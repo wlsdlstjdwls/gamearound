@@ -1,7 +1,7 @@
 // 소스 간 게임 매칭 — 설계서 §4.2.
 // titleEn 정규화 → adapter.search → trigram 유사도 상위 후보 → 임계값에 따라 auto / pending / 미매칭.
 // matched_by="manual" 행은 크롤러가 절대 덮어쓰지 않는다.
-import { and, eq, isNull, sql } from "drizzle-orm";
+import { and, eq, isNull, lt, or, sql } from "drizzle-orm";
 import { getDb } from "@/server/db/client";
 import { gameSourceRefs, games } from "@/server/db/schema";
 import { getAdapter, getDisabledReason, isSourceEnabled } from "@/server/adapters";
@@ -10,6 +10,13 @@ import { normalizeTitle, trigramSimilarity } from "@/lib/slug";
 
 export const AUTO_MATCH_THRESHOLD = 0.9;
 export const PENDING_MATCH_THRESHOLD = 0.7;
+/** matched_by="none" 행을 다시 검색하기까지의 최소 경과일. 소스 카탈로그에 뒤늦게 등록되는 게임을 회수한다. */
+export const NONE_RETRY_DAYS = 14;
+
+/** 지금 기준 재검색 가능 시점(= now - NONE_RETRY_DAYS) */
+export function noneRetryCutoff(now: Date = new Date()): Date {
+  return new Date(now.getTime() - NONE_RETRY_DAYS * 24 * 60 * 60 * 1000);
+}
 
 export type MatchDecision = "auto" | "pending" | "none";
 
@@ -71,22 +78,26 @@ export async function matchGameToSource(gameId: string, source: Source): Promise
 
   if (!best) return { gameId, source, decision: "no-candidates" }; // 후보 0건은 검색 실패일 수 있어 기록하지 않음(다음 실행에 재시도)
   if (decision === "none") {
-    // 후보는 있었지만 유사도 미달 → matched_by="none" 기록해 다음 실행에서 같은 게임을 다시 검색하지 않는다(워커 시간 절약).
-    // auto/manual/pending 행은 덮지 않는다(onConflictDoNothing). 재시도는 TODO: refs 에 checked_at 컬럼 추가 후 N일 경과 행만 재검색.
+    // 후보는 있었지만 유사도 미달 → matched_by="none" 기록해 당분간 같은 게임을 다시 검색하지 않는다(워커 시간 절약).
+    // checked_at 을 갱신해 NONE_RETRY_DAYS 경과 후에만 재검색되게 한다. auto/manual/pending 행은 덮지 않는다.
     await db
       .insert(gameSourceRefs)
-      .values({ gameId, source, externalId: best.candidate.externalId, url: best.candidate.url, matchedBy: "none", confidence: best.similarity.toFixed(2) })
-      .onConflictDoNothing();
+      .values({ gameId, source, externalId: best.candidate.externalId, url: best.candidate.url, matchedBy: "none", confidence: best.similarity.toFixed(2), checkedAt: new Date() })
+      .onConflictDoUpdate({
+        target: [gameSourceRefs.gameId, gameSourceRefs.source],
+        set: { externalId: best.candidate.externalId, url: best.candidate.url, confidence: best.similarity.toFixed(2), checkedAt: new Date() },
+        setWhere: sql`${gameSourceRefs.matchedBy} = 'none'`,
+      });
     return { gameId, source, decision, externalId: best.candidate.externalId, similarity: best.similarity };
   }
 
   const confidence = best.similarity.toFixed(2);
   await db
     .insert(gameSourceRefs)
-    .values({ gameId, source, externalId: best.candidate.externalId, url: best.candidate.url, matchedBy: decision, confidence })
+    .values({ gameId, source, externalId: best.candidate.externalId, url: best.candidate.url, matchedBy: decision, confidence, checkedAt: new Date() })
     .onConflictDoUpdate({
       target: [gameSourceRefs.gameId, gameSourceRefs.source],
-      set: { externalId: best.candidate.externalId, url: best.candidate.url, matchedBy: decision, confidence },
+      set: { externalId: best.candidate.externalId, url: best.candidate.url, matchedBy: decision, confidence, checkedAt: new Date() },
       // 동시 실행으로 manual 이 생겼을 수 있으므로 한 번 더 방어
       setWhere: sql`${gameSourceRefs.matchedBy} <> 'manual'`,
     });
@@ -102,7 +113,10 @@ export interface MatchSummary {
   errors: number;
 }
 
-/** 해당 소스에 ref 가 없는 게임을 limit 개까지 매칭. 소스별 minIntervalMs 대기 */
+/**
+ * 해당 소스에 ref 가 없는 게임 + matched_by="none" 으로 기록된 지 NONE_RETRY_DAYS 지난 게임을
+ * limit 개까지 매칭. 소스별 minIntervalMs 대기.
+ */
 export async function matchUnmatchedGames(source: Source, limit: number): Promise<MatchSummary> {
   if (!isSourceEnabled(source)) throw new Error(`${source} 비활성 소스: ${getDisabledReason(source)}`);
   const db = getDb();
@@ -111,7 +125,12 @@ export async function matchUnmatchedGames(source: Source, limit: number): Promis
     .select({ id: games.id })
     .from(games)
     .leftJoin(gameSourceRefs, and(eq(gameSourceRefs.gameId, games.id), eq(gameSourceRefs.source, source)))
-    .where(isNull(gameSourceRefs.gameId))
+    .where(
+      or(
+        isNull(gameSourceRefs.gameId),
+        and(eq(gameSourceRefs.matchedBy, "none"), lt(gameSourceRefs.checkedAt, noneRetryCutoff())),
+      ),
+    )
     .orderBy(games.createdAt)
     .limit(limit);
 

@@ -4,7 +4,8 @@ name: crawl-prices
 
 on:
   schedule:
-    - cron: "0 */4 * * *"
+    # 주기 8h: 실행 1회 ~12분 × 3회/일 ≈ 월 1,080분. private 레포 Actions 무료 2,000분 한도 대응(레포 public 전환 시 무제한 → 4h로 복구 가능).
+    - cron: "0 */8 * * *"
   workflow_dispatch:
     inputs:
       limit:

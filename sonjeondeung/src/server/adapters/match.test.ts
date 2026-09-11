@@ -1,7 +1,7 @@
 // 매칭 임계값 테스트 (§4.2) — trigram 유사도 + classifyMatch/pickBestCandidate 순수 함수만. DB/네트워크 없음
 import { describe, expect, it } from "vitest";
 import { normalizeTitle, trigramSimilarity } from "@/lib/slug";
-import { AUTO_MATCH_THRESHOLD, classifyMatch, PENDING_MATCH_THRESHOLD, pickBestCandidate } from "@/server/sync/match";
+import { AUTO_MATCH_THRESHOLD, classifyMatch, NONE_RETRY_DAYS, noneRetryCutoff, PENDING_MATCH_THRESHOLD, pickBestCandidate } from "@/server/sync/match";
 import { matchNewsToGame } from "@/server/sync/run-source";
 
 describe("classifyMatch", () => {
@@ -62,5 +62,24 @@ describe("matchNewsToGame", () => {
   });
   it("없으면 null, 짧은 제목은 매칭하지 않음", () => {
     expect(matchNewsToGame("Let's go outside", index)).toBeNull();
+  });
+});
+
+describe("noneRetryCutoff", () => {
+  const now = new Date("2026-09-12T00:00:00.000Z");
+
+  it("now - NONE_RETRY_DAYS 를 반환한다", () => {
+    expect(noneRetryCutoff(now).toISOString()).toBe("2026-08-29T00:00:00.000Z");
+    expect(NONE_RETRY_DAYS).toBe(14);
+  });
+
+  it("경계: 정확히 NONE_RETRY_DAYS 전 기록은 아직 재검색 대상이 아니다(cutoff 미만만 대상)", () => {
+    const checkedAt = new Date(now.getTime() - NONE_RETRY_DAYS * 24 * 60 * 60 * 1000);
+    expect(checkedAt < noneRetryCutoff(now)).toBe(false);
+  });
+
+  it("NONE_RETRY_DAYS + 1일 지난 기록은 재검색 대상", () => {
+    const checkedAt = new Date(now.getTime() - (NONE_RETRY_DAYS + 1) * 24 * 60 * 60 * 1000);
+    expect(checkedAt < noneRetryCutoff(now)).toBe(true);
   });
 });

@@ -4,7 +4,8 @@ name: crawl-meta
 
 on:
   schedule:
-    - cron: "0 3 * * *"
+    # 주기 2일: 실행 1회 ~10분 × 15회/월 ≈ 월 150분. 평점은 변동이 느려 일간 → 격일로 완화.
+    - cron: "0 3 */2 * *"
   workflow_dispatch:
     inputs:
       limit:

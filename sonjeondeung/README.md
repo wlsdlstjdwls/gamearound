@@ -70,3 +70,5 @@ pnpm dev
 | 플랫폼 세분화 | PS4/PS5, Switch/Switch2 분리 |
 | 멀티플레이 출처 | Steam 카테고리 태그 + 관리자 정정 |
 | 정정 잠금 | 관리자가 해제할 때까지 영구 잠금 |
+| 크롤 주기 (설계서 §4.3 이탈) | prices 8h·news 3h·meta 격일. 설계서는 prices 4h·news 1h이나 private 레포 Actions 무료 2,000분/월을 2배 초과(≈3,900분)해 완화. 레포 public 전환 시 무제한이므로 설계서 값으로 복구 |
+| 미매칭(`matched_by="none"`) 재시도 | `game_source_refs.checked_at` 기준 `NONE_RETRY_DAYS`(14일) 경과 행만 재검색 |

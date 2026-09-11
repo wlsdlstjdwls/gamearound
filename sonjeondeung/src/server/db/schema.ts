@@ -31,8 +31,8 @@ export const games = pgTable("games", {
   supportsCoop: boolean("supports_coop").default(false),
   supportsPvp: boolean("supports_pvp").default(false),
   isRetro: boolean("is_retro").default(false),
-  createdAt: timestamp("created_at").defaultNow().notNull(),
-  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
 }, (t) => [index("games_title_en_idx").on(t.titleEn)]);
 
 export const genres = pgTable("genres", {
@@ -58,7 +58,7 @@ export const gamePlatforms = pgTable("game_platforms", {
   discountPct: integer("discount_pct"),
   metacriticScore: integer("metacritic_score"),
   opencriticScore: integer("opencritic_score"),
-  lastSyncedAt: timestamp("last_synced_at"),  // UI "갱신 시각" 표시 원천
+  lastSyncedAt: timestamp("last_synced_at", { withTimezone: true }),  // UI "갱신 시각" 표시 원천
   syncStatus: syncStatusEnum("sync_status").default("ok"),
 }, (t) => [uniqueIndex("gp_game_platform_uq").on(t.gameId, t.platform)]);
 
@@ -67,7 +67,7 @@ export const priceSnapshots = pgTable("price_snapshots", {
   gamePlatformId: uuid("game_platform_id").references(() => gamePlatforms.id, { onDelete: "cascade" }).notNull(),
   price: integer("price").notNull(),
   discountPct: integer("discount_pct").default(0),
-  capturedAt: timestamp("captured_at").defaultNow().notNull(),
+  capturedAt: timestamp("captured_at", { withTimezone: true }).defaultNow().notNull(),
 }, (t) => [index("ps_gp_captured_idx").on(t.gamePlatformId, t.capturedAt)]);
 
 export const gameSourceRefs = pgTable("game_source_refs", {
@@ -78,14 +78,19 @@ export const gameSourceRefs = pgTable("game_source_refs", {
   // "auto" | "manual" | "pending" | "none" — pending = 유사도 0.7~0.9 관리자 검수 큐 (§4.2), none = 미매칭 기록(재검색 방지, 수집 대상 아님)
   matchedBy: text("matched_by").notNull(),
   confidence: numeric("confidence", { precision: 3, scale: 2 }),
-}, (t) => [primaryKey({ columns: [t.gameId, t.source] })]);
+  // 마지막 매칭 시도 시각 — matched_by="none" 행의 재검색 주기 판단용(NONE_RETRY_DAYS)
+  checkedAt: timestamp("checked_at", { withTimezone: true }).defaultNow().notNull(),
+}, (t) => [
+  primaryKey({ columns: [t.gameId, t.source] }),
+  index("gsr_source_matched_checked_idx").on(t.source, t.matchedBy, t.checkedAt),
+]);
 
 export const playtimes = pgTable("playtimes", {
   gameId: uuid("game_id").primaryKey().references(() => games.id, { onDelete: "cascade" }),
   mainStoryHours: numeric("main_story_hours", { precision: 5, scale: 1 }),
   mainExtraHours: numeric("main_extra_hours", { precision: 5, scale: 1 }),
   completionistHours: numeric("completionist_hours", { precision: 5, scale: 1 }),
-  lastSyncedAt: timestamp("last_synced_at"),
+  lastSyncedAt: timestamp("last_synced_at", { withTimezone: true }),
 });
 
 export const news = pgTable("news", {
@@ -95,7 +100,7 @@ export const news = pgTable("news", {
   url: text("url").notNull().unique(),
   sourceName: text("source_name").notNull(),
   thumbnailUrl: text("thumbnail_url"),
-  publishedAt: timestamp("published_at").notNull(),
+  publishedAt: timestamp("published_at", { withTimezone: true }).notNull(),
 }, (t) => [index("news_game_pub_idx").on(t.gameId, t.publishedAt)]);
 
 // 자체 인증(§6 개정 2026-09-11, 외부 인증 SaaS 미사용). email은 소문자 정규화 후 저장(unique).
@@ -106,18 +111,18 @@ export const users = pgTable("users", {
   passwordHash: text("password_hash"),
   role: roleEnum("role").default("user").notNull(),
   displayName: text("display_name"),
-  emailVerifiedAt: timestamp("email_verified_at"),
-  createdAt: timestamp("created_at").defaultNow().notNull(),
-  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+  emailVerifiedAt: timestamp("email_verified_at", { withTimezone: true }),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
 });
 
 // 서버 세션(쿠키에는 랜덤 토큰, DB에는 sha256 해시만). 만료·강제 로그아웃은 행 삭제로 처리.
 export const sessions = pgTable("sessions", {
   id: text("id").primaryKey(), // sha256(token) hex
   userId: uuid("user_id").references(() => users.id, { onDelete: "cascade" }).notNull(),
-  expiresAt: timestamp("expires_at").notNull(),
-  createdAt: timestamp("created_at").defaultNow().notNull(),
-  lastSeenAt: timestamp("last_seen_at").defaultNow().notNull(),
+  expiresAt: timestamp("expires_at", { withTimezone: true }).notNull(),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+  lastSeenAt: timestamp("last_seen_at", { withTimezone: true }).defaultNow().notNull(),
   userAgent: text("user_agent"),
   ip: text("ip"),
 }, (t) => [index("sessions_user_idx").on(t.userId), index("sessions_expires_idx").on(t.expiresAt)]);
@@ -125,7 +130,7 @@ export const sessions = pgTable("sessions", {
 export const wishlists = pgTable("wishlists", {
   userId: uuid("user_id").references(() => users.id, { onDelete: "cascade" }).notNull(),
   gameId: uuid("game_id").references(() => games.id, { onDelete: "cascade" }).notNull(),
-  createdAt: timestamp("created_at").defaultNow().notNull(),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
 }, (t) => [primaryKey({ columns: [t.userId, t.gameId] })]);
 
 export const pushSubscriptions = pgTable("push_subscriptions", {
@@ -134,7 +139,7 @@ export const pushSubscriptions = pgTable("push_subscriptions", {
   endpoint: text("endpoint").notNull().unique(),
   p256dh: text("p256dh").notNull(),
   auth: text("auth").notNull(),
-  createdAt: timestamp("created_at").defaultNow().notNull(),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
 });
 
 export const priceAlerts = pgTable("price_alerts", {
@@ -149,7 +154,7 @@ export const priceAlerts = pgTable("price_alerts", {
 export const alertDeliveries = pgTable("alert_deliveries", {
   alertId: uuid("alert_id").references(() => priceAlerts.id, { onDelete: "cascade" }).notNull(),
   snapshotId: integer("snapshot_id").references(() => priceSnapshots.id).notNull(),
-  sentAt: timestamp("sent_at").defaultNow().notNull(),
+  sentAt: timestamp("sent_at", { withTimezone: true }).defaultNow().notNull(),
 }, (t) => [primaryKey({ columns: [t.alertId, t.snapshotId] })]);
 
 export const syncLogs = pgTable("sync_logs", {
@@ -159,8 +164,8 @@ export const syncLogs = pgTable("sync_logs", {
   processed: integer("processed").default(0),
   failed: integer("failed").default(0),
   errorSample: text("error_sample"),
-  startedAt: timestamp("started_at").notNull(),
-  finishedAt: timestamp("finished_at"),
+  startedAt: timestamp("started_at", { withTimezone: true }).notNull(),
+  finishedAt: timestamp("finished_at", { withTimezone: true }),
 });
 
 export const dataCorrections = pgTable("data_corrections", {
@@ -172,7 +177,7 @@ export const dataCorrections = pgTable("data_corrections", {
   before: jsonb("before"),
   after: jsonb("after"),
   lockField: boolean("lock_field").default(true), // true면 크롤러가 덮어쓰지 않음
-  createdAt: timestamp("created_at").defaultNow().notNull(),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
 });
 
 // ---- relations (drizzle relational query API 용) ----
