@@ -2,7 +2,7 @@
 //  1. Redis 락  2. sync_logs INSERT  3. 대상 목록  4. fetch(재시도·간격) → 변경 시에만 반영
 //  5. 가격 변동 → dispatch-alerts  6. sync_logs UPDATE  7. /api/revalidate  8. 락 해제
 // 계층: adapter → sync(이 파일) → db. 어댑터는 가져오기만, DB 반영은 여기서만.
-import { and, eq, inArray, ne, sql } from "drizzle-orm";
+import { and, eq, inArray, sql } from "drizzle-orm";
 import { getDb, type Db } from "@/server/db/client";
 import {
   dataCorrections,
@@ -38,10 +38,12 @@ import { dispatchPriceAlerts, type DispatchSummary, type PriceChange } from "./d
 // ---- 상수 ----
 export const LOCK_TTL_SEC = 3600;
 export const RETRY_DELAYS_MS = [1000, 4000, 16000]; // 재시도 3회 지수 백오프
-/** 소스별 배치 크기 (§4.4: 200~500, §9: 1회 5분 이내) */
+/** 수집 대상이 되는 매핑 상태. pending(검수 대기)·none(미매칭 기록)은 제외 */
+export const MATCHED_FOR_SYNC = ["auto", "manual"] as const;
+/** 소스별 배치 크기 (§4.4: 200~500, §9: 1회 5분 이내). 크롤 소스는 minIntervalMs × 배치가 워크플로 timeout 안에 들도록 */
 export const BATCH_SIZE: Record<Source, number> = {
-  steam: 300, psstore: 200, xbox: 200, nintendo: 200,
-  hltb: 200, opencritic: 300, metacritic: 200,
+  steam: 300, psstore: 200, xbox: 200, nintendo: 120,
+  hltb: 200, opencritic: 300, metacritic: 150,
   rss: RSS_FEEDS.length,
 };
 /** 스토어 소스 → 담당 플랫폼 (§11-6: PS4/PS5, Switch/Switch2 분리 유지) */
@@ -142,7 +144,7 @@ async function listStoreTargets(ctx: Ctx, source: StoreSource, limit: number, se
     .from(gameSourceRefs)
     .innerJoin(games, eq(games.id, gameSourceRefs.gameId))
     .leftJoin(gamePlatforms, and(eq(gamePlatforms.gameId, gameSourceRefs.gameId), inArray(gamePlatforms.platform, platforms)))
-    .where(and(eq(gameSourceRefs.source, source), ne(gameSourceRefs.matchedBy, "pending")))
+    .where(and(eq(gameSourceRefs.source, source), inArray(gameSourceRefs.matchedBy, MATCHED_FOR_SYNC)))
     .orderBy(sql`${gamePlatforms.lastSyncedAt} asc nulls first`)
     .limit(limit);
 
@@ -401,13 +403,13 @@ async function listMetaTargets(ctx: Ctx, source: MetaSource, limit: number): Pro
   if (source === "hltb") {
     return base
       .leftJoin(playtimes, eq(playtimes.gameId, gameSourceRefs.gameId))
-      .where(and(eq(gameSourceRefs.source, source), ne(gameSourceRefs.matchedBy, "pending")))
+      .where(and(eq(gameSourceRefs.source, source), inArray(gameSourceRefs.matchedBy, MATCHED_FOR_SYNC)))
       .orderBy(sql`${playtimes.lastSyncedAt} asc nulls first`)
       .limit(limit);
   }
   // 평점 소스는 소스별 동기화 시각이 없어 games.updated_at 오래된 순
   return base
-    .where(and(eq(gameSourceRefs.source, source), ne(gameSourceRefs.matchedBy, "pending")))
+    .where(and(eq(gameSourceRefs.source, source), inArray(gameSourceRefs.matchedBy, MATCHED_FOR_SYNC)))
     .orderBy(games.updatedAt)
     .limit(limit);
 }

@@ -67,10 +67,19 @@ export async function matchGameToSource(gameId: string, source: Source): Promise
   const query = normalizeTitle(game.titleEn);
   const candidates = query ? await adapter.search(query) : [];
   const best = pickBestCandidate(game.titleEn, game.titleKo, candidates);
-  if (!best) return { gameId, source, decision: "no-candidates" };
+  const decision: MatchDecision = best ? classifyMatch(best.similarity) : "none";
 
-  const decision = classifyMatch(best.similarity);
-  if (decision === "none") return { gameId, source, decision, externalId: best.candidate.externalId, similarity: best.similarity };
+  if (decision === "none") {
+    // 미매칭도 기록(matched_by="none")해 다음 실행에서 같은 게임을 다시 검색하지 않는다(워커 시간 절약).
+    // auto/manual/pending 행은 덮지 않는다. 재시도는 TODO: refs 에 checked_at 컬럼 추가 후 N일 경과 행만 재검색.
+    await db
+      .insert(gameSourceRefs)
+      .values({ gameId, source, externalId: best?.candidate.externalId ?? "", url: best?.candidate.url ?? null, matchedBy: "none", confidence: best ? best.similarity.toFixed(2) : null })
+      .onConflictDoNothing();
+    if (!best) return { gameId, source, decision: "no-candidates" };
+    return { gameId, source, decision, externalId: best.candidate.externalId, similarity: best.similarity };
+  }
+  if (!best) return { gameId, source, decision: "no-candidates" };
 
   const confidence = best.similarity.toFixed(2);
   await db

@@ -130,7 +130,7 @@ export default async function AdminGamePage({ params }: { params: Promise<{ id: 
                       {r.url ? <a href={r.url} target="_blank" rel="noreferrer" className="break-all text-xs text-amber-300 hover:underline">{r.url}</a> : "-"}
                     </td>
                     <td className="px-3 py-2">
-                      <span className={`rounded px-1.5 py-0.5 text-xs ${r.matchedBy === "pending" ? "bg-amber-900/60 text-amber-300" : r.matchedBy === "manual" ? "bg-sky-900/60 text-sky-300" : "bg-slate-800 text-slate-300"}`}>
+                      <span className={`rounded px-1.5 py-0.5 text-xs ${r.matchedBy === "pending" ? "bg-amber-900/60 text-amber-300" : r.matchedBy === "manual" ? "bg-sky-900/60 text-sky-300" : r.matchedBy === "none" ? "bg-slate-900 text-slate-500" : "bg-slate-800 text-slate-300"}`}>
                         {r.matchedBy}
                       </span>
                     </td>

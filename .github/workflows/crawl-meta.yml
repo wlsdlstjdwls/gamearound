@@ -30,7 +30,7 @@ env:
 jobs:
   crawl:
     runs-on: ubuntu-latest
-    timeout-minutes: 20
+    timeout-minutes: 40
     defaults:
       run:
         working-directory: sonjeondeung # 레포 루트는 gamearound/, 앱은 하위 폴더

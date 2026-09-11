@@ -75,7 +75,7 @@ export const gameSourceRefs = pgTable("game_source_refs", {
   source: sourceEnum("source").notNull(),
   externalId: text("external_id").notNull(),
   url: text("url"),
-  // "auto" | "manual" | "pending" — pending = 유사도 0.7~0.9 관리자 검수 큐 (§4.2)
+  // "auto" | "manual" | "pending" | "none" — pending = 유사도 0.7~0.9 관리자 검수 큐 (§4.2), none = 미매칭 기록(재검색 방지, 수집 대상 아님)
   matchedBy: text("matched_by").notNull(),
   confidence: numeric("confidence", { precision: 3, scale: 2 }),
 }, (t) => [primaryKey({ columns: [t.gameId, t.source] })]);

@@ -352,7 +352,10 @@ export async function getGameBySlug(slug: string): Promise<GameDetail | null> {
       thumbnailUrl: n.thumbnailUrl,
       publishedAt: n.publishedAt.toISOString(),
     })),
-    sourceRefs: row.sourceRefs.map((r) => ({ source: r.source, externalId: r.externalId, url: r.url })),
+    // 공개 화면 "정보 출처"는 확정된 매핑(auto/manual)만. pending(검수 대기)·none(미매칭 기록)은 노출하지 않는다
+    sourceRefs: row.sourceRefs
+      .filter((r) => r.matchedBy === "auto" || r.matchedBy === "manual")
+      .map((r) => ({ source: r.source, externalId: r.externalId, url: r.url })),
   };
 }
 

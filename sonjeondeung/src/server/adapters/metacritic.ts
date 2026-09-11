@@ -107,7 +107,7 @@ async function fetchJson(url: string): Promise<unknown> {
 
 export const metacriticAdapter: MetaAdapter = {
   source: "metacritic",
-  minIntervalMs: 5000,
+  minIntervalMs: 3000,
 
   async search(query: string): Promise<SearchCandidate[]> {
     const u = new URL(`${METACRITIC_BACKEND_URL}/finder/metacritic/search/${encodeURIComponent(query)}/web`);
