@@ -31,6 +31,21 @@ const metaAdapters: Record<MetaSource, MetaAdapter> = {
 };
 const newsAdapters: Record<NewsSource, NewsAdapter> = { rss: rssAdapter };
 
+/**
+ * 비활성 소스 — PoC 미통과로 구현되지 않았거나 차단된 소스. crawl/match 는 이 목록에 있으면 실행하지 않는다(sync_logs 기록 없음).
+ * 활성화하려면 어댑터를 구현하고 여기서 제거한다. 사유는 관리자 대시보드에 그대로 표시된다.
+ */
+export const DISABLED_SOURCES: Readonly<Partial<Record<Source, string>>> = {
+  psstore: "PlayStation Store 는 클라이언트 렌더링 + persisted GraphQL 해시가 필요해 PoC 미통과 (2026-09-11)",
+  xbox: "Xbox Store 어댑터 미구현 (스텁)",
+  nintendo: "Nintendo eShop 어댑터 미구현 (스텁)",
+  metacritic: "Metacritic 어댑터 미구현 (스텁)",
+};
+
+export function isSourceEnabled(source: Source): boolean {
+  return DISABLED_SOURCES[source] === undefined;
+}
+
 export function isSource(v: string): v is Source {
   return (ALL_SOURCES as readonly string[]).includes(v);
 }

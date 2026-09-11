@@ -11,6 +11,7 @@ import {
   type SourceName,
 } from "@/server/db/schema";
 import { requireAdmin } from "@/server/services/users";
+import { DISPLAY_TIME_ZONE } from "@/lib/format";
 
 export type SyncLogRow = typeof syncLogs.$inferSelect;
 export type SourceRefRow = typeof gameSourceRefs.$inferSelect;
@@ -25,12 +26,17 @@ export function isSourceName(v: unknown): v is SourceName {
 
 export type SyncOverviewItem = { source: SourceName; latest: SyncLogRow | null; failedToday: number };
 
-/** 소스별 최근 sync_logs 1건 + 오늘(서버 로컬 자정 이후) 실패 횟수 */
+/** 표시 시간대(KST) 기준 오늘 0시. 서버는 UTC 라 로컬 자정을 쓰면 9시간 어긋난다 */
+export function startOfTodayInDisplayZone(now: Date = new Date()): Date {
+  const ymd = now.toLocaleDateString("en-CA", { timeZone: DISPLAY_TIME_ZONE }); // YYYY-MM-DD
+  return new Date(`${ymd}T00:00:00+09:00`);
+}
+
+/** 소스별 최근 sync_logs 1건 + 오늘(KST 자정 이후) 실패 횟수 */
 export async function getSyncOverview(): Promise<{ items: SyncOverviewItem[]; pendingCount: number }> {
   await requireAdmin();
   const db = getDb();
-  const todayStart = new Date();
-  todayStart.setHours(0, 0, 0, 0);
+  const todayStart = startOfTodayInDisplayZone();
 
   const [latestRows, failedRows, [pending]] = await Promise.all([
     db.selectDistinctOn([syncLogs.source]).from(syncLogs).orderBy(syncLogs.source, desc(syncLogs.startedAt)),

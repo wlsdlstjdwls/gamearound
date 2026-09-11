@@ -4,7 +4,7 @@
 import { and, eq, isNull, sql } from "drizzle-orm";
 import { getDb } from "@/server/db/client";
 import { gameSourceRefs, games } from "@/server/db/schema";
-import { getAdapter } from "@/server/adapters";
+import { DISABLED_SOURCES, getAdapter, isSourceEnabled } from "@/server/adapters";
 import type { SearchCandidate, Source } from "@/server/adapters/types";
 import { normalizeTitle, trigramSimilarity } from "@/lib/slug";
 
@@ -96,6 +96,7 @@ export interface MatchSummary {
 
 /** 해당 소스에 ref 가 없는 게임을 limit 개까지 매칭. 소스별 minIntervalMs 대기 */
 export async function matchUnmatchedGames(source: Source, limit: number): Promise<MatchSummary> {
+  if (!isSourceEnabled(source)) throw new Error(`${source} 비활성 소스: ${DISABLED_SOURCES[source]}`);
   const db = getDb();
   const adapter = getAdapter(source);
   const rows = await db

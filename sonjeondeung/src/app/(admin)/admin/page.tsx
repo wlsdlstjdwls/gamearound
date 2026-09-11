@@ -3,6 +3,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { formatDateTime } from "@/lib/format";
 import { getSyncOverview, listPendingMatches, type SyncOverviewItem } from "@/server/services/admin";
+import { DISABLED_SOURCES, isSource, isSourceEnabled } from "@/server/adapters";
 import { requireRoleOrForbid } from "@/server/auth/guards";
 import { MatchReviewButtons } from "@/components/admin/match-review-buttons";
 
@@ -16,11 +17,14 @@ const STATUS_STYLE: Record<string, string> = {
 
 function SourceCard({ item }: { item: SyncOverviewItem }) {
   const l = item.latest;
+  const disabledReason = isSource(item.source) && !isSourceEnabled(item.source) ? DISABLED_SOURCES[item.source] : undefined;
   return (
-    <div className="rounded-lg border border-slate-800 bg-slate-900/60 p-4">
+    <div className={`rounded-lg border border-slate-800 bg-slate-900/60 p-4 ${disabledReason ? "opacity-70" : ""}`}>
       <div className="flex items-center justify-between">
         <h3 className="font-semibold">{item.source}</h3>
-        {l ? (
+        {disabledReason ? (
+          <span className="rounded bg-slate-800 px-2 py-0.5 text-xs text-slate-400" title={disabledReason}>비활성</span>
+        ) : l ? (
           <span className={`rounded px-2 py-0.5 text-xs ${STATUS_STYLE[l.status] ?? ""}`}>{l.status}</span>
         ) : (
           <span className="rounded bg-slate-800 px-2 py-0.5 text-xs text-slate-400">기록 없음</span>
@@ -42,6 +46,7 @@ function SourceCard({ item }: { item: SyncOverviewItem }) {
       ) : (
         <p className="mt-2 text-xs text-slate-500">아직 실행된 적이 없습니다.</p>
       )}
+      {disabledReason && <p className="mt-2 text-xs text-slate-500">{disabledReason}</p>}
     </div>
   );
 }

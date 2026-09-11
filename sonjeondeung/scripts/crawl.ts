@@ -4,7 +4,7 @@
 // 종료 코드: 0 = ok/skipped, 2 = partial(일부 실패), 1 = failed/인자 오류
 import path from "node:path";
 import { config as loadEnv } from "dotenv";
-import { ALL_SOURCES, isSource } from "@/server/adapters";
+import { ALL_SOURCES, DISABLED_SOURCES, isSource, isSourceEnabled } from "@/server/adapters";
 import { runSource } from "@/server/sync/run-source";
 import { matchUnmatchedGames } from "@/server/sync/match";
 
@@ -33,6 +33,11 @@ async function main(): Promise<number> {
   if (!source || !isSource(source)) {
     console.error(`사용법: tsx scripts/crawl.ts --source=<${ALL_SOURCES.join("|")}> [--limit=N] [--seed-top=N]`);
     return 1;
+  }
+  if (!isSourceEnabled(source)) {
+    // 비활성 소스는 sync_logs 도 남기지 않고 즉시 종료 (워크플로 단계는 유지해 활성화 시 바로 돌게)
+    console.log(`[crawl] ${source} 비활성 — 건너뜀: ${DISABLED_SOURCES[source]}`);
+    return 0;
   }
   const limit = parsePositiveInt(args.limit, "limit");
   const seedTop = parsePositiveInt(args["seed-top"], "seed-top");
