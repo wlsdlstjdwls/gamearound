@@ -1,8 +1,9 @@
 // GET /api/cron/daily — Vercel Cron 진입점 (§4.3). Authorization: Bearer <CRON_SECRET>
-// 작업: 스냅샷 다운샘플링(90일) + 뉴스 90일 삭제 + sync_logs 30일 삭제
+// 작업: 스냅샷 다운샘플링(90일) + 뉴스 90일 삭제 + sync_logs 30일 삭제 + 만료 세션 정리
 import { timingSafeEqual } from "node:crypto";
 import { NextResponse, type NextRequest } from "next/server";
 import { downsampleSnapshots, purgeOldNews, purgeOldSyncLogs } from "@/server/services/prices";
+import { purgeExpiredSessions } from "@/server/auth/session";
 
 export const maxDuration = 60;
 export const dynamic = "force-dynamic";
@@ -28,6 +29,7 @@ export async function GET(req: NextRequest) {
     ["snapshotsDownsampled", () => downsampleSnapshots(90)],
     ["newsPurged", () => purgeOldNews(90)],
     ["syncLogsPurged", () => purgeOldSyncLogs(30)],
+    ["sessionsPurged", () => purgeExpiredSessions()],
   ];
   for (const [name, run] of jobs) {
     try {

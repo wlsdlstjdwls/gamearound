@@ -3,7 +3,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { formatDateTime } from "@/lib/format";
 import { isSourceName, listSyncLogs, SOURCES } from "@/server/services/admin";
-import { requireAdmin } from "@/server/services/users";
+import { requireRoleOrForbid } from "@/server/auth/guards";
 
 export const metadata: Metadata = { title: "동기화 로그" };
 
@@ -19,7 +19,7 @@ function durationSec(start: Date, end: Date | null): string {
 }
 
 export default async function SyncLogsPage({ searchParams }: { searchParams: Promise<{ source?: string | string[] }> }) {
-  await requireAdmin();
+  await requireRoleOrForbid("admin");
   const sp = await searchParams;
   const raw = typeof sp.source === "string" ? sp.source : undefined;
   const source = isSourceName(raw) ? raw : undefined;

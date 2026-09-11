@@ -5,7 +5,7 @@ import { notFound } from "next/navigation";
 import { z } from "zod";
 import { formatDateTime, formatKrw, PLATFORM_LABEL } from "@/lib/format";
 import { CORRECTABLE_FIELDS, getGameForAdmin, SOURCES } from "@/server/services/admin";
-import { requireAdmin } from "@/server/services/users";
+import { requireRoleOrForbid } from "@/server/auth/guards";
 import { CorrectionForm, type FieldOption } from "@/components/admin/correction-form";
 import { ManualRefForm } from "@/components/admin/manual-ref-form";
 import { MatchReviewButtons } from "@/components/admin/match-review-buttons";
@@ -63,7 +63,7 @@ function jsonText(v: unknown): string {
 }
 
 export default async function AdminGamePage({ params }: { params: Promise<{ id: string }> }) {
-  await requireAdmin();
+  await requireRoleOrForbid("admin");
   const { id } = await params;
   if (!z.uuid().safeParse(id).success) notFound();
   const game = await getGameForAdmin(id);

@@ -1,26 +1,185 @@
 @import "tailwindcss";
 
+/* ── 손전등 디자인 토큰 ─────────────────────────────────────────
+   색은 Tailwind slate/amber 팔레트와 같은 값. 컴포넌트는 Tailwind 유틸을 쓰되,
+   순수 CSS(키프레임·포커스 링·터치 튜닝)가 필요한 곳은 이 변수를 참조한다.
+   모션 곡선·시간은 여기 값만 쓴다 — 컴포넌트에 임의 숫자 금지. */
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --bg: #020617; /* slate-950 */
+  --surface: #0f172a; /* slate-900 */
+  --surface-2: #1e293b; /* slate-800 */
+  --line: #1e293b;
+  --line-strong: #334155; /* slate-700 */
+  --ink: #f1f5f9; /* slate-100 */
+  --mut: #94a3b8; /* slate-400 */
+  --dim: #64748b; /* slate-500 */
+  --acc: #fbbf24; /* amber-400 */
+  --acc-hover: #fcd34d; /* amber-300 */
+  --acc-rgb: 251, 191, 36;
+  --acc-soft: rgba(251, 191, 36, 0.12);
+  --acc-glow: rgba(251, 191, 36, 0.35);
+  --danger: #f87171; /* red-400 */
+  --danger-soft: rgba(248, 113, 113, 0.12);
+  --ok: #34d399; /* emerald-400 */
+  --warn: #fb923c; /* orange-400 */
+
+  /* 모션 — 확정값. 등장은 JS 타이머가 아니라 CSS 애니메이션으로(백그라운드 탭에서 opacity:0에 멈추지 않는다) */
+  --duration-fast: 150ms;
+  --duration-base: 220ms;
+  --duration-slow: 360ms;
+  --ease-standard: cubic-bezier(0.25, 0.8, 0.25, 1);
+  --ease-out-emph: cubic-bezier(0.25, 1.02, 0.36, 1);
+  --ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
+  --stagger-step: 45ms;
+
+  --radius-sm: 8px;
+  --radius-md: 12px;
+  --radius-lg: 16px;
+  --radius-xl: 24px;
+  --touch-target: 44px;
+
+  --font-sans: "Pretendard Variable", Pretendard, -apple-system, BlinkMacSystemFont, "Apple SD Gothic Neo", "Segoe UI", Roboto,
+    "Noto Sans KR", "Malgun Gothic", sans-serif;
 }
 
+/* Tailwind v4 테마 연결 — bg-surface, text-mut, duration-base, ease-out-emph, animate-rise 같은 유틸이 생긴다 */
 @theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  --color-bg: var(--bg);
+  --color-surface: var(--surface);
+  --color-surface-2: var(--surface-2);
+  --color-line: var(--line);
+  --color-line-strong: var(--line-strong);
+  --color-ink: var(--ink);
+  --color-mut: var(--mut);
+  --color-dim: var(--dim);
+  --color-acc: var(--acc);
+  --color-acc-hover: var(--acc-hover);
+  --color-danger: var(--danger);
+  --color-ok: var(--ok);
+  --color-warn: var(--warn);
+
+  --font-sans: var(--font-sans);
+
+  --ease-standard: var(--ease-standard);
+  --ease-out-emph: var(--ease-out-emph);
+  --ease-spring: var(--ease-spring);
+
+  --animate-fade-in: fade-in var(--duration-base) var(--ease-standard) both;
+  --animate-rise: rise var(--duration-slow) var(--ease-out-emph) both;
+  --animate-scale-in: scale-in var(--duration-base) var(--ease-out-emph) both;
+  --animate-shake: shake 420ms var(--ease-standard) both;
+  --animate-pop: pop 420ms var(--ease-out-emph);
+  --animate-shimmer: shimmer 1.5s ease-in-out infinite;
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+/* ── 키프레임 ── */
+@keyframes fade-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+@keyframes rise {
+  from { opacity: 0; transform: translateY(12px); }
+  to { opacity: 1; transform: none; }
+}
+@keyframes scale-in {
+  from { opacity: 0; transform: scale(0.96) translateY(-4px); }
+  to { opacity: 1; transform: none; }
+}
+/* 폼 에러 — 좌우 흔들림 (fitin globalIconErrorShake 축약) */
+@keyframes shake {
+  10%, 90% { transform: translateX(-1px); }
+  20%, 80% { transform: translateX(2px); }
+  30%, 50%, 70% { transform: translateX(-4px); }
+  40%, 60% { transform: translateX(4px); }
+}
+@keyframes pop {
+  0% { transform: scale(1); }
+  40% { transform: scale(1.12); }
+  72% { transform: scale(0.97); }
+  100% { transform: scale(1); }
+}
+@keyframes shimmer {
+  0% { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}
+
+/* ── 기본 ── */
+html {
+  -webkit-text-size-adjust: 100%;
+}
+body {
+  background: var(--bg);
+  color: var(--ink);
+  font-family: var(--font-sans);
+  word-break: keep-all;
+  overflow-wrap: break-word;
+  -webkit-font-smoothing: antialiased;
+  font-variant-numeric: tabular-nums;
+}
+
+/* 포커스 링 — 키보드 사용자만. 컴포넌트가 자체 ring을 그리면 outline-none으로 덮는다 */
+:focus-visible {
+  outline: 2px solid var(--acc);
+  outline-offset: 2px;
+  border-radius: 6px;
+}
+
+/* ── 터치/모바일 튜닝 ── */
+button,
+[role="button"],
+a {
+  -webkit-tap-highlight-color: transparent;
+  touch-action: manipulation;
+}
+/* iOS: 16px 미만 입력은 포커스 시 화면이 확대된다 — 터치 기기에서만 16px 강제 */
+@media (hover: none) and (pointer: coarse) {
+  input:not([type="checkbox"]):not([type="radio"]),
+  textarea,
+  select {
+    font-size: 16px;
   }
 }
 
-body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+/* ── 공용 모션 유틸 ── */
+/* 등장 스태거: style={{ "--stagger": "90ms" }} 또는 stagger(i) 헬퍼 */
+.reveal {
+  animation: rise var(--duration-slow) var(--ease-out-emph) both;
+  animation-delay: var(--stagger, 0ms);
+}
+/* 누르는 느낌 — 마우스/터치 공통. disabled면 없음 */
+.press {
+  transition: transform var(--duration-fast) var(--ease-standard), background-color var(--duration-base) var(--ease-standard),
+    border-color var(--duration-base) var(--ease-standard), color var(--duration-base) var(--ease-standard),
+    box-shadow var(--duration-base) var(--ease-standard), opacity var(--duration-base) var(--ease-standard);
+}
+.press:active:not(:disabled) {
+  transform: scale(0.97);
+}
+/* 호버 가능한 기기에서만 살짝 떠오름 (터치에선 sticky hover 방지) */
+@media (hover: hover) and (pointer: fine) {
+  .lift:hover:not(:disabled) {
+    transform: translateY(-1.5px);
+  }
+}
+/* 스켈레톤 */
+.skeleton {
+  background: var(--surface-2);
+  background-image: linear-gradient(90deg, var(--surface-2) 0%, var(--line-strong) 50%, var(--surface-2) 100%);
+  background-size: 200% 100%;
+  animation: shimmer 1.5s ease-in-out infinite;
+}
+
+/* 접근성: 모션 축소 요청 시 전부 거의 즉시 */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+  .press:active:not(:disabled) {
+    transform: none;
+  }
 }

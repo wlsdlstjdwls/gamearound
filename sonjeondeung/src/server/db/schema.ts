@@ -98,13 +98,29 @@ export const news = pgTable("news", {
   publishedAt: timestamp("published_at").notNull(),
 }, (t) => [index("news_game_pub_idx").on(t.gameId, t.publishedAt)]);
 
+// 자체 인증(§6 개정 2026-09-11, 외부 인증 SaaS 미사용). email은 소문자 정규화 후 저장(unique).
+// passwordHash는 nullable — 확장 지점: SNS/OAuth 계정은 비밀번호 없이 가입 가능. provider 연결은 별도 auth_accounts 테이블로 추가 예정.
 export const users = pgTable("users", {
   id: uuid("id").primaryKey().defaultRandom(),
-  clerkId: text("clerk_id").notNull().unique(),
+  email: text("email").notNull().unique(),
+  passwordHash: text("password_hash"),
   role: roleEnum("role").default("user").notNull(),
   displayName: text("display_name"),
+  emailVerifiedAt: timestamp("email_verified_at"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });
+
+// 서버 세션(쿠키에는 랜덤 토큰, DB에는 sha256 해시만). 만료·강제 로그아웃은 행 삭제로 처리.
+export const sessions = pgTable("sessions", {
+  id: text("id").primaryKey(), // sha256(token) hex
+  userId: uuid("user_id").references(() => users.id, { onDelete: "cascade" }).notNull(),
+  expiresAt: timestamp("expires_at").notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  lastSeenAt: timestamp("last_seen_at").defaultNow().notNull(),
+  userAgent: text("user_agent"),
+  ip: text("ip"),
+}, (t) => [index("sessions_user_idx").on(t.userId), index("sessions_expires_idx").on(t.expiresAt)]);
 
 export const wishlists = pgTable("wishlists", {
   userId: uuid("user_id").references(() => users.id, { onDelete: "cascade" }).notNull(),
@@ -192,6 +208,10 @@ export const usersRelations = relations(users, ({ many }) => ({
   wishlists: many(wishlists),
   pushSubscriptions: many(pushSubscriptions),
   priceAlerts: many(priceAlerts),
+  sessions: many(sessions),
+}));
+export const sessionsRelations = relations(sessions, ({ one }) => ({
+  user: one(users, { fields: [sessions.userId], references: [users.id] }),
 }));
 export const wishlistsRelations = relations(wishlists, ({ one }) => ({
   user: one(users, { fields: [wishlists.userId], references: [users.id] }),

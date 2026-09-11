@@ -1,16 +1,19 @@
 "use client";
 // 계약: 상세 페이지(P3)가 사용. props { gameId, wished, signedIn }. 내부에서 Server Action toggleWishlistAction 호출.
 import Link from "next/link";
+import { usePathname } from "next/navigation";
 import { useState, useTransition } from "react";
+import { signInPath } from "@/lib/routes";
 import { removeFromWishlistAction, toggleWishlistAction } from "@/app/(user)/wishlist/actions";
 
 export function WishlistButton({ gameId, wished: initial, signedIn }: { gameId: string; wished: boolean; signedIn: boolean }) {
   const [wished, setWished] = useState(initial);
   const [error, setError] = useState<string | null>(null);
   const [pending, start] = useTransition();
+  const pathname = usePathname();
   if (!signedIn) {
     return (
-      <Link href="/sign-in" className="rounded-md border border-slate-700 px-3 py-1.5 text-sm hover:border-amber-400">
+      <Link href={signInPath(pathname)} className="press rounded-md border border-slate-700 px-3 py-1.5 text-sm hover:border-amber-400">
         ♡ 로그인 후 찜
       </Link>
     );

@@ -5,7 +5,7 @@
 
 ## 스택
 
-Next.js 16 App Router · TypeScript · Drizzle ORM · Neon Postgres · Clerk · Upstash Redis · web-push · GitHub Actions 크롤러 · Vercel
+Next.js 16 App Router · TypeScript · Drizzle ORM · Neon Postgres · 자체 세션 인증(scrypt + DB 세션) · Upstash Redis · web-push · GitHub Actions 크롤러 · Vercel
 
 ## 로컬 실행
 
@@ -23,29 +23,40 @@ pnpm dev
 |---|---|
 | `pnpm dev` / `pnpm build` / `pnpm start` | Next.js |
 | `pnpm typecheck` / `pnpm lint` / `pnpm test` | 검증 |
+| `pnpm e2e:auth` | 인증 E2E (dev 서버 필요, 가입→로그인→보호경로→로그아웃, e2e 계정 자동 삭제) |
 | `pnpm db:generate` | 스키마 변경 → 마이그레이션 SQL 생성 |
 | `pnpm db:migrate` | 마이그레이션 적용 |
 | `pnpm crawl -- --source=steam [--limit=N] [--seed-top=N]` | 소스별 수집 (GitHub Actions와 동일 진입점) |
 
 ## 구조 (설계서 §2)
 
-- `src/app` 라우트: `(public)` 홈/검색/상세/가격그래프, `(user)` 위시리스트/알림/설정, `(admin)` 동기화 대시보드/검수/정정, `api/*` 라우트 핸들러
+- `src/app` 라우트: `(public)` 홈/검색/상세/가격그래프, `(auth)` 로그인/회원가입 + Server Action, `(user)` 위시리스트/알림/설정, `(admin)` 동기화 대시보드/검수/정정, `api/*` 라우트 핸들러
 - `src/server/db` 스키마·클라이언트·마이그레이션
 - `src/server/services` 비즈니스 로직 (route → service → adapter/db 3계층)
 - `src/server/adapters` 소스별 수집기 (가져오기만), `src/server/sync` DB 반영·매칭·알림 발송
 - `scripts/crawl.ts` GitHub Actions 진입점, `.github/workflows/*.yml` 스케줄
-- `src/proxy.ts` Clerk + role 가드 (Next 16에서 middleware → proxy)
+- `src/proxy.ts` 세션 쿠키 유무로 보호 경로 리다이렉트 (Next 16에서 middleware → proxy). role은 각 layout/action에서 재검증
+- `src/lib/auth` 인증 상수·문구·zod 스키마(서버/클라이언트 공유), `src/server/auth` scrypt 해시·세션·레이트리밋, `src/components/auth` 폼/헤더 메뉴/SessionProvider
+- `src/lib/routes.ts` 경로 상수 + `safeNextPath`(오픈 리다이렉트 방지), `src/lib/motion.ts` 등장 스태거, `src/components/ui` 공용 버튼/입력/체크박스
+
+## 인증 (자체 구현, SNS 로그인은 후속)
+
+- 이메일/비밀번호 가입·로그인·로그아웃. 비밀번호는 Node 내장 `scrypt`(N=16384) 해시, 형식 `scrypt$N$r$p$salt$hash`로 알고리즘 교체 가능
+- 세션: 쿠키(`sjd_session`, httpOnly/secure/lax)에 랜덤 토큰, DB `sessions`엔 sha256 해시. 30일 슬라이딩, 만료분은 daily cron이 정리
+- 레이트리밋: 로그인 IP당 15분 20회·이메일당 10회, 가입 IP당 시간 5회 (Redis 없으면 경고 후 통과)
+- 헤더 로그인 상태는 클라이언트 `SessionProvider`가 `/api/auth/me`로 가져온다 — 루트 레이아웃에서 `cookies()`를 읽으면 홈 풀 라우트 캐시가 깨지기 때문
+- 확장 지점: `users.passwordHash`는 nullable(OAuth 전용 계정), provider 연결은 `auth_accounts` 테이블 추가로 대응
 
 ## 배포 체크리스트
 
 1. Neon 프로젝트 생성 → `DATABASE_URL`
-2. Clerk 앱 생성 → 키 3종, Webhook(`/api/webhooks/clerk`, user.created/updated/deleted) 등록
+2. `ADMIN_EMAILS`에 관리자 이메일 등록 (가입/로그인 시 admin 승격)
 3. Upstash Redis → REST URL/TOKEN
 4. `pnpm dlx web-push generate-vapid-keys` → VAPID 3종
 5. `CRAWL_SECRET`, `CRON_SECRET` 임의 문자열
 6. Vercel 프로젝트 env 등록, `vercel.json` cron 자동 반영
 7. GitHub repo Secrets에 DATABASE_URL, UPSTASH_*, CRAWL_SECRET, NEXT_PUBLIC_APP_URL, VAPID_* 등록
-8. 관리자 role: Clerk 대시보드에서 사용자 `publicMetadata.role = "admin"` 수동 부여
+8. 관리자 role: `ADMIN_EMAILS` 환경변수 또는 DB `users.role` 직접 수정
 
 ## 미결정 사항에 대한 현재 가정 (설계서 §11)
 

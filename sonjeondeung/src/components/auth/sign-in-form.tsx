@@ -1,0 +1,70 @@
+"use client";
+import Link from "next/link";
+import { useActionState, useRef } from "react";
+import { signInAction } from "@/app/(auth)/actions";
+import { AUTH_MESSAGES as M } from "@/lib/auth/messages";
+import { signInInputFromForm, signInSchema } from "@/lib/auth/schemas";
+import { stagger } from "@/lib/motion";
+import { ROUTES } from "@/lib/routes";
+import { focusNextOnEnter, useAuthForm } from "@/components/auth/use-auth-form";
+import { Button } from "@/components/ui/button";
+import { FormMessage } from "@/components/ui/form-message";
+import { PasswordField } from "@/components/ui/password-field";
+import { TextField } from "@/components/ui/text-field";
+
+export function SignInForm({ next }: { next: string }) {
+  const [state, formAction, pending] = useActionState(signInAction, null);
+  const { formRef, formError, errorSerial, fieldProps, onSubmit, navigating } = useAuthForm({
+    schema: signInSchema,
+    toInput: signInInputFromForm,
+    serverState: state,
+  });
+  const passwordRef = useRef<HTMLInputElement>(null);
+  const busy = pending || navigating;
+
+  return (
+    <form ref={formRef} action={formAction} onSubmit={onSubmit} noValidate className="space-y-4">
+      <input type="hidden" name="next" value={next} />
+
+      {formError && (
+        <div className="reveal" style={stagger(0)}>
+          <FormMessage tone="error" replayKey={errorSerial}>
+            {formError}
+          </FormMessage>
+        </div>
+      )}
+
+      <div className="reveal" style={stagger(1)}>
+        <TextField
+          label="이메일"
+          type="email"
+          placeholder="you@example.com"
+          autoComplete="email"
+          autoCapitalize="none"
+          inputMode="email"
+          autoFocus
+          disabled={busy}
+          onKeyDown={(e) => focusNextOnEnter(e, passwordRef)}
+          {...fieldProps("email")}
+        />
+      </div>
+
+      <div className="reveal" style={stagger(2)}>
+        <PasswordField ref={passwordRef} label="비밀번호" placeholder="비밀번호" autoComplete="current-password" disabled={busy} {...fieldProps("password")} />
+      </div>
+
+      <div className="reveal pt-1" style={stagger(3)}>
+        <Button type="submit" size="lg" fullWidth loading={busy} loadingLabel={M.pending}>
+          {M.signInCta}
+        </Button>
+      </div>
+
+      <p className="reveal text-center text-sm text-mut" style={stagger(4)}>
+        {M.noAccount}{" "}
+        <Link href={next === ROUTES.home ? ROUTES.signUp : `${ROUTES.signUp}?next=${encodeURIComponent(next)}`} className="font-semibold text-acc-hover underline-offset-4 hover:underline">
+          {M.signUpCta}
+        </Link>
+      </p>
+    </form>
+  );
+}

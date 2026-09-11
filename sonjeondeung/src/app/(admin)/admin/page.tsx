@@ -3,7 +3,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { formatDateTime } from "@/lib/format";
 import { getSyncOverview, listPendingMatches, type SyncOverviewItem } from "@/server/services/admin";
-import { requireAdmin } from "@/server/services/users";
+import { requireRoleOrForbid } from "@/server/auth/guards";
 import { MatchReviewButtons } from "@/components/admin/match-review-buttons";
 
 export const metadata: Metadata = { title: "관리자 대시보드" };
@@ -47,7 +47,7 @@ function SourceCard({ item }: { item: SyncOverviewItem }) {
 }
 
 export default async function AdminDashboardPage() {
-  await requireAdmin();
+  await requireRoleOrForbid("admin");
   const [overview, pending] = await Promise.all([getSyncOverview(), listPendingMatches()]);
   const repo = process.env.NEXT_PUBLIC_GITHUB_REPO;
 

@@ -1,7 +1,6 @@
-// 관리자 영역 공통 레이아웃. proxy 가드만 믿지 않고 여기서도 role 검사(§6). 각 페이지·액션은 별도로 requireAdmin() 호출.
+// 관리자 영역 공통 레이아웃. proxy 가드만 믿지 않고 여기서도 role 검사(§6). 페이지는 requireRoleOrForbid(), Server Action은 requireAdmin()으로 각각 재검증.
 import Link from "next/link";
-import { redirect } from "next/navigation";
-import { getCurrentUser } from "@/server/services/users";
+import { requireRoleOrForbid } from "@/server/auth/guards";
 
 export const dynamic = "force-dynamic";
 
@@ -11,9 +10,7 @@ const NAV = [
 ];
 
 export default async function AdminLayout({ children }: { children: React.ReactNode }) {
-  const user = await getCurrentUser();
-  if (!user) redirect("/sign-in");
-  if (user.role !== "admin") redirect("/403");
+  const user = await requireRoleOrForbid("admin");
 
   return (
     <div className="space-y-6">
@@ -24,7 +21,7 @@ export default async function AdminLayout({ children }: { children: React.ReactN
             {n.label}
           </Link>
         ))}
-        <span className="ml-auto px-2 text-xs text-slate-500">{user.displayName ?? user.clerkId}</span>
+        <span className="ml-auto px-2 text-xs text-slate-500">{user.displayName ?? user.email}</span>
       </nav>
       {children}
     </div>
