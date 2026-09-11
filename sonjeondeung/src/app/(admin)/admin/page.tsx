@@ -3,7 +3,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { formatDateTime } from "@/lib/format";
 import { getSyncOverview, listPendingMatches, type SyncOverviewItem } from "@/server/services/admin";
-import { DISABLED_SOURCES, isSource, isSourceEnabled } from "@/server/adapters";
+import { getDisabledReason, isSource } from "@/server/adapters";
 import { requireRoleOrForbid } from "@/server/auth/guards";
 import { MatchReviewButtons } from "@/components/admin/match-review-buttons";
 
@@ -17,7 +17,7 @@ const STATUS_STYLE: Record<string, string> = {
 
 function SourceCard({ item }: { item: SyncOverviewItem }) {
   const l = item.latest;
-  const disabledReason = isSource(item.source) && !isSourceEnabled(item.source) ? DISABLED_SOURCES[item.source] : undefined;
+  const disabledReason = isSource(item.source) ? getDisabledReason(item.source) : undefined;
   return (
     <div className={`rounded-lg border border-slate-800 bg-slate-900/60 p-4 ${disabledReason ? "opacity-70" : ""}`}>
       <div className="flex items-center justify-between">

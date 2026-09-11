@@ -5,7 +5,7 @@ import { psstoreAdapter } from "./psstore";
 import { xboxAdapter } from "./xbox";
 import { nintendoAdapter } from "./nintendo";
 import { hltbAdapter } from "./hltb";
-import { opencriticAdapter } from "./opencritic";
+import { OPENCRITIC_RAPIDAPI_KEY_ENV, opencriticAdapter } from "./opencritic";
 import { metacriticAdapter } from "./metacritic";
 import { rssAdapter } from "./news-rss";
 
@@ -32,15 +32,26 @@ const metaAdapters: Record<MetaSource, MetaAdapter> = {
 const newsAdapters: Record<NewsSource, NewsAdapter> = { rss: rssAdapter };
 
 /**
- * 비활성 소스 — PoC 미통과로 구현되지 않았거나 차단된 소스. crawl/match 는 이 목록에 있으면 실행하지 않는다(sync_logs 기록 없음).
- * 활성화하려면 어댑터를 구현하고 여기서 제거한다. 사유는 관리자 대시보드에 그대로 표시된다.
+ * 비활성 소스 — PoC 미통과/차단/키 없음. crawl/match 는 비활성 소스를 실행하지 않는다(sync_logs 기록 없음).
+ * 사유는 관리자 대시보드에 그대로 표시된다. 환경변수에 따라 달라지는 소스가 있어 호출 시점에 평가한다(dotenv 로딩 순서).
  */
-export const DISABLED_SOURCES: Readonly<Partial<Record<Source, string>>> = {
-  psstore: "PlayStation Store 는 클라이언트 렌더링 + persisted GraphQL 해시가 필요해 PoC 미통과 (2026-09-11)",
-};
+export function getDisabledReason(source: Source): string | undefined {
+  switch (source) {
+    case "psstore":
+      return "PlayStation Store 는 클라이언트 렌더링 + persisted GraphQL 해시가 필요해 PoC 미통과 (2026-09-11)";
+    case "hltb":
+      return "HowLongToBeat 검색 API(/api/search)가 404 — 경로/토큰 변경으로 매칭 불가(2026-09-11 확인). 어댑터 재구현 필요";
+    case "opencritic":
+      return process.env[OPENCRITIC_RAPIDAPI_KEY_ENV]
+        ? undefined
+        : `OpenCritic API 가 RapidAPI 키를 요구함(HTTP 400, 2026-09-11 확인). ${OPENCRITIC_RAPIDAPI_KEY_ENV} 환경변수(Actions secret) 설정 시 자동 활성`;
+    default:
+      return undefined;
+  }
+}
 
 export function isSourceEnabled(source: Source): boolean {
-  return DISABLED_SOURCES[source] === undefined;
+  return getDisabledReason(source) === undefined;
 }
 
 export function isSource(v: string): v is Source {

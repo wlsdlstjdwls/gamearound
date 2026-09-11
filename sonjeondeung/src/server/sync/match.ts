@@ -4,7 +4,7 @@
 import { and, eq, isNull, sql } from "drizzle-orm";
 import { getDb } from "@/server/db/client";
 import { gameSourceRefs, games } from "@/server/db/schema";
-import { DISABLED_SOURCES, getAdapter, isSourceEnabled } from "@/server/adapters";
+import { getAdapter, getDisabledReason, isSourceEnabled } from "@/server/adapters";
 import type { SearchCandidate, Source } from "@/server/adapters/types";
 import { normalizeTitle, trigramSimilarity } from "@/lib/slug";
 
@@ -69,17 +69,16 @@ export async function matchGameToSource(gameId: string, source: Source): Promise
   const best = pickBestCandidate(game.titleEn, game.titleKo, candidates);
   const decision: MatchDecision = best ? classifyMatch(best.similarity) : "none";
 
+  if (!best) return { gameId, source, decision: "no-candidates" }; // 후보 0건은 검색 실패일 수 있어 기록하지 않음(다음 실행에 재시도)
   if (decision === "none") {
-    // 미매칭도 기록(matched_by="none")해 다음 실행에서 같은 게임을 다시 검색하지 않는다(워커 시간 절약).
-    // auto/manual/pending 행은 덮지 않는다. 재시도는 TODO: refs 에 checked_at 컬럼 추가 후 N일 경과 행만 재검색.
+    // 후보는 있었지만 유사도 미달 → matched_by="none" 기록해 다음 실행에서 같은 게임을 다시 검색하지 않는다(워커 시간 절약).
+    // auto/manual/pending 행은 덮지 않는다(onConflictDoNothing). 재시도는 TODO: refs 에 checked_at 컬럼 추가 후 N일 경과 행만 재검색.
     await db
       .insert(gameSourceRefs)
-      .values({ gameId, source, externalId: best?.candidate.externalId ?? "", url: best?.candidate.url ?? null, matchedBy: "none", confidence: best ? best.similarity.toFixed(2) : null })
+      .values({ gameId, source, externalId: best.candidate.externalId, url: best.candidate.url, matchedBy: "none", confidence: best.similarity.toFixed(2) })
       .onConflictDoNothing();
-    if (!best) return { gameId, source, decision: "no-candidates" };
     return { gameId, source, decision, externalId: best.candidate.externalId, similarity: best.similarity };
   }
-  if (!best) return { gameId, source, decision: "no-candidates" };
 
   const confidence = best.similarity.toFixed(2);
   await db
@@ -105,7 +104,7 @@ export interface MatchSummary {
 
 /** 해당 소스에 ref 가 없는 게임을 limit 개까지 매칭. 소스별 minIntervalMs 대기 */
 export async function matchUnmatchedGames(source: Source, limit: number): Promise<MatchSummary> {
-  if (!isSourceEnabled(source)) throw new Error(`${source} 비활성 소스: ${DISABLED_SOURCES[source]}`);
+  if (!isSourceEnabled(source)) throw new Error(`${source} 비활성 소스: ${getDisabledReason(source)}`);
   const db = getDb();
   const adapter = getAdapter(source);
   const rows = await db
