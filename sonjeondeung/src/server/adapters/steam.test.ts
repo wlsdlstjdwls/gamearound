@@ -3,7 +3,14 @@ import { describe, expect, it } from "vitest";
 import { readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import { AdapterError } from "./types";
-import { inferMultiplayer, parseAppDetails, parseFeaturedAppIds, parseSteamDate, parseStoreSearch } from "./steam";
+import {
+  inferMultiplayer,
+  parseAppDetails,
+  parseFeaturedAppIds,
+  parseSteamDate,
+  parseStoreSearch,
+  parseTopSellerAppIds,
+} from "./steam";
 
 const fixture = (name: string): unknown =>
   JSON.parse(readFileSync(fileURLToPath(new URL(`./__fixtures__/${name}`, import.meta.url)), "utf8"));
@@ -91,5 +98,15 @@ describe("parseFeaturedAppIds", () => {
   it("top_sellers + specials 에서 앱(type=0)만 중복 없이 n개", () => {
     expect(parseFeaturedAppIds(fixture("steam-featuredcategories.json"), 10)).toEqual(["570", "1091500", "730", "1245620"]);
     expect(parseFeaturedAppIds(fixture("steam-featuredcategories.json"), 2)).toEqual(["570", "1091500"]);
+  });
+});
+
+describe("parseTopSellerAppIds", () => {
+  it("logo URL 의 /apps/<id>/ 만 추출하고 subs·logo 없음·중복은 제외한다", () => {
+    expect(parseTopSellerAppIds(fixture("steam-search-results.json"))).toEqual(["578080", "730"]);
+  });
+
+  it("형식이 다르면 AdapterError", () => {
+    expect(() => parseTopSellerAppIds({ items: "nope" })).toThrow(AdapterError);
   });
 });

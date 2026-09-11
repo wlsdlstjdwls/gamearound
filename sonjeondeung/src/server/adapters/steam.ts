@@ -12,6 +12,11 @@ import {
 export const STEAM_APPDETAILS_URL = "https://store.steampowered.com/api/appdetails";
 export const STEAM_STORESEARCH_URL = "https://store.steampowered.com/api/storesearch/";
 export const STEAM_FEATURED_URL = "https://store.steampowered.com/api/featuredcategories";
+/** 인기순위 검색(비공식 JSON, 페이지당 최대 100개). featuredcategories 는 60개 안팎이라 시드 상위 N개용으로는 부족 */
+export const STEAM_TOPSELLERS_URL = "https://store.steampowered.com/search/results/";
+const TOPSELLERS_PAGE_SIZE = 100;
+const TOPSELLERS_MAX_PAGES = 5;
+const TOPSELLERS_PAGE_INTERVAL_MS = 1500;
 export const STEAM_STORE_APP_URL = "https://store.steampowered.com/app";
 const FETCH_TIMEOUT_MS = 15_000;
 
@@ -55,6 +60,12 @@ const featuredCategoriesSchema = z.object({
   top_sellers: z.object({ items: z.array(featuredItemSchema).default([]) }).optional(),
   specials: z.object({ items: z.array(featuredItemSchema).default([]) }).optional(),
 });
+
+/** search/results?json=1 — items 에 appid 가 없고 logo URL(.../apps/<appid>/...) 에만 들어 있다 */
+const searchResultsSchema = z.object({
+  items: z.array(z.object({ name: z.string().optional(), logo: z.string().optional() })).default([]),
+});
+const APP_ID_IN_LOGO_URL = /\/apps\/(\d+)\//;
 
 export type SteamAppData = z.infer<typeof appDataSchema>;
 
@@ -190,6 +201,21 @@ export function parseFeaturedAppIds(raw: unknown, n: number): string[] {
   return out;
 }
 
+/** search/results 응답 → logo URL 에서 appid 추출 (subs/bundles 는 /apps/ 경로가 아니므로 자연 제외, 중복 제거) */
+export function parseTopSellerAppIds(raw: unknown): string[] {
+  const parsed = searchResultsSchema.safeParse(raw);
+  if (!parsed.success) throw new AdapterError(`search/results 응답 형식 오류: ${parsed.error.message}`, "steam", false);
+  const out: string[] = [];
+  const seen = new Set<string>();
+  for (const it of parsed.data.items) {
+    const id = it.logo?.match(APP_ID_IN_LOGO_URL)?.[1];
+    if (!id || seen.has(id)) continue;
+    seen.add(id);
+    out.push(id);
+  }
+  return out;
+}
+
 // ---- 네트워크 ----
 
 async function fetchJson(url: string): Promise<unknown> {
@@ -219,8 +245,37 @@ function appDetailsUrl(appid: string, lang: "koreana" | "english"): string {
   return u.toString();
 }
 
-/** scripts/crawl.ts --seed-top=N 용: 인기/할인 목록에서 appid 상위 n개 (§11-1: 전체가 아닌 상위 N개) */
+/**
+ * scripts/crawl.ts --seed-top=N 용: 인기순위 appid 상위 n개 (§11-1: 전체가 아닌 상위 N개).
+ * 1차 인기순위 검색(페이지네이션) → 실패/빈 응답 시 featuredcategories(top_sellers+specials) 폴백.
+ */
 export async function fetchSteamTopAppIds(n: number): Promise<string[]> {
+  const ids: string[] = [];
+  const seen = new Set<string>();
+  try {
+    for (let page = 0; page < TOPSELLERS_MAX_PAGES && ids.length < n; page++) {
+      const u = new URL(STEAM_TOPSELLERS_URL);
+      u.searchParams.set("json", "1");
+      u.searchParams.set("filter", "topsellers");
+      u.searchParams.set("cc", "kr");
+      u.searchParams.set("l", "koreana");
+      u.searchParams.set("count", String(TOPSELLERS_PAGE_SIZE));
+      u.searchParams.set("start", String(page * TOPSELLERS_PAGE_SIZE));
+      const pageIds = parseTopSellerAppIds(await fetchJson(u.toString()));
+      if (pageIds.length === 0) break;
+      for (const id of pageIds) {
+        if (seen.has(id)) continue;
+        seen.add(id);
+        ids.push(id);
+        if (ids.length >= n) break;
+      }
+      if (ids.length < n) await new Promise((r) => setTimeout(r, TOPSELLERS_PAGE_INTERVAL_MS));
+    }
+  } catch (e) {
+    console.warn(`[steam] 인기순위 검색 실패 → featuredcategories 폴백: ${e instanceof Error ? e.message : String(e)}`);
+  }
+  if (ids.length > 0) return ids;
+
   const u = new URL(STEAM_FEATURED_URL);
   u.searchParams.set("cc", "kr");
   u.searchParams.set("l", "koreana");
