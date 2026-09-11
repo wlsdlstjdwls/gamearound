@@ -4,9 +4,11 @@ import { Redis } from "@upstash/redis";
 let _redis: Redis | null = null;
 export function getRedis(): Redis {
   if (!_redis) {
-    const url = process.env.UPSTASH_REDIS_REST_URL;
-    const token = process.env.UPSTASH_REDIS_REST_TOKEN;
-    if (!url || !token) throw new Error("UPSTASH_REDIS_REST_URL / UPSTASH_REDIS_REST_TOKEN 환경변수가 없습니다");
+    // Vercel Marketplace(Upstash KV)는 KV_REST_API_* 이름으로 주입하므로 둘 다 허용
+    const url = process.env.UPSTASH_REDIS_REST_URL ?? process.env.KV_REST_API_URL;
+    const token = process.env.UPSTASH_REDIS_REST_TOKEN ?? process.env.KV_REST_API_TOKEN;
+    if (!url || !token)
+      throw new Error("UPSTASH_REDIS_REST_URL / UPSTASH_REDIS_REST_TOKEN (또는 KV_REST_API_URL / KV_REST_API_TOKEN) 환경변수가 없습니다");
     _redis = new Redis({ url, token });
   }
   return _redis;

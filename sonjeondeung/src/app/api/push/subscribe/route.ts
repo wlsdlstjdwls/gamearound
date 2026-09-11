@@ -3,6 +3,7 @@ import { auth } from "@clerk/nextjs/server";
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { rateLimit } from "@/server/redis";
+import { AUTH_DISABLED } from "@/lib/auth-flag";
 import { getCurrentUser } from "@/server/services/users";
 import { deletePushSubscription, upsertPushSubscription } from "@/server/services/push";
 
@@ -16,6 +17,7 @@ const subscribeSchema = z.object({
 const unsubscribeSchema = z.object({ endpoint: z.url().max(2048) });
 
 async function guard(): Promise<{ clerkId: string } | NextResponse> {
+  if (AUTH_DISABLED) return NextResponse.json({ error: "로그인 기능이 비활성화되어 있습니다" }, { status: 401 });
   const { userId } = await auth();
   if (!userId) return NextResponse.json({ error: "로그인이 필요합니다" }, { status: 401 });
   // 푸시 구독 레이트리밋: 사용자당 분당 10회 (§1 Redis 용도)

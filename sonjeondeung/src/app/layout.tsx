@@ -3,6 +3,7 @@ import { ClerkProvider } from "@clerk/nextjs";
 import { koKR } from "@clerk/localizations";
 import "./globals.css";
 import { SiteHeader } from "@/components/site-header";
+import { AUTH_DISABLED } from "@/lib/auth-flag";
 
 export const metadata: Metadata = {
   title: { default: "손전등", template: "%s | 손전등" },
@@ -18,17 +19,18 @@ export const viewport: Viewport = {
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
-  return (
-    <ClerkProvider localization={koKR}>
-      <html lang="ko" className="h-full antialiased">
-        <body className="min-h-full flex flex-col bg-slate-950 text-slate-100">
-          <SiteHeader />
-          <main className="flex-1 mx-auto w-full max-w-6xl px-4 py-6">{children}</main>
-          <footer className="border-t border-slate-800 py-6 text-center text-xs text-slate-500">
-            손전등 · 가격/정보는 각 스토어 및 외부 소스에서 주기적으로 수집되며 실시간이 아닙니다.
-          </footer>
-        </body>
-      </html>
-    </ClerkProvider>
+  const shell = (
+    <html lang="ko" className="h-full antialiased">
+      <body className="min-h-full flex flex-col bg-slate-950 text-slate-100">
+        <SiteHeader />
+        <main className="flex-1 mx-auto w-full max-w-6xl px-4 py-6">{children}</main>
+        <footer className="border-t border-slate-800 py-6 text-center text-xs text-slate-500">
+          손전등 · 가격/정보는 각 스토어 및 외부 소스에서 주기적으로 수집되며 실시간이 아닙니다.
+        </footer>
+      </body>
+    </html>
   );
+  // AUTH_DISABLED: ClerkProvider 미장착 (Clerk 스크립트/핸드셰이크 없음)
+  if (AUTH_DISABLED) return shell;
+  return <ClerkProvider localization={koKR}>{shell}</ClerkProvider>;
 }

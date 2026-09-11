@@ -1,5 +1,26 @@
 import Link from "next/link";
 import { Show, SignInButton, UserButton } from "@clerk/nextjs";
+import { AUTH_DISABLED } from "@/lib/auth-flag";
+
+function AuthNav() {
+  // AUTH_DISABLED: Clerk 컴포넌트는 Provider 없이는 렌더 불가 → 로그인 UI 자체를 숨김
+  if (AUTH_DISABLED) return null;
+  return (
+    <>
+      <Show when="signed-in">
+        <Link href="/wishlist" className="hover:text-amber-300">위시리스트</Link>
+        <Link href="/alerts" className="hover:text-amber-300">알림</Link>
+        <Link href="/settings" className="hover:text-amber-300">설정</Link>
+        <UserButton />
+      </Show>
+      <Show when="signed-out">
+        <SignInButton mode="modal">
+          <button className="rounded-md bg-amber-400 px-3 py-1.5 font-medium text-slate-950 hover:bg-amber-300">로그인</button>
+        </SignInButton>
+      </Show>
+    </>
+  );
+}
 
 export function SiteHeader() {
   return (
@@ -20,17 +41,7 @@ export function SiteHeader() {
           />
         </form>
         <nav className="ml-auto flex items-center gap-3 text-sm">
-          <Show when="signed-in">
-            <Link href="/wishlist" className="hover:text-amber-300">위시리스트</Link>
-            <Link href="/alerts" className="hover:text-amber-300">알림</Link>
-            <Link href="/settings" className="hover:text-amber-300">설정</Link>
-            <UserButton />
-          </Show>
-          <Show when="signed-out">
-            <SignInButton mode="modal">
-              <button className="rounded-md bg-amber-400 px-3 py-1.5 font-medium text-slate-950 hover:bg-amber-300">로그인</button>
-            </SignInButton>
-          </Show>
+          <AuthNav />
         </nav>
       </div>
     </header>

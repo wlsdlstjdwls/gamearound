@@ -3,6 +3,7 @@ import { auth, currentUser } from "@clerk/nextjs/server";
 import { eq } from "drizzle-orm";
 import { getDb } from "@/server/db/client";
 import { users, type Role } from "@/server/db/schema";
+import { AUTH_DISABLED } from "@/lib/auth-flag";
 
 export type UserRow = typeof users.$inferSelect;
 
@@ -34,6 +35,8 @@ export async function deleteUserByClerkId(clerkId: string): Promise<void> {
 
 /** 로그인 사용자의 users 행. 없으면 Clerk 정보로 생성. 비로그인 시 null */
 export async function getCurrentUser(): Promise<UserRow | null> {
+  // AUTH_DISABLED: auth()는 clerkMiddleware 없이 호출하면 throw → 항상 비로그인 취급
+  if (AUTH_DISABLED) return null;
   const { userId, sessionClaims } = await auth();
   if (!userId) return null;
   const db = getDb();
