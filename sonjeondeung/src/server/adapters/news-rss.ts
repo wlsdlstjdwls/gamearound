@@ -4,11 +4,24 @@ import { XMLParser } from "fast-xml-parser";
 import { load } from "cheerio";
 import { AdapterError, CRAWLER_USER_AGENT, type NewsAdapter, type NewsItem, type SearchCandidate } from "./types";
 
-/** 피드 목록. externalId = name. TODO(§11-4): 매체 목록·사전 협의 필요 여부 미결정 — 아래는 예시 3개 */
+/**
+ * 피드 목록(§11-4 확정, 2026-09-11 응답 확인). externalId = name.
+ * 공식 RSS 를 공개한 매체만 넣는다(§10: 제목·링크·공식 썸네일만 저장). 응답이 끊기면 sync_logs 에 partial 로 남으니 거기서 정리.
+ * 제외: VG247(최신 항목 3개월 전), Polygon(피드 응답 실패), 인벤·디스이즈게임·게임포커스(404), Xbox Wire(403).
+ */
 export const RSS_FEEDS: ReadonlyArray<{ name: string; url: string }> = [
   { name: "PC Gamer", url: "https://www.pcgamer.com/rss/" },
   { name: "Eurogamer", url: "https://www.eurogamer.net/feed" },
   { name: "Rock Paper Shotgun", url: "https://www.rockpapershotgun.com/feed" },
+  { name: "GameSpot", url: "https://www.gamespot.com/feeds/news/" },
+  { name: "IGN", url: "https://www.ign.com/rss/articles/feed?tags=games" },
+  { name: "Kotaku", url: "https://kotaku.com/feed" },
+  { name: "GamesIndustry.biz", url: "https://www.gamesindustry.biz/feed" },
+  { name: "Nintendo Life", url: "https://www.nintendolife.com/feeds/latest" },
+  { name: "PlayStation Blog", url: "https://blog.playstation.com/feed/" },
+  { name: "Steam 뉴스", url: "https://store.steampowered.com/feeds/news/" },
+  { name: "게임메카", url: "https://www.gamemeca.com/rss.php" },
+  { name: "루리웹 뉴스", url: "https://bbs.ruliweb.com/news/rss" },
 ];
 
 const FETCH_TIMEOUT_MS = 15_000;
