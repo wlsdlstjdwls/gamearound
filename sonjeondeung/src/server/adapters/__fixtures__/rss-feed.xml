@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<rss version="2.0" xmlns:media="http://search.yahoo.com/mrss/" xmlns:content="http://purl.org/rss/1.0/modules/content/" xmlns:dc="http://purl.org/dc/elements/1.1/">
+<channel>
+  <title>Example Gaming News</title>
+  <link>https://news.example.com/</link>
+  <item>
+    <title><![CDATA[Cyberpunk 2077 gets a 50% discount on Steam]]></title>
+    <link>https://news.example.com/cyberpunk-discount</link>
+    <pubDate>Tue, 08 Sep 2026 10:15:00 +0000</pubDate>
+    <media:thumbnail url="https://cdn.example.com/thumb1.jpg" width="300" height="200"/>
+    <description><![CDATA[<p>Big sale.</p><img src="https://cdn.example.com/inline1.jpg"/>]]></description>
+  </item>
+  <item>
+    <title>Elden Ring patch notes 1.16</title>
+    <link>https://news.example.com/elden-ring-patch</link>
+    <pubDate>Mon, 07 Sep 2026 08:00:00 GMT</pubDate>
+    <enclosure url="https://cdn.example.com/enclosure2.jpg" type="image/jpeg" length="1234"/>
+  </item>
+  <item>
+    <title>Only description image &amp; no date</title>
+    <link>https://news.example.com/desc-only</link>
+    <description><![CDATA[<div><img src="https://cdn.example.com/inline3.png" alt=""/> text</div>]]></description>
+  </item>
+  <item>
+    <title>No link item should be skipped</title>
+    <pubDate>Mon, 07 Sep 2026 08:00:00 GMT</pubDate>
+  </item>
+</channel>
+</rss>

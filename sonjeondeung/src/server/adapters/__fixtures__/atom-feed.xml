@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8"?>
+<feed xmlns="http://www.w3.org/2005/Atom" xmlns:media="http://search.yahoo.com/mrss/">
+  <title>Example Atom</title>
+  <entry>
+    <title type="html">Hollow Knight: Silksong review</title>
+    <link rel="self" href="https://atom.example.com/api/1"/>
+    <link rel="alternate" type="text/html" href="https://atom.example.com/silksong-review"/>
+    <published>2026-09-05T12:00:00Z</published>
+    <updated>2026-09-06T12:00:00Z</updated>
+    <content type="html"><![CDATA[<img src="https://cdn.example.com/atom1.jpg"><p>Great.</p>]]></content>
+  </entry>
+  <entry>
+    <title>Second entry</title>
+    <link href="https://atom.example.com/second"/>
+    <updated>2026-09-04T09:30:00Z</updated>
+  </entry>
+</feed>

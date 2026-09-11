@@ -1,0 +1,8 @@
+{
+  "total": 3,
+  "items": [
+    { "type": "app", "name": "Cyberpunk 2077", "id": 1091500, "tiny_image": "https://example/1.jpg" },
+    { "type": "app", "name": "Cyberpunk 2077: Phantom Liberty", "id": 2138330, "tiny_image": "https://example/2.jpg" },
+    { "type": "bundle", "name": "Cyberpunk 2077 & Phantom Liberty Bundle", "id": 36606 }
+  ]
+}

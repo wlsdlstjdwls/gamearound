@@ -1,0 +1,48 @@
+# 설계서 §4.3 — crawl-news. 소스 순차 실행, 한 소스가 실패해도 다음 소스 계속(continue-on-error).
+# 종료 코드: 0 ok, 2 partial(경고), 1 failed. 중복 실행은 concurrency 그룹 + Redis 락(§4.4)으로 이중 방지.
+name: crawl-news
+
+on:
+  schedule:
+    - cron: "0 * * * *"
+  workflow_dispatch:
+    inputs:
+      limit:
+        description: "배치 크기 덮어쓰기 (비우면 소스별 기본값)"
+        required: false
+        default: ""
+
+concurrency:
+  group: crawl-news
+  cancel-in-progress: false
+
+env:
+  DATABASE_URL: ${{ secrets.DATABASE_URL }}
+  UPSTASH_REDIS_REST_URL: ${{ secrets.UPSTASH_REDIS_REST_URL }}
+  UPSTASH_REDIS_REST_TOKEN: ${{ secrets.UPSTASH_REDIS_REST_TOKEN }}
+  CRAWL_SECRET: ${{ secrets.CRAWL_SECRET }}
+  NEXT_PUBLIC_APP_URL: ${{ secrets.NEXT_PUBLIC_APP_URL }}
+  NEXT_PUBLIC_VAPID_PUBLIC_KEY: ${{ secrets.NEXT_PUBLIC_VAPID_PUBLIC_KEY }}
+  VAPID_PRIVATE_KEY: ${{ secrets.VAPID_PRIVATE_KEY }}
+  VAPID_SUBJECT: ${{ secrets.VAPID_SUBJECT }}
+  CRAWL_LIMIT_ARG: ${{ github.event.inputs.limit != '' && format('--limit={0}', github.event.inputs.limit) || '' }}
+
+jobs:
+  crawl:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4 # packageManager 필드(pnpm@10)를 그대로 사용
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: pnpm
+
+      - run: pnpm install --frozen-lockfile
+
+      - name: crawl rss
+        continue-on-error: true
+        run: pnpm crawl --source=rss $CRAWL_LIMIT_ARG

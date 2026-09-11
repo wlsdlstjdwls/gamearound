@@ -1,0 +1,23 @@
+{
+  "570": {
+    "success": true,
+    "data": {
+      "type": "game",
+      "name": "Dota 2",
+      "steam_appid": 570,
+      "is_free": true,
+      "short_description": "매일 수백만 명의 플레이어가 Dota 2에서 전투를 벌입니다.",
+      "header_image": "https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/570/header.jpg",
+      "developers": ["Valve"],
+      "publishers": ["Valve"],
+      "categories": [
+        { "id": 1, "description": "Multi-player" },
+        { "id": 9, "description": "Co-op" },
+        { "id": 36, "description": "Online PvP" },
+        { "id": 38, "description": "Online Co-op" }
+      ],
+      "genres": [{ "id": "1", "description": "액션" }, { "id": "2", "description": "전략" }, { "id": "37", "description": "무료 플레이" }],
+      "release_date": { "coming_soon": false, "date": "2013년 7월 9일" }
+    }
+  }
+}

@@ -1,0 +1,249 @@
+// Steam 스토어 어댑터 — 설계서 §4.1/§4.2. 기준 소스(공식 API). 가져오기만 하고 DB 반영은 sync/가 맡음.
+// 파싱 함수(parse*)는 네트워크와 분리되어 있어 fixture 기반 테스트가 가능하다.
+import { z } from "zod";
+import {
+  AdapterError,
+  CRAWLER_USER_AGENT,
+  type SearchCandidate,
+  type StoreAdapter,
+  type StoreSnapshot,
+} from "./types";
+
+export const STEAM_APPDETAILS_URL = "https://store.steampowered.com/api/appdetails";
+export const STEAM_STORESEARCH_URL = "https://store.steampowered.com/api/storesearch/";
+export const STEAM_FEATURED_URL = "https://store.steampowered.com/api/featuredcategories";
+export const STEAM_STORE_APP_URL = "https://store.steampowered.com/app";
+const FETCH_TIMEOUT_MS = 15_000;
+
+// ---- 응답 스키마 (unknown → zod) ----
+const priceOverviewSchema = z.object({
+  currency: z.string().optional(),
+  initial: z.number(), // 센트 단위 (KRW × 100)
+  final: z.number(),
+  discount_percent: z.number().optional(),
+});
+
+const appDataSchema = z.object({
+  type: z.string().optional(),
+  name: z.string(),
+  steam_appid: z.number().optional(),
+  is_free: z.boolean().optional(),
+  short_description: z.string().optional(),
+  header_image: z.string().optional(),
+  developers: z.array(z.string()).optional(),
+  publishers: z.array(z.string()).optional(),
+  price_overview: priceOverviewSchema.optional(),
+  categories: z.array(z.object({ id: z.number(), description: z.string() })).optional(),
+  genres: z.array(z.object({ id: z.union([z.string(), z.number()]), description: z.string() })).optional(),
+  release_date: z.object({ coming_soon: z.boolean().optional(), date: z.string().optional() }).optional(),
+});
+
+const appDetailsResponseSchema = z.record(
+  z.string(),
+  z.object({ success: z.boolean(), data: appDataSchema.optional() }),
+);
+
+const storeSearchSchema = z.object({
+  total: z.number().optional(),
+  items: z
+    .array(z.object({ id: z.number(), name: z.string(), type: z.string().optional() }))
+    .default([]),
+});
+
+const featuredItemSchema = z.object({ id: z.number(), name: z.string().optional(), type: z.number().optional() });
+const featuredCategoriesSchema = z.object({
+  top_sellers: z.object({ items: z.array(featuredItemSchema).default([]) }).optional(),
+  specials: z.object({ items: z.array(featuredItemSchema).default([]) }).optional(),
+});
+
+export type SteamAppData = z.infer<typeof appDataSchema>;
+
+// ---- 순수 파서 ----
+
+const MONTHS: Record<string, number> = {
+  jan: 1, feb: 2, mar: 3, apr: 4, may: 5, jun: 6, jul: 7, aug: 8, sep: 9, sept: 9, oct: 10, nov: 11, dec: 12,
+};
+
+/** Steam 출시일 문자열 → YYYY-MM-DD. "2020년 12월 10일", "10 Dec, 2020", "Dec 10, 2020", "2020-12-10" 지원. 불명확하면 null */
+export function parseSteamDate(input: string | null | undefined): string | null {
+  if (!input) return null;
+  const s = input.trim();
+  const pad = (n: number) => String(n).padStart(2, "0");
+  const build = (y: number, m: number, d: number) =>
+    m >= 1 && m <= 12 && d >= 1 && d <= 31 ? `${y}-${pad(m)}-${pad(d)}` : null;
+
+  let m = s.match(/^(\d{4})년\s*(\d{1,2})월\s*(\d{1,2})일$/);
+  if (m) return build(Number(m[1]), Number(m[2]), Number(m[3]));
+  m = s.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+  if (m) return build(Number(m[1]), Number(m[2]), Number(m[3]));
+  m = s.match(/^(\d{1,2})\s+([A-Za-z]+),?\s+(\d{4})$/);
+  if (m) {
+    const mon = MONTHS[m[2].toLowerCase()];
+    return mon ? build(Number(m[3]), mon, Number(m[1])) : null;
+  }
+  m = s.match(/^([A-Za-z]+)\s+(\d{1,2}),?\s+(\d{4})$/);
+  if (m) {
+    const mon = MONTHS[m[1].toLowerCase()];
+    return mon ? build(Number(m[3]), mon, Number(m[2])) : null;
+  }
+  return null;
+}
+
+/** Steam categories 로 멀티플레이 정보 추론 (§11-7: 카테고리 태그만 사용, 인원수는 알 수 없음) */
+export function inferMultiplayer(categories: Array<{ description: string }> | undefined): NonNullable<StoreSnapshot["meta"]>["multiplayer"] {
+  const descs = (categories ?? []).map((c) => c.description.toLowerCase());
+  const has = (kw: string) => descs.some((d) => d.includes(kw));
+  const solo = has("single-player");
+  const coop = has("co-op");
+  const pvp = has("pvp");
+  const multi = has("multi-player") || has("mmo") || coop || pvp;
+  if (!solo && !multi) return undefined;
+  return { solo, coop, pvp };
+}
+
+function centsToKrw(cents: number): number {
+  return Math.round(cents / 100);
+}
+
+function extractAppData(raw: unknown, appid: string): SteamAppData | null {
+  const parsed = appDetailsResponseSchema.safeParse(raw);
+  if (!parsed.success) throw new AdapterError(`appdetails 응답 형식 오류 (appid=${appid}): ${parsed.error.message}`, "steam", false);
+  const entry = parsed.data[appid];
+  if (!entry || !entry.success || !entry.data) return null;
+  return entry.data;
+}
+
+/**
+ * appdetails 응답(koreana) + 선택적으로 english 응답 → StoreSnapshot.
+ * - 가격: price_overview.initial/final(센트) → KRW 정수. 무료 게임은 0, 미판매/미출시는 null
+ * - titleKo: koreana name (영문 name과 같으면 null → UI는 titleEn 사용)
+ */
+export function parseAppDetails(rawKo: unknown, appid: string, rawEn?: unknown): StoreSnapshot {
+  const ko = extractAppData(rawKo, appid);
+  if (!ko) throw new AdapterError(`appid ${appid} 를 찾을 수 없거나 success=false`, "steam", false);
+  const en = rawEn === undefined ? null : extractAppData(rawEn, appid);
+
+  let listPrice: number | null = null;
+  let currentPrice: number | null = null;
+  let discountPct: number | null = null;
+  if (ko.price_overview) {
+    listPrice = centsToKrw(ko.price_overview.initial);
+    currentPrice = centsToKrw(ko.price_overview.final);
+    discountPct = ko.price_overview.discount_percent ?? (listPrice > 0 ? Math.round((1 - currentPrice / listPrice) * 100) : 0);
+  } else if (ko.is_free) {
+    listPrice = 0;
+    currentPrice = 0;
+    discountPct = 0;
+  }
+
+  const titleEn = (en?.name ?? ko.name).trim();
+  const titleKoRaw = ko.name.trim();
+  const titleKo = titleKoRaw && titleKoRaw !== titleEn ? titleKoRaw : null;
+  const releaseDate = parseSteamDate(en?.release_date?.date) ?? parseSteamDate(ko.release_date?.date);
+
+  return {
+    platform: "steam",
+    storeExternalId: appid,
+    storeUrl: `${STEAM_STORE_APP_URL}/${appid}`,
+    listPrice,
+    currentPrice,
+    discountPct,
+    currentVersion: null,
+    releaseDate,
+    meta: {
+      titleEn,
+      titleKo,
+      description: ko.short_description?.trim() || null,
+      coverUrl: ko.header_image ?? null,
+      developer: ko.developers?.[0] ?? null,
+      publisher: ko.publishers?.[0] ?? null,
+      genres: (ko.genres ?? []).map((g) => g.description.trim()).filter(Boolean),
+      multiplayer: inferMultiplayer(ko.categories),
+    },
+  };
+}
+
+/** storesearch 응답 → 검색 후보 (앱만, 번들/DLC 제외 불가 — type 필드가 "app"인 것만) */
+export function parseStoreSearch(raw: unknown): SearchCandidate[] {
+  const parsed = storeSearchSchema.safeParse(raw);
+  if (!parsed.success) throw new AdapterError(`storesearch 응답 형식 오류: ${parsed.error.message}`, "steam", false);
+  return parsed.data.items
+    .filter((it) => !it.type || it.type === "app")
+    .map((it) => ({ externalId: String(it.id), title: it.name, url: `${STEAM_STORE_APP_URL}/${it.id}` }));
+}
+
+/** featuredcategories 응답 → top_sellers + specials 의 appid 상위 n개 (중복 제거, type=0 앱만) */
+export function parseFeaturedAppIds(raw: unknown, n: number): string[] {
+  const parsed = featuredCategoriesSchema.safeParse(raw);
+  if (!parsed.success) throw new AdapterError(`featuredcategories 응답 형식 오류: ${parsed.error.message}`, "steam", false);
+  const items = [...(parsed.data.top_sellers?.items ?? []), ...(parsed.data.specials?.items ?? [])];
+  const out: string[] = [];
+  const seen = new Set<string>();
+  for (const it of items) {
+    if (it.type !== undefined && it.type !== 0) continue; // 0 = 앱, 그 외 패키지/번들
+    const id = String(it.id);
+    if (seen.has(id)) continue;
+    seen.add(id);
+    out.push(id);
+    if (out.length >= n) break;
+  }
+  return out;
+}
+
+// ---- 네트워크 ----
+
+async function fetchJson(url: string): Promise<unknown> {
+  let res: Response;
+  try {
+    res = await fetch(url, {
+      headers: { "User-Agent": CRAWLER_USER_AGENT, Accept: "application/json" },
+      signal: AbortSignal.timeout(FETCH_TIMEOUT_MS),
+    });
+  } catch (e) {
+    throw new AdapterError(`Steam 요청 실패 (${url}): ${e instanceof Error ? e.message : String(e)}`, "steam", true);
+  }
+  if (res.status === 429 || res.status >= 500) throw new AdapterError(`Steam HTTP ${res.status} (${url})`, "steam", true);
+  if (!res.ok) throw new AdapterError(`Steam HTTP ${res.status} (${url})`, "steam", false);
+  try {
+    return await res.json();
+  } catch (e) {
+    throw new AdapterError(`Steam JSON 파싱 실패 (${url}): ${e instanceof Error ? e.message : String(e)}`, "steam", true);
+  }
+}
+
+function appDetailsUrl(appid: string, lang: "koreana" | "english"): string {
+  const u = new URL(STEAM_APPDETAILS_URL);
+  u.searchParams.set("appids", appid);
+  u.searchParams.set("cc", "kr");
+  u.searchParams.set("l", lang);
+  return u.toString();
+}
+
+/** scripts/crawl.ts --seed-top=N 용: 인기/할인 목록에서 appid 상위 n개 (§11-1: 전체가 아닌 상위 N개) */
+export async function fetchSteamTopAppIds(n: number): Promise<string[]> {
+  const u = new URL(STEAM_FEATURED_URL);
+  u.searchParams.set("cc", "kr");
+  u.searchParams.set("l", "koreana");
+  return parseFeaturedAppIds(await fetchJson(u.toString()), n);
+}
+
+export const steamAdapter: StoreAdapter = {
+  source: "steam",
+  minIntervalMs: 1500,
+
+  async search(query: string): Promise<SearchCandidate[]> {
+    const u = new URL(STEAM_STORESEARCH_URL);
+    u.searchParams.set("term", query);
+    u.searchParams.set("cc", "kr");
+    u.searchParams.set("l", "koreana");
+    return parseStoreSearch(await fetchJson(u.toString()));
+  },
+
+  /** koreana + english 2회 호출(영문 제목/출시일 확보). 사이 간격은 minIntervalMs 의 절반만 둔다 */
+  async fetch(appid: string): Promise<StoreSnapshot> {
+    const rawKo = await fetchJson(appDetailsUrl(appid, "koreana"));
+    await new Promise((r) => setTimeout(r, Math.floor(steamAdapter.minIntervalMs / 2)));
+    const rawEn = await fetchJson(appDetailsUrl(appid, "english"));
+    return parseAppDetails(rawKo, appid, rawEn);
+  },
+};
