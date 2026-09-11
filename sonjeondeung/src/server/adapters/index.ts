@@ -37,7 +37,6 @@ const newsAdapters: Record<NewsSource, NewsAdapter> = { rss: rssAdapter };
  */
 export const DISABLED_SOURCES: Readonly<Partial<Record<Source, string>>> = {
   psstore: "PlayStation Store 는 클라이언트 렌더링 + persisted GraphQL 해시가 필요해 PoC 미통과 (2026-09-11)",
-  nintendo: "Nintendo eShop 어댑터 미구현 (스텁)",
   metacritic: "Metacritic 어댑터 미구현 (스텁)",
 };
 
