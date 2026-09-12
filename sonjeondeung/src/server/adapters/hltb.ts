@@ -1,5 +1,7 @@
 // HowLongToBeat 어댑터 — 설계서 §4.1. 게임 페이지 HTML을 cheerio 로 파싱해 플레이타임 추출.
-// 검색 API(/api/search)는 토큰이 자주 바뀌어 불안정하므로 실패 시 빈 배열(§10: 해당 소스만 실패 처리).
+// 검색은 2단계다(2026-09-12 재구현): GET /api/search/site/init 로 1회용 토큰을 받고,
+// POST /api/search/site 에 헤더 3종(x-auth-token/x-hp-key/x-hp-val)과 본문 hpKey 필드를 함께 보낸다.
+// 토큰은 재사용 가능하며 만료 시 403 이 오므로 그때 한 번만 재발급해 재시도한다(사이트 프런트엔드와 동일).
 import { load } from "cheerio";
 import { z } from "zod";
 import {
@@ -12,7 +14,8 @@ import {
 
 export const HLTB_BASE_URL = "https://howlongtobeat.com";
 export const HLTB_GAME_URL = `${HLTB_BASE_URL}/game`;
-export const HLTB_SEARCH_URL = `${HLTB_BASE_URL}/api/search`;
+export const HLTB_SEARCH_URL = `${HLTB_BASE_URL}/api/search/site`;
+export const HLTB_SEARCH_INIT_URL = `${HLTB_SEARCH_URL}/init`;
 const FETCH_TIMEOUT_MS = 15_000;
 
 // ---- 셀렉터 상수: 사이트 마크업 변경 시 여기만 수정 ----
@@ -56,6 +59,14 @@ const nextDataSchema = z.object({
 const searchResponseSchema = z.object({
   data: z.array(z.object({ game_id: z.number(), game_name: z.string() })).default([]),
 });
+
+/** /api/search/site/init 응답 — 검색 1건에 필요한 토큰 3종 */
+const searchTokenSchema = z.object({
+  token: z.string().min(1),
+  hpKey: z.string().min(1),
+  hpVal: z.string().min(1),
+});
+export type HltbSearchToken = z.infer<typeof searchTokenSchema>;
 
 // ---- 순수 파서 ----
 
@@ -123,7 +134,7 @@ export function parseHltbGamePage(html: string): MetaSnapshot {
   return { playtime };
 }
 
-/** /api/search 응답 → 후보 */
+/** /api/search/site 응답 → 후보 */
 export function parseHltbSearch(raw: unknown): SearchCandidate[] {
   const parsed = searchResponseSchema.safeParse(raw);
   if (!parsed.success) return [];
@@ -136,54 +147,109 @@ export function parseHltbSearch(raw: unknown): SearchCandidate[] {
 
 // ---- 네트워크 ----
 
+// 게임 페이지는 크롤러 UA 로도 200 이지만, 검색 init 은 봇 UA 에 403 을 준다(2026-09-12 확인).
+// init 토큰 안에 UA 문자열이 그대로 들어가므로 init 과 search 는 반드시 같은 UA 여야 한다.
+export const HLTB_SEARCH_USER_AGENT =
+  "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36";
+
 const COMMON_HEADERS = {
   "User-Agent": CRAWLER_USER_AGENT,
   Referer: `${HLTB_BASE_URL}/`,
   Origin: HLTB_BASE_URL,
 };
 
+const SEARCH_HEADERS = { ...COMMON_HEADERS, "User-Agent": HLTB_SEARCH_USER_AGENT };
+
+/** 검색 본문. hpKey 필드에 hpVal 을 넣는 것까지가 서버 검증 대상이다(프런트엔드와 동일). */
+export function buildHltbSearchBody(query: string, token: HltbSearchToken): Record<string, unknown> {
+  const emptyFilter = { mode: "include", values: [] as string[] };
+  return {
+    searchType: "games",
+    searchTerms: query.trim().split(/\s+/).filter(Boolean),
+    searchPage: 1,
+    size: 20,
+    searchOptions: {
+      games: {
+        userId: 0,
+        platform: emptyFilter,
+        sortCategory: "popular",
+        rangeCategory: "main",
+        rangeTime: { min: null, max: null },
+        gameplay: { perspective: emptyFilter, flow: emptyFilter, genre: emptyFilter, difficulty: "" },
+        year: emptyFilter,
+        modifier: "",
+      },
+      users: { sortCategory: "postcount" },
+      lists: { sortCategory: "follows" },
+      filter: "",
+      sort: 0,
+      randomizer: 0,
+    },
+    useCache: true,
+    [token.hpKey]: token.hpVal,
+  };
+}
+
+/** 토큰은 여러 검색에 재사용 가능. 403 일 때만 재발급한다. */
+let cachedSearchToken: HltbSearchToken | null = null;
+
+/** 테스트용 — 모듈 캐시 초기화 */
+export function resetHltbSearchToken(): void {
+  cachedSearchToken = null;
+}
+
+async function fetchSearchToken(): Promise<HltbSearchToken> {
+  let res: Response;
+  try {
+    res = await fetch(`${HLTB_SEARCH_INIT_URL}?t=${Date.now()}`, {
+      headers: { ...SEARCH_HEADERS, Accept: "application/json" },
+      signal: AbortSignal.timeout(FETCH_TIMEOUT_MS),
+    });
+  } catch (e) {
+    throw new AdapterError(`HLTB 검색 토큰 요청 실패: ${e instanceof Error ? e.message : String(e)}`, "hltb", true);
+  }
+  if (!res.ok) throw new AdapterError(`HLTB 검색 토큰 HTTP ${res.status}`, "hltb", res.status === 429 || res.status >= 500);
+  const parsed = searchTokenSchema.safeParse(await res.json());
+  if (!parsed.success) throw new AdapterError("HLTB 검색 토큰 응답 형식 변경", "hltb", false);
+  cachedSearchToken = parsed.data;
+  return parsed.data;
+}
+
+async function postSearch(query: string, token: HltbSearchToken): Promise<Response> {
+  try {
+    return await fetch(HLTB_SEARCH_URL, {
+      method: "POST",
+      headers: {
+        ...SEARCH_HEADERS,
+        "Content-Type": "application/json",
+        Accept: "application/json",
+        "x-auth-token": token.token,
+        "x-hp-key": token.hpKey,
+        "x-hp-val": token.hpVal,
+      },
+      body: JSON.stringify(buildHltbSearchBody(query, token)),
+      signal: AbortSignal.timeout(FETCH_TIMEOUT_MS),
+    });
+  } catch (e) {
+    throw new AdapterError(`HLTB 검색 요청 실패: ${e instanceof Error ? e.message : String(e)}`, "hltb", true);
+  }
+}
+
 export const hltbAdapter: MetaAdapter = {
   source: "hltb",
   minIntervalMs: 4000,
 
-  /** 검색 API 는 토큰/경로가 자주 바뀜. 실패하면 빈 배열 (매칭만 건너뜀) */
+  /** init 토큰 → 검색. 토큰 만료(403)면 1회 재발급 후 재시도 */
   async search(query: string): Promise<SearchCandidate[]> {
-    const body = {
-      searchType: "games",
-      searchTerms: query.split(/\s+/).filter(Boolean),
-      searchPage: 1,
-      size: 20,
-      searchOptions: {
-        games: {
-          userId: 0,
-          platform: "",
-          sortCategory: "popular",
-          rangeCategory: "main",
-          rangeTime: { min: null, max: null },
-          gameplay: { perspective: "", flow: "", genre: "", difficulty: "" },
-          rangeYear: { min: "", max: "" },
-          modifier: "",
-        },
-        users: { sortCategory: "postcount" },
-        lists: { sortCategory: "follows" },
-        filter: "",
-        sort: 0,
-        randomizer: 0,
-      },
-      useCache: true,
-    };
-    try {
-      const res = await fetch(HLTB_SEARCH_URL, {
-        method: "POST",
-        headers: { ...COMMON_HEADERS, "Content-Type": "application/json", Accept: "application/json" },
-        body: JSON.stringify(body),
-        signal: AbortSignal.timeout(FETCH_TIMEOUT_MS),
-      });
-      if (!res.ok) return [];
-      return parseHltbSearch(await res.json());
-    } catch {
-      return [];
+    let token = cachedSearchToken ?? (await fetchSearchToken());
+    let res = await postSearch(query, token);
+    if (res.status === 403) {
+      cachedSearchToken = null;
+      token = await fetchSearchToken();
+      res = await postSearch(query, token);
     }
+    if (!res.ok) throw new AdapterError(`HLTB 검색 HTTP ${res.status}`, "hltb", res.status === 429 || res.status >= 500);
+    return parseHltbSearch(await res.json());
   },
 
   async fetch(gameId: string): Promise<MetaSnapshot> {

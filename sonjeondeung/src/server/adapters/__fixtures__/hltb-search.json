@@ -1,4 +1,40 @@
-{ "count": 2, "data": [
-  { "game_id": 2127, "game_name": "Cyberpunk 2077", "comp_main": 91800 },
-  { "game_id": 120306, "game_name": "Cyberpunk 2077: Phantom Liberty", "comp_main": 60000 }
-] }
+{
+  "color": "blue",
+  "title": "",
+  "category": "games",
+  "count": 3,
+  "pageCurrent": 1,
+  "pageTotal": 1,
+  "pageSize": 20,
+  "data": [
+    {
+      "game_id": 68151,
+      "game_name": "Elden Ring",
+      "game_alias": "Elden Ring Tarnished Edition",
+      "comp_main": 216329,
+      "comp_plus": 364708,
+      "comp_100": 490300,
+      "release_world": 2022
+    },
+    {
+      "game_id": 160589,
+      "game_name": "Elden Ring: Nightreign",
+      "game_alias": "",
+      "comp_main": 101698,
+      "comp_plus": 147052,
+      "comp_100": 244463,
+      "release_world": 2025
+    },
+    {
+      "game_id": 139385,
+      "game_name": "Elden Ring: Shadow of the Erdtree",
+      "game_alias": "",
+      "comp_main": 92524,
+      "comp_plus": 141299,
+      "comp_100": 184017,
+      "release_world": 2024
+    }
+  ],
+  "userData": [],
+  "displayModifier": null
+}

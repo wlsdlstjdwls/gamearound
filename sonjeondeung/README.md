@@ -72,3 +72,4 @@ pnpm dev
 | 정정 잠금 | 관리자가 해제할 때까지 영구 잠금 |
 | 크롤 주기 (설계서 §4.3 이탈) | prices 8h·news 3h·meta 격일. 설계서는 prices 4h·news 1h이나 private 레포 Actions 무료 2,000분/월을 2배 초과(≈3,900분)해 완화. 레포 public 전환 시 무제한이므로 설계서 값으로 복구 |
 | 미매칭(`matched_by="none"`) 재시도 | `game_source_refs.checked_at` 기준 `NONE_RETRY_DAYS`(14일) 경과 행만 재검색 |
+| HLTB 검색 UA (설계서 §10 이탈) | HLTB `/api/search/site/init` 이 봇 UA 에 403 을 주므로 **검색 경로에서만** 브라우저 UA(`HLTB_SEARCH_USER_AGENT`)를 쓴다. 게임 페이지 조회는 `CRAWLER_USER_AGENT` 유지. init 토큰에 UA 가 포함돼 init/search UA 가 같아야 함 |

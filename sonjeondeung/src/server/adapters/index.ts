@@ -39,8 +39,6 @@ export function getDisabledReason(source: Source): string | undefined {
   switch (source) {
     case "psstore":
       return "PlayStation Store 는 클라이언트 렌더링 + persisted GraphQL 해시가 필요해 PoC 미통과 (2026-09-11)";
-    case "hltb":
-      return "HowLongToBeat 검색 API(/api/search)가 404 — 경로/토큰 변경으로 매칭 불가(2026-09-11 확인). 어댑터 재구현 필요";
     case "opencritic":
       return process.env[OPENCRITIC_RAPIDAPI_KEY_ENV]
         ? undefined

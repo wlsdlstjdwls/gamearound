@@ -3,7 +3,7 @@ import { describe, expect, it } from "vitest";
 import { readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import { AdapterError } from "./types";
-import { parseHltbGamePage, parseHltbSearch, parseHoursText, secondsToHours } from "./hltb";
+import { buildHltbSearchBody, HLTB_SEARCH_INIT_URL, HLTB_SEARCH_URL, parseHltbGamePage, parseHltbSearch, parseHoursText, secondsToHours } from "./hltb";
 
 const fixture = (name: string): string => readFileSync(fileURLToPath(new URL(`./__fixtures__/${name}`, import.meta.url)), "utf8");
 
@@ -39,12 +39,38 @@ describe("parseHoursText / secondsToHours", () => {
 });
 
 describe("parseHltbSearch", () => {
-  it("검색 응답 → 후보", () => {
+  it("검색 응답 → 후보 (2026-09-12 실응답 픽스처)", () => {
     const list = parseHltbSearch(JSON.parse(fixture("hltb-search.json")));
-    expect(list).toHaveLength(2);
-    expect(list[0]).toEqual({ externalId: "2127", title: "Cyberpunk 2077", url: "https://howlongtobeat.com/game/2127" });
+    expect(list).toHaveLength(3);
+    expect(list[0]).toEqual({ externalId: "68151", title: "Elden Ring", url: "https://howlongtobeat.com/game/68151" });
   });
   it("형식이 다르면 빈 배열", () => {
     expect(parseHltbSearch({ foo: 1 })).toEqual([]);
+  });
+});
+
+describe("buildHltbSearchBody", () => {
+  const token = JSON.parse(fixture("hltb-search-init.json")) as { token: string; hpKey: string; hpVal: string };
+
+  it("hpKey 필드에 hpVal 을 넣는다 (서버 검증 대상)", () => {
+    const body = buildHltbSearchBody("elden ring", token);
+    expect(body[token.hpKey]).toBe(token.hpVal);
+  });
+
+  it("검색어를 공백으로 나누고 빈 토큰을 버린다", () => {
+    expect(buildHltbSearchBody("  elden   ring  ", token).searchTerms).toEqual(["elden", "ring"]);
+  });
+
+  it("필터는 include/빈 배열 형태 (2026-09-12 프런트엔드 스키마)", () => {
+    const games = (buildHltbSearchBody("hades", token).searchOptions as { games: Record<string, unknown> }).games;
+    expect(games.platform).toEqual({ mode: "include", values: [] });
+    expect(games.year).toEqual({ mode: "include", values: [] });
+  });
+});
+
+describe("검색 엔드포인트 상수", () => {
+  it("site 검색 경로와 init 경로", () => {
+    expect(HLTB_SEARCH_URL).toBe("https://howlongtobeat.com/api/search/site");
+    expect(HLTB_SEARCH_INIT_URL).toBe("https://howlongtobeat.com/api/search/site/init");
   });
 });
