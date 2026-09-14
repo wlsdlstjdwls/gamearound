@@ -77,9 +77,14 @@ route(page/action/api)  →  server/services  →  server/adapters | server/db
 새 소스를 붙일 때: 어댑터 1개 추가 → `server/adapters/index.ts` 레지스트리에 등록 → `sync/constants.ts` 에 배치 크기, 플랫폼 매핑 추가. `sync/` 로직은 건드리지 않는다.
 비활성 소스는 지우지 말고 `getDisabledReason()` 에 사유를 남긴다(관리자 화면에 그대로 표시된다).
 
+카탈로그 발견은 `discoverPages()` 로 목록 페이지를 흘려보내기만 한다. "상위 N개" 를 돌려주면 안 된다 —
+그 N개가 전부 등록된 순간 신규가 영원히 0건이 된다. 아는 것을 거르고 멈출 시점을 정하는 일은 `sync/discover` 가 한다.
+
 스토어가 우리 실행 환경을 막을 때는 사유를 코드에 남긴다 — 추측하지 말고 실측해서 적는다.
-- GitHub Actions 러너에서만 막히는 소스는 `LOCAL_ONLY_SOURCES` 에 넣고 `pnpm crawl:local` 로 돌린다(닌텐도, Epic).
+- IP 대역 때문에 러너에서만 막히는 소스는 `viaProxy: true` 를 선언한다. `CRAWL_PROXY_URL` 이 있으면 그 소스만 프록시로 나간다(닌텐도, Epic).
+  프록시가 없으면 `LOCAL_ONLY_SOURCES` 대로 `pnpm crawl:local` 이 맡는다.
 - Node 의 TLS 지문 자체가 막히면 `createHttpClient({ transport: "curl" })` 를 쓴다. 그 경로는 헤더를 선언 순서, 대소문자 그대로 보낸다 — 순서가 지문이 되는 곳이 있다.
+- 질의를 화이트리스트로 막는 곳(PlayStation)은 해시를 상수로 고정하고, 갱신 방법을 그 옆에 적는다. 낡으면 수집이 실패하며 사유가 관리자 화면에 뜬다.
 - 가격 통화가 원화가 아니면 `StoreSnapshot.currency` 를 채운다. 환산하지 않는다(`lib/currency`).
 
 ## 6. UI
