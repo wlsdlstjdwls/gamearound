@@ -76,7 +76,7 @@ export default async function HomePage() {
         </div>
       )}
 
-      <Section id="discounts" title="오늘의 할인">
+      <Section id="discounts" title="오늘의 할인" more={{ href: "/games?sale=1", label: "할인 전체 보기 →" }}>
         {discounts.length === 0 ? (
           <EmptyState title="현재 할인 중인 게임이 없습니다" description="수집이 완료되면 할인 게임이 여기에 표시됩니다." />
         ) : (
@@ -90,7 +90,7 @@ export default async function HomePage() {
         )}
       </Section>
 
-      <Section id="releases" title="최근 출시">
+      <Section id="releases" title="최근 출시" more={{ href: "/games?sort=release", label: "전체 게임 목록 →" }}>
         {recentReleases.length === 0 ? (
           <EmptyState title="최근 출시 정보가 없습니다" />
         ) : (

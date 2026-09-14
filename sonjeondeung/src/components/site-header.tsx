@@ -10,6 +10,12 @@ export function SiteHeader() {
           <span aria-hidden>🔦</span>
           <span>손전등</span>
         </Link>
+        <Link
+          href={ROUTES.game}
+          className="press hidden shrink-0 text-sm text-slate-300 transition-colors duration-base hover:text-amber-300 sm:block"
+        >
+          게임 목록
+        </Link>
         <form action={ROUTES.search} className="min-w-0 flex-1 max-w-md">
           <label htmlFor="q" className="sr-only">게임 검색</label>
           <input

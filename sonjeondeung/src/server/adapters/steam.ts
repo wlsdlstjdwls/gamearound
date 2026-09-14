@@ -118,7 +118,14 @@ const storeItemSchema = z.object({
       publishers: z.array(z.object({ name: z.string() })).default([]),
     })
     .optional(),
-  assets: z.object({ asset_url_format: z.string().optional(), header: z.string().optional() }).optional(),
+  assets: z
+    .object({
+      asset_url_format: z.string().optional(),
+      header: z.string().optional(),
+      /** 600×900 세로 아트. 구작은 "library_600x900.jpg", 신작은 "<해시>/library_capsule.jpg" */
+      library_capsule: z.string().optional(),
+    })
+    .optional(),
   release: z.object({ steam_release_date: z.number().optional(), is_coming_soon: z.boolean().optional() }).optional(),
   categories: z.object({ supported_player_categoryids: z.array(z.number()).default([]) }).optional(),
   tagids: z.array(z.number()).default([]),
@@ -296,10 +303,17 @@ export function parseStoreItemDiscount(raw: unknown, appid: string): SteamDiscou
   };
 }
 
-/** GetItems assets → 헤더 이미지 절대 URL. asset_url_format 의 ${FILENAME} 자리에 header 파일명을 끼운다 */
-export function steamAssetUrl(assets: { asset_url_format?: string; header?: string } | undefined): string | null {
-  if (!assets?.asset_url_format || !assets.header) return null;
-  return `${STEAM_ASSET_BASE_URL}/${assets.asset_url_format.replace("${FILENAME}", assets.header)}`;
+/**
+ * GetItems assets → 이미지 절대 URL. asset_url_format 의 ${FILENAME} 자리에 해당 에셋 파일명을 끼운다.
+ * kind="header" 는 460×215 가로 배너(카드용), "library_capsule" 은 600×900 세로 아트(상세 헤더용).
+ */
+export function steamAssetUrl(
+  assets: { asset_url_format?: string; header?: string; library_capsule?: string } | undefined,
+  kind: "header" | "library_capsule" = "header",
+): string | null {
+  const filename = assets?.[kind];
+  if (!assets?.asset_url_format || !filename) return null;
+  return `${STEAM_ASSET_BASE_URL}/${assets.asset_url_format.replace("${FILENAME}", filename)}`;
 }
 
 /** GetItems 는 출시 시각을 unix 초로 준다. 날짜로 자를 때는 한국 스토어 표기와 같은 KST 기준이어야 한다 */
@@ -389,6 +403,7 @@ export function parseStoreItems(rawKo: unknown, rawEn?: unknown): Map<string, St
         titleKo: nameKo && nameKo !== titleEn ? nameKo : null,
         description: item.basic_info?.short_description?.trim() || null,
         coverUrl: steamAssetUrl(item.assets),
+        portraitUrl: steamAssetUrl(item.assets, "library_capsule"),
         developer: item.basic_info?.developers?.[0]?.name ?? null,
         publisher: item.basic_info?.publishers?.[0]?.name ?? null,
         genres: item.tagids.map((id) => STEAM_GENRE_TAG_IDS[id]).filter((g): g is string => Boolean(g)),

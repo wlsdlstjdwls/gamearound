@@ -51,8 +51,22 @@ export default async function GameDetailPage({ params }: Props) {
       {/* 헤더 카드 */}
       <section className="overflow-hidden rounded-2xl border border-slate-800 bg-slate-900/60">
         <div className="grid gap-4 p-4 sm:grid-cols-[240px_1fr] sm:p-6">
-          <div className="relative aspect-[460/215] w-full overflow-hidden rounded-lg bg-slate-800 sm:aspect-[3/4]">
-            <CoverImage src={game.coverUrl} alt={`${title} 커버`} sizes="(max-width: 640px) 100vw, 240px" priority />
+          {/*
+            세로 아트(600×900)가 있으면 3:4 슬롯을 그대로 채운다. 없으면 커버는 460×215 가로 배너라
+            3:4 로 크롭하면 제목이 잘려 나간다 — 그때는 배너 비율을 유지한다.
+          */}
+          <div
+            className={`relative self-start overflow-hidden rounded-lg bg-slate-800 ${
+              // 모바일에서 3:4 를 100vw 로 펼치면 커버 하나가 화면을 다 먹는다 — 폭을 고정하고 가운데 정렬
+              game.portraitUrl ? "mx-auto aspect-[3/4] w-40 sm:mx-0 sm:w-full" : "aspect-[460/215] w-full"
+            }`}
+          >
+            <CoverImage
+              src={game.portraitUrl ?? game.coverUrl}
+              alt={`${title} 커버`}
+              sizes="(max-width: 640px) 100vw, 240px"
+              priority
+            />
           </div>
           <div className="flex min-w-0 flex-col gap-3">
             <div className="flex items-start justify-between gap-3">

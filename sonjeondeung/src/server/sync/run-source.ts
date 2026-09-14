@@ -282,6 +282,7 @@ async function createGameFromSnapshot(ctx: Ctx, snapshot: StoreSnapshot): Promis
       titleKo: meta.titleKo ?? null,
       description: meta.description ?? null,
       coverUrl: meta.coverUrl ?? null,
+      portraitUrl: meta.portraitUrl ?? null,
       developer: meta.developer ?? null,
       publisher: meta.publisher ?? null,
       supportsSolo: mp?.solo ?? true,
@@ -316,6 +317,7 @@ async function updateGameMeta(ctx: Ctx, gameId: string, slug: string, meta: NonN
   consider("titleKo", meta.titleKo);
   consider("description", meta.description);
   consider("coverUrl", meta.coverUrl);
+  consider("portraitUrl", meta.portraitUrl);
   consider("developer", meta.developer);
   consider("publisher", meta.publisher);
   if (meta.multiplayer) {

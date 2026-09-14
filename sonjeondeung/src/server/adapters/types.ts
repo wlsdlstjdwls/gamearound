@@ -23,7 +23,10 @@ export interface StoreSnapshot {
     titleEn: string;
     titleKo?: string | null;
     description?: string | null;
+    /** 가로 배너(460×215) — 카드·목록용 */
     coverUrl?: string | null;
+    /** 세로 아트(600×900) — 상세 헤더용. 주는 소스만 채움(steam GetItems) */
+    portraitUrl?: string | null;
     developer?: string | null;
     publisher?: string | null;
     genres?: string[];

@@ -162,6 +162,14 @@ describe("parseStoreItems", () => {
     expect(witcher.releaseDate).toBe("2015-05-18");
   });
 
+  it("가로 배너(header)와 세로 아트(library_capsule)를 각각 채운다", () => {
+    const witcher = parseStoreItems(ko(), en()).get("292030")!;
+    // 상세 헤더의 3:4 슬롯은 세로 아트용이다 — 가로 배너를 넣으면 제목이 크롭돼 잘린다
+    expect(witcher.meta?.coverUrl).toContain("/header");
+    expect(witcher.meta?.portraitUrl).toContain("/library_capsule.jpg");
+    expect(witcher.meta?.portraitUrl).not.toBe(witcher.meta?.coverUrl);
+  });
+
   it("할인 중이면 가격 3종 + 종료 시각 + 행사명을 채운다", () => {
     const kalpa = parseStoreItems(ko(), en()).get("2717010")!;
     expect(kalpa.listPrice).toBe(22000); // 센트 문자열 → KRW 정수
@@ -208,9 +216,20 @@ describe("steamAssetUrl", () => {
       "https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/1/abc/header.jpg?t=2",
     );
   });
+  it("kind=library_capsule 은 세로 아트 파일명을 끼운다", () => {
+    expect(
+      steamAssetUrl(
+        { asset_url_format: "steam/apps/1/${FILENAME}?t=2", header: "abc/header.jpg", library_capsule: "def/library_capsule.jpg" },
+        "library_capsule",
+      ),
+    ).toBe("https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/1/def/library_capsule.jpg?t=2");
+  });
   it("둘 중 하나라도 없으면 null", () => {
     expect(steamAssetUrl({ asset_url_format: "x/${FILENAME}" })).toBeNull();
     expect(steamAssetUrl(undefined)).toBeNull();
+  });
+  it("요청한 종류의 에셋이 없으면 null — header 로 대신 채우지 않는다", () => {
+    expect(steamAssetUrl({ asset_url_format: "x/${FILENAME}", header: "h.jpg" }, "library_capsule")).toBeNull();
   });
 });
 

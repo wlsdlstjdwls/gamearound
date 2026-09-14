@@ -46,6 +46,16 @@ export function normalizeTitle(title: string): string {
   return t;
 }
 
+/**
+ * 검색 질의 정규화 — games.title_en_norm / title_ko_norm 생성 컬럼과 같은 규칙이어야 한다.
+ * SQL 쪽: lower(regexp_replace(title, '[^[:alnum:]]+', '', 'g')).
+ * C.UTF-8 의 [:alnum:] 은 유니코드 문자·숫자이므로 JS 에서는 \p{L}\p{N} 로 맞춘다.
+ * 공백·구두점·™®© 가 사라지므로 "엘든 링" 과 "엘든링", "ELDEN RING:" 이 같은 키가 된다.
+ */
+export function normalizeForSearch(input: string): string {
+  return input.toLowerCase().replace(/[^\p{L}\p{N}]+/gu, "");
+}
+
 function trigrams(s: string): Set<string> {
   const padded = `  ${s} `;
   const out = new Set<string>();

@@ -2,11 +2,15 @@
 // 캐시 태그 규칙(§4.5): 상세 `game:<slug>`, 홈 `home`. 검색은 페이지 풀 라우트 캐시(revalidate=3600).
 // 주의: unstable_cache 내부에서는 headers()/cookies()/auth()를 호출하지 않는다. 로그인 의존 데이터는 페이지에서 별도 조회.
 import { unstable_cache } from "next/cache";
-import { and, desc, eq, gt, inArray, isNotNull, sql } from "drizzle-orm";
+import { and, asc, desc, eq, gt, inArray, isNotNull, sql } from "drizzle-orm";
 import { getDb } from "@/server/db/client";
+import { normalizeForSearch } from "@/lib/slug";
+import { DEFAULT_GAME_SORT, type GamesQuery } from "@/lib/games-query";
 import {
+  gameGenres,
   gamePlatforms,
   games,
+  genres,
   news,
   type Platform,
   type SyncStatus,
@@ -63,6 +67,8 @@ export type GameDetail = {
   titleEn: string;
   description: string | null;
   coverUrl: string | null;
+  /** 세로 아트(600×900). 없는 게임은 null → UI 가 coverUrl(가로 배너)로 폴백 */
+  portraitUrl: string | null;
   developer: string | null;
   publisher: string | null;
   localMaxPlayers: number | null;
@@ -269,29 +275,43 @@ async function attachBestPrice(rows: GameRow[]): Promise<GameSummary[]> {
   });
 }
 
+/**
+ * 제목 검색 조건 — 정규화 컬럼(title_en_norm/title_ko_norm)만 본다.
+ * 원본 제목 대신 정규화본을 쓰므로 "엘든 링"/"엘든링", "철권8"/"철권 8" 이 같은 질의가 된다.
+ * hit = 부분 문자열 포함, score = trigram 유사도(오타 허용). 호출부가 hit 먼저, score 순으로 정렬한다.
+ */
+function titleMatch(term: string) {
+  const norm = normalizeForSearch(term);
+  const pattern = `%${escapeLike(norm)}%`;
+  return {
+    norm,
+    hit: sql<boolean>`(${games.titleEnNorm} like ${pattern} or ${games.titleKoNorm} like ${pattern})`,
+    score: sql<number>`greatest(similarity(${games.titleEnNorm}, ${norm}), similarity(${games.titleKoNorm}, ${norm}))`,
+  };
+}
+
+/** pg_trgm 확장이 없는 환경(undefined_function 42883) 판별 */
+function isMissingTrgm(err: unknown): boolean {
+  const code = (err as { code?: string; cause?: { code?: string } })?.code ?? (err as { cause?: { code?: string } })?.cause?.code;
+  return code === "42883";
+}
+
 async function searchGamesRaw(q: string, limit: number): Promise<GameSummary[]> {
   const db = getDb();
-  const term = q.trim();
-  if (!term) return [];
-  const pattern = `%${escapeLike(term)}%`;
-
-  // 1차: ILIKE + pg_trgm similarity (title_en/title_ko 모두). 정확 포함 매치를 먼저, 유사도 순.
-  const trgmScore = sql<number>`greatest(similarity(${games.titleEn}, ${term}), similarity(coalesce(${games.titleKo}, ''), ${term}))`;
-  const ilikeHit = sql<boolean>`(${games.titleEn} ilike ${pattern} or coalesce(${games.titleKo}, '') ilike ${pattern})`;
+  const { norm, hit, score } = titleMatch(q);
+  if (!norm) return [];
 
   let rows: GameRow[];
   try {
     rows = await db
       .select()
       .from(games)
-      .where(sql`${ilikeHit} or ${trgmScore} >= ${TRGM_THRESHOLD}`)
-      .orderBy(sql`${ilikeHit} desc`, sql`${trgmScore} desc`, games.titleEn)
+      .where(sql`${hit} or ${score} >= ${TRGM_THRESHOLD}`)
+      .orderBy(sql`${hit} desc`, sql`${score} desc`, games.titleEn)
       .limit(limit);
   } catch (err) {
-    // pg_trgm 확장이 없는 환경(undefined_function 42883) → ILIKE만으로 폴백
-    const code = (err as { code?: string; cause?: { code?: string } })?.code ?? (err as { cause?: { code?: string } })?.cause?.code;
-    if (code !== "42883") throw err;
-    rows = await db.select().from(games).where(ilikeHit).orderBy(games.titleEn).limit(limit);
+    if (!isMissingTrgm(err)) throw err;
+    rows = await db.select().from(games).where(hit).orderBy(games.titleEn).limit(limit);
   }
   return attachBestPrice(rows);
 }
@@ -307,6 +327,132 @@ export async function searchGames(q: string, opts: { limit?: number } = {}): Pro
   });
   return cached();
 }
+
+// ---------- 목록 (/games) ----------
+
+export const GAMES_PAGE_SIZE = 36;
+
+/** 정렬 키·쿼리스트링 변환은 lib/games-query (순수 유틸)에 있다 — 여기서는 조회만 한다 */
+export type GameListFilter = Omit<GamesQuery, "platform"> & { platform?: Platform };
+
+export type GameListResult = {
+  items: GameSummary[];
+  total: number;
+  page: number;
+  pageSize: number;
+  totalPages: number;
+};
+
+/** 필터 UI 가 고를 수 있는 값 — 실제로 게임이 붙어 있는 것만 */
+export type GameFacets = {
+  platforms: Array<{ platform: Platform; count: number }>;
+  genres: Array<{ name: string; count: number }>;
+  total: number;
+};
+
+/**
+ * 게임별 플랫폼 집계 서브쿼리. platform 필터가 있으면 그 플랫폼만 집계하므로
+ * inner join 하는 것만으로 "그 플랫폼을 가진 게임"으로 좁혀진다.
+ */
+function platformAgg(platform?: Platform) {
+  const db = getDb();
+  return db
+    .select({
+      gameId: gamePlatforms.gameId,
+      maxDiscount: sql<number>`max(coalesce(${gamePlatforms.discountPct}, 0))`.as("max_discount"),
+      minPrice: sql<number | null>`min(${gamePlatforms.currentPrice})`.as("min_price"),
+      maxRelease: sql<string | null>`max(${gamePlatforms.releaseDate})`.as("max_release"),
+    })
+    .from(gamePlatforms)
+    .where(platform ? eq(gamePlatforms.platform, platform) : undefined)
+    .groupBy(gamePlatforms.gameId)
+    .as("agg");
+}
+
+async function listGamesRaw(filter: GameListFilter): Promise<GameListResult> {
+  const db = getDb();
+  const page = Math.max(filter.page ?? 1, 1);
+  const sort = filter.sort ?? DEFAULT_GAME_SORT;
+  const agg = platformAgg(filter.platform);
+
+  const conds = [];
+  if (filter.onSale) conds.push(sql`${agg.maxDiscount} > 0`);
+  if (filter.genre) {
+    conds.push(
+      sql`exists (select 1 from ${gameGenres} inner join ${genres} on ${genres.id} = ${gameGenres.genreId}
+                  where ${gameGenres.gameId} = ${games.id} and ${genres.name} = ${filter.genre})`,
+    );
+  }
+  const term = filter.q ? normalizeForSearch(filter.q) : "";
+  if (term) {
+    const { hit, score } = titleMatch(filter.q!);
+    conds.push(sql`(${hit} or ${score} >= ${TRGM_THRESHOLD})`);
+  }
+  const where = conds.length > 0 ? and(...conds) : undefined;
+
+  // nulls last 로 값 없는 게임(가격 미수집·출시일 미상)이 앞을 차지하지 않게 한다
+  const orderBy = {
+    discount: [sql`${agg.maxDiscount} desc nulls last`, sql`${agg.minPrice} asc nulls last`],
+    price: [sql`${agg.minPrice} asc nulls last`, sql`${agg.maxDiscount} desc nulls last`],
+    release: [sql`${agg.maxRelease} desc nulls last`],
+    title: [asc(sql`coalesce(${games.titleKo}, ${games.titleEn})`)],
+  }[sort];
+
+  const [{ total }] = await db
+    .select({ total: sql<number>`count(*)::int` })
+    .from(games)
+    .innerJoin(agg, eq(agg.gameId, games.id))
+    .where(where);
+
+  const rows = await db
+    .select({ game: games })
+    .from(games)
+    .innerJoin(agg, eq(agg.gameId, games.id))
+    .where(where)
+    // 같은 정렬값이 많을 때 페이지 경계에서 중복/누락이 나지 않도록 마지막 키는 항상 고유값(slug)
+    .orderBy(...orderBy, asc(games.slug))
+    .limit(GAMES_PAGE_SIZE)
+    .offset((page - 1) * GAMES_PAGE_SIZE);
+
+  return {
+    items: await attachBestPrice(rows.map((r) => r.game)),
+    total,
+    page,
+    pageSize: GAMES_PAGE_SIZE,
+    totalPages: Math.max(Math.ceil(total / GAMES_PAGE_SIZE), 1),
+  };
+}
+
+/** 목록 — 필터 조합별 1시간 캐시. 크롤러 완료 시 `home` 태그로 함께 무효화된다 */
+export async function listGames(filter: GameListFilter): Promise<GameListResult> {
+  const key = [filter.q?.trim().toLowerCase() ?? "", filter.platform ?? "", filter.genre ?? "", filter.onSale ? "sale" : "", filter.sort ?? DEFAULT_GAME_SORT, String(filter.page ?? 1)];
+  const cached = unstable_cache(() => listGamesRaw(filter), ["games", ...key], { tags: ["home"], revalidate: 3600 });
+  return cached();
+}
+
+async function getGameFacetsRaw(): Promise<GameFacets> {
+  const db = getDb();
+  const [platformRows, genreRows, [{ total }]] = await Promise.all([
+    db
+      .select({ platform: gamePlatforms.platform, count: sql<number>`count(distinct ${gamePlatforms.gameId})::int` })
+      .from(gamePlatforms)
+      .groupBy(gamePlatforms.platform),
+    db
+      .select({ name: genres.name, count: sql<number>`count(*)::int` })
+      .from(gameGenres)
+      .innerJoin(genres, eq(genres.id, gameGenres.genreId))
+      .groupBy(genres.name),
+    db.select({ total: sql<number>`count(*)::int` }).from(games),
+  ]);
+  return {
+    platforms: platformRows.sort((a, b) => b.count - a.count),
+    genres: genreRows.sort((a, b) => b.count - a.count || a.name.localeCompare(b.name, "ko")),
+    total,
+  };
+}
+
+/** 필터 선택지 — 게임 수가 늘어도 목록 페이지마다 다시 세지 않게 별도 캐시 */
+export const getGameFacets = unstable_cache(getGameFacetsRaw, ["game-facets"], { tags: ["home"], revalidate: 3600 });
 
 // ---------- 상세 ----------
 
@@ -338,6 +484,7 @@ export async function getGameBySlug(slug: string): Promise<GameDetail | null> {
     titleEn: row.titleEn,
     description: row.description,
     coverUrl: row.coverUrl,
+    portraitUrl: row.portraitUrl,
     developer: row.developer,
     publisher: row.publisher,
     localMaxPlayers: row.localMaxPlayers,
@@ -390,6 +537,7 @@ export function toPublicGameDto(g: GameDetail): PublicGameDto {
     titleEn: g.titleEn,
     description: g.description,
     coverUrl: g.coverUrl,
+    portraitUrl: g.portraitUrl,
     developer: g.developer,
     publisher: g.publisher,
     localMaxPlayers: g.localMaxPlayers,
