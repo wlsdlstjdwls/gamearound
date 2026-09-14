@@ -6,12 +6,14 @@ import { gamepassAdapter } from "./gamepass";
 import { psstoreAdapter } from "./psstore";
 import { xboxAdapter } from "./xbox";
 import { nintendoAdapter } from "./nintendo";
+import { epicAdapter } from "./epic";
 import { hltbAdapter } from "./hltb";
 import { OPENCRITIC_RAPIDAPI_KEY_ENV, opencriticAdapter } from "./opencritic";
+import { EPIC_ENABLE_ENV } from "./epic";
 import { metacriticAdapter } from "./metacritic";
 import { rssAdapter } from "./news-rss";
 
-export const STORE_SOURCES = ["steam", "psstore", "xbox", "nintendo"] as const;
+export const STORE_SOURCES = ["steam", "psstore", "xbox", "nintendo", "epic"] as const;
 export const META_SOURCES = ["hltb", "opencritic", "metacritic"] as const;
 export const NEWS_SOURCES = ["rss"] as const;
 /** 회사 정보 소스 — 게임이 아니라 회사를 조회한다(§5 확장 지점) */
@@ -33,6 +35,7 @@ const storeAdapters: Record<StoreSource, StoreAdapter> = {
   psstore: psstoreAdapter,
   xbox: xboxAdapter,
   nintendo: nintendoAdapter,
+  epic: epicAdapter,
 };
 const metaAdapters: Record<MetaSource, MetaAdapter> = {
   hltb: hltbAdapter,
@@ -51,6 +54,11 @@ export function getDisabledReason(source: Source): string | undefined {
   switch (source) {
     case "psstore":
       return "PlayStation Store 는 클라이언트 렌더링 + persisted GraphQL 해시가 필요해 PoC 미통과 (2026-09-11)";
+    case "epic":
+      return process.env[EPIC_ENABLE_ENV]
+        ? undefined
+        : "Epic 의 Cloudflare 가 데이터센터 IP 를 막는다 — GitHub Actions 러너에서는 curl 도 403 (2026-09-14 probe-epic 실행으로 확인). " +
+          `가정용 회선에서는 통과하므로 ${EPIC_ENABLE_ENV}=1 을 켜면 로컬 크롤로만 수집한다`;
     case "opencritic":
       return process.env[OPENCRITIC_RAPIDAPI_KEY_ENV]
         ? undefined

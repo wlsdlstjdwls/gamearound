@@ -45,6 +45,7 @@ export const PLATFORM_LABEL: Record<string, string> = {
   xbox: "Xbox",
   switch: "Switch",
   switch2: "Switch 2",
+  epic: "Epic Games",
 };
 
 const MS_PER_DAY = 24 * 60 * 60 * 1000;

@@ -38,7 +38,10 @@ env:
   # 발견은 장르 슬라이스로 수만 건까지 훑을 수 있으므로, 카탈로그는 실행을 거듭하며 며칠에 걸쳐 찬다.
   STEAM_SEED_TOP: ${{ github.event.inputs.seed_top || '1500' }}
   # nintendo 는 요청 간격 4초 × (발견 페이지 + 상품 페이지) 라 BATCH_SIZE.nintendo(120) 안에서 소량만
-  NINTENDO_SEED_TOP: '60' 
+  NINTENDO_SEED_TOP: '60'
+  # epic 은 발견이 카탈로그를 한 바퀴 도는 구조라 카탈로그(KR 기본판 약 7,000건)보다 큰 값을 준다.
+  # 한 실행이 처리하는 건수는 BATCH_SIZE.epic(250) 이 막는다 — 며칠에 걸쳐 카탈로그가 찬다.
+  EPIC_SEED_TOP: '8000'
 
 jobs:
   crawl:
@@ -79,3 +82,10 @@ jobs:
       - name: crawl nintendo
         continue-on-error: true
         run: pnpm crawl --source=nintendo --seed-top=$NINTENDO_SEED_TOP $CRAWL_LIMIT_ARG
+
+      # Epic 독점작(Alan Wake 2 등)은 Steam 에 없다. 발견은 공개 GraphQL 한 바퀴, 흡수/신규 판단은 제목 역매칭.
+      # 지금은 비활성이라 이 단계가 "건너뜀" 한 줄만 찍고 끝난다 — Cloudflare 가 러너 IP 를 막는다(어댑터 주석).
+      # 단계를 남겨 두는 이유: EPIC_CRAWL_ENABLED 를 켜는 순간 워크플로 수정 없이 바로 돌게.
+      - name: crawl epic
+        continue-on-error: true
+        run: pnpm crawl --source=epic --seed-top=$EPIC_SEED_TOP $CRAWL_LIMIT_ARG

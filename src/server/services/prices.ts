@@ -18,7 +18,7 @@ export type PriceSeries = {
   storeUrl: string | null;
 };
 
-const PLATFORM_ORDER: Platform[] = ["steam", "ps5", "ps4", "xbox", "switch", "switch2"];
+const PLATFORM_ORDER: Platform[] = ["steam", "epic", "ps5", "ps4", "xbox", "switch", "switch2"];
 
 async function getPriceHistoryRaw(slug: string, days: number): Promise<PriceSeries[]> {
   const db = getDb();

@@ -34,9 +34,10 @@ const PLATFORM_COLOR: Record<Platform, string> = {
   xbox: "#A8A59E",
   switch: "#C4C0B8",
   switch2: "#3A5A4A",
+  epic: "#4A4A6B",
 };
 /** 가장 진한 선(=대표 플랫폼)만 2.5px, 나머지는 2px */
-const PLATFORM_WIDTH: Record<Platform, number> = { steam: 2.5, ps5: 2, ps4: 2, xbox: 2, switch: 2, switch2: 2 };
+const PLATFORM_WIDTH: Record<Platform, number> = { steam: 2.5, ps5: 2, ps4: 2, xbox: 2, switch: 2, switch2: 2, epic: 2 };
 
 /** 기간 선택 — days=null 은 전체 */
 const RANGES: Array<{ key: string; label: string; days: number | null }> = [

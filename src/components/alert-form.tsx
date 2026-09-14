@@ -12,7 +12,7 @@ import { Clamp } from "@/components/ui/tooltip";
 
 export const PLATFORM_OPTIONS: { value: string; label: string }[] = [
   { value: "all", label: "전체 플랫폼" },
-  ...(["steam", "ps5", "ps4", "xbox", "switch", "switch2"] as const).map((p) => ({ value: p, label: PLATFORM_LABEL[p] })),
+  ...(["steam", "epic", "ps5", "ps4", "xbox", "switch", "switch2"] as const).map((p) => ({ value: p, label: PLATFORM_LABEL[p] })),
 ];
 
 const DEFAULT_MIN_DISCOUNT = 50;

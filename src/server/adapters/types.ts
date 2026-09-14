@@ -4,7 +4,7 @@ import type { Platform } from "@/server/db/schema";
 /** 크롤러 공통 User-Agent (§10: UA 명시) — 실제 값은 서비스 아이덴티티(lib/site)에서 만든다 */
 export { CRAWLER_USER_AGENT } from "@/lib/site";
 
-export type Source = "steam" | "psstore" | "xbox" | "nintendo" | "hltb" | "opencritic" | "metacritic" | "rss" | "wikidata" | "gamepass";
+export type Source = "steam" | "psstore" | "xbox" | "nintendo" | "epic" | "hltb" | "opencritic" | "metacritic" | "rss" | "wikidata" | "gamepass";
 
 export interface StoreSnapshot {
   platform: Platform;
