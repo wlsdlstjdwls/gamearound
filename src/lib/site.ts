@@ -21,7 +21,7 @@ export const SITE = {
   /** 저작권 표기의 시작 연도. 푸터가 매년 바뀌지 않도록 연도는 렌더 시점에 붙인다 */
   foundedYear: 2026,
   repoUrl: "https://github.com/wlsdlstjdwls/gamearound",
-  contactEmail: "admin@example.com",
+  contactEmail: "wlsdlstjdwls12@gmail.com",
   /** PWA, 브라우저 UI 색. globals.css 의 --bg / --ink 와 같은 값이어야 한다 */
   themeColor: "#1c1c1a",
   backgroundColor: "#faf9f7",
