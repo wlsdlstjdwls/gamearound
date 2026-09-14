@@ -31,11 +31,13 @@ export async function runSource(source: Source, opts: RunOptions = {}): Promise<
   const db = getDb();
   const now = new Date();
   let logId: number | null = null;
+  // 치명적 오류로 끝난 실행도 발견 요약은 남겨야 한다 — 예산을 다 쓰고 쓰러진 실행이야말로 포화 신호다
+  let ctx: Ctx | null = null;
   try {
     const [log] = await db.insert(syncLogs).values({ source, status: "ok", startedAt: now }).returning({ id: syncLogs.id });
     logId = log.id;
 
-    const ctx: Ctx = {
+    ctx = {
       db, source, now,
       locks: await loadLockedFields(db),
       processed: 0, failed: 0, errors: [],
@@ -70,7 +72,8 @@ export async function runSource(source: Source, opts: RunOptions = {}): Promise<
     const errorSample = ctx.errors.length ? ctx.errors.join("\n").slice(0, 1000) : null;
     await db
       .update(syncLogs)
-      .set({ status, processed: ctx.processed, failed: ctx.failed, errorSample, finishedAt: new Date() })
+      // 발견을 돌리지 않은 실행은 null 로 남긴다 — "0페이지" 와 "안 돌렸다" 는 다른 이야기다
+      .set({ status, processed: ctx.processed, failed: ctx.failed, errorSample, discovery: ctx.discovery ?? null, finishedAt: new Date() })
       .where(eq(syncLogs.id, logId));
 
     return { source, status, processed: ctx.processed, failed: ctx.failed, changed: ctx.changedSlugs.size, errorSample: errorSample ?? undefined, alerts };
@@ -80,7 +83,7 @@ export async function runSource(source: Source, opts: RunOptions = {}): Promise<
     if (logId !== null) {
       await db
         .update(syncLogs)
-        .set({ status: "failed", errorSample: message.slice(0, 1000), finishedAt: new Date() })
+        .set({ status: "failed", errorSample: message.slice(0, 1000), discovery: ctx?.discovery ?? null, finishedAt: new Date() })
         .where(eq(syncLogs.id, logId))
         .catch(() => undefined);
     }

@@ -23,6 +23,14 @@ export interface DiscoveryResult {
   stoppedBy: DiscoveryStop;
 }
 
+/**
+ * sync_logs 에 남길 발견 요약 — 후보 배열만 뺀 나머지.
+ * 왜 남기나: 콘솔에만 찍으면 워크플로 로그가 지워진 뒤에는 "예산을 다 쓴 실행" 을 셀 수 없다.
+ * stoppedBy="budget" 이 며칠째 이어지면 그게 포화 신호다 — 아는 것만 나오는 구간이 페이지 예산보다 길다는 뜻이라
+ * 예산을 올리거나 발견 시작점을 옮겨야 한다. 그 시점을 놓치면 신규가 조용히 0건으로 굳는다.
+ */
+export type DiscoveryLog = Omit<DiscoveryResult, "fresh"> & { fresh: number };
+
 export interface CollectOptions {
   /** 이번 실행에서 찾을 신규 후보 수 */
   want: number;

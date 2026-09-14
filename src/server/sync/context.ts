@@ -7,6 +7,7 @@ import type { Source } from "@/server/adapters/types";
 import { errorMessage } from "@/lib/errors";
 import { ERROR_SAMPLE_MAX } from "./constants";
 import type { DispatchSummary, PriceChange } from "./dispatch-alerts";
+import type { DiscoveryLog } from "./discover";
 
 export interface RunOptions {
   /** 배치 크기 덮어쓰기 */
@@ -48,6 +49,8 @@ export interface Ctx {
   /** 게임이 아니라 회사 화면 캐시를 깨야 할 때 — 회사 정보나 그 회사 게임이 바뀐 경우 */
   changedCompanySlugs: Set<string>;
   priceChanges: PriceChange[];
+  /** 이번 실행이 카탈로그 발견을 돌렸다면 그 요약. run-source 가 sync_logs 에 그대로 남긴다 */
+  discovery?: DiscoveryLog;
 }
 
 /** 잠금 키는 snake_case 로 정규화한다 — DB 는 snake, 코드는 camel 로 같은 필드를 부른다 */

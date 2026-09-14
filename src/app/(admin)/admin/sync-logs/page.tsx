@@ -15,6 +15,16 @@ const STATUS_STYLE: Record<string, string> = {
   failed: "text-danger",
 };
 
+/**
+ * 발견 중단 사유. "예산 소진" 이 이어지면 포화 신호다 — 아는 것만 나오는 구간이 페이지 예산보다 길다는 뜻이라
+ * 예산을 올리거나 발견 시작점을 옮겨야 한다. 그래서 이 값만 경고색으로 띄운다.
+ */
+const DISCOVERY_STOP: Record<string, { label: string; style: string }> = {
+  want: { label: "목표 달성", style: "text-acc" },
+  budget: { label: "예산 소진", style: "text-warn" },
+  "catalog-end": { label: "카탈로그 끝", style: "text-mut" },
+};
+
 function durationSec(start: Date, end: Date | null): string {
   if (!end) return "-";
   return `${Math.max(0, Math.round((end.getTime() - start.getTime()) / 1000))}s`;
@@ -55,6 +65,7 @@ export default async function SyncLogsPage({ searchParams }: { searchParams: Pro
                 <th className="px-3 py-2">소요</th>
                 <th className="px-3 py-2">처리</th>
                 <th className="px-3 py-2">실패</th>
+                <th className="px-3 py-2">발견</th>
                 <th className="px-3 py-2">에러 샘플</th>
               </tr>
             </thead>
@@ -68,6 +79,20 @@ export default async function SyncLogsPage({ searchParams }: { searchParams: Pro
                   <td className="px-3 py-2">{durationSec(l.startedAt, l.finishedAt)}</td>
                   <td className="px-3 py-2">{l.processed ?? 0}</td>
                   <td className={`px-3 py-2 ${(l.failed ?? 0) > 0 ? "font-semibold text-danger" : ""}`}>{l.failed ?? 0}</td>
+                  <td className="whitespace-nowrap px-3 py-2">
+                    {l.discovery ? (
+                      <>
+                        <span className={DISCOVERY_STOP[l.discovery.stoppedBy]?.style ?? ""}>
+                          {DISCOVERY_STOP[l.discovery.stoppedBy]?.label ?? l.discovery.stoppedBy}
+                        </span>
+                        <span className="text-[11.5px] text-dim">
+                          {" "}{l.discovery.pages}페이지 | {l.discovery.scanned}건 훑어 신규 {l.discovery.fresh}
+                        </span>
+                      </>
+                    ) : (
+                      <span className="text-dim-2">-</span>
+                    )}
+                  </td>
                   <td className="max-w-md px-3 py-2">
                     {l.errorSample ? (
                       <code className="font-mono text-[11px] text-mut">

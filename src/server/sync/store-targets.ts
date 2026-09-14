@@ -214,6 +214,8 @@ async function seedTargets(ctx: Ctx, source: StoreSource, seedWant: number, page
     }),
   );
   const { fresh } = result;
+  // 콘솔 줄은 워크플로 로그가 지워지면 사라진다 — 포화 판단에 쓰려면 실행 기록으로 남아야 한다
+  ctx.discovery = { pages: result.pages, scanned: result.scanned, fresh: fresh.length, stoppedBy: result.stoppedBy };
   console.log(
     `[sync:${source}] 발견 ${result.pages}페이지, ${result.scanned}건 훑어 신규 ${fresh.length}건 (중단 사유: ${result.stoppedBy})`,
   );
