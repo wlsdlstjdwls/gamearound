@@ -77,6 +77,11 @@ route(page/action/api)  →  server/services  →  server/adapters | server/db
 새 소스를 붙일 때: 어댑터 1개 추가 → `server/adapters/index.ts` 레지스트리에 등록 → `sync/constants.ts` 에 배치 크기, 플랫폼 매핑 추가. `sync/` 로직은 건드리지 않는다.
 비활성 소스는 지우지 말고 `getDisabledReason()` 에 사유를 남긴다(관리자 화면에 그대로 표시된다).
 
+스토어가 우리 실행 환경을 막을 때는 사유를 코드에 남긴다 — 추측하지 말고 실측해서 적는다.
+- GitHub Actions 러너에서만 막히는 소스는 `LOCAL_ONLY_SOURCES` 에 넣고 `pnpm crawl:local` 로 돌린다(닌텐도, Epic).
+- Node 의 TLS 지문 자체가 막히면 `createHttpClient({ transport: "curl" })` 를 쓴다. 그 경로는 헤더를 선언 순서, 대소문자 그대로 보낸다 — 순서가 지문이 되는 곳이 있다.
+- 가격 통화가 원화가 아니면 `StoreSnapshot.currency` 를 채운다. 환산하지 않는다(`lib/currency`).
+
 ## 6. UI
 
 - 색, 간격, 모션은 `globals.css` 토큰만 쓴다. 컴포넌트에 임의 숫자(`duration-[230ms]` 등)를 넣지 않는다.
