@@ -153,7 +153,7 @@ export function PushToggle({ initialCount }: { initialCount: number }) {
       {error && <p className="text-[12.5px] text-danger">{error}</p>}
       {iosHint && (
         <p className="rounded-[9px] bg-warn-soft px-3.5 py-[11px] text-[12px] leading-[1.6] text-warn">
-          iOS Safari는 공유 → &ldquo;홈 화면에 추가&rdquo;로 설치한 뒤 홈 화면 아이콘으로 실행한 경우에만 웹푸시를 받을 수 있습니다.
+          iOS Safari는 공유 메뉴의 &ldquo;홈 화면에 추가&rdquo;로 설치한 뒤 홈 화면 아이콘으로 실행한 경우에만 웹푸시를 받을 수 있습니다.
         </p>
       )}
     </section>

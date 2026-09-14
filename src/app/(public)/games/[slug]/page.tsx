@@ -96,7 +96,7 @@ export default async function GameDetailPage({ params }: Props) {
     <Page pad="detail" gap={28}>
       <nav aria-label="브레드크럼">
         <Link href={ROUTES.game} className="text-[12.5px] text-dim transition-colors hover:text-ink">
-          ← 게임 목록
+          게임 목록으로
         </Link>
       </nav>
 
@@ -164,7 +164,7 @@ export default async function GameDetailPage({ params }: Props) {
               title="플랫폼별 가격"
               action={
                 <Link href={`/games/${game.slug}/prices`} className="text-[12.5px] text-acc hover:underline">
-                  가격 변동 그래프 →
+                  가격 변동 그래프
                 </Link>
               }
             />
@@ -198,7 +198,6 @@ export default async function GameDetailPage({ params }: Props) {
                         className="press inline-flex items-center gap-1 rounded-full border border-line-strong px-2.5 py-1 text-ink-2 transition-colors hover:border-ink"
                       >
                         {r.source}
-                        <span aria-hidden>↗</span>
                         <span className="sr-only"> (새 창에서 열림)</span>
                       </a>
                     </li>

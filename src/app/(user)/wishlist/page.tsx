@@ -129,7 +129,7 @@ export default async function WishlistPage({ searchParams }: Props) {
                       <span className="text-warn">{collectedAtText(stalest.lastSyncedAt)} | 스토어에서 확인 권장</span>
                     ) : (
                       <Link href={`${ROUTES.alerts}?game=${encodeURIComponent(game.slug)}`} className="text-acc hover:underline">
-                        할인 알림 만들기 →
+                        할인 알림 만들기
                       </Link>
                     )}
                   </p>

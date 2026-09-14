@@ -91,7 +91,8 @@ export default async function AdminDashboardPage() {
           </div>
           {repo ? (
             <a href={`https://github.com/${repo}/actions`} target="_blank" rel="noreferrer" className={buttonClass({ variant: "secondary" })}>
-              Actions에서 재실행 ↗
+              Actions에서 재실행
+              <span className="sr-only"> (새 창에서 열림)</span>
             </a>
           ) : (
             <span className="max-w-[320px] text-[11.5px] text-dim">
@@ -107,7 +108,7 @@ export default async function AdminDashboardPage() {
         </div>
 
         <Link href="/admin/sync-logs" className="text-[12.5px] text-acc hover:underline">
-          전체 로그 보기 →
+          전체 로그 보기
         </Link>
       </section>
 
@@ -140,7 +141,7 @@ export default async function AdminDashboardPage() {
                     {p.externalId}
                     {p.url && (
                       <a href={p.url} target="_blank" rel="noreferrer" className="ml-2 font-sans text-acc hover:underline">
-                        열기 ↗
+                        열기
                       </a>
                     )}
                   </span>

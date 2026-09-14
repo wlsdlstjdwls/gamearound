@@ -50,7 +50,7 @@ export default async function PricesPage({ params }: Props) {
     <Page gap={20}>
       <nav aria-label="브레드크럼">
         <Link href={`/games/${game.slug}`} className="text-[12.5px] text-dim transition-colors hover:text-ink">
-          ← {title}
+          {title} 상세로
         </Link>
       </nav>
 

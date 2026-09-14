@@ -104,7 +104,7 @@ export default async function HomePage() {
           note="플랫폼별 최저가 기준"
           action={
             <Link href={`${ROUTES.game}?sale=1`} className="text-[12.5px] text-acc hover:underline">
-              할인 전체 보기 →
+              할인 전체 보기
             </Link>
           }
         />
@@ -167,7 +167,7 @@ export default async function HomePage() {
             title="최근 출시"
             action={
               <Link href={`${ROUTES.game}?sort=release`} className="text-[12.5px] text-acc hover:underline">
-                전체 게임 목록 →
+                전체 게임 목록
               </Link>
             }
           />

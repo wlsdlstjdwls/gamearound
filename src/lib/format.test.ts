@@ -24,6 +24,6 @@ describe("formatSaleWindow", () => {
     expect(formatSaleWindow(null, null)).toBeNull();
     expect(formatSaleWindow("2026-09-10T00:00:00Z", null)).toContain("시작");
     expect(formatSaleWindow(null, "2026-09-16T14:59:59Z")).toContain("종료");
-    expect(formatSaleWindow("2026-09-10T00:00:00Z", "2026-09-16T14:59:59Z")).toContain("→");
+    expect(formatSaleWindow("2026-09-10T00:00:00Z", "2026-09-16T14:59:59Z")).toContain("~");
   });
 });

@@ -76,11 +76,11 @@ export function saleRemaining(endsAt: string | Date | null | undefined, now: num
   return { text: `${days}일 남음`, days, urgent: days <= 3 };
 }
 
-/** "9월 10일 → 9월 16일 24:00" 형태의 할인 기간. 시작/종료 중 있는 것만 쓴다 */
+/** "9월 10일 ~ 9월 16일 24:00" 형태의 할인 기간. 시작/종료 중 있는 것만 쓴다 (화면 문구에 화살표를 쓰지 않는다) */
 export function formatSaleWindow(startsAt: string | null | undefined, endsAt: string | null | undefined): string | null {
   const start = startsAt ? formatDate(startsAt) : null;
   const end = endsAt ? formatShortDateTime(endsAt) : null;
-  if (start && end) return `${start} → ${end}`;
+  if (start && end) return `${start} ~ ${end}`;
   if (end) return `${end} 종료`;
   if (start) return `${start} 시작`;
   return null;

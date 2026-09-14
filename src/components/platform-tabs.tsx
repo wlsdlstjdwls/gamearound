@@ -112,7 +112,6 @@ export function PlatformTabs({ platforms }: { platforms: PlatformTabItem[] }) {
           >
             {PLATFORM_LABEL[current.platform] ?? current.platform} 스토어에서 보기
             <span className="sr-only"> (새 창에서 열림)</span>
-            <span aria-hidden>↗</span>
           </a>
         ) : (
           <p className="text-[12px] text-dim">스토어 링크가 없습니다.</p>
