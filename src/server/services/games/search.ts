@@ -6,6 +6,7 @@ import { games } from "@/server/db/schema";
 import type { GameSummary } from "./dto";
 import { attachBestPrice, type GameRow } from "./mappers";
 import { isMissingTrgm, titleMatch, TRGM_THRESHOLD } from "./title-search";
+import { LIST_REVALIDATE_SECONDS } from "@/lib/cache";
 
 const SEARCH_DEFAULT_LIMIT = 24;
 
@@ -36,7 +37,7 @@ export async function searchGames(q: string, opts: { limit?: number } = {}): Pro
   if (!key) return [];
   const cached = unstable_cache(() => searchGamesRaw(key, limit), ["search", key, String(limit)], {
     tags: ["home"],
-    revalidate: 3600,
+    revalidate: LIST_REVALIDATE_SECONDS,
   });
   return cached();
 }

@@ -13,6 +13,7 @@ import { ROUTES } from "@/lib/routes";
 import { getGameFacets, listGames } from "@/server/services/games";
 import { platformEnum, type Platform } from "@/server/db/schema";
 
+// Next 가 정적으로 읽는 값이라 리터럴이어야 한다 — 근거·수치는 lib/cache 의 LIST_REVALIDATE_SECONDS 와 같게 유지
 export const revalidate = 3600;
 
 type Search = Record<string, string | string[] | undefined>;

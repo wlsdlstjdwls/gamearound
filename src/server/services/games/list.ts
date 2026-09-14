@@ -8,6 +8,7 @@ import { DEFAULT_GAME_SORT, type GamesQuery } from "@/lib/games-query";
 import type { GameSummary } from "./dto";
 import { attachBestPrice } from "./mappers";
 import { titleMatch, TRGM_THRESHOLD } from "./title-search";
+import { LIST_REVALIDATE_SECONDS } from "@/lib/cache";
 
 export const GAMES_PAGE_SIZE = 36;
 
@@ -105,7 +106,7 @@ async function listGamesRaw(filter: GameListFilter): Promise<GameListResult> {
 /** 목록 — 필터 조합별 1시간 캐시. 크롤러 완료 시 `home` 태그로 함께 무효화된다 */
 export async function listGames(filter: GameListFilter): Promise<GameListResult> {
   const key = [filter.q?.trim().toLowerCase() ?? "", filter.platform ?? "", filter.genre ?? "", filter.onSale ? "sale" : "", filter.sort ?? DEFAULT_GAME_SORT, String(filter.page ?? 1)];
-  const cached = unstable_cache(() => listGamesRaw(filter), ["games", ...key], { tags: ["home"], revalidate: 3600 });
+  const cached = unstable_cache(() => listGamesRaw(filter), ["games", ...key], { tags: ["home"], revalidate: LIST_REVALIDATE_SECONDS });
   return cached();
 }
 
@@ -131,4 +132,4 @@ async function getGameFacetsRaw(): Promise<GameFacets> {
 }
 
 /** 필터 선택지 — 게임 수가 늘어도 목록 페이지마다 다시 세지 않게 별도 캐시 */
-export const getGameFacets = unstable_cache(getGameFacetsRaw, ["game-facets"], { tags: ["home"], revalidate: 3600 });
+export const getGameFacets = unstable_cache(getGameFacetsRaw, ["game-facets"], { tags: ["home"], revalidate: LIST_REVALIDATE_SECONDS });

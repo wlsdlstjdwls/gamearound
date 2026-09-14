@@ -19,6 +19,9 @@ import { getCurrentUser } from "@/server/services/users";
 import { isInWishlist } from "@/server/services/wishlist";
 import { cardClass } from "@/components/ui/page";
 
+/** 검색결과·SNS 카드에 들어가는 설명 길이 상한 */
+const META_DESCRIPTION_MAX = 150;
+
 type Props = { params: Promise<{ slug: string }> };
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
@@ -27,7 +30,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   if (!game) return { title: "게임을 찾을 수 없음" };
   const title = displayTitle(game);
   const description =
-    game.description?.slice(0, 150) ??
+    game.description?.slice(0, META_DESCRIPTION_MAX) ??
     `${title}의 플랫폼별 가격·할인, 플레이타임, 평점, 뉴스를 ${SITE.name}에서 확인하세요.`;
   return {
     title,

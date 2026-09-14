@@ -10,6 +10,9 @@ import { getDisabledReason, isSource } from "@/server/adapters";
 import { requireRoleOrForbid } from "@/server/auth/guards";
 import { cardClass } from "@/components/ui/page";
 
+/** 대시보드 카드에 노출할 에러 샘플 길이. 전문은 로그 화면에서 본다 */
+const ERROR_SAMPLE_PREVIEW_LEN = 300;
+
 export const metadata: Metadata = { title: "관리자 대시보드" };
 
 const STATUS_STYLE: Record<string, string> = {
@@ -57,7 +60,7 @@ function SourceCard({ item }: { item: SyncOverviewItem }) {
             <div className="mt-1">
               <dt className="mb-1 text-[11.5px] text-dim">에러 샘플</dt>
               <dd className="line-clamp-3 break-all rounded-[7px] bg-surface-4 px-2.5 py-2 font-mono text-[11px] leading-[1.55] text-mut">
-                {l.errorSample.slice(0, 300)}
+                {l.errorSample.slice(0, ERROR_SAMPLE_PREVIEW_LEN)}
               </dd>
             </div>
           )}

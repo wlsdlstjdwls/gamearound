@@ -11,6 +11,7 @@ import { nextCollectTimeText } from "@/lib/freshness";
 import { ROUTES } from "@/lib/routes";
 import { getHomeData, type GameSummary } from "@/server/services/games";
 
+// Next 가 정적으로 읽는 값이라 리터럴이어야 한다 — 근거·수치는 lib/cache 의 LIST_REVALIDATE_SECONDS 와 같게 유지
 export const revalidate = 3600;
 
 /** 48시간 이내 종료 = "지금 결정해야 하는" 할인. 페이지 캐시(1h) 주기로 다시 계산된다 */

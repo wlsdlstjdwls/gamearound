@@ -5,6 +5,7 @@ import { getDb } from "@/server/db/client";
 import { gamePlatforms, games, news } from "@/server/db/schema";
 import type { HomeData } from "./dto";
 import { groupSummaries } from "./mappers";
+import { LIST_REVALIDATE_SECONDS } from "@/lib/cache";
 
 const HOME_LIMIT = 12;
 const HOME_NEWS_LIMIT = 8;
@@ -53,4 +54,4 @@ async function getHomeDataRaw(): Promise<HomeData> {
 }
 
 /** 홈 데이터 — 태그 `home`. 크롤러 완료 시 /api/revalidate 가 항상 무효화 */
-export const getHomeData = unstable_cache(getHomeDataRaw, ["home"], { tags: ["home"], revalidate: 3600 });
+export const getHomeData = unstable_cache(getHomeDataRaw, ["home"], { tags: ["home"], revalidate: LIST_REVALIDATE_SECONDS });

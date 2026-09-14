@@ -9,7 +9,9 @@ import { formatDate, formatDiscount, formatKrw, PLATFORM_LABEL } from "@/lib/for
 import { nextCollectTimeText } from "@/lib/freshness";
 import { ROUTES } from "@/lib/routes";
 import { searchGames, type GameSummary } from "@/server/services/games";
+import { MAX_PARAM_LEN } from "@/lib/games-query";
 
+// Next 가 정적으로 읽는 값이라 리터럴이어야 한다 — 근거·수치는 lib/cache 의 LIST_REVALIDATE_SECONDS 와 같게 유지
 export const revalidate = 3600;
 
 type Props = { searchParams: Promise<{ q?: string | string[]; sort?: string | string[] }> };
@@ -25,7 +27,7 @@ function readOne(v: string | string[] | undefined): string {
   return (Array.isArray(v) ? v[0] : v ?? "").trim();
 }
 function readQuery(q: string | string[] | undefined): string {
-  return readOne(q).slice(0, 100);
+  return readOne(q).slice(0, MAX_PARAM_LEN);
 }
 function readSort(v: string | string[] | undefined): SortKey {
   const s = readOne(v);
@@ -95,7 +97,7 @@ export default async function SearchPage({ searchParams }: Props) {
     );
   }
 
-  const results = sortResults(await searchGames(q, { limit: 24 }), sort);
+  const results = sortResults(await searchGames(q), sort);
 
   return (
     <Page gap={20}>

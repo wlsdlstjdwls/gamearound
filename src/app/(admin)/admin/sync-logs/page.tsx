@@ -24,7 +24,7 @@ export default async function SyncLogsPage({ searchParams }: { searchParams: Pro
   const sp = await searchParams;
   const raw = typeof sp.source === "string" ? sp.source : undefined;
   const source = isSourceName(raw) ? raw : undefined;
-  const logs = await listSyncLogs({ limit: 100, source });
+  const logs = await listSyncLogs({ source });
 
   return (
     <section className="flex flex-col gap-4">

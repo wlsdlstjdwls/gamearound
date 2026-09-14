@@ -29,7 +29,8 @@ export function isGameSort(v: string | undefined): v is GameSort {
   return GAME_SORTS.includes(v as GameSort);
 }
 
-const MAX_PARAM_LEN = 100;
+/** 쿼리스트링 값 길이 상한 — 검색어·필터 모두 같은 규칙을 쓴다 */
+export const MAX_PARAM_LEN = 100;
 
 /** 다중 값(?q=a&q=b)은 첫 값만. 빈 문자열은 "없음"으로 접는다 */
 export function firstParam(v: string | string[] | undefined): string | undefined {
