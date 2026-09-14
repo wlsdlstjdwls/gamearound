@@ -73,3 +73,6 @@ pnpm dev
 | 크롤 주기 (설계서 §4.3 이탈) | prices 8h·news 3h·meta 격일. 설계서는 prices 4h·news 1h이나 private 레포 Actions 무료 2,000분/월을 2배 초과(≈3,900분)해 완화. 레포 public 전환 시 무제한이므로 설계서 값으로 복구 |
 | 미매칭(`matched_by="none"`) 재시도 | `game_source_refs.checked_at` 기준 `NONE_RETRY_DAYS`(14일) 경과 행만 재검색 |
 | HLTB 검색 UA (설계서 §10 이탈) | HLTB `/api/search/site/init` 이 봇 UA 에 403 을 주므로 **검색 경로에서만** 브라우저 UA(`HLTB_SEARCH_USER_AGENT`)를 쓴다. 게임 페이지 조회는 `CRAWLER_USER_AGENT` 유지. init 토큰에 UA 가 포함돼 init/search UA 가 같아야 함 |
+| 할인 기간·행사명 | 스토어가 주는 만큼만 저장한다. Steam=`IStoreBrowseService/GetItems` 의 `active_discounts`(종료 시각 + `#discount_desc_*` 토큰 → 한국어 라벨, 모르는 토큰은 표시 안 함), Xbox=`Availability.Conditions` 시작·종료(상시 판매 센티널 9998년은 버림). PS Store·Nintendo 는 미지원 |
+| HLTB 플레이타임 0 | `comp_main/plus/100` 이 전부 0 이면 "제보 없음"으로 보고 전부 null 을 정상 반환한다(에러 아님). 에러로 처리하면 해당 게임이 매 배치마다 재시도돼 sync_logs 가 계속 partial 이 된다 |
+| 가격 그래프 표시 | 가격은 변동 시점만 기록되므로 차트는 마지막 기록 → 지금까지 수평으로 잇고, 진행 중 할인은 음영 + 종료선으로 표시한다. 미래 가격은 그리지 않는다 |

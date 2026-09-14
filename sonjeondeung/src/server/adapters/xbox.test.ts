@@ -3,7 +3,7 @@ import { describe, expect, it } from "vitest";
 import { readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import { AdapterError } from "./types";
-import { parseXboxAutosuggest, parseXboxProduct, xboxStoreUrl } from "./xbox";
+import { parseXboxAutosuggest, parseXboxProduct, xboxPeriodDate, xboxStoreUrl } from "./xbox";
 
 const fixture = (name: string): unknown =>
   JSON.parse(readFileSync(fileURLToPath(new URL(`./__fixtures__/${name}`, import.meta.url)), "utf8"));
@@ -72,5 +72,14 @@ describe("parseXboxAutosuggest", () => {
   });
   it("빈 응답 → 빈 배열", () => {
     expect(parseXboxAutosuggest({ Results: [] })).toEqual([]);
+  });
+});
+
+describe("xboxPeriodDate (할인 기간)", () => {
+  it("정상 날짜는 ISO", () => expect(xboxPeriodDate("2026-09-16T23:59:59.0000000Z")).toBe("2026-09-16T23:59:59.000Z"));
+  it("상시 판매 센티널(9998년)·빈 값은 null", () => {
+    expect(xboxPeriodDate("9998-12-30T00:00:00.0000000Z")).toBeNull();
+    expect(xboxPeriodDate(undefined)).toBeNull();
+    expect(xboxPeriodDate("not-a-date")).toBeNull();
   });
 });

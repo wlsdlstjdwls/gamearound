@@ -98,19 +98,22 @@ function emptyPlaytime(): NonNullable<MetaSnapshot["playtime"]> {
 export function parseHltbGamePage(html: string): MetaSnapshot {
   const $ = load(html);
 
-  // 1순위: __NEXT_DATA__
+  // 1순위: __NEXT_DATA__.
+  // 값이 전부 0 이어도 "제보가 아직 없는 게임"일 뿐이므로 정상 응답(전부 null)으로 돌려준다.
+  // 여기서 에러를 던지면 그런 게임이 매 배치마다 재시도되고 sync_logs 가 partial 로 남는다(2026-09-13 hltb 9건).
   const nextRaw = $(HLTB_SELECTORS.nextData).first().text();
   if (nextRaw) {
     try {
       const parsed = nextDataSchema.safeParse(JSON.parse(nextRaw));
       const g = parsed.success ? parsed.data.props.pageProps.game.data.game[0] : undefined;
       if (g) {
-        const playtime = {
-          main: secondsToHours(g.comp_main),
-          extra: secondsToHours(g.comp_plus),
-          completionist: secondsToHours(g.comp_100),
+        return {
+          playtime: {
+            main: secondsToHours(g.comp_main),
+            extra: secondsToHours(g.comp_plus),
+            completionist: secondsToHours(g.comp_100),
+          },
         };
-        if (playtime.main !== null || playtime.extra !== null || playtime.completionist !== null) return { playtime };
       }
     } catch {
       // JSON 깨짐 → 셀렉터 파싱으로 폴백

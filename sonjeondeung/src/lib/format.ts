@@ -42,3 +42,42 @@ export const PLATFORM_LABEL: Record<string, string> = {
   switch: "Switch",
   switch2: "Switch 2",
 };
+
+const MS_PER_DAY = 24 * 60 * 60 * 1000;
+
+/** "9월 16일 24:00" 처럼 짧은 날짜+시각 (KST) */
+export function formatShortDateTime(d: Date | string | null | undefined): string {
+  if (!d) return "-";
+  const date = typeof d === "string" ? new Date(d) : d;
+  if (Number.isNaN(date.getTime())) return "-";
+  return date.toLocaleString("ko-KR", { month: "long", day: "numeric", hour: "2-digit", minute: "2-digit", timeZone: DISPLAY_TIME_ZONE });
+}
+
+export type SaleRemaining = { text: string; days: number; urgent: boolean };
+
+/**
+ * 할인 종료까지 남은 기간. 이미 끝났거나 값이 없으면 null.
+ * now 를 인자로 받는 순수 함수 — 캐시된 RSC 에서 굳은 "지금"을 쓰지 않도록 호출부(클라이언트)가 현재 시각을 넘긴다.
+ */
+export function saleRemaining(endsAt: string | Date | null | undefined, now: number = Date.now()): SaleRemaining | null {
+  if (!endsAt) return null;
+  const end = typeof endsAt === "string" ? new Date(endsAt) : endsAt;
+  const ms = end.getTime() - now;
+  if (Number.isNaN(end.getTime()) || ms <= 0) return null;
+  const days = Math.ceil(ms / MS_PER_DAY);
+  if (ms < MS_PER_DAY) {
+    const hours = Math.max(1, Math.round(ms / (60 * 60 * 1000)));
+    return { text: `${hours}시간 남음`, days: 0, urgent: true };
+  }
+  return { text: `${days}일 남음`, days, urgent: days <= 3 };
+}
+
+/** "9월 10일 → 9월 16일 24:00" 형태의 할인 기간. 시작/종료 중 있는 것만 쓴다 */
+export function formatSaleWindow(startsAt: string | null | undefined, endsAt: string | null | undefined): string | null {
+  const start = startsAt ? formatDate(startsAt) : null;
+  const end = endsAt ? formatShortDateTime(endsAt) : null;
+  if (start && end) return `${start} → ${end}`;
+  if (end) return `${end} 종료`;
+  if (start) return `${start} 시작`;
+  return null;
+}

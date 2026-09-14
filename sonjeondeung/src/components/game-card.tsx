@@ -3,6 +3,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { formatDate, formatDiscount, formatKrw, PLATFORM_LABEL } from "@/lib/format";
 import type { GameSummary } from "@/server/services/games";
+import { SaleBadge } from "@/components/sale-badge";
 
 // next.config.ts images.remotePatterns 에 등록된 호스트만 최적화. 그 외는 unoptimized 로 원본 사용(런타임 오류 방지)
 const OPTIMIZABLE_HOSTS = ["cdn.akamai.steamstatic.com", "shared.akamai.steamstatic.com", "cdn.cloudflare.steamstatic.com"];
@@ -75,6 +76,7 @@ export function GameCard({ game, variant = "discount" }: { game: GameSummary; va
       <div className="flex flex-1 flex-col gap-1 p-3">
         <p className="line-clamp-2 text-sm font-semibold leading-snug text-slate-100 group-hover:text-amber-300">{title}</p>
         {game.titleKo && <p className="line-clamp-1 text-xs text-slate-500">{game.titleEn}</p>}
+        {hasDiscount && best && <SaleBadge discountName={best.discountName} discountEndsAt={best.discountEndsAt} />}
         <div className="mt-auto flex items-end justify-between gap-2 pt-1 text-xs text-slate-400">
           <span>
             {best ? PLATFORM_LABEL[best.platform] ?? best.platform : "플랫폼 정보 없음"}

@@ -22,6 +22,10 @@ export type PlatformDto = {
   listPrice: number | null;
   currentPrice: number | null;
   discountPct: number | null;
+  /** 할인 기간·행사명 (소스가 주는 만큼만. steam=종료+행사명, xbox=시작·종료) */
+  discountStartsAt: string | null;
+  discountEndsAt: string | null;
+  discountName: string | null;
   metacriticScore: number | null;
   opencriticScore: number | null;
   lastSyncedAt: string | null;
@@ -86,6 +90,8 @@ export type GameSummary = {
     listPrice: number | null;
     currentPrice: number | null;
     discountPct: number | null;
+    discountEndsAt: string | null;
+    discountName: string | null;
     releaseDate: string | null;
   } | null;
   platformCount: number;
@@ -122,6 +128,9 @@ function toPlatformDto(p: PlatformRow): PlatformDto {
     listPrice: p.listPrice,
     currentPrice: p.currentPrice,
     discountPct: p.discountPct,
+    discountStartsAt: iso(p.discountStartsAt),
+    discountEndsAt: iso(p.discountEndsAt),
+    discountName: p.discountName,
     metacriticScore: p.metacriticScore,
     opencriticScore: p.opencriticScore,
     lastSyncedAt: iso(p.lastSyncedAt),
@@ -148,6 +157,8 @@ function groupSummaries(rows: Array<{ game: GameRow; gp: PlatformRow }>, limit: 
         listPrice: gp.listPrice,
         currentPrice: gp.currentPrice,
         discountPct: gp.discountPct,
+        discountEndsAt: iso(gp.discountEndsAt),
+        discountName: gp.discountName,
         releaseDate: gp.releaseDate,
       },
       platformCount: 1,
@@ -248,6 +259,8 @@ async function attachBestPrice(rows: GameRow[]): Promise<GameSummary[]> {
             listPrice: best.listPrice,
             currentPrice: best.currentPrice,
             discountPct: best.discountPct,
+            discountEndsAt: iso(best.discountEndsAt),
+            discountName: best.discountName,
             releaseDate: best.releaseDate,
           }
         : null,

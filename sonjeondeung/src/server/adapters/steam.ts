@@ -18,6 +18,8 @@ const TOPSELLERS_PAGE_SIZE = 100;
 const TOPSELLERS_MAX_PAGES = 5;
 const TOPSELLERS_PAGE_INTERVAL_MS = 1500;
 export const STEAM_STORE_APP_URL = "https://store.steampowered.com/app";
+/** 할인 종료 시각·행사명은 appdetails 에 없다. 공개 스토어 API(GetItems)의 active_discounts 에만 있다 */
+export const STEAM_STOREITEMS_URL = "https://api.steampowered.com/IStoreBrowseService/GetItems/v1/";
 const FETCH_TIMEOUT_MS = 15_000;
 
 // ---- 응답 스키마 (unknown → zod) ----
@@ -59,6 +61,29 @@ const featuredItemSchema = z.object({ id: z.number(), name: z.string().optional(
 const featuredCategoriesSchema = z.object({
   top_sellers: z.object({ items: z.array(featuredItemSchema).default([]) }).optional(),
   specials: z.object({ items: z.array(featuredItemSchema).default([]) }).optional(),
+});
+
+/** GetItems 응답 — 할인 기간·행사명만 쓴다 */
+const storeItemsSchema = z.object({
+  response: z
+    .object({
+      store_items: z
+        .array(
+          z.object({
+            appid: z.number().optional(),
+            best_purchase_option: z
+              .object({
+                discount_pct: z.number().optional(),
+                active_discounts: z
+                  .array(z.object({ discount_end_date: z.number().optional(), discount_description: z.string().optional() }))
+                  .default([]),
+              })
+              .optional(),
+          }),
+        )
+        .default([]),
+    })
+    .default({ store_items: [] }),
 });
 
 /** search/results?json=1 — items 에 appid 가 없고 logo URL(.../apps/<appid>/...) 에만 들어 있다 */
@@ -174,6 +199,61 @@ export function parseAppDetails(rawKo: unknown, appid: string, rawEn?: unknown):
   };
 }
 
+/**
+ * discount_description 토큰 → 한국어 행사명.
+ * Steam 은 language=koreana 로 물어도 "#discount_desc_preset_weekend" 같은 토큰을 준다(2026-09-14 확인).
+ * 모르는 토큰은 계절 키워드로 한 번 더 시도하고, 그래도 모르면 null(가짜 이름을 만들지 않는다).
+ */
+export const STEAM_DISCOUNT_LABELS: Record<string, string> = {
+  daily: "데일리 딜",
+  midweek: "미드위크 할인",
+  weekend: "주말 특가",
+  weeklong: "주간 할인",
+  special: "특별 할인",
+  publisher: "퍼블리셔 세일",
+  franchise: "프랜차이즈 세일",
+  launch: "출시 기념 할인",
+  prerelease: "예약 구매 할인",
+  freeweekend: "무료 주말",
+  bundle: "번들 할인",
+};
+const STEAM_SEASON_LABELS: Array<[RegExp, string]> = [
+  [/spring/, "봄 세일"],
+  [/summer/, "여름 세일"],
+  [/autumn|fall/, "가을 세일"],
+  [/winter/, "겨울 세일"],
+  [/lunar/, "설 세일"],
+  [/halloween|scream/, "할로윈 세일"],
+  [/golden|award/, "스팀 어워드 페스티벌"],
+  [/next[_-]?fest/, "넥스트 페스트"],
+];
+
+export function steamDiscountLabel(description: string | undefined): string | null {
+  if (!description) return null;
+  const key = description.replace(/^#?discount_desc_(preset_)?/, "").trim().toLowerCase();
+  if (!key) return null;
+  if (STEAM_DISCOUNT_LABELS[key]) return STEAM_DISCOUNT_LABELS[key];
+  for (const [re, label] of STEAM_SEASON_LABELS) if (re.test(key)) return label;
+  return null;
+}
+
+export type SteamDiscountInfo = { discountEndsAt: string | null; discountName: string | null };
+
+/** GetItems 응답 → 할인 종료 시각(ISO)·행사명. 할인 중이 아니면 둘 다 null */
+export function parseStoreItemDiscount(raw: unknown, appid: string): SteamDiscountInfo {
+  const parsed = storeItemsSchema.safeParse(raw);
+  if (!parsed.success) return { discountEndsAt: null, discountName: null };
+  const items = parsed.data.response.store_items;
+  const item = items.find((i) => String(i.appid) === appid) ?? items[0];
+  const discount = item?.best_purchase_option?.active_discounts?.[0];
+  if (!discount) return { discountEndsAt: null, discountName: null };
+  const end = discount.discount_end_date;
+  return {
+    discountEndsAt: end && end > 0 ? new Date(end * 1000).toISOString() : null,
+    discountName: steamDiscountLabel(discount.discount_description),
+  };
+}
+
 /** storesearch 응답 → 검색 후보 (앱만, 번들/DLC 제외 불가 — type 필드가 "app"인 것만) */
 export function parseStoreSearch(raw: unknown): SearchCandidate[] {
   const parsed = storeSearchSchema.safeParse(raw);
@@ -237,6 +317,18 @@ async function fetchJson(url: string): Promise<unknown> {
   }
 }
 
+/** GetItems 는 input_json 쿼리 하나로 받는다. 한 번에 여러 id 도 가능하지만 어댑터 구조상 1건씩 */
+function storeItemsUrl(appid: string): string {
+  const input = {
+    ids: [{ appid: Number(appid) }],
+    context: { language: "koreana", country_code: "KR", steam_realm: 1 },
+    data_request: { include_basic_info: true },
+  };
+  const u = new URL(STEAM_STOREITEMS_URL);
+  u.searchParams.set("input_json", JSON.stringify(input));
+  return u.toString();
+}
+
 function appDetailsUrl(appid: string, lang: "koreana" | "english"): string {
   const u = new URL(STEAM_APPDETAILS_URL);
   u.searchParams.set("appids", appid);
@@ -294,11 +386,23 @@ export const steamAdapter: StoreAdapter = {
     return parseStoreSearch(await fetchJson(u.toString()));
   },
 
-  /** koreana + english 2회 호출(영문 제목/출시일 확보). 사이 간격은 minIntervalMs 의 절반만 둔다 */
+  /**
+   * koreana + english 2회 호출(영문 제목/출시일 확보). 사이 간격은 minIntervalMs 의 절반만 둔다.
+   * 할인 중일 때만 GetItems 를 1회 더 호출해 종료 시각·행사명을 붙인다(할인 아닌 게임엔 요청을 늘리지 않음).
+   * GetItems 실패는 가격 수집을 막지 않는다 — 부가 정보라 경고만 남기고 넘어간다.
+   */
   async fetch(appid: string): Promise<StoreSnapshot> {
     const rawKo = await fetchJson(appDetailsUrl(appid, "koreana"));
     await new Promise((r) => setTimeout(r, Math.floor(steamAdapter.minIntervalMs / 2)));
     const rawEn = await fetchJson(appDetailsUrl(appid, "english"));
-    return parseAppDetails(rawKo, appid, rawEn);
+    const snapshot = parseAppDetails(rawKo, appid, rawEn);
+    if (!snapshot.discountPct || snapshot.discountPct <= 0) return snapshot;
+    try {
+      const info = parseStoreItemDiscount(await fetchJson(storeItemsUrl(appid)), appid);
+      return { ...snapshot, discountEndsAt: info.discountEndsAt, discountName: info.discountName };
+    } catch (e) {
+      console.warn(`[steam] 할인 기간 조회 실패 (appid=${appid}): ${e instanceof Error ? e.message : String(e)}`);
+      return snapshot;
+    }
   },
 };

@@ -10,6 +10,12 @@ export interface StoreSnapshot {
   listPrice: number | null;      // KRW
   currentPrice: number | null;
   discountPct: number | null;
+  /** 할인 시작 시각 (ISO datetime). 주는 소스만 채움 — xbox */
+  discountStartsAt?: string | null;
+  /** 할인 종료 예정 시각 (ISO datetime). steam·xbox */
+  discountEndsAt?: string | null;
+  /** 행사명 ("여름 세일", "주말 특가" 등). steam 만 토큰 → 한국어 라벨 */
+  discountName?: string | null;
   currentVersion?: string | null;
   releaseDate?: string | null;   // ISO date (YYYY-MM-DD)
   // Steam 기준 소스에서만 채워지는 게임 마스터 정보(신규 게임 생성용)

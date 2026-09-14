@@ -6,6 +6,7 @@ import { formatDate, formatDateTime, formatDiscount, formatKrw, PLATFORM_LABEL }
 import type { Freshness } from "@/lib/freshness";
 import type { PlatformDto } from "@/server/services/games";
 import { FreshnessBadge } from "@/components/freshness-badge";
+import { SaleBadge } from "@/components/sale-badge";
 
 export type PlatformTabItem = PlatformDto & { freshness: Freshness };
 
@@ -83,6 +84,7 @@ export function PlatformTabs({ platforms }: { platforms: PlatformTabItem[] }) {
                 {formatDiscount(current.discountPct)}
               </span>
             )}
+            {hasDiscount && <SaleBadge discountName={current.discountName} discountEndsAt={current.discountEndsAt} />}
           </div>
           <FreshnessBadge freshness={current.freshness} />
         </div>
@@ -97,6 +99,20 @@ export function PlatformTabs({ platforms }: { platforms: PlatformTabItem[] }) {
           <Row label="정가">{formatKrw(current.listPrice)}</Row>
           <Row label="현재가">{formatKrw(current.currentPrice)}</Row>
           <Row label="할인율">{hasDiscount ? formatDiscount(current.discountPct) : "-"}</Row>
+          {hasDiscount && (
+            <Row label="할인 기간">
+              {current.discountEndsAt || current.discountStartsAt || current.discountName ? (
+                <SaleBadge
+                  variant="full"
+                  discountName={current.discountName}
+                  discountStartsAt={current.discountStartsAt}
+                  discountEndsAt={current.discountEndsAt}
+                />
+              ) : (
+                <span className="text-slate-500">스토어가 기간을 공개하지 않음</span>
+              )}
+            </Row>
+          )}
           <Row label="출시일">{formatDate(current.releaseDate)}</Row>
           <Row label="버전">{current.currentVersion ?? "-"}</Row>
           <Row label="메타크리틱">{current.metacriticScore ?? "-"}</Row>

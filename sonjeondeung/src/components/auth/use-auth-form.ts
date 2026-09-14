@@ -32,15 +32,14 @@ export function useAuthForm<S extends z.ZodType>({ schema, toInput, serverState 
     if (serverState && !serverState.ok) setErrorSerial((n) => n + 1);
   }
 
-  // 성공: 세션 갱신 → soft navigation. 서버 컴포넌트도 새 쿠키로 다시 그리도록 refresh (외부 시스템 동기화만, setState 없음)
+  // 성공: 세션 갱신 → soft navigation(replace: 뒤로가기로 로그인 폼에 돌아오지 않게).
+  // router.refresh()는 부르지 않는다 — push 직후 부르면 아직 커밋 전인 /sign-in 트리를 새 쿠키로 다시 그리고,
+  // (auth)/layout 의 redirect 가 목적지를 덮어써 홈으로 튄다. 목적지는 어차피 새 쿠키로 RSC 요청된다.
   const navigating = Boolean(serverState?.ok);
   useEffect(() => {
     if (!serverState?.ok) return;
     const target = serverState.redirectTo;
-    session.refresh().finally(() => {
-      router.push(target);
-      router.refresh();
-    });
+    session.refresh().finally(() => router.replace(target));
   }, [serverState, router, session]);
 
   const validateAll = useCallback((): Record<string, string> => {

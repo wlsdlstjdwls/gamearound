@@ -1,0 +1,34 @@
+{
+  "response": {
+    "store_items": [
+      {
+        "appid": 275850,
+        "name": "No Man's Sky",
+        "best_purchase_option": {
+          "discount_pct": 60,
+          "active_discounts": [
+            {
+              "discount_amount": "3780000",
+              "discount_description": "#discount_desc_preset_weekend",
+              "discount_end_date": 1790010000
+            }
+          ]
+        }
+      },
+      {
+        "appid": 1144200,
+        "name": "Ready or Not",
+        "best_purchase_option": {
+          "discount_pct": 50,
+          "active_discounts": [
+            {
+              "discount_amount": "2650000",
+              "discount_description": "#discount_desc_preset_special",
+              "discount_end_date": 1789750800
+            }
+          ]
+        }
+      }
+    ]
+  }
+}

@@ -6,7 +6,7 @@ import { CoverImage } from "@/components/game-card";
 import { MultiplayerBadges } from "@/components/multiplayer-badges";
 import { NewsList } from "@/components/news-list";
 import { PlatformTabs, type PlatformTabItem } from "@/components/platform-tabs";
-import { PlaytimeCard } from "@/components/playtime-card";
+import { PlaytimeStrip } from "@/components/playtime-card";
 import { WishlistButton } from "@/components/wishlist-button";
 import { formatDateTime } from "@/lib/format";
 import { getFreshness } from "@/lib/freshness";
@@ -96,6 +96,9 @@ export default async function GameDetailPage({ params }: Props) {
               supportsPvp={game.supportsPvp}
             />
 
+            {/* 플레이타임은 구매 결정의 1순위 정보(기획서 3-1) — 상단 헤더 카드 안에 둔다 */}
+            <PlaytimeStrip playtime={game.playtime} />
+
             {game.description && <p className="line-clamp-4 text-sm leading-relaxed text-slate-400">{game.description}</p>}
           </div>
         </div>
@@ -128,8 +131,6 @@ export default async function GameDetailPage({ params }: Props) {
         </div>
 
         <aside className="space-y-6">
-          <PlaytimeCard playtime={game.playtime} />
-
           {game.sourceRefs.length > 0 && (
             <section aria-labelledby="sources-heading" className="rounded-xl border border-slate-800 bg-slate-900/60 p-4">
               <h2 id="sources-heading" className="mb-2 text-sm font-semibold text-slate-300">

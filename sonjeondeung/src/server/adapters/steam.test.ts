@@ -8,8 +8,10 @@ import {
   parseAppDetails,
   parseFeaturedAppIds,
   parseSteamDate,
+  parseStoreItemDiscount,
   parseStoreSearch,
   parseTopSellerAppIds,
+  steamDiscountLabel,
 } from "./steam";
 
 const fixture = (name: string): unknown =>
@@ -108,5 +110,35 @@ describe("parseTopSellerAppIds", () => {
 
   it("형식이 다르면 AdapterError", () => {
     expect(() => parseTopSellerAppIds({ items: "nope" })).toThrow(AdapterError);
+  });
+});
+
+describe("parseStoreItemDiscount (할인 기간·행사명)", () => {
+  it("GetItems 실응답에서 종료 시각과 행사명을 뽑는다 (2026-09-14 픽스처)", () => {
+    const info = parseStoreItemDiscount(fixture("steam-getitems.json"), "275850");
+    expect(info.discountEndsAt).toBe(new Date(1790010000 * 1000).toISOString());
+    expect(info.discountName).toBe("주말 특가");
+  });
+
+  it("할인이 없거나 형식이 다르면 둘 다 null", () => {
+    expect(parseStoreItemDiscount({ response: { store_items: [{ appid: 1, best_purchase_option: {} }] } }, "1")).toEqual({
+      discountEndsAt: null,
+      discountName: null,
+    });
+    expect(parseStoreItemDiscount({ foo: 1 }, "1")).toEqual({ discountEndsAt: null, discountName: null });
+  });
+});
+
+describe("steamDiscountLabel", () => {
+  it("프리셋 토큰 → 한국어", () => {
+    expect(steamDiscountLabel("#discount_desc_preset_daily")).toBe("데일리 딜");
+    expect(steamDiscountLabel("#discount_desc_preset_special")).toBe("특별 할인");
+  });
+  it("계절 세일은 키워드로 잡는다", () => {
+    expect(steamDiscountLabel("#discount_desc_summer_sale_2026")).toBe("여름 세일");
+  });
+  it("모르는 토큰·빈 값은 null (가짜 행사명을 만들지 않는다)", () => {
+    expect(steamDiscountLabel("#discount_desc_preset_zzz")).toBeNull();
+    expect(steamDiscountLabel(undefined)).toBeNull();
   });
 });

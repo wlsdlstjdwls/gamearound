@@ -4,8 +4,19 @@ import { and, eq, gte, inArray, lt, sql } from "drizzle-orm";
 import { getDb } from "@/server/db/client";
 import { gamePlatforms, games, news, priceSnapshots, syncLogs, type Platform } from "@/server/db/schema";
 
-export type PricePoint = { t: string; price: number; discountPct: number };
-export type PriceSeries = { platform: Platform; points: PricePoint[] };
+export type PricePoint = { t: string; price: number; discountPct: number; discountName: string | null };
+/** 플랫폼별 시계열 + 현재 상태(정가 기준선·진행 중 할인 표시에 쓴다) */
+export type PriceSeries = {
+  platform: Platform;
+  points: PricePoint[];
+  listPrice: number | null;
+  currentPrice: number | null;
+  discountPct: number | null;
+  discountStartsAt: string | null;
+  discountEndsAt: string | null;
+  discountName: string | null;
+  storeUrl: string | null;
+};
 
 const PLATFORM_ORDER: Platform[] = ["steam", "ps5", "ps4", "xbox", "switch", "switch2"];
 
@@ -15,7 +26,17 @@ async function getPriceHistoryRaw(slug: string, days: number): Promise<PriceSeri
   if (!game) return [];
 
   const gps = await db
-    .select({ id: gamePlatforms.id, platform: gamePlatforms.platform })
+    .select({
+      id: gamePlatforms.id,
+      platform: gamePlatforms.platform,
+      listPrice: gamePlatforms.listPrice,
+      currentPrice: gamePlatforms.currentPrice,
+      discountPct: gamePlatforms.discountPct,
+      discountStartsAt: gamePlatforms.discountStartsAt,
+      discountEndsAt: gamePlatforms.discountEndsAt,
+      discountName: gamePlatforms.discountName,
+      storeUrl: gamePlatforms.storeUrl,
+    })
     .from(gamePlatforms)
     .where(eq(gamePlatforms.gameId, game.id));
   if (gps.length === 0) return [];
@@ -26,6 +47,7 @@ async function getPriceHistoryRaw(slug: string, days: number): Promise<PriceSeri
       gamePlatformId: priceSnapshots.gamePlatformId,
       price: priceSnapshots.price,
       discountPct: priceSnapshots.discountPct,
+      discountName: priceSnapshots.discountName,
       capturedAt: priceSnapshots.capturedAt,
     })
     .from(priceSnapshots)
@@ -43,12 +65,22 @@ async function getPriceHistoryRaw(slug: string, days: number): Promise<PriceSeri
   const byGp = new Map<string, PricePoint[]>();
   for (const r of rows) {
     const list = byGp.get(r.gamePlatformId) ?? [];
-    list.push({ t: r.capturedAt.toISOString(), price: r.price, discountPct: r.discountPct ?? 0 });
+    list.push({ t: r.capturedAt.toISOString(), price: r.price, discountPct: r.discountPct ?? 0, discountName: r.discountName });
     byGp.set(r.gamePlatformId, list);
   }
 
   return gps
-    .map((g) => ({ platform: g.platform, points: byGp.get(g.id) ?? [] }))
+    .map((g) => ({
+      platform: g.platform,
+      points: byGp.get(g.id) ?? [],
+      listPrice: g.listPrice,
+      currentPrice: g.currentPrice,
+      discountPct: g.discountPct,
+      discountStartsAt: g.discountStartsAt ? g.discountStartsAt.toISOString() : null,
+      discountEndsAt: g.discountEndsAt ? g.discountEndsAt.toISOString() : null,
+      discountName: g.discountName,
+      storeUrl: g.storeUrl,
+    }))
     .filter((s) => s.points.length > 0)
     .sort((a, b) => PLATFORM_ORDER.indexOf(a.platform) - PLATFORM_ORDER.indexOf(b.platform));
 }

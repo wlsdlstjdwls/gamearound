@@ -56,6 +56,11 @@ export const gamePlatforms = pgTable("game_platforms", {
   listPrice: integer("list_price"),          // KRW 정수
   currentPrice: integer("current_price"),
   discountPct: integer("discount_pct"),
+  // 할인 기간·행사명 (기획서 3-2 "할인 가격 그래프", dekudeals 참고). 소스가 주는 만큼만 채운다:
+  // steam=IStoreBrowseService active_discounts(종료시각+행사 토큰), xbox=Availability.Conditions(시작·종료), 그 외 null
+  discountStartsAt: timestamp("discount_starts_at", { withTimezone: true }),
+  discountEndsAt: timestamp("discount_ends_at", { withTimezone: true }),
+  discountName: text("discount_name"),
   metacriticScore: integer("metacritic_score"),
   opencriticScore: integer("opencritic_score"),
   lastSyncedAt: timestamp("last_synced_at", { withTimezone: true }),  // UI "갱신 시각" 표시 원천
@@ -67,6 +72,9 @@ export const priceSnapshots = pgTable("price_snapshots", {
   gamePlatformId: uuid("game_platform_id").references(() => gamePlatforms.id, { onDelete: "cascade" }).notNull(),
   price: integer("price").notNull(),
   discountPct: integer("discount_pct").default(0),
+  // 그래프에서 할인 구간을 그리기 위해 스냅샷에도 남긴다(당시 행사 종료 예정 시각·행사명)
+  discountEndsAt: timestamp("discount_ends_at", { withTimezone: true }),
+  discountName: text("discount_name"),
   capturedAt: timestamp("captured_at", { withTimezone: true }).defaultNow().notNull(),
 }, (t) => [index("ps_gp_captured_idx").on(t.gamePlatformId, t.capturedAt)]);
 

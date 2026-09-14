@@ -27,6 +27,8 @@ const priceSchema = z.object({
 const availabilitySchema = z.object({
   Actions: z.array(z.string()).optional(),
   OrderManagementData: z.object({ Price: priceSchema.optional() }).optional(),
+  // 할인 기간 — 할인 중이 아니면 상시 판매 구간이라 "종료 없음" 센티널(9998년)이 온다
+  Conditions: z.object({ StartDate: z.string().optional(), EndDate: z.string().optional() }).optional(),
 });
 
 const productSchema = z.object({
@@ -60,8 +62,21 @@ function toIsoDate(v: string | undefined): string | null {
   return Number.isNaN(d.getTime()) ? null : d.toISOString().slice(0, 10);
 }
 
+/** 상시 판매 구간의 "종료 없음" 센티널(9998-12-30 등)은 할인 기간이 아니다 */
+const XBOX_NO_END_YEAR = 9000;
+
+/** ISO datetime 문자열 → ISO. 센티널·잘못된 값은 null */
+export function xboxPeriodDate(v: string | undefined): string | null {
+  if (!v) return null;
+  const d = new Date(v);
+  if (Number.isNaN(d.getTime()) || d.getUTCFullYear() >= XBOX_NO_END_YEAR) return null;
+  return d.toISOString();
+}
+
 /** 구매 가능한 KRW 가용성(Availability) 하나 선택. 없으면 null(미판매/게임패스 전용 등) */
-function pickKrwPurchase(product: z.infer<typeof productSchema>): { list: number; current: number } | null {
+function pickKrwPurchase(
+  product: z.infer<typeof productSchema>,
+): { list: number; current: number; startsAt: string | null; endsAt: string | null } | null {
   for (const sku of product.DisplaySkuAvailabilities) {
     for (const a of sku.Availabilities) {
       const p = a.OrderManagementData?.Price;
@@ -70,7 +85,12 @@ function pickKrwPurchase(product: z.infer<typeof productSchema>): { list: number
       const current = p.ListPrice ?? p.MSRP;
       const list = p.MSRP ?? p.ListPrice;
       if (current === undefined || list === undefined) continue;
-      return { list, current };
+      return {
+        list,
+        current,
+        startsAt: xboxPeriodDate(a.Conditions?.StartDate),
+        endsAt: xboxPeriodDate(a.Conditions?.EndDate),
+      };
     }
   }
   return null;
@@ -98,6 +118,9 @@ export function parseXboxProduct(raw: unknown, productId: string): StoreSnapshot
     listPrice: price ? price.list : null,
     currentPrice: price ? price.current : null,
     discountPct: price ? discountPct : null,
+    // 기간은 할인 중일 때만 의미가 있다(상시 판매 구간의 시작일을 "할인 시작"으로 오해하지 않게)
+    discountStartsAt: discountPct > 0 ? price?.startsAt ?? null : null,
+    discountEndsAt: discountPct > 0 ? price?.endsAt ?? null : null,
     releaseDate: toIsoDate(product.MarketProperties[0]?.OriginalReleaseDate),
   };
 }

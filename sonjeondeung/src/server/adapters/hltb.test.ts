@@ -18,6 +18,11 @@ describe("parseHltbGamePage", () => {
     expect(snap.playtime).toEqual({ main: 12, extra: null, completionist: 0.8 });
   });
 
+  it("제보가 없어 값이 전부 0 이면 에러가 아니라 전부 null (2026-09-13 hltb partial 원인)", () => {
+    const snap = parseHltbGamePage(fixture("hltb-game-no-data.html"));
+    expect(snap.playtime).toEqual({ main: null, extra: null, completionist: null });
+  });
+
   it("아무것도 못 찾으면 재시도 불가 AdapterError (마크업 변경 감지)", () => {
     expect(() => parseHltbGamePage("<html><body><p>nothing</p></body></html>")).toThrowError(AdapterError);
   });
