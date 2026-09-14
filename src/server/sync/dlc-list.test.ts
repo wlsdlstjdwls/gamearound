@@ -7,13 +7,13 @@ const NOW = new Date("2026-09-14T00:00:00Z");
 const daysAgo = (n: number) => new Date(NOW.getTime() - n * 24 * 60 * 60 * 1000);
 
 function row(over: Partial<DlcListRow> = {}): DlcListRow {
-  return { id: "p1", gameId: "g1", storeExternalId: "1245620", dlcListedAt: null, hasAddOns: null, ...over };
+  return { id: "p1", gameId: "g1", storeExternalId: "1245620", titleCode: null, dlcListedAt: null, hasAddOns: null, ...over };
 }
 
 describe("pickDlcListTargets", () => {
   it("한 번도 물어보지 않은 본편을 고른다", () => {
     const picks = pickDlcListTargets([{ gameId: "g1", slug: "elden-ring" }], [row()], NOW);
-    expect(picks).toEqual([{ platformId: "p1", gameId: "g1", slug: "elden-ring", externalId: "1245620" }]);
+    expect(picks).toEqual([{ platformId: "p1", gameId: "g1", slug: "elden-ring", key: "1245620" }]);
   });
 
   it("최근에 물어본 본편은 건너뛴다 — 같은 질문을 매 실행 반복하지 않는다", () => {
@@ -33,7 +33,7 @@ describe("pickDlcListTargets", () => {
     ];
     const parents = [{ gameId: "g-old", slug: "old" }, { gameId: "g-new", slug: "new" }];
     expect(pickDlcListTargets(parents, rows, NOW, 1)).toEqual([
-      { platformId: "p-new", gameId: "g-new", slug: "new", externalId: "1245620" },
+      { platformId: "p-new", gameId: "g-new", slug: "new", key: "1245620" },
     ]);
   });
 
@@ -45,6 +45,18 @@ describe("pickDlcListTargets", () => {
 
   it("외부 ID 가 없는 행은 물어볼 데가 없다", () => {
     expect(pickDlcListTargets([{ gameId: "g1", slug: "elden-ring" }], [row({ storeExternalId: null })], NOW)).toEqual([]);
+  });
+
+  it("작품 코드로 묻는 소스는 그 값을 키로 넘긴다 (nintendo_jp 는 nsuid 로 되물을 수 없다)", () => {
+    const rows = [row({ storeExternalId: "70010000012345", titleCode: "AV5JA" })];
+    expect(pickDlcListTargets([{ gameId: "g1", slug: "splatoon-3" }], rows, NOW, 60, "titleCode")).toEqual([
+      { platformId: "p1", gameId: "g1", slug: "splatoon-3", key: "AV5JA" },
+    ]);
+  });
+
+  it("작품 코드가 없으면 건너뛴다 — 외부 ID 가 있어도 물어볼 질의가 없다", () => {
+    const rows = [row({ storeExternalId: "70010000012345", titleCode: null })];
+    expect(pickDlcListTargets([{ gameId: "g1", slug: "splatoon-3" }], rows, NOW, 60, "titleCode")).toEqual([]);
   });
 
   it("한 게임에 플랫폼 행이 여럿이면 한 번만 묻는다 (psstore 의 ps5, ps4)", () => {

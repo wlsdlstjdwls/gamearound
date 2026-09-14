@@ -21,18 +21,27 @@ export const EC_PRICE_BATCH = 50;
 export const JP_SEARCH_URL = "https://search.nintendo.jp/nintendo_soft/search.json";
 /** 검색 1페이지에 받을 건수. 50 이면 전체 한 바퀴가 약 300페이지다 */
 export const JP_SEARCH_PAGE_SIZE = 50;
+/** 스위치 기기만. hard_s 의 1_HAC = Switch, 05_BEE = Switch 2 (2_CTR 3DS, 4_WUP Wii U 는 뺀다) */
+const JP_SWITCH_FQ = '(hard_s:"1_HAC" OR hard_s:"05_BEE")';
+/** 파는 것과 예약만. not_found, sales_termination 은 살 수 없어 가격 API 가 값을 주지 않는다 */
+const JP_SELLABLE_FQ = '(ssitu_s:"onsale" OR ssitu_s:"preorder")';
 /**
- * 발견 대상을 스위치 본편으로 좁히는 질의.
- *   hard_s  1_HAC = Switch, 05_BEE = Switch 2 (2_CTR 3DS, 4_WUP Wii U 는 뺀다)
- *   sctg_s  dl_soft = 본편. aoc(추가 콘텐츠)는 여기서 안 받는다 — DLC 는 본편에 붙어야 하는데
- *           일본 목록만으로는 어느 본편의 것인지 알 수 없어서, 독립 게임으로 만들면 카탈로그가 오염된다
- *   ssitu_s 파는 것과 예약만. not_found, sales_termination 은 살 수 없으니 등록하지 않는다
+ * 발견 대상을 스위치 본편으로 좁히는 질의(sctg_s 의 dl_soft = 본편).
+ * 추가 콘텐츠(aoc)는 여기서 안 받는다 — 목록만 훑어서는 어느 본편의 것인지 알 수 없어
+ * 독립 게임으로 만들면 카탈로그가 오염된다. DLC 는 본편의 작품 코드로 되물어서 받는다(jpDlcFq).
  * 2026-09-14 실측 건수: 이 조건으로 14,882건.
  */
-export const JP_DISCOVER_FQ =
-  '(hard_s:"1_HAC" OR hard_s:"05_BEE") AND sctg_s:"dl_soft" AND (ssitu_s:"onsale" OR ssitu_s:"preorder")';
+export const JP_DISCOVER_FQ = `${JP_SWITCH_FQ} AND sctg_s:"dl_soft" AND ${JP_SELLABLE_FQ}`;
 /** 같은 작품 코드로 되묻는 질의 — 일본 상품 1건을 다시 볼 때 쓴다(nsuid 로 되묻는 길이 없다) */
 export const jpIcodeFq = (code: string): string => `icode_s:"${code}"`;
+/**
+ * 본편이 가진 추가 콘텐츠를 작품 코드로 되묻는 질의.
+ * 본편과 DLC 가 icode 를 공유하므로 제목을 맞춰 볼 필요가 없다 — 제목이 다른 문자 체계여도
+ * 연결이 구조적이라 유사도 오매칭 위험이 이 경로에는 없다.
+ * 판매 상태를 본편과 같은 기준으로 거른다. 2026-09-15 실측: 스위치 DLC 11,018건 중 살 수 있는 것 10,075건.
+ */
+export const jpDlcFq = (code: string): string =>
+  `${JP_SWITCH_FQ} AND ${jpIcodeFq(code)} AND sctg_s:"aoc" AND ${JP_SELLABLE_FQ}`;
 /** 일본 상품 이미지. 검색 응답의 iurl 은 해시라 이 주소에 끼워야 그림이 된다 */
 export const jpImageUrl = (hash: string): string => `https://img-eshop.cdn.nintendo.net/i/${hash}.jpg`;
 /** 일본 상품 페이지. 검색 응답의 url 이 비어 있는 건이 많아 nsuid 로 만든다 */

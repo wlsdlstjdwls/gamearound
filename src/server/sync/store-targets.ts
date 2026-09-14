@@ -34,6 +34,25 @@ export interface StoreTarget {
 
 type StoreSnapshotMeta = NonNullable<import("@/server/adapters/types").StoreSnapshot["meta"]>;
 
+/**
+ * 발견 후보가 들고 온 값을 대상에 그대로 옮긴다 — 가격 API 가 모르는 것들이다.
+ * DLC 등록(sync/dlc-writer)도 이 변환을 쓴다. 그쪽도 "가격만 있는 스냅샷에 목록이 준 마스터를 얹는"
+ * 같은 자리라, 따로 만들면 한쪽만 고쳐지는 값이 생긴다.
+ */
+export function candidateAsTarget(c: SearchCandidate, game: { id: string; slug: string } | null): StoreTarget {
+  return {
+    gameId: game?.id ?? null,
+    slug: game?.slug ?? null,
+    externalId: c.externalId,
+    coverUrl: c.coverUrl,
+    portraitUrl: c.portraitUrl,
+    platform: c.platform,
+    titleCode: c.titleCode,
+    releaseDate: c.releaseDate,
+    meta: c.meta,
+  };
+}
+
 /** 대상 선정 몫. 인자가 넷이라 이름을 붙여 호출부에서 순서를 외우지 않게 한다 */
 export interface StoreTargetOptions {
   /** 이번 실행의 총 처리 건수 상한 */
@@ -218,22 +237,10 @@ async function seedTargets(ctx: Ctx, source: StoreSource, seedWant: number, page
   );
   if (fresh.length === 0) return [];
 
-  /** 발견 후보가 들고 온 값을 대상에 그대로 옮긴다 — 가격 API 가 모르는 것들이다 */
-  const asTarget = (c: (typeof fresh)[number], game: { id: string; slug: string } | null): StoreTarget => ({
-    gameId: game?.id ?? null,
-    slug: game?.slug ?? null,
-    externalId: c.externalId,
-    coverUrl: c.coverUrl,
-    portraitUrl: c.portraitUrl,
-    platform: c.platform,
-    titleCode: c.titleCode,
-    releaseDate: c.releaseDate,
-    meta: c.meta,
-  });
 
   // Steam 은 기준 소스라 흡수할 상대가 없다 — 발견한 것이 곧 새 게임이다
   if (source === "steam") {
-    return fresh.map((c) => asTarget(c, null));
+    return fresh.map((c) => candidateAsTarget(c, null));
   }
 
   const titles = await loadGameTitles(db);
@@ -263,7 +270,7 @@ async function seedTargets(ctx: Ctx, source: StoreSource, seedWant: number, page
       }
       await linkRef(db, source, byCode.id, c, 1, ctx.now);
       refOwned.add(byCode.id);
-      out.push(asTarget(c, byCode));
+      out.push(candidateAsTarget(c, byCode));
       absorbed++;
       continue;
     }
@@ -275,7 +282,7 @@ async function seedTargets(ctx: Ctx, source: StoreSource, seedWant: number, page
         continue;
       }
       if (key) newTitles.add(key);
-      out.push(asTarget(c, null));
+      out.push(candidateAsTarget(c, null));
       continue;
     }
     if (refOwned.has(hit.game.id)) {
@@ -284,7 +291,7 @@ async function seedTargets(ctx: Ctx, source: StoreSource, seedWant: number, page
     }
     await linkRef(db, source, hit.game.id, c, hit.similarity, ctx.now);
     refOwned.add(hit.game.id);
-    out.push(asTarget(c, hit.game));
+    out.push(candidateAsTarget(c, hit.game));
     absorbed++;
   }
   console.log(

@@ -261,6 +261,10 @@ export const DLC_LIST_PER_RUN_BY_SOURCE: Partial<Record<Source, number>> = {
   // (2026-09-15: 엘든 링 2, 사이버펑크 3, FF16 3, 철권 8 24, 몬헌 와일즈 48건이 상한에 걸려 30).
   // 첫 몇 바퀴만 비싸고 그 뒤로는 이미 아는 DLC 가 걸러져 거의 빈손이다.
   psstore: 10,
+  // nintendo_jp 는 목록이 검색 JSON 1회라 가장 싸다(건당 수십 KB). 그런데도 20 에 묶는 이유는
+  // 응답 크기가 아니라 크론 예산이다 — discover 모드가 이미 100페이지를 읽어 몫이 거의 없다.
+  // JP 본편이 100건 남짓이라(작품 코드가 있는 행 기준) 20이면 몇 바퀴 만에 전부 한 번씩 지나간다.
+  nintendo_jp: 20,
 };
 /**
  * 한 실행에서 **새로 등록할** DLC 수 상한. 비우면 상한 없음.
@@ -284,6 +288,10 @@ export const DLC_LIST_PER_RUN_BY_SOURCE: Partial<Record<Source, number>> = {
 export const DLC_FETCH_PER_RUN_BY_SOURCE: Partial<Record<Source, number>> = {
   epic: 10,
   psstore: 60,
+  // nintendo_jp 는 가격이 배치 50건/요청이라 요청 시간은 거의 안 든다 — 드는 것은 반영 시간뿐이다.
+  // 그래서 40 의 근거도 반영 쪽이다: 목록 20회(20초) + 40건 반영(16초)이 discover 모드의
+  // 남은 몫(약 40초) 안에 든다. 예산이 더 빡빡한 discover 를 기준으로 잡으면 prices 는 저절로 든다.
+  nintendo_jp: 40,
 };
 
 /**

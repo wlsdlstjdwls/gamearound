@@ -12,7 +12,7 @@
 import { and, eq, inArray } from "drizzle-orm";
 import { gamePlatforms } from "@/server/db/schema";
 import type { StoreSource } from "@/server/adapters";
-import type { StoreAdapter } from "@/server/adapters/types";
+import type { SearchCandidate, StoreAdapter } from "@/server/adapters/types";
 import { sleep } from "@/lib/async";
 import { DLC_LIST_PER_RUN, DLC_LIST_PER_RUN_BY_SOURCE, DLC_LIST_REFRESH_DAYS, DLC_PER_GAME_MAX, SOURCE_PLATFORMS, SOURCE_REGION } from "./constants";
 import { recordError, type Ctx } from "./context";
@@ -27,6 +27,8 @@ export interface DlcListRow {
   id: string;
   gameId: string;
   storeExternalId: string | null;
+  /** 스토어의 작품 코드. DLC 를 이 값으로 묶는 소스(nintendo_jp)만 쓴다 */
+  titleCode: string | null;
   dlcListedAt: Date | null;
   /** 스토어가 말한 추가 콘텐츠 유무. 모르는 소스는 null */
   hasAddOns: boolean | null;
@@ -37,7 +39,8 @@ export interface DlcListPick {
   platformId: string;
   gameId: string;
   slug: string;
-  externalId: string;
+  /** 어댑터에 넘길 질의 키. 소스에 따라 외부 ID 이거나 작품 코드다(StoreAdapter.dlcListKey) */
+  key: string;
 }
 
 /**
@@ -49,12 +52,15 @@ export function pickDlcListTargets(
   rows: DlcListRow[],
   now: Date,
   max: number = DLC_LIST_PER_RUN,
+  dlcListKey: "externalId" | "titleCode" = "externalId",
 ): DlcListPick[] {
   const slugByGame = new Map(parents.map((p) => [p.gameId, p.slug]));
   const staleBefore = now.getTime() - DLC_LIST_REFRESH_DAYS * DAY_MS;
+  const keyOf = (r: DlcListRow) => (dlcListKey === "titleCode" ? r.titleCode : r.storeExternalId);
 
   const stale = rows.filter((r) => {
-    if (!r.storeExternalId) return false;
+    // 질의에 쓸 키가 없으면 물어볼 데가 없다. 작품 코드로 묻는 소스에서는 그 값이 빈 행이 섞여 있다
+    if (!keyOf(r)) return false;
     if (!slugByGame.has(r.gameId)) return false;
     // 스토어가 "추가 콘텐츠 없음"이라고 했으면 목록을 물어볼 이유가 없다. 비싼 요청을 빈손에 쓰지 않는다
     if (r.hasAddOns === false) return false;
@@ -73,9 +79,27 @@ export function pickDlcListTargets(
     if (out.length >= max) break;
     if (seen.has(row.gameId)) continue;
     seen.add(row.gameId);
-    out.push({ platformId: row.id, gameId: row.gameId, slug: slugByGame.get(row.gameId)!, externalId: row.storeExternalId! });
+    out.push({ platformId: row.id, gameId: row.gameId, slug: slugByGame.get(row.gameId)!, key: keyOf(row)! });
   }
   return out;
+}
+
+/**
+ * 한 본편의 DLC 목록을 어댑터에게 받는다.
+ * 소스마다 돌려주는 모양이 다르다 — ID 만 주거나(steam, xbox, gog, psstore, epic),
+ * 게임 마스터까지 붙은 후보를 주거나(nintendo_jp). 뒤쪽은 DLC 상세를 되물을 경로가 없어서
+ * 이 응답이 새 DLC 를 만들 유일한 근거다(adapters/types 의 listDlcCandidates 주석).
+ * 상한을 여기서 자르는 이유: 뒤에 이어질 상세 조회, 등록이 전부 이 수에 비례한다.
+ */
+async function listDlcsOf(
+  adapter: StoreAdapter,
+  key: string,
+): Promise<{ externalIds: string[]; candidates?: SearchCandidate[] }> {
+  if (adapter.listDlcCandidates) {
+    const candidates = (await adapter.listDlcCandidates(key)).slice(0, DLC_PER_GAME_MAX);
+    return { externalIds: candidates.map((c) => c.externalId), candidates };
+  }
+  return { externalIds: (await adapter.listDlcIds!(key)).slice(0, DLC_PER_GAME_MAX) };
 }
 
 /**
@@ -90,7 +114,7 @@ export async function listParentDlcs(
   adapter: StoreAdapter,
   applied: Applied[],
 ): Promise<DlcGroup[]> {
-  if (!adapter.listDlcIds) return [];
+  if (!adapter.listDlcIds && !adapter.listDlcCandidates) return [];
   const parents = applied
     .filter((a) => a.snapshot.contentType !== "dlc" && a.snapshot.dlcExternalIds === undefined)
     .map((a) => ({ gameId: a.gameId, slug: a.slug }));
@@ -101,6 +125,7 @@ export async function listParentDlcs(
       id: gamePlatforms.id,
       gameId: gamePlatforms.gameId,
       storeExternalId: gamePlatforms.storeExternalId,
+      titleCode: gamePlatforms.titleCode,
       dlcListedAt: gamePlatforms.dlcListedAt,
       hasAddOns: gamePlatforms.hasAddOns,
     })
@@ -114,22 +139,22 @@ export async function listParentDlcs(
       ),
     );
 
-  const picks = pickDlcListTargets(parents, rows, ctx.now, DLC_LIST_PER_RUN_BY_SOURCE[source] ?? DLC_LIST_PER_RUN);
+  const picks = pickDlcListTargets(parents, rows, ctx.now, DLC_LIST_PER_RUN_BY_SOURCE[source] ?? DLC_LIST_PER_RUN, adapter.dlcListKey);
   if (picks.length === 0) return [];
 
   const groups: DlcGroup[] = [];
   const marks: Statement[] = [];
   for (const [i, pick] of picks.entries()) {
     try {
-      const ids = await fetchWithRetry(() => adapter.listDlcIds!(pick.externalId));
+      const group = await fetchWithRetry(() => listDlcsOf(adapter, pick.key));
       // 빈 목록도 답이다 — 물어봤다는 사실을 남겨야 다음 실행이 같은 본편을 또 묻지 않는다
       marks.push(ctx.db.update(gamePlatforms).set({ dlcListedAt: ctx.now }).where(eq(gamePlatforms.id, pick.platformId)));
-      if (ids.length > 0) {
-        groups.push({ parentGameId: pick.gameId, parentSlug: pick.slug, externalIds: ids.slice(0, DLC_PER_GAME_MAX) });
+      if (group.externalIds.length > 0) {
+        groups.push({ parentGameId: pick.gameId, parentSlug: pick.slug, ...group });
       }
     } catch (e) {
       // 실패는 표시하지 않는다 — 다음 실행이 다시 물어본다
-      recordError(ctx, `${source}:dlc-list:${pick.externalId}`, e);
+      recordError(ctx, `${source}:dlc-list:${pick.key}`, e);
     }
     if (i < picks.length - 1) await sleep(adapter.minIntervalMs);
   }

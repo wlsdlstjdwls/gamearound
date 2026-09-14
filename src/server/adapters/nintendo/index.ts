@@ -14,6 +14,7 @@ import {
   DISCOVERY_QUERIES,
   EC_PRICE_BATCH,
   JP_DISCOVER_FQ,
+  jpDlcFq,
   JP_SEARCH_PAGE_SIZE,
   JP_SEARCH_URL,
   NINTENDO_BASE_URL,
@@ -154,6 +155,19 @@ export const nintendoJpAdapter: StoreAdapter = {
     if (ids.length === 0) return new Map();
     const raw = await jpHttp.json(ecPriceUrl("JP", "ja", ids));
     return priceSnapshots(parseEcPrices(raw, "JPY"), "JP", jpProductUrl);
+  },
+
+  // 본편과 DLC 는 판매 단위(nsuid)가 아니라 작품 코드(icode)로 묶인다 — nsuid 로는 되물을 길이 없다
+  dlcListKey: "titleCode",
+
+  /**
+   * 본편의 작품 코드로 추가 콘텐츠를 받는다. 한 요청이 ID 와 게임 마스터를 함께 주므로
+   * ID 만 돌려주는 listDlcIds 를 쓸 수 없다 — 이 소스에는 DLC 상세를 되묻는 경로가 없어서
+   * 여기서 받은 마스터가 새 DLC 를 만들 유일한 근거다(fetch 가 막혀 있는 이유와 같다).
+   * 한 페이지(50건)만 본다. 등록 상한(DLC_PER_GAME_MAX)이 30이라 그 뒤는 어차피 버려진다.
+   */
+  async listDlcCandidates(icode: string): Promise<SearchCandidate[]> {
+    return parseJpSearch(await jpHttp.json(jpSearchUrl({ fq: jpDlcFq(icode), page: 1 })));
   },
 
   /**

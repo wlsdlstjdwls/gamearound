@@ -36,9 +36,11 @@ function estimateMs(source: (typeof CRON_SOURCES)[number], mode: "prices" | "dis
   const batchedItems = Math.max(plan.limit - detailItems, 0);
   const perRequest = adapter.fetchMany ? (adapter.batchSize ?? DEFAULT_FETCH_BATCH_SIZE) : 1;
 
-  // DLC 목록을 물어볼 줄 모르는 어댑터는 이 단계를 아예 건너뛴다
-  const dlcListRequests = adapter.listDlcIds ? (DLC_LIST_PER_RUN_BY_SOURCE[source] ?? DLC_LIST_PER_RUN) : 0;
-  const dlcFetchItems = adapter.listDlcIds ? (DLC_FETCH_PER_RUN_BY_SOURCE[source] ?? 0) : 0;
+  // DLC 목록을 물어볼 줄 모르는 어댑터는 이 단계를 아예 건너뛴다.
+  // 두 메서드를 다 봐야 한다 — 마스터까지 주는 소스(nintendo_jp)는 listDlcCandidates 쪽에만 있다
+  const listsDlcs = Boolean(adapter.listDlcIds ?? adapter.listDlcCandidates);
+  const dlcListRequests = listsDlcs ? (DLC_LIST_PER_RUN_BY_SOURCE[source] ?? DLC_LIST_PER_RUN) : 0;
+  const dlcFetchItems = listsDlcs ? (DLC_FETCH_PER_RUN_BY_SOURCE[source] ?? 0) : 0;
   const dlcFetchRequests = Math.ceil(dlcFetchItems / perRequest);
 
   const requests =

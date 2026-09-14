@@ -3,6 +3,7 @@ import { describe, expect, it } from "vitest";
 import { cleanJpTitle, parseJpDate, parseJpPlayers, parseJpSearch } from "./nintendo/search-jp";
 import { ecPriceUrl, parseEcPrices } from "./nintendo/price-api";
 import { parseNintendoTitleCode } from "./nintendo/parse-kr";
+import { jpDlcFq } from "./nintendo/constants";
 
 /** 2026-09-14 실응답에서 필요한 필드만 남긴 표본 */
 const jpResponse = {
@@ -160,5 +161,57 @@ describe("parseNintendoTitleCode", () => {
 
   it("SKU 가 없으면 null — 그 게임은 제목으로만 이어진다", () => {
     expect(parseNintendoTitleCode("<html></html>")).toBeNull();
+  });
+});
+
+/** 2026-09-15 실응답 — 본편의 작품 코드로 되물은 추가 콘텐츠. DLC 행은 장르, 인원이 비어 온다 */
+const jpDlcResponse = {
+  result: {
+    total: 1,
+    items: [
+      {
+        id: "70050000059660",
+        title: "ＤＫアイランド＆エメラルドラッシュ",
+        icode: "AAACA",
+        hard: "05_BEE",
+        pdate: "2025-09-12 23:00:00",
+        maker: "任天堂",
+        genre: null,
+        player: null,
+        iurl: "a215d7a68ba53cc8d9ca2e3a9e610b3e3a469488db7e94a551e5fd5fc4376520",
+      },
+    ],
+  },
+};
+
+describe("jpDlcFq", () => {
+  it("본편의 작품 코드에 추가 콘텐츠 조건을 묶는다 — 제목을 맞춰 보지 않는다", () => {
+    const fq = jpDlcFq("AAACA");
+    expect(fq).toContain('icode_s:"AAACA"');
+    expect(fq).toContain('sctg_s:"aoc"');
+  });
+
+  it("살 수 없는 상품과 다른 기기를 뺀다 — 가격 API 가 값을 주지 않는 행이다", () => {
+    const fq = jpDlcFq("AAACA");
+    expect(fq).toContain('ssitu_s:"onsale"');
+    expect(fq).toContain('hard_s:"1_HAC"');
+  });
+});
+
+describe("parseJpSearch — 추가 콘텐츠 응답", () => {
+  it("DLC 도 게임 마스터를 들고 온다 — 이 소스에는 DLC 상세를 되물을 경로가 없다", () => {
+    const [dlc] = parseJpSearch(jpDlcResponse);
+    expect(dlc.externalId).toBe("70050000059660");
+    expect(dlc.titleCode).toBe("AAACA");
+    expect(dlc.platform).toBe("switch2");
+    expect(dlc.meta?.titleEn).toBe("ＤＫアイランド＆エメラルドラッシュ");
+    expect(dlc.meta?.publisher).toBe("任天堂");
+    expect(dlc.releaseDate).toBe("2025-09-12");
+  });
+
+  it("장르, 인원이 비어 오는 DLC 행도 버리지 않는다", () => {
+    const [dlc] = parseJpSearch(jpDlcResponse);
+    expect(dlc.meta?.genres).toEqual([]);
+    expect(dlc.meta?.multiplayer).toBeUndefined();
   });
 });

@@ -186,7 +186,20 @@ export type StoreAdapter = SourceAdapter<StoreSnapshot> & {
    * 요청을 한 번 더 쓰는 경로라 호출은 sync/dlc-list 가 빈도와 건수를 막아 준다.
    * 스냅샷에 dlcExternalIds 를 이미 채워 주는 소스는 이 메서드를 두지 않는다.
    */
-  listDlcIds?(externalId: string): Promise<string[]>;
+  listDlcIds?(key: string): Promise<string[]>;
+  /**
+   * 목록 요청이 ID 만이 아니라 게임 마스터까지 주는 소스용(nintendo_jp 검색 JSON).
+   * 그런 소스는 배치가 가격만 주고 단건 조회 경로가 아예 없어서, 여기서 받은 마스터가
+   * 새 DLC 를 만들 유일한 근거다 — ID 만 돌려주면 제목도 이미지도 없는 게임이 생긴다.
+   * listDlcIds 와 둘 중 하나만 둔다.
+   */
+  listDlcCandidates?(key: string): Promise<SearchCandidate[]>;
+  /**
+   * 위 두 메서드에 넘길 키를 어디서 읽을지. 비우면 store_external_id.
+   * 닌텐도 일본은 판매 단위(nsuid)가 아니라 작품 코드(icode)로 본편과 DLC 가 묶이고,
+   * nsuid 로 되묻는 질의가 없어서 game_platforms.title_code 말고는 물어볼 키가 없다.
+   */
+  dlcListKey?: "externalId" | "titleCode";
 };
 
 export type MetaAdapter = SourceAdapter<MetaSnapshot>;

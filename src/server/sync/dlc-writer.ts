@@ -8,7 +8,7 @@
 // 상한(DLC_PER_GAME_MAX)을 두는 이유: DLC 가 수십 개인 타이틀 하나가 배치를 통째로 먹는다.
 import { and, eq, inArray } from "drizzle-orm";
 import { gameSourceRefs } from "@/server/db/schema";
-import type { StoreAdapter, StoreSnapshot } from "@/server/adapters/types";
+import type { SearchCandidate, StoreAdapter, StoreSnapshot } from "@/server/adapters/types";
 import type { StoreSource } from "@/server/adapters";
 import { sleep } from "@/lib/async";
 import { DEFAULT_FETCH_BATCH_SIZE, DLC_FETCH_PER_RUN_BY_SOURCE, DLC_PER_GAME_MAX } from "./constants";
@@ -16,12 +16,19 @@ import { recordError, type Ctx } from "./context";
 import { createGameFromSnapshot } from "./game-writer";
 import { upsertPlatform } from "./platform-writer";
 import { fetchWithRetry } from "./retry";
+import { withDiscoveredMedia } from "./store-apply";
+import { candidateAsTarget } from "./store-targets";
 
 /** 본편 1건과 그 본편이 알려준 DLC 외부 ID 들 */
 export interface DlcGroup {
   parentGameId: string;
   parentSlug: string;
   externalIds: string[];
+  /**
+   * 목록 요청이 ID 와 함께 준 게임 마스터(nintendo_jp). 배치가 가격만 주고 DLC 상세를 되물을
+   * 경로가 없는 소스에서는 이것이 없으면 제목도 이미지도 없는 게임이 생긴다.
+   */
+  candidates?: SearchCandidate[];
 }
 
 /**
@@ -81,11 +88,18 @@ export async function syncDlcs(
     console.log(`[sync:${source}] 새 DLC ${fresh.length}건 중 ${newIds.length}건만 이번에 등록 (한 실행 상한)`);
   }
 
+  // 목록이 마스터까지 준 소스는 그 값이 유일한 근거다 — 가격 응답에는 제목도 기기도 없다
+  const candidateById = new Map<string, SearchCandidate>();
+  for (const g of groups) for (const c of g.candidates ?? []) candidateById.set(c.externalId, c);
+
   const snapshots = await fetchDlcSnapshots(ctx, source, adapter, newIds);
   let created = 0;
-  for (const [externalId, snapshot] of snapshots) {
+  for (const [externalId, priced] of snapshots) {
     const group = parentByExternalId.get(externalId);
     if (!group) continue;
+    // 발견 목록의 마스터를 얹는 일은 일반 수집과 같은 자리다 — 같은 함수를 쓴다(store-apply)
+    const candidate = candidateById.get(externalId);
+    const snapshot = candidate ? withDiscoveredMedia(priced, candidateAsTarget(candidate, null)) : priced;
     try {
       const child = await createGameFromSnapshot(ctx, snapshot, { contentType: "dlc", parentGameId: group.parentGameId });
       await upsertPlatform(ctx, child.id, child.slug, snapshot);
