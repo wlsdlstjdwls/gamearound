@@ -111,48 +111,50 @@ export function PushToggle({ initialCount }: { initialCount: number }) {
     }
   }
 
+  const on = status === "subscribed";
+  const disabled = busy || status === "checking" || status === "unsupported" || status === "denied";
+
   return (
-    <div className="space-y-3 rounded-lg border border-slate-800 bg-slate-900/60 p-4">
+    <section className="flex flex-col gap-3 rounded-xl border border-line bg-surface p-5">
       <div className="flex items-center justify-between gap-3">
         <div>
-          <h2 className="font-semibold">이 브라우저에서 푸시 알림 받기</h2>
-          <p className="text-xs text-slate-400">
+          <h2 className="text-[14px] font-bold text-ink">웹푸시 알림</h2>
+          <p className="text-[12.5px] text-mut">
             {status === "checking" && "상태 확인 중…"}
             {status === "unsupported" && "이 브라우저는 웹푸시를 지원하지 않습니다."}
-            {status === "denied" && "브라우저에서 알림 권한이 차단되어 있습니다. 사이트 설정에서 알림을 허용한 뒤 다시 시도하세요."}
-            {status === "subscribed" && "이 기기에서 알림을 받고 있습니다."}
-            {status === "unsubscribed" && "아직 구독하지 않았습니다."}
+            {status === "denied" && "브라우저에서 알림 권한이 차단되어 있습니다. 사이트 설정에서 허용한 뒤 다시 시도하세요."}
+            {status === "subscribed" && "이 기기에서 할인 알림을 받고 있습니다."}
+            {status === "unsubscribed" && "이 브라우저에서 할인 알림 받기"}
           </p>
         </div>
-        {status === "subscribed" ? (
-          <button
-            type="button"
-            onClick={unsubscribe}
-            disabled={busy}
-            className="rounded-md border border-slate-700 px-3 py-1.5 text-sm hover:border-red-400 hover:text-red-300 disabled:opacity-60"
-          >
-            {busy ? "처리 중…" : "알림 끄기"}
-          </button>
-        ) : (
-          <button
-            type="button"
-            onClick={subscribe}
-            disabled={busy || status === "checking" || status === "unsupported" || status === "denied"}
-            className="rounded-md bg-amber-400 px-3 py-1.5 text-sm font-medium text-slate-950 hover:bg-amber-300 disabled:opacity-60"
-          >
-            {busy ? "처리 중…" : "알림 켜기"}
-          </button>
-        )}
+        <button
+          type="button"
+          role="switch"
+          aria-checked={on}
+          aria-label="웹푸시 알림"
+          disabled={disabled && !on}
+          onClick={on ? unsubscribe : subscribe}
+          className={`press flex h-6 w-[42px] shrink-0 items-center rounded-full p-0.5 transition-colors duration-base disabled:opacity-60 ${
+            on ? "bg-ink" : "bg-line-strong"
+          }`}
+        >
+          <span
+            aria-hidden
+            className={`h-5 w-5 rounded-full bg-surface transition-transform duration-base ease-out-emph ${on ? "translate-x-[18px]" : ""}`}
+          />
+        </button>
       </div>
-      {error && <p className="text-sm text-red-400">{error}</p>}
+
+      <p className="rounded-[9px] bg-surface-4 px-3.5 py-[11px] text-[12.5px] text-mut">
+        연결된 기기 {initialCount}대 · 다른 브라우저/기기에서도 각각 켜야 합니다.
+      </p>
+
+      {error && <p className="text-[12.5px] text-danger">{error}</p>}
       {iosHint && (
-        <p className="rounded-md border border-amber-400/30 bg-amber-400/10 px-3 py-2 text-xs text-amber-200">
+        <p className="rounded-[9px] bg-warn-soft px-3.5 py-[11px] text-[12px] leading-[1.6] text-warn">
           iOS Safari는 공유 → &ldquo;홈 화면에 추가&rdquo;로 설치한 뒤 홈 화면 아이콘으로 실행한 경우에만 웹푸시를 받을 수 있습니다.
         </p>
       )}
-      <p className="text-xs text-slate-500">
-        등록된 기기: {initialCount}대 · 다른 브라우저/기기에서도 각각 켜야 합니다.
-      </p>
-    </div>
+    </section>
   );
 }

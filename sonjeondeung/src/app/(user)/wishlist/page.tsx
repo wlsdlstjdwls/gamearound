@@ -1,93 +1,145 @@
 // /wishlist — 찜한 게임 목록 (§5.1 dynamic, 캐시 안 함)
+// 리디자인: 기본 정렬은 "할인 중 먼저" — 찜 목록의 용건은 "지금 사도 되는가"다.
 import type { Metadata } from "next";
 import Image from "next/image";
 import Link from "next/link";
-import { formatDiscount, formatKrw, PLATFORM_LABEL } from "@/lib/format";
-import { getFreshness, FRESHNESS_LABEL } from "@/lib/freshness";
-import { listWishlist } from "@/server/services/wishlist";
+import { EmptyState } from "@/components/empty-state";
 import { WishlistRemoveButton } from "@/components/wishlist-button";
+import { Page } from "@/components/ui/page";
+import { formatDiscount, formatKrw, PLATFORM_LABEL } from "@/lib/format";
+import { collectedAtText, getFreshness } from "@/lib/freshness";
+import { ROUTES } from "@/lib/routes";
+import { listWishlist, type WishlistItem } from "@/server/services/wishlist";
 
 export const metadata: Metadata = { title: "위시리스트" };
 
-export default async function WishlistPage() {
+const SORTS = [
+  { key: "sale", label: "할인 중 먼저" },
+  { key: "added", label: "추가순" },
+] as const;
+type SortKey = (typeof SORTS)[number]["key"];
+
+type Props = { searchParams: Promise<{ sort?: string | string[] }> };
+
+function readSort(v: string | string[] | undefined): SortKey {
+  const s = Array.isArray(v) ? v[0] : v;
+  return s === "added" ? "added" : "sale";
+}
+
+function maxDiscount(item: WishlistItem): number {
+  return Math.max(0, ...item.game.platforms.map((p) => p.discountPct ?? 0));
+}
+
+function isOnSale(item: WishlistItem): boolean {
+  return maxDiscount(item) > 0;
+}
+
+export default async function WishlistPage({ searchParams }: Props) {
+  const sort = readSort((await searchParams).sort);
   const items = await listWishlist();
+  const onSaleCount = items.filter(isOnSale).length;
+  // listWishlist 는 추가순(최근 먼저)으로 온다 — "할인 중 먼저"만 화면에서 다시 정렬한다
+  const sorted = sort === "added" ? items : [...items].sort((a, b) => maxDiscount(b) - maxDiscount(a));
 
   return (
-    <section className="space-y-4">
-      <header className="flex items-end justify-between">
-        <h1 className="text-xl font-bold">위시리스트</h1>
-        <p className="text-sm text-slate-400">{items.length}개</p>
+    <Page gap={20}>
+      <header className="flex flex-wrap items-end justify-between gap-x-4 gap-y-2">
+        <div>
+          <h1 className="text-2xl font-bold tracking-[-0.03em] text-ink">위시리스트</h1>
+          <p className="mt-1 text-[13px] text-mut">
+            {items.length}개 중 <span className="font-semibold text-acc">{onSaleCount}개가 지금 할인 중</span>입니다.
+          </p>
+        </div>
+        <div role="group" aria-label="정렬" className="flex gap-1">
+          {SORTS.map((s) => (
+            <Link
+              key={s.key}
+              href={s.key === "sale" ? ROUTES.wishlist : `${ROUTES.wishlist}?sort=${s.key}`}
+              aria-current={s.key === sort ? "true" : undefined}
+              className={`press rounded-lg px-3 py-1.5 text-[12.5px] transition-colors duration-base ${
+                s.key === sort ? "bg-ink font-semibold text-on-ink" : "border border-line-strong text-mut hover:border-ink hover:text-ink"
+              }`}
+            >
+              {s.label}
+            </Link>
+          ))}
+        </div>
       </header>
 
       {items.length === 0 ? (
-        <div className="rounded-lg border border-dashed border-slate-800 p-10 text-center text-slate-400">
-          아직 찜한 게임이 없습니다. <Link href="/" className="text-amber-300 hover:underline">게임 찾아보기</Link>
-        </div>
+        <EmptyState
+          title="아직 찜한 게임이 없습니다"
+          description="게임 상세에서 위시리스트에 담으면 할인 시작 시 이 자리에서 먼저 보여 드립니다."
+          action={{ href: ROUTES.game, label: "할인 목록 보기" }}
+        />
       ) : (
-        <ul className="grid gap-4 sm:grid-cols-2">
-          {items.map(({ game }) => {
+        <ul className="grid grid-cols-[repeat(auto-fit,minmax(330px,1fr))] gap-4">
+          {sorted.map(({ game }) => {
             const priced = game.platforms.filter((p) => p.currentPrice !== null);
             const lowest = priced.length > 0 ? Math.min(...priced.map((p) => p.currentPrice as number)) : null;
             const title = game.titleKo ?? game.titleEn;
+            const stalest = game.platforms.find((p) => getFreshness(p.lastSyncedAt, p.syncStatus) !== "fresh");
+
             return (
-              <li key={game.id} className="flex gap-4 rounded-lg border border-slate-800 bg-slate-900/60 p-4">
+              <li key={game.id} className="flex gap-3.5 rounded-xl border border-line bg-surface p-4">
                 <Link href={`/games/${game.slug}`} className="shrink-0">
                   {game.coverUrl ? (
                     <Image
                       src={game.coverUrl}
                       alt={title}
-                      width={120}
-                      height={56}
+                      width={104}
+                      height={60}
                       unoptimized
-                      className="h-14 w-[120px] rounded object-cover"
+                      className="h-[60px] w-[104px] rounded-lg object-cover"
                     />
                   ) : (
-                    <div className="flex h-14 w-[120px] items-center justify-center rounded bg-slate-800 text-xs text-slate-500">
-                      이미지 없음
-                    </div>
+                    <div aria-hidden className="h-[60px] w-[104px] rounded-lg bg-surface-3" />
                   )}
                 </Link>
-                <div className="min-w-0 flex-1 space-y-2">
+
+                <div className="flex min-w-0 flex-1 flex-col gap-2">
                   <div className="flex items-start justify-between gap-2">
-                    <Link href={`/games/${game.slug}`} className="truncate font-semibold hover:text-amber-300">
+                    <Link href={`/games/${game.slug}`} className="truncate text-[14.5px] font-bold tracking-[-0.01em] text-ink hover:text-acc">
                       {title}
                     </Link>
                     <WishlistRemoveButton gameId={game.id} />
                   </div>
+
                   {game.platforms.length === 0 ? (
-                    <p className="text-xs text-slate-500">플랫폼 가격 정보 없음</p>
+                    <p className="text-[12px] text-dim">플랫폼 가격 정보 없음</p>
                   ) : (
-                    <ul className="space-y-1 text-sm">
+                    <ul className="flex flex-col gap-1 text-[12.5px]">
                       {game.platforms.map((p) => {
-                        const fresh = getFreshness(p.lastSyncedAt, p.syncStatus);
                         const isLowest = lowest !== null && p.currentPrice === lowest;
                         return (
-                          <li key={p.id} className="flex items-center gap-2">
-                            <span className="w-16 shrink-0 text-slate-400">{PLATFORM_LABEL[p.platform] ?? p.platform}</span>
-                            <span className={isLowest ? "font-semibold text-amber-300" : ""}>{formatKrw(p.currentPrice)}</span>
+                          <li key={p.id} className="flex items-baseline gap-2">
+                            <span className="w-[52px] shrink-0 text-dim">{PLATFORM_LABEL[p.platform] ?? p.platform}</span>
+                            <span className={isLowest ? "font-bold text-ink" : "text-ink"}>{formatKrw(p.currentPrice)}</span>
                             {p.discountPct ? (
-                              <span className="rounded bg-emerald-900/60 px-1.5 py-0.5 text-xs text-emerald-300">
-                                {formatDiscount(p.discountPct)}
-                              </span>
+                              <span className="rounded-[5px] bg-surface-2 px-1.5 py-px text-[11px] text-ink-2">{formatDiscount(p.discountPct)}</span>
                             ) : null}
-                            {isLowest && priced.length > 1 && <span className="text-xs text-amber-400">최저가</span>}
-                            {fresh !== "fresh" && <span className="text-xs text-slate-500">{FRESHNESS_LABEL[fresh]}</span>}
+                            {isLowest && priced.length > 1 && <span className="font-semibold text-acc">최저가</span>}
                           </li>
                         );
                       })}
                     </ul>
                   )}
-                  <div className="text-xs">
-                    <Link href={`/alerts?game=${encodeURIComponent(game.slug)}`} className="text-slate-400 hover:text-amber-300">
-                      할인 알림 만들기 →
-                    </Link>
-                  </div>
+
+                  <p className="mt-auto text-[12px]">
+                    {stalest ? (
+                      <span className="text-warn">{collectedAtText(stalest.lastSyncedAt)} · 스토어에서 확인 권장</span>
+                    ) : (
+                      <Link href={`${ROUTES.alerts}?game=${encodeURIComponent(game.slug)}`} className="text-acc hover:underline">
+                        할인 알림 만들기 →
+                      </Link>
+                    )}
+                  </p>
                 </div>
               </li>
             );
           })}
         </ul>
       )}
-    </section>
+    </Page>
   );
 }

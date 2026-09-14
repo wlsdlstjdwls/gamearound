@@ -10,10 +10,8 @@ function Chip({ href, active, children }: { href: string; active: boolean; child
     <Link
       href={href}
       aria-current={active ? "true" : undefined}
-      className={`press rounded-full border px-3 py-1 text-xs transition-colors duration-base ${
-        active
-          ? "border-amber-400 bg-amber-400 font-semibold text-slate-950"
-          : "border-slate-700 text-slate-300 hover:border-amber-400/60 hover:text-amber-300"
+      className={`press rounded-lg px-3 py-1.5 text-[12px] transition-colors duration-base ${
+        active ? "bg-ink font-semibold text-on-ink" : "border border-line-strong text-mut hover:border-ink hover:text-ink"
       }`}
     >
       {children}
@@ -24,7 +22,7 @@ function Chip({ href, active, children }: { href: string; active: boolean; child
 function Row({ label, children }: { label: string; children: React.ReactNode }) {
   return (
     <div className="flex flex-wrap items-center gap-2">
-      <span className="w-14 shrink-0 text-xs font-medium text-slate-500">{label}</span>
+      <span className="w-12 shrink-0 text-[11.5px] text-dim">{label}</span>
       <div className="flex flex-wrap gap-1.5">{children}</div>
     </div>
   );
@@ -35,41 +33,41 @@ export function GameFilters({ facets, filter }: { facets: GameFacets; filter: Ga
   const href = (patch: Partial<GamesQuery>) => gamesHref(filter, { ...patch, page: 1 });
 
   return (
-    <section aria-label="목록 필터" className="space-y-2 rounded-xl border border-slate-800 bg-slate-900/40 p-3 sm:p-4">
-      <Row label="플랫폼">
-        <Chip href={href({ platform: undefined })} active={!filter.platform}>
-          전체
-        </Chip>
-        {facets.platforms.map((p) => (
-          <Chip key={p.platform} href={href({ platform: p.platform })} active={filter.platform === p.platform}>
-            {PLATFORM_LABEL[p.platform] ?? p.platform} <span className="opacity-60">{p.count}</span>
-          </Chip>
-        ))}
-      </Row>
-
-      {facets.genres.length > 0 && (
-        <Row label="장르">
-          <Chip href={href({ genre: undefined })} active={!filter.genre}>
+    <section aria-label="목록 필터" className="flex flex-col gap-2.5 rounded-xl border border-line bg-surface p-4">
+        <Row label="플랫폼">
+          <Chip href={href({ platform: undefined })} active={!filter.platform}>
             전체
           </Chip>
-          {facets.genres.map((g) => (
-            <Chip key={g.name} href={href({ genre: g.name })} active={filter.genre === g.name}>
-              {g.name} <span className="opacity-60">{g.count}</span>
+          {facets.platforms.map((p) => (
+            <Chip key={p.platform} href={href({ platform: p.platform })} active={filter.platform === p.platform}>
+              {PLATFORM_LABEL[p.platform] ?? p.platform} <span className="opacity-55">{p.count}</span>
             </Chip>
           ))}
         </Row>
-      )}
 
-      <Row label="정렬">
-        {GAME_SORTS.map((s) => (
-          <Chip key={s} href={href({ sort: s })} active={(filter.sort ?? DEFAULT_GAME_SORT) === s}>
-            {SORT_LABEL[s]}
+        {facets.genres.length > 0 && (
+          <Row label="장르">
+            <Chip href={href({ genre: undefined })} active={!filter.genre}>
+              전체
+            </Chip>
+            {facets.genres.map((g) => (
+              <Chip key={g.name} href={href({ genre: g.name })} active={filter.genre === g.name}>
+                {g.name} <span className="opacity-55">{g.count}</span>
+              </Chip>
+            ))}
+          </Row>
+        )}
+
+        <Row label="정렬">
+          {GAME_SORTS.map((s) => (
+            <Chip key={s} href={href({ sort: s })} active={(filter.sort ?? DEFAULT_GAME_SORT) === s}>
+              {SORT_LABEL[s]}
+            </Chip>
+          ))}
+          <Chip href={href({ onSale: !filter.onSale })} active={Boolean(filter.onSale)}>
+            할인 중만
           </Chip>
-        ))}
-        <Chip href={href({ onSale: !filter.onSale })} active={Boolean(filter.onSale)}>
-          할인 중만
-        </Chip>
-      </Row>
+        </Row>
     </section>
   );
 }

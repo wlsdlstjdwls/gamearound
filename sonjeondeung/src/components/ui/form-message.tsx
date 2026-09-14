@@ -10,10 +10,10 @@ export function FormMessage({ tone, children, replayKey }: { tone: "error" | "su
       role={isError ? "alert" : "status"}
       aria-live={isError ? "assertive" : "polite"}
       className={cn(
-        "flex items-start gap-2 rounded-[var(--radius-md)] border px-3.5 py-3 text-sm",
-        isError && "animate-shake border-danger/40 bg-danger/10 text-red-200",
-        tone === "success" && "animate-rise border-ok/40 bg-ok/10 text-emerald-200",
-        tone === "info" && "animate-rise border-acc/30 bg-acc/10 text-amber-100",
+        "flex items-start gap-2 rounded-[var(--radius-sm)] border px-3.5 py-3 text-[13px]",
+        isError && "animate-shake border-danger/35 bg-danger-soft text-danger",
+        tone === "success" && "animate-rise border-acc/35 bg-acc-soft text-acc",
+        tone === "info" && "animate-rise border-line-strong bg-surface-4 text-mut",
       )}
     >
       {isError ? <AlertCircleIcon size={16} className="mt-0.5 shrink-0" /> : <CheckIcon size={16} className="mt-0.5 shrink-0" />}

@@ -24,15 +24,15 @@ export function TextField({ label, hideLabel, hint, error, trailing, wrapperClas
 
   return (
     <div className={cn("group/field", wrapperClassName)}>
-      <label htmlFor={id} className={cn("mb-1.5 block text-sm font-medium text-mut transition-colors group-focus-within/field:text-ink", hideLabel && "sr-only")}>
+      <label htmlFor={id} className={cn("mb-1.5 block text-[12.5px] font-medium text-mut transition-colors group-focus-within/field:text-ink", hideLabel && "sr-only")}>
         {label}
       </label>
       <div
         key={invalid ? "invalid" : "valid"}
         className={cn(
-          "flex items-center rounded-[var(--radius-md)] border bg-surface transition-[border-color,box-shadow] duration-base ease-standard",
-          "focus-within:border-acc focus-within:shadow-[0_0_0_4px_var(--acc-soft)]",
-          invalid ? "animate-shake border-danger focus-within:border-danger focus-within:shadow-[0_0_0_4px_var(--danger-soft)]" : "border-line-strong hover:border-slate-500",
+          "flex items-center rounded-[var(--radius-sm)] border bg-bg transition-[border-color,background-color] duration-base ease-standard",
+          "focus-within:border-ink focus-within:bg-surface",
+          invalid ? "animate-shake border-danger focus-within:border-danger" : "border-line-strong hover:border-dim",
         )}
       >
         <input
@@ -40,8 +40,8 @@ export function TextField({ label, hideLabel, hint, error, trailing, wrapperClas
           aria-invalid={invalid || undefined}
           aria-describedby={[hint ? hintId : null, invalid ? errorId : null].filter(Boolean).join(" ") || undefined}
           className={cn(
-            "min-h-[var(--touch-target)] w-full flex-1 bg-transparent px-3.5 py-2.5 text-[15px] text-ink outline-none placeholder:text-dim",
-            "autofill:shadow-[inset_0_0_0_1000px_var(--surface)] autofill:[-webkit-text-fill-color:var(--ink)]",
+            "h-[42px] min-h-[42px] w-full flex-1 bg-transparent px-3.5 text-[14px] text-ink outline-none placeholder:text-dim",
+            "autofill:shadow-[inset_0_0_0_1000px_var(--bg)] autofill:[-webkit-text-fill-color:var(--ink)]",
             className,
           )}
           {...input}

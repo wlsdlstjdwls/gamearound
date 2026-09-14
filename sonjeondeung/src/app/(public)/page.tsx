@@ -1,27 +1,53 @@
-// 홈 — 검색 안내 + 오늘의 할인 + 최근 출시 + 최신 뉴스 (§5.1, 풀 라우트 캐시 1h + 태그 home)
+// 홈 — "오늘 뭘 사면 되는가"에 먼저 답한다 (§5.1, 풀 라우트 캐시 1h + 태그 home)
+// 검색 폼은 헤더 검색창이 유일한 진입점이므로 히어로에서 제거했다(리디자인).
 import Link from "next/link";
 import { GameCard } from "@/components/game-card";
 import { NewsList } from "@/components/news-list";
 import { EmptyState } from "@/components/empty-state";
-import { getHomeData } from "@/server/services/games";
+import { SaleBadge } from "@/components/sale-badge";
+import { Card, Page, SectionHead } from "@/components/ui/page";
+import { formatKrw, PLATFORM_LABEL } from "@/lib/format";
+import { nextCollectTimeText } from "@/lib/freshness";
+import { ROUTES } from "@/lib/routes";
+import { getHomeData, type GameSummary } from "@/server/services/games";
 
 export const revalidate = 3600;
 
-function Section({ id, title, children, more }: { id: string; title: string; children: React.ReactNode; more?: { href: string; label: string } }) {
+/** 48시간 이내 종료 = "지금 결정해야 하는" 할인. 페이지 캐시(1h) 주기로 다시 계산된다 */
+const URGENT_MS = 48 * 60 * 60 * 1000;
+const ENDING_SOON_LIMIT = 6;
+
+function endsAtMs(g: GameSummary): number | null {
+  const raw = g.best?.discountEndsAt;
+  if (!raw) return null;
+  const t = new Date(raw).getTime();
+  return Number.isNaN(t) ? null : t;
+}
+
+/** 종료 시각이 있는 할인만, 빨리 끝나는 순 */
+function endingSoon(discounts: GameSummary[]): GameSummary[] {
+  return discounts
+    .map((g) => ({ g, t: endsAtMs(g) }))
+    .filter((x): x is { g: GameSummary; t: number } => x.t !== null && x.t > Date.now())
+    .sort((a, b) => a.t - b.t)
+    .slice(0, ENDING_SOON_LIMIT)
+    .map((x) => x.g);
+}
+
+function urgentCount(discounts: GameSummary[]): number {
+  const now = Date.now();
+  return discounts.filter((g) => {
+    const t = endsAtMs(g);
+    return t !== null && t > now && t - now <= URGENT_MS;
+  }).length;
+}
+
+function Metric({ label, value, accent = false }: { label: string; value: string; accent?: boolean }) {
   return (
-    <section aria-labelledby={`${id}-heading`} className="space-y-3">
-      <div className="flex items-baseline justify-between">
-        <h2 id={`${id}-heading`} className="text-lg font-bold text-slate-100">
-          {title}
-        </h2>
-        {more && (
-          <Link href={more.href} className="text-sm text-amber-300 hover:underline">
-            {more.label}
-          </Link>
-        )}
-      </div>
-      {children}
-    </section>
+    <div className="flex flex-col gap-1 px-5 py-3.5">
+      <span className="text-[11.5px] text-dim">{label}</span>
+      <span className={`text-[20px] font-bold tracking-[-0.02em] ${accent ? "text-acc" : "text-ink"}`}>{value}</span>
+    </div>
   );
 }
 
@@ -41,46 +67,54 @@ async function loadHomeData(): Promise<{ data: HomeData; dbError: string | null 
 export default async function HomePage() {
   const { data, dbError } = await loadHomeData();
   const { discounts, recentReleases, latestNews } = data;
+  const soon = endingSoon(discounts);
 
   return (
-    <div className="space-y-10">
-      <section className="rounded-2xl border border-slate-800 bg-gradient-to-br from-slate-900 to-slate-950 p-6 sm:p-10">
-        <h1 className="text-2xl font-bold sm:text-3xl">
-          <span aria-hidden>🔦 </span>게임 정보, 한 곳에서 비추기
-        </h1>
-        <p className="mt-2 max-w-xl text-sm text-slate-400 sm:text-base">
-          플랫폼별 가격·할인, 플레이타임, 평점, 뉴스를 한 화면에서 확인하고 할인 알림을 받아보세요.
-        </p>
-        <form action="/search" className="mt-5 flex max-w-lg gap-2">
-          <label htmlFor="home-q" className="sr-only">
-            게임 제목 검색
-          </label>
-          <input
-            id="home-q"
-            name="q"
-            type="search"
-            required
-            placeholder="게임 제목을 입력하세요 (한글/영문)"
-            className="flex-1 rounded-md border border-slate-700 bg-slate-900 px-3 py-2 text-sm outline-none focus:border-amber-400"
-          />
-          <button type="submit" className="rounded-md bg-amber-400 px-4 py-2 text-sm font-semibold text-slate-950 hover:bg-amber-300">
-            검색
-          </button>
-        </form>
+    <Page pad="home" gap={36}>
+      {/* 섹션 1 — 헤드라인 + 지표 */}
+      <section className="flex flex-wrap items-end justify-between gap-5">
+        <div className="flex flex-col gap-2">
+          <h1 className="text-[30px] font-bold leading-[1.25] tracking-[-0.03em] text-ink">
+            지금 할인 중인 게임 {discounts.length}개
+          </h1>
+          <p className="max-w-[460px] text-[13.5px] leading-[1.75] text-mut">
+            스팀·PS·엑스박스·닌텐도 가격을 하루 세 번 수집합니다. 이 중 {urgentCount(discounts)}개는 48시간 안에 할인이 끝납니다.
+          </p>
+        </div>
+
+        <Card className="grid shrink-0 grid-cols-1 divide-y divide-line border-line-strong sm:grid-cols-3 sm:divide-x sm:divide-y-0">
+          <Metric label="할인 중" value={`${discounts.length}종`} />
+          <Metric label="48시간 내 종료" value={`${urgentCount(discounts)}건`} accent />
+          <Metric label="최근 출시" value={`${recentReleases.length}종`} />
+        </Card>
       </section>
 
       {dbError && (
-        <div role="alert" className="rounded-xl border border-red-900 bg-red-950/40 px-4 py-3 text-sm text-red-200">
-          데이터베이스에 연결할 수 없습니다. <code className="text-red-100">.env.local</code>의 <code className="text-red-100">DATABASE_URL</code>을 설정하고
-          <code className="text-red-100"> pnpm db:migrate</code>를 실행하세요.
+        <div role="alert" className="rounded-xl border border-danger/40 bg-danger-soft px-4 py-3 text-[13px] text-danger">
+          데이터베이스에 연결할 수 없습니다. <code>.env.local</code>의 <code>DATABASE_URL</code>을 설정하고 <code>pnpm db:migrate</code>를 실행하세요.
         </div>
       )}
 
-      <Section id="discounts" title="오늘의 할인" more={{ href: "/games?sale=1", label: "할인 전체 보기 →" }}>
+      {/* 섹션 2 — 할인 중인 게임 */}
+      <section aria-labelledby="discounts-heading" className="flex flex-col gap-4">
+        <SectionHead
+          id="discounts-heading"
+          title="할인 중인 게임"
+          note="플랫폼별 최저가 기준"
+          action={
+            <Link href={`${ROUTES.game}?sale=1`} className="text-[12.5px] text-acc hover:underline">
+              할인 전체 보기 →
+            </Link>
+          }
+        />
         {discounts.length === 0 ? (
-          <EmptyState title="현재 할인 중인 게임이 없습니다" description="수집이 완료되면 할인 게임이 여기에 표시됩니다." />
+          <EmptyState
+            title="지금 할인 중인 게임이 없습니다"
+            description={`수집이 끝나면 이 자리에 표시됩니다. 다음 수집은 ${nextCollectTimeText()}입니다.`}
+            action={{ href: ROUTES.game, label: "전체 게임 목록 보기" }}
+          />
         ) : (
-          <ul className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
+          <ul className="grid grid-cols-[repeat(auto-fit,minmax(238px,1fr))] gap-4">
             {discounts.map((g) => (
               <li key={g.slug}>
                 <GameCard game={g} variant="discount" />
@@ -88,27 +122,63 @@ export default async function HomePage() {
             ))}
           </ul>
         )}
-      </Section>
+      </section>
 
-      <Section id="releases" title="최근 출시" more={{ href: "/games?sort=release", label: "전체 게임 목록 →" }}>
-        {recentReleases.length === 0 ? (
-          <EmptyState title="최근 출시 정보가 없습니다" />
-        ) : (
-          <ul className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
+      {/* 섹션 3 — 곧 끝나는 할인 / 최신 뉴스 */}
+      <section className="grid grid-cols-[repeat(auto-fit,minmax(300px,1fr))] gap-7">
+        <div className="flex flex-col gap-4">
+          <SectionHead title="곧 끝나는 할인" note="종료 시각이 공개된 건만" />
+          <Card className="px-4">
+            {soon.length === 0 ? (
+              <p className="py-5 text-[13px] text-dim">종료 시각이 공개된 할인이 없습니다.</p>
+            ) : (
+              <ul className="divide-y divide-line-soft">
+                {soon.map((g) => (
+                  <li key={g.slug} className="flex flex-wrap items-baseline gap-x-3 gap-y-1 py-[13px]">
+                    <Link href={`/games/${g.slug}`} className="min-w-[130px] flex-1 truncate text-[13.5px] font-semibold text-ink hover:text-acc">
+                      {g.titleKo ?? g.titleEn}
+                    </Link>
+                    <span className="text-[12px] text-dim">
+                      {g.best ? PLATFORM_LABEL[g.best.platform] ?? g.best.platform : "-"}
+                    </span>
+                    <span className="text-[13.5px] font-bold text-ink">{formatKrw(g.best?.currentPrice)}</span>
+                    <SaleBadge discountName={null} discountEndsAt={g.best?.discountEndsAt} />
+                  </li>
+                ))}
+              </ul>
+            )}
+          </Card>
+        </div>
+
+        <div className="flex flex-col gap-4">
+          <SectionHead title="최신 뉴스" />
+          <Card className="px-4">
+            <NewsList items={latestNews} showGame />
+          </Card>
+        </div>
+      </section>
+
+      {/* 섹션 4 — 최근 출시 */}
+      {recentReleases.length > 0 && (
+        <section aria-labelledby="releases-heading" className="flex flex-col gap-4">
+          <SectionHead
+            id="releases-heading"
+            title="최근 출시"
+            action={
+              <Link href={`${ROUTES.game}?sort=release`} className="text-[12.5px] text-acc hover:underline">
+                전체 게임 목록 →
+              </Link>
+            }
+          />
+          <ul className="grid grid-cols-[repeat(auto-fit,minmax(238px,1fr))] gap-4">
             {recentReleases.map((g) => (
               <li key={g.slug}>
                 <GameCard game={g} variant="release" />
               </li>
             ))}
           </ul>
-        )}
-      </Section>
-
-      <Section id="news" title="최신 뉴스">
-        <div className="rounded-xl border border-slate-800 bg-slate-900/60 px-4">
-          <NewsList items={latestNews} showGame />
-        </div>
-      </Section>
-    </div>
+        </section>
+      )}
+    </Page>
   );
 }

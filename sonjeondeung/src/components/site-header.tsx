@@ -2,31 +2,52 @@ import Link from "next/link";
 import { ROUTES } from "@/lib/routes";
 import { AuthNav } from "@/components/auth/auth-nav";
 
+/** 로고 마크 — 26×26 잉크 사각형 + "손" 글자. 이모지는 쓰지 않는다 */
+export function BrandMark({ size = 26, className = "" }: { size?: number; className?: string }) {
+  return (
+    <span
+      aria-hidden
+      className={`inline-flex shrink-0 items-center justify-center rounded-[7px] bg-ink font-bold text-on-ink ${className}`}
+      style={{ width: size, height: size, fontSize: Math.round(size * 0.5) }}
+    >
+      손
+    </span>
+  );
+}
+
 export function SiteHeader() {
   return (
-    <header className="sticky top-0 z-40 border-b border-slate-800 bg-slate-950/90 backdrop-blur">
-      <div className="mx-auto flex h-14 w-full max-w-6xl items-center gap-3 px-4 sm:gap-4">
-        <Link href={ROUTES.home} className="press flex shrink-0 items-center gap-2 text-lg font-bold">
-          <span aria-hidden>🔦</span>
-          <span>손전등</span>
+    <header className="sticky top-0 z-40 border-b border-line bg-surface">
+      <div className="mx-auto flex w-full max-w-[var(--page-w)] flex-wrap items-center gap-x-4 gap-y-3 px-7 py-4">
+        <Link href={ROUTES.home} className="press flex shrink-0 items-center gap-2">
+          <BrandMark />
+          <span className="text-base font-bold tracking-[-0.02em] text-ink">손전등</span>
         </Link>
-        <Link
-          href={ROUTES.game}
-          className="press hidden shrink-0 text-sm text-slate-300 transition-colors duration-base hover:text-amber-300 sm:block"
-        >
-          게임 목록
-        </Link>
-        <form action={ROUTES.search} className="min-w-0 flex-1 max-w-md">
+
+        <form action={ROUTES.search} className="min-w-[180px] max-w-[380px] flex-1">
           <label htmlFor="q" className="sr-only">게임 검색</label>
-          <input
-            id="q"
-            name="q"
-            type="search"
-            placeholder="게임 제목 검색"
-            className="w-full rounded-md border border-slate-700 bg-slate-900 px-3 py-1.5 text-sm outline-none transition-[border-color,box-shadow] duration-base focus:border-amber-400 focus:shadow-[0_0_0_3px_var(--acc-soft)]"
-          />
+          <div className="flex h-[34px] items-center gap-1.5 rounded-[9px] border border-line-strong bg-bg px-2.5 transition-colors duration-base focus-within:border-ink">
+            <span aria-hidden className="text-[13px] text-dim">⌕</span>
+            <input
+              id="q"
+              name="q"
+              type="search"
+              placeholder="게임 제목 검색"
+              className="min-w-0 flex-1 bg-transparent text-[13px] text-ink outline-none placeholder:text-dim"
+            />
+          </div>
         </form>
-        <nav aria-label="계정" className="ml-auto flex shrink-0 items-center gap-3 text-sm">
+
+        <nav aria-label="주요 메뉴" className="ml-auto flex shrink-0 items-center gap-1 text-[13px]">
+          <Link href={ROUTES.game} className="press rounded-lg px-3 py-[7px] text-mut transition-colors hover:text-ink">
+            게임 목록
+          </Link>
+          <Link href={ROUTES.wishlist} className="press hidden rounded-lg px-3 py-[7px] text-mut transition-colors hover:text-ink sm:block">
+            위시리스트
+          </Link>
+          <Link href={ROUTES.alerts} className="press hidden rounded-lg px-3 py-[7px] text-mut transition-colors hover:text-ink sm:block">
+            알림
+          </Link>
           <AuthNav />
         </nav>
       </div>

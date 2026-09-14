@@ -1,26 +1,70 @@
-// 인증 화면 셸 — 모바일은 여백만 있는 풀블리드, sm 이상은 가운데 카드. 브랜드 마크 + 제목 + 설명 → 폼.
+// 인증 화면 셸(화면 08) — 좌: 로고 + 카피 블록, 우: 탭이 달린 폼 카드. 모바일에선 한 칸으로 접힌다.
 import Link from "next/link";
 import type { ReactNode } from "react";
+import { cn } from "@/lib/cn";
 import { stagger } from "@/lib/motion";
 import { ROUTES } from "@/lib/routes";
+import { AUTH_MESSAGES as M } from "@/lib/auth/messages";
+import { BrandMark } from "@/components/site-header";
+import { Page, Card } from "@/components/ui/page";
 
-export function AuthCard({ title, subtitle, children }: { title: string; subtitle: string; children: ReactNode }) {
+const LEAD_TITLE = ["위시리스트와 할인 알림은", "로그인 후 사용할 수 있습니다"];
+const LEAD_BODY = "가격은 로그인 없이도 전부 볼 수 있습니다. 계정은 알림을 보낼 기기를 기억하는 데만 씁니다.";
+
+function Tab({ href, active, children }: { href: string; active: boolean; children: ReactNode }) {
   return (
-    <div className="mx-auto w-full max-w-md py-4 sm:py-10">
-      <div className="sm:rounded-[var(--radius-xl)] sm:border sm:border-line sm:bg-surface/70 sm:p-8 sm:shadow-[0_30px_70px_-44px_rgba(0,0,0,0.9)] sm:backdrop-blur">
-        <header className="mb-6 text-center">
-          <Link href={ROUTES.home} aria-label="손전등 홈" className="reveal inline-flex h-14 w-14 items-center justify-center rounded-2xl bg-acc/15 text-3xl shadow-[0_0_0_1px_var(--acc-soft),0_12px_30px_-12px_var(--acc-glow)]" style={stagger(0)}>
-            <span aria-hidden>🔦</span>
-          </Link>
-          <h1 className="reveal mt-4 text-2xl font-bold tracking-tight text-ink" style={stagger(1)}>
-            {title}
-          </h1>
-          <p className="reveal mt-1.5 text-sm text-mut" style={stagger(2)}>
-            {subtitle}
-          </p>
-        </header>
-        {children}
+    <Link
+      href={href}
+      aria-current={active ? "page" : undefined}
+      className={cn(
+        "press rounded-lg px-3.5 py-[7px] text-[13px] transition-colors duration-base",
+        active ? "bg-surface-2 font-bold text-ink" : "text-dim hover:text-ink",
+      )}
+    >
+      {children}
+    </Link>
+  );
+}
+
+export function AuthCard({
+  mode,
+  subtitle,
+  next,
+  children,
+}: {
+  mode: "signIn" | "signUp";
+  subtitle: string;
+  next: string;
+  children: ReactNode;
+}) {
+  const withNext = (base: string) => (next === ROUTES.home ? base : `${base}?next=${encodeURIComponent(next)}`);
+
+  return (
+    <Page pad="home" className="grid items-start gap-6 sm:grid-cols-[repeat(auto-fit,minmax(300px,1fr))]">
+      <div className="reveal flex flex-col gap-4" style={stagger(0)}>
+        <Link href={ROUTES.home} aria-label="손전등 홈" className="press w-fit">
+          <BrandMark size={34} />
+        </Link>
+        <h1 className="text-[26px] font-bold leading-[1.3] tracking-[-0.03em] text-ink">
+          {LEAD_TITLE[0]}
+          <br />
+          {LEAD_TITLE[1]}
+        </h1>
+        <p className="max-w-[380px] text-[13.5px] leading-[1.8] text-mut">{LEAD_BODY}</p>
       </div>
-    </div>
+
+      <Card className="reveal flex flex-col gap-4 p-[26px]" style={stagger(1)}>
+        <div className="flex gap-1">
+          <Tab href={withNext(ROUTES.signIn)} active={mode === "signIn"}>
+            {M.signInCta}
+          </Tab>
+          <Tab href={withNext(ROUTES.signUp)} active={mode === "signUp"}>
+            회원가입
+          </Tab>
+        </div>
+        <p className="text-[12.5px] text-dim">{subtitle}</p>
+        {children}
+      </Card>
+    </Page>
   );
 }

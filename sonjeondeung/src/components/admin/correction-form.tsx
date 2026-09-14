@@ -6,7 +6,7 @@ import { ActionStatus, SubmitButton } from "@/components/admin/submit-button";
 
 export type FieldOption = { name: string; label: string; kind: "text" | "int" | "bool" | "date"; current: string | number | boolean | null };
 
-const inputCls = "w-full rounded-md border border-slate-700 bg-slate-950 px-3 py-1.5 text-sm outline-none focus:border-amber-400";
+const inputCls = "h-8 w-full rounded-[9px] border border-line-strong bg-bg px-3 text-[12.5px] text-ink outline-none transition-colors focus:border-ink focus:bg-surface";
 
 function toInputValue(v: FieldOption["current"]): string {
   if (v === null || v === undefined) return "";
@@ -32,11 +32,11 @@ export function CorrectionForm({
   const field = fields.find((f) => f.name === fieldName) ?? fields[0];
 
   return (
-    <form action={formAction} className="space-y-2 rounded-md border border-slate-800 p-3">
+    <form action={formAction} className="flex flex-col gap-2.5 rounded-xl border border-line bg-surface p-4">
       <input type="hidden" name="table" value={table} />
       <input type="hidden" name="rowId" value={rowId} />
       <input type="hidden" name="gameId" value={gameId} />
-      <p className="text-sm font-medium">{title}</p>
+      <p className="text-[13px] font-bold text-ink">{title}</p>
       <div className="grid gap-2 sm:grid-cols-[12rem_1fr_auto_auto]">
         <select name="field" value={fieldName} onChange={(e) => setFieldName(e.target.value)} className={inputCls}>
           {fields.map((f) => (
@@ -55,15 +55,15 @@ export function CorrectionForm({
         ) : (
           <input name="value" key={`${field?.name}-text`} type="text" defaultValue={toInputValue(field?.current ?? null)} placeholder="비우면 null" className={inputCls} />
         )}
-        <label className="flex items-center gap-1.5 text-xs text-slate-300">
-          <input type="checkbox" name="lock" defaultChecked className="accent-amber-400" />
+        <label className="flex items-center gap-1.5 text-[11.5px] text-mut">
+          <input type="checkbox" name="lock" defaultChecked className="accent-[var(--ink)]" />
           크롤러 덮어쓰기 잠금
         </label>
         <SubmitButton label="정정" />
       </div>
       {field && (
-        <p className="text-xs text-slate-500">
-          현재 값: <span className="text-slate-300">{field.current === null ? "(없음)" : toInputValue(field.current)}</span>
+        <p className="text-[11.5px] text-dim">
+          현재 값: <span className="text-mut">{field.current === null ? "(없음)" : toInputValue(field.current)}</span>
         </p>
       )}
       <ActionStatus state={state} />

@@ -7,10 +7,10 @@ export function SubmitButton({ label, pendingLabel = "처리 중…", variant = 
   const { pending } = useFormStatus();
   const cls =
     variant === "primary"
-      ? "bg-amber-400 text-slate-950 hover:bg-amber-300"
-      : "border border-slate-700 text-slate-200 hover:border-amber-400";
+      ? "bg-ink font-semibold text-on-ink hover:bg-ink-2"
+      : "border border-line-strong bg-surface text-ink hover:border-ink";
   return (
-    <button type="submit" disabled={pending} className={`rounded-md px-3 py-1.5 text-sm font-medium disabled:opacity-60 ${cls}`}>
+    <button type="submit" disabled={pending} className={`press inline-flex h-8 items-center rounded-[9px] px-3.5 text-[12.5px] transition-colors duration-base disabled:opacity-60 ${cls}`}>
       {pending ? pendingLabel : label}
     </button>
   );
@@ -19,7 +19,7 @@ export function SubmitButton({ label, pendingLabel = "처리 중…", variant = 
 export function ActionStatus({ state }: { state: AdminActionState }) {
   if (!state) return null;
   return (
-    <p aria-live="polite" className={`text-sm ${state.ok ? "text-emerald-300" : "text-red-400"}`}>
+    <p aria-live="polite" className={`text-[12.5px] ${state.ok ? "text-acc" : "text-danger"}`}>
       {state.ok ? state.message : state.error}
     </p>
   );

@@ -10,7 +10,7 @@ export default async function SignInPage({ searchParams }: { searchParams: Promi
   const sp = await searchParams;
   const next = safeNextPath(Array.isArray(sp.next) ? sp.next[0] : sp.next);
   return (
-    <AuthCard title={M.signInTitle} subtitle={M.signInSubtitle}>
+    <AuthCard mode="signIn" subtitle={M.signInSubtitle} next={next}>
       <SignInForm next={next} />
     </AuthCard>
   );

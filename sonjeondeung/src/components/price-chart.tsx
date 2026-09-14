@@ -25,25 +25,26 @@ import type { Platform } from "@/server/db/schema";
 import type { PriceSeries } from "@/server/services/prices";
 import { useNow } from "@/components/use-now";
 
-// 플랫폼 → 색 고정(엔티티 기준, 순서/개수와 무관). 다크 서피스 기준 검증된 6색
+// 플랫폼 → 색 고정(엔티티 기준, 순서/개수와 무관). 저채도 팔레트라 색상이 아니라 명도로 구분한다
 const PLATFORM_COLOR: Record<Platform, string> = {
-  steam: "#3987e5",
-  ps5: "#d95926",
-  ps4: "#199e70",
-  xbox: "#c98500",
-  switch: "#d55181",
-  switch2: "#008300",
+  steam: "#1C1C1A",
+  ps5: "#6B6862",
+  ps4: "#8C8A84",
+  xbox: "#A8A59E",
+  switch: "#C4C0B8",
+  switch2: "#3A5A4A",
 };
+/** 가장 진한 선(=대표 플랫폼)만 2.5px, 나머지는 2px */
+const PLATFORM_WIDTH: Record<Platform, number> = { steam: 2.5, ps5: 2, ps4: 2, xbox: 2, switch: 2, switch2: 2 };
 
 /** 기간 선택 — days=null 은 전체 */
 const RANGES: Array<{ key: string; label: string; days: number | null }> = [
-  { key: "1m", label: "1개월", days: 30 },
-  { key: "3m", label: "3개월", days: 90 },
-  { key: "6m", label: "6개월", days: 180 },
   { key: "1y", label: "1년", days: 365 },
+  { key: "6m", label: "6개월", days: 180 },
+  { key: "3m", label: "3개월", days: 90 },
   { key: "all", label: "전체", days: null },
 ];
-const DEFAULT_RANGE_KEY = "3m";
+const DEFAULT_RANGE_KEY = "1y";
 /** Y축 위쪽 여유 — 정가 기준선 라벨이 잘리지 않게 */
 const Y_HEADROOM = 1.12;
 /** X축 오른쪽 여유(구간 폭 대비) — 할인 종료선 라벨 자리 */
@@ -118,14 +119,14 @@ function prepare(series: PriceSeries[], rangeDays: number | null, now: number): 
 function PriceTooltip({ active, payload, label }: TooltipContentProps) {
   if (!active || !payload || payload.length === 0) return null;
   return (
-    <div className="rounded-md border border-slate-700 bg-slate-900/95 px-3 py-2 text-xs shadow-lg">
-      <p className="mb-1 text-slate-400">{formatDate(new Date(Number(label)))}</p>
+    <div className="rounded-[7px] border border-line-strong bg-surface px-3 py-2 text-[11.5px]">
+      <p className="mb-1 text-dim">{formatDate(new Date(Number(label)))}</p>
       <ul className="space-y-0.5">
         {payload.map((e) => (
           <li key={String(e.dataKey)} className="flex items-center gap-2">
             <span aria-hidden className="inline-block h-2 w-2 rounded-full" style={{ background: e.color }} />
-            <span className="text-slate-300">{PLATFORM_LABEL[String(e.dataKey)] ?? String(e.dataKey)}</span>
-            <span className="ml-auto font-semibold text-slate-100">{formatKrw(typeof e.value === "number" ? e.value : null)}</span>
+            <span className="text-mut">{PLATFORM_LABEL[String(e.dataKey)] ?? String(e.dataKey)}</span>
+            <span className="ml-auto font-semibold text-ink">{formatKrw(typeof e.value === "number" ? e.value : null)}</span>
           </li>
         ))}
       </ul>
@@ -165,8 +166,8 @@ export function PriceChart({ series }: { series: PriceSeries[] }) {
             type="button"
             aria-pressed={r.key === rangeKey}
             onClick={() => setRangeKey(r.key)}
-            className={`rounded-md px-2.5 py-1 text-xs font-medium transition ${
-              r.key === rangeKey ? "bg-amber-400 text-slate-950" : "border border-slate-700 text-slate-300 hover:border-amber-400 hover:text-amber-300"
+            className={`press rounded-lg px-3 py-1.5 text-[12.5px] transition-colors duration-base ${
+              r.key === rangeKey ? "bg-ink font-semibold text-on-ink" : "border border-line-strong text-mut hover:border-ink hover:text-ink"
             }`}
           >
             {r.label}
@@ -175,57 +176,57 @@ export function PriceChart({ series }: { series: PriceSeries[] }) {
       </div>
 
       {data.length === 0 ? (
-        <p className="py-10 text-center text-sm text-slate-500">이 기간에는 기록이 없습니다. 더 긴 기간을 선택해 보세요.</p>
+        <p className="py-10 text-center text-[13px] text-dim">이 기간에는 기록이 없습니다. 더 긴 기간을 선택해 보세요.</p>
       ) : (
         <div className="h-72 w-full sm:h-96" role="img" aria-label="플랫폼별 가격 변동 그래프">
           <ResponsiveContainer width="100%" height="100%">
             <LineChart data={data} margin={{ top: 8, right: 12, bottom: 4, left: 8 }}>
-              <CartesianGrid stroke="#1e293b" vertical={false} />
+              <CartesianGrid stroke="#F0EEE9" vertical={false} />
               <XAxis
                 dataKey="t"
                 type="number"
                 scale="time"
                 domain={["dataMin", xMax]}
                 tickFormatter={(v: number) => formatDate(new Date(v))}
-                stroke="#475569"
-                tick={{ fill: "#94a3b8", fontSize: 11 }}
+                stroke="#E6E3DD"
+                tick={{ fill: "#8C8A84", fontSize: 11.5 }}
                 minTickGap={40}
               />
               <YAxis
                 tickFormatter={(v: number) => formatKrw(v)}
-                stroke="#475569"
-                tick={{ fill: "#94a3b8", fontSize: 11 }}
+                stroke="#E6E3DD"
+                tick={{ fill: "#8C8A84", fontSize: 11.5 }}
                 width={80}
                 domain={[0, Math.round(yMax * Y_HEADROOM)]}
               />
-              <Tooltip content={PriceTooltip} cursor={{ stroke: "#64748b", strokeDasharray: "3 3" }} />
+              <Tooltip content={PriceTooltip} cursor={{ stroke: "#A8A59E", strokeDasharray: "3 3" }} />
               {platforms.length > 1 && (
-                <Legend formatter={(v: string) => <span className="text-xs text-slate-300">{PLATFORM_LABEL[v] ?? v}</span>} />
+                <Legend formatter={(v: string) => <span className="text-[12px] text-mut">{PLATFORM_LABEL[v] ?? v}</span>} />
               )}
 
               {/* 진행 중 할인 구간 음영 */}
               {single?.saleFrom && single.saleTo && single.saleTo > single.saleFrom && (
-                <ReferenceArea x1={single.saleFrom} x2={single.saleTo} fill="#fbbf24" fillOpacity={0.08} stroke="#fbbf24" strokeOpacity={0.25} />
+                <ReferenceArea x1={single.saleFrom} x2={single.saleTo} fill="#F4F2ED" fillOpacity={1} stroke="#E6E3DD" strokeOpacity={1} />
               )}
 
               {/* 할인 종료 시점 — 라인은 "지금"에서 끝내고(미래 가격은 알 수 없다) 종료 시점만 표시 */}
               {single?.saleTo && single.saleTo > now && (
-                <ReferenceLine x={single.saleTo} stroke="#fbbf24" strokeDasharray="3 3">
-                  <Label value={`할인 종료 ${formatDate(new Date(single.saleTo))}`} position="insideTopLeft" fill="#fbbf24" fontSize={11} />
+                <ReferenceLine x={single.saleTo} stroke="#A6462E" strokeDasharray="3 3">
+                  <Label value={`할인 종료 ${formatDate(new Date(single.saleTo))}`} position="insideTopLeft" fill="#A6462E" fontSize={11.5} />
                 </ReferenceLine>
               )}
 
               {/* 정가 기준선 */}
               {single?.listPrice ? (
-                <ReferenceLine y={single.listPrice} stroke="#64748b" strokeDasharray="4 4">
-                  <Label value={`정가 ${formatKrw(single.listPrice)}`} position="insideTopRight" fill="#94a3b8" fontSize={11} />
+                <ReferenceLine y={single.listPrice} stroke="#DFDCD5" strokeDasharray="4 4">
+                  <Label value={`정가 ${formatKrw(single.listPrice)}`} position="insideTopRight" fill="#8C8A84" fontSize={11.5} />
                 </ReferenceLine>
               ) : null}
 
               {/* 역대 최저점 */}
               {single?.low && (
-                <ReferenceDot x={single.low.t} y={single.low.price} r={4} fill="#fbbf24" stroke="#0f172a">
-                  <Label value={`최저 ${formatKrw(single.low.price)}`} position="insideBottomLeft" fill="#fbbf24" fontSize={11} />
+                <ReferenceDot x={single.low.t} y={single.low.price} r={4} fill="#1C1C1A" stroke="#FFFFFF">
+                  <Label value={`최저 ${formatKrw(single.low.price)}`} position="insideBottomLeft" fill="#3A5A4A" fontSize={11.5} />
                 </ReferenceDot>
               )}
 
@@ -236,7 +237,7 @@ export function PriceChart({ series }: { series: PriceSeries[] }) {
                   dataKey={p}
                   name={p}
                   stroke={PLATFORM_COLOR[p]}
-                  strokeWidth={2}
+                  strokeWidth={PLATFORM_WIDTH[p]}
                   dot={false}
                   activeDot={{ r: 4 }}
                   connectNulls

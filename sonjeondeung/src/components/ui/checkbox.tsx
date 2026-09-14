@@ -1,5 +1,5 @@
 "use client";
-// 커스텀 체크박스 — 네이티브 input은 sr-only로 두고(키보드/폼 제출 유지) 시각은 span으로. 체크 시 pop + 글로우.
+// 커스텀 체크박스 — 네이티브 input은 sr-only로 두고(키보드/폼 제출 유지) 시각은 span으로. 체크 시 pop.
 import { useId, type ComponentProps, type ReactNode } from "react";
 import { cn } from "@/lib/cn";
 import { CheckIcon } from "@/components/ui/icons";
@@ -20,13 +20,13 @@ export function Checkbox({ children, error, className, id: idProp, checked, ...i
         <span
           aria-hidden
           className={cn(
-            "mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-[6px] border transition-[background-color,border-color,box-shadow] duration-base ease-standard",
-            "peer-focus-visible:ring-2 peer-focus-visible:ring-acc peer-focus-visible:ring-offset-2 peer-focus-visible:ring-offset-bg",
-            "peer-checked:animate-pop peer-checked:border-acc peer-checked:bg-acc peer-checked:shadow-[0_4px_12px_var(--acc-glow)] peer-checked:[&>svg]:opacity-100 peer-checked:[&>svg]:scale-100",
-            error ? "border-danger" : "border-line-strong group-hover/cb:border-slate-500",
+            "mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-[4px] border transition-[background-color,border-color,box-shadow] duration-base ease-standard",
+            "peer-focus-visible:ring-2 peer-focus-visible:ring-ink peer-focus-visible:ring-offset-2 peer-focus-visible:ring-offset-bg",
+            "peer-checked:animate-pop peer-checked:border-ink peer-checked:bg-ink peer-checked:[&>svg]:opacity-100 peer-checked:[&>svg]:scale-100",
+            error ? "border-danger" : "border-line-strong group-hover/cb:border-ink",
           )}
         >
-          <CheckIcon size={13} className="scale-50 text-slate-950 opacity-0 transition-[opacity,transform] duration-fast ease-out-emph" />
+          <CheckIcon size={13} className="scale-50 text-on-ink opacity-0 transition-[opacity,transform] duration-fast ease-out-emph" />
         </span>
         <span className="leading-relaxed">{children}</span>
       </label>

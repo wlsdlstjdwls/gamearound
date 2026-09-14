@@ -28,8 +28,8 @@ export function PasswordField({ strengthOf, ...field }: Props) {
             aria-pressed={visible}
             className={cn(
               "press flex h-9 w-9 items-center justify-center rounded-[var(--radius-sm)] outline-none",
-              "focus-visible:ring-2 focus-visible:ring-acc",
-              visible ? "text-acc" : "text-dim hover:text-mut",
+              "focus-visible:ring-2 focus-visible:ring-ink",
+              visible ? "text-ink" : "text-dim hover:text-mut",
             )}
           >
             {visible ? <EyeOffIcon /> : <EyeIcon />}
@@ -45,8 +45,8 @@ export function PasswordField({ strengthOf, ...field }: Props) {
 const BAR_COLOR: Record<number, string> = {
   1: "bg-danger",
   2: "bg-warn",
-  3: "bg-acc",
-  4: "bg-ok",
+  3: "bg-dim",
+  4: "bg-acc",
 };
 
 export function PasswordStrengthMeter({ value }: { value: string }) {

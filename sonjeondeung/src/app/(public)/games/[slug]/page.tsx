@@ -1,4 +1,4 @@
-// 게임 상세 — 카드형 (§5.1). 데이터는 tag 캐시(getGameBySlugCached), 로그인 의존 데이터(찜 여부)는 캐시 밖에서 조회
+// 게임 상세 — 결론 → 근거 순 (§5.1). 데이터는 tag 캐시(getGameBySlugCached), 로그인 의존 데이터(찜 여부)는 캐시 밖에서 조회
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
@@ -6,11 +6,14 @@ import { CoverImage } from "@/components/game-card";
 import { MultiplayerBadges } from "@/components/multiplayer-badges";
 import { NewsList } from "@/components/news-list";
 import { PlatformTabs, type PlatformTabItem } from "@/components/platform-tabs";
-import { PlaytimeStrip } from "@/components/playtime-card";
+import { PlaytimeCard } from "@/components/playtime-card";
 import { WishlistButton } from "@/components/wishlist-button";
-import { formatDateTime } from "@/lib/format";
+import { buttonClass } from "@/components/ui/button";
+import { Card, Page, SectionHead } from "@/components/ui/page";
+import { formatDateTime, formatHours, formatKrw, PLATFORM_LABEL } from "@/lib/format";
 import { getFreshness } from "@/lib/freshness";
-import { displayTitle, getGameBySlugCached } from "@/server/services/games";
+import { ROUTES } from "@/lib/routes";
+import { displayTitle, getGameBySlugCached, type GameDetail, type PlatformDto } from "@/server/services/games";
 import { getCurrentUser } from "@/server/services/users";
 import { isInWishlist } from "@/server/services/wishlist";
 
@@ -31,6 +34,58 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   };
 }
 
+/** 현재가가 가장 싼 플랫폼 */
+function cheapest(platforms: PlatformDto[]): PlatformDto | null {
+  const priced = platforms.filter((p) => p.currentPrice !== null);
+  if (priced.length === 0) return null;
+  return priced.reduce((a, b) => ((b.currentPrice as number) < (a.currentPrice as number) ? b : a));
+}
+
+/** 평점 — OpenCritic 우선, 없으면 메타크리틱. 어느 쪽을 썼는지 함께 돌려준다 */
+function bestScore(platforms: PlatformDto[]): { value: number; note: string } | null {
+  const oc = platforms.map((p) => p.opencriticScore).find((v): v is number => typeof v === "number");
+  const mc = platforms.map((p) => p.metacriticScore).find((v): v is number => typeof v === "number");
+  if (oc !== undefined) return { value: oc, note: mc !== undefined ? `OpenCritic · 메타 ${mc}` : "OpenCritic" };
+  if (mc !== undefined) return { value: mc, note: "메타크리틱" };
+  return null;
+}
+
+function SummaryCell({ label, value, note }: { label: string; value: string; note?: string }) {
+  return (
+    <div className="flex flex-col gap-1 px-4 py-3.5">
+      <dt className="text-[11.5px] text-dim">{label}</dt>
+      <dd className="flex flex-col gap-0.5">
+        <span className="text-[20px] font-bold tracking-[-0.02em] text-ink">{value}</span>
+        {note && <span className="text-[11.5px] text-mut">{note}</span>}
+      </dd>
+    </div>
+  );
+}
+
+/** 결정 요약 바 — "지금이 싼가 · 얼마나 걸리나 · 살 만한가" 세 값만 최상단에 고정한다 */
+function DecisionSummary({ game }: { game: GameDetail }) {
+  const best = cheapest(game.platforms);
+  const score = bestScore(game.platforms);
+  const main = game.playtime?.mainStoryHours;
+  const complete = game.playtime?.completionistHours;
+
+  return (
+    <dl className="grid grid-cols-[repeat(auto-fit,minmax(160px,1fr))] divide-x divide-line-soft overflow-hidden rounded-xl border border-line bg-surface">
+      <SummaryCell
+        label="지금 최저가"
+        value={best ? formatKrw(best.currentPrice) : "-"}
+        note={best ? `${PLATFORM_LABEL[best.platform] ?? best.platform}${best.discountPct ? ` · -${best.discountPct}%` : ""}` : "가격 정보 없음"}
+      />
+      <SummaryCell
+        label="메인 스토리"
+        value={main ? formatHours(main) : "-"}
+        note={complete ? `완전 정복 ${formatHours(complete)}` : "HLTB 제보 없음"}
+      />
+      <SummaryCell label="평점" value={score ? String(score.value) : "-"} note={score?.note ?? "수집된 평점 없음"} />
+    </dl>
+  );
+}
+
 export default async function GameDetailPage({ params }: Props) {
   const { slug } = await params;
   const game = await getGameBySlugCached(slug);
@@ -45,63 +100,58 @@ export default async function GameDetailPage({ params }: Props) {
     ...p,
     freshness: getFreshness(p.lastSyncedAt, p.syncStatus),
   }));
+  const best = cheapest(game.platforms);
 
   return (
-    <article className="space-y-6">
-      {/* 헤더 카드 */}
-      <section className="overflow-hidden rounded-2xl border border-slate-800 bg-slate-900/60">
-        <div className="grid gap-4 p-4 sm:grid-cols-[240px_1fr] sm:p-6">
-          {/*
-            세로 아트(600×900)가 있으면 3:4 슬롯을 그대로 채운다. 없으면 커버는 460×215 가로 배너라
-            3:4 로 크롭하면 제목이 잘려 나간다 — 그때는 배너 비율을 유지한다.
-          */}
-          <div
-            className={`relative self-start overflow-hidden rounded-lg bg-slate-800 ${
-              // 모바일에서 3:4 를 100vw 로 펼치면 커버 하나가 화면을 다 먹는다 — 폭을 고정하고 가운데 정렬
-              game.portraitUrl ? "mx-auto aspect-[3/4] w-40 sm:mx-0 sm:w-full" : "aspect-[460/215] w-full"
-            }`}
-          >
-            <CoverImage
-              src={game.portraitUrl ?? game.coverUrl}
-              alt={`${title} 커버`}
-              sizes="(max-width: 640px) 100vw, 240px"
-              priority
-            />
-          </div>
-          <div className="flex min-w-0 flex-col gap-3">
-            <div className="flex items-start justify-between gap-3">
-              <div className="min-w-0">
-                <h1 className="text-2xl font-bold leading-tight text-slate-100 sm:text-3xl">{title}</h1>
-                {game.titleKo && <p className="mt-1 text-sm text-slate-400">{game.titleEn}</p>}
-              </div>
-              <div className="flex shrink-0 flex-col items-end gap-2">
-                <WishlistButton gameId={game.id} wished={wished} signedIn={Boolean(user)} />
-                <Link
-                  href={`/alerts?game=${encodeURIComponent(game.slug)}`}
-                  className="rounded-md border border-slate-700 px-3 py-1.5 text-sm hover:border-amber-400 hover:text-amber-300"
-                >
-                  🔔 가격 알림 설정
-                </Link>
-              </div>
+    <Page pad="detail" gap={28}>
+      <nav aria-label="브레드크럼">
+        <Link href={ROUTES.game} className="text-[12.5px] text-dim transition-colors hover:text-ink">
+          ← 게임 목록
+        </Link>
+      </nav>
+
+      {/* 섹션 1 — 헤더 블록 */}
+      <section className="flex flex-wrap gap-6">
+        <div
+          className={`relative shrink-0 overflow-hidden rounded-xl border border-line bg-surface-3 ${
+            // 세로 아트가 있으면 190×250 슬롯을 채운다. 없으면 가로 배너 비율을 유지해 제목이 잘리지 않게 한다
+            game.portraitUrl ? "aspect-[3/4] w-[190px]" : "aspect-[460/215] w-full max-w-[380px]"
+          }`}
+        >
+          <CoverImage src={game.portraitUrl ?? game.coverUrl} alt={`${title} 커버`} sizes="(max-width: 640px) 100vw, 190px" priority />
+        </div>
+
+        <div className="flex min-w-[280px] flex-1 flex-col gap-4">
+          <div className="flex flex-wrap items-start justify-between gap-3">
+            <div className="min-w-0">
+              <h1 className="text-[28px] font-bold leading-[1.2] tracking-[-0.03em] text-ink">{title}</h1>
+              <p className="mt-1 text-[13px] text-dim">
+                {[game.titleKo ? game.titleEn : null, game.developer, game.publisher].filter(Boolean).join(" · ") || "제작사 정보 없음"}
+              </p>
             </div>
+            <div className="flex shrink-0 flex-wrap items-center gap-2">
+              <WishlistButton gameId={game.id} wished={wished} signedIn={Boolean(user)} />
+              <Link href={`${ROUTES.alerts}?game=${encodeURIComponent(game.slug)}`} className={buttonClass({ variant: "primary" })}>
+                할인 알림 받기
+              </Link>
+            </div>
+          </div>
 
-            <dl className="grid grid-cols-[auto_1fr] gap-x-3 gap-y-1 text-sm">
-              <dt className="text-slate-500">개발</dt>
-              <dd className="text-slate-200">{game.developer ?? "-"}</dd>
-              <dt className="text-slate-500">퍼블리셔</dt>
-              <dd className="text-slate-200">{game.publisher ?? "-"}</dd>
-            </dl>
+          <DecisionSummary game={game} />
 
+          <div className="flex flex-wrap items-center gap-2">
             {game.genres.length > 0 && (
-              <ul className="flex flex-wrap gap-1.5" aria-label="장르">
-                {game.genres.map((g) => (
-                  <li key={g} className="rounded-full bg-slate-800 px-2 py-0.5 text-xs text-slate-300">
-                    {g}
-                  </li>
-                ))}
-              </ul>
+              <>
+                <ul className="flex flex-wrap gap-1.5" aria-label="장르">
+                  {game.genres.map((g) => (
+                    <li key={g} className="rounded-full bg-surface-2 px-[11px] py-1 text-[12px] text-ink-2">
+                      {g}
+                    </li>
+                  ))}
+                </ul>
+                <span aria-hidden className="h-5 w-px bg-line" />
+              </>
             )}
-
             <MultiplayerBadges
               localMaxPlayers={game.localMaxPlayers}
               onlineMaxPlayers={game.onlineMaxPlayers}
@@ -109,48 +159,45 @@ export default async function GameDetailPage({ params }: Props) {
               supportsCoop={game.supportsCoop}
               supportsPvp={game.supportsPvp}
             />
-
-            {/* 플레이타임은 구매 결정의 1순위 정보(기획서 3-1) — 상단 헤더 카드 안에 둔다 */}
-            <PlaytimeStrip playtime={game.playtime} />
-
-            {game.description && <p className="line-clamp-4 text-sm leading-relaxed text-slate-400">{game.description}</p>}
           </div>
+
+          {game.description && <p className="max-w-[600px] text-[13.5px] leading-[1.75] text-mut">{game.description}</p>}
         </div>
       </section>
 
-      <div className="grid gap-6 lg:grid-cols-[1fr_360px]">
-        <div className="space-y-6">
-          {/* 플랫폼 탭 */}
-          <section aria-labelledby="platforms-heading" className="space-y-3">
-            <div className="flex items-baseline justify-between">
-              <h2 id="platforms-heading" className="text-lg font-bold">
-                플랫폼별 가격
-              </h2>
-              <Link href={`/games/${game.slug}/prices`} className="text-sm text-amber-300 hover:underline">
-                가격 변동 그래프 →
-              </Link>
-            </div>
+      {/* 섹션 2 — 가격/뉴스 + 사이드바 */}
+      <div className="grid gap-6 lg:grid-cols-[2fr_1fr]">
+        <div className="flex flex-col gap-6">
+          <section aria-labelledby="platforms-heading" className="flex flex-col gap-3">
+            <SectionHead
+              id="platforms-heading"
+              title="플랫폼별 가격"
+              action={
+                <Link href={`/games/${game.slug}/prices`} className="text-[12.5px] text-acc hover:underline">
+                  가격 변동 그래프 →
+                </Link>
+              }
+            />
             <PlatformTabs platforms={platforms} />
           </section>
 
-          {/* 뉴스 */}
-          <section aria-labelledby="news-heading" className="space-y-3">
-            <h2 id="news-heading" className="text-lg font-bold">
-              관련 뉴스
-            </h2>
-            <div className="rounded-xl border border-slate-800 bg-slate-900/60 px-4">
+          <section aria-labelledby="news-heading" className="flex flex-col gap-3">
+            <SectionHead id="news-heading" title="관련 뉴스" />
+            <Card className="px-4">
               <NewsList items={game.news} />
-            </div>
+            </Card>
           </section>
         </div>
 
-        <aside className="space-y-6">
+        <aside className="flex flex-col gap-4">
+          <PlaytimeCard playtime={game.playtime} currentPrice={best?.currentPrice ?? null} />
+
           {game.sourceRefs.length > 0 && (
-            <section aria-labelledby="sources-heading" className="rounded-xl border border-slate-800 bg-slate-900/60 p-4">
-              <h2 id="sources-heading" className="mb-2 text-sm font-semibold text-slate-300">
+            <section aria-labelledby="sources-heading" className="flex flex-col gap-3 rounded-xl border border-line bg-surface p-4">
+              <h2 id="sources-heading" className="text-[13.5px] font-bold text-ink">
                 정보 출처
               </h2>
-              <ul className="flex flex-wrap gap-1.5 text-xs">
+              <ul className="flex flex-wrap gap-1.5 text-[12px]">
                 {game.sourceRefs.map((r) =>
                   r.url ? (
                     <li key={r.source}>
@@ -158,24 +205,25 @@ export default async function GameDetailPage({ params }: Props) {
                         href={r.url}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="rounded-full border border-slate-700 px-2 py-0.5 text-slate-300 hover:border-amber-400 hover:text-amber-300"
+                        className="press inline-flex items-center gap-1 rounded-full border border-line-strong px-2.5 py-1 text-ink-2 transition-colors hover:border-ink"
                       >
                         {r.source}
+                        <span aria-hidden>↗</span>
                         <span className="sr-only"> (새 창에서 열림)</span>
                       </a>
                     </li>
                   ) : (
-                    <li key={r.source} className="rounded-full border border-slate-800 px-2 py-0.5 text-slate-500">
+                    <li key={r.source} className="rounded-full border border-line px-2.5 py-1 text-dim-2">
                       {r.source}
                     </li>
                   ),
                 )}
               </ul>
-              <p className="mt-3 text-[11px] text-slate-500">마지막 갱신 {formatDateTime(game.updatedAt)}</p>
+              <p className="text-[11.5px] text-dim">마지막 갱신 {formatDateTime(game.updatedAt)}</p>
             </section>
           )}
         </aside>
       </div>
-    </article>
+    </Page>
   );
 }

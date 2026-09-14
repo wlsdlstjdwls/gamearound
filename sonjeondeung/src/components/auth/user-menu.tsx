@@ -93,15 +93,15 @@ export function UserMenu({ user }: { user: PublicUser }) {
         aria-controls={open ? id : undefined}
         aria-label={`${name} 메뉴`}
         className={cn(
-          "press flex h-10 items-center gap-2 rounded-full border pl-1 pr-2 outline-none transition-colors",
-          "focus-visible:ring-2 focus-visible:ring-acc focus-visible:ring-offset-2 focus-visible:ring-offset-bg",
-          open ? "border-acc/60 bg-surface" : "border-line-strong hover:border-acc/60 hover:bg-surface",
+          "press flex h-9 items-center gap-2 rounded-full border pl-1 pr-2.5 outline-none transition-colors",
+          "focus-visible:ring-2 focus-visible:ring-ink focus-visible:ring-offset-2 focus-visible:ring-offset-bg",
+          open ? "border-ink bg-surface" : "border-line-strong hover:border-ink hover:bg-surface",
         )}
       >
-        <span aria-hidden className="flex h-8 w-8 items-center justify-center rounded-full bg-acc text-sm font-bold text-slate-950">
+        <span aria-hidden className="flex h-[30px] w-[30px] items-center justify-center rounded-full bg-surface-3 text-[12px] font-bold text-ink-2">
           {initialOf(user)}
         </span>
-        <span className="hidden max-w-[7rem] truncate text-sm font-medium text-ink sm:block">{name}</span>
+        <span className="hidden max-w-[7rem] truncate text-[13px] font-medium text-ink sm:block">{name}</span>
         <ChevronDownIcon size={16} className={cn("text-dim transition-transform duration-base ease-out-emph", open && "rotate-180")} />
       </button>
 
@@ -112,12 +112,12 @@ export function UserMenu({ user }: { user: PublicUser }) {
           role="menu"
           aria-label="내 계정"
           onKeyDown={onMenuKey}
-          className="absolute right-0 top-[calc(100%+8px)] z-50 w-60 origin-top-right animate-scale-in overflow-hidden rounded-[var(--radius-lg)] border border-line-strong bg-surface shadow-[0_18px_50px_-18px_rgba(0,0,0,0.8)]"
+          className="absolute right-0 top-[calc(100%+8px)] z-50 w-60 origin-top-right animate-scale-in overflow-hidden rounded-[var(--radius-md)] border border-line-strong bg-surface"
         >
           <div className="border-b border-line px-4 py-3">
             <p className="truncate text-sm font-semibold text-ink">{name}</p>
             <p className="truncate text-xs text-dim">{user.email}</p>
-            {user.role !== "user" && <span className="mt-1 inline-block rounded-md bg-acc/15 px-1.5 py-0.5 text-[11px] font-semibold text-acc-hover">{ROLE_LABEL[user.role]}</span>}
+            {user.role !== "user" && <span className="mt-1 inline-block rounded-[5px] bg-acc-soft px-1.5 py-0.5 text-[11px] font-semibold text-acc">{ROLE_LABEL[user.role]}</span>}
           </div>
           <div className="py-1.5">
             {links.map((l) => (
@@ -126,7 +126,7 @@ export function UserMenu({ user }: { user: PublicUser }) {
                 href={l.href}
                 role="menuitem"
                 onClick={() => close(false)}
-                className="flex min-h-[var(--touch-target)] items-center px-4 text-sm text-slate-200 outline-none transition-colors hover:bg-surface-2 hover:text-acc-hover focus-visible:bg-surface-2 focus-visible:text-acc-hover"
+                className="flex min-h-[var(--touch-target)] items-center px-4 text-[13px] text-mut outline-none transition-colors hover:bg-surface-2 hover:text-ink focus-visible:bg-surface-2 focus-visible:text-ink"
               >
                 {l.label}
               </Link>
@@ -138,7 +138,7 @@ export function UserMenu({ user }: { user: PublicUser }) {
               role="menuitem"
               onClick={signOut}
               disabled={signingOut}
-              className="flex min-h-[var(--touch-target)] w-full items-center gap-2 px-4 text-left text-sm text-mut outline-none transition-colors hover:bg-danger/10 hover:text-danger focus-visible:bg-danger/10 focus-visible:text-danger disabled:opacity-60"
+              className="flex min-h-[var(--touch-target)] w-full items-center gap-2 px-4 text-left text-[13px] text-mut outline-none transition-colors hover:bg-danger-soft hover:text-danger focus-visible:bg-danger-soft focus-visible:text-danger disabled:opacity-60"
             >
               {signingOut ? <SpinnerIcon size={16} /> : <LogOutIcon size={16} />}
               {M.signOutCta}

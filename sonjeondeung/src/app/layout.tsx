@@ -11,22 +11,23 @@ export const metadata: Metadata = {
 };
 
 export const viewport: Viewport = {
-  themeColor: "#0f172a",
+  themeColor: "#ffffff",
   width: "device-width",
   initialScale: 1,
   viewportFit: "cover",
 };
 
 // 루트 레이아웃은 cookies()를 읽지 않는다(홈 풀 라우트 캐시 유지). 세션 표시는 SessionProvider가 클라이언트에서 /api/auth/me 로 가져온다.
+// 폭·패딩은 화면마다 다르므로 여기서 잡지 않는다 — 각 페이지가 <Page>로 지정한다.
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="ko" className="h-full antialiased">
-      <body className="min-h-full flex flex-col bg-slate-950 text-slate-100">
+      <body className="flex min-h-full flex-col bg-bg text-ink">
         <SessionProvider>
           <SiteHeader />
-          <main className="flex-1 mx-auto w-full max-w-6xl px-4 py-6">{children}</main>
-          <footer className="border-t border-slate-800 py-6 text-center text-xs text-slate-500">
-            손전등 · 가격/정보는 각 스토어 및 외부 소스에서 주기적으로 수집되며 실시간이 아닙니다.
+          <main className="flex-1">{children}</main>
+          <footer className="border-t border-line bg-surface py-6 text-center text-[11.5px] text-dim">
+            손전등 · 가격·정보는 각 스토어와 외부 소스에서 주기적으로 수집되며 실시간이 아닙니다.
           </footer>
         </SessionProvider>
       </body>

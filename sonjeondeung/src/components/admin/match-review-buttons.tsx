@@ -12,7 +12,7 @@ export function MatchReviewButtons({ gameId, source }: { gameId: string; source:
         type="button"
         disabled={pending}
         onClick={() => start(async () => setState(await approveMatchAction(gameId, source)))}
-        className="rounded-md bg-emerald-500/90 px-2.5 py-1 text-xs font-medium text-slate-950 hover:bg-emerald-400 disabled:opacity-60"
+        className="press rounded-[7px] bg-ink px-[11px] py-[5px] text-[12px] font-semibold text-on-ink transition-colors hover:bg-ink-2 disabled:opacity-60"
       >
         승인
       </button>
@@ -23,11 +23,11 @@ export function MatchReviewButtons({ gameId, source }: { gameId: string; source:
           if (!confirm("이 후보 매핑을 거절(삭제)할까요?")) return;
           start(async () => setState(await rejectMatchAction(gameId, source)));
         }}
-        className="rounded-md border border-slate-700 px-2.5 py-1 text-xs text-slate-300 hover:border-red-400 hover:text-red-300 disabled:opacity-60"
+        className="press rounded-[7px] border border-line-strong px-[11px] py-[5px] text-[12px] text-mut transition-colors hover:border-danger hover:text-danger disabled:opacity-60"
       >
         거절
       </button>
-      {state && !state.ok && <span className="text-xs text-red-400">{state.error}</span>}
+      {state && !state.ok && <span className="text-[11.5px] text-danger">{state.error}</span>}
     </div>
   );
 }

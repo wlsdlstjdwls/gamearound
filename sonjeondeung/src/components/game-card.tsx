@@ -1,4 +1,4 @@
-// 게임 카드(홈/검색 목록) + 커버 이미지 공용 컴포넌트
+// 게임 카드(홈/목록) + 커버 이미지 공용 컴포넌트
 import Image from "next/image";
 import Link from "next/link";
 import { formatDate, formatDiscount, formatKrw, PLATFORM_LABEL } from "@/lib/format";
@@ -18,7 +18,7 @@ function isOptimizable(url: string): boolean {
   }
 }
 
-/** 커버 이미지. coverUrl 없으면 placeholder. 부모가 relative + 크기 지정 */
+/** 커버 이미지. coverUrl 없으면 빈 플레이스홀더(이모지 금지 — 회색 면으로만 비운다). 부모가 relative + 크기 지정 */
 export function CoverImage({
   src,
   alt,
@@ -31,15 +31,7 @@ export function CoverImage({
   priority?: boolean;
 }) {
   if (!src) {
-    return (
-      <div
-        role="img"
-        aria-label={`${alt} (커버 이미지 없음)`}
-        className="flex h-full w-full items-center justify-center bg-slate-800 text-3xl text-slate-600"
-      >
-        🎮
-      </div>
-    );
+    return <div role="img" aria-label={`${alt} (커버 이미지 없음)`} className="h-full w-full bg-surface-3" />;
   }
   return (
     <Image
@@ -58,43 +50,46 @@ export function GameCard({ game, variant = "discount" }: { game: GameSummary; va
   const title = game.titleKo ?? game.titleEn;
   const best = game.best;
   const hasDiscount = Boolean(best?.discountPct && best.discountPct > 0);
+  const platformText = best ? PLATFORM_LABEL[best.platform] ?? best.platform : "플랫폼 정보 없음";
 
   return (
     <Link
       href={`/games/${game.slug}`}
-      className="group flex flex-col overflow-hidden rounded-xl border border-slate-800 bg-slate-900/60 transition hover:border-amber-400/60 focus:outline-none focus-visible:ring-2 focus-visible:ring-amber-400"
+      className="lift press group flex h-full flex-col overflow-hidden rounded-xl border border-line bg-surface outline-none transition-colors duration-base hover:border-line-strong focus-visible:ring-2 focus-visible:ring-ink focus-visible:ring-offset-2 focus-visible:ring-offset-bg"
       aria-label={`${title} 상세 보기`}
     >
-      <div className="relative aspect-[460/215] w-full bg-slate-800">
+      <div className="relative aspect-[460/215] w-full bg-surface-3">
         <CoverImage src={game.coverUrl} alt={`${title} 커버`} />
         {hasDiscount && best && (
-          <span className="absolute left-2 top-2 rounded-md bg-amber-400 px-1.5 py-0.5 text-xs font-bold text-slate-950">
+          <span className="absolute left-2.5 top-2.5 rounded-[6px] bg-ink px-2 py-[3px] text-[11.5px] font-bold text-on-ink">
             {formatDiscount(best.discountPct)}
           </span>
         )}
       </div>
-      <div className="flex flex-1 flex-col gap-1 p-3">
-        <p className="line-clamp-2 text-sm font-semibold leading-snug text-slate-100 group-hover:text-amber-300">{title}</p>
-        {game.titleKo && <p className="line-clamp-1 text-xs text-slate-500">{game.titleEn}</p>}
-        {hasDiscount && best && <SaleBadge discountName={best.discountName} discountEndsAt={best.discountEndsAt} />}
-        <div className="mt-auto flex items-end justify-between gap-2 pt-1 text-xs text-slate-400">
-          <span>
-            {best ? PLATFORM_LABEL[best.platform] ?? best.platform : "플랫폼 정보 없음"}
-            {game.platformCount > 1 && <span className="text-slate-500"> 외 {game.platformCount - 1}</span>}
-          </span>
-          {variant === "release" && best?.releaseDate ? (
-            <span className="text-slate-300">{formatDate(best.releaseDate)}</span>
-          ) : (
-            best && (
-              <span className="text-right">
+
+      <div className="flex flex-1 flex-col gap-[7px] p-[15px]">
+        <p className="line-clamp-2 text-[14.5px] font-bold leading-snug tracking-[-0.01em] text-ink">{title}</p>
+        <p className="line-clamp-1 text-[11.5px] text-dim">
+          {platformText}
+          {game.platformCount > 1 && ` 외 ${game.platformCount - 1}`}
+          {game.titleKo && ` · ${game.titleEn}`}
+        </p>
+
+        {variant === "release" && best?.releaseDate ? (
+          <p className="mt-auto text-[13px] text-mut">{formatDate(best.releaseDate)} 출시</p>
+        ) : (
+          best && (
+            <div className="mt-auto flex flex-col gap-1">
+              <p className="flex items-baseline gap-1.5">
+                <span className="text-[19px] font-bold tracking-[-0.02em] text-ink">{formatKrw(best.currentPrice)}</span>
                 {hasDiscount && best.listPrice !== null && (
-                  <span className="mr-1 text-slate-500 line-through">{formatKrw(best.listPrice)}</span>
+                  <span className="text-[12px] text-dim-2 line-through">{formatKrw(best.listPrice)}</span>
                 )}
-                <span className="font-semibold text-slate-100">{formatKrw(best.currentPrice)}</span>
-              </span>
-            )
-          )}
-        </div>
+              </p>
+              {hasDiscount && <SaleBadge discountName={best.discountName} discountEndsAt={best.discountEndsAt} />}
+            </div>
+          )
+        )}
       </div>
     </Link>
   );

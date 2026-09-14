@@ -6,6 +6,7 @@ import { GameCard } from "@/components/game-card";
 import { EmptyState } from "@/components/empty-state";
 import { GameFilters } from "@/components/game-filters";
 import { Pagination } from "@/components/pagination";
+import { Page } from "@/components/ui/page";
 import { DEFAULT_GAME_SORT, SORT_LABEL, gamesHref, parseGamesQuery } from "@/lib/games-query";
 import { PLATFORM_LABEL } from "@/lib/format";
 import { ROUTES } from "@/lib/routes";
@@ -42,13 +43,13 @@ export default async function GamesPage({ searchParams }: Props) {
   const hasFilter = Boolean(filter.q || filter.platform || filter.genre || filter.onSale);
 
   return (
-    <div className="space-y-4">
-      <div className="flex flex-wrap items-baseline justify-between gap-2">
-        <h1 className="text-xl font-bold">게임 목록</h1>
-        <p className="text-sm text-slate-400" aria-live="polite">
-          전체 {facets.total}개 중 <span className="text-slate-200">{result.total}개</span>
+    <Page gap={20}>
+      <div className="flex flex-wrap items-baseline justify-between gap-x-3 gap-y-2">
+        <h1 className="text-2xl font-bold tracking-[-0.03em] text-ink">게임 목록</h1>
+        <p className="text-[13px] text-dim" aria-live="polite">
+          전체 {facets.total}개 중 <span className="font-semibold text-ink">{result.total}개</span>
           {result.totalPages > 1 && (
-            <span className="text-slate-500">
+            <span>
               {" · "}
               {result.page}/{result.totalPages} 페이지
             </span>
@@ -69,7 +70,7 @@ export default async function GamesPage({ searchParams }: Props) {
           <h2 className="sr-only">
             {SORT_LABEL[filter.sort ?? DEFAULT_GAME_SORT]} 게임 {result.total}개
           </h2>
-          <ul className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
+          <ul className="grid grid-cols-[repeat(auto-fit,minmax(238px,1fr))] gap-4">
             {result.items.map((g) => (
               <li key={g.slug}>
                 <GameCard game={g} variant={filter.sort === "release" ? "release" : "discount"} />
@@ -83,6 +84,6 @@ export default async function GamesPage({ searchParams }: Props) {
           />
         </>
       )}
-    </div>
+    </Page>
   );
 }

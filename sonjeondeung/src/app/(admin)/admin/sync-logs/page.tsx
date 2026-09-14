@@ -8,9 +8,9 @@ import { requireRoleOrForbid } from "@/server/auth/guards";
 export const metadata: Metadata = { title: "동기화 로그" };
 
 const STATUS_STYLE: Record<string, string> = {
-  ok: "text-emerald-300",
-  partial: "text-amber-300",
-  failed: "text-red-300",
+  ok: "text-acc",
+  partial: "text-warn",
+  failed: "text-danger",
 };
 
 function durationSec(start: Date, end: Date | null): string {
@@ -26,16 +26,16 @@ export default async function SyncLogsPage({ searchParams }: { searchParams: Pro
   const logs = await listSyncLogs({ limit: 100, source });
 
   return (
-    <section className="space-y-4">
+    <section className="flex flex-col gap-4">
       <header className="flex flex-wrap items-end justify-between gap-2">
-        <h1 className="text-xl font-bold">동기화 로그 <span className="text-sm font-normal text-slate-400">최근 {logs.length}건</span></h1>
+        <h1 className="text-2xl font-bold tracking-[-0.03em] text-ink">동기화 로그 <span className="text-[13px] font-normal text-dim">최근 {logs.length}건</span></h1>
         <div className="flex flex-wrap gap-1 text-xs">
-          <Link href="/admin/sync-logs" className={`rounded-md border px-2 py-1 ${!source ? "border-amber-400 text-amber-300" : "border-slate-700 text-slate-300 hover:border-slate-500"}`}>전체</Link>
+          <Link href="/admin/sync-logs" className={`press rounded-lg px-2.5 py-1 ${!source ? "bg-ink font-semibold text-on-ink" : "border border-line-strong text-mut hover:border-ink hover:text-ink"}`}>전체</Link>
           {SOURCES.map((s) => (
             <Link
               key={s}
               href={`/admin/sync-logs?source=${s}`}
-              className={`rounded-md border px-2 py-1 ${source === s ? "border-amber-400 text-amber-300" : "border-slate-700 text-slate-300 hover:border-slate-500"}`}
+              className={`press rounded-lg px-2.5 py-1 ${source === s ? "bg-ink font-semibold text-on-ink" : "border border-line-strong text-mut hover:border-ink hover:text-ink"}`}
             >
               {s}
             </Link>
@@ -44,11 +44,11 @@ export default async function SyncLogsPage({ searchParams }: { searchParams: Pro
       </header>
 
       {logs.length === 0 ? (
-        <p className="rounded-lg border border-dashed border-slate-800 p-6 text-center text-sm text-slate-400">로그가 없습니다.</p>
+        <p className="rounded-xl border border-dashed border-line-strong bg-surface p-6 text-[13px] text-mut">로그가 없습니다.</p>
       ) : (
-        <div className="overflow-x-auto rounded-lg border border-slate-800">
-          <table className="w-full text-sm">
-            <thead className="bg-slate-900 text-left text-xs text-slate-400">
+        <div className="overflow-x-auto rounded-xl border border-line bg-surface">
+          <table className="w-full text-[13px]">
+            <thead className="border-b border-line text-left text-[11.5px] text-dim">
               <tr>
                 <th className="px-3 py-2">#</th>
                 <th className="px-3 py-2">소스</th>
@@ -60,18 +60,18 @@ export default async function SyncLogsPage({ searchParams }: { searchParams: Pro
                 <th className="px-3 py-2">에러 샘플</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-slate-800">
+            <tbody className="divide-y divide-line-soft">
               {logs.map((l) => (
                 <tr key={l.id} className="align-top">
-                  <td className="px-3 py-2 text-slate-500">{l.id}</td>
+                  <td className="px-3 py-2 text-dim">{l.id}</td>
                   <td className="px-3 py-2">{l.source}</td>
                   <td className={`px-3 py-2 ${STATUS_STYLE[l.status] ?? ""}`}>{l.status}</td>
                   <td className="whitespace-nowrap px-3 py-2">{formatDateTime(l.startedAt)}</td>
                   <td className="px-3 py-2">{durationSec(l.startedAt, l.finishedAt)}</td>
                   <td className="px-3 py-2">{l.processed ?? 0}</td>
-                  <td className={`px-3 py-2 ${(l.failed ?? 0) > 0 ? "text-red-300" : ""}`}>{l.failed ?? 0}</td>
+                  <td className={`px-3 py-2 ${(l.failed ?? 0) > 0 ? "font-semibold text-danger" : ""}`}>{l.failed ?? 0}</td>
                   <td className="max-w-md px-3 py-2">
-                    {l.errorSample ? <code className="line-clamp-2 break-all text-[11px] text-red-200">{l.errorSample}</code> : <span className="text-slate-600">-</span>}
+                    {l.errorSample ? <code className="line-clamp-2 break-all font-mono text-[11px] text-mut">{l.errorSample}</code> : <span className="text-dim-2">-</span>}
                   </td>
                 </tr>
               ))}

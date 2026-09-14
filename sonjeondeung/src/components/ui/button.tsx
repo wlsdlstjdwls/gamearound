@@ -1,4 +1,5 @@
-// 공용 버튼 — variant/size/loading. 누름 모션(.press)과 터치 타깃 44px 보장. Link가 필요하면 buttonClass()로 스타일만 가져간다.
+// 공용 버튼 — variant/size/loading. 누름 모션(.press)과 터치 타깃 보장. Link가 필요하면 buttonClass()로 스타일만 가져간다.
+// 리디자인: 주 버튼은 잉크 필, 보조는 흰 배경 + 1px 테두리. 그림자는 쓰지 않는다.
 import type { ComponentProps, ReactNode } from "react";
 import { cn } from "@/lib/cn";
 import { SpinnerIcon } from "@/components/ui/icons";
@@ -7,23 +8,23 @@ export type ButtonVariant = "primary" | "secondary" | "ghost" | "danger";
 export type ButtonSize = "sm" | "md" | "lg";
 
 const VARIANT: Record<ButtonVariant, string> = {
-  primary: "bg-acc text-slate-950 font-semibold hover:bg-acc-hover shadow-[0_6px_18px_-8px_rgba(251,191,36,0.7)] disabled:shadow-none",
-  secondary: "border border-line-strong bg-surface text-ink hover:border-acc/60 hover:text-acc-hover",
+  primary: "bg-ink text-on-ink font-semibold hover:bg-ink-2",
+  secondary: "border border-line-strong bg-surface text-ink hover:border-ink",
   ghost: "text-mut hover:bg-surface-2 hover:text-ink",
-  danger: "border border-danger/40 text-danger hover:bg-danger/10",
+  danger: "border border-line-strong bg-surface text-danger hover:border-danger",
 };
 
 const SIZE: Record<ButtonSize, string> = {
-  sm: "h-9 px-3 text-sm rounded-[var(--radius-sm)]",
-  md: "h-11 px-4 text-sm rounded-[var(--radius-md)]",
-  lg: "h-12 px-5 text-base rounded-[var(--radius-md)]",
+  sm: "h-8 px-3.5 text-[12.5px]",
+  md: "h-9 px-3.5 text-[13px]",
+  lg: "h-11 px-5 text-sm",
 };
 
 export function buttonClass(opts: { variant?: ButtonVariant; size?: ButtonSize; fullWidth?: boolean; className?: string } = {}): string {
   const { variant = "primary", size = "md", fullWidth = false, className } = opts;
   return cn(
-    "press lift inline-flex items-center justify-center gap-2 whitespace-nowrap select-none outline-none",
-    "focus-visible:ring-2 focus-visible:ring-acc focus-visible:ring-offset-2 focus-visible:ring-offset-bg",
+    "press lift inline-flex select-none items-center justify-center gap-1.5 whitespace-nowrap rounded-[var(--radius-sm)] outline-none",
+    "focus-visible:ring-2 focus-visible:ring-ink focus-visible:ring-offset-2 focus-visible:ring-offset-bg",
     "disabled:cursor-not-allowed disabled:opacity-60",
     VARIANT[variant],
     SIZE[size],
@@ -51,7 +52,7 @@ export function Button({ variant, size, fullWidth, loading = false, loadingLabel
       {...rest}
     >
       {loading && <SpinnerIcon size={16} />}
-      <span className={cn("inline-flex items-center gap-2 transition-opacity duration-fast", loading && !loadingLabel && "opacity-80")}>
+      <span className={cn("inline-flex items-center gap-1.5 transition-opacity duration-fast", loading && !loadingLabel && "opacity-80")}>
         {loading && loadingLabel ? loadingLabel : children}
       </span>
     </button>
