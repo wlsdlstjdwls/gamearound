@@ -4,9 +4,10 @@ import { timingSafeEqual } from "node:crypto";
 import { revalidateTag } from "next/cache";
 import { NextResponse, type NextRequest } from "next/server";
 import { z } from "zod";
+import { REVALIDATE_TAGS_PER_REQUEST } from "@/lib/cache";
 
 const BodySchema = z.object({
-  tags: z.array(z.string().trim().min(1).max(256)).max(1000),
+  tags: z.array(z.string().trim().min(1).max(256)).max(REVALIDATE_TAGS_PER_REQUEST),
 });
 
 function secretMatches(provided: string | null): boolean {
