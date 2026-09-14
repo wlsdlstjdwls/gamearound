@@ -1,14 +1,18 @@
-// /games 목록 필터 — 서버 컴포넌트. 상태는 전부 쿼리스트링에 있으므로 클라이언트 JS 가 필요 없다.
-// 각 칩은 "그 값만 바꾸고 page 는 1로" 돌아가는 링크다.
+// /games 목록 필터 — 상태는 전부 쿼리스트링에 있고, 고르는 것은 곧 그 주소로 가는 일이다.
+// 이 파일 자체는 서버 컴포넌트다. 펼치는 목록을 우리 토큰으로 그려야 하는 드롭다운(ui/select)만 클라이언트다.
 //
 // 넓은 화면에서는 목록 왼쪽 기둥에 세로로 선다(games/page.tsx 가 자리를 잡는다).
 // 가로로 눕혀 두면 플랫폼, 장르 칩이 줄바꿈하며 화면 위쪽을 몇 줄씩 먹어 정작 게임이 밀린다.
 // 좁은 화면에서는 접어 둔다 — details 라 JS 없이 열고 닫힌다.
 import { PLATFORM_LABEL } from "@/lib/format";
 import { ChipLink } from "@/components/ui/chip";
+import { Select, type SelectOption } from "@/components/ui/select";
 import { GAME_SORTS, DEFAULT_GAME_SORT, SORT_LABEL, gamesHref, type GamesQuery } from "@/lib/games-query";
 import type { GameFacets } from "@/server/services/games";
 import { cardClass } from "@/components/ui/page";
+
+/** "고르지 않음" 을 나타내는 값. 빈 문자열을 쓰면 현재 값 비교가 undefined 와 헷갈린다 */
+const ALL = "__all__";
 
 function Group({ label, children }: { label: string; children: React.ReactNode }) {
   return (
@@ -23,9 +27,20 @@ function Group({ label, children }: { label: string; children: React.ReactNode }
  * 칩에 건수를 붙이지 않는다. 필터를 고르는 자리에서 알고 싶은 것은 "무엇이 있는가" 이지
  * "몇 개인가" 가 아니고, 숫자가 붙으면 칩이 두 배로 길어져 기둥 폭을 넘는다.
  * 고른 뒤의 건수는 목록 머리글이 이미 말해 준다.
+ *
+ * 칩과 드롭다운을 가르는 기준은 개수다. 서넛이면 칩이 빠르고(한 번에 다 보이고 한 번에 눌린다),
+ * 열 개를 넘으면 드롭다운이 낫다(안 고른 값이 자리를 차지하지 않는다).
  */
 function Groups({ facets, filter }: { facets: GameFacets; filter: GamesQuery }) {
   const href = (patch: Partial<GamesQuery>) => gamesHref(filter, { ...patch, page: 1 });
+
+  // 장르는 스무 개가 넘어 칩으로 늘어놓으면 기둥을 세로로 다 먹는다 — 드롭다운으로 접는다
+  const genreOptions: SelectOption[] = [
+    { value: ALL, label: "전체 장르", href: href({ genre: undefined }) },
+    ...facets.genres.map((g) => ({ value: g.name, label: g.name, href: href({ genre: g.name }) })),
+  ];
+  const sortOptions: SelectOption[] = GAME_SORTS.map((s) => ({ value: s, label: SORT_LABEL[s], href: href({ sort: s }) }));
+
   return (
     <>
       <Group label="플랫폼">
@@ -37,24 +52,9 @@ function Groups({ facets, filter }: { facets: GameFacets; filter: GamesQuery }) 
         ))}
       </Group>
 
-      {facets.genres.length > 0 && (
-        <Group label="장르">
-          <ChipLink href={href({ genre: undefined })} active={!filter.genre}>전체</ChipLink>
-          {facets.genres.map((g) => (
-            <ChipLink key={g.name} href={href({ genre: g.name })} active={filter.genre === g.name}>
-              {g.name}
-            </ChipLink>
-          ))}
-        </Group>
-      )}
+      {facets.genres.length > 0 && <Select label="장르" value={filter.genre ?? ALL} options={genreOptions} />}
 
-      <Group label="정렬">
-        {GAME_SORTS.map((s) => (
-          <ChipLink key={s} href={href({ sort: s })} active={(filter.sort ?? DEFAULT_GAME_SORT) === s}>
-            {SORT_LABEL[s]}
-          </ChipLink>
-        ))}
-      </Group>
+      <Select label="정렬" value={filter.sort ?? DEFAULT_GAME_SORT} options={sortOptions} />
 
       <Group label="조건">
         <ChipLink href={href({ onSale: !filter.onSale })} active={Boolean(filter.onSale)}>할인 중만</ChipLink>
@@ -75,7 +75,7 @@ export function GameFilters({ facets, filter }: { facets: GameFacets; filter: Ga
         <summary className="cursor-pointer list-none px-4 py-3 text-[13px] font-semibold text-ink">
           필터와 정렬
         </summary>
-        <div className="flex flex-col gap-3 border-t border-line px-4 py-3">
+        <div className="flex flex-col gap-3.5 border-t border-line px-4 py-3">
           <Groups facets={facets} filter={filter} />
         </div>
       </details>
