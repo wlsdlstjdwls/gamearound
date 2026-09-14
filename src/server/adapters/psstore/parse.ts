@@ -12,6 +12,7 @@ import {
   PSSTORE_PORTRAIT_WIDTH,
   PSSTORE_PS4_TITLE_ID,
   PSSTORE_PS5_TITLE_ID,
+  PSSTORE_UPSELL_APPLICABILITY,
 } from "./constants";
 
 const productRefSchema = z.object({ id: z.string() });
@@ -37,6 +38,11 @@ const priceSchema = z.object({
   /** 할인 종료 시각(epoch ms 문자열). 할인이 아니어도 값이 있을 수 있어 할인일 때만 읽는다 */
   endTime: z.string().nullish(),
   isFree: z.boolean().nullish(),
+  /**
+   * 이 가격이 "누구에게" 해당하는지. "APPLICABLE" 이면 지금 살 수 있는 값이고,
+   * "UPSELL" 이면 구독에 가입해야 받는 값이다 — 아래 PSSTORE_UPSELL_APPLICABILITY 참고.
+   */
+  applicability: z.string().nullish(),
 });
 
 const conceptSchema = z.object({
@@ -51,7 +57,7 @@ const conceptSchema = z.object({
             id: z.string(),
             name: z.string().nullish(),
             invariantName: z.string().nullish(),
-            webctas: z.array(z.object({ price: priceSchema.nullish() })).nullish(),
+            webctas: z.array(z.object({ type: z.string().nullish(), price: priceSchema.nullish() })).nullish(),
           })
           .nullish(),
       })
@@ -143,7 +149,23 @@ export function psstoreEpochToIso(v: string | null | undefined): string | null {
   return new Date(ms).toISOString();
 }
 
-/** 콘셉트 상세 → 스냅샷. 가격이 붙은 첫 구매 버튼을 쓴다(무료 배포판, 구독 버튼은 가격이 없다) */
+/**
+ * 구매 버튼의 가격만 고른다.
+ *
+ * PS 는 같은 게임에 버튼을 여럿 준다. PlayStation Plus 스페셜 카탈로그에 든 게임은
+ * "UPSELL_PS_PLUS_GAME_CATALOG" 버튼이 **먼저** 오고, 그 가격이 basePrice=정가, discounted=0("포함")이다.
+ * 첫 가격을 그냥 쓰면 사이버펑크 2077 이 54,800원 → 0원, 100% 할인으로 찍힌다(2026-09-14 실측).
+ * 실제 구매가는 뒤에 오는 "ADD_TO_CART"(applicability=APPLICABLE) 쪽에 있다 — 같은 날 21,920원.
+ *
+ * 가입자만 0원인 값을 할인으로 적으면 가격 알림 서비스가 제일 하면 안 되는 일을 한다.
+ * 구독 포함 여부는 별도 축(game_subscriptions)이 다룰 일이지 여기 가격 자리가 아니다.
+ */
+function pickPurchasePrice(webctas: Array<{ price?: z.infer<typeof priceSchema> | null }> | null | undefined) {
+  const priced = (webctas ?? []).map((c) => c.price).filter((p) => p && p.basePriceValue != null);
+  return priced.find((p) => p!.applicability !== PSSTORE_UPSELL_APPLICABILITY) ?? null;
+}
+
+/** 콘셉트 상세 → 스냅샷. 구매 버튼의 가격만 쓴다(구독 가입가는 버린다) */
 export function parsePsstoreConcept(raw: unknown, conceptId: string): StoreSnapshot {
   const parsed = conceptSchema.safeParse(raw);
   if (!parsed.success) fail("콘셉트", parsed.error);
@@ -151,9 +173,10 @@ export function parsePsstoreConcept(raw: unknown, conceptId: string): StoreSnaps
   if (!concept) throw new AdapterError(`PlayStation 게임 없음: ${conceptId}`, "psstore", false);
 
   const dp = concept.defaultProduct;
-  const price = (dp?.webctas ?? []).map((c) => c.price).find((p) => p && p.basePriceValue != null) ?? null;
+  const price = pickPurchasePrice(dp?.webctas);
   const listPrice = price?.basePriceValue ?? null;
-  const currentPrice = price?.discountedValue ?? listPrice;
+  // 구매 버튼이 없으면(구독 전용) 살 수 있는 값이 없다 — 0 이 아니라 "모름"이다
+  const currentPrice = price ? price.discountedValue ?? listPrice : null;
   const discountPct =
     listPrice != null && currentPrice != null && listPrice > 0 && currentPrice < listPrice
       ? Math.round(((listPrice - currentPrice) / listPrice) * 100)

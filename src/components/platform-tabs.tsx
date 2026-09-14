@@ -1,11 +1,12 @@
 "use client";
 // 플랫폼 탭 — 상세 페이지. 현재가/할인/정가, 출시일, 버전, 할인 종료 + 스토어 링크.
 // freshness 는 서버(RSC)에서 계산해 넘긴다(캐시/하이드레이션 시각 차이 방지).
-// 수집 시각은 값 옆에 문장으로 붙인다(리디자인 원칙 2) — 빨간 배지를 쓰지 않는다.
+// 수집 시각은 값이 오래됐을 때만 말한다(StalenessNote). 늘 붙이던 "오늘 15:11 수집" 은 뺐다 —
+// 가격이 최신일 때 그 문구는 알려 주는 것이 없고, 오래됐을 때는 아래 안내가 같은 말을 한 번 더 했다.
 import { formatPrice } from "@/lib/currency";
 import { useId, useState } from "react";
 import { formatDate, formatDiscount, formatShortDateTime, PLATFORM_LABEL, REGION_SUFFIX } from "@/lib/format";
-import { collectedAtText, type Freshness } from "@/lib/freshness";
+import type { Freshness } from "@/lib/freshness";
 import type { PlatformDto } from "@/server/services/games";
 import { StalenessNote } from "@/components/freshness-badge";
 import { SaleBadge } from "@/components/sale-badge";
@@ -101,7 +102,6 @@ export function PlatformTabs({ platforms }: { platforms: PlatformTabItem[] }) {
             </span>
           )}
           {hasDiscount && <SaleBadge discountName={current.discountName} discountEndsAt={current.discountEndsAt} />}
-          <span className="ml-auto text-[11.5px] text-dim">{collectedAtText(current.lastSyncedAt)}</span>
         </div>
 
         <StalenessNote freshness={current.freshness} lastSyncedAt={current.lastSyncedAt} />

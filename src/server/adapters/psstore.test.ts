@@ -147,3 +147,32 @@ describe("parsePsstoreSearch, parsePsstoreProduct", () => {
     expect(parsePsstoreProduct({ data: { productRetrieve: { id: "A", invariantName: "A" } } })).toBeNull();
   });
 });
+
+// PlayStation Plus 스페셜 카탈로그에 든 게임은 "포함"(0원) 버튼이 구매 버튼보다 먼저 온다.
+// 첫 가격을 쓰면 정가짜리 게임이 전부 100% 할인으로 찍힌다(2026-09-14 실측: 사이버펑크 2077 외 다수).
+describe("parsePsstoreConcept — 구독 가입가 걸러내기", () => {
+  const concept = (webctas: unknown[]) => ({
+    data: { conceptRetrieve: { id: "234567", products: [], defaultProduct: { id: "EP4497-PPSA04029_00-A", invariantName: "Cyberpunk 2077", webctas } } },
+  });
+  const upsell = { type: "UPSELL_PS_PLUS_GAME_CATALOG", price: { applicability: "UPSELL", basePriceValue: 54800, discountedValue: 0 } };
+  const buy = { type: "ADD_TO_CART", price: { applicability: "APPLICABLE", basePriceValue: 54800, discountedValue: 21920 } };
+
+  it("구독 가입가가 먼저 와도 구매가를 쓴다", () => {
+    const snap = parsePsstoreConcept(concept([upsell, buy]), "234567");
+    expect(snap.currentPrice).toBe(21920);
+    expect(snap.listPrice).toBe(54800);
+    expect(snap.discountPct).toBe(60);
+  });
+
+  it("구매 버튼이 없으면 0 이 아니라 모름이다", () => {
+    const snap = parsePsstoreConcept(concept([upsell]), "234567");
+    expect(snap.currentPrice).toBeNull();
+    expect(snap.discountPct).toBeNull();
+  });
+
+  it("할인 없는 구매가는 그대로 정가다", () => {
+    const snap = parsePsstoreConcept(concept([upsell, { type: "ADD_TO_CART", price: { applicability: "APPLICABLE", basePriceValue: 58800, discountedValue: 58800 } }]), "234567");
+    expect(snap.currentPrice).toBe(58800);
+    expect(snap.discountPct).toBe(0);
+  });
+});

@@ -73,3 +73,11 @@ export const PSSTORE_PORTRAIT_ROLE = "PORTRAIT_BANNER";
  */
 export const PSSTORE_COVER_WIDTH = 640;
 export const PSSTORE_PORTRAIT_WIDTH = 600;
+
+/**
+ * price.applicability 가 이 값이면 "지금 살 수 있는 값"이 아니라 구독 가입자용 값이다.
+ * PlayStation Plus 스페셜 카탈로그에 든 게임이 여기 걸린다 — discountedValue=0, 표시 문자열은 "포함".
+ * 실측(2026-09-14): 사이버펑크 2077(234567), 파이널 판타지 XVI(10002100) 둘 다
+ * UPSELL 버튼이 ADD_TO_CART 버튼보다 앞에 온다. 순서를 믿으면 안 되고 이 값으로 걸러야 한다.
+ */
+export const PSSTORE_UPSELL_APPLICABILITY = "UPSELL";
