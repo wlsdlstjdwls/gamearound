@@ -6,11 +6,13 @@ import { notFound } from "next/navigation";
 import { z } from "zod";
 import { formatDateTime, PLATFORM_LABEL } from "@/lib/format";
 import { CORRECTABLE_FIELDS, getGameForAdmin, SOURCES } from "@/server/services/admin";
+import { listAliases } from "@/server/services/admin-aliases";
 import { listUpgrades } from "@/server/services/admin-upgrades";
 import { platformEnum, upgradeKindEnum } from "@/server/db/schema";
 import { requireRoleOrForbid } from "@/server/auth/guards";
 import { CorrectionForm, type FieldOption } from "@/components/admin/correction-form";
 import { ManualRefForm } from "@/components/admin/manual-ref-form";
+import { AliasForm } from "@/components/admin/alias-form";
 import { UpgradeForm } from "@/components/admin/upgrade-form";
 import { MatchReviewButtons } from "@/components/admin/match-review-buttons";
 import { cardClass } from "@/components/ui/page";
@@ -76,7 +78,7 @@ export default async function AdminGamePage({ params }: { params: Promise<{ id: 
 
   const platformLabel = (p: PlatformRow) => PLATFORM_LABEL[p.platform] ?? p.platform;
   const platformById = new Map(game.platforms.map((p) => [p.id, p]));
-  const upgradeRows = await listUpgrades(game.id);
+  const [upgradeRows, aliasRows] = await Promise.all([listUpgrades(game.id), listAliases(game.id)]);
 
   return (
     <div className="flex flex-col gap-8">
@@ -92,6 +94,11 @@ export default async function AdminGamePage({ params }: { params: Promise<{ id: 
       <section className="flex flex-col gap-3">
         <h2 className="text-[17px] font-bold tracking-[-0.02em] text-ink">기본 정보 정정</h2>
         <CorrectionForm table="games" rowId={game.id} gameId={game.id} fields={gameFields(game)} title="games 필드" />
+      </section>
+
+      <section className="flex flex-col gap-3">
+        <h2 className="text-[17px] font-bold tracking-[-0.02em] text-ink">검색</h2>
+        <AliasForm gameId={game.id} items={aliasRows.map((a) => ({ id: a.id, alias: a.alias }))} />
       </section>
 
       <section className="flex flex-col gap-3">

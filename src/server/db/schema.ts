@@ -100,6 +100,33 @@ export const games = pgTable("games", {
   index("games_content_parent_idx").on(t.contentType, t.parentGameId),
 ]);
 
+/**
+ * 검색 별칭 — 제목 어디에도 없는 말로 게임을 찾게 하는 유일한 경로.
+ *
+ * 왜 필요한가: 검색은 정규화 제목 두 컬럼만 본다. 그래서 "해리포터" 로는 "호그와트 레거시" 가
+ * 영원히 안 나온다 — 부분일치도 trigram 도 **같은 글자가 하나도 없으면** 손을 못 쓴다.
+ * 시리즈명, 원작명, 약칭, 흔한 오표기는 제목에서 끌어낼 수 있는 값이 아니라 사람이 아는 값이다.
+ *
+ * 크롤러는 이 테이블을 쓰지 않는다. 그래서 data_corrections 잠금도 걸지 않는다 —
+ * 덮어쓸 상대가 없다. 나중에 자동 출처(위키데이터 P179 시리즈 등)를 붙이면
+ * 그때 출처 컬럼을 더하고 수동 행을 지키는 규칙을 같이 만든다.
+ */
+export const gameAliases = pgTable("game_aliases", {
+  id: integer("id").primaryKey().generatedAlwaysAsIdentity(),
+  gameId: uuid("game_id").references(() => games.id, { onDelete: "cascade" }).notNull(),
+  alias: text("alias").notNull(),
+  /** games.title_en_norm 과 **같은 식**이어야 한다 — 질의는 한쪽만 정규화해 두 컬럼에 함께 던진다 */
+  aliasNorm: text("alias_norm").generatedAlwaysAs(
+    sql`lower(regexp_replace(alias, '[^[:alnum:]]+', '', 'g'))`,
+  ),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+}, (t) => [
+  // 같은 게임에 같은 별칭을 두 번 넣지 못하게 — 원문이 아니라 정규화본으로 막는다
+  // ("해리 포터" 와 "해리포터" 는 질의에서 어차피 같은 값이 된다).
+  // game_id 로 시작하므로 "이 게임의 별칭들" 조회도 이 인덱스가 받는다 — 인덱스를 따로 두지 않는다
+  uniqueIndex("game_aliases_game_norm_uq").on(t.gameId, t.aliasNorm),
+]);
+
 export const genres = pgTable("genres", {
   id: integer("id").primaryKey().generatedAlwaysAsIdentity(),
   name: text("name").notNull().unique(),

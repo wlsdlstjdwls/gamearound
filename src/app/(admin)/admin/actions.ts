@@ -13,6 +13,8 @@ import {
   setManualRef,
   type CorrectableTable,
 } from "@/server/services/admin";
+import { ALIAS_MAX_LEN } from "@/lib/aliases";
+import { addAlias, deleteAlias } from "@/server/services/admin-aliases";
 import { resolveCompanyName } from "@/server/services/admin-companies";
 import { deleteUpgrade, upsertUpgrade } from "@/server/services/admin-upgrades";
 import { requireAdmin } from "@/server/services/users";
@@ -33,6 +35,11 @@ const correctionSchema = z.object({
   field: z.string().min(1),
   value: z.string().max(20000).default(""),
   lock: z.boolean().default(true),
+});
+
+const aliasSchema = z.object({
+  gameId: z.uuid(),
+  alias: z.string().trim().min(1, "별칭을 입력하세요").max(ALIAS_MAX_LEN),
 });
 
 /** 업그레이드 입력. 빈 문자열은 "값 없음"으로 접는다 — 폼은 빈 칸을 null 로 보낼 방법이 없다 */
@@ -174,6 +181,39 @@ export async function resolveCompanyAction(rawName: string): Promise<AdminAction
     // 회사 화면은 태그로 캐시하므로 붙은 회사만 무효화한다
     for (const slug of result.companySlugs) revalidateTag(`company:${slug}`, "max");
     return { ok: true, message: result.message };
+  } catch (e) {
+    return fail(e);
+  }
+}
+
+/**
+ * 검색 별칭 추가. 별칭은 공개 검색 결과를 바꾸므로 관리자 경로만 무효화해서는 모자라다 —
+ * 검색은 검색어별로 캐시되고 그 캐시가 "home" 태그에 묶여 있다(services/games/search).
+ */
+export async function addAliasAction(_prev: AdminActionState, formData: FormData): Promise<AdminActionState> {
+  try {
+    await requireAdmin();
+    const p = aliasSchema.safeParse({ gameId: formData.get("gameId"), alias: formData.get("alias") });
+    if (!p.success) return { ok: false, error: p.error.issues[0]?.message ?? "입력값이 올바르지 않습니다" };
+    const { created } = await addAlias(p.data.gameId, p.data.alias);
+    revalidateGame(p.data.gameId);
+    revalidateTag("home", "max");
+    return created
+      ? { ok: true, message: `별칭 "${p.data.alias}" 을(를) 추가했습니다` }
+      : { ok: true, message: "이미 있는 별칭입니다" };
+  } catch (e) {
+    return fail(e);
+  }
+}
+
+export async function deleteAliasAction(gameId: string, id: number): Promise<AdminActionState> {
+  try {
+    await requireAdmin();
+    if (!z.uuid().safeParse(gameId).success) return { ok: false, error: "잘못된 요청입니다" };
+    await deleteAlias(id);
+    revalidateGame(gameId);
+    revalidateTag("home", "max");
+    return { ok: true, message: "별칭을 삭제했습니다" };
   } catch (e) {
     return fail(e);
   }
