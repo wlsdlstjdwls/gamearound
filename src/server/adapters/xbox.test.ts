@@ -18,6 +18,8 @@ describe("parseXboxProduct", () => {
     expect(snap.discountPct).toBe(0);
     expect(snap.releaseDate).toBe("2022-02-25");
     expect(snap.storeUrl).toBe("https://www.xbox.com/ko-KR/games/store/elden-ring/9P3J32CTXLRZ");
+    // Xbox 는 추가 콘텐츠의 유무만 준다. 목록을 주는 공개 경로는 없다(어댑터 주석 참고)
+    expect(snap.hasAddOns).toBe(true);
   });
 
   it("MSRP 보다 ListPrice 가 낮으면 할인율 계산", () => {

@@ -32,6 +32,13 @@ const availabilitySchema = z.object({
 
 const productSchema = z.object({
   ProductId: z.string(),
+  /**
+   * 추가 콘텐츠 유무. **유무뿐이고 목록은 없다** — 다시 조사하지 말 것(2026-09-14 실측).
+   * storefront 의 /v9.0/products/<id>/addons 는 200 을 주지만 AddOns 가 늘 빈 배열이었다
+   * (KR, US, GB 모두, deviceFamily 를 바꿔도 같음). displaycatalog 응답에도 RelatedProducts 는 null 이다.
+   * 그래서 화면은 "추가 콘텐츠가 있어요" 까지만 말하고 목록은 스팀에서 온 것만 보여준다.
+   */
+  Properties: z.object({ HasAddOns: z.boolean().optional() }).optional(),
   LocalizedProperties: z
     .array(z.object({ ProductTitle: z.string().optional(), DeveloperName: z.string().optional(), PublisherName: z.string().optional() }))
     .default([]),
@@ -121,6 +128,7 @@ export function parseXboxProduct(raw: unknown, productId: string): StoreSnapshot
     discountStartsAt: discountPct > 0 ? price?.startsAt ?? null : null,
     discountEndsAt: discountPct > 0 ? price?.endsAt ?? null : null,
     releaseDate: toIsoDate(product.MarketProperties[0]?.OriginalReleaseDate),
+    hasAddOns: product.Properties?.HasAddOns ?? null,
   };
 }
 
