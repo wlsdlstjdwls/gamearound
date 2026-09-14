@@ -55,8 +55,6 @@ const subscriptionAdapters: Record<SubscriptionSource, SubscriptionAdapter> = { 
  */
 export function getDisabledReason(source: Source): string | undefined {
   switch (source) {
-    case "psstore":
-      return "PlayStation Store 는 클라이언트 렌더링 + persisted GraphQL 해시가 필요해 PoC 미통과 (2026-09-11)";
     case "epic":
       // 프록시가 설정돼 있으면 켠다 — 막는 기준이 IP 대역이라 주거용 출구를 거치면 통과한다.
       // 데이터센터 프록시를 넣으면 여전히 403 이 나는데, 그건 로그에 그대로 드러나는 편이 낫다.

@@ -58,7 +58,7 @@ export const LOCAL_SEED_TOP: Partial<Record<Source, number>> = {
 };
 
 /** --seed-top 으로 카탈로그를 훑어 신규 게임을 등록할 수 있는 소스 (어댑터가 discoverPages 를 가진 소스) */
-export const SEEDABLE_SOURCES: Source[] = ["steam", "xbox", "nintendo", "epic", "gog"];
+export const SEEDABLE_SOURCES: Source[] = ["steam", "psstore", "xbox", "nintendo", "epic", "gog"];
 /**
  * 한 실행에서 목록 페이지를 몇 장까지 읽을지. 발견은 아는 것이 나오는 앞부분을 건너뛰며 파고들기 때문에
  * (sync/discover) 카탈로그가 커질수록 건너뛸 페이지가 늘어난다. 그렇다고 무한정 읽으면
@@ -75,6 +75,8 @@ export const DISCOVERY_PAGE_BUDGET: Partial<Record<StoreSource, number>> = {
   epic: 200,
   // 1.5초 × 60 ≈ 90초. KR 16,991건이 페이지당 43~48건이라 한 바퀴는 340페이지 — 며칠에 걸쳐 채운다
   xbox: 60,
+  // 1초 × 90 ≈ 1.5분. 서버가 페이지를 24건으로 깎아 KR 7,571건이 316페이지다
+  psstore: 90,
 };
 /**
  * 신규 시드가 한 배치에서 가져갈 수 있는 몫의 상한. 시드는 대상 목록 맨 앞에 붙으므로

@@ -1,0 +1,72 @@
+{
+  "data": {
+    "conceptRetrieve": {
+      "__typename": "Concept",
+      "id": "10002075",
+      "releaseDate": {
+        "__typename": "ReleaseDate",
+        "type": "DAY_MONTH_YEAR",
+        "value": "2026-04-16T15:00:00Z"
+      },
+      "products": [
+        {
+          "__typename": "Product",
+          "id": "UP0102-PPSA02530_00-PRAGMATA00000000",
+          "name": "PRAGMATA (중국어(간체자), 한국어, 영어, 일본어, 중국어(번체자))",
+          "skus": [
+            {
+              "__typename": "Sku",
+              "id": "UP0102-PPSA02530_00-PRAGMATA00000000-K003",
+              "name": "한국어판"
+            }
+          ]
+        },
+        {
+          "__typename": "Product",
+          "id": "UP0102-PPSA02530_00-PRAGMATADX000000",
+          "name": "PRAGMATA Deluxe Edition (중국어(간체자), 한국어, 영어, 일본어, 중국어(번체자))",
+          "skus": [
+            {
+              "__typename": "Sku",
+              "id": "UP0102-PPSA02530_00-PRAGMATADX000000-K003",
+              "name": "한국어판"
+            }
+          ]
+        },
+        {
+          "__typename": "Product",
+          "id": "UP0102-PPSA33065_00-PRAGMATADEMO0000",
+          "name": "PRAGMATA Sketchbook - DEMO (중국어(간체자), 한국어, 영어, 일본어, 중국어(번체자))",
+          "skus": [
+            {
+              "__typename": "Sku",
+              "id": "UP0102-PPSA33065_00-PRAGMATADEMO0000-K001",
+              "name": "한국어판"
+            }
+          ]
+        }
+      ],
+      "defaultProduct": {
+        "__typename": "Product",
+        "id": "UP0102-PPSA02530_00-PRAGMATA00000000",
+        "name": "PRAGMATA (중국어(간체자), 한국어, 영어, 일본어, 중국어(번체자))",
+        "invariantName": "PRAGMATA",
+        "webctas": [
+          {
+            "__typename": "GameCTA",
+            "type": "ADD_TO_CART",
+            "price": {
+              "basePrice": "69,800원",
+              "basePriceValue": 69800,
+              "discountedPrice": "55,840원",
+              "discountedValue": 55840,
+              "currencyCode": "KRW",
+              "endTime": "1790175540000",
+              "isFree": false
+            }
+          }
+        ]
+      }
+    }
+  }
+}

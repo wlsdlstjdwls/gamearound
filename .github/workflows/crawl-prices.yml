@@ -45,6 +45,7 @@ env:
   EPIC_SEED_TOP: '125'     # BATCH_SIZE.epic 250 의 절반
   GOG_SEED_TOP: '200'      # BATCH_SIZE.gog 400 의 절반
   XBOX_SEED_TOP: '100'     # BATCH_SIZE.xbox 200 의 절반
+  PSSTORE_SEED_TOP: '100'  # BATCH_SIZE.psstore 200 의 절반
 
 jobs:
   crawl:
@@ -72,9 +73,11 @@ jobs:
         continue-on-error: true
         run: pnpm crawl --source=steam --seed-top=$STEAM_SEED_TOP $CRAWL_LIMIT_ARG
 
+      # PS 독점작도 Steam 에 없다. 발견은 전체 게임 카테고리(콘셉트 단위), 흡수/신규 판단은 제목 역매칭.
+      # 질의 해시가 낡으면 "not whitelisted" 로 실패한다 — 갱신 방법은 어댑터 constants 주석에 있다.
       - name: crawl psstore
         continue-on-error: true
-        run: pnpm crawl --source=psstore $CRAWL_LIMIT_ARG
+        run: pnpm crawl --source=psstore --seed-top=$PSSTORE_SEED_TOP $CRAWL_LIMIT_ARG
 
       # Xbox 독점작은 Steam 에 없다. 발견은 xbox.com 스토어의 목록(emerald browse), 흡수/신규 판단은 제목 역매칭.
       - name: crawl xbox

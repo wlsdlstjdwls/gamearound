@@ -1,0 +1,161 @@
+{
+  "data": {
+    "categoryGridRetrieve": {
+      "__typename": "CategoryGrid",
+      "concepts": [
+        {
+          "__typename": "Concept",
+          "id": "10000730",
+          "name": "Grand Theft Auto VI",
+          "price": {
+            "basePrice": "112,800원",
+            "discountedPrice": "112,800원",
+            "discountText": null
+          },
+          "products": [
+            {
+              "__typename": "Product",
+              "id": "EP1004-PPSA01547_00-GTAVIULTIMATE001"
+            },
+            {
+              "__typename": "Product",
+              "id": "EP1004-PPSA01547_00-GTAVISTANDARD001"
+            }
+          ]
+        },
+        {
+          "__typename": "Concept",
+          "id": "10013248",
+          "name": "귀무자 Way of the Sword",
+          "price": {
+            "basePrice": "79,800원",
+            "discountedPrice": "79,800원",
+            "discountText": null
+          },
+          "products": [
+            {
+              "__typename": "Product",
+              "id": "UP0102-PPSA27836_00-0000000000000001"
+            },
+            {
+              "__typename": "Product",
+              "id": "UP0102-PPSA27836_00-0000000000000003"
+            },
+            {
+              "__typename": "Product",
+              "id": "UP0102-PPSA27836_00-0000000000000002"
+            },
+            {
+              "__typename": "Product",
+              "id": "UP0102-PPSA27836_00-DEMO000000000002"
+            }
+          ]
+        },
+        {
+          "__typename": "Concept",
+          "id": "10002427",
+          "name": "eFootball™",
+          "price": {
+            "basePrice": "무료",
+            "discountedPrice": "무료",
+            "discountText": null
+          },
+          "products": [
+            {
+              "__typename": "Product",
+              "id": "HP0101-CUSA26994_00-EDITION000000015"
+            },
+            {
+              "__typename": "Product",
+              "id": "HP0101-CUSA26994_00-EDITION000000013"
+            },
+            {
+              "__typename": "Product",
+              "id": "HP0101-CUSA26994_00-EDITION000000012"
+            },
+            {
+              "__typename": "Product",
+              "id": "HP0101-CUSA26994_00-EDITION000000014"
+            },
+            {
+              "__typename": "Product",
+              "id": "HP0101-PPSA03071_00-EFOOTBALL0000000"
+            },
+            {
+              "__typename": "Product",
+              "id": "HP0101-CUSA26994_00-EFOOTBALL0000000"
+            }
+          ]
+        },
+        {
+          "__typename": "Concept",
+          "id": "10002363",
+          "name": "붉은사막 Enhanced",
+          "price": {
+            "basePrice": "79,800원",
+            "discountedPrice": "79,800원",
+            "discountText": null
+          },
+          "products": [
+            {
+              "__typename": "Product",
+              "id": "UP4162-PPSA25286_00-0653729629077452"
+            },
+            {
+              "__typename": "Product",
+              "id": "UP4162-PPSA25286_00-0527386153670087"
+            }
+          ]
+        },
+        {
+          "__typename": "Concept",
+          "id": "10002861",
+          "name": "Marvel’s Wolverine",
+          "price": {
+            "basePrice": "89,800원",
+            "discountedPrice": "89,800원",
+            "discountText": null
+          },
+          "products": [
+            {
+              "__typename": "Product",
+              "id": "UP9000-PPSA03671_00-WOLVERINEDELUXE0"
+            },
+            {
+              "__typename": "Product",
+              "id": "UP9000-PPSA03671_00-MARVELSWOLVERINE"
+            },
+            {
+              "__typename": "Product",
+              "id": "UP9000-PPSA03671_00-WOLVERINEUPGRADE"
+            }
+          ]
+        },
+        {
+          "__typename": "Concept",
+          "id": "10009763",
+          "name": "젠레스 존 제로",
+          "price": {
+            "basePrice": "무료",
+            "discountedPrice": "무료",
+            "discountText": null
+          },
+          "products": [
+            {
+              "__typename": "Product",
+              "id": "EP7711-PPSA20599_00-OSSIEEZENLESS000"
+            }
+          ]
+        }
+      ],
+      "products": null,
+      "pageInfo": {
+        "__typename": "PageInfo",
+        "isLast": false,
+        "offset": 0,
+        "size": 24,
+        "totalCount": 7571
+      }
+    }
+  }
+}
