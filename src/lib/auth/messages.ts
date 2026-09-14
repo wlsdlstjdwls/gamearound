@@ -31,7 +31,7 @@ export const AUTH_MESSAGES = {
   signInCta: "로그인",
   signUpCta: "가입하기",
   signOutCta: "로그아웃",
-  termsConsent: `${SITE.name} 이용약관과 개인정보처리방침에 동의해요. ${SITE.dataDisclaimer}`,
+  termsConsent: `${SITE.name} 이용약관과 개인정보처리방침에 동의해요.`,
   pending: "확인 중…",
   noAccount: "아직 계정이 없나요?",
   hasAccount: "이미 계정이 있나요?",

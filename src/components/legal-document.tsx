@@ -20,8 +20,6 @@ export function LegalDocumentView({ doc }: { doc: LegalDocument }) {
           ))}
         </Card>
       )}
-
-      <p className="text-[11.5px] leading-[1.6] text-dim">{LEGAL_MESSAGES.disclaimer}</p>
     </Page>
   );
 }

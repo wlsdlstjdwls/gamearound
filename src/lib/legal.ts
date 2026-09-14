@@ -57,8 +57,7 @@ export const TERMS: LegalDocument = {
     },
     {
       heading: "제5조 (가격 정보의 성격)",
-      body: `${SITE.dataDisclaimer}
-가격은 각 스토어가 공개하는 정보를 주기적으로 가져와 저장한 값이라, 실제 스토어 가격과 다를 수 있어요.
+      body: `가격은 각 스토어가 공개하는 정보를 주기적으로 가져와 저장한 값이라, 실제 스토어 가격과 다를 수 있어요.
 환율로 바꾼 가격은 보여주지 않아요. 스토어가 외화로 파는 상품은 그 통화 그대로 적어요.
 구매를 결정하기 전에 반드시 해당 스토어에서 최종 가격을 확인해 주세요.`,
     },
@@ -192,5 +191,4 @@ export const PRIVACY: LegalDocument = {
 export const LEGAL_MESSAGES = {
   empty: "아직 준비 중이에요. 내용이 확정되면 이 자리에 올려요.",
   contact: `문의는 ${SITE.contactEmail} 로 보내주세요.`,
-  disclaimer: SITE.dataDisclaimer,
 } as const;
