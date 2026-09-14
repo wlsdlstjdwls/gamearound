@@ -54,6 +54,10 @@ export function GameFilters({ facets, filter }: { facets: GameFacets; filter: Ga
           <ChipLink href={href({ onSale: !filter.onSale })} active={Boolean(filter.onSale)}>
             할인 중만
           </ChipLink>
+          {/* 구독 포함 여부는 Game Pass 하나로 시작하지만 조건은 "어떤 구독이든"이라 PS Plus 를 붙여도 문구가 그대로다 */}
+          <ChipLink href={href({ subscription: !filter.subscription })} active={Boolean(filter.subscription)}>
+            구독으로 즐길 수 있어요
+          </ChipLink>
         </Row>
     </section>
   );

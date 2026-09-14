@@ -5,7 +5,10 @@ import { ROUTES } from "./routes";
 
 describe("parseGamesQuery", () => {
   it("빈 쿼리는 1페이지 기본 필터", () => {
-    expect(parseGamesQuery({})).toEqual({ q: undefined, platform: undefined, genre: undefined, onSale: false, sort: undefined, page: 1 });
+    expect(parseGamesQuery({})).toEqual({
+      q: undefined, platform: undefined, genre: undefined, onSale: false,
+      company: undefined, subscription: false, sort: undefined, page: 1,
+    });
   });
 
   it("다중 값은 첫 값만 쓴다", () => {
@@ -70,9 +73,19 @@ describe("gamesHref", () => {
   });
 
   it("왕복: gamesHref 로 만든 주소를 parseGamesQuery 가 그대로 복원한다", () => {
-    const filter = { q: "엘든 링", platform: "steam", genre: "RPG", onSale: true, sort: "title" as const, page: 4 };
+    const filter = {
+      q: "엘든 링", platform: "steam", genre: "RPG", onSale: true,
+      company: "fromsoftware", subscription: true, sort: "title" as const, page: 4,
+    };
     const sp = Object.fromEntries(new URLSearchParams(gamesHref(filter).split("?")[1]));
     expect(parseGamesQuery(sp)).toEqual(filter);
+  });
+
+  it("회사, 구독 필터가 주소에 실린다", () => {
+    expect(gamesHref({ company: "ubisoft" })).toBe("/games?company=ubisoft");
+    expect(gamesHref({ subscription: true })).toBe("/games?sub=1");
+    // 기본값(false)은 주소에 남기지 않는다 — 같은 화면이 두 개의 주소를 갖지 않게
+    expect(gamesHref({ subscription: false })).toBe(ROUTES.game);
   });
 });
 

@@ -1,12 +1,13 @@
 // /games 목록 — 필터, 정렬, 페이지네이션과 필터 선택지(facets).
 import { unstable_cache } from "next/cache";
-import { and, asc, eq, sql } from "drizzle-orm";
+import { asc, eq, sql } from "drizzle-orm";
 import { getDb } from "@/server/db/client";
 import { gameGenres, gamePlatforms, games, genres, type Platform } from "@/server/db/schema";
 import { normalizeForSearch } from "@/lib/slug";
 import { DEFAULT_GAME_SORT, type GamesQuery } from "@/lib/games-query";
 import type { GameSummary } from "./dto";
 import { attachBestPrice } from "./mappers";
+import { allOf, byCompanySlug, inAnySubscription, mainGamesOnly } from "./filters";
 import { titleMatch, TRGM_THRESHOLD } from "./title-search";
 import { LIST_REVALIDATE_SECONDS } from "@/lib/cache";
 
@@ -55,8 +56,11 @@ async function listGamesRaw(filter: GameListFilter): Promise<GameListResult> {
   const sort = filter.sort ?? DEFAULT_GAME_SORT;
   const agg = platformAgg(filter.platform);
 
-  const conds = [];
+  // 본편만 — DLC 가 목록에 본편처럼 섞이지 않게 모든 목록 쿼리가 이 조건을 탄다
+  const conds = [mainGamesOnly()];
   if (filter.onSale) conds.push(sql`${agg.maxDiscount} > 0`);
+  if (filter.company) conds.push(byCompanySlug(filter.company));
+  if (filter.subscription) conds.push(inAnySubscription());
   if (filter.genre) {
     conds.push(
       sql`exists (select 1 from ${gameGenres} inner join ${genres} on ${genres.id} = ${gameGenres.genreId}
@@ -68,7 +72,7 @@ async function listGamesRaw(filter: GameListFilter): Promise<GameListResult> {
     const { hit, score } = titleMatch(filter.q!);
     conds.push(sql`(${hit} or ${score} >= ${TRGM_THRESHOLD})`);
   }
-  const where = conds.length > 0 ? and(...conds) : undefined;
+  const where = allOf(...conds);
 
   // nulls last 로 값 없는 게임(가격 미수집, 출시일 미상)이 앞을 차지하지 않게 한다
   const orderBy = {
@@ -105,7 +109,7 @@ async function listGamesRaw(filter: GameListFilter): Promise<GameListResult> {
 
 /** 목록 — 필터 조합별 1시간 캐시. 크롤러 완료 시 `home` 태그로 함께 무효화된다 */
 export async function listGames(filter: GameListFilter): Promise<GameListResult> {
-  const key = [filter.q?.trim().toLowerCase() ?? "", filter.platform ?? "", filter.genre ?? "", filter.onSale ? "sale" : "", filter.sort ?? DEFAULT_GAME_SORT, String(filter.page ?? 1)];
+  const key = [filter.q?.trim().toLowerCase() ?? "", filter.platform ?? "", filter.genre ?? "", filter.onSale ? "sale" : "", filter.company ?? "", filter.subscription ? "sub" : "", filter.sort ?? DEFAULT_GAME_SORT, String(filter.page ?? 1)];
   const cached = unstable_cache(() => listGamesRaw(filter), ["games", ...key], { tags: ["home"], revalidate: LIST_REVALIDATE_SECONDS });
   return cached();
 }
@@ -116,13 +120,17 @@ async function getGameFacetsRaw(): Promise<GameFacets> {
     db
       .select({ platform: gamePlatforms.platform, count: sql<number>`count(distinct ${gamePlatforms.gameId})::int` })
       .from(gamePlatforms)
+      .innerJoin(games, eq(games.id, gamePlatforms.gameId))
+      .where(mainGamesOnly())
       .groupBy(gamePlatforms.platform),
     db
       .select({ name: genres.name, count: sql<number>`count(*)::int` })
       .from(gameGenres)
       .innerJoin(genres, eq(genres.id, gameGenres.genreId))
+      .innerJoin(games, eq(games.id, gameGenres.gameId))
+      .where(mainGamesOnly())
       .groupBy(genres.name),
-    db.select({ total: sql<number>`count(*)::int` }).from(games),
+    db.select({ total: sql<number>`count(*)::int` }).from(games).where(mainGamesOnly()),
   ]);
   return {
     platforms: platformRows.sort((a, b) => b.count - a.count),

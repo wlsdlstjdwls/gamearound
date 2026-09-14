@@ -3,6 +3,10 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { CoverImage } from "@/components/game-card";
+import { CompanyChips } from "@/components/company-chips";
+import { DlcList } from "@/components/dlc-list";
+import { SubscriptionBadges } from "@/components/subscription-badges";
+import { UpgradeNotes } from "@/components/upgrade-note";
 import { MultiplayerBadges } from "@/components/multiplayer-badges";
 import { NewsList } from "@/components/news-list";
 import { PlatformTabs, type PlatformTabItem } from "@/components/platform-tabs";
@@ -13,6 +17,8 @@ import { Card, Page, SectionHead } from "@/components/ui/page";
 import { formatDateTime, formatHours, formatKrw, PLATFORM_LABEL } from "@/lib/format";
 import { SITE } from "@/lib/site";
 import { getFreshness } from "@/lib/freshness";
+import { GAME_MESSAGES } from "@/lib/games/messages";
+import { stagger } from "@/lib/motion";
 import { ROUTES } from "@/lib/routes";
 import { bestScore, cheapestPlatform, displayTitle, getGameBySlugCached, type GameDetail } from "@/server/services/games";
 import { getCurrentUser } from "@/server/services/users";
@@ -53,14 +59,17 @@ function SummaryCell({ label, value, note }: { label: string; value: string; not
 }
 
 /** 결정 요약 바 — "지금이 싼가 | 얼마나 걸리나 | 살 만한가" 세 값만 최상단에 고정한다 */
-function DecisionSummary({ game }: { game: GameDetail }) {
+function DecisionSummary({ game, className, style }: { game: GameDetail; className?: string; style?: React.CSSProperties }) {
   const best = cheapestPlatform(game.platforms);
   const score = bestScore(game.platforms);
   const main = game.playtime?.mainStoryHours;
   const complete = game.playtime?.completionistHours;
 
   return (
-    <dl className={cardClass("grid grid-cols-[repeat(auto-fit,minmax(160px,1fr))] divide-x divide-line-soft overflow-hidden")}>
+    <dl
+      className={cardClass(`grid grid-cols-[repeat(auto-fit,minmax(160px,1fr))] divide-x divide-line-soft overflow-hidden ${className ?? ""}`)}
+      style={style}
+    >
       <SummaryCell
         label="지금 최저가"
         value={best ? formatKrw(best.currentPrice) : "-"}
@@ -91,6 +100,9 @@ export default async function GameDetailPage({ params }: Props) {
     freshness: getFreshness(p.lastSyncedAt, p.syncStatus),
   }));
   const best = cheapestPlatform(game.platforms);
+  // 어느 한 플랫폼이라도 "추가 콘텐츠 있음"이라고 했으면 DLC 블록을 띄운다.
+  // 목록이 비어 있어도 그 사실 자체가 사용자에게 쓸모 있는 정보다.
+  const hasAddOns = game.platforms.some((p) => p.hasAddOns === true);
 
   return (
     <Page pad="detail" gap={28}>
@@ -100,10 +112,14 @@ export default async function GameDetailPage({ params }: Props) {
         </Link>
       </nav>
 
-      {/* 섹션 1 — 헤더 블록 */}
+      {/* 섹션 1 — 헤더 블록.
+          안쪽 조각마다 .enter-item 을 붙이는 이유: 헤더는 300px 넘는 덩어리라 통째로 페이드하면
+          화면이 한 번에 툭 던져진다. 커버, 제목, 요약, 장르, 설명 순으로 들어와야 목록 화면과 결이 같다.
+          (조각이 하나라도 .enter-item 이면 감싼 section 은 애니메이션에서 빠진다 — 겹쳐 페이드 방지) */}
       <section className="flex flex-wrap gap-6">
         <div
-          className={`relative shrink-0 overflow-hidden rounded-xl border border-line bg-surface-3 ${
+          style={stagger(0)}
+          className={`enter-item relative shrink-0 overflow-hidden rounded-xl border border-line bg-surface-3 ${
             // 세로 아트가 있으면 190×250 슬롯을 채운다. 없으면 가로 배너 비율을 유지해 제목이 잘리지 않게 한다
             game.portraitUrl ? "aspect-[3/4] w-[190px]" : "aspect-[460/215] w-full max-w-[380px]"
           }`}
@@ -112,12 +128,11 @@ export default async function GameDetailPage({ params }: Props) {
         </div>
 
         <div className="flex min-w-[280px] flex-1 flex-col gap-4">
-          <div className="flex flex-wrap items-start justify-between gap-3">
-            <div className="min-w-0">
+          <div className="enter-item flex flex-wrap items-start justify-between gap-3" style={stagger(1)}>
+            <div className="flex min-w-0 flex-col gap-1.5">
               <h1 className="text-[28px] font-bold leading-[1.2] tracking-[-0.03em] text-ink">{title}</h1>
-              <p className="mt-1 text-[13px] text-dim">
-                {[game.titleKo ? game.titleEn : null, game.developer, game.publisher].filter(Boolean).join(" | ") || "제작사 정보 없음"}
-              </p>
+              {game.titleKo && <p className="text-[13px] text-dim">{game.titleEn}</p>}
+              <CompanyChips companies={game.companies} developer={game.developer} publisher={game.publisher} />
             </div>
             <div className="flex shrink-0 flex-wrap items-center gap-2">
               <WishlistButton gameId={game.id} wished={wished} signedIn={Boolean(user)} />
@@ -127,9 +142,9 @@ export default async function GameDetailPage({ params }: Props) {
             </div>
           </div>
 
-          <DecisionSummary game={game} />
+          <DecisionSummary game={game} className="enter-item" style={stagger(2)} />
 
-          <div className="flex flex-wrap items-center gap-2">
+          <div className="enter-item flex flex-wrap items-center gap-2" style={stagger(3)}>
             {game.genres.length > 0 && (
               <>
                 <ul className="flex flex-wrap gap-1.5" aria-label="장르">
@@ -151,13 +166,17 @@ export default async function GameDetailPage({ params }: Props) {
             />
           </div>
 
-          {game.description && <p className="max-w-[600px] text-[13.5px] leading-[1.75] text-mut">{game.description}</p>}
+          {game.description && (
+            <p className="enter-item max-w-[600px] text-[13.5px] leading-[1.75] text-mut" style={stagger(4)}>
+              {game.description}
+            </p>
+          )}
         </div>
       </section>
 
       {/* 섹션 2 — 가격/뉴스 + 사이드바 */}
       <div className="grid gap-6 lg:grid-cols-[2fr_1fr]">
-        <div className="flex flex-col gap-6">
+        <div className="enter-item flex flex-col gap-6" style={stagger(5)}>
           <section aria-labelledby="platforms-heading" className="flex flex-col gap-3">
             <SectionHead
               id="platforms-heading"
@@ -168,8 +187,21 @@ export default async function GameDetailPage({ params }: Props) {
                 </Link>
               }
             />
+            <SubscriptionBadges subscriptions={game.subscriptions} />
             <PlatformTabs platforms={platforms} />
+            <UpgradeNotes upgrades={game.upgrades} />
           </section>
+
+          {(game.dlcs.length > 0 || hasAddOns) && (
+            <section aria-labelledby="dlc-heading" className="flex flex-col gap-3">
+              <SectionHead
+                id="dlc-heading"
+                title={GAME_MESSAGES.dlcHeading}
+                note={game.dlcs.length > 0 ? `${game.dlcs.length}개` : undefined}
+              />
+              <DlcList dlcs={game.dlcs} hasAddOns={hasAddOns} />
+            </section>
+          )}
 
           <section aria-labelledby="news-heading" className="flex flex-col gap-3">
             <SectionHead id="news-heading" title="관련 뉴스" />
@@ -179,7 +211,7 @@ export default async function GameDetailPage({ params }: Props) {
           </section>
         </div>
 
-        <aside className="flex flex-col gap-4">
+        <aside className="enter-item flex flex-col gap-4" style={stagger(6)}>
           <PlaytimeCard playtime={game.playtime} currentPrice={best?.currentPrice ?? null} />
 
           {game.sourceRefs.length > 0 && (

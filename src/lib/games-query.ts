@@ -20,6 +20,10 @@ export type GamesQuery = {
   platform?: string;
   genre?: string;
   onSale?: boolean;
+  /** 회사 slug — 회사 화면과 목록 필터가 같은 키를 쓴다 */
+  company?: string;
+  /** 구독(게임패스 등)으로 지금 플레이할 수 있는 게임만 */
+  subscription?: boolean;
   sort?: GameSort;
   /** 1-based */
   page?: number;
@@ -48,6 +52,8 @@ export function parseGamesQuery(sp: Record<string, string | string[] | undefined
     platform: firstParam(sp.platform),
     genre: firstParam(sp.genre),
     onSale: firstParam(sp.sale) === "1",
+    company: firstParam(sp.company),
+    subscription: firstParam(sp.sub) === "1",
     sort: isGameSort(sort) ? sort : undefined,
     page: Number.isFinite(page) && page > 0 ? Math.floor(page) : 1,
   };
@@ -64,6 +70,8 @@ export function gamesHref(current: GamesQuery, patch: Partial<GamesQuery> = {}):
   if (next.platform) params.set("platform", next.platform);
   if (next.genre) params.set("genre", next.genre);
   if (next.onSale) params.set("sale", "1");
+  if (next.company) params.set("company", next.company);
+  if (next.subscription) params.set("sub", "1");
   if (next.sort && next.sort !== DEFAULT_GAME_SORT) params.set("sort", next.sort);
   if (next.page && next.page > 1) params.set("page", String(next.page));
   const qs = params.toString();

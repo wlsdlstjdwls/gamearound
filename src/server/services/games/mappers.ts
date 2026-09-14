@@ -34,6 +34,7 @@ export function toPlatformDto(p: PlatformRow): PlatformDto {
     opencriticScore: p.opencriticScore,
     lastSyncedAt: iso(p.lastSyncedAt),
     syncStatus: p.syncStatus,
+    hasAddOns: p.hasAddOns,
   };
 }
 
@@ -128,6 +129,10 @@ export function toPublicGameDto(g: GameDetail): PublicGameDto {
     platforms: g.platforms,
     playtime: g.playtime,
     sourceRefs: g.sourceRefs,
+    companies: g.companies,
+    dlcs: g.dlcs,
+    subscriptions: g.subscriptions,
+    upgrades: g.upgrades,
     news: g.news.map(({ title, url, sourceName, thumbnailUrl, publishedAt }) => ({
       title,
       url,

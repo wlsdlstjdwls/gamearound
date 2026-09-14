@@ -9,6 +9,7 @@ import { Pagination } from "@/components/pagination";
 import { Page } from "@/components/ui/page";
 import { DEFAULT_GAME_SORT, SORT_LABEL, gamesHref, parseGamesQuery } from "@/lib/games-query";
 import { PLATFORM_LABEL } from "@/lib/format";
+import { stagger } from "@/lib/motion";
 import { ROUTES } from "@/lib/routes";
 import { getGameFacets, listGames } from "@/server/services/games";
 import { platformEnum, type Platform } from "@/server/db/schema";
@@ -34,6 +35,7 @@ export async function generateMetadata({ searchParams }: Props): Promise<Metadat
     f.platform ? PLATFORM_LABEL[f.platform] ?? f.platform : null,
     f.genre,
     f.onSale ? "할인 중" : null,
+    f.subscription ? "구독 포함" : null,
   ].filter(Boolean);
   return { title: parts.length > 0 ? `게임 목록 | ${parts.join(" | ")}` : "게임 목록" };
 }
@@ -41,7 +43,7 @@ export async function generateMetadata({ searchParams }: Props): Promise<Metadat
 export default async function GamesPage({ searchParams }: Props) {
   const filter = readFilter(await searchParams);
   const [facets, result] = await Promise.all([getGameFacets(), listGames(filter)]);
-  const hasFilter = Boolean(filter.q || filter.platform || filter.genre || filter.onSale);
+  const hasFilter = Boolean(filter.q || filter.platform || filter.genre || filter.onSale || filter.company || filter.subscription);
 
   return (
     <Page gap={20}>
@@ -72,8 +74,8 @@ export default async function GamesPage({ searchParams }: Props) {
             {SORT_LABEL[filter.sort ?? DEFAULT_GAME_SORT]} 게임 {result.total}개
           </h2>
           <ul className="grid grid-cols-[repeat(auto-fit,minmax(238px,1fr))] gap-4">
-            {result.items.map((g) => (
-              <li key={g.slug}>
+            {result.items.map((g, i) => (
+              <li key={g.slug} className="enter-item" style={stagger(i)}>
                 <GameCard game={g} variant={filter.sort === "release" ? "release" : "discount"} />
               </li>
             ))}

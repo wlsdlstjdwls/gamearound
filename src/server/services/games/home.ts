@@ -5,6 +5,7 @@ import { getDb } from "@/server/db/client";
 import { gamePlatforms, games, news } from "@/server/db/schema";
 import type { HomeData } from "./dto";
 import { groupSummaries } from "./mappers";
+import { mainGamesOnly } from "./filters";
 import { LIST_REVALIDATE_SECONDS } from "@/lib/cache";
 
 const HOME_LIMIT = 12;
@@ -18,7 +19,7 @@ async function getHomeDataRaw(): Promise<HomeData> {
     .select({ game: games, gp: gamePlatforms })
     .from(gamePlatforms)
     .innerJoin(games, eq(gamePlatforms.gameId, games.id))
-    .where(and(gt(gamePlatforms.discountPct, 0), isNotNull(gamePlatforms.currentPrice)))
+    .where(and(mainGamesOnly(), gt(gamePlatforms.discountPct, 0), isNotNull(gamePlatforms.currentPrice)))
     .orderBy(desc(gamePlatforms.discountPct), desc(gamePlatforms.lastSyncedAt))
     .limit(HOME_LIMIT * 4);
 
@@ -27,7 +28,7 @@ async function getHomeDataRaw(): Promise<HomeData> {
     .select({ game: games, gp: gamePlatforms })
     .from(gamePlatforms)
     .innerJoin(games, eq(gamePlatforms.gameId, games.id))
-    .where(and(isNotNull(gamePlatforms.releaseDate), sql`${gamePlatforms.releaseDate} <= current_date`))
+    .where(and(mainGamesOnly(), isNotNull(gamePlatforms.releaseDate), sql`${gamePlatforms.releaseDate} <= current_date`))
     .orderBy(desc(gamePlatforms.releaseDate))
     .limit(HOME_LIMIT * 4);
 
