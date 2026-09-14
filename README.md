@@ -30,14 +30,28 @@ pnpm dev
 
 ## 구조 (설계서 §2)
 
-- `src/app` 라우트: `(public)` 홈/검색/상세/가격그래프, `(auth)` 로그인/회원가입 + Server Action, `(user)` 위시리스트/알림/설정, `(admin)` 동기화 대시보드/검수/정정, `api/*` 라우트 핸들러
-- `src/server/db` 스키마·클라이언트·마이그레이션
-- `src/server/services` 비즈니스 로직 (route → service → adapter/db 3계층)
-- `src/server/adapters` 소스별 수집기 (가져오기만), `src/server/sync` DB 반영·매칭·알림 발송
-- `scripts/crawl.ts` GitHub Actions 진입점, `.github/workflows/*.yml` 스케줄
+레포 루트가 곧 앱 루트다. 설계·기획 산출물은 `docs/` 에 있다.
+
+```
+src/
+  app/                라우트 — (public) 홈·검색·목록·상세·가격그래프 / (auth) 로그인·가입 / (user) 위시리스트·알림·설정 / (admin) 동기화·검수·정정 / api
+  components/         화면 컴포넌트, ui/ 는 공용 프리미티브(Button·Chip·Page/Card·입력)
+  lib/                순수 유틸 — site(브랜드) · routes · cache · format · slug · games-query · motion · async · errors
+  server/
+    db/               Drizzle 스키마·클라이언트·마이그레이션
+    services/         비즈니스 로직. games/ 는 dto·mappers·home·search·list·detail 로 나뉜다
+    adapters/         소스별 수집기(가져오기만). http.ts 가 공통 HTTP 계층, steam/ 은 constants·schemas·parse·index
+    sync/             수집 결과 DB 반영 — constants·context·retry·store-targets·store-fetch·game-writer·platform-writer·run-store·run-meta·run-news·revalidate·run-source
+    auth/ push/ redis 세션·웹푸시·락
+scripts/              crawl.ts(GitHub Actions 진입점) · seed.ts
+.github/workflows/    크롤 스케줄 (레포 루트에 있어야 실행된다)
+docs/                 기획서·개발설계서·리디자인 스펙
+```
+
+- 계층 규칙: `route → service → adapter | db`, DB 쓰기는 `sync/` 에서만. 자세한 규약은 `AGENTS.md`
 - `src/proxy.ts` 세션 쿠키 유무로 보호 경로 리다이렉트 (Next 16에서 middleware → proxy). role은 각 layout/action에서 재검증
-- `src/lib/auth` 인증 상수·문구·zod 스키마(서버/클라이언트 공유), `src/server/auth` scrypt 해시·세션·레이트리밋, `src/components/auth` 폼/헤더 메뉴/SessionProvider
-- `src/lib/routes.ts` 경로 상수 + `safeNextPath`(오픈 리다이렉트 방지), `src/lib/motion.ts` 등장 스태거, `src/components/ui` 공용 버튼/입력/체크박스
+- `src/lib/routes.ts` 경로 상수 + `safeNextPath`(오픈 리다이렉트 방지)
+- `src/lib/site.ts` 서비스 이름·설명·테마색·크롤러 UA 단일 소스
 
 ## 인증 (자체 구현, SNS 로그인은 후속)
 
