@@ -5,14 +5,13 @@ import { load, type CheerioAPI } from "cheerio";
 import type { Platform } from "@/server/db/schema";
 import {
   AdapterError,
-  CRAWLER_USER_AGENT,
   type SearchCandidate,
   type StoreAdapter,
   type StoreSnapshot,
 } from "./types";
+import { createHttpClient, notFoundAs } from "./http";
 
 export const NINTENDO_BASE_URL = "https://store.nintendo.co.kr";
-const FETCH_TIMEOUT_MS = 20_000;
 
 export const NINTENDO_SELECTORS = {
   searchLink: "a.product-item-link",
@@ -144,21 +143,14 @@ export function parseNintendoSearch(html: string): SearchCandidate[] {
 
 // ---- 네트워크 ----
 
-async function fetchHtml(url: string): Promise<string> {
-  let res: Response;
-  try {
-    res = await fetch(url, {
-      headers: { "User-Agent": CRAWLER_USER_AGENT, Accept: "text/html", "Accept-Language": "ko-KR,ko;q=0.9" },
-      signal: AbortSignal.timeout(FETCH_TIMEOUT_MS),
-    });
-  } catch (e) {
-    throw new AdapterError(`Nintendo 요청 실패 (${url}): ${e instanceof Error ? e.message : String(e)}`, "nintendo", true);
-  }
-  if (res.status === 404) throw new AdapterError(`Nintendo 상품 없음 (${url})`, "nintendo", false);
-  if (res.status === 429 || res.status >= 500) throw new AdapterError(`Nintendo HTTP ${res.status} (${url})`, "nintendo", true);
-  if (!res.ok) throw new AdapterError(`Nintendo HTTP ${res.status} (${url})`, "nintendo", false);
-  return res.text();
-}
+// eShop 은 HTML 크롤이라 봇 차단을 피하려 한국어 Accept-Language 를 명시한다. 타임아웃도 API 보다 길게 잡는다.
+const http = createHttpClient({
+  source: "nintendo",
+  label: "Nintendo",
+  timeoutMs: 20_000,
+  headers: { "Accept-Language": "ko-KR,ko;q=0.9" },
+  onStatus: notFoundAs("nintendo", (ctx) => `Nintendo 상품 없음 (${ctx})`),
+});
 
 export const nintendoAdapter: StoreAdapter = {
   source: "nintendo",
@@ -167,12 +159,12 @@ export const nintendoAdapter: StoreAdapter = {
   async search(query: string): Promise<SearchCandidate[]> {
     const u = new URL(`${NINTENDO_BASE_URL}/catalogsearch/result/`);
     u.searchParams.set("q", query);
-    return parseNintendoSearch(await fetchHtml(u.toString()));
+    return parseNintendoSearch(await http.text(u.toString()));
   },
 
   async fetch(id: string): Promise<StoreSnapshot> {
     if (!/^[a-z0-9]+$/i.test(id)) throw new AdapterError(`Nintendo 상품 ID 형식 오류: ${id}`, "nintendo", false);
-    return parseNintendoProduct(await fetchHtml(nintendoProductUrl(id)), id);
+    return parseNintendoProduct(await http.text(nintendoProductUrl(id)), id);
   },
 
   /** 검색 시드 × 페이지네이션으로 카탈로그를 훑는다. 한 시드가 바닥나면 다음 시드로 */
@@ -184,7 +176,7 @@ export const nintendoAdapter: StoreAdapter = {
         const u = new URL(`${NINTENDO_BASE_URL}/catalogsearch/result/`);
         u.searchParams.set("q", q);
         u.searchParams.set("p", String(page));
-        const found = parseNintendoSearch(await fetchHtml(u.toString()));
+        const found = parseNintendoSearch(await http.text(u.toString()));
         if (found.length === 0) break; // 이 시드는 끝 — 다음 시드로
         for (const c of found) {
           if (seen.has(c.externalId)) continue;

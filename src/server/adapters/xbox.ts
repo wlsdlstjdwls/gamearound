@@ -5,17 +5,16 @@ import { z } from "zod";
 import { slugify } from "@/lib/slug";
 import {
   AdapterError,
-  CRAWLER_USER_AGENT,
   type SearchCandidate,
   type StoreAdapter,
   type StoreSnapshot,
 } from "./types";
+import { createHttpClient, notFoundAs } from "./http";
 
 export const XBOX_CATALOG_URL = "https://displaycatalog.mp.microsoft.com/v7.0";
 export const XBOX_STORE_URL = "https://www.xbox.com/ko-KR/games/store";
 export const XBOX_MARKET = "KR";
 export const XBOX_LANGUAGE = "ko-KR";
-const FETCH_TIMEOUT_MS = 15_000;
 
 // ---- 응답 스키마 ----
 const priceSchema = z.object({
@@ -149,25 +148,12 @@ function correlationId(): string {
   return Math.random().toString(36).slice(2, 12);
 }
 
-async function fetchJson(url: string): Promise<unknown> {
-  let res: Response;
-  try {
-    res = await fetch(url, {
-      headers: { "User-Agent": CRAWLER_USER_AGENT, Accept: "application/json", "MS-CV": correlationId() },
-      signal: AbortSignal.timeout(FETCH_TIMEOUT_MS),
-    });
-  } catch (e) {
-    throw new AdapterError(`Xbox 요청 실패 (${url}): ${e instanceof Error ? e.message : String(e)}`, "xbox", true);
-  }
-  if (res.status === 404) throw new AdapterError(`Xbox 게임 없음 (${url})`, "xbox", false);
-  if (res.status === 429 || res.status >= 500) throw new AdapterError(`Xbox HTTP ${res.status} (${url})`, "xbox", true);
-  if (!res.ok) throw new AdapterError(`Xbox HTTP ${res.status} (${url})`, "xbox", false);
-  try {
-    return await res.json();
-  } catch (e) {
-    throw new AdapterError(`Xbox JSON 파싱 실패: ${e instanceof Error ? e.message : String(e)}`, "xbox", true);
-  }
-}
+const http = createHttpClient({
+  source: "xbox",
+  label: "Xbox",
+  headers: () => ({ "MS-CV": correlationId() }),
+  onStatus: notFoundAs("xbox", (ctx) => `Xbox 게임 없음 (${ctx})`),
+});
 
 export const xboxAdapter: StoreAdapter = {
   source: "xbox",
@@ -179,7 +165,7 @@ export const xboxAdapter: StoreAdapter = {
     u.searchParams.set("languages", XBOX_LANGUAGE);
     u.searchParams.set("query", query);
     u.searchParams.set("productFamilyNames", "Games");
-    return parseXboxAutosuggest(await fetchJson(u.toString()));
+    return parseXboxAutosuggest(await http.json(u.toString()));
   },
 
   async fetch(productId: string): Promise<StoreSnapshot> {
@@ -187,6 +173,6 @@ export const xboxAdapter: StoreAdapter = {
     u.searchParams.set("bigIds", productId);
     u.searchParams.set("market", XBOX_MARKET);
     u.searchParams.set("languages", XBOX_LANGUAGE);
-    return parseXboxProduct(await fetchJson(u.toString()), productId);
+    return parseXboxProduct(await http.json(u.toString()), productId);
   },
 };

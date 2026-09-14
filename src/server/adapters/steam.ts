@@ -3,11 +3,11 @@
 import { z } from "zod";
 import {
   AdapterError,
-  CRAWLER_USER_AGENT,
   type SearchCandidate,
   type StoreAdapter,
   type StoreSnapshot,
 } from "./types";
+import { createHttpClient } from "./http";
 
 export const STEAM_APPDETAILS_URL = "https://store.steampowered.com/api/appdetails";
 export const STEAM_STORESEARCH_URL = "https://store.steampowered.com/api/storesearch/";
@@ -24,7 +24,6 @@ export const STEAM_STOREITEMS_URL = "https://api.steampowered.com/IStoreBrowseSe
 /** GetItems 는 appid 100개까지 한 요청에 넣어도 100개를 그대로 돌려준다(2026-09-14 확인) */
 export const STEAM_GETITEMS_BATCH = 100;
 export const STEAM_ASSET_BASE_URL = "https://shared.akamai.steamstatic.com/store_item_assets";
-const FETCH_TIMEOUT_MS = 15_000;
 
 /**
  * Steam 태그 id → 장르명. GetItems 는 appdetails 의 genres 대신 tagid 만 준다.
@@ -458,24 +457,7 @@ export function parseTopSellerAppIds(raw: unknown): string[] {
 
 // ---- 네트워크 ----
 
-async function fetchJson(url: string): Promise<unknown> {
-  let res: Response;
-  try {
-    res = await fetch(url, {
-      headers: { "User-Agent": CRAWLER_USER_AGENT, Accept: "application/json" },
-      signal: AbortSignal.timeout(FETCH_TIMEOUT_MS),
-    });
-  } catch (e) {
-    throw new AdapterError(`Steam 요청 실패 (${url}): ${e instanceof Error ? e.message : String(e)}`, "steam", true);
-  }
-  if (res.status === 429 || res.status >= 500) throw new AdapterError(`Steam HTTP ${res.status} (${url})`, "steam", true);
-  if (!res.ok) throw new AdapterError(`Steam HTTP ${res.status} (${url})`, "steam", false);
-  try {
-    return await res.json();
-  } catch (e) {
-    throw new AdapterError(`Steam JSON 파싱 실패 (${url}): ${e instanceof Error ? e.message : String(e)}`, "steam", true);
-  }
-}
+const http = createHttpClient({ source: "steam", label: "Steam" });
 
 /** GetItems 는 input_json 쿼리 하나로 받는다. appid 여러 개를 한 번에 넣을 수 있다(STEAM_GETITEMS_BATCH) */
 function storeItemsUrl(appids: string[], language: "koreana" | "english", full: boolean): string {
@@ -524,7 +506,7 @@ export async function fetchSteamTopAppIds(n: number): Promise<string[]> {
         u.searchParams.set("count", String(TOPSELLERS_PAGE_SIZE));
         u.searchParams.set("start", String(page * TOPSELLERS_PAGE_SIZE));
         if (slice) u.searchParams.set("tags", slice);
-        const pageIds = parseTopSellerAppIds(await fetchJson(u.toString()));
+        const pageIds = parseTopSellerAppIds(await http.json(u.toString()));
         if (pageIds.length === 0) break; // 이 슬라이스는 바닥 — 다음 슬라이스로
         for (const id of pageIds) {
           if (seen.has(id)) continue;
@@ -544,7 +526,7 @@ export async function fetchSteamTopAppIds(n: number): Promise<string[]> {
   const u = new URL(STEAM_FEATURED_URL);
   u.searchParams.set("cc", "kr");
   u.searchParams.set("l", "koreana");
-  return parseFeaturedAppIds(await fetchJson(u.toString()), n);
+  return parseFeaturedAppIds(await http.json(u.toString()), n);
 }
 
 export const steamAdapter: StoreAdapter = {
@@ -556,7 +538,7 @@ export const steamAdapter: StoreAdapter = {
     u.searchParams.set("term", query);
     u.searchParams.set("cc", "kr");
     u.searchParams.set("l", "koreana");
-    return parseStoreSearch(await fetchJson(u.toString()));
+    return parseStoreSearch(await http.json(u.toString()));
   },
 
   /**
@@ -565,13 +547,13 @@ export const steamAdapter: StoreAdapter = {
    * GetItems 실패는 가격 수집을 막지 않는다 — 부가 정보라 경고만 남기고 넘어간다.
    */
   async fetch(appid: string): Promise<StoreSnapshot> {
-    const rawKo = await fetchJson(appDetailsUrl(appid, "koreana"));
+    const rawKo = await http.json(appDetailsUrl(appid, "koreana"));
     await new Promise((r) => setTimeout(r, Math.floor(steamAdapter.minIntervalMs / 2)));
-    const rawEn = await fetchJson(appDetailsUrl(appid, "english"));
+    const rawEn = await http.json(appDetailsUrl(appid, "english"));
     const snapshot = parseAppDetails(rawKo, appid, rawEn);
     if (!snapshot.discountPct || snapshot.discountPct <= 0) return snapshot;
     try {
-      const info = parseStoreItemDiscount(await fetchJson(storeItemsUrl([appid], "koreana", false)), appid);
+      const info = parseStoreItemDiscount(await http.json(storeItemsUrl([appid], "koreana", false)), appid);
       return { ...snapshot, discountEndsAt: info.discountEndsAt, discountName: info.discountName };
     } catch (e) {
       console.warn(`[steam] 할인 기간 조회 실패 (appid=${appid}): ${e instanceof Error ? e.message : String(e)}`);
@@ -587,9 +569,9 @@ export const steamAdapter: StoreAdapter = {
    */
   async fetchMany(appids: string[]): Promise<Map<string, StoreSnapshot>> {
     if (appids.length === 0) return new Map();
-    const rawKo = await fetchJson(storeItemsUrl(appids, "koreana", true));
+    const rawKo = await http.json(storeItemsUrl(appids, "koreana", true));
     await new Promise((r) => setTimeout(r, Math.floor(steamAdapter.minIntervalMs / 2)));
-    const rawEn = await fetchJson(storeItemsUrl(appids, "english", false));
+    const rawEn = await http.json(storeItemsUrl(appids, "english", false));
     return parseStoreItems(rawKo, rawEn);
   },
 };

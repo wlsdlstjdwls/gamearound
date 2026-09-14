@@ -2,7 +2,8 @@
 // §10 저작권: 제목 + 링크 + 공식 썸네일만 추출, 본문은 저장하지 않는다.
 import { XMLParser } from "fast-xml-parser";
 import { load } from "cheerio";
-import { AdapterError, CRAWLER_USER_AGENT, type NewsAdapter, type NewsItem, type SearchCandidate } from "./types";
+import { AdapterError, type NewsAdapter, type NewsItem, type SearchCandidate } from "./types";
+import { createHttpClient } from "./http";
 
 /**
  * 피드 목록(§11-4 확정, 2026-09-11 응답 확인). externalId = name.
@@ -24,7 +25,11 @@ export const RSS_FEEDS: ReadonlyArray<{ name: string; url: string }> = [
   { name: "루리웹 뉴스", url: "https://bbs.ruliweb.com/news/rss" },
 ];
 
-const FETCH_TIMEOUT_MS = 15_000;
+const http = createHttpClient({
+  source: "rss",
+  label: "RSS",
+  headers: { Accept: "application/rss+xml, application/atom+xml, application/xml, text/xml" },
+});
 
 // ---- XML 파서 설정 ----
 const ARRAY_PATHS = new Set(["rss.channel.item", "feed.entry", "feed.entry.link", "rss.channel.item.enclosure", "rss.channel.item.media:content"]);
@@ -186,17 +191,6 @@ export const rssAdapter: NewsAdapter = {
   async fetch(feedName: string): Promise<NewsItem[]> {
     const feed = findFeed(feedName);
     if (!feed) throw new AdapterError(`알 수 없는 피드: ${feedName}`, "rss", false);
-    let res: Response;
-    try {
-      res = await fetch(feed.url, {
-        headers: { "User-Agent": CRAWLER_USER_AGENT, Accept: "application/rss+xml, application/atom+xml, application/xml, text/xml" },
-        signal: AbortSignal.timeout(FETCH_TIMEOUT_MS),
-      });
-    } catch (e) {
-      throw new AdapterError(`RSS 요청 실패 (${feed.name}): ${e instanceof Error ? e.message : String(e)}`, "rss", true);
-    }
-    if (res.status === 429 || res.status >= 500) throw new AdapterError(`RSS HTTP ${res.status} (${feed.name})`, "rss", true);
-    if (!res.ok) throw new AdapterError(`RSS HTTP ${res.status} (${feed.name})`, "rss", false);
-    return parseFeed(await res.text(), feed.name);
+    return parseFeed(await http.text(feed.url, { context: feed.name }), feed.name);
   },
 };

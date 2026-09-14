@@ -5,17 +5,16 @@ import { z } from "zod";
 import { slugify } from "@/lib/slug";
 import {
   AdapterError,
-  CRAWLER_USER_AGENT,
   type MetaAdapter,
   type MetaSnapshot,
   type SearchCandidate,
 } from "./types";
+import { createHttpClient } from "./http";
 
 export const OPENCRITIC_RAPIDAPI_KEY_ENV = "OPENCRITIC_RAPIDAPI_KEY";
 export const OPENCRITIC_RAPIDAPI_HOST = "opencritic-api.p.rapidapi.com";
 export const OPENCRITIC_API_URL = `https://${OPENCRITIC_RAPIDAPI_HOST}/api`;
 export const OPENCRITIC_SITE_URL = "https://opencritic.com/game";
-const FETCH_TIMEOUT_MS = 15_000;
 
 const gameSchema = z.object({
   id: z.number(),
@@ -56,34 +55,23 @@ export function parseOpenCriticSearch(raw: unknown): SearchCandidate[] {
 
 // ---- 네트워크 ----
 
-async function fetchJson(url: string): Promise<unknown> {
-  let res: Response;
-  try {
+// RapidAPI 키는 요청 시점에 읽는다 — 모듈 로드 순서(dotenv)보다 늦게 들어오는 환경이 있다.
+const http = createHttpClient({
+  source: "opencritic",
+  label: "OpenCritic",
+  headers: () => {
     const apiKey = process.env[OPENCRITIC_RAPIDAPI_KEY_ENV];
     if (!apiKey) throw new AdapterError(`OpenCritic: ${OPENCRITIC_RAPIDAPI_KEY_ENV} 없음`, "opencritic", false);
-    res = await fetch(url, {
-      headers: {
-        "User-Agent": CRAWLER_USER_AGENT,
-        Accept: "application/json",
-        "x-rapidapi-key": apiKey,
-        "x-rapidapi-host": OPENCRITIC_RAPIDAPI_HOST,
-      },
-      signal: AbortSignal.timeout(FETCH_TIMEOUT_MS),
-    });
-  } catch (e) {
-    if (e instanceof AdapterError) throw e;
-    throw new AdapterError(`OpenCritic 요청 실패 (${url}): ${e instanceof Error ? e.message : String(e)}`, "opencritic", true);
-  }
-  if (res.status === 401 || res.status === 403) throw new AdapterError(`OpenCritic 인증 실패 HTTP ${res.status} (RapidAPI 키 확인)`, "opencritic", false);
-  if (res.status === 404) throw new AdapterError(`OpenCritic 게임 없음 (${url})`, "opencritic", false);
-  if (res.status === 429 || res.status >= 500) throw new AdapterError(`OpenCritic HTTP ${res.status} (${url})`, "opencritic", true);
-  if (!res.ok) throw new AdapterError(`OpenCritic HTTP ${res.status} (${url})`, "opencritic", false);
-  try {
-    return await res.json();
-  } catch (e) {
-    throw new AdapterError(`OpenCritic JSON 파싱 실패: ${e instanceof Error ? e.message : String(e)}`, "opencritic", true);
-  }
-}
+    return { "x-rapidapi-key": apiKey, "x-rapidapi-host": OPENCRITIC_RAPIDAPI_HOST };
+  },
+  onStatus: (status, ctx) => {
+    // 401·403 은 키 문제라 재시도해도 같다 — 관리자가 키를 넣어야 풀린다
+    if (status === 401 || status === 403)
+      return new AdapterError(`OpenCritic 인증 실패 HTTP ${status} (RapidAPI 키 확인)`, "opencritic", false);
+    if (status === 404) return new AdapterError(`OpenCritic 게임 없음 (${ctx})`, "opencritic", false);
+    return undefined;
+  },
+});
 
 export const opencriticAdapter: MetaAdapter = {
   source: "opencritic",
@@ -92,10 +80,10 @@ export const opencriticAdapter: MetaAdapter = {
   async search(query: string): Promise<SearchCandidate[]> {
     const u = new URL(`${OPENCRITIC_API_URL}/game/search`);
     u.searchParams.set("criteria", query);
-    return parseOpenCriticSearch(await fetchJson(u.toString()));
+    return parseOpenCriticSearch(await http.json(u.toString()));
   },
 
   async fetch(id: string): Promise<MetaSnapshot> {
-    return parseOpenCriticGame(await fetchJson(`${OPENCRITIC_API_URL}/game/${encodeURIComponent(id)}`));
+    return parseOpenCriticGame(await http.json(`${OPENCRITIC_API_URL}/game/${encodeURIComponent(id)}`));
   },
 };

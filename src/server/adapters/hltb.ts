@@ -6,17 +6,16 @@ import { load } from "cheerio";
 import { z } from "zod";
 import {
   AdapterError,
-  CRAWLER_USER_AGENT,
   type MetaAdapter,
   type MetaSnapshot,
   type SearchCandidate,
 } from "./types";
+import { createHttpClient } from "./http";
 
 export const HLTB_BASE_URL = "https://howlongtobeat.com";
 export const HLTB_GAME_URL = `${HLTB_BASE_URL}/game`;
 export const HLTB_SEARCH_URL = `${HLTB_BASE_URL}/api/search/site`;
 export const HLTB_SEARCH_INIT_URL = `${HLTB_SEARCH_URL}/init`;
-const FETCH_TIMEOUT_MS = 15_000;
 
 // ---- 셀렉터 상수: 사이트 마크업 변경 시 여기만 수정 ----
 export const HLTB_SELECTORS = {
@@ -156,12 +155,28 @@ export const HLTB_SEARCH_USER_AGENT =
   "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36";
 
 const COMMON_HEADERS = {
-  "User-Agent": CRAWLER_USER_AGENT,
   Referer: `${HLTB_BASE_URL}/`,
   Origin: HLTB_BASE_URL,
 };
 
-const SEARCH_HEADERS = { ...COMMON_HEADERS, "User-Agent": HLTB_SEARCH_USER_AGENT };
+// 게임 페이지용 — 403 은 여기선 일시적 차단이라 재시도 대상이다(검색 쪽 403 과 의미가 다르다).
+const pageHttp = createHttpClient({
+  source: "hltb",
+  label: "HLTB",
+  headers: COMMON_HEADERS,
+  onStatus: (status, ctx) => {
+    if (status === 404) return new AdapterError(`HLTB 게임 없음 (${ctx})`, "hltb", false);
+    if (status === 403) return new AdapterError(`HLTB HTTP 403 (${ctx})`, "hltb", true);
+    return undefined;
+  },
+});
+
+// 검색용 — init 토큰 안에 UA 문자열이 들어가므로 init 과 search 는 반드시 같은 UA 여야 한다.
+const searchHttp = createHttpClient({
+  source: "hltb",
+  label: "HLTB",
+  headers: { ...COMMON_HEADERS, "User-Agent": HLTB_SEARCH_USER_AGENT },
+});
 
 /** 검색 본문. hpKey 필드에 hpVal 을 넣는 것까지가 서버 검증 대상이다(프런트엔드와 동일). */
 export function buildHltbSearchBody(query: string, token: HltbSearchToken): Record<string, unknown> {
@@ -202,40 +217,26 @@ export function resetHltbSearchToken(): void {
 }
 
 async function fetchSearchToken(): Promise<HltbSearchToken> {
-  let res: Response;
-  try {
-    res = await fetch(`${HLTB_SEARCH_INIT_URL}?t=${Date.now()}`, {
-      headers: { ...SEARCH_HEADERS, Accept: "application/json" },
-      signal: AbortSignal.timeout(FETCH_TIMEOUT_MS),
-    });
-  } catch (e) {
-    throw new AdapterError(`HLTB 검색 토큰 요청 실패: ${e instanceof Error ? e.message : String(e)}`, "hltb", true);
-  }
-  if (!res.ok) throw new AdapterError(`HLTB 검색 토큰 HTTP ${res.status}`, "hltb", res.status === 429 || res.status >= 500);
-  const parsed = searchTokenSchema.safeParse(await res.json());
+  const raw = await searchHttp.json(`${HLTB_SEARCH_INIT_URL}?t=${Date.now()}`, { context: "검색 토큰" });
+  const parsed = searchTokenSchema.safeParse(raw);
   if (!parsed.success) throw new AdapterError("HLTB 검색 토큰 응답 형식 변경", "hltb", false);
   cachedSearchToken = parsed.data;
   return parsed.data;
 }
 
+/** 403(토큰 만료)을 호출부가 직접 봐야 해서 raw 로 받는다 */
 async function postSearch(query: string, token: HltbSearchToken): Promise<Response> {
-  try {
-    return await fetch(HLTB_SEARCH_URL, {
-      method: "POST",
-      headers: {
-        ...SEARCH_HEADERS,
-        "Content-Type": "application/json",
-        Accept: "application/json",
-        "x-auth-token": token.token,
-        "x-hp-key": token.hpKey,
-        "x-hp-val": token.hpVal,
-      },
-      body: JSON.stringify(buildHltbSearchBody(query, token)),
-      signal: AbortSignal.timeout(FETCH_TIMEOUT_MS),
-    });
-  } catch (e) {
-    throw new AdapterError(`HLTB 검색 요청 실패: ${e instanceof Error ? e.message : String(e)}`, "hltb", true);
-  }
+  return searchHttp.raw(HLTB_SEARCH_URL, {
+    method: "POST",
+    context: "검색",
+    headers: {
+      "Content-Type": "application/json",
+      "x-auth-token": token.token,
+      "x-hp-key": token.hpKey,
+      "x-hp-val": token.hpVal,
+    },
+    body: JSON.stringify(buildHltbSearchBody(query, token)),
+  });
 }
 
 export const hltbAdapter: MetaAdapter = {
@@ -256,18 +257,7 @@ export const hltbAdapter: MetaAdapter = {
   },
 
   async fetch(gameId: string): Promise<MetaSnapshot> {
-    let res: Response;
-    try {
-      res = await fetch(`${HLTB_GAME_URL}/${encodeURIComponent(gameId)}`, {
-        headers: { ...COMMON_HEADERS, Accept: "text/html" },
-        signal: AbortSignal.timeout(FETCH_TIMEOUT_MS),
-      });
-    } catch (e) {
-      throw new AdapterError(`HLTB 요청 실패 (id=${gameId}): ${e instanceof Error ? e.message : String(e)}`, "hltb", true);
-    }
-    if (res.status === 404) throw new AdapterError(`HLTB 게임 없음 (id=${gameId})`, "hltb", false);
-    if (res.status === 429 || res.status === 403 || res.status >= 500) throw new AdapterError(`HLTB HTTP ${res.status} (id=${gameId})`, "hltb", true);
-    if (!res.ok) throw new AdapterError(`HLTB HTTP ${res.status} (id=${gameId})`, "hltb", false);
-    return parseHltbGamePage(await res.text());
+    const html = await pageHttp.text(`${HLTB_GAME_URL}/${encodeURIComponent(gameId)}`, { context: `id=${gameId}` });
+    return parseHltbGamePage(html);
   },
 };

@@ -3,7 +3,8 @@
 //   apiKey 는 사이트 HTML 에 공개된 프론트엔드 키(비밀 아님). 키가 바뀌면 이 파일 상수만 갱신(§10). 차단 시 §11-5: OpenCritic 만 표기.
 // PoC(2026-09-11): elden-ring / baldurs-gate-3 / hades / hollow-knight-silksong 4건 점수 확인.
 import { z } from "zod";
-import { AdapterError, CRAWLER_USER_AGENT, type MetaAdapter, type MetaSnapshot, type SearchCandidate } from "./types";
+import { AdapterError, type MetaAdapter, type MetaSnapshot, type SearchCandidate } from "./types";
+import { createHttpClient, notFoundAs } from "./http";
 
 export const METACRITIC_BACKEND_URL = "https://backend.metacritic.com";
 export const METACRITIC_SITE_URL = "https://www.metacritic.com/game";
@@ -12,7 +13,6 @@ export const METACRITIC_API_KEY = "1MOZgmNFxvmljaQR1X9KAij9Mo4xAY3u";
 /** finder 의 mcoTypeId: 13 = game-title */
 const GAME_TYPE_ID = 13;
 const SEARCH_LIMIT = 10;
-const FETCH_TIMEOUT_MS = 15_000;
 
 // ---- 응답 스키마 ----
 const scoreSummarySchema = z.object({ score: z.number().nullable().optional(), reviewCount: z.number().nullable().optional() });
@@ -85,25 +85,11 @@ export function parseMetacriticSearch(raw: unknown): SearchCandidate[] {
 
 // ---- 네트워크 ----
 
-async function fetchJson(url: string): Promise<unknown> {
-  let res: Response;
-  try {
-    res = await fetch(url, {
-      headers: { "User-Agent": CRAWLER_USER_AGENT, Accept: "application/json" },
-      signal: AbortSignal.timeout(FETCH_TIMEOUT_MS),
-    });
-  } catch (e) {
-    throw new AdapterError(`Metacritic 요청 실패 (${url}): ${e instanceof Error ? e.message : String(e)}`, "metacritic", true);
-  }
-  if (res.status === 404) throw new AdapterError(`Metacritic 게임 없음 (${url})`, "metacritic", false);
-  if (res.status === 429 || res.status >= 500) throw new AdapterError(`Metacritic HTTP ${res.status} (${url})`, "metacritic", true);
-  if (!res.ok) throw new AdapterError(`Metacritic HTTP ${res.status} (${url})`, "metacritic", false);
-  try {
-    return await res.json();
-  } catch (e) {
-    throw new AdapterError(`Metacritic JSON 파싱 실패: ${e instanceof Error ? e.message : String(e)}`, "metacritic", true);
-  }
-}
+const http = createHttpClient({
+  source: "metacritic",
+  label: "Metacritic",
+  onStatus: notFoundAs("metacritic", (ctx) => `Metacritic 게임 없음 (${ctx})`),
+});
 
 export const metacriticAdapter: MetaAdapter = {
   source: "metacritic",
@@ -114,13 +100,13 @@ export const metacriticAdapter: MetaAdapter = {
     u.searchParams.set("apiKey", METACRITIC_API_KEY);
     u.searchParams.set("mcoTypeId", String(GAME_TYPE_ID));
     u.searchParams.set("limit", String(SEARCH_LIMIT));
-    return parseMetacriticSearch(await fetchJson(u.toString()));
+    return parseMetacriticSearch(await http.json(u.toString()));
   },
 
   async fetch(slug: string): Promise<MetaSnapshot> {
     if (!/^[a-z0-9-]+$/.test(slug)) throw new AdapterError(`Metacritic slug 형식 오류: ${slug}`, "metacritic", false);
     const u = new URL(`${METACRITIC_BACKEND_URL}/composer/metacritic/pages/games/${slug}/web`);
     u.searchParams.set("apiKey", METACRITIC_API_KEY);
-    return parseMetacriticGame(await fetchJson(u.toString()), slug);
+    return parseMetacriticGame(await http.json(u.toString()), slug);
   },
 };
