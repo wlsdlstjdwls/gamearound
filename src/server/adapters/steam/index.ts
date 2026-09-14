@@ -18,11 +18,11 @@ import {
 } from "./constants";
 import {
   parseAppDetails,
-  parseFeaturedAppIds,
+  parseFeaturedCandidates,
   parseStoreItemDiscount,
   parseStoreItems,
   parseStoreSearch,
-  parseTopSellerAppIds,
+  parseTopSellerCandidates,
 } from "./parse";
 
 // 외부(어댑터 레지스트리, sync, 테스트)가 쓰는 이름은 여기서 한 번에 내보낸다
@@ -62,15 +62,17 @@ function appDetailsUrl(appid: string, lang: "koreana" | "english"): string {
 }
 
 /**
- * scripts/crawl.ts --seed-top=N 용: 인기순위 appid 상위 n개 (§11-1: 전체가 아닌 상위 N개).
- * 1차 인기순위 검색(페이지네이션) → 실패/빈 응답 시 featuredcategories(top_sellers+specials) 폴백.
+ * 카탈로그 발견 — 인기순위 검색을 페이지 단위로 흘려보낸다(§11-1).
+ * 한 쿼리는 ~6,500건에서 바닥나므로 장르 태그 슬라이스로 잘라 계속 파고든다.
+ * 상위 N개만 끊어 돌려주지 않는 이유: 그 N개가 전부 등록된 순간 신규가 영원히 0건이 된다 —
+ * 어디까지 아는지는 DB 를 보는 호출부만 안다(adapters/types 의 discoverPages 주석).
+ * 인기순위 검색 자체가 막히면 featuredcategories 한 장(60건 안팎)으로 폴백한다.
  */
-export async function fetchSteamTopAppIds(n: number): Promise<string[]> {
-  const ids: string[] = [];
-  const seen = new Set<string>();
+async function* steamDiscoverPages(): AsyncGenerator<SearchCandidate[]> {
+  let pages = 0;
   try {
-    outer: for (const slice of DISCOVERY_SLICES) {
-      for (let page = 0; page < TOPSELLERS_MAX_PAGES && ids.length < n; page++) {
+    for (const slice of DISCOVERY_SLICES) {
+      for (let page = 0; page < TOPSELLERS_MAX_PAGES; page++) {
         const u = new URL(STEAM_TOPSELLERS_URL);
         u.searchParams.set("json", "1");
         u.searchParams.set("filter", "topsellers");
@@ -79,27 +81,26 @@ export async function fetchSteamTopAppIds(n: number): Promise<string[]> {
         u.searchParams.set("count", String(TOPSELLERS_PAGE_SIZE));
         u.searchParams.set("start", String(page * TOPSELLERS_PAGE_SIZE));
         if (slice) u.searchParams.set("tags", slice);
-        const pageIds = parseTopSellerAppIds(await http.json(u.toString()));
-        if (pageIds.length === 0) break; // 이 슬라이스는 바닥 — 다음 슬라이스로
-        for (const id of pageIds) {
-          if (seen.has(id)) continue;
-          seen.add(id);
-          ids.push(id);
-          if (ids.length >= n) break;
-        }
+        const found = parseTopSellerCandidates(await http.json(u.toString()));
+        if (found.length === 0) break; // 이 슬라이스는 바닥 — 다음 슬라이스로
+        pages++;
+        yield found;
         await sleep(TOPSELLERS_PAGE_INTERVAL_MS);
       }
-      if (ids.length >= n) break outer;
     }
+    return;
   } catch (e) {
+    // 이미 넘긴 페이지가 있으면 거기까지가 이번 실행의 수확이다 — 폴백으로 앞부분을 다시 훑지 않는다
+    if (pages > 0) {
+      console.warn(`[steam] 인기순위 검색 중단 (${pages}페이지까지 수집): ${errorMessage(e)}`);
+      return;
+    }
     console.warn(`[steam] 인기순위 검색 실패 → featuredcategories 폴백: ${errorMessage(e)}`);
   }
-  if (ids.length > 0) return ids;
-
   const u = new URL(STEAM_FEATURED_URL);
   u.searchParams.set("cc", "kr");
   u.searchParams.set("l", "koreana");
-  return parseFeaturedAppIds(await http.json(u.toString()), n);
+  yield parseFeaturedCandidates(await http.json(u.toString()));
 }
 
 export const steamAdapter: StoreAdapter = {
@@ -147,4 +148,6 @@ export const steamAdapter: StoreAdapter = {
     const rawEn = await http.json(storeItemsUrl(appids, "english", false));
     return parseStoreItems(rawKo, rawEn);
   },
+
+  discoverPages: steamDiscoverPages,
 };

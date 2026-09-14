@@ -284,16 +284,12 @@ export const epicAdapter: StoreAdapter = {
   },
 
   /**
-   * 카탈로그를 출시일 내림차순으로 훑는다.
-   * limit 은 상한일 뿐이고 워크플로는 카탈로그보다 큰 값(EPIC_SEED_TOP)을 넘겨 한 바퀴를 다 돌게 한다 —
-   * 이미 아는 것을 걸러내는 일은 호출부(sync/store-targets)가 하므로, 여기서 신작 N개만 돌려주면
-   * 매 실행이 같은 목록을 내고 나머지 카탈로그는 영원히 안 들어온다.
-   * 한 바퀴가 약 175 요청(1초 간격 ≈ 3분)이라 하루 3회 실행에도 부담이 크지 않다.
+   * 카탈로그를 출시일 내림차순으로, 페이지 단위로 흘려보낸다.
+   * 아는 것을 걸러내고 언제 멈출지는 호출부가 정한다(adapters/types 의 discoverPages 주석) —
+   * 신작 N개만 끊어 돌려주면 그 N개가 다 등록된 순간 나머지 카탈로그가 영원히 안 들어온다.
    */
-  async discover(limit: number): Promise<SearchCandidate[]> {
-    const out: SearchCandidate[] = [];
-    const seen = new Set<string>();
-    for (let page = 0; page < EPIC_DISCOVERY_MAX_PAGES && out.length < limit; page++) {
+  async *discoverPages(): AsyncGenerator<SearchCandidate[]> {
+    for (let page = 0; page < EPIC_DISCOVERY_MAX_PAGES; page++) {
       const raw = await graphql(
         EPIC_SEARCH_QUERY,
         {
@@ -308,15 +304,9 @@ export const epicAdapter: StoreAdapter = {
         `discover:${page}`,
       );
       const offers = parseEpicSearch(raw);
-      if (offers.length === 0) break; // 카탈로그 끝
-      for (const offer of offers) {
-        const candidate = toEpicCandidate(offer);
-        if (seen.has(candidate.externalId)) continue;
-        seen.add(candidate.externalId);
-        out.push(candidate);
-      }
+      if (offers.length === 0) return; // 카탈로그 끝
+      yield offers.map(toEpicCandidate);
       await sleep(epicAdapter.minIntervalMs);
     }
-    return out;
   },
 };

@@ -219,23 +219,15 @@ export const gogAdapter: StoreAdapter = {
   },
 
   /**
-   * 카탈로그를 한 바퀴 돈다. limit 은 상한일 뿐이고 워크플로는 카탈로그보다 큰 값을 넘긴다 —
-   * 아는 것을 걸러내는 일은 호출부(sync/store-targets)가 하므로 여기서 앞부분만 돌려주면
-   * 매 실행이 같은 목록을 내고 나머지 카탈로그는 영원히 안 들어온다(epic 어댑터와 같은 이유).
+   * 카탈로그를 페이지 단위로 흘려보낸다. 아는 것을 걸러내고 언제 멈출지는 호출부가 정한다
+   * (adapters/types 의 discoverPages 주석) — 여기서 앞부분만 끊어 돌려주면 매 실행 같은 목록만 나온다.
    */
-  async discover(limit: number): Promise<SearchCandidate[]> {
-    const out: SearchCandidate[] = [];
-    const seen = new Set<string>();
-    for (let page = 1; page <= GOG_DISCOVERY_MAX_PAGES && out.length < limit; page++) {
+  async *discoverPages(): AsyncGenerator<SearchCandidate[]> {
+    for (let page = 1; page <= GOG_DISCOVERY_MAX_PAGES; page++) {
       const found = parseGogCatalog(await http.json(catalogUrl(page), { context: `discover:${page}` }));
-      if (found.length === 0) break; // 카탈로그 끝
-      for (const c of found) {
-        if (seen.has(c.externalId)) continue;
-        seen.add(c.externalId);
-        out.push(c);
-      }
+      if (found.length === 0) return; // 카탈로그 끝
+      yield found;
       await sleep(gogAdapter.minIntervalMs);
     }
-    return out;
   },
 };

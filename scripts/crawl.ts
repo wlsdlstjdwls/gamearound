@@ -1,6 +1,6 @@
 // GitHub Actions 진입점 — 설계서 §2/§4.3.
 //   tsx scripts/crawl.ts --source=steam [--limit=N] [--seed-top=N] [--match=N|--no-match]
-//   --seed-top=N : 카탈로그에서 신규 게임 N개까지 발견해 등록 (steam/nintendo)
+//   --seed-top=N : 카탈로그를 훑어 아직 없는 게임 N개까지 발견해 등록 (SEEDABLE_SOURCES)
 //   --match=N : 수집 전에 해당 소스 ref 가 없는 게임 N개를 매칭(§4.2). steam/rss 외 소스는 기본 50
 // 종료 코드: 0 = ok/skipped, 2 = partial(일부 실패), 1 = failed/인자 오류
 import path from "node:path";

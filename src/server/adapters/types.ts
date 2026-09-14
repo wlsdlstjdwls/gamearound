@@ -125,10 +125,15 @@ export interface SourceAdapter<T extends StoreSnapshot | MetaSnapshot | NewsItem
   /** fetchMany 한 요청에 넣을 수 있는 ID 수 */
   batchSize?: number;
   /**
-   * 카탈로그에서 신규 후보를 찾아온다 (지원하는 소스만). 이게 없으면 그 소스는
+   * 카탈로그를 페이지 단위로 훑는다 (지원하는 소스만). 이게 없으면 그 소스는
    * 이미 등록된 게임에 가격을 붙이기만 할 뿐, 그 플랫폼 독점작을 영원히 못 가져온다.
+   *
+   * "상위 N개" 가 아니라 페이지를 흘려보내는 이유: N 이 카탈로그보다 작은 소스(steam, nintendo)에서
+   * 상위 N개만 돌려주면 그 N개가 전부 이미 아는 것이 된 순간 신규가 영원히 0건이 된다.
+   * 어디까지 아는지는 DB 를 보는 호출부(sync/store-targets)만 알기 때문에, 거르는 일도 멈출 시점도 호출부가 정한다.
+   * 요청 간격(minIntervalMs)은 페이지를 넘길 때마다 어댑터가 지킨다.
    */
-  discover?(limit: number): Promise<SearchCandidate[]>;
+  discoverPages?(): AsyncIterable<SearchCandidate[]>;
   /** 소스별 요청 간격(ms). 크롤 대상은 보수적으로 */
   minIntervalMs: number;
 }

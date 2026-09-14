@@ -44,16 +44,40 @@ export const WRITE_BATCH_SIZE = 50;
  * 그래서 이 둘만 가정용 회선에서 도는 로컬 크롤(scripts/crawl-local.ts)이 맡는다.
  */
 export const LOCAL_ONLY_SOURCES: Source[] = ["nintendo", "epic"];
-/** 로컬 크롤이 소스별로 넘길 --seed-top. 발견이 카탈로그를 한 바퀴 도는 소스는 카탈로그보다 큰 값을 준다 */
+/**
+ * 로컬 크롤이 소스별로 넘길 --seed-top = 한 실행에서 새로 등록할 상한.
+ * 실제 몫은 SEED_SHARE_MAX 가 한 번 더 깎는다(배치의 절반).
+ */
 export const LOCAL_SEED_TOP: Partial<Record<Source, number>> = {
   // eShop 은 요청 간격 4초라 한 번에 많이 못 당긴다 — 며칠에 걸쳐 채운다
-  nintendo: 120,
-  // 한 바퀴가 약 175 요청(1초 간격). 처리량은 BATCH_SIZE.epic 이 막는다
-  epic: 8000,
+  nintendo: 60,
+  // BATCH_SIZE.epic(250)의 절반. 발견 페이지 예산은 DISCOVERY_PAGE_BUDGET.epic 이 따로 막는다
+  epic: 125,
 };
 
-/** --seed-top 으로 카탈로그를 훑어 신규 게임을 등록할 수 있는 소스 (어댑터가 discover 를 갖거나 steam) */
+/** --seed-top 으로 카탈로그를 훑어 신규 게임을 등록할 수 있는 소스 (어댑터가 discoverPages 를 가진 소스) */
 export const SEEDABLE_SOURCES: Source[] = ["steam", "nintendo", "epic", "gog"];
+/**
+ * 한 실행에서 목록 페이지를 몇 장까지 읽을지. 발견은 아는 것이 나오는 앞부분을 건너뛰며 파고들기 때문에
+ * (sync/discover) 카탈로그가 커질수록 건너뛸 페이지가 늘어난다. 그렇다고 무한정 읽으면
+ * 정작 가격 수집 시간을 잡아먹으므로, 요청 간격 × 이 값이 몇 분 안에 끝나도록 잡는다.
+ */
+export const DISCOVERY_PAGE_BUDGET: Partial<Record<StoreSource, number>> = {
+  // 1.5초 × 80 ≈ 2분. 페이지당 100건이라 이미 아는 8,000건 구간을 건너뛰고도 신규를 만난다
+  steam: 80,
+  // KR 카탈로그 전체가 64페이지(100건/page) — 한 바퀴를 다 돌 수 있는 값에 여유를 더했다
+  gog: 70,
+  // 4초 × 25 ≈ 100초. 검색 결과가 페이지당 24건이라 한 실행에 600건까지 훑는다
+  nintendo: 25,
+  // 1초 × 200 ≈ 3.5분. 카탈로그 한 바퀴가 약 175페이지(40건/page)
+  epic: 200,
+};
+/**
+ * 신규 시드가 한 배치에서 가져갈 수 있는 몫의 상한. 시드는 대상 목록 맨 앞에 붙으므로
+ * 상한이 없으면 카탈로그가 비어 있는 초기에 시드가 배치를 통째로 먹고 기존 게임 가격이 안 갱신된다.
+ * 0.5 = 신규 유입과 기존 갱신을 반씩. Steam 기준 실행당 750건 신규 = 하루 2,250건.
+ */
+export const SEED_SHARE_MAX = 0.5;
 /** 스토어 소스 → 담당 플랫폼 (§11-6: PS4/PS5, Switch/Switch2 분리 유지) */
 export const SOURCE_PLATFORMS: Record<StoreSource, Platform[]> = {
   steam: ["steam"], psstore: ["ps5", "ps4"], xbox: ["xbox"], nintendo: ["switch", "switch2"], epic: ["epic"], gog: ["gog"],

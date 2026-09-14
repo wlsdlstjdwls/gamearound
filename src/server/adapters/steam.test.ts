@@ -6,12 +6,12 @@ import { AdapterError } from "./types";
 import {
   inferMultiplayer,
   parseAppDetails,
-  parseFeaturedAppIds,
+  parseFeaturedCandidates,
   parseSteamDate,
   parseStoreItemDiscount,
   parseStoreItems,
   parseStoreSearch,
-  parseTopSellerAppIds,
+  parseTopSellerCandidates,
   steamAssetUrl,
   steamDiscountLabel,
   unixToIsoDate,
@@ -99,20 +99,25 @@ describe("parseStoreSearch", () => {
   });
 });
 
-describe("parseFeaturedAppIds", () => {
-  it("top_sellers + specials 에서 앱(type=0)만 중복 없이 n개", () => {
-    expect(parseFeaturedAppIds(fixture("steam-featuredcategories.json"), 10)).toEqual(["570", "1091500", "730", "1245620"]);
-    expect(parseFeaturedAppIds(fixture("steam-featuredcategories.json"), 2)).toEqual(["570", "1091500"]);
+describe("parseFeaturedCandidates", () => {
+  it("top_sellers + specials 에서 앱(type=0)만 중복 없이", () => {
+    const list = parseFeaturedCandidates(fixture("steam-featuredcategories.json"));
+    expect(list.map((c) => c.externalId)).toEqual(["570", "1091500", "730", "1245620"]);
+    expect(list[0].url).toBe("https://store.steampowered.com/app/570");
   });
 });
 
-describe("parseTopSellerAppIds", () => {
+describe("parseTopSellerCandidates", () => {
   it("logo URL 의 /apps/<id>/ 만 추출하고 subs, logo 없음, 중복은 제외한다", () => {
-    expect(parseTopSellerAppIds(fixture("steam-search-results.json"))).toEqual(["578080", "730"]);
+    const list = parseTopSellerCandidates(fixture("steam-search-results.json"));
+    expect(list).toEqual([
+      { externalId: "578080", title: "PUBG: BATTLEGROUNDS", url: "https://store.steampowered.com/app/578080" },
+      { externalId: "730", title: "Counter-Strike 2", url: "https://store.steampowered.com/app/730" },
+    ]);
   });
 
   it("형식이 다르면 AdapterError", () => {
-    expect(() => parseTopSellerAppIds({ items: "nope" })).toThrow(AdapterError);
+    expect(() => parseTopSellerCandidates({ items: "nope" })).toThrow(AdapterError);
   });
 });
 

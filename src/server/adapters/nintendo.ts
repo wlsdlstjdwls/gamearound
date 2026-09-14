@@ -10,6 +10,7 @@ import {
   type StoreSnapshot,
 } from "./types";
 import { createHttpClient, notFoundAs } from "./http";
+import { sleep } from "@/lib/async";
 
 export const NINTENDO_BASE_URL = "https://store.nintendo.co.kr";
 
@@ -182,27 +183,21 @@ export const nintendoAdapter: StoreAdapter = {
     return parseNintendoProduct(requireBody(await http.text(nintendoProductUrl(id)), id), id);
   },
 
-  /** 검색 시드 × 페이지네이션으로 카탈로그를 훑는다. 한 시드가 바닥나면 다음 시드로 */
-  async discover(limit: number): Promise<SearchCandidate[]> {
-    const out: SearchCandidate[] = [];
-    const seen = new Set<string>();
+  /**
+   * 검색 시드 × 페이지네이션으로 카탈로그를 페이지 단위로 흘려보낸다. 한 시드가 바닥나면 다음 시드로.
+   * 아는 것을 걸러내고 멈출 시점을 정하는 일은 호출부 몫이다(adapters/types 의 discoverPages 주석).
+   */
+  async *discoverPages(): AsyncGenerator<SearchCandidate[]> {
     for (const q of DISCOVERY_QUERIES) {
-      for (let page = 1; page <= DISCOVERY_MAX_PAGES && out.length < limit; page++) {
+      for (let page = 1; page <= DISCOVERY_MAX_PAGES; page++) {
         const u = new URL(`${NINTENDO_BASE_URL}/catalogsearch/result/`);
         u.searchParams.set("q", q);
         u.searchParams.set("p", String(page));
         const found = parseNintendoSearch(requireBody(await http.text(u.toString()), `discover:${q}:${page}`));
         if (found.length === 0) break; // 이 시드는 끝 — 다음 시드로
-        for (const c of found) {
-          if (seen.has(c.externalId)) continue;
-          seen.add(c.externalId);
-          out.push(c);
-          if (out.length >= limit) break;
-        }
-        await new Promise((r) => setTimeout(r, nintendoAdapter.minIntervalMs));
+        yield found;
+        await sleep(nintendoAdapter.minIntervalMs);
       }
-      if (out.length >= limit) break;
     }
-    return out;
   },
 };
