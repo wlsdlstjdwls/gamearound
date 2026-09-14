@@ -1,0 +1,16 @@
+export interface RunOptions {
+  /** 배치 크기 덮어쓰기 */
+  limit?: number;
+  /** 카탈로그에서 신규 게임을 N개까지 발견해 시드 (SEEDABLE_SOURCES) */
+  seedTop?: number;
+}
+
+export interface RunResult {
+  source: Source;
+  status: SyncStatus | "skipped";
+  processed: number;
+  failed: number;
+  changed: number;
+  errorSample?: string;
+  alerts?: DispatchSummary;
+}

@@ -1,24 +1,3 @@
-// 소스 1개 동기화 진입점 — 설계서 §4.4 흐름 8단계.
-//  1. Redis 락  2. sync_logs INSERT  3~4. 소스별 실행(run-store / run-meta / run-news)
-//  5. 가격 변동 → dispatch-alerts  6. sync_logs UPDATE  7. revalidate  8. 락 해제
-// 이 파일은 순서와 실패 처리만 책임진다 — 실제 수집·반영은 각 모듈이 한다.
-import { eq } from "drizzle-orm";
-import { getDb } from "@/server/db/client";
-import { syncLogs, type SyncStatus } from "@/server/db/schema";
-import { acquireLock, releaseLock } from "@/server/redis";
-import { isMetaSource, isNewsSource, isStoreSource } from "@/server/adapters";
-import type { Source } from "@/server/adapters/types";
-import { errorMessage } from "@/lib/errors";
-import { LOCK_TTL_SEC } from "./constants";
-import { loadLockedFields, recordError, type Ctx, type RunOptions, type RunResult } from "./context";
-import { dispatchPriceAlerts, type DispatchSummary } from "./dispatch-alerts";
-import { revalidateGameTags } from "./revalidate";
-import { runMeta } from "./run-meta";
-import { runNews } from "./run-news";
-import { runStore } from "./run-store";
-
-export type { RunOptions, RunResult } from "./context";
-
 export async function runSource(source: Source, opts: RunOptions = {}): Promise<RunResult> {
   const lockKey = `lock:${source}`;
   if (!(await acquireLock(lockKey, LOCK_TTL_SEC))) {
@@ -71,7 +50,7 @@ export async function runSource(source: Source, opts: RunOptions = {}): Promise<
 
     return { source, status, processed: ctx.processed, failed: ctx.failed, changed: ctx.changedSlugs.size, errorSample: errorSample ?? undefined, alerts };
   } catch (e) {
-    const message = errorMessage(e);
+    const message = errMsg(e);
     console.error(`[sync:${source}] 치명적 오류: ${message}`);
     if (logId !== null) {
       await db
@@ -82,6 +61,6 @@ export async function runSource(source: Source, opts: RunOptions = {}): Promise<
     }
     return { source, status: "failed", processed: 0, failed: 0, changed: 0, errorSample: message };
   } finally {
-    await releaseLock(lockKey).catch((e) => console.warn(`[sync:${source}] 락 해제 실패: ${errorMessage(e)}`));
+    await releaseLock(lockKey).catch((e) => console.warn(`[sync:${source}] 락 해제 실패: ${errMsg(e)}`));
   }
 }

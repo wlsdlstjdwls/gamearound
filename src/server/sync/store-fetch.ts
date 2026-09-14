@@ -1,0 +1,63 @@
+// 스토어 수집 경로 — 단건 조회와 배치 조회. 어느 쪽이든 항목 하나의 실패가 실행 전체를 멈추지 않는다.
+import type { StoreAdapter, StoreSnapshot } from "@/server/adapters/types";
+import type { StoreSource } from "@/server/adapters";
+import { sleep } from "@/lib/async";
+import { errorMessage } from "@/lib/errors";
+import { DEFAULT_FETCH_BATCH_SIZE, SOURCE_PLATFORMS } from "./constants";
+import { recordError, type Ctx } from "./context";
+import { fetchWithRetry } from "./retry";
+import { markPlatformFailed } from "./platform-writer";
+import type { StoreTarget } from "./store-targets";
+
+export type Fetched = Array<{ target: StoreTarget; snapshot: StoreSnapshot }>;
+
+/** 단건 조회 경로 — fetchMany 를 지원하지 않는 소스(xbox/nintendo/psstore)용 */
+export async function fetchStoreOneByOne(ctx: Ctx, source: StoreSource, adapter: StoreAdapter, targets: StoreTarget[]): Promise<Fetched> {
+  const fetched: Fetched = [];
+  for (let i = 0; i < targets.length; i++) {
+    const target = targets[i];
+    try {
+      fetched.push({ target, snapshot: await fetchWithRetry(() => adapter.fetch(target.externalId)) });
+    } catch (e) {
+      recordError(ctx, `${source}:${target.externalId}`, e);
+      if (target.gameId) await markPlatformFailed(ctx, target.gameId, SOURCE_PLATFORMS[source]);
+    }
+    if (i < targets.length - 1) await sleep(adapter.minIntervalMs);
+  }
+  return fetched;
+}
+
+/**
+ * 배치 조회 경로 (steam). 한 요청에 batchSize 개씩 묶는다.
+ * 배치 하나가 통째로 실패하면 그 배치만 단건 조회로 되돌린다 — 카탈로그 전체가 한 번의 실패로 멈추지 않게.
+ */
+export async function fetchStoreBatched(ctx: Ctx, source: StoreSource, adapter: StoreAdapter, targets: StoreTarget[]): Promise<Fetched> {
+  const size = adapter.batchSize ?? DEFAULT_FETCH_BATCH_SIZE;
+  const batches: StoreTarget[][] = [];
+  for (let i = 0; i < targets.length; i += size) batches.push(targets.slice(i, i + size));
+
+  const fetched: Fetched = [];
+  for (let b = 0; b < batches.length; b++) {
+    const batch = batches[b];
+    let byId: Map<string, StoreSnapshot>;
+    try {
+      byId = await fetchWithRetry(() => adapter.fetchMany!(batch.map((t) => t.externalId)));
+    } catch (e) {
+      console.warn(`[sync:${source}] 배치 ${b + 1}/${batches.length} 실패 → 단건 조회로 폴백: ${errorMessage(e)}`);
+      fetched.push(...(await fetchStoreOneByOne(ctx, source, adapter, batch)));
+      continue;
+    }
+    for (const target of batch) {
+      const snapshot = byId.get(target.externalId);
+      if (snapshot) {
+        fetched.push({ target, snapshot });
+        continue;
+      }
+      // 배치는 성공했는데 이 id 만 빠진 경우 = 삭제/비공개/지역 미판매. 재시도해도 같으니 폴백하지 않는다
+      recordError(ctx, `${source}:${target.externalId}`, new Error("배치 응답에 없음 (비공개·미판매·삭제 추정)"));
+      if (target.gameId) await markPlatformFailed(ctx, target.gameId, SOURCE_PLATFORMS[source]);
+    }
+    if (b < batches.length - 1) await sleep(adapter.minIntervalMs);
+  }
+  return fetched;
+}

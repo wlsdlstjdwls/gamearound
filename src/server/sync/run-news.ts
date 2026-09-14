@@ -1,0 +1,70 @@
+// 뉴스 실행 — RSS 피드를 모아 제목으로 게임에 연결한다.
+import { games, news } from "@/server/db/schema";
+import { getNewsAdapter } from "@/server/adapters";
+import { RSS_FEEDS } from "@/server/adapters/news-rss";
+import type { NewsItem } from "@/server/adapters/types";
+import { sleep } from "@/lib/async";
+import { NEWS_MATCH_MIN_TITLE_LEN } from "./constants";
+import { recordError, type Ctx } from "./context";
+import { fetchWithRetry } from "./retry";
+
+export interface TitleIndex {
+  id: string;
+  slug: string;
+  needles: string[]; // 소문자 제목들
+}
+
+/** 뉴스 제목에 games.title_en / title_ko 가 포함되면 연결. 가장 긴 제목이 매칭된 게임 우선. 없으면 null */
+export function matchNewsToGame(title: string, index: TitleIndex[]): TitleIndex | null {
+  const hay = title.toLowerCase();
+  let best: { game: TitleIndex; len: number } | null = null;
+  for (const g of index) {
+    for (const needle of g.needles) {
+      if (needle.length < NEWS_MATCH_MIN_TITLE_LEN) continue;
+      if (hay.includes(needle) && (!best || needle.length > best.len)) best = { game: g, len: needle.length };
+    }
+  }
+  return best?.game ?? null;
+}
+
+export async function runNews(ctx: Ctx): Promise<void> {
+  const adapter = getNewsAdapter("rss");
+  const { db } = ctx;
+  const titleRows = await db.select({ id: games.id, slug: games.slug, titleEn: games.titleEn, titleKo: games.titleKo }).from(games);
+  const index: TitleIndex[] = titleRows.map((g) => ({
+    id: g.id,
+    slug: g.slug,
+    needles: [g.titleEn, g.titleKo].filter((t): t is string => Boolean(t)).map((t) => t.toLowerCase()),
+  }));
+
+  for (let i = 0; i < RSS_FEEDS.length; i++) {
+    const feed = RSS_FEEDS[i];
+    let items: NewsItem[];
+    try {
+      items = await fetchWithRetry(() => adapter.fetch(feed.name));
+    } catch (e) {
+      recordError(ctx, `rss:${feed.name}`, e);
+      continue;
+    }
+    if (items.length === 0) continue;
+    const values = items.map((it) => {
+      const game = matchNewsToGame(it.title, index);
+      if (game) ctx.changedSlugs.add(game.slug);
+      return {
+        gameId: game?.id ?? null,
+        title: it.title,
+        url: it.url,
+        sourceName: it.sourceName,
+        thumbnailUrl: it.thumbnailUrl ?? null,
+        publishedAt: new Date(it.publishedAt),
+      };
+    });
+    try {
+      await db.insert(news).values(values).onConflictDoNothing({ target: news.url });
+      ctx.processed += values.length;
+    } catch (e) {
+      recordError(ctx, `rss:${feed.name}:db`, e);
+    }
+    if (i < RSS_FEEDS.length - 1) await sleep(adapter.minIntervalMs);
+  }
+}

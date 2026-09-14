@@ -2,7 +2,7 @@
 import { describe, expect, it } from "vitest";
 import { normalizeTitle, slugify, trigramSimilarity } from "@/lib/slug";
 import { AUTO_MATCH_THRESHOLD, classifyMatch, findGameByTitle, NONE_RETRY_DAYS, noneRetryCutoff, PENDING_MATCH_THRESHOLD, pickBestCandidate } from "@/server/sync/match";
-import { matchNewsToGame } from "@/server/sync/run-source";
+import { matchNewsToGame } from "@/server/sync/run-news";
 
 describe("classifyMatch", () => {
   it("≥0.9 auto, 0.7~0.9 pending, <0.7 none", () => {

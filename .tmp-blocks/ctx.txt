@@ -1,0 +1,11 @@
+interface Ctx {
+  db: Db;
+  source: Source;
+  now: Date;
+  locks: Set<string>;
+  processed: number;
+  failed: number;
+  errors: string[];
+  changedSlugs: Set<string>;
+  priceChanges: PriceChange[];
+}

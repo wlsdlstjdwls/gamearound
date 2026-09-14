@@ -4,10 +4,14 @@ import { AdapterError, CRAWLER_USER_AGENT } from "./types";
 
 /** fetch 를 고정 응답으로 바꾼다. 마지막 호출 인자를 확인할 수 있게 mock 을 돌려준다. */
 function stubFetch(res: Response | (() => Promise<Response>)) {
-  const fn = vi.fn(typeof res === "function" ? res : async () => res);
+  const impl = typeof res === "function" ? res : async () => res;
+  const fn = vi.fn<(url: string, init: RequestInit) => Promise<Response>>(impl);
   vi.stubGlobal("fetch", fn);
   return fn;
 }
+
+/** mock 이 기록한 n번째 호출의 헤더 */
+const headersOf = (fn: ReturnType<typeof stubFetch>, n: number): Headers => fn.mock.calls[n][1].headers as Headers;
 
 const json = (body: unknown, status = 200) =>
   new Response(JSON.stringify(body), { status, headers: { "Content-Type": "application/json" } });
@@ -29,7 +33,7 @@ describe("createHttpClient", () => {
     const http = createHttpClient({ source: "steam", label: "Steam" });
     await http.json("https://example.test/a");
 
-    const headers = fetchMock.mock.calls[0][1].headers as Headers;
+    const headers = headersOf(fetchMock, 0);
     expect(headers.get("User-Agent")).toBe(CRAWLER_USER_AGENT);
     expect(headers.get("Accept")).toBe("application/json");
   });
@@ -39,7 +43,7 @@ describe("createHttpClient", () => {
     const http = createHttpClient({ source: "hltb", label: "HLTB", headers: { "User-Agent": "base-ua", Origin: "o" } });
     await http.json("https://example.test/a", { headers: { "User-Agent": "call-ua" } });
 
-    const headers = fetchMock.mock.calls[0][1].headers as Headers;
+    const headers = headersOf(fetchMock, 0);
     expect(headers.get("User-Agent")).toBe("call-ua");
     expect(headers.get("Origin")).toBe("o");
   });
@@ -51,8 +55,8 @@ describe("createHttpClient", () => {
     await http.json("https://example.test/a");
     await http.json("https://example.test/b");
 
-    expect((fetchMock.mock.calls[0][1].headers as Headers).get("MS-CV")).toBe("0");
-    expect((fetchMock.mock.calls[1][1].headers as Headers).get("MS-CV")).toBe("1");
+    expect(headersOf(fetchMock, 0).get("MS-CV")).toBe("0");
+    expect(headersOf(fetchMock, 1).get("MS-CV")).toBe("1");
   });
 
   it("헤더 함수가 던진 AdapterError 는 '요청 실패'로 덮이지 않는다", async () => {

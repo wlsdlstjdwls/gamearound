@@ -1,0 +1,19 @@
+/** data_corrections.lock_field=true 인 (table,row_id,field) 집합. 키는 snake_case 로 정규화 */
+async function loadLockedFields(db: Db): Promise<Set<string>> {
+  const rows = await db
+    .select({ table: dataCorrections.table, rowId: dataCorrections.rowId, field: dataCorrections.field })
+    .from(dataCorrections)
+    .where(eq(dataCorrections.lockField, true));
+  return new Set(rows.map((r) => `${toSnake(r.table)}:${r.rowId}:${toSnake(r.field)}`));
+}
+
+function isLocked(ctx: Ctx, table: string, rowId: string, field: string): boolean {
+  return ctx.locks.has(`${toSnake(table)}:${rowId}:${toSnake(field)}`);
+}
+
+function recordError(ctx: Ctx, label: string, e: unknown): void {
+  ctx.failed++;
+  const msg = `[${label}] ${errMsg(e)}`;
+  if (ctx.errors.length < ERROR_SAMPLE_MAX) ctx.errors.push(msg);
+  console.warn(`[sync:${ctx.source}] ${msg}`);
+}

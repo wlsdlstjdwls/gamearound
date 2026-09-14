@@ -1,0 +1,102 @@
+// 메타 소스 실행 — 플레이타임(HLTB)과 평점(OpenCritic·Metacritic).
+import { and, eq, inArray, sql } from "drizzle-orm";
+import { gamePlatforms, gameSourceRefs, games, playtimes } from "@/server/db/schema";
+import { getMetaAdapter, type MetaSource } from "@/server/adapters";
+import type { MetaSnapshot } from "@/server/adapters/types";
+import { sleep } from "@/lib/async";
+import { BATCH_SIZE, MATCHED_FOR_SYNC } from "./constants";
+import { isLocked, recordError, type Ctx, type RunOptions } from "./context";
+import { fetchWithRetry } from "./retry";
+
+export interface MetaTarget {
+  gameId: string;
+  slug: string;
+  externalId: string;
+}
+
+async function listMetaTargets(ctx: Ctx, source: MetaSource, limit: number): Promise<MetaTarget[]> {
+  const { db } = ctx;
+  const base = db
+    .select({ gameId: gameSourceRefs.gameId, externalId: gameSourceRefs.externalId, slug: games.slug })
+    .from(gameSourceRefs)
+    .innerJoin(games, eq(games.id, gameSourceRefs.gameId));
+  if (source === "hltb") {
+    return base
+      .leftJoin(playtimes, eq(playtimes.gameId, gameSourceRefs.gameId))
+      .where(and(eq(gameSourceRefs.source, source), inArray(gameSourceRefs.matchedBy, MATCHED_FOR_SYNC)))
+      .orderBy(sql`${playtimes.lastSyncedAt} asc nulls first`)
+      .limit(limit);
+  }
+  // 평점 소스는 소스별 동기화 시각이 없어 games.updated_at 오래된 순
+  return base
+    .where(and(eq(gameSourceRefs.source, source), inArray(gameSourceRefs.matchedBy, MATCHED_FOR_SYNC)))
+    .orderBy(games.updatedAt)
+    .limit(limit);
+}
+
+const hoursToNumeric = (h: number) => h.toFixed(1);
+
+async function applyPlaytime(ctx: Ctx, target: MetaTarget, snapshot: MetaSnapshot): Promise<void> {
+  const pt = snapshot.playtime;
+  if (!pt) return;
+  const { db } = ctx;
+  const existing = await db.query.playtimes.findFirst({ where: eq(playtimes.gameId, target.gameId) });
+  const fields = [
+    ["mainStoryHours", pt.main],
+    ["mainExtraHours", pt.extra],
+    ["completionistHours", pt.completionist],
+  ] as const;
+  const set: Partial<typeof playtimes.$inferInsert> = {};
+  for (const [field, value] of fields) {
+    if (value === null || value === undefined) continue;
+    if (isLocked(ctx, "playtimes", target.gameId, field)) continue;
+    const next = hoursToNumeric(value);
+    const cur = existing?.[field];
+    if (cur === null || cur === undefined || Number(cur) !== Number(next)) set[field] = next;
+  }
+  if (!existing) {
+    await db.insert(playtimes).values({ gameId: target.gameId, ...set, lastSyncedAt: ctx.now }).onConflictDoNothing();
+    ctx.changedSlugs.add(target.slug);
+    return;
+  }
+  await db.update(playtimes).set({ ...set, lastSyncedAt: ctx.now }).where(eq(playtimes.gameId, target.gameId));
+  if (Object.keys(set).length > 0) ctx.changedSlugs.add(target.slug);
+}
+
+async function applyScore(ctx: Ctx, target: MetaTarget, field: "opencriticScore" | "metacriticScore", score: number | null | undefined): Promise<void> {
+  if (score === null || score === undefined) return; // 점수 없음 → 기존 값 유지
+  const { db } = ctx;
+  const rows = await db
+    .select({ id: gamePlatforms.id, current: gamePlatforms[field] })
+    .from(gamePlatforms)
+    .where(eq(gamePlatforms.gameId, target.gameId));
+  let changed = false;
+  for (const row of rows) {
+    if (row.current === score) continue;
+    if (isLocked(ctx, "game_platforms", row.id, field)) continue;
+    await db.update(gamePlatforms).set({ [field]: score }).where(eq(gamePlatforms.id, row.id));
+    changed = true;
+  }
+  // 다음 배치 순서를 위해 games.updated_at 갱신
+  await db.update(games).set({ updatedAt: ctx.now }).where(eq(games.id, target.gameId));
+  if (changed) ctx.changedSlugs.add(target.slug);
+}
+
+export async function runMeta(ctx: Ctx, source: MetaSource, opts: RunOptions): Promise<void> {
+  const adapter = getMetaAdapter(source);
+  const targets = await listMetaTargets(ctx, source, opts.limit ?? BATCH_SIZE[source]);
+  console.log(`[sync:${source}] 대상 ${targets.length}건`);
+  for (let i = 0; i < targets.length; i++) {
+    const target = targets[i];
+    try {
+      const snapshot = await fetchWithRetry(() => adapter.fetch(target.externalId));
+      if (source === "hltb") await applyPlaytime(ctx, target, snapshot);
+      else if (source === "opencritic") await applyScore(ctx, target, "opencriticScore", snapshot.scores?.opencritic);
+      else await applyScore(ctx, target, "metacriticScore", snapshot.scores?.metacritic);
+      ctx.processed++;
+    } catch (e) {
+      recordError(ctx, `${source}:${target.externalId}`, e);
+    }
+    if (i < targets.length - 1) await sleep(adapter.minIntervalMs);
+  }
+}

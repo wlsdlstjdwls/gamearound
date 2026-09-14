@@ -6,7 +6,8 @@
 import path from "node:path";
 import { config as loadEnv } from "dotenv";
 import { ALL_SOURCES, getDisabledReason, isSource, isSourceEnabled } from "@/server/adapters";
-import { runSource, SEEDABLE_SOURCES } from "@/server/sync/run-source";
+import { runSource } from "@/server/sync/run-source";
+import { SEEDABLE_SOURCES } from "@/server/sync/constants";
 import { matchUnmatchedGames } from "@/server/sync/match";
 
 loadEnv({ path: path.resolve(process.cwd(), ".env.local"), quiet: true });

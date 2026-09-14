@@ -1,0 +1,14 @@
+/** 재시도 3회(1s/4s/16s). retryable=false 인 AdapterError 는 즉시 실패 */
+export async function fetchWithRetry<T>(fn: () => Promise<T>, delays: number[] = RETRY_DELAYS_MS): Promise<T> {
+  let lastErr: unknown;
+  for (let attempt = 0; attempt <= delays.length; attempt++) {
+    try {
+      return await fn();
+    } catch (e) {
+      lastErr = e;
+      if (e instanceof AdapterError && !e.retryable) throw e;
+      if (attempt < delays.length) await sleep(delays[attempt]);
+    }
+  }
+  throw lastErr;
+}
