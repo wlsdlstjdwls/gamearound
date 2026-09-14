@@ -147,6 +147,17 @@ export function parseNintendoSearch(html: string): SearchCandidate[] {
 
 // ---- 네트워크 ----
 
+/**
+ * eShop 은 차단을 404 나 403 으로 알리지 않는다 — **202 에 빈 본문**을 준다
+ * (GitHub Actions 러너(Azure US)에서 실측, 2026-09-14: search/product 모두 http=202 size=0).
+ * 이걸 그냥 파싱하면 "검색 결과 0건" 과 구분이 안 돼서, 수집이 조용히 0건으로 끝나고 로그도 ok 로 남는다.
+ * 그래서 본문이 비면 여기서 실패로 바꾼다 — 재시도 가능으로 두는 이유는 일시적 차단도 같은 모양이기 때문이다.
+ */
+export function requireBody(html: string, ctx: string): string {
+  if (html.trim().length > 0) return html;
+  throw new AdapterError(`Nintendo 빈 응답 (${ctx}) — 한국 외 IP 차단 추정`, "nintendo", true);
+}
+
 // eShop 은 HTML 크롤이라 봇 차단을 피하려 한국어 Accept-Language 를 명시한다. 타임아웃도 API 보다 길게 잡는다.
 const http = createHttpClient({
   source: "nintendo",
@@ -163,12 +174,12 @@ export const nintendoAdapter: StoreAdapter = {
   async search(query: string): Promise<SearchCandidate[]> {
     const u = new URL(`${NINTENDO_BASE_URL}/catalogsearch/result/`);
     u.searchParams.set("q", query);
-    return parseNintendoSearch(await http.text(u.toString()));
+    return parseNintendoSearch(requireBody(await http.text(u.toString()), `search:${query}`));
   },
 
   async fetch(id: string): Promise<StoreSnapshot> {
     if (!/^[a-z0-9]+$/i.test(id)) throw new AdapterError(`Nintendo 상품 ID 형식 오류: ${id}`, "nintendo", false);
-    return parseNintendoProduct(await http.text(nintendoProductUrl(id)), id);
+    return parseNintendoProduct(requireBody(await http.text(nintendoProductUrl(id)), id), id);
   },
 
   /** 검색 시드 × 페이지네이션으로 카탈로그를 훑는다. 한 시드가 바닥나면 다음 시드로 */
@@ -180,7 +191,7 @@ export const nintendoAdapter: StoreAdapter = {
         const u = new URL(`${NINTENDO_BASE_URL}/catalogsearch/result/`);
         u.searchParams.set("q", q);
         u.searchParams.set("p", String(page));
-        const found = parseNintendoSearch(await http.text(u.toString()));
+        const found = parseNintendoSearch(requireBody(await http.text(u.toString()), `discover:${q}:${page}`));
         if (found.length === 0) break; // 이 시드는 끝 — 다음 시드로
         for (const c of found) {
           if (seen.has(c.externalId)) continue;

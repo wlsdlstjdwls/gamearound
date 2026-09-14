@@ -3,7 +3,7 @@ import { describe, expect, it } from "vitest";
 import { readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import { AdapterError } from "./types";
-import { parseNintendoDate, parseNintendoGenres, parseNintendoPlayers, parseNintendoProduct, parseNintendoSearch } from "./nintendo";
+import { parseNintendoDate, parseNintendoGenres, parseNintendoPlayers, parseNintendoProduct, parseNintendoSearch, requireBody } from "./nintendo";
 
 const fixture = (name: string): string => readFileSync(fileURLToPath(new URL(`./__fixtures__/${name}`, import.meta.url)), "utf8");
 
@@ -102,5 +102,23 @@ describe("parseNintendoPlayers", () => {
   it("숫자가 없으면 null", () => {
     expect(parseNintendoPlayers("")).toBeNull();
     expect(parseNintendoPlayers(null)).toBeNull();
+  });
+});
+
+describe("requireBody", () => {
+  it("본문이 있으면 그대로 돌려준다", () => {
+    expect(requireBody("<html>x</html>", "ctx")).toBe("<html>x</html>");
+  });
+
+  it("빈 본문(202 차단)은 재시도 가능한 실패로 바꾼다 — 검색 결과 0건과 구분해야 한다", () => {
+    let caught: AdapterError | null = null;
+    try {
+      requireBody("   ", "search:mario");
+    } catch (e) {
+      caught = e as AdapterError;
+    }
+    expect(caught).toBeInstanceOf(AdapterError);
+    expect(caught?.retryable).toBe(true);
+    expect(caught?.message).toContain("search:mario");
   });
 });
