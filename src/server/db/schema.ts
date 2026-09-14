@@ -2,18 +2,37 @@
 import {
   pgTable, pgEnum, uuid, text, integer, numeric, boolean,
   timestamp, date, jsonb, primaryKey, index, uniqueIndex,
+  type AnyPgColumn,
 } from "drizzle-orm/pg-core";
 import { relations, sql } from "drizzle-orm";
 
 export const platformEnum = pgEnum("platform", ["steam", "ps5", "ps4", "xbox", "switch", "switch2"]);
-export const sourceEnum = pgEnum("source", ["steam", "psstore", "xbox", "nintendo", "hltb", "opencritic", "metacritic", "rss", "manual"]);
+export const sourceEnum = pgEnum("source", ["steam", "psstore", "xbox", "nintendo", "hltb", "opencritic", "metacritic", "rss", "manual", "wikidata", "gamepass"]);
 export const roleEnum = pgEnum("role", ["user", "game_company", "seller", "admin"]);
 export const syncStatusEnum = pgEnum("sync_status", ["ok", "partial", "failed"]);
+
+/**
+ * 게임 레코드의 성격. DLC 를 별도 테이블이 아니라 games 행으로 담는 이유(기획서 5.4):
+ * price_snapshots, price_alerts, wishlists 가 전부 game_platforms 에 붙어 있어
+ * DLC 를 분리하면 가격 이력과 알림 경로를 통째로 복제해야 한다.
+ * edition(디럭스판), bundle(묶음)은 지금 채우지 않지만 어휘를 미리 열어 둔다 — 나중에 enum 을 늘리면 마이그레이션이 또 필요하다.
+ */
+export const contentTypeEnum = pgEnum("content_type", ["game", "dlc", "edition", "bundle"]);
+/** 회사가 이 게임에 대해 가진 역할. 같은 회사가 개발과 배급을 겸하면 행 2개가 된다 */
+export const companyRoleEnum = pgEnum("company_role", ["developer", "publisher"]);
+/**
+ * 세대 간 업그레이드 방식. Switch 2 Edition 전용이 아니라 세대 중립으로 둔다 —
+ * PS4 에서 PS5 로의 무료 업그레이드, Xbox Smart Delivery 가 같은 모양이다.
+ */
+export const upgradeKindEnum = pgEnum("upgrade_kind", ["free", "paid", "subscription_included"]);
 
 export type Platform = (typeof platformEnum.enumValues)[number];
 export type SourceName = (typeof sourceEnum.enumValues)[number];
 export type Role = (typeof roleEnum.enumValues)[number];
 export type SyncStatus = (typeof syncStatusEnum.enumValues)[number];
+export type ContentType = (typeof contentTypeEnum.enumValues)[number];
+export type CompanyRole = (typeof companyRoleEnum.enumValues)[number];
+export type UpgradeKind = (typeof upgradeKindEnum.enumValues)[number];
 
 export const games = pgTable("games", {
   id: uuid("id").primaryKey().defaultRandom(),
@@ -34,6 +53,10 @@ export const games = pgTable("games", {
   supportsCoop: boolean("supports_coop").default(false),
   supportsPvp: boolean("supports_pvp").default(false),
   isRetro: boolean("is_retro").default(false),
+  /** 본편인지 DLC 인지. 목록, 검색, 홈은 game 만 본다(lib/games-query.ts 한 곳에서 거른다) */
+  contentType: contentTypeEnum("content_type").default("game").notNull(),
+  /** DLC 가 가리키는 본편. contentType 이 game 이면 null. 본편이 지워지면 DLC 도 같이 지운다 */
+  parentGameId: uuid("parent_game_id").references((): AnyPgColumn => games.id, { onDelete: "cascade" }),
   createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
   updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
   /**
@@ -49,7 +72,11 @@ export const games = pgTable("games", {
   titleKoNorm: text("title_ko_norm").generatedAlwaysAs(
     sql`lower(regexp_replace(coalesce(title_ko, ''), '[^[:alnum:]]+', '', 'g'))`,
   ),
-}, (t) => [index("games_title_en_idx").on(t.titleEn)]);
+}, (t) => [
+  index("games_title_en_idx").on(t.titleEn),
+  // 목록 쿼리가 매번 content_type='game' 으로 거르고, 상세는 parent_game_id 로 DLC 를 모은다
+  index("games_content_parent_idx").on(t.contentType, t.parentGameId),
+]);
 
 export const genres = pgTable("genres", {
   id: integer("id").primaryKey().generatedAlwaysAsIdentity(),
@@ -81,6 +108,11 @@ export const gamePlatforms = pgTable("game_platforms", {
   opencriticScore: integer("opencritic_score"),
   lastSyncedAt: timestamp("last_synced_at", { withTimezone: true }),  // UI "갱신 시각" 표시 원천
   syncStatus: syncStatusEnum("sync_status").default("ok"),
+  /**
+   * 이 스토어가 "추가 콘텐츠 있음"이라고 알려준 값(xbox Properties.HasAddOns).
+   * DLC 목록을 못 가져오는 플랫폼에서도 유무 배지는 띄우기 위한 것 — 목록과 별개의 신호다.
+   */
+  hasAddOns: boolean("has_add_ons"),
 }, (t) => [uniqueIndex("gp_game_platform_uq").on(t.gameId, t.platform)]);
 
 export const priceSnapshots = pgTable("price_snapshots", {
@@ -204,6 +236,84 @@ export const dataCorrections = pgTable("data_corrections", {
   createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
 });
 
+// ---- 회사 (기획서 F1, F2, F4) ----
+// games.developer/publisher 자유 텍스트를 지우지 않고 남겨 둔 이유: 회사 매칭에 실패한 표기의 보존처이자
+// 백필이 끝나기 전까지의 화면 폴백이다.
+export const companies = pgTable("companies", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  slug: text("slug").notNull().unique(),
+  nameEn: text("name_en").notNull(),
+  nameKo: text("name_ko"),
+  countryCode: text("country_code"),      // ISO 3166-1 alpha-2. 필터 키
+  countryNameKo: text("country_name_ko"), // "일본" 등 표시용
+  foundedAt: date("founded_at"),
+  hqNameKo: text("hq_name_ko"),
+  websiteUrl: text("website_url"),
+  description: text("description"),
+  wikidataId: text("wikidata_id").unique(), // Q번호. 재조회 키
+  lastSyncedAt: timestamp("last_synced_at", { withTimezone: true }),
+}, (t) => [index("companies_country_idx").on(t.countryCode)]);
+
+/**
+ * 스토어마다 같은 회사를 다르게 적는다 — steam "FromSoftware, Inc.", xbox "UBISOFT"(전부 대문자).
+ * 정규화한 표기를 여기에 쌓아 두 번째부터는 외부 질의 없이 회사를 찾는다.
+ */
+export const companyAliases = pgTable("company_aliases", {
+  id: integer("id").primaryKey().generatedAlwaysAsIdentity(),
+  companyId: uuid("company_id").references(() => companies.id, { onDelete: "cascade" }).notNull(),
+  aliasNorm: text("alias_norm").notNull().unique(), // lib/company-name.ts 의 normalizeCompanyName 결과
+  aliasRaw: text("alias_raw").notNull(),
+  source: sourceEnum("source").notNull(),
+});
+
+export const gameCompanies = pgTable("game_companies", {
+  gameId: uuid("game_id").references(() => games.id, { onDelete: "cascade" }).notNull(),
+  companyId: uuid("company_id").references(() => companies.id, { onDelete: "cascade" }).notNull(),
+  role: companyRoleEnum("role").notNull(),
+}, (t) => [
+  primaryKey({ columns: [t.gameId, t.companyId, t.role] }),
+  index("gc_company_role_idx").on(t.companyId, t.role),
+]);
+
+// ---- 구독 서비스 (기획서 F7 을 Game Pass 전용이 아니라 일반화) ----
+export const subscriptions = pgTable("subscriptions", {
+  id: integer("id").primaryKey().generatedAlwaysAsIdentity(),
+  key: text("key").notNull().unique(), // "gamepass_console" 등. 코드가 참조하는 안정적 식별자
+  labelKo: text("label_ko").notNull(),
+  platform: platformEnum("platform").notNull(),
+  catalogId: text("catalog_id"),       // Game Pass 컬렉션 GUID 등 수집 키
+  isActive: boolean("is_active").default(true).notNull(),
+});
+
+/**
+ * 포함 여부를 행 삭제가 아니라 removedAt 으로 표시한다.
+ * 이탈 자체가 사용자에게 가치 있는 정보이고("곧 빠져요"), 일시적 수집 실패로 행이 사라지는 사고도 막는다.
+ */
+export const gameSubscriptions = pgTable("game_subscriptions", {
+  id: integer("id").primaryKey().generatedAlwaysAsIdentity(),
+  gamePlatformId: uuid("game_platform_id").references(() => gamePlatforms.id, { onDelete: "cascade" }).notNull(),
+  subscriptionId: integer("subscription_id").references(() => subscriptions.id, { onDelete: "cascade" }).notNull(),
+  addedAt: timestamp("added_at", { withTimezone: true }).defaultNow().notNull(),
+  removedAt: timestamp("removed_at", { withTimezone: true }),
+}, (t) => [
+  index("gs_sub_removed_idx").on(t.subscriptionId, t.removedAt),
+  index("gs_gp_idx").on(t.gamePlatformId),
+]);
+
+// ---- 세대 간 업그레이드 (기획서 F6) ----
+export const upgrades = pgTable("upgrades", {
+  id: integer("id").primaryKey().generatedAlwaysAsIdentity(),
+  gameId: uuid("game_id").references(() => games.id, { onDelete: "cascade" }).notNull(),
+  fromPlatform: platformEnum("from_platform").notNull(),
+  toPlatform: platformEnum("to_platform").notNull(),
+  kind: upgradeKindEnum("kind").notNull(),
+  price: integer("price"),               // KRW. kind 가 paid 일 때만 의미가 있다
+  storeExternalId: text("store_external_id"),
+  storeUrl: text("store_url"),
+  note: text("note"),                    // "원본 소유 필요" 같은 조건
+  updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
+}, (t) => [uniqueIndex("upgrades_game_from_to_uq").on(t.gameId, t.fromPlatform, t.toPlatform)]);
+
 // ---- relations (drizzle relational query API 용) ----
 export const gamesRelations = relations(games, ({ many, one }) => ({
   platforms: many(gamePlatforms),
@@ -211,10 +321,36 @@ export const gamesRelations = relations(games, ({ many, one }) => ({
   genres: many(gameGenres),
   news: many(news),
   playtime: one(playtimes, { fields: [games.id], references: [playtimes.gameId] }),
+  companies: many(gameCompanies),
+  upgrades: many(upgrades),
+  parent: one(games, { fields: [games.parentGameId], references: [games.id], relationName: "gameDlc" }),
+  dlcs: many(games, { relationName: "gameDlc" }),
 }));
 export const gamePlatformsRelations = relations(gamePlatforms, ({ one, many }) => ({
   game: one(games, { fields: [gamePlatforms.gameId], references: [games.id] }),
   snapshots: many(priceSnapshots),
+  subscriptions: many(gameSubscriptions),
+}));
+export const companiesRelations = relations(companies, ({ many }) => ({
+  games: many(gameCompanies),
+  aliases: many(companyAliases),
+}));
+export const companyAliasesRelations = relations(companyAliases, ({ one }) => ({
+  company: one(companies, { fields: [companyAliases.companyId], references: [companies.id] }),
+}));
+export const gameCompaniesRelations = relations(gameCompanies, ({ one }) => ({
+  game: one(games, { fields: [gameCompanies.gameId], references: [games.id] }),
+  company: one(companies, { fields: [gameCompanies.companyId], references: [companies.id] }),
+}));
+export const subscriptionsRelations = relations(subscriptions, ({ many }) => ({
+  games: many(gameSubscriptions),
+}));
+export const gameSubscriptionsRelations = relations(gameSubscriptions, ({ one }) => ({
+  gamePlatform: one(gamePlatforms, { fields: [gameSubscriptions.gamePlatformId], references: [gamePlatforms.id] }),
+  subscription: one(subscriptions, { fields: [gameSubscriptions.subscriptionId], references: [subscriptions.id] }),
+}));
+export const upgradesRelations = relations(upgrades, ({ one }) => ({
+  game: one(games, { fields: [upgrades.gameId], references: [games.id] }),
 }));
 export const priceSnapshotsRelations = relations(priceSnapshots, ({ one }) => ({
   gamePlatform: one(gamePlatforms, { fields: [priceSnapshots.gamePlatformId], references: [gamePlatforms.id] }),
