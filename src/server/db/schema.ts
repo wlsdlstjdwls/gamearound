@@ -10,7 +10,10 @@ import { relations, sql } from "drizzle-orm";
 import type { DiscoveryLog } from "@/server/sync/discover";
 
 export const platformEnum = pgEnum("platform", ["steam", "ps5", "ps4", "xbox", "switch", "switch2", "epic", "gog"]);
-export const sourceEnum = pgEnum("source", ["steam", "psstore", "xbox", "nintendo", "nintendo_jp", "hltb", "opencritic", "metacritic", "rss", "manual", "wikidata", "gamepass", "epic", "gog"]);
+// wikidata 와 wikidata_game 을 가른 이유: 같은 백과사전이지만 조회 대상이 다르다.
+// wikidata 는 회사 항목을, wikidata_game 은 게임 항목을 찾는다. 한 소스로 합치면
+// game_source_refs 한 행에 회사 Q번호와 게임 Q번호가 섞이고, 디스패치도 갈 곳을 못 정한다.
+export const sourceEnum = pgEnum("source", ["steam", "psstore", "xbox", "nintendo", "nintendo_jp", "hltb", "opencritic", "metacritic", "rss", "manual", "wikidata", "wikidata_game", "gamepass", "epic", "gog"]);
 export const roleEnum = pgEnum("role", ["user", "game_company", "seller", "admin"]);
 export const syncStatusEnum = pgEnum("sync_status", ["ok", "partial", "failed"]);
 /**
@@ -115,6 +118,11 @@ export const gameAliases = pgTable("game_aliases", {
   id: integer("id").primaryKey().generatedAlwaysAsIdentity(),
   gameId: uuid("game_id").references(() => games.id, { onDelete: "cascade" }).notNull(),
   alias: text("alias").notNull(),
+  /**
+   * 이 별칭을 누가 넣었나. 자동 수집이 자기가 넣은 것만 지우고 다시 쓰기 위해 필요하다 —
+   * 사람이 넣은 별칭("manual")은 어떤 수집도 건드리지 않는다.
+   */
+  source: sourceEnum("source").default("manual").notNull(),
   /** games.title_en_norm 과 **같은 식**이어야 한다 — 질의는 한쪽만 정규화해 두 컬럼에 함께 던진다 */
   aliasNorm: text("alias_norm").generatedAlwaysAs(
     sql`lower(regexp_replace(alias, '[^[:alnum:]]+', '', 'g'))`,

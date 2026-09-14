@@ -1,4 +1,4 @@
-# 회사 정보(wikidata)와 구독 카탈로그(gamepass) 수집.
+# 회사 정보(wikidata), 검색 별칭(wikidata_game), 구독 카탈로그(gamepass) 수집.
 # 가격 워크플로와 분리한 이유(기획서 7.4): 둘 다 변동이 느리고 응답이 느리다.
 # 가격 배치에 섞으면 하루 3회 도는 수집이 백과사전 응답 속도에 묶인다.
 # 종료 코드: 0 ok, 2 partial(경고), 1 failed. 중복 실행은 concurrency 그룹 + Redis 락으로 이중 방지.
@@ -8,7 +8,7 @@ on:
   schedule:
     # gamepass 는 요청이 2회뿐이라 매일 돌려도 비용이 없다. 카탈로그는 월 2회 안팎으로 바뀐다.
     - cron: "30 4 * * *"
-    # wikidata 는 주 1회. 설립일, 국가는 사실상 안 바뀌고 공개 SPARQL 에 예의를 지켜야 한다.
+    # wikidata(회사)는 주 1회. 설립일, 국가는 사실상 안 바뀌고 공개 SPARQL 에 예의를 지켜야 한다.
     - cron: "0 5 * * 1"
   workflow_dispatch:
     inputs:
@@ -32,7 +32,7 @@ env:
 jobs:
   crawl:
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    timeout-minutes: 45
     steps:
       - uses: actions/checkout@v4
 
@@ -53,7 +53,20 @@ jobs:
         continue-on-error: true
         run: pnpm crawl --source=gamepass --no-match $CRAWL_LIMIT_ARG
 
-      # 회사 정보 — 월요일 실행분에서만. 다른 날은 같은 워크플로가 gamepass 만 돌린다
+      # 검색 별칭 — 매일. 이게 있어야 "해리포터" 로 "호그와트 레거시" 가 나온다.
+      #
+      # 예산(2026-09-15 실측 기준): 위키데이터 공개 엔드포인트는 간격 5초를 지켜야 한다
+      # (회사 경로가 2초에서 429 를 맞고 올려 둔 값). 매칭 1건은 요청 2회(검색 + 분류 확인),
+      # 별칭 수집 1건은 요청 1회다. 따라서
+      #   매칭 120건 × 2 × 5초 = 1,200초(20분) + 별칭 60건 × 5초 = 300초(5분) = 약 25분.
+      # 한 바퀴: 본편 4,907건 ÷ 120 ≈ 41일. 느리지만 별칭은 급한 값이 아니고,
+      # 공개 SPARQL 에 예의를 지키는 쪽이 차단당하는 것보다 낫다. 급하면 가정용 회선에서
+      # `pnpm crawl --source=wikidata_game --match=N` 으로 따로 당긴다.
+      - name: crawl wikidata_game
+        continue-on-error: true
+        run: pnpm crawl --source=wikidata_game --match=120 ${CRAWL_LIMIT_ARG:---limit=60}
+
+      # 회사 정보 — 월요일 실행분에서만. 다른 날은 같은 워크플로가 gamepass 와 별칭만 돌린다
       - name: crawl wikidata
         if: github.event.schedule == '0 5 * * 1' || github.event_name == 'workflow_dispatch'
         continue-on-error: true

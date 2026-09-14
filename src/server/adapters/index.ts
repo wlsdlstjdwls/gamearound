@@ -14,9 +14,12 @@ import { EPIC_ENABLE_ENV } from "./epic";
 import { CRAWL_PROXY_URL_ENV, crawlProxyUrl, runsInSeoulRegion } from "./http";
 import { metacriticAdapter } from "./metacritic";
 import { rssAdapter } from "./news-rss";
+import { wikidataGameAdapter } from "./wikidata/game";
 
 export const STORE_SOURCES = ["steam", "psstore", "xbox", "nintendo", "nintendo_jp", "epic", "gog"] as const;
-export const META_SOURCES = ["hltb", "opencritic", "metacritic"] as const;
+// wikidata_game 이 여기 있는 이유: 조회 경로가 메타 소스와 같다(제목으로 매칭한 뒤 단건 조회).
+// 회사 소스 wikidata 와는 다른 소스다 — 그쪽은 회사 항목을, 이쪽은 게임 항목을 찾는다(schema 의 sourceEnum 주석).
+export const META_SOURCES = ["hltb", "opencritic", "metacritic", "wikidata_game"] as const;
 export const NEWS_SOURCES = ["rss"] as const;
 /** 회사 정보 소스 — 게임이 아니라 회사를 조회한다(§5 확장 지점) */
 export const COMPANY_SOURCES = ["wikidata"] as const;
@@ -45,6 +48,7 @@ const metaAdapters: Record<MetaSource, MetaAdapter> = {
   hltb: hltbAdapter,
   opencritic: opencriticAdapter,
   metacritic: metacriticAdapter,
+  wikidata_game: wikidataGameAdapter,
 };
 const newsAdapters: Record<NewsSource, NewsAdapter> = { rss: rssAdapter };
 const companyAdapters: Record<CompanySource, CompanyAdapter> = { wikidata: wikidataAdapter };

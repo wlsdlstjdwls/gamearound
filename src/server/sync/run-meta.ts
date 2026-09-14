@@ -6,18 +6,22 @@ import type { MetaSnapshot } from "@/server/adapters/types";
 import { sleep } from "@/lib/async";
 import { BATCH_SIZE, MATCHED_FOR_SYNC } from "./constants";
 import { isLocked, recordError, type Ctx, type RunOptions } from "./context";
+import { applyAliases } from "./alias-writer";
+import { usefulAliases } from "@/server/adapters/wikidata/game";
 import { fetchWithRetry } from "./retry";
 
 export interface MetaTarget {
   gameId: string;
   slug: string;
   externalId: string;
+  /** 별칭이 제목과 같은지 가르는 데 쓴다. 다른 메타 소스는 보지 않는다 */
+  titleEn?: string | null;
 }
 
 async function listMetaTargets(ctx: Ctx, source: MetaSource, limit: number): Promise<MetaTarget[]> {
   const { db } = ctx;
   const base = db
-    .select({ gameId: gameSourceRefs.gameId, externalId: gameSourceRefs.externalId, slug: games.slug })
+    .select({ gameId: gameSourceRefs.gameId, externalId: gameSourceRefs.externalId, slug: games.slug, titleEn: games.titleEn })
     .from(gameSourceRefs)
     .innerJoin(games, eq(games.id, gameSourceRefs.gameId));
   if (source === "hltb") {
@@ -25,6 +29,14 @@ async function listMetaTargets(ctx: Ctx, source: MetaSource, limit: number): Pro
       .leftJoin(playtimes, eq(playtimes.gameId, gameSourceRefs.gameId))
       .where(and(eq(gameSourceRefs.source, source), inArray(gameSourceRefs.matchedBy, MATCHED_FOR_SYNC)))
       .orderBy(sql`${playtimes.lastSyncedAt} asc nulls first`)
+      .limit(limit);
+  }
+  if (source === "wikidata_game") {
+    // 별칭은 소스별 동기화 시각을 따로 두지 않는다 — ref 의 checked_at 이 "마지막으로 이 소스를 본 때"다.
+    // 오래된 것부터 도니 한 바퀴가 끝나기 전에는 같은 게임을 다시 묻지 않는다.
+    return base
+      .where(and(eq(gameSourceRefs.source, source), inArray(gameSourceRefs.matchedBy, MATCHED_FOR_SYNC)))
+      .orderBy(gameSourceRefs.checkedAt)
       .limit(limit);
   }
   // 평점 소스는 소스별 동기화 시각이 없어 games.updated_at 오래된 순
@@ -82,6 +94,19 @@ async function applyScore(ctx: Ctx, target: MetaTarget, field: "opencriticScore"
   if (changed) ctx.changedSlugs.add(target.slug);
 }
 
+/**
+ * 별칭 반영. 제목과 같은 값은 버린다 — 넣어도 검색 결과가 달라지지 않고 자리만 차지한다.
+ * 재조회 시각을 ref 에 남기는 이유: 별칭에는 playtimes.last_synced_at 같은 자기 시각이 없다.
+ */
+async function applyAliasesFor(ctx: Ctx, source: MetaSource, target: MetaTarget, snapshot: MetaSnapshot): Promise<void> {
+  const title = target.titleEn ?? target.slug;
+  await applyAliases(ctx, target.gameId, target.slug, source, usefulAliases(snapshot.aliases ?? [], title));
+  await ctx.db
+    .update(gameSourceRefs)
+    .set({ checkedAt: ctx.now })
+    .where(and(eq(gameSourceRefs.gameId, target.gameId), eq(gameSourceRefs.source, source)));
+}
+
 export async function runMeta(ctx: Ctx, source: MetaSource, opts: RunOptions): Promise<void> {
   const adapter = getMetaAdapter(source);
   const targets = await listMetaTargets(ctx, source, opts.limit ?? BATCH_SIZE[source]);
@@ -92,6 +117,7 @@ export async function runMeta(ctx: Ctx, source: MetaSource, opts: RunOptions): P
       const snapshot = await fetchWithRetry(() => adapter.fetch(target.externalId));
       if (source === "hltb") await applyPlaytime(ctx, target, snapshot);
       else if (source === "opencritic") await applyScore(ctx, target, "opencriticScore", snapshot.scores?.opencritic);
+      else if (source === "wikidata_game") await applyAliasesFor(ctx, source, target, snapshot);
       else await applyScore(ctx, target, "metacriticScore", snapshot.scores?.metacritic);
       ctx.processed++;
     } catch (e) {

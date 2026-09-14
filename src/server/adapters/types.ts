@@ -4,7 +4,8 @@ import type { Currency, Platform, Region } from "@/server/db/schema";
 /** 크롤러 공통 User-Agent (§10: UA 명시) — 실제 값은 서비스 아이덴티티(lib/site)에서 만든다 */
 export { CRAWLER_USER_AGENT } from "@/lib/site";
 
-export type Source = "steam" | "psstore" | "xbox" | "nintendo" | "nintendo_jp" | "epic" | "gog" | "hltb" | "opencritic" | "metacritic" | "rss" | "wikidata" | "gamepass";
+// wikidata(회사)와 wikidata_game(게임)은 다른 소스다 — schema 의 sourceEnum 주석 참고
+export type Source = "steam" | "psstore" | "xbox" | "nintendo" | "nintendo_jp" | "epic" | "gog" | "hltb" | "opencritic" | "metacritic" | "rss" | "wikidata" | "wikidata_game" | "gamepass";
 
 export interface StoreSnapshot {
   platform: Platform;
@@ -68,6 +69,12 @@ export interface StoreSnapshot {
 }
 
 export interface MetaSnapshot {
+  /**
+   * 검색 별칭(game_aliases). 제목에 없는 말로 게임을 찾게 하는 값이라 다른 메타 값과 성격이 다르다 —
+   * 플레이타임, 평점은 "그 게임의 속성"이지만 별칭은 "그 게임을 부르는 다른 이름"이다.
+   * 그래도 MetaSnapshot 에 둔 이유는 조회 경로가 같기 때문이다(제목으로 매칭 후 단건 조회).
+   */
+  aliases?: string[];
   playtime?: { main: number | null; extra: number | null; completionist: number | null };
   scores?: { metacritic?: number | null; opencritic?: number | null };
   genres?: string[];

@@ -31,6 +31,10 @@ export const BATCH_SIZE: Record<Source, number> = {
   // 위키데이터 공개 SPARQL 은 질의 1건이 수백 ms 에서 수 초다. 2초 간격 × 150 = 최대 ~7분.
   // 회사는 거의 안 바뀌므로 한 번에 다 훑을 필요가 없다 — lastSyncedAt 이 오래된 것부터 잘라 간다.
   wikidata: 150,
+  // 위키데이터 게임 조회는 별칭 한 덩어리라 응답이 작다. 병목은 요청 간격 5초뿐이다
+  // (회사 경로가 2초에서 429 를 맞고 올려 둔 값). 40건 ≈ 3.5분이라 다른 메타 소스와 함께 돌 수 있다.
+  // 본편이 4,907건이라 한 바퀴에 며칠이 걸린다 — 별칭은 급한 값이 아니라 그걸 감수한다.
+  wikidata_game: 40,
   // 컬렉션 수만큼만 요청한다. 배치 개념이 없어 형식상의 값이다
   gamepass: Object.keys(GAMEPASS_COLLECTIONS).length,
 };
@@ -225,6 +229,13 @@ export const ERROR_SAMPLE_MAX = 3;
 /** 뉴스 제목 매칭 시 너무 짧은 게임 제목은 제외 (오매칭 방지) */
 export const NEWS_MATCH_MIN_TITLE_LEN = 4;
 export const REVALIDATE_TIMEOUT_MS = 15_000;
+
+/**
+ * 한 게임에 붙일 자동 별칭 수 상한. 위키데이터 altLabel 은 한 항목에 수십 개가 달리는 일이 있다
+ * (오표기, 부제 변형, 개발 코드명). 그걸 다 넣으면 검색 EXISTS 가 훑을 행만 늘고 정확도는 안 는다.
+ * 시리즈 1~2, 원작 1~2, 약칭 몇 개면 연관검색어로 충분하다.
+ */
+export const ALIAS_PER_GAME_MAX = 12;
 
 /**
  * 한 게임에서 따라 들여올 DLC 수 상한. 심즈류는 DLC 가 수십 개라 상한이 없으면
