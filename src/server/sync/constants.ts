@@ -69,10 +69,10 @@ export const LOCAL_SEED_TOP: Partial<Record<Source, number>> = {
  */
 export const CRON_SOURCES = ["nintendo", "epic"] as const;
 // 주기는 vercel.json 의 crons 에 있다 — JSON 이라 주석을 못 달아 근거를 여기 적는다(시각은 UTC).
-//   /api/cron/crawl/nintendo/prices    15 */3 * * *       하루 8회 × 45건 = 360건/일
+//   /api/cron/crawl/nintendo/prices    15 */3 * * *       하루 8회 × 42건 = 336건/일
 //   /api/cron/crawl/nintendo/discover  45 1,7,13,19 * * *  하루 4회 × 12건 = 48건/일 (4초 간격이 한계다)
-//   /api/cron/crawl/epic/prices        25 */6 * * *        하루 4회 × 180건 = 720건/일
-//   /api/cron/crawl/epic/discover      55 3,15 * * *       하루 2회 × 40건 = 80건/일 (한 바퀴가 175페이지)
+//   /api/cron/crawl/epic/prices        25 */6 * * *        하루 4회 × 130건 = 520건/일
+//   /api/cron/crawl/epic/discover      55 3,15 * * *       하루 2회 × 30건 = 60건/일 (한 바퀴가 175페이지)
 // 분을 0 으로 두지 않는 이유: Vercel 크론은 정각에 몰리고, 몰리면 실행이 뒤로 밀린다.
 export type CronSource = (typeof CRON_SOURCES)[number];
 /** 크론 1회가 하는 일. 한 번에 다 하면 300초를 넘겨서 갈라 둔다 */
@@ -101,18 +101,27 @@ export interface CronRunPlan {
  */
 export const CRON_TIME_BUDGET_MS = 200_000;
 
+/**
+ * 요청 간격만으로 계산한 시간에 곱할 보정 계수. 실제 실행에는 반영(DB 왕복), 알림, 캐시 무효화가 붙는다.
+ * 배포된 함수에서 잰 값이 근거다(2026-09-14):
+ *   epic prices 180건 250.5초 = 간격 1초 × 180 의 1.39배 (건당 요청이 1회라 DB 몫이 그대로 드러난다)
+ *   nintendo prices 20건 87.8초 = 간격 4초 × 20 의 1.10배 (간격이 길어 DB 몫이 묻힌다)
+ * 값을 고칠 때는 추측하지 말고 응답의 durationMs 를 다시 보고 고친다.
+ */
+export const CRON_OVERHEAD_FACTOR: Record<CronSource, number> = { nintendo: 1.15, epic: 1.4 };
+
 export const CRON_PLAN: Record<CronSource, Record<CronMode, CronRunPlan>> = {
   nintendo: {
-    // 4초 × 45건 = 180초
-    prices: { limit: 45, seedTop: 0, pageBudget: 0, match: 0 },
-    // 4초 × (12페이지 + 24건) = 144초. 매칭 1건이 또 4초라 3건만 본다
+    // 4초 × 42건 × 1.15 = 193초
+    prices: { limit: 42, seedTop: 0, pageBudget: 0, match: 0 },
+    // 4초 × (12페이지 + 24건 + 매칭 3건) × 1.15 = 179초. 매칭 1건이 또 검색 1회라 3건만 본다
     discover: { limit: 24, seedTop: 12, pageBudget: 12, match: 3 },
   },
   epic: {
-    // 1초 × 180건 = 180초
-    prices: { limit: 180, seedTop: 0, pageBudget: 0, match: 0 },
-    // 1초 × (90페이지 + 80건) = 170초. 카탈로그 한 바퀴가 175페이지라 두 번에 나눠 도는 셈이다
-    discover: { limit: 80, seedTop: 40, pageBudget: 90, match: 10 },
+    // 1초 × 130건 × 1.4 = 182초. 첫 실측(180건)이 250초로 300초에 너무 붙어 내려 잡았다
+    prices: { limit: 130, seedTop: 0, pageBudget: 0, match: 0 },
+    // 1초 × (60페이지 + 60건 + 매칭 8건) × 1.4 = 179초. 카탈로그 한 바퀴가 175페이지라 세 번에 나눠 돈다
+    discover: { limit: 60, seedTop: 30, pageBudget: 60, match: 8 },
   },
 };
 
