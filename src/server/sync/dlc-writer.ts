@@ -11,7 +11,7 @@ import { gameSourceRefs } from "@/server/db/schema";
 import type { StoreAdapter, StoreSnapshot } from "@/server/adapters/types";
 import type { StoreSource } from "@/server/adapters";
 import { sleep } from "@/lib/async";
-import { DEFAULT_FETCH_BATCH_SIZE, DLC_PER_GAME_MAX } from "./constants";
+import { DEFAULT_FETCH_BATCH_SIZE, DLC_FETCH_PER_RUN_BY_SOURCE, DLC_PER_GAME_MAX } from "./constants";
 import { recordError, type Ctx } from "./context";
 import { createGameFromSnapshot } from "./game-writer";
 import { upsertPlatform } from "./platform-writer";
@@ -71,8 +71,15 @@ export async function syncDlcs(
   for (const g of groups) for (const id of g.externalIds) if (!parentByExternalId.has(id)) parentByExternalId.set(id, g);
 
   const known = await knownExternalIds(ctx, source, Array.from(parentByExternalId.keys()));
-  const newIds = Array.from(parentByExternalId.keys()).filter((id) => !known.has(id));
-  if (newIds.length === 0) return 0;
+  const fresh = Array.from(parentByExternalId.keys()).filter((id) => !known.has(id));
+  if (fresh.length === 0) return 0;
+  // 배치 조회가 없는 소스는 새 DLC 한 건이 요청 한 번이다 — 상한이 없으면 DLC 부자 본편 몇 개가
+  // 실행 시간을 통째로 먹는다(DLC_FETCH_PER_RUN_BY_SOURCE 주석에 소스별 근거와 그 대가를 적었다)
+  const budget = DLC_FETCH_PER_RUN_BY_SOURCE[source];
+  const newIds = budget === undefined ? fresh : fresh.slice(0, budget);
+  if (newIds.length < fresh.length) {
+    console.log(`[sync:${source}] 새 DLC ${fresh.length}건 중 ${newIds.length}건만 이번에 등록 (한 실행 상한)`);
+  }
 
   const snapshots = await fetchDlcSnapshots(ctx, source, adapter, newIds);
   let created = 0;

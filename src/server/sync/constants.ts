@@ -82,7 +82,7 @@ export const CRON_SOURCES = ["nintendo", "nintendo_jp", "epic"] as const;
 //   /api/cron/crawl/nintendo/discover     45 1,7,13,19 * * *    하루 4회 × 20건 = 80건/일 (신규는 상품 HTML 이라 4초 간격을 탄다)
 //   /api/cron/crawl/nintendo_jp/prices    35 */6 * * *          하루 4회 × 300건 = 1,200건/일
 //   /api/cron/crawl/nintendo_jp/discover  5 2,8,14,20 * * *     하루 4회 × 60건 = 240건/일 (한 바퀴가 약 300페이지)
-//   /api/cron/crawl/epic/prices           25 */6 * * *          하루 4회 × 120건 = 480건/일
+//   /api/cron/crawl/epic/prices           25 */6 * * *          하루 4회 × 110건 = 440건/일 (DLC 몫을 떼며 120에서 내렸다)
 //   /api/cron/crawl/epic/discover         55 3,9,15,21 * * *    하루 4회 × 60건 = 240건/일 (한 바퀴가 175페이지)
 // 가격 갱신 주기를 발견보다 성기게 두는 이유(2026-09-14): 카탈로그가 비어 있는 단계에서는
 // 같은 몇십 건을 하루에 열두 번 다시 묻는 것보다 새 게임을 들이는 쪽이 낫다. 보유가 갱신 몫을
@@ -153,8 +153,9 @@ export const CRON_PLAN: Record<CronSource, Record<CronMode, CronRunPlan>> = {
     discover: { limit: 60, seedTop: 60, pageBudget: 100, match: 8, seedShare: 1 },
   },
   epic: {
-    // 요청 120초 + 반영 120건 × 0.4초 = 168초 → 193초. 첫 실측(180건)이 250초라 내려 잡았다
-    prices: { limit: 120, seedTop: 0, pageBudget: 0, match: 0 },
+    // 2026-09-15 에 120 에서 110 으로 내렸다 — DLC 목록 3회와 새 DLC 상세 10건이 이 모드에 새로 붙었다.
+    // 요청 (110 + 3 + 10) × 1초 + 반영 (110 + 10)건 × 0.4초 → 197초. 첫 실측(180건)이 250초라 보수적으로 잡는다
+    prices: { limit: 110, seedTop: 0, pageBudget: 0, match: 0 },
     // 요청 (60페이지 + 60건 + 매칭 8) × 1초 + 반영 60건 × 0.4초 → 175초. 한 바퀴가 175페이지라 나눠 돈다
     // 60건 전부를 신규에 준다. Epic 기존 가격은 prices 모드가 따로 돈다
     discover: { limit: 60, seedTop: 60, pageBudget: 60, match: 8, seedShare: 1 },
@@ -249,6 +250,9 @@ export const DLC_LIST_PER_RUN = 60;
  */
 export const DLC_LIST_PER_RUN_BY_SOURCE: Partial<Record<Source, number>> = {
   xbox: 20,
+  // epic 은 목록이 GraphQL 1회라 싸지만(HTML 을 안 읽는다), 그 결과로 받을 DLC 상세가 비싸다.
+  // 이 값이 곧 DLC_FETCH_PER_RUN_BY_SOURCE.epic 을 채우는 속도라 3 이면 충분하다 — 크론은 6시간마다 돈다.
+  epic: 3,
   // psstore 도 스토어 페이지 HTML 이다 — 건당 0.6~1.2MB(2026-09-15 실측: DEATHLOOP 713KB, 철권 8 1.03MB).
   // 그런데 xbox 보다 낮게 잡는 이유는 페이지 크기가 아니라 **그다음 단계**다:
   // psstore 에는 fetchMany 가 없어 새 DLC 한 건이 요청 한 번이다(xbox, steam 은 배치라 거의 공짜다).
@@ -258,6 +262,30 @@ export const DLC_LIST_PER_RUN_BY_SOURCE: Partial<Record<Source, number>> = {
   // 첫 몇 바퀴만 비싸고 그 뒤로는 이미 아는 DLC 가 걸러져 거의 빈손이다.
   psstore: 10,
 };
+/**
+ * 한 실행에서 **새로 등록할** DLC 수 상한. 비우면 상한 없음.
+ *
+ * 목록을 받는 값(DLC_LIST_PER_RUN_BY_SOURCE)과 다른 축이다. 목록은 본편당 요청 1회지만,
+ * 거기서 나온 새 DLC 는 각각 상세를 받아야 게임 레코드가 된다. 배치 조회가 있는 소스(steam, xbox, gog)는
+ * 그 상세가 50건에 요청 1회라 사실상 공짜여서 상한이 필요 없었는데, **fetchMany 가 없는 소스**
+ * (epic, psstore)는 새 DLC 한 건이 요청 한 번이다 — 본편 몇 개만 DLC 부자여도 실행이 몇 분씩 길어진다.
+ *
+ * epic 10 의 근거: epic 은 Vercel 크론(함수 300초)에서 돌고 CRON_PLAN 이 이미 예산을 거의 다 쓴다.
+ * DLC 는 요청 시간(건당 1초)만 먹는 게 아니라 반영 시간(CRON_DB_MS_PER_ITEM)도 같이 먹는다 —
+ * 손으로 계산할 때 그 절반을 빠뜨리기 쉬워서 cron-plan.test 가 두 축을 다 세도록 해 뒀다.
+ * 10건 + 목록 3회를 떼고 prices limit 을 120 에서 110 으로 내리면 두 모드가 다 예산 안에 든다
+ * (prices 197초, discover 194초). discover 몫은 건드리지 않아도 됐다.
+ * psstore 60 은 Actions(timeout 60분)라 덜 빡빡하지만, 한 실행이 DLC 로 10분씩 길어지는 것은 막는다.
+ *
+ * 상한에 걸려 이번에 못 받은 DLC 는 그 본편의 dlc_listed_at 이 이미 찍혀 있어
+ * DLC_LIST_REFRESH_DAYS 뒤에야 다시 걸린다. 새 DLC 가 며칠 늦게 잡히는 것은 손해가 아니라는
+ * 이 경로의 전제(dlc-list 주석)를 그대로 따른다 — 대신 그 대가를 여기 적어 둔다.
+ */
+export const DLC_FETCH_PER_RUN_BY_SOURCE: Partial<Record<Source, number>> = {
+  epic: 10,
+  psstore: 60,
+};
+
 /**
  * 한 번 물어본 본편을 다시 물어보기까지의 간격(일).
  * 새 DLC 는 드물게 나오고, 나온 뒤 며칠 늦게 잡혀도 손해가 없다. 짧게 잡으면 이 경로가

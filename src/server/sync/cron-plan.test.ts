@@ -4,7 +4,17 @@
 // 실제로 배포해서 함수가 잘려 봐야 안다. 그 전에 여기서 막는다.
 import { describe, expect, it } from "vitest";
 import { getStoreAdapter } from "@/server/adapters";
-import { CRON_DB_MS_PER_ITEM, CRON_PLAN, CRON_SAFETY_FACTOR, CRON_SOURCES, CRON_TIME_BUDGET_MS, DEFAULT_FETCH_BATCH_SIZE } from "./constants";
+import {
+  CRON_DB_MS_PER_ITEM,
+  CRON_PLAN,
+  CRON_SAFETY_FACTOR,
+  CRON_SOURCES,
+  CRON_TIME_BUDGET_MS,
+  DEFAULT_FETCH_BATCH_SIZE,
+  DLC_FETCH_PER_RUN_BY_SOURCE,
+  DLC_LIST_PER_RUN,
+  DLC_LIST_PER_RUN_BY_SOURCE,
+} from "./constants";
 
 /**
  * 한 실행이 걸릴 시간의 어림값 = (요청 시간 + 반영 시간) × 여유.
@@ -13,6 +23,11 @@ import { CRON_DB_MS_PER_ITEM, CRON_PLAN, CRON_SAFETY_FACTOR, CRON_SOURCES, CRON_
  * 건수로 세면 실제보다 수십 배 크게 나온다. 다만 신규 등록 대상은 배치가 마스터를 안 줘서
  * 단건 상세를 따로 받는 소스가 있고(batchPricesOnly "detail"), 그건 건수만큼 요청이 는다.
  * 반영 시간은 소스와 무관하게 건당 CRON_DB_MS_PER_ITEM 이다(그 상수의 근거 주석 참고).
+ *
+ * DLC 단계도 같은 실행 안에서 돈다(sync/run-store 4단계). 두 축을 따로 센다 —
+ * 본편에게 목록을 묻는 요청과, 그 결과로 받은 새 DLC 의 상세 요청이다.
+ * 뒤엣것은 배치 조회가 있는 소스에서는 거의 공짜지만 epic 처럼 fetchMany 가 없는 소스에서는 건당 1회다.
+ * 이 몫을 빼놓고 세면 테스트는 통과하는데 실제 함수는 300초에 잘린다.
  */
 function estimateMs(source: (typeof CRON_SOURCES)[number], mode: "prices" | "discover"): number {
   const plan = CRON_PLAN[source][mode];
@@ -20,8 +35,16 @@ function estimateMs(source: (typeof CRON_SOURCES)[number], mode: "prices" | "dis
   const detailItems = adapter.batchPricesOnly === "detail" ? plan.seedTop : 0;
   const batchedItems = Math.max(plan.limit - detailItems, 0);
   const perRequest = adapter.fetchMany ? (adapter.batchSize ?? DEFAULT_FETCH_BATCH_SIZE) : 1;
-  const requests = plan.pageBudget + plan.match + detailItems + Math.ceil(batchedItems / perRequest);
-  return (requests * adapter.minIntervalMs + plan.limit * CRON_DB_MS_PER_ITEM) * CRON_SAFETY_FACTOR;
+
+  // DLC 목록을 물어볼 줄 모르는 어댑터는 이 단계를 아예 건너뛴다
+  const dlcListRequests = adapter.listDlcIds ? (DLC_LIST_PER_RUN_BY_SOURCE[source] ?? DLC_LIST_PER_RUN) : 0;
+  const dlcFetchItems = adapter.listDlcIds ? (DLC_FETCH_PER_RUN_BY_SOURCE[source] ?? 0) : 0;
+  const dlcFetchRequests = Math.ceil(dlcFetchItems / perRequest);
+
+  const requests =
+    plan.pageBudget + plan.match + detailItems + Math.ceil(batchedItems / perRequest) + dlcListRequests + dlcFetchRequests;
+  const items = plan.limit + dlcFetchItems;
+  return (requests * adapter.minIntervalMs + items * CRON_DB_MS_PER_ITEM) * CRON_SAFETY_FACTOR;
 }
 
 describe("CRON_PLAN", () => {

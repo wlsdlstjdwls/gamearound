@@ -31,12 +31,22 @@ export const EPIC_LOCALE = "ko";
 export const EPIC_PAGE_SIZE = 40;
 /**
  * 기본판만 보는 카테고리. DLC, 애드온, 번들은 여기서 걸러진다.
- *
- * DLC 목록은 아직 붙이지 않았다. 이 환경에서 Epic 은 403 이라(위 EPIC_ENABLE_ENV 주석) 실측을 못 했다 —
- * 추측으로 적지 않는다. 되살아나면 여기부터 보면 된다: 같은 searchStore 질의에 카테고리만
- * 애드온 쪽으로 바꿔 훑고, 각 애드온 offer 가 가리키는 기본판으로 부모를 잇는 길이다.
  */
 export const EPIC_BASE_GAME_CATEGORY = "games/edition/base";
+/**
+ * 추가 콘텐츠 카테고리. 같은 searchStore 에 카테고리만 바꾸고 namespace 로 좁히면
+ * 그 게임의 DLC 만 온다(2026-09-15 실측). 스토어 페이지가 쓰는 것과 같은 값이다 —
+ * 페이지 안 getRelatedOfferIdsByCategory 의 category 가 이 문자열이다.
+ *
+ * 두 종류가 섞여 온다: offerType 이 DLC 인 것(확장팩, 시즌 패스)과 ADD_ON 인 것(꾸미기 아이템 팩).
+ * 둘 다 추가 콘텐츠라 가르지 않는다.
+ */
+export const EPIC_ADDON_CATEGORY = "addons|digitalextras";
+/**
+ * 한 본편에서 받아 올 DLC 수 상한. 실측(2026-09-15) 보더랜드 3 이 23건으로 제일 많았고
+ * 하데스, 위쳐 3 는 1건이었다. 100 은 여유이고, 실제 등록 수는 DLC_PER_GAME_MAX 가 다시 깎는다.
+ */
+export const EPIC_ADDON_PAGE_SIZE = 100;
 /**
  * 발견이 넘길 수 있는 최대 페이지 수. KR 기본판이 약 7,000건이라 175페이지면 카탈로그를 한 바퀴 돈다.
  * 여유를 둔 상한이고, 실제 종료 조건은 "빈 페이지" 다.
@@ -91,6 +101,17 @@ export const EPIC_SEARCH_QUERY = `query search($country: String!, $locale: Strin
 
 export const EPIC_OFFER_QUERY = `query offer($country: String!, $locale: String, $namespace: String!, $offerId: String!) {
   Catalog { catalogOffer(namespace: $namespace, id: $offerId, locale: $locale) { ${OFFER_FIELDS} } }
+}`;
+
+/**
+ * 한 게임의 추가 콘텐츠. searchStore 는 namespace 로 좁힐 수 있어서 별도 엔드포인트가 필요 없다.
+ * 우리 외부 ID 가 이미 `namespace:offerId` 라 부모의 namespace 를 따로 조회하지 않아도 된다.
+ */
+export const EPIC_ADDON_QUERY = `query addons($country: String!, $locale: String, $namespace: String!, $category: String, $count: Int) {
+  Catalog { searchStore(country: $country, locale: $locale, namespace: $namespace, category: $category, count: $count) {
+    paging { total count }
+    elements { ${OFFER_FIELDS} }
+  } }
 }`;
 
 // ---- 응답 스키마 ----
@@ -295,6 +316,23 @@ export const epicAdapter: StoreAdapter = {
     const { namespace, offerId } = parseEpicExternalId(externalId);
     const raw = await graphql(EPIC_OFFER_QUERY, { country: EPIC_COUNTRY, locale: EPIC_LOCALE, namespace, offerId }, externalId);
     return parseEpicOffer(raw, externalId);
+  },
+
+  /**
+   * 이 게임의 추가 콘텐츠 외부 ID 목록. 요청 1회로 끝난다 —
+   * 부모의 namespace 가 우리 외부 ID 안에 이미 들어 있어 따로 물어볼 것이 없다.
+   */
+  async listDlcIds(externalId: string): Promise<string[]> {
+    const { namespace, offerId } = parseEpicExternalId(externalId);
+    const raw = await graphql(
+      EPIC_ADDON_QUERY,
+      { country: EPIC_COUNTRY, locale: EPIC_LOCALE, namespace, category: EPIC_ADDON_CATEGORY, count: EPIC_ADDON_PAGE_SIZE },
+      `dlc:${externalId}`,
+    );
+    // 같은 namespace 의 본편이 섞여 오는 일은 카테고리가 막지만, 자기 자신은 한 번 더 걸러 둔다
+    return parseEpicSearch(raw)
+      .map((o) => epicExternalId(o.namespace, o.id))
+      .filter((id) => id !== epicExternalId(namespace, offerId));
   },
 
   /**

@@ -171,3 +171,26 @@ describe("epicReleaseDate / epicSaleName", () => {
     expect(epicSaleName(null)).toBeNull();
   });
 });
+
+describe("추가 콘텐츠 목록", () => {
+  const offers = parseEpicSearch(fixture("epic-addons.json"));
+
+  it("애드온 응답의 offerType 두 종류를 모두 DLC 로 읽는다", () => {
+    expect(offers.length).toBeGreaterThan(0);
+    expect(new Set(offers.map((o) => o.offerType))).toEqual(new Set(["DLC", "ADD_ON"]));
+    for (const o of offers) expect(toEpicSnapshot(o).contentType).toBe("dlc");
+  });
+
+  it("외부 ID 는 부모와 같은 namespace 를 그대로 쓴다 — 부모 연결이 응답 안에 있다", () => {
+    for (const o of offers) {
+      expect(epicExternalId(o.namespace, o.id)).toBe(`catnip:${o.id}`);
+    }
+  });
+
+  it("가격은 최소 단위 정수와 할인율로 들어온다", () => {
+    const snap = toEpicSnapshot(offers[0]);
+    expect(snap.listPrice).toBeGreaterThan(0);
+    expect(snap.currentPrice).not.toBeNull();
+    expect(snap.discountPct).toBeGreaterThanOrEqual(0);
+  });
+});

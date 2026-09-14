@@ -1,0 +1,680 @@
+{
+  "data": {
+    "Catalog": {
+      "searchStore": {
+        "paging": {
+          "total": 23,
+          "count": 40
+        },
+        "elements": [
+          {
+            "title": "보더랜드 3 시즌 패스 번들",
+            "id": "7fc3be734f1c4288b3aa3e887dbea50b",
+            "namespace": "catnip",
+            "description": "2개 시즌에 달하는 보더랜드 3의 프리미엄 애드온을 하나의 멋진 패키지로 승화시킨 시즌 패스 번들을 구매하세요! 추가 스토리 캠페인, 거대한 레이드 보스, 볼트 헌터별 추가 스킬 트리, 죽여주는 꾸미기 아이템으로 더 커다란 난장판을 일으키세요!",
+            "effectiveDate": "2021-10-25T17:00:00.000Z",
+            "offerType": "DLC",
+            "productSlug": null,
+            "urlSlug": "borderlands-3--season-pass-bundle-1",
+            "developerDisplayName": null,
+            "publisherDisplayName": null,
+            "keyImages": [
+              {
+                "type": "CodeRedemption_340x440",
+                "url": "https://cdn1.epicgames.com/salesEvent/salesEvent/2KGMKT_BL3_SeasonPassMetadata_EPIC_TallProductImage_1200x1600_1200x1600-e251a9b19bc206ff6a87a65d27b50f96"
+              },
+              {
+                "type": "DieselStoreFrontTall",
+                "url": "https://cdn1.epicgames.com/salesEvent/salesEvent/2KGMKT_BL3_SeasonPassMetadata_EPIC_TallProductImage_1200x1600_1200x1600-e251a9b19bc206ff6a87a65d27b50f96"
+              },
+              {
+                "type": "DieselStoreFrontWide",
+                "url": "https://cdn1.epicgames.com/salesEvent/salesEvent/2KGMKT_BL3_SeasonPassMetadata_EPIC_WideProductImage_2560x1440_2560x1440-ebcaa8d275483352d95c3cb93b3c10f4"
+              },
+              {
+                "type": "OfferImageTall",
+                "url": "https://cdn1.epicgames.com/salesEvent/salesEvent/2KGMKT_BL3_SeasonPassMetadata_EPIC_TallProductImage_1200x1600_1200x1600-e251a9b19bc206ff6a87a65d27b50f96"
+              },
+              {
+                "type": "OfferImageWide",
+                "url": "https://cdn1.epicgames.com/salesEvent/salesEvent/2KGMKT_BL3_SeasonPassMetadata_EPIC_WideProductImage_2560x1440_2560x1440-ebcaa8d275483352d95c3cb93b3c10f4"
+              },
+              {
+                "type": "Thumbnail",
+                "url": "https://cdn1.epicgames.com/salesEvent/salesEvent/2KGMKT_BL3_SeasonPassMetadata_EPIC_TallProductImage_1200x1600_1200x1600-e251a9b19bc206ff6a87a65d27b50f96"
+              },
+              {
+                "type": "featuredMedia",
+                "url": "https://cdn1.epicgames.com/salesEvent/salesEvent/2KGMKT_BL3_SeasonPassMetadata_EPIC_WideProductImage_2560x1440_2560x1440-ebcaa8d275483352d95c3cb93b3c10f4"
+              },
+              {
+                "type": "ProductLogo",
+                "url": "https://cdn1.epicgames.com/salesEvent/salesEvent/BL3_SPB_Epic_Logo_200x200_200x200-e7c4f34deef0dc53f2c12d7e5ef91005"
+              }
+            ],
+            "catalogNs": {
+              "mappings": [
+                {
+                  "pageSlug": "borderlands-3--psycho-krieg-and-the-fantastic-fustercluck",
+                  "pageType": "addon--cms-hybrid"
+                },
+                {
+                  "pageSlug": "borderlands-3--gearbox-cosmetic-pack",
+                  "pageType": "addon--cms-hybrid"
+                },
+                {
+                  "pageSlug": "borderlands-3--retro-cosmetic-pack",
+                  "pageType": "addon--cms-hybrid"
+                },
+                {
+                  "pageSlug": "borderlands-3--directors-cut",
+                  "pageType": "addon--cms-hybrid"
+                },
+                {
+                  "pageSlug": "borderlands-3--multiverse-disciples-of-the-vault-amara-cosmetic-pack",
+                  "pageType": "addon--cms-hybrid"
+                },
+                {
+                  "pageSlug": "borderlands-3--multiverse-disciples-of-the-vault-moze-cosmetic-pack",
+                  "pageType": "addon--cms-hybrid"
+                },
+                {
+                  "pageSlug": "borderlands-3--multiverse-disciples-of-the-vault-fl2k-cosmetic-pack",
+                  "pageType": "addon--cms-hybrid"
+                },
+                {
+                  "pageSlug": "borderlands-3--designers-cut",
+                  "pageType": "addon--cms-hybrid"
+                },
+                {
+                  "pageSlug": "borderlands-3--multiverse-disciples-of-the-vault-zane-cosmetic-pack",
+                  "pageType": "addon--cms-hybrid"
+                },
+                {
+                  "pageSlug": "borderlands-3--toy-box-weapons-pack",
+                  "pageType": "addon--cms-hybrid"
+                },
+                {
+                  "pageSlug": "borderlands-3--multiverse-final-form-zane-cosmetic-pack",
+                  "pageType": "addon--cms-hybrid"
+                },
+                {
+                  "pageSlug": "borderlands-3--multiverse-final-form-moze-cosmetic-pack",
+                  "pageType": "addon--cms-hybrid"
+                },
+                {
+                  "pageSlug": "borderlands-3--moxxis-heist-of-the-handsome-jackpot",
+                  "pageType": "addon--cms-hybrid"
+                },
+                {
+                  "pageSlug": "borderlands-3--season-pass",
+                  "pageType": "addon--cms-hybrid"
+                },
+                {
+                  "pageSlug": "borderlands-3--season-pass-bundle",
+                  "pageType": "addon--cms-hybrid"
+                },
+                {
+                  "pageSlug": "borderlands-3--multiverse-final-form-amara-cosmetic-pack",
+                  "pageType": "addon--cms-hybrid"
+                },
+                {
+                  "pageSlug": "borderlands-3--bounty-of-blood",
+                  "pageType": "addon--cms-hybrid"
+                },
+                {
+                  "pageSlug": "borderlands-3--guns-love-and-tentacles",
+                  "pageType": "addon--cms-hybrid"
+                },
+                {
+                  "pageSlug": "borderlands-3--gold-weapon-skins-pack",
+                  "pageType": "addon--cms-hybrid"
+                },
+                {
+                  "pageSlug": "borderlands-3--multiverse-final-form-fl4k-cosmetic-pack",
+                  "pageType": "addon--cms-hybrid"
+                },
+                {
+                  "pageSlug": "borderlands-3--neon-cosmetic-pack",
+                  "pageType": "addon--cms-hybrid"
+                },
+                {
+                  "pageSlug": "borderlands-3--season-pass-bundle-1",
+                  "pageType": "addon--cms-hybrid"
+                },
+                {
+                  "pageSlug": "borderlands-3",
+                  "pageType": "productHome"
+                },
+                {
+                  "pageSlug": "borderlands-3--super-deluxe-edition",
+                  "pageType": "offer"
+                },
+                {
+                  "pageSlug": "borderlands-3--ultimate-edition",
+                  "pageType": "offer"
+                },
+                {
+                  "pageSlug": "borderlands-3--season-pass-2",
+                  "pageType": "addon--cms-hybrid"
+                }
+              ]
+            },
+            "price": {
+              "totalPrice": {
+                "discountPrice": 28000,
+                "originalPrice": 84870,
+                "currencyCode": "KRW",
+                "currencyInfo": {
+                  "decimals": 0
+                }
+              },
+              "lineOffers": [
+                {
+                  "appliedRules": [
+                    {
+                      "name": "[Seasonal Sale] End of Summer Sale 2026",
+                      "startDate": "2026-09-03T15:00:00.000Z",
+                      "endDate": "2026-09-17T15:00:00.000Z"
+                    }
+                  ]
+                }
+              ]
+            }
+          },
+          {
+            "title": "보더랜드 3 시즌 패스 번들",
+            "id": "03eba3730db246859c79a756ac8a06be",
+            "namespace": "catnip",
+            "description": "2개 시즌에 달하는 보더랜드 3의 프리미엄 애드온을 하나의 멋진 패키지로 승화시킨 시즌 패스 번들을 구매하세요! 추가 스토리 캠페인, 거대한 레이드 보스, 볼트 헌터별 추가 스킬 트리, 죽여주는 꾸미기 아이템으로 더 커다란 난장판을 일으키세요!",
+            "effectiveDate": "2021-10-25T17:00:00.000Z",
+            "offerType": "DLC",
+            "productSlug": null,
+            "urlSlug": "borderlands-3--season-pass-bundle",
+            "developerDisplayName": null,
+            "publisherDisplayName": null,
+            "keyImages": [
+              {
+                "type": "CodeRedemption_340x440",
+                "url": "https://cdn1.epicgames.com/salesEvent/salesEvent/2KGMKT_BL3_SeasonPassMetadata_EPIC_TallProductImage_1200x1600_1200x1600-e251a9b19bc206ff6a87a65d27b50f96"
+              },
+              {
+                "type": "DieselStoreFrontTall",
+                "url": "https://cdn1.epicgames.com/salesEvent/salesEvent/2KGMKT_BL3_SeasonPassMetadata_EPIC_TallProductImage_1200x1600_1200x1600-e251a9b19bc206ff6a87a65d27b50f96"
+              },
+              {
+                "type": "DieselStoreFrontWide",
+                "url": "https://cdn1.epicgames.com/salesEvent/salesEvent/2KGMKT_BL3_SeasonPassMetadata_EPIC_WideProductImage_2560x1440_2560x1440-ebcaa8d275483352d95c3cb93b3c10f4"
+              },
+              {
+                "type": "OfferImageTall",
+                "url": "https://cdn1.epicgames.com/salesEvent/salesEvent/2KGMKT_BL3_SeasonPassMetadata_EPIC_TallProductImage_1200x1600_1200x1600-e251a9b19bc206ff6a87a65d27b50f96"
+              },
+              {
+                "type": "OfferImageWide",
+                "url": "https://cdn1.epicgames.com/salesEvent/salesEvent/2KGMKT_BL3_SeasonPassMetadata_EPIC_WideProductImage_2560x1440_2560x1440-ebcaa8d275483352d95c3cb93b3c10f4"
+              },
+              {
+                "type": "ProductLogo",
+                "url": "https://cdn1.epicgames.com/salesEvent/salesEvent/BL3_SPB_Epic_Logo_200x200_200x200-e7c4f34deef0dc53f2c12d7e5ef91005"
+              },
+              {
+                "type": "Thumbnail",
+                "url": "https://cdn1.epicgames.com/salesEvent/salesEvent/2KGMKT_BL3_SeasonPassMetadata_EPIC_TallProductImage_1200x1600_1200x1600-e251a9b19bc206ff6a87a65d27b50f96"
+              },
+              {
+                "type": "featuredMedia",
+                "url": "https://cdn1.epicgames.com/salesEvent/salesEvent/2KGMKT_BL3_SeasonPassMetadata_EPIC_WideProductImage_2560x1440_2560x1440-ebcaa8d275483352d95c3cb93b3c10f4"
+              }
+            ],
+            "catalogNs": {
+              "mappings": [
+                {
+                  "pageSlug": "borderlands-3--psycho-krieg-and-the-fantastic-fustercluck",
+                  "pageType": "addon--cms-hybrid"
+                },
+                {
+                  "pageSlug": "borderlands-3--gearbox-cosmetic-pack",
+                  "pageType": "addon--cms-hybrid"
+                },
+                {
+                  "pageSlug": "borderlands-3--retro-cosmetic-pack",
+                  "pageType": "addon--cms-hybrid"
+                },
+                {
+                  "pageSlug": "borderlands-3--directors-cut",
+                  "pageType": "addon--cms-hybrid"
+                },
+                {
+                  "pageSlug": "borderlands-3--multiverse-disciples-of-the-vault-amara-cosmetic-pack",
+                  "pageType": "addon--cms-hybrid"
+                },
+                {
+                  "pageSlug": "borderlands-3--multiverse-disciples-of-the-vault-moze-cosmetic-pack",
+                  "pageType": "addon--cms-hybrid"
+                },
+                {
+                  "pageSlug": "borderlands-3--multiverse-disciples-of-the-vault-fl2k-cosmetic-pack",
+                  "pageType": "addon--cms-hybrid"
+                },
+                {
+                  "pageSlug": "borderlands-3--designers-cut",
+                  "pageType": "addon--cms-hybrid"
+                },
+                {
+                  "pageSlug": "borderlands-3--multiverse-disciples-of-the-vault-zane-cosmetic-pack",
+                  "pageType": "addon--cms-hybrid"
+                },
+                {
+                  "pageSlug": "borderlands-3--toy-box-weapons-pack",
+                  "pageType": "addon--cms-hybrid"
+                },
+                {
+                  "pageSlug": "borderlands-3--multiverse-final-form-zane-cosmetic-pack",
+                  "pageType": "addon--cms-hybrid"
+                },
+                {
+                  "pageSlug": "borderlands-3--multiverse-final-form-moze-cosmetic-pack",
+                  "pageType": "addon--cms-hybrid"
+                },
+                {
+                  "pageSlug": "borderlands-3--moxxis-heist-of-the-handsome-jackpot",
+                  "pageType": "addon--cms-hybrid"
+                },
+                {
+                  "pageSlug": "borderlands-3--season-pass",
+                  "pageType": "addon--cms-hybrid"
+                },
+                {
+                  "pageSlug": "borderlands-3--season-pass-bundle",
+                  "pageType": "addon--cms-hybrid"
+                },
+                {
+                  "pageSlug": "borderlands-3--multiverse-final-form-amara-cosmetic-pack",
+                  "pageType": "addon--cms-hybrid"
+                },
+                {
+                  "pageSlug": "borderlands-3--bounty-of-blood",
+                  "pageType": "addon--cms-hybrid"
+                },
+                {
+                  "pageSlug": "borderlands-3--guns-love-and-tentacles",
+                  "pageType": "addon--cms-hybrid"
+                },
+                {
+                  "pageSlug": "borderlands-3--gold-weapon-skins-pack",
+                  "pageType": "addon--cms-hybrid"
+                },
+                {
+                  "pageSlug": "borderlands-3--multiverse-final-form-fl4k-cosmetic-pack",
+                  "pageType": "addon--cms-hybrid"
+                },
+                {
+                  "pageSlug": "borderlands-3--neon-cosmetic-pack",
+                  "pageType": "addon--cms-hybrid"
+                },
+                {
+                  "pageSlug": "borderlands-3--season-pass-bundle-1",
+                  "pageType": "addon--cms-hybrid"
+                },
+                {
+                  "pageSlug": "borderlands-3",
+                  "pageType": "productHome"
+                },
+                {
+                  "pageSlug": "borderlands-3--super-deluxe-edition",
+                  "pageType": "offer"
+                },
+                {
+                  "pageSlug": "borderlands-3--ultimate-edition",
+                  "pageType": "offer"
+                },
+                {
+                  "pageSlug": "borderlands-3--season-pass-2",
+                  "pageType": "addon--cms-hybrid"
+                }
+              ]
+            },
+            "price": {
+              "totalPrice": {
+                "discountPrice": 28000,
+                "originalPrice": 84870,
+                "currencyCode": "KRW",
+                "currencyInfo": {
+                  "decimals": 0
+                }
+              },
+              "lineOffers": [
+                {
+                  "appliedRules": [
+                    {
+                      "name": "[Seasonal Sale] End of Summer Sale 2026",
+                      "startDate": "2026-09-03T15:00:00.000Z",
+                      "endDate": "2026-09-17T15:00:00.000Z"
+                    }
+                  ]
+                }
+              ]
+            }
+          },
+          {
+            "title": "보더랜드 3: 디렉터스 컷",
+            "id": "3e4d16ea778c4a9f89cba96e4b91dc56",
+            "namespace": "catnip",
+            "description": "보더랜드 3이 디렉터스 컷 추가 콘텐츠로 더욱 풍성해집니다!",
+            "effectiveDate": "2021-04-08T17:00:00.000Z",
+            "offerType": "DLC",
+            "productSlug": null,
+            "urlSlug": "borderlands-3--directors-cut",
+            "developerDisplayName": null,
+            "publisherDisplayName": null,
+            "keyImages": [
+              {
+                "type": "OfferImageWide",
+                "url": "https://cdn1.epicgames.com/catnip/offer/2KGMKT_BL3_DLC6_2560x1440-2560x1440-bd2f5f1e5ea3034d66f751e43e916312.jpg"
+              },
+              {
+                "type": "OfferImageTall",
+                "url": "https://cdn1.epicgames.com/catnip/offer/2KGMKT_BL3_DLC6_EPIC_Mobile_Store_1200x1600-1200x1600-eea1a9f53987e943321d90e015f9d368.jpg"
+              },
+              {
+                "type": "Thumbnail",
+                "url": "https://cdn1.epicgames.com/catnip/offer/2KGMKT_BL3_DLC6_EPIC_Mobile_Store_1200x1600-1200x1600-eea1a9f53987e943321d90e015f9d368.jpg"
+              },
+              {
+                "type": "CodeRedemption_340x440",
+                "url": "https://cdn1.epicgames.com/catnip/offer/2KGMKT_BL3_DLC6_EPIC_Mobile_Store_1200x1600-1200x1600-eea1a9f53987e943321d90e015f9d368.jpg"
+              }
+            ],
+            "catalogNs": {
+              "mappings": [
+                {
+                  "pageSlug": "borderlands-3--psycho-krieg-and-the-fantastic-fustercluck",
+                  "pageType": "addon--cms-hybrid"
+                },
+                {
+                  "pageSlug": "borderlands-3--gearbox-cosmetic-pack",
+                  "pageType": "addon--cms-hybrid"
+                },
+                {
+                  "pageSlug": "borderlands-3--retro-cosmetic-pack",
+                  "pageType": "addon--cms-hybrid"
+                },
+                {
+                  "pageSlug": "borderlands-3--directors-cut",
+                  "pageType": "addon--cms-hybrid"
+                },
+                {
+                  "pageSlug": "borderlands-3--multiverse-disciples-of-the-vault-amara-cosmetic-pack",
+                  "pageType": "addon--cms-hybrid"
+                },
+                {
+                  "pageSlug": "borderlands-3--multiverse-disciples-of-the-vault-moze-cosmetic-pack",
+                  "pageType": "addon--cms-hybrid"
+                },
+                {
+                  "pageSlug": "borderlands-3--multiverse-disciples-of-the-vault-fl2k-cosmetic-pack",
+                  "pageType": "addon--cms-hybrid"
+                },
+                {
+                  "pageSlug": "borderlands-3--designers-cut",
+                  "pageType": "addon--cms-hybrid"
+                },
+                {
+                  "pageSlug": "borderlands-3--multiverse-disciples-of-the-vault-zane-cosmetic-pack",
+                  "pageType": "addon--cms-hybrid"
+                },
+                {
+                  "pageSlug": "borderlands-3--toy-box-weapons-pack",
+                  "pageType": "addon--cms-hybrid"
+                },
+                {
+                  "pageSlug": "borderlands-3--multiverse-final-form-zane-cosmetic-pack",
+                  "pageType": "addon--cms-hybrid"
+                },
+                {
+                  "pageSlug": "borderlands-3--multiverse-final-form-moze-cosmetic-pack",
+                  "pageType": "addon--cms-hybrid"
+                },
+                {
+                  "pageSlug": "borderlands-3--moxxis-heist-of-the-handsome-jackpot",
+                  "pageType": "addon--cms-hybrid"
+                },
+                {
+                  "pageSlug": "borderlands-3--season-pass",
+                  "pageType": "addon--cms-hybrid"
+                },
+                {
+                  "pageSlug": "borderlands-3--season-pass-bundle",
+                  "pageType": "addon--cms-hybrid"
+                },
+                {
+                  "pageSlug": "borderlands-3--multiverse-final-form-amara-cosmetic-pack",
+                  "pageType": "addon--cms-hybrid"
+                },
+                {
+                  "pageSlug": "borderlands-3--bounty-of-blood",
+                  "pageType": "addon--cms-hybrid"
+                },
+                {
+                  "pageSlug": "borderlands-3--guns-love-and-tentacles",
+                  "pageType": "addon--cms-hybrid"
+                },
+                {
+                  "pageSlug": "borderlands-3--gold-weapon-skins-pack",
+                  "pageType": "addon--cms-hybrid"
+                },
+                {
+                  "pageSlug": "borderlands-3--multiverse-final-form-fl4k-cosmetic-pack",
+                  "pageType": "addon--cms-hybrid"
+                },
+                {
+                  "pageSlug": "borderlands-3--neon-cosmetic-pack",
+                  "pageType": "addon--cms-hybrid"
+                },
+                {
+                  "pageSlug": "borderlands-3--season-pass-bundle-1",
+                  "pageType": "addon--cms-hybrid"
+                },
+                {
+                  "pageSlug": "borderlands-3",
+                  "pageType": "productHome"
+                },
+                {
+                  "pageSlug": "borderlands-3--super-deluxe-edition",
+                  "pageType": "offer"
+                },
+                {
+                  "pageSlug": "borderlands-3--ultimate-edition",
+                  "pageType": "offer"
+                },
+                {
+                  "pageSlug": "borderlands-3--season-pass-2",
+                  "pageType": "addon--cms-hybrid"
+                }
+              ]
+            },
+            "price": {
+              "totalPrice": {
+                "discountPrice": 12020,
+                "originalPrice": 18500,
+                "currencyCode": "KRW",
+                "currencyInfo": {
+                  "decimals": 0
+                }
+              },
+              "lineOffers": [
+                {
+                  "appliedRules": [
+                    {
+                      "name": "[Seasonal Sale] End of Summer Sale 2026",
+                      "startDate": "2026-09-03T15:00:00.000Z",
+                      "endDate": "2026-09-17T15:00:00.000Z"
+                    }
+                  ]
+                }
+              ]
+            }
+          },
+          {
+            "title": "보더랜드 3: 멀티버스 볼트의 제자 아마라 꾸미기 아이템 팩",
+            "id": "c4ed8a9670d24e4dac8d9bdfb59029ce",
+            "namespace": "catnip",
+            "description": "멀티버스 볼트의 제자 아마라 꾸미기 아이템 팩으로 사이렌 아마라가 밴딧이 되어 볼트의 아이들에 합류했다면 어떤 모습이 되었을지 만나보세요!",
+            "effectiveDate": "2021-04-08T17:00:00.000Z",
+            "offerType": "ADD_ON",
+            "productSlug": null,
+            "urlSlug": "borderlands-3--multiverse-disciples-of-the-vault-amara-cosmetic-pack",
+            "developerDisplayName": null,
+            "publisherDisplayName": null,
+            "keyImages": [
+              {
+                "type": "OfferImageWide",
+                "url": "https://cdn1.epicgames.com/catnip/offer/2KGMKT_BL3_Amara_DOTV_Pack_EPIC_Blog_Landscape_Store_2560x1440-2560x1440-af1a91d311bfcd1ec4e9ecd64868f8d0.jpg"
+              },
+              {
+                "type": "OfferImageTall",
+                "url": "https://cdn1.epicgames.com/catnip/offer/2KGMKT_BL3_Amara_DOTV_Pack_EPIC_Mobile_Store_1200x1600-1200x1600-92a219267c6301f55670e9972719fe21.jpg"
+              },
+              {
+                "type": "Thumbnail",
+                "url": "https://cdn1.epicgames.com/catnip/offer/2KGMKT_BL3_Amara_DOTV_Pack_EPIC_Mobile_Store_1200x1600-1200x1600-92a219267c6301f55670e9972719fe21.jpg"
+              },
+              {
+                "type": "CodeRedemption_340x440",
+                "url": "https://cdn1.epicgames.com/catnip/offer/2KGMKT_BL3_Amara_DOTV_Pack_EPIC_Mobile_Store_1200x1600-1200x1600-92a219267c6301f55670e9972719fe21.jpg"
+              },
+              {
+                "type": "ProductLogo",
+                "url": "https://cdn1.epicgames.com/catnip/offer/2KGMKT_BL3_Amara_DOTV_Pack_EPIC_Logo_400x400-400x400-79d17b78e6f8f047ac28dfe183611332.png"
+              }
+            ],
+            "catalogNs": {
+              "mappings": [
+                {
+                  "pageSlug": "borderlands-3--psycho-krieg-and-the-fantastic-fustercluck",
+                  "pageType": "addon--cms-hybrid"
+                },
+                {
+                  "pageSlug": "borderlands-3--gearbox-cosmetic-pack",
+                  "pageType": "addon--cms-hybrid"
+                },
+                {
+                  "pageSlug": "borderlands-3--retro-cosmetic-pack",
+                  "pageType": "addon--cms-hybrid"
+                },
+                {
+                  "pageSlug": "borderlands-3--directors-cut",
+                  "pageType": "addon--cms-hybrid"
+                },
+                {
+                  "pageSlug": "borderlands-3--multiverse-disciples-of-the-vault-amara-cosmetic-pack",
+                  "pageType": "addon--cms-hybrid"
+                },
+                {
+                  "pageSlug": "borderlands-3--multiverse-disciples-of-the-vault-moze-cosmetic-pack",
+                  "pageType": "addon--cms-hybrid"
+                },
+                {
+                  "pageSlug": "borderlands-3--multiverse-disciples-of-the-vault-fl2k-cosmetic-pack",
+                  "pageType": "addon--cms-hybrid"
+                },
+                {
+                  "pageSlug": "borderlands-3--designers-cut",
+                  "pageType": "addon--cms-hybrid"
+                },
+                {
+                  "pageSlug": "borderlands-3--multiverse-disciples-of-the-vault-zane-cosmetic-pack",
+                  "pageType": "addon--cms-hybrid"
+                },
+                {
+                  "pageSlug": "borderlands-3--toy-box-weapons-pack",
+                  "pageType": "addon--cms-hybrid"
+                },
+                {
+                  "pageSlug": "borderlands-3--multiverse-final-form-zane-cosmetic-pack",
+                  "pageType": "addon--cms-hybrid"
+                },
+                {
+                  "pageSlug": "borderlands-3--multiverse-final-form-moze-cosmetic-pack",
+                  "pageType": "addon--cms-hybrid"
+                },
+                {
+                  "pageSlug": "borderlands-3--moxxis-heist-of-the-handsome-jackpot",
+                  "pageType": "addon--cms-hybrid"
+                },
+                {
+                  "pageSlug": "borderlands-3--season-pass",
+                  "pageType": "addon--cms-hybrid"
+                },
+                {
+                  "pageSlug": "borderlands-3--season-pass-bundle",
+                  "pageType": "addon--cms-hybrid"
+                },
+                {
+                  "pageSlug": "borderlands-3--multiverse-final-form-amara-cosmetic-pack",
+                  "pageType": "addon--cms-hybrid"
+                },
+                {
+                  "pageSlug": "borderlands-3--bounty-of-blood",
+                  "pageType": "addon--cms-hybrid"
+                },
+                {
+                  "pageSlug": "borderlands-3--guns-love-and-tentacles",
+                  "pageType": "addon--cms-hybrid"
+                },
+                {
+                  "pageSlug": "borderlands-3--gold-weapon-skins-pack",
+                  "pageType": "addon--cms-hybrid"
+                },
+                {
+                  "pageSlug": "borderlands-3--multiverse-final-form-fl4k-cosmetic-pack",
+                  "pageType": "addon--cms-hybrid"
+                },
+                {
+                  "pageSlug": "borderlands-3--neon-cosmetic-pack",
+                  "pageType": "addon--cms-hybrid"
+                },
+                {
+                  "pageSlug": "borderlands-3--season-pass-bundle-1",
+                  "pageType": "addon--cms-hybrid"
+                },
+                {
+                  "pageSlug": "borderlands-3",
+                  "pageType": "productHome"
+                },
+                {
+                  "pageSlug": "borderlands-3--super-deluxe-edition",
+                  "pageType": "offer"
+                },
+                {
+                  "pageSlug": "borderlands-3--ultimate-edition",
+                  "pageType": "offer"
+                },
+                {
+                  "pageSlug": "borderlands-3--season-pass-2",
+                  "pageType": "addon--cms-hybrid"
+                }
+              ]
+            },
+            "price": {
+              "totalPrice": {
+                "discountPrice": 12000,
+                "originalPrice": 12000,
+                "currencyCode": "KRW",
+                "currencyInfo": {
+                  "decimals": 0
+                }
+              },
+              "lineOffers": [
+                {
+                  "appliedRules": []
+                }
+              ]
+            }
+          }
+        ]
+      }
+    }
+  }
+}
