@@ -24,8 +24,11 @@ export const VERIFY_MAX_CANDIDATES = 10;
 /**
  * 위키데이터는 UA 없는 요청과 과요청을 차단한다. 공개 엔드포인트는 동시성이 아니라
  * 간격으로 제한되므로 보수적으로 잡는다(회사는 수천 건 규모라 서두를 이유가 없다).
+ *
+ * 2초로는 모자랐다 — 20건 배치에서 8건이 검색 API 429 로 떨어졌다(2026-09-14 실측).
+ * 회사 1건이 검색 최대 2회 + SPARQL 1회라 간격당 요청이 3회까지 몰린다. 5초로 올린다.
  */
-export const WIKIDATA_MIN_INTERVAL_MS = 2000;
+export const WIKIDATA_MIN_INTERVAL_MS = 5000;
 /** SPARQL 은 일반 REST 보다 느리다. 좁힌 질의는 실측 1.5초지만(2026-09-14) 여유를 둔다 */
 export const WIKIDATA_TIMEOUT_MS = 30_000;
 

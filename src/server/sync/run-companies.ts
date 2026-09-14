@@ -10,6 +10,7 @@ import { normalizeCompanyName } from "@/lib/company-name";
 import { sleep } from "@/lib/async";
 import { BATCH_SIZE, COMPANY_REFRESH_DAYS } from "./constants";
 import { recordError, type Ctx, type RunOptions } from "./context";
+import { fetchWithRetry } from "./retry";
 import { attachCompany, companyNamesOf, findCompanyByAlias, linkGameCompany } from "./company-writer";
 
 /** 한 회사 이름과, 그 이름을 쓰는 게임들 */
@@ -91,7 +92,8 @@ export async function runCompanies(ctx: Ctx, source: CompanySource, opts: RunOpt
       }
       // 외부 질의는 별칭에 없는 이름에만. 간격은 어댑터가 선언한 값을 그대로 지킨다
       if (i > 0) await sleep(adapter.minIntervalMs);
-      const info = await adapter.lookup(target.rawName);
+      // 429 로 한 건을 통째로 버리지 않는다 — 위키데이터는 과요청을 만나면 몇 분간 막으므로 물러섰다 다시 묻는다
+      const info = await fetchWithRetry(() => adapter.lookup(target.rawName));
       if (!info) {
         // 후보가 없거나 모호함. 회사를 만들지 않고 넘어간다 — 관리자 검수 큐에서 사람이 정한다.
         ctx.processed++;
