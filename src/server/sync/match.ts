@@ -128,14 +128,18 @@ export async function matchGameToSource(gameId: string, source: SearchableSource
   if (!best) return { gameId, source, decision: "no-candidates" }; // 후보 0건은 검색 실패일 수 있어 기록하지 않음(다음 실행에 재시도)
   if (decision === "none") {
     // 후보는 있었지만 유사도 미달 → matched_by="none" 기록해 당분간 같은 게임을 다시 검색하지 않는다(워커 시간 절약).
-    // checked_at 을 갱신해 NONE_RETRY_DAYS 경과 후에만 재검색되게 한다. auto/manual/pending 행은 덮지 않는다.
+    // checked_at 을 갱신해 NONE_RETRY_DAYS 경과 후에만 재검색되게 한다.
+    //
+    // pending 행도 덮는다. pending 은 "사람이 판단해 달라" 는 뜻인데, 판정 규칙이 좋아져 이제 후보조차
+    // 아니라고 말한다면 그 대기표는 우리가 더 이상 믿지 않는 옛 판단이다 — 검수자에게 남겨 둘 이유가 없다.
+    // auto, manual 은 그대로 둔다. 한 번 붙은 매핑을 검색 결과가 잠깐 나빠졌다고 떼면 수집이 들쭉날쭉해진다.
     await db
       .insert(gameSourceRefs)
       .values({ gameId, source, externalId: best.candidate.externalId, url: best.candidate.url, matchedTitle: best.candidate.title, matchedBy: "none", confidence: best.similarity.toFixed(2), checkedAt: new Date() })
       .onConflictDoUpdate({
         target: [gameSourceRefs.gameId, gameSourceRefs.source],
-        set: { externalId: best.candidate.externalId, url: best.candidate.url, matchedTitle: best.candidate.title, confidence: best.similarity.toFixed(2), checkedAt: new Date() },
-        setWhere: sql`${gameSourceRefs.matchedBy} = 'none'`,
+        set: { externalId: best.candidate.externalId, url: best.candidate.url, matchedTitle: best.candidate.title, matchedBy: "none", confidence: best.similarity.toFixed(2), checkedAt: new Date() },
+        setWhere: sql`${gameSourceRefs.matchedBy} in ('none', 'pending')`,
       });
     return { gameId, source, decision, externalId: best.candidate.externalId, similarity: best.similarity };
   }
