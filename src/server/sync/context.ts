@@ -34,6 +34,8 @@ export interface Ctx {
   failed: number;
   errors: string[];
   changedSlugs: Set<string>;
+  /** 게임이 아니라 회사 화면 캐시를 깨야 할 때 — 회사 정보나 그 회사 게임이 바뀐 경우 */
+  changedCompanySlugs: Set<string>;
   priceChanges: PriceChange[];
 }
 

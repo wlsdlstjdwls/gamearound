@@ -2,15 +2,15 @@
 import { CRAWLER_USER_AGENT } from "@/server/adapters/types";
 import { REVALIDATE_TIMEOUT_MS } from "./constants";
 
-export async function revalidateGameTags(slugs: string[]): Promise<void> {
-  if (slugs.length === 0) return;
+export async function revalidateGameTags(slugs: string[], companySlugs: string[] = []): Promise<void> {
+  if (slugs.length === 0 && companySlugs.length === 0) return;
   const base = process.env.NEXT_PUBLIC_APP_URL;
   const secret = process.env.CRAWL_SECRET;
   if (!base || !secret) {
     console.warn("[sync] NEXT_PUBLIC_APP_URL / CRAWL_SECRET 없음 — revalidate 생략");
     return;
   }
-  const tags = slugs.map((s) => `game:${s}`);
+  const tags = [...slugs.map((s) => `game:${s}`), ...companySlugs.map((s) => `company:${s}`)];
   const res = await fetch(`${base.replace(/\/$/, "")}/api/revalidate`, {
     method: "POST",
     headers: { "Content-Type": "application/json", "x-crawl-secret": secret, "User-Agent": CRAWLER_USER_AGENT },

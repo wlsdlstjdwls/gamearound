@@ -6,7 +6,7 @@ import { eq } from "drizzle-orm";
 import { getDb } from "@/server/db/client";
 import { syncLogs, type SyncStatus } from "@/server/db/schema";
 import { acquireLock, releaseLock } from "@/server/redis";
-import { isMetaSource, isNewsSource, isStoreSource } from "@/server/adapters";
+import { isCompanySource, isMetaSource, isNewsSource, isStoreSource, isSubscriptionSource } from "@/server/adapters";
 import type { Source } from "@/server/adapters/types";
 import { errorMessage } from "@/lib/errors";
 import { LOCK_TTL_SEC } from "./constants";
@@ -16,6 +16,8 @@ import { revalidateGameTags } from "./revalidate";
 import { runMeta } from "./run-meta";
 import { runNews } from "./run-news";
 import { runStore } from "./run-store";
+import { runCompanies } from "./run-companies";
+import { runSubscriptions } from "./run-subscriptions";
 
 export type { RunOptions, RunResult } from "./context";
 
@@ -37,11 +39,13 @@ export async function runSource(source: Source, opts: RunOptions = {}): Promise<
       db, source, now,
       locks: await loadLockedFields(db),
       processed: 0, failed: 0, errors: [],
-      changedSlugs: new Set(), priceChanges: [],
+      changedSlugs: new Set(), changedCompanySlugs: new Set(), priceChanges: [],
     };
 
     if (isStoreSource(source)) await runStore(ctx, source, opts);
     else if (isMetaSource(source)) await runMeta(ctx, source, opts);
+    else if (isCompanySource(source)) await runCompanies(ctx, source, opts);
+    else if (isSubscriptionSource(source)) await runSubscriptions(ctx, source);
     else if (isNewsSource(source)) await runNews(ctx);
 
     // 5. 알림 (§7) — 실패해도 동기화 결과는 유지
@@ -57,7 +61,7 @@ export async function runSource(source: Source, opts: RunOptions = {}): Promise<
 
     // 7. 캐시 무효화 — 실패는 partial 사유로만 기록
     try {
-      await revalidateGameTags(Array.from(ctx.changedSlugs));
+      await revalidateGameTags(Array.from(ctx.changedSlugs), Array.from(ctx.changedCompanySlugs));
     } catch (e) {
       recordError(ctx, "revalidate", e);
     }

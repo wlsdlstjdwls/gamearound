@@ -1,6 +1,7 @@
 // 동기화 실행 상수 — 설계서 §4.4/§9/§10 의 수치를 한 곳에 모은다.
 // 배치 크기, 임계값은 운영하며 조정되는 값이라 로직 파일에 흩어져 있으면 근거(주석)를 잃는다.
 import { RSS_FEEDS } from "@/server/adapters/news-rss";
+import { GAMEPASS_COLLECTIONS } from "@/server/adapters/gamepass";
 import type { Source } from "@/server/adapters/types";
 import type { StoreSource } from "@/server/adapters";
 import type { Platform } from "@/server/db/schema";
@@ -16,6 +17,11 @@ export const BATCH_SIZE: Record<Source, number> = {
   steam: 1500, psstore: 200, xbox: 200, nintendo: 120,
   hltb: 200, opencritic: 300, metacritic: 150,
   rss: RSS_FEEDS.length,
+  // 위키데이터 공개 SPARQL 은 질의 1건이 수백 ms 에서 수 초다. 2초 간격 × 150 = 최대 ~7분.
+  // 회사는 거의 안 바뀌므로 한 번에 다 훑을 필요가 없다 — lastSyncedAt 이 오래된 것부터 잘라 간다.
+  wikidata: 150,
+  // 컬렉션 수만큼만 요청한다. 배치 개념이 없어 형식상의 값이다
+  gamepass: Object.keys(GAMEPASS_COLLECTIONS).length,
 };
 /** fetchMany 는 있는데 batchSize 를 선언하지 않은 어댑터용 기본값 */
 export const DEFAULT_FETCH_BATCH_SIZE = 50;
@@ -32,3 +38,21 @@ export const ERROR_SAMPLE_MAX = 3;
 /** 뉴스 제목 매칭 시 너무 짧은 게임 제목은 제외 (오매칭 방지) */
 export const NEWS_MATCH_MIN_TITLE_LEN = 4;
 export const REVALIDATE_TIMEOUT_MS = 15_000;
+
+/**
+ * 한 게임에서 따라 들여올 DLC 수 상한. 심즈류는 DLC 가 수십 개라 상한이 없으면
+ * 그 한 게임이 배치를 다 먹는다. 초과분은 recordError 로 표본만 남기고 건너뛴다.
+ */
+export const DLC_PER_GAME_MAX = 30;
+
+/**
+ * 구독 카탈로그를 반영할 최소 크기. 이보다 적게 오면 수집 실패로 보고 아무것도 지우지 않는다.
+ * 실측(2026-09-14) 콘솔 컬렉션이 수백 건이라 100 이면 정상 응답과 사고를 충분히 가른다.
+ */
+export const SUBSCRIPTION_MIN_CATALOG_SIZE = 100;
+
+/**
+ * 회사 정보 재조회 주기. 설립일, 국가는 사실상 안 바뀌므로 길게 잡는다 —
+ * 짧게 잡으면 위키데이터에 예의 없는 트래픽만 만든다.
+ */
+export const COMPANY_REFRESH_DAYS = 90;

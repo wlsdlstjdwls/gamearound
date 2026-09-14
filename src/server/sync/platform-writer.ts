@@ -5,7 +5,8 @@ import { gamePlatforms, priceSnapshots, type Platform } from "@/server/db/schema
 import type { StoreSnapshot } from "@/server/adapters/types";
 import { isLocked, type Ctx } from "./context";
 
-const PLATFORM_FIELDS = ["storeExternalId", "storeUrl", "releaseDate", "currentVersion", "listPrice", "currentPrice", "discountPct"] as const;
+// hasAddOns 도 여기 규칙을 그대로 탄다 — 주지 않는 소스는 undefined 라 기존 값을 덮지 않는다
+const PLATFORM_FIELDS = ["storeExternalId", "storeUrl", "releaseDate", "currentVersion", "listPrice", "currentPrice", "discountPct", "hasAddOns"] as const;
 const PRICE_FIELDS = new Set<string>(["listPrice", "currentPrice", "discountPct"]);
 
 /** ISO 문자열 → Date. 빈 값/파싱 실패는 null */
@@ -60,6 +61,7 @@ export async function upsertPlatform(ctx: Ctx, gameId: string, slug: string, sna
         listPrice: snapshot.listPrice,
         currentPrice: snapshot.currentPrice,
         discountPct: snapshot.discountPct,
+        hasAddOns: snapshot.hasAddOns ?? null,
         ...meta,
         lastSyncedAt: ctx.now,
         syncStatus: "ok",

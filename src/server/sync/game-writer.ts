@@ -1,7 +1,7 @@
 // games 테이블 쓰기 — 신규 생성과 마스터 정보 갱신.
 // 원칙 셋: null 로 덮어쓰지 않는다, 잠긴 필드(data_corrections.lock_field)는 건드리지 않는다, 값이 달라질 때만 UPDATE 한다.
 import { eq, inArray } from "drizzle-orm";
-import { gameGenres, gameSourceRefs, games, genres } from "@/server/db/schema";
+import { gameGenres, gameSourceRefs, games, genres, type ContentType } from "@/server/db/schema";
 import type { Db } from "@/server/db/client";
 import { AdapterError, type StoreSnapshot } from "@/server/adapters/types";
 import { slugify, slugWithSuffix } from "@/lib/slug";
@@ -27,8 +27,18 @@ async function linkGenres(db: Db, gameId: string, names: string[]): Promise<void
   await db.insert(gameGenres).values(rows.map((g) => ({ gameId, genreId: g.id }))).onConflictDoNothing();
 }
 
+/** DLC 로 만들 때만 채운다. 본편이면 기본값(game, 부모 없음) */
+export interface CreateGameOptions {
+  contentType?: ContentType;
+  parentGameId?: string | null;
+}
+
 /** Steam 스냅샷의 meta 로 games 신규 생성 + refs 등록 */
-export async function createGameFromSnapshot(ctx: Ctx, snapshot: StoreSnapshot): Promise<{ id: string; slug: string }> {
+export async function createGameFromSnapshot(
+  ctx: Ctx,
+  snapshot: StoreSnapshot,
+  options: CreateGameOptions = {},
+): Promise<{ id: string; slug: string }> {
   const meta = snapshot.meta;
   if (!meta?.titleEn) throw new AdapterError(`appid ${snapshot.storeExternalId}: meta.titleEn 없음 — 게임 생성 불가`, ctx.source, false);
   const { db } = ctx;
@@ -50,6 +60,8 @@ export async function createGameFromSnapshot(ctx: Ctx, snapshot: StoreSnapshot):
       supportsPvp: mp?.pvp ?? false,
       localMaxPlayers: mp?.localMax ?? null,
       onlineMaxPlayers: mp?.onlineMax ?? null,
+      contentType: options.contentType ?? "game",
+      parentGameId: options.parentGameId ?? null,
       createdAt: ctx.now,
       updatedAt: ctx.now,
     })

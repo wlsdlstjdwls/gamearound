@@ -4,7 +4,7 @@
 import { and, eq, isNull, lt, or, sql } from "drizzle-orm";
 import { getDb } from "@/server/db/client";
 import { gameSourceRefs, games } from "@/server/db/schema";
-import { getAdapter, getDisabledReason, isSourceEnabled } from "@/server/adapters";
+import { getSearchableAdapter, getDisabledReason, isSourceEnabled, type SearchableSource } from "@/server/adapters";
 import type { SearchCandidate, Source } from "@/server/adapters/types";
 import { normalizeTitle, trigramSimilarity } from "@/lib/slug";
 
@@ -79,7 +79,7 @@ export interface MatchResult {
 }
 
 /** 게임 1개를 소스 1개에 매칭 시도. manual 이면 건너뜀. DB 에 upsert 까지 수행 */
-export async function matchGameToSource(gameId: string, source: Source): Promise<MatchResult> {
+export async function matchGameToSource(gameId: string, source: SearchableSource): Promise<MatchResult> {
   const db = getDb();
   const game = await db.query.games.findFirst({
     where: eq(games.id, gameId),
@@ -92,7 +92,7 @@ export async function matchGameToSource(gameId: string, source: Source): Promise
   });
   if (existing?.matchedBy === "manual") return { gameId, source, decision: "skipped-manual" };
 
-  const adapter = getAdapter(source);
+  const adapter = getSearchableAdapter(source);
   const query = normalizeTitle(game.titleEn);
   const candidates = query ? await adapter.search(query) : [];
   const best = pickBestCandidate(game.titleEn, game.titleKo, candidates);
@@ -139,10 +139,10 @@ export interface MatchSummary {
  * 해당 소스에 ref 가 없는 게임 + matched_by="none" 으로 기록된 지 NONE_RETRY_DAYS 지난 게임을
  * limit 개까지 매칭. 소스별 minIntervalMs 대기.
  */
-export async function matchUnmatchedGames(source: Source, limit: number): Promise<MatchSummary> {
+export async function matchUnmatchedGames(source: SearchableSource, limit: number): Promise<MatchSummary> {
   if (!isSourceEnabled(source)) throw new Error(`${source} 비활성 소스: ${getDisabledReason(source)}`);
   const db = getDb();
-  const adapter = getAdapter(source);
+  const adapter = getSearchableAdapter(source);
   const rows = await db
     .select({ id: games.id })
     .from(games)

@@ -5,7 +5,7 @@
 // 종료 코드: 0 = ok/skipped, 2 = partial(일부 실패), 1 = failed/인자 오류
 import path from "node:path";
 import { config as loadEnv } from "dotenv";
-import { ALL_SOURCES, getDisabledReason, isSource, isSourceEnabled } from "@/server/adapters";
+import { ALL_SOURCES, getDisabledReason, isSearchableSource, isSource, isSourceEnabled } from "@/server/adapters";
 import { runSource } from "@/server/sync/run-source";
 import { SEEDABLE_SOURCES } from "@/server/sync/constants";
 import { matchUnmatchedGames } from "@/server/sync/match";
@@ -50,9 +50,10 @@ async function main(): Promise<number> {
 
   const started = Date.now();
 
-  // §4.2 매칭: 기준 소스(steam)와 rss 를 제외한 소스는 수집 전에 미매칭 게임을 먼저 매칭
+  // §4.2 매칭: 기준 소스(steam)와 rss 를 제외한 소스는 수집 전에 미매칭 게임을 먼저 매칭.
+  // 회사, 구독 소스는 게임 제목으로 검색하는 개념이 없어 매칭 단계 자체를 건너뛴다.
   const matchLimit = args["no-match"] ? 0 : (parsePositiveInt(args.match, "match") ?? (source === "steam" || source === "rss" ? 0 : 50));
-  if (matchLimit > 0) {
+  if (matchLimit > 0 && isSearchableSource(source)) {
     const m = await matchUnmatchedGames(source, matchLimit);
     console.log(`[match] ${source}: ${JSON.stringify(m)}`);
   }
