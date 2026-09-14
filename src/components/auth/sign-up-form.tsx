@@ -94,7 +94,7 @@ export function SignUpForm({ next }: { next: string }) {
 
       <div className="reveal" style={stagger(5)}>
         <Checkbox name="terms" disabled={busy} onChange={terms.onChange} onBlur={terms.onBlur} error={terms.error}>
-          <span className="text-ink">(필수)</span> 손전등 이용약관과 개인정보처리방침에 동의해요. 가격·정보는 각 스토어에서 수집되며 실시간이 아닐 수 있어요.
+          <span className="text-ink">(필수)</span> {M.termsConsent}
         </Checkbox>
       </div>
 

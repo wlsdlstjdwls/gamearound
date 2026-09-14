@@ -1,6 +1,9 @@
 // 어댑터 인터페이스 — 설계서 §4.1. 어댑터는 "가져오기만" 한다. DB 반영은 sync/가 맡음.
 import type { Platform } from "@/server/db/schema";
 
+/** 크롤러 공통 User-Agent (§10: UA 명시) — 실제 값은 서비스 아이덴티티(lib/site)에서 만든다 */
+export { CRAWLER_USER_AGENT } from "@/lib/site";
+
 export type Source = "steam" | "psstore" | "xbox" | "nintendo" | "hltb" | "opencritic" | "metacritic" | "rss";
 
 export interface StoreSnapshot {
@@ -80,10 +83,6 @@ export interface SourceAdapter<T extends StoreSnapshot | MetaSnapshot | NewsItem
 export type StoreAdapter = SourceAdapter<StoreSnapshot>;
 export type MetaAdapter = SourceAdapter<MetaSnapshot>;
 export type NewsAdapter = SourceAdapter<NewsItem[]>;
-
-/** 크롤러 공통 User-Agent (§10: UA 명시) */
-export const CRAWLER_USER_AGENT =
-  "SonjeondeungBot/0.1 (+https://github.com/sonjeondeung; game price aggregator; contact: admin@example.com)";
 
 export class AdapterError extends Error {
   constructor(message: string, public readonly source: Source, public readonly retryable = true) {

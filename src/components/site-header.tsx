@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { ROUTES } from "@/lib/routes";
+import { SITE } from "@/lib/site";
 import { AuthNav } from "@/components/auth/auth-nav";
 
 /** 로고 마크 — 26×26 잉크 사각형 + "손" 글자. 이모지는 쓰지 않는다 */
@@ -21,7 +22,7 @@ export function SiteHeader() {
       <div className="mx-auto flex w-full max-w-[var(--page-w)] flex-wrap items-center gap-x-4 gap-y-3 px-7 py-4">
         <Link href={ROUTES.home} className="press flex shrink-0 items-center gap-2">
           <BrandMark />
-          <span className="text-base font-bold tracking-[-0.02em] text-ink">손전등</span>
+          <span className="text-base font-bold tracking-[-0.02em] text-ink">{SITE.name}</span>
         </Link>
 
         <form action={ROUTES.search} className="min-w-[180px] max-w-[380px] flex-1">

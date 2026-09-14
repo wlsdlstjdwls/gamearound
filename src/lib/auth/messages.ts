@@ -1,5 +1,6 @@
 // 인증 UI/서버 공용 문구. 하드코딩 금지 — 문구 수정은 여기서만.
 import { DISPLAY_NAME_MAX, DISPLAY_NAME_MIN, PASSWORD_MIN } from "@/lib/auth/constants";
+import { SITE } from "@/lib/site";
 
 export const AUTH_MESSAGES = {
   // 검증
@@ -25,11 +26,12 @@ export const AUTH_MESSAGES = {
   // UI 라벨
   signInTitle: "다시 만나서 반가워요",
   signInSubtitle: "찜한 게임의 할인 소식을 놓치지 마세요",
-  signUpTitle: "손전등 시작하기",
+  signUpTitle: `${SITE.name} 시작하기`,
   signUpSubtitle: "가격 알림과 위시리스트를 무료로 이용하세요",
   signInCta: "로그인",
   signUpCta: "가입하기",
   signOutCta: "로그아웃",
+  termsConsent: `${SITE.name} 이용약관과 개인정보처리방침에 동의해요. ${SITE.dataDisclaimer}`,
   pending: "확인 중…",
   noAccount: "아직 계정이 없나요?",
   hasAccount: "이미 계정이 있나요?",

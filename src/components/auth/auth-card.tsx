@@ -4,6 +4,7 @@ import type { ReactNode } from "react";
 import { cn } from "@/lib/cn";
 import { stagger } from "@/lib/motion";
 import { ROUTES } from "@/lib/routes";
+import { SITE } from "@/lib/site";
 import { AUTH_MESSAGES as M } from "@/lib/auth/messages";
 import { BrandMark } from "@/components/site-header";
 import { Page, Card } from "@/components/ui/page";
@@ -42,7 +43,7 @@ export function AuthCard({
   return (
     <Page pad="home" className="grid items-start gap-6 sm:grid-cols-[repeat(auto-fit,minmax(300px,1fr))]">
       <div className="reveal flex flex-col gap-4" style={stagger(0)}>
-        <Link href={ROUTES.home} aria-label="손전등 홈" className="press w-fit">
+        <Link href={ROUTES.home} aria-label={`${SITE.name} 홈`} className="press w-fit">
           <BrandMark size={34} />
         </Link>
         <h1 className="text-[26px] font-bold leading-[1.3] tracking-[-0.03em] text-ink">

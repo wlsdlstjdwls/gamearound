@@ -1,4 +1,4 @@
-// 손전등 DB 스키마 — 설계서 §3.2 그대로. 확장1 테이블은 미정의(§3.3 컬럼만 문서화).
+// gamearound DB 스키마 — 설계서 §3.2 그대로. 확장1 테이블은 미정의(§3.3 컬럼만 문서화).
 import {
   pgTable, pgEnum, uuid, text, integer, numeric, boolean,
   timestamp, date, jsonb, primaryKey, index, uniqueIndex,

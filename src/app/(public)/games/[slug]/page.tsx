@@ -11,6 +11,7 @@ import { WishlistButton } from "@/components/wishlist-button";
 import { buttonClass } from "@/components/ui/button";
 import { Card, Page, SectionHead } from "@/components/ui/page";
 import { formatDateTime, formatHours, formatKrw, PLATFORM_LABEL } from "@/lib/format";
+import { SITE } from "@/lib/site";
 import { getFreshness } from "@/lib/freshness";
 import { ROUTES } from "@/lib/routes";
 import { displayTitle, getGameBySlugCached, type GameDetail, type PlatformDto } from "@/server/services/games";
@@ -26,7 +27,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const title = displayTitle(game);
   const description =
     game.description?.slice(0, 150) ??
-    `${title}의 플랫폼별 가격·할인, 플레이타임, 평점, 뉴스를 손전등에서 확인하세요.`;
+    `${title}의 플랫폼별 가격·할인, 플레이타임, 평점, 뉴스를 ${SITE.name}에서 확인하세요.`;
   return {
     title,
     description,
