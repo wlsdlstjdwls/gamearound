@@ -3,7 +3,7 @@ import { describe, expect, it } from "vitest";
 import { readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import { AdapterError } from "./types";
-import { parseXboxAutosuggest, parseXboxProduct, xboxPeriodDate, xboxStoreUrl } from "./xbox";
+import { parseXboxAutosuggest, parseXboxBrowse, parseXboxProduct, xboxImageUrl, xboxPeriodDate, xboxStoreUrl } from "./xbox";
 
 const fixture = (name: string): unknown =>
   JSON.parse(readFileSync(fileURLToPath(new URL(`./__fixtures__/${name}`, import.meta.url)), "utf8"));
@@ -83,5 +83,59 @@ describe("xboxPeriodDate (할인 기간)", () => {
     expect(xboxPeriodDate("9998-12-30T00:00:00.0000000Z")).toBeNull();
     expect(xboxPeriodDate(undefined)).toBeNull();
     expect(xboxPeriodDate("not-a-date")).toBeNull();
+  });
+});
+
+describe("parseXboxBrowse (카탈로그 발견)", () => {
+  it("게임만 중복 없이 후보로 만든다", () => {
+    const list = parseXboxBrowse(fixture("xbox-browse.json"));
+    expect(list.map((c) => c.externalId)).toEqual(["9PK3G146XXVF", "9NWWNS0C3007", "9NSN56SL5HC0"]);
+    expect(list[0].url).toContain("/9PK3G146XXVF");
+  });
+
+  it("추가 콘텐츠(Durable)는 후보에서 뺀다", () => {
+    expect(parseXboxBrowse(fixture("xbox-browse.json")).some((c) => c.externalId === "9NDURABLE001")).toBe(false);
+  });
+
+  it("제목이 없으면 건너뛴다 (제목 역매칭을 못 해 중복 등록이 된다)", () => {
+    expect(parseXboxBrowse({ productSummaries: [{ productId: "9NOTITLE0001" }] })).toEqual([]);
+  });
+
+  it("형식이 다르면 AdapterError", () => {
+    expect(() => parseXboxBrowse({ productSummaries: "nope" })).toThrow(AdapterError);
+  });
+});
+
+describe("게임 마스터 정보(meta)", () => {
+  const en = {
+    Products: [{ ProductId: "9P3J32CTXLRZ", LocalizedProperties: [{ ProductTitle: "ELDEN RING" }], MarketProperties: [], DisplaySkuAvailabilities: [] }],
+  };
+
+  it("영문 응답이 있어야 meta 를 만든다 (한국어 slug 로 게임을 만들지 않는다)", () => {
+    expect(parseXboxProduct(fixture("xbox-product.json"), "9P3J32CTXLRZ").meta).toBeUndefined();
+    const meta = parseXboxProduct(fixture("xbox-product.json"), "9P3J32CTXLRZ", en).meta;
+    expect(meta?.titleEn).toBe("ELDEN RING");
+    expect(meta?.developer).toBe("FromSoftware, Inc.");
+    expect(meta?.coverUrl).toMatch(/^https:\/\/store-images/);
+    expect(meta?.portraitUrl).toMatch(/^https:\/\/store-images/);
+  });
+
+  it("한국어 제목이 영문과 같으면 titleKo 를 비워 둔다", () => {
+    expect(parseXboxProduct(fixture("xbox-product.json"), "9P3J32CTXLRZ", en).meta?.titleKo).toBeNull();
+  });
+
+  it("영문 응답 형식이 깨져도 가격 수집은 계속된다", () => {
+    const snap = parseXboxProduct(fixture("xbox-product.json"), "9P3J32CTXLRZ", { Products: "nope" });
+    expect(snap.meta).toBeUndefined();
+    expect(snap.listPrice).toBe(64800);
+  });
+});
+
+describe("xboxImageUrl", () => {
+  it("목적 순서대로 고르고 스킴 없는 주소에 https 를 붙인다", () => {
+    const images = [{ ImagePurpose: "SuperHeroArt", Uri: "//img/hero" }, { ImagePurpose: "Poster", Uri: "https://img/poster" }];
+    expect(xboxImageUrl(images, ["TitledHeroArt", "SuperHeroArt"])).toBe("https://img/hero");
+    expect(xboxImageUrl(images, ["Poster"])).toBe("https://img/poster");
+    expect(xboxImageUrl(images, ["BoxArt"])).toBeNull();
   });
 });

@@ -1,5 +1,5 @@
 // Xbox Store 어댑터 — 설계서 §4.1. Microsoft Display Catalog(공개 JSON, 인증 불필요) 기반.
-//   검색: productFamilies/autosuggest  |  단건: products?bigIds=<ProductId>
+//   검색: productFamilies/autosuggest  |  단건: products?bigIds=<ProductId>  |  발견: emerald 의 browse
 // PoC(2026-09-11): market=KR 에서 4개 타이틀 제목, KRW 가격, 출시일 파싱 확인. 엔드포인트/필드 경로는 이 파일 상수에만 둔다(§10).
 import { z } from "zod";
 import { slugify } from "@/lib/slug";
@@ -10,11 +10,30 @@ import {
   type StoreSnapshot,
 } from "./types";
 import { createHttpClient, notFoundAs } from "./http";
+import { sleep } from "@/lib/async";
 
 export const XBOX_CATALOG_URL = "https://displaycatalog.mp.microsoft.com/v7.0";
+/**
+ * 카탈로그 목록 — xbox.com 스토어가 쓰는 공개 엔드포인트(인증 불필요, MS-CV 헤더는 필수).
+ * displaycatalog 에는 목록 API 가 없다: productFamilies/Games/products 는 top, skipItems 를 무시하고
+ * 늘 같은 10건만 준다(2026-09-14 실측). 그래서 발견만 이 호스트를 쓴다.
+ */
+export const XBOX_BROWSE_URL = "https://emerald.xboxservices.com/xboxcomfd/browse";
+/** 한 페이지 요청 수. 실제로는 필터링돼 43~48건이 온다(2026-09-14 실측, KR 전체 16,991건) */
+export const XBOX_BROWSE_PAGE_SIZE = 50;
+/** 발견이 넘길 최대 페이지. 16,991 / 50 ≈ 340 페이지에 여유를 뒀다. 실제 종료 조건은 빈 페이지 */
+export const XBOX_DISCOVERY_MAX_PAGES = 400;
 export const XBOX_STORE_URL = "https://www.xbox.com/ko-KR/games/store";
 export const XBOX_MARKET = "KR";
 export const XBOX_LANGUAGE = "ko-KR";
+/** 영문 제목용. 게임 slug 와 titleEn 은 영문에서 만든다(steam 과 같은 규칙) */
+export const XBOX_LANGUAGE_EN = "en-US";
+/** products?bigIds= 에 한 번에 넣을 ID 수. 3건 응답 확인(2026-09-14), 보수적으로 20 */
+export const XBOX_BIGIDS_BATCH = 20;
+/** 가로 배너(카드, 목록용) 후보 — 앞에 있는 것부터 고른다 */
+export const XBOX_IMAGE_WIDE = ["TitledHeroArt", "SuperHeroArt", "FeaturePromotionalSquareArt"];
+/** 세로 아트(상세 헤더용) 후보 */
+export const XBOX_IMAGE_TALL = ["Poster", "BrandedKeyArt", "BoxArt"];
 
 // ---- 응답 스키마 ----
 const priceSchema = z.object({
@@ -30,6 +49,8 @@ const availabilitySchema = z.object({
   Conditions: z.object({ StartDate: z.string().optional(), EndDate: z.string().optional() }).optional(),
 });
 
+const imageSchema = z.object({ ImagePurpose: z.string().optional(), Uri: z.string().optional() });
+
 const productSchema = z.object({
   ProductId: z.string(),
   /**
@@ -40,13 +61,28 @@ const productSchema = z.object({
    */
   Properties: z.object({ HasAddOns: z.boolean().optional() }).optional(),
   LocalizedProperties: z
-    .array(z.object({ ProductTitle: z.string().optional(), DeveloperName: z.string().optional(), PublisherName: z.string().optional() }))
+    .array(
+      z.object({
+        ProductTitle: z.string().optional(),
+        DeveloperName: z.string().optional(),
+        PublisherName: z.string().optional(),
+        ShortDescription: z.string().optional(),
+        Images: z.array(imageSchema).default([]),
+      }),
+    )
     .default([]),
   MarketProperties: z.array(z.object({ OriginalReleaseDate: z.string().optional() })).default([]),
   DisplaySkuAvailabilities: z.array(z.object({ Availabilities: z.array(availabilitySchema).default([]) })).default([]),
 });
 
 const productsResponseSchema = z.object({ Products: z.array(productSchema).default([]) });
+
+/** browse 응답 — 목록은 productSummaries 에 있고, channels 는 페이지 메타라 쓰지 않는다 */
+const browseSchema = z.object({
+  productSummaries: z
+    .array(z.object({ productId: z.string(), title: z.string().optional(), productKind: z.string().optional() }))
+    .default([]),
+});
 
 const autosuggestSchema = z.object({
   Results: z
@@ -107,7 +143,24 @@ export function xboxStoreUrl(productId: string, title: string): string {
 }
 
 /** products?bigIds 응답 → StoreSnapshot. Products 가 비면 게임 없음(재시도 없음) */
-export function parseXboxProduct(raw: unknown, productId: string): StoreSnapshot {
+/**
+ * 목적(ImagePurpose)이 앞선 것부터 골라 절대 주소로 돌려준다.
+ * Uri 는 "//store-images..." 처럼 스킴이 빠진 채로 온다 — 그대로 쓰면 화면에서 깨진다.
+ */
+export function xboxImageUrl(images: Array<{ ImagePurpose?: string; Uri?: string }>, purposes: string[]): string | null {
+  for (const purpose of purposes) {
+    const uri = images.find((i) => i.ImagePurpose === purpose && i.Uri)?.Uri;
+    if (uri) return uri.startsWith("//") ? `https:${uri}` : uri;
+  }
+  return null;
+}
+
+/**
+ * 한국어 응답 하나로 가격, 출시일을 읽고, 영문 응답이 있으면 게임 마스터 정보(meta)를 붙인다.
+ * meta 가 있어야 이 소스만 아는 게임(Xbox 독점작)을 새로 만들 수 있다 — 없으면 가격만 붙이는 소스가 된다.
+ * titleEn 을 영문 응답에서 가져오는 이유: slug 를 한국어로 만들면 다른 소스와 매칭이 안 된다.
+ */
+export function parseXboxProduct(raw: unknown, productId: string, rawEn?: unknown): StoreSnapshot {
   const parsed = productsResponseSchema.safeParse(raw);
   if (!parsed.success) throw new AdapterError(`Xbox 응답 형식 오류: ${parsed.error.message}`, "xbox", false);
   const product = parsed.data.Products.find((p) => p.ProductId === productId) ?? parsed.data.Products[0];
@@ -129,6 +182,34 @@ export function parseXboxProduct(raw: unknown, productId: string): StoreSnapshot
     discountEndsAt: discountPct > 0 ? price?.endsAt ?? null : null,
     releaseDate: toIsoDate(product.MarketProperties[0]?.OriginalReleaseDate),
     hasAddOns: product.Properties?.HasAddOns ?? null,
+    meta: xboxMeta(product, rawEn ? titleOf(rawEn, productId) : null),
+  };
+}
+
+/** 영문 응답에서 이 상품의 제목만 꺼낸다. 형식이 깨져 있으면 없는 것으로 본다 — 가격 수집을 막지 않는다 */
+function titleOf(rawEn: unknown, productId: string): string | null {
+  const parsed = productsResponseSchema.safeParse(rawEn);
+  if (!parsed.success) return null;
+  const hit = parsed.data.Products.find((p) => p.ProductId === productId);
+  return hit?.LocalizedProperties[0]?.ProductTitle?.trim() || null;
+}
+
+/** 게임 마스터 정보. 영문 제목이 없으면 meta 자체를 만들지 않는다(한국어 slug 로 게임을 만들지 않기 위해) */
+function xboxMeta(
+  product: z.infer<typeof productSchema>,
+  titleEn: string | null,
+): StoreSnapshot["meta"] {
+  if (!titleEn) return undefined;
+  const lp = product.LocalizedProperties[0];
+  const titleKo = lp?.ProductTitle?.trim() || null;
+  return {
+    titleEn,
+    titleKo: titleKo && titleKo !== titleEn ? titleKo : null,
+    description: lp?.ShortDescription?.trim() || null,
+    coverUrl: xboxImageUrl(lp?.Images ?? [], XBOX_IMAGE_WIDE),
+    portraitUrl: xboxImageUrl(lp?.Images ?? [], XBOX_IMAGE_TALL),
+    developer: lp?.DeveloperName?.trim() || null,
+    publisher: lp?.PublisherName?.trim() || null,
   };
 }
 
@@ -149,11 +230,37 @@ export function parseXboxAutosuggest(raw: unknown): SearchCandidate[] {
   return out;
 }
 
+/** browse 응답 → 후보 (productKind=Game 만. 추가 콘텐츠는 본편 수집이 따로 들여온다) */
+export function parseXboxBrowse(raw: unknown): SearchCandidate[] {
+  const parsed = browseSchema.safeParse(raw);
+  if (!parsed.success) throw new AdapterError(`Xbox 목록 응답 형식 오류: ${parsed.error.message}`, "xbox", false);
+  const out: SearchCandidate[] = [];
+  const seen = new Set<string>();
+  for (const p of parsed.data.productSummaries) {
+    if (p.productKind && p.productKind !== "Game") continue;
+    const title = p.title?.trim();
+    // 제목이 없으면 흡수 판단(제목 역매칭)을 할 수 없다 — 중복 등록을 만드느니 건너뛴다
+    if (!title || seen.has(p.productId)) continue;
+    seen.add(p.productId);
+    out.push({ externalId: p.productId, title, url: xboxStoreUrl(p.productId, title) });
+  }
+  return out;
+}
+
 // ---- 네트워크 ----
 
 /** 요청마다 새 상관 ID (MS-CV). 값 자체는 검증되지 않지만 카탈로그 API 관례상 포함 */
 function correlationId(): string {
   return Math.random().toString(36).slice(2, 12);
+}
+
+/** products?bigIds= 주소. ID 를 쉼표로 잇는다 */
+function productsUrl(productIds: string[], language: string): string {
+  const u = new URL(`${XBOX_CATALOG_URL}/products`);
+  u.searchParams.set("bigIds", productIds.join(","));
+  u.searchParams.set("market", XBOX_MARKET);
+  u.searchParams.set("languages", language);
+  return u.toString();
 }
 
 const http = createHttpClient({
@@ -176,11 +283,49 @@ export const xboxAdapter: StoreAdapter = {
     return parseXboxAutosuggest(await http.json(u.toString()));
   },
 
+  /** 한국어 + 영문 2회. 영문은 제목만 쓰지만, 그게 있어야 신규 게임을 만들 수 있다 */
   async fetch(productId: string): Promise<StoreSnapshot> {
-    const u = new URL(`${XBOX_CATALOG_URL}/products`);
-    u.searchParams.set("bigIds", productId);
-    u.searchParams.set("market", XBOX_MARKET);
-    u.searchParams.set("languages", XBOX_LANGUAGE);
-    return parseXboxProduct(await http.json(u.toString()), productId);
+    const rawKo = await http.json(productsUrl([productId], XBOX_LANGUAGE));
+    await sleep(Math.floor(xboxAdapter.minIntervalMs / 2));
+    const rawEn = await http.json(productsUrl([productId], XBOX_LANGUAGE_EN));
+    return parseXboxProduct(rawKo, productId, rawEn);
+  },
+
+  batchSize: XBOX_BIGIDS_BATCH,
+
+  /** bigIds 로 한 번에. 배치 하나가 한국어 + 영문 2회 요청으로 끝난다 */
+  async fetchMany(productIds: string[]): Promise<Map<string, StoreSnapshot>> {
+    if (productIds.length === 0) return new Map();
+    const rawKo = await http.json(productsUrl(productIds, XBOX_LANGUAGE));
+    await sleep(Math.floor(xboxAdapter.minIntervalMs / 2));
+    const rawEn = await http.json(productsUrl(productIds, XBOX_LANGUAGE_EN));
+    const out = new Map<string, StoreSnapshot>();
+    for (const id of productIds) {
+      // 배치 응답에 없는 ID 는 그 게임만 실패다 — 배치 전체를 죽이지 않는다(adapters/types 의 fetchMany 주석)
+      try {
+        out.set(id, parseXboxProduct(rawKo, id, rawEn));
+      } catch {
+        continue;
+      }
+    }
+    return out;
+  },
+
+  /**
+   * 카탈로그를 페이지 단위로 흘려보낸다. 이게 없던 동안 Xbox 는 Steam 으로 들어온 게임에
+   * 가격만 붙이는 소스였다 — Xbox 독점작은 한 건도 못 들어왔다(2026-09-14: ref 50건).
+   */
+  async *discoverPages(): AsyncGenerator<SearchCandidate[]> {
+    for (let page = 1; page <= XBOX_DISCOVERY_MAX_PAGES; page++) {
+      const u = new URL(XBOX_BROWSE_URL);
+      u.searchParams.set("locale", XBOX_LANGUAGE);
+      u.searchParams.set("market", XBOX_MARKET);
+      u.searchParams.set("PageNumber", String(page));
+      u.searchParams.set("ResultsPerPage", String(XBOX_BROWSE_PAGE_SIZE));
+      const found = parseXboxBrowse(await http.json(u.toString(), { context: `discover:${page}` }));
+      if (found.length === 0) return; // 카탈로그 끝
+      yield found;
+      await sleep(xboxAdapter.minIntervalMs);
+    }
   },
 };
