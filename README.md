@@ -1,11 +1,11 @@
 # gamearound
 
-게임 가격·플레이타임·평점·뉴스를 한 곳에서 보여주고 플랫폼별 할인 웹푸시를 보내는 서비스.
+게임 가격, 플레이타임, 평점, 뉴스를 한 곳에서 보여주고 플랫폼별 할인 웹푸시를 보내는 서비스.
 설계 근거: `docs/손전등_개발설계서.md` (MVP 범위만 구현).
 
 ## 스택
 
-Next.js 16 App Router · TypeScript · Drizzle ORM · Neon Postgres · 자체 세션 인증(scrypt + DB 세션) · Upstash Redis · web-push · GitHub Actions 크롤러 · Vercel
+Next.js 16 App Router | TypeScript | Drizzle ORM | Neon Postgres | 자체 세션 인증(scrypt + DB 세션) | Upstash Redis | web-push | GitHub Actions 크롤러 | Vercel
 
 ## 로컬 실행
 
@@ -30,34 +30,34 @@ pnpm dev
 
 ## 구조 (설계서 §2)
 
-레포 루트가 곧 앱 루트다. 설계·기획 산출물은 `docs/` 에 있다.
+레포 루트가 곧 앱 루트다. 설계, 기획 산출물은 `docs/` 에 있다.
 
 ```
 src/
-  app/                라우트 — (public) 홈·검색·목록·상세·가격그래프 / (auth) 로그인·가입 / (user) 위시리스트·알림·설정 / (admin) 동기화·검수·정정 / api
-  components/         화면 컴포넌트, ui/ 는 공용 프리미티브(Button·Chip·Page/Card·입력)
-  lib/                순수 유틸 — site(브랜드) · routes · cache · format · slug · games-query · motion · async · errors
+  app/                라우트 — (public) 홈, 검색, 목록, 상세, 가격그래프 / (auth) 로그인, 가입 / (user) 위시리스트, 알림, 설정 / (admin) 동기화, 검수, 정정 / api
+  components/         화면 컴포넌트, ui/ 는 공용 프리미티브(Button, Chip, Page/Card, 입력)
+  lib/                순수 유틸 — site(브랜드) | routes | cache | format | slug | games-query | motion | async | errors
   server/
-    db/               Drizzle 스키마·클라이언트·마이그레이션
-    services/         비즈니스 로직. games/ 는 dto·mappers·home·search·list·detail 로 나뉜다
-    adapters/         소스별 수집기(가져오기만). http.ts 가 공통 HTTP 계층, steam/ 은 constants·schemas·parse·index
-    sync/             수집 결과 DB 반영 — constants·context·retry·store-targets·store-fetch·game-writer·platform-writer·run-store·run-meta·run-news·revalidate·run-source
-    auth/ push/ redis 세션·웹푸시·락
-scripts/              crawl.ts(GitHub Actions 진입점) · seed.ts
+    db/               Drizzle 스키마, 클라이언트, 마이그레이션
+    services/         비즈니스 로직. games/ 는 dto, mappers, home, search, list, detail 로 나뉜다
+    adapters/         소스별 수집기(가져오기만). http.ts 가 공통 HTTP 계층, steam/ 은 constants, schemas, parse, index
+    sync/             수집 결과 DB 반영 — constants, context, retry, store-targets, store-fetch, game-writer, platform-writer, run-store, run-meta, run-news, revalidate, run-source
+    auth/ push/ redis 세션, 웹푸시, 락
+scripts/              crawl.ts(GitHub Actions 진입점) | seed.ts
 .github/workflows/    크롤 스케줄 (레포 루트에 있어야 실행된다)
-docs/                 기획서·개발설계서·리디자인 스펙
+docs/                 기획서, 개발설계서, 리디자인 스펙
 ```
 
 - 계층 규칙: `route → service → adapter | db`, DB 쓰기는 `sync/` 에서만. 자세한 규약은 `AGENTS.md`
 - `src/proxy.ts` 세션 쿠키 유무로 보호 경로 리다이렉트 (Next 16에서 middleware → proxy). role은 각 layout/action에서 재검증
 - `src/lib/routes.ts` 경로 상수 + `safeNextPath`(오픈 리다이렉트 방지)
-- `src/lib/site.ts` 서비스 이름·설명·테마색·크롤러 UA 단일 소스
+- `src/lib/site.ts` 서비스 이름, 설명, 테마색, 크롤러 UA 단일 소스
 
 ## 인증 (자체 구현, SNS 로그인은 후속)
 
-- 이메일/비밀번호 가입·로그인·로그아웃. 비밀번호는 Node 내장 `scrypt`(N=16384) 해시, 형식 `scrypt$N$r$p$salt$hash`로 알고리즘 교체 가능
+- 이메일/비밀번호 가입, 로그인, 로그아웃. 비밀번호는 Node 내장 `scrypt`(N=16384) 해시, 형식 `scrypt$N$r$p$salt$hash`로 알고리즘 교체 가능
 - 세션: 쿠키(`sjd_session`, httpOnly/secure/lax)에 랜덤 토큰, DB `sessions`엔 sha256 해시. 30일 슬라이딩, 만료분은 daily cron이 정리
-- 레이트리밋: 로그인 IP당 15분 20회·이메일당 10회, 가입 IP당 시간 5회 (Redis 없으면 경고 후 통과)
+- 레이트리밋: 로그인 IP당 15분 20회, 이메일당 10회, 가입 IP당 시간 5회 (Redis 없으면 경고 후 통과)
 - 헤더 로그인 상태는 클라이언트 `SessionProvider`가 `/api/auth/me`로 가져온다 — 루트 레이아웃에서 `cookies()`를 읽으면 홈 풀 라우트 캐시가 깨지기 때문
 - 확장 지점: `users.passwordHash`는 nullable(OAuth 전용 계정), provider 연결은 `auth_accounts` 테이블 추가로 대응
 
@@ -84,9 +84,9 @@ docs/                 기획서·개발설계서·리디자인 스펙
 | 플랫폼 세분화 | PS4/PS5, Switch/Switch2 분리 |
 | 멀티플레이 출처 | Steam 카테고리 태그 + 관리자 정정 |
 | 정정 잠금 | 관리자가 해제할 때까지 영구 잠금 |
-| 크롤 주기 (설계서 §4.3 이탈) | prices 하루 3회(KST 02:10/10:10/18:10)·news 6h·meta 격일 ≈ 월 1,470분. 설계서는 prices 4h·news 1h(≈3,900분)이나 private 레포 Actions 무료 2,000분을 초과한다. 뉴스·가격 모두 시간 단위 변동이 거의 없어 주기를 늘리는 대신, prices 실행 시각을 **Steam 할인 전환 시각(KST 02:00) 직후**로 고정해 할인 감지 지연을 8시간 → 10분으로 줄였다. public 전환(Actions 무제한)은 현재 불필요 |
+| 크롤 주기 (설계서 §4.3 이탈) | prices 하루 3회(KST 02:10/10:10/18:10), news 6h, meta 격일 ≈ 월 1,470분. 설계서는 prices 4h, news 1h(≈3,900분)이나 private 레포 Actions 무료 2,000분을 초과한다. 뉴스, 가격 모두 시간 단위 변동이 거의 없어 주기를 늘리는 대신, prices 실행 시각을 **Steam 할인 전환 시각(KST 02:00) 직후**로 고정해 할인 감지 지연을 8시간 → 10분으로 줄였다. public 전환(Actions 무제한)은 현재 불필요 |
 | 미매칭(`matched_by="none"`) 재시도 | `game_source_refs.checked_at` 기준 `NONE_RETRY_DAYS`(14일) 경과 행만 재검색 |
 | HLTB 검색 UA (설계서 §10 이탈) | HLTB `/api/search/site/init` 이 봇 UA 에 403 을 주므로 **검색 경로에서만** 브라우저 UA(`HLTB_SEARCH_USER_AGENT`)를 쓴다. 게임 페이지 조회는 `CRAWLER_USER_AGENT` 유지. init 토큰에 UA 가 포함돼 init/search UA 가 같아야 함 |
-| 할인 기간·행사명 | 스토어가 주는 만큼만 저장한다. Steam=`IStoreBrowseService/GetItems` 의 `active_discounts`(종료 시각 + `#discount_desc_*` 토큰 → 한국어 라벨, 모르는 토큰은 표시 안 함), Xbox=`Availability.Conditions` 시작·종료(상시 판매 센티널 9998년은 버림). PS Store·Nintendo 는 미지원 |
+| 할인 기간, 행사명 | 스토어가 주는 만큼만 저장한다. Steam=`IStoreBrowseService/GetItems` 의 `active_discounts`(종료 시각 + `#discount_desc_*` 토큰 → 한국어 라벨, 모르는 토큰은 표시 안 함), Xbox=`Availability.Conditions` 시작, 종료(상시 판매 센티널 9998년은 버림). PS Store, Nintendo 는 미지원 |
 | HLTB 플레이타임 0 | `comp_main/plus/100` 이 전부 0 이면 "제보 없음"으로 보고 전부 null 을 정상 반환한다(에러 아님). 에러로 처리하면 해당 게임이 매 배치마다 재시도돼 sync_logs 가 계속 partial 이 된다 |
 | 가격 그래프 표시 | 가격은 변동 시점만 기록되므로 차트는 마지막 기록 → 지금까지 수평으로 잇고, 진행 중 할인은 음영 + 종료선으로 표시한다. 미래 가격은 그리지 않는다 |

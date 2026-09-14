@@ -43,7 +43,7 @@ export function PushToggle({ initialCount }: { initialCount: number }) {
   const [error, setError] = useState<string | null>(null);
   const [iosHint, setIosHint] = useState(false);
 
-  // 브라우저 지원 여부·권한·기존 구독을 비동기로 판정한 뒤 콜백에서 상태 반영 (외부 시스템 구독)
+  // 브라우저 지원 여부, 권한, 기존 구독을 비동기로 판정한 뒤 콜백에서 상태 반영 (외부 시스템 구독)
   useEffect(() => {
     let cancelled = false;
     detectInitialStatus().then((r) => {
@@ -147,7 +147,7 @@ export function PushToggle({ initialCount }: { initialCount: number }) {
       </div>
 
       <p className="rounded-[9px] bg-surface-4 px-3.5 py-[11px] text-[12.5px] text-mut">
-        연결된 기기 {initialCount}대 · 다른 브라우저/기기에서도 각각 켜야 합니다.
+        연결된 기기 {initialCount}대 | 다른 브라우저/기기에서도 각각 켜야 합니다.
       </p>
 
       {error && <p className="text-[12.5px] text-danger">{error}</p>}

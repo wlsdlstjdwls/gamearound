@@ -1,4 +1,4 @@
-// 공개 DTO — route·컴포넌트가 받는 모양. 모두 JSON 직렬화 가능(Date → ISO 문자열).
+// 공개 DTO — route, 컴포넌트가 받는 모양. 모두 JSON 직렬화 가능(Date → ISO 문자열).
 // DB 행 타입을 그대로 노출하지 않는 이유: 스키마가 바뀌어도 화면 계약은 유지돼야 한다.
 import type { Platform, SyncStatus } from "@/server/db/schema";
 
@@ -10,7 +10,7 @@ export type PlatformDto = {
   listPrice: number | null;
   currentPrice: number | null;
   discountPct: number | null;
-  /** 할인 기간·행사명 (소스가 주는 만큼만. steam=종료+행사명, xbox=시작·종료) */
+  /** 할인 기간, 행사명 (소스가 주는 만큼만. steam=종료+행사명, xbox=시작, 종료) */
   discountStartsAt: string | null;
   discountEndsAt: string | null;
   discountName: string | null;

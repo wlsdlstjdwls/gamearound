@@ -21,7 +21,7 @@ describe("normalizeForSearch", () => {
     expect(normalizeForSearch(input)).toBe(expected);
   });
 
-  it("공백·구두점만 다른 제목은 같은 키가 된다", () => {
+  it("공백, 구두점만 다른 제목은 같은 키가 된다", () => {
     expect(normalizeForSearch("엘든 링")).toBe(normalizeForSearch("엘든링"));
     expect(normalizeForSearch("ELDEN RING:")).toBe(normalizeForSearch("eldenring"));
   });

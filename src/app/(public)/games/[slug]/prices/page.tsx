@@ -1,5 +1,5 @@
 // 가격 그래프 — 최근 1년 price_snapshots → 클라이언트 차트에 JSON prop (§5.1)
-// 가격은 "값이 바뀐 시점"만 기록되므로 기록이 적은 게임은 그래프가 거의 평평하다. 대신 현재 할인·행사 기간을 함께 보여준다.
+// 가격은 "값이 바뀐 시점"만 기록되므로 기록이 적은 게임은 그래프가 거의 평평하다. 대신 현재 할인, 행사 기간을 함께 보여준다.
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
@@ -54,7 +54,7 @@ export default async function PricesPage({ params }: Props) {
         </Link>
       </nav>
 
-      <h1 className="text-2xl font-bold tracking-[-0.03em] text-ink">가격 변동 · 최근 1년</h1>
+      <h1 className="text-2xl font-bold tracking-[-0.03em] text-ink">가격 변동 | 최근 1년</h1>
 
       {series.length === 0 ? (
         <EmptyState
@@ -87,7 +87,7 @@ export default async function PricesPage({ params }: Props) {
                 <p className="text-[11.5px] text-dim">기록 기준 최저가</p>
                 <p className="text-[15px] font-bold text-ink">
                   {formatKrw(lowestOf(best))}
-                  {best.currentPrice === lowestOf(best) && <span className="ml-1 text-[12px] font-normal text-acc">· 현재가와 동일</span>}
+                  {best.currentPrice === lowestOf(best) && <span className="ml-1 text-[12px] font-normal text-acc">현재가와 동일</span>}
                 </p>
               </div>
             </Card>
@@ -98,7 +98,7 @@ export default async function PricesPage({ params }: Props) {
             <p className="mt-2 text-right text-[11.5px] text-dim">음영 = 할인 진행 구간</p>
           </Card>
 
-          {/* 표 뷰(접근성 보조): 플랫폼별 현재가·할인·최저/최고 */}
+          {/* 표 뷰(접근성 보조): 플랫폼별 현재가, 할인, 최저/최고 */}
           <section aria-labelledby="summary-heading" className="flex flex-col gap-3">
             <SectionHead id="summary-heading" title="플랫폼별 요약" note="기록된 스냅샷 기준" />
             <Card className="overflow-hidden">

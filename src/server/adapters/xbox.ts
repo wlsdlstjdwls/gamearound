@@ -1,6 +1,6 @@
 // Xbox Store 어댑터 — 설계서 §4.1. Microsoft Display Catalog(공개 JSON, 인증 불필요) 기반.
 //   검색: productFamilies/autosuggest  |  단건: products?bigIds=<ProductId>
-// PoC(2026-09-11): market=KR 에서 4개 타이틀 제목·KRW 가격·출시일 파싱 확인. 엔드포인트/필드 경로는 이 파일 상수에만 둔다(§10).
+// PoC(2026-09-11): market=KR 에서 4개 타이틀 제목, KRW 가격, 출시일 파싱 확인. 엔드포인트/필드 경로는 이 파일 상수에만 둔다(§10).
 import { z } from "zod";
 import { slugify } from "@/lib/slug";
 import {
@@ -64,7 +64,7 @@ function toIsoDate(v: string | undefined): string | null {
 /** 상시 판매 구간의 "종료 없음" 센티널(9998-12-30 등)은 할인 기간이 아니다 */
 const XBOX_NO_END_YEAR = 9000;
 
-/** ISO datetime 문자열 → ISO. 센티널·잘못된 값은 null */
+/** ISO datetime 문자열 → ISO. 센티널, 잘못된 값은 null */
 export function xboxPeriodDate(v: string | undefined): string | null {
   if (!v) return null;
   const d = new Date(v);

@@ -5,7 +5,7 @@ import { getDb } from "@/server/db/client";
 import { gamePlatforms, games, news, priceSnapshots, syncLogs, type Platform } from "@/server/db/schema";
 
 export type PricePoint = { t: string; price: number; discountPct: number; discountName: string | null };
-/** 플랫폼별 시계열 + 현재 상태(정가 기준선·진행 중 할인 표시에 쓴다) */
+/** 플랫폼별 시계열 + 현재 상태(정가 기준선, 진행 중 할인 표시에 쓴다) */
 export type PriceSeries = {
   platform: Platform;
   points: PricePoint[];

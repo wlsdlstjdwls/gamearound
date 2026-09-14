@@ -90,7 +90,7 @@ describe("pageWindow", () => {
     expect(pageWindow(10, 20)).toEqual([1, null, 8, 9, 10, 11, 12, null, 20]);
   });
 
-  it("첫·끝 페이지는 항상 남는다", () => {
+  it("첫, 끝 페이지는 항상 남는다", () => {
     const w = pageWindow(20, 20);
     expect(w[0]).toBe(1);
     expect(w[w.length - 1]).toBe(20);

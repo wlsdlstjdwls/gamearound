@@ -65,7 +65,7 @@ const http = createHttpClient({
     return { "x-rapidapi-key": apiKey, "x-rapidapi-host": OPENCRITIC_RAPIDAPI_HOST };
   },
   onStatus: (status, ctx) => {
-    // 401·403 은 키 문제라 재시도해도 같다 — 관리자가 키를 넣어야 풀린다
+    // 401, 403 은 키 문제라 재시도해도 같다 — 관리자가 키를 넣어야 풀린다
     if (status === 401 || status === 403)
       return new AdapterError(`OpenCritic 인증 실패 HTTP ${status} (RapidAPI 키 확인)`, "opencritic", false);
     if (status === 404) return new AdapterError(`OpenCritic 게임 없음 (${ctx})`, "opencritic", false);

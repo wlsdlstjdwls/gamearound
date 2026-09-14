@@ -21,7 +21,7 @@ export const games = pgTable("games", {
   titleKo: text("title_ko"),
   titleEn: text("title_en").notNull(),
   description: text("description"),
-  // 가로 배너(460×215, Steam header.jpg) — 카드·목록용
+  // 가로 배너(460×215, Steam header.jpg) — 카드, 목록용
   coverUrl: text("cover_url"),
   // 세로 아트(600×900, Steam library_capsule) — 상세 헤더의 세로 슬롯용. 없으면 coverUrl 로 폴백
   portraitUrl: text("portrait_url"),
@@ -37,9 +37,9 @@ export const games = pgTable("games", {
   createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
   updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
   /**
-   * 검색용 정규화 제목 — 소문자 + 영숫자·한글·가나·한자 외 전부 제거.
-   * "엘든 링" / "ELDEN RING:" 처럼 공백·구두점만 다른 질의를 흡수한다(§4.2 normalizeTitle 의 DB 판).
-   * [:alnum:] 은 C.UTF-8 에서 한글·가나·한자를 포함하고 공백·™·: 는 제외한다(2026-09-14 확인).
+   * 검색용 정규화 제목 — 소문자 + 영숫자, 한글, 가나, 한자 외 전부 제거.
+   * "엘든 링" / "ELDEN RING:" 처럼 공백, 구두점만 다른 질의를 흡수한다(§4.2 normalizeTitle 의 DB 판).
+   * [:alnum:] 은 C.UTF-8 에서 한글, 가나, 한자를 포함하고 공백, ™, : 는 제외한다(2026-09-14 확인).
    * 한/영을 한 컬럼에 합치지 않는 이유: similarity() 가 긴 문자열에서 희석돼 한글 질의가 임계값 아래로 떨어진다.
    * 생성 컬럼이라 크롤러가 따로 갱신하지 않는다 — title_en/title_ko 만 쓰면 자동으로 따라온다.
    */
@@ -72,8 +72,8 @@ export const gamePlatforms = pgTable("game_platforms", {
   listPrice: integer("list_price"),          // KRW 정수
   currentPrice: integer("current_price"),
   discountPct: integer("discount_pct"),
-  // 할인 기간·행사명 (기획서 3-2 "할인 가격 그래프", dekudeals 참고). 소스가 주는 만큼만 채운다:
-  // steam=IStoreBrowseService active_discounts(종료시각+행사 토큰), xbox=Availability.Conditions(시작·종료), 그 외 null
+  // 할인 기간, 행사명 (기획서 3-2 "할인 가격 그래프", dekudeals 참고). 소스가 주는 만큼만 채운다:
+  // steam=IStoreBrowseService active_discounts(종료시각+행사 토큰), xbox=Availability.Conditions(시작, 종료), 그 외 null
   discountStartsAt: timestamp("discount_starts_at", { withTimezone: true }),
   discountEndsAt: timestamp("discount_ends_at", { withTimezone: true }),
   discountName: text("discount_name"),
@@ -88,7 +88,7 @@ export const priceSnapshots = pgTable("price_snapshots", {
   gamePlatformId: uuid("game_platform_id").references(() => gamePlatforms.id, { onDelete: "cascade" }).notNull(),
   price: integer("price").notNull(),
   discountPct: integer("discount_pct").default(0),
-  // 그래프에서 할인 구간을 그리기 위해 스냅샷에도 남긴다(당시 행사 종료 예정 시각·행사명)
+  // 그래프에서 할인 구간을 그리기 위해 스냅샷에도 남긴다(당시 행사 종료 예정 시각, 행사명)
   discountEndsAt: timestamp("discount_ends_at", { withTimezone: true }),
   discountName: text("discount_name"),
   capturedAt: timestamp("captured_at", { withTimezone: true }).defaultNow().notNull(),
@@ -140,7 +140,7 @@ export const users = pgTable("users", {
   updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
 });
 
-// 서버 세션(쿠키에는 랜덤 토큰, DB에는 sha256 해시만). 만료·강제 로그아웃은 행 삭제로 처리.
+// 서버 세션(쿠키에는 랜덤 토큰, DB에는 sha256 해시만). 만료, 강제 로그아웃은 행 삭제로 처리.
 export const sessions = pgTable("sessions", {
   id: text("id").primaryKey(), // sha256(token) hex
   userId: uuid("user_id").references(() => users.id, { onDelete: "cascade" }).notNull(),

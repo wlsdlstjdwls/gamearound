@@ -1,4 +1,4 @@
-// 선택형 칩 — "여러 값 중 하나를 고르는" 자리(필터·정렬·플랫폼·기간·페이지)에 쓴다.
+// 선택형 칩 — "여러 값 중 하나를 고르는" 자리(필터, 정렬, 플랫폼, 기간, 페이지)에 쓴다.
 // 같은 모양이 7곳에 문자열로 복제돼 있었다. 선택 상태의 대비(잉크 필 ↔ 테두리)는 이 파일에서만 정한다.
 import Link from "next/link";
 import type { ComponentProps } from "react";
@@ -7,9 +7,9 @@ import { cn } from "@/lib/cn";
 export type ChipSize = "sm" | "md" | "page";
 
 const SIZE: Record<ChipSize, string> = {
-  /** 관리자 목록·차트 기간처럼 조밀한 자리 */
+  /** 관리자 목록, 차트 기간처럼 조밀한 자리 */
   sm: "px-2.5 py-1 text-[12px]",
-  /** 기본 — 목록 필터·정렬·플랫폼 선택 */
+  /** 기본 — 목록 필터, 정렬, 플랫폼 선택 */
   md: "px-3 py-1.5 text-[12.5px]",
   /** 페이지네이션 — 숫자 폭이 달라도 정사각에 가깝게 */
   page: "h-8 min-w-8 justify-center px-3 text-[12.5px]",
@@ -34,7 +34,7 @@ type ChipLinkProps = Omit<ComponentProps<typeof Link>, "className"> & {
   className?: string;
 };
 
-/** 링크 칩 — 상태가 쿼리스트링에 있는 필터·정렬용(클라이언트 JS 불필요) */
+/** 링크 칩 — 상태가 쿼리스트링에 있는 필터, 정렬용(클라이언트 JS 불필요) */
 export function ChipLink({ active = false, size, className, children, ...rest }: ChipLinkProps) {
   return (
     <Link aria-current={active ? "true" : undefined} className={chipClass({ active, size, className })} {...rest}>

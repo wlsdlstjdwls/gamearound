@@ -73,7 +73,7 @@ export function GameCard({ game, variant = "discount" }: { game: GameSummary; va
         <p className="line-clamp-1 text-[11.5px] text-dim">
           {platformText}
           {game.platformCount > 1 && ` 외 ${game.platformCount - 1}`}
-          {game.titleKo && ` · ${game.titleEn}`}
+          {game.titleKo && ` | ${game.titleEn}`}
         </p>
 
         {variant === "release" && best?.releaseDate ? (

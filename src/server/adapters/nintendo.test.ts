@@ -83,7 +83,7 @@ describe("parseNintendoProduct meta", () => {
 });
 
 describe("parseNintendoGenres", () => {
-  it("쉼표·가운뎃점으로 나누고 중복을 지운다", () => {
+  it("쉼표, 가운뎃점으로 나누고 중복을 지운다", () => {
     expect(parseNintendoGenres("액션, 어드벤처")).toEqual(["액션", "어드벤처"]);
     expect(parseNintendoGenres("액션 · 액션")).toEqual(["액션"]);
   });

@@ -1,4 +1,4 @@
-// 카탈로그 발견 파서 — 검색·인기순위·추천 목록에서 appid 만 뽑는다.
+// 카탈로그 발견 파서 — 검색, 인기순위, 추천 목록에서 appid 만 뽑는다.
 import { AdapterError, type SearchCandidate } from "../types";
 import { APP_ID_IN_LOGO_URL, featuredCategoriesSchema, searchResultsSchema, storeSearchSchema } from "./schemas";
 import { STEAM_STORE_APP_URL } from "./constants";

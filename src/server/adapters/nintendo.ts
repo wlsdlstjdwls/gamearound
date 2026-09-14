@@ -1,6 +1,6 @@
 // Nintendo eShop(한국) 어댑터 — 설계서 §4.1. store.nintendo.co.kr(Magento) HTML 을 cheerio 로 파싱.
 //   검색: /catalogsearch/result/?q=  |  단건: /<상품ID> (다운로드 상품 ID 는 숫자 14자리, 패키지는 hacp… 알파벳)
-// PoC(2026-09-11): 젤다/마리오/실크송 검색 및 상품 3건에서 제목·정가·세일가·발매일·대상 본체 파싱 확인. 셀렉터는 이 파일 상수에만(§10).
+// PoC(2026-09-11): 젤다/마리오/실크송 검색 및 상품 3건에서 제목, 정가, 세일가, 발매일, 대상 본체 파싱 확인. 셀렉터는 이 파일 상수에만(§10).
 import { load, type CheerioAPI } from "cheerio";
 import type { Platform } from "@/server/db/schema";
 import {
@@ -67,7 +67,11 @@ export function nintendoProductUrl(id: string): string {
   return `${NINTENDO_BASE_URL}/${id}`;
 }
 
-/** "액션, 어드벤처" → ["액션", "어드벤처"] */
+/**
+ * "액션, 어드벤처" → ["액션", "어드벤처"]
+ * 구분자 클래스에 가운뎃점(U+00B7)이 남아 있는 이유: 닌텐도 스토어가 실제로 그 문자로 장르를 잇는다.
+ * 우리 코드/문구에서는 쓰지 않지만, 외부 입력을 읽는 자리라 지우면 파싱이 깨진다.
+ */
 export function parseNintendoGenres(raw: string | null | undefined): string[] {
   if (!raw) return [];
   return Array.from(new Set(raw.split(/[,·/]/).map((g) => g.trim()).filter(Boolean)));

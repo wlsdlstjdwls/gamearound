@@ -1,4 +1,4 @@
-// 페이지 셸 — 리디자인 스펙의 최대폭·좌우 28px 패딩을 한 곳에서 관리한다.
+// 페이지 셸 — 리디자인 스펙의 최대폭, 좌우 28px 패딩을 한 곳에서 관리한다.
 // 폭: 기본 1120 / 알림 860 / 설정 720. 상단 패딩은 화면 성격별로 22~32px, 하단은 80~90px.
 import { cn } from "@/lib/cn";
 
@@ -38,7 +38,7 @@ export function Page({ width = "default", pad = "sub", gap, className, style, ch
 
 /**
  * 카드 표면 — 1px 테두리 + 흰 배경 + 12px 라운드. 그림자는 쓰지 않는다(리디자인 원칙: 깊이는 테두리로만).
- * div 가 아닌 요소(section·form·dl·li·nav)도 같은 표면을 쓰므로 클래스 함수로 내보낸다.
+ * div 가 아닌 요소(section, form, dl, li, nav)도 같은 표면을 쓰므로 클래스 함수로 내보낸다.
  */
 export function cardClass(className?: string): string {
   return cn("rounded-xl border border-line bg-surface", className);

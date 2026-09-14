@@ -38,7 +38,7 @@ export async function listStoreTargets(ctx: Ctx, source: StoreSource, limit: num
   }
 
   // 신규 시드 (§4.2-1, §11-1 상위 N개).
-  // 발견은 부가 작업이다 — 스토어가 목록을 안 주더라도(차단·개편) 기존 게임 가격 갱신은 계속돼야 한다.
+  // 발견은 부가 작업이다 — 스토어가 목록을 안 주더라도(차단, 개편) 기존 게임 가격 갱신은 계속돼야 한다.
   if (seedTop && seedTop > 0) {
     try {
       for (const t of await seedTargets(ctx, source, seedTop)) {
@@ -111,7 +111,7 @@ async function seedTargets(ctx: Ctx, source: StoreSource, seedTop: number): Prom
         confidence: hit.similarity.toFixed(2),
         checkedAt: ctx.now,
       })
-      // 이미 매칭된 게임이면(동시 실행·수동 매칭) 건드리지 않는다
+      // 이미 매칭된 게임이면(동시 실행, 수동 매칭) 건드리지 않는다
       .onConflictDoNothing();
     out.push({ gameId: hit.game.id, slug: hit.game.slug, externalId: c.externalId });
     absorbed++;

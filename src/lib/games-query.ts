@@ -1,5 +1,5 @@
 // /games 목록의 쿼리스트링 ↔ 필터 변환. 순수 유틸(서버/클라 양쪽에서 import 가능).
-// 목록 상태를 전부 주소에 담아 서버 컴포넌트만으로 필터·정렬·페이지를 돌리기 위한 단일 원천이다.
+// 목록 상태를 전부 주소에 담아 서버 컴포넌트만으로 필터, 정렬, 페이지를 돌리기 위한 단일 원천이다.
 import { ROUTES } from "./routes";
 
 /** 정렬 키. 값이 그대로 쿼리스트링에 실린다 */
@@ -29,7 +29,7 @@ export function isGameSort(v: string | undefined): v is GameSort {
   return GAME_SORTS.includes(v as GameSort);
 }
 
-/** 쿼리스트링 값 길이 상한 — 검색어·필터 모두 같은 규칙을 쓴다 */
+/** 쿼리스트링 값 길이 상한 — 검색어, 필터 모두 같은 규칙을 쓴다 */
 export const MAX_PARAM_LEN = 100;
 
 /** 다중 값(?q=a&q=b)은 첫 값만. 빈 문자열은 "없음"으로 접는다 */

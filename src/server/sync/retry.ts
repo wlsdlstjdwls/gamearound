@@ -1,4 +1,4 @@
-// 어댑터 호출 재시도 — 일시적 실패(429·5xx·네트워크)만 다시 시도한다.
+// 어댑터 호출 재시도 — 일시적 실패(429, 5xx, 네트워크)만 다시 시도한다.
 import { AdapterError } from "@/server/adapters/types";
 import { sleep } from "@/lib/async";
 import { RETRY_DELAYS_MS } from "./constants";

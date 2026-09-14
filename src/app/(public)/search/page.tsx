@@ -1,5 +1,5 @@
 // 검색 결과 — searchParams(q, sort) 처리 (§5.1). Route Handler 불필요.
-// 리디자인: 카드 그리드 → 가로 행 리스트. 제목·플랫폼·가격을 같은 축에서 비교할 수 있다.
+// 리디자인: 카드 그리드 → 가로 행 리스트. 제목, 플랫폼, 가격을 같은 축에서 비교할 수 있다.
 import type { Metadata } from "next";
 import Link from "next/link";
 import { CoverImage } from "@/components/game-card";
@@ -11,7 +11,7 @@ import { ROUTES } from "@/lib/routes";
 import { searchGames, type GameSummary } from "@/server/services/games";
 import { MAX_PARAM_LEN } from "@/lib/games-query";
 
-// Next 가 정적으로 읽는 값이라 리터럴이어야 한다 — 근거·수치는 lib/cache 의 LIST_REVALIDATE_SECONDS 와 같게 유지
+// Next 가 정적으로 읽는 값이라 리터럴이어야 한다 — 근거, 수치는 lib/cache 의 LIST_REVALIDATE_SECONDS 와 같게 유지
 export const revalidate = 3600;
 
 type Props = { searchParams: Promise<{ q?: string | string[]; sort?: string | string[] }> };
@@ -145,7 +145,7 @@ export default async function SearchPage({ searchParams }: Props) {
                       <div className="min-w-[180px] flex-1">
                         <p className="text-[14.5px] font-bold tracking-[-0.01em] text-ink">{title}</p>
                         <p className="mt-0.5 text-[12px] text-dim">
-                          {g.titleKo ? `${g.titleEn} · ` : ""}
+                          {g.titleKo ? `${g.titleEn} | ` : ""}
                           {best?.releaseDate ? `${formatDate(best.releaseDate)} 출시` : "출시일 미상"}
                         </p>
                         <p className="mt-0.5 text-[12px] text-mut">
@@ -159,7 +159,7 @@ export default async function SearchPage({ searchParams }: Props) {
                           {hasDiscount && best ? (
                             <>
                               <span className="text-dim-2 line-through">{formatKrw(best.listPrice)}</span>
-                              {" · "}
+                              {" | "}
                               {formatDiscount(best.discountPct)}
                             </>
                           ) : (

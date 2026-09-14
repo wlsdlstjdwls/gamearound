@@ -1,6 +1,6 @@
 // 관리자 계정 부트스트랩 (일회성). 가입 폼의 비밀번호 정책을 우회해 DB에 직접 생성/갱신한다.
 //   tsx scripts/create-admin.ts --email=<EMAIL> --password=<PW> [--name=<DISPLAY_NAME>]
-// 이미 있는 이메일이면 비밀번호·역할을 갱신한다.
+// 이미 있는 이메일이면 비밀번호, 역할을 갱신한다.
 import path from "node:path";
 import { config as loadEnv } from "dotenv";
 import { eq } from "drizzle-orm";

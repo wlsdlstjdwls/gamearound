@@ -1,4 +1,4 @@
-// 실행 컨텍스트 — 한 번의 runSource 동안 누적되는 상태(처리 수·오류 표본·변경된 slug·가격 변동).
+// 실행 컨텍스트 — 한 번의 runSource 동안 누적되는 상태(처리 수, 오류 표본, 변경된 slug, 가격 변동).
 // 단계 함수들이 이 객체 하나만 받으므로 인자 목록이 단계마다 늘어나지 않는다.
 import { eq } from "drizzle-orm";
 import { dataCorrections, type SyncStatus } from "@/server/db/schema";

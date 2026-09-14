@@ -1,4 +1,4 @@
-// Steam 엔드포인트와 수집 파라미터. 값의 근거(실측 날짜·한계)를 주석으로 남긴다.
+// Steam 엔드포인트와 수집 파라미터. 값의 근거(실측 날짜, 한계)를 주석으로 남긴다.
 
 export const STEAM_APPDETAILS_URL = "https://store.steampowered.com/api/appdetails";
 export const STEAM_STORESEARCH_URL = "https://store.steampowered.com/api/storesearch/";
@@ -10,7 +10,7 @@ export const TOPSELLERS_PAGE_SIZE = 100;
 export const TOPSELLERS_MAX_PAGES = 65;
 export const TOPSELLERS_PAGE_INTERVAL_MS = 1500;
 export const STEAM_STORE_APP_URL = "https://store.steampowered.com/app";
-/** 할인 종료 시각·행사명은 appdetails 에 없다. 공개 스토어 API(GetItems)의 active_discounts 에만 있다 */
+/** 할인 종료 시각, 행사명은 appdetails 에 없다. 공개 스토어 API(GetItems)의 active_discounts 에만 있다 */
 export const STEAM_STOREITEMS_URL = "https://api.steampowered.com/IStoreBrowseService/GetItems/v1/";
 /** GetItems 는 appid 100개까지 한 요청에 넣어도 100개를 그대로 돌려준다(2026-09-14 확인) */
 export const STEAM_GETITEMS_BATCH = 100;

@@ -40,7 +40,7 @@ export default async function SettingsPage() {
           <dt className="text-dim">가입일</dt>
           <dd className="text-ink">{formatDate(user.createdAt)}</dd>
         </dl>
-        <p className="text-[11.5px] text-dim">닉네임·비밀번호 변경은 곧 추가됩니다.</p>
+        <p className="text-[11.5px] text-dim">닉네임, 비밀번호 변경은 곧 추가됩니다.</p>
       </Card>
 
       <PushToggle initialCount={pushCount} />

@@ -107,7 +107,7 @@ describe("parseFeaturedAppIds", () => {
 });
 
 describe("parseTopSellerAppIds", () => {
-  it("logo URL 의 /apps/<id>/ 만 추출하고 subs·logo 없음·중복은 제외한다", () => {
+  it("logo URL 의 /apps/<id>/ 만 추출하고 subs, logo 없음, 중복은 제외한다", () => {
     expect(parseTopSellerAppIds(fixture("steam-search-results.json"))).toEqual(["578080", "730"]);
   });
 
@@ -116,7 +116,7 @@ describe("parseTopSellerAppIds", () => {
   });
 });
 
-describe("parseStoreItemDiscount (할인 기간·행사명)", () => {
+describe("parseStoreItemDiscount (할인 기간, 행사명)", () => {
   it("GetItems 실응답에서 종료 시각과 행사명을 뽑는다 (2026-09-14 픽스처)", () => {
     const info = parseStoreItemDiscount(fixture("steam-getitems.json"), "275850");
     expect(info.discountEndsAt).toBe(new Date(1790010000 * 1000).toISOString());
@@ -140,7 +140,7 @@ describe("steamDiscountLabel", () => {
   it("계절 세일은 키워드로 잡는다", () => {
     expect(steamDiscountLabel("#discount_desc_summer_sale_2026")).toBe("여름 세일");
   });
-  it("모르는 토큰·빈 값은 null (가짜 행사명을 만들지 않는다)", () => {
+  it("모르는 토큰, 빈 값은 null (가짜 행사명을 만들지 않는다)", () => {
     expect(steamDiscountLabel("#discount_desc_preset_zzz")).toBeNull();
     expect(steamDiscountLabel(undefined)).toBeNull();
   });
@@ -237,7 +237,7 @@ describe("unixToIsoDate", () => {
   it("unix 초를 YYYY-MM-DD 로", () => {
     expect(unixToIsoDate(1431937260)).toBe("2015-05-18");
   });
-  it("0·undefined 는 null", () => {
+  it("0, undefined 는 null", () => {
     expect(unixToIsoDate(0)).toBeNull();
     expect(unixToIsoDate(undefined)).toBeNull();
   });

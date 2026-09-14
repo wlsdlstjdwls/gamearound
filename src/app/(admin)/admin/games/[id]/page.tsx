@@ -79,7 +79,7 @@ export default async function AdminGamePage({ params }: { params: Promise<{ id: 
         <p className="text-[12.5px] text-dim"><Link href="/admin" className="hover:text-ink">대시보드</Link> / 게임 정정</p>
         <h1 className="text-2xl font-bold tracking-[-0.03em] text-ink">{game.titleKo ?? game.titleEn}</h1>
         <p className="text-[13px] text-mut">
-          {game.titleEn} · <code className="text-xs">{game.slug}</code> ·{" "}
+          {game.titleEn} | <code className="text-xs">{game.slug}</code> |{" "}
           <Link href={`/games/${game.slug}`} className="text-acc hover:underline">공개 페이지 보기</Link>
         </p>
       </header>
@@ -97,7 +97,7 @@ export default async function AdminGamePage({ params }: { params: Promise<{ id: 
           game.platforms.map((p) => (
             <div key={p.id} className="flex flex-col gap-2">
               <p className="text-[11.5px] text-dim">
-                {platformLabel(p)} · 현재가 {formatKrw(p.currentPrice)} · 정가 {formatKrw(p.listPrice)} · 마지막 수집 {formatDateTime(p.lastSyncedAt)} · {p.syncStatus ?? "-"}
+                {platformLabel(p)} | 현재가 {formatKrw(p.currentPrice)} | 정가 {formatKrw(p.listPrice)} | 마지막 수집 {formatDateTime(p.lastSyncedAt)} | {p.syncStatus ?? "-"}
               </p>
               <CorrectionForm table="game_platforms" rowId={p.id} gameId={game.id} fields={platformFields(p)} title={`${platformLabel(p)} 필드`} />
             </div>
@@ -165,7 +165,7 @@ export default async function AdminGamePage({ params }: { params: Promise<{ id: 
               </thead>
               <tbody className="divide-y divide-line-soft">
                 {game.corrections.map((c) => {
-                  const target = c.table === "games" ? "games" : `${c.table} · ${platformById.get(c.rowId) ? platformLabel(platformById.get(c.rowId) as PlatformRow) : c.rowId.slice(0, 8)}`;
+                  const target = c.table === "games" ? "games" : `${c.table} | ${platformById.get(c.rowId) ? platformLabel(platformById.get(c.rowId) as PlatformRow) : c.rowId.slice(0, 8)}`;
                   return (
                     <tr key={c.id} className="align-top">
                       <td className="whitespace-nowrap px-3 py-2">{formatDateTime(c.createdAt)}</td>

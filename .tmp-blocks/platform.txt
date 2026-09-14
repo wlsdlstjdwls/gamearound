@@ -12,7 +12,7 @@ const sameInstant = (a: Date | null, b: Date | null): boolean => (a === null || 
 
 type DiscountMeta = { discountStartsAt: Date | null; discountEndsAt: Date | null; discountName: string | null };
 
-/** 스냅샷의 할인 기간·행사명. 할인이 끝났으면(할인율 0) 세 값 모두 null 로 지워야 지난 행사 정보가 남지 않는다 */
+/** 스냅샷의 할인 기간, 행사명. 할인이 끝났으면(할인율 0) 세 값 모두 null 로 지워야 지난 행사 정보가 남지 않는다 */
 export function discountMetaOf(snapshot: StoreSnapshot): DiscountMeta {
   const onSale = (snapshot.discountPct ?? 0) > 0;
   if (!onSale) return { discountStartsAt: null, discountEndsAt: null, discountName: null };

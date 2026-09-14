@@ -1,5 +1,5 @@
 "use client";
-// 클라이언트 세션 상태 — 헤더·버튼 등 UI 게이팅 전용. 실제 권한 검증은 서버(getCurrentUser/requireRole)가 한다.
+// 클라이언트 세션 상태 — 헤더, 버튼 등 UI 게이팅 전용. 실제 권한 검증은 서버(getCurrentUser/requireRole)가 한다.
 // 루트 레이아웃에서 cookies()를 읽으면 홈 풀 라우트 캐시가 깨지므로 /api/auth/me 를 마운트 후 호출한다.
 import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from "react";
 import { ROUTES } from "@/lib/routes";

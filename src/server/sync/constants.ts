@@ -1,5 +1,5 @@
 // 동기화 실행 상수 — 설계서 §4.4/§9/§10 의 수치를 한 곳에 모은다.
-// 배치 크기·임계값은 운영하며 조정되는 값이라 로직 파일에 흩어져 있으면 근거(주석)를 잃는다.
+// 배치 크기, 임계값은 운영하며 조정되는 값이라 로직 파일에 흩어져 있으면 근거(주석)를 잃는다.
 import { RSS_FEEDS } from "@/server/adapters/news-rss";
 import type { Source } from "@/server/adapters/types";
 import type { StoreSource } from "@/server/adapters";
@@ -7,7 +7,7 @@ import type { Platform } from "@/server/db/schema";
 
 export const LOCK_TTL_SEC = 3600;
 export const RETRY_DELAYS_MS = [1000, 4000, 16000]; // 재시도 3회 지수 백오프
-/** 수집 대상이 되는 매핑 상태. pending(검수 대기)·none(미매칭 기록)은 제외 */
+/** 수집 대상이 되는 매핑 상태. pending(검수 대기), none(미매칭 기록)은 제외 */
 export const MATCHED_FOR_SYNC = ["auto", "manual"] as const;
 /** 소스별 배치 크기 (§4.4: 200~500, §9: 1회 5분 이내). 크롤 소스는 minIntervalMs × 배치가 워크플로 timeout 안에 들도록 */
 export const BATCH_SIZE: Record<Source, number> = {

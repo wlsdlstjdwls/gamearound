@@ -21,7 +21,7 @@ const FULL_PCT = 100;
 /** 최댓값 대비 1% 미만인 값도 막대가 보이도록 하한을 준다 */
 const MIN_BAR_PCT = 5;
 
-/** numeric 컬럼은 문자열로 온다 — 양수만 막대로 그린다(0·음수·NaN 은 값 없음 취급) */
+/** numeric 컬럼은 문자열로 온다 — 양수만 막대로 그린다(0, 음수, NaN 은 값 없음 취급) */
 function toHours(v: string | number | null | undefined): number | null {
   if (v === null || v === undefined || v === "") return null;
   const n = Number(v);
@@ -117,7 +117,7 @@ export function PlaytimeCard({ playtime, currentPrice }: { playtime: PlaytimeDto
         <h2 id="playtime-card-heading" className="text-[13.5px] font-bold text-ink">
           플레이타임
         </h2>
-        <span className="text-[11.5px] text-dim">{synced ? `HLTB · ${synced}` : "HLTB"}</span>
+        <span className="text-[11.5px] text-dim">{synced ? `HLTB | ${synced}` : "HLTB"}</span>
       </div>
       {hasAnyValue(playtime) ? <PlaytimeBars playtime={playtime} /> : <p className="text-[12.5px] text-dim">{EMPTY_TEXT}</p>}
       {perHour !== null && (

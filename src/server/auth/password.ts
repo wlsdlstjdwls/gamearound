@@ -1,5 +1,5 @@
 // 비밀번호 해싱 — Node 내장 scrypt (외부 의존성 없음, OWASP 권장 파라미터).
-// 저장 형식: "scrypt$N$r$p$<salt b64url>$<hash b64url>". 알고리즘 접두사가 있어 나중에 argon2 등으로 교체해도 기존 해시를 검증·재해싱할 수 있다.
+// 저장 형식: "scrypt$N$r$p$<salt b64url>$<hash b64url>". 알고리즘 접두사가 있어 나중에 argon2 등으로 교체해도 기존 해시를 검증, 재해싱할 수 있다.
 import { randomBytes, scrypt as scryptCb, timingSafeEqual, type ScryptOptions } from "node:crypto";
 
 // promisify는 options 오버로드 타입을 잃어버리므로 직접 감싼다

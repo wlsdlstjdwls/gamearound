@@ -106,7 +106,7 @@ export function AlertForm({ game }: { game: FormGame }) {
   );
 }
 
-/** 목록 행의 활성 토글·삭제 버튼 */
+/** 목록 행의 활성 토글, 삭제 버튼 */
 export function AlertItemControls({ id, isActive }: { id: string; isActive: boolean }) {
   const [pending, start] = useTransition();
   // 성공 시엔 revalidate로 화면이 갱신되므로 에러만 표시

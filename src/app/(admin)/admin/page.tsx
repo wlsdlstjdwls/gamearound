@@ -54,7 +54,7 @@ function SourceCard({ item }: { item: SyncOverviewItem }) {
       {l ? (
         <dl className="flex flex-col gap-1">
           <Metric label="종료" value={l.finishedAt ? formatDateTime(l.finishedAt) : "실행 중/중단"} />
-          <Metric label="처리 · 실패" value={`${l.processed ?? 0} · ${l.failed ?? 0}`} />
+          <Metric label="처리 | 실패" value={`${l.processed ?? 0} | ${l.failed ?? 0}`} />
           <Metric label="오늘 실패" value={`${item.failedToday}회`} alert={item.failedToday > 0} />
           {l.errorSample && (
             <div className="mt-1">
@@ -112,7 +112,7 @@ export default async function AdminDashboardPage() {
       </section>
 
       <section className="flex flex-col gap-3">
-        <SectionHead title="매칭 검수 큐" note={`유사도 0.7~0.9 · ${pending.length}건`} />
+        <SectionHead title="매칭 검수 큐" note={`유사도 0.7~0.9 | ${pending.length}건`} />
         {pending.length === 0 ? (
           <p className="rounded-xl border border-dashed border-line-strong bg-surface p-6 text-[13px] text-mut">
             검수 대기 중인 매핑이 없습니다.

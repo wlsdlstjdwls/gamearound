@@ -1,4 +1,4 @@
-// /games 목록 — 필터·정렬·페이지네이션과 필터 선택지(facets).
+// /games 목록 — 필터, 정렬, 페이지네이션과 필터 선택지(facets).
 import { unstable_cache } from "next/cache";
 import { and, asc, eq, sql } from "drizzle-orm";
 import { getDb } from "@/server/db/client";
@@ -12,7 +12,7 @@ import { LIST_REVALIDATE_SECONDS } from "@/lib/cache";
 
 export const GAMES_PAGE_SIZE = 36;
 
-/** 정렬 키·쿼리스트링 변환은 lib/games-query (순수 유틸)에 있다 — 여기서는 조회만 한다 */
+/** 정렬 키, 쿼리스트링 변환은 lib/games-query (순수 유틸)에 있다 — 여기서는 조회만 한다 */
 export type GameListFilter = Omit<GamesQuery, "platform"> & { platform?: Platform };
 
 export type GameListResult = {
@@ -70,7 +70,7 @@ async function listGamesRaw(filter: GameListFilter): Promise<GameListResult> {
   }
   const where = conds.length > 0 ? and(...conds) : undefined;
 
-  // nulls last 로 값 없는 게임(가격 미수집·출시일 미상)이 앞을 차지하지 않게 한다
+  // nulls last 로 값 없는 게임(가격 미수집, 출시일 미상)이 앞을 차지하지 않게 한다
   const orderBy = {
     discount: [sql`${agg.maxDiscount} desc nulls last`, sql`${agg.minPrice} asc nulls last`],
     price: [sql`${agg.minPrice} asc nulls last`, sql`${agg.maxDiscount} desc nulls last`],

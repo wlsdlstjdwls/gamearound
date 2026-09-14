@@ -16,7 +16,7 @@ describe("classifyMatch", () => {
 });
 
 describe("trigramSimilarity + normalizeTitle", () => {
-  it("동일 제목·에디션 접미어 차이는 auto 구간", () => {
+  it("동일 제목, 에디션 접미어 차이는 auto 구간", () => {
     expect(trigramSimilarity("Cyberpunk 2077", "Cyberpunk 2077")).toBe(1);
     expect(classifyMatch(trigramSimilarity("Cyberpunk 2077", "Cyberpunk 2077: Ultimate Edition"))).toBe("auto");
     expect(classifyMatch(trigramSimilarity("The Witcher 3: Wild Hunt", "The Witcher 3 - Wild Hunt"))).toBe("auto");
@@ -24,7 +24,7 @@ describe("trigramSimilarity + normalizeTitle", () => {
   it("전혀 다른 제목은 none", () => {
     expect(classifyMatch(trigramSimilarity("Cyberpunk 2077", "Stardew Valley"))).toBe("none");
   });
-  it("normalizeTitle 은 특수문자·에디션 접미어를 제거", () => {
+  it("normalizeTitle 은 특수문자, 에디션 접미어를 제거", () => {
     expect(normalizeTitle("Cyberpunk 2077: Ultimate Edition")).toBe("cyberpunk 2077");
     expect(normalizeTitle("The Witcher® 3")).toBe("the witcher 3");
   });

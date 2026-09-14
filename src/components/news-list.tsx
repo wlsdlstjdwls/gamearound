@@ -1,4 +1,4 @@
-// 뉴스 목록 — 썸네일 + 제목 + 출처·시각, 외부 링크 새 창. 본문은 저장하지 않으므로 링크만 제공(§10 저작권)
+// 뉴스 목록 — 썸네일 + 제목 + 출처, 시각, 외부 링크 새 창. 본문은 저장하지 않으므로 링크만 제공(§10 저작권)
 import Link from "next/link";
 import { formatDateTime } from "@/lib/format";
 import type { NewsDto } from "@/server/services/games";
@@ -30,11 +30,11 @@ export function NewsList({ items, showGame = false }: { items: NewsDto[]; showGa
             </a>
             <p className="mt-1 flex flex-wrap items-center gap-x-1.5 text-[11.5px] text-dim">
               <span>{n.sourceName}</span>
-              <span aria-hidden>·</span>
+              <span aria-hidden>|</span>
               <time dateTime={n.publishedAt}>{formatDateTime(n.publishedAt)}</time>
               {showGame && n.game && (
                 <>
-                  <span aria-hidden>·</span>
+                  <span aria-hidden>|</span>
                   <Link href={`/games/${n.game.slug}`} className="text-acc hover:underline">
                     {n.game.title}
                   </Link>

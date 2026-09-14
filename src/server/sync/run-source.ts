@@ -1,7 +1,7 @@
 // 소스 1개 동기화 진입점 — 설계서 §4.4 흐름 8단계.
 //  1. Redis 락  2. sync_logs INSERT  3~4. 소스별 실행(run-store / run-meta / run-news)
 //  5. 가격 변동 → dispatch-alerts  6. sync_logs UPDATE  7. revalidate  8. 락 해제
-// 이 파일은 순서와 실패 처리만 책임진다 — 실제 수집·반영은 각 모듈이 한다.
+// 이 파일은 순서와 실패 처리만 책임진다 — 실제 수집, 반영은 각 모듈이 한다.
 import { eq } from "drizzle-orm";
 import { getDb } from "@/server/db/client";
 import { syncLogs, type SyncStatus } from "@/server/db/schema";

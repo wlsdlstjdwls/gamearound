@@ -11,7 +11,7 @@ import { nextCollectTimeText } from "@/lib/freshness";
 import { ROUTES } from "@/lib/routes";
 import { getHomeData, type GameSummary } from "@/server/services/games";
 
-// Next 가 정적으로 읽는 값이라 리터럴이어야 한다 — 근거·수치는 lib/cache 의 LIST_REVALIDATE_SECONDS 와 같게 유지
+// Next 가 정적으로 읽는 값이라 리터럴이어야 한다 — 근거, 수치는 lib/cache 의 LIST_REVALIDATE_SECONDS 와 같게 유지
 export const revalidate = 3600;
 
 /** 48시간 이내 종료 = "지금 결정해야 하는" 할인. 페이지 캐시(1h) 주기로 다시 계산된다 */
@@ -79,7 +79,7 @@ export default async function HomePage() {
             지금 할인 중인 게임 {discounts.length}개
           </h1>
           <p className="max-w-[460px] text-[13.5px] leading-[1.75] text-mut">
-            스팀·PS·엑스박스·닌텐도 가격을 하루 세 번 수집합니다. 이 중 {urgentCount(discounts)}개는 48시간 안에 할인이 끝납니다.
+            스팀, PS, 엑스박스, 닌텐도 가격을 하루 세 번 수집합니다. 이 중 {urgentCount(discounts)}개는 48시간 안에 할인이 끝납니다.
           </p>
         </div>
 

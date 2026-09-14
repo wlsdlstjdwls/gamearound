@@ -1,4 +1,4 @@
-// 메타 소스 실행 — 플레이타임(HLTB)과 평점(OpenCritic·Metacritic).
+// 메타 소스 실행 — 플레이타임(HLTB)과 평점(OpenCritic, Metacritic).
 import { and, eq, inArray, sql } from "drizzle-orm";
 import { gamePlatforms, gameSourceRefs, games, playtimes } from "@/server/db/schema";
 import { getMetaAdapter, type MetaSource } from "@/server/adapters";

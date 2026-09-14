@@ -151,7 +151,7 @@ export async function getGameForAdmin(id: string): Promise<AdminGame | null> {
 type FieldKind = "text" | "int" | "bool" | "date";
 type FieldSpec = { kind: FieldKind; label: string };
 
-/** 허용 테이블·필드 화이트리스트. 키는 DB 컬럼명(snake_case) — 크롤러가 lock 비교에 쓰는 이름 */
+/** 허용 테이블, 필드 화이트리스트. 키는 DB 컬럼명(snake_case) — 크롤러가 lock 비교에 쓰는 이름 */
 export const CORRECTABLE_FIELDS = {
   games: {
     title_ko: { kind: "text", label: "한글 제목" },

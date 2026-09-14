@@ -1,5 +1,5 @@
 // 어댑터 공통 HTTP 계층.
-// 6개 어댑터가 거의 같은 fetchJson 을 각자 들고 있었고, 타임아웃·UA·재시도 판정이 조금씩 어긋나 있었다
+// 6개 어댑터가 거의 같은 fetchJson 을 각자 들고 있었고, 타임아웃, UA, 재시도 판정이 조금씩 어긋나 있었다
 // (같은 429 인데 어떤 소스는 retryable, 어떤 소스는 아니었다). 판정은 여기 한 곳에서만 한다.
 // 어댑터는 "무엇을 어떤 헤더로 요청할지"만 정하고, 실패를 AdapterError 로 바꾸는 일은 이 파일이 맡는다.
 import { AdapterError, CRAWLER_USER_AGENT, type Source } from "./types";
@@ -37,9 +37,9 @@ export interface RequestOptions extends RequestInit {
 }
 
 export interface HttpClient {
-  /** JSON 응답. 상태 코드·파싱 실패 모두 AdapterError 로 바뀐다 */
+  /** JSON 응답. 상태 코드, 파싱 실패 모두 AdapterError 로 바뀐다 */
   json(url: string, opts?: RequestOptions): Promise<unknown>;
-  /** 텍스트(HTML·XML) 응답 */
+  /** 텍스트(HTML, XML) 응답 */
   text(url: string, opts?: RequestOptions): Promise<string>;
   /**
    * 상태 코드를 호출부가 직접 다뤄야 하는 흐름용 — 상태 검사 없이 Response 를 준다.

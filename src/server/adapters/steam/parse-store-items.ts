@@ -1,4 +1,4 @@
-// GetItems 응답 파서 — 배치 조회 경로. 가격·할인 기간·에셋·멀티플레이 추론이 여기서 나온다.
+// GetItems 응답 파서 — 배치 조회 경로. 가격, 할인 기간, 에셋, 멀티플레이 추론이 여기서 나온다.
 import { AdapterError, type StoreSnapshot } from "../types";
 import { storeItemsSchema, type StoreItem } from "./schemas";
 import { PLAYER_CATEGORY, STEAM_ASSET_BASE_URL, STEAM_GENRE_TAG_IDS, STEAM_STORE_APP_URL } from "./constants";
@@ -34,7 +34,7 @@ function priceOf(item: StoreItem): { listPrice: number | null; currentPrice: num
   const opt = item.best_purchase_option;
   const current = centsStrToKrw(opt?.final_price_in_cents);
   if (current === null) {
-    // 구매 옵션이 없는 경우: 무료 게임은 0원, 그 외(미출시·미판매)는 값 없음
+    // 구매 옵션이 없는 경우: 무료 게임은 0원, 그 외(미출시, 미판매)는 값 없음
     return item.is_free ? { listPrice: 0, currentPrice: 0, discountPct: 0 } : { listPrice: null, currentPrice: null, discountPct: null };
   }
   const list = centsStrToKrw(opt?.original_price_in_cents) ?? current;

@@ -43,7 +43,7 @@ async function fetchStoreBatched(ctx: Ctx, source: StoreSource, adapter: StoreAd
         continue;
       }
       // 배치는 성공했는데 이 id 만 빠진 경우 = 삭제/비공개/지역 미판매. 재시도해도 같으니 폴백하지 않는다
-      recordError(ctx, `${source}:${target.externalId}`, new Error("배치 응답에 없음 (비공개·미판매·삭제 추정)"));
+      recordError(ctx, `${source}:${target.externalId}`, new Error("배치 응답에 없음 (비공개, 미판매, 삭제 추정)"));
       if (target.gameId) await markPlatformFailed(ctx, target.gameId, SOURCE_PLATFORMS[source]);
     }
     if (b < batches.length - 1) await sleep(adapter.minIntervalMs);

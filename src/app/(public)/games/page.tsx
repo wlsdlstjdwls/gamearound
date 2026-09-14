@@ -1,4 +1,4 @@
-// 전체 게임 목록 — 플랫폼·장르·할인 필터 + 정렬 + 페이지네이션.
+// 전체 게임 목록 — 플랫폼, 장르, 할인 필터 + 정렬 + 페이지네이션.
 // 홈은 "오늘의 할인 12 + 최근 출시 12" 고정이라 카탈로그가 커져도 드러나지 않는다. 이 화면이 전수 열람 경로다.
 // 필터 상태는 전부 쿼리스트링 → 서버 컴포넌트만으로 동작하고 주소를 그대로 공유할 수 있다.
 import type { Metadata } from "next";
@@ -13,7 +13,7 @@ import { ROUTES } from "@/lib/routes";
 import { getGameFacets, listGames } from "@/server/services/games";
 import { platformEnum, type Platform } from "@/server/db/schema";
 
-// Next 가 정적으로 읽는 값이라 리터럴이어야 한다 — 근거·수치는 lib/cache 의 LIST_REVALIDATE_SECONDS 와 같게 유지
+// Next 가 정적으로 읽는 값이라 리터럴이어야 한다 — 근거, 수치는 lib/cache 의 LIST_REVALIDATE_SECONDS 와 같게 유지
 export const revalidate = 3600;
 
 type Search = Record<string, string | string[] | undefined>;
@@ -35,7 +35,7 @@ export async function generateMetadata({ searchParams }: Props): Promise<Metadat
     f.genre,
     f.onSale ? "할인 중" : null,
   ].filter(Boolean);
-  return { title: parts.length > 0 ? `게임 목록 · ${parts.join(" · ")}` : "게임 목록" };
+  return { title: parts.length > 0 ? `게임 목록 | ${parts.join(" | ")}` : "게임 목록" };
 }
 
 export default async function GamesPage({ searchParams }: Props) {
@@ -51,7 +51,7 @@ export default async function GamesPage({ searchParams }: Props) {
           전체 {facets.total}개 중 <span className="font-semibold text-ink">{result.total}개</span>
           {result.totalPages > 1 && (
             <span>
-              {" · "}
+              {" | "}
               {result.page}/{result.totalPages} 페이지
             </span>
           )}

@@ -19,7 +19,7 @@ import { getCurrentUser } from "@/server/services/users";
 import { isInWishlist } from "@/server/services/wishlist";
 import { cardClass } from "@/components/ui/page";
 
-/** 검색결과·SNS 카드에 들어가는 설명 길이 상한 */
+/** 검색결과, SNS 카드에 들어가는 설명 길이 상한 */
 const META_DESCRIPTION_MAX = 150;
 
 type Props = { params: Promise<{ slug: string }> };
@@ -31,7 +31,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const title = displayTitle(game);
   const description =
     game.description?.slice(0, META_DESCRIPTION_MAX) ??
-    `${title}의 플랫폼별 가격·할인, 플레이타임, 평점, 뉴스를 ${SITE.name}에서 확인하세요.`;
+    `${title}의 플랫폼별 가격, 할인, 플레이타임, 평점, 뉴스를 ${SITE.name}에서 확인하세요.`;
   return {
     title,
     description,
@@ -50,7 +50,7 @@ function cheapest(platforms: PlatformDto[]): PlatformDto | null {
 function bestScore(platforms: PlatformDto[]): { value: number; note: string } | null {
   const oc = platforms.map((p) => p.opencriticScore).find((v): v is number => typeof v === "number");
   const mc = platforms.map((p) => p.metacriticScore).find((v): v is number => typeof v === "number");
-  if (oc !== undefined) return { value: oc, note: mc !== undefined ? `OpenCritic · 메타 ${mc}` : "OpenCritic" };
+  if (oc !== undefined) return { value: oc, note: mc !== undefined ? `OpenCritic | 메타 ${mc}` : "OpenCritic" };
   if (mc !== undefined) return { value: mc, note: "메타크리틱" };
   return null;
 }
@@ -67,7 +67,7 @@ function SummaryCell({ label, value, note }: { label: string; value: string; not
   );
 }
 
-/** 결정 요약 바 — "지금이 싼가 · 얼마나 걸리나 · 살 만한가" 세 값만 최상단에 고정한다 */
+/** 결정 요약 바 — "지금이 싼가 | 얼마나 걸리나 | 살 만한가" 세 값만 최상단에 고정한다 */
 function DecisionSummary({ game }: { game: GameDetail }) {
   const best = cheapest(game.platforms);
   const score = bestScore(game.platforms);
@@ -79,7 +79,7 @@ function DecisionSummary({ game }: { game: GameDetail }) {
       <SummaryCell
         label="지금 최저가"
         value={best ? formatKrw(best.currentPrice) : "-"}
-        note={best ? `${PLATFORM_LABEL[best.platform] ?? best.platform}${best.discountPct ? ` · -${best.discountPct}%` : ""}` : "가격 정보 없음"}
+        note={best ? `${PLATFORM_LABEL[best.platform] ?? best.platform}${best.discountPct ? ` | -${best.discountPct}%` : ""}` : "가격 정보 없음"}
       />
       <SummaryCell
         label="메인 스토리"
@@ -131,7 +131,7 @@ export default async function GameDetailPage({ params }: Props) {
             <div className="min-w-0">
               <h1 className="text-[28px] font-bold leading-[1.2] tracking-[-0.03em] text-ink">{title}</h1>
               <p className="mt-1 text-[13px] text-dim">
-                {[game.titleKo ? game.titleEn : null, game.developer, game.publisher].filter(Boolean).join(" · ") || "제작사 정보 없음"}
+                {[game.titleKo ? game.titleEn : null, game.developer, game.publisher].filter(Boolean).join(" | ") || "제작사 정보 없음"}
               </p>
             </div>
             <div className="flex shrink-0 flex-wrap items-center gap-2">

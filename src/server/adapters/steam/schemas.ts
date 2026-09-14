@@ -43,7 +43,7 @@ export const featuredCategoriesSchema = z.object({
   specials: z.object({ items: z.array(featuredItemSchema).default([]) }).optional(),
 });
 
-/** GetItems 의 구매 옵션 — 가격 3종 + 할인 기간·행사명이 모두 여기 있다 */
+/** GetItems 의 구매 옵션 — 가격 3종 + 할인 기간, 행사명이 모두 여기 있다 */
 export const purchaseOptionSchema = z.object({
   /** 문자열로 온다 (센트 단위, KRW × 100) */
   final_price_in_cents: z.string().optional(),

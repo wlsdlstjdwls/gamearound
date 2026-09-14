@@ -15,7 +15,7 @@ export interface StoreSnapshot {
   discountPct: number | null;
   /** 할인 시작 시각 (ISO datetime). 주는 소스만 채움 — xbox */
   discountStartsAt?: string | null;
-  /** 할인 종료 예정 시각 (ISO datetime). steam·xbox */
+  /** 할인 종료 예정 시각 (ISO datetime). steam, xbox */
   discountEndsAt?: string | null;
   /** 행사명 ("여름 세일", "주말 특가" 등). steam 만 토큰 → 한국어 라벨 */
   discountName?: string | null;
@@ -26,7 +26,7 @@ export interface StoreSnapshot {
     titleEn: string;
     titleKo?: string | null;
     description?: string | null;
-    /** 가로 배너(460×215) — 카드·목록용 */
+    /** 가로 배너(460×215) — 카드, 목록용 */
     coverUrl?: string | null;
     /** 세로 아트(600×900) — 상세 헤더용. 주는 소스만 채움(steam GetItems) */
     portraitUrl?: string | null;

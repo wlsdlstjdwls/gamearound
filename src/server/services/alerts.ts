@@ -35,7 +35,7 @@ export async function createAlert(input: CreateAlertInput): Promise<AlertRow> {
   const db = getDb();
   const game = await db.query.games.findFirst({ where: eq(games.id, input.gameId), columns: { id: true } });
   if (!game) throw new Error("존재하지 않는 게임입니다");
-  // 같은 게임·플랫폼 조건이 이미 있으면 새로 만들지 않고 조건만 갱신(중복 알림 방지)
+  // 같은 게임, 플랫폼 조건이 이미 있으면 새로 만들지 않고 조건만 갱신(중복 알림 방지)
   const existing = await db.query.priceAlerts.findFirst({
     where: and(
       eq(priceAlerts.userId, u.id),

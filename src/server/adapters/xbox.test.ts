@@ -77,7 +77,7 @@ describe("parseXboxAutosuggest", () => {
 
 describe("xboxPeriodDate (할인 기간)", () => {
   it("정상 날짜는 ISO", () => expect(xboxPeriodDate("2026-09-16T23:59:59.0000000Z")).toBe("2026-09-16T23:59:59.000Z"));
-  it("상시 판매 센티널(9998년)·빈 값은 null", () => {
+  it("상시 판매 센티널(9998년), 빈 값은 null", () => {
     expect(xboxPeriodDate("9998-12-30T00:00:00.0000000Z")).toBeNull();
     expect(xboxPeriodDate(undefined)).toBeNull();
     expect(xboxPeriodDate("not-a-date")).toBeNull();

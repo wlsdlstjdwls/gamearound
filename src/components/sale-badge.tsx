@@ -23,7 +23,7 @@ export function SaleBadge({ discountName, discountEndsAt, discountStartsAt, vari
     return (
       <span className="inline-flex flex-wrap items-baseline gap-x-1 text-[12px] text-dim">
         {discountName && <span>{discountName}</span>}
-        {discountName && remaining && <span aria-hidden>·</span>}
+        {discountName && remaining && <span aria-hidden>|</span>}
         {remaining && <span className={remaining.urgent ? "font-semibold text-danger" : "text-mut"}>{remaining.text}</span>}
       </span>
     );

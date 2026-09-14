@@ -36,7 +36,7 @@ export function StalenessNote({ freshness, lastSyncedAt }: { freshness: Freshnes
   if (freshness === "fresh") return null;
   return (
     <p className="rounded-[7px] bg-surface-4 px-3 py-2 text-[12px] leading-[1.6] text-warn">
-      {collectedAtText(lastSyncedAt)} · 표시된 가격이 바뀌었을 수 있습니다. 스토어에서 확인하세요.
+      {collectedAtText(lastSyncedAt)} | 표시된 가격이 바뀌었을 수 있습니다. 스토어에서 확인하세요.
     </p>
   );
 }

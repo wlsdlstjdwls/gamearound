@@ -22,7 +22,7 @@ export default async function AlertsPage({ searchParams }: { searchParams: Promi
       <header className="flex flex-wrap items-end justify-between gap-x-4 gap-y-2">
         <h1 className="text-2xl font-bold tracking-[-0.03em] text-ink">가격 알림</h1>
         <p className="text-[13px] text-dim">
-          활성 {active}개 · 일시중지 {alerts.length - active}개
+          활성 {active}개 | 일시중지 {alerts.length - active}개
         </p>
       </header>
 
@@ -60,7 +60,7 @@ export default async function AlertsPage({ searchParams }: { searchParams: Promi
                     {a.game.titleKo ?? a.game.titleEn}
                   </Link>
                   <p className="text-[12px] text-dim">
-                    {a.platform ? PLATFORM_LABEL[a.platform] ?? a.platform : "전체 플랫폼"} · 할인 {a.minDiscountPct ?? 1}% 이상
+                    {a.platform ? PLATFORM_LABEL[a.platform] ?? a.platform : "전체 플랫폼"} | 할인 {a.minDiscountPct ?? 1}% 이상
                   </p>
                 </div>
                 <span className="text-[12px] text-dim">{a.isActive ? "감시 중" : "일시중지"}</span>

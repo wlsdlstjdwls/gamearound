@@ -19,7 +19,7 @@ const json = (body: unknown, status = 200) =>
 afterEach(() => vi.unstubAllGlobals());
 
 describe("isRetryableStatus", () => {
-  it("429·5xx 만 재시도 대상", () => {
+  it("429, 5xx 만 재시도 대상", () => {
     expect(isRetryableStatus(429)).toBe(true);
     expect(isRetryableStatus(503)).toBe(true);
     expect(isRetryableStatus(404)).toBe(false);

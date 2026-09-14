@@ -37,7 +37,7 @@ export function steamDiscountLabel(description: string | undefined): string | nu
 
 export type SteamDiscountInfo = { discountEndsAt: string | null; discountName: string | null };
 
-/** GetItems 응답 → 할인 종료 시각(ISO)·행사명. 할인 중이 아니면 둘 다 null */
+/** GetItems 응답 → 할인 종료 시각(ISO), 행사명. 할인 중이 아니면 둘 다 null */
 export function parseStoreItemDiscount(raw: unknown, appid: string): SteamDiscountInfo {
   const parsed = storeItemsSchema.safeParse(raw);
   if (!parsed.success) return { discountEndsAt: null, discountName: null };

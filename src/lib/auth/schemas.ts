@@ -29,7 +29,7 @@ export const passwordSchema = z
 /** 로그인용: 길이 규칙만 (규칙이 바뀌어도 기존 사용자가 로그인은 되어야 함) */
 export const passwordLooseSchema = z.string({ message: M.passwordRequired }).min(1, M.passwordRequired).max(PASSWORD_MAX, M.passwordTooLong);
 
-// 한글·영문·숫자·공백·._- 허용
+// 한글, 영문, 숫자, 공백, ._- 허용
 const DISPLAY_NAME_RE = /^[\p{L}\p{N} ._-]+$/u;
 
 export const displayNameSchema = z

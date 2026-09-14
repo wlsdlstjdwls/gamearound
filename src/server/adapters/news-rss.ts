@@ -7,8 +7,8 @@ import { createHttpClient } from "./http";
 
 /**
  * 피드 목록(§11-4 확정, 2026-09-11 응답 확인). externalId = name.
- * 공식 RSS 를 공개한 매체만 넣는다(§10: 제목·링크·공식 썸네일만 저장). 응답이 끊기면 sync_logs 에 partial 로 남으니 거기서 정리.
- * 제외: VG247(최신 항목 3개월 전), Polygon(피드 응답 실패), 인벤·디스이즈게임·게임포커스(404), Xbox Wire(403).
+ * 공식 RSS 를 공개한 매체만 넣는다(§10: 제목, 링크, 공식 썸네일만 저장). 응답이 끊기면 sync_logs 에 partial 로 남으니 거기서 정리.
+ * 제외: VG247(최신 항목 3개월 전), Polygon(피드 응답 실패), 인벤, 디스이즈게임, 게임포커스(404), Xbox Wire(403).
  */
 export const RSS_FEEDS: ReadonlyArray<{ name: string; url: string }> = [
   { name: "PC Gamer", url: "https://www.pcgamer.com/rss/" },

@@ -1,4 +1,4 @@
-// 루트 로딩 — 홈/검색 등 공통 스켈레톤. 실제 화면과 같은 셸(Page)·카드 표면을 써야 전환이 튀지 않는다.
+// 루트 로딩 — 홈/검색 등 공통 스켈레톤. 실제 화면과 같은 셸(Page), 카드 표면을 써야 전환이 튀지 않는다.
 import { cardClass, Page } from "@/components/ui/page";
 
 const SKELETON_CARDS = 8;

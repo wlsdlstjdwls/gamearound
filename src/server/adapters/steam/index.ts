@@ -25,7 +25,7 @@ import {
   parseTopSellerAppIds,
 } from "./parse";
 
-// 외부(어댑터 레지스트리·sync·테스트)가 쓰는 이름은 여기서 한 번에 내보낸다
+// 외부(어댑터 레지스트리, sync, 테스트)가 쓰는 이름은 여기서 한 번에 내보낸다
 export * from "./constants";
 export * from "./parse";
 export type { StoreItem } from "./schemas";
@@ -116,7 +116,7 @@ export const steamAdapter: StoreAdapter = {
 
   /**
    * koreana + english 2회 호출(영문 제목/출시일 확보). 사이 간격은 minIntervalMs 의 절반만 둔다.
-   * 할인 중일 때만 GetItems 를 1회 더 호출해 종료 시각·행사명을 붙인다(할인 아닌 게임엔 요청을 늘리지 않음).
+   * 할인 중일 때만 GetItems 를 1회 더 호출해 종료 시각, 행사명을 붙인다(할인 아닌 게임엔 요청을 늘리지 않음).
    * GetItems 실패는 가격 수집을 막지 않는다 — 부가 정보라 경고만 남기고 넘어간다.
    */
   async fetch(appid: string): Promise<StoreSnapshot> {

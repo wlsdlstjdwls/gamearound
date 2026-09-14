@@ -1,4 +1,4 @@
-// 홈 데이터 — 할인·신작·뉴스 묶음. 캐시 태그 `home`(§4.5).
+// 홈 데이터 — 할인, 신작, 뉴스 묶음. 캐시 태그 `home`(§4.5).
 import { unstable_cache } from "next/cache";
 import { and, desc, eq, gt, isNotNull, sql } from "drizzle-orm";
 import { getDb } from "@/server/db/client";

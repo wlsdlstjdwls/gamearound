@@ -1,4 +1,4 @@
-// game_platforms + price_snapshots 쓰기 — 가격·할인이 실제로 반영되는 지점.
+// game_platforms + price_snapshots 쓰기 — 가격, 할인이 실제로 반영되는 지점.
 // 가격이 바뀐 경우에만 스냅샷을 남기고, 그 변동을 ctx.priceChanges 에 모아 알림 단계로 넘긴다.
 import { and, eq, inArray } from "drizzle-orm";
 import { gamePlatforms, priceSnapshots, type Platform } from "@/server/db/schema";
@@ -19,7 +19,7 @@ const sameInstant = (a: Date | null, b: Date | null): boolean => (a === null || 
 
 type DiscountMeta = { discountStartsAt: Date | null; discountEndsAt: Date | null; discountName: string | null };
 
-/** 스냅샷의 할인 기간·행사명. 할인이 끝났으면(할인율 0) 세 값 모두 null 로 지워야 지난 행사 정보가 남지 않는다 */
+/** 스냅샷의 할인 기간, 행사명. 할인이 끝났으면(할인율 0) 세 값 모두 null 로 지워야 지난 행사 정보가 남지 않는다 */
 export function discountMetaOf(snapshot: StoreSnapshot): DiscountMeta {
   const onSale = (snapshot.discountPct ?? 0) > 0;
   if (!onSale) return { discountStartsAt: null, discountEndsAt: null, discountName: null };
