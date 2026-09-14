@@ -29,7 +29,7 @@ import {
   type MetaSource,
   type StoreSource,
 } from "@/server/adapters";
-import { AdapterError, CRAWLER_USER_AGENT, type MetaSnapshot, type NewsItem, type Source, type StoreSnapshot } from "@/server/adapters/types";
+import { AdapterError, CRAWLER_USER_AGENT, type MetaSnapshot, type NewsItem, type Source, type StoreAdapter, type StoreSnapshot } from "@/server/adapters/types";
 import { fetchSteamTopAppIds } from "@/server/adapters/steam";
 import { RSS_FEEDS } from "@/server/adapters/news-rss";
 import { slugify, slugWithSuffix } from "@/lib/slug";
@@ -42,10 +42,14 @@ export const RETRY_DELAYS_MS = [1000, 4000, 16000]; // 재시도 3회 지수 백
 export const MATCHED_FOR_SYNC = ["auto", "manual"] as const;
 /** 소스별 배치 크기 (§4.4: 200~500, §9: 1회 5분 이내). 크롤 소스는 minIntervalMs × 배치가 워크플로 timeout 안에 들도록 */
 export const BATCH_SIZE: Record<Source, number> = {
-  steam: 300, psstore: 200, xbox: 200, nintendo: 120,
+  // steam 은 fetchMany(100개/요청) 라 수집은 1,500건에 ~15초. 병목은 게임당 DB 왕복(실측 0.87초/건)이라
+  // 1,500 ≈ 22분 으로 잡는다(하루 3회 = 4,500건/일). 이 값을 올리려면 반영 단계를 먼저 배치화해야 한다.
+  steam: 1500, psstore: 200, xbox: 200, nintendo: 120,
   hltb: 200, opencritic: 300, metacritic: 150,
   rss: RSS_FEEDS.length,
 };
+/** fetchMany 는 있는데 batchSize 를 선언하지 않은 어댑터용 기본값 */
+const DEFAULT_FETCH_BATCH_SIZE = 50;
 /** 스토어 소스 → 담당 플랫폼 (§11-6: PS4/PS5, Switch/Switch2 분리 유지) */
 export const SOURCE_PLATFORMS: Record<StoreSource, Platform[]> = {
   steam: ["steam"], psstore: ["ps5", "ps4"], xbox: ["xbox"], nintendo: ["switch", "switch2"],
@@ -174,7 +178,9 @@ async function listStoreTargets(ctx: Ctx, source: StoreSource, limit: number, se
       }
     }
   }
-  return targets;
+  // 시드는 앞에 붙으므로 여기서 자르면 신규 게임이 우선되고, 가장 오래 갱신 안 된 기존 게임이 밀린다.
+  // limit 을 한 실행의 총 처리 건수 상한으로 지키지 않으면 시드가 많은 날 워크플로 timeout 이 난다.
+  return targets.slice(0, limit);
 }
 
 /** slug 충돌 처리: base → base-<externalId> → base-<externalId>-<ts> */
@@ -384,24 +390,68 @@ async function markPlatformFailed(ctx: Ctx, gameId: string, platforms: Platform[
     .where(and(eq(gamePlatforms.gameId, gameId), inArray(gamePlatforms.platform, platforms)));
 }
 
-async function runStore(ctx: Ctx, source: StoreSource, opts: RunOptions): Promise<void> {
-  const adapter = getStoreAdapter(source);
-  const targets = await listStoreTargets(ctx, source, opts.limit ?? BATCH_SIZE[source], opts.seedTop);
-  console.log(`[sync:${source}] 대상 ${targets.length}건 (신규 시드 ${targets.filter((t) => t.gameId === null).length})`);
+type Fetched = Array<{ target: StoreTarget; snapshot: StoreSnapshot }>;
 
-  // 1단계: 수집 (검증을 위해 반영 전에 전부 모은다)
-  const fetched: Array<{ target: StoreTarget; snapshot: StoreSnapshot }> = [];
+/** 단건 조회 경로 — fetchMany 를 지원하지 않는 소스(xbox/nintendo/psstore)용 */
+async function fetchStoreOneByOne(ctx: Ctx, source: StoreSource, adapter: StoreAdapter, targets: StoreTarget[]): Promise<Fetched> {
+  const fetched: Fetched = [];
   for (let i = 0; i < targets.length; i++) {
     const target = targets[i];
     try {
-      const snapshot = await fetchWithRetry(() => adapter.fetch(target.externalId));
-      fetched.push({ target, snapshot });
+      fetched.push({ target, snapshot: await fetchWithRetry(() => adapter.fetch(target.externalId)) });
     } catch (e) {
       recordError(ctx, `${source}:${target.externalId}`, e);
       if (target.gameId) await markPlatformFailed(ctx, target.gameId, SOURCE_PLATFORMS[source]);
     }
     if (i < targets.length - 1) await sleep(adapter.minIntervalMs);
   }
+  return fetched;
+}
+
+/**
+ * 배치 조회 경로 (steam). 한 요청에 batchSize 개씩 묶는다.
+ * 배치 하나가 통째로 실패하면 그 배치만 단건 조회로 되돌린다 — 카탈로그 전체가 한 번의 실패로 멈추지 않게.
+ */
+async function fetchStoreBatched(ctx: Ctx, source: StoreSource, adapter: StoreAdapter, targets: StoreTarget[]): Promise<Fetched> {
+  const size = adapter.batchSize ?? DEFAULT_FETCH_BATCH_SIZE;
+  const batches: StoreTarget[][] = [];
+  for (let i = 0; i < targets.length; i += size) batches.push(targets.slice(i, i + size));
+
+  const fetched: Fetched = [];
+  for (let b = 0; b < batches.length; b++) {
+    const batch = batches[b];
+    let byId: Map<string, StoreSnapshot>;
+    try {
+      byId = await fetchWithRetry(() => adapter.fetchMany!(batch.map((t) => t.externalId)));
+    } catch (e) {
+      console.warn(`[sync:${source}] 배치 ${b + 1}/${batches.length} 실패 → 단건 조회로 폴백: ${e instanceof Error ? e.message : String(e)}`);
+      fetched.push(...(await fetchStoreOneByOne(ctx, source, adapter, batch)));
+      continue;
+    }
+    for (const target of batch) {
+      const snapshot = byId.get(target.externalId);
+      if (snapshot) {
+        fetched.push({ target, snapshot });
+        continue;
+      }
+      // 배치는 성공했는데 이 id 만 빠진 경우 = 삭제/비공개/지역 미판매. 재시도해도 같으니 폴백하지 않는다
+      recordError(ctx, `${source}:${target.externalId}`, new Error("배치 응답에 없음 (비공개·미판매·삭제 추정)"));
+      if (target.gameId) await markPlatformFailed(ctx, target.gameId, SOURCE_PLATFORMS[source]);
+    }
+    if (b < batches.length - 1) await sleep(adapter.minIntervalMs);
+  }
+  return fetched;
+}
+
+async function runStore(ctx: Ctx, source: StoreSource, opts: RunOptions): Promise<void> {
+  const adapter = getStoreAdapter(source);
+  const targets = await listStoreTargets(ctx, source, opts.limit ?? BATCH_SIZE[source], opts.seedTop);
+  console.log(`[sync:${source}] 대상 ${targets.length}건 (신규 시드 ${targets.filter((t) => t.gameId === null).length})`);
+
+  // 1단계: 수집 (검증을 위해 반영 전에 전부 모은다)
+  const fetched = adapter.fetchMany
+    ? await fetchStoreBatched(ctx, source, adapter, targets)
+    : await fetchStoreOneByOne(ctx, source, adapter, targets);
 
   // 2단계: §10 파싱 검증 — 가격 0/null 급증 시 반영 생략
   const suspicious = fetched.filter((f) => f.snapshot.currentPrice === null || f.snapshot.currentPrice === 0).length;

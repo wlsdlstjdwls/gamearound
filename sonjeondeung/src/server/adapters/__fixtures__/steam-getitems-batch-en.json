@@ -1,0 +1,27 @@
+{
+ "response": {
+  "store_items": [
+   {
+    "item_type": 0,
+    "success": 1,
+    "visible": true,
+    "name": "The Witcher 3: Wild Hunt - Complete Edition",
+    "appid": 292030
+   },
+   {
+    "item_type": 0,
+    "success": 1,
+    "visible": true,
+    "name": "KALPA: Cosmic Symphony",
+    "appid": 2717010
+   },
+   {
+    "item_type": 0,
+    "success": 1,
+    "visible": true,
+    "name": "PUBG: BATTLEGROUNDS",
+    "appid": 578080
+   }
+  ]
+ }
+}

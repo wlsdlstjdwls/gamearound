@@ -29,6 +29,9 @@ env:
   VAPID_PRIVATE_KEY: ${{ secrets.VAPID_PRIVATE_KEY }}
   VAPID_SUBJECT: ${{ secrets.VAPID_SUBJECT }}
   CRAWL_LIMIT_ARG: ${{ github.event.inputs.limit != '' && format('--limit={0}', github.event.inputs.limit) || '' }}
+  # 신규 시드된 게임이 hltb/평점 ref 를 받기까지 걸리는 시간을 줄인다(기본 50 → 150).
+  # crawl-prices 가 하루 최대 수백 건을 새로 시드하므로 격일 50건으로는 매칭 대기열이 계속 밀린다.
+  MATCH_ARG: --match=150
 
 jobs:
   crawl:
@@ -54,12 +57,12 @@ jobs:
 
       - name: crawl hltb
         continue-on-error: true
-        run: pnpm crawl --source=hltb $CRAWL_LIMIT_ARG
+        run: pnpm crawl --source=hltb $MATCH_ARG $CRAWL_LIMIT_ARG
 
       - name: crawl opencritic
         continue-on-error: true
-        run: pnpm crawl --source=opencritic $CRAWL_LIMIT_ARG
+        run: pnpm crawl --source=opencritic $MATCH_ARG $CRAWL_LIMIT_ARG
 
       - name: crawl metacritic
         continue-on-error: true
-        run: pnpm crawl --source=metacritic $CRAWL_LIMIT_ARG
+        run: pnpm crawl --source=metacritic $MATCH_ARG $CRAWL_LIMIT_ARG

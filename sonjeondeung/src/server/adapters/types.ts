@@ -58,6 +58,13 @@ export interface SourceAdapter<T extends StoreSnapshot | MetaSnapshot | NewsItem
   search(query: string): Promise<SearchCandidate[]>;
   /** 외부 ID로 단건 조회 */
   fetch(externalId: string): Promise<T>;
+  /**
+   * 여러 ID를 한 요청으로 조회 (지원하는 소스만). 카탈로그가 수만 건이면 단건 조회로는 예산이 안 나온다.
+   * 반환 Map 에 없는 ID = 그 게임만 실패 — 배치 전체를 실패로 만들지 않는다.
+   */
+  fetchMany?(externalIds: string[]): Promise<Map<string, T>>;
+  /** fetchMany 한 요청에 넣을 수 있는 ID 수 */
+  batchSize?: number;
   /** 소스별 요청 간격(ms). 크롤 대상은 보수적으로 */
   minIntervalMs: number;
 }

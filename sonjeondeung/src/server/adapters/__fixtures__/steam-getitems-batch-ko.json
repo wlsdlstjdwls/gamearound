@@ -1,0 +1,307 @@
+{
+ "response": {
+  "store_items": [
+   {
+    "item_type": 0,
+    "success": 1,
+    "visible": true,
+    "name": "더 위쳐 3: 와일드 헌트 - 컴플리트 에디션",
+    "appid": 292030,
+    "tagids": [
+     1695,
+     122,
+     1742,
+     4166,
+     1684,
+     21,
+     4182,
+     6650,
+     6426,
+     1756,
+     1697,
+     4172,
+     19,
+     6971,
+     4231,
+     4604,
+     4057,
+     4342,
+     3810,
+     12095
+    ],
+    "categories": {
+     "supported_player_categoryids": [
+      2
+     ],
+     "feature_categoryids": [
+      22,
+      29,
+      30,
+      64,
+      66,
+      67,
+      68,
+      69,
+      70,
+      74,
+      78,
+      79,
+      23,
+      42,
+      43,
+      61,
+      62
+     ],
+     "controller_categoryids": [
+      18
+     ]
+    },
+    "basic_info": {
+     "short_description": "리비아의 게롤트가 되어 의뢰를 받고 괴물을 사냥하세요. 전쟁의 상처가 가득하고 괴물이 들끓는 대륙을 마음껏 탐험해 보세요. 지금 가장 중요한 일은 대륙의 판도를 뒤바꿀 수도 있는 살아 있는 무기이자 예언의 아이, 시리를 추적하는 것입니다.",
+     "publishers": [
+      {
+       "name": "CD PROJEKT RED",
+       "creator_clan_account_id": 32989758
+      }
+     ],
+     "developers": [
+      {
+       "name": "CD PROJEKT RED",
+       "creator_clan_account_id": 32989758
+      }
+     ]
+    },
+    "assets": {
+     "asset_url_format": "steam/apps/292030/${FILENAME}?t=1788333513",
+     "main_capsule": "4acef5dab53a1f156fe99a5272a2d02880146326/capsule_616x353_alt_assets_4_koreana.jpg",
+     "main_capsule_2x": "4acef5dab53a1f156fe99a5272a2d02880146326/capsule_616x353_alt_assets_4_koreana_2x.jpg",
+     "small_capsule": "ac432ac8dbf079a3a3d3fed7611b337b38e31ac4/capsule_231x87_alt_assets_4_koreana.jpg",
+     "small_capsule_2x": "ac432ac8dbf079a3a3d3fed7611b337b38e31ac4/capsule_231x87_alt_assets_4_koreana_2x.jpg",
+     "header": "f52686b11ef743958fb79732dbdbf5b5b1de67cb/header_alt_assets_4_koreana.jpg",
+     "header_2x": "f52686b11ef743958fb79732dbdbf5b5b1de67cb/header_alt_assets_4_koreana_2x.jpg",
+     "page_background": "94a3c7f9db82538b752312f6e17f912f0899ca30/page_bg_v6.jpg",
+     "hero_capsule": "55647077a1dc7429df192ef8b94ed7d84d877834/hero_capsule.jpg",
+     "hero_capsule_2x": "55647077a1dc7429df192ef8b94ed7d84d877834/hero_capsule_2x.jpg",
+     "library_capsule": "47b9d2d162fffa30c2123b5d995cd73f83643673/library_capsule.jpg",
+     "library_capsule_2x": "47b9d2d162fffa30c2123b5d995cd73f83643673/library_capsule_2x.jpg",
+     "library_hero": "b7b91c8dc934090721da9ada409a152db30ef4d5/library_hero.jpg",
+     "library_hero_2x": "b7b91c8dc934090721da9ada409a152db30ef4d5/library_hero_2x.jpg",
+     "community_icon": "7b52d11edee478d652ef4e7103e00644bed2c74c",
+     "page_background_path": "app/292030?t=1788333513",
+     "raw_page_background": "94a3c7f9db82538b752312f6e17f912f0899ca30/page_bg_raw.jpg",
+     "last_modified": 1788333513
+    },
+    "release": {
+     "steam_release_date": 1431937260,
+     "original_release_date": 0
+    },
+    "best_purchase_option": {
+     "packageid": 68476,
+     "purchase_option_name": "The Witcher 3: Wild Hunt - Complete Edition",
+     "final_price_in_cents": "5490000",
+     "formatted_final_price": "₩ 54,900",
+     "user_can_purchase_as_gift": true,
+     "hide_discount_pct_for_compliance": false,
+     "included_game_count": 1,
+     "must_purchase_as_set": false,
+     "package_group": "default",
+     "price_cannot_be_displayed_as_discount": false
+    }
+   },
+   {
+    "item_type": 0,
+    "success": 1,
+    "visible": true,
+    "name": "칼파: 코스믹 심포니(KALPA: Cosmic Symphony)",
+    "appid": 2717010,
+    "tagids": [
+     1752,
+     1621,
+     597,
+     4085,
+     19,
+     3859,
+     4182,
+     4726,
+     3871,
+     3878,
+     1773,
+     4026,
+     4191,
+     3964,
+     1684,
+     12095,
+     493,
+     1775,
+     6730,
+     701
+    ],
+    "categories": {
+     "supported_player_categoryids": [
+      2,
+      1,
+      49,
+      36
+     ],
+     "feature_categoryids": [
+      62
+     ]
+    },
+    "basic_info": {
+     "short_description": "스토리와 음악이 맞물려 돌아가는 차세대 리듬게임. 유명 작곡가의 오리지널·라이선스 명곡과 방대한 스토리 PLAY, 랜덤 매치·고스트 랭크·아스트라 등 다양한 모드로 끝없는 도전을 즐겨보세요. 당신의 연주가 곧 세계의 운명이 됩니다.",
+     "publishers": [
+      {
+       "name": "QueseraGames",
+       "creator_clan_account_id": 45558417
+      }
+     ],
+     "developers": [
+      {
+       "name": "QueseraGames",
+       "creator_clan_account_id": 45558417
+      }
+     ],
+     "franchises": [
+      {
+       "name": "QueseraGames",
+       "creator_clan_account_id": 45558417
+      }
+     ]
+    },
+    "assets": {
+     "asset_url_format": "steam/apps/2717010/${FILENAME}?t=1785151510",
+     "main_capsule": "426b5ed8cf2818730101f817cc4651a4ae77fe35/capsule_616x353.jpg",
+     "main_capsule_2x": "426b5ed8cf2818730101f817cc4651a4ae77fe35/capsule_616x353_2x.jpg",
+     "small_capsule": "64acb46a46d74dc46f772ba5cdbacefedb78df0b/capsule_231x87.jpg",
+     "small_capsule_2x": "64acb46a46d74dc46f772ba5cdbacefedb78df0b/capsule_231x87_2x.jpg",
+     "header": "52f4b6ad5b54f3c86ee83b248192242142e19389/header.jpg",
+     "header_2x": "52f4b6ad5b54f3c86ee83b248192242142e19389/header_2x.jpg",
+     "page_background": "page_bg_generated_v6b.jpg",
+     "hero_capsule": "731d9af082cdd306a3abae8871418e51e7412c17/hero_capsule.jpg",
+     "hero_capsule_2x": "731d9af082cdd306a3abae8871418e51e7412c17/hero_capsule_2x.jpg",
+     "library_capsule": "574be20ad3f6117595c1ba66dec1ddd6acd869dd/library_capsule.jpg",
+     "library_capsule_2x": "574be20ad3f6117595c1ba66dec1ddd6acd869dd/library_capsule_2x.jpg",
+     "library_hero": "1d28ffd250e72a36c56a693a2852ccfecb8f6cc7/library_hero.jpg",
+     "library_hero_2x": "1d28ffd250e72a36c56a693a2852ccfecb8f6cc7/library_hero_2x.jpg",
+     "community_icon": "46c6f540c44a2cc274840227e68fa46208993b58",
+     "page_background_path": "app/2717010?t=1785151510",
+     "raw_page_background": "page_bg_raw.jpg",
+     "last_modified": 1785151510
+    },
+    "release": {
+     "steam_release_date": 1759312777,
+     "original_steam_release_date": 1723712543
+    },
+    "best_purchase_option": {
+     "packageid": 972537,
+     "purchase_option_name": "KALPA",
+     "final_price_in_cents": "1320000",
+     "original_price_in_cents": "2200000",
+     "formatted_final_price": "₩ 13,200",
+     "formatted_original_price": "₩ 22,000",
+     "discount_pct": 40,
+     "active_discounts": [
+      {
+       "discount_amount": "880000",
+       "discount_description": "#discount_desc_preset_special",
+       "discount_end_date": 1790071200
+      }
+     ],
+     "user_can_purchase_as_gift": true,
+     "hide_discount_pct_for_compliance": false,
+     "included_game_count": 1,
+     "must_purchase_as_set": false,
+     "package_group": "default",
+     "price_cannot_be_displayed_as_discount": false
+    }
+   },
+   {
+    "item_type": 0,
+    "success": 1,
+    "visible": true,
+    "name": "PUBG: BATTLEGROUNDS",
+    "appid": 578080,
+    "is_free": true,
+    "tagids": [
+     1662,
+     1774,
+     176981,
+     3859,
+     1663,
+     1775,
+     3814,
+     19,
+     3843,
+     1708,
+     1685,
+     3839,
+     9,
+     493,
+     3878,
+     1697,
+     5711,
+     4026,
+     599,
+     1687
+    ],
+    "categories": {
+     "supported_player_categoryids": [
+      1,
+      49,
+      36
+     ],
+     "feature_categoryids": [
+      68,
+      69,
+      70,
+      15,
+      41,
+      42,
+      62
+     ],
+     "controller_categoryids": [
+      18
+     ]
+    },
+    "basic_info": {
+     "short_description": "배틀로얄 유행의 시작이자, 그 정수를 보여준 PUBG: 배틀그라운드를 지금 무료로 플레이하세요! 다양한 맵에 낙하하여 무기와 보급품을 확보하고, 점점 줄어드는 블루존 속에서 끝까지 살아남아 승리를 쟁취하세요.",
+     "publishers": [
+      {
+       "name": "KRAFTON, Inc.",
+       "creator_clan_account_id": 44295939
+      }
+     ],
+     "developers": [
+      {
+       "name": "PUBG Corporation",
+       "creator_clan_account_id": 33973721
+      }
+     ]
+    },
+    "assets": {
+     "asset_url_format": "steam/apps/578080/${FILENAME}?t=1786493086",
+     "main_capsule": "3c8895a8ff87fb18d50ff17842511514d4200437/capsule_616x353.jpg",
+     "main_capsule_2x": "3c8895a8ff87fb18d50ff17842511514d4200437/capsule_616x353_2x.jpg",
+     "small_capsule": "14f42ab797699a9c9f137fda66582d8776da4330/capsule_231x87.jpg",
+     "small_capsule_2x": "14f42ab797699a9c9f137fda66582d8776da4330/capsule_231x87_2x.jpg",
+     "header": "841ea38bc58cabb70aef65365cf50bc2d79329d9/header.jpg",
+     "header_2x": "841ea38bc58cabb70aef65365cf50bc2d79329d9/header_2x.jpg",
+     "page_background": "378ba5d5c4cabc77814a29d8088bbb92aecec194/page_bg_v6.jpg",
+     "hero_capsule": "bdf06fda158573f5dd1b996c373356fba9cfa926/hero_capsule.jpg",
+     "hero_capsule_2x": "bdf06fda158573f5dd1b996c373356fba9cfa926/hero_capsule_2x.jpg",
+     "library_capsule": "36a1a274b3a7870e475ea1e110e58db8a0803c41/library_600x900.jpg",
+     "library_capsule_2x": "36a1a274b3a7870e475ea1e110e58db8a0803c41/library_600x900_2x.jpg",
+     "library_hero": "a14b88ee69f55d5354d3efc1f725eddf40650869/library_hero.jpg",
+     "library_hero_2x": "a14b88ee69f55d5354d3efc1f725eddf40650869/library_hero_2x.jpg",
+     "community_icon": "609f27278aa70697c13bf99f32c5a0248c381f9d",
+     "page_background_path": "app/578080?t=1786493086",
+     "raw_page_background": "378ba5d5c4cabc77814a29d8088bbb92aecec194/page_bg_raw.jpg",
+     "last_modified": 1786493086
+    },
+    "release": {
+     "steam_release_date": 1513843500
+    }
+   }
+  ]
+ }
+}

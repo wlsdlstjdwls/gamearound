@@ -15,12 +15,40 @@ export const STEAM_FEATURED_URL = "https://store.steampowered.com/api/featuredca
 /** 인기순위 검색(비공식 JSON, 페이지당 최대 100개). featuredcategories 는 60개 안팎이라 시드 상위 N개용으로는 부족 */
 export const STEAM_TOPSELLERS_URL = "https://store.steampowered.com/search/results/";
 const TOPSELLERS_PAGE_SIZE = 100;
-const TOPSELLERS_MAX_PAGES = 5;
+/** 한 검색 쿼리가 돌려주는 깊이 한계. start=6000 은 응답, 7000 은 빈 응답(2026-09-14 확인) */
+const TOPSELLERS_MAX_PAGES = 65;
 const TOPSELLERS_PAGE_INTERVAL_MS = 1500;
 export const STEAM_STORE_APP_URL = "https://store.steampowered.com/app";
 /** 할인 종료 시각·행사명은 appdetails 에 없다. 공개 스토어 API(GetItems)의 active_discounts 에만 있다 */
 export const STEAM_STOREITEMS_URL = "https://api.steampowered.com/IStoreBrowseService/GetItems/v1/";
+/** GetItems 는 appid 100개까지 한 요청에 넣어도 100개를 그대로 돌려준다(2026-09-14 확인) */
+export const STEAM_GETITEMS_BATCH = 100;
+export const STEAM_ASSET_BASE_URL = "https://shared.akamai.steamstatic.com/store_item_assets";
 const FETCH_TIMEOUT_MS = 15_000;
+
+/**
+ * Steam 태그 id → 장르명. GetItems 는 appdetails 의 genres 대신 tagid 만 준다.
+ * 태그 전체(446개)를 장르로 쓰면 장르 어휘가 폭발하므로 scripts/seed.ts 의 DEFAULT_GENRES 12종만 매핑한다.
+ * id 는 IStoreService/GetTagList/v1?language=koreana 로 확인 (2026-09-14).
+ */
+export const STEAM_GENRE_TAG_IDS: Record<number, string> = {
+  19: "액션", 21: "어드벤처", 597: "캐주얼", 492: "인디", 128: "대규모 멀티플레이어", 699: "레이싱",
+  122: "RPG", 599: "시뮬레이션", 701: "스포츠", 9: "전략", 113: "무료 플레이", 493: "앞서 해보기",
+};
+
+/**
+ * 발견용 검색 슬라이스. 한 쿼리는 ~6,500건에서 바닥나므로, 전체 인기순위를 다 훑은 뒤
+ * 장르 태그로 잘라 계속 파고든다(슬라이스 간 중복은 호출부에서 제거). null = 태그 필터 없음.
+ */
+const DISCOVERY_SLICES: Array<string | null> = [null, ...Object.keys(STEAM_GENRE_TAG_IDS)];
+
+/** GetItems 의 supported_player_categoryids → 멀티플레이 추론 (§11-7: 인원수는 알 수 없음) */
+const PLAYER_CATEGORY = {
+  solo: [2],
+  multi: [1],
+  coop: [9, 38, 39, 48],
+  pvp: [36, 37, 47, 49],
+} as const;
 
 // ---- 응답 스키마 (unknown → zod) ----
 const priceOverviewSchema = z.object({
@@ -63,27 +91,41 @@ const featuredCategoriesSchema = z.object({
   specials: z.object({ items: z.array(featuredItemSchema).default([]) }).optional(),
 });
 
-/** GetItems 응답 — 할인 기간·행사명만 쓴다 */
-const storeItemsSchema = z.object({
-  response: z
+/** GetItems 의 구매 옵션 — 가격 3종 + 할인 기간·행사명이 모두 여기 있다 */
+const purchaseOptionSchema = z.object({
+  /** 문자열로 온다 (센트 단위, KRW × 100) */
+  final_price_in_cents: z.string().optional(),
+  original_price_in_cents: z.string().optional(),
+  discount_pct: z.number().optional(),
+  active_discounts: z
+    .array(z.object({ discount_end_date: z.number().optional(), discount_description: z.string().optional() }))
+    .default([]),
+});
+
+const storeItemSchema = z.object({
+  appid: z.number().optional(),
+  /** 0 = 앱(게임). 1 이상은 패키지/번들 — 게임 마스터로 만들지 않는다 */
+  item_type: z.number().optional(),
+  success: z.number().optional(),
+  visible: z.boolean().optional(),
+  name: z.string().optional(),
+  is_free: z.boolean().optional(),
+  best_purchase_option: purchaseOptionSchema.optional(),
+  basic_info: z
     .object({
-      store_items: z
-        .array(
-          z.object({
-            appid: z.number().optional(),
-            best_purchase_option: z
-              .object({
-                discount_pct: z.number().optional(),
-                active_discounts: z
-                  .array(z.object({ discount_end_date: z.number().optional(), discount_description: z.string().optional() }))
-                  .default([]),
-              })
-              .optional(),
-          }),
-        )
-        .default([]),
+      short_description: z.string().optional(),
+      developers: z.array(z.object({ name: z.string() })).default([]),
+      publishers: z.array(z.object({ name: z.string() })).default([]),
     })
-    .default({ store_items: [] }),
+    .optional(),
+  assets: z.object({ asset_url_format: z.string().optional(), header: z.string().optional() }).optional(),
+  release: z.object({ steam_release_date: z.number().optional(), is_coming_soon: z.boolean().optional() }).optional(),
+  categories: z.object({ supported_player_categoryids: z.array(z.number()).default([]) }).optional(),
+  tagids: z.array(z.number()).default([]),
+});
+
+const storeItemsSchema = z.object({
+  response: z.object({ store_items: z.array(storeItemSchema).default([]) }).default({ store_items: [] }),
 });
 
 /** search/results?json=1 — items 에 appid 가 없고 logo URL(.../apps/<appid>/...) 에만 들어 있다 */
@@ -254,6 +296,109 @@ export function parseStoreItemDiscount(raw: unknown, appid: string): SteamDiscou
   };
 }
 
+/** GetItems assets → 헤더 이미지 절대 URL. asset_url_format 의 ${FILENAME} 자리에 header 파일명을 끼운다 */
+export function steamAssetUrl(assets: { asset_url_format?: string; header?: string } | undefined): string | null {
+  if (!assets?.asset_url_format || !assets.header) return null;
+  return `${STEAM_ASSET_BASE_URL}/${assets.asset_url_format.replace("${FILENAME}", assets.header)}`;
+}
+
+/** GetItems 는 출시 시각을 unix 초로 준다. 날짜로 자를 때는 한국 스토어 표기와 같은 KST 기준이어야 한다 */
+const KST_OFFSET_MS = 9 * 60 * 60 * 1000;
+
+/** unix seconds → YYYY-MM-DD (KST). 0/미정은 null */
+export function unixToIsoDate(sec: number | undefined): string | null {
+  if (!sec || sec <= 0) return null;
+  const d = new Date(sec * 1000 + KST_OFFSET_MS);
+  return Number.isNaN(d.getTime()) ? null : d.toISOString().slice(0, 10);
+}
+
+type StoreItem = z.infer<typeof storeItemSchema>;
+
+/** 문자열 센트 → KRW 정수. 빈 값/파싱 실패는 null */
+function centsStrToKrw(v: string | undefined): number | null {
+  if (!v) return null;
+  const n = Number(v);
+  return Number.isFinite(n) ? Math.round(n / 100) : null;
+}
+
+function priceOf(item: StoreItem): { listPrice: number | null; currentPrice: number | null; discountPct: number | null } {
+  const opt = item.best_purchase_option;
+  const current = centsStrToKrw(opt?.final_price_in_cents);
+  if (current === null) {
+    // 구매 옵션이 없는 경우: 무료 게임은 0원, 그 외(미출시·미판매)는 값 없음
+    return item.is_free ? { listPrice: 0, currentPrice: 0, discountPct: 0 } : { listPrice: null, currentPrice: null, discountPct: null };
+  }
+  const list = centsStrToKrw(opt?.original_price_in_cents) ?? current;
+  const pct = opt?.discount_pct ?? (list > 0 ? Math.round((1 - current / list) * 100) : 0);
+  return { listPrice: list, currentPrice: current, discountPct: pct };
+}
+
+function multiplayerOf(item: StoreItem): NonNullable<StoreSnapshot["meta"]>["multiplayer"] {
+  const ids = item.categories?.supported_player_categoryids ?? [];
+  if (ids.length === 0) return undefined;
+  const has = (group: readonly number[]) => group.some((id) => ids.includes(id));
+  const coop = has(PLAYER_CATEGORY.coop);
+  const pvp = has(PLAYER_CATEGORY.pvp);
+  return { solo: has(PLAYER_CATEGORY.solo), coop, pvp };
+}
+
+function isUsableItem(item: StoreItem): boolean {
+  return item.appid !== undefined && item.success !== 0 && item.visible !== false && (item.item_type ?? 0) === 0;
+}
+
+/**
+ * GetItems 응답(koreana) + 선택적으로 english 응답 → appid별 StoreSnapshot.
+ * appdetails(게임당 ko/en 2회) + GetItems(할인 시 1회) 를 100개당 2회로 줄이는 배치 경로.
+ * 응답에 없거나 success=0 인 appid 는 Map 에서 빠진다 — 호출부가 그 건만 실패로 처리한다.
+ */
+export function parseStoreItems(rawKo: unknown, rawEn?: unknown): Map<string, StoreSnapshot> {
+  const parsed = storeItemsSchema.safeParse(rawKo);
+  if (!parsed.success) throw new AdapterError(`GetItems 응답 형식 오류: ${parsed.error.message}`, "steam", false);
+  const enNames = new Map<string, string>();
+  if (rawEn !== undefined) {
+    const en = storeItemsSchema.safeParse(rawEn);
+    if (en.success) {
+      for (const it of en.data.response.store_items) {
+        if (it.appid !== undefined && it.name) enNames.set(String(it.appid), it.name.trim());
+      }
+    }
+  }
+
+  const out = new Map<string, StoreSnapshot>();
+  for (const item of parsed.data.response.store_items) {
+    if (!isUsableItem(item)) continue;
+    const appid = String(item.appid);
+    const nameKo = item.name?.trim() ?? "";
+    const titleEn = enNames.get(appid) || nameKo;
+    if (!titleEn) continue; // 제목이 없으면 게임 마스터를 만들 수 없다
+    const discount = item.best_purchase_option?.active_discounts?.[0];
+    const { listPrice, currentPrice, discountPct } = priceOf(item);
+    out.set(appid, {
+      platform: "steam",
+      storeExternalId: appid,
+      storeUrl: `${STEAM_STORE_APP_URL}/${appid}`,
+      listPrice,
+      currentPrice,
+      discountPct,
+      discountEndsAt: discount?.discount_end_date ? new Date(discount.discount_end_date * 1000).toISOString() : null,
+      discountName: steamDiscountLabel(discount?.discount_description),
+      currentVersion: null,
+      releaseDate: unixToIsoDate(item.release?.steam_release_date),
+      meta: {
+        titleEn,
+        titleKo: nameKo && nameKo !== titleEn ? nameKo : null,
+        description: item.basic_info?.short_description?.trim() || null,
+        coverUrl: steamAssetUrl(item.assets),
+        developer: item.basic_info?.developers?.[0]?.name ?? null,
+        publisher: item.basic_info?.publishers?.[0]?.name ?? null,
+        genres: item.tagids.map((id) => STEAM_GENRE_TAG_IDS[id]).filter((g): g is string => Boolean(g)),
+        multiplayer: multiplayerOf(item),
+      },
+    });
+  }
+  return out;
+}
+
 /** storesearch 응답 → 검색 후보 (앱만, 번들/DLC 제외 불가 — type 필드가 "app"인 것만) */
 export function parseStoreSearch(raw: unknown): SearchCandidate[] {
   const parsed = storeSearchSchema.safeParse(raw);
@@ -317,16 +462,25 @@ async function fetchJson(url: string): Promise<unknown> {
   }
 }
 
-/** GetItems 는 input_json 쿼리 하나로 받는다. 한 번에 여러 id 도 가능하지만 어댑터 구조상 1건씩 */
-function storeItemsUrl(appid: string): string {
+/** GetItems 는 input_json 쿼리 하나로 받는다. appid 여러 개를 한 번에 넣을 수 있다(STEAM_GETITEMS_BATCH) */
+function storeItemsUrl(appids: string[], language: "koreana" | "english", full: boolean): string {
   const input = {
-    ids: [{ appid: Number(appid) }],
-    context: { language: "koreana", country_code: "KR", steam_realm: 1 },
-    data_request: { include_basic_info: true },
+    ids: appids.map((id) => ({ appid: Number(id) })),
+    context: { language, country_code: "KR", steam_realm: 1 },
+    // 영문 응답은 제목만 쓰므로 basic_info 만 요청해 응답 크기를 줄인다
+    data_request: full
+      ? { include_basic_info: true, include_assets: true, include_release: true, include_platforms: true, include_tag_count: 20 }
+      : { include_basic_info: true },
   };
   const u = new URL(STEAM_STOREITEMS_URL);
   u.searchParams.set("input_json", JSON.stringify(input));
   return u.toString();
+}
+
+export function chunk<T>(items: T[], size: number): T[][] {
+  const out: T[][] = [];
+  for (let i = 0; i < items.length; i += size) out.push(items.slice(i, i + size));
+  return out;
 }
 
 function appDetailsUrl(appid: string, lang: "koreana" | "english"): string {
@@ -345,23 +499,27 @@ export async function fetchSteamTopAppIds(n: number): Promise<string[]> {
   const ids: string[] = [];
   const seen = new Set<string>();
   try {
-    for (let page = 0; page < TOPSELLERS_MAX_PAGES && ids.length < n; page++) {
-      const u = new URL(STEAM_TOPSELLERS_URL);
-      u.searchParams.set("json", "1");
-      u.searchParams.set("filter", "topsellers");
-      u.searchParams.set("cc", "kr");
-      u.searchParams.set("l", "koreana");
-      u.searchParams.set("count", String(TOPSELLERS_PAGE_SIZE));
-      u.searchParams.set("start", String(page * TOPSELLERS_PAGE_SIZE));
-      const pageIds = parseTopSellerAppIds(await fetchJson(u.toString()));
-      if (pageIds.length === 0) break;
-      for (const id of pageIds) {
-        if (seen.has(id)) continue;
-        seen.add(id);
-        ids.push(id);
-        if (ids.length >= n) break;
+    outer: for (const slice of DISCOVERY_SLICES) {
+      for (let page = 0; page < TOPSELLERS_MAX_PAGES && ids.length < n; page++) {
+        const u = new URL(STEAM_TOPSELLERS_URL);
+        u.searchParams.set("json", "1");
+        u.searchParams.set("filter", "topsellers");
+        u.searchParams.set("cc", "kr");
+        u.searchParams.set("l", "koreana");
+        u.searchParams.set("count", String(TOPSELLERS_PAGE_SIZE));
+        u.searchParams.set("start", String(page * TOPSELLERS_PAGE_SIZE));
+        if (slice) u.searchParams.set("tags", slice);
+        const pageIds = parseTopSellerAppIds(await fetchJson(u.toString()));
+        if (pageIds.length === 0) break; // 이 슬라이스는 바닥 — 다음 슬라이스로
+        for (const id of pageIds) {
+          if (seen.has(id)) continue;
+          seen.add(id);
+          ids.push(id);
+          if (ids.length >= n) break;
+        }
+        await new Promise((r) => setTimeout(r, TOPSELLERS_PAGE_INTERVAL_MS));
       }
-      if (ids.length < n) await new Promise((r) => setTimeout(r, TOPSELLERS_PAGE_INTERVAL_MS));
+      if (ids.length >= n) break outer;
     }
   } catch (e) {
     console.warn(`[steam] 인기순위 검색 실패 → featuredcategories 폴백: ${e instanceof Error ? e.message : String(e)}`);
@@ -398,11 +556,25 @@ export const steamAdapter: StoreAdapter = {
     const snapshot = parseAppDetails(rawKo, appid, rawEn);
     if (!snapshot.discountPct || snapshot.discountPct <= 0) return snapshot;
     try {
-      const info = parseStoreItemDiscount(await fetchJson(storeItemsUrl(appid)), appid);
+      const info = parseStoreItemDiscount(await fetchJson(storeItemsUrl([appid], "koreana", false)), appid);
       return { ...snapshot, discountEndsAt: info.discountEndsAt, discountName: info.discountName };
     } catch (e) {
       console.warn(`[steam] 할인 기간 조회 실패 (appid=${appid}): ${e instanceof Error ? e.message : String(e)}`);
       return snapshot;
     }
+  },
+
+  batchSize: STEAM_GETITEMS_BATCH,
+
+  /**
+   * GetItems 로 최대 100개를 한 번에. koreana(전체 필드) + english(제목만) 2회 요청으로 배치 하나를 끝낸다.
+   * 게임당 2.3초 → 100개당 ~3초. 카탈로그가 수만 건이어도 Actions 예산 안에 들어온다.
+   */
+  async fetchMany(appids: string[]): Promise<Map<string, StoreSnapshot>> {
+    if (appids.length === 0) return new Map();
+    const rawKo = await fetchJson(storeItemsUrl(appids, "koreana", true));
+    await new Promise((r) => setTimeout(r, Math.floor(steamAdapter.minIntervalMs / 2)));
+    const rawEn = await fetchJson(storeItemsUrl(appids, "english", false));
+    return parseStoreItems(rawKo, rawEn);
   },
 };

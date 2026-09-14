@@ -9,9 +9,12 @@ import {
   parseFeaturedAppIds,
   parseSteamDate,
   parseStoreItemDiscount,
+  parseStoreItems,
   parseStoreSearch,
   parseTopSellerAppIds,
+  steamAssetUrl,
   steamDiscountLabel,
+  unixToIsoDate,
 } from "./steam";
 
 const fixture = (name: string): unknown =>
@@ -140,5 +143,83 @@ describe("steamDiscountLabel", () => {
   it("모르는 토큰·빈 값은 null (가짜 행사명을 만들지 않는다)", () => {
     expect(steamDiscountLabel("#discount_desc_preset_zzz")).toBeNull();
     expect(steamDiscountLabel(undefined)).toBeNull();
+  });
+});
+
+describe("parseStoreItems", () => {
+  const ko = () => fixture("steam-getitems-batch-ko.json");
+  const en = () => fixture("steam-getitems-batch-en.json");
+
+  it("배치 응답을 appid별 StoreSnapshot 으로 변환한다", () => {
+    const map = parseStoreItems(ko(), en());
+    expect(map.size).toBe(3);
+    const witcher = map.get("292030")!;
+    expect(witcher.platform).toBe("steam");
+    expect(witcher.storeUrl).toBe("https://store.steampowered.com/app/292030");
+    expect(witcher.meta?.titleEn).toBe("The Witcher 3: Wild Hunt - Complete Edition");
+    expect(witcher.meta?.titleKo).toBe("더 위쳐 3: 와일드 헌트 - 컴플리트 에디션");
+    expect(witcher.meta?.developer).toBe("CD PROJEKT RED");
+    expect(witcher.releaseDate).toBe("2015-05-18");
+  });
+
+  it("할인 중이면 가격 3종 + 종료 시각 + 행사명을 채운다", () => {
+    const kalpa = parseStoreItems(ko(), en()).get("2717010")!;
+    expect(kalpa.listPrice).toBe(22000); // 센트 문자열 → KRW 정수
+    expect(kalpa.currentPrice).toBe(13200);
+    expect(kalpa.discountPct).toBe(40);
+    expect(kalpa.discountEndsAt).not.toBeNull();
+    expect(kalpa.discountName).toBe("특별 할인");
+  });
+
+  it("구매 옵션이 없는 무료 게임은 0원으로 처리한다", () => {
+    const pubg = parseStoreItems(ko(), en()).get("578080")!;
+    expect(pubg.listPrice).toBe(0);
+    expect(pubg.currentPrice).toBe(0);
+    expect(pubg.discountPct).toBe(0);
+  });
+
+  it("tagid 는 기본 장르 12종만 장르명으로 옮기고 나머지는 버린다", () => {
+    const kalpa = parseStoreItems(ko(), en()).get("2717010")!;
+    expect(kalpa.meta?.genres).toContain("캐주얼"); // 597
+    expect(kalpa.meta?.genres).toContain("액션"); // 19
+    expect(kalpa.meta?.genres).not.toContain(""); // 매핑 없는 tagid 는 제외
+  });
+
+  it("supported_player_categoryids 로 멀티플레이를 추론한다", () => {
+    const map = parseStoreItems(ko(), en());
+    expect(map.get("292030")!.meta?.multiplayer).toEqual({ solo: true, coop: false, pvp: false });
+    expect(map.get("2717010")!.meta?.multiplayer).toEqual({ solo: true, coop: false, pvp: true });
+  });
+
+  it("english 응답 없이도 한국어 제목을 titleEn 으로 쓴다", () => {
+    const witcher = parseStoreItems(ko()).get("292030")!;
+    expect(witcher.meta?.titleEn).toBe("더 위쳐 3: 와일드 헌트 - 컴플리트 에디션");
+    expect(witcher.meta?.titleKo).toBeNull(); // 같은 값을 중복으로 넣지 않는다
+  });
+
+  it("형식이 깨진 응답은 AdapterError", () => {
+    expect(() => parseStoreItems({ response: { store_items: "nope" } })).toThrow(AdapterError);
+  });
+});
+
+describe("steamAssetUrl", () => {
+  it("asset_url_format 의 FILENAME 자리에 header 파일명을 끼운다", () => {
+    expect(steamAssetUrl({ asset_url_format: "steam/apps/1/${FILENAME}?t=2", header: "abc/header.jpg" })).toBe(
+      "https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/1/abc/header.jpg?t=2",
+    );
+  });
+  it("둘 중 하나라도 없으면 null", () => {
+    expect(steamAssetUrl({ asset_url_format: "x/${FILENAME}" })).toBeNull();
+    expect(steamAssetUrl(undefined)).toBeNull();
+  });
+});
+
+describe("unixToIsoDate", () => {
+  it("unix 초를 YYYY-MM-DD 로", () => {
+    expect(unixToIsoDate(1431937260)).toBe("2015-05-18");
+  });
+  it("0·undefined 는 null", () => {
+    expect(unixToIsoDate(0)).toBeNull();
+    expect(unixToIsoDate(undefined)).toBeNull();
   });
 });

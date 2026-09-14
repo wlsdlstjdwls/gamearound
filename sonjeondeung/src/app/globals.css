@@ -102,6 +102,10 @@
   0% { background-position: 200% 0; }
   100% { background-position: -200% 0; }
 }
+@keyframes bar-grow {
+  from { width: 0; }
+  to { width: var(--bar-w, 0%); }
+}
 
 /* ── 기본 ── */
 html {
@@ -144,6 +148,12 @@ a {
 /* 등장 스태거: style={{ "--stagger": "90ms" }} 또는 stagger(i) 헬퍼 */
 .reveal {
   animation: rise var(--duration-slow) var(--ease-out-emph) both;
+  animation-delay: var(--stagger, 0ms);
+}
+/* 가로 막대 그래프: style={{ "--bar-w": "62%" }} (+ stagger(i)) 로 목표 폭 전달 */
+.bar-grow {
+  width: var(--bar-w, 0%);
+  animation: bar-grow var(--duration-slow) var(--ease-out-emph) both;
   animation-delay: var(--stagger, 0ms);
 }
 /* 누르는 느낌 — 마우스/터치 공통. disabled면 없음 */

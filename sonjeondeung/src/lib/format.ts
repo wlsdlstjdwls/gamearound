@@ -27,11 +27,15 @@ export function formatDateTime(d: Date | string | null | undefined): string {
   return date.toLocaleString("ko-KR", { dateStyle: "short", timeStyle: "short", timeZone: DISPLAY_TIME_ZONE });
 }
 
+/** 100시간 미만은 소수 첫째 자리까지, 그 이상은 정수+천단위 콤마 (HLTB 값은 5,000시간대까지 나온다) */
+const HOURS_DECIMAL_MAX = 100;
+
 export function formatHours(h: string | number | null | undefined): string {
   if (h === null || h === undefined || h === "") return "-";
   const n = typeof h === "string" ? Number(h) : h;
-  if (Number.isNaN(n)) return "-";
-  return `${n}시간`;
+  if (!Number.isFinite(n)) return "-";
+  const digits = Math.abs(n) < HOURS_DECIMAL_MAX ? 1 : 0;
+  return `${n.toLocaleString("ko-KR", { maximumFractionDigits: digits })}시간`;
 }
 
 export const PLATFORM_LABEL: Record<string, string> = {
