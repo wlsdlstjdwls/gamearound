@@ -590,13 +590,23 @@
           "notNull": true,
           "default": "now()"
         },
-        "title_norm": {
-          "name": "title_norm",
+        "title_en_norm": {
+          "name": "title_en_norm",
           "type": "text",
           "primaryKey": false,
           "notNull": false,
           "generated": {
-            "as": "lower(regexp_replace(coalesce(title_ko, '') || ' ' || title_en, '[^[:alnum:]]+', '', 'g'))",
+            "as": "lower(regexp_replace(title_en, '[^[:alnum:]]+', '', 'g'))",
+            "type": "stored"
+          }
+        },
+        "title_ko_norm": {
+          "name": "title_ko_norm",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "generated": {
+            "as": "lower(regexp_replace(coalesce(title_ko, ''), '[^[:alnum:]]+', '', 'g'))",
             "type": "stored"
           }
         }
