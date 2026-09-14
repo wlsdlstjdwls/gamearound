@@ -1,0 +1,280 @@
+// 스토어 수집 결과를 DB 에 반영하는 단계 — 배치 경로.
+//
+// 왜 배치인가: 예전에는 게임 한 건마다 조회 1~2회, 쓰기 1~3회를 순차로 왕복했다. Neon HTTP 는
+// 왕복 1회가 200~350ms 라 게임당 0.87초가 나왔고(실측), 그게 하루 수집량의 상한이었다.
+// 같은 문장을 db.batch 로 묶으면 왕복이 1회로 접힌다 — 20문장 기준 4.4초에서 0.25초였다(2026-09-14 실측).
+//
+// 규칙은 단건 경로와 똑같다(planPlatform, planGameMeta 를 그대로 쓴다). 이 파일이 더하는 것은
+// "언제 읽고 언제 묶어 보낼지" 뿐이다.
+//
+// 실패 격리: 배치 하나가 통째로 실패하면 그 묶음만 다시 한 문장씩 보낸다(§7 — 한 건의 실패가
+// 배치 전체를 멈추면 안 된다). 묶음이 깨지는 일은 드물고, 드문 만큼 느려도 된다.
+import { and, eq, inArray } from "drizzle-orm";
+import { gameCompanies, gamePlatforms, gameSourceRefs, games, priceSnapshots } from "@/server/db/schema";
+import type { StoreSource } from "@/server/adapters";
+import type { StoreSnapshot } from "@/server/adapters/types";
+import { normalizeCompanyName } from "@/lib/company-name";
+import { errorMessage } from "@/lib/errors";
+import { WRITE_BATCH_SIZE } from "./constants";
+import { recordError, type Ctx } from "./context";
+import { companyNamesOf, findCompaniesByAliases } from "./company-writer";
+import { createGameFromSnapshot, planGameMeta, type GameRow } from "./game-writer";
+import { planPlatform, type PlatformPlan, type PlatformRow } from "./platform-writer";
+import type { StoreTarget } from "./store-targets";
+
+/** 수집 결과 1건 — 대상과 그 대상에서 받아온 스냅샷 */
+export interface Fetched {
+  target: StoreTarget;
+  snapshot: StoreSnapshot;
+}
+
+/** 반영이 끝난 1건. DLC 등록 단계가 이 목록을 받는다 */
+export interface Applied {
+  gameId: string;
+  slug: string;
+  snapshot: StoreSnapshot;
+}
+
+/** drizzle 문장은 thenable 이라 같은 객체를 배치로도, 단건으로도 보낼 수 있다 */
+type Statement = PromiseLike<unknown>;
+
+/**
+ * 문장들을 WRITE_BATCH_SIZE 단위로 묶어 보낸다.
+ * 묶음이 실패하면 그 묶음만 한 문장씩 다시 보내 어느 문장이 문제인지 좁힌다.
+ */
+async function runStatements(ctx: Ctx, label: string, statements: Statement[]): Promise<void> {
+  for (let i = 0; i < statements.length; i += WRITE_BATCH_SIZE) {
+    const chunk = statements.slice(i, i + WRITE_BATCH_SIZE);
+    if (chunk.length === 0) continue;
+    try {
+      await ctx.db.batch(chunk as unknown as Parameters<Ctx["db"]["batch"]>[0]);
+    } catch (e) {
+      console.warn(`[sync:${ctx.source}] ${label} 배치 실패 — 한 문장씩 재시도: ${errorMessage(e)}`);
+      for (const [j, st] of chunk.entries()) {
+        try {
+          await st;
+        } catch (inner) {
+          recordError(ctx, `${label}:${i + j}`, inner);
+        }
+      }
+    }
+  }
+}
+
+/** 대상 게임들의 기존 행을 한 번에 읽어 둔다 — 계획 단계는 여기서 읽은 것만 본다 */
+async function loadExisting(
+  ctx: Ctx,
+  gameIds: string[],
+): Promise<{ gameById: Map<string, GameRow>; platformsByGame: Map<string, PlatformRow[]> }> {
+  if (gameIds.length === 0) return { gameById: new Map(), platformsByGame: new Map() };
+  const [gameRows, platformRows] = await ctx.db.batch([
+    ctx.db.select().from(games).where(inArray(games.id, gameIds)),
+    ctx.db.select().from(gamePlatforms).where(inArray(gamePlatforms.gameId, gameIds)),
+  ]);
+  const platformsByGame = new Map<string, PlatformRow[]>();
+  for (const row of platformRows) {
+    const list = platformsByGame.get(row.gameId);
+    if (list) list.push(row);
+    else platformsByGame.set(row.gameId, [row]);
+  }
+  return { gameById: new Map(gameRows.map((g) => [g.id, g])), platformsByGame };
+}
+
+/**
+ * DLC 가 스스로 알려준 본편을 이어 붙인다(steam 의 fullgame / related_items).
+ * 배치 경로에서는 부모 ref 를 한 번에 조회한다 — 건마다 물으면 DLC 가 많은 배치에서 왕복이 배로 는다.
+ */
+async function planParentLinks(
+  ctx: Ctx,
+  source: StoreSource,
+  items: Array<{ gameId: string; snapshot: StoreSnapshot }>,
+  gameById: Map<string, GameRow>,
+): Promise<Statement[]> {
+  const pending = items.filter((it) => {
+    if (it.snapshot.contentType !== "dlc" || !it.snapshot.parentExternalId) return false;
+    const cur = gameById.get(it.gameId);
+    // 이미 DLC 로 확정돼 부모까지 붙어 있으면 다시 쓰지 않는다
+    return Boolean(cur) && !(cur!.contentType === "dlc" && cur!.parentGameId);
+  });
+  if (pending.length === 0) return [];
+
+  const parentIds = Array.from(new Set(pending.map((p) => p.snapshot.parentExternalId as string)));
+  const refs = await ctx.db
+    .select({ externalId: gameSourceRefs.externalId, gameId: gameSourceRefs.gameId })
+    .from(gameSourceRefs)
+    .where(and(eq(gameSourceRefs.source, source), inArray(gameSourceRefs.externalId, parentIds)));
+  const parentByExternalId = new Map(refs.map((r) => [r.externalId, r.gameId]));
+
+  const out: Statement[] = [];
+  for (const { gameId, snapshot } of pending) {
+    const parentGameId = parentByExternalId.get(snapshot.parentExternalId as string);
+    if (!parentGameId || parentGameId === gameId) continue;
+    out.push(
+      ctx.db.update(games).set({ contentType: "dlc", parentGameId, updatedAt: ctx.now }).where(eq(games.id, gameId)),
+    );
+  }
+  return out;
+}
+
+/**
+ * 이미 아는 회사만 게임에 잇는다(외부 질의 없음).
+ * 별칭 조회를 한 번으로 접고 연결 INSERT 도 한 문장으로 모은다.
+ */
+async function planCompanyLinks(ctx: Ctx, items: Array<{ gameId: string; snapshot: StoreSnapshot }>): Promise<Statement[]> {
+  const byGame = items
+    .filter((it) => it.snapshot.meta)
+    .map((it) => ({ gameId: it.gameId, names: companyNamesOf(it.snapshot.meta?.developer ?? null, it.snapshot.meta?.publisher ?? null) }))
+    .filter((g) => g.names.length > 0);
+  if (byGame.length === 0) return [];
+
+  const aliasMap = await findCompaniesByAliases(ctx.db, byGame.flatMap((g) => g.names.map((n) => n.name)));
+  if (aliasMap.size === 0) return [];
+
+  const rows: Array<typeof gameCompanies.$inferInsert> = [];
+  const seen = new Set<string>();
+  for (const { gameId, names } of byGame) {
+    for (const { name, role } of names) {
+      const hit = aliasMap.get(normalizeCompanyName(name));
+      if (!hit) continue;
+      const key = `${gameId}:${hit.companyId}:${role}`;
+      if (seen.has(key)) continue;
+      seen.add(key);
+      rows.push({ gameId, companyId: hit.companyId, role });
+      // 회사 화면의 게임 목록이 달라지므로 그 회사 캐시도 깬다
+      ctx.changedCompanySlugs.add(hit.slug);
+    }
+  }
+  return rows.length === 0 ? [] : [ctx.db.insert(gameCompanies).values(rows).onConflictDoNothing()];
+}
+
+/** 한 문장이 너무 길어지지 않게 값 배열을 잘라 넣는다. 한 조각이 실패해도 나머지 조각은 계속 간다 */
+async function insertChunked<V, R>(
+  ctx: Ctx,
+  label: string,
+  values: V[],
+  run: (chunk: V[]) => PromiseLike<R[]>,
+): Promise<Array<R | undefined>> {
+  const out: Array<R | undefined> = [];
+  for (let i = 0; i < values.length; i += WRITE_BATCH_SIZE) {
+    const chunk = values.slice(i, i + WRITE_BATCH_SIZE);
+    try {
+      const rows = await run(chunk);
+      // RETURNING 은 넣은 순서대로 돌아온다 — 순서로 짝을 맞춘다
+      for (let j = 0; j < chunk.length; j++) out.push(rows[j]);
+    } catch (e) {
+      recordError(ctx, `${label}:${i}`, e);
+      for (let j = 0; j < chunk.length; j++) out.push(undefined);
+    }
+  }
+  return out;
+}
+
+/** 새 플랫폼 행을 넣고, 돌려받은 id 로 가격 스냅샷까지 잇는다 */
+async function insertNewPlatforms(
+  ctx: Ctx,
+  plans: Array<{ slug: string; plan: Extract<PlatformPlan, { kind: "insert" }> }>,
+): Promise<void> {
+  if (plans.length === 0) return;
+  const inserted = await insertChunked(ctx, "platform-insert", plans, (chunk) =>
+    ctx.db.insert(gamePlatforms).values(chunk.map((p) => p.plan.values)).returning({ id: gamePlatforms.id }),
+  );
+  const drafts = plans
+    .map((p, i) => ({ id: inserted[i]?.id, draft: p.plan.snapshot, slug: p.slug }))
+    .filter((d): d is { id: string; draft: NonNullable<typeof d.draft>; slug: string } => Boolean(d.id));
+  for (const d of drafts) ctx.changedSlugs.add(d.slug);
+
+  const withPrice = drafts.filter((d) => d.draft !== null);
+  if (withPrice.length === 0) return;
+  const snaps = await insertChunked(ctx, "price-snapshot", withPrice, (chunk) =>
+    ctx.db
+      .insert(priceSnapshots)
+      .values(chunk.map((d) => ({ ...d.draft, gamePlatformId: d.id })))
+      .returning({ id: priceSnapshots.id, gamePlatformId: priceSnapshots.gamePlatformId }),
+  );
+  for (const [i, s] of snaps.entries()) {
+    if (s) ctx.priceChanges.push({ gamePlatformId: s.gamePlatformId, snapshotId: s.id, previousPrice: null, newPrice: withPrice[i].draft.price });
+  }
+}
+
+/** 기존 플랫폼 행 갱신 + 가격이 바뀐 행만 스냅샷 */
+async function updateExistingPlatforms(
+  ctx: Ctx,
+  plans: Array<{ slug: string; plan: Extract<PlatformPlan, { kind: "update" }> }>,
+): Promise<void> {
+  if (plans.length === 0) return;
+  await runStatements(
+    ctx,
+    "platform",
+    plans.map(({ plan }) => ctx.db.update(gamePlatforms).set(plan.set).where(eq(gamePlatforms.id, plan.id))),
+  );
+  for (const { slug, plan } of plans) if (plan.changed) ctx.changedSlugs.add(slug);
+
+  const withSnapshot = plans.filter(({ plan }) => plan.snapshot !== null);
+  if (withSnapshot.length === 0) return;
+  const snaps = await insertChunked(ctx, "price-snapshot", withSnapshot, (chunk) =>
+    ctx.db
+      .insert(priceSnapshots)
+      .values(chunk.map(({ plan }) => ({ ...plan.snapshot!, gamePlatformId: plan.id })))
+      .returning({ id: priceSnapshots.id, gamePlatformId: priceSnapshots.gamePlatformId }),
+  );
+  for (const [i, s] of snaps.entries()) {
+    const { plan } = withSnapshot[i];
+    if (s && plan.priceChange) ctx.priceChanges.push({ gamePlatformId: plan.id, snapshotId: s.id, ...plan.priceChange });
+  }
+}
+
+/**
+ * 반영 단계 전체.
+ * 신규 게임 생성은 slug 중복 확인이 필요해 건별로 남겨 뒀다 — 시드가 없는 날에는 0건이다.
+ */
+export async function applyStore(ctx: Ctx, source: StoreSource, fetched: Fetched[]): Promise<Applied[]> {
+  const applied: Applied[] = [];
+
+  // 1. 신규 게임 — 건별 생성(§ slug 유일성). 실패는 그 건만 버린다
+  for (const { target, snapshot } of fetched) {
+    if (target.gameId && target.slug) continue;
+    try {
+      const created = await createGameFromSnapshot(ctx, snapshot, { contentType: snapshot.contentType ?? "game" });
+      ctx.changedSlugs.add(created.slug);
+      applied.push({ gameId: created.id, slug: created.slug, snapshot });
+    } catch (e) {
+      recordError(ctx, `${source}:${target.externalId}:db`, e);
+    }
+  }
+  for (const { target, snapshot } of fetched) {
+    if (target.gameId && target.slug) applied.push({ gameId: target.gameId, slug: target.slug, snapshot });
+  }
+  if (applied.length === 0) return applied;
+
+  // 2. 기존 행 읽기 — 여기까지가 조회다
+  const { gameById, platformsByGame } = await loadExisting(ctx, applied.map((a) => a.gameId));
+
+  // 3. 계획
+  const metaUpdates: Statement[] = [];
+  const inserts: Array<{ slug: string; plan: Extract<PlatformPlan, { kind: "insert" }> }> = [];
+  const updates: Array<{ slug: string; plan: Extract<PlatformPlan, { kind: "update" }> }> = [];
+  for (const { gameId, slug, snapshot } of applied) {
+    const cur = gameById.get(gameId);
+    if (source === "steam" && snapshot.meta && cur) {
+      const set = planGameMeta(ctx, cur, snapshot.meta);
+      if (Object.keys(set).length > 0) {
+        metaUpdates.push(ctx.db.update(games).set({ ...set, updatedAt: ctx.now }).where(eq(games.id, gameId)));
+        ctx.changedSlugs.add(slug);
+      }
+    }
+    const existing = platformsByGame.get(gameId)?.find((p) => p.platform === snapshot.platform);
+    const plan = planPlatform(ctx, existing, gameId, snapshot);
+    if (plan.kind === "insert") inserts.push({ slug, plan });
+    else updates.push({ slug, plan });
+  }
+
+  // 4. 쓰기
+  await runStatements(ctx, "game-meta", metaUpdates);
+  await updateExistingPlatforms(ctx, updates);
+  await insertNewPlatforms(ctx, inserts);
+  await runStatements(ctx, "dlc-parent", await planParentLinks(ctx, source, applied, gameById));
+  await runStatements(ctx, "company-link", await planCompanyLinks(ctx, applied));
+
+  ctx.processed += applied.length;
+  return applied;
+}

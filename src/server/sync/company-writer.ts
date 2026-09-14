@@ -34,6 +34,21 @@ export async function findCompanyByAlias(db: Db, rawName: string): Promise<strin
   return hit?.companyId ?? null;
 }
 
+/**
+ * 여러 이름을 한 번에 회사로 바꾼다(정규화 이름 → 회사 id, slug).
+ * 이름마다 따로 물으면 게임 한 건당 왕복이 2~4회 늘어난다 — 배치 경로는 이걸 쓴다.
+ */
+export async function findCompaniesByAliases(db: Db, rawNames: string[]): Promise<Map<string, { companyId: string; slug: string }>> {
+  const norms = Array.from(new Set(rawNames.map(normalizeCompanyName).filter(Boolean)));
+  if (norms.length === 0) return new Map();
+  const rows = await db
+    .select({ aliasNorm: companyAliases.aliasNorm, companyId: companyAliases.companyId, slug: companies.slug })
+    .from(companyAliases)
+    .innerJoin(companies, eq(companies.id, companyAliases.companyId))
+    .where(inArray(companyAliases.aliasNorm, norms));
+  return new Map(rows.map((r) => [r.aliasNorm, { companyId: r.companyId, slug: r.slug }]));
+}
+
 /** 별칭을 회사에 매어 둔다. 이미 있으면 그대로 둔다 — 먼저 등록한 소스를 존중한다 */
 async function rememberAlias(db: Db, companyId: string, rawName: string, source: Ctx["source"]): Promise<void> {
   const norm = normalizeCompanyName(rawName);
@@ -122,22 +137,6 @@ export function companyNamesOf(developer: string | null, publisher: string | nul
   push(developer, "developer");
   push(publisher, "publisher");
   return out;
-}
-
-/**
- * 이미 해결된 회사만 게임에 이어 붙인다(외부 질의 없음).
- * 스토어 수집 중에 위키데이터를 때리면 가격 배치가 백과사전 응답 속도에 묶인다 —
- * 회사 조회는 주기가 다른 별도 배치(run-companies)에서만 한다.
- */
-export async function linkKnownCompanies(ctx: Ctx, gameId: string, developer: string | null, publisher: string | null): Promise<void> {
-  for (const { name, role } of companyNamesOf(developer, publisher)) {
-    const companyId = await findCompanyByAlias(ctx.db, name);
-    if (!companyId) continue;
-    await linkGameCompany(ctx.db, gameId, companyId, role);
-    // 회사 화면의 게임 목록이 달라지므로 그 회사 캐시도 깬다
-    const c = await ctx.db.query.companies.findFirst({ where: eq(companies.id, companyId), columns: { slug: true } });
-    if (c) ctx.changedCompanySlugs.add(c.slug);
-  }
 }
 
 /** 회사를 확정했을 때 별칭 등록과 게임 연결을 한 번에 */

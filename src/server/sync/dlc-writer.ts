@@ -7,7 +7,7 @@
 //
 // 상한(DLC_PER_GAME_MAX)을 두는 이유: DLC 가 수십 개인 타이틀 하나가 배치를 통째로 먹는다.
 import { and, eq, inArray } from "drizzle-orm";
-import { gameSourceRefs, games } from "@/server/db/schema";
+import { gameSourceRefs } from "@/server/db/schema";
 import type { StoreAdapter, StoreSnapshot } from "@/server/adapters/types";
 import type { StoreSource } from "@/server/adapters";
 import { sleep } from "@/lib/async";
@@ -121,21 +121,4 @@ async function fetchDlcSnapshots(
     if (i < ids.length - 1) await sleep(adapter.minIntervalMs);
   }
   return out;
-}
-
-/**
- * DLC 가 스스로 본편을 알려준 경우의 보정(steam 의 fullgame).
- * 매칭 단계에서 DLC 가 본편보다 먼저 등록되는 순서 문제를 여기서 되돌린다.
- */
-export async function attachParentIfKnown(ctx: Ctx, gameId: string, source: StoreSource, snapshot: StoreSnapshot): Promise<void> {
-  if (snapshot.contentType !== "dlc" || !snapshot.parentExternalId) return;
-  const cur = await ctx.db.query.games.findFirst({ where: eq(games.id, gameId), columns: { contentType: true, parentGameId: true } });
-  if (!cur || (cur.contentType === "dlc" && cur.parentGameId)) return;
-
-  const parentRef = await ctx.db.query.gameSourceRefs.findFirst({
-    where: and(eq(gameSourceRefs.source, source), eq(gameSourceRefs.externalId, snapshot.parentExternalId)),
-    columns: { gameId: true },
-  });
-  if (!parentRef || parentRef.gameId === gameId) return;
-  await ctx.db.update(games).set({ contentType: "dlc", parentGameId: parentRef.gameId, updatedAt: ctx.now }).where(eq(games.id, gameId));
 }

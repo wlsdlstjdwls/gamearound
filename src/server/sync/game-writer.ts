@@ -74,11 +74,14 @@ export async function createGameFromSnapshot(
   return game;
 }
 
-/** 기존 게임의 마스터 정보 갱신 (Steam 기준 소스). 값 변경 시에만, null 로 덮지 않음, 잠긴 필드 제외 */
-export async function updateGameMeta(ctx: Ctx, gameId: string, slug: string, meta: NonNullable<StoreSnapshot["meta"]>): Promise<void> {
-  const { db } = ctx;
-  const cur = await db.query.games.findFirst({ where: eq(games.id, gameId) });
-  if (!cur) return;
+export type GameRow = typeof games.$inferSelect;
+
+/**
+ * 기존 행과 새 meta 를 비교해 UPDATE 할 필드만 고른다. DB 를 건드리지 않는다 —
+ * 배치 경로(store-apply)가 게임마다 왕복하지 않고 계획만 모을 수 있어야 한다.
+ */
+export function planGameMeta(ctx: Ctx, cur: GameRow, meta: NonNullable<StoreSnapshot["meta"]>): Partial<typeof games.$inferInsert> {
+  const gameId = cur.id;
   const set: Partial<typeof games.$inferInsert> = {};
   const consider = <K extends keyof typeof games.$inferInsert>(field: K, value: (typeof games.$inferInsert)[K] | null | undefined) => {
     if (value === null || value === undefined) return;
@@ -99,7 +102,5 @@ export async function updateGameMeta(ctx: Ctx, gameId: string, slug: string, met
     consider("localMaxPlayers", meta.multiplayer.localMax);
     consider("onlineMaxPlayers", meta.multiplayer.onlineMax);
   }
-  if (Object.keys(set).length === 0) return;
-  await db.update(games).set({ ...set, updatedAt: ctx.now }).where(eq(games.id, gameId));
-  ctx.changedSlugs.add(slug);
+  return set;
 }

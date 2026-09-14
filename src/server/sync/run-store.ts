@@ -1,12 +1,9 @@
 // 스토어 소스 실행 — 수집 → 검증 → 반영 3단계. 검증을 통과하지 못하면 아무것도 반영하지 않는다.
 import { getStoreAdapter, type StoreSource } from "@/server/adapters";
-import type { StoreSnapshot } from "@/server/adapters/types";
 import { BATCH_SIZE, SUSPICIOUS_MIN_SAMPLE, SUSPICIOUS_PRICE_RATIO } from "./constants";
 import { recordError, type Ctx, type RunOptions } from "./context";
-import { createGameFromSnapshot, updateGameMeta } from "./game-writer";
-import { attachParentIfKnown, syncDlcs } from "./dlc-writer";
-import { linkKnownCompanies } from "./company-writer";
-import { upsertPlatform } from "./platform-writer";
+import { syncDlcs } from "./dlc-writer";
+import { applyStore } from "./store-apply";
 import { fetchStoreBatched, fetchStoreOneByOne } from "./store-fetch";
 import { listStoreTargets } from "./store-targets";
 
@@ -30,33 +27,8 @@ export async function runStore(ctx: Ctx, source: StoreSource, opts: RunOptions):
     return;
   }
 
-  // 3단계: 반영
-  const applied: Array<{ gameId: string; slug: string; snapshot: StoreSnapshot }> = [];
-  for (const { target, snapshot } of fetched) {
-    try {
-      let gameId = target.gameId;
-      let slug = target.slug;
-      if (!gameId || !slug) {
-        const created = await createGameFromSnapshot(ctx, snapshot, {
-          contentType: snapshot.contentType ?? "game",
-        });
-        gameId = created.id;
-        slug = created.slug;
-        ctx.changedSlugs.add(slug);
-      } else if (source === "steam" && snapshot.meta) {
-        await updateGameMeta(ctx, gameId, slug, snapshot.meta);
-      }
-      await upsertPlatform(ctx, gameId, slug, snapshot);
-      // DLC 가 본편보다 먼저 등록된 경우를 되돌린다(매칭 순서 문제)
-      await attachParentIfKnown(ctx, gameId, source, snapshot);
-      // 이미 아는 회사만 잇는다 — 외부 질의는 주기가 다른 run-companies 가 맡는다
-      if (snapshot.meta) await linkKnownCompanies(ctx, gameId, snapshot.meta.developer ?? null, snapshot.meta.publisher ?? null);
-      applied.push({ gameId, slug, snapshot });
-      ctx.processed++;
-    } catch (e) {
-      recordError(ctx, `${source}:${target.externalId}:db`, e);
-    }
-  }
+  // 3단계: 반영 — 읽기와 쓰기를 각각 묶어 보낸다(store-apply)
+  const applied = await applyStore(ctx, source, fetched);
 
   // 4단계: 본편이 알려준 새 DLC 등록. 실패해도 가격 수집 결과는 유지한다
   try {

@@ -25,6 +25,14 @@ export const BATCH_SIZE: Record<Source, number> = {
 };
 /** fetchMany 는 있는데 batchSize 를 선언하지 않은 어댑터용 기본값 */
 export const DEFAULT_FETCH_BATCH_SIZE = 50;
+
+/**
+ * 반영 단계에서 한 번에 묶어 보낼 SQL 문장 수.
+ * Neon HTTP 는 왕복 1회가 200~350ms 라 문장을 묶을수록 이득이지만, 한 묶음이 실패하면
+ * 그 묶음을 한 문장씩 다시 보내야 해서 너무 크면 재시도 비용이 커진다.
+ * 50 은 실측(2026-09-14)에서 왕복이 20문장부터 거의 평평해지는 구간이다.
+ */
+export const WRITE_BATCH_SIZE = 50;
 /** --seed-top 으로 카탈로그를 훑어 신규 게임을 등록할 수 있는 소스 (어댑터가 discover 를 갖거나 steam) */
 export const SEEDABLE_SOURCES: Source[] = ["steam", "nintendo"];
 /** 스토어 소스 → 담당 플랫폼 (§11-6: PS4/PS5, Switch/Switch2 분리 유지) */
