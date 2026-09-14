@@ -23,7 +23,7 @@ export interface StoreTarget {
   portraitUrl?: string | null;
 }
 
-export async function listStoreTargets(ctx: Ctx, source: StoreSource, limit: number, seedTop?: number): Promise<StoreTarget[]> {
+export async function listStoreTargets(ctx: Ctx, source: StoreSource, limit: number, seedTop?: number, pageBudget?: number): Promise<StoreTarget[]> {
   const { db } = ctx;
   const platforms = SOURCE_PLATFORMS[source];
   const rows = await db
@@ -53,7 +53,7 @@ export async function listStoreTargets(ctx: Ctx, source: StoreSource, limit: num
     try {
       // 한 건씩 unshift 하면 발견 순서가 뒤집힌다 — 카탈로그 꼬리(인기 없는 것, 미출시)가 맨 앞에 오고
       // 한 실행의 limit 을 다 먹는다. 발견 순서(인기순)를 그대로 지키려고 한 번에 앞에 붙인다.
-      const seeds = (await seedTargets(ctx, source, seedWant)).filter((t) => {
+      const seeds = (await seedTargets(ctx, source, seedWant, pageBudget)).filter((t) => {
         if (seen.has(`seed:${t.externalId}`)) return false;
         seen.add(`seed:${t.externalId}`);
         return true;
@@ -119,7 +119,7 @@ export async function ignoreDiscovery(
  *   맞으면 ref 만 붙여 기존 게임의 플랫폼으로 흡수하고, 못 찾은 것만 새 게임으로 만든다.
  *   이 단계가 없으면 멀티플랫폼 게임이 플랫폼 수만큼 중복 등록된다.
  */
-async function seedTargets(ctx: Ctx, source: StoreSource, seedWant: number): Promise<StoreTarget[]> {
+async function seedTargets(ctx: Ctx, source: StoreSource, seedWant: number, pageBudget?: number): Promise<StoreTarget[]> {
   const { db } = ctx;
   const adapter = getStoreAdapter(source);
   if (!adapter.discoverPages) return [];
@@ -127,7 +127,7 @@ async function seedTargets(ctx: Ctx, source: StoreSource, seedWant: number): Pro
   const result = await fetchWithRetry(() =>
     collectFreshCandidates(adapter.discoverPages!(), {
       want: seedWant,
-      pageBudget: DISCOVERY_PAGE_BUDGET[source] ?? 0,
+      pageBudget: pageBudget ?? DISCOVERY_PAGE_BUDGET[source] ?? 0,
       unknownOf: async (ids) => {
         const known = await knownExternalIds(db, source, ids);
         return ids.filter((id) => !known.has(id));

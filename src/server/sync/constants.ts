@@ -46,6 +46,9 @@ export const WRITE_BATCH_SIZE = 50;
  * — 그때는 이 목록이 "프록시가 없을 때의 대비책" 이 된다(adapters/http 의 viaProxy).
  */
 export const LOCAL_ONLY_SOURCES: Source[] = ["nintendo", "epic"];
+// 2026-09-14 이후 이 둘의 정규 실행처는 서울 리전 Vercel 크론이다(CRON_SOURCES).
+// 이 목록과 scripts/crawl-local.ts 는 손으로 돌려야 할 때를 위해 남겨 둔다 — 크론이 막히거나
+// 리전이 바뀌면 가정용 회선이 유일한 대비책이라, 쓰이지 않는다고 지우면 그때 다시 만들어야 한다.
 /**
  * 로컬 크롤이 소스별로 넘길 --seed-top = 한 실행에서 새로 등록할 상한.
  * 실제 몫은 SEED_SHARE_MAX 가 한 번 더 깎는다(배치의 절반).
@@ -55,6 +58,62 @@ export const LOCAL_SEED_TOP: Partial<Record<Source, number>> = {
   nintendo: 60,
   // BATCH_SIZE.epic(250)의 절반. 발견 페이지 예산은 DISCOVERY_PAGE_BUDGET.epic 이 따로 막는다
   epic: 125,
+};
+
+/**
+ * Vercel 크론이 맡는 소스. 러너 IP 로는 못 도는 두 소스만 서울 리전 함수로 뗀다 —
+ * 그 리전은 한국 IP 로 나가서 둘 다 열린다(2026-09-14 /api/debug/reachability 실측:
+ * nintendo 200, epic 은 curl 전송기로 200, 출구 IP 43.201.77.62).
+ * 나머지 소스는 Actions 에 남는다: steam 배치 1,500건은 함수 300초 안에 안 들어오고,
+ * Actions 무료 한도(월 2,000분)에 맞춘 주기가 이미 잡혀 있다.
+ */
+export const CRON_SOURCES = ["nintendo", "epic"] as const;
+// 주기는 vercel.json 의 crons 에 있다 — JSON 이라 주석을 못 달아 근거를 여기 적는다(시각은 UTC).
+//   /api/cron/crawl/nintendo/prices    15 */3 * * *       하루 8회 × 45건 = 360건/일
+//   /api/cron/crawl/nintendo/discover  45 1,7,13,19 * * *  하루 4회 × 12건 = 48건/일 (4초 간격이 한계다)
+//   /api/cron/crawl/epic/prices        25 */6 * * *        하루 4회 × 180건 = 720건/일
+//   /api/cron/crawl/epic/discover      55 3,15 * * *       하루 2회 × 40건 = 80건/일 (한 바퀴가 175페이지)
+// 분을 0 으로 두지 않는 이유: Vercel 크론은 정각에 몰리고, 몰리면 실행이 뒤로 밀린다.
+export type CronSource = (typeof CRON_SOURCES)[number];
+/** 크론 1회가 하는 일. 한 번에 다 하면 300초를 넘겨서 갈라 둔다 */
+export const CRON_MODES = ["prices", "discover"] as const;
+export type CronMode = (typeof CRON_MODES)[number];
+
+export interface CronRunPlan {
+  /** 이번 실행의 총 처리 건수 상한 */
+  limit: number;
+  /** 새로 등록할 상한. 0 이면 발견을 아예 돌지 않는다 */
+  seedTop: number;
+  /** 발견이 읽을 목록 페이지 수 상한 */
+  pageBudget: number;
+  /** 수집 전에 제목으로 매칭해 볼 미매칭 게임 수. 검색도 요청이라 이 자리에선 적게 */
+  match: number;
+}
+
+/**
+ * 소스별, 모드별 실행 몫. **요청 간격에서 역산한 값이다** — 함수 제한 300초에서
+ * 반영(DB 왕복)과 알림, 캐시 무효화 몫으로 100초쯤을 남기고 200초 안쪽으로 잡는다.
+ * 간격은 어댑터의 minIntervalMs 가 근거다: nintendo 4초, epic 1초.
+ * 값을 올리려면 먼저 실제 실행 시간을 재고(응답의 durationMs) 올린다.
+ *
+ * CRON_TIME_BUDGET_MS 는 "요청에 쓸 수 있는 시간" 이고, 각 몫이 이 안에 드는지는
+ * cron-plan.test 가 지킨다 — 몫을 손으로 올릴 때 300초를 넘기는 실수를 테스트가 먼저 잡는다.
+ */
+export const CRON_TIME_BUDGET_MS = 200_000;
+
+export const CRON_PLAN: Record<CronSource, Record<CronMode, CronRunPlan>> = {
+  nintendo: {
+    // 4초 × 45건 = 180초
+    prices: { limit: 45, seedTop: 0, pageBudget: 0, match: 0 },
+    // 4초 × (12페이지 + 24건) = 144초. 매칭 1건이 또 4초라 3건만 본다
+    discover: { limit: 24, seedTop: 12, pageBudget: 12, match: 3 },
+  },
+  epic: {
+    // 1초 × 180건 = 180초
+    prices: { limit: 180, seedTop: 0, pageBudget: 0, match: 0 },
+    // 1초 × (90페이지 + 80건) = 170초. 카탈로그 한 바퀴가 175페이지라 두 번에 나눠 도는 셈이다
+    discover: { limit: 80, seedTop: 40, pageBudget: 90, match: 10 },
+  },
 };
 
 /** --seed-top 으로 카탈로그를 훑어 신규 게임을 등록할 수 있는 소스 (어댑터가 discoverPages 를 가진 소스) */

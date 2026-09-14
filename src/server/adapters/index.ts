@@ -11,7 +11,7 @@ import { gogAdapter } from "./gog";
 import { hltbAdapter } from "./hltb";
 import { OPENCRITIC_RAPIDAPI_KEY_ENV, opencriticAdapter } from "./opencritic";
 import { EPIC_ENABLE_ENV } from "./epic";
-import { CRAWL_PROXY_URL_ENV, crawlProxyUrl } from "./http";
+import { CRAWL_PROXY_URL_ENV, crawlProxyUrl, runsInSeoulRegion } from "./http";
 import { metacriticAdapter } from "./metacritic";
 import { rssAdapter } from "./news-rss";
 
@@ -58,7 +58,8 @@ export function getDisabledReason(source: Source): string | undefined {
     case "epic":
       // 프록시가 설정돼 있으면 켠다 — 막는 기준이 IP 대역이라 주거용 출구를 거치면 통과한다.
       // 데이터센터 프록시를 넣으면 여전히 403 이 나는데, 그건 로그에 그대로 드러나는 편이 낫다.
-      return process.env[EPIC_ENABLE_ENV] || crawlProxyUrl()
+      // 서울 리전 함수도 켠다 — 그 IP 는 Cloudflare 를 통과한다(2026-09-14 실측, curl 전송기 기준).
+      return process.env[EPIC_ENABLE_ENV] || crawlProxyUrl() || runsInSeoulRegion()
         ? undefined
         : "Epic 의 Cloudflare 가 (1) 데이터센터 IP 와 (2) Node 의 TLS 지문을 모두 막는다 — " +
           "Actions 러너는 curl 로도 403, 가정용 회선에서도 Node 는 403 이고 curl 만 통과한다(2026-09-14 확인). " +

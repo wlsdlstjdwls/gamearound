@@ -13,6 +13,11 @@ export interface RunOptions {
   limit?: number;
   /** 카탈로그에서 신규 게임을 N개까지 발견해 시드 (SEEDABLE_SOURCES) */
   seedTop?: number;
+  /**
+   * 발견이 읽을 목록 페이지 수 상한. 비우면 소스별 기본값(DISCOVERY_PAGE_BUDGET).
+   * 실행 시간이 짧은 자리(Vercel 함수 300초)에서만 줄여 쓴다 — 요청 간격 × 이 값이 곧 시간이다.
+   */
+  pageBudget?: number;
 }
 
 export interface RunResult {

@@ -4,7 +4,8 @@ name: crawl-prices
 
 on:
   schedule:
-    # 하루 3회(≈8h 간격): 실행 1회 ~12분 × 3회/일 ≈ 월 1,080분. private 레포 Actions 무료 2,000분 한도 대응.
+    # 하루 3회(≈8h 간격): 실행 1회 ~10분 × 3회/일 ≈ 월 900분. private 레포 Actions 무료 2,000분 한도 대응.
+    # (nintendo, epic 을 Vercel 크론으로 뗀 뒤 1회 실행이 2분쯤 짧아졌다)
     # 시각 고정 이유: Steam 할인은 대부분 KST 02:00(UTC 17:00)에 시작, 종료된다. 단순 "0 */8"(KST 01/09/17시)이면
     # 세일 시작 1시간 전에 돌고 다음 실행까지 8시간을 놓치므로, 세일 전환 직후를 첫 타자로 잡는다.
     # UTC 17:10 / 01:10 / 09:10 = KST 02:10 / 10:10 / 18:10.
@@ -29,9 +30,6 @@ env:
   UPSTASH_REDIS_REST_URL: ${{ secrets.UPSTASH_REDIS_REST_URL }}
   UPSTASH_REDIS_REST_TOKEN: ${{ secrets.UPSTASH_REDIS_REST_TOKEN }}
   CRAWL_SECRET: ${{ secrets.CRAWL_SECRET }}
-  # 주거용 한국 출구 프록시. 있으면 nintendo, epic 이 이 프록시로만 나간다(adapters/http 의 viaProxy).
-  # 비어 있으면 두 소스는 러너에서 빈손이고 pnpm crawl:local 이 맡는다.
-  CRAWL_PROXY_URL: ${{ secrets.CRAWL_PROXY_URL }}
   NEXT_PUBLIC_APP_URL: ${{ secrets.NEXT_PUBLIC_APP_URL }}
   NEXT_PUBLIC_VAPID_PUBLIC_KEY: ${{ secrets.NEXT_PUBLIC_VAPID_PUBLIC_KEY }}
   VAPID_PRIVATE_KEY: ${{ secrets.VAPID_PRIVATE_KEY }}
@@ -41,8 +39,6 @@ env:
   # (server/sync/discover). 실제 몫은 SEED_SHARE_MAX(배치의 절반)가 한 번 더 깎으므로
   # 배치의 절반값을 그대로 적는다 — 나머지 절반은 기존 게임 가격 갱신이 쓴다.
   STEAM_SEED_TOP: ${{ github.event.inputs.seed_top || '750' }}   # BATCH_SIZE.steam 1,500 의 절반
-  NINTENDO_SEED_TOP: '60'  # BATCH_SIZE.nintendo 120 의 절반. 요청 간격 4초라 이 이상은 시간이 안 나온다
-  EPIC_SEED_TOP: '125'     # BATCH_SIZE.epic 250 의 절반
   GOG_SEED_TOP: '200'      # BATCH_SIZE.gog 400 의 절반
   XBOX_SEED_TOP: '100'     # BATCH_SIZE.xbox 200 의 절반
   PSSTORE_SEED_TOP: '100'  # BATCH_SIZE.psstore 200 의 절반
@@ -84,19 +80,9 @@ jobs:
         continue-on-error: true
         run: pnpm crawl --source=xbox --seed-top=$XBOX_SEED_TOP $CRAWL_LIMIT_ARG
 
-      # Switch 독점작은 Steam 에 없어 nintendo 도 카탈로그를 훑어야 들어온다. 흡수/신규 판단은 제목 역매칭.
-      # eShop 은 HTML 크롤(요청 간격 4초)이라 Steam 처럼 대량으로 못 당긴다 — 실행당 소량씩 며칠에 걸쳐 채운다.
-      # 러너 IP 로는 한국 eShop 이 빈 본문을 준다 — CRAWL_PROXY_URL 이 있어야 이 단계가 실제로 채운다.
-      - name: crawl nintendo
-        continue-on-error: true
-        run: pnpm crawl --source=nintendo --seed-top=$NINTENDO_SEED_TOP $CRAWL_LIMIT_ARG
-
-      # Epic 독점작(Alan Wake 2 등)은 Steam 에 없다. 발견은 공개 GraphQL 한 바퀴, 흡수/신규 판단은 제목 역매칭.
-      # CRAWL_PROXY_URL 이 비어 있으면 비활성이라 "건너뜀" 한 줄만 찍고 끝난다(Cloudflare 가 러너 IP 를 막는다).
-      # 프록시 시크릿을 넣는 순간 워크플로 수정 없이 바로 돈다.
-      - name: crawl epic
-        continue-on-error: true
-        run: pnpm crawl --source=epic --seed-top=$EPIC_SEED_TOP $CRAWL_LIMIT_ARG
+      # nintendo, epic 은 여기서 돌리지 않는다 — 러너 IP 로는 빈손이고(한국 밖 IP 차단, 데이터센터 IP 차단)
+      # 서울 리전 함수에서는 열린다. 두 소스는 Vercel 크론이 맡는다: vercel.json 의 /api/cron/crawl,
+      # 몫과 근거는 server/sync/constants 의 CRON_PLAN. 손으로 돌릴 일이 생기면 pnpm crawl:local 이 남아 있다.
 
       # GOG 는 한국에 달러로 판다 — 가격에 통화가 붙어 들어오고, 원화 가격과 섞어 비교하지 않는다(lib/currency).
       - name: crawl gog

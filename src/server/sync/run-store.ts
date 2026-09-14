@@ -10,7 +10,7 @@ import { listStoreTargets } from "./store-targets";
 
 export async function runStore(ctx: Ctx, source: StoreSource, opts: RunOptions): Promise<void> {
   const adapter = getStoreAdapter(source);
-  const targets = await listStoreTargets(ctx, source, opts.limit ?? BATCH_SIZE[source], opts.seedTop);
+  const targets = await listStoreTargets(ctx, source, opts.limit ?? BATCH_SIZE[source], opts.seedTop, opts.pageBudget);
   console.log(`[sync:${source}] 대상 ${targets.length}건 (신규 시드 ${targets.filter((t) => t.gameId === null).length})`);
 
   // 1단계: 수집 (검증을 위해 반영 전에 전부 모은다)

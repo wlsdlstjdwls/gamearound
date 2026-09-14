@@ -18,6 +18,20 @@ export function crawlProxyUrl(): string | undefined {
   return process.env[CRAWL_PROXY_URL_ENV]?.trim() || undefined;
 }
 
+/** Vercel 이 함수 실행 리전을 알려주는 환경변수. 로컬에서는 비어 있다 */
+export const VERCEL_REGION_ENV = "VERCEL_REGION";
+/** 서울 리전. 프로젝트 설정(Functions > Region)에서 정한 값이고 코드로는 못 바꾼다 */
+export const SEOUL_REGION = "icn1";
+
+/**
+ * 지금 이 코드가 서울 리전 함수 안에서 도는가.
+ * 여기서는 한국 IP 로 나가므로 IP 대역 때문에 막히던 소스(nintendo, epic)가 열린다
+ * (2026-09-14 /api/debug/reachability 실측: nintendo 200, epic curl 200, 출구 IP 43.201.77.62).
+ */
+export function runsInSeoulRegion(): boolean {
+  return process.env[VERCEL_REGION_ENV] === SEOUL_REGION;
+}
+
 /**
  * 재시도해볼 만한 상태 코드 — 429(과요청)와 5xx(서버 장애).
  * 4xx 는 요청 자체가 틀린 것이라 같은 요청을 반복해도 결과가 같다.

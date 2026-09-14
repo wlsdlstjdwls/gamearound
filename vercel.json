@@ -1,4 +1,10 @@
 {
-  "crons": [{ "path": "/api/cron/daily", "schedule": "0 18 * * *" }],
+  "crons": [
+    { "path": "/api/cron/daily", "schedule": "0 18 * * *" },
+    { "path": "/api/cron/crawl/nintendo/prices", "schedule": "15 */3 * * *" },
+    { "path": "/api/cron/crawl/nintendo/discover", "schedule": "45 1,7,13,19 * * *" },
+    { "path": "/api/cron/crawl/epic/prices", "schedule": "25 */6 * * *" },
+    { "path": "/api/cron/crawl/epic/discover", "schedule": "55 3,15 * * *" }
+  ],
   "git": { "deploymentEnabled": { "main": false } }
 }

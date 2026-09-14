@@ -9,6 +9,7 @@
 // "무엇이 막혔는지" 가 흐려진다. 여기서는 날것의 응답만 본다.
 import { EPIC_BROWSER_HEADERS, EPIC_GRAPHQL_URL } from "@/server/adapters/epic";
 import { runCurl } from "@/server/adapters/curl";
+import { VERCEL_REGION_ENV } from "@/server/adapters/http";
 import { NINTENDO_BASE_URL } from "@/server/adapters/nintendo";
 import { GOG_CATALOG_URL } from "@/server/adapters/gog";
 import { CRAWLER_USER_AGENT } from "@/lib/site";
@@ -215,7 +216,7 @@ export async function probeStoreReachability(): Promise<ReachabilityReport> {
   ]);
 
   return {
-    region: process.env.VERCEL_REGION ?? "로컬 (Vercel 아님)",
+    region: process.env[VERCEL_REGION_ENV] ?? "로컬 (Vercel 아님)",
     egressIp: ip,
     checkedAt: new Date().toISOString(),
     probes,
