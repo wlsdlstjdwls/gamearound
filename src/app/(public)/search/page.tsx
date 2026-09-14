@@ -49,27 +49,6 @@ export async function generateMetadata({ searchParams }: Props): Promise<Metadat
   return { title: q ? `"${q}" 검색 결과` : "검색" };
 }
 
-function SearchBox({ q }: { q: string }) {
-  return (
-    <form action={ROUTES.search} className="w-full max-w-[520px]">
-      <label htmlFor="search-q" className="sr-only">
-        게임 제목 검색
-      </label>
-      <div className="flex h-11 items-center gap-2 rounded-[10px] border border-ink bg-surface px-3.5">
-        <span aria-hidden className="text-[15px] text-dim">⌕</span>
-        <input
-          id="search-q"
-          name="q"
-          type="search"
-          defaultValue={q}
-          placeholder="게임 제목 검색 (한글/영문)"
-          className="min-w-0 flex-1 bg-transparent text-[14px] font-medium text-ink outline-none placeholder:text-dim"
-        />
-      </div>
-    </form>
-  );
-}
-
 function ReportBlock({ q }: { q: string }) {
   return (
     <EmptyState
@@ -89,10 +68,9 @@ export default async function SearchPage({ searchParams }: Props) {
     return (
       <Page gap={20}>
         <h1 className="text-2xl font-bold tracking-[-0.03em] text-ink">검색</h1>
-        <SearchBox q="" />
         <EmptyState
           title="검색어를 입력하세요"
-          description="게임 제목(한글 또는 영문)으로 검색할 수 있습니다."
+          description="위 검색창에 게임 제목(한글 또는 영문)을 입력하면 결과가 바로 따라와요."
           action={{ href: ROUTES.game, label: "전체 게임 목록 보기" }}
         />
       </Page>
@@ -103,8 +81,6 @@ export default async function SearchPage({ searchParams }: Props) {
 
   return (
     <Page gap={20}>
-      <SearchBox q={q} />
-
       <div className="flex flex-wrap items-baseline justify-between gap-x-3 gap-y-2">
         <div className="flex flex-wrap items-baseline gap-2.5">
           <h1 className="text-[20px] font-bold tracking-[-0.02em] text-ink">&ldquo;{q}&rdquo; 검색 결과</h1>

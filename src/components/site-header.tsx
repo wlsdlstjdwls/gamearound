@@ -1,7 +1,9 @@
+import { Suspense } from "react";
 import Link from "next/link";
 import { ROUTES } from "@/lib/routes";
 import { AuthNav } from "@/components/auth/auth-nav";
 import { BrandLockup } from "@/components/ui/logo";
+import { SearchBox, SearchBoxFallback } from "@/components/search-box";
 
 export function SiteHeader() {
   return (
@@ -11,19 +13,11 @@ export function SiteHeader() {
           <BrandLockup />
         </Link>
 
-        <form action={ROUTES.search} className="min-w-[180px] max-w-[380px] flex-1">
-          <label htmlFor="q" className="sr-only">게임 검색</label>
-          <div className="flex h-[34px] items-center gap-1.5 rounded-[9px] border border-line-strong bg-bg px-2.5 transition-colors duration-base focus-within:border-ink">
-            <span aria-hidden className="text-[13px] text-dim">⌕</span>
-            <input
-              id="q"
-              name="q"
-              type="search"
-              placeholder="게임 제목 검색"
-              className="min-w-0 flex-1 bg-transparent text-[13px] text-ink outline-none placeholder:text-dim"
-            />
-          </div>
-        </form>
+        {/* useSearchParams 를 쓰는 검색창은 Suspense 경계 안에 둔다 —
+            없으면 정적으로 뽑히는 화면(/_not-found 등)이 프리렌더 단계에서 실패한다 */}
+        <Suspense fallback={<SearchBoxFallback />}>
+          <SearchBox />
+        </Suspense>
 
         <nav aria-label="주요 메뉴" className="ml-auto flex shrink-0 items-center gap-1 text-[13px]">
           <Link href={ROUTES.game} className="press rounded-lg px-3 py-[7px] text-mut transition-colors hover:text-ink">

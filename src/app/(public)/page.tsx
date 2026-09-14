@@ -47,9 +47,11 @@ function urgentCount(discounts: GameSummary[]): number {
 }
 
 /**
- * 홈 지표 타일. 라벨과 숫자만 쌓아 두면 세 칸이 전부 같은 회색 덩어리로 읽혀서
- * 톤(윗줄 색띠 + 점) + 큰 숫자 + 한 줄 설명으로 무게를 나눴다.
- * 색은 의미를 따른다: 할인은 악센트, 마감 임박은 danger, 신작은 중립.
+ * 홈 지표 타일. 색은 의미를 따른다: 할인은 악센트, 마감 임박은 danger, 신작은 중립.
+ *
+ * 설명 문구를 뺀 이유(2026-09-14): 라벨이 이미 같은 말을 한다("할인 중" / "지금 할인가로 살 수 있어요").
+ * 좁은 화면에서 세 칸이 세로로 쌓이면서 설명까지 붙어 첫 화면을 통째로 먹었다.
+ * 가로 3칸을 모든 폭에서 유지하고 숫자를 줄여 머리글 아래 띠 하나로 읽히게 했다.
  */
 const METRIC_TONE = {
   acc: { stripe: "bg-acc", dot: "bg-acc", value: "text-acc" },
@@ -61,7 +63,6 @@ function Metric({
   label,
   value,
   unit,
-  caption,
   tone = "neutral",
   urgent = false,
   index,
@@ -69,7 +70,6 @@ function Metric({
   label: string;
   value: number;
   unit: string;
-  caption: string;
   tone?: keyof typeof METRIC_TONE;
   /** 값이 있을 때만 표시등을 켠다 */
   urgent?: boolean;
@@ -77,17 +77,16 @@ function Metric({
 }) {
   const t = METRIC_TONE[tone];
   return (
-    <div className="enter-item relative flex flex-col gap-2 px-5 py-4" style={stagger(index)}>
+    <div className="enter-item relative flex flex-col gap-1 px-4 py-3" style={stagger(index)}>
       <span aria-hidden className={`absolute inset-x-0 top-0 h-[3px] ${t.stripe}`} />
-      <span className="flex items-center gap-1.5 text-[11.5px] text-dim">
-        <span aria-hidden className={`size-1.5 rounded-full ${t.dot} ${urgent ? "pulse-dot" : ""}`} />
+      <span className="flex items-center gap-1.5 text-[11.5px] leading-[1.4] text-dim">
+        <span aria-hidden className={`size-1.5 shrink-0 rounded-full ${t.dot} ${urgent ? "pulse-dot" : ""}`} />
         {label}
       </span>
       <span className="flex items-baseline gap-1">
-        <strong className={`text-[30px] font-bold leading-none tracking-[-0.03em] ${t.value}`}>{value}</strong>
+        <strong className={`text-[20px] font-bold leading-none tracking-[-0.03em] ${t.value}`}>{value}</strong>
         <span className="text-[12px] text-dim">{unit}</span>
       </span>
-      <span className="text-[11.5px] leading-[1.5] text-dim">{caption}</span>
     </div>
   );
 }
@@ -121,31 +120,11 @@ export default async function HomePage() {
           </h1>
         </div>
 
-        <Card className="grid w-full shrink-0 grid-cols-1 divide-y divide-line overflow-hidden border-line-strong p-0 sm:w-auto sm:grid-cols-3 sm:divide-x sm:divide-y-0">
-          <Metric
-            index={0}
-            label="할인 중"
-            value={discounts.length}
-            unit="종"
-            caption="지금 할인가로 살 수 있어요"
-            tone="acc"
-          />
-          <Metric
-            index={1}
-            label="48시간 내 종료"
-            value={urgent}
-            unit="건"
-            caption="곧 원래 가격으로 돌아가요"
-            tone="danger"
-            urgent={urgent > 0}
-          />
-          <Metric
-            index={2}
-            label="최근 출시"
-            value={recentReleases.length}
-            unit="종"
-            caption="새로 들어온 게임이에요"
-          />
+        {/* 좁은 화면에서도 3칸을 유지한다 — 세로로 쌓으면 머리글보다 큰 덩어리가 된다 */}
+        <Card className="grid w-full shrink-0 grid-cols-3 divide-x divide-line overflow-hidden border-line-strong p-0 sm:w-auto">
+          <Metric index={0} label="할인 중" value={discounts.length} unit="종" tone="acc" />
+          <Metric index={1} label="48시간 내 종료" value={urgent} unit="건" tone="danger" urgent={urgent > 0} />
+          <Metric index={2} label="최근 출시" value={recentReleases.length} unit="종" />
         </Card>
       </section>
 
