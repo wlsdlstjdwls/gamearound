@@ -4,27 +4,35 @@
  * 악센트 제거용 NFKD 는 한글 음절도 자모(U+1100~)로 분해한다. 그 상태에서 [^a-z0-9가-힣] 로 거르면
  * 한국어 제목이 통째로 빈 문자열이 된다 → 서로 다른 한국어 제목이 유사도 1.0 으로 auto 매칭되고,
  * slug 는 전부 "game" 으로 충돌한다. 분해된 자모를 NFC 로 도로 합친 뒤에 걸러야 한다.
+ *
+ * NFKD 는 전각도 반각으로 되돌린다("マリオカート８" → "8", "Ｒ－ＴＹＰＥ" → "R-TYPE").
+ * 일본 스토어가 전각, 반각을 섞어 쓰므로 이 단계가 곧 일본어 제목 비교의 전제다.
  */
 function stripDiacritics(input: string): string {
   return input.replace(/[™®©]/g, "").normalize("NFKD").replace(/[̀-ͯ]/g, "").normalize("NFC");
 }
 
 /**
- * slug 에 남길 글자. 로마자, 숫자에 더해 **글자를 쓰는 언어를 버리지 않는다**:
+ * 버리지 않을 글자 — 로마자, 숫자에 더해 **글자를 쓰는 언어**:
  * 한글(가-힣), 가나(ぁ-ゖ ァ-ヺ 장음 ー), 한자(一-鿿).
  *
  * 가나, 한자를 넣은 이유(2026-09-14): 일본 eShop 을 붙이면서 일본어 제목이 들어오기 시작했는데,
- * 이 글자들을 버리면 제목에서 라틴 조각만 남아 slug 가 뜻을 잃는다 —
+ * 이 글자들을 버리면 제목에서 라틴 조각만 남아 뜻을 잃는다 —
  * "ロマンシング サガ3" → "3", "ゼルダ無双 厄災の黙示録 DX" → "dx", "非凡仙途" → "game".
  * 뜻을 잃는 것보다 나쁜 건 겹치기 쉬워진다는 점이다. slug 는 주소라 나중에 못 바꾼다.
- * 한글을 이미 살리고 있었으니 같은 기준을 다른 문자 체계에도 적용한다.
+ *
+ * slug 와 제목 정규화가 **같은 집합**을 쓴다. 한쪽만 살리면 주소는 뜻을 지키는데 매칭은
+ * 빈 제목끼리 붙는 엇갈림이 생긴다(일본 제목이 전부 "" 로 정규화돼 서로 유사도 1.0 이던 상태).
  */
-const SLUG_KEEP = /[^a-z0-9가-힣ぁ-ゖァ-ヺー一-鿿]+/g;
+const SCRIPT_CHARS = "a-z0-9가-힣ぁ-ゖァ-ヺー一-鿿";
+const SLUG_DROP = new RegExp(`[^${SCRIPT_CHARS}]+`, "g");
+// 공백은 제목 정규화에서만 남긴다(낱말 경계). 템플릿 리터럴은 \s 를 s 로 삼키므로 문자열로 잇는다
+const TITLE_DROP = new RegExp("[^" + SCRIPT_CHARS + "\\s]", "g");
 
 export function slugify(input: string): string {
   return stripDiacritics(input)
     .toLowerCase()
-    .replace(SLUG_KEEP, "-")
+    .replace(SLUG_DROP, "-")
     .replace(/^-+|-+$/g, "")
     .slice(0, 80) || "game";
 }
@@ -46,6 +54,20 @@ const EDITION_SUFFIXES = [
 ];
 
 /**
+ * 일본 스토어가 붙이는 판매 단위 표시. 라틴 목록과 달리 **앞 공백을 요구하지 않는다** —
+ * 일본어는 낱말을 띄우지 않아 "ポケットモンスター スカーレットダウンロード版" 처럼 붙어 온다.
+ * 이걸 떼지 않으면 같은 게임의 판매 단위가 본편과 유사도 0.68 에 그쳐(2026-09-14 실측)
+ * auto 도 pending 도 못 되고 새 게임으로 등록된다 — 일본 안에서 같은 게임이 두 벌 생긴다.
+ *
+ * 체험판은 일부러 넣지 않는다. 본편에 흡수하면 무료 데모 가격이 본편 가격을 덮는다.
+ */
+const JP_EDITION_SUFFIXES = [
+  "ダウンロード版", "パッケージ版", "通常版", "完全版", "廉価版", "特別版", "限定版",
+  "デラックス版", "豪華版", "ベスト版", "アルティメットエディション", "デラックスエディション",
+  "スタンダードエディション", "コンプリートエディション", "アニバーサリーエディション",
+];
+
+/**
  * 제목 뒤에 붙는 실행 플랫폼 표시. Xbox 카탈로그는 같은 게임의 PC 판을 "(Windows)" 로 구분해
  * 별개 SKU 로 내보낸다 — 우리에게는 같은 게임이므로 매칭 전에 지운다.
  */
@@ -63,18 +85,36 @@ const EDITION_TAIL = /\s[-–—:]\s(?:\S+\s){0,2}(?:edition|에디션)\s*$/i;
 /** 구분자 없이 붙는 꼬리("Vault Edition", "볼트 에디션") — 에디션 낱말과 그 앞 한 낱말까지 지운다 */
 const LOOSE_EDITION_TAIL = /\s(?:\S+\s)?(?:edition|에디션)$/;
 
+/** 꼬리를 떼되 통째로 사라지면 원본을 지킨다 — 빈 제목은 아무하고나 붙는다 */
+function stripJapaneseEditions(t: string): string {
+  for (let cut = true; cut; ) {
+    cut = false;
+    for (const suf of JP_EDITION_SUFFIXES) {
+      if (!t.endsWith(suf)) continue;
+      const head = t.slice(0, -suf.length).trim();
+      if (!head) continue;
+      t = head;
+      cut = true;
+      break;
+    }
+  }
+  return t;
+}
+
 /** 소문자, 특수문자 제거, 플랫폼 표시와 에디션 접미어 제거, 공백 정리 */
 export function normalizeTitle(title: string): string {
   // 구두점을 지우기 전에 에디션 꼬리부터 떼어낸다 — 구분자가 사라지면 경계를 못 찾는다
   let head = stripDiacritics(title).replace(PLATFORM_MARKERS, "");
   while (EDITION_TAIL.test(head)) head = head.replace(EDITION_TAIL, "");
 
-  const t = head
-    .toLowerCase()
-    .replace(/&/g, " and ")
-    .replace(/[^a-z0-9가-힣\s]/g, " ")
-    .replace(/\s+/g, " ")
-    .trim();
+  const t = stripJapaneseEditions(
+    head
+      .toLowerCase()
+      .replace(/&/g, " and ")
+      .replace(TITLE_DROP, " ")
+      .replace(/\s+/g, " ")
+      .trim(),
+  );
 
   for (const suf of EDITION_SUFFIXES) {
     if (t.endsWith(" " + suf)) return t.slice(0, -(suf.length + 1)).trim();
@@ -96,6 +136,22 @@ export function normalizeForSearch(input: string): string {
   return input.toLowerCase().replace(/[^\p{L}\p{N}]+/gu, "");
 }
 
+/**
+ * 유사도 비교용 키 — 정규화한 제목에서 공백까지 지운다.
+ *
+ * 띄어쓰기는 스토어마다 제멋대로다("몬스터 헌터 라이즈" / "몬스터헌터라이즈",
+ * "ゼルダの伝説 ブレス オブ ザ ワイルド" / "ゼルダの伝説ブレスオブザワイルド").
+ * 공백을 신호로 두면 같은 게임이 0.31~0.36 으로 떨어져 남남이 된다.
+ *
+ * 지워도 안전한 이유(2026-09-14 실측, 아래 표본은 slug.test.ts 에 고정해 뒀다):
+ * 낱말이 붙으면 경계 trigram 이 사라져 **서로 다른 게임의 유사도는 오히려 내려간다**
+ * (Portal / Portal 2 0.78 → 0.67, 풍화설월 / 무쌍 풍화설월 0.71 → 0.60).
+ * 같은 게임 최저 0.87, 다른 게임 최고 0.68 로 벌어져 임계값 0.9 / 0.7 을 그대로 둔다.
+ */
+function matchKey(title: string): string {
+  return normalizeTitle(title).replace(/\s+/g, "");
+}
+
 function trigrams(s: string): Set<string> {
   const padded = `  ${s} `;
   const out = new Set<string>();
@@ -105,9 +161,13 @@ function trigrams(s: string): Set<string> {
 
 /** pg_trgm 방식과 유사한 trigram Jaccard 유사도 (0~1) */
 export function trigramSimilarity(a: string, b: string): number {
-  const ta = trigrams(normalizeTitle(a));
-  const tb = trigrams(normalizeTitle(b));
-  if (ta.size === 0 || tb.size === 0) return 0;
+  const ka = matchKey(a);
+  const kb = matchKey(b);
+  // 빈 키는 0. trigrams("") 는 패딩 때문에 원소가 1개라 빈 것끼리 1.0 이 나온다 —
+  // 그대로 두면 글자를 하나도 못 남긴 제목들(기호뿐인 제목)이 서로 auto 매칭돼 다른 게임이 합쳐진다.
+  if (!ka || !kb) return 0;
+  const ta = trigrams(ka);
+  const tb = trigrams(kb);
   let inter = 0;
   for (const g of ta) if (tb.has(g)) inter++;
   const union = ta.size + tb.size - inter;
