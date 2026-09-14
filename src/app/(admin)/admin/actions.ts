@@ -2,7 +2,7 @@
 // 관리자 Server Action (§5.2). 각 액션은 requireAdmin()으로 role 재검증(§6) 후 서비스 호출.
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
-import { sourceEnum } from "@/server/db/schema";
+import { platformEnum, sourceEnum, upgradeKindEnum } from "@/server/db/schema";
 import {
   approveMatch,
   CORRECTABLE_FIELDS,
@@ -13,6 +13,7 @@ import {
   setManualRef,
   type CorrectableTable,
 } from "@/server/services/admin";
+import { deleteUpgrade, upsertUpgrade } from "@/server/services/admin-upgrades";
 import { requireAdmin } from "@/server/services/users";
 
 export type AdminActionState = { ok: true; message?: string } | { ok: false; error: string } | null;
@@ -31,6 +32,19 @@ const correctionSchema = z.object({
   field: z.string().min(1),
   value: z.string().max(20000).default(""),
   lock: z.boolean().default(true),
+});
+
+/** 업그레이드 입력. 빈 문자열은 "값 없음"으로 접는다 — 폼은 빈 칸을 null 로 보낼 방법이 없다 */
+const optionalText = z.union([z.literal(""), z.string().trim().max(500)]).optional();
+const upgradeSchema = z.object({
+  gameId: z.uuid(),
+  fromPlatform: z.enum(platformEnum.enumValues),
+  toPlatform: z.enum(platformEnum.enumValues),
+  kind: z.enum(upgradeKindEnum.enumValues),
+  price: z.union([z.literal(""), z.coerce.number().int().min(0).max(10_000_000)]).optional(),
+  storeExternalId: optionalText,
+  storeUrl: z.union([z.literal(""), z.url({ message: "URL 형식이 올바르지 않습니다" }).max(2048)]).optional(),
+  note: optionalText,
 });
 
 function fail(e: unknown): AdminActionState {
@@ -109,6 +123,51 @@ export async function correctFieldAction(_prev: AdminActionState, formData: Form
     if (gameId.success) revalidateGame(gameId.data);
     else revalidatePath("/admin");
     return { ok: true, message: `정정 완료 (이전 값: ${r.before === null ? "없음" : String(r.before)})` };
+  } catch (e) {
+    return fail(e);
+  }
+}
+
+/** 세대 업그레이드 입력, 수정. useActionState용 */
+export async function upsertUpgradeAction(_prev: AdminActionState, formData: FormData): Promise<AdminActionState> {
+  try {
+    await requireAdmin();
+    const p = upgradeSchema.safeParse({
+      gameId: formData.get("gameId"),
+      fromPlatform: formData.get("fromPlatform"),
+      toPlatform: formData.get("toPlatform"),
+      kind: formData.get("kind"),
+      price: formData.get("price") ?? "",
+      storeExternalId: formData.get("storeExternalId") ?? "",
+      storeUrl: formData.get("storeUrl") ?? "",
+      note: formData.get("note") ?? "",
+    });
+    if (!p.success) return { ok: false, error: p.error.issues[0]?.message ?? "입력값이 올바르지 않습니다" };
+    const d = p.data;
+    const { created } = await upsertUpgrade({
+      gameId: d.gameId,
+      fromPlatform: d.fromPlatform,
+      toPlatform: d.toPlatform,
+      kind: d.kind,
+      price: typeof d.price === "number" ? d.price : null,
+      storeExternalId: d.storeExternalId ? d.storeExternalId : null,
+      storeUrl: d.storeUrl ? d.storeUrl : null,
+      note: d.note ? d.note : null,
+    });
+    revalidateGame(d.gameId);
+    return { ok: true, message: created ? "업그레이드를 추가했습니다" : "업그레이드를 수정했습니다" };
+  } catch (e) {
+    return fail(e);
+  }
+}
+
+export async function deleteUpgradeAction(gameId: string, id: number): Promise<AdminActionState> {
+  try {
+    await requireAdmin();
+    if (!z.uuid().safeParse(gameId).success) return { ok: false, error: "잘못된 요청입니다" };
+    await deleteUpgrade(id);
+    revalidateGame(gameId);
+    return { ok: true, message: "업그레이드를 삭제했습니다" };
   } catch (e) {
     return fail(e);
   }
