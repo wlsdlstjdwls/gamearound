@@ -11,9 +11,14 @@ export const priceOverviewSchema = z.object({
 });
 
 export const appDataSchema = z.object({
+  /** "game" | "dlc" | "demo" | "music" ... — DLC 판별의 1차 근거 (2026-09-14 실측) */
   type: z.string().optional(),
   name: z.string(),
   steam_appid: z.number().optional(),
+  /** 본편이 알려주는 DLC appid 목록. 엘든 링(1245620) 에서 [3655690, 2778590, 2778580] 확인 */
+  dlc: z.array(z.number()).optional(),
+  /** DLC 가 알려주는 본편. appid 가 문자열로 온다 */
+  fullgame: z.object({ appid: z.union([z.string(), z.number()]).optional(), name: z.string().optional() }).optional(),
   is_free: z.boolean().optional(),
   short_description: z.string().optional(),
   header_image: z.string().optional(),

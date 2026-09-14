@@ -84,6 +84,13 @@ export function parseAppDetails(rawKo: unknown, appid: string, rawEn?: unknown):
   const titleKo = titleKoRaw && titleKoRaw !== titleEn ? titleKoRaw : null;
   const releaseDate = parseSteamDate(en?.release_date?.date) ?? parseSteamDate(ko.release_date?.date);
 
+  const parentRaw = ko.fullgame?.appid ?? en?.fullgame?.appid;
+  const parentExternalId = parentRaw === undefined || parentRaw === null ? null : String(parentRaw);
+  // type 이 "dlc" 이거나 본편을 가리키고 있으면 DLC 로 본다.
+  // 두 신호를 모두 보는 이유: Steam 은 일부 확장팩을 type="game" 으로 두면서 fullgame 만 채워 준다.
+  const isDlc = (ko.type ?? en?.type) === "dlc" || Boolean(parentExternalId);
+  const dlcExternalIds = (ko.dlc ?? en?.dlc ?? []).map(String);
+
   return {
     platform: "steam",
     storeExternalId: appid,
@@ -93,6 +100,11 @@ export function parseAppDetails(rawKo: unknown, appid: string, rawEn?: unknown):
     discountPct,
     currentVersion: null,
     releaseDate,
+    contentType: isDlc ? "dlc" : "game",
+    parentExternalId,
+    dlcExternalIds,
+    // 본편이 DLC 목록을 줬다면 그 자체가 "추가 콘텐츠 있음"이다
+    hasAddOns: isDlc ? null : dlcExternalIds.length > 0,
     meta: {
       titleEn,
       titleKo,

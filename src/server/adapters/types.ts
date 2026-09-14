@@ -4,7 +4,7 @@ import type { Platform } from "@/server/db/schema";
 /** 크롤러 공통 User-Agent (§10: UA 명시) — 실제 값은 서비스 아이덴티티(lib/site)에서 만든다 */
 export { CRAWLER_USER_AGENT } from "@/lib/site";
 
-export type Source = "steam" | "psstore" | "xbox" | "nintendo" | "hltb" | "opencritic" | "metacritic" | "rss";
+export type Source = "steam" | "psstore" | "xbox" | "nintendo" | "hltb" | "opencritic" | "metacritic" | "rss" | "wikidata" | "gamepass";
 
 export interface StoreSnapshot {
   platform: Platform;
@@ -21,6 +21,17 @@ export interface StoreSnapshot {
   discountName?: string | null;
   currentVersion?: string | null;
   releaseDate?: string | null;   // ISO date (YYYY-MM-DD)
+  /**
+   * 이 스토어가 "추가 콘텐츠 있음"이라고 알려준 값. xbox Properties.HasAddOns 가 준다.
+   * DLC 목록을 못 가져오는 플랫폼에서도 유무만은 표시하기 위한 별도 신호다.
+   */
+  hasAddOns?: boolean | null;
+  /** 본편이 알려주는 DLC 외부 ID 목록. steam appdetails 의 dlc 배열 (2026-09-14 실측) */
+  dlcExternalIds?: string[];
+  /** DLC 가 알려주는 본편 외부 ID. steam appdetails 의 fullgame.appid */
+  parentExternalId?: string | null;
+  /** 이 레코드 자체가 본편인지 DLC 인지. 주지 않는 소스는 undefined(= 본편으로 본다) */
+  contentType?: "game" | "dlc" | null;
   // Steam 기준 소스에서만 채워지는 게임 마스터 정보(신규 게임 생성용)
   meta?: {
     titleEn: string;
@@ -42,6 +53,45 @@ export interface MetaSnapshot {
   scores?: { metacritic?: number | null; opencritic?: number | null };
   genres?: string[];
   multiplayer?: { localMax?: number; onlineMax?: number; coop?: boolean; pvp?: boolean };
+}
+
+/**
+ * 회사 정보. 스토어가 아니라 백과사전(위키데이터)에서 온다 — 스토어는 회사명 문자열만 주고 국가를 주지 않는다.
+ * 값이 없는 필드는 null 로 오고, sync 는 null 로 기존 값을 덮지 않는다.
+ */
+export interface CompanyInfo {
+  /** 외부 식별자(위키데이터 Q번호). 재조회 키이자 중복 방지 키 */
+  externalId: string;
+  nameEn: string;
+  nameKo: string | null;
+  countryCode: string | null;   // ISO 3166-1 alpha-2
+  countryNameKo: string | null;
+  foundedAt: string | null;     // YYYY-MM-DD
+  hqNameKo: string | null;
+  websiteUrl: string | null;
+  description: string | null;
+}
+
+/**
+ * 회사 조회 어댑터. `lookup` 은 **확실할 때만** 값을 준다 —
+ * 동명이인(같은 이름의 다른 회사)을 자동 확정하면 국가가 틀린 채로 화면에 박힌다.
+ * 후보가 0건이거나 2건 이상이면 null 을 돌려주고, 호출부가 관리자 검수 큐로 넘긴다.
+ */
+export interface CompanyAdapter {
+  source: Source;
+  lookup(name: string): Promise<CompanyInfo | null>;
+  minIntervalMs: number;
+}
+
+/**
+ * 구독 카탈로그 어댑터. 구독은 게임 단위가 아니라 "카탈로그 전체 목록" 단위로 온다.
+ * 반환값은 스토어 외부 ID 목록이고, 우리 DB 의 game_platforms.store_external_id 와 맞춘다.
+ */
+export interface SubscriptionAdapter {
+  source: Source;
+  /** catalogId 는 subscriptions.catalog_id (Game Pass 컬렉션 GUID 등) */
+  fetchCatalog(catalogId: string): Promise<string[]>;
+  minIntervalMs: number;
 }
 
 export interface NewsItem {

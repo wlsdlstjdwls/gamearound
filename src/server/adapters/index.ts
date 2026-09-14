@@ -1,6 +1,8 @@
 // 어댑터 레지스트리 — source 이름 → 어댑터. sync/ 는 이 파일을 통해서만 어댑터에 접근한다.
-import type { MetaAdapter, NewsAdapter, Source, StoreAdapter } from "./types";
+import type { CompanyAdapter, MetaAdapter, NewsAdapter, Source, StoreAdapter, SubscriptionAdapter } from "./types";
 import { steamAdapter } from "./steam";
+import { wikidataAdapter } from "./wikidata";
+import { gamepassAdapter } from "./gamepass";
 import { psstoreAdapter } from "./psstore";
 import { xboxAdapter } from "./xbox";
 import { nintendoAdapter } from "./nintendo";
@@ -12,11 +14,19 @@ import { rssAdapter } from "./news-rss";
 export const STORE_SOURCES = ["steam", "psstore", "xbox", "nintendo"] as const;
 export const META_SOURCES = ["hltb", "opencritic", "metacritic"] as const;
 export const NEWS_SOURCES = ["rss"] as const;
-export const ALL_SOURCES: readonly Source[] = [...STORE_SOURCES, ...META_SOURCES, ...NEWS_SOURCES];
+/** 회사 정보 소스 — 게임이 아니라 회사를 조회한다(§5 확장 지점) */
+export const COMPANY_SOURCES = ["wikidata"] as const;
+/** 구독 카탈로그 소스 — 게임 단위가 아니라 카탈로그 목록 단위로 받는다 */
+export const SUBSCRIPTION_SOURCES = ["gamepass"] as const;
+export const ALL_SOURCES: readonly Source[] = [
+  ...STORE_SOURCES, ...META_SOURCES, ...NEWS_SOURCES, ...COMPANY_SOURCES, ...SUBSCRIPTION_SOURCES,
+];
 
 export type StoreSource = (typeof STORE_SOURCES)[number];
 export type MetaSource = (typeof META_SOURCES)[number];
 export type NewsSource = (typeof NEWS_SOURCES)[number];
+export type CompanySource = (typeof COMPANY_SOURCES)[number];
+export type SubscriptionSource = (typeof SUBSCRIPTION_SOURCES)[number];
 
 const storeAdapters: Record<StoreSource, StoreAdapter> = {
   steam: steamAdapter,
@@ -30,6 +40,8 @@ const metaAdapters: Record<MetaSource, MetaAdapter> = {
   metacritic: metacriticAdapter,
 };
 const newsAdapters: Record<NewsSource, NewsAdapter> = { rss: rssAdapter };
+const companyAdapters: Record<CompanySource, CompanyAdapter> = { wikidata: wikidataAdapter };
+const subscriptionAdapters: Record<SubscriptionSource, SubscriptionAdapter> = { gamepass: gamepassAdapter };
 
 /**
  * 비활성 소스 — PoC 미통과/차단/키 없음. crawl/match 는 비활성 소스를 실행하지 않는다(sync_logs 기록 없음).
@@ -64,6 +76,12 @@ export function isMetaSource(s: Source): s is MetaSource {
 export function isNewsSource(s: Source): s is NewsSource {
   return (NEWS_SOURCES as readonly string[]).includes(s);
 }
+export function isCompanySource(s: Source): s is CompanySource {
+  return (COMPANY_SOURCES as readonly string[]).includes(s);
+}
+export function isSubscriptionSource(s: Source): s is SubscriptionSource {
+  return (SUBSCRIPTION_SOURCES as readonly string[]).includes(s);
+}
 
 export function getStoreAdapter(source: StoreSource): StoreAdapter {
   return storeAdapters[source];
@@ -74,10 +92,34 @@ export function getMetaAdapter(source: MetaSource): MetaAdapter {
 export function getNewsAdapter(source: NewsSource): NewsAdapter {
   return newsAdapters[source];
 }
+export function getCompanyAdapter(source: CompanySource): CompanyAdapter {
+  return companyAdapters[source];
+}
+export function getSubscriptionAdapter(source: SubscriptionSource): SubscriptionAdapter {
+  return subscriptionAdapters[source];
+}
 
-/** source 이름 → 어댑터 (타입 구분 없이 search/minIntervalMs 만 쓸 때) */
-export function getAdapter(source: Source): StoreAdapter | MetaAdapter | NewsAdapter {
+/**
+ * 제목으로 후보를 찾을 수 있는 소스. 매칭 단계(sync/match)가 쓰는 집합이다.
+ * 회사, 구독 소스는 게임 제목으로 검색하는 개념 자체가 없어 여기서 빠진다.
+ */
+export type SearchableSource = StoreSource | MetaSource | NewsSource;
+export function isSearchableSource(s: Source): s is SearchableSource {
+  return isStoreSource(s) || isMetaSource(s) || isNewsSource(s);
+}
+export function getSearchableAdapter(source: SearchableSource): StoreAdapter | MetaAdapter | NewsAdapter {
   if (isStoreSource(source)) return storeAdapters[source];
   if (isMetaSource(source)) return metaAdapters[source];
+  return newsAdapters[source];
+}
+
+/** source 이름 → 어댑터 (타입 구분 없이 minIntervalMs 만 쓸 때) */
+export function getAdapter(
+  source: Source,
+): StoreAdapter | MetaAdapter | NewsAdapter | CompanyAdapter | SubscriptionAdapter {
+  if (isStoreSource(source)) return storeAdapters[source];
+  if (isMetaSource(source)) return metaAdapters[source];
+  if (isCompanySource(source)) return companyAdapters[source];
+  if (isSubscriptionSource(source)) return subscriptionAdapters[source];
   return newsAdapters[source as NewsSource];
 }
