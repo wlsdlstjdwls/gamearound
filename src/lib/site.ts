@@ -20,6 +20,8 @@ export const SITE = {
   /** 수집 데이터의 성격을 알리는 고지 — 푸터, 약관 동의문에서 공유한다 */
   dataDisclaimer: "가격, 정보는 각 스토어와 외부 소스에서 주기적으로 수집되며 실시간이 아닙니다.",
   locale: "ko",
+  /** 저작권 표기의 시작 연도. 푸터가 매년 바뀌지 않도록 연도는 렌더 시점에 붙인다 */
+  foundedYear: 2026,
   repoUrl: "https://github.com/wlsdlstjdwls/gamearound",
   contactEmail: "admin@example.com",
   /** PWA, 브라우저 UI 색. globals.css 의 --bg / --ink 와 같은 값이어야 한다 */

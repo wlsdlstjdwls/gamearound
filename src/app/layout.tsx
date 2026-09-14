@@ -3,6 +3,7 @@ import "./globals.css";
 import { SITE } from "@/lib/site";
 import { SessionProvider } from "@/components/auth/session-provider";
 import { SiteHeader } from "@/components/site-header";
+import { SiteFooter } from "@/components/site-footer";
 
 // OG 이미지 URL 은 절대 경로여야 한다. 배포 주소를 모르면 Next 가 상대 경로로 내보내고 SNS 에서 미리보기가 깨진다.
 const siteUrl = process.env.NEXT_PUBLIC_APP_URL;
@@ -34,9 +35,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <SessionProvider>
           <SiteHeader />
           <main className="flex-1">{children}</main>
-          <footer className="border-t border-line bg-surface py-6 text-center text-[11.5px] text-dim">
-            {SITE.name} | {SITE.dataDisclaimer}
-          </footer>
+          <SiteFooter />
         </SessionProvider>
       </body>
     </html>
