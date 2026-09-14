@@ -4,6 +4,7 @@ import { eq, inArray } from "drizzle-orm";
 import { gameGenres, gameSourceRefs, games, genres, type ContentType } from "@/server/db/schema";
 import type { Db } from "@/server/db/client";
 import { AdapterError, type StoreSnapshot } from "@/server/adapters/types";
+import { normalizeGenre } from "@/lib/genres";
 import { slugify, slugWithSuffix } from "@/lib/slug";
 import { isLocked, type Ctx } from "./context";
 
@@ -19,7 +20,8 @@ async function uniqueSlug(db: Db, titleEn: string, externalId: string): Promise<
 }
 
 async function linkGenres(db: Db, gameId: string, names: string[]): Promise<void> {
-  const clean = Array.from(new Set(names.map((n) => n.trim()).filter(Boolean)));
+  // 저장 전에 우리 어휘로 옮긴다 — 소스마다 다른 말로 주면 같은 장르가 칩 두 개가 된다
+  const clean = Array.from(new Set(names.map((n) => normalizeGenre(n)).filter(Boolean)));
   if (clean.length === 0) return;
   await db.insert(genres).values(clean.map((name) => ({ name }))).onConflictDoNothing();
   const rows = await db.select({ id: genres.id }).from(genres).where(inArray(genres.name, clean));

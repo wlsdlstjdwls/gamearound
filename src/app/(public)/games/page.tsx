@@ -60,8 +60,11 @@ export default async function GamesPage({ searchParams }: Props) {
         </p>
       </div>
 
-      <GameFilters facets={facets} filter={filter} />
+      {/* 넓은 화면에서만 두 기둥이 된다. 좁은 화면에서는 필터가 접힌 서랍으로 위에 한 줄만 차지한다 */}
+      <div className="grid items-start gap-5 lg:grid-cols-[216px_minmax(0,1fr)]">
+        <GameFilters facets={facets} filter={filter} />
 
+        <div className="flex flex-col gap-5">
       {result.items.length === 0 ? (
         <EmptyState
           title="조건에 맞는 게임이 없습니다"
@@ -87,6 +90,8 @@ export default async function GamesPage({ searchParams }: Props) {
           />
         </>
       )}
+        </div>
+      </div>
     </Page>
   );
 }
