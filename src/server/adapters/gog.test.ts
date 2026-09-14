@@ -4,6 +4,7 @@ import { readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import { AdapterError } from "./types";
 import {
+  gogDlcIds,
   gogImageUrl,
   gogReleaseDate,
   gogStoreUrl,
@@ -71,17 +72,30 @@ describe("parseGogProducts", () => {
     expect(parseGogProducts(fixture("gog-products.json")).map((p) => p.id)).toEqual([1207658995, 1207666073]);
   });
 
-  it("비공개, 본편이 아닌 상품은 뺀다", () => {
+  it("비공개 상품만 뺀다 — DLC 는 남긴다(콕 집어 물었을 때 빈손이면 등록이 안 된다)", () => {
     const raw = [
       { id: 1, title: "정상", game_type: "game", is_secret: false },
       { id: 2, title: "비공개", game_type: "game", is_secret: true },
       { id: 3, title: "DLC", game_type: "dlc", is_secret: false },
     ];
-    expect(parseGogProducts(raw).map((p) => p.id)).toEqual([1]);
+    expect(parseGogProducts(raw).map((p) => p.id)).toEqual([1, 3]);
   });
 
   it("형식이 다르면 재시도하지 않는 AdapterError", () => {
     expect(() => parseGogProducts({ nope: true })).toThrow(AdapterError);
+  });
+});
+
+describe("gogDlcIds", () => {
+  // dlcs 는 없을 때 [], 있을 때 { products } 로 오는 두 모양이다(2026-09-14 실측)
+  it("DLC 가 없으면 빈 배열로 온다", () => {
+    expect(gogDlcIds({ id: 1, title: "x", dlcs: [] } as unknown as GogProduct)).toEqual([]);
+    expect(gogDlcIds({ id: 1, title: "x" } as unknown as GogProduct)).toEqual([]);
+  });
+
+  it("DLC 가 있으면 객체 안 products 에서 id 를 꺼낸다", () => {
+    const product = { id: 1423049311, title: "Cyberpunk 2077", dlcs: { products: [{ id: 1256837418 }, { id: 1597316373 }] } };
+    expect(gogDlcIds(product as unknown as GogProduct)).toEqual(["1256837418", "1597316373"]);
   });
 });
 

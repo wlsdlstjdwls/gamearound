@@ -14,6 +14,7 @@ import {
 } from "./types";
 import { createHttpClient } from "./http";
 import { sleep } from "@/lib/async";
+import { errorMessage } from "@/lib/errors";
 
 export const GOG_CATALOG_URL = "https://catalog.gog.com/v1/catalog";
 export const GOG_API_URL = "https://api.gog.com";
@@ -41,6 +42,11 @@ const productSchema = z.object({
   slug: z.string().nullish(),
   game_type: z.string().nullish(),
   is_secret: z.boolean().nullish(),
+  /**
+   * 본편이 가진 DLC. 값이 없으면 빈 배열([])로, 있으면 객체로 온다 — 같은 필드가 두 모양이다(2026-09-14 실측).
+   * expand=expanded_dlcs 를 붙이지 않아도 products 안에 id 가 들어 있어 목록은 이것만으로 충분하다.
+   */
+  dlcs: z.union([z.array(z.unknown()), z.object({ products: z.array(z.object({ id: z.number() })).default([]) })]).nullish(),
   release_date: z.string().nullish(),
   images: z.object({ logo2x: z.string().nullish(), logo: z.string().nullish() }).nullish(),
   links: z.object({ product_card: z.string().nullish() }).nullish(),
@@ -115,10 +121,19 @@ export function toGogSnapshot(product: GogProduct, price: { basePrice: string; f
         ? null
         : 0;
 
+  // game_type 이 "game" 이 아니면 본편이 아니다 — "dlc"(추가 콘텐츠)와 "pack"(묶음판)이 온다.
+  // 묶음판은 DLC 가 아니라 에디션이므로 본편으로 둔다. 우리가 DLC 로 세는 것은 "dlc" 뿐이다.
+  const isDlc = (product.game_type ?? "game") === "dlc";
+  const dlcExternalIds = gogDlcIds(product);
+
   return {
     platform: "gog",
     storeExternalId: String(product.id),
     storeUrl: gogStoreUrl(product),
+    contentType: isDlc ? "dlc" : "game",
+    dlcExternalIds,
+    // DLC 자신에게는 "추가 콘텐츠 유무"가 의미 없다 — null 은 모른다는 뜻이라 기존 값을 덮지 않는다
+    hasAddOns: isDlc ? null : dlcExternalIds.length > 0,
     listPrice,
     currentPrice,
     // 한국에는 달러로 판다. 원화로 환산하지 않는 이유는 schema 의 currencyEnum 주석에 있다
@@ -136,11 +151,29 @@ export function toGogSnapshot(product: GogProduct, price: { basePrice: string; f
   };
 }
 
+/**
+ * 본편이 가진 DLC 의 외부 ID. 없으면 빈 배열.
+ * dlcs 는 없을 때 [] 로, 있을 때 { products: [...] } 로 오는 두 모양이라 모양부터 가른다.
+ */
+export function gogDlcIds(product: GogProduct): string[] {
+  const dlcs = product.dlcs;
+  if (!dlcs || Array.isArray(dlcs)) return [];
+  return dlcs.products.map((p) => String(p.id));
+}
+
+/**
+ * 상품 응답 파싱. 비공개 상품만 걸러낸다.
+ *
+ * 예전에는 여기서 game_type!=game 도 걸렀는데, 그러면 DLC 를 **콕 집어 물어도** 빈손이 돌아온다.
+ * DLC 등록 단계(sync/dlc-writer)는 부모가 알려준 id 로 이 경로를 다시 타므로, 여기서 걸러 버리면
+ * GOG DLC 는 영원히 등록되지 않는다(2026-09-14 기준 GOG DLC 11건, 대부분 스팀에서 온 것).
+ * "본편이 아닌 것을 새 게임으로 만들지 않는다"는 규칙은 발견 단계가 이미 지킨다 — 카탈로그 질의에
+ * productType=in:game(GOG_GAME_FILTER)을 걸어 DLC, 팩이 아예 목록에 오지 않는다.
+ */
 export function parseGogProducts(raw: unknown): GogProduct[] {
   const parsed = z.array(productSchema).safeParse(raw);
   if (!parsed.success) throw new AdapterError(`GOG 상품 응답 형식 오류: ${parsed.error.message}`, "gog", false);
-  // is_secret(비공개), game_type!=game(DLC, 팩)은 목록에 올리지 않는다
-  return parsed.data.filter((p) => !p.is_secret && (p.game_type ?? "game") === "game");
+  return parsed.data.filter((p) => !p.is_secret);
 }
 
 /** 가격 응답 → 상품 ID별 가격. 가격이 없는 상품은 Map 에 담기지 않는다 */
@@ -186,11 +219,28 @@ function catalogUrl(page: number, query?: string): string {
   return u.toString();
 }
 
+/**
+ * 가격 응답. 한국에서 안 파는 상품이 하나라도 섞이면 이 API 는 400 을 준다
+ * ("Product <id> not found", reason PRICES_NOT_FOUND — 2026-09-14 실측, GOG 판 Cyberpunk 2077).
+ * 그걸 그대로 던지면 **배치에 든 나머지 상품까지 통째로 날아간다**. DLC 등록이 특히 여기 걸린다 —
+ * 한 본편의 DLC 를 한 배치로 묻는데 그중 하나만 미판매여도 전부 못 들어온다.
+ * 그래서 못 받은 가격은 "없음"으로 두고 상품은 살린다. 일시적 장애(retryable)는 그대로 올린다.
+ */
+async function fetchPrices(joined: string): Promise<Map<string, { basePrice: string; finalPrice: string; currencyCode: string }>> {
+  try {
+    return parseGogPrices(await http.json(`${GOG_API_URL}/products/prices?ids=${joined}&countryCode=${GOG_COUNTRY}`, { context: joined }));
+  } catch (e) {
+    if (e instanceof AdapterError && e.retryable) throw e;
+    console.warn(`[gog] 가격 없음 — 상품만 반영한다 (${joined}): ${errorMessage(e)}`);
+    return new Map();
+  }
+}
+
 /** 상품 + 가격을 한 번씩 불러 스냅샷으로 묶는다. 두 응답 중 가격만 비어도 상품은 살린다 */
 async function fetchSnapshots(ids: string[]): Promise<Map<string, StoreSnapshot>> {
   const joined = ids.join(",");
   const products = parseGogProducts(await http.json(`${GOG_API_URL}/products?ids=${joined}&locale=${GOG_LOCALE}`, { context: joined }));
-  const prices = parseGogPrices(await http.json(`${GOG_API_URL}/products/prices?ids=${joined}&countryCode=${GOG_COUNTRY}`, { context: joined }));
+  const prices = await fetchPrices(joined);
   const out = new Map<string, StoreSnapshot>();
   for (const product of products) {
     const id = String(product.id);

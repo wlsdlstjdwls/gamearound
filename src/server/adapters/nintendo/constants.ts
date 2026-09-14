@@ -83,3 +83,13 @@ export const DISCOVERY_QUERIES = [
 export const DISCOVERY_MAX_PAGES = 60;
 
 export const nintendoProductUrl = (id: string): string => `${NINTENDO_BASE_URL}/${id}`;
+
+// ---- 추가 콘텐츠(DLC): 한국 스토어는 본편 페이지에서 알려주지 않는다(2026-09-14 실측) ----
+//
+// 상품 페이지 HTML 에 "추가 콘텐츠" 라는 말이 나오긴 하는데, DLC 목록이 아니라 하단 이용 안내 문구다
+// ("한국닌텐도 홈페이지에서 판매하는 소프트웨어, 추가 콘텐츠, 체험판 ..."). DLC 섹션 자체가 없다.
+// 링크도, nsuid 도, aoc 같은 표시도 없다.
+//
+// 남은 길은 카탈로그 쪽이다: 이 스토어는 DLC 를 별도 상품으로 판다. 발견 단계가 그것까지 훑게 하고
+// 제목으로 부모를 찾는 방법인데, 제목 매칭은 이미 "Escape from Tarkan" 류로 데인 자리라
+// (jp-title-matching 회차) 부모를 자동 확정하면 안 된다. 붙인다면 검수 큐를 거치는 설계가 먼저다.

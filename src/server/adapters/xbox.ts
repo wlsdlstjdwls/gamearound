@@ -35,6 +35,23 @@ export const XBOX_IMAGE_WIDE = ["TitledHeroArt", "SuperHeroArt", "FeaturePromoti
 /** 세로 아트(상세 헤더용) 후보 */
 export const XBOX_IMAGE_TALL = ["Poster", "BrandedKeyArt", "BoxArt"];
 
+/**
+ * 추가 콘텐츠 목록이 들어 있는 스토어 페이지 상태 키. 실제 키는 `PRODUCTADDONS_<ProductId>` 다.
+ *
+ * 왜 HTML 을 읽는가: JSON API 는 유무(Properties.HasAddOns)까지만 준다(위 주석). 목록은
+ * xbox.com 상품 페이지가 `__PRELOADED_STATE__` 에 실어 보내는 것뿐이다(2026-09-14 실측).
+ * 주소의 슬러그 자리는 서버가 무시한다 — 아무 값이나 넣어도 같은 페이지가 온다(`/x/<ProductId>` 확인).
+ *
+ * 한계: 페이지에 오는 것은 **첫 묶음뿐**이다. 철권 8(9PPSM14VKCLW)은 totalItems 30 인데 25건만 실려 온다.
+ * 나머지는 페이지 안에서 더 불러오는 몫이라 여기서는 못 본다. 상한(DLC_PER_GAME_MAX)이 어차피 더 낮아
+ * 지금은 손해가 없지만, 목록이 30개에서 잘려 보이면 이 한계를 먼저 의심할 것.
+ */
+export const XBOX_ADDONS_KEY = (productId: string): string => `PRODUCTADDONS_${productId}`;
+/** ProductKind 가 이 값이면 본편이 아니라 추가 콘텐츠다. 본편은 "Game" 으로 온다 */
+export const XBOX_ADDON_KIND = "Durable";
+/** 상태 키 뒤에서 products 배열을 찾을 때 넘겨다볼 글자 수. 한 줄짜리 900KB HTML 이라 창을 둬야 한다 */
+export const XBOX_ADDONS_SCAN_WINDOW = 20_000;
+
 // ---- 응답 스키마 ----
 const priceSchema = z.object({
   CurrencyCode: z.string().optional(),
@@ -54,12 +71,20 @@ const imageSchema = z.object({ ImagePurpose: z.string().optional(), Uri: z.strin
 const productSchema = z.object({
   ProductId: z.string(),
   /**
-   * 추가 콘텐츠 유무. **유무뿐이고 목록은 없다** — 다시 조사하지 말 것(2026-09-14 실측).
-   * storefront 의 /v9.0/products/<id>/addons 는 200 을 주지만 AddOns 가 늘 빈 배열이었다
-   * (KR, US, GB 모두, deviceFamily 를 바꿔도 같음). displaycatalog 응답에도 RelatedProducts 는 null 이다.
-   * 그래서 화면은 "추가 콘텐츠가 있어요" 까지만 말하고 목록은 스팀에서 온 것만 보여준다.
+   * 본편인지 추가 콘텐츠인지. 본편은 "Game", 추가 콘텐츠는 "Durable" 로 온다(2026-09-14 실측:
+   * 철권 8 = Game, "철권 8 시즌 3 패스" = Durable). 이 값이 없으면 본편으로 본다 —
+   * 우리가 보는 목록이 게임 카탈로그라 기본값이 그쪽이 맞다.
    */
-  Properties: z.object({ HasAddOns: z.boolean().optional() }).optional(),
+  ProductKind: z.string().optional(),
+  /**
+   * 추가 콘텐츠 유무. 이 JSON API 는 유무만 주고 목록은 주지 않는다(2026-09-14 실측):
+   * storefront 의 /v9.0/products/<id>/addons 는 200 을 주지만 AddOns 가 늘 빈 배열이고
+   * (KR, US, GB 모두, deviceFamily 를 바꿔도 같음), displaycatalog 응답의 RelatedProducts 는 null 이다.
+   * 목록은 스토어 페이지 HTML 에만 있다 — listDlcIds 와 XBOX_ADDONS_KEY 주석 참고.
+   */
+  // 추가 콘텐츠 상품은 이 값이 null 로 온다(2026-09-14 실측) — optional 만으로는 파싱이 통째로 실패해서
+  // DLC 가 한 건도 등록되지 않았다. "모른다"와 "없다"를 갈라 두려면 nullish 여야 한다
+  Properties: z.object({ HasAddOns: z.boolean().nullish() }).optional(),
   LocalizedProperties: z
     .array(
       z.object({
@@ -167,6 +192,7 @@ export function parseXboxProduct(raw: unknown, productId: string, rawEn?: unknow
   if (!product) throw new AdapterError(`Xbox 게임 없음: ${productId}`, "xbox", false);
 
   const title = product.LocalizedProperties[0]?.ProductTitle?.trim() || productId;
+  const isDlc = product.ProductKind === XBOX_ADDON_KIND;
   const price = pickKrwPurchase(product);
   const discountPct = price && price.list > 0 && price.current < price.list ? Math.round(((price.list - price.current) / price.list) * 100) : 0;
 
@@ -181,7 +207,9 @@ export function parseXboxProduct(raw: unknown, productId: string, rawEn?: unknow
     discountStartsAt: discountPct > 0 ? price?.startsAt ?? null : null,
     discountEndsAt: discountPct > 0 ? price?.endsAt ?? null : null,
     releaseDate: toIsoDate(product.MarketProperties[0]?.OriginalReleaseDate),
-    hasAddOns: product.Properties?.HasAddOns ?? null,
+    contentType: isDlc ? "dlc" : "game",
+    // DLC 자신에게는 "추가 콘텐츠 유무"가 의미 없다 — null 은 모른다는 뜻이라 기존 값을 덮지 않는다
+    hasAddOns: isDlc ? null : product.Properties?.HasAddOns ?? null,
     meta: xboxMeta(product, rawEn ? titleOf(rawEn, productId) : null),
   };
 }
@@ -263,6 +291,37 @@ function productsUrl(productIds: string[], language: string): string {
   return u.toString();
 }
 
+/**
+ * 스토어 페이지 HTML 에서 그 게임의 추가 콘텐츠 ProductId 목록을 꺼낸다.
+ *
+ * 같은 페이지에 "비슷한 게임"(SeededProductChannel) 같은 다른 상품 묶음도 실려 오므로
+ * 반드시 PRODUCTADDONS_<이 게임 id> 블록 안에서만 읽는다. 그 키는 두 번 나오는데(목록 블록,
+ * 제목 블록) products 를 가진 쪽만 쓴다.
+ */
+export function parseXboxAddOnIds(html: string, productId: string): string[] {
+  const key = XBOX_ADDONS_KEY(productId);
+  const out: string[] = [];
+  const seen = new Set<string>();
+  let from = 0;
+  for (;;) {
+    const at = html.indexOf(key, from);
+    if (at === -1) break;
+    from = at + key.length;
+    const window = html.slice(from, from + XBOX_ADDONS_SCAN_WINDOW);
+    // 항목이 {"productId":"..."} 뿐이라 대괄호가 안쪽에 없다 — 여는 괄호 뒤를 닫는 괄호까지 그대로 읽는다
+    const list = /"products":\[([^\]]*)\]/.exec(window);
+    if (!list) continue;
+    for (const m of list[1].matchAll(/"productId":"([A-Za-z0-9]+)"/g)) {
+      const id = m[1];
+      // 자기 자신이 목록에 섞여 오는 경우를 대비한다 — 부모를 자기 DLC 로 등록하면 안 된다
+      if (id === productId || seen.has(id)) continue;
+      seen.add(id);
+      out.push(id);
+    }
+  }
+  return out;
+}
+
 const http = createHttpClient({
   source: "xbox",
   label: "Xbox",
@@ -292,6 +351,16 @@ export const xboxAdapter: StoreAdapter = {
   },
 
   batchSize: XBOX_BIGIDS_BATCH,
+
+  /**
+   * 추가 콘텐츠 목록. JSON API 에는 없고 스토어 페이지에만 있어 HTML 을 읽는다(XBOX_ADDONS_KEY 주석).
+   * 한 건에 900KB 짜리 응답이라 비싸다 — 호출 빈도와 건수는 sync/dlc-list 가 막아 준다.
+   */
+  async listDlcIds(productId: string): Promise<string[]> {
+    // 슬러그 자리는 서버가 무시한다. 제목을 모르는 자리에서도 부를 수 있게 고정 값을 넣는다
+    const html = await http.text(`${XBOX_STORE_URL}/x/${productId}`, { context: `dlc:${productId}` });
+    return parseXboxAddOnIds(html, productId);
+  },
 
   /** bigIds 로 한 번에. 배치 하나가 한국어 + 영문 2회 요청으로 끝난다 */
   async fetchMany(productIds: string[]): Promise<Map<string, StoreSnapshot>> {

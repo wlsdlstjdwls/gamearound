@@ -14,7 +14,7 @@ import { gamePlatforms } from "@/server/db/schema";
 import type { StoreSource } from "@/server/adapters";
 import type { StoreAdapter } from "@/server/adapters/types";
 import { sleep } from "@/lib/async";
-import { DLC_LIST_PER_RUN, DLC_LIST_REFRESH_DAYS, DLC_PER_GAME_MAX, SOURCE_PLATFORMS, SOURCE_REGION } from "./constants";
+import { DLC_LIST_PER_RUN, DLC_LIST_PER_RUN_BY_SOURCE, DLC_LIST_REFRESH_DAYS, DLC_PER_GAME_MAX, SOURCE_PLATFORMS, SOURCE_REGION } from "./constants";
 import { recordError, type Ctx } from "./context";
 import type { DlcGroup } from "./dlc-writer";
 import { fetchWithRetry } from "./retry";
@@ -28,6 +28,8 @@ export interface DlcListRow {
   gameId: string;
   storeExternalId: string | null;
   dlcListedAt: Date | null;
+  /** 스토어가 말한 추가 콘텐츠 유무. 모르는 소스는 null */
+  hasAddOns: boolean | null;
 }
 
 /** 이번 실행에서 목록을 물어볼 본편 1건 */
@@ -54,10 +56,16 @@ export function pickDlcListTargets(
   const stale = rows.filter((r) => {
     if (!r.storeExternalId) return false;
     if (!slugByGame.has(r.gameId)) return false;
+    // 스토어가 "추가 콘텐츠 없음"이라고 했으면 목록을 물어볼 이유가 없다. 비싼 요청을 빈손에 쓰지 않는다
+    if (r.hasAddOns === false) return false;
     return r.dlcListedAt === null || r.dlcListedAt.getTime() <= staleBefore;
   });
-  // null(한 번도 안 물어봄) → 오래된 순. 같은 게임에 플랫폼 행이 여럿인 소스(psstore)는 먼저 온 행 하나만 쓴다
-  stale.sort((a, b) => (a.dlcListedAt?.getTime() ?? 0) - (b.dlcListedAt?.getTime() ?? 0));
+  // 있다고 아는 것부터. 유무를 아는 소스(xbox Properties.HasAddOns)에서 이 정렬이 없으면
+  // 한 실행의 몫을 추가 콘텐츠가 없는 게임에 다 쓰고 끝난다(2026-09-14: xbox 60건을 돌려 DLC 0건).
+  // 모르는 소스(null)는 그다음이고, 그 안에서는 한 번도 안 물어본 것 → 오래된 순이다.
+  // 같은 게임에 플랫폼 행이 여럿인 소스(psstore)는 먼저 온 행 하나만 쓴다
+  const rank = (r: DlcListRow): number => (r.hasAddOns === true ? 0 : 1);
+  stale.sort((a, b) => rank(a) - rank(b) || (a.dlcListedAt?.getTime() ?? 0) - (b.dlcListedAt?.getTime() ?? 0));
 
   const out: DlcListPick[] = [];
   const seen = new Set<string>();
@@ -94,6 +102,7 @@ export async function listParentDlcs(
       gameId: gamePlatforms.gameId,
       storeExternalId: gamePlatforms.storeExternalId,
       dlcListedAt: gamePlatforms.dlcListedAt,
+      hasAddOns: gamePlatforms.hasAddOns,
     })
     .from(gamePlatforms)
     .where(
@@ -105,7 +114,7 @@ export async function listParentDlcs(
       ),
     );
 
-  const picks = pickDlcListTargets(parents, rows, ctx.now);
+  const picks = pickDlcListTargets(parents, rows, ctx.now, DLC_LIST_PER_RUN_BY_SOURCE[source] ?? DLC_LIST_PER_RUN);
   if (picks.length === 0) return [];
 
   const groups: DlcGroup[] = [];

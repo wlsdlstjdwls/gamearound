@@ -7,7 +7,7 @@ const NOW = new Date("2026-09-14T00:00:00Z");
 const daysAgo = (n: number) => new Date(NOW.getTime() - n * 24 * 60 * 60 * 1000);
 
 function row(over: Partial<DlcListRow> = {}): DlcListRow {
-  return { id: "p1", gameId: "g1", storeExternalId: "1245620", dlcListedAt: null, ...over };
+  return { id: "p1", gameId: "g1", storeExternalId: "1245620", dlcListedAt: null, hasAddOns: null, ...over };
 }
 
 describe("pickDlcListTargets", () => {
@@ -50,5 +50,34 @@ describe("pickDlcListTargets", () => {
   it("한 게임에 플랫폼 행이 여럿이면 한 번만 묻는다 (psstore 의 ps5, ps4)", () => {
     const rows = [row({ id: "p5" }), row({ id: "p4" })];
     expect(pickDlcListTargets([{ gameId: "g1", slug: "elden-ring" }], rows, NOW)).toHaveLength(1);
+  });
+});
+
+describe("pickDlcListTargets — 추가 콘텐츠 유무를 아는 소스", () => {
+  const parents = [
+    { gameId: "g1", slug: "없음" },
+    { gameId: "g2", slug: "있음" },
+    { gameId: "g3", slug: "모름" },
+  ];
+
+  it("스토어가 '없음'이라고 한 본편은 아예 묻지 않는다", () => {
+    const rows = [row({ id: "p1", gameId: "g1", hasAddOns: false })];
+    expect(pickDlcListTargets(parents, rows, NOW)).toEqual([]);
+  });
+
+  it("'있음'이 '모름'보다 먼저다 — 한 실행의 몫을 빈손에 쓰지 않는다", () => {
+    const rows = [
+      row({ id: "p3", gameId: "g3", hasAddOns: null }),
+      row({ id: "p2", gameId: "g2", hasAddOns: true }),
+    ];
+    expect(pickDlcListTargets(parents, rows, NOW).map((p) => p.slug)).toEqual(["있음", "모름"]);
+  });
+
+  it("몫이 하나뿐이면 '있음'이 가져간다", () => {
+    const rows = [
+      row({ id: "p3", gameId: "g3", hasAddOns: null }),
+      row({ id: "p2", gameId: "g2", hasAddOns: true }),
+    ];
+    expect(pickDlcListTargets(parents, rows, NOW, 1).map((p) => p.slug)).toEqual(["있음"]);
   });
 });

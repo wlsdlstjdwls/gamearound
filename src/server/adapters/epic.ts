@@ -29,7 +29,13 @@ export const EPIC_COUNTRY = "KR";
 export const EPIC_LOCALE = "ko";
 /** searchStore 는 count 를 40 으로 깎는다 — 100 을 넣어도 40건만 온다(2026-09-14 확인) */
 export const EPIC_PAGE_SIZE = 40;
-/** 기본판만 보는 카테고리. DLC, 애드온, 번들은 여기서 걸러진다 */
+/**
+ * 기본판만 보는 카테고리. DLC, 애드온, 번들은 여기서 걸러진다.
+ *
+ * DLC 목록은 아직 붙이지 않았다. 이 환경에서 Epic 은 403 이라(위 EPIC_ENABLE_ENV 주석) 실측을 못 했다 —
+ * 추측으로 적지 않는다. 되살아나면 여기부터 보면 된다: 같은 searchStore 질의에 카테고리만
+ * 애드온 쪽으로 바꿔 훑고, 각 애드온 offer 가 가리키는 기본판으로 부모를 잇는 길이다.
+ */
 export const EPIC_BASE_GAME_CATEGORY = "games/edition/base";
 /**
  * 발견이 넘길 수 있는 최대 페이지 수. KR 기본판이 약 7,000건이라 175페이지면 카탈로그를 한 바퀴 돈다.

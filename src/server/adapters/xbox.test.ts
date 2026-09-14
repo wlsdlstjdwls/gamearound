@@ -3,7 +3,7 @@ import { describe, expect, it } from "vitest";
 import { readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import { AdapterError } from "./types";
-import { parseXboxAutosuggest, parseXboxBrowse, parseXboxProduct, xboxImageUrl, xboxPeriodDate, xboxStoreUrl } from "./xbox";
+import { parseXboxAddOnIds, parseXboxAutosuggest, parseXboxBrowse, parseXboxProduct, xboxImageUrl, xboxPeriodDate, xboxStoreUrl } from "./xbox";
 
 const fixture = (name: string): unknown =>
   JSON.parse(readFileSync(fileURLToPath(new URL(`./__fixtures__/${name}`, import.meta.url)), "utf8"));
@@ -137,5 +137,54 @@ describe("xboxImageUrl", () => {
     expect(xboxImageUrl(images, ["TitledHeroArt", "SuperHeroArt"])).toBe("https://img/hero");
     expect(xboxImageUrl(images, ["Poster"])).toBe("https://img/poster");
     expect(xboxImageUrl(images, ["BoxArt"])).toBeNull();
+  });
+});
+
+describe("parseXboxAddOnIds (스토어 페이지 HTML)", () => {
+  // 실응답(철권 8, 9PPSM14VKCLW)의 모양을 줄인 것. 한 줄짜리 상태값에
+  // 다른 상품 묶음(비슷한 게임)이 먼저 오고, 같은 키가 목록 블록과 제목 블록으로 두 번 나온다.
+  const html = [
+    '{"SEEDEDPRODUCTS_9PPSM14VKCLW":{"data":{"products":[{"productId":"BXXXOTHER01"},{"productId":"BXXXOTHER02"}],"totalItems":390}},',
+    '"PRODUCTADDONS_9PPSM14VKCLW":{"data":{"products":[{"productId":"9N11QCQ52HMS"},{"productId":"9PL437799WSZ"}],"totalItems":30}},',
+    '"PRODUCTADDONS_9PPSM14VKCLW":{"data":{"channelName":"이 게임의 추가 콘텐츠"}}}',
+  ].join("");
+
+  it("그 게임의 추가 콘텐츠 블록에서만 ID 를 꺼낸다", () => {
+    expect(parseXboxAddOnIds(html, "9PPSM14VKCLW")).toEqual(["9N11QCQ52HMS", "9PL437799WSZ"]);
+  });
+
+  it("다른 상품 묶음(비슷한 게임)은 섞이지 않는다", () => {
+    expect(parseXboxAddOnIds(html, "9PPSM14VKCLW")).not.toContain("BXXXOTHER01");
+  });
+
+  it("본편 자신은 자기 DLC 가 될 수 없다", () => {
+    const withSelf = '"PRODUCTADDONS_ABC":{"data":{"products":[{"productId":"ABC"},{"productId":"DEF"}]}}';
+    expect(parseXboxAddOnIds(withSelf, "ABC")).toEqual(["DEF"]);
+  });
+
+  it("추가 콘텐츠가 없는 게임은 빈 배열", () => {
+    expect(parseXboxAddOnIds('{"OTHER":{"data":{}}}', "9PPSM14VKCLW")).toEqual([]);
+    expect(parseXboxAddOnIds("", "9PPSM14VKCLW")).toEqual([]);
+  });
+});
+
+describe("ProductKind (본편/추가 콘텐츠)", () => {
+  const raw = (kind: string | undefined, hasAddOns: boolean) => ({
+    Products: [{ ProductId: "X1", ProductKind: kind, Properties: { HasAddOns: hasAddOns }, LocalizedProperties: [{ ProductTitle: "제목" }], MarketProperties: [], DisplaySkuAvailabilities: [] }],
+  });
+
+  it("Durable 은 추가 콘텐츠로 읽는다", () => {
+    const snap = parseXboxProduct(raw("Durable", false), "X1");
+    expect(snap.contentType).toBe("dlc");
+  });
+
+  it("Game 과 값 없음은 본편으로 읽는다", () => {
+    expect(parseXboxProduct(raw("Game", true), "X1").contentType).toBe("game");
+    expect(parseXboxProduct(raw(undefined, true), "X1").contentType).toBe("game");
+  });
+
+  it("DLC 의 추가 콘텐츠 유무는 null — 모른다는 뜻이라 본편 값을 덮지 않는다", () => {
+    expect(parseXboxProduct(raw("Durable", true), "X1").hasAddOns).toBeNull();
+    expect(parseXboxProduct(raw("Game", true), "X1").hasAddOns).toBe(true);
   });
 });

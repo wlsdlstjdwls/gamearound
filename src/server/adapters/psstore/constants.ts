@@ -44,6 +44,24 @@ export const PSSTORE_QUERY_HASHES = {
   search: "4df6284f982e57bec70f23c77e2c219dc792eb19af7fb3d3a81767aa3f1958aa",
 } as const;
 
+// ---- 추가 콘텐츠(DLC) 목록: 아직 못 가져온다. 다시 처음부터 조사하지 말 것(2026-09-14 실측) ----
+//
+// 막힌 지점은 하나뿐이다: 질의 해시. 나머지는 다 알아냈다.
+//   - 콘셉트 상세(conceptRetrieveForCtasWithPrice)는 DLC 를 주지 않는다. products 는 에디션 SKU 다.
+//   - 스토어 페이지는 애드온을 지연 로드한다(addOns 청크). 그 번들에 질의문이 그대로 들어 있다:
+//       query getAddOnProductsByConcept($conceptId: ID!, $pageArgs: PageArgs) {
+//         addOnProductsRetrieve(conceptId: $conceptId, pageArgs: $pageArgs) { addOnProducts { ...addOnProduct } }
+//       }
+//     콘셉트 id 를 그대로 받으므로 우리 키와 맞는다.
+//   - 질의문에서 해시를 직접 계산해 봤지만(graphql print 후 sha256, 프래그먼트 순서 4가지) 전부
+//     "not whitelisted" 였다. 서버가 등록해 둔 해시와 정규화가 다르다.
+//   - 격자 질의에 filterBy 로 애드온만 거르는 것도 안 된다 — storeDisplayClassification, productType,
+//     gameContentType 셋 다 무시되고 같은 첫 콘셉트가 돌아온다.
+//
+// 켜는 법: 브라우저로 애드온이 있는 게임의 상세를 열고 PSSTORE_QUERY_HASHES 주석의 한 줄을 콘솔에 넣어
+// getAddOnProductsByConcept 의 해시를 뜬 뒤, PSSTORE_QUERY_HASHES 에 한 줄 더하고 listDlcIds 를 붙이면 된다.
+// 애드온 상품의 concept.id 가 곧 부모 콘셉트라 부모 연결은 이미 parsePsstoreProduct 가 할 줄 안다.
+
 /** 콘셉트 하나가 PS4, PS5 판을 다 갖는 경우가 많아 상품 id 로 가른다. PPSA = PS5, CUSA = PS4 세대 타이틀 id */
 export const PSSTORE_PS5_TITLE_ID = /-PPSA\d/;
 export const PSSTORE_PS4_TITLE_ID = /-CUSA\d/;

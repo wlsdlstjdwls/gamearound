@@ -222,6 +222,18 @@ export const DLC_PER_GAME_MAX = 30;
  * 값을 크게 올릴 거면 appdetails 의 과요청 차단(429)부터 실측한다.
  */
 export const DLC_LIST_PER_RUN = 60;
+
+/**
+ * 소스별 상한. 응답 크기가 소스마다 자릿수로 다르다 — 하나의 숫자로는 둘 다 맞출 수 없다.
+ *   steam  appdetails JSON, 건당 ~100KB
+ *   xbox   스토어 페이지 HTML, 건당 ~900KB (2026-09-14 실측: 철권 8 페이지 932KB)
+ *   gog    목록이 상품 응답 안에 이미 들어 있어 이 경로를 쓰지 않는다
+ * xbox 를 20 으로 잡은 근거: 20 × 900KB ≈ 18MB, 요청 간격 1초로 ~20초. 스팀과 비슷한 시간, 비슷한 바이트다.
+ * 카탈로그를 한 바퀴 도는 데 그만큼 오래 걸리지만, 새 DLC 는 급한 정보가 아니다.
+ */
+export const DLC_LIST_PER_RUN_BY_SOURCE: Partial<Record<Source, number>> = {
+  xbox: 20,
+};
 /**
  * 한 번 물어본 본편을 다시 물어보기까지의 간격(일).
  * 새 DLC 는 드물게 나오고, 나온 뒤 며칠 늦게 잡혀도 손해가 없다. 짧게 잡으면 이 경로가
