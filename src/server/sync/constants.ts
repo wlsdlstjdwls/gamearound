@@ -207,6 +207,11 @@ export const SEED_SHARE_MAX = 0.5;
  * 발견은 `stoppedBy: "want"` 로 멈춘다 — 더 찾을 게 있는데 몫이 없어 멈춘다는 뜻이다.
  * 0.75 로 올리면 실행당 신규가 100건에서 150건이 되고(하루 450건), 남는 50건이 155건을 하루 한 바퀴 돌린다.
  * 배치 크기는 그대로라 실행 시간도, Actions 사용 분도 늘지 않는다.
+ *
+ * 2026-09-15 확인: 먹히고 있다 — 매핑이 155건에서 587건으로 늘었다(실행당 신규 150건이 그대로 찬다,
+ * 마지막 실행 discovery fresh 150, pages 20, stoppedBy "want"). 남은 약 7,000건은 이 속도면 2주쯤이다.
+ * **여기서 더 올리지 않는다.** 남은 손잡이는 배치 크기인데 그건 Actions 분을 그대로 먹는다 —
+ * psstore 단계는 200건에 737초로 이미 이 워크플로에서 제일 비싼 단계다(crawl-prices.yml 주석의 실측).
  * 보유가 카탈로그를 따라잡으면 이 줄을 지워 기본값(절반)으로 되돌린다.
  */
 export const SEED_SHARE_BY_SOURCE: Partial<Record<StoreSource, number>> = {
