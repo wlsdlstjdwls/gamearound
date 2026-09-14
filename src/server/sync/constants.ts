@@ -160,7 +160,7 @@ export const CRON_PLAN: Record<CronSource, Record<CronMode, CronRunPlan>> = {
 };
 
 /** --seed-top 으로 카탈로그를 훑어 신규 게임을 등록할 수 있는 소스 (어댑터가 discoverPages 를 가진 소스) */
-export const SEEDABLE_SOURCES: Source[] = ["steam", "psstore", "xbox", "nintendo", "epic", "gog"];
+export const SEEDABLE_SOURCES: Source[] = ["steam", "psstore", "xbox", "nintendo", "nintendo_jp", "epic", "gog"];
 /**
  * 한 실행에서 목록 페이지를 몇 장까지 읽을지. 발견은 아는 것이 나오는 앞부분을 건너뛰며 파고들기 때문에
  * (sync/discover) 카탈로그가 커질수록 건너뛸 페이지가 늘어난다. 그렇다고 무한정 읽으면

@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { normalizeForSearch, normalizeTitle, trigramSimilarity } from "./slug";
+import { normalizeForSearch, normalizeTitle, slugify, trigramSimilarity } from "./slug";
 
 // 이 규칙은 games.title_en_norm / title_ko_norm 생성 컬럼과 짝을 이룬다.
 // SQL: lower(regexp_replace(title, '[^[:alnum:]]+', '', 'g')) — C.UTF-8 기준
@@ -61,5 +61,22 @@ describe("normalizeTitle", () => {
 
   it("서로 다른 게임은 합쳐지지 않는다", () => {
     expect(trigramSimilarity("Halo: Combat Evolved Anniversary", "Halo: The Master Chief Collection")).toBeLessThan(0.9);
+  });
+});
+
+describe("slugify — 글자를 쓰는 언어", () => {
+  it("가나, 한자를 버리지 않는다 — 버리면 라틴 조각만 남아 뜻을 잃는다", () => {
+    expect(slugify("ロマンシング サガ3 デスティニーユナイテッド")).toBe("ロマンシング-サガ3-デスティニーユナイテッド");
+    expect(slugify("ゼルダ無双 厄災の黙示録 DX")).toBe("ゼルダ無双-厄災の黙示録-dx");
+    expect(slugify("非凡仙途")).toBe("非凡仙途");
+  });
+
+  it("한글, 영문 slug 는 그대로다", () => {
+    expect(slugify("Hollow Knight")).toBe("hollow-knight");
+    expect(slugify("젤다의 전설")).toBe("젤다의-전설");
+  });
+
+  it("섞인 제목은 둘 다 남긴다", () => {
+    expect(slugify("餓狼伝説 City of the Wolves")).toBe("餓狼伝説-city-of-the-wolves");
   });
 });

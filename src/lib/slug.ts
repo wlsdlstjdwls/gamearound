@@ -9,10 +9,22 @@ function stripDiacritics(input: string): string {
   return input.replace(/[™®©]/g, "").normalize("NFKD").replace(/[̀-ͯ]/g, "").normalize("NFC");
 }
 
+/**
+ * slug 에 남길 글자. 로마자, 숫자에 더해 **글자를 쓰는 언어를 버리지 않는다**:
+ * 한글(가-힣), 가나(ぁ-ゖ ァ-ヺ 장음 ー), 한자(一-鿿).
+ *
+ * 가나, 한자를 넣은 이유(2026-09-14): 일본 eShop 을 붙이면서 일본어 제목이 들어오기 시작했는데,
+ * 이 글자들을 버리면 제목에서 라틴 조각만 남아 slug 가 뜻을 잃는다 —
+ * "ロマンシング サガ3" → "3", "ゼルダ無双 厄災の黙示録 DX" → "dx", "非凡仙途" → "game".
+ * 뜻을 잃는 것보다 나쁜 건 겹치기 쉬워진다는 점이다. slug 는 주소라 나중에 못 바꾼다.
+ * 한글을 이미 살리고 있었으니 같은 기준을 다른 문자 체계에도 적용한다.
+ */
+const SLUG_KEEP = /[^a-z0-9가-힣ぁ-ゖァ-ヺー一-鿿]+/g;
+
 export function slugify(input: string): string {
   return stripDiacritics(input)
     .toLowerCase()
-    .replace(/[^a-z0-9가-힣]+/g, "-")
+    .replace(SLUG_KEEP, "-")
     .replace(/^-+|-+$/g, "")
     .slice(0, 80) || "game";
 }
