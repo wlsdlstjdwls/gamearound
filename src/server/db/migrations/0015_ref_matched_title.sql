@@ -1,0 +1,1 @@
+ALTER TABLE "game_source_refs" ADD COLUMN "matched_title" text;

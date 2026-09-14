@@ -188,6 +188,13 @@ export const gameSourceRefs = pgTable("game_source_refs", {
   source: sourceEnum("source").notNull(),
   externalId: text("external_id").notNull(),
   url: text("url"),
+  /**
+   * 매칭한 순간 그 스토어가 부르던 제목. 검수 큐에서 우리 제목과 나란히 보여 준다 —
+   * 이게 없으면 검수자가 "이 후보가 같은 게임인가" 를 링크를 열어 봐야만 알 수 있다.
+   * 실제로 Escape from Tarkov 에 닌텐도의 "Escape from Tarkan" 이 붙어 검수 큐에 올라왔다(2026-09-14).
+   * 표시용 기록이라 스토어가 제목을 바꿔도 따라가지 않는다 — 그때 무엇을 보고 판단했는지가 남아야 한다.
+   */
+  matchedTitle: text("matched_title"),
   // "auto" | "manual" | "pending" | "none" — pending = 유사도 0.7~0.9 관리자 검수 큐 (§4.2), none = 미매칭 기록(재검색 방지, 수집 대상 아님)
   matchedBy: text("matched_by").notNull(),
   confidence: numeric("confidence", { precision: 3, scale: 2 }),

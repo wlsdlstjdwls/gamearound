@@ -166,6 +166,7 @@ async function linkRef(
       source,
       externalId: c.externalId,
       url: c.url,
+      matchedTitle: c.title,
       matchedBy: "auto",
       confidence: similarity.toFixed(2),
       checkedAt: now,

@@ -22,7 +22,8 @@ const STATUS_STYLE: Record<string, string> = {
   failed: "bg-danger-soft text-danger",
 };
 const BADGE = "rounded-[6px] px-2 py-0.5 text-[11.5px] font-semibold";
-const QUEUE_COLS = "grid grid-cols-[minmax(0,2fr)_90px_minmax(0,1.6fr)_74px_132px] gap-x-3 px-4 py-[13px]";
+// 우리 제목과 스토어 제목을 같은 너비로 나란히 둔다 — 검수자가 두 이름을 눈으로 맞대는 것이 이 화면의 일이다
+const QUEUE_COLS = "grid grid-cols-[minmax(0,2fr)_minmax(0,2fr)_90px_minmax(0,1.4fr)_64px_132px] gap-x-3 px-4 py-[13px]";
 
 function Metric({ label, value, alert = false }: { label: string; value: string; alert?: boolean }) {
   return (
@@ -123,20 +124,25 @@ export default async function AdminDashboardPage() {
           </p>
         ) : (
           <Card className="overflow-x-auto">
-            <div className={`${QUEUE_COLS} min-w-[720px] border-b border-line text-[11.5px] text-dim`}>
-              <span>게임</span>
+            <div className={`${QUEUE_COLS} min-w-[900px] border-b border-line text-[11.5px] text-dim`}>
+              <span>우리 제목</span>
+              <span>스토어 제목</span>
               <span>소스</span>
               <span>후보 외부 ID / URL</span>
               <span>유사도</span>
               <span>처리</span>
             </div>
-            <ul className="min-w-[720px] divide-y divide-line-soft">
+            <ul className="min-w-[900px] divide-y divide-line-soft">
               {pending.map((p) => (
                 <li key={`${p.gameId}-${p.source}`} className={`${QUEUE_COLS} items-center text-[13px] text-ink`}>
                   <span className="min-w-0">
                     <Link href={`/admin/games/${p.gameId}`} className="font-medium hover:text-acc">
                       <Clamp>{p.game.titleKo ? `${p.game.titleKo} (${p.game.titleEn})` : p.game.titleEn}</Clamp>
                     </Link>
+                  </span>
+                  {/* 매칭한 순간의 제목이다. 여기가 다른 게임 이름이면 그대로 거절하면 된다 */}
+                  <span className="min-w-0 text-mut">
+                    {p.matchedTitle ? <Clamp>{p.matchedTitle}</Clamp> : <span className="text-dim-2">기록 없음</span>}
                   </span>
                   <span className="text-mut">{p.source}</span>
                   <span className="min-w-0 font-mono text-[12px] text-mut">

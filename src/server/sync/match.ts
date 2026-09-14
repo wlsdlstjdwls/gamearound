@@ -1,5 +1,5 @@
 // 소스 간 게임 매칭 — 설계서 §4.2.
-// titleEn 정규화 → adapter.search → trigram 유사도 상위 후보 → 임계값에 따라 auto / pending / 미매칭.
+// 제목 정규화 → adapter.search(영문, 필요하면 한국어까지) → trigram 유사도 상위 후보 → 임계값에 따라 auto / pending / 미매칭.
 // matched_by="manual" 행은 크롤러가 절대 덮어쓰지 않는다.
 import { and, eq, isNull, lt, or, sql } from "drizzle-orm";
 import { getDb } from "@/server/db/client";
@@ -78,6 +78,35 @@ export interface MatchResult {
   similarity?: number;
 }
 
+/**
+ * 제목으로 후보를 찾는다. 영문으로 한 번, 그래도 확실하지 않으면 한국어로 한 번 더.
+ *
+ * 왜 두 번 묻나: 스토어 카탈로그는 그 나라 말로 적혀 있다. 한국 PS, 닌텐도 스토어에서
+ * "Cyberpunk 2077" 을 찾으면 안 나오고 "사이버펑크 2077" 로는 나오는 일이 있다.
+ * 영문 한 번으로 끝내면 그런 게임이 matched_by="none" 으로 박혀 14일간 다시 안 찾는다.
+ *
+ * 두 번째 질의는 auto 를 못 넘겼을 때만 보낸다 — 확실한 답이 이미 있으면 요청을 더 쓸 이유가 없다.
+ * 두 결과 중 더 닮은 쪽을 쓴다. 제목 비교는 pickBestCandidate 가 영문, 한국어 둘 다와 재므로
+ * 어느 말로 찾아왔든 판정 기준은 같다.
+ */
+async function searchBestCandidate(
+  adapter: { search: (q: string) => Promise<SearchCandidate[]> },
+  game: { titleEn: string; titleKo: string | null },
+): Promise<BestCandidate | null> {
+  let best: BestCandidate | null = null;
+  const tried = new Set<string>();
+  for (const title of [game.titleEn, game.titleKo]) {
+    if (!title) continue;
+    const query = normalizeTitle(title);
+    if (!query || tried.has(query)) continue;
+    tried.add(query);
+    const hit = pickBestCandidate(game.titleEn, game.titleKo, await adapter.search(query));
+    if (hit && (!best || hit.similarity > best.similarity)) best = hit;
+    if (best && best.similarity >= AUTO_MATCH_THRESHOLD) break;
+  }
+  return best;
+}
+
 /** 게임 1개를 소스 1개에 매칭 시도. manual 이면 건너뜀. DB 에 upsert 까지 수행 */
 export async function matchGameToSource(gameId: string, source: SearchableSource): Promise<MatchResult> {
   const db = getDb();
@@ -93,9 +122,7 @@ export async function matchGameToSource(gameId: string, source: SearchableSource
   if (existing?.matchedBy === "manual") return { gameId, source, decision: "skipped-manual" };
 
   const adapter = getSearchableAdapter(source);
-  const query = normalizeTitle(game.titleEn);
-  const candidates = query ? await adapter.search(query) : [];
-  const best = pickBestCandidate(game.titleEn, game.titleKo, candidates);
+  const best = await searchBestCandidate(adapter, game);
   const decision: MatchDecision = best ? classifyMatch(best.similarity) : "none";
 
   if (!best) return { gameId, source, decision: "no-candidates" }; // 후보 0건은 검색 실패일 수 있어 기록하지 않음(다음 실행에 재시도)
@@ -104,10 +131,10 @@ export async function matchGameToSource(gameId: string, source: SearchableSource
     // checked_at 을 갱신해 NONE_RETRY_DAYS 경과 후에만 재검색되게 한다. auto/manual/pending 행은 덮지 않는다.
     await db
       .insert(gameSourceRefs)
-      .values({ gameId, source, externalId: best.candidate.externalId, url: best.candidate.url, matchedBy: "none", confidence: best.similarity.toFixed(2), checkedAt: new Date() })
+      .values({ gameId, source, externalId: best.candidate.externalId, url: best.candidate.url, matchedTitle: best.candidate.title, matchedBy: "none", confidence: best.similarity.toFixed(2), checkedAt: new Date() })
       .onConflictDoUpdate({
         target: [gameSourceRefs.gameId, gameSourceRefs.source],
-        set: { externalId: best.candidate.externalId, url: best.candidate.url, confidence: best.similarity.toFixed(2), checkedAt: new Date() },
+        set: { externalId: best.candidate.externalId, url: best.candidate.url, matchedTitle: best.candidate.title, confidence: best.similarity.toFixed(2), checkedAt: new Date() },
         setWhere: sql`${gameSourceRefs.matchedBy} = 'none'`,
       });
     return { gameId, source, decision, externalId: best.candidate.externalId, similarity: best.similarity };
@@ -116,10 +143,10 @@ export async function matchGameToSource(gameId: string, source: SearchableSource
   const confidence = best.similarity.toFixed(2);
   await db
     .insert(gameSourceRefs)
-    .values({ gameId, source, externalId: best.candidate.externalId, url: best.candidate.url, matchedBy: decision, confidence, checkedAt: new Date() })
+    .values({ gameId, source, externalId: best.candidate.externalId, url: best.candidate.url, matchedTitle: best.candidate.title, matchedBy: decision, confidence, checkedAt: new Date() })
     .onConflictDoUpdate({
       target: [gameSourceRefs.gameId, gameSourceRefs.source],
-      set: { externalId: best.candidate.externalId, url: best.candidate.url, matchedBy: decision, confidence, checkedAt: new Date() },
+      set: { externalId: best.candidate.externalId, url: best.candidate.url, matchedTitle: best.candidate.title, matchedBy: decision, confidence, checkedAt: new Date() },
       // 동시 실행으로 manual 이 생겼을 수 있으므로 한 번 더 방어
       setWhere: sql`${gameSourceRefs.matchedBy} <> 'manual'`,
     });
