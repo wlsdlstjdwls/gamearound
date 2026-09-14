@@ -37,6 +37,21 @@ export const DEFAULT_FETCH_BATCH_SIZE = 50;
  * 50 은 실측(2026-09-14)에서 왕복이 20문장부터 거의 평평해지는 구간이다.
  */
 export const WRITE_BATCH_SIZE = 50;
+/**
+ * GitHub Actions 러너에서는 못 도는 소스. 스토어가 데이터센터, 해외 IP 를 막는다(2026-09-14 실측):
+ *   nintendo — 한국 eShop 이 한국 밖 IP 에 202 + 빈 본문을 준다
+ *   epic — Cloudflare 가 데이터센터 IP 를 막는다(curl 로도 403). Node 의 TLS 지문도 막혀 curl 전송기를 쓴다
+ * 그래서 이 둘만 가정용 회선에서 도는 로컬 크롤(scripts/crawl-local.ts)이 맡는다.
+ */
+export const LOCAL_ONLY_SOURCES: Source[] = ["nintendo", "epic"];
+/** 로컬 크롤이 소스별로 넘길 --seed-top. 발견이 카탈로그를 한 바퀴 도는 소스는 카탈로그보다 큰 값을 준다 */
+export const LOCAL_SEED_TOP: Partial<Record<Source, number>> = {
+  // eShop 은 요청 간격 4초라 한 번에 많이 못 당긴다 — 며칠에 걸쳐 채운다
+  nintendo: 120,
+  // 한 바퀴가 약 175 요청(1초 간격). 처리량은 BATCH_SIZE.epic 이 막는다
+  epic: 8000,
+};
+
 /** --seed-top 으로 카탈로그를 훑어 신규 게임을 등록할 수 있는 소스 (어댑터가 discover 를 갖거나 steam) */
 export const SEEDABLE_SOURCES: Source[] = ["steam", "nintendo", "epic", "gog"];
 /** 스토어 소스 → 담당 플랫폼 (§11-6: PS4/PS5, Switch/Switch2 분리 유지) */

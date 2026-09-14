@@ -252,7 +252,8 @@ export function toEpicCandidate(offer: EpicOffer): SearchCandidate {
 
 // ---- 네트워크 ----
 
-const http = createHttpClient({ source: "epic", label: "Epic", headers: EPIC_BROWSER_HEADERS });
+// transport: "curl" 인 이유 — Node 는 헤더를 다 맞춰도 403 이다. 자세한 실측은 adapters/curl.ts 상단
+const http = createHttpClient({ source: "epic", label: "Epic", headers: EPIC_BROWSER_HEADERS, transport: "curl" });
 
 async function graphql(query: string, variables: Record<string, unknown>, context: string): Promise<unknown> {
   return http.json(EPIC_GRAPHQL_URL, {

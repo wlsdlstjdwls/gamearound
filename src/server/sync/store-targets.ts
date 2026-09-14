@@ -41,11 +41,14 @@ export async function listStoreTargets(ctx: Ctx, source: StoreSource, limit: num
   // 발견은 부가 작업이다 — 스토어가 목록을 안 주더라도(차단, 개편) 기존 게임 가격 갱신은 계속돼야 한다.
   if (seedTop && seedTop > 0) {
     try {
-      for (const t of await seedTargets(ctx, source, seedTop)) {
-        if (seen.has(`seed:${t.externalId}`)) continue;
+      // 한 건씩 unshift 하면 발견 순서가 뒤집힌다 — 카탈로그 꼬리(인기 없는 것, 미출시)가 맨 앞에 오고
+      // 한 실행의 limit 을 다 먹는다. 발견 순서(인기순)를 그대로 지키려고 한 번에 앞에 붙인다.
+      const seeds = (await seedTargets(ctx, source, seedTop)).filter((t) => {
+        if (seen.has(`seed:${t.externalId}`)) return false;
         seen.add(`seed:${t.externalId}`);
-        targets.unshift(t);
-      }
+        return true;
+      });
+      targets.unshift(...seeds);
     } catch (e) {
       ctx.errors.push(`[${source}:discover] ${errorMessage(e)}`);
       console.warn(`[sync:${source}] 카탈로그 발견 실패 — 기존 게임 갱신만 진행: ${errorMessage(e)}`);

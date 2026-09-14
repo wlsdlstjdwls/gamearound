@@ -1,5 +1,6 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { createHttpClient, isRetryableStatus, notFoundAs } from "./http";
+import { createHttpClient, headerPairs, isRetryableStatus, notFoundAs } from "./http";
+import { curlArgs, splitCurlOutput } from "./curl";
 import { AdapterError, CRAWLER_USER_AGENT } from "./types";
 
 /** fetch 를 고정 응답으로 바꾼다. 마지막 호출 인자를 확인할 수 있게 mock 을 돌려준다. */
@@ -116,5 +117,57 @@ describe("createHttpClient", () => {
     const http = createHttpClient({ source: "hltb", label: "HLTB" });
     const res = await http.raw("https://example.test/search", { method: "POST" });
     expect(res.status).toBe(403);
+  });
+});
+
+describe("headerPairs", () => {
+  it("선언 순서와 대소문자를 그대로 지킨다 — 이 순서 자체가 지문이 되는 소스가 있다", () => {
+    const pairs = headerPairs({ "User-Agent": "UA", Accept: "*/*", Origin: "https://x", Referer: "https://x/y" }, "application/json", undefined);
+    expect(pairs).toEqual([
+      ["User-Agent", "UA"],
+      ["Accept", "*/*"],
+      ["Origin", "https://x"],
+      ["Referer", "https://x/y"],
+    ]);
+  });
+
+  it("같은 이름은 뒤 값으로 덮되 자리는 그대로 둔다", () => {
+    const pairs = headerPairs({ "User-Agent": "UA", Accept: "*/*" }, "application/json", { accept: "text/html" });
+    expect(pairs).toEqual([
+      ["User-Agent", "UA"],
+      ["accept", "text/html"],
+    ]);
+  });
+
+  it("빠진 UA, Accept 는 뒤에 채운다", () => {
+    expect(headerPairs({ Origin: "https://x" }, "application/json", undefined)).toEqual([
+      ["Origin", "https://x"],
+      ["User-Agent", CRAWLER_USER_AGENT],
+      ["Accept", "application/json"],
+    ]);
+  });
+});
+
+describe("curl 인자, 출력", () => {
+  it("본문은 인자가 아니라 stdin 으로 넘긴다(@-)", () => {
+    const args = curlArgs("https://x/graphql", { method: "POST", headers: [["Origin", "https://x"]], body: "{}", timeoutMs: 15_000 });
+    expect(args).toContain("--data-binary");
+    expect(args).toContain("@-");
+    expect(args.join(" ")).toContain("--header Origin: https://x");
+    expect(args).toContain("--request");
+    expect(args[args.length - 1]).toBe("https://x/graphql");
+    expect(args).not.toContain("{}");
+  });
+
+  it("GET 은 --request 를 붙이지 않는다", () => {
+    expect(curlArgs("https://x", { timeoutMs: 1_000 })).not.toContain("--request");
+  });
+
+  it("출력 끝의 상태 표시를 본문과 가른다", () => {
+    expect(splitCurlOutput('{"a":1}\n__curl_status__:200')).toEqual({ status: 200, body: '{"a":1}' });
+  });
+
+  it("상태 표시가 없으면 0 으로 본다 (curl 이 응답을 못 받음)", () => {
+    expect(splitCurlOutput("")).toEqual({ status: 0, body: "" });
   });
 });
