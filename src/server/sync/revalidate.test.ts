@@ -4,13 +4,15 @@ import { REVALIDATE_TAGS_PER_REQUEST } from "@/lib/cache";
 import { revalidateGameTags } from "./revalidate";
 
 function stubFetch(status = 200) {
-  const fn = vi.fn(async () => new Response(JSON.stringify({ revalidated: true }), { status }));
+  const fn = vi.fn<(url: string, init: RequestInit) => Promise<Response>>(
+    async () => new Response(JSON.stringify({ revalidated: true }), { status }),
+  );
   vi.stubGlobal("fetch", fn);
   return fn;
 }
 
 const bodyTags = (fn: ReturnType<typeof stubFetch>, call: number): string[] =>
-  JSON.parse((fn.mock.calls[call][1] as RequestInit).body as string).tags;
+  JSON.parse(fn.mock.calls[call][1].body as string).tags;
 
 beforeEach(() => {
   process.env.NEXT_PUBLIC_APP_URL = "https://example.test";
