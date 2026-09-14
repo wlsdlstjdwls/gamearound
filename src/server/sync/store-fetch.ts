@@ -3,7 +3,7 @@ import type { StoreAdapter, StoreSnapshot } from "@/server/adapters/types";
 import type { StoreSource } from "@/server/adapters";
 import { sleep } from "@/lib/async";
 import { errorMessage } from "@/lib/errors";
-import { DEFAULT_FETCH_BATCH_SIZE, SOURCE_PLATFORMS } from "./constants";
+import { DEFAULT_FETCH_BATCH_SIZE, SOURCE_PLATFORMS, SOURCE_REGION } from "./constants";
 import { recordError, type Ctx } from "./context";
 import { fetchWithRetry } from "./retry";
 import { markPlatformFailed } from "./platform-writer";
@@ -20,7 +20,7 @@ export async function fetchStoreOneByOne(ctx: Ctx, source: StoreSource, adapter:
       fetched.push({ target, snapshot: await fetchWithRetry(() => adapter.fetch(target.externalId)) });
     } catch (e) {
       recordError(ctx, `${source}:${target.externalId}`, e);
-      if (target.gameId) await markPlatformFailed(ctx, target.gameId, SOURCE_PLATFORMS[source]);
+      if (target.gameId) await markPlatformFailed(ctx, target.gameId, SOURCE_PLATFORMS[source], SOURCE_REGION[source]);
     }
     if (i < targets.length - 1) await sleep(adapter.minIntervalMs);
   }
@@ -33,16 +33,35 @@ export async function fetchStoreOneByOne(ctx: Ctx, source: StoreSource, adapter:
  */
 export async function fetchStoreBatched(ctx: Ctx, source: StoreSource, adapter: StoreAdapter, targets: StoreTarget[]): Promise<Fetched> {
   const size = adapter.batchSize ?? DEFAULT_FETCH_BATCH_SIZE;
-  const batches: StoreTarget[][] = [];
-  for (let i = 0; i < targets.length; i += size) batches.push(targets.slice(i, i + size));
 
+  // 배치가 가격만 주는 소스(nintendo)는 신규 등록 대상을 단건 상세로 따로 받는다 —
+  // 제목, 이미지가 없으면 게임을 만들 수 없다. 발견 목록이 상세까지 준 소스(nintendo_jp)는 그럴 필요가 없다.
   const fetched: Fetched = [];
+  let batchable = targets;
+  if (adapter.batchPricesOnly === "detail") {
+    const needDetail = targets.filter((t) => !t.gameId);
+    batchable = targets.filter((t) => t.gameId);
+    if (needDetail.length > 0) {
+      console.log(`[sync:${source}] 신규 ${needDetail.length}건은 상세 조회로 받는다 (배치는 가격만 준다)`);
+      fetched.push(...(await fetchStoreOneByOne(ctx, source, adapter, needDetail)));
+    }
+  }
+
+  const batches: StoreTarget[][] = [];
+  for (let i = 0; i < batchable.length; i += size) batches.push(batchable.slice(i, i + size));
+
   for (let b = 0; b < batches.length; b++) {
     const batch = batches[b];
     let byId: Map<string, StoreSnapshot>;
     try {
       byId = await fetchWithRetry(() => adapter.fetchMany!(batch.map((t) => t.externalId)));
     } catch (e) {
+      // 단건 조회 경로가 없는 소스(nintendo_jp)는 폴백할 곳이 없다 — 배치 실패를 그대로 기록하고 넘어간다
+      if (adapter.batchPricesOnly === "discovery") {
+        recordError(ctx, `${source}:batch`, e);
+        console.warn(`[sync:${source}] 배치 ${b + 1}/${batches.length} 실패 (단건 경로 없음): ${errorMessage(e)}`);
+        continue;
+      }
       console.warn(`[sync:${source}] 배치 ${b + 1}/${batches.length} 실패 → 단건 조회로 폴백: ${errorMessage(e)}`);
       fetched.push(...(await fetchStoreOneByOne(ctx, source, adapter, batch)));
       continue;
@@ -50,12 +69,17 @@ export async function fetchStoreBatched(ctx: Ctx, source: StoreSource, adapter: 
     for (const target of batch) {
       const snapshot = byId.get(target.externalId);
       if (snapshot) {
-        fetched.push({ target, snapshot });
+        // 가격만 주는 응답은 기기(switch/switch2)를 모른다. 아는 값이 있으면 그것으로 바로잡는다 —
+        // 안 그러면 Switch 2 행 옆에 Switch 행이 새로 생긴다
+        fetched.push({
+          target,
+          snapshot: adapter.batchPricesOnly && target.platform ? { ...snapshot, platform: target.platform } : snapshot,
+        });
         continue;
       }
       // 배치는 성공했는데 이 id 만 빠진 경우 = 삭제/비공개/지역 미판매. 재시도해도 같으니 폴백하지 않는다
       recordError(ctx, `${source}:${target.externalId}`, new Error("배치 응답에 없음 (비공개, 미판매, 삭제 추정)"));
-      if (target.gameId) await markPlatformFailed(ctx, target.gameId, SOURCE_PLATFORMS[source]);
+      if (target.gameId) await markPlatformFailed(ctx, target.gameId, SOURCE_PLATFORMS[source], SOURCE_REGION[source]);
     }
     if (b < batches.length - 1) await sleep(adapter.minIntervalMs);
   }

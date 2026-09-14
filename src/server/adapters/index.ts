@@ -5,7 +5,7 @@ import { wikidataAdapter } from "./wikidata";
 import { gamepassAdapter } from "./gamepass";
 import { psstoreAdapter } from "./psstore";
 import { xboxAdapter } from "./xbox";
-import { nintendoAdapter } from "./nintendo";
+import { nintendoAdapter, nintendoJpAdapter } from "./nintendo";
 import { epicAdapter } from "./epic";
 import { gogAdapter } from "./gog";
 import { hltbAdapter } from "./hltb";
@@ -15,7 +15,7 @@ import { CRAWL_PROXY_URL_ENV, crawlProxyUrl, runsInSeoulRegion } from "./http";
 import { metacriticAdapter } from "./metacritic";
 import { rssAdapter } from "./news-rss";
 
-export const STORE_SOURCES = ["steam", "psstore", "xbox", "nintendo", "epic", "gog"] as const;
+export const STORE_SOURCES = ["steam", "psstore", "xbox", "nintendo", "nintendo_jp", "epic", "gog"] as const;
 export const META_SOURCES = ["hltb", "opencritic", "metacritic"] as const;
 export const NEWS_SOURCES = ["rss"] as const;
 /** 회사 정보 소스 — 게임이 아니라 회사를 조회한다(§5 확장 지점) */
@@ -37,6 +37,7 @@ const storeAdapters: Record<StoreSource, StoreAdapter> = {
   psstore: psstoreAdapter,
   xbox: xboxAdapter,
   nintendo: nintendoAdapter,
+  nintendo_jp: nintendoJpAdapter,
   epic: epicAdapter,
   gog: gogAdapter,
 };

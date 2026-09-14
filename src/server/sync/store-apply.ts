@@ -10,7 +10,7 @@
 // 실패 격리: 배치 하나가 통째로 실패하면 그 묶음만 다시 한 문장씩 보낸다(§7 — 한 건의 실패가
 // 배치 전체를 멈추면 안 된다). 묶음이 깨지는 일은 드물고, 드문 만큼 느려도 된다.
 import { and, eq, inArray } from "drizzle-orm";
-import { gameCompanies, gamePlatforms, gameSourceRefs, games, priceSnapshots } from "@/server/db/schema";
+import { gameCompanies, gamePlatforms, gameSourceRefs, games, priceSnapshots, HOME_REGION } from "@/server/db/schema";
 import type { StoreSource } from "@/server/adapters";
 import type { StoreSnapshot } from "@/server/adapters/types";
 import { normalizeCompanyName } from "@/lib/company-name";
@@ -231,12 +231,27 @@ async function updateExistingPlatforms(
  * 상세가 준 값이 있으면 그쪽이 이긴다 — 발견 목록은 대체재일 뿐이다.
  */
 export function withDiscoveredMedia(snapshot: StoreSnapshot, target: StoreTarget): StoreSnapshot {
-  const meta = snapshot.meta;
+  // 가격만 주는 배치(nintendo_jp)는 meta 가 아예 없다 — 그 소스에서는 발견 목록이 준 마스터가 유일한 근거다.
+  // 상세가 준 값이 있으면 언제나 그쪽이 이긴다. 발견 목록은 대체재일 뿐이다.
+  const meta = snapshot.meta ?? target.meta;
   if (!meta) return snapshot;
+
   const coverUrl = meta.coverUrl ?? target.coverUrl ?? null;
   const portraitUrl = meta.portraitUrl ?? target.portraitUrl ?? null;
-  if (coverUrl === (meta.coverUrl ?? null) && portraitUrl === (meta.portraitUrl ?? null)) return snapshot;
-  return { ...snapshot, meta: { ...meta, coverUrl, portraitUrl } };
+  // 상세가 없어 발견 목록의 마스터를 쓸 때는 기기, 발매일도 그쪽 값을 따른다(가격 API 는 둘 다 모른다)
+  const platform = snapshot.meta ? snapshot.platform : target.platform ?? snapshot.platform;
+  const releaseDate = snapshot.releaseDate ?? target.releaseDate ?? null;
+  const titleCode = snapshot.titleCode ?? target.titleCode ?? null;
+
+  const sameMedia = coverUrl === (meta.coverUrl ?? null) && portraitUrl === (meta.portraitUrl ?? null);
+  const sameRest =
+    meta === snapshot.meta &&
+    platform === snapshot.platform &&
+    releaseDate === (snapshot.releaseDate ?? null) &&
+    titleCode === (snapshot.titleCode ?? null);
+  if (sameMedia && sameRest) return snapshot;
+
+  return { ...snapshot, platform, releaseDate, titleCode, meta: { ...meta, coverUrl, portraitUrl } };
 }
 
 /**
@@ -287,9 +302,10 @@ export async function applyStore(ctx: Ctx, source: StoreSource, fetched: Fetched
         applied.push({ gameId: hit.game.id, slug: hit.game.slug, snapshot });
         continue;
       }
-      const created = await createGameFromSnapshot(ctx, withDiscoveredMedia(snapshot, target), { contentType: snapshot.contentType ?? "game" });
+      const enriched = withDiscoveredMedia(snapshot, target);
+      const created = await createGameFromSnapshot(ctx, enriched, { contentType: snapshot.contentType ?? "game" });
       ctx.changedSlugs.add(created.slug);
-      applied.push({ gameId: created.id, slug: created.slug, snapshot });
+      applied.push({ gameId: created.id, slug: created.slug, snapshot: enriched });
     } catch (e) {
       recordError(ctx, `${source}:${target.externalId}:db`, e);
     }
@@ -315,7 +331,9 @@ export async function applyStore(ctx: Ctx, source: StoreSource, fetched: Fetched
         ctx.changedSlugs.add(slug);
       }
     }
-    const existing = platformsByGame.get(gameId)?.find((p) => p.platform === snapshot.platform);
+    // 지역까지 봐야 한다 — 같은 게임, 같은 기기라도 나라가 다르면 다른 행이고, 섞으면 일본 가격이 한국 행을 덮는다
+    const region = snapshot.region ?? HOME_REGION;
+    const existing = platformsByGame.get(gameId)?.find((p) => p.platform === snapshot.platform && p.region === region);
     const plan = planPlatform(ctx, existing, gameId, snapshot);
     if (plan.kind === "insert") inserts.push({ slug, plan });
     else updates.push({ slug, plan });

@@ -8,8 +8,9 @@ import type { Currency } from "@/server/db/schema";
 export const DISPLAY_CURRENCY: Currency = "KRW";
 
 /** 통화별 소수 자릿수. 최소 단위 정수를 사람이 읽는 금액으로 되돌릴 때 쓴다 */
-const DECIMALS: Record<Currency, number> = { KRW: 0, USD: 2 };
-const SYMBOL: Record<Currency, string> = { KRW: "₩", USD: "$" };
+// 엔은 원과 같이 소수가 없다 — 최소 단위가 1엔이라 raw_value 를 그대로 담는다
+const DECIMALS: Record<Currency, number> = { KRW: 0, USD: 2, JPY: 0 };
+const SYMBOL: Record<Currency, string> = { KRW: "₩", USD: "$", JPY: "¥" };
 
 /** 12345 → "₩12,345", (699, "USD") → "$6.99". 값이 없으면 "-", 0 은 "무료" */
 export function formatPrice(price: number | null | undefined, currency: Currency = DISPLAY_CURRENCY): string {

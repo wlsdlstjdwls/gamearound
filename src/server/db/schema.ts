@@ -7,7 +7,7 @@ import {
 import { relations, sql } from "drizzle-orm";
 
 export const platformEnum = pgEnum("platform", ["steam", "ps5", "ps4", "xbox", "switch", "switch2", "epic", "gog"]);
-export const sourceEnum = pgEnum("source", ["steam", "psstore", "xbox", "nintendo", "hltb", "opencritic", "metacritic", "rss", "manual", "wikidata", "gamepass", "epic", "gog"]);
+export const sourceEnum = pgEnum("source", ["steam", "psstore", "xbox", "nintendo", "nintendo_jp", "hltb", "opencritic", "metacritic", "rss", "manual", "wikidata", "gamepass", "epic", "gog"]);
 export const roleEnum = pgEnum("role", ["user", "game_company", "seller", "admin"]);
 export const syncStatusEnum = pgEnum("sync_status", ["ok", "partial", "failed"]);
 /**
@@ -15,7 +15,18 @@ export const syncStatusEnum = pgEnum("sync_status", ["ok", "partial", "failed"])
  * GOG 는 한국에도 USD 로 판다(2026-09-14 확인: currencyCode=KRW 로 조회하면 0건).
  * 임의 환율로 바꿔 적으면 화면 가격과 실제 결제액이 어긋나고, 그건 가격 알림 서비스에서 제일 하면 안 되는 일이다.
  */
-export const currencyEnum = pgEnum("currency", ["KRW", "USD"]);
+export const currencyEnum = pgEnum("currency", ["KRW", "USD", "JPY"]);
+
+/**
+ * 가격이 어느 나라 스토어의 것인지. 같은 게임, 같은 기기라도 스토어가 나라별로 따로라
+ * 가격도 판매 여부도 다르다 — 한국 eShop 미발매작이 일본 eShop 에는 있다(2026-09-14).
+ *
+ * 왜 platform 을 늘리지 않았나: 기기는 그대로 Switch 다. 지역은 "어디서 파느냐" 라는 다른 축이고,
+ * 이 축을 platform 에 접으면(switch_jp 같은 값) 기기별 필터, 배지가 전부 지역만큼 늘어난다.
+ */
+export const regionEnum = pgEnum("region", ["KR", "JP"]);
+/** 화면과 수집의 기준 지역. 이 값이 아닌 행은 "참고 가격" 으로만 보여 준다 */
+export const HOME_REGION = "KR" as const;
 
 /**
  * 게임 레코드의 성격. DLC 를 별도 테이블이 아니라 games 행으로 담는 이유(기획서 5.4):
@@ -37,6 +48,7 @@ export type SourceName = (typeof sourceEnum.enumValues)[number];
 export type Role = (typeof roleEnum.enumValues)[number];
 export type SyncStatus = (typeof syncStatusEnum.enumValues)[number];
 export type Currency = (typeof currencyEnum.enumValues)[number];
+export type Region = (typeof regionEnum.enumValues)[number];
 export type ContentType = (typeof contentTypeEnum.enumValues)[number];
 export type CompanyRole = (typeof companyRoleEnum.enumValues)[number];
 export type UpgradeKind = (typeof upgradeKindEnum.enumValues)[number];
@@ -133,7 +145,25 @@ export const gamePlatforms = pgTable("game_platforms", {
    * 같은 본편을 매 실행 다시 묻지 않는다(sync/dlc-list 의 DLC_LIST_REFRESH_DAYS).
    */
   dlcListedAt: timestamp("dlc_listed_at", { withTimezone: true }),
-}, (t) => [uniqueIndex("gp_game_platform_uq").on(t.gameId, t.platform)]);
+  /**
+   * 이 가격을 파는 스토어의 나라. 한 게임, 한 기기라도 나라 수만큼 행이 생긴다
+   * (닌텐도 스위치 = 한국 eShop 행 + 일본 eShop 행). 통화도 그 나라의 것이다.
+   */
+  region: regionEnum("region").default("KR").notNull(),
+  /**
+   * 스토어가 쓰는 "작품" 코드. nsuid 같은 판매 단위 ID 와 다르다 — 그쪽은 나라마다 다른 값이지만
+   * 이 코드는 같은 작품이면 나라가 달라도 같다(2026-09-14 실측: 한국 SKU HACPA5WZA 와
+   * 일본 icode A5WZA 가 같은 No Man's Sky).
+   *
+   * 쓰는 곳: 일본 eShop 에서 발견한 상품이 우리가 이미 아는 게임인지 판정한다. 제목으로는 못 한다 —
+   * 일본 제목이 가타카나면("ア フォルド エーパート") 영문 카탈로그와 유사도가 0 이다.
+   * 지금은 닌텐도만 채운다. 다른 스토어가 같은 성격의 코드를 주면 그때 같이 쓴다.
+   */
+  titleCode: text("title_code"),
+}, (t) => [
+  uniqueIndex("gp_game_platform_region_uq").on(t.gameId, t.platform, t.region),
+  index("gp_title_code_idx").on(t.titleCode),
+]);
 
 /**
  * 가격 이력. 통화 컬럼을 따로 두지 않는다 — 스냅샷은 언제나 game_platforms 한 행에 매달려 있고,

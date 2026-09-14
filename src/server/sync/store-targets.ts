@@ -1,13 +1,14 @@
 // 스토어 소스의 수집 대상 선정 — 기존 매핑 + 카탈로그 신규 발견(시드).
 import { and, eq, inArray, sql } from "drizzle-orm";
-import { discoveryIgnores, gamePlatforms, gameSourceRefs, games } from "@/server/db/schema";
+import { discoveryIgnores, gamePlatforms, gameSourceRefs, games, type Platform } from "@/server/db/schema";
 import type { Db } from "@/server/db/client";
 import { getStoreAdapter, type StoreSource } from "@/server/adapters";
+import type { SearchCandidate } from "@/server/adapters/types";
 import { errorMessage } from "@/lib/errors";
 import { normalizeTitle } from "@/lib/slug";
 import { findGameByTitle, type GameTitleRow } from "./match";
 import { collectFreshCandidates } from "./discover";
-import { DISCOVERY_PAGE_BUDGET, MATCHED_FOR_SYNC, SEED_SHARE_MAX, SOURCE_PLATFORMS } from "./constants";
+import { DISCOVERY_PAGE_BUDGET, MATCHED_FOR_SYNC, SEED_SHARE_MAX, SOURCE_PLATFORMS, SOURCE_REGION } from "./constants";
 import { fetchWithRetry } from "./retry";
 import type { Ctx } from "./context";
 
@@ -21,7 +22,17 @@ export interface StoreTarget {
    */
   coverUrl?: string | null;
   portraitUrl?: string | null;
+  /**
+   * 가격만 주는 배치(nintendo_jp 가격 API)를 위한 자리. 그런 소스는 응답에 기기도 마스터도 없어서
+   * 발견 목록이 준 값, 또는 이미 있는 행의 값이 유일한 근거다(store-fetch, store-apply 가 쓴다).
+   */
+  platform?: Platform;
+  titleCode?: string | null;
+  releaseDate?: string | null;
+  meta?: StoreSnapshotMeta;
 }
+
+type StoreSnapshotMeta = NonNullable<import("@/server/adapters/types").StoreSnapshot["meta"]>;
 
 /** 대상 선정 몫. 인자가 넷이라 이름을 붙여 호출부에서 순서를 외우지 않게 한다 */
 export interface StoreTargetOptions {
@@ -37,11 +48,26 @@ export async function listStoreTargets(ctx: Ctx, source: StoreSource, opts: Stor
   const { limit, seedTop, pageBudget } = opts;
   const { db } = ctx;
   const platforms = SOURCE_PLATFORMS[source];
+  // 지역을 조건에 넣지 않으면 한 게임에 한국, 일본 행이 둘 다 붙어 같은 대상이 두 번 나오고,
+  // 갱신 순서(lastSyncedAt)도 남의 나라 행을 보고 정해진다
+  const region = SOURCE_REGION[source];
   const rows = await db
-    .select({ gameId: gameSourceRefs.gameId, externalId: gameSourceRefs.externalId, slug: games.slug })
+    .select({
+      gameId: gameSourceRefs.gameId,
+      externalId: gameSourceRefs.externalId,
+      slug: games.slug,
+      platform: gamePlatforms.platform,
+    })
     .from(gameSourceRefs)
     .innerJoin(games, eq(games.id, gameSourceRefs.gameId))
-    .leftJoin(gamePlatforms, and(eq(gamePlatforms.gameId, gameSourceRefs.gameId), inArray(gamePlatforms.platform, platforms)))
+    .leftJoin(
+      gamePlatforms,
+      and(
+        eq(gamePlatforms.gameId, gameSourceRefs.gameId),
+        inArray(gamePlatforms.platform, platforms),
+        eq(gamePlatforms.region, region),
+      ),
+    )
     .where(and(eq(gameSourceRefs.source, source), inArray(gameSourceRefs.matchedBy, MATCHED_FOR_SYNC)))
     .orderBy(sql`${gamePlatforms.lastSyncedAt} asc nulls first`)
     .limit(limit);
@@ -52,7 +78,7 @@ export async function listStoreTargets(ctx: Ctx, source: StoreSource, opts: Stor
     const key = `${r.gameId}:${r.externalId}`;
     if (seen.has(key)) continue; // psstore/nintendo 는 플랫폼 2개 조인으로 중복 가능
     seen.add(key);
-    targets.push({ gameId: r.gameId, slug: r.slug, externalId: r.externalId });
+    targets.push({ gameId: r.gameId, slug: r.slug, externalId: r.externalId, platform: r.platform ?? undefined });
   }
 
   // 신규 시드 (§4.2-1). 발견은 부가 작업이다 — 스토어가 목록을 안 주더라도(차단, 개편)
@@ -107,6 +133,46 @@ export async function gamesWithRef(db: Db, source: StoreSource): Promise<Set<str
   return new Set(rows.map((r) => r.gameId));
 }
 
+/**
+ * 작품 코드 → 그 코드를 가진 게임. 같은 작품이면 나라가 달라도 같은 코드라
+ * "일본에서 발견한 이 상품이 우리가 이미 아는 게임인가" 를 제목 없이 판정한다.
+ */
+async function gamesByTitleCode(db: Db, codes: string[]): Promise<Map<string, { id: string; slug: string }>> {
+  const wanted = Array.from(new Set(codes));
+  if (wanted.length === 0) return new Map();
+  const rows = await db
+    .select({ code: gamePlatforms.titleCode, id: games.id, slug: games.slug })
+    .from(gamePlatforms)
+    .innerJoin(games, eq(games.id, gamePlatforms.gameId))
+    .where(inArray(gamePlatforms.titleCode, wanted));
+  const out = new Map<string, { id: string; slug: string }>();
+  for (const r of rows) if (r.code && !out.has(r.code)) out.set(r.code, { id: r.id, slug: r.slug });
+  return out;
+}
+
+/** 기존 게임에 이 소스의 ID 를 붙인다. 이미 매칭된 게임이면(동시 실행, 수동 매칭) 건드리지 않는다 */
+async function linkRef(
+  db: Db,
+  source: StoreSource,
+  gameId: string,
+  c: SearchCandidate,
+  similarity: number,
+  now: Date,
+): Promise<void> {
+  await db
+    .insert(gameSourceRefs)
+    .values({
+      gameId,
+      source,
+      externalId: c.externalId,
+      url: c.url,
+      matchedBy: "auto",
+      confidence: similarity.toFixed(2),
+      checkedAt: now,
+    })
+    .onConflictDoNothing();
+}
+
 /** 역방향 매칭용 제목 목록. 카탈로그 전체라 발견, 반영 두 단계가 각각 한 번씩만 읽는다 */
 export async function loadGameTitles(db: Db): Promise<GameTitleRow[]> {
   return db.select({ id: games.id, slug: games.slug, titleEn: games.titleEn, titleKo: games.titleKo }).from(games);
@@ -153,12 +219,28 @@ async function seedTargets(ctx: Ctx, source: StoreSource, seedWant: number, page
   );
   if (fresh.length === 0) return [];
 
+  /** 발견 후보가 들고 온 값을 대상에 그대로 옮긴다 — 가격 API 가 모르는 것들이다 */
+  const asTarget = (c: (typeof fresh)[number], game: { id: string; slug: string } | null): StoreTarget => ({
+    gameId: game?.id ?? null,
+    slug: game?.slug ?? null,
+    externalId: c.externalId,
+    coverUrl: c.coverUrl,
+    portraitUrl: c.portraitUrl,
+    platform: c.platform,
+    titleCode: c.titleCode,
+    releaseDate: c.releaseDate,
+    meta: c.meta,
+  });
+
   // Steam 은 기준 소스라 흡수할 상대가 없다 — 발견한 것이 곧 새 게임이다
   if (source === "steam") {
-    return fresh.map((c) => ({ gameId: null, slug: null, externalId: c.externalId }));
+    return fresh.map((c) => asTarget(c, null));
   }
 
   const titles = await loadGameTitles(db);
+  // 작품 코드로 먼저 맞춘다. 제목보다 앞세우는 이유: 나라가 다르면 제목이 다른 문자 체계라
+  // 유사도가 0 인 경우가 있다(일본 "ア フォルド エーパート" = 우리 "A Fold Apart").
+  const ownerByCode = await gamesByTitleCode(db, fresh.map((c) => c.titleCode).filter((v): v is string => !!v));
 
   // 스토어는 같은 게임을 에디션, 플랫폼별 SKU 로 여러 벌 내보낸다. 그 게임에 이 소스 ref 가 이미 있으면
   // 두 번째 SKU 는 수집하지 않는다 — 수집하면 본편 가격이 에디션 가격(보통 더 비싸다)으로 덮인다.
@@ -174,6 +256,18 @@ async function seedTargets(ctx: Ctx, source: StoreSource, seedWant: number, page
   };
 
   for (const c of fresh) {
+    const byCode = c.titleCode ? ownerByCode.get(c.titleCode) : undefined;
+    if (byCode) {
+      if (refOwned.has(byCode.id)) {
+        await ignore(c.externalId, byCode.id, `${byCode.slug} 의 다른 판매 단위 (작품 코드 ${c.titleCode})`);
+        continue;
+      }
+      await linkRef(db, source, byCode.id, c, 1, ctx.now);
+      refOwned.add(byCode.id);
+      out.push(asTarget(c, byCode));
+      absorbed++;
+      continue;
+    }
     const hit = findGameByTitle(c.title, titles);
     if (!hit) {
       const key = normalizeTitle(c.title);
@@ -182,28 +276,16 @@ async function seedTargets(ctx: Ctx, source: StoreSource, seedWant: number, page
         continue;
       }
       if (key) newTitles.add(key);
-      out.push({ gameId: null, slug: null, externalId: c.externalId, coverUrl: c.coverUrl, portraitUrl: c.portraitUrl });
+      out.push(asTarget(c, null));
       continue;
     }
     if (refOwned.has(hit.game.id)) {
       await ignore(c.externalId, hit.game.id, `${hit.game.slug} 의 다른 SKU (에디션, 플랫폼판)`);
       continue;
     }
-    await db
-      .insert(gameSourceRefs)
-      .values({
-        gameId: hit.game.id,
-        source,
-        externalId: c.externalId,
-        url: c.url,
-        matchedBy: "auto",
-        confidence: hit.similarity.toFixed(2),
-        checkedAt: ctx.now,
-      })
-      // 이미 매칭된 게임이면(동시 실행, 수동 매칭) 건드리지 않는다
-      .onConflictDoNothing();
+    await linkRef(db, source, hit.game.id, c, hit.similarity, ctx.now);
     refOwned.add(hit.game.id);
-    out.push({ gameId: hit.game.id, slug: hit.game.slug, externalId: c.externalId });
+    out.push(asTarget(c, hit.game));
     absorbed++;
   }
   console.log(

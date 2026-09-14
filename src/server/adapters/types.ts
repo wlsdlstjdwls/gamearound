@@ -1,14 +1,21 @@
 // 어댑터 인터페이스 — 설계서 §4.1. 어댑터는 "가져오기만" 한다. DB 반영은 sync/가 맡음.
-import type { Currency, Platform } from "@/server/db/schema";
+import type { Currency, Platform, Region } from "@/server/db/schema";
 
 /** 크롤러 공통 User-Agent (§10: UA 명시) — 실제 값은 서비스 아이덴티티(lib/site)에서 만든다 */
 export { CRAWLER_USER_AGENT } from "@/lib/site";
 
-export type Source = "steam" | "psstore" | "xbox" | "nintendo" | "epic" | "gog" | "hltb" | "opencritic" | "metacritic" | "rss" | "wikidata" | "gamepass";
+export type Source = "steam" | "psstore" | "xbox" | "nintendo" | "nintendo_jp" | "epic" | "gog" | "hltb" | "opencritic" | "metacritic" | "rss" | "wikidata" | "gamepass";
 
 export interface StoreSnapshot {
   platform: Platform;
+  /** 이 가격을 파는 나라. 주지 않으면 KR 로 본다 — 기존 소스는 전부 한국 스토어다 */
+  region?: Region;
   storeExternalId: string;
+  /**
+   * 스토어의 "작품" 코드(닌텐도 initial code). 나라가 달라도 같은 작품이면 같은 값이라
+   * 지역 간 동일 게임 판정에 쓴다. 주는 소스만 채운다 — schema 의 game_platforms.title_code 주석 참고.
+   */
+  titleCode?: string | null;
   storeUrl: string;
   /** 통화의 최소 단위 정수(KRW=원, USD=센트). 통화는 아래 currency 가 말한다 */
   listPrice: number | null;
@@ -115,6 +122,17 @@ export interface SearchCandidate {
    */
   coverUrl?: string | null;
   portraitUrl?: string | null;
+  /** 지역 간 동일 작품 판정용 코드. 제목이 다른 문자 체계일 때 유일한 연결 고리다 */
+  titleCode?: string | null;
+  /**
+   * 목록 응답이 게임 마스터까지 다 주는 소스(nintendo_jp 검색 JSON)를 위한 자리.
+   * 그런 소스는 단건 조회 경로가 아예 없어서(nsuid 로 되묻는 API 가 없다) 여기서 받은 것이
+   * 신규 게임 생성의 유일한 근거가 된다.
+   */
+  meta?: StoreSnapshot["meta"];
+  /** 목록이 알려주는 기기, 발매일. meta 와 같은 이유로 들고 내려간다 */
+  platform?: Platform;
+  releaseDate?: string | null;
 }
 
 export interface SourceAdapter<T extends StoreSnapshot | MetaSnapshot | NewsItem[]> {
@@ -130,6 +148,14 @@ export interface SourceAdapter<T extends StoreSnapshot | MetaSnapshot | NewsItem
   fetchMany?(externalIds: string[]): Promise<Map<string, T>>;
   /** fetchMany 한 요청에 넣을 수 있는 ID 수 */
   batchSize?: number;
+  /**
+   * fetchMany 가 **가격만** 주는 소스. 신규 등록 대상은 게임 마스터(meta)가 없으면 만들 수 없어
+   * 어디서 얻을지를 여기서 밝힌다:
+   *   "detail"    — 단건 조회(fetch)로 상세를 받는다. nintendo(KR) 상품 HTML
+   *   "discovery" — 발견 목록이 이미 상세를 줬다. nintendo_jp 검색 JSON (단건 조회 경로가 없다)
+   * 비우면 "배치가 마스터까지 준다"는 뜻이다(steam GetItems).
+   */
+  batchPricesOnly?: "detail" | "discovery";
   /**
    * 카탈로그를 페이지 단위로 훑는다 (지원하는 소스만). 이게 없으면 그 소스는
    * 이미 등록된 게임에 가격을 붙이기만 할 뿐, 그 플랫폼 독점작을 영원히 못 가져온다.

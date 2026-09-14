@@ -2,7 +2,7 @@
 import { unstable_cache } from "next/cache";
 import { and, desc, eq, inArray, isNull } from "drizzle-orm";
 import { getDb } from "@/server/db/client";
-import { gameSubscriptions, games, news, subscriptions as subscriptionsTable, type Platform } from "@/server/db/schema";
+import { gameSubscriptions, games, news, subscriptions as subscriptionsTable, HOME_REGION, type Platform, type Region } from "@/server/db/schema";
 import type { GameDetail, SubscriptionDto } from "./dto";
 import { iso, toPlatformDto } from "./mappers";
 
@@ -12,6 +12,12 @@ const DETAIL_DLC_LIMIT = 30;
 
 /** 플랫폼 표시 순서 — 상세의 가격 표와 DLC 목록이 같은 순서를 써야 눈이 따라간다 */
 const PLATFORM_ORDER: Platform[] = ["steam", "epic", "gog", "ps5", "ps4", "xbox", "switch", "switch2"];
+/** 한국 스토어 행이 늘 먼저다 — 기준 통화의 가격이 대표가 돼야 한다 */
+function byRegionThenPlatform(a: { platform: Platform; region: Region }, b: { platform: Platform; region: Region }): number {
+  if (a.region !== b.region) return a.region === HOME_REGION ? -1 : 1;
+  return byPlatformOrder(a, b);
+}
+
 function byPlatformOrder(a: { platform: Platform }, b: { platform: Platform }): number {
   return PLATFORM_ORDER.indexOf(a.platform) - PLATFORM_ORDER.indexOf(b.platform);
 }
@@ -47,7 +53,7 @@ export async function getGameBySlug(slug: string): Promise<GameDetail | null> {
   });
   if (!row) return null;
 
-  const platforms = [...row.platforms].sort(byPlatformOrder).map(toPlatformDto);
+  const platforms = [...row.platforms].sort(byRegionThenPlatform).map(toPlatformDto);
   const subscriptions = await activeSubscriptions(row.platforms.map((p) => p.id));
 
   return {
@@ -102,7 +108,7 @@ export async function getGameBySlug(slug: string): Promise<GameDetail | null> {
       .map((d) => ({
         slug: d.slug,
         title: d.titleKo ?? d.titleEn,
-        platforms: [...d.platforms].sort(byPlatformOrder).map(toPlatformDto),
+        platforms: [...d.platforms].sort(byRegionThenPlatform).map(toPlatformDto),
       }))
       .sort((a, b) => a.title.localeCompare(b.title, "ko")),
     subscriptions,

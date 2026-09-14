@@ -1,49 +1,15 @@
-// Nintendo eShop(한국) 어댑터 — 설계서 §4.1. store.nintendo.co.kr(Magento) HTML 을 cheerio 로 파싱.
-//   검색: /catalogsearch/result/?q=  |  단건: /<상품ID> (다운로드 상품 ID 는 숫자 14자리, 패키지는 hacp… 알파벳)
-// PoC(2026-09-11): 젤다/마리오/실크송 검색 및 상품 3건에서 제목, 정가, 세일가, 발매일, 대상 본체 파싱 확인. 셀렉터는 이 파일 상수에만(§10).
+// 한국 eShop 상품, 검색 HTML 파서. 셀렉터는 constants 에만 둔다(§10).
 import { load, type CheerioAPI } from "cheerio";
 import type { Platform } from "@/server/db/schema";
+import { AdapterError, type SearchCandidate, type StoreSnapshot } from "../types";
 import {
-  AdapterError,
-  type SearchCandidate,
-  type StoreAdapter,
-  type StoreSnapshot,
-} from "./types";
-import { createHttpClient, notFoundAs } from "./http";
-import { sleep } from "@/lib/async";
-
-export const NINTENDO_BASE_URL = "https://store.nintendo.co.kr";
-
-export const NINTENDO_SELECTORS = {
-  searchLink: "a.product-item-link",
-  title: 'span[itemprop="name"]',
-  finalPrice: '[data-price-type="finalPrice"]',
-  oldPrice: '[data-price-type="oldPrice"]',
-  releaseDate: ".product-attribute.release_date .product-attribute-val",
-  platform: ".product-attribute.label_platform_attr .product-attribute-val",
-  publisher: ".product-attribute.publisher .product-attribute-val",
-  gameCategory: ".product-attribute.game_category .product-attribute-val",
-  players: ".product-attribute.no_of_players .product-attribute-val",
-  ogImage: 'meta[property="og:image"]',
-} as const;
-
-/** 다운로드(eShop) 상품 ID — 가격 수집 대상. 패키지 상품(hacp…)은 제외 */
-const DIGITAL_ID = /^\d{10,}$/;
-const PLATFORM_SWITCH2 = /switch\s*2/i;
-
-/**
- * 카탈로그 발견용 검색 시드. Magento 카테고리 페이지(/digital)는 클라이언트 렌더라 ?p= 가 먹지 않고,
- * GraphQL 도 꺼져 있다(2026-09-14 확인). 서버 렌더되는 검색 결과만 페이지네이션이 동작하므로
- * 흔한 글자를 질의로 넣어 훑는다. 시드 간 중복은 호출부가 제거한다.
- */
-const DISCOVERY_QUERIES = [
-  "a", "e", "i", "o", "u", "s", "t", "r", "n", "l", "the", "1", "2",
-  "의", "이", "스", "리", "드", "마", "게임", "어", "라", "트",
-];
-/** 검색 결과 1페이지에 24건. 시드 하나가 이 페이지 수를 넘기면 다음 시드로 넘어간다 */
-const DISCOVERY_MAX_PAGES = 60;
-
-// ---- 순수 파서 ----
+  DIGITAL_ID,
+  KR_SKU_CODE,
+  KR_SKU_PATTERN,
+  NINTENDO_SELECTORS,
+  PLATFORM_SWITCH2,
+  nintendoProductUrl,
+} from "./constants";
 
 /** "2026/11/5", "2026.11.05", "2026-11-05" → YYYY-MM-DD. 불명확하면 null */
 export function parseNintendoDate(input: string | null | undefined): string | null {
@@ -64,10 +30,6 @@ function priceOf($: CheerioAPI, selector: string): number | null {
   return Number.isFinite(n) ? Math.round(n) : null;
 }
 
-export function nintendoProductUrl(id: string): string {
-  return `${NINTENDO_BASE_URL}/${id}`;
-}
-
 /**
  * "액션, 어드벤처" → ["액션", "어드벤처"]
  * 구분자 클래스에 가운뎃점(U+00B7)이 남아 있는 이유: 닌텐도 스토어가 실제로 그 문자로 장르를 잇는다.
@@ -85,6 +47,16 @@ export function parseNintendoPlayers(raw: string | null | undefined): number | n
   if (!nums || nums.length === 0) return null;
   const max = Math.max(...nums.map(Number));
   return Number.isFinite(max) && max > 0 ? max : null;
+}
+
+/**
+ * 상품 HTML 에서 작품 코드. 못 찾으면 null 이고, 그러면 이 게임은 일본 쪽과 코드로 이어지지 않는다
+ * (제목 유사도로 한 번 더 시도하므로 수집이 멈추지는 않는다).
+ */
+export function parseNintendoTitleCode(html: string): string | null {
+  const sku = html.match(KR_SKU_PATTERN)?.[1];
+  if (!sku) return null;
+  return sku.match(KR_SKU_CODE)?.[1] ?? null;
 }
 
 /** 상품 페이지 HTML → StoreSnapshot */
@@ -113,6 +85,7 @@ export function parseNintendoProduct(html: string, id: string): StoreSnapshot {
     platform,
     storeExternalId: id,
     storeUrl: nintendoProductUrl(id),
+    titleCode: parseNintendoTitleCode(html),
     listPrice,
     currentPrice: finalPrice,
     discountPct,
@@ -146,8 +119,6 @@ export function parseNintendoSearch(html: string): SearchCandidate[] {
   return out;
 }
 
-// ---- 네트워크 ----
-
 /**
  * eShop 은 차단을 404 나 403 으로 알리지 않는다 — **202 에 빈 본문**을 준다
  * (GitHub Actions 러너(Azure US)에서 실측, 2026-09-14: search/product 모두 http=202 size=0).
@@ -158,49 +129,3 @@ export function requireBody(html: string, ctx: string): string {
   if (html.trim().length > 0) return html;
   throw new AdapterError(`Nintendo 빈 응답 (${ctx}) — 한국 외 IP 차단 추정`, "nintendo", true);
 }
-
-// eShop 은 HTML 크롤이라 봇 차단을 피하려 한국어 Accept-Language 를 명시한다. 타임아웃도 API 보다 길게 잡는다.
-const http = createHttpClient({
-  source: "nintendo",
-  label: "Nintendo",
-  timeoutMs: 20_000,
-  headers: { "Accept-Language": "ko-KR,ko;q=0.9" },
-  // 한국 eShop 은 한국 밖 IP 에 202 + 빈 본문을 준다 — CRAWL_PROXY_URL(한국 출구)이 있으면 거쳐 간다.
-  // 가정용 회선(한국)에서는 값이 없으므로 그대로 직접 나간다.
-  viaProxy: true,
-  onStatus: notFoundAs("nintendo", (ctx) => `Nintendo 상품 없음 (${ctx})`),
-});
-
-export const nintendoAdapter: StoreAdapter = {
-  source: "nintendo",
-  minIntervalMs: 4000,
-
-  async search(query: string): Promise<SearchCandidate[]> {
-    const u = new URL(`${NINTENDO_BASE_URL}/catalogsearch/result/`);
-    u.searchParams.set("q", query);
-    return parseNintendoSearch(requireBody(await http.text(u.toString()), `search:${query}`));
-  },
-
-  async fetch(id: string): Promise<StoreSnapshot> {
-    if (!/^[a-z0-9]+$/i.test(id)) throw new AdapterError(`Nintendo 상품 ID 형식 오류: ${id}`, "nintendo", false);
-    return parseNintendoProduct(requireBody(await http.text(nintendoProductUrl(id)), id), id);
-  },
-
-  /**
-   * 검색 시드 × 페이지네이션으로 카탈로그를 페이지 단위로 흘려보낸다. 한 시드가 바닥나면 다음 시드로.
-   * 아는 것을 걸러내고 멈출 시점을 정하는 일은 호출부 몫이다(adapters/types 의 discoverPages 주석).
-   */
-  async *discoverPages(): AsyncGenerator<SearchCandidate[]> {
-    for (const q of DISCOVERY_QUERIES) {
-      for (let page = 1; page <= DISCOVERY_MAX_PAGES; page++) {
-        const u = new URL(`${NINTENDO_BASE_URL}/catalogsearch/result/`);
-        u.searchParams.set("q", q);
-        u.searchParams.set("p", String(page));
-        const found = parseNintendoSearch(requireBody(await http.text(u.toString()), `discover:${q}:${page}`));
-        if (found.length === 0) break; // 이 시드는 끝 — 다음 시드로
-        yield found;
-        await sleep(nintendoAdapter.minIntervalMs);
-      }
-    }
-  },
-};

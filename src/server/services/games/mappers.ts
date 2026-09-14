@@ -22,6 +22,7 @@ export type PlatformRow = typeof gamePlatforms.$inferSelect;
 export function toPlatformDto(p: PlatformRow): PlatformDto {
   return {
     platform: p.platform,
+    region: p.region,
     storeUrl: p.storeUrl,
     releaseDate: p.releaseDate,
     currentVersion: p.currentVersion,

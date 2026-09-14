@@ -4,17 +4,24 @@
 // 실제로 배포해서 함수가 잘려 봐야 안다. 그 전에 여기서 막는다.
 import { describe, expect, it } from "vitest";
 import { getStoreAdapter } from "@/server/adapters";
-import { CRON_OVERHEAD_FACTOR, CRON_PLAN, CRON_SOURCES, CRON_TIME_BUDGET_MS } from "./constants";
+import { CRON_DB_MS_PER_ITEM, CRON_PLAN, CRON_SAFETY_FACTOR, CRON_SOURCES, CRON_TIME_BUDGET_MS, DEFAULT_FETCH_BATCH_SIZE } from "./constants";
 
 /**
- * 한 실행이 걸릴 시간의 어림값 = (목록 페이지 + 대상 건수 + 매칭 검색) × 요청 간격 × 실측 보정 계수.
- * 대상 1건이 요청 2회인 경우(언어 2회 조회 등)는 어댑터가 간격의 절반만 쉬므로 여기서는 1건으로 센다.
- * 보정 계수가 반영(DB 왕복)과 알림 몫을 담당한다 — 그 값의 근거는 CRON_OVERHEAD_FACTOR 주석에 있다.
+ * 한 실행이 걸릴 시간의 어림값 = (요청 시간 + 반영 시간) × 여유.
+ *
+ * 요청 시간은 "몇 번 나가느냐" 로 센다 — 건수가 아니다. 가격을 배치로 받는 소스는 50건이 요청 1회라
+ * 건수로 세면 실제보다 수십 배 크게 나온다. 다만 신규 등록 대상은 배치가 마스터를 안 줘서
+ * 단건 상세를 따로 받는 소스가 있고(batchPricesOnly "detail"), 그건 건수만큼 요청이 는다.
+ * 반영 시간은 소스와 무관하게 건당 CRON_DB_MS_PER_ITEM 이다(그 상수의 근거 주석 참고).
  */
 function estimateMs(source: (typeof CRON_SOURCES)[number], mode: "prices" | "discover"): number {
   const plan = CRON_PLAN[source][mode];
-  const interval = getStoreAdapter(source).minIntervalMs;
-  return (plan.pageBudget + plan.limit + plan.match) * interval * CRON_OVERHEAD_FACTOR[source];
+  const adapter = getStoreAdapter(source);
+  const detailItems = adapter.batchPricesOnly === "detail" ? plan.seedTop : 0;
+  const batchedItems = Math.max(plan.limit - detailItems, 0);
+  const perRequest = adapter.fetchMany ? (adapter.batchSize ?? DEFAULT_FETCH_BATCH_SIZE) : 1;
+  const requests = plan.pageBudget + plan.match + detailItems + Math.ceil(batchedItems / perRequest);
+  return (requests * adapter.minIntervalMs + plan.limit * CRON_DB_MS_PER_ITEM) * CRON_SAFETY_FACTOR;
 }
 
 describe("CRON_PLAN", () => {

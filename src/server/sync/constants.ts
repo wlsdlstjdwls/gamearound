@@ -4,7 +4,7 @@ import { RSS_FEEDS } from "@/server/adapters/news-rss";
 import { GAMEPASS_COLLECTIONS } from "@/server/adapters/gamepass";
 import type { Source } from "@/server/adapters/types";
 import type { StoreSource } from "@/server/adapters";
-import type { Platform } from "@/server/db/schema";
+import type { Platform, Region } from "@/server/db/schema";
 
 export const LOCK_TTL_SEC = 3600;
 export const RETRY_DELAYS_MS = [1000, 4000, 16000]; // 재시도 3회 지수 백오프
@@ -14,7 +14,12 @@ export const MATCHED_FOR_SYNC = ["auto", "manual"] as const;
 export const BATCH_SIZE: Record<Source, number> = {
   // steam 은 fetchMany(100개/요청) 라 수집은 1,500건에 ~15초. 병목은 게임당 DB 왕복(실측 0.87초/건)이라
   // 1,500 ≈ 22분 으로 잡는다(하루 3회 = 4,500건/일). 이 값을 올리려면 반영 단계를 먼저 배치화해야 한다.
-  steam: 1500, psstore: 200, xbox: 200, nintendo: 120,
+  steam: 1500, psstore: 200, xbox: 200,
+  // 가격이 공식 API 배치(50건/요청)로 오면서 한국 eShop 도 4초 간격에 묶이지 않는다.
+  // 남은 병목은 신규 등록 대상의 상품 HTML 뿐이다(batchPricesOnly "detail").
+  nintendo: 300,
+  // 일본은 HTML 이 아예 없다 — 발견도 가격도 JSON 이라 한국보다 크게 잡는다
+  nintendo_jp: 600,
   // epic 은 단건 조회(catalogOffer) + 요청 간격 1초라 250건 ≈ 4분. 여기에 발견 한 바퀴(약 175요청 ≈ 3분)가 더 붙는다
   epic: 250,
   // gog 는 배치 조회(50개 ID 당 상품, 가격 2요청)라 수집은 빠르다. 발견 한 바퀴가 64페이지 ≈ 1분
@@ -45,7 +50,7 @@ export const WRITE_BATCH_SIZE = 50;
  * CRAWL_PROXY_URL(주거용 한국 출구)이 있으면 두 어댑터가 그 프록시로 나가므로 러너에서도 돈다
  * — 그때는 이 목록이 "프록시가 없을 때의 대비책" 이 된다(adapters/http 의 viaProxy).
  */
-export const LOCAL_ONLY_SOURCES: Source[] = ["nintendo", "epic"];
+export const LOCAL_ONLY_SOURCES: Source[] = ["nintendo", "nintendo_jp", "epic"];
 // 2026-09-14 이후 이 둘의 정규 실행처는 서울 리전 Vercel 크론이다(CRON_SOURCES).
 // 이 목록과 scripts/crawl-local.ts 는 손으로 돌려야 할 때를 위해 남겨 둔다 — 크론이 막히거나
 // 리전이 바뀌면 가정용 회선이 유일한 대비책이라, 쓰이지 않는다고 지우면 그때 다시 만들어야 한다.
@@ -58,6 +63,8 @@ export const LOCAL_SEED_TOP: Partial<Record<Source, number>> = {
   nintendo: 60,
   // BATCH_SIZE.epic(250)의 절반. 발견 페이지 예산은 DISCOVERY_PAGE_BUDGET.epic 이 따로 막는다
   epic: 125,
+  // 일본은 발견도 가격도 JSON 이라 한국보다 크게 잡는다(BATCH_SIZE.nintendo_jp 의 절반)
+  nintendo_jp: 300,
 };
 
 /**
@@ -67,12 +74,14 @@ export const LOCAL_SEED_TOP: Partial<Record<Source, number>> = {
  * 나머지 소스는 Actions 에 남는다: steam 배치 1,500건은 함수 300초 안에 안 들어오고,
  * Actions 무료 한도(월 2,000분)에 맞춘 주기가 이미 잡혀 있다.
  */
-export const CRON_SOURCES = ["nintendo", "epic"] as const;
+export const CRON_SOURCES = ["nintendo", "nintendo_jp", "epic"] as const;
 // 주기는 vercel.json 의 crons 에 있다 — JSON 이라 주석을 못 달아 근거를 여기 적는다(시각은 UTC).
-//   /api/cron/crawl/nintendo/prices    15 */6 * * *          하루 4회 × 42건 = 168건/일
-//   /api/cron/crawl/nintendo/discover  45 1,7,13,19 * * *    하루 4회 × 20건 = 80건/일 (4초 간격이 한계다)
-//   /api/cron/crawl/epic/prices        25 */6 * * *          하루 4회 × 130건 = 520건/일
-//   /api/cron/crawl/epic/discover      55 3,9,15,21 * * *    하루 4회 × 60건 = 240건/일 (한 바퀴가 175페이지)
+//   /api/cron/crawl/nintendo/prices       15 */6 * * *          하루 4회 × 300건 = 1,200건/일
+//   /api/cron/crawl/nintendo/discover     45 1,7,13,19 * * *    하루 4회 × 20건 = 80건/일 (신규는 상품 HTML 이라 4초 간격을 탄다)
+//   /api/cron/crawl/nintendo_jp/prices    35 */6 * * *          하루 4회 × 300건 = 1,200건/일
+//   /api/cron/crawl/nintendo_jp/discover  5 2,8,14,20 * * *     하루 4회 × 60건 = 240건/일 (한 바퀴가 약 300페이지)
+//   /api/cron/crawl/epic/prices           25 */6 * * *          하루 4회 × 120건 = 480건/일
+//   /api/cron/crawl/epic/discover         55 3,9,15,21 * * *    하루 4회 × 60건 = 240건/일 (한 바퀴가 175페이지)
 // 가격 갱신 주기를 발견보다 성기게 두는 이유(2026-09-14): 카탈로그가 비어 있는 단계에서는
 // 같은 몇십 건을 하루에 열두 번 다시 묻는 것보다 새 게임을 들이는 쪽이 낫다. 보유가 갱신 몫을
 // 따라잡으면(닌텐도 168건, Epic 520건) 그때 prices 주기를 다시 촘촘하게 한다.
@@ -111,27 +120,41 @@ export interface CronRunPlan {
 export const CRON_TIME_BUDGET_MS = 200_000;
 
 /**
- * 요청 간격만으로 계산한 시간에 곱할 보정 계수. 실제 실행에는 반영(DB 왕복), 알림, 캐시 무효화가 붙는다.
- * 배포된 함수에서 잰 값이 근거다(2026-09-14):
- *   epic prices 180건 250.5초 = 간격 1초 × 180 의 1.39배 (건당 요청이 1회라 DB 몫이 그대로 드러난다)
- *   nintendo prices 20건 87.8초 = 간격 4초 × 20 의 1.10배 (간격이 길어 DB 몫이 묻힌다)
- * 값을 고칠 때는 추측하지 말고 응답의 durationMs 를 다시 보고 고친다.
+ * 항목 1건을 반영하는 데 드는 시간(요청 시간 제외) — DB 왕복, 알림, 캐시 무효화 몫.
+ *
+ * 처음에는 "요청 시간 × 소스별 보정 계수" 로 어림했는데, 가격을 배치로 받는 소스가 생기면서 그 모양이 깨졌다:
+ * 50건을 한 요청에 받으면 요청 시간이 거의 0 이 되고, 그때 남는 것은 건당 DB 시간뿐이다.
+ * 그래서 요청 시간과 반영 시간을 갈라 놓는다.
+ *
+ * 400ms 의 근거는 배포된 함수 실측 두 건이다(2026-09-14). 둘 다 건당 요청이 1회라 빼면 반영 몫만 남는다:
+ *   epic prices     180건 250.5초 - 요청 180초 = 70.5초 → 건당 392ms
+ *   nintendo prices  20건  87.8초 - 요청  80초 =  7.8초 → 건당 390ms
+ * 소스가 달라도 같은 값이 나왔다 — 반영 경로(store-apply)가 소스와 무관하게 같기 때문이다.
  */
-export const CRON_OVERHEAD_FACTOR: Record<CronSource, number> = { nintendo: 1.15, epic: 1.4 };
+export const CRON_DB_MS_PER_ITEM = 400;
+/** 위 둘을 더한 값에 곱할 여유. 실행 시간은 들쭉날쭉하고, 잘리면 그 실행이 통째로 버려진다 */
+export const CRON_SAFETY_FACTOR = 1.15;
 
 export const CRON_PLAN: Record<CronSource, Record<CronMode, CronRunPlan>> = {
   nintendo: {
-    // 4초 × 42건 × 1.15 = 193초
-    prices: { limit: 42, seedTop: 0, pageBudget: 0, match: 0 },
-    // 4초 × (12페이지 + 24건 + 매칭 3건) × 1.15 = 179초. 매칭 1건이 또 검색 1회라 3건만 본다
-    // seedTop 은 limit 안의 배분이라 올려도 시간이 안 는다 — 24건 중 20건을 신규에 준다
+    // 가격이 배치 50건/요청이라 요청은 6회(24초)뿐이고 남는 건 반영 시간이다: (24 + 300×0.4)×1.15 = 166초
+    prices: { limit: 300, seedTop: 0, pageBudget: 0, match: 0 },
+    // 신규 20건은 상품 HTML 단건 조회다(batchPricesOnly "detail") — 여기만 4초 간격을 그대로 탄다.
+    // 요청 (12페이지 + 매칭 3 + 신규 20) × 4초 = 140초, 반영 24건 × 0.4초 → 합 172초
     discover: { limit: 24, seedTop: 20, pageBudget: 12, match: 3, seedShare: 1 },
   },
+  nintendo_jp: {
+    // 발견도 가격도 JSON 이라 한국보다 싸다. 요청 6회(6초) + 반영 300건 × 0.4초 → 145초
+    prices: { limit: 300, seedTop: 0, pageBudget: 0, match: 0 },
+    // 단건 조회 경로가 없어 신규도 요청을 더 쓰지 않는다(발견 목록이 마스터까지 준다).
+    // 요청 (100페이지 + 배치 2 + 매칭 8) × 1초 + 반영 60건 × 0.4초 → 154초
+    discover: { limit: 60, seedTop: 60, pageBudget: 100, match: 8, seedShare: 1 },
+  },
   epic: {
-    // 1초 × 130건 × 1.4 = 182초. 첫 실측(180건)이 250초로 300초에 너무 붙어 내려 잡았다
-    prices: { limit: 130, seedTop: 0, pageBudget: 0, match: 0 },
-    // 1초 × (60페이지 + 60건 + 매칭 8건) × 1.4 = 179초. 카탈로그 한 바퀴가 175페이지라 세 번에 나눠 돈다
-    // 60건 전부를 신규에 준다. Epic 기존 가격은 prices 모드가 하루 520건으로 따로 돈다
+    // 요청 120초 + 반영 120건 × 0.4초 = 168초 → 193초. 첫 실측(180건)이 250초라 내려 잡았다
+    prices: { limit: 120, seedTop: 0, pageBudget: 0, match: 0 },
+    // 요청 (60페이지 + 60건 + 매칭 8) × 1초 + 반영 60건 × 0.4초 → 175초. 한 바퀴가 175페이지라 나눠 돈다
+    // 60건 전부를 신규에 준다. Epic 기존 가격은 prices 모드가 따로 돈다
     discover: { limit: 60, seedTop: 60, pageBudget: 60, match: 8, seedShare: 1 },
   },
 };
@@ -154,6 +177,8 @@ export const DISCOVERY_PAGE_BUDGET: Partial<Record<StoreSource, number>> = {
   epic: 200,
   // 1.5초 × 60 ≈ 90초. KR 16,991건이 페이지당 43~48건이라 한 바퀴는 340페이지 — 며칠에 걸쳐 채운다
   xbox: 60,
+  // 1초 × 60 ≈ 1분. 스위치 본편, 판매 중으로 좁힌 14,882건이 페이지당 50건이라 한 바퀴가 약 300페이지
+  nintendo_jp: 60,
   // 1초 × 90 ≈ 1.5분. 서버가 페이지를 24건으로 깎아 KR 7,571건이 316페이지다
   psstore: 90,
 };
@@ -165,7 +190,16 @@ export const DISCOVERY_PAGE_BUDGET: Partial<Record<StoreSource, number>> = {
 export const SEED_SHARE_MAX = 0.5;
 /** 스토어 소스 → 담당 플랫폼 (§11-6: PS4/PS5, Switch/Switch2 분리 유지) */
 export const SOURCE_PLATFORMS: Record<StoreSource, Platform[]> = {
-  steam: ["steam"], psstore: ["ps5", "ps4"], xbox: ["xbox"], nintendo: ["switch", "switch2"], epic: ["epic"], gog: ["gog"],
+  steam: ["steam"], psstore: ["ps5", "ps4"], xbox: ["xbox"], nintendo: ["switch", "switch2"],
+  nintendo_jp: ["switch", "switch2"], epic: ["epic"], gog: ["gog"],
+};
+/**
+ * 소스가 파는 나라. 같은 기기라도 나라가 다르면 game_platforms 행이 따로다 —
+ * 그래서 "이 소스의 행" 을 고를 때는 플랫폼만으로 부족하고 이 값이 함께 조건에 들어가야 한다.
+ * 안 그러면 일본 수집이 한국 행을 덮어쓴다.
+ */
+export const SOURCE_REGION: Record<StoreSource, Region> = {
+  steam: "KR", psstore: "KR", xbox: "KR", nintendo: "KR", nintendo_jp: "JP", epic: "KR", gog: "KR",
 };
 /** §10 파싱 검증: 성공 건 중 가격 0/null 비율이 이 값을 넘으면 반영 생략 + partial */
 export const SUSPICIOUS_PRICE_RATIO = 0.5;

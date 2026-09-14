@@ -4,13 +4,13 @@
 // "무엇을 쓸지 정하는 일"(planPlatform)과 "쓰는 일"을 갈라 둔 이유: 반영 단계가 게임마다
 // DB 를 왕복하면 배치 하나가 몇십 분이 된다. 계획만 모아 두면 호출부가 한 번에 묶어 보낼 수 있다.
 import { and, eq, inArray } from "drizzle-orm";
-import { gamePlatforms, priceSnapshots, type Platform } from "@/server/db/schema";
+import { gamePlatforms, priceSnapshots, HOME_REGION, type Platform, type Region } from "@/server/db/schema";
 import type { StoreSnapshot } from "@/server/adapters/types";
 import { DISPLAY_CURRENCY } from "@/lib/currency";
 import { isLocked, type Ctx } from "./context";
 
 // hasAddOns 도 여기 규칙을 그대로 탄다 — 주지 않는 소스는 undefined 라 기존 값을 덮지 않는다
-const PLATFORM_FIELDS = ["storeExternalId", "storeUrl", "releaseDate", "currentVersion", "listPrice", "currentPrice", "discountPct", "hasAddOns", "currency"] as const;
+const PLATFORM_FIELDS = ["storeExternalId", "storeUrl", "releaseDate", "currentVersion", "listPrice", "currentPrice", "discountPct", "hasAddOns", "currency", "titleCode"] as const;
 const PRICE_FIELDS = new Set<string>(["listPrice", "currentPrice", "discountPct"]);
 
 /** ISO 문자열 → Date. 빈 값/파싱 실패는 null */
@@ -72,6 +72,9 @@ export function planPlatform(ctx: Ctx, existing: PlatformRow | undefined, gameId
       values: {
         gameId,
         platform: snapshot.platform,
+        // 지역은 행의 정체성(유니크 키)이라 나중에 고쳐 쓰지 않는다 — 그래서 INSERT 에만 있다
+        region: snapshot.region ?? HOME_REGION,
+        titleCode: snapshot.titleCode ?? null,
         storeExternalId: snapshot.storeExternalId,
         storeUrl: snapshot.storeUrl,
         releaseDate: snapshot.releaseDate ?? null,
@@ -167,9 +170,9 @@ export async function upsertPlatform(ctx: Ctx, gameId: string, slug: string, sna
 }
 
 /** 항목 실패 시 해당 플랫폼 행을 failed 로 표시 (값은 유지, §4.6 신선도 경고용) */
-export async function markPlatformFailed(ctx: Ctx, gameId: string, platforms: Platform[]): Promise<void> {
+export async function markPlatformFailed(ctx: Ctx, gameId: string, platforms: Platform[], region: Region): Promise<void> {
   await ctx.db
     .update(gamePlatforms)
     .set({ syncStatus: "failed" })
-    .where(and(eq(gamePlatforms.gameId, gameId), inArray(gamePlatforms.platform, platforms)));
+    .where(and(eq(gamePlatforms.gameId, gameId), inArray(gamePlatforms.platform, platforms), eq(gamePlatforms.region, region)));
 }

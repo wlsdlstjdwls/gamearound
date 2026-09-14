@@ -1,5 +1,6 @@
 // 순수 유틸: 날짜, 시간 포맷과 플랫폼 라벨. 가격 표시는 통화 규칙이 붙어 lib/currency 가 맡는다.
 // 시각은 항상 한국 시간(KST)으로 표시한다. 서버(Vercel)는 UTC 라 timeZone 을 명시하지 않으면 9시간 어긋난다.
+import type { Region } from "@/server/db/schema";
 export const DISPLAY_TIME_ZONE = "Asia/Seoul";
 
 export function formatDiscount(pct: number | null | undefined): string {
@@ -31,6 +32,12 @@ export function formatHours(h: string | number | null | undefined): string {
   const digits = Math.abs(n) < HOURS_DECIMAL_MAX ? 1 : 0;
   return `${n.toLocaleString("ko-KR", { maximumFractionDigits: digits })}시간`;
 }
+
+/**
+ * 기준 지역(한국)이 아닌 가격에 붙이는 꼬리표. 한국 계정으로 살 수 없는 가격이라
+ * 아무 표시 없이 나란히 두면 최저가를 잘못 읽는다. 기준 지역에는 아무것도 붙이지 않는다.
+ */
+export const REGION_SUFFIX: Partial<Record<Region, string>> = { JP: "일본" };
 
 export const PLATFORM_LABEL: Record<string, string> = {
   steam: "Steam",

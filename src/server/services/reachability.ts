@@ -10,7 +10,7 @@
 import { EPIC_BROWSER_HEADERS, EPIC_GRAPHQL_URL } from "@/server/adapters/epic";
 import { runCurl } from "@/server/adapters/curl";
 import { VERCEL_REGION_ENV } from "@/server/adapters/http";
-import { NINTENDO_BASE_URL } from "@/server/adapters/nintendo";
+import { JP_DISCOVER_FQ, JP_SEARCH_URL, NINTENDO_BASE_URL } from "@/server/adapters/nintendo";
 import { GOG_CATALOG_URL } from "@/server/adapters/gog";
 import { CRAWLER_USER_AGENT } from "@/lib/site";
 import { errorMessage } from "@/lib/errors";
@@ -82,6 +82,10 @@ export function summarize(probes: ProbeResult[]): string[] {
   if (nintendo === "ok") out.push("닌텐도: 수집 가능 — 이 환경은 한국 IP 로 보인다. 가정용 회선 의존을 뗄 수 있다");
   else if (nintendo === "empty") out.push("닌텐도: 한국 밖 IP 다 (2xx + 빈 본문). 한국 출구가 필요하다");
   else if (nintendo) out.push("닌텐도: 요청 자체가 실패했다 — 차단이 아니라 연결 문제일 수 있다");
+
+  const nintendoJp = verdictOf(probes, "nintendo_jp");
+  if (nintendoJp === "ok") out.push("닌텐도 일본: 수집 가능 — 검색 API 가 열려 있다");
+  else if (nintendoJp) out.push("닌텐도 일본: 검색 API 가 응답하지 않는다 — 이 환경에서는 일본 카탈로그를 못 훑는다");
 
   const fetchVerdict = verdictOf(probes, "epic (fetch)");
   const curlVerdict = verdictOf(probes, "epic (curl)");
@@ -186,6 +190,14 @@ export async function probeStoreReachability(): Promise<ReachabilityReport> {
       probe("nintendo", "한국 eShop 검색 페이지가 내용을 주는가", MIN_BODY_BYTES.html, () =>
         fetch(`${NINTENDO_BASE_URL}/catalogsearch/result/?q=마리오`, {
           headers: { "User-Agent": CRAWLER_USER_AGENT, "Accept-Language": "ko-KR,ko;q=0.9" },
+          signal: timeout(),
+          cache: "no-store",
+        }),
+      ),
+      // 일본 eShop — 한국 스토어와 막는 기준이 다를 수 있어 따로 잰다(이쪽은 HTML 이 아니라 검색 JSON 이다)
+      probe("nintendo_jp", "일본 eShop 검색 API 가 목록을 주는가", MIN_BODY_BYTES.json, () =>
+        fetch(`${JP_SEARCH_URL}?limit=1&page=1&fq=${encodeURIComponent(JP_DISCOVER_FQ)}`, {
+          headers: { "User-Agent": CRAWLER_USER_AGENT, "Accept-Language": "ja-JP,ja;q=0.9" },
           signal: timeout(),
           cache: "no-store",
         }),

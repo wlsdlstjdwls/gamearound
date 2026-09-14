@@ -1,9 +1,9 @@
 // /games 목록 — 필터, 정렬, 페이지네이션과 필터 선택지(facets).
 import { unstable_cache } from "next/cache";
-import { asc, eq, sql } from "drizzle-orm";
+import { and, asc, eq, sql } from "drizzle-orm";
 import { DISPLAY_CURRENCY } from "@/lib/currency";
 import { getDb } from "@/server/db/client";
-import { gameGenres, gamePlatforms, games, genres, type Platform } from "@/server/db/schema";
+import { gameGenres, gamePlatforms, games, genres, HOME_REGION, type Platform } from "@/server/db/schema";
 import { normalizeForSearch } from "@/lib/slug";
 import { DEFAULT_GAME_SORT, type GamesQuery } from "@/lib/games-query";
 import type { GameSummary } from "./dto";
@@ -47,7 +47,9 @@ function platformAgg(platform?: Platform) {
       maxRelease: sql<string | null>`max(${gamePlatforms.releaseDate})`.as("max_release"),
     })
     .from(gamePlatforms)
-    .where(platform ? eq(gamePlatforms.platform, platform) : undefined)
+    // 목록의 최저가, 할인, 발매일은 기준 지역(한국) 행만 본다. 다른 나라 가격을 섞으면
+    // 카드의 할인 배지가 한국에서 살 수 없는 할인을 가리킨다 — 상세 화면에서만 참고로 보여 준다
+    .where(and(eq(gamePlatforms.region, HOME_REGION), platform ? eq(gamePlatforms.platform, platform) : undefined))
     .groupBy(gamePlatforms.gameId)
     .as("agg");
 }
@@ -123,7 +125,9 @@ async function getGameFacetsRaw(): Promise<GameFacets> {
       .select({ platform: gamePlatforms.platform, count: sql<number>`count(distinct ${gamePlatforms.gameId})::int` })
       .from(gamePlatforms)
       .innerJoin(games, eq(games.id, gamePlatforms.gameId))
-      .where(mainGamesOnly())
+      // 필터 선택지도 기준 지역만 센다 — 일본 스토어에만 있는 게임이 "스위치 1,234개" 를 부풀리면
+      // 그 필터를 눌렀을 때 목록(위 집계도 기준 지역만 본다)과 수가 안 맞는다
+      .where(and(mainGamesOnly(), eq(gamePlatforms.region, HOME_REGION)))
       .groupBy(gamePlatforms.platform),
     db
       .select({ name: genres.name, count: sql<number>`count(*)::int` })

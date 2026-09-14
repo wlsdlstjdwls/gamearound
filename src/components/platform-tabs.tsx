@@ -4,7 +4,7 @@
 // 수집 시각은 값 옆에 문장으로 붙인다(리디자인 원칙 2) — 빨간 배지를 쓰지 않는다.
 import { formatPrice } from "@/lib/currency";
 import { useId, useState } from "react";
-import { formatDate, formatDiscount, formatShortDateTime, PLATFORM_LABEL } from "@/lib/format";
+import { formatDate, formatDiscount, formatShortDateTime, PLATFORM_LABEL, REGION_SUFFIX } from "@/lib/format";
 import { collectedAtText, type Freshness } from "@/lib/freshness";
 import type { PlatformDto } from "@/server/services/games";
 import { StalenessNote } from "@/components/freshness-badge";
@@ -20,6 +20,20 @@ function MetaCell({ label, children }: { label: string; children: React.ReactNod
       <dd className="text-[13px] font-semibold text-ink">{children}</dd>
     </div>
   );
+}
+
+/**
+ * 같은 기기라도 나라가 다르면 다른 탭이다 — 기기 이름만 키로 쓰면 한국 스위치와 일본 스위치가
+ * 같은 키가 돼 탭 하나가 사라진다.
+ */
+function tabKey(p: PlatformDto): string {
+  return `${p.platform}-${p.region}`;
+}
+
+function tabLabel(p: PlatformDto): string {
+  const base = PLATFORM_LABEL[p.platform] ?? p.platform;
+  const suffix = REGION_SUFFIX[p.region];
+  return suffix ? `${base} ${suffix}` : base;
 }
 
 export function PlatformTabs({ platforms }: { platforms: PlatformTabItem[] }) {
@@ -45,11 +59,11 @@ export function PlatformTabs({ platforms }: { platforms: PlatformTabItem[] }) {
           const selected = i === idx;
           return (
             <button
-              key={p.platform}
+              key={tabKey(p)}
               role="tab"
-              id={`${baseId}-tab-${p.platform}`}
+              id={`${baseId}-tab-${tabKey(p)}`}
               aria-selected={selected}
-              aria-controls={`${baseId}-panel-${p.platform}`}
+              aria-controls={`${baseId}-panel-${tabKey(p)}`}
               tabIndex={selected ? 0 : -1}
               onClick={() => setIdx(i)}
               onKeyDown={(e) => {
@@ -60,7 +74,7 @@ export function PlatformTabs({ platforms }: { platforms: PlatformTabItem[] }) {
                 selected ? "font-semibold text-ink" : "text-dim hover:text-ink"
               }`}
             >
-              {PLATFORM_LABEL[p.platform] ?? p.platform}
+              {tabLabel(p)}
               {p.discountPct && p.discountPct > 0 ? (
                 <span className="ml-1 text-[11.5px] text-dim">{formatDiscount(p.discountPct)}</span>
               ) : null}
@@ -72,8 +86,8 @@ export function PlatformTabs({ platforms }: { platforms: PlatformTabItem[] }) {
 
       <div
         role="tabpanel"
-        id={`${baseId}-panel-${current.platform}`}
-        aria-labelledby={`${baseId}-tab-${current.platform}`}
+        id={`${baseId}-panel-${tabKey(current)}`}
+        aria-labelledby={`${baseId}-tab-${tabKey(current)}`}
         className="flex flex-col gap-4 p-[18px]"
       >
         <div className="flex flex-wrap items-baseline gap-x-2.5 gap-y-1.5">
@@ -111,7 +125,7 @@ export function PlatformTabs({ platforms }: { platforms: PlatformTabItem[] }) {
               isStale ? "bg-ink text-on-ink hover:bg-ink-2" : "border border-line-strong bg-surface text-ink hover:border-ink"
             }`}
           >
-            {PLATFORM_LABEL[current.platform] ?? current.platform} 스토어에서 보기
+            {tabLabel(current)} 스토어에서 보기
             <span className="sr-only"> (새 창에서 열림)</span>
           </a>
         ) : (

@@ -14,7 +14,7 @@ import { gamePlatforms } from "@/server/db/schema";
 import type { StoreSource } from "@/server/adapters";
 import type { StoreAdapter } from "@/server/adapters/types";
 import { sleep } from "@/lib/async";
-import { DLC_LIST_PER_RUN, DLC_LIST_REFRESH_DAYS, DLC_PER_GAME_MAX, SOURCE_PLATFORMS } from "./constants";
+import { DLC_LIST_PER_RUN, DLC_LIST_REFRESH_DAYS, DLC_PER_GAME_MAX, SOURCE_PLATFORMS, SOURCE_REGION } from "./constants";
 import { recordError, type Ctx } from "./context";
 import type { DlcGroup } from "./dlc-writer";
 import { fetchWithRetry } from "./retry";
@@ -96,7 +96,14 @@ export async function listParentDlcs(
       dlcListedAt: gamePlatforms.dlcListedAt,
     })
     .from(gamePlatforms)
-    .where(and(inArray(gamePlatforms.gameId, parents.map((p) => p.gameId)), inArray(gamePlatforms.platform, SOURCE_PLATFORMS[source])));
+    .where(
+      and(
+        inArray(gamePlatforms.gameId, parents.map((p) => p.gameId)),
+        inArray(gamePlatforms.platform, SOURCE_PLATFORMS[source]),
+        // 지역이 다르면 다른 행이다 — 일본 행의 "물어본 시각" 으로 한국 행을 건너뛰면 안 된다
+        eq(gamePlatforms.region, SOURCE_REGION[source]),
+      ),
+    );
 
   const picks = pickDlcListTargets(parents, rows, ctx.now);
   if (picks.length === 0) return [];

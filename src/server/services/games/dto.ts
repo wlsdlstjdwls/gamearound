@@ -1,9 +1,14 @@
 // 공개 DTO — route, 컴포넌트가 받는 모양. 모두 JSON 직렬화 가능(Date → ISO 문자열).
 // DB 행 타입을 그대로 노출하지 않는 이유: 스키마가 바뀌어도 화면 계약은 유지돼야 한다.
-import type { CompanyRole, Currency, Platform, SyncStatus, UpgradeKind } from "@/server/db/schema";
+import type { CompanyRole, Currency, Platform, Region, SyncStatus, UpgradeKind } from "@/server/db/schema";
 
 export type PlatformDto = {
   platform: Platform;
+  /**
+   * 이 가격을 파는 나라. 같은 기기라도 나라가 다르면 다른 행이라 화면에서 구분해 줘야 한다 —
+   * 한국 계정으로 못 사는 가격을 아무 표시 없이 나란히 두면 최저가를 잘못 읽는다.
+   */
+  region: Region;
   storeUrl: string | null;
   releaseDate: string | null;
   currentVersion: string | null;
