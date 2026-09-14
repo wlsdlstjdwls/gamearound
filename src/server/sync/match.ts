@@ -12,6 +12,23 @@ export const AUTO_MATCH_THRESHOLD = 0.9;
 export const PENDING_MATCH_THRESHOLD = 0.7;
 /** matched_by="none" 행을 다시 검색하기까지의 최소 경과일. 소스 카탈로그에 뒤늦게 등록되는 게임을 회수한다. */
 export const NONE_RETRY_DAYS = 14;
+/**
+ * 후보가 0건일 때 none 행에 넣는 외부 id 자리표시자.
+ *
+ * 기록을 남기지 않으면 그 게임은 "ref 가 없는 게임" 으로 남아 큐(createdAt 오름차순)의 선두에
+ * 영원히 머문다 — 다음 실행이 같은 게임을 다시 검색하고, 또 0건을 받고, 또 기록하지 않는다.
+ * 2026-09-14 실측: hltb 큐 선두 5건(Drag'n Wash, PLATiNA :: LAB, Godius Eternal War,
+ * Little LUMI Model, Tree of Savior)이 전부 후보 0건이라 매 실행의 앞자리를 그대로 먹고 있었다.
+ * 한국 인디, 국내 서비스 게임은 HLTB 에 아예 없어서 이 집합은 시간이 갈수록 커지기만 한다.
+ *
+ * 빈 문자열을 쓰는 이유: external_id 는 notNull 이고, nullable 로 바꾸면 이 컬럼을 string 으로
+ * 읽는 8개 파일(store-targets, dlc-writer, run-meta, services/games/detail 등)이 함께 깨진다.
+ * none 행은 수집 대상(MATCHED_FOR_SYNC)도 공개 화면 노출 대상도 아니라 이 값이 밖으로 나가지 않는다.
+ *
+ * 검색이 일시적으로 빈손일 때 잘못 박힐 위험은 NONE_RETRY_DAYS 가 받는다. 진짜 실패(HTTP 오류)는
+ * 예외로 던져져 이 경로까지 오지 않는다 — 여기 오는 0건은 "그 카탈로그에 없다" 는 답이다.
+ */
+export const NO_CANDIDATE_EXTERNAL_ID = "";
 
 /** 지금 기준 재검색 가능 시점(= now - NONE_RETRY_DAYS) */
 export function noneRetryCutoff(now: Date = new Date()): Date {
@@ -78,6 +95,32 @@ export interface MatchResult {
   similarity?: number;
 }
 
+/** game_source_refs 에 쓸 값 한 벌. 어떤 행을 쓸지의 판단만 담는다(DB 접근 없음) */
+export interface RefRow {
+  externalId: string;
+  url: string | null;
+  matchedTitle: string | null;
+  matchedBy: MatchDecision;
+  confidence: string | null;
+}
+
+/**
+ * 매칭 시도 1회의 결과를 행으로 옮긴다. 후보가 없으면 자리표시자 none 행이다
+ * (기록해야 큐가 앞으로 나간다 — NO_CANDIDATE_EXTERNAL_ID 참고).
+ */
+export function refRowFor(best: BestCandidate | null): RefRow {
+  if (!best) {
+    return { externalId: NO_CANDIDATE_EXTERNAL_ID, url: null, matchedTitle: null, matchedBy: "none", confidence: null };
+  }
+  return {
+    externalId: best.candidate.externalId,
+    url: best.candidate.url,
+    matchedTitle: best.candidate.title,
+    matchedBy: classifyMatch(best.similarity),
+    confidence: best.similarity.toFixed(2),
+  };
+}
+
 /**
  * 제목으로 후보를 찾는다. 영문으로 한 번, 그래도 확실하지 않으면 한국어로 한 번 더.
  *
@@ -123,39 +166,24 @@ export async function matchGameToSource(gameId: string, source: SearchableSource
 
   const adapter = getSearchableAdapter(source);
   const best = await searchBestCandidate(adapter, game);
-  const decision: MatchDecision = best ? classifyMatch(best.similarity) : "none";
+  const row = refRowFor(best);
 
-  if (!best) return { gameId, source, decision: "no-candidates" }; // 후보 0건은 검색 실패일 수 있어 기록하지 않음(다음 실행에 재시도)
-  if (decision === "none") {
-    // 후보는 있었지만 유사도 미달 → matched_by="none" 기록해 당분간 같은 게임을 다시 검색하지 않는다(워커 시간 절약).
-    // checked_at 을 갱신해 NONE_RETRY_DAYS 경과 후에만 재검색되게 한다.
-    //
-    // pending 행도 덮는다. pending 은 "사람이 판단해 달라" 는 뜻인데, 판정 규칙이 좋아져 이제 후보조차
-    // 아니라고 말한다면 그 대기표는 우리가 더 이상 믿지 않는 옛 판단이다 — 검수자에게 남겨 둘 이유가 없다.
-    // auto, manual 은 그대로 둔다. 한 번 붙은 매핑을 검색 결과가 잠깐 나빠졌다고 떼면 수집이 들쭉날쭉해진다.
-    await db
-      .insert(gameSourceRefs)
-      .values({ gameId, source, externalId: best.candidate.externalId, url: best.candidate.url, matchedTitle: best.candidate.title, matchedBy: "none", confidence: best.similarity.toFixed(2), checkedAt: new Date() })
-      .onConflictDoUpdate({
-        target: [gameSourceRefs.gameId, gameSourceRefs.source],
-        set: { externalId: best.candidate.externalId, url: best.candidate.url, matchedTitle: best.candidate.title, matchedBy: "none", confidence: best.similarity.toFixed(2), checkedAt: new Date() },
-        setWhere: sql`${gameSourceRefs.matchedBy} in ('none', 'pending')`,
-      });
-    return { gameId, source, decision, externalId: best.candidate.externalId, similarity: best.similarity };
-  }
-
-  const confidence = best.similarity.toFixed(2);
+  // none 행은 pending 까지만 덮는다. pending 은 "사람이 판단해 달라" 는 뜻인데, 판정 규칙이 좋아져
+  // 이제 후보조차 아니라고 말한다면 그 대기표는 우리가 더 이상 믿지 않는 옛 판단이다.
+  // auto 는 그대로 둔다 — 한 번 붙은 매핑을 검색 결과가 잠깐 나빠졌다고 떼면 수집이 들쭉날쭉해진다.
+  // manual 은 어느 경우에도 건드리지 않는다(동시 실행으로 방금 생겼을 수 있어 여기서 한 번 더 막는다).
+  const setWhere =
+    row.matchedBy === "none"
+      ? sql`${gameSourceRefs.matchedBy} in ('none', 'pending')`
+      : sql`${gameSourceRefs.matchedBy} <> 'manual'`;
+  const values = { gameId, source, ...row, checkedAt: new Date() };
   await db
     .insert(gameSourceRefs)
-    .values({ gameId, source, externalId: best.candidate.externalId, url: best.candidate.url, matchedTitle: best.candidate.title, matchedBy: decision, confidence, checkedAt: new Date() })
-    .onConflictDoUpdate({
-      target: [gameSourceRefs.gameId, gameSourceRefs.source],
-      set: { externalId: best.candidate.externalId, url: best.candidate.url, matchedTitle: best.candidate.title, matchedBy: decision, confidence, checkedAt: new Date() },
-      // 동시 실행으로 manual 이 생겼을 수 있으므로 한 번 더 방어
-      setWhere: sql`${gameSourceRefs.matchedBy} <> 'manual'`,
-    });
+    .values(values)
+    .onConflictDoUpdate({ target: [gameSourceRefs.gameId, gameSourceRefs.source], set: values, setWhere });
 
-  return { gameId, source, decision, externalId: best.candidate.externalId, similarity: best.similarity };
+  if (!best) return { gameId, source, decision: "no-candidates" };
+  return { gameId, source, decision: row.matchedBy, externalId: row.externalId, similarity: best.similarity };
 }
 
 export interface MatchSummary {

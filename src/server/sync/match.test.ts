@@ -1,7 +1,7 @@
 // 매칭 임계값 테스트 (§4.2) — trigram 유사도 + classifyMatch/pickBestCandidate 순수 함수만. DB/네트워크 없음
 import { describe, expect, it } from "vitest";
 import { normalizeTitle, slugify, trigramSimilarity } from "@/lib/slug";
-import { AUTO_MATCH_THRESHOLD, classifyMatch, findGameByTitle, NONE_RETRY_DAYS, noneRetryCutoff, PENDING_MATCH_THRESHOLD, pickBestCandidate } from "@/server/sync/match";
+import { AUTO_MATCH_THRESHOLD, classifyMatch, findGameByTitle, NO_CANDIDATE_EXTERNAL_ID, NONE_RETRY_DAYS, noneRetryCutoff, PENDING_MATCH_THRESHOLD, pickBestCandidate, refRowFor } from "@/server/sync/match";
 import { matchNewsToGame } from "@/server/sync/run-news";
 
 describe("classifyMatch", () => {
@@ -81,6 +81,36 @@ describe("noneRetryCutoff", () => {
   it("NONE_RETRY_DAYS + 1일 지난 기록은 재검색 대상", () => {
     const checkedAt = new Date(now.getTime() - (NONE_RETRY_DAYS + 1) * 24 * 60 * 60 * 1000);
     expect(checkedAt < noneRetryCutoff(now)).toBe(true);
+  });
+});
+
+describe("refRowFor (후보 → 기록할 행)", () => {
+  const candidate = { externalId: "71763", title: "Crusader Kings III", url: "https://hltb/71763" };
+
+  it("후보가 없어도 none 행을 남긴다 — 안 남기면 큐 선두에 영원히 머문다", () => {
+    const row = refRowFor(null);
+    expect(row.matchedBy).toBe("none");
+    expect(row.externalId).toBe(NO_CANDIDATE_EXTERNAL_ID);
+    expect(row.matchedTitle).toBeNull();
+    expect(row.confidence).toBeNull();
+  });
+
+  it("auto 구간은 후보의 id, 제목, 유사도를 그대로 남긴다", () => {
+    const row = refRowFor({ candidate, similarity: 1 });
+    expect(row).toEqual({ externalId: "71763", url: "https://hltb/71763", matchedTitle: "Crusader Kings III", matchedBy: "auto", confidence: "1.00" });
+  });
+
+  it("pending 구간은 검수용으로 스토어 제목을 남긴다", () => {
+    const row = refRowFor({ candidate, similarity: 0.75 });
+    expect(row.matchedBy).toBe("pending");
+    expect(row.matchedTitle).toBe("Crusader Kings III");
+    expect(row.confidence).toBe("0.75");
+  });
+
+  it("후보는 있지만 유사도 미달이면 none 이되 자리표시자가 아니다", () => {
+    const row = refRowFor({ candidate, similarity: 0.3 });
+    expect(row.matchedBy).toBe("none");
+    expect(row.externalId).toBe("71763");
   });
 });
 
