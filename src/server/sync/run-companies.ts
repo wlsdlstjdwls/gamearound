@@ -9,6 +9,7 @@ import { getCompanyAdapter, type CompanySource } from "@/server/adapters";
 import { normalizeCompanyName } from "@/lib/company-name";
 import { sleep } from "@/lib/async";
 import { BATCH_SIZE, COMPANY_REFRESH_DAYS } from "./constants";
+import type { Db } from "@/server/db/client";
 import { recordError, type Ctx, type RunOptions } from "./context";
 import { fetchWithRetry } from "./retry";
 import { attachCompany, companyNamesOf, findCompanyByAlias, linkGameCompany } from "./company-writer";
@@ -27,8 +28,7 @@ function refreshCutoff(now: Date): Date {
  * games.developer / publisher 문자열을 훑어 아직 회사로 승격되지 않은 이름을 모은다.
  * 한 이름이 여러 게임에 걸리므로 이름 단위로 묶는다 — 같은 회사를 게임 수만큼 조회하면 예산이 안 나온다.
  */
-export async function listCompanyTargets(ctx: Ctx, limit: number): Promise<CompanyTarget[]> {
-  const { db } = ctx;
+export async function listCompanyTargets(db: Db, limit: number): Promise<CompanyTarget[]> {
   // 회사 연결이 하나도 없는 게임부터 본다. 이미 연결된 게임을 다시 훑어봐야 새로 붙을 이름이 거의 없다.
   const rows = await db
     .select({ id: games.id, developer: games.developer, publisher: games.publisher })
@@ -80,7 +80,7 @@ export async function runCompanies(ctx: Ctx, source: CompanySource, opts: RunOpt
   const adapter = getCompanyAdapter(source);
   const limit = opts.limit ?? BATCH_SIZE[source];
 
-  const fresh = await listCompanyTargets(ctx, limit);
+  const fresh = await listCompanyTargets(ctx.db, limit);
   const stale = await listStaleCompanies(ctx, limit - fresh.length);
   const targets = [...fresh, ...stale];
 
@@ -108,12 +108,12 @@ export async function runCompanies(ctx: Ctx, source: CompanySource, opts: RunOpt
 }
 
 /** 관리자 검수 큐 — 회사로 승격되지 않은 이름과 그 이름을 쓰는 게임 수 */
-export async function listPendingCompanyNames(ctx: Ctx, limit: number): Promise<Array<{ name: string; gameCount: number }>> {
-  const targets = await listCompanyTargets(ctx, limit);
+export async function listPendingCompanyNames(db: Db, limit: number): Promise<Array<{ name: string; gameCount: number }>> {
+  const targets = await listCompanyTargets(db, limit);
   if (targets.length === 0) return [];
   const norms = targets.map((t) => normalizeCompanyName(t.rawName)).filter(Boolean);
   const known = norms.length
-    ? await ctx.db.select({ aliasNorm: companyAliases.aliasNorm }).from(companyAliases).where(inArray(companyAliases.aliasNorm, norms))
+    ? await db.select({ aliasNorm: companyAliases.aliasNorm }).from(companyAliases).where(inArray(companyAliases.aliasNorm, norms))
     : [];
   const knownSet = new Set(known.map((k) => k.aliasNorm));
   return targets

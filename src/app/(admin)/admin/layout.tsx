@@ -9,6 +9,7 @@ export const dynamic = "force-dynamic";
 const NAV = [
   { href: "/admin", label: "동기화 대시보드" },
   { href: "/admin/sync-logs", label: "동기화 로그" },
+  { href: "/admin/companies", label: "회사 검수" },
 ];
 
 export default async function AdminLayout({ children }: { children: React.ReactNode }) {

@@ -1,6 +1,6 @@
 "use server";
 // 관리자 Server Action (§5.2). 각 액션은 requireAdmin()으로 role 재검증(§6) 후 서비스 호출.
-import { revalidatePath } from "next/cache";
+import { revalidatePath, revalidateTag } from "next/cache";
 import { z } from "zod";
 import { platformEnum, sourceEnum, upgradeKindEnum } from "@/server/db/schema";
 import {
@@ -13,6 +13,7 @@ import {
   setManualRef,
   type CorrectableTable,
 } from "@/server/services/admin";
+import { resolveCompanyName } from "@/server/services/admin-companies";
 import { deleteUpgrade, upsertUpgrade } from "@/server/services/admin-upgrades";
 import { requireAdmin } from "@/server/services/users";
 
@@ -156,6 +157,23 @@ export async function upsertUpgradeAction(_prev: AdminActionState, formData: For
     });
     revalidateGame(d.gameId);
     return { ok: true, message: created ? "업그레이드를 추가했습니다" : "업그레이드를 수정했습니다" };
+  } catch (e) {
+    return fail(e);
+  }
+}
+
+/** 검수 큐의 이름 하나를 위키데이터에서 다시 조회해 회사로 붙인다 */
+export async function resolveCompanyAction(rawName: string): Promise<AdminActionState> {
+  try {
+    await requireAdmin();
+    const p = z.string().trim().min(1).max(200).safeParse(rawName);
+    if (!p.success) return { ok: false, error: "이름이 올바르지 않습니다" };
+    const result = await resolveCompanyName(p.data);
+    if (!result.ok) return { ok: false, error: result.message };
+    revalidatePath("/admin/companies");
+    // 회사 화면은 태그로 캐시하므로 붙은 회사만 무효화한다
+    for (const slug of result.companySlugs) revalidateTag(`company:${slug}`, "max");
+    return { ok: true, message: result.message };
   } catch (e) {
     return fail(e);
   }
