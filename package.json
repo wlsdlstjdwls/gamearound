@@ -12,6 +12,7 @@
     "db:migrate": "drizzle-kit migrate",
     "db:studio": "drizzle-kit studio",
     "crawl": "tsx scripts/crawl.ts",
+    "icons": "tsx scripts/generate-icons.ts",
     "seed": "tsx scripts/seed.ts",
     "test": "vitest run",
     "e2e:auth": "node scripts/e2e-auth.mjs"

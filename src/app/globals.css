@@ -22,6 +22,7 @@
   --acc-hover: #2f4a3c;
   --acc-soft: #eaf1ec; /* ok 배지 배경 */
   --acc-glow: rgba(58, 90, 74, 0.18);
+  --acc-on-ink: #4d7f62; /* 잉크 배경 위 악센트 — --acc 는 명도차가 부족해 검정에 묻힌다 */
   --danger: #a6462e; /* 마감 임박 */
   --danger-soft: #f6e9e5;
   --ok: #3a5a4a;
@@ -75,6 +76,7 @@
   --color-acc: var(--acc);
   --color-acc-hover: var(--acc-hover);
   --color-acc-soft: var(--acc-soft);
+  --color-acc-on-ink: var(--acc-on-ink);
   --color-danger: var(--danger);
   --color-danger-soft: var(--danger-soft);
   --color-ok: var(--ok);

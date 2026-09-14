@@ -4,3 +4,6 @@
 
 /** 목록, 검색, 홈처럼 태그 무효화로 갱신되는 화면의 기본 재검증 주기(초) */
 export const LIST_REVALIDATE_SECONDS = 3600;
+
+/** OG 이미지용 한글 폰트 서브셋 캐시 수명(초). 글리프 구성이 같은 요청끼리 재사용된다 */
+export const OG_FONT_REVALIDATE_SECONDS = 2592000;

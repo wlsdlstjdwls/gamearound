@@ -17,7 +17,8 @@ export default function manifest(): MetadataRoute.Manifest {
     icons: [
       { src: "/icon-192.png", sizes: "192x192", type: "image/png" },
       { src: "/icon-512.png", sizes: "512x512", type: "image/png" },
-      { src: "/icon-512.png", sizes: "512x512", type: "image/png", purpose: "maskable" },
+      // maskable 은 안전영역(80%)만큼 심볼을 줄여 둔 별도 파일이다 — 같은 파일을 재사용하면 안드로이드가 가장자리를 깎는다
+      { src: "/icon-maskable-512.png", sizes: "512x512", type: "image/png", purpose: "maskable" },
     ],
   };
 }

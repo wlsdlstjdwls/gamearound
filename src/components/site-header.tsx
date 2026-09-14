@@ -1,28 +1,14 @@
 import Link from "next/link";
 import { ROUTES } from "@/lib/routes";
-import { SITE } from "@/lib/site";
 import { AuthNav } from "@/components/auth/auth-nav";
-
-/** 로고 마크 — 26×26 잉크 사각형 + "손" 글자. 이모지는 쓰지 않는다 */
-export function BrandMark({ size = 26, className = "" }: { size?: number; className?: string }) {
-  return (
-    <span
-      aria-hidden
-      className={`inline-flex shrink-0 items-center justify-center rounded-[7px] bg-ink font-bold text-on-ink ${className}`}
-      style={{ width: size, height: size, fontSize: Math.round(size * 0.5) }}
-    >
-      손
-    </span>
-  );
-}
+import { BrandLockup } from "@/components/ui/logo";
 
 export function SiteHeader() {
   return (
     <header className="sticky top-0 z-40 border-b border-line bg-surface">
       <div className="mx-auto flex w-full max-w-[var(--page-w)] flex-wrap items-center gap-x-4 gap-y-3 px-7 py-4">
-        <Link href={ROUTES.home} className="press flex shrink-0 items-center gap-2">
-          <BrandMark />
-          <span className="text-base font-bold tracking-[-0.02em] text-ink">{SITE.name}</span>
+        <Link href={ROUTES.home} className="press shrink-0 text-ink">
+          <BrandLockup />
         </Link>
 
         <form action={ROUTES.search} className="min-w-[180px] max-w-[380px] flex-1">

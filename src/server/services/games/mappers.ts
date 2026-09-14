@@ -137,3 +137,25 @@ export function toPublicGameDto(g: GameDetail): PublicGameDto {
     })),
   };
 }
+
+/**
+ * 현재가가 가장 싼 플랫폼. 가격이 없는 플랫폼은 후보에서 뺀다.
+ * 상세 화면과 공유 이미지가 같은 기준으로 "최저가"를 말해야 해서 여기로 올렸다.
+ */
+export function cheapestPlatform(platforms: PlatformDto[]): PlatformDto | null {
+  const priced = platforms.filter((p) => p.currentPrice !== null);
+  if (priced.length === 0) return null;
+  return priced.reduce((a, b) => ((b.currentPrice as number) < (a.currentPrice as number) ? b : a));
+}
+
+/**
+ * 대표 평점 — OpenCritic 우선, 없으면 메타크리틱. 어느 쪽을 썼는지 함께 돌려준다.
+ * 상세 화면과 공유 이미지가 같은 점수를 말해야 해서 여기로 올렸다.
+ */
+export function bestScore(platforms: PlatformDto[]): { value: number; note: string } | null {
+  const oc = platforms.map((p) => p.opencriticScore).find((v): v is number => typeof v === "number");
+  const mc = platforms.map((p) => p.metacriticScore).find((v): v is number => typeof v === "number");
+  if (oc !== undefined) return { value: oc, note: mc !== undefined ? `OpenCritic | 메타 ${mc}` : "OpenCritic" };
+  if (mc !== undefined) return { value: mc, note: "메타크리틱" };
+  return null;
+}

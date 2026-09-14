@@ -14,7 +14,7 @@ import { formatDateTime, formatHours, formatKrw, PLATFORM_LABEL } from "@/lib/fo
 import { SITE } from "@/lib/site";
 import { getFreshness } from "@/lib/freshness";
 import { ROUTES } from "@/lib/routes";
-import { displayTitle, getGameBySlugCached, type GameDetail, type PlatformDto } from "@/server/services/games";
+import { bestScore, cheapestPlatform, displayTitle, getGameBySlugCached, type GameDetail } from "@/server/services/games";
 import { getCurrentUser } from "@/server/services/users";
 import { isInWishlist } from "@/server/services/wishlist";
 import { cardClass } from "@/components/ui/page";
@@ -35,24 +35,9 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   return {
     title,
     description,
-    openGraph: { title, description, images: game.coverUrl ? [{ url: game.coverUrl }] : undefined },
+    // openGraph.images 는 opengraph-image.tsx 가 자동으로 채운다 — 여기서 커버를 지정하면 그걸 덮어쓴다
+    openGraph: { title, description },
   };
-}
-
-/** 현재가가 가장 싼 플랫폼 */
-function cheapest(platforms: PlatformDto[]): PlatformDto | null {
-  const priced = platforms.filter((p) => p.currentPrice !== null);
-  if (priced.length === 0) return null;
-  return priced.reduce((a, b) => ((b.currentPrice as number) < (a.currentPrice as number) ? b : a));
-}
-
-/** 평점 — OpenCritic 우선, 없으면 메타크리틱. 어느 쪽을 썼는지 함께 돌려준다 */
-function bestScore(platforms: PlatformDto[]): { value: number; note: string } | null {
-  const oc = platforms.map((p) => p.opencriticScore).find((v): v is number => typeof v === "number");
-  const mc = platforms.map((p) => p.metacriticScore).find((v): v is number => typeof v === "number");
-  if (oc !== undefined) return { value: oc, note: mc !== undefined ? `OpenCritic | 메타 ${mc}` : "OpenCritic" };
-  if (mc !== undefined) return { value: mc, note: "메타크리틱" };
-  return null;
 }
 
 function SummaryCell({ label, value, note }: { label: string; value: string; note?: string }) {
@@ -69,7 +54,7 @@ function SummaryCell({ label, value, note }: { label: string; value: string; not
 
 /** 결정 요약 바 — "지금이 싼가 | 얼마나 걸리나 | 살 만한가" 세 값만 최상단에 고정한다 */
 function DecisionSummary({ game }: { game: GameDetail }) {
-  const best = cheapest(game.platforms);
+  const best = cheapestPlatform(game.platforms);
   const score = bestScore(game.platforms);
   const main = game.playtime?.mainStoryHours;
   const complete = game.playtime?.completionistHours;
@@ -105,7 +90,7 @@ export default async function GameDetailPage({ params }: Props) {
     ...p,
     freshness: getFreshness(p.lastSyncedAt, p.syncStatus),
   }));
-  const best = cheapest(game.platforms);
+  const best = cheapestPlatform(game.platforms);
 
   return (
     <Page pad="detail" gap={28}>

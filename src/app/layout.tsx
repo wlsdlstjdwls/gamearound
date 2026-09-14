@@ -4,11 +4,18 @@ import { SITE } from "@/lib/site";
 import { SessionProvider } from "@/components/auth/session-provider";
 import { SiteHeader } from "@/components/site-header";
 
+// OG 이미지 URL 은 절대 경로여야 한다. 배포 주소를 모르면 Next 가 상대 경로로 내보내고 SNS 에서 미리보기가 깨진다.
+const siteUrl = process.env.NEXT_PUBLIC_APP_URL;
+
 export const metadata: Metadata = {
+  metadataBase: siteUrl ? new URL(siteUrl) : null,
   title: { default: SITE.name, template: SITE.titleTemplate },
   description: SITE.description,
   manifest: "/manifest.webmanifest",
   appleWebApp: { capable: true, statusBarStyle: "default", title: SITE.name },
+  openGraph: { type: "website", siteName: SITE.name, locale: "ko_KR" },
+  // 트위터는 큰 카드를 쓰라고 명시해야 1200x630 을 그대로 보여준다
+  twitter: { card: "summary_large_image" },
 };
 
 export const viewport: Viewport = {
