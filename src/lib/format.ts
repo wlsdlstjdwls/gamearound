@@ -1,12 +1,6 @@
-// 순수 유틸: 가격/날짜 포맷
+// 순수 유틸: 날짜, 시간 포맷과 플랫폼 라벨. 가격 표시는 통화 규칙이 붙어 lib/currency 가 맡는다.
 // 시각은 항상 한국 시간(KST)으로 표시한다. 서버(Vercel)는 UTC 라 timeZone 을 명시하지 않으면 9시간 어긋난다.
 export const DISPLAY_TIME_ZONE = "Asia/Seoul";
-
-export function formatKrw(price: number | null | undefined): string {
-  if (price === null || price === undefined) return "-";
-  if (price === 0) return "무료";
-  return `₩${price.toLocaleString("ko-KR")}`;
-}
 
 export function formatDiscount(pct: number | null | undefined): string {
   if (!pct || pct <= 0) return "";

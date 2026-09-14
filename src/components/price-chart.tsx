@@ -1,9 +1,10 @@
 "use client";
-// 가격 이력 차트 — recharts LineChart. 플랫폼별 라인(색은 플랫폼 고정 매핑), KRW 단일 축, 툴팁 formatKrw
+// 가격 이력 차트 — recharts LineChart. 플랫폼별 라인(색은 플랫폼 고정 매핑), 단일 통화 축(sameCurrency)
 // 표시 규칙(dekudeals 참고):
 //  - 가격은 "바뀔 때만" 기록되므로 각 라인은 마지막 기록 → 지금까지 수평으로 이어 그린다(기록 1건이면 점이 아니라 선으로 보이게)
 //  - 구간을 좁히면 구간 시작 시점의 가격을 앵커 포인트로 만들어 라인이 끊기지 않게 한다
 //  - 플랫폼이 하나일 때만 정가 기준선, 역대 최저점, 진행 중 할인 구간을 함께 그린다(여러 개면 읽기 어려움)
+import { formatPrice, sameCurrency } from "@/lib/currency";
 import { useMemo, useState } from "react";
 import {
   CartesianGrid,
@@ -20,8 +21,8 @@ import {
   YAxis,
 } from "recharts";
 import type { TooltipContentProps } from "recharts";
-import { formatDate, formatKrw, PLATFORM_LABEL } from "@/lib/format";
-import type { Platform } from "@/server/db/schema";
+import { formatDate, PLATFORM_LABEL } from "@/lib/format";
+import type { Currency, Platform } from "@/server/db/schema";
 import type { PriceSeries } from "@/server/services/prices";
 import { useNow } from "@/components/use-now";
 import { ChipButton } from "@/components/ui/chip";
@@ -118,7 +119,7 @@ function prepare(series: PriceSeries[], rangeDays: number | null, now: number): 
   return { data, platforms, single: null };
 }
 
-function PriceTooltip({ active, payload, label }: TooltipContentProps) {
+function PriceTooltip({ active, payload, label, currency }: TooltipContentProps & { currency: Currency }) {
   if (!active || !payload || payload.length === 0) return null;
   return (
     <div className="rounded-[7px] border border-line-strong bg-surface px-3 py-2 text-[11.5px]">
@@ -128,7 +129,7 @@ function PriceTooltip({ active, payload, label }: TooltipContentProps) {
           <li key={String(e.dataKey)} className="flex items-center gap-2">
             <span aria-hidden className="inline-block h-2 w-2 rounded-full" style={{ background: e.color }} />
             <span className="text-mut">{PLATFORM_LABEL[String(e.dataKey)] ?? String(e.dataKey)}</span>
-            <span className="ml-auto font-semibold text-ink">{formatKrw(typeof e.value === "number" ? e.value : null)}</span>
+            <span className="ml-auto font-semibold text-ink">{formatPrice(typeof e.value === "number" ? e.value : null, currency)}</span>
           </li>
         ))}
       </ul>
@@ -138,21 +139,23 @@ function PriceTooltip({ active, payload, label }: TooltipContentProps) {
 
 export function PriceChart({ series }: { series: PriceSeries[] }) {
   const [rangeKey, setRangeKey] = useState(DEFAULT_RANGE_KEY);
+  // 한 축에 두 통화를 그리면 선이 뜻 없이 겹친다(₩44,990 옆의 $6.99). 기준 통화만 그리고 나머지는 밑에 적는다
+  const { kept: drawn, dropped, currency } = useMemo(() => sameCurrency(series), [series]);
   const clientNow = useNow();
   // 마운트 전에는 마지막 기록 시각을 "지금"으로 써서 서버/클라이언트 렌더를 일치시킨다
   const fallbackNow = useMemo(
-    () => Math.max(...series.flatMap((s) => s.points.map((p) => new Date(p.t).getTime())), 0),
-    [series],
+    () => Math.max(...drawn.flatMap((s) => s.points.map((p) => new Date(p.t).getTime())), 0),
+    [drawn],
   );
   const now = clientNow ?? fallbackNow;
   const range = RANGES.find((r) => r.key === rangeKey) ?? RANGES[0];
-  const { data, platforms, single } = useMemo(() => prepare(series, range.days, now), [series, range.days, now]);
+  const { data, platforms, single } = useMemo(() => prepare(drawn, range.days, now), [drawn, range.days, now]);
 
   // 정가 기준선과 진행 중 할인 구간이 축 밖으로 잘리지 않도록 도메인을 넓힌다
   const yMax = Math.max(
     ...data.flatMap((row) => platforms.map((p) => row[p] ?? 0)),
     single?.listPrice ?? 0,
-    ...series.map((s) => s.listPrice ?? 0),
+    ...drawn.map((s) => s.listPrice ?? 0),
   );
   // 할인 종료선이 축 오른쪽 끝에 붙으면 라벨이 잘린다 — 구간 폭의 일부만큼 여유를 둔다
   const xMin = data[0]?.t ?? now;
@@ -187,13 +190,13 @@ export function PriceChart({ series }: { series: PriceSeries[] }) {
                 minTickGap={40}
               />
               <YAxis
-                tickFormatter={(v: number) => formatKrw(v)}
+                tickFormatter={(v: number) => formatPrice(v, currency)}
                 stroke="#E6E3DD"
                 tick={{ fill: "#8C8A84", fontSize: 11.5 }}
                 width={80}
                 domain={[0, Math.round(yMax * Y_HEADROOM)]}
               />
-              <Tooltip content={PriceTooltip} cursor={{ stroke: "#A8A59E", strokeDasharray: "3 3" }} />
+              <Tooltip content={(props: TooltipContentProps) => <PriceTooltip {...props} currency={currency} />} cursor={{ stroke: "#A8A59E", strokeDasharray: "3 3" }} />
               {platforms.length > 1 && (
                 <Legend formatter={(v: string) => <span className="text-[12px] text-mut">{PLATFORM_LABEL[v] ?? v}</span>} />
               )}
@@ -213,14 +216,14 @@ export function PriceChart({ series }: { series: PriceSeries[] }) {
               {/* 정가 기준선 */}
               {single?.listPrice ? (
                 <ReferenceLine y={single.listPrice} stroke="#DFDCD5" strokeDasharray="4 4">
-                  <Label value={`정가 ${formatKrw(single.listPrice)}`} position="insideTopRight" fill="#8C8A84" fontSize={11.5} />
+                  <Label value={`정가 ${formatPrice(single.listPrice, currency)}`} position="insideTopRight" fill="#8C8A84" fontSize={11.5} />
                 </ReferenceLine>
               ) : null}
 
               {/* 역대 최저점 */}
               {single?.low && (
                 <ReferenceDot x={single.low.t} y={single.low.price} r={4} fill="#1C1C1A" stroke="#FFFFFF">
-                  <Label value={`최저 ${formatKrw(single.low.price)}`} position="insideBottomLeft" fill="#3A5A4A" fontSize={11.5} />
+                  <Label value={`최저 ${formatPrice(single.low.price, currency)}`} position="insideBottomLeft" fill="#3A5A4A" fontSize={11.5} />
                 </ReferenceDot>
               )}
 
@@ -241,6 +244,12 @@ export function PriceChart({ series }: { series: PriceSeries[] }) {
             </LineChart>
           </ResponsiveContainer>
         </div>
+      )}
+
+      {dropped.length > 0 && (
+        <p className="text-[11.5px] text-dim">
+          {dropped.map((s) => PLATFORM_LABEL[s.platform] ?? s.platform).join(", ")}는 결제 통화가 달라 이 그래프에 함께 그리지 않아요. 아래 표에서 통화 그대로 볼 수 있어요.
+        </p>
       )}
     </div>
   );

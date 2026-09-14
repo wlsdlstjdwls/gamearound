@@ -1,4 +1,5 @@
 // 게임 상세 — 결론 → 근거 순 (§5.1). 데이터는 tag 캐시(getGameBySlugCached), 로그인 의존 데이터(찜 여부)는 캐시 밖에서 조회
+import { formatPrice } from "@/lib/currency";
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
@@ -14,7 +15,7 @@ import { PlaytimeCard } from "@/components/playtime-card";
 import { WishlistButton } from "@/components/wishlist-button";
 import { buttonClass } from "@/components/ui/button";
 import { Card, Page, SectionHead } from "@/components/ui/page";
-import { formatDateTime, formatHours, formatKrw, PLATFORM_LABEL } from "@/lib/format";
+import { formatDateTime, formatHours, PLATFORM_LABEL } from "@/lib/format";
 import { SITE } from "@/lib/site";
 import { getFreshness } from "@/lib/freshness";
 import { GAME_MESSAGES } from "@/lib/games/messages";
@@ -72,7 +73,7 @@ function DecisionSummary({ game, className, style }: { game: GameDetail; classNa
     >
       <SummaryCell
         label="지금 최저가"
-        value={best ? formatKrw(best.currentPrice) : "-"}
+        value={best ? formatPrice(best.currentPrice, best.currency) : "-"}
         note={best ? `${PLATFORM_LABEL[best.platform] ?? best.platform}${best.discountPct ? ` | -${best.discountPct}%` : ""}` : "가격 정보 없음"}
       />
       <SummaryCell

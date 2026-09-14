@@ -2,6 +2,7 @@
 import { inArray } from "drizzle-orm";
 import { getDb } from "@/server/db/client";
 import { gamePlatforms, games } from "@/server/db/schema";
+import { cheapestOf } from "@/lib/currency";
 import type { GameDetail, GameSummary, PlatformDto, PublicGameDto } from "./dto";
 
 export const iso = (d: Date | string | null | undefined): string | null => {
@@ -26,6 +27,7 @@ export function toPlatformDto(p: PlatformRow): PlatformDto {
     currentVersion: p.currentVersion,
     listPrice: p.listPrice,
     currentPrice: p.currentPrice,
+    currency: p.currency,
     discountPct: p.discountPct,
     discountStartsAt: iso(p.discountStartsAt),
     discountEndsAt: iso(p.discountEndsAt),
@@ -56,6 +58,7 @@ export function groupSummaries(rows: Array<{ game: GameRow; gp: PlatformRow }>, 
         platform: gp.platform,
         listPrice: gp.listPrice,
         currentPrice: gp.currentPrice,
+        currency: gp.currency,
         discountPct: gp.discountPct,
         discountEndsAt: iso(gp.discountEndsAt),
         discountName: gp.discountName,
@@ -81,12 +84,7 @@ export async function attachBestPrice(rows: GameRow[]): Promise<GameSummary[]> {
   }
   return rows.map((g) => {
     const list = byGame.get(g.id) ?? [];
-    // 가격이 있는 것 중 최저가, 없으면 첫 플랫폼
-    const priced = list.filter((p) => p.currentPrice !== null);
-    const best =
-      priced.length > 0
-        ? priced.reduce((a, b) => ((b.currentPrice ?? Infinity) < (a.currentPrice ?? Infinity) ? b : a))
-        : list[0];
+    const best = cheapestOf(list) ?? list[0];
     return {
       slug: g.slug,
       titleKo: g.titleKo,
@@ -97,6 +95,7 @@ export async function attachBestPrice(rows: GameRow[]): Promise<GameSummary[]> {
             platform: best.platform,
             listPrice: best.listPrice,
             currentPrice: best.currentPrice,
+            currency: best.currency,
             discountPct: best.discountPct,
             discountEndsAt: iso(best.discountEndsAt),
             discountName: best.discountName,
@@ -144,13 +143,11 @@ export function toPublicGameDto(g: GameDetail): PublicGameDto {
 }
 
 /**
- * 현재가가 가장 싼 플랫폼. 가격이 없는 플랫폼은 후보에서 뺀다.
+ * 현재가가 가장 싼 플랫폼. 통화가 섞였을 때의 규칙은 lib/currency 의 cheapestOf 가 갖는다.
  * 상세 화면과 공유 이미지가 같은 기준으로 "최저가"를 말해야 해서 여기로 올렸다.
  */
 export function cheapestPlatform(platforms: PlatformDto[]): PlatformDto | null {
-  const priced = platforms.filter((p) => p.currentPrice !== null);
-  if (priced.length === 0) return null;
-  return priced.reduce((a, b) => ((b.currentPrice as number) < (a.currentPrice as number) ? b : a));
+  return cheapestOf(platforms);
 }
 
 /**

@@ -10,6 +10,12 @@ export const platformEnum = pgEnum("platform", ["steam", "ps5", "ps4", "xbox", "
 export const sourceEnum = pgEnum("source", ["steam", "psstore", "xbox", "nintendo", "hltb", "opencritic", "metacritic", "rss", "manual", "wikidata", "gamepass", "epic"]);
 export const roleEnum = pgEnum("role", ["user", "game_company", "seller", "admin"]);
 export const syncStatusEnum = pgEnum("sync_status", ["ok", "partial", "failed"]);
+/**
+ * 가격의 통화. 스토어가 그 나라에 파는 통화를 그대로 담는다 — 환산하지 않는다.
+ * GOG 는 한국에도 USD 로 판다(2026-09-14 확인: currencyCode=KRW 로 조회하면 0건).
+ * 임의 환율로 바꿔 적으면 화면 가격과 실제 결제액이 어긋나고, 그건 가격 알림 서비스에서 제일 하면 안 되는 일이다.
+ */
+export const currencyEnum = pgEnum("currency", ["KRW", "USD"]);
 
 /**
  * 게임 레코드의 성격. DLC 를 별도 테이블이 아니라 games 행으로 담는 이유(기획서 5.4):
@@ -30,6 +36,7 @@ export type Platform = (typeof platformEnum.enumValues)[number];
 export type SourceName = (typeof sourceEnum.enumValues)[number];
 export type Role = (typeof roleEnum.enumValues)[number];
 export type SyncStatus = (typeof syncStatusEnum.enumValues)[number];
+export type Currency = (typeof currencyEnum.enumValues)[number];
 export type ContentType = (typeof contentTypeEnum.enumValues)[number];
 export type CompanyRole = (typeof companyRoleEnum.enumValues)[number];
 export type UpgradeKind = (typeof upgradeKindEnum.enumValues)[number];
@@ -96,7 +103,11 @@ export const gamePlatforms = pgTable("game_platforms", {
   storeUrl: text("store_url"),
   releaseDate: date("release_date"),
   currentVersion: text("current_version"),
-  listPrice: integer("list_price"),          // KRW 정수
+  /**
+   * 가격은 통화의 최소 단위 정수다 — KRW 는 원(소수 없음), USD 는 센트(6.99달러 = 699).
+   * 소수를 쓰지 않는 이유: 부동소수 반올림이 알림 임계값 비교에 섞이면 안 된다.
+   */
+  listPrice: integer("list_price"),
   currentPrice: integer("current_price"),
   discountPct: integer("discount_pct"),
   // 할인 기간, 행사명 (기획서 3-2 "할인 가격 그래프", dekudeals 참고). 소스가 주는 만큼만 채운다:
@@ -104,6 +115,8 @@ export const gamePlatforms = pgTable("game_platforms", {
   discountStartsAt: timestamp("discount_starts_at", { withTimezone: true }),
   discountEndsAt: timestamp("discount_ends_at", { withTimezone: true }),
   discountName: text("discount_name"),
+  /** 위 가격 두 개의 통화. 비교, 집계는 같은 통화끼리만 한다(services 의 DISPLAY_CURRENCY) */
+  currency: currencyEnum("currency").default("KRW").notNull(),
   metacriticScore: integer("metacritic_score"),
   opencriticScore: integer("opencritic_score"),
   lastSyncedAt: timestamp("last_synced_at", { withTimezone: true }),  // UI "갱신 시각" 표시 원천
@@ -115,6 +128,10 @@ export const gamePlatforms = pgTable("game_platforms", {
   hasAddOns: boolean("has_add_ons"),
 }, (t) => [uniqueIndex("gp_game_platform_uq").on(t.gameId, t.platform)]);
 
+/**
+ * 가격 이력. 통화 컬럼을 따로 두지 않는다 — 스냅샷은 언제나 game_platforms 한 행에 매달려 있고,
+ * 한 스토어가 파는 통화는 바뀌지 않는다. 통화는 그 행에서 읽는다.
+ */
 export const priceSnapshots = pgTable("price_snapshots", {
   id: integer("id").primaryKey().generatedAlwaysAsIdentity(),
   gamePlatformId: uuid("game_platform_id").references(() => gamePlatforms.id, { onDelete: "cascade" }).notNull(),

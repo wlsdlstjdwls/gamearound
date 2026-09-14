@@ -2,8 +2,9 @@
 // 플랫폼 탭 — 상세 페이지. 현재가/할인/정가, 출시일, 버전, 할인 종료 + 스토어 링크.
 // freshness 는 서버(RSC)에서 계산해 넘긴다(캐시/하이드레이션 시각 차이 방지).
 // 수집 시각은 값 옆에 문장으로 붙인다(리디자인 원칙 2) — 빨간 배지를 쓰지 않는다.
+import { formatPrice } from "@/lib/currency";
 import { useId, useState } from "react";
-import { formatDate, formatDiscount, formatKrw, formatShortDateTime, PLATFORM_LABEL } from "@/lib/format";
+import { formatDate, formatDiscount, formatShortDateTime, PLATFORM_LABEL } from "@/lib/format";
 import { collectedAtText, type Freshness } from "@/lib/freshness";
 import type { PlatformDto } from "@/server/services/games";
 import { StalenessNote } from "@/components/freshness-badge";
@@ -76,9 +77,9 @@ export function PlatformTabs({ platforms }: { platforms: PlatformTabItem[] }) {
         className="flex flex-col gap-4 p-[18px]"
       >
         <div className="flex flex-wrap items-baseline gap-x-2.5 gap-y-1.5">
-          <span className="text-[27px] font-bold tracking-[-0.03em] text-ink">{formatKrw(current.currentPrice)}</span>
+          <span className="text-[27px] font-bold tracking-[-0.03em] text-ink">{formatPrice(current.currentPrice, current.currency)}</span>
           {hasDiscount && current.listPrice !== null && (
-            <span className="text-[13px] text-dim-2 line-through">{formatKrw(current.listPrice)}</span>
+            <span className="text-[13px] text-dim-2 line-through">{formatPrice(current.listPrice, current.currency)}</span>
           )}
           {hasDiscount && (
             <span className="rounded-[6px] bg-ink px-2 py-[3px] text-[11.5px] font-bold text-on-ink">
@@ -92,7 +93,7 @@ export function PlatformTabs({ platforms }: { platforms: PlatformTabItem[] }) {
         <StalenessNote freshness={current.freshness} lastSyncedAt={current.lastSyncedAt} />
 
         <dl className="grid grid-cols-[repeat(auto-fit,minmax(120px,1fr))] divide-x divide-line overflow-hidden rounded-[10px] border border-line">
-          <MetaCell label="정가">{formatKrw(current.listPrice)}</MetaCell>
+          <MetaCell label="정가">{formatPrice(current.listPrice, current.currency)}</MetaCell>
           <MetaCell label="출시일">{formatDate(current.releaseDate)}</MetaCell>
           <MetaCell label="버전">{current.currentVersion ?? "-"}</MetaCell>
           <MetaCell label="할인 종료">

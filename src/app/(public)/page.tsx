@@ -1,5 +1,6 @@
 // 홈 — "오늘 뭘 사면 되는가"에 먼저 답한다 (§5.1, 풀 라우트 캐시 1h + 태그 home)
 // 검색 폼은 헤더 검색창이 유일한 진입점이므로 히어로에서 제거했다(리디자인).
+import { formatPrice } from "@/lib/currency";
 import Link from "next/link";
 import { GameCard } from "@/components/game-card";
 import { Clamp } from "@/components/ui/tooltip";
@@ -7,7 +8,7 @@ import { NewsList } from "@/components/news-list";
 import { EmptyState } from "@/components/empty-state";
 import { SaleBadge } from "@/components/sale-badge";
 import { Card, Page, SectionHead } from "@/components/ui/page";
-import { formatKrw, PLATFORM_LABEL } from "@/lib/format";
+import { PLATFORM_LABEL } from "@/lib/format";
 import { nextCollectTimeText } from "@/lib/freshness";
 import { stagger } from "@/lib/motion";
 import { ROUTES } from "@/lib/routes";
@@ -202,7 +203,7 @@ export default async function HomePage() {
                     <span className="text-[12px] text-dim">
                       {g.best ? PLATFORM_LABEL[g.best.platform] ?? g.best.platform : "-"}
                     </span>
-                    <span className="text-[13.5px] font-bold text-ink">{formatKrw(g.best?.currentPrice)}</span>
+                    <span className="text-[13.5px] font-bold text-ink">{formatPrice(g.best?.currentPrice, g.best?.currency)}</span>
                     <SaleBadge discountName={null} discountEndsAt={g.best?.discountEndsAt} />
                   </li>
                 ))}

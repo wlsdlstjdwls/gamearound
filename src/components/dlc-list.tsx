@@ -3,10 +3,11 @@
 //
 // "목록은 없는데 스토어가 추가 콘텐츠가 있다고만 알려준" 상태를 따로 다룬다.
 // 그걸 "DLC 없음"으로 적으면 사실이 아니고, 빈 목록으로 두면 수집이 고장난 것처럼 보인다.
+import { formatPrice } from "@/lib/currency";
 import Link from "next/link";
 import { Clamp } from "@/components/ui/tooltip";
 import { cardClass } from "@/components/ui/page";
-import { formatKrw, PLATFORM_LABEL } from "@/lib/format";
+import { PLATFORM_LABEL } from "@/lib/format";
 import { GAME_MESSAGES } from "@/lib/games/messages";
 import { gamePath } from "@/lib/routes";
 import { stagger } from "@/lib/motion";
@@ -36,7 +37,7 @@ export function DlcList({ dlcs, hasAddOns }: { dlcs: DlcDto[]; hasAddOns: boolea
               </Clamp>
               <span className="flex shrink-0 items-baseline gap-2 text-[12.5px]">
                 {best?.discountPct ? <span className="font-semibold text-danger">-{best.discountPct}%</span> : null}
-                <span className="font-semibold text-ink">{best ? formatKrw(best.currentPrice) : "-"}</span>
+                <span className="font-semibold text-ink">{best ? formatPrice(best.currentPrice, best.currency) : "-"}</span>
                 {best && <span className="text-dim">{PLATFORM_LABEL[best.platform] ?? best.platform}</span>}
               </span>
             </Link>

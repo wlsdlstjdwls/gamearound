@@ -1,7 +1,8 @@
 // 게임 카드(홈/목록) + 커버 이미지 공용 컴포넌트
+import { formatPrice } from "@/lib/currency";
 import Image from "next/image";
 import Link from "next/link";
-import { formatDate, formatDiscount, formatKrw, PLATFORM_LABEL } from "@/lib/format";
+import { formatDate, formatDiscount, PLATFORM_LABEL } from "@/lib/format";
 import type { GameSummary } from "@/server/services/games";
 import { SaleBadge } from "@/components/sale-badge";
 import { FadeImage } from "@/components/ui/fade-image";
@@ -83,9 +84,9 @@ export function GameCard({ game, variant = "discount" }: { game: GameSummary; va
           best && (
             <div className="mt-auto flex flex-col gap-1">
               <p className="flex items-baseline gap-1.5">
-                <span className="text-[19px] font-bold tracking-[-0.02em] text-ink">{formatKrw(best.currentPrice)}</span>
+                <span className="text-[19px] font-bold tracking-[-0.02em] text-ink">{formatPrice(best.currentPrice, best.currency)}</span>
                 {hasDiscount && best.listPrice !== null && (
-                  <span className="text-[12px] text-dim-2 line-through">{formatKrw(best.listPrice)}</span>
+                  <span className="text-[12px] text-dim-2 line-through">{formatPrice(best.listPrice, best.currency)}</span>
                 )}
               </p>
               {hasDiscount && <SaleBadge discountName={best.discountName} discountEndsAt={best.discountEndsAt} />}

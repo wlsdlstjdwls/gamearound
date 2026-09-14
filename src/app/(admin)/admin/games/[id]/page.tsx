@@ -1,9 +1,10 @@
 // /admin/games/[id] — 데이터 정정(§4.4), 소스 매핑(§4.2), 정정 이력
+import { formatPrice } from "@/lib/currency";
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { z } from "zod";
-import { formatDateTime, formatKrw, PLATFORM_LABEL } from "@/lib/format";
+import { formatDateTime, PLATFORM_LABEL } from "@/lib/format";
 import { CORRECTABLE_FIELDS, getGameForAdmin, SOURCES } from "@/server/services/admin";
 import { listUpgrades } from "@/server/services/admin-upgrades";
 import { platformEnum, upgradeKindEnum } from "@/server/db/schema";
@@ -119,7 +120,7 @@ export default async function AdminGamePage({ params }: { params: Promise<{ id: 
           game.platforms.map((p) => (
             <div key={p.id} className="flex flex-col gap-2">
               <p className="text-[11.5px] text-dim">
-                {platformLabel(p)} | 현재가 {formatKrw(p.currentPrice)} | 정가 {formatKrw(p.listPrice)} | 마지막 수집 {formatDateTime(p.lastSyncedAt)} | {p.syncStatus ?? "-"}
+                {platformLabel(p)} | 현재가 {formatPrice(p.currentPrice, p.currency)} | 정가 {formatPrice(p.listPrice, p.currency)} | 마지막 수집 {formatDateTime(p.lastSyncedAt)} | {p.syncStatus ?? "-"}
               </p>
               <CorrectionForm table="game_platforms" rowId={p.id} gameId={game.id} fields={platformFields(p)} title={`${platformLabel(p)} 필드`} />
             </div>

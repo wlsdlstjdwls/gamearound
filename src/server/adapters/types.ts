@@ -1,5 +1,5 @@
 // 어댑터 인터페이스 — 설계서 §4.1. 어댑터는 "가져오기만" 한다. DB 반영은 sync/가 맡음.
-import type { Platform } from "@/server/db/schema";
+import type { Currency, Platform } from "@/server/db/schema";
 
 /** 크롤러 공통 User-Agent (§10: UA 명시) — 실제 값은 서비스 아이덴티티(lib/site)에서 만든다 */
 export { CRAWLER_USER_AGENT } from "@/lib/site";
@@ -10,8 +10,11 @@ export interface StoreSnapshot {
   platform: Platform;
   storeExternalId: string;
   storeUrl: string;
-  listPrice: number | null;      // KRW
+  /** 통화의 최소 단위 정수(KRW=원, USD=센트). 통화는 아래 currency 가 말한다 */
+  listPrice: number | null;
   currentPrice: number | null;
+  /** 이 스토어가 파는 통화. 주지 않으면 KRW 로 본다 — 기존 소스는 전부 원화다 */
+  currency?: Currency;
   discountPct: number | null;
   /** 할인 시작 시각 (ISO datetime). 주는 소스만 채움 — xbox */
   discountStartsAt?: string | null;

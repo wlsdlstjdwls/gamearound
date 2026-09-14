@@ -1,6 +1,7 @@
 // /games 목록 — 필터, 정렬, 페이지네이션과 필터 선택지(facets).
 import { unstable_cache } from "next/cache";
 import { asc, eq, sql } from "drizzle-orm";
+import { DISPLAY_CURRENCY } from "@/lib/currency";
 import { getDb } from "@/server/db/client";
 import { gameGenres, gamePlatforms, games, genres, type Platform } from "@/server/db/schema";
 import { normalizeForSearch } from "@/lib/slug";
@@ -41,7 +42,8 @@ function platformAgg(platform?: Platform) {
     .select({
       gameId: gamePlatforms.gameId,
       maxDiscount: sql<number>`max(coalesce(${gamePlatforms.discountPct}, 0))`.as("max_discount"),
-      minPrice: sql<number | null>`min(${gamePlatforms.currentPrice})`.as("min_price"),
+      // 통화가 섞인 min() 은 뜻이 없다 — 정렬 기준은 기준 통화 가격만 본다(외화 전용 게임은 가격 정렬에서 nulls last)
+      minPrice: sql<number | null>`min(${gamePlatforms.currentPrice}) filter (where ${gamePlatforms.currency} = ${DISPLAY_CURRENCY})`.as("min_price"),
       maxRelease: sql<string | null>`max(${gamePlatforms.releaseDate})`.as("max_release"),
     })
     .from(gamePlatforms)

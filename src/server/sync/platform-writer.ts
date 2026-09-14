@@ -6,10 +6,11 @@
 import { and, eq, inArray } from "drizzle-orm";
 import { gamePlatforms, priceSnapshots, type Platform } from "@/server/db/schema";
 import type { StoreSnapshot } from "@/server/adapters/types";
+import { DISPLAY_CURRENCY } from "@/lib/currency";
 import { isLocked, type Ctx } from "./context";
 
 // hasAddOns 도 여기 규칙을 그대로 탄다 — 주지 않는 소스는 undefined 라 기존 값을 덮지 않는다
-const PLATFORM_FIELDS = ["storeExternalId", "storeUrl", "releaseDate", "currentVersion", "listPrice", "currentPrice", "discountPct", "hasAddOns"] as const;
+const PLATFORM_FIELDS = ["storeExternalId", "storeUrl", "releaseDate", "currentVersion", "listPrice", "currentPrice", "discountPct", "hasAddOns", "currency"] as const;
 const PRICE_FIELDS = new Set<string>(["listPrice", "currentPrice", "discountPct"]);
 
 /** ISO 문자열 → Date. 빈 값/파싱 실패는 null */
@@ -77,6 +78,7 @@ export function planPlatform(ctx: Ctx, existing: PlatformRow | undefined, gameId
         currentVersion: snapshot.currentVersion ?? null,
         listPrice: snapshot.listPrice,
         currentPrice: snapshot.currentPrice,
+        currency: snapshot.currency ?? DISPLAY_CURRENCY,
         discountPct: snapshot.discountPct,
         hasAddOns: snapshot.hasAddOns ?? null,
         ...meta,

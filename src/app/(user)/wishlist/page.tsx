@@ -1,5 +1,6 @@
 // /wishlist — 찜한 게임 목록 (§5.1 dynamic, 캐시 안 함)
 // 리디자인: 기본 정렬은 "할인 중 먼저" — 찜 목록의 용건은 "지금 사도 되는가"다.
+import { cheapestOf, formatPrice } from "@/lib/currency";
 import type { Metadata } from "next";
 import Link from "next/link";
 import { EmptyState } from "@/components/empty-state";
@@ -7,7 +8,7 @@ import { WishlistRemoveButton } from "@/components/wishlist-button";
 import { FadeImage } from "@/components/ui/fade-image";
 import { Page } from "@/components/ui/page";
 import { Clamp } from "@/components/ui/tooltip";
-import { formatDiscount, formatKrw, PLATFORM_LABEL } from "@/lib/format";
+import { formatDiscount, PLATFORM_LABEL } from "@/lib/format";
 import { collectedAtText, getFreshness } from "@/lib/freshness";
 import { stagger } from "@/lib/motion";
 import { ROUTES } from "@/lib/routes";
@@ -76,8 +77,9 @@ export default async function WishlistPage({ searchParams }: Props) {
       ) : (
         <ul className="grid grid-cols-[repeat(auto-fit,minmax(330px,1fr))] gap-4">
           {sorted.map(({ game }, i) => {
-            const priced = game.platforms.filter((p) => p.currentPrice !== null);
-            const lowest = priced.length > 0 ? Math.min(...priced.map((p) => p.currentPrice as number)) : null;
+            // "최저" 표시는 같은 통화끼리만 뜻이 있다 — 기준을 lib/currency 한 곳에서만 정한다
+            const cheapest = cheapestOf(game.platforms);
+            const pricedCount = game.platforms.filter((p) => p.currentPrice !== null).length;
             const title = game.titleKo ?? game.titleEn;
             const stalest = game.platforms.find((p) => getFreshness(p.lastSyncedAt, p.syncStatus) !== "fresh");
 
@@ -111,15 +113,15 @@ export default async function WishlistPage({ searchParams }: Props) {
                   ) : (
                     <ul className="flex flex-col gap-1 text-[12.5px]">
                       {game.platforms.map((p) => {
-                        const isLowest = lowest !== null && p.currentPrice === lowest;
+                        const isLowest = cheapest !== null && p.platform === cheapest.platform;
                         return (
                           <li key={p.id} className="flex items-baseline gap-2">
                             <span className="w-[52px] shrink-0 text-dim">{PLATFORM_LABEL[p.platform] ?? p.platform}</span>
-                            <span className={isLowest ? "font-bold text-ink" : "text-ink"}>{formatKrw(p.currentPrice)}</span>
+                            <span className={isLowest ? "font-bold text-ink" : "text-ink"}>{formatPrice(p.currentPrice, p.currency)}</span>
                             {p.discountPct ? (
                               <span className="rounded-[5px] bg-surface-2 px-1.5 py-px text-[11px] text-ink-2">{formatDiscount(p.discountPct)}</span>
                             ) : null}
-                            {isLowest && priced.length > 1 && <span className="font-semibold text-acc">최저가</span>}
+                            {isLowest && pricedCount > 1 && <span className="font-semibold text-acc">최저가</span>}
                           </li>
                         );
                       })}

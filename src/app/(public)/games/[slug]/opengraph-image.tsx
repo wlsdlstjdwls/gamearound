@@ -2,10 +2,11 @@
 // 게임 상세 전용 SNS 공유 이미지.
 // 커버만 보내면 "이 게임 페이지" 라는 사실밖에 전달되지 않는다. 공유의 이유는 대개 가격이므로
 // 최저가, 원가, 할인율을 썸네일 안에서 읽히게 박는다. 가격이 바뀌면 이미지도 따라 바뀐다.
+import { formatPrice } from "@/lib/currency";
 import { ImageResponse } from "next/og";
 import { notFound } from "next/navigation";
 import { BRAND_COLOR, brandSymbolDataUri } from "@/lib/brand";
-import { formatDiscount, formatKrw, PLATFORM_LABEL } from "@/lib/format";
+import { formatDiscount, PLATFORM_LABEL } from "@/lib/format";
 import { loadOgFonts } from "@/lib/og/font";
 import { loadOgImage } from "@/lib/og/image";
 import { OG_CONTENT_TYPE, OG_FONT_FAMILY, OG_PADDING, OG_SIZE } from "@/lib/og/constants";
@@ -32,8 +33,8 @@ export default async function GameOpengraphImage({ params }: Props) {
   const best = cheapestPlatform(game.platforms);
   const score = bestScore(game.platforms);
 
-  const price = best ? formatKrw(best.currentPrice) : "가격 정보 없음";
-  const listPrice = best && best.discountPct && best.listPrice ? formatKrw(best.listPrice) : null;
+  const price = best ? formatPrice(best.currentPrice, best.currency) : "가격 정보 없음";
+  const listPrice = best && best.discountPct && best.listPrice ? formatPrice(best.listPrice, best.currency) : null;
   const discount = best ? formatDiscount(best.discountPct) : "";
   const meta = [
     best ? `${PLATFORM_LABEL[best.platform] ?? best.platform} 최저가` : null,

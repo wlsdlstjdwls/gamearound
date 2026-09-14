@@ -1,5 +1,6 @@
 // 가격 그래프 — 최근 1년 price_snapshots → 클라이언트 차트에 JSON prop (§5.1)
 // 가격은 "값이 바뀐 시점"만 기록되므로 기록이 적은 게임은 그래프가 거의 평평하다. 대신 현재 할인, 행사 기간을 함께 보여준다.
+import { cheapestOf, formatPrice } from "@/lib/currency";
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
@@ -7,7 +8,7 @@ import { EmptyState } from "@/components/empty-state";
 import { PriceChart } from "@/components/price-chart";
 import { SaleBadge } from "@/components/sale-badge";
 import { Card, Page, SectionHead } from "@/components/ui/page";
-import { formatDate, formatDiscount, formatKrw, PLATFORM_LABEL } from "@/lib/format";
+import { formatDate, formatDiscount, PLATFORM_LABEL } from "@/lib/format";
 import { displayTitle, getGameBySlugCached } from "@/server/services/games";
 import { getPriceHistory, type PriceSeries } from "@/server/services/prices";
 
@@ -29,11 +30,8 @@ function lowestOf(s: PriceSeries): number {
 }
 
 /** 현재가가 가장 싼 플랫폼 */
-function bestDeal(series: PriceSeries[]): PriceSeries | null {
-  const priced = series.filter((s) => s.currentPrice !== null);
-  if (priced.length === 0) return null;
-  return priced.reduce((a, b) => ((b.currentPrice ?? Infinity) < (a.currentPrice ?? Infinity) ? b : a));
-}
+/** 통화가 섞였을 때의 규칙은 lib/currency 가 갖는다 — 화면마다 다르게 고르면 "최저가"가 서로 달라진다 */
+const bestDeal = (series: PriceSeries[]): PriceSeries | null => cheapestOf(series);
 
 const COLS = "grid grid-cols-[repeat(auto-fit,minmax(110px,1fr))] gap-x-3 px-4 py-[13px]";
 
@@ -69,10 +67,10 @@ export default async function PricesPage({ params }: Props) {
               <div className="flex flex-col gap-1.5">
                 <span className="text-[13px] font-semibold text-mut">{PLATFORM_LABEL[best.platform] ?? best.platform}</span>
                 <div className="flex flex-wrap items-baseline gap-x-2.5 gap-y-1">
-                  <span className="text-2xl font-bold tracking-[-0.03em] text-ink">{formatKrw(best.currentPrice)}</span>
+                  <span className="text-2xl font-bold tracking-[-0.03em] text-ink">{formatPrice(best.currentPrice, best.currency)}</span>
                   {best.discountPct && best.discountPct > 0 ? (
                     <>
-                      <span className="text-[13px] text-dim-2 line-through">{formatKrw(best.listPrice)}</span>
+                      <span className="text-[13px] text-dim-2 line-through">{formatPrice(best.listPrice, best.currency)}</span>
                       <span className="rounded-[6px] bg-ink px-2 py-[3px] text-[11.5px] font-bold text-on-ink">
                         {formatDiscount(best.discountPct)}
                       </span>
@@ -86,7 +84,7 @@ export default async function PricesPage({ params }: Props) {
               <div className="text-right">
                 <p className="text-[11.5px] text-dim">기록 기준 최저가</p>
                 <p className="text-[15px] font-bold text-ink">
-                  {formatKrw(lowestOf(best))}
+                  {formatPrice(lowestOf(best), best.currency)}
                   {best.currentPrice === lowestOf(best) && <span className="ml-1 text-[12px] font-normal text-acc">현재가와 동일</span>}
                 </p>
               </div>
@@ -117,10 +115,10 @@ export default async function PricesPage({ params }: Props) {
                   return (
                     <li key={s.platform} className={`${COLS} text-[13px] text-ink`}>
                       <span className="font-semibold">{PLATFORM_LABEL[s.platform] ?? s.platform}</span>
-                      <span>{formatKrw(s.currentPrice)}</span>
+                      <span>{formatPrice(s.currentPrice, s.currency)}</span>
                       <span className={onSale ? "text-acc" : "text-dim"}>{onSale ? formatDiscount(s.discountPct) : "-"}</span>
-                      <span>{formatKrw(Math.min(...prices))}</span>
-                      <span className="text-mut">{formatKrw(Math.max(...prices))}</span>
+                      <span>{formatPrice(Math.min(...prices), s.currency)}</span>
+                      <span className="text-mut">{formatPrice(Math.max(...prices), s.currency)}</span>
                       <span className="text-dim">
                         {s.points.length}건 <span className="text-[11.5px]">({formatDate(s.points[s.points.length - 1].t)})</span>
                       </span>

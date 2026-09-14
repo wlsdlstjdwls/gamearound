@@ -1,11 +1,12 @@
 // 검색 결과 — searchParams(q, sort) 처리 (§5.1). Route Handler 불필요.
 // 리디자인: 카드 그리드 → 가로 행 리스트. 제목, 플랫폼, 가격을 같은 축에서 비교할 수 있다.
+import { formatPrice } from "@/lib/currency";
 import type { Metadata } from "next";
 import Link from "next/link";
 import { CoverImage } from "@/components/game-card";
 import { EmptyState } from "@/components/empty-state";
 import { Card, Page } from "@/components/ui/page";
-import { formatDate, formatDiscount, formatKrw, PLATFORM_LABEL } from "@/lib/format";
+import { formatDate, formatDiscount, PLATFORM_LABEL } from "@/lib/format";
 import { nextCollectTimeText } from "@/lib/freshness";
 import { stagger } from "@/lib/motion";
 import { ROUTES } from "@/lib/routes";
@@ -155,11 +156,11 @@ export default async function SearchPage({ searchParams }: Props) {
                         </p>
                       </div>
                       <div className="ml-auto text-right">
-                        <p className="text-[17px] font-bold tracking-[-0.02em] text-ink">{formatKrw(best?.currentPrice)}</p>
+                        <p className="text-[17px] font-bold tracking-[-0.02em] text-ink">{formatPrice(best?.currentPrice, best?.currency)}</p>
                         <p className="mt-0.5 text-[12px] text-dim">
                           {hasDiscount && best ? (
                             <>
-                              <span className="text-dim-2 line-through">{formatKrw(best.listPrice)}</span>
+                              <span className="text-dim-2 line-through">{formatPrice(best.listPrice, best.currency)}</span>
                               {" | "}
                               {formatDiscount(best.discountPct)}
                             </>

@@ -5,7 +5,8 @@ import { getDb } from "@/server/db/client";
 import { alertDeliveries, gamePlatforms, games, priceAlerts, pushSubscriptions } from "@/server/db/schema";
 import { markOnce } from "@/server/redis";
 import { sendPush } from "@/server/push/webpush";
-import { formatKrw, PLATFORM_LABEL } from "@/lib/format";
+import { PLATFORM_LABEL } from "@/lib/format";
+import { formatPrice } from "@/lib/currency";
 
 /** run-source → dispatch 로 넘기는 변동 1건 */
 export interface PriceChange {
@@ -47,6 +48,7 @@ export async function dispatchPriceAlerts(changes: PriceChange[]): Promise<Dispa
         gameId: gamePlatforms.gameId,
         platform: gamePlatforms.platform,
         currentPrice: gamePlatforms.currentPrice,
+        currency: gamePlatforms.currency,
         discountPct: gamePlatforms.discountPct,
         slug: games.slug,
         titleKo: games.titleKo,
@@ -75,7 +77,7 @@ export async function dispatchPriceAlerts(changes: PriceChange[]): Promise<Dispa
     const title = gp.titleKo ?? gp.titleEn;
     const payload = {
       title: `${title} 할인 중`,
-      body: `${PLATFORM_LABEL[gp.platform] ?? gp.platform} ${formatKrw(change.newPrice)} (${discountPct}% 할인)`,
+      body: `${PLATFORM_LABEL[gp.platform] ?? gp.platform} ${formatPrice(change.newPrice, gp.currency)} (${discountPct}% 할인)`,
       url: `/games/${gp.slug}`,
       tag: `price:${gp.id}`,
     };

@@ -2,12 +2,14 @@
 import { unstable_cache } from "next/cache";
 import { and, eq, gte, inArray, lt, sql } from "drizzle-orm";
 import { getDb } from "@/server/db/client";
-import { gamePlatforms, games, news, priceSnapshots, syncLogs, type Platform } from "@/server/db/schema";
+import { gamePlatforms, games, news, priceSnapshots, syncLogs, type Currency, type Platform } from "@/server/db/schema";
 
 export type PricePoint = { t: string; price: number; discountPct: number; discountName: string | null };
 /** 플랫폼별 시계열 + 현재 상태(정가 기준선, 진행 중 할인 표시에 쓴다) */
 export type PriceSeries = {
   platform: Platform;
+  /** 이 계열의 통화. 차트는 한 축에 한 통화만 그린다 */
+  currency: Currency;
   points: PricePoint[];
   listPrice: number | null;
   currentPrice: number | null;
@@ -31,6 +33,7 @@ async function getPriceHistoryRaw(slug: string, days: number): Promise<PriceSeri
       platform: gamePlatforms.platform,
       listPrice: gamePlatforms.listPrice,
       currentPrice: gamePlatforms.currentPrice,
+      currency: gamePlatforms.currency,
       discountPct: gamePlatforms.discountPct,
       discountStartsAt: gamePlatforms.discountStartsAt,
       discountEndsAt: gamePlatforms.discountEndsAt,
@@ -72,6 +75,7 @@ async function getPriceHistoryRaw(slug: string, days: number): Promise<PriceSeri
   return gps
     .map((g) => ({
       platform: g.platform,
+      currency: g.currency,
       points: byGp.get(g.id) ?? [],
       listPrice: g.listPrice,
       currentPrice: g.currentPrice,

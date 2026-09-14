@@ -1,6 +1,7 @@
 // 세대 간 업그레이드 안내 — 기획서 F6.
 // Switch 2 Edition 이 첫 사례지만 표현은 세대 중립이다. PS4 에서 PS5, Xbox Smart Delivery 도 같은 줄을 쓴다.
-import { formatKrw, PLATFORM_LABEL } from "@/lib/format";
+import { formatPrice } from "@/lib/currency";
+import { PLATFORM_LABEL } from "@/lib/format";
 import { GAME_MESSAGES, upgradeText } from "@/lib/games/messages";
 import type { UpgradeDto } from "@/server/services/games";
 
@@ -11,7 +12,7 @@ export function UpgradeNotes({ upgrades }: { upgrades: UpgradeDto[] }) {
     <ul className="flex flex-col gap-1.5" aria-label={GAME_MESSAGES.upgradeHeading}>
       {upgrades.map((u) => {
         const toLabel = PLATFORM_LABEL[u.toPlatform] ?? u.toPlatform;
-        const price = u.kind === "paid" && u.price !== null ? formatKrw(u.price) : null;
+        const price = u.kind === "paid" && u.price !== null ? formatPrice(u.price) : null;
         return (
           <li
             key={`${u.fromPlatform}-${u.toPlatform}`}
