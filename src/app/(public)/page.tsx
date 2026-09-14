@@ -9,6 +9,7 @@ import { SaleBadge } from "@/components/sale-badge";
 import { Card, Page, SectionHead } from "@/components/ui/page";
 import { formatKrw, PLATFORM_LABEL } from "@/lib/format";
 import { nextCollectTimeText } from "@/lib/freshness";
+import { stagger } from "@/lib/motion";
 import { ROUTES } from "@/lib/routes";
 import { getHomeData, type GameSummary } from "@/server/services/games";
 
@@ -44,11 +45,48 @@ function urgentCount(discounts: GameSummary[]): number {
   }).length;
 }
 
-function Metric({ label, value, accent = false }: { label: string; value: string; accent?: boolean }) {
+/**
+ * 홈 지표 타일. 라벨과 숫자만 쌓아 두면 세 칸이 전부 같은 회색 덩어리로 읽혀서
+ * 톤(윗줄 색띠 + 점) + 큰 숫자 + 한 줄 설명으로 무게를 나눴다.
+ * 색은 의미를 따른다: 할인은 악센트, 마감 임박은 danger, 신작은 중립.
+ */
+const METRIC_TONE = {
+  acc: { stripe: "bg-acc", dot: "bg-acc", value: "text-acc" },
+  danger: { stripe: "bg-danger", dot: "bg-danger", value: "text-danger" },
+  neutral: { stripe: "bg-line-strong", dot: "bg-dim-2", value: "text-ink" },
+} as const;
+
+function Metric({
+  label,
+  value,
+  unit,
+  caption,
+  tone = "neutral",
+  urgent = false,
+  index,
+}: {
+  label: string;
+  value: number;
+  unit: string;
+  caption: string;
+  tone?: keyof typeof METRIC_TONE;
+  /** 값이 있을 때만 표시등을 켠다 */
+  urgent?: boolean;
+  index: number;
+}) {
+  const t = METRIC_TONE[tone];
   return (
-    <div className="flex flex-col gap-1 px-5 py-3.5">
-      <span className="text-[11.5px] text-dim">{label}</span>
-      <span className={`text-[20px] font-bold tracking-[-0.02em] ${accent ? "text-acc" : "text-ink"}`}>{value}</span>
+    <div className="enter-item relative flex flex-col gap-2 px-5 py-4" style={stagger(index)}>
+      <span aria-hidden className={`absolute inset-x-0 top-0 h-[3px] ${t.stripe}`} />
+      <span className="flex items-center gap-1.5 text-[11.5px] text-dim">
+        <span aria-hidden className={`size-1.5 rounded-full ${t.dot} ${urgent ? "pulse-dot" : ""}`} />
+        {label}
+      </span>
+      <span className="flex items-baseline gap-1">
+        <strong className={`text-[30px] font-bold leading-none tracking-[-0.03em] ${t.value}`}>{value}</strong>
+        <span className="text-[12px] text-dim">{unit}</span>
+      </span>
+      <span className="text-[11.5px] leading-[1.5] text-dim">{caption}</span>
     </div>
   );
 }
@@ -70,6 +108,7 @@ export default async function HomePage() {
   const { data, dbError } = await loadHomeData();
   const { discounts, recentReleases, latestNews } = data;
   const soon = endingSoon(discounts);
+  const urgent = urgentCount(discounts);
 
   return (
     <Page pad="home" gap={36}>
@@ -79,15 +118,33 @@ export default async function HomePage() {
           <h1 className="text-[30px] font-bold leading-[1.25] tracking-[-0.03em] text-ink">
             지금 할인 중인 게임 {discounts.length}개
           </h1>
-          <p className="max-w-[460px] text-[13.5px] leading-[1.75] text-mut">
-            스팀, PS, 엑스박스, 닌텐도 가격을 하루 세 번 수집합니다. 이 중 {urgentCount(discounts)}개는 48시간 안에 할인이 끝납니다.
-          </p>
         </div>
 
-        <Card className="grid shrink-0 grid-cols-1 divide-y divide-line border-line-strong sm:grid-cols-3 sm:divide-x sm:divide-y-0">
-          <Metric label="할인 중" value={`${discounts.length}종`} />
-          <Metric label="48시간 내 종료" value={`${urgentCount(discounts)}건`} accent />
-          <Metric label="최근 출시" value={`${recentReleases.length}종`} />
+        <Card className="grid w-full shrink-0 grid-cols-1 divide-y divide-line overflow-hidden border-line-strong p-0 sm:w-auto sm:grid-cols-3 sm:divide-x sm:divide-y-0">
+          <Metric
+            index={0}
+            label="할인 중"
+            value={discounts.length}
+            unit="종"
+            caption="지금 할인가로 살 수 있어요"
+            tone="acc"
+          />
+          <Metric
+            index={1}
+            label="48시간 내 종료"
+            value={urgent}
+            unit="건"
+            caption="곧 원래 가격으로 돌아가요"
+            tone="danger"
+            urgent={urgent > 0}
+          />
+          <Metric
+            index={2}
+            label="최근 출시"
+            value={recentReleases.length}
+            unit="종"
+            caption="새로 들어온 게임이에요"
+          />
         </Card>
       </section>
 
@@ -100,6 +157,8 @@ export default async function HomePage() {
       {/* 섹션 2 — 할인 중인 게임 */}
       <section aria-labelledby="discounts-heading" className="flex flex-col gap-4">
         <SectionHead
+          className="enter-item"
+          style={stagger(0)}
           id="discounts-heading"
           title="할인 중인 게임"
           note="플랫폼별 최저가 기준"
@@ -117,8 +176,8 @@ export default async function HomePage() {
           />
         ) : (
           <ul className="grid grid-cols-[repeat(auto-fit,minmax(238px,1fr))] gap-4">
-            {discounts.map((g) => (
-              <li key={g.slug}>
+            {discounts.map((g, i) => (
+              <li key={g.slug} className="enter-item" style={stagger(i + 1)}>
                 <GameCard game={g} variant="discount" />
               </li>
             ))}
@@ -128,7 +187,7 @@ export default async function HomePage() {
 
       {/* 섹션 3 — 곧 끝나는 할인 / 최신 뉴스 */}
       <section className="grid grid-cols-[repeat(auto-fit,minmax(300px,1fr))] gap-7">
-        <div className="flex flex-col gap-4">
+        <div className="enter-item flex flex-col gap-4" style={stagger(0)}>
           <SectionHead title="곧 끝나는 할인" note="종료 시각이 공개된 건만" />
           <Card className="px-4">
             {soon.length === 0 ? (
@@ -152,7 +211,7 @@ export default async function HomePage() {
           </Card>
         </div>
 
-        <div className="flex flex-col gap-4">
+        <div className="enter-item flex flex-col gap-4" style={stagger(1)}>
           <SectionHead title="최신 뉴스" />
           <Card className="px-4">
             <NewsList items={latestNews} showGame />
@@ -164,6 +223,8 @@ export default async function HomePage() {
       {recentReleases.length > 0 && (
         <section aria-labelledby="releases-heading" className="flex flex-col gap-4">
           <SectionHead
+            className="enter-item"
+            style={stagger(0)}
             id="releases-heading"
             title="최근 출시"
             action={
@@ -173,8 +234,8 @@ export default async function HomePage() {
             }
           />
           <ul className="grid grid-cols-[repeat(auto-fit,minmax(238px,1fr))] gap-4">
-            {recentReleases.map((g) => (
-              <li key={g.slug}>
+            {recentReleases.map((g, i) => (
+              <li key={g.slug} className="enter-item" style={stagger(i + 1)}>
                 <GameCard game={g} variant="release" />
               </li>
             ))}
