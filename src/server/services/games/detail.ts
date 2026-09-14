@@ -11,7 +11,7 @@ const DETAIL_NEWS_LIMIT = 5;
 const DETAIL_DLC_LIMIT = 30;
 
 /** 플랫폼 표시 순서 — 상세의 가격 표와 DLC 목록이 같은 순서를 써야 눈이 따라간다 */
-const PLATFORM_ORDER: Platform[] = ["steam", "epic", "ps5", "ps4", "xbox", "switch", "switch2"];
+const PLATFORM_ORDER: Platform[] = ["steam", "epic", "gog", "ps5", "ps4", "xbox", "switch", "switch2"];
 function byPlatformOrder(a: { platform: Platform }, b: { platform: Platform }): number {
   return PLATFORM_ORDER.indexOf(a.platform) - PLATFORM_ORDER.indexOf(b.platform);
 }

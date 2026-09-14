@@ -42,6 +42,8 @@ env:
   # epic 은 발견이 카탈로그를 한 바퀴 도는 구조라 카탈로그(KR 기본판 약 7,000건)보다 큰 값을 준다.
   # 한 실행이 처리하는 건수는 BATCH_SIZE.epic(250) 이 막는다 — 며칠에 걸쳐 카탈로그가 찬다.
   EPIC_SEED_TOP: '8000'
+  # gog 도 발견이 카탈로그를 한 바퀴 돈다(KR 기준 기본 게임 약 6,400건). 한 실행 처리량은 BATCH_SIZE.gog(400)가 막는다
+  GOG_SEED_TOP: '8000'
 
 jobs:
   crawl:
@@ -89,3 +91,8 @@ jobs:
       - name: crawl epic
         continue-on-error: true
         run: pnpm crawl --source=epic --seed-top=$EPIC_SEED_TOP $CRAWL_LIMIT_ARG
+
+      # GOG 는 한국에 달러로 판다 — 가격에 통화가 붙어 들어오고, 원화 가격과 섞어 비교하지 않는다(lib/currency).
+      - name: crawl gog
+        continue-on-error: true
+        run: pnpm crawl --source=gog --seed-top=$GOG_SEED_TOP $CRAWL_LIMIT_ARG

@@ -6,8 +6,8 @@ import {
 } from "drizzle-orm/pg-core";
 import { relations, sql } from "drizzle-orm";
 
-export const platformEnum = pgEnum("platform", ["steam", "ps5", "ps4", "xbox", "switch", "switch2", "epic"]);
-export const sourceEnum = pgEnum("source", ["steam", "psstore", "xbox", "nintendo", "hltb", "opencritic", "metacritic", "rss", "manual", "wikidata", "gamepass", "epic"]);
+export const platformEnum = pgEnum("platform", ["steam", "ps5", "ps4", "xbox", "switch", "switch2", "epic", "gog"]);
+export const sourceEnum = pgEnum("source", ["steam", "psstore", "xbox", "nintendo", "hltb", "opencritic", "metacritic", "rss", "manual", "wikidata", "gamepass", "epic", "gog"]);
 export const roleEnum = pgEnum("role", ["user", "game_company", "seller", "admin"]);
 export const syncStatusEnum = pgEnum("sync_status", ["ok", "partial", "failed"]);
 /**

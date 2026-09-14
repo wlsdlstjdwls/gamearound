@@ -40,6 +40,7 @@ export const PLATFORM_LABEL: Record<string, string> = {
   switch: "Switch",
   switch2: "Switch 2",
   epic: "Epic Games",
+  gog: "GOG",
 };
 
 const MS_PER_DAY = 24 * 60 * 60 * 1000;

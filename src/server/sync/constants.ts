@@ -17,6 +17,8 @@ export const BATCH_SIZE: Record<Source, number> = {
   steam: 1500, psstore: 200, xbox: 200, nintendo: 120,
   // epic 은 단건 조회(catalogOffer) + 요청 간격 1초라 250건 ≈ 4분. 여기에 발견 한 바퀴(약 175요청 ≈ 3분)가 더 붙는다
   epic: 250,
+  // gog 는 배치 조회(50개 ID 당 상품, 가격 2요청)라 수집은 빠르다. 발견 한 바퀴가 64페이지 ≈ 1분
+  gog: 400,
   hltb: 200, opencritic: 300, metacritic: 150,
   rss: RSS_FEEDS.length,
   // 위키데이터 공개 SPARQL 은 질의 1건이 수백 ms 에서 수 초다. 2초 간격 × 150 = 최대 ~7분.
@@ -36,10 +38,10 @@ export const DEFAULT_FETCH_BATCH_SIZE = 50;
  */
 export const WRITE_BATCH_SIZE = 50;
 /** --seed-top 으로 카탈로그를 훑어 신규 게임을 등록할 수 있는 소스 (어댑터가 discover 를 갖거나 steam) */
-export const SEEDABLE_SOURCES: Source[] = ["steam", "nintendo", "epic"];
+export const SEEDABLE_SOURCES: Source[] = ["steam", "nintendo", "epic", "gog"];
 /** 스토어 소스 → 담당 플랫폼 (§11-6: PS4/PS5, Switch/Switch2 분리 유지) */
 export const SOURCE_PLATFORMS: Record<StoreSource, Platform[]> = {
-  steam: ["steam"], psstore: ["ps5", "ps4"], xbox: ["xbox"], nintendo: ["switch", "switch2"], epic: ["epic"],
+  steam: ["steam"], psstore: ["ps5", "ps4"], xbox: ["xbox"], nintendo: ["switch", "switch2"], epic: ["epic"], gog: ["gog"],
 };
 /** §10 파싱 검증: 성공 건 중 가격 0/null 비율이 이 값을 넘으면 반영 생략 + partial */
 export const SUSPICIOUS_PRICE_RATIO = 0.5;

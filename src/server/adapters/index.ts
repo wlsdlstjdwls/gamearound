@@ -7,13 +7,14 @@ import { psstoreAdapter } from "./psstore";
 import { xboxAdapter } from "./xbox";
 import { nintendoAdapter } from "./nintendo";
 import { epicAdapter } from "./epic";
+import { gogAdapter } from "./gog";
 import { hltbAdapter } from "./hltb";
 import { OPENCRITIC_RAPIDAPI_KEY_ENV, opencriticAdapter } from "./opencritic";
 import { EPIC_ENABLE_ENV } from "./epic";
 import { metacriticAdapter } from "./metacritic";
 import { rssAdapter } from "./news-rss";
 
-export const STORE_SOURCES = ["steam", "psstore", "xbox", "nintendo", "epic"] as const;
+export const STORE_SOURCES = ["steam", "psstore", "xbox", "nintendo", "epic", "gog"] as const;
 export const META_SOURCES = ["hltb", "opencritic", "metacritic"] as const;
 export const NEWS_SOURCES = ["rss"] as const;
 /** 회사 정보 소스 — 게임이 아니라 회사를 조회한다(§5 확장 지점) */
@@ -36,6 +37,7 @@ const storeAdapters: Record<StoreSource, StoreAdapter> = {
   xbox: xboxAdapter,
   nintendo: nintendoAdapter,
   epic: epicAdapter,
+  gog: gogAdapter,
 };
 const metaAdapters: Record<MetaSource, MetaAdapter> = {
   hltb: hltbAdapter,
