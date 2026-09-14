@@ -253,7 +253,15 @@ export function toEpicCandidate(offer: EpicOffer): SearchCandidate {
 // ---- 네트워크 ----
 
 // transport: "curl" 인 이유 — Node 는 헤더를 다 맞춰도 403 이다. 자세한 실측은 adapters/curl.ts 상단
-const http = createHttpClient({ source: "epic", label: "Epic", headers: EPIC_BROWSER_HEADERS, transport: "curl" });
+// viaProxy — Cloudflare 가 데이터센터 IP 를 막으므로 러너에서는 주거용 출구가 필요하다.
+// 가정용 회선에서 돌릴 때는 CRAWL_PROXY_URL 이 비어 있어 그대로 직접 나간다.
+const http = createHttpClient({
+  source: "epic",
+  label: "Epic",
+  headers: EPIC_BROWSER_HEADERS,
+  transport: "curl",
+  viaProxy: true,
+});
 
 async function graphql(query: string, variables: Record<string, unknown>, context: string): Promise<unknown> {
   return http.json(EPIC_GRAPHQL_URL, {

@@ -17,6 +17,8 @@ export interface CurlRequest {
   headers?: Array<[string, string]>;
   body?: string;
   timeoutMs: number;
+  /** 이 요청만 거쳐 갈 프록시(http://user:pass@host:port). 없으면 러너, 로컬 IP 로 그대로 나간다 */
+  proxy?: string;
 }
 
 export interface CurlResponse {
@@ -35,6 +37,9 @@ export function curlArgs(url: string, req: CurlRequest): string[] {
     "--write-out",
     `${STATUS_MARK}%{http_code}`,
   ];
+  // --proxy 는 헤더보다 앞에 둔다 — 순서가 지문이 되는 것은 HTTP 헤더뿐이고, curl 인자 순서는 무관하지만
+  // 사람이 로그에서 "이 요청이 프록시를 탔는지" 를 맨 앞에서 바로 읽게 한다
+  if (req.proxy) args.push("--proxy", req.proxy);
   for (const [k, v] of req.headers ?? []) args.push("--header", `${k}: ${v}`);
   if (req.method && req.method !== "GET") args.push("--request", req.method);
   if (req.body !== undefined) args.push("--data-binary", "@-");

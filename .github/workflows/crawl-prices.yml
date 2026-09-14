@@ -29,6 +29,9 @@ env:
   UPSTASH_REDIS_REST_URL: ${{ secrets.UPSTASH_REDIS_REST_URL }}
   UPSTASH_REDIS_REST_TOKEN: ${{ secrets.UPSTASH_REDIS_REST_TOKEN }}
   CRAWL_SECRET: ${{ secrets.CRAWL_SECRET }}
+  # 주거용 한국 출구 프록시. 있으면 nintendo, epic 이 이 프록시로만 나간다(adapters/http 의 viaProxy).
+  # 비어 있으면 두 소스는 러너에서 빈손이고 pnpm crawl:local 이 맡는다.
+  CRAWL_PROXY_URL: ${{ secrets.CRAWL_PROXY_URL }}
   NEXT_PUBLIC_APP_URL: ${{ secrets.NEXT_PUBLIC_APP_URL }}
   NEXT_PUBLIC_VAPID_PUBLIC_KEY: ${{ secrets.NEXT_PUBLIC_VAPID_PUBLIC_KEY }}
   VAPID_PRIVATE_KEY: ${{ secrets.VAPID_PRIVATE_KEY }}
@@ -78,14 +81,14 @@ jobs:
 
       # Switch 독점작은 Steam 에 없어 nintendo 도 카탈로그를 훑어야 들어온다. 흡수/신규 판단은 제목 역매칭.
       # eShop 은 HTML 크롤(요청 간격 4초)이라 Steam 처럼 대량으로 못 당긴다 — 실행당 소량씩 며칠에 걸쳐 채운다.
-      # 러너 IP 로는 한국 eShop 이 빈 본문을 준다 — 실제로 채우는 것은 지금도 pnpm crawl:local 이다.
+      # 러너 IP 로는 한국 eShop 이 빈 본문을 준다 — CRAWL_PROXY_URL 이 있어야 이 단계가 실제로 채운다.
       - name: crawl nintendo
         continue-on-error: true
         run: pnpm crawl --source=nintendo --seed-top=$NINTENDO_SEED_TOP $CRAWL_LIMIT_ARG
 
       # Epic 독점작(Alan Wake 2 등)은 Steam 에 없다. 발견은 공개 GraphQL 한 바퀴, 흡수/신규 판단은 제목 역매칭.
-      # 지금은 비활성이라 이 단계가 "건너뜀" 한 줄만 찍고 끝난다 — Cloudflare 가 러너 IP 를 막는다(어댑터 주석).
-      # 단계를 남겨 두는 이유: EPIC_CRAWL_ENABLED 를 켜는 순간 워크플로 수정 없이 바로 돌게.
+      # CRAWL_PROXY_URL 이 비어 있으면 비활성이라 "건너뜀" 한 줄만 찍고 끝난다(Cloudflare 가 러너 IP 를 막는다).
+      # 프록시 시크릿을 넣는 순간 워크플로 수정 없이 바로 돈다.
       - name: crawl epic
         continue-on-error: true
         run: pnpm crawl --source=epic --seed-top=$EPIC_SEED_TOP $CRAWL_LIMIT_ARG

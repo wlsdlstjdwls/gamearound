@@ -165,6 +165,9 @@ const http = createHttpClient({
   label: "Nintendo",
   timeoutMs: 20_000,
   headers: { "Accept-Language": "ko-KR,ko;q=0.9" },
+  // 한국 eShop 은 한국 밖 IP 에 202 + 빈 본문을 준다 — CRAWL_PROXY_URL(한국 출구)이 있으면 거쳐 간다.
+  // 가정용 회선(한국)에서는 값이 없으므로 그대로 직접 나간다.
+  viaProxy: true,
   onStatus: notFoundAs("nintendo", (ctx) => `Nintendo 상품 없음 (${ctx})`),
 });
 

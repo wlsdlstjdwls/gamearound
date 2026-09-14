@@ -8,6 +8,17 @@ import { runCurl } from "./curl";
 export const DEFAULT_TIMEOUT_MS = 15_000;
 
 /**
+ * 막힌 소스가 거쳐 갈 프록시 주소를 담는 환경변수(http://user:pass@host:port).
+ * 값이 있으면 viaProxy 를 선언한 어댑터만 이 프록시로 나간다 — 없으면 평소대로 직접 나간다.
+ */
+export const CRAWL_PROXY_URL_ENV = "CRAWL_PROXY_URL";
+
+/** 호출 시점에 읽는다 — dotenv 로딩 순서보다 늦게 평가해야 크롤 스크립트에서도 값이 잡힌다 */
+export function crawlProxyUrl(): string | undefined {
+  return process.env[CRAWL_PROXY_URL_ENV]?.trim() || undefined;
+}
+
+/**
  * 재시도해볼 만한 상태 코드 — 429(과요청)와 5xx(서버 장애).
  * 4xx 는 요청 자체가 틀린 것이라 같은 요청을 반복해도 결과가 같다.
  */
@@ -36,6 +47,18 @@ export interface HttpClientOptions {
    * 프로세스를 띄우는 값비싼 경로라 막히지 않는 소스가 쓰면 손해만 본다.
    */
   transport?: "fetch" | "curl";
+  /**
+   * 우리 실행 환경의 IP 가 막혀 프록시를 거쳐야 하는 소스인지
+   * (nintendo: 한국 밖 IP 차단, epic: 데이터센터 IP 차단 — sync/constants 의 LOCAL_ONLY_SOURCES 주석).
+   * CRAWL_PROXY_URL 이 있으면 그 프록시를 거치고, 없으면 평소 전송기로 그대로 나간다.
+   *
+   * 프록시를 소스별로 켜는 이유: DB(Neon), Redis(Upstash), 재검증 호출까지 유료 프록시로 보내면
+   * 요금과 지연만 늘고 얻는 게 없다. 전역 프록시 환경변수(HTTPS_PROXY)를 쓰지 않는 것도 같은 이유다.
+   *
+   * 프록시를 탈 때는 전송기를 curl 로 고정한다 — Node 의 fetch 는 프록시를 쓰려면 별도 디스패처
+   * 패키지가 필요한데, 막힌 두 소스는 어차피 curl 경로(TLS 지문)를 요구하거나 요청이 드물다.
+   */
+  viaProxy?: boolean;
 }
 
 export interface RequestOptions extends RequestInit {
@@ -92,29 +115,37 @@ export function headerPairs(base: HeadersInit | undefined, accept: string, extra
 }
 
 /** curl 결과를 Response 로 감싼다 — 아래 흐름(상태 검사, json/text 파싱)이 전송기를 몰라도 되게 */
-async function sendWithCurl(url: string, headers: Array<[string, string]>, opts: RequestOptions | undefined, timeoutMs: number): Promise<Response> {
+async function sendWithCurl(
+  url: string,
+  headers: Array<[string, string]>,
+  opts: RequestOptions | undefined,
+  timeoutMs: number,
+  proxy?: string,
+): Promise<Response> {
   const { status, body } = await runCurl(url, {
     method: typeof opts?.method === "string" ? opts.method : "GET",
     headers,
     body: typeof opts?.body === "string" ? opts.body : undefined,
     timeoutMs,
+    proxy,
   });
   // status 0 = curl 이 응답을 못 받음. 502 로 올려 재시도 대상이 되게 한다
   return new Response(body, { status: status === 0 ? 502 : status });
 }
 
 export function createHttpClient(options: HttpClientOptions): HttpClient {
-  const { source, label, timeoutMs = DEFAULT_TIMEOUT_MS, headers, onStatus, transport = "fetch" } = options;
+  const { source, label, timeoutMs = DEFAULT_TIMEOUT_MS, headers, onStatus, transport = "fetch", viaProxy = false } = options;
 
   // 헤더 해석은 try 밖에서 한다 — 여기서 던진 AdapterError(키 없음 등)를 "요청 실패"로 덮어쓰면 원인이 사라진다.
   async function send(url: string, accept: string, opts: RequestOptions | undefined): Promise<{ res: Response; ctx: string }> {
     const ctx = opts?.context ?? url;
     const base = typeof headers === "function" ? headers() : headers;
+    const proxy = viaProxy ? crawlProxyUrl() : undefined;
     let res: Response;
     try {
       res =
-        transport === "curl"
-          ? await sendWithCurl(url, headerPairs(base, accept, opts?.headers), opts, timeoutMs)
+        transport === "curl" || proxy
+          ? await sendWithCurl(url, headerPairs(base, accept, opts?.headers), opts, timeoutMs, proxy)
           : await fetch(url, { ...opts, headers: mergeHeaders(base, accept, opts?.headers), signal: AbortSignal.timeout(timeoutMs) });
     } catch (e) {
       if (e instanceof AdapterError) throw e;

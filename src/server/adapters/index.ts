@@ -11,6 +11,7 @@ import { gogAdapter } from "./gog";
 import { hltbAdapter } from "./hltb";
 import { OPENCRITIC_RAPIDAPI_KEY_ENV, opencriticAdapter } from "./opencritic";
 import { EPIC_ENABLE_ENV } from "./epic";
+import { CRAWL_PROXY_URL_ENV, crawlProxyUrl } from "./http";
 import { metacriticAdapter } from "./metacritic";
 import { rssAdapter } from "./news-rss";
 
@@ -57,11 +58,13 @@ export function getDisabledReason(source: Source): string | undefined {
     case "psstore":
       return "PlayStation Store 는 클라이언트 렌더링 + persisted GraphQL 해시가 필요해 PoC 미통과 (2026-09-11)";
     case "epic":
-      return process.env[EPIC_ENABLE_ENV]
+      // 프록시가 설정돼 있으면 켠다 — 막는 기준이 IP 대역이라 주거용 출구를 거치면 통과한다.
+      // 데이터센터 프록시를 넣으면 여전히 403 이 나는데, 그건 로그에 그대로 드러나는 편이 낫다.
+      return process.env[EPIC_ENABLE_ENV] || crawlProxyUrl()
         ? undefined
         : "Epic 의 Cloudflare 가 (1) 데이터센터 IP 와 (2) Node 의 TLS 지문을 모두 막는다 — " +
           "Actions 러너는 curl 로도 403, 가정용 회선에서도 Node 는 403 이고 curl 만 통과한다(2026-09-14 확인). " +
-          `통과하는 전송 수단이 생기면 ${EPIC_ENABLE_ENV}=1 로 되살린다 — 파서, 질의는 그대로 있다`;
+          `주거용 출구 프록시를 ${CRAWL_PROXY_URL_ENV} 에 넣거나, 가정용 회선에서 ${EPIC_ENABLE_ENV}=1 로 켠다 — 파서, 질의는 그대로 있다`;
     case "opencritic":
       return process.env[OPENCRITIC_RAPIDAPI_KEY_ENV]
         ? undefined

@@ -38,10 +38,12 @@ export const DEFAULT_FETCH_BATCH_SIZE = 50;
  */
 export const WRITE_BATCH_SIZE = 50;
 /**
- * GitHub Actions 러너에서는 못 도는 소스. 스토어가 데이터센터, 해외 IP 를 막는다(2026-09-14 실측):
+ * 러너의 IP 로는 못 도는 소스. 스토어가 데이터센터, 해외 IP 를 막는다(2026-09-14 실측):
  *   nintendo — 한국 eShop 이 한국 밖 IP 에 202 + 빈 본문을 준다
  *   epic — Cloudflare 가 데이터센터 IP 를 막는다(curl 로도 403). Node 의 TLS 지문도 막혀 curl 전송기를 쓴다
- * 그래서 이 둘만 가정용 회선에서 도는 로컬 크롤(scripts/crawl-local.ts)이 맡는다.
+ * 가정용 회선에서 도는 로컬 크롤(scripts/crawl-local.ts)이 이 둘을 맡는다.
+ * CRAWL_PROXY_URL(주거용 한국 출구)이 있으면 두 어댑터가 그 프록시로 나가므로 러너에서도 돈다
+ * — 그때는 이 목록이 "프록시가 없을 때의 대비책" 이 된다(adapters/http 의 viaProxy).
  */
 export const LOCAL_ONLY_SOURCES: Source[] = ["nintendo", "epic"];
 /**

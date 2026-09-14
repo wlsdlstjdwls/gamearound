@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { createHttpClient, headerPairs, isRetryableStatus, notFoundAs } from "./http";
+import { CRAWL_PROXY_URL_ENV, createHttpClient, crawlProxyUrl, headerPairs, isRetryableStatus, notFoundAs } from "./http";
 import { curlArgs, splitCurlOutput } from "./curl";
 import { AdapterError, CRAWLER_USER_AGENT } from "./types";
 
@@ -163,11 +163,48 @@ describe("curl 인자, 출력", () => {
     expect(curlArgs("https://x", { timeoutMs: 1_000 })).not.toContain("--request");
   });
 
+  it("프록시를 주면 --proxy 로 넘긴다", () => {
+    const args = curlArgs("https://x", { timeoutMs: 1_000, proxy: "http://u:p@proxy.test:8080" });
+    expect(args).toContain("--proxy");
+    expect(args[args.indexOf("--proxy") + 1]).toBe("http://u:p@proxy.test:8080");
+  });
+
+  it("프록시가 없으면 --proxy 가 붙지 않는다", () => {
+    expect(curlArgs("https://x", { timeoutMs: 1_000 })).not.toContain("--proxy");
+  });
+
   it("출력 끝의 상태 표시를 본문과 가른다", () => {
     expect(splitCurlOutput('{"a":1}\n__curl_status__:200')).toEqual({ status: 200, body: '{"a":1}' });
   });
 
   it("상태 표시가 없으면 0 으로 본다 (curl 이 응답을 못 받음)", () => {
     expect(splitCurlOutput("")).toEqual({ status: 0, body: "" });
+  });
+});
+
+describe("viaProxy", () => {
+  afterEach(() => vi.unstubAllEnvs());
+
+  it("프록시 환경변수가 비어 있으면 평소대로 fetch 로 나간다", async () => {
+    vi.stubEnv(CRAWL_PROXY_URL_ENV, "");
+    const fetchMock = stubFetch(json({ ok: true }));
+    const http = createHttpClient({ source: "nintendo", label: "Nintendo", viaProxy: true });
+    await http.json("https://example.test/a");
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+  });
+
+  it("viaProxy 가 아닌 소스는 프록시가 있어도 직접 나간다", async () => {
+    vi.stubEnv(CRAWL_PROXY_URL_ENV, "http://proxy.test:8080");
+    const fetchMock = stubFetch(json({ ok: true }));
+    const http = createHttpClient({ source: "steam", label: "Steam" });
+    await http.json("https://example.test/a");
+    expect(fetchMock).toHaveBeenCalledTimes(1); // DB, Redis 트래픽까지 유료 프록시로 보내지 않는다
+  });
+
+  it("crawlProxyUrl 은 공백만 있는 값을 비어 있는 것으로 본다", () => {
+    vi.stubEnv(CRAWL_PROXY_URL_ENV, "   ");
+    expect(crawlProxyUrl()).toBeUndefined();
+    vi.stubEnv(CRAWL_PROXY_URL_ENV, "http://proxy.test:8080");
+    expect(crawlProxyUrl()).toBe("http://proxy.test:8080");
   });
 });
