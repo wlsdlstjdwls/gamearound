@@ -3,6 +3,7 @@
 // PoC(2026-09-14): country=KR 에서 기본판 6,990건, KRW 정가/할인가/할인 기간/행사명 파싱 확인.
 // Cloudflare 가 앞에 있어 브라우저 헤더(Origin, Referer, sec-fetch-*)가 없으면 403 챌린지 HTML 이 온다 —
 // 크롤러 UA 만으로는 통과하지 못해 이 어댑터만 UA 를 브라우저 값으로 덮어쓴다(§10 의 UA 명시 예외).
+// 헤더를 다 맞춰도 Node 는 막힌다(아래 EPIC_ENABLE_ENV 주석). 지금은 비활성 소스다.
 import { z } from "zod";
 import {
   AdapterError,
@@ -14,9 +15,11 @@ import { createHttpClient } from "./http";
 import { sleep } from "@/lib/async";
 
 /**
- * 이 소스를 켜는 환경변수. 기본은 비활성이다 —
- * Epic 앞단의 Cloudflare 가 데이터센터 IP 를 막아 Actions 러너에서는 curl 조차 403 이다(2026-09-14 확인).
- * 가정용 회선에서는 그대로 통과하므로, 로컬에서 카탈로그를 채울 때만 이 값을 켠다.
+ * 이 소스를 켜는 환경변수. 기본은 비활성이고, 켠다고 바로 되지도 않는다 — 2026-09-14 실측:
+ *   - GitHub Actions 러너에서는 curl 로도 403 (데이터센터 IP 차단)
+ *   - 가정용 회선에서도 Node(undici, http2, 암호군 교체 전부) 는 403 이고 curl 만 통과 (TLS 지문 차단)
+ * 즉 Node 로 부를 수 있는 경로가 지금은 없다. Cloudflare 를 통과하는 전송 수단(프록시 등)이 생기면
+ * 이 값만 켜서 되살린다 — 파서와 질의는 그대로 쓸 수 있게 남겨 둔다.
  */
 export const EPIC_ENABLE_ENV = "EPIC_CRAWL_ENABLED";
 

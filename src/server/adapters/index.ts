@@ -57,8 +57,9 @@ export function getDisabledReason(source: Source): string | undefined {
     case "epic":
       return process.env[EPIC_ENABLE_ENV]
         ? undefined
-        : "Epic 의 Cloudflare 가 데이터센터 IP 를 막는다 — GitHub Actions 러너에서는 curl 도 403 (2026-09-14 probe-epic 실행으로 확인). " +
-          `가정용 회선에서는 통과하므로 ${EPIC_ENABLE_ENV}=1 을 켜면 로컬 크롤로만 수집한다`;
+        : "Epic 의 Cloudflare 가 (1) 데이터센터 IP 와 (2) Node 의 TLS 지문을 모두 막는다 — " +
+          "Actions 러너는 curl 로도 403, 가정용 회선에서도 Node 는 403 이고 curl 만 통과한다(2026-09-14 확인). " +
+          `통과하는 전송 수단이 생기면 ${EPIC_ENABLE_ENV}=1 로 되살린다 — 파서, 질의는 그대로 있다`;
     case "opencritic":
       return process.env[OPENCRITIC_RAPIDAPI_KEY_ENV]
         ? undefined
