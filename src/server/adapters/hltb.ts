@@ -241,7 +241,14 @@ async function postSearch(query: string, token: HltbSearchToken): Promise<Respon
 
 export const hltbAdapter: MetaAdapter = {
   source: "hltb",
-  minIntervalMs: 4000,
+  /**
+   * 2026-09-14 실측으로 4,000 에서 내렸다. 4,000 에는 근거가 없었고, 그 값 때문에 매칭 대기열이
+   * 카탈로그 증가 속도를 못 따라갔다(게임 4,236건 중 hltb ref 94건).
+   * 실측: 검색 1,000ms 간격 15회 연속 성공(429 없음, 응답 185~1,843ms),
+   * 게임 페이지 fetch 도 같은 간격 12회 연속 성공(173~864ms).
+   * 더 내리지 않는 이유 — 1,000 으로 이미 4배다. 여기서 더 욕심내다 막히면 회복할 길이 없다.
+   */
+  minIntervalMs: 1000,
 
   /** init 토큰 → 검색. 토큰 만료(403)면 1회 재발급 후 재시도 */
   async search(query: string): Promise<SearchCandidate[]> {

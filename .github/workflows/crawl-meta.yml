@@ -1,10 +1,14 @@
 # 설계서 §4.3 — crawl-meta. 소스 순차 실행, 한 소스가 실패해도 다음 소스 계속(continue-on-error).
 # 종료 코드: 0 ok, 2 partial(경고), 1 failed. 중복 실행은 concurrency 그룹 + Redis 락(§4.4)으로 이중 방지.
+#
+# 잡을 둘로 나눈 이유(2026-09-14): 한 잡에 세 소스를 넣으니 요청 간격이 제일 긴 hltb 가 예산을 다 먹고
+# 뒤 소스가 timeout 에 잘렸다. 구간별 실측 합이 53분인데 timeout 이 40분이었다.
+# 잡을 나누면 각자 자기 timeout 을 갖고 러너에서 나란히 돈다 — 총 사용 분은 같고 서로를 굶기지 않는다.
 name: crawl-meta
 
 on:
   schedule:
-    # 주기 2일: 실행 1회 ~10분 × 15회/월 ≈ 월 150분. 평점은 변동이 느려 일간 → 격일로 완화.
+    # 주기 2일: 평점은 변동이 느려 일간 → 격일로 완화. 플레이타임도 같은 주기로 붙어 간다.
     - cron: "0 3 */2 * *"
   workflow_dispatch:
     inputs:
@@ -12,31 +16,36 @@ on:
         description: "배치 크기 덮어쓰기 (비우면 소스별 기본값)"
         required: false
         default: ""
+      match:
+        description: "매칭 건수 덮어쓰기 (비우면 워크플로 기본값). 대기열을 몰아서 비울 때 크게 준다"
+        required: false
+        default: ""
 
 concurrency:
   group: crawl-meta
   cancel-in-progress: false
 
-env:
-  DATABASE_URL: ${{ secrets.DATABASE_URL }}
-  UPSTASH_REDIS_REST_URL: ${{ secrets.UPSTASH_REDIS_REST_URL }}
-  UPSTASH_REDIS_REST_TOKEN: ${{ secrets.UPSTASH_REDIS_REST_TOKEN }}
-  CRAWL_SECRET: ${{ secrets.CRAWL_SECRET }}
-  # 있으면 opencritic 소스가 자동 활성, 없으면 어댑터가 비활성 사유를 대시보드에 표시
-  OPENCRITIC_RAPIDAPI_KEY: ${{ secrets.OPENCRITIC_RAPIDAPI_KEY }}
-  NEXT_PUBLIC_APP_URL: ${{ secrets.NEXT_PUBLIC_APP_URL }}
-  NEXT_PUBLIC_VAPID_PUBLIC_KEY: ${{ secrets.NEXT_PUBLIC_VAPID_PUBLIC_KEY }}
-  VAPID_PRIVATE_KEY: ${{ secrets.VAPID_PRIVATE_KEY }}
-  VAPID_SUBJECT: ${{ secrets.VAPID_SUBJECT }}
-  CRAWL_LIMIT_ARG: ${{ github.event.inputs.limit != '' && format('--limit={0}', github.event.inputs.limit) || '' }}
-  # 신규 시드된 게임이 hltb/평점 ref 를 받기까지 걸리는 시간을 줄인다(기본 50 → 150).
-  # crawl-prices 가 하루 최대 수백 건을 새로 시드하므로 격일 50건으로는 매칭 대기열이 계속 밀린다.
-  MATCH_ARG: --match=150
-
 jobs:
-  crawl:
+  # 플레이타임(HLTB). 매칭 대기열이 여기에 몰려 있어 잡을 따로 뗐다.
+  playtime:
     runs-on: ubuntu-latest
-    timeout-minutes: 40
+    # 매칭 600건 × 건당 약 3초(검색 1초 + DB 왕복 + 대기 1초) ≈ 30분,
+    # 수집 300건 × 약 2초 ≈ 10분 → 40분. 여유 10분.
+    timeout-minutes: 50
+    env:
+      DATABASE_URL: ${{ secrets.DATABASE_URL }}
+      UPSTASH_REDIS_REST_URL: ${{ secrets.UPSTASH_REDIS_REST_URL }}
+      UPSTASH_REDIS_REST_TOKEN: ${{ secrets.UPSTASH_REDIS_REST_TOKEN }}
+      CRAWL_SECRET: ${{ secrets.CRAWL_SECRET }}
+      NEXT_PUBLIC_APP_URL: ${{ secrets.NEXT_PUBLIC_APP_URL }}
+      NEXT_PUBLIC_VAPID_PUBLIC_KEY: ${{ secrets.NEXT_PUBLIC_VAPID_PUBLIC_KEY }}
+      VAPID_PRIVATE_KEY: ${{ secrets.VAPID_PRIVATE_KEY }}
+      VAPID_SUBJECT: ${{ secrets.VAPID_SUBJECT }}
+      CRAWL_LIMIT_ARG: ${{ github.event.inputs.limit != '' && format('--limit={0}', github.event.inputs.limit) || '' }}
+      # 2026-09-14 실측: 게임 4,236건 중 hltb ref 94건. 매칭이 카탈로그 증가를 못 따라간 것이 원인이라
+      # 이 값이 곧 플레이타임 커버리지 속도다. 600건 = 격일 기준 하루 300건, 밀린 4,142건을 약 2주에 비운다.
+      # 이 값을 올리려면 timeout-minutes 를 함께 본다(건당 약 3초).
+      MATCH_ARG: ${{ github.event.inputs.match != '' && format('--match={0}', github.event.inputs.match) || '--match=600' }}
     steps:
       - uses: actions/checkout@v4
 
@@ -53,8 +62,42 @@ jobs:
       - run: pnpm install --frozen-lockfile
 
       - name: crawl hltb
-        continue-on-error: true
         run: pnpm crawl --source=hltb $MATCH_ARG $CRAWL_LIMIT_ARG
+
+  # 평점(OpenCritic, Metacritic). 둘 다 hltb 보다 간격이 짧아 한 잡에 같이 둔다.
+  scores:
+    runs-on: ubuntu-latest
+    # opencritic 매칭 150×2초 + 수집 300×2초 = 15분, metacritic 150×3초 + 150×3초 = 15분 → 30분.
+    timeout-minutes: 40
+    env:
+      DATABASE_URL: ${{ secrets.DATABASE_URL }}
+      UPSTASH_REDIS_REST_URL: ${{ secrets.UPSTASH_REDIS_REST_URL }}
+      UPSTASH_REDIS_REST_TOKEN: ${{ secrets.UPSTASH_REDIS_REST_TOKEN }}
+      CRAWL_SECRET: ${{ secrets.CRAWL_SECRET }}
+      # 있으면 opencritic 소스가 자동 활성, 없으면 어댑터가 비활성 사유를 대시보드에 표시
+      OPENCRITIC_RAPIDAPI_KEY: ${{ secrets.OPENCRITIC_RAPIDAPI_KEY }}
+      NEXT_PUBLIC_APP_URL: ${{ secrets.NEXT_PUBLIC_APP_URL }}
+      NEXT_PUBLIC_VAPID_PUBLIC_KEY: ${{ secrets.NEXT_PUBLIC_VAPID_PUBLIC_KEY }}
+      VAPID_PRIVATE_KEY: ${{ secrets.VAPID_PRIVATE_KEY }}
+      VAPID_SUBJECT: ${{ secrets.VAPID_SUBJECT }}
+      CRAWL_LIMIT_ARG: ${{ github.event.inputs.limit != '' && format('--limit={0}', github.event.inputs.limit) || '' }}
+      # 신규 시드된 게임이 평점 ref 를 받기까지 걸리는 시간을 줄인다(기본 50 → 150).
+      # crawl-prices 가 하루 최대 수백 건을 새로 시드하므로 격일 50건으로는 매칭 대기열이 계속 밀린다.
+      MATCH_ARG: ${{ github.event.inputs.match != '' && format('--match={0}', github.event.inputs.match) || '--match=150' }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+        with:
+          package_json_file: package.json
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: pnpm
+          cache-dependency-path: pnpm-lock.yaml
+
+      - run: pnpm install --frozen-lockfile
 
       - name: crawl opencritic
         continue-on-error: true

@@ -24,7 +24,9 @@ export const BATCH_SIZE: Record<Source, number> = {
   epic: 250,
   // gog 는 배치 조회(50개 ID 당 상품, 가격 2요청)라 수집은 빠르다. 발견 한 바퀴가 64페이지 ≈ 1분
   gog: 400,
-  hltb: 200, opencritic: 300, metacritic: 150,
+  // hltb 는 간격이 4초에서 1초로 내려가며(어댑터 주석의 실측) 같은 시간에 3배를 볼 수 있게 됐다.
+  // 건당 페이지 fetch 0.6초 + 반영 + 대기 1초 ≈ 2초 → 300건 ≈ 10분.
+  hltb: 300, opencritic: 300, metacritic: 150,
   rss: RSS_FEEDS.length,
   // 위키데이터 공개 SPARQL 은 질의 1건이 수백 ms 에서 수 초다. 2초 간격 × 150 = 최대 ~7분.
   // 회사는 거의 안 바뀌므로 한 번에 다 훑을 필요가 없다 — lastSyncedAt 이 오래된 것부터 잘라 간다.
