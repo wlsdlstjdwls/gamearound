@@ -33,21 +33,18 @@ jobs:
   crawl:
     runs-on: ubuntu-latest
     timeout-minutes: 20
-    defaults:
-      run:
-        working-directory: sonjeondeung # 레포 루트는 gamearound/, 앱은 하위 폴더
     steps:
       - uses: actions/checkout@v4
 
       - uses: pnpm/action-setup@v4 # packageManager 필드(pnpm@10)를 그대로 사용
         with:
-          package_json_file: sonjeondeung/package.json
+          package_json_file: package.json
 
       - uses: actions/setup-node@v4
         with:
           node-version: 24
           cache: pnpm
-          cache-dependency-path: sonjeondeung/pnpm-lock.yaml
+          cache-dependency-path: pnpm-lock.yaml
 
       - run: pnpm install --frozen-lockfile
 
