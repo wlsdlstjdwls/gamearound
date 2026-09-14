@@ -8,6 +8,7 @@ import { createAlertAction, deleteAlertAction, toggleAlertAction, type ActionSta
 import { PLATFORM_LABEL } from "@/lib/format";
 import { Button } from "@/components/ui/button";
 import { ChipButton } from "@/components/ui/chip";
+import { Clamp } from "@/components/ui/tooltip";
 
 export const PLATFORM_OPTIONS: { value: string; label: string }[] = [
   { value: "all", label: "전체 플랫폼" },
@@ -56,7 +57,9 @@ export function AlertForm({ game }: { game: FormGame }) {
           <div aria-hidden className="h-[42px] w-[72px] rounded-[7px] bg-surface-3" />
         )}
         <div className="min-w-0">
-          <h2 className="truncate text-[14.5px] font-bold tracking-[-0.01em] text-ink">{game.title}</h2>
+          <h2 className="text-[14.5px] font-bold tracking-[-0.01em] text-ink">
+            <Clamp>{game.title}</Clamp>
+          </h2>
           {game.priceNote && <p className="text-[12px] text-dim">{game.priceNote}</p>}
         </div>
       </div>

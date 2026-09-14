@@ -5,6 +5,7 @@ import { formatDate, formatDiscount, formatKrw, PLATFORM_LABEL } from "@/lib/for
 import type { GameSummary } from "@/server/services/games";
 import { SaleBadge } from "@/components/sale-badge";
 import { cardClass } from "@/components/ui/page";
+import { Clamp } from "@/components/ui/tooltip";
 
 // next.config.ts images.remotePatterns 에 등록된 호스트만 최적화. 그 외는 unoptimized 로 원본 사용(런타임 오류 방지)
 const OPTIMIZABLE_HOSTS = ["cdn.akamai.steamstatic.com", "shared.akamai.steamstatic.com", "cdn.cloudflare.steamstatic.com"];
@@ -52,6 +53,13 @@ export function GameCard({ game, variant = "discount" }: { game: GameSummary; va
   const best = game.best;
   const hasDiscount = Boolean(best?.discountPct && best.discountPct > 0);
   const platformText = best ? PLATFORM_LABEL[best.platform] ?? best.platform : "플랫폼 정보 없음";
+  // 한 줄로 합쳐 둔다 — 잘렸을 때 툴팁에 그대로 쓸 문구가 필요하다
+  const metaText = [
+    platformText + (game.platformCount > 1 ? ` 외 ${game.platformCount - 1}` : ""),
+    game.titleKo ? game.titleEn : null,
+  ]
+    .filter(Boolean)
+    .join(" | ");
 
   return (
     <Link
@@ -69,12 +77,10 @@ export function GameCard({ game, variant = "discount" }: { game: GameSummary; va
       </div>
 
       <div className="flex flex-1 flex-col gap-[7px] p-[15px]">
-        <p className="line-clamp-2 text-[14.5px] font-bold leading-snug tracking-[-0.01em] text-ink">{title}</p>
-        <p className="line-clamp-1 text-[11.5px] text-dim">
-          {platformText}
-          {game.platformCount > 1 && ` 외 ${game.platformCount - 1}`}
-          {game.titleKo && ` | ${game.titleEn}`}
-        </p>
+        <Clamp lines={2} className="text-[14.5px] font-bold leading-snug tracking-[-0.01em] text-ink">
+          {title}
+        </Clamp>
+        <Clamp className="text-[11.5px] text-dim">{metaText}</Clamp>
 
         {variant === "release" && best?.releaseDate ? (
           <p className="mt-auto text-[13px] text-mut">{formatDate(best.releaseDate)} 출시</p>

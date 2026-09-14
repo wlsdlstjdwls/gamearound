@@ -5,6 +5,7 @@ import { ChipLink } from "@/components/ui/chip";
 import { isSourceName, listSyncLogs, SOURCES } from "@/server/services/admin";
 import { requireRoleOrForbid } from "@/server/auth/guards";
 import { cardClass } from "@/components/ui/page";
+import { Clamp } from "@/components/ui/tooltip";
 
 export const metadata: Metadata = { title: "동기화 로그" };
 
@@ -68,7 +69,15 @@ export default async function SyncLogsPage({ searchParams }: { searchParams: Pro
                   <td className="px-3 py-2">{l.processed ?? 0}</td>
                   <td className={`px-3 py-2 ${(l.failed ?? 0) > 0 ? "font-semibold text-danger" : ""}`}>{l.failed ?? 0}</td>
                   <td className="max-w-md px-3 py-2">
-                    {l.errorSample ? <code className="line-clamp-2 break-all font-mono text-[11px] text-mut">{l.errorSample}</code> : <span className="text-dim-2">-</span>}
+                    {l.errorSample ? (
+                      <code className="font-mono text-[11px] text-mut">
+                        <Clamp lines={2} className="break-all">
+                          {l.errorSample}
+                        </Clamp>
+                      </code>
+                    ) : (
+                      <span className="text-dim-2">-</span>
+                    )}
                   </td>
                 </tr>
               ))}

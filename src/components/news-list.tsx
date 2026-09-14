@@ -2,6 +2,7 @@
 import Link from "next/link";
 import { formatDateTime } from "@/lib/format";
 import type { NewsDto } from "@/server/services/games";
+import { Clamp } from "@/components/ui/tooltip";
 
 export function NewsList({ items, showGame = false }: { items: NewsDto[]; showGame?: boolean }) {
   if (items.length === 0) {
@@ -23,9 +24,9 @@ export function NewsList({ items, showGame = false }: { items: NewsDto[]; showGa
               href={n.url}
               target="_blank"
               rel="noopener noreferrer"
-              className="line-clamp-2 text-[13px] font-semibold leading-[1.5] text-ink transition-colors duration-base hover:text-acc"
+              className="block text-[13px] font-semibold leading-[1.5] text-ink transition-colors duration-base hover:text-acc"
             >
-              {n.title}
+              <Clamp lines={2}>{n.title}</Clamp>
               <span className="sr-only"> (새 창에서 열림)</span>
             </a>
             <p className="mt-1 flex flex-wrap items-center gap-x-1.5 text-[11.5px] text-dim">

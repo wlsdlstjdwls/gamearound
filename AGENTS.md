@@ -56,6 +56,7 @@ route(page/action/api)  →  server/services  →  server/adapters | server/db
   - `components/ui/button.tsx` — `Button`, `buttonClass()`
   - `components/ui/chip.tsx` — 선택형 칩 `ChipLink` / `ChipButton` / `chipClass()`
   - `components/ui/page.tsx` — `Page`(폭, 패딩 셸), `Card` / `cardClass()`, `SectionHead`
+  - `components/ui/tooltip.tsx` — `Clamp`(줄 수로 자르고 잘렸을 때만 툴팁), `useTooltip()`. 잘린 글자에 `title` 속성을 쓰지 않는다
   - `components/ui/text-field.tsx` | `password-field.tsx` | `checkbox.tsx` | `form-message.tsx`
   - `server/adapters/http.ts` — `createHttpClient()`. 어댑터에서 `fetch` 를 직접 호출하지 않는다.
   - `lib/async.ts`(`sleep`) | `lib/errors.ts`(`errorMessage`) | `lib/cn.ts`(`cn`)

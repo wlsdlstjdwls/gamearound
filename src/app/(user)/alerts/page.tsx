@@ -4,6 +4,7 @@ import Link from "next/link";
 import { AlertForm, AlertItemControls } from "@/components/alert-form";
 import { EmptyState } from "@/components/empty-state";
 import { Card, Page } from "@/components/ui/page";
+import { Clamp } from "@/components/ui/tooltip";
 import { PLATFORM_LABEL } from "@/lib/format";
 import { ALERT_RULE_TEXT, COLLECT_SCHEDULE_TEXT } from "@/lib/freshness";
 import { ROUTES } from "@/lib/routes";
@@ -56,8 +57,8 @@ export default async function AlertsPage({ searchParams }: { searchParams: Promi
             {alerts.map((a) => (
               <li key={a.id} className={`flex flex-wrap items-center gap-x-4 gap-y-2 px-4 py-[15px] ${a.isActive ? "" : "opacity-55"}`}>
                 <div className="min-w-0 flex-1">
-                  <Link href={`/games/${a.game.slug}`} className="block truncate text-[13.5px] font-semibold text-ink hover:text-acc">
-                    {a.game.titleKo ?? a.game.titleEn}
+                  <Link href={`/games/${a.game.slug}`} className="block text-[13.5px] font-semibold text-ink hover:text-acc">
+                    <Clamp>{a.game.titleKo ?? a.game.titleEn}</Clamp>
                   </Link>
                   <p className="text-[12px] text-dim">
                     {a.platform ? PLATFORM_LABEL[a.platform] ?? a.platform : "전체 플랫폼"} | 할인 {a.minDiscountPct ?? 1}% 이상

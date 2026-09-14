@@ -9,6 +9,7 @@ import { getSyncOverview, listPendingMatches, type SyncOverviewItem } from "@/se
 import { getDisabledReason, isSource } from "@/server/adapters";
 import { requireRoleOrForbid } from "@/server/auth/guards";
 import { cardClass } from "@/components/ui/page";
+import { Clamp } from "@/components/ui/tooltip";
 
 /** 대시보드 카드에 노출할 에러 샘플 길이. 전문은 로그 화면에서 본다 */
 const ERROR_SAMPLE_PREVIEW_LEN = 300;
@@ -59,8 +60,10 @@ function SourceCard({ item }: { item: SyncOverviewItem }) {
           {l.errorSample && (
             <div className="mt-1">
               <dt className="mb-1 text-[11.5px] text-dim">에러 샘플</dt>
-              <dd className="line-clamp-3 break-all rounded-[7px] bg-surface-4 px-2.5 py-2 font-mono text-[11px] leading-[1.55] text-mut">
-                {l.errorSample.slice(0, ERROR_SAMPLE_PREVIEW_LEN)}
+              <dd className="rounded-[7px] bg-surface-4 px-2.5 py-2 font-mono text-[11px] leading-[1.55] text-mut">
+                <Clamp lines={3} className="break-all">
+                  {l.errorSample.slice(0, ERROR_SAMPLE_PREVIEW_LEN)}
+                </Clamp>
               </dd>
             </div>
           )}
@@ -130,15 +133,14 @@ export default async function AdminDashboardPage() {
             <ul className="min-w-[720px] divide-y divide-line-soft">
               {pending.map((p) => (
                 <li key={`${p.gameId}-${p.source}`} className={`${QUEUE_COLS} items-center text-[13px] text-ink`}>
-                  <span className="min-w-0 truncate">
+                  <span className="min-w-0">
                     <Link href={`/admin/games/${p.gameId}`} className="font-medium hover:text-acc">
-                      {p.game.titleKo ?? p.game.titleEn}
+                      <Clamp>{p.game.titleKo ? `${p.game.titleKo} (${p.game.titleEn})` : p.game.titleEn}</Clamp>
                     </Link>
-                    {p.game.titleKo && <span className="ml-1 text-[11.5px] text-dim">({p.game.titleEn})</span>}
                   </span>
                   <span className="text-mut">{p.source}</span>
-                  <span className="min-w-0 truncate font-mono text-[12px] text-mut">
-                    {p.externalId}
+                  <span className="min-w-0 font-mono text-[12px] text-mut">
+                    <Clamp className="inline-block max-w-full align-bottom">{p.externalId}</Clamp>
                     {p.url && (
                       <a href={p.url} target="_blank" rel="noreferrer" className="ml-2 font-sans text-acc hover:underline">
                         열기

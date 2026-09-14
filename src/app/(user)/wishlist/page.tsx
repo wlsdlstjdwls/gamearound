@@ -6,6 +6,7 @@ import Link from "next/link";
 import { EmptyState } from "@/components/empty-state";
 import { WishlistRemoveButton } from "@/components/wishlist-button";
 import { Page } from "@/components/ui/page";
+import { Clamp } from "@/components/ui/tooltip";
 import { formatDiscount, formatKrw, PLATFORM_LABEL } from "@/lib/format";
 import { collectedAtText, getFreshness } from "@/lib/freshness";
 import { ROUTES } from "@/lib/routes";
@@ -98,8 +99,8 @@ export default async function WishlistPage({ searchParams }: Props) {
 
                 <div className="flex min-w-0 flex-1 flex-col gap-2">
                   <div className="flex items-start justify-between gap-2">
-                    <Link href={`/games/${game.slug}`} className="truncate text-[14.5px] font-bold tracking-[-0.01em] text-ink hover:text-acc">
-                      {title}
+                    <Link href={`/games/${game.slug}`} className="min-w-0 text-[14.5px] font-bold tracking-[-0.01em] text-ink hover:text-acc">
+                      <Clamp>{title}</Clamp>
                     </Link>
                     <WishlistRemoveButton gameId={game.id} />
                   </div>

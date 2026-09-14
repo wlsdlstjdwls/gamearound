@@ -6,6 +6,7 @@ import { useCallback, useEffect, useId, useRef, useState, type KeyboardEvent } f
 import { ROLE_LABEL } from "@/lib/auth/constants";
 import { AUTH_MESSAGES as M } from "@/lib/auth/messages";
 import { cn } from "@/lib/cn";
+import { Clamp } from "@/components/ui/tooltip";
 import { ROUTES } from "@/lib/routes";
 import type { PublicUser } from "@/server/services/users";
 import { useSignOut } from "@/components/auth/use-sign-out";
@@ -101,7 +102,9 @@ export function UserMenu({ user }: { user: PublicUser }) {
         <span aria-hidden className="flex h-[30px] w-[30px] items-center justify-center rounded-full bg-surface-3 text-[12px] font-bold text-ink-2">
           {initialOf(user)}
         </span>
-        <span className="hidden max-w-[7rem] truncate text-[13px] font-medium text-ink sm:block">{name}</span>
+        <span className="hidden max-w-[7rem] text-[13px] font-medium text-ink sm:block">
+          <Clamp>{name}</Clamp>
+        </span>
         <ChevronDownIcon size={16} className={cn("text-dim transition-transform duration-base ease-out-emph", open && "rotate-180")} />
       </button>
 
@@ -115,8 +118,12 @@ export function UserMenu({ user }: { user: PublicUser }) {
           className="absolute right-0 top-[calc(100%+8px)] z-50 w-60 origin-top-right animate-scale-in overflow-hidden rounded-[var(--radius-md)] border border-line-strong bg-surface"
         >
           <div className="border-b border-line px-4 py-3">
-            <p className="truncate text-sm font-semibold text-ink">{name}</p>
-            <p className="truncate text-xs text-dim">{user.email}</p>
+            <p className="text-sm font-semibold text-ink">
+              <Clamp>{name}</Clamp>
+            </p>
+            <p className="text-xs text-dim">
+              <Clamp>{user.email}</Clamp>
+            </p>
             {user.role !== "user" && <span className="mt-1 inline-block rounded-[5px] bg-acc-soft px-1.5 py-0.5 text-[11px] font-semibold text-acc">{ROLE_LABEL[user.role]}</span>}
           </div>
           <div className="py-1.5">

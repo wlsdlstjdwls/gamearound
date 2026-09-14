@@ -2,6 +2,7 @@
 // 검색 폼은 헤더 검색창이 유일한 진입점이므로 히어로에서 제거했다(리디자인).
 import Link from "next/link";
 import { GameCard } from "@/components/game-card";
+import { Clamp } from "@/components/ui/tooltip";
 import { NewsList } from "@/components/news-list";
 import { EmptyState } from "@/components/empty-state";
 import { SaleBadge } from "@/components/sale-badge";
@@ -136,8 +137,8 @@ export default async function HomePage() {
               <ul className="divide-y divide-line-soft">
                 {soon.map((g) => (
                   <li key={g.slug} className="flex flex-wrap items-baseline gap-x-3 gap-y-1 py-[13px]">
-                    <Link href={`/games/${g.slug}`} className="min-w-[130px] flex-1 truncate text-[13.5px] font-semibold text-ink hover:text-acc">
-                      {g.titleKo ?? g.titleEn}
+                    <Link href={`/games/${g.slug}`} className="min-w-[130px] flex-1 text-[13.5px] font-semibold text-ink hover:text-acc">
+                      <Clamp>{g.titleKo ?? g.titleEn}</Clamp>
                     </Link>
                     <span className="text-[12px] text-dim">
                       {g.best ? PLATFORM_LABEL[g.best.platform] ?? g.best.platform : "-"}
