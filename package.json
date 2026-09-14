@@ -13,6 +13,7 @@
     "db:studio": "drizzle-kit studio",
     "crawl": "tsx scripts/crawl.ts",
     "crawl:local": "tsx scripts/crawl-local.ts",
+    "probe": "tsx scripts/probe.ts",
     "icons": "tsx scripts/generate-icons.ts",
     "seed": "tsx scripts/seed.ts",
     "test": "vitest run",
