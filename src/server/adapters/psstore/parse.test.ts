@@ -1,7 +1,9 @@
 // psstore 파서 — 구독 포함 판정과 가격 선택이 서로 섞이지 않는지 잠근다.
 // 표본은 2026-09-14 실측 응답의 webcta 모양을 그대로 줄인 것이다.
 import { describe, expect, it } from "vitest";
-import { parsePsstoreConcept, psstoreSubscriptionKeys } from "./parse";
+import { parsePsstoreConcept, parsePsstoreDlc, psstoreSubscriptionKeys } from "./parse";
+import { readFileSync } from "node:fs";
+import path from "node:path";
 
 const cta = (type: string, price: Record<string, unknown> | null) => ({ type, price });
 
@@ -81,5 +83,35 @@ describe("parsePsstoreConcept", () => {
       },
     };
     expect(parsePsstoreConcept(plain, "234567").subscriptionKeys).toEqual([]);
+  });
+});
+
+describe("parsePsstoreDlc", () => {
+  const raw = JSON.parse(
+    readFileSync(path.join(__dirname, "..", "__fixtures__", "psstore-product-dlc.json"), "utf8"),
+  ) as unknown;
+  const id = "HP0700-PPSA10593_00-TK8S3CHARASTPASS";
+
+  it("DLC 로 표시하고 부모 콘셉트를 응답에서 그대로 가져온다", () => {
+    const snap = parsePsstoreDlc(raw, id);
+    expect(snap.contentType).toBe("dlc");
+    expect(snap.parentExternalId).toBe("10006270");
+    expect(snap.storeExternalId).toBe(id);
+  });
+
+  it("가격은 최소 단위 정수로, 기기는 상품 id 로 읽는다", () => {
+    const snap = parsePsstoreDlc(raw, id);
+    expect(snap.listPrice).toBe(33800);
+    expect(snap.currentPrice).toBe(33800);
+    expect(snap.discountPct).toBe(0);
+    expect(snap.platform).toBe("ps5"); // PPSA = PS5 세대
+  });
+
+  it("구독 축은 건드리지 않는다 — 빈 배열도 주지 않는다", () => {
+    expect(parsePsstoreDlc(raw, id).subscriptionKeys).toBeUndefined();
+  });
+
+  it("상품이 없으면 재시도해도 같아서 바로 실패로 올린다", () => {
+    expect(() => parsePsstoreDlc({ data: { productRetrieve: null } }, id)).toThrowError(/상품 없음/);
   });
 });

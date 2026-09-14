@@ -10,6 +10,7 @@ import {
   PSSTORE_INCLUSION_CTA,
   PSSTORE_LANGUAGE_SUFFIX,
   PSSTORE_PORTRAIT_ROLE,
+  PSSTORE_PRODUCT_URL,
   PSSTORE_PORTRAIT_WIDTH,
   PSSTORE_PS4_TITLE_ID,
   PSSTORE_PS5_TITLE_ID,
@@ -88,6 +89,8 @@ const productSchema = z.object({
         invariantName: z.string().nullish(),
         name: z.string().nullish(),
         concept: z.object({ id: z.string() }).nullish(),
+        // DLC 를 스냅샷으로 읽을 때만 쓰인다. 검색 경로는 concept.id 만 보고 지나간다
+        webctas: z.array(ctaSchema).nullish(),
       })
       .nullish(),
   }),
@@ -242,4 +245,44 @@ export function parsePsstoreProduct(raw: unknown): SearchCandidate | null {
   const title = p.invariantName?.trim() || psstoreCleanTitle(p.name);
   if (!title) return null;
   return { externalId: conceptId, title, url: `${PSSTORE_CONCEPT_URL}/${conceptId}` };
+}
+
+/**
+ * 상품 상세 → DLC 스냅샷.
+ *
+ * 왜 콘셉트가 아니라 상품인가: DLC 는 콘셉트를 갖지 않는다. 애드온 목록이 주는 것도 상품 id 고,
+ * 그 상품의 concept.id 가 곧 부모 게임이다 — 부모 연결이 응답 안에 이미 들어 있다.
+ *
+ * 구독 키는 채우지 않는다(undefined). PS Plus 포함은 본편에 붙는 이야기이고,
+ * 여기서 빈 배열을 주면 "이 DLC 는 어느 구독에도 안 들었다"는 단언이 돼 구독 축을 건드린다.
+ */
+export function parsePsstoreDlc(raw: unknown, productId: string): StoreSnapshot {
+  const parsed = productSchema.safeParse(raw);
+  if (!parsed.success) fail("DLC 상품", parsed.error);
+  const p = parsed.data!.data.productRetrieve;
+  if (!p) throw new AdapterError(`PlayStation 상품 없음: ${productId}`, "psstore", false);
+
+  const price = pickPurchasePrice(p.webctas);
+  const listPrice = price?.basePriceValue ?? null;
+  const currentPrice = price ? price.discountedValue ?? listPrice : null;
+  const discountPct =
+    listPrice != null && currentPrice != null && listPrice > 0 && currentPrice < listPrice
+      ? Math.round(((listPrice - currentPrice) / listPrice) * 100)
+      : 0;
+
+  const titleEn = p.invariantName?.trim() || null;
+  const titleKo = psstoreCleanTitle(p.name);
+
+  return {
+    platform: psstorePlatform([p.id]),
+    storeExternalId: p.id,
+    storeUrl: `${PSSTORE_PRODUCT_URL}/${p.id}`,
+    listPrice,
+    currentPrice,
+    discountPct: price ? discountPct : null,
+    discountEndsAt: discountPct > 0 ? psstoreEpochToIso(price?.endTime) : null,
+    contentType: "dlc",
+    parentExternalId: p.concept?.id ?? null,
+    meta: titleEn ? { titleEn, titleKo: titleKo && titleKo !== titleEn ? titleKo : null } : undefined,
+  };
 }

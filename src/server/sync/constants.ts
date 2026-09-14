@@ -249,6 +249,14 @@ export const DLC_LIST_PER_RUN = 60;
  */
 export const DLC_LIST_PER_RUN_BY_SOURCE: Partial<Record<Source, number>> = {
   xbox: 20,
+  // psstore 도 스토어 페이지 HTML 이다 — 건당 0.6~1.2MB(2026-09-15 실측: DEATHLOOP 713KB, 철권 8 1.03MB).
+  // 그런데 xbox 보다 낮게 잡는 이유는 페이지 크기가 아니라 **그다음 단계**다:
+  // psstore 에는 fetchMany 가 없어 새 DLC 한 건이 요청 한 번이다(xbox, steam 은 배치라 거의 공짜다).
+  // 목록만 보면 10건 × 1초 = 10초지만, 최악(한 본편이 상한 DLC_PER_GAME_MAX 30건을 다 채움)에는
+  // 등록에 10 × 30 = 300요청 ≈ 5분이 더 붙는다. 실측 표본은 대체로 그보다 훨씬 적다
+  // (2026-09-15: 엘든 링 2, 사이버펑크 3, FF16 3, 철권 8 24, 몬헌 와일즈 48건이 상한에 걸려 30).
+  // 첫 몇 바퀴만 비싸고 그 뒤로는 이미 아는 DLC 가 걸러져 거의 빈손이다.
+  psstore: 10,
 };
 /**
  * 한 번 물어본 본편을 다시 물어보기까지의 간격(일).

@@ -44,23 +44,44 @@ export const PSSTORE_QUERY_HASHES = {
   search: "4df6284f982e57bec70f23c77e2c219dc792eb19af7fb3d3a81767aa3f1958aa",
 } as const;
 
-// ---- 추가 콘텐츠(DLC) 목록: 아직 못 가져온다. 다시 처음부터 조사하지 말 것(2026-09-14 실측) ----
+// ---- 추가 콘텐츠(DLC) 목록 ----
 //
-// 막힌 지점은 하나뿐이다: 질의 해시. 나머지는 다 알아냈다.
-//   - 콘셉트 상세(conceptRetrieveForCtasWithPrice)는 DLC 를 주지 않는다. products 는 에디션 SKU 다.
-//   - 스토어 페이지는 애드온을 지연 로드한다(addOns 청크). 그 번들에 질의문이 그대로 들어 있다:
-//       query getAddOnProductsByConcept($conceptId: ID!, $pageArgs: PageArgs) {
-//         addOnProductsRetrieve(conceptId: $conceptId, pageArgs: $pageArgs) { addOnProducts { ...addOnProduct } }
-//       }
-//     콘셉트 id 를 그대로 받으므로 우리 키와 맞는다.
-//   - 질의문에서 해시를 직접 계산해 봤지만(graphql print 후 sha256, 프래그먼트 순서 4가지) 전부
-//     "not whitelisted" 였다. 서버가 등록해 둔 해시와 정규화가 다르다.
-//   - 격자 질의에 filterBy 로 애드온만 거르는 것도 안 된다 — storeDisplayClassification, productType,
-//     gameContentType 셋 다 무시되고 같은 첫 콘셉트가 돌아온다.
+// 해시는 결국 필요 없었다(2026-09-15 실측). **콘셉트 페이지 HTML 이 애드온을 이미 서버 렌더링해서 준다** —
+// Xbox 의 __PRELOADED_STATE__ 와 같은 모양이다. 지연 로드 청크(addOns.<hash>.js)를 보고
+// "브라우저로 질의 해시를 떠야 한다"고 적었던 앞 회차의 결론은 틀렸다.
 //
-// 켜는 법: 브라우저로 애드온이 있는 게임의 상세를 열고 PSSTORE_QUERY_HASHES 주석의 한 줄을 콘솔에 넣어
-// getAddOnProductsByConcept 의 해시를 뜬 뒤, PSSTORE_QUERY_HASHES 에 한 줄 더하고 listDlcIds 를 붙이면 된다.
-// 애드온 상품의 concept.id 가 곧 부모 콘셉트라 부모 연결은 이미 parsePsstoreProduct 가 할 줄 안다.
+// 페이지 안의 모양: `<div data-mfe-name="addOns" data-initial="env:<id>">` 바로 앞에
+// `<script id="env:<id>">` 가 있고 그 JSON 의 cache 가 Apollo 정규화 캐시다.
+//   ROOT_QUERY["addOnProductsRetrieve({\"conceptId\":...,\"pageArgs\":{\"size\":48}})"].addOnProducts
+//     → [{ __ref: "Product:<상품id>" }, ...]  같은 cache 안에 Product:<상품id> 본문이 함께 있다.
+//
+// 상품 본문에는 id, name, invariantName, platforms, price, storeDisplayClassification 이 들어 있다.
+// 우리는 id 만 쓰고 나머지는 productRetrieveForCtasWithPrice 로 다시 받는다 —
+// 페이지의 price 는 표시 문자열("22,800원")뿐이고 우리에게 필요한 최소 단위 정수가 없다.
+//
+// 애드온 상품의 concept.id 가 곧 부모 콘셉트라 부모 연결은 parsePsstoreProduct 가 이미 할 줄 안다.
+
+/**
+ * 페이지가 한 번에 심어 주는 애드온 수. 더 있으면 "더 보기"가 나머지를 지연 로드한다 —
+ * 거기부터는 질의 해시가 필요하고, 우리는 앞의 48건으로 그친다(DLC_PER_GAME_MAX 가 30 이라 어차피 더 깎인다).
+ * 실측(2026-09-15): Dead by Daylight(227319)가 정확히 48건으로 잘렸고, 철권 8 은 30건이 다 왔다.
+ */
+export const PSSTORE_ADD_ON_PAGE_SIZE = 48;
+
+/**
+ * 애드온 자리에 오지만 DLC 가 아닌 것. storeDisplayClassification 으로 가른다.
+ * 게임 내 화폐 팩은 콘텐츠가 아니라 결제 수단이라 DLC 목록에 넣으면 목록이 화폐로 뒤덮인다
+ * (2026-09-15 실측: 철권 8 30건 중 TEKKEN COINS 가 여러 건, Dead by Daylight 48건은 앞부분이 전부 오릭 셀 팩).
+ * 그 상품들은 platforms 도 빈 배열로 온다.
+ */
+export const PSSTORE_NON_DLC_CLASSIFICATIONS = new Set(["VIRTUAL_CURRENCY"]);
+
+/**
+ * 상품 id 인가 콘셉트 id 인가. 콘셉트는 숫자뿐("10006270")이고 상품은 지역, 배급사 접두사로 시작한다
+ * ("HP0700-PPSA10593_00-TK8S3CHARASTPASS", "UP3509-...", "EP4497-..."). DLC 는 상품으로만 존재해서
+ * fetch 가 이 둘을 갈라야 한다.
+ */
+export const PSSTORE_PRODUCT_ID = /^[A-Z]{2}\d{4}-/;
 
 /** 콘셉트 하나가 PS4, PS5 판을 다 갖는 경우가 많아 상품 id 로 가른다. PPSA = PS5, CUSA = PS4 세대 타이틀 id */
 export const PSSTORE_PS5_TITLE_ID = /-PPSA\d/;

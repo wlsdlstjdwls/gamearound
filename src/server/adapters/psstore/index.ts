@@ -12,19 +12,23 @@ import { sleep } from "@/lib/async";
 import { errorMessage } from "@/lib/errors";
 import {
   PSSTORE_ALL_GAMES_CATEGORY,
+  PSSTORE_CONCEPT_URL,
   PSSTORE_COUNTRY,
   PSSTORE_DISCOVERY_MAX_PAGES,
   PSSTORE_GRAPHQL_URL,
   PSSTORE_HEADERS,
   PSSTORE_LANGUAGE,
   PSSTORE_PAGE_SIZE,
+  PSSTORE_PRODUCT_ID,
   PSSTORE_QUERY_HASHES,
   PSSTORE_SEARCH_LOOKUP_MAX,
 } from "./constants";
-import { parsePsstoreConcept, parsePsstoreGrid, parsePsstoreProduct, parsePsstoreSearch } from "./parse";
+import { parsePsstoreConcept, parsePsstoreDlc, parsePsstoreGrid, parsePsstoreProduct, parsePsstoreSearch } from "./parse";
+import { parsePsstoreAddOnIds } from "./add-ons";
 
 export * from "./constants";
 export * from "./parse";
+export * from "./add-ons";
 
 const http = createHttpClient({ source: "psstore", label: "PlayStation", headers: PSSTORE_HEADERS });
 
@@ -74,10 +78,29 @@ export const psstoreAdapter: StoreAdapter = {
     return out;
   },
 
-  async fetch(conceptId: string): Promise<StoreSnapshot> {
-    if (!/^\d+$/.test(conceptId)) throw new AdapterError(`PlayStation 콘셉트 ID 형식 오류: ${conceptId}`, "psstore", false);
-    const raw = await op("conceptRetrieveForCtasWithPrice", { conceptId }, PSSTORE_QUERY_HASHES.conceptDetail, conceptId);
-    return parsePsstoreConcept(raw, conceptId);
+  /**
+   * 본편은 콘셉트, DLC 는 상품이다 — 키 모양으로 가른다.
+   * 콘셉트 id 는 숫자뿐이고(10006270), 상품 id 는 "HP0700-PPSA10593_00-TK8S3CHARASTPASS" 꼴이다.
+   * DLC 는 콘셉트를 갖지 않아서 여기서 갈라 주지 않으면 애드온 목록이 준 id 를 되물을 길이 없다.
+   */
+  async fetch(externalId: string): Promise<StoreSnapshot> {
+    if (PSSTORE_PRODUCT_ID.test(externalId)) {
+      const raw = await op("productRetrieveForCtasWithPrice", { productId: externalId }, PSSTORE_QUERY_HASHES.productDetail, externalId);
+      return parsePsstoreDlc(raw, externalId);
+    }
+    if (!/^\d+$/.test(externalId)) throw new AdapterError(`PlayStation 외부 ID 형식 오류: ${externalId}`, "psstore", false);
+    const raw = await op("conceptRetrieveForCtasWithPrice", { conceptId: externalId }, PSSTORE_QUERY_HASHES.conceptDetail, externalId);
+    return parsePsstoreConcept(raw, externalId);
+  },
+
+  /**
+   * 추가 콘텐츠 목록. GraphQL 질의는 화이트리스트에 막혀 있지만 콘셉트 페이지 HTML 이
+   * 애드온을 이미 서버 렌더링해서 준다(constants 의 "추가 콘텐츠(DLC) 목록" 주석).
+   * 한 건에 0.6~1.2MB 짜리 응답이라 비싸다 — 호출 빈도와 건수는 sync/dlc-list 가 막아 준다.
+   */
+  async listDlcIds(conceptId: string): Promise<string[]> {
+    const html = await http.text(`${PSSTORE_CONCEPT_URL}/${conceptId}`, { context: `dlc:${conceptId}` });
+    return parsePsstoreAddOnIds(html);
   },
 
   /** 전체 게임 카테고리를 페이지 단위로 흘려보낸다. 아는 것을 걸러내고 멈출 시점은 호출부가 정한다 */

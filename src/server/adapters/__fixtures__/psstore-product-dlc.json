@@ -1,0 +1,89 @@
+{
+  "data": {
+    "productRetrieve": {
+      "__typename": "Product",
+      "concept": {
+        "__typename": "Concept",
+        "id": "10006270"
+      },
+      "id": "HP0700-PPSA10593_00-TK8S3CHARASTPASS",
+      "invariantName": "TEKKEN 8 - Season 3 Pass",
+      "isInWishlist": false,
+      "isWishlistable": true,
+      "name": "철권 8 시즌 3 패스 (한국어판)",
+      "npTitleId": "PPSA10593_00",
+      "skus": [
+        {
+          "__typename": "Sku",
+          "id": "HP0700-PPSA10593_00-TK8S3CHARASTPASS-K001",
+          "name": "한국어판"
+        }
+      ],
+      "webctas": [
+        {
+          "__typename": "GameCTA",
+          "action": {
+            "__typename": "Action",
+            "param": [
+              {
+                "__typename": "ActionParam",
+                "name": "skuId",
+                "value": "HP0700-PPSA10593_00-TK8S3CHARASTPASS-K001"
+              },
+              {
+                "__typename": "ActionParam",
+                "name": "rewardId",
+                "value": "OUTRIGHT"
+              }
+            ],
+            "type": "ADD_TO_CART"
+          },
+          "hasLinkedConsole": false,
+          "meta": {
+            "__typename": "CTAMeta",
+            "exclusive": false,
+            "ineligibilityReasons": [
+              {
+                "__typename": "IneligibilityReason",
+                "names": [],
+                "type": "UNKNOWN"
+              }
+            ],
+            "playabilityDate": null,
+            "upSellService": "NONE"
+          },
+          "type": "ADD_TO_CART",
+          "price": {
+            "__typename": "Price",
+            "applicability": "APPLICABLE",
+            "basePrice": "33,800원",
+            "basePriceValue": 33800,
+            "campaignId": null,
+            "currencyCode": "KRW",
+            "discountedPrice": "33,800원",
+            "discountedValue": 33800,
+            "displayDiscountText": null,
+            "displayUpsellText": null,
+            "endTime": null,
+            "history": null,
+            "isExclusive": false,
+            "isFree": false,
+            "isTiedToSubscription": false,
+            "membershipType": null,
+            "qualifications": [],
+            "rewardId": "",
+            "savingTag": "",
+            "serviceBranding": [
+              "NONE"
+            ],
+            "telemetryData": {
+              "experimentData": [],
+              "experimentNotShownData": []
+            },
+            "tierLabel": null
+          }
+        }
+      ]
+    }
+  }
+}
