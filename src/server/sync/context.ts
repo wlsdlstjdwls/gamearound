@@ -18,6 +18,12 @@ export interface RunOptions {
    * 실행 시간이 짧은 자리(Vercel 함수 300초)에서만 줄여 쓴다 — 요청 간격 × 이 값이 곧 시간이다.
    */
   pageBudget?: number;
+  /**
+   * 신규 시드가 배치에서 가져갈 몫의 비율. 비우면 SEED_SHARE_MAX(절반).
+   * 1 을 주면 배치 전부를 시드가 쓴다 — 가격 갱신을 다른 실행이 따로 맡는 자리
+   * (크론 discover 모드)에서만 그렇게 한다.
+   */
+  seedShare?: number;
 }
 
 export interface RunResult {

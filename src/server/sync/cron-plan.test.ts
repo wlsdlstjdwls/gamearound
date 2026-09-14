@@ -33,10 +33,19 @@ describe("CRON_PLAN", () => {
     }
   });
 
-  it("discover 모드의 신규 몫은 배치의 절반을 넘지 않는다 — 나머지 절반은 기존 갱신 몫이다", () => {
+  // 시간을 정하는 것은 limit 이다. seedTop 은 그 안에서 신규와 기존 갱신의 배분만 바꾸므로
+  // limit 을 넘지만 않으면 시간 예산과 무관하다.
+  it("discover 모드의 신규 몫은 배치를 넘지 않는다", () => {
     for (const source of CRON_SOURCES) {
       const { seedTop, limit } = CRON_PLAN[source].discover;
-      expect(seedTop).toBeLessThanOrEqual(limit / 2);
+      expect(seedTop).toBeGreaterThan(0);
+      expect(seedTop).toBeLessThanOrEqual(limit);
+    }
+  });
+
+  it("discover 모드는 시드 몫 제한을 푼다 — 기존 갱신은 prices 모드가 따로 맡는다", () => {
+    for (const source of CRON_SOURCES) {
+      expect(CRON_PLAN[source].discover.seedShare).toBe(1);
     }
   });
 });

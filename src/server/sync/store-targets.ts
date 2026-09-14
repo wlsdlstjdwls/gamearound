@@ -23,7 +23,18 @@ export interface StoreTarget {
   portraitUrl?: string | null;
 }
 
-export async function listStoreTargets(ctx: Ctx, source: StoreSource, limit: number, seedTop?: number, pageBudget?: number): Promise<StoreTarget[]> {
+/** 대상 선정 몫. 인자가 넷이라 이름을 붙여 호출부에서 순서를 외우지 않게 한다 */
+export interface StoreTargetOptions {
+  /** 이번 실행의 총 처리 건수 상한 */
+  limit: number;
+  seedTop?: number;
+  pageBudget?: number;
+  /** 시드가 가져갈 몫의 비율. 비우면 SEED_SHARE_MAX */
+  seedShare?: number;
+}
+
+export async function listStoreTargets(ctx: Ctx, source: StoreSource, opts: StoreTargetOptions): Promise<StoreTarget[]> {
+  const { limit, seedTop, pageBudget } = opts;
   const { db } = ctx;
   const platforms = SOURCE_PLATFORMS[source];
   const rows = await db
@@ -48,7 +59,9 @@ export async function listStoreTargets(ctx: Ctx, source: StoreSource, limit: num
   // 기존 게임 가격 갱신은 계속돼야 한다.
   // 시드가 가져갈 몫을 배치의 일부로 제한하는 이유: 시드는 아래에서 대상 목록 앞에 붙는다.
   // 상한이 없으면 신규가 많은 날 시드가 배치를 통째로 먹고 기존 게임 가격이 한 번도 안 갱신된다.
-  const seedWant = Math.min(seedTop ?? 0, Math.floor(limit * SEED_SHARE_MAX));
+  // 가격 갱신을 다른 실행이 따로 맡는 자리(크론 discover 모드)는 seedShare 로 이 제한을 푼다 —
+  // 거기서 절반을 기존 갱신에 묶어 두면 그 절반이 prices 모드가 이미 하는 일과 겹친다.
+  const seedWant = Math.min(seedTop ?? 0, Math.floor(limit * (opts.seedShare ?? SEED_SHARE_MAX)));
   if (seedWant > 0) {
     try {
       // 한 건씩 unshift 하면 발견 순서가 뒤집힌다 — 카탈로그 꼬리(인기 없는 것, 미출시)가 맨 앞에 오고

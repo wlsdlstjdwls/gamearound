@@ -48,7 +48,12 @@ export async function GET(req: NextRequest, ctx: { params: Promise<{ source: str
   const plan = CRON_PLAN[source][mode];
   const startedAt = Date.now();
   const matched = plan.match > 0 && isSearchableSource(source) ? await matchUnmatchedGames(source, plan.match) : null;
-  const result = await runSource(source, { limit: plan.limit, seedTop: plan.seedTop, pageBudget: plan.pageBudget });
+  const result = await runSource(source, {
+    limit: plan.limit,
+    seedTop: plan.seedTop,
+    pageBudget: plan.pageBudget,
+    seedShare: plan.seedShare,
+  });
 
   // durationMs 는 다음에 CRON_PLAN 의 몫을 조정할 때 쓰는 근거다 — 추측 대신 이 값을 본다
   return NextResponse.json(
