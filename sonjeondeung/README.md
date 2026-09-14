@@ -70,7 +70,7 @@ pnpm dev
 | 플랫폼 세분화 | PS4/PS5, Switch/Switch2 분리 |
 | 멀티플레이 출처 | Steam 카테고리 태그 + 관리자 정정 |
 | 정정 잠금 | 관리자가 해제할 때까지 영구 잠금 |
-| 크롤 주기 (설계서 §4.3 이탈) | prices 8h·news 3h·meta 격일. 설계서는 prices 4h·news 1h이나 private 레포 Actions 무료 2,000분/월을 2배 초과(≈3,900분)해 완화. 레포 public 전환 시 무제한이므로 설계서 값으로 복구 |
+| 크롤 주기 (설계서 §4.3 이탈) | prices 하루 3회(KST 02:10/10:10/18:10)·news 6h·meta 격일 ≈ 월 1,470분. 설계서는 prices 4h·news 1h(≈3,900분)이나 private 레포 Actions 무료 2,000분을 초과한다. 뉴스·가격 모두 시간 단위 변동이 거의 없어 주기를 늘리는 대신, prices 실행 시각을 **Steam 할인 전환 시각(KST 02:00) 직후**로 고정해 할인 감지 지연을 8시간 → 10분으로 줄였다. public 전환(Actions 무제한)은 현재 불필요 |
 | 미매칭(`matched_by="none"`) 재시도 | `game_source_refs.checked_at` 기준 `NONE_RETRY_DAYS`(14일) 경과 행만 재검색 |
 | HLTB 검색 UA (설계서 §10 이탈) | HLTB `/api/search/site/init` 이 봇 UA 에 403 을 주므로 **검색 경로에서만** 브라우저 UA(`HLTB_SEARCH_USER_AGENT`)를 쓴다. 게임 페이지 조회는 `CRAWLER_USER_AGENT` 유지. init 토큰에 UA 가 포함돼 init/search UA 가 같아야 함 |
 | 할인 기간·행사명 | 스토어가 주는 만큼만 저장한다. Steam=`IStoreBrowseService/GetItems` 의 `active_discounts`(종료 시각 + `#discount_desc_*` 토큰 → 한국어 라벨, 모르는 토큰은 표시 안 함), Xbox=`Availability.Conditions` 시작·종료(상시 판매 센티널 9998년은 버림). PS Store·Nintendo 는 미지원 |

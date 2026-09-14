@@ -4,8 +4,9 @@ name: crawl-news
 
 on:
   schedule:
-    # 주기 3h: 실행 1회 ~2분 × 8회/일 ≈ 월 480분. private 레포 Actions 무료 2,000분 한도 대응(public 전환 시 1h로 복구 가능).
-    - cron: "0 */3 * * *"
+    # 주기 6h: 실행 1회 ~2분 × 4회/일 ≈ 월 240분.
+    # RSS 12개 소스에 한 시간 단위로 새 글이 쌓이지 않아 3h → 6h 로 완화(설계서 §4.3 의 1h 이탈, 사유는 README 가정표).
+    - cron: "0 */6 * * *"
   workflow_dispatch:
     inputs:
       limit:
