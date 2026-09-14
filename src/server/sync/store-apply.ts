@@ -224,6 +224,21 @@ async function updateExistingPlatforms(
 }
 
 /**
+ * 발견 목록에서만 오는 이미지를 스냅샷에 얹는다.
+ * PlayStation 은 콘셉트 상세에 이미지가 없어(질의가 화이트리스트라 필드를 늘릴 수도 없다)
+ * 이 단계에서 얹지 않으면 PS 단독 게임은 커버가 영영 빈다.
+ * 상세가 준 값이 있으면 그쪽이 이긴다 — 발견 목록은 대체재일 뿐이다.
+ */
+export function withDiscoveredMedia(snapshot: StoreSnapshot, target: StoreTarget): StoreSnapshot {
+  const meta = snapshot.meta;
+  if (!meta) return snapshot;
+  const coverUrl = meta.coverUrl ?? target.coverUrl ?? null;
+  const portraitUrl = meta.portraitUrl ?? target.portraitUrl ?? null;
+  if (coverUrl === (meta.coverUrl ?? null) && portraitUrl === (meta.portraitUrl ?? null)) return snapshot;
+  return { ...snapshot, meta: { ...meta, coverUrl, portraitUrl } };
+}
+
+/**
  * 반영 단계 전체.
  * 신규 게임 생성은 slug 중복 확인이 필요해 건별로 남겨 뒀다 — 시드가 없는 날에는 0건이다.
  */
@@ -234,7 +249,7 @@ export async function applyStore(ctx: Ctx, source: StoreSource, fetched: Fetched
   for (const { target, snapshot } of fetched) {
     if (target.gameId && target.slug) continue;
     try {
-      const created = await createGameFromSnapshot(ctx, snapshot, { contentType: snapshot.contentType ?? "game" });
+      const created = await createGameFromSnapshot(ctx, withDiscoveredMedia(snapshot, target), { contentType: snapshot.contentType ?? "game" });
       ctx.changedSlugs.add(created.slug);
       applied.push({ gameId: created.id, slug: created.slug, snapshot });
     } catch (e) {

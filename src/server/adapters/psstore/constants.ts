@@ -53,3 +53,23 @@ export const PSSTORE_PS4_TITLE_ID = /-CUSA\d/;
  * 게임 제목이 아니라 상품 표기라 titleKo 에서 걷어낸다.
  */
 export const PSSTORE_LANGUAGE_SUFFIX = /\s*\((?:[^()]|\([^()]*\))*(?:어|판)(?:[^()]|\([^()]*\))*\)\s*$/;
+
+/**
+ * 콘셉트 상세(conceptRetrieveForCtasWithPrice)에는 이미지가 없다 — 목록 응답의 media 배열에만 있다(2026-09-14 실측).
+ * 그래서 발견 단계에서 커버를 들고 내려간다. 질의가 화이트리스트라 선택 필드를 늘릴 수도 없다.
+ *
+ * 역할별 실측(한 페이지 24건 기준):
+ *   MASTER 1024×1024(1:1, 24/24) | GAMEHUB_COVER_ART 3840×2160(16:9, 24/24)
+ *   PORTRAIT_BANNER 1440×2160(2:3, 19/24) | SIXTEEN_BY_NINE_BANNER, FOUR_BY_THREE_BANNER 14~22/24
+ * 카드용 가로 배너로는 항상 있는 GAMEHUB_COVER_ART 를, 세로 아트로는 PORTRAIT_BANNER 를 쓴다.
+ */
+export const PSSTORE_COVER_ROLE = "GAMEHUB_COVER_ART";
+export const PSSTORE_PORTRAIT_ROLE = "PORTRAIT_BANNER";
+
+/**
+ * 이미지 CDN 은 w 를 그대로 쓰지 않고 사전 크기로 올림한다(2026-09-14 실측).
+ * w=640 → 764×430(71KB)이 카드(460×215)의 2배 해상도에 가장 가깝다. 원본은 800KB 라 그대로 쓰면 안 된다.
+ * w=600 → 세로 아트가 660×990 언저리로 온다(상세 헤더 600×900 기준).
+ */
+export const PSSTORE_COVER_WIDTH = 640;
+export const PSSTORE_PORTRAIT_WIDTH = 600;

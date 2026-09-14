@@ -21,6 +21,32 @@
               "__typename": "Product",
               "id": "EP1004-PPSA01547_00-GTAVISTANDARD001"
             }
+          ],
+          "media": [
+            {
+              "__typename": "Media",
+              "role": "PREVIEW",
+              "type": "VIDEO",
+              "url": "https://vulcan.dl.playstation.net/img/rnd/202606/2410/fc4311ec.mp4"
+            },
+            {
+              "__typename": "Media",
+              "role": "GAMEHUB_COVER_ART",
+              "type": "IMAGE",
+              "url": "https://image.api.playstation.com/vulcan/ap/rnd/202606/1818/1c8e3e304f0bad2d99ffed828ad460ebe5949608cb82a5dd.png"
+            },
+            {
+              "__typename": "Media",
+              "role": "PORTRAIT_BANNER",
+              "type": "IMAGE",
+              "url": "https://image.api.playstation.com/vulcan/ap/rnd/202606/1818/2ebe6fa868c682fcd3d7c5bc866bc95697c02aa4c8f16dc2.jpg"
+            },
+            {
+              "__typename": "Media",
+              "role": "LOGO",
+              "type": "IMAGE",
+              "url": "https://image.api.playstation.com/vulcan/ap/rnd/202606/1818/939d117f7c92cfdd07f93a1474b0eb0c196b32514007a4d6.png"
+            }
           ]
         },
         {
@@ -48,6 +74,14 @@
             {
               "__typename": "Product",
               "id": "UP0102-PPSA27836_00-DEMO000000000002"
+            }
+          ],
+          "media": [
+            {
+              "__typename": "Media",
+              "role": "GAMEHUB_COVER_ART",
+              "type": "IMAGE",
+              "url": "https://image.api.playstation.com/vulcan/ap/rnd/202606/1818/aaaabbbbccccdddd.png"
             }
           ]
         },

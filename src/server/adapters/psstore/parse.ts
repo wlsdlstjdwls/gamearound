@@ -5,18 +5,25 @@ import { AdapterError, type SearchCandidate, type StoreSnapshot } from "../types
 import type { Platform } from "@/server/db/schema";
 import {
   PSSTORE_CONCEPT_URL,
+  PSSTORE_COVER_ROLE,
+  PSSTORE_COVER_WIDTH,
   PSSTORE_LANGUAGE_SUFFIX,
+  PSSTORE_PORTRAIT_ROLE,
+  PSSTORE_PORTRAIT_WIDTH,
   PSSTORE_PS4_TITLE_ID,
   PSSTORE_PS5_TITLE_ID,
 } from "./constants";
 
 const productRefSchema = z.object({ id: z.string() });
 
+/** 역할별 대표 이미지. 영상(type="VIDEO")도 같은 배열에 섞여 온다 */
+const mediaSchema = z.object({ role: z.string().nullish(), type: z.string().nullish(), url: z.string().nullish() });
+
 const gridSchema = z.object({
   data: z.object({
     categoryGridRetrieve: z.object({
       concepts: z
-        .array(z.object({ id: z.string(), name: z.string().nullish() }))
+        .array(z.object({ id: z.string(), name: z.string().nullish(), media: z.array(mediaSchema).nullish() }))
         .nullish(),
     }),
   }),
@@ -83,6 +90,16 @@ export function psstoreCleanTitle(name: string | null | undefined): string | nul
   return cleaned || null;
 }
 
+type Media = z.infer<typeof mediaSchema>;
+
+/** 역할 하나를 골라 폭을 지정한 주소로 돌려준다. 원본은 3840×2160(800KB)이라 그대로 쓰지 않는다 */
+export function psstoreImageUrl(media: Media[] | null | undefined, role: string, width: number): string | null {
+  const hit = (media ?? []).find((m) => m.type === "IMAGE" && m.role === role && m.url);
+  if (!hit?.url) return null;
+  // 주소에 이미 질의가 붙어 오는 경우는 없었지만, 붙어 와도 우리 폭이 이기게 둔다
+  return `${hit.url.split("?")[0]}?w=${width}`;
+}
+
 /** 목록 응답 → 후보. 콘셉트(게임) 단위라 에디션 중복이 없다 */
 export function parsePsstoreGrid(raw: unknown): SearchCandidate[] {
   const parsed = gridSchema.safeParse(raw);
@@ -95,7 +112,14 @@ export function parsePsstoreGrid(raw: unknown): SearchCandidate[] {
     // 제목이 없으면 흡수 판단(제목 역매칭)을 못 한다 — 중복 등록을 만드느니 건너뛴다
     if (!title || seen.has(c.id)) continue;
     seen.add(c.id);
-    out.push({ externalId: c.id, title, url: `${PSSTORE_CONCEPT_URL}/${c.id}` });
+    out.push({
+      externalId: c.id,
+      title,
+      url: `${PSSTORE_CONCEPT_URL}/${c.id}`,
+      // 상세에는 이미지가 없다 — 여기서 안 들고 가면 PS 단독 게임은 커버가 영영 빈다
+      coverUrl: psstoreImageUrl(c.media, PSSTORE_COVER_ROLE, PSSTORE_COVER_WIDTH),
+      portraitUrl: psstoreImageUrl(c.media, PSSTORE_PORTRAIT_ROLE, PSSTORE_PORTRAIT_WIDTH),
+    });
   }
   return out;
 }
@@ -149,7 +173,7 @@ export function parsePsstoreConcept(raw: unknown, conceptId: string): StoreSnaps
     // 종료 시각은 할인 중일 때만 의미가 있다 — 상시 판매 구간의 값을 "할인 종료"로 오해하지 않게
     discountEndsAt: discountPct > 0 ? psstoreEpochToIso(price?.endTime) : null,
     releaseDate: concept.releaseDate?.value ? concept.releaseDate.value.slice(0, 10) : null,
-    // 이미지는 콘셉트 상세에 없다(목록 응답에만 있고, 후보는 이미지를 나르지 않는다) — 커버는 다른 소스에서 채워진다
+    // 이미지는 콘셉트 상세에 없다 — 발견 단계(parsePsstoreGrid)가 들고 온 값을 반영 단계에서 얹는다
     meta: titleEn ? { titleEn, titleKo: titleKo && titleKo !== titleEn ? titleKo : null } : undefined,
   };
 }

@@ -6,6 +6,7 @@ import { AdapterError } from "./types";
 import {
   parsePsstoreConcept,
   parsePsstoreGrid,
+  psstoreImageUrl,
   parsePsstoreProduct,
   parsePsstoreSearch,
   psstoreCleanTitle,
@@ -25,8 +26,35 @@ describe("parsePsstoreGrid", () => {
     expect(list[0].url).toBe("https://store.playstation.com/ko-kr/concept/10000730");
   });
 
+  // 커버는 목록에만 있고 콘셉트 상세에는 없다 — 여기서 안 들고 가면 PS 단독 게임은 커버가 빈다
+  it("커버, 세로 아트를 폭 지정 주소로 들고 온다", () => {
+    const list = parsePsstoreGrid(fixture("psstore-grid.json"));
+    expect(list[0].coverUrl).toBe(
+      "https://image.api.playstation.com/vulcan/ap/rnd/202606/1818/1c8e3e304f0bad2d99ffed828ad460ebe5949608cb82a5dd.png?w=640",
+    );
+    expect(list[0].portraitUrl).toBe(
+      "https://image.api.playstation.com/vulcan/ap/rnd/202606/1818/2ebe6fa868c682fcd3d7c5bc866bc95697c02aa4c8f16dc2.jpg?w=600",
+    );
+  });
+
+  it("세로 아트가 없는 게임(24건 중 5건꼴)은 null 이고 커버만 온다", () => {
+    const list = parsePsstoreGrid(fixture("psstore-grid.json"));
+    expect(list[1].coverUrl).toContain("?w=640");
+    expect(list[1].portraitUrl).toBeNull();
+  });
+
+  it("영상은 커버로 쓰지 않는다", () => {
+    const media = [{ role: "GAMEHUB_COVER_ART", type: "VIDEO", url: "https://x/a.mp4" }];
+    expect(psstoreImageUrl(media, "GAMEHUB_COVER_ART", 640)).toBeNull();
+  });
+
   it("제목이 없으면 건너뛴다", () => {
     expect(parsePsstoreGrid({ data: { categoryGridRetrieve: { concepts: [{ id: "1" }] } } })).toEqual([]);
+  });
+
+  it("이미지가 아예 없어도 후보는 만든다", () => {
+    const list = parsePsstoreGrid({ data: { categoryGridRetrieve: { concepts: [{ id: "9", name: "제목만" }] } } });
+    expect(list[0].coverUrl).toBeNull();
   });
 
   it("형식이 다르면 AdapterError", () => {

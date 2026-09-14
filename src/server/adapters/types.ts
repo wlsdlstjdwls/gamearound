@@ -109,6 +109,12 @@ export interface SearchCandidate {
   externalId: string;
   title: string;
   url: string;
+  /**
+   * 목록 응답에만 이미지가 있는 소스(psstore)를 위한 자리. 단건 조회로는 못 얻는 값이라
+   * 발견 단계에서 들고 내려간다 — 채우지 않는 소스는 undefined 다.
+   */
+  coverUrl?: string | null;
+  portraitUrl?: string | null;
 }
 
 export interface SourceAdapter<T extends StoreSnapshot | MetaSnapshot | NewsItem[]> {

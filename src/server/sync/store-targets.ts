@@ -15,6 +15,12 @@ export interface StoreTarget {
   gameId: string | null; // null = 신규 게임 생성 대상
   slug: string | null;
   externalId: string;
+  /**
+   * 발견 목록에서만 얻을 수 있는 이미지(psstore). 신규 게임을 만들 때만 쓰인다 —
+   * 기존 매핑으로 들어온 대상에는 없다(그 게임은 이미 커버가 있다).
+   */
+  coverUrl?: string | null;
+  portraitUrl?: string | null;
 }
 
 export async function listStoreTargets(ctx: Ctx, source: StoreSource, limit: number, seedTop?: number): Promise<StoreTarget[]> {
@@ -148,7 +154,7 @@ async function seedTargets(ctx: Ctx, source: StoreSource, seedWant: number): Pro
         continue;
       }
       if (key) newTitles.add(key);
-      out.push({ gameId: null, slug: null, externalId: c.externalId });
+      out.push({ gameId: null, slug: null, externalId: c.externalId, coverUrl: c.coverUrl, portraitUrl: c.portraitUrl });
       continue;
     }
     if (refOwned.has(hit.game.id)) {
