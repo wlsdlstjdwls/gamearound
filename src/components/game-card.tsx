@@ -4,6 +4,7 @@ import Link from "next/link";
 import { formatDate, formatDiscount, formatKrw, PLATFORM_LABEL } from "@/lib/format";
 import type { GameSummary } from "@/server/services/games";
 import { SaleBadge } from "@/components/sale-badge";
+import { FadeImage } from "@/components/ui/fade-image";
 import { cardClass } from "@/components/ui/page";
 import { Clamp } from "@/components/ui/tooltip";
 
@@ -35,17 +36,11 @@ export function CoverImage({
   if (!src) {
     return <div role="img" aria-label={`${alt} (커버 이미지 없음)`} className="h-full w-full bg-surface-3" />;
   }
-  return (
-    <Image
-      src={src}
-      alt={alt}
-      fill
-      sizes={sizes}
-      priority={priority}
-      unoptimized={!isOptimizable(src)}
-      className="object-cover"
-    />
-  );
+  // alt 을 spread 에 섞지 않는다 — jsx-a11y 가 정적으로 못 읽어 경고를 낸다
+  const props = { src, fill: true as const, sizes, unoptimized: !isOptimizable(src), className: "object-cover" };
+  // priority 커버(상세 헤더)는 페이드하지 않는다 — 감싼 영역이 이미 페이드하는데 안쪽 이미지가 한 박자 늦게 또 뜨면
+  // 같은 자리가 두 번 켜져 깜빡인다. LCP 요소를 opacity:0 으로 숨기는 비용도 없앤다.
+  return priority ? <Image {...props} alt={alt} priority /> : <FadeImage {...props} alt={alt} />;
 }
 
 export function GameCard({ game, variant = "discount" }: { game: GameSummary; variant?: "discount" | "release" }) {

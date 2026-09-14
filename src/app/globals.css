@@ -39,6 +39,9 @@
   --ease-out-emph: cubic-bezier(0.25, 1.02, 0.36, 1);
   --ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
   --stagger-step: 45ms;
+  /* 스켈레톤이 뜨기까지 기다리는 시간. 로컬 prod 기준 상세 RSC 응답이 12~37ms 라 곧바로 그리면
+     스켈레톤이 한두 프레임 번쩍이고 사라진다(= 깜빡임). 이 시간 안에 본문이 오면 아예 안 보인다 */
+  --skeleton-delay: 200ms;
 
   /* 라운드 — 리디자인 확정값 */
   --radius-xs: 6px; /* 배지, 태그 */
@@ -107,6 +110,13 @@
 @keyframes rise {
   from { opacity: 0; transform: translateY(12px); }
   to { opacity: 1; transform: none; }
+}
+/* 스켈레톤 → 본문 전환용. 0 에서 시작하지 않는 이유: 느린 응답으로 스켈레톤이 실제로 떠 있었다면
+   교체 순간 그 자리가 비어 깜빡인다. 0.4 는 "페이드가 눈에 보이되 자리가 비어 보이지는 않는" 선이다.
+   자리 이동은 넣지 않는다 — 스켈레톤과 본문은 같은 자리에 있다 */
+@keyframes settle {
+  from { opacity: 0.4; }
+  to { opacity: 1; }
 }
 @keyframes scale-in {
   from { opacity: 0; transform: scale(0.96) translateY(-4px); }
@@ -177,17 +187,26 @@ a {
   animation: rise var(--duration-slow) var(--ease-out-emph) both;
   animation-delay: var(--stagger, 0ms);
 }
-/* 페이지 진입 — 스켈레톤이 걷히고 본문이 한 번에 나타나면 깜빡임으로 보인다.
-   직계 섹션을 순서대로 살짝 띄워 페이드인시켜 전환을 이어 붙인다. */
-.page-enter > * {
-  animation: rise var(--duration-slow) var(--ease-out-emph) both;
+/* 페이지 진입 — 스켈레톤이 걷힌 자리에 본문이 녹아든다.
+   rise 를 쓰지 않는 이유: 스켈레톤과 본문은 같은 자리에 있는데 본문만 12px 아래에서 올라오면
+   회색 덩어리가 한 번 튀어 보인다. 여기서는 투명도만 바꾼다.
+   영역별 순번 지연(--stagger-base)을 두지 않는 이유: 대부분의 화면은 "빈 화면 → 본문" 이 아니라
+   "스켈레톤 → 본문" 이다. 아래쪽 영역이 순번을 기다리는 동안 그 자리가 스켈레톤보다 흐리게 남아
+   그게 깜빡임으로 보인다. 순번은 영역이 아니라 조각(.enter-item)이 직접 갖는다 — 상세 헤더처럼
+   큰 덩어리는 안쪽을 조각내야 한 번에 툭 던져지지 않는다. */
+.page-enter > *:not(:has(.enter-item)) {
+  animation: settle var(--duration-base) var(--ease-standard) both;
 }
-.page-enter > *:nth-child(1) { animation-delay: 0ms; }
-.page-enter > *:nth-child(2) { animation-delay: var(--stagger-step); }
-.page-enter > *:nth-child(3) { animation-delay: calc(var(--stagger-step) * 2); }
-.page-enter > *:nth-child(4) { animation-delay: calc(var(--stagger-step) * 3); }
-.page-enter > *:nth-child(5) { animation-delay: calc(var(--stagger-step) * 4); }
-.page-enter > *:nth-child(n + 6) { animation-delay: calc(var(--stagger-step) * 5); }
+/* 영역 안의 항목 — style={stagger(i)} 로 순번을 넘긴다.
+   .page-enter 아래로 한정한 이유: 스켈레톤 셸(enter={false})에서는 같은 마크업이라도 등장하지 않아야 한다 */
+.page-enter .enter-item {
+  animation: settle var(--duration-base) var(--ease-standard) both;
+  animation-delay: var(--stagger, 0ms);
+}
+/* 중첩하지 않는다 — 부모와 자식이 겹쳐 페이드하면 투명도가 곱해져 첫 프레임이 비어 보인다 */
+.page-enter .enter-item .enter-item {
+  animation: none;
+}
 
 /* 가로 막대 그래프: style={{ "--bar-w": "62%" }} (+ stagger(i)) 로 목표 폭 전달 */
 .bar-grow {
@@ -210,6 +229,22 @@ a {
     transform: translateY(-1.5px);
   }
 }
+/* 이미지 도착 — 회색 플레이스홀더 위로 녹아들게. 기본값이 "보임" 이라 JS 가 없어도 그냥 보인다.
+   아직 안 온 이미지에만 FadeImage 가 data-fade="in" 을 붙였다 뗀다 */
+.img-fade {
+  transition: opacity var(--duration-base) var(--ease-standard);
+}
+.img-fade[data-fade="in"] {
+  opacity: 0;
+}
+
+/* 스켈레톤 셸 — 응답이 빠르면 보이지 않아야 한다. 자리를 차지한 채 투명하게 기다리다
+   --skeleton-delay 를 넘겨 느릴 때만 떠오른다. both 라서 지연 동안 opacity 는 0 에 머문다 */
+.skeleton-delay {
+  animation: fade-in var(--duration-base) var(--ease-standard) both;
+  animation-delay: var(--skeleton-delay);
+}
+
 /* 스켈레톤 */
 .skeleton {
   background: var(--surface-2);

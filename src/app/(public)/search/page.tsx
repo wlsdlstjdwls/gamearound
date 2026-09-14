@@ -7,6 +7,7 @@ import { EmptyState } from "@/components/empty-state";
 import { Card, Page } from "@/components/ui/page";
 import { formatDate, formatDiscount, formatKrw, PLATFORM_LABEL } from "@/lib/format";
 import { nextCollectTimeText } from "@/lib/freshness";
+import { stagger } from "@/lib/motion";
 import { ROUTES } from "@/lib/routes";
 import { searchGames, type GameSummary } from "@/server/services/games";
 import { MAX_PARAM_LEN } from "@/lib/games-query";
@@ -132,12 +133,12 @@ export default async function SearchPage({ searchParams }: Props) {
         <>
           <Card>
             <ul className="divide-y divide-line-soft">
-              {results.map((g) => {
+              {results.map((g, i) => {
                 const title = g.titleKo ?? g.titleEn;
                 const best = g.best;
                 const hasDiscount = Boolean(best?.discountPct && best.discountPct > 0);
                 return (
-                  <li key={g.slug}>
+                  <li key={g.slug} className="enter-item" style={stagger(i)}>
                     <Link href={`/games/${g.slug}`} className="flex flex-wrap items-center gap-4 p-4 transition-colors duration-base hover:bg-surface-4">
                       <div className="relative h-14 w-24 shrink-0 overflow-hidden rounded-lg bg-surface-3">
                         <CoverImage src={g.coverUrl} alt={`${title} 커버`} sizes="96px" />

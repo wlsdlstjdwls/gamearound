@@ -22,12 +22,14 @@ export type PageProps = React.ComponentProps<"div"> & {
   pad?: PagePad;
   /** 섹션 간 간격(px). 홈 36 / 상세 28 / 서브 20 */
   gap?: number;
+  /** 등장 페이드. 스켈레톤(loading.tsx)은 false — 스켈레톤까지 페이드하면 본문 교체 때 같은 자리가 두 번 켜져 깜빡인다 */
+  enter?: boolean;
 };
 
-export function Page({ width = "default", pad = "sub", gap, className, style, children, ...rest }: PageProps) {
+export function Page({ width = "default", pad = "sub", gap, enter = true, className, style, children, ...rest }: PageProps) {
   return (
     <div
-      className={cn("page-enter mx-auto flex w-full flex-col px-7", WIDTH[width], PAD[pad], className)}
+      className={cn(enter && "page-enter", "mx-auto flex w-full flex-col px-7", WIDTH[width], PAD[pad], className)}
       style={gap === undefined ? style : { ...style, gap: `${gap}px` }}
       {...rest}
     >
@@ -52,10 +54,25 @@ export function Card({ className, children, ...rest }: React.ComponentProps<"div
   );
 }
 
-/** 섹션 제목 행 — h2 17px/700 + 우측 보조 문구/링크 */
-export function SectionHead({ id, title, note, action }: { id?: string; title: string; note?: string; action?: React.ReactNode }) {
+/** 섹션 제목 행 — h2 17px/700 + 우측 보조 문구/링크.
+ *  className, style 을 받는 이유: 목록이 항목별로 등장하는 영역에서는 제목도 등장 순번(.enter-item + stagger)을 가져야 한다 */
+export function SectionHead({
+  id,
+  title,
+  note,
+  action,
+  className,
+  style,
+}: {
+  id?: string;
+  title: string;
+  note?: string;
+  action?: React.ReactNode;
+  className?: string;
+  style?: React.CSSProperties;
+}) {
   return (
-    <div className="flex flex-wrap items-baseline justify-between gap-x-3 gap-y-1">
+    <div className={cn("flex flex-wrap items-baseline justify-between gap-x-3 gap-y-1", className)} style={style}>
       <div className="flex flex-wrap items-baseline gap-x-2.5 gap-y-1">
         <h2 id={id} className="text-[17px] font-bold tracking-[-0.02em] text-ink">
           {title}

@@ -7,6 +7,7 @@ import { Card, Page } from "@/components/ui/page";
 import { Clamp } from "@/components/ui/tooltip";
 import { PLATFORM_LABEL } from "@/lib/format";
 import { ALERT_RULE_TEXT, COLLECT_SCHEDULE_TEXT } from "@/lib/freshness";
+import { stagger } from "@/lib/motion";
 import { ROUTES } from "@/lib/routes";
 import { findGameBySlug, listAlerts } from "@/server/services/alerts";
 
@@ -54,8 +55,12 @@ export default async function AlertsPage({ searchParams }: { searchParams: Promi
       ) : (
         <Card className="overflow-hidden">
           <ul className="divide-y divide-line-soft">
-            {alerts.map((a) => (
-              <li key={a.id} className={`flex flex-wrap items-center gap-x-4 gap-y-2 px-4 py-[15px] ${a.isActive ? "" : "opacity-55"}`}>
+            {alerts.map((a, i) => (
+              <li
+                key={a.id}
+                className={`enter-item flex flex-wrap items-center gap-x-4 gap-y-2 px-4 py-[15px] ${a.isActive ? "" : "opacity-55"}`}
+                style={stagger(i)}
+              >
                 <div className="min-w-0 flex-1">
                   <Link href={`/games/${a.game.slug}`} className="block text-[13.5px] font-semibold text-ink hover:text-acc">
                     <Clamp>{a.game.titleKo ?? a.game.titleEn}</Clamp>

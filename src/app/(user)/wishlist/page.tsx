@@ -1,14 +1,15 @@
 // /wishlist — 찜한 게임 목록 (§5.1 dynamic, 캐시 안 함)
 // 리디자인: 기본 정렬은 "할인 중 먼저" — 찜 목록의 용건은 "지금 사도 되는가"다.
 import type { Metadata } from "next";
-import Image from "next/image";
 import Link from "next/link";
 import { EmptyState } from "@/components/empty-state";
 import { WishlistRemoveButton } from "@/components/wishlist-button";
+import { FadeImage } from "@/components/ui/fade-image";
 import { Page } from "@/components/ui/page";
 import { Clamp } from "@/components/ui/tooltip";
 import { formatDiscount, formatKrw, PLATFORM_LABEL } from "@/lib/format";
 import { collectedAtText, getFreshness } from "@/lib/freshness";
+import { stagger } from "@/lib/motion";
 import { ROUTES } from "@/lib/routes";
 import { ChipLink } from "@/components/ui/chip";
 import { listWishlist, type WishlistItem } from "@/server/services/wishlist";
@@ -74,17 +75,17 @@ export default async function WishlistPage({ searchParams }: Props) {
         />
       ) : (
         <ul className="grid grid-cols-[repeat(auto-fit,minmax(330px,1fr))] gap-4">
-          {sorted.map(({ game }) => {
+          {sorted.map(({ game }, i) => {
             const priced = game.platforms.filter((p) => p.currentPrice !== null);
             const lowest = priced.length > 0 ? Math.min(...priced.map((p) => p.currentPrice as number)) : null;
             const title = game.titleKo ?? game.titleEn;
             const stalest = game.platforms.find((p) => getFreshness(p.lastSyncedAt, p.syncStatus) !== "fresh");
 
             return (
-              <li key={game.id} className={cardClass("flex gap-3.5 p-4")}>
+              <li key={game.id} className={cardClass("enter-item flex gap-3.5 p-4")} style={stagger(i)}>
                 <Link href={`/games/${game.slug}`} className="shrink-0">
                   {game.coverUrl ? (
-                    <Image
+                    <FadeImage
                       src={game.coverUrl}
                       alt={title}
                       width={104}

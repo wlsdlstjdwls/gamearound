@@ -1,10 +1,10 @@
 "use client";
 // 가격 알림 폼/컨트롤 (클라이언트). Server Action은 src/app/(user)/alerts/actions.ts
 // 리디자인: 플랫폼은 select 대신 칩 버튼, 최소 할인율은 숫자 입력 대신 슬라이더.
-import Image from "next/image";
 import { useActionState, useState, useTransition } from "react";
 import { useFormStatus } from "react-dom";
 import { createAlertAction, deleteAlertAction, toggleAlertAction, type ActionState } from "@/app/(user)/alerts/actions";
+import { FadeImage } from "@/components/ui/fade-image";
 import { PLATFORM_LABEL } from "@/lib/format";
 import { Button } from "@/components/ui/button";
 import { ChipButton } from "@/components/ui/chip";
@@ -52,7 +52,7 @@ export function AlertForm({ game }: { game: FormGame }) {
 
       <div className="flex items-center gap-3">
         {game.coverUrl ? (
-          <Image src={game.coverUrl} alt="" width={72} height={42} unoptimized className="h-[42px] w-[72px] rounded-[7px] object-cover" />
+          <FadeImage src={game.coverUrl} alt="" width={72} height={42} unoptimized className="h-[42px] w-[72px] rounded-[7px] object-cover" />
         ) : (
           <div aria-hidden className="h-[42px] w-[72px] rounded-[7px] bg-surface-3" />
         )}
