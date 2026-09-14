@@ -20,7 +20,8 @@ import { recordError, type Ctx } from "./context";
 import { companyNamesOf, findCompaniesByAliases } from "./company-writer";
 import { createGameFromSnapshot, planGameMeta, type GameRow } from "./game-writer";
 import { planPlatform, type PlatformPlan, type PlatformRow } from "./platform-writer";
-import type { StoreTarget } from "./store-targets";
+import { gamesWithRef, ignoreDiscovery, loadGameTitles, type StoreTarget } from "./store-targets";
+import { findGameByTitle } from "./match";
 
 /** 수집 결과 1건 — 대상과 그 대상에서 받아온 스냅샷 */
 export interface Fetched {
@@ -245,10 +246,47 @@ export function withDiscoveredMedia(snapshot: StoreSnapshot, target: StoreTarget
 export async function applyStore(ctx: Ctx, source: StoreSource, fetched: Fetched[]): Promise<Applied[]> {
   const applied: Applied[] = [];
 
-  // 1. 신규 게임 — 건별 생성(§ slug 유일성). 실패는 그 건만 버린다
-  for (const { target, snapshot } of fetched) {
-    if (target.gameId && target.slug) continue;
+  // 1. 신규 게임 — 건별 생성(§ slug 유일성). 실패는 그 건만 버린다.
+  //
+  // 만들기 전에 흡수 판단을 한 번 더 한다. 발견 단계는 목록 제목으로만 판단하는데
+  // PlayStation, 닌텐도 목록은 한국어 제목을 준다("사이버펑크 2077"). 우리 게임에 title_ko 가 없으면
+  // 같은 게임인데도 유사도가 안 나와 중복이 생긴다(2026-09-14 실측: Cyberpunk 2077 이 두 벌).
+  // 상세 응답은 영문명을 주므로 여기서는 붙는다.
+  const newTargets = fetched.filter(({ target }) => !(target.gameId && target.slug));
+  const titles = newTargets.length > 0 ? await loadGameTitles(ctx.db) : [];
+  const refOwned = newTargets.length > 0 ? await gamesWithRef(ctx.db, source) : new Set<string>();
+
+  for (const { target, snapshot } of newTargets) {
     try {
+      const titleEn = snapshot.meta?.titleEn;
+      const hit = titleEn ? findGameByTitle(titleEn, titles) : null;
+      if (hit && refOwned.has(hit.game.id)) {
+        // 그 게임에는 이 소스 가격이 이미 있다 — 여기서 덮으면 본편 가격이 에디션 가격으로 바뀐다
+        await ignoreDiscovery(ctx.db, source, {
+          externalId: target.externalId,
+          gameId: hit.game.id,
+          reason: `${hit.game.slug} 의 다른 SKU (상세 제목으로 확인)`,
+          now: ctx.now,
+        });
+        continue;
+      }
+      if (hit) {
+        await ctx.db
+          .insert(gameSourceRefs)
+          .values({
+            gameId: hit.game.id,
+            source,
+            externalId: target.externalId,
+            url: snapshot.storeUrl,
+            matchedBy: "auto",
+            confidence: hit.similarity.toFixed(2),
+            checkedAt: ctx.now,
+          })
+          .onConflictDoNothing();
+        refOwned.add(hit.game.id);
+        applied.push({ gameId: hit.game.id, slug: hit.game.slug, snapshot });
+        continue;
+      }
       const created = await createGameFromSnapshot(ctx, withDiscoveredMedia(snapshot, target), { contentType: snapshot.contentType ?? "game" });
       ctx.changedSlugs.add(created.slug);
       applied.push({ gameId: created.id, slug: created.slug, snapshot });

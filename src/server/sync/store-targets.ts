@@ -89,9 +89,26 @@ async function knownExternalIds(db: Db, source: StoreSource, ids: string[]): Pro
 }
 
 /** 이 소스에 이미 ref 가 붙은 게임 id 집합. 같은 게임의 두 번째 SKU 를 가려내는 데 쓴다 */
-async function gamesWithRef(db: Db, source: StoreSource): Promise<Set<string>> {
+export async function gamesWithRef(db: Db, source: StoreSource): Promise<Set<string>> {
   const rows = await db.select({ gameId: gameSourceRefs.gameId }).from(gameSourceRefs).where(eq(gameSourceRefs.source, source));
   return new Set(rows.map((r) => r.gameId));
+}
+
+/** 역방향 매칭용 제목 목록. 카탈로그 전체라 발견, 반영 두 단계가 각각 한 번씩만 읽는다 */
+export async function loadGameTitles(db: Db): Promise<GameTitleRow[]> {
+  return db.select({ id: games.id, slug: games.slug, titleEn: games.titleEn, titleKo: games.titleKo }).from(games);
+}
+
+/** 수집하지 않기로 한 SKU 기록. 다음 실행의 발견이 이걸 보고 건너뛴다 */
+export async function ignoreDiscovery(
+  db: Db,
+  source: StoreSource,
+  entry: { externalId: string; gameId: string | null; reason: string; now: Date },
+): Promise<void> {
+  await db
+    .insert(discoveryIgnores)
+    .values({ source, externalId: entry.externalId, gameId: entry.gameId, reason: entry.reason, createdAt: entry.now })
+    .onConflictDoNothing();
 }
 
 /**
@@ -128,9 +145,7 @@ async function seedTargets(ctx: Ctx, source: StoreSource, seedWant: number): Pro
     return fresh.map((c) => ({ gameId: null, slug: null, externalId: c.externalId }));
   }
 
-  const titles: GameTitleRow[] = await db
-    .select({ id: games.id, slug: games.slug, titleEn: games.titleEn, titleKo: games.titleKo })
-    .from(games);
+  const titles = await loadGameTitles(db);
 
   // 스토어는 같은 게임을 에디션, 플랫폼별 SKU 로 여러 벌 내보낸다. 그 게임에 이 소스 ref 가 이미 있으면
   // 두 번째 SKU 는 수집하지 않는다 — 수집하면 본편 가격이 에디션 가격(보통 더 비싸다)으로 덮인다.
@@ -141,7 +156,7 @@ async function seedTargets(ctx: Ctx, source: StoreSource, seedWant: number): Pro
   let absorbed = 0;
   let ignored = 0;
   const ignore = async (externalId: string, gameId: string | null, reason: string) => {
-    await db.insert(discoveryIgnores).values({ source, externalId, gameId, reason, createdAt: ctx.now }).onConflictDoNothing();
+    await ignoreDiscovery(db, source, { externalId, gameId, reason, now: ctx.now });
     ignored++;
   };
 
