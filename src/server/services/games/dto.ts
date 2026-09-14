@@ -96,10 +96,10 @@ export type DlcDto = {
 };
 
 /** 지금 이 플랫폼을 구독으로 즐길 수 있는지 */
+/** 구독 포함 배지 1개. 기기는 담지 않는다 — 한 구독이 여러 기기에 걸치고(PS Plus), 화면도 쓰지 않는다 */
 export type SubscriptionDto = {
   key: string;
   label: string;
-  platform: Platform;
 };
 
 /** 세대 간 업그레이드 안내 */

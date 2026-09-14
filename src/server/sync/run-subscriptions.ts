@@ -40,6 +40,9 @@ export async function applySubscriptionCatalog(
     );
   }
 
+  // 카탈로그 경로는 "이 기기의 행 중에서" 외부 ID 를 맞춘다. 기기가 없는 구독(PS Plus)은
+  // 게임 단건이 알려주는 쪽(subscription-writer)이 맡으므로 여기 올 일이 없다 — 와도 조용히 지나간다.
+  if (!subscription.platform) return;
   const rows = await resolvePlatformRows(ctx, subscription.platform, externalIds);
   const incoming = new Map(rows.map((r) => [r.id, r.slug]));
 
@@ -84,7 +87,8 @@ export async function runSubscriptions(ctx: Ctx, source: SubscriptionSource): Pr
   const rows = await ctx.db.select().from(subscriptions).where(eq(subscriptions.isActive, true));
 
   for (const [i, sub] of rows.entries()) {
-    if (!sub.catalogId) continue; // 수집 키가 없는 구독은 관리자 입력 전용이다
+    // 수집 키가 없는 구독은 카탈로그로 받을 길이 없다 — 게임 단건이 채우거나(PS Plus) 관리자가 넣는다
+    if (!sub.catalogId) continue;
     try {
       if (i > 0) await sleep(adapter.minIntervalMs);
       const ids = await adapter.fetchCatalog(sub.catalogId);

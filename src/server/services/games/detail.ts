@@ -26,11 +26,11 @@ function byPlatformOrder(a: { platform: Platform }, b: { platform: Platform }): 
 async function activeSubscriptions(gamePlatformIds: string[]): Promise<SubscriptionDto[]> {
   if (gamePlatformIds.length === 0) return [];
   const rows = await getDb()
-    .select({ key: subscriptionsTable.key, label: subscriptionsTable.labelKo, platform: subscriptionsTable.platform })
+    .select({ key: subscriptionsTable.key, label: subscriptionsTable.labelKo })
     .from(gameSubscriptions)
     .innerJoin(subscriptionsTable, eq(subscriptionsTable.id, gameSubscriptions.subscriptionId))
     .where(and(inArray(gameSubscriptions.gamePlatformId, gamePlatformIds), isNull(gameSubscriptions.removedAt)));
-  // 같은 구독이 플랫폼별로 두 번 올 수 있다(콘솔, PC). key 로 접는다
+  // 같은 구독이 기기별 행마다 한 번씩 올 수 있다(PS4판, PS5판). key 로 접는다
   const byKey = new Map(rows.map((r) => [r.key, r]));
   return Array.from(byKey.values());
 }

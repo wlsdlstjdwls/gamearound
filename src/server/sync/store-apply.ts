@@ -22,6 +22,7 @@ import { createGameFromSnapshot, planGameMeta, type GameRow } from "./game-write
 import { planPlatform, type PlatformPlan, type PlatformRow } from "./platform-writer";
 import { gamesWithRef, ignoreDiscovery, loadGameTitles, type StoreTarget } from "./store-targets";
 import { findGameByTitle } from "./match";
+import { syncSnapshotSubscriptions } from "./subscription-writer";
 
 /** 수집 결과 1건 — 대상과 그 대상에서 받아온 스냅샷 */
 export interface Fetched {
@@ -174,8 +175,8 @@ async function insertChunked<V, R>(
 async function insertNewPlatforms(
   ctx: Ctx,
   plans: Array<{ slug: string; plan: Extract<PlatformPlan, { kind: "insert" }> }>,
-): Promise<void> {
-  if (plans.length === 0) return;
+): Promise<Array<string | undefined>> {
+  if (plans.length === 0) return [];
   const inserted = await insertChunked(ctx, "platform-insert", plans, (chunk) =>
     ctx.db.insert(gamePlatforms).values(chunk.map((p) => p.plan.values)).returning({ id: gamePlatforms.id }),
   );
@@ -184,8 +185,9 @@ async function insertNewPlatforms(
     .filter((d): d is { id: string; draft: NonNullable<typeof d.draft>; slug: string } => Boolean(d.id));
   for (const d of drafts) ctx.changedSlugs.add(d.slug);
 
+  const newIds = inserted.map((r) => r?.id);
   const withPrice = drafts.filter((d) => d.draft !== null);
-  if (withPrice.length === 0) return;
+  if (withPrice.length === 0) return newIds;
   const snaps = await insertChunked(ctx, "price-snapshot", withPrice, (chunk) =>
     ctx.db
       .insert(priceSnapshots)
@@ -195,6 +197,7 @@ async function insertNewPlatforms(
   for (const [i, s] of snaps.entries()) {
     if (s) ctx.priceChanges.push({ gamePlatformId: s.gamePlatformId, snapshotId: s.id, previousPrice: null, newPrice: withPrice[i].draft.price });
   }
+  return newIds;
 }
 
 /** 기존 플랫폼 행 갱신 + 가격이 바뀐 행만 스냅샷 */
@@ -320,8 +323,8 @@ export async function applyStore(ctx: Ctx, source: StoreSource, fetched: Fetched
 
   // 3. 계획
   const metaUpdates: Statement[] = [];
-  const inserts: Array<{ slug: string; plan: Extract<PlatformPlan, { kind: "insert" }> }> = [];
-  const updates: Array<{ slug: string; plan: Extract<PlatformPlan, { kind: "update" }> }> = [];
+  const inserts: Array<{ slug: string; plan: Extract<PlatformPlan, { kind: "insert" }>; snapshot: StoreSnapshot }> = [];
+  const updates: Array<{ slug: string; plan: Extract<PlatformPlan, { kind: "update" }>; snapshot: StoreSnapshot }> = [];
   for (const { gameId, slug, snapshot } of applied) {
     const cur = gameById.get(gameId);
     if (source === "steam" && snapshot.meta && cur) {
@@ -335,14 +338,23 @@ export async function applyStore(ctx: Ctx, source: StoreSource, fetched: Fetched
     const region = snapshot.region ?? HOME_REGION;
     const existing = platformsByGame.get(gameId)?.find((p) => p.platform === snapshot.platform && p.region === region);
     const plan = planPlatform(ctx, existing, gameId, snapshot);
-    if (plan.kind === "insert") inserts.push({ slug, plan });
-    else updates.push({ slug, plan });
+    if (plan.kind === "insert") inserts.push({ slug, plan, snapshot });
+    else updates.push({ slug, plan, snapshot });
   }
 
   // 4. 쓰기
   await runStatements(ctx, "game-meta", metaUpdates);
   await updateExistingPlatforms(ctx, updates);
-  await insertNewPlatforms(ctx, inserts);
+  const newIds = await insertNewPlatforms(ctx, inserts);
+
+  // 구독 포함은 플랫폼 행 id 를 알아야 쓸 수 있다 — 갱신은 계획이, 신규는 INSERT 가 그 id 를 준다.
+  // subscriptionKeys 를 주지 않는 소스는 여기서 걸러져 구독 축을 건드리지 않는다(undefined ≠ []).
+  const subscriptionTargets = [
+    ...updates.map(({ slug, plan, snapshot }) => ({ gamePlatformId: plan.id, slug, keys: snapshot.subscriptionKeys })),
+    ...inserts.map(({ slug, snapshot }, i) => ({ gamePlatformId: newIds[i], slug, keys: snapshot.subscriptionKeys })),
+  ].filter((t): t is { gamePlatformId: string; slug: string; keys: string[] } => Boolean(t.gamePlatformId) && t.keys !== undefined);
+  await syncSnapshotSubscriptions(ctx, subscriptionTargets);
+
   await runStatements(ctx, "dlc-parent", await planParentLinks(ctx, source, applied, gameById));
   await runStatements(ctx, "company-link", await planCompanyLinks(ctx, applied));
 

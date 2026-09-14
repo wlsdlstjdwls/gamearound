@@ -20,12 +20,22 @@ const DEFAULT_TOP = 100;
 
 /**
  * 구독 서비스 마스터. key 는 코드가 참조하는 안정적 식별자라 바꾸지 않는다.
- * catalog_id 가 있는 것만 크롤러가 자동 갱신하고, 없는 것은 관리자 입력 전용이다.
- * PS Plus 카탈로그는 psstore 어댑터가 스텁이라 아직 넣지 않는다 — 붙는 날 여기 한 줄만 추가한다.
+ *
+ * 포함 목록을 채우는 길이 둘이다.
+ *   catalog_id 가 있는 것 — 카탈로그 전체를 받아 맞춘다(run-subscriptions). Game Pass.
+ *   catalog_id 가 없는 것 — 게임 단건 응답이 포함 여부를 말해 준다(subscription-writer).
+ *     PlayStation 은 카탈로그 API 가 없어 이쪽이다. 키는 어댑터의 PSSTORE_INCLUSION_CTA 와 맞춰야 한다.
+ * platform 은 카탈로그 경로가 대상 행을 찾을 때만 쓴다 — PS Plus 는 ps4, ps5 양쪽이라 null 이다.
+ *
+ * 라벨은 한국 스토어 표기를 따른다(2026-09-14 실측) — 다른 나라의 Extra, Premium 이 여기서는 스페셜, 디럭스다.
  */
 export const DEFAULT_SUBSCRIPTIONS = [
   { key: "gamepass_console", labelKo: "Game Pass 콘솔", platform: "xbox" as const, catalogId: GAMEPASS_COLLECTIONS.console },
   { key: "gamepass_pc", labelKo: "PC Game Pass", platform: "xbox" as const, catalogId: GAMEPASS_COLLECTIONS.pc },
+  { key: "psplus_special", labelKo: "PlayStation Plus 스페셜", platform: null, catalogId: null },
+  { key: "psplus_deluxe", labelKo: "PlayStation Plus 디럭스", platform: null, catalogId: null },
+  { key: "ea_play_ps", labelKo: "EA Play", platform: null, catalogId: null },
+  { key: "ubisoft_plus_ps", labelKo: "Ubisoft+ Classics", platform: null, catalogId: null },
 ];
 
 async function main(): Promise<number> {

@@ -81,3 +81,27 @@ export const PSSTORE_PORTRAIT_WIDTH = 600;
  * UPSELL 버튼이 ADD_TO_CART 버튼보다 앞에 온다. 순서를 믿으면 안 되고 이 값으로 걸러야 한다.
  */
 export const PSSTORE_UPSELL_APPLICABILITY = "UPSELL";
+
+/**
+ * 그 UPSELL 버튼이 "구독에 포함"을 뜻하는 경우만 골라 구독 키로 바꾼다.
+ *
+ * PlayStation 에는 구독 카탈로그를 통째로 주는 API 가 없다. 대신 콘셉트 상세의 webcta 가
+ * 이 게임이 어느 구독에 들었는지 말해 준다 — 그래서 구독 축을 게임 단위로 채운다.
+ *
+ * 버튼 종류를 화이트리스트로 둔 이유: 같은 UPSELL 자리에 "포함"이 아닌 것들이 섞여 온다(2026-09-14 실측,
+ * 콘셉트 192건 표본).
+ *   포함    UPSELL_PS_PLUS_GAME_CATALOG(TIER_20, "포함") | UPSELL_PS_PLUS_CLASSIC_GAME_COLLECTION(TIER_30)
+ *           UPSELL_EA_ACCESS_FREE | UPSELL_UBISOFT_PLUS_FREE
+ *   체험판  UPSELL_PS_PLUS_TRIAL("2시간 체험") | UPSELL_EA_ACCESS_PLAY_FIRST_TRIAL("10시간 체험")
+ *   할인    UPSELL_EA_ACCESS_DISCOUNT("EA Play로 10% 할인")
+ * 체험판과 할인을 포함으로 읽으면 "구독하면 공짜"라는 틀린 말을 화면에 박는다.
+ *
+ * 티어 표기는 한국 스토어 문구 그대로다 — TIER_20 은 "스페셜", TIER_30 은 "디럭스"
+ * (다른 나라의 Extra, Premium 에 해당한다. 한국은 클라우드 스트리밍이 없어 이름이 다르다).
+ */
+export const PSSTORE_INCLUSION_CTA: Record<string, string> = {
+  UPSELL_PS_PLUS_GAME_CATALOG: "psplus_special",
+  UPSELL_PS_PLUS_CLASSIC_GAME_COLLECTION: "psplus_deluxe",
+  UPSELL_EA_ACCESS_FREE: "ea_play_ps",
+  UPSELL_UBISOFT_PLUS_FREE: "ubisoft_plus_ps",
+};

@@ -7,6 +7,7 @@ import {
   PSSTORE_CONCEPT_URL,
   PSSTORE_COVER_ROLE,
   PSSTORE_COVER_WIDTH,
+  PSSTORE_INCLUSION_CTA,
   PSSTORE_LANGUAGE_SUFFIX,
   PSSTORE_PORTRAIT_ROLE,
   PSSTORE_PORTRAIT_WIDTH,
@@ -45,6 +46,12 @@ const priceSchema = z.object({
   applicability: z.string().nullish(),
 });
 
+/**
+ * 구매/업셀 버튼 하나. type 이 무슨 버튼인지 말하고, price 가 그 버튼의 값을 담는다.
+ * 구독 포함 여부는 type 으로만 가른다 — PSSTORE_INCLUSION_CTA 주석 참고.
+ */
+const ctaSchema = z.object({ type: z.string().nullish(), price: priceSchema.nullish() });
+
 const conceptSchema = z.object({
   data: z.object({
     conceptRetrieve: z
@@ -57,7 +64,7 @@ const conceptSchema = z.object({
             id: z.string(),
             name: z.string().nullish(),
             invariantName: z.string().nullish(),
-            webctas: z.array(z.object({ type: z.string().nullish(), price: priceSchema.nullish() })).nullish(),
+            webctas: z.array(ctaSchema).nullish(),
           })
           .nullish(),
       })
@@ -165,7 +172,20 @@ function pickPurchasePrice(webctas: Array<{ price?: z.infer<typeof priceSchema> 
   return priced.find((p) => p!.applicability !== PSSTORE_UPSELL_APPLICABILITY) ?? null;
 }
 
-/** 콘셉트 상세 → 스냅샷. 구매 버튼의 가격만 쓴다(구독 가입가는 버린다) */
+/**
+ * 버린 UPSELL 버튼에서 "구독 포함"만 건져 구독 키로 돌려준다.
+ * 가격 자리에서 쓸모없다고 버린 값이 구독 축에서는 유일한 근거다 — PS 는 구독 카탈로그 API 가 없다.
+ */
+export function psstoreSubscriptionKeys(webctas: Array<z.infer<typeof ctaSchema>> | null | undefined): string[] {
+  const keys = new Set<string>();
+  for (const cta of webctas ?? []) {
+    const key = cta.type ? PSSTORE_INCLUSION_CTA[cta.type] : undefined;
+    if (key) keys.add(key);
+  }
+  return [...keys];
+}
+
+/** 콘셉트 상세 → 스냅샷. 가격은 구매 버튼만 쓰고, 구독 가입가 버튼은 구독 축으로 보낸다 */
 export function parsePsstoreConcept(raw: unknown, conceptId: string): StoreSnapshot {
   const parsed = conceptSchema.safeParse(raw);
   if (!parsed.success) fail("콘셉트", parsed.error);
@@ -196,6 +216,7 @@ export function parsePsstoreConcept(raw: unknown, conceptId: string): StoreSnaps
     // 종료 시각은 할인 중일 때만 의미가 있다 — 상시 판매 구간의 값을 "할인 종료"로 오해하지 않게
     discountEndsAt: discountPct > 0 ? psstoreEpochToIso(price?.endTime) : null,
     releaseDate: concept.releaseDate?.value ? concept.releaseDate.value.slice(0, 10) : null,
+    subscriptionKeys: psstoreSubscriptionKeys(dp?.webctas),
     // 이미지는 콘셉트 상세에 없다 — 발견 단계(parsePsstoreGrid)가 들고 온 값을 반영 단계에서 얹는다
     meta: titleEn ? { titleEn, titleKo: titleKo && titleKo !== titleEn ? titleKo : null } : undefined,
   };

@@ -42,6 +42,15 @@ export interface StoreSnapshot {
   parentExternalId?: string | null;
   /** 이 레코드 자체가 본편인지 DLC 인지. 주지 않는 소스는 undefined(= 본편으로 본다) */
   contentType?: "game" | "dlc" | null;
+  /**
+   * 이 스토어가 "지금 이 구독에 포함돼 있다"고 말한 구독 키 목록(subscriptions.key).
+   *
+   * 구독은 원래 카탈로그 전체를 받아 맞추는 축인데(run-subscriptions), PlayStation 은 그런 목록 API 가 없고
+   * 대신 게임 단건 응답이 자기가 어느 구독에 들었는지 말해 준다. 그래서 게임 단위로 실어 나른다.
+   * 주지 않는 소스는 undefined 이고, 그때는 구독 축을 아예 건드리지 않는다 — 빈 배열([])과 다르다.
+   * 빈 배열은 "이 게임은 어느 구독에도 안 들었다"는 단언이라 기존 포함 기록을 내린다.
+   */
+  subscriptionKeys?: string[];
   // Steam 기준 소스에서만 채워지는 게임 마스터 정보(신규 게임 생성용)
   meta?: {
     titleEn: string;

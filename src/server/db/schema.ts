@@ -364,7 +364,12 @@ export const subscriptions = pgTable("subscriptions", {
   id: integer("id").primaryKey().generatedAlwaysAsIdentity(),
   key: text("key").notNull().unique(), // "gamepass_console" 등. 코드가 참조하는 안정적 식별자
   labelKo: text("label_ko").notNull(),
-  platform: platformEnum("platform").notNull(),
+  /**
+   * 카탈로그 수집이 "어느 기기의 행과 맞출지" 정할 때만 쓴다(run-subscriptions).
+   * 게임 단건이 포함 여부를 알려주는 구독(PS Plus, EA Play)은 기기가 이미 정해진 행에 붙으므로
+   * 이 값이 필요 없고, 한 기기로 적을 수도 없다(PS Plus 는 ps4, ps5 양쪽이다) — 그래서 null 을 허용한다.
+   */
+  platform: platformEnum("platform"),
   catalogId: text("catalog_id"),       // Game Pass 컬렉션 GUID 등 수집 키
   isActive: boolean("is_active").default(true).notNull(),
 });
