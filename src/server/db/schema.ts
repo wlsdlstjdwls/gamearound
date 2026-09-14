@@ -158,6 +158,22 @@ export const gameSourceRefs = pgTable("game_source_refs", {
   index("gsr_source_matched_checked_idx").on(t.source, t.matchedBy, t.checkedAt),
 ]);
 
+/**
+ * 발견했지만 수집하지 않기로 한 외부 SKU.
+ *
+ * 왜 따로 두나: game_source_refs 는 (game_id, source) 가 PK 라 "이미 아는 게임의 두 번째 SKU"
+ * (에디션 판, Windows 판)를 담을 자리가 없다. 그렇다고 그냥 버리면 발견이 매 실행 이 SKU 를
+ * 신규로 집어 시드 몫을 먹는다 — 이런 SKU 는 계속 쌓이므로 결국 신규 게임이 다시 0건이 된다.
+ */
+export const discoveryIgnores = pgTable("discovery_ignores", {
+  source: sourceEnum("source").notNull(),
+  externalId: text("external_id").notNull(),
+  /** 같은 게임이라고 판단한 상대. 판단을 나중에 되짚을 수 있게 남긴다(신규 게임이면 null) */
+  gameId: uuid("game_id").references(() => games.id, { onDelete: "cascade" }),
+  reason: text("reason").notNull(),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+}, (t) => [primaryKey({ columns: [t.source, t.externalId] })]);
+
 export const playtimes = pgTable("playtimes", {
   gameId: uuid("game_id").primaryKey().references(() => games.id, { onDelete: "cascade" }),
   mainStoryHours: numeric("main_story_hours", { precision: 5, scale: 1 }),

@@ -22,28 +22,56 @@ export function slugWithSuffix(base: string, suffix: string | number): string {
   return `${base}-${suffix}`;
 }
 
+/**
+ * 에디션 접미어 — 긴 것부터 둔다. "game of the year edition" 이 "edition" 보다 먼저 걸려야
+ * "game of the year" 가 제목에 남지 않는다.
+ */
 const EDITION_SUFFIXES = [
   "game of the year edition", "goty edition", "goty", "definitive edition", "deluxe edition",
   "ultimate edition", "complete edition", "gold edition", "premium edition", "standard edition",
   "digital deluxe", "remastered", "remaster", "director's cut", "directors cut", "anniversary edition",
-  "collector's edition", "collectors edition", "enhanced edition", "special edition", "edition",
+  "collector's edition", "collectors edition", "enhanced edition", "special edition",
 ];
 
-/** 소문자, 특수문자 제거, 에디션 접미어 제거, 공백 정리 */
+/**
+ * 제목 뒤에 붙는 실행 플랫폼 표시. Xbox 카탈로그는 같은 게임의 PC 판을 "(Windows)" 로 구분해
+ * 별개 SKU 로 내보낸다 — 우리에게는 같은 게임이므로 매칭 전에 지운다.
+ */
+const PLATFORM_MARKERS = /\s*\((?:windows|pc|xbox one|xbox series x\|s|xbox series x\/s|nintendo switch|switch)\)/gi;
+
+/**
+ * 구분자 뒤에 에디션 이름이 오는 형태를 지운다:
+ *   "... 4 - Vault Edition", "...: Ultimate Edition", "... – 지옥불 에디션"
+ * 구분자를 경계로 삼는 이유: 정규화로 구두점을 지운 뒤에는 어디까지가 에디션 이름인지 알 수 없다.
+ * 에디션 이름은 두 낱말까지만 본다 — 더 넓히면 "Halo: Combat Evolved Anniversary Edition" 이 "Halo" 로 깎인다
+ * (그 형태는 아래 접미어 목록이 "anniversary edition" 만 떼어 제대로 처리한다).
+ */
+const EDITION_TAIL = /\s[-–—:]\s(?:\S+\s){0,2}(?:edition|에디션)\s*$/i;
+
+/** 구분자 없이 붙는 꼬리("Vault Edition", "볼트 에디션") — 에디션 낱말과 그 앞 한 낱말까지 지운다 */
+const LOOSE_EDITION_TAIL = /\s(?:\S+\s)?(?:edition|에디션)$/;
+
+/** 소문자, 특수문자 제거, 플랫폼 표시와 에디션 접미어 제거, 공백 정리 */
 export function normalizeTitle(title: string): string {
-  let t = stripDiacritics(title) // ™ 은 NFKD 전에 제거된다 (™ → "tm" 분해 방지)
+  // 구두점을 지우기 전에 에디션 꼬리부터 떼어낸다 — 구분자가 사라지면 경계를 못 찾는다
+  let head = stripDiacritics(title).replace(PLATFORM_MARKERS, "");
+  while (EDITION_TAIL.test(head)) head = head.replace(EDITION_TAIL, "");
+
+  const t = head
     .toLowerCase()
     .replace(/&/g, " and ")
     .replace(/[^a-z0-9가-힣\s]/g, " ")
     .replace(/\s+/g, " ")
     .trim();
+
   for (const suf of EDITION_SUFFIXES) {
-    if (t.endsWith(" " + suf)) {
-      t = t.slice(0, -(suf.length + 1)).trim();
-      break;
-    }
+    if (t.endsWith(" " + suf)) return t.slice(0, -(suf.length + 1)).trim();
   }
-  return t;
+  // 목록에 없는 에디션 이름(볼트, 지옥불, Infernal...)까지 걷어낸다.
+  // 낱말 하나만 지우는 이유: 더 지우면 "Halo: The Master Chief Collection" 같은 정상 제목을 깎아낸다.
+  // 남는 것이 한 낱말뿐이면 지우지 않는다 — 흔한 낱말 하나는 엉뚱한 게임과 붙는다("Vault Edition" → "vault")
+  const loose = t.replace(LOOSE_EDITION_TAIL, "").trim();
+  return loose.includes(" ") ? loose : t;
 }
 
 /**

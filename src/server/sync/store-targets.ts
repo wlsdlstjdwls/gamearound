@@ -1,9 +1,10 @@
 // 스토어 소스의 수집 대상 선정 — 기존 매핑 + 카탈로그 신규 발견(시드).
 import { and, eq, inArray, sql } from "drizzle-orm";
-import { gamePlatforms, gameSourceRefs, games } from "@/server/db/schema";
+import { discoveryIgnores, gamePlatforms, gameSourceRefs, games } from "@/server/db/schema";
 import type { Db } from "@/server/db/client";
 import { getStoreAdapter, type StoreSource } from "@/server/adapters";
 import { errorMessage } from "@/lib/errors";
+import { normalizeTitle } from "@/lib/slug";
 import { findGameByTitle, type GameTitleRow } from "./match";
 import { collectFreshCandidates } from "./discover";
 import { DISCOVERY_PAGE_BUDGET, MATCHED_FOR_SYNC, SEED_SHARE_MAX, SOURCE_PLATFORMS } from "./constants";
@@ -62,14 +63,29 @@ export async function listStoreTargets(ctx: Ctx, source: StoreSource, limit: num
   return targets.slice(0, limit);
 }
 
-/** 이 소스에 이미 ref 가 있는 externalId 집합 */
+/**
+ * 이 소스에서 이미 아는 externalId 집합 — 매핑된 것(game_source_refs)과 수집하지 않기로 한 것(discovery_ignores).
+ * 무시 목록까지 봐야 에디션 SKU 가 매 실행 "신규" 로 잡혀 시드 몫을 먹는 일이 없다.
+ */
 async function knownExternalIds(db: Db, source: StoreSource, ids: string[]): Promise<Set<string>> {
   if (ids.length === 0) return new Set();
-  const rows = await db
-    .select({ externalId: gameSourceRefs.externalId })
-    .from(gameSourceRefs)
-    .where(and(eq(gameSourceRefs.source, source), inArray(gameSourceRefs.externalId, ids)));
-  return new Set(rows.map((r) => r.externalId));
+  const [refs, ignored] = await Promise.all([
+    db
+      .select({ externalId: gameSourceRefs.externalId })
+      .from(gameSourceRefs)
+      .where(and(eq(gameSourceRefs.source, source), inArray(gameSourceRefs.externalId, ids))),
+    db
+      .select({ externalId: discoveryIgnores.externalId })
+      .from(discoveryIgnores)
+      .where(and(eq(discoveryIgnores.source, source), inArray(discoveryIgnores.externalId, ids))),
+  ]);
+  return new Set([...refs, ...ignored].map((r) => r.externalId));
+}
+
+/** 이 소스에 이미 ref 가 붙은 게임 id 집합. 같은 게임의 두 번째 SKU 를 가려내는 데 쓴다 */
+async function gamesWithRef(db: Db, source: StoreSource): Promise<Set<string>> {
+  const rows = await db.select({ gameId: gameSourceRefs.gameId }).from(gameSourceRefs).where(eq(gameSourceRefs.source, source));
+  return new Set(rows.map((r) => r.gameId));
 }
 
 /**
@@ -110,12 +126,33 @@ async function seedTargets(ctx: Ctx, source: StoreSource, seedWant: number): Pro
     .select({ id: games.id, slug: games.slug, titleEn: games.titleEn, titleKo: games.titleKo })
     .from(games);
 
+  // 스토어는 같은 게임을 에디션, 플랫폼별 SKU 로 여러 벌 내보낸다. 그 게임에 이 소스 ref 가 이미 있으면
+  // 두 번째 SKU 는 수집하지 않는다 — 수집하면 본편 가격이 에디션 가격(보통 더 비싸다)으로 덮인다.
+  const refOwned = await gamesWithRef(db, source);
+  const newTitles = new Set<string>(); // 이번 실행에서 새 게임으로 보낸 제목 — 한 실행 안의 SKU 중복도 막는다
+
   const out: StoreTarget[] = [];
   let absorbed = 0;
+  let ignored = 0;
+  const ignore = async (externalId: string, gameId: string | null, reason: string) => {
+    await db.insert(discoveryIgnores).values({ source, externalId, gameId, reason, createdAt: ctx.now }).onConflictDoNothing();
+    ignored++;
+  };
+
   for (const c of fresh) {
     const hit = findGameByTitle(c.title, titles);
     if (!hit) {
+      const key = normalizeTitle(c.title);
+      if (key && newTitles.has(key)) {
+        await ignore(c.externalId, null, "같은 실행에서 이미 만든 게임의 다른 SKU");
+        continue;
+      }
+      if (key) newTitles.add(key);
       out.push({ gameId: null, slug: null, externalId: c.externalId });
+      continue;
+    }
+    if (refOwned.has(hit.game.id)) {
+      await ignore(c.externalId, hit.game.id, `${hit.game.slug} 의 다른 SKU (에디션, 플랫폼판)`);
       continue;
     }
     await db
@@ -131,9 +168,12 @@ async function seedTargets(ctx: Ctx, source: StoreSource, seedWant: number): Pro
       })
       // 이미 매칭된 게임이면(동시 실행, 수동 매칭) 건드리지 않는다
       .onConflictDoNothing();
+    refOwned.add(hit.game.id);
     out.push({ gameId: hit.game.id, slug: hit.game.slug, externalId: c.externalId });
     absorbed++;
   }
-  console.log(`[sync:${source}] 신규 ${fresh.length}건 (기존 게임에 흡수 ${absorbed}, 새 게임 ${fresh.length - absorbed})`);
+  console.log(
+    `[sync:${source}] 신규 ${fresh.length}건 (기존 게임에 흡수 ${absorbed}, 새 게임 ${out.length - absorbed}, 중복 SKU 제외 ${ignored})`,
+  );
   return out;
 }
