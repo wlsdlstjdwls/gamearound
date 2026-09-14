@@ -18,6 +18,7 @@ import {
 } from "./constants";
 import {
   parseAppDetails,
+  parseDlcIds,
   parseFeaturedCandidates,
   parseStoreItemDiscount,
   parseStoreItems,
@@ -133,6 +134,14 @@ export const steamAdapter: StoreAdapter = {
       console.warn(`[steam] 할인 기간 조회 실패 (appid=${appid}): ${errorMessage(e)}`);
       return snapshot;
     }
+  },
+
+  /**
+   * 본편이 가진 DLC 목록. appdetails 에만 있다 — GetItems 는 자식의 parent_appid 만 준다.
+   * 언어는 english 하나로 족하다(목록은 appid 배열이라 언어와 무관하고, 요청을 반으로 줄인다).
+   */
+  async listDlcIds(appid: string): Promise<string[]> {
+    return parseDlcIds(await http.json(appDetailsUrl(appid, "english")), appid);
   },
 
   batchSize: STEAM_GETITEMS_BATCH,

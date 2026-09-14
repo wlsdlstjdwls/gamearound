@@ -119,6 +119,24 @@ export function parseAppDetails(rawKo: unknown, appid: string, rawEn?: unknown):
 }
 
 /**
+ * 본편 appdetails 응답 → 그 본편이 가진 DLC appid 목록.
+ * 배치 경로(GetItems)는 자식이 부모를 가리키는 방향만 주므로, 본편에서 DLC 를 찾아 들여오려면
+ * 이 단건 응답이 유일한 출처다(2026-09-14 실측).
+ *
+ * 사운드트랙(EStoreAppType 11)도 이 배열에 섞여 온다 — 셀레스트 1092840, 할로우나이트 598190 이
+ * 그렇다. 걸러내지 않는 이유: 스토어가 그 자리에서 파는 추가 콘텐츠이고, 우리가 하는 일이 가격
+ * 비교라 사는 사람에게는 DLC 와 같은 상품이다. 번들은 appid 가 아니라 packageid, bundleid 라
+ * 이 배열에 아예 없다 — 이 경로로는 들어오지 않는다.
+ *
+ * 응답이 success=false 면 빈 배열이다. 목록이 없다는 사실과 게임이 없다는 사실을 여기서 가르지
+ * 않는다 — 호출부는 둘 다 "이번에는 새 DLC 없음" 으로 똑같이 다루면 된다.
+ */
+export function parseDlcIds(raw: unknown, appid: string): string[] {
+  const data = extractAppData(raw, appid);
+  return (data?.dlc ?? []).map(String);
+}
+
+/**
  * discount_description 토큰 → 한국어 행사명.
  * Steam 은 language=koreana 로 물어도 "#discount_desc_preset_weekend" 같은 토큰을 준다(2026-09-14 확인).
  * 모르는 토큰은 계절 키워드로 한 번 더 시도하고, 그래도 모르면 null(가짜 이름을 만들지 않는다).

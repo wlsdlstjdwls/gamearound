@@ -126,6 +126,13 @@ export const gamePlatforms = pgTable("game_platforms", {
    * DLC 목록을 못 가져오는 플랫폼에서도 유무 배지는 띄우기 위한 것 — 목록과 별개의 신호다.
    */
   hasAddOns: boolean("has_add_ons"),
+  /**
+   * 이 본편의 DLC 목록을 스토어에 마지막으로 물어본 시각.
+   * 배치 조회(steam GetItems)는 자식이 부모를 가리키는 방향만 주고 본편이 가진 DLC 목록은 주지 않아,
+   * 목록은 단건 요청(appdetails)을 한 번 더 보내야 얻는다. 요청이 비싸므로 언제 물어봤는지를 남겨
+   * 같은 본편을 매 실행 다시 묻지 않는다(sync/dlc-list 의 DLC_LIST_REFRESH_DAYS).
+   */
+  dlcListedAt: timestamp("dlc_listed_at", { withTimezone: true }),
 }, (t) => [uniqueIndex("gp_game_platform_uq").on(t.gameId, t.platform)]);
 
 /**

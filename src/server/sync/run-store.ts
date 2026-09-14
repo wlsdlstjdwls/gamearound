@@ -2,6 +2,7 @@
 import { getStoreAdapter, type StoreSource } from "@/server/adapters";
 import { BATCH_SIZE, SUSPICIOUS_MIN_SAMPLE, SUSPICIOUS_PRICE_RATIO } from "./constants";
 import { recordError, type Ctx, type RunOptions } from "./context";
+import { listParentDlcs } from "./dlc-list";
 import { syncDlcs } from "./dlc-writer";
 import { applyStore } from "./store-apply";
 import { fetchStoreBatched, fetchStoreOneByOne } from "./store-fetch";
@@ -30,9 +31,11 @@ export async function runStore(ctx: Ctx, source: StoreSource, opts: RunOptions):
   // 3단계: 반영 — 읽기와 쓰기를 각각 묶어 보낸다(store-apply)
   const applied = await applyStore(ctx, source, fetched);
 
-  // 4단계: 본편이 알려준 새 DLC 등록. 실패해도 가격 수집 결과는 유지한다
+  // 4단계: 본편이 알려준 새 DLC 등록. 실패해도 가격 수집 결과는 유지한다.
+  // 배치 조회가 DLC 목록을 주지 않는 소스(steam)는 목록을 따로 물어본 뒤 같은 등록 경로로 보낸다
   try {
-    const created = await syncDlcs(ctx, source, adapter, applied);
+    const listed = await listParentDlcs(ctx, source, adapter, applied);
+    const created = await syncDlcs(ctx, source, adapter, applied, listed);
     if (created > 0) console.log(`[sync:${source}] DLC ${created}건 신규 등록`);
   } catch (e) {
     recordError(ctx, `${source}:dlc`, e);

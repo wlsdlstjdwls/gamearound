@@ -144,7 +144,16 @@ export interface SourceAdapter<T extends StoreSnapshot | MetaSnapshot | NewsItem
   minIntervalMs: number;
 }
 
-export type StoreAdapter = SourceAdapter<StoreSnapshot>;
+export type StoreAdapter = SourceAdapter<StoreSnapshot> & {
+  /**
+   * 본편이 가진 DLC 외부 ID 목록. 배치 조회가 "자식 → 부모" 방향만 주는 소스(steam GetItems)에서는
+   * 본편을 아무리 갱신해도 그 본편의 DLC 를 영원히 못 만난다 — 목록은 단건 요청으로만 온다.
+   * 요청을 한 번 더 쓰는 경로라 호출은 sync/dlc-list 가 빈도와 건수를 막아 준다.
+   * 스냅샷에 dlcExternalIds 를 이미 채워 주는 소스는 이 메서드를 두지 않는다.
+   */
+  listDlcIds?(externalId: string): Promise<string[]>;
+};
+
 export type MetaAdapter = SourceAdapter<MetaSnapshot>;
 export type NewsAdapter = SourceAdapter<NewsItem[]>;
 

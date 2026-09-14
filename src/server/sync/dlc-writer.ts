@@ -60,8 +60,10 @@ export async function syncDlcs(
   source: StoreSource,
   adapter: StoreAdapter,
   applied: Array<{ gameId: string; slug: string; snapshot: StoreSnapshot }>,
+  /** 스냅샷이 아니라 별도 요청으로 얻은 목록(sync/dlc-list). 배치 조회가 DLC 목록을 안 주는 소스용 */
+  extraGroups: DlcGroup[] = [],
 ): Promise<number> {
-  const groups = collectDlcGroups(applied);
+  const groups = [...collectDlcGroups(applied), ...extraGroups];
   if (groups.length === 0) return 0;
 
   // 한 DLC 가 여러 본편에 걸리는 일은 없지만, 같은 배치에 본편이 두 번 들어오는 경우는 있다

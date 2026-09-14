@@ -37,13 +37,13 @@ export interface Applied {
 }
 
 /** drizzle 문장은 thenable 이라 같은 객체를 배치로도, 단건으로도 보낼 수 있다 */
-type Statement = PromiseLike<unknown>;
+export type Statement = PromiseLike<unknown>;
 
 /**
  * 문장들을 WRITE_BATCH_SIZE 단위로 묶어 보낸다.
  * 묶음이 실패하면 그 묶음만 한 문장씩 다시 보내 어느 문장이 문제인지 좁힌다.
  */
-async function runStatements(ctx: Ctx, label: string, statements: Statement[]): Promise<void> {
+export async function runStatements(ctx: Ctx, label: string, statements: Statement[]): Promise<void> {
   for (let i = 0; i < statements.length; i += WRITE_BATCH_SIZE) {
     const chunk = statements.slice(i, i + WRITE_BATCH_SIZE);
     if (chunk.length === 0) continue;

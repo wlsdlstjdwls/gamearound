@@ -1,0 +1,1 @@
+ALTER TABLE "game_platforms" ADD COLUMN "dlc_listed_at" timestamp with time zone;

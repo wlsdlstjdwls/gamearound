@@ -6,6 +6,7 @@ import { AdapterError } from "./types";
 import {
   inferMultiplayer,
   parseAppDetails,
+  parseDlcIds,
   parseFeaturedCandidates,
   parseSteamDate,
   parseStoreItemDiscount,
@@ -65,6 +66,23 @@ describe("parseAppDetails", () => {
 
   it("응답에 해당 appid 가 없으면 실패", () => {
     expect(() => parseAppDetails(fixture("steam-appdetails-ko.json"), "1")).toThrowError(AdapterError);
+  });
+});
+
+describe("parseDlcIds", () => {
+  // 실제 응답에서 옮겨 온 값 — 할로우 나이트(367520)의 두 번째 항목 916000 은 사운드트랙이다(2026-09-14)
+  const response = { "367520": { success: true, data: { type: "game", name: "Hollow Knight", dlc: [598190, 916000] } } };
+
+  it("본편이 알려준 DLC appid 를 문자열로 돌려준다", () => {
+    expect(parseDlcIds(response, "367520")).toEqual(["598190", "916000"]);
+  });
+
+  it("목록이 없으면 빈 배열", () => {
+    expect(parseDlcIds({ "1": { success: true, data: { name: "No DLC" } } }, "1")).toEqual([]);
+  });
+
+  it("success=false 는 빈 배열 — 게임이 없는 것과 목록이 없는 것을 가르지 않는다", () => {
+    expect(parseDlcIds(fixture("steam-appdetails-fail.json"), "999999999")).toEqual([]);
   });
 });
 

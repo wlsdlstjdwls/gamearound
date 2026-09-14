@@ -78,6 +78,13 @@
       "when": 1789367035980,
       "tag": "0010_discovery_ignores",
       "breakpoints": true
+    },
+    {
+      "idx": 11,
+      "version": "7",
+      "when": 1789368657374,
+      "tag": "0011_dlc_listed_at",
+      "breakpoints": true
     }
   ]
 }
