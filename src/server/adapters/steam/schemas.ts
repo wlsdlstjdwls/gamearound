@@ -61,6 +61,10 @@ export const purchaseOptionSchema = z.object({
 
 export const storeItemSchema = z.object({
   appid: z.number().optional(),
+  /** EStoreAppType — 0 게임, 4 DLC. 배치 경로의 유일한 DLC 판별 근거다 */
+  type: z.number().optional(),
+  /** DLC 가 가리키는 본편. 본편에는 이 필드가 없다(= 역방향 목록은 GetItems 가 주지 않는다) */
+  related_items: z.object({ parent_appid: z.number().optional() }).optional(),
   /** 0 = 앱(게임). 1 이상은 패키지/번들 — 게임 마스터로 만들지 않는다 */
   item_type: z.number().optional(),
   success: z.number().optional(),

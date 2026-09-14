@@ -14,6 +14,12 @@ export const STEAM_STORE_APP_URL = "https://store.steampowered.com/app";
 export const STEAM_STOREITEMS_URL = "https://api.steampowered.com/IStoreBrowseService/GetItems/v1/";
 /** GetItems 는 appid 100개까지 한 요청에 넣어도 100개를 그대로 돌려준다(2026-09-14 확인) */
 export const STEAM_GETITEMS_BATCH = 100;
+/**
+ * GetItems 의 type 필드(EStoreAppType). 0 = 게임, 4 = DLC.
+ * 엘든 링(1245620) type 0, 그 DLC(2778580) type 4 로 확인했다(2026-09-14 실측).
+ * appdetails 의 문자열 type("game" | "dlc") 과 같은 뜻이지만 배치 경로는 숫자로 온다.
+ */
+export const STEAM_APP_TYPE_DLC = 4;
 export const STEAM_ASSET_BASE_URL = "https://shared.akamai.steamstatic.com/store_item_assets";
 
 /**

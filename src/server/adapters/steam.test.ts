@@ -205,6 +205,29 @@ describe("parseStoreItems", () => {
     expect(witcher.meta?.titleKo).toBeNull(); // 같은 값을 중복으로 넣지 않는다
   });
 
+  it("배치 응답의 기본값은 본편이다", () => {
+    const witcher = parseStoreItems(ko(), en()).get("292030")!;
+    expect(witcher.contentType).toBe("game");
+    expect(witcher.parentExternalId).toBeNull();
+  });
+
+  it("type=4 또는 related_items.parent_appid 가 있으면 DLC 로 본다", () => {
+    // 엘든 링 DLC(2778580) 실측 모양 — GetItems 는 본편의 DLC 목록을 주지 않고 자식만 부모를 가리킨다
+    const raw = {
+      response: {
+        store_items: [
+          { appid: 2778580, type: 4, name: "ELDEN RING Shadow of the Erdtree", related_items: { parent_appid: 1245620 }, tagids: [] },
+          // type 은 게임인데 본편만 가리키는 확장팩 — 한쪽 신호만 봐도 DLC 로 잡혀야 한다
+          { appid: 999001, type: 0, name: "Expansion", related_items: { parent_appid: 1245620 }, tagids: [] },
+        ],
+      },
+    };
+    const map = parseStoreItems(raw);
+    expect(map.get("2778580")!.contentType).toBe("dlc");
+    expect(map.get("2778580")!.parentExternalId).toBe("1245620");
+    expect(map.get("999001")!.contentType).toBe("dlc");
+  });
+
   it("형식이 깨진 응답은 AdapterError", () => {
     expect(() => parseStoreItems({ response: { store_items: "nope" } })).toThrow(AdapterError);
   });
