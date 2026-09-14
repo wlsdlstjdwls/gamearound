@@ -1,11 +1,12 @@
 // GitHub Actions 진입점 — 설계서 §2/§4.3.
 //   tsx scripts/crawl.ts --source=steam [--limit=N] [--seed-top=N] [--match=N|--no-match]
+//   --seed-top=N : 카탈로그에서 신규 게임 N개까지 발견해 등록 (steam/nintendo)
 //   --match=N : 수집 전에 해당 소스 ref 가 없는 게임 N개를 매칭(§4.2). steam/rss 외 소스는 기본 50
 // 종료 코드: 0 = ok/skipped, 2 = partial(일부 실패), 1 = failed/인자 오류
 import path from "node:path";
 import { config as loadEnv } from "dotenv";
 import { ALL_SOURCES, getDisabledReason, isSource, isSourceEnabled } from "@/server/adapters";
-import { runSource } from "@/server/sync/run-source";
+import { runSource, SEEDABLE_SOURCES } from "@/server/sync/run-source";
 import { matchUnmatchedGames } from "@/server/sync/match";
 
 loadEnv({ path: path.resolve(process.cwd(), ".env.local"), quiet: true });
@@ -41,8 +42,8 @@ async function main(): Promise<number> {
   }
   const limit = parsePositiveInt(args.limit, "limit");
   const seedTop = parsePositiveInt(args["seed-top"], "seed-top");
-  if (seedTop && source !== "steam") {
-    console.error("--seed-top 은 --source=steam 에서만 사용할 수 있습니다");
+  if (seedTop && !SEEDABLE_SOURCES.includes(source)) {
+    console.error(`--seed-top 은 ${SEEDABLE_SOURCES.join("/")} 에서만 사용할 수 있습니다 (카탈로그 탐색을 지원하는 소스)`);
     return 1;
   }
 

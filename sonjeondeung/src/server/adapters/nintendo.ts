@@ -21,11 +21,27 @@ export const NINTENDO_SELECTORS = {
   oldPrice: '[data-price-type="oldPrice"]',
   releaseDate: ".product-attribute.release_date .product-attribute-val",
   platform: ".product-attribute.label_platform_attr .product-attribute-val",
+  publisher: ".product-attribute.publisher .product-attribute-val",
+  gameCategory: ".product-attribute.game_category .product-attribute-val",
+  players: ".product-attribute.no_of_players .product-attribute-val",
+  ogImage: 'meta[property="og:image"]',
 } as const;
 
 /** 다운로드(eShop) 상품 ID — 가격 수집 대상. 패키지 상품(hacp…)은 제외 */
 const DIGITAL_ID = /^\d{10,}$/;
 const PLATFORM_SWITCH2 = /switch\s*2/i;
+
+/**
+ * 카탈로그 발견용 검색 시드. Magento 카테고리 페이지(/digital)는 클라이언트 렌더라 ?p= 가 먹지 않고,
+ * GraphQL 도 꺼져 있다(2026-09-14 확인). 서버 렌더되는 검색 결과만 페이지네이션이 동작하므로
+ * 흔한 글자를 질의로 넣어 훑는다. 시드 간 중복은 호출부가 제거한다.
+ */
+const DISCOVERY_QUERIES = [
+  "a", "e", "i", "o", "u", "s", "t", "r", "n", "l", "the", "1", "2",
+  "의", "이", "스", "리", "드", "마", "게임", "어", "라", "트",
+];
+/** 검색 결과 1페이지에 24건. 시드 하나가 이 페이지 수를 넘기면 다음 시드로 넘어간다 */
+const DISCOVERY_MAX_PAGES = 60;
 
 // ---- 순수 파서 ----
 
@@ -52,6 +68,21 @@ export function nintendoProductUrl(id: string): string {
   return `${NINTENDO_BASE_URL}/${id}`;
 }
 
+/** "액션, 어드벤처" → ["액션", "어드벤처"] */
+export function parseNintendoGenres(raw: string | null | undefined): string[] {
+  if (!raw) return [];
+  return Array.from(new Set(raw.split(/[,·/]/).map((g) => g.trim()).filter(Boolean)));
+}
+
+/** "1~4명", "최대 8명" 등에서 최대 인원 수. 못 읽으면 null */
+export function parseNintendoPlayers(raw: string | null | undefined): number | null {
+  if (!raw) return null;
+  const nums = raw.match(/\d+/g);
+  if (!nums || nums.length === 0) return null;
+  const max = Math.max(...nums.map(Number));
+  return Number.isFinite(max) && max > 0 ? max : null;
+}
+
 /** 상품 페이지 HTML → StoreSnapshot */
 export function parseNintendoProduct(html: string, id: string): StoreSnapshot {
   const $ = load(html);
@@ -71,6 +102,9 @@ export function parseNintendoProduct(html: string, id: string): StoreSnapshot {
   const platformText = $(NINTENDO_SELECTORS.platform).first().text();
   const platform: Platform = PLATFORM_SWITCH2.test(platformText) ? "switch2" : "switch";
 
+  // Switch 독점작은 Steam 에 없어 이 스냅샷으로 게임 마스터를 새로 만든다 → meta 가 있어야 한다.
+  // 한국 eShop 은 영문 제목을 따로 주지 않으므로 titleEn 자리에 한국어 제목을 넣는다(slugify 는 한글을 살린다).
+  const players = parseNintendoPlayers($(NINTENDO_SELECTORS.players).first().text());
   return {
     platform,
     storeExternalId: id,
@@ -79,6 +113,15 @@ export function parseNintendoProduct(html: string, id: string): StoreSnapshot {
     currentPrice: finalPrice,
     discountPct,
     releaseDate: parseNintendoDate($(NINTENDO_SELECTORS.releaseDate).first().text()),
+    meta: {
+      titleEn: title,
+      titleKo: null,
+      coverUrl: $(NINTENDO_SELECTORS.ogImage).first().attr("content")?.trim() || null,
+      publisher: $(NINTENDO_SELECTORS.publisher).first().text().trim() || null,
+      genres: parseNintendoGenres($(NINTENDO_SELECTORS.gameCategory).first().text()),
+      // 로컬 인원수만 표기된다. 솔로 가능 여부는 1명 플레이가 포함되는지로 판단
+      multiplayer: players ? { localMax: players, solo: true, coop: players > 1 } : undefined,
+    },
   };
 }
 
@@ -130,5 +173,29 @@ export const nintendoAdapter: StoreAdapter = {
   async fetch(id: string): Promise<StoreSnapshot> {
     if (!/^[a-z0-9]+$/i.test(id)) throw new AdapterError(`Nintendo 상품 ID 형식 오류: ${id}`, "nintendo", false);
     return parseNintendoProduct(await fetchHtml(nintendoProductUrl(id)), id);
+  },
+
+  /** 검색 시드 × 페이지네이션으로 카탈로그를 훑는다. 한 시드가 바닥나면 다음 시드로 */
+  async discover(limit: number): Promise<SearchCandidate[]> {
+    const out: SearchCandidate[] = [];
+    const seen = new Set<string>();
+    for (const q of DISCOVERY_QUERIES) {
+      for (let page = 1; page <= DISCOVERY_MAX_PAGES && out.length < limit; page++) {
+        const u = new URL(`${NINTENDO_BASE_URL}/catalogsearch/result/`);
+        u.searchParams.set("q", q);
+        u.searchParams.set("p", String(page));
+        const found = parseNintendoSearch(await fetchHtml(u.toString()));
+        if (found.length === 0) break; // 이 시드는 끝 — 다음 시드로
+        for (const c of found) {
+          if (seen.has(c.externalId)) continue;
+          seen.add(c.externalId);
+          out.push(c);
+          if (out.length >= limit) break;
+        }
+        await new Promise((r) => setTimeout(r, nintendoAdapter.minIntervalMs));
+      }
+      if (out.length >= limit) break;
+    }
+    return out;
   },
 };

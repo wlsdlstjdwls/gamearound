@@ -65,6 +65,11 @@ export interface SourceAdapter<T extends StoreSnapshot | MetaSnapshot | NewsItem
   fetchMany?(externalIds: string[]): Promise<Map<string, T>>;
   /** fetchMany 한 요청에 넣을 수 있는 ID 수 */
   batchSize?: number;
+  /**
+   * 카탈로그에서 신규 후보를 찾아온다 (지원하는 소스만). 이게 없으면 그 소스는
+   * 이미 등록된 게임에 가격을 붙이기만 할 뿐, 그 플랫폼 독점작을 영원히 못 가져온다.
+   */
+  discover?(limit: number): Promise<SearchCandidate[]>;
   /** 소스별 요청 간격(ms). 크롤 대상은 보수적으로 */
   minIntervalMs: number;
 }

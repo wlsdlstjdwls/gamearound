@@ -37,6 +37,8 @@ env:
   # 한 실행의 총 처리 건수는 BATCH_SIZE.steam(1,500) 이 상한이고 시드가 그 앞자리를 차지한다.
   # 발견은 장르 슬라이스로 수만 건까지 훑을 수 있으므로, 카탈로그는 실행을 거듭하며 며칠에 걸쳐 찬다.
   STEAM_SEED_TOP: ${{ github.event.inputs.seed_top || '1500' }}
+  # nintendo 는 요청 간격 4초 × (발견 페이지 + 상품 페이지) 라 BATCH_SIZE.nintendo(120) 안에서 소량만
+  NINTENDO_SEED_TOP: '60' 
 
 jobs:
   crawl:
@@ -75,6 +77,8 @@ jobs:
         continue-on-error: true
         run: pnpm crawl --source=xbox $CRAWL_LIMIT_ARG
 
+      # Switch 독점작은 Steam 에 없어 nintendo 도 카탈로그를 훑어야 들어온다. 흡수/신규 판단은 제목 역매칭.
+      # eShop 은 HTML 크롤(요청 간격 4초)이라 Steam 처럼 대량으로 못 당긴다 — 실행당 소량씩 며칠에 걸쳐 채운다.
       - name: crawl nintendo
         continue-on-error: true
-        run: pnpm crawl --source=nintendo $CRAWL_LIMIT_ARG
+        run: pnpm crawl --source=nintendo --seed-top=$NINTENDO_SEED_TOP $CRAWL_LIMIT_ARG

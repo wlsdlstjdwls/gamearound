@@ -1,7 +1,7 @@
 // 매칭 임계값 테스트 (§4.2) — trigram 유사도 + classifyMatch/pickBestCandidate 순수 함수만. DB/네트워크 없음
 import { describe, expect, it } from "vitest";
-import { normalizeTitle, trigramSimilarity } from "@/lib/slug";
-import { AUTO_MATCH_THRESHOLD, classifyMatch, NONE_RETRY_DAYS, noneRetryCutoff, PENDING_MATCH_THRESHOLD, pickBestCandidate } from "@/server/sync/match";
+import { normalizeTitle, slugify, trigramSimilarity } from "@/lib/slug";
+import { AUTO_MATCH_THRESHOLD, classifyMatch, findGameByTitle, NONE_RETRY_DAYS, noneRetryCutoff, PENDING_MATCH_THRESHOLD, pickBestCandidate } from "@/server/sync/match";
 import { matchNewsToGame } from "@/server/sync/run-source";
 
 describe("classifyMatch", () => {
@@ -81,5 +81,50 @@ describe("noneRetryCutoff", () => {
   it("NONE_RETRY_DAYS + 1일 지난 기록은 재검색 대상", () => {
     const checkedAt = new Date(now.getTime() - (NONE_RETRY_DAYS + 1) * 24 * 60 * 60 * 1000);
     expect(checkedAt < noneRetryCutoff(now)).toBe(true);
+  });
+});
+
+describe("findGameByTitle (역방향 매칭)", () => {
+  const rows = [
+    { id: "g1", slug: "hollow-knight-silksong", titleEn: "Hollow Knight: Silksong", titleKo: "할로우 나이트: 실크송" },
+    { id: "g2", slug: "stardew-valley", titleEn: "Stardew Valley", titleKo: null },
+  ];
+
+  it("영문 제목이 같으면 기존 게임에 흡수한다", () => {
+    expect(findGameByTitle("Stardew Valley", rows)?.game.id).toBe("g2");
+  });
+
+  it("한국어 제목으로도 찾는다 — Switch 스토어는 한국어 제목만 준다", () => {
+    expect(findGameByTitle("할로우 나이트: 실크송", rows)?.game.id).toBe("g1");
+  });
+
+  it("임계값 미만은 별개 게임으로 둔다 (애매한 병합은 가격을 섞는다)", () => {
+    expect(findGameByTitle("Hollow Knight", rows)).toBeNull();
+    expect(findGameByTitle("전혀 다른 게임", rows)).toBeNull();
+  });
+
+  it("기존 게임이 없으면 null", () => {
+    expect(findGameByTitle("Stardew Valley", [])).toBeNull();
+  });
+});
+
+describe("한글 정규화 (NFKD 자모 분해 회귀)", () => {
+  it("한국어 제목이 정규화 후에도 남는다", () => {
+    expect(normalizeTitle("젤다의 전설")).toBe("젤다의 전설");
+    expect(normalizeTitle("할로우 나이트: 실크송")).toBe("할로우 나이트 실크송");
+  });
+
+  it("서로 다른 한국어 제목은 유사도가 1 이 아니다", () => {
+    // 자모가 분해된 채 걸러지면 둘 다 빈 문자열이 되어 1.0 으로 auto 매칭된다
+    expect(trigramSimilarity("전혀 다른 게임", "할로우 나이트")).toBeLessThan(AUTO_MATCH_THRESHOLD);
+  });
+
+  it("한국어 제목의 slug 가 게임마다 구분된다", () => {
+    expect(slugify("할로우 나이트: 실크송")).toBe("할로우-나이트-실크송");
+    expect(slugify("젤다의 전설")).not.toBe(slugify("마리오 카트"));
+  });
+
+  it("라틴 문자 악센트 제거는 그대로 동작한다", () => {
+    expect(normalizeTitle("Pokémon Légendes")).toBe("pokemon legendes");
   });
 });

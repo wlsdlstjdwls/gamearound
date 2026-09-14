@@ -3,7 +3,7 @@ import { describe, expect, it } from "vitest";
 import { readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import { AdapterError } from "./types";
-import { parseNintendoDate, parseNintendoProduct, parseNintendoSearch } from "./nintendo";
+import { parseNintendoDate, parseNintendoGenres, parseNintendoPlayers, parseNintendoProduct, parseNintendoSearch } from "./nintendo";
 
 const fixture = (name: string): string => readFileSync(fileURLToPath(new URL(`./__fixtures__/${name}`, import.meta.url)), "utf8");
 
@@ -68,5 +68,39 @@ describe("parseNintendoDate", () => {
     ["", null],
   ])("%s → %s", (input, expected) => {
     expect(parseNintendoDate(input)).toBe(expected);
+  });
+});
+
+describe("parseNintendoProduct meta", () => {
+  it("신규 게임 생성에 필요한 meta 를 채운다 (Switch 독점작은 Steam 에 없다)", () => {
+    const snap = parseNintendoProduct(fixture("nintendo-product-switch1.html"), "70010000100203");
+    expect(snap.meta?.titleEn).toBeTruthy(); // 한국 eShop 은 영문 제목이 없어 한국어 제목이 들어간다
+    expect(snap.meta?.titleKo).toBeNull();
+    expect(snap.meta?.publisher).toBe("Team Cherry");
+    expect(snap.meta?.coverUrl).toContain("media/catalog/product");
+    expect(snap.meta?.genres).toContain("액션");
+  });
+});
+
+describe("parseNintendoGenres", () => {
+  it("쉼표·가운뎃점으로 나누고 중복을 지운다", () => {
+    expect(parseNintendoGenres("액션, 어드벤처")).toEqual(["액션", "어드벤처"]);
+    expect(parseNintendoGenres("액션 · 액션")).toEqual(["액션"]);
+  });
+  it("빈 값은 빈 배열", () => {
+    expect(parseNintendoGenres(null)).toEqual([]);
+    expect(parseNintendoGenres("  ")).toEqual([]);
+  });
+});
+
+describe("parseNintendoPlayers", () => {
+  it("범위 표기에서 최대 인원을 읽는다", () => {
+    expect(parseNintendoPlayers("1~4명")).toBe(4);
+    expect(parseNintendoPlayers("최대 8명")).toBe(8);
+    expect(parseNintendoPlayers("1명")).toBe(1);
+  });
+  it("숫자가 없으면 null", () => {
+    expect(parseNintendoPlayers("")).toBeNull();
+    expect(parseNintendoPlayers(null)).toBeNull();
   });
 });
