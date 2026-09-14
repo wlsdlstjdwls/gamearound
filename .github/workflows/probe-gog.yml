@@ -1,0 +1,29 @@
+# 일회성 조사 — GOG 가격이 러너(미국 IP)에서만 0/빈값으로 오는지 본다. 확인 후 삭제한다.
+name: probe-gog
+
+on:
+  workflow_dispatch:
+
+jobs:
+  probe:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - run: curl -s https://ipinfo.io/json | head -c 200; echo
+      - name: 카탈로그 + 가격 표본
+        run: |
+          node -e '
+          const H={"User-Agent":"Mozilla/5.0","Accept":"application/json"};
+          const j=async u=>(await fetch(u,{headers:H})).json();
+          (async()=>{
+            const cat=await j("https://catalog.gog.com/v1/catalog?limit=25&page=1&countryCode=KR&locale=en-US&productType=in%3Agame&order=desc%3Atrending");
+            console.log("catalog productCount",cat.productCount,"shown",cat.products.length);
+            console.log("catalog price 표본",JSON.stringify(cat.products.slice(0,3).map(p=>({t:p.title,price:p.price&&p.price.final}))));
+            const ids=cat.products.map(p=>p.id);
+            const pr=await j("https://api.gog.com/products/prices?ids="+ids.join(",")+"&countryCode=KR");
+            const items=pr._embedded.items;
+            const zero=items.filter(i=>!i._embedded.prices[0]||i._embedded.prices[0].finalPrice==="0 USD").length;
+            console.log("prices items",items.length,"of",ids.length,"| zero/empty",zero);
+            console.log("표본",JSON.stringify(items.slice(0,3).map(i=>({id:i._embedded.product.id,p:i._embedded.prices[0]||null}))));
+          })();
+          '
