@@ -36,12 +36,14 @@ env:
   VAPID_SUBJECT: ${{ secrets.VAPID_SUBJECT }}
   CRAWL_LIMIT_ARG: ${{ github.event.inputs.limit != '' && format('--limit={0}', github.event.inputs.limit) || '' }}
   # --seed-top = 이 실행에서 새로 등록할 상한. 발견은 이미 아는 것을 건너뛰며 카탈로그를 파고든다
-  # (server/sync/discover). 실제 몫은 SEED_SHARE_MAX(배치의 절반)가 한 번 더 깎으므로
-  # 배치의 절반값을 그대로 적는다 — 나머지 절반은 기존 게임 가격 갱신이 쓴다.
+  # (server/sync/discover). 실제 몫은 seedQuota 가 한 번 더 깎으므로 그 몫과 같은 값을 적는다 —
+  # 기본은 배치의 절반이고, 나머지 절반은 기존 게임 가격 갱신이 쓴다.
   STEAM_SEED_TOP: ${{ github.event.inputs.seed_top || '750' }}   # BATCH_SIZE.steam 1,500 의 절반
   GOG_SEED_TOP: '200'      # BATCH_SIZE.gog 400 의 절반
   XBOX_SEED_TOP: '100'     # BATCH_SIZE.xbox 200 의 절반
-  PSSTORE_SEED_TOP: '100'  # BATCH_SIZE.psstore 200 의 절반
+  # psstore 만 절반이 아니라 3/4 다 — 매핑 155건 대 KR 카탈로그 7,571건이라 재조회 몫이 남아돈다.
+  # 근거는 SEED_SHARE_BY_SOURCE 주석. 보유가 따라잡으면 이 값과 그 상수를 함께 되돌린다.
+  PSSTORE_SEED_TOP: '150'  # BATCH_SIZE.psstore 200 의 3/4
 
 jobs:
   crawl:

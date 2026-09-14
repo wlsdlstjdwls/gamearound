@@ -190,6 +190,20 @@ export const DISCOVERY_PAGE_BUDGET: Partial<Record<StoreSource, number>> = {
  * 0.5 = 신규 유입과 기존 갱신을 반씩. Steam 기준 실행당 750건 신규 = 하루 2,250건.
  */
 export const SEED_SHARE_MAX = 0.5;
+/**
+ * 소스별 몫 덮어쓰기. 카탈로그의 대부분을 아직 모르는 소스는 절반이 너무 후하다 —
+ * 아는 것이 적으면 그 적은 것을 하루 세 번 다시 묻는 데 배치의 절반이 나간다.
+ *
+ * psstore 0.75 의 근거(2026-09-14 실측): 매핑된 게임이 155건인데 KR 카탈로그는 7,571건이다.
+ * 155건은 전부 2일 안에 갱신돼 있어(game_platforms.last_synced_at) 재조회 몫이 남아돌고,
+ * 발견은 `stoppedBy: "want"` 로 멈춘다 — 더 찾을 게 있는데 몫이 없어 멈춘다는 뜻이다.
+ * 0.75 로 올리면 실행당 신규가 100건에서 150건이 되고(하루 450건), 남는 50건이 155건을 하루 한 바퀴 돌린다.
+ * 배치 크기는 그대로라 실행 시간도, Actions 사용 분도 늘지 않는다.
+ * 보유가 카탈로그를 따라잡으면 이 줄을 지워 기본값(절반)으로 되돌린다.
+ */
+export const SEED_SHARE_BY_SOURCE: Partial<Record<StoreSource, number>> = {
+  psstore: 0.75,
+};
 /** 스토어 소스 → 담당 플랫폼 (§11-6: PS4/PS5, Switch/Switch2 분리 유지) */
 export const SOURCE_PLATFORMS: Record<StoreSource, Platform[]> = {
   steam: ["steam"], psstore: ["ps5", "ps4"], xbox: ["xbox"], nintendo: ["switch", "switch2"],

@@ -1,6 +1,6 @@
 // 발견 수집기 테스트 — 네트워크, DB 없음. 페이지는 가짜 async iterable, 아는 것은 Set 으로 준다.
 import { describe, expect, it } from "vitest";
-import { collectFreshCandidates } from "./discover";
+import { collectFreshCandidates, seedQuota } from "./discover";
 import type { SearchCandidate } from "@/server/adapters/types";
 
 const candidate = (id: string): SearchCandidate => ({ externalId: id, title: `게임 ${id}`, url: `https://x/${id}` });
@@ -91,5 +91,27 @@ describe("collectFreshCandidates", () => {
     });
     expect(read).toHaveLength(0);
     expect(r.fresh).toEqual([]);
+  });
+});
+
+describe("seedQuota", () => {
+  it("소스별 값이 없으면 배치의 절반까지만 시드에 준다", () => {
+    expect(seedQuota("steam", 1500, 750, undefined)).toBe(750);
+    expect(seedQuota("steam", 1500, 900, undefined)).toBe(750); // 몫이 seedTop 을 깎는다
+    expect(seedQuota("steam", 1500, 300, undefined)).toBe(300); // seedTop 이 더 좁으면 그쪽이 이긴다
+  });
+
+  it("psstore 는 카탈로그의 대부분을 아직 몰라 몫을 더 받는다", () => {
+    expect(seedQuota("psstore", 200, 150, undefined)).toBe(150); // 200 × 0.75
+    expect(seedQuota("psstore", 200, 999, undefined)).toBe(150);
+  });
+
+  it("호출부가 준 몫이 소스별 값보다 우선한다 (크론 discover 모드의 1)", () => {
+    expect(seedQuota("psstore", 200, 200, 1)).toBe(200);
+    expect(seedQuota("psstore", 200, 200, 0.25)).toBe(50);
+  });
+
+  it("seedTop 이 없으면 발견을 돌지 않는다", () => {
+    expect(seedQuota("psstore", 200, undefined, undefined)).toBe(0);
   });
 });

@@ -6,6 +6,28 @@
 //
 // DB 접근은 unknownOf 로 주입받는다 — 이 파일은 네트워크도 DB 도 직접 만지지 않아 테스트가 쉽다.
 import type { SearchCandidate } from "@/server/adapters/types";
+import type { StoreSource } from "@/server/adapters";
+import { SEED_SHARE_BY_SOURCE, SEED_SHARE_MAX } from "./constants";
+
+/**
+ * 이번 실행에서 신규 발견에 줄 자리 수.
+ *
+ * 두 상한이 함께 걸린다 — 호출부가 원한 수(seedTop)와 배치에서 시드가 가져갈 몫이다.
+ * 몫을 두는 이유: 시드는 대상 목록 맨 앞에 붙어서, 상한이 없으면 신규가 많은 날
+ * 배치를 통째로 먹고 기존 게임 가격이 한 번도 안 갱신된다.
+ *
+ * 몫의 출처는 셋이고 좁은 것이 이긴다: 호출부가 준 값(크론 discover 모드의 1) →
+ * 소스별 값(SEED_SHARE_BY_SOURCE) → 기본값(절반).
+ */
+export function seedQuota(
+  source: StoreSource,
+  limit: number,
+  seedTop: number | undefined,
+  seedShare: number | undefined,
+): number {
+  const share = seedShare ?? SEED_SHARE_BY_SOURCE[source] ?? SEED_SHARE_MAX;
+  return Math.min(seedTop ?? 0, Math.floor(limit * share));
+}
 
 /** 발견을 멈춘 이유. 운영 로그에 그대로 찍어 "왜 신규가 적은지" 를 사후에 알 수 있게 한다 */
 export type DiscoveryStop =

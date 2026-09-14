@@ -7,8 +7,8 @@ import type { SearchCandidate } from "@/server/adapters/types";
 import { errorMessage } from "@/lib/errors";
 import { normalizeTitle } from "@/lib/slug";
 import { findGameByTitle, type GameTitleRow } from "./match";
-import { collectFreshCandidates } from "./discover";
-import { DISCOVERY_PAGE_BUDGET, MATCHED_FOR_SYNC, SEED_SHARE_MAX, SOURCE_PLATFORMS, SOURCE_REGION } from "./constants";
+import { collectFreshCandidates, seedQuota } from "./discover";
+import { DISCOVERY_PAGE_BUDGET, MATCHED_FOR_SYNC, SOURCE_PLATFORMS, SOURCE_REGION } from "./constants";
 import { fetchWithRetry } from "./retry";
 import type { Ctx } from "./context";
 
@@ -40,7 +40,7 @@ export interface StoreTargetOptions {
   limit: number;
   seedTop?: number;
   pageBudget?: number;
-  /** 시드가 가져갈 몫의 비율. 비우면 SEED_SHARE_MAX */
+  /** 시드가 가져갈 몫의 비율. 비우면 소스별 값 또는 기본값 (seedQuota) */
   seedShare?: number;
 }
 
@@ -82,12 +82,8 @@ export async function listStoreTargets(ctx: Ctx, source: StoreSource, opts: Stor
   }
 
   // 신규 시드 (§4.2-1). 발견은 부가 작업이다 — 스토어가 목록을 안 주더라도(차단, 개편)
-  // 기존 게임 가격 갱신은 계속돼야 한다.
-  // 시드가 가져갈 몫을 배치의 일부로 제한하는 이유: 시드는 아래에서 대상 목록 앞에 붙는다.
-  // 상한이 없으면 신규가 많은 날 시드가 배치를 통째로 먹고 기존 게임 가격이 한 번도 안 갱신된다.
-  // 가격 갱신을 다른 실행이 따로 맡는 자리(크론 discover 모드)는 seedShare 로 이 제한을 푼다 —
-  // 거기서 절반을 기존 갱신에 묶어 두면 그 절반이 prices 모드가 이미 하는 일과 겹친다.
-  const seedWant = Math.min(seedTop ?? 0, Math.floor(limit * (opts.seedShare ?? SEED_SHARE_MAX)));
+  // 기존 게임 가격 갱신은 계속돼야 한다. 몫을 정하는 규칙은 seedQuota 에 있다.
+  const seedWant = seedQuota(source, limit, seedTop, opts.seedShare);
   if (seedWant > 0) {
     try {
       // 한 건씩 unshift 하면 발견 순서가 뒤집힌다 — 카탈로그 꼬리(인기 없는 것, 미출시)가 맨 앞에 오고
