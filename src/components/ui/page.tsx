@@ -17,34 +17,36 @@ const PAD: Record<PagePad, string> = {
   sub: "pt-[22px] pb-20",
 };
 
-export function Page({
-  width = "default",
-  pad = "sub",
-  gap,
-  className,
-  children,
-}: {
+export type PageProps = React.ComponentProps<"div"> & {
   width?: PageWidth;
   pad?: PagePad;
   /** 섹션 간 간격(px). 홈 36 / 상세 28 / 서브 20 */
   gap?: number;
-  className?: string;
-  children: React.ReactNode;
-}) {
+};
+
+export function Page({ width = "default", pad = "sub", gap, className, style, children, ...rest }: PageProps) {
   return (
     <div
       className={cn("page-enter mx-auto flex w-full flex-col px-7", WIDTH[width], PAD[pad], className)}
-      style={gap === undefined ? undefined : { gap: `${gap}px` }}
+      style={gap === undefined ? style : { ...style, gap: `${gap}px` }}
+      {...rest}
     >
       {children}
     </div>
   );
 }
 
-/** 카드 — 1px 테두리 + 흰 배경 + 12px 라운드. 그림자는 쓰지 않는다 */
+/**
+ * 카드 표면 — 1px 테두리 + 흰 배경 + 12px 라운드. 그림자는 쓰지 않는다(리디자인 원칙: 깊이는 테두리로만).
+ * div 가 아닌 요소(section·form·dl·li·nav)도 같은 표면을 쓰므로 클래스 함수로 내보낸다.
+ */
+export function cardClass(className?: string): string {
+  return cn("rounded-xl border border-line bg-surface", className);
+}
+
 export function Card({ className, children, ...rest }: React.ComponentProps<"div">) {
   return (
-    <div className={cn("rounded-xl border border-line bg-surface", className)} {...rest}>
+    <div className={cardClass(className)} {...rest}>
       {children}
     </div>
   );

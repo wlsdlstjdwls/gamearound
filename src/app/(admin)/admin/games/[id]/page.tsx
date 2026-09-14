@@ -9,6 +9,7 @@ import { requireRoleOrForbid } from "@/server/auth/guards";
 import { CorrectionForm, type FieldOption } from "@/components/admin/correction-form";
 import { ManualRefForm } from "@/components/admin/manual-ref-form";
 import { MatchReviewButtons } from "@/components/admin/match-review-buttons";
+import { cardClass } from "@/components/ui/page";
 
 export const metadata: Metadata = { title: "게임 데이터 정정" };
 
@@ -109,7 +110,7 @@ export default async function AdminGamePage({ params }: { params: Promise<{ id: 
         {game.sourceRefs.length === 0 ? (
           <p className="text-[13px] text-mut">매핑된 소스가 없습니다.</p>
         ) : (
-          <div className="overflow-x-auto rounded-xl border border-line bg-surface">
+          <div className={cardClass("overflow-x-auto")}>
             <table className="w-full text-[13px]">
               <thead className="border-b border-line text-left text-[11.5px] text-dim">
                 <tr>
@@ -150,7 +151,7 @@ export default async function AdminGamePage({ params }: { params: Promise<{ id: 
         {game.corrections.length === 0 ? (
           <p className="text-[13px] text-mut">정정 이력이 없습니다.</p>
         ) : (
-          <div className="overflow-x-auto rounded-xl border border-line bg-surface">
+          <div className={cardClass("overflow-x-auto")}>
             <table className="w-full text-[13px]">
               <thead className="border-b border-line text-left text-[11.5px] text-dim">
                 <tr>

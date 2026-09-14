@@ -8,6 +8,7 @@ import { formatDateTime } from "@/lib/format";
 import { getSyncOverview, listPendingMatches, type SyncOverviewItem } from "@/server/services/admin";
 import { getDisabledReason, isSource } from "@/server/adapters";
 import { requireRoleOrForbid } from "@/server/auth/guards";
+import { cardClass } from "@/components/ui/page";
 
 export const metadata: Metadata = { title: "관리자 대시보드" };
 
@@ -33,7 +34,7 @@ function SourceCard({ item }: { item: SyncOverviewItem }) {
   const disabledReason = isSource(item.source) ? getDisabledReason(item.source) : undefined;
 
   return (
-    <div className={`flex flex-col gap-2.5 rounded-xl border border-line bg-surface p-4 ${disabledReason ? "opacity-60" : ""}`}>
+    <div className={cardClass(`flex flex-col gap-2.5 p-4 ${disabledReason ? "opacity-60" : ""}`)}>
       <div className="flex items-center justify-between gap-2">
         <h3 className="text-[13.5px] font-bold text-ink">{item.source}</h3>
         {disabledReason ? (

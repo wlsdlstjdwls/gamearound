@@ -3,6 +3,7 @@
 import { useActionState, useState } from "react";
 import { correctFieldAction } from "@/app/(admin)/admin/actions";
 import { ActionStatus, SubmitButton } from "@/components/admin/submit-button";
+import { cardClass } from "@/components/ui/page";
 
 export type FieldOption = { name: string; label: string; kind: "text" | "int" | "bool" | "date"; current: string | number | boolean | null };
 
@@ -32,7 +33,7 @@ export function CorrectionForm({
   const field = fields.find((f) => f.name === fieldName) ?? fields[0];
 
   return (
-    <form action={formAction} className="flex flex-col gap-2.5 rounded-xl border border-line bg-surface p-4">
+    <form action={formAction} className={cardClass("flex flex-col gap-2.5 p-4")}>
       <input type="hidden" name="table" value={table} />
       <input type="hidden" name="rowId" value={rowId} />
       <input type="hidden" name="gameId" value={gameId} />

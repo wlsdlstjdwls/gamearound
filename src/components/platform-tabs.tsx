@@ -8,6 +8,7 @@ import { collectedAtText, type Freshness } from "@/lib/freshness";
 import type { PlatformDto } from "@/server/services/games";
 import { StalenessNote } from "@/components/freshness-badge";
 import { SaleBadge } from "@/components/sale-badge";
+import { cardClass } from "@/components/ui/page";
 
 export type PlatformTabItem = PlatformDto & { freshness: Freshness };
 
@@ -26,7 +27,7 @@ export function PlatformTabs({ platforms }: { platforms: PlatformTabItem[] }) {
 
   if (platforms.length === 0) {
     return (
-      <div className="rounded-xl border border-line bg-surface p-[18px] text-[13px] text-dim">
+      <div className={cardClass("p-[18px] text-[13px] text-dim")}>
         플랫폼별 가격 정보가 아직 수집되지 않았습니다.
       </div>
     );
@@ -37,7 +38,7 @@ export function PlatformTabs({ platforms }: { platforms: PlatformTabItem[] }) {
   const isStale = current.freshness === "stale";
 
   return (
-    <div className="overflow-hidden rounded-xl border border-line bg-surface">
+    <div className={cardClass("overflow-hidden")}>
       <div role="tablist" aria-label="플랫폼 선택" className="flex overflow-x-auto overflow-y-hidden border-b border-line">
         {platforms.map((p, i) => {
           const selected = i === idx;

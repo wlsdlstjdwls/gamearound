@@ -3,6 +3,7 @@
 import { stagger } from "@/lib/motion";
 import { formatHours } from "@/lib/format";
 import type { PlaytimeDto } from "@/server/services/games";
+import { cardClass } from "@/components/ui/page";
 
 type ItemKey = keyof Omit<PlaytimeDto, "lastSyncedAt">;
 
@@ -111,7 +112,7 @@ export function PlaytimeCard({ playtime, currentPrice }: { playtime: PlaytimeDto
   const perHour = pricePerHour(currentPrice, playtime);
 
   return (
-    <section aria-labelledby="playtime-card-heading" className="flex flex-col gap-3 rounded-xl border border-line bg-surface p-4">
+    <section aria-labelledby="playtime-card-heading" className={cardClass("flex flex-col gap-3 p-4")}>
       <div className="flex items-baseline justify-between gap-2">
         <h2 id="playtime-card-heading" className="text-[13.5px] font-bold text-ink">
           플레이타임

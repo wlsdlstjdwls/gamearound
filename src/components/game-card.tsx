@@ -4,6 +4,7 @@ import Link from "next/link";
 import { formatDate, formatDiscount, formatKrw, PLATFORM_LABEL } from "@/lib/format";
 import type { GameSummary } from "@/server/services/games";
 import { SaleBadge } from "@/components/sale-badge";
+import { cardClass } from "@/components/ui/page";
 
 // next.config.ts images.remotePatterns 에 등록된 호스트만 최적화. 그 외는 unoptimized 로 원본 사용(런타임 오류 방지)
 const OPTIMIZABLE_HOSTS = ["cdn.akamai.steamstatic.com", "shared.akamai.steamstatic.com", "cdn.cloudflare.steamstatic.com"];
@@ -55,7 +56,7 @@ export function GameCard({ game, variant = "discount" }: { game: GameSummary; va
   return (
     <Link
       href={`/games/${game.slug}`}
-      className="lift press group flex h-full flex-col overflow-hidden rounded-xl border border-line bg-surface outline-none transition-colors duration-base hover:border-line-strong focus-visible:ring-2 focus-visible:ring-ink focus-visible:ring-offset-2 focus-visible:ring-offset-bg"
+      className={cardClass("lift press group flex h-full flex-col overflow-hidden outline-none transition-colors duration-base hover:border-line-strong focus-visible:ring-2 focus-visible:ring-ink focus-visible:ring-offset-2 focus-visible:ring-offset-bg")}
       aria-label={`${title} 상세 보기`}
     >
       <div className="relative aspect-[460/215] w-full bg-surface-3">

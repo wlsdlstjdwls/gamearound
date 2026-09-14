@@ -1,6 +1,7 @@
 "use client";
 // 웹푸시 구독 토글 (§7). SW 등록 → 권한 요청 → pushManager.subscribe → POST /api/push/subscribe
 import { useEffect, useState } from "react";
+import { cardClass } from "@/components/ui/page";
 
 type Status = "checking" | "unsupported" | "denied" | "subscribed" | "unsubscribed";
 
@@ -115,7 +116,7 @@ export function PushToggle({ initialCount }: { initialCount: number }) {
   const disabled = busy || status === "checking" || status === "unsupported" || status === "denied";
 
   return (
-    <section className="flex flex-col gap-3 rounded-xl border border-line bg-surface p-5">
+    <section className={cardClass("flex flex-col gap-3 p-5")}>
       <div className="flex items-center justify-between gap-3">
         <div>
           <h2 className="text-[14px] font-bold text-ink">웹푸시 알림</h2>

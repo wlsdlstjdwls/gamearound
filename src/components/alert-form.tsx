@@ -7,6 +7,7 @@ import { useFormStatus } from "react-dom";
 import { createAlertAction, deleteAlertAction, toggleAlertAction, type ActionState } from "@/app/(user)/alerts/actions";
 import { PLATFORM_LABEL } from "@/lib/format";
 import { Button } from "@/components/ui/button";
+import { ChipButton } from "@/components/ui/chip";
 
 export const PLATFORM_OPTIONS: { value: string; label: string }[] = [
   { value: "all", label: "전체 플랫폼" },
@@ -65,17 +66,9 @@ export function AlertForm({ game }: { game: FormGame }) {
           <legend className="mb-2 text-[12.5px] text-mut">알림 받을 플랫폼</legend>
           <div className="flex flex-wrap gap-1.5">
             {PLATFORM_OPTIONS.map((o) => (
-              <button
-                key={o.value}
-                type="button"
-                aria-pressed={platform === o.value}
-                onClick={() => setPlatform(o.value)}
-                className={`press rounded-lg px-3 py-1.5 text-[12.5px] transition-colors duration-base ${
-                  platform === o.value ? "bg-ink font-semibold text-on-ink" : "border border-line-strong text-mut hover:border-ink hover:text-ink"
-                }`}
-              >
+              <ChipButton key={o.value} active={platform === o.value} onClick={() => setPlatform(o.value)}>
                 {o.label}
-              </button>
+              </ChipButton>
             ))}
           </div>
         </fieldset>

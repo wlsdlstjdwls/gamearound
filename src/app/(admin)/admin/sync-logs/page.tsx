@@ -1,9 +1,10 @@
 // /admin/sync-logs — 최근 100건 테이블, ?source= 필터
 import type { Metadata } from "next";
-import Link from "next/link";
 import { formatDateTime } from "@/lib/format";
+import { ChipLink } from "@/components/ui/chip";
 import { isSourceName, listSyncLogs, SOURCES } from "@/server/services/admin";
 import { requireRoleOrForbid } from "@/server/auth/guards";
+import { cardClass } from "@/components/ui/page";
 
 export const metadata: Metadata = { title: "동기화 로그" };
 
@@ -30,15 +31,11 @@ export default async function SyncLogsPage({ searchParams }: { searchParams: Pro
       <header className="flex flex-wrap items-end justify-between gap-2">
         <h1 className="text-2xl font-bold tracking-[-0.03em] text-ink">동기화 로그 <span className="text-[13px] font-normal text-dim">최근 {logs.length}건</span></h1>
         <div className="flex flex-wrap gap-1 text-xs">
-          <Link href="/admin/sync-logs" className={`press rounded-lg px-2.5 py-1 ${!source ? "bg-ink font-semibold text-on-ink" : "border border-line-strong text-mut hover:border-ink hover:text-ink"}`}>전체</Link>
+          <ChipLink href="/admin/sync-logs" active={!source} size="sm">전체</ChipLink>
           {SOURCES.map((s) => (
-            <Link
-              key={s}
-              href={`/admin/sync-logs?source=${s}`}
-              className={`press rounded-lg px-2.5 py-1 ${source === s ? "bg-ink font-semibold text-on-ink" : "border border-line-strong text-mut hover:border-ink hover:text-ink"}`}
-            >
+            <ChipLink key={s} href={`/admin/sync-logs?source=${s}`} active={source === s} size="sm">
               {s}
-            </Link>
+            </ChipLink>
           ))}
         </div>
       </header>
@@ -46,7 +43,7 @@ export default async function SyncLogsPage({ searchParams }: { searchParams: Pro
       {logs.length === 0 ? (
         <p className="rounded-xl border border-dashed border-line-strong bg-surface p-6 text-[13px] text-mut">로그가 없습니다.</p>
       ) : (
-        <div className="overflow-x-auto rounded-xl border border-line bg-surface">
+        <div className={cardClass("overflow-x-auto")}>
           <table className="w-full text-[13px]">
             <thead className="border-b border-line text-left text-[11.5px] text-dim">
               <tr>

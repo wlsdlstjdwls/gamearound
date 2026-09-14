@@ -2,6 +2,7 @@
 import Link from "next/link";
 import { Page } from "@/components/ui/page";
 import { requireRoleOrForbid } from "@/server/auth/guards";
+import { cardClass } from "@/components/ui/page";
 
 export const dynamic = "force-dynamic";
 
@@ -15,7 +16,7 @@ export default async function AdminLayout({ children }: { children: React.ReactN
 
   return (
     <Page gap={22}>
-      <nav aria-label="관리자 메뉴" className="flex flex-wrap items-center gap-1 rounded-xl border border-line bg-surface p-1.5 text-[12.5px]">
+      <nav aria-label="관리자 메뉴" className={cardClass("flex flex-wrap items-center gap-1 p-1.5 text-[12.5px]")}>
         <span className="px-2 text-[11px] font-semibold uppercase tracking-[0.12em] text-dim">Admin</span>
         {NAV.map((n) => (
           <Link key={n.href} href={n.href} className="press rounded-lg px-3 py-1.5 text-mut transition-colors hover:bg-surface-2 hover:text-ink">

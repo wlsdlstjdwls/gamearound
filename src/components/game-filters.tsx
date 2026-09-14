@@ -1,23 +1,10 @@
 // /games 목록 필터 — 서버 컴포넌트. 상태는 전부 쿼리스트링에 있으므로 클라이언트 JS 가 필요 없다.
 // 각 칩은 "그 값만 바꾸고 page 는 1로" 돌아가는 링크다.
-import Link from "next/link";
 import { PLATFORM_LABEL } from "@/lib/format";
+import { ChipLink } from "@/components/ui/chip";
 import { GAME_SORTS, DEFAULT_GAME_SORT, SORT_LABEL, gamesHref, type GamesQuery } from "@/lib/games-query";
 import type { GameFacets } from "@/server/services/games";
-
-function Chip({ href, active, children }: { href: string; active: boolean; children: React.ReactNode }) {
-  return (
-    <Link
-      href={href}
-      aria-current={active ? "true" : undefined}
-      className={`press rounded-lg px-3 py-1.5 text-[12px] transition-colors duration-base ${
-        active ? "bg-ink font-semibold text-on-ink" : "border border-line-strong text-mut hover:border-ink hover:text-ink"
-      }`}
-    >
-      {children}
-    </Link>
-  );
-}
+import { cardClass } from "@/components/ui/page";
 
 function Row({ label, children }: { label: string; children: React.ReactNode }) {
   return (
@@ -33,40 +20,40 @@ export function GameFilters({ facets, filter }: { facets: GameFacets; filter: Ga
   const href = (patch: Partial<GamesQuery>) => gamesHref(filter, { ...patch, page: 1 });
 
   return (
-    <section aria-label="목록 필터" className="flex flex-col gap-2.5 rounded-xl border border-line bg-surface p-4">
+    <section aria-label="목록 필터" className={cardClass("flex flex-col gap-2.5 p-4")}>
         <Row label="플랫폼">
-          <Chip href={href({ platform: undefined })} active={!filter.platform}>
+          <ChipLink href={href({ platform: undefined })} active={!filter.platform}>
             전체
-          </Chip>
+          </ChipLink>
           {facets.platforms.map((p) => (
-            <Chip key={p.platform} href={href({ platform: p.platform })} active={filter.platform === p.platform}>
+            <ChipLink key={p.platform} href={href({ platform: p.platform })} active={filter.platform === p.platform}>
               {PLATFORM_LABEL[p.platform] ?? p.platform} <span className="opacity-55">{p.count}</span>
-            </Chip>
+            </ChipLink>
           ))}
         </Row>
 
         {facets.genres.length > 0 && (
           <Row label="장르">
-            <Chip href={href({ genre: undefined })} active={!filter.genre}>
+            <ChipLink href={href({ genre: undefined })} active={!filter.genre}>
               전체
-            </Chip>
+            </ChipLink>
             {facets.genres.map((g) => (
-              <Chip key={g.name} href={href({ genre: g.name })} active={filter.genre === g.name}>
+              <ChipLink key={g.name} href={href({ genre: g.name })} active={filter.genre === g.name}>
                 {g.name} <span className="opacity-55">{g.count}</span>
-              </Chip>
+              </ChipLink>
             ))}
           </Row>
         )}
 
         <Row label="정렬">
           {GAME_SORTS.map((s) => (
-            <Chip key={s} href={href({ sort: s })} active={(filter.sort ?? DEFAULT_GAME_SORT) === s}>
+            <ChipLink key={s} href={href({ sort: s })} active={(filter.sort ?? DEFAULT_GAME_SORT) === s}>
               {SORT_LABEL[s]}
-            </Chip>
+            </ChipLink>
           ))}
-          <Chip href={href({ onSale: !filter.onSale })} active={Boolean(filter.onSale)}>
+          <ChipLink href={href({ onSale: !filter.onSale })} active={Boolean(filter.onSale)}>
             할인 중만
-          </Chip>
+          </ChipLink>
         </Row>
     </section>
   );

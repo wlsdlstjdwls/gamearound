@@ -9,7 +9,9 @@ import { Page } from "@/components/ui/page";
 import { formatDiscount, formatKrw, PLATFORM_LABEL } from "@/lib/format";
 import { collectedAtText, getFreshness } from "@/lib/freshness";
 import { ROUTES } from "@/lib/routes";
+import { ChipLink } from "@/components/ui/chip";
 import { listWishlist, type WishlistItem } from "@/server/services/wishlist";
+import { cardClass } from "@/components/ui/page";
 
 export const metadata: Metadata = { title: "위시리스트" };
 
@@ -52,16 +54,13 @@ export default async function WishlistPage({ searchParams }: Props) {
         </div>
         <div role="group" aria-label="정렬" className="flex gap-1">
           {SORTS.map((s) => (
-            <Link
+            <ChipLink
               key={s.key}
               href={s.key === "sale" ? ROUTES.wishlist : `${ROUTES.wishlist}?sort=${s.key}`}
-              aria-current={s.key === sort ? "true" : undefined}
-              className={`press rounded-lg px-3 py-1.5 text-[12.5px] transition-colors duration-base ${
-                s.key === sort ? "bg-ink font-semibold text-on-ink" : "border border-line-strong text-mut hover:border-ink hover:text-ink"
-              }`}
+              active={s.key === sort}
             >
               {s.label}
-            </Link>
+            </ChipLink>
           ))}
         </div>
       </header>
@@ -81,7 +80,7 @@ export default async function WishlistPage({ searchParams }: Props) {
             const stalest = game.platforms.find((p) => getFreshness(p.lastSyncedAt, p.syncStatus) !== "fresh");
 
             return (
-              <li key={game.id} className="flex gap-3.5 rounded-xl border border-line bg-surface p-4">
+              <li key={game.id} className={cardClass("flex gap-3.5 p-4")}>
                 <Link href={`/games/${game.slug}`} className="shrink-0">
                   {game.coverUrl ? (
                     <Image

@@ -24,6 +24,7 @@ import { formatDate, formatKrw, PLATFORM_LABEL } from "@/lib/format";
 import type { Platform } from "@/server/db/schema";
 import type { PriceSeries } from "@/server/services/prices";
 import { useNow } from "@/components/use-now";
+import { ChipButton } from "@/components/ui/chip";
 
 // 플랫폼 → 색 고정(엔티티 기준, 순서/개수와 무관). 저채도 팔레트라 색상이 아니라 명도로 구분한다
 const PLATFORM_COLOR: Record<Platform, string> = {
@@ -161,17 +162,9 @@ export function PriceChart({ series }: { series: PriceSeries[] }) {
     <div className="space-y-3">
       <div role="group" aria-label="기간 선택" className="flex flex-wrap gap-1">
         {RANGES.map((r) => (
-          <button
-            key={r.key}
-            type="button"
-            aria-pressed={r.key === rangeKey}
-            onClick={() => setRangeKey(r.key)}
-            className={`press rounded-lg px-3 py-1.5 text-[12.5px] transition-colors duration-base ${
-              r.key === rangeKey ? "bg-ink font-semibold text-on-ink" : "border border-line-strong text-mut hover:border-ink hover:text-ink"
-            }`}
-          >
+          <ChipButton key={r.key} active={r.key === rangeKey} onClick={() => setRangeKey(r.key)}>
             {r.label}
-          </button>
+          </ChipButton>
         ))}
       </div>
 

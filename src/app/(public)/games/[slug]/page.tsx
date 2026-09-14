@@ -17,6 +17,7 @@ import { ROUTES } from "@/lib/routes";
 import { displayTitle, getGameBySlugCached, type GameDetail, type PlatformDto } from "@/server/services/games";
 import { getCurrentUser } from "@/server/services/users";
 import { isInWishlist } from "@/server/services/wishlist";
+import { cardClass } from "@/components/ui/page";
 
 type Props = { params: Promise<{ slug: string }> };
 
@@ -71,7 +72,7 @@ function DecisionSummary({ game }: { game: GameDetail }) {
   const complete = game.playtime?.completionistHours;
 
   return (
-    <dl className="grid grid-cols-[repeat(auto-fit,minmax(160px,1fr))] divide-x divide-line-soft overflow-hidden rounded-xl border border-line bg-surface">
+    <dl className={cardClass("grid grid-cols-[repeat(auto-fit,minmax(160px,1fr))] divide-x divide-line-soft overflow-hidden")}>
       <SummaryCell
         label="지금 최저가"
         value={best ? formatKrw(best.currentPrice) : "-"}
@@ -194,7 +195,7 @@ export default async function GameDetailPage({ params }: Props) {
           <PlaytimeCard playtime={game.playtime} currentPrice={best?.currentPrice ?? null} />
 
           {game.sourceRefs.length > 0 && (
-            <section aria-labelledby="sources-heading" className="flex flex-col gap-3 rounded-xl border border-line bg-surface p-4">
+            <section aria-labelledby="sources-heading" className={cardClass("flex flex-col gap-3 p-4")}>
               <h2 id="sources-heading" className="text-[13.5px] font-bold text-ink">
                 정보 출처
               </h2>

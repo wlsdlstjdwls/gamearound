@@ -3,13 +3,14 @@
 import { useActionState } from "react";
 import { setManualRefAction } from "@/app/(admin)/admin/actions";
 import { ActionStatus, SubmitButton } from "@/components/admin/submit-button";
+import { cardClass } from "@/components/ui/page";
 
 const inputCls = "h-8 w-full rounded-[9px] border border-line-strong bg-bg px-3 text-[12.5px] text-ink outline-none transition-colors focus:border-ink focus:bg-surface";
 
 export function ManualRefForm({ gameId, sources }: { gameId: string; sources: readonly string[] }) {
   const [state, formAction] = useActionState(setManualRefAction, null);
   return (
-    <form action={formAction} className="flex flex-col gap-2.5 rounded-xl border border-line bg-surface p-4">
+    <form action={formAction} className={cardClass("flex flex-col gap-2.5 p-4")}>
       <input type="hidden" name="gameId" value={gameId} />
       <p className="text-[13px] font-bold text-ink">수동 매핑 추가/덮어쓰기</p>
       <div className="grid gap-2 sm:grid-cols-[8rem_1fr_1fr_auto]">
