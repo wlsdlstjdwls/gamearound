@@ -59,12 +59,16 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   };
 }
 
-function SummaryCell({ label, value, note }: { label: string; value: string; note?: string }) {
+function SummaryCell({ label, value, was, note }: { label: string; value: string; was?: string; note?: string }) {
   return (
     <div className="flex flex-col gap-1 px-4 py-3.5">
       <dt className="text-[11.5px] text-dim">{label}</dt>
       <dd className="flex flex-col gap-0.5">
-        <span className="text-[20px] font-bold tracking-[-0.02em] text-ink">{value}</span>
+        {/* 정가는 현재가 옆에 취소선으로 붙인다 — 카드 목록과 같은 모양이라야 "얼마나 싸졌나" 를 같은 눈으로 읽는다 */}
+        <span className="flex items-baseline gap-1.5">
+          <span className="text-[20px] font-bold tracking-[-0.02em] text-ink">{value}</span>
+          {was && <span className="text-[12px] text-dim-2 line-through">{was}</span>}
+        </span>
         {note && <span className="text-[11.5px] text-mut">{note}</span>}
       </dd>
     </div>
@@ -88,6 +92,7 @@ function DecisionSummary({ game, className, style }: { game: GameDetail; classNa
       <SummaryCell
         label="지금 최저가"
         value={best ? formatPrice(best.currentPrice, best.currency) : "-"}
+        was={best && best.discountPct && best.listPrice !== null ? formatPrice(best.listPrice, best.currency) : undefined}
         note={best ? `${PLATFORM_LABEL[best.platform] ?? best.platform}${best.discountPct ? ` | -${best.discountPct}%` : ""}` : undefined}
       />
       <SummaryCell label="메인 스토리" value={main ? formatHours(main) : "-"} note={complete ? `완전 정복 ${formatHours(complete)}` : undefined} />

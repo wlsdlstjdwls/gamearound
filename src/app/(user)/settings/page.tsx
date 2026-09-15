@@ -1,21 +1,16 @@
-// /settings — 계정 정보, 푸시 알림 토글, 알림 동작 안내 (§7, §10)
+// /settings — 계정 정보, 푸시 알림 토글 (§7, §10)
+// 알림 동작 안내를 여기 두지 않는 이유: 같은 문구가 /alerts 아래에도 있어 두 번 읽히고,
+// 설정 화면에서 할 일은 "켜고 끄는 것" 이라 규칙 설명은 알림 목록 쪽이 제자리다.
 import type { Metadata } from "next";
 import { PushToggle } from "@/components/push-toggle";
 import { SignOutButton } from "@/components/auth/sign-out-button";
 import { Card, Page } from "@/components/ui/page";
 import { ROLE_LABEL } from "@/lib/auth/constants";
 import { formatDate } from "@/lib/format";
-import { ALERT_RULE_TEXT, COLLECT_SCHEDULE_TEXT } from "@/lib/freshness";
 import { requireUserOrRedirect } from "@/server/auth/guards";
 import { countPushSubscriptions } from "@/server/services/push";
 
 export const metadata: Metadata = { title: "설정" };
-
-const NOTICE_ITEMS = [
-  COLLECT_SCHEDULE_TEXT,
-  ALERT_RULE_TEXT,
-  "구독이 만료된 기기(브라우저 데이터 삭제 등)는 자동으로 정리되며, 다시 켜면 됩니다.",
-];
 
 export default async function SettingsPage() {
   const user = await requireUserOrRedirect();
@@ -44,15 +39,6 @@ export default async function SettingsPage() {
       </Card>
 
       <PushToggle initialCount={pushCount} />
-
-      <Card className="flex flex-col gap-2 p-5">
-        <h2 className="text-[14px] font-bold text-ink">알림 동작</h2>
-        <ul className="list-disc pl-5 text-[12.5px] leading-[1.7] text-mut">
-          {NOTICE_ITEMS.map((t) => (
-            <li key={t}>{t}</li>
-          ))}
-        </ul>
-      </Card>
     </Page>
   );
 }

@@ -42,8 +42,13 @@ export function collectedAtText(lastSyncedAt: Date | string | null | undefined):
   return days === 1 ? "어제 수집" : `${days}일 전 수집`;
 }
 
-/** KST 기준 수집 시각 — cron 은 하루 세 번(02:10 / 10:10 / 18:10) */
-export const COLLECT_HOURS_KST = [2, 10, 18] as const;
+/**
+ * KST 기준 가격 수집 시각. crawl-prices 워크플로의 cron(UTC 17:10, 05:10)을 옮긴 값이다 —
+ * 그 파일의 schedule 을 고치면 여기도 고친다.
+ * 2026-09-15 에 셋(02:10 / 10:10 / 18:10)에서 둘로 줄였다. Actions 무료 한도에 맞춘 주기다.
+ * 닌텐도와 Epic 은 Vercel 크론이 6시간마다 따로 돌지만, 화면 문구는 대부분의 스토어가 도는 이 두 시각으로 말한다.
+ */
+export const COLLECT_HOURS_KST = [2, 14] as const;
 export const COLLECT_MINUTE_KST = 10;
 
 /** 다음 수집 예정 시각("10:10"). 빈 상태 안내에 "다음 수집"을 넣을 때 쓴다 */
@@ -55,8 +60,8 @@ export function nextCollectTimeText(now: Date = new Date()): string {
   return `${String(Math.floor(next / 60)).padStart(2, "0")}:${String(next % 60).padStart(2, "0")}`;
 }
 
-/** 수집 주기 안내 문구 — /alerts, /settings 공용. 실제 cron(하루 3회)과 일치시킨다 */
+/** 수집 주기 안내 문구 — /alerts 에서 쓴다. 실제 cron 과 일치시킨다(COLLECT_HOURS_KST) */
 export const COLLECT_SCHEDULE_TEXT =
-  "가격 수집은 하루 세 번(02:10 / 10:10 / 18:10 KST)이며 정확한 시각을 보장하지 않습니다.";
+  "가격 수집은 하루 두 번(02:10 / 14:10 KST)이며 정확한 시각을 보장하지 않습니다.";
 export const ALERT_RULE_TEXT =
   "알림은 할인율이 조건 이상이고 직전 수집보다 가격이 내려갔을 때 발송됩니다.";
