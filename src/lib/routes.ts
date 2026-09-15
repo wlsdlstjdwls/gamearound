@@ -3,6 +3,8 @@ export const ROUTES = {
   home: "/",
   search: "/search",
   game: "/games",
+  /** 스팀 정기 세일 예상 일정 — 수집이 아니라 lib/sales/calendar 의 계산 결과다 */
+  sales: "/sales",
   signIn: "/sign-in",
   signUp: "/sign-up",
   wishlist: "/wishlist",
