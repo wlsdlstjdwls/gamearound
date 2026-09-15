@@ -93,12 +93,23 @@ export async function approveMatch(gameId: string, source: SourceName): Promise<
   if (rows.length === 0) throw new Error("해당 소스 매핑이 없습니다");
 }
 
-/** 검수 거절: 행 삭제 (다음 크롤에서 다시 후보로 올라올 수 있음) */
+/**
+ * 검수 거절: 행을 지우지 않고 "이 소스엔 없다"(none)로 기록한다.
+ *
+ * 지우면 그 게임은 다시 "ref 가 없는 게임" 이 돼 다음 실행의 큐 선두로 올라오고, 같은 검색이
+ * 같은 후보를 데려와 같은 대기표를 또 만든다 — 사람이 거절할수록 큐가 그대로 차는 쳇바퀴다
+ * (후보 0건을 기록하지 않아 hltb 큐 선두가 막혔던 것과 같은 머리막힘, match.ts NO_CANDIDATE_EXTERNAL_ID 참고).
+ * none 으로 남기면 checked_at 이 갱신돼 NONE_RETRY_DAYS 동안 조용하고, 그 사이 판정 규칙이 좋아지면
+ * 재검색 때 제대로 된 후보를 집는다. 거절한 후보 id 는 그대로 둔다 — 무엇을 보고 물렀는지가 남는다.
+ */
 export async function rejectMatch(gameId: string, source: SourceName): Promise<void> {
   await requireAdmin();
-  await getDb()
-    .delete(gameSourceRefs)
-    .where(and(eq(gameSourceRefs.gameId, gameId), eq(gameSourceRefs.source, source)));
+  const rows = await getDb()
+    .update(gameSourceRefs)
+    .set({ matchedBy: "none", confidence: null, checkedAt: new Date() })
+    .where(and(eq(gameSourceRefs.gameId, gameId), eq(gameSourceRefs.source, source)))
+    .returning({ gameId: gameSourceRefs.gameId });
+  if (rows.length === 0) throw new Error("해당 소스 매핑이 없습니다");
 }
 
 /** 수동 매핑 upsert (game_id, source) 기준. confidence는 비움 */

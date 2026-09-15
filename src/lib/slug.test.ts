@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { normalizeForSearch, normalizeTitle, slugify, trigramSimilarity } from "./slug";
+import { normalizeForSearch, normalizeTitle, seriesConflict, seriesNumbers, slugify, trigramSimilarity } from "./slug";
 
 // 이 규칙은 games.title_en_norm / title_ko_norm 생성 컬럼과 짝을 이룬다.
 // SQL: lower(regexp_replace(title, '[^[:alnum:]]+', '', 'g')) — C.UTF-8 기준
@@ -143,5 +143,60 @@ describe("trigramSimilarity — 임계값 표본", () => {
   it("글자를 못 남긴 제목끼리 붙지 않는다 — 빈 키는 0", () => {
     expect(trigramSimilarity("★★★", "!!!")).toBe(0);
     expect(trigramSimilarity("★★★", "Hollow Knight")).toBe(0);
+  });
+});
+
+// 2026-09-15 검수 큐 36건 실측 표본. 이 규칙이 그 큐를 비운 근거다.
+describe("시리즈 번호", () => {
+  it("로마 숫자와 아라비아 숫자를 같은 번호로 읽는다", () => {
+    expect(seriesNumbers("Dragon's Dogma II")).toEqual(new Set([2]));
+    expect(seriesNumbers("Dragon's Dogma 2")).toEqual(new Set([2]));
+    expect(seriesNumbers("Hearts of Iron IV")).toEqual(new Set([4]));
+  });
+
+  it("번호가 없으면 1편으로 본다", () => {
+    expect(seriesNumbers("Darkest Dungeon")).toEqual(new Set([1]));
+    expect(seriesNumbers("How to Fish 1")).toEqual(new Set([1]));
+  });
+
+  it("글자에 붙은 숫자는 시리즈 번호가 아니다", () => {
+    // 3D 는 판본 표시, ps4/ps5 는 기기 표시, mwii 는 약어다
+    expect(seriesNumbers("STAR WARS: Rogue Squadron 3D")).toEqual(new Set([1]));
+    expect(seriesNumbers("ELDEN RING Shadow of the Erdtree PS4 & PS5")).toEqual(new Set([1]));
+  });
+
+  const conflict: [string, string][] = [
+    ["Darkest Dungeon", "Darkest Dungeon II"],
+    ["Hearts of Iron IV", "Hearts of Iron"],
+    ["The Sinking City Remastered", "The Sinking City 2"],
+    ["Total War: ROME REMASTERED", "Total War: Rome II"],
+    ["Road to Empress I", "Road to Empress II"],
+    ["BLACK SOULS", "Black Souls II"],
+    ["Cities: Skylines II - Creator Pack: Skyscrapers", "Cities: Skylines - Content Creator Pack: Skyscrapers"],
+  ];
+  const sameSeries: [string, string][] = [
+    ["Dragon's Dogma 2", "Dragon's Dogma II"],
+    ["Warlords Battlecry 2", "Warlords Battlecry II"],
+    ["Divinity: Original Sin 2 - Definitive Edition", "Divinity: Original Sin II"],
+    ["Mad Experiments: Escape Room 2", "Mad Experiments 2: Escape Room"],
+    ["How to Fish", "How to Fish 1"],
+    ["Stronghold HD", "Stronghold"],
+    ["STAR WARS™: Rogue Squadron 3D", "Star Wars: Rogue Squadron"],
+    ["ELDEN RING Shadow of the Erdtree", "ELDEN RING Shadow of the Erdtree PS4 & PS5"],
+    ["Tropico 6 - The Llama of Wall Street", "Tropico 6 - The Llama of Wall Street DLC"],
+  ];
+
+  it.each(conflict)("속편은 어긋난다: %s / %s", (a, b) => {
+    expect(seriesConflict(a, b)).toBe(true);
+  });
+
+  it.each(sameSeries)("같은 편은 어긋나지 않는다: %s / %s", (a, b) => {
+    expect(seriesConflict(a, b)).toBe(false);
+  });
+
+  it("로마 숫자를 접으면 같은 속편이 auto 임계값을 넘는다", () => {
+    // 접기 전 실측 0.71. 이 값이 다시 0.9 아래로 내려가면 검수 큐가 도로 찬다
+    expect(trigramSimilarity("Dragon's Dogma 2", "Dragon's Dogma II")).toBeGreaterThanOrEqual(0.9);
+    expect(trigramSimilarity("Stronghold HD", "Stronghold")).toBeGreaterThanOrEqual(0.9);
   });
 });

@@ -6,7 +6,7 @@ import { getDb } from "@/server/db/client";
 import { gameSourceRefs, games } from "@/server/db/schema";
 import { getSearchableAdapter, getDisabledReason, isSourceEnabled, type SearchableSource } from "@/server/adapters";
 import type { SearchCandidate, Source } from "@/server/adapters/types";
-import { normalizeTitle, trigramSimilarity } from "@/lib/slug";
+import { normalizeTitle, seriesConflict, trigramSimilarity } from "@/lib/slug";
 
 export const AUTO_MATCH_THRESHOLD = 0.9;
 export const PENDING_MATCH_THRESHOLD = 0.7;
@@ -49,7 +49,13 @@ export interface BestCandidate {
   similarity: number;
 }
 
-/** 후보들 중 titleEn(또는 titleKo) 과 가장 유사한 것. 후보가 없으면 null */
+/**
+ * 후보들 중 titleEn(또는 titleKo) 과 가장 유사한 것. 후보가 없으면 null.
+ *
+ * 시리즈 번호가 어긋나는 후보는 유사도를 재기 전에 버린다(seriesConflict). 임계값으로 거르지 않고
+ * 후보에서 아예 빼는 이유: 2편을 버리면 같은 검색 결과 안에 있던 1편이 최선 후보로 올라온다.
+ * 임계값으로만 눌렀다면 1편이 있어도 2편이 자리를 차지한 채 none 으로 끝났다.
+ */
 export function pickBestCandidate(
   titleEn: string,
   titleKo: string | null | undefined,
@@ -57,6 +63,7 @@ export function pickBestCandidate(
 ): BestCandidate | null {
   let best: BestCandidate | null = null;
   for (const c of candidates) {
+    if (seriesConflict(titleEn, c.title) && (!titleKo || seriesConflict(titleKo, c.title))) continue;
     const simEn = trigramSimilarity(titleEn, c.title);
     const simKo = titleKo ? trigramSimilarity(titleKo, c.title) : 0;
     const similarity = Math.max(simEn, simKo);
@@ -81,6 +88,9 @@ export interface GameTitleRow {
 export function findGameByTitle(title: string, rows: GameTitleRow[]): { game: GameTitleRow; similarity: number } | null {
   let best: { game: GameTitleRow; similarity: number } | null = null;
   for (const row of rows) {
+    // 역방향도 같은 규칙을 쓴다 — 카탈로그의 "Darkest Dungeon II" 가 우리 "Darkest Dungeon" 에 붙으면
+    // 새 게임이 생기지 않고 1편 페이지에 2편 플랫폼이 달린다
+    if (seriesConflict(title, row.titleEn) && (!row.titleKo || seriesConflict(title, row.titleKo))) continue;
     const similarity = Math.max(trigramSimilarity(title, row.titleEn), row.titleKo ? trigramSimilarity(title, row.titleKo) : 0);
     if (!best || similarity > best.similarity) best = { game: row, similarity };
   }

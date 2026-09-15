@@ -137,6 +137,84 @@ export function normalizeForSearch(input: string): string {
 }
 
 /**
+ * 로마 숫자 낱말 → 아라비아 숫자. 스토어마다 같은 속편을 다르게 적는다 —
+ * Steam 은 "Dragon's Dogma 2", HLTB 는 "Dragon's Dogma II" 로 쓴다(2026-09-15 실측 유사도 0.71,
+ * 사람이 봐야 하는 검수 큐 36건 중 6건이 이 차이 하나였다).
+ *
+ * **낱말 전체가 로마 숫자일 때만** 바꾼다. "mwii", "v2", "3d" 처럼 글자에 붙은 것은 시리즈 번호가 아니다.
+ * 20 까지만 두는 이유: 그 위의 속편은 없고, 목록이 길어질수록 평범한 낱말(li, mix...)과 겹칠 위험만 는다.
+ *
+ * 이 접기를 normalizeTitle 이 아니라 matchKey 에만 두는 이유: normalizeTitle 의 결과가
+ * 그대로 스토어 검색 질의로 나간다(match.ts searchBestCandidate). "V Rising" 을 "5 rising" 으로
+ * 물으면 아무것도 안 나온다. 접기는 비교할 때만 필요하다.
+ */
+const ROMAN_NUMERALS: Record<string, number> = {
+  i: 1, ii: 2, iii: 3, iv: 4, v: 5, vi: 6, vii: 7, viii: 8, ix: 9, x: 10,
+  xi: 11, xii: 12, xiii: 13, xiv: 14, xv: 15, xvi: 16, xvii: 17, xviii: 18, xix: 19, xx: 20,
+};
+
+/**
+ * 같은 게임의 재출시 표시. 뒤에 붙을 때만 뗀다 —
+ * "Sonic 3D Blast" 의 3D 는 제목의 일부지만 "Rogue Squadron 3D" 의 3D 는 판본 표시다.
+ * EDITION_SUFFIXES 에 넣지 않는 이유: 저 목록은 normalizeTitle 이 쓰고, 그 결과는 검색 질의로 나간다.
+ * 스토어 제목이 실제로 "Stronghold HD" 라면 그 이름 그대로 물어야 찾는다.
+ */
+const VERSION_TAGS = new Set(["hd", "3d", "dx"]);
+
+/**
+ * 낱말 경계를 공백이 아니라 "로마자, 숫자가 아닌 것" 으로 잡는다.
+ * 일본어 제목은 낱말을 띄우지 않아 "ファイナルファンタジーVIIリメイク" 처럼 붙어 온다 —
+ * 공백으로 끊으면 이쪽 VII 만 못 접어서 띄어 쓴 같은 제목과 0.64 로 갈라진다(2026-09-15 회귀).
+ * 반대로 "mwii", "v2" 는 앞뒤가 로마자, 숫자라 그대로 남는다.
+ */
+const ROMAN_PATTERN = new RegExp(
+  `(?<![a-z0-9])(${Object.keys(ROMAN_NUMERALS).sort((a, b) => b.length - a.length).join("|")})(?![a-z0-9])`,
+  "g",
+);
+
+/** 같은 경계 규칙으로 읽는 시리즈 번호 자리 */
+const SERIES_NUMBER_PATTERN = /(?<![a-z])\d+(?![a-z])/g;
+
+/** 비교 직전 단계: 뒤에 붙은 판본 표시를 떼고, 로마 숫자를 아라비아 숫자로 접는다 */
+function foldForCompare(normalized: string): string {
+  const words = normalized.split(" ").filter(Boolean);
+  while (words.length > 1 && VERSION_TAGS.has(words[words.length - 1])) words.pop();
+  return words.join(" ").replace(ROMAN_PATTERN, (w) => String(ROMAN_NUMERALS[w]));
+}
+
+/**
+ * 제목에 박힌 시리즈 번호들. 낱말 하나가 통째로 숫자(또는 로마 숫자)일 때만 센다.
+ * 번호가 하나도 없으면 1편으로 본다 — "Darkest Dungeon" 과 "Darkest Dungeon II" 를 가르는 축이 이것이다.
+ */
+export function seriesNumbers(title: string): Set<number> {
+  const found = new Set<number>();
+  for (const m of foldForCompare(normalizeTitle(title)).matchAll(SERIES_NUMBER_PATTERN)) found.add(Number(m[0]));
+  return found.size > 0 ? found : new Set([1]);
+}
+
+/**
+ * 시리즈 번호가 어긋나는가 — 어긋나면 유사도가 아무리 높아도 다른 게임이다.
+ *
+ * 왜 필요한가(2026-09-15): 유사도 0.7~0.9 구간은 **속편이 사는 구간**이다. 실측 표본에서
+ * "Darkest Dungeon" 대 "Darkest Dungeon II" 가 0.78, "Hearts of Iron IV" 대 "Hearts of Iron" 이 0.75,
+ * "The Sinking City Remastered" 대 "The Sinking City 2" 가 0.82 였다. 번호를 안 보고 유사도만 쓰면
+ * 2편 가격이 1편 페이지에 박힌다 — 되돌리기 어려운 오염이다.
+ *
+ * 알면서 감수하는 손해: 우리 제목에만 번호가 붙은 같은 게임도 함께 걸린다
+ * (실측 "Deus Ex 2: Invisible War" 대 "Deus Ex: Invisible War"). 이쪽은 매핑이 없어 값이 비는 것으로
+ * 끝나고 NONE_RETRY_DAYS 뒤 다시 시도하지만, 반대 실수는 틀린 값을 화면에 띄운다. 안전한 쪽으로 튼다.
+ *
+ * 연도를 예외로 두지 않는다 — "Cyberpunk 2077" 과 "Football Manager 2024" 를 가르는 규칙이 없다.
+ */
+export function seriesConflict(a: string, b: string): boolean {
+  const sa = seriesNumbers(a);
+  const sb = seriesNumbers(b);
+  if (sa.size !== sb.size) return true;
+  for (const n of sa) if (!sb.has(n)) return true;
+  return false;
+}
+
+/**
  * 유사도 비교용 키 — 정규화한 제목에서 공백까지 지운다.
  *
  * 띄어쓰기는 스토어마다 제멋대로다("몬스터 헌터 라이즈" / "몬스터헌터라이즈",
@@ -149,7 +227,7 @@ export function normalizeForSearch(input: string): string {
  * 같은 게임 최저 0.87, 다른 게임 최고 0.68 로 벌어져 임계값 0.9 / 0.7 을 그대로 둔다.
  */
 function matchKey(title: string): string {
-  return normalizeTitle(title).replace(/\s+/g, "");
+  return foldForCompare(normalizeTitle(title)).replace(/\s+/g, "");
 }
 
 function trigrams(s: string): Set<string> {
