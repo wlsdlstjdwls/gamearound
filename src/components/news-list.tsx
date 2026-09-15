@@ -3,6 +3,8 @@ import Link from "next/link";
 import { formatDateTime } from "@/lib/format";
 import type { NewsDto } from "@/server/services/games";
 import { Clamp } from "@/components/ui/tooltip";
+import { FadeImage } from "@/components/ui/fade-image";
+import { ImageFallback } from "@/components/ui/image-fallback";
 
 export function NewsList({ items, showGame = false }: { items: NewsDto[]; showGame?: boolean }) {
   if (items.length === 0) {
@@ -13,10 +15,22 @@ export function NewsList({ items, showGame = false }: { items: NewsDto[]; showGa
       {items.map((n) => (
         <li key={n.id} className="flex gap-3 py-[13px]">
           <div className="relative h-12 w-[72px] shrink-0 overflow-hidden rounded-[7px] bg-surface-3">
-            {n.thumbnailUrl && (
-              // 뉴스 썸네일은 외부 도메인이 불특정이라 next/image 최적화 대상에서 제외
-              // eslint-disable-next-line @next/next/no-img-element
-              <img src={n.thumbnailUrl} alt="" loading="lazy" className="h-full w-full object-cover" />
+            {/* 뉴스 썸네일은 외부 도메인이 불특정이라 next/image 최적화 대상에서 제외한다(unoptimized).
+                주소가 없을 때와 죽은 주소일 때 둘 다 브랜드 면으로 받는다 — 뉴스는 원문이 사라지면
+                썸네일부터 404 가 되는 자리라 엑박이 제일 잘 난다. */}
+            {n.thumbnailUrl ? (
+              <FadeImage
+                src={n.thumbnailUrl}
+                alt=""
+                fill
+                sizes="72px"
+                unoptimized
+                loading="lazy"
+                className="object-cover"
+                fallback={<ImageFallback label="" />}
+              />
+            ) : (
+              <ImageFallback label="" />
             )}
           </div>
           <div className="min-w-0 flex-1">

@@ -6,6 +6,7 @@ import Link from "next/link";
 import { EmptyState } from "@/components/empty-state";
 import { WishlistRemoveButton } from "@/components/wishlist-button";
 import { FadeImage } from "@/components/ui/fade-image";
+import { ImageFallback } from "@/components/ui/image-fallback";
 import { Page } from "@/components/ui/page";
 import { Clamp } from "@/components/ui/tooltip";
 import { formatDiscount, PLATFORM_LABEL } from "@/lib/format";
@@ -94,9 +95,10 @@ export default async function WishlistPage({ searchParams }: Props) {
                       height={60}
                       unoptimized
                       className="h-[60px] w-[104px] rounded-lg object-cover"
+                      fallback={<ImageFallback label="" className="h-[60px] w-[104px] rounded-lg" />}
                     />
                   ) : (
-                    <div aria-hidden className="h-[60px] w-[104px] rounded-lg bg-surface-3" />
+                    <ImageFallback label="" className="h-[60px] w-[104px] rounded-lg" />
                   )}
                 </Link>
 

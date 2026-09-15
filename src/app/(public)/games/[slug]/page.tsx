@@ -16,7 +16,7 @@ import { PlaytimeCard } from "@/components/playtime-card";
 import { WishlistButton } from "@/components/wishlist-button";
 import { buttonClass } from "@/components/ui/button";
 import { Card, Page, SectionHead } from "@/components/ui/page";
-import { formatDateTime, formatHours, PLATFORM_LABEL } from "@/lib/format";
+import { formatHours, PLATFORM_LABEL } from "@/lib/format";
 import { SITE } from "@/lib/site";
 import { getFreshness } from "@/lib/freshness";
 import { GAME_MESSAGES } from "@/lib/games/messages";
@@ -83,17 +83,15 @@ function DecisionSummary({ game, className, style }: { game: GameDetail; classNa
       className={cardClass(`grid grid-cols-[repeat(auto-fit,minmax(160px,1fr))] divide-x divide-line-soft overflow-hidden ${className ?? ""}`)}
       style={style}
     >
+      {/* 값이 없을 때 note 를 비우는 이유: 값 자리에 이미 "-" 가 서 있는데 그 밑에 "없음" 을 또 적으면
+          같은 말을 두 번 하는 데다, 화면이 아는 것보다 모르는 것을 더 크게 말하게 된다. */}
       <SummaryCell
         label="지금 최저가"
         value={best ? formatPrice(best.currentPrice, best.currency) : "-"}
-        note={best ? `${PLATFORM_LABEL[best.platform] ?? best.platform}${best.discountPct ? ` | -${best.discountPct}%` : ""}` : "가격 정보 없음"}
+        note={best ? `${PLATFORM_LABEL[best.platform] ?? best.platform}${best.discountPct ? ` | -${best.discountPct}%` : ""}` : undefined}
       />
-      <SummaryCell
-        label="메인 스토리"
-        value={main ? formatHours(main) : "-"}
-        note={complete ? `완전 정복 ${formatHours(complete)}` : "HLTB 제보 없음"}
-      />
-      <SummaryCell label="평점" value={score ? String(score.value) : "-"} note={score?.note ?? "수집된 평점 없음"} />
+      <SummaryCell label="메인 스토리" value={main ? formatHours(main) : "-"} note={complete ? `완전 정복 ${formatHours(complete)}` : undefined} />
+      <SummaryCell label="평점" value={score ? String(score.value) : "-"} note={score?.note ?? undefined} />
     </dl>
   );
 }
@@ -274,7 +272,6 @@ export default async function GameDetailPage({ params }: Props) {
                   ),
                 )}
               </ul>
-              <p className="text-[11.5px] text-dim">마지막 갱신 {formatDateTime(game.updatedAt)}</p>
             </section>
           )}
         </aside>

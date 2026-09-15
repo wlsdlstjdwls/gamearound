@@ -5,6 +5,7 @@ import { useActionState, useState, useTransition } from "react";
 import { useFormStatus } from "react-dom";
 import { createAlertAction, deleteAlertAction, toggleAlertAction, type ActionState } from "@/app/(user)/alerts/actions";
 import { FadeImage } from "@/components/ui/fade-image";
+import { ImageFallback } from "@/components/ui/image-fallback";
 import { PLATFORM_LABEL } from "@/lib/format";
 import { PLATFORM_ORDER } from "@/lib/platform";
 import { Button } from "@/components/ui/button";
@@ -53,9 +54,17 @@ export function AlertForm({ game }: { game: FormGame }) {
 
       <div className="flex items-center gap-3">
         {game.coverUrl ? (
-          <FadeImage src={game.coverUrl} alt="" width={72} height={42} unoptimized className="h-[42px] w-[72px] rounded-[7px] object-cover" />
+          <FadeImage
+            src={game.coverUrl}
+            alt=""
+            width={72}
+            height={42}
+            unoptimized
+            className="h-[42px] w-[72px] rounded-[7px] object-cover"
+            fallback={<ImageFallback label="" className="h-[42px] w-[72px] rounded-[7px]" />}
+          />
         ) : (
-          <div aria-hidden className="h-[42px] w-[72px] rounded-[7px] bg-surface-3" />
+          <ImageFallback label="" className="h-[42px] w-[72px] rounded-[7px]" />
         )}
         <div className="min-w-0">
           <h2 className="text-[14.5px] font-bold tracking-[-0.01em] text-ink">

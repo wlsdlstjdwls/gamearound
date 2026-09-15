@@ -1,12 +1,12 @@
 // 게임 카드(홈/목록) + 커버 이미지 공용 컴포넌트
 import { formatPrice } from "@/lib/currency";
-import Image from "next/image";
 import Link from "next/link";
 import { formatDate, formatDiscount } from "@/lib/format";
 import type { GameSummary } from "@/server/services/games";
 import { PlatformBadges } from "@/components/platform-badges";
 import { SaleBadge } from "@/components/sale-badge";
 import { FadeImage } from "@/components/ui/fade-image";
+import { ImageFallback } from "@/components/ui/image-fallback";
 import { cardClass } from "@/components/ui/page";
 import { Clamp } from "@/components/ui/tooltip";
 
@@ -23,7 +23,11 @@ function isOptimizable(url: string): boolean {
   }
 }
 
-/** 커버 이미지. coverUrl 없으면 빈 플레이스홀더(이모지 금지 — 회색 면으로만 비운다). 부모가 relative + 크기 지정 */
+/**
+ * 커버 이미지. 부모가 relative + 크기를 정한다.
+ * 주소가 없을 때와 불러오다 실패했을 때 같은 자리를 쓴다 — 스토어가 이미지를 내리는 일이 잦은데
+ * 그때 엑박이 뜨면 우리가 고장 난 것처럼 보인다(ImageFallback 주석).
+ */
 export function CoverImage({
   src,
   alt,
@@ -35,14 +39,11 @@ export function CoverImage({
   sizes?: string;
   priority?: boolean;
 }) {
-  if (!src) {
-    return <div role="img" aria-label={`${alt} (커버 이미지 없음)`} className="h-full w-full bg-surface-3" />;
-  }
+  const fallback = <ImageFallback label={`${alt} (이미지 없음)`} />;
+  if (!src) return fallback;
   // alt 을 spread 에 섞지 않는다 — jsx-a11y 가 정적으로 못 읽어 경고를 낸다
   const props = { src, fill: true as const, sizes, unoptimized: !isOptimizable(src), className: "object-cover" };
-  // priority 커버(상세 헤더)는 페이드하지 않는다 — 감싼 영역이 이미 페이드하는데 안쪽 이미지가 한 박자 늦게 또 뜨면
-  // 같은 자리가 두 번 켜져 깜빡인다. LCP 요소를 opacity:0 으로 숨기는 비용도 없앤다.
-  return priority ? <Image {...props} alt={alt} priority /> : <FadeImage {...props} alt={alt} />;
+  return <FadeImage {...props} alt={alt} priority={priority} fallback={fallback} />;
 }
 
 export function GameCard({ game, variant = "discount" }: { game: GameSummary; variant?: "discount" | "release" }) {
