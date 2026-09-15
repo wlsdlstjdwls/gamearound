@@ -18,8 +18,10 @@ import { CRON_MODES, CRON_PLAN, CRON_SOURCES, type CronMode, type CronSource } f
 import { bearerToken, secretMatches } from "@/lib/secret";
 
 // 라우트 세그먼트 설정은 정적으로 읽히는 값이어야 해서 리터럴을 쓴다(AGENTS §2 예외).
-// 300 = 함수 실행 상한. CRON_PLAN 의 몫이 이 수치에서 역산한 값이라 둘은 같이 움직인다.
-export const maxDuration = 300;
+// 800 = 함수 실행 상한. CRON_PLAN 의 몫이 이 수치에서 역산한 값이라 둘은 같이 움직인다.
+// 800 은 Pro 의 상한이다(Fluid Compute). 요금제가 Hobby 로 내려가면 300 이 상한이라 배포가 깨진다 —
+// 그때는 이 값과 CRON_TIME_BUDGET_MS 를 같이 되돌린다.
+export const maxDuration = 800;
 export const dynamic = "force-dynamic";
 
 function authorized(req: NextRequest): boolean {
