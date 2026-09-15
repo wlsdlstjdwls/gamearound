@@ -39,8 +39,11 @@ export const HOME_REGION = "KR" as const;
  * price_snapshots, price_alerts, wishlists 가 전부 game_platforms 에 붙어 있어
  * DLC 를 분리하면 가격 이력과 알림 경로를 통째로 복제해야 한다.
  * edition(디럭스판), bundle(묶음)은 지금 채우지 않지만 어휘를 미리 열어 둔다 — 나중에 enum 을 늘리면 마이그레이션이 또 필요하다.
+ * demo(체험판)를 지우지 않고 분류로 빼는 이유: 체험판 935건 중 253건은 우리가 직접 수집한
+ * 가격이 붙어 있다. 지우면 그 수집 결과까지 날아간다. 목록은 content_type='game' 만 보므로
+ * 분류만 옮기면 본편인 척 섞이는 문제는 사라지고, 나중에 체험판 화면이 필요해지면 그대로 쓴다.
  */
-export const contentTypeEnum = pgEnum("content_type", ["game", "dlc", "edition", "bundle"]);
+export const contentTypeEnum = pgEnum("content_type", ["game", "dlc", "edition", "bundle", "demo"]);
 /** 회사가 이 게임에 대해 가진 역할. 같은 회사가 개발과 배급을 겸하면 행 2개가 된다 */
 export const companyRoleEnum = pgEnum("company_role", ["developer", "publisher"]);
 /**

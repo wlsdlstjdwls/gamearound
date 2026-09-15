@@ -148,6 +148,13 @@
       "when": 1789442604824,
       "tag": "0020_furry_exodus",
       "breakpoints": true
+    },
+    {
+      "idx": 21,
+      "version": "7",
+      "when": 1789455006127,
+      "tag": "0021_glamorous_wolf_cub",
+      "breakpoints": true
     }
   ]
 }
