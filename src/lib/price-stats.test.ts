@@ -36,6 +36,16 @@ describe("bestDiscountOf", () => {
     expect(best?.t).toBe("2026-06-01");
   });
 
+  it("정가가 있는데 값이 0 인 점은 스토어 오독이라 버린다", () => {
+    // 실측: 정가 46,800 현재가 11,700 인 플레이스테이션 행에 값 0 스냅샷이 찍혔다
+    const best = bestDiscountOf([p("2026-09-14", 0, 100), p("2026-09-13", 11700, 75)], 46800);
+    expect(best?.discountPct).toBe(75);
+  });
+
+  it("정가를 모르면 값이 0 이어도 버리지 않는다", () => {
+    expect(bestDiscountOf([p("2026-09-14", 0, 100)])?.discountPct).toBe(100);
+  });
+
   it("정가 기록이 섞여 있어도 할인 점만 본다", () => {
     const best = bestDiscountOf([p("2026-01-01", 50000, 0), p("2026-02-01", 45000, 10)]);
     expect(best?.discountPct).toBe(10);
