@@ -42,14 +42,6 @@ function barPct(hours: number, max: number): number {
   return Math.max(MIN_BAR_PCT, (hours / max) * FULL_PCT);
 }
 
-/** "MM.DD" — 사이드 카드 헤더의 출처 표기용 */
-function shortDate(d: string | Date | null | undefined): string | null {
-  if (!d) return null;
-  const date = typeof d === "string" ? new Date(d) : d;
-  if (Number.isNaN(date.getTime())) return null;
-  return `${String(date.getMonth() + 1).padStart(2, "0")}.${String(date.getDate()).padStart(2, "0")}`;
-}
-
 /** 메인 스토리 기준 시간당 가격. 값이 하나라도 없으면 null → 줄 자체를 숨긴다 */
 export function pricePerHour(currentPrice: number | null | undefined, playtime: PlaytimeDto | null): number | null {
   const hours = toHours(playtime?.mainStoryHours);
@@ -108,17 +100,15 @@ export function PlaytimeStrip({ playtime }: { playtime: PlaytimeDto | null }) {
 
 /** 상세 사이드바 카드 — 하단에 "시간당 가격" 파생 지표 */
 export function PlaytimeCard({ playtime, currentPrice }: { playtime: PlaytimeDto | null; currentPrice?: number | null }) {
-  const synced = shortDate(playtime?.lastSyncedAt);
   const perHour = pricePerHour(currentPrice, playtime);
 
   return (
     <section aria-labelledby="playtime-card-heading" className={cardClass("flex flex-col gap-3 p-4")}>
-      <div className="flex items-baseline justify-between gap-2">
-        <h2 id="playtime-card-heading" className="text-[13.5px] font-bold text-ink">
-          플레이타임
-        </h2>
-        <span className="text-[11.5px] text-dim">{synced ? `HLTB | ${synced}` : "HLTB"}</span>
-      </div>
+      {/* 출처, 갱신일 표기를 뺀 이유(2026-09-15): 어디서 온 값이고 언제 받았는지는
+          이 칸을 읽는 사람이 묻는 것이 아니다. 묻는 것은 "얼마나 걸리나" 하나다 */}
+      <h2 id="playtime-card-heading" className="text-[13.5px] font-bold text-ink">
+        플레이타임
+      </h2>
       {hasAnyValue(playtime) ? <PlaytimeBars playtime={playtime} /> : <p className="text-[12.5px] text-dim">{EMPTY_TEXT}</p>}
       {perHour !== null && (
         <p className="border-t border-line-soft pt-2.5 text-[11.5px] text-dim">

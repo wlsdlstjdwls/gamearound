@@ -54,8 +54,10 @@ export function Card({ className, children, ...rest }: React.ComponentProps<"div
   );
 }
 
-/** 섹션 제목 행 — h2 17px/700 + 우측 보조 문구/링크.
- *  className, style 을 받는 이유: 목록이 항목별로 등장하는 영역에서는 제목도 등장 순번(.enter-item + stagger)을 가져야 한다 */
+/** 섹션 제목 행 — 17px/700 + 우측 보조 문구/링크.
+ *  className, style 을 받는 이유: 목록이 항목별로 등장하는 영역에서는 제목도 등장 순번(.enter-item + stagger)을 가져야 한다
+ *  as 를 받는 이유: 별도 머리글 없이 섹션으로 시작하는 화면(홈)은 첫 섹션 제목이 그 문서의 h1 이어야 한다.
+ *  크기는 그대로 둔다 — 문서 구조와 글자 크기는 별개다 */
 export function SectionHead({
   id,
   title,
@@ -63,6 +65,7 @@ export function SectionHead({
   action,
   className,
   style,
+  as: Heading = "h2",
 }: {
   id?: string;
   title: string;
@@ -70,13 +73,14 @@ export function SectionHead({
   action?: React.ReactNode;
   className?: string;
   style?: React.CSSProperties;
+  as?: "h1" | "h2";
 }) {
   return (
     <div className={cn("flex flex-wrap items-baseline justify-between gap-x-3 gap-y-1", className)} style={style}>
       <div className="flex flex-wrap items-baseline gap-x-2.5 gap-y-1">
-        <h2 id={id} className="text-[17px] font-bold tracking-[-0.02em] text-ink">
+        <Heading id={id} className="text-[17px] font-bold tracking-[-0.02em] text-ink">
           {title}
-        </h2>
+        </Heading>
         {note && <span className="text-[12.5px] text-dim">{note}</span>}
       </div>
       {action}

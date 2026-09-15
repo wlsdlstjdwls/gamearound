@@ -13,8 +13,10 @@ export function SiteFooter() {
   const thisYear = new Date().getFullYear();
   const years = thisYear > SITE.foundedYear ? `${SITE.foundedYear}-${thisYear}` : `${SITE.foundedYear}`;
 
+  // 위 여백은 붙이지 않는다 — 본문과의 거리는 <Page> 의 하단 패딩 하나가 갖는다.
+  // 둘 다 여백을 가지면 페이지마다 합이 달라지고, 화면 맨 아래 고지가 푸터에서 멀리 떨어져 떠 보인다.
   return (
-    <footer className="mt-4 flex flex-col items-center gap-2 border-t border-line bg-surface px-4 pb-8 pt-6">
+    <footer className="flex flex-col items-center gap-2 border-t border-line bg-surface px-4 pb-8 pt-6">
       <nav className="flex flex-wrap items-center justify-center gap-4" aria-label="약관">
         <Link href={ROUTES.terms} className={LINK_CLASS}>
           이용약관

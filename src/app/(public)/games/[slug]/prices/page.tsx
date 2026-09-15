@@ -14,9 +14,6 @@ import { getPriceHistory, type PriceSeries } from "@/server/services/prices";
 
 type Props = { params: Promise<{ slug: string }> };
 
-const FOOTNOTE =
-  "가격은 값이 바뀐 시점에만 기록됩니다. 수집을 시작한 뒤 아직 가격이 바뀌지 않은 플랫폼은 선이 평평하게 보입니다. 할인 기간은 스토어가 공개하는 경우에만 표시합니다.";
-
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { slug } = await params;
   const game = await getGameBySlugCached(slug);
@@ -130,8 +127,6 @@ export default async function PricesPage({ params }: Props) {
           </section>
         </>
       )}
-
-      <p className="max-w-[760px] text-[12px] leading-[1.8] text-dim">{FOOTNOTE}</p>
     </Page>
   );
 }
