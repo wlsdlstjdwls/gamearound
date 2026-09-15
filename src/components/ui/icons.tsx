@@ -103,6 +103,37 @@ export function AlertCircleIcon(p: IconProps) {
   );
 }
 
+/** 위시리스트 — 헤더 메뉴(좁은 화면은 글자 없이 이것만 선다) */
+export function HeartIcon(p: IconProps) {
+  return (
+    <svg {...base(p)}>
+      <path d="M12 20s-7-4.4-7-9.2A4 4 0 0 1 12 8a4 4 0 0 1 7 2.8c0 4.8-7 9.2-7 9.2Z" />
+    </svg>
+  );
+}
+
+/** 가격 알림 — 헤더 메뉴. 종을 고른 이유: 이 화면에서 알림은 "값이 내려가면 알려 준다" 는 약속이라
+    느낌표(AlertCircle)의 경고와 뜻이 다르다 */
+export function BellIcon(p: IconProps) {
+  return (
+    <svg {...base(p)}>
+      <path d="M18 9a6 6 0 1 0-12 0c0 5-2 6.5-2 6.5h16S18 14 18 9Z" />
+      <path d="M13.7 19a2 2 0 0 1-3.4 0" />
+    </svg>
+  );
+}
+
+/** 메뉴 — 좁은 화면 헤더의 햄버거. 줄 사이는 6px, 24 그리드 한가운데에 맞춘다 */
+export function MenuIcon(p: IconProps) {
+  return (
+    <svg {...base(p)}>
+      <path d="M4 6h16" />
+      <path d="M4 12h16" />
+      <path d="M4 18h16" />
+    </svg>
+  );
+}
+
 /** 로딩 스피너 — CSS animate-spin */
 export function SpinnerIcon(p: IconProps) {
   return (

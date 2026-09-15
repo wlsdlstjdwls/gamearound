@@ -1,23 +1,20 @@
 "use client";
-// 헤더 검색창 — 타이핑하는 대로 결과가 따라온다(엔터를 안 눌러도 된다).
+// 헤더 검색창 — 엔터(모바일 자판의 "검색")를 눌러야 결과로 간다.
 //
-// 왜 클라이언트 컴포넌트인가: 입력 상태와 디바운스가 필요하다. 결과는 그대로 서버(/search)가 그린다 —
+// 타이핑을 따라가던 것을 되돌렸다(2026-09-15 요청). 한 글자마다 화면이 /search 로 바뀌어서
+// 보던 화면이 손을 멈출 때마다 사라졌고, 조합이 끝나는 한글은 그 순간이 예측되지 않았다.
+// 지금은 "언제 검색되는가" 를 치는 사람이 정한다.
+//
+// 왜 클라이언트 컴포넌트인가: 입력 상태가 필요하다. 결과는 그대로 서버(/search)가 그린다 —
 // 검색 결과 화면이 이미 같은 질의를 서버에서 처리하고 있어서 API 라우트를 따로 두면 같은 일을 두 벌 만들게 된다.
 //
 // 화면에 검색창은 이것 하나뿐이다. 결과 화면이 자기 검색창을 또 그리면 같은 자리에 입력칸이 둘로 보이고,
 // 둘 중 어느 쪽이 현재 질의인지 알 수 없다(2026-09-14 제보).
-import { useEffect, useRef, useState, useTransition } from "react";
+import { useRef, useState, useTransition } from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { SearchIcon, SpinnerIcon, XIcon } from "@/components/ui/icons";
 import { MAX_PARAM_LEN } from "@/lib/games-query";
 import { ROUTES } from "@/lib/routes";
-
-/**
- * 마지막 타건 후 이만큼 조용하면 질의한다.
- * 한글은 조합 중에도 input 이 뜨므로 너무 짧으면 "ㄱ", "가", "간"... 이 전부 한 번씩 질의가 된다.
- * 250ms 는 낱말 하나를 치는 동안에는 안 나가고, 손을 멈추면 바로 따라오는 정도다.
- */
-const DEBOUNCE_MS = 250;
 
 const SEARCH_PLACEHOLDER = "게임 제목 검색";
 
@@ -39,9 +36,14 @@ const FIELD_CLASS =
   "flex h-9 items-center gap-2 rounded-full border border-transparent bg-surface-2 pl-3 pr-2 transition-[background-color,border-color,box-shadow] duration-base ease-standard focus-within:border-acc focus-within:bg-surface focus-within:shadow-[0_0_0_3px_var(--acc-glow)]";
 const INPUT_CLASS =
   "min-w-0 flex-1 bg-transparent text-[13px] text-ink outline-none placeholder:text-dim [&::-webkit-search-cancel-button]:appearance-none";
-const FORM_CLASS = "min-w-[180px] max-w-[420px] flex-1";
+/*
+ * 헤더 안에서 이 칸이 차지하는 자리 — 로고와 메뉴 사이의 남는 폭을 전부 가져간다.
+ * 최소 폭을 걸지 않는 이유: 320px 기기에서는 이 칸이 줄어들어야 로고와 햄버거가 한 줄에 남는다.
+ * 최소 폭을 걸면 그 순간 셋이 각자 줄을 차지하고 머리띠가 세 배로 자란다.
+ */
+const FORM_CLASS = "min-w-0 max-w-[420px] flex-1";
 /** 오른쪽 끝 자리 — 스피너와 지우기 버튼이 번갈아 선다. 폭을 고정해야 글자가 밀리지 않는다 */
-const TRAIL_CLASS = "flex size-6 shrink-0 items-center justify-center";
+const TRAIL_CLASS = "flex size-7 shrink-0 items-center justify-center";
 
 /**
  * 프리렌더용 껍데기. useSearchParams 는 정적 렌더를 포기시키므로 Suspense 경계 안에 둬야 하고,
@@ -68,41 +70,34 @@ export function SearchBox() {
 
   const [value, setValue] = useState(urlQuery);
   const [isPending, startTransition] = useTransition();
-  // 한글, 일본어 입력기가 글자를 조합하는 중에는 질의하지 않는다 — 자모 단계로 검색이 나간다
+  // 조합 중인 엔터는 "글자 확정"이지 "검색"이 아니다(onKeyDown 주석)
   const composing = useRef(false);
   const inputRef = useRef<HTMLInputElement>(null);
 
   // 뒤로 가기, 다른 화면에서 온 경우처럼 주소가 **밖에서** 바뀌면 입력칸을 주소에 맞춘다.
   // effect 가 아니라 렌더 중 보정인 이유: effect 로 하면 한 번 그린 뒤 다시 그려 입력칸이 깜빡인다.
-  // 내가 친 글자가 디바운스를 타고 주소로 나간 경우는 건너뛴다 — 그때 덮어쓰면 아직 안 보낸
-  // 뒤쪽 공백이나 조합 중인 글자가 지워진다.
+  // 방금 내가 엔터로 보낸 주소는 건너뛴다 — 그때 덮어쓰면 아직 안 보낸 뒤쪽 공백이 지워진다.
   const [urlEcho, setUrlEcho] = useState(urlQuery);
   if (urlQuery !== urlEcho) {
     setUrlEcho(urlQuery);
     if (urlQuery !== trimQuery(value)) setValue(urlQuery);
   }
 
-  useEffect(() => {
-    if (composing.current) return;
+  /** 지금 칸에 있는 글자로 검색 화면에 간다. 빈 칸이면 질의 없는 검색 화면으로 — 결과를 지우는 일도 하나의 요청이다 */
+  const submit = () => {
     const next = trimQuery(value);
-    if (next === urlQuery.trim()) return;
-    const id = setTimeout(() => {
-      const href = next ? `${ROUTES.search}?q=${encodeURIComponent(next)}` : ROUTES.search;
-      // 검색 화면 안에서는 replace 를 쓴다. push 로 쌓으면 한 글자마다 방문 기록이 하나씩 생겨
-      // 뒤로 가기가 타이핑을 거꾸로 되감는다. 다른 화면에서 들어올 때만 한 번 push 한다.
-      startTransition(() => (onSearchPage ? router.replace(href) : router.push(href)));
-    }, DEBOUNCE_MS);
-    return () => clearTimeout(id);
-  }, [value, urlQuery, onSearchPage, router]);
+    const href = next ? `${ROUTES.search}?q=${encodeURIComponent(next)}` : ROUTES.search;
+    if (onSearchPage && href === `${ROUTES.search}${urlQuery ? `?q=${encodeURIComponent(urlQuery)}` : ""}`) return;
+    startTransition(() => router.push(href));
+  };
 
   return (
     <form
       role="search"
       className={FORM_CLASS}
       onSubmit={(e) => {
-        e.preventDefault(); // 디바운스가 이미 같은 곳으로 보냈다. 엔터는 그걸 앞당기기만 한다
-        const next = trimQuery(value);
-        if (next) router.push(`${ROUTES.search}?q=${encodeURIComponent(next)}`);
+        e.preventDefault(); // 기본 GET 제출은 전체 새로고침이다. 이동은 라우터가 한다
+        submit();
       }}
     >
       <label htmlFor="q" className="sr-only">게임 검색</label>
@@ -116,12 +111,15 @@ export function SearchBox() {
           value={value}
           maxLength={MAX_PARAM_LEN}
           autoComplete="off"
+          enterKeyHint="search"
           placeholder={SEARCH_PLACEHOLDER}
           onChange={(e) => setValue(e.target.value)}
           onCompositionStart={() => { composing.current = true; }}
-          onCompositionEnd={(e) => {
-            composing.current = false;
-            setValue(e.currentTarget.value); // 조합이 끝난 글자로 한 번 더 알려 디바운스를 깨운다
+          onCompositionEnd={() => { composing.current = false; }}
+          onKeyDown={(e) => {
+            // 한글, 일본어 입력기에서 조합을 끝내는 엔터와 검색하는 엔터는 같은 키다.
+            // 막지 않으면 "게임"의 "임"을 확정하는 순간 "게ㅇ"으로 검색이 나간다
+            if (e.key === "Enter" && (e.nativeEvent.isComposing || composing.current)) e.preventDefault();
           }}
           className={INPUT_CLASS}
         />
@@ -138,10 +136,15 @@ export function SearchBox() {
                 onClick={() => {
                   setValue("");
                   inputRef.current?.focus(); // 지운 뒤 다시 칠 수 있어야 한다 — 포커스를 잃으면 한 번 더 눌러야 한다
+                  // 결과 화면에서 지웠으면 결과도 같이 걷는다. 칸만 비우고 결과가 남아 있으면
+                  // 화면이 말하는 질의와 칸에 적힌 질의가 어긋난다
+                  if (onSearchPage && urlQuery) startTransition(() => router.push(ROUTES.search));
                 }}
-                className="press flex size-6 items-center justify-center rounded-full text-dim transition-colors hover:bg-surface-3 hover:text-ink"
+                // 보이는 동그라미는 28px 이지만 손가락이 닿는 넓이는 44px 이다. 상자를 키우지 않고
+                // ::after 로 덮는 이유: 입력칸 높이(36px)를 넘기면 머리띠가 통째로 두꺼워진다
+                className="press relative flex size-7 items-center justify-center rounded-full text-dim transition-colors after:absolute after:-inset-2 after:content-[''] hover:bg-surface-3 hover:text-ink"
               >
-                <XIcon size={13} />
+                <XIcon size={14} />
               </button>
             )
           )}

@@ -42,17 +42,21 @@ type LockupProps = {
   size?: number;
   tone?: Tone;
   className?: string;
+  /** 워드마크 글자에 얹을 클래스. 좁은 화면에서 글자만 숨기고 심볼만 남길 때 쓴다(헤더) */
+  wordmarkClassName?: string;
 };
 
 /**
  * 심볼 + 워드마크. 간격은 심볼 폭의 1/3 —
  * 컨트롤러는 가로로 넓어서 글자 x-height 에 맞추면 혼자 커 보인다.
+ *
+ * 워드마크를 숨겨도 간격은 따로 지울 필요가 없다 — display:none 인 자식은 flex gap 을 만들지 않는다.
  */
-export function BrandLockup({ size = DEFAULT_SYMBOL_SIZE, tone = "default", className }: LockupProps) {
+export function BrandLockup({ size = DEFAULT_SYMBOL_SIZE, tone = "default", className, wordmarkClassName }: LockupProps) {
   return (
     <span className={cn("inline-flex items-center", className)} style={{ gap: Math.round(size / 3) }}>
       <BrandSymbol size={size} tone={tone} />
-      <span className="font-bold tracking-[-0.035em]" style={{ fontSize: Math.round(size * 0.66) }}>
+      <span className={cn("font-bold tracking-[-0.035em]", wordmarkClassName)} style={{ fontSize: Math.round(size * 0.66) }}>
         {SITE.name}
       </span>
     </span>

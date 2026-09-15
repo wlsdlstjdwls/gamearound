@@ -19,8 +19,11 @@ export function GameFilters({ facets, filter }: { facets: GameFacets; filter: Ga
   return (
     <>
       {/* 좁은 화면: 접어 둔 서랍. 접힌 채로도 몇 개가 걸렸는지는 말해 준다 —
-          열어 보기 전에는 아무 표시가 없어서 걸어 둔 조건을 잊고 "결과가 왜 이것뿐이지" 로 읽혔다 */}
-      <details className={cardClass("p-0 lg:hidden")} open={applied > 0}>
+          열어 보기 전에는 아무 표시가 없어서 걸어 둔 조건을 잊고 "결과가 왜 이것뿐이지" 로 읽혔다.
+          걸린 조건이 있어도 펴 두지 않는다(2026-09-15): 이 무리가 700px 이라 조건을 걸고 들어온 화면은
+          게임이 한 장도 안 보이는 채로 시작했다. 화면에 들어와서 하려던 일은 결과를 보는 것이지
+          방금 고른 조건을 다시 읽는 것이 아니다 — 걸린 개수는 접힌 줄의 숫자 배지가 말한다 */}
+      <details className={cardClass("p-0 lg:hidden")}>
         <summary className="flex cursor-pointer list-none items-center gap-2 px-4 py-3 text-[13px] font-semibold text-ink">
           필터와 정렬
           {applied > 0 && (

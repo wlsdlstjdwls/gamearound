@@ -7,11 +7,26 @@
 //
 // 색이 아니라 글자색과 굵기로만 표시한다 — 헤더에 브랜드 색 덩어리를 하나 더 얹으면
 // 로고와 경쟁한다. 보조 기술에는 aria-current 가 같은 말을 한다.
+//
+// icon 을 받으면 좁은 화면에서 글자를 접고 그림만 세운다. 전에는 같은 상황을 `hidden sm:block` 으로
+// 다뤄서 위시리스트, 알림이 모바일에서 아예 사라졌고, 그 두 화면으로 가는 길이 사용자 메뉴 안에만 남았다.
+// 글자는 지우지 않고 sr-only 로 남긴다 — 화면 낭독기는 그림이 아니라 이 글자를 읽는다.
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { cn } from "@/lib/cn";
 
-export function SiteNavLink({ href, children, className }: { href: string; children: React.ReactNode; className?: string }) {
+export function SiteNavLink({
+  href,
+  icon,
+  children,
+  className,
+}: {
+  href: string;
+  /** 있으면 좁은 화면에서 글자 대신 이것만 보인다 */
+  icon?: React.ReactNode;
+  children: string;
+  className?: string;
+}) {
   const pathname = usePathname();
   // 하위 경로도 그 메뉴 안이다(/games/<slug> 는 게임 목록 아래). 홈(/)만 정확히 일치할 때로 한정한다
   const current = href === "/" ? pathname === href : pathname === href || pathname.startsWith(`${href}/`);
@@ -21,12 +36,17 @@ export function SiteNavLink({ href, children, className }: { href: string; child
       href={href}
       aria-current={current ? "page" : undefined}
       className={cn(
-        "press rounded-lg px-3 py-[7px] transition-colors",
+        "press flex items-center justify-center rounded-lg transition-colors",
+        // 그림만 선 칸은 정사각 터치 타깃을 갖는다. 글자가 돌아오는 넓은 화면에서는 원래 여백으로 돌아간다
+        icon
+          ? "size-[var(--touch-target)] sm:size-auto sm:gap-1.5 sm:px-3 sm:py-[7px]"
+          : "px-3 py-[7px]",
         current ? "font-semibold text-ink" : "text-mut hover:text-ink",
         className,
       )}
     >
-      {children}
+      {icon}
+      <span className={icon ? "sr-only sm:not-sr-only" : undefined}>{children}</span>
     </Link>
   );
 }

@@ -562,6 +562,37 @@ a {
   }
 }
 
+/* ── 오른쪽 서랍 ──
+   같은 <dialog> 로 방향만 바꾼다. 좁은 화면의 전체 메뉴(components/site-menu)가 쓴다.
+   바닥 시트와 다른 점은 셋이다: 화면 높이를 끝까지 쓰고, 왼쪽 모서리만 굴리고, 손가락은 가로로 민다.
+   선택자가 바닥 시트 규칙보다 한 칸 더 구체적이라 파일 안 어디에 있든 이긴다(데스크톱 팝업 규칙 포함). */
+.sheet[data-side="right"][open] {
+  align-items: stretch;
+  justify-content: flex-end;
+}
+.sheet[data-side="right"] .sheet__panel {
+  width: min(84vw, 320px);
+  max-width: none;
+  height: 100%;
+  max-height: none;
+  border: 0;
+  border-left: 1px solid var(--line);
+  border-radius: var(--radius-md) 0 0 var(--radius-md);
+  /* 노치와 홈 인디케이터 양쪽을 피한다 — 서랍은 화면을 세로로 끝까지 쓴다 */
+  padding-top: env(safe-area-inset-top);
+  padding-right: env(safe-area-inset-right);
+  padding-bottom: env(safe-area-inset-bottom);
+  animation: drawer-in var(--duration-slow) var(--ease-out-emph) both;
+}
+/* 손잡이는 바닥 시트의 물건이다 — 가로로 미는 서랍에서 가로 막대는 방향을 거짓말한다 */
+.sheet[data-side="right"] .sheet__grip-row {
+  display: none;
+}
+@keyframes drawer-in {
+  from { opacity: 0; transform: translateX(28px); }
+  to { opacity: 1; transform: none; }
+}
+
 /* 접근성: 모션 축소 요청 시 전부 거의 즉시 */
 @media (prefers-reduced-motion: reduce) {
   *,

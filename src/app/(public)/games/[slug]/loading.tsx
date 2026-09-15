@@ -15,9 +15,10 @@ export default function GameDetailLoading() {
       </div>
 
       {/* 헤더 — 커버 + 제목/버튼/요약/장르/설명 */}
-      <div className="flex flex-wrap gap-6">
-        <div className="skeleton aspect-[3/4] w-[190px] shrink-0 rounded-xl" />
-        <div className="flex min-w-[280px] flex-1 flex-col gap-4">
+      <div className="flex flex-wrap gap-5 sm:gap-6">
+        {/* 본문과 같은 자리를 잡아야 교체될 때 화면이 밀리지 않는다 — 비율 전환도 같이 따라간다(page.tsx 주석) */}
+        <div className="skeleton aspect-[4/3] w-full shrink-0 rounded-xl sm:aspect-[3/4] sm:w-[190px]" />
+        <div className="flex min-w-0 flex-1 flex-col gap-4 sm:min-w-[280px]">
           <div className="flex flex-wrap items-start justify-between gap-3">
             <div className="flex flex-col gap-1">
               <div className="skeleton h-[34px] w-[320px] max-w-full rounded" />

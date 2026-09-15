@@ -215,18 +215,25 @@ export default async function GameDetailPage({ params }: Props) {
           안쪽 조각마다 .enter-item 을 붙이는 이유: 헤더는 300px 넘는 덩어리라 통째로 페이드하면
           화면이 한 번에 툭 던져진다. 커버, 제목, 요약, 장르, 설명 순으로 들어와야 목록 화면과 결이 같다.
           (조각이 하나라도 .enter-item 이면 감싼 section 은 애니메이션에서 빠진다 — 겹쳐 페이드 방지) */}
-      <section className="flex flex-wrap gap-6">
+      <section className="flex flex-wrap gap-5 sm:gap-6">
         <div
           style={stagger(0)}
-          className={`enter-item relative shrink-0 overflow-hidden rounded-xl border border-line bg-surface-3 ${
-            // 세로 아트가 있으면 190×250 슬롯을 채운다. 없으면 가로 배너 비율을 유지해 제목이 잘리지 않게 한다
-            game.portraitUrl ? "aspect-[3/4] w-[190px]" : "aspect-[460/215] w-full max-w-[380px]"
+          className={`enter-item relative w-full shrink-0 overflow-hidden rounded-xl border border-line bg-surface-3 ${
+            // 좁은 화면은 폭을 꽉 채운 띠 하나다 — 190px 슬롯을 그대로 두면 오른쪽 130px 이 빈 채로 남고,
+            // 제목이 그 옆에 끼어 두세 글자마다 줄바꿈했다.
+            //
+            // 비율을 원본에 맞춰 가르는 이유: 세로 아트를 가로 배너 칸에 넣으면 위아래가 잘려 로고가 사라지고,
+            // 가로 배너를 세로 칸에 넣으면 좌우가 잘린다. 4:3 은 세로 아트를 반 정도만 보여 주되
+            // 인물과 로고가 모이는 가운데 띠를 남기는 선이다(3:4 원본을 그대로 펴면 420px 이라 제목이 화면 밖으로 밀린다).
+            game.portraitUrl
+              ? "aspect-[4/3] sm:aspect-[3/4] sm:w-[190px]"
+              : "aspect-[460/215] sm:max-w-[380px]"
           }`}
         >
-          <CoverImage src={game.portraitUrl ?? game.coverUrl} alt={`${title} 커버`} sizes="(max-width: 640px) 100vw, 190px" priority />
+          <CoverImage src={game.portraitUrl ?? game.coverUrl} alt={`${title} 커버`} sizes="(max-width: 639px) 100vw, 190px" priority />
         </div>
 
-        <div className="flex min-w-[280px] flex-1 flex-col gap-4">
+        <div className="flex min-w-0 flex-1 flex-col gap-4 sm:min-w-[280px]">
           <div className="enter-item flex flex-wrap items-start justify-between gap-3" style={stagger(1)}>
             <div className="flex min-w-0 flex-col gap-1.5">
               <h1 className="text-[28px] font-bold leading-[1.2] tracking-[-0.03em] text-ink">{title}</h1>

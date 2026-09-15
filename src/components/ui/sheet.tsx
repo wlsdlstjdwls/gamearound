@@ -1,5 +1,7 @@
 "use client";
-// 시트 — 모바일은 바닥에서 올라오는 바텀시트, 데스크톱은 가운데 팝업. 마크업 하나로 둘을 낸다.
+// 시트 — 모바일은 바닥에서 올라오는 바텀시트(기본), 데스크톱은 가운데 팝업. 마크업 하나로 둘을 낸다.
+// side="right" 면 대신 오른쪽에서 나오는 서랍이 된다(전체 메뉴). 다른 것은 미는 축뿐이라
+// 판을 따로 만들지 않는다 — 막, 포커스 가두기, 배경 스크롤 잠금, 화면 이동 시 닫기를 두 벌 갖지 않기 위해서다.
 //
 // 동작은 fitin-app 의 common_bottom_sheet 를 그대로 옮겼다(2026-09-15): 손잡이/머리를 끌어내려 닫기,
 // 끌린 만큼 막이 옅어지기, 임계값을 넘지 못하면 제자리로, 열린 직후 유령 클릭 차단, 배경 스크롤 잠금.
@@ -11,7 +13,9 @@
 //
 // 내용(children)은 열기 전에도 DOM 에 있다 — 서버에서 그린 것을 그대로 받으므로 열 때 기다림이 없다.
 import { useCallback, useEffect, useId, useRef, useState } from "react";
+import { usePathname } from "next/navigation";
 import { buttonClass } from "@/components/ui/button";
+import { cn } from "@/lib/cn";
 import { XIcon } from "@/components/ui/icons";
 
 /** 데스크톱 팝업으로 바뀌는 폭. globals.css 의 .sheet 미디어 쿼리와 같은 값이어야 한다 */
@@ -45,6 +49,8 @@ export function Sheet({
   title,
   children,
   triggerClassName,
+  unstyledTrigger = false,
+  side = "bottom",
 }: {
   /** 여는 버튼에 적을 말 */
   label: React.ReactNode;
@@ -52,7 +58,18 @@ export function Sheet({
   title: string;
   children: React.ReactNode;
   triggerClassName?: string;
+  /**
+   * 여는 버튼에서 공용 버튼 모양을 벗긴다(triggerClassName 만 입는다).
+   * 필요한 이유: cn 은 단순 이어붙이기라 buttonClass 의 h-8, px-3.5 를 뒤에서 덮어쓸 수 없다.
+   * 헤더 햄버거처럼 정사각 아이콘 칸이어야 하는 자리는 아예 처음부터 다른 모양이다.
+   */
+  unstyledTrigger?: boolean;
+  /** 어느 쪽에서 나오는가. 모양은 globals.css 의 .sheet[data-side="right"] 가 맡는다 */
+  side?: "bottom" | "right";
 }) {
+  // 미는 방향. 바닥 시트는 아래로, 오른쪽 서랍은 오른쪽으로 — 나온 방향으로 되돌려 보내는 것이 닫기다
+  const axis = side === "right" ? "x" : "y";
+  const pathname = usePathname();
   const dialogRef = useRef<HTMLDialogElement>(null);
   const panelRef = useRef<HTMLDivElement>(null);
   const overlayRef = useRef<HTMLDivElement>(null);
@@ -107,12 +124,13 @@ export function Sheet({
     panel.style.transition = `transform ${ease}, opacity ${ease}`;
     overlay.style.transition = `opacity ${ease}`;
     overlay.style.opacity = "0";
-    if (isDesktop()) {
+    if (isDesktop() && side !== "right") {
       // 가운데 팝업은 아래로 내려가는 대신 그 자리에서 물러난다 — 바닥과 이어져 있지 않은 판이다
       panel.style.opacity = "0";
       panel.style.transform = "scale(0.97)";
     } else {
-      panel.style.transform = `translateY(${panel.getBoundingClientRect().height}px)`;
+      const box = panel.getBoundingClientRect();
+      panel.style.transform = axis === "x" ? `translateX(${box.width}px)` : `translateY(${box.height}px)`;
     }
 
     // transitionend 가 오지 않는 경우(모션 축소, 탭 전환)를 위해 시간으로도 끝낸다
@@ -125,7 +143,7 @@ export function Sheet({
       },
       { once: true },
     );
-  }, [resetStyles]);
+  }, [resetStyles, axis, side]);
 
   const openSheet = () => {
     closingRef.current = false;
@@ -135,6 +153,16 @@ export function Sheet({
     dialogRef.current?.showModal();
     setOpen(true);
   };
+
+  // 안에 있는 링크를 눌러 화면이 바뀌면 같이 닫는다. 소프트 내비게이션이라 시트는 그대로 떠 있고,
+  // 바뀐 화면이 그 뒤에 가려진 채 남는다 — 누른 사람 눈에는 아무 일도 안 일어난 것으로 보인다.
+  // 첫 렌더의 경로는 건너뛴다(열지도 않았는데 닫을 일이 없다)
+  const pathnameRef = useRef(pathname);
+  useEffect(() => {
+    if (pathnameRef.current === pathname) return;
+    pathnameRef.current = pathname;
+    if (open) close();
+  }, [pathname, open, close]);
 
   // 등장이 끝난 뒤에야 제스처를 받는다
   useEffect(() => {
@@ -174,11 +202,14 @@ export function Sheet({
     };
   }, [open]);
 
+  /** 이번 축의 좌표. 아래 세 함수는 이 값 하나만 보고 움직인다 */
+  const pos = (e: React.PointerEvent) => (axis === "x" ? e.clientX : e.clientY);
+
   const beginDrag = (e: React.PointerEvent) => {
-    if (!interactableRef.current || isDesktop() || closingRef.current) return;
+    if (!interactableRef.current || (isDesktop() && side !== "right") || closingRef.current) return;
     const panel = panelRef.current;
     if (!panel) return;
-    dragRef.current = { startY: e.clientY, lastY: e.clientY, lastAt: e.timeStamp, velocity: 0 };
+    dragRef.current = { startY: pos(e), lastY: pos(e), lastAt: e.timeStamp, velocity: 0 };
     panel.dataset.dragging = "true";
     panel.style.transition = "";
     e.currentTarget.setPointerCapture(e.pointerId);
@@ -189,15 +220,16 @@ export function Sheet({
     const panel = panelRef.current;
     const overlay = overlayRef.current;
     if (!drag || !panel || !overlay) return;
-    // 위로는 끌리지 않는다 — 시트는 바닥에 붙어 있고 올라갈 자리가 없다
-    const dy = Math.max(0, e.clientY - drag.startY);
+    // 나온 방향으로만 끌린다 — 시트는 화면 가장자리에 붙어 있고 그 너머로 갈 자리가 없다
+    const dy = Math.max(0, pos(e) - drag.startY);
     const dt = e.timeStamp - drag.lastAt;
-    if (dt > 0) drag.velocity = (e.clientY - drag.lastY) / dt;
-    drag.lastY = e.clientY;
+    if (dt > 0) drag.velocity = (pos(e) - drag.lastY) / dt;
+    drag.lastY = pos(e);
     drag.lastAt = e.timeStamp;
 
-    panel.style.transform = `translateY(${dy}px)`;
-    overlay.style.opacity = String(Math.max(0, 1 - dy / (window.innerHeight * OVERLAY_FADE_RATIO)));
+    panel.style.transform = axis === "x" ? `translateX(${dy}px)` : `translateY(${dy}px)`;
+    const span = axis === "x" ? panel.getBoundingClientRect().width / OVERLAY_FADE_RATIO : window.innerHeight * OVERLAY_FADE_RATIO;
+    overlay.style.opacity = String(Math.max(0, 1 - dy / span));
   };
 
   const endDrag = () => {
@@ -212,11 +244,11 @@ export function Sheet({
       close();
       return;
     }
-    // 제자리로. 되돌림은 튕기지 않는 곡선을 쓴다 — 위로 던진 손에 스프링을 물리면 시트가 천장을 친다
+    // 제자리로. 되돌림은 튕기지 않는 곡선을 쓴다 — 던진 손에 스프링을 물리면 판이 가장자리를 친다
     const back = "var(--duration-base) var(--ease-standard)";
     panel.style.transition = `transform ${back}`;
     overlay.style.transition = `opacity ${back}`;
-    panel.style.transform = "translateY(0)";
+    panel.style.transform = axis === "x" ? "translateX(0)" : "translateY(0)";
     overlay.style.opacity = "1";
   };
 
@@ -224,7 +256,7 @@ export function Sheet({
     <>
       <button
         type="button"
-        className={buttonClass({ variant: "secondary", size: "sm", className: triggerClassName })}
+        className={unstyledTrigger ? cn("press", triggerClassName) : buttonClass({ variant: "secondary", size: "sm", className: triggerClassName })}
         onClick={openSheet}
       >
         {label}
@@ -233,6 +265,7 @@ export function Sheet({
       <dialog
         ref={dialogRef}
         className="sheet"
+        data-side={side}
         aria-labelledby={titleId}
         onClose={() => setOpen(false)}
         // Esc 는 브라우저가 곧장 닫아 버린다 — 막고 우리 퇴장 모션을 태운다
