@@ -50,3 +50,7 @@ dev.log
 
 # OS
 Thumbs.db
+
+# 실측용 임시 산출물 - 프로브 스크립트와 그 결과물(로그, 스크린샷, jsonl). 근거는 docs/ 에 글로 남긴다
+/artifacts
+/scripts/_tmp-*
