@@ -9,6 +9,7 @@ import { SaleBadge } from "@/components/sale-badge";
 import { BackLink } from "@/components/ui/back-link";
 import { Card, Page, PageHead, SectionHead } from "@/components/ui/page";
 import { formatDate, formatDiscount, PLATFORM_LABEL } from "@/lib/format";
+import { bestDiscountOf, isAtBestDiscount } from "@/lib/price-stats";
 import { displayTitle, getGameBySlugCached } from "@/server/services/games";
 import { getPriceHistory, type PriceSeries } from "@/server/services/prices";
 
@@ -73,12 +74,33 @@ export default async function PricesPage({ params }: Props) {
                   )}
                 </div>
               </div>
-              <div className="text-right">
-                <p className="text-[11.5px] text-dim">기록 기준 최저가</p>
-                <p className="text-[15px] font-bold text-ink">
-                  {formatPrice(lowestOf(best), best.currency)}
-                  {best.currentPrice === lowestOf(best) && <span className="ml-1 text-[12px] font-normal text-ok">현재가와 동일</span>}
-                </p>
+              <div className="flex flex-wrap justify-end gap-x-7 gap-y-3 text-right">
+                {/* 할인율을 먼저 둔다 — 정가가 바뀌어도 흔들리지 않아 "살 때인가" 를 그대로 말해 준다 */}
+                <div>
+                  <p className="text-[11.5px] text-dim">기록 기준 최대 할인</p>
+                  {(() => {
+                    const top = bestDiscountOf(best.points);
+                    if (!top) return <p className="text-[15px] font-bold text-dim">할인 기록 없음</p>;
+                    return (
+                      <p className="text-[15px] font-bold text-ink">
+                        {formatDiscount(top.discountPct)}
+                        <span className="ml-1 text-[12px] font-normal text-mut">{formatPrice(top.price, best.currency)}</span>
+                        {isAtBestDiscount(best.discountPct, top) ? (
+                          <span className="ml-1 text-[12px] font-normal text-ok">지금이 그때예요</span>
+                        ) : (
+                          <span className="ml-1 text-[12px] font-normal text-dim">{formatDate(top.t)}</span>
+                        )}
+                      </p>
+                    );
+                  })()}
+                </div>
+                <div>
+                  <p className="text-[11.5px] text-dim">기록 기준 최저가</p>
+                  <p className="text-[15px] font-bold text-ink">
+                    {formatPrice(lowestOf(best), best.currency)}
+                    {best.currentPrice === lowestOf(best) && <span className="ml-1 text-[12px] font-normal text-ok">현재가와 동일</span>}
+                  </p>
+                </div>
               </div>
             </Card>
           )}
@@ -96,6 +118,7 @@ export default async function PricesPage({ params }: Props) {
                 <span>플랫폼</span>
                 <span>현재가</span>
                 <span>할인</span>
+                <span>최대 할인(기록)</span>
                 <span>최저(기록)</span>
                 <span>최고(기록)</span>
                 <span>기록 수</span>
@@ -104,11 +127,15 @@ export default async function PricesPage({ params }: Props) {
                 {series.map((s) => {
                   const prices = s.points.map((p) => p.price);
                   const onSale = Boolean(s.discountPct && s.discountPct > 0);
+                  const top = bestDiscountOf(s.points);
                   return (
                     <li key={s.platform} className={`${COLS} text-[13px] text-ink`}>
                       <span className="font-semibold">{PLATFORM_LABEL[s.platform] ?? s.platform}</span>
                       <span>{formatPrice(s.currentPrice, s.currency)}</span>
                       <span className={onSale ? "text-ok" : "text-dim"}>{onSale ? formatDiscount(s.discountPct) : "-"}</span>
+                      <span className={top ? "text-mut" : "text-dim"}>
+                        {top ? formatDiscount(top.discountPct) : "-"}
+                      </span>
                       <span>{formatPrice(Math.min(...prices), s.currency)}</span>
                       <span className="text-mut">{formatPrice(Math.max(...prices), s.currency)}</span>
                       <span className="text-dim">
