@@ -2,12 +2,12 @@
 // 가격은 "값이 바뀐 시점"만 기록되므로 기록이 적은 게임은 그래프가 거의 평평하다. 대신 현재 할인, 행사 기간을 함께 보여준다.
 import { cheapestOf, formatPrice } from "@/lib/currency";
 import type { Metadata } from "next";
-import Link from "next/link";
 import { notFound } from "next/navigation";
 import { EmptyState } from "@/components/empty-state";
 import { PriceChart } from "@/components/price-chart";
 import { SaleBadge } from "@/components/sale-badge";
-import { Card, Page, SectionHead } from "@/components/ui/page";
+import { BackLink } from "@/components/ui/back-link";
+import { Card, Page, PageHead, SectionHead } from "@/components/ui/page";
 import { formatDate, formatDiscount, PLATFORM_LABEL } from "@/lib/format";
 import { displayTitle, getGameBySlugCached } from "@/server/services/games";
 import { getPriceHistory, type PriceSeries } from "@/server/services/prices";
@@ -34,22 +34,17 @@ const COLS = "grid grid-cols-[repeat(auto-fit,minmax(110px,1fr))] gap-x-3 px-4 p
 
 export default async function PricesPage({ params }: Props) {
   const { slug } = await params;
-  const game = await getGameBySlugCached(slug);
+  // 둘 다 slug 만 있으면 된다 — 줄 세울 이유가 없다(왕복 한 번이 200ms 대)
+  const [game, series] = await Promise.all([getGameBySlugCached(slug), getPriceHistory(slug, { days: 365 })]);
   if (!game) notFound();
-
-  const series = await getPriceHistory(slug, { days: 365 });
   const title = displayTitle(game);
   const best = bestDeal(series);
 
   return (
     <Page gap={20}>
-      <nav aria-label="브레드크럼">
-        <Link href={`/games/${game.slug}`} className="text-[12.5px] text-dim transition-colors hover:text-ink">
-          {title} 상세로
-        </Link>
-      </nav>
+      <BackLink href={`/games/${game.slug}`}>{title} 상세로</BackLink>
 
-      <h1 className="text-2xl font-bold tracking-[-0.03em] text-ink">가격 변동 | 최근 1년</h1>
+      <PageHead title="가격 변동 | 최근 1년" />
 
       {series.length === 0 ? (
         <EmptyState
@@ -82,7 +77,7 @@ export default async function PricesPage({ params }: Props) {
                 <p className="text-[11.5px] text-dim">기록 기준 최저가</p>
                 <p className="text-[15px] font-bold text-ink">
                   {formatPrice(lowestOf(best), best.currency)}
-                  {best.currentPrice === lowestOf(best) && <span className="ml-1 text-[12px] font-normal text-acc">현재가와 동일</span>}
+                  {best.currentPrice === lowestOf(best) && <span className="ml-1 text-[12px] font-normal text-ok">현재가와 동일</span>}
                 </p>
               </div>
             </Card>
@@ -113,7 +108,7 @@ export default async function PricesPage({ params }: Props) {
                     <li key={s.platform} className={`${COLS} text-[13px] text-ink`}>
                       <span className="font-semibold">{PLATFORM_LABEL[s.platform] ?? s.platform}</span>
                       <span>{formatPrice(s.currentPrice, s.currency)}</span>
-                      <span className={onSale ? "text-acc" : "text-dim"}>{onSale ? formatDiscount(s.discountPct) : "-"}</span>
+                      <span className={onSale ? "text-ok" : "text-dim"}>{onSale ? formatDiscount(s.discountPct) : "-"}</span>
                       <span>{formatPrice(Math.min(...prices), s.currency)}</span>
                       <span className="text-mut">{formatPrice(Math.max(...prices), s.currency)}</span>
                       <span className="text-dim">

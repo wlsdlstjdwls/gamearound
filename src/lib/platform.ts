@@ -54,3 +54,24 @@ export function isPlatformFamily(v: string | undefined): v is PlatformFamily {
 export function platformsOf(value: Platform | PlatformFamily): Platform[] {
   return isPlatformFamily(value) ? FAMILY_PLATFORMS[value] : [value];
 }
+
+/** 필터에 고를 수 있는 값 전부 — 갈래 둘 + 스토어 여덟. 주소 값 검증과 정렬의 원천이다 */
+export const PLATFORM_VALUE_ORDER: string[] = [...PLATFORM_FAMILIES, ...PLATFORM_ORDER];
+
+export function isPlatformValue(v: string | undefined): v is Platform | PlatformFamily {
+  return v !== undefined && PLATFORM_VALUE_ORDER.includes(v);
+}
+
+/**
+ * 고른 값들 → 실제로 걸러야 할 플랫폼 목록(합집합).
+ * 갈래와 그 안의 스토어를 같이 고른 경우(pc + steam)도 합집합이라 갈래가 이긴다 — 주소가 그렇게 말했으니
+ * "PC 전부" 를 보여 주는 편이 맞다. 고르는 쪽(UI)이 갈래를 누르면 낱개를 지우므로 실제로는 거의 안 생긴다.
+ */
+export function expandPlatformValues(values: string[]): Platform[] {
+  const out = new Set<Platform>();
+  for (const v of values) {
+    if (!isPlatformValue(v)) continue;
+    for (const p of platformsOf(v)) out.add(p);
+  }
+  return PLATFORM_ORDER.filter((p) => out.has(p));
+}

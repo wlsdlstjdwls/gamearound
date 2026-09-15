@@ -12,7 +12,7 @@ export function FormMessage({ tone, children, replayKey }: { tone: "error" | "su
       className={cn(
         "flex items-start gap-2 rounded-[var(--radius-sm)] border px-3.5 py-3 text-[13px]",
         isError && "animate-shake border-danger/35 bg-danger-soft text-danger",
-        tone === "success" && "animate-rise border-acc/35 bg-acc-soft text-acc",
+        tone === "success" && "animate-rise border-ok/35 bg-ok-soft text-ok",
         tone === "info" && "animate-rise border-line-strong bg-surface-4 text-mut",
       )}
     >

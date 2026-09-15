@@ -71,17 +71,17 @@ export function brandAccentDot(variant: BrandSymbolVariant = "full"): Dot {
 /**
  * 아이콘 색. ink / bg / accent 는 SITE 가 원천이고, 나머지 둘은 그 자리에서만 필요한 보정값이다.
  * globals.css 의 --acc 를 그대로 쓰면 두 경우에 사실상 안 보인다:
- *  - 잉크 배경 위(앱 아이콘, 반전 락업): 명도 차가 부족해 검정에 묻힌다.
- *  - 16px 파비콘: 점이 작아 저채도 그린이 검정으로 읽힌다.
+ *  - 잉크 배경 위(앱 아이콘, 반전 락업): 명도 차가 부족해 검정에 묻힌다(2.24:1).
+ *  - 16px 파비콘: 점이 작아 어두운 보라가 검정으로 읽힌다.
  */
 export const BRAND_COLOR = {
   ink: SITE.themeColor,
   bg: SITE.backgroundColor,
   accent: SITE.accentColor,
-  /** 잉크 배경 위에 얹는 악센트 */
-  accentOnInk: "#4d7f62",
-  /** 16px 이하에서만 쓰는 채도 보정 악센트 */
-  accentMicro: "#3f6b53",
+  /** 잉크 배경 위에 얹는 악센트. globals.css 의 --acc-on-ink 와 같은 값 */
+  accentOnInk: "#9182f0",
+  /** 16px 이하에서만 쓰는 명도 보정 악센트 — 점이 작아 어두운 보라는 검정으로 읽힌다 */
+  accentMicro: "#6a3fd6",
   /** 카드, 칩 바탕. globals.css 의 --surface 와 같은 값 */
   surface: "#ffffff",
   /** 테두리. globals.css 의 --line 과 같은 값 */

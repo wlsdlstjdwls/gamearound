@@ -7,7 +7,7 @@ import { EmptyState } from "@/components/empty-state";
 import { WishlistRemoveButton } from "@/components/wishlist-button";
 import { FadeImage } from "@/components/ui/fade-image";
 import { ImageFallback } from "@/components/ui/image-fallback";
-import { Page } from "@/components/ui/page";
+import { Page, PageHead } from "@/components/ui/page";
 import { Clamp } from "@/components/ui/tooltip";
 import { formatDiscount, PLATFORM_LABEL } from "@/lib/format";
 import { collectedAtText, getFreshness } from "@/lib/freshness";
@@ -51,9 +51,9 @@ export default async function WishlistPage({ searchParams }: Props) {
     <Page gap={20}>
       <header className="flex flex-wrap items-end justify-between gap-x-4 gap-y-2">
         <div>
-          <h1 className="text-2xl font-bold tracking-[-0.03em] text-ink">위시리스트</h1>
+          <PageHead title="위시리스트" />
           <p className="mt-1 text-[13px] text-mut">
-            {items.length}개 중 <span className="font-semibold text-acc">{onSaleCount}개가 지금 할인 중</span>입니다.
+            {items.length}개 중 <span className="font-semibold text-ok">{onSaleCount}개가 지금 할인 중</span>입니다.
           </p>
         </div>
         <div role="group" aria-label="정렬" className="flex gap-1">
@@ -123,7 +123,7 @@ export default async function WishlistPage({ searchParams }: Props) {
                             {p.discountPct ? (
                               <span className="rounded-[5px] bg-surface-2 px-1.5 py-px text-[11px] text-ink-2">{formatDiscount(p.discountPct)}</span>
                             ) : null}
-                            {isLowest && pricedCount > 1 && <span className="font-semibold text-acc">최저가</span>}
+                            {isLowest && pricedCount > 1 && <span className="font-semibold text-ok">최저가</span>}
                           </li>
                         );
                       })}

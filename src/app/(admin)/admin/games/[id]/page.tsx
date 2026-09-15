@@ -15,7 +15,7 @@ import { ManualRefForm } from "@/components/admin/manual-ref-form";
 import { AliasForm } from "@/components/admin/alias-form";
 import { UpgradeForm } from "@/components/admin/upgrade-form";
 import { MatchReviewButtons } from "@/components/admin/match-review-buttons";
-import { cardClass } from "@/components/ui/page";
+import { PageHead, cardClass } from "@/components/ui/page";
 
 export const metadata: Metadata = { title: "게임 데이터 정정" };
 
@@ -84,7 +84,7 @@ export default async function AdminGamePage({ params }: { params: Promise<{ id: 
     <div className="flex flex-col gap-8">
       <header className="flex flex-col gap-1">
         <p className="text-[12.5px] text-dim"><Link href="/admin" className="hover:text-ink">대시보드</Link> / 게임 정정</p>
-        <h1 className="text-2xl font-bold tracking-[-0.03em] text-ink">{game.titleKo ?? game.titleEn}</h1>
+        <PageHead title={game.titleKo ?? game.titleEn} />
         <p className="text-[13px] text-mut">
           {game.titleEn} | <code className="text-xs">{game.slug}</code> |{" "}
           <Link href={`/games/${game.slug}`} className="text-acc hover:underline">공개 페이지 보기</Link>
@@ -161,7 +161,7 @@ export default async function AdminGamePage({ params }: { params: Promise<{ id: 
                       {r.url ? <a href={r.url} target="_blank" rel="noreferrer" className="break-all text-[12px] text-acc hover:underline">{r.url}</a> : "-"}
                     </td>
                     <td className="px-3 py-2">
-                      <span className={`rounded-[5px] px-1.5 py-0.5 text-[11.5px] font-semibold ${r.matchedBy === "pending" ? "bg-warn-soft text-warn" : r.matchedBy === "manual" ? "bg-acc-soft text-acc" : r.matchedBy === "none" ? "bg-surface-2 text-dim-2" : "bg-surface-2 text-ink-2"}`}>
+                      <span className={`rounded-[5px] px-1.5 py-0.5 text-[11.5px] font-semibold ${r.matchedBy === "pending" ? "bg-warn-soft text-warn" : r.matchedBy === "manual" ? "bg-ok-soft text-ok" : r.matchedBy === "none" ? "bg-surface-2 text-dim-2" : "bg-surface-2 text-ink-2"}`}>
                         {r.matchedBy}
                       </span>
                     </td>

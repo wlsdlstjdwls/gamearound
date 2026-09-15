@@ -28,9 +28,10 @@ import type { Currency, Platform } from "@/server/db/schema";
 import type { PriceSeries } from "@/server/services/prices";
 import { useNow } from "@/components/use-now";
 import { ChipButton } from "@/components/ui/chip";
+import { useCssTokens } from "@/components/use-css-tokens";
 
 /**
- * 플랫폼 → 색 고정(엔티티 기준, 순서, 개수와 무관 — 필터로 선이 줄어도 남은 선의 색은 그대로다).
+ * 플랫폼 → 색 토큰 이름(엔티티 기준, 순서, 개수와 무관 — 필터로 선이 줄어도 남은 선의 색은 그대로다).
  *
  * 왜 바꿨나(2026-09-15): 이전 팔레트는 전부 따뜻한 회색이라 명도로만 갈렸다.
  * 명도 구분은 선이 겹치는 순간 무너진다 — 가격이 같은 구간에서는 선이 포개져 위의 것만 보인다.
@@ -38,19 +39,35 @@ import { ChipButton } from "@/components/ui/chip";
  * 흰 표면 기준으로 통과시킨 조합이다: 색각 이상 인접쌍 ΔE 9.1, 정상 시야 19.6.
  * 순서는 PLATFORM_ORDER 와 같다 — 인접쌍 검증이 그 순서를 전제한다.
  *
- * 색을 아래 globals.css 토큰으로 못 빼는 이유: recharts 는 stroke 를 CSS 속성이 아니라
- * SVG 표현 속성으로 내보내고, 표현 속성 안에서는 var() 가 풀리지 않는다.
+ * 값 자체는 globals.css 에 있다(--store-*). recharts 는 stroke 를 SVG 표현 속성으로 내보내고
+ * 그 안에서는 var() 가 풀리지 않으므로, 이름만 여기 두고 계산된 값은 useCssTokens 가 읽어 온다.
+ * 그 덕분에 다크에서는 같은 이름이 한 단 밝은 값으로 바뀐다.
  */
-const PLATFORM_COLOR: Record<Platform, string> = {
-  steam: "#2A78D6",   // 파랑
-  epic: "#EB6834",    // 주황
-  gog: "#1BAF7A",     // 아쿠아
-  ps5: "#EDA100",     // 노랑
-  ps4: "#E87BA4",     // 자홍
-  xbox: "#008300",    // 초록
-  switch: "#4A3AA7",  // 보라
-  switch2: "#E34948", // 빨강
+const PLATFORM_TOKEN: Record<Platform, string> = {
+  steam: "--store-steam", // 파랑
+  epic: "--store-epic", // 주황
+  gog: "--store-gog", // 아쿠아
+  ps5: "--store-ps5", // 노랑
+  ps4: "--store-ps4", // 자홍
+  xbox: "--store-xbox", // 초록
+  switch: "--store-switch", // 보라
+  switch2: "--store-switch2", // 빨강
 };
+
+/** 그래프의 판 색(격자, 축, 기준선). 화면의 나머지와 같은 토큰을 쓴다 */
+const CHART_TOKENS = [
+  "--line",
+  "--line-soft",
+  "--line-strong",
+  "--surface",
+  "--surface-4",
+  "--ink",
+  "--dim",
+  "--dim-2",
+  "--danger",
+  "--ok",
+  ...Object.values(PLATFORM_TOKEN),
+] as const;
 
 /**
  * 색 말고 하나 더 — 선 모양. 색만으로 가르면 두 가지 자리에서 진다:
@@ -172,6 +189,8 @@ function PriceTooltip({ active, payload, label, currency }: TooltipContentProps 
 const ALL_PLATFORMS = "all";
 
 export function PriceChart({ series }: { series: PriceSeries[] }) {
+  // 그래프가 쓰는 색은 전부 여기서 한 번 읽는다 — 테마가 바뀌면 이 값이 통째로 새것이 된다
+  const token = useCssTokens(CHART_TOKENS);
   const [rangeKey, setRangeKey] = useState(DEFAULT_RANGE_KEY);
   const [pick, setPick] = useState<Platform | typeof ALL_PLATFORMS>(ALL_PLATFORMS);
   // 한 축에 두 통화를 그리면 선이 뜻 없이 겹친다(₩44,990 옆의 $6.99). 기준 통화만 그리고 나머지는 밑에 적는다
@@ -217,7 +236,7 @@ export function PriceChart({ series }: { series: PriceSeries[] }) {
               <span
                 aria-hidden
                 className="mr-1.5 inline-block size-2 shrink-0 rounded-full"
-                style={{ background: PLATFORM_COLOR[s.platform] }}
+                style={{ background: token[PLATFORM_TOKEN[s.platform]] }}
               />
               {PLATFORM_LABEL[s.platform] ?? s.platform}
             </ChipButton>
@@ -239,52 +258,52 @@ export function PriceChart({ series }: { series: PriceSeries[] }) {
         <div className="h-72 w-full sm:h-96" role="img" aria-label="플랫폼별 가격 변동 그래프">
           <ResponsiveContainer width="100%" height="100%">
             <LineChart data={data} margin={{ top: 8, right: 12, bottom: 4, left: 8 }}>
-              <CartesianGrid stroke="#F0EEE9" vertical={false} />
+              <CartesianGrid stroke={token["--line-soft"]} vertical={false} />
               <XAxis
                 dataKey="t"
                 type="number"
                 scale="time"
                 domain={["dataMin", xMax]}
                 tickFormatter={(v: number) => formatDate(new Date(v))}
-                stroke="#E6E3DD"
-                tick={{ fill: "#8C8A84", fontSize: 11.5 }}
+                stroke={token["--line"]}
+                tick={{ fill: token["--dim"], fontSize: 11.5 }}
                 minTickGap={40}
               />
               <YAxis
                 tickFormatter={(v: number) => formatPrice(v, currency)}
-                stroke="#E6E3DD"
-                tick={{ fill: "#8C8A84", fontSize: 11.5 }}
+                stroke={token["--line"]}
+                tick={{ fill: token["--dim"], fontSize: 11.5 }}
                 width={80}
                 domain={[0, Math.round(yMax * Y_HEADROOM)]}
               />
-              <Tooltip content={(props: TooltipContentProps) => <PriceTooltip {...props} currency={currency} />} cursor={{ stroke: "#A8A59E", strokeDasharray: "3 3" }} />
+              <Tooltip content={(props: TooltipContentProps) => <PriceTooltip {...props} currency={currency} />} cursor={{ stroke: token["--dim-2"], strokeDasharray: "3 3" }} />
               {platforms.length > 1 && (
                 <Legend formatter={(v: string) => <span className="text-[12px] text-mut">{PLATFORM_LABEL[v] ?? v}</span>} />
               )}
 
               {/* 진행 중 할인 구간 음영 */}
               {single?.saleFrom && single.saleTo && single.saleTo > single.saleFrom && (
-                <ReferenceArea x1={single.saleFrom} x2={single.saleTo} fill="#F4F2ED" fillOpacity={1} stroke="#E6E3DD" strokeOpacity={1} />
+                <ReferenceArea x1={single.saleFrom} x2={single.saleTo} fill={token["--surface-4"]} fillOpacity={1} stroke={token["--line"]} strokeOpacity={1} />
               )}
 
               {/* 할인 종료 시점 — 라인은 "지금"에서 끝내고(미래 가격은 알 수 없다) 종료 시점만 표시 */}
               {single?.saleTo && single.saleTo > now && (
-                <ReferenceLine x={single.saleTo} stroke="#A6462E" strokeDasharray="3 3">
-                  <Label value={`할인 종료 ${formatDate(new Date(single.saleTo))}`} position="insideTopLeft" fill="#A6462E" fontSize={11.5} />
+                <ReferenceLine x={single.saleTo} stroke={token["--danger"]} strokeDasharray="3 3">
+                  <Label value={`할인 종료 ${formatDate(new Date(single.saleTo))}`} position="insideTopLeft" fill={token["--danger"]} fontSize={11.5} />
                 </ReferenceLine>
               )}
 
               {/* 정가 기준선 */}
               {single?.listPrice ? (
-                <ReferenceLine y={single.listPrice} stroke="#DFDCD5" strokeDasharray="4 4">
-                  <Label value={`정가 ${formatPrice(single.listPrice, currency)}`} position="insideTopRight" fill="#8C8A84" fontSize={11.5} />
+                <ReferenceLine y={single.listPrice} stroke={token["--line-strong"]} strokeDasharray="4 4">
+                  <Label value={`정가 ${formatPrice(single.listPrice, currency)}`} position="insideTopRight" fill={token["--dim"]} fontSize={11.5} />
                 </ReferenceLine>
               ) : null}
 
               {/* 역대 최저점 */}
               {single?.low && (
-                <ReferenceDot x={single.low.t} y={single.low.price} r={4} fill="#1C1C1A" stroke="#FFFFFF">
-                  <Label value={`최저 ${formatPrice(single.low.price, currency)}`} position="insideBottomLeft" fill="#3A5A4A" fontSize={11.5} />
+                <ReferenceDot x={single.low.t} y={single.low.price} r={4} fill={token["--ink"]} stroke={token["--surface"]}>
+                  <Label value={`최저 ${formatPrice(single.low.price, currency)}`} position="insideBottomLeft" fill={token["--ok"]} fontSize={11.5} />
                 </ReferenceDot>
               )}
 
@@ -294,7 +313,7 @@ export function PriceChart({ series }: { series: PriceSeries[] }) {
                   type="stepAfter"
                   dataKey={p}
                   name={p}
-                  stroke={PLATFORM_COLOR[p]}
+                  stroke={token[PLATFORM_TOKEN[p]]}
                   strokeWidth={LINE_WIDTH}
                   strokeDasharray={PLATFORM_DASH[p]}
                   // 범례 아이콘도 선 모양을 그대로 따라야 한다 — 기본 아이콘은 실선이라 파선 구분이 범례에서 사라진다

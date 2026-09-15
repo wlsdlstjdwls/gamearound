@@ -4,13 +4,13 @@ import { formatDateTime } from "@/lib/format";
 import { ChipLink } from "@/components/ui/chip";
 import { isSourceName, listSyncLogs, SOURCES } from "@/server/services/admin";
 import { requireRoleOrForbid } from "@/server/auth/guards";
-import { cardClass } from "@/components/ui/page";
+import { PageHead, cardClass } from "@/components/ui/page";
 import { Clamp } from "@/components/ui/tooltip";
 
 export const metadata: Metadata = { title: "동기화 로그" };
 
 const STATUS_STYLE: Record<string, string> = {
-  ok: "text-acc",
+  ok: "text-ok",
   partial: "text-warn",
   failed: "text-danger",
 };
@@ -20,7 +20,7 @@ const STATUS_STYLE: Record<string, string> = {
  * 예산을 올리거나 발견 시작점을 옮겨야 한다. 그래서 이 값만 경고색으로 띄운다.
  */
 const DISCOVERY_STOP: Record<string, { label: string; style: string }> = {
-  want: { label: "목표 달성", style: "text-acc" },
+  want: { label: "목표 달성", style: "text-ok" },
   budget: { label: "예산 소진", style: "text-warn" },
   "catalog-end": { label: "카탈로그 끝", style: "text-mut" },
 };
@@ -40,7 +40,7 @@ export default async function SyncLogsPage({ searchParams }: { searchParams: Pro
   return (
     <section className="flex flex-col gap-4">
       <header className="flex flex-wrap items-end justify-between gap-2">
-        <h1 className="text-2xl font-bold tracking-[-0.03em] text-ink">동기화 로그 <span className="text-[13px] font-normal text-dim">최근 {logs.length}건</span></h1>
+        <PageHead title="동기화 로그" note={`최근 ${logs.length}건`} />
         <div className="flex flex-wrap gap-1 text-xs">
           <ChipLink href="/admin/sync-logs" active={!source} size="sm">전체</ChipLink>
           {SOURCES.map((s) => (

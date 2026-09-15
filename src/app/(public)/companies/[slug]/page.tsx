@@ -3,12 +3,12 @@
 // "정보 없음"으로 막지 않고 헤더만 줄여서 낸다.
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
-import Link from "next/link";
 import { GameCard } from "@/components/game-card";
 import { EmptyState } from "@/components/empty-state";
 import { Pagination } from "@/components/pagination";
 import { ChipLink } from "@/components/ui/chip";
-import { Card, Page, SectionHead } from "@/components/ui/page";
+import { BackLink } from "@/components/ui/back-link";
+import { Card, Page, PageHead, SectionHead } from "@/components/ui/page";
 import { stagger } from "@/lib/motion";
 import { ROUTES, companyPath } from "@/lib/routes";
 import { firstParam } from "@/lib/games-query";
@@ -65,19 +65,17 @@ export default async function CompanyPage({ params, searchParams }: Props) {
   const role: CompanyRoleFilter = isRole(roleRaw) ? roleRaw : "all";
   const pageNum = Math.max(Number(firstParam(sp.page)) || 1, 1);
 
-  const company = await getCompanyBySlug(slug);
+  // 목록도 slug 로 조회한다 — 회사 행이 오기를 기다릴 이유가 없다(왕복 한 번이 200ms 대)
+  const [company, result] = await Promise.all([getCompanyBySlug(slug), listCompanyGames(slug, role, pageNum)]);
   if (!company) notFound();
-  const result = await listCompanyGames(slug, role, pageNum);
 
   const hasFacts = Boolean(company.countryNameKo || company.foundedYear || company.hqNameKo || company.websiteUrl);
 
   return (
     <Page pad="detail" gap={24}>
       <header className="enter-item flex flex-col gap-3" style={stagger(0)}>
-        <Link href={ROUTES.company} className="self-start text-[12.5px] text-dim transition-colors hover:text-ink">
-          회사 목록으로
-        </Link>
-        <h1 className="text-[26px] font-bold leading-[1.25] tracking-[-0.03em] text-ink">{company.name}</h1>
+        <BackLink href={ROUTES.company}>회사 목록으로</BackLink>
+        <PageHead size="hero" title={company.name} />
         {company.nameKo && company.nameEn !== company.nameKo && (
           <p className="text-[13px] text-dim">{company.nameEn}</p>
         )}
@@ -86,7 +84,7 @@ export default async function CompanyPage({ params, searchParams }: Props) {
           {company.onSaleCount > 0 && (
             <>
               {" | "}
-              <span className="font-semibold text-acc">지금 할인 중 {company.onSaleCount}개</span>
+              <span className="font-semibold text-ok">지금 할인 중 {company.onSaleCount}개</span>
             </>
           )}
         </p>

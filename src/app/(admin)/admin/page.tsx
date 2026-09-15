@@ -2,7 +2,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { MatchReviewButtons } from "@/components/admin/match-review-buttons";
-import { Card, SectionHead } from "@/components/ui/page";
+import { Card, PageHead, SectionHead } from "@/components/ui/page";
 import { buttonClass } from "@/components/ui/button";
 import { formatDateTime } from "@/lib/format";
 import { getSyncOverview, listPendingMatches, type SyncOverviewItem } from "@/server/services/admin";
@@ -17,7 +17,7 @@ const ERROR_SAMPLE_PREVIEW_LEN = 300;
 export const metadata: Metadata = { title: "관리자 대시보드" };
 
 const STATUS_STYLE: Record<string, string> = {
-  ok: "bg-acc-soft text-acc",
+  ok: "bg-ok-soft text-ok",
   partial: "bg-warn-soft text-warn",
   failed: "bg-danger-soft text-danger",
 };
@@ -88,7 +88,7 @@ export default async function AdminDashboardPage() {
       <section className="flex flex-col gap-4">
         <header className="flex flex-wrap items-end justify-between gap-x-4 gap-y-2">
           <div>
-            <h1 className="text-2xl font-bold tracking-[-0.03em] text-ink">동기화 대시보드</h1>
+            <PageHead title="동기화 대시보드" />
             <p className="mt-1 max-w-[560px] text-[13px] text-mut">
               수집은 GitHub Actions 워커에서만 실행됩니다. 이 화면은 로그를 읽기만 합니다.
             </p>

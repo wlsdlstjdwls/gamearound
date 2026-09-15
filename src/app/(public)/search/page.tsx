@@ -6,7 +6,7 @@ import Link from "next/link";
 import { CoverImage } from "@/components/game-card";
 import { EmptyState } from "@/components/empty-state";
 import { PlatformBadges } from "@/components/platform-badges";
-import { Card, Page } from "@/components/ui/page";
+import { Card, Page, PageHead } from "@/components/ui/page";
 import { formatDate, formatDiscount } from "@/lib/format";
 import { nextCollectTimeText } from "@/lib/freshness";
 import { stagger } from "@/lib/motion";
@@ -68,7 +68,7 @@ export default async function SearchPage({ searchParams }: Props) {
   if (!q) {
     return (
       <Page gap={20}>
-        <h1 className="text-2xl font-bold tracking-[-0.03em] text-ink">검색</h1>
+        <PageHead title="검색" />
         <EmptyState
           title="검색어를 입력하세요"
           description="위 검색창에 게임 제목(한글 또는 영문)을 입력하면 결과가 바로 따라와요."
@@ -83,12 +83,12 @@ export default async function SearchPage({ searchParams }: Props) {
   return (
     <Page gap={20}>
       <div className="flex flex-wrap items-baseline justify-between gap-x-3 gap-y-2">
-        <div className="flex flex-wrap items-baseline gap-2.5">
-          <h1 className="text-[20px] font-bold tracking-[-0.02em] text-ink">&ldquo;{q}&rdquo; 검색 결과</h1>
-          <p className="text-[13px] text-dim" aria-live="polite">
-            {results.length}건
-          </p>
-        </div>
+        <PageHead
+          title={<>&ldquo;{q}&rdquo; 검색 결과</>}
+          note={
+            <span aria-live="polite">{results.length}건</span>
+          }
+        />
         <div role="group" aria-label="정렬" className="flex gap-1">
           {SORTS.map((s) => (
             <Link

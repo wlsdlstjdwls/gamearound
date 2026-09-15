@@ -18,14 +18,22 @@
   --mut: #5c5a55; /* 보조 텍스트 */
   --dim: #8c8a84; /* 라벨, 메타 */
   --dim-2: #a8a59e; /* 취소선 가격, 화면 번호 라벨 */
-  --acc: #3a5a4a; /* 딥 그린 — 링크, 알림 충족, 최저가 */
-  --acc-hover: #2f4a3c;
-  --acc-soft: #eaf1ec; /* ok 배지 배경 */
-  --acc-glow: rgba(58, 90, 74, 0.18);
-  --acc-on-ink: #4d7f62; /* 잉크 배경 위 악센트 — --acc 는 명도차가 부족해 검정에 묻힌다 */
+  /*
+   * 브랜드 악센트 — 바이올렛. 뜻을 갖지 않는 색이어야 해서 이 색상역을 골랐다(2026-09-15 교체).
+   * 화면의 다른 색은 이미 말을 하고 있다: 빨강은 "마감 임박, 비싸다", 호박은 "수집이 늦다",
+   * 초록은 "싸다, 충족". 브랜드가 그 중 하나를 빌려 쓰면 로고와 링크가 뜻을 가진 것처럼 읽힌다.
+   * 직전까지 --acc 가 --ok 와 같은 딥 그린이었고, 그래서 "성공"과 "브랜드"가 같은 색으로 말했다.
+   * 쓰는 자리: 로고, 링크, 할인율 배지, 선택 표시. 판정("좋다")에는 쓰지 않는다 — 그 자리는 --ok.
+   */
+  --acc: #5b34c7; /* 오프화이트 대비 7.23:1 */
+  --acc-hover: #4a29a6; /* 9.24:1 */
+  --acc-soft: #efeafb; /* 배지 배경 — 이 위의 --acc 글자가 6.46:1 */
+  --acc-glow: rgba(91, 52, 199, 0.18);
+  --acc-on-ink: #9182f0; /* 잉크 배경 위 악센트 5.41:1 — --acc 는 2.24:1 이라 검정에 묻힌다 */
   --danger: #a6462e; /* 마감 임박 */
   --danger-soft: #f6e9e5;
-  --ok: #3a5a4a;
+  /* 충족, 성공, 최저가. --acc 와 같은 값이 아니다 — 위 주석 참조 */
+  --ok: #2a6a4c; /* 6.11:1 */
   --ok-soft: #eaf1ec;
   --warn: #8a6a2e; /* 데이터 지연 */
   --warn-soft: #f6efe2;
@@ -39,6 +47,21 @@
   --price-good: #227a55;
   --price-bad: #c4452c;
   --on-ink: #faf9f7; /* 잉크 배경 위 텍스트 */
+
+  /*
+   * 가격 그래프의 스토어별 선 색. 의미색이 아니라 **스토어 브랜드 색**이라 팔레트 규칙(저채도) 밖이다 —
+   * 선이 여덟 개까지 겹치는 자리라 서로 구분되는 것이 유일한 요구다.
+   * 토큰으로 옮긴 이유(2026-09-15): 컴포넌트에 리터럴로 박아 두면 다크에서 그대로 어두운 바탕에 묻힌다.
+   * 여기 있으면 다크 블록이 같은 이름으로 한 단 밝은 값을 덮어쓴다.
+   */
+  --store-steam: #2a78d6; /* 파랑 */
+  --store-epic: #eb6834; /* 주황 */
+  --store-gog: #1baf7a; /* 아쿠아 */
+  --store-ps5: #eda100; /* 노랑 */
+  --store-ps4: #e87ba4; /* 자홍 */
+  --store-xbox: #008300; /* 초록 */
+  --store-switch: #4a3aa7; /* 보라 */
+  --store-switch2: #e34948; /* 빨강 */
 
   /* 모션 — 확정값. 등장은 JS 타이머가 아니라 CSS 애니메이션으로(백그라운드 탭에서 opacity:0에 멈추지 않는다) */
   --duration-fast: 150ms;
@@ -68,6 +91,113 @@
 
   --font-sans: "Pretendard Variable", Pretendard, -apple-system, BlinkMacSystemFont, "Apple SD Gothic Neo", "Segoe UI", Roboto,
     "Noto Sans KR", "Malgun Gothic", sans-serif;
+
+  /* 브라우저가 그리는 것(스크롤바, 기본 폼 컨트롤, 자동완성 배경)도 같은 편에 서게 한다 */
+  color-scheme: light;
+}
+
+/* ──────────────────────────────────────────────────────────────────
+   다크
+   ------------------------------------------------------------------
+   값 이름은 라이트와 **한 글자도 다르지 않다**. 화면 코드는 bg-surface, text-mut 만 알고
+   그것이 흰색인지 검정인지는 모른다 — 그래야 새 화면을 만들 때 다크를 따로 챙기지 않아도 된다.
+
+   뒤집는 방식(왜 단순 반전이 아닌가):
+    - --ink 와 --on-ink 는 자리를 맞바꾼다. 주 버튼은 라이트에서 "검정 판 + 흰 글자" 였고
+      다크에서는 "밝은 판 + 검은 글자" 가 된다. 두 경우 모두 화면에서 가장 센 대비다.
+    - 배경은 순수 검정(#000)이 아니라 따뜻한 먹색이다. 오프화이트(#faf9f7)가 중성 회색이 아니듯,
+      같은 온도를 유지해야 커버 이미지와 브랜드 보라가 같은 결로 얹힌다.
+    - 테두리는 라이트보다 **상대적으로 더 밝게** 잡는다. 이 디자인은 깊이를 그림자가 아니라 1px 선으로
+      내는데(파일 맨 위 주석), 어두운 바탕에서 라이트와 같은 비율로 깔면 카드 경계가 통째로 사라진다.
+    - 악센트, 의미색은 어두운 바탕에서 채도가 낮으면 탁해 보인다. 라이트 값보다 한 단 밝고 맑은 값을 쓴다.
+
+   세 갈래를 모두 지원한다: 시스템 설정(미디어 쿼리) + 사용자가 고른 값(data-theme).
+   data-theme="light" 가 서 있으면 미디어 쿼리를 무시해야 하므로 :not() 으로 막는다.
+   ────────────────────────────────────────────────────────────────── */
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    color-scheme: dark;
+
+    --bg: #131312;
+    --surface: #1b1b1a;
+    --surface-2: #242422;
+    --surface-3: #2b2b28;
+    --surface-4: #201f1e;
+    --line: #3d3d39;
+    --line-soft: #343431;
+    --line-strong: #4a4a45;
+    --ink: #f0efec;
+    --ink-2: #d3d1cc;
+    --mut: #a8a59e;
+    --dim: #85827c;
+    --dim-2: #757169;
+    --acc: #9182f0; /* 바탕 대비 5.89:1 */
+    --acc-hover: #a99df4;
+    --acc-soft: #251f4a;
+    --acc-glow: rgba(145, 130, 240, 0.22);
+    --acc-on-ink: #5b34c7; /* 다크에서 "잉크" 는 밝은 판이다 — 그 위에는 라이트의 진한 보라가 선다 */
+    --danger: #e08a72;
+    --danger-soft: #3a211a;
+    --ok: #5fb98c;
+    --ok-soft: #122b20;
+    --warn: #d4a64e;
+    --warn-soft: #33270f;
+    --price-good: #4fc48a;
+    --price-bad: #f0705a;
+    --on-ink: #131312;
+
+    --store-steam: #5b9ce8;
+    --store-epic: #f5895a;
+    --store-gog: #35c894;
+    --store-ps5: #f2b93a;
+    --store-ps4: #f094b6;
+    --store-xbox: #3fb23f;
+    --store-switch: #8d7df0;
+    --store-switch2: #ed6e6d;
+  }
+}
+
+/* 사용자가 직접 고른 값은 시스템 설정을 이긴다. 위 블록과 같은 값을 다시 적는 이유:
+   CSS 에는 "다른 선택자의 선언 묶음을 재사용" 하는 방법이 없다. 값을 고칠 때는 두 곳을 같이 고친다. */
+:root[data-theme="dark"] {
+  color-scheme: dark;
+
+  --bg: #131312;
+  --surface: #1b1b1a;
+  --surface-2: #242422;
+  --surface-3: #2b2b28;
+  --surface-4: #201f1e;
+  --line: #3d3d39;
+  --line-soft: #343431;
+  --line-strong: #4a4a45;
+  --ink: #f0efec;
+  --ink-2: #d3d1cc;
+  --mut: #a8a59e;
+  --dim: #85827c;
+  --dim-2: #757169;
+  --acc: #9182f0;
+  --acc-hover: #a99df4;
+  --acc-soft: #251f4a;
+  --acc-glow: rgba(145, 130, 240, 0.22);
+  --acc-on-ink: #5b34c7;
+  --danger: #e08a72;
+  --danger-soft: #3a211a;
+  --ok: #5fb98c;
+  --ok-soft: #122b20;
+  --warn: #d4a64e;
+  --warn-soft: #33270f;
+  --price-good: #4fc48a;
+  --price-bad: #f0705a;
+  --on-ink: #131312;
+
+  --store-steam: #5b9ce8;
+  --store-epic: #f5895a;
+  --store-gog: #35c894;
+  --store-ps5: #f2b93a;
+  --store-ps4: #f094b6;
+  --store-xbox: #3fb23f;
+  --store-switch: #8d7df0;
+  --store-switch2: #ed6e6d;
 }
 
 /* Tailwind v4 테마 연결 — bg-surface, text-mut, duration-base, ease-out-emph, animate-rise 같은 유틸이 생긴다 */
@@ -98,6 +228,15 @@
   --color-price-good: var(--price-good);
   --color-price-bad: var(--price-bad);
   --color-on-ink: var(--on-ink);
+
+  --color-store-steam: var(--store-steam);
+  --color-store-epic: var(--store-epic);
+  --color-store-gog: var(--store-gog);
+  --color-store-ps5: var(--store-ps5);
+  --color-store-ps4: var(--store-ps4);
+  --color-store-xbox: var(--store-xbox);
+  --color-store-switch: var(--store-switch);
+  --color-store-switch2: var(--store-switch2);
 
   --font-sans: var(--font-sans);
 

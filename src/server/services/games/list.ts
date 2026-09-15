@@ -6,8 +6,8 @@ import { DISPLAY_CURRENCY } from "@/lib/currency";
 import { getDb } from "@/server/db/client";
 import { gameGenres, gamePlatforms, games, genres, HOME_REGION, type Platform } from "@/server/db/schema";
 import { normalizeForSearch } from "@/lib/slug";
-import { DEFAULT_GAME_SORT, type GamesQuery } from "@/lib/games-query";
-import { platformsOf, type PlatformFamily } from "@/lib/platform";
+import { DEFAULT_GAME_SORT, parsePlatformValues, type GamesQuery } from "@/lib/games-query";
+import { expandPlatformValues } from "@/lib/platform";
 import type { GameSummary } from "./dto";
 import { attachBestPrice } from "./mappers";
 import { allOf, byCompanySlug, inAnySubscription, mainGamesOnly } from "./filters";
@@ -18,10 +18,11 @@ export const GAMES_PAGE_SIZE = 36;
 
 /**
  * 정렬 키, 쿼리스트링 변환은 lib/games-query (순수 유틸)에 있다 — 여기서는 조회만 한다.
- * platform 은 스토어 하나("steam") 또는 갈래 전체("pc") 다. 둘을 같은 칸에 두는 이유는
- * 주소가 하나만 남기 때문이다 — 갈래와 스토어를 따로 실으면 서로 어긋난 조합(pc + ps5)이 생긴다.
+ * platform 은 스토어("steam"), 갈래("pc"), 또는 그것들을 쉼표로 이은 여러 값("ps5,switch") 이다.
+ * 갈래와 스토어를 한 칸에 두는 이유는 주소가 하나만 남기 때문이다 — 칸을 나누면 서로 어긋난
+ * 조합(pc + ps5)이 생기고 같은 화면이 두 주소를 갖는다.
  */
-export type GameListFilter = Omit<GamesQuery, "platform"> & { platform?: Platform | PlatformFamily };
+export type GameListFilter = Omit<GamesQuery, "platform"> & { platform?: string };
 
 export type GameListResult = {
   items: GameSummary[];
@@ -42,7 +43,7 @@ export type GameFacets = {
  * 게임별 플랫폼 집계 서브쿼리. platform 필터가 있으면 그 플랫폼만 집계하므로
  * inner join 하는 것만으로 "그 플랫폼을 가진 게임"으로 좁혀진다.
  */
-function platformAgg(platform?: Platform | PlatformFamily) {
+function platformAgg(platforms: Platform[]) {
   const db = getDb();
   return db
     .select({
@@ -64,7 +65,7 @@ function platformAgg(platform?: Platform | PlatformFamily) {
     .from(gamePlatforms)
     // 목록의 최저가, 할인, 발매일은 기준 지역(한국) 행만 본다. 다른 나라 가격을 섞으면
     // 카드의 할인 배지가 한국에서 살 수 없는 할인을 가리킨다 — 상세 화면에서만 참고로 보여 준다
-    .where(and(eq(gamePlatforms.region, HOME_REGION), platform ? inArray(gamePlatforms.platform, platformsOf(platform)) : undefined))
+    .where(and(eq(gamePlatforms.region, HOME_REGION), platforms.length > 0 ? inArray(gamePlatforms.platform, platforms) : undefined))
     .groupBy(gamePlatforms.gameId)
     .as("agg");
 }
@@ -73,13 +74,15 @@ async function listGamesRaw(filter: GameListFilter): Promise<GameListResult> {
   const db = getDb();
   const page = Math.max(filter.page ?? 1, 1);
   const sort = filter.sort ?? DEFAULT_GAME_SORT;
-  const agg = platformAgg(filter.platform);
+  const agg = platformAgg(expandPlatformValues(parsePlatformValues(filter.platform)));
 
   // 본편만 — DLC 가 목록에 본편처럼 섞이지 않게 모든 목록 쿼리가 이 조건을 탄다
   const conds = [mainGamesOnly()];
   // 최소 할인율은 "할인 중" 을 포함하는 조건이라 둘이 같이 오면 강한 쪽만 건다
   if (filter.minDiscount) conds.push(sql`${agg.maxDiscount} >= ${filter.minDiscount}`);
   else if (filter.onSale) conds.push(sql`${agg.maxDiscount} > 0`);
+  // 가격 상한은 기준 통화 가격이 있는 게임에만 뜻이 있다 — min_price 가 null 이면 조건이 자동으로 걸러 낸다
+  if (filter.maxPrice !== undefined) conds.push(sql`${agg.minPrice} <= ${filter.maxPrice}`);
   if (filter.company) conds.push(byCompanySlug(filter.company));
   if (filter.subscription) conds.push(inAnySubscription());
   if (filter.genre) {
@@ -139,6 +142,7 @@ function listKey(f: GameListFilter): string[] {
     f.genre ?? "",
     f.onSale ? "sale" : "",
     f.minDiscount ? String(f.minDiscount) : "",
+    f.maxPrice !== undefined ? String(f.maxPrice) : "",
     f.company ?? "",
     f.subscription ? "sub" : "",
     f.sort ?? DEFAULT_GAME_SORT,
@@ -165,13 +169,15 @@ const listByJson = cache(async (json: string): Promise<GameListResult> => {
 /** 목록 — 필터 조합별 1시간 캐시. 크롤러 완료 시 `home` 태그로 함께 무효화된다 */
 export async function listGames(filter: GameListFilter): Promise<GameListResult> {
   // 키 순서와 같은 순서로 다시 세워야 같은 필터가 늘 같은 문자열이 된다
-  const [q, platform, genre, onSale, minDiscount, company, subscription, sort, page] = listKey(filter);
+  const [q, platform, genre, onSale, minDiscount, maxPrice, company, subscription, sort, page] = listKey(filter);
   return listByJson(JSON.stringify({
     q: q || undefined,
-    platform: (platform || undefined) as GameListFilter["platform"],
+    platform: platform || undefined,
     genre: genre || undefined,
     onSale: onSale ? true : undefined,
     minDiscount: (minDiscount ? Number(minDiscount) : undefined) as GameListFilter["minDiscount"],
+    // 0("무료")과 "고르지 않음"을 가르는 자리 — 빈 문자열만 undefined 다
+    maxPrice: (maxPrice === "" ? undefined : Number(maxPrice)) as GameListFilter["maxPrice"],
     company: company || undefined,
     subscription: subscription ? true : undefined,
     sort: sort as GameListFilter["sort"],

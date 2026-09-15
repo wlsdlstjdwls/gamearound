@@ -4,14 +4,18 @@
 // 넓은 화면에서는 목록 왼쪽 기둥에 세로로 선다(games/page.tsx 가 자리를 잡는다).
 // 가로로 눕혀 두면 플랫폼, 장르 칩이 줄바꿈하며 화면 위쪽을 몇 줄씩 먹어 정작 게임이 밀린다.
 // 좁은 화면에서는 접어 둔다 — details 라 JS 없이 열고 닫힌다.
+//
+// 플랫폼은 여러 개를 같이 고를 수 있다(2026-09-15). 전에는 한 번에 하나만 골렸고 낱개 기기는
+// 갈래를 먼저 누른 뒤에야 나타났다 — "PS5 와 스위치를 같이 보고 싶다" 에 답할 길이 아예 없었다.
+// 지금은 낱개를 늘 펴 두고 칩마다 켜고 끈다. 고른 값은 주소에 쉼표로 이어 실린다.
 import { PLATFORM_LABEL } from "@/lib/format";
 import {
   familyOf,
-  isPlatformFamily,
+  FAMILY_PLATFORMS,
   PLATFORM_FAMILIES,
-  PLATFORM_FAMILY_CHILD_LABEL,
   PLATFORM_FAMILY_LABEL,
   PLATFORM_ORDER,
+  PLATFORM_VALUE_ORDER,
   type PlatformFamily,
 } from "@/lib/platform";
 import { ChipLink } from "@/components/ui/chip";
@@ -19,10 +23,15 @@ import { Select, type SelectOption } from "@/components/ui/select";
 import {
   GAME_SORTS,
   DEFAULT_GAME_SORT,
+  MAX_PRICE_STEPS,
   MIN_DISCOUNT_STEPS,
   SORT_LABEL,
   gamesHref,
+  joinPlatformValues,
+  maxPriceLabel,
+  parsePlatformValues,
   type GamesQuery,
+  type MaxPrice,
   type MinDiscount,
 } from "@/lib/games-query";
 import type { GameFacets } from "@/server/services/games";
@@ -54,7 +63,6 @@ function Group({ label, children }: { label: string; children: React.ReactNode }
 /**
  * 칩에 건수를 붙이지 않는다. 필터를 고르는 자리에서 알고 싶은 것은 "무엇이 있는가" 이지
  * "몇 개인가" 가 아니고, 숫자가 붙으면 칩이 두 배로 길어져 기둥 폭을 넘는다.
- * 고른 뒤의 건수는 목록 머리글이 이미 말해 준다.
  *
  * 칩과 드롭다운을 가르는 기준은 개수다. 서넛이면 칩이 빠르고(한 번에 다 보이고 한 번에 눌린다),
  * 열 개를 넘으면 드롭다운이 낫다(안 고른 값이 자리를 차지하지 않는다).
@@ -62,14 +70,20 @@ function Group({ label, children }: { label: string; children: React.ReactNode }
 function Groups({ facets, filter }: { facets: GameFacets; filter: GamesQuery }) {
   const href = (patch: Partial<GamesQuery>) => gamesHref(filter, { ...patch, page: 1 });
 
-  // 실제로 게임이 붙어 있는 플랫폼만 고를 수 있다(facets). 스토어 하나를 고른 상태에서도
-  // 그 스토어가 속한 갈래를 펴 둬야 옆 스토어로 한 번에 옮겨 갈 수 있다.
+  // 실제로 게임이 붙어 있는 플랫폼만 고를 수 있다(facets)
   const available = new Set(facets.platforms.map((p) => p.platform));
+  const picked = parsePlatformValues(filter.platform);
+  const pickedSet = new Set(picked);
   const families = PLATFORM_FAMILIES.filter((f) => byFamily(f).some((p) => available.has(p)));
-  const family: PlatformFamily | undefined = isPlatformFamily(filter.platform)
-    ? filter.platform
-    : familyOf(filter.platform);
-  const children = family ? byFamily(family).filter((p) => available.has(p)) : [];
+
+  /** 값 하나를 켜고 끈 뒤의 주소. 같은 선택이 늘 같은 문자열이 되도록 joinPlatformValues 가 순서를 세운다 */
+  const platformHref = (value: string, siblings: readonly string[] = []) => {
+    const next = pickedSet.has(value)
+      ? picked.filter((v) => v !== value)
+      : // 갈래를 켜면 그 안의 낱개를 지운다(낱개를 켜면 갈래를 지운다) — 둘이 같이 서면 주소가 같은 말을 두 번 한다
+        [...picked.filter((v) => !siblings.includes(v)), value];
+    return href({ platform: joinPlatformValues(next, PLATFORM_VALUE_ORDER) });
+  };
 
   // 장르는 스무 개가 넘어 칩으로 늘어놓으면 기둥을 세로로 다 먹는다 — 드롭다운으로 접는다
   const genreOptions: SelectOption[] = [
@@ -81,27 +95,31 @@ function Groups({ facets, filter }: { facets: GameFacets; filter: GamesQuery }) 
   return (
     <>
       <Group label="플랫폼">
-        <ChipLink {...KEEP_SCROLL} href={href({ platform: undefined })} active={!filter.platform}>전체</ChipLink>
+        <ChipLink {...KEEP_SCROLL} href={href({ platform: undefined })} active={picked.length === 0}>
+          전체
+        </ChipLink>
         {families.map((f) => (
-          <ChipLink key={f} {...KEEP_SCROLL} href={href({ platform: f })} active={family === f}>
+          <ChipLink key={f} {...KEEP_SCROLL} href={platformHref(f, FAMILY_PLATFORMS[f])} active={pickedSet.has(f)}>
             {PLATFORM_FAMILY_LABEL[f]}
           </ChipLink>
         ))}
       </Group>
 
-      {/* 갈래를 고른 뒤에만 안쪽을 편다 — 여덟 개를 늘 펴 두면 기둥이 플랫폼만으로 다 찬다 */}
-      {family && children.length > 0 && (
-        <Group label={PLATFORM_FAMILY_CHILD_LABEL[family]}>
-          <ChipLink {...KEEP_SCROLL} href={href({ platform: family })} active={filter.platform === family}>
-            {PLATFORM_FAMILY_LABEL[family]} 전체
-          </ChipLink>
-          {children.map((p) => (
-            <ChipLink key={p} {...KEEP_SCROLL} href={href({ platform: p })} active={filter.platform === p}>
-              {PLATFORM_LABEL[p] ?? p}
-            </ChipLink>
-          ))}
-        </Group>
-      )}
+      {/* 낱개는 늘 펴 둔다 — 접어 두면 "PS5 만" 을 고르려고 콘솔을 한 번 더 눌러야 했고,
+          그 한 번이 "낱개는 고를 수 없다" 로 읽혔다. 갈래가 켜져 있으면 안쪽은 이미 다 포함이라 꺼진 채로 둔다 */}
+      {families.map((f) => {
+        const children = byFamily(f).filter((p) => available.has(p));
+        if (children.length === 0) return null;
+        return (
+          <Group key={f} label={PLATFORM_FAMILY_LABEL[f]}>
+            {children.map((p) => (
+              <ChipLink key={p} {...KEEP_SCROLL} href={platformHref(p, [f])} active={pickedSet.has(p)}>
+                {PLATFORM_LABEL[p] ?? p}
+              </ChipLink>
+            ))}
+          </Group>
+        );
+      })}
 
       {facets.genres.length > 0 && <Select label="장르" value={filter.genre ?? ALL} options={genreOptions} scroll={false} />}
 
@@ -131,6 +149,23 @@ function Groups({ facets, filter }: { facets: GameFacets; filter: GamesQuery }) 
         ))}
       </Group>
 
+      {/* 가격은 할인과 다른 질문이다 — "얼마나 깎였나" 가 아니라 "내 예산에 드나"(lib/games-query 주석) */}
+      <Group label="가격">
+        <ChipLink {...KEEP_SCROLL} href={href({ maxPrice: undefined })} active={filter.maxPrice === undefined}>
+          전체
+        </ChipLink>
+        {MAX_PRICE_STEPS.map((won: MaxPrice) => (
+          <ChipLink
+            key={won}
+            {...KEEP_SCROLL}
+            href={href({ maxPrice: filter.maxPrice === won ? undefined : won })}
+            active={filter.maxPrice === won}
+          >
+            {maxPriceLabel(won)}
+          </ChipLink>
+        ))}
+      </Group>
+
       <Group label="조건">
         {/* 구독 포함 여부는 Game Pass 하나로 시작하지만 조건은 "어떤 구독이든"이라 PS Plus 를 붙여도 문구가 그대로다 */}
         <ChipLink {...KEEP_SCROLL} href={href({ subscription: !filter.subscription })} active={Boolean(filter.subscription)}>
@@ -141,22 +176,39 @@ function Groups({ facets, filter }: { facets: GameFacets; filter: GamesQuery }) 
   );
 }
 
+/** 지금 뭔가 걸러져 있는가. 정렬은 필터가 아니라 보기 방식이라 세지 않는다 */
+function hasAnyFilter(f: GamesQuery): boolean {
+  return Boolean(
+    f.platform || f.genre || f.onSale || f.minDiscount !== undefined || f.maxPrice !== undefined || f.company || f.subscription,
+  );
+}
+
+/** 칩을 하나씩 되돌리는 것 말고는 나갈 길이 없었다. 축이 여섯이라 그 길은 여섯 번을 누르는 길이다 */
+function ClearFilters({ filter }: { filter: GamesQuery }) {
+  if (!hasAnyFilter(filter)) return null;
+  return (
+    <ChipLink {...KEEP_SCROLL} href={gamesHref({ sort: filter.sort })} className="self-start">
+      필터 지우기
+    </ChipLink>
+  );
+}
+
 export function GameFilters({ facets, filter }: { facets: GameFacets; filter: GamesQuery }) {
   return (
     <>
       {/* 좁은 화면: 접어 둔 서랍. 열어 둔 채로 두면 목록이 한 화면 아래로 밀린다 */}
       <details className={cardClass("p-0 lg:hidden")}>
-        <summary className="cursor-pointer list-none px-4 py-3 text-[13px] font-semibold text-ink">
-          필터와 정렬
-        </summary>
+        <summary className="cursor-pointer list-none px-4 py-3 text-[13px] font-semibold text-ink">필터와 정렬</summary>
         <div className="flex flex-col gap-3.5 border-t border-line px-4 py-3">
           <Groups facets={facets} filter={filter} />
+          <ClearFilters filter={filter} />
         </div>
       </details>
 
       {/* 넓은 화면: 왼쪽 기둥. 스크롤해도 따라오도록 붙여 둔다(헤더 높이만큼 띄운다) */}
       <aside aria-label="목록 필터" className={cardClass("hidden flex-col gap-4 p-4 lg:sticky lg:top-[86px] lg:flex")}>
         <Groups facets={facets} filter={filter} />
+        <ClearFilters filter={filter} />
       </aside>
     </>
   );

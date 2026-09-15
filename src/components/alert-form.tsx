@@ -32,7 +32,7 @@ function SubmitButton({ label, pendingLabel }: { label: string; pendingLabel: st
 export function StatusLine({ state }: { state: ActionState }) {
   if (!state) return null;
   return (
-    <p aria-live="polite" className={`text-[12.5px] ${state.ok ? "text-acc" : "text-danger"}`}>
+    <p aria-live="polite" className={`text-[12.5px] ${state.ok ? "text-ok" : "text-danger"}`}>
       {state.ok ? state.message : state.error}
     </p>
   );

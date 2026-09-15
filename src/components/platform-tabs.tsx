@@ -52,6 +52,27 @@ export function PlatformTabs({ platforms }: { platforms: PlatformTabItem[] }) {
   const hasDiscount = Boolean(current.discountPct && current.discountPct > 0);
   const isStale = current.freshness === "stale";
 
+  const metaCells: Array<{ label: string; value: React.ReactNode; note?: string }> = [
+    { label: "정가", value: formatPrice(current.listPrice, current.currency) },
+    { label: "출시일", value: formatDate(current.releaseDate) },
+  ];
+  if (current.currentVersion) metaCells.push({ label: "버전", value: current.currentVersion });
+  // 할인 중인데 종료 시각만 없을 때는 "미공개" 가 정보다 — 할인이 없으면 칸 자체가 할 말이 없다
+  if (hasDiscount) {
+    metaCells.push({
+      label: "할인 종료",
+      value: current.discountEndsAt ? formatShortDateTime(current.discountEndsAt) : "미공개",
+    });
+  }
+  // 유저 점수는 스토어마다 재는 방식이 달라 요약 바가 아니라 그 스토어 칸 안에서도 한 번 말한다
+  if (current.userScore) {
+    metaCells.push({
+      label: "유저 점수",
+      value: userScoreValueText(current.userScore.value, current.userScore.kind),
+      note: userScoreNoteText(current.userScore.kind, current.userScore.count),
+    });
+  }
+
   return (
     <div className={cardClass("overflow-hidden")}>
       <div role="tablist" aria-label="플랫폼 선택" className="flex overflow-x-auto overflow-y-hidden border-b border-line">
@@ -82,7 +103,7 @@ export function PlatformTabs({ platforms }: { platforms: PlatformTabItem[] }) {
                   이름은 탭을 열면 칩이 말한다. 읽는 사람을 위해 aria-label 로 이름을 남긴다 */}
               {p.subscriptions.length > 0 && (
                 <span
-                  className="ml-1 inline-block size-1.5 rounded-full bg-acc align-middle"
+                  className="ml-1 inline-block size-1.5 rounded-full bg-ok align-middle"
                   aria-label={`${p.subscriptions.map((s) => s.label).join(", ")} 포함`}
                 />
               )}
@@ -104,7 +125,7 @@ export function PlatformTabs({ platforms }: { platforms: PlatformTabItem[] }) {
             <span className="text-[13px] text-dim-2 line-through">{formatPrice(current.listPrice, current.currency)}</span>
           )}
           {hasDiscount && (
-            <span className="rounded-[6px] bg-ink px-2 py-[3px] text-[11.5px] font-bold text-on-ink">
+            <span className="rounded-[6px] bg-acc px-2 py-[3px] text-[11.5px] font-bold text-on-ink">
               {formatDiscount(current.discountPct)}
             </span>
           )}
@@ -114,20 +135,14 @@ export function PlatformTabs({ platforms }: { platforms: PlatformTabItem[] }) {
         {/* 구독 칩은 가격 바로 밑이다 — "얼마인가" 다음에 오는 질문이 "안 사고도 할 수 있나" 라서다 */}
         <SubscriptionChips subscriptions={current.subscriptions} />
 
+        {/* 모르는 값의 칸은 세우지 않는다 — 다섯 칸 중 둘이 "-" 인 스토어가 흔한데,
+            그 자리는 "아직 모은다" 가 아니라 "고장 났다" 로 읽힌다(상세 요약 바와 같은 규칙) */}
         <dl className="grid grid-cols-[repeat(auto-fit,minmax(120px,1fr))] divide-x divide-line overflow-hidden rounded-[10px] border border-line">
-          <MetaCell label="정가">{formatPrice(current.listPrice, current.currency)}</MetaCell>
-          <MetaCell label="출시일">{formatDate(current.releaseDate)}</MetaCell>
-          <MetaCell label="버전">{current.currentVersion ?? "-"}</MetaCell>
-          <MetaCell label="할인 종료">
-            {hasDiscount && current.discountEndsAt ? formatShortDateTime(current.discountEndsAt) : hasDiscount ? "미공개" : "-"}
-          </MetaCell>
-          {/* 유저 점수는 스토어마다 재는 방식이 달라 요약 바가 아니라 그 스토어 칸 안에서도 한 번 말한다 */}
-          <MetaCell
-            label="유저 점수"
-            note={current.userScore ? userScoreNoteText(current.userScore.kind, current.userScore.count) : undefined}
-          >
-            {current.userScore ? userScoreValueText(current.userScore.value, current.userScore.kind) : "-"}
-          </MetaCell>
+          {metaCells.map((c) => (
+            <MetaCell key={c.label} label={c.label} note={c.note}>
+              {c.value}
+            </MetaCell>
+          ))}
         </dl>
 
         {current.storeUrl ? (

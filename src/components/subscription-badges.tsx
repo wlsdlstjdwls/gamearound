@@ -16,9 +16,9 @@ export function SubscriptionChips({ subscriptions }: { subscriptions: Subscripti
       {subscriptions.map((s) => (
         <li
           key={s.key}
-          className="inline-flex items-center gap-1.5 rounded-full border border-acc/30 bg-acc-soft px-[11px] py-1 text-[12px] font-semibold text-acc"
+          className="inline-flex items-center gap-1.5 rounded-full border border-ok/30 bg-ok-soft px-[11px] py-1 text-[12px] font-semibold text-ok"
         >
-          <span aria-hidden className="size-1.5 shrink-0 rounded-full bg-acc" />
+          <span aria-hidden className="size-1.5 shrink-0 rounded-full bg-ok" />
           {subscriptionChipText(s.label)}
         </li>
       ))}

@@ -2,6 +2,7 @@
 // 왜 loading.tsx 가 아니라 여기인가: 필터를 눌러 주소만 바뀌는 이동은 같은 세그먼트 안의 갱신이라
 // loading.tsx 가 다시 뜨지 않는다. 그래서 경계를 페이지 안(Suspense)에 두고, 그 자리만 뼈대로 받는다.
 // 높이는 실제 화면을 재서 맞춘 값이다 — 어긋나면 본문이 들어올 때 통째로 밀려 그게 깜빡임이 된다.
+import { GAMES_GRID_CLASS } from "@/components/games-infinite";
 import { cardClass } from "@/components/ui/page";
 
 /** 건수는 <p> 안에 들어간다 — div 를 쓰면 HTML 이 <p> 를 끊어 하이드레이션이 깨진다 */
@@ -33,7 +34,7 @@ export function FiltersSkeleton() {
  */
 export function GamesGridSkeleton({ cards }: { cards: number }) {
   return (
-    <div className="grid grid-cols-[repeat(auto-fit,minmax(238px,1fr))] gap-4 skeleton-delay" aria-busy="true" aria-label="목록을 불러오는 중">
+    <div className={`${GAMES_GRID_CLASS} skeleton-delay`} aria-busy="true" aria-label="목록을 불러오는 중">
       {Array.from({ length: cards }).map((_, i) => (
         <div key={i} className={cardClass("overflow-hidden")}>
           <div className="skeleton aspect-[460/215]" />

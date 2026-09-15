@@ -15,12 +15,12 @@ export function CompanyResolveButton({ name }: { name: string }) {
         type="button"
         disabled={pending}
         onClick={() => start(async () => setState(await resolveCompanyAction(name)))}
-        className="press rounded-[7px] border border-line-strong px-[11px] py-[5px] text-[12px] text-mut transition-colors hover:border-acc hover:text-acc disabled:opacity-60"
+        className="press rounded-[7px] border border-line-strong px-[11px] py-[5px] text-[12px] text-mut transition-colors hover:border-ok hover:text-ok disabled:opacity-60"
       >
         {pending ? "조회 중" : "위키데이터 조회"}
       </button>
       {state && (
-        <span className={`text-[11.5px] ${state.ok ? "text-acc" : "text-dim"}`}>
+        <span className={`text-[11.5px] ${state.ok ? "text-ok" : "text-dim"}`}>
           {state.ok ? state.message : state.error}
         </span>
       )}

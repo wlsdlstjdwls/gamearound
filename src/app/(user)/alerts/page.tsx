@@ -3,7 +3,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { AlertForm, AlertItemControls } from "@/components/alert-form";
 import { EmptyState } from "@/components/empty-state";
-import { Card, Page } from "@/components/ui/page";
+import { Card, Page, PageHead } from "@/components/ui/page";
 import { Clamp } from "@/components/ui/tooltip";
 import { PLATFORM_LABEL } from "@/lib/format";
 import { ALERT_RULE_TEXT, COLLECT_SCHEDULE_TEXT } from "@/lib/freshness";
@@ -21,12 +21,14 @@ export default async function AlertsPage({ searchParams }: { searchParams: Promi
 
   return (
     <Page width="narrow" gap={20}>
-      <header className="flex flex-wrap items-end justify-between gap-x-4 gap-y-2">
-        <h1 className="text-2xl font-bold tracking-[-0.03em] text-ink">가격 알림</h1>
-        <p className="text-[13px] text-dim">
-          활성 {active}개 | 일시중지 {alerts.length - active}개
-        </p>
-      </header>
+      <PageHead
+        title="가격 알림"
+        action={
+          <p className="text-[13px] text-dim">
+            활성 {active}개 | 일시중지 {alerts.length - active}개
+          </p>
+        }
+      />
 
       {slug && !game && (
         <p role="alert" className="rounded-[9px] border border-danger/35 bg-danger-soft px-3.5 py-2.5 text-[13px] text-danger">

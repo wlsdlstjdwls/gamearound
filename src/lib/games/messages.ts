@@ -7,6 +7,16 @@ export const COMPANY_ROLE_LABEL: Record<CompanyRole, string> = {
   publisher: "배급",
 };
 
+/** 목록 화면(스크롤 페이징) 문구 */
+export const GAMES_LIST_MESSAGES = {
+  loadingMore: "더 불러오는 중이에요",
+  loadMore: "더 보기",
+  loadFailed: "더 불러오지 못했어요.",
+  retry: "다시 시도",
+  /** 끝을 말해 주지 않으면 사람이 바닥에서 계속 기다린다 */
+  listEnd: "목록의 끝이에요",
+} as const;
+
 export const GAME_MESSAGES = {
   /** 회사 엔티티가 아직 없을 때 — 결함처럼 보이지 않게 조용한 문구를 쓴다 */
   companyUnknown: "제작사 정보 없어요",
@@ -15,6 +25,8 @@ export const GAME_MESSAGES = {
   dlcKnownButUnlisted: "DLC 가 있어요. 목록은 아직 모으는 중이에요.",
   dlcNone: "지금은 확인된 DLC 가 없어요.",
   patchHeading: "패치 기록",
+  /** 요약 바에 최저가 말고는 아직 아는 값이 없을 때. 빈 칸을 "-" 로 채우는 대신 한 줄로 말한다 */
+  summaryPending: "플레이타임과 평점은 아직 모으는 중이에요.",
   patchNone: "아직 모은 패치 기록이 없어요.",
   /**
    * 패치 기록을 공개하는 스토어가 둘뿐이라는 사실을 화면이 먼저 말한다 —

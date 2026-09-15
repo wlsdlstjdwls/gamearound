@@ -4,6 +4,7 @@ import { ROUTES } from "@/lib/routes";
 import { AuthNav } from "@/components/auth/auth-nav";
 import { BrandLockup } from "@/components/ui/logo";
 import { SearchBox, SearchBoxFallback } from "@/components/search-box";
+import { SiteNavLink } from "@/components/site-nav-link";
 
 export function SiteHeader() {
   return (
@@ -20,15 +21,13 @@ export function SiteHeader() {
         </Suspense>
 
         <nav aria-label="주요 메뉴" className="ml-auto flex shrink-0 items-center gap-1 text-[13px]">
-          <Link href={ROUTES.game} className="press rounded-lg px-3 py-[7px] text-mut transition-colors hover:text-ink">
-            게임 목록
-          </Link>
-          <Link href={ROUTES.wishlist} className="press hidden rounded-lg px-3 py-[7px] text-mut transition-colors hover:text-ink sm:block">
+          <SiteNavLink href={ROUTES.game}>게임 목록</SiteNavLink>
+          <SiteNavLink href={ROUTES.wishlist} className="hidden sm:block">
             위시리스트
-          </Link>
-          <Link href={ROUTES.alerts} className="press hidden rounded-lg px-3 py-[7px] text-mut transition-colors hover:text-ink sm:block">
+          </SiteNavLink>
+          <SiteNavLink href={ROUTES.alerts} className="hidden sm:block">
             알림
-          </Link>
+          </SiteNavLink>
           <AuthNav />
         </nav>
       </div>

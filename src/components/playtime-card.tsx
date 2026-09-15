@@ -24,10 +24,12 @@ import { cardClass } from "@/components/ui/page";
 
 type ItemKey = keyof Omit<PlaytimeDto, "lastSyncedAt">;
 
-// 막대는 하나의 색을 밝기로만 나눈다(채도 대비 금지 — 저채도 정보형 UI)
+// 막대는 하나의 색을 밝기로만 나눈다(채도 대비 금지 — 저채도 정보형 UI).
+// 가운데 칸이 리터럴(#6B6862)이었는데, 그 값은 다크에서 어두운 바탕에 묻힌다.
+// 본문색 사다리(ink > mut > dim-2)를 그대로 쓰면 테마가 뒤집혀도 순서가 유지된다.
 const ITEMS: Array<{ key: ItemKey; label: string; barClass: string }> = [
   { key: "mainStoryHours", label: "메인 스토리", barClass: "bg-ink" },
-  { key: "mainExtraHours", label: "메인 + 서브", barClass: "bg-[#6B6862]" },
+  { key: "mainExtraHours", label: "메인 + 서브", barClass: "bg-mut" },
   { key: "completionistHours", label: "완전 정복", barClass: "bg-dim-2" },
 ];
 

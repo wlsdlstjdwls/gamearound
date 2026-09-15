@@ -4,6 +4,7 @@
 import { useEffect } from "react";
 import Link from "next/link";
 import { buttonClass } from "@/components/ui/button";
+import { PageHead } from "@/components/ui/page";
 import { ERROR_MESSAGES } from "@/lib/messages";
 import { ROUTES } from "@/lib/routes";
 
@@ -13,7 +14,7 @@ export default function GlobalError({ error, reset }: { error: Error & { digest?
   }, [error]);
   return (
     <div className="mx-auto flex max-w-[var(--page-w)] flex-col items-start gap-2 px-7 py-20">
-      <h1 className="text-2xl font-bold tracking-[-0.03em] text-ink">{ERROR_MESSAGES.title}</h1>
+      <PageHead title={ERROR_MESSAGES.title} />
       <p className="max-w-[460px] text-[13.5px] leading-[1.75] text-mut">{ERROR_MESSAGES.body}</p>
       <div className="mt-3 flex gap-2">
         <button type="button" onClick={reset} className={buttonClass()}>

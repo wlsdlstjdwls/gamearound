@@ -1,11 +1,11 @@
 // 패치 기록 — 플랫폼별 전체 목록 + 패치 속도 비교 (기획서 v2 2번).
 // 본문은 담지 않으므로 한 줄은 "버전 + 제목 + 날짜"가 전부다(§10 저작권). 본문은 스토어 페이지로 보낸다.
 import type { Metadata } from "next";
-import Link from "next/link";
 import { notFound } from "next/navigation";
 import { EmptyState } from "@/components/empty-state";
 import { PatchList, PatchSpeed } from "@/components/patch-list";
-import { Card, Page, SectionHead } from "@/components/ui/page";
+import { BackLink } from "@/components/ui/back-link";
+import { Card, Page, PageHead, SectionHead } from "@/components/ui/page";
 import { platformLabel } from "@/lib/format";
 import { GAME_MESSAGES, patchSpeedText } from "@/lib/games/messages";
 import { gamePath } from "@/lib/routes";
@@ -29,21 +29,16 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 
 export default async function PatchesPage({ params }: Props) {
   const { slug } = await params;
-  const game = await getGameBySlugCached(slug);
+  // 둘은 서로를 참조하지 않는다 — 줄 세우면 Neon 왕복(200ms 대)을 두 번 치른다
+  const [game, groups] = await Promise.all([getGameBySlugCached(slug), getGamePatchesCached(slug)]);
   if (!game) notFound();
-
-  const groups = await getGamePatchesCached(slug);
   const title = displayTitle(game);
 
   return (
     <Page gap={20}>
-      <nav aria-label="브레드크럼">
-        <Link href={gamePath(game.slug)} className="text-[12.5px] text-dim transition-colors hover:text-ink">
-          {title} 상세로
-        </Link>
-      </nav>
+      <BackLink href={gamePath(game.slug)}>{title} 상세로</BackLink>
 
-      <h1 className="text-2xl font-bold tracking-[-0.03em] text-ink">{GAME_MESSAGES.patchHeading}</h1>
+      <PageHead title={GAME_MESSAGES.patchHeading} />
 
       {groups.length === 0 ? (
         <EmptyState

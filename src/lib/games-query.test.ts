@@ -1,5 +1,12 @@
 import { describe, expect, it } from "vitest";
-import { gamesHref, isGameSort, parseGamesQuery } from "./games-query";
+import {
+  gamesHref,
+  isGameSort,
+  joinPlatformValues,
+  maxPriceLabel,
+  parseGamesQuery,
+  parsePlatformValues,
+} from "./games-query";
 import { pageWindow } from "./pagination";
 import { ROUTES } from "./routes";
 
@@ -129,5 +136,46 @@ describe("pageWindow", () => {
 
   it("창과 끝이 붙으면 생략 기호를 넣지 않는다", () => {
     expect(pageWindow(3, 6)).toEqual([1, 2, 3, 4, 5, 6]);
+  });
+});
+
+describe("플랫폼 여러 값", () => {
+  it("쉼표로 이은 값을 목록으로 읽는다", () => {
+    expect(parsePlatformValues("ps5,switch")).toEqual(["ps5", "switch"]);
+  });
+
+  it("빈 값, 공백, 중복은 버린다 — 같은 선택이 늘 같은 문자열이어야 캐시 키가 쪼개지지 않는다", () => {
+    expect(parsePlatformValues(" ps5 , ,ps5,switch")).toEqual(["ps5", "switch"]);
+    expect(parsePlatformValues(undefined)).toEqual([]);
+    expect(parsePlatformValues("")).toEqual([]);
+  });
+
+  it("다시 이을 때는 고른 순서가 아니라 정해진 순서로 선다", () => {
+    const order = ["pc", "console", "steam", "ps5", "switch"];
+    expect(joinPlatformValues(["switch", "ps5"], order)).toBe("ps5,switch");
+    expect(joinPlatformValues(["ps5", "switch"], order)).toBe("ps5,switch");
+  });
+
+  it("모르는 값과 빈 선택은 undefined — 주소에 찌꺼기를 남기지 않는다", () => {
+    expect(joinPlatformValues(["mobile"], ["pc", "console"])).toBeUndefined();
+    expect(joinPlatformValues([], ["pc"])).toBeUndefined();
+  });
+});
+
+describe("가격 상한", () => {
+  it("0 은 무료다 — falsy 라고 '고르지 않음' 으로 접으면 안 된다", () => {
+    expect(maxPriceLabel(0)).toBe("무료");
+    expect(parseGamesQuery({ max: "0" }).maxPrice).toBe(0);
+    expect(gamesHref({}, { maxPrice: 0 })).toBe(`${ROUTES.game}?max=0`);
+  });
+
+  it("정해진 단이 아닌 값은 버린다", () => {
+    expect(parseGamesQuery({ max: "7777" }).maxPrice).toBeUndefined();
+  });
+
+  it("만 단위로 떨어지면 만원, 아니면 천원으로 읽는다", () => {
+    expect(maxPriceLabel(5_000)).toBe("5천원 이하");
+    expect(maxPriceLabel(10_000)).toBe("1만원 이하");
+    expect(maxPriceLabel(30_000)).toBe("3만원 이하");
   });
 });

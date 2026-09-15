@@ -1,6 +1,7 @@
 // 게임 상세 — 결론 → 근거 순 (§5.1). 데이터는 tag 캐시(getGameBySlugCached), 로그인 의존 데이터(찜 여부)는 캐시 밖에서 조회
 import { formatPrice } from "@/lib/currency";
 import type { Metadata } from "next";
+import { Suspense } from "react";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { CoverImage } from "@/components/game-card";
@@ -13,6 +14,7 @@ import { PatchList, PatchSpeed } from "@/components/patch-list";
 import { PlatformTabs, type PlatformTabItem } from "@/components/platform-tabs";
 import { PlaytimeCard } from "@/components/playtime-card";
 import { WishlistButton } from "@/components/wishlist-button";
+import { BackLink } from "@/components/ui/back-link";
 import { buttonClass } from "@/components/ui/button";
 import { Card, Page, SectionHead } from "@/components/ui/page";
 import { formatHours, PLATFORM_LABEL } from "@/lib/format";
@@ -61,7 +63,9 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   };
 }
 
-function SummaryCell({ label, value, was, note }: { label: string; value: string; was?: string; note?: string }) {
+type SummaryCellProps = { label: string; value: string; was?: string; note?: string };
+
+function SummaryCell({ label, value, was, note }: SummaryCellProps) {
   return (
     <div className="flex flex-col gap-1 px-4 py-3.5">
       <dt className="text-[11.5px] text-dim">{label}</dt>
@@ -77,7 +81,14 @@ function SummaryCell({ label, value, was, note }: { label: string; value: string
   );
 }
 
-/** 결정 요약 바 — "지금이 싼가 | 얼마나 걸리나 | 살 만한가" 세 값만 최상단에 고정한다 */
+/**
+ * 결정 요약 바 — "지금이 싼가 | 얼마나 걸리나 | 살 만한가" 를 최상단에 고정한다.
+ *
+ * 모르는 값의 칸은 아예 세우지 않는다(2026-09-15). 전에는 네 칸을 늘 그리고 값이 없으면 "-" 를 넣었는데,
+ * 카탈로그 대부분이 플레이타임과 평점을 아직 안 갖고 있어서 화면에서 가장 큰 자리가 줄줄이 "-" 였다.
+ * 그건 "아직 모은다" 가 아니라 "고장 났다" 로 읽힌다. 대신 아는 게 최저가뿐이면 한 줄로 그 사실을 말한다 —
+ * 모르는 것을 네 번 반복하는 것보다 한 번 적는 편이 짧고 정직하다.
+ */
 function DecisionSummary({ game, className, style }: { game: GameDetail; className?: string; style?: React.CSSProperties }) {
   const best = cheapestPlatform(game.platforms);
   const score = bestScore(game.platforms);
@@ -85,49 +96,91 @@ function DecisionSummary({ game, className, style }: { game: GameDetail; classNa
   const main = game.playtime?.mainStoryHours;
   const complete = game.playtime?.completionistHours;
 
+  const cells: SummaryCellProps[] = [
+    {
+      label: "지금 최저가",
+      value: best ? formatPrice(best.currentPrice, best.currency) : "-",
+      was: best && best.discountPct && best.listPrice !== null ? formatPrice(best.listPrice, best.currency) : undefined,
+      note: best ? `${PLATFORM_LABEL[best.platform] ?? best.platform}${best.discountPct ? ` | -${best.discountPct}%` : ""}` : undefined,
+    },
+  ];
+  if (main) {
+    cells.push({ label: "메인 스토리", value: formatHours(main), note: complete ? `완전 정복 ${formatHours(complete)}` : undefined });
+  }
+  if (score) {
+    cells.push({ label: "평론가 평점", value: String(score.value), note: score.note ?? undefined });
+  }
+  // 유저 점수를 평론가 점수 옆에 따로 세우는 이유: 두 값이 갈리는 게임이 있고, 그 사실 자체가
+  // 살지 말지를 정하는 정보다. 하나로 합치면 그 갈림이 사라진다
+  if (user) {
+    cells.push({
+      label: "유저 점수",
+      value: userScoreValueText(user.score.value, user.score.kind),
+      note: `${PLATFORM_LABEL[user.platform] ?? user.platform} | ${userScoreNoteText(user.score.kind, user.score.count)}`,
+    });
+  }
+
   return (
     <dl
       className={cardClass(`grid grid-cols-[repeat(auto-fit,minmax(160px,1fr))] divide-x divide-line-soft overflow-hidden ${className ?? ""}`)}
       style={style}
     >
-      {/* 값이 없을 때 note 를 비우는 이유: 값 자리에 이미 "-" 가 서 있는데 그 밑에 "없음" 을 또 적으면
-          같은 말을 두 번 하는 데다, 화면이 아는 것보다 모르는 것을 더 크게 말하게 된다. */}
-      <SummaryCell
-        label="지금 최저가"
-        value={best ? formatPrice(best.currentPrice, best.currency) : "-"}
-        was={best && best.discountPct && best.listPrice !== null ? formatPrice(best.listPrice, best.currency) : undefined}
-        note={best ? `${PLATFORM_LABEL[best.platform] ?? best.platform}${best.discountPct ? ` | -${best.discountPct}%` : ""}` : undefined}
-      />
-      <SummaryCell label="메인 스토리" value={main ? formatHours(main) : "-"} note={complete ? `완전 정복 ${formatHours(complete)}` : undefined} />
-      <SummaryCell label="평론가 평점" value={score ? String(score.value) : "-"} note={score?.note ?? undefined} />
-      {/* 유저 점수를 평론가 점수 옆에 따로 세우는 이유: 두 값이 갈리는 게임이 있고, 그 사실 자체가
-          살지 말지를 정하는 정보다. 하나로 합치면 그 갈림이 사라진다 */}
-      <SummaryCell
-        label="유저 점수"
-        value={user ? userScoreValueText(user.score.value, user.score.kind) : "-"}
-        note={
-          user
-            ? `${PLATFORM_LABEL[user.platform] ?? user.platform} | ${userScoreNoteText(user.score.kind, user.score.count)}`
-            : undefined
-        }
-      />
+      {cells.map((c) => (
+        <SummaryCell key={c.label} {...c} />
+      ))}
+      {cells.length === 1 && (
+        <p className="flex items-center px-4 py-3.5 text-[12.5px] leading-[1.6] text-dim">
+          {GAME_MESSAGES.summaryPending}
+        </p>
+      )}
     </dl>
+  );
+}
+
+/**
+ * 찜 버튼 자리. 이것만 로그인 상태에 매달려 있다.
+ *
+ * 왜 따로 떼어 Suspense 로 감쌌나(2026-09-15): 세션 조회와 찜 여부는 각각 Neon 왕복 한 번씩이고
+ * (실측 220ms), 둘은 서로를 참조해서 줄을 설 수밖에 없다. 그 440ms 를 페이지 본문이 기다리면
+ * 가격도 뉴스도 "내가 이 게임을 찜했는지" 를 기다리는 꼴이 된다. 본문을 먼저 흘려보내고
+ * 이 버튼만 늦게 앉힌다 — 자리는 폴백이 미리 잡아 두므로 늦게 와도 화면이 밀리지 않는다.
+ */
+async function WishlistSlot({ gameId }: { gameId: string }) {
+  const user = await getCurrentUser();
+  const wished = user ? await isInWishlist(gameId) : false;
+  return <WishlistButton gameId={gameId} wished={wished} signedIn={Boolean(user)} />;
+}
+
+/** 아직 오지 않은 찜 버튼의 자리. 같은 크기여야 도착할 때 옆 버튼이 밀리지 않는다 */
+function WishlistSlotFallback() {
+  return (
+    <span aria-hidden className={buttonClass({ variant: "secondary", className: "pointer-events-none opacity-60" })}>
+      위시리스트
+    </span>
   );
 }
 
 export default async function GameDetailPage({ params }: Props) {
   const { slug } = await params;
-  const game = await getGameBySlugCached(slug);
-  if (!game) notFound();
 
-  // 로그인 의존 데이터는 캐시 밖에서
-  const user = await getCurrentUser();
-  const wished = user ? await isInWishlist(game.id) : false;
-  // 패치 기록은 상세 조회와 같은 태그(`game:<slug>`)로 따로 캐시된다 — 붙는 테이블이 game_platforms 라
-  // 상세 질의에 얹으면 화면이 안 쓰는 행까지 통째로 끌려온다
-  const patchGroups = await getGamePatchesCached(slug);
-  // 시간당 가격을 세울 눈금 - 이 게임이 아니라 카탈로그의 성질이라 게임 태그와 따로 캐시된다
-  const perHourScale = await getPricePerHourScale();
+  /*
+   * 한 번에 던진다. 전에는 다섯 개를 줄 세워 await 했다 —
+   * 상세 → 세션 → 찜 여부 → 패치 → 눈금 순으로, 앞이 끝나야 뒤가 나갔다.
+   * 질의 자체는 DB 에서 10~20ms 인데 Neon(us-east-1) 왕복이 한 번에 200ms 대다(list.ts 주석).
+   * 그래서 이 화면의 서버 시간은 거의 전부 "기다림" 이었다 — 실측 1,547ms(2026-09-15, 로컬 prod, 콜드).
+   * 셋은 서로를 참조하지 않으므로 같이 나간다.
+   *
+   * 세션과 찜 여부는 여기서 기다리지 않는다 — WishlistSlot 이 Suspense 안에서 따로 받아 온다(아래 주석).
+   */
+  const [game, patchGroups, perHourScale] = await Promise.all([
+    getGameBySlugCached(slug),
+    // 패치 기록은 상세 조회와 같은 태그(`game:<slug>`)로 따로 캐시된다 — 붙는 테이블이 game_platforms 라
+    // 상세 질의에 얹으면 화면이 안 쓰는 행까지 통째로 끌려온다
+    getGamePatchesCached(slug),
+    // 시간당 가격을 세울 눈금 - 이 게임이 아니라 카탈로그의 성질이라 게임 태그와 따로 캐시된다
+    getPricePerHourScale(),
+  ]);
+  if (!game) notFound();
 
   const title = displayTitle(game);
   const platforms: PlatformTabItem[] = game.platforms.map((p) => ({
@@ -148,11 +201,7 @@ export default async function GameDetailPage({ params }: Props) {
 
   return (
     <Page pad="detail" gap={28}>
-      <nav aria-label="브레드크럼">
-        <Link href={ROUTES.game} className="text-[12.5px] text-dim transition-colors hover:text-ink">
-          게임 목록으로
-        </Link>
-      </nav>
+      <BackLink href={ROUTES.game}>게임 목록으로</BackLink>
 
       {/* 섹션 1 — 헤더 블록.
           안쪽 조각마다 .enter-item 을 붙이는 이유: 헤더는 300px 넘는 덩어리라 통째로 페이드하면
@@ -177,7 +226,9 @@ export default async function GameDetailPage({ params }: Props) {
               <CompanyChips companies={game.companies} developer={game.developer} publisher={game.publisher} />
             </div>
             <div className="flex shrink-0 flex-wrap items-center gap-2">
-              <WishlistButton gameId={game.id} wished={wished} signedIn={Boolean(user)} />
+              <Suspense fallback={<WishlistSlotFallback />}>
+                <WishlistSlot gameId={game.id} />
+              </Suspense>
               <Link href={`${ROUTES.alerts}?game=${encodeURIComponent(game.slug)}`} className={buttonClass({ variant: "primary" })}>
                 할인 알림 받기
               </Link>

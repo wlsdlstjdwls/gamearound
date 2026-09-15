@@ -8,6 +8,7 @@
 // 둘 중 어느 쪽이 현재 질의인지 알 수 없다(2026-09-14 제보).
 import { useEffect, useRef, useState, useTransition } from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
+import { SearchIcon, SpinnerIcon, XIcon } from "@/components/ui/icons";
 import { MAX_PARAM_LEN } from "@/lib/games-query";
 import { ROUTES } from "@/lib/routes";
 
@@ -18,15 +19,29 @@ import { ROUTES } from "@/lib/routes";
  */
 const DEBOUNCE_MS = 250;
 
+const SEARCH_PLACEHOLDER = "게임 제목 검색";
+
 /** 주소에 실리는 형태. 비교와 전송이 같은 규칙을 써야 "바뀌었나" 판정이 흔들리지 않는다 */
 function trimQuery(raw: string): string {
   return raw.trim().slice(0, MAX_PARAM_LEN);
 }
 
+/*
+ * 입력칸 모양.
+ *
+ * 전에는 흰 헤더 위에 흰 입력칸을 테두리 하나로 세워 뒀다. 테두리 1px 만으로는 "여기에 쓸 수 있다" 가
+ * 읽히지 않아 그냥 선이 그어진 빈칸으로 보였고, 34px 높이가 옆 링크들과도 어긋났다.
+ * 지금은 바탕을 한 단 가라앉혀(--surface-2) 헤더에서 파인 자리로 만들고, 포커스에서만 테두리와
+ * 브랜드 글로우를 켠다 — 평소에는 조용하고 손이 닿은 순간에만 말한다.
+ * 모서리를 완전히 굴리는 이유: 이 화면에서 유일하게 "무엇이든 써도 되는" 칸이라 각진 카드, 칩과 달라야 한다.
+ */
 const FIELD_CLASS =
-  "flex h-[34px] items-center gap-1.5 rounded-[9px] border border-line-strong bg-bg px-2.5 transition-colors duration-base focus-within:border-ink";
-const INPUT_CLASS = "min-w-0 flex-1 bg-transparent text-[13px] text-ink outline-none placeholder:text-dim";
-const FORM_CLASS = "min-w-[180px] max-w-[380px] flex-1";
+  "flex h-9 items-center gap-2 rounded-full border border-transparent bg-surface-2 pl-3 pr-2 transition-[background-color,border-color,box-shadow] duration-base ease-standard focus-within:border-acc focus-within:bg-surface focus-within:shadow-[0_0_0_3px_var(--acc-glow)]";
+const INPUT_CLASS =
+  "min-w-0 flex-1 bg-transparent text-[13px] text-ink outline-none placeholder:text-dim [&::-webkit-search-cancel-button]:appearance-none";
+const FORM_CLASS = "min-w-[180px] max-w-[420px] flex-1";
+/** 오른쪽 끝 자리 — 스피너와 지우기 버튼이 번갈아 선다. 폭을 고정해야 글자가 밀리지 않는다 */
+const TRAIL_CLASS = "flex size-6 shrink-0 items-center justify-center";
 
 /**
  * 프리렌더용 껍데기. useSearchParams 는 정적 렌더를 포기시키므로 Suspense 경계 안에 둬야 하고,
@@ -36,8 +51,9 @@ export function SearchBoxFallback() {
   return (
     <div className={FORM_CLASS}>
       <div className={FIELD_CLASS}>
-        <span aria-hidden className="text-[13px] text-dim">⌕</span>
-        <input type="search" disabled placeholder="게임 제목 검색" aria-label="게임 검색" className={INPUT_CLASS} />
+        <SearchIcon size={15} className="shrink-0 text-dim" />
+        <input type="search" disabled placeholder={SEARCH_PLACEHOLDER} aria-label="게임 검색" className={INPUT_CLASS} />
+        <span aria-hidden className={TRAIL_CLASS} />
       </div>
     </div>
   );
@@ -54,6 +70,7 @@ export function SearchBox() {
   const [isPending, startTransition] = useTransition();
   // 한글, 일본어 입력기가 글자를 조합하는 중에는 질의하지 않는다 — 자모 단계로 검색이 나간다
   const composing = useRef(false);
+  const inputRef = useRef<HTMLInputElement>(null);
 
   // 뒤로 가기, 다른 화면에서 온 경우처럼 주소가 **밖에서** 바뀌면 입력칸을 주소에 맞춘다.
   // effect 가 아니라 렌더 중 보정인 이유: effect 로 하면 한 번 그린 뒤 다시 그려 입력칸이 깜빡인다.
@@ -90,15 +107,16 @@ export function SearchBox() {
     >
       <label htmlFor="q" className="sr-only">게임 검색</label>
       <div className={FIELD_CLASS}>
-        <span aria-hidden className="text-[13px] text-dim">⌕</span>
+        <SearchIcon size={15} className="shrink-0 text-dim" />
         <input
           id="q"
+          ref={inputRef}
           name="q"
           type="search"
           value={value}
           maxLength={MAX_PARAM_LEN}
           autoComplete="off"
-          placeholder="게임 제목 검색"
+          placeholder={SEARCH_PLACEHOLDER}
           onChange={(e) => setValue(e.target.value)}
           onCompositionStart={() => { composing.current = true; }}
           onCompositionEnd={(e) => {
@@ -107,8 +125,27 @@ export function SearchBox() {
           }}
           className={INPUT_CLASS}
         />
-        {/* 진행 표시는 자리를 차지하지 않는 점 하나로 둔다 — 입력칸이 흔들리면 타이핑이 방해된다 */}
-        <span aria-hidden className={`size-1.5 shrink-0 rounded-full bg-acc transition-opacity duration-base ${isPending ? "opacity-100" : "opacity-0"}`} />
+        {/* 오른쪽 끝 한 자리를 스피너와 지우기 버튼이 나눠 쓴다. 자리를 고정해 두는 이유는
+            둘이 번갈아 뜨고 질 때 입력칸 폭이 흔들리면 타이핑이 방해받기 때문이다 */}
+        <span className={TRAIL_CLASS}>
+          {isPending ? (
+            <SpinnerIcon size={14} className="text-acc" />
+          ) : (
+            value !== "" && (
+              <button
+                type="button"
+                aria-label="검색어 지우기"
+                onClick={() => {
+                  setValue("");
+                  inputRef.current?.focus(); // 지운 뒤 다시 칠 수 있어야 한다 — 포커스를 잃으면 한 번 더 눌러야 한다
+                }}
+                className="press flex size-6 items-center justify-center rounded-full text-dim transition-colors hover:bg-surface-3 hover:text-ink"
+              >
+                <XIcon size={13} />
+              </button>
+            )
+          )}
+        </span>
       </div>
     </form>
   );

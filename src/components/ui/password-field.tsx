@@ -46,7 +46,7 @@ const BAR_COLOR: Record<number, string> = {
   1: "bg-danger",
   2: "bg-warn",
   3: "bg-dim",
-  4: "bg-acc",
+  4: "bg-ok",
 };
 
 export function PasswordStrengthMeter({ value }: { value: string }) {

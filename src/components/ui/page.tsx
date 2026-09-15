@@ -54,6 +54,50 @@ export function Card({ className, children, ...rest }: React.ComponentProps<"div
   );
 }
 
+/**
+ * 화면 제목 행 — 한 화면에 하나뿐인 h1 자리.
+ *
+ * 뽑아낸 이유: `text-2xl font-bold tracking-[-0.03em] text-ink` 가 13곳에 그대로 복제돼 있었고,
+ * 그러는 동안 상세 28px, 회사 26px, 검색 결과 20px 로 슬금슬금 어긋났다. 크기는 두 단만 둔다 —
+ * 목록, 설정처럼 제목이 표지 노릇만 하는 화면은 page, 제목 자체가 내용인 화면(상세, 회사)은 hero.
+ * note 는 제목 옆 회색 보조 문구, action 은 오른쪽 끝 링크 자리다(SectionHead 와 같은 배치 규칙).
+ */
+export type PageTitleSize = "page" | "hero";
+
+const TITLE_SIZE: Record<PageTitleSize, string> = {
+  page: "text-2xl tracking-[-0.03em]",
+  hero: "text-[28px] leading-[1.2] tracking-[-0.03em]",
+};
+
+export function PageHead({
+  title,
+  note,
+  action,
+  size = "page",
+  className,
+  style,
+  children,
+}: {
+  title: React.ReactNode;
+  note?: React.ReactNode;
+  action?: React.ReactNode;
+  size?: PageTitleSize;
+  className?: string;
+  style?: React.CSSProperties;
+  children?: React.ReactNode;
+}) {
+  return (
+    <div className={cn("flex flex-wrap items-baseline justify-between gap-x-3 gap-y-2", className)} style={style}>
+      <div className="flex min-w-0 flex-wrap items-baseline gap-x-2.5 gap-y-1">
+        <h1 className={cn("font-bold text-ink", TITLE_SIZE[size])}>{title}</h1>
+        {note && <span className="text-[13px] text-dim">{note}</span>}
+      </div>
+      {action}
+      {children}
+    </div>
+  );
+}
+
 /** 섹션 제목 행 — 17px/700 + 우측 보조 문구/링크.
  *  className, style 을 받는 이유: 목록이 항목별로 등장하는 영역에서는 제목도 등장 순번(.enter-item + stagger)을 가져야 한다
  *  as 를 받는 이유: 별도 머리글 없이 섹션으로 시작하는 화면(홈)은 첫 섹션 제목이 그 문서의 h1 이어야 한다.

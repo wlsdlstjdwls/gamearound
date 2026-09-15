@@ -8,7 +8,7 @@ import { requireRoleOrForbid } from "@/server/auth/guards";
 import { listPendingCompanies, PENDING_COMPANIES_LIMIT } from "@/server/services/admin-companies";
 import { listCompanies } from "@/server/services/companies";
 import { CompanyResolveButton } from "@/components/admin/company-resolve-button";
-import { cardClass } from "@/components/ui/page";
+import { PageHead, cardClass } from "@/components/ui/page";
 import { Clamp } from "@/components/ui/tooltip";
 
 export const metadata: Metadata = { title: "회사 검수" };
@@ -22,9 +22,7 @@ export default async function AdminCompaniesPage() {
     <div className="flex flex-col gap-8">
       <section className="flex flex-col gap-3">
         <header className="flex flex-wrap items-end justify-between gap-2">
-          <h1 className="text-2xl font-bold tracking-[-0.03em] text-ink">
-            회사 검수 큐 <span className="text-[13px] font-normal text-dim">{pending.length}건</span>
-          </h1>
+          <PageHead title="회사 검수 큐" note={`${pending.length}건`} />
           <p className="text-[11.5px] text-dim">한 번에 최대 {PENDING_COMPANIES_LIMIT}건까지 봅니다</p>
         </header>
 

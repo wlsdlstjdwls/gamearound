@@ -18,6 +18,16 @@ function base({ size = 18, ...rest }: IconProps) {
   };
 }
 
+/** 검색 — 헤더 입력칸 왼쪽. 유니코드 ⌕ 를 쓰면 글꼴마다 굵기와 기준선이 달라 입력칸이 들쭉날쭉했다 */
+export function SearchIcon(p: IconProps) {
+  return (
+    <svg {...base(p)}>
+      <circle cx="11" cy="11" r="7" />
+      <path d="m20 20-3.2-3.2" />
+    </svg>
+  );
+}
+
 export function EyeIcon(p: IconProps) {
   return (
     <svg {...base(p)}>
@@ -42,6 +52,25 @@ export function CheckIcon(p: IconProps) {
   return (
     <svg {...base({ strokeWidth: 3, ...p })}>
       <path d="M5 12.5l4.5 4.5L19 7.5" />
+    </svg>
+  );
+}
+
+/** 뒤로 — 되돌아가는 링크 앞에 선다. 화살표 "글자"(←)는 화면 문구에서 금지지만(AGENTS §4),
+ *  그건 글 안에 섞이는 기호 얘기다. 여기 화살표는 글이 아니라 아이콘이고, 어디로 가는지는 옆 문구가 말한다 */
+export function ChevronLeftIcon(p: IconProps) {
+  return (
+    <svg {...base(p)}>
+      <path d="m14.5 5-7 7 7 7" />
+    </svg>
+  );
+}
+
+/** 입력칸 비우기 */
+export function XIcon(p: IconProps) {
+  return (
+    <svg {...base(p)}>
+      <path d="M6 6 18 18M18 6 6 18" />
     </svg>
   );
 }

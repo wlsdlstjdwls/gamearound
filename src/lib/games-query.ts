@@ -27,6 +27,46 @@ export function isMinDiscount(v: number): v is MinDiscount {
   return (MIN_DISCOUNT_STEPS as readonly number[]).includes(v);
 }
 
+/**
+ * 가격 상한 칸(원). 할인율과는 다른 질문에 답한다 — "얼마나 깎였나" 가 아니라 "내 예산에 드나".
+ * -90% 인데 6만원인 게임과 정가 5천원인 게임은 할인 축에서만 보면 앞엣것이 위에 서지만,
+ * 만원짜리를 찾는 사람에게는 뒤엣것만 답이다.
+ * 0 은 "무료" 다 — 별도 칸을 두지 않고 상한 0 으로 두면 조건식이 하나로 유지된다.
+ */
+export const MAX_PRICE_STEPS = [0, 5_000, 10_000, 30_000] as const;
+export type MaxPrice = (typeof MAX_PRICE_STEPS)[number];
+
+export function isMaxPrice(v: number): v is MaxPrice {
+  return (MAX_PRICE_STEPS as readonly number[]).includes(v);
+}
+
+/** 가격 상한 칩 문구. 만 단위로 안 떨어지는 값은 천 단위로 읽는다 — "0.5만원" 은 아무도 그렇게 말하지 않는다 */
+export function maxPriceLabel(v: MaxPrice): string {
+  if (v === 0) return "무료";
+  return v % 10_000 === 0 ? `${v / 10_000}만원 이하` : `${v / 1_000}천원 이하`;
+}
+
+/**
+ * 플랫폼 값 구분자. 주소에 `platform=ps5,switch` 로 실린다.
+ *
+ * 왜 한 칸에 여러 값을 담나: 칸을 나누면(platform=, store=) 서로 어긋난 조합이 생기고,
+ * 같은 화면이 두 개의 주소를 갖게 된다. 한 칸에 두면 "고른 것들" 이 곧 주소다.
+ */
+export const PLATFORM_VALUE_SEP = ",";
+
+/** 주소의 platform 값 → 고른 값 목록. 빈 값, 중복은 버린다(같은 선택이 늘 같은 문자열이 되도록) */
+export function parsePlatformValues(raw: string | undefined): string[] {
+  if (!raw) return [];
+  return [...new Set(raw.split(PLATFORM_VALUE_SEP).map((v) => v.trim()).filter(Boolean))];
+}
+
+/** 고른 값 목록 → 주소에 실을 문자열. 순서를 고정해야 같은 선택이 같은 캐시 키가 된다 */
+export function joinPlatformValues(values: string[], order: readonly string[]): string | undefined {
+  const picked = [...new Set(values)].filter((v) => order.includes(v));
+  if (picked.length === 0) return undefined;
+  return order.filter((v) => picked.includes(v)).join(PLATFORM_VALUE_SEP);
+}
+
 /** 플랫폼 값은 DB enum 이 원천이라 여기서는 문자열로 두고, 페이지가 enum 으로 좁힌다 */
 export type GamesQuery = {
   q?: string;
@@ -35,6 +75,8 @@ export type GamesQuery = {
   onSale?: boolean;
   /** 이 할인율 이상만. onSale 과 같은 축이라 둘 중 하나만 선다(gamesHref 가 맞춰 지운다) */
   minDiscount?: MinDiscount;
+  /** 이 금액 이하만(원). 0 은 무료 */
+  maxPrice?: MaxPrice;
   /** 회사 slug — 회사 화면과 목록 필터가 같은 키를 쓴다 */
   company?: string;
   /** 구독(게임패스 등)으로 지금 플레이할 수 있는 게임만 */
@@ -64,12 +106,15 @@ export function parseGamesQuery(sp: Record<string, string | string[] | undefined
   const page = Number(firstParam(sp.page));
   const rawOff = Number(firstParam(sp.off));
   const off = isMinDiscount(rawOff) ? rawOff : undefined;
+  const rawMax = Number(firstParam(sp.max));
+  const max = isMaxPrice(rawMax) ? rawMax : undefined;
   return {
     q: firstParam(sp.q),
     platform: firstParam(sp.platform),
     genre: firstParam(sp.genre),
     onSale: firstParam(sp.sale) === "1",
     minDiscount: off,
+    maxPrice: max,
     company: firstParam(sp.company),
     subscription: firstParam(sp.sub) === "1",
     sort: isGameSort(sort) ? sort : undefined,
@@ -89,6 +134,8 @@ export function gamesHref(current: GamesQuery, patch: Partial<GamesQuery> = {}):
   if (next.genre) params.set("genre", next.genre);
   if (next.minDiscount) params.set("off", String(next.minDiscount));
   else if (next.onSale) params.set("sale", "1");
+  // 0 은 "무료" 라는 뜻이 있는 값이라 falsy 로 접으면 안 된다
+  if (next.maxPrice !== undefined) params.set("max", String(next.maxPrice));
   if (next.company) params.set("company", next.company);
   if (next.subscription) params.set("sub", "1");
   if (next.sort && next.sort !== DEFAULT_GAME_SORT) params.set("sort", next.sort);

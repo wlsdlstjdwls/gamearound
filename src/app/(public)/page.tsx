@@ -17,7 +17,9 @@ import { getHomeData, type GameSummary } from "@/server/services/games";
 // Next 가 정적으로 읽는 값이라 리터럴이어야 한다 — 근거, 수치는 lib/cache 의 LIST_REVALIDATE_SECONDS 와 같게 유지
 export const revalidate = 3600;
 
-const ENDING_SOON_LIMIT = 6;
+// 오른쪽 뉴스(HOME_NEWS_LIMIT = 8)와 줄 수를 맞춘다 — 두 기둥의 길이가 크게 어긋나면
+// 짧은 쪽 아래가 빈 흰 판으로 남는다
+const ENDING_SOON_LIMIT = 8;
 
 function endsAtMs(g: GameSummary): number | null {
   const raw = g.best?.discountEndsAt;
@@ -96,7 +98,9 @@ export default async function HomePage() {
       </section>
 
       {/* 섹션 2 — 곧 끝나는 할인 / 최신 뉴스 */}
-      <section className="grid grid-cols-[repeat(auto-fit,minmax(300px,1fr))] gap-7">
+      {/* items-start: 두 카드가 서로의 키를 따라가지 않게 한다. 기본값(stretch)이면 짧은 쪽 카드가
+          긴 쪽 높이까지 늘어나고, 늘어난 만큼이 그대로 빈 흰 판이 된다 */}
+      <section className="grid grid-cols-[repeat(auto-fit,minmax(300px,1fr))] items-start gap-7">
         <div className="enter-item flex flex-col gap-4" style={stagger(0)}>
           <SectionHead title="곧 할인 마감" />
           <Card className="px-4">

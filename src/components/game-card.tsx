@@ -63,7 +63,10 @@ export function GameCard({ game, variant = "discount" }: { game: GameSummary; va
       <div className="relative aspect-[460/215] w-full bg-surface-3">
         <CoverImage src={game.coverUrl} alt={`${title} 커버`} />
         {hasDiscount && best && (
-          <span className="absolute left-2.5 top-2.5 rounded-[6px] bg-ink px-2 py-[3px] text-[11.5px] font-bold text-on-ink">
+          // 잉크 검정이었는데, 커버 이미지의 절반 이상이 어두워 배지가 그림 속으로 사라졌다(2026-09-15 실측).
+          // 이 숫자가 목록에서 가장 먼저 읽혀야 할 값이라 브랜드 색으로 세운다 — 흰 글자 대비 7.6:1 이고,
+          // 게임 커버에 잘 나오지 않는 색이라 어떤 그림 위에서도 배지가 배지로 읽힌다.
+          <span className="absolute left-2.5 top-2.5 rounded-[6px] bg-acc px-2 py-[3px] text-[11.5px] font-bold text-on-ink">
             {formatDiscount(best.discountPct)}
           </span>
         )}
