@@ -25,12 +25,13 @@ import { cardClass } from "@/components/ui/page";
 type ItemKey = keyof Omit<PlaytimeDto, "lastSyncedAt">;
 
 // 막대는 하나의 색을 밝기로만 나눈다(채도 대비 금지 — 저채도 정보형 UI).
-// 가운데 칸이 리터럴(#6B6862)이었는데, 그 값은 다크에서 어두운 바탕에 묻힌다.
-// 본문색 사다리(ink > mut > dim-2)를 그대로 쓰면 테마가 뒤집혀도 순서가 유지된다.
+// 본문색 사다리(ink > mut > dim-2)를 쓰다가 브랜드 색 사다리로 바꿨다(2026-09-15):
+// 회색 막대는 옆 글자와 같은 색이라 그래픽으로 읽히지 않았고, 이 카드만 화면에서 브랜드가 지워진 칸이었다.
+// 값에 뜻을 붙이는 색(ok, danger, price-*)은 여기 쓰지 않는다 — 시간이 길고 짧은 것은 좋고 나쁨이 아니다.
 const ITEMS: Array<{ key: ItemKey; label: string; barClass: string }> = [
-  { key: "mainStoryHours", label: "메인 스토리", barClass: "bg-ink" },
-  { key: "mainExtraHours", label: "메인 + 서브", barClass: "bg-mut" },
-  { key: "completionistHours", label: "완전 정복", barClass: "bg-dim-2" },
+  { key: "mainStoryHours", label: "메인 스토리", barClass: "bg-acc" },
+  { key: "mainExtraHours", label: "메인 + 서브", barClass: "bg-acc-2" },
+  { key: "completionistHours", label: "완전 정복", barClass: "bg-acc-3" },
 ];
 
 const EMPTY_TEXT = "플레이타임 정보가 아직 없습니다.";
@@ -42,25 +43,26 @@ const MIN_BAR_PCT = 5;
 
 /**
  * 판정 색 — 금액, 판정 단어, 축 마커가 한 색으로 같이 움직인다.
- * 전용 토큰을 쓰는 이유는 globals.css 의 --price-good, --price-bad 주석에 있다(acc, danger 와 뜻이 겹치지 않게).
+ * "싼 편"은 브랜드 색이다(2026-09-15 교체): 초록이면 같은 화면의 --ok 와 같은 말을 하고,
+ * 이 카드만 다른 색 계열로 떠 브랜드가 없는 칸처럼 보였다. "비싼 편"만 전용 경고색을 쓴다(globals.css 주석).
  * 보통을 본문색(ink)으로 두는 이유: 20px 금액을 회색으로 깔면 카드에서 제일 중요한 값이 죽는다.
  */
 const AMOUNT_CLASS: Record<PerHourVerdict, string> = {
-  cheap: "text-price-good",
+  cheap: "text-acc",
   mid: "text-ink",
   pricy: "text-price-bad",
 };
 
 /** 판정 단어 — 금액과 같은 색. 보통일 때만 물러난다(말 자체가 "특별할 것 없다"는 뜻이다) */
 const VERDICT_CLASS: Record<PerHourVerdict, string> = {
-  cheap: "text-price-good",
+  cheap: "text-acc",
   mid: "text-dim",
   pricy: "text-price-bad",
 };
 
 /** 축 위 마커 — 색이 판정과 어긋나면 같은 사실을 두 번 다르게 말하는 꼴이 된다 */
 const MARKER_CLASS: Record<PerHourVerdict, { bar: string; label: string }> = {
-  cheap: { bar: "bg-price-good", label: "text-price-good" },
+  cheap: { bar: "bg-acc", label: "text-acc" },
   mid: { bar: "bg-ink", label: "text-ink" },
   pricy: { bar: "bg-price-bad", label: "text-price-bad" },
 };
