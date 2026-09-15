@@ -371,6 +371,20 @@ a {
 .page-enter .enter-item .enter-item {
   animation: none;
 }
+/* 등장이 끝난 셸(lib/motion 의 markPageEntered 가 붙인다) — 같은 자리가 다시 그려져도 다시 켜지 않는다.
+   왜 있나: 스크롤로 다음 장을 이어 붙이는 동안 React 가 첫 장을 다시 그리면 이미 보고 있던 카드까지
+   전부 다시 페이드해 목록이 통째로 깜빡였다. 등장은 "도착" 에 한 번이면 된다.
+   앞의 두 규칙과 무게가 같으므로 순서로 이긴다 — 이 블록을 위로 옮기지 않는다. */
+.page-enter[data-entered] > *,
+.page-enter[data-entered] .enter-item {
+  animation: none;
+}
+/* 등장이 끝난 뒤에 새로 붙는 조각 — 이어 붙인 다음 장 카드처럼 클라이언트가 방금 만든 것만 이 이름을 쓴다.
+   표식과 무관하게 늘 등장한다(games/actions 에서 붙인다) */
+.page-enter .enter-late {
+  animation: settle var(--duration-base) var(--ease-standard) both;
+  animation-delay: var(--stagger, 0ms);
+}
 
 /* 마감 임박 표시등. 값이 0 이면 붙이지 않는다 — 알릴 게 없는데 깜빡이면 소음이다 */
 .pulse-dot {

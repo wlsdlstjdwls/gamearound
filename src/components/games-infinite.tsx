@@ -12,6 +12,7 @@ import { Button } from "@/components/ui/button";
 import { SpinnerIcon } from "@/components/ui/icons";
 import { loadMoreGames } from "@/app/(public)/games/actions";
 import { GAMES_GRID_CLASS } from "@/lib/games/grid";
+import { markPageEntered } from "@/lib/motion";
 import { GAMES_LIST_MESSAGES } from "@/lib/games/messages";
 import type { GameListFilter } from "@/server/services/games";
 
@@ -43,6 +44,9 @@ export function GamesInfinite({
   const loadMore = useCallback(() => {
     if (busy.current || !hasMore) return;
     busy.current = true;
+    // 이어 붙이기가 시작되면 이 화면의 등장은 끝난 것으로 본다. 표식이 없으면 다음 장이 붙는 동안
+    // React 가 첫 장을 다시 그릴 때 카드 전체가 다시 페이드해 목록이 통째로 깜빡인다(lib/motion)
+    markPageEntered(sentinel.current);
     setFailed(false);
     startTransition(async () => {
       try {

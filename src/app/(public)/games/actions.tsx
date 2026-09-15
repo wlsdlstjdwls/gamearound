@@ -19,8 +19,10 @@ export type MorePage = {
 export async function loadMoreGames(filter: GameListFilter, page: number): Promise<MorePage> {
   const result = await listGames({ ...filter, page });
   return {
+    // 첫 장(page.tsx)과 달리 `.enter-late` 를 쓴다 — 첫 등장이 끝난 셸에서는 `.enter-item` 이 조용해지고,
+    // 방금 만들어 붙이는 이 카드들만 등장해야 한다(lib/motion 의 markPageEntered, globals.css)
     nodes: result.items.map((g, i) => (
-      <li key={g.slug} className="enter-item" style={stagger(i)}>
+      <li key={g.slug} className="enter-late" style={stagger(i)}>
         <GameCard game={g} variant={filter.sort === "release" ? "release" : "discount"} />
       </li>
     )),
