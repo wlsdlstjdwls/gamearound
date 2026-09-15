@@ -243,9 +243,18 @@ function xboxUserScore(product: { MarketProperties: Array<{ UsageData: Array<{ A
   return value === null ? null : { value, kind: "star_average", count };
 }
 
-/** 이 ID 의 상품 원본. 없으면 첫 상품(단건 조회 응답용 관용) */
+/**
+ * 이 ID 의 상품 원본. 대소문자를 가리지 않고 찾는다 — 스토어는 ProductId 를 대문자로 돌려주는데
+ * 우리가 들고 있는 SKU 는 소문자일 수 있다(psprices 병합분이 전부 소문자다).
+ *
+ * 못 찾으면 없는 것으로 본다. 예전에는 `?? products[0]` 으로 떨어졌고 그 관용이 배치 조회에서
+ * 사고를 냈다 — 소문자 ID 20개를 한 번에 물으면 하나도 일치하지 않아 **요청한 전원이 첫 상품의
+ * 값(제목, 커버, ProductKind)을 받았다**(2026-09-16 실측). 다른 상품을 이 상품이라고 말하느니
+ * 없다고 하는 편이 안전하다. 배치에서 못 찾은 ID 는 그 건만 실패한다(fetchMany 주석 참고).
+ */
 function pickRawProduct(products: unknown[], productId: string): unknown {
-  return products.find((p) => productIdSchema.safeParse(p).data?.ProductId === productId) ?? products[0];
+  const want = productId.toLowerCase();
+  return products.find((p) => productIdSchema.safeParse(p).data?.ProductId?.toLowerCase() === want);
 }
 
 export function parseXboxProduct(raw: unknown, productId: string, rawEn?: unknown): StoreSnapshot {

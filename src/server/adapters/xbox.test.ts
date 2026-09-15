@@ -138,6 +138,27 @@ describe("parseXboxProduct", () => {
   it("형식 오류는 AdapterError", () => {
     expect(() => parseXboxProduct({ nope: true }, "X")).toThrowError(AdapterError);
   });
+
+  it("소문자 ID 로도 제 상품을 찾는다 — 스토어는 ProductId 를 대문자로 돌려준다", () => {
+    const raw = {
+      Products: [
+        { ProductId: "AAAA1111AAAA", LocalizedProperties: [{ ProductTitle: "First" }] },
+        { ProductId: "BBBB2222BBBB", LocalizedProperties: [{ ProductTitle: "Second" }], ProductKind: "Durable" },
+      ],
+    };
+    const snap = parseXboxProduct(raw, "bbbb2222bbbb");
+    expect(snap.storeExternalId).toBe("BBBB2222BBBB");
+    expect(snap.contentType).toBe("dlc");
+  });
+
+  it("응답에 없는 ID 는 첫 상품으로 때우지 않고 없음으로 본다", () => {
+    // 예전에는 products[0] 으로 떨어졌다. 배치 조회에서 요청한 전원이 첫 상품의 제목, 커버,
+    // ProductKind 를 받아 가는 사고가 났다(2026-09-16). 남의 상품을 주느니 없다고 해야 한다.
+    const raw = {
+      Products: [{ ProductId: "AAAA1111AAAA", LocalizedProperties: [{ ProductTitle: "First" }], ProductKind: "Durable" }],
+    };
+    expect(() => parseXboxProduct(raw, "ZZZZ9999ZZZZ")).toThrowError(AdapterError);
+  });
 });
 
 describe("parseXboxAutosuggest", () => {
