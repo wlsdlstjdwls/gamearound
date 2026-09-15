@@ -84,6 +84,9 @@ route(page/action/api)  →  server/services  →  server/adapters | server/db
 - IP 대역 때문에 Actions 러너에서만 막히는 소스(닌텐도, Epic)는 **서울 리전 Vercel 크론**이 맡는다 —
   `vercel.json` 의 `/api/cron/crawl`, 몫과 주기의 근거는 `sync/constants` 의 `CRON_SOURCES`, `CRON_PLAN`.
   그 소스를 Actions 워크플로에 다시 넣지 않는다(빈손으로 돌며 러너 분만 먹는다).
+  **리전은 함수마다 다르다** — `vercel.json` 의 `regions` 는 `iad1` 이다(Neon 이 us-east-1 이라 화면 질의 왕복이 220ms 에서 한 자릿수로 준다).
+  크롤 경로(`src/app/api/cron/crawl/**`, `.../debug/reachability/**`)만 `functions` 로 `icn1` 을 덮어쓴다 — 그 소스들은 서울 IP 여야 열리고,
+  한국 스토어 가격도 나가는 IP 를 본다. 이 `functions` 블록을 지우면 수집이 조용히 미국 값을 긁거나 차단당한다.
   대비책은 둘이다: `CRAWL_PROXY_URL`(`viaProxy: true` 를 선언한 소스만 프록시로 나간다)과
   가정용 회선의 `pnpm crawl:local`(`LOCAL_ONLY_SOURCES`). 쓰이지 않는다고 지우지 않는다.
 - Node 의 TLS 지문 자체가 막히면 `createHttpClient({ transport: "curl" })` 를 쓴다. 그 경로는 헤더를 선언 순서, 대소문자 그대로 보낸다 — 순서가 지문이 되는 곳이 있다.
