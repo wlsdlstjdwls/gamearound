@@ -2,25 +2,13 @@
 import { unstable_cache } from "next/cache";
 import { and, desc, eq, inArray, isNull } from "drizzle-orm";
 import { getDb } from "@/server/db/client";
-import { gameSubscriptions, games, news, subscriptions as subscriptionsTable, HOME_REGION, type Platform, type Region } from "@/server/db/schema";
+import { gameSubscriptions, games, news, subscriptions as subscriptionsTable } from "@/server/db/schema";
 import type { GameDetail, SubscriptionDto } from "./dto";
-import { iso, toPlatformDto } from "./mappers";
+import { byRegionThenPlatform, iso, toPlatformDto } from "./mappers";
 
 const DETAIL_NEWS_LIMIT = 5;
 /** 상세에 한 번에 띄울 DLC 수. 심즈류는 수십 개라 상한이 없으면 화면이 DLC 목록으로 덮인다 */
 const DETAIL_DLC_LIMIT = 30;
-
-/** 플랫폼 표시 순서 — 상세의 가격 표와 DLC 목록이 같은 순서를 써야 눈이 따라간다 */
-const PLATFORM_ORDER: Platform[] = ["steam", "epic", "gog", "ps5", "ps4", "xbox", "switch", "switch2"];
-/** 한국 스토어 행이 늘 먼저다 — 기준 통화의 가격이 대표가 돼야 한다 */
-function byRegionThenPlatform(a: { platform: Platform; region: Region }, b: { platform: Platform; region: Region }): number {
-  if (a.region !== b.region) return a.region === HOME_REGION ? -1 : 1;
-  return byPlatformOrder(a, b);
-}
-
-function byPlatformOrder(a: { platform: Platform }, b: { platform: Platform }): number {
-  return PLATFORM_ORDER.indexOf(a.platform) - PLATFORM_ORDER.indexOf(b.platform);
-}
 
 /** 지금 구독으로 즐길 수 있는 플랫폼들. removed_at 이 찍힌 이력 행은 제외한다 */
 async function activeSubscriptions(gamePlatformIds: string[]): Promise<SubscriptionDto[]> {

@@ -5,8 +5,9 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { CoverImage } from "@/components/game-card";
 import { EmptyState } from "@/components/empty-state";
+import { PlatformBadges } from "@/components/platform-badges";
 import { Card, Page } from "@/components/ui/page";
-import { formatDate, formatDiscount, PLATFORM_LABEL } from "@/lib/format";
+import { formatDate, formatDiscount } from "@/lib/format";
 import { nextCollectTimeText } from "@/lib/freshness";
 import { stagger } from "@/lib/motion";
 import { ROUTES } from "@/lib/routes";
@@ -126,10 +127,9 @@ export default async function SearchPage({ searchParams }: Props) {
                           {g.titleKo ? `${g.titleEn} | ` : ""}
                           {best?.releaseDate ? `${formatDate(best.releaseDate)} 출시` : "출시일 미상"}
                         </p>
-                        <p className="mt-0.5 text-[12px] text-mut">
-                          {best ? PLATFORM_LABEL[best.platform] ?? best.platform : "플랫폼 정보 없음"}
-                          {g.platformCount > 1 && ` 외 ${g.platformCount - 1}개 플랫폼`}
-                        </p>
+                        <div className="mt-1.5">
+                          <PlatformBadges platforms={g.platforms} />
+                        </div>
                       </div>
                       <div className="ml-auto text-right">
                         <p className="text-[17px] font-bold tracking-[-0.02em] text-ink">{formatPrice(best?.currentPrice, best?.currency)}</p>

@@ -50,6 +50,16 @@ export const PLATFORM_LABEL: Record<string, string> = {
   gog: "GOG",
 };
 
+/**
+ * 화면에 그대로 쓸 스토어 이름. 기준 지역이 아니면 나라를 붙인다("Switch 일본") —
+ * 가격 탭, 패치 기록이 같은 이름으로 같은 스토어를 불러야 사용자가 둘을 잇는다.
+ */
+export function platformLabel(p: { platform: string; region: Region }): string {
+  const base = PLATFORM_LABEL[p.platform] ?? p.platform;
+  const suffix = REGION_SUFFIX[p.region];
+  return suffix ? `${base} ${suffix}` : base;
+}
+
 const MS_PER_DAY = 24 * 60 * 60 * 1000;
 
 /** "9월 16일 24:00" 처럼 짧은 날짜+시각 (KST) */

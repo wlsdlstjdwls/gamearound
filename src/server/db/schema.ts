@@ -198,6 +198,12 @@ export const gamePlatforms = pgTable("game_platforms", {
    * 지금은 닌텐도만 채운다. 다른 스토어가 같은 성격의 코드를 주면 그때 같이 쓴다.
    */
   titleCode: text("title_code"),
+  /**
+   * 이 행의 패치 기록을 스토어에 마지막으로 물어본 시각.
+   * dlc_listed_at 과 같은 성격이다 — 패치 목록도 게임 1개가 요청 1회라(steam ISteamNews, gog changelog)
+   * 매 실행 전부 다시 묻지 않도록 언제 물어봤는지를 남긴다(sync/patch-list 의 PATCH_LIST_REFRESH_DAYS).
+   */
+  patchListedAt: timestamp("patch_listed_at", { withTimezone: true }),
 }, (t) => [
   uniqueIndex("gp_game_platform_region_uq").on(t.gameId, t.platform, t.region),
   index("gp_title_code_idx").on(t.titleCode),
@@ -273,6 +279,37 @@ export const news = pgTable("news", {
   thumbnailUrl: text("thumbnail_url"),
   publishedAt: timestamp("published_at", { withTimezone: true }).notNull(),
 }, (t) => [index("news_game_pub_idx").on(t.gameId, t.publishedAt)]);
+
+/**
+ * 패치 기록 — 설계서 §3.3 의 patch_notes(확장1).
+ *
+ * body_md 를 두지 않는다(§10 저작권). 뉴스와 같은 규칙이다 — 제목, 링크, 게시 시각까지만 남기고
+ * 본문은 스토어 페이지로 보낸다. 이 테이블이 대답하는 질문은 "언제, 얼마나 자주 고쳤나" 이지
+ * "무엇을 고쳤나" 가 아니다. 후자를 우리가 보관하면 그건 남의 글을 옮겨 적는 일이다.
+ *
+ * games 가 아니라 game_platforms 에 매다는 이유: 같은 게임이라도 스토어마다 패치 시점이 다르다.
+ * "플랫폼별 패치 속도 비교"(기획서 v2 2번)는 이 축이 없으면 아예 계산되지 않는다.
+ */
+export const patchNotes = pgTable("patch_notes", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  gamePlatformId: uuid("game_platform_id").references(() => gamePlatforms.id, { onDelete: "cascade" }).notNull(),
+  /** 이 기록을 준 스토어. 한 게임이 두 스토어에 다 있으면 기록도 스토어 수만큼 따로 쌓인다 */
+  source: sourceEnum("source").notNull(),
+  /**
+   * 스토어 안에서 이 패치를 가리키는 값. 재수집할 때 같은 패치를 두 번 넣지 않기 위한 키다.
+   * steam = 공지 gid, gog = 게시일(+버전) — 변경 기록이 글 단위 id 를 주지 않아 날짜로 만든다.
+   */
+  externalId: text("external_id").notNull(),
+  /** 스토어가 말한 버전. 제목에서 읽어낸 값이라 안 적는 게시물에서는 null 이다 */
+  version: text("version"),
+  title: text("title").notNull(),
+  /** 본문이 있는 스토어 페이지. 글 단위 주소가 없는 소스(gog 변경 기록)는 null */
+  url: text("url"),
+  publishedAt: timestamp("published_at", { withTimezone: true }).notNull(),
+}, (t) => [
+  uniqueIndex("patch_notes_platform_external_uq").on(t.gamePlatformId, t.externalId),
+  index("patch_notes_platform_pub_idx").on(t.gamePlatformId, t.publishedAt),
+]);
 
 // 자체 인증(§6 개정 2026-09-11, 외부 인증 SaaS 미사용). email은 소문자 정규화 후 저장(unique).
 // passwordHash는 nullable — 확장 지점: SNS/OAuth 계정은 비밀번호 없이 가입 가능. provider 연결은 별도 auth_accounts 테이블로 추가 예정.
@@ -454,6 +491,7 @@ export const gamePlatformsRelations = relations(gamePlatforms, ({ one, many }) =
   game: one(games, { fields: [gamePlatforms.gameId], references: [games.id] }),
   snapshots: many(priceSnapshots),
   subscriptions: many(gameSubscriptions),
+  patchNotes: many(patchNotes),
 }));
 export const companiesRelations = relations(companies, ({ many }) => ({
   games: many(gameCompanies),
@@ -489,6 +527,9 @@ export const gameGenresRelations = relations(gameGenres, ({ one }) => ({
 export const genresRelations = relations(genres, ({ many }) => ({ games: many(gameGenres) }));
 export const newsRelations = relations(news, ({ one }) => ({
   game: one(games, { fields: [news.gameId], references: [games.id] }),
+}));
+export const patchNotesRelations = relations(patchNotes, ({ one }) => ({
+  gamePlatform: one(gamePlatforms, { fields: [patchNotes.gamePlatformId], references: [gamePlatforms.id] }),
 }));
 export const playtimesRelations = relations(playtimes, ({ one }) => ({
   game: one(games, { fields: [playtimes.gameId], references: [games.id] }),

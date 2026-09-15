@@ -23,6 +23,28 @@ export const STEAM_APP_TYPE_DLC = 4;
 export const STEAM_ASSET_BASE_URL = "https://shared.akamai.steamstatic.com/store_item_assets";
 
 /**
+ * 패치 기록 — 공개 뉴스 API. 배치가 없어 게임 1개가 요청 1회다(빈도는 sync/patch-list 가 막는다).
+ * 공지 중 patchnotes 태그만 서버가 걸러 준다(2026-09-15 실측: CS2 251건, 엘든 링 28건).
+ */
+export const STEAM_NEWS_URL = "https://api.steampowered.com/ISteamNews/GetNewsForApp/v2/";
+export const STEAM_NEWS_FEED = "steam_community_announcements";
+export const STEAM_NEWS_TAG = "patchnotes";
+/**
+ * 한 게임에서 받아올 최근 패치 수. 30 이면 자주 고치는 게임(CS2 는 한 해 수십 건)도
+ * 재조회 주기(PATCH_LIST_REFRESH_DAYS) 사이에 빠지는 것이 없다.
+ */
+export const STEAM_NEWS_COUNT = 30;
+/** 본문을 안 쓰므로 1글자로 잘라 받는다(§10 저작권) — 응답 크기도 같이 줄어든다 */
+export const STEAM_NEWS_MAXLENGTH = 1;
+/**
+ * 글 단위 스토어 주소. 응답의 url 은 akamaihd 외부 리다이렉트라 그대로 쓰지 않는다 —
+ * 이 형태가 스토어 안에서 열린다(2026-09-15 확인: 200).
+ */
+export function steamNewsViewUrl(appid: string, gid: string): string {
+  return `https://store.steampowered.com/news/app/${appid}/view/${gid}`;
+}
+
+/**
  * Steam 태그 id → 장르명. GetItems 는 appdetails 의 genres 대신 tagid 만 준다.
  * 태그 전체(446개)를 장르로 쓰면 장르 어휘가 폭발하므로 scripts/seed.ts 의 DEFAULT_GENRES 12종만 매핑한다.
  * id 는 IStoreService/GetTagList/v1?language=koreana 로 확인 (2026-09-14).

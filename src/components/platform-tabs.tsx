@@ -5,7 +5,7 @@
 // 가격이 최신일 때 그 문구는 알려 주는 것이 없고, 오래됐을 때는 아래 안내가 같은 말을 한 번 더 했다.
 import { formatPrice } from "@/lib/currency";
 import { useId, useState } from "react";
-import { formatDate, formatDiscount, formatShortDateTime, PLATFORM_LABEL, REGION_SUFFIX } from "@/lib/format";
+import { formatDate, formatDiscount, formatShortDateTime, platformLabel } from "@/lib/format";
 import type { Freshness } from "@/lib/freshness";
 import type { PlatformDto } from "@/server/services/games";
 import { StalenessNote } from "@/components/freshness-badge";
@@ -29,12 +29,6 @@ function MetaCell({ label, children }: { label: string; children: React.ReactNod
  */
 function tabKey(p: PlatformDto): string {
   return `${p.platform}-${p.region}`;
-}
-
-function tabLabel(p: PlatformDto): string {
-  const base = PLATFORM_LABEL[p.platform] ?? p.platform;
-  const suffix = REGION_SUFFIX[p.region];
-  return suffix ? `${base} ${suffix}` : base;
 }
 
 export function PlatformTabs({ platforms }: { platforms: PlatformTabItem[] }) {
@@ -75,7 +69,7 @@ export function PlatformTabs({ platforms }: { platforms: PlatformTabItem[] }) {
                 selected ? "font-semibold text-ink" : "text-dim hover:text-ink"
               }`}
             >
-              {tabLabel(p)}
+              {platformLabel(p)}
               {p.discountPct && p.discountPct > 0 ? (
                 <span className="ml-1 text-[11.5px] text-dim">{formatDiscount(p.discountPct)}</span>
               ) : null}
@@ -125,7 +119,7 @@ export function PlatformTabs({ platforms }: { platforms: PlatformTabItem[] }) {
               isStale ? "bg-ink text-on-ink hover:bg-ink-2" : "border border-line-strong bg-surface text-ink hover:border-ink"
             }`}
           >
-            {tabLabel(current)} 스토어에서 보기
+            {platformLabel(current)} 스토어에서 보기
             <span className="sr-only"> (새 창에서 열림)</span>
           </a>
         ) : (

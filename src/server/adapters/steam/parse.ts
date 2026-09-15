@@ -4,3 +4,4 @@ export * from "./parse-app-details";
 export * from "./parse-discount";
 export * from "./parse-store-items";
 export * from "./parse-discovery";
+export * from "./parse-news";

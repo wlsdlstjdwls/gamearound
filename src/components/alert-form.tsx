@@ -6,13 +6,14 @@ import { useFormStatus } from "react-dom";
 import { createAlertAction, deleteAlertAction, toggleAlertAction, type ActionState } from "@/app/(user)/alerts/actions";
 import { FadeImage } from "@/components/ui/fade-image";
 import { PLATFORM_LABEL } from "@/lib/format";
+import { PLATFORM_ORDER } from "@/lib/platform";
 import { Button } from "@/components/ui/button";
 import { ChipButton } from "@/components/ui/chip";
 import { Clamp } from "@/components/ui/tooltip";
 
 export const PLATFORM_OPTIONS: { value: string; label: string }[] = [
   { value: "all", label: "전체 플랫폼" },
-  ...(["steam", "epic", "gog", "ps5", "ps4", "xbox", "switch", "switch2"] as const).map((p) => ({ value: p, label: PLATFORM_LABEL[p] })),
+  ...PLATFORM_ORDER.map((p) => ({ value: p, label: PLATFORM_LABEL[p] })),
 ];
 
 const DEFAULT_MIN_DISCOUNT = 50;

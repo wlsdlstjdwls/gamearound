@@ -1,11 +1,12 @@
 // /games 목록 — 필터, 정렬, 페이지네이션과 필터 선택지(facets).
 import { unstable_cache } from "next/cache";
-import { and, asc, eq, sql } from "drizzle-orm";
+import { and, asc, eq, inArray, sql } from "drizzle-orm";
 import { DISPLAY_CURRENCY } from "@/lib/currency";
 import { getDb } from "@/server/db/client";
 import { gameGenres, gamePlatforms, games, genres, HOME_REGION, type Platform } from "@/server/db/schema";
 import { normalizeForSearch } from "@/lib/slug";
 import { DEFAULT_GAME_SORT, type GamesQuery } from "@/lib/games-query";
+import { platformsOf, type PlatformFamily } from "@/lib/platform";
 import type { GameSummary } from "./dto";
 import { attachBestPrice } from "./mappers";
 import { allOf, byCompanySlug, inAnySubscription, mainGamesOnly } from "./filters";
@@ -14,8 +15,12 @@ import { LIST_REVALIDATE_SECONDS } from "@/lib/cache";
 
 export const GAMES_PAGE_SIZE = 36;
 
-/** 정렬 키, 쿼리스트링 변환은 lib/games-query (순수 유틸)에 있다 — 여기서는 조회만 한다 */
-export type GameListFilter = Omit<GamesQuery, "platform"> & { platform?: Platform };
+/**
+ * 정렬 키, 쿼리스트링 변환은 lib/games-query (순수 유틸)에 있다 — 여기서는 조회만 한다.
+ * platform 은 스토어 하나("steam") 또는 갈래 전체("pc") 다. 둘을 같은 칸에 두는 이유는
+ * 주소가 하나만 남기 때문이다 — 갈래와 스토어를 따로 실으면 서로 어긋난 조합(pc + ps5)이 생긴다.
+ */
+export type GameListFilter = Omit<GamesQuery, "platform"> & { platform?: Platform | PlatformFamily };
 
 export type GameListResult = {
   items: GameSummary[];
@@ -36,7 +41,7 @@ export type GameFacets = {
  * 게임별 플랫폼 집계 서브쿼리. platform 필터가 있으면 그 플랫폼만 집계하므로
  * inner join 하는 것만으로 "그 플랫폼을 가진 게임"으로 좁혀진다.
  */
-function platformAgg(platform?: Platform) {
+function platformAgg(platform?: Platform | PlatformFamily) {
   const db = getDb();
   return db
     .select({
@@ -49,7 +54,7 @@ function platformAgg(platform?: Platform) {
     .from(gamePlatforms)
     // 목록의 최저가, 할인, 발매일은 기준 지역(한국) 행만 본다. 다른 나라 가격을 섞으면
     // 카드의 할인 배지가 한국에서 살 수 없는 할인을 가리킨다 — 상세 화면에서만 참고로 보여 준다
-    .where(and(eq(gamePlatforms.region, HOME_REGION), platform ? eq(gamePlatforms.platform, platform) : undefined))
+    .where(and(eq(gamePlatforms.region, HOME_REGION), platform ? inArray(gamePlatforms.platform, platformsOf(platform)) : undefined))
     .groupBy(gamePlatforms.gameId)
     .as("agg");
 }

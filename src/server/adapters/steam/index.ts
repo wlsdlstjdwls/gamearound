@@ -1,6 +1,6 @@
 // Steam 스토어 어댑터 — 설계서 §4.1/§4.2. 기준 소스(공식 API). 가져오기만 하고 DB 반영은 sync/ 가 맡는다.
 // 이 파일은 '어떤 요청을 어떤 순서로 보낼지'만 담당한다 — 응답 해석은 parse.ts, 형식 검증은 schemas.ts.
-import { type SearchCandidate, type StoreAdapter, type StoreSnapshot } from "../types";
+import { type PatchNote, type SearchCandidate, type StoreAdapter, type StoreSnapshot } from "../types";
 import { createHttpClient } from "../http";
 import { sleep } from "@/lib/async";
 import { errorMessage } from "@/lib/errors";
@@ -9,6 +9,11 @@ import {
   STEAM_APPDETAILS_URL,
   STEAM_FEATURED_URL,
   STEAM_GETITEMS_BATCH,
+  STEAM_NEWS_COUNT,
+  STEAM_NEWS_FEED,
+  STEAM_NEWS_MAXLENGTH,
+  STEAM_NEWS_TAG,
+  STEAM_NEWS_URL,
   STEAM_STOREITEMS_URL,
   STEAM_STORESEARCH_URL,
   STEAM_TOPSELLERS_URL,
@@ -22,6 +27,7 @@ import {
   parseFeaturedCandidates,
   parseStoreItemDiscount,
   parseStoreItems,
+  parseSteamPatchNotes,
   parseStoreSearch,
   parseTopSellerCandidates,
 } from "./parse";
@@ -52,6 +58,17 @@ export function chunk<T>(items: T[], size: number): T[][] {
   const out: T[][] = [];
   for (let i = 0; i < items.length; i += size) out.push(items.slice(i, i + size));
   return out;
+}
+
+/** 패치 공지 목록 주소. 태그 필터는 서버가 걸고, 본문은 maxlength 로 잘라 받는다 */
+function newsUrl(appid: string): string {
+  const u = new URL(STEAM_NEWS_URL);
+  u.searchParams.set("appid", appid);
+  u.searchParams.set("count", String(STEAM_NEWS_COUNT));
+  u.searchParams.set("maxlength", String(STEAM_NEWS_MAXLENGTH));
+  u.searchParams.set("feeds", STEAM_NEWS_FEED);
+  u.searchParams.set("tags", STEAM_NEWS_TAG);
+  return u.toString();
 }
 
 function appDetailsUrl(appid: string, lang: "koreana" | "english"): string {
@@ -142,6 +159,14 @@ export const steamAdapter: StoreAdapter = {
    */
   async listDlcIds(appid: string): Promise<string[]> {
     return parseDlcIds(await http.json(appDetailsUrl(appid, "english")), appid);
+  },
+
+  /**
+   * 이 게임의 패치 공지. 배치가 없어 게임 1개가 요청 1회다 — listDlcIds 와 같은 성격이라
+   * 빈도와 건수는 sync/patch-list 가 막는다.
+   */
+  async listPatchNotes(appid: string): Promise<PatchNote[]> {
+    return parseSteamPatchNotes(await http.json(newsUrl(appid)), appid);
   },
 
   batchSize: STEAM_GETITEMS_BATCH,

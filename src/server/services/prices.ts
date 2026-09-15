@@ -3,6 +3,7 @@ import { unstable_cache } from "next/cache";
 import { and, eq, gte, inArray, lt, sql } from "drizzle-orm";
 import { getDb } from "@/server/db/client";
 import { gamePlatforms, games, news, priceSnapshots, syncLogs, type Currency, type Platform } from "@/server/db/schema";
+import { PLATFORM_ORDER } from "@/lib/platform";
 
 export type PricePoint = { t: string; price: number; discountPct: number; discountName: string | null };
 /** 플랫폼별 시계열 + 현재 상태(정가 기준선, 진행 중 할인 표시에 쓴다) */
@@ -19,8 +20,6 @@ export type PriceSeries = {
   discountName: string | null;
   storeUrl: string | null;
 };
-
-const PLATFORM_ORDER: Platform[] = ["steam", "epic", "gog", "ps5", "ps4", "xbox", "switch", "switch2"];
 
 async function getPriceHistoryRaw(slug: string, days: number): Promise<PriceSeries[]> {
   const db = getDb();

@@ -2,8 +2,9 @@
 import { formatPrice } from "@/lib/currency";
 import Image from "next/image";
 import Link from "next/link";
-import { formatDate, formatDiscount, PLATFORM_LABEL } from "@/lib/format";
+import { formatDate, formatDiscount } from "@/lib/format";
 import type { GameSummary } from "@/server/services/games";
+import { PlatformBadges } from "@/components/platform-badges";
 import { SaleBadge } from "@/components/sale-badge";
 import { FadeImage } from "@/components/ui/fade-image";
 import { cardClass } from "@/components/ui/page";
@@ -48,14 +49,6 @@ export function GameCard({ game, variant = "discount" }: { game: GameSummary; va
   const title = game.titleKo ?? game.titleEn;
   const best = game.best;
   const hasDiscount = Boolean(best?.discountPct && best.discountPct > 0);
-  const platformText = best ? PLATFORM_LABEL[best.platform] ?? best.platform : "플랫폼 정보 없음";
-  // 한 줄로 합쳐 둔다 — 잘렸을 때 툴팁에 그대로 쓸 문구가 필요하다
-  const metaText = [
-    platformText + (game.platformCount > 1 ? ` 외 ${game.platformCount - 1}` : ""),
-    game.titleKo ? game.titleEn : null,
-  ]
-    .filter(Boolean)
-    .join(" | ");
 
   return (
     <Link
@@ -76,7 +69,8 @@ export function GameCard({ game, variant = "discount" }: { game: GameSummary; va
         <Clamp lines={2} className="text-[14.5px] font-bold leading-snug tracking-[-0.01em] text-ink">
           {title}
         </Clamp>
-        <Clamp className="text-[11.5px] text-dim">{metaText}</Clamp>
+        {game.titleKo && <Clamp className="text-[11.5px] text-dim">{game.titleEn}</Clamp>}
+        <PlatformBadges platforms={game.platforms} />
 
         {variant === "release" && best?.releaseDate ? (
           <p className="mt-auto text-[13px] text-mut">{formatDate(best.releaseDate)} 출시</p>

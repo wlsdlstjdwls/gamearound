@@ -134,6 +134,13 @@
       "when": 1789428729710,
       "tag": "0018_abandoned_mad_thinker",
       "breakpoints": true
+    },
+    {
+      "idx": 19,
+      "version": "7",
+      "when": 1789431011510,
+      "tag": "0019_tiresome_ender_wiggin",
+      "breakpoints": true
     }
   ]
 }

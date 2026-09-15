@@ -1,0 +1,72 @@
+{
+  "appnews": {
+    "appid": 1245620,
+    "newsitems": [
+      {
+        "gid": "1818752592134836",
+        "title": "Release Note for 2025/12/16",
+        "url": "https://steamstore-a.akamaihd.net/news/externalpost/steam_community_announcements/1818752592134836",
+        "is_external_url": true,
+        "author": "katsuki_honjo",
+        "contents": "T...",
+        "feedlabel": "Community Announcements",
+        "date": 1765868757,
+        "feedname": "steam_community_announcements",
+        "feed_type": 1,
+        "appid": 1245620,
+        "tags": [
+          "patchnotes"
+        ]
+      },
+      {
+        "gid": "1808601382443022",
+        "title": "ELDEN RING - Patch Notes Version 1.16.1",
+        "url": "https://steamstore-a.akamaihd.net/news/externalpost/steam_community_announcements/1808601382443022",
+        "is_external_url": true,
+        "author": "[BNE]plt",
+        "contents": "B...",
+        "feedlabel": "Community Announcements",
+        "date": 1755778145,
+        "feedname": "steam_community_announcements",
+        "feed_type": 1,
+        "appid": 1245620,
+        "tags": [
+          "patchnotes"
+        ]
+      },
+      {
+        "gid": "6212244583175036162",
+        "title": "Patch Notes Version 1.16",
+        "url": "https://steamstore-a.akamaihd.net/news/externalpost/steam_community_announcements/6212244583175036162",
+        "is_external_url": true,
+        "author": "Will",
+        "contents": "B...",
+        "feedlabel": "Community Announcements",
+        "date": 1729150857,
+        "feedname": "steam_community_announcements",
+        "feed_type": 1,
+        "appid": 1245620,
+        "tags": [
+          "patchnotes"
+        ]
+      },
+      {
+        "gid": "6350729003489816555",
+        "title": "Patch Notes Version 1.15",
+        "url": "https://steamstore-a.akamaihd.net/news/externalpost/steam_community_announcements/6350729003489816555",
+        "is_external_url": true,
+        "author": "Will",
+        "contents": "P...",
+        "feedlabel": "Community Announcements",
+        "date": 1727857250,
+        "feedname": "steam_community_announcements",
+        "feed_type": 1,
+        "appid": 1245620,
+        "tags": [
+          "patchnotes"
+        ]
+      }
+    ],
+    "count": 28
+  }
+}

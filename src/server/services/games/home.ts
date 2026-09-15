@@ -4,7 +4,7 @@ import { and, desc, eq, gt, isNotNull, sql } from "drizzle-orm";
 import { getDb } from "@/server/db/client";
 import { gamePlatforms, games, news } from "@/server/db/schema";
 import type { HomeData } from "./dto";
-import { groupSummaries } from "./mappers";
+import { fillPlatforms, groupSummaries } from "./mappers";
 import { mainGamesOnly } from "./filters";
 import { LIST_REVALIDATE_SECONDS } from "@/lib/cache";
 
@@ -39,9 +39,15 @@ async function getHomeDataRaw(): Promise<HomeData> {
     .orderBy(desc(news.publishedAt))
     .limit(HOME_NEWS_LIMIT);
 
+  // 잘라 온 조인 행만으로는 배지가 빠진다 — 자른 뒤 게임 단위로 한 번 더 채운다(fillPlatforms 주석)
+  const [discounts, recentReleases] = await Promise.all([
+    fillPlatforms(groupSummaries(discountRows, HOME_LIMIT)),
+    fillPlatforms(groupSummaries(releaseRows, HOME_LIMIT)),
+  ]);
+
   return {
-    discounts: groupSummaries(discountRows, HOME_LIMIT),
-    recentReleases: groupSummaries(releaseRows, HOME_LIMIT),
+    discounts,
+    recentReleases,
     latestNews: newsRows.map(({ n, slug, titleKo, titleEn }) => ({
       id: n.id,
       title: n.title,

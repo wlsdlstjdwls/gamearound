@@ -40,6 +40,34 @@ export type NewsDto = {
   game?: { slug: string; title: string } | null;
 };
 
+/** 패치 기록 한 건. 본문은 담지 않는다 — 이유는 schema 의 patch_notes 주석(§10 저작권) */
+export type PatchNoteDto = {
+  id: string;
+  /** 제목에서 읽어낸 버전. 버전을 안 적는 게시물이 흔해 null 이 기본이다 */
+  version: string | null;
+  title: string;
+  /** 본문이 있는 스토어 페이지. 글 단위 주소가 없는 소스(GOG)는 null 이고 화면은 링크 없이 보여 준다 */
+  url: string | null;
+  publishedAt: string;
+};
+
+/**
+ * 한 플랫폼의 패치 기록 묶음. "플랫폼별 패치 속도 비교"가 쓰는 모양이다.
+ *
+ * 속도 값은 전부 **우리가 모은 범위 안에서만** 참이다. 스토어가 돌려주는 최근 몇십 건만 받고
+ * 수집을 시작하기 전의 패치는 아예 모른다 — 화면이 그 사실을 함께 말해야 한다.
+ */
+export type PlatformPatchesDto = {
+  platform: Platform;
+  region: Region;
+  notes: PatchNoteDto[];
+  /** 기록된 패치 사이 평균 간격(일). 기록이 2건 미만이면 계산할 수 없어 null */
+  averageIntervalDays: number | null;
+  /** 가장 최근 패치 시각 */
+  latestAt: string | null;
+  count: number;
+};
+
 export type PlaytimeDto = {
   mainStoryHours: string | null;
   mainExtraHours: string | null;
@@ -159,7 +187,11 @@ export type GameSummary = {
     discountName: string | null;
     releaseDate: string | null;
   } | null;
-  platformCount: number;
+  /**
+   * 이 게임이 붙어 있는 플랫폼 전부(나라 구분 없이 기기 단위, PLATFORM_ORDER 순).
+   * 카드가 배지로 그대로 펴서 보여 준다 — "외 2개" 는 무엇이 있는지 말해 주지 않아 다시 눌러 봐야 했다.
+   */
+  platforms: Platform[];
 };
 
 export type HomeData = {

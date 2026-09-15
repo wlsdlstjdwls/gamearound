@@ -17,7 +17,8 @@
     "icons": "tsx scripts/generate-icons.ts",
     "seed": "tsx scripts/seed.ts",
     "test": "vitest run",
-    "e2e:auth": "node scripts/e2e-auth.mjs"
+    "e2e:auth": "node scripts/e2e-auth.mjs",
+    "crawl:seed": "tsx scripts/crawl-local.ts --seed"
   },
   "dependencies": {
     "@neondatabase/serverless": "^1.1.0",

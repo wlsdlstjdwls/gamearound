@@ -8,3 +8,4 @@ export { searchGames } from "./search";
 export { GAMES_PAGE_SIZE, getGameFacets, listGames } from "./list";
 export type { GameFacets, GameListFilter, GameListResult } from "./list";
 export { getGameBySlug, getGameBySlugCached } from "./detail";
+export { averageIntervalDays, getGamePatches, getGamePatchesCached, latestPatches } from "./patches";

@@ -1,8 +1,9 @@
 // DB 행 → DTO 변환. 조회 로직(어떤 행을 가져올지)과 표현 로직(어떤 모양으로 줄지)을 갈라 둔다.
-import { inArray } from "drizzle-orm";
+import { eq, inArray } from "drizzle-orm";
 import { getDb } from "@/server/db/client";
-import { gamePlatforms, games } from "@/server/db/schema";
+import { gamePlatforms, games, HOME_REGION, type Platform, type Region } from "@/server/db/schema";
 import { cheapestOf } from "@/lib/currency";
+import { PLATFORM_ORDER } from "@/lib/platform";
 import type { GameDetail, GameSummary, PlatformDto, PublicGameDto } from "./dto";
 
 export const iso = (d: Date | string | null | undefined): string | null => {
@@ -14,6 +15,16 @@ export const iso = (d: Date | string | null | undefined): string | null => {
 /** 표시 제목: 한글 우선 */
 export function displayTitle(g: { titleKo: string | null; titleEn: string }): string {
   return g.titleKo ?? g.titleEn;
+}
+
+export function byPlatformOrder(a: { platform: Platform }, b: { platform: Platform }): number {
+  return PLATFORM_ORDER.indexOf(a.platform) - PLATFORM_ORDER.indexOf(b.platform);
+}
+
+/** 한국 스토어 행이 늘 먼저다 — 기준 통화의 값이 대표가 돼야 한다 */
+export function byRegionThenPlatform(a: { platform: Platform; region: Region }, b: { platform: Platform; region: Region }): number {
+  if (a.region !== b.region) return a.region === HOME_REGION ? -1 : 1;
+  return byPlatformOrder(a, b);
 }
 
 export type GameRow = typeof games.$inferSelect;
@@ -41,13 +52,18 @@ export function toPlatformDto(p: PlatformRow): PlatformDto {
   };
 }
 
+/** 나라가 달라도 같은 기기는 배지 하나다(한국 스위치, 일본 스위치). 표시 순서는 PLATFORM_ORDER */
+export function distinctPlatforms(list: Platform[]): Platform[] {
+  return [...new Set(list)].sort((a, b) => PLATFORM_ORDER.indexOf(a) - PLATFORM_ORDER.indexOf(b));
+}
+
 /** games ⨝ game_platforms 조인 행 목록을 게임 단위로 묶어 요약 생성. 첫 등장 플랫폼이 대표(best). */
 export function groupSummaries(rows: Array<{ game: GameRow; gp: PlatformRow }>, limit: number): GameSummary[] {
   const map = new Map<string, GameSummary>();
   for (const { game, gp } of rows) {
     const existing = map.get(game.id);
     if (existing) {
-      existing.platformCount += 1;
+      if (!existing.platforms.includes(gp.platform)) existing.platforms.push(gp.platform);
       continue;
     }
     map.set(game.id, {
@@ -65,10 +81,39 @@ export function groupSummaries(rows: Array<{ game: GameRow; gp: PlatformRow }>, 
         discountName: gp.discountName,
         releaseDate: gp.releaseDate,
       },
-      platformCount: 1,
+      platforms: [gp.platform],
     });
   }
-  return [...map.values()].slice(0, limit);
+  const out = [...map.values()].slice(0, limit);
+  for (const item of out) item.platforms = distinctPlatforms(item.platforms);
+  return out;
+}
+
+/**
+ * 요약 목록의 플랫폼 배지를 게임 단위로 다시 채운다.
+ *
+ * 홈은 조인 행을 잘라서 가져온다(상위 N행). 그 행만 보면 같은 게임의 다른 플랫폼이 잘려 나가
+ * 배지가 실제보다 적게 뜬다 — "외 N개" 일 때는 숫자 하나가 틀리는 정도였지만, 배지로 바꾼 뒤에는
+ * 있는 스토어가 통째로 안 보이는 일이 된다. 그래서 목록을 자른 뒤 한 번 더 묻는다.
+ */
+export async function fillPlatforms(items: GameSummary[]): Promise<GameSummary[]> {
+  if (items.length === 0) return items;
+  const rows = await getDb()
+    .select({ slug: games.slug, platform: gamePlatforms.platform })
+    .from(gamePlatforms)
+    .innerJoin(games, eq(games.id, gamePlatforms.gameId))
+    .where(inArray(games.slug, items.map((i) => i.slug)));
+  const bySlug = new Map<string, Platform[]>();
+  for (const r of rows) {
+    const list = bySlug.get(r.slug) ?? [];
+    list.push(r.platform);
+    bySlug.set(r.slug, list);
+  }
+  for (const item of items) {
+    const list = bySlug.get(item.slug);
+    if (list) item.platforms = distinctPlatforms(list);
+  }
+  return items;
 }
 
 /** 검색 결과에 붙일 플랫폼 요약: 게임별 최저가 플랫폼 */
@@ -103,7 +148,7 @@ export async function attachBestPrice(rows: GameRow[]): Promise<GameSummary[]> {
             releaseDate: best.releaseDate,
           }
         : null,
-      platformCount: list.length,
+      platforms: distinctPlatforms(list.map((p) => p.platform)),
     };
   });
 }

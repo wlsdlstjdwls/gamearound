@@ -128,6 +128,21 @@ export interface NewsItem {
   publishedAt: string; // ISO datetime
 }
 
+/**
+ * 스토어가 공개한 패치 기록 1건. 본문은 담지 않는다 — 이유는 schema 의 patch_notes 주석(§10 저작권).
+ * 이 계약이 대답하는 것은 "언제 고쳤나" 이고, "무엇을 고쳤나" 는 스토어 페이지로 보낸다.
+ */
+export interface PatchNote {
+  /** 스토어 안에서 이 패치를 가리키는 값. 재수집할 때 같은 패치를 두 번 넣지 않기 위한 키다 */
+  externalId: string;
+  title: string;
+  /** 제목에서 읽어낸 버전. 버전을 안 적는 게시물이 흔해 null 이 기본이다 */
+  version?: string | null;
+  /** 본문이 있는 스토어 페이지. 글 단위 주소가 없는 소스(gog 변경 기록)는 null */
+  url?: string | null;
+  publishedAt: string; // ISO datetime
+}
+
 export interface SearchCandidate {
   externalId: string;
   title: string;
@@ -207,6 +222,20 @@ export type StoreAdapter = SourceAdapter<StoreSnapshot> & {
    * nsuid 로 되묻는 질의가 없어서 game_platforms.title_code 말고는 물어볼 키가 없다.
    */
   dlcListKey?: "externalId" | "titleCode";
+  /**
+   * 이 게임의 패치 기록. **공개하는 스토어에만 둔다.**
+   *
+   * 2026-09-15 실측으로 steam 과 gog 둘뿐이다. 나머지는 패치 시점을 알 방법이 없다:
+   *   xbox      displaycatalog 의 Packages[].Version 이 전부 "0" 이고(철권 8 확인),
+   *             남는 LastModifiedDate 는 가격, 이미지 수정에도 움직여 패치 시각이 아니다
+   *   psstore   질의가 화이트리스트라 필드를 늘릴 수 없다(어댑터 주석의 해시 고정)
+   *   nintendo  eShop 응답에 버전도 갱신일도 없다
+   *   epic      catalogOffer 에 같은 성격의 필드가 없다
+   * 추측해서 채우지 않는다 — 패치가 아닌 날짜를 패치라고 적으면 "패치 속도" 가 통째로 거짓말이 된다.
+   *
+   * 게임 1개가 요청 1회라 빈도와 건수는 sync/patch-list 가 막는다(listDlcIds 와 같은 경로다).
+   */
+  listPatchNotes?(key: string): Promise<PatchNote[]>;
 };
 
 export type MetaAdapter = SourceAdapter<MetaSnapshot>;

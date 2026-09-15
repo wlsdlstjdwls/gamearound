@@ -5,6 +5,15 @@
 // 가로로 눕혀 두면 플랫폼, 장르 칩이 줄바꿈하며 화면 위쪽을 몇 줄씩 먹어 정작 게임이 밀린다.
 // 좁은 화면에서는 접어 둔다 — details 라 JS 없이 열고 닫힌다.
 import { PLATFORM_LABEL } from "@/lib/format";
+import {
+  familyOf,
+  isPlatformFamily,
+  PLATFORM_FAMILIES,
+  PLATFORM_FAMILY_CHILD_LABEL,
+  PLATFORM_FAMILY_LABEL,
+  PLATFORM_ORDER,
+  type PlatformFamily,
+} from "@/lib/platform";
 import { ChipLink } from "@/components/ui/chip";
 import { Select, type SelectOption } from "@/components/ui/select";
 import { GAME_SORTS, DEFAULT_GAME_SORT, SORT_LABEL, gamesHref, type GamesQuery } from "@/lib/games-query";
@@ -13,6 +22,9 @@ import { cardClass } from "@/components/ui/page";
 
 /** "고르지 않음" 을 나타내는 값. 빈 문자열을 쓰면 현재 값 비교가 undefined 와 헷갈린다 */
 const ALL = "__all__";
+
+/** 갈래에 속한 플랫폼을 화면 순서대로. FAMILY_PLATFORMS 를 직접 쓰지 않는 이유는 순서 원천을 하나로 두기 위해서다 */
+const byFamily = (f: PlatformFamily) => PLATFORM_ORDER.filter((p) => familyOf(p) === f);
 
 function Group({ label, children }: { label: string; children: React.ReactNode }) {
   return (
@@ -34,6 +46,15 @@ function Group({ label, children }: { label: string; children: React.ReactNode }
 function Groups({ facets, filter }: { facets: GameFacets; filter: GamesQuery }) {
   const href = (patch: Partial<GamesQuery>) => gamesHref(filter, { ...patch, page: 1 });
 
+  // 실제로 게임이 붙어 있는 플랫폼만 고를 수 있다(facets). 스토어 하나를 고른 상태에서도
+  // 그 스토어가 속한 갈래를 펴 둬야 옆 스토어로 한 번에 옮겨 갈 수 있다.
+  const available = new Set(facets.platforms.map((p) => p.platform));
+  const families = PLATFORM_FAMILIES.filter((f) => byFamily(f).some((p) => available.has(p)));
+  const family: PlatformFamily | undefined = isPlatformFamily(filter.platform)
+    ? filter.platform
+    : familyOf(filter.platform);
+  const children = family ? byFamily(family).filter((p) => available.has(p)) : [];
+
   // 장르는 스무 개가 넘어 칩으로 늘어놓으면 기둥을 세로로 다 먹는다 — 드롭다운으로 접는다
   const genreOptions: SelectOption[] = [
     { value: ALL, label: "전체 장르", href: href({ genre: undefined }) },
@@ -45,12 +66,26 @@ function Groups({ facets, filter }: { facets: GameFacets; filter: GamesQuery }) 
     <>
       <Group label="플랫폼">
         <ChipLink href={href({ platform: undefined })} active={!filter.platform}>전체</ChipLink>
-        {facets.platforms.map((p) => (
-          <ChipLink key={p.platform} href={href({ platform: p.platform })} active={filter.platform === p.platform}>
-            {PLATFORM_LABEL[p.platform] ?? p.platform}
+        {families.map((f) => (
+          <ChipLink key={f} href={href({ platform: f })} active={family === f}>
+            {PLATFORM_FAMILY_LABEL[f]}
           </ChipLink>
         ))}
       </Group>
+
+      {/* 갈래를 고른 뒤에만 안쪽을 편다 — 여덟 개를 늘 펴 두면 기둥이 플랫폼만으로 다 찬다 */}
+      {family && children.length > 0 && (
+        <Group label={PLATFORM_FAMILY_CHILD_LABEL[family]}>
+          <ChipLink href={href({ platform: family })} active={filter.platform === family}>
+            {PLATFORM_FAMILY_LABEL[family]} 전체
+          </ChipLink>
+          {children.map((p) => (
+            <ChipLink key={p} href={href({ platform: p })} active={filter.platform === p}>
+              {PLATFORM_LABEL[p] ?? p}
+            </ChipLink>
+          ))}
+        </Group>
+      )}
 
       {facets.genres.length > 0 && <Select label="장르" value={filter.genre ?? ALL} options={genreOptions} />}
 

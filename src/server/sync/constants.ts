@@ -74,6 +74,32 @@ export const LOCAL_SEED_TOP: Partial<Record<Source, number>> = {
 };
 
 /**
+ * 발견(신규 등록)을 **로컬에서** 도는 스토어와 그 몫.
+ *
+ * 왜 로컬인가: 신규 등록은 일회성 폭증이다. 카탈로그를 한 번 채우고 나면 신규는 출시작 몇 건/일로
+ * 떨어진다. 그 일회성 비용을 유한한 Actions 분(무료 월 2,000분)으로 때우면, 정작 매일 되풀이되는
+ * 할인 추적이 한도에 밀린다 — 2026-09-15 실측으로 crawl-prices 시간의 절반에서 77%가 신규 등록이었다
+ * (steam 750/1,497, psstore 150/194, xbox 100/100). 가정용 회선은 시간이 공짜라 여기가 제자리다.
+ * LOCAL_ONLY_SOURCES 와 다른 목록인 이유: 저쪽은 "러너 IP 로 막혀서" 로컬이고, 이쪽은 "분이 아까워서" 다.
+ *
+ * limit 을 따로 두는 이유: 시드 몫은 seedQuota 가 limit × 몫으로 한 번 더 깎는다.
+ * seedTop 만 올리면 그 곱이 막아 아무 일도 안 일어난다([[ps-subscription-coverage]] 에서 겪은 함정).
+ * limit 을 비우면 BATCH_SIZE 기본값을 쓴다.
+ */
+export const LOCAL_SEED_SOURCES: Source[] = ["steam", "psstore", "xbox", "gog"];
+export const LOCAL_SEED_PLAN: Partial<Record<Source, { seedTop: number; limit?: number }>> = {
+  // BATCH_SIZE.steam 1,500 의 절반 = SEED_SHARE_MAX 가 주는 최대치. 배치 조회라 건당 0.39초로 싸다
+  steam: { seedTop: 750 },
+  // psstore 는 fetchMany 가 없어 건당 요청 1회(실측 2.26초)라 제일 비싸다. 그래도 카탈로그가
+  // 7,571건인데 587건만 알아서 제일 급하다 — 분 걱정이 없는 로컬에서 400건까지 올려 잡는다(약 15분).
+  psstore: { seedTop: 300, limit: 400 },
+  // KR 카탈로그 16,991건. 몫의 절반이 시드라 limit 300 이면 신규 150건이다
+  xbox: { seedTop: 150, limit: 300 },
+  // 카탈로그 한 바퀴가 64페이지라 이미 거의 다 안다. 기본 배치로 충분하다
+  gog: { seedTop: 200 },
+};
+
+/**
  * Vercel 크론이 맡는 소스. 러너 IP 로는 못 도는 두 소스만 서울 리전 함수로 뗀다 —
  * 그 리전은 한국 IP 로 나가서 둘 다 열린다(2026-09-14 /api/debug/reachability 실측:
  * nintendo 200, epic 은 curl 전송기로 200, 출구 IP 43.201.77.62).
@@ -319,6 +345,45 @@ export const DLC_FETCH_PER_RUN_BY_SOURCE: Partial<Record<Source, number>> = {
   // JP 에서 급한 쪽은 "본편 하나가 DLC 부자인 경우" 가 아니라 "아직 안 물어본 본편" 이다.
   nintendo_jp: 20,
 };
+
+/**
+ * 한 실행에서 패치 기록을 새로 물어볼 게임 수.
+ *
+ * DLC 목록과 같은 성격의 경로다 — 배치가 없어 게임 1개가 요청 1회다(steam ISteamNews, gog changelog).
+ * 그래서 한도의 근거도 같은 자리에서 온다: **Actions 사용 분**이다.
+ *   steam 30건 × 요청 간격 1.5초 = 45초
+ *   gog   20건 × 요청 간격 1.0초 = 20초
+ * 합쳐 실행당 65초, 하루 3회(crawl-prices 의 cron) = 월 약 98분이다.
+ *
+ * crawl-prices 는 이미 1회 33분, 월 3,000분으로 무료 한도(2,000분)를 넘고 있다(워크플로 주석의 실측).
+ * 이 단계는 그 위에 3%를 더한다 — 여기서 더 올리기 전에 **먼저 볼 것은 33분 쪽**이다.
+ * 그 33분의 절반 이상이 신규 등록이라 LOCAL_SEED_SOURCES 가 그걸 덜어내는 중이고, 한도가 풀리면
+ * 이 값도 같이 올린다. 카탈로그를 한 바퀴 도는 속도는 이 값이 정한다(하루 90건).
+ */
+export const PATCH_LIST_PER_RUN = 30;
+/**
+ * 소스별 상한. gog 는 요청 간격이 1초로 더 싸지만 **응답이 크다** —
+ * expand=changelog 는 게임당 수십에서 수백 KB 다(2026-09-15 실측: 사이버펑크 2077 244KB,
+ * 위쳐 3 8.5KB, 위쳐 1 841B). 20건이면 최악이라도 5MB 안쪽이고 20초에 끝난다.
+ * 시간이 아니라 바이트가 한도를 정하는 유일한 소스라 따로 적는다.
+ */
+export const PATCH_LIST_PER_RUN_BY_SOURCE: Partial<Record<Source, number>> = {
+  gog: 20,
+};
+/**
+ * 한 번 물어본 게임을 다시 물어보기까지의 간격(일).
+ *
+ * DLC(30일)보다 짧게 잡는 이유: 새 DLC 는 몇 달에 한 번이지만 패치는 주 단위로 나온다.
+ * 그렇다고 아주 짧게 잡아도 소용이 없다 — 아직 한 번도 안 물어본 게임이 늘 먼저라(pickPatchListTargets)
+ * 카탈로그가 한 바퀴 돌기 전에는 이 값이 실제로 쓰이지 않는다. 그때를 위한 값이다.
+ */
+export const PATCH_LIST_REFRESH_DAYS = 14;
+/**
+ * 한 게임에서 담을 패치 기록 수 상한. 오래 서비스한 게임은 기록이 수백 건이다
+ * (2026-09-15 실측: CS2 251건, 사이버펑크 2077 변경 기록 제목 수백 개).
+ * 화면이 대답하는 질문은 "얼마나 자주 고치나" 라서 최근 것 몇십 건이면 충분하다.
+ */
+export const PATCH_PER_GAME_MAX = 50;
 
 /**
  * 한 번 물어본 본편을 다시 물어보기까지의 간격(일).

@@ -9,6 +9,7 @@ import { Pagination } from "@/components/pagination";
 import { Page } from "@/components/ui/page";
 import { DEFAULT_GAME_SORT, SORT_LABEL, gamesHref, parseGamesQuery } from "@/lib/games-query";
 import { PLATFORM_LABEL } from "@/lib/format";
+import { isPlatformFamily, PLATFORM_FAMILY_LABEL, type PlatformFamily } from "@/lib/platform";
 import { stagger } from "@/lib/motion";
 import { ROUTES } from "@/lib/routes";
 import { getGameFacets, listGames } from "@/server/services/games";
@@ -23,16 +24,24 @@ type Props = { searchParams: Promise<Search> };
 const isPlatform = (v: string | undefined): v is Platform =>
   v !== undefined && (platformEnum.enumValues as readonly string[]).includes(v);
 
+/** 플랫폼 칸에는 스토어("steam")와 갈래("pc") 가 같이 들어온다 — 근거는 GameListFilter 주석 */
+const isPlatformValue = (v: string | undefined): v is Platform | PlatformFamily => isPlatform(v) || isPlatformFamily(v);
+
+/** 화면 문구용 이름. 갈래면 "PC", 스토어면 "Steam" */
+function platformFilterLabel(v: string): string {
+  return isPlatformFamily(v) ? PLATFORM_FAMILY_LABEL[v] : PLATFORM_LABEL[v] ?? v;
+}
+
 /** 쿼리스트링 → 조회 필터. 모르는 플랫폼 값은 버려 항상 유효한 목록이 나오게 한다 */
 function readFilter(sp: Search) {
   const q = parseGamesQuery(sp);
-  return { ...q, platform: isPlatform(q.platform) ? q.platform : undefined };
+  return { ...q, platform: isPlatformValue(q.platform) ? q.platform : undefined };
 }
 
 export async function generateMetadata({ searchParams }: Props): Promise<Metadata> {
   const f = readFilter(await searchParams);
   const parts = [
-    f.platform ? PLATFORM_LABEL[f.platform] ?? f.platform : null,
+    f.platform ? platformFilterLabel(f.platform) : null,
     f.genre,
     f.onSale ? "할인 중" : null,
     f.subscription ? "구독 포함" : null,

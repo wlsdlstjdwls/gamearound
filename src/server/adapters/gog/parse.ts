@@ -1,34 +1,8 @@
-// GOG 어댑터 — 설계서 §4.1. 공개 JSON API(인증 불필요) 기반.
-//   발견, 검색: catalog.gog.com/v1/catalog  |  단건, 배치: api.gog.com/products + products/prices
-// PoC(2026-09-14): countryCode=KR 에서 기본 게임 6,381건 확인. 막는 것 없이 Node 에서 그대로 200 이다.
-//
-// **가격이 달러다.** GOG 는 한국에 원화로 팔지 않는다(currencyCode=KRW 로 조회하면 0건).
-// 그래서 이 어댑터만 currency:"USD" 를 얹고, 화면의 비교, 정렬은 lib/currency 의 규칙이 따로 거른다.
-// locale 은 en-US 고정이다 — ko-KR 을 넣으면 카탈로그가 0건으로 온다(같은 날 확인).
+// GOG 응답 파서 — 외부 JSON 은 unknown 으로 받아 zod 로만 통과시킨다.
+// 응답이 바뀌면 잘못된 값을 반영하는 대신 여기서 형식 오류로 멈춘다.
 import { z } from "zod";
-import {
-  AdapterError,
-  type SearchCandidate,
-  type StoreAdapter,
-  type StoreSnapshot,
-} from "./types";
-import { createHttpClient } from "./http";
-import { sleep } from "@/lib/async";
-import { errorMessage } from "@/lib/errors";
+import { AdapterError, type SearchCandidate, type StoreSnapshot } from "../types";
 
-export const GOG_CATALOG_URL = "https://catalog.gog.com/v1/catalog";
-export const GOG_API_URL = "https://api.gog.com";
-export const GOG_COUNTRY = "KR";
-/** ko-KR 은 카탈로그를 0건으로 만든다 — 제목도 영문으로 온다 */
-export const GOG_LOCALE = "en-US";
-/** 카탈로그 한 페이지 최대치(실측 100). 전체 6,000여 건이 64페이지 안에 들어온다 */
-export const GOG_CATALOG_PAGE_SIZE = 100;
-/** 발견이 넘길 최대 페이지. 실제 종료 조건은 빈 페이지다 */
-export const GOG_DISCOVERY_MAX_PAGES = 120;
-/** 본편만 — 카탈로그의 productType 필터. DLC, 팩은 빠진다 */
-export const GOG_GAME_FILTER = "in:game";
-/** 배치 조회에 한 번에 넣을 ID 수. products 와 prices 를 각각 한 번씩 부른다 */
-export const GOG_BATCH_SIZE = 50;
 /** "699 USD" 처럼 최소 단위 정수 + 통화 코드로 온다 */
 const MONEY = /^(\d+)\s+([A-Z]{3})$/;
 /** 우리 스키마가 아는 통화. 다른 통화가 오면 조용히 원화인 척하지 않고 실패시킨다 */
@@ -50,6 +24,8 @@ const productSchema = z.object({
   release_date: z.string().nullish(),
   images: z.object({ logo2x: z.string().nullish(), logo: z.string().nullish() }).nullish(),
   links: z.object({ product_card: z.string().nullish() }).nullish(),
+  /** expand=changelog 를 붙였을 때만 온다. 변경 기록 전체가 붙은 HTML 한 덩어리다 */
+  changelog: z.string().nullish(),
 });
 
 const priceItemSchema = z.object({
@@ -202,82 +178,3 @@ export function parseGogCatalog(raw: unknown): SearchCandidate[] {
     url: `https://www.gog.com/game/${p.slug ?? p.id}`,
   }));
 }
-
-// ---- 네트워크 ----
-
-const http = createHttpClient({ source: "gog", label: "GOG" });
-
-function catalogUrl(page: number, query?: string): string {
-  const u = new URL(GOG_CATALOG_URL);
-  u.searchParams.set("limit", String(GOG_CATALOG_PAGE_SIZE));
-  u.searchParams.set("page", String(page));
-  u.searchParams.set("countryCode", GOG_COUNTRY);
-  u.searchParams.set("locale", GOG_LOCALE);
-  u.searchParams.set("productType", GOG_GAME_FILTER);
-  if (query) u.searchParams.set("query", `like:${query}`);
-  else u.searchParams.set("order", "desc:trending");
-  return u.toString();
-}
-
-/**
- * 가격 응답. 한국에서 안 파는 상품이 하나라도 섞이면 이 API 는 400 을 준다
- * ("Product <id> not found", reason PRICES_NOT_FOUND — 2026-09-14 실측, GOG 판 Cyberpunk 2077).
- * 그걸 그대로 던지면 **배치에 든 나머지 상품까지 통째로 날아간다**. DLC 등록이 특히 여기 걸린다 —
- * 한 본편의 DLC 를 한 배치로 묻는데 그중 하나만 미판매여도 전부 못 들어온다.
- * 그래서 못 받은 가격은 "없음"으로 두고 상품은 살린다. 일시적 장애(retryable)는 그대로 올린다.
- */
-async function fetchPrices(joined: string): Promise<Map<string, { basePrice: string; finalPrice: string; currencyCode: string }>> {
-  try {
-    return parseGogPrices(await http.json(`${GOG_API_URL}/products/prices?ids=${joined}&countryCode=${GOG_COUNTRY}`, { context: joined }));
-  } catch (e) {
-    if (e instanceof AdapterError && e.retryable) throw e;
-    console.warn(`[gog] 가격 없음 — 상품만 반영한다 (${joined}): ${errorMessage(e)}`);
-    return new Map();
-  }
-}
-
-/** 상품 + 가격을 한 번씩 불러 스냅샷으로 묶는다. 두 응답 중 가격만 비어도 상품은 살린다 */
-async function fetchSnapshots(ids: string[]): Promise<Map<string, StoreSnapshot>> {
-  const joined = ids.join(",");
-  const products = parseGogProducts(await http.json(`${GOG_API_URL}/products?ids=${joined}&locale=${GOG_LOCALE}`, { context: joined }));
-  const prices = await fetchPrices(joined);
-  const out = new Map<string, StoreSnapshot>();
-  for (const product of products) {
-    const id = String(product.id);
-    out.set(id, toGogSnapshot(product, prices.get(id) ?? null));
-  }
-  return out;
-}
-
-export const gogAdapter: StoreAdapter = {
-  source: "gog",
-  minIntervalMs: 1000,
-  batchSize: GOG_BATCH_SIZE,
-
-  async search(query: string): Promise<SearchCandidate[]> {
-    return parseGogCatalog(await http.json(catalogUrl(1, query), { context: `search:${query}` }));
-  },
-
-  async fetch(externalId: string): Promise<StoreSnapshot> {
-    const snapshot = (await fetchSnapshots([externalId])).get(externalId);
-    if (!snapshot) throw new AdapterError(`GOG 게임 없음: ${externalId}`, "gog", false);
-    return snapshot;
-  },
-
-  async fetchMany(externalIds: string[]): Promise<Map<string, StoreSnapshot>> {
-    return fetchSnapshots(externalIds);
-  },
-
-  /**
-   * 카탈로그를 페이지 단위로 흘려보낸다. 아는 것을 걸러내고 언제 멈출지는 호출부가 정한다
-   * (adapters/types 의 discoverPages 주석) — 여기서 앞부분만 끊어 돌려주면 매 실행 같은 목록만 나온다.
-   */
-  async *discoverPages(): AsyncGenerator<SearchCandidate[]> {
-    for (let page = 1; page <= GOG_DISCOVERY_MAX_PAGES; page++) {
-      const found = parseGogCatalog(await http.json(catalogUrl(page), { context: `discover:${page}` }));
-      if (found.length === 0) return; // 카탈로그 끝
-      yield found;
-      await sleep(gogAdapter.minIntervalMs);
-    }
-  },
-};

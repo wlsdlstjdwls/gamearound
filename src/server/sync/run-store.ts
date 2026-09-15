@@ -3,6 +3,7 @@ import { getStoreAdapter, type StoreSource } from "@/server/adapters";
 import { BATCH_SIZE, SUSPICIOUS_MIN_SAMPLE, SUSPICIOUS_PRICE_RATIO } from "./constants";
 import { recordError, type Ctx, type RunOptions } from "./context";
 import { listParentDlcs } from "./dlc-list";
+import { syncPatchNotes } from "./patch-list";
 import { syncDlcs } from "./dlc-writer";
 import { applyStore } from "./store-apply";
 import { fetchStoreBatched, fetchStoreOneByOne } from "./store-fetch";
@@ -44,5 +45,14 @@ export async function runStore(ctx: Ctx, source: StoreSource, opts: RunOptions):
     if (created > 0) console.log(`[sync:${source}] DLC ${created}건 신규 등록`);
   } catch (e) {
     recordError(ctx, `${source}:dlc`, e);
+  }
+
+  // 5단계: 패치 기록. 공개하는 스토어(steam, gog)에서만 돈다 — 나머지는 어댑터에 메서드가 없어 즉시 빠진다.
+  // DLC 와 마찬가지로 실패해도 가격 수집 결과는 유지한다.
+  try {
+    const notes = await syncPatchNotes(ctx, source, adapter, applied);
+    if (notes > 0) console.log(`[sync:${source}] 패치 기록 ${notes}건 신규`);
+  } catch (e) {
+    recordError(ctx, `${source}:patch`, e);
   }
 }

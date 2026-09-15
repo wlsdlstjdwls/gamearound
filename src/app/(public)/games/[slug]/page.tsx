@@ -10,6 +10,7 @@ import { SubscriptionBadges } from "@/components/subscription-badges";
 import { UpgradeNotes } from "@/components/upgrade-note";
 import { MultiplayerBadges } from "@/components/multiplayer-badges";
 import { NewsList } from "@/components/news-list";
+import { PatchList, PatchSpeed } from "@/components/patch-list";
 import { PlatformTabs, type PlatformTabItem } from "@/components/platform-tabs";
 import { PlaytimeCard } from "@/components/playtime-card";
 import { WishlistButton } from "@/components/wishlist-button";
@@ -20,14 +21,25 @@ import { SITE } from "@/lib/site";
 import { getFreshness } from "@/lib/freshness";
 import { GAME_MESSAGES } from "@/lib/games/messages";
 import { stagger } from "@/lib/motion";
-import { ROUTES } from "@/lib/routes";
-import { bestScore, cheapestPlatform, displayTitle, getGameBySlugCached, type GameDetail } from "@/server/services/games";
+import { gamePatchesPath, gamePricesPath, ROUTES } from "@/lib/routes";
+import {
+  bestScore,
+  cheapestPlatform,
+  displayTitle,
+  getGameBySlugCached,
+  getGamePatchesCached,
+  latestPatches,
+  type GameDetail,
+} from "@/server/services/games";
 import { getCurrentUser } from "@/server/services/users";
 import { isInWishlist } from "@/server/services/wishlist";
 import { cardClass } from "@/components/ui/page";
 
 /** 검색결과, SNS 카드에 들어가는 설명 길이 상한 */
 const META_DESCRIPTION_MAX = 150;
+
+/** 상세에 띄울 최근 패치 수. 전체 목록과 속도 비교는 전용 화면(/patches)이 맡는다 */
+const DETAIL_PATCH_LIMIT = 5;
 
 type Props = { params: Promise<{ slug: string }> };
 
@@ -94,6 +106,9 @@ export default async function GameDetailPage({ params }: Props) {
   // 로그인 의존 데이터는 캐시 밖에서
   const user = await getCurrentUser();
   const wished = user ? await isInWishlist(game.id) : false;
+  // 패치 기록은 상세 조회와 같은 태그(`game:<slug>`)로 따로 캐시된다 — 붙는 테이블이 game_platforms 라
+  // 상세 질의에 얹으면 화면이 안 쓰는 행까지 통째로 끌려온다
+  const patchGroups = await getGamePatchesCached(slug);
 
   const title = displayTitle(game);
   const platforms: PlatformTabItem[] = game.platforms.map((p) => ({
@@ -183,7 +198,7 @@ export default async function GameDetailPage({ params }: Props) {
               id="platforms-heading"
               title="플랫폼별 가격"
               action={
-                <Link href={`/games/${game.slug}/prices`} className="text-[12.5px] text-acc hover:underline">
+                <Link href={gamePricesPath(game.slug)} className="text-[12.5px] text-acc hover:underline">
                   가격 변동 그래프
                 </Link>
               }
@@ -201,6 +216,24 @@ export default async function GameDetailPage({ params }: Props) {
                 note={game.dlcs.length > 0 ? `${game.dlcs.length}개` : undefined}
               />
               <DlcList dlcs={game.dlcs} hasAddOns={hasAddOns} />
+            </section>
+          )}
+
+          {patchGroups.length > 0 && (
+            <section aria-labelledby="patches-heading" className="flex flex-col gap-3">
+              <SectionHead
+                id="patches-heading"
+                title={GAME_MESSAGES.patchHeading}
+                action={
+                  <Link href={gamePatchesPath(game.slug)} className="text-[12.5px] text-acc hover:underline">
+                    플랫폼별 패치 속도
+                  </Link>
+                }
+              />
+              <PatchSpeed groups={patchGroups} />
+              <Card className="px-4">
+                <PatchList items={latestPatches(patchGroups, DETAIL_PATCH_LIMIT)} showPlatform={patchGroups.length > 1} />
+              </Card>
             </section>
           )}
 
