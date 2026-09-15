@@ -1,7 +1,7 @@
 // 진단 판정 테스트 — 네트워크 없음. "조용히 막힌 것"을 정상으로 읽지 않는지, 그리고
 // 403 하나만 보고 원인을 단정하지 않는지가 핵심이다.
 import { describe, expect, it } from "vitest";
-import { classifyProbe, describeVerdict, summarize, type ProbeResult, type ProbeVerdict } from "./reachability";
+import { classifyProbe, describeVerdict, summarize, type ProbeResult, type ProbeVerdict } from "./classify";
 
 const probe = (source: string, verdict: ProbeVerdict): ProbeResult => ({
   source,
@@ -74,5 +74,21 @@ describe("summarize", () => {
   it("대조군까지 실패하면 스토어가 아니라 환경을 의심하라고 한다", () => {
     const out = summarize([probe("nintendo", "error"), probe("gog", "error")]);
     expect(out.join(" ")).toContain("바깥 연결");
+  });
+  it("발견 경로와 가격 경로가 다 열려야 옮길 수 있다고 말한다", () => {
+    const out = summarize([probe("steam (발견)", "ok"), probe("steam (가격)", "ok"), gogOk]);
+    expect(out.join(" ")).toContain("Steam: 서울 함수에서 열린다");
+  });
+
+  it("가격 경로만 막혀도 옮기지 말라고 말한다 — 값 없는 신규 등록을 막는다", () => {
+    const out = summarize([probe("xbox (발견)", "ok"), probe("xbox (가격)", "blocked"), gogOk]);
+    expect(out.join(" ")).toContain("Xbox: 서울 함수에서 막힌다");
+    expect(out.join(" ")).toContain("xbox (가격) blocked");
+  });
+
+  it("진단에 없는 소스는 아무 말도 하지 않는다", () => {
+    const out = summarize([gogOk]);
+    expect(out.join(" ")).not.toContain("Steam");
+    expect(out.join(" ")).not.toContain("Xbox");
   });
 });
