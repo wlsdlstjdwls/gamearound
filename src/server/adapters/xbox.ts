@@ -54,19 +54,19 @@ export const XBOX_ADDONS_SCAN_WINDOW = 20_000;
 
 // ---- 응답 스키마 ----
 const priceSchema = z.object({
-  CurrencyCode: z.string().optional(),
-  ListPrice: z.number().optional(), // 현재 판매가
-  MSRP: z.number().optional(), // 정가
+  CurrencyCode: z.string().nullish(),
+  ListPrice: z.number().nullish(), // 현재 판매가
+  MSRP: z.number().nullish(), // 정가
 });
 
 const availabilitySchema = z.object({
-  Actions: z.array(z.string()).optional(),
-  OrderManagementData: z.object({ Price: priceSchema.optional() }).optional(),
+  Actions: z.array(z.string()).nullish(),
+  OrderManagementData: z.object({ Price: priceSchema.nullish() }).nullish(),
   // 할인 기간 — 할인 중이 아니면 상시 판매 구간이라 "종료 없음" 센티널(9998년)이 온다
-  Conditions: z.object({ StartDate: z.string().optional(), EndDate: z.string().optional() }).optional(),
+  Conditions: z.object({ StartDate: z.string().nullish(), EndDate: z.string().nullish() }).nullish(),
 });
 
-const imageSchema = z.object({ ImagePurpose: z.string().optional(), Uri: z.string().optional() });
+const imageSchema = z.object({ ImagePurpose: z.string().nullish(), Uri: z.string().nullish() });
 
 const productSchema = z.object({
   ProductId: z.string(),
@@ -75,7 +75,7 @@ const productSchema = z.object({
    * 철권 8 = Game, "철권 8 시즌 3 패스" = Durable). 이 값이 없으면 본편으로 본다 —
    * 우리가 보는 목록이 게임 카탈로그라 기본값이 그쪽이 맞다.
    */
-  ProductKind: z.string().optional(),
+  ProductKind: z.string().nullish(),
   /**
    * 추가 콘텐츠 유무. 이 JSON API 는 유무만 주고 목록은 주지 않는다(2026-09-14 실측):
    * storefront 의 /v9.0/products/<id>/addons 는 200 을 주지만 AddOns 가 늘 빈 배열이고
@@ -88,19 +88,33 @@ const productSchema = z.object({
   LocalizedProperties: z
     .array(
       z.object({
-        ProductTitle: z.string().optional(),
-        DeveloperName: z.string().optional(),
-        PublisherName: z.string().optional(),
-        ShortDescription: z.string().optional(),
-        Images: z.array(imageSchema).default([]),
+        // 이 스토어는 "값 없음" 을 키 생략이 아니라 null 로 준다(2026-09-15 실측: ShortDescription null).
+        // optional 만 달면 그 상품 하나 때문에 응답 전체가 거절된다 — Properties 에서 이미 한 번 겪은 함정이다.
+        ProductTitle: z.string().nullish(),
+        DeveloperName: z.string().nullish(),
+        PublisherName: z.string().nullish(),
+        ShortDescription: z.string().nullish(),
+        Images: z.array(imageSchema).nullish().default([]),
       }),
     )
     .default([]),
-  MarketProperties: z.array(z.object({ OriginalReleaseDate: z.string().optional() })).default([]),
+  MarketProperties: z.array(z.object({ OriginalReleaseDate: z.string().nullish() })).default([]),
   DisplaySkuAvailabilities: z.array(z.object({ Availabilities: z.array(availabilitySchema).default([]) })).default([]),
 });
 
-const productsResponseSchema = z.object({ Products: z.array(productSchema).default([]) });
+/**
+ * 응답 봉투. 상품을 여기서 검증하지 않고 z.unknown 으로 받아 두는 것이 요점이다.
+ *
+ * 왜: fetchMany 는 한 번에 20건을 묻고 "응답에 없는 ID 만 그 게임의 실패" 로 치려 한다.
+ * 그런데 배열 전체를 한 번에 검증하면 상품 하나의 필드가 예상을 벗어나는 순간 나머지 19건까지
+ * 같이 죽는다 — 2026-09-15 실측으로 이게 실제로 일어나고 있었다(ShortDescription 이 null 인
+ * 상품 하나 때문에 배치 20건이 통째로 실패, 한 실행에서 200건 중 100건이 이렇게 날아갔다).
+ * 게다가 호출부는 그 사유를 모르고 "비공개, 미판매, 삭제 추정" 으로 기록해 진단까지 틀어졌다.
+ * 그래서 검증은 **우리가 찾는 상품 하나에만** 건다(parseXboxProduct).
+ */
+const productsEnvelopeSchema = z.object({ Products: z.array(z.unknown()).default([]) });
+/** 봉투 안에서 원하는 상품을 고를 때만 쓰는 최소 스키마 */
+const productIdSchema = z.object({ ProductId: z.string() });
 
 /** browse 응답 — 목록은 productSummaries 에 있고, channels 는 페이지 메타라 쓰지 않는다 */
 const browseSchema = z.object({
@@ -123,7 +137,7 @@ const autosuggestSchema = z.object({
 // ---- 순수 파서 ----
 
 /** ISO datetime → YYYY-MM-DD (UTC 기준). 잘못된 값은 null */
-function toIsoDate(v: string | undefined): string | null {
+function toIsoDate(v: string | null | undefined): string | null {
   if (!v) return null;
   const d = new Date(v);
   return Number.isNaN(d.getTime()) ? null : d.toISOString().slice(0, 10);
@@ -133,7 +147,7 @@ function toIsoDate(v: string | undefined): string | null {
 const XBOX_NO_END_YEAR = 9000;
 
 /** ISO datetime 문자열 → ISO. 센티널, 잘못된 값은 null */
-export function xboxPeriodDate(v: string | undefined): string | null {
+export function xboxPeriodDate(v: string | null | undefined): string | null {
   if (!v) return null;
   const d = new Date(v);
   if (Number.isNaN(d.getTime()) || d.getUTCFullYear() >= XBOX_NO_END_YEAR) return null;
@@ -149,9 +163,10 @@ function pickKrwPurchase(
       const p = a.OrderManagementData?.Price;
       if (!p || p.CurrencyCode !== "KRW") continue;
       if (!a.Actions?.includes("Purchase")) continue;
+      // 두 값 다 null 로 오는 자리가 있어 nullish 로 받는다 — 하나라도 비면 이 SKU 는 값을 모르는 것이다
       const current = p.ListPrice ?? p.MSRP;
       const list = p.MSRP ?? p.ListPrice;
-      if (current === undefined || list === undefined) continue;
+      if (current == null || list == null) continue;
       return {
         list,
         current,
@@ -172,7 +187,7 @@ export function xboxStoreUrl(productId: string, title: string): string {
  * 목적(ImagePurpose)이 앞선 것부터 골라 절대 주소로 돌려준다.
  * Uri 는 "//store-images..." 처럼 스킴이 빠진 채로 온다 — 그대로 쓰면 화면에서 깨진다.
  */
-export function xboxImageUrl(images: Array<{ ImagePurpose?: string; Uri?: string }>, purposes: string[]): string | null {
+export function xboxImageUrl(images: Array<{ ImagePurpose?: string | null; Uri?: string | null }>, purposes: string[]): string | null {
   for (const purpose of purposes) {
     const uri = images.find((i) => i.ImagePurpose === purpose && i.Uri)?.Uri;
     if (uri) return uri.startsWith("//") ? `https:${uri}` : uri;
@@ -185,11 +200,25 @@ export function xboxImageUrl(images: Array<{ ImagePurpose?: string; Uri?: string
  * meta 가 있어야 이 소스만 아는 게임(Xbox 독점작)을 새로 만들 수 있다 — 없으면 가격만 붙이는 소스가 된다.
  * titleEn 을 영문 응답에서 가져오는 이유: slug 를 한국어로 만들면 다른 소스와 매칭이 안 된다.
  */
+/** 봉투에서 상품 원본 배열만 꺼낸다. null = 봉투 자체가 깨짐. 던지지 않는다 — 영문 경로가 이걸 무시하고 넘어간다 */
+function rawProductsOf(raw: unknown): unknown[] | null {
+  const env = productsEnvelopeSchema.safeParse(raw);
+  return env.success ? env.data.Products : null;
+}
+
+/** 이 ID 의 상품 원본. 없으면 첫 상품(단건 조회 응답용 관용) */
+function pickRawProduct(products: unknown[], productId: string): unknown {
+  return products.find((p) => productIdSchema.safeParse(p).data?.ProductId === productId) ?? products[0];
+}
+
 export function parseXboxProduct(raw: unknown, productId: string, rawEn?: unknown): StoreSnapshot {
-  const parsed = productsResponseSchema.safeParse(raw);
+  const products = rawProductsOf(raw);
+  if (!products) throw new AdapterError(`Xbox 응답 형식 오류: 상품 배열이 없다 (${productId})`, "xbox", false);
+  const rawProduct = pickRawProduct(products, productId);
+  if (rawProduct === undefined) throw new AdapterError(`Xbox 게임 없음: ${productId}`, "xbox", false);
+  const parsed = productSchema.safeParse(rawProduct);
   if (!parsed.success) throw new AdapterError(`Xbox 응답 형식 오류: ${parsed.error.message}`, "xbox", false);
-  const product = parsed.data.Products.find((p) => p.ProductId === productId) ?? parsed.data.Products[0];
-  if (!product) throw new AdapterError(`Xbox 게임 없음: ${productId}`, "xbox", false);
+  const product = parsed.data;
 
   const title = product.LocalizedProperties[0]?.ProductTitle?.trim() || productId;
   const isDlc = product.ProductKind === XBOX_ADDON_KIND;
@@ -216,10 +245,11 @@ export function parseXboxProduct(raw: unknown, productId: string, rawEn?: unknow
 
 /** 영문 응답에서 이 상품의 제목만 꺼낸다. 형식이 깨져 있으면 없는 것으로 본다 — 가격 수집을 막지 않는다 */
 function titleOf(rawEn: unknown, productId: string): string | null {
-  const parsed = productsResponseSchema.safeParse(rawEn);
-  if (!parsed.success) return null;
-  const hit = parsed.data.Products.find((p) => p.ProductId === productId);
-  return hit?.LocalizedProperties[0]?.ProductTitle?.trim() || null;
+  const products = rawProductsOf(rawEn);
+  if (!products) return null;
+  const hit = productSchema.safeParse(pickRawProduct(products, productId));
+  if (!hit.success) return null;
+  return hit.data.LocalizedProperties[0]?.ProductTitle?.trim() || null;
 }
 
 /** 게임 마스터 정보. 영문 제목이 없으면 meta 자체를 만들지 않는다(한국어 slug 로 게임을 만들지 않기 위해) */

@@ -22,6 +22,46 @@ describe("parseXboxProduct", () => {
     expect(snap.hasAddOns).toBe(true);
   });
 
+  // 2026-09-15 회귀: 같은 배치에 섞인 상품 하나가 나머지를 죽이고 있었다.
+  // 응답 전체를 한 번에 검증하던 탓인데, 호출부(sync/store-fetch)는 그 사유를 몰라
+  // "비공개, 미판매, 삭제 추정" 으로 기록했다 — 한 실행에서 200건 중 100건이 이렇게 날아갔다.
+  it("같은 응답의 다른 상품이 깨져 있어도 요청한 상품은 읽는다", () => {
+    const raw = {
+      Products: [
+        // 스토어가 "값 없음" 을 null 로 준다. 이 한 건이 예전에는 배치 20건을 통째로 죽였다
+        { ProductId: "BAD", LocalizedProperties: [{ ProductTitle: null, ShortDescription: null }] },
+        {
+          ProductId: "X2",
+          LocalizedProperties: [{ ProductTitle: "Good Game" }],
+          DisplaySkuAvailabilities: [
+            { Availabilities: [{ Actions: ["Purchase"], OrderManagementData: { Price: { CurrencyCode: "KRW", ListPrice: 10000, MSRP: 10000 } } }] },
+          ],
+        },
+      ],
+    };
+    const snap = parseXboxProduct(raw, "X2");
+    expect(snap.storeExternalId).toBe("X2");
+    expect(snap.currentPrice).toBe(10000);
+  });
+
+  it("텍스트 필드가 null 로 와도 그 상품 자체를 읽는다", () => {
+    const raw = {
+      Products: [
+        {
+          ProductId: "X3",
+          ProductKind: null,
+          LocalizedProperties: [{ ProductTitle: "Null Fields", ShortDescription: null, DeveloperName: null, PublisherName: null }],
+          MarketProperties: [{ OriginalReleaseDate: null }],
+        },
+      ],
+    };
+    const snap = parseXboxProduct(raw, "X3", raw);
+    expect(snap.storeExternalId).toBe("X3");
+    expect(snap.releaseDate).toBeNull();
+    expect(snap.contentType).toBe("game");
+    expect(snap.meta?.description).toBeNull();
+  });
+
   it("MSRP 보다 ListPrice 가 낮으면 할인율 계산", () => {
     const raw = {
       Products: [
