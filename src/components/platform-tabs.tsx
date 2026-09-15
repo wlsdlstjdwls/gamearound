@@ -9,6 +9,7 @@ import { useId, useState } from "react";
 import { formatDate, formatDiscount, formatShortDateTime, platformLabel } from "@/lib/format";
 import { userScoreNoteText, userScoreValueText } from "@/lib/user-score";
 import type { Freshness } from "@/lib/freshness";
+import type { Platform } from "@/server/db/schema";
 import type { PlatformDto } from "@/server/services/games";
 import { SaleBadge } from "@/components/sale-badge";
 import { SubscriptionChips } from "@/components/subscription-badges";
@@ -36,7 +37,18 @@ function tabKey(p: PlatformDto): string {
   return `${p.platform}-${p.region}`;
 }
 
-export function PlatformTabs({ platforms }: { platforms: PlatformTabItem[] }) {
+export function PlatformTabs({
+  platforms,
+  quotedUserScorePlatform = null,
+}: {
+  platforms: PlatformTabItem[];
+  /**
+   * 상세 요약 바가 이미 인용한 유저 점수의 스토어.
+   * 그 스토어 탭에서는 같은 숫자를 또 적지 않는다 — 한 화면에서 같은 값이 두 번 나오면
+   * 읽는 사람은 "다른 값인가" 하고 두 번 읽는다. 다른 스토어 탭에서는 그대로 보인다(스토어마다 값이 다르다).
+   */
+  quotedUserScorePlatform?: Platform | null;
+}) {
   const [idx, setIdx] = useState(0);
   const baseId = useId();
 
@@ -52,8 +64,10 @@ export function PlatformTabs({ platforms }: { platforms: PlatformTabItem[] }) {
   const hasDiscount = Boolean(current.discountPct && current.discountPct > 0);
   const isStale = current.freshness === "stale";
 
+  // 정가는 할인 중일 때만 칸을 세운다 — 할인이 없으면 위의 큰 금액과 같은 숫자를 바로 아래에 한 번 더 적는 꼴이다
+  const showListPrice = hasDiscount && current.listPrice !== null && current.listPrice !== current.currentPrice;
   const metaCells: Array<{ label: string; value: React.ReactNode; note?: string }> = [
-    { label: "정가", value: formatPrice(current.listPrice, current.currency) },
+    ...(showListPrice ? [{ label: "정가", value: formatPrice(current.listPrice, current.currency) }] : []),
     { label: "출시일", value: formatDate(current.releaseDate) },
   ];
   if (current.currentVersion) metaCells.push({ label: "버전", value: current.currentVersion });
@@ -64,8 +78,9 @@ export function PlatformTabs({ platforms }: { platforms: PlatformTabItem[] }) {
       value: current.discountEndsAt ? formatShortDateTime(current.discountEndsAt) : "미공개",
     });
   }
-  // 유저 점수는 스토어마다 재는 방식이 달라 요약 바가 아니라 그 스토어 칸 안에서도 한 번 말한다
-  if (current.userScore) {
+  // 유저 점수는 스토어마다 재는 방식이 달라(긍정 비율, 별점) 그 스토어 칸 안에서 말한다.
+  // 요약 바가 이미 인용한 스토어만 건너뛴다 — 같은 숫자를 한 화면에 두 번 적지 않기 위해서다
+  if (current.userScore && current.platform !== quotedUserScorePlatform) {
     metaCells.push({
       label: "유저 점수",
       value: userScoreValueText(current.userScore.value, current.userScore.kind),

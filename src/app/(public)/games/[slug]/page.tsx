@@ -94,7 +94,6 @@ function DecisionSummary({ game, className, style }: { game: GameDetail; classNa
   const score = bestScore(game.platforms);
   const user = bestUserScore(game.platforms);
   const main = game.playtime?.mainStoryHours;
-  const complete = game.playtime?.completionistHours;
 
   const cells: SummaryCellProps[] = [
     {
@@ -104,8 +103,10 @@ function DecisionSummary({ game, className, style }: { game: GameDetail; classNa
       note: best ? `${PLATFORM_LABEL[best.platform] ?? best.platform}${best.discountPct ? ` | -${best.discountPct}%` : ""}` : undefined,
     },
   ];
+  // 완전 정복 시간을 여기 붙이지 않는 이유(2026-09-15): 같은 화면의 플레이타임 카드가 3종을 막대까지 붙여 말한다.
+  // 요약 바는 "얼마나 걸리나" 에 한 값으로 답하는 자리다 — 두 값을 적으면 카드와 겹치기만 하고 결론이 흐려진다
   if (main) {
-    cells.push({ label: "메인 스토리", value: formatHours(main), note: complete ? `완전 정복 ${formatHours(complete)}` : undefined });
+    cells.push({ label: "메인 스토리", value: formatHours(main) });
   }
   if (score) {
     cells.push({ label: "평론가 평점", value: String(score.value), note: score.note ?? undefined });
@@ -280,7 +281,8 @@ export default async function GameDetailPage({ params }: Props) {
                 </Link>
               }
             />
-            <PlatformTabs platforms={platforms} />
+            {/* 요약 바가 인용한 스토어의 유저 점수는 탭 안에서 또 적지 않는다(platform-tabs 주석) */}
+            <PlatformTabs platforms={platforms} quotedUserScorePlatform={bestUserScore(game.platforms)?.platform ?? null} />
             <UpgradeNotes upgrades={game.upgrades} />
           </section>
 
