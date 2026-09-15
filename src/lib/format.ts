@@ -8,18 +8,59 @@ export function formatDiscount(pct: number | null | undefined): string {
   return `-${pct}%`;
 }
 
-export function formatDate(d: Date | string | null | undefined): string {
-  if (!d) return "-";
-  const date = typeof d === "string" ? new Date(d) : d;
-  if (Number.isNaN(date.getTime())) return "-";
-  return date.toLocaleDateString("ko-KR", { year: "numeric", month: "2-digit", day: "2-digit", timeZone: DISPLAY_TIME_ZONE });
+/**
+ * KST 기준 달력 조각. 숫자만 꺼내고 한국어 표기는 아래 함수들이 직접 붙인다.
+ *
+ * 왜 toLocaleString("ko-KR") 을 그대로 쓰지 않나(2026-09-15 실측): 같은 값이 서버와 브라우저에서
+ * 다르게 찍혔다 — 서버(Node) "9월 15일 오전 02:00", 크롬 "9월 15일 AM 02:00". 런타임마다 ICU 판이
+ * 달라서다. 같은 자리의 글자가 다르면 React 는 수분화에 실패하고 **그 트리를 클라이언트에서 통째로
+ * 다시 그린다** — 목록과 상세가 뜬 직후 한 번 깜빡이던 원인이 이것이었다.
+ * 숫자 조각(연, 월, 일, 시, 분)은 ICU 판이 달라도 같은 값이라 여기서만 Intl 을 쓴다.
+ * 로캘을 en-US 로 두는 이유: 숫자만 꺼낼 것이라 한국어 표기 규칙이 끼어들 여지를 없앤다.
+ */
+const KST_PARTS = new Intl.DateTimeFormat("en-US", {
+  timeZone: DISPLAY_TIME_ZONE,
+  year: "numeric",
+  month: "2-digit",
+  day: "2-digit",
+  hour: "2-digit",
+  minute: "2-digit",
+  hourCycle: "h23",
+});
+
+type CalendarParts = { year: string; month: string; day: string; hour: string; minute: string };
+
+function kstParts(date: Date): CalendarParts {
+  const out: Record<string, string> = {};
+  for (const part of KST_PARTS.formatToParts(date)) out[part.type] = part.value;
+  return out as CalendarParts;
 }
 
-export function formatDateTime(d: Date | string | null | undefined): string {
-  if (!d) return "-";
+/** 앞의 0 을 뗀 값 — "09월" 이 아니라 "9월" 로 읽어야 한국어 표기가 된다 */
+function trimZero(v: string): string {
+  return String(Number(v));
+}
+
+/** 유효한 Date 로 바꾼다. 못 바꾸면 null — 화면에는 "-" 가 나간다 */
+function toDate(d: Date | string | null | undefined): Date | null {
+  if (!d) return null;
   const date = typeof d === "string" ? new Date(d) : d;
-  if (Number.isNaN(date.getTime())) return "-";
-  return date.toLocaleString("ko-KR", { dateStyle: "short", timeStyle: "short", timeZone: DISPLAY_TIME_ZONE });
+  return Number.isNaN(date.getTime()) ? null : date;
+}
+
+export function formatDate(d: Date | string | null | undefined): string {
+  const date = toDate(d);
+  if (!date) return "-";
+  const { year, month, day } = kstParts(date);
+  return `${year}. ${month}. ${day}.`;
+}
+
+/** 목록에 붙는 짧은 시각. 24시간제로 적는다 — 오전/오후 표기가 런타임마다 갈렸다(KST_PARTS 주석) */
+export function formatDateTime(d: Date | string | null | undefined): string {
+  const date = toDate(d);
+  if (!date) return "-";
+  const { year, month, day, hour, minute } = kstParts(date);
+  return `${year.slice(-2)}. ${trimZero(month)}. ${trimZero(day)}. ${hour}:${minute}`;
 }
 
 /** 100시간 미만은 소수 첫째 자리까지, 그 이상은 정수+천단위 콤마 (HLTB 값은 5,000시간대까지 나온다) */
@@ -64,10 +105,10 @@ const MS_PER_DAY = 24 * 60 * 60 * 1000;
 
 /** "9월 16일 24:00" 처럼 짧은 날짜+시각 (KST) */
 export function formatShortDateTime(d: Date | string | null | undefined): string {
-  if (!d) return "-";
-  const date = typeof d === "string" ? new Date(d) : d;
-  if (Number.isNaN(date.getTime())) return "-";
-  return date.toLocaleString("ko-KR", { month: "long", day: "numeric", hour: "2-digit", minute: "2-digit", timeZone: DISPLAY_TIME_ZONE });
+  const date = toDate(d);
+  if (!date) return "-";
+  const { month, day, hour, minute } = kstParts(date);
+  return `${trimZero(month)}월 ${trimZero(day)}일 ${hour}:${minute}`;
 }
 
 export type SaleRemaining = { text: string; days: number; urgent: boolean };
