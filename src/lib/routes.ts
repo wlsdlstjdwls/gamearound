@@ -16,6 +16,8 @@ export const ROUTES = {
   company: "/companies",
   apiAuthMe: "/api/auth/me",
   apiPushSubscribe: "/api/push/subscribe",
+  /** 뉴스 썸네일 프록시 — 매체 CDN 이 핫링크를 막아 서버가 대신 받는다(lib/news/thumbnail) */
+  apiNewsThumbnail: "/api/news/thumbnail",
 } as const;
 
 /** 로그인 후 돌아갈 경로를 붙인 로그인 URL. next가 없거나 안전하지 않으면 붙이지 않는다 */
