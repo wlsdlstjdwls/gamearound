@@ -28,10 +28,12 @@ export const GAME_MESSAGES = {
   freeUpgradeNote: "원본을 가지고 있어야 해요.",
 } as const;
 
-/** 구독 배지 문구 — 서비스 이름은 구독 레코드가 들고 있고, 여기서는 문장만 만든다 */
-export function subscriptionText(labels: string[]): string {
-  if (labels.length === 0) return "";
-  return `${labels.join(" | ")} 로 플레이할 수 있어요`;
+/**
+ * 구독 칩 문구 — 플랫폼 탭 안에 한 칩씩 선다. 서비스 이름은 구독 레코드가 들고 있고 여기서는 꼬리말만 붙인다.
+ * 문장이 아니라 칩인 이유: 이미 그 스토어의 탭 안이라 "어디서" 를 다시 말할 필요가 없다.
+ */
+export function subscriptionChipText(label: string): string {
+  return `${label} 포함`;
 }
 
 /**

@@ -11,16 +11,35 @@ const DETAIL_NEWS_LIMIT = 5;
 /** 상세에 한 번에 띄울 DLC 수. 심즈류는 수십 개라 상한이 없으면 화면이 DLC 목록으로 덮인다 */
 const DETAIL_DLC_LIMIT = 30;
 
-/** 지금 구독으로 즐길 수 있는 플랫폼들. removed_at 이 찍힌 이력 행은 제외한다 */
-async function activeSubscriptions(gamePlatformIds: string[]): Promise<SubscriptionDto[]> {
-  if (gamePlatformIds.length === 0) return [];
+/**
+ * 지금 구독으로 즐길 수 있는 플랫폼들 — game_platform 별로 묶어서 돌려준다.
+ *
+ * 게임 단위로 접지 않는 이유(2026-09-15): Game Pass 는 Xbox 에서만 유효한 혜택인데
+ * 게임 위에 하나로 붙여 두면 PS 탭을 보는 사람도 "구독으로 할 수 있다" 로 읽는다.
+ * 구독은 스토어의 성질이라 그 스토어 안에서만 말해야 참이다.
+ * removed_at 이 찍힌 이력 행은 제외한다.
+ */
+async function activeSubscriptionsByPlatform(gamePlatformIds: string[]): Promise<Map<string, SubscriptionDto[]>> {
+  const out = new Map<string, SubscriptionDto[]>();
+  if (gamePlatformIds.length === 0) return out;
   const rows = await getDb()
-    .select({ key: subscriptionsTable.key, label: subscriptionsTable.labelKo })
+    .select({ gamePlatformId: gameSubscriptions.gamePlatformId, key: subscriptionsTable.key, label: subscriptionsTable.labelKo })
     .from(gameSubscriptions)
     .innerJoin(subscriptionsTable, eq(subscriptionsTable.id, gameSubscriptions.subscriptionId))
     .where(and(inArray(gameSubscriptions.gamePlatformId, gamePlatformIds), isNull(gameSubscriptions.removedAt)));
-  // 같은 구독이 기기별 행마다 한 번씩 올 수 있다(PS4판, PS5판). key 로 접는다
-  const byKey = new Map(rows.map((r) => [r.key, r]));
+  for (const r of rows) {
+    const list = out.get(r.gamePlatformId) ?? [];
+    // 한 플랫폼 행에 같은 구독이 두 번 붙는 일은 없지만, 카탈로그가 겹쳐 들어온 적이 있어 key 로 한 번 접는다
+    if (!list.some((s) => s.key === r.key)) list.push({ key: r.key, label: r.label });
+    out.set(r.gamePlatformId, list);
+  }
+  return out;
+}
+
+/** 게임 전체 기준의 구독 목록 — 어느 스토어든 하나라도 포함이면 여기 들어온다(목록, 필터가 쓴다) */
+function flattenSubscriptions(byPlatform: Map<string, SubscriptionDto[]>): SubscriptionDto[] {
+  const byKey = new Map<string, SubscriptionDto>();
+  for (const list of byPlatform.values()) for (const s of list) byKey.set(s.key, s);
   return Array.from(byKey.values());
 }
 
@@ -42,8 +61,11 @@ export async function getGameBySlug(slug: string): Promise<GameDetail | null> {
   });
   if (!row) return null;
 
-  const platforms = [...row.platforms].sort(byRegionThenPlatform).map(toPlatformDto);
-  const subscriptions = await activeSubscriptions(row.platforms.map((p) => p.id));
+  const subsByPlatform = await activeSubscriptionsByPlatform(row.platforms.map((p) => p.id));
+  const platforms = [...row.platforms]
+    .sort(byRegionThenPlatform)
+    .map((p) => ({ ...toPlatformDto(p), subscriptions: subsByPlatform.get(p.id) ?? [] }));
+  const subscriptions = flattenSubscriptions(subsByPlatform);
 
   return {
     id: row.id,

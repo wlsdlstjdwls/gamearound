@@ -6,7 +6,6 @@ import { notFound } from "next/navigation";
 import { CoverImage } from "@/components/game-card";
 import { CompanyChips } from "@/components/company-chips";
 import { DlcList } from "@/components/dlc-list";
-import { SubscriptionBadges } from "@/components/subscription-badges";
 import { UpgradeNotes } from "@/components/upgrade-note";
 import { MultiplayerBadges } from "@/components/multiplayer-badges";
 import { NewsList } from "@/components/news-list";
@@ -122,6 +121,13 @@ export default async function GameDetailPage({ params }: Props) {
   // 어느 한 플랫폼이라도 "추가 콘텐츠 있음"이라고 했으면 DLC 블록을 띄운다.
   // 목록이 비어 있어도 그 사실 자체가 사용자에게 쓸모 있는 정보다.
   const hasAddOns = game.platforms.some((p) => p.hasAddOns === true);
+  // 플레이 방식 칩이 하나라도 서는지 — 장르와 사이의 구분선을 그릴지 정한다
+  const hasPlayModes =
+    game.supportsSolo ||
+    game.supportsCoop ||
+    game.supportsPvp ||
+    Boolean(game.localMaxPlayers) ||
+    Boolean(game.onlineMaxPlayers);
 
   return (
     <Page pad="detail" gap={28}>
@@ -165,17 +171,17 @@ export default async function GameDetailPage({ params }: Props) {
 
           <div className="enter-item flex flex-wrap items-center gap-2" style={stagger(3)}>
             {game.genres.length > 0 && (
-              <>
-                <ul className="flex flex-wrap gap-1.5" aria-label="장르">
-                  {game.genres.map((g) => (
-                    <li key={g} className="rounded-full bg-surface-2 px-[11px] py-1 text-[12px] text-ink-2">
-                      {g}
-                    </li>
-                  ))}
-                </ul>
-                <span aria-hidden className="h-5 w-px bg-line" />
-              </>
+              <ul className="flex flex-wrap gap-1.5" aria-label="장르">
+                {game.genres.map((g) => (
+                  <li key={g} className="rounded-full bg-surface-2 px-[11px] py-1 text-[12px] text-ink-2">
+                    {g}
+                  </li>
+                ))}
+              </ul>
             )}
+            {/* 구분선은 양쪽에 실제로 뭔가 있을 때만 긋는다 — 미지원 칩을 안 그리게 되면서
+                플레이 방식이 통째로 비는 게임이 생겼고, 그때 선만 홀로 서 있었다 */}
+            {game.genres.length > 0 && hasPlayModes && <span aria-hidden className="h-5 w-px bg-line" />}
             <MultiplayerBadges
               localMaxPlayers={game.localMaxPlayers}
               onlineMaxPlayers={game.onlineMaxPlayers}
@@ -206,7 +212,6 @@ export default async function GameDetailPage({ params }: Props) {
                 </Link>
               }
             />
-            <SubscriptionBadges subscriptions={game.subscriptions} />
             <PlatformTabs platforms={platforms} />
             <UpgradeNotes upgrades={game.upgrades} />
           </section>

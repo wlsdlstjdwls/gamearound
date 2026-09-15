@@ -49,6 +49,8 @@ export function toPlatformDto(p: PlatformRow): PlatformDto {
     lastSyncedAt: iso(p.lastSyncedAt),
     syncStatus: p.syncStatus,
     hasAddOns: p.hasAddOns,
+    // 구독은 다른 테이블이라 행 하나로는 알 수 없다. 채우는 곳은 detail 의 조회부다
+    subscriptions: [],
   };
 }
 
@@ -139,18 +141,31 @@ export const CARD_GENRE_MAX = 3;
  */
 export async function fillGenres(items: GameSummary[]): Promise<GameSummary[]> {
   if (items.length === 0) return items;
+  return applyGenres(items, await fetchGenresBySlug(items.map((i) => i.slug)));
+}
+
+/**
+ * 슬러그별 장르 목록만 가져온다. 조회와 적용을 가른 이유: 부르는 쪽이 이 왕복을
+ * 다른 조회와 나란히 띄울 수 있어야 한다 — Neon 은 us-east-1 이라 한 번에 200ms 가 넘는다.
+ */
+async function fetchGenresBySlug(slugs: string[]): Promise<Map<string, string[]>> {
+  const bySlug = new Map<string, string[]>();
+  if (slugs.length === 0) return bySlug;
   const rows = await getDb()
     .select({ slug: games.slug, name: genres.name })
     .from(gameGenres)
     .innerJoin(games, eq(games.id, gameGenres.gameId))
     .innerJoin(genres, eq(genres.id, gameGenres.genreId))
-    .where(inArray(games.slug, items.map((i) => i.slug)));
-  const bySlug = new Map<string, string[]>();
+    .where(inArray(games.slug, slugs));
   for (const r of rows) {
     const list = bySlug.get(r.slug) ?? [];
     list.push(r.name);
     bySlug.set(r.slug, list);
   }
+  return bySlug;
+}
+
+function applyGenres(items: GameSummary[], bySlug: Map<string, string[]>): GameSummary[] {
   for (const item of items) {
     // 가나다순으로 자른다 — 순서가 조회마다 흔들리면 같은 게임의 칩이 화면마다 달라진다
     item.genres = [...new Set(bySlug.get(item.slug) ?? [])].sort((a, b) => a.localeCompare(b, "ko")).slice(0, CARD_GENRE_MAX);
@@ -163,7 +178,11 @@ export async function attachBestPrice(rows: GameRow[]): Promise<GameSummary[]> {
   if (rows.length === 0) return [];
   const db = getDb();
   const ids = rows.map((g) => g.id);
-  const gps = await db.select().from(gamePlatforms).where(inArray(gamePlatforms.gameId, ids));
+  // 가격과 장르는 서로를 기다릴 이유가 없다. 직렬로 두면 왕복 한 번(200ms 대)이 그대로 목록 지연이 된다
+  const [gps, genresBySlug] = await Promise.all([
+    db.select().from(gamePlatforms).where(inArray(gamePlatforms.gameId, ids)),
+    fetchGenresBySlug(rows.map((g) => g.slug)),
+  ]);
   const byGame = new Map<string, PlatformRow[]>();
   for (const gp of gps) {
     const list = byGame.get(gp.gameId) ?? [];
@@ -171,7 +190,7 @@ export async function attachBestPrice(rows: GameRow[]): Promise<GameSummary[]> {
     byGame.set(gp.gameId, list);
   }
   // 장르는 여기서 같이 채운다 — attachBestPrice 를 쓰는 화면(목록, 검색, 회사)은 전부 카드를 그린다
-  return fillGenres(rows.map((g) => {
+  return applyGenres(rows.map((g) => {
     const list = byGame.get(g.id) ?? [];
     const best = cheapestOf(list) ?? list[0];
     return {
@@ -183,7 +202,7 @@ export async function attachBestPrice(rows: GameRow[]): Promise<GameSummary[]> {
       platforms: distinctPlatforms(list.map((p) => p.platform)),
       genres: [],
     };
-  }));
+  }), genresBySlug);
 }
 
 export function toPublicGameDto(g: GameDetail): PublicGameDto {

@@ -27,6 +27,12 @@ export type PlatformDto = {
   syncStatus: SyncStatus | null;
   /** 이 스토어가 "추가 콘텐츠 있음"이라고 알려준 값. DLC 목록을 못 가져오는 플랫폼에서도 유무는 말할 수 있다 */
   hasAddOns: boolean | null;
+  /**
+   * 이 플랫폼에서 이 게임을 포함하는 구독. 게임 단위가 아니라 플랫폼 단위로 매다는 이유:
+   * Game Pass 는 Xbox 에서만 유효한데 게임 위에 붙여 두면 PS 탭을 보는 사람에게도
+   * "구독으로 할 수 있다" 로 읽힌다. 값이 붙은 스토어 안에서만 말해야 참이다.
+   */
+  subscriptions: SubscriptionDto[];
 };
 
 export type NewsDto = {

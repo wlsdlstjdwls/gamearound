@@ -1,15 +1,16 @@
 "use client";
 // 플랫폼 탭 — 상세 페이지. 현재가/할인/정가, 출시일, 버전, 할인 종료 + 스토어 링크.
 // freshness 는 서버(RSC)에서 계산해 넘긴다(캐시/하이드레이션 시각 차이 방지).
-// 수집 시각은 값이 오래됐을 때만 말한다(StalenessNote). 늘 붙이던 "오늘 15:11 수집" 은 뺐다 —
-// 가격이 최신일 때 그 문구는 알려 주는 것이 없고, 오래됐을 때는 아래 안내가 같은 말을 한 번 더 했다.
+// 수집 시각도 "가격이 바뀌었을 수 있다" 는 고지도 화면에 적지 않는다(2026-09-15).
+// 값이 오래된 것은 탭마다 문장으로 사과할 일이 아니라 다음 행동을 바꿀 일이다 —
+// 그때만 스토어 링크를 주 버튼으로 승격한다(isStale).
 import { formatPrice } from "@/lib/currency";
 import { useId, useState } from "react";
 import { formatDate, formatDiscount, formatShortDateTime, platformLabel } from "@/lib/format";
 import type { Freshness } from "@/lib/freshness";
 import type { PlatformDto } from "@/server/services/games";
-import { StalenessNote } from "@/components/freshness-badge";
 import { SaleBadge } from "@/components/sale-badge";
+import { SubscriptionChips } from "@/components/subscription-badges";
 import { cardClass } from "@/components/ui/page";
 
 export type PlatformTabItem = PlatformDto & { freshness: Freshness };
@@ -73,6 +74,14 @@ export function PlatformTabs({ platforms }: { platforms: PlatformTabItem[] }) {
               {p.discountPct && p.discountPct > 0 ? (
                 <span className="ml-1 text-[11.5px] text-dim">{formatDiscount(p.discountPct)}</span>
               ) : null}
+              {/* 구독 포함 표시는 점 하나로 족하다 — 탭 줄에 서비스 이름까지 넣으면 탭이 가로로 넘친다.
+                  이름은 탭을 열면 칩이 말한다. 읽는 사람을 위해 aria-label 로 이름을 남긴다 */}
+              {p.subscriptions.length > 0 && (
+                <span
+                  className="ml-1 inline-block size-1.5 rounded-full bg-acc align-middle"
+                  aria-label={`${p.subscriptions.map((s) => s.label).join(", ")} 포함`}
+                />
+              )}
               {selected && <span aria-hidden className="absolute inset-x-3 -bottom-px h-0.5 bg-ink" />}
             </button>
           );
@@ -98,7 +107,8 @@ export function PlatformTabs({ platforms }: { platforms: PlatformTabItem[] }) {
           {hasDiscount && <SaleBadge discountName={current.discountName} discountEndsAt={current.discountEndsAt} />}
         </div>
 
-        <StalenessNote freshness={current.freshness} lastSyncedAt={current.lastSyncedAt} />
+        {/* 구독 칩은 가격 바로 밑이다 — "얼마인가" 다음에 오는 질문이 "안 사고도 할 수 있나" 라서다 */}
+        <SubscriptionChips subscriptions={current.subscriptions} />
 
         <dl className="grid grid-cols-[repeat(auto-fit,minmax(120px,1fr))] divide-x divide-line overflow-hidden rounded-[10px] border border-line">
           <MetaCell label="정가">{formatPrice(current.listPrice, current.currency)}</MetaCell>

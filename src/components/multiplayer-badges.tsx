@@ -1,6 +1,10 @@
 // 멀티플레이 칩 — 기획서 3-6: 솔로/협동/PvP, 로컬/온라인 최대 인원.
-// 미지원 항목은 지우지 않고 취소선으로 남긴다("없는 것"이 아니라 "지원 안 함"이 정보다).
-
+//
+// 지원하는 것만 그린다(2026-09-15). 이전에는 미지원 항목을 취소선으로 남겼는데, 그 표시가
+// 거짓을 자신 있게 말하고 있었다 — 값의 출처가 스토어 카테고리 하나뿐이라 `false` 가
+// "지원 안 함" 과 "스토어가 안 알려 줌" 을 겸한다. 실측(2026-09-15): 팰월드의 Steam 카테고리에는
+// PvP 항목이 아예 없어(싱글, 멀티, 협동, 온라인 협동까지만) 화면이 "PvP 안 됨" 으로 그었다.
+// 모르는 것을 그리지 않으면 이 거짓말이 사라진다. 아는 것만 말한다.
 type Props = {
   localMaxPlayers: number | null;
   onlineMaxPlayers: number | null;
@@ -9,31 +13,32 @@ type Props = {
   supportsPvp: boolean;
 };
 
-function Chip({ children, on }: { children: React.ReactNode; on: boolean }) {
+function Chip({ children }: { children: React.ReactNode }) {
   return (
-    <span
-      className={`inline-flex items-center rounded-full px-[11px] py-1 text-[12px] ${
-        on ? "border border-line-strong text-ink-2" : "border border-line text-dim-2 line-through"
-      }`}
-      aria-label={on ? undefined : "미지원"}
-    >
+    <span className="inline-flex items-center rounded-full border border-line-strong px-[11px] py-1 text-[12px] text-ink-2">
       {children}
     </span>
   );
 }
 
 export function MultiplayerBadges(p: Props) {
+  const items = [
+    p.supportsSolo ? "솔로" : null,
+    p.supportsCoop ? "협동" : null,
+    p.supportsPvp ? "PvP" : null,
+    p.localMaxPlayers && p.localMaxPlayers > 0 ? `로컬 최대 ${p.localMaxPlayers}인` : null,
+    p.onlineMaxPlayers && p.onlineMaxPlayers > 0 ? `온라인 최대 ${p.onlineMaxPlayers}인` : null,
+  ].filter((v): v is string => v !== null);
+
+  if (items.length === 0) return null;
+
   return (
     <ul className="flex flex-wrap gap-1.5" aria-label="플레이 방식">
-      <li><Chip on={p.supportsSolo}>솔로</Chip></li>
-      <li><Chip on={p.supportsCoop}>협동</Chip></li>
-      <li><Chip on={p.supportsPvp}>PvP</Chip></li>
-      {p.localMaxPlayers !== null && p.localMaxPlayers > 0 && (
-        <li><Chip on>로컬 최대 {p.localMaxPlayers}인</Chip></li>
-      )}
-      {p.onlineMaxPlayers !== null && p.onlineMaxPlayers > 0 && (
-        <li><Chip on>온라인 최대 {p.onlineMaxPlayers}인</Chip></li>
-      )}
+      {items.map((label) => (
+        <li key={label}>
+          <Chip>{label}</Chip>
+        </li>
+      ))}
     </ul>
   );
 }
