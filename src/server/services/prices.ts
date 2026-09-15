@@ -4,6 +4,7 @@ import { and, eq, gte, inArray, lt, sql } from "drizzle-orm";
 import { getDb } from "@/server/db/client";
 import { gamePlatforms, games, news, priceSnapshots, syncLogs, type Currency, type Platform } from "@/server/db/schema";
 import { PLATFORM_ORDER } from "@/lib/platform";
+import { DTO_CACHE_VERSION } from "@/lib/cache";
 
 export type PricePoint = { t: string; price: number; discountPct: number; discountName: string | null };
 /** 플랫폼별 시계열 + 현재 상태(정가 기준선, 진행 중 할인 표시에 쓴다) */
@@ -91,7 +92,7 @@ async function getPriceHistoryRaw(slug: string, days: number): Promise<PriceSeri
 /** 최근 N일 가격 이력 — 태그 `game:<slug>` (크롤러 갱신 시 함께 무효화) */
 export async function getPriceHistory(slug: string, opts: { days?: number } = {}): Promise<PriceSeries[]> {
   const days = Math.min(Math.max(opts.days ?? 365, 1), 730);
-  const cached = unstable_cache(() => getPriceHistoryRaw(slug, days), ["price-history", slug, String(days)], {
+  const cached = unstable_cache(() => getPriceHistoryRaw(slug, days), [DTO_CACHE_VERSION, "price-history", slug, String(days)], {
     tags: [`game:${slug}`],
   });
   return cached();

@@ -6,7 +6,9 @@
 import { PLATFORM_LABEL } from "@/lib/format";
 import type { Platform } from "@/server/db/schema";
 
-export function PlatformBadges({ platforms }: { platforms: Platform[] }) {
+// 기본값을 두는 이유: 이 배지 하나가 없어서 목록 화면 전체가 죽은 적이 있다(2026-09-15).
+// 캐시에 담긴 옛 모양 DTO 에는 platforms 가 없었다 — 근거와 재발 방지는 lib/cache 의 DTO_CACHE_VERSION.
+export function PlatformBadges({ platforms = [] }: { platforms?: Platform[] }) {
   if (platforms.length === 0) return <p className="text-[11.5px] text-dim">플랫폼 정보 없음</p>;
   return (
     <ul className="flex flex-wrap gap-1">

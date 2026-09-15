@@ -182,7 +182,13 @@ export default async function HomePage() {
                     <span className="text-[12px] text-dim">
                       {g.best ? PLATFORM_LABEL[g.best.platform] ?? g.best.platform : "-"}
                     </span>
-                    <span className="text-[13.5px] font-bold text-ink">{formatPrice(g.best?.currentPrice, g.best?.currency)}</span>
+                    {/* 할인가만 있으면 "싼지" 를 알 수 없다 — 정가를 옆에 같이 세워야 값이 뜻을 가진다 */}
+                    <span className="flex items-baseline gap-1.5">
+                      <span className="text-[13.5px] font-bold text-ink">{formatPrice(g.best?.currentPrice, g.best?.currency)}</span>
+                      {g.best?.listPrice != null && g.best.listPrice !== g.best.currentPrice && (
+                        <span className="text-[11.5px] text-dim-2 line-through">{formatPrice(g.best.listPrice, g.best.currency)}</span>
+                      )}
+                    </span>
                     <SaleBadge discountName={null} discountEndsAt={g.best?.discountEndsAt} />
                   </li>
                 ))}

@@ -4,7 +4,7 @@ import { unstable_cache } from "next/cache";
 import { and, asc, eq, gt, isNotNull, sql } from "drizzle-orm";
 import { getDb } from "@/server/db/client";
 import { companies, gameCompanies, gamePlatforms, games } from "@/server/db/schema";
-import { LIST_REVALIDATE_SECONDS } from "@/lib/cache";
+import { DTO_CACHE_VERSION, LIST_REVALIDATE_SECONDS } from "@/lib/cache";
 import type { CompanyDetail, CompanySummary, GameSummary } from "./games/dto";
 import { attachBestPrice } from "./games/mappers";
 import { companyDisplayName } from "./games/detail";
@@ -54,7 +54,7 @@ async function getCompanyBySlugRaw(slug: string): Promise<CompanyDetail | null> 
 
 /** 회사 상세 — 태그 `company:<slug>`. 그 회사 게임이 바뀌면 sync 가 이 태그를 무효화한다 */
 export async function getCompanyBySlug(slug: string): Promise<CompanyDetail | null> {
-  const cached = unstable_cache(() => getCompanyBySlugRaw(slug), ["company", slug], {
+  const cached = unstable_cache(() => getCompanyBySlugRaw(slug), [DTO_CACHE_VERSION, "company", slug], {
     tags: [`company:${slug}`],
     revalidate: LIST_REVALIDATE_SECONDS,
   });
@@ -108,7 +108,7 @@ async function listCompanyGamesRaw(slug: string, role: CompanyRoleFilter, page: 
 export async function listCompanyGames(slug: string, role: CompanyRoleFilter, page: number): Promise<CompanyGamesResult> {
   const cached = unstable_cache(
     () => listCompanyGamesRaw(slug, role, page),
-    ["company-games", slug, role, String(page)],
+    [DTO_CACHE_VERSION, "company-games", slug, role, String(page)],
     { tags: [`company:${slug}`], revalidate: LIST_REVALIDATE_SECONDS },
   );
   return cached();
@@ -151,7 +151,7 @@ async function listCompaniesRaw(country: string | undefined, page: number): Prom
 }
 
 export const listCompanies = (country: string | undefined, page: number) =>
-  unstable_cache(() => listCompaniesRaw(country, page), ["companies", country ?? "", String(page)], {
+  unstable_cache(() => listCompaniesRaw(country, page), [DTO_CACHE_VERSION, "companies", country ?? "", String(page)], {
     tags: ["home"],
     revalidate: LIST_REVALIDATE_SECONDS,
   })();
@@ -174,7 +174,7 @@ async function getCountryFacetsRaw(): Promise<Array<{ code: string; name: string
     .map((r) => ({ code: r.code, name: r.name, count: r.count }));
 }
 
-export const getCountryFacets = unstable_cache(getCountryFacetsRaw, ["company-countries"], {
+export const getCountryFacets = unstable_cache(getCountryFacetsRaw, [DTO_CACHE_VERSION, "company-countries"], {
   tags: ["home"],
   revalidate: LIST_REVALIDATE_SECONDS,
 });

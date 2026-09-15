@@ -5,6 +5,7 @@ import { getDb } from "@/server/db/client";
 import { gameSubscriptions, games, news, subscriptions as subscriptionsTable } from "@/server/db/schema";
 import type { GameDetail, SubscriptionDto } from "./dto";
 import { byRegionThenPlatform, iso, toPlatformDto } from "./mappers";
+import { DTO_CACHE_VERSION } from "@/lib/cache";
 
 const DETAIL_NEWS_LIMIT = 5;
 /** 상세에 한 번에 띄울 DLC 수. 심즈류는 수십 개라 상한이 없으면 화면이 DLC 목록으로 덮인다 */
@@ -118,6 +119,6 @@ export function companyDisplayName(c: { nameKo: string | null; nameEn: string })
 
 /** 상세 — 태그 `game:<slug>` (§4.5). 크롤러가 해당 게임 갱신 후 revalidateTag 호출 */
 export async function getGameBySlugCached(slug: string): Promise<GameDetail | null> {
-  const cached = unstable_cache(() => getGameBySlug(slug), ["game", slug], { tags: [`game:${slug}`] });
+  const cached = unstable_cache(() => getGameBySlug(slug), [DTO_CACHE_VERSION, "game", slug], { tags: [`game:${slug}`] });
   return cached();
 }

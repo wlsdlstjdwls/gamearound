@@ -10,6 +10,7 @@ import { getDb } from "@/server/db/client";
 import { gamePlatforms, games, patchNotes, type Platform, type Region } from "@/server/db/schema";
 import { byRegionThenPlatform } from "./mappers";
 import type { PatchNoteDto, PlatformPatchesDto } from "./dto";
+import { DTO_CACHE_VERSION } from "@/lib/cache";
 
 const MS_PER_DAY = 24 * 60 * 60 * 1000;
 
@@ -87,7 +88,7 @@ export async function getGamePatches(slug: string): Promise<PlatformPatchesDto[]
 
 /** 상세, 패치 화면이 같은 캐시 항목을 쓴다 — 태그는 게임 상세와 같은 `game:<slug>` */
 export async function getGamePatchesCached(slug: string): Promise<PlatformPatchesDto[]> {
-  const cached = unstable_cache(() => getGamePatches(slug), ["game-patches", slug], { tags: [`game:${slug}`] });
+  const cached = unstable_cache(() => getGamePatches(slug), [DTO_CACHE_VERSION, "game-patches", slug], { tags: [`game:${slug}`] });
   return cached();
 }
 

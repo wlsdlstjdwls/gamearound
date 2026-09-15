@@ -49,6 +49,9 @@ export function GameCard({ game, variant = "discount" }: { game: GameSummary; va
   const title = game.titleKo ?? game.titleEn;
   const best = game.best;
   const hasDiscount = Boolean(best?.discountPct && best.discountPct > 0);
+  // 캐시에 담긴 옛 모양 DTO 에는 이 배열이 없을 수 있다 — 카드 한 장이 화면 전체를 죽이지 않게 받아 준다
+  // (판 올리는 자리는 lib/cache 의 DTO_CACHE_VERSION. 여기 기본값은 그 사이를 버티는 몫이다)
+  const genres = game.genres ?? [];
 
   return (
     <Link
@@ -71,6 +74,11 @@ export function GameCard({ game, variant = "discount" }: { game: GameSummary; va
         </Clamp>
         {game.titleKo && <Clamp className="text-[11.5px] text-dim">{game.titleEn}</Clamp>}
         <PlatformBadges platforms={game.platforms} />
+        {genres.length > 0 && (
+          // 칩이 아니라 한 줄 글로 둔다 — 카드에 테두리 덩어리가 두 줄이 되면 격자가 시끄럽고,
+          // 장르는 고르는 값이 아니라 읽는 값이다(고르는 자리는 목록 왼쪽 필터 기둥이다).
+          <Clamp className="text-[11.5px] text-mut">{genres.join(", ")}</Clamp>
+        )}
 
         {variant === "release" && best?.releaseDate ? (
           <p className="mt-auto text-[13px] text-mut">{formatDate(best.releaseDate)} 출시</p>

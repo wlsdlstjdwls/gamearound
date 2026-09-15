@@ -7,7 +7,7 @@ import type { GameSummary } from "./dto";
 import { attachBestPrice, type GameRow } from "./mappers";
 import { isMissingTrgm, titleMatch, TRGM_THRESHOLD } from "./title-search";
 import { mainGamesOnly } from "./filters";
-import { LIST_REVALIDATE_SECONDS } from "@/lib/cache";
+import { DTO_CACHE_VERSION, LIST_REVALIDATE_SECONDS } from "@/lib/cache";
 
 const SEARCH_DEFAULT_LIMIT = 24;
 
@@ -36,7 +36,7 @@ export async function searchGames(q: string, opts: { limit?: number } = {}): Pro
   const limit = Math.min(Math.max(opts.limit ?? SEARCH_DEFAULT_LIMIT, 1), 50);
   const key = q.trim().toLowerCase();
   if (!key) return [];
-  const cached = unstable_cache(() => searchGamesRaw(key, limit), ["search", key, String(limit)], {
+  const cached = unstable_cache(() => searchGamesRaw(key, limit), [DTO_CACHE_VERSION, "search", key, String(limit)], {
     tags: ["home"],
     revalidate: LIST_REVALIDATE_SECONDS,
   });

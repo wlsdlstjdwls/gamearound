@@ -11,7 +11,7 @@ import type { GameSummary } from "./dto";
 import { attachBestPrice } from "./mappers";
 import { allOf, byCompanySlug, inAnySubscription, mainGamesOnly } from "./filters";
 import { titleMatch, TRGM_THRESHOLD } from "./title-search";
-import { LIST_REVALIDATE_SECONDS } from "@/lib/cache";
+import { DTO_CACHE_VERSION, LIST_REVALIDATE_SECONDS } from "@/lib/cache";
 
 export const GAMES_PAGE_SIZE = 36;
 
@@ -47,6 +47,15 @@ function platformAgg(platform?: Platform | PlatformFamily) {
     .select({
       gameId: gamePlatforms.gameId,
       maxDiscount: sql<number>`max(coalesce(${gamePlatforms.discountPct}, 0))`.as("max_discount"),
+      /**
+       * 기준 통화로 살 수 있는 게임인가. 할인율순의 첫 정렬 키다.
+       *
+       * 왜 필요한가(2026-09-15 실측): 4,910개 중 1,490개는 원화 가격이 아예 없다. 거의 GOG 인데
+       * (GOG 는 한국에 원화로 팔지 않는다 — adapters/gog 주석) 그쪽 할인이 -95% 대라
+       * 할인율만으로 세우면 첫 화면이 통째로 달러가 된다. 환산은 하지 않으므로(lib/currency)
+       * 남은 손잡이는 순서뿐이다 — 원화로 살 수 있는 것을 먼저 세우고, 나머지는 뒤에 그대로 둔다.
+       */
+      hasBaseCurrency: sql<boolean>`bool_or(${gamePlatforms.currency} = ${DISPLAY_CURRENCY} and ${gamePlatforms.currentPrice} is not null)`.as("has_base_currency"),
       // 통화가 섞인 min() 은 뜻이 없다 — 정렬 기준은 기준 통화 가격만 본다(외화 전용 게임은 가격 정렬에서 nulls last)
       minPrice: sql<number | null>`min(${gamePlatforms.currentPrice}) filter (where ${gamePlatforms.currency} = ${DISPLAY_CURRENCY})`.as("min_price"),
       maxRelease: sql<string | null>`max(${gamePlatforms.releaseDate})`.as("max_release"),
@@ -85,7 +94,7 @@ async function listGamesRaw(filter: GameListFilter): Promise<GameListResult> {
 
   // nulls last 로 값 없는 게임(가격 미수집, 출시일 미상)이 앞을 차지하지 않게 한다
   const orderBy = {
-    discount: [sql`${agg.maxDiscount} desc nulls last`, sql`${agg.minPrice} asc nulls last`],
+    discount: [sql`${agg.hasBaseCurrency} desc`, sql`${agg.maxDiscount} desc nulls last`, sql`${agg.minPrice} asc nulls last`],
     price: [sql`${agg.minPrice} asc nulls last`, sql`${agg.maxDiscount} desc nulls last`],
     release: [sql`${agg.maxRelease} desc nulls last`],
     title: [asc(sql`coalesce(${games.titleKo}, ${games.titleEn})`)],
@@ -119,7 +128,7 @@ async function listGamesRaw(filter: GameListFilter): Promise<GameListResult> {
 /** 목록 — 필터 조합별 1시간 캐시. 크롤러 완료 시 `home` 태그로 함께 무효화된다 */
 export async function listGames(filter: GameListFilter): Promise<GameListResult> {
   const key = [filter.q?.trim().toLowerCase() ?? "", filter.platform ?? "", filter.genre ?? "", filter.onSale ? "sale" : "", filter.company ?? "", filter.subscription ? "sub" : "", filter.sort ?? DEFAULT_GAME_SORT, String(filter.page ?? 1)];
-  const cached = unstable_cache(() => listGamesRaw(filter), ["games", ...key], { tags: ["home"], revalidate: LIST_REVALIDATE_SECONDS });
+  const cached = unstable_cache(() => listGamesRaw(filter), [DTO_CACHE_VERSION, "games", ...key], { tags: ["home"], revalidate: LIST_REVALIDATE_SECONDS });
   return cached();
 }
 
@@ -151,4 +160,4 @@ async function getGameFacetsRaw(): Promise<GameFacets> {
 }
 
 /** 필터 선택지 — 게임 수가 늘어도 목록 페이지마다 다시 세지 않게 별도 캐시 */
-export const getGameFacets = unstable_cache(getGameFacetsRaw, ["game-facets"], { tags: ["home"], revalidate: LIST_REVALIDATE_SECONDS });
+export const getGameFacets = unstable_cache(getGameFacetsRaw, [DTO_CACHE_VERSION, "game-facets"], { tags: ["home"], revalidate: LIST_REVALIDATE_SECONDS });

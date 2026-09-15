@@ -192,6 +192,12 @@ export type GameSummary = {
    * 카드가 배지로 그대로 펴서 보여 준다 — "외 2개" 는 무엇이 있는지 말해 주지 않아 다시 눌러 봐야 했다.
    */
   platforms: Platform[];
+  /**
+   * 카드에 띄울 장르(가나다순, CARD_GENRE_MAX 개까지). 목록에서 나오는 두 번째 질문이
+   * "무슨 장르냐" 라서 카드를 열지 않고 답이 나야 한다 — 플랫폼 배지와 같은 이유다.
+   * 상세의 genres 와 달리 잘린 목록이다. 전부 보려면 상세로 간다.
+   */
+  genres: string[];
 };
 
 export type HomeData = {

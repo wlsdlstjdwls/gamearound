@@ -1,8 +1,8 @@
 // DB 행 → DTO 변환. 조회 로직(어떤 행을 가져올지)과 표현 로직(어떤 모양으로 줄지)을 갈라 둔다.
 import { eq, inArray } from "drizzle-orm";
 import { getDb } from "@/server/db/client";
-import { gamePlatforms, games, HOME_REGION, type Platform, type Region } from "@/server/db/schema";
-import { cheapestOf } from "@/lib/currency";
+import { gameGenres, gamePlatforms, games, genres, HOME_REGION, type Platform, type Region } from "@/server/db/schema";
+import { cheapestOf, DISPLAY_CURRENCY } from "@/lib/currency";
 import { PLATFORM_ORDER } from "@/lib/platform";
 import type { GameDetail, GameSummary, PlatformDto, PublicGameDto } from "./dto";
 
@@ -57,13 +57,32 @@ export function distinctPlatforms(list: Platform[]): Platform[] {
   return [...new Set(list)].sort((a, b) => PLATFORM_ORDER.indexOf(a) - PLATFORM_ORDER.indexOf(b));
 }
 
-/** games ⨝ game_platforms 조인 행 목록을 게임 단위로 묶어 요약 생성. 첫 등장 플랫폼이 대표(best). */
+/** 플랫폼 행 1개 → 카드가 쓰는 대표 가격 모양. 두 매퍼가 같은 모양을 써야 카드가 한 가지만 안다 */
+function bestOf(gp: PlatformRow): NonNullable<GameSummary["best"]> {
+  return {
+    platform: gp.platform,
+    listPrice: gp.listPrice,
+    currentPrice: gp.currentPrice,
+    currency: gp.currency,
+    discountPct: gp.discountPct,
+    discountEndsAt: iso(gp.discountEndsAt),
+    discountName: gp.discountName,
+    releaseDate: gp.releaseDate,
+  };
+}
+
+/** games ⨝ game_platforms 조인 행 목록을 게임 단위로 묶어 요약 생성. 대표(best)는 기준 통화 우선. */
 export function groupSummaries(rows: Array<{ game: GameRow; gp: PlatformRow }>, limit: number): GameSummary[] {
   const map = new Map<string, GameSummary>();
   for (const { game, gp } of rows) {
     const existing = map.get(game.id);
     if (existing) {
       if (!existing.platforms.includes(gp.platform)) existing.platforms.push(gp.platform);
+      // 대표 가격은 기준 통화가 이긴다. 먼저 온 행이 엔화고 뒤에 원화 행이 오면 갈아 끼운다 —
+      // 한국에서 볼 화면이라 "₩2,100" 이 "¥799" 보다 언제나 나은 답이다(환산은 하지 않는다).
+      if (existing.best && existing.best.currency !== DISPLAY_CURRENCY && gp.currency === DISPLAY_CURRENCY) {
+        existing.best = bestOf(gp);
+      }
       continue;
     }
     map.set(game.id, {
@@ -71,17 +90,9 @@ export function groupSummaries(rows: Array<{ game: GameRow; gp: PlatformRow }>, 
       titleKo: game.titleKo,
       titleEn: game.titleEn,
       coverUrl: game.coverUrl,
-      best: {
-        platform: gp.platform,
-        listPrice: gp.listPrice,
-        currentPrice: gp.currentPrice,
-        currency: gp.currency,
-        discountPct: gp.discountPct,
-        discountEndsAt: iso(gp.discountEndsAt),
-        discountName: gp.discountName,
-        releaseDate: gp.releaseDate,
-      },
+      best: bestOf(gp),
       platforms: [gp.platform],
+      genres: [],
     });
   }
   const out = [...map.values()].slice(0, limit);
@@ -116,6 +127,37 @@ export async function fillPlatforms(items: GameSummary[]): Promise<GameSummary[]
   return items;
 }
 
+/**
+ * 카드 한 장이 달 장르 수. 세 개를 넘기면 칩이 줄을 바꿔 카드 높이가 제각각이 된다 —
+ * 격자에서 높이가 흔들리면 훑는 눈이 매번 다시 자리를 잡아야 한다.
+ */
+export const CARD_GENRE_MAX = 3;
+
+/**
+ * 요약 목록에 장르를 채운다. fillPlatforms 와 같은 이유로 조회를 따로 한다 —
+ * 가격 조인에 장르를 같이 걸면 게임 하나가 (플랫폼 × 장르) 배로 불어나 페이지 경계가 틀어진다.
+ */
+export async function fillGenres(items: GameSummary[]): Promise<GameSummary[]> {
+  if (items.length === 0) return items;
+  const rows = await getDb()
+    .select({ slug: games.slug, name: genres.name })
+    .from(gameGenres)
+    .innerJoin(games, eq(games.id, gameGenres.gameId))
+    .innerJoin(genres, eq(genres.id, gameGenres.genreId))
+    .where(inArray(games.slug, items.map((i) => i.slug)));
+  const bySlug = new Map<string, string[]>();
+  for (const r of rows) {
+    const list = bySlug.get(r.slug) ?? [];
+    list.push(r.name);
+    bySlug.set(r.slug, list);
+  }
+  for (const item of items) {
+    // 가나다순으로 자른다 — 순서가 조회마다 흔들리면 같은 게임의 칩이 화면마다 달라진다
+    item.genres = [...new Set(bySlug.get(item.slug) ?? [])].sort((a, b) => a.localeCompare(b, "ko")).slice(0, CARD_GENRE_MAX);
+  }
+  return items;
+}
+
 /** 검색 결과에 붙일 플랫폼 요약: 게임별 최저가 플랫폼 */
 export async function attachBestPrice(rows: GameRow[]): Promise<GameSummary[]> {
   if (rows.length === 0) return [];
@@ -128,7 +170,8 @@ export async function attachBestPrice(rows: GameRow[]): Promise<GameSummary[]> {
     list.push(gp);
     byGame.set(gp.gameId, list);
   }
-  return rows.map((g) => {
+  // 장르는 여기서 같이 채운다 — attachBestPrice 를 쓰는 화면(목록, 검색, 회사)은 전부 카드를 그린다
+  return fillGenres(rows.map((g) => {
     const list = byGame.get(g.id) ?? [];
     const best = cheapestOf(list) ?? list[0];
     return {
@@ -136,21 +179,11 @@ export async function attachBestPrice(rows: GameRow[]): Promise<GameSummary[]> {
       titleKo: g.titleKo,
       titleEn: g.titleEn,
       coverUrl: g.coverUrl,
-      best: best
-        ? {
-            platform: best.platform,
-            listPrice: best.listPrice,
-            currentPrice: best.currentPrice,
-            currency: best.currency,
-            discountPct: best.discountPct,
-            discountEndsAt: iso(best.discountEndsAt),
-            discountName: best.discountName,
-            releaseDate: best.releaseDate,
-          }
-        : null,
+      best: best ? bestOf(best) : null,
       platforms: distinctPlatforms(list.map((p) => p.platform)),
+      genres: [],
     };
-  });
+  }));
 }
 
 export function toPublicGameDto(g: GameDetail): PublicGameDto {
