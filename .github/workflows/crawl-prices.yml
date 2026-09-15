@@ -4,16 +4,28 @@ name: crawl-prices
 
 on:
   schedule:
-    # 하루 3회(≈8h 간격).
-    # 2026-09-15 실측으로 시간을 다시 적는다 — 실행 1회가 33분이다(run 34895780383 단계별:
-    # steam 9.8분, psstore 12.3분, xbox 5.3분, gog 5.7분). 월 3,000분으로 private 레포
-    # Actions 무료 2,000분을 넘는다. 앞 주석의 "1회 10분" 은 소스가 적던 때의 값이고 이제 틀렸다.
-    # 배치 크기나 주기를 올리는 변경은 이 한도를 먼저 확인하고 한다 — 제일 비싼 단계는 psstore 다
-    # (200건에 737초, fetchMany 가 없어 건당 요청 1회라서).
-    # 시각 고정 이유: Steam 할인은 대부분 KST 02:00(UTC 17:00)에 시작, 종료된다. 단순 "0 */8"(KST 01/09/17시)이면
-    # 세일 시작 1시간 전에 돌고 다음 실행까지 8시간을 놓치므로, 세일 전환 직후를 첫 타자로 잡는다.
-    # UTC 17:10 / 01:10 / 09:10 = KST 02:10 / 10:10 / 18:10.
-    - cron: "10 17,1,9 * * *"
+    # 하루 2회. 횟수를 정한 것은 취향이 아니라 예산이다 — 아래 분 계산을 먼저 읽는다.
+    #
+    # private 레포의 Actions 무료 한도는 월 2,000분이다. 2026-09-15 실측으로 이 워크플로 1회가
+    # 33분이었고(run 34895780383: steam 9.8분, psstore 12.3분, xbox 5.3분, gog 5.7분),
+    # 하루 3회면 이 워크플로 하나로 월 3,000분이라 한도의 1.5배였다. 두 가지로 줄였다.
+    #   1) 발견(--seed-top)을 여기서 뗐다. 그 시간의 절반에서 77%가 신규 등록이었다
+    #      (steam 750/1,497, psstore 150/194, xbox 100/100). 발견은 카탈로그를 한 번 채우면
+    #      출시작 몇 건/일로 떨어지는 일회성 폭증이라, 시간이 공짜인 가정용 회선이 제자리다 —
+    #      sync/constants 의 LOCAL_SEED_SOURCES, 실행은 `pnpm crawl:seed`.
+    #   2) 주기를 3회에서 2회로 내리고, 비싼 두 소스는 그중 1회만 돌린다(아래 cron 주석).
+    # 추정: 전체 회차 약 14분 + 가벼운 회차 약 8분 = 월 660분. **추정치다** — 다음 스케줄 실행의
+    # 단계별 시간으로 이 숫자를 고친다. 배치 크기나 주기를 올리는 변경은 이 한도를 먼저 확인하고 한다.
+    #
+    # 시각 고정 이유: Steam 할인은 대부분 KST 02:00(UTC 17:00)에 시작, 종료된다. 단순 "10 */12" 면
+    # 세일 시작 직전에 돌고 다음 실행까지 12시간을 놓치므로, 세일 전환 직후를 첫 타자로 잡는다.
+    #
+    # UTC 17:10 = KST 02:10 — 전 소스
+    - cron: "10 17 * * *"
+    # UTC 05:10 = KST 14:10 — steam, gog 만. psstore, xbox 는 이 회차에서 건너뛴다(각 단계의 if).
+    # 둘을 뺀 이유: 건당 요청 1회라 이 워크플로에서 제일 비싼 단계인데(psstore 200건에 737초),
+    # PS, Xbox 할인은 Steam 처럼 하루 안에서 바뀌지 않아 그만큼 자주 볼 값이 아니다.
+    - cron: "10 5 * * *"
   workflow_dispatch:
     inputs:
       limit:
@@ -21,7 +33,7 @@ on:
         required: false
         default: ""
       seed_top:
-        description: "Steam 신규 시드 개수 (비우면 1500)"
+        description: "신규 발견 개수 (비우면 발견 안 함 - 발견의 제자리는 로컬 pnpm crawl:seed)"
         required: false
         default: ""
 
@@ -39,20 +51,16 @@ env:
   VAPID_PRIVATE_KEY: ${{ secrets.VAPID_PRIVATE_KEY }}
   VAPID_SUBJECT: ${{ secrets.VAPID_SUBJECT }}
   CRAWL_LIMIT_ARG: ${{ github.event.inputs.limit != '' && format('--limit={0}', github.event.inputs.limit) || '' }}
-  # --seed-top = 이 실행에서 새로 등록할 상한. 발견은 이미 아는 것을 건너뛰며 카탈로그를 파고든다
-  # (server/sync/discover). 실제 몫은 seedQuota 가 한 번 더 깎으므로 그 몫과 같은 값을 적는다 —
-  # 기본은 배치의 절반이고, 나머지 절반은 기존 게임 가격 갱신이 쓴다.
-  STEAM_SEED_TOP: ${{ github.event.inputs.seed_top || '750' }}   # BATCH_SIZE.steam 1,500 의 절반
-  GOG_SEED_TOP: '200'      # BATCH_SIZE.gog 400 의 절반
-  XBOX_SEED_TOP: '100'     # BATCH_SIZE.xbox 200 의 절반
-  # psstore 만 절반이 아니라 3/4 다 — 매핑 155건 대 KR 카탈로그 7,571건이라 재조회 몫이 남아돈다.
-  # 근거는 SEED_SHARE_BY_SOURCE 주석. 보유가 따라잡으면 이 값과 그 상수를 함께 되돌린다.
-  PSSTORE_SEED_TOP: '150'  # BATCH_SIZE.psstore 200 의 3/4
+  # 발견 몫. 스케줄 실행에서는 항상 비어 있다 = 발견을 하지 않고 기존 게임 가격만 갱신한다.
+  # 손으로 돌릴 때만 값을 넣어 켠다(로컬 회선이 죽었는데 신규를 급히 넣어야 하는 경우).
+  # 소스별 상시 몫은 sync/constants 의 LOCAL_SEED_PLAN 이 갖고 있다.
+  CRAWL_SEED_ARG: ${{ github.event.inputs.seed_top != '' && format('--seed-top={0}', github.event.inputs.seed_top) || '' }}
 
 jobs:
   crawl:
     runs-on: ubuntu-latest
-    timeout-minutes: 60
+    # 발견을 떼며 1회가 33분에서 약 14분으로 줄 것으로 본다. 여유를 두되 60분은 이제 과하다
+    timeout-minutes: 40
     steps:
       - uses: actions/checkout@v4
 
@@ -68,23 +76,24 @@ jobs:
 
       - run: pnpm install --frozen-lockfile
 
-      # --seed-top: 인기순위를 페이지 단위로 훑어 DB 에 없는 appid 를 N개 찾을 때까지 파고든다.
-      # 이게 없으면 게임은 최초 `pnpm seed` 로 들어온 것뿐이고 크롤은 기존 게임 가격만 갱신한다(= 게임 수가 늘지 않음).
-      # 상위 N개만 보던 예전 방식은 그 N개가 전부 등록된 2026-09-14 에 신규 0건으로 멈춰 있었다.
       - name: crawl steam
         continue-on-error: true
-        run: pnpm crawl --source=steam --seed-top=$STEAM_SEED_TOP $CRAWL_LIMIT_ARG
+        run: pnpm crawl --source=steam $CRAWL_SEED_ARG $CRAWL_LIMIT_ARG
 
       # PS 독점작도 Steam 에 없다. 발견은 전체 게임 카테고리(콘셉트 단위), 흡수/신규 판단은 제목 역매칭.
       # 질의 해시가 낡으면 "not whitelisted" 로 실패한다 — 갱신 방법은 어댑터 constants 주석에 있다.
+      # 가벼운 회차(KST 14:10)에서는 건너뛴다. 스케줄이 아닌 실행(손으로 돌리기)에서는 항상 돈다 —
+      # github.event.schedule 이 비어 있어 아래 비교가 참이 된다.
       - name: crawl psstore
+        if: github.event.schedule != '10 5 * * *'
         continue-on-error: true
-        run: pnpm crawl --source=psstore --seed-top=$PSSTORE_SEED_TOP $CRAWL_LIMIT_ARG
+        run: pnpm crawl --source=psstore $CRAWL_SEED_ARG $CRAWL_LIMIT_ARG
 
       # Xbox 독점작은 Steam 에 없다. 발견은 xbox.com 스토어의 목록(emerald browse), 흡수/신규 판단은 제목 역매칭.
       - name: crawl xbox
+        if: github.event.schedule != '10 5 * * *'
         continue-on-error: true
-        run: pnpm crawl --source=xbox --seed-top=$XBOX_SEED_TOP $CRAWL_LIMIT_ARG
+        run: pnpm crawl --source=xbox $CRAWL_SEED_ARG $CRAWL_LIMIT_ARG
 
       # nintendo, epic 은 여기서 돌리지 않는다 — 러너 IP 로는 빈손이고(한국 밖 IP 차단, 데이터센터 IP 차단)
       # 서울 리전 함수에서는 열린다. 두 소스는 Vercel 크론이 맡는다: vercel.json 의 /api/cron/crawl,
@@ -93,4 +102,4 @@ jobs:
       # GOG 는 한국에 달러로 판다 — 가격에 통화가 붙어 들어오고, 원화 가격과 섞어 비교하지 않는다(lib/currency).
       - name: crawl gog
         continue-on-error: true
-        run: pnpm crawl --source=gog --seed-top=$GOG_SEED_TOP $CRAWL_LIMIT_ARG
+        run: pnpm crawl --source=gog $CRAWL_SEED_ARG $CRAWL_LIMIT_ARG

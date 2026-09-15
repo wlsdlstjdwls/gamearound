@@ -86,6 +86,9 @@ export const LOCAL_SEED_TOP: Partial<Record<Source, number>> = {
  * (steam 750/1,497, psstore 150/194, xbox 100/100). 가정용 회선은 시간이 공짜라 여기가 제자리다.
  * LOCAL_ONLY_SOURCES 와 다른 목록인 이유: 저쪽은 "러너 IP 로 막혀서" 로컬이고, 이쪽은 "분이 아까워서" 다.
  *
+ * 2026-09-15: 말만 두지 않고 실제로 뗐다 — crawl-prices 워크플로는 이제 --seed-top 없이 돈다.
+ * 이 네 소스의 발견이 도는 곳은 `pnpm crawl:seed` 하나뿐이다. 며칠 안 돌리면 신규가 0건이 된다.
+ *
  * limit 을 따로 두는 이유: 시드 몫은 seedQuota 가 limit × 몫으로 한 번 더 깎는다.
  * seedTop 만 올리면 그 곱이 막아 아무 일도 안 일어난다([[ps-subscription-coverage]] 에서 겪은 함정).
  * limit 을 비우면 BATCH_SIZE 기본값을 쓴다.
@@ -227,7 +230,8 @@ export const DISCOVERY_PAGE_BUDGET: Partial<Record<StoreSource, number>> = {
 /**
  * 신규 시드가 한 배치에서 가져갈 수 있는 몫의 상한. 시드는 대상 목록 맨 앞에 붙으므로
  * 상한이 없으면 카탈로그가 비어 있는 초기에 시드가 배치를 통째로 먹고 기존 게임 가격이 안 갱신된다.
- * 0.5 = 신규 유입과 기존 갱신을 반씩. Steam 기준 실행당 750건 신규 = 하루 2,250건.
+ * 0.5 = 신규 유입과 기존 갱신을 반씩. Steam 기준 실행당 750건 신규(LOCAL_SEED_PLAN.steam).
+ * 하루 몇 건이 되는지는 `pnpm crawl:seed` 를 몇 번 돌리느냐로 정해진다 — 발견은 Actions 에 없다.
  */
 export const SEED_SHARE_MAX = 0.5;
 /**
@@ -237,13 +241,17 @@ export const SEED_SHARE_MAX = 0.5;
  * psstore 0.75 의 근거(2026-09-14 실측): 매핑된 게임이 155건인데 KR 카탈로그는 7,571건이다.
  * 155건은 전부 2일 안에 갱신돼 있어(game_platforms.last_synced_at) 재조회 몫이 남아돌고,
  * 발견은 `stoppedBy: "want"` 로 멈춘다 — 더 찾을 게 있는데 몫이 없어 멈춘다는 뜻이다.
- * 0.75 로 올리면 실행당 신규가 100건에서 150건이 되고(하루 450건), 남는 50건이 155건을 하루 한 바퀴 돌린다.
- * 배치 크기는 그대로라 실행 시간도, Actions 사용 분도 늘지 않는다.
+ * 0.75 로 올리면 신규가 배치의 절반이 아니라 3/4 를 가져간다. 배치 크기는 그대로라 실행 시간이 늘지 않는다.
  *
- * 2026-09-15 확인: 먹히고 있다 — 매핑이 155건에서 587건으로 늘었다(실행당 신규 150건이 그대로 찬다,
- * 마지막 실행 discovery fresh 150, pages 20, stoppedBy "want"). 남은 약 7,000건은 이 속도면 2주쯤이다.
- * **여기서 더 올리지 않는다.** 남은 손잡이는 배치 크기인데 그건 Actions 분을 그대로 먹는다 —
- * psstore 단계는 200건에 737초로 이미 이 워크플로에서 제일 비싼 단계다(crawl-prices.yml 주석의 실측).
+ * 2026-09-15 확인: 먹히고 있다 — 매핑이 155건에서 587건으로 늘었다(discovery fresh 150, pages 20,
+ * stoppedBy "want"). 남은 약 7,000건이 목표다.
+ *
+ * 2026-09-15 이후 이 값이 걸리는 곳은 **로컬 실행뿐이다.** crawl-prices 워크플로가 발견을 떼면서
+ * (그 파일의 cron 주석) Actions 는 --seed-top 없이 돌고, 크론 discover 는 seedShare 1 을 직접 넘긴다.
+ * 그래서 속도를 정하는 것은 `pnpm crawl:seed` 를 얼마나 자주 돌리느냐다 — LOCAL_SEED_PLAN.psstore
+ * (limit 400 × 0.75 = 실행당 300건)와 이 값을 함께 본다.
+ * **여기서 더 올리지 않는다.** 남은 손잡이는 배치 크기인데, psstore 는 fetchMany 가 없어 건당 요청
+ * 1회(200건에 737초)라 배치를 키우면 실행 시간이 그대로 따라 는다.
  * 보유가 카탈로그를 따라잡으면 이 줄을 지워 기본값(절반)으로 되돌린다.
  */
 export const SEED_SHARE_BY_SOURCE: Partial<Record<StoreSource, number>> = {
