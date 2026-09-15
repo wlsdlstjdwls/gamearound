@@ -52,11 +52,6 @@ export function gamePricesPath(slug: string): string {
   return `${gamePath(slug)}/prices`;
 }
 
-/** 패치 기록, 플랫폼별 패치 속도 — 게임 상세의 하위 화면 */
-export function gamePatchesPath(slug: string): string {
-  return `${gamePath(slug)}/patches`;
-}
-
 /**
  * "/sign-in?next=%2Fadmin" 같은 (pathname+search) 문자열에서 next 를 꺼내 안전 경로로 돌려준다.
  * proxy 가 넘긴 PATHNAME_HEADER 값을 layout 에서 해석할 때 쓴다(layout 은 searchParams 를 받지 못함).

@@ -28,13 +28,6 @@ export const GAME_MESSAGES = {
   /** 요약 바에 최저가 말고는 아직 아는 값이 없을 때. 빈 칸을 "-" 로 채우는 대신 한 줄로 말한다 */
   summaryPending: "플레이타임과 평점은 아직 모으는 중이에요.",
   patchNone: "아직 모은 패치 기록이 없어요.",
-  /**
-   * 패치 기록을 공개하는 스토어가 둘뿐이라는 사실을 화면이 먼저 말한다 —
-   * 안 그러면 "Xbox 는 패치를 안 하나" 로 읽힌다. 왜 둘뿐인지는 adapters/types 의 listPatchNotes 주석에 있다.
-   */
-  patchSourceNote: "패치 기록은 Steam 과 GOG 만 공개해요. 다른 스토어는 아직 받아올 곳이 없어요.",
-  /** 속도 값이 "우리가 모은 범위 안에서만" 참이라는 단서 */
-  patchScopeNote: "우리가 모으기 시작한 뒤의 기록만 담고 있어요.",
   subscriptionHeading: "구독",
   upgradeHeading: "업그레이드",
   freeUpgradeNote: "원본을 가지고 있어야 해요.",

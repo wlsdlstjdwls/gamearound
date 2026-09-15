@@ -55,6 +55,10 @@
    */
   --price-bad: #c4452c;
   --on-ink: #faf9f7; /* 잉크 배경 위 텍스트 */
+  /* 시트, 팝업 뒤를 덮는 막. 검정이 아니라 먹색을 깔아 오프화이트, 커버 이미지와 온도를 맞춘다 */
+  --overlay: rgba(28, 28, 26, 0.42);
+  /* 막 뒤를 흐리는 정도. 막만으로는 뒤 카드의 글자가 그대로 읽혀 시트가 "떠 있는" 것으로 보이지 않는다 */
+  --overlay-blur: 4px;
 
   /*
    * 가격 그래프의 스토어별 선 색. 의미색이 아니라 **스토어 브랜드 색**이라 팔레트 규칙(저채도) 밖이다 —
@@ -155,6 +159,7 @@
     --warn-soft: #33270f;
     --price-bad: #f0705a;
     --on-ink: #131312;
+    --overlay: rgba(0, 0, 0, 0.62);
 
     --store-steam: #5b9ce8;
     --store-epic: #f5895a;
@@ -198,6 +203,7 @@
   --warn-soft: #33270f;
   --price-bad: #f0705a;
   --on-ink: #131312;
+  --overlay: rgba(0, 0, 0, 0.62);
 
   --store-steam: #5b9ce8;
   --store-epic: #f5895a;
@@ -299,6 +305,11 @@
 @keyframes chip-pending {
   from { opacity: 0; }
   to { opacity: 0.22; }
+}
+/* 바텀시트 — 바닥에서 올라온다. 데스크톱 팝업은 scale-in 을 그대로 쓴다 */
+@keyframes sheet-up {
+  from { opacity: 0; transform: translateY(16px); }
+  to { opacity: 1; transform: none; }
 }
 @keyframes shimmer {
   0% { background-position: 200% 0; }
@@ -462,6 +473,93 @@ a {
   background-image: linear-gradient(90deg, var(--surface-2) 0%, var(--surface-3) 50%, var(--surface-2) 100%);
   background-size: 200% 100%;
   animation: shimmer 1.5s ease-in-out infinite;
+}
+
+/* ── 시트(ui/sheet) — 모바일은 바닥에서 올라오는 바텀시트, 데스크톱은 가운데 팝업 ──
+   <dialog> + showModal() 을 쓰는 이유: 포커스 가두기, 뒤 화면 비활성화, 최상위 레이어를 브라우저가 해 준다.
+   막(overlay)만은 ::backdrop 이 아니라 안쪽 div 가 그린다 — 손가락을 따라 시트가 내려가는 동안
+   막도 같이 옅어져야 하는데 ::backdrop 은 인라인 스타일로 건드릴 수 없다. */
+.sheet {
+  position: fixed;
+  inset: 0;
+  width: 100%;
+  max-width: 100%;
+  height: 100%;
+  max-height: 100%;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--ink);
+  overflow: hidden;
+}
+/* display 는 [open] 에만 준다 — 닫힌 <dialog> 를 감추는 것이 UA 의 display: none 이라
+   무조건 flex 를 주면 닫아도 화면에 남는다 */
+.sheet[open] {
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+}
+.sheet::backdrop {
+  background: transparent;
+}
+.sheet__overlay {
+  position: absolute;
+  inset: 0;
+  background: var(--overlay);
+  backdrop-filter: blur(var(--overlay-blur));
+  -webkit-backdrop-filter: blur(var(--overlay-blur));
+  animation: fade-in var(--duration-fast) var(--ease-standard) both;
+  /* 없으면 브라우저가 터치를 스크롤 제스처로 가로채 끌어내려 닫기가 씹힌다 */
+  touch-action: none;
+}
+.sheet__panel {
+  position: relative;
+  display: flex;
+  width: 100%;
+  max-height: 85vh;
+  flex-direction: column;
+  border-top: 1px solid var(--line);
+  border-radius: var(--radius-md) var(--radius-md) 0 0;
+  background: var(--surface);
+  /* 홈 인디케이터가 있는 기기에서 마지막 줄이 가려지지 않게 */
+  padding-bottom: env(safe-area-inset-bottom);
+  animation: sheet-up var(--duration-slow) var(--ease-out-emph) both;
+  will-change: transform;
+}
+/* 손가락을 따라가는 동안에는 등장 애니메이션이 자리를 되돌려 놓으면 안 된다 */
+.sheet__panel[data-dragging="true"] {
+  animation: none;
+}
+/* 끌어내릴 수 있는 줄. 내용 영역은 스크롤해야 하므로 여기만 제스처를 가져간다 */
+.sheet__grip-row,
+.sheet__header {
+  touch-action: none;
+  user-select: none;
+  -webkit-user-select: none;
+}
+.sheet__grip {
+  width: 36px;
+  height: 4px;
+  margin: 0 auto;
+  border-radius: 999px;
+  background: var(--line-strong);
+}
+@media (min-width: 640px) {
+  .sheet[open] {
+    align-items: center;
+  }
+  .sheet__panel {
+    width: auto;
+    max-width: 620px;
+    max-height: 80vh;
+    border: 1px solid var(--line);
+    border-radius: var(--radius-md);
+    animation: scale-in var(--duration-base) var(--ease-out-emph) both;
+  }
+  /* 마우스로는 끌어내리지 않는다 — 데스크톱에서는 손잡이가 할 일이 없다 */
+  .sheet__grip-row {
+    display: none;
+  }
 }
 
 /* 접근성: 모션 축소 요청 시 전부 거의 즉시 */

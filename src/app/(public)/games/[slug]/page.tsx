@@ -11,7 +11,8 @@ import { UpgradeNotes } from "@/components/upgrade-note";
 import { MultiplayerBadges } from "@/components/multiplayer-badges";
 import { NewsList } from "@/components/news-list";
 import { PatchList, PatchSpeed } from "@/components/patch-list";
-import { PlatformTabs, type PlatformTabItem } from "@/components/platform-tabs";
+import { Sheet } from "@/components/ui/sheet";
+import { PlatformPrices, type PlatformPriceItem } from "@/components/platform-prices";
 import { PlaytimeCard } from "@/components/playtime-card";
 import { WishlistButton } from "@/components/wishlist-button";
 import { BackLink } from "@/components/ui/back-link";
@@ -23,7 +24,7 @@ import { SITE } from "@/lib/site";
 import { getFreshness } from "@/lib/freshness";
 import { GAME_MESSAGES } from "@/lib/games/messages";
 import { stagger } from "@/lib/motion";
-import { gamePatchesPath, gamePricesPath, ROUTES } from "@/lib/routes";
+import { gamePricesPath, ROUTES } from "@/lib/routes";
 import {
   bestScore,
   bestUserScore,
@@ -42,8 +43,14 @@ import { cardClass } from "@/components/ui/page";
 /** 검색결과, SNS 카드에 들어가는 설명 길이 상한 */
 const META_DESCRIPTION_MAX = 150;
 
-/** 상세에 띄울 최근 패치 수. 전체 목록과 속도 비교는 전용 화면(/patches)이 맡는다 */
-const DETAIL_PATCH_LIMIT = 5;
+/**
+ * 시트에 담을 패치 기록 수.
+ *
+ * 전용 화면(/patches)을 걷어내고 시트로 합쳤다(2026-09-15). 패치를 보려고 화면을 옮기면
+ * 가격과 플레이타임을 두고 떠나야 했는데, 이 기록은 그것들과 나란히 읽어야 뜻이 있다.
+ * 50 은 상한일 뿐이다 — 스토어가 최근 기록만 돌려줘서 실제로는 게임당 훨씬 적다.
+ */
+const SHEET_PATCH_LIMIT = 50;
 
 type Props = { params: Promise<{ slug: string }> };
 
@@ -184,7 +191,7 @@ export default async function GameDetailPage({ params }: Props) {
   if (!game) notFound();
 
   const title = displayTitle(game);
-  const platforms: PlatformTabItem[] = game.platforms.map((p) => ({
+  const platforms: PlatformPriceItem[] = game.platforms.map((p) => ({
     ...p,
     freshness: getFreshness(p.lastSyncedAt, p.syncStatus),
   }));
@@ -281,8 +288,8 @@ export default async function GameDetailPage({ params }: Props) {
                 </Link>
               }
             />
-            {/* 요약 바가 인용한 스토어의 유저 점수는 탭 안에서 또 적지 않는다(platform-tabs 주석) */}
-            <PlatformTabs platforms={platforms} quotedUserScorePlatform={bestUserScore(game.platforms)?.platform ?? null} />
+            {/* 요약 바가 인용한 스토어의 유저 점수는 행 안에서 또 적지 않는다(platform-prices 주석) */}
+            <PlatformPrices platforms={platforms} quotedUserScorePlatform={bestUserScore(game.platforms)?.platform ?? null} />
             <UpgradeNotes upgrades={game.upgrades} />
           </section>
 
@@ -299,19 +306,19 @@ export default async function GameDetailPage({ params }: Props) {
 
           {patchGroups.length > 0 && (
             <section aria-labelledby="patches-heading" className="flex flex-col gap-3">
+              {/* 목록은 시트 안에 둔다 — 상세에서 자리를 가장 많이 먹던 블록인데,
+                  "언제 고쳐졌나" 는 한 번 확인하면 끝나는 질문이라 늘 펼쳐 둘 이유가 없다.
+                  펼쳐 둘 값은 속도 표 한 줄이면 족하다 */}
               <SectionHead
                 id="patches-heading"
                 title={GAME_MESSAGES.patchHeading}
                 action={
-                  <Link href={gamePatchesPath(game.slug)} className="text-[12.5px] text-acc hover:underline">
-                    플랫폼별 패치 속도
-                  </Link>
+                  <Sheet label="패치 기록 보기" title={`${title} 패치 기록`}>
+                    <PatchList items={latestPatches(patchGroups, SHEET_PATCH_LIMIT)} showPlatform={patchGroups.length > 1} />
+                  </Sheet>
                 }
               />
               <PatchSpeed groups={patchGroups} />
-              <Card className="px-4">
-                <PatchList items={latestPatches(patchGroups, DETAIL_PATCH_LIMIT)} showPlatform={patchGroups.length > 1} />
-              </Card>
             </section>
           )}
 
