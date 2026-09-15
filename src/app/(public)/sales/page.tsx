@@ -42,8 +42,15 @@ function SaleCard({ item, index }: { item: UpcomingSale; index: number }) {
                 {M.running}
               </span>
             ) : (
-              <span className="rounded-[5px] bg-surface-2 px-1.5 py-0.5 text-[11.5px] font-semibold text-ink-2">
-                {M.estimated}
+              // 확정과 예상을 눈으로 갈라 준다 — 예상 날짜를 믿고 구매를 미루면 손해를 본다
+              <span
+                className={
+                  item.source === "confirmed"
+                    ? "rounded-[5px] bg-surface-2 px-1.5 py-0.5 text-[11.5px] font-semibold text-ink-2"
+                    : "rounded-[5px] border border-dashed border-line px-1.5 py-0.5 text-[11.5px] font-semibold text-dim"
+                }
+              >
+                {item.source === "confirmed" ? M.confirmed : M.estimated}
               </span>
             )}
           </div>

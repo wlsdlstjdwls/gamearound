@@ -1,7 +1,7 @@
 // 세일 일정 계산 테스트 — 순수 함수만. 네트워크도 DB 도 쓰지 않는다.
 //
-// 기준 날짜는 주석의 ANCHOR(과거 실제 회차)를 그대로 쓴다.
-// 규칙을 고쳤을 때 과거 회차가 재현되지 않으면 그 규칙이 틀린 것이다.
+// 기준 날짜는 밸브가 공지한 확정 회차를 그대로 쓴다.
+// 확정이 규칙을 덮어쓰는 구조라, 규칙을 고쳐도 확정 연도는 흔들리지 않아야 한다.
 import { describe, expect, it } from "vitest";
 import {
   STEAM_SALES,
@@ -45,9 +45,22 @@ describe("occurrenceIn: 과거 회차를 재현한다", () => {
     expect(ymd(occurrenceIn(sale("winter"), 2025).startsAt)).toBe("2025-12-18");
   });
 
-  it("봄 세일 2024, 2025", () => {
+  it("봄 세일 2024, 2025, 2026", () => {
     expect(ymd(occurrenceIn(sale("spring"), 2024).startsAt)).toBe("2024-03-14");
     expect(ymd(occurrenceIn(sale("spring"), 2025).startsAt)).toBe("2025-03-13");
+    // 2026 은 한 주 밀렸다. 규칙으로는 못 맞히고 확정 공지라야 맞는 값
+    expect(ymd(occurrenceIn(sale("spring"), 2026).startsAt)).toBe("2026-03-19");
+  });
+
+  it("가을 세일이 10월 초로 앞당겨진 것을 반영한다", () => {
+    expect(ymd(occurrenceIn(sale("autumn"), 2025).startsAt)).toBe("2025-09-29");
+    expect(ymd(occurrenceIn(sale("autumn"), 2026).startsAt)).toBe("2026-10-01");
+  });
+
+  it("확정이 있으면 확정, 없으면 규칙으로 민 예상이라고 말한다", () => {
+    expect(occurrenceIn(sale("winter"), 2026).source).toBe("confirmed");
+    // 공지 지평 너머의 해는 규칙으로 민다
+    expect(occurrenceIn(sale("winter"), 2030).source).toBe("estimated");
   });
 
   it("할로윈 세일 2024, 2025", () => {
@@ -56,14 +69,16 @@ describe("occurrenceIn: 과거 회차를 재현한다", () => {
   });
 
   it("겨울 세일은 해를 넘겨 끝난다", () => {
-    expect(ymd(occurrenceIn(sale("winter"), 2025).endsAt)).toBe("2026-01-01");
+    // 공지 기준 2025-12-18 ~ 2026-01-05. 예전에는 14일로 잡아 1월 1일에 끊고 있었다
+    expect(ymd(occurrenceIn(sale("winter"), 2025).endsAt)).toBe("2026-01-05");
   });
 });
 
 describe("upcomingSales", () => {
   it("가까운 순서로 준다", () => {
     const list = upcomingSales(new Date("2026-01-20T00:00:00Z"));
-    expect(list.map((u) => u.sale.key)).toEqual(["spring", "summer", "halloween", "autumn", "winter"]);
+    // 가을 세일이 11월 말에서 10월 초로 앞당겨져 할로윈보다 먼저 온다
+    expect(list.map((u) => u.sale.key)).toEqual(["spring", "summer", "autumn", "halloween", "winter"]);
   });
 
   it("진행 중이면 running 이고 종료까지 남은 시간을 센다", () => {
