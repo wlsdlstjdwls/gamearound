@@ -24,12 +24,18 @@ async function getHomeDataRaw(): Promise<HomeData> {
    */
   const baseCurrencyFirst = sql`(${gamePlatforms.currency} = ${DISPLAY_CURRENCY}) desc`;
 
-  // 오늘의 할인: 원화 우선 → 할인율 desc. 게임당 1개로 묶기 위해 넉넉히 가져와 JS에서 dedupe
+  /**
+   * 오늘의 할인: 원화 우선 → 할인율 desc. 게임당 1개로 묶기 위해 넉넉히 가져와 JS에서 dedupe.
+   *
+   * 무료는 뺀다(2026-09-15). 100% 할인(에픽 무료 배포 등)은 할인율 정렬에서 늘 맨 앞에 서서
+   * 첫 화면을 통째로 차지하는데, "할인 중인 게임" 이 답해야 하는 질문은 "얼마에 살까" 지
+   * "공짜로 받을 게 있나" 가 아니다. 무료는 가격 필터(maxPrice=0)로 따로 찾는 축이다.
+   */
   const discountRows = await db
     .select({ game: games, gp: gamePlatforms })
     .from(gamePlatforms)
     .innerJoin(games, eq(gamePlatforms.gameId, games.id))
-    .where(and(mainGamesOnly(), homeRegion, gt(gamePlatforms.discountPct, 0), isNotNull(gamePlatforms.currentPrice)))
+    .where(and(mainGamesOnly(), homeRegion, gt(gamePlatforms.discountPct, 0), gt(gamePlatforms.currentPrice, 0)))
     .orderBy(baseCurrencyFirst, desc(gamePlatforms.discountPct), desc(gamePlatforms.lastSyncedAt))
     .limit(HOME_LIMIT * 4);
 
