@@ -35,6 +35,8 @@ export const XBOX_BIGIDS_BATCH = 20;
 export const XBOX_IMAGE_WIDE = ["TitledHeroArt", "SuperHeroArt", "FeaturePromotionalSquareArt"];
 /** 세로 아트(상세 헤더용) 후보 */
 export const XBOX_IMAGE_TALL = ["Poster", "BrandedKeyArt", "BoxArt"];
+/** 추가 콘텐츠 응답의 RelatedProducts 에서 본편을 가리키는 관계 이름 */
+export const XBOX_ADDON_PARENT_RELATION = "addOnParent";
 
 /**
  * 추가 콘텐츠 목록이 들어 있는 스토어 페이지 상태 키. 실제 키는 `PRODUCTADDONS_<ProductId>` 다.
@@ -116,6 +118,15 @@ const productSchema = z.object({
               RatingCount: z.number().nullish(),
             }),
           )
+          .default([]),
+        /**
+         * 관계 목록. 방향에 주의한다 — 본편 응답에서는 늘 비어 있어서 여기로 DLC 목록을 만들 수 없지만
+         * (위 Properties.HasAddOns 주석), **추가 콘텐츠 응답에는 addOnParent 로 본편 ProductId 가 들어 있다**
+         * (2026-09-16 실측). 자식에서 부모로 올라가는 길만 열려 있는 셈이다.
+         */
+        RelatedProducts: z
+          .array(z.object({ RelatedProductId: z.string().nullish(), RelationshipType: z.string().nullish() }))
+          .nullish()
           .default([]),
       }),
     )
@@ -284,10 +295,26 @@ export function parseXboxProduct(raw: unknown, productId: string, rawEn?: unknow
     discountEndsAt: discountPct > 0 ? price?.endsAt ?? null : null,
     releaseDate: toIsoDate(product.MarketProperties[0]?.OriginalReleaseDate),
     contentType: isDlc ? "dlc" : "game",
+    // 본편 쪽에서 물으면 이 자리가 비어 있다 — 부모를 말해 주는 건 추가 콘텐츠 응답뿐이다
+    parentExternalId: isDlc ? xboxAddOnParentId(product) : null,
     // DLC 자신에게는 "추가 콘텐츠 유무"가 의미 없다 — null 은 모른다는 뜻이라 기존 값을 덮지 않는다
     hasAddOns: isDlc ? null : product.Properties?.HasAddOns ?? null,
     meta: xboxMeta(product, rawEn ? titleOf(rawEn, productId) : null),
   };
+}
+
+/**
+ * 이 추가 콘텐츠가 붙는 본편의 ProductId. 없으면 null — 부모를 모른다는 뜻이고, 그 자리는 비워 둔다.
+ * 같은 배열에 Bundle, SellableBy 같은 다른 관계가 섞여 오므로 관계 이름을 반드시 본다.
+ */
+function xboxAddOnParentId(product: z.infer<typeof productSchema>): string | null {
+  for (const mp of product.MarketProperties) {
+    const hit = (mp.RelatedProducts ?? []).find(
+      (r) => r.RelationshipType === XBOX_ADDON_PARENT_RELATION && r.RelatedProductId,
+    );
+    if (hit?.RelatedProductId) return hit.RelatedProductId;
+  }
+  return null;
 }
 
 /** 영문 응답에서 이 상품의 제목만 꺼낸다. 형식이 깨져 있으면 없는 것으로 본다 — 가격 수집을 막지 않는다 */

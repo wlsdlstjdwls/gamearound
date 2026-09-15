@@ -151,6 +151,36 @@ describe("parseXboxProduct", () => {
     expect(snap.contentType).toBe("dlc");
   });
 
+  it("추가 콘텐츠는 addOnParent 로 본편 ID 를 싣는다 — 다른 관계는 무시한다", () => {
+    const raw = {
+      Products: [{
+        ProductId: "CHILD0000001",
+        ProductKind: "Durable",
+        LocalizedProperties: [{ ProductTitle: "Skin Pack" }],
+        MarketProperties: [{
+          RelatedProducts: [
+            { RelatedProductId: "BUNDLE000001", RelationshipType: "Bundle" },
+            { RelatedProductId: "PARENT000001", RelationshipType: "addOnParent" },
+          ],
+        }],
+      }],
+    };
+    const snap = parseXboxProduct(raw, "CHILD0000001");
+    expect(snap.contentType).toBe("dlc");
+    expect(snap.parentExternalId).toBe("PARENT000001");
+  });
+
+  it("본편에는 부모를 달지 않는다 — 그 자리는 늘 비어 있다", () => {
+    const raw = {
+      Products: [{
+        ProductId: "MAIN00000001",
+        LocalizedProperties: [{ ProductTitle: "Main" }],
+        MarketProperties: [{ RelatedProducts: [{ RelatedProductId: "X", RelationshipType: "addOnParent" }] }],
+      }],
+    };
+    expect(parseXboxProduct(raw, "MAIN00000001").parentExternalId).toBeNull();
+  });
+
   it("응답에 없는 ID 는 첫 상품으로 때우지 않고 없음으로 본다", () => {
     // 예전에는 products[0] 으로 떨어졌다. 배치 조회에서 요청한 전원이 첫 상품의 제목, 커버,
     // ProductKind 를 받아 가는 사고가 났다(2026-09-16). 남의 상품을 주느니 없다고 해야 한다.
