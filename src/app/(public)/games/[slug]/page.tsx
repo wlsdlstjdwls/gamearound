@@ -29,6 +29,7 @@ import {
   displayTitle,
   getGameBySlugCached,
   getGamePatchesCached,
+  getPricePerHourScale,
   latestPatches,
   type GameDetail,
 } from "@/server/services/games";
@@ -125,6 +126,8 @@ export default async function GameDetailPage({ params }: Props) {
   // 패치 기록은 상세 조회와 같은 태그(`game:<slug>`)로 따로 캐시된다 — 붙는 테이블이 game_platforms 라
   // 상세 질의에 얹으면 화면이 안 쓰는 행까지 통째로 끌려온다
   const patchGroups = await getGamePatchesCached(slug);
+  // 시간당 가격을 세울 눈금 - 이 게임이 아니라 카탈로그의 성질이라 게임 태그와 따로 캐시된다
+  const perHourScale = await getPricePerHourScale();
 
   const title = displayTitle(game);
   const platforms: PlatformTabItem[] = game.platforms.map((p) => ({
@@ -268,7 +271,7 @@ export default async function GameDetailPage({ params }: Props) {
         </div>
 
         <aside className="enter-item flex flex-col gap-4" style={stagger(6)}>
-          <PlaytimeCard playtime={game.playtime} currentPrice={best?.currentPrice ?? null} />
+          <PlaytimeCard playtime={game.playtime} currentPrice={best?.currentPrice ?? null} currency={best?.currency} scale={perHourScale} />
 
           {game.sourceRefs.length > 0 && (
             <section aria-labelledby="sources-heading" className={cardClass("flex flex-col gap-3 p-4")}>

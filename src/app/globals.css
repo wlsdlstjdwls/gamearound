@@ -29,6 +29,15 @@
   --ok-soft: #eaf1ec;
   --warn: #8a6a2e; /* 데이터 지연 */
   --warn-soft: #f6efe2;
+  /*
+   * 가격 판정 — 시간당 가격이 카탈로그 분포에서 어느 편인지.
+   * acc, danger 를 쓰지 않는 이유: 그 둘은 이미 "최저가", "마감 임박" 이라는 뜻을 갖고 있어
+   * 같은 화면에서 두 번째 뜻으로 쓰면 색이 무슨 말을 하는지 흐려진다.
+   * 나머지 토큰보다 채도가 높은 것은 의도다 — 20px 숫자에 얹히는 유일한 색이라
+   * 저채도로 두면 본문색과 구별이 안 되고 탁하게만 보인다(2026-09-15 실측 후 교체).
+   */
+  --price-good: #227a55;
+  --price-bad: #c4452c;
   --on-ink: #faf9f7; /* 잉크 배경 위 텍스트 */
 
   /* 모션 — 확정값. 등장은 JS 타이머가 아니라 CSS 애니메이션으로(백그라운드 탭에서 opacity:0에 멈추지 않는다) */
@@ -86,6 +95,8 @@
   --color-ok-soft: var(--ok-soft);
   --color-warn: var(--warn);
   --color-warn-soft: var(--warn-soft);
+  --color-price-good: var(--price-good);
+  --color-price-bad: var(--price-bad);
   --color-on-ink: var(--on-ink);
 
   --font-sans: var(--font-sans);

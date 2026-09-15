@@ -29,6 +29,39 @@ export const GAME_MESSAGES = {
 } as const;
 
 /**
+ * 시간당 가격 문구.
+ *
+ * 눈금의 기준선을 "평균"이라 부르지 않는 이유: 우리가 쓰는 값은 중간값이다.
+ * 5,000시간짜리 몇 개가 평균을 통째로 끌고 가서 백분위를 쓰기로 했는데,
+ * 화면에서만 평균이라 부르면 읽는 사람이 다른 계산을 상상한다.
+ */
+export const PER_HOUR_MESSAGES = {
+  heading: "시간당 가격",
+  unit: "/시간",
+  basis: "메인 스토리 기준",
+  medianTick: "중간",
+  meTick: "이 게임",
+  axisStart: "싼 쪽",
+  axisEnd: "비싼 쪽",
+} as const;
+
+/** 분포 안에서의 자리. 단정하지 않는 말로 적는다 - 우리가 모은 범위 안에서만 참인 값이다 */
+export const PER_HOUR_VERDICT_LABEL = {
+  cheap: "싼 편",
+  mid: "보통",
+  pricy: "비싼 편",
+} as const;
+
+/**
+ * 눈금 밑 한 줄. 몇 개와 견준 값인지를 밝혀야 "싼 편" 이 말이 된다.
+ * 표본이 원화 가격과 플레이타임을 둘 다 가진 게임뿐이라는 사정은 적지 않는다 —
+ * 읽는 사람이 할 수 있는 일이 없고, 우리 데이터 사정을 화면에 옮겨 적는 일이다.
+ */
+export function perHourScopeText(sampleSize: number): string {
+  return `게임 ${sampleSize.toLocaleString("ko-KR")}개와 비교했어요.`;
+}
+
+/**
  * 구독 칩 문구 — 플랫폼 탭 안에 한 칩씩 선다. 서비스 이름은 구독 레코드가 들고 있고 여기서는 꼬리말만 붙인다.
  * 문장이 아니라 칩인 이유: 이미 그 스토어의 탭 안이라 "어디서" 를 다시 말할 필요가 없다.
  */

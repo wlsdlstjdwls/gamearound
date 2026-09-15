@@ -26,6 +26,13 @@ export const DTO_CACHE_VERSION = "v5";
 /** 목록, 검색, 홈처럼 태그 무효화로 갱신되는 화면의 기본 재검증 주기(초) */
 export const LIST_REVALIDATE_SECONDS = 3600;
 
+/**
+ * 시간당 가격 분포(카탈로그 전체 백분위)의 수명(초) = 6시간.
+ * 가격 크롤이 8시간 주기인데, 한 번 돌아도 수만 건의 사분위 경계는 사람 눈에 보일 만큼 안 움직인다.
+ * 게임 태그로는 못 푸는 값이라(카탈로그 전체가 원천) 무효화 대신 수명으로만 관리한다.
+ */
+export const PRICE_SCALE_REVALIDATE_SECONDS = 21600;
+
 /** OG 이미지용 한글 폰트 서브셋 캐시 수명(초). 글리프 구성이 같은 요청끼리 재사용된다 */
 export const OG_FONT_REVALIDATE_SECONDS = 2592000;
 
