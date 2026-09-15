@@ -6,7 +6,7 @@ import { ROUTES } from "./routes";
 describe("parseGamesQuery", () => {
   it("빈 쿼리는 1페이지 기본 필터", () => {
     expect(parseGamesQuery({})).toEqual({
-      q: undefined, platform: undefined, genre: undefined, onSale: false,
+      q: undefined, platform: undefined, genre: undefined, onSale: false, minDiscount: undefined,
       company: undefined, subscription: false, sort: undefined, page: 1,
     });
   });
@@ -33,6 +33,14 @@ describe("parseGamesQuery", () => {
   it("sale 은 정확히 '1' 일 때만 켜진다", () => {
     expect(parseGamesQuery({ sale: "1" }).onSale).toBe(true);
     expect(parseGamesQuery({ sale: "true" }).onSale).toBe(false);
+  });
+
+  it("최소 할인율은 정해진 단만 받는다", () => {
+    expect(parseGamesQuery({ off: "30" }).minDiscount).toBe(30);
+    expect(parseGamesQuery({ off: "70" }).minDiscount).toBe(70);
+    // 단에 없는 값, 숫자가 아닌 값은 조용히 버린다 — 캐시 키가 값마다 쪼개지지 않게
+    expect(parseGamesQuery({ off: "33" }).minDiscount).toBeUndefined();
+    expect(parseGamesQuery({ off: "drop; --" }).minDiscount).toBeUndefined();
   });
 
   it("공백뿐인 값은 없는 것으로 접는다", () => {
@@ -72,6 +80,12 @@ describe("gamesHref", () => {
     expect(gamesHref({ genre: "액션" })).toBe(`/games?genre=${encodeURIComponent("액션")}`);
   });
 
+  it("최소 할인율이 서면 sale 은 싣지 않는다 — 같은 축이라 둘 다 담으면 뜻이 겹친다", () => {
+    expect(gamesHref({ onSale: true, minDiscount: 50 })).toBe("/games?off=50");
+    expect(gamesHref({ onSale: true })).toBe("/games?sale=1");
+    expect(gamesHref({ minDiscount: 30 }, { minDiscount: undefined })).toBe(ROUTES.game);
+  });
+
   it("왕복: gamesHref 로 만든 주소를 parseGamesQuery 가 그대로 복원한다", () => {
     const filter = {
       q: "엘든 링", platform: "steam", genre: "RPG", onSale: true,
@@ -79,6 +93,10 @@ describe("gamesHref", () => {
     };
     const sp = Object.fromEntries(new URLSearchParams(gamesHref(filter).split("?")[1]));
     expect(parseGamesQuery(sp)).toEqual(filter);
+
+    const withOff = { ...filter, onSale: false, minDiscount: 70 as const };
+    const sp2 = Object.fromEntries(new URLSearchParams(gamesHref(withOff).split("?")[1]));
+    expect(parseGamesQuery(sp2)).toEqual(withOff);
   });
 
   it("회사, 구독 필터가 주소에 실린다", () => {

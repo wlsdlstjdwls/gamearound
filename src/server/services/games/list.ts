@@ -77,7 +77,9 @@ async function listGamesRaw(filter: GameListFilter): Promise<GameListResult> {
 
   // 본편만 — DLC 가 목록에 본편처럼 섞이지 않게 모든 목록 쿼리가 이 조건을 탄다
   const conds = [mainGamesOnly()];
-  if (filter.onSale) conds.push(sql`${agg.maxDiscount} > 0`);
+  // 최소 할인율은 "할인 중" 을 포함하는 조건이라 둘이 같이 오면 강한 쪽만 건다
+  if (filter.minDiscount) conds.push(sql`${agg.maxDiscount} >= ${filter.minDiscount}`);
+  else if (filter.onSale) conds.push(sql`${agg.maxDiscount} > 0`);
   if (filter.company) conds.push(byCompanySlug(filter.company));
   if (filter.subscription) conds.push(inAnySubscription());
   if (filter.genre) {
@@ -136,6 +138,7 @@ function listKey(f: GameListFilter): string[] {
     f.platform ?? "",
     f.genre ?? "",
     f.onSale ? "sale" : "",
+    f.minDiscount ? String(f.minDiscount) : "",
     f.company ?? "",
     f.subscription ? "sub" : "",
     f.sort ?? DEFAULT_GAME_SORT,
@@ -162,12 +165,13 @@ const listByJson = cache(async (json: string): Promise<GameListResult> => {
 /** 목록 — 필터 조합별 1시간 캐시. 크롤러 완료 시 `home` 태그로 함께 무효화된다 */
 export async function listGames(filter: GameListFilter): Promise<GameListResult> {
   // 키 순서와 같은 순서로 다시 세워야 같은 필터가 늘 같은 문자열이 된다
-  const [q, platform, genre, onSale, company, subscription, sort, page] = listKey(filter);
+  const [q, platform, genre, onSale, minDiscount, company, subscription, sort, page] = listKey(filter);
   return listByJson(JSON.stringify({
     q: q || undefined,
     platform: (platform || undefined) as GameListFilter["platform"],
     genre: genre || undefined,
     onSale: onSale ? true : undefined,
+    minDiscount: (minDiscount ? Number(minDiscount) : undefined) as GameListFilter["minDiscount"],
     company: company || undefined,
     subscription: subscription ? true : undefined,
     sort: sort as GameListFilter["sort"],

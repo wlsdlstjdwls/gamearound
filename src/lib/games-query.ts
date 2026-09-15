@@ -14,12 +14,27 @@ export const SORT_LABEL: Record<GameSort, string> = {
   title: "제목순",
 };
 
+/**
+ * 최소 할인율 칸. 자유 입력이 아니라 정해진 단으로 두는 이유는 두 가지다.
+ * 하나, 목록 캐시 키가 값마다 쪼개진다 — 33%, 34% 가 각각 다른 캐시가 된다.
+ * 둘, 실제 구매 행동은 "30% 넘으면 산다" 쪽이라 1% 단위를 고를 이유가 없다.
+ * 70 까지만 두는 것은 그 위(80, 90)가 대개 묵은 게임이라 한 칸 더 늘려도 목록이 거의 같아서다.
+ */
+export const MIN_DISCOUNT_STEPS = [30, 50, 70] as const;
+export type MinDiscount = (typeof MIN_DISCOUNT_STEPS)[number];
+
+export function isMinDiscount(v: number): v is MinDiscount {
+  return (MIN_DISCOUNT_STEPS as readonly number[]).includes(v);
+}
+
 /** 플랫폼 값은 DB enum 이 원천이라 여기서는 문자열로 두고, 페이지가 enum 으로 좁힌다 */
 export type GamesQuery = {
   q?: string;
   platform?: string;
   genre?: string;
   onSale?: boolean;
+  /** 이 할인율 이상만. onSale 과 같은 축이라 둘 중 하나만 선다(gamesHref 가 맞춰 지운다) */
+  minDiscount?: MinDiscount;
   /** 회사 slug — 회사 화면과 목록 필터가 같은 키를 쓴다 */
   company?: string;
   /** 구독(게임패스 등)으로 지금 플레이할 수 있는 게임만 */
@@ -47,11 +62,14 @@ export function firstParam(v: string | string[] | undefined): string | undefined
 export function parseGamesQuery(sp: Record<string, string | string[] | undefined>): GamesQuery {
   const sort = firstParam(sp.sort);
   const page = Number(firstParam(sp.page));
+  const rawOff = Number(firstParam(sp.off));
+  const off = isMinDiscount(rawOff) ? rawOff : undefined;
   return {
     q: firstParam(sp.q),
     platform: firstParam(sp.platform),
     genre: firstParam(sp.genre),
     onSale: firstParam(sp.sale) === "1",
+    minDiscount: off,
     company: firstParam(sp.company),
     subscription: firstParam(sp.sub) === "1",
     sort: isGameSort(sort) ? sort : undefined,
@@ -69,7 +87,8 @@ export function gamesHref(current: GamesQuery, patch: Partial<GamesQuery> = {}):
   if (next.q) params.set("q", next.q);
   if (next.platform) params.set("platform", next.platform);
   if (next.genre) params.set("genre", next.genre);
-  if (next.onSale) params.set("sale", "1");
+  if (next.minDiscount) params.set("off", String(next.minDiscount));
+  else if (next.onSale) params.set("sale", "1");
   if (next.company) params.set("company", next.company);
   if (next.subscription) params.set("sub", "1");
   if (next.sort && next.sort !== DEFAULT_GAME_SORT) params.set("sort", next.sort);

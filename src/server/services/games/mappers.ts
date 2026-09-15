@@ -271,7 +271,10 @@ export function bestScore(platforms: PlatformDto[]): { value: number; note: stri
  * 어느 스토어의 값인지 함께 돌려주고, 화면이 그 이름을 같이 적는다.
  */
 export function bestUserScore(platforms: PlatformDto[]): { score: UserScoreDto; platform: Platform } | null {
-  const rated = platforms.filter((p): p is PlatformDto & { userScore: UserScoreDto } => p.userScore !== null);
+  // != null 로 undefined 까지 함께 막는다. 타입상으로는 null 뿐이지만 캐시에 담긴 옛 값에는
+  // 이 필드가 아예 없다(DTO_CACHE_VERSION 참고) — 판을 올리는 것이 고치는 길이고, 이 한 글자는
+  // 다음에 또 빠뜨렸을 때 상세 화면 한 장이 통째로 죽지 않게 받쳐 준다
+  const rated = platforms.filter((p): p is PlatformDto & { userScore: UserScoreDto } => p.userScore != null);
   if (rated.length === 0) return null;
   const top = rated.reduce((a, b) => (b.userScore.count > a.userScore.count ? b : a));
   return { score: top.userScore, platform: top.platform };

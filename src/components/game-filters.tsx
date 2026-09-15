@@ -16,7 +16,15 @@ import {
 } from "@/lib/platform";
 import { ChipLink } from "@/components/ui/chip";
 import { Select, type SelectOption } from "@/components/ui/select";
-import { GAME_SORTS, DEFAULT_GAME_SORT, SORT_LABEL, gamesHref, type GamesQuery } from "@/lib/games-query";
+import {
+  GAME_SORTS,
+  DEFAULT_GAME_SORT,
+  MIN_DISCOUNT_STEPS,
+  SORT_LABEL,
+  gamesHref,
+  type GamesQuery,
+  type MinDiscount,
+} from "@/lib/games-query";
 import type { GameFacets } from "@/server/services/games";
 import { cardClass } from "@/components/ui/page";
 
@@ -99,8 +107,31 @@ function Groups({ facets, filter }: { facets: GameFacets; filter: GamesQuery }) 
 
       <Select label="정렬" value={filter.sort ?? DEFAULT_GAME_SORT} options={sortOptions} scroll={false} />
 
+      {/*
+        할인은 한 축이다. "할인 중만" 과 "30% 이상" 을 따로 두면 둘 다 켠 상태가 생기고
+        그때 화면이 말하는 것과 질의가 거는 것이 어긋난다. 그래서 한 줄에서 하나만 서게 한다 —
+        칸을 옮길 때 반대쪽을 반드시 지워 준다(주소에 찌꺼기가 남지 않는다).
+      */}
+      <Group label="할인">
+        <ChipLink {...KEEP_SCROLL} href={href({ onSale: false, minDiscount: undefined })} active={!filter.onSale && !filter.minDiscount}>
+          전체
+        </ChipLink>
+        <ChipLink {...KEEP_SCROLL} href={href({ onSale: true, minDiscount: undefined })} active={Boolean(filter.onSale) && !filter.minDiscount}>
+          할인 중
+        </ChipLink>
+        {MIN_DISCOUNT_STEPS.map((pct: MinDiscount) => (
+          <ChipLink
+            key={pct}
+            {...KEEP_SCROLL}
+            href={href({ onSale: false, minDiscount: filter.minDiscount === pct ? undefined : pct })}
+            active={filter.minDiscount === pct}
+          >
+            {pct}% 이상
+          </ChipLink>
+        ))}
+      </Group>
+
       <Group label="조건">
-        <ChipLink {...KEEP_SCROLL} href={href({ onSale: !filter.onSale })} active={Boolean(filter.onSale)}>할인 중만</ChipLink>
         {/* 구독 포함 여부는 Game Pass 하나로 시작하지만 조건은 "어떤 구독이든"이라 PS Plus 를 붙여도 문구가 그대로다 */}
         <ChipLink {...KEEP_SCROLL} href={href({ subscription: !filter.subscription })} active={Boolean(filter.subscription)}>
           구독으로 즐길 수 있어요

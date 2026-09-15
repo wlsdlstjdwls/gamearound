@@ -45,7 +45,7 @@ export async function generateMetadata({ searchParams }: Props): Promise<Metadat
   const parts = [
     f.platform ? platformFilterLabel(f.platform) : null,
     f.genre,
-    f.onSale ? "할인 중" : null,
+    f.minDiscount ? `${f.minDiscount}% 이상 할인` : f.onSale ? "할인 중" : null,
     f.subscription ? "구독 포함" : null,
   ].filter(Boolean);
   return { title: parts.length > 0 ? `게임 목록 | ${parts.join(" | ")}` : "게임 목록" };
@@ -81,7 +81,9 @@ async function FilterColumn({ filter }: { filter: GameListFilter }) {
 
 async function Results({ filter }: { filter: GameListFilter }) {
   const result = await listGames(filter);
-  const hasFilter = Boolean(filter.q || filter.platform || filter.genre || filter.onSale || filter.company || filter.subscription);
+  const hasFilter = Boolean(
+    filter.q || filter.platform || filter.genre || filter.onSale || filter.minDiscount || filter.company || filter.subscription,
+  );
 
   if (result.items.length === 0) {
     return (
