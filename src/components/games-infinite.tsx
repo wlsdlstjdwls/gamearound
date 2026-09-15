@@ -11,11 +11,9 @@ import { useCallback, useEffect, useRef, useState, useTransition } from "react";
 import { Button } from "@/components/ui/button";
 import { SpinnerIcon } from "@/components/ui/icons";
 import { loadMoreGames } from "@/app/(public)/games/actions";
+import { GAMES_GRID_CLASS } from "@/lib/games/grid";
 import { GAMES_LIST_MESSAGES } from "@/lib/games/messages";
 import type { GameListFilter } from "@/server/services/games";
-
-/** 격자 설정은 한 곳에서만 — 서버가 그리는 첫 페이지(page.tsx)와 같은 값이어야 카드 폭이 경계에서 바뀌지 않는다 */
-export const GAMES_GRID_CLASS = "grid grid-cols-[repeat(auto-fit,minmax(238px,1fr))] gap-4";
 
 /**
  * 바닥에서 이만큼 남았을 때 미리 부른다. 카드 한 줄 높이(약 250px)의 두 배 —
@@ -61,17 +59,26 @@ export function GamesInfinite({
     });
   }, [filter, nextPage, hasMore]);
 
+  // 관찰자에게 건네는 "늘 최신인" 콜백. 관찰자가 loadMore 를 직접 붙잡으면 페이지를 한 장 붙일 때마다
+  // 콜백 정체가 바뀌어 관찰자를 다시 만들게 되는데, 갓 만든 관찰자는 이미 걸쳐 있는 표적을
+  // "지금 막 들어왔다" 고 한 번 더 알린다 — 바닥에 서 있기만 해도 다음 장이 연달아 딸려 왔다.
+  const latestLoadMore = useRef(loadMore);
+  useEffect(() => {
+    latestLoadMore.current = loadMore;
+  }, [loadMore]);
+
   useEffect(() => {
     const el = sentinel.current;
     // 실패한 뒤에는 자동으로 다시 시도하지 않는다. 바닥에 머무는 동안 같은 요청이 계속 나가면
     // 끊긴 네트워크에서 요청만 쌓인다 — 다시 시도는 사람이 누른다
     if (!el || !hasMore || failed) return;
-    const io = new IntersectionObserver((entries) => entries[0]?.isIntersecting && loadMore(), {
+    const io = new IntersectionObserver((entries) => entries[0]?.isIntersecting && latestLoadMore.current(), {
       rootMargin: `0px 0px ${PREFETCH_MARGIN} 0px`,
     });
     io.observe(el);
     return () => io.disconnect();
-  }, [loadMore, hasMore, failed]);
+    // loadMore 는 일부러 뺀다(위 상자를 통해 최신 값이 들어간다) — 관찰자는 한 번만 세운다
+  }, [hasMore, failed]);
 
   return (
     <>
