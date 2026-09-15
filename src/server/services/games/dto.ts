@@ -1,6 +1,12 @@
 // 공개 DTO — route, 컴포넌트가 받는 모양. 모두 JSON 직렬화 가능(Date → ISO 문자열).
 // DB 행 타입을 그대로 노출하지 않는 이유: 스키마가 바뀌어도 화면 계약은 유지돼야 한다.
-import type { CompanyRole, Currency, Platform, Region, SyncStatus, UpgradeKind } from "@/server/db/schema";
+import type { CompanyRole, Currency, Platform, Region, SyncStatus, UpgradeKind, UserScoreKind } from "@/server/db/schema";
+
+/**
+ * 스토어 이용자가 매긴 점수. 평론가 점수와 축이 다르다.
+ * value 는 0~100 정수이고 무슨 뜻인지는 kind 가 말한다 — 화면은 kind 를 보고 문구를 고른다(lib/user-score).
+ */
+export type UserScoreDto = { value: number; kind: UserScoreKind; count: number };
 
 export type PlatformDto = {
   platform: Platform;
@@ -23,6 +29,8 @@ export type PlatformDto = {
   discountName: string | null;
   metacriticScore: number | null;
   opencriticScore: number | null;
+  /** 이 스토어 이용자들의 점수. 주지 않는 스토어(PlayStation, 닌텐도, Epic, GOG)는 null */
+  userScore: UserScoreDto | null;
   lastSyncedAt: string | null;
   syncStatus: SyncStatus | null;
   /** 이 스토어가 "추가 콘텐츠 있음"이라고 알려준 값. DLC 목록을 못 가져오는 플랫폼에서도 유무는 말할 수 있다 */

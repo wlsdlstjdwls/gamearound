@@ -57,6 +57,46 @@ function row(over: Partial<PlatformRow> = {}): PlatformRow {
   } as PlatformRow;
 }
 
+describe("planPlatform - 유저 점수", () => {
+  const score = { value: 94, kind: "positive_ratio", count: 487684 } as const;
+
+  it("세 값을 함께 쓴다 — 점수만 바뀌고 척도가 남으면 뜻이 뒤집힌다", () => {
+    const plan = planPlatform(ctx(), row(), "g-1", snapshot({ userScore: { ...score } }));
+    expect(plan.kind).toBe("update");
+    if (plan.kind !== "update") return;
+    expect(plan.set.userScore).toBe(94);
+    expect(plan.set.userScoreKind).toBe("positive_ratio");
+    expect(plan.set.userScoreCount).toBe(487684);
+    expect(plan.changed).toBe(true);
+  });
+
+  it("스토어가 점수를 안 주면 이미 있는 값을 지우지 않는다(§7)", () => {
+    const existing = row({ userScore: 94, userScoreKind: "positive_ratio", userScoreCount: 487684 });
+    const plan = planPlatform(ctx(), existing, "g-1", snapshot());
+    expect(plan.kind).toBe("update");
+    if (plan.kind !== "update") return;
+    expect(plan.set.userScore).toBeUndefined();
+    expect(plan.changed).toBe(false);
+  });
+
+  it("값이 그대로면 UPDATE 하지 않는다 — 리뷰 수는 매번 조금씩 늘어 캐시를 헛되이 깬다", () => {
+    const existing = row({ userScore: 94, userScoreKind: "positive_ratio", userScoreCount: 487684 });
+    const plan = planPlatform(ctx(), existing, "g-1", snapshot({ userScore: { ...score } }));
+    expect(plan.kind).toBe("update");
+    if (plan.kind !== "update") return;
+    expect(plan.set.userScore).toBeUndefined();
+    expect(plan.changed).toBe(false);
+  });
+
+  it("관리자가 잠근 점수는 건드리지 않는다", () => {
+    const existing = row({ userScore: 50, userScoreKind: "positive_ratio", userScoreCount: 10 });
+    const plan = planPlatform(ctx(["game_platforms:gp-1:user_score"]), existing, "g-1", snapshot({ userScore: { ...score } }));
+    expect(plan.kind).toBe("update");
+    if (plan.kind !== "update") return;
+    expect(plan.set.userScore).toBeUndefined();
+  });
+});
+
 describe("planPlatform", () => {
   it("기존 행이 없으면 INSERT 계획 + 첫 가격 스냅샷", () => {
     const plan = planPlatform(ctx(), undefined, "g-1", snapshot());

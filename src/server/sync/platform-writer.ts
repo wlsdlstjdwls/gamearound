@@ -44,6 +44,29 @@ function changedDiscountMeta(ctx: Ctx, rowId: string, meta: DiscountMeta, existi
   return set;
 }
 
+/** 유저 점수 세 컬럼을 한 덩어리로 다룬다 — 값과 척도와 표본 수는 따로 떨어지면 뜻을 잃는다 */
+type UserScoreSet = { userScore: number; userScoreKind: NonNullable<StoreSnapshot["userScore"]>["kind"]; userScoreCount: number };
+
+/**
+ * 스냅샷의 유저 점수 → 쓸 값. 스토어가 안 주면 undefined 라 기존 값을 덮지 않는다(§7).
+ * 세 값을 같이 넣거나 같이 두거나 둘 중 하나다 — 점수만 바뀌고 척도가 남으면 "3.9%" 같은 것이 된다.
+ */
+export function userScoreSet(snapshot: StoreSnapshot): UserScoreSet | undefined {
+  const s = snapshot.userScore;
+  if (!s) return undefined;
+  return { userScore: s.value, userScoreKind: s.kind, userScoreCount: s.count };
+}
+
+/** 기존 행과 견줘 실제로 달라진 것만. 잠긴 필드는 건드리지 않는다 */
+function changedUserScore(ctx: Ctx, rowId: string, next: UserScoreSet | undefined, existing: PlatformRow): Partial<UserScoreSet> {
+  if (!next || isLocked(ctx, "game_platforms", rowId, "userScore")) return {};
+  const same =
+    existing.userScore === next.userScore &&
+    existing.userScoreKind === next.userScoreKind &&
+    existing.userScoreCount === next.userScoreCount;
+  return same ? {} : next;
+}
+
 /** 한 행에 남길 가격 스냅샷. gamePlatformId 는 INSERT 직후에야 알 수 있으므로 여기서 빼 둔다 */
 export type PriceSnapshotDraft = Omit<typeof priceSnapshots.$inferInsert, "gamePlatformId">;
 
@@ -84,6 +107,7 @@ export function planPlatform(ctx: Ctx, existing: PlatformRow | undefined, gameId
         currency: snapshot.currency ?? DISPLAY_CURRENCY,
         discountPct: snapshot.discountPct,
         hasAddOns: snapshot.hasAddOns ?? null,
+        ...userScoreSet(snapshot),
         ...meta,
         lastSyncedAt: ctx.now,
         syncStatus: "ok",
@@ -111,6 +135,8 @@ export function planPlatform(ctx: Ctx, existing: PlatformRow | undefined, gameId
   const priceChanged = Object.keys(set).some((k) => PRICE_FIELDS.has(k));
   // 할인 메타는 null 로 덮어써야 하는 유일한 필드라 PLATFORM_FIELDS 규칙(널 무시) 밖에서 따로 처리
   const metaSet = changedDiscountMeta(ctx, existing.id, meta, existing);
+  // 유저 점수도 평평한 필드가 아니라 세 컬럼 묶음이라 PLATFORM_FIELDS 규칙 밖에서 따로 본다
+  const scoreSet = changedUserScore(ctx, existing.id, userScoreSet(snapshot), existing);
   const newPrice = set.currentPrice ?? existing.currentPrice;
 
   const draft: PriceSnapshotDraft | null =
@@ -127,10 +153,10 @@ export function planPlatform(ctx: Ctx, existing: PlatformRow | undefined, gameId
   return {
     kind: "update",
     id: existing.id,
-    set: { ...set, ...metaSet, lastSyncedAt: ctx.now, syncStatus: "ok" },
+    set: { ...set, ...metaSet, ...scoreSet, lastSyncedAt: ctx.now, syncStatus: "ok" },
     snapshot: draft,
     priceChange: draft !== null && set.currentPrice !== undefined ? { previousPrice: existing.currentPrice, newPrice: draft.price } : null,
-    changed: Object.keys(set).length > 0 || Object.keys(metaSet).length > 0,
+    changed: Object.keys(set).length > 0 || Object.keys(metaSet).length > 0 || Object.keys(scoreSet).length > 0,
   };
 }
 

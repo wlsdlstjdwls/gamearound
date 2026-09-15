@@ -44,9 +44,17 @@ function storeItemsUrl(appids: string[], language: "koreana" | "english", full: 
   const input = {
     ids: appids.map((id) => ({ appid: Number(id) })),
     context: { language, country_code: "KR", steam_realm: 1 },
-    // 영문 응답은 제목만 쓰므로 basic_info 만 요청해 응답 크기를 줄인다
+    // 영문 응답은 제목만 쓰므로 basic_info 만 요청해 응답 크기를 줄인다.
+    // include_reviews 는 유저 점수를 준다 — 요청 수가 늘지 않고 응답만 조금 커진다(2026-09-15 실측)
     data_request: full
-      ? { include_basic_info: true, include_assets: true, include_release: true, include_platforms: true, include_tag_count: 20 }
+      ? {
+          include_basic_info: true,
+          include_assets: true,
+          include_release: true,
+          include_platforms: true,
+          include_reviews: true,
+          include_tag_count: 20,
+        }
       : { include_basic_info: true },
   };
   const u = new URL(STEAM_STOREITEMS_URL);

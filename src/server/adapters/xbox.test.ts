@@ -44,6 +44,41 @@ describe("parseXboxProduct", () => {
     expect(snap.currentPrice).toBe(10000);
   });
 
+  it("유저 점수는 전체 기간 별점만 쓴다 — 7일치는 표본이 작아 출렁인다", () => {
+    const raw = {
+      Products: [
+        {
+          ProductId: "X4",
+          LocalizedProperties: [{ ProductTitle: "Rated" }],
+          MarketProperties: [
+            {
+              OriginalReleaseDate: null,
+              UsageData: [
+                { AggregateTimeSpan: "7Days", AverageRating: 4.4, RatingCount: 73 },
+                { AggregateTimeSpan: "AllTime", AverageRating: 3.9, RatingCount: 57919 },
+              ],
+            },
+          ],
+        },
+      ],
+    };
+    // 3.9 * 20 = 78. 척도는 star_average 라 화면이 "3.9" 로 되돌려 적는다
+    expect(parseXboxProduct(raw, "X4").userScore).toEqual({ value: 78, kind: "star_average", count: 57919 });
+  });
+
+  it("아무도 별점을 안 매겼으면 값을 주지 않는다 — 0점이 아니다", () => {
+    const raw = {
+      Products: [
+        {
+          ProductId: "X5",
+          LocalizedProperties: [{ ProductTitle: "Unrated" }],
+          MarketProperties: [{ OriginalReleaseDate: null, UsageData: [{ AggregateTimeSpan: "AllTime", AverageRating: 0, RatingCount: 0 }] }],
+        },
+      ],
+    };
+    expect(parseXboxProduct(raw, "X5").userScore).toBeNull();
+  });
+
   it("텍스트 필드가 null 로 와도 그 상품 자체를 읽는다", () => {
     const raw = {
       Products: [

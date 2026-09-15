@@ -4,7 +4,7 @@ import { getDb } from "@/server/db/client";
 import { gameGenres, gamePlatforms, games, genres, HOME_REGION, type Platform, type Region } from "@/server/db/schema";
 import { cheapestOf, DISPLAY_CURRENCY } from "@/lib/currency";
 import { PLATFORM_ORDER } from "@/lib/platform";
-import type { GameDetail, GameSummary, PlatformDto, PublicGameDto } from "./dto";
+import type { GameDetail, GameSummary, PlatformDto, PublicGameDto, UserScoreDto } from "./dto";
 
 export const iso = (d: Date | string | null | undefined): string | null => {
   if (!d) return null;
@@ -46,6 +46,11 @@ export function toPlatformDto(p: PlatformRow): PlatformDto {
     discountName: p.discountName,
     metacriticScore: p.metacriticScore,
     opencriticScore: p.opencriticScore,
+    // 세 컬럼이 다 차 있을 때만 점수다 — 하나라도 비면 뜻을 만들 수 없다
+    userScore:
+      p.userScore !== null && p.userScoreKind !== null
+        ? { value: p.userScore, kind: p.userScoreKind, count: p.userScoreCount ?? 0 }
+        : null,
     lastSyncedAt: iso(p.lastSyncedAt),
     syncStatus: p.syncStatus,
     hasAddOns: p.hasAddOns,
@@ -258,4 +263,16 @@ export function bestScore(platforms: PlatformDto[]): { value: number; note: stri
   if (oc !== undefined) return { value: oc, note: mc !== undefined ? `OpenCritic | 메타 ${mc}` : "OpenCritic" };
   if (mc !== undefined) return { value: mc, note: "메타크리틱" };
   return null;
+}
+
+/**
+ * 대표 유저 점수 — 표본이 가장 큰 스토어의 것. 평균을 내지 않는 이유:
+ * Steam 의 "긍정 94%" 와 Xbox 의 "평균 3.9점" 은 재는 방식이 달라 더하면 아무 뜻도 아닌 값이 된다.
+ * 어느 스토어의 값인지 함께 돌려주고, 화면이 그 이름을 같이 적는다.
+ */
+export function bestUserScore(platforms: PlatformDto[]): { score: UserScoreDto; platform: Platform } | null {
+  const rated = platforms.filter((p): p is PlatformDto & { userScore: UserScoreDto } => p.userScore !== null);
+  if (rated.length === 0) return null;
+  const top = rated.reduce((a, b) => (b.userScore.count > a.userScore.count ? b : a));
+  return { score: top.userScore, platform: top.platform };
 }

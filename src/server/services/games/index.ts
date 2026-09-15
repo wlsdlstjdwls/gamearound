@@ -2,7 +2,7 @@
 // 주의: unstable_cache 내부에서는 headers()/cookies()/auth() 를 호출하지 않는다.
 //       로그인 의존 데이터는 페이지에서 별도로 조회한다.
 export type * from "./dto";
-export { bestScore, cheapestPlatform, displayTitle, toPublicGameDto } from "./mappers";
+export { bestScore, bestUserScore, cheapestPlatform, displayTitle, toPublicGameDto } from "./mappers";
 export { getHomeData } from "./home";
 export { searchGames } from "./search";
 export { GAMES_PAGE_SIZE, getGameFacets, listGames } from "./list";

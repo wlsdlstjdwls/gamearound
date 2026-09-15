@@ -141,6 +141,13 @@
       "when": 1789431011510,
       "tag": "0019_tiresome_ender_wiggin",
       "breakpoints": true
+    },
+    {
+      "idx": 20,
+      "version": "7",
+      "when": 1789442604824,
+      "tag": "0020_furry_exodus",
+      "breakpoints": true
     }
   ]
 }

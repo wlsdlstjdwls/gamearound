@@ -48,11 +48,20 @@ export const companyRoleEnum = pgEnum("company_role", ["developer", "publisher"]
  * PS4 에서 PS5 로의 무료 업그레이드, Xbox Smart Delivery 가 같은 모양이다.
  */
 export const upgradeKindEnum = pgEnum("upgrade_kind", ["free", "paid", "subscription_included"]);
+/**
+ * 유저 점수의 척도. 스토어마다 재는 방식이 달라 값만으로는 무슨 뜻인지 알 수 없다.
+ *   positive_ratio = 긍정 리뷰 비율(Steam. "94% 가 긍정적")
+ *   star_average   = 5점 만점 평균 별점(Xbox. "3.9 / 5")
+ * 한 숫자로 합치지 않는 이유: "94% 가 좋다고 했다" 와 "평균 3.9점" 은 다른 사실이다.
+ * 화면이 이 값을 보고 문장을 고른다.
+ */
+export const userScoreKindEnum = pgEnum("user_score_kind", ["positive_ratio", "star_average"]);
 
 export type Platform = (typeof platformEnum.enumValues)[number];
 export type SourceName = (typeof sourceEnum.enumValues)[number];
 export type Role = (typeof roleEnum.enumValues)[number];
 export type SyncStatus = (typeof syncStatusEnum.enumValues)[number];
+export type UserScoreKind = (typeof userScoreKindEnum.enumValues)[number];
 export type Currency = (typeof currencyEnum.enumValues)[number];
 export type Region = (typeof regionEnum.enumValues)[number];
 export type ContentType = (typeof contentTypeEnum.enumValues)[number];
@@ -169,6 +178,22 @@ export const gamePlatforms = pgTable("game_platforms", {
   currency: currencyEnum("currency").default("KRW").notNull(),
   metacriticScore: integer("metacritic_score"),
   opencriticScore: integer("opencritic_score"),
+  /**
+   * 그 스토어에서 실제로 산 사람들이 매긴 점수 — 평론가 점수(위 둘)와 다른 축이다.
+   *
+   * 0~100 정수 하나로 저장하고 뜻은 user_score_kind 가 말한다. 별점은 20을 곱해 넣는다
+   * (3.9 -> 78). 소수 한 자리까지만 오는 값이라 되돌릴 때 손실이 없고, 척도가 다른 스토어끼리도
+   * "높은 쪽" 을 고를 수 있다. 화면에 적을 때는 kind 를 보고 원래 말로 되돌린다.
+   *
+   * 채우는 소스(2026-09-15 실측): steam = GetItems 의 reviews.summary_filtered(가격 배치에 얹혀 추가 요청 0),
+   * xbox = displaycatalog 의 MarketProperties[].UsageData 중 AllTime(역시 추가 요청 0).
+   * PlayStation 도 값은 있으나(콘셉트 페이지 HTML 의 averageRating) 응답이 건당 1MB 라 가격 경로에 얹지 않는다.
+   * 닌텐도, Epic, GOG 는 공개된 유저 점수가 없다.
+   */
+  userScore: integer("user_score"),
+  userScoreKind: userScoreKindEnum("user_score_kind"),
+  /** 그 점수를 만든 사람 수. 100명의 90점과 5만명의 90점은 다른 값이라 함께 적는다 */
+  userScoreCount: integer("user_score_count"),
   lastSyncedAt: timestamp("last_synced_at", { withTimezone: true }),  // UI "갱신 시각" 표시 원천
   syncStatus: syncStatusEnum("sync_status").default("ok"),
   /**

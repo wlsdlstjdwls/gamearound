@@ -185,6 +185,17 @@ describe("parseStoreItems", () => {
     expect(witcher.releaseDate).toBe("2015-05-18");
   });
 
+  it("유저 점수는 전체 리뷰의 긍정 비율이다 — 한국어 리뷰만 세면 표본이 20분의 1로 줄어 값이 튄다", () => {
+    const map = parseStoreItems(ko(), en());
+    expect(map.get("292030")!.userScore).toEqual({ value: 96, kind: "positive_ratio", count: 793664 });
+    // 한국어 묶음(49%)이 아니라 전체 묶음(58%)을 쓴다
+    expect(map.get("578080")!.userScore).toEqual({ value: 58, kind: "positive_ratio", count: 2455900 });
+  });
+
+  it("리뷰가 없는 게임은 점수를 주지 않는다 — 1건짜리 100% 를 만점으로 띄우지 않는다", () => {
+    expect(parseStoreItems(ko(), en()).get("2717010")!.userScore).toBeNull();
+  });
+
   it("가로 배너(header)와 세로 아트(library_capsule)를 각각 채운다", () => {
     const witcher = parseStoreItems(ko(), en()).get("292030")!;
     // 상세 헤더의 3:4 슬롯은 세로 아트용이다 — 가로 배너를 넣으면 제목이 크롭돼 잘린다

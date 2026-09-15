@@ -7,6 +7,7 @@
 import { formatPrice } from "@/lib/currency";
 import { useId, useState } from "react";
 import { formatDate, formatDiscount, formatShortDateTime, platformLabel } from "@/lib/format";
+import { userScoreNoteText, userScoreValueText } from "@/lib/user-score";
 import type { Freshness } from "@/lib/freshness";
 import type { PlatformDto } from "@/server/services/games";
 import { SaleBadge } from "@/components/sale-badge";
@@ -15,11 +16,14 @@ import { cardClass } from "@/components/ui/page";
 
 export type PlatformTabItem = PlatformDto & { freshness: Freshness };
 
-function MetaCell({ label, children }: { label: string; children: React.ReactNode }) {
+function MetaCell({ label, children, note }: { label: string; children: React.ReactNode; note?: string }) {
   return (
     <div className="flex flex-col gap-1 px-4 py-3">
       <dt className="text-[11.5px] text-dim">{label}</dt>
-      <dd className="text-[13px] font-semibold text-ink">{children}</dd>
+      <dd className="flex flex-col gap-0.5">
+        <span className="text-[13px] font-semibold text-ink">{children}</span>
+        {note && <span className="text-[11.5px] font-normal text-mut">{note}</span>}
+      </dd>
     </div>
   );
 }
@@ -116,6 +120,13 @@ export function PlatformTabs({ platforms }: { platforms: PlatformTabItem[] }) {
           <MetaCell label="버전">{current.currentVersion ?? "-"}</MetaCell>
           <MetaCell label="할인 종료">
             {hasDiscount && current.discountEndsAt ? formatShortDateTime(current.discountEndsAt) : hasDiscount ? "미공개" : "-"}
+          </MetaCell>
+          {/* 유저 점수는 스토어마다 재는 방식이 달라 요약 바가 아니라 그 스토어 칸 안에서도 한 번 말한다 */}
+          <MetaCell
+            label="유저 점수"
+            note={current.userScore ? userScoreNoteText(current.userScore.kind, current.userScore.count) : undefined}
+          >
+            {current.userScore ? userScoreValueText(current.userScore.value, current.userScore.kind) : "-"}
           </MetaCell>
         </dl>
 

@@ -16,6 +16,7 @@ import { WishlistButton } from "@/components/wishlist-button";
 import { buttonClass } from "@/components/ui/button";
 import { Card, Page, SectionHead } from "@/components/ui/page";
 import { formatHours, PLATFORM_LABEL } from "@/lib/format";
+import { userScoreNoteText, userScoreValueText } from "@/lib/user-score";
 import { SITE } from "@/lib/site";
 import { getFreshness } from "@/lib/freshness";
 import { GAME_MESSAGES } from "@/lib/games/messages";
@@ -23,6 +24,7 @@ import { stagger } from "@/lib/motion";
 import { gamePatchesPath, gamePricesPath, ROUTES } from "@/lib/routes";
 import {
   bestScore,
+  bestUserScore,
   cheapestPlatform,
   displayTitle,
   getGameBySlugCached,
@@ -78,6 +80,7 @@ function SummaryCell({ label, value, was, note }: { label: string; value: string
 function DecisionSummary({ game, className, style }: { game: GameDetail; className?: string; style?: React.CSSProperties }) {
   const best = cheapestPlatform(game.platforms);
   const score = bestScore(game.platforms);
+  const user = bestUserScore(game.platforms);
   const main = game.playtime?.mainStoryHours;
   const complete = game.playtime?.completionistHours;
 
@@ -95,7 +98,18 @@ function DecisionSummary({ game, className, style }: { game: GameDetail; classNa
         note={best ? `${PLATFORM_LABEL[best.platform] ?? best.platform}${best.discountPct ? ` | -${best.discountPct}%` : ""}` : undefined}
       />
       <SummaryCell label="메인 스토리" value={main ? formatHours(main) : "-"} note={complete ? `완전 정복 ${formatHours(complete)}` : undefined} />
-      <SummaryCell label="평점" value={score ? String(score.value) : "-"} note={score?.note ?? undefined} />
+      <SummaryCell label="평론가 평점" value={score ? String(score.value) : "-"} note={score?.note ?? undefined} />
+      {/* 유저 점수를 평론가 점수 옆에 따로 세우는 이유: 두 값이 갈리는 게임이 있고, 그 사실 자체가
+          살지 말지를 정하는 정보다. 하나로 합치면 그 갈림이 사라진다 */}
+      <SummaryCell
+        label="유저 점수"
+        value={user ? userScoreValueText(user.score.value, user.score.kind) : "-"}
+        note={
+          user
+            ? `${PLATFORM_LABEL[user.platform] ?? user.platform} | ${userScoreNoteText(user.score.kind, user.score.count)}`
+            : undefined
+        }
+      />
     </dl>
   );
 }

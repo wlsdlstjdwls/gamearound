@@ -89,6 +89,22 @@ export const storeItemSchema = z.object({
     .optional(),
   release: z.object({ steam_release_date: z.number().optional(), is_coming_soon: z.boolean().optional() }).optional(),
   categories: z.object({ supported_player_categoryids: z.array(z.number()).default([]) }).optional(),
+  /**
+   * 유저 리뷰 요약(data_request.include_reviews). 두 묶음이 온다 —
+   * summary_filtered 는 전체, summary_language_specific 은 요청 언어(한국어)만이다.
+   * 전체를 쓴다: 한국어 리뷰만 세면 표본이 20분의 1로 줄어 값이 튄다
+   * (2026-09-15 실측, 팰월드: 전체 411,416건 94% 대 한국어 23,143건 95%).
+   */
+  reviews: z
+    .object({
+      summary_filtered: z
+        .object({
+          review_count: z.number().optional(),
+          percent_positive: z.number().optional(),
+        })
+        .optional(),
+    })
+    .optional(),
   tagids: z.array(z.number()).default([]),
 });
 

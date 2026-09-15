@@ -3,6 +3,7 @@ import { AdapterError, type StoreSnapshot } from "../types";
 import { storeItemsSchema, type StoreItem } from "./schemas";
 import { PLAYER_CATEGORY, STEAM_APP_TYPE_DLC, STEAM_ASSET_BASE_URL, STEAM_GENRE_TAG_IDS, STEAM_STORE_APP_URL } from "./constants";
 import { steamDiscountLabel } from "./parse-discount";
+import { ratioToScore } from "@/lib/user-score";
 
 export function steamAssetUrl(
   assets: { asset_url_format?: string; header?: string; library_capsule?: string } | undefined,
@@ -49,6 +50,18 @@ function multiplayerOf(item: StoreItem): NonNullable<StoreSnapshot["meta"]>["mul
   const coop = has(PLAYER_CATEGORY.coop);
   const pvp = has(PLAYER_CATEGORY.pvp);
   return { solo: has(PLAYER_CATEGORY.solo), coop, pvp };
+}
+
+/**
+ * 유저 점수 — 긍정 리뷰 비율. 리뷰가 0건이면 비율이 의미를 잃어 값을 주지 않는다
+ * (출시 직후 1건짜리 100% 를 "만점" 으로 띄우지 않기 위해서다).
+ */
+function userScoreOf(item: StoreItem): StoreSnapshot["userScore"] {
+  const summary = item.reviews?.summary_filtered;
+  const count = summary?.review_count ?? 0;
+  if (count <= 0 || summary?.percent_positive === undefined) return null;
+  const value = ratioToScore(summary.percent_positive);
+  return value === null ? null : { value, kind: "positive_ratio", count };
 }
 
 function isUsableItem(item: StoreItem): boolean {
@@ -98,6 +111,7 @@ export function parseStoreItems(rawKo: unknown, rawEn?: unknown): Map<string, St
       // 두 신호를 모두 본다 — appdetails 경로와 같은 규칙이다(type 이 게임인데 본편만 가리키는 확장팩이 있다)
       contentType: item.type === STEAM_APP_TYPE_DLC || parentAppid !== null ? "dlc" : "game",
       parentExternalId: parentAppid,
+      userScore: userScoreOf(item),
       // 본편의 DLC 목록은 GetItems 가 주지 않는다. 목록이 필요하면 appdetails 경로(fetch)를 써야 한다
       meta: {
         titleEn,

@@ -3,6 +3,7 @@
 // PoC(2026-09-11): market=KR 에서 4개 타이틀 제목, KRW 가격, 출시일 파싱 확인. 엔드포인트/필드 경로는 이 파일 상수에만 둔다(§10).
 import { z } from "zod";
 import { slugify } from "@/lib/slug";
+import { starsToScore } from "@/lib/user-score";
 import {
   AdapterError,
   type SearchCandidate,
@@ -98,7 +99,27 @@ const productSchema = z.object({
       }),
     )
     .default([]),
-  MarketProperties: z.array(z.object({ OriginalReleaseDate: z.string().nullish() })).default([]),
+  MarketProperties: z
+    .array(
+      z.object({
+        OriginalReleaseDate: z.string().nullish(),
+        /**
+         * 이용자 별점. 기간별로 여러 줄이 온다(7Days, 30Days, AllTime).
+         * AllTime 만 쓴다 — 7일치는 표본이 수십 건이라 신작 하나가 별 하나로 출렁인다
+         * (2026-09-15 실측, 팰월드: 7일 4.4/73명, 30일 4.4/512명, 전체 3.9/57,919명).
+         */
+        UsageData: z
+          .array(
+            z.object({
+              AggregateTimeSpan: z.string().nullish(),
+              AverageRating: z.number().nullish(),
+              RatingCount: z.number().nullish(),
+            }),
+          )
+          .default([]),
+      }),
+    )
+    .default([]),
   DisplaySkuAvailabilities: z.array(z.object({ Availabilities: z.array(availabilitySchema).default([]) })).default([]),
 });
 
@@ -206,6 +227,22 @@ function rawProductsOf(raw: unknown): unknown[] | null {
   return env.success ? env.data.Products : null;
 }
 
+/** 전체 기간 별점 묶음. 기간 이름이 이것뿐이라 상수로 박는다 */
+const XBOX_USAGE_ALL_TIME = "AllTime";
+
+/**
+ * 유저 점수 — 전체 기간 평균 별점. 별점을 매긴 사람이 없으면 값을 주지 않는다.
+ * 평균이 0 으로 오는 건은 "0점" 이 아니라 "아직 아무도 안 매김" 이라 같이 버린다.
+ */
+function xboxUserScore(product: { MarketProperties: Array<{ UsageData: Array<{ AggregateTimeSpan?: string | null; AverageRating?: number | null; RatingCount?: number | null }> }> }): StoreSnapshot["userScore"] {
+  const usage = product.MarketProperties[0]?.UsageData ?? [];
+  const all = usage.find((u) => u.AggregateTimeSpan === XBOX_USAGE_ALL_TIME);
+  const count = all?.RatingCount ?? 0;
+  if (!all?.AverageRating || count <= 0) return null;
+  const value = starsToScore(all.AverageRating);
+  return value === null ? null : { value, kind: "star_average", count };
+}
+
 /** 이 ID 의 상품 원본. 없으면 첫 상품(단건 조회 응답용 관용) */
 function pickRawProduct(products: unknown[], productId: string): unknown {
   return products.find((p) => productIdSchema.safeParse(p).data?.ProductId === productId) ?? products[0];
@@ -227,6 +264,7 @@ export function parseXboxProduct(raw: unknown, productId: string, rawEn?: unknow
 
   return {
     platform: "xbox",
+    userScore: xboxUserScore(product),
     storeExternalId: product.ProductId,
     storeUrl: xboxStoreUrl(product.ProductId, title),
     listPrice: price ? price.list : null,

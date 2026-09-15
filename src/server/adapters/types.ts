@@ -1,5 +1,5 @@
 // 어댑터 인터페이스 — 설계서 §4.1. 어댑터는 "가져오기만" 한다. DB 반영은 sync/가 맡음.
-import type { Currency, Platform, Region } from "@/server/db/schema";
+import type { Currency, Platform, Region, UserScoreKind } from "@/server/db/schema";
 
 /** 크롤러 공통 User-Agent (§10: UA 명시) — 실제 값은 서비스 아이덴티티(lib/site)에서 만든다 */
 export { CRAWLER_USER_AGENT } from "@/lib/site";
@@ -52,6 +52,13 @@ export interface StoreSnapshot {
    * 빈 배열은 "이 게임은 어느 구독에도 안 들었다"는 단언이라 기존 포함 기록을 내린다.
    */
   subscriptionKeys?: string[];
+  /**
+   * 그 스토어 이용자들이 매긴 점수. 평론가 점수와 다른 축이라 따로 둔다.
+   * value 는 0~100 정수이고 뜻은 kind 가 말한다(schema 의 user_score 주석).
+   * 값을 안 주는 스토어는 이 필드를 비운다 — 0 을 넣으면 "아무도 안 좋아한다" 가 된다.
+   */
+  userScore?: { value: number; kind: UserScoreKind; count: number } | null;
+
   // Steam 기준 소스에서만 채워지는 게임 마스터 정보(신규 게임 생성용)
   meta?: {
     titleEn: string;
