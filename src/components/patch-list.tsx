@@ -1,8 +1,11 @@
 // 패치 기록 표시 — 목록(PatchList)과 플랫폼별 속도 비교(PatchSpeed).
 //
-// 본문을 담지 않으므로 목록의 한 줄은 "버전 + 제목 + 종류 + 날짜"가 전부다(§10 저작권).
-// 종류 딱지는 제목에서 규칙으로 읽어낸 한글이다 — 스토어가 한국어 패치 노트를 주지 않아서다
-// (2026-09-15 실측, lib/patch-kind 주석).
+// 본문을 담지 않으므로 목록의 한 줄은 "버전 + 제목 + 종류 + 날짜"다(§10 저작권).
+// 스토어가 한국어 패치 노트를 주지 않아(2026-09-15 실측) 한글은 두 군데서 온다:
+//   titleKo, summaryKo  우리가 본문을 읽고 쓴 글(scripts/patch-ko). 아직 안 쓴 기록은 null 이다
+//   종류 딱지          제목에서 규칙으로 읽어낸 한 마디(lib/patch-kind)
+// 한글 제목이 있으면 그것을 보여 주고 없으면 원문으로 폴백한다 — 채우는 일이 밀려도 목록은 선다.
+// **종류 딱지는 늘 원문 제목으로 읽는다.** 규칙이 영어 낱말로 짜여 있어 한글 제목을 넣으면 아무것도 안 걸린다.
 // 글 단위 주소가 있는 소스(Steam)만 제목이 링크가 되고, 없는 소스(GOG)는 글자로 남는다 —
 // 열리지 않는 링크를 만들지 않기 위해서다.
 import { Clamp } from "@/components/ui/tooltip";
@@ -57,13 +60,18 @@ export function PatchList({ items, showPlatform = false }: { items: Item[]; show
                 rel="noopener noreferrer"
                 className="font-semibold transition-colors duration-base hover:text-acc"
               >
-                <Clamp lines={2}>{n.title}</Clamp>
+                <Clamp lines={2}>{n.titleKo ?? n.title}</Clamp>
                 <span className="sr-only"> (새 창에서 열림)</span>
               </a>
             ) : (
               <span className="font-semibold">
-                <Clamp lines={2}>{n.title}</Clamp>
+                <Clamp lines={2}>{n.titleKo ?? n.title}</Clamp>
               </span>
+            )}
+            {n.summaryKo && (
+              <p className="mt-1 text-[12.5px] font-normal leading-[1.55] text-mut">
+                <Clamp lines={3}>{n.summaryKo}</Clamp>
+              </p>
             )}
           </div>
           <KindChips title={n.title} />

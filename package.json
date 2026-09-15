@@ -18,7 +18,8 @@
     "seed": "tsx scripts/seed.ts",
     "test": "vitest run",
     "e2e:auth": "node scripts/e2e-auth.mjs",
-    "crawl:seed": "tsx scripts/crawl-local.ts --seed"
+    "crawl:seed": "tsx scripts/crawl-local.ts --seed",
+    "patch:ko": "tsx scripts/patch-ko.ts"
   },
   "dependencies": {
     "@neondatabase/serverless": "^1.1.0",

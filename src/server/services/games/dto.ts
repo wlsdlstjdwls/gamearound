@@ -60,6 +60,12 @@ export type PatchNoteDto = {
   /** 제목에서 읽어낸 버전. 버전을 안 적는 게시물이 흔해 null 이 기본이다 */
   version: string | null;
   title: string;
+  /**
+   * 우리가 쓴 한글 제목과 한글 요약. 스토어가 한국어 패치 노트를 주지 않아 채워 넣는 값이다.
+   * 아직 안 채운 기록은 null 이고 화면은 원문 제목으로 폴백한다 — 채우는 일이 밀려도 목록은 선다.
+   */
+  titleKo: string | null;
+  summaryKo: string | null;
   /** 본문이 있는 스토어 페이지. 글 단위 주소가 없는 소스(GOG)는 null 이고 화면은 링크 없이 보여 준다 */
   url: string | null;
   publishedAt: string;

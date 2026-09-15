@@ -4,6 +4,7 @@
 //   1. 이 게임은 언제 고쳐졌나 (플랫폼별 목록)
 //   2. 얼마나 자주 고치나 (기록 사이 평균 간격)
 // 본문은 담지 않는다 — 이유는 schema 의 patch_notes 주석(§10 저작권).
+// 한글 제목, 한글 요약은 본문이 아니라 우리가 쓴 글이라 함께 내려보낸다.
 import { unstable_cache } from "next/cache";
 import { desc, eq } from "drizzle-orm";
 import { getDb } from "@/server/db/client";
@@ -36,6 +37,8 @@ type Row = {
   region: Region;
   version: string | null;
   title: string;
+  titleKo: string | null;
+  summaryKo: string | null;
   url: string | null;
   publishedAt: Date;
 };
@@ -50,6 +53,8 @@ export function groupPatchesByPlatform(rows: Row[]): PlatformPatchesDto[] {
       id: r.id,
       version: r.version,
       title: r.title,
+      titleKo: r.titleKo,
+      summaryKo: r.summaryKo,
       url: r.url,
       publishedAt: r.publishedAt.toISOString(),
     };
@@ -75,6 +80,8 @@ export async function getGamePatches(slug: string): Promise<PlatformPatchesDto[]
       region: gamePlatforms.region,
       version: patchNotes.version,
       title: patchNotes.title,
+      titleKo: patchNotes.titleKo,
+      summaryKo: patchNotes.summaryKo,
       url: patchNotes.url,
       publishedAt: patchNotes.publishedAt,
     })

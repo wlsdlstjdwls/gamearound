@@ -10,6 +10,8 @@ const row = (over: Partial<Parameters<typeof groupPatchesByPlatform>[0][number]>
   region: "KR" as Region,
   version: null,
   title: "Update",
+  titleKo: null,
+  summaryKo: null,
   url: null,
   ...over,
 });
@@ -64,6 +66,18 @@ describe("groupPatchesByPlatform", () => {
 
   it("기록이 없으면 빈 배열", () => {
     expect(groupPatchesByPlatform([])).toEqual([]);
+  });
+
+  // 한글은 우리가 채우는 값이라 늘 비어 있을 수 있다. 화면이 폴백하려면 DTO 까지 내려와야 한다
+  it("한글 제목과 요약을 그대로 실어 보낸다 — 없으면 null", () => {
+    const [group] = groupPatchesByPlatform([
+      row({ id: "1", publishedAt: at("2026-09-11T00:00:00Z"), titleKo: "업데이트 1.0.3", summaryKo: "저장 오류를 고쳤어요." }),
+      row({ id: "2", publishedAt: at("2026-09-10T00:00:00Z") }),
+    ]);
+    expect(group.notes[0].titleKo).toBe("업데이트 1.0.3");
+    expect(group.notes[0].summaryKo).toBe("저장 오류를 고쳤어요.");
+    expect(group.notes[1].titleKo).toBeNull();
+    expect(group.notes[1].summaryKo).toBeNull();
   });
 });
 

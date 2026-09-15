@@ -333,6 +333,21 @@ export const patchNotes = pgTable("patch_notes", {
   title: text("title").notNull(),
   /** 본문이 있는 스토어 페이지. 글 단위 주소가 없는 소스(gog 변경 기록)는 null */
   url: text("url"),
+  /**
+   * 한글 제목과 한글 요약. 스토어가 한국어 패치 노트를 주지 않아서(2026-09-15 실측:
+   * Steam 이벤트를 l=koreana 로 불러도 영어가 온다) 우리가 만들어 채운다.
+   *
+   * **본문은 여전히 저장하지 않는다.** 요약은 본문을 읽고 우리가 새로 쓴 글이고,
+   * 전문 번역은 본문을 한글로 옮겨 담는 일이라 §10 의 전제를 깬다 — 그래서 요약만 둔다.
+   * 제목을 따로 두는 이유: 목록 한 줄이 "버전, 제목, 종류, 날짜" 라 제목만 한글이어도 화면이 읽힌다.
+   *
+   * 미생성은 null 이고 화면은 원문으로 폴백한다 — 채우는 일이 밀려도 목록은 그대로 선다.
+   */
+  titleKo: text("title_ko"),
+  summaryKo: text("summary_ko"),
+  /** 이 한글을 누가 썼나. 나중에 모델을 바꾸면 어느 판으로 쓴 것인지 되짚을 수 있어야 한다 */
+  summaryModel: text("summary_model"),
+  summarizedAt: timestamp("summarized_at", { withTimezone: true }),
   publishedAt: timestamp("published_at", { withTimezone: true }).notNull(),
 }, (t) => [
   uniqueIndex("patch_notes_platform_external_uq").on(t.gamePlatformId, t.externalId),
