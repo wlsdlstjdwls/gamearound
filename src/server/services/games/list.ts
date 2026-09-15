@@ -1,4 +1,5 @@
 // /games 목록 — 필터, 정렬, 페이지네이션과 필터 선택지(facets).
+import { cache } from "react";
 import { unstable_cache } from "next/cache";
 import { and, asc, eq, inArray, sql } from "drizzle-orm";
 import { DISPLAY_CURRENCY } from "@/lib/currency";
@@ -100,21 +101,24 @@ async function listGamesRaw(filter: GameListFilter): Promise<GameListResult> {
     title: [asc(sql`coalesce(${games.titleKo}, ${games.titleEn})`)],
   }[sort];
 
-  const [{ total }] = await db
-    .select({ total: sql<number>`count(*)::int` })
-    .from(games)
-    .innerJoin(agg, eq(agg.gameId, games.id))
-    .where(where);
-
-  const rows = await db
-    .select({ game: games })
-    .from(games)
-    .innerJoin(agg, eq(agg.gameId, games.id))
-    .where(where)
-    // 같은 정렬값이 많을 때 페이지 경계에서 중복/누락이 나지 않도록 마지막 키는 항상 고유값(slug)
-    .orderBy(...orderBy, asc(games.slug))
-    .limit(GAMES_PAGE_SIZE)
-    .offset((page - 1) * GAMES_PAGE_SIZE);
+  // 건수와 목록은 서로를 기다릴 이유가 없다. DB 실행은 각 10~20ms 인데 왕복이 200ms 대라
+  // (Neon us-east-1, 2026-09-15 실측) 직렬로 두면 지연의 거의 전부가 기다림이다
+  const [[{ total }], rows] = await Promise.all([
+    db
+      .select({ total: sql<number>`count(*)::int` })
+      .from(games)
+      .innerJoin(agg, eq(agg.gameId, games.id))
+      .where(where),
+    db
+      .select({ game: games })
+      .from(games)
+      .innerJoin(agg, eq(agg.gameId, games.id))
+      .where(where)
+      // 같은 정렬값이 많을 때 페이지 경계에서 중복/누락이 나지 않도록 마지막 키는 항상 고유값(slug)
+      .orderBy(...orderBy, asc(games.slug))
+      .limit(GAMES_PAGE_SIZE)
+      .offset((page - 1) * GAMES_PAGE_SIZE),
+  ]);
 
   return {
     items: await attachBestPrice(rows.map((r) => r.game)),
@@ -125,11 +129,50 @@ async function listGamesRaw(filter: GameListFilter): Promise<GameListResult> {
   };
 }
 
+/** 캐시 키. 같은 뜻의 필터가 늘 같은 문자열이 되도록 순서를 고정한다 */
+function listKey(f: GameListFilter): string[] {
+  return [
+    f.q?.trim().toLowerCase() ?? "",
+    f.platform ?? "",
+    f.genre ?? "",
+    f.onSale ? "sale" : "",
+    f.company ?? "",
+    f.subscription ? "sub" : "",
+    f.sort ?? DEFAULT_GAME_SORT,
+    String(f.page ?? 1),
+  ];
+}
+
+/**
+ * 한 번의 렌더 안에서 같은 목록을 두 곳(머리글의 건수, 격자)이 물어도 조회는 한 번이다.
+ *
+ * 인자가 문자열 하나인 이유: React cache 는 인자를 참조로 비교한다. 필터 객체를 그대로 넘기면
+ * 호출마다 새 객체라 캐시가 절대 맞지 않는다. 그래서 필터를 직렬화해 넘기고 여기서 되돌린다 —
+ * 값이 전부 스칼라라 왕복이 안전하다.
+ */
+const listByJson = cache(async (json: string): Promise<GameListResult> => {
+  const filter = JSON.parse(json) as GameListFilter;
+  const cached = unstable_cache(() => listGamesRaw(filter), [DTO_CACHE_VERSION, "games", ...listKey(filter)], {
+    tags: ["home"],
+    revalidate: LIST_REVALIDATE_SECONDS,
+  });
+  return cached();
+});
+
 /** 목록 — 필터 조합별 1시간 캐시. 크롤러 완료 시 `home` 태그로 함께 무효화된다 */
 export async function listGames(filter: GameListFilter): Promise<GameListResult> {
-  const key = [filter.q?.trim().toLowerCase() ?? "", filter.platform ?? "", filter.genre ?? "", filter.onSale ? "sale" : "", filter.company ?? "", filter.subscription ? "sub" : "", filter.sort ?? DEFAULT_GAME_SORT, String(filter.page ?? 1)];
-  const cached = unstable_cache(() => listGamesRaw(filter), [DTO_CACHE_VERSION, "games", ...key], { tags: ["home"], revalidate: LIST_REVALIDATE_SECONDS });
-  return cached();
+  // 키 순서와 같은 순서로 다시 세워야 같은 필터가 늘 같은 문자열이 된다
+  const [q, platform, genre, onSale, company, subscription, sort, page] = listKey(filter);
+  return listByJson(JSON.stringify({
+    q: q || undefined,
+    platform: (platform || undefined) as GameListFilter["platform"],
+    genre: genre || undefined,
+    onSale: onSale ? true : undefined,
+    company: company || undefined,
+    subscription: subscription ? true : undefined,
+    sort: sort as GameListFilter["sort"],
+    page: Number(page),
+  }));
 }
 
 async function getGameFacetsRaw(): Promise<GameFacets> {
@@ -159,5 +202,11 @@ async function getGameFacetsRaw(): Promise<GameFacets> {
   };
 }
 
-/** 필터 선택지 — 게임 수가 늘어도 목록 페이지마다 다시 세지 않게 별도 캐시 */
-export const getGameFacets = unstable_cache(getGameFacetsRaw, [DTO_CACHE_VERSION, "game-facets"], { tags: ["home"], revalidate: LIST_REVALIDATE_SECONDS });
+/**
+ * 필터 선택지 — 게임 수가 늘어도 목록 페이지마다 다시 세지 않게 별도 캐시.
+ * React cache 로 한 번 더 감싸는 이유: 한 화면에서 두 곳(머리글의 전체 수, 필터 기둥)이 부른다.
+ * 감싸지 않으면 같은 값을 얻자고 왕복을 두 번 한다.
+ */
+export const getGameFacets = cache(
+  unstable_cache(getGameFacetsRaw, [DTO_CACHE_VERSION, "game-facets"], { tags: ["home"], revalidate: LIST_REVALIDATE_SECONDS }),
+);

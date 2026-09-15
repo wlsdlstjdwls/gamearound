@@ -27,11 +27,14 @@ export function Select({
   value,
   options,
   className,
+  scroll = true,
 }: {
   label: string;
   value: string;
   options: SelectOption[];
   className?: string;
+  /** 고른 뒤 맨 위로 올릴지. 제자리에서 거르는 자리(목록 필터)는 false */
+  scroll?: boolean;
 }) {
   const router = useRouter();
   const id = useId();
@@ -66,7 +69,7 @@ export function Select({
   const choose = (i: number) => {
     const opt = options[i];
     setOpen(false);
-    if (opt && opt.value !== value) router.push(opt.href);
+    if (opt && opt.value !== value) router.push(opt.href, { scroll });
   };
 
   const onKeyDown = (e: React.KeyboardEvent) => {

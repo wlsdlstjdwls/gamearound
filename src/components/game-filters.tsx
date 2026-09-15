@@ -26,6 +26,14 @@ const ALL = "__all__";
 /** 갈래에 속한 플랫폼을 화면 순서대로. FAMILY_PLATFORMS 를 직접 쓰지 않는 이유는 순서 원천을 하나로 두기 위해서다 */
 const byFamily = (f: PlatformFamily) => PLATFORM_ORDER.filter((p) => familyOf(p) === f);
 
+/**
+ * 필터를 고르는 일은 "다른 곳으로 가는" 일이 아니라 "보던 자리에서 거르는" 일이다.
+ * 기본값(scroll)대로 두면 누를 때마다 맨 위로 튄다 — 왼쪽 기둥은 붙어 있어 필터는 계속 보이는데
+ * 보고 있던 줄만 사라진다. 게다가 목록이 뼈대로 바뀌며 문서가 짧아지는 순간이 겹쳐
+ * 위로 튀었다가 본문이 오면 다시 내려오는 것처럼 보인다.
+ */
+const KEEP_SCROLL = { scroll: false } as const;
+
 function Group({ label, children }: { label: string; children: React.ReactNode }) {
   return (
     <div className="flex flex-col gap-1.5">
@@ -65,9 +73,9 @@ function Groups({ facets, filter }: { facets: GameFacets; filter: GamesQuery }) 
   return (
     <>
       <Group label="플랫폼">
-        <ChipLink href={href({ platform: undefined })} active={!filter.platform}>전체</ChipLink>
+        <ChipLink {...KEEP_SCROLL} href={href({ platform: undefined })} active={!filter.platform}>전체</ChipLink>
         {families.map((f) => (
-          <ChipLink key={f} href={href({ platform: f })} active={family === f}>
+          <ChipLink key={f} {...KEEP_SCROLL} href={href({ platform: f })} active={family === f}>
             {PLATFORM_FAMILY_LABEL[f]}
           </ChipLink>
         ))}
@@ -76,25 +84,25 @@ function Groups({ facets, filter }: { facets: GameFacets; filter: GamesQuery }) 
       {/* 갈래를 고른 뒤에만 안쪽을 편다 — 여덟 개를 늘 펴 두면 기둥이 플랫폼만으로 다 찬다 */}
       {family && children.length > 0 && (
         <Group label={PLATFORM_FAMILY_CHILD_LABEL[family]}>
-          <ChipLink href={href({ platform: family })} active={filter.platform === family}>
+          <ChipLink {...KEEP_SCROLL} href={href({ platform: family })} active={filter.platform === family}>
             {PLATFORM_FAMILY_LABEL[family]} 전체
           </ChipLink>
           {children.map((p) => (
-            <ChipLink key={p} href={href({ platform: p })} active={filter.platform === p}>
+            <ChipLink key={p} {...KEEP_SCROLL} href={href({ platform: p })} active={filter.platform === p}>
               {PLATFORM_LABEL[p] ?? p}
             </ChipLink>
           ))}
         </Group>
       )}
 
-      {facets.genres.length > 0 && <Select label="장르" value={filter.genre ?? ALL} options={genreOptions} />}
+      {facets.genres.length > 0 && <Select label="장르" value={filter.genre ?? ALL} options={genreOptions} scroll={false} />}
 
-      <Select label="정렬" value={filter.sort ?? DEFAULT_GAME_SORT} options={sortOptions} />
+      <Select label="정렬" value={filter.sort ?? DEFAULT_GAME_SORT} options={sortOptions} scroll={false} />
 
       <Group label="조건">
-        <ChipLink href={href({ onSale: !filter.onSale })} active={Boolean(filter.onSale)}>할인 중만</ChipLink>
+        <ChipLink {...KEEP_SCROLL} href={href({ onSale: !filter.onSale })} active={Boolean(filter.onSale)}>할인 중만</ChipLink>
         {/* 구독 포함 여부는 Game Pass 하나로 시작하지만 조건은 "어떤 구독이든"이라 PS Plus 를 붙여도 문구가 그대로다 */}
-        <ChipLink href={href({ subscription: !filter.subscription })} active={Boolean(filter.subscription)}>
+        <ChipLink {...KEEP_SCROLL} href={href({ subscription: !filter.subscription })} active={Boolean(filter.subscription)}>
           구독으로 즐길 수 있어요
         </ChipLink>
       </Group>
