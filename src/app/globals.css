@@ -74,6 +74,9 @@
   /* 스켈레톤이 뜨기까지 기다리는 시간. 로컬 prod 기준 상세 RSC 응답이 12~37ms 라 곧바로 그리면
      스켈레톤이 한두 프레임 번쩍이고 사라진다(= 깜빡임). 이 시간 안에 본문이 오면 아예 안 보인다 */
   --skeleton-delay: 200ms;
+  /* 주소를 바꾸는 칩의 진행 표시가 뜨기까지 기다리는 시간. 미리 받아 둔 주소로 가면 이동이
+     한두 프레임에 끝나는데 그때도 막이 보이면 누를 때마다 번쩍인다 — 그 선을 넘을 때만 뜬다 */
+  --chip-pending-delay: 120ms;
 
   /* 라운드 — 리디자인 확정값 */
   --radius-xs: 6px; /* 배지, 태그 */
@@ -285,6 +288,11 @@
   72% { transform: scale(0.97); }
   100% { transform: scale(1); }
 }
+/* 칩 진행 표시 — 자리를 차지하지 않는 막이라 투명도만 바꾼다(레이아웃을 밀지 않는다) */
+@keyframes chip-pending {
+  from { opacity: 0; }
+  to { opacity: 0.22; }
+}
 @keyframes shimmer {
   0% { background-position: 200% 0; }
   100% { background-position: -200% 0; }
@@ -404,6 +412,19 @@ a {
 .skeleton-delay {
   animation: fade-in var(--duration-base) var(--ease-standard) both;
   animation-delay: var(--skeleton-delay);
+}
+
+/* 주소를 바꾸는 칩(ui/chip-nav)의 진행 표시. 이동이 끝나면 요소가 사라지며 같이 걷힌다 */
+.chip-pending {
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background: var(--acc);
+  opacity: 0;
+  pointer-events: none;
+}
+.chip-pending[data-pending="true"] {
+  animation: chip-pending var(--duration-base) var(--ease-standard) var(--chip-pending-delay) forwards;
 }
 
 /* 스켈레톤 */

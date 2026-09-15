@@ -1,9 +1,5 @@
-// /games 목록 필터 — 상태는 전부 쿼리스트링에 있고, 고르는 것은 곧 그 주소로 가는 일이다.
-// 이 파일 자체는 서버 컴포넌트다. 펼치는 목록을 우리 토큰으로 그려야 하는 드롭다운(ui/select)만 클라이언트다.
-//
-// 넓은 화면에서는 목록 왼쪽 기둥에 세로로 선다(games/page.tsx 가 자리를 잡는다).
-// 가로로 눕혀 두면 플랫폼, 장르 칩이 줄바꿈하며 화면 위쪽을 몇 줄씩 먹어 정작 게임이 밀린다.
-// 좁은 화면에서는 접어 둔다 — details 라 JS 없이 열고 닫힌다.
+// 필터 고르는 자리 — 플랫폼, 장르, 정렬, 할인, 가격, 조건.
+// 고르는 것은 곧 그 주소로 가는 일이다(상태는 전부 쿼리스트링에 있다).
 //
 // 플랫폼은 여러 개를 같이 고를 수 있다(2026-09-15). 전에는 한 번에 하나만 골렸고 낱개 기기는
 // 갈래를 먼저 누른 뒤에야 나타났다 — "PS5 와 스위치를 같이 보고 싶다" 에 답할 길이 아예 없었다.
@@ -18,7 +14,7 @@ import {
   PLATFORM_VALUE_ORDER,
   type PlatformFamily,
 } from "@/lib/platform";
-import { ChipLink } from "@/components/ui/chip";
+import { ChipNavLink } from "@/components/ui/chip-nav";
 import { Select, type SelectOption } from "@/components/ui/select";
 import {
   GAME_SORTS,
@@ -35,7 +31,6 @@ import {
   type MinDiscount,
 } from "@/lib/games-query";
 import type { GameFacets } from "@/server/services/games";
-import { cardClass } from "@/components/ui/page";
 
 /** "고르지 않음" 을 나타내는 값. 빈 문자열을 쓰면 현재 값 비교가 undefined 와 헷갈린다 */
 const ALL = "__all__";
@@ -49,7 +44,7 @@ const byFamily = (f: PlatformFamily) => PLATFORM_ORDER.filter((p) => familyOf(p)
  * 보고 있던 줄만 사라진다. 게다가 목록이 뼈대로 바뀌며 문서가 짧아지는 순간이 겹쳐
  * 위로 튀었다가 본문이 오면 다시 내려오는 것처럼 보인다.
  */
-const KEEP_SCROLL = { scroll: false } as const;
+export const KEEP_SCROLL = { scroll: false } as const;
 
 function Group({ label, children }: { label: string; children: React.ReactNode }) {
   return (
@@ -67,7 +62,7 @@ function Group({ label, children }: { label: string; children: React.ReactNode }
  * 칩과 드롭다운을 가르는 기준은 개수다. 서넛이면 칩이 빠르고(한 번에 다 보이고 한 번에 눌린다),
  * 열 개를 넘으면 드롭다운이 낫다(안 고른 값이 자리를 차지하지 않는다).
  */
-function Groups({ facets, filter }: { facets: GameFacets; filter: GamesQuery }) {
+export function Groups({ facets, filter }: { facets: GameFacets; filter: GamesQuery }) {
   const href = (patch: Partial<GamesQuery>) => gamesHref(filter, { ...patch, page: 1 });
 
   // 실제로 게임이 붙어 있는 플랫폼만 고를 수 있다(facets)
@@ -95,13 +90,13 @@ function Groups({ facets, filter }: { facets: GameFacets; filter: GamesQuery }) 
   return (
     <>
       <Group label="플랫폼">
-        <ChipLink {...KEEP_SCROLL} href={href({ platform: undefined })} active={picked.length === 0}>
+        <ChipNavLink {...KEEP_SCROLL} href={href({ platform: undefined })} active={picked.length === 0}>
           전체
-        </ChipLink>
+        </ChipNavLink>
         {families.map((f) => (
-          <ChipLink key={f} {...KEEP_SCROLL} href={platformHref(f, FAMILY_PLATFORMS[f])} active={pickedSet.has(f)}>
+          <ChipNavLink key={f} {...KEEP_SCROLL} href={platformHref(f, FAMILY_PLATFORMS[f])} active={pickedSet.has(f)}>
             {PLATFORM_FAMILY_LABEL[f]}
-          </ChipLink>
+          </ChipNavLink>
         ))}
       </Group>
 
@@ -113,9 +108,9 @@ function Groups({ facets, filter }: { facets: GameFacets; filter: GamesQuery }) 
         return (
           <Group key={f} label={PLATFORM_FAMILY_LABEL[f]}>
             {children.map((p) => (
-              <ChipLink key={p} {...KEEP_SCROLL} href={platformHref(p, [f])} active={pickedSet.has(p)}>
+              <ChipNavLink key={p} {...KEEP_SCROLL} href={platformHref(p, [f])} active={pickedSet.has(p)}>
                 {PLATFORM_LABEL[p] ?? p}
-              </ChipLink>
+              </ChipNavLink>
             ))}
           </Group>
         );
@@ -131,85 +126,47 @@ function Groups({ facets, filter }: { facets: GameFacets; filter: GamesQuery }) 
         칸을 옮길 때 반대쪽을 반드시 지워 준다(주소에 찌꺼기가 남지 않는다).
       */}
       <Group label="할인">
-        <ChipLink {...KEEP_SCROLL} href={href({ onSale: false, minDiscount: undefined })} active={!filter.onSale && !filter.minDiscount}>
+        <ChipNavLink {...KEEP_SCROLL} href={href({ onSale: false, minDiscount: undefined })} active={!filter.onSale && !filter.minDiscount}>
           전체
-        </ChipLink>
-        <ChipLink {...KEEP_SCROLL} href={href({ onSale: true, minDiscount: undefined })} active={Boolean(filter.onSale) && !filter.minDiscount}>
+        </ChipNavLink>
+        <ChipNavLink {...KEEP_SCROLL} href={href({ onSale: true, minDiscount: undefined })} active={Boolean(filter.onSale) && !filter.minDiscount}>
           할인 중
-        </ChipLink>
+        </ChipNavLink>
         {MIN_DISCOUNT_STEPS.map((pct: MinDiscount) => (
-          <ChipLink
+          <ChipNavLink
             key={pct}
             {...KEEP_SCROLL}
             href={href({ onSale: false, minDiscount: filter.minDiscount === pct ? undefined : pct })}
             active={filter.minDiscount === pct}
           >
             {pct}% 이상
-          </ChipLink>
+          </ChipNavLink>
         ))}
       </Group>
 
       {/* 가격은 할인과 다른 질문이다 — "얼마나 깎였나" 가 아니라 "내 예산에 드나"(lib/games-query 주석) */}
       <Group label="가격">
-        <ChipLink {...KEEP_SCROLL} href={href({ maxPrice: undefined })} active={filter.maxPrice === undefined}>
+        <ChipNavLink {...KEEP_SCROLL} href={href({ maxPrice: undefined })} active={filter.maxPrice === undefined}>
           전체
-        </ChipLink>
+        </ChipNavLink>
         {MAX_PRICE_STEPS.map((won: MaxPrice) => (
-          <ChipLink
+          <ChipNavLink
             key={won}
             {...KEEP_SCROLL}
             href={href({ maxPrice: filter.maxPrice === won ? undefined : won })}
             active={filter.maxPrice === won}
           >
             {maxPriceLabel(won)}
-          </ChipLink>
+          </ChipNavLink>
         ))}
       </Group>
 
       <Group label="조건">
         {/* 구독 포함 여부는 Game Pass 하나로 시작하지만 조건은 "어떤 구독이든"이라 PS Plus 를 붙여도 문구가 그대로다 */}
-        <ChipLink {...KEEP_SCROLL} href={href({ subscription: !filter.subscription })} active={Boolean(filter.subscription)}>
+        <ChipNavLink {...KEEP_SCROLL} href={href({ subscription: !filter.subscription })} active={Boolean(filter.subscription)}>
           구독으로 즐길 수 있어요
-        </ChipLink>
+        </ChipNavLink>
       </Group>
-    </>
-  );
-}
-
-/** 지금 뭔가 걸러져 있는가. 정렬은 필터가 아니라 보기 방식이라 세지 않는다 */
-function hasAnyFilter(f: GamesQuery): boolean {
-  return Boolean(
-    f.platform || f.genre || f.onSale || f.minDiscount !== undefined || f.maxPrice !== undefined || f.company || f.subscription,
-  );
-}
-
-/** 칩을 하나씩 되돌리는 것 말고는 나갈 길이 없었다. 축이 여섯이라 그 길은 여섯 번을 누르는 길이다 */
-function ClearFilters({ filter }: { filter: GamesQuery }) {
-  if (!hasAnyFilter(filter)) return null;
-  return (
-    <ChipLink {...KEEP_SCROLL} href={gamesHref({ sort: filter.sort })} className="self-start">
-      필터 지우기
-    </ChipLink>
-  );
-}
-
-export function GameFilters({ facets, filter }: { facets: GameFacets; filter: GamesQuery }) {
-  return (
-    <>
-      {/* 좁은 화면: 접어 둔 서랍. 열어 둔 채로 두면 목록이 한 화면 아래로 밀린다 */}
-      <details className={cardClass("p-0 lg:hidden")}>
-        <summary className="cursor-pointer list-none px-4 py-3 text-[13px] font-semibold text-ink">필터와 정렬</summary>
-        <div className="flex flex-col gap-3.5 border-t border-line px-4 py-3">
-          <Groups facets={facets} filter={filter} />
-          <ClearFilters filter={filter} />
-        </div>
-      </details>
-
-      {/* 넓은 화면: 왼쪽 기둥. 스크롤해도 따라오도록 붙여 둔다(헤더 높이만큼 띄운다) */}
-      <aside aria-label="목록 필터" className={cardClass("hidden flex-col gap-4 p-4 lg:sticky lg:top-[86px] lg:flex")}>
-        <Groups facets={facets} filter={filter} />
-        <ClearFilters filter={filter} />
-      </aside>
     </>
   );
 }
