@@ -84,6 +84,44 @@ describe("parsePsstoreConcept", () => {
     };
     expect(parsePsstoreConcept(plain, "234567").subscriptionKeys).toEqual([]);
   });
+
+  // 2026-09-15: 한국어판 SKU 는 invariantName 이 null 이다. 이 폴백이 없으면 game-writer 가
+  // "meta.titleEn 없음" 으로 던지고, 그 콘셉트는 매 실행 다시 잡혀 같은 자리에서 또 죽는다.
+  it("invariantName 이 없으면 name 에서 언어 표기를 떼 제목으로 쓴다 — 한국어판 SKU", () => {
+    const korean = {
+      data: {
+        conceptRetrieve: {
+          id: "218800",
+          releaseDate: { value: "2019-02-14T00:00:00Z" },
+          products: [{ id: "KP5014-CUSA12715_00-ASIAFULLGAME0000" }],
+          defaultProduct: {
+            id: "KP5014-CUSA12715_00-ASIAFULLGAME0000",
+            name: "무쌍OROCHI3 Ultimate (한국어판)",
+            invariantName: null,
+            webctas: [cta("ADD_TO_CART", { applicability: "APPLICABLE", basePriceValue: 64800, discountedValue: 32400, endTime: null })],
+          },
+        },
+      },
+    };
+    const snap = parsePsstoreConcept(korean, "218800");
+    expect(snap.meta?.titleEn).toBe("무쌍OROCHI3 Ultimate");
+    // 같은 값을 두 컬럼에 넣지 않는다 — titleKo 는 영문명과 다를 때만 채운다
+    expect(snap.meta?.titleKo).toBeNull();
+    expect(snap.currentPrice).toBe(32400);
+  });
+
+  it("이름이 아예 없으면 meta 를 만들지 않는다 — 없는 제목을 지어내지 않는다", () => {
+    const nameless = {
+      data: {
+        conceptRetrieve: {
+          id: "999999",
+          products: [],
+          defaultProduct: { id: "X", name: null, invariantName: null, webctas: [] },
+        },
+      },
+    };
+    expect(parsePsstoreConcept(nameless, "999999").meta).toBeUndefined();
+  });
 });
 
 describe("parsePsstoreDlc", () => {

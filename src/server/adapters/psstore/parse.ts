@@ -205,8 +205,13 @@ export function parsePsstoreConcept(raw: unknown, conceptId: string): StoreSnaps
       ? Math.round(((listPrice - currentPrice) / listPrice) * 100)
       : 0;
 
-  const titleEn = dp?.invariantName?.trim() || null;
   const titleKo = psstoreCleanTitle(dp?.name);
+  // invariantName(영문 불변명)이 우선이지만 **한국어판 SKU 에는 이 값이 null 로 온다**
+  // (2026-09-15 실측: 무쌍OROCHI3 Ultimate, 영웅전설 여의 궤적, God of War III Remastered, 나유타의 궤적).
+  // 없다고 meta 를 통째로 버리면 게임 생성이 불가능해지고, 그 콘셉트는 발견될 때마다 같은 자리에서
+  // 죽으면서 시드 몫만 먹는다(sync_logs 의 psstore 가 매 실행 partial 인 이유였다).
+  // name 은 "무쌍OROCHI3 Ultimate (한국어판)" 꼴이라 psstoreCleanTitle 이 괄호를 떼면 쓸 만한 제목이 된다.
+  const titleEn = dp?.invariantName?.trim() || titleKo;
   const productIds = [...(concept.products ?? []).map((p) => p.id), ...(dp ? [dp.id] : [])];
 
   return {
