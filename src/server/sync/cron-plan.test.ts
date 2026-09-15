@@ -6,6 +6,7 @@ import { describe, expect, it } from "vitest";
 import { getStoreAdapter } from "@/server/adapters";
 import {
   CRON_DB_MS_PER_ITEM,
+  CRON_DB_MS_PER_NEW_ITEM,
   CRON_PLAN,
   CRON_SAFETY_FACTOR,
   CRON_SOURCES,
@@ -22,7 +23,10 @@ import {
  * 요청 시간은 "몇 번 나가느냐" 로 센다 — 건수가 아니다. 가격을 배치로 받는 소스는 50건이 요청 1회라
  * 건수로 세면 실제보다 수십 배 크게 나온다. 다만 신규 등록 대상은 배치가 마스터를 안 줘서
  * 단건 상세를 따로 받는 소스가 있고(batchPricesOnly "detail"), 그건 건수만큼 요청이 는다.
- * 반영 시간은 소스와 무관하게 건당 CRON_DB_MS_PER_ITEM 이다(그 상수의 근거 주석 참고).
+ * 반영 시간은 **신규와 갱신을 갈라서** 센다. 신규 1건은 게임 행에 플랫폼, 장르, 이미지까지 딸려서
+ * 갱신 1건의 네 배가 넘는다(CRON_DB_MS_PER_NEW_ITEM). 이걸 뭉뚱그렸다가 gog 몫을 283초로 보고
+ * 실제 760초를 맞았다 — discover 모드는 seedShare 1 이라 처리 건수가 곧 신규 건수다.
+ * 새로 등록되는 DLC 도 같은 값으로 센다.
  *
  * DLC 단계도 같은 실행 안에서 돈다(sync/run-store 4단계). 두 축을 따로 센다 —
  * 본편에게 목록을 묻는 요청과, 그 결과로 받은 새 DLC 의 상세 요청이다.
@@ -45,8 +49,11 @@ function estimateMs(source: (typeof CRON_SOURCES)[number], mode: "prices" | "dis
 
   const requests =
     plan.pageBudget + plan.match + detailItems + Math.ceil(batchedItems / perRequest) + dlcListRequests + dlcFetchRequests;
-  const items = plan.limit + dlcFetchItems;
-  return (requests * adapter.minIntervalMs + items * CRON_DB_MS_PER_ITEM) * CRON_SAFETY_FACTOR;
+  // 새로 들어오는 것(시드 + 새 DLC)과 이미 아는 것을 갈라 센다
+  const newItems = plan.seedTop + dlcFetchItems;
+  const updatedItems = Math.max(plan.limit - plan.seedTop, 0);
+  const applyMs = newItems * CRON_DB_MS_PER_NEW_ITEM + updatedItems * CRON_DB_MS_PER_ITEM;
+  return (requests * adapter.minIntervalMs + applyMs) * CRON_SAFETY_FACTOR;
 }
 
 describe("CRON_PLAN", () => {

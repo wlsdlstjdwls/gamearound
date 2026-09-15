@@ -144,10 +144,10 @@ export const CRON_SOURCES = ["nintendo", "nintendo_jp", "epic", "steam", "psstor
 // 분을 0 으로 두지 않는 이유: Vercel 크론은 정각에 몰리고, 몰리면 실행이 뒤로 밀린다.
 //
 // 발견만 맡는 네 소스(2026-09-15 추가). 하루 2회씩, 20분 간격으로 흩어 둔다:
-//   /api/cron/crawl/gog/discover      10 3,15 * * *     하루 2회 × 400건
-//   /api/cron/crawl/steam/discover    10 4,16 * * *     하루 2회 × 500건
-//   /api/cron/crawl/psstore/discover  30 4,16 * * *     하루 2회 × 200건 (KR 7,571건 중 587건만 안다)
-//   /api/cron/crawl/xbox/discover     50 4,16 * * *     하루 2회 × 300건 (KR 16,991건)
+//   /api/cron/crawl/gog/discover      10 3,15 * * *     하루 2회 × 220건
+//   /api/cron/crawl/steam/discover    10 4,16 * * *     하루 2회 × 140건
+//   /api/cron/crawl/psstore/discover  30 4,16 * * *     하루 2회 ×  80건 (KR 7,571건 중 587건만 안다)
+//   /api/cron/crawl/xbox/discover     50 4,16 * * *     하루 2회 × 180건 (KR 16,991건)
 // 시각을 고른 기준은 둘이다.
 //   1) 같은 소스를 Actions 가 도는 시각(crawl-prices 의 10 5, 10 17 UTC)과 겹치지 않게 —
 //      겹치면 Redis 락에 걸려 한쪽이 빈손으로 끝난다(설계서 §4.4).
@@ -203,6 +203,23 @@ export const CRON_TIME_BUDGET_MS = 600_000;
  * 소스가 달라도 같은 값이 나왔다 — 반영 경로(store-apply)가 소스와 무관하게 같기 때문이다.
  */
 export const CRON_DB_MS_PER_ITEM = 400;
+/**
+ * **신규 등록** 1건을 반영하는 데 드는 시간. 위 값과 자릿수가 다르다 — 갱신은 있는 행의 값 몇 개를
+ * 고치는 일이지만, 신규는 게임 행을 만들고 플랫폼, 장르, 이미지, 회사까지 함께 넣는 일이다.
+ *
+ * 1,800ms 의 근거(2026-09-15 실측): 배포본 크론을 손으로 때린 gog discover 1회.
+ *   proc 400 전부 fresh, pages 10, 760초. 요청 몫(페이지 10초 + 배치 16초 + 매칭 18초)을 빼면
+ *   400건에 716초 → 건당 1.79초.
+ *
+ * 왜 이 상수가 따로 필요한가: 이 값을 400 으로 뭉뚱그렸더니 gog 몫을 283초로 추정했는데 실제는
+ * 760초였다(함수 상한 800초의 95%). discover 모드는 seedShare 1 이라 **처리 건수가 곧 신규 건수**라서,
+ * 갱신 기준으로 세면 예산이 통째로 어긋난다.
+ *
+ * 소스마다 다를 수 있다 — gog 하나에서 잰 값이다. Actions 러너의 steam 실행은 1,497건(신규 750)을
+ * 588초에 끝냈으니(건당 0.39초) 러너와 함수의 차이든 소스의 차이든 편차가 있다. 그래서 여유(200초)를
+ * 남기고, 소스별 첫 크론 실행의 durationMs 로 이 값을 다시 잰다.
+ */
+export const CRON_DB_MS_PER_NEW_ITEM = 1800;
 /** 위 둘을 더한 값에 곱할 여유. 실행 시간은 들쭉날쭉하고, 잘리면 그 실행이 통째로 버려진다 */
 export const CRON_SAFETY_FACTOR = 1.15;
 
@@ -226,36 +243,39 @@ export const CRON_PLAN: Record<CronSource, Record<CronMode, CronRunPlan>> = {
   },
   // ---- 아래 넷은 발견만 크론이 맡는다. 가격 갱신은 Actions 워크플로에 남아 있다 ----
   //
-  // 몫을 정한 방법: cron-plan.test 의 estimateMs 가 600초 예산 안에 드는 최대치에서 한 단 낮춰 잡았다.
-  // 손으로 곱하지 말 것 — 이 소스들은 DLC 단계(목록 요청 + 새 DLC 상세)가 실행마다 고정비로 붙고,
-  // 그 몫을 빼먹으면 테스트는 통과하는데 함수가 잘린다.
+  // discover 몫이 작아 보이는 이유: 이 모드는 seedShare 1 이라 **처리 건수가 곧 신규 건수**이고,
+  // 신규 1건은 갱신 1건의 네 배가 넘는다(CRON_DB_MS_PER_NEW_ITEM 의 실측 근거 참고).
+  // 2026-09-15 첫 배포에서 이 차이를 빼먹고 gog 를 400건으로 잡았다가 760초를 맞았다 — 상한 800초의 95%다.
+  // 손으로 곱하지 말 것. cron-plan.test 의 estimateMs 가 DLC 단계까지 세고, 그게 이 숫자들의 출처다.
   steam: {
-    // 가격은 Actions 가 맡으므로 이 몫은 손으로 돌릴 때만 쓴다. BATCH_SIZE.steam(1,500)은 예산을 넘는다
-    // (819초) — DLC 목록 60회가 90초를 먼저 떼어 가서다. 1,000 이면 581초.
+    // 가격은 Actions 가 맡으므로 이 몫은 손으로 돌릴 때만 쓴다(신규가 없어 건당 0.4초로 싸다).
     prices: { limit: 1000, seedTop: 0, pageBudget: 0, match: 0 },
-    // 요청 (80페이지 + 매칭 8 + 배치 5 + DLC 목록 60) × 1.5초 + 반영 500건 × 0.4초 → 494초.
+    // 549초. DLC 목록 60회가 90초를 먼저 떼어 가서 신규에 쓸 자리가 그만큼 준다.
     // 페이지 예산 80 의 근거는 DISCOVERY_PAGE_BUDGET.steam 주석에 있다(아는 8,000건 구간을 건너뛴다).
-    discover: { limit: 500, seedTop: 500, pageBudget: 80, match: 8, seedShare: 1 },
+    discover: { limit: 140, seedTop: 140, pageBudget: 80, match: 8, seedShare: 1 },
   },
   psstore: {
     prices: { limit: 200, seedTop: 0, pageBudget: 0, match: 0 },
-    // 이 소스가 제일 비싸다 — fetchMany 가 없어 **한 건이 요청 한 번**이다(간격 1초).
-    // 요청 (90페이지 + 매칭 8 + 건당 200 + DLC 목록 10 + DLC 상세 60) × 1초 + 반영 260건 × 0.4초 → 543초.
-    // 그런데도 제일 급하다: KR 카탈로그 7,571건 중 587건만 안다(2026-09-15).
-    discover: { limit: 200, seedTop: 200, pageBudget: 90, match: 8, seedShare: 1 },
+    // 575초. 예산을 거의 다 쓰는데도 몫이 제일 작다 — fetchMany 가 없어 **한 건이 요청 한 번**이고
+    // (간격 1초) 거기에 신규 반영 1.8초가 더 붙어 건당 2.8초다.
+    // 게다가 DLC 신규 60건(DLC_FETCH_PER_RUN_BY_SOURCE.psstore)이 요청 60초 + 반영 108초를
+    // 발견보다 먼저 가져간다. 그 값은 Actions(타임아웃 60분) 기준으로 잡힌 것이라 이 자리에는 과하다 —
+    // 올릴 자리를 찾는다면 몫이 아니라 거기다.
+    //
+    // 제일 급한 소스인데 제일 느리다: KR 카탈로그 7,571건 중 587건만 안다(2026-09-15).
+    // 하루 2회 × 80건이면 한 바퀴가 44일이다. 첫 크론 실행의 durationMs 를 보고 올릴 것.
+    discover: { limit: 80, seedTop: 80, pageBudget: 90, match: 8, seedShare: 1 },
   },
   xbox: {
     prices: { limit: 200, seedTop: 0, pageBudget: 0, match: 0 },
-    // 요청 (60페이지 + 매칭 8 + 배치 15 + DLC 목록 20) × 1.5초 + 반영 300건 × 0.4초 → 316초.
-    // KR 카탈로그 16,991건이라 한 바퀴가 길다 — 며칠에 걸쳐 채우는 것을 전제로 한 값이다.
-    discover: { limit: 300, seedTop: 300, pageBudget: 60, match: 8, seedShare: 1 },
+    // 540초. KR 카탈로그 16,991건이라 한 바퀴가 길다 — 며칠에 걸쳐 채우는 것을 전제로 한 값이다.
+    discover: { limit: 180, seedTop: 180, pageBudget: 60, match: 8, seedShare: 1 },
   },
   gog: {
     prices: { limit: 400, seedTop: 0, pageBudget: 0, match: 0 },
-    // 카탈로그 한 바퀴가 64페이지라 이미 거의 다 안다. 예산이 남지만 올릴 이유가 없다 —
-    // 신규가 없으면 발견은 일찍 멈추고 실행도 그만큼 짧다(estimateMs 는 최악값이다).
-    // 요청 (70페이지 + 매칭 8 + 배치 8) × 1초 + 반영 400건 × 0.4초 → 283초.
-    discover: { limit: 400, seedTop: 400, pageBudget: 70, match: 8, seedShare: 1 },
+    // 551초. 400건으로 잡았다가 760초를 맞은 자리다(실측이 CRON_DB_MS_PER_NEW_ITEM 의 근거가 됐다).
+    // 카탈로그 한 바퀴가 64페이지라 신규가 마르면 발견은 일찍 멈추고 실행도 그만큼 짧다.
+    discover: { limit: 220, seedTop: 220, pageBudget: 70, match: 8, seedShare: 1 },
   },
   epic: {
     // 2026-09-15 에 120 에서 110 으로 내렸다 — DLC 목록 3회와 새 DLC 상세 10건이 이 모드에 새로 붙었다.
