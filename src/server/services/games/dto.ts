@@ -186,6 +186,12 @@ export type GameDetail = {
   /** 회사 엔티티로 승격된 것만. 매칭 전이면 빈 배열이고 화면은 developer/publisher 문자열로 폴백한다 */
   companies: GameCompanyDto[];
   dlcs: DlcDto[];
+  /**
+   * 에디션, 기종 변형("PS4 & PS5 버전", "디지털 디럭스 에디션").
+   * DLC 와 나눠 두는 이유: 둘 다 본편의 자식이지만 사용자에게는 다른 질문이다 —
+   * DLC 는 "더 살 것이 있나", 에디션은 "어느 판을 살까". 한 칸에 섞으면 둘 다 안 읽힌다.
+   */
+  editions: DlcDto[];
   /** 지금 구독으로 즐길 수 있는 플랫폼들 */
   subscriptions: SubscriptionDto[];
   upgrades: UpgradeDto[];

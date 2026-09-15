@@ -24,6 +24,8 @@ export const GAME_MESSAGES = {
   /** 목록은 아직인데 스토어가 "추가 콘텐츠 있음"이라고만 알려준 경우 */
   dlcKnownButUnlisted: "DLC 가 있어요. 목록은 아직 모으는 중이에요.",
   dlcNone: "지금은 확인된 DLC 가 없어요.",
+  /** 에디션, 기종 변형 칸. "에디션"만으로는 "PS4 & PS5 버전" 류가 안 읽혀서 둘을 함께 적는다 */
+  editionHeading: "에디션, 기종별 판",
   patchHeading: "패치 기록",
   /** 요약 바에 최저가 말고는 아직 아는 값이 없을 때. 빈 칸을 "-" 로 채우는 대신 한 줄로 말한다 */
   summaryPending: "플레이타임과 평점은 아직 모으는 중이에요.",

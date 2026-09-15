@@ -233,6 +233,7 @@ export function toPublicGameDto(g: GameDetail): PublicGameDto {
     sourceRefs: g.sourceRefs,
     companies: g.companies,
     dlcs: g.dlcs,
+    editions: g.editions,
     subscriptions: g.subscriptions,
     upgrades: g.upgrades,
     news: g.news.map(({ title, url, sourceName, thumbnailUrl, publishedAt }) => ({

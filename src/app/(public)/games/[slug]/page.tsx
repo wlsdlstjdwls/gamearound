@@ -300,6 +300,18 @@ export default async function GameDetailPage({ params }: Props) {
             <UpgradeNotes upgrades={game.upgrades} />
           </section>
 
+          {game.editions.length > 0 && (
+            <section aria-labelledby="edition-heading" className="flex flex-col gap-3">
+              <SectionHead
+                id="edition-heading"
+                title={GAME_MESSAGES.editionHeading}
+                note={`${game.editions.length}개`}
+              />
+              {/* DLC 와 같은 줄 모양을 쓴다 - 묻는 것이 "제목과 값" 으로 같고, 모양이 다르면 같은 화면에서 두 번 배워야 한다 */}
+              <DlcList dlcs={game.editions} hasAddOns={false} />
+            </section>
+          )}
+
           {(game.dlcs.length > 0 || hasAddOns) && (
             <section aria-labelledby="dlc-heading" className="flex flex-col gap-3">
               <SectionHead

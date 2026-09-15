@@ -43,6 +43,17 @@ function flattenSubscriptions(byPlatform: Map<string, SubscriptionDto[]>): Subsc
   return Array.from(byKey.values());
 }
 
+/** 자식 행(DLC, 에디션)을 화면 계약으로 옮긴다. 둘이 같은 모양이라 변환도 하나만 둔다 */
+function toChildDtos(rows: { slug: string; titleKo: string | null; titleEn: string; platforms: Parameters<typeof toPlatformDto>[0][] }[]) {
+  return rows
+    .map((d) => ({
+      slug: d.slug,
+      title: d.titleKo ?? d.titleEn,
+      platforms: [...d.platforms].sort(byRegionThenPlatform).map(toPlatformDto),
+    }))
+    .sort((a, b) => a.title.localeCompare(b.title, "ko"));
+}
+
 export async function getGameBySlug(slug: string): Promise<GameDetail | null> {
   const db = getDb();
   const row = await db.query.games.findFirst({
@@ -55,7 +66,7 @@ export async function getGameBySlug(slug: string): Promise<GameDetail | null> {
       sourceRefs: true,
       companies: { with: { company: true } },
       upgrades: true,
-      // DLC 는 본편 화면에서만 필요하다. DLC 자기 화면에서는 빈 배열이 된다(부모가 자식을 갖지 않으므로)
+      // 자식(DLC, 에디션)은 본편 화면에서만 필요하다. 자식 자기 화면에서는 빈 배열이 된다(자식이 자식을 갖지 않으므로)
       dlcs: { with: { platforms: true }, limit: DETAIL_DLC_LIMIT },
     },
   });
@@ -115,13 +126,9 @@ export async function getGameBySlug(slug: string): Promise<GameDetail | null> {
       }))
       // 개발사를 먼저 보여준다 — 사용자가 먼저 찾는 쪽이다
       .sort((a, b) => (a.role === b.role ? a.name.localeCompare(b.name, "ko") : a.role === "developer" ? -1 : 1)),
-    dlcs: row.dlcs
-      .map((d) => ({
-        slug: d.slug,
-        title: d.titleKo ?? d.titleEn,
-        platforms: [...d.platforms].sort(byRegionThenPlatform).map(toPlatformDto),
-      }))
-      .sort((a, b) => a.title.localeCompare(b.title, "ko")),
+    dlcs: toChildDtos(row.dlcs.filter((d) => d.contentType !== "edition" && d.contentType !== "bundle")),
+    // 에디션, 번들은 "어느 판을 살까" 쪽이라 DLC 칸과 나눈다(dto 의 editions 주석)
+    editions: toChildDtos(row.dlcs.filter((d) => d.contentType === "edition" || d.contentType === "bundle")),
     subscriptions,
     upgrades: row.upgrades.map((u) => ({
       fromPlatform: u.fromPlatform,
