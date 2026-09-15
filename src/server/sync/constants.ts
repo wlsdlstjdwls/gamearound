@@ -215,11 +215,30 @@ export const CRON_DB_MS_PER_ITEM = 400;
  * 760초였다(함수 상한 800초의 95%). discover 모드는 seedShare 1 이라 **처리 건수가 곧 신규 건수**라서,
  * 갱신 기준으로 세면 예산이 통째로 어긋난다.
  *
- * 소스마다 다를 수 있다 — gog 하나에서 잰 값이다. Actions 러너의 steam 실행은 1,497건(신규 750)을
- * 588초에 끝냈으니(건당 0.39초) 러너와 함수의 차이든 소스의 차이든 편차가 있다. 그래서 여유(200초)를
- * 남기고, 소스별 첫 크론 실행의 durationMs 로 이 값을 다시 잰다.
+ * 2026-09-15 2차 실측으로 이 값이 맞다는 것을 확인했다. 크론 4개의 첫 실행에서 **실제로 만들어진
+ * 행**을 세고(created_at 이 실행 창에 든 games) 요청 몫을 뺐다:
+ *   steam   680초 - 요청 135초 = 545초 / 315행 → 1.73초
+ *   gog     514초 - 요청  28초 = 486초 / 402행 → 1.21초
+ *   xbox    315초 - 요청  69초 = 246초 / 171행 → 1.44초
+ *   psstore 354초 - 요청 182초 = 172초 /  91행 → 1.89초
+ * 소스가 달라도 1.2~1.9초로 모인다 — 등록 경로(createGameFromSnapshot + upsertPlatform)가 같기 때문이다.
+ *
+ * **틀렸던 것은 이 값이 아니라 세는 대상이었다.** 발견 건수(fresh)만 세고 같은 실행에서 함께 등록되는
+ * 새 DLC 를 빼놓았다. steam 은 발견 140건을 세는 동안 DLC 230건을 더 만들고 있었다 —
+ * 그래서 549초로 추정한 실행이 680초가 됐다. 세는 자리는 DLC_FETCH_PER_RUN_BY_SOURCE 다.
  */
 export const CRON_DB_MS_PER_NEW_ITEM = 1800;
+/**
+ * 위 값을 덮어쓰는 소스별 실측. 값이 다른 이유는 등록 경로가 아니라 **한 건이 몇 행을 만드느냐**다.
+ *
+ * gog 2,300ms: gog 는 DLC 목록을 따로 묻지 않는다(어댑터에 listDlcIds 가 없다) — 상품 응답 안에
+ * DLC 가 이미 들어 있어 발견 1건이 본편 행과 그에 딸린 DLC 행을 함께 만든다. 실측 한 실행에서
+ * 발견 220건이 402행(본편 191, DLC 205, 체험판 6)이 됐다: 486초 / 220건 → 건당 2.21초.
+ * 그래서 gog 만큼은 DLC 상한으로 못 막는다. 몫 자체에 그 무게를 실어야 한다.
+ */
+export const CRON_DB_MS_PER_NEW_ITEM_BY_SOURCE: Partial<Record<CronSource, number>> = {
+  gog: 2300,
+};
 /** 위 둘을 더한 값에 곱할 여유. 실행 시간은 들쭉날쭉하고, 잘리면 그 실행이 통째로 버려진다 */
 export const CRON_SAFETY_FACTOR = 1.15;
 
@@ -249,33 +268,44 @@ export const CRON_PLAN: Record<CronSource, Record<CronMode, CronRunPlan>> = {
   // 손으로 곱하지 말 것. cron-plan.test 의 estimateMs 가 DLC 단계까지 세고, 그게 이 숫자들의 출처다.
   steam: {
     // 가격은 Actions 가 맡으므로 이 몫은 손으로 돌릴 때만 쓴다(신규가 없어 건당 0.4초로 싸다).
-    prices: { limit: 1000, seedTop: 0, pageBudget: 0, match: 0 },
-    // 549초. DLC 목록 60회가 90초를 먼저 떼어 가서 신규에 쓸 자리가 그만큼 준다.
+    // 2026-09-15 에 1,000 에서 800 으로 내렸다. 이 모드가 느려진 게 아니라, 새 DLC 등록 몫
+    // (DLC_FETCH_PER_RUN_BY_SOURCE.steam 40건 × 1.8초)을 이제 제대로 세기 때문이다 —
+    // DLC 단계는 prices 모드에서도 똑같이 돈다(sync/run-store 4단계).
+    prices: { limit: 800, seedTop: 0, pageBudget: 0, match: 0 },
+    // 592초. 2026-09-15 에 140 에서 120 으로 내렸다 — 140 은 실측 680초를 냈다(추정은 549초였다).
+    // 차이는 발견이 아니라 같은 실행이 함께 등록한 새 DLC 230건이었다. 그쪽에 상한 40 을 걸고
+    // (DLC_FETCH_PER_RUN_BY_SOURCE.steam) 남는 자리에 맞춰 몫을 다시 잡았다.
     // 페이지 예산 80 의 근거는 DISCOVERY_PAGE_BUDGET.steam 주석에 있다(아는 8,000건 구간을 건너뛴다).
-    discover: { limit: 140, seedTop: 140, pageBudget: 80, match: 8, seedShare: 1 },
+    discover: { limit: 120, seedTop: 120, pageBudget: 80, match: 8, seedShare: 1 },
   },
   psstore: {
     prices: { limit: 200, seedTop: 0, pageBudget: 0, match: 0 },
-    // 575초. 예산을 거의 다 쓰는데도 몫이 제일 작다 — fetchMany 가 없어 **한 건이 요청 한 번**이고
-    // (간격 1초) 거기에 신규 반영 1.8초가 더 붙어 건당 2.8초다.
-    // 게다가 DLC 신규 60건(DLC_FETCH_PER_RUN_BY_SOURCE.psstore)이 요청 60초 + 반영 108초를
-    // 발견보다 먼저 가져간다. 그 값은 Actions(타임아웃 60분) 기준으로 잡힌 것이라 이 자리에는 과하다 —
-    // 올릴 자리를 찾는다면 몫이 아니라 거기다.
+    // 578초. fetchMany 가 없어 **한 건이 요청 한 번**이고(간격 1초) 거기에 신규 반영 1.8초가
+    // 더 붙어 건당 2.8초다 — 네 소스 중 건당 단가가 제일 비싸다.
     //
-    // 제일 급한 소스인데 제일 느리다: KR 카탈로그 7,571건 중 587건만 안다(2026-09-15).
-    // 하루 2회 × 80건이면 한 바퀴가 44일이다. 첫 크론 실행의 durationMs 를 보고 올릴 것.
-    discover: { limit: 80, seedTop: 80, pageBudget: 90, match: 8, seedShare: 1 },
+    // 그런데 제일 굶은 소스다: KR 카탈로그 7,571건 중 587건만 안다(2026-09-15).
+    // 2026-09-15 에 80 에서 120 으로 올렸다. 근거는 실측이다 — 첫 크론 실행이 354초로 끝나
+    // 예산 800초에 446초가 남아 있었다. 그 자리를 두 곳에서 만들었다:
+    //   DLC 신규 상한 60 → 20 (요청 40초 + 반영 72초 회수)
+    //   남은 여유를 발견 몫으로
+    // 하루 2회 × 120건이면 한 바퀴가 44일에서 29일로 준다.
+    discover: { limit: 120, seedTop: 120, pageBudget: 90, match: 8, seedShare: 1 },
   },
   xbox: {
     prices: { limit: 200, seedTop: 0, pageBudget: 0, match: 0 },
-    // 540초. KR 카탈로그 16,991건이라 한 바퀴가 길다 — 며칠에 걸쳐 채우는 것을 전제로 한 값이다.
-    discover: { limit: 180, seedTop: 180, pageBudget: 60, match: 8, seedShare: 1 },
+    // 583초. KR 카탈로그 16,991건이라 한 바퀴가 길다 — 며칠에 걸쳐 채우는 것을 전제로 한 값이다.
+    // 2026-09-15 에 180 에서 160 으로 내렸다. 실측 자체는 315초로 여유로웠지만 그건 페이지를 9장만
+    // 읽었을 때다(예산은 60장). 카탈로그가 차면 그 50장이 75초로 돌아오고, 새 DLC 40건도 함께 센다.
+    discover: { limit: 160, seedTop: 160, pageBudget: 60, match: 8, seedShare: 1 },
   },
   gog: {
     prices: { limit: 400, seedTop: 0, pageBudget: 0, match: 0 },
-    // 551초. 400건으로 잡았다가 760초를 맞은 자리다(실측이 CRON_DB_MS_PER_NEW_ITEM 의 근거가 됐다).
+    // 597초. 400건으로 잡았다가 760초를 맞은 자리다(실측이 CRON_DB_MS_PER_NEW_ITEM 의 근거가 됐다).
+    // 2026-09-15 에 220 에서 190 으로 내렸다 — 건당 단가가 다른 소스의 1.8초가 아니라 2.21초다.
+    // gog 발견 1건은 본편 행 하나로 끝나지 않고 딸린 DLC 행까지 만든다
+    // (CRON_DB_MS_PER_NEW_ITEM_BY_SOURCE.gog 주석에 실측: 220건이 402행).
     // 카탈로그 한 바퀴가 64페이지라 신규가 마르면 발견은 일찍 멈추고 실행도 그만큼 짧다.
-    discover: { limit: 220, seedTop: 220, pageBudget: 70, match: 8, seedShare: 1 },
+    discover: { limit: 190, seedTop: 190, pageBudget: 70, match: 8, seedShare: 1 },
   },
   epic: {
     // 2026-09-15 에 120 에서 110 으로 내렸다 — DLC 목록 3회와 새 DLC 상세 10건이 이 모드에 새로 붙었다.
@@ -439,9 +469,16 @@ export const DLC_LIST_PER_RUN_BY_SOURCE: Partial<Record<Source, number>> = {
  * 한 실행에서 **새로 등록할** DLC 수 상한. 비우면 상한 없음.
  *
  * 목록을 받는 값(DLC_LIST_PER_RUN_BY_SOURCE)과 다른 축이다. 목록은 본편당 요청 1회지만,
- * 거기서 나온 새 DLC 는 각각 상세를 받아야 게임 레코드가 된다. 배치 조회가 있는 소스(steam, xbox, gog)는
- * 그 상세가 50건에 요청 1회라 사실상 공짜여서 상한이 필요 없었는데, **fetchMany 가 없는 소스**
- * (epic, psstore)는 새 DLC 한 건이 요청 한 번이다 — 본편 몇 개만 DLC 부자여도 실행이 몇 분씩 길어진다.
+ * 거기서 나온 새 DLC 는 각각 상세를 받아야 게임 레코드가 된다.
+ *
+ * **2026-09-15 정정: 배치 조회가 있는 소스도 공짜가 아니다.** 전에는 steam, xbox 를 비워 뒀는데
+ * (상한 없음 = 나온 만큼 전부 등록) 그때 센 것은 요청 시간뿐이었다. 요청은 50건에 1회라 정말 싸지만
+ * **반영 시간은 건수만큼 든다**(CRON_DB_MS_PER_NEW_ITEM, 건당 1.8초). 실측: steam discover 한 실행이
+ * 발견 140건을 처리하는 동안 새 DLC 230건을 함께 등록했고, 그 몫이 실행을 680초로 밀어 올렸다.
+ * 상한이 없으면 최악은 DLC_LIST_PER_RUN 60 × DLC_PER_GAME_MAX 30 = 1,800건 ≈ 54분이다 —
+ * 함수(800초)가 잘리고 그 실행이 통째로 버려진다. 조용히 일어나서 로그에도 이유가 안 남는다.
+ *
+ * fetchMany 가 없는 소스(epic, psstore)는 여기에 요청 시간까지 더 든다 — 새 DLC 한 건이 요청 한 번이다.
  *
  * epic 10 의 근거: epic 은 Vercel 크론(함수 300초)에서 돌고 CRON_PLAN 이 이미 예산을 거의 다 쓴다.
  * DLC 는 요청 시간(건당 1초)만 먹는 게 아니라 반영 시간(CRON_DB_MS_PER_ITEM)도 같이 먹는다 —
@@ -456,7 +493,16 @@ export const DLC_LIST_PER_RUN_BY_SOURCE: Partial<Record<Source, number>> = {
  */
 export const DLC_FETCH_PER_RUN_BY_SOURCE: Partial<Record<Source, number>> = {
   epic: 10,
-  psstore: 60,
+  // 2026-09-15 에 60 에서 20 으로 내렸다. 60 은 Actions(타임아웃 60분) 시절 값이라 800초 함수에는 과했다 —
+  // 요청 60초에 반영 108초를 발견보다 먼저 가져간다. psstore 는 KR 7,571건 중 587건만 아는 제일 굶은
+  // 소스라, 그 자리를 본편 발견 몫에 준다(CRON_PLAN.psstore.discover 80 → 120).
+  psstore: 20,
+  // steam, xbox 40: 위 정정의 결과다. 요청은 배치라 거의 안 들지만 반영이 40 × 1.8초 = 72초를 쓴다.
+  // 40 인 근거는 실측 분포다 — steam 은 한 실행에 230건까지 올라왔다(상한이 없어서 전부 등록됐다).
+  // 40 으로 자르면 남는 것은 다음 실행으로 밀린다: 본편의 dlc_listed_at 이 이미 찍혀 있어
+  // DLC_LIST_REFRESH_DAYS 뒤에 다시 걸린다. 새 DLC 가 며칠 늦는 대가로 실행이 잘리지 않는 쪽을 택했다.
+  steam: 40,
+  xbox: 40,
   // nintendo_jp 는 가격이 배치 50건/요청이라 요청 시간은 거의 안 든다 — 드는 것은 반영 시간뿐이다.
   // 2026-09-15 에 40 에서 20 으로 내렸다. 40 은 한 번도 안 닿은 값이다(실측: 본편 40건을 물어
   // 등록된 JP DLC 가 8건). 닿지도 않는 상한이 예산에서 16초를 미리 떼어 가고 있었고,

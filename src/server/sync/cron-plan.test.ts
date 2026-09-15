@@ -7,6 +7,7 @@ import { getStoreAdapter } from "@/server/adapters";
 import {
   CRON_DB_MS_PER_ITEM,
   CRON_DB_MS_PER_NEW_ITEM,
+  CRON_DB_MS_PER_NEW_ITEM_BY_SOURCE,
   CRON_PLAN,
   CRON_SAFETY_FACTOR,
   CRON_SOURCES,
@@ -26,7 +27,11 @@ import {
  * 반영 시간은 **신규와 갱신을 갈라서** 센다. 신규 1건은 게임 행에 플랫폼, 장르, 이미지까지 딸려서
  * 갱신 1건의 네 배가 넘는다(CRON_DB_MS_PER_NEW_ITEM). 이걸 뭉뚱그렸다가 gog 몫을 283초로 보고
  * 실제 760초를 맞았다 — discover 모드는 seedShare 1 이라 처리 건수가 곧 신규 건수다.
- * 새로 등록되는 DLC 도 같은 값으로 센다.
+ * 발견 1건이 몇 행을 만드는지는 소스마다 다르다(CRON_DB_MS_PER_NEW_ITEM_BY_SOURCE).
+ *
+ * 새로 등록되는 DLC 도 같은 값으로 센다. **이 몫을 빼먹으면 예산이 통째로 어긋난다** —
+ * 2026-09-15 에 steam 을 549초로 보고 680초를 맞은 원인이 이것이다. 배치 소스는 DLC 상세 요청이
+ * 거의 공짜라 상한을 비워 뒀는데, 요청이 공짜인 것이지 반영이 공짜인 게 아니었다(230건이 등록됐다).
  *
  * DLC 단계도 같은 실행 안에서 돈다(sync/run-store 4단계). 두 축을 따로 센다 —
  * 본편에게 목록을 묻는 요청과, 그 결과로 받은 새 DLC 의 상세 요청이다.
@@ -52,7 +57,8 @@ function estimateMs(source: (typeof CRON_SOURCES)[number], mode: "prices" | "dis
   // 새로 들어오는 것(시드 + 새 DLC)과 이미 아는 것을 갈라 센다
   const newItems = plan.seedTop + dlcFetchItems;
   const updatedItems = Math.max(plan.limit - plan.seedTop, 0);
-  const applyMs = newItems * CRON_DB_MS_PER_NEW_ITEM + updatedItems * CRON_DB_MS_PER_ITEM;
+  const newItemMs = CRON_DB_MS_PER_NEW_ITEM_BY_SOURCE[source] ?? CRON_DB_MS_PER_NEW_ITEM;
+  const applyMs = newItems * newItemMs + updatedItems * CRON_DB_MS_PER_ITEM;
   return (requests * adapter.minIntervalMs + applyMs) * CRON_SAFETY_FACTOR;
 }
 
@@ -64,6 +70,16 @@ describe("CRON_PLAN", () => {
       });
     }
   }
+
+  // 2026-09-15: steam 이 한 실행에 새 DLC 230건을 등록해 680초를 썼다. dlc-writer 는 상한이
+  // undefined 면 나온 만큼 전부 등록한다 — 배치 소스라고 비워 두면 최악 1,800건까지 열린다.
+  it("DLC 목록을 묻는 크론 소스는 새 DLC 등록 상한이 있다 — 비우면 무제한이다", () => {
+    for (const source of CRON_SOURCES) {
+      const adapter = getStoreAdapter(source);
+      if (!(adapter.listDlcIds ?? adapter.listDlcCandidates)) continue;
+      expect(DLC_FETCH_PER_RUN_BY_SOURCE[source]).toBeGreaterThan(0);
+    }
+  });
 
   it("prices 모드는 발견을 돌지 않는다 — 가격 갱신만 하라고 나눈 모드다", () => {
     for (const source of CRON_SOURCES) {
