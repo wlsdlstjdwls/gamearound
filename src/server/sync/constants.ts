@@ -65,8 +65,12 @@ export const LOCAL_ONLY_SOURCES: Source[] = ["nintendo", "nintendo_jp", "epic"];
  * 실제 몫은 SEED_SHARE_MAX 가 한 번 더 깎는다(배치의 절반).
  */
 export const LOCAL_SEED_TOP: Partial<Record<Source, number>> = {
-  // eShop 은 요청 간격 4초라 한 번에 많이 못 당긴다 — 며칠에 걸쳐 채운다
-  nintendo: 60,
+  // eShop 은 요청 간격 4초라 한 번에 많이 못 당긴다. 그래도 2026-09-15 에 60 에서 240 으로 올렸다 —
+  // 한국 스위치 행 87건에 일본 239건이라, 스위치 게임의 가격이 화면에서 엔화로 서고 있었다.
+  // 기존 갱신은 크론 prices 가 하루 1,200건씩 따로 맡으므로 로컬 실행은 신규에 다 쓴다
+  // (SEED_SHARE_BY_SOURCE.nintendo 가 몫을 0.8 로 올려 주지 않으면 이 값이 절반으로 깎인다).
+  // 240건 × 4초 = 16분 + 발견 페이지 몫. 로컬은 함수 300초 제한이 없어 견딜 수 있다.
+  nintendo: 240,
   // BATCH_SIZE.epic(250)의 절반. 발견 페이지 예산은 DISCOVERY_PAGE_BUDGET.epic 이 따로 막는다
   epic: 125,
   // 일본은 발견도 가격도 JSON 이라 한국보다 크게 잡는다(BATCH_SIZE.nintendo_jp 의 절반)
@@ -207,8 +211,10 @@ export const DISCOVERY_PAGE_BUDGET: Partial<Record<StoreSource, number>> = {
   steam: 80,
   // KR 카탈로그 전체가 64페이지(100건/page) — 한 바퀴를 다 돌 수 있는 값에 여유를 더했다
   gog: 70,
-  // 4초 × 25 ≈ 100초. 검색 결과가 페이지당 24건이라 한 실행에 600건까지 훑는다
-  nintendo: 25,
+  // 4초 × 150 ≈ 10분. 검색 결과가 페이지당 24건이라 한 실행에 3,600건까지 훑는다.
+  // 이 값은 **로컬 실행에서만** 쓰인다 — 닌텐도는 Actions 워크플로에 없고, 크론은 pageBudget 12 를
+  // 직접 넘긴다(CRON_PLAN). 그래서 Actions 무료 분과 함수 300초 어디에도 영향이 없다.
+  nintendo: 150,
   // 1초 × 200 ≈ 3.5분. 카탈로그 한 바퀴가 약 175페이지(40건/page)
   epic: 200,
   // 1.5초 × 60 ≈ 90초. KR 16,991건이 페이지당 43~48건이라 한 바퀴는 340페이지 — 며칠에 걸쳐 채운다
@@ -242,7 +248,27 @@ export const SEED_SHARE_MAX = 0.5;
  */
 export const SEED_SHARE_BY_SOURCE: Partial<Record<StoreSource, number>> = {
   psstore: 0.75,
+  // nintendo 0.8 의 근거(2026-09-15 실측): 한국 스위치 행이 87건인데 일본은 239건이다.
+  // 그래서 스위치 게임 32개가 다른 스토어는 원화인데 스위치만 엔화로 서 있었다 — 한국 행이 없어서다.
+  // 아는 것이 87건뿐이라 절반(150건)을 재조회에 주는 것은 낭비다. 게다가 기존 갱신은
+  // 크론 prices 가 하루 1,200건으로 따로 맡는다. 로컬 실행의 몫은 신규에 쏟는 쪽이 맞다.
+  // 이 값은 로컬에만 걸린다 — 크론 discover 는 seedShare 1 을, prices 는 seedTop 0 을 직접 넘긴다.
+  nintendo: 0.8,
 };
+/**
+ * `games.title_en` 과 회사 이름을 **비어 있을 때만** 채우는 소스. 이미 값이 있으면 물러난다.
+ *
+ * 넣는 기준: 그 소스가 영문 제목을 주지 않아, titleEn 자리에 다른 문자 체계의 제목이 들어가는 소스.
+ *   nintendo_jp — 일본 eShop 표기 그대로다(search-jp 의 cleanJpTitle). 가나만 남는 제목이 많아,
+ *                 다른 스토어가 영문으로 세워 둔 게임을 나중에 흡수하면 제목이 일본어로 뒤집힌다.
+ *   nintendo    — 한국 eShop 도 영문 제목을 주지 않아 한국어 제목이 titleEn 자리에 들어간다(parse-kr).
+ *                 한국어 제목 자체는 titleKo 로 따로 가므로 화면에서 잃는 것이 없다.
+ *
+ * 비어 있을 때 채우는 것까지 막지는 않는다 — 그 스토어에만 있는 작품은 그 표기가 유일한 근거다.
+ * titleKo 는 이 규칙을 타지 않는다. 한국어 제목은 늦게 온 값이 더 나은 값이다.
+ */
+export const TEXT_FILL_ONLY_SOURCES: Source[] = ["nintendo", "nintendo_jp"];
+
 /** 스토어 소스 → 담당 플랫폼 (§11-6: PS4/PS5, Switch/Switch2 분리 유지) */
 export const SOURCE_PLATFORMS: Record<StoreSource, Platform[]> = {
   steam: ["steam"], psstore: ["ps5", "ps4"], xbox: ["xbox"], nintendo: ["switch", "switch2"],

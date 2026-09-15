@@ -79,7 +79,10 @@ export function parseNintendoProduct(html: string, id: string): StoreSnapshot {
   const platform: Platform = PLATFORM_SWITCH2.test(platformText) ? "switch2" : "switch";
 
   // Switch 독점작은 Steam 에 없어 이 스냅샷으로 게임 마스터를 새로 만든다 → meta 가 있어야 한다.
-  // 한국 eShop 은 영문 제목을 따로 주지 않으므로 titleEn 자리에 한국어 제목을 넣는다(slugify 는 한글을 살린다).
+  // 한국 eShop 은 영문 제목을 따로 주지 않는다. 같은 한국어 제목을 두 자리에 넣는 이유가 갈린다:
+  //   titleKo — 이것이 제자리다. 한국 서비스의 표시 제목은 이 값이 이긴다
+  //   titleEn — 새 게임을 만들 때 반드시 있어야 하는 값이라 비워 둘 수 없다(game-writer 가 없으면 던진다).
+  //             다만 영문 제목은 아니므로 이미 값이 있는 게임을 덮지는 않는다(TEXT_FILL_ONLY_SOURCES).
   const players = parseNintendoPlayers($(NINTENDO_SELECTORS.players).first().text());
   return {
     platform,
@@ -92,7 +95,7 @@ export function parseNintendoProduct(html: string, id: string): StoreSnapshot {
     releaseDate: parseNintendoDate($(NINTENDO_SELECTORS.releaseDate).first().text()),
     meta: {
       titleEn: title,
-      titleKo: null,
+      titleKo: title,
       coverUrl: $(NINTENDO_SELECTORS.ogImage).first().attr("content")?.trim() || null,
       publisher: $(NINTENDO_SELECTORS.publisher).first().text().trim() || null,
       genres: parseNintendoGenres($(NINTENDO_SELECTORS.gameCategory).first().text()),

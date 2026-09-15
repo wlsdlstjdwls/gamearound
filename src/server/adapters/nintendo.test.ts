@@ -74,8 +74,10 @@ describe("parseNintendoDate", () => {
 describe("parseNintendoProduct meta", () => {
   it("신규 게임 생성에 필요한 meta 를 채운다 (Switch 독점작은 Steam 에 없다)", () => {
     const snap = parseNintendoProduct(fixture("nintendo-product-switch1.html"), "70010000100203");
-    expect(snap.meta?.titleEn).toBeTruthy(); // 한국 eShop 은 영문 제목이 없어 한국어 제목이 들어간다
-    expect(snap.meta?.titleKo).toBeNull();
+    // 한국 eShop 은 영문 제목을 주지 않는다 — 같은 한국어 제목이 두 자리에 들어간다.
+    // titleKo 가 제자리고, titleEn 은 신규 생성에 반드시 있어야 해서 채우는 값이다(parse-kr 주석).
+    expect(snap.meta?.titleEn).toBeTruthy();
+    expect(snap.meta?.titleKo).toBe(snap.meta?.titleEn);
     expect(snap.meta?.publisher).toBe("Team Cherry");
     expect(snap.meta?.coverUrl).toContain("media/catalog/product");
     expect(snap.meta?.genres).toContain("액션");

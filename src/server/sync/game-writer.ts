@@ -7,6 +7,7 @@ import { AdapterError, type StoreSnapshot } from "@/server/adapters/types";
 import { normalizeGenre } from "@/lib/genres";
 import { slugify, slugWithSuffix } from "@/lib/slug";
 import { isLocked, type Ctx } from "./context";
+import { TEXT_FILL_ONLY_SOURCES } from "./constants";
 
 /** slug 충돌 처리: base → base-<externalId> → base-<externalId>-<ts> */
 async function uniqueSlug(db: Db, titleEn: string, externalId: string): Promise<string> {
@@ -85,18 +86,26 @@ export type GameRow = typeof games.$inferSelect;
 export function planGameMeta(ctx: Ctx, cur: GameRow, meta: NonNullable<StoreSnapshot["meta"]>): Partial<typeof games.$inferInsert> {
   const gameId = cur.id;
   const set: Partial<typeof games.$inferInsert> = {};
-  const consider = <K extends keyof typeof games.$inferInsert>(field: K, value: (typeof games.$inferInsert)[K] | null | undefined) => {
+  const consider = <K extends keyof typeof games.$inferInsert>(
+    field: K,
+    value: (typeof games.$inferInsert)[K] | null | undefined,
+    fillOnly = false,
+  ) => {
     if (value === null || value === undefined) return;
     if (isLocked(ctx, "games", gameId, field)) return;
+    // 채우기만 하는 소스는 이미 값이 있으면 물러난다 (TEXT_FILL_ONLY_SOURCES)
+    if (fillOnly && cur[field as keyof typeof cur]) return;
     if (cur[field as keyof typeof cur] !== value) set[field] = value;
   };
-  consider("titleEn", meta.titleEn);
+  // 일본어 표기로 우리가 세워 둔 이름을 뒤집지 않게 한다 — 근거는 TEXT_FILL_ONLY_SOURCES 주석
+  const textFillOnly = TEXT_FILL_ONLY_SOURCES.includes(ctx.source);
+  consider("titleEn", meta.titleEn, textFillOnly);
   consider("titleKo", meta.titleKo);
   consider("description", meta.description);
   consider("coverUrl", meta.coverUrl);
   consider("portraitUrl", meta.portraitUrl);
-  consider("developer", meta.developer);
-  consider("publisher", meta.publisher);
+  consider("developer", meta.developer, textFillOnly);
+  consider("publisher", meta.publisher, textFillOnly);
   if (meta.multiplayer) {
     consider("supportsSolo", meta.multiplayer.solo);
     consider("supportsCoop", meta.multiplayer.coop);
