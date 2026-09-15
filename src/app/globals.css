@@ -335,6 +335,14 @@ body {
   outline-offset: 2px;
   border-radius: 6px;
 }
+/* 글자를 치는 칸은 감싼 상자가 포커스를 말한다(focus-within 으로 테두리, 브랜드 글로우를 켠다).
+   거기에 기본 링까지 겹치면 둥근 검색칸 위에 각진 검은 테두리가 한 겹 더 그어진다 —
+   유틸리티의 outline-none 으로는 못 덮는다(이 규칙은 레이어 밖이라 항상 이긴다).
+   체크박스, 라디오, select 는 감싼 상자가 없으므로 기본 링을 그대로 둔다. */
+input:not([type="checkbox"]):not([type="radio"]):focus-visible,
+textarea:focus-visible {
+  outline: none;
+}
 
 /* ── 터치/모바일 튜닝 ── */
 button,
