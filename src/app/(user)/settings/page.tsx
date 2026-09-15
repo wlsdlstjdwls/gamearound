@@ -3,22 +3,23 @@
 // 설정 화면에서 할 일은 "켜고 끄는 것" 이라 규칙 설명은 알림 목록 쪽이 제자리다.
 import type { Metadata } from "next";
 import { PushToggle } from "@/components/push-toggle";
+import { ThemeToggle } from "@/components/theme-toggle";
 import { SignOutButton } from "@/components/auth/sign-out-button";
-import { Card, Page } from "@/components/ui/page";
+import { Card, Page, PageHead } from "@/components/ui/page";
 import { ROLE_LABEL } from "@/lib/auth/constants";
 import { formatDate } from "@/lib/format";
 import { requireUserOrRedirect } from "@/server/auth/guards";
-import { countPushSubscriptions } from "@/server/services/push";
+import { countMyPushSubscriptions } from "@/server/services/push";
 
 export const metadata: Metadata = { title: "설정" };
 
 export default async function SettingsPage() {
-  const user = await requireUserOrRedirect();
-  const pushCount = await countPushSubscriptions(user.id);
+  // 나란히 쏜다 — 줄을 세우면 Neon 왕복(us-east-1, 약 220ms)을 두 번 기다린다
+  const [user, pushCount] = await Promise.all([requireUserOrRedirect(), countMyPushSubscriptions()]);
 
   return (
     <Page width="tight" gap={18}>
-      <h1 className="text-2xl font-bold tracking-[-0.03em] text-ink">설정</h1>
+      <PageHead title="설정" />
 
       <Card className="flex flex-col gap-3.5 p-5">
         <div className="flex items-start justify-between gap-3">
@@ -37,6 +38,8 @@ export default async function SettingsPage() {
         </dl>
         <p className="text-[11.5px] text-dim">닉네임, 비밀번호 변경은 곧 추가됩니다.</p>
       </Card>
+
+      <ThemeToggle />
 
       <PushToggle initialCount={pushCount} />
     </Page>

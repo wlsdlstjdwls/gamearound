@@ -4,6 +4,8 @@ import { and, desc, eq, isNull } from "drizzle-orm";
 import { getDb } from "@/server/db/client";
 import { games, priceAlerts, type Platform } from "@/server/db/schema";
 import { requireUser } from "@/server/services/users";
+import { ownedByCurrentSession } from "@/server/auth/session";
+import { AUTH_MESSAGES } from "@/lib/auth/messages";
 
 export type AlertRow = typeof priceAlerts.$inferSelect;
 export type AlertWithGame = AlertRow & { game: { id: string; slug: string; titleKo: string | null; titleEn: string; coverUrl: string | null } };
@@ -19,11 +21,19 @@ export async function findGameBySlug(slug: string) {
   });
 }
 
-/** 내 알림 목록(게임 정보 포함). 활성 우선, 그 다음 최근 생성 순은 id 정렬로 대체 */
+/**
+ * 내 알림 목록(게임 정보 포함). 활성 우선, 그 다음 최근 생성 순은 id 정렬로 대체.
+ *
+ * 읽기 전용이라 requireUser() 대신 세션 서브질의로 소유자를 건다 — 세션 조회를 기다렸다가
+ * 목록을 묻는 왕복 2회가 1회로 준다. 근거는 currentUserIdSql 주석.
+ * 변경 함수(create/update/delete)는 그대로 requireUser() 를 쓴다. 액션은 화면 지연이 아니고,
+ * "누가 고쳤는가" 를 사람이 읽을 수 있는 형태로 남기는 편이 낫다.
+ */
 export async function listAlerts(): Promise<AlertWithGame[]> {
-  const u = await requireUser();
+  const owner = await ownedByCurrentSession(priceAlerts.userId);
+  if (!owner) throw new Error(AUTH_MESSAGES.loginRequired);
   const rows = await getDb().query.priceAlerts.findMany({
-    where: eq(priceAlerts.userId, u.id),
+    where: owner,
     orderBy: [desc(priceAlerts.isActive), desc(priceAlerts.id)],
     with: { game: { columns: { id: true, slug: true, titleKo: true, titleEn: true, coverUrl: true } } },
   });

@@ -7,6 +7,8 @@ import { and, desc, eq } from "drizzle-orm";
 import { getDb } from "@/server/db/client";
 import { wishlists, type games, type gamePlatforms } from "@/server/db/schema";
 import { getCurrentUser, requireUser } from "@/server/services/users";
+import { ownedByCurrentSession } from "@/server/auth/session";
+import { AUTH_MESSAGES } from "@/lib/auth/messages";
 
 export type WishlistGame = typeof games.$inferSelect & { platforms: (typeof gamePlatforms.$inferSelect)[] };
 export type WishlistItem = { gameId: string; createdAt: Date; game: WishlistGame };
@@ -40,11 +42,18 @@ export async function removeFromWishlist(gameId: string): Promise<void> {
   await getDb().delete(wishlists).where(and(eq(wishlists.userId, u.id), eq(wishlists.gameId, gameId)));
 }
 
-/** 현재 사용자의 찜 목록. 최근 찜한 순. 게임의 플랫폼별 가격 포함 */
+/**
+ * 현재 사용자의 찜 목록. 최근 찜한 순. 게임의 플랫폼별 가격 포함.
+ *
+ * requireUser() 를 쓰지 않는 이유는 왕복 수다 — 그러면 세션 조회를 기다린 뒤에야 목록 질의가
+ * 나가 화면이 왕복 2회(약 440ms)를 기다린다. 소유자 조건을 세션 서브질의로 바꿔 한 왕복에 끝낸다.
+ * 근거는 currentUserIdSql 주석.
+ */
 export async function listWishlist(): Promise<WishlistItem[]> {
-  const u = await requireUser();
+  const owner = await ownedByCurrentSession(wishlists.userId);
+  if (!owner) throw new Error(AUTH_MESSAGES.loginRequired);
   const rows = await getDb().query.wishlists.findMany({
-    where: eq(wishlists.userId, u.id),
+    where: owner,
     orderBy: [desc(wishlists.createdAt)],
     with: { game: { with: { platforms: true } } },
   });

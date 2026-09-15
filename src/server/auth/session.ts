@@ -3,7 +3,8 @@
 import "server-only";
 import { createHash, randomBytes } from "node:crypto";
 import { cookies } from "next/headers";
-import { and, eq, gt, lt } from "drizzle-orm";
+import { and, eq, gt, inArray, lt, type SQL } from "drizzle-orm";
+import type { PgColumn } from "drizzle-orm/pg-core";
 import { getDb } from "@/server/db/client";
 import { sessions, users } from "@/server/db/schema";
 import { SESSION_COOKIE_NAME, SESSION_RENEW_BELOW_SEC, SESSION_TOKEN_BYTES, SESSION_TTL_SEC } from "@/lib/auth/constants";
@@ -86,6 +87,42 @@ export async function validateSessionToken(token: string, opts: { renewCookie?: 
     }
   }
   return { user, session };
+}
+
+/**
+ * "이 컬럼이 가리키는 소유자가 곧 현재 세션의 사용자" 라는 조회 조건. 세션 쿠키가 없으면 null.
+ *
+ * 왜 있나: 사용자 화면은 "세션 검증(왕복 1회) → userId → 데이터 조회(왕복 2회)" 로 왕복을 줄 세우고
+ * 있었다. Neon 이 us-east-1 이라 왕복 1회가 210~220ms 다(2026-09-15 실측) — /wishlist 본문이
+ * 525ms 에 오던 것의 거의 전부가 그 기다림이었다. 소유자 조건을 세션 서브질의로 바꾸면 검증과
+ * 조회가 한 왕복에서 끝난다. 이 함수 자체는 쿠키만 읽으므로 왕복을 더하지 않는다.
+ *
+ * 서브질의가 아니라 **완성된 조건(SQL)** 을 돌려주는 이유가 둘이다.
+ *  - drizzle 의 select 빌더는 thenable 이다. async 함수가 그것을 return 하면 그 자리에서
+ *    await 돼 질의가 실행된다 — 왕복을 줄이려다 오히려 한 번 더 나간다.
+ *  - `sql` 템플릿으로 서브질의를 쓰면 안 된다. 그렇게 썼다가 /wishlist 가 통째로 죽었다:
+ *    `db.query.*.findMany` 는 뿌리 테이블에 별칭을 붙이고 조건 안의 컬럼 참조를 그 별칭으로
+ *    다시 쓴다. 서브질의 안의 sessions 컬럼까지 바깥 별칭이 돼
+ *    `select "wishlists"."user_id" from "sessions" where "wishlists"."expires_at" > now()`
+ *    가 나갔다. 빌더가 만든 서브질의 객체는 따로 컴파일되므로 그 재작성을 타지 않는다.
+ *
+ * 만료 조건을 서브질의 안에 둔다 — 폐기된 쿠키로는 한 행도 읽히지 않는다. 만료 행 삭제는
+ * 여기서 하지 않는다. 그건 validateSessionToken 과 일일 정리(purgeExpiredSessions)의 몫이다.
+ *
+ * 레이아웃 가드(requireUserOrRedirect)를 대신하지 않는다. 가드는 병렬로 돌며 "로그인 화면으로
+ * 보낼지" 를 정하고, 이 조건은 "남의 행을 못 읽게" 한다. 둘 다 있어야 한다.
+ */
+export async function ownedByCurrentSession(column: PgColumn): Promise<SQL | null> {
+  const token = await readSessionToken();
+  if (!token) return null;
+  const db = getDb();
+  return inArray(
+    column,
+    db
+      .select({ userId: sessions.userId })
+      .from(sessions)
+      .where(and(eq(sessions.id, hashSessionToken(token)), gt(sessions.expiresAt, new Date()))),
+  );
 }
 
 /** 현재 세션 폐기 (로그아웃) */
