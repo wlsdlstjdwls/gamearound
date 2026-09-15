@@ -4,6 +4,8 @@
 //  - 가격은 "바뀔 때만" 기록되므로 각 라인은 마지막 기록 → 지금까지 수평으로 이어 그린다(기록 1건이면 점이 아니라 선으로 보이게)
 //  - 구간을 좁히면 구간 시작 시점의 가격을 앵커 포인트로 만들어 라인이 끊기지 않게 한다
 //  - 플랫폼이 하나일 때만 정가 기준선, 역대 최저점, 진행 중 할인 구간을 함께 그린다(여러 개면 읽기 어려움)
+//  - 플랫폼을 하나 고르면 그 계열만 그린다 — 선이 넷을 넘으면 색과 선 모양으로도 안 갈린다.
+//    고르는 순간 위의 단일 표시(정가선, 최저점, 할인 구간)가 따라 붙는 것이 이 탭의 값어치다
 import { formatPrice, sameCurrency } from "@/lib/currency";
 import { useMemo, useState } from "react";
 import {
@@ -27,19 +29,47 @@ import type { PriceSeries } from "@/server/services/prices";
 import { useNow } from "@/components/use-now";
 import { ChipButton } from "@/components/ui/chip";
 
-// 플랫폼 → 색 고정(엔티티 기준, 순서/개수와 무관). 저채도 팔레트라 색상이 아니라 명도로 구분한다
+/**
+ * 플랫폼 → 색 고정(엔티티 기준, 순서, 개수와 무관 — 필터로 선이 줄어도 남은 선의 색은 그대로다).
+ *
+ * 왜 바꿨나(2026-09-15): 이전 팔레트는 전부 따뜻한 회색이라 명도로만 갈렸다.
+ * 명도 구분은 선이 겹치는 순간 무너진다 — 가격이 같은 구간에서는 선이 포개져 위의 것만 보인다.
+ * 그래서 색상(hue)으로 가른 8색으로 바꿨다. 값은 검증기(dataviz validate_palette)가
+ * 흰 표면 기준으로 통과시킨 조합이다: 색각 이상 인접쌍 ΔE 9.1, 정상 시야 19.6.
+ * 순서는 PLATFORM_ORDER 와 같다 — 인접쌍 검증이 그 순서를 전제한다.
+ *
+ * 색을 아래 globals.css 토큰으로 못 빼는 이유: recharts 는 stroke 를 CSS 속성이 아니라
+ * SVG 표현 속성으로 내보내고, 표현 속성 안에서는 var() 가 풀리지 않는다.
+ */
 const PLATFORM_COLOR: Record<Platform, string> = {
-  steam: "#1C1C1A",
-  ps5: "#6B6862",
-  ps4: "#8C8A84",
-  xbox: "#A8A59E",
-  switch: "#C4C0B8",
-  switch2: "#3A5A4A",
-  epic: "#4A4A6B",
-  gog: "#6B4A5A",
+  steam: "#2A78D6",   // 파랑
+  epic: "#EB6834",    // 주황
+  gog: "#1BAF7A",     // 아쿠아
+  ps5: "#EDA100",     // 노랑
+  ps4: "#E87BA4",     // 자홍
+  xbox: "#008300",    // 초록
+  switch: "#4A3AA7",  // 보라
+  switch2: "#E34948", // 빨강
 };
-/** 가장 진한 선(=대표 플랫폼)만 2.5px, 나머지는 2px */
-const PLATFORM_WIDTH: Record<Platform, number> = { steam: 2.5, ps5: 2, ps4: 2, xbox: 2, switch: 2, switch2: 2, epic: 2, gog: 2 };
+
+/**
+ * 색 말고 하나 더 — 선 모양. 색만으로 가르면 두 가지 자리에서 진다:
+ * 가격이 같아 선이 정확히 포개지는 구간(위의 선만 보인다), 그리고 색각 이상.
+ * 파선이면 아래 선이 틈으로 비친다. 대표 플랫폼(steam)만 실선으로 두어 기준선을 만든다.
+ */
+const PLATFORM_DASH: Record<Platform, string | undefined> = {
+  steam: undefined,
+  epic: "7 4",
+  gog: "2 3",
+  ps5: "11 4",
+  ps4: "7 3 2 3",
+  xbox: "1 4",
+  switch: "13 4 2 4",
+  switch2: "4 3",
+};
+
+/** 선 굵기는 전부 같다 — 굵기로 순위를 말하지 않는다(색과 선 모양이 이미 정체를 말한다) */
+const LINE_WIDTH = 2;
 
 /** 기간 선택 — days=null 은 전체 */
 const RANGES: Array<{ key: string; label: string; days: number | null }> = [
@@ -138,10 +168,20 @@ function PriceTooltip({ active, payload, label, currency }: TooltipContentProps 
   );
 }
 
+/** 플랫폼 칩의 "전체". 플랫폼 값과 겹치지 않는 문자열이어야 한다 */
+const ALL_PLATFORMS = "all";
+
 export function PriceChart({ series }: { series: PriceSeries[] }) {
   const [rangeKey, setRangeKey] = useState(DEFAULT_RANGE_KEY);
+  const [pick, setPick] = useState<Platform | typeof ALL_PLATFORMS>(ALL_PLATFORMS);
   // 한 축에 두 통화를 그리면 선이 뜻 없이 겹친다(₩44,990 옆의 $6.99). 기준 통화만 그리고 나머지는 밑에 적는다
   const { kept: drawn, dropped, currency } = useMemo(() => sameCurrency(series), [series]);
+  // 고른 플랫폼이 사라졌으면(게임이 바뀌거나 계열이 줄면) 조용히 전체로 돌아간다
+  const picked = pick !== ALL_PLATFORMS && drawn.some((s) => s.platform === pick) ? pick : ALL_PLATFORMS;
+  const shown = useMemo(
+    () => (picked === ALL_PLATFORMS ? drawn : drawn.filter((s) => s.platform === picked)),
+    [drawn, picked],
+  );
   const clientNow = useNow();
   // 마운트 전에는 마지막 기록 시각을 "지금"으로 써서 서버/클라이언트 렌더를 일치시킨다
   const fallbackNow = useMemo(
@@ -150,13 +190,13 @@ export function PriceChart({ series }: { series: PriceSeries[] }) {
   );
   const now = clientNow ?? fallbackNow;
   const range = RANGES.find((r) => r.key === rangeKey) ?? RANGES[0];
-  const { data, platforms, single } = useMemo(() => prepare(drawn, range.days, now), [drawn, range.days, now]);
+  const { data, platforms, single } = useMemo(() => prepare(shown, range.days, now), [shown, range.days, now]);
 
   // 정가 기준선과 진행 중 할인 구간이 축 밖으로 잘리지 않도록 도메인을 넓힌다
   const yMax = Math.max(
     ...data.flatMap((row) => platforms.map((p) => row[p] ?? 0)),
     single?.listPrice ?? 0,
-    ...drawn.map((s) => s.listPrice ?? 0),
+    ...shown.map((s) => s.listPrice ?? 0),
   );
   // 할인 종료선이 축 오른쪽 끝에 붙으면 라벨이 잘린다 — 구간 폭의 일부만큼 여유를 둔다
   const xMin = data[0]?.t ?? now;
@@ -165,6 +205,26 @@ export function PriceChart({ series }: { series: PriceSeries[] }) {
 
   return (
     <div className="space-y-3">
+      {/* 플랫폼이 둘 이상일 때만 고르는 자리를 만든다 — 하나뿐이면 "전체" 와 그 하나가 같은 말이다 */}
+      {drawn.length > 1 && (
+        <div role="group" aria-label="플랫폼 선택" className="flex flex-wrap gap-1">
+          <ChipButton active={picked === ALL_PLATFORMS} onClick={() => setPick(ALL_PLATFORMS)}>
+            전체
+          </ChipButton>
+          {drawn.map((s) => (
+            <ChipButton key={s.platform} active={picked === s.platform} onClick={() => setPick(s.platform)}>
+              {/* 칩의 점이 그래프의 선 색과 같아야 "이 칩이 저 선" 이 말없이 이어진다 */}
+              <span
+                aria-hidden
+                className="mr-1.5 inline-block size-2 shrink-0 rounded-full"
+                style={{ background: PLATFORM_COLOR[s.platform] }}
+              />
+              {PLATFORM_LABEL[s.platform] ?? s.platform}
+            </ChipButton>
+          ))}
+        </div>
+      )}
+
       <div role="group" aria-label="기간 선택" className="flex flex-wrap gap-1">
         {RANGES.map((r) => (
           <ChipButton key={r.key} active={r.key === rangeKey} onClick={() => setRangeKey(r.key)}>
@@ -235,7 +295,10 @@ export function PriceChart({ series }: { series: PriceSeries[] }) {
                   dataKey={p}
                   name={p}
                   stroke={PLATFORM_COLOR[p]}
-                  strokeWidth={PLATFORM_WIDTH[p]}
+                  strokeWidth={LINE_WIDTH}
+                  strokeDasharray={PLATFORM_DASH[p]}
+                  // 범례 아이콘도 선 모양을 그대로 따라야 한다 — 기본 아이콘은 실선이라 파선 구분이 범례에서 사라진다
+                  legendType="plainline"
                   dot={false}
                   activeDot={{ r: 4 }}
                   connectNulls
