@@ -21,6 +21,7 @@ import {
   PATCH_LIST_PER_RUN_BY_SOURCE,
   PATCH_LIST_REFRESH_DAYS,
   PATCH_PER_GAME_MAX,
+  PATCH_SOURCES,
   SOURCE_PLATFORMS,
   SOURCE_REGION,
   WRITE_BATCH_SIZE,
@@ -50,13 +51,22 @@ export interface PatchListPick {
 
 /**
  * 물어볼 게임을 고른다. DB 를 보지 않아 테스트가 가능하다.
- * 한 번도 안 물어본 게임이 늘 먼저다 — 그래야 카탈로그 전체를 한 바퀴 도는 일이 먼저 끝난다.
+ *
+ * 순서가 두 겹이다.
+ *   1. **다른 패치 스토어에도 있는 게임 먼저**(comparable). 이 화면이 대답하려는 질문은
+ *      "어느 플랫폼이 더 자주 고치나" 인데, 한 스토어에만 기록이 있으면 비교가 아니라 숫자 하나다.
+ *      한 번도 안 물어본 순서만으로 돌면 그런 게임이 카탈로그 한 바퀴가 끝날 때까지 안 생긴다
+ *      (2026-09-15 실측: 두 칸이 서는 게임 0건, steam 36/4,660건만 물어본 상태).
+ *   2. 그 안에서 한 번도 안 물어본 게임 먼저, 그다음 오래된 순.
+ *
+ * 1번을 넣어도 전체를 도는 속도는 그대로다 — 한 실행의 몫(max)은 그대로이고 순서만 바뀐다.
  */
 export function pickPatchListTargets(
   candidates: Array<{ gameId: string; slug: string }>,
   rows: PatchListRow[],
   now: Date,
   max: number = PATCH_LIST_PER_RUN,
+  comparableGameIds: ReadonlySet<string> = new Set(),
 ): PatchListPick[] {
   const slugByGame = new Map(candidates.map((c) => [c.gameId, c.slug]));
   const staleBefore = now.getTime() - PATCH_LIST_REFRESH_DAYS * DAY_MS;
@@ -66,8 +76,9 @@ export function pickPatchListTargets(
     if (!slugByGame.has(r.gameId)) return false;
     return r.patchListedAt === null || r.patchListedAt.getTime() <= staleBefore;
   });
-  // 한 번도 안 물어본 것(null → 0) 먼저, 그다음 오래된 순
-  stale.sort((a, b) => (a.patchListedAt?.getTime() ?? 0) - (b.patchListedAt?.getTime() ?? 0));
+  // 비교가 되는 게임 먼저, 그 안에서 한 번도 안 물어본 것(null → 0) 먼저, 그다음 오래된 순
+  const rank = (r: PatchListRow): number => (comparableGameIds.has(r.gameId) ? 0 : 1);
+  stale.sort((a, b) => rank(a) - rank(b) || (a.patchListedAt?.getTime() ?? 0) - (b.patchListedAt?.getTime() ?? 0));
 
   const out: PatchListPick[] = [];
   const seen = new Set<string>();
@@ -95,6 +106,20 @@ export function toPatchRows(
     url: n.url ?? null,
     publishedAt: new Date(n.publishedAt),
   }));
+}
+
+/**
+ * 후보 중 **다른 패치 스토어에도 팔리는** 게임들. 이 게임들을 먼저 물어봐야 비교 화면이 산다
+ * (pickPatchListTargets 주석). 질의는 후보 id 안에서만 도는 IN 하나라 실행당 1회로 끝난다.
+ */
+async function comparableGameIds(ctx: Ctx, source: StoreSource, gameIds: string[]): Promise<Set<string>> {
+  const others = PATCH_SOURCES.filter((s) => s !== source).flatMap((s) => SOURCE_PLATFORMS[s]);
+  if (others.length === 0 || gameIds.length === 0) return new Set();
+  const rows = await ctx.db
+    .selectDistinct({ gameId: gamePlatforms.gameId })
+    .from(gamePlatforms)
+    .where(and(inArray(gamePlatforms.gameId, gameIds), inArray(gamePlatforms.platform, others)));
+  return new Set(rows.map((r) => r.gameId));
 }
 
 /**
@@ -131,7 +156,14 @@ export async function syncPatchNotes(
       ),
     );
 
-  const picks = pickPatchListTargets(candidates, rows, ctx.now, PATCH_LIST_PER_RUN_BY_SOURCE[source] ?? PATCH_LIST_PER_RUN);
+  const comparable = await comparableGameIds(ctx, source, candidates.map((c) => c.gameId));
+  const picks = pickPatchListTargets(
+    candidates,
+    rows,
+    ctx.now,
+    PATCH_LIST_PER_RUN_BY_SOURCE[source] ?? PATCH_LIST_PER_RUN,
+    comparable,
+  );
   if (picks.length === 0) return 0;
 
   const values: Array<typeof patchNotes.$inferInsert> = [];

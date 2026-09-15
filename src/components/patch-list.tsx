@@ -1,12 +1,15 @@
 // 패치 기록 표시 — 목록(PatchList)과 플랫폼별 속도 비교(PatchSpeed).
 //
-// 본문을 담지 않으므로 목록의 한 줄은 "버전 + 제목 + 날짜"가 전부다(§10 저작권).
+// 본문을 담지 않으므로 목록의 한 줄은 "버전 + 제목 + 종류 + 날짜"가 전부다(§10 저작권).
+// 종류 딱지는 제목에서 규칙으로 읽어낸 한글이다 — 스토어가 한국어 패치 노트를 주지 않아서다
+// (2026-09-15 실측, lib/patch-kind 주석).
 // 글 단위 주소가 있는 소스(Steam)만 제목이 링크가 되고, 없는 소스(GOG)는 글자로 남는다 —
 // 열리지 않는 링크를 만들지 않기 위해서다.
 import { Clamp } from "@/components/ui/tooltip";
 import { cardClass } from "@/components/ui/page";
 import { formatDate, platformLabel } from "@/lib/format";
 import { GAME_MESSAGES, patchSpeedText } from "@/lib/games/messages";
+import { patchKindLabels } from "@/lib/patch-kind";
 import type { PatchNoteDto, PlatformPatchesDto } from "@/server/services/games";
 import type { Platform, Region } from "@/server/db/schema";
 
@@ -14,6 +17,24 @@ function VersionChip({ version }: { version: string | null }) {
   if (!version) return null;
   return (
     <span className="shrink-0 rounded-[6px] bg-surface-2 px-[7px] py-[2px] font-mono text-[11.5px] text-ink-2">{version}</span>
+  );
+}
+
+/**
+ * 무엇을 고친 패치인지 한글 한 마디로. 제목이 영어라 이게 없으면 목록이 통째로 영어다.
+ * 읽어내지 못한 제목에는 아무것도 붙이지 않는다(lib/patch-kind).
+ */
+function KindChips({ title }: { title: string }) {
+  const labels = patchKindLabels(title);
+  if (labels.length === 0) return null;
+  return (
+    <>
+      {labels.map((label) => (
+        <span key={label} className="shrink-0 rounded-full border border-line px-[7px] py-[2px] text-[11px] text-mut">
+          {label}
+        </span>
+      ))}
+    </>
   );
 }
 
@@ -45,6 +66,7 @@ export function PatchList({ items, showPlatform = false }: { items: Item[]; show
               </span>
             )}
           </div>
+          <KindChips title={n.title} />
           <p className="flex shrink-0 items-center gap-x-1.5 text-[11.5px] text-dim">
             {showPlatform && n.platform && (
               <>

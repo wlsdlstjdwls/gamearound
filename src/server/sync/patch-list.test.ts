@@ -27,6 +27,31 @@ describe("pickPatchListTargets", () => {
     expect(pickPatchListTargets(candidates, rows, NOW, 1).map((p) => p.gameId)).toEqual(["g2"]);
   });
 
+  it("다른 패치 스토어에도 있는 게임이 한 번도 안 물어본 게임보다 먼저다", () => {
+    const rows = [
+      row({ id: "p1", gameId: "g1", patchListedAt: null }),
+      row({ id: "p2", gameId: "g2", patchListedAt: null }),
+    ];
+    // g2 만 GOG 에도 있다 — 이 게임을 물어봐야 두 칸이 서고 비교가 시작된다
+    expect(pickPatchListTargets(candidates, rows, NOW, 1, new Set(["g2"])).map((p) => p.gameId)).toEqual(["g2"]);
+  });
+
+  it("비교되는 게임끼리는 한 번도 안 물어본 것이 먼저다", () => {
+    const rows = [
+      row({ id: "p1", gameId: "g1", patchListedAt: daysAgo(PATCH_LIST_REFRESH_DAYS + 1) }),
+      row({ id: "p2", gameId: "g2", patchListedAt: null }),
+    ];
+    expect(pickPatchListTargets(candidates, rows, NOW, 2, new Set(["g1", "g2"])).map((p) => p.gameId)).toEqual(["g2", "g1"]);
+  });
+
+  it("비교되는 게임을 먼저 볼 뿐, 나머지를 건너뛰지는 않는다", () => {
+    const rows = [
+      row({ id: "p1", gameId: "g1", patchListedAt: null }),
+      row({ id: "p2", gameId: "g2", patchListedAt: null }),
+    ];
+    expect(pickPatchListTargets(candidates, rows, NOW, 2, new Set(["g2"])).map((p) => p.gameId)).toEqual(["g2", "g1"]);
+  });
+
   it("최근에 물어본 게임은 빠진다", () => {
     const rows = [row({ id: "p1", gameId: "g1", patchListedAt: daysAgo(1) })];
     expect(pickPatchListTargets(candidates, rows, NOW)).toEqual([]);
