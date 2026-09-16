@@ -517,7 +517,15 @@ a {
   border: 0;
   background: transparent;
   color: var(--ink);
-  overflow: hidden;
+  /*
+   * clip 이어야 한다(hidden 이 아니다). hidden 은 스크롤 컨테이너를 만든다 —
+   * 판이 화면 밖(translateX(100%))에서 시작하는데 showModal 이 그 안쪽으로 포커스를 옮기면
+   * 브라우저가 "보이게" 하려고 dialog 를 가로로 265px 밀어 놓는다(2026-09-16 실측 scrollLeft 265).
+   * 그러면 판은 등장 애니메이션이 도는 내내 밀린 자리에 그려지고, 애니메이션이 끝나 넘침이 사라지는
+   * 순간 스크롤이 0 으로 되돌아가며 판이 오른쪽으로 툭 되돌아간다 — 서랍이 왼쪽으로 쭉 나왔다가
+   * 다시 오른쪽으로 들어가 보이던 이유다. clip 은 스크롤 컨테이너를 만들지 않아 밀릴 자리가 없다.
+   */
+  overflow: clip;
 }
 /* display 는 [open] 에만 준다 — 닫힌 <dialog> 를 감추는 것이 UA 의 display: none 이라
    무조건 flex 를 주면 닫아도 화면에 남는다 */
