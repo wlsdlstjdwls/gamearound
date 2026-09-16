@@ -23,7 +23,11 @@ export const GAMES_PAGE_SIZE = 36;
  * 갈래와 스토어를 한 칸에 두는 이유는 주소가 하나만 남기 때문이다 — 칸을 나누면 서로 어긋난
  * 조합(pc + ps5)이 생기고 같은 화면이 두 주소를 갖는다.
  */
-export type GameListFilter = Omit<GamesQuery, "platform"> & { platform?: string };
+/**
+ * view 를 뺀다: 보기 모양은 조회에 아무 영향이 없는데 필터에 남으면 캐시 키와 Suspense 경계 키에
+ * 섞여 들어가, 카드와 리스트가 같은 목록을 두 벌씩 조회하고 보기를 바꿀 때마다 뼈대가 번쩍인다.
+ */
+export type GameListFilter = Omit<GamesQuery, "platform" | "view"> & { platform?: string };
 
 export type GameListResult = {
   items: GameSummary[];

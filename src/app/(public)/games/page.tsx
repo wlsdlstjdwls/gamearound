@@ -6,13 +6,16 @@
 import type { Metadata } from "next";
 import { Suspense } from "react";
 import { GameCard } from "@/components/game-card";
+import { GameRow } from "@/components/game-row";
+import { GameViewToggle } from "@/components/game-view-toggle";
 import { EmptyState } from "@/components/empty-state";
 import { GameFilters } from "@/components/game-filters";
 import { GamesInfinite } from "@/components/games-infinite";
 import { Page, PageHead } from "@/components/ui/page";
-import { DEFAULT_GAME_SORT, SORT_LABEL, joinPlatformValues, parsePlatformValues, parseGamesQuery } from "@/lib/games-query";
+import { DEFAULT_GAME_SORT, SORT_LABEL, joinPlatformValues, parsePlatformValues, parseGamesQuery, type GamesQuery } from "@/lib/games-query";
 import { PLATFORM_LABEL } from "@/lib/format";
 import { isPlatformFamily, isPlatformValue, PLATFORM_FAMILY_LABEL, PLATFORM_VALUE_ORDER } from "@/lib/platform";
+import { DEFAULT_GAME_VIEW, type GameView } from "@/lib/games/view";
 import { stagger } from "@/lib/motion";
 import { ROUTES } from "@/lib/routes";
 import { GAMES_PAGE_SIZE, getGameFacets, listGames, type GameListFilter } from "@/server/services/games";
@@ -34,14 +37,23 @@ function platformFilterLabel(v: string): string {
  * 여러 값이 실려 오므로(`platform=ps5,switch`) 토큰마다 걸러 낸 뒤 정해진 순서로 다시 잇는다 —
  * 같은 선택이 늘 같은 문자열이어야 목록 캐시 키가 쪼개지지 않는다.
  */
-function readFilter(sp: Search): GameListFilter {
+function readQuery(sp: Search): GamesQuery {
   const q = parseGamesQuery(sp);
   const picked = parsePlatformValues(q.platform).filter(isPlatformValue);
   return { ...q, platform: joinPlatformValues(picked, PLATFORM_VALUE_ORDER) };
 }
 
+/**
+ * 조회에 넘길 값만 남긴다. view 는 보는 모양이라 여기서 떨어져 나간다 —
+ * 남겨 두면 캐시 키와 Suspense 경계 키가 보기마다 갈라져 같은 목록을 두 벌 조회한다.
+ */
+function toListFilter({ view, ...filter }: GamesQuery): GameListFilter {
+  void view;
+  return filter;
+}
+
 export async function generateMetadata({ searchParams }: Props): Promise<Metadata> {
-  const f = readFilter(await searchParams);
+  const f = readQuery(await searchParams);
   const platforms = parsePlatformValues(f.platform).map(platformFilterLabel);
   const parts = [
     platforms.length > 0 ? platforms.join(", ") : null,
@@ -76,11 +88,11 @@ async function ResultCount({ filter }: { filter: GameListFilter }) {
   return <>{result.total.toLocaleString("ko-KR")}개</>;
 }
 
-async function FilterColumn({ filter }: { filter: GameListFilter }) {
+async function FilterColumn({ filter }: { filter: GamesQuery }) {
   return <GameFilters facets={await getGameFacets()} filter={filter} />;
 }
 
-async function Results({ filter }: { filter: GameListFilter }) {
+async function Results({ filter, view }: { filter: GameListFilter; view: GameView }) {
   const result = await listGames(filter);
 
   if (result.items.length === 0) {
@@ -100,19 +112,25 @@ async function Results({ filter }: { filter: GameListFilter }) {
         {SORT_LABEL[filter.sort ?? DEFAULT_GAME_SORT]} 게임 {result.total}개
       </h2>
       {/* 첫 페이지는 여기서 서버가 그린다. 두 번째 장부터는 같은 ul 안에 클라이언트가 이어 붙인다 */}
-      <GamesInfinite filter={filter} initialHasMore={result.page < result.totalPages}>
-        {result.items.map((g, i) => (
-          <li key={g.slug} className="enter-item" style={stagger(i)}>
-            <GameCard game={g} variant={filter.sort === "release" ? "release" : "discount"} />
-          </li>
-        ))}
+      <GamesInfinite filter={filter} view={view} initialHasMore={result.page < result.totalPages}>
+        {result.items.map((g, i) => {
+          // 카드와 줄은 같은 DTO 를 다르게 세울 뿐이다 — 고르는 자리는 여기 하나다(actions 도 같은 규칙)
+          const Item = view === "list" ? GameRow : GameCard;
+          return (
+            <li key={g.slug} className="enter-item" style={stagger(i)}>
+              <Item game={g} variant={filter.sort === "release" ? "release" : "discount"} />
+            </li>
+          );
+        })}
       </GamesInfinite>
     </>
   );
 }
 
 export default async function GamesPage({ searchParams }: Props) {
-  const filter = readFilter(await searchParams);
+  const query = readQuery(await searchParams);
+  const filter = toListFilter(query);
+  const view = query.view ?? DEFAULT_GAME_VIEW;
   // 필터가 바뀌면 경계를 새로 세운다 — 키가 같으면 React 는 이것을 갱신으로 보고
   // 새 값이 올 때까지 옛 목록을 그대로 둔다. 눌렀는데 아무 일도 안 일어나는 것처럼 보이는 자리다.
   const boundaryKey = JSON.stringify(filter);
@@ -123,14 +141,18 @@ export default async function GamesPage({ searchParams }: Props) {
       <PageHead
         title="게임 목록"
         // 거르지 않은 목록의 건수는 읽는 사람이 쓸 일이 없다 — 걸렀을 때만 "얼마나 남았나" 가 답이 된다
+        // 건수와 보기 전환이 한 덩어리로 오른쪽에 선다. 보기 전환은 걸린 조건과 상관없이 늘 있다
         action={
-          filtered ? (
-            <p className="text-[13px] text-dim" aria-live="polite">
-              <Suspense key={boundaryKey} fallback={<CountSkeleton />}>
-                <ResultCount filter={filter} />
-              </Suspense>
-            </p>
-          ) : undefined
+          <div className="flex items-center gap-3">
+            {filtered && (
+              <p className="text-[13px] text-dim" aria-live="polite">
+                <Suspense key={boundaryKey} fallback={<CountSkeleton />}>
+                  <ResultCount filter={filter} />
+                </Suspense>
+              </p>
+            )}
+            <GameViewToggle query={query} />
+          </div>
         }
       />
 
@@ -139,13 +161,13 @@ export default async function GamesPage({ searchParams }: Props) {
         {/* 필터 기둥에는 키를 주지 않는다 — 다시 세우면 고른 값이 뼈대로 한 번 사라졌다 돌아온다.
             선택지(facets)는 필터와 무관하게 같은 값이라 옛 기둥을 그대로 두는 편이 덜 튄다 */}
         <Suspense fallback={<FiltersSkeleton />}>
-          <FilterColumn filter={filter} />
+          <FilterColumn filter={query} />
         </Suspense>
 
         {/* min-w-0: 격자 칸의 기본 최소 크기는 auto 라 안쪽의 잘리지 않는 제목이 칸을 밀어낸다(상세 화면 주석) */}
         <div className="flex min-w-0 flex-col gap-5">
-          <Suspense key={boundaryKey} fallback={<GamesGridSkeleton cards={GAMES_PAGE_SIZE} />}>
-            <Results filter={filter} />
+          <Suspense key={boundaryKey} fallback={<GamesGridSkeleton cards={GAMES_PAGE_SIZE} view={view} />}>
+            <Results filter={filter} view={view} />
           </Suspense>
         </div>
       </div>

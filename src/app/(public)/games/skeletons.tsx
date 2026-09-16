@@ -2,7 +2,7 @@
 // 왜 loading.tsx 가 아니라 여기인가: 필터를 눌러 주소만 바뀌는 이동은 같은 세그먼트 안의 갱신이라
 // loading.tsx 가 다시 뜨지 않는다. 그래서 경계를 페이지 안(Suspense)에 두고, 그 자리만 뼈대로 받는다.
 // 높이는 실제 화면을 재서 맞춘 값이다 — 어긋나면 본문이 들어올 때 통째로 밀려 그게 깜빡임이 된다.
-import { GAMES_GRID_CLASS } from "@/lib/games/grid";
+import { gamesContainerClass, type GameView } from "@/lib/games/view";
 import { cardClass } from "@/components/ui/page";
 
 /** 건수는 <p> 안에 들어간다 — div 를 쓰면 HTML 이 <p> 를 끊어 하이드레이션이 깨진다 */
@@ -36,20 +36,33 @@ export function FiltersSkeleton() {
  * 12줄이면 1,000px 넘게 어긋나 본문이 올 때 화면이 통째로 밀렸다). 줄 높이는 game-card 의
  * 제목, 플랫폼 배지, 장르, 가격 네 줄을 잰 값이다.
  */
-export function GamesGridSkeleton({ cards }: { cards: number }) {
+export function GamesGridSkeleton({ cards, view = "card" }: { cards: number; view?: GameView }) {
   return (
-    <div className={`${GAMES_GRID_CLASS} skeleton-delay`} aria-busy="true" aria-label="목록을 불러오는 중">
-      {Array.from({ length: cards }).map((_, i) => (
-        <div key={i} className={cardClass("overflow-hidden")}>
-          <div className="skeleton aspect-[460/215]" />
-          <div className="flex flex-col gap-[7px] p-[15px]">
-            <div className="skeleton h-5 w-4/5 rounded" />
-            <div className="skeleton h-[22px] w-1/2 rounded-md" />
-            <div className="skeleton h-4 w-3/5 rounded" />
-            <div className="skeleton h-[26px] w-2/5 rounded" />
+    <div className={`${gamesContainerClass(view)} skeleton-delay`} aria-busy="true" aria-label="목록을 불러오는 중">
+      {Array.from({ length: cards }).map((_, i) =>
+        view === "list" ? (
+          // 줄 뼈대도 실물과 같은 뼈대로 세운다 — 커버 폭, 여백, 줄 수가 같아야 본문이 올 때 안 밀린다
+          <div key={i} className={cardClass("flex items-center gap-3 p-2.5 sm:gap-3.5 sm:p-3")}>
+            <div className="skeleton aspect-[460/215] w-[92px] shrink-0 rounded-[8px] sm:w-[132px]" />
+            <div className="flex min-w-0 flex-1 flex-col gap-[3px]">
+              <div className="skeleton h-5 w-3/5 rounded" />
+              <div className="skeleton h-4 w-2/5 rounded" />
+              <div className="skeleton h-[22px] w-1/3 rounded-md" />
+            </div>
+            <div className="skeleton h-6 w-20 shrink-0 rounded" />
           </div>
-        </div>
-      ))}
+        ) : (
+          <div key={i} className={cardClass("overflow-hidden")}>
+            <div className="skeleton aspect-[460/215]" />
+            <div className="flex flex-col gap-[7px] p-[15px]">
+              <div className="skeleton h-5 w-4/5 rounded" />
+              <div className="skeleton h-[22px] w-1/2 rounded-md" />
+              <div className="skeleton h-4 w-3/5 rounded" />
+              <div className="skeleton h-[26px] w-2/5 rounded" />
+            </div>
+          </div>
+        ),
+      )}
     </div>
   );
 }

@@ -7,6 +7,8 @@
 //
 // 첫 페이지는 여전히 page.tsx 가 서버에서 그린다 — 검색 로봇과 JS 가 꺼진 브라우저가 보는 것이 그 한 장이다.
 import { GameCard } from "@/components/game-card";
+import { GameRow } from "@/components/game-row";
+import { type GameView } from "@/lib/games/view";
 import { stagger } from "@/lib/motion";
 import { listGames, type GameListFilter } from "@/server/services/games";
 
@@ -16,14 +18,16 @@ export type MorePage = {
   hasMore: boolean;
 };
 
-export async function loadMoreGames(filter: GameListFilter, page: number): Promise<MorePage> {
+export async function loadMoreGames(filter: GameListFilter, page: number, view: GameView = "card"): Promise<MorePage> {
   const result = await listGames({ ...filter, page });
+  // 카드냐 줄이냐만 다르고 값도 순서도 같다 — 고르는 자리를 하나로 둬야 두 보기가 갈라지지 않는다
+  const Item = view === "list" ? GameRow : GameCard;
   return {
     // 첫 장(page.tsx)과 달리 `.enter-late` 를 쓴다 — 첫 등장이 끝난 셸에서는 `.enter-item` 이 조용해지고,
     // 방금 만들어 붙이는 이 카드들만 등장해야 한다(lib/motion 의 markPageEntered, globals.css)
     nodes: result.items.map((g, i) => (
       <li key={g.slug} className="enter-late" style={stagger(i)}>
-        <GameCard game={g} variant={filter.sort === "release" ? "release" : "discount"} />
+        <Item game={g} variant={filter.sort === "release" ? "release" : "discount"} />
       </li>
     )),
     hasMore: result.page < result.totalPages,

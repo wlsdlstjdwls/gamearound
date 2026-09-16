@@ -11,7 +11,7 @@ import { useCallback, useEffect, useRef, useState, useTransition } from "react";
 import { Button } from "@/components/ui/button";
 import { SpinnerIcon } from "@/components/ui/icons";
 import { loadMoreGames } from "@/app/(public)/games/actions";
-import { GAMES_GRID_CLASS } from "@/lib/games/grid";
+import { gamesContainerClass, type GameView } from "@/lib/games/view";
 import { markPageEntered } from "@/lib/motion";
 import { GAMES_LIST_MESSAGES } from "@/lib/games/messages";
 import type { GameListFilter } from "@/server/services/games";
@@ -24,10 +24,13 @@ const PREFETCH_MARGIN = "500px";
 
 export function GamesInfinite({
   filter,
+  view,
   initialHasMore,
   children,
 }: {
   filter: GameListFilter;
+  /** 보기 모양. 이어 붙이는 페이지도 첫 페이지와 같은 모양이어야 해서 서버 액션까지 그대로 넘긴다 */
+  view: GameView;
   initialHasMore: boolean;
   children: React.ReactNode;
 }) {
@@ -50,7 +53,7 @@ export function GamesInfinite({
     setFailed(false);
     startTransition(async () => {
       try {
-        const { nodes, hasMore: more } = await loadMoreGames(filter, nextPage);
+        const { nodes, hasMore: more } = await loadMoreGames(filter, nextPage, view);
         setPages((prev) => [...prev, nodes]);
         setNextPage((p) => p + 1);
         setHasMore(more);
@@ -61,7 +64,7 @@ export function GamesInfinite({
         busy.current = false;
       }
     });
-  }, [filter, nextPage, hasMore]);
+  }, [filter, nextPage, hasMore, view]);
 
   // 관찰자에게 건네는 "늘 최신인" 콜백. 관찰자가 loadMore 를 직접 붙잡으면 페이지를 한 장 붙일 때마다
   // 콜백 정체가 바뀌어 관찰자를 다시 만들게 되는데, 갓 만든 관찰자는 이미 걸쳐 있는 표적을
@@ -86,7 +89,7 @@ export function GamesInfinite({
 
   return (
     <>
-      <ul className={GAMES_GRID_CLASS}>
+      <ul className={gamesContainerClass(view)}>
         {children}
         {pages}
       </ul>
