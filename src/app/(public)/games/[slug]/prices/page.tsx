@@ -12,11 +12,12 @@ import { formatDate, formatDiscount, PLATFORM_LABEL } from "@/lib/format";
 import { bestDiscountOf, isAtBestDiscount } from "@/lib/price-stats";
 import { displayTitle, getGameBySlugCached } from "@/server/services/games";
 import { getPriceHistory, type PriceSeries } from "@/server/services/prices";
+import { decodeSlugParam } from "@/lib/slug";
 
 type Props = { params: Promise<{ slug: string }> };
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
-  const { slug } = await params;
+  const slug = decodeSlugParam((await params).slug);
   const game = await getGameBySlugCached(slug);
   if (!game) return { title: "게임을 찾을 수 없음" };
   return { title: `${displayTitle(game)} 가격 변동`, description: `${displayTitle(game)}의 최근 1년 플랫폼별 가격 변동 그래프` };
@@ -34,7 +35,7 @@ const bestDeal = (series: PriceSeries[]): PriceSeries | null => cheapestOf(serie
 const COLS = "grid grid-cols-[repeat(auto-fit,minmax(110px,1fr))] gap-x-3 px-4 py-[13px]";
 
 export default async function PricesPage({ params }: Props) {
-  const { slug } = await params;
+  const slug = decodeSlugParam((await params).slug);
   // 둘 다 slug 만 있으면 된다 — 줄 세울 이유가 없다(왕복 한 번이 200ms 대)
   const [game, series] = await Promise.all([getGameBySlugCached(slug), getPriceHistory(slug, { days: 365 })]);
   if (!game) notFound();

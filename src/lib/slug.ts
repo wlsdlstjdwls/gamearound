@@ -251,3 +251,23 @@ export function trigramSimilarity(a: string, b: string): number {
   const union = ta.size + tb.size - inter;
   return union === 0 ? 0 : inter / union;
 }
+
+/**
+ * 라우트 세그먼트(`[slug]`)로 들어온 값을 원래 글자로 되돌린다.
+ *
+ * Next 16.3.4 의 page 는 params 를 주소에 적힌 그대로, 즉 퍼센트 인코딩된 채로 준다
+ * ("lego-%EC%9D%B8..."). 같은 요청의 generateMetadata 와 route handler 는 풀어서 주는데
+ * page 만 그렇지 않다(2026-09-16 실측). 그래서 화면 제목은 제대로 뜨는데 본문만 404 로 떨어졌다.
+ *
+ * 우리 slug 는 37%(56,414 중 20,965)가 한글이라 이걸 안 풀면 그만큼이 통째로 없는 게임이 된다.
+ * slugify 는 `%` 를 남기지 않으므로(SLUG_DROP), 이미 풀린 값에 이 함수를 또 써도 값이 달라지지 않는다.
+ */
+export function decodeSlugParam(raw: string): string {
+  if (!raw.includes("%")) return raw;
+  try {
+    return decodeURIComponent(raw);
+  } catch {
+    // 잘린 인코딩(%E 처럼)이면 decodeURIComponent 가 던진다 — 그대로 넘겨 조회에서 없는 slug 로 끝낸다
+    return raw;
+  }
+}

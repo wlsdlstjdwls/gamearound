@@ -12,6 +12,7 @@ import { loadOgImage } from "@/lib/og/image";
 import { OG_CONTENT_TYPE, OG_FONT_FAMILY, OG_PADDING, OG_SIZE } from "@/lib/og/constants";
 import { SITE } from "@/lib/site";
 import { bestScore, cheapestPlatform, displayTitle, getGameBySlugCached } from "@/server/services/games";
+import { decodeSlugParam } from "@/lib/slug";
 
 export const size = OG_SIZE;
 export const contentType = OG_CONTENT_TYPE;
@@ -25,7 +26,7 @@ export const alt = `${SITE.name} 최저가`;
 type Props = { params: Promise<{ slug: string }> };
 
 export default async function GameOpengraphImage({ params }: Props) {
-  const { slug } = await params;
+  const slug = decodeSlugParam((await params).slug);
   const game = await getGameBySlugCached(slug);
   if (!game) notFound();
 

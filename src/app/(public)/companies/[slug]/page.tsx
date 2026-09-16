@@ -13,6 +13,7 @@ import { stagger } from "@/lib/motion";
 import { ROUTES, companyPath } from "@/lib/routes";
 import { firstParam } from "@/lib/games-query";
 import { getCompanyBySlug, listCompanyGames, type CompanyRoleFilter } from "@/server/services/companies";
+import { decodeSlugParam } from "@/lib/slug";
 
 // Next 가 정적으로 읽는 값이라 리터럴이어야 한다 — lib/cache 의 LIST_REVALIDATE_SECONDS 와 같게 유지
 export const revalidate = 3600;
@@ -41,7 +42,7 @@ function href(slug: string, role: CompanyRoleFilter, page: number): string {
 }
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
-  const { slug } = await params;
+  const slug = decodeSlugParam((await params).slug);
   const company = await getCompanyBySlug(slug);
   if (!company) return { title: "회사를 찾을 수 없어요" };
   const where = company.countryNameKo ? ` (${company.countryNameKo})` : "";
@@ -59,7 +60,7 @@ function Fact({ label, children }: { label: string; children: React.ReactNode })
 }
 
 export default async function CompanyPage({ params, searchParams }: Props) {
-  const { slug } = await params;
+  const slug = decodeSlugParam((await params).slug);
   const sp = await searchParams;
   const roleRaw = firstParam(sp.role);
   const role: CompanyRoleFilter = isRole(roleRaw) ? roleRaw : "all";

@@ -39,6 +39,7 @@ import {
 import { getCurrentUser } from "@/server/services/users";
 import { isInWishlist } from "@/server/services/wishlist";
 import { cardClass } from "@/components/ui/page";
+import { decodeSlugParam } from "@/lib/slug";
 
 /** 검색결과, SNS 카드에 들어가는 설명 길이 상한 */
 const META_DESCRIPTION_MAX = 150;
@@ -55,7 +56,7 @@ const SHEET_PATCH_LIMIT = 50;
 type Props = { params: Promise<{ slug: string }> };
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
-  const { slug } = await params;
+  const slug = decodeSlugParam((await params).slug);
   const game = await getGameBySlugCached(slug);
   if (!game) return { title: "게임을 찾을 수 없음" };
   const title = displayTitle(game);
@@ -169,7 +170,7 @@ function WishlistSlotFallback() {
 }
 
 export default async function GameDetailPage({ params }: Props) {
-  const { slug } = await params;
+  const slug = decodeSlugParam((await params).slug);
 
   /*
    * 한 번에 던진다. 전에는 다섯 개를 줄 세워 await 했다 —
