@@ -5,7 +5,7 @@ import { getDb } from "@/server/db/client";
 import { games } from "@/server/db/schema";
 import type { GameSummary } from "./dto";
 import { attachBestPrice, type GameRow } from "./mappers";
-import { isMissingTrgm, titleMatch, TRGM_THRESHOLD } from "./title-search";
+import { isMissingTrgm, titleMatch, titleMatches } from "./title-search";
 import { mainGamesOnly } from "./filters";
 import { DTO_CACHE_VERSION, LIST_REVALIDATE_SECONDS } from "@/lib/cache";
 
@@ -21,7 +21,7 @@ async function searchGamesRaw(q: string, limit: number): Promise<GameSummary[]> 
     rows = await db
       .select()
       .from(games)
-      .where(and(mainGamesOnly(), sql`${hit} or ${score} >= ${TRGM_THRESHOLD}`))
+      .where(and(mainGamesOnly(), titleMatches({ hit, score })))
       .orderBy(sql`${hit} desc`, sql`${score} desc`, games.titleEn)
       .limit(limit);
   } catch (err) {

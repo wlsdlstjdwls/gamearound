@@ -1,5 +1,5 @@
 // 제목 검색 조건 — 검색 화면과 목록 필터가 같은 규칙을 써야 결과가 어긋나지 않는다.
-import { sql } from "drizzle-orm";
+import { sql, type SQL } from "drizzle-orm";
 import { gameAliases, games } from "@/server/db/schema";
 import { normalizeForSearch } from "@/lib/slug";
 
@@ -38,6 +38,19 @@ export function titleMatch(term: string) {
     // greatest 는 null 을 무시한다 — 별칭이 없는 게임(대다수)은 아래 subquery 가 null 이라 그냥 빠진다
     score: sql<number>`greatest(similarity(${games.titleEnNorm}, ${norm}), similarity(${games.titleKoNorm}, ${norm}), ${aliasScore})`,
   };
+}
+
+/**
+ * "부분일치했거나 유사도가 임계값을 넘었다" 한 덩어리. **반드시 괄호로 감싸서** 돌려준다.
+ *
+ * 왜 함수로 두나: 이 조립을 호출부 두 곳(목록 필터, 검색)이 각자 하다가 검색 쪽에서 괄호를 빠뜨렸다
+ * (2026-09-16). SQL 은 and 가 or 보다 세게 붙어서 `(본편 and 부분일치) or 유사도` 가 되고,
+ * 유사도만 넘긴 DLC, 에디션, 번들이 본편 조건을 통째로 건너뛰었다 —
+ * "호그와트 레거시" 검색이 9건이었고 그중 7건이 변형이었다.
+ * 조각을 주고 조립을 맡기면 같은 실수가 다음 호출부에서 또 난다. 조립까지 여기서 끝낸다.
+ */
+export function titleMatches(m: Pick<ReturnType<typeof titleMatch>, "hit" | "score">): SQL<boolean> {
+  return sql<boolean>`(${m.hit} or ${m.score} >= ${TRGM_THRESHOLD})`;
 }
 
 /** pg_trgm 확장이 없는 환경(undefined_function 42883) 판별 */

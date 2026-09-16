@@ -12,7 +12,7 @@ import { expandPlatformValues } from "@/lib/platform";
 import type { GameSummary } from "./dto";
 import { attachBestPrice } from "./mappers";
 import { allOf, byCompanySlug, inAnySubscription, mainGamesOnly } from "./filters";
-import { titleMatch, TRGM_THRESHOLD } from "./title-search";
+import { titleMatch, titleMatches } from "./title-search";
 import { DTO_CACHE_VERSION, LIST_REVALIDATE_SECONDS } from "@/lib/cache";
 
 export const GAMES_PAGE_SIZE = 36;
@@ -98,7 +98,7 @@ async function listGamesRaw(filter: GameListFilter): Promise<GameListResult> {
   const term = filter.q ? normalizeForSearch(filter.q) : "";
   if (term) {
     const { hit, score } = titleMatch(filter.q!);
-    conds.push(sql`(${hit} or ${score} >= ${TRGM_THRESHOLD})`);
+    conds.push(titleMatches({ hit, score }));
   }
   const where = allOf(...conds);
 

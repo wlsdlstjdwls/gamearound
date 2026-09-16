@@ -1,9 +1,10 @@
 // 검색 조건이 실제로 어떤 SQL 과 바인딩을 만드는지 고정한다.
 // DB 없이 검증하려고 드리즐 방언으로 렌더만 한다 — 이 파일은 네트워크, DB 를 건드리지 않는다.
 import { describe, expect, it } from "vitest";
-import type { SQL } from "drizzle-orm";
+import { and, type SQL } from "drizzle-orm";
 import { PgDialect } from "drizzle-orm/pg-core";
-import { titleMatch } from "./title-search";
+import { titleMatch, titleMatches } from "./title-search";
+import { mainGamesOnly } from "./filters";
 
 const dialect = new PgDialect();
 const render = (q: SQL<unknown>) => dialect.sqlToQuery(q);
@@ -46,5 +47,26 @@ describe("titleMatch", () => {
   it("빈 질의는 빈 norm 을 돌려준다 — 호출부가 이 값으로 검색을 건너뛴다", () => {
     expect(titleMatch("   ").norm).toBe("");
     expect(titleMatch("!!!").norm).toBe("");
+  });
+});
+
+describe("titleMatches", () => {
+  it("or 를 괄호로 감싼다 — 다른 조건과 and 로 묶였을 때 우선순위가 뒤집히면 안 된다", () => {
+    const { sql: text } = render(titleMatches(titleMatch("호그와트 레거시")));
+    // 2026-09-16 회귀: 괄호가 없으면 `(본편 and 부분일치) or 유사도` 가 되어
+    // 유사도만 넘긴 DLC, 에디션이 본편 조건을 건너뛰고 검색 결과에 섞였다.
+    expect(text.trim().startsWith("(")).toBe(true);
+    expect(text.trim().endsWith(")")).toBe(true);
+    expect(text).toContain(" or ");
+  });
+
+  it("본편 조건과 and 로 묶어도 or 가 밖으로 새지 않는다", () => {
+    const cond = and(mainGamesOnly(), titleMatches(titleMatch("호그와트")))!;
+    const { sql: text } = render(cond);
+    const orAt = text.indexOf(" or ");
+    const openAt = text.indexOf("(", text.indexOf("content_type"));
+    // or 는 반드시 content_type 조건 뒤에 열린 괄호 **안쪽**에 있다
+    expect(orAt).toBeGreaterThan(openAt);
+    expect(text).toContain('"games"."content_type"');
   });
 });
