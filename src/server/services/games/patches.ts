@@ -6,9 +6,10 @@
 // 본문은 담지 않는다 — 이유는 schema 의 patch_notes 주석(§10 저작권).
 // 한글 제목, 한글 요약은 본문이 아니라 우리가 쓴 글이라 함께 내려보낸다.
 import { unstable_cache } from "next/cache";
-import { desc, eq } from "drizzle-orm";
+import { and, desc, eq } from "drizzle-orm";
 import { getDb } from "@/server/db/client";
 import { gamePlatforms, games, patchNotes, type Platform, type Region } from "@/server/db/schema";
+import { visiblePlatformsOnly } from "@/server/db/visibility";
 import { byRegionThenPlatform } from "./mappers";
 import type { PatchNoteDto, PlatformPatchesDto } from "./dto";
 import { DTO_CACHE_VERSION } from "@/lib/cache";
@@ -88,7 +89,7 @@ export async function getGamePatches(slug: string): Promise<PlatformPatchesDto[]
     .from(patchNotes)
     .innerJoin(gamePlatforms, eq(gamePlatforms.id, patchNotes.gamePlatformId))
     .innerJoin(games, eq(games.id, gamePlatforms.gameId))
-    .where(eq(games.slug, slug))
+    .where(and(eq(games.slug, slug), visiblePlatformsOnly()))
     .orderBy(desc(patchNotes.publishedAt));
   return groupPatchesByPlatform(rows);
 }

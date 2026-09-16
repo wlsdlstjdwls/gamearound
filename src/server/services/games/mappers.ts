@@ -1,7 +1,8 @@
 // DB 행 → DTO 변환. 조회 로직(어떤 행을 가져올지)과 표현 로직(어떤 모양으로 줄지)을 갈라 둔다.
-import { eq, inArray } from "drizzle-orm";
+import { and, eq, inArray } from "drizzle-orm";
 import { getDb } from "@/server/db/client";
 import { gameGenres, gamePlatforms, games, genres, HOME_REGION, type Platform, type Region } from "@/server/db/schema";
+import { visiblePlatformsOnly } from "@/server/db/visibility";
 import { cheapestOf, DISPLAY_CURRENCY } from "@/lib/currency";
 import { PLATFORM_ORDER } from "@/lib/platform";
 import type { GameDetail, GameSummary, PlatformDto, PublicGameDto, UserScoreDto } from "./dto";
@@ -17,9 +18,18 @@ export function displayTitle(g: { titleKo: string | null; titleEn: string }): st
   return g.titleKo ?? g.titleEn;
 }
 
+/**
+ * 화면 순서대로. 순서에 없는 값(숨긴 플랫폼이 어쩌다 섞여 들어온 경우)은 **뒤로** 보낸다 —
+ * indexOf 를 그대로 쓰면 -1 이라 맨 앞에 서서, 안 보여야 할 것이 제일 먼저 눈에 띈다.
+ */
 export function byPlatformOrder(a: { platform: Platform }, b: { platform: Platform }): number {
-  return PLATFORM_ORDER.indexOf(a.platform) - PLATFORM_ORDER.indexOf(b.platform);
+  return rank(a.platform) - rank(b.platform);
 }
+
+const rank = (p: Platform): number => {
+  const i = PLATFORM_ORDER.indexOf(p);
+  return i === -1 ? PLATFORM_ORDER.length : i;
+};
 
 /** 한국 스토어 행이 늘 먼저다 — 기준 통화의 값이 대표가 돼야 한다 */
 export function byRegionThenPlatform(a: { platform: Platform; region: Region }, b: { platform: Platform; region: Region }): number {
@@ -120,7 +130,7 @@ export async function fillPlatforms(items: GameSummary[]): Promise<GameSummary[]
     .select({ slug: games.slug, platform: gamePlatforms.platform })
     .from(gamePlatforms)
     .innerJoin(games, eq(games.id, gamePlatforms.gameId))
-    .where(inArray(games.slug, items.map((i) => i.slug)));
+    .where(and(inArray(games.slug, items.map((i) => i.slug)), visiblePlatformsOnly()));
   const bySlug = new Map<string, Platform[]>();
   for (const r of rows) {
     const list = bySlug.get(r.slug) ?? [];
@@ -185,7 +195,7 @@ export async function attachBestPrice(rows: GameRow[]): Promise<GameSummary[]> {
   const ids = rows.map((g) => g.id);
   // 가격과 장르는 서로를 기다릴 이유가 없다. 직렬로 두면 왕복 한 번(200ms 대)이 그대로 목록 지연이 된다
   const [gps, genresBySlug] = await Promise.all([
-    db.select().from(gamePlatforms).where(inArray(gamePlatforms.gameId, ids)),
+    db.select().from(gamePlatforms).where(and(inArray(gamePlatforms.gameId, ids), visiblePlatformsOnly())),
     fetchGenresBySlug(rows.map((g) => g.slug)),
   ]);
   const byGame = new Map<string, PlatformRow[]>();

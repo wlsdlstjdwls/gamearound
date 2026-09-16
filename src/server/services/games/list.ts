@@ -5,6 +5,7 @@ import { and, asc, eq, inArray, sql } from "drizzle-orm";
 import { DISPLAY_CURRENCY } from "@/lib/currency";
 import { getDb } from "@/server/db/client";
 import { gameGenres, gamePlatforms, games, genres, HOME_REGION, type Platform } from "@/server/db/schema";
+import { visiblePlatformsOnly } from "@/server/db/visibility";
 import { normalizeForSearch } from "@/lib/slug";
 import { DEFAULT_GAME_SORT, parsePlatformValues, type GamesQuery } from "@/lib/games-query";
 import { expandPlatformValues } from "@/lib/platform";
@@ -52,10 +53,13 @@ function platformAgg(platforms: Platform[]) {
       /**
        * 기준 통화로 살 수 있는 게임인가. 할인율순의 첫 정렬 키다.
        *
-       * 왜 필요한가(2026-09-15 실측): 4,910개 중 1,490개는 원화 가격이 아예 없다. 거의 GOG 인데
-       * (GOG 는 한국에 원화로 팔지 않는다 — adapters/gog 주석) 그쪽 할인이 -95% 대라
-       * 할인율만으로 세우면 첫 화면이 통째로 달러가 된다. 환산은 하지 않으므로(lib/currency)
-       * 남은 손잡이는 순서뿐이다 — 원화로 살 수 있는 것을 먼저 세우고, 나머지는 뒤에 그대로 둔다.
+       * 왜 필요한가: 원화 가격이 없는 게임이 할인율만으로 첫 화면을 차지하는 것을 막는다.
+       * 환산은 하지 않으므로(lib/currency) 남은 손잡이는 순서뿐이다 — 원화로 살 수 있는 것을
+       * 먼저 세우고, 나머지는 뒤에 그대로 둔다.
+       *
+       * 이 키를 넣은 계기는 GOG 였다(2026-09-15 실측: 4,910개 중 1,490개가 원화 없음, 거의 GOG).
+       * 2026-09-16 에 GOG 를 숨기면서 그 수가 **26개**로 줄었다(일본 스위치 행). 그래도 키는 남긴다 —
+       * 26개가 첫 화면을 먹는 것도 같은 문제고, 지역이 늘면 그 수는 다시 는다.
        */
       hasBaseCurrency: sql<boolean>`bool_or(${gamePlatforms.currency} = ${DISPLAY_CURRENCY} and ${gamePlatforms.currentPrice} is not null)`.as("has_base_currency"),
       // 통화가 섞인 min() 은 뜻이 없다 — 정렬 기준은 기준 통화 가격만 본다(외화 전용 게임은 가격 정렬에서 nulls last)
@@ -65,7 +69,7 @@ function platformAgg(platforms: Platform[]) {
     .from(gamePlatforms)
     // 목록의 최저가, 할인, 발매일은 기준 지역(한국) 행만 본다. 다른 나라 가격을 섞으면
     // 카드의 할인 배지가 한국에서 살 수 없는 할인을 가리킨다 — 상세 화면에서만 참고로 보여 준다
-    .where(and(eq(gamePlatforms.region, HOME_REGION), platforms.length > 0 ? inArray(gamePlatforms.platform, platforms) : undefined))
+    .where(and(eq(gamePlatforms.region, HOME_REGION), visiblePlatformsOnly(), platforms.length > 0 ? inArray(gamePlatforms.platform, platforms) : undefined))
     .groupBy(gamePlatforms.gameId)
     .as("agg");
 }
@@ -194,7 +198,7 @@ async function getGameFacetsRaw(): Promise<GameFacets> {
       .innerJoin(games, eq(games.id, gamePlatforms.gameId))
       // 필터 선택지도 기준 지역만 센다 — 일본 스토어에만 있는 게임이 "스위치 1,234개" 를 부풀리면
       // 그 필터를 눌렀을 때 목록(위 집계도 기준 지역만 본다)과 수가 안 맞는다
-      .where(and(mainGamesOnly(), eq(gamePlatforms.region, HOME_REGION)))
+      .where(and(mainGamesOnly(), eq(gamePlatforms.region, HOME_REGION), visiblePlatformsOnly()))
       .groupBy(gamePlatforms.platform),
     db
       .select({ name: genres.name, count: sql<number>`count(*)::int` })

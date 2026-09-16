@@ -3,6 +3,7 @@ import { unstable_cache } from "next/cache";
 import { and, desc, eq, gt, isNotNull, sql } from "drizzle-orm";
 import { getDb } from "@/server/db/client";
 import { gamePlatforms, games, HOME_REGION, news } from "@/server/db/schema";
+import { visiblePlatformsOnly } from "@/server/db/visibility";
 import type { HomeData } from "./dto";
 import { fillGenres, fillPlatforms, groupSummaries } from "./mappers";
 import { mainGamesOnly } from "./filters";
@@ -35,7 +36,7 @@ async function getHomeDataRaw(): Promise<HomeData> {
     .select({ game: games, gp: gamePlatforms })
     .from(gamePlatforms)
     .innerJoin(games, eq(gamePlatforms.gameId, games.id))
-    .where(and(mainGamesOnly(), homeRegion, gt(gamePlatforms.discountPct, 0), gt(gamePlatforms.currentPrice, 0)))
+    .where(and(mainGamesOnly(), homeRegion, visiblePlatformsOnly(), gt(gamePlatforms.discountPct, 0), gt(gamePlatforms.currentPrice, 0)))
     .orderBy(baseCurrencyFirst, desc(gamePlatforms.discountPct), desc(gamePlatforms.lastSyncedAt))
     .limit(HOME_LIMIT * 4);
 
@@ -44,7 +45,7 @@ async function getHomeDataRaw(): Promise<HomeData> {
     .select({ game: games, gp: gamePlatforms })
     .from(gamePlatforms)
     .innerJoin(games, eq(gamePlatforms.gameId, games.id))
-    .where(and(mainGamesOnly(), homeRegion, isNotNull(gamePlatforms.releaseDate), sql`${gamePlatforms.releaseDate} <= current_date`))
+    .where(and(mainGamesOnly(), homeRegion, visiblePlatformsOnly(), isNotNull(gamePlatforms.releaseDate), sql`${gamePlatforms.releaseDate} <= current_date`))
     .orderBy(desc(gamePlatforms.releaseDate), baseCurrencyFirst)
     .limit(HOME_LIMIT * 4);
 

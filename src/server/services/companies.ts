@@ -4,6 +4,7 @@ import { unstable_cache } from "next/cache";
 import { and, asc, eq, gt, isNotNull, sql } from "drizzle-orm";
 import { getDb } from "@/server/db/client";
 import { companies, gameCompanies, gamePlatforms, games } from "@/server/db/schema";
+import { visiblePlatformsOnly } from "@/server/db/visibility";
 import { DTO_CACHE_VERSION, LIST_REVALIDATE_SECONDS } from "@/lib/cache";
 import type { CompanyDetail, CompanySummary, GameSummary } from "./games/dto";
 import { attachBestPrice } from "./games/mappers";
@@ -31,7 +32,7 @@ async function getCompanyBySlugRaw(slug: string): Promise<CompanyDetail | null> 
     })
     .from(gameCompanies)
     .innerJoin(games, and(eq(games.id, gameCompanies.gameId), mainGamesOnly()))
-    .leftJoin(gamePlatforms, eq(gamePlatforms.gameId, games.id))
+    .leftJoin(gamePlatforms, and(eq(gamePlatforms.gameId, games.id), visiblePlatformsOnly()))
     .where(eq(gameCompanies.companyId, company.id));
 
   return {

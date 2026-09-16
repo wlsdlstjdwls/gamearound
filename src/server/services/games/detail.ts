@@ -3,6 +3,7 @@ import { unstable_cache } from "next/cache";
 import { and, desc, eq, inArray, isNull } from "drizzle-orm";
 import { getDb } from "@/server/db/client";
 import { gameSubscriptions, games, news, subscriptions as subscriptionsTable } from "@/server/db/schema";
+import { keepVisiblePlatforms } from "@/server/db/visibility";
 import type { GameDetail, SubscriptionDto } from "./dto";
 import { byRegionThenPlatform, iso, toPlatformDto } from "./mappers";
 import { DTO_CACHE_VERSION } from "@/lib/cache";
@@ -49,7 +50,7 @@ function toChildDtos(rows: { slug: string; titleKo: string | null; titleEn: stri
     .map((d) => ({
       slug: d.slug,
       title: d.titleKo ?? d.titleEn,
-      platforms: [...d.platforms].sort(byRegionThenPlatform).map(toPlatformDto),
+      platforms: keepVisiblePlatforms([...d.platforms]).sort(byRegionThenPlatform).map(toPlatformDto),
     }))
     .sort((a, b) => a.title.localeCompare(b.title, "ko"));
 }
@@ -72,8 +73,10 @@ export async function getGameBySlug(slug: string): Promise<GameDetail | null> {
   });
   if (!row) return null;
 
-  const subsByPlatform = await activeSubscriptionsByPlatform(row.platforms.map((p) => p.id));
-  const platforms = [...row.platforms]
+  // 관계형 조회(with)는 조건을 걸기 번거로워 읽어 온 뒤 거른다 — 상세는 게임 하나라 행이 몇 개뿐이다
+  const visible = keepVisiblePlatforms(row.platforms);
+  const subsByPlatform = await activeSubscriptionsByPlatform(visible.map((p) => p.id));
+  const platforms = [...visible]
     .sort(byRegionThenPlatform)
     .map((p) => ({ ...toPlatformDto(p), subscriptions: subsByPlatform.get(p.id) ?? [] }));
   const subscriptions = flattenSubscriptions(subsByPlatform);

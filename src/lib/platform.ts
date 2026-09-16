@@ -23,12 +23,36 @@ export const PLATFORM_FAMILY_CHILD_LABEL: Record<PlatformFamily, string> = {
 };
 
 /**
- * 갈래별 플랫폼. 이 배열의 순서가 곧 화면 순서다(아래 PLATFORM_ORDER).
+ * 갈래별 플랫폼 전체. 이 배열의 순서가 곧 화면 순서다(아래 PLATFORM_ORDER).
  * 새 스토어를 붙이면 여기에도 넣어야 필터, 배지에 나온다 — 빠뜨리면 정렬에서 -1 로 밀려 앞에 선다.
+ *
+ * 여기는 "어느 갈래에 속하는가" 라는 사실만 적는다. 화면에 내보낼지는 HIDDEN_PLATFORMS 가 정한다 —
+ * 숨긴 스토어를 이 표에서 빼 버리면 다시 켤 때 어느 갈래였는지가 사라진다.
  */
-export const FAMILY_PLATFORMS: Record<PlatformFamily, Platform[]> = {
+const ALL_FAMILY_PLATFORMS: Record<PlatformFamily, Platform[]> = {
   pc: ["steam", "epic", "gog"],
   console: ["ps5", "ps4", "xbox", "switch", "switch2"],
+};
+
+/**
+ * 화면에서 숨기는 플랫폼. **데이터는 지우지 않는다** — 내보내기만 멈춘다.
+ *
+ * gog(2026-09-16): 우리가 가진 gog 행 4,449개가 **한 건도 빠짐없이 USD** 다. 원화 판매가가 없다.
+ * §5 의 환산 금지 때문에 `sameCurrency()` 가 원화 행을 남기고 USD 행을 버리므로, 스팀에도 있는
+ * 1,063건에서 gog 는 이미 가격 비교와 차트에서 빠져 있었다. 원화 가격 서비스에서 값을 쓸 수 없는
+ * 스토어를 목록과 배지에만 남겨 두면 "있는데 못 쓰는 칸" 이 된다.
+ * 수집도 함께 멈춘다 — `adapters/index.ts` 의 `getDisabledReason("gog")`.
+ *
+ * 되살리려면 이 배열에서 빼고 그 사유를 같이 지운다. 화면 질의는 `server/db/visibility` 하나만 탄다.
+ */
+export const HIDDEN_PLATFORMS: Platform[] = ["gog"];
+
+const isHidden = (p: Platform): boolean => HIDDEN_PLATFORMS.includes(p);
+
+/** 화면이 쓰는 갈래별 플랫폼 — 숨긴 것을 뺀 것. 필터 칩과 주소 값 검증이 전부 이걸 본다 */
+export const FAMILY_PLATFORMS: Record<PlatformFamily, Platform[]> = {
+  pc: ALL_FAMILY_PLATFORMS.pc.filter((p) => !isHidden(p)),
+  console: ALL_FAMILY_PLATFORMS.console.filter((p) => !isHidden(p)),
 };
 
 /**
@@ -36,6 +60,13 @@ export const FAMILY_PLATFORMS: Record<PlatformFamily, Platform[]> = {
  * 화면마다 다른 순서를 쓰면 같은 게임인데도 매번 다시 훑어야 한다.
  */
 export const PLATFORM_ORDER: Platform[] = PLATFORM_FAMILIES.flatMap((f) => FAMILY_PLATFORMS[f]);
+
+/**
+ * 숨긴 것까지 포함한 전체 순서. 화면은 PLATFORM_ORDER 를 쓰고 이건 두 자리에만 쓴다 —
+ * (1) enum 의 모든 값이 갈래 하나에 들어갔는지 보는 불변식 검사,
+ * (2) 정렬에서 "아는 플랫폼이지만 지금은 숨긴 것" 을 뒤로 보내는 자리(mappers 의 byPlatformOrder).
+ */
+export const ALL_PLATFORM_ORDER: Platform[] = PLATFORM_FAMILIES.flatMap((f) => ALL_FAMILY_PLATFORMS[f]);
 
 const FAMILY_OF = new Map<Platform, PlatformFamily>(
   PLATFORM_FAMILIES.flatMap((f) => FAMILY_PLATFORMS[f].map((p) => [p, f] as const)),

@@ -1,9 +1,11 @@
 import { describe, expect, it } from "vitest";
 import { platformEnum } from "@/server/db/schema";
 import {
+  ALL_PLATFORM_ORDER,
   expandPlatformValues,
   familyOf,
   FAMILY_PLATFORMS,
+  HIDDEN_PLATFORMS,
   isPlatformFamily,
   isPlatformValue,
   PLATFORM_ORDER,
@@ -14,12 +16,22 @@ describe("플랫폼 갈래", () => {
   // 새 스토어를 enum 에만 넣고 갈래에 안 넣으면 필터에서 사라지고 배지 정렬도 앞으로 튄다 —
   // 그 실수를 여기서 잡는다
   it("enum 의 모든 플랫폼이 갈래 하나에 정확히 한 번 들어간다", () => {
-    expect([...PLATFORM_ORDER].sort()).toEqual([...platformEnum.enumValues].sort());
-    expect(new Set(PLATFORM_ORDER).size).toBe(PLATFORM_ORDER.length);
+    expect([...ALL_PLATFORM_ORDER].sort()).toEqual([...platformEnum.enumValues].sort());
+    expect(new Set(ALL_PLATFORM_ORDER).size).toBe(ALL_PLATFORM_ORDER.length);
   });
 
-  it("GOG, Epic, Steam 은 PC 다", () => {
-    expect(familyOf("gog")).toBe("pc");
+  it("숨긴 플랫폼은 화면 순서와 필터 값에서 빠진다 — 갈래 표에는 남아 있다", () => {
+    for (const hidden of HIDDEN_PLATFORMS) {
+      expect(ALL_PLATFORM_ORDER).toContain(hidden);
+      expect(PLATFORM_ORDER).not.toContain(hidden);
+      // 주소에 ?platform=gog 가 실려 와도 아무 일도 없어야 한다
+      expect(isPlatformValue(hidden)).toBe(false);
+      expect(expandPlatformValues([hidden])).toEqual([]);
+      expect(familyOf(hidden)).toBeUndefined();
+    }
+  });
+
+  it("Epic, Steam 은 PC 다", () => {
     expect(familyOf("epic")).toBe("pc");
     expect(familyOf("steam")).toBe("pc");
   });

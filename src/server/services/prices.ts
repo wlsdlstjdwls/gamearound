@@ -4,6 +4,7 @@ import { and, eq, gte, inArray, lt, sql } from "drizzle-orm";
 import { getDb } from "@/server/db/client";
 import { gamePlatforms, games, news, priceSnapshots, syncLogs, type Currency, type Platform } from "@/server/db/schema";
 import { PLATFORM_ORDER } from "@/lib/platform";
+import { visiblePlatformsOnly } from "@/server/db/visibility";
 import { DTO_CACHE_VERSION } from "@/lib/cache";
 
 export type PricePoint = { t: string; price: number; discountPct: number; discountName: string | null };
@@ -41,7 +42,7 @@ async function getPriceHistoryRaw(slug: string, days: number): Promise<PriceSeri
       storeUrl: gamePlatforms.storeUrl,
     })
     .from(gamePlatforms)
-    .where(eq(gamePlatforms.gameId, game.id));
+    .where(and(eq(gamePlatforms.gameId, game.id), visiblePlatformsOnly()));
   if (gps.length === 0) return [];
 
   const since = new Date(Date.now() - days * 24 * 60 * 60 * 1000);
