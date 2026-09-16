@@ -76,7 +76,8 @@ export default async function WishlistPage({ searchParams }: Props) {
           action={{ href: ROUTES.game, label: "할인 목록 보기" }}
         />
       ) : (
-        <ul className="grid grid-cols-[repeat(auto-fit,minmax(330px,1fr))] gap-4">
+        // min(): 화면이 330px 보다 좁아도 칸이 줄어야 한다. 안 씌우면 360px 기기에서 카드가 화면 밖으로 나간다
+        <ul className="grid grid-cols-[repeat(auto-fit,minmax(min(330px,100%),1fr))] gap-4">
           {sorted.map(({ game }, i) => {
             // "최저" 표시는 같은 통화끼리만 뜻이 있다 — 기준을 lib/currency 한 곳에서만 정한다
             const cheapest = cheapestOf(game.platforms);

@@ -329,6 +329,15 @@
 /* ── 기본 ── */
 html {
   -webkit-text-size-adjust: 100%;
+  /*
+   * 스크롤바 자리를 늘 비워 둔다.
+   * 시트, 서랍을 열면 배경을 잠그느라 html 의 overflow 를 hidden 으로 돌리는데(ui/sheet),
+   * 그 순간 막대가 사라지면서 본문 폭이 15px 넓어지고 글이 통째로 다시 줄바꿈됐다 —
+   * 메뉴가 미끄러져 들어오는 동안 뒤 화면이 옆으로 튀는 것으로 보인다(2026-09-16 실측 371 -> 386px).
+   * 짧은 화면과 긴 화면 사이를 오갈 때 생기던 같은 튐도 이걸로 함께 사라진다.
+   * 막대를 띄워 그리는 기기(모바일)에서는 아무 자리도 차지하지 않는다.
+   */
+  scrollbar-gutter: stable;
 }
 body {
   background: var(--bg);
@@ -368,6 +377,24 @@ a {
   textarea,
   select {
     font-size: 16px;
+  }
+}
+
+/* 문서 맨 아래에 서는 조각(푸터)의 아래 여백. 홈 인디케이터가 있는 기기에서는 그 높이만큼 더 내려 준다.
+   32px 은 기존 pb-8 과 같은 값이다 — env() 는 토큰으로 접을 수 없어 여기서만 다룬다 */
+.safe-bottom {
+  padding-bottom: calc(32px + env(safe-area-inset-bottom));
+}
+
+/* 손가락으로 누르는 기기에서만 최소 탭 높이를 44px 로 올린다(--touch-target).
+   왜 높이만 올리나: 칩, 작은 버튼은 줄바꿈으로 촘촘히 서기 때문에 좌우까지 넓히면 이웃과 겹쳐
+   "옆 칩이 눌리는" 문제로 바뀐다. 세로로만 벌리고 가로는 글자 폭 그대로 둔다.
+   height 를 auto 로 되돌리는 이유: h-8, h-9 같은 고정 높이가 min-height 를 이긴다.
+   마우스 화면은 건드리지 않는다 — 거기서는 조밀함이 정보다. */
+@media (hover: none) and (pointer: coarse) {
+  .tap {
+    height: auto;
+    min-height: var(--touch-target);
   }
 }
 
@@ -508,9 +535,22 @@ a {
   background: var(--overlay);
   backdrop-filter: blur(var(--overlay-blur));
   -webkit-backdrop-filter: blur(var(--overlay-blur));
-  animation: fade-in var(--duration-fast) var(--ease-standard) both;
+  /* 판과 같은 시간으로 어두워진다. --duration-fast(150ms)였을 때는 막이 먼저 다 깔린 뒤에
+     판이 뒤늦게 도착해 둘이 한 몸으로 읽히지 않았다 */
+  animation: fade-in var(--duration-base) var(--ease-standard) both;
+  will-change: opacity;
   /* 없으면 브라우저가 터치를 스크롤 제스처로 가로채 끌어내려 닫기가 씹힌다 */
   touch-action: none;
+}
+/*
+ * 막의 투명도를 JS 가 직접 쥐는 동안에는 등장 애니메이션을 끈다(판의 같은 이름 규칙과 짝이다).
+ * 없으면 안 된다: CSS 애니메이션은 인라인 스타일보다 우선순위가 높고 fill 이 both 라
+ * 등장이 끝난 뒤에도 opacity: 1 을 계속 붙들고 있다. 그래서 overlay.style.opacity 로 적는 값이
+ * 전부 무시됐고, 닫을 때 막이 걷히지 않고 판만 미끄러져 나간 뒤 그 자리에서 툭 사라졌다.
+ * 손가락을 따라 막이 옅어지는 것도 같은 이유로 죽어 있었다.
+ */
+.sheet__overlay[data-dragging="true"] {
+  animation: none;
 }
 .sheet__panel {
   position: relative;
@@ -582,15 +622,40 @@ a {
   padding-top: env(safe-area-inset-top);
   padding-right: env(safe-area-inset-right);
   padding-bottom: env(safe-area-inset-bottom);
-  animation: drawer-in var(--duration-slow) var(--ease-out-emph) both;
+  /*
+   * 곡선은 --ease-standard 다. --ease-out-emph 는 처음 45ms 에 거리의 46% 를 먹는데,
+   * 28px 만 움직이던 때는 그게 "빠릿함" 이었지만 판 너비(320px) 를 통째로 미는 지금은
+   * 첫 두 프레임에 이미 절반이 들어와 있어 툭 튀어 들어온 것처럼 보인다(2026-09-16 실측).
+   */
+  animation: drawer-in var(--duration-slow) var(--ease-standard) both;
 }
+/*
+ * 서랍에도 "애니메이션을 놓아라" 규칙이 따로 필요하다.
+ * 위의 .sheet__panel[data-dragging="true"] 는 무게가 (0,2,0) 인데 서랍 규칙은 (0,3,0) 이라
+ * 서랍에서는 등장 애니메이션이 끝내 꺼지지 않았다. fill 이 both 라 끝난 뒤에도 transform 을 계속 쥐고 있고,
+ * 애니메이션이 쥔 값은 인라인 스타일을 이긴다 — 그래서 손가락을 따라 미는 것도, 닫을 때 미끄러져 나가는 것도
+ * 둘 다 죽어 있었다(판은 제자리에 선 채 대기 시간만 기다렸다 사라졌다).
+ */
+.sheet[data-side="right"] .sheet__panel[data-dragging="true"] {
+  animation: none;
+}
+
 /* 손잡이는 바닥 시트의 물건이다 — 가로로 미는 서랍에서 가로 막대는 방향을 거짓말한다 */
 .sheet[data-side="right"] .sheet__grip-row {
   display: none;
 }
+/* 손잡이 줄이 사라지면 제목과 닫기가 판 맨 위에 붙는다 — 바닥 시트에서는 그 줄(pt-3.5 + pb-3)이
+   위 여백 노릇을 하고 있었다. 서랍에는 그 줄이 없으므로 머리가 직접 여백을 갖는다.
+   좁은 화면에만 필요한 값이 아니다(데스크톱에서도 서랍은 서랍이다) — sm:py-3 와 같은 14px 로 맞춘다 */
+.sheet[data-side="right"] .sheet__header {
+  padding-top: 14px;
+}
+/* 서랍은 화면 밖에서 통째로 밀려 들어온다. 28px 만 움직이던 때는 "옆에서 나온" 것이 아니라
+   제자리에서 페이드하는 판으로 보였고, 닫기(판 너비만큼 밀어내기)와 거리가 달라 짝이 맞지 않았다.
+   투명도는 건드리지 않는다 — 나가고 들어오는 자리가 화면 가장자리라 페이드까지 얹으면 뿌옇게 보인다 */
 @keyframes drawer-in {
-  from { opacity: 0; transform: translateX(28px); }
-  to { opacity: 1; transform: none; }
+  from { transform: translateX(100%); }
+  to { transform: none; }
 }
 
 /* 접근성: 모션 축소 요청 시 전부 거의 즉시 */

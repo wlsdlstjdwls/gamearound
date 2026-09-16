@@ -6,7 +6,8 @@ import Link from "next/link";
 import { ROUTES } from "@/lib/routes";
 import { SITE } from "@/lib/site";
 
-const LINK_CLASS = "text-[12px] text-dim transition-colors hover:text-ink focus-visible:text-ink";
+// inline-flex + tap: 12px 글자라 링크 높이가 18px 밖에 되지 않았다. 손가락으로 누르는 기기에서만 44px 로 벌린다
+const LINK_CLASS = "tap inline-flex items-center text-[12px] text-dim transition-colors hover:text-ink focus-visible:text-ink";
 
 export function SiteFooter() {
   // 저작권 연도는 렌더 시점에 계산한다. 하드코딩하면 해가 바뀔 때 반드시 한 군데가 남는다.
@@ -16,7 +17,8 @@ export function SiteFooter() {
   // 위 여백은 붙이지 않는다 — 본문과의 거리는 <Page> 의 하단 패딩 하나가 갖는다.
   // 둘 다 여백을 가지면 페이지마다 합이 달라지고, 화면 맨 아래 고지가 푸터에서 멀리 떨어져 떠 보인다.
   return (
-    <footer className="flex flex-col items-center gap-2 border-t border-line bg-surface px-4 pb-8 pt-6">
+    // safe-bottom: 홈 인디케이터가 있는 기기에서 마지막 줄이 가려지지 않게 한다(globals.css). 푸터가 문서의 맨 끝이다
+    <footer className="safe-bottom flex flex-col items-center gap-2 border-t border-line bg-surface px-4 pt-6">
       <nav className="flex flex-wrap items-center justify-center gap-4" aria-label="약관">
         <Link href={ROUTES.terms} className={LINK_CLASS}>
           이용약관

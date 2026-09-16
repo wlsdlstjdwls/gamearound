@@ -142,7 +142,8 @@ export default async function GamesPage({ searchParams }: Props) {
           <FilterColumn filter={filter} />
         </Suspense>
 
-        <div className="flex flex-col gap-5">
+        {/* min-w-0: 격자 칸의 기본 최소 크기는 auto 라 안쪽의 잘리지 않는 제목이 칸을 밀어낸다(상세 화면 주석) */}
+        <div className="flex min-w-0 flex-col gap-5">
           <Suspense key={boundaryKey} fallback={<GamesGridSkeleton cards={GAMES_PAGE_SIZE} />}>
             <Results filter={filter} />
           </Suspense>

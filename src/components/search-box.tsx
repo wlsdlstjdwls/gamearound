@@ -33,7 +33,7 @@ function trimQuery(raw: string): string {
  * 모서리를 완전히 굴리는 이유: 이 화면에서 유일하게 "무엇이든 써도 되는" 칸이라 각진 카드, 칩과 달라야 한다.
  */
 const FIELD_CLASS =
-  "flex h-9 items-center gap-2 rounded-full border border-transparent bg-surface-2 pl-3 pr-2 transition-[background-color,border-color,box-shadow] duration-base ease-standard focus-within:border-acc focus-within:bg-surface focus-within:shadow-[0_0_0_3px_var(--acc-glow)]";
+  "tap flex h-9 items-center gap-2 rounded-full border border-transparent bg-surface-2 pl-3 pr-2 transition-[background-color,border-color,box-shadow] duration-base ease-standard focus-within:border-acc focus-within:bg-surface focus-within:shadow-[0_0_0_3px_var(--acc-glow)]";
 const INPUT_CLASS =
   "min-w-0 flex-1 bg-transparent text-[13px] text-ink outline-none placeholder:text-dim [&::-webkit-search-cancel-button]:appearance-none";
 /*

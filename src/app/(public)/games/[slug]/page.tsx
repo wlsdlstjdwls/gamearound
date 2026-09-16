@@ -286,9 +286,18 @@ export default async function GameDetailPage({ params }: Props) {
         </div>
       </section>
 
-      {/* 섹션 2 — 가격/뉴스 + 사이드바 */}
-      <div className="grid gap-6 lg:grid-cols-[2fr_1fr]">
-        <div className="enter-item flex flex-col gap-6" style={stagger(5)}>
+      {/*
+        섹션 2 — 가격/뉴스 + 사이드바.
+
+        칸마다 min-w-0 을 다는 이유(2026-09-16): 격자 칸의 기본 최소 크기는 auto 다. 그래서 칸은
+        "안쪽에서 줄바꿈 없이 필요한 폭" 아래로는 절대 줄지 않는다. 안에는 한 줄로 자르는 제목
+        (Clamp, truncate = white-space: nowrap)이 있고, 그 제목의 최소 폭은 잘리기 전 글자 전체 폭이다 —
+        자식 컴포넌트가 min-w-0, flex-1 을 아무리 붙여도 그 값은 칸까지 올라온다.
+        긴 DLC 제목 하나가 상세 본문 전체를 520px 로 밀어 화면 밖으로 내보냈다(390px 기기, ea-sports-fc-26).
+        좁은 화면은 칸이 하나뿐이라 minmax(0, ...) 로는 못 막는다 — 칸 자체에 붙여야 한다.
+      */}
+      <div className="grid gap-6 lg:grid-cols-[minmax(0,2fr)_minmax(0,1fr)]">
+        <div className="enter-item flex min-w-0 flex-col gap-6" style={stagger(5)}>
           <section aria-labelledby="platforms-heading" className="flex flex-col gap-3">
             <SectionHead
               id="platforms-heading"
@@ -341,7 +350,7 @@ export default async function GameDetailPage({ params }: Props) {
           </section>
         </div>
 
-        <aside className="enter-item flex flex-col gap-4" style={stagger(6)}>
+        <aside className="enter-item flex min-w-0 flex-col gap-4" style={stagger(6)}>
           <PlaytimeCard playtime={game.playtime} currentPrice={best?.currentPrice ?? null} currency={best?.currency} scale={perHourScale} />
 
           {game.sourceRefs.length > 0 && (

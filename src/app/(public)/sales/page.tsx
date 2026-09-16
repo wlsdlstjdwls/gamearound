@@ -35,10 +35,11 @@ function SaleCard({ item, index }: { item: UpcomingSale; index: number }) {
     <li className="enter-item" style={stagger(index)}>
       <Card className="flex flex-col gap-3 p-5">
         <div className="flex flex-wrap items-baseline justify-between gap-x-3 gap-y-1.5">
-          <div className="flex flex-wrap items-baseline gap-x-2 gap-y-1">
+          {/* 제목과 배지는 갈라 놓지 않는다 — 좁은 화면에서 "확정" 만 다음 줄에 남으면 어느 회차의 말인지 흐려진다 */}
+          <div className="flex min-w-0 items-baseline gap-x-2">
             <h3 className="text-[17px] font-bold tracking-[-0.02em] text-ink">{item.sale.name}</h3>
             {running ? (
-              <span className="rounded-[5px] bg-acc-soft px-1.5 py-0.5 text-[11.5px] font-semibold text-acc">
+              <span className="shrink-0 rounded-[5px] bg-acc-soft px-1.5 py-0.5 text-[11.5px] font-semibold text-acc">
                 {M.running}
               </span>
             ) : (
@@ -46,8 +47,8 @@ function SaleCard({ item, index }: { item: UpcomingSale; index: number }) {
               <span
                 className={
                   item.source === "confirmed"
-                    ? "rounded-[5px] bg-surface-2 px-1.5 py-0.5 text-[11.5px] font-semibold text-ink-2"
-                    : "rounded-[5px] border border-dashed border-line px-1.5 py-0.5 text-[11.5px] font-semibold text-dim"
+                    ? "shrink-0 rounded-[5px] bg-surface-2 px-1.5 py-0.5 text-[11.5px] font-semibold text-ink-2"
+                    : "shrink-0 rounded-[5px] border border-dashed border-line px-1.5 py-0.5 text-[11.5px] font-semibold text-dim"
                 }
               >
                 {item.source === "confirmed" ? M.confirmed : M.estimated}

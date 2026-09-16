@@ -98,6 +98,7 @@ export function Sheet({
     if (overlay) {
       overlay.style.transition = "";
       overlay.style.opacity = "";
+      delete overlay.dataset.dragging;
     }
   }, []);
 
@@ -120,7 +121,15 @@ export function Sheet({
     }
 
     const ease = "var(--duration-base) var(--ease-standard)";
-    panel.dataset.dragging = "true"; // 등장 애니메이션을 끄고 인라인 transform 이 자리를 갖게 한다
+    // 등장 애니메이션을 끄고 인라인 값이 자리를 갖게 한다. 막에도 반드시 걸어야 한다 —
+    // 애니메이션(fill: both)이 살아 있으면 opacity 인라인 값이 통째로 무시된다(globals.css 주석)
+    panel.dataset.dragging = "true";
+    overlay.dataset.dragging = "true";
+    // 애니메이션을 뗀 상태를 여기서 한 번 확정시킨다(강제 리플로우).
+    // 없으면 안 된다: 전환은 "바뀌기 전 값" 과 "바뀐 뒤 값" 을 같은 스타일 계산에서 비교하는데,
+    // 같은 틱에 목표값까지 적으면 바뀌기 전 값을 아직 애니메이션이 쥐고 있어 전환이 아예 시작되지 않는다.
+    // 그래서 닫기가 모션 없이 대기 시간만 기다렸다 툭 사라졌다(2026-09-16 실측: 판도 막도 제자리).
+    void panel.offsetHeight;
     panel.style.transition = `transform ${ease}, opacity ${ease}`;
     overlay.style.transition = `opacity ${ease}`;
     overlay.style.opacity = "0";
@@ -151,6 +160,10 @@ export function Sheet({
     openedAtRef.current = Date.now();
     resetStyles();
     dialogRef.current?.showModal();
+    // showModal 은 안쪽 첫 포커스 대상에 포커스를 준다 — 그게 닫기(X)라 열자마자 X 에 링이 서고
+    // 스크린 리더도 시트 이름 대신 "닫기" 를 먼저 읽는다. 판 자체를 받게 해 둘 다 막는다.
+    // 포커스를 아예 놓지는 않는다 — <dialog> 의 포커스 가두기와 Esc 는 안쪽에 포커스가 있어야 산다
+    panelRef.current?.focus({ preventScroll: true });
     setOpen(true);
   };
 
@@ -208,10 +221,14 @@ export function Sheet({
   const beginDrag = (e: React.PointerEvent) => {
     if (!interactableRef.current || (isDesktop() && side !== "right") || closingRef.current) return;
     const panel = panelRef.current;
-    if (!panel) return;
+    const overlay = overlayRef.current;
+    if (!panel || !overlay) return;
     dragRef.current = { startY: pos(e), lastY: pos(e), lastAt: e.timeStamp, velocity: 0 };
     panel.dataset.dragging = "true";
+    // 손가락을 따라 막이 옅어지려면 막도 애니메이션을 놓아야 한다(close 와 같은 이유)
+    overlay.dataset.dragging = "true";
     panel.style.transition = "";
+    overlay.style.transition = "";
     e.currentTarget.setPointerCapture(e.pointerId);
   };
 
@@ -292,7 +309,7 @@ export function Sheet({
           }}
         />
 
-        <div ref={panelRef} className="sheet__panel">
+        <div ref={panelRef} tabIndex={-1} className="sheet__panel outline-none">
           {/* 손잡이 — 바 옆 빈 자리까지 한 줄 전체가 끌리는 영역이다 */}
           <div className="sheet__grip-row shrink-0 pb-3 pt-3.5" onPointerDown={beginDrag} onPointerMove={moveDrag} onPointerUp={endDrag} onPointerCancel={endDrag}>
             <div className="sheet__grip" aria-hidden />
@@ -311,7 +328,8 @@ export function Sheet({
             <button
               type="button"
               onClick={close}
-              className="press inline-flex size-9 shrink-0 items-center justify-center rounded-full text-mut outline-none hover:bg-surface-2 hover:text-ink focus-visible:ring-2 focus-visible:ring-ink"
+              // 좁은 화면에서는 손가락이 닿는 넓이가 곧 크기다(44px). 넓은 화면은 조밀한 36px 그대로 둔다
+              className="press inline-flex size-11 shrink-0 items-center justify-center rounded-full text-mut outline-none hover:bg-surface-2 hover:text-ink focus-visible:ring-2 focus-visible:ring-ink sm:size-9"
             >
               <XIcon size={18} />
               <span className="sr-only">닫기</span>

@@ -103,7 +103,7 @@ export function Select({
         onClick={() => { setActiveIdx(selectedIdx); setOpen((v) => !v); }}
         onKeyDown={onKeyDown}
         className={cn(
-          "press flex h-9 w-full items-center gap-2 rounded-[var(--radius-sm)] border bg-surface px-3 text-left text-[12.5px] transition-colors duration-base",
+          "press tap flex h-9 w-full items-center gap-2 rounded-[var(--radius-sm)] border bg-surface px-3 text-left text-[12.5px] transition-colors duration-base",
           open ? "border-ink text-ink" : "border-line-strong text-mut hover:border-ink hover:text-ink",
         )}
       >
@@ -137,7 +137,7 @@ export function Select({
                   onMouseEnter={() => setActiveIdx(i)}
                   onClick={() => choose(i)}
                   className={cn(
-                    "flex w-full items-center rounded-[var(--radius-inset)] px-2.5 py-[7px] text-left text-[12.5px] transition-colors duration-base",
+                    "tap flex w-full items-center rounded-[var(--radius-inset)] px-2.5 py-[7px] text-left text-[12.5px] transition-colors duration-base",
                     isSelected ? "font-semibold text-ink" : "text-mut",
                     i === activeIdx && "bg-surface-2 text-ink",
                   )}

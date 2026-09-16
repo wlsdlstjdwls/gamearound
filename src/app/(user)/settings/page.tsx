@@ -26,7 +26,7 @@ export default async function SettingsPage() {
           <h2 className="text-[14px] font-bold text-ink">계정</h2>
           <SignOutButton />
         </div>
-        <dl className="grid grid-cols-[88px_1fr] gap-x-3.5 gap-y-[9px] text-[13px]">
+        <dl className="grid grid-cols-[88px_minmax(0,1fr)] gap-x-3.5 gap-y-[9px] text-[13px]">
           <dt className="text-dim">닉네임</dt>
           <dd className="text-ink">{user.displayName ?? "(미설정)"}</dd>
           <dt className="text-dim">이메일</dt>

@@ -21,7 +21,9 @@ const IDLE = "border border-line-strong text-mut hover:border-ink hover:text-ink
 export function chipClass(opts: { active?: boolean; size?: ChipSize; className?: string } = {}): string {
   const { active = false, size = "md", className } = opts;
   return cn(
-    "press inline-flex items-center rounded-lg transition-colors duration-base",
+    // tap: 손가락 기기에서만 최소 높이를 44px 로 올린다(globals.css). 칩은 12~13px 글자라
+    // 실제 높이가 30~33px 밖에 되지 않아 필터, 페이지 이동에서 옆 칩이 눌리는 자리였다
+    "press tap inline-flex items-center rounded-lg transition-colors duration-base",
     SIZE[size],
     active ? ACTIVE : IDLE,
     className,

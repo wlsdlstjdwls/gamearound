@@ -108,7 +108,7 @@ export function PlatformPrices({
                 href={p.storeUrl}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="press shrink-0 rounded-[8px] border border-line-strong px-3 py-1.5 text-[12.5px] font-semibold text-ink transition-colors duration-base hover:border-ink"
+                className="press tap inline-flex shrink-0 items-center rounded-[8px] border border-line-strong px-3 py-1.5 text-[12.5px] font-semibold text-ink transition-colors duration-base hover:border-ink"
               >
                 스토어
                 <span className="sr-only"> {platformLabel(p)} (새 창에서 열림)</span>

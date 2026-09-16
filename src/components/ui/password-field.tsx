@@ -27,7 +27,7 @@ export function PasswordField({ strengthOf, ...field }: Props) {
             aria-label={visible ? AUTH_MESSAGES.hidePassword : AUTH_MESSAGES.showPassword}
             aria-pressed={visible}
             className={cn(
-              "press flex h-9 w-9 items-center justify-center rounded-[var(--radius-sm)] outline-none",
+              "press tap flex h-9 w-9 items-center justify-center rounded-[var(--radius-sm)] outline-none",
               "focus-visible:ring-2 focus-visible:ring-ink",
               visible ? "text-ink" : "text-dim hover:text-mut",
             )}

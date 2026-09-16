@@ -44,8 +44,8 @@ export default function GameDetailLoading() {
       </div>
 
       {/* 본문 열 + 사이드바 — 본문과 같은 골격 */}
-      <div className="grid gap-6 lg:grid-cols-[2fr_1fr]">
-        <div className="flex flex-col gap-6">
+      <div className="grid gap-6 lg:grid-cols-[minmax(0,2fr)_minmax(0,1fr)]">
+        <div className="flex min-w-0 flex-col gap-6">
           <div className="flex flex-col gap-3">
             <div className="skeleton h-[26px] w-28 rounded" />
             <div className="skeleton h-[200px] rounded-xl" />
@@ -55,7 +55,7 @@ export default function GameDetailLoading() {
             <div className="skeleton h-[46px] rounded-xl" />
           </div>
         </div>
-        <div className="flex flex-col gap-4">
+        <div className="flex min-w-0 flex-col gap-4">
           <div className="skeleton h-[85px] rounded-xl" />
           <div className="skeleton h-[124px] rounded-xl" />
         </div>

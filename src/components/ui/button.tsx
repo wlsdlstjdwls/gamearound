@@ -14,9 +14,13 @@ const VARIANT: Record<ButtonVariant, string> = {
   danger: "border border-line-strong bg-surface text-danger hover:border-danger",
 };
 
+/*
+ * tap 은 손가락 기기에서만 최소 높이를 44px 로 올린다(globals.css). sm(32px), md(36px) 는
+ * 마우스 화면의 조밀함을 위한 값이고 터치로는 작다 — lg 는 이미 44px 라 붙이지 않는다.
+ */
 const SIZE: Record<ButtonSize, string> = {
-  sm: "h-8 px-3.5 text-[12.5px]",
-  md: "h-9 px-3.5 text-[13px]",
+  sm: "tap h-8 px-3.5 text-[12.5px]",
+  md: "tap h-9 px-3.5 text-[13px]",
   lg: "h-11 px-5 text-sm",
 };
 

@@ -22,7 +22,8 @@ export function SiteHeader() {
     <header className="sticky top-0 z-40 border-b border-line bg-surface">
       <div className="mx-auto flex w-full max-w-[var(--page-w)] items-center gap-2 px-5 py-2.5 sm:gap-4 sm:px-7 sm:py-4">
         {/* 좁은 화면에서는 심볼만 남는다. 글자가 접혀도 링크의 이름은 남아야 하므로 aria-label 로 못 박는다 */}
-        <Link href={ROUTES.home} aria-label={SITE.name} className="press shrink-0 text-ink">
+        {/* tap: 좁은 화면에서는 심볼만 남아 26x32 였다 — 머리띠에서 가장 자주 눌리는 자리인데 손가락보다 작았다 */}
+        <Link href={ROUTES.home} aria-label={SITE.name} className="press tap inline-flex shrink-0 items-center text-ink">
           <BrandLockup wordmarkClassName="hidden sm:inline" />
         </Link>
 

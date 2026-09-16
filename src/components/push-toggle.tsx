@@ -135,7 +135,9 @@ export function PushToggle({ initialCount }: { initialCount: number }) {
           aria-label="웹푸시 알림"
           disabled={disabled && !on}
           onClick={on ? unsubscribe : subscribe}
-          className={`press flex h-6 w-[42px] shrink-0 items-center rounded-full p-0.5 transition-colors duration-base disabled:opacity-60 ${
+          // 보이는 스위치는 24px 이지만 손가락이 닿는 넓이는 44px 이다 — 판을 키우면 알약이 세로로 늘어난다.
+          // 위아래로만 벌린다: 오른쪽 끝에 홀로 서 있어 겹칠 이웃이 없다(검색칸 지우기 버튼과 같은 수법)
+          className={`press relative flex h-6 w-[42px] shrink-0 items-center rounded-full p-0.5 transition-colors duration-base after:absolute after:-inset-y-2.5 after:inset-x-0 after:content-[''] disabled:opacity-60 ${
             on ? "bg-ink" : "bg-line-strong"
           }`}
         >

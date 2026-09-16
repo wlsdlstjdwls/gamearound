@@ -1,4 +1,4 @@
-// 페이지 셸 — 리디자인 스펙의 최대폭, 좌우 28px 패딩을 한 곳에서 관리한다.
+// 페이지 셸 — 리디자인 스펙의 최대폭, 좌우 패딩을 한 곳에서 관리한다.
 // 폭: 기본 1120 / 알림 860 / 설정 720. 상단 패딩은 화면 성격별로 22~32px, 하단은 80~90px.
 import { cn } from "@/lib/cn";
 
@@ -11,6 +11,11 @@ const WIDTH: Record<PageWidth, string> = {
   tight: "max-w-[var(--page-w-tight)]",
 };
 
+/*
+ * 좌우 여백은 머리띠(site-header)와 같은 값이어야 한다 — 거기는 좁은 화면에서 px-5 다.
+ * 본문만 px-7 로 두었더니 로고와 본문 첫 글자의 시작점이 8px 어긋나 화면이 한 칸 밀려 보였고,
+ * 320px 기기에서는 그 8px 두 벌이 카드 폭에서 그대로 빠졌다.
+ */
 const PAD: Record<PagePad, string> = {
   home: "pt-8 pb-[90px]",
   detail: "pt-6 pb-20",
@@ -29,7 +34,7 @@ export type PageProps = React.ComponentProps<"div"> & {
 export function Page({ width = "default", pad = "sub", gap, enter = true, className, style, children, ...rest }: PageProps) {
   return (
     <div
-      className={cn(enter && "page-enter", "mx-auto flex w-full flex-col px-7", WIDTH[width], PAD[pad], className)}
+      className={cn(enter && "page-enter", "mx-auto flex w-full flex-col px-5 sm:px-7", WIDTH[width], PAD[pad], className)}
       style={gap === undefined ? style : { ...style, gap: `${gap}px` }}
       {...rest}
     >
@@ -92,7 +97,9 @@ export function PageHead({
         <h1 className={cn("font-bold text-ink", TITLE_SIZE[size])}>{title}</h1>
         {note && <span className="text-[13px] text-dim">{note}</span>}
       </div>
-      {action}
+      {/* justify-between 은 한 줄일 때만 오른쪽 끝을 만든다. 좁은 화면에서 줄이 갈리면
+          혼자 남은 이 조각이 왼쪽에 붙어 제목 아래 들여쓴 것처럼 보였다 — ml-auto 가 두 경우를 같게 만든다 */}
+      {action && <div className="ml-auto">{action}</div>}
       {children}
     </div>
   );
@@ -127,7 +134,7 @@ export function SectionHead({
         </Heading>
         {note && <span className="text-[12.5px] text-dim">{note}</span>}
       </div>
-      {action}
+      {action && <div className="ml-auto">{action}</div>}
     </div>
   );
 }

@@ -99,7 +99,9 @@ export default async function HomePage() {
       {/* 섹션 2 — 곧 끝나는 할인 / 최신 뉴스 */}
       {/* items-start: 두 카드가 서로의 키를 따라가지 않게 한다. 기본값(stretch)이면 짧은 쪽 카드가
           긴 쪽 높이까지 늘어나고, 늘어난 만큼이 그대로 빈 흰 판이 된다 */}
-      <section className="grid grid-cols-[repeat(auto-fit,minmax(300px,1fr))] items-start gap-7">
+      {/* min() 을 씌우는 이유: auto-fit 의 minmax 는 화면이 그 값보다 좁아도 칸을 줄이지 않는다.
+          320px 기기에서 300px 칸 + 좌우 여백이 화면을 넘어 홈 전체가 가로로 밀렸다 */}
+      <section className="grid grid-cols-[repeat(auto-fit,minmax(min(300px,100%),1fr))] items-start gap-7">
         <div className="enter-item flex flex-col gap-4" style={stagger(0)}>
           <SectionHead title="곧 할인 마감" />
           <Card className="px-4">
@@ -108,21 +110,27 @@ export default async function HomePage() {
             ) : (
               <ul className="divide-y divide-line-soft">
                 {soon.map((g) => (
-                  <li key={g.slug} className="flex flex-wrap items-baseline gap-x-3 gap-y-1 py-[13px]">
-                    <Link href={`/games/${g.slug}`} className="min-w-[130px] flex-1 text-[13.5px] font-semibold text-ink hover:text-acc">
+                  /* 좁은 화면에서는 제목 줄과 값 줄, 두 줄로 세운다.
+                     전에는 넷을 한 줄에 흘려보냈고 390px 에서 제목, 스토어, 값, 남은 기간이 제각기 줄을 차지해
+                     한 항목이 서너 줄로 흩어졌다 — 그중 스토어 이름만 오른쪽 끝에 홀로 붙어 값처럼 읽혔다.
+                     넓은 화면(sm)에서는 원래대로 한 줄이다 */
+                  <li key={g.slug} className="flex flex-col gap-1 py-[13px] sm:flex-row sm:flex-wrap sm:items-baseline sm:gap-x-3">
+                    <Link href={`/games/${g.slug}`} className="min-w-0 flex-1 text-[13.5px] font-semibold text-ink hover:text-acc">
                       <Clamp>{g.titleKo ?? g.titleEn}</Clamp>
                     </Link>
-                    <span className="text-[12px] text-dim">
-                      {g.best ? PLATFORM_LABEL[g.best.platform] ?? g.best.platform : "-"}
-                    </span>
-                    {/* 할인가만 있으면 "싼지" 를 알 수 없다 — 정가를 옆에 같이 세워야 값이 뜻을 가진다 */}
-                    <span className="flex items-baseline gap-1.5">
-                      <span className="text-[13.5px] font-bold text-ink">{formatPrice(g.best?.currentPrice, g.best?.currency)}</span>
-                      {g.best?.listPrice != null && g.best.listPrice !== g.best.currentPrice && (
-                        <span className="text-[11.5px] text-dim-2 line-through">{formatPrice(g.best.listPrice, g.best.currency)}</span>
-                      )}
-                    </span>
-                    <SaleBadge discountName={null} discountEndsAt={g.best?.discountEndsAt} />
+                    <div className="flex flex-wrap items-baseline gap-x-2.5 gap-y-1">
+                      <span className="text-[12px] text-dim">
+                        {g.best ? PLATFORM_LABEL[g.best.platform] ?? g.best.platform : "-"}
+                      </span>
+                      {/* 할인가만 있으면 "싼지" 를 알 수 없다 — 정가를 옆에 같이 세워야 값이 뜻을 가진다 */}
+                      <span className="flex items-baseline gap-1.5">
+                        <span className="text-[13.5px] font-bold text-ink">{formatPrice(g.best?.currentPrice, g.best?.currency)}</span>
+                        {g.best?.listPrice != null && g.best.listPrice !== g.best.currentPrice && (
+                          <span className="text-[11.5px] text-dim-2 line-through">{formatPrice(g.best.listPrice, g.best.currency)}</span>
+                        )}
+                      </span>
+                      <SaleBadge discountName={null} discountEndsAt={g.best?.discountEndsAt} />
+                    </div>
                   </li>
                 ))}
               </ul>

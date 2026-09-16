@@ -15,7 +15,7 @@ export function Checkbox({ children, error, className, id: idProp, checked, ...i
   const errorId = `${id}-error`;
   return (
     <div>
-      <label htmlFor={id} className={cn("group/cb flex cursor-pointer items-start gap-2.5 py-1 text-sm text-mut", className)}>
+      <label htmlFor={id} className={cn("group/cb tap flex cursor-pointer items-start gap-2.5 py-1 text-sm text-mut", className)}>
         <input id={id} type="checkbox" className="peer sr-only" checked={checked} aria-invalid={Boolean(error) || undefined} aria-describedby={error ? errorId : undefined} {...input} />
         <span
           aria-hidden

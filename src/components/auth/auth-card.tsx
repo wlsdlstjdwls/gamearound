@@ -41,7 +41,7 @@ export function AuthCard({
   const withNext = (base: string) => (next === ROUTES.home ? base : `${base}?next=${encodeURIComponent(next)}`);
 
   return (
-    <Page pad="home" className="grid items-start gap-6 sm:grid-cols-[repeat(auto-fit,minmax(300px,1fr))]">
+    <Page pad="home" className="grid items-start gap-6 sm:grid-cols-[repeat(auto-fit,minmax(min(300px,100%),1fr))]">
       <div className="reveal flex flex-col gap-4" style={stagger(0)}>
         <Link href={ROUTES.home} aria-label={`${SITE.name} 홈`} className="press w-fit">
           <BrandSymbol size={34} />
