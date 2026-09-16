@@ -30,11 +30,11 @@
     },
     {
       "path": "/api/cron/crawl/nintendo_jp/prices",
-      "schedule": "35 */6 * * *"
+      "schedule": "35 */12 * * *"
     },
     {
       "path": "/api/cron/crawl/nintendo_jp/discover",
-      "schedule": "5 2,8,14,20 * * *"
+      "schedule": "5 2,14 * * *"
     },
     {
       "path": "/api/cron/crawl/epic/prices",

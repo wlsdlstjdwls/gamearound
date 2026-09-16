@@ -134,8 +134,13 @@ export const CRON_SOURCES = ["nintendo", "nintendo_jp", "epic", "steam", "psstor
 // 주기는 vercel.json 의 crons 에 있다 — JSON 이라 주석을 못 달아 근거를 여기 적는다(시각은 UTC).
 //   /api/cron/crawl/nintendo/prices       15 */6 * * *          하루 4회 × 300건 = 1,200건/일
 //   /api/cron/crawl/nintendo/discover     45 1,7,13,19 * * *    하루 4회 × 20건 = 80건/일 (신규는 상품 HTML 이라 4초 간격을 탄다)
-//   /api/cron/crawl/nintendo_jp/prices    35 */6 * * *          하루 4회 × 300건 = 1,200건/일
-//   /api/cron/crawl/nintendo_jp/discover  5 2,8,14,20 * * *     하루 4회 × 60건 = 240건/일 (한 바퀴가 약 300페이지)
+//   /api/cron/crawl/nintendo_jp/prices    35 */12 * * *         하루 2회 × 300건 = 600건/일
+//   /api/cron/crawl/nintendo_jp/discover  5 2,14 * * *          하루 2회 × 60건 = 120건/일 (한 바퀴가 약 300페이지)
+// 일본 몫을 2026-09-16 에 반으로 줄였다(넷에서 둘로). 이유는 산수다 — JP 행이 585개인데 하루 1,200건을
+// 돌고 있었다. 같은 행을 하루에 두 번 다시 묻고 있던 것이다. 600건이면 하루 한 바퀴다.
+// 더 줄이지 않는 이유: 일본에만 있는 스위치 작품이 목록에 안 나올 뿐 데이터로는 값이 있고
+// (KR, JP 둘 다 가진 게임 135건은 상세에서 엔화를 참고로 보여 준다), title_code 가 지역 간 동일 작품
+// 판정의 유일한 근거다(JP 474/585 가 코드를 갖는데 KR 은 270/1,118 뿐이다).
 //   /api/cron/crawl/epic/prices           25 */6 * * *          하루 4회 × 110건 = 440건/일 (DLC 몫을 떼며 120에서 내렸다)
 //   /api/cron/crawl/epic/discover         55 3,9,15,21 * * *    하루 4회 × 60건 = 240건/일 (한 바퀴가 175페이지)
 // 가격 갱신 주기를 발견보다 성기게 두는 이유(2026-09-14): 카탈로그가 비어 있는 단계에서는
