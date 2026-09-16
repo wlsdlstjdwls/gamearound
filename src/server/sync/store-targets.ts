@@ -1,6 +1,6 @@
 // 스토어 소스의 수집 대상 선정 — 기존 매핑 + 카탈로그 신규 발견(시드).
-import { and, eq, inArray, sql } from "drizzle-orm";
-import { discoveryIgnores, gamePlatforms, gameSourceRefs, games, type Platform } from "@/server/db/schema";
+import { and, eq, inArray, ne, sql } from "drizzle-orm";
+import { discoveryIgnores, gamePlatforms, gameSourceRefs, games, type Platform, type Region } from "@/server/db/schema";
 import type { Db } from "@/server/db/client";
 import { getStoreAdapter, type StoreSource } from "@/server/adapters";
 import type { SearchCandidate } from "@/server/adapters/types";
@@ -8,7 +8,7 @@ import { errorMessage } from "@/lib/errors";
 import { normalizeTitle } from "@/lib/slug";
 import { findGameByTitle, type GameTitleRow } from "./match";
 import { collectFreshCandidates, seedQuota } from "./discover";
-import { DISCOVERY_PAGE_BUDGET, MATCHED_FOR_SYNC, SOURCE_PLATFORMS, SOURCE_REGION } from "./constants";
+import { DISCOVERY_PAGE_BUDGET, MATCHED_FOR_SYNC, REFRESH_MAIN_SHARE, SOURCE_PLATFORMS, SOURCE_REGION } from "./constants";
 import { fetchWithRetry } from "./retry";
 import type { Ctx } from "./context";
 
@@ -70,26 +70,16 @@ export async function listStoreTargets(ctx: Ctx, source: StoreSource, opts: Stor
   // 지역을 조건에 넣지 않으면 한 게임에 한국, 일본 행이 둘 다 붙어 같은 대상이 두 번 나오고,
   // 갱신 순서(lastSyncedAt)도 남의 나라 행을 보고 정해진다
   const region = SOURCE_REGION[source];
-  const rows = await db
-    .select({
-      gameId: gameSourceRefs.gameId,
-      externalId: gameSourceRefs.externalId,
-      slug: games.slug,
-      platform: gamePlatforms.platform,
-    })
-    .from(gameSourceRefs)
-    .innerJoin(games, eq(games.id, gameSourceRefs.gameId))
-    .leftJoin(
-      gamePlatforms,
-      and(
-        eq(gamePlatforms.gameId, gameSourceRefs.gameId),
-        inArray(gamePlatforms.platform, platforms),
-        eq(gamePlatforms.region, region),
-      ),
-    )
-    .where(and(eq(gameSourceRefs.source, source), inArray(gameSourceRefs.matchedBy, MATCHED_FOR_SYNC)))
-    .orderBy(sql`${gamePlatforms.lastSyncedAt} asc nulls first`)
-    .limit(limit);
+  // 본편을 먼저 채우고 남는 자리에 나머지(DLC, 에디션, 번들, 체험판)를 넣는다.
+  // 한 번에 뽑지 않는 이유는 REFRESH_MAIN_SHARE 주석에 있다 — 한 줄로 세우면 DLC 가 많은 스토어에서
+  // 본편이 뒤로 밀린다. 본편이 몫보다 적으면 남는 자리는 그대로 나머지가 가져간다.
+  const mainWant = Math.ceil(limit * REFRESH_MAIN_SHARE);
+  const mainRows = await refreshRows(db, source, platforms, region, { mainOnly: true, limit: mainWant });
+  const restRows = await refreshRows(db, source, platforms, region, {
+    mainOnly: false,
+    limit: limit - mainRows.length,
+  });
+  const rows = [...mainRows, ...restRows];
 
   const seen = new Set<string>();
   const targets: StoreTarget[] = [];
@@ -121,6 +111,48 @@ export async function listStoreTargets(ctx: Ctx, source: StoreSource, opts: Stor
   // 시드는 앞에 붙으므로 여기서 자르면 신규 게임이 우선되고, 가장 오래 갱신 안 된 기존 게임이 밀린다.
   // limit 을 한 실행의 총 처리 건수 상한으로 지키지 않으면 시드가 많은 날 워크플로 timeout 이 난다.
   return targets.slice(0, limit);
+}
+
+/**
+ * 갱신 대상 한 묶음 — 이 소스가 아는 게임 중 가장 오래 갱신 안 된 것부터.
+ *
+ * 지역을 조건에 넣지 않으면 한 게임에 한국, 일본 행이 둘 다 붙어 같은 대상이 두 번 나오고,
+ * 갱신 순서(lastSyncedAt)도 남의 나라 행을 보고 정해진다.
+ */
+async function refreshRows(
+  db: Db,
+  source: StoreSource,
+  platforms: Platform[],
+  region: Region,
+  opts: { mainOnly: boolean; limit: number },
+): Promise<Array<{ gameId: string; externalId: string; slug: string; platform: Platform | null }>> {
+  if (opts.limit <= 0) return [];
+  return db
+    .select({
+      gameId: gameSourceRefs.gameId,
+      externalId: gameSourceRefs.externalId,
+      slug: games.slug,
+      platform: gamePlatforms.platform,
+    })
+    .from(gameSourceRefs)
+    .innerJoin(games, eq(games.id, gameSourceRefs.gameId))
+    .leftJoin(
+      gamePlatforms,
+      and(
+        eq(gamePlatforms.gameId, gameSourceRefs.gameId),
+        inArray(gamePlatforms.platform, platforms),
+        eq(gamePlatforms.region, region),
+      ),
+    )
+    .where(
+      and(
+        eq(gameSourceRefs.source, source),
+        inArray(gameSourceRefs.matchedBy, MATCHED_FOR_SYNC),
+        opts.mainOnly ? eq(games.contentType, "game") : ne(games.contentType, "game"),
+      ),
+    )
+    .orderBy(sql`${gamePlatforms.lastSyncedAt} asc nulls first`)
+    .limit(opts.limit);
 }
 
 /**
