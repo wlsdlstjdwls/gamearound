@@ -9,19 +9,21 @@
  * 이걸 못 푼다 — 무효화는 "값이 낡았다" 를 말하지 "값의 뜻이 달라졌다" 를 말하지 않는다.
  * 배포해도 안 풀린다. 캐시 수명은 배포와 무관하다.
  *
- * 2026-09-15 에 세 번 데었다:
+ * 2026-09-15~16 에 네 번 데었다:
  *   GameSummary 에 platforms 를 더했더니 옛 값에는 없어 목록 화면이 통째로 죽었다(undefined.length)
  *   할인 목록 정렬을 원화 우선으로 바꿨는데 옛 순서가 그대로 나왔다
  *   PlatformDto 에 subscriptions(9720056), userScore(52a3f19) 를 더하면서 이 값을 안 올렸다 —
  *   옛 값에 userScore 가 없어 bestUserScore 가 undefined.count 를 읽고 상세 화면이 오류로 떨어졌다
+ *   GameDetail 에 editions(16a411d), PatchDto 에 titleKo/summaryKo(d243ce0) 를 더하면서 또 안 올렸다 —
+ *   옛 값에 editions 가 없어 상세 화면이 undefined.length 로 죽었다(로그인 여부와 무관, 캐시된 게임만)
  *
- * 세 번 다 같은 모양이다: **DTO 를 고친 커밋이 이 파일을 건드리지 않았다.**
+ * 네 번 다 같은 모양이다: **DTO 를 고친 커밋이 이 파일을 건드리지 않았다.**
  * DTO 를 손대면 같은 커밋에서 이 값을 올린다. 배포만으로는 절대 안 풀린다.
  *
  * **이 값을 올려야 하는 때** — services 의 DTO 필드를 더하거나 뺄 때,
  * 그리고 캐시된 조회의 **정렬, 필터, 집계 기준**을 바꿀 때. 둘 다 "같은 키, 다른 뜻" 이다.
  */
-export const DTO_CACHE_VERSION = "v5";
+export const DTO_CACHE_VERSION = "v6";
 
 /** 목록, 검색, 홈처럼 태그 무효화로 갱신되는 화면의 기본 재검증 주기(초) */
 export const LIST_REVALIDATE_SECONDS = 3600;
