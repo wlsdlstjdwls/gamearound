@@ -1,7 +1,9 @@
 // games 마스터 갱신 계획 테스트 — 순수 함수(planGameMeta)만. DB 는 건드리지 않는다.
-// 여기서 지키는 규칙은 하나다: **다른 문자 체계로 세워진 제목이 우리가 이미 가진 제목을 덮지 않는다.**
-// 닌텐도 두 소스는 영문 제목을 주지 않아 titleEn 자리에 한국어, 일본어가 들어온다
-// (TEXT_FILL_ONLY_SOURCES). 그 값이 Steam 이 세운 영문 제목을 뒤집으면 목록이 읽히지 않는다.
+// 여기서 지키는 규칙은 둘이다.
+//   1) 권위를 가진 소스(META_OVERWRITE_SOURCES = steam)만 이미 있는 값을 덮는다. 나머지는 빈 칸만 채운다 —
+//      열어 두면 스토어끼리 같은 필드를 번갈아 뒤집고, 그 왕복이 매 실행 캐시를 무효화한다.
+//   2) 그래도 빈 칸은 누구든 채운다. 스팀에 없는 게임에는 그 스토어의 표기가 유일한 근거다
+//      (닌텐도 두 소스는 영문 제목을 주지 않아 titleEn 자리에 한국어, 일본어가 들어온다).
 import { describe, expect, it } from "vitest";
 import type { Source } from "@/server/adapters/types";
 import type { StoreSnapshot } from "@/server/adapters/types";
@@ -54,10 +56,23 @@ describe("planGameMeta 제목 권위", () => {
     expect(planGameMeta(ctx("nintendo_jp"), blank, meta())).toEqual({ titleEn: "プラグマタ" });
   });
 
-  it("한국어 제목은 이 규칙을 타지 않는다 — 늦게 온 값이 더 나은 값이다", () => {
-    expect(planGameMeta(ctx("nintendo"), game(), meta({ titleEn: "프라그마타", titleKo: "프라그마타" }))).toEqual({
+  it("한국어 제목도 이미 있으면 덮지 않는다 — 스토어끼리 번갈아 뒤집으면 매 실행 캐시가 날아간다", () => {
+    const named = game({ titleKo: "프라그마타(구)" });
+    expect(planGameMeta(ctx("nintendo"), named, meta({ titleEn: "프라그마타", titleKo: "프라그마타" }))).toEqual({});
+  });
+
+  it("비어 있던 한국어 제목은 어느 스토어든 채운다", () => {
+    const blank = game({ titleKo: null });
+    expect(planGameMeta(ctx("xbox"), blank, meta({ titleEn: undefined, titleKo: "프라그마타" }))).toEqual({
       titleKo: "프라그마타",
     });
+  });
+
+  it("설명, 개발사도 빈 칸이면 비-steam 이 채운다 — 스팀에 없는 게임의 유일한 근거다", () => {
+    const blank = game({ description: null, developer: null });
+    expect(
+      planGameMeta(ctx("xbox"), blank, meta({ titleEn: undefined, description: "설명", developer: "개발사" })),
+    ).toEqual({ description: "설명", developer: "개발사" });
   });
 
   it("영문 제목을 주는 소스는 그대로 덮는다", () => {

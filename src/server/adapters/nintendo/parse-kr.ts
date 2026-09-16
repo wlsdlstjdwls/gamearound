@@ -82,7 +82,7 @@ export function parseNintendoProduct(html: string, id: string): StoreSnapshot {
   // 한국 eShop 은 영문 제목을 따로 주지 않는다. 같은 한국어 제목을 두 자리에 넣는 이유가 갈린다:
   //   titleKo — 이것이 제자리다. 한국 서비스의 표시 제목은 이 값이 이긴다
   //   titleEn — 새 게임을 만들 때 반드시 있어야 하는 값이라 비워 둘 수 없다(game-writer 가 없으면 던진다).
-  //             다만 영문 제목은 아니므로 이미 값이 있는 게임을 덮지는 않는다(TEXT_FILL_ONLY_SOURCES).
+  //             다만 영문 제목은 아니므로 이미 값이 있는 게임을 덮지는 않는다(META_OVERWRITE_SOURCES).
   const players = parseNintendoPlayers($(NINTENDO_SELECTORS.players).first().text());
   return {
     platform,

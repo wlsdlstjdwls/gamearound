@@ -395,18 +395,25 @@ export const SEED_SHARE_BY_SOURCE: Partial<Record<StoreSource, number>> = {
   nintendo: 0.8,
 };
 /**
- * `games.title_en` 과 회사 이름을 **비어 있을 때만** 채우는 소스. 이미 값이 있으면 물러난다.
+ * `games` 마스터(제목, 설명, 이미지, 회사)를 **덮어쓸 수 있는** 소스. 나머지 소스는 빈 칸만 채운다.
  *
- * 넣는 기준: 그 소스가 영문 제목을 주지 않아, titleEn 자리에 다른 문자 체계의 제목이 들어가는 소스.
- *   nintendo_jp — 일본 eShop 표기 그대로다(search-jp 의 cleanJpTitle). 가나만 남는 제목이 많아,
- *                 다른 스토어가 영문으로 세워 둔 게임을 나중에 흡수하면 제목이 일본어로 뒤집힌다.
- *   nintendo    — 한국 eShop 도 영문 제목을 주지 않아 한국어 제목이 titleEn 자리에 들어간다(parse-kr).
- *                 한국어 제목 자체는 titleKo 로 따로 가므로 화면에서 잃는 것이 없다.
+ * 2026-09-16 이전에는 store-apply 가 아예 steam 스냅샷에서만 마스터를 갱신했다. 그래서 스팀에 없는
+ * 게임은 등록 순간의 값에 영원히 멈춰 있었다 — 실측으로 본편 14,491건 중 한국어 제목이 11,921건(82%),
+ * 설명이 10,704건(74%), 개발사가 10,677건(74%) 비어 있었고, xbox 단독 게임만 7,278건이었다.
+ * 값을 주는 어댑터는 이미 있었다(xbox ProductTitle/ShortDescription/DeveloperName, epic description,
+ * nintendo 한국어 제목). 막고 있던 것은 그 가드 한 줄이다.
  *
- * 비어 있을 때 채우는 것까지 막지는 않는다 — 그 스토어에만 있는 작품은 그 표기가 유일한 근거다.
- * titleKo 는 이 규칙을 타지 않는다. 한국어 제목은 늦게 온 값이 더 나은 값이다.
+ * 그래서 가드를 풀되 **권위는 steam 하나만** 갖는다. 모든 소스에 덮어쓰기를 열면 같은 필드를
+ * 스토어끼리 번갈아 뒤집는다 — 스팀이 "엘든 링" 으로 쓰면 다음 xbox 실행이 "ELDEN RING" 으로
+ * 되돌리는 식이다. 그 왕복은 매 실행 changedSlugs 에 들어가 캐시를 통째로 무효화한다(§7).
+ *
+ * 비-steam 이 빈 칸만 채우는 값이라도 잃는 것은 없다. 빈 칸이 채워지는 것이 지금 문제이고,
+ * 이미 값이 있는 자리는 steam 이 계속 고친다.
+ *
+ * 원래 이 자리에 있던 TEXT_FILL_ONLY_SOURCES(nintendo, nintendo_jp)는 이 규칙에 흡수됐다 —
+ * 일본, 한국 eShop 표기가 영문 제목 자리를 덮지 않게 하려던 것이고, 그 둘도 비-steam 이다.
  */
-export const TEXT_FILL_ONLY_SOURCES: Source[] = ["nintendo", "nintendo_jp"];
+export const META_OVERWRITE_SOURCES: Source[] = ["steam"];
 
 /** 스토어 소스 → 담당 플랫폼 (§11-6: PS4/PS5, Switch/Switch2 분리 유지) */
 export const SOURCE_PLATFORMS: Record<StoreSource, Platform[]> = {

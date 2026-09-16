@@ -327,7 +327,9 @@ export async function applyStore(ctx: Ctx, source: StoreSource, fetched: Fetched
   const updates: Array<{ slug: string; plan: Extract<PlatformPlan, { kind: "update" }>; snapshot: StoreSnapshot }> = [];
   for (const { gameId, slug, snapshot } of applied) {
     const cur = gameById.get(gameId);
-    if (source === "steam" && snapshot.meta && cur) {
+    // 소스를 가리지 않는다. 권위(덮어쓸 수 있는가)는 planGameMeta 가 META_OVERWRITE_SOURCES 로 가른다 —
+    // 예전에는 여기서 steam 만 통과시켜서, 스팀에 없는 게임은 등록 순간의 값에 영원히 멈춰 있었다.
+    if (snapshot.meta && cur) {
       const set = planGameMeta(ctx, cur, snapshot.meta);
       if (Object.keys(set).length > 0) {
         metaUpdates.push(ctx.db.update(games).set({ ...set, updatedAt: ctx.now }).where(eq(games.id, gameId)));
