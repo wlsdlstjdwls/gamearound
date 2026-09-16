@@ -162,6 +162,13 @@
       "when": 1789459669257,
       "tag": "0022_aromatic_human_robot",
       "breakpoints": true
+    },
+    {
+      "idx": 23,
+      "version": "7",
+      "when": 1789546326655,
+      "tag": "0023_amazing_franklin_richards",
+      "breakpoints": true
     }
   ]
 }

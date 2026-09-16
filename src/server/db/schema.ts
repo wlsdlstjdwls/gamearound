@@ -42,8 +42,11 @@ export const HOME_REGION = "KR" as const;
  * demo(체험판)를 지우지 않고 분류로 빼는 이유: 체험판 935건 중 253건은 우리가 직접 수집한
  * 가격이 붙어 있다. 지우면 그 수집 결과까지 날아간다. 목록은 content_type='game' 만 보므로
  * 분류만 옮기면 본편인 척 섞이는 문제는 사라지고, 나중에 체험판 화면이 필요해지면 그대로 쓴다.
+ * music(사운드트랙)도 같은 이유로 둔다: 스팀 출시예정 목록 100건 중 7건이 독립 상품으로 나온
+ * 사운드트랙이었다(2026-09-16 실측). 본편에 딸린 사운드트랙은 dlc 로 오지만 이쪽은 부모 없이
+ * 혼자 서서, 가르지 않으면 출시예정 목록이 OST 로 찬다.
  */
-export const contentTypeEnum = pgEnum("content_type", ["game", "dlc", "edition", "bundle", "demo"]);
+export const contentTypeEnum = pgEnum("content_type", ["game", "dlc", "edition", "bundle", "demo", "music"]);
 /** 회사가 이 게임에 대해 가진 역할. 같은 회사가 개발과 배급을 겸하면 행 2개가 된다 */
 export const companyRoleEnum = pgEnum("company_role", ["developer", "publisher"]);
 /**

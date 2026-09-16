@@ -18,6 +18,8 @@ export const CONTENT_KIND_LABEL: Record<Exclude<ContentType, "game">, string> = 
   edition: "에디션",
   bundle: "번들",
   demo: "체험판",
+  /** 본편에 딸린 것이 아니라 혼자 서는 사운드트랙 상품. 딸린 쪽은 dlc 로 온다 */
+  music: "사운드트랙",
 };
 
 /** 자식 화면에서 본편으로 돌아가는 줄. 부모를 아는 자식에게만 보인다 */

@@ -184,6 +184,16 @@ describe("parseStoreItems 의 종류 판정", () => {
     expect(parseStoreItems(withParent, withParent).get("7")?.contentType).toBe("demo");
   });
 
+  it("type 11 은 사운드트랙이다", () => {
+    expect(parseStoreItems(items(11), items(11)).get("7")?.contentType).toBe("music");
+  });
+
+  // 부모가 있으면 그 게임의 추가 콘텐츠로 서는 편이 맞다 — 체험판과 반대 순서다
+  it("부모를 가리키는 사운드트랙은 DLC 로 남는다", () => {
+    const withParent = items(11, { related_items: { parent_appid: 9 } });
+    expect(parseStoreItems(withParent, withParent).get("7")?.contentType).toBe("dlc");
+  });
+
   it("type 0 은 본편, type 4 는 DLC", () => {
     expect(parseStoreItems(items(0), items(0)).get("7")?.contentType).toBe("game");
     expect(parseStoreItems(items(4), items(4)).get("7")?.contentType).toBe("dlc");

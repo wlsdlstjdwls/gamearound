@@ -32,6 +32,13 @@ export const STEAM_APP_TYPE_DLC = 4;
  * 가르지 않으면 "Aerosurge Demo" 같은 행이 본편으로 등록돼 출시예정 목록을 채운다.
  */
 export const STEAM_APP_TYPE_DEMO = 1;
+/**
+ * 사운드트랙(EStoreAppType 11). 체험판과 같은 이유로 가른다 —
+ * 2026-09-16 실측으로 출시예정 목록 100건 중 7건이었다.
+ * 본편에 딸린 사운드트랙은 parent_appid 를 달고 와 dlc 로 빠지므로, 여기 걸리는 것은
+ * 부모 없이 혼자 서는 상품이다("AKIBA LOST - アキバロスト Soundtrack").
+ */
+export const STEAM_APP_TYPE_MUSIC = 11;
 export const STEAM_ASSET_BASE_URL = "https://shared.akamai.steamstatic.com/store_item_assets";
 
 /**
