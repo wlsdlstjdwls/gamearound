@@ -9,6 +9,12 @@ export const TOPSELLERS_PAGE_SIZE = 100;
 /** 한 검색 쿼리가 돌려주는 깊이 한계. start=6000 은 응답, 7000 은 빈 응답(2026-09-14 확인) */
 export const TOPSELLERS_MAX_PAGES = 65;
 export const TOPSELLERS_PAGE_INTERVAL_MS = 1500;
+/**
+ * 출시예정 패스가 한 실행에서 넘길 페이지 수. 인기순위와 같은 count 를 쓰므로 400건까지 본다
+ * (2026-09-16 실측: count=100 이면 100건이 온다. 다만 하한이 있어 count=10 에도 25건이 왔다).
+ * 작게 잡은 이유는 DISCOVERY_PASSES 주석에 있다: 이 목록은 바닥나지 않아 상한이 곧 몫이다.
+ */
+export const UPCOMING_MAX_PAGES = 4;
 export const STEAM_STORE_APP_URL = "https://store.steampowered.com/app";
 /** 할인 종료 시각, 행사명은 appdetails 에 없다. 공개 스토어 API(GetItems)의 active_discounts 에만 있다 */
 export const STEAM_STOREITEMS_URL = "https://api.steampowered.com/IStoreBrowseService/GetItems/v1/";
@@ -20,6 +26,12 @@ export const STEAM_GETITEMS_BATCH = 100;
  * appdetails 의 문자열 type("game" | "dlc") 과 같은 뜻이지만 배치 경로는 숫자로 온다.
  */
 export const STEAM_APP_TYPE_DLC = 4;
+/**
+ * 체험판(EStoreAppType 1). 출시예정 목록을 훑기 시작하면서 필요해졌다 —
+ * 2026-09-16 실측으로 그 목록 100건 중 10건이 체험판이었다(인기순위에는 거의 없다).
+ * 가르지 않으면 "Aerosurge Demo" 같은 행이 본편으로 등록돼 출시예정 목록을 채운다.
+ */
+export const STEAM_APP_TYPE_DEMO = 1;
 export const STEAM_ASSET_BASE_URL = "https://shared.akamai.steamstatic.com/store_item_assets";
 
 /**
@@ -59,6 +71,22 @@ export const STEAM_GENRE_TAG_IDS: Record<number, string> = {
  * 장르 태그로 잘라 계속 파고든다(슬라이스 간 중복은 호출부에서 제거). null = 태그 필터 없음.
  */
 export const DISCOVERY_SLICES: Array<string | null> = [null, ...Object.keys(STEAM_GENRE_TAG_IDS)];
+
+/**
+ * 발견이 훑을 패스. 검색 필터 하나와 태그 슬라이스 하나가 한 패스다.
+ *
+ * 출시예정(comingsoon)을 맨 앞에 두는 이유(2026-09-16 실측): 인기순위만 훑으면 아직 안 나온 게임이
+ * 카탈로그에 늦게 들어오고, 그 사이 미래 출시일을 가진 본편이 116건에 머문다. 같은 검색 API 에
+ * filter 만 바꾸면 되므로 새 엔드포인트도 새 예산도 필요 없다.
+ *
+ * 그런데 출시예정 목록은 바닥나지 않는다 — 매일 새 등록이 들어와 늘 "처음 보는 후보" 를 준다.
+ * 상한(UPCOMING_MAX_PAGES)을 두지 않으면 시드 몫을 이 패스가 통째로 먹고 인기순위 발견이
+ * 영원히 안 돈다. 그래서 앞자리를 주되 몇 페이지에서 끊고 나머지는 인기순위에 넘긴다.
+ */
+export const DISCOVERY_PASSES: Array<{ filter: string; tags: string | null; maxPages: number }> = [
+  { filter: "comingsoon", tags: null, maxPages: UPCOMING_MAX_PAGES },
+  ...DISCOVERY_SLICES.map((tags) => ({ filter: "topsellers", tags, maxPages: TOPSELLERS_MAX_PAGES })),
+];
 
 /** GetItems 의 supported_player_categoryids → 멀티플레이 추론 (§11-7: 인원수는 알 수 없음) */
 export const PLAYER_CATEGORY = {

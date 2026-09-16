@@ -5,7 +5,7 @@ import { createHttpClient } from "../http";
 import { sleep } from "@/lib/async";
 import { errorMessage } from "@/lib/errors";
 import {
-  DISCOVERY_SLICES,
+  DISCOVERY_PASSES,
   STEAM_APPDETAILS_URL,
   STEAM_FEATURED_URL,
   STEAM_GETITEMS_BATCH,
@@ -17,7 +17,6 @@ import {
   STEAM_STOREITEMS_URL,
   STEAM_STORESEARCH_URL,
   STEAM_TOPSELLERS_URL,
-  TOPSELLERS_MAX_PAGES,
   TOPSELLERS_PAGE_INTERVAL_MS,
   TOPSELLERS_PAGE_SIZE,
 } from "./constants";
@@ -88,8 +87,9 @@ function appDetailsUrl(appid: string, lang: "koreana" | "english"): string {
 }
 
 /**
- * 카탈로그 발견 — 인기순위 검색을 페이지 단위로 흘려보낸다(§11-1).
- * 한 쿼리는 ~6,500건에서 바닥나므로 장르 태그 슬라이스로 잘라 계속 파고든다.
+ * 카탈로그 발견 — 같은 검색 API 를 패스 단위로 흘려보낸다(§11-1).
+ * 먼저 출시예정을 몇 페이지 훑고(아직 안 나온 게임이 늦게 들어오면 출시예정 축이 빈다),
+ * 그다음 인기순위를 본다. 한 쿼리는 ~6,500건에서 바닥나므로 장르 태그 슬라이스로 잘라 계속 파고든다.
  * 상위 N개만 끊어 돌려주지 않는 이유: 그 N개가 전부 등록된 순간 신규가 영원히 0건이 된다 —
  * 어디까지 아는지는 DB 를 보는 호출부만 안다(adapters/types 의 discoverPages 주석).
  * 인기순위 검색 자체가 막히면 featuredcategories 한 장(60건 안팎)으로 폴백한다.
@@ -97,18 +97,18 @@ function appDetailsUrl(appid: string, lang: "koreana" | "english"): string {
 async function* steamDiscoverPages(): AsyncGenerator<SearchCandidate[]> {
   let pages = 0;
   try {
-    for (const slice of DISCOVERY_SLICES) {
-      for (let page = 0; page < TOPSELLERS_MAX_PAGES; page++) {
+    for (const pass of DISCOVERY_PASSES) {
+      for (let page = 0; page < pass.maxPages; page++) {
         const u = new URL(STEAM_TOPSELLERS_URL);
         u.searchParams.set("json", "1");
-        u.searchParams.set("filter", "topsellers");
+        u.searchParams.set("filter", pass.filter);
         u.searchParams.set("cc", "kr");
         u.searchParams.set("l", "koreana");
         u.searchParams.set("count", String(TOPSELLERS_PAGE_SIZE));
         u.searchParams.set("start", String(page * TOPSELLERS_PAGE_SIZE));
-        if (slice) u.searchParams.set("tags", slice);
+        if (pass.tags) u.searchParams.set("tags", pass.tags);
         const found = parseTopSellerCandidates(await http.json(u.toString()));
-        if (found.length === 0) break; // 이 슬라이스는 바닥 — 다음 슬라이스로
+        if (found.length === 0) break; // 이 패스는 바닥 — 다음 패스로
         pages++;
         yield found;
         await sleep(TOPSELLERS_PAGE_INTERVAL_MS);
