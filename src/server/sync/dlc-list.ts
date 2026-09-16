@@ -116,7 +116,7 @@ export async function listParentDlcs(
 ): Promise<DlcGroup[]> {
   if (!adapter.listDlcIds && !adapter.listDlcCandidates) return [];
   const parents = applied
-    .filter((a) => a.snapshot.contentType !== "dlc" && a.snapshot.dlcExternalIds === undefined)
+    .filter((a) => a.snapshot.contentType !== "dlc" && a.snapshot.contentType !== "demo" && a.snapshot.dlcExternalIds === undefined)
     .map((a) => ({ gameId: a.gameId, slug: a.slug }));
   if (parents.length === 0) return [];
 

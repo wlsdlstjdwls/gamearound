@@ -1,7 +1,7 @@
 // GetItems 응답 파서 — 배치 조회 경로. 가격, 할인 기간, 에셋, 멀티플레이 추론이 여기서 나온다.
 import { AdapterError, type StoreSnapshot } from "../types";
 import { storeItemsSchema, type StoreItem } from "./schemas";
-import { PLAYER_CATEGORY, STEAM_APP_TYPE_DLC, STEAM_ASSET_BASE_URL, STEAM_GENRE_TAG_IDS, STEAM_STORE_APP_URL } from "./constants";
+import { PLAYER_CATEGORY, STEAM_APP_TYPE_DEMO, STEAM_APP_TYPE_DLC, STEAM_ASSET_BASE_URL, STEAM_GENRE_TAG_IDS, STEAM_STORE_APP_URL } from "./constants";
 import { steamDiscountLabel } from "./parse-discount";
 import { ratioToScore } from "@/lib/user-score";
 
@@ -108,8 +108,14 @@ export function parseStoreItems(rawKo: unknown, rawEn?: unknown): Map<string, St
       discountName: steamDiscountLabel(discount?.discount_description),
       currentVersion: null,
       releaseDate: unixToIsoDate(item.release?.steam_release_date),
-      // 두 신호를 모두 본다 — appdetails 경로와 같은 규칙이다(type 이 게임인데 본편만 가리키는 확장팩이 있다)
-      contentType: item.type === STEAM_APP_TYPE_DLC || parentAppid !== null ? "dlc" : "game",
+      // 두 신호를 모두 본다 — appdetails 경로와 같은 규칙이다(type 이 게임인데 본편만 가리키는 확장팩이 있다).
+      // 체험판은 부모를 가리켜도 DLC 가 아니다 — 먼저 가른다
+      contentType:
+        item.type === STEAM_APP_TYPE_DEMO
+          ? "demo"
+          : item.type === STEAM_APP_TYPE_DLC || parentAppid !== null
+            ? "dlc"
+            : "game",
       parentExternalId: parentAppid,
       userScore: userScoreOf(item),
       // 본편의 DLC 목록은 GetItems 가 주지 않는다. 목록이 필요하면 appdetails 경로(fetch)를 써야 한다

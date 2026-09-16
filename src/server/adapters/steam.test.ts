@@ -169,6 +169,27 @@ describe("steamDiscountLabel", () => {
   });
 });
 
+describe("parseStoreItems 의 종류 판정", () => {
+  // 출시예정 목록에는 체험판이 섞여 온다(2026-09-16 실측 100건 중 10건). 본편으로 새면 안 된다
+  const items = (type: number, extra: Record<string, unknown> = {}) => ({
+    response: { store_items: [{ appid: 7, type, name: "Foo", success: 1, visible: true, ...extra }] },
+  });
+
+  it("type 1 은 체험판이다", () => {
+    expect(parseStoreItems(items(1), items(1)).get("7")?.contentType).toBe("demo");
+  });
+
+  it("체험판은 본편을 가리켜도 DLC 가 되지 않는다", () => {
+    const withParent = items(1, { related_items: { parent_appid: 9 } });
+    expect(parseStoreItems(withParent, withParent).get("7")?.contentType).toBe("demo");
+  });
+
+  it("type 0 은 본편, type 4 는 DLC", () => {
+    expect(parseStoreItems(items(0), items(0)).get("7")?.contentType).toBe("game");
+    expect(parseStoreItems(items(4), items(4)).get("7")?.contentType).toBe("dlc");
+  });
+});
+
 describe("parseStoreItems", () => {
   const ko = () => fixture("steam-getitems-batch-ko.json");
   const en = () => fixture("steam-getitems-batch-en.json");

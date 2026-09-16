@@ -136,7 +136,10 @@ export async function syncPatchNotes(
 ): Promise<number> {
   if (!adapter.listPatchNotes) return 0;
   // DLC 에는 자기 패치 기록이 없다 — 패치는 본편 단위로 나온다
-  const candidates = applied.filter((a) => a.snapshot.contentType !== "dlc").map((a) => ({ gameId: a.gameId, slug: a.slug }));
+  // 체험판도 뺀다 — 자기 패치 기록을 따로 갖지 않으면서 요청만 먹는다
+  const candidates = applied
+    .filter((a) => a.snapshot.contentType !== "dlc" && a.snapshot.contentType !== "demo")
+    .map((a) => ({ gameId: a.gameId, slug: a.slug }));
   if (candidates.length === 0) return 0;
 
   const rows = await ctx.db

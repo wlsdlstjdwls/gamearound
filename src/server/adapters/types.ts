@@ -41,8 +41,12 @@ export interface StoreSnapshot {
   dlcExternalIds?: string[];
   /** DLC 가 알려주는 본편 외부 ID. steam appdetails 의 fullgame.appid */
   parentExternalId?: string | null;
-  /** 이 레코드 자체가 본편인지 DLC 인지. 주지 않는 소스는 undefined(= 본편으로 본다) */
-  contentType?: "game" | "dlc" | null;
+  /**
+   * 이 레코드 자체가 무엇인지. 주지 않는 소스는 undefined(= 본편으로 본다).
+   * demo 가 있는 이유: 출시예정 목록에는 체험판이 섞여 오는데(steam comingsoon 100건 중 10건,
+   * 2026-09-16 실측) 본편으로 등록하면 출시예정 화면이 체험판으로 찬다.
+   */
+  contentType?: "game" | "dlc" | "demo" | null;
   /**
    * 이 스토어가 "지금 이 구독에 포함돼 있다"고 말한 구독 키 목록(subscriptions.key).
    *
