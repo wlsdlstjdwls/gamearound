@@ -158,6 +158,16 @@ export const CRON_SOURCES = ["nintendo", "nintendo_jp", "epic", "steam", "psstor
 // Actions 분도 12.3분/회를 통째로 돌려받는다. 두 곳에서 같이 돌리지 않는다 — Redis 락에 걸려 한쪽이 빈손이 된다.
 // 갱신이 본편부터 도는 것은 REFRESH_MAIN_SHARE 가 맡는다(43,405행 중 본편은 4,781행뿐이다).
 //
+// 교차 매칭은 2026-09-16 에 자기 모드를 받았다(CRON_MODES 의 match). 하루 2회씩, 20분 간격으로 흩어 둔다:
+//   /api/cron/crawl/steam/match        20 8,20 * * *    하루 2회 × 150건
+//   /api/cron/crawl/xbox/match         40 8,20 * * *    하루 2회 × 150건
+//   /api/cron/crawl/psstore/match      0 9,21 * * *     하루 2회 × 200건
+//   /api/cron/crawl/epic/match         20 9,21 * * *    하루 2회 × 200건
+//   /api/cron/crawl/nintendo/match     40 9,21 * * *    하루 2회 × 60건 (간격 4초라 제일 적다)
+//   /api/cron/crawl/nintendo_jp/match  0 10,22 * * *    하루 2회 × 200건
+// 시각을 오전 8~10시, 오후 8~10시(UTC)에 몰아 둔 이유: 가격과 발견이 쓰지 않는 시간대다.
+// 같은 소스를 두 실행이 동시에 잡으면 Redis 락에 걸려 한쪽이 빈손으로 끝난다.
+//
 // 남은 빈 자리 둘(gog prices 400, gog discover 190)은 아직 안 돌렸다.
 // 돌릴 곳을 고를 때 발견 쪽으로 기울지 말 것 — 굶은 것은 발견이 아니라 갱신 주기였다
 // (psstore 하루 408건으로 한 바퀴 108일, xbox 587건으로 52일).
@@ -166,8 +176,16 @@ export const CRON_SOURCES = ["nintendo", "nintendo_jp", "epic", "steam", "psstor
 //      겹치면 Redis 락에 걸려 한쪽이 빈손으로 끝난다(설계서 §4.4).
 //   2) 실행이 5~9분씩 걸리므로 서로도 20분씩 띄운다. 겹쳐도 동작은 하지만 함수 동시 실행이 늘 뿐이다.
 export type CronSource = (typeof CRON_SOURCES)[number];
-/** 크론 1회가 하는 일. 한 번에 다 하면 300초를 넘겨서 갈라 둔다 */
-export const CRON_MODES = ["prices", "discover"] as const;
+/**
+ * 크론 1회가 하는 일. 한 번에 다 하면 300초를 넘겨서 갈라 둔다.
+ *
+ * match 는 2026-09-16 에 더했다. 그전까지 교차 매칭(우리가 아는 게임이 이 스토어에도 있는지 제목으로
+ * 찾아보는 일)은 discover 실행에 8건씩 얹혀 갔다 — 하루 16건이다. 그 속도로는 본편 14,491건을
+ * 도는 데 2년이 넘게 걸린다. 실제로 본편의 76%(11,062건)가 스토어를 하나만 갖고 있고,
+ * 스토어가 하나면 가격 비교라는 이 서비스의 축이 아예 서지 않는다.
+ * 매칭에는 발견이 쓰는 목록 페이지 예산이 필요 없어서(검색 요청뿐이다) 모드를 따로 두는 편이 싸다.
+ */
+export const CRON_MODES = ["prices", "discover", "match"] as const;
 export type CronMode = (typeof CRON_MODES)[number];
 
 export interface CronRunPlan {
@@ -262,6 +280,8 @@ export const CRON_PLAN: Record<CronSource, Record<CronMode, CronRunPlan>> = {
     // 신규 20건은 상품 HTML 단건 조회다(batchPricesOnly "detail") — 여기만 4초 간격을 그대로 탄다.
     // 요청 (12페이지 + 매칭 3 + 신규 20) × 4초 = 140초, 반영 24건 × 0.4초 → 합 172초
     discover: { limit: 24, seedTop: 20, pageBudget: 12, match: 3, seedShare: 1 },
+    // 간격 4초라 제일 비싸다. 검색은 제목 두 개(영문, 한글)까지 나가므로 건당 최대 8.4초로 센다 → 60건 580초
+    match: { limit: 0, seedTop: 0, pageBudget: 0, match: 60 },
   },
   nintendo_jp: {
     // 발견도 가격도 JSON 이라 한국보다 싸다. 요청 6회(6초) + 반영 300건 × 0.4초 → 145초
@@ -272,6 +292,8 @@ export const CRON_PLAN: Record<CronSource, Record<CronMode, CronRunPlan>> = {
     // 멈춘다(300건 훑어 신규 60건). 안 쓰는 최악값이 예산에서 10초를 떼어 가고 있었다.
     // 요청 (90페이지 + 배치 2 + 매칭 8 + DLC 목록 30 + DLC 상세 1) × 1초 + 반영 80건 × 0.4초 → 163초
     discover: { limit: 60, seedTop: 60, pageBudget: 90, match: 8, seedShare: 1 },
+    // 간격 1초. 건당 최대 2.4초 → 200건 552초
+    match: { limit: 0, seedTop: 0, pageBudget: 0, match: 200 },
   },
   // ---- 아래 넷은 발견만 크론이 맡는다. 가격 갱신은 Actions 워크플로에 남아 있다 ----
   //
@@ -290,6 +312,8 @@ export const CRON_PLAN: Record<CronSource, Record<CronMode, CronRunPlan>> = {
     // (DLC_FETCH_PER_RUN_BY_SOURCE.steam) 남는 자리에 맞춰 몫을 다시 잡았다.
     // 페이지 예산 80 의 근거는 DISCOVERY_PAGE_BUDGET.steam 주석에 있다(아는 8,000건 구간을 건너뛴다).
     discover: { limit: 120, seedTop: 120, pageBudget: 80, match: 8, seedShare: 1 },
+    // 간격 1.5초. 건당 최대 3.4초 → 150건 587초. 하루 2회면 300건이라 본편 11,301건을 38일에 한 바퀴 돈다
+    match: { limit: 0, seedTop: 0, pageBudget: 0, match: 150 },
   },
   psstore: {
     // 559초. 2026-09-16 에 200 에서 300 으로 올렸다 — 가격 갱신이 Actions 에서 이 크론으로 옮겨 왔다.
@@ -306,6 +330,8 @@ export const CRON_PLAN: Record<CronSource, Record<CronMode, CronRunPlan>> = {
     //   남은 여유를 발견 몫으로
     // 하루 2회 × 120건이면 한 바퀴가 44일에서 29일로 준다.
     discover: { limit: 120, seedTop: 120, pageBudget: 90, match: 8, seedShare: 1 },
+    // 간격 1초. 건당 최대 2.4초 → 200건 552초
+    match: { limit: 0, seedTop: 0, pageBudget: 0, match: 200 },
   },
   xbox: {
     prices: { limit: 200, seedTop: 0, pageBudget: 0, match: 0 },
@@ -313,6 +339,8 @@ export const CRON_PLAN: Record<CronSource, Record<CronMode, CronRunPlan>> = {
     // 2026-09-15 에 180 에서 160 으로 내렸다. 실측 자체는 315초로 여유로웠지만 그건 페이지를 9장만
     // 읽었을 때다(예산은 60장). 카탈로그가 차면 그 50장이 75초로 돌아오고, 새 DLC 40건도 함께 센다.
     discover: { limit: 160, seedTop: 160, pageBudget: 60, match: 8, seedShare: 1 },
+    // 간격 1.5초. 건당 최대 3.4초 → 150건 587초
+    match: { limit: 0, seedTop: 0, pageBudget: 0, match: 150 },
   },
   gog: {
     prices: { limit: 400, seedTop: 0, pageBudget: 0, match: 0 },
@@ -322,6 +350,8 @@ export const CRON_PLAN: Record<CronSource, Record<CronMode, CronRunPlan>> = {
     // (CRON_DB_MS_PER_NEW_ITEM_BY_SOURCE.gog 주석에 실측: 220건이 402행).
     // 카탈로그 한 바퀴가 64페이지라 신규가 마르면 발견은 일찍 멈추고 실행도 그만큼 짧다.
     discover: { limit: 190, seedTop: 190, pageBudget: 70, match: 8, seedShare: 1 },
+    // 중단된 소스라 크론에 걸어 두지 않았다. 되살릴 때를 위해 몫만 남긴다
+    match: { limit: 0, seedTop: 0, pageBudget: 0, match: 150 },
   },
   epic: {
     // 2026-09-15 에 120 에서 110 으로 내렸다 — DLC 목록 3회와 새 DLC 상세 10건이 이 모드에 새로 붙었다.
@@ -330,6 +360,8 @@ export const CRON_PLAN: Record<CronSource, Record<CronMode, CronRunPlan>> = {
     // 요청 (60페이지 + 60건 + 매칭 8) × 1초 + 반영 60건 × 0.4초 → 175초. 한 바퀴가 175페이지라 나눠 돈다
     // 60건 전부를 신규에 준다. Epic 기존 가격은 prices 모드가 따로 돈다
     discover: { limit: 60, seedTop: 60, pageBudget: 60, match: 8, seedShare: 1 },
+    // 간격 1초. 건당 최대 2.4초 → 200건 552초
+    match: { limit: 0, seedTop: 0, pageBudget: 0, match: 200 },
   },
 };
 

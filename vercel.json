@@ -59,6 +59,30 @@
     {
       "path": "/api/cron/crawl/psstore/discover",
       "schedule": "30 4,16 * * *"
+    },
+    {
+      "path": "/api/cron/crawl/steam/match",
+      "schedule": "20 8,20 * * *"
+    },
+    {
+      "path": "/api/cron/crawl/xbox/match",
+      "schedule": "40 8,20 * * *"
+    },
+    {
+      "path": "/api/cron/crawl/psstore/match",
+      "schedule": "0 9,21 * * *"
+    },
+    {
+      "path": "/api/cron/crawl/epic/match",
+      "schedule": "20 9,21 * * *"
+    },
+    {
+      "path": "/api/cron/crawl/nintendo/match",
+      "schedule": "40 9,21 * * *"
+    },
+    {
+      "path": "/api/cron/crawl/nintendo_jp/match",
+      "schedule": "0 10,22 * * *"
     }
   ],
   "git": {

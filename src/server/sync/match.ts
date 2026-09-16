@@ -217,9 +217,16 @@ export async function matchUnmatchedGames(source: SearchableSource, limit: numbe
     .from(games)
     .leftJoin(gameSourceRefs, and(eq(gameSourceRefs.gameId, games.id), eq(gameSourceRefs.source, source)))
     .where(
-      or(
-        isNull(gameSourceRefs.gameId),
-        and(eq(gameSourceRefs.matchedBy, "none"), lt(gameSourceRefs.checkedAt, noneRetryCutoff())),
+      and(
+        // 본편만 줄을 선다. 2026-09-16 실측으로 이 큐의 76~80%가 DLC, 에디션, 번들, 체험판이었다
+        // (steam 기준 미매칭 51,075건 중 본편은 11,301건). 그것들은 제목 검색으로 붙일 값이 아니다 —
+        // DLC 는 본편을 통해 붙고(sync/dlc-writer), 에디션과 번들은 본편의 변형이다.
+        // 몫이 작은데 줄이 이렇게 섞여 있으면 정작 본편이 영영 차례를 못 받는다.
+        eq(games.contentType, "game"),
+        or(
+          isNull(gameSourceRefs.gameId),
+          and(eq(gameSourceRefs.matchedBy, "none"), lt(gameSourceRefs.checkedAt, noneRetryCutoff())),
+        ),
       ),
     )
     .orderBy(games.createdAt)

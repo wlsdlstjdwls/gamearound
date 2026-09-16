@@ -5,6 +5,8 @@
 import { describe, expect, it } from "vitest";
 import { getStoreAdapter } from "@/server/adapters";
 import {
+  CRON_MODES,
+  type CronMode,
   CRON_DB_MS_PER_ITEM,
   CRON_DB_MS_PER_NEW_ITEM,
   CRON_DB_MS_PER_NEW_ITEM_BY_SOURCE,
@@ -38,9 +40,14 @@ import {
  * 뒤엣것은 배치 조회가 있는 소스에서는 거의 공짜지만 epic 처럼 fetchMany 가 없는 소스에서는 건당 1회다.
  * 이 몫을 빼놓고 세면 테스트는 통과하는데 실제 함수는 300초에 잘린다.
  */
-function estimateMs(source: (typeof CRON_SOURCES)[number], mode: "prices" | "discover"): number {
+function estimateMs(source: (typeof CRON_SOURCES)[number], mode: CronMode): number {
   const plan = CRON_PLAN[source][mode];
   const adapter = getStoreAdapter(source);
+  // match 모드는 runSource 를 아예 부르지 않는다(route 의 limit 0 분기) — 목록 페이지도 DLC 단계도 없다.
+  // 드는 것은 검색뿐이고, 한 건이 최대 두 번 나간다(영문 제목, 한국어 제목. match.ts 의 searchBestCandidate).
+  if (mode === "match") {
+    return (plan.match * 2 * adapter.minIntervalMs + plan.match * CRON_DB_MS_PER_ITEM) * CRON_SAFETY_FACTOR;
+  }
   const detailItems = adapter.batchPricesOnly === "detail" ? plan.seedTop : 0;
   const batchedItems = Math.max(plan.limit - detailItems, 0);
   const perRequest = adapter.fetchMany ? (adapter.batchSize ?? DEFAULT_FETCH_BATCH_SIZE) : 1;
@@ -64,7 +71,7 @@ function estimateMs(source: (typeof CRON_SOURCES)[number], mode: "prices" | "dis
 
 describe("CRON_PLAN", () => {
   for (const source of CRON_SOURCES) {
-    for (const mode of ["prices", "discover"] as const) {
+    for (const mode of CRON_MODES) {
       it(`${source} ${mode} 몫이 요청 시간 예산 안에 든다`, () => {
         expect(estimateMs(source, mode)).toBeLessThanOrEqual(CRON_TIME_BUDGET_MS);
       });

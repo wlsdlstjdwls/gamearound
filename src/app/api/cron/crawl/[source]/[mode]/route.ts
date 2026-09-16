@@ -50,12 +50,17 @@ export async function GET(req: NextRequest, ctx: { params: Promise<{ source: str
   const plan = CRON_PLAN[source][mode];
   const startedAt = Date.now();
   const matched = plan.match > 0 && isSearchableSource(source) ? await matchUnmatchedGames(source, plan.match) : null;
-  const result = await runSource(source, {
-    limit: plan.limit,
-    seedTop: plan.seedTop,
-    pageBudget: plan.pageBudget,
-    seedShare: plan.seedShare,
-  });
+  // limit 0 은 "이번 실행은 수집하지 않는다" 는 뜻이다(match 모드). 그래도 runSource 를 부르면
+  // 아무것도 안 한 실행이 sync_logs 에 남고 Redis 락을 잡아 같은 시각의 다른 실행을 빈손으로 만든다.
+  const result =
+    plan.limit > 0
+      ? await runSource(source, {
+          limit: plan.limit,
+          seedTop: plan.seedTop,
+          pageBudget: plan.pageBudget,
+          seedShare: plan.seedShare,
+        })
+      : { status: "ok" as const, processed: 0, failed: 0 };
 
   // durationMs 는 다음에 CRON_PLAN 의 몫을 조정할 때 쓰는 근거다 — 추측 대신 이 값을 본다
   return NextResponse.json(
