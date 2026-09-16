@@ -50,7 +50,7 @@ export default async function PricesPage({ params }: Props) {
       {series.length === 0 ? (
         <EmptyState
           title="아직 가격 이력이 없습니다"
-          description="가격은 값이 바뀔 때만 기록됩니다. 수집이 누적되면 그래프가 표시됩니다."
+          description="가격은 값이 바뀔 때만 기록해요. 기록이 쌓이면 그래프가 표시돼요."
           action={{ href: `/games/${game.slug}`, label: "상세로 돌아가기" }}
         />
       ) : (

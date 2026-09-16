@@ -19,5 +19,5 @@ export const ERROR_MESSAGES = {
 
 export const NOT_FOUND_MESSAGES = {
   title: "페이지를 찾을 수 없어요",
-  body: "주소가 잘못됐거나 아직 수집되지 않은 게임일 수 있어요. 제목으로 다시 검색해 보세요.",
+  body: "주소가 잘못됐거나 목록에 없는 게임이에요. 제목으로 다시 검색해 보세요.",
 } as const;

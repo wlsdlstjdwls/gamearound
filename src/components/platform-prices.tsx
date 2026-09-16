@@ -67,7 +67,7 @@ export function PlatformPrices({
   quotedUserScorePlatform?: Platform | null;
 }) {
   if (platforms.length === 0) {
-    return <div className={cardClass("p-[18px] text-[13px] text-dim")}>플랫폼별 가격 정보가 아직 수집되지 않았어요.</div>;
+    return <div className={cardClass("p-[18px] text-[13px] text-dim")}>플랫폼별 가격 정보가 아직 없어요.</div>;
   }
 
   const rows = [...platforms].sort(byPrice);

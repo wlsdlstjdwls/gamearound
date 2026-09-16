@@ -88,7 +88,7 @@ async function Results({ filter }: { filter: GameListFilter }) {
     return (
       <EmptyState
         title="조건에 맞는 게임이 없습니다"
-        description={filtered ? "필터를 줄이면 더 많은 게임이 보입니다." : "수집이 완료되면 게임이 여기에 표시됩니다."}
+        description={filtered ? "필터를 줄이면 더 많은 게임이 보입니다." : "조건에 맞는 게임이 아직 없어요."}
         action={filtered ? { href: ROUTES.game, label: "필터 초기화" } : { href: ROUTES.home, label: "홈으로" }}
       />
     );

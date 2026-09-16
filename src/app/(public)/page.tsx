@@ -9,7 +9,6 @@ import { EmptyState } from "@/components/empty-state";
 import { SaleBadge } from "@/components/sale-badge";
 import { Card, Page, SectionHead } from "@/components/ui/page";
 import { PLATFORM_LABEL } from "@/lib/format";
-import { nextCollectTimeText } from "@/lib/freshness";
 import { stagger } from "@/lib/motion";
 import { ROUTES } from "@/lib/routes";
 import { getHomeData, type GameSummary } from "@/server/services/games";
@@ -83,7 +82,7 @@ export default async function HomePage() {
         {discounts.length === 0 ? (
           <EmptyState
             title="지금 할인 중인 게임이 없습니다"
-            description={`수집이 끝나면 이 자리에 표시됩니다. 다음 수집은 ${nextCollectTimeText()}입니다.`}
+            description="할인 중인 게임이 확인되면 이 자리에 표시돼요."
             action={{ href: ROUTES.game, label: "전체 게임 목록 보기" }}
           />
         ) : (

@@ -8,7 +8,6 @@ import { EmptyState } from "@/components/empty-state";
 import { PlatformBadges } from "@/components/platform-badges";
 import { Card, Page, PageHead } from "@/components/ui/page";
 import { formatDate, formatDiscount } from "@/lib/format";
-import { nextCollectTimeText } from "@/lib/freshness";
 import { stagger } from "@/lib/motion";
 import { ROUTES } from "@/lib/routes";
 import { searchGames, type GameSummary } from "@/server/services/games";
@@ -54,7 +53,7 @@ function ReportBlock({ q }: { q: string }) {
   return (
     <EmptyState
       title="찾는 게임이 없나요?"
-      description={`아직 수집되지 않은 게임일 수 있습니다. 영문 제목으로 다시 검색하거나, 제보해 주시면 다음 수집(${nextCollectTimeText()})에 포함합니다.`}
+      description="제목의 일부만 넣거나 영문 제목으로 다시 검색해 보세요."
       action={{ href: `${ROUTES.game}?q=${encodeURIComponent(q)}`, label: "전체 목록에서 찾기" }}
     />
   );

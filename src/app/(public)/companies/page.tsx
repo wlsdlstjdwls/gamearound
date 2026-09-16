@@ -60,7 +60,7 @@ export default async function CompaniesPage({ searchParams }: Props) {
       {result.items.length === 0 ? (
         <EmptyState
           title="아직 회사 정보를 모으는 중이에요"
-          description="게임을 수집하면서 개발사, 배급사를 하나씩 확인하고 있어요."
+          description="개발사, 배급사 정보를 하나씩 확인하고 있어요."
           action={{ href: ROUTES.game, label: "게임 목록 보기" }}
         />
       ) : (
