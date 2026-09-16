@@ -1,6 +1,11 @@
 // OpenCritic 어댑터 — 설계서 §4.1/§10 (평점 1순위 소스).
 // 2026-09-11: api.opencritic.com 직접 호출은 HTTP 400 "API key is required" — RapidAPI 경유만 가능.
 // OPENCRITIC_RAPIDAPI_KEY 가 있으면 RapidAPI 호스트 + x-rapidapi-key 헤더로 호출, 없으면 소스 비활성(adapters/index.ts).
+//
+// 무료 등급의 한도는 두 개이고 따로 센다(2026-09-16 응답 헤더 실측):
+//   x-ratelimit-requests-limit = 200/일   — 모든 호출이 여기서 깎인다
+//   x-ratelimit-searches-limit = 25/일    — /game/search 만 여기서도 깎인다
+// 그래서 매칭(검색)이 수집(단건 조회)보다 25배 비싸다. 몫은 sync/constants 가 나눈다.
 import { z } from "zod";
 import { slugify } from "@/lib/slug";
 import {
@@ -13,7 +18,12 @@ import { createHttpClient } from "./http";
 
 export const OPENCRITIC_RAPIDAPI_KEY_ENV = "OPENCRITIC_RAPIDAPI_KEY";
 export const OPENCRITIC_RAPIDAPI_HOST = "opencritic-api.p.rapidapi.com";
-export const OPENCRITIC_API_URL = `https://${OPENCRITIC_RAPIDAPI_HOST}/api`;
+/**
+ * RapidAPI 경유 주소에는 `/api` 접두가 없다 — 붙이면 모든 호출이
+ * {"message":"Endpoint '/api/game/search' does not exist"} 404 로 돌아온다(2026-09-16 실측).
+ * 키가 없어 한 번도 못 돌아 본 탓에 이 오타가 드러나지 않고 있었다.
+ */
+export const OPENCRITIC_API_URL = `https://${OPENCRITIC_RAPIDAPI_HOST}`;
 export const OPENCRITIC_SITE_URL = "https://opencritic.com/game";
 
 const gameSchema = z.object({

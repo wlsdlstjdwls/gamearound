@@ -9,6 +9,7 @@ import { ALL_SOURCES, getDisabledReason, isSearchableSource, isSource, isSourceE
 import { runSource } from "@/server/sync/run-source";
 import { SEEDABLE_SOURCES } from "@/server/sync/constants";
 import { matchUnmatchedGames } from "@/server/sync/match";
+import { MATCH_LIMIT_MAX_BY_SOURCE } from "@/server/sync/constants";
 
 loadEnv({ path: path.resolve(process.cwd(), ".env.local"), quiet: true });
 loadEnv({ quiet: true }); // .env 폴백 (있으면)
@@ -52,7 +53,10 @@ async function main(): Promise<number> {
 
   // §4.2 매칭: 기준 소스(steam)와 rss 를 제외한 소스는 수집 전에 미매칭 게임을 먼저 매칭.
   // 회사, 구독 소스는 게임 제목으로 검색하는 개념이 없어 매칭 단계 자체를 건너뛴다.
-  const matchLimit = args["no-match"] ? 0 : (parsePositiveInt(args.match, "match") ?? (source === "steam" || source === "rss" ? 0 : 50));
+  const asked = args["no-match"] ? 0 : (parsePositiveInt(args.match, "match") ?? (source === "steam" || source === "rss" ? 0 : 50));
+  // 소스가 검색에 자기 한도를 매기면 거기서 한 번 더 깎는다 — 워크플로는 여러 소스에 같은 값을 준다
+  const matchLimit = Math.min(asked, MATCH_LIMIT_MAX_BY_SOURCE[source] ?? asked);
+  if (matchLimit < asked) console.log(`[match] ${source}: 요청 ${asked} → 소스 한도 ${matchLimit}`);
   if (matchLimit > 0 && isSearchableSource(source)) {
     const m = await matchUnmatchedGames(source, matchLimit);
     console.log(`[match] ${source}: ${JSON.stringify(m)}`);

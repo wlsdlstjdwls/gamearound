@@ -3,7 +3,7 @@ import { describe, expect, it } from "vitest";
 import { readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import { AdapterError } from "./types";
-import { parseOpenCriticGame, parseOpenCriticSearch } from "./opencritic";
+import { OPENCRITIC_API_URL, parseOpenCriticGame, parseOpenCriticSearch } from "./opencritic";
 
 const fixture = (name: string): unknown =>
   JSON.parse(readFileSync(fileURLToPath(new URL(`./__fixtures__/${name}`, import.meta.url)), "utf8"));
@@ -29,5 +29,13 @@ describe("parseOpenCriticSearch", () => {
     expect(list).toHaveLength(2);
     expect(list[0].externalId).toBe("9136");
     expect(list[0].url).toBe("https://opencritic.com/game/9136/cyberpunk-2077");
+  });
+});
+
+describe("RapidAPI 주소", () => {
+  // /api 접두를 붙이면 모든 호출이 404 로 돌아온다(2026-09-16 실측). 키가 없어 여태 안 드러났다
+  it("경로에 /api 접두가 없다", () => {
+    expect(OPENCRITIC_API_URL).toBe("https://opencritic-api.p.rapidapi.com");
+    expect(OPENCRITIC_API_URL).not.toContain("/api");
   });
 });

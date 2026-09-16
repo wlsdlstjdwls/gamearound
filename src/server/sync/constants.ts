@@ -26,7 +26,11 @@ export const BATCH_SIZE: Record<Source, number> = {
   gog: 400,
   // hltb 는 간격이 4초에서 1초로 내려가며(어댑터 주석의 실측) 같은 시간에 3배를 볼 수 있게 됐다.
   // 건당 페이지 fetch 0.6초 + 반영 + 대기 1초 ≈ 2초 → 300건 ≈ 10분.
-  hltb: 300, opencritic: 300, metacritic: 150,
+  hltb: 300,
+  // opencritic 무료 등급은 하루 200요청이다(2026-09-16 헤더 실측). 매칭이 쓸 25를 빼면 175가 남고,
+  // 격일 실행이라 한 회차가 곧 하루치다. 여유를 두고 150 으로 잡는다 — 넘기면 429 로 회차가 통째로 죽는다.
+  opencritic: 150,
+  metacritic: 150,
   rss: RSS_FEEDS.length,
   // 위키데이터 공개 SPARQL 은 질의 1건이 수백 ms 에서 수 초다. 2초 간격 × 150 = 최대 ~7분.
   // 회사는 거의 안 바뀌므로 한 번에 다 훑을 필요가 없다 — lastSyncedAt 이 오래된 것부터 잘라 간다.
@@ -665,3 +669,15 @@ export const COMPANY_REFRESH_DAYS = 90;
  */
 export const RELEASE_DATE_MIN_YEAR = 1970;
 export const RELEASE_DATE_MAX_YEARS_AHEAD = 10;
+
+/**
+ * 한 실행에서 그 소스에 허용할 매칭(검색) 건수 상한. 적어 두지 않은 소스는 상한이 없다.
+ *
+ * opencritic 만 있는 이유: 이 API 는 검색에 별도 한도를 매긴다 — 하루 25건이고, 전체 요청 한도(200)와
+ * 따로 센다(어댑터 주석의 헤더 실측). 워크플로는 opencritic 과 metacritic 에 같은 --match 값을 주는데
+ * 그 값이 150 이라, 상한이 없으면 opencritic 이 매칭 25건째에서 429 를 맞고 그 회차 수집까지 못 한다.
+ * 워크플로 값을 내리면 metacritic 매칭까지 같이 굶으므로 여기서 소스별로 깎는다.
+ */
+export const MATCH_LIMIT_MAX_BY_SOURCE: Partial<Record<Source, number>> = {
+  opencritic: 25,
+};
