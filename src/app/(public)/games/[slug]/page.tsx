@@ -6,6 +6,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { CoverImage } from "@/components/game-card";
 import { CompanyChips } from "@/components/company-chips";
+import { ContentKindHead } from "@/components/content-kind-head";
 import { DlcSection } from "@/components/dlc-list";
 import { UpgradeNotes } from "@/components/upgrade-note";
 import { MultiplayerBadges } from "@/components/multiplayer-badges";
@@ -237,6 +238,8 @@ export default async function GameDetailPage({ params }: Props) {
         <div className="flex min-w-0 flex-1 flex-col gap-4 sm:min-w-[280px]">
           <div className="enter-item flex flex-wrap items-start justify-between gap-3" style={stagger(1)}>
             <div className="flex min-w-0 flex-col gap-1.5">
+              {/* 자식(DLC, 에디션)일 때만 선다 - 본편 화면에서는 아무것도 그리지 않는다 */}
+              <ContentKindHead contentType={game.contentType} parent={game.parent} className="mb-0.5" />
               <h1 className="text-[28px] font-bold leading-[1.2] tracking-[-0.03em] text-ink">{title}</h1>
               {game.titleKo && <p className="text-[13px] text-dim">{game.titleEn}</p>}
               <CompanyChips companies={game.companies} developer={game.developer} publisher={game.publisher} />

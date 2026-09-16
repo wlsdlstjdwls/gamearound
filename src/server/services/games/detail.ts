@@ -69,6 +69,8 @@ export async function getGameBySlug(slug: string): Promise<GameDetail | null> {
       upgrades: true,
       // 자식(DLC, 에디션)은 본편 화면에서만 필요하다. 자식 자기 화면에서는 빈 배열이 된다(자식이 자식을 갖지 않으므로)
       dlcs: { with: { platforms: true }, limit: DETAIL_DLC_LIMIT },
+      // 반대 방향 — 자식 화면에서 본편으로 돌아가는 링크에 쓴다. 본편 행에서는 null 이다
+      parent: { columns: { slug: true, titleKo: true, titleEn: true } },
     },
   });
   if (!row) return null;
@@ -84,6 +86,8 @@ export async function getGameBySlug(slug: string): Promise<GameDetail | null> {
   return {
     id: row.id,
     slug: row.slug,
+    contentType: row.contentType,
+    parent: row.parent ? { slug: row.parent.slug, title: row.parent.titleKo ?? row.parent.titleEn } : null,
     titleKo: row.titleKo,
     titleEn: row.titleEn,
     description: row.description,

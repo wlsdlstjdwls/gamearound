@@ -1,6 +1,6 @@
 // 공개 DTO — route, 컴포넌트가 받는 모양. 모두 JSON 직렬화 가능(Date → ISO 문자열).
 // DB 행 타입을 그대로 노출하지 않는 이유: 스키마가 바뀌어도 화면 계약은 유지돼야 한다.
-import type { CompanyRole, Currency, Platform, Region, SyncStatus, UpgradeKind, UserScoreKind } from "@/server/db/schema";
+import type { CompanyRole, ContentType, Currency, Platform, Region, SyncStatus, UpgradeKind, UserScoreKind } from "@/server/db/schema";
 
 /**
  * 스토어 이용자가 매긴 점수. 평론가 점수와 축이 다르다.
@@ -163,6 +163,16 @@ export type UpgradeDto = {
 export type GameDetail = {
   id: string;
   slug: string;
+  /**
+   * 이 행이 본편인지 DLC, 에디션, 번들, 체험판인지. 화면이 제목 옆에 그대로 적는다 —
+   * DLC 도 자기 상세를 갖는데, 종류를 안 적으면 "왜 이 게임은 값이 1,900원이지" 로 읽힌다.
+   */
+  contentType: ContentType;
+  /**
+   * 본편. DLC, 에디션에만 있고 본편 자신은 null 이다.
+   * 스토어가 부모를 안 알려 준 자식도 많아(부모 없는 DLC 18,642건) null 이 흔하다 — 링크는 있을 때만 건다.
+   */
+  parent: { slug: string; title: string } | null;
   titleKo: string | null;
   titleEn: string;
   description: string | null;

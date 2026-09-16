@@ -22,8 +22,11 @@
  *
  * **이 값을 올려야 하는 때** — services 의 DTO 필드를 더하거나 뺄 때,
  * 그리고 캐시된 조회의 **정렬, 필터, 집계 기준**을 바꿀 때. 둘 다 "같은 키, 다른 뜻" 이다.
+ *
+ * v7(2026-09-16): GameDetail 에 contentType, parent 를 더했다. 옛 값에는 둘 다 없어
+ * 자식 화면이 종류 배지도 본편 링크도 못 그린다(죽지는 않는다 — 둘 다 없을 때를 이미 다룬다).
  */
-export const DTO_CACHE_VERSION = "v6";
+export const DTO_CACHE_VERSION = "v7";
 
 /** 목록, 검색, 홈처럼 태그 무효화로 갱신되는 화면의 기본 재검증 주기(초) */
 export const LIST_REVALIDATE_SECONDS = 3600;

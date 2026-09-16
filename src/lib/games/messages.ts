@@ -1,11 +1,26 @@
 // 게임 상세, 회사 화면의 사용자 문구. "-해요"체, 가운뎃점과 화살표 글자를 쓰지 않는다.
 // 문구를 컴포넌트에 흩어 두면 같은 개념이 화면마다 다른 말로 불린다.
-import type { CompanyRole, UpgradeKind } from "@/server/db/schema";
+import type { CompanyRole, ContentType, UpgradeKind } from "@/server/db/schema";
 
 export const COMPANY_ROLE_LABEL: Record<CompanyRole, string> = {
   developer: "개발",
   publisher: "배급",
 };
+
+/**
+ * 콘텐츠 종류 배지 문구. 본편(game)은 없다 — 게임 화면에 "게임" 이라고 적어 봐야 아무것도 안 말한다.
+ * DLC 와 에디션도 자기 상세를 갖는데, 종류를 안 적으면 본편 화면과 구분이 안 돼
+ * "이 게임은 왜 1,900원이지" 로 읽힌다.
+ */
+export const CONTENT_KIND_LABEL: Record<Exclude<ContentType, "game">, string> = {
+  dlc: "DLC",
+  edition: "에디션",
+  bundle: "번들",
+  demo: "체험판",
+};
+
+/** 자식 화면에서 본편으로 돌아가는 줄. 부모를 아는 자식에게만 보인다 */
+export const PARENT_LINK_LABEL = "본편";
 
 /** 목록 화면(스크롤 페이징) 문구 */
 export const GAMES_LIST_MESSAGES = {

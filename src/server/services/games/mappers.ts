@@ -223,6 +223,8 @@ export async function attachBestPrice(rows: GameRow[]): Promise<GameSummary[]> {
 export function toPublicGameDto(g: GameDetail): PublicGameDto {
   return {
     slug: g.slug,
+    contentType: g.contentType,
+    parent: g.parent,
     titleKo: g.titleKo,
     titleEn: g.titleEn,
     description: g.description,
