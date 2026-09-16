@@ -363,6 +363,14 @@ input:not([type="checkbox"]):not([type="radio"]):focus-visible,
 textarea:focus-visible {
   outline: none;
 }
+/* 시트, 서랍의 판도 같은 이유로 기본 링을 뗀다. 판은 열릴 때 프로그램으로 포커스를 받는데(ui/sheet),
+   사파리가 그것을 focus-visible 로 쳐서 판 둘레에 링을 그린다. 서랍은 오른쪽에 딱 붙은 전체 높이라
+   위, 오른쪽, 아래 변이 dialog 의 overflow: clip 에 잘리고 왼쪽 변만 남는다 — 햄버거 메뉴 왼쪽에
+   흰 세로줄이 보이던 것이 이 링이다(2026-09-16). 판은 포커스를 잡아 두기만 할 뿐 조작 대상이 아니라
+   링이 할 말이 없다. 유틸리티의 outline-none 으로는 못 덮는다(위 규칙과 같은 사유). */
+.sheet__panel:focus-visible {
+  outline: none;
+}
 
 /* ── 터치/모바일 튜닝 ── */
 button,

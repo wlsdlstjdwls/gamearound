@@ -309,7 +309,8 @@ export function Sheet({
           }}
         />
 
-        <div ref={panelRef} tabIndex={-1} className="sheet__panel outline-none">
+        {/* 포커스 링은 globals.css 의 .sheet__panel:focus-visible 가 뗀다 — 유틸리티 outline-none 으로는 못 덮는다 */}
+        <div ref={panelRef} tabIndex={-1} className="sheet__panel">
           {/* 손잡이 — 바 옆 빈 자리까지 한 줄 전체가 끌리는 영역이다 */}
           <div className="sheet__grip-row shrink-0 pb-3 pt-3.5" onPointerDown={beginDrag} onPointerMove={moveDrag} onPointerUp={endDrag} onPointerCancel={endDrag}>
             <div className="sheet__grip" aria-hidden />
