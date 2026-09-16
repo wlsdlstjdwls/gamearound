@@ -6,7 +6,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { CoverImage } from "@/components/game-card";
 import { CompanyChips } from "@/components/company-chips";
-import { DlcList } from "@/components/dlc-list";
+import { DlcSection } from "@/components/dlc-list";
 import { UpgradeNotes } from "@/components/upgrade-note";
 import { MultiplayerBadges } from "@/components/multiplayer-badges";
 import { NewsList } from "@/components/news-list";
@@ -301,27 +301,15 @@ export default async function GameDetailPage({ params }: Props) {
             <UpgradeNotes upgrades={game.upgrades} />
           </section>
 
+          {/* 에디션과 DLC 는 같은 줄 모양을 쓴다 - 묻는 것이 "제목과 값" 으로 같고,
+              모양이 다르면 같은 화면에서 두 번 배워야 한다.
+              머리(건수)까지 DlcSection 안에 있다 - 플랫폼 칩으로 거른 건수를 말해야 해서다 */}
           {game.editions.length > 0 && (
-            <section aria-labelledby="edition-heading" className="flex flex-col gap-3">
-              <SectionHead
-                id="edition-heading"
-                title={GAME_MESSAGES.editionHeading}
-                note={`${game.editions.length}개`}
-              />
-              {/* DLC 와 같은 줄 모양을 쓴다 - 묻는 것이 "제목과 값" 으로 같고, 모양이 다르면 같은 화면에서 두 번 배워야 한다 */}
-              <DlcList dlcs={game.editions} hasAddOns={false} />
-            </section>
+            <DlcSection id="edition-heading" title={GAME_MESSAGES.editionHeading} dlcs={game.editions} hasAddOns={false} />
           )}
 
           {(game.dlcs.length > 0 || hasAddOns) && (
-            <section aria-labelledby="dlc-heading" className="flex flex-col gap-3">
-              <SectionHead
-                id="dlc-heading"
-                title={GAME_MESSAGES.dlcHeading}
-                note={game.dlcs.length > 0 ? `${game.dlcs.length}개` : undefined}
-              />
-              <DlcList dlcs={game.dlcs} hasAddOns={hasAddOns} />
-            </section>
+            <DlcSection id="dlc-heading" title={GAME_MESSAGES.dlcHeading} dlcs={game.dlcs} hasAddOns={hasAddOns} />
           )}
 
           {patchGroups.length > 0 && (
