@@ -4,7 +4,7 @@
 import { describe, expect, it } from "vitest";
 import type { StoreSnapshot } from "@/server/adapters/types";
 import type { Ctx } from "./context";
-import { planPlatform, priceMisread, type PlatformRow } from "./platform-writer";
+import { planPlatform, priceMisread, withSaneReleaseDate, type PlatformRow } from "./platform-writer";
 
 const NOW = new Date("2026-09-14T00:00:00.000Z");
 
@@ -229,5 +229,38 @@ describe("planPlatform - 못 믿을 가격 회차", () => {
     expect(plan.values.discountName).toBeNull();
     expect(plan.snapshot).toBeNull();
     expect(c.droppedPrices).toBe(1);
+  });
+});
+
+describe("출시일 소독", () => {
+  // xbox 가 "미정" 을 9998년으로 준다(2026-09-16 실측 63건). 정렬과 집계가 그 줄에 끌려간다
+  it("범위 밖 연도는 버린다", () => {
+    expect(withSaneReleaseDate(snapshot({ releaseDate: "9998-12-31" })).releaseDate).toBeNull();
+    expect(withSaneReleaseDate(snapshot({ releaseDate: "2799-01-01" })).releaseDate).toBeNull();
+    expect(withSaneReleaseDate(snapshot({ releaseDate: "1969-12-31" })).releaseDate).toBeNull();
+  });
+
+  it("정상 범위는 그대로 둔다", () => {
+    for (const d of ["1996-06-30", "2026-09-16", "2028-01-01"]) {
+      expect(withSaneReleaseDate(snapshot({ releaseDate: d })).releaseDate).toBe(d);
+    }
+  });
+
+  it("값이 없으면 스냅샷을 그대로 돌려준다", () => {
+    const s = snapshot();
+    expect(withSaneReleaseDate(s)).toBe(s);
+  });
+
+  // 버린 값이 null 로 흘러가면 PLATFORM_FIELDS 의 널 무시 규칙을 타 기존 값이 살아남아야 한다
+  it("쓰레기 출시일이 기존 값을 덮지 않는다", () => {
+    const plan = planPlatform(ctx(), row({ releaseDate: "2020-01-01" }), "g-1", snapshot({ releaseDate: "9998-12-31" }));
+    if (plan.kind !== "update") throw new Error("update 여야 한다");
+    expect(plan.set.releaseDate).toBeUndefined();
+  });
+
+  it("INSERT 에도 쓰레기 출시일이 들어가지 않는다", () => {
+    const plan = planPlatform(ctx(), undefined, "g-1", snapshot({ releaseDate: "9998-12-31" }));
+    if (plan.kind !== "insert") throw new Error("insert 여야 한다");
+    expect(plan.values.releaseDate).toBeNull();
   });
 });

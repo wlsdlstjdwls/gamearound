@@ -8,6 +8,7 @@ import { gamePlatforms, priceSnapshots, HOME_REGION, type Platform, type Region 
 import type { StoreSnapshot } from "@/server/adapters/types";
 import { DISPLAY_CURRENCY } from "@/lib/currency";
 import { isLocked, type Ctx } from "./context";
+import { RELEASE_DATE_MAX_YEARS_AHEAD, RELEASE_DATE_MIN_YEAR } from "./constants";
 
 // hasAddOns 도 여기 규칙을 그대로 탄다 — 주지 않는 소스는 undefined 라 기존 값을 덮지 않는다
 const PLATFORM_FIELDS = ["storeExternalId", "storeUrl", "releaseDate", "currentVersion", "listPrice", "currentPrice", "discountPct", "hasAddOns", "currency", "titleCode"] as const;
@@ -97,6 +98,22 @@ export type PriceSnapshotDraft = Omit<typeof priceSnapshots.$inferInsert, "gameP
 
 export type PlatformRow = typeof gamePlatforms.$inferSelect;
 
+/**
+ * 말이 되지 않는 출시일을 떼어 낸 스냅샷.
+ *
+ * 스토어가 "미정" 을 먼 미래(xbox 의 9998년)로 적어 보내는 일이 있어서, 그대로 쓰면
+ * 출시예정 목록의 정렬과 집계가 그 한 줄에 끌려간다. 값을 고쳐 쓰지 않고 **버리는** 이유:
+ * 무엇으로 고칠지 우리가 알 수 없고, 버리면 PLATFORM_FIELDS 의 널 무시 규칙을 타 기존 값이 살아남는다.
+ */
+export function withSaneReleaseDate(snapshot: StoreSnapshot): StoreSnapshot {
+  const raw = snapshot.releaseDate;
+  if (!raw) return snapshot;
+  const year = new Date(raw).getUTCFullYear();
+  const maxYear = new Date().getUTCFullYear() + RELEASE_DATE_MAX_YEARS_AHEAD;
+  if (!Number.isNaN(year) && year >= RELEASE_DATE_MIN_YEAR && year <= maxYear) return snapshot;
+  return { ...snapshot, releaseDate: null };
+}
+
 /** 이 플랫폼 행에 무엇을 쓸지. 실행은 호출부가 한다 */
 export type PlatformPlan =
   | { kind: "insert"; values: typeof gamePlatforms.$inferInsert; snapshot: PriceSnapshotDraft | null }
@@ -111,7 +128,9 @@ export type PlatformPlan =
     };
 
 /** 기존 행(없으면 undefined)과 스냅샷을 받아 쓸 내용을 정한다. DB 를 건드리지 않는다 */
-export function planPlatform(ctx: Ctx, existing: PlatformRow | undefined, gameId: string, snapshot: StoreSnapshot): PlatformPlan {
+export function planPlatform(ctx: Ctx, existing: PlatformRow | undefined, gameId: string, raw: StoreSnapshot): PlatformPlan {
+  // 출시일 소독을 여기서 하는 이유: 아래 두 경로(INSERT 값, UPDATE 필드 루프)가 모두 이 객체만 읽는다
+  const snapshot = withSaneReleaseDate(raw);
   // 못 믿을 회차는 가격 세 값과 할인 메타를 통째로 버린다. 나머지 필드(출시일, 버전, 점수)는 그대로 쓴다 —
   // 그것들은 응답의 다른 자리에서 오고 오독의 흔적이 없었다
   const misread = priceMisread(snapshot, existing?.listPrice);

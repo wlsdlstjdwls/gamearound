@@ -652,3 +652,16 @@ export const SUBSCRIPTION_MIN_CATALOG_SIZE = 100;
  * 짧게 잡으면 위키데이터에 예의 없는 트래픽만 만든다.
  */
 export const COMPANY_REFRESH_DAYS = 90;
+
+/**
+ * 믿을 수 있는 출시일의 범위(연도). 밖에 있으면 값을 버리고 기존 값을 지킨다.
+ *
+ * 왜 필요한가(2026-09-16 실측): xbox 가 OriginalReleaseDate 로 9998년 58건, 2799년 5건을 준다.
+ * "미정" 을 먼 미래로 적는 관행인데, 이대로 두면 출시예정 목록을 출시일순으로 세울 때
+ * 그 63건이 영원히 꼬리에 붙고 "가장 먼 출시예정" 같은 집계가 통째로 망가진다.
+ *
+ * 아래 경계의 근거: 1970 은 상용 비디오 게임이 존재하기 전이고(그보다 이른 값은 epoch 오독이다),
+ * 앞으로 10년은 스토어가 실제로 예고하는 최장 구간(보통 1~3년)보다 넉넉하다.
+ */
+export const RELEASE_DATE_MIN_YEAR = 1970;
+export const RELEASE_DATE_MAX_YEARS_AHEAD = 10;
