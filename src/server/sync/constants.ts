@@ -144,10 +144,14 @@ export const CRON_SOURCES = ["nintendo", "nintendo_jp", "epic", "steam", "psstor
 // 분을 0 으로 두지 않는 이유: Vercel 크론은 정각에 몰리고, 몰리면 실행이 뒤로 밀린다.
 //
 // 발견만 맡는 네 소스(2026-09-15 추가). 하루 2회씩, 20분 간격으로 흩어 둔다:
-//   /api/cron/crawl/gog/discover      10 3,15 * * *     하루 2회 × 220건
 //   /api/cron/crawl/steam/discover    10 4,16 * * *     하루 2회 × 140건
-//   /api/cron/crawl/psstore/discover  30 4,16 * * *     하루 2회 ×  80건 (KR 7,571건 중 587건만 안다)
 //   /api/cron/crawl/xbox/discover     50 4,16 * * *     하루 2회 × 180건 (KR 16,991건)
+// 넷 중 둘은 껐고 크론도 뺐다. 몫은 아래 CRON_PLAN 에 그대로 남겨 둔다 — 다시 켤 때 근거를 다시 재지 않으려고다.
+//   gog     10 3,15 * * *     2026-09-16 중단(달러 전용). 사유는 getDisabledReason("gog")
+//   psstore 30 4,16 * * *     2026-09-16 중단(사용자 지시). 사유는 getDisabledReason("psstore")
+// 빈 자리 넷(gog prices 400, gog discover 190, psstore prices 200, psstore discover 120)은 아직 안 돌렸다.
+// 돌릴 곳을 고를 때 발견 쪽으로 기울지 말 것 — 2026-09-16 실측으로 PS 는 이미 43,430행이 차 있었고
+// 굶은 것은 발견이 아니라 갱신 주기였다(psstore 하루 408건으로 한 바퀴 108일, xbox 587건으로 52일).
 // 시각을 고른 기준은 둘이다.
 //   1) 같은 소스를 Actions 가 도는 시각(crawl-prices 의 10 5, 10 17 UTC)과 겹치지 않게 —
 //      겹치면 Redis 락에 걸려 한쪽이 빈손으로 끝난다(설계서 §4.4).

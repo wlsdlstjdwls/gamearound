@@ -84,6 +84,25 @@ export function getDisabledReason(source: Source): string | undefined {
       return "GOG 가 한국에 달러로만 판다 — 우리가 가졌던 gog 행 4,449개가 전부 USD 였다(2026-09-16 실측). 그 행들은 같은 날 지웠다. " +
         "원화 가격 서비스에서 비교에 쓸 수 없어 수집과 화면 노출을 함께 멈췄다. " +
         "화면 쪽 짝은 lib/platform 의 HIDDEN_PLATFORMS 다. 원화 판매가가 생기면 둘 다 풀면 된다";
+    case "psstore":
+      // 막혀서가 아니라 **사용자 지시로** 끈다(2026-09-16). gog 와 달리 값이 못 쓸 값이어서가 아니다.
+      // 카탈로그는 찼다 — 2026-09-16 실측으로 ps4, ps5 행 43,430건 중 43,408건에 가격이 있고
+      // 전부 9/14~9/15 에 동기화돼 있다. psprices 병합이 들어오면서 "KR 7,571건 중 587건만 안다" 던
+      // 예전 명분은 사라졌다.
+      //
+      // **끄면 가격이 그 시점에 고정된다.** 이 서비스에서 PS 는 행이 제일 많은 스토어라
+      // (steam 5,391 대 ps 43,430) 그 정지는 화면에 그대로 보인다. 다시 켤 때 알아야 할 값도
+      // 같이 적어 둔다 — 끄기 직전 갱신 속도는 하루 약 408건이었고, 그 속도로는 한 바퀴가 108일이다.
+      // 즉 되살린다면 몫을 올리지 않는 한 같은 정체가 이어진다.
+      //
+      // gog 와 다른 점 둘: 데이터를 지우지 않았고, 화면에서도 숨기지 않았다. 멈춘 것은 수집뿐이다.
+      // 그래서 lib/platform 의 HIDDEN_PLATFORMS 에는 손대지 않았다.
+      // 되살리려면 이 case 를 빼고, vercel.json 의 psstore discover 크론과
+      // .github/workflows/crawl-prices.yml 의 psstore 단계를 되돌린다.
+      return "사용자 지시로 2026-09-16 에 수집을 멈췄다. 막힌 것이 아니라 그만 두기로 한 것이다 — " +
+        "카탈로그는 이미 찼다(ps4, ps5 행 43,430건 중 43,408건에 가격이 있고 전부 9/14~9/15 동기화). " +
+        "데이터와 화면 노출은 그대로 두었고 멈춘 것은 수집뿐이라, 가격은 멈춘 시점 값에 고정된다. " +
+        "다시 켜려면 이 사유를 지우고 vercel.json 의 discover 크론과 Actions 의 psstore 단계를 되돌린다";
     case "opencritic":
       return process.env[OPENCRITIC_RAPIDAPI_KEY_ENV]
         ? undefined
