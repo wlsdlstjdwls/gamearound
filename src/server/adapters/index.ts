@@ -70,15 +70,18 @@ export function getDisabledReason(source: Source): string | undefined {
           "Actions 러너는 curl 로도 403, 가정용 회선에서도 Node 는 403 이고 curl 만 통과한다(2026-09-14 확인). " +
           `주거용 출구 프록시를 ${CRAWL_PROXY_URL_ENV} 에 넣거나, 가정용 회선에서 ${EPIC_ENABLE_ENV}=1 로 켠다 — 파서, 질의는 그대로 있다`;
     case "gog":
-      // 막혀서가 아니라 **쓸 값이 아니라서** 끈다. 2026-09-16 실측: 우리가 가진 gog 행 4,449개가
-      // 한 건도 빠짐없이 USD 다 — 원화 판매가 자체가 없다. §5 의 환산 금지 때문에 화면은 이미
+      // 막혀서가 아니라 **쓸 값이 아니라서** 끈다. 2026-09-16 실측: 우리가 가졌던 gog 행 4,449개가
+      // 한 건도 빠짐없이 USD 였다 — 원화 판매가 자체가 없다. §5 의 환산 금지 때문에 화면은 이미
       // USD 행을 버리고 있었고(lib/currency 의 sameCurrency), 스팀에도 있는 1,063건에서 gog 는
       // 가격 비교와 차트에 아예 안 나왔다. 값을 못 쓰는 스토어에 크론 몫 두 자리(prices 400건,
       // discover 190건, 합쳐 약 20분/일)를 계속 쓸 이유가 없다.
       //
+      // 2026-09-16 그 행들을 DB 에서 지웠다 — game_platforms 4,449(스냅샷 4,293, 패치 156 은 cascade),
+      // game_source_refs 4,940, gog 만 가졌던 게임 3,386 과 그 자식 DLC 777. 숨김이 아니라 삭제라
+      // 되살리려면 발견부터 다시 긁는다.
       // 어댑터, 파서, 질의는 그대로 둔다(§5). 되살리려면 이 case 와 lib/platform 의
       // HIDDEN_PLATFORMS 에서 gog 를 같이 빼면 된다 — 원화를 받을 길이 생겼을 때가 그때다.
-      return "GOG 가 한국에 달러로만 판다 — 우리 gog 행 4,449개가 전부 USD 다(2026-09-16 실측). " +
+      return "GOG 가 한국에 달러로만 판다 — 우리가 가졌던 gog 행 4,449개가 전부 USD 였다(2026-09-16 실측). 그 행들은 같은 날 지웠다. " +
         "원화 가격 서비스에서 비교에 쓸 수 없어 수집과 화면 노출을 함께 멈췄다. " +
         "화면 쪽 짝은 lib/platform 의 HIDDEN_PLATFORMS 다. 원화 판매가가 생기면 둘 다 풀면 된다";
     case "opencritic":
