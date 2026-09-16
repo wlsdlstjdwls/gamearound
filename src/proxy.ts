@@ -43,14 +43,27 @@ export default function proxy(req: NextRequest) {
  * 동적 렌더로 떨어져 목록 캐시(revalidate 3600)를 통째로 잃는다.
  *
  * 되돌리기는 한 번뿐이다: 되돌린 주소에는 view 가 있어 다시 걸리지 않는다.
+ *
+ * **값이 실제로 바뀔 때만 쓴다.** 응답에 Set-Cookie 가 실리면 앱 라우터는 그 응답을 "쿠키를 건드린 응답"
+ * 으로 보고 클라이언트 라우터 캐시를 통째로 버린다. 목록은 스크롤로 다음 장을 서버 액션으로 받아 오는데
+ * (games/actions), 그 POST 도 `/games?view=list` 로 나가므로 여기에 걸려 매번 Set-Cookie 가 붙었다.
+ * 그러면 액션 응답 뒤에 트리 전체를 다시 받는 요청이 한 번 더 나가고(실측: 액션 60KB + 재요청 74KB),
+ * 화면이 통째로 다시 그려진다 — 이미 100장 넘게 쌓인 목록이 36장짜리 뼈대로 잠깐 줄었다 돌아오면서
+ * 스크롤이 위로 튀었다 내려오고 카드가 깜빡였다(skeletons.tsx 의 같은 주석).
+ *
+ * 그래서 두 가지를 건다: 읽기(GET)가 아닌 요청에는 쓰지 않고, 이미 같은 값이면 쓰지 않는다.
+ * 수명은 고를 때마다 새로 1년이 되고, 고르지 않는 동안에는 늘어나지 않는다 — 취향은 칩 한 번이면 고쳐진다.
  */
 function rememberGameView(req: NextRequest, res: NextResponse): void {
   if (req.nextUrl.pathname !== ROUTES.game) return;
+  // 서버 액션은 같은 주소로 나가는 POST 다. 액션 응답에 Set-Cookie 를 얹지 않는다
+  if (req.method !== "GET") return;
 
   const picked = req.nextUrl.searchParams.get("view") ?? undefined;
-  if (isGameView(picked)) {
-    res.cookies.set(GAME_VIEW_COOKIE, picked, { maxAge: GAME_VIEW_COOKIE_MAX_AGE, sameSite: "lax", path: "/" });
-  }
+  if (!isGameView(picked)) return;
+  if (req.cookies.get(GAME_VIEW_COOKIE)?.value === picked) return;
+
+  res.cookies.set(GAME_VIEW_COOKIE, picked, { maxAge: GAME_VIEW_COOKIE_MAX_AGE, sameSite: "lax", path: "/" });
 }
 
 /**
