@@ -22,6 +22,7 @@ function ctx(source: Source, locks: string[] = []): Ctx {
     changedSlugs: new Set(),
     changedCompanySlugs: new Set(),
     priceChanges: [],
+    droppedPrices: 0,
   };
 }
 

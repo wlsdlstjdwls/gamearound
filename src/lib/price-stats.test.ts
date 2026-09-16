@@ -36,13 +36,8 @@ describe("bestDiscountOf", () => {
     expect(best?.t).toBe("2026-06-01");
   });
 
-  it("정가가 있는데 값이 0 인 점은 스토어 오독이라 버린다", () => {
-    // 실측: 정가 46,800 현재가 11,700 인 플레이스테이션 행에 값 0 스냅샷이 찍혔다
-    const best = bestDiscountOf([p("2026-09-14", 0, 100), p("2026-09-13", 11700, 75)], 46800);
-    expect(best?.discountPct).toBe(75);
-  });
-
-  it("정가를 모르면 값이 0 이어도 버리지 않는다", () => {
+  it("값이 0 인 점도 그대로 본다 - 거르는 일은 sync 가 한다", () => {
+    // 오독 차단은 platform-writer 의 priceMisread 로 옮겼다. 여기까지 온 0 은 진짜 0원이라는 뜻이다
     expect(bestDiscountOf([p("2026-09-14", 0, 100)])?.discountPct).toBe(100);
   });
 

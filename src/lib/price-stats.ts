@@ -23,23 +23,14 @@ export type DiscountPoint = {
  * 같은 할인율이 여럿이면 더 싼 값을, 그것도 같으면 더 최근 것을 고른다 —
  * 정가가 내려간 뒤의 같은 할인율이 실제로 더 좋은 거래다.
  *
- * listPrice 를 받는 이유는 값이 0 인 점을 거르기 위해서다.
- * 2026-09-15 실측: 값이 0 인 스냅샷 14건이 전부 플레이스테이션이었고, 그 행의 정가와 현재가는
- * 멀쩡했다(정가 46,800 현재가 11,700 인데 스냅샷만 0). 스토어 응답을 잘못 읽은 것이다.
- * 거르지 않으면 그 게임이 영영 "역대 최대 할인 100%" 로 박제된다.
- *
- * 맞바꾼 것: 정가가 있는 물건을 진짜 공짜로 푸는 배포(에픽 무료 배포)도 같이 걸러진다.
- * 오독은 나흘에 14건 나왔고 무료 배포는 그보다 드물어서 이쪽을 택했다.
- * 제대로 고치려면 sync 가 값 0 인 스냅샷을 아예 쓰지 않아야 한다.
+ * 값이 0 인 점을 여기서 거르지 않는 이유(2026-09-16): 거르는 일은 sync 의 몫으로 옮겼다.
+ * `server/sync/platform-writer` 의 `priceMisread` 가 정가가 있는데 값이 0 인 회차를 아예 쓰지 않고,
+ * 그 전에 새어 들어간 26건은 지웠다. 화면이 같은 판단을 두 번 하면 규칙이 두 곳에서 어긋난다.
  */
-export function bestDiscountOf(
-  points: readonly DiscountPoint[],
-  listPrice: number | null = null,
-): DiscountPoint | null {
+export function bestDiscountOf(points: readonly DiscountPoint[]): DiscountPoint | null {
   let best: DiscountPoint | null = null;
   for (const p of points) {
     if (p.discountPct <= 0) continue;
-    if (p.price <= 0 && (listPrice ?? 0) > 0) continue;
     if (best === null) {
       best = p;
       continue;

@@ -79,7 +79,7 @@ export default async function PricesPage({ params }: Props) {
                 <div>
                   <p className="text-[11.5px] text-dim">기록 기준 최대 할인</p>
                   {(() => {
-                    const top = bestDiscountOf(best.points, best.listPrice);
+                    const top = bestDiscountOf(best.points);
                     if (!top) return <p className="text-[15px] font-bold text-dim">할인 기록 없음</p>;
                     return (
                       <p className="text-[15px] font-bold text-ink">
@@ -127,7 +127,7 @@ export default async function PricesPage({ params }: Props) {
                 {series.map((s) => {
                   const prices = s.points.map((p) => p.price);
                   const onSale = Boolean(s.discountPct && s.discountPct > 0);
-                  const top = bestDiscountOf(s.points, s.listPrice);
+                  const top = bestDiscountOf(s.points);
                   return (
                     <li key={s.platform} className={`${COLS} text-[13px] text-ink`}>
                       <span className="font-semibold">{PLATFORM_LABEL[s.platform] ?? s.platform}</span>

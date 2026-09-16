@@ -41,7 +41,7 @@ export async function runSource(source: Source, opts: RunOptions = {}): Promise<
       db, source, now,
       locks: await loadLockedFields(db),
       processed: 0, failed: 0, errors: [],
-      changedSlugs: new Set(), changedCompanySlugs: new Set(), priceChanges: [],
+      changedSlugs: new Set(), changedCompanySlugs: new Set(), priceChanges: [], droppedPrices: 0,
     };
 
     if (isStoreSource(source)) await runStore(ctx, source, opts);
@@ -49,6 +49,9 @@ export async function runSource(source: Source, opts: RunOptions = {}): Promise<
     else if (isCompanySource(source)) await runCompanies(ctx, source, opts);
     else if (isSubscriptionSource(source)) await runSubscriptions(ctx, source);
     else if (isNewsSource(source)) await runNews(ctx);
+
+    // 못 믿을 값으로 버린 가격 회차. 실패가 아니라 status 를 흔들지 않는다 — 로그로만 보인다
+    if (ctx.droppedPrices > 0) console.warn(`[sync:${source}] 정가가 있는데 값이 0 인 회차 ${ctx.droppedPrices}건을 버렸다`);
 
     // 5. 알림 (§7) — 실패해도 동기화 결과는 유지
     let alerts: DispatchSummary | undefined;

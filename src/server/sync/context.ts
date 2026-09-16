@@ -49,6 +49,11 @@ export interface Ctx {
   /** 게임이 아니라 회사 화면 캐시를 깨야 할 때 — 회사 정보나 그 회사 게임이 바뀐 경우 */
   changedCompanySlugs: Set<string>;
   priceChanges: PriceChange[];
+  /**
+   * 못 믿을 값으로 판정해 버린 가격 회차 수 (platform-writer 의 priceMisread).
+   * 실패가 아니라 "안 쓴 것" 이라 failed 와 따로 센다 — 이 수가 갑자기 뛰면 스토어 응답이 바뀐 것이다.
+   */
+  droppedPrices: number;
   /** 이번 실행이 카탈로그 발견을 돌렸다면 그 요약. run-source 가 sync_logs 에 그대로 남긴다 */
   discovery?: DiscoveryLog;
 }

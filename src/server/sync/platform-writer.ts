@@ -24,6 +24,31 @@ const sameInstant = (a: Date | null, b: Date | null): boolean => (a === null || 
 
 type DiscountMeta = { discountStartsAt: Date | null; discountEndsAt: Date | null; discountName: string | null };
 
+/** 할인이 없는 상태. 못 믿을 회차의 INSERT 가 가짜 행사 정보를 남기지 않게 쓴다 */
+const NO_DISCOUNT: DiscountMeta = { discountStartsAt: null, discountEndsAt: null, discountName: null };
+
+/**
+ * 이번 회차의 가격을 스토어 응답 오독으로 볼 것인가.
+ *
+ * 정가가 있는데 판매가가 0 으로 읽히는 회차가 있다. 2026-09-16 실측: 그런 스냅샷 26건
+ * (ps5 22, ps4 2, xbox 2)이 있었고 **26건 전부 다음 회차에 정상값으로 돌아왔다**
+ * (레지던트 이블 빌리지 12,450 → 0 → 11,700). 0 이 연달아 두 번 찍힌 적은 한 번도 없다.
+ * 같은 배치의 다른 항목은 멀쩡했으니 배치 사고가 아니라 항목별 응답 오독이다.
+ *
+ * 한 번 새어 들어가면 그 게임은 영영 "역대 최대 할인 100%" 로 박제된다 — 가격 알림 서비스가
+ * 제일 하면 안 되는 일이다. §7 의 "null 로 덮지 않는다" 와 같은 성격으로 0 도 못 믿을 값으로 다룬다.
+ *
+ * **맞바꾼 것**: 정가가 있는 물건을 진짜 0원으로 푸는 배포(에픽 무료 배포)도 같이 버려진다.
+ * 우리 데이터에서 그런 배포가 잡힌 적은 아직 없다(값 0 스냅샷 1,012건 중 정가가 있는 것은 위 26건뿐,
+ * 에픽 146건은 전부 정가도 0 인 부분 무료 게임이었다). 살려야 할 날이 오면
+ * "연속 두 회차가 0 이면 받아들인다" 로 바꾼다 — 그러려면 직전 회차의 0 을 기억할 자리가 필요하다.
+ */
+export function priceMisread(snapshot: StoreSnapshot, existingListPrice: number | null | undefined): boolean {
+  if (snapshot.currentPrice !== 0) return false;
+  const listPrice = snapshot.listPrice ?? existingListPrice ?? null;
+  return listPrice !== null && listPrice > 0;
+}
+
 /** 스냅샷의 할인 기간, 행사명. 할인이 끝났으면(할인율 0) 세 값 모두 null 로 지워야 지난 행사 정보가 남지 않는다 */
 export function discountMetaOf(snapshot: StoreSnapshot): DiscountMeta {
   const onSale = (snapshot.discountPct ?? 0) > 0;
@@ -87,7 +112,11 @@ export type PlatformPlan =
 
 /** 기존 행(없으면 undefined)과 스냅샷을 받아 쓸 내용을 정한다. DB 를 건드리지 않는다 */
 export function planPlatform(ctx: Ctx, existing: PlatformRow | undefined, gameId: string, snapshot: StoreSnapshot): PlatformPlan {
-  const meta = discountMetaOf(snapshot);
+  // 못 믿을 회차는 가격 세 값과 할인 메타를 통째로 버린다. 나머지 필드(출시일, 버전, 점수)는 그대로 쓴다 —
+  // 그것들은 응답의 다른 자리에서 오고 오독의 흔적이 없었다
+  const misread = priceMisread(snapshot, existing?.listPrice);
+  if (misread) ctx.droppedPrices++;
+  const meta = misread ? NO_DISCOUNT : discountMetaOf(snapshot);
 
   if (!existing) {
     return {
@@ -102,10 +131,10 @@ export function planPlatform(ctx: Ctx, existing: PlatformRow | undefined, gameId
         storeUrl: snapshot.storeUrl,
         releaseDate: snapshot.releaseDate ?? null,
         currentVersion: snapshot.currentVersion ?? null,
-        listPrice: snapshot.listPrice,
-        currentPrice: snapshot.currentPrice,
+        listPrice: misread ? null : snapshot.listPrice,
+        currentPrice: misread ? null : snapshot.currentPrice,
         currency: snapshot.currency ?? DISPLAY_CURRENCY,
-        discountPct: snapshot.discountPct,
+        discountPct: misread ? null : snapshot.discountPct,
         hasAddOns: snapshot.hasAddOns ?? null,
         ...userScoreSet(snapshot),
         ...meta,
@@ -113,7 +142,7 @@ export function planPlatform(ctx: Ctx, existing: PlatformRow | undefined, gameId
         syncStatus: "ok",
       },
       snapshot:
-        snapshot.currentPrice === null
+        misread || snapshot.currentPrice === null
           ? null
           : {
               price: snapshot.currentPrice,
@@ -129,12 +158,14 @@ export function planPlatform(ctx: Ctx, existing: PlatformRow | undefined, gameId
   for (const field of PLATFORM_FIELDS) {
     const value = snapshot[field];
     if (value === null || value === undefined) continue; // 절대 null 로 덮지 않음
+    if (misread && PRICE_FIELDS.has(field)) continue; // 못 믿을 회차의 가격 — 기존 값을 지킨다
     if (isLocked(ctx, "game_platforms", existing.id, field)) continue;
     if (existing[field] !== value) (set as Record<string, unknown>)[field] = value;
   }
   const priceChanged = Object.keys(set).some((k) => PRICE_FIELDS.has(k));
   // 할인 메타는 null 로 덮어써야 하는 유일한 필드라 PLATFORM_FIELDS 규칙(널 무시) 밖에서 따로 처리
-  const metaSet = changedDiscountMeta(ctx, existing.id, meta, existing);
+  // misread 면 빈 객체다 — 못 믿을 회차가 진행 중인 진짜 행사 정보를 지워 버리면 안 된다
+  const metaSet = misread ? {} : changedDiscountMeta(ctx, existing.id, meta, existing);
   // 유저 점수도 평평한 필드가 아니라 세 컬럼 묶음이라 PLATFORM_FIELDS 규칙 밖에서 따로 본다
   const scoreSet = changedUserScore(ctx, existing.id, userScoreSet(snapshot), existing);
   const newPrice = set.currentPrice ?? existing.currentPrice;

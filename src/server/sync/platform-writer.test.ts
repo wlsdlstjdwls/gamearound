@@ -4,7 +4,7 @@
 import { describe, expect, it } from "vitest";
 import type { StoreSnapshot } from "@/server/adapters/types";
 import type { Ctx } from "./context";
-import { planPlatform, type PlatformRow } from "./platform-writer";
+import { planPlatform, priceMisread, type PlatformRow } from "./platform-writer";
 
 const NOW = new Date("2026-09-14T00:00:00.000Z");
 
@@ -20,6 +20,7 @@ function ctx(locks: string[] = []): Ctx {
     changedSlugs: new Set(),
     changedCompanySlugs: new Set(),
     priceChanges: [],
+    droppedPrices: 0,
   };
 }
 
@@ -162,5 +163,71 @@ describe("planPlatform", () => {
     expect(plan.set.discountEndsAt).toBeNull();
     expect(plan.set.discountName).toBeNull();
     expect(plan.changed).toBe(true);
+  });
+});
+
+describe("priceMisread - 정가가 있는데 값이 0 인 회차", () => {
+  it("정가가 있는데 판매가가 0 이면 못 믿는다", () => {
+    expect(priceMisread(snapshot({ listPrice: 46800, currentPrice: 0, discountPct: 100 }), null)).toBe(true);
+  });
+
+  it("이번 응답에 정가가 없어도 기존 행의 정가로 판정한다", () => {
+    expect(priceMisread(snapshot({ listPrice: null, currentPrice: 0 }), 46800)).toBe(true);
+  });
+
+  it("정가도 0 이면 부분 무료 게임이다 - 그대로 받는다", () => {
+    expect(priceMisread(snapshot({ listPrice: 0, currentPrice: 0 }), 0)).toBe(false);
+  });
+
+  it("값을 아예 안 주는 회차(null)는 이 규칙의 대상이 아니다", () => {
+    expect(priceMisread(snapshot({ currentPrice: null }), 46800)).toBe(false);
+  });
+});
+
+describe("planPlatform - 못 믿을 가격 회차", () => {
+  const misreadSnap = snapshot({ listPrice: 46800, currentPrice: 0, discountPct: 100, discountName: "가을 할인", discountEndsAt: "2026-09-30T00:00:00.000Z" });
+
+  it("기존 가격을 덮지 않고 스냅샷도 남기지 않는다", () => {
+    const c = ctx();
+    const existing = row({ listPrice: 46800, currentPrice: 11700, discountPct: 75 });
+    const plan = planPlatform(c, existing, "g-1", misreadSnap);
+    expect(plan.kind).toBe("update");
+    if (plan.kind !== "update") return;
+    expect(plan.set.listPrice).toBeUndefined();
+    expect(plan.set.currentPrice).toBeUndefined();
+    expect(plan.set.discountPct).toBeUndefined();
+    expect(plan.snapshot).toBeNull();
+    expect(plan.priceChange).toBeNull();
+    expect(c.droppedPrices).toBe(1);
+  });
+
+  it("진행 중인 진짜 행사 정보를 지우지 않는다", () => {
+    const existing = row({ currentPrice: 11700, discountPct: 75, discountName: "여름 할인", discountEndsAt: new Date("2026-09-20T00:00:00.000Z") });
+    const plan = planPlatform(ctx(), existing, "g-1", misreadSnap);
+    expect(plan.kind).toBe("update");
+    if (plan.kind !== "update") return;
+    expect(plan.set.discountName).toBeUndefined();
+    expect(plan.set.discountEndsAt).toBeUndefined();
+  });
+
+  it("가격 말고 다른 필드는 그대로 반영한다", () => {
+    const plan = planPlatform(ctx(), row({ currentVersion: null }), "g-1", snapshot({ listPrice: 46800, currentPrice: 0, discountPct: 100, currentVersion: "1.2.0" }));
+    expect(plan.kind).toBe("update");
+    if (plan.kind !== "update") return;
+    expect(plan.set.currentVersion).toBe("1.2.0");
+    expect(plan.changed).toBe(true);
+  });
+
+  it("새 행이면 가격 세 값을 비워 두고 다음 회차에 맡긴다", () => {
+    const c = ctx();
+    const plan = planPlatform(c, undefined, "g-1", misreadSnap);
+    expect(plan.kind).toBe("insert");
+    if (plan.kind !== "insert") return;
+    expect(plan.values.listPrice).toBeNull();
+    expect(plan.values.currentPrice).toBeNull();
+    expect(plan.values.discountPct).toBeNull();
+    expect(plan.values.discountName).toBeNull();
+    expect(plan.snapshot).toBeNull();
+    expect(c.droppedPrices).toBe(1);
   });
 });
