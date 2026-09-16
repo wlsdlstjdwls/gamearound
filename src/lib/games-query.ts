@@ -92,6 +92,9 @@ export type GamesQuery = {
   view?: GameView;
 };
 
+/** gamesHref 의 곁가지 규칙. 기본값 생략은 주소를 깨끗하게 하지만 되돌아갈 길을 막는 자리가 있다 */
+export type HrefOptions = { keepDefaultView?: boolean };
+
 export function isGameSort(v: string | undefined): v is GameSort {
   return GAME_SORTS.includes(v as GameSort);
 }
@@ -134,7 +137,7 @@ export function parseGamesQuery(sp: Record<string, string | string[] | undefined
  * 현재 필터에서 일부만 바꾼 /games URL.
  * 기본값(정렬=discount, page=1, 빈 필터)은 빼서 같은 화면이 항상 같은 주소가 되게 한다 — 캐시 키가 쪼개지지 않는다.
  */
-export function gamesHref(current: GamesQuery, patch: Partial<GamesQuery> = {}): string {
+export function gamesHref(current: GamesQuery, patch: Partial<GamesQuery> = {}, opts: HrefOptions = {}): string {
   const next = { ...current, ...patch };
   const params = new URLSearchParams();
   if (next.q) params.set("q", next.q);
@@ -148,8 +151,10 @@ export function gamesHref(current: GamesQuery, patch: Partial<GamesQuery> = {}):
   if (next.subscription) params.set("sub", "1");
   if (next.sort && next.sort !== DEFAULT_GAME_SORT) params.set("sort", next.sort);
   if (next.page && next.page > 1) params.set("page", String(next.page));
-  // 기본 보기는 주소에 안 적는다 — 같은 화면이 두 주소를 갖지 않게 한다(이 함수 머리 주석)
-  if (next.view && next.view !== DEFAULT_GAME_VIEW) params.set("view", next.view);
+  // 기본 보기는 주소에 안 적는다 — 같은 화면이 두 주소를 갖지 않게 한다(이 함수 머리 주석).
+  // 보기 전환 칩만 예외다(keepDefaultView): 그 링크에서까지 지우면 "카드로" 가 맨 주소가 되고,
+  // 맨 주소는 기억해 둔 보기로 되돌려지므로(proxy.ts) 리스트에서 카드로 돌아갈 길이 사라진다.
+  if (next.view && (opts.keepDefaultView || next.view !== DEFAULT_GAME_VIEW)) params.set("view", next.view);
   const qs = params.toString();
   return qs ? `${ROUTES.game}?${qs}` : ROUTES.game;
 }

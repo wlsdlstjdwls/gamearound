@@ -33,3 +33,17 @@ export function isGameView(v: string | undefined): v is GameView {
 export function gamesContainerClass(view: GameView): string {
   return view === "list" ? "flex flex-col gap-2" : GAMES_GRID_CLASS;
 }
+
+/**
+ * 고른 보기를 기억하는 쿠키.
+ *
+ * 주소가 여전히 단일 원천이다 — 쿠키는 "주소에 view 가 없을 때 어디로 보낼지" 만 정한다(proxy.ts).
+ * 그래서 공유받은 주소(?view=list)는 쿠키와 무관하게 그 모양으로 열리고, 화면을 떠났다 돌아오면
+ * 마지막에 고른 모양으로 열린다.
+ *
+ * 왜 쿠키인가: 서버가 첫 화면을 그리는 화면이라 localStorage 로는 늦는다 — 카드로 한 번 그린 뒤
+ * 클라이언트에서 리스트로 바꾸게 되고, 그 사이 한 번 번쩍인다.
+ */
+export const GAME_VIEW_COOKIE = "ga_view";
+/** 1년. 취향은 자주 바뀌지 않고, 틀려도 칩 한 번이면 고쳐진다 */
+export const GAME_VIEW_COOKIE_MAX_AGE = 60 * 60 * 24 * 365;

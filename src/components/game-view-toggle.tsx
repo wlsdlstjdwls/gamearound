@@ -19,7 +19,14 @@ export function GameViewToggle({ query }: { query: GamesQuery }) {
   return (
     <div className="flex items-center gap-1" role="group" aria-label="목록 보기 방식">
       {GAME_VIEWS.map((v) => (
-        <ChipNavLink key={v} {...KEEP_SCROLL} size="sm" href={gamesHref(query, { view: v, page: 1 })} active={current === v}>
+        <ChipNavLink
+          key={v}
+          {...KEEP_SCROLL}
+          size="sm"
+          // 기본 보기라도 주소에 적는다 — 그래야 프록시가 "이 사람은 카드를 골랐다" 로 읽는다(gamesHref 주석)
+          href={gamesHref(query, { view: v, page: 1 }, { keepDefaultView: true })}
+          active={current === v}
+        >
           {VIEW_LABEL[v]}
           <span className="sr-only">로 보기</span>
         </ChipNavLink>
