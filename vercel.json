@@ -51,6 +51,14 @@
     {
       "path": "/api/cron/crawl/xbox/discover",
       "schedule": "50 4,16 * * *"
+    },
+    {
+      "path": "/api/cron/crawl/psstore/prices",
+      "schedule": "45 */6 * * *"
+    },
+    {
+      "path": "/api/cron/crawl/psstore/discover",
+      "schedule": "30 4,16 * * *"
     }
   ],
   "git": {

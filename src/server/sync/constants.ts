@@ -148,10 +148,19 @@ export const CRON_SOURCES = ["nintendo", "nintendo_jp", "epic", "steam", "psstor
 //   /api/cron/crawl/xbox/discover     50 4,16 * * *     하루 2회 × 180건 (KR 16,991건)
 // 넷 중 둘은 껐고 크론도 뺐다. 몫은 아래 CRON_PLAN 에 그대로 남겨 둔다 — 다시 켤 때 근거를 다시 재지 않으려고다.
 //   gog     10 3,15 * * *     2026-09-16 중단(달러 전용). 사유는 getDisabledReason("gog")
-//   psstore 30 4,16 * * *     2026-09-16 중단(사용자 지시). 사유는 getDisabledReason("psstore")
-// 빈 자리 넷(gog prices 400, gog discover 190, psstore prices 200, psstore discover 120)은 아직 안 돌렸다.
-// 돌릴 곳을 고를 때 발견 쪽으로 기울지 말 것 — 2026-09-16 실측으로 PS 는 이미 43,430행이 차 있었고
-// 굶은 것은 발견이 아니라 갱신 주기였다(psstore 하루 408건으로 한 바퀴 108일, xbox 587건으로 52일).
+//
+// psstore 는 2026-09-16 에 껐다가 같은 날 되살리며 **가격까지 크론으로 옮겼다**:
+//   /api/cron/crawl/psstore/prices    45 */6 * * *   하루 4회 × 300건 = 1,200건/일
+//   /api/cron/crawl/psstore/discover  30 4,16 * * *   하루 2회 × 120건
+// Actions 로 되돌리지 않은 이유: 그 자리는 하루 2회 × 200건(408건/일)이 한계였고 그 속도로는
+// 한 바퀴가 108일이다. 43,405행 중 98.7%가 출시일을 모르는 상태라(ps4 122/2,416, ps5 424/2,365)
+// 그 주기로는 화면에 보이는 값이 영영 안 채워진다. 크론 1회는 800초까지 쓸 수 있어 300건이 들어가고,
+// Actions 분도 12.3분/회를 통째로 돌려받는다. 두 곳에서 같이 돌리지 않는다 — Redis 락에 걸려 한쪽이 빈손이 된다.
+// 갱신이 본편부터 도는 것은 REFRESH_MAIN_SHARE 가 맡는다(43,405행 중 본편은 4,781행뿐이다).
+//
+// 남은 빈 자리 둘(gog prices 400, gog discover 190)은 아직 안 돌렸다.
+// 돌릴 곳을 고를 때 발견 쪽으로 기울지 말 것 — 굶은 것은 발견이 아니라 갱신 주기였다
+// (psstore 하루 408건으로 한 바퀴 108일, xbox 587건으로 52일).
 // 시각을 고른 기준은 둘이다.
 //   1) 같은 소스를 Actions 가 도는 시각(crawl-prices 의 10 5, 10 17 UTC)과 겹치지 않게 —
 //      겹치면 Redis 락에 걸려 한쪽이 빈손으로 끝난다(설계서 §4.4).
@@ -283,7 +292,10 @@ export const CRON_PLAN: Record<CronSource, Record<CronMode, CronRunPlan>> = {
     discover: { limit: 120, seedTop: 120, pageBudget: 80, match: 8, seedShare: 1 },
   },
   psstore: {
-    prices: { limit: 200, seedTop: 0, pageBudget: 0, match: 0 },
+    // 559초. 2026-09-16 에 200 에서 300 으로 올렸다 — 가격 갱신이 Actions 에서 이 크론으로 옮겨 왔다.
+    // fetchMany 가 없어 건당 요청 1회(간격 1초) + 반영 0.4초라 건당 1.4초다.
+    // 상한은 325건이다(cron-plan.test 의 estimateMs 가 600초에서 역산한다) — 여유를 두고 300 에 멈춘다.
+    prices: { limit: 300, seedTop: 0, pageBudget: 0, match: 0 },
     // 578초. fetchMany 가 없어 **한 건이 요청 한 번**이고(간격 1초) 거기에 신규 반영 1.8초가
     // 더 붙어 건당 2.8초다 — 네 소스 중 건당 단가가 제일 비싸다.
     //
