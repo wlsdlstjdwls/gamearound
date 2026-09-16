@@ -13,7 +13,8 @@ export const COMPANY_ROLE_LABEL: Record<CompanyRole, string> = {
  * "이 게임은 왜 1,900원이지" 로 읽힌다.
  */
 export const CONTENT_KIND_LABEL: Record<Exclude<ContentType, "game">, string> = {
-  dlc: "DLC",
+  /** 사운드트랙, 코스튬, 재화가 전부 이 갈래로 들어온다 — 좁게 "DLC" 라고 적으면 거짓말이 된다(dlcHeading 주석) */
+  dlc: "추가 콘텐츠",
   edition: "에디션",
   bundle: "번들",
   demo: "체험판",
@@ -35,10 +36,15 @@ export const GAMES_LIST_MESSAGES = {
 export const GAME_MESSAGES = {
   /** 회사 엔티티가 아직 없을 때 — 결함처럼 보이지 않게 조용한 문구를 쓴다 */
   companyUnknown: "제작사 정보 없어요",
-  dlcHeading: "DLC",
+  /**
+   * "DLC" 라고 적지 않는다(2026-09-16). 이 칸에는 확장팩만 오지 않는다 —
+   * 코스튬 4,895건, 사운드트랙 580건, 재화 208건이 같은 칸에 들어 있다.
+   * 사운드트랙을 DLC 라고 부르면 틀린 말이고, "추가 콘텐츠" 는 셋 다 참이다.
+   */
+  dlcHeading: "추가 콘텐츠",
   /** 목록은 아직인데 스토어가 "추가 콘텐츠 있음"이라고만 알려준 경우 */
-  dlcKnownButUnlisted: "DLC 가 있어요. 목록은 아직 모으는 중이에요.",
-  dlcNone: "지금은 확인된 DLC 가 없어요.",
+  dlcKnownButUnlisted: "추가 콘텐츠가 있어요. 목록은 아직 모으는 중이에요.",
+  dlcNone: "지금은 확인된 추가 콘텐츠가 없어요.",
   /** 에디션, 기종 변형 칸. "에디션"만으로는 "PS4 & PS5 버전" 류가 안 읽혀서 둘을 함께 적는다 */
   editionHeading: "에디션, 기종별 판",
   patchHeading: "패치 기록",

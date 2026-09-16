@@ -7,10 +7,19 @@ import { keepVisiblePlatforms } from "@/server/db/visibility";
 import type { GameDetail, SubscriptionDto } from "./dto";
 import { byRegionThenPlatform, iso, toPlatformDto } from "./mappers";
 import { DTO_CACHE_VERSION } from "@/lib/cache";
+import { byAddonKind } from "@/lib/games/addon-kind";
+import { cheapestOf } from "@/lib/currency";
 
 const DETAIL_NEWS_LIMIT = 5;
-/** 상세에 한 번에 띄울 DLC 수. 심즈류는 수십 개라 상한이 없으면 화면이 DLC 목록으로 덮인다 */
+/** 상세에 한 번에 띄울 추가 콘텐츠 수. 심즈류는 수백 개라 상한이 없으면 화면이 목록으로 덮인다 */
 const DETAIL_DLC_LIMIT = 30;
+/**
+ * 상한을 세우기 전에 읽어 올 자식 수. 표시 상한보다 크게 잡는 이유:
+ * 질의에 30 을 걸면 **아무 순서 없이 앞의 30건**이 잘린다. 몬헌 라이즈는 자식이 504건이고
+ * 그 30건이 전부 "덧입는 장비" 로 나왔다 — 확장팩 SUNBREAK 은 목록에 들지도 못했다.
+ * 넉넉히 읽어 갈래로 세운 뒤 자른다. 자식이 이보다 많은 게임은 카탈로그에서 극소수다.
+ */
+const DETAIL_DLC_FETCH_LIMIT = 300;
 
 /**
  * 지금 구독으로 즐길 수 있는 플랫폼들 — game_platform 별로 묶어서 돌려준다.
@@ -44,15 +53,29 @@ function flattenSubscriptions(byPlatform: Map<string, SubscriptionDto[]>): Subsc
   return Array.from(byKey.values());
 }
 
-/** 자식 행(DLC, 에디션)을 화면 계약으로 옮긴다. 둘이 같은 모양이라 변환도 하나만 둔다 */
-function toChildDtos(rows: { slug: string; titleKo: string | null; titleEn: string; platforms: Parameters<typeof toPlatformDto>[0][] }[]) {
+/**
+ * 자식 행(DLC, 에디션)을 화면 계약으로 옮긴다. 둘이 같은 모양이라 변환도 하나만 둔다.
+ *
+ * `byKind` 는 추가 콘텐츠 칸에만 켠다 — 확장팩을 위로, 꾸미기와 사운드트랙을 아래로 세운다(lib/games/addon-kind).
+ * 에디션 칸은 제목 순 그대로다. 거기서 묻는 것은 "어느 판을 살까" 라서 갈래가 하나뿐이다.
+ */
+function toChildDtos(
+  rows: { slug: string; titleKo: string | null; titleEn: string; platforms: Parameters<typeof toPlatformDto>[0][] }[],
+  { byKind = false }: { byKind?: boolean } = {},
+) {
   return rows
-    .map((d) => ({
-      slug: d.slug,
-      title: d.titleKo ?? d.titleEn,
-      platforms: keepVisiblePlatforms([...d.platforms]).sort(byRegionThenPlatform).map(toPlatformDto),
-    }))
-    .sort((a, b) => a.title.localeCompare(b.title, "ko"));
+    .map((d) => {
+      const platforms = keepVisiblePlatforms([...d.platforms]).sort(byRegionThenPlatform).map(toPlatformDto);
+      return { slug: d.slug, title: d.titleKo ?? d.titleEn, platforms };
+    })
+    // 정렬 열쇠(값)를 한 번만 구해 두고 비교자에 넘긴다 — 비교자 안에서 최저가를 다시 세면
+    // 300건 정렬에 cheapestOf 가 수천 번 돈다
+    .map((d) => ({ row: d, price: cheapestOf(d.platforms)?.currentPrice ?? null }))
+    .sort(byKind
+      ? (a, b) => byAddonKind({ title: a.row.title, price: a.price }, { title: b.row.title, price: b.price })
+      : (a, b) => a.row.title.localeCompare(b.row.title, "ko"))
+    .slice(0, DETAIL_DLC_LIMIT)
+    .map((d) => d.row);
 }
 
 export async function getGameBySlug(slug: string): Promise<GameDetail | null> {
@@ -68,7 +91,7 @@ export async function getGameBySlug(slug: string): Promise<GameDetail | null> {
       companies: { with: { company: true } },
       upgrades: true,
       // 자식(DLC, 에디션)은 본편 화면에서만 필요하다. 자식 자기 화면에서는 빈 배열이 된다(자식이 자식을 갖지 않으므로)
-      dlcs: { with: { platforms: true }, limit: DETAIL_DLC_LIMIT },
+      dlcs: { with: { platforms: true }, limit: DETAIL_DLC_FETCH_LIMIT },
       // 반대 방향 — 자식 화면에서 본편으로 돌아가는 링크에 쓴다. 본편 행에서는 null 이다
       parent: { columns: { slug: true, titleKo: true, titleEn: true } },
     },
@@ -133,7 +156,7 @@ export async function getGameBySlug(slug: string): Promise<GameDetail | null> {
       }))
       // 개발사를 먼저 보여준다 — 사용자가 먼저 찾는 쪽이다
       .sort((a, b) => (a.role === b.role ? a.name.localeCompare(b.name, "ko") : a.role === "developer" ? -1 : 1)),
-    dlcs: toChildDtos(row.dlcs.filter((d) => d.contentType !== "edition" && d.contentType !== "bundle")),
+    dlcs: toChildDtos(row.dlcs.filter((d) => d.contentType !== "edition" && d.contentType !== "bundle"), { byKind: true }),
     // 에디션, 번들은 "어느 판을 살까" 쪽이라 DLC 칸과 나눈다(dto 의 editions 주석)
     editions: toChildDtos(row.dlcs.filter((d) => d.contentType === "edition" || d.contentType === "bundle")),
     subscriptions,

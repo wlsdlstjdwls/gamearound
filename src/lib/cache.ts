@@ -25,8 +25,12 @@
  *
  * v7(2026-09-16): GameDetail 에 contentType, parent 를 더했다. 옛 값에는 둘 다 없어
  * 자식 화면이 종류 배지도 본편 링크도 못 그린다(죽지는 않는다 — 둘 다 없을 때를 이미 다룬다).
+ *
+ * v8(2026-09-16): 추가 콘텐츠 목록의 **정렬 기준**을 갈래, 값 순으로 바꿨다(lib/games/addon-kind).
+ * 필드가 아니라 순서만 바뀐 경우라 화면은 멀쩡히 뜨는데 옛 순서가 그대로 나온다 —
+ * 위 목록의 두 번째 사고와 같은 모양이고, 이번에도 고친 직후 화면에서 정렬이 안 먹는 것으로 드러났다.
  */
-export const DTO_CACHE_VERSION = "v7";
+export const DTO_CACHE_VERSION = "v8";
 
 /** 목록, 검색, 홈처럼 태그 무효화로 갱신되는 화면의 기본 재검증 주기(초) */
 export const LIST_REVALIDATE_SECONDS = 3600;
