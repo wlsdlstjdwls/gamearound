@@ -29,8 +29,12 @@
  * v8(2026-09-16): 추가 콘텐츠 목록의 **정렬 기준**을 갈래, 값 순으로 바꿨다(lib/games/addon-kind).
  * 필드가 아니라 순서만 바뀐 경우라 화면은 멀쩡히 뜨는데 옛 순서가 그대로 나온다 —
  * 위 목록의 두 번째 사고와 같은 모양이고, 이번에도 고친 직후 화면에서 정렬이 안 먹는 것으로 드러났다.
+ *
+ * v9(2026-09-16): psprices.com 링크 72,324행을 비웠다(psprices 는 스토어가 아니다).
+ * sync 를 거치지 않은 직접 UPDATE 라 changedSlugs 가 없고, 상세 캐시는 수명이 없어
+ * 태그를 안 풀면 옛 값이 영영 남는다 — 게임 5만 개 태그를 밀기보다 판을 올려 통째로 버린다.
  */
-export const DTO_CACHE_VERSION = "v8";
+export const DTO_CACHE_VERSION = "v9";
 
 /** 목록, 검색, 홈처럼 태그 무효화로 갱신되는 화면의 기본 재검증 주기(초) */
 export const LIST_REVALIDATE_SECONDS = 3600;
