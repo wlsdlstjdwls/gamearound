@@ -74,6 +74,43 @@ const JP_EDITION_SUFFIXES = [
 const PLATFORM_MARKERS = /\s*\((?:windows|pc|xbox one|xbox series x\|s|xbox series x\/s|nintendo switch|switch)\)/gi;
 
 /**
+ * 괄호 없이 꼬리로 붙는 기종 표시 — "호그와트 레거시 PS5 버전", "Cooking Simulator Windows",
+ * "MotoGP 25 — Xbox One", "호그와트 레거시 버전"(PlayStation 한국어 SKU 는 기종을 빼고 "버전"만 남긴다).
+ *
+ * 왜 떼나(2026-09-16): 이걸 안 떼면 같은 게임의 기종별 SKU 가 서로 다른 제목이 되어 새 게임으로 등록된다.
+ * 실제로 "호그와트 레거시" 의 PS4, PS5 가격이 본편이 아니라 "호그와트 레거시 PS5 버전" 이라는
+ * 딴 행에 붙어 있었다 — 본편 상세에는 Xbox 와 Switch2 만 떴다. 기종은 game_platforms 의 축이지
+ * 제목의 축이 아니다.
+ *
+ * 리마스터, 디럭스 같은 **판본** 은 여기서 떼지 않는다. 그쪽은 값도 내용도 다른 별개 상품이라
+ * EDITION_SUFFIXES 가 따로 다룬다.
+ */
+const TRAILING_PLATFORM =
+  /[\s\-–—:|/&,]*(?:for\s+)?(?:windows|pc|steam|playstation\s?[45]|ps[45]|xbox\s?series\s?x\|s|xbox\s?series\s?x\/?s|xbox\s?series|xbox\s?one|xbox|nintendo\s?switch\s?2|nintendo\s?switch|switch\s?2|switch)\s*(?:버전|판|version|에디션|edition)?\s*$/i;
+
+/** 기종만 빠지고 남은 꼬리("... 버전", "... 판") — 제목이 통째로 사라지지 않을 때만 뗀다 */
+const TRAILING_VERSION_WORD = /[\s\-–—:|]*(?:버전|version)\s*$/i;
+
+/**
+ * 꼬리에 붙은 기종 표시를 다 뗀다. "Hogwarts Legacy PS4 & PS5" 처럼 겹쳐 붙는 경우가 있어 반복한다.
+ * 떼고 나면 아무것도 안 남는 제목(게임 이름이 "Switch" 인 경우)은 원본을 지킨다 — 빈 제목은 아무하고나 붙는다.
+ */
+export function stripTrailingPlatform(input: string): string {
+  let t = input;
+  for (let cut = true; cut; ) {
+    cut = false;
+    for (const re of [TRAILING_PLATFORM, TRAILING_VERSION_WORD]) {
+      const head = t.replace(re, "").trim();
+      if (head && head !== t) {
+        t = head;
+        cut = true;
+      }
+    }
+  }
+  return t;
+}
+
+/**
  * 구분자 뒤에 에디션 이름이 오는 형태를 지운다:
  *   "... 4 - Vault Edition", "...: Ultimate Edition", "... – 지옥불 에디션"
  * 구분자를 경계로 삼는 이유: 정규화로 구두점을 지운 뒤에는 어디까지가 에디션 이름인지 알 수 없다.
@@ -104,7 +141,7 @@ function stripJapaneseEditions(t: string): string {
 /** 소문자, 특수문자 제거, 플랫폼 표시와 에디션 접미어 제거, 공백 정리 */
 export function normalizeTitle(title: string): string {
   // 구두점을 지우기 전에 에디션 꼬리부터 떼어낸다 — 구분자가 사라지면 경계를 못 찾는다
-  let head = stripDiacritics(title).replace(PLATFORM_MARKERS, "");
+  let head = stripTrailingPlatform(stripDiacritics(title).replace(PLATFORM_MARKERS, ""));
   while (EDITION_TAIL.test(head)) head = head.replace(EDITION_TAIL, "");
 
   const t = stripJapaneseEditions(

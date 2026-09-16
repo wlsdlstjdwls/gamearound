@@ -46,6 +46,34 @@ describe("normalizeTitle", () => {
     expect(normalizeTitle(input)).toBe(expected);
   });
 
+  // 기종은 game_platforms 의 축이지 제목의 축이 아니다(2026-09-16).
+  // 이걸 안 떼면 "호그와트 레거시 PS5 버전" 이 새 게임으로 등록돼 본편 상세에 PS 가격이 안 붙는다.
+  describe("괄호 없이 꼬리로 붙은 기종", () => {
+    it.each([
+      ["Hogwarts Legacy PS5 Version", "hogwarts legacy"],
+      ["호그와트 레거시 PS5 버전", "호그와트 레거시"],
+      ["호그와트 레거시 버전", "호그와트 레거시"], // PlayStation 한국어 SKU 는 기종을 빼고 "버전" 만 남긴다
+      ["Cooking Simulator Windows", "cooking simulator"],
+      ["MotoGP 25 — Xbox One", "motogp 25"],
+      ["ELDEN RING Shadow of the Erdtree PS4 & PS5", "elden ring shadow of the erdtree"],
+    ])("%s → %s", (input, expected) => {
+      expect(normalizeTitle(input)).toBe(expected);
+    });
+
+    it("제목의 일부인 기종 이름은 지킨다", () => {
+      // 꼬리로 붙은 것만 뗀다 — 앞이나 가운데에 있는 낱말은 제목 그 자체다
+      expect(normalizeTitle("PC Building Simulator")).toBe("pc building simulator");
+      expect(normalizeTitle("Xbox Game Pass")).toBe("xbox game pass");
+      // 통째로 지우면 빈 제목이 된다 — 빈 제목은 아무하고나 붙는다
+      expect(normalizeTitle("Switch")).toBe("switch");
+    });
+
+    it("기종만 다른 SKU 는 본편과 유사도 1.0 이라 흡수된다", () => {
+      expect(trigramSimilarity("Hogwarts Legacy", "Hogwarts Legacy PS5 Version")).toBe(1);
+      expect(trigramSimilarity("호그와트 레거시", "호그와트 레거시 버전")).toBe(1);
+    });
+  });
+
   it("부제는 살리고 에디션 이름만 뗀다", () => {
     // 에디션 이름을 두 낱말까지만 보는 이유 — 부제가 통째로 날아가면 서로 다른 게임이 한 제목이 된다
     expect(normalizeTitle("Halo: Combat Evolved Anniversary Edition")).toBe("halo combat evolved");
