@@ -1,5 +1,9 @@
-# 회사 정보(wikidata), 검색 별칭(wikidata_game), 구독 카탈로그(gamepass) 수집.
-# 비용의 거의 전부가 검색 별칭이다(회사 수집은 주 1회라 월 99분뿐) — 주기를 건드리기 전에 schedule 주석을 읽는다.
+# 회사 정보(wikidata)와 구독 카탈로그(gamepass) 수집.
+#
+# 2026-09-17 에 검색 별칭(wikidata_game)을 여기서 뺐다 — 서울 리전 Vercel 크론으로 옮겼다
+# (몫과 주기의 근거는 sync/constants 의 CRON_META_PLAN). 두 곳에서 같이 돌리면 Redis 락에 걸려
+# 한쪽이 빈손이 된다. 되돌리고 싶어도 크론을 먼저 지우고 여기에 넣는다, 둘을 같이 두지 않는다.
+# 옮긴 이유: 별칭 한 바퀴가 이 자리에서 240일이었다(본편이 4,907 에서 14,788 로 늘었다).
 # 가격 워크플로와 분리한 이유(기획서 7.4): 둘 다 변동이 느리고 응답이 느리다.
 # 가격 배치에 섞으면 하루 3회 도는 수집이 백과사전 응답 속도에 묶인다.
 # 종료 코드: 0 ok, 2 partial(경고), 1 failed. 중복 실행은 concurrency 그룹 + Redis 락으로 이중 방지.
@@ -7,18 +11,10 @@ name: crawl-catalog
 
 on:
   schedule:
-    # 주기 2일. 매일이 아닌 것은 취향이 아니라 예산이다 — 아래 계산을 먼저 읽는다.
-    #
-    # 이 워크플로의 비용은 사실상 crawl wikidata_game 한 단계다(2026-09-15 실측, 아래 그 단계 주석).
-    # 1회 약 24분이라 매일이면 월 720분, 거기에 월요일 회사 수집 23분 × 4.3 을 더해 월 약 819분이었다.
-    # Actions 무료 한도 월 2,000분에서 가격 수집을 뺀 몫에 이게 다 들어가면 여유가 7% 밖에 안 남는다.
-    #
-    # 줄이는 방법은 월 처리 건수뿐이다. 간격 5초는 내리지 않는다 — 차단당하면 회사 수집까지 같이 죽는다
-    # (WIKIDATA_MIN_INTERVAL_MS 주석의 2초 429 실측). 배치를 키우고 주기를 늘려도 건수가 같으면 분도 같다.
-    # 그래서 주기를 반으로 내렸다: 월 약 459분. 별칭 한 바퀴는 41일에서 82일이 된다.
-    # 별칭은 없어도 검색이 동작하는 값이라(제목 두 컬럼은 그대로다) 늦어지는 것이 손해가 아니다.
-    #
-    # gamepass 는 요청이 2회뿐이라 비용이 없고, 카탈로그가 월 2회 안팎으로 바뀌어 격일로 충분하다.
+    # 주기 2일. 별칭 단계를 크론으로 보낸 뒤 이 워크플로는 거의 공짜가 됐다 —
+    # gamepass 는 요청이 2회뿐이고(카탈로그가 월 2회 안팎으로 바뀌어 격일로 충분하다),
+    # 나머지 비용은 월요일에만 도는 회사 수집 23분 × 4.3 = 월 약 99분이 전부다.
+    # 이전에는 이 자리가 월 459분이었다(그 전부가 별칭 단계였다).
     - cron: "30 4 */2 * *"
     # wikidata(회사)는 주 1회. 설립일, 국가는 사실상 안 바뀌고 공개 SPARQL 에 예의를 지켜야 한다.
     - cron: "0 5 * * 1"
@@ -44,7 +40,9 @@ env:
 jobs:
   crawl:
     runs-on: ubuntu-latest
-    timeout-minutes: 45
+    # 별칭 단계(약 24분)를 크론으로 보낸 뒤 45 에서 내렸다. 남은 것은 gamepass 2분과
+    # 월요일 회사 수집 23분이라 30분이면 든다.
+    timeout-minutes: 30
     steps:
       - uses: actions/checkout@v4
 
@@ -65,26 +63,7 @@ jobs:
         continue-on-error: true
         run: pnpm crawl --source=gamepass --no-match $CRAWL_LIMIT_ARG
 
-      # 검색 별칭 — 격일. 이게 있어야 "해리포터" 로 "호그와트 레거시" 가 나온다.
-      #
-      # 이 워크플로에서 유일하게 비싼 단계다. 예산을 손계산하지 말고 아래 실측을 쓴다.
-      #
-      # 2026-09-15 실측(로컬, `pnpm crawl --source=wikidata_game` 를 작은 배치로 두 번 돌려 쟀다):
-      #   매칭 1건 8.6초 — 6건이 51.4초였다. sleep 5초(WIKIDATA_MIN_INTERVAL_MS)에 검색 API 1회와
-      #                    분류 확인 SPARQL 1회의 응답 시간이 얹힌다.
-      #   별칭 수집 1건 5.8초 — 4건이 23.1초였다. SPARQL 1회다.
-      # 따라서 이 단계는 120 × 8.6 + 60 × 5.8 = 1,380초, 약 23분이다.
-      #
-      # sleep 은 항목당 1회다(sync/match.ts 의 루프 끝). 요청 수로 곱하면 안 된다 —
-      # 앞선 주석이 "요청 2회 × 5초" 로 잡아 25분으로 과대계산돼 있었다.
-      #
-      # 한 바퀴: 본편 4,907건 ÷ 120 ÷ (격일) ≈ 82일. 급하면 가정용 회선에서
-      # `pnpm crawl --source=wikidata_game --match=N` 으로 따로 당긴다 — 그쪽은 Actions 분을 안 먹는다.
-      - name: crawl wikidata_game
-        continue-on-error: true
-        run: pnpm crawl --source=wikidata_game --match=120 ${CRAWL_LIMIT_ARG:---limit=60}
-
-      # 회사 정보 — 월요일 실행분에서만. 다른 날은 같은 워크플로가 gamepass 와 별칭만 돌린다
+      # 회사 정보 — 월요일 실행분에서만. 다른 날은 같은 워크플로가 gamepass 만 돌린다
       - name: crawl wikidata
         if: github.event.schedule == '0 5 * * 1' || github.event_name == 'workflow_dispatch'
         continue-on-error: true

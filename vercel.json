@@ -83,6 +83,14 @@
     {
       "path": "/api/cron/crawl/nintendo_jp/match",
       "schedule": "0 10,22 * * *"
+    },
+    {
+      "path": "/api/cron/crawl/wikidata_game/match",
+      "schedule": "0 5,11,17,23 * * *"
+    },
+    {
+      "path": "/api/cron/crawl/wikidata_game/collect",
+      "schedule": "30 5,11,17,23 * * *"
     }
   ],
   "git": {

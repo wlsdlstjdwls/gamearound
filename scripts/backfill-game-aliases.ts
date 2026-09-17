@@ -20,7 +20,8 @@
  * (2026-09-17 실측: 본편 14,735 중 3,739건이 어떤 점수축도 없고, 브레스 오브 더 와일드가 그 안에 있다).
  * 정작 통칭 검색이 필요한 쪽이 그쪽이라 먼저 돌 수 있게 갈래를 둔다(한글 제목 본편 1,021건, 약 1.4시간).
  *
- * 쓰는 법: pnpm tsx scripts/backfill-game-aliases.ts [--apply] [--limit=N] [--hangul]
+ * 쓰는 법: pnpm tsx scripts/backfill-game-aliases.ts [--apply] [--limit=N] [--hangul] [--slug=...]
+ *   --slug 는 한 건만 골라 돈다 — 순서 뒤쪽에 있는 게임을 먼저 확인할 때 쓴다.
  *   --apply 없이 돌리면 무엇이 붙을지만 찍는다(DB 쓰기 없음). 다 돌린 뒤에는 이 파일을 지운다.
  *
  * 한 건에 5초 걸린다(위키데이터 간격). 14,614건을 한 번에 돌 수 없으니 --limit 으로 나눠 돈다.
@@ -45,6 +46,9 @@ const SOURCE = "wikidata_game" as const;
 const apply = process.argv.includes("--apply");
 /** 한글 제목 게임만 — 점수축이 비어 순서 뒤로 밀리는 쪽을 먼저 돌 때 */
 const hangulOnly = process.argv.includes("--hangul");
+/** 한 건만. 순서를 기다리지 않고 특정 게임을 확인할 때 */
+const slugArg = process.argv.find((a) => a.startsWith("--slug="));
+const onlySlug = slugArg ? slugArg.slice("--slug=".length) : null;
 const limitArg = process.argv.find((a) => a.startsWith("--limit="));
 const limit = limitArg ? Number(limitArg.slice("--limit=".length)) : 100;
 
@@ -63,6 +67,14 @@ interface Row extends Record<string, unknown> {
  * 여기서 한 번에 끝낸다. matchGameToSource 가 auto 를 다시 덮어쓰지 않으므로 재실행이 안전하다.
  */
 async function listTargets(db: Ctx["db"]): Promise<Row[]> {
+  // --slug 가 있으면 그 한 건이 전부다 — 별칭이 이미 있어도 다시 본다(확인용이라 재실행이 목적)
+  if (onlySlug) {
+    const one = await db.execute<Row>(sql`
+      select g.id, g.slug, g.title_en as "titleEn", g.title_ko as "titleKo"
+      from games g where g.slug = ${onlySlug}
+    `);
+    return one.rows as Row[];
+  }
   const hangul = hangulOnly ? sql`and (g.title_ko ~ '[가-힣]' or g.title_en ~ '[가-힣]')` : sql``;
   const rows = await db.execute<Row>(sql`
     select g.id, g.slug, g.title_en as "titleEn", g.title_ko as "titleKo"

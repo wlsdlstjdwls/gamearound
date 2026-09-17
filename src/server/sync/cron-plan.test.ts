@@ -5,6 +5,10 @@
 import { describe, expect, it } from "vitest";
 import { getStoreAdapter } from "@/server/adapters";
 import {
+  CRON_META_MODES,
+  CRON_META_MS_PER_ITEM,
+  CRON_META_PLAN,
+  CRON_META_SOURCES,
   CRON_MODES,
   type CronMode,
   CRON_DB_MS_PER_ITEM,
@@ -108,6 +112,40 @@ describe("CRON_PLAN", () => {
   it("discover 모드는 시드 몫 제한을 푼다 — 기존 갱신은 prices 모드가 따로 맡는다", () => {
     for (const source of CRON_SOURCES) {
       expect(CRON_PLAN[source].discover.seedShare).toBe(1);
+    }
+  });
+});
+
+/**
+ * 메타 소스는 건당 실측 하나로 센다 — 간격 5초가 응답 시간을 덮어서 요청 횟수로 세는 스토어 식이
+ * 오히려 부정확하다(CRON_META_MS_PER_ITEM 주석의 실측).
+ */
+describe("CRON_META_PLAN", () => {
+  for (const source of CRON_META_SOURCES) {
+    for (const mode of CRON_META_MODES) {
+      it(`${source} ${mode} 몫이 시간 예산 안에 든다`, () => {
+        const plan = CRON_META_PLAN[source][mode];
+        const items = mode === "match" ? plan.match : plan.limit;
+        expect(items * CRON_META_MS_PER_ITEM[source][mode] * CRON_SAFETY_FACTOR).toBeLessThanOrEqual(CRON_TIME_BUDGET_MS);
+      });
+    }
+  }
+
+  // 모드를 나눈 값이 서로의 일을 겹쳐 하면 한 실행이 두 몫의 시간을 쓴다 — 그러면 위 예산이 무의미해진다
+  it("한 모드는 한 가지 일만 한다", () => {
+    for (const source of CRON_META_SOURCES) {
+      expect(CRON_META_PLAN[source].match.limit).toBe(0);
+      expect(CRON_META_PLAN[source].collect.match).toBe(0);
+    }
+  });
+
+  // 매칭이 만든 ref 가 조회 대기줄에 서므로, 하루 collect 몫이 하루 match 몫보다 적으면 줄이 계속 길어진다.
+  // crawl-catalog.yml 이 match=120 대 limit=60 으로 정확히 그 상태였다(2026-09-17 옮겨 오며 고쳤다).
+  // 회차당 건수로 재면 안 된다 — 회차 수가 달라서 71 < 60 같은 비교는 뜻이 없다(runsPerDay 주석).
+  it("하루 collect 몫이 하루 match 몫보다 많다 — 아니면 조회 대기줄이 밀린다", () => {
+    for (const source of CRON_META_SOURCES) {
+      const { match, collect } = CRON_META_PLAN[source];
+      expect(collect.limit * collect.runsPerDay).toBeGreaterThan(match.match * match.runsPerDay);
     }
   });
 });

@@ -374,6 +374,94 @@ export const CRON_PLAN: Record<CronSource, Record<CronMode, CronRunPlan>> = {
   },
 };
 
+/**
+ * 메타 소스 크론 — 스토어와 갈라 둔 이유는 모드가 다르기 때문이다.
+ * 메타 소스에는 가격도 발견도 없다. 할 일은 둘뿐이다: 제목으로 항목 찾기(match), 찾은 항목 조회하기(collect).
+ * 스토어 CRON_PLAN 에 억지로 끼우면 소스 7개마다 쓰지 않는 모드가 하나씩 생긴다.
+ *
+ * 2026-09-17 에 Actions(crawl-catalog.yml)에서 여기로 옮겼다. 옮긴 이유는 산수다 —
+ * 그 워크플로는 격일 match=120 이라 하루 60건인데, 주석이 쓰인 뒤 본편이 4,907 에서 14,788 로 늘어
+ * 한 바퀴가 82일이 아니라 240일이 됐다. Actions 무료 분(월 2,000, 계정 전체가 나눠 쓴다)으로 그 속도를
+ * 네 배로 올리면 정작 매일 도는 가격 수집이 한도에 밀린다. 크론은 그 예산 밖이다.
+ * 위키데이터는 IP 를 가리지 않아 리전 제약도 없다 — 서울이든 미국이든 똑같이 열린다.
+ *
+ * **두 곳에서 같이 돌리지 않는다** — 같은 소스를 두 실행이 잡으면 Redis 락에 걸려 한쪽이 빈손이 된다.
+ * 그래서 crawl-catalog.yml 에서 wikidata_game 단계를 뺐다. 그 워크플로에는 gamepass 와 회사 수집만 남는다.
+ */
+export const CRON_META_SOURCES = ["wikidata_game"] as const;
+export type CronMetaSource = (typeof CRON_META_SOURCES)[number];
+
+/**
+ * 메타 소스 크론의 모드.
+ *   match    제목으로 위키데이터 항목을 찾아 ref 를 만든다. 별칭 없는 게임 대다수가 여기서 막혀 있다
+ *   collect  ref 가 있는 게임의 별칭을 받아 온다
+ */
+export const CRON_META_MODES = ["match", "collect"] as const;
+export type CronMetaMode = (typeof CRON_META_MODES)[number];
+
+export interface CronMetaRunPlan {
+  /** 이번 실행에서 조회할 건수. 0 이면 수집을 돌지 않는다(match 모드) */
+  limit: number;
+  /** 이번 실행에서 매칭해 볼 미매칭 게임 수. 0 이면 매칭을 돌지 않는다(collect 모드) */
+  match: number;
+  /**
+   * vercel.json 에 걸어 둔 하루 실행 횟수. 몫 옆에 두는 이유는 검증 때문이다 —
+   * 두 모드가 균형을 이루는지는 회차당 건수가 아니라 **하루 처리량**으로만 판정할 수 있는데,
+   * 그 값이 JSON 에만 있으면 테스트가 못 본다. vercel.json 을 고치면 여기도 같이 고친다.
+   */
+  runsPerDay: number;
+}
+
+/**
+ * 메타 소스 건당 실측 시간. 스토어 쪽은 요청 횟수 × 간격으로 세지만(cron-plan.test 의 estimateMs)
+ * 메타 소스는 간격(5초)이 응답 시간을 덮어 버려서 건당 실측 하나로 세는 편이 정확하다.
+ *
+ * 2026-09-15 실측(로컬에서 작은 배치로 두 번 돌려 쟀다. 4~6건짜리 표본이었다):
+ *   match   8.6초 — 6건이 51.4초
+ *   collect 5.8초 — 4건이 23.1초
+ *
+ * 2026-09-17 에 라우트를 통째로 돌려 다시 쟀다. **표본이 작아서 둘 다 낙관적이었다**:
+ *   match   8.93초 — 60건이 535.6초 (8.6초로 보면 회차가 예산을 16초 넘긴다)
+ *   collect 7.31초 — 88건이 643.3초 (5.8초로 보면 43초 넘긴다. 실제로 넘겨 봤다)
+ *
+ * 이 재측정은 별칭 백필이 같이 도는 중에 나온 값이라 위키데이터 응답이 평소보다 느렸을 수 있다.
+ * 그래도 느린 쪽을 쓴다 — 예산이 빠듯해서 잘리면 그 실행이 통째로 버려지고, 빠른 쪽으로 잡아 두면
+ * 백필처럼 같이 도는 일이 생길 때마다 잘린다. 값을 내리려면 백필이 끝난 뒤 다시 재고 내린다.
+ */
+export const CRON_META_MS_PER_ITEM: Record<CronMetaSource, Record<CronMetaMode, number>> = {
+  wikidata_game: { match: 8930, collect: 7310 },
+};
+
+/**
+ * 메타 소스의 모드별 몫. CRON_TIME_BUDGET_MS(600초)를 CRON_META_MS_PER_ITEM 과 여유로 나눈 값이다.
+ * 손으로 곱하지 말 것 — cron-plan.test 가 같은 식으로 다시 세고 넘치면 막는다.
+ *
+ * 주기는 vercel.json 에 있다(시각은 UTC). 회차 수는 runsPerDay 에 같이 적는다:
+ *   /api/cron/crawl/wikidata_game/match    0 5,11,17,23 * * *    하루 4회 × 58건 = 232건/일
+ *   /api/cron/crawl/wikidata_game/collect  30 5,11,17,23 * * *   하루 4회 × 71건 = 284건/일
+ *
+ * collect 하루 몫이 match 보다 많아야 하는 이유: 매칭한 것 중 auto 로 붙는 만큼이 조회 대기줄에
+ * 새로 선다. 붙는 비율은 어떤 게임이 줄에 섰느냐로 갈린다 — 2026-09-17 실측으로 인기 한글 제목
+ * 표본은 91%(118건 중 107), 생성일 순으로 도는 크론 큐 표본은 78%(60건 중 47)였다.
+ * 높은 쪽으로 세도 232 × 0.91 = 211건이라 collect 284건 안에 든다.
+ * collect 가 그보다 적으면 줄이 계속 길어진다 — crawl-catalog.yml 의 match=120 대 limit=60 이
+ * 정확히 그 상태였다. 회차당 건수로는 이 관계가 안 보인다(71 < 60 이 아니다). 하루로 세야 보인다.
+ *
+ * 한 바퀴: 매칭 대기 14,263건(2026-09-17) 기준 약 62일. 신규 유입은 하루 수십 건까지 떨어졌으므로
+ * (최근 7일 등록 10,419 → 3,791 → 428 → 53) 한 바퀴를 돌고 나면 이 몫은 남아돈다. 그때 주기를 줄인다.
+ *
+ * 시각은 기존 크론이 비워 둔 자리다(5, 11, 17, 23시 UTC). 다른 소스와 겹쳐도 락은 소스별이라 상관없지만
+ * match 와 collect 는 같은 소스라 30분 띄운다 — 겹치면 한쪽이 빈손이 된다.
+ */
+export const CRON_META_PLAN: Record<CronMetaSource, Record<CronMetaMode, CronMetaRunPlan>> = {
+  wikidata_game: {
+    // 58 × 8.93초 × 1.15 = 596초. 실측 60건 535.6초(여유 없이 쓰면 616초)
+    match: { limit: 0, match: 58, runsPerDay: 4 },
+    // 71 × 7.31초 × 1.15 = 597초. 88 로 잡았다가 실측 643초를 맞은 자리다(위 상수 주석)
+    collect: { limit: 71, match: 0, runsPerDay: 4 },
+  },
+};
+
 /** --seed-top 으로 카탈로그를 훑어 신규 게임을 등록할 수 있는 소스 (어댑터가 discoverPages 를 가진 소스) */
 export const SEEDABLE_SOURCES: Source[] = ["steam", "psstore", "xbox", "nintendo", "nintendo_jp", "epic", "gog"];
 /**

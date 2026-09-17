@@ -1,5 +1,8 @@
 // GET /api/cron/crawl/<source>/<mode> — 서울 리전 함수에서 도는 수집 진입점.
-// 예: /api/cron/crawl/nintendo/prices, /api/cron/crawl/epic/discover
+// 예: /api/cron/crawl/nintendo/prices, /api/cron/crawl/epic/discover, /api/cron/crawl/wikidata_game/match
+//
+// 소스는 두 갈래다. 스토어(CRON_SOURCES)는 prices/discover/match 를, 메타 소스(CRON_META_SOURCES)는
+// match/collect 를 받는다 — 메타에는 가격도 발견도 없다. 몫도 표를 따로 본다(CRON_META_PLAN).
 //
 // 왜 함수인가: 닌텐도와 Epic 은 Actions 러너 IP 로는 빈손이다(한국 밖 IP 차단, 데이터센터 IP 차단).
 // 서울 리전(icn1) 함수는 한국 IP 로 나가서 둘 다 열린다 — 2026-09-14 /api/debug/reachability 실측.
@@ -14,7 +17,18 @@ import { NextResponse, type NextRequest } from "next/server";
 import { getDisabledReason, isSearchableSource, isSourceEnabled } from "@/server/adapters";
 import { runSource } from "@/server/sync/run-source";
 import { matchUnmatchedGames } from "@/server/sync/match";
-import { CRON_MODES, CRON_PLAN, CRON_SOURCES, type CronMode, type CronSource } from "@/server/sync/constants";
+import {
+  CRON_META_MODES,
+  CRON_META_PLAN,
+  CRON_META_SOURCES,
+  CRON_MODES,
+  CRON_PLAN,
+  CRON_SOURCES,
+  type CronMetaMode,
+  type CronMetaSource,
+  type CronMode,
+  type CronSource,
+} from "@/server/sync/constants";
 import { bearerToken, secretMatches } from "@/lib/secret";
 
 // 라우트 세그먼트 설정은 정적으로 읽히는 값이어야 해서 리터럴을 쓴다(AGENTS §2 예외).
@@ -33,11 +47,38 @@ export async function GET(req: NextRequest, ctx: { params: Promise<{ source: str
   if (!authorized(req)) return NextResponse.json({ error: "unauthorized" }, { status: 401 });
 
   const params = await ctx.params;
+  // 메타 소스를 먼저 가른다. 모드도 몫도 표가 다르니 갈래를 여기서 끝내고 스토어 경로로 내려보내지 않는다
+  const metaSource = CRON_META_SOURCES.find((s): s is CronMetaSource => s === params.source);
+  if (metaSource) {
+    const metaMode = CRON_META_MODES.find((m): m is CronMetaMode => m === params.mode);
+    if (!metaMode) {
+      return NextResponse.json(
+        { error: `${metaSource} 의 모드는 <${CRON_META_MODES.join("|")}> 중 하나여야 해요` },
+        { status: 400 },
+      );
+    }
+    if (!isSourceEnabled(metaSource)) {
+      return NextResponse.json({ source: metaSource, mode: metaMode, status: "skipped", reason: getDisabledReason(metaSource) });
+    }
+    const plan = CRON_META_PLAN[metaSource][metaMode];
+    const startedAt = Date.now();
+    const matched = plan.match > 0 ? await matchUnmatchedGames(metaSource, plan.match) : null;
+    const result = plan.limit > 0 ? await runSource(metaSource, { limit: plan.limit }) : { status: "ok" as const, processed: 0, failed: 0 };
+    return NextResponse.json(
+      { source: metaSource, mode: metaMode, plan, matched, ...result, durationMs: Date.now() - startedAt },
+      { status: result.status === "failed" ? 500 : 200, headers: { "Cache-Control": "no-store" } },
+    );
+  }
+
   const source = CRON_SOURCES.find((s): s is CronSource => s === params.source);
   const mode = CRON_MODES.find((m): m is CronMode => m === params.mode);
   if (!source || !mode) {
     return NextResponse.json(
-      { error: `경로는 /api/cron/crawl/<${CRON_SOURCES.join("|")}>/<${CRON_MODES.join("|")}> 형태여야 해요` },
+      {
+        error:
+          `경로는 /api/cron/crawl/<${CRON_SOURCES.join("|")}>/<${CRON_MODES.join("|")}> 또는 ` +
+          `/api/cron/crawl/<${CRON_META_SOURCES.join("|")}>/<${CRON_META_MODES.join("|")}> 형태여야 해요`,
+      },
       { status: 400 },
     );
   }
