@@ -1,0 +1,12 @@
+-- psprices 수집 적재용 임시 표를 지운다.
+--
+-- 왜 지우나: psprices 병합은 2026-09-15 에 끝났다(SKU 중복정리, 체험판 분류, 커버 백필까지).
+-- 이 표는 그때 쓰던 적재 버퍼이고, 스키마(schema.ts)에 정의된 적이 없어 drizzle 도 모르는 표다.
+-- 73,897행 59MB 로 Neon 무료 한도(0.5GB)의 12% 를 차지하고 있었다.
+--
+-- 되돌리려면: 원본을 백업해 뒀다(C:/Users/cware/backup/psprices_snapshot_2026-09-17.jsonl.gz, 73,897행).
+-- 적재 스크립트는 scripts/_tmp-psprices-load.ts 에 그대로 있다.
+--
+-- 손으로 쓴 마이그레이션인 이유: drizzle-kit 은 스키마에 없는 표를 비교 대상에 넣지 않아
+-- generate 로는 이 DROP 이 나오지 않는다. 그래도 DB 변경은 전부 여기 남아야 한다.
+DROP TABLE IF EXISTS "psprices_snapshot";
