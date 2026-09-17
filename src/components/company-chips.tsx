@@ -4,7 +4,7 @@
 // 폴백을 "정보 없음"으로 처리하지 않는 이유: 이름은 아는데 회사 페이지만 없는 상태라 사용자에게는 정보가 맞다.
 import Link from "next/link";
 import { companyPath } from "@/lib/routes";
-import { COMPANY_ROLE_LABEL, GAME_MESSAGES } from "@/lib/games/messages";
+import { COMPANY_ROLE_LABEL } from "@/lib/games/messages";
 import type { GameCompanyDto } from "@/server/services/games";
 
 const BASE = "inline-flex items-center gap-1 rounded-full px-[11px] py-1 text-[12px]";
@@ -37,7 +37,10 @@ export function CompanyChips({
     );
   }
 
-  // 폴백 — 회사 매칭 전. 문자열을 그대로, 링크 없이
+  // 폴백 — 회사 매칭 전. 문자열을 그대로, 링크 없이.
+  // 이름조차 없으면 아무것도 그리지 않는다 — "정보 없어요" 는 빈칸을 읽을거리로 위장할 뿐,
+  // 보는 사람이 할 수 있는 일이 없다(2026-09-17).
   const fallback = [developer, publisher].filter(Boolean).join(" | ");
-  return <p className="text-[13px] text-dim">{fallback || GAME_MESSAGES.companyUnknown}</p>;
+  if (!fallback) return null;
+  return <p className="text-[13px] text-dim">{fallback}</p>;
 }

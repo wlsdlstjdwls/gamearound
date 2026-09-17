@@ -54,7 +54,9 @@ function metaText(p: PlatformPriceItem, skipUserScore: boolean): string {
     if (count > 0) parts.push(countText(count));
   }
   // 오래된 값은 사과가 아니라 단서로 적는다 — 그래야 "스토어에서 직접 확인" 이 다음 행동이 된다
-  if (p.freshness !== "fresh") parts.push(FRESHNESS_LABEL[p.freshness]);
+  // 라벨이 빈 구간(delayed)은 건너뛴다 — 빈 조각을 넣으면 파이프 구분자만 남는다
+  const freshnessLabel = FRESHNESS_LABEL[p.freshness];
+  if (freshnessLabel) parts.push(freshnessLabel);
   return parts.join(" | ");
 }
 

@@ -23,9 +23,14 @@ export function getFreshness(lastSyncedAt: Date | string | null | undefined, syn
   return "stale";
 }
 
+/**
+ * 24~72시간 구간(delayed)은 문구를 달지 않는다(2026-09-17).
+ * 하루 이틀 지난 값은 보는 사람이 달리 행동할 일이 없는데 "갱신 지연" 은 우리 사정을 고장처럼 알린다 —
+ * 정말 손을 써야 하는 것은 사흘 넘은 값(stale)뿐이다. 구간 자체는 남긴다(정렬, 관리자 화면이 쓴다).
+ */
 export const FRESHNESS_LABEL: Record<Freshness, string> = {
   fresh: "",
-  delayed: "갱신 지연",
+  delayed: "",
   stale: "정보가 오래됐을 수 있음",
 };
 

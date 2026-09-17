@@ -37,7 +37,6 @@ export const GAMES_LIST_MESSAGES = {
 
 export const GAME_MESSAGES = {
   /** 회사 엔티티가 아직 없을 때 — 결함처럼 보이지 않게 조용한 문구를 쓴다 */
-  companyUnknown: "제작사 정보 없어요",
   /**
    * "DLC" 라고 적지 않는다(2026-09-16). 이 칸에는 확장팩만 오지 않는다 —
    * 코스튬 4,895건, 사운드트랙 580건, 재화 208건이 같은 칸에 들어 있다.
