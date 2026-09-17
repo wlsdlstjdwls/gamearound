@@ -51,6 +51,27 @@ describe("parseEpicOffer", () => {
     expect(snap.contentType).toBe("game");
   });
 
+  // locale 을 따라 제목이 번역돼 온다 — 영문 응답을 같이 넘기면 한/영을 제자리에 넣는다(2026-09-17 실측).
+  // 이게 없던 동안 Epic 본편 21건의 title_en 자리에 한국어가 들어앉아 있었다.
+  it("영문 응답을 같이 주면 영문은 titleEn, 한국어는 titleKo 로 간다", () => {
+    const ko = fixture("epic-offer.json") as { data: { Catalog: { catalogOffer: Record<string, unknown> } } };
+    ko.data.Catalog.catalogOffer.title = "엘더스크롤 V: 스카이림 스페셜 에디션";
+    const snap = parseEpicOffer(ko, "ns:id", fixture("epic-offer.json"));
+    expect(snap.meta?.titleEn).toBe("The Elder Scrolls V: Skyrim Special Edition");
+    expect(snap.meta?.titleKo).toBe("엘더스크롤 V: 스카이림 스페셜 에디션");
+  });
+
+  it("영문 응답이 없으면 예전대로 이 응답의 제목을 쓴다 — 영문 요청 실패가 가격 수집을 막지 않는다", () => {
+    const snap = parseEpicOffer(fixture("epic-offer.json"), "ns:id");
+    expect(snap.meta?.titleEn).toBe("The Elder Scrolls V: Skyrim Special Edition");
+    expect(snap.meta?.titleKo).toBeNull();
+  });
+
+  it("두 응답의 제목이 같으면 titleKo 를 비운다 — 같은 값을 두 칸에 적지 않는다", () => {
+    const snap = parseEpicOffer(fixture("epic-offer.json"), "ns:id", fixture("epic-offer.json"));
+    expect(snap.meta?.titleKo).toBeNull();
+  });
+
   it("오퍼가 없으면 재시도하지 않는 AdapterError", () => {
     const err = (() => {
       try {

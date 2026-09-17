@@ -118,7 +118,7 @@ function appliedRule(offer: EpicOffer): { name: string | null; startsAt: string 
 }
 
 /** 오퍼 → StoreSnapshot. KRW 가 아니면 가격을 비워 둔다(지역 미판매) */
-export function toEpicSnapshot(offer: EpicOffer): StoreSnapshot {
+export function toEpicSnapshot(offer: EpicOffer, titleEn?: string | null): StoreSnapshot {
   const total = offer.price?.totalPrice;
   const krw = total && (total.currencyCode ?? "KRW") === "KRW";
   // 통화 최소 단위로 오는 값이라 자릿수만큼 나눈다. KRW 는 decimals=0 이지만 계약을 믿지 않고 계산한다
@@ -146,12 +146,18 @@ export function toEpicSnapshot(offer: EpicOffer): StoreSnapshot {
     releaseDate: epicReleaseDate(offer.effectiveDate),
     contentType: EPIC_DLC_OFFER_TYPES.has(offer.offerType ?? "") ? "dlc" : "game",
     // Epic 독점작은 Steam 에 없어 이 스냅샷으로 게임 마스터를 새로 만든다 → meta 가 있어야 한다.
-    // 제목은 locale=ko 에서도 원어 하나만 오므로 titleEn 자리에 넣고 titleKo 는 비운다.
+    //
+    // 제목은 요청 locale 을 그대로 따른다. 예전 주석은 "locale=ko 에서도 원어 하나만 온다" 고 적었는데
+    // 실측(2026-09-17)에서 틀렸다 — locale=ko 는 "혼잣말", locale=en-US 는 "Soliloquy" 를 준다.
+    // 그래서 영문 이름이 titleEn 자리에 영영 못 들어가고 한국어가 들어앉아 있었다(본편 21건).
+    // 이제 호출부가 영문 응답의 제목을 같이 넘긴다(index.ts fetch, Xbox 의 rawEn 과 같은 꼴).
+    //
     // 장르는 채우지 않는다 — tags 에 장르("RPG")와 기능("Cloud Saves", "Windows")이 섞여 오고
     // 태그 ID 로 장르만 가려낼 공개 목록이 없다. 잘못 넣으면 장르 필터가 오염된다.
     meta: {
-      titleEn: offer.title.trim(),
-      titleKo: null,
+      titleEn: titleEn?.trim() || offer.title.trim(),
+      // 영문 이름을 따로 받았고 그것과 다를 때만 이 응답의 제목이 "한국어 제목" 이다
+      titleKo: titleEn && titleEn.trim() !== offer.title.trim() ? offer.title.trim() : null,
       description: offer.description?.trim() || null,
       coverUrl: imageUrl(offer, EPIC_IMAGE_WIDE),
       portraitUrl: imageUrl(offer, EPIC_IMAGE_TALL),
@@ -167,12 +173,19 @@ export function parseEpicSearch(raw: unknown): EpicOffer[] {
   return parsed.data.data.Catalog.searchStore.elements ?? [];
 }
 
-export function parseEpicOffer(raw: unknown, externalId: string): StoreSnapshot {
+/** 영문 응답에서 이 상품의 제목만 꺼낸다. 형식이 깨져 있으면 없는 것으로 본다 — 가격 수집을 막지 않는다 */
+export function epicTitleOf(rawEn: unknown): string | null {
+  const parsed = offerResponseSchema.safeParse(rawEn);
+  if (!parsed.success) return null;
+  return parsed.data.data.Catalog.catalogOffer?.title?.trim() || null;
+}
+
+export function parseEpicOffer(raw: unknown, externalId: string, rawEn?: unknown): StoreSnapshot {
   const parsed = offerResponseSchema.safeParse(raw);
   if (!parsed.success) throw new AdapterError(`Epic 응답 형식 오류: ${parsed.error.message}`, "epic", false);
   const offer = parsed.data.data.Catalog.catalogOffer;
   if (!offer) throw new AdapterError(`Epic 게임 없음: ${externalId}`, "epic", false);
-  return toEpicSnapshot(offer);
+  return toEpicSnapshot(offer, rawEn === undefined ? null : epicTitleOf(rawEn));
 }
 
 export function toEpicCandidate(offer: EpicOffer): SearchCandidate {

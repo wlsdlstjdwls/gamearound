@@ -19,6 +19,7 @@ import {
   EPIC_DISCOVERY_MAX_PAGES,
   EPIC_GRAPHQL_URL,
   EPIC_LOCALE,
+  EPIC_LOCALE_EN,
   EPIC_OFFER_QUERY,
   EPIC_PAGE_SIZE,
   EPIC_SEARCH_QUERY,
@@ -63,10 +64,18 @@ export const epicAdapter: StoreAdapter = {
     return parseEpicSearch(raw).map(toEpicCandidate);
   },
 
+  /** 한국어 + 영문 2회 요청으로 끝난다 — 제목이 로케일을 따라오므로 영문 이름은 따로 물어야 한다 */
   async fetch(externalId: string): Promise<StoreSnapshot> {
     const { namespace, offerId } = parseEpicExternalId(externalId);
     const raw = await graphql(EPIC_OFFER_QUERY, { country: EPIC_COUNTRY, locale: EPIC_LOCALE, namespace, offerId }, externalId);
-    return parseEpicOffer(raw, externalId);
+    await sleep(Math.floor(epicAdapter.minIntervalMs / 2));
+    // 영문 요청이 실패해도 가격 수집은 계속된다 — 그때는 한국어 제목이 그대로 titleEn 에 남는다(예전 동작)
+    const rawEn = await graphql(
+      EPIC_OFFER_QUERY,
+      { country: EPIC_COUNTRY, locale: EPIC_LOCALE_EN, namespace, offerId },
+      `${externalId}:en`,
+    ).catch(() => undefined);
+    return parseEpicOffer(raw, externalId, rawEn);
   },
 
   /**

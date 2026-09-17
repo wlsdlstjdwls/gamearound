@@ -14,6 +14,12 @@ export const EPIC_GRAPHQL_URL = "https://store.epicgames.com/graphql";
 export const EPIC_STORE_BASE_URL = "https://store.epicgames.com/ko/p";
 export const EPIC_COUNTRY = "KR";
 export const EPIC_LOCALE = "ko";
+/**
+ * 영문 이름을 받기 위한 두 번째 로케일. Epic 은 locale 을 그대로 따라 제목을 번역해 준다 —
+ * ko 는 "혼잣말", en-US 는 "Soliloquy"(2026-09-17 실측 5/5). 한 요청 더 쓰는 값이
+ * title_en 자리에 한국어가 들어앉는 것보다 싸다.
+ */
+export const EPIC_LOCALE_EN = "en-US";
 /** searchStore 는 count 를 40 으로 깎는다 — 100 을 넣어도 40건만 온다(2026-09-14 확인) */
 export const EPIC_PAGE_SIZE = 40;
 /**
