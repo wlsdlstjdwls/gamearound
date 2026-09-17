@@ -12,6 +12,16 @@ export const ROUTES = {
   settings: "/settings",
   admin: "/admin",
   vendor: "/vendor",
+  /** 매장(오프라인 판매처). 디지털 스토어와 낱말을 가르려고 shop 을 쓴다 — 설계서 §1 */
+  shops: "/shops",
+  /** 입점 랜딩. 매장을 데려오는 화면이라 /shops 와 따로 둔다 */
+  business: "/business",
+  shopsJoin: "/shops/join",
+  /**
+   * 매장 관리자 콘솔. `/admin/shops` 로 두면 주소를 잘못 쳤을 때 `/admin` 으로 들어간다.
+   * 경로 분리는 실수 방지일 뿐이고, 진짜 방어는 requireRoleOrForbid("admin") 이다.
+   */
+  shopsAdmin: "/shops/admin",
   forbidden: "/403",
   terms: "/terms",
   privacy: "/privacy",
@@ -47,6 +57,21 @@ export function gamePath(slug: string): string {
 
 export function companyPath(slug: string): string {
   return `${ROUTES.company}/${encodeURIComponent(slug)}`;
+}
+
+/**
+ * 매장 slug 로 쓸 수 없는 말. `/shops/[slug]` 가 `/shops/admin` 같은 고정 경로를 가리면
+ * 그 화면이 통째로 가려진다 — 입점 신청에서 이 목록을 막는다.
+ */
+export const RESERVED_SHOP_SLUGS = ["admin", "join", "new", "search", "api"] as const;
+
+export function shopPath(slug: string): string {
+  return `${ROUTES.shops}/${encodeURIComponent(slug)}`;
+}
+
+/** 매장주 콘솔은 매장별로 갈린다 */
+export function vendorShopPath(slug: string): string {
+  return `${ROUTES.vendor}/${encodeURIComponent(slug)}`;
 }
 
 /** 가격 변동 그래프 — 게임 상세의 하위 화면 */

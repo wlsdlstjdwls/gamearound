@@ -9,6 +9,10 @@ import { relations, sql } from "drizzle-orm";
 // 여기서 모양을 한 번 더 적으면 두 곳이 말없이 어긋난다
 import type { DiscoveryLog } from "@/server/sync/discover";
 
+// 매장 도메인은 파일을 갈라 둔다(schema-shops.ts). 여기서 재수출하므로 호출부 import 경로는 그대로다 —
+// `@/server/db/schema` 하나만 보면 된다.
+export * from "./schema-shops";
+
 export const platformEnum = pgEnum("platform", ["steam", "ps5", "ps4", "xbox", "switch", "switch2", "epic", "gog"]);
 // wikidata 와 wikidata_game 을 가른 이유: 같은 백과사전이지만 조회 대상이 다르다.
 // wikidata 는 회사 항목을, wikidata_game 은 게임 항목을 찾는다. 한 소스로 합치면
