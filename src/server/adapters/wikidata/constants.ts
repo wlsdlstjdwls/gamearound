@@ -10,8 +10,30 @@ export const WIKIDATA_API_URL = "https://www.wikidata.org/w/api.php";
  */
 export const COMPANY_CLASSES = ["Q210167", "Q1137109", "Q4830453"] as const;
 
-/** 라벨 언어 우선순위. 한국어가 없으면 영어로 떨어진다 */
-export const LABEL_LANGUAGES = "ko,en";
+/**
+ * 질의에서 받을 이름 언어(게임, 회사 공통). **mul 이 빠지면 안 된다.**
+ *
+ * 위키데이터는 라틴 문자권에서 표기가 같은 이름을 언어마다 두지 않고 다국어 라벨(mul) 하나로 옮겼다.
+ * 그래서 영어 라벨이 **아예 없는** 항목이 흔하다 — 2026-09-17 실측:
+ *   Q49740(마인크래프트)            라벨 43개, en 없음, mul = "Minecraft"
+ *   Q111165107(카운터-스트라이크 2)  en 없음, mul = "Counter-Strike 2", mul 별칭 "CS2"
+ * en 만 걸렀을 때 이 항목들은 한국어 라벨 하나만 남아 우리 영문 제목과 유사도 0.00 으로 떨어졌다.
+ * 회사도 같다 — 우리가 가진 위키데이터 회사 101곳 중 22곳이 en 없이 mul 만 가졌고(밸브, 비헤이비어),
+ * 그 결과 name_en 자리에 한국어 이름이 들어앉았다(2026-09-17 실측 13곳).
+ *
+ * 그렇다고 mul 로 갈아타면 안 된다 — 젤다는 en, ko, mul 을 다 가졌다. 셋을 다 받고
+ * 겹치는 값은 호출부가 정규화로 접는다(spreadNames, collectAliases).
+ */
+export const SPARQL_NAME_LANGS = `"ko","en","mul"`;
+
+/** 위 목록의 "영문 라벨 자리" 판 — 한국어 라벨은 따로 받으므로 여기서는 뺀다 */
+export const SPARQL_EN_LANGS = `"en","mul"`;
+
+/**
+ * 라벨 언어 우선순위(SERVICE wikibase:label 용). 한국어가 없으면 영어, 그것도 없으면 다국어(mul).
+ * mul 이 왜 필요한지는 SPARQL_NAME_LANGS 주석 참고 — 영어 라벨이 아예 없는 항목이 흔하다.
+ */
+export const LABEL_LANGUAGES = "ko,en,mul";
 
 /**
  * 검색 API 에서 받아올 후보 수. 우리는 라벨이 정확히 일치하는 것만 남기므로 넉넉히 받아도 낭비가 아니다.
@@ -49,7 +71,7 @@ export function companyDetailQuery(entityIds: readonly string[]): string {
   VALUES ?company { ${values} }
   VALUES ?cls { ${classes} }
   ?company wdt:P31/wdt:P279* ?cls .
-  OPTIONAL { ?company rdfs:label ?labelEn . FILTER(lang(?labelEn) = "en") }
+  OPTIONAL { ?company rdfs:label ?labelEn . FILTER(lang(?labelEn) in (${SPARQL_EN_LANGS})) }
   OPTIONAL { ?company rdfs:label ?labelKo . FILTER(lang(?labelKo) = "ko") }
   OPTIONAL { ?company schema:description ?descKo . FILTER(lang(?descKo) = "ko") }
   OPTIONAL { ?company wdt:P17 ?country . OPTIONAL { ?country wdt:P297 ?countryCode } }
@@ -59,6 +81,35 @@ export function companyDetailQuery(entityIds: readonly string[]): string {
   SERVICE wikibase:label { bd:serviceParam wikibase:language "${LABEL_LANGUAGES}". }
 }
 LIMIT 200`;
+}
+
+/**
+ * 한글 제목으로 후보를 찾는 전문 검색 URL(CirrusSearch).
+ *
+ * wbsearchentities 를 쓰지 않는 이유는 그것이 **접두 일치**이기 때문이다. 한국어 라벨은
+ * 콜론을 달고 있는데("젤다의 전설: 브레스 오브 더 와일드") 스토어 제목에는 없어서
+ * 첫 낱말 뒤에서 바로 어긋난다 — language 를 ko 로 바꿔도 0건이다(2026-09-17 실측).
+ *
+ * 2026-09-17 실측, 질의 "젤다의 전설 브레스 오브 더 와일드":
+ *   wbsearchentities language=en  0건
+ *   wbsearchentities language=ko  0건
+ *   list=search(이 경로)          Q17185964 단독 1건
+ *
+ * 대신 이 경로는 낱말 단위 검색이라 엉뚱한 항목도 섞여 온다 — 분류 확인(gameVerifyQuery)과
+ * 제목 정확 일치 검사를 반드시 뒤에 붙인다. 응답에 라벨이 없어서 그 검사는 검증 단계가 맡는다.
+ */
+export function fulltextSearchUrl(name: string): string {
+  const params = new URLSearchParams({
+    action: "query",
+    list: "search",
+    srsearch: name,
+    srlimit: String(SEARCH_LIMIT),
+    // 0 = 항목(Q) 이름공간. 안 막으면 속성(P), 토론 문서가 섞인다
+    srnamespace: "0",
+    format: "json",
+    origin: "*",
+  });
+  return `${WIKIDATA_API_URL}?${params.toString()}`;
 }
 
 /** 이름으로 후보 항목을 찾는 검색 API URL. 실측 0.7초(2026-09-14) */
@@ -83,17 +134,24 @@ export function searchUrl(name: string, language: string): string {
  */
 export const GAME_CLASS = "Q7889";
 
+
+
 /**
  * 후보 Q번호가 정말 게임인지 가른다. 검색 API 는 분류를 안 주므로 이 한 번이 꼭 필요하다.
  * 회사 경로와 같은 이유로 VALUES 로 못박는다 — 라벨을 조건으로 스캔하면 타임아웃이 난다.
+ *
+ * altLabel 까지 받는 이유: 전문 검색 경로는 응답에 이름이 없어서 "우리 제목과 같은가" 를
+ * 여기서 판정해야 한다. 라벨만 보면 통칭으로 등록된 항목을 놓친다.
+ * 별칭 하나가 한 행이라 같은 항목이 여러 줄로 온다 — 호출부가 항목별로 접는다.
  */
 export function gameVerifyQuery(entityIds: readonly string[]): string {
   const values = entityIds.map((q) => `wd:${q}`).join(" ");
-  return `SELECT ?item ?labelEn ?labelKo WHERE {
+  return `SELECT ?item ?labelEn ?labelKo ?alt WHERE {
   VALUES ?item { ${values} }
   ?item wdt:P31/wdt:P279* wd:${GAME_CLASS} .
-  OPTIONAL { ?item rdfs:label ?labelEn . FILTER(lang(?labelEn) = "en") }
+  OPTIONAL { ?item rdfs:label ?labelEn . FILTER(lang(?labelEn) in (${SPARQL_EN_LANGS})) }
   OPTIONAL { ?item rdfs:label ?labelKo . FILTER(lang(?labelKo) = "ko") }
+  OPTIONAL { ?item skos:altLabel ?alt . FILTER(lang(?alt) in (${SPARQL_NAME_LANGS})) }
 }`;
 }
 
@@ -102,14 +160,15 @@ export function gameVerifyQuery(entityIds: readonly string[]): string {
  *   P179 시리즈    "젤다의 전설", "철권"        — 연관검색어의 본줄기
  *   P144 원작      "해리 포터", "사이버펑크"     — 원작이 다른 매체인 게임
  *   skos:altLabel  "TOTK", "TK8", "botw 2"    — 약칭, 통칭
- * 한국어와 영어만 받는다. 다른 언어까지 받으면 별칭이 수십 개로 불어나고 검색에 잡음만 는다.
+ * 한국어, 영어, 다국어(mul)만 받는다 — 나머지 언어까지 받으면 별칭이 수십 개로 불어나고 검색에 잡음만 는다.
+ * mul 을 넣는 이유는 SPARQL_NAME_LANGS 주석 참고("CS2" 같은 약칭이 거기 들어 있다).
  * (2026-09-15 실측: 호그와트 레거시에서 "해리 포터", "Harry Potter", "Wizard Game" 이 나온다.)
  */
 export function gameAliasQuery(entityId: string): string {
   return `SELECT ?series ?based ?alt WHERE {
   VALUES ?item { wd:${entityId} }
-  OPTIONAL { ?item wdt:P179 ?s . ?s rdfs:label ?series . FILTER(lang(?series) in ("ko","en")) }
-  OPTIONAL { ?item wdt:P144 ?b . ?b rdfs:label ?based . FILTER(lang(?based) in ("ko","en")) }
-  OPTIONAL { ?item skos:altLabel ?alt . FILTER(lang(?alt) in ("ko","en")) }
+  OPTIONAL { ?item wdt:P179 ?s . ?s rdfs:label ?series . FILTER(lang(?series) in (${SPARQL_NAME_LANGS})) }
+  OPTIONAL { ?item wdt:P144 ?b . ?b rdfs:label ?based . FILTER(lang(?based) in (${SPARQL_NAME_LANGS})) }
+  OPTIONAL { ?item skos:altLabel ?alt . FILTER(lang(?alt) in (${SPARQL_NAME_LANGS})) }
 } LIMIT 100`;
 }
