@@ -8,6 +8,7 @@ import { relations, sql } from "drizzle-orm";
 // 발견 요약의 형태는 sync/discover 가 정한다. 타입만 가져오므로 런타임 의존은 생기지 않는다 —
 // 여기서 모양을 한 번 더 적으면 두 곳이 말없이 어긋난다
 import type { DiscoveryLog } from "@/server/sync/discover";
+import { auditColumns } from "./audit";
 
 // 매장 도메인은 파일을 갈라 둔다(schema-shops.ts). 여기서 재수출하므로 호출부 import 경로는 그대로다 —
 // `@/server/db/schema` 하나만 보면 된다.
@@ -101,8 +102,6 @@ export const games = pgTable("games", {
   contentType: contentTypeEnum("content_type").default("game").notNull(),
   /** DLC 가 가리키는 본편. contentType 이 game 이면 null. 본편이 지워지면 DLC 도 같이 지운다 */
   parentGameId: uuid("parent_game_id").references((): AnyPgColumn => games.id, { onDelete: "cascade" }),
-  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
-  updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
   /**
    * 검색용 정규화 제목 — 소문자 + 영숫자, 한글, 가나, 한자 외 전부 제거.
    * "엘든 링" / "ELDEN RING:" 처럼 공백, 구두점만 다른 질의를 흡수한다(§4.2 normalizeTitle 의 DB 판).
@@ -116,6 +115,7 @@ export const games = pgTable("games", {
   titleKoNorm: text("title_ko_norm").generatedAlwaysAs(
     sql`lower(regexp_replace(coalesce(title_ko, ''), '[^[:alnum:]]+', '', 'g'))`,
   ),
+  ...auditColumns(),
 }, (t) => [
   index("games_title_en_idx").on(t.titleEn),
   // 목록 쿼리가 매번 content_type='game' 으로 거르고, 상세는 parent_game_id 로 DLC 를 모은다
@@ -146,7 +146,7 @@ export const gameAliases = pgTable("game_aliases", {
   aliasNorm: text("alias_norm").generatedAlwaysAs(
     sql`lower(regexp_replace(alias, '[^[:alnum:]]+', '', 'g'))`,
   ),
-  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+  ...auditColumns(),
 }, (t) => [
   // 같은 게임에 같은 별칭을 두 번 넣지 못하게 — 원문이 아니라 정규화본으로 막는다
   // ("해리 포터" 와 "해리포터" 는 질의에서 어차피 같은 값이 된다).
@@ -157,11 +157,13 @@ export const gameAliases = pgTable("game_aliases", {
 export const genres = pgTable("genres", {
   id: integer("id").primaryKey().generatedAlwaysAsIdentity(),
   name: text("name").notNull().unique(),
+  ...auditColumns(),
 });
 
 export const gameGenres = pgTable("game_genres", {
   gameId: uuid("game_id").references(() => games.id, { onDelete: "cascade" }).notNull(),
   genreId: integer("genre_id").references(() => genres.id).notNull(),
+  ...auditColumns(),
 }, (t) => [primaryKey({ columns: [t.gameId, t.genreId] })]);
 
 export const gamePlatforms = pgTable("game_platforms", {
@@ -239,6 +241,7 @@ export const gamePlatforms = pgTable("game_platforms", {
    * 매 실행 전부 다시 묻지 않도록 언제 물어봤는지를 남긴다(sync/patch-list 의 PATCH_LIST_REFRESH_DAYS).
    */
   patchListedAt: timestamp("patch_listed_at", { withTimezone: true }),
+  ...auditColumns(),
 }, (t) => [
   uniqueIndex("gp_game_platform_region_uq").on(t.gameId, t.platform, t.region),
   index("gp_title_code_idx").on(t.titleCode),
@@ -257,6 +260,7 @@ export const priceSnapshots = pgTable("price_snapshots", {
   discountEndsAt: timestamp("discount_ends_at", { withTimezone: true }),
   discountName: text("discount_name"),
   capturedAt: timestamp("captured_at", { withTimezone: true }).defaultNow().notNull(),
+  ...auditColumns(),
 }, (t) => [index("ps_gp_captured_idx").on(t.gamePlatformId, t.capturedAt)]);
 
 export const gameSourceRefs = pgTable("game_source_refs", {
@@ -276,6 +280,7 @@ export const gameSourceRefs = pgTable("game_source_refs", {
   confidence: numeric("confidence", { precision: 3, scale: 2 }),
   // 마지막 매칭 시도 시각 — matched_by="none" 행의 재검색 주기 판단용(NONE_RETRY_DAYS)
   checkedAt: timestamp("checked_at", { withTimezone: true }).defaultNow().notNull(),
+  ...auditColumns(),
 }, (t) => [
   primaryKey({ columns: [t.gameId, t.source] }),
   index("gsr_source_matched_checked_idx").on(t.source, t.matchedBy, t.checkedAt),
@@ -294,7 +299,7 @@ export const discoveryIgnores = pgTable("discovery_ignores", {
   /** 같은 게임이라고 판단한 상대. 판단을 나중에 되짚을 수 있게 남긴다(신규 게임이면 null) */
   gameId: uuid("game_id").references(() => games.id, { onDelete: "cascade" }),
   reason: text("reason").notNull(),
-  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+  ...auditColumns(),
 }, (t) => [primaryKey({ columns: [t.source, t.externalId] })]);
 
 export const playtimes = pgTable("playtimes", {
@@ -303,6 +308,7 @@ export const playtimes = pgTable("playtimes", {
   mainExtraHours: numeric("main_extra_hours", { precision: 5, scale: 1 }),
   completionistHours: numeric("completionist_hours", { precision: 5, scale: 1 }),
   lastSyncedAt: timestamp("last_synced_at", { withTimezone: true }),
+  ...auditColumns(),
 });
 
 export const news = pgTable("news", {
@@ -313,6 +319,7 @@ export const news = pgTable("news", {
   sourceName: text("source_name").notNull(),
   thumbnailUrl: text("thumbnail_url"),
   publishedAt: timestamp("published_at", { withTimezone: true }).notNull(),
+  ...auditColumns(),
 }, (t) => [index("news_game_pub_idx").on(t.gameId, t.publishedAt)]);
 
 /**
@@ -356,6 +363,7 @@ export const patchNotes = pgTable("patch_notes", {
   summaryModel: text("summary_model"),
   summarizedAt: timestamp("summarized_at", { withTimezone: true }),
   publishedAt: timestamp("published_at", { withTimezone: true }).notNull(),
+  ...auditColumns(),
 }, (t) => [
   uniqueIndex("patch_notes_platform_external_uq").on(t.gamePlatformId, t.externalId),
   index("patch_notes_platform_pub_idx").on(t.gamePlatformId, t.publishedAt),
@@ -370,8 +378,7 @@ export const users = pgTable("users", {
   role: roleEnum("role").default("user").notNull(),
   displayName: text("display_name"),
   emailVerifiedAt: timestamp("email_verified_at", { withTimezone: true }),
-  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
-  updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
+  ...auditColumns(),
 });
 
 // 서버 세션(쿠키에는 랜덤 토큰, DB에는 sha256 해시만). 만료, 강제 로그아웃은 행 삭제로 처리.
@@ -379,16 +386,16 @@ export const sessions = pgTable("sessions", {
   id: text("id").primaryKey(), // sha256(token) hex
   userId: uuid("user_id").references(() => users.id, { onDelete: "cascade" }).notNull(),
   expiresAt: timestamp("expires_at", { withTimezone: true }).notNull(),
-  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
   lastSeenAt: timestamp("last_seen_at", { withTimezone: true }).defaultNow().notNull(),
   userAgent: text("user_agent"),
   ip: text("ip"),
+  ...auditColumns(),
 }, (t) => [index("sessions_user_idx").on(t.userId), index("sessions_expires_idx").on(t.expiresAt)]);
 
 export const wishlists = pgTable("wishlists", {
   userId: uuid("user_id").references(() => users.id, { onDelete: "cascade" }).notNull(),
   gameId: uuid("game_id").references(() => games.id, { onDelete: "cascade" }).notNull(),
-  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+  ...auditColumns(),
 }, (t) => [primaryKey({ columns: [t.userId, t.gameId] })]);
 
 export const pushSubscriptions = pgTable("push_subscriptions", {
@@ -397,7 +404,7 @@ export const pushSubscriptions = pgTable("push_subscriptions", {
   endpoint: text("endpoint").notNull().unique(),
   p256dh: text("p256dh").notNull(),
   auth: text("auth").notNull(),
-  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+  ...auditColumns(),
 });
 
 export const priceAlerts = pgTable("price_alerts", {
@@ -407,12 +414,14 @@ export const priceAlerts = pgTable("price_alerts", {
   platform: platformEnum("platform"),          // null = 모든 플랫폼
   minDiscountPct: integer("min_discount_pct").default(1), // 1 = 할인 발생 시
   isActive: boolean("is_active").default(true).notNull(),
+  ...auditColumns(),
 }, (t) => [index("pa_game_active_idx").on(t.gameId, t.isActive)]);
 
 export const alertDeliveries = pgTable("alert_deliveries", {
   alertId: uuid("alert_id").references(() => priceAlerts.id, { onDelete: "cascade" }).notNull(),
   snapshotId: integer("snapshot_id").references(() => priceSnapshots.id).notNull(),
   sentAt: timestamp("sent_at", { withTimezone: true }).defaultNow().notNull(),
+  ...auditColumns(),
 }, (t) => [primaryKey({ columns: [t.alertId, t.snapshotId] })]);
 
 export const syncLogs = pgTable("sync_logs", {
@@ -428,6 +437,7 @@ export const syncLogs = pgTable("sync_logs", {
   discovery: jsonb("discovery").$type<DiscoveryLog>(),
   startedAt: timestamp("started_at", { withTimezone: true }).notNull(),
   finishedAt: timestamp("finished_at", { withTimezone: true }),
+  ...auditColumns(),
 });
 
 export const dataCorrections = pgTable("data_corrections", {
@@ -439,7 +449,7 @@ export const dataCorrections = pgTable("data_corrections", {
   before: jsonb("before"),
   after: jsonb("after"),
   lockField: boolean("lock_field").default(true), // true면 크롤러가 덮어쓰지 않음
-  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+  ...auditColumns(),
 });
 
 // ---- 회사 (기획서 F1, F2, F4) ----
@@ -458,6 +468,7 @@ export const companies = pgTable("companies", {
   description: text("description"),
   wikidataId: text("wikidata_id").unique(), // Q번호. 재조회 키
   lastSyncedAt: timestamp("last_synced_at", { withTimezone: true }),
+  ...auditColumns(),
 }, (t) => [index("companies_country_idx").on(t.countryCode)]);
 
 /**
@@ -470,12 +481,14 @@ export const companyAliases = pgTable("company_aliases", {
   aliasNorm: text("alias_norm").notNull().unique(), // lib/company-name.ts 의 normalizeCompanyName 결과
   aliasRaw: text("alias_raw").notNull(),
   source: sourceEnum("source").notNull(),
+  ...auditColumns(),
 });
 
 export const gameCompanies = pgTable("game_companies", {
   gameId: uuid("game_id").references(() => games.id, { onDelete: "cascade" }).notNull(),
   companyId: uuid("company_id").references(() => companies.id, { onDelete: "cascade" }).notNull(),
   role: companyRoleEnum("role").notNull(),
+  ...auditColumns(),
 }, (t) => [
   primaryKey({ columns: [t.gameId, t.companyId, t.role] }),
   index("gc_company_role_idx").on(t.companyId, t.role),
@@ -494,6 +507,7 @@ export const subscriptions = pgTable("subscriptions", {
   platform: platformEnum("platform"),
   catalogId: text("catalog_id"),       // Game Pass 컬렉션 GUID 등 수집 키
   isActive: boolean("is_active").default(true).notNull(),
+  ...auditColumns(),
 });
 
 /**
@@ -506,6 +520,7 @@ export const gameSubscriptions = pgTable("game_subscriptions", {
   subscriptionId: integer("subscription_id").references(() => subscriptions.id, { onDelete: "cascade" }).notNull(),
   addedAt: timestamp("added_at", { withTimezone: true }).defaultNow().notNull(),
   removedAt: timestamp("removed_at", { withTimezone: true }),
+  ...auditColumns(),
 }, (t) => [
   index("gs_sub_removed_idx").on(t.subscriptionId, t.removedAt),
   index("gs_gp_idx").on(t.gamePlatformId),
@@ -522,7 +537,7 @@ export const upgrades = pgTable("upgrades", {
   storeExternalId: text("store_external_id"),
   storeUrl: text("store_url"),
   note: text("note"),                    // "원본 소유 필요" 같은 조건
-  updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
+  ...auditColumns(),
 }, (t) => [uniqueIndex("upgrades_game_from_to_uq").on(t.gameId, t.fromPlatform, t.toPlatform)]);
 
 // ---- relations (drizzle relational query API 용) ----
