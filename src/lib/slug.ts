@@ -29,6 +29,20 @@ const SLUG_DROP = new RegExp(`[^${SCRIPT_CHARS}]+`, "g");
 // 공백은 제목 정규화에서만 남긴다(낱말 경계). 템플릿 리터럴은 \s 를 s 로 삼키므로 문자열로 잇는다
 const TITLE_DROP = new RegExp("[^" + SCRIPT_CHARS + "\\s]", "g");
 
+/**
+ * `title_en` 에 한글이 섞였는가 — "영문 이름" 자리에 한국어 스토어 표기가 들어앉은 상태다.
+ *
+ * 왜 필요한가(2026-09-17 실측): 09-15 발견 회차에서 본편 1,443건이 한국어 제목으로 등록됐다.
+ * Xbox 는 매 수집마다 영문 응답으로 올바른 이름("Game Dev Story")을 들고 오는데,
+ * planGameMeta 의 fillOnly 가 "값이 이미 있다" 며 그걸 버렸다 — 한 번 박히면 영영 안 고쳐진다.
+ *
+ * 채워진 것과 잘못 채워진 것을 가르는 술어가 이 함수다. 가나, 한자는 보지 않는다 —
+ * 일본 스토어 제목은 그 자체로 정식 이름이라 되돌릴 영문 상대가 없다.
+ */
+export function hasHangul(title: string): boolean {
+  return /[가-힣]/.test(title);
+}
+
 export function slugify(input: string): string {
   return stripDiacritics(input)
     .toLowerCase()
@@ -37,9 +51,13 @@ export function slugify(input: string): string {
     .slice(0, 80) || "game";
 }
 
-/** slug 충돌 시 접미어 부착 */
+/**
+ * slug 충돌 시 접미어 부착. 접미어도 slugify 를 거친다 —
+ * 붙는 값이 스토어 외부 ID 라 콜론, 대문자가 섞여 들어온다(Epic 은 "namespace:offerId" 한 덩어리다).
+ * 날것으로 이으면 주소에 못 쓸 글자가 박힌다(2026-09-17 실측: 콜론 10건, 대문자 310건).
+ */
 export function slugWithSuffix(base: string, suffix: string | number): string {
-  return `${base}-${suffix}`;
+  return `${base}-${slugify(String(suffix))}`;
 }
 
 /**

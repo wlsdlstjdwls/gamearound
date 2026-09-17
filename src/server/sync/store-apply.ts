@@ -16,9 +16,9 @@ import type { StoreSnapshot } from "@/server/adapters/types";
 import { normalizeCompanyName } from "@/lib/company-name";
 import { errorMessage } from "@/lib/errors";
 import { WRITE_BATCH_SIZE } from "./constants";
-import { recordError, type Ctx } from "./context";
+import { isLocked, recordError, type Ctx } from "./context";
 import { companyNamesOf, findCompaniesByAliases } from "./company-writer";
-import { createGameFromSnapshot, planGameMeta, type GameRow } from "./game-writer";
+import { createGameFromSnapshot, isTitleEnRecovery, planGameMeta, planSlugRename, type GameRow } from "./game-writer";
 import { planPlatform, type PlatformPlan, type PlatformRow } from "./platform-writer";
 import { gamesWithRef, ignoreDiscovery, loadGameTitles, type StoreTarget } from "./store-targets";
 import { findGameByTitle } from "./match";
@@ -331,6 +331,16 @@ export async function applyStore(ctx: Ctx, source: StoreSource, fetched: Fetched
     // 예전에는 여기서 steam 만 통과시켜서, 스팀에 없는 게임은 등록 순간의 값에 영원히 멈춰 있었다.
     if (snapshot.meta && cur) {
       const set = planGameMeta(ctx, cur, snapshot.meta);
+      // 영문 이름을 되찾았을 때만 주소도 따라 바꾼다(planSlugRename 주석: 옛 주소는 버린다).
+      // 평범한 제목 정정("Game" → "Game: Definitive Edition")에는 손대지 않는다 —
+      // 그것까지 따라가면 멀쩡한 주소가 스토어 표기가 흔들릴 때마다 404 가 된다.
+      if (set.titleEn && isTitleEnRecovery(cur.titleEn, set.titleEn) && !isLocked(ctx, "games", gameId, "slug")) {
+        const nextSlug = await planSlugRename(ctx.db, cur, set.titleEn, snapshot.storeExternalId);
+        if (nextSlug) {
+          set.slug = nextSlug;
+          ctx.changedSlugs.add(nextSlug);
+        }
+      }
       if (Object.keys(set).length > 0) {
         metaUpdates.push(ctx.db.update(games).set({ ...set, updatedAt: ctx.now }).where(eq(games.id, gameId)));
         ctx.changedSlugs.add(slug);

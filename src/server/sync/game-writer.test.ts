@@ -8,7 +8,7 @@ import { describe, expect, it } from "vitest";
 import type { Source } from "@/server/adapters/types";
 import type { StoreSnapshot } from "@/server/adapters/types";
 import type { Ctx } from "./context";
-import { planGameMeta, type GameRow } from "./game-writer";
+import { isTitleEnRecovery, planGameMeta, type GameRow } from "./game-writer";
 
 const NOW = new Date("2026-09-15T00:00:00.000Z");
 
@@ -81,5 +81,46 @@ describe("planGameMeta 제목 권위", () => {
 
   it("회사 이름도 같은 규칙을 탄다 — 일본 표기가 기존 회사명을 덮지 않는다", () => {
     expect(planGameMeta(ctx("nintendo_jp"), game(), meta({ titleEn: undefined, publisher: "カプコン" }))).toEqual({});
+  });
+});
+
+// 한글이 든 title_en 은 "채워진 값" 이 아니라 잘못 채워진 값이다 — 권위 없는 소스라도 라틴 이름으로 되돌린다.
+// 09-15 발견 회차에 본편 1,443건이 한국어 제목으로 등록됐고, fillOnly 가 그걸 영영 굳히고 있었다(2026-09-17).
+describe("planGameMeta 영문 제목 복구", () => {
+  const contaminated = game({ titleEn: "게임개발 스토리" });
+
+  it("한글이 든 영문 제목은 권위 없는 소스도 라틴 이름으로 덮는다", () => {
+    expect(planGameMeta(ctx("xbox"), contaminated, meta({ titleEn: "Game Dev Story" }))).toEqual({
+      titleEn: "Game Dev Story",
+    });
+  });
+
+  it("후보에도 한글이 있으면 그대로 둔다 — 닌텐도 코리아 공식 표기가 그 형태다", () => {
+    expect(
+      planGameMeta(ctx("nintendo"), game({ titleEn: "ASTRAL CHAIN (애스트럴 체인)" }), meta({ titleEn: "ASTRAL CHAIN (애스트럴 체인)" })),
+    ).toEqual({});
+  });
+
+  it("라틴 제목이 멀쩡하면 건드리지 않는다 — 복구는 오염된 자리에서만 돈다", () => {
+    expect(planGameMeta(ctx("xbox"), game(), meta({ titleEn: "Pragmata" }))).toEqual({});
+  });
+
+  it("잠긴 필드는 복구도 하지 않는다 — 관리자가 고른 제목이 우선이다", () => {
+    expect(planGameMeta(ctx("xbox", ["games:g-1:title_en"]), contaminated, meta({ titleEn: "Game Dev Story" }))).toEqual({});
+  });
+});
+
+// 주소 갱신(store-apply)이 이 술어를 같이 쓴다 — 갈라지면 평범한 제목 정정에도 주소가 따라 바뀐다
+describe("isTitleEnRecovery", () => {
+  it("한글 제목을 라틴 이름으로 되돌리는 경우만 참이다", () => {
+    expect(isTitleEnRecovery("게임개발 스토리", "Game Dev Story")).toBe(true);
+  });
+
+  it("평범한 제목 정정은 복구가 아니다", () => {
+    expect(isTitleEnRecovery("Game", "Game: Definitive Edition")).toBe(false);
+  });
+
+  it("후보가 없으면 거짓이다", () => {
+    expect(isTitleEnRecovery("게임개발 스토리", null)).toBe(false);
   });
 });

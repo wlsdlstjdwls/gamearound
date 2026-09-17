@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { normalizeForSearch, normalizeTitle, seriesConflict, seriesNumbers, slugify, trigramSimilarity } from "./slug";
+import { normalizeForSearch, normalizeTitle, seriesConflict, seriesNumbers, slugify, slugWithSuffix, trigramSimilarity } from "./slug";
 
 // 이 규칙은 games.title_en_norm / title_ko_norm 생성 컬럼과 짝을 이룬다.
 // SQL: lower(regexp_replace(title, '[^[:alnum:]]+', '', 'g')) — C.UTF-8 기준
@@ -89,6 +89,23 @@ describe("normalizeTitle", () => {
 
   it("서로 다른 게임은 합쳐지지 않는다", () => {
     expect(trigramSimilarity("Halo: Combat Evolved Anniversary", "Halo: The Master Chief Collection")).toBeLessThan(0.9);
+  });
+});
+
+// 접미어에는 스토어 외부 ID 가 그대로 들어온다 — 주소에 못 쓸 글자를 걸러야 한다(2026-09-17)
+describe("slugWithSuffix", () => {
+  it("Epic 외부 ID 의 콜론을 주소에 남기지 않는다", () => {
+    expect(slugWithSuffix("maneater-truth-quest", "turtle:dd2c5fdab4104ad5b8577bef89db4c8a")).toBe(
+      "maneater-truth-quest-turtle-dd2c5fdab4104ad5b8577bef89db4c8a",
+    );
+  });
+
+  it("Xbox 대문자 ID 를 소문자로 내린다", () => {
+    expect(slugWithSuffix("the-settlers-new-allies", "9NPGPDCXWJQ7")).toBe("the-settlers-new-allies-9npgpdcxwjq7");
+  });
+
+  it("숫자 접미어는 그대로다", () => {
+    expect(slugWithSuffix("pragmata", 2)).toBe("pragmata-2");
   });
 });
 
