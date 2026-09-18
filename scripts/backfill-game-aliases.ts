@@ -76,15 +76,23 @@ async function listTargets(db: Ctx["db"]): Promise<Row[]> {
     return one.rows as Row[];
   }
   const hangul = hangulOnly ? sql`and (g.title_ko ~ '[가-힣]' or g.title_en ~ '[가-힣]')` : sql``;
+  // 이미 "후보 없음" 으로 끝난 행(matched_by = 'none')은 다시 세우지 않는다. 그 기록이 곧 재검색 방지표다 —
+  // 2026-09-18 실측: 한글 큐 앞 300건 중 75건이 지난 회차에 죽은 행이라 같은 빈손을 되풀이하고 있었다.
   const rows = await db.execute<Row>(sql`
     select g.id, g.slug, g.title_en as "titleEn", g.title_ko as "titleKo"
     from games g
     left join game_platforms p on p.game_id = g.id
+    left join game_source_refs r on r.game_id = g.id and r.source = 'wikidata_game'
     where g.content_type = 'game'
       and not exists (select 1 from game_aliases a where a.game_id = g.id)
+      and not exists (
+        select 1 from game_source_refs d
+        where d.game_id = g.id and d.source = 'wikidata_game' and d.matched_by = 'none')
       ${hangul}
     group by g.id
-    order by max(p.user_score_count) desc nulls last,
+    -- 안 본 것 먼저, 그다음 오래 전에 본 것. 이게 없으면 별칭이 안 붙는 행들이 큐의 머리를 영원히 막는다
+    order by max(r.updated_at) asc nulls first,
+             max(p.user_score_count) desc nulls last,
              max(greatest(p.metacritic_score, p.opencritic_score)) desc nulls last,
              max(p.release_date) desc nulls last,
              g.created_at
@@ -147,6 +155,12 @@ async function main(): Promise<void> {
     } catch (e) {
       failed++;
       console.warn(`실패 | ${t.slug} | ${errorMessage(e)}`);
+    }
+    // 본 자리에 흔적을 남긴다 — 별칭이 안 붙은 행도 "봤다" 가 남아야 다음 회차가 다음 줄로 넘어간다
+    if (apply) {
+      await db.execute(sql`
+        update game_source_refs set updated_at = now()
+        where game_id = ${t.id}::uuid and source = 'wikidata_game'`);
     }
     if (i < targets.length - 1) await sleep(adapter.minIntervalMs);
   }
