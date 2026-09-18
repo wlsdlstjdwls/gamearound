@@ -20,7 +20,7 @@ async function getHomeDataRaw(): Promise<HomeData> {
   const homeRegion = eq(gamePlatforms.region, HOME_REGION);
   /**
    * 기준 통화 우선. 할인율만으로 세우면 첫 화면이 통째로 달러가 된다 —
-   * 원화 가격이 없는 게임이 1,490개고 거의 GOG 인데 그쪽 할인이 -95% 대다(2026-09-15 실측).
+   * 원화 가격이 없는 게임이 1,490개였고 그쪽 할인이 -95% 대였다(2026-09-15 실측, 달러 전용 스토어).
    * 환산은 하지 않으므로(lib/currency) 남은 손잡이는 순서뿐이다. 목록의 hasBaseCurrency 와 같은 규칙.
    */
   const baseCurrencyFirst = sql`(${gamePlatforms.currency} = ${DISPLAY_CURRENCY}) desc`;

@@ -23,11 +23,14 @@ describe("hasVisiblePlatform", () => {
     expect(text).toContain('"game_platforms"."game_id" = "games"."id"');
   });
 
+  // 특정 스토어 이름을 박아 두지 않는다(2026-09-18) — 숨김 목록이 비면 조건 자체가 서지 않는 것이 맞다.
+  // 전에는 "not in 이 있다" 로 단정해 뒀는데, 목록이 빈 순간 규칙이 멀쩡한데도 테스트가 깨졌다
   it("숨긴 스토어는 값마다 자리표시자로 빠진다", () => {
     const { sql: text, params } = render(hasVisiblePlatform([]));
-    expect(text).toContain("not in");
     // 배열을 통째로 넘기면 자리표시자 하나에 배열이 묶여 조건이 조용히 어긋난다
     expect(params).toEqual([...HIDDEN_PLATFORMS]);
+    if (HIDDEN_PLATFORMS.length > 0) expect(text).toContain("not in");
+    else expect(text).not.toContain("not in");
   });
 
   it("고른 플랫폼이 있으면 그중 하나여야 한다", () => {

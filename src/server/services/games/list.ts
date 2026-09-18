@@ -62,8 +62,8 @@ function platformAgg(platforms: Platform[]) {
        * 환산은 하지 않으므로(lib/currency) 남은 손잡이는 순서뿐이다 — 원화로 살 수 있는 것을
        * 먼저 세우고, 나머지는 뒤에 그대로 둔다.
        *
-       * 이 키를 넣은 계기는 GOG 였다(2026-09-15 실측: 4,910개 중 1,490개가 원화 없음, 거의 GOG).
-       * 2026-09-16 에 GOG 를 숨기면서 그 수가 **26개**로 줄었다(일본 스위치 행). 그래도 키는 남긴다 —
+       * 이 키를 넣은 계기는 달러 전용 스토어였다(2026-09-15 실측: 4,910개 중 1,490개가 원화 없음).
+       * 2026-09-16 에 그 스토어를 숨기면서 수가 **26개**로 줄었다(일본 스위치 행). 그래도 키는 남긴다 —
        * 26개가 첫 화면을 먹는 것도 같은 문제고, 지역이 늘면 그 수는 다시 는다.
        */
       hasBaseCurrency: sql<boolean>`bool_or(${gamePlatforms.currency} = ${DISPLAY_CURRENCY} and ${gamePlatforms.currentPrice} is not null)`.as("has_base_currency"),

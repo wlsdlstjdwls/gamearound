@@ -54,13 +54,15 @@ const verdictOf = (probes: ProbeResult[], source: string): ProbeVerdict | undefi
  * 발견만 열리고 가격이 막히면 신규 게임이 값 없이 등록된다 — 그건 옮긴 게 아니라 망가뜨린 것이다.
  *   steam  발견 store.steampowered.com  |  가격 api.steampowered.com
  *   xbox   발견 emerald.xboxservices.com |  가격 displaycatalog.mp.microsoft.com
- * psstore, gog 는 한 호스트가 둘 다 맡는다.
+ * psstore 는 한 호스트가 둘 다 맡는다.
  */
+/** 대조군 진단의 이름. stores.ts 가 붙이는 이름과 같아야 한다 — 다르면 이 경고가 조용히 안 뜬다 */
+export const CONTROL_PROBE = "대조군";
+
 const CRON_CANDIDATES: Array<{ label: string; probes: string[] }> = [
   { label: "Steam", probes: ["steam (발견)", "steam (가격)"] },
   { label: "PlayStation", probes: ["psstore"] },
   { label: "Xbox", probes: ["xbox (발견)", "xbox (가격)"] },
-  { label: "GOG", probes: ["gog"] },
 ];
 
 /** 후보 한 소스의 판정. 경로가 하나라도 빠져 있으면(진단에 없으면) 말하지 않는다 */
@@ -108,8 +110,8 @@ export function summarize(probes: ProbeResult[]): string[] {
     if (line) out.push(line);
   }
 
-  if (verdictOf(probes, "gog") !== "ok") {
-    out.push("주의: 대조군(GOG)까지 실패했다. 스토어 차단이 아니라 이 환경의 바깥 연결을 먼저 의심한다");
+  if (verdictOf(probes, CONTROL_PROBE) !== "ok") {
+    out.push("주의: 대조군까지 실패했다. 스토어 차단이 아니라 이 환경의 바깥 연결을 먼저 의심한다");
   }
   return out;
 }

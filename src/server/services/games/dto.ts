@@ -29,7 +29,7 @@ export type PlatformDto = {
   discountName: string | null;
   metacriticScore: number | null;
   opencriticScore: number | null;
-  /** 이 스토어 이용자들의 점수. 주지 않는 스토어(PlayStation, 닌텐도, Epic, GOG)는 null */
+  /** 이 스토어 이용자들의 점수. 주지 않는 스토어(PlayStation, 닌텐도, Epic)는 null */
   userScore: UserScoreDto | null;
   lastSyncedAt: string | null;
   syncStatus: SyncStatus | null;
@@ -75,7 +75,7 @@ export type PatchNoteDto = {
    */
   titleKo: string | null;
   summaryKo: string | null;
-  /** 본문이 있는 스토어 페이지. 글 단위 주소가 없는 소스(GOG)는 null 이고 화면은 링크 없이 보여 준다 */
+  /** 본문이 있는 스토어 페이지. 글 단위 주소를 주지 않는 소스는 null 이고 화면은 링크 없이 보여 준다 */
   url: string | null;
   publishedAt: string;
 };

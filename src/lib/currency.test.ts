@@ -24,13 +24,13 @@ describe("sameCurrency", () => {
   it("기준 통화가 있으면 그것만 남기고 나머지를 떨궈 준다", () => {
     const list = [
       { platform: "steam", currency: "KRW" as const },
-      { platform: "gog", currency: "USD" as const },
+      { platform: "epic", currency: "USD" as const },
       { platform: "xbox", currency: "KRW" as const },
     ];
     const { kept, dropped, currency } = sameCurrency(list);
     expect(currency).toBe(DISPLAY_CURRENCY);
     expect(kept.map((k) => k.platform)).toEqual(["steam", "xbox"]);
-    expect(dropped.map((d) => d.platform)).toEqual(["gog"]);
+    expect(dropped.map((d) => d.platform)).toEqual(["epic"]);
   });
 
   it("기준 통화가 하나도 없으면 첫 항목의 통화로 맞춘다", () => {
@@ -56,17 +56,17 @@ describe("cheapestOf", () => {
   it("통화가 섞이면 숫자만 보고 고르지 않는다 — $6.99 는 ₩30,000 보다 싸지만 비교하지 않는다", () => {
     const best = cheapestOf([
       { id: "steam", currentPrice: 30000, currency: "KRW" as const },
-      { id: "gog", currentPrice: 699, currency: "USD" as const },
+      { id: "usd", currentPrice: 699, currency: "USD" as const },
     ]);
     expect(best?.id).toBe("steam");
   });
 
   it("기준 통화가 하나도 없으면 남은 통화 안에서 고른다", () => {
     const best = cheapestOf([
-      { id: "gog", currentPrice: 699, currency: "USD" as const },
-      { id: "gog-sale", currentPrice: 199, currency: "USD" as const },
+      { id: "usd", currentPrice: 699, currency: "USD" as const },
+      { id: "usd-sale", currentPrice: 199, currency: "USD" as const },
     ]);
-    expect(best?.id).toBe("gog-sale");
+    expect(best?.id).toBe("usd-sale");
   });
 
   it("가격이 하나도 없으면 null", () => {

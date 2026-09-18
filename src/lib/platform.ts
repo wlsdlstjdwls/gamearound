@@ -4,8 +4,8 @@
 // "PC 만 보고 싶다" 라는 흔한 질문에 답하려면 세 칩을 차례로 눌러야 한다. 먼저 큰 갈래를 고르고
 // 그 안에서 스토어를 좁히면 한 번에 하나씩만 고르면 된다.
 //
-// 가르는 기준은 **기기**가 아니라 **살 수 있는 물건**이다. GOG, Epic, Steam 은 셋 다 PC 로 받는
-// 같은 게임을 파는 곳이라 한 갈래에 둔다(GOG 는 DRM 없는 PC 스토어다).
+// 가르는 기준은 **기기**가 아니라 **살 수 있는 물건**이다. Epic 과 Steam 은 둘 다 PC 로 받는
+// 같은 게임을 파는 곳이라 한 갈래에 둔다.
 import type { Platform } from "@/server/db/schema";
 
 export const PLATFORM_FAMILIES = ["pc", "console"] as const;
@@ -30,22 +30,21 @@ export const PLATFORM_FAMILY_CHILD_LABEL: Record<PlatformFamily, string> = {
  * 숨긴 스토어를 이 표에서 빼 버리면 다시 켤 때 어느 갈래였는지가 사라진다.
  */
 const ALL_FAMILY_PLATFORMS: Record<PlatformFamily, Platform[]> = {
-  pc: ["steam", "epic", "gog"],
+  pc: ["steam", "epic"],
   console: ["ps5", "ps4", "xbox", "switch", "switch2"],
 };
 
 /**
  * 화면에서 숨기는 플랫폼. **데이터는 지우지 않는다** — 내보내기만 멈춘다.
  *
- * gog(2026-09-16): 우리가 가진 gog 행 4,449개가 **한 건도 빠짐없이 USD** 다. 원화 판매가가 없다.
- * §5 의 환산 금지 때문에 `sameCurrency()` 가 원화 행을 남기고 USD 행을 버리므로, 스팀에도 있는
- * 1,063건에서 gog 는 이미 가격 비교와 차트에서 빠져 있었다. 원화 가격 서비스에서 값을 쓸 수 없는
- * 스토어를 목록과 배지에만 남겨 두면 "있는데 못 쓰는 칸" 이 된다.
- * 수집도 함께 멈춘다 — `adapters/index.ts` 의 `getDisabledReason("gog")`.
+ * 지금은 비어 있다. 달러 전용이던 스토어 하나가 여기 있었는데 2026-09-18 에 코드에서 통째로 뺐다 —
+ * 달러 전용이라 원화 가격 서비스에서 쓸 값이 아니었고, 데이터는 그 전에 이미 지웠다.
+ * 배열 자체는 남겨 둔다: 스토어를 지우지 않고 화면에서만 내리는 일은 앞으로도 생긴다
+ * (그 판단이 뒤집힌 적도 있다 — psstore 를 껐다가 같은 날 되살렸다).
  *
- * 되살리려면 이 배열에서 빼고 그 사유를 같이 지운다. 화면 질의는 `server/db/visibility` 하나만 탄다.
+ * 화면 질의는 `server/db/visibility` 하나만 탄다.
  */
-export const HIDDEN_PLATFORMS: Platform[] = ["gog"];
+export const HIDDEN_PLATFORMS: Platform[] = []
 
 const isHidden = (p: Platform): boolean => HIDDEN_PLATFORMS.includes(p);
 

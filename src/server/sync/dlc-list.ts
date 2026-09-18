@@ -86,7 +86,7 @@ export function pickDlcListTargets(
 
 /**
  * 한 본편의 DLC 목록을 어댑터에게 받는다.
- * 소스마다 돌려주는 모양이 다르다 — ID 만 주거나(steam, xbox, gog, psstore, epic),
+ * 소스마다 돌려주는 모양이 다르다 — ID 만 주거나(steam, xbox, psstore, epic),
  * 게임 마스터까지 붙은 후보를 주거나(nintendo_jp). 뒤쪽은 DLC 상세를 되물을 경로가 없어서
  * 이 응답이 새 DLC 를 만들 유일한 근거다(adapters/types 의 listDlcCandidates 주석).
  * 상한을 여기서 자르는 이유: 뒤에 이어질 상세 조회, 등록이 전부 이 수에 비례한다.

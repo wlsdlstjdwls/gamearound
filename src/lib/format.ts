@@ -99,7 +99,6 @@ export const PLATFORM_LABEL: Record<string, string> = {
   switch: "Switch",
   switch2: "Switch 2",
   epic: "Epic Games",
-  gog: "GOG",
 };
 
 /**

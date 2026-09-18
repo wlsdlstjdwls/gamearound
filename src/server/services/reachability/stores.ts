@@ -3,7 +3,6 @@
 // 고르는 기준: 그 소스의 수집이 **실제로 매달려 있는** 경로만 잰다. 홈페이지가 열리는지는
 // 아무것도 말해 주지 않는다. 그래서 발견은 목록 API 를, 가격은 상세 API 를 직접 찌른다.
 import { EPIC_BROWSER_HEADERS, EPIC_GRAPHQL_URL } from "@/server/adapters/epic";
-import { GOG_CATALOG_URL } from "@/server/adapters/gog";
 import { JP_DISCOVER_FQ, JP_SEARCH_URL, NINTENDO_BASE_URL } from "@/server/adapters/nintendo";
 import {
   PSSTORE_ALL_GAMES_CATEGORY,
@@ -36,6 +35,12 @@ const SAMPLE_STEAM_APPID = 1245620;
 const SAMPLE_XBOX_BIG_ID = "9PPSM14VKCLW";
 /** MS-CV 는 값이 검증되지 않지만 없으면 카탈로그 API 가 거부한다(adapters/xbox 주석) */
 const PROBE_CORRELATION_ID = "reachability";
+/**
+ * 대조군 주소. 지역 차단도 봇 차단도 없고 크기가 일정한 응답을 주는 곳이라야 한다 —
+ * 여기가 실패하면 "이 환경이 바깥으로 못 나간다" 로 읽히므로, 그 자체가 까다로운 곳이면 안 된다.
+ * 2026-09-18 실측: 200, 212바이트(연결 추적용 엔드포인트라 응답 길이가 거의 고정이다).
+ */
+const CONTROL_PROBE_URL = "https://www.cloudflare.com/cdn-cgi/trace";
 
 /** 인기순위 검색 — steam 발견이 매달린 경로(adapters/steam 의 discoverPages 와 같은 파라미터) */
 function steamDiscoverUrl(): string {
@@ -165,12 +170,16 @@ export function runStoreProbes(): Promise<ProbeResult[]> {
       MIN_BODY_BYTES.list,
       get(xboxPriceUrl(), { "MS-CV": PROBE_CORRELATION_ID }),
     ),
-    // GOG — 대조군. 이것까지 막히면 스토어가 아니라 이 환경의 바깥 연결이 문제다
+    // 대조군 — 이것까지 막히면 스토어 차단이 아니라 이 환경의 바깥 연결이 문제다.
+    //
+    // 스토어가 아닌 곳을 쓰는 이유(2026-09-18): 전에는 GOG 카탈로그를 대조군으로 썼는데,
+    // 그 소스를 걷어내자 진단의 기준점까지 같이 사라졌다. 대조군에 필요한 성질은 "우리가 수집하는 곳"이
+    // 아니라 "어디서든, 차단 정책 없이 열리는 곳" 이다. 수집 대상과 엮어 두면 이 일이 되풀이된다.
     probe(
-      "gog",
-      "대조군 (어디서든 열리는 소스)",
+      "대조군",
+      "바깥 연결 자체가 되는가 (스토어와 무관한 곳)",
       MIN_BODY_BYTES.json,
-      get(`${GOG_CATALOG_URL}?limit=5&locale=en-US&countryCode=KR`),
+      get(CONTROL_PROBE_URL),
     ),
   ]);
 }

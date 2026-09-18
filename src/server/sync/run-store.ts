@@ -57,7 +57,7 @@ export async function runStore(ctx: Ctx, source: StoreSource, opts: RunOptions):
     recordError(ctx, `${source}:requirements`, e);
   }
 
-  // 6단계: 패치 기록. 공개하는 스토어(steam, gog)에서만 돈다 — 나머지는 어댑터에 메서드가 없어 즉시 빠진다.
+  // 6단계: 패치 기록. 공개하는 스토어(steam)에서만 돈다 — 나머지는 어댑터에 메서드가 없어 즉시 빠진다.
   // DLC 와 마찬가지로 실패해도 가격 수집 결과는 유지한다.
   try {
     const notes = await syncPatchNotes(ctx, source, adapter, applied);

@@ -7,7 +7,6 @@ import { psstoreAdapter } from "./psstore";
 import { xboxAdapter } from "./xbox";
 import { nintendoAdapter, nintendoJpAdapter } from "./nintendo";
 import { epicAdapter } from "./epic";
-import { gogAdapter } from "./gog";
 import { hltbAdapter } from "./hltb";
 import { OPENCRITIC_RAPIDAPI_KEY_ENV, opencriticAdapter } from "./opencritic";
 import { EPIC_ENABLE_ENV } from "./epic";
@@ -16,7 +15,7 @@ import { metacriticAdapter } from "./metacritic";
 import { rssAdapter } from "./news-rss";
 import { wikidataGameAdapter } from "./wikidata/game";
 
-export const STORE_SOURCES = ["steam", "psstore", "xbox", "nintendo", "nintendo_jp", "epic", "gog"] as const;
+export const STORE_SOURCES = ["steam", "psstore", "xbox", "nintendo", "nintendo_jp", "epic"] as const;
 // wikidata_game 이 여기 있는 이유: 조회 경로가 메타 소스와 같다(제목으로 매칭한 뒤 단건 조회).
 // 회사 소스 wikidata 와는 다른 소스다 — 그쪽은 회사 항목을, 이쪽은 게임 항목을 찾는다(schema 의 sourceEnum 주석).
 export const META_SOURCES = ["hltb", "opencritic", "metacritic", "wikidata_game"] as const;
@@ -42,7 +41,6 @@ const storeAdapters: Record<StoreSource, StoreAdapter> = {
   nintendo: nintendoAdapter,
   nintendo_jp: nintendoJpAdapter,
   epic: epicAdapter,
-  gog: gogAdapter,
 };
 const metaAdapters: Record<MetaSource, MetaAdapter> = {
   hltb: hltbAdapter,
@@ -69,21 +67,6 @@ export function getDisabledReason(source: Source): string | undefined {
         : "Epic 의 Cloudflare 가 (1) 데이터센터 IP 와 (2) Node 의 TLS 지문을 모두 막는다 — " +
           "Actions 러너는 curl 로도 403, 가정용 회선에서도 Node 는 403 이고 curl 만 통과한다(2026-09-14 확인). " +
           `주거용 출구 프록시를 ${CRAWL_PROXY_URL_ENV} 에 넣거나, 가정용 회선에서 ${EPIC_ENABLE_ENV}=1 로 켠다 — 파서, 질의는 그대로 있다`;
-    case "gog":
-      // 막혀서가 아니라 **쓸 값이 아니라서** 끈다. 2026-09-16 실측: 우리가 가졌던 gog 행 4,449개가
-      // 한 건도 빠짐없이 USD 였다 — 원화 판매가 자체가 없다. §5 의 환산 금지 때문에 화면은 이미
-      // USD 행을 버리고 있었고(lib/currency 의 sameCurrency), 스팀에도 있는 1,063건에서 gog 는
-      // 가격 비교와 차트에 아예 안 나왔다. 값을 못 쓰는 스토어에 크론 몫 두 자리(prices 400건,
-      // discover 190건, 합쳐 약 20분/일)를 계속 쓸 이유가 없다.
-      //
-      // 2026-09-16 그 행들을 DB 에서 지웠다 — game_platforms 4,449(스냅샷 4,293, 패치 156 은 cascade),
-      // game_source_refs 4,940, gog 만 가졌던 게임 3,386 과 그 자식 DLC 777. 숨김이 아니라 삭제라
-      // 되살리려면 발견부터 다시 긁는다.
-      // 어댑터, 파서, 질의는 그대로 둔다(§5). 되살리려면 이 case 와 lib/platform 의
-      // HIDDEN_PLATFORMS 에서 gog 를 같이 빼면 된다 — 원화를 받을 길이 생겼을 때가 그때다.
-      return "GOG 가 한국에 달러로만 판다 — 우리가 가졌던 gog 행 4,449개가 전부 USD 였다(2026-09-16 실측). 그 행들은 같은 날 지웠다. " +
-        "원화 가격 서비스에서 비교에 쓸 수 없어 수집과 화면 노출을 함께 멈췄다. " +
-        "화면 쪽 짝은 lib/platform 의 HIDDEN_PLATFORMS 다. 원화 판매가가 생기면 둘 다 풀면 된다";
     case "psstore":
       // 2026-09-16 에 껐다가 같은 날 되살렸다. 끈 근거는 "카탈로그가 찼다" 였는데 그 판단이 틀렸다 —
       // 찬 것은 행 수(43,405건)였지 값이 아니었다. 실측으로 그 행의 98.7%가 출시일을 모른다

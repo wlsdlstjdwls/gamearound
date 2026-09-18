@@ -5,7 +5,7 @@ import type { Currency, DeckCompat, OsFamily, Platform, Region, RequirementTier,
 export { CRAWLER_USER_AGENT } from "@/lib/site";
 
 // wikidata(회사)와 wikidata_game(게임)은 다른 소스다 — schema 의 sourceEnum 주석 참고
-export type Source = "steam" | "psstore" | "xbox" | "nintendo" | "nintendo_jp" | "epic" | "gog" | "hltb" | "opencritic" | "metacritic" | "rss" | "wikidata" | "wikidata_game" | "gamepass";
+export type Source = "steam" | "psstore" | "xbox" | "nintendo" | "nintendo_jp" | "epic" | "hltb" | "opencritic" | "metacritic" | "rss" | "wikidata" | "wikidata_game" | "gamepass";
 
 export interface StoreSnapshot {
   platform: Platform;
@@ -162,7 +162,7 @@ export interface PatchNote {
   title: string;
   /** 제목에서 읽어낸 버전. 버전을 안 적는 게시물이 흔해 null 이 기본이다 */
   version?: string | null;
-  /** 본문이 있는 스토어 페이지. 글 단위 주소가 없는 소스(gog 변경 기록)는 null */
+  /** 본문이 있는 스토어 페이지. 글 단위 주소를 주지 않는 소스는 null 이고, 화면은 링크 없이 보여 준다 */
   url?: string | null;
   publishedAt: string; // ISO datetime
 }
@@ -249,7 +249,7 @@ export type StoreAdapter = SourceAdapter<StoreSnapshot> & {
   /**
    * 이 게임의 패치 기록. **공개하는 스토어에만 둔다.**
    *
-   * 2026-09-15 실측으로 steam 과 gog 둘뿐이다. 나머지는 패치 시점을 알 방법이 없다:
+   * 2026-09-15 실측으로 steam 뿐이다. 나머지는 패치 시점을 알 방법이 없다:
    *   xbox      displaycatalog 의 Packages[].Version 이 전부 "0" 이고(철권 8 확인),
    *             남는 LastModifiedDate 는 가격, 이미지 수정에도 움직여 패치 시각이 아니다
    *   psstore   질의가 화이트리스트라 필드를 늘릴 수 없다(어댑터 주석의 해시 고정)

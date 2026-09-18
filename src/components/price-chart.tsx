@@ -46,7 +46,6 @@ import { useCssTokens } from "@/components/use-css-tokens";
 const PLATFORM_TOKEN: Record<Platform, string> = {
   steam: "--store-steam", // 파랑
   epic: "--store-epic", // 주황
-  gog: "--store-gog", // 아쿠아
   ps5: "--store-ps5", // 노랑
   ps4: "--store-ps4", // 자홍
   xbox: "--store-xbox", // 초록
@@ -77,7 +76,6 @@ const CHART_TOKENS = [
 const PLATFORM_DASH: Record<Platform, string | undefined> = {
   steam: undefined,
   epic: "7 4",
-  gog: "2 3",
   ps5: "11 4",
   ps4: "7 3 2 3",
   xbox: "1 4",

@@ -1,4 +1,4 @@
-// 패치 제목 → 버전 파서. 예시는 전부 실제 관측한 제목이다(2026-09-15 Steam 공지, GOG 변경 기록).
+// 패치 제목 → 버전 파서. 예시는 전부 실제 관측한 제목이다(2026-09-15 Steam 공지).
 import { describe, expect, it } from "vitest";
 import { patchVersionFromTitle } from "./patch-version";
 

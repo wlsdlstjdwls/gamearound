@@ -14,16 +14,16 @@ import { auditColumns } from "./audit";
 // `@/server/db/schema` 하나만 보면 된다.
 export * from "./schema-shops";
 
-export const platformEnum = pgEnum("platform", ["steam", "ps5", "ps4", "xbox", "switch", "switch2", "epic", "gog"]);
+export const platformEnum = pgEnum("platform", ["steam", "ps5", "ps4", "xbox", "switch", "switch2", "epic"]);
 // wikidata 와 wikidata_game 을 가른 이유: 같은 백과사전이지만 조회 대상이 다르다.
 // wikidata 는 회사 항목을, wikidata_game 은 게임 항목을 찾는다. 한 소스로 합치면
 // game_source_refs 한 행에 회사 Q번호와 게임 Q번호가 섞이고, 디스패치도 갈 곳을 못 정한다.
-export const sourceEnum = pgEnum("source", ["steam", "psstore", "xbox", "nintendo", "nintendo_jp", "hltb", "opencritic", "metacritic", "rss", "manual", "wikidata", "wikidata_game", "gamepass", "epic", "gog"]);
+export const sourceEnum = pgEnum("source", ["steam", "psstore", "xbox", "nintendo", "nintendo_jp", "hltb", "opencritic", "metacritic", "rss", "manual", "wikidata", "wikidata_game", "gamepass", "epic"]);
 export const roleEnum = pgEnum("role", ["user", "game_company", "seller", "admin"]);
 export const syncStatusEnum = pgEnum("sync_status", ["ok", "partial", "failed"]);
 /**
  * 가격의 통화. 스토어가 그 나라에 파는 통화를 그대로 담는다 — 환산하지 않는다.
- * GOG 는 한국에도 USD 로 판다(2026-09-14 확인: currencyCode=KRW 로 조회하면 0건).
+ * 한국에도 달러로만 파는 스토어가 있다(2026-09-14 확인). 그런 스토어는 원화 비교에 못 써서 결국 걷어냈다.
  * 임의 환율로 바꿔 적으면 화면 가격과 실제 결제액이 어긋나고, 그건 가격 알림 서비스에서 제일 하면 안 되는 일이다.
  */
 export const currencyEnum = pgEnum("currency", ["KRW", "USD", "JPY"]);
@@ -222,7 +222,7 @@ export const gamePlatforms = pgTable("game_platforms", {
    * 채우는 소스(2026-09-15 실측): steam = GetItems 의 reviews.summary_filtered(가격 배치에 얹혀 추가 요청 0),
    * xbox = displaycatalog 의 MarketProperties[].UsageData 중 AllTime(역시 추가 요청 0).
    * PlayStation 도 값은 있으나(콘셉트 페이지 HTML 의 averageRating) 응답이 건당 1MB 라 가격 경로에 얹지 않는다.
-   * 닌텐도, Epic, GOG 는 공개된 유저 점수가 없다.
+   * 닌텐도와 Epic 은 공개된 유저 점수가 없다.
    */
   userScore: integer("user_score"),
   userScoreKind: userScoreKindEnum("user_score_kind"),
@@ -259,7 +259,7 @@ export const gamePlatforms = pgTable("game_platforms", {
   titleCode: text("title_code"),
   /**
    * 이 행의 패치 기록을 스토어에 마지막으로 물어본 시각.
-   * dlc_listed_at 과 같은 성격이다 — 패치 목록도 게임 1개가 요청 1회라(steam ISteamNews, gog changelog)
+   * dlc_listed_at 과 같은 성격이다 — 패치 목록도 게임 1개가 요청 1회라(steam ISteamNews)
    * 매 실행 전부 다시 묻지 않도록 언제 물어봤는지를 남긴다(sync/patch-list 의 PATCH_LIST_REFRESH_DAYS).
    */
   patchListedAt: timestamp("patch_listed_at", { withTimezone: true }),
@@ -504,13 +504,13 @@ export const patchNotes = pgTable("patch_notes", {
   source: sourceEnum("source").notNull(),
   /**
    * 스토어 안에서 이 패치를 가리키는 값. 재수집할 때 같은 패치를 두 번 넣지 않기 위한 키다.
-   * steam = 공지 gid, gog = 게시일(+버전) — 변경 기록이 글 단위 id 를 주지 않아 날짜로 만든다.
+   * steam = 공지 gid. 글 단위 id 를 주지 않는 소스가 붙으면 게시일(+버전)으로 만든다.
    */
   externalId: text("external_id").notNull(),
   /** 스토어가 말한 버전. 제목에서 읽어낸 값이라 안 적는 게시물에서는 null 이다 */
   version: text("version"),
   title: text("title").notNull(),
-  /** 본문이 있는 스토어 페이지. 글 단위 주소가 없는 소스(gog 변경 기록)는 null */
+  /** 본문이 있는 스토어 페이지. 글 단위 주소를 주지 않는 소스는 null 이고, 화면은 링크 없이 보여 준다 */
   url: text("url"),
   /**
    * 한글 제목과 한글 요약. 스토어가 한국어 패치 노트를 주지 않아서(2026-09-15 실측:

@@ -1,11 +1,16 @@
 // 숨김 규칙이 화면 질의에서 실제로 한 곳만 타는지 확인한다. DB 는 건드리지 않는다.
+//
+// 특정 스토어 이름을 박아 두지 않는다(2026-09-18). 전에는 "gog 를 뺀다" 로 적어 뒀는데,
+// 그 스토어를 코드에서 걷어내자 규칙이 멀쩡한데도 테스트가 깨졌다.
+// 무엇이 숨겨져 있는지는 HIDDEN_PLATFORMS 가 정하고, 여기서는 **그 목록대로 동작하는지**만 본다 —
+// 목록이 비어 있는 지금도 의미가 있는 확인이다.
 import { describe, expect, it } from "vitest";
 import { HIDDEN_PLATFORMS } from "@/lib/platform";
 import { keepVisiblePlatforms, visiblePlatformsOnly } from "./visibility";
 
 describe("keepVisiblePlatforms", () => {
   it("숨긴 플랫폼 행을 뺀다", () => {
-    const rows = [{ platform: "steam" }, { platform: "gog" }, { platform: "ps5" }];
+    const rows = [{ platform: "steam" }, ...HIDDEN_PLATFORMS.map((platform) => ({ platform })), { platform: "ps5" }];
     expect(keepVisiblePlatforms(rows).map((r) => r.platform)).toEqual(["steam", "ps5"]);
   });
 
@@ -20,8 +25,13 @@ describe("keepVisiblePlatforms", () => {
 });
 
 describe("visiblePlatformsOnly", () => {
-  // 숨긴 것이 없으면 undefined 여야 and(...) 에 넣어도 질의가 달라지지 않는다
-  it("숨긴 플랫폼이 있으면 조건을 돌려준다", () => {
-    expect(HIDDEN_PLATFORMS.length > 0 ? visiblePlatformsOnly() : undefined).toBeDefined();
+  /**
+   * 숨긴 것이 없으면 undefined 여야 and(...) 에 넣어도 질의가 달라지지 않는다.
+   * 있으면 조건이 나와야 한다 — 둘 중 어느 상태든 이 한 줄이 맞아야 화면 질의가 안전하다.
+   */
+  it("숨긴 목록에 맞는 조건을 돌려준다", () => {
+    const condition = visiblePlatformsOnly();
+    if (HIDDEN_PLATFORMS.length === 0) expect(condition).toBeUndefined();
+    else expect(condition).toBeDefined();
   });
 });

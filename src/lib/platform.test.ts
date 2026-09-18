@@ -24,7 +24,7 @@ describe("플랫폼 갈래", () => {
     for (const hidden of HIDDEN_PLATFORMS) {
       expect(ALL_PLATFORM_ORDER).toContain(hidden);
       expect(PLATFORM_ORDER).not.toContain(hidden);
-      // 주소에 ?platform=gog 가 실려 와도 아무 일도 없어야 한다
+      // 주소에 숨긴 플랫폼 값이 실려 와도 아무 일도 없어야 한다
       expect(isPlatformValue(hidden)).toBe(false);
       expect(expandPlatformValues([hidden])).toEqual([]);
       expect(familyOf(hidden)).toBeUndefined();

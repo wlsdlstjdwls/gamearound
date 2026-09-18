@@ -9,7 +9,7 @@
 // 대상은 이번 배치에서 이미 가격을 갱신한 게임들 중에서 고른다 — 가격 수집이 카탈로그를 한 바퀴
 // 돌기 때문에, 따로 대상을 뽑지 않아도 모든 게임이 언젠가 이 자리를 지나간다(dlc-list 와 같은 전제).
 //
-// 패치 기록을 주는 스토어는 steam 과 gog 둘뿐이다. 나머지가 왜 빠졌는지는
+// 패치 기록을 주는 스토어는 steam 하나뿐이다. 나머지가 왜 빠졌는지는
 // adapters/types 의 listPatchNotes 주석에 실측으로 적어 뒀다.
 import { and, eq, inArray } from "drizzle-orm";
 import { gamePlatforms, patchNotes } from "@/server/db/schema";

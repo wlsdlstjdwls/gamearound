@@ -22,8 +22,6 @@ export const BATCH_SIZE: Record<Source, number> = {
   nintendo_jp: 600,
   // epic 은 단건 조회(catalogOffer) + 요청 간격 1초라 250건 ≈ 4분. 여기에 발견 한 바퀴(약 175요청 ≈ 3분)가 더 붙는다
   epic: 250,
-  // gog 는 배치 조회(50개 ID 당 상품, 가격 2요청)라 수집은 빠르다. 발견 한 바퀴가 64페이지 ≈ 1분
-  gog: 400,
   // hltb 는 간격이 4초에서 1초로 내려가며(어댑터 주석의 실측) 같은 시간에 3배를 볼 수 있게 됐다.
   // 건당 페이지 fetch 0.6초 + 반영 + 대기 1초 ≈ 2초 → 300건 ≈ 10분.
   hltb: 300,
@@ -106,7 +104,7 @@ export const LOCAL_SEED_TOP: Partial<Record<Source, number>> = {
  * seedTop 만 올리면 그 곱이 막아 아무 일도 안 일어난다([[ps-subscription-coverage]] 에서 겪은 함정).
  * limit 을 비우면 BATCH_SIZE 기본값을 쓴다.
  */
-export const LOCAL_SEED_SOURCES: Source[] = ["steam", "psstore", "xbox", "gog"];
+export const LOCAL_SEED_SOURCES: Source[] = ["steam", "psstore", "xbox"];
 export const LOCAL_SEED_PLAN: Partial<Record<Source, { seedTop: number; limit?: number }>> = {
   // BATCH_SIZE.steam 1,500 의 절반 = SEED_SHARE_MAX 가 주는 최대치. 배치 조회라 건당 0.39초로 싸다
   steam: { seedTop: 750 },
@@ -115,8 +113,6 @@ export const LOCAL_SEED_PLAN: Partial<Record<Source, { seedTop: number; limit?: 
   psstore: { seedTop: 300, limit: 400 },
   // KR 카탈로그 16,991건. 몫의 절반이 시드라 limit 300 이면 신규 150건이다
   xbox: { seedTop: 150, limit: 300 },
-  // 카탈로그 한 바퀴가 64페이지라 이미 거의 다 안다. 기본 배치로 충분하다
-  gog: { seedTop: 200 },
 };
 
 /**
@@ -124,7 +120,7 @@ export const LOCAL_SEED_PLAN: Partial<Record<Source, { seedTop: number; limit?: 
  *
  * 1) 러너 IP 로는 못 도는 소스(nintendo, nintendo_jp, epic). 서울 리전은 한국 IP 로 나가서 열린다
  *    (2026-09-14 /api/debug/reachability 실측: nintendo 200, epic 은 curl 전송기로 200).
- * 2) 러너에서도 돌지만 **발견만** 여기로 뗀 소스(steam, psstore, xbox, gog).
+ * 2) 러너에서도 돌지만 **발견만** 여기로 뗀 소스(steam, psstore, xbox).
  *    발견은 Actions 시간을 크게 먹는다 — 실측으로 crawl-prices 1회가 12분에서 34분으로 뛴 원인이 발견이었다.
  *    Actions 무료 한도는 계정 전체가 나눠 쓰는 월 2,000분이고, 다른 레포가 월 약 354분을 먼저 먹는다
  *    (2026-09-15 실측). 그 유한한 분은 매일 되풀이되는 가격 갱신에 쓰고, 발견은 크론으로 옮긴다.
@@ -134,7 +130,7 @@ export const LOCAL_SEED_PLAN: Partial<Record<Source, { seedTop: number; limit?: 
  * 가격 갱신은 네 소스 모두 Actions 에 남는다. 발견과 달리 매일 같은 양이 도는 일이라
  * 주기를 예산에 맞춰 이미 잡아 뒀고, 한쪽 경로가 막혔을 때의 대비책도 된다.
  */
-export const CRON_SOURCES = ["nintendo", "nintendo_jp", "epic", "steam", "psstore", "xbox", "gog"] as const;
+export const CRON_SOURCES = ["nintendo", "nintendo_jp", "epic", "steam", "psstore", "xbox"] as const;
 // 주기는 vercel.json 의 crons 에 있다 — JSON 이라 주석을 못 달아 근거를 여기 적는다(시각은 UTC).
 //   /api/cron/crawl/nintendo/prices       15 */6 * * *          하루 4회 × 300건 = 1,200건/일
 //   /api/cron/crawl/nintendo/discover     45 1,7,13,19 * * *    하루 4회 × 20건 = 80건/일 (신규는 상품 HTML 이라 4초 간격을 탄다)
@@ -156,7 +152,6 @@ export const CRON_SOURCES = ["nintendo", "nintendo_jp", "epic", "steam", "psstor
 //   /api/cron/crawl/steam/discover    10 4,16 * * *     하루 2회 × 140건
 //   /api/cron/crawl/xbox/discover     50 4,16 * * *     하루 2회 × 180건 (KR 16,991건)
 // 넷 중 둘은 껐고 크론도 뺐다. 몫은 아래 CRON_PLAN 에 그대로 남겨 둔다 — 다시 켤 때 근거를 다시 재지 않으려고다.
-//   gog     10 3,15 * * *     2026-09-16 중단(달러 전용). 사유는 getDisabledReason("gog")
 //
 // psstore 는 2026-09-16 에 껐다가 같은 날 되살리며 **가격까지 크론으로 옮겼다**:
 //   /api/cron/crawl/psstore/prices    45 */6 * * *   하루 4회 × 300건 = 1,200건/일
@@ -177,8 +172,7 @@ export const CRON_SOURCES = ["nintendo", "nintendo_jp", "epic", "steam", "psstor
 // 시각을 오전 8~10시, 오후 8~10시(UTC)에 몰아 둔 이유: 가격과 발견이 쓰지 않는 시간대다.
 // 같은 소스를 두 실행이 동시에 잡으면 Redis 락에 걸려 한쪽이 빈손으로 끝난다.
 //
-// 남은 빈 자리 둘(gog prices 400, gog discover 190)은 아직 안 돌렸다.
-// 돌릴 곳을 고를 때 발견 쪽으로 기울지 말 것 — 굶은 것은 발견이 아니라 갱신 주기였다
+// 크론 자리를 더 늘릴 때 발견 쪽으로 기울지 말 것 — 굶은 것은 발견이 아니라 갱신 주기였다
 // (psstore 하루 408건으로 한 바퀴 108일, xbox 587건으로 52일).
 // 시각을 고른 기준은 둘이다.
 //   1) 같은 소스를 Actions 가 도는 시각(crawl-prices 의 10 5, 10 17 UTC)과 겹치지 않게 —
@@ -247,18 +241,16 @@ export const CRON_DB_MS_PER_ITEM = 400;
  * **신규 등록** 1건을 반영하는 데 드는 시간. 위 값과 자릿수가 다르다 — 갱신은 있는 행의 값 몇 개를
  * 고치는 일이지만, 신규는 게임 행을 만들고 플랫폼, 장르, 이미지, 회사까지 함께 넣는 일이다.
  *
- * 1,800ms 의 근거(2026-09-15 실측): 배포본 크론을 손으로 때린 gog discover 1회.
- *   proc 400 전부 fresh, pages 10, 760초. 요청 몫(페이지 10초 + 배치 16초 + 매칭 18초)을 빼면
- *   400건에 716초 → 건당 1.79초.
+ * 1,800ms 의 근거(2026-09-15 실측): 배포본 크론 discover 1회에서 400건 전부가 신규였고 760초가 걸렸다.
+ * 요청 몫(페이지 10초 + 배치 16초 + 매칭 18초)을 빼면 400건에 716초 → 건당 1.79초.
  *
- * 왜 이 상수가 따로 필요한가: 이 값을 400 으로 뭉뚱그렸더니 gog 몫을 283초로 추정했는데 실제는
+ * 왜 이 상수가 따로 필요한가: 이 값을 400 으로 뭉뚱그렸다가 그 실행을 283초로 추정했는데 실제는
  * 760초였다(함수 상한 800초의 95%). discover 모드는 seedShare 1 이라 **처리 건수가 곧 신규 건수**라서,
  * 갱신 기준으로 세면 예산이 통째로 어긋난다.
  *
  * 2026-09-15 2차 실측으로 이 값이 맞다는 것을 확인했다. 크론 4개의 첫 실행에서 **실제로 만들어진
  * 행**을 세고(created_at 이 실행 창에 든 games) 요청 몫을 뺐다:
  *   steam   680초 - 요청 135초 = 545초 / 315행 → 1.73초
- *   gog     514초 - 요청  28초 = 486초 / 402행 → 1.21초
  *   xbox    315초 - 요청  69초 = 246초 / 171행 → 1.44초
  *   psstore 354초 - 요청 182초 = 172초 /  91행 → 1.89초
  * 소스가 달라도 1.2~1.9초로 모인다 — 등록 경로(createGameFromSnapshot + upsertPlatform)가 같기 때문이다.
@@ -271,14 +263,11 @@ export const CRON_DB_MS_PER_NEW_ITEM = 1800;
 /**
  * 위 값을 덮어쓰는 소스별 실측. 값이 다른 이유는 등록 경로가 아니라 **한 건이 몇 행을 만드느냐**다.
  *
- * gog 2,300ms: gog 는 DLC 목록을 따로 묻지 않는다(어댑터에 listDlcIds 가 없다) — 상품 응답 안에
- * DLC 가 이미 들어 있어 발견 1건이 본편 행과 그에 딸린 DLC 행을 함께 만든다. 실측 한 실행에서
- * 발견 220건이 402행(본편 191, DLC 205, 체험판 6)이 됐다: 486초 / 220건 → 건당 2.21초.
- * 그래서 gog 만큼은 DLC 상한으로 못 막는다. 몫 자체에 그 무게를 실어야 한다.
+ * 지금은 비어 있다. 여기 있던 유일한 값은 2026-09-18 에 그 소스를 걷어내며 같이 지웠다.
+ * 표를 남겨 두는 이유: 상품 응답 안에 DLC 가 함께 오는 소스는 발견 1건이 여러 행을 만들어
+ * DLC 상한으로 막을 수 없다 — 그런 소스를 다시 붙이면 몫 자체에 그 무게를 실어야 한다.
  */
-export const CRON_DB_MS_PER_NEW_ITEM_BY_SOURCE: Partial<Record<CronSource, number>> = {
-  gog: 2300,
-};
+export const CRON_DB_MS_PER_NEW_ITEM_BY_SOURCE: Partial<Record<CronSource, number>> = {};
 /** 위 둘을 더한 값에 곱할 여유. 실행 시간은 들쭉날쭉하고, 잘리면 그 실행이 통째로 버려진다 */
 export const CRON_SAFETY_FACTOR = 1.15;
 
@@ -308,7 +297,7 @@ export const CRON_PLAN: Record<CronSource, Record<CronMode, CronRunPlan>> = {
   //
   // discover 몫이 작아 보이는 이유: 이 모드는 seedShare 1 이라 **처리 건수가 곧 신규 건수**이고,
   // 신규 1건은 갱신 1건의 네 배가 넘는다(CRON_DB_MS_PER_NEW_ITEM 의 실측 근거 참고).
-  // 2026-09-15 첫 배포에서 이 차이를 빼먹고 gog 를 400건으로 잡았다가 760초를 맞았다 — 상한 800초의 95%다.
+  // 2026-09-15 첫 배포에서 이 차이를 빼먹고 한 소스를 400건으로 잡았다가 760초를 맞았다 — 상한 800초의 95%다.
   // 손으로 곱하지 말 것. cron-plan.test 의 estimateMs 가 DLC 단계까지 세고, 그게 이 숫자들의 출처다.
   steam: {
     // 가격은 Actions 가 맡으므로 이 몫은 손으로 돌릴 때만 쓴다(신규가 없어 건당 0.4초로 싸다).
@@ -349,17 +338,6 @@ export const CRON_PLAN: Record<CronSource, Record<CronMode, CronRunPlan>> = {
     // 읽었을 때다(예산은 60장). 카탈로그가 차면 그 50장이 75초로 돌아오고, 새 DLC 40건도 함께 센다.
     discover: { limit: 160, seedTop: 160, pageBudget: 60, match: 8, seedShare: 1 },
     // 간격 1.5초. 건당 최대 3.4초 → 150건 587초
-    match: { limit: 0, seedTop: 0, pageBudget: 0, match: 150 },
-  },
-  gog: {
-    prices: { limit: 400, seedTop: 0, pageBudget: 0, match: 0 },
-    // 597초. 400건으로 잡았다가 760초를 맞은 자리다(실측이 CRON_DB_MS_PER_NEW_ITEM 의 근거가 됐다).
-    // 2026-09-15 에 220 에서 190 으로 내렸다 — 건당 단가가 다른 소스의 1.8초가 아니라 2.21초다.
-    // gog 발견 1건은 본편 행 하나로 끝나지 않고 딸린 DLC 행까지 만든다
-    // (CRON_DB_MS_PER_NEW_ITEM_BY_SOURCE.gog 주석에 실측: 220건이 402행).
-    // 카탈로그 한 바퀴가 64페이지라 신규가 마르면 발견은 일찍 멈추고 실행도 그만큼 짧다.
-    discover: { limit: 190, seedTop: 190, pageBudget: 70, match: 8, seedShare: 1 },
-    // 중단된 소스라 크론에 걸어 두지 않았다. 되살릴 때를 위해 몫만 남긴다
     match: { limit: 0, seedTop: 0, pageBudget: 0, match: 150 },
   },
   epic: {
@@ -463,7 +441,7 @@ export const CRON_META_PLAN: Record<CronMetaSource, Record<CronMetaMode, CronMet
 };
 
 /** --seed-top 으로 카탈로그를 훑어 신규 게임을 등록할 수 있는 소스 (어댑터가 discoverPages 를 가진 소스) */
-export const SEEDABLE_SOURCES: Source[] = ["steam", "psstore", "xbox", "nintendo", "nintendo_jp", "epic", "gog"];
+export const SEEDABLE_SOURCES: Source[] = ["steam", "psstore", "xbox", "nintendo", "nintendo_jp", "epic"];
 /**
  * 한 실행에서 목록 페이지를 몇 장까지 읽을지. 발견은 아는 것이 나오는 앞부분을 건너뛰며 파고들기 때문에
  * (sync/discover) 카탈로그가 커질수록 건너뛸 페이지가 늘어난다. 그렇다고 무한정 읽으면
@@ -472,8 +450,6 @@ export const SEEDABLE_SOURCES: Source[] = ["steam", "psstore", "xbox", "nintendo
 export const DISCOVERY_PAGE_BUDGET: Partial<Record<StoreSource, number>> = {
   // 1.5초 × 80 ≈ 2분. 페이지당 100건이라 이미 아는 8,000건 구간을 건너뛰고도 신규를 만난다
   steam: 80,
-  // KR 카탈로그 전체가 64페이지(100건/page) — 한 바퀴를 다 돌 수 있는 값에 여유를 더했다
-  gog: 70,
   // 4초 × 150 ≈ 10분. 검색 결과가 페이지당 24건이라 한 실행에 3,600건까지 훑는다.
   // 이 값은 **로컬 실행에서만** 쓰인다 — 닌텐도는 Actions 워크플로에 없고, 크론은 pageBudget 12 를
   // 직접 넘긴다(CRON_PLAN). 그래서 Actions 무료 분과 함수 300초 어디에도 영향이 없다.
@@ -562,7 +538,7 @@ export const META_OVERWRITE_SOURCES: Source[] = ["steam"];
 /** 스토어 소스 → 담당 플랫폼 (§11-6: PS4/PS5, Switch/Switch2 분리 유지) */
 export const SOURCE_PLATFORMS: Record<StoreSource, Platform[]> = {
   steam: ["steam"], psstore: ["ps5", "ps4"], xbox: ["xbox"], nintendo: ["switch", "switch2"],
-  nintendo_jp: ["switch", "switch2"], epic: ["epic"], gog: ["gog"],
+  nintendo_jp: ["switch", "switch2"], epic: ["epic"],
 };
 /**
  * 소스가 파는 나라. 같은 기기라도 나라가 다르면 game_platforms 행이 따로다 —
@@ -570,7 +546,7 @@ export const SOURCE_PLATFORMS: Record<StoreSource, Platform[]> = {
  * 안 그러면 일본 수집이 한국 행을 덮어쓴다.
  */
 export const SOURCE_REGION: Record<StoreSource, Region> = {
-  steam: "KR", psstore: "KR", xbox: "KR", nintendo: "KR", nintendo_jp: "JP", epic: "KR", gog: "KR",
+  steam: "KR", psstore: "KR", xbox: "KR", nintendo: "KR", nintendo_jp: "JP", epic: "KR",
 };
 /** §10 파싱 검증: 성공 건 중 가격 0/null 비율이 이 값을 넘으면 반영 생략 + partial */
 export const SUSPICIOUS_PRICE_RATIO = 0.5;
@@ -605,7 +581,6 @@ export const DLC_LIST_PER_RUN = 60;
  * 소스별 상한. 응답 크기가 소스마다 자릿수로 다르다 — 하나의 숫자로는 둘 다 맞출 수 없다.
  *   steam  appdetails JSON, 건당 ~100KB
  *   xbox   스토어 페이지 HTML, 건당 ~900KB (2026-09-14 실측: 철권 8 페이지 932KB)
- *   gog    목록이 상품 응답 안에 이미 들어 있어 이 경로를 쓰지 않는다
  * xbox 를 20 으로 잡은 근거: 20 × 900KB ≈ 18MB, 요청 간격 1초로 ~20초. 스팀과 비슷한 시간, 비슷한 바이트다.
  * 카탈로그를 한 바퀴 도는 데 그만큼 오래 걸리지만, 새 DLC 는 급한 정보가 아니다.
  */
@@ -681,11 +656,10 @@ export const DLC_FETCH_PER_RUN_BY_SOURCE: Partial<Record<Source, number>> = {
 /**
  * 한 실행에서 패치 기록을 새로 물어볼 게임 수.
  *
- * DLC 목록과 같은 성격의 경로다 — 배치가 없어 게임 1개가 요청 1회다(steam ISteamNews, gog changelog).
+ * DLC 목록과 같은 성격의 경로다 — 배치가 없어 게임 1개가 요청 1회다(steam ISteamNews).
  * 그래서 한도의 근거도 같은 자리에서 온다: **Actions 사용 분**이다.
  *   steam 30건 × 요청 간격 1.5초 = 45초
- *   gog   20건 × 요청 간격 1.0초 = 20초
- * 합쳐 실행당 65초, 하루 3회(crawl-prices 의 cron) = 월 약 98분이다.
+ * 하루 3회(crawl-prices 의 cron)면 월 약 68분이다.
  *
  * crawl-prices 는 이미 1회 33분, 월 3,000분으로 무료 한도(2,000분)를 넘고 있다(워크플로 주석의 실측).
  * 이 단계는 그 위에 3%를 더한다 — 여기서 더 올리기 전에 **먼저 볼 것은 33분 쪽**이다.
@@ -694,14 +668,11 @@ export const DLC_FETCH_PER_RUN_BY_SOURCE: Partial<Record<Source, number>> = {
  */
 export const PATCH_LIST_PER_RUN = 30;
 /**
- * 소스별 상한. gog 는 요청 간격이 1초로 더 싸지만 **응답이 크다** —
- * expand=changelog 는 게임당 수십에서 수백 KB 다(2026-09-15 실측: 사이버펑크 2077 244KB,
- * 위쳐 3 8.5KB, 위쳐 1 841B). 20건이면 최악이라도 5MB 안쪽이고 20초에 끝난다.
- * 시간이 아니라 바이트가 한도를 정하는 유일한 소스라 따로 적는다.
+ * 소스별 상한. 지금은 비어 있다 — 패치 기록을 주는 스토어가 steam 하나뿐이라(PATCH_SOURCES)
+ * 위 기본값 하나로 족하다. 표를 남겨 두는 이유는 한도를 정하는 축이 소스마다 다르기 때문이다:
+ * 시간이 아니라 **응답 바이트**가 한도를 정하는 소스가 있었다(변경 기록이 게임당 수백 KB).
  */
-export const PATCH_LIST_PER_RUN_BY_SOURCE: Partial<Record<Source, number>> = {
-  gog: 20,
-};
+export const PATCH_LIST_PER_RUN_BY_SOURCE: Partial<Record<Source, number>> = {};
 /**
  * 한 번 물어본 게임을 다시 물어보기까지의 간격(일).
  *
@@ -724,7 +695,7 @@ export const PATCH_PER_GAME_MAX = 50;
  * 카탈로그를 한 바퀴 다 돌 때까지(steam 4,660건 기준 약 78일) 한 건도 안 생긴다 —
  * 실제로 2026-09-15 기준 두 칸이 서는 게임이 0건이었다. 양쪽에 다 있는 게임을 먼저 물어본다.
  */
-export const PATCH_SOURCES: StoreSource[] = ["steam", "gog"];
+export const PATCH_SOURCES: StoreSource[] = ["steam"];
 
 /**
  * 한 실행에서 사양(steam appdetails)을 새로 물어볼 게임 수.

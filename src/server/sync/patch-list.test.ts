@@ -32,7 +32,7 @@ describe("pickPatchListTargets", () => {
       row({ id: "p1", gameId: "g1", patchListedAt: null }),
       row({ id: "p2", gameId: "g2", patchListedAt: null }),
     ];
-    // g2 만 GOG 에도 있다 — 이 게임을 물어봐야 두 칸이 서고 비교가 시작된다
+    // g2 만 다른 패치 스토어에도 있다 — 이 게임을 물어봐야 두 칸이 서고 비교가 시작된다
     expect(pickPatchListTargets(candidates, rows, NOW, 1, new Set(["g2"])).map((p) => p.gameId)).toEqual(["g2"]);
   });
 
@@ -88,7 +88,7 @@ describe("toPatchRows", () => {
   });
 
   it("버전, 주소를 안 주는 소스는 null 로 남는다 — undefined 를 그대로 넣지 않는다", () => {
-    const [r] = toPatchRows("gog", "gp1", [{ externalId: "2026-09-01", title: "Update", publishedAt: "2026-09-01T00:00:00.000Z" }]);
+    const [r] = toPatchRows("steam", "gp1", [{ externalId: "2026-09-01", title: "Update", publishedAt: "2026-09-01T00:00:00.000Z" }]);
     expect(r.version).toBeNull();
     expect(r.url).toBeNull();
   });

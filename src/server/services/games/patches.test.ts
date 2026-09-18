@@ -46,10 +46,10 @@ describe("groupPatchesByPlatform", () => {
   it("플랫폼별로 나누고 속도를 계산한다", () => {
     const groups = groupPatchesByPlatform([
       row({ id: "1", publishedAt: at("2026-09-11T00:00:00Z") }),
-      row({ id: "2", platform: "gog", publishedAt: at("2026-09-10T00:00:00Z") }),
+      row({ id: "2", platform: "epic", publishedAt: at("2026-09-10T00:00:00Z") }),
       row({ id: "3", publishedAt: at("2026-09-01T00:00:00Z") }),
     ]);
-    expect(groups.map((g) => g.platform)).toEqual(["steam", "gog"]);
+    expect(groups.map((g) => g.platform)).toEqual(["steam", "epic"]);
     expect(groups[0]).toMatchObject({ count: 2, averageIntervalDays: 10, latestAt: "2026-09-11T00:00:00.000Z" });
     expect(groups[1]).toMatchObject({ count: 1, averageIntervalDays: null });
   });
@@ -85,10 +85,10 @@ describe("latestPatches", () => {
   it("플랫폼을 섞어 최신순으로 자른다", () => {
     const groups = groupPatchesByPlatform([
       row({ id: "1", publishedAt: at("2026-09-11T00:00:00Z") }),
-      row({ id: "2", platform: "gog", publishedAt: at("2026-09-12T00:00:00Z") }),
+      row({ id: "2", platform: "epic", publishedAt: at("2026-09-12T00:00:00Z") }),
       row({ id: "3", publishedAt: at("2026-09-01T00:00:00Z") }),
     ]);
     expect(latestPatches(groups, 2).map((n) => n.id)).toEqual(["2", "1"]);
-    expect(latestPatches(groups, 2)[0].platform).toBe("gog");
+    expect(latestPatches(groups, 2)[0].platform).toBe("epic");
   });
 });
