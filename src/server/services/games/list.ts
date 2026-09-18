@@ -1,5 +1,6 @@
 // /games 목록 — 필터, 정렬, 페이지네이션과 필터 선택지(facets).
 import { cache } from "react";
+import type { PgSelect } from "drizzle-orm/pg-core";
 import { unstable_cache } from "next/cache";
 import { and, asc, eq, inArray, sql } from "drizzle-orm";
 import { DISPLAY_CURRENCY } from "@/lib/currency";
@@ -10,8 +11,8 @@ import { normalizeForSearch } from "@/lib/slug";
 import { DEFAULT_GAME_SORT, parsePlatformValues, type GamesQuery } from "@/lib/games-query";
 import { expandPlatformValues } from "@/lib/platform";
 import type { GameSummary } from "./dto";
-import { attachBestPrice } from "./mappers";
-import { allOf, byCompanySlug, inAnySubscription, mainGamesOnly } from "./filters";
+import { attachBestPrice, type GameRow } from "./mappers";
+import { allOf, byCompanySlug, hasVisiblePlatform, inAnySubscription, mainGamesOnly } from "./filters";
 import { titleMatch, titleMatches } from "./title-search";
 import { DTO_CACHE_VERSION, LIST_REVALIDATE_SECONDS } from "@/lib/cache";
 
@@ -87,7 +88,8 @@ async function listGamesRaw(filter: GameListFilter): Promise<GameListResult> {
   const db = getDb();
   const page = Math.max(filter.page ?? 1, 1);
   const sort = filter.sort ?? DEFAULT_GAME_SORT;
-  const agg = platformAgg(expandPlatformValues(parsePlatformValues(filter.platform)));
+  const picked = expandPlatformValues(parsePlatformValues(filter.platform));
+  const agg = platformAgg(picked);
 
   // 본편만 — DLC 가 목록에 본편처럼 섞이지 않게 모든 목록 쿼리가 이 조건을 탄다
   const conds = [mainGamesOnly()];
@@ -108,6 +110,19 @@ async function listGamesRaw(filter: GameListFilter): Promise<GameListResult> {
   if (term) {
     const { hit, score } = titleMatch(filter.q!);
     conds.push(titleMatches({ hit, score }));
+    /**
+     * 검색어가 있는 질의만 한국 행이 없는 게임까지 받는다(2026-09-18 실측 477건, 전부 일본 스위치).
+     *
+     * 왜 검색어가 있을 때만인가: 기본 목록이 답하는 질문은 "무엇을 살 수 있나" 라서 한국에서 못 사는
+     * 게임이 끼면 훑는 사람이 매번 걸려 넘어진다. 그런데 **제목을 찍어 물은** 사람은 그 게임 하나를
+     * 찾는 중이다 — 검색 화면(/search)은 이미 그 게임을 주는데 그 아래 "전체 목록에서 찾기" 링크만
+     * 0건으로 떨어지고 있었다. 같은 제목에 두 화면이 다른 답을 하지 않게 이 자리를 맞춘다.
+     *
+     * 집계(agg)는 한국 행만 세는 채로 둔다. 카드의 가격, 할인은 지금처럼 한국 값이고,
+     * 한국 행이 없는 게임은 그 자리가 빈다(엔화 값은 attachBestPrice 가 대표로 채운다).
+     * 가격, 할인 필터는 집계가 null 이라 저절로 걸러 낸다 — 원화 조건에 엔화 게임이 낄 이유가 없다.
+     */
+    conds.push(hasVisiblePlatform(picked));
   }
   const where = allOf(...conds);
 
@@ -119,24 +134,25 @@ async function listGamesRaw(filter: GameListFilter): Promise<GameListResult> {
     title: [asc(sql`coalesce(${games.titleKo}, ${games.titleEn})`)],
   }[sort];
 
+  // 검색어가 있으면 집계를 left join 으로 붙인다 — inner join 이 한국 행 없는 게임을 통째로 지운다.
+  // 플랫폼 필터를 강제하던 힘은 위의 hasVisiblePlatform 이 대신 받는다.
+  // 조인 종류가 갈리면 빌더 타입도 갈려 제네릭 한 함수에 담기지 않는다. select 모양을 명시해 뒀으니
+  // 돌아오는 행 모양은 조인 종류와 무관하다 — 조립은 PgSelect 로 받고 결과에서 한 번만 모양을 밝힌다
+  const joinAgg = (qb: PgSelect): PgSelect => (term ? qb.leftJoin(agg, eq(agg.gameId, games.id)) : qb.innerJoin(agg, eq(agg.gameId, games.id)));
+
   // 건수와 목록은 서로를 기다릴 이유가 없다. DB 실행은 각 10~20ms 인데 왕복이 200ms 대라
   // (Neon us-east-1, 2026-09-15 실측) 직렬로 두면 지연의 거의 전부가 기다림이다
-  const [[{ total }], rows] = await Promise.all([
-    db
-      .select({ total: sql<number>`count(*)::int` })
-      .from(games)
-      .innerJoin(agg, eq(agg.gameId, games.id))
-      .where(where),
-    db
-      .select({ game: games })
-      .from(games)
-      .innerJoin(agg, eq(agg.gameId, games.id))
+  const [totalRows, pageRows] = await Promise.all([
+    joinAgg(db.select({ total: sql<number>`count(*)::int` }).from(games).$dynamic()).where(where),
+    joinAgg(db.select({ game: games }).from(games).$dynamic())
       .where(where)
       // 같은 정렬값이 많을 때 페이지 경계에서 중복/누락이 나지 않도록 마지막 키는 항상 고유값(slug)
       .orderBy(...orderBy, asc(games.slug))
       .limit(GAMES_PAGE_SIZE)
       .offset((page - 1) * GAMES_PAGE_SIZE),
   ]);
+  const total = (totalRows as Array<{ total: number }>)[0].total;
+  const rows = pageRows as Array<{ game: GameRow }>;
 
   return {
     items: await attachBestPrice(rows.map((r) => r.game)),
