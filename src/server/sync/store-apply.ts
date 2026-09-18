@@ -83,6 +83,34 @@ async function loadExisting(
 }
 
 /**
+ * 부모 후보를 external_id 마다 하나로 좁힌다.
+ *
+ * **한 external_id 가 게임 한 행을 가리킨다고 가정하지 않는다.** PlayStation 의 콘셉트 번호는
+ * 제품군 단위라 별개 게임이 한 번호를 나눠 갖는다(2026-09-18 실측: psstore 73개 번호, 그 아래 자식 1,071건).
+ * 전에는 조회 순서대로 맨 뒤 행이 부모가 돼서 "Call of Duty League - FaZe Vegas Team Pack" 이
+ * "Black Ops 7 Cross-Gen Bundle" 밑에 붙었다.
+ *
+ * 후보가 여럿이면 본편(`game`) 하나만 고르고, 그래도 안 가려지면 **붙이지 않는다** —
+ * 부모 없는 DLC 는 목록에 안 뜰 뿐 되살릴 수 있지만, 엉뚱한 부모는 화면에 그대로 거짓말로 나간다.
+ */
+export function resolveParents(
+  refs: Array<{ externalId: string; gameId: string; contentType: GameRow["contentType"] }>,
+): Map<string, string> {
+  const candidates = new Map<string, typeof refs>();
+  for (const r of refs) {
+    const list = candidates.get(r.externalId);
+    if (list) list.push(r);
+    else candidates.set(r.externalId, [r]);
+  }
+  const out = new Map<string, string>();
+  for (const [externalId, list] of candidates) {
+    const pick = list.length === 1 ? list : list.filter((c) => c.contentType === "game");
+    if (pick.length === 1) out.set(externalId, pick[0].gameId);
+  }
+  return out;
+}
+
+/**
  * DLC 가 스스로 알려준 본편을 이어 붙인다(steam 의 fullgame / related_items).
  * 배치 경로에서는 부모 ref 를 한 번에 조회한다 — 건마다 물으면 DLC 가 많은 배치에서 왕복이 배로 는다.
  */
@@ -102,10 +130,12 @@ async function planParentLinks(
 
   const parentIds = Array.from(new Set(pending.map((p) => p.snapshot.parentExternalId as string)));
   const refs = await ctx.db
-    .select({ externalId: gameSourceRefs.externalId, gameId: gameSourceRefs.gameId })
+    .select({ externalId: gameSourceRefs.externalId, gameId: gameSourceRefs.gameId, contentType: games.contentType })
     .from(gameSourceRefs)
+    .innerJoin(games, eq(games.id, gameSourceRefs.gameId))
     .where(and(eq(gameSourceRefs.source, source), inArray(gameSourceRefs.externalId, parentIds)));
-  const parentByExternalId = new Map(refs.map((r) => [r.externalId, r.gameId]));
+
+  const parentByExternalId = resolveParents(refs);
 
   const out: Statement[] = [];
   for (const { gameId, snapshot } of pending) {

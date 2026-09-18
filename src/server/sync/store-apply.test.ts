@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { withDiscoveredMedia } from "./store-apply";
+import { resolveParents, withDiscoveredMedia } from "./store-apply";
 import type { StoreSnapshot } from "@/server/adapters/types";
 import type { StoreTarget } from "./store-targets";
 
@@ -45,5 +45,33 @@ describe("withDiscoveredMedia", () => {
   it("meta 가 없는 스냅샷(기존 게임 가격 갱신)은 건드리지 않는다", () => {
     const s = snapshot();
     expect(withDiscoveredMedia(s, target())).toBe(s);
+  });
+});
+
+describe("resolveParents", () => {
+  const ref = (externalId: string, gameId: string, contentType: "game" | "dlc" | "edition") =>
+    ({ externalId, gameId, contentType }) as const;
+
+  it("후보가 하나면 종류를 안 따지고 그 행이 부모다", () => {
+    expect(resolveParents([ref("10000248", "g1", "edition")]).get("10000248")).toBe("g1");
+  });
+
+  it("한 번호를 여럿이 나눠 가지면 본편 하나만 고른다", () => {
+    const map = resolveParents([
+      ref("10001130", "bundle", "edition"),
+      ref("10001130", "main", "game"),
+      ref("10001130", "addon", "dlc"),
+    ]);
+    expect(map.get("10001130")).toBe("main");
+  });
+
+  it("본편이 둘이면 붙이지 않는다 — 엉뚱한 부모보다 부모 없음이 낫다", () => {
+    const map = resolveParents([ref("228748", "fortnite", "game"), ref("228748", "rocket", "game")]);
+    expect(map.has("228748")).toBe(false);
+  });
+
+  it("본편이 하나도 없으면 붙이지 않는다", () => {
+    const map = resolveParents([ref("x", "a", "edition"), ref("x", "b", "dlc")]);
+    expect(map.has("x")).toBe(false);
   });
 });
