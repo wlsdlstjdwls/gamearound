@@ -22,6 +22,10 @@ export const shopStatusEnum = pgEnum("shop_status", ["pending", "active", "suspe
 export const shopAddressTypeEnum = pgEnum("shop_address_type", ["offline", "online_only", "none"]);
 export const shopStaffRoleEnum = pgEnum("shop_staff_role", ["owner", "manager", "staff"]);
 
+/** 화면과 서비스가 문자열 리터럴 대신 쓰는 이름 — enum 값이 늘면 여기가 따라 넓어진다 */
+export type ShopStatus = (typeof shopStatusEnum.enumValues)[number];
+export type ShopType = (typeof shopTypeEnum.enumValues)[number];
+
 export const shops = pgTable("shops", {
   id: uuid("id").primaryKey().defaultRandom(),
   shopType: shopTypeEnum("shop_type").default("business").notNull(),

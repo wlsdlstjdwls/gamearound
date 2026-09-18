@@ -21,6 +21,8 @@ export const ROUTES = {
   /** 입점 랜딩. 매장을 데려오는 화면이라 /shops 와 따로 둔다 */
   business: "/business",
   shopsJoin: "/shops/join",
+  /** 신청 상태. 심사 중, 반려 사유, 재신청이 한 화면에서 끝난다(설계서 §11) */
+  shopsJoinStatus: "/shops/join/status",
   /**
    * 매장 관리자 콘솔. `/admin/shops` 로 두면 주소를 잘못 쳤을 때 `/admin` 으로 들어간다.
    * 경로 분리는 실수 방지일 뿐이고, 진짜 방어는 requireRoleOrForbid("admin") 이다.

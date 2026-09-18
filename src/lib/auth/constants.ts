@@ -30,8 +30,9 @@ export const RATE_LIMIT = {
 } as const;
 
 /** proxy.ts 경로 가드 — 접두사 매칭 */
-export const USER_ROUTE_PREFIXES: readonly string[] = [ROUTES.wishlist, ROUTES.alerts, ROUTES.settings];
-export const ADMIN_ROUTE_PREFIXES: readonly string[] = [ROUTES.admin];
+// 입점 신청은 로그인한 사람만 본다. 매장 찾기(/shops)와 매장 페이지는 공개라 접두사로 막지 않는다
+export const USER_ROUTE_PREFIXES: readonly string[] = [ROUTES.wishlist, ROUTES.alerts, ROUTES.settings, ROUTES.shopsJoin];
+export const ADMIN_ROUTE_PREFIXES: readonly string[] = [ROUTES.admin, ROUTES.shopsAdmin];
 export const VENDOR_ROUTE_PREFIXES: readonly string[] = [ROUTES.vendor];
 export const AUTH_PAGE_PREFIXES: readonly string[] = [ROUTES.signIn, ROUTES.signUp];
 
