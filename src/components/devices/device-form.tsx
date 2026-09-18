@@ -8,6 +8,7 @@ import { useActionState, useState } from "react";
 import { useFormStatus } from "react-dom";
 import { saveDeviceAction, type ActionState } from "@/app/(user)/settings/devices/actions";
 import { Button } from "@/components/ui/button";
+import { DetectButton } from "./detect-button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { TextField } from "@/components/ui/text-field";
 import { DEVICE_LABEL_MAX, mbToGb } from "@/lib/hardware/device-schemas";
@@ -46,6 +47,8 @@ export function DeviceForm({
     return next;
   }, null);
   const [os, setOs] = useState<OsFamily>(device?.osFamily ?? "windows");
+  // 감지가 채울 칸만 controlled 로 둔다. 나머지를 다 옮기면 폼이 상태 덩어리가 되고 얻는 것이 없다
+  const [gpu, setGpu] = useState(device?.gpuName ?? "");
 
   return (
     <form action={formAction} className="flex flex-col gap-4">
@@ -81,6 +84,14 @@ export function DeviceForm({
         </div>
       </fieldset>
 
+      <DetectButton
+        size="md"
+        onDetected={(spec) => {
+          if (spec.gpuName) setGpu(spec.gpuName);
+          if (spec.osFamily) setOs(spec.osFamily);
+        }}
+      />
+
       <TextField
         label="프로세서"
         name="cpuText"
@@ -98,7 +109,8 @@ export function DeviceForm({
       <TextField
         label="그래픽"
         name="gpuText"
-        defaultValue={device?.gpuName ?? ""}
+        value={gpu}
+        onChange={(e) => setGpu(e.target.value)}
         list="gpu-models"
         placeholder="GeForce GTX 1060"
         hint={DEVICE_MESSAGES.partHint}

@@ -7,6 +7,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import { buttonClass } from "@/components/ui/button";
+import { DetectButton } from "./detect-button";
 import { COMPAT_MESSAGES, DEVICE_MESSAGES, OS_FAMILY_LABEL } from "@/lib/games/messages";
 import { findModel, modelByKey } from "@/lib/hardware";
 import { ROUTES } from "@/lib/routes";
@@ -72,6 +73,13 @@ export function GuestDeviceForm({
           </li>
         ))}
       </ul>
+      {/* 적는 칸보다 먼저 둔다 — 채워진 칸을 고치는 것이 빈칸을 처음부터 적는 것보다 쉽다 */}
+      <DetectButton
+        onDetected={(spec) => {
+          if (spec.gpuName) setGpu(spec.gpuName);
+          if (spec.osFamily) setOs(spec.osFamily);
+        }}
+      />
       <div className={`grid gap-2 ${columns ? "sm:grid-cols-3" : ""}`}>
         <input value={cpu} onChange={(e) => setCpu(e.target.value)} placeholder="프로세서 (Core i5 8400)" aria-label="프로세서" className={FIELD_CLASS} />
         <input value={gpu} onChange={(e) => setGpu(e.target.value)} placeholder="그래픽 (GTX 1060)" aria-label="그래픽" className={FIELD_CLASS} />
