@@ -11,6 +11,7 @@ import { extractVramMb, normalizeModelKey, splitCandidates, stripSpecNoise } fro
 
 export { extractVramMb, normalizeModelKey, splitCandidates, stripSpecNoise } from "./normalize";
 export { CPU_TIERS } from "./cpu-tiers";
+export * from "./verdict";
 export { GPU_TIERS } from "./gpu-tiers";
 
 export type PartKind = "cpu" | "gpu";
@@ -97,6 +98,19 @@ export function looksLikeModel(kind: PartKind, candidate: string): boolean {
   const lower = candidate.toLowerCase();
   if (hintsOf(kind).some((h) => lower.includes(h)) && !/\d{3,4}/.test(lower)) return false;
   return /\d{3,}/.test(lower);
+}
+
+/**
+ * 사전 전체 — 기기 등록 폼의 선택지다. 빠른 것부터 준다(사람은 자기 부품을 위쪽에서 찾는다).
+ * 같은 티어 안에서는 이름순이라 목록이 실행마다 흔들리지 않는다.
+ */
+export function listModels(kind: PartKind): HardwareModel[] {
+  return [...indexOf(kind).values()].sort((a, b) => b.tier - a.tier || a.name.localeCompare(b.name));
+}
+
+/** 열쇠 하나로 모델을 되찾는다. 저장된 기기가 어떤 부품인지 화면에 적을 때 쓴다 */
+export function modelByKey(kind: PartKind, key: string | null): HardwareModel | null {
+  return key ? indexOf(kind).get(key) ?? null : null;
 }
 
 /** 사양 문구에서 뽑아낸 후보 하나 */

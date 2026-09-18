@@ -12,6 +12,8 @@ export const ROUTES = {
   wishlist: "/wishlist",
   alerts: "/alerts",
   settings: "/settings",
+  /** 내 기기 — 사양 판정의 한쪽 항이다(설계 §7 "설정") */
+  settingsDevices: "/settings/devices",
   admin: "/admin",
   vendor: "/vendor",
   /** 매장(오프라인 판매처). 디지털 스토어와 낱말을 가르려고 shop 을 쓴다 — 설계서 §1 */

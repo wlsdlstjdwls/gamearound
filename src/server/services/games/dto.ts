@@ -174,6 +174,13 @@ export type RequirementDto = {
   ramMb: number | null;
   vramMb: number | null;
   storageMb: number | null;
+  /**
+   * 판정이 쓰는 부품 후보의 티어. 값이 여럿인 이유는 "A 또는 B" 라서다 —
+   * 하나만 넘으면 충족이므로 실제 요구선은 이 중 가장 낮은 값이다(lib/hardware/verdict).
+   * null 은 사전에서 못 찾은 후보다. 화면은 그 사실을 "일부 확인 불가" 로 말한다.
+   */
+  cpuTiers: Array<number | null>;
+  gpuTiers: Array<number | null>;
 };
 
 /**

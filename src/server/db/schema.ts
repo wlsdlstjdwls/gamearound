@@ -345,6 +345,41 @@ export const gameRequirements = pgTable("game_requirements", {
 ]);
 
 /**
+ * 내 기기 — 설계 문서 §4. "이 게임이 내 PC 에서 도나" 의 한쪽 항이다.
+ *
+ * **여러 대를 등록한다.** 데스크탑과 노트북의 답이 다르고, 사용자가 묻는 게임도 그때그때 다르다.
+ *
+ * 부품을 티어가 아니라 **사전 열쇠**로 저장하는 이유: 티어표는 앞으로 계속 손본다.
+ * 티어를 박아 두면 표를 고칠 때 등록된 기기를 전부 다시 계산해야 하는데, 열쇠로 두면
+ * 판정할 때 그때의 표를 본다 — 사전이 좋아지면 이미 등록된 기기의 판정도 같이 좋아진다.
+ * (사양 쪽 후보 행에는 반대로 티어를 박는다. 거기는 SQL 이 걸러야 해서다 — 두 선택의 이유가 다르다.)
+ *
+ * 비회원은 이 표에 행이 없다. 브라우저에 기기 하나를 두고 판정도 브라우저에서 한다(lib/hardware/verdict).
+ * 로그인을 요구하면 이 기능을 아무도 안 쓴다는 것이 설계의 전제다.
+ */
+export const userDevices = pgTable("user_devices", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  userId: uuid("user_id").references(() => users.id, { onDelete: "cascade" }).notNull(),
+  /** "집 데스크탑", "회사 노트북". 기기가 여럿일 때 사람이 고를 수 있는 유일한 단서다 */
+  label: text("label").notNull(),
+  osFamily: osFamilyEnum("os_family").notNull(),
+  /** 사전 열쇠(lib/hardware 의 normalizeModelKey). 못 고른 부품은 null 이고 그 부위는 판정에서 빠진다 */
+  cpuModelKey: text("cpu_model_key"),
+  gpuModelKey: text("gpu_model_key"),
+  ramMb: integer("ram_mb"),
+  storageFreeMb: integer("storage_free_mb"),
+  /**
+   * 값을 누가 넣었나 — "manual"(사람이 고름) 또는 "detected"(브라우저가 추측).
+   * 가르는 이유는 설계 §4 에 있다: 자동 감지는 틀린다(사파리는 GPU 를 "Apple GPU" 로 뭉개고,
+   * deviceMemory 는 8GB 에서 막힌다). 틀린 판정이 나왔을 때 원인을 여기서 찾는다.
+   */
+  source: text("source").default("manual").notNull(),
+  /** 기본 기기. 상세 화면이 아무것도 안 골랐을 때 이 기기로 답한다 */
+  isPrimary: boolean("is_primary").default(false).notNull(),
+  ...auditColumns(),
+}, (t) => [index("ud_user_idx").on(t.userId)]);
+
+/**
  * 사양 한 칸이 말하는 부품 후보들 — 설계 문서 §2 의 "A 또는 B 를 담는 자리".
  *
  * 왜 컬럼 하나로 안 되나: 실제 문구가 이렇게 온다.

@@ -51,8 +51,11 @@
  *
  * v14(2026-09-18): GameDetail 에 requirements(구동 사양)를 더했다. 옛 값에는 필드가 없어
  * 사양 칸이 `undefined.length` 로 죽는다 — v7 때 editions 로 겪은 것과 같은 사고라 같은 커밋에서 올린다.
+ *
+ * v15(2026-09-18): RequirementDto 에 판정용 티어 두 배열(cpuTiers, gpuTiers)을 더했다.
+ * 옛 값에는 필드가 없어 판정 칸이 `undefined.filter` 로 죽는다 — v7 때 editions 와 같은 사고다.
  */
-export const DTO_CACHE_VERSION = "v14";
+export const DTO_CACHE_VERSION = "v15";
 
 /** 목록, 검색, 홈처럼 태그 무효화로 갱신되는 화면의 기본 재검증 주기(초) */
 export const LIST_REVALIDATE_SECONDS = 3600;

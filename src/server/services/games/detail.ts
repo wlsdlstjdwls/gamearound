@@ -90,8 +90,9 @@ export async function getGameBySlug(slug: string): Promise<GameDetail | null> {
       sourceRefs: true,
       companies: { with: { company: true } },
       upgrades: true,
-      // 사양은 게임당 최대 6행이라(OS 3 × 등급 2) 상세 질의에 얹어도 행이 늘지 않는다
-      requirements: true,
+      // 사양은 게임당 최대 6행이라(OS 3 × 등급 2) 상세 질의에 얹어도 행이 늘지 않는다.
+      // 부품 후보는 판정이 쓴다 — 행마다 서너 개라 같이 읽어도 값이 싸다
+      requirements: { with: { parts: true } },
       // 자식(DLC, 에디션)은 본편 화면에서만 필요하다. 자식 자기 화면에서는 빈 배열이 된다(자식이 자식을 갖지 않으므로)
       dlcs: { with: { platforms: true }, limit: DETAIL_DLC_FETCH_LIMIT },
       // 반대 방향 — 자식 화면에서 본편으로 돌아가는 링크에 쓴다. 본편 행에서는 null 이다

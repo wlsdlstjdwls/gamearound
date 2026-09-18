@@ -16,6 +16,7 @@ import { PatchList, PatchSpeed } from "@/components/patch-list";
 import { Sheet } from "@/components/ui/sheet";
 import { PlatformPrices, type PlatformPriceItem } from "@/components/platform-prices";
 import { PlaytimeCard } from "@/components/playtime-card";
+import { CompatSection } from "@/components/compat-section";
 import { RequirementsSection } from "@/components/requirements-table";
 import { WishlistButton } from "@/components/wishlist-button";
 import { BackLink } from "@/components/ui/back-link";
@@ -40,6 +41,7 @@ import {
   type GameDetail,
 } from "@/server/services/games";
 import { getCurrentUser } from "@/server/services/users";
+import { listMyDevices } from "@/server/services/devices";
 import { isInWishlist } from "@/server/services/wishlist";
 import { cardClass } from "@/components/ui/page";
 import { decodeSlugParam } from "@/lib/slug";
@@ -166,6 +168,17 @@ async function WishlistSlot({ gameId }: { gameId: string }) {
   const user = await getCurrentUser();
   const wished = user ? await isInWishlist(gameId) : false;
   return <WishlistButton gameId={gameId} wished={wished} signedIn={Boolean(user)} />;
+}
+
+/**
+ * 판정 칸. 찜 버튼과 같은 이유로 따로 떼어 Suspense 로 감쌌다 — 등록된 기기는 로그인에 매달린
+ * 값이라, 본문이 세션 조회(실측 220ms)를 기다릴 이유가 없다.
+ * 비회원은 devices 가 빈 배열이고, 그때 기기는 브라우저에서 읽는다(compat-section).
+ */
+async function CompatSlot({ groups }: { groups: GameDetail["requirements"] }) {
+  const user = await getCurrentUser();
+  const devices = user ? await listMyDevices() : [];
+  return <CompatSection groups={groups} devices={devices.map((d) => ({ ...d, id: d.id, label: d.label }))} />;
 }
 
 /** 아직 오지 않은 찜 버튼의 자리. 같은 크기여야 도착할 때 옆 버튼이 밀리지 않는다 */
@@ -334,7 +347,13 @@ export default async function GameDetailPage({ params }: Props) {
           )}
 
           {/* 사양은 가격, 추가 콘텐츠 다음이다 — 살지 말지를 정한 뒤에 오는 질문이라서다.
-              콘솔 전용 게임은 groups 가 비어 있어 칸 자체가 서지 않는다 */}
+              콘솔 전용 게임은 groups 가 비어 있어 칸 자체가 서지 않는다.
+              판정이 사양표보다 먼저 서는 이유: 사람이 묻는 것은 "돌아가나" 이고 표는 그 근거다 */}
+          {game.requirements.length > 0 && (
+            <Suspense fallback={null}>
+              <CompatSlot groups={game.requirements} />
+            </Suspense>
+          )}
           <RequirementsSection groups={game.requirements} />
 
           {patchGroups.length > 0 && (

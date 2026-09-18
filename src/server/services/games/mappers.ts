@@ -40,6 +40,8 @@ export function byRegionThenPlatform(a: { platform: Platform; region: Region }, 
 export type GameRow = typeof games.$inferSelect;
 export type PlatformRow = typeof gamePlatforms.$inferSelect;
 export type RequirementRow = typeof gameRequirements.$inferSelect;
+/** 사양 행 + 그 행이 말하는 부품 후보들. 판정에 둘 다 필요하다 */
+export type RequirementRowWithParts = RequirementRow & { parts: Array<{ kind: "cpu" | "gpu"; tier: number | null }> };
 
 export function toPlatformDto(p: PlatformRow): PlatformDto {
   return {
@@ -81,7 +83,7 @@ export function toPlatformDto(p: PlatformRow): PlatformDto {
  * 화면이 "무엇을 믿어야 하나" 라는 새 질문을 만든다 — 지금 값을 주는 스토어는 스팀뿐이라
  * 실제로 겹치는 일도 아직 없다(겹치기 시작하면 어느 쪽을 믿을지부터 정한다).
  */
-export function toRequirementGroups(rows: RequirementRow[]): RequirementGroupDto[] {
+export function toRequirementGroups(rows: RequirementRowWithParts[]): RequirementGroupDto[] {
   const byOs = new Map<OsFamily, RequirementGroupDto>();
   for (const os of OS_ORDER) {
     const forOs = rows.filter((r) => r.osFamily === os);
@@ -100,6 +102,8 @@ export function toRequirementGroups(rows: RequirementRow[]): RequirementGroupDto
         ramMb: row.ramMb,
         vramMb: row.vramMb,
         storageMb: row.storageMb,
+        cpuTiers: row.parts.filter((p) => p.kind === "cpu").map((p) => p.tier),
+        gpuTiers: row.parts.filter((p) => p.kind === "gpu").map((p) => p.tier),
       };
     };
     byOs.set(os, { osFamily: os, platform, minimum: of("minimum"), recommended: of("recommended") });

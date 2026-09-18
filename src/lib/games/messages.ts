@@ -64,6 +64,54 @@ export const REQUIREMENT_ROW_LABEL = {
   noteText: "그 밖에",
 } as const;
 
+/** 내 기기 화면과 폼의 문구 */
+export const DEVICE_MESSAGES = {
+  heading: "내 기기",
+  lead: "등록해 두면 게임 상세에서 이 기기로 돌아가는지 바로 알려줘요.",
+  labelHint: "데스크탑과 노트북처럼 여러 대를 등록할 수 있어요.",
+  /** 사전에 없는 부품은 판정에서 빠진다는 사실을 미리 말해 둔다 */
+  partHint: "적어 두면 우리가 알아볼게요. 모르는 부품이면 그 항목만 판정에서 빠져요.",
+  empty: "아직 등록한 기기가 없어요.",
+  addHeading: "기기 추가",
+  editHeading: "기기 수정",
+  primary: "기본 기기",
+  makePrimary: "기본으로",
+  remove: "지우기",
+  /** 비회원 안내. 로그인을 요구하면 이 기능을 아무도 안 쓴다(설계 §4) */
+  guestNote: "로그인하면 여러 대를 저장하고 어디서나 같은 판정을 받아요.",
+} as const;
+
+/** 판정 결과 문구. 단정하지 않는다 — 스토어가 적어 둔 값을 견준 결과일 뿐이다(설계 §6) */
+export const VERDICT_LABEL = {
+  below_minimum: "최소 사양에 못 미쳐요",
+  meets_minimum: "최소 사양을 넘어요",
+  meets_recommended: "권장 사양을 넘어요",
+  unknown: "판정할 수 없어요",
+} as const;
+
+export const VERDICT_PART_LABEL = {
+  cpu: "프로세서",
+  gpu: "그래픽",
+  ram: "메모리",
+  storage: "저장공간",
+} as const;
+
+export const COMPAT_MESSAGES = {
+  heading: "내 PC 로 돌아갈까요",
+  /** 기기를 아직 안 고른 사람에게 */
+  cta: "기기 여러 대 관리하기",
+  guestLead: "기기를 적어 두면 이 게임이 돌아갈지 알려줘요. 로그인 없이도 돼요.",
+  check: "확인하기",
+  editDevice: "기기 다시 적기",
+  /** 한 부위라도 못 본 경우. 조용히 통과시키지 않는다 */
+  partial: "일부 항목은 확인하지 못했어요.",
+  /** 판정은 예상이지 약속이 아니다 */
+  note: "스토어에 적힌 사양과 견준 결과예요. 실제 구동은 게임 설정과 기기 상태에 따라 달라요.",
+  unknownPart: "확인 못 함",
+  meets: "충족",
+  below: "모자람",
+} as const;
+
 /** 자식 화면에서 본편으로 돌아가는 줄. 부모를 아는 자식에게만 보인다 */
 export const PARENT_LINK_LABEL = "본편";
 
