@@ -11,10 +11,11 @@
 // 대상은 이번 배치에서 이미 가격을 갱신한 본편들 중에서 고른다. 백필은 이 상한으로는 느려서
 // 따로 돈다 — scripts/backfill-requirements.ts(로컬 회선, Actions 분을 쓰지 않는다).
 import { and, eq, inArray } from "drizzle-orm";
-import { gamePlatforms, gameRequirements, type Platform } from "@/server/db/schema";
+import { gamePlatforms, gameRequirementParts, gameRequirements, type Platform } from "@/server/db/schema";
 import type { StoreSource } from "@/server/adapters";
 import type { RequirementSnapshot, StoreAdapter } from "@/server/adapters/types";
 import { sleep } from "@/lib/async";
+import { extractParts, PART_MATCH_VERSION } from "@/lib/hardware";
 import { REQUIREMENTS_PER_RUN, REQUIREMENTS_REFRESH_DAYS, SOURCE_PLATFORMS, SOURCE_REGION } from "./constants";
 import { recordError, type Ctx } from "./context";
 import { fetchWithRetry } from "./retry";
@@ -108,6 +109,55 @@ export function planRequirements(ctx: Ctx, gameId: string, platform: Platform, s
 }
 
 /**
+ * 사양 행들 → 부품 후보 쓰기 문장. 행마다 기존 후보를 지우고 새로 넣는다.
+ *
+ * 값을 견주지 않고 통째로 갈아 끼우는 이유: 후보는 사양 문구에서 **파생된** 값이라
+ * 원본이 같으면 결과도 같고, 다르면 통째로 다르다. 어느 후보가 달라졌는지 세는 일에
+ * 값어치가 없다(가격과 다른 점이다 — 그쪽은 변동 자체가 알릴 사건이다).
+ *
+ * 사전이나 매칭 규칙을 고치면 PART_MATCH_VERSION 을 올리고 재매칭을 돌린다.
+ */
+export function planRequirementParts(ctx: Ctx, rows: Array<{ id: number; cpuText: string | null; gpuText: string | null }>): Statement[] {
+  const out: Statement[] = [];
+  for (const row of rows) {
+    out.push(ctx.db.delete(gameRequirementParts).where(eq(gameRequirementParts.requirementId, row.id)));
+    const parts = [...extractParts("cpu", row.cpuText), ...extractParts("gpu", row.gpuText)];
+    if (parts.length === 0) continue;
+    out.push(
+      ctx.db.insert(gameRequirementParts).values(
+        parts.map((p) => ({
+          requirementId: row.id,
+          kind: p.kind,
+          rawText: p.rawText,
+          modelKey: p.modelKey,
+          tier: p.tier,
+          vramMb: p.vramMb,
+          isAlternative: p.isAlternative,
+          matchVersion: PART_MATCH_VERSION,
+          ...createdBy(`crawler:${ctx.source}`),
+        })),
+      ),
+    );
+  }
+  return out;
+}
+
+/**
+ * 방금 쓴 사양 행을 되읽어 부품 후보를 채운다.
+ *
+ * 되읽는 이유: 후보 행은 사양 행의 id 를 참조하는데 그 id 는 INSERT 가 끝나야 안다.
+ * 게임마다 되읽으면 왕복이 건수만큼 늘어나므로 **배치 전체를 한 번에** 읽는다.
+ */
+async function syncPartsFor(ctx: Ctx, gameIds: string[]): Promise<void> {
+  if (gameIds.length === 0) return;
+  const rows = await ctx.db
+    .select({ id: gameRequirements.id, cpuText: gameRequirements.cpuText, gpuText: gameRequirements.gpuText })
+    .from(gameRequirements)
+    .where(inArray(gameRequirements.gameId, gameIds));
+  await runStatements(ctx, `${ctx.source}:requirement-parts`, planRequirementParts(ctx, rows));
+}
+
+/**
  * 이번 배치에서 갱신한 게임들에게 사양을 물어본다. 받은 건수를 돌려준다.
  *
  * DLC 는 묻지 않는다 — 추가 콘텐츠에는 자기 사양이 없고(본편 사양이 곧 그 사양이다),
@@ -169,5 +219,7 @@ export async function syncRequirements(
     if (i < picks.length - 1) await sleep(adapter.minIntervalMs);
   }
   await runStatements(ctx, `${source}:requirements`, statements);
+  // 후보 추출은 사양 행이 DB 에 앉은 뒤에만 할 수 있다(syncPartsFor 주석)
+  await syncPartsFor(ctx, [...new Set(picks.map((p) => p.gameId))]);
   return received;
 }

@@ -83,6 +83,8 @@ export const deckCompatEnum = pgEnum("deck_compat", ["verified", "playable", "un
 export const osFamilyEnum = pgEnum("os_family", ["windows", "mac", "linux"]);
 /** 최소 사양인가 권장 사양인가. 권장은 표본 60건 중 49건에만 있었다(2026-09-18 실측) — 없는 것이 정상이다 */
 export const requirementTierEnum = pgEnum("requirement_tier", ["minimum", "recommended"]);
+/** 판정이 견주는 부품. 메모리, 저장공간은 숫자라 후보가 필요 없고 이 둘만 "A 또는 B" 로 온다 */
+export const partKindEnum = pgEnum("part_kind", ["cpu", "gpu"]);
 
 export type Platform = (typeof platformEnum.enumValues)[number];
 export type SourceName = (typeof sourceEnum.enumValues)[number];
@@ -92,6 +94,7 @@ export type UserScoreKind = (typeof userScoreKindEnum.enumValues)[number];
 export type DeckCompat = (typeof deckCompatEnum.enumValues)[number];
 export type OsFamily = (typeof osFamilyEnum.enumValues)[number];
 export type RequirementTier = (typeof requirementTierEnum.enumValues)[number];
+export type PartKind = (typeof partKindEnum.enumValues)[number];
 export type Currency = (typeof currencyEnum.enumValues)[number];
 export type Region = (typeof regionEnum.enumValues)[number];
 export type ContentType = (typeof contentTypeEnum.enumValues)[number];
@@ -339,6 +342,39 @@ export const gameRequirements = pgTable("game_requirements", {
 }, (t) => [
   // 같은 게임, 같은 스토어, 같은 OS, 같은 등급은 한 행이다 — 다시 물어보면 덮어쓴다
   uniqueIndex("gr_game_platform_os_tier_uq").on(t.gameId, t.platform, t.osFamily, t.tier),
+]);
+
+/**
+ * 사양 한 칸이 말하는 부품 후보들 — 설계 문서 §2 의 "A 또는 B 를 담는 자리".
+ *
+ * 왜 컬럼 하나로 안 되나: 실제 문구가 이렇게 온다.
+ *   Graphics: NVIDIA GEFORCE GTX 1060 3 GB or AMD RADEON RX 580 4 GB
+ * 한 칸에 후보가 둘이고, 판정은 **후보 중 하나만 넘으면 충족**이다.
+ * 한 문자열로 두면 인텔 쓰는 사람에게 라이젠 기준을 들이대게 된다.
+ *
+ * `tier` 를 여기 박아 두는 이유: 사전을 코드에 두었기 때문이다(lib/hardware 머리 주석).
+ * SQL 이 사전을 못 보므로 매칭 시점의 티어를 행에 적어 둬야 3단계의 "내 기기로 돌아가는 게임만"
+ * 필터가 질의로 선다. 사전이 바뀌면 재매칭이 이 값을 갈아 준다 — 그래서 match_version 이 있다.
+ */
+export const gameRequirementParts = pgTable("game_requirement_parts", {
+  id: integer("id").primaryKey().generatedAlwaysAsIdentity(),
+  requirementId: integer("requirement_id").references(() => gameRequirements.id, { onDelete: "cascade" }).notNull(),
+  kind: partKindEnum("kind").notNull(),
+  /** 스토어 문구에서 이 후보에 해당하는 조각. 화면은 이것을 보여 준다 */
+  rawText: text("raw_text").notNull(),
+  /** 사전에서 찾은 모델의 열쇠. 못 찾으면 null 이고 그 후보는 판정에서 빠진다 */
+  modelKey: text("model_key"),
+  tier: integer("tier"),
+  /** 이 후보 카드에 딸려 온 비디오 메모리. 게임이 요구하는 VRAM 이 아니라 그 카드의 사양이다 */
+  vramMb: integer("vram_mb"),
+  /** 첫 후보가 아니면 참. "A 또는 B" 의 B 쪽이다 */
+  isAlternative: boolean("is_alternative").default(false).notNull(),
+  matchVersion: integer("match_version").notNull(),
+  ...auditColumns(),
+}, (t) => [
+  index("grp_requirement_idx").on(t.requirementId),
+  // 3단계 목록 필터가 "이 티어 이하를 요구하는 게임" 을 고른다
+  index("grp_kind_tier_idx").on(t.kind, t.tier),
 ]);
 
 /**
@@ -674,8 +710,13 @@ export const gameSubscriptionsRelations = relations(gameSubscriptions, ({ one })
 export const upgradesRelations = relations(upgrades, ({ one }) => ({
   game: one(games, { fields: [upgrades.gameId], references: [games.id] }),
 }));
-export const gameRequirementsRelations = relations(gameRequirements, ({ one }) => ({
+export const gameRequirementsRelations = relations(gameRequirements, ({ one, many }) => ({
   game: one(games, { fields: [gameRequirements.gameId], references: [games.id] }),
+  parts: many(gameRequirementParts),
+}));
+
+export const gameRequirementPartsRelations = relations(gameRequirementParts, ({ one }) => ({
+  requirement: one(gameRequirements, { fields: [gameRequirementParts.requirementId], references: [gameRequirements.id] }),
 }));
 
 export const priceSnapshotsRelations = relations(priceSnapshots, ({ one }) => ({
