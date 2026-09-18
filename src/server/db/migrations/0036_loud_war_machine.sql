@@ -1,0 +1,3 @@
+ALTER TABLE "products" ADD COLUMN "game_match_rejected_id" uuid;--> statement-breakpoint
+ALTER TABLE "products" ADD CONSTRAINT "products_game_match_rejected_id_games_id_fk" FOREIGN KEY ("game_match_rejected_id") REFERENCES "public"."games"("id") ON DELETE set null ON UPDATE no action;--> statement-breakpoint
+CREATE UNIQUE INDEX "product_components_game_uq" ON "product_components" USING btree ("product_id","kind","game_id") WHERE game_id is not null;

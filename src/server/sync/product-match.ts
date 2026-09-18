@@ -9,7 +9,7 @@
 import { and, eq, isNull, or, sql } from "drizzle-orm";
 import { getDb } from "@/server/db/client";
 import { games, productComponents, products } from "@/server/db/schema";
-import { createdBy, updatedBy } from "@/server/db/audit";
+import { createdBy, updatedBy, type AuditSource } from "@/server/db/audit";
 import { normalizeForSearch } from "@/lib/slug";
 import { AUTO_MATCH_THRESHOLD, PENDING_MATCH_THRESHOLD } from "./match";
 import { PRODUCT_MATCH_CANDIDATES, PRODUCT_MATCH_RECHECK_DAYS } from "./constants";
@@ -69,7 +69,7 @@ async function findCandidates(name: string): Promise<Candidate[]> {
 export async function matchUnlinkedProducts(limit: number): Promise<ProductMatchSummary> {
   const db = getDb();
   const rows = await db
-    .select({ id: products.id, name: products.name })
+    .select({ id: products.id, name: products.name, rejectedId: products.gameMatchRejectedId })
     .from(products)
     .where(
       and(
@@ -83,11 +83,13 @@ export async function matchUnlinkedProducts(limit: number): Promise<ProductMatch
   const summary: ProductMatchSummary = { attempted: 0, linked: 0, suggested: 0, unmatched: 0 };
   for (const row of rows) {
     summary.attempted++;
-    const best = (await findCandidates(row.name))[0];
+    // 관리자가 물린 후보는 건너뛰고 그다음을 본다. 그대로 다시 집으면 사람이 거절할수록
+    // 같은 줄이 검수 큐에 다시 쌓인다 — 거절을 기록으로 남긴 이유가 이것이다(§5.2)
+    const best = (await findCandidates(row.name)).find((c) => c.id !== row.rejectedId);
     const now = new Date();
 
     if (best && best.similarity >= AUTO_MATCH_THRESHOLD) {
-      await linkProduct(row.id, best, now);
+      await linkProductToGame(row.id, best.id, { source: "cron:product-match" }, best.similarity, now);
       summary.linked++;
     } else if (best && best.similarity >= PENDING_MATCH_THRESHOLD) {
       await db
@@ -115,21 +117,31 @@ export async function matchUnlinkedProducts(limit: number): Promise<ProductMatch
  * 상품에 게임을 잇는다. 구성품 한 줄을 같이 남기는 것이 핵심이다 —
  * 게임 상세의 "파는 곳" 은 `products.gameId` 가 아니라 `product_components.gameId` 를 본다(§4).
  * 여기서 안 남기면 상품은 게임을 가리키는데 그 게임 화면에는 안 뜨는 조용한 어긋남이 생긴다.
+ *
+ * 배치와 관리자 검수(services/admin-products)가 같은 함수를 쓴다. 두 벌로 두면 한쪽만
+ * 구성품을 남기는 날이 오고, 그날의 증상은 "이었다는데 화면에 안 뜬다" 라 원인을 찾기 어렵다.
  */
-async function linkProduct(productId: string, best: Candidate, now: Date): Promise<void> {
+export async function linkProductToGame(
+  productId: string,
+  gameId: string,
+  actor: { source: AuditSource; userId?: string },
+  confidence: number | null,
+  now: Date = new Date(),
+): Promise<void> {
   const db = getDb();
   await db
     .update(products)
     .set({
-      gameId: best.id,
+      gameId,
       gameMatchSuggestedId: null,
-      gameMatchConfidence: best.similarity.toFixed(2),
+      gameMatchConfidence: confidence === null ? null : confidence.toFixed(2),
       gameMatchCheckedAt: now,
-      ...updatedBy("cron:product-match"),
+      ...updatedBy(actor.source, actor.userId),
     })
     .where(eq(products.id, productId));
+  // 같은 줄이 이미 있으면 그대로 둔다 — 부분 unique 인덱스(product_components_game_uq)가 받는다
   await db
     .insert(productComponents)
-    .values({ productId, kind: "game", gameId: best.id, ...createdBy("cron:product-match") })
+    .values({ productId, kind: "game", gameId, ...createdBy(actor.source, actor.userId) })
     .onConflictDoNothing();
 }

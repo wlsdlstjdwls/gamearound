@@ -3,6 +3,7 @@
 import { revalidatePath, revalidateTag } from "next/cache";
 import { z } from "zod";
 import { platformEnum, sourceEnum, upgradeKindEnum } from "@/server/db/schema";
+import { ROUTES } from "@/lib/routes";
 import {
   approveMatch,
   CORRECTABLE_FIELDS,
@@ -16,6 +17,7 @@ import {
 import { ALIAS_MAX_LEN } from "@/lib/aliases";
 import { addAlias, deleteAlias } from "@/server/services/admin-aliases";
 import { resolveCompanyName } from "@/server/services/admin-companies";
+import { approveProductMatch, rejectProductMatch } from "@/server/services/admin-products";
 import { deleteUpgrade, upsertUpgrade } from "@/server/services/admin-upgrades";
 import { requireAdmin } from "@/server/services/users";
 
@@ -226,6 +228,36 @@ export async function deleteUpgradeAction(gameId: string, id: number): Promise<A
     await deleteUpgrade(id);
     revalidateGame(gameId);
     return { ok: true, message: "업그레이드를 삭제했습니다" };
+  } catch (e) {
+    return fail(e);
+  }
+}
+
+/**
+ * 상품 매핑 승인. 게임 상세는 무효화하지 않는다 — 매장, 재고에는 캐시를 걸지 않기 때문이다
+ * (services/admin-products 의 주석). 여기서 태그를 깨면 걸지도 않은 캐시를 깨는 시늉만 한다.
+ */
+export async function approveProductMatchAction(productId: string): Promise<AdminActionState> {
+  try {
+    await requireAdmin();
+    const p = z.uuid().safeParse(productId);
+    if (!p.success) return { ok: false, error: "잘못된 요청입니다" };
+    await approveProductMatch(p.data);
+    revalidatePath(ROUTES.adminProducts);
+    return { ok: true, message: "상품에 게임을 이었습니다" };
+  } catch (e) {
+    return fail(e);
+  }
+}
+
+export async function rejectProductMatchAction(productId: string): Promise<AdminActionState> {
+  try {
+    await requireAdmin();
+    const p = z.uuid().safeParse(productId);
+    if (!p.success) return { ok: false, error: "잘못된 요청입니다" };
+    await rejectProductMatch(p.data);
+    revalidatePath(ROUTES.adminProducts);
+    return { ok: true, message: "후보를 물렀습니다" };
   } catch (e) {
     return fail(e);
   }

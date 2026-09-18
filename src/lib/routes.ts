@@ -15,6 +15,8 @@ export const ROUTES = {
   /** 내 기기 — 사양 판정의 한쪽 항이다(설계 §7 "설정") */
   settingsDevices: "/settings/devices",
   admin: "/admin",
+  /** 상품 매핑 검수 — 매핑 배치(§5.2)가 후보만 남긴 상품을 사람이 마무리하는 자리 */
+  adminProducts: "/admin/products",
   vendor: "/vendor",
   /** 매장(오프라인 판매처). 디지털 스토어와 낱말을 가르려고 shop 을 쓴다 — 설계서 §1 */
   shops: "/shops",

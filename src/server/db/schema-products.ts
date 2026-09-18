@@ -108,6 +108,12 @@ export const products = pgTable("products", {
    */
   gameMatchSuggestedId: uuid("game_match_suggested_id").references(() => games.id, { onDelete: "set null" }),
   gameMatchConfidence: numeric("game_match_confidence", { precision: 3, scale: 2 }),
+  /**
+   * 관리자가 물린 후보(§5.2 검수). 지우지 않고 남기는 이유: 배치는 이레마다 같은 카탈로그를
+   * 다시 견주므로 기록이 없으면 사람이 거절할수록 같은 후보가 같은 자리에 다시 쌓인다 —
+   * 사람이 물릴수록 큐가 차는 쳇바퀴다(스토어 매칭이 거절을 `none` 으로 남기는 이유와 같다).
+   */
+  gameMatchRejectedId: uuid("game_match_rejected_id").references(() => games.id, { onDelete: "set null" }),
   ...auditColumns(),
 }, (t) => [
   // 바코드는 자연키지만 없는 물건이 있어 unique 를 부분 인덱스로 건다 —
@@ -138,6 +144,9 @@ export const productComponents = pgTable("product_components", {
   index("product_components_product_idx").on(t.productId),
   // "이 게임을 파는 곳" 질의가 타는 인덱스다. 게임 상세가 매 요청 이걸 묻는다
   index("product_components_game_idx").on(t.gameId),
+  // 같은 상품에 같은 게임이 두 줄이면 "파는 곳" 에 같은 매장이 두 번 뜬다. 수량은 qty 가 말하므로
+  // 줄을 늘릴 이유가 없다. 넣으려는 경로가 셋(매장 등록, 매핑 배치, 관리자 검수)이라 DB 가 막는다
+  uniqueIndex("product_components_game_uq").on(t.productId, t.kind, t.gameId).where(sql`game_id is not null`),
 ]);
 
 /**
