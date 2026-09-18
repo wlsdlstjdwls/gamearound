@@ -1,11 +1,11 @@
 // DB 행 → DTO 변환. 조회 로직(어떤 행을 가져올지)과 표현 로직(어떤 모양으로 줄지)을 갈라 둔다.
 import { and, eq, inArray } from "drizzle-orm";
 import { getDb } from "@/server/db/client";
-import { gameGenres, gamePlatforms, games, genres, HOME_REGION, type Platform, type Region } from "@/server/db/schema";
+import { gameGenres, gamePlatforms, gameRequirements, games, genres, HOME_REGION, type OsFamily, type Platform, type Region, type RequirementTier } from "@/server/db/schema";
 import { visiblePlatformsOnly } from "@/server/db/visibility";
 import { cheapestOf, DISPLAY_CURRENCY } from "@/lib/currency";
 import { PLATFORM_ORDER } from "@/lib/platform";
-import type { GameDetail, GameSummary, PlatformDto, PublicGameDto, UserScoreDto } from "./dto";
+import type { GameDetail, GameSummary, PlatformDto, PublicGameDto, RequirementDto, RequirementGroupDto, UserScoreDto } from "./dto";
 
 export const iso = (d: Date | string | null | undefined): string | null => {
   if (!d) return null;
@@ -39,6 +39,7 @@ export function byRegionThenPlatform(a: { platform: Platform; region: Region }, 
 
 export type GameRow = typeof games.$inferSelect;
 export type PlatformRow = typeof gamePlatforms.$inferSelect;
+export type RequirementRow = typeof gameRequirements.$inferSelect;
 
 export function toPlatformDto(p: PlatformRow): PlatformDto {
   return {
@@ -72,6 +73,41 @@ export function toPlatformDto(p: PlatformRow): PlatformDto {
     subscriptions: [],
   };
 }
+
+/**
+ * 사양 행들 → OS 묶음. OS 순서는 windows, mac, linux 고정이다 — 사용자의 절대다수가 윈도우다.
+ *
+ * 같은 OS 에 스토어가 둘 이상 값을 준 경우 먼저 온 스토어 하나만 쓴다. 두 벌을 나란히 세우면
+ * 화면이 "무엇을 믿어야 하나" 라는 새 질문을 만든다 — 지금 값을 주는 스토어는 스팀뿐이라
+ * 실제로 겹치는 일도 아직 없다(겹치기 시작하면 어느 쪽을 믿을지부터 정한다).
+ */
+export function toRequirementGroups(rows: RequirementRow[]): RequirementGroupDto[] {
+  const byOs = new Map<OsFamily, RequirementGroupDto>();
+  for (const os of OS_ORDER) {
+    const forOs = rows.filter((r) => r.osFamily === os);
+    if (forOs.length === 0) continue;
+    const platform = forOs[0].platform;
+    const of = (tier: RequirementTier): RequirementDto | null => {
+      const row = forOs.find((r) => r.tier === tier && r.platform === platform);
+      if (!row) return null;
+      return {
+        tier,
+        osText: row.osText,
+        cpuText: row.cpuText,
+        gpuText: row.gpuText,
+        directxText: row.directxText,
+        noteText: row.noteText,
+        ramMb: row.ramMb,
+        vramMb: row.vramMb,
+        storageMb: row.storageMb,
+      };
+    };
+    byOs.set(os, { osFamily: os, platform, minimum: of("minimum"), recommended: of("recommended") });
+  }
+  return [...byOs.values()];
+}
+
+const OS_ORDER: OsFamily[] = ["windows", "mac", "linux"];
 
 /** 나라가 달라도 같은 기기는 배지 하나다(한국 스위치, 일본 스위치). 표시 순서는 PLATFORM_ORDER */
 export function distinctPlatforms(list: Platform[]): Platform[] {
@@ -253,6 +289,7 @@ export function toPublicGameDto(g: GameDetail): PublicGameDto {
     editions: g.editions,
     subscriptions: g.subscriptions,
     upgrades: g.upgrades,
+    requirements: g.requirements,
     news: g.news.map(({ title, url, sourceName, thumbnailUrl, publishedAt }) => ({
       title,
       url,

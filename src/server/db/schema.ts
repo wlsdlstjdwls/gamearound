@@ -76,6 +76,13 @@ export const userScoreKindEnum = pgEnum("user_score_kind", ["positive_ratio", "s
  * 그대로 태우기 위해서다. 등급을 아는 행이 응답 한 번 어긋났다고 "모름" 으로 내려가면 안 된다.
  */
 export const deckCompatEnum = pgEnum("deck_compat", ["verified", "playable", "unsupported"]);
+/**
+ * 사양이 어느 OS 의 것인가. 스팀은 pc/mac/linux 세 덩어리로 주는데 "pc" 는 사실 윈도우라
+ * 우리 어휘에서는 windows 로 적는다 — mac 도 linux 도 PC 다.
+ */
+export const osFamilyEnum = pgEnum("os_family", ["windows", "mac", "linux"]);
+/** 최소 사양인가 권장 사양인가. 권장은 표본 60건 중 49건에만 있었다(2026-09-18 실측) — 없는 것이 정상이다 */
+export const requirementTierEnum = pgEnum("requirement_tier", ["minimum", "recommended"]);
 
 export type Platform = (typeof platformEnum.enumValues)[number];
 export type SourceName = (typeof sourceEnum.enumValues)[number];
@@ -83,6 +90,8 @@ export type Role = (typeof roleEnum.enumValues)[number];
 export type SyncStatus = (typeof syncStatusEnum.enumValues)[number];
 export type UserScoreKind = (typeof userScoreKindEnum.enumValues)[number];
 export type DeckCompat = (typeof deckCompatEnum.enumValues)[number];
+export type OsFamily = (typeof osFamilyEnum.enumValues)[number];
+export type RequirementTier = (typeof requirementTierEnum.enumValues)[number];
 export type Currency = (typeof currencyEnum.enumValues)[number];
 export type Region = (typeof regionEnum.enumValues)[number];
 export type ContentType = (typeof contentTypeEnum.enumValues)[number];
@@ -252,6 +261,14 @@ export const gamePlatforms = pgTable("game_platforms", {
    */
   patchListedAt: timestamp("patch_listed_at", { withTimezone: true }),
   /**
+   * 이 행의 사양을 스토어에 마지막으로 물어본 시각. dlc_listed_at, patch_listed_at 과 같은 성격이다 —
+   * 사양은 배치로 못 받아 게임 1개가 요청 1회다(GetItems 에는 requirement 계열 키가 없다, 2026-09-18 실측).
+   *
+   * 다른 둘보다 이 값이 더 중요하다: 사양은 **거의 안 변한다**. 재발매나 대규모 패치 때만 바뀌므로
+   * 한 바퀴 돌고 나면 다시 물을 일이 거의 없다(REQUIREMENTS_REFRESH_DAYS).
+   */
+  requirementsListedAt: timestamp("requirements_listed_at", { withTimezone: true }),
+  /**
    * 스팀덱 구동 등급(밸브 판정). 값의 뜻은 deckCompatEnum 주석에 있다.
    *
    * 여기(game_platforms)에 두는 이유: 같은 게임이라도 이 사실은 스팀 스토어의 성질이다.
@@ -276,6 +293,52 @@ export const gamePlatforms = pgTable("game_platforms", {
 }, (t) => [
   uniqueIndex("gp_game_platform_region_uq").on(t.gameId, t.platform, t.region),
   index("gp_title_code_idx").on(t.titleCode),
+]);
+
+/**
+ * 게임 사양 — 스토어가 적어 둔 최소, 권장 사양. 설계 문서 §2.
+ *
+ * 한 게임에 행이 최대 6개다(OS 3 × 등급 2). game_platforms 가 아니라 game 에 매다는 이유:
+ * 사양은 그 스토어에서 파는 조건이 아니라 **그 게임이 도는 조건**이다. 같은 게임을 스팀에서 사든
+ * 에픽에서 사든 요구 사양은 같다. 대신 어느 스토어가 알려 준 값인지는 platform 으로 남긴다 —
+ * 스토어마다 적어 둔 값이 조금씩 다르고, 나중에 어느 쪽을 믿을지 고를 때 필요하다.
+ *
+ * **rawHtml 을 버리지 않는다.** 파서는 반드시 고치게 된다(라벨이 개발사 손글씨다). 원문이 있으면
+ * 스팀에 수만 번 다시 묻는 대신 DB 를 한 번 훑어 다시 돌린다 — 그 차이가 이 컬럼의 값어치다.
+ *
+ * "A 또는 B" 를 담는 자리(game_requirement_parts)는 아직 만들지 않았다. 판정(2단계)에 가서야
+ * 필요하고, 그때까지 이 표의 *_text 는 사람이 읽을 문구로 화면에 그대로 선다.
+ */
+export const gameRequirements = pgTable("game_requirements", {
+  id: integer("id").primaryKey().generatedAlwaysAsIdentity(),
+  gameId: uuid("game_id").references(() => games.id, { onDelete: "cascade" }).notNull(),
+  /** 이 사양을 알려 준 스토어. 값이 다를 때 출처를 되짚을 유일한 단서다 */
+  platform: platformEnum("platform").notNull(),
+  osFamily: osFamilyEnum("os_family").notNull(),
+  tier: requirementTierEnum("tier").notNull(),
+  /** 스토어가 준 원문 HTML. 재파싱의 근거라 절대 비우지 않는다(위 주석) */
+  rawHtml: text("raw_html").notNull(),
+  osText: text("os_text"),
+  cpuText: text("cpu_text"),
+  gpuText: text("gpu_text"),
+  directxText: text("directx_text"),
+  /** 라벨을 모르는 줄(Sound Card, Network)과 라벨 없는 줄("64-bit 필요")이 모인다 */
+  noteText: text("note_text"),
+  /**
+   * 숫자로 뽑힌 값. **단위가 없으면 null 이다** — 실측 표본의 "256 RAM" 처럼 단위를 안 적은 사양이 있고,
+   * 짐작해서 채우면 판정이 조용히 틀린 답을 낸다.
+   */
+  ramMb: integer("ram_mb"),
+  vramMb: integer("vram_mb"),
+  storageMb: integer("storage_mb"),
+  /** 어느 파서 판이 뽑았나. 파서를 고친 뒤 재파싱 대상을 이 값으로 고른다 */
+  parseVersion: integer("parse_version").notNull(),
+  /** 판정에 쓰는 네 칸(OS, CPU, GPU, RAM) 중 몇 할을 건졌나. 0.00~1.00 */
+  parseConfidence: numeric("parse_confidence", { precision: 3, scale: 2 }),
+  ...auditColumns(),
+}, (t) => [
+  // 같은 게임, 같은 스토어, 같은 OS, 같은 등급은 한 행이다 — 다시 물어보면 덮어쓴다
+  uniqueIndex("gr_game_platform_os_tier_uq").on(t.gameId, t.platform, t.osFamily, t.tier),
 ]);
 
 /**
@@ -580,6 +643,7 @@ export const gamesRelations = relations(games, ({ many, one }) => ({
   playtime: one(playtimes, { fields: [games.id], references: [playtimes.gameId] }),
   companies: many(gameCompanies),
   upgrades: many(upgrades),
+  requirements: many(gameRequirements),
   parent: one(games, { fields: [games.parentGameId], references: [games.id], relationName: "gameDlc" }),
   dlcs: many(games, { relationName: "gameDlc" }),
 }));
@@ -610,6 +674,10 @@ export const gameSubscriptionsRelations = relations(gameSubscriptions, ({ one })
 export const upgradesRelations = relations(upgrades, ({ one }) => ({
   game: one(games, { fields: [upgrades.gameId], references: [games.id] }),
 }));
+export const gameRequirementsRelations = relations(gameRequirements, ({ one }) => ({
+  game: one(games, { fields: [gameRequirements.gameId], references: [games.id] }),
+}));
+
 export const priceSnapshotsRelations = relations(priceSnapshots, ({ one }) => ({
   gamePlatform: one(gamePlatforms, { fields: [priceSnapshots.gamePlatformId], references: [gamePlatforms.id] }),
 }));

@@ -166,6 +166,34 @@ describe("planPlatform", () => {
   });
 });
 
+describe("planPlatform - 스팀덱 등급과 네이티브 OS", () => {
+  const runtime = { deckCompat: "verified" as const, nativeWindows: true, nativeMac: true, nativeLinux: false };
+
+  // 2026-09-18 에 UPDATE 목록에만 더했다가 새 행이 전부 빈칸으로 들어갔다. 두 경로를 같이 본다
+  it("새 행에도 값이 들어간다", () => {
+    const plan = planPlatform(ctx(), undefined, "g-1", snapshot(runtime));
+    expect(plan.kind).toBe("insert");
+    if (plan.kind !== "insert") return;
+    expect(plan.values.deckCompat).toBe("verified");
+    expect(plan.values.nativeMac).toBe(true);
+    expect(plan.values.nativeLinux).toBe(false);
+  });
+
+  it("기존 행도 갱신한다", () => {
+    const plan = planPlatform(ctx(), row(), "g-1", snapshot(runtime));
+    expect(plan.kind).toBe("update");
+    if (plan.kind !== "update") return;
+    expect(plan.set.deckCompat).toBe("verified");
+    expect(plan.set.nativeWindows).toBe(true);
+  });
+
+  // 밸브가 아직 안 본 게임은 null 로 온다. 아는 등급을 모름으로 내리면 안 된다(§7)
+  it("null 은 기존 등급을 덮지 않는다", () => {
+    const plan = planPlatform(ctx(), row({ deckCompat: "verified" } as Partial<PlatformRow>), "g-1", snapshot({ deckCompat: null }));
+    expect(plan.kind === "update" && plan.set.deckCompat).toBeUndefined();
+  });
+});
+
 describe("priceMisread - 정가가 있는데 값이 0 인 회차", () => {
   it("정가가 있는데 판매가가 0 이면 못 믿는다", () => {
     expect(priceMisread(snapshot({ listPrice: 46800, currentPrice: 0, discountPct: 100 }), null)).toBe(true);

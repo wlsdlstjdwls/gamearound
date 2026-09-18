@@ -1,6 +1,6 @@
 // 게임 상세, 회사 화면의 사용자 문구. "-해요"체, 가운뎃점과 화살표 글자를 쓰지 않는다.
 // 문구를 컴포넌트에 흩어 두면 같은 개념이 화면마다 다른 말로 불린다.
-import type { CompanyRole, ContentType, DeckCompat, UpgradeKind } from "@/server/db/schema";
+import type { CompanyRole, ContentType, DeckCompat, OsFamily, RequirementTier, UpgradeKind } from "@/server/db/schema";
 
 export const COMPANY_ROLE_LABEL: Record<CompanyRole, string> = {
   developer: "개발",
@@ -39,6 +39,31 @@ export const NATIVE_OS_LABEL = {
   linux: "리눅스 지원",
 } as const;
 
+/** 사양표의 OS 이름. "PC" 라고 적지 않는다 — 맥도 리눅스도 PC 다 */
+export const OS_FAMILY_LABEL: Record<OsFamily, string> = {
+  windows: "윈도우",
+  mac: "맥",
+  linux: "리눅스",
+};
+
+/** 사양 등급. 최소는 "돌아가나", 권장은 "쾌적한가" 에 답한다 */
+export const REQUIREMENT_TIER_LABEL: Record<RequirementTier, string> = {
+  minimum: "최소",
+  recommended: "권장",
+};
+
+/** 사양표의 줄 이름. 스토어 라벨(영문)을 그대로 쓰지 않고 우리 말로 적는다 */
+export const REQUIREMENT_ROW_LABEL = {
+  osText: "운영체제",
+  cpuText: "프로세서",
+  ramMb: "메모리",
+  gpuText: "그래픽",
+  vramMb: "비디오 메모리",
+  directxText: "DirectX",
+  storageMb: "저장공간",
+  noteText: "그 밖에",
+} as const;
+
 /** 자식 화면에서 본편으로 돌아가는 줄. 부모를 아는 자식에게만 보인다 */
 export const PARENT_LINK_LABEL = "본편";
 
@@ -69,6 +94,12 @@ export const GAME_MESSAGES = {
   /** 요약 바에 최저가 말고는 아직 아는 값이 없을 때. 빈 칸을 "-" 로 채우는 대신 한 줄로 말한다 */
   summaryPending: "플레이타임과 평점은 아직 모으는 중이에요.",
   patchNone: "아직 모은 패치 기록이 없어요.",
+  requirementHeading: "구동 사양",
+  /**
+   * 사양표 아래 한 줄. 스토어가 적어 둔 값을 옮겼을 뿐이라는 사실을 말해 둔다 —
+   * "권장 = 1080p 높음 60fps" 는 업계 통념이지 약속이 아니다(설계 §6).
+   */
+  requirementNote: "스토어에 적힌 값을 그대로 옮겼어요. 실제 구동은 게임 설정과 기기 상태에 따라 달라요.",
   subscriptionHeading: "구독",
   upgradeHeading: "업그레이드",
   freeUpgradeNote: "원본을 가지고 있어야 해요.",

@@ -5,7 +5,7 @@ import { getDb } from "@/server/db/client";
 import { gameSubscriptions, games, news, subscriptions as subscriptionsTable } from "@/server/db/schema";
 import { keepVisiblePlatforms } from "@/server/db/visibility";
 import type { GameDetail, SubscriptionDto } from "./dto";
-import { byRegionThenPlatform, iso, toPlatformDto } from "./mappers";
+import { byRegionThenPlatform, iso, toPlatformDto, toRequirementGroups } from "./mappers";
 import { DTO_CACHE_VERSION } from "@/lib/cache";
 import { byAddonKind } from "@/lib/games/addon-kind";
 import { cheapestOf } from "@/lib/currency";
@@ -90,6 +90,8 @@ export async function getGameBySlug(slug: string): Promise<GameDetail | null> {
       sourceRefs: true,
       companies: { with: { company: true } },
       upgrades: true,
+      // 사양은 게임당 최대 6행이라(OS 3 × 등급 2) 상세 질의에 얹어도 행이 늘지 않는다
+      requirements: true,
       // 자식(DLC, 에디션)은 본편 화면에서만 필요하다. 자식 자기 화면에서는 빈 배열이 된다(자식이 자식을 갖지 않으므로)
       dlcs: { with: { platforms: true }, limit: DETAIL_DLC_FETCH_LIMIT },
       // 반대 방향 — 자식 화면에서 본편으로 돌아가는 링크에 쓴다. 본편 행에서는 null 이다
@@ -164,6 +166,7 @@ export async function getGameBySlug(slug: string): Promise<GameDetail | null> {
     // 에디션, 번들은 "어느 판을 살까" 쪽이라 DLC 칸과 나눈다(dto 의 editions 주석)
     editions: toChildDtos(row.dlcs.filter((d) => d.contentType === "edition" || d.contentType === "bundle")),
     subscriptions,
+    requirements: toRequirementGroups(row.requirements),
     upgrades: row.upgrades.map((u) => ({
       fromPlatform: u.fromPlatform,
       toPlatform: u.toPlatform,

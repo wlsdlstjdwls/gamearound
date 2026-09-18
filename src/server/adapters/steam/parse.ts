@@ -5,3 +5,4 @@ export * from "./parse-discount";
 export * from "./parse-store-items";
 export * from "./parse-discovery";
 export * from "./parse-news";
+export * from "./parse-requirements";

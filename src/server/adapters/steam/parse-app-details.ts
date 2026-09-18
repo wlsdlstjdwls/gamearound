@@ -1,5 +1,6 @@
 // appdetails 응답 파서 — 단건 조회 경로(GetItems 가 실패하거나 배치가 아닌 경우).
-import { AdapterError, type StoreSnapshot } from "../types";
+import { AdapterError, type RequirementSnapshot, type StoreSnapshot } from "../types";
+import { parseRequirements } from "./parse-requirements";
 import { appDetailsResponseSchema, type SteamAppData } from "./schemas";
 import { STEAM_STORE_APP_URL } from "./constants";
 
@@ -144,6 +145,18 @@ export function parseAppDetails(rawKo: unknown, appid: string, rawEn?: unknown):
 export function parseDlcIds(raw: unknown, appid: string): string[] {
   const data = extractAppData(raw, appid);
   return (data?.dlc ?? []).map(String);
+}
+
+/**
+ * appdetails(english) 응답 → 사양 스냅샷 목록. 실제 해석은 parse-requirements 가 한다 —
+ * 여기서는 응답 껍데기를 벗겨 넘기기만 한다.
+ *
+ * 응답이 success=false 면 빈 배열이다. 사양이 없는 게임과 구분하지 않는다 —
+ * 호출부는 둘 다 "이번에는 받은 사양 없음" 으로 똑같이 다루면 된다(parseDlcIds 와 같은 규칙).
+ */
+export function parseAppRequirements(raw: unknown, appid: string): RequirementSnapshot[] {
+  const data = extractAppData(raw, appid);
+  return data ? parseRequirements(data) : [];
 }
 
 /**

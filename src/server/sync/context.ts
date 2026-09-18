@@ -2,7 +2,7 @@
 // 단계 함수들이 이 객체 하나만 받으므로 인자 목록이 단계마다 늘어나지 않는다.
 import { eq } from "drizzle-orm";
 import { dataCorrections, type SyncStatus } from "@/server/db/schema";
-import type { Db } from "@/server/db/client";
+import { getDb, type Db } from "@/server/db/client";
 import type { Source } from "@/server/adapters/types";
 import { errorMessage } from "@/lib/errors";
 import { ERROR_SAMPLE_MAX } from "./constants";
@@ -56,6 +56,20 @@ export interface Ctx {
   droppedPrices: number;
   /** 이번 실행이 카탈로그 발견을 돌렸다면 그 요약. run-source 가 sync_logs 에 그대로 남긴다 */
   discovery?: DiscoveryLog;
+}
+
+/**
+ * 실행 문맥 한 벌. 진입점이 둘이라(정규 실행 run-source, 백필 스크립트) 같은 자리를 두 번 적지 않는다 —
+ * 한쪽만 고치면 잠금 목록이나 변경 슬러그 수집이 조용히 빠진다.
+ */
+export async function createContext(source: Source, now: Date = new Date()): Promise<Ctx> {
+  const db = getDb();
+  return {
+    db, source, now,
+    locks: await loadLockedFields(db),
+    processed: 0, failed: 0, errors: [],
+    changedSlugs: new Set(), changedCompanySlugs: new Set(), priceChanges: [], droppedPrices: 0,
+  };
 }
 
 /** 잠금 키는 snake_case 로 정규화한다 — DB 는 snake, 코드는 camel 로 같은 필드를 부른다 */

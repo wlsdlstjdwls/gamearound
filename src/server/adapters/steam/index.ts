@@ -1,6 +1,6 @@
 // Steam 스토어 어댑터 — 설계서 §4.1/§4.2. 기준 소스(공식 API). 가져오기만 하고 DB 반영은 sync/ 가 맡는다.
 // 이 파일은 '어떤 요청을 어떤 순서로 보낼지'만 담당한다 — 응답 해석은 parse.ts, 형식 검증은 schemas.ts.
-import { type PatchNote, type SearchCandidate, type StoreAdapter, type StoreSnapshot } from "../types";
+import { type PatchNote, type RequirementSnapshot, type SearchCandidate, type StoreAdapter, type StoreSnapshot } from "../types";
 import { createHttpClient } from "../http";
 import { sleep } from "@/lib/async";
 import { errorMessage } from "@/lib/errors";
@@ -22,6 +22,7 @@ import {
 } from "./constants";
 import {
   parseAppDetails,
+  parseAppRequirements,
   parseDlcIds,
   parseFeaturedCandidates,
   parseStoreItemDiscount,
@@ -167,6 +168,14 @@ export const steamAdapter: StoreAdapter = {
    */
   async listDlcIds(appid: string): Promise<string[]> {
     return parseDlcIds(await http.json(appDetailsUrl(appid, "english")), appid);
+  },
+
+  /**
+   * 이 게임의 구동 사양. english 하나만 받는다 — 라벨이 번역되면 별칭 지도가 몇 배로 커지고
+   * 번역이 게임마다 흔들린다(parse-requirements 주석). 값(칩 이름)은 어차피 영문이다.
+   */
+  async fetchRequirements(appid: string): Promise<RequirementSnapshot[]> {
+    return parseAppRequirements(await http.json(appDetailsUrl(appid, "english")), appid);
   },
 
   /**

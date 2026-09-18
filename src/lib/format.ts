@@ -48,6 +48,17 @@ function toDate(d: Date | string | null | undefined): Date | null {
   return Number.isNaN(date.getTime()) ? null : date;
 }
 
+/**
+ * MB 정수 → 사람이 읽는 용량. 1,024MB 부터 GB 로 올리고 소수 한 자리까지만 적는다.
+ * "9.0 GB" 대신 "9 GB" 로 적는 이유: 스토어가 적어 둔 값 자체가 어림수라 자릿수를 흉내 낼 이유가 없다.
+ */
+export function formatSizeMb(mb: number | null | undefined): string {
+  if (!mb || mb <= 0) return "";
+  if (mb < 1024) return `${Math.round(mb)} MB`;
+  const gb = mb / 1024;
+  return `${Number(gb.toFixed(1))} GB`;
+}
+
 export function formatDate(d: Date | string | null | undefined): string {
   const date = toDate(d);
   if (!date) return "-";

@@ -10,7 +10,7 @@ import { isCompanySource, isMetaSource, isNewsSource, isStoreSource, isSubscript
 import type { Source } from "@/server/adapters/types";
 import { errorMessage } from "@/lib/errors";
 import { LOCK_TTL_SEC } from "./constants";
-import { loadLockedFields, recordError, type Ctx, type RunOptions, type RunResult } from "./context";
+import { createContext, recordError, type Ctx, type RunOptions, type RunResult } from "./context";
 import { dispatchPriceAlerts, type DispatchSummary } from "./dispatch-alerts";
 import { revalidateGameTags } from "./revalidate";
 import { runMeta } from "./run-meta";
@@ -37,12 +37,7 @@ export async function runSource(source: Source, opts: RunOptions = {}): Promise<
     const [log] = await db.insert(syncLogs).values({ source, status: "ok", startedAt: now }).returning({ id: syncLogs.id });
     logId = log.id;
 
-    ctx = {
-      db, source, now,
-      locks: await loadLockedFields(db),
-      processed: 0, failed: 0, errors: [],
-      changedSlugs: new Set(), changedCompanySlugs: new Set(), priceChanges: [], droppedPrices: 0,
-    };
+    ctx = await createContext(source, now);
 
     if (isStoreSource(source)) await runStore(ctx, source, opts);
     else if (isMetaSource(source)) await runMeta(ctx, source, opts);

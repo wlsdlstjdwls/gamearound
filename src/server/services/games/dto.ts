@@ -1,6 +1,6 @@
 // 공개 DTO — route, 컴포넌트가 받는 모양. 모두 JSON 직렬화 가능(Date → ISO 문자열).
 // DB 행 타입을 그대로 노출하지 않는 이유: 스키마가 바뀌어도 화면 계약은 유지돼야 한다.
-import type { CompanyRole, ContentType, Currency, DeckCompat, Platform, Region, SyncStatus, UpgradeKind, UserScoreKind } from "@/server/db/schema";
+import type { CompanyRole, ContentType, Currency, DeckCompat, OsFamily, Platform, Region, RequirementTier, SyncStatus, UpgradeKind, UserScoreKind } from "@/server/db/schema";
 
 /**
  * 스토어 이용자가 매긴 점수. 평론가 점수와 축이 다르다.
@@ -159,6 +159,35 @@ export type SubscriptionDto = {
   label: string;
 };
 
+/**
+ * 사양 한 칸(한 OS, 한 등급). 원문 HTML 은 담지 않는다 — 화면이 쓰지 않고,
+ * 게임마다 6KB 씩 캐시에 실려 다닐 이유가 없다(재파싱용이라 DB 에만 있으면 된다).
+ */
+export type RequirementDto = {
+  tier: RequirementTier;
+  osText: string | null;
+  cpuText: string | null;
+  gpuText: string | null;
+  directxText: string | null;
+  noteText: string | null;
+  /** MB. 스토어가 단위를 안 적었으면 null 이다 — 화면은 그 줄을 그리지 않는다 */
+  ramMb: number | null;
+  vramMb: number | null;
+  storageMb: number | null;
+};
+
+/**
+ * 한 OS 의 사양 묶음. 최소와 권장을 나란히 두는 이유: 사용자가 묻는 것은 "돌아가나" 와
+ * "쾌적한가" 둘이고, 두 값은 나란히 봐야 뜻이 산다. 권장은 없는 게임이 흔하다(60건 중 11건이 없었다).
+ */
+export type RequirementGroupDto = {
+  osFamily: OsFamily;
+  /** 어느 스토어가 알려 준 값인가. 같은 게임의 사양을 스토어마다 다르게 적는 일이 있다 */
+  platform: Platform;
+  minimum: RequirementDto | null;
+  recommended: RequirementDto | null;
+};
+
 /** 세대 간 업그레이드 안내 */
 export type UpgradeDto = {
   fromPlatform: Platform;
@@ -223,6 +252,11 @@ export type GameDetail = {
   /** 지금 구독으로 즐길 수 있는 플랫폼들 */
   subscriptions: SubscriptionDto[];
   upgrades: UpgradeDto[];
+  /**
+   * 구동 사양. PC 스토어(steam)만 주는 값이라 콘솔 전용 게임은 빈 배열이다 —
+   * 화면은 그때 사양 칸 자체를 세우지 않는다(설계 §7 "콘솔 전용 게임에는 자리 자체가 없다").
+   */
+  requirements: RequirementGroupDto[];
 };
 
 /** 카드/목록용 요약. `best`는 대표 플랫폼(할인 최대 또는 최저가) */

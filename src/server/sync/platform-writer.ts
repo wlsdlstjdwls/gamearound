@@ -157,6 +157,13 @@ export function planPlatform(ctx: Ctx, existing: PlatformRow | undefined, gameId
         currency: snapshot.currency ?? DISPLAY_CURRENCY,
         discountPct: misread ? null : snapshot.discountPct,
         hasAddOns: snapshot.hasAddOns ?? null,
+        // 널 무시 규칙(PLATFORM_FIELDS)은 UPDATE 쪽 이야기다. INSERT 는 지킬 기존 값이 없어
+        // 여기 안 적은 필드가 그대로 빈칸이 된다 — 새 필드를 더할 때 두 자리를 같이 봐야 한다.
+        // 2026-09-18 에 덱 등급을 UPDATE 목록에만 더했다가 새 행이 전부 빈칸으로 들어갔다
+        deckCompat: snapshot.deckCompat ?? null,
+        nativeWindows: snapshot.nativeWindows ?? null,
+        nativeMac: snapshot.nativeMac ?? null,
+        nativeLinux: snapshot.nativeLinux ?? null,
         ...userScoreSet(snapshot),
         ...meta,
         lastSyncedAt: ctx.now,

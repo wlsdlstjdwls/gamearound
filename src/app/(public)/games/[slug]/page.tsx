@@ -16,6 +16,7 @@ import { PatchList, PatchSpeed } from "@/components/patch-list";
 import { Sheet } from "@/components/ui/sheet";
 import { PlatformPrices, type PlatformPriceItem } from "@/components/platform-prices";
 import { PlaytimeCard } from "@/components/playtime-card";
+import { RequirementsSection } from "@/components/requirements-table";
 import { WishlistButton } from "@/components/wishlist-button";
 import { BackLink } from "@/components/ui/back-link";
 import { buttonClass } from "@/components/ui/button";
@@ -331,6 +332,10 @@ export default async function GameDetailPage({ params }: Props) {
           {(game.dlcs.length > 0 || hasAddOns) && (
             <DlcSection id="dlc-heading" title={GAME_MESSAGES.dlcHeading} dlcs={game.dlcs} hasAddOns={hasAddOns} />
           )}
+
+          {/* 사양은 가격, 추가 콘텐츠 다음이다 — 살지 말지를 정한 뒤에 오는 질문이라서다.
+              콘솔 전용 게임은 groups 가 비어 있어 칸 자체가 서지 않는다 */}
+          <RequirementsSection groups={game.requirements} />
 
           {patchGroups.length > 0 && (
             <section aria-labelledby="patches-heading" className="flex flex-col gap-3">

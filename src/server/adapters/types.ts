@@ -1,5 +1,5 @@
 // 어댑터 인터페이스 — 설계서 §4.1. 어댑터는 "가져오기만" 한다. DB 반영은 sync/가 맡음.
-import type { Currency, DeckCompat, Platform, Region, UserScoreKind } from "@/server/db/schema";
+import type { Currency, DeckCompat, OsFamily, Platform, Region, RequirementTier, UserScoreKind } from "@/server/db/schema";
 
 /** 크롤러 공통 User-Agent (§10: UA 명시) — 실제 값은 서비스 아이덴티티(lib/site)에서 만든다 */
 export { CRAWLER_USER_AGENT } from "@/lib/site";
@@ -260,7 +260,40 @@ export type StoreAdapter = SourceAdapter<StoreSnapshot> & {
    * 게임 1개가 요청 1회라 빈도와 건수는 sync/patch-list 가 막는다(listDlcIds 와 같은 경로다).
    */
   listPatchNotes?(key: string): Promise<PatchNote[]>;
+
+  /**
+   * 이 게임의 구동 사양. **배치로 못 받는다** — GetItems 응답에는 requirement 계열 키가 아예 없고
+   * (include_platforms, include_full_description 을 켜고 확인했다, 2026-09-18 실측)
+   * 단건 경로(appdetails)에만 있다. 그래서 게임 1개가 요청 1회다.
+   *
+   * 대신 사양은 거의 안 변해서 한 바퀴 돌고 나면 다시 물을 일이 거의 없다 —
+   * 빈도와 건수는 sync/requirements 가 막는다(listDlcIds 와 같은 경로다).
+   * 콘솔 스토어에는 이 메서드를 두지 않는다. 사양이라는 개념 자체가 없다.
+   */
+  fetchRequirements?(key: string): Promise<RequirementSnapshot[]>;
 };
+
+/**
+ * 사양 한 덩어리(한 OS, 한 등급). 스토어가 준 원문과 우리가 뽑아낸 값을 함께 나른다 —
+ * 원문을 같이 저장해야 파서를 고친 뒤 재수집 없이 다시 돌릴 수 있다(schema 의 game_requirements 주석).
+ */
+export interface RequirementSnapshot {
+  osFamily: OsFamily;
+  tier: RequirementTier;
+  rawHtml: string;
+  osText: string | null;
+  cpuText: string | null;
+  gpuText: string | null;
+  directxText: string | null;
+  noteText: string | null;
+  /** 단위를 못 읽었으면 null 이다. 짐작해서 채우지 않는다 */
+  ramMb: number | null;
+  vramMb: number | null;
+  storageMb: number | null;
+  parseVersion: number;
+  /** 0~1. 판정에 쓰는 네 칸 중 몇 할을 건졌나 */
+  parseConfidence: number;
+}
 
 export type MetaAdapter = SourceAdapter<MetaSnapshot>;
 export type NewsAdapter = SourceAdapter<NewsItem[]>;

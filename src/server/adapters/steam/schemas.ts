@@ -34,6 +34,15 @@ export const appDataSchema = z.object({
    * 그래서 덱 등급의 출처는 배치 경로 하나뿐이다.
    */
   platforms: z.object({ windows: z.boolean().optional(), mac: z.boolean().optional(), linux: z.boolean().optional() }).optional(),
+  /**
+   * 구동 사양. 값이 구조체가 아니라 **HTML 문자열**이고(`<strong>라벨:</strong> 값` 이 `<li>` 로 나열),
+   * 사양이 아예 없는 게임에는 객체 대신 **빈 배열**이 온다. 두 모양이 다 오므로 여기서는 형을 세우지 않고
+   * unknown 으로 받아 parse-requirements 가 가른다 — zod 로 좁히면 빈 배열 응답이 형식 오류가 돼
+   * 그 게임의 가격 수집까지 통째로 멈춘다.
+   */
+  pc_requirements: z.unknown().optional(),
+  mac_requirements: z.unknown().optional(),
+  linux_requirements: z.unknown().optional(),
 });
 
 export const appDetailsResponseSchema = z.record(
