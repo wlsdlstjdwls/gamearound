@@ -10,6 +10,7 @@
 import { useActionState } from "react";
 import { useFormStatus } from "react-dom";
 import { createListingAction, type ListingState } from "@/app/(user)/vendor/[shopSlug]/listings/actions";
+import { GamePicker } from "@/components/shops/game-picker";
 import { Button } from "@/components/ui/button";
 import { FormMessage } from "@/components/ui/form-message";
 import { TextField } from "@/components/ui/text-field";
@@ -57,6 +58,9 @@ export function ListingForm({ shopSlug, hardware }: { shopSlug: string; hardware
           {state.message}
         </FormMessage>
       )}
+
+      {/* 게임을 먼저 고른다. 안 걸고 올린 상품은 그 게임 상세의 "파는 곳" 에 영원히 안 뜬다 */}
+      <GamePicker />
 
       <TextField name="name" label={M.productNameLabel} hint={M.productNameHint} maxLength={PRODUCT_NAME_MAX} required />
       <TextField name="barcode" label={M.barcodeLabel} hint={M.barcodeHint} maxLength={BARCODE_MAX} inputMode="numeric" />
