@@ -32,6 +32,8 @@ export interface RequirementRow {
   /** 사양 행에 그대로 적을 출처. 소스 하나가 기기 여럿을 파는 경우(psstore)를 상수로 짐작하지 않는다 */
   platform: Platform;
   storeExternalId: string | null;
+  /** 에픽은 사양을 페이지 slug 로 묻는다. 그 slug 가 들어 있는 자리가 여기뿐이다(StoreAdapter.requirementsKey) */
+  storeUrl: string | null;
   requirementsListedAt: Date | null;
 }
 
@@ -54,12 +56,16 @@ export function pickRequirementTargets(
   rows: RequirementRow[],
   now: Date,
   max: number = REQUIREMENTS_PER_RUN,
+  requirementsKey: "externalId" | "storeUrl" = "externalId",
 ): RequirementPick[] {
   const slugByGame = new Map(targets.map((t) => [t.gameId, t.slug]));
+  const keyOf = (r: RequirementRow) => (requirementsKey === "storeUrl" ? r.storeUrl : r.storeExternalId);
   const staleBefore = now.getTime() - REQUIREMENTS_REFRESH_DAYS * DAY_MS;
 
   const stale = rows.filter((r) => {
-    if (!r.storeExternalId) return false;
+    // 열쇠가 없는 행은 물어볼 방법이 없다. 여기서 빼지 않으면 그 행이 매 회차 몫을 먹고
+    // 빈손으로 돌아오며, 뒤에 선 게임의 차례를 가져간다
+    if (!keyOf(r)) return false;
     if (!slugByGame.has(r.gameId)) return false;
     return r.requirementsListedAt === null || r.requirementsListedAt.getTime() <= staleBefore;
   });
@@ -71,7 +77,7 @@ export function pickRequirementTargets(
     if (out.length >= max) break;
     if (seen.has(row.gameId)) continue;
     seen.add(row.gameId);
-    out.push({ platformId: row.id, gameId: row.gameId, platform: row.platform, slug: slugByGame.get(row.gameId)!, key: row.storeExternalId! });
+    out.push({ platformId: row.id, gameId: row.gameId, platform: row.platform, slug: slugByGame.get(row.gameId)!, key: keyOf(row)! });
   }
   return out;
 }
@@ -185,6 +191,7 @@ export async function syncRequirements(
       gameId: gamePlatforms.gameId,
       platform: gamePlatforms.platform,
       storeExternalId: gamePlatforms.storeExternalId,
+      storeUrl: gamePlatforms.storeUrl,
       requirementsListedAt: gamePlatforms.requirementsListedAt,
     })
     .from(gamePlatforms)
@@ -196,7 +203,7 @@ export async function syncRequirements(
       ),
     );
 
-  const picks = pickRequirementTargets(targets, rows, ctx.now, max);
+  const picks = pickRequirementTargets(targets, rows, ctx.now, max, adapter.requirementsKey);
   if (picks.length === 0) return 0;
 
   const statements: Statement[] = [];

@@ -3,7 +3,9 @@
 import { describe, expect, it } from "vitest";
 import { readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
-import { parseAppRequirements, parseRequirementBlock, parseRequirements, parseSizeMb } from "./steam";
+import { parseAppRequirements, parseRequirementBlock, parseRequirements } from "./steam";
+// 크기 읽기는 스토어가 둘이 되면서 lib/hardware 로 옮겼다 — 스팀 파서와 에픽 파서가 같은 것을 쓴다
+import { parseSizeMb } from "@/lib/hardware/requirement-fields";
 
 const fixture = (name: string): unknown =>
   JSON.parse(readFileSync(fileURLToPath(new URL(`./__fixtures__/${name}`, import.meta.url)), "utf8"));

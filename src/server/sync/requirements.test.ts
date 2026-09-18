@@ -7,7 +7,7 @@ const NOW = new Date("2026-09-18T00:00:00Z");
 const daysAgo = (n: number) => new Date(NOW.getTime() - n * 24 * 60 * 60 * 1000);
 
 function row(over: Partial<RequirementRow> = {}): RequirementRow {
-  return { id: "p1", gameId: "g1", platform: "steam", storeExternalId: "1245620", requirementsListedAt: null, ...over };
+  return { id: "p1", gameId: "g1", platform: "steam", storeExternalId: "1245620", storeUrl: null, requirementsListedAt: null, ...over };
 }
 
 const targets = [{ gameId: "g1", slug: "elden-ring" }];
@@ -50,5 +50,18 @@ describe("pickRequirementTargets", () => {
     const rows = [row({ id: "p1", gameId: "g1" }), row({ id: "p2", gameId: "g2" }), row({ id: "p3", gameId: "g3" })];
     const three = [{ gameId: "g1", slug: "a" }, { gameId: "g2", slug: "b" }, { gameId: "g3", slug: "c" }];
     expect(pickRequirementTargets(three, rows, NOW, 2)).toHaveLength(2);
+  });
+});
+
+// 에픽은 외부 ID(namespace:offerId)로 사양을 물을 수 없다 — 콘텐츠 API 가 페이지 slug 만 받는다
+describe("pickRequirementTargets — 열쇠 고르기", () => {
+  it("storeUrl 을 열쇠로 쓰면 주소를 넘긴다", () => {
+    const r = row({ platform: "epic", storeUrl: "https://store.epicgames.com/ko/p/hades" });
+    expect(pickRequirementTargets(targets, [r], NOW, 10, "storeUrl")[0].key).toBe("https://store.epicgames.com/ko/p/hades");
+  });
+
+  it("열쇠가 없는 행은 아예 줄에 세우지 않는다 — 매 회차 몫만 먹는다", () => {
+    const r = row({ platform: "epic", storeUrl: null });
+    expect(pickRequirementTargets(targets, [r], NOW, 10, "storeUrl")).toEqual([]);
   });
 });

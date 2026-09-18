@@ -15,6 +15,7 @@ import {
   EPIC_ADDON_QUERY,
   EPIC_BASE_GAME_CATEGORY,
   EPIC_BROWSER_HEADERS,
+  EPIC_CONTENT_URL,
   EPIC_COUNTRY,
   EPIC_DISCOVERY_MAX_PAGES,
   EPIC_GRAPHQL_URL,
@@ -25,9 +26,12 @@ import {
   EPIC_SEARCH_QUERY,
 } from "./constants";
 import { epicExternalId, parseEpicExternalId, parseEpicOffer, parseEpicSearch, toEpicCandidate } from "./parse";
+import { epicProductSlug, parseEpicRequirements } from "./parse-requirements";
+import type { RequirementSnapshot } from "../types";
 
 export * from "./constants";
 export * from "./parse";
+export * from "./parse-requirements";
 
 // ---- 네트워크 ----
 
@@ -42,6 +46,18 @@ const http = createHttpClient({
   viaProxy: true,
 });
 
+/**
+ * 상품 콘텐츠 전용 클라이언트. GraphQL 쪽과 **일부러 나눠 둔다** —
+ * 저쪽은 Cloudflare 때문에 curl 과 프록시가 필요하지만 이 호스트는 Node 로 그냥 열린다
+ * (constants 의 EPIC_CONTENT_URL 주석). 한 클라이언트로 묶으면 열려 있는 경로까지
+ * curl 프로세스를 띄우고 프록시 요금을 쓴다.
+ */
+const contentHttp = createHttpClient({
+  source: "epic",
+  label: "Epic 콘텐츠",
+  headers: EPIC_BROWSER_HEADERS,
+});
+
 async function graphql(query: string, variables: Record<string, unknown>, context: string): Promise<unknown> {
   return http.json(EPIC_GRAPHQL_URL, {
     method: "POST",
@@ -54,6 +70,20 @@ async function graphql(query: string, variables: Record<string, unknown>, contex
 export const epicAdapter: StoreAdapter = {
   source: "epic",
   minIntervalMs: 1000,
+  // 사양 열쇠는 외부 ID 가 아니라 저장해 둔 스토어 주소다(types 의 requirementsKey 주석)
+  requirementsKey: "storeUrl",
+
+  /**
+   * 사양. 게임 1개가 요청 1회다 — 배치 응답에는 사양이 없다.
+   * 주소에서 slug 를 못 뽑으면 빈 배열이다. 그 게임은 "물어봤지만 없더라" 로 기록되고
+   * 다음 회차에 다시 줄 서지 않는다 — slug 없는 행은 다시 물어도 같은 답이다.
+   */
+  async fetchRequirements(storeUrl: string): Promise<RequirementSnapshot[]> {
+    const slug = epicProductSlug(storeUrl);
+    if (!slug) return [];
+    const raw = await contentHttp.json(EPIC_CONTENT_URL(slug), { context: `requirements:${slug}` });
+    return parseEpicRequirements(raw);
+  },
 
   async search(query: string): Promise<SearchCandidate[]> {
     const raw = await graphql(

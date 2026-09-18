@@ -11,6 +11,18 @@
 export const EPIC_ENABLE_ENV = "EPIC_CRAWL_ENABLED";
 
 export const EPIC_GRAPHQL_URL = "https://store.epicgames.com/graphql";
+/**
+ * 상품 콘텐츠(사양, 언어)를 주는 호스트. **카탈로그와 다른 호스트다.**
+ *
+ * 2026-09-18 실측(가정용 회선): 이 호스트는 Node 의 fetch 로 200 이 온다. GraphQL 쪽을 막는
+ * Cloudflare 챌린지가 여기에는 없다 — 정적 콘텐츠 CDN 이라 앞단이 다르다. 그래서 사양만은
+ * curl 전송 없이 받는다. 나중에 막히면 transport 만 curl 로 바꾸면 되고 파서는 그대로다.
+ *
+ * 열쇠는 오퍼 ID 가 아니라 **페이지 slug** 다(`.../products/hades`). namespace:offerId 는 모른다.
+ * locale 은 영문을 쓴다 — ko 로 부르면 라벨까지 번역돼 와서 별칭 사전이 몇 배가 된다.
+ */
+export const EPIC_CONTENT_URL = (slug: string, locale: string = EPIC_LOCALE_EN): string =>
+  `https://store-content.ak.epicgames.com/api/${locale}/content/products/${encodeURIComponent(slug)}`;
 export const EPIC_STORE_BASE_URL = "https://store.epicgames.com/ko/p";
 export const EPIC_COUNTRY = "KR";
 export const EPIC_LOCALE = "ko";

@@ -1,0 +1,227 @@
+{
+  "pages": [
+    {
+      "_slug": "home",
+      "data": {
+        "requirements": {
+          "languages": [
+            "AUDIO: English",
+            "TEXT: English, Chinese - Simplified, French, German, Italian, Korean, Polish, Portuguese - Brazil, Russian, Spanish - Spain, Japanese",
+            ""
+          ],
+          "systems": [
+            {
+              "_type": "Diesel System Detail",
+              "systemType": "Mac",
+              "details": [
+                {
+                  "_type": "Diesel System Detail Item",
+                  "title": "OS",
+                  "minimum": "macOS 10.12+",
+                  "recommended": "macOS 10.14+"
+                },
+                {
+                  "_type": "Diesel System Detail Item",
+                  "title": "Processor",
+                  "minimum": "Dual Core 2.4ghz",
+                  "recommended": "Quad Core 3.0 ghz+"
+                },
+                {
+                  "_type": "Diesel System Detail Item",
+                  "title": "Memory",
+                  "minimum": "4 GB of RAM",
+                  "recommended": "8 GB of RAM"
+                },
+                {
+                  "_type": "Diesel System Detail Item",
+                  "title": "Storage",
+                  "minimum": "15 GB",
+                  "recommended": "20 GB"
+                },
+                {
+                  "_type": "Diesel System Detail Item",
+                  "title": "Graphics",
+                  "minimum": "Intel HD 5000 (Mac computers must support Metal API)",
+                  "recommended": "Intel UHD 630+ (Mac computers must support Metal API)"
+                },
+                {
+                  "_type": "Diesel System Detail Item",
+                  "title": "Other",
+                  "recommended": "MacBook Air, MacBook Pro, iMac, Mac Mini late 2012 and newer; Mac Pro late 2013 and newer; MacBook 2015 and newer"
+                }
+              ]
+            },
+            {
+              "_type": "Diesel System Detail",
+              "systemType": "Windows",
+              "details": [
+                {
+                  "_type": "Diesel System Detail Item",
+                  "title": "OS",
+                  "minimum": "Windows 7 SP1  ",
+                  "recommended": "Windows 7 SP1  "
+                },
+                {
+                  "_type": "Diesel System Detail Item",
+                  "title": "Processor",
+                  "minimum": "Dual Core 2.4 GHz\t",
+                  "recommended": "Dual Core 3.4ghz"
+                },
+                {
+                  "_type": "Diesel System Detail Item",
+                  "title": "Memory",
+                  "minimum": "4 GB RAM",
+                  "recommended": "8 GB RAM"
+                },
+                {
+                  "_type": "Diesel System Detail Item",
+                  "title": "Graphics",
+                  "minimum": "1GB VRAM",
+                  "recommended": "2GB VRAM"
+                },
+                {
+                  "_type": "Diesel System Detail Item",
+                  "title": "Storage",
+                  "minimum": "15 GB",
+                  "recommended": "20 GB "
+                },
+                {
+                  "_type": "Diesel System Detail Item",
+                  "title": "Direct X",
+                  "minimum": " DirectX 10+ support"
+                }
+              ]
+            }
+          ],
+          "legalTags": [
+            {
+              "countryCodes": "KR",
+              "visibility": "visibleToSpecific",
+              "src": "https://cdn2.unrealengine.com/Diesel%2Fproduct%2Fhades%2Fhome%2FHades-Ratings-Footer-1-210x117-9f0754fe98d1b4d6c045ab980abec611ad4a4ce8.png",
+              "_type": "Epic Footer Legal Tag",
+              "title": "15세이용가"
+            },
+            {
+              "countryCodes": "AG,AR,BS,BB,BZ,BO,CA,CL,CO,CR,CU,DM,DO,EC,SV,GD,GT,GY,HT,HN,JM,MX,NI,PA,PY,PE,KN,LC,VC,SR,TT,US,UY,VE",
+              "visibility": "visibleToSpecific",
+              "src": "https://cdn2.unrealengine.com/hadesesrb-200x103-7cd137b1f0d8.png",
+              "_type": "Epic Footer Legal Tag",
+              "title": "TEEN"
+            }
+          ],
+          "accountRequirements": "EPIC_ACCOUNT",
+          "_type": "Diesel System Details",
+          "rating": {
+            "_type": "Diesel Rating"
+          }
+        }
+      }
+    },
+    {
+      "_slug": "home",
+      "data": {
+        "requirements": {
+          "languages": [
+            "AUDIO: English, German, Spanish - Spain, Japanese, French | TEXT: English, German, French, Spanish - Spain, Spanish - Latin America, Japanese, Italian, Chinese - Simplified, Chinese - Traditional, Russian, Ukrainian, Polish, Korean, Portuguese - Brazil"
+          ],
+          "systems": [
+            {
+              "_type": "Diesel System Detail",
+              "systemType": "Windows",
+              "details": [
+                {
+                  "_type": "Diesel System Detail Item",
+                  "title": "Windows OS",
+                  "minimum": "Windows 10/11 64-bit",
+                  "recommended": "Windows 10/11 64-bit"
+                },
+                {
+                  "_type": "Diesel System Detail Item",
+                  "title": "Windows Processor",
+                  "minimum": "Intel i5-7600K or AMD equivalent",
+                  "recommended": "Ryzen 7 3700X or Intel equivalent"
+                },
+                {
+                  "_type": "Diesel System Detail Item",
+                  "title": "Windows Memory",
+                  "minimum": "16 GB",
+                  "recommended": "16 GB"
+                },
+                {
+                  "_type": "Diesel System Detail Item",
+                  "title": "Windows Storage",
+                  "minimum": "SSD with 90 GB free space",
+                  "recommended": "SSD with 90 GB free space"
+                },
+                {
+                  "_type": "Diesel System Detail Item",
+                  "title": "Windows Graphics",
+                  "minimum": "GeForce GTX 1070 / Radeon RX 5600 XT",
+                  "recommended": "GeForce RTX 3060 / Radeon RX 6600 XT"
+                }
+              ]
+            }
+          ],
+          "accountRequirements": "EPIC_ACCOUNT",
+          "_type": "Diesel System Details",
+          "rating": {
+            "_type": "Diesel Rating"
+          }
+        }
+      }
+    },
+    {
+      "_slug": "deluxe-edition",
+      "data": {
+        "requirements": {
+          "languages": [
+            "AUDIO: English, German, Spanish - Spain, Japanese, French | TEXT: English, German, French, Spanish - Spain, Spanish - Latin America, Japanese, Italian, Chinese - Simplified, Chinese - Traditional, Russian, Ukrainian, Polish, Korean, Portuguese - Brazil"
+          ],
+          "systems": [
+            {
+              "_type": "Diesel System Detail",
+              "systemType": "Windows",
+              "details": [
+                {
+                  "_type": "Diesel System Detail Item",
+                  "title": "Windows OS",
+                  "minimum": "Windows 10/11 64-bit",
+                  "recommended": "Windows 10/11 64-bit"
+                },
+                {
+                  "_type": "Diesel System Detail Item",
+                  "title": "Windows Processor",
+                  "minimum": "Intel i5-7600K or AMD equivalent",
+                  "recommended": "Ryzen 7 3700X or Intel equivalent"
+                },
+                {
+                  "_type": "Diesel System Detail Item",
+                  "title": "Windows Memory",
+                  "minimum": "16 GB",
+                  "recommended": "16 GB"
+                },
+                {
+                  "_type": "Diesel System Detail Item",
+                  "title": "Windows Storage",
+                  "minimum": "SSD with 90 GB free space",
+                  "recommended": "SSD with 90 GB free space"
+                },
+                {
+                  "_type": "Diesel System Detail Item",
+                  "title": "Windows Graphics",
+                  "minimum": "GeForce GTX 1070 / Radeon RX 5600 XT",
+                  "recommended": "GeForce RTX 3060 / Radeon RX 6600 XT"
+                }
+              ]
+            }
+          ],
+          "accountRequirements": "EPIC_ACCOUNT",
+          "_type": "Diesel System Details",
+          "rating": {
+            "_type": "Diesel Rating"
+          }
+        }
+      }
+    }
+  ]
+}

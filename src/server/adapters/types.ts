@@ -271,6 +271,12 @@ export type StoreAdapter = SourceAdapter<StoreSnapshot> & {
    * 콘솔 스토어에는 이 메서드를 두지 않는다. 사양이라는 개념 자체가 없다.
    */
   fetchRequirements?(key: string): Promise<RequirementSnapshot[]>;
+  /**
+   * 위 메서드에 넘길 키를 어디서 읽을지. 비우면 store_external_id.
+   * 에픽의 외부 ID 는 `namespace:offerId` 인데 사양을 주는 콘텐츠 API 는 그것을 모르고 페이지
+   * slug 만 받는다. slug 가 들어 있는 자리가 store_url 뿐이라 거기서 읽는다(dlcListKey 와 같은 모양).
+   */
+  requirementsKey?: "externalId" | "storeUrl";
 };
 
 /**
