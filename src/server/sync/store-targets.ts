@@ -148,6 +148,9 @@ async function refreshRows(
       and(
         eq(gameSourceRefs.source, source),
         inArray(gameSourceRefs.matchedBy, MATCHED_FOR_SYNC),
+        // 수집 제외 표시가 걸린 행은 여기서만 뺀다(매장 설계서 §6). 레트로와 굿즈는 온라인 스토어에
+        // 없어서, 빼지 않으면 매 실행 몫만 먹고 빈손으로 돌아온다
+        eq(games.crawlExcluded, false),
         opts.mainOnly ? eq(games.contentType, "game") : ne(games.contentType, "game"),
       ),
     )
@@ -221,9 +224,18 @@ async function linkRef(
     .onConflictDoNothing();
 }
 
-/** 역방향 매칭용 제목 목록. 카탈로그 전체라 발견, 반영 두 단계가 각각 한 번씩만 읽는다 */
+/**
+ * 역방향 매칭용 제목 목록. 카탈로그 전체라 발견, 반영 두 단계가 각각 한 번씩만 읽는다.
+ *
+ * 수집 제외 행은 후보에서 뺀다 — 슈퍼패미컴판 "젤다의 전설" 에 스팀 SKU 가 붙으면
+ * 그 행은 디지털 가격을 갖게 되고, 레트로 상세가 매장 시세 대신 엉뚱한 값을 머리에 건다.
+ * 매장 발 게임은 그대로 후보로 둔다 — 스토어 ID 가 붙는 것이 §5.3 이 노리는 일이다.
+ */
 export async function loadGameTitles(db: Db): Promise<GameTitleRow[]> {
-  return db.select({ id: games.id, slug: games.slug, titleEn: games.titleEn, titleKo: games.titleKo }).from(games);
+  return db
+    .select({ id: games.id, slug: games.slug, titleEn: games.titleEn, titleKo: games.titleKo })
+    .from(games)
+    .where(eq(games.crawlExcluded, false));
 }
 
 /** 수집하지 않기로 한 SKU 기록. 다음 실행의 발견이 이걸 보고 건너뛴다 */

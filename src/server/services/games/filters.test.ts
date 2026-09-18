@@ -67,6 +67,12 @@ describe("mainGamesOnly", () => {
     const { sql: text } = render(mainGamesOnly());
     expect(text).toContain('"game_source_refs"."game_id" = "games"."id"');
   });
+
+  it("매장 발 임시 게임을 뺀다 — 스토어 ID 가 붙어도 승격 전에는 목록에 안 나온다", () => {
+    const { sql: text, params } = render(mainGamesOnly());
+    expect(text).toContain('"games"."visibility"');
+    expect(params).toContain("public");
+  });
 });
 
 describe("runsOnRig", () => {

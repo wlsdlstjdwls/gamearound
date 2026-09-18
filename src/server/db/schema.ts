@@ -54,6 +54,22 @@ export const HOME_REGION = "KR" as const;
  * 혼자 서서, 가르지 않으면 출시예정 목록이 OST 로 찬다.
  */
 export const contentTypeEnum = pgEnum("content_type", ["game", "dlc", "edition", "bundle", "demo", "music"]);
+/**
+ * 이 게임 행을 누가 만들었나 — 매장 설계서 §6.
+ *
+ * 크롤러가 만든 행과 매장이 만든 행은 믿을 수 있는 정도가 다르다. 그 차이를 감사 컬럼
+ * (`created_source`)만으로 물으면 `shop:{uuid}` 같은 텍스트를 like 로 훑어야 해서 인덱스가 안 탄다.
+ * "매장이 만든 게임" 은 목록, 매핑 배치, 관리자 화면이 상시로 묻는 질문이라 컬럼이어야 한다.
+ */
+export const gameOriginEnum = pgEnum("game_origin", ["crawler", "shop", "admin"]);
+/**
+ * 전체 목록과 검색에 나오나 — 매장 설계서 §7.
+ *
+ * 매장이 게임을 만드는 데 승인을 두지 않는 대신(§7) 오염을 이 컬럼이 막는다.
+ * `shop_only` 는 매장 페이지와 그 매장의 상품에서만 보인다. 매핑 배치가 기존 게임을 찾아
+ * 상품을 옮기거나, 크롤러 소스가 붙거나, 관리자가 확인하면 `public` 으로 승격한다.
+ */
+export const gameVisibilityEnum = pgEnum("game_visibility", ["public", "shop_only"]);
 /** 회사가 이 게임에 대해 가진 역할. 같은 회사가 개발과 배급을 겸하면 행 2개가 된다 */
 export const companyRoleEnum = pgEnum("company_role", ["developer", "publisher"]);
 /**
@@ -100,6 +116,8 @@ export type PartKind = (typeof partKindEnum.enumValues)[number];
 export type Currency = (typeof currencyEnum.enumValues)[number];
 export type Region = (typeof regionEnum.enumValues)[number];
 export type ContentType = (typeof contentTypeEnum.enumValues)[number];
+export type GameOrigin = (typeof gameOriginEnum.enumValues)[number];
+export type GameVisibility = (typeof gameVisibilityEnum.enumValues)[number];
 export type CompanyRole = (typeof companyRoleEnum.enumValues)[number];
 export type UpgradeKind = (typeof upgradeKindEnum.enumValues)[number];
 
@@ -126,6 +144,16 @@ export const games = pgTable("games", {
   contentType: contentTypeEnum("content_type").default("game").notNull(),
   /** DLC 가 가리키는 본편. contentType 이 game 이면 null. 본편이 지워지면 DLC 도 같이 지운다 */
   parentGameId: uuid("parent_game_id").references((): AnyPgColumn => games.id, { onDelete: "cascade" }),
+  /** 이 행을 누가 만들었나(매장 설계서 §6). 기존 행은 전부 크롤러가 만든 것이라 기본값이 곧 백필이다 */
+  origin: gameOriginEnum("origin").default("crawler").notNull(),
+  /** 전체 목록, 검색, 홈에 나오나(§7). 거르는 자리는 services/games/filters 의 mainGamesOnly 한 곳뿐이다 */
+  visibility: gameVisibilityEnum("visibility").default("public").notNull(),
+  /**
+   * 수집 대상에서 뺀다(§6). 레트로와 굿즈가 여기 걸린다 — 온라인 스토어에 없는 물건을
+   * 크롤러가 매 실행 찾으러 갔다가 빈손으로 돌아오는 것을 막는다.
+   * 보는 자리는 sync/store-targets 의 대상 질의 한 곳이다. 흩으면 한 곳이 빠지고 그 경로만 긁으러 간다.
+   */
+  crawlExcluded: boolean("crawl_excluded").default(false).notNull(),
   /**
    * 검색용 정규화 제목 — 소문자 + 영숫자, 한글, 가나, 한자 외 전부 제거.
    * "엘든 링" / "ELDEN RING:" 처럼 공백, 구두점만 다른 질의를 흡수한다(§4.2 normalizeTitle 의 DB 판).
@@ -144,6 +172,9 @@ export const games = pgTable("games", {
   index("games_title_en_idx").on(t.titleEn),
   // 목록 쿼리가 매번 content_type='game' 으로 거르고, 상세는 parent_game_id 로 DLC 를 모은다
   index("games_content_parent_idx").on(t.contentType, t.parentGameId),
+  // 매장 발 게임은 카탈로그 7만 행 중 극소수다. 부분 인덱스로 두면 매핑 배치(§5.2)와
+  // 역방향 수집(§5.3)이 전체를 훑지 않고 자기 몫만 집는다
+  index("games_shop_origin_idx").on(t.origin).where(sql`origin <> 'crawler'`),
 ]);
 
 /**

@@ -31,14 +31,19 @@ function matchedToStore(): SQL {
 }
 
 /**
- * 목록에 낼 수 있는 본편만. DLC, 에디션, 번들이 빠지고, 스토어와 못 이어진 게임도 빠진다.
+ * 목록에 낼 수 있는 본편만. DLC, 에디션, 번들이 빠지고, 스토어와 못 이어진 게임도,
+ * 매장이 자기 상품을 걸려고 만든 임시 게임도 빠진다.
  *
- * 두 조건을 한 함수에 접은 이유는 이 파일이 있는 이유와 같다 — 호출부(목록, 검색, 홈, 회사,
+ * 세 조건을 한 함수에 접은 이유는 이 파일이 있는 이유와 같다 — 호출부(목록, 검색, 홈, 회사,
  * 출시예정)에 흩어 놓으면 언젠가 한 곳이 빠지고, 그 화면에서만 오염이 되살아난다.
  * **수집(sync)과 관리자 화면은 이걸 쓰지 않는다** — 거기서는 걸러지지 않은 사실을 봐야 한다.
+ *
+ * `visibility` 를 따로 보는 이유(매장 설계서 §7): 매장 발 게임은 ref 가 없어 `matchedToStore()`
+ * 만으로도 지금은 걸린다. 하지만 역방향 수집(§5.3)이 스토어 ID 를 붙이는 순간 그 조건이 풀리고,
+ * 아직 사람이 확인하지 않은 행이 전체 목록으로 샌다. 승격은 `visibility` 를 올리는 일이어야 한다.
  */
 export function mainGamesOnly(): SQL {
-  return and(eq(games.contentType, "game"), matchedToStore())!;
+  return and(eq(games.contentType, "game"), eq(games.visibility, "public"), matchedToStore())!;
 }
 
 /** 특정 회사의 게임만(개발, 배급 무관). 회사 화면과 목록 필터가 같은 조건을 쓴다 */
