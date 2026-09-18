@@ -22,6 +22,10 @@ import {
   DLC_FETCH_PER_RUN_BY_SOURCE,
   DLC_LIST_PER_RUN,
   DLC_LIST_PER_RUN_BY_SOURCE,
+  PATCH_LIST_PER_RUN,
+  PATCH_LIST_PER_RUN_BY_SOURCE,
+  PATCH_SOURCES,
+  REQUIREMENTS_PER_RUN,
 } from "./constants";
 
 /**
@@ -63,8 +67,16 @@ function estimateMs(source: (typeof CRON_SOURCES)[number], mode: CronMode): numb
   const dlcFetchItems = listsDlcs ? (DLC_FETCH_PER_RUN_BY_SOURCE[source] ?? 0) : 0;
   const dlcFetchRequests = Math.ceil(dlcFetchItems / perRequest);
 
+  // 패치 기록과 사양도 같은 실행 안에서 돈다(run-store 5, 6단계). **둘 다 이 식이 빼먹고 있었다**
+  // (2026-09-18 발견). 빼먹은 채로는 steam 이 95%로 보이지만 실제로는 109%다 —
+  // 이 파일 머리의 경고("이 몫을 빼놓고 세면 테스트는 통과하는데 실제 함수는 잘린다")가 그대로 일어났다.
+  // 둘 다 배치가 없어 게임 1개가 요청 1회다.
+  const patchRequests = PATCH_SOURCES.includes(source) ? (PATCH_LIST_PER_RUN_BY_SOURCE[source] ?? PATCH_LIST_PER_RUN) : 0;
+  const requirementRequests = adapter.fetchRequirements ? REQUIREMENTS_PER_RUN : 0;
+
   const requests =
-    plan.pageBudget + plan.match + detailItems + Math.ceil(batchedItems / perRequest) + dlcListRequests + dlcFetchRequests;
+    plan.pageBudget + plan.match + detailItems + Math.ceil(batchedItems / perRequest) + dlcListRequests + dlcFetchRequests +
+    patchRequests + requirementRequests;
   // 새로 들어오는 것(시드 + 새 DLC)과 이미 아는 것을 갈라 센다
   const newItems = plan.seedTop + dlcFetchItems;
   const updatedItems = Math.max(plan.limit - plan.seedTop, 0);

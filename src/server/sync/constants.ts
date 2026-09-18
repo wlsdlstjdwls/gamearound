@@ -304,12 +304,16 @@ export const CRON_PLAN: Record<CronSource, Record<CronMode, CronRunPlan>> = {
     // 2026-09-15 에 1,000 에서 800 으로 내렸다. 이 모드가 느려진 게 아니라, 새 DLC 등록 몫
     // (DLC_FETCH_PER_RUN_BY_SOURCE.steam 40건 × 1.8초)을 이제 제대로 세기 때문이다 —
     // DLC 단계는 prices 모드에서도 똑같이 돈다(sync/run-store 4단계).
-    prices: { limit: 800, seedTop: 0, pageBudget: 0, match: 0 },
+    // 2026-09-18 에 800 에서 700 으로 내렸다 — 패치, 사양 단계를 예산에 넣자 800 은 109%가 됐다.
+    prices: { limit: 700, seedTop: 0, pageBudget: 0, match: 0 },
     // 592초. 2026-09-15 에 140 에서 120 으로 내렸다 — 140 은 실측 680초를 냈다(추정은 549초였다).
     // 차이는 발견이 아니라 같은 실행이 함께 등록한 새 DLC 230건이었다. 그쪽에 상한 40 을 걸고
     // (DLC_FETCH_PER_RUN_BY_SOURCE.steam) 남는 자리에 맞춰 몫을 다시 잡았다.
     // 페이지 예산 80 의 근거는 DISCOVERY_PAGE_BUDGET.steam 주석에 있다(아는 8,000건 구간을 건너뛴다).
-    discover: { limit: 120, seedTop: 120, pageBudget: 80, match: 8, seedShare: 1 },
+    // 2026-09-18 에 120 에서 90 으로 내렸다. 이 모드가 느려진 게 아니라 **예산 계산이 두 단계를
+    // 빼먹고 있었다** — 패치 30요청(52초)과 사양 10요청(17초)이다. 둘을 넣으면 120 은 113%다.
+    // 큰 쪽은 패치이고 그건 원래 있던 구멍이다. 발견 몫이 준 것은 그 구멍을 메운 대가다.
+    discover: { limit: 90, seedTop: 90, pageBudget: 80, match: 8, seedShare: 1 },
     // 간격 1.5초. 건당 최대 3.4초 → 150건 587초. 하루 2회면 300건이라 본편 11,301건을 38일에 한 바퀴 돈다
     match: { limit: 0, seedTop: 0, pageBudget: 0, match: 150 },
   },
@@ -702,15 +706,19 @@ export const PATCH_SOURCES: StoreSource[] = ["steam"];
  *
  * DLC 목록, 패치 기록과 같은 성격의 경로다 — 배치가 없어 게임 1개가 요청 1회다.
  * 그래서 한도의 근거도 같은 자리에서 온다: **Actions 사용 분**이다.
- * 20건 × 요청 간격 1.5초 = 30초. crawl-prices 는 이미 1회 9~15분이고 무료 한도에 붙어 있어
+ * 10건 × 요청 간격 1.5초 = 15초. crawl-prices 는 이미 1회 9~15분이고 무료 한도에 붙어 있어
  * (워크플로 주석의 실측) 여기서 크게 가져갈 자리가 없다.
+ *
+ * **2026-09-18 에 20 에서 10 으로 내렸다.** 이 단계가 크론 예산 계산에서 빠져 있었는데(패치 단계도
+ * 같이 빠져 있었다), 세어 보니 steam 이 예산의 109~113% 였다. 두 단계를 식에 넣고 이 값을 반으로
+ * 줄여 발견 몫의 손실을 덜었다 — 하루 4회 실행이면 40건이고, 스팀 신규 등록 속도보다 훨씬 빠르다.
  *
  * **이 값으로 백필하지 않는다.** 스팀 본편이 3,493건인데(2026-09-18 실측) 하루 2회 × 20건이면
  * 한 바퀴에 87일이다. 백필은 로컬 회선이 맡는다(scripts/backfill-requirements.ts) —
  * 사양은 1회 백필 + 신규분만이면 되는 축이라 그 둘이 갈리는 것이 자연스럽다.
  * 이 상수가 맡는 것은 그 뒤의 신규분이다.
  */
-export const REQUIREMENTS_PER_RUN = 20;
+export const REQUIREMENTS_PER_RUN = 10;
 /**
  * 한 번 물어본 게임을 다시 물어보기까지의 간격(일).
  *
