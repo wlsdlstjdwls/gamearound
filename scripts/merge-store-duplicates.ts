@@ -22,13 +22,26 @@ import { getDb } from "@/server/db/client";
 
 /** 기종 꼬리표. 괄호형과 줄표형 둘 다 온다(실측: "Axonvolt (Xbox One)", "Grizzly Bear Is Hungry — Windows") */
 const DEVICE = "(windows|pc|xbox one|xbox series x/s|xbox series x[|]s|ps4|ps5)";
+/**
+ * 구분자 없이 이름 끝에 그냥 붙는 꼬리표에만 쓰는 좁은 사전(실측 2026-09-18, wikidata 묶음):
+ * "STAR WARS Jedi: Survivor™ Xbox One", "NBA 2K26 for Xbox Series X|S", "Mafia: Definitive Edition for XBOX One".
+ * 여기에 windows, pc 를 넣지 않는다 — 구분자가 없으면 "Broken Windows" 같은 진짜 제목의 끝말을 떼어 낸다.
+ */
+const DEVICE_BARE = "(xbox one|xbox series x/s|xbox series x[|]s|ps4|ps5)";
+/** "Xbox One & Xbox Series X|S", "PS4 & PS5" 처럼 둘을 묶어 적는 꼴도 한 꼬리표다 */
+const PAIR = (d: string) => `${d}([[:space:]]*(&|and)[[:space:]]*${d})?`;
 // 백슬래시를 안 쓴다 — Neon 드라이버가 생 SQL 의 백슬래시를 먹어 정규식이 조용히 빗나간다
+const TAIL = [
+  `[(][[:space:]]*(for[[:space:]]+)?${PAIR(DEVICE)}[[:space:]]*[)]`,
+  `[—–-][[:space:]]*(for[[:space:]]+)?${PAIR(DEVICE)}`,
+  `[[:space:]](for[[:space:]]+)?${PAIR(DEVICE_BARE)}`,
+].join("|");
 const STRIP = (col: string) =>
-  `regexp_replace(${col}, '[[:space:]]*([(][[:space:]]*${DEVICE}[[:space:]]*[)]|[—–-][[:space:]]*${DEVICE})[[:space:]]*$', '', 'i')`;
+  `regexp_replace(${col}, '[[:space:]]*(${TAIL})[[:space:]]*$', '', 'i')`;
 const NORM = (col: string) => `lower(regexp_replace(${STRIP(col)}, '[^[:alnum:]]+', '', 'g'))`;
 /** 주소에 남은 같은 꼬리표. 제목과 달리 이미 소문자, 붙임표 꼴이라 따로 적는다 */
 const SLUG_STRIP = (col: string) =>
-  `regexp_replace(${col}, '-(windows|pc|xbox-one|xbox-series-x-s|ps4|ps5)$', '')`;
+  `regexp_replace(${col}, '-(for-)?(windows|pc|xbox-one|xbox-series-x-s|ps4|ps5)(-(and|&)?-?(xbox-one|xbox-series-x-s|ps4|ps5))?$', '')`;
 
 /** 합칠 때 살아남는 행의 빈 칸만 메우는 칸들. 값이 있는 칸은 건드리지 않는다(AGENTS §7) */
 const FILLABLE = [
