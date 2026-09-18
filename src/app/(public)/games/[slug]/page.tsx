@@ -178,10 +178,16 @@ async function WishlistSlot({ gameId }: { gameId: string }) {
  * 값이라, 본문이 세션 조회(실측 220ms)를 기다릴 이유가 없다.
  * 비회원은 devices 가 빈 배열이고, 그때 기기는 브라우저에서 읽는다(compat-section).
  */
-async function CompatSlot({ groups }: { groups: GameDetail["requirements"] }) {
+async function CompatSlot({ groups, platforms }: { groups: GameDetail["requirements"]; platforms: GameDetail["platforms"] }) {
   const user = await getCurrentUser();
   const devices = user ? await listMyDevices() : [];
-  return <CompatSection groups={groups} devices={devices.map((d) => ({ ...d, id: d.id, label: d.label }))} />;
+  return (
+    <CompatSection
+      groups={groups}
+      devices={devices.map((d) => ({ ...d, id: d.id, label: d.label }))}
+      platforms={platforms}
+    />
+  );
 }
 
 /**
@@ -373,7 +379,7 @@ export default async function GameDetailPage({ params }: Props) {
               판정이 사양표보다 먼저 서는 이유: 사람이 묻는 것은 "돌아가나" 이고 표는 그 근거다 */}
           {game.requirements.length > 0 && (
             <Suspense fallback={null}>
-              <CompatSlot groups={game.requirements} />
+              <CompatSlot groups={game.requirements} platforms={game.platforms} />
             </Suspense>
           )}
           <RequirementsSection groups={game.requirements} />

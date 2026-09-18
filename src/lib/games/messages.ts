@@ -118,6 +118,13 @@ export const COMPAT_MESSAGES = {
   unknownPart: "확인 못 함",
   meets: "충족",
   below: "모자람",
+  /**
+   * 네이티브 빌드 안내(설계 §5). 사양을 견주기 전에 답해야 하는 질문이라 문구를 따로 둔다.
+   * "없어요" 와 "모르겠어요" 를 가려 말한다 — 스토어가 없다고 한 것과 아무 말 안 한 것은 다르다.
+   */
+  nativeNo: (os: string) => `이 게임은 ${os} 빌드가 없어요.`,
+  nativeYesNoSpec: (os: string) => `${os} 에서 돌아가요. 다만 스토어가 ${os} 사양을 따로 적어 두지 않았어요.`,
+  nativeUnknown: (os: string) => `${os} 사양이 없어요. 스토어가 ${os} 지원 여부를 알려 주지 않았어요.`,
 } as const;
 
 /**

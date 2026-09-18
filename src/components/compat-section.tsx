@@ -12,6 +12,7 @@ import { COMPAT_MESSAGES, OS_FAMILY_LABEL, VERDICT_LABEL, VERDICT_PART_LABEL } f
 import { useGuestDevice, type CompatDevice } from "@/components/devices/guest-device";
 import { GuestDeviceForm } from "@/components/devices/guest-device-form";
 import { judge, type PartVerdict, type RequirementSpec } from "@/lib/hardware/verdict";
+import { nativeSupport, type NativeFlags } from "@/lib/hardware/native";
 import type { RequirementGroupDto } from "@/server/services/games";
 
 export type { CompatDevice };
@@ -24,13 +25,31 @@ function StatusDot({ status }: { status: PartVerdict["status"] }) {
   return <span aria-hidden className={`mt-[7px] h-1.5 w-1.5 shrink-0 rounded-full ${tone}`} />;
 }
 
+/** 사양 행이 없는 OS 에 붙일 한 줄. 스토어가 "없다" 고 한 것과 아무 말 안 한 것을 가려 말한다 */
+function nativeNote(platforms: NativeFlags[], osFamily: CompatDevice["osFamily"]): string {
+  const os = OS_FAMILY_LABEL[osFamily];
+  const support = nativeSupport(platforms, osFamily);
+  if (support === "no") return COMPAT_MESSAGES.nativeNo(os);
+  if (support === "yes") return COMPAT_MESSAGES.nativeYesNoSpec(os);
+  return COMPAT_MESSAGES.nativeUnknown(os);
+}
+
 function statusText(status: PartVerdict["status"]): string {
   if (status === "meets") return COMPAT_MESSAGES.meets;
   if (status === "below") return COMPAT_MESSAGES.below;
   return COMPAT_MESSAGES.unknownPart;
 }
 
-export function CompatSection({ groups, devices }: { groups: RequirementGroupDto[]; devices: CompatDevice[] }) {
+export function CompatSection({
+  groups,
+  devices,
+  platforms,
+}: {
+  groups: RequirementGroupDto[];
+  devices: CompatDevice[];
+  /** 네이티브 빌드 여부. 사양 행이 없을 때 "지원 안 함" 을 추측이 아니라 사실로 말하기 위한 값이다 */
+  platforms: NativeFlags[];
+}) {
   const [selected, setSelected] = useState<string | null>(devices[0]?.id ?? null);
   /** 비회원이 적어 둔 기기를 다시 펴 놓았나. 한 번 저장하면 못 고치는 화면이 되면 안 된다 */
   const [editing, setEditing] = useState(false);
@@ -81,10 +100,10 @@ export function CompatSection({ groups, devices }: { groups: RequirementGroupDto
         )}
 
         {device && !group && !editing && (
-          // 맥 사용자에게 먼저 답해야 하는 것은 사양이 아니라 "네이티브 빌드가 있느냐" 다(설계 §5)
-          <p className="text-[13px] leading-[1.7] text-mut">
-            {OS_FAMILY_LABEL[device.osFamily]} 사양이 없어요. 이 게임은 {OS_FAMILY_LABEL[device.osFamily]} 을 지원하지 않는 것으로 보여요.
-          </p>
+          // 맥 사용자에게 먼저 답해야 하는 것은 사양이 아니라 "네이티브 빌드가 있느냐" 다(설계 §5).
+          // 사양 행이 없다는 사실로 추측하지 않는다 — 맥판이 있는데 스토어가 사양을 윈도우 하나로만
+          // 적어 둔 게임이 흔하고, 그때 옛 문구는 멀쩡히 도는 게임을 "지원 안 함" 이라고 말했다
+          <p className="text-[13px] leading-[1.7] text-mut">{nativeNote(platforms, device.osFamily)}</p>
         )}
 
         {verdict && !editing && (
