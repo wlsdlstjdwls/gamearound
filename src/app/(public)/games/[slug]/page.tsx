@@ -19,7 +19,7 @@ import { WishlistButton } from "@/components/wishlist-button";
 import { BackLink } from "@/components/ui/back-link";
 import { buttonClass } from "@/components/ui/button";
 import { Card, Page, SectionHead } from "@/components/ui/page";
-import { formatHours, PLATFORM_LABEL } from "@/lib/format";
+import { formatDate, formatHours, PLATFORM_LABEL } from "@/lib/format";
 import { userScoreNoteText, userScoreValueText } from "@/lib/user-score";
 import { SITE } from "@/lib/site";
 import { getFreshness } from "@/lib/freshness";
@@ -112,6 +112,11 @@ function DecisionSummary({ game, className, style }: { game: GameDetail; classNa
       note: best ? `${PLATFORM_LABEL[best.platform] ?? best.platform}${best.discountPct ? ` | -${best.discountPct}%` : ""}` : undefined,
     },
   ];
+  // 출시일은 게임 단위 값이다(dto 의 releaseDate 주석) — 플랫폼 탭마다 다른 값을 보여 주면
+  // PlayStation 탭에서만 빈칸이 된다. 여기서는 어느 탭을 보든 같은 한 값을 말한다
+  if (game.releaseDate) {
+    cells.push({ label: "출시일", value: formatDate(game.releaseDate) });
+  }
   // 완전 정복 시간을 여기 붙이지 않는 이유(2026-09-15): 같은 화면의 플레이타임 카드가 3종을 막대까지 붙여 말한다.
   // 요약 바는 "얼마나 걸리나" 에 한 값으로 답하는 자리다 — 두 값을 적으면 카드와 겹치기만 하고 결론이 흐려진다
   if (main) {

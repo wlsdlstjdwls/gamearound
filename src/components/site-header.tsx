@@ -35,6 +35,7 @@ export function SiteHeader() {
 
         <nav aria-label="주요 메뉴" className="hidden shrink-0 items-center gap-1 text-[13px] sm:flex">
           <SiteNavLink href={ROUTES.game}>게임 목록</SiteNavLink>
+          <SiteNavLink href={ROUTES.upcoming}>출시 예정</SiteNavLink>
           <SiteNavLink href={ROUTES.sales}>다음 세일</SiteNavLink>
           <SiteNavLink href={ROUTES.wishlist} icon={<HeartIcon size={19} />}>
             위시리스트

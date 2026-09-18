@@ -1,6 +1,6 @@
 // 포맷 유틸 테스트 — 할인 기간 표시(순수 함수, now 를 인자로 받는다)
 import { describe, expect, it } from "vitest";
-import { formatDate, formatDateTime, formatSaleWindow, formatShortDateTime, saleRemaining } from "./format";
+import { formatDate, formatDateTime, formatMonthLabel, formatReleaseDay, formatSaleWindow, formatShortDateTime, saleRemaining } from "./format";
 
 const NOW = Date.parse("2026-09-14T00:00:00Z");
 
@@ -48,5 +48,26 @@ describe("날짜 표기", () => {
     expect(formatDate(null)).toBe("-");
     expect(formatDateTime("아무 글자")).toBe("-");
     expect(formatShortDateTime(undefined)).toBe("-");
+  });
+});
+
+// 출시일은 시각이 없는 date 값이라 시간대를 옮기면 하루가 밀린다 — 그 사실을 여기서 못 박는다
+describe("출시일 표기", () => {
+  it("날짜와 요일을 적는다", () => {
+    expect(formatReleaseDay("2026-09-24")).toBe("9월 24일 (목)");
+    expect(formatReleaseDay("2026-10-01")).toBe("10월 1일 (목)");
+  });
+
+  it("시간대 때문에 하루가 밀리지 않는다 — 달의 첫날이 전달로 가지 않는다", () => {
+    expect(formatReleaseDay("2026-11-01")).toBe("11월 1일 (일)");
+  });
+
+  it("형식이 깨졌으면 받은 값을 그대로 돌려준다", () => {
+    expect(formatReleaseDay("미정")).toBe("미정");
+  });
+
+  it("달 열쇠를 한국어 머리로 바꾼다", () => {
+    expect(formatMonthLabel("2026-10")).toBe("2026년 10월");
+    expect(formatMonthLabel("나중")).toBe("나중");
   });
 });

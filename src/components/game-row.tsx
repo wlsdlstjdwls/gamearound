@@ -16,12 +16,26 @@ import { SaleBadge } from "@/components/sale-badge";
 import { cardClass } from "@/components/ui/page";
 import { Clamp } from "@/components/ui/tooltip";
 
-export function GameRow({ game, variant = "discount" }: { game: GameSummary; variant?: "discount" | "release" }) {
+/**
+ * releaseText: 날짜 칸을 부르는 쪽이 정한 문구로 갈아 끼운다.
+ * 출시예정 화면이 쓴다 — 그 화면의 날짜는 대표 가격 행이 아니라 **게임이 아는 가장 이른 날짜**라
+ * (PlayStation 이 출시일을 주지 않아 게임 단위로 묶는다) best.releaseDate 와 다른 값이다.
+ */
+export function GameRow({
+  game,
+  variant = "discount",
+  releaseText,
+}: {
+  game: GameSummary;
+  variant?: "discount" | "release";
+  releaseText?: string;
+}) {
   const title = game.titleKo ?? game.titleEn;
   const best = game.best;
   const hasDiscount = Boolean(best?.discountPct && best.discountPct > 0);
   // 카드와 같은 이유로 기본값을 둔다 — 캐시에 담긴 옛 모양 DTO 에는 이 배열이 없을 수 있다
   const genres = game.genres ?? [];
+  const releaseLabel = releaseText ?? (best?.releaseDate ? `${formatDate(best.releaseDate)} 출시` : null);
 
   return (
     <Link
@@ -46,8 +60,8 @@ export function GameRow({ game, variant = "discount" }: { game: GameSummary; var
         </div>
       </div>
 
-      {variant === "release" && best?.releaseDate ? (
-        <p className="shrink-0 text-right text-[12.5px] text-mut sm:text-[13px]">{formatDate(best.releaseDate)} 출시</p>
+      {variant === "release" && releaseLabel ? (
+        <p className="shrink-0 text-right text-[12.5px] text-mut sm:text-[13px]">{releaseLabel}</p>
       ) : (
         best && (
           <div className="flex shrink-0 flex-col items-end gap-1">

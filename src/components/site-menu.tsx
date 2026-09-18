@@ -28,6 +28,7 @@ type MenuLink = { href: string; label: string; icon?: React.ReactNode; authOnly?
 /** 시트에 서는 차례. 헤더에 펴 두는 넓은 화면 메뉴(site-header)와 같은 순서를 지킨다 */
 const LINKS: MenuLink[] = [
   { href: ROUTES.game, label: "게임 목록" },
+  { href: ROUTES.upcoming, label: "출시 예정" },
   { href: ROUTES.sales, label: "다음 세일" },
   { href: ROUTES.wishlist, label: "위시리스트", icon: <HeartIcon size={17} /> },
   { href: ROUTES.alerts, label: "가격 알림", icon: <BellIcon size={17} /> },

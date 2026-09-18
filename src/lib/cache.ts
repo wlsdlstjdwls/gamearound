@@ -33,8 +33,12 @@
  * v9(2026-09-16): psprices.com 링크 72,324행을 비웠다(psprices 는 스토어가 아니다).
  * sync 를 거치지 않은 직접 UPDATE 라 changedSlugs 가 없고, 상세 캐시는 수명이 없어
  * 태그를 안 풀면 옛 값이 영영 남는다 — 게임 5만 개 태그를 밀기보다 판을 올려 통째로 버린다.
+ *
+ * v10(2026-09-18): GameDetail 에 게임 단위 releaseDate 를 더했고, 목록의 "최신 출시순" 이
+ * 미래 날짜를 빼고 세도록 **집계 기준**을 바꿨다. 옛 값에는 필드가 없고(빈칸으로 뜬다)
+ * 옛 순서에는 미출시 게임이 앞에 남는다 — 위 두 사고와 같은 모양이라 같은 커밋에서 올린다.
  */
-export const DTO_CACHE_VERSION = "v9";
+export const DTO_CACHE_VERSION = "v10";
 
 /** 목록, 검색, 홈처럼 태그 무효화로 갱신되는 화면의 기본 재검증 주기(초) */
 export const LIST_REVALIDATE_SECONDS = 3600;

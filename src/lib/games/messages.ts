@@ -122,3 +122,22 @@ export function patchSpeedText(averageIntervalDays: number | null, count: number
   if (averageIntervalDays === null) return `기록 ${count}건`;
   return `평균 ${averageIntervalDays}일마다 | ${count}건`;
 }
+
+/**
+ * 출시예정 화면 문구.
+ * "미정" 을 세지 않는 이유를 화면에 적는다 — 스토어가 날짜를 주지 않는 게임이 많고
+ * (PlayStation 은 아예 주지 않는다) 그 사정을 숨기면 목록이 비어 보이는 것으로만 읽힌다.
+ */
+export const UPCOMING_MESSAGES = {
+  title: "출시 예정",
+  note: "한국 스토어 기준이에요",
+  lead: "곧 나올 게임을 가까운 날짜부터 보여드려요. 스토어가 날짜를 밝힌 게임만 담겨요.",
+  empty: "아직 날짜가 밝혀진 게임이 없어요.",
+  basis: "스토어마다 출시일이 다르면 가장 이른 날짜로 세웠어요. PlayStation 은 출시일을 공개하지 않아 다른 스토어에도 없는 게임은 담기지 않아요.",
+  browseGames: "전체 게임 보기",
+} as const;
+
+/** 달 머리 옆 건수. 그 달에 몇 개가 몰려 있는지가 훑는 사람의 다음 질문이다 */
+export function upcomingCountText(count: number): string {
+  return `${count.toLocaleString("ko-KR")}개`;
+}

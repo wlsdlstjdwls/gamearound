@@ -105,6 +105,9 @@ export async function getGameBySlug(slug: string): Promise<GameDetail | null> {
     .sort(byRegionThenPlatform)
     .map((p) => ({ ...toPlatformDto(p), subscriptions: subsByPlatform.get(p.id) ?? [] }));
   const subscriptions = flattenSubscriptions(subsByPlatform);
+  // 이미 읽어 온 행에서 고른다 — 게임 단위 출시일 하나 때문에 왕복을 늘리지 않는다.
+  // "YYYY-MM-DD" 라 문자열 비교가 곧 날짜 비교다
+  const releaseDates = platforms.map((p) => p.releaseDate).filter((d): d is string => Boolean(d));
 
   return {
     id: row.id,
@@ -124,6 +127,7 @@ export async function getGameBySlug(slug: string): Promise<GameDetail | null> {
     supportsCoop: row.supportsCoop ?? false,
     supportsPvp: row.supportsPvp ?? false,
     isRetro: row.isRetro ?? false,
+    releaseDate: releaseDates.length > 0 ? releaseDates.reduce((a, b) => (a < b ? a : b)) : null,
     updatedAt: row.updatedAt.toISOString(),
     genres: row.genres.map((gg) => gg.genre.name).sort(),
     platforms,

@@ -238,6 +238,7 @@ export function toPublicGameDto(g: GameDetail): PublicGameDto {
     supportsCoop: g.supportsCoop,
     supportsPvp: g.supportsPvp,
     isRetro: g.isRetro,
+    releaseDate: g.releaseDate,
     updatedAt: g.updatedAt,
     genres: g.genres,
     platforms: g.platforms,

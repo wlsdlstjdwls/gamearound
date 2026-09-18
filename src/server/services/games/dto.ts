@@ -187,6 +187,15 @@ export type GameDetail = {
   supportsCoop: boolean;
   supportsPvp: boolean;
   isRetro: boolean;
+  /**
+   * 게임이 아는 가장 이른 출시일. 플랫폼 행 전체에서 고른 값이라 어느 탭을 보든 같다.
+   *
+   * 왜 게임 단위로 한 칸을 더 두나: 출시일은 플랫폼마다 따로 오는데 PlayStation 은 그 값을
+   * 아예 주지 않는다(2026-09-16 실측). PS 탭만 열어 본 사람에게는 출시일이 없는 게임이 되는데,
+   * 같은 게임의 스팀 행은 날짜를 알고 있다 — 스토어끼리 빈칸을 메우게 한다.
+   * 날짜를 아무도 모르면 null 이고, 그때는 화면이 그 줄을 그리지 않는다.
+   */
+  releaseDate: string | null;
   updatedAt: string;
   genres: string[];
   platforms: PlatformDto[];

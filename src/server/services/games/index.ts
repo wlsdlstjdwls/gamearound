@@ -4,6 +4,8 @@
 export type * from "./dto";
 export { bestScore, bestUserScore, cheapestPlatform, displayTitle, toPublicGameDto } from "./mappers";
 export { getHomeData } from "./home";
+export { getUpcomingGames, UPCOMING_LIMIT, UPCOMING_WINDOW_DAYS } from "./upcoming";
+export type { UpcomingEntry, UpcomingMonth } from "./upcoming";
 export { searchGames } from "./search";
 export { GAMES_PAGE_SIZE, getGameFacets, listGames } from "./list";
 export type { GameFacets, GameListFilter, GameListResult } from "./list";

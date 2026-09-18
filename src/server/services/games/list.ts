@@ -68,7 +68,12 @@ function platformAgg(platforms: Platform[]) {
       hasBaseCurrency: sql<boolean>`bool_or(${gamePlatforms.currency} = ${DISPLAY_CURRENCY} and ${gamePlatforms.currentPrice} is not null)`.as("has_base_currency"),
       // 통화가 섞인 min() 은 뜻이 없다 — 정렬 기준은 기준 통화 가격만 본다(외화 전용 게임은 가격 정렬에서 nulls last)
       minPrice: sql<number | null>`min(${gamePlatforms.currentPrice}) filter (where ${gamePlatforms.currency} = ${DISPLAY_CURRENCY})`.as("min_price"),
-      maxRelease: sql<string | null>`max(${gamePlatforms.releaseDate})`.as("max_release"),
+      /**
+       * "최신 출시순" 이 세는 값. **이미 나온 날짜만** 본다(2026-09-18).
+       * 미래 날짜를 그대로 세면 아직 못 사는 게임이 첫 페이지를 통째로 차지한다 —
+       * 이 목록이 답하는 질문은 "무엇이 나왔나" 고, "무엇을 기다리나" 는 /upcoming 이 맡는다.
+       */
+      maxRelease: sql<string | null>`max(${gamePlatforms.releaseDate}) filter (where ${gamePlatforms.releaseDate} <= current_date)`.as("max_release"),
     })
     .from(gamePlatforms)
     // 목록의 최저가, 할인, 발매일은 기준 지역(한국) 행만 본다. 다른 나라 가격을 섞으면

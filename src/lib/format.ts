@@ -139,3 +139,28 @@ export function formatSaleWindow(startsAt: string | null | undefined, endsAt: st
   if (start) return `${start} 시작`;
   return null;
 }
+
+/**
+ * 요일 이름. 출시예정 목록이 쓴다 — "9월 24일" 만으로는 그게 이번 주인지 다음 주인지 세어 봐야 한다.
+ */
+const WEEKDAY_LABEL = ["일", "월", "화", "수", "목", "금", "토"];
+
+/**
+ * date 컬럼 값("2026-09-24") → "9월 24일 (목)".
+ *
+ * KST 변환을 하지 않는 이유: 시각이 없는 날짜다. 이 값을 자정으로 놓고 시간대를 옮기면
+ * 하루가 앞뒤로 밀린다 — 스토어가 말한 날짜를 그대로 읽는 것이 맞다.
+ */
+export function formatReleaseDay(day: string): string {
+  const [year, month, date] = day.split("-").map(Number);
+  if (!year || !month || !date) return day;
+  const weekday = WEEKDAY_LABEL[new Date(Date.UTC(year, month - 1, date)).getUTCDay()];
+  return `${month}월 ${date}일 (${weekday})`;
+}
+
+/** 달 열쇠("2026-10") → "2026년 10월". 출시예정 목록의 구분 머리 */
+export function formatMonthLabel(key: string): string {
+  const [year, month] = key.split("-").map(Number);
+  if (!year || !month) return key;
+  return `${year}년 ${month}월`;
+}
