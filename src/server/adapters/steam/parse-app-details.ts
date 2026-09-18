@@ -44,6 +44,14 @@ export function inferMultiplayer(categories: Array<{ description: string }> | un
   return { solo, coop, pvp };
 }
 
+/** appdetails 의 platforms → 네이티브 지원 세 값. 응답에 없으면 전부 undefined(기존 값을 안 덮는다) */
+function nativeOsOf(
+  p: { windows?: boolean; mac?: boolean; linux?: boolean } | undefined,
+): Pick<StoreSnapshot, "nativeWindows" | "nativeMac" | "nativeLinux"> {
+  if (!p) return {};
+  return { nativeWindows: p.windows ?? false, nativeMac: p.mac ?? false, nativeLinux: p.linux ?? false };
+}
+
 function centsToKrw(cents: number): number {
   return Math.round(cents / 100);
 }
@@ -105,6 +113,8 @@ export function parseAppDetails(rawKo: unknown, appid: string, rawEn?: unknown):
     dlcExternalIds,
     // 본편이 DLC 목록을 줬다면 그 자체가 "추가 콘텐츠 있음"이다
     hasAddOns: isDlc ? null : dlcExternalIds.length > 0,
+    // 덱 등급은 이 응답에 없다(배치 경로에만 있다 — schemas 의 platforms 주석). OS 세 개만 옮긴다
+    ...nativeOsOf(ko.platforms ?? en?.platforms),
     meta: {
       titleEn,
       titleKo,

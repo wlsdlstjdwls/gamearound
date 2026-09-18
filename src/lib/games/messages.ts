@@ -1,6 +1,6 @@
 // 게임 상세, 회사 화면의 사용자 문구. "-해요"체, 가운뎃점과 화살표 글자를 쓰지 않는다.
 // 문구를 컴포넌트에 흩어 두면 같은 개념이 화면마다 다른 말로 불린다.
-import type { CompanyRole, ContentType, UpgradeKind } from "@/server/db/schema";
+import type { CompanyRole, ContentType, DeckCompat, UpgradeKind } from "@/server/db/schema";
 
 export const COMPANY_ROLE_LABEL: Record<CompanyRole, string> = {
   developer: "개발",
@@ -21,6 +21,23 @@ export const CONTENT_KIND_LABEL: Record<Exclude<ContentType, "game">, string> = 
   /** 본편에 딸린 것이 아니라 혼자 서는 사운드트랙 상품. 딸린 쪽은 dlc 로 온다 */
   music: "사운드트랙",
 };
+
+/**
+ * 스팀덱 등급 칩 문구. 밸브가 단언한 값이라 미지원까지 그대로 적는다 —
+ * 멀티플레이 칩에서 미지원을 지운 것과 다른 경우다(그쪽은 false 가 "스토어가 안 알려 줌" 을 겸했다).
+ * 여기서는 "모름" 이 아예 null 로 와서, 값이 있다는 것 자체가 밸브가 봤다는 뜻이다.
+ */
+export const DECK_COMPAT_LABEL: Record<DeckCompat, string> = {
+  verified: "스팀덱 검증됨",
+  playable: "스팀덱 구동 가능",
+  unsupported: "스팀덱 미지원",
+};
+
+/** 네이티브로 도는 OS 칩. 참인 것만 적는다 — 우회 실행(Proton, 포팅 툴킷)은 우리가 보증할 값이 아니다 */
+export const NATIVE_OS_LABEL = {
+  mac: "맥 지원",
+  linux: "리눅스 지원",
+} as const;
 
 /** 자식 화면에서 본편으로 돌아가는 줄. 부모를 아는 자식에게만 보인다 */
 export const PARENT_LINK_LABEL = "본편";

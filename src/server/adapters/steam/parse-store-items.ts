@@ -1,7 +1,7 @@
 // GetItems 응답 파서 — 배치 조회 경로. 가격, 할인 기간, 에셋, 멀티플레이 추론이 여기서 나온다.
 import { AdapterError, type StoreSnapshot } from "../types";
 import { storeItemsSchema, type StoreItem } from "./schemas";
-import { PLAYER_CATEGORY, STEAM_APP_TYPE_DEMO, STEAM_APP_TYPE_DLC, STEAM_APP_TYPE_MUSIC, STEAM_ASSET_BASE_URL, STEAM_GENRE_TAG_IDS, STEAM_STORE_APP_URL } from "./constants";
+import { PLAYER_CATEGORY, STEAM_DECK_COMPAT, STEAM_APP_TYPE_DEMO, STEAM_APP_TYPE_DLC, STEAM_APP_TYPE_MUSIC, STEAM_ASSET_BASE_URL, STEAM_GENRE_TAG_IDS, STEAM_STORE_APP_URL } from "./constants";
 import { steamDiscountLabel } from "./parse-discount";
 import { ratioToScore } from "@/lib/user-score";
 
@@ -50,6 +50,22 @@ function multiplayerOf(item: StoreItem): NonNullable<StoreSnapshot["meta"]>["mul
   const coop = has(PLAYER_CATEGORY.coop);
   const pvp = has(PLAYER_CATEGORY.pvp);
   return { solo: has(PLAYER_CATEGORY.solo), coop, pvp };
+}
+
+/**
+ * 구동 환경 — 덱 등급과 OS 네이티브 지원. 응답에 platforms 자체가 없으면 전부 undefined 라
+ * 기존 값을 덮지 않는다(§7). "모름"(0)도 마찬가지로 값을 만들지 않는다.
+ */
+function runtimeOf(item: StoreItem): Pick<StoreSnapshot, "deckCompat" | "nativeWindows" | "nativeMac" | "nativeLinux"> {
+  const p = item.platforms;
+  if (!p) return {};
+  return {
+    deckCompat: STEAM_DECK_COMPAT[p.steam_deck_compat_category ?? 0] ?? null,
+    nativeWindows: p.windows ?? false,
+    nativeMac: p.mac ?? false,
+    // 스팀의 리눅스 칸 이름은 steamos_linux 다 — SteamOS 와 일반 리눅스를 가르지 않는다
+    nativeLinux: p.steamos_linux ?? false,
+  };
 }
 
 /**
@@ -122,6 +138,7 @@ export function parseStoreItems(rawKo: unknown, rawEn?: unknown): Map<string, St
       contentType: steamContentType(item.type, parentAppid),
       parentExternalId: parentAppid,
       userScore: userScoreOf(item),
+      ...runtimeOf(item),
       // 본편의 DLC 목록은 GetItems 가 주지 않는다. 목록이 필요하면 appdetails 경로(fetch)를 써야 한다
       meta: {
         titleEn,

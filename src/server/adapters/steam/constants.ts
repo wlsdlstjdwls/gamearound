@@ -1,4 +1,5 @@
 // Steam 엔드포인트와 수집 파라미터. 값의 근거(실측 날짜, 한계)를 주석으로 남긴다.
+import type { DeckCompat } from "@/server/db/schema";
 
 export const STEAM_APPDETAILS_URL = "https://store.steampowered.com/api/appdetails";
 export const STEAM_STORESEARCH_URL = "https://store.steampowered.com/api/storesearch/";
@@ -94,6 +95,18 @@ export const DISCOVERY_PASSES: Array<{ filter: string; tags: string | null; maxP
   { filter: "comingsoon", tags: null, maxPages: UPCOMING_MAX_PAGES },
   ...DISCOVERY_SLICES.map((tags) => ({ filter: "topsellers", tags, maxPages: TOPSELLERS_MAX_PAGES })),
 ];
+
+/**
+ * GetItems 의 steam_deck_compat_category → 우리 등급(ESteamDeckCompatibilityCategory).
+ *   0 밸브가 아직 안 봄 | 1 미지원 | 2 조건부 구동 | 3 검증됨
+ * 2026-09-18 실측으로 값의 자리를 확인했다: 엘든 링 3, 마블 라이벌즈 2, CS2 2.
+ * 0 은 지도에 넣지 않는다 — "모름" 은 값이 아니라 없음이라야 기존 등급을 안 덮는다(schema 의 deck_compat 주석).
+ */
+export const STEAM_DECK_COMPAT: Record<number, DeckCompat> = {
+  1: "unsupported",
+  2: "playable",
+  3: "verified",
+};
 
 /** GetItems 의 supported_player_categoryids → 멀티플레이 추론 (§11-7: 인원수는 알 수 없음) */
 export const PLAYER_CATEGORY = {

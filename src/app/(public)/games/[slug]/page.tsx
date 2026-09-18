@@ -10,6 +10,7 @@ import { ContentKindHead } from "@/components/content-kind-head";
 import { DlcSection } from "@/components/dlc-list";
 import { UpgradeNotes } from "@/components/upgrade-note";
 import { MultiplayerBadges } from "@/components/multiplayer-badges";
+import { PcSupportBadges } from "@/components/pc-support-badges";
 import { NewsList } from "@/components/news-list";
 import { PatchList, PatchSpeed } from "@/components/patch-list";
 import { Sheet } from "@/components/ui/sheet";
@@ -281,6 +282,8 @@ export default async function GameDetailPage({ params }: Props) {
               supportsCoop={game.supportsCoop}
               supportsPvp={game.supportsPvp}
             />
+            {/* 스팀덱 등급과 네이티브 OS. 기기 등록을 요구하지 않는 값이라 플레이 방식과 같은 줄에 선다 */}
+            <PcSupportBadges platforms={game.platforms} />
           </div>
 
           {game.description && (

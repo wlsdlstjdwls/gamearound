@@ -64,6 +64,10 @@ export function toPlatformDto(p: PlatformRow): PlatformDto {
     lastSyncedAt: iso(p.lastSyncedAt),
     syncStatus: p.syncStatus,
     hasAddOns: p.hasAddOns,
+    deckCompat: p.deckCompat,
+    nativeWindows: p.nativeWindows,
+    nativeMac: p.nativeMac,
+    nativeLinux: p.nativeLinux,
     // 구독은 다른 테이블이라 행 하나로는 알 수 없다. 채우는 곳은 detail 의 조회부다
     subscriptions: [],
   };

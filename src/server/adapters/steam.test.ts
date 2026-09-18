@@ -293,6 +293,42 @@ describe("parseStoreItems", () => {
     expect(map.get("999001")!.contentType).toBe("dlc");
   });
 
+  // 요청을 늘리지 않고 얻는 축이다 — 이미 include_platforms 로 받고 있던 값을 파서가 버리고 있었다
+  it("스팀덱 등급을 옮긴다 (2026-09-18 실측: 위쳐3 verified, 칼파 playable, 배그 unsupported)", () => {
+    const map = parseStoreItems(ko(), en());
+    expect(map.get("292030")!.deckCompat).toBe("verified");
+    expect(map.get("2717010")!.deckCompat).toBe("playable");
+    expect(map.get("578080")!.deckCompat).toBe("unsupported");
+  });
+
+  it("밸브가 아직 안 본 게임(0)은 등급이 아니라 null 이다 — 기존 등급을 덮으면 안 된다", () => {
+    const raw = {
+      response: { store_items: [{ appid: 7, type: 0, name: "Foo", tagids: [], platforms: { windows: true, steam_deck_compat_category: 0 } }] },
+    };
+    expect(parseStoreItems(raw).get("7")!.deckCompat).toBeNull();
+  });
+
+  it("platforms 자체가 없으면 네 값 모두 건드리지 않는다 (undefined = 기존 값 유지)", () => {
+    const raw = { response: { store_items: [{ appid: 7, type: 0, name: "Foo", tagids: [] }] } };
+    const snap = parseStoreItems(raw).get("7")!;
+    expect(snap.deckCompat).toBeUndefined();
+    expect(snap.nativeWindows).toBeUndefined();
+    expect(snap.nativeMac).toBeUndefined();
+  });
+
+  it("네이티브 OS 는 스팀이 말한 그대로 — 리눅스 칸 이름은 steamos_linux 다", () => {
+    const raw = {
+      response: {
+        store_items: [{ appid: 730, type: 0, name: "CS2", tagids: [], platforms: { windows: true, steamos_linux: true, steam_deck_compat_category: 2 } }],
+      },
+    };
+    const snap = parseStoreItems(raw).get("730")!;
+    expect(snap.nativeWindows).toBe(true);
+    expect(snap.nativeLinux).toBe(true);
+    // 응답이 안 준 OS 는 미지원이다 — 스팀은 지원하는 것만 켜서 보낸다(2026-09-18 실측)
+    expect(snap.nativeMac).toBe(false);
+  });
+
   it("형식이 깨진 응답은 AdapterError", () => {
     expect(() => parseStoreItems({ response: { store_items: "nope" } })).toThrow(AdapterError);
   });

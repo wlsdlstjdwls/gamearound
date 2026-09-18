@@ -67,12 +67,22 @@ export const upgradeKindEnum = pgEnum("upgrade_kind", ["free", "paid", "subscrip
  * 화면이 이 값을 보고 문장을 고른다.
  */
 export const userScoreKindEnum = pgEnum("user_score_kind", ["positive_ratio", "star_average"]);
+/**
+ * 밸브가 매긴 스팀덱 구동 등급. 우리가 판정한 값이 아니라 밸브의 검증 결과를 그대로 옮긴다.
+ *   verified    밸브가 검증했고 손댈 것 없이 돌아간다
+ *   playable    돌아가지만 손이 간다(작은 글씨, 가상 키보드 필요 등)
+ *   unsupported 안 돌아간다
+ * "모름"(밸브가 아직 안 봤다)은 값으로 두지 않고 NULL 이다 — §7 의 "null 로 덮지 않는다" 규칙을
+ * 그대로 태우기 위해서다. 등급을 아는 행이 응답 한 번 어긋났다고 "모름" 으로 내려가면 안 된다.
+ */
+export const deckCompatEnum = pgEnum("deck_compat", ["verified", "playable", "unsupported"]);
 
 export type Platform = (typeof platformEnum.enumValues)[number];
 export type SourceName = (typeof sourceEnum.enumValues)[number];
 export type Role = (typeof roleEnum.enumValues)[number];
 export type SyncStatus = (typeof syncStatusEnum.enumValues)[number];
 export type UserScoreKind = (typeof userScoreKindEnum.enumValues)[number];
+export type DeckCompat = (typeof deckCompatEnum.enumValues)[number];
 export type Currency = (typeof currencyEnum.enumValues)[number];
 export type Region = (typeof regionEnum.enumValues)[number];
 export type ContentType = (typeof contentTypeEnum.enumValues)[number];
@@ -241,6 +251,27 @@ export const gamePlatforms = pgTable("game_platforms", {
    * 매 실행 전부 다시 묻지 않도록 언제 물어봤는지를 남긴다(sync/patch-list 의 PATCH_LIST_REFRESH_DAYS).
    */
   patchListedAt: timestamp("patch_listed_at", { withTimezone: true }),
+  /**
+   * 스팀덱 구동 등급(밸브 판정). 값의 뜻은 deckCompatEnum 주석에 있다.
+   *
+   * 여기(game_platforms)에 두는 이유: 같은 게임이라도 이 사실은 스팀 스토어의 성질이다.
+   * 게임 위에 올리면 PS 탭을 보는 사람에게도 덱 배지가 뜬다 — 구독 배지를 플랫폼 행에 매단 것과 같은 이유다.
+   *
+   * 수집 원가 0(2026-09-18 실측): GetItems 의 platforms 안에 이미 실려 온다. 요청도 파라미터도 늘지 않고
+   * 파서가 버리던 값을 주울 뿐이다. 응답은 SteamOS, 스팀 머신 등급도 같이 주지만 담지 않는다 —
+   * 지금 화면이 답하는 질문은 "내 덱에서 돌아가나" 하나뿐이고, 안 쓰는 열은 소급 백필 대상만 늘린다.
+   */
+  deckCompat: deckCompatEnum("steam_deck_compat"),
+  /**
+   * 그 OS 에서 **네이티브로** 돌아가는가(스토어가 말한 값 그대로).
+   *
+   * 사양보다 이 값이 먼저다(설계 §5): 맥 빌드가 없으면 맥 사양을 견줄 이유가 자체가 없다.
+   * Proton, 게임 포팅 툴킷 같은 우회 실행은 여기 담지 않는다 — 우리가 보증할 수 있는 사실이 아니다.
+   * 모르는 스토어는 NULL 로 남는다(콘솔은 이 축이 아예 없다).
+   */
+  nativeWindows: boolean("native_windows"),
+  nativeMac: boolean("native_mac"),
+  nativeLinux: boolean("native_linux"),
   ...auditColumns(),
 }, (t) => [
   uniqueIndex("gp_game_platform_region_uq").on(t.gameId, t.platform, t.region),

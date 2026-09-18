@@ -28,6 +28,12 @@ export const appDataSchema = z.object({
   categories: z.array(z.object({ id: z.number(), description: z.string() })).optional(),
   genres: z.array(z.object({ id: z.union([z.string(), z.number()]), description: z.string() })).optional(),
   release_date: z.object({ coming_soon: z.boolean().optional(), date: z.string().optional() }).optional(),
+  /**
+   * 단건 경로의 구동 환경. 배치(GetItems)와 달리 **덱 등급은 없고** OS 세 개만 준다
+   * (2026-09-18 실측: 엘든 링 {windows:true, mac:false, linux:false}).
+   * 그래서 덱 등급의 출처는 배치 경로 하나뿐이다.
+   */
+  platforms: z.object({ windows: z.boolean().optional(), mac: z.boolean().optional(), linux: z.boolean().optional() }).optional(),
 });
 
 export const appDetailsResponseSchema = z.record(
@@ -89,6 +95,20 @@ export const storeItemSchema = z.object({
     .optional(),
   release: z.object({ steam_release_date: z.number().optional(), is_coming_soon: z.boolean().optional() }).optional(),
   categories: z.object({ supported_player_categoryids: z.array(z.number()).default([]) }).optional(),
+  /**
+   * 구동 환경(data_request.include_platforms). 이미 켜 놓고 받던 값인데 파서가 버리고 있었다 —
+   * 요청을 늘리지 않고 스팀덱 등급과 OS 네이티브 지원을 같이 준다(2026-09-18 실측: 엘든 링 3=verified,
+   * CS2 는 steamos_linux=true). steam_os_compat_category, steam_machine_compat_category 도 함께 오지만
+   * 담지 않는다(schema 의 steam_deck_compat 주석).
+   */
+  platforms: z
+    .object({
+      windows: z.boolean().optional(),
+      mac: z.boolean().optional(),
+      steamos_linux: z.boolean().optional(),
+      steam_deck_compat_category: z.number().optional(),
+    })
+    .optional(),
   /**
    * 유저 리뷰 요약(data_request.include_reviews). 두 묶음이 온다 —
    * summary_filtered 는 전체, summary_language_specific 은 요청 언어(한국어)만이다.

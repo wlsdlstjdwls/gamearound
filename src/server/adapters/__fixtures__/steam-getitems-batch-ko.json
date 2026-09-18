@@ -120,6 +120,14 @@
             "review_score": 9,
             "review_score_label": "압도적으로 긍정적"
           }
+        },
+        "platforms": {
+          "windows": true,
+          "vr_support": {},
+          "steam_deck_compat_category": 3,
+          "steam_os_compat_category": 2,
+          "steam_frame_compat_category": 0,
+          "steam_machine_compat_category": 3
         }
       },
       {
@@ -227,6 +235,14 @@
           "must_purchase_as_set": false,
           "package_group": "default",
           "price_cannot_be_displayed_as_discount": false
+        },
+        "platforms": {
+          "windows": true,
+          "vr_support": {},
+          "steam_deck_compat_category": 2,
+          "steam_os_compat_category": 2,
+          "steam_frame_compat_category": 0,
+          "steam_machine_compat_category": 2
         }
       },
       {
@@ -328,6 +344,14 @@
             "review_score": 4,
             "review_score_label": "대체로 부정적"
           }
+        },
+        "platforms": {
+          "windows": true,
+          "vr_support": {},
+          "steam_deck_compat_category": 1,
+          "steam_os_compat_category": 1,
+          "steam_frame_compat_category": 0,
+          "steam_machine_compat_category": 1
         }
       }
     ]

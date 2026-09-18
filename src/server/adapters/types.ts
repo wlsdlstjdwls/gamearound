@@ -1,5 +1,5 @@
 // 어댑터 인터페이스 — 설계서 §4.1. 어댑터는 "가져오기만" 한다. DB 반영은 sync/가 맡음.
-import type { Currency, Platform, Region, UserScoreKind } from "@/server/db/schema";
+import type { Currency, DeckCompat, Platform, Region, UserScoreKind } from "@/server/db/schema";
 
 /** 크롤러 공통 User-Agent (§10: UA 명시) — 실제 값은 서비스 아이덴티티(lib/site)에서 만든다 */
 export { CRAWLER_USER_AGENT } from "@/lib/site";
@@ -37,6 +37,18 @@ export interface StoreSnapshot {
    * DLC 목록을 못 가져오는 플랫폼에서도 유무만은 표시하기 위한 별도 신호다.
    */
   hasAddOns?: boolean | null;
+  /**
+   * 밸브가 매긴 스팀덱 구동 등급. 스팀만 준다(schema 의 deck_compat 주석).
+   * 밸브가 아직 안 본 게임은 응답이 "모름"(0)으로 오고, 우리는 그것을 값이 아니라 null 로 옮긴다.
+   */
+  deckCompat?: DeckCompat | null;
+  /**
+   * 그 OS 네이티브 지원 여부. 스토어가 말한 값 그대로 옮긴다 — 우회 실행(Proton 등)은 여기 담지 않는다.
+   * 세 값을 객체로 묶지 않는 이유: 반영 단계가 평평한 필드를 그대로 훑어 널만 걸러 낸다(platform-writer).
+   */
+  nativeWindows?: boolean | null;
+  nativeMac?: boolean | null;
+  nativeLinux?: boolean | null;
   /** 본편이 알려주는 DLC 외부 ID 목록. steam appdetails 의 dlc 배열 (2026-09-14 실측) */
   dlcExternalIds?: string[];
   /** DLC 가 알려주는 본편 외부 ID. steam appdetails 의 fullgame.appid */

@@ -45,8 +45,11 @@
  * v12(2026-09-18): 목록, 검색, 홈, 회사, 출시예정이 **스토어와 이어진 게임만** 센다
  * (`mainGamesOnly` 에 매칭 조건을 접었다). psprices 병합분 2,173건이 빠져 본편이 14,637 에서
  * 12,464 로 준다 — 거르는 기준이 바뀐 경우라 v8, v11 과 같은 모양이다.
+ *
+ * v13(2026-09-18): PlatformDto 에 스팀덱 등급과 네이티브 OS 네 필드를 더했다. 옛 값에는 필드가 없어
+ * 칩이 안 뜬다(죽지는 않는다 — 전부 null 로 읽혀 아무것도 안 그린다). v7 과 같은 모양이라 같은 커밋에서 올린다.
  */
-export const DTO_CACHE_VERSION = "v12";
+export const DTO_CACHE_VERSION = "v13";
 
 /** 목록, 검색, 홈처럼 태그 무효화로 갱신되는 화면의 기본 재검증 주기(초) */
 export const LIST_REVALIDATE_SECONDS = 3600;

@@ -1,6 +1,6 @@
 // 공개 DTO — route, 컴포넌트가 받는 모양. 모두 JSON 직렬화 가능(Date → ISO 문자열).
 // DB 행 타입을 그대로 노출하지 않는 이유: 스키마가 바뀌어도 화면 계약은 유지돼야 한다.
-import type { CompanyRole, ContentType, Currency, Platform, Region, SyncStatus, UpgradeKind, UserScoreKind } from "@/server/db/schema";
+import type { CompanyRole, ContentType, Currency, DeckCompat, Platform, Region, SyncStatus, UpgradeKind, UserScoreKind } from "@/server/db/schema";
 
 /**
  * 스토어 이용자가 매긴 점수. 평론가 점수와 축이 다르다.
@@ -35,6 +35,15 @@ export type PlatformDto = {
   syncStatus: SyncStatus | null;
   /** 이 스토어가 "추가 콘텐츠 있음"이라고 알려준 값. DLC 목록을 못 가져오는 플랫폼에서도 유무는 말할 수 있다 */
   hasAddOns: boolean | null;
+  /** 밸브가 매긴 스팀덱 구동 등급. 스팀 행에만 있고, 밸브가 아직 안 본 게임도 null 이다 */
+  deckCompat: DeckCompat | null;
+  /**
+   * 이 스토어가 말한 네이티브 구동 OS. 모르는 스토어(콘솔 전체)는 세 값이 다 null 이라
+   * 화면이 "미지원" 과 "모름" 을 가를 수 있다 — false 와 null 을 같게 다루면 거짓을 자신 있게 말하게 된다.
+   */
+  nativeWindows: boolean | null;
+  nativeMac: boolean | null;
+  nativeLinux: boolean | null;
   /**
    * 이 플랫폼에서 이 게임을 포함하는 구독. 게임 단위가 아니라 플랫폼 단위로 매다는 이유:
    * Game Pass 는 Xbox 에서만 유효한데 게임 위에 붙여 두면 PS 탭을 보는 사람에게도
