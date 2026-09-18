@@ -82,7 +82,37 @@ export const SHOP_MESSAGES = {
   statusSuspended: "멈춰 있어요",
   reasonLabel: "사유",
   reapply: "신청서 고쳐서 다시 내기",
+  viewMyShop: "내 매장 페이지 보기",
   noApplication: "아직 낸 신청서가 없어요.",
+} as const;
+
+/**
+ * 매장 찾기(/shops)와 매장 페이지(/shops/[slug]).
+ *
+ * 설계서 §11 은 매장 찾기를 "거리순" 으로 그렸다. 지금은 못 한다 — 입점 신청서가 주소를 글로만 받고
+ * 좌표(shops.lat, lng)를 채우는 자리가 아직 없다. 지오코딩을 붙이기 전까지는 이름순으로 세우고,
+ * 찾는 일은 검색어(이름, 주소)가 맡는다. 거리순인 척하는 정렬을 먼저 만들지 않는다.
+ */
+export const SHOP_DIRECTORY_MESSAGES = {
+  title: "매장 찾기",
+  lead: "입점한 게임 매장이에요. 파는 물건은 매장이 직접 올려요.",
+  searchLabel: "매장 이름이나 주소로 찾기",
+  searchPlaceholder: "매장 이름, 주소",
+  searchSubmit: "찾기",
+  countSuffix: "곳",
+  empty: "찾는 조건에 맞는 매장이 없어요.",
+  emptyAll: "아직 입점한 매장이 없어요.",
+  emptyAction: "입점 안내 보기",
+  onlineOnly: "온라인만 팔아요",
+  noAddress: "매장 주소가 없어요",
+  phoneLabel: "연락처",
+  hoursLabel: "영업시간",
+  aboutLabel: "매장 소개",
+  /** 판매 목록은 2단계(상품, 재고) 몫이다. 빈 자리를 감추지 않고 언제 채워지는지 말한다 */
+  listingsTitle: "파는 물건",
+  listingsEmpty: "아직 올라온 물건이 없어요.",
+  backToDirectory: "매장 찾기로",
+  suspendedNotice: "지금은 쉬고 있는 매장이에요.",
 } as const;
 
 /** 관리자 심사 화면(/shops/admin) */

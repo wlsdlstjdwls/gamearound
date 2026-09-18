@@ -6,7 +6,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { Card, Page, PageHead } from "@/components/ui/page";
 import { buttonClass } from "@/components/ui/button";
-import { ROUTES } from "@/lib/routes";
+import { ROUTES, shopPath } from "@/lib/routes";
 import { SHOP_MESSAGES } from "@/lib/shops/messages";
 import { requireUserOrRedirect } from "@/server/auth/guards";
 import { findMyShop, type ShopApplication } from "@/server/services/shops";
@@ -71,6 +71,13 @@ export default async function ShopJoinStatusPage() {
             {shop.status === "pending" && shop.statusReason && (
               <Link href={ROUTES.shopsJoin} className={buttonClass({ variant: "primary" })}>
                 {SHOP_MESSAGES.reapply}
+              </Link>
+            )}
+            {/* 승인된 매장주가 "그래서 내 매장이 어디에 떴나" 를 물을 자리가 여기다.
+                이 링크가 없던 동안 상태 화면은 "승인됐어요" 에서 끊겼다 */}
+            {shop.status === "active" && (
+              <Link href={shopPath(shop.slug)} className={buttonClass({ variant: "primary" })}>
+                {SHOP_MESSAGES.viewMyShop}
               </Link>
             )}
           </div>

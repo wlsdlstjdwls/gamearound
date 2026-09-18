@@ -20,6 +20,11 @@ export function SiteFooter() {
     // safe-bottom: 홈 인디케이터가 있는 기기에서 마지막 줄이 가려지지 않게 한다(globals.css). 푸터가 문서의 맨 끝이다
     <footer className="safe-bottom flex flex-col items-center gap-2 border-t border-line bg-surface px-4 pt-6">
       <nav className="flex flex-wrap items-center justify-center gap-4" aria-label="약관">
+        {/* 매장 찾기는 손님 화면이지만 머리글에 올리지 않는다 — 입점 매장이 쌓이기 전까지는
+            빈 목록을 모든 방문자에게 먼저 보여 주게 된다(회사 목록과 같은 이유) */}
+        <Link href={ROUTES.shops} className={LINK_CLASS}>
+          매장 찾기
+        </Link>
         {/* 입점 랜딩은 머리글이 아니라 여기에 둔다 — 손님 열에 섞이면 매장용 링크가 손님의 길을 가린다 */}
         <Link href={ROUTES.business} className={LINK_CLASS}>
           매장 입점
