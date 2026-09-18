@@ -80,6 +80,11 @@ export function vendorShopPath(slug: string): string {
   return `${ROUTES.vendor}/${encodeURIComponent(slug)}`;
 }
 
+/** 매장주의 판매 목록. 매장 하나짜리 매장주는 /vendor 가 곧장 여기로 보낸다 */
+export function vendorListingsPath(slug: string): string {
+  return `${vendorShopPath(slug)}/listings`;
+}
+
 /** 가격 변동 그래프 — 게임 상세의 하위 화면 */
 export function gamePricesPath(slug: string): string {
   return `${gamePath(slug)}/prices`;

@@ -22,6 +22,9 @@ import { WishlistButton } from "@/components/wishlist-button";
 import { BackLink } from "@/components/ui/back-link";
 import { buttonClass } from "@/components/ui/button";
 import { Card, Page, SectionHead } from "@/components/ui/page";
+import { SellersSection } from "@/components/shops/sellers-section";
+import { listSellersForGame } from "@/server/services/listings";
+import { SELLING_MESSAGES } from "@/lib/shops/listing-messages";
 import { formatDate, formatHours, PLATFORM_LABEL } from "@/lib/format";
 import { userScoreNoteText, userScoreValueText } from "@/lib/user-score";
 import { SITE } from "@/lib/site";
@@ -179,6 +182,25 @@ async function CompatSlot({ groups }: { groups: GameDetail["requirements"] }) {
   const user = await getCurrentUser();
   const devices = user ? await listMyDevices() : [];
   return <CompatSection groups={groups} devices={devices.map((d) => ({ ...d, id: d.id, label: d.label }))} />;
+}
+
+/**
+ * "파는 곳" 칸. 상세 본문(getGameBySlugCached)과 **같이 캐시하지 않는다** —
+ * 매장 재고는 크롤이 아니라 매장주가 손으로 바꾸는 값이라, 게임 태그를 밀어 주는 사람이 없다.
+ * 상세 캐시에 얹으면 매장이 값을 고쳐도 게임 화면은 한 시간 뒤에나 따라온다.
+ *
+ * 그래서 Suspense 안에서 따로 받는다. 찜 버튼과 같은 자리이고, 본문이 이 질의를 기다리지 않는다.
+ */
+async function SellersSlot({ gameId }: { gameId: string }) {
+  const sellers = await listSellersForGame(gameId);
+  // 파는 곳이 없으면 칸을 아예 안 그린다 — 근거는 SellersSection 머리 주석
+  if (sellers.length === 0) return null;
+  return (
+    <section aria-labelledby="sellers-heading" className="flex flex-col gap-3">
+      <SectionHead id="sellers-heading" title={SELLING_MESSAGES.title} note={SELLING_MESSAGES.lead} />
+      <SellersSection sellers={sellers} />
+    </section>
+  );
 }
 
 /** 아직 오지 않은 찜 버튼의 자리. 같은 크기여야 도착할 때 옆 버튼이 밀리지 않는다 */
@@ -355,6 +377,10 @@ export default async function GameDetailPage({ params }: Props) {
             </Suspense>
           )}
           <RequirementsSection groups={game.requirements} />
+
+          <Suspense fallback={null}>
+            <SellersSlot gameId={game.id} />
+          </Suspense>
 
           {patchGroups.length > 0 && (
             <section aria-labelledby="patches-heading" className="flex flex-col gap-3">
