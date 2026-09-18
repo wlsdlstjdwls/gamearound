@@ -18,6 +18,7 @@ import { sleep } from "@/lib/async";
 import { extractParts, PART_MATCH_VERSION } from "@/lib/hardware";
 import { REQUIREMENTS_PER_RUN, REQUIREMENTS_REFRESH_DAYS, SOURCE_PLATFORMS, SOURCE_REGION } from "./constants";
 import { recordError, type Ctx } from "./context";
+import { refreshFloors } from "./requirement-floors";
 import { fetchWithRetry } from "./retry";
 import { runStatements, type Applied, type Statement } from "./store-apply";
 import { createdBy, updatedBy } from "@/server/db/audit";
@@ -155,6 +156,8 @@ async function syncPartsFor(ctx: Ctx, gameIds: string[]): Promise<void> {
     .from(gameRequirements)
     .where(inArray(gameRequirements.gameId, gameIds));
   await runStatements(ctx, `${ctx.source}:requirement-parts`, planRequirementParts(ctx, rows));
+  // 문턱은 후보에서 접는 값이라 후보가 앉은 뒤에만 맞다. 여기서 안 접으면 목록 필터가 어제 값을 본다
+  await refreshFloors(ctx, gameIds);
 }
 
 /**

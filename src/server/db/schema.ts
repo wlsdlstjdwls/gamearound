@@ -413,6 +413,46 @@ export const gameRequirementParts = pgTable("game_requirement_parts", {
 ]);
 
 /**
+ * 게임 하나가 요구하는 **문턱** — 설계 문서 §6 의 판정 캐시 자리다.
+ *
+ * 설계는 `(기기, 게임)` 판정을 캐시하라고 적었지만 그렇게 만들지 않았다. 그 표는 사용자 수만큼
+ * 커지는데(기기 10대 × 본편 14,715), 정작 목록 필터에 필요한 것은 기기마다 다른 답이 아니라
+ * **게임마다 하나뿐인 요구선**이다. 기기 쪽 값(티어 셋)은 질의 시점에 사전에서 뽑으면 되고,
+ * 그러면 캐시 무효화도 사용자와 무관해진다 — 사양이나 사전이 바뀐 게임만 다시 접으면 된다.
+ *
+ * 왜 질의에서 매번 접지 않나: 접으려면 game_requirement_parts(17,111행)를 게임별로 묶어야 하는데
+ * 목록은 페이지마다 전체 집계를 한 번 더 돈다(services/games/list). 접어 둔 값이면 인덱스 한 번이다.
+ *
+ * **판정 규칙 자체는 여기 없다.** 여기 적히는 것은 lib/hardware/verdict 의 `requiredTier` 가
+ * 후보들에서 고른 값 그대로다 — 규칙이 두 벌이 되면 목록과 상세가 다른 답을 한다.
+ */
+export const gameRequirementFloors = pgTable("game_requirement_floors", {
+  gameId: uuid("game_id").references(() => games.id, { onDelete: "cascade" }).notNull(),
+  osFamily: osFamilyEnum("os_family").notNull(),
+  /**
+   * 최소 사양이 요구하는 티어. **후보 중 가장 낮은 것**이고(verdict.requiredTier),
+   * 스토어가 둘 이상이면 그중에서도 낮은 쪽이다 — 같은 게임을 두 스토어가 다르게 적었을 때
+   * 더 높은 쪽을 적으면 한 스토어에서는 실제로 도는 게임이 목록에서 사라진다.
+   * null 은 "판정에 쓸 수 있는 값이 없다" 는 뜻이다(사전에 없는 부품, 또는 스토어가 안 적음).
+   */
+  minCpuTier: integer("min_cpu_tier"),
+  minGpuTier: integer("min_gpu_tier"),
+  minRamMb: integer("min_ram_mb"),
+  minStorageMb: integer("min_storage_mb"),
+  recCpuTier: integer("rec_cpu_tier"),
+  recGpuTier: integer("rec_gpu_tier"),
+  recRamMb: integer("rec_ram_mb"),
+  recStorageMb: integer("rec_storage_mb"),
+  /** 접을 때의 사전 판. 사전을 고치고 재매칭하면 이 값으로 낡은 행을 찾는다 */
+  matchVersion: integer("match_version").notNull(),
+  ...auditColumns(),
+}, (t) => [
+  primaryKey({ columns: [t.gameId, t.osFamily] }),
+  // 목록 필터의 조건 순서와 같다 — OS 로 먼저 좁히고 티어 둘을 견준다
+  index("grf_os_tiers_idx").on(t.osFamily, t.minGpuTier, t.minCpuTier),
+]);
+
+/**
  * 가격 이력. 통화 컬럼을 따로 두지 않는다 — 스냅샷은 언제나 game_platforms 한 행에 매달려 있고,
  * 한 스토어가 파는 통화는 바뀌지 않는다. 통화는 그 행에서 읽는다.
  */

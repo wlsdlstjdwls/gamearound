@@ -21,7 +21,8 @@
     "crawl:seed": "tsx scripts/crawl-local.ts --seed",
     "patch:ko": "tsx scripts/patch-ko.ts",
     "requirements:backfill": "tsx scripts/backfill-requirements.ts",
-    "parts:rematch": "tsx scripts/rematch-parts.ts"
+    "parts:rematch": "tsx scripts/rematch-parts.ts",
+    "floors:backfill": "tsx scripts/backfill-floors.ts"
   },
   "dependencies": {
     "@neondatabase/serverless": "^1.1.0",

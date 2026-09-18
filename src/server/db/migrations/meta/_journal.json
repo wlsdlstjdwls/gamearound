@@ -225,6 +225,13 @@
       "when": 1789701293586,
       "tag": "0031_short_dagger",
       "breakpoints": true
+    },
+    {
+      "idx": 32,
+      "version": "7",
+      "when": 1789706799082,
+      "tag": "0032_handy_invaders",
+      "breakpoints": true
     }
   ]
 }

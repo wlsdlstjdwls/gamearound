@@ -14,6 +14,7 @@ import { gameRequirementParts, gameRequirements } from "@/server/db/schema";
 import { PART_MATCH_VERSION } from "@/lib/hardware";
 import { createContext } from "@/server/sync/context";
 import { planRequirementParts } from "@/server/sync/requirements";
+import { refreshFloors } from "@/server/sync/requirement-floors";
 import { runStatements } from "@/server/sync/store-apply";
 import { errorMessage } from "@/lib/errors";
 
@@ -52,10 +53,12 @@ async function main(): Promise<number> {
   for (let i = 0; i < targets.length; i += CHUNK) {
     const ids = targets.slice(i, i + CHUNK).map((t) => t.id);
     const rows = await db
-      .select({ id: gameRequirements.id, cpuText: gameRequirements.cpuText, gpuText: gameRequirements.gpuText })
+      .select({ id: gameRequirements.id, gameId: gameRequirements.gameId, cpuText: gameRequirements.cpuText, gpuText: gameRequirements.gpuText })
       .from(gameRequirements)
       .where(inArray(gameRequirements.id, ids));
     await runStatements(ctx, "parts-rematch", planRequirementParts(ctx, rows));
+    // 후보가 바뀌면 접힌 문턱도 낡는다 — 여기서 같이 접지 않으면 목록 필터만 옛 사전으로 답한다
+    await refreshFloors(ctx, [...new Set(rows.map((r) => r.gameId))]);
     console.log(`[parts] ${Math.min(i + CHUNK, targets.length)}/${targets.length} | ${((Date.now() - started) / 1000).toFixed(0)}s`);
   }
   return 0;
