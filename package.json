@@ -23,7 +23,8 @@
     "requirements:backfill": "tsx scripts/backfill-requirements.ts",
     "parts:rematch": "tsx scripts/rematch-parts.ts",
     "floors:backfill": "tsx scripts/backfill-floors.ts",
-    "portraits:backfill": "tsx scripts/backfill-portraits.ts"
+    "portraits:backfill": "tsx scripts/backfill-portraits.ts",
+    "e2e:shops": "node scripts/e2e-shops.mjs"
   },
   "dependencies": {
     "@neondatabase/serverless": "^1.1.0",
