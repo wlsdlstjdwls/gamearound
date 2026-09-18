@@ -540,13 +540,21 @@ export const REFRESH_MAIN_SHARE = 0.7;
 export const META_OVERWRITE_SOURCES: Source[] = ["steam"];
 
 /**
- * 세로 아트(games.portrait_url)를 실제로 주는 스토어. 백필(scripts/backfill-portraits)의 대상 선정에 쓴다.
+ * 세로 아트(games.portrait_url)를 **단건 조회로** 주는 스토어. 백필(scripts/backfill-portraits)의 대상 선정에 쓴다.
  *
- * 닌텐도 둘이 빠진 것은 게으름이 아니다 — 한국, 일본 eShop 응답에는 세로 비율 이미지 자체가 없다.
- * 그 소스만 아는 게임은 세로 자리를 영영 못 채우고, 화면이 커버로 폴백하는 것이 최종 답이다.
- * 여기에 소스를 더하기 전에 그 어댑터의 meta.portraitUrl 이 null 이 아닌지 표본으로 먼저 본다.
+ * "단건 조회로" 가 조건이다. 백필은 이미 등록된 게임을 다시 묻는 일이라 발견 목록을 거치지 않는다.
+ * 목록에만 이미지가 있는 소스는 여기 넣어 봐야 요청만 쓰고 빈손으로 돌아온다.
+ *
+ * 빠진 소스와 이유(2026-09-18 실측):
+ *   psstore — 상세 응답의 meta 에 이미지가 **아예 없다**(adapters/psstore/parse 의 meta 는 제목뿐).
+ *             이미지는 발견 목록(SearchCandidate)에만 온다. 표본 20건 백필 결과 0건 채움.
+ *             이 소스의 세로는 발견이 새로 훑을 때만 들어온다.
+ *   nintendo, nintendo_jp — 한국, 일본 eShop 응답에 세로 비율 이미지 자체가 없다.
+ *             그 소스만 아는 게임은 화면이 커버로 폴백하는 것이 최종 답이다.
+ *
+ * 여기에 소스를 더하기 전에 `--source=<새 소스> --limit=20 --dry` 로 채움률을 먼저 본다.
  */
-export const PORTRAIT_SOURCES: StoreSource[] = ["steam", "xbox", "psstore", "epic"];
+export const PORTRAIT_SOURCES: StoreSource[] = ["steam", "xbox", "epic"];
 
 /** 스토어 소스 → 담당 플랫폼 (§11-6: PS4/PS5, Switch/Switch2 분리 유지) */
 export const SOURCE_PLATFORMS: Record<StoreSource, Platform[]> = {
