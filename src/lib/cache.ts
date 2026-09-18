@@ -54,8 +54,11 @@
  *
  * v15(2026-09-18): RequirementDto 에 판정용 티어 두 배열(cpuTiers, gpuTiers)을 더했다.
  * 옛 값에는 필드가 없어 판정 칸이 `undefined.filter` 로 죽는다 — v7 때 editions 와 같은 사고다.
+ *
+ * v16(2026-09-18): 카드의 커버가 비면 **세로 아트로 대신한다**(mappers 의 cardCover).
+ * 값이 바뀌는 경우라 안 올리면 커버 없는 카드 60여 장이 회색 칸인 채로 한 시간을 더 산다.
  */
-export const DTO_CACHE_VERSION = "v15";
+export const DTO_CACHE_VERSION = "v16";
 
 /** 목록, 검색, 홈처럼 태그 무효화로 갱신되는 화면의 기본 재검증 주기(초) */
 export const LIST_REVALIDATE_SECONDS = 3600;

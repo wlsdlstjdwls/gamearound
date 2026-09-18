@@ -13,6 +13,17 @@ export const iso = (d: Date | string | null | undefined): string | null => {
   return Number.isNaN(date.getTime()) ? null : date.toISOString();
 };
 
+/**
+ * 카드에 세울 그림. 가로 커버가 없으면 **세로 아트로 대신한다.**
+ *
+ * 2026-09-18 실측: 커버가 빈 본편 67건 중 60건이 Xbox 인데, 그 상품들에 다시 물어보면
+ * 세로(Poster)는 오고 가로(SuperHeroArt)만 없다 — 스토어가 안 만든 것이라 다시 긁어도 안 채워진다.
+ * 세로를 가로 칸에 넣으면 잘리지만, 아무것도 없는 회색 칸보다 게임을 알아보기 쉽다.
+ */
+export function cardCover(g: { coverUrl: string | null; portraitUrl?: string | null }): string | null {
+  return g.coverUrl ?? g.portraitUrl ?? null;
+}
+
 /** 표시 제목: 한글 우선 */
 export function displayTitle(g: { titleKo: string | null; titleEn: string }): string {
   return g.titleKo ?? g.titleEn;
@@ -150,7 +161,7 @@ export function groupSummaries(rows: Array<{ game: GameRow; gp: PlatformRow }>, 
       slug: game.slug,
       titleKo: game.titleKo,
       titleEn: game.titleEn,
-      coverUrl: game.coverUrl,
+      coverUrl: cardCover(game),
       best: bestOf(gp),
       platforms: [gp.platform],
       genres: [],
@@ -256,7 +267,7 @@ export async function attachBestPrice(rows: GameRow[]): Promise<GameSummary[]> {
       slug: g.slug,
       titleKo: g.titleKo,
       titleEn: g.titleEn,
-      coverUrl: g.coverUrl,
+      coverUrl: cardCover(g),
       best: best ? bestOf(best) : null,
       platforms: distinctPlatforms(list.map((p) => p.platform)),
       genres: [],
