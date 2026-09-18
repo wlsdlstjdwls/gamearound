@@ -3,7 +3,7 @@
 import { describe, expect, it } from "vitest";
 import { type SQL } from "drizzle-orm";
 import { PgDialect } from "drizzle-orm/pg-core";
-import { hasVisiblePlatform } from "./filters";
+import { hasVisiblePlatform, mainGamesOnly } from "./filters";
 import { HIDDEN_PLATFORMS } from "@/lib/platform";
 
 const dialect = new PgDialect();
@@ -39,5 +39,29 @@ describe("hasVisiblePlatform", () => {
   it("고른 플랫폼이 없으면 플랫폼 조건을 붙이지 않는다", () => {
     const { params } = render(hasVisiblePlatform([]));
     expect(params).toHaveLength(HIDDEN_PLATFORMS.length);
+  });
+});
+
+describe("mainGamesOnly", () => {
+  it("본편 조건과 매칭 조건을 함께 건다", () => {
+    const { sql: text } = render(mainGamesOnly());
+    expect(text).toContain('"games"."content_type"');
+    expect(text).toContain('"game_source_refs"');
+    expect(text).toContain("exists");
+  });
+
+  it("쓸 수 있는 매칭만 인정한다 — pending, none 은 아니다", () => {
+    const { sql: text } = render(mainGamesOnly());
+    // 2026-09-15 psprices 병합분 2,173건은 none 이거나 ref 행 자체가 없다.
+    // 목록에 낼 수 있는 근거는 "스토어와 이어졌다" 하나뿐이다
+    expect(text).toContain("'auto'");
+    expect(text).toContain("'manual'");
+    expect(text).not.toContain("'pending'");
+    expect(text).not.toContain("'none'");
+  });
+
+  it("그 게임의 ref 만 본다 (상관 조건)", () => {
+    const { sql: text } = render(mainGamesOnly());
+    expect(text).toContain('"game_source_refs"."game_id" = "games"."id"');
   });
 });
