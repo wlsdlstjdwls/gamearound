@@ -7,7 +7,7 @@
 //
 // 파일을 또 가르는 이유는 schema-shops.ts 머리 주석과 같다 — 한 파일 300줄(AGENTS §4).
 // schema.ts 가 재수출하므로 호출부 import 경로는 바뀌지 않는다.
-import { pgTable, pgEnum, uuid, text, integer, boolean, timestamp, index, uniqueIndex } from "drizzle-orm/pg-core";
+import { pgTable, pgEnum, uuid, text, integer, boolean, numeric, timestamp, index, uniqueIndex } from "drizzle-orm/pg-core";
 import { relations, sql } from "drizzle-orm";
 import { auditColumns } from "./audit";
 import { games, users } from "./schema";
@@ -94,6 +94,20 @@ export const products = pgTable("products", {
   registeredShopId: uuid("registered_shop_id").references(() => shops.id, { onDelete: "set null" }),
   verifiedAt: timestamp("verified_at", { withTimezone: true }),
   verifiedBy: uuid("verified_by").references(() => users.id),
+  /**
+   * 매핑 배치(§5.2)가 이 상품을 마지막으로 본 시각. **없으면 배치가 큐 선두에서 막힌다** —
+   * 후보를 못 찾은 상품이 기록 없이 남으면 다음 회차가 같은 행을 또 집고, 뒤에 선 상품은
+   * 영영 차례를 못 받는다(2026-09-14 HLTB 매칭 큐가 정확히 이 모양으로 멈춰 있었다).
+   */
+  gameMatchCheckedAt: timestamp("game_match_checked_at", { withTimezone: true }),
+  /**
+   * 배치가 찾았지만 자동으로 잇기에는 모자란 후보(§5.2 의 "중간"). 관리자가 보고 정한다.
+   *
+   * 검수 큐를 별도 표로 만들지 않은 이유: 큐에 담길 것이 "상품 하나에 후보 하나" 뿐이라
+   * 표를 세우면 상품과 1:1 인 행을 따로 관리하게 되고, 상품이 지워질 때 남는 고아 행이 생긴다.
+   */
+  gameMatchSuggestedId: uuid("game_match_suggested_id").references(() => games.id, { onDelete: "set null" }),
+  gameMatchConfidence: numeric("game_match_confidence", { precision: 3, scale: 2 }),
   ...auditColumns(),
 }, (t) => [
   // 바코드는 자연키지만 없는 물건이 있어 unique 를 부분 인덱스로 건다 —
@@ -101,6 +115,8 @@ export const products = pgTable("products", {
   uniqueIndex("products_barcode_uq").on(t.barcode).where(sql`barcode is not null`),
   index("products_game_idx").on(t.gameId),
   index("products_shop_idx").on(t.registeredShopId),
+  // 매핑 배치가 타는 인덱스 — 아직 게임을 못 단 상품을 오래된 확인 순으로 집는다
+  index("products_match_queue_idx").on(t.gameMatchCheckedAt).where(sql`game_id is null`),
 ]);
 
 /**

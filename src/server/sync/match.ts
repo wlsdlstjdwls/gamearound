@@ -4,6 +4,7 @@
 import { and, eq, isNull, lt, or, sql } from "drizzle-orm";
 import { getDb } from "@/server/db/client";
 import { gameSourceRefs, games } from "@/server/db/schema";
+import { updatedBy } from "@/server/db/audit";
 import { getSearchableAdapter, getDisabledReason, isSourceEnabled, type SearchableSource } from "@/server/adapters";
 import type { SearchCandidate, Source } from "@/server/adapters/types";
 import { normalizeTitle, seriesConflict, trigramSimilarity } from "@/lib/slug";
@@ -193,7 +194,24 @@ export async function matchGameToSource(gameId: string, source: SearchableSource
     .onConflictDoUpdate({ target: [gameSourceRefs.gameId, gameSourceRefs.source], set: values, setWhere });
 
   if (!best) return { gameId, source, decision: "no-candidates" };
+  if (row.matchedBy === "auto") await promoteShopGame(gameId, source);
   return { gameId, source, decision: row.matchedBy, externalId: row.externalId, similarity: best.similarity };
+}
+
+/**
+ * 매장이 만든 임시 게임을 전체 목록으로 올린다 — 매장 설계서 §7 의 "크롤러 소스가 붙으면 승격".
+ *
+ * 승격 조건을 auto 하나로 둔 이유: pending 은 "사람이 판단해 달라" 는 뜻이라 아직 근거가 아니다.
+ * 그 상태로 올리면 검수 큐에 선 채로 전체 목록에 나오고, 나중에 아니라고 판명되면 이미 손님이 봤다.
+ *
+ * `visibility` 만 올리고 `origin` 은 그대로 둔다. 누가 만들었나는 사실이고 바뀌지 않는다 —
+ * 나중에 "매장이 만든 행이 얼마나 카탈로그에 흡수됐나" 를 물을 때 답이 되는 것이 그 컬럼이다.
+ */
+async function promoteShopGame(gameId: string, source: SearchableSource): Promise<void> {
+  await getDb()
+    .update(games)
+    .set({ visibility: "public", ...updatedBy(`cron:match:${source}`) })
+    .where(and(eq(games.id, gameId), eq(games.visibility, "shop_only")));
 }
 
 export interface MatchSummary {
@@ -223,13 +241,19 @@ export async function matchUnmatchedGames(source: SearchableSource, limit: numbe
         // DLC 는 본편을 통해 붙고(sync/dlc-writer), 에디션과 번들은 본편의 변형이다.
         // 몫이 작은데 줄이 이렇게 섞여 있으면 정작 본편이 영영 차례를 못 받는다.
         eq(games.contentType, "game"),
+        // 레트로는 이 배치를 타지 않는다(매장 설계서 §5.3). 온라인 스토어에 없는 물건이라
+        // 넣어 두면 매 회차 몫만 먹고 후보 0건으로 돌아온다
+        eq(games.crawlExcluded, false),
         or(
           isNull(gameSourceRefs.gameId),
           and(eq(gameSourceRefs.matchedBy, "none"), lt(gameSourceRefs.checkedAt, noneRetryCutoff())),
         ),
       ),
     )
-    .orderBy(games.createdAt)
+    // 매장이 만든 게임을 맨 앞에 세운다(§5.3 역방향 수집). 생성순으로만 세우면 이 행들은
+    // 앞에 선 미매칭 1만여 건 뒤라 차례가 영영 안 온다 — 매장은 자기가 올린 물건에 값이
+    // 언제 붙는지로 이 서비스를 판단한다. 몫이 작을수록 순서가 곧 결과다.
+    .orderBy(sql`case when ${games.origin} = 'shop' then 0 else 1 end`, games.createdAt)
     .limit(limit);
 
   const summary: MatchSummary = { attempted: 0, auto: 0, pending: 0, unmatched: 0, errors: 0 };

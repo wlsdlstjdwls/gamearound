@@ -788,3 +788,18 @@ export const RELEASE_DATE_MAX_YEARS_AHEAD = 10;
 export const MATCH_LIMIT_MAX_BY_SOURCE: Partial<Record<Source, number>> = {
   opencritic: 25,
 };
+
+/**
+ * 상품 매핑 배치(매장 설계서 §5.2)의 값 셋.
+ *
+ * 후보 수를 5로 둔 이유: 쓰는 것은 1등 하나뿐이지만, 1등만 뽑으면 "2등과 얼마나 벌어졌나" 를
+ * 나중에 물을 수 없다. 5는 그 여지를 남기면서 질의 비용이 안 늘어나는 선이다(정렬은 어차피 돈다).
+ *
+ * 다시 보는 주기가 7일인 이유: 상품이 안 이어지는 까닭은 대개 "그 게임이 아직 카탈로그에 없다" 이고,
+ * 발견은 하루 단위로 돈다. 매일 다시 보면 같은 상품에 같은 답을 여섯 번 더 내고, 한 달에 한 번이면
+ * 매장이 물건을 올린 뒤 값이 붙기까지 한 달을 기다린다.
+ */
+export const PRODUCT_MATCH_CANDIDATES = 5;
+export const PRODUCT_MATCH_RECHECK_DAYS = 7;
+/** 하루 한 번 도는 정리 크론이 한 회차에 볼 상품 수. 네트워크를 안 쓰므로 스토어 몫과 무관하다 */
+export const PRODUCT_MATCH_BATCH = 200;
