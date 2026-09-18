@@ -142,8 +142,15 @@ export const games = pgTable("games", {
   isRetro: boolean("is_retro").default(false),
   /** 본편인지 DLC 인지. 목록, 검색, 홈은 game 만 본다(lib/games-query.ts 한 곳에서 거른다) */
   contentType: contentTypeEnum("content_type").default("game").notNull(),
-  /** DLC 가 가리키는 본편. contentType 이 game 이면 null. 본편이 지워지면 DLC 도 같이 지운다 */
-  parentGameId: uuid("parent_game_id").references((): AnyPgColumn => games.id, { onDelete: "cascade" }),
+  /**
+   * DLC 가 가리키는 본편. contentType 이 game 이면 null.
+   *
+   * **cascade 가 아니다.** 부모가 지워지면 자식은 부모를 잃을 뿐 같이 죽지 않는다.
+   * 중복 정리로 본편 껍데기를 지울 때 그 밑의 DLC 가 소리 없이 따라 사라지는 일이 실제로 가능했다
+   * (2026-09-18 실측: 접을 수 있는 묶음 밑에만 자식 83건, 한 묶음에서만 39건). 부모 없는 DLC 는
+   * 목록에 안 뜰 뿐 되살릴 수 있지만, 지워진 행은 되돌릴 데가 없다.
+   */
+  parentGameId: uuid("parent_game_id").references((): AnyPgColumn => games.id, { onDelete: "set null" }),
   /** 이 행을 누가 만들었나(매장 설계서 §6). 기존 행은 전부 크롤러가 만든 것이라 기본값이 곧 백필이다 */
   origin: gameOriginEnum("origin").default("crawler").notNull(),
   /** 전체 목록, 검색, 홈에 나오나(§7). 거르는 자리는 services/games/filters 의 mainGamesOnly 한 곳뿐이다 */
