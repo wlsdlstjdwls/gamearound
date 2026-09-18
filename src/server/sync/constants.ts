@@ -539,6 +539,15 @@ export const REFRESH_MAIN_SHARE = 0.7;
  */
 export const META_OVERWRITE_SOURCES: Source[] = ["steam"];
 
+/**
+ * 세로 아트(games.portrait_url)를 실제로 주는 스토어. 백필(scripts/backfill-portraits)의 대상 선정에 쓴다.
+ *
+ * 닌텐도 둘이 빠진 것은 게으름이 아니다 — 한국, 일본 eShop 응답에는 세로 비율 이미지 자체가 없다.
+ * 그 소스만 아는 게임은 세로 자리를 영영 못 채우고, 화면이 커버로 폴백하는 것이 최종 답이다.
+ * 여기에 소스를 더하기 전에 그 어댑터의 meta.portraitUrl 이 null 이 아닌지 표본으로 먼저 본다.
+ */
+export const PORTRAIT_SOURCES: StoreSource[] = ["steam", "xbox", "psstore", "epic"];
+
 /** 스토어 소스 → 담당 플랫폼 (§11-6: PS4/PS5, Switch/Switch2 분리 유지) */
 export const SOURCE_PLATFORMS: Record<StoreSource, Platform[]> = {
   steam: ["steam"], psstore: ["ps5", "ps4"], xbox: ["xbox"], nintendo: ["switch", "switch2"],
