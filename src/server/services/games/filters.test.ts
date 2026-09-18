@@ -3,7 +3,7 @@
 import { describe, expect, it } from "vitest";
 import { type SQL } from "drizzle-orm";
 import { PgDialect } from "drizzle-orm/pg-core";
-import { hasVisiblePlatform, mainGamesOnly } from "./filters";
+import { hasVisiblePlatform, mainGamesOnly, runsOnRig } from "./filters";
 import { HIDDEN_PLATFORMS } from "@/lib/platform";
 
 const dialect = new PgDialect();
@@ -66,5 +66,27 @@ describe("mainGamesOnly", () => {
   it("그 게임의 ref 만 본다 (상관 조건)", () => {
     const { sql: text } = render(mainGamesOnly());
     expect(text).toContain('"game_source_refs"."game_id" = "games"."id"');
+  });
+});
+
+describe("runsOnRig", () => {
+  it("기기가 안 적은 부위는 조건에 넣지 않는다 — CPU 만 적은 사람의 목록이 비지 않게", () => {
+    const { sql: text } = render(runsOnRig({ osFamily: "windows", cpuTier: 10, gpuTier: null, ramMb: null }));
+    expect(text).toContain("min_cpu_tier");
+    expect(text).not.toContain("min_gpu_tier");
+    expect(text).not.toContain("min_ram_mb");
+  });
+
+  it("문턱이 null 인 부위는 넘어가되, 한 부위는 실제로 견줘야 한다", () => {
+    const { sql: text } = render(runsOnRig({ osFamily: "windows", cpuTier: 10, gpuTier: 12, ramMb: null }));
+    // 못 견주는 자리를 "못 넘었다" 로 읽지 않는다
+    expect(text).toContain('"min_cpu_tier" is null or');
+    // 그렇다고 전부 넘어가면 판정을 한 것이 아니다
+    expect(text).toContain('"min_gpu_tier" is not null');
+  });
+
+  it("기기의 OS 사양만 본다", () => {
+    const { params } = render(runsOnRig({ osFamily: "mac", cpuTier: null, gpuTier: 12, ramMb: null }));
+    expect(params).toContain("mac");
   });
 });

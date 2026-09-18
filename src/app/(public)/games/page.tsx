@@ -19,6 +19,8 @@ import { DEFAULT_GAME_VIEW, type GameView } from "@/lib/games/view";
 import { stagger } from "@/lib/motion";
 import { ROUTES } from "@/lib/routes";
 import { GAMES_PAGE_SIZE, getGameFacets, listGames, type GameListFilter } from "@/server/services/games";
+import { listMyDevices } from "@/server/services/devices";
+import { getCurrentUser } from "@/server/services/users";
 import { CountSkeleton, FiltersSkeleton, GamesGridSkeleton } from "./skeletons";
 
 // Next 가 정적으로 읽는 값이라 리터럴이어야 한다 — 근거, 수치는 lib/cache 의 LIST_REVALIDATE_SECONDS 와 같게 유지
@@ -68,7 +70,7 @@ export async function generateMetadata({ searchParams }: Props): Promise<Metadat
 /** 뭔가 걸러져 있는가 — 건수를 띄울지 정한다 */
 function isFiltered(f: GameListFilter): boolean {
   return Boolean(
-    f.q || f.platform || f.genre || f.onSale || f.minDiscount !== undefined || f.maxPrice !== undefined || f.company || f.subscription,
+    f.q || f.platform || f.genre || f.onSale || f.minDiscount !== undefined || f.maxPrice !== undefined || f.company || f.subscription || f.rig,
   );
 }
 
@@ -89,7 +91,10 @@ async function ResultCount({ filter }: { filter: GameListFilter }) {
 }
 
 async function FilterColumn({ filter }: { filter: GamesQuery }) {
-  return <GameFilters facets={await getGameFacets()} filter={filter} />;
+  // 기기는 로그인한 사람만 서버에 있다. 비회원 것은 브라우저에만 있어 칩이 직접 읽는다(rig-chip)
+  const user = await getCurrentUser();
+  const [facets, devices] = await Promise.all([getGameFacets(), user ? listMyDevices() : Promise.resolve([])]);
+  return <GameFilters facets={facets} filter={filter} devices={devices} />;
 }
 
 async function Results({ filter, view }: { filter: GameListFilter; view: GameView }) {

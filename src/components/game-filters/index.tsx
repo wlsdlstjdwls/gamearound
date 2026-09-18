@@ -10,10 +10,11 @@
 import { cardClass } from "@/components/ui/page";
 import type { GamesQuery } from "@/lib/games-query";
 import type { GameFacets } from "@/server/services/games";
+import type { CompatDevice } from "@/components/devices/guest-device";
 import { ActiveFilters, activeFilterCount } from "./active";
 import { Groups } from "./groups";
 
-export function GameFilters({ facets, filter }: { facets: GameFacets; filter: GamesQuery }) {
+export function GameFilters({ facets, filter, devices }: { facets: GameFacets; filter: GamesQuery; devices: CompatDevice[] }) {
   const applied = activeFilterCount(filter);
 
   return (
@@ -32,7 +33,7 @@ export function GameFilters({ facets, filter }: { facets: GameFacets; filter: Ga
         </summary>
         <div className="flex flex-col gap-3.5 border-t border-line px-4 py-3">
           <ActiveFilters filter={filter} />
-          <Groups facets={facets} filter={filter} />
+          <Groups facets={facets} filter={filter} devices={devices} />
         </div>
       </details>
 
@@ -43,7 +44,7 @@ export function GameFilters({ facets, filter }: { facets: GameFacets; filter: Ga
         className={cardClass("hidden flex-col gap-4 p-4 lg:sticky lg:top-[86px] lg:flex lg:max-h-[calc(100vh-102px)] lg:overflow-y-auto")}
       >
         <ActiveFilters filter={filter} />
-        <Groups facets={facets} filter={filter} />
+        <Groups facets={facets} filter={filter} devices={devices} />
       </aside>
     </>
   );

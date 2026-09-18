@@ -4,8 +4,9 @@
 // 그 조건을 각 파일에 흩어 놓으면 언젠가 한 곳이 빠지고, 그 화면에서만 DLC 가 본편처럼 섞여 나온다.
 // 그래서 조건을 여기 한 곳에 두고 테스트를 붙인다.
 import { and, eq, isNull, sql, type SQL } from "drizzle-orm";
-import { gameCompanies, gamePlatforms, gameSourceRefs, gameSubscriptions, games, companies, subscriptions, type Platform } from "@/server/db/schema";
+import { gameCompanies, gamePlatforms, gameRequirementFloors, gameSourceRefs, gameSubscriptions, games, companies, subscriptions, type Platform } from "@/server/db/schema";
 import { HIDDEN_PLATFORMS } from "@/lib/platform";
+import type { RigSpec } from "@/lib/hardware/rig";
 
 /**
  * 스토어와 이어져 있는 게임. 매칭(auto, manual)이 하나라도 있어야 한다.
@@ -70,6 +71,39 @@ export function inAnySubscription(): SQL {
     select 1 from ${gameSubscriptions}
     inner join ${gamePlatforms} on ${gamePlatforms.id} = ${gameSubscriptions.gamePlatformId}
     where ${gamePlatforms.gameId} = ${games.id} and ${gameSubscriptions.removedAt} is null
+  )`;
+}
+
+/**
+ * 이 기기로 돌아가는 게임 — 설계 문서 §7 의 3단계 필터.
+ *
+ * 접어 둔 문턱(game_requirement_floors)과 견주기만 한다. 규칙은 verdict.judge 와 같은 모양이다:
+ *   - 아는 조건 중 하나라도 못 넘으면 뺀다
+ *   - 아는 조건이 하나도 없으면 뺀다(판정 불가를 조용히 통과시키지 않는다 — 설계 §6)
+ * 문턱이 아예 없는 게임(사양 미수집, 콘솔 전용)도 빠진다. "돌아간다" 고 말할 근거가 없기 때문이다.
+ *
+ * 최소 사양만 본다. 권장까지 요구하면 "돌아가는 게임" 이 아니라 "쾌적한 게임" 이 되는데,
+ * 권장 사양은 절반 가까운 게임에 아예 없다(실측 2,572/3,498) — 없는 기준으로 게임을 지우게 된다.
+ */
+export function runsOnRig(rig: RigSpec): SQL {
+  // 기기가 안 적은 부위는 견줄 수 없다. 기기 쪽이 null 이면 그 부위는 조건에 아예 넣지 않는다 —
+  // "적지 않았다" 를 "못 넘는다" 로 읽으면 CPU 만 적은 사람에게 목록이 통째로 비어 보인다
+  const slots: Array<{ column: SQL; mine: number }> = [];
+  if (rig.cpuTier !== null) slots.push({ column: sql`${gameRequirementFloors.minCpuTier}`, mine: rig.cpuTier });
+  if (rig.gpuTier !== null) slots.push({ column: sql`${gameRequirementFloors.minGpuTier}`, mine: rig.gpuTier });
+  if (rig.ramMb !== null) slots.push({ column: sql`${gameRequirementFloors.minRamMb}`, mine: rig.ramMb });
+
+  // 문턱이 null 인 부위는 그 게임에서 판정할 수 없는 자리다. 못 넘은 것으로 세지 않고 넘어간다
+  const meets = slots.map((s) => sql`(${s.column} is null or ${s.column} <= ${s.mine})`);
+  // 다만 넘어간 자리만 남으면 판정을 한 것이 아니다 — 한 부위라도 실제로 견줬어야 한다
+  const judged = slots.map((s) => sql`${s.column} is not null`);
+
+  return sql`exists (
+    select 1 from ${gameRequirementFloors}
+    where ${gameRequirementFloors.gameId} = ${games.id}
+      and ${gameRequirementFloors.osFamily} = ${rig.osFamily}
+      and ${sql.join(meets, sql` and `)}
+      and (${sql.join(judged, sql` or `)})
   )`;
 }
 

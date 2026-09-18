@@ -31,6 +31,9 @@ import {
   type MinDiscount,
 } from "@/lib/games-query";
 import type { GameFacets } from "@/server/services/games";
+import type { CompatDevice } from "@/components/devices/guest-device";
+import { RIG_FILTER_MESSAGES } from "@/lib/games/messages";
+import { RigChip } from "./rig-chip";
 
 /** "고르지 않음" 을 나타내는 값. 빈 문자열을 쓰면 현재 값 비교가 undefined 와 헷갈린다 */
 const ALL = "__all__";
@@ -62,7 +65,7 @@ function Group({ label, children }: { label: string; children: React.ReactNode }
  * 칩과 드롭다운을 가르는 기준은 개수다. 서넛이면 칩이 빠르고(한 번에 다 보이고 한 번에 눌린다),
  * 열 개를 넘으면 드롭다운이 낫다(안 고른 값이 자리를 차지하지 않는다).
  */
-export function Groups({ facets, filter }: { facets: GameFacets; filter: GamesQuery }) {
+export function Groups({ facets, filter, devices }: { facets: GameFacets; filter: GamesQuery; devices: CompatDevice[] }) {
   const href = (patch: Partial<GamesQuery>) => gamesHref(filter, { ...patch, page: 1 });
 
   // 실제로 게임이 붙어 있는 플랫폼만 고를 수 있다(facets)
@@ -159,6 +162,11 @@ export function Groups({ facets, filter }: { facets: GameFacets; filter: GamesQu
             {maxPriceLabel(won)}
           </ChipNavLink>
         ))}
+      </Group>
+
+      {/* 기기는 다른 필터와 달리 사람마다 값이 다르다 — 고르는 자리가 아니라 적는 자리가 함께 선다 */}
+      <Group label={RIG_FILTER_MESSAGES.group}>
+        <RigChip filter={filter} devices={devices} />
       </Group>
 
       <Group label="조건">

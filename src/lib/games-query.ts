@@ -82,6 +82,12 @@ export type GamesQuery = {
   company?: string;
   /** 구독(게임패스 등)으로 지금 플레이할 수 있는 게임만 */
   subscription?: boolean;
+  /**
+   * 내 기기로 돌아가는 게임만. 값은 기기를 접은 문자열이다(lib/hardware/rig).
+   * 기기 id 가 아니라 티어를 싣는 이유는 그 파일 머리 주석에 있다 — 여기서는 문자열로 두고
+   * 조회하는 쪽이 parseRig 로 좁힌다(platform 을 문자열로 두는 것과 같은 이유다).
+   */
+  rig?: string;
   sort?: GameSort;
   /** 1-based */
   page?: number;
@@ -127,6 +133,7 @@ export function parseGamesQuery(sp: Record<string, string | string[] | undefined
     maxPrice: max,
     company: firstParam(sp.company),
     subscription: firstParam(sp.sub) === "1",
+    rig: firstParam(sp.rig),
     sort: isGameSort(sort) ? sort : undefined,
     page: Number.isFinite(page) && page > 0 ? Math.floor(page) : 1,
     view: isGameView(view) ? view : undefined,
@@ -149,6 +156,7 @@ export function gamesHref(current: GamesQuery, patch: Partial<GamesQuery> = {}, 
   if (next.maxPrice !== undefined) params.set("max", String(next.maxPrice));
   if (next.company) params.set("company", next.company);
   if (next.subscription) params.set("sub", "1");
+  if (next.rig) params.set("rig", next.rig);
   if (next.sort && next.sort !== DEFAULT_GAME_SORT) params.set("sort", next.sort);
   if (next.page && next.page > 1) params.set("page", String(next.page));
   // 기본 보기는 주소에 안 적는다 — 같은 화면이 두 주소를 갖지 않게 한다(이 함수 머리 주석).

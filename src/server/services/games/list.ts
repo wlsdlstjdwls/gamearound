@@ -12,7 +12,8 @@ import { DEFAULT_GAME_SORT, parsePlatformValues, type GamesQuery } from "@/lib/g
 import { expandPlatformValues } from "@/lib/platform";
 import type { GameSummary } from "./dto";
 import { attachBestPrice, type GameRow } from "./mappers";
-import { allOf, byCompanySlug, hasVisiblePlatform, inAnySubscription, mainGamesOnly } from "./filters";
+import { allOf, byCompanySlug, hasVisiblePlatform, inAnySubscription, mainGamesOnly, runsOnRig } from "./filters";
+import { parseRig } from "@/lib/hardware/rig";
 import { titleMatch, titleMatches } from "./title-search";
 import { DTO_CACHE_VERSION, LIST_REVALIDATE_SECONDS } from "@/lib/cache";
 
@@ -100,6 +101,9 @@ async function listGamesRaw(filter: GameListFilter): Promise<GameListResult> {
   if (filter.maxPrice !== undefined) conds.push(sql`${agg.minPrice} <= ${filter.maxPrice}`);
   if (filter.company) conds.push(byCompanySlug(filter.company));
   if (filter.subscription) conds.push(inAnySubscription());
+  // 주소에 실린 기기. 모양이 어긋난 값은 parseRig 가 null 로 돌려줘 필터가 아예 안 걸린다
+  const rig = parseRig(filter.rig);
+  if (rig) conds.push(runsOnRig(rig));
   if (filter.genre) {
     conds.push(
       sql`exists (select 1 from ${gameGenres} inner join ${genres} on ${genres.id} = ${gameGenres.genreId}
@@ -174,6 +178,8 @@ function listKey(f: GameListFilter): string[] {
     f.maxPrice !== undefined ? String(f.maxPrice) : "",
     f.company ?? "",
     f.subscription ? "sub" : "",
+    // 기기는 티어로 실려서 같은 급의 컴퓨터를 쓰는 사람들이 한 캐시를 나눠 쓴다(lib/hardware/rig)
+    f.rig ?? "",
     f.sort ?? DEFAULT_GAME_SORT,
     String(f.page ?? 1),
   ];
@@ -198,7 +204,7 @@ const listByJson = cache(async (json: string): Promise<GameListResult> => {
 /** 목록 — 필터 조합별 1시간 캐시. 크롤러 완료 시 `home` 태그로 함께 무효화된다 */
 export async function listGames(filter: GameListFilter): Promise<GameListResult> {
   // 키 순서와 같은 순서로 다시 세워야 같은 필터가 늘 같은 문자열이 된다
-  const [q, platform, genre, onSale, minDiscount, maxPrice, company, subscription, sort, page] = listKey(filter);
+  const [q, platform, genre, onSale, minDiscount, maxPrice, company, subscription, rig, sort, page] = listKey(filter);
   return listByJson(JSON.stringify({
     q: q || undefined,
     platform: platform || undefined,
@@ -209,6 +215,7 @@ export async function listGames(filter: GameListFilter): Promise<GameListResult>
     maxPrice: (maxPrice === "" ? undefined : Number(maxPrice)) as GameListFilter["maxPrice"],
     company: company || undefined,
     subscription: subscription ? true : undefined,
+    rig: rig || undefined,
     sort: sort as GameListFilter["sort"],
     page: Number(page),
   }));

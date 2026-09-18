@@ -11,6 +11,7 @@ import { PLATFORM_LABEL } from "@/lib/format";
 import { isPlatformFamily, PLATFORM_FAMILY_LABEL, PLATFORM_VALUE_ORDER } from "@/lib/platform";
 import { gamesHref, joinPlatformValues, maxPriceLabel, parsePlatformValues, type GamesQuery } from "@/lib/games-query";
 import { ChipNavLink } from "@/components/ui/chip-nav";
+import { RIG_FILTER_MESSAGES } from "@/lib/games/messages";
 import { KEEP_SCROLL } from "./groups";
 import Link from "next/link";
 
@@ -48,6 +49,8 @@ export function activeFilters(filter: GamesQuery): ActiveFilter[] {
     list.push({ key: "maxPrice", label: maxPriceLabel(filter.maxPrice), href: href({ maxPrice: undefined }) });
   }
   if (filter.subscription) list.push({ key: "subscription", label: "구독 포함", href: href({ subscription: false }) });
+  // 기기는 값이 아니라 사람마다 다른 기준이라 문구로만 말한다 — 주소의 티어 숫자를 그대로 적어도 읽히지 않는다
+  if (filter.rig) list.push({ key: "rig", label: RIG_FILTER_MESSAGES.chip, href: href({ rig: undefined }) });
   if (filter.company) list.push({ key: "company", label: `회사 ${filter.company}`, href: href({ company: undefined }) });
   return list;
 }
