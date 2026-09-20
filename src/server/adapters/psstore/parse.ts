@@ -1,6 +1,7 @@
 // PlayStation Store 응답 파서 — 목록(콘셉트 격자), 콘셉트 상세, 검색.
 // 형식 검증은 zod 로 하고, 실패는 재시도해도 같은 결과라 retryable=false 로 올린다.
 import { z } from "zod";
+import { isCurrencyItemTitle } from "@/lib/games/content-kind";
 import { AdapterError, type SearchCandidate, type StoreSnapshot } from "../types";
 import type { Platform } from "@/server/db/schema";
 import {
@@ -227,6 +228,10 @@ export function parsePsstoreConcept(raw: unknown, conceptId: string): StoreSnaps
     // 종료 시각은 할인 중일 때만 의미가 있다 — 상시 판매 구간의 값을 "할인 종료"로 오해하지 않게
     discountEndsAt: discountPct > 0 ? psstoreEpochToIso(price?.endTime) : null,
     releaseDate: concept.releaseDate?.value ? concept.releaseDate.value.slice(0, 10) : null,
+    // 콘셉트는 보통 본편이지만 재화 상품도 자기 콘셉트를 갖는다(실측: "디아블로 IV — 500 백금화",
+    // "Battlefield V — Battlefield 화폐 6000"). PS 는 콘셉트에 분류 값을 주지 않아 제목으로만 가른다
+    // (lib/games/content-kind — 숫자를 함께 요구해서 "CoA: 아틀란의 크리스탈" 같은 본편은 안 걸린다)
+    contentType: isCurrencyItemTitle(titleKo) || isCurrencyItemTitle(titleEn) ? "dlc" : undefined,
     subscriptionKeys: psstoreSubscriptionKeys(dp?.webctas),
     // 이미지는 콘셉트 상세에 없다 — 발견 단계(parsePsstoreGrid)가 들고 온 값을 반영 단계에서 얹는다
     meta: titleEn ? { titleEn, titleKo: titleKo && titleKo !== titleEn ? titleKo : null } : undefined,

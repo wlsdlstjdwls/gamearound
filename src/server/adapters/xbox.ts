@@ -11,7 +11,7 @@ import {
   type StoreSnapshot,
 } from "./types";
 import { createHttpClient, notFoundAs } from "./http";
-import { isPreOrderExtraTitle } from "@/lib/games/content-kind";
+import { isCurrencyItemTitle, isPreOrderExtraTitle } from "@/lib/games/content-kind";
 import { sleep } from "@/lib/async";
 
 export const XBOX_CATALOG_URL = "https://displaycatalog.mp.microsoft.com/v7.0";
@@ -281,7 +281,8 @@ export function parseXboxProduct(raw: unknown, productId: string, rawEn?: unknow
   const title = product.LocalizedProperties[0]?.ProductTitle?.trim() || productId;
   // ProductKind 가 "Game" 이어도 예약 특전, 예약 팩은 본편이 아니다 — 스토어가 안 가르는 자리다(lib/games/content-kind).
   // Sku.Properties.IsPreOrder 는 못 쓴다: 예약 중인 **본편**의 SKU 에도 true 가 실린다(2026-09-18 원문 확인)
-  const isDlc = product.ProductKind === XBOX_ADDON_KIND || isPreOrderExtraTitle(title);
+  // 게임 안 재화, 교환권도 ProductKind 가 "Game" 으로 온다(실측: Forza Horizon 6 Car Voucher 4)
+  const isDlc = product.ProductKind === XBOX_ADDON_KIND || isPreOrderExtraTitle(title) || isCurrencyItemTitle(title);
   const price = pickKrwPurchase(product);
   const discountPct = price && price.list > 0 && price.current < price.list ? Math.round(((price.list - price.current) / price.list) * 100) : 0;
 
