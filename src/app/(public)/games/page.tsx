@@ -10,6 +10,7 @@ import { GameRow } from "@/components/game-row";
 import { GameViewToggle } from "@/components/game-view-toggle";
 import { EmptyState } from "@/components/empty-state";
 import { GameFilters } from "@/components/game-filters";
+import { GameSort } from "@/components/game-sort";
 import { GamesInfinite } from "@/components/games-infinite";
 import { Page, PageHead } from "@/components/ui/page";
 import { DEFAULT_GAME_SORT, SORT_LABEL, joinPlatformValues, parsePlatformValues, parseGamesQuery, type GamesQuery } from "@/lib/games-query";
@@ -171,6 +172,10 @@ export default async function GamesPage({ searchParams }: Props) {
 
         {/* min-w-0: 격자 칸의 기본 최소 크기는 auto 라 안쪽의 잘리지 않는 제목이 칸을 밀어낸다(상세 화면 주석) */}
         <div className="flex min-w-0 flex-col gap-5">
+          {/* 정렬은 목록 위에 선다 — 거르는 일이 아니라 줄 세우는 일이라 필터 기둥에 두지 않는다(game-sort 주석) */}
+          <div className="flex justify-end">
+            <GameSort query={query} />
+          </div>
           <Suspense key={boundaryKey} fallback={<GamesGridSkeleton cards={GAMES_PAGE_SIZE} view={view} />}>
             <Results filter={filter} view={view} />
           </Suspense>

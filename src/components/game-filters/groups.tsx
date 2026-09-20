@@ -17,18 +17,13 @@ import {
 import { ChipNavLink } from "@/components/ui/chip-nav";
 import { Select, type SelectOption } from "@/components/ui/select";
 import {
-  GAME_SORTS,
-  DEFAULT_GAME_SORT,
   MAX_PRICE_STEPS,
-  MIN_DISCOUNT_STEPS,
-  SORT_LABEL,
   gamesHref,
   joinPlatformValues,
   maxPriceLabel,
   parsePlatformValues,
   type GamesQuery,
   type MaxPrice,
-  type MinDiscount,
 } from "@/lib/games-query";
 import type { GameFacets } from "@/server/services/games";
 import type { CompatDevice } from "@/components/devices/guest-device";
@@ -88,10 +83,14 @@ export function Groups({ facets, filter, devices }: { facets: GameFacets; filter
     { value: ALL, label: "전체 장르", href: href({ genre: undefined }) },
     ...facets.genres.map((g) => ({ value: g.name, label: g.name, href: href({ genre: g.name }) })),
   ];
-  const sortOptions: SelectOption[] = GAME_SORTS.map((s) => ({ value: s, label: SORT_LABEL[s], href: href({ sort: s }) }));
-
   return (
     <>
+      {/*
+        갈래와 낱개를 한 무리 두 줄로 세운다(2026-09-21). 전에는 "플랫폼 / PC / 콘솔" 세 무리였는데,
+        아래 두 무리의 제목이 윗줄 칩과 똑같은 글자였다 — 같은 말을 두 번 하면서 기둥만 세 칸 먹었다.
+        낱개는 늘 펴 둔다: 접어 두면 "PS5 만" 을 고르려고 콘솔을 한 번 더 눌러야 했고,
+        그 한 번이 "낱개는 고를 수 없다" 로 읽혔다.
+      */}
       <Group label="플랫폼">
         <ChipNavLink {...KEEP_SCROLL} href={href({ platform: undefined })} active={picked.length === 0}>
           전체
@@ -101,50 +100,38 @@ export function Groups({ facets, filter, devices }: { facets: GameFacets; filter
             {PLATFORM_FAMILY_LABEL[f]}
           </ChipNavLink>
         ))}
+        {/* 줄을 갈라 세운다 — 갈래 칩과 낱개 칩이 한 줄에 섞이면 "콘솔" 과 "PS5" 가 같은 층으로 읽힌다 */}
+        <div className="flex w-full flex-wrap gap-1.5 border-t border-line-soft pt-1.5">
+          {families.flatMap((f) =>
+            byFamily(f)
+              .filter((p) => available.has(p))
+              .map((p) => (
+                <ChipNavLink key={p} {...KEEP_SCROLL} href={platformHref(p, [f])} active={pickedSet.has(p)}>
+                  {PLATFORM_LABEL[p] ?? p}
+                </ChipNavLink>
+              )),
+          )}
+        </div>
       </Group>
-
-      {/* 낱개는 늘 펴 둔다 — 접어 두면 "PS5 만" 을 고르려고 콘솔을 한 번 더 눌러야 했고,
-          그 한 번이 "낱개는 고를 수 없다" 로 읽혔다. 갈래가 켜져 있으면 안쪽은 이미 다 포함이라 꺼진 채로 둔다 */}
-      {families.map((f) => {
-        const children = byFamily(f).filter((p) => available.has(p));
-        if (children.length === 0) return null;
-        return (
-          <Group key={f} label={PLATFORM_FAMILY_LABEL[f]}>
-            {children.map((p) => (
-              <ChipNavLink key={p} {...KEEP_SCROLL} href={platformHref(p, [f])} active={pickedSet.has(p)}>
-                {PLATFORM_LABEL[p] ?? p}
-              </ChipNavLink>
-            ))}
-          </Group>
-        );
-      })}
 
       {facets.genres.length > 0 && <Select label="장르" value={filter.genre ?? ALL} options={genreOptions} scroll={false} />}
 
-      <Select label="정렬" value={filter.sort ?? DEFAULT_GAME_SORT} options={sortOptions} scroll={false} />
-
       {/*
-        할인은 한 축이다. "할인 중만" 과 "30% 이상" 을 따로 두면 둘 다 켠 상태가 생기고
-        그때 화면이 말하는 것과 질의가 거는 것이 어긋난다. 그래서 한 줄에서 하나만 서게 한다 —
-        칸을 옮길 때 반대쪽을 반드시 지워 준다(주소에 찌꺼기가 남지 않는다).
+        할인은 토글 하나다(2026-09-21). 전에는 "할인 중 / 30% / 50% / 70% 이상" 네 칸이었는데,
+        그 셋이 하던 일은 정렬이 이미 한다 — "할인율순" 으로 세우면 70%짜리가 맨 위에 온다.
+        칩을 눌러 얻는 것은 "그 아래를 안 보이게 하는 것" 뿐이고, 정렬돼 있으면 스크롤을 멈추면 되는 일이다.
+        그 대가로 기둥에 칩 셋과, "지금 무엇이 걸렸나" 를 헷갈리게 하는 상태 하나를 더 두고 있었다.
+
+        minDiscount 자체는 살려 둔다 — 주소로 들어온 값은 그대로 거른다(바깥에 남은 링크가 있다).
+        고르는 자리만 걷어냈다.
       */}
       <Group label="할인">
         <ChipNavLink {...KEEP_SCROLL} href={href({ onSale: false, minDiscount: undefined })} active={!filter.onSale && !filter.minDiscount}>
           전체
         </ChipNavLink>
-        <ChipNavLink {...KEEP_SCROLL} href={href({ onSale: true, minDiscount: undefined })} active={Boolean(filter.onSale) && !filter.minDiscount}>
+        <ChipNavLink {...KEEP_SCROLL} href={href({ onSale: true, minDiscount: undefined })} active={Boolean(filter.onSale) || Boolean(filter.minDiscount)}>
           할인 중
         </ChipNavLink>
-        {MIN_DISCOUNT_STEPS.map((pct: MinDiscount) => (
-          <ChipNavLink
-            key={pct}
-            {...KEEP_SCROLL}
-            href={href({ onSale: false, minDiscount: filter.minDiscount === pct ? undefined : pct })}
-            active={filter.minDiscount === pct}
-          >
-            {pct}% 이상
-          </ChipNavLink>
-        ))}
       </Group>
 
       {/* 가격은 할인과 다른 질문이다 — "얼마나 깎였나" 가 아니라 "내 예산에 드나"(lib/games-query 주석) */}
