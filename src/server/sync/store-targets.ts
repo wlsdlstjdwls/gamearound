@@ -1,5 +1,5 @@
 // 스토어 소스의 수집 대상 선정 — 기존 매핑 + 카탈로그 신규 발견(시드).
-import { and, eq, inArray, ne, sql } from "drizzle-orm";
+import { and, eq, inArray, ne, not, sql } from "drizzle-orm";
 import { discoveryIgnores, gamePlatforms, gameSourceRefs, games, type Platform, type Region } from "@/server/db/schema";
 import type { Db } from "@/server/db/client";
 import { getStoreAdapter, type StoreSource } from "@/server/adapters";
@@ -9,6 +9,7 @@ import { normalizeTitle } from "@/lib/slug";
 import { findGameByTitle, type GameTitleRow } from "./match";
 import { collectFreshCandidates, seedQuota } from "./discover";
 import { resolveRankRows, writePopularityRanks } from "./rank-writer";
+import { missingRefExcluded } from "./missing-refs";
 import { DISCOVERY_PAGE_BUDGET, MATCHED_FOR_SYNC, REFRESH_MAIN_SHARE, SOURCE_PLATFORMS, SOURCE_REGION } from "./constants";
 import { fetchWithRetry } from "./retry";
 import type { Ctx } from "./context";
@@ -152,6 +153,9 @@ async function refreshRows(
         // 수집 제외 표시가 걸린 행은 여기서만 뺀다(매장 설계서 §6). 레트로와 굿즈는 온라인 스토어에
         // 없어서, 빼지 않으면 매 실행 몫만 먹고 빈손으로 돌아온다
         eq(games.crawlExcluded, false),
+        // 스토어가 연달아 "없다" 고 한 ref 는 뺀다 — 영구 제외가 아니라 한 달에 한 번만 다시 묻는다.
+        // 안 빼면 매 회차 같은 건이 실패해 실행이 늘 partial 로 끝난다(sync/missing-refs 주석)
+        not(missingRefExcluded()),
         opts.mainOnly ? eq(games.contentType, "game") : ne(games.contentType, "game"),
       ),
     )

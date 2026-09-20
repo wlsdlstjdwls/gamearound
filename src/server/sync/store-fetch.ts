@@ -3,6 +3,7 @@ import type { StoreAdapter, StoreSnapshot } from "@/server/adapters/types";
 import type { StoreSource } from "@/server/adapters";
 import { sleep } from "@/lib/async";
 import { errorMessage } from "@/lib/errors";
+import { applyMissingRefs } from "./missing-refs";
 import { DEFAULT_FETCH_BATCH_SIZE, SOURCE_PLATFORMS, SOURCE_REGION } from "./constants";
 import { recordError, type Ctx } from "./context";
 import { fetchWithRetry } from "./retry";
@@ -33,6 +34,8 @@ export async function fetchStoreOneByOne(ctx: Ctx, source: StoreSource, adapter:
  */
 export async function fetchStoreBatched(ctx: Ctx, source: StoreSource, adapter: StoreAdapter, targets: StoreTarget[]): Promise<Fetched> {
   const size = adapter.batchSize ?? DEFAULT_FETCH_BATCH_SIZE;
+  /** 배치가 성공했는데 응답에 없던 id. 회차 끝에 한 번에 세어 둔다(왕복을 건마다 쓰지 않는다) */
+  const missing: string[] = [];
 
   // 배치가 가격만 주는 소스(nintendo)는 신규 등록 대상을 단건 상세로 따로 받는다 —
   // 제목, 이미지가 없으면 게임을 만들 수 없다. 발견 목록이 상세까지 준 소스(nintendo_jp)는 그럴 필요가 없다.
@@ -79,9 +82,32 @@ export async function fetchStoreBatched(ctx: Ctx, source: StoreSource, adapter: 
       }
       // 배치는 성공했는데 이 id 만 빠진 경우 = 삭제/비공개/지역 미판매. 재시도해도 같으니 폴백하지 않는다
       recordError(ctx, `${source}:${target.externalId}`, new Error("배치 응답에 없음 (비공개, 미판매, 삭제 추정)"));
+      missing.push(target.externalId);
+      // game_platforms 행이 **아예 없는** ref 가 있다(제목 역매칭으로 붙었지만 그 나라에 없는 상품).
+      // 그때 이 호출은 고칠 행이 없어 아무 일도 안 한다 — 그래서 아래 missing 집계가 따로 필요하다
       if (target.gameId) await markPlatformFailed(ctx, target.gameId, SOURCE_PLATFORMS[source], SOURCE_REGION[source]);
     }
     if (b < batches.length - 1) await sleep(adapter.minIntervalMs);
+  }
+
+  /**
+   * 안 준 id 는 세어 두고 준 id 는 되돌린다(sync/missing-refs). 한계를 넘으면 다음 회차부터
+   * 대상에서 빠지고, MISSING_RETRY_DAYS 가 지나면 한 번 다시 물어본다.
+   * 여기서 실패해도 수집을 멈추지 않는다 — 기록이 못 남으면 예전처럼 매번 묻게 될 뿐이다.
+   */
+  try {
+    const { bumped, cleared } = await applyMissingRefs(
+      ctx.db,
+      source,
+      fetched.map((f) => f.target.externalId),
+      missing,
+      ctx.now,
+    );
+    if (bumped > 0 || cleared > 0) {
+      console.log(`[sync:${source}] 스토어가 안 준 ref ${bumped}건 누적, 되살아난 ref ${cleared}건 초기화`);
+    }
+  } catch (e) {
+    console.warn(`[sync:${source}] 안 준 ref 기록 실패: ${errorMessage(e)}`);
   }
   return fetched;
 }

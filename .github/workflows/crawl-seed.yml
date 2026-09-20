@@ -65,5 +65,23 @@ jobs:
       # crawl:seed 는 LOCAL_SEED_SOURCES 를 순서대로 돈다. 한 소스가 실패해도 다음 소스는 계속 간다
       # (crawl-local.ts 가 종료 코드를 모아 준다: 0 전부 ok, 2 일부 partial, 1 하나라도 failed).
       # nintendo, epic 은 여기 없다 — 러너 IP 로는 빈손이라 LOCAL_ONLY_SOURCES 로 갈라 뒀다.
+      #
+      # **partial(2)은 실패로 치지 않는다.** 규약을 위에 적어 놓고 정작 쓰지 않아서, 2,172건 중
+      # 7건(0.3%)이 실패한 회차가 통째로 빨갛게 떴다(2026-09-20, run 35541558366).
+      # 그 7건은 스토어가 안 주는 상품이라 다음 회차에도 같은 수가 나온다 —
+      # 늘 켜져 있는 알람은 진짜 고장을 가린다. 근본은 sync/missing-refs 가 막지만,
+      # 스토어에서 내려가는 상품은 앞으로도 생기므로 이 구분 자체가 필요하다.
+      #
+      # 다른 워크플로 넷은 소스마다 step 을 나눠 continue-on-error 로 같은 일을 한다.
+      # 여기는 step 이 하나뿐이라 그 방법을 쓰면 진짜 실패(1)까지 초록이 된다 — 그래서 코드로 가른다.
       - name: crawl seed
-        run: pnpm crawl:seed $CRAWL_LIMIT_ARG
+        run: |
+          set +e
+          pnpm crawl:seed $CRAWL_LIMIT_ARG
+          code=$?
+          set -e
+          if [ "$code" -eq 2 ]; then
+            echo "::warning::일부 소스가 partial 로 끝났습니다 (위 로그의 errorSample 확인). 실행은 성공으로 둡니다."
+            exit 0
+          fi
+          exit $code

@@ -589,6 +589,19 @@ export const POPULARITY_RANK_PAGES_DEFAULT = 20;
 export const SUSPICIOUS_PRICE_RATIO = 0.5;
 export const SUSPICIOUS_MIN_SAMPLE = 10;
 export const ERROR_SAMPLE_MAX = 3;
+/**
+ * 스토어가 연달아 이만큼 "없다" 고 하면 갱신 대상에서 뺀다(game_source_refs.missing_streak).
+ *
+ * 3 인 근거: 한 번은 일시적 오류일 수 있고 두 번은 우연이 겹칠 수 있다. 세 번이면 그 상품이
+ * 그 나라 스토어에 없다고 보는 편이 맞다 — 되살아나면 아래 주기가 다시 확인해 준다.
+ */
+export const MISSING_STREAK_MAX = 3;
+/**
+ * 제외한 ref 를 다시 물어보는 주기(일). **영구 제외를 하지 않는 이유**는 스토어가 상품을 되살리기
+ * 때문이다(지역 판매 재개, 퍼블리셔 교체). 30일이면 되살아난 게임을 한 달 안에 도로 잡고,
+ * 죽은 상품에는 한 달에 한 번만 요청을 쓴다.
+ */
+export const MISSING_RETRY_DAYS = 30;
 /** 뉴스 제목 매칭 시 너무 짧은 게임 제목은 제외 (오매칭 방지) */
 export const NEWS_MATCH_MIN_TITLE_LEN = 4;
 export const REVALIDATE_TIMEOUT_MS = 15_000;

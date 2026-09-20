@@ -274,6 +274,13 @@
       "when": 1789927257187,
       "tag": "0038_white_shape",
       "breakpoints": true
+    },
+    {
+      "idx": 39,
+      "version": "7",
+      "when": 1789946197237,
+      "tag": "0039_huge_cobalt_man",
+      "breakpoints": true
     }
   ]
 }

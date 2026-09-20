@@ -545,6 +545,20 @@ export const gameSourceRefs = pgTable("game_source_refs", {
   confidence: numeric("confidence", { precision: 3, scale: 2 }),
   // 마지막 매칭 시도 시각 — matched_by="none" 행의 재검색 주기 판단용(NONE_RETRY_DAYS)
   checkedAt: timestamp("checked_at", { withTimezone: true }).defaultNow().notNull(),
+  /**
+   * 스토어가 이 id 를 **연달아 몇 번 안 줬나**(배치 응답에 없음 = 비공개, 미판매, 삭제 추정).
+   *
+   * 왜 세는가: ref 는 붙었는데 스토어가 영영 안 주는 상품이 있다. 제목 역매칭으로 붙였는데
+   * 한국에서 안 팔거나 내려간 경우다(2026-09-21 실측: steam 4, epic 17, nintendo 10, nintendo_jp 23).
+   * 그 행들은 game_platforms 행이 아예 없어서 markPlatformFailed 가 고칠 대상조차 없고,
+   * 기록이 안 남으니 **매 회차 다시 묻고 다시 실패한다**. 그래서 주 1회 도는 crawl-seed 가
+   * 늘 partial 로 끝났다 — 늘 켜져 있는 알람은 진짜 고장을 가린다.
+   *
+   * 성공하면 0 으로 되돌린다. matched_by="none" + checked_at 이 재검색 주기를 재는 것과 같은 장치다.
+   */
+  missingStreak: integer("missing_streak").default(0).notNull(),
+  /** 마지막으로 "없다" 는 답을 받은 시각. 영구 제외가 아니라 재시도 주기를 재는 데 쓴다 */
+  missingAt: timestamp("missing_at", { withTimezone: true }),
   ...auditColumns(),
 }, (t) => [
   primaryKey({ columns: [t.gameId, t.source] }),
