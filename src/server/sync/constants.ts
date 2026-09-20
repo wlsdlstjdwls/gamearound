@@ -569,6 +569,18 @@ export const SOURCE_PLATFORMS: Record<StoreSource, Platform[]> = {
 export const SOURCE_REGION: Record<StoreSource, Region> = {
   steam: "KR", psstore: "KR", xbox: "KR", nintendo: "KR", nintendo_jp: "JP", epic: "KR",
 };
+/**
+ * 인기순위 순번을 믿을 수 있는 기간. 이 날수보다 오래된 순번은 없는 값으로 친다.
+ *
+ * 왜 필요한가: 순위에서 빠진 게임은 갱신할 기회가 없어 마지막 순번으로 굳는다.
+ * 지난달 50위였다가 목록 밖으로 나간 게임이 오늘 200위인 게임을 영원히 앞서면
+ * 화면의 "인기순" 은 "한때 인기였던 순" 이 된다.
+ *
+ * 14일인 근거: 발견이 전체 인기순위(6,500위)를 한 실행에 다 훑으므로(DISCOVERY_PAGE_BUDGET.steam
+ * 80페이지 중 76장이 그 패스다) 순위 안에 있는 게임은 발견이 도는 날마다 갱신된다.
+ * 2주는 발견이 며칠 쉬어도 순위가 통째로 비지 않을 만큼의 여유다.
+ */
+export const POPULARITY_RANK_MAX_AGE_DAYS = 14;
 /** §10 파싱 검증: 성공 건 중 가격 0/null 비율이 이 값을 넘으면 반영 생략 + partial */
 export const SUSPICIOUS_PRICE_RATIO = 0.5;
 export const SUSPICIOUS_MIN_SAMPLE = 10;

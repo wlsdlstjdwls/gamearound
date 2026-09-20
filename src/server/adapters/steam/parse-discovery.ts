@@ -36,16 +36,23 @@ export function parseFeaturedCandidates(raw: unknown): SearchCandidate[] {
  * 제목은 목록에 있는 것을 그대로 담는다 — Steam 은 기준 소스라 제목 매칭에 쓰지 않지만,
  * 관리자 화면에서 무엇이 발견됐는지 읽을 수 있어야 한다.
  */
-export function parseTopSellerCandidates(raw: unknown): SearchCandidate[] {
+export function parseTopSellerCandidates(raw: unknown, firstRank?: number): SearchCandidate[] {
   const parsed = searchResultsSchema.safeParse(raw);
   if (!parsed.success) throw new AdapterError(`search/results 응답 형식 오류: ${parsed.error.message}`, "steam", false);
   const out: SearchCandidate[] = [];
   const seen = new Set<string>();
-  for (const it of parsed.data.items) {
+  // 순번은 **입력 위치**로 센다. 걸러진 항목(패키지, 중복)이 있어도 스토어가 보여 준 자리는 그대로다 —
+  // out.length 로 세면 앞에서 3건이 걸릴 때마다 뒤의 모든 게임이 3계단씩 위로 올라간다.
+  for (const [i, it] of parsed.data.items.entries()) {
     const id = it.logo?.match(APP_ID_IN_LOGO_URL)?.[1];
     if (!id || seen.has(id)) continue;
     seen.add(id);
-    out.push({ externalId: id, title: it.name ?? "", url: `${STEAM_STORE_APP_URL}/${id}` });
+    out.push({
+      externalId: id,
+      title: it.name ?? "",
+      url: `${STEAM_STORE_APP_URL}/${id}`,
+      ...(firstRank === undefined ? {} : { rank: firstRank + i }),
+    });
   }
   return out;
 }

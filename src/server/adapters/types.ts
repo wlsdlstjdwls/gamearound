@@ -188,6 +188,17 @@ export interface SearchCandidate {
   /** 목록이 알려주는 기기, 발매일. meta 와 같은 이유로 들고 내려간다 */
   platform?: Platform;
   releaseDate?: string | null;
+  /**
+   * 이 후보가 스토어 **전체 인기순위**에서 몇 번째였나(1 = 1위).
+   *
+   * 발견 목록의 순서 자체가 정보인데 여태 버리고 있었다 — 판매량을 주는 스토어는 없으므로
+   * 이 순번이 우리가 얻을 수 있는 가장 좋은 인기 근거다. 목록을 걸어 내려가는 김에 공짜로 딸려 온다.
+   *
+   * 채우지 않는 경우가 둘이다. 하나, 인기순이 아닌 목록(출시예정, 검색 결과) — 그 순서는 인기와
+   * 무관하다. 둘, 장르로 좁힌 목록 — "액션 3위" 를 전체 순위와 같은 칸에 넣으면 거짓말이 된다.
+   * 둘 다 undefined 로 둔다. 0 이나 큰 수를 넣지 않는다 — "모름" 과 "꼴찌" 는 다른 값이다.
+   */
+  rank?: number;
 }
 
 export interface SourceAdapter<T extends StoreSnapshot | MetaSnapshot | NewsItem[]> {

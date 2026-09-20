@@ -56,6 +56,12 @@ export interface Ctx {
   droppedPrices: number;
   /** 이번 실행이 카탈로그 발견을 돌렸다면 그 요약. run-source 가 sync_logs 에 그대로 남긴다 */
   discovery?: DiscoveryLog;
+  /**
+   * 인기순위 순번을 쓴 게임 수. 발견 요약과 따로 세는 이유는 둘이 다른 것을 재기 때문이다 —
+   * 발견은 "몇 개가 새것인가", 이 값은 "몇 개의 순위를 알게 됐나" 다.
+   * 이 수가 0 으로 떨어지면 순위 목록 자체가 막힌 것이고, 화면의 인기순이 조용히 낡는다.
+   */
+  rankedCount?: number;
 }
 
 /**

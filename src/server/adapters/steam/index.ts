@@ -108,7 +108,11 @@ async function* steamDiscoverPages(): AsyncGenerator<SearchCandidate[]> {
         u.searchParams.set("count", String(TOPSELLERS_PAGE_SIZE));
         u.searchParams.set("start", String(page * TOPSELLERS_PAGE_SIZE));
         if (pass.tags) u.searchParams.set("tags", pass.tags);
-        const found = parseTopSellerCandidates(await http.json(u.toString()));
+        // 순번을 담는 패스는 하나뿐이다: 태그 없는 topsellers = 스토어 전체 인기순위.
+        // 출시예정은 인기순이 아니고, 장르 슬라이스는 그 장르 안 순위다(types 의 rank 주석).
+        const isGlobalRanking = pass.filter === "topsellers" && pass.tags === null;
+        const firstRank = isGlobalRanking ? page * TOPSELLERS_PAGE_SIZE + 1 : undefined;
+        const found = parseTopSellerCandidates(await http.json(u.toString()), firstRank);
         if (found.length === 0) break; // 이 패스는 바닥 — 다음 패스로
         pages++;
         yield found;

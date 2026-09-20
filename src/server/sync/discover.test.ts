@@ -20,6 +20,17 @@ function pagesOf(ids: string[], size: number, read: string[][] = []): AsyncItera
 
 const unknownOfSet = (known: Set<string>) => async (ids: string[]) => ids.filter((id) => !known.has(id));
 
+/** 순번 달린 후보. 인기순위 패스가 주는 모양이다 */
+const ranked = (id: string, rank: number): SearchCandidate => ({ ...candidate(id), rank });
+
+function rankedPages(items: SearchCandidate[][]): AsyncIterable<SearchCandidate[]> {
+  return {
+    async *[Symbol.asyncIterator]() {
+      for (const page of items) yield page;
+    },
+  };
+}
+
 describe("collectFreshCandidates", () => {
   it("아는 것만 있는 앞 페이지를 건너뛰고 뒤에서 신규를 찾는다", async () => {
     const known = new Set(["1", "2", "3", "4"]);
@@ -113,5 +124,61 @@ describe("seedQuota", () => {
 
   it("seedTop 이 없으면 발견을 돌지 않는다", () => {
     expect(seedQuota("psstore", 200, undefined, undefined)).toBe(0);
+  });
+});
+
+// 이 작업의 요점이 여기 있다: fresh 는 "모르는 것" 만 담는데 인기순위 상위는 거의 다 이미 아는
+// 게임이라 그 칸에 남지 않는다. 순번을 fresh 에서 주우면 1위가 영원히 안 잡힌다.
+describe("collectFreshCandidates 의 순번 수집(onRanked)", () => {
+  it("이미 아는 게임의 순번도 넘긴다 — 인기 상위는 대개 이미 등록돼 있다", async () => {
+    const seen: SearchCandidate[][] = [];
+    const result = await collectFreshCandidates(
+      rankedPages([[ranked("1", 1), ranked("2", 2), ranked("99", 3)]]),
+      {
+        want: 5,
+        pageBudget: 10,
+        unknownOf: unknownOfSet(new Set(["1", "2"])),
+        onRanked: async (r) => void seen.push(r),
+      },
+    );
+    // 신규는 99 하나뿐이지만 순번은 셋 다 넘어간다
+    expect(result.fresh.map((c) => c.externalId)).toEqual(["99"]);
+    expect(seen.flat().map((c) => [c.externalId, c.rank])).toEqual([
+      ["1", 1],
+      ["2", 2],
+      ["99", 3],
+    ]);
+  });
+
+  it("want 를 채워 일찍 멈춰도 그때까지 읽은 페이지의 순번은 남는다", async () => {
+    const seen: SearchCandidate[][] = [];
+    await collectFreshCandidates(
+      rankedPages([[ranked("a", 1)], [ranked("b", 2)], [ranked("c", 3)]]),
+      { want: 1, pageBudget: 10, unknownOf: unknownOfSet(new Set()), onRanked: async (r) => void seen.push(r) },
+    );
+    // 첫 페이지에서 want 를 채우고 멈춘다. 그 페이지의 순번은 이미 쓰였다
+    expect(seen.flat().map((c) => c.externalId)).toEqual(["a"]);
+  });
+
+  it("순번이 없는 후보만 있는 페이지에서는 부르지 않는다 — 출시예정 패스", async () => {
+    let calls = 0;
+    await collectFreshCandidates(rankedPages([[candidate("x"), candidate("y")]]), {
+      want: 5,
+      pageBudget: 10,
+      unknownOf: unknownOfSet(new Set()),
+      onRanked: async () => void calls++,
+    });
+    expect(calls).toBe(0);
+  });
+
+  it("같은 후보가 여러 슬라이스에 나와도 순번은 처음 본 자리 한 번만 넘긴다", async () => {
+    const seen: SearchCandidate[][] = [];
+    await collectFreshCandidates(rankedPages([[ranked("dup", 5)], [ranked("dup", 800)]]), {
+      want: 99,
+      pageBudget: 10,
+      unknownOf: unknownOfSet(new Set(["dup"])),
+      onRanked: async (r) => void seen.push(r),
+    });
+    expect(seen.flat().map((c) => c.rank)).toEqual([5]);
   });
 });

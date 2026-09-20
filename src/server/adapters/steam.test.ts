@@ -137,6 +137,26 @@ describe("parseTopSellerCandidates", () => {
   it("형식이 다르면 AdapterError", () => {
     expect(() => parseTopSellerCandidates({ items: "nope" })).toThrow(AdapterError);
   });
+
+  it("firstRank 를 주면 순번을 단다 — 걸러진 항목이 있어도 스토어가 보여 준 자리 그대로", () => {
+    // 픽스처의 입력 순서는 PUBG(1번 자리), 번들(2번, 걸러짐), CS2(3번 자리)다.
+    // 출력 배열 index 로 세면 CS2 가 2위가 된다 — 번들 하나 때문에 뒤가 통째로 한 계단 올라간다.
+    const list = parseTopSellerCandidates(fixture("steam-search-results.json"), 1);
+    expect(list.map((c) => [c.externalId, c.rank])).toEqual([
+      ["578080", 1],
+      ["730", 3],
+    ]);
+  });
+
+  it("두 번째 페이지는 앞 페이지 수만큼 밀어서 센다", () => {
+    const list = parseTopSellerCandidates(fixture("steam-search-results.json"), 101);
+    expect(list.map((c) => c.rank)).toEqual([101, 103]);
+  });
+
+  it("firstRank 가 없으면 순번을 달지 않는다 — 인기순이 아닌 목록(출시예정, 장르 슬라이스)", () => {
+    const list = parseTopSellerCandidates(fixture("steam-search-results.json"));
+    expect(list.every((c) => c.rank === undefined)).toBe(true);
+  });
 });
 
 describe("parseStoreItemDiscount (할인 기간, 행사명)", () => {

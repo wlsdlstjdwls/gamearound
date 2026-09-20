@@ -267,6 +267,13 @@
       "when": 1789714629052,
       "tag": "0037_wealthy_blazing_skull",
       "breakpoints": true
+    },
+    {
+      "idx": 38,
+      "version": "7",
+      "when": 1789927257187,
+      "tag": "0038_white_shape",
+      "breakpoints": true
     }
   ]
 }

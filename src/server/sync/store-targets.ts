@@ -8,6 +8,7 @@ import { errorMessage } from "@/lib/errors";
 import { normalizeTitle } from "@/lib/slug";
 import { findGameByTitle, type GameTitleRow } from "./match";
 import { collectFreshCandidates, seedQuota } from "./discover";
+import { resolveRankRows, writePopularityRanks } from "./rank-writer";
 import { DISCOVERY_PAGE_BUDGET, MATCHED_FOR_SYNC, REFRESH_MAIN_SHARE, SOURCE_PLATFORMS, SOURCE_REGION } from "./constants";
 import { fetchWithRetry } from "./retry";
 import type { Ctx } from "./context";
@@ -271,13 +272,24 @@ async function seedTargets(ctx: Ctx, source: StoreSource, seedWant: number, page
         const known = await knownExternalIds(db, source, ids);
         return ids.filter((id) => !known.has(id));
       },
+      // 순번은 발견의 부산물이다 — 여기서 실패해도 발견을 멈추지 않는다.
+      // 신규 등록이 순위 기록 때문에 통째로 무너지면 손해가 훨씬 크다(§7 "항목 하나의 실패가 배치를 멈추지 않는다").
+      onRanked: async (ranked) => {
+        try {
+          const rows = await resolveRankRows(db, source, ranked);
+          ctx.rankedCount = (ctx.rankedCount ?? 0) + (await writePopularityRanks(db, source, rows, new Date()));
+        } catch (e) {
+          console.warn(`[sync:${source}] 인기순위 순번 기록 실패: ${errorMessage(e)}`);
+        }
+      },
     }),
   );
   const { fresh } = result;
   // 콘솔 줄은 워크플로 로그가 지워지면 사라진다 — 포화 판단에 쓰려면 실행 기록으로 남아야 한다
   ctx.discovery = { pages: result.pages, scanned: result.scanned, fresh: fresh.length, stoppedBy: result.stoppedBy };
   console.log(
-    `[sync:${source}] 발견 ${result.pages}페이지, ${result.scanned}건 훑어 신규 ${fresh.length}건 (중단 사유: ${result.stoppedBy})`,
+    `[sync:${source}] 발견 ${result.pages}페이지, ${result.scanned}건 훑어 신규 ${fresh.length}건 (중단 사유: ${result.stoppedBy})` +
+      (ctx.rankedCount ? `, 인기순위 ${ctx.rankedCount}건 기록` : ""),
   );
   if (fresh.length === 0) return [];
 

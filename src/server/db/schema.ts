@@ -268,6 +268,22 @@ export const gamePlatforms = pgTable("game_platforms", {
   userScoreKind: userScoreKindEnum("user_score_kind"),
   /** 그 점수를 만든 사람 수. 100명의 90점과 5만명의 90점은 다른 값이라 함께 적는다 */
   userScoreCount: integer("user_score_count"),
+  /**
+   * 스토어 인기순위에서 이 상품이 몇 번째였나(1 = 1위). 지금은 steam 만 채운다 —
+   * 발견이 매 실행 전체 인기순위를 1위부터 걸어 내려가는데(adapters/steam 의 DISCOVERY_PASSES
+   * 첫 topsellers 패스, tags=null) 그 순번을 여태 버리고 있었다. 장르 슬라이스는 담지 않는다:
+   * 그건 장르 안 순위라 전체 순위와 같은 칸에 섞이면 "액션 3위" 가 "전체 3위" 로 읽힌다.
+   *
+   * 판매량이 아니라 판매량의 대리지표다. 어느 스토어도 판매량을 공개하지 않으므로
+   * 이것과 user_score_count 가 우리가 가진 인기 근거의 전부다.
+   */
+  popularityRank: integer("popularity_rank"),
+  /**
+   * 그 순번을 본 시각. 순번만으로는 못 쓴다 — 지난달 50위였다가 목록에서 빠진 게임은
+   * 갱신할 기회가 없어 50위로 굳고, 오늘 200위인 게임을 영원히 앞선다.
+   * 읽는 쪽이 이 시각으로 신선도를 재고 낡은 값을 버린다(POPULARITY_RANK_MAX_AGE_DAYS).
+   */
+  popularityRankAt: timestamp("popularity_rank_at", { withTimezone: true }),
   lastSyncedAt: timestamp("last_synced_at", { withTimezone: true }),  // UI "갱신 시각" 표시 원천
   syncStatus: syncStatusEnum("sync_status").default("ok"),
   /**
@@ -336,6 +352,10 @@ export const gamePlatforms = pgTable("game_platforms", {
 }, (t) => [
   uniqueIndex("gp_game_platform_region_uq").on(t.gameId, t.platform, t.region),
   index("gp_title_code_idx").on(t.titleCode),
+  // 인기순 정렬용. 부분 인덱스로 두는 이유: 순번이 있는 행은 카탈로그의 한 줌이다
+  // (steam 전체 인기순위 상한이 6,500위인데 game_platforms 는 십만 행대다).
+  // 전체를 담으면 인덱스의 대부분이 NULL 이고, 정렬 질의는 그 NULL 을 한 번도 읽지 않는다.
+  index("gp_popularity_rank_idx").on(t.popularityRank).where(sql`${t.popularityRank} is not null`),
 ]);
 
 /**

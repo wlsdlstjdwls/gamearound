@@ -60,6 +60,17 @@ export interface CollectOptions {
   pageBudget: number;
   /** 넘긴 externalId 중 DB 에 없는 것만 돌려준다 */
   unknownOf: (externalIds: string[]) => Promise<string[]>;
+  /**
+   * 순번이 달린 후보를 페이지 단위로 넘겨받는 자리(없으면 순번을 버린다).
+   *
+   * **아는 것을 거르기 전에** 부른다. 이 함수의 결과(fresh)는 모르는 후보만 담는데,
+   * 인기순위 상위는 거의 다 이미 등록돼 있어 그 칸에 남지 않는다 — 정작 1위가 빠진다.
+   * 순번은 "신규인가" 와 아무 상관이 없는 값이라 발견의 판단과 분리해서 흘려보낸다.
+   *
+   * 페이지마다 부르는 이유: 마지막에 모아 한 번에 쓰면 want 를 채워 일찍 멈춘 실행에서
+   * 이미 읽은 페이지의 순번까지 같이 버려진다.
+   */
+  onRanked?: (ranked: SearchCandidate[]) => Promise<void>;
 }
 
 /**
@@ -68,7 +79,7 @@ export interface CollectOptions {
  */
 export async function collectFreshCandidates(
   pages: AsyncIterable<SearchCandidate[]>,
-  { want, pageBudget, unknownOf }: CollectOptions,
+  { want, pageBudget, unknownOf, onRanked }: CollectOptions,
 ): Promise<DiscoveryResult> {
   const fresh: SearchCandidate[] = [];
   const seen = new Set<string>();
@@ -85,6 +96,10 @@ export async function collectFreshCandidates(
       return true;
     });
     scanned += batch.length;
+    if (onRanked) {
+      const ranked = batch.filter((c) => c.rank !== undefined);
+      if (ranked.length > 0) await onRanked(ranked);
+    }
     if (batch.length > 0) {
       const unknown = new Set(await unknownOf(batch.map((c) => c.externalId)));
       for (const c of batch) {
