@@ -264,6 +264,9 @@ async function seedTargets(ctx: Ctx, source: StoreSource, seedWant: number, page
   const adapter = getStoreAdapter(source);
   if (!adapter.discoverPages) return [];
 
+  // 이 발견 걸음이 주운 순번만 센다. ctx.rankedCount 는 0단계(listPopularPages)가 이미 쓴 것을
+  // 포함하고 있어서, 그걸 그대로 적으면 같은 수를 두 번 말한다
+  let rankedHere = 0;
   const result = await fetchWithRetry(() =>
     collectFreshCandidates(adapter.discoverPages!(), {
       want: seedWant,
@@ -278,7 +281,9 @@ async function seedTargets(ctx: Ctx, source: StoreSource, seedWant: number, page
         try {
           const rows = await resolveRankRows(db, source, ranked);
           // ctx.now 를 쓴다 — 실행 하나에 시각 하나여야 페이지끼리 서로 덮지 않는다(rank-writer 주석)
-          ctx.rankedCount = (ctx.rankedCount ?? 0) + (await writePopularityRanks(db, source, rows, ctx.now));
+          const n = await writePopularityRanks(db, source, rows, ctx.now);
+          rankedHere += n;
+          ctx.rankedCount = (ctx.rankedCount ?? 0) + n;
         } catch (e) {
           console.warn(`[sync:${source}] 인기순위 순번 기록 실패: ${errorMessage(e)}`);
         }
@@ -290,7 +295,7 @@ async function seedTargets(ctx: Ctx, source: StoreSource, seedWant: number, page
   ctx.discovery = { pages: result.pages, scanned: result.scanned, fresh: fresh.length, stoppedBy: result.stoppedBy };
   console.log(
     `[sync:${source}] 발견 ${result.pages}페이지, ${result.scanned}건 훑어 신규 ${fresh.length}건 (중단 사유: ${result.stoppedBy})` +
-      (ctx.rankedCount ? `, 인기순위 ${ctx.rankedCount}건 기록` : ""),
+      (rankedHere > 0 ? `, 걸으며 순번 ${rankedHere}건 더 기록` : ""),
   );
   if (fresh.length === 0) return [];
 
