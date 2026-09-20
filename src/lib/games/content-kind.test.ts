@@ -63,4 +63,47 @@ describe("isCurrencyItemTitle", () => {
     expect(isCurrencyItemTitle(null)).toBe(false);
     expect(isCurrencyItemTitle("")).toBe(false);
   });
+
+  /**
+   * 2026-09-21 2차 실측. 낱말 사전이 못 따라간 자리를 수량 단위가 메운다 —
+   * 사전에 프리즘, 스타, 유물을 넣었다면 같은 낱말을 쓴 본편이 죽었다.
+   */
+  it.each([
+    "오버워치 — 신화 프리즘 100개",
+    "MLB The Show 25를 위한 Stubs 67,500개",
+    "금괴 245개",
+    "스타 110개 — Among Us",
+    "거대한 포션 — 힌트 250개",
+    "콜 오브 듀티: 어드밴스드 워페어 — 고급 보급품 13개 (Windows)",
+    "Paladins 수정 200개",
+    "Killer Klowns From Outer Space: 티켓 450장",
+  ])("수량 단위가 붙은 재화를 가른다: %s", (t) => {
+    expect(isCurrencyItemTitle(t)).toBe(true);
+  });
+
+  /** 숫자 없는 재화도 있다 — 앞 회차의 "숫자 없는 재화는 0건" 전제가 깨진 자리다 */
+  it("현금 카드는 숫자가 없어도 재화다", () => {
+    expect(isCurrencyItemTitle("Gta 온라인: 메갈로돈 샤크 현금 카드")).toBe(true);
+    expect(isCurrencyItemTitle("GTA 온라인: 불 샤크 현금 카드 (Xbox Series X|S)")).toBe(true);
+  });
+
+  /**
+   * 수량 단위를 보되 기간과 낱말은 보지 않는다.
+   * 개월은 기간이라 구독 상품이고, Loot Box 가 든 넷은 실제로 팔리는 **게임**이다.
+   */
+  it.each([
+    "개인 플랜 12개월(365일간) 이용권",
+    "‘저스트 댄스+’ 3개월 패스",
+    "Let's Sing 2025 — 12개월 Vip 패스",
+    "Loot Box Simulator",
+    "Shadow Of Loot Box",
+    "Loot Box Quest — Mystic Maidens",
+    "Lootbox Lyfe+",
+    // "개의" 는 게임 제목 꼴이라 규칙에서 뺐다. 이 게임은 12,400원짜리 Xbox 본편이다
+    "100 개의 문 감옥에서 탈출해보세요— 감옥 탈출 게임",
+    // 그 대가로 진짜 재화 셋을 놓친다. 놓치는 것을 알고 놓는다 — 본편을 내리는 쪽이 더 나쁘다
+    "110개의 유물",
+  ])("기간제 이용권과 Loot Box 게임은 건드리지 않는다: %s", (t) => {
+    expect(isCurrencyItemTitle(t)).toBe(false);
+  });
 });

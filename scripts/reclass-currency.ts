@@ -22,17 +22,17 @@ async function main(): Promise<number> {
   const apply = process.argv.includes("--apply");
   const db = getDb();
 
-  // 재화 낱말이 하나라도 든 본편을 넓게 끌어온다. 정밀한 판정은 아래 필터가 한다
+  // 공개 본편을 **전량** 끌어온다. 숫자로 먼저 좁히지 않는다 — 2026-09-21 2차 실측에서
+  // 숫자 없는 재화(현금 카드)가 나와 그 좁히기가 빠뜨렸다. 1.5만 행이라 전량이 감당된다.
   const raw = await db.execute(sql`
     select id, coalesce(title_ko, title_en) as t, title_ko, title_en
     from games
     where content_type = 'game' and visibility = 'public'
-      and coalesce(title_ko, title_en) ~* '[0-9]'
   `);
   const rows = (raw.rows ?? raw) as Array<{ id: string; t: string; title_ko: string | null; title_en: string | null }>;
   const hits = rows.filter((r) => isCurrencyItemTitle(r.title_ko) || isCurrencyItemTitle(r.title_en) || isCurrencyItemTitle(r.t));
 
-  console.log(`숫자 든 본편 ${rows.length}건을 훑어 재화 ${hits.length}건:`);
+  console.log(`공개 본편 ${rows.length}건을 훑어 재화 ${hits.length}건:`);
   for (const h of hits) console.log(`  ${h.t}`);
   if (hits.length === 0) return 0;
 
