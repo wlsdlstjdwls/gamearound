@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
+  DEFAULT_GAME_SORT,
   gamesHref,
   isGameSort,
   joinPlatformValues,
@@ -66,7 +67,13 @@ describe("isGameSort", () => {
 
 describe("gamesHref", () => {
   it("기본값만 있으면 쿼리스트링 없이 /games", () => {
-    expect(gamesHref({ sort: "discount", page: 1, onSale: false })).toBe(ROUTES.game);
+    expect(gamesHref({ sort: DEFAULT_GAME_SORT, page: 1, onSale: false })).toBe(ROUTES.game);
+  });
+
+  // 기본 정렬이 인기순으로 바뀐 뒤(2026-09-21) 할인율순은 실어야 하는 값이 됐다.
+  // 이 줄이 없으면 기본값을 또 옮길 때 "안 실리는 정렬" 이 조용히 하나 더 생긴다.
+  it("할인율순은 이제 기본값이 아니라 주소에 실린다", () => {
+    expect(gamesHref({ sort: "discount", page: 1, onSale: false })).toBe("/games?sort=discount");
   });
 
   it("비기본값만 주소에 싣는다", () => {

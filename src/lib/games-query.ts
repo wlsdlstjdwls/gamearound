@@ -3,12 +3,23 @@
 import { ROUTES } from "./routes";
 import { DEFAULT_GAME_VIEW, isGameView, type GameView } from "./games/view";
 
-/** 정렬 키. 값이 그대로 쿼리스트링에 실린다 */
-export const GAME_SORTS = ["discount", "price", "release", "title"] as const;
+/** 정렬 키. 값이 그대로 쿼리스트링에 실린다. 맨 앞이 기본값이라 순서가 뜻을 가진다 */
+export const GAME_SORTS = ["popular", "discount", "price", "release", "title"] as const;
 export type GameSort = (typeof GAME_SORTS)[number];
-export const DEFAULT_GAME_SORT: GameSort = "discount";
+/**
+ * 기본 정렬 — 인기순.
+ *
+ * 2026-09-21 에 할인율순에서 바꿨다. 할인율순은 "가장 많이 깎인 것" 이지 "가장 살 만한 것" 이 아니다.
+ * 90% 짜리는 대개 묵은 게임이라(MIN_DISCOUNT_STEPS 주석이 이미 알고 있던 사실이다)
+ * 카탈로그 7만 건의 첫인상이 아무도 모르는 싸구려로 채워지고 있었다.
+ *
+ * 인기순을 쓸 수 있게 된 근거는 순번을 줍기 시작해서다(server/sync/rank-writer).
+ * 판매량을 주는 스토어는 없으므로 스토어 인기순위가 우리가 가진 가장 좋은 대리지표다.
+ */
+export const DEFAULT_GAME_SORT: GameSort = "popular";
 
 export const SORT_LABEL: Record<GameSort, string> = {
+  popular: "인기순",
   discount: "할인율순",
   price: "가격 낮은순",
   release: "최신 출시순",

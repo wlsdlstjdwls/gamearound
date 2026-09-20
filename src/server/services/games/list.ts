@@ -10,6 +10,7 @@ import { visiblePlatformsOnly } from "@/server/db/visibility";
 import { normalizeForSearch } from "@/lib/slug";
 import { DEFAULT_GAME_SORT, parsePlatformValues, type GamesQuery } from "@/lib/games-query";
 import { expandPlatformValues } from "@/lib/platform";
+import { POPULARITY_RANK_MAX_AGE_DAYS } from "@/lib/games/popularity";
 import type { GameSummary } from "./dto";
 import { attachBestPrice, type GameRow } from "./mappers";
 import { allOf, byCompanySlug, hasVisiblePlatform, inAnySubscription, mainGamesOnly, runsOnRig } from "./filters";
@@ -76,6 +77,19 @@ function platformAgg(platforms: Platform[]) {
        * 이 목록이 답하는 질문은 "무엇이 나왔나" 고, "무엇을 기다리나" 는 /upcoming 이 맡는다.
        */
       maxRelease: sql<string | null>`max(${gamePlatforms.releaseDate}) filter (where ${gamePlatforms.releaseDate} <= current_date)`.as("max_release"),
+      /**
+       * "인기순" 이 세는 값 — 스토어 인기순위에서 이 게임의 가장 높은 자리(작은 수가 앞).
+       *
+       * **낡은 순번은 여기서 버린다**(POPULARITY_RANK_MAX_AGE_DAYS). 순위에서 빠진 게임은
+       * 갱신할 기회가 없어 마지막 순번으로 굳는데, 그걸 그대로 세면 "인기순" 이
+       * "한때 인기였던 순" 이 된다. 거르는 자리를 읽는 쪽에 두는 이유는 쓰는 쪽이 지울 수 없어서다 —
+       * 목록 밖으로 나간 게임은 다음 수집에 나타나지 않으므로 아무도 그 행을 찾아가지 않는다.
+       *
+       * 여러 기기에 순번이 있으면 가장 높은 자리를 쓴다. 게임 하나의 인기는 그중 앞선 쪽이다.
+       */
+      minRank: sql<number | null>`min(${gamePlatforms.popularityRank}) filter (
+        where ${gamePlatforms.popularityRankAt} >= now() - make_interval(days => ${POPULARITY_RANK_MAX_AGE_DAYS})
+      )`.as("min_rank"),
     })
     .from(gamePlatforms)
     // 목록의 최저가, 할인, 발매일은 기준 지역(한국) 행만 본다. 다른 나라 가격을 섞으면
@@ -136,6 +150,17 @@ async function listGamesRaw(filter: GameListFilter): Promise<GameListResult> {
     price: [sql`${agg.minPrice} asc nulls last`, sql`${agg.maxDiscount} desc nulls last`],
     release: [sql`${agg.maxRelease} desc nulls last`],
     title: [asc(sql`coalesce(${games.titleKo}, ${games.titleEn})`)],
+    /**
+     * 순번이 있는 게임은 한 줌이다(실측 1,687건 대 카탈로그 7만). 나머지는 nulls last 로 뒤에 서는데,
+     * 그 뒤가 무순서면 2페이지부터 새로고침마다 순서가 바뀐다 — 그래서 뒷줄에도 기준을 준다.
+     * 뒷줄의 기준은 할인율순과 같게 둔다: 순위를 모르는 게임들 사이에서 답할 수 있는 질문이 그것뿐이다.
+     */
+    popular: [
+      sql`${agg.minRank} asc nulls last`,
+      sql`${agg.hasBaseCurrency} desc`,
+      sql`${agg.maxDiscount} desc nulls last`,
+      sql`${agg.minPrice} asc nulls last`,
+    ],
   }[sort];
 
   // 검색어가 있으면 집계를 left join 으로 붙인다 — inner join 이 한국 행 없는 게임을 통째로 지운다.
