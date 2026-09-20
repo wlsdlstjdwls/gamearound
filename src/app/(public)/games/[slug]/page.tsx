@@ -43,6 +43,7 @@ import {
   latestPatches,
   type GameDetail,
 } from "@/server/services/games";
+import { getRecordedLow, type RecordedLow } from "@/server/services/prices";
 import { getCurrentUser } from "@/server/services/users";
 import { listMyDevices } from "@/server/services/devices";
 import { isInWishlist } from "@/server/services/wishlist";
@@ -105,7 +106,17 @@ function SummaryCell({ label, value, was, note }: SummaryCellProps) {
  * 그건 "아직 모은다" 가 아니라 "고장 났다" 로 읽힌다. 대신 아는 게 최저가뿐이면 한 줄로 그 사실을 말한다 —
  * 모르는 것을 네 번 반복하는 것보다 한 번 적는 편이 짧고 정직하다.
  */
-function DecisionSummary({ game, className, style }: { game: GameDetail; className?: string; style?: React.CSSProperties }) {
+function DecisionSummary({
+  game,
+  recordedLow,
+  className,
+  style,
+}: {
+  game: GameDetail;
+  recordedLow: RecordedLow | null;
+  className?: string;
+  style?: React.CSSProperties;
+}) {
   const best = cheapestPlatform(game.platforms);
   const score = bestScore(game.platforms);
   const user = bestUserScore(game.platforms);
@@ -119,6 +130,20 @@ function DecisionSummary({ game, className, style }: { game: GameDetail; classNa
       note: best ? `${PLATFORM_LABEL[best.platform] ?? best.platform}${best.discountPct ? ` | -${best.discountPct}%` : ""}` : undefined,
     },
   ];
+  /**
+   * 기록상 최저가. **지금보다 쌌던 적이 있을 때만** 선다 — 없으면 칸 자체를 세우지 않는다.
+   *
+   * "최저가 = 현재가" 를 적지 않는 이유는 그게 거짓이어서가 아니라, 우리가 열흘밖에 안 봤다는
+   * 사실이 화면에 없어서다. 읽는 사람은 그 줄을 "지금이 제일 싸다" 로 읽는다(services/prices 주석).
+   * 값이 설 때는 "얼마나 더 쌌었나" 를 같이 말한다 — 그게 이 칸이 답하는 질문이다.
+   */
+  if (recordedLow) {
+    cells.push({
+      label: GAME_MESSAGES.recordedLowLabel,
+      value: formatPrice(recordedLow.price, recordedLow.currency),
+      note: GAME_MESSAGES.recordedLowNote(formatPrice(recordedLow.gap, recordedLow.currency), formatDate(recordedLow.at)),
+    });
+  }
   // 출시일은 게임 단위 값이다(dto 의 releaseDate 주석) — 플랫폼 탭마다 다른 값을 보여 주면
   // PlayStation 탭에서만 빈칸이 된다. 여기서는 어느 탭을 보든 같은 한 값을 말한다
   if (game.releaseDate) {
@@ -230,13 +255,15 @@ export default async function GameDetailPage({ params }: Props) {
    *
    * 세션과 찜 여부는 여기서 기다리지 않는다 — WishlistSlot 이 Suspense 안에서 따로 받아 온다(아래 주석).
    */
-  const [game, patchGroups, perHourScale] = await Promise.all([
+  const [game, patchGroups, perHourScale, recordedLow] = await Promise.all([
     getGameBySlugCached(slug),
     // 패치 기록은 상세 조회와 같은 태그(`game:<slug>`)로 따로 캐시된다 — 붙는 테이블이 game_platforms 라
     // 상세 질의에 얹으면 화면이 안 쓰는 행까지 통째로 끌려온다
     getGamePatchesCached(slug),
     // 시간당 가격을 세울 눈금 - 이 게임이 아니라 카탈로그의 성질이라 게임 태그와 따로 캐시된다
     getPricePerHourScale(),
+    // 기록상 최저가. 지금보다 쌌던 적이 있을 때만 값이 온다(services/prices 의 getRecordedLow 주석)
+    getRecordedLow(slug),
   ]);
   if (!game) notFound();
 
@@ -302,7 +329,7 @@ export default async function GameDetailPage({ params }: Props) {
             </div>
           </div>
 
-          <DecisionSummary game={game} className="enter-item" style={stagger(2)} />
+          <DecisionSummary game={game} recordedLow={recordedLow} className="enter-item" style={stagger(2)} />
 
           <div className="enter-item flex flex-wrap items-center gap-2" style={stagger(3)}>
             {game.genres.length > 0 && (
