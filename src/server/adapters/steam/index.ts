@@ -95,24 +95,45 @@ function appDetailsUrl(appid: string, lang: "koreana" | "english"): string {
  * 어디까지 아는지는 DB 를 보는 호출부만 안다(adapters/types 의 discoverPages 주석).
  * 인기순위 검색 자체가 막히면 featuredcategories 한 장(60건 안팎)으로 폴백한다.
  */
+/**
+ * 검색 목록 한 장. 발견과 인기순위 수집이 같은 엔드포인트를 쓰므로 여기로 모은다.
+ *
+ * 순번을 담는 자리는 하나뿐이다: 태그 없는 topsellers = 스토어 전체 인기순위.
+ * 출시예정은 인기순이 아니고, 장르 슬라이스는 그 장르 안 순위다(types 의 rank 주석).
+ */
+async function fetchSearchPage(
+  pass: { filter: string; tags: string | null },
+  page: number,
+): Promise<SearchCandidate[]> {
+  const u = new URL(STEAM_TOPSELLERS_URL);
+  u.searchParams.set("json", "1");
+  u.searchParams.set("filter", pass.filter);
+  u.searchParams.set("cc", "kr");
+  u.searchParams.set("l", "koreana");
+  u.searchParams.set("count", String(TOPSELLERS_PAGE_SIZE));
+  u.searchParams.set("start", String(page * TOPSELLERS_PAGE_SIZE));
+  if (pass.tags) u.searchParams.set("tags", pass.tags);
+  const isGlobalRanking = pass.filter === "topsellers" && pass.tags === null;
+  const firstRank = isGlobalRanking ? page * TOPSELLERS_PAGE_SIZE + 1 : undefined;
+  return parseTopSellerCandidates(await http.json(u.toString()), firstRank);
+}
+
+/** 인기순위만 1위부터. 발견과 달리 멈출 조건이 "페이지 수" 뿐이다(types 의 listPopularPages 주석) */
+async function* steamPopularPages(maxPages: number): AsyncGenerator<SearchCandidate[]> {
+  for (let page = 0; page < maxPages; page++) {
+    const found = await fetchSearchPage({ filter: "topsellers", tags: null }, page);
+    if (found.length === 0) return;
+    yield found;
+    await sleep(TOPSELLERS_PAGE_INTERVAL_MS);
+  }
+}
+
 async function* steamDiscoverPages(): AsyncGenerator<SearchCandidate[]> {
   let pages = 0;
   try {
     for (const pass of DISCOVERY_PASSES) {
       for (let page = 0; page < pass.maxPages; page++) {
-        const u = new URL(STEAM_TOPSELLERS_URL);
-        u.searchParams.set("json", "1");
-        u.searchParams.set("filter", pass.filter);
-        u.searchParams.set("cc", "kr");
-        u.searchParams.set("l", "koreana");
-        u.searchParams.set("count", String(TOPSELLERS_PAGE_SIZE));
-        u.searchParams.set("start", String(page * TOPSELLERS_PAGE_SIZE));
-        if (pass.tags) u.searchParams.set("tags", pass.tags);
-        // 순번을 담는 패스는 하나뿐이다: 태그 없는 topsellers = 스토어 전체 인기순위.
-        // 출시예정은 인기순이 아니고, 장르 슬라이스는 그 장르 안 순위다(types 의 rank 주석).
-        const isGlobalRanking = pass.filter === "topsellers" && pass.tags === null;
-        const firstRank = isGlobalRanking ? page * TOPSELLERS_PAGE_SIZE + 1 : undefined;
-        const found = parseTopSellerCandidates(await http.json(u.toString()), firstRank);
+        const found = await fetchSearchPage(pass, page);
         if (found.length === 0) break; // 이 패스는 바닥 — 다음 패스로
         pages++;
         yield found;
@@ -137,6 +158,8 @@ async function* steamDiscoverPages(): AsyncGenerator<SearchCandidate[]> {
 export const steamAdapter: StoreAdapter = {
   source: "steam",
   minIntervalMs: 1500,
+
+  listPopularPages: steamPopularPages,
 
   async search(query: string): Promise<SearchCandidate[]> {
     const u = new URL(STEAM_STORESEARCH_URL);

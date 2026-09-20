@@ -9,8 +9,10 @@ import { sql } from "drizzle-orm";
 import { gamePlatforms, gameSourceRefs } from "@/server/db/schema";
 import type { Db } from "@/server/db/client";
 import type { StoreSource } from "@/server/adapters";
-import type { SearchCandidate } from "@/server/adapters/types";
-import { SOURCE_PLATFORMS, SOURCE_REGION } from "./constants";
+import type { SearchCandidate, StoreAdapter } from "@/server/adapters/types";
+import { errorMessage } from "@/lib/errors";
+import { POPULARITY_RANK_PAGES, SOURCE_PLATFORMS, SOURCE_REGION } from "./constants";
+import type { Ctx } from "./context";
 
 /** 순번이 달린 후보를 (게임, 순번) 쌍으로 푼 것 */
 export interface RankRow {
@@ -58,20 +60,65 @@ export async function resolveRankRows(db: Db, source: StoreSource, ranked: Searc
  *
  * 생 SQL 을 쓰는 것은 drizzle 빌더에 "VALUES 목록과 조인하는 UPDATE" 가 없어서다.
  * 값은 전부 바인딩으로 나간다 — 문자열을 이어 붙이지 않는다(lib 의 Neon 백슬래시 주석).
+ *
+ * `runAt` 은 **실행 하나에 하나**여야 한다(페이지마다 new Date() 가 아니다). 덮어쓸지 말지를
+ * 이 값으로 가르기 때문이다. 2026-09-21 실측으로 찾은 일이다: 같은 게임의 에디션 SKU 가
+ * 본편과 따로 순위에 오르면(본편 50위, 디럭스판 250위) 둘이 다른 페이지에 흩어져 들어와
+ * 나중 페이지가 앞 순위를 덮었다. 발견의 중복 제거는 externalId 기준이라 이걸 못 막는다 —
+ * 두 SKU 는 서로 다른 externalId 이고, 같은 게임이 되는 것은 ref 를 푼 뒤다.
+ *
+ *   - 기존 값이 이번 실행 것이면(stamp = runAt): 더 높은 순위만 이긴다
+ *   - 기존 값이 지난 실행 것이면(stamp < runAt): 무조건 새 값이 이긴다 — 순위가 내려간 것도 사실이다
  */
-export async function writePopularityRanks(db: Db, source: StoreSource, rows: RankRow[], now: Date): Promise<number> {
+export async function writePopularityRanks(db: Db, source: StoreSource, rows: RankRow[], runAt: Date): Promise<number> {
   if (rows.length === 0) return 0;
   const platforms = SOURCE_PLATFORMS[source];
   const region = SOURCE_REGION[source];
   const tuples = rows.map((r) => sql`(${r.gameId}::uuid, ${r.rank}::int)`);
 
-  await db.execute(sql`
+  const res = await db.execute(sql`
     update ${gamePlatforms}
-    set popularity_rank = v.rank, popularity_rank_at = ${now}
+    set popularity_rank = v.rank, popularity_rank_at = ${runAt}
     from (values ${sql.join(tuples, sql`, `)}) as v(game_id, rank)
     where ${gamePlatforms.gameId} = v.game_id
       and ${inArray(gamePlatforms.platform, platforms)}
       and ${eq(gamePlatforms.region, region)}
+      and (
+        ${gamePlatforms.popularityRank} is null
+        or ${gamePlatforms.popularityRankAt} is null
+        or ${gamePlatforms.popularityRankAt} < ${runAt}
+        or ${gamePlatforms.popularityRank} > v.rank
+      )
   `);
-  return rows.length;
+  // 시도한 수가 아니라 **실제로 바뀐 행 수**를 돌려준다. 둘은 갈린다 — ref 는 있는데 그 소스의
+  // game_platforms 행이 아직 없는 게임이 있고(2026-09-21 실측 500건 중 1건), 가드에 걸려
+  // 안 덮은 행도 있다. 이 숫자는 "순위 수집이 도는가" 를 재는 감시 값이라 부풀면 고장을 못 잡는다.
+  return (res as { rowCount?: number }).rowCount ?? 0;
+}
+
+/**
+ * 인기순위를 앞에서부터 훑어 순번을 기록한다.
+ *
+ * 발견과 따로 도는 이유는 adapters/types 의 listPopularPages 주석에 있다 — 한 줄로 줄이면
+ * "발견은 신규를 채우면 멈추는데 순위는 신규와 상관없는 값" 이다.
+ *
+ * 실패가 수집을 멈추지 않는다. 순위는 화면을 더 낫게 하는 값이지 가격처럼 없으면 안 되는 값이 아니다.
+ * 막히면 화면이 예전 순서로 돌아갈 뿐이고, 그 사실은 rankedCount 가 0 으로 떨어지는 것으로 드러난다.
+ */
+export async function syncPopularityRanks(ctx: Ctx, source: StoreSource, adapter: StoreAdapter): Promise<number> {
+  if (!adapter.listPopularPages) return 0;
+  const { db } = ctx;
+  let written = 0;
+  try {
+    for await (const page of adapter.listPopularPages(POPULARITY_RANK_PAGES)) {
+      const ranked = page.filter((c) => c.rank !== undefined);
+      if (ranked.length === 0) continue;
+      const rows = await resolveRankRows(db, source, ranked);
+      written += await writePopularityRanks(db, source, rows, ctx.now);
+    }
+  } catch (e) {
+    console.warn(`[sync:${source}] 인기순위 수집 중단(${written}건까지 기록): ${errorMessage(e)}`);
+  }
+  ctx.rankedCount = (ctx.rankedCount ?? 0) + written;
+  return written;
 }

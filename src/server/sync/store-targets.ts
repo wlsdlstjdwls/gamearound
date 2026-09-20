@@ -277,7 +277,8 @@ async function seedTargets(ctx: Ctx, source: StoreSource, seedWant: number, page
       onRanked: async (ranked) => {
         try {
           const rows = await resolveRankRows(db, source, ranked);
-          ctx.rankedCount = (ctx.rankedCount ?? 0) + (await writePopularityRanks(db, source, rows, new Date()));
+          // ctx.now 를 쓴다 — 실행 하나에 시각 하나여야 페이지끼리 서로 덮지 않는다(rank-writer 주석)
+          ctx.rankedCount = (ctx.rankedCount ?? 0) + (await writePopularityRanks(db, source, rows, ctx.now));
         } catch (e) {
           console.warn(`[sync:${source}] 인기순위 순번 기록 실패: ${errorMessage(e)}`);
         }

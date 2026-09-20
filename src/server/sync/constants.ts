@@ -581,6 +581,14 @@ export const SOURCE_REGION: Record<StoreSource, Region> = {
  * 2주는 발견이 며칠 쉬어도 순위가 통째로 비지 않을 만큼의 여유다.
  */
 export const POPULARITY_RANK_MAX_AGE_DAYS = 14;
+/**
+ * 인기순위를 몇 페이지까지 훑을까(페이지당 100건 = 100위).
+ *
+ * 20 인 근거: 화면이 인기순을 쓰는 자리는 홈 첫 줄과 목록 첫 장이다. 2,000위 아래는 그 자리에
+ * 닿지 않으므로 더 읽어도 화면이 달라지지 않는다. 1.5초 간격이라 20장이면 30초다.
+ * 더 깊은 순번은 발견이 인기순위까지 파고드는 날 공짜로 딸려 온다(store-targets 의 onRanked).
+ */
+export const POPULARITY_RANK_PAGES = 20;
 /** §10 파싱 검증: 성공 건 중 가격 0/null 비율이 이 값을 넘으면 반영 생략 + partial */
 export const SUSPICIOUS_PRICE_RATIO = 0.5;
 export const SUSPICIOUS_MIN_SAMPLE = 10;

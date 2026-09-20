@@ -19,6 +19,7 @@
     "test": "vitest run",
     "e2e:auth": "node scripts/e2e-auth.mjs",
     "crawl:seed": "tsx scripts/crawl-local.ts --seed",
+    "ranks:sync": "tsx scripts/sync-ranks.ts",
     "patch:ko": "tsx scripts/patch-ko.ts",
     "requirements:backfill": "tsx scripts/backfill-requirements.ts",
     "parts:rematch": "tsx scripts/rematch-parts.ts",

@@ -9,9 +9,19 @@ import { syncDlcs } from "./dlc-writer";
 import { applyStore } from "./store-apply";
 import { fetchStoreBatched, fetchStoreOneByOne } from "./store-fetch";
 import { listStoreTargets } from "./store-targets";
+import { syncPopularityRanks } from "./rank-writer";
 
 export async function runStore(ctx: Ctx, source: StoreSource, opts: RunOptions): Promise<void> {
   const adapter = getStoreAdapter(source);
+
+  // 0단계: 인기순위 순번. 발견을 도는 실행에서만 돈다 —
+  // Actions 의 가격 갱신(seedTop 없음)에 30초를 얹지 않기 위해서다. 순위는 하루에 몇 번씩
+  // 다시 읽을 값이 아니고, 발견이 도는 주기면 POPULARITY_RANK_MAX_AGE_DAYS 안에 충분히 들어온다.
+  if (opts.seedTop) {
+    const ranked = await syncPopularityRanks(ctx, source, adapter);
+    if (ranked > 0) console.log(`[sync:${source}] 인기순위 ${ranked}건 기록`);
+  }
+
   const targets = await listStoreTargets(ctx, source, {
     limit: opts.limit ?? BATCH_SIZE[source],
     seedTop: opts.seedTop,

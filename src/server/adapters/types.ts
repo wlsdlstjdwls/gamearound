@@ -238,6 +238,18 @@ export interface SourceAdapter<T extends StoreSnapshot | MetaSnapshot | NewsItem
 
 export type StoreAdapter = SourceAdapter<StoreSnapshot> & {
   /**
+   * 스토어 전체 인기순위만 앞에서부터 훑는다. 후보에 rank 가 실려 온다.
+   *
+   * discoverPages 와 가르는 이유(2026-09-21 실측): 발견은 "신규를 N개 채우면 멈춘다".
+   * 스팀은 출시예정 패스가 맨 앞이고 그 목록은 매일 새것을 주므로, 신규 몫이 거기서 다 차면
+   * 인기순위 페이지를 **한 장도 안 읽고** 끝난다(실측: seed-top=60 이 첫 페이지에서 want 로 멈췄다).
+   * 순위는 신규와 아무 상관이 없는 값인데 신규 목표에 인질로 잡혀 있었다.
+   *
+   * 이 경로는 출시예정을 거치지 않고 인기순위 1위부터 바로 연다 — 낭비도 없고 멈출 이유도 없다.
+   * 순위를 주지 않는 소스는 이 메서드를 두지 않는다(콘솔 스토어는 인기순 목록이 없다).
+   */
+  listPopularPages?(maxPages: number): AsyncIterable<SearchCandidate[]>;
+  /**
    * 본편이 가진 DLC 외부 ID 목록. 배치 조회가 "자식 → 부모" 방향만 주는 소스(steam GetItems)에서는
    * 본편을 아무리 갱신해도 그 본편의 DLC 를 영원히 못 만난다 — 목록은 단건 요청으로만 온다.
    * 요청을 한 번 더 쓰는 경로라 호출은 sync/dlc-list 가 빈도와 건수를 막아 준다.
