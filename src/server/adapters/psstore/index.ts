@@ -45,6 +45,26 @@ async function op(operationName: string, variables: unknown, hash: string, conte
   return http.json(opUrl(operationName, variables, hash), { context });
 }
 
+/**
+ * 목록 한 장. 발견과 인기순위 수집이 같은 질의를 쓰므로 여기로 모은다.
+ * firstRank 를 주면 후보에 순번이 실린다 — 이 카테고리의 기본 정렬이 베스트셀러라 그 자리가 곧 순위다.
+ */
+async function gridPage(page: number, context: string, firstRank?: number): Promise<SearchCandidate[]> {
+  const raw = await op(
+    "categoryGridRetrieve",
+    {
+      id: PSSTORE_ALL_GAMES_CATEGORY,
+      pageArgs: { size: PSSTORE_PAGE_SIZE, offset: page * PSSTORE_PAGE_SIZE },
+      sortBy: null,
+      filterBy: [],
+      facetOptions: [],
+    },
+    PSSTORE_QUERY_HASHES.categoryGrid,
+    context,
+  );
+  return parsePsstoreGrid(raw, firstRank);
+}
+
 export const psstoreAdapter: StoreAdapter = {
   source: "psstore",
   minIntervalMs: 1000,
@@ -106,20 +126,23 @@ export const psstoreAdapter: StoreAdapter = {
   /** 전체 게임 카테고리를 페이지 단위로 흘려보낸다. 아는 것을 걸러내고 멈출 시점은 호출부가 정한다 */
   async *discoverPages(): AsyncGenerator<SearchCandidate[]> {
     for (let page = 0; page < PSSTORE_DISCOVERY_MAX_PAGES; page++) {
-      const raw = await op(
-        "categoryGridRetrieve",
-        {
-          id: PSSTORE_ALL_GAMES_CATEGORY,
-          pageArgs: { size: PSSTORE_PAGE_SIZE, offset: page * PSSTORE_PAGE_SIZE },
-          sortBy: null,
-          filterBy: [],
-          facetOptions: [],
-        },
-        PSSTORE_QUERY_HASHES.categoryGrid,
-        `discover:${page}`,
-      );
-      const found = parsePsstoreGrid(raw);
-      if (found.length === 0) return; // 카탈로그 끝
+      yield await gridPage(page, `discover:${page}`);
+      await sleep(psstoreAdapter.minIntervalMs);
+    }
+  },
+
+  /**
+   * 인기순위(베스트셀러)만 1위부터. 발견과 같은 목록을 읽지만 멈출 조건이 페이지 수뿐이다
+   * (adapters/types 의 listPopularPages 주석).
+   *
+   * 같은 질의를 쓰는 이유: 이 카테고리의 기본 정렬이 이미 `sales30`("베스트셀러", 30일 판매)이다 —
+   * 응답의 sortedBy 가 그렇게 말한다(2026-09-21 실측). 스토어가 정렬해 준 순서를 우리가 여태
+   * 버리고 있었을 뿐이라 새 엔드포인트도 새 해시도 필요 없다.
+   */
+  async *listPopularPages(maxPages: number): AsyncGenerator<SearchCandidate[]> {
+    for (let page = 0; page < maxPages; page++) {
+      const found = await gridPage(page, `popular:${page}`, page * PSSTORE_PAGE_SIZE + 1);
+      if (found.length === 0) return;
       yield found;
       await sleep(psstoreAdapter.minIntervalMs);
     }

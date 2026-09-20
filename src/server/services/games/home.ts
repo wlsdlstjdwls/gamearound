@@ -69,9 +69,11 @@ async function getHomeDataRaw(): Promise<HomeData> {
    * 첫 화면을 통째로 차지하는데, "할인 중인 게임" 이 답해야 하는 질문은 "얼마에 살까" 지
    * "공짜로 받을 게 있나" 가 아니다. 무료는 가격 필터(maxPrice=0)로 따로 찾는 축이다.
    *
-   * 아는 한계: 순번이 스팀에만 있어 **콘솔 전용작은 순위를 못 받는다**. 멀티플랫폼 게임은
-   * 스팀 순위로 뽑혀 가장 싼 기기 값으로 서므로(attachBestPrice) 화면이 PC 전용이 되지는 않지만,
-   * 콘솔 독점작은 이 줄에 오르지 못한다. PS, Xbox 인기 목록을 붙이면 그때 풀린다.
+   * 2026-09-21 에 PlayStation 순위를 붙여 "콘솔 독점작은 못 받는다" 던 한계를 풀었다 —
+   * GTA VI 2위, 마블 울버린 3위, 고스트 오브 요테이 13위가 이 줄에 오른다.
+   *
+   * 남은 한계는 Xbox 다. 그쪽은 목록 정렬을 바꿀 수 없어(adapters/xbox 의 discoverPages 주석)
+   * 순위를 못 받는다 — 대신 평가 수가 목록 정렬의 두 번째 키로 그 자리를 메운다.
    */
   const discountRows = await db
     .select({ game: games, gp: gamePlatforms })

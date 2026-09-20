@@ -11,7 +11,7 @@ import type { Db } from "@/server/db/client";
 import type { StoreSource } from "@/server/adapters";
 import type { SearchCandidate, StoreAdapter } from "@/server/adapters/types";
 import { errorMessage } from "@/lib/errors";
-import { POPULARITY_RANK_PAGES, SOURCE_PLATFORMS, SOURCE_REGION } from "./constants";
+import { POPULARITY_RANK_PAGES, POPULARITY_RANK_PAGES_DEFAULT, SOURCE_PLATFORMS, SOURCE_REGION } from "./constants";
 import type { Ctx } from "./context";
 
 /** 순번이 달린 후보를 (게임, 순번) 쌍으로 푼 것 */
@@ -110,7 +110,8 @@ export async function syncPopularityRanks(ctx: Ctx, source: StoreSource, adapter
   const { db } = ctx;
   let written = 0;
   try {
-    for await (const page of adapter.listPopularPages(POPULARITY_RANK_PAGES)) {
+    const pages = POPULARITY_RANK_PAGES[source] ?? POPULARITY_RANK_PAGES_DEFAULT;
+    for await (const page of adapter.listPopularPages(pages)) {
       const ranked = page.filter((c) => c.rank !== undefined);
       if (ranked.length === 0) continue;
       const rows = await resolveRankRows(db, source, ranked);

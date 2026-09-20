@@ -117,13 +117,15 @@ export function psstoreImageUrl(media: Media[] | null | undefined, role: string,
 }
 
 /** 목록 응답 → 후보. 콘셉트(게임) 단위라 에디션 중복이 없다 */
-export function parsePsstoreGrid(raw: unknown): SearchCandidate[] {
+export function parsePsstoreGrid(raw: unknown, firstRank?: number): SearchCandidate[] {
   const parsed = gridSchema.safeParse(raw);
   if (!parsed.success) fail("목록", parsed.error);
   const concepts = parsed.data!.data.categoryGridRetrieve.concepts ?? [];
   const out: SearchCandidate[] = [];
   const seen = new Set<string>();
-  for (const c of concepts) {
+  // 순번은 **입력 위치**로 센다(steam 의 parseTopSellerCandidates 와 같은 이유).
+  // 아래에서 제목 없는 콘셉트를 건너뛰므로, out.length 로 세면 걸린 수만큼 뒤가 위로 올라간다
+  for (const [i, c] of concepts.entries()) {
     const title = psstoreCleanTitle(c.name);
     // 제목이 없으면 흡수 판단(제목 역매칭)을 못 한다 — 중복 등록을 만드느니 건너뛴다
     if (!title || seen.has(c.id)) continue;
@@ -135,6 +137,7 @@ export function parsePsstoreGrid(raw: unknown): SearchCandidate[] {
       // 상세에는 이미지가 없다 — 여기서 안 들고 가면 PS 단독 게임은 커버가 영영 빈다
       coverUrl: psstoreImageUrl(c.media, PSSTORE_COVER_ROLE, PSSTORE_COVER_WIDTH),
       portraitUrl: psstoreImageUrl(c.media, PSSTORE_PORTRAIT_ROLE, PSSTORE_PORTRAIT_WIDTH),
+      ...(firstRank === undefined ? {} : { rank: firstRank + i }),
     });
   }
   return out;

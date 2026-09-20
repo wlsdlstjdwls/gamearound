@@ -491,6 +491,16 @@ export const xboxAdapter: StoreAdapter = {
    * 카탈로그를 페이지 단위로 흘려보낸다. 이게 없던 동안 Xbox 는 Steam 으로 들어온 게임에
    * 가격만 붙이는 소스였다 — Xbox 독점작은 한 건도 못 들어왔다(2026-09-14: ref 50건).
    */
+  /**
+   * listPopularPages 를 두지 않는다 — Xbox 목록은 **정렬을 못 바꾼다**(2026-09-21 실측).
+   * OrderBy 에 Popularity, BestSelling, MostPopular, Rating, ReleaseDate, Title 을 넣어 봤고
+   * 이름을 orderBy, sortBy, Sort 로도 바꿔 봤지만 여섯 경우가 전부 **같은 순서**를 돌려줬다.
+   * 파라미터가 무시되는 것이고, 그렇다면 기본 순서가 무엇을 뜻하는지도 우리가 알 수 없다.
+   *
+   * 뜻을 모르는 순서를 순위로 박으면 화면이 거짓을 말한다. 대신 Xbox 는 평가 수(user_score_count)를
+   * 기존 요청에 얹어 주고, 목록 정렬이 그것을 두 번째 키로 쓴다(services/games/list 의 maxReviews).
+   * 정렬할 수 있는 입구를 찾으면 그때 붙인다.
+   */
   async *discoverPages(): AsyncGenerator<SearchCandidate[]> {
     for (let page = 1; page <= XBOX_DISCOVERY_MAX_PAGES; page++) {
       const u = new URL(XBOX_BROWSE_URL);
