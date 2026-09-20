@@ -41,6 +41,14 @@ async function getHomeDataRaw(): Promise<HomeData> {
       minRank: sql<number>`min(${gamePlatforms.popularityRank})`.as("min_rank"),
     })
     .from(gamePlatforms)
+    /**
+     * where 로 좁히는 것이 핵심이다 — 부분 인덱스(gp_popularity_rank_idx)만 훑고 끝난다.
+     *
+     * 목록(list.ts)처럼 평가 수까지 같이 집계하려다 되돌렸다(2026-09-21 실측): 조건을 filter 절로
+     * 옮기고 지역 전체를 훑게 하니 **0.7~1.2초에서 2.5~3.5초**가 됐다(KR 행 85,408건).
+     * 그 값이 필요하지도 않았다 — 순번 가진 할인 게임이 720건인데 홈은 12칸이라
+     * 두 번째 키까지 갈 일이 없다. 목록에서는 이미 도는 집계에 얹는 거라 공짜다(그쪽엔 남겼다).
+     */
     .where(
       and(
         isNotNull(gamePlatforms.popularityRank),
@@ -71,7 +79,12 @@ async function getHomeDataRaw(): Promise<HomeData> {
     .innerJoin(games, eq(gamePlatforms.gameId, games.id))
     .leftJoin(rankAgg, eq(rankAgg.gameId, games.id))
     .where(and(mainGamesOnly(), homeRegion, visiblePlatformsOnly(), gt(gamePlatforms.discountPct, 0), gt(gamePlatforms.currentPrice, 0)))
-    .orderBy(baseCurrencyFirst, sql`${rankAgg.minRank} asc nulls last`, desc(gamePlatforms.discountPct), desc(gamePlatforms.lastSyncedAt))
+    .orderBy(
+      baseCurrencyFirst,
+      sql`${rankAgg.minRank} asc nulls last`,
+      desc(gamePlatforms.discountPct),
+      desc(gamePlatforms.lastSyncedAt),
+    )
     .limit(HOME_LIMIT * 4);
 
   // 최근 출시: 출시일 desc (미래 출시 제외)

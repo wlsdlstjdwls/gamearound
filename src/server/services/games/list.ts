@@ -87,6 +87,17 @@ function platformAgg(platforms: Platform[]) {
        *
        * 여러 기기에 순번이 있으면 가장 높은 자리를 쓴다. 게임 하나의 인기는 그중 앞선 쪽이다.
        */
+      /**
+       * 평가 수(스팀, Xbox 가 기존 요청에 얹어 준다). 인기순의 **두 번째** 키다.
+       *
+       * 왜 필요한가: 순번은 상위 2,000위까지만 있고 카탈로그는 7만 건이다. 순번 없는 뒷줄이
+       * 무순서면 거기서 다시 할인율이 기준이 되고, 그러면 묵은 싸구려가 또 앞에 선다.
+       * 평가 수는 판매량 추정의 표준 대리지표다 — 순번 다음으로 좋은 근거다.
+       *
+       * PS 는 이 값을 주지 않는다(1MB HTML 을 긁어야 한다). 그래서 PS 독점작은 여전히
+       * 두 근거를 다 못 받는다 — 그건 PS 인기 목록을 붙여야 풀린다.
+       */
+      maxReviews: sql<number | null>`max(${gamePlatforms.userScoreCount})`.as("max_reviews"),
       minRank: sql<number | null>`min(${gamePlatforms.popularityRank}) filter (
         where ${gamePlatforms.popularityRankAt} >= now() - make_interval(days => ${POPULARITY_RANK_MAX_AGE_DAYS})
       )`.as("min_rank"),
@@ -158,6 +169,9 @@ async function listGamesRaw(filter: GameListFilter): Promise<GameListResult> {
     popular: [
       sql`${agg.minRank} asc nulls last`,
       sql`${agg.hasBaseCurrency} desc`,
+      // 순번이 없으면 평가 수로 센다. 둘 다 없을 때만 할인율로 떨어진다 —
+      // 그 자리까지 오면 답할 수 있는 질문이 그것뿐이다
+      sql`${agg.maxReviews} desc nulls last`,
       sql`${agg.maxDiscount} desc nulls last`,
       sql`${agg.minPrice} asc nulls last`,
     ],
