@@ -18,12 +18,17 @@ const SIZE: Record<ChipSize, string> = {
 /*
  * 고른 칩과 안 고른 칩(2026-09-21 리디자인).
  *
+ * 고른 칩은 잉크가 아니라 브랜드 보라다(2026-09-21). 검정 필은 "눌린 버튼" 으로 읽혀서
+ * 화면에서 브랜드가 할인 스탬프에만 남아 있었다 — 지금 걸린 조건도 같은 색으로 말한다.
+ * 글자는 --on-ink 를 쓴다(스탬프와 같은 짝): 라이트에서 보라 위 흰 글자, 다크에서는 --acc 가
+ * 밝은 보라로 뒤집히고 --on-ink 도 검정으로 뒤집혀 두 테마 모두 대비가 선다.
+ *
  * 안 고른 칩에서 테두리를 걷어냈다. 필터 기둥에 칩이 스무 개 서면 테두리 스무 겹이 먼저 읽히고,
- * 그 소음 속에서 "잉크로 채워진 한 칸" 을 찾는 일이 되레 어려워진다. 안 고른 값은 회색 글자로만
+ * 그 소음 속에서 "채워진 한 칸" 을 찾는 일이 되레 어려워진다. 안 고른 값은 회색 글자로만
  * 두고, 고른 값만 면을 갖는다 — 화면에서 채워진 면은 곧 "지금 걸린 조건" 이라는 뜻이다.
  * hover 는 면을 미리 보여 주는 몫이다(--surface-2).
  */
-const ACTIVE = "bg-ink font-semibold text-on-ink";
+const ACTIVE = "bg-acc font-semibold text-on-ink hover:bg-acc-hover";
 const IDLE = "text-mut hover:bg-surface-2 hover:text-ink";
 
 export function chipClass(opts: { active?: boolean; size?: ChipSize; className?: string } = {}): string {

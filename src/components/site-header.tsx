@@ -37,7 +37,8 @@ export function SiteHeader() {
         <nav aria-label="주요 메뉴" className="hidden shrink-0 items-center gap-1 text-[14px] sm:flex">
           <SiteNavLink href={ROUTES.game}>게임 목록</SiteNavLink>
           <SiteNavLink href={ROUTES.upcoming}>출시 예정</SiteNavLink>
-          <SiteNavLink href={ROUTES.sales}>다음 세일</SiteNavLink>
+          {/* "다음 세일" 은 메뉴에서 숨겼다(2026-09-21, 사용자 결정). 화면(/sales)과 자료는 그대로라
+              주소로는 열린다 — 되살릴 때는 이 줄과 site-menu 의 LINKS 한 줄을 같이 되돌린다 */}
         </nav>
 
         {/* useSearchParams 를 쓰는 검색창은 Suspense 경계 안에 둔다 —
