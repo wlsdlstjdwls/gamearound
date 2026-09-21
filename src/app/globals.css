@@ -338,6 +338,39 @@
   100% { opacity: 1; transform: scale(1) rotate(-3deg); }
 }
 
+/* 준비 중 그림 — 아직 열지 않은 화면이 "고장" 이 아니라 "아직" 이라고 말하는 자리.
+   움직임이 필요한 이유: 멈춘 그림은 빈 화면과 구별되지 않는다. 뭔가 돌아가고 있다는 느낌만 주면 된다.
+
+   세 겹이 같이 돈다.
+   1) 물결(ripple) 둘 — 가운데 원에서 퍼져 나가 옅어진다. 둘의 시작을 어긋나게 해 끊기지 않는다.
+   2) 가운데 원(float) — 아주 조금 오르내린다. 크기를 바꾸지 않는 이유는 물결과 같은 축으로 움직이면
+      둘이 한 덩어리로 커졌다 작아지는 것처럼 보여서다.
+   3) 톱니(spin-slow) — 실제로 무엇인가 만들고 있다는 뜻을 맡는다. 느려야 한다(6초).
+      빠르면 "기다리는 중(스피너)" 으로 읽히는데, 여기서 기다리는 건 사용자가 아니라 우리다.
+   전부 투명도와 변형만 건드린다 — 레이아웃을 밀지 않는다. 모션 축소는 전역 킬스위치가 처리한다. */
+@keyframes soon-ripple {
+  0% { opacity: 0.5; transform: scale(0.72); }
+  70% { opacity: 0; transform: scale(1.5); }
+  100% { opacity: 0; transform: scale(1.5); }
+}
+@keyframes soon-float {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-5px); }
+}
+@keyframes spin-slow {
+  to { transform: rotate(360deg); }
+}
+.soon-ripple {
+  animation: soon-ripple 2.8s var(--ease-standard) infinite;
+  animation-delay: var(--stagger, 0ms);
+}
+.soon-float {
+  animation: soon-float 3.4s var(--ease-standard) infinite;
+}
+.soon-gear {
+  animation: spin-slow 6s linear infinite;
+}
+
 /* ── 기본 ── */
 html {
   -webkit-text-size-adjust: 100%;

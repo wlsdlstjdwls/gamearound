@@ -13,7 +13,6 @@ export const BUSINESS_MESSAGES = {
    * 되살릴 때는 이 네 줄과 business/page.tsx 의 JoinSoonButton 한 줄을 같이 되돌린다.
    */
   soonTitle: "입점 신청",
-  soonBadge: "준비 중",
   soonLead: "입점 신청은 아직 열지 않았어요",
   soonBody:
     "매장 페이지와 판매 목록은 다 만들어 뒀고, 사업자 확인 절차를 준비하고 있어요. 열리면 이 화면에서 바로 신청할 수 있어요.",

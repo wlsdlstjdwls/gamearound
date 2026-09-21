@@ -5,29 +5,21 @@
 // 지우면 되살릴 때 화면을 다시 만들어야 하고, 주소로는 여전히 열리므로 코드도 그대로 둔다.
 // 이 파일 하나와 business/page.tsx 의 한 줄만 되돌리면 신청이 다시 열린다.
 //
-// 왜 그냥 "준비 중" 글씨가 아니라 시트인가: 랜딩은 매장을 데려오는 화면이라 "무엇이 되는가" 를
-// 다 읽고 누른 사람이 온다. 그 자리에서 아무 일도 안 일어나면 고장으로 읽힌다 —
-// 무엇이 준비 중이고 언제 다시 오면 되는지를 같은 자리에서 말해 준다.
+// 판 자체는 공용 ComingSoon 이 맡는다 — 관리자 메뉴의 "상품 매핑", "입점 신청" 도 같은 판을 쓴다.
+// 같은 말을 두 모양으로 하면 둘 중 하나는 반드시 낡는다.
+import { useState } from "react";
 import { buttonClass } from "@/components/ui/button";
-import { Sheet } from "@/components/ui/sheet";
+import { ComingSoon } from "@/components/ui/coming-soon";
 import { BUSINESS_MESSAGES as B } from "@/lib/shops/messages";
 
 export function JoinSoonButton() {
+  const [open, setOpen] = useState(false);
   return (
-    <Sheet
-      title={B.soonTitle}
-      unstyledTrigger
-      triggerClassName={buttonClass({ variant: "primary" })}
-      label={B.ctaJoin}
-    >
-      <div className="flex flex-col items-center gap-4 px-2 py-6 text-center">
-        {/* 브랜드 면 위의 큰 글자 하나. 그림 대신 상태를 말로 세운다 — 여기서 할 말은 "아직" 하나뿐이다 */}
-        <span className="inline-flex items-center rounded-full bg-acc-soft px-4 py-1.5 text-[12.5px] font-bold text-acc">
-          {B.soonBadge}
-        </span>
-        <p className="text-[17px] font-bold leading-[1.45] tracking-[-0.02em] text-ink">{B.soonLead}</p>
-        <p className="max-w-[420px] text-[13.5px] leading-[1.75] text-mut">{B.soonBody}</p>
-      </div>
-    </Sheet>
+    <>
+      <button type="button" onClick={() => setOpen(true)} className={buttonClass({ variant: "primary" })}>
+        {B.ctaJoin}
+      </button>
+      <ComingSoon title={B.soonTitle} lead={B.soonLead} body={B.soonBody} open={open} onOpenChange={setOpen} />
+    </>
   );
 }

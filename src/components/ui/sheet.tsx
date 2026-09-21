@@ -88,7 +88,12 @@ export function Sheet({
   const dialogRef = useRef<HTMLDialogElement>(null);
   const panelRef = useRef<HTMLDivElement>(null);
   const overlayRef = useRef<HTMLDivElement>(null);
-  const [open, setOpen] = useState(false);
+  /**
+   * 스스로 여닫을 때의 상태. 바깥이 여닫는 모드에서는 openProp 이 곧 답이라 이 값을 보지 않는다 —
+   * 같은 사실을 두 곳에 두면 둘이 어긋나고, 맞추려고 effect 안에서 setState 를 하게 된다.
+   */
+  const [selfOpen, setSelfOpen] = useState(false);
+  const open = openProp ?? selfOpen;
   const titleId = useId();
 
   // 열린 시각과 제스처 허용 여부 — 리렌더를 일으키지 않아야 해서 ref 로 둔다
@@ -169,7 +174,8 @@ export function Sheet({
     );
   }, [resetStyles, axis, side]);
 
-  const openSheet = useCallback(() => {
+  /** 판을 실제로 띄운다. DOM 만 건드린다 — 상태는 부르는 쪽이 정한다 */
+  const showDialog = useCallback(() => {
     closingRef.current = false;
     interactableRef.current = false;
     openedAtRef.current = Date.now();
@@ -179,19 +185,26 @@ export function Sheet({
     // 스크린 리더도 시트 이름 대신 "닫기" 를 먼저 읽는다. 판 자체를 받게 해 둘 다 막는다.
     // 포커스를 아예 놓지는 않는다 — <dialog> 의 포커스 가두기와 Esc 는 안쪽에 포커스가 있어야 산다
     panelRef.current?.focus({ preventScroll: true });
-    setOpen(true);
   }, [resetStyles]);
+
+  const openSheet = () => {
+    showDialog();
+    setSelfOpen(true);
+  };
 
   /*
    * 바깥이 여닫는 모드. 실제 여닫기는 여전히 이 안에서 한다 — <dialog> 의 showModal 과 퇴장 모션은
    * DOM 을 직접 만져야 하고, 그 일을 바깥으로 넘기면 부르는 자리마다 같은 코드를 갖게 된다.
-   * 바깥 값과 지금 상태가 어긋날 때만 움직인다(같으면 아무 일도 하지 않아 되먹임이 생기지 않는다).
+   * 여기서는 DOM 만 맞춘다(상태는 openProp 이 이미 쥐고 있다). 마지막으로 반영한 값을 ref 로 들고
+   * 달라질 때만 움직인다 — 매 렌더마다 showModal 을 다시 부르면 등장 모션이 처음부터 다시 돈다.
    */
+  const appliedRef = useRef(false);
   useEffect(() => {
-    if (openProp === undefined) return;
-    if (openProp && !open) openSheet();
-    if (!openProp && open) close();
-  }, [openProp, open, openSheet, close]);
+    if (openProp === undefined || openProp === appliedRef.current) return;
+    appliedRef.current = openProp;
+    if (openProp) showDialog();
+    else close();
+  }, [openProp, showDialog, close]);
 
   // 안에 있는 링크를 눌러 화면이 바뀌면 같이 닫는다. 소프트 내비게이션이라 시트는 그대로 떠 있고,
   // 바뀐 화면이 그 뒤에 가려진 채 남는다 — 누른 사람 눈에는 아무 일도 안 일어난 것으로 보인다.
@@ -314,7 +327,8 @@ export function Sheet({
         data-side={side}
         aria-labelledby={titleId}
         onClose={() => {
-          setOpen(false);
+          appliedRef.current = false;
+          setSelfOpen(false);
           onOpenChange?.(false);
         }}
         // Esc 는 브라우저가 곧장 닫아 버린다 — 막고 우리 퇴장 모션을 태운다

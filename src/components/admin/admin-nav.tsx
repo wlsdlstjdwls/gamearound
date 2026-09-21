@@ -21,14 +21,16 @@
 // 남은 일 수는 **약속(Promise)으로 받아 배지 자리에서만 기다린다.** 회사 검수 수를 뽑는 질의가
 // games 전수 훑기(실측 27ms, 왕복까지 두 번)라서, 그 값을 메뉴가 기다리면 관리자가 누르는
 // 모든 화면이 그만큼 늦게 뜬다. 메뉴는 먼저 그리고 숫자만 나중에 앉힌다.
-import { Suspense, use, type ComponentType } from "react";
+import { Suspense, use, useState, type ComponentType } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { cn } from "@/lib/cn";
 import { panelClass } from "@/components/ui/page";
-import { ADMIN_NAV } from "@/lib/admin/messages";
+import { ADMIN_NAV, ADMIN_SOON } from "@/lib/admin/messages";
+import { COMING_SOON } from "@/lib/messages/coming-soon";
 import { ROUTES } from "@/lib/routes";
 import { BoxIcon, BuildingIcon, CheckListIcon, LinkIcon, LogIcon, PulseIcon, StoreIcon } from "@/components/admin/nav-icons";
+import { ComingSoon } from "@/components/ui/coming-soon";
 
 export interface AdminNavCounts {
   matches: number;
@@ -46,6 +48,11 @@ type Item = {
   Icon: ComponentType<{ size?: number }>;
   /** 이 칸에 남은 일 수를 뽑는 함수. 없으면 배지를 달지 않는다(읽기 전용 화면) */
   pick?: (c: AdminNavCounts) => Pick;
+  /**
+   * 아직 열지 않은 칸. 주면 링크가 아니라 사유를 말하는 판을 여는 버튼이 된다.
+   * 화면은 그대로 살아 있어 주소로는 열린다 — 막는 건 이 한 줄뿐이다.
+   */
+  soon?: { lead: string; body: string };
 };
 
 /** 묶음 제목이 없는 묶음은 칸 하나짜리다 — 제목이 곧 칸 이름이라 두 번 적지 않는다 */
@@ -69,14 +76,14 @@ const GROUPS: Array<{ key: string; title?: string; items: Item[] }> = [
         Icon: BuildingIcon,
         pick: (c) => ({ n: c.companies, capped: c.companiesCapped }),
       },
-      { href: ROUTES.adminProducts, label: ADMIN_NAV.products, Icon: BoxIcon, pick: (c) => ({ n: c.products }) },
+      { href: ROUTES.adminProducts, label: ADMIN_NAV.products, Icon: BoxIcon, soon: ADMIN_SOON.products },
     ],
   },
   {
     key: "etc",
     title: ADMIN_NAV.groupEtc,
     items: [
-      { href: ROUTES.shopsAdmin, label: ADMIN_NAV.shops, Icon: StoreIcon, pick: (c) => ({ n: c.shops }) },
+      { href: ROUTES.shopsAdmin, label: ADMIN_NAV.shops, Icon: StoreIcon, soon: ADMIN_SOON.shops },
       { href: ROUTES.adminTasks, label: ADMIN_NAV.tasks, Icon: CheckListIcon },
     ],
   },
@@ -125,32 +132,75 @@ function Badge({
   );
 }
 
-/** 기둥의 한 줄. 그림, 글자, 남은 일 수가 늘 같은 자리에 선다 */
-function Row({ item, active, counts }: { item: Item; active: boolean; counts: Promise<AdminNavCounts | null> }) {
+/** 칸 하나의 속. 링크든 버튼이든 안은 같아야 한다 — 다르면 둘 중 하나가 슬금슬금 어긋난다 */
+function ItemBody({
+  item,
+  active,
+  counts,
+  iconSize,
+  badgeClassName,
+}: {
+  item: Item;
+  active: boolean;
+  counts: Promise<AdminNavCounts | null>;
+  iconSize: number;
+  badgeClassName?: string;
+}) {
   const { Icon } = item;
   return (
-    <Link
-      href={item.href}
-      aria-current={active ? "page" : undefined}
-      className={cn(
-        "press flex min-h-[var(--touch-target)] items-center gap-2.5 rounded-lg px-3 text-[14px] transition-colors",
-        active ? "bg-acc font-semibold text-on-ink" : "font-medium text-mut hover:bg-surface-2 hover:text-ink",
-      )}
-    >
-      <Icon size={18} />
+    <>
+      <Icon size={iconSize} />
       {item.label}
       {item.pick && (
         // 숫자가 늦어도 메뉴는 이미 눌리는 상태여야 한다 — 그래서 배지만 따로 기다린다
         <Suspense fallback={null}>
-          <Badge counts={counts} pick={item.pick} active={active} className="ml-auto" />
+          <Badge counts={counts} pick={item.pick} active={active} className={badgeClassName} />
         </Suspense>
       )}
-    </Link>
+      {/* 아직 열지 않은 칸은 그렇게 보여야 한다 — 눌러 보고 알게 하면 매번 같은 실망을 한다 */}
+      {item.soon && (
+        <span
+          className={cn(
+            "rounded-full px-1.5 py-px text-[10.5px] font-semibold",
+            badgeClassName,
+            active ? "bg-on-ink/20 text-on-ink" : "bg-surface-3 text-dim",
+          )}
+        >
+          {COMING_SOON.badge}
+        </span>
+      )}
+    </>
   );
 }
 
 export function AdminNav({ user, counts }: { user: string; counts: Promise<AdminNavCounts | null> }) {
   const pathname = usePathname();
+  /** 지금 사유를 말하고 있는 칸. 한 번에 하나만 뜬다 */
+  const [soon, setSoon] = useState<Item | null>(null);
+
+  /** 링크와 버튼이 같은 모양이어야 한다. 아직 열지 않은 칸만 버튼이고 나머지는 전부 링크다 */
+  const itemClass = (active: boolean, wide: boolean) =>
+    cn(
+      "press flex min-h-[var(--touch-target)] items-center rounded-lg transition-colors",
+      wide ? "gap-2.5 px-3 text-[14px]" : "shrink-0 gap-1.5 px-3 text-[13.5px] whitespace-nowrap",
+      active ? "bg-acc font-semibold text-on-ink" : cn("font-medium text-mut", wide && "hover:bg-surface-2 hover:text-ink"),
+    );
+
+  const render = (item: Item, wide: boolean) => {
+    const active = isActive(pathname, item.href);
+    const body = (
+      <ItemBody item={item} active={active} counts={counts} iconSize={wide ? 18 : 16} badgeClassName={wide ? "ml-auto" : undefined} />
+    );
+    return item.soon ? (
+      <button key={item.href} type="button" onClick={() => setSoon(item)} className={cn(itemClass(active, wide), "w-full text-left")}>
+        {body}
+      </button>
+    ) : (
+      <Link key={item.href} href={item.href} aria-current={active ? "page" : undefined} className={itemClass(active, wide)}>
+        {body}
+      </Link>
+    );
+  };
 
   return (
     <>
@@ -164,12 +214,8 @@ export function AdminNav({ user, counts }: { user: string; counts: Promise<Admin
         <nav aria-label="관리자 메뉴" className="flex flex-col gap-4">
           {GROUPS.map((g) => (
             <div key={g.key} className="flex flex-col gap-0.5">
-              {g.title && (
-                <p className="px-3 pb-1 text-[11px] font-bold tracking-[0.1em] text-dim-2">{g.title}</p>
-              )}
-              {g.items.map((item) => (
-                <Row key={item.href} item={item} active={isActive(pathname, item.href)} counts={counts} />
-              ))}
+              {g.title && <p className="px-3 pb-1 text-[11px] font-bold tracking-[0.1em] text-dim-2">{g.title}</p>}
+              {g.items.map((item) => render(item, true))}
             </div>
           ))}
         </nav>
@@ -185,30 +231,17 @@ export function AdminNav({ user, counts }: { user: string; counts: Promise<Admin
         aria-label="관리자 메뉴"
         className={panelClass("-mx-1 flex gap-1 overflow-x-auto px-1 py-1 md:hidden [scrollbar-width:none]")}
       >
-        {ITEMS.map((item) => {
-          const active = isActive(pathname, item.href);
-          const { Icon } = item;
-          return (
-            <Link
-              key={item.href}
-              href={item.href}
-              aria-current={active ? "page" : undefined}
-              className={cn(
-                "press flex min-h-[var(--touch-target)] shrink-0 items-center gap-1.5 rounded-lg px-3 text-[13.5px] whitespace-nowrap transition-colors",
-                active ? "bg-acc font-semibold text-on-ink" : "font-medium text-mut",
-              )}
-            >
-              <Icon size={16} />
-              {item.label}
-              {item.pick && (
-                <Suspense fallback={null}>
-                  <Badge counts={counts} pick={item.pick} active={active} />
-                </Suspense>
-              )}
-            </Link>
-          );
-        })}
+        {ITEMS.map((item) => render(item, false))}
       </nav>
+
+      {/* 판은 메뉴 바깥에 하나만 둔다 — 칸마다 두면 안 열린 판이 일곱 개 떠 있게 된다 */}
+      <ComingSoon
+        title={soon?.label ?? ""}
+        lead={soon?.soon?.lead ?? ""}
+        body={soon?.soon?.body ?? ""}
+        open={soon !== null}
+        onOpenChange={(v) => !v && setSoon(null)}
+      />
     </>
   );
 }
