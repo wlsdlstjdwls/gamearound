@@ -2,12 +2,15 @@ import { describe, expect, it } from "vitest";
 import { platformEnum } from "@/server/db/schema";
 import {
   ALL_PLATFORM_ORDER,
+  brandKeyOf,
+  brandOf,
   expandPlatformValues,
   familyOf,
   FAMILY_PLATFORMS,
   HIDDEN_PLATFORMS,
   isPlatformFamily,
   isPlatformValue,
+  PLATFORM_BRANDS,
   PLATFORM_ORDER,
   platformsOf,
 } from "./platform";
@@ -69,5 +72,31 @@ describe("여러 값 펼치기", () => {
     expect(isPlatformValue("mobile")).toBe(false);
     expect(isPlatformValue("console")).toBe(true);
     expect(isPlatformValue("steam")).toBe(true);
+  });
+});
+
+describe("세대 묶음", () => {
+  it("묶음의 구성원은 전부 아는 플랫폼이고 두 묶음에 겹쳐 들지 않는다", () => {
+    const members = Object.values(PLATFORM_BRANDS).flatMap((b) => [...b.members]);
+    expect(new Set(members).size).toBe(members.length);
+    for (const p of members) expect(ALL_PLATFORM_ORDER).toContain(p);
+  });
+
+  it("같은 묶음의 세대는 같은 키를 쓴다 — 가격표가 이 키로 줄을 붙인다", () => {
+    expect(brandKeyOf("ps5")).toBe(brandKeyOf("ps4"));
+    expect(brandKeyOf("switch")).toBe(brandKeyOf("switch2"));
+    expect(brandKeyOf("ps5")).not.toBe(brandKeyOf("switch"));
+  });
+
+  it("묶이지 않는 플랫폼은 자기 자신이 키다 — 부르는 쪽이 묶였나를 따지지 않게", () => {
+    expect(brandOf("steam")).toBeUndefined();
+    expect(brandKeyOf("steam")).toBe("steam");
+    expect(brandKeyOf("xbox")).toBe("xbox");
+  });
+
+  // 묶음은 화면 표기 전용이다. 필터가 이걸 따라가면 "PS4 만" 을 고를 수 없게 된다
+  it("묶음은 필터 값을 건드리지 않는다", () => {
+    expect(platformsOf("ps4")).toEqual(["ps4"]);
+    expect(isPlatformValue("playstation")).toBe(false);
   });
 });

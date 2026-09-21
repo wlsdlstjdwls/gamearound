@@ -67,6 +67,45 @@ export const PLATFORM_ORDER: Platform[] = PLATFORM_FAMILIES.flatMap((f) => FAMIL
  */
 export const ALL_PLATFORM_ORDER: Platform[] = PLATFORM_FAMILIES.flatMap((f) => ALL_FAMILY_PLATFORMS[f]);
 
+/**
+ * 세대 묶음 — 같은 기기의 위아래 세대를 화면에서 한 이름으로 부르기 위한 표(2026-09-21).
+ *
+ * 왜 필요한가: 상세 가격표는 PLATFORM_ORDER 를 그대로 펴서 PS5, PS4, Switch, Switch 2 를
+ * 각각 한 줄씩 세웠다. 콘솔 전용 게임에서 여덟 줄 중 넷이 같은 기기의 세대 차이로 채워졌고,
+ * 그 게임을 안 파는 경우엔 "서비스하지 않음" 이 넷 붙어 표가 빈 줄로 보였다.
+ *
+ * **묶음은 화면 표기에만 쓴다.** 필터(FAMILY_PLATFORMS), 주소 값, 질의는 그대로 낱개 플랫폼이다 —
+ * "PS4 만" 으로 거르고 싶은 사람이 실제로 있고, 값도 세대마다 다르다.
+ *
+ * Xbox 를 묶지 않는 이유: enum 에 세대가 하나(xbox)뿐이라 묶을 짝이 없다.
+ * 세대가 갈리면 여기 한 줄을 더한다.
+ */
+export const PLATFORM_BRANDS = {
+  playstation: { label: "PlayStation", members: ["ps5", "ps4"] },
+  nintendo: { label: "Nintendo", members: ["switch", "switch2"] },
+} as const satisfies Record<string, { label: string; members: readonly Platform[] }>;
+
+export type PlatformBrand = keyof typeof PLATFORM_BRANDS;
+
+const BRAND_OF = new Map<Platform, PlatformBrand>(
+  (Object.keys(PLATFORM_BRANDS) as PlatformBrand[]).flatMap((b) =>
+    PLATFORM_BRANDS[b].members.map((p) => [p, b] as const),
+  ),
+);
+
+/** 이 플랫폼이 속한 세대 묶음. 묶음이 없으면 undefined — 그때는 플랫폼 이름이 곧 묶음 이름이다 */
+export function brandOf(platform: Platform): PlatformBrand | undefined {
+  return BRAND_OF.get(platform);
+}
+
+/**
+ * 묶음 단위 키. 묶이지 않는 플랫폼은 자기 자신이 키다 —
+ * 부르는 쪽이 "묶였나" 를 따지지 않고 이 값으로만 모으면 된다.
+ */
+export function brandKeyOf(platform: Platform): string {
+  return BRAND_OF.get(platform) ?? platform;
+}
+
 const FAMILY_OF = new Map<Platform, PlatformFamily>(
   PLATFORM_FAMILIES.flatMap((f) => FAMILY_PLATFORMS[f].map((p) => [p, f] as const)),
 );

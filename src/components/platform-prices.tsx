@@ -14,11 +14,11 @@
 // 없는 줄은 값 자리에 한마디를 적고 회색으로 물러난다. 순서는 PLATFORM_ORDER 를 따르되
 // 파는 곳 전부가 먼저다 — 비교하러 온 사람의 눈이 빈 줄을 건너뛰며 내려가면 안 된다.
 import { formatPrice } from "@/lib/currency";
-import { formatDate, formatDiscount, PLATFORM_LABEL, platformLabel } from "@/lib/format";
-import { PLATFORM_ORDER } from "@/lib/platform";
+import { formatDate, formatDiscount, PLATFORM_LABEL, platformLabel, REGION_SUFFIX } from "@/lib/format";
+import { brandKeyOf, brandOf, PLATFORM_BRANDS, PLATFORM_ORDER } from "@/lib/platform";
 import { countText, scoreToStars } from "@/lib/user-score";
 import { type Freshness } from "@/lib/freshness";
-import type { Platform } from "@/server/db/schema";
+import type { Platform, Region } from "@/server/db/schema";
 import type { PlatformDto } from "@/server/services/games";
 import { SaleBadge } from "@/components/sale-badge";
 import { SubscriptionChips } from "@/components/subscription-badges";
@@ -65,33 +65,107 @@ function metaText(p: PlatformPriceItem, skipUserScore: boolean): string {
   return parts.join(" | ");
 }
 
+/**
+ * 이름 기둥에 적을 말(2026-09-21). PS5 와 PS4 는 "PlayStation" 한 이름으로, Switch 와 Switch 2 는
+ * "Nintendo" 한 이름으로 부르고, 어느 세대인지는 옆 배지가 말한다.
+ *
+ * 왜 이름에서 세대를 뗐나: 이 기둥이 답하는 질문은 "어디서 파나" 다. 세대는 그 다음 질문인데
+ * 이름에 붙어 있으면 PS5 줄과 PS4 줄이 서로 다른 스토어처럼 읽혀, 둘을 견주려면 표를 두 번 훑어야 했다.
+ * 이름을 같게 두면 같은 곳의 두 값이라는 사실이 먼저 읽히고, 배지가 그 안의 차이를 말한다.
+ *
+ * 지역 접미어는 이름 쪽에 남긴다("Nintendo 일본") — 나라는 세대와 다른 축이고,
+ * 배지 둘이 나란히 서면 어느 쪽이 기기이고 어느 쪽이 나라인지 구별이 안 된다.
+ */
+function brandNameOf(p: { platform: string; region: Region }): string {
+  const brand = brandOf(p.platform as Platform);
+  if (!brand) return platformLabel(p);
+  const suffix = REGION_SUFFIX[p.region];
+  return suffix ? `${PLATFORM_BRANDS[brand].label} ${suffix}` : PLATFORM_BRANDS[brand].label;
+}
+
+/** 세대 배지에 적을 말. 묶이지 않는 플랫폼(Steam, Xbox, Epic)은 배지를 달지 않는다 — 가를 짝이 없다 */
+function generationOf(platform: Platform): string | null {
+  return brandOf(platform) ? PLATFORM_LABEL[platform] ?? platform : null;
+}
+
+/** 세대 배지. 값이 아니라 분류라 면만 있고 색은 없다 — 이 표에서 색을 가진 것은 최저가 표시와 할인뿐이다 */
+function GenerationBadge({ platform }: { platform: Platform }) {
+  const label = generationOf(platform);
+  if (!label) return null;
+  return (
+    <span className="inline-flex w-fit items-center rounded-full bg-surface-2 px-[7px] py-[3px] text-[10.5px] font-semibold leading-none text-mut">
+      {label}
+    </span>
+  );
+}
+
+/**
+ * 싼 순을 지키되 같은 묶음의 줄을 붙여 세운다.
+ *
+ * 값 순서만 쓰면 PS5 가 1번, PS4 가 5번에 서서 이름이 같은 두 줄이 표 양 끝으로 갈린다 —
+ * 묶어 부르기로 한 이름이 오히려 "같은 이름이 왜 두 번 나오나" 로 읽힌다.
+ * 묶음의 자리는 그 묶음에서 가장 싼 줄이 정한다. 최저가 줄은 어차피 맨 위이므로 이 정렬로 안 밀린다.
+ */
+function groupByBrand(rows: PlatformPriceItem[]): PlatformPriceItem[] {
+  const rank = new Map<string, number>();
+  rows.forEach((r, i) => {
+    const key = brandKeyOf(r.platform);
+    if (!rank.has(key)) rank.set(key, i);
+  });
+  return rows
+    .map((r, i) => ({ r, i, rank: rank.get(brandKeyOf(r.platform)) ?? i }))
+    .sort((a, b) => a.rank - b.rank || a.i - b.i)
+    .map((x) => x.r);
+}
+
+/**
+ * 안 파는 줄도 묶음 단위로 센다. 묶음 안에서 **한 세대라도 팔면** 줄을 세우지 않는다 —
+ * 그 사실은 파는 줄의 세대 배지가 이미 말한다("PlayStation [PS5]" 는 PS4 판이 없다는 뜻이다).
+ * 넷이던 "서비스하지 않음" 줄이 둘로 준다.
+ */
+function absentBrands(sold: Set<Platform>): { key: string; label: string }[] {
+  const seen = new Set<string>();
+  const out: { key: string; label: string }[] = [];
+  for (const p of PLATFORM_ORDER) {
+    const key = brandKeyOf(p);
+    if (seen.has(key)) continue;
+    const members = PLATFORM_ORDER.filter((q) => brandKeyOf(q) === key);
+    if (members.some((q) => sold.has(q))) {
+      seen.add(key);
+      continue;
+    }
+    seen.add(key);
+    const brand = brandOf(p);
+    out.push({ key, label: brand ? PLATFORM_BRANDS[brand].label : PLATFORM_LABEL[p] ?? p });
+  }
+  return out;
+}
+
 /** 값 줄과 같은 왼쪽 기둥 폭. 스토어 이름의 시작점이 어긋나면 두 무리가 한 표로 안 읽힌다 */
 const NAME_COL = "w-[124px] shrink-0";
 
 /**
- * 파는 곳이 아닌 스토어 한 줄. 지역 접미어 없이 기기 이름만 적는다 —
- * 팔지 않는 곳에 "Switch 일본" 이라고 쓰면 "일본에는 있다" 로 읽힌다.
+ * 파는 곳이 아닌 한 줄. 지역 접미어도 세대 배지도 붙이지 않는다 —
+ * 팔지 않는 곳에 "Nintendo 일본" 이라고 쓰면 "일본에는 있다" 로 읽히고,
+ * 세대 배지는 "그 세대만 없다" 로 읽힌다. 여기 서는 줄은 묶음 전체가 없는 경우뿐이다.
  */
-function AbsentRow({ platform }: { platform: Platform }) {
+function AbsentRow({ label }: { label: string }) {
   return (
     <li className={cn(ROW, "flex items-center gap-x-4 py-[13px]")}>
-      <span className={cn(NAME_COL, "text-[14px] text-dim")}>{PLATFORM_LABEL[platform] ?? platform}</span>
+      <span className={cn(NAME_COL, "text-[14px] text-dim")}>{label}</span>
       <span className="text-[13px] text-dim-2">{ABSENT_TEXT}</span>
     </li>
   );
 }
 
 /**
- * 파는 곳이 아닌 줄에 적는 말(2026-09-21 고침).
+ * 파는 곳이 아닌 줄에 적는 말(2026-09-21, 사용자 지정).
  *
- * 전에는 "서비스 없어요" 였다. 짧아서 골랐는데 읽으면 가게가 손님을 물리는 말투가 된다 —
- * 이 줄이 말하려는 것은 스토어의 사정이 아니라 우리가 아는 사실("여기엔 이 게임이 없다")이다.
- * 그래서 주어를 스토어에서 게임으로 옮겼다.
- *
- * "판매 정보 없어요" 로 가지 않은 이유: 이 줄을 세운 목적 자체가 "없다" 와 "아직 안 긁었다" 를
- * 가르는 것이었는데(위 머리 주석), 그 말은 둘을 도로 붙여 놓는다.
+ * 이 화면에서 "-해요" 를 안 쓰는 유일한 자리다(UI 규약 §6 의 예외). 나머지 줄이 전부 값을
+ * 말하는 표 안에서, 이 줄만 말을 걸면 값이 아니라 안내문으로 읽혀 눈이 거기 걸린다.
+ * 표의 다른 칸("정보 없음", "링크 없음")과 같은 명사형으로 맞춘 말이다.
  */
-const ABSENT_TEXT = "이 스토어엔 없어요";
+const ABSENT_TEXT = "서비스하지 않음";
 
 export function PlatformPrices({
   platforms,
@@ -101,17 +175,20 @@ export function PlatformPrices({
   /** 상세 요약 바가 이미 인용한 유저 점수의 스토어 */
   quotedUserScorePlatform?: Platform | null;
 }) {
-  const rows = [...platforms].sort(byPrice);
+  // 값 순으로 세운 뒤 같은 세대 묶음끼리 붙인다(groupByBrand 주석)
+  const rows = groupByBrand([...platforms].sort(byPrice));
   // 한 플랫폼이 나라별로 여러 행일 수 있어(Switch 한국, 일본) 플랫폼 단위로 접어서 없는 것만 고른다
   const sold = new Set(platforms.map((p) => p.platform));
-  const absent = PLATFORM_ORDER.filter((p) => !sold.has(p));
+  const absent = absentBrands(sold);
 
   if (rows.length === 0 && absent.length === 0) {
     return <p className="border-t border-line-strong py-5 text-[13px] text-dim">플랫폼별 가격 정보가 아직 없어요.</p>;
   }
 
-  // 맨 앞 행이 최저가다(정렬 결과). 값이 없는 스토어뿐이면 아무 행에도 표를 달지 않는다
-  const bestKey = rows[0]?.currentPrice != null ? rowKey(rows[0]) : null;
+  // 최저가는 **값 순서**로 정한다. 묶음 정렬이 줄 자리를 바꾸므로 "맨 앞 행" 으로 잡으면
+  // 묶음이 앞으로 올라온 날 엉뚱한 줄에 "최저가" 가 붙는다(정렬을 바꾸며 실제로 깨졌던 자리)
+  const cheapest = [...platforms].sort(byPrice)[0] ?? null;
+  const bestKey = cheapest?.currentPrice != null ? rowKey(cheapest) : null;
 
   return (
     <ul className={ROWS}>
@@ -122,8 +199,9 @@ export function PlatformPrices({
           <li key={rowKey(p)} className={cn(ROW, "flex flex-wrap items-center gap-x-4 gap-y-2 py-[15px]")}>
             {/* 스토어 이름과 "최저" 표가 한 기둥에 선다 — 표를 면(배지)이 아니라 브랜드색 글자로 두는 이유는
                 이 화면에서 면을 가진 것이 히어로의 할인 스탬프 하나여야 해서다 */}
-            <span className={cn(NAME_COL, "flex flex-col gap-0.5")}>
-              <span className="text-[15px] font-bold text-ink">{platformLabel(p)}</span>
+            <span className={cn(NAME_COL, "flex flex-col items-start gap-1")}>
+              <span className="text-[15px] font-bold text-ink">{brandNameOf(p)}</span>
+              <GenerationBadge platform={p.platform} />
               {rowKey(p) === bestKey && <span className="text-[11.5px] font-bold text-acc">최저가</span>}
             </span>
 
@@ -163,8 +241,8 @@ export function PlatformPrices({
           </li>
         );
       })}
-      {absent.map((p) => (
-        <AbsentRow key={p} platform={p} />
+      {absent.map((a) => (
+        <AbsentRow key={a.key} label={a.label} />
       ))}
     </ul>
   );
