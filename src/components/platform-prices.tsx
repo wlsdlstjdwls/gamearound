@@ -7,8 +7,15 @@
 //
 // 큰 글씨는 요약 바가 맡는다 — 여기 숫자는 13px 다. 이 블록은 "결론" 이 아니라 "근거" 다.
 // 상태가 사라졌으므로 서버 컴포넌트다(SaleBadge 만 남은 시간 때문에 클라이언트).
+//
+// **없는 스토어도 줄을 세운다**(2026-09-21). 전에는 파는 곳만 그렸는데, 그러면 "스위치에 없다" 와
+// "스위치를 아직 안 긁었다" 가 화면에서 똑같이 생긴 빈자리였다. PS 유저가 PS 줄을 못 찾으면
+// 목록으로 돌아가 다시 검색하거나 스토어를 직접 열어 확인해야 했다 — 우리가 이미 아는 사실인데도.
+// 없는 줄은 값 자리에 "서비스 없어요" 를 적고 회색으로 물러난다. 순서는 PLATFORM_ORDER 를 따르되
+// 파는 곳 전부가 먼저다 — 비교하러 온 사람의 눈이 빈 줄을 건너뛰며 내려가면 안 된다.
 import { formatPrice } from "@/lib/currency";
-import { formatDate, formatDiscount, platformLabel } from "@/lib/format";
+import { formatDate, formatDiscount, PLATFORM_LABEL, platformLabel } from "@/lib/format";
+import { PLATFORM_ORDER } from "@/lib/platform";
 import { countText, scoreToStars } from "@/lib/user-score";
 import { type Freshness } from "@/lib/freshness";
 import type { Platform } from "@/server/db/schema";
@@ -58,6 +65,24 @@ function metaText(p: PlatformPriceItem, skipUserScore: boolean): string {
   return parts.join(" | ");
 }
 
+/** 값 줄과 같은 왼쪽 기둥 폭. 스토어 이름의 시작점이 어긋나면 두 무리가 한 표로 안 읽힌다 */
+const NAME_COL = "w-[124px] shrink-0";
+
+/**
+ * 파는 곳이 아닌 스토어 한 줄. 지역 접미어 없이 기기 이름만 적는다 —
+ * 팔지 않는 곳에 "Switch 일본" 이라고 쓰면 "일본에는 있다" 로 읽힌다.
+ */
+function AbsentRow({ platform }: { platform: Platform }) {
+  return (
+    <li className={cn(ROW, "flex items-center gap-x-4 py-[13px]")}>
+      <span className={cn(NAME_COL, "text-[14px] text-dim")}>{PLATFORM_LABEL[platform] ?? platform}</span>
+      <span className="text-[13px] text-dim-2">{ABSENT_TEXT}</span>
+    </li>
+  );
+}
+
+const ABSENT_TEXT = "서비스 없어요";
+
 export function PlatformPrices({
   platforms,
   quotedUserScorePlatform = null,
@@ -66,13 +91,17 @@ export function PlatformPrices({
   /** 상세 요약 바가 이미 인용한 유저 점수의 스토어 */
   quotedUserScorePlatform?: Platform | null;
 }) {
-  if (platforms.length === 0) {
+  const rows = [...platforms].sort(byPrice);
+  // 한 플랫폼이 나라별로 여러 행일 수 있어(Switch 한국, 일본) 플랫폼 단위로 접어서 없는 것만 고른다
+  const sold = new Set(platforms.map((p) => p.platform));
+  const absent = PLATFORM_ORDER.filter((p) => !sold.has(p));
+
+  if (rows.length === 0 && absent.length === 0) {
     return <p className="border-t border-line-strong py-5 text-[13px] text-dim">플랫폼별 가격 정보가 아직 없어요.</p>;
   }
 
-  const rows = [...platforms].sort(byPrice);
   // 맨 앞 행이 최저가다(정렬 결과). 값이 없는 스토어뿐이면 아무 행에도 표를 달지 않는다
-  const bestKey = rows[0].currentPrice !== null ? rowKey(rows[0]) : null;
+  const bestKey = rows[0]?.currentPrice != null ? rowKey(rows[0]) : null;
 
   return (
     <ul className={ROWS}>
@@ -83,7 +112,7 @@ export function PlatformPrices({
           <li key={rowKey(p)} className={cn(ROW, "flex flex-wrap items-center gap-x-4 gap-y-2 py-[15px]")}>
             {/* 스토어 이름과 "최저" 표가 한 기둥에 선다 — 표를 면(배지)이 아니라 브랜드색 글자로 두는 이유는
                 이 화면에서 면을 가진 것이 히어로의 할인 스탬프 하나여야 해서다 */}
-            <span className="flex w-[124px] shrink-0 flex-col gap-0.5">
+            <span className={cn(NAME_COL, "flex flex-col gap-0.5")}>
               <span className="text-[15px] font-bold text-ink">{platformLabel(p)}</span>
               {rowKey(p) === bestKey && <span className="text-[11.5px] font-bold text-acc">최저가</span>}
             </span>
@@ -124,6 +153,9 @@ export function PlatformPrices({
           </li>
         );
       })}
+      {absent.map((p) => (
+        <AbsentRow key={p} platform={p} />
+      ))}
     </ul>
   );
 }
