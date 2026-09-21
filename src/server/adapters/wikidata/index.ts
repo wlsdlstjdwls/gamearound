@@ -21,7 +21,7 @@ import {
 import { exactSearchMatches, resolveSingleCompany } from "./parse";
 
 export { companyDetailQuery, searchUrl, WIKIDATA_SPARQL_URL } from "./constants";
-export { exactSearchMatches, groupCompanies, resolveSingleCompany, entityId, toIsoDate } from "./parse";
+export { exactSearchMatches, groupCompanies, pickCompany, resolveSingleCompany, entityId, toIsoDate } from "./parse";
 
 const sparql = createHttpClient({
   source: "wikidata",

@@ -114,13 +114,23 @@ export function groupCompanies(payload: unknown): Map<string, CompanyInfo> {
  * 이름이 진짜로 같은 동명 회사 둘은 여전히 null 이다 — 그 자리는 사람이 봐야 한다.
  */
 export function resolveSingleCompany(payload: unknown, queryName?: string): CompanyInfo | null {
-  const grouped = groupCompanies(payload);
-  if (grouped.size === 1) return grouped.values().next().value ?? null;
-  if (grouped.size === 0 || !queryName) return null;
+  return pickCompany([...groupCompanies(payload).values()], queryName);
+}
+
+/**
+ * 판정 규칙 본체 — 응답 형태를 모르고 후보 목록만 본다.
+ *
+ * 따로 뽑은 이유: 이름 여러 개의 후보를 **한 질의에 몰아넣고** 답을 나중에 이름별로 가르는 경로가 있다
+ * (일괄 확정 스크립트). 거기서는 이름 하나짜리 payload 가 아예 만들어지지 않으므로,
+ * 판정 규칙이 payload 모양에 묶여 있으면 규칙을 두 벌 갖게 된다. 두 벌이 되는 순간 갈라진다.
+ */
+export function pickCompany(candidates: CompanyInfo[], queryName?: string): CompanyInfo | null {
+  if (candidates.length === 1) return candidates[0];
+  if (candidates.length === 0 || !queryName) return null;
 
   const target = normalizeCompanyName(queryName);
   if (!target) return null;
-  const named = [...grouped.values()].filter(
+  const named = candidates.filter(
     (c) => normalizeCompanyName(c.nameEn) === target || (c.nameKo ? normalizeCompanyName(c.nameKo) === target : false),
   );
   return named.length === 1 ? named[0] : null;
