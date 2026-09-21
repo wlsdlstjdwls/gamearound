@@ -26,13 +26,14 @@ export const metadata: Metadata = {
 
 export default async function UpcomingPage() {
   const months = await getUpcomingGames();
-  const total = months.reduce((sum, m) => sum + m.items.length, 0);
 
   return (
     <Page gap={30}>
+      {/* 제목은 낭독기에만 남긴다(2026-09-21, 목록 화면과 같은 규칙). 건수도 같이 뗐다 —
+          달마다 서는 구분 머리(SectionHead)가 이미 그 달의 건수를 말한다 */}
       <PageHead
         title={M.title}
-        note={total > 0 ? upcomingCountText(total) : undefined}
+        hideTitle
         action={
           <Link href={ROUTES.game} className={buttonClass({ variant: "secondary", className: "rounded-full" })}>
             {M.browseGames}

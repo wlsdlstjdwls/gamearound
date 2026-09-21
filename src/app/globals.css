@@ -106,7 +106,6 @@
 
   /* 레이아웃 최대폭 — 리디자인 스펙 1200. 카드 격자가 한 줄에 4장 서는 최소 폭이다 */
   --page-w: 1200px;
-  --page-w-narrow: 860px;
   --page-w-tight: 720px;
 
   --font-sans: "Pretendard Variable", Pretendard, -apple-system, BlinkMacSystemFont, "Apple SD Gothic Neo", "Segoe UI", Roboto,

@@ -5,8 +5,10 @@
 // "내가 어디 있는지" 를 헤더가 말해 주지 않았다. 브레드크럼이 있는 상세와 달리
 // 목록, 위시리스트, 알림은 헤더가 유일한 위치 표시다.
 //
-// 색이 아니라 글자색과 굵기로만 표시한다 — 헤더에 브랜드 색 덩어리를 하나 더 얹으면
-// 로고와 경쟁한다. 보조 기술에는 aria-current 가 같은 말을 한다.
+// 표시는 브랜드 보라 글자다(2026-09-21). 잉크색 굵은 글자로만 말하던 때는 안 고른 칸과
+// 굵기 하나 차이라 훑어서는 안 보였다 — 목록 화면에서 제목을 뺀 지금은 머리띠가 "여기가 어디인가" 를
+// 말하는 유일한 자리다. 면이 아니라 글자에만 색을 주므로 로고와 경쟁하지 않는다.
+// 보조 기술에는 aria-current 가 같은 말을 한다.
 //
 // icon 을 받으면 좁은 화면에서 글자를 접고 그림만 세운다. 전에는 같은 상황을 `hidden sm:block` 으로
 // 다뤄서 위시리스트, 알림이 모바일에서 아예 사라졌고, 그 두 화면으로 가는 길이 사용자 메뉴 안에만 남았다.
@@ -47,7 +49,7 @@ export function SiteNavLink({
             ? "size-[var(--touch-target)] sm:size-auto sm:gap-1.5 sm:px-3 sm:py-[7px]"
             : "px-3 py-[7px]",
         // 안 고른 칸은 면을 갖지 않는다 — hover 에서만 바탕이 한 겹 깔린다(칩과 같은 규칙)
-        current ? "font-bold text-ink" : "text-mut hover:bg-surface-2 hover:text-ink",
+        current ? "font-bold text-acc" : "text-mut hover:bg-surface-2 hover:text-ink",
         className,
       )}
     >

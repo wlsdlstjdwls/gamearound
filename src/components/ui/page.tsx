@@ -1,13 +1,15 @@
 // 페이지 셸 — 리디자인 스펙의 최대폭, 좌우 패딩을 한 곳에서 관리한다.
-// 폭: 기본 1200 / 알림 860 / 설정 720. 상단 패딩은 화면 성격별로 22~32px, 하단은 80~90px.
+// 폭: 기본 1200 / 좁은 화면 720(설정, 입점처럼 입력이 주인공인 곳). 상단 패딩은 22~32px, 하단은 80~90px.
+//
+// 860 짜리 한 칸(narrow)을 지웠다(2026-09-21): 알림 하나만 그 폭을 쓰고 있었는데, 목록과 위시리스트를
+// 오가다 알림에 들어오면 본문이 혼자 좁아져 화면이 한 번 흔들렸다. 폭이 다르면 다른 이유가 있어야 한다.
 import { cn } from "@/lib/cn";
 
-export type PageWidth = "default" | "narrow" | "tight";
+export type PageWidth = "default" | "tight";
 export type PagePad = "home" | "detail" | "sub";
 
 const WIDTH: Record<PageWidth, string> = {
   default: "max-w-[var(--page-w)]",
-  narrow: "max-w-[var(--page-w-narrow)]",
   tight: "max-w-[var(--page-w-tight)]",
 };
 
@@ -115,6 +117,7 @@ export function PageHead({
   note,
   action,
   size = "page",
+  hideTitle = false,
   className,
   style,
   children,
@@ -123,17 +126,27 @@ export function PageHead({
   note?: React.ReactNode;
   action?: React.ReactNode;
   size?: PageTitleSize;
+  /**
+   * 제목을 화면에서만 감춘다(목록, 출시예정). 지우지 않고 감추는 이유는 h1 이 문서의 뼈대라서다 —
+   * 없애면 낭독기 사용자가 "여기가 어느 화면인가" 를 물을 자리를 잃고, 검색 로봇도 같은 것을 읽는다.
+   * 머리띠가 지금 보고 있는 메뉴를 보라색으로 말해 주므로 눈으로 읽는 제목은 같은 말을 두 번 한다.
+   */
+  hideTitle?: boolean;
   className?: string;
   style?: React.CSSProperties;
   children?: React.ReactNode;
 }) {
+  // 제목만 있고 감춘 화면은 껍데기를 세우지 않는다 — 빈 div 하나가 페이지 간격(gap)을 한 칸 더 먹는다.
+  // sr-only 는 absolute 라 flex 칸을 차지하지 않는다(그래서 이 한 줄만 남기면 간격이 안 생긴다)
+  if (hideTitle && !note && !action && !children) return <h1 className="sr-only">{title}</h1>;
+
   return (
     // children(설명 문단)은 제목 줄 **아래** 줄에 통째로 눕는다.
     // 같은 flex 행에 두면 제목과 오른쪽 버튼 사이에 문단이 끼어 셋이 한 줄로 읽혔다(2026-09-21).
     <div className={cn("flex flex-col gap-2.5", className)} style={style}>
       <div className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-2">
         <div className="flex min-w-0 flex-wrap items-baseline gap-x-2.5 gap-y-1">
-          <h1 className={cn("font-extrabold text-ink", TITLE_SIZE[size])}>{title}</h1>
+          <h1 className={hideTitle ? "sr-only" : cn("font-extrabold text-ink", TITLE_SIZE[size])}>{title}</h1>
           {note && <span className="text-[13.5px] text-mut">{note}</span>}
         </div>
         {/* justify-between 은 한 줄일 때만 오른쪽 끝을 만든다. 좁은 화면에서 줄이 갈리면

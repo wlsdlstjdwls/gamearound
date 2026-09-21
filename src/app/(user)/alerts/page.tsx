@@ -21,7 +21,7 @@ export default async function AlertsPage({ searchParams }: { searchParams: Promi
   const active = alerts.filter((a) => a.isActive).length;
 
   return (
-    <Page width="narrow" gap={30}>
+    <Page gap={30}>
       <PageHead
         title="가격 알림"
         note={`활성 ${active}개 | 일시중지 ${alerts.length - active}개`}

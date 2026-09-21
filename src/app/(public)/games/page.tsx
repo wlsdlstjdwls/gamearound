@@ -9,7 +9,7 @@
 // 첫 페이지는 서버가 그리고, 그 아래는 스크롤이 이어 붙인다(components/games-infinite).
 import type { Metadata } from "next";
 import { Suspense } from "react";
-import { GameCard } from "@/components/game-card";
+import { GameCard, highlightFromFilter } from "@/components/game-card";
 import { EmptyState } from "@/components/empty-state";
 import { GameFilters } from "@/components/game-filters";
 import { ActiveFilters } from "@/components/game-filters/active";
@@ -81,6 +81,7 @@ async function FilterColumn({ filter }: { filter: GamesQuery }) {
 
 async function Results({ filter }: { filter: GameListFilter }) {
   const result = await listGames(filter);
+  const highlight = highlightFromFilter(filter);
 
   if (result.items.length === 0) {
     const filtered = isFiltered(filter);
@@ -102,7 +103,7 @@ async function Results({ filter }: { filter: GameListFilter }) {
       <GamesInfinite filter={filter} initialHasMore={result.page < result.totalPages}>
         {result.items.map((g, i) => (
           <li key={g.slug} className="enter-item" style={stagger(i)}>
-            <GameCard game={g} variant={filter.sort === "release" ? "release" : "discount"} />
+            <GameCard game={g} variant={filter.sort === "release" ? "release" : "discount"} highlight={highlight} />
           </li>
         ))}
       </GamesInfinite>
@@ -119,10 +120,10 @@ export default async function GamesPage({ searchParams }: Props) {
 
   return (
     <Page gap={22}>
-      {/* 제목 한 줄이 전부다(2026-09-21). 건수("9,789개가 조건에 맞아요")를 뗐다 — 거른 결과를
-          읽는 데 보태는 게 없는데 그 한 줄 때문에 제목 아래 조회 하나를 더 기다리고 있었다.
-          정렬은 기둥으로 들어갔다(game-filters/groups) */}
-      <PageHead title="게임 목록" />
+      {/* 제목은 낭독기에만 남긴다(2026-09-21). 머리띠의 "게임 목록" 이 보라색으로 서서 같은 말을
+          이미 하고 있어, 화면에는 첫 카드 줄이 바로 오는 편이 낫다.
+          건수("9,789개가 조건에 맞아요")도 앞서 뗐다 — 그 한 줄 때문에 목록과 같은 조회를 한 번 더 기다렸다 */}
+      <PageHead title="게임 목록" hideTitle />
 
       {/* 걸린 조건 띠 — 결과 바로 위를 가로지른다(전폭). 필터 기둥 안이 아니라 여기인 이유는 ./active 주석 */}
       <ActiveFilters filter={query} />

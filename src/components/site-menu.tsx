@@ -44,7 +44,9 @@ function Row({ href, label, icon, current }: MenuLink & { current: boolean }) {
       aria-current={current ? "page" : undefined}
       className={cn(
         "flex min-h-[var(--touch-target)] items-center gap-2.5 rounded-lg px-3 text-[14px] transition-colors",
-        current ? "bg-surface-2 font-semibold text-ink" : "text-mut hover:bg-surface-2 hover:text-ink",
+        // 머리띠와 같은 규칙 — 지금 보고 있는 줄은 브랜드 보라다(site-nav-link 주석).
+        // 시트에서는 줄이 세로로 서서 글자색만으로는 약해 연한 브랜드 면을 같이 깐다
+        current ? "bg-acc-soft font-semibold text-acc" : "text-mut hover:bg-surface-2 hover:text-ink",
       )}
     >
       {/* 그림이 없는 줄도 글자 시작점은 같아야 한다 — 없으면 들쭉날쭉한 계단이 된다 */}

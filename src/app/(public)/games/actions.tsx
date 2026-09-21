@@ -6,7 +6,7 @@
 // 서버 액션은 RSC 결과를 그대로 실어 보낼 수 있으므로 카드는 계속 서버에서만 그려진다.
 //
 // 첫 페이지는 여전히 page.tsx 가 서버에서 그린다 — 검색 로봇과 JS 가 꺼진 브라우저가 보는 것이 그 한 장이다.
-import { GameCard } from "@/components/game-card";
+import { GameCard, highlightFromFilter } from "@/components/game-card";
 import { stagger } from "@/lib/motion";
 import { listGames, type GameListFilter } from "@/server/services/games";
 
@@ -18,12 +18,14 @@ export type MorePage = {
 
 export async function loadMoreGames(filter: GameListFilter, page: number): Promise<MorePage> {
   const result = await listGames({ ...filter, page });
+  // 첫 장과 같은 규칙으로 강조한다 — 경계에서 색이 갈리면 같은 조건인데 위아래가 달라 보인다
+  const highlight = highlightFromFilter(filter);
   return {
     // 첫 장(page.tsx)과 달리 `.enter-late` 를 쓴다 — 첫 등장이 끝난 셸에서는 `.enter-item` 이 조용해지고,
     // 방금 만들어 붙이는 이 카드들만 등장해야 한다(lib/motion 의 markPageEntered, globals.css)
     nodes: result.items.map((g, i) => (
       <li key={g.slug} className="enter-late" style={stagger(i)}>
-        <GameCard game={g} variant={filter.sort === "release" ? "release" : "discount"} />
+        <GameCard game={g} variant={filter.sort === "release" ? "release" : "discount"} highlight={highlight} />
       </li>
     )),
     hasMore: result.page < result.totalPages,

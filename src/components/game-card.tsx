@@ -3,10 +3,14 @@
 // 리디자인(2026-09-21): 카드에서 테두리와 흰 판을 걷어냈다. 커버가 카드의 주역이고,
 // 글자는 그 아래 배경 위에 그대로 앉는다. 강조는 카드당 하나뿐이다 —
 // 커버 왼쪽 아래 모서리를 뚫고 나오는 할인 스탬프. 나머지는 전부 회색 글자다.
+import { Fragment } from "react";
 import { formatPrice } from "@/lib/currency";
 import Link from "next/link";
 import { formatDate, formatDiscount, PLATFORM_LABEL } from "@/lib/format";
+import { parsePlatformValues } from "@/lib/games-query";
+import { expandPlatformValues } from "@/lib/platform";
 import { PlatformBadges } from "@/components/platform-badges";
+import type { Platform } from "@/server/db/schema";
 import type { GameSummary } from "@/server/services/games";
 import { SaleBadge } from "@/components/sale-badge";
 import { FadeImage } from "@/components/ui/fade-image";
@@ -78,15 +82,40 @@ export function DiscountStamp({ pct, size = "card" }: { pct: number | null; size
   );
 }
 
-export function GameCard({ game, variant = "discount" }: { game: GameSummary; variant?: "discount" | "release" }) {
+/**
+ * 지금 걸어 둔 조건. 카드 안에서 그 값만 브랜드 색으로 올라온다(2026-09-21).
+ * 홈처럼 거르지 않는 화면은 넘기지 않는다 — 아무것도 강조되지 않는다.
+ */
+export type CardHighlight = { platforms?: Platform[]; genre?: string | null };
+
+/**
+ * 목록 조건 → 카드 강조값. 첫 장(games/page)과 스크롤로 이어 붙이는 장(games/actions)이
+ * 같은 값을 써야 경계에서 색이 갈리지 않아 여기 한 곳에서 만든다.
+ * 갈래("PC")를 고르면 그 안의 스토어 배지가 전부 선다 — 조회가 거르는 범위와 같은 범위다.
+ */
+export function highlightFromFilter(filter: { platform?: string; genre?: string }): CardHighlight {
+  return { platforms: expandPlatformValues(parsePlatformValues(filter.platform)), genre: filter.genre ?? null };
+}
+
+export function GameCard({
+  game,
+  variant = "discount",
+  highlight,
+}: {
+  game: GameSummary;
+  variant?: "discount" | "release";
+  highlight?: CardHighlight;
+}) {
   const title = game.titleKo ?? game.titleEn;
   const best = game.best;
   const hasDiscount = Boolean(best?.discountPct && best.discountPct > 0);
   // 캐시에 담긴 옛 모양 DTO 에는 이 배열이 없을 수 있다 — 카드 한 장이 화면 전체를 죽이지 않게 받아 준다
   // (판 올리는 자리는 lib/cache 의 DTO_CACHE_VERSION. 여기 기본값은 그 사이를 버티는 몫이다)
   const genres = game.genres ?? [];
-  // 부제 줄 — 원제와 장르. 둘 다 "이게 무슨 게임인지" 를 말하는 값이라 한 줄에 묶는다
-  const subtitle = [game.titleKo ? game.titleEn : null, genres.length > 0 ? genres.join(", ") : null].filter(Boolean).join(" | ");
+  // 부제 줄 — 원제와 장르. 둘 다 "이게 무슨 게임인지" 를 말하는 값이라 한 줄에 묶는다.
+  // 고른 장르 하나만 색이 달라야 해서 조각으로 쪼갠다 — 말풍선에 쓸 글자는 따로 만들어 Clamp 에 준다
+  const originalTitle = game.titleKo ? game.titleEn : null;
+  const subtitleText = [originalTitle, genres.length > 0 ? genres.join(", ") : null].filter(Boolean).join(" | ");
   const storeLabel = best ? PLATFORM_LABEL[best.platform] ?? best.platform : null;
 
   return (
@@ -123,7 +152,21 @@ export function GameCard({ game, variant = "discount" }: { game: GameSummary; va
         </span>
 
         <span className="flex items-baseline justify-between gap-2.5 text-[12.5px] text-mut">
-          {subtitle ? <Clamp>{subtitle}</Clamp> : <span />}
+          {subtitleText ? (
+            <Clamp text={subtitleText}>
+              {originalTitle}
+              {originalTitle && genres.length > 0 ? " | " : null}
+              {genres.map((g, i) => (
+                // 쉼표는 색을 입힌 조각 **밖에** 둔다 — 안에 넣으면 고른 장르 앞의 구분자까지 보라가 된다
+                <Fragment key={g}>
+                  {i > 0 ? ", " : null}
+                  <span className={g === highlight?.genre ? "font-semibold text-acc" : undefined}>{g}</span>
+                </Fragment>
+              ))}
+            </Clamp>
+          ) : (
+            <span />
+          )}
           {variant !== "release" && hasDiscount && <SaleBadge variant="inline" discountName={null} discountEndsAt={best?.discountEndsAt} />}
         </span>
 
@@ -133,7 +176,7 @@ export function GameCard({ game, variant = "discount" }: { game: GameSummary; va
             배지가 줄 하나를 따로 쓰는 이유는 곁 문구와 한 줄을 다투면 둘 다 접혀서다
             (같은 판단이 game-row 에도 있다). 줄 수가 늘었으니 뼈대도 같이 늘린다(games/skeletons) */}
         <span className="mt-auto flex flex-col gap-1.5 pt-1.5">
-          <PlatformBadges platforms={game.platforms} />
+          <PlatformBadges platforms={game.platforms} highlight={highlight?.platforms} />
           <span className="text-[12px] text-dim">
             {variant === "release"
               ? best?.releaseDate

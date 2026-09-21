@@ -165,19 +165,27 @@ const LINE_CLASS: Record<ClampLines, string> = {
 
 /**
  * 정해진 줄 수로 자르고, 실제로 잘렸을 때만 전체 문구 툴팁을 붙인다.
- * children 은 문자열만 받는다 — 툴팁에 그대로 쓰는 값이라 노드를 받으면 문구를 만들 수 없다.
+ * 글자를 그대로 넘기면 그것이 곧 말풍선 문구다. 조각을 넘길 때는 text 로 문구를 따로 준다 —
+ * 노드에서 글자를 긁어내지 않는다(중첩이 깊어지면 무엇이 읽히는지 부르는 쪽이 알 수 없다).
  */
 export function Clamp({
   lines = 1,
   className,
+  text,
   children,
 }: {
   lines?: ClampLines;
   className?: string;
-  children: string;
+  /**
+   * 말풍선에 띄울 글자. 조각(ReactNode)을 넘길 때만 필요하다 —
+   * 글자 하나만 색을 달리 주려고 span 으로 쪼갠 줄(카드의 장르)이 그 경우다.
+   */
+  text?: string;
+  children: React.ReactNode;
 }) {
   const [clipped, setClipped] = useState(false);
-  const { triggerProps, tooltip } = useTooltip<HTMLSpanElement>(children, clipped);
+  const label = text ?? (typeof children === "string" ? children : "");
+  const { triggerProps, tooltip } = useTooltip<HTMLSpanElement>(label, clipped && label.length > 0);
   const { ref } = triggerProps;
 
   useEffect(() => {
