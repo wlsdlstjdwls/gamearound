@@ -3,8 +3,7 @@
 // 주의: 쿠키가 있어도 만료/폐기된 세션일 수 있으므로 "쿠키 있으면 로그인 페이지 차단" 같은 판단은 하지 않는다 — 그건 (auth)/layout.tsx 가 실제 검증 후 처리.
 import { NextResponse, type NextRequest } from "next/server";
 import { ADMIN_ROUTE_PREFIXES, SESSION_COOKIE_NAME, USER_ROUTE_PREFIXES, VENDOR_ROUTE_PREFIXES } from "@/lib/auth/constants";
-import { ROUTES, signInPath } from "@/lib/routes";
-import { GAME_VIEW_COOKIE, GAME_VIEW_COOKIE_MAX_AGE, DEFAULT_GAME_VIEW, isGameView } from "@/lib/games/view";
+import { signInPath } from "@/lib/routes";
 
 /** 레이아웃이 "돌아갈 경로"를 알 수 있도록 요청 헤더로 넘긴다 (headers().get(PATHNAME_HEADER)) */
 export const PATHNAME_HEADER = "x-pathname";
@@ -22,64 +21,9 @@ export default function proxy(req: NextRequest) {
     return NextResponse.redirect(new URL(signInPath(pathname + search), req.url));
   }
 
-  const remembered = rememberedViewRedirect(req);
-  if (remembered) return remembered;
-
   const headers = new Headers(req.headers);
   headers.set(PATHNAME_HEADER, pathname + search);
-  const res = NextResponse.next({ request: { headers } });
-  rememberGameView(req, res);
-  return res;
-}
-
-/**
- * 목록 보기 기억하기.
- *
- * 화면의 상태는 주소에 있다(lib/games/view). 그런데 주소를 들고 다니지 않는 길이 있다 —
- * 머리글의 "게임 목록" 링크는 언제나 맨 주소라 리스트로 보던 사람도 카드로 돌아왔다.
- *
- * 그래서 고른 값을 쿠키에 적어 두고, view 가 없는 요청만 그 주소로 되돌린다. 화면 코드는
- * 그대로다(여전히 주소만 읽는다) — 여기서 안 하고 페이지에서 쿠키를 읽으면 /games 가
- * 동적 렌더로 떨어져 목록 캐시(revalidate 3600)를 통째로 잃는다.
- *
- * 되돌리기는 한 번뿐이다: 되돌린 주소에는 view 가 있어 다시 걸리지 않는다.
- *
- * **값이 실제로 바뀔 때만 쓴다.** 응답에 Set-Cookie 가 실리면 앱 라우터는 그 응답을 "쿠키를 건드린 응답"
- * 으로 보고 클라이언트 라우터 캐시를 통째로 버린다. 목록은 스크롤로 다음 장을 서버 액션으로 받아 오는데
- * (games/actions), 그 POST 도 `/games?view=list` 로 나가므로 여기에 걸려 매번 Set-Cookie 가 붙었다.
- * 그러면 액션 응답 뒤에 트리 전체를 다시 받는 요청이 한 번 더 나가고(실측: 액션 60KB + 재요청 74KB),
- * 화면이 통째로 다시 그려진다 — 이미 100장 넘게 쌓인 목록이 36장짜리 뼈대로 잠깐 줄었다 돌아오면서
- * 스크롤이 위로 튀었다 내려오고 카드가 깜빡였다(skeletons.tsx 의 같은 주석).
- *
- * 그래서 두 가지를 건다: 읽기(GET)가 아닌 요청에는 쓰지 않고, 이미 같은 값이면 쓰지 않는다.
- * 수명은 고를 때마다 새로 1년이 되고, 고르지 않는 동안에는 늘어나지 않는다 — 취향은 칩 한 번이면 고쳐진다.
- */
-function rememberGameView(req: NextRequest, res: NextResponse): void {
-  if (req.nextUrl.pathname !== ROUTES.game) return;
-  // 서버 액션은 같은 주소로 나가는 POST 다. 액션 응답에 Set-Cookie 를 얹지 않는다
-  if (req.method !== "GET") return;
-
-  const picked = req.nextUrl.searchParams.get("view") ?? undefined;
-  if (!isGameView(picked)) return;
-  if (req.cookies.get(GAME_VIEW_COOKIE)?.value === picked) return;
-
-  res.cookies.set(GAME_VIEW_COOKIE, picked, { maxAge: GAME_VIEW_COOKIE_MAX_AGE, sameSite: "lax", path: "/" });
-}
-
-/**
- * 주소에 보기가 없으면 기억해 둔 보기로 보낸다. 기본 보기는 주소에 안 적으므로 되돌릴 일도 없다.
- * 쿠키가 없는 쪽(처음 온 사람, 검색 로봇)은 그대로 기본 화면을 본다.
- */
-function rememberedViewRedirect(req: NextRequest): NextResponse | null {
-  if (req.nextUrl.pathname !== ROUTES.game) return null;
-  if (req.nextUrl.searchParams.has("view")) return null;
-
-  const saved = req.cookies.get(GAME_VIEW_COOKIE)?.value;
-  if (!isGameView(saved) || saved === DEFAULT_GAME_VIEW) return null;
-
-  const url = req.nextUrl.clone();
-  url.searchParams.set("view", saved);
-  return NextResponse.redirect(url);
+  return NextResponse.next({ request: { headers } });
 }
 
 export const config = {

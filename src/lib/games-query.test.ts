@@ -186,23 +186,3 @@ describe("가격 상한", () => {
     expect(maxPriceLabel(30_000)).toBe("3만원 이하");
   });
 });
-
-describe("보기 모양", () => {
-  it("모르는 값은 버린다 — 기본 보기로 떨어진다", () => {
-    expect(parseGamesQuery({ view: "table" }).view).toBeUndefined();
-    expect(parseGamesQuery({ view: "list" }).view).toBe("list");
-  });
-
-  it("기본 보기는 주소에 안 적는다 — 같은 화면이 두 주소를 갖지 않게", () => {
-    expect(gamesHref({}, { view: "card" })).toBe(ROUTES.game);
-    expect(gamesHref({}, { view: "list" })).toBe(`${ROUTES.game}?view=list`);
-  });
-
-  it("전환 칩은 기본 보기도 주소에 적는다 — 안 그러면 카드로 돌아갈 길이 막힌다", () => {
-    expect(gamesHref({ view: "list" }, { view: "card" }, { keepDefaultView: true })).toBe(`${ROUTES.game}?view=card`);
-  });
-
-  it("다른 필터를 눌러도 보던 모양이 따라간다", () => {
-    expect(gamesHref({ view: "list" }, { platform: "steam" })).toBe(`${ROUTES.game}?platform=steam&view=list`);
-  });
-});

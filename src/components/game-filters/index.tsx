@@ -10,11 +10,10 @@
 // 기둥 머리와 함께 사라졌다 — "지금 무엇이 걸렸나" 는 결과 바로 위에 있어야 답이 된다.
 import type { GamesQuery } from "@/lib/games-query";
 import type { GameFacets } from "@/server/services/games";
-import type { CompatDevice } from "@/components/devices/guest-device";
 import { activeFilterCount } from "./active";
 import { Groups } from "./groups";
 
-export function GameFilters({ facets, filter, devices }: { facets: GameFacets; filter: GamesQuery; devices: CompatDevice[] }) {
+export function GameFilters({ facets, filter }: { facets: GameFacets; filter: GamesQuery }) {
   const applied = activeFilterCount(filter);
 
   return (
@@ -35,7 +34,7 @@ export function GameFilters({ facets, filter, devices }: { facets: GameFacets; f
           )}
         </summary>
         <div className="flex flex-col gap-5 pb-4 pt-1">
-          <Groups facets={facets} filter={filter} devices={devices} />
+          <Groups facets={facets} filter={filter} />
         </div>
       </details>
 
@@ -45,7 +44,7 @@ export function GameFilters({ facets, filter, devices }: { facets: GameFacets; f
         aria-label="목록 필터"
         className="hidden flex-col gap-[26px] lg:sticky lg:top-[80px] lg:flex lg:max-h-[calc(100vh-96px)] lg:overflow-y-auto"
       >
-        <Groups facets={facets} filter={filter} devices={devices} />
+        <Groups facets={facets} filter={filter} />
       </aside>
     </>
   );
