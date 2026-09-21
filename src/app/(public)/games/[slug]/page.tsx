@@ -461,9 +461,10 @@ export default async function GameDetailPage({ params }: Props) {
           왼쪽이 판정인 이유는 순서 때문이다 — 사람이 묻는 것은 "돌아가나" 이고 표는 그 근거다.
           한 기둥으로 접히는 좁은 화면(lg 아래)에서는 소스 순서대로 판정이 위에 온다.
 
-          오른쪽 사양표는 펴 둔다. 접었던 이유가 "펴 두면 아래 마디를 화면 밖으로 민다" 하나였는데
-          (requirements-table 머리 주석), 제 기둥을 가진 지금은 밀 것이 없다. 접힌 채로 두면
-          그 기둥이 제목 한 줄만 남아 통째로 빈다. */}
+          기본은 접어 둔다. 두 기둥으로 갈라 키를 절반으로 줄여 놓고도, 부위별 판정과 OS 별
+          사양표가 함께 서면 여전히 화면 하나를 먹어 그 아래 "파는 곳" 과 패치 기록을 밀어낸다.
+          "돌아가나" 는 콘솔로 살 사람에겐 아예 묻지 않는 질문이라, 묻는 사람만 열게 한다.
+          제목 줄에 어느 OS 사양이 있는지(requirementNote)를 적어 두는 것은 그래서다. */}
       {game.requirements.length > 0 && (
         <RunCheck
           verdictTitle={COMPAT_MESSAGES.heading}
@@ -475,6 +476,7 @@ export default async function GameDetailPage({ params }: Props) {
             </Suspense>
           }
           requirements={<RequirementsBody groups={game.requirements} />}
+          defaultOpen={false}
         />
       )}
 
