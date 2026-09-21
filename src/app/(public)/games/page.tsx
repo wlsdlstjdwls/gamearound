@@ -13,7 +13,6 @@ import { GameCard } from "@/components/game-card";
 import { EmptyState } from "@/components/empty-state";
 import { GameFilters } from "@/components/game-filters";
 import { ActiveFilters } from "@/components/game-filters/active";
-import { GameSort } from "@/components/game-sort";
 import { GamesInfinite } from "@/components/games-infinite";
 import { Page, PageHead } from "@/components/ui/page";
 import { DEFAULT_GAME_SORT, SORT_LABEL, joinPlatformValues, parsePlatformValues, parseGamesQuery, type GamesQuery } from "@/lib/games-query";
@@ -22,7 +21,7 @@ import { isPlatformFamily, isPlatformValue, PLATFORM_FAMILY_LABEL, PLATFORM_VALU
 import { stagger } from "@/lib/motion";
 import { ROUTES } from "@/lib/routes";
 import { GAMES_PAGE_SIZE, getGameFacets, listGames, type GameListFilter } from "@/server/services/games";
-import { CountSkeleton, FiltersSkeleton, GamesGridSkeleton } from "./skeletons";
+import { FiltersSkeleton, GamesGridSkeleton } from "./skeletons";
 
 // Next 가 정적으로 읽는 값이라 리터럴이어야 한다 — 근거, 수치는 lib/cache 의 LIST_REVALIDATE_SECONDS 와 같게 유지
 export const revalidate = 3600;
@@ -70,21 +69,11 @@ function isFiltered(f: GameListFilter): boolean {
 }
 
 /**
- * 조회를 기다리는 조각들.
- *
- * 왜 갈랐나(2026-09-15): 필터를 누르면 1초 가까이 화면이 그대로 멈춰 있었다. 페이지가 조회를
- * 전부 기다린 뒤에야 첫 바이트가 나가서다 — 라우터는 그때까지 이동을 붙들고 있는다.
- * 조회 자체는 DB 에서 10~20ms 다. 지연의 거의 전부가 Neon(us-east-1) 왕복이라
- * 줄일 수 있는 것은 "기다리는 동안 보여 줄 것" 뿐이다. 그래서 껍데기는 즉시 내보내고
- * 값이 필요한 자리만 경계로 감싼다.
+ * 필터 기둥은 따로 기다린다(2026-09-15). 페이지가 조회를 전부 기다린 뒤에야 첫 바이트가 나가면
+ * 필터를 누르고 1초 가까이 화면이 멈춰 있는다 — 라우터는 그때까지 이동을 붙들고 있는다.
+ * 조회 자체는 DB 에서 10~20ms 고 지연의 거의 전부가 Neon(us-east-1) 왕복이라,
+ * 줄일 수 있는 것은 "기다리는 동안 보여 줄 것" 뿐이다. 껍데기는 즉시 내보내고 값이 필요한 자리만 감싼다.
  */
-async function ResultCount({ filter }: { filter: GameListFilter }) {
-  const result = await listGames(filter);
-  // 전체 개수와 페이지 번호를 지웠다(2026-09-15). 스크롤 페이징에는 페이지 번호가 없고,
-  // "전체 6,047개" 는 거른 결과를 읽는 데 보태는 게 없다 — 지금 몇 개가 남았는지만 말한다
-  return <>{result.total.toLocaleString("ko-KR")}개</>;
-}
-
 async function FilterColumn({ filter }: { filter: GamesQuery }) {
   const facets = await getGameFacets();
   return <GameFilters facets={facets} filter={filter} />;
@@ -127,26 +116,13 @@ export default async function GamesPage({ searchParams }: Props) {
   // 필터가 바뀌면 경계를 새로 세운다 — 키가 같으면 React 는 이것을 갱신으로 보고
   // 새 값이 올 때까지 옛 목록을 그대로 둔다. 눌렀는데 아무 일도 안 일어나는 것처럼 보이는 자리다.
   const boundaryKey = JSON.stringify(filter);
-  const filtered = isFiltered(filter);
 
   return (
     <Page gap={22}>
-      {/* 제목 줄 — 왼쪽은 "무엇을 보고 있나", 오른쪽은 "어떤 순서로 세울까".
-          거르지 않은 목록의 건수는 읽는 사람이 쓸 일이 없다 — 걸렀을 때만 "얼마나 남았나" 가 답이 된다 */}
-      <PageHead
-        title="게임 목록"
-        note={
-          filtered ? (
-            <span aria-live="polite">
-              <Suspense key={boundaryKey} fallback={<CountSkeleton />}>
-                <ResultCount filter={filter} />
-              </Suspense>
-              {"가 조건에 맞아요"}
-            </span>
-          ) : undefined
-        }
-        action={<GameSort query={query} />}
-      />
+      {/* 제목 한 줄이 전부다(2026-09-21). 건수("9,789개가 조건에 맞아요")를 뗐다 — 거른 결과를
+          읽는 데 보태는 게 없는데 그 한 줄 때문에 제목 아래 조회 하나를 더 기다리고 있었다.
+          정렬은 기둥으로 들어갔다(game-filters/groups) */}
+      <PageHead title="게임 목록" />
 
       {/* 걸린 조건 띠 — 결과 바로 위를 가로지른다(전폭). 필터 기둥 안이 아니라 여기인 이유는 ./active 주석 */}
       <ActiveFilters filter={query} />

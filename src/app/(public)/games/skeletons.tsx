@@ -4,17 +4,12 @@
 // 높이는 실제 화면을 재서 맞춘 값이다 — 어긋나면 본문이 들어올 때 통째로 밀려 그게 깜빡임이 된다.
 import { GAMES_GRID_CLASS } from "@/lib/games/grid";
 
-/** 건수는 <p> 안에 들어간다 — div 를 쓰면 HTML 이 <p> 를 끊어 하이드레이션이 깨진다 */
-export function CountSkeleton() {
-  return <span className="skeleton inline-block h-4 w-32 rounded align-middle" aria-hidden />;
-}
-
 export function FiltersSkeleton() {
   return (
     <div className="hidden flex-col gap-[26px] lg:flex" aria-hidden>
-      {/* 기둥에 서는 무리는 셋이다 — 플랫폼 칩 셋, 장르 드롭다운, 조건 칩 하나(game-filters/groups).
+      {/* 기둥에 서는 무리는 셋이다 — 정렬 드롭다운, 플랫폼 칩 셋, 장르 드롭다운(game-filters/groups).
           뼈대가 실물보다 길면 본문이 올 때 기둥이 줄면서 목록까지 한 번 밀린다 */}
-      {[3, 1, 1].map((rows, g) => (
+      {[1, 3, 1].map((rows, g) => (
         <div key={g} className="flex flex-col gap-2.5">
           <div className="skeleton h-3.5 w-14 rounded" />
           <div className="flex flex-wrap gap-1.5">
