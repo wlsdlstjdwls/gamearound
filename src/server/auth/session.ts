@@ -125,11 +125,19 @@ export async function ownedByCurrentSession(column: PgColumn): Promise<SQL | nul
   );
 }
 
-/** 현재 세션 폐기 (로그아웃) */
+/**
+ * 현재 세션 폐기 (로그아웃).
+ *
+ * **쿠키를 먼저 지운다.** 예전에는 DB 삭제를 먼저 하고 쿠키를 나중에 지웠는데, 그 사이에서 DB 가
+ * 터지면(Neon 이 깨어나는 중이거나 왕복이 끊기면) 쿠키가 그대로 남아 다음 요청이 다시 로그인 상태가
+ * 된다 — 사람 눈에는 "로그아웃을 눌렀는데 자동으로 다시 로그인된다" 로 보인다.
+ * 쿠키가 먼저 사라지면 최악의 경우에도 남는 것은 "쓰이지 않는 DB 행" 이고, 그건 만료와
+ * 일일 정리(purgeExpiredSessions)가 치운다. 반대 순서의 사고는 사람이 치울 수 없다.
+ */
 export async function invalidateCurrentSession(): Promise<void> {
   const token = await readSessionToken();
-  if (token) await getDb().delete(sessions).where(eq(sessions.id, hashSessionToken(token)));
   await clearSessionCookie();
+  if (token) await getDb().delete(sessions).where(eq(sessions.id, hashSessionToken(token)));
 }
 
 /** 특정 사용자의 다른 기기 세션 전부 폐기 (비밀번호 변경 등 — 확장 지점) */
