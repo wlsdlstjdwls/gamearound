@@ -11,7 +11,7 @@
 // **없는 스토어도 줄을 세운다**(2026-09-21). 전에는 파는 곳만 그렸는데, 그러면 "스위치에 없다" 와
 // "스위치를 아직 안 긁었다" 가 화면에서 똑같이 생긴 빈자리였다. PS 유저가 PS 줄을 못 찾으면
 // 목록으로 돌아가 다시 검색하거나 스토어를 직접 열어 확인해야 했다 — 우리가 이미 아는 사실인데도.
-// 없는 줄은 값 자리에 "서비스 없어요" 를 적고 회색으로 물러난다. 순서는 PLATFORM_ORDER 를 따르되
+// 없는 줄은 값 자리에 한마디를 적고 회색으로 물러난다. 순서는 PLATFORM_ORDER 를 따르되
 // 파는 곳 전부가 먼저다 — 비교하러 온 사람의 눈이 빈 줄을 건너뛰며 내려가면 안 된다.
 import { formatPrice } from "@/lib/currency";
 import { formatDate, formatDiscount, PLATFORM_LABEL, platformLabel } from "@/lib/format";
@@ -81,7 +81,17 @@ function AbsentRow({ platform }: { platform: Platform }) {
   );
 }
 
-const ABSENT_TEXT = "서비스 없어요";
+/**
+ * 파는 곳이 아닌 줄에 적는 말(2026-09-21 고침).
+ *
+ * 전에는 "서비스 없어요" 였다. 짧아서 골랐는데 읽으면 가게가 손님을 물리는 말투가 된다 —
+ * 이 줄이 말하려는 것은 스토어의 사정이 아니라 우리가 아는 사실("여기엔 이 게임이 없다")이다.
+ * 그래서 주어를 스토어에서 게임으로 옮겼다.
+ *
+ * "판매 정보 없어요" 로 가지 않은 이유: 이 줄을 세운 목적 자체가 "없다" 와 "아직 안 긁었다" 를
+ * 가르는 것이었는데(위 머리 주석), 그 말은 둘을 도로 붙여 놓는다.
+ */
+const ABSENT_TEXT = "이 스토어엔 없어요";
 
 export function PlatformPrices({
   platforms,
