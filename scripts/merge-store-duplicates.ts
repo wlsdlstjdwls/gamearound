@@ -1,11 +1,14 @@
 // 한 스토어 ID 를 여러 게임 행이 나눠 가진 묶음을 하나로 접는다.
 //
-//   pnpm dedup:stores [--source xbox] [--limit 20] [--apply]
+//   pnpm dedup:stores [--source xbox] [--limit 20] [--external Q73154387] [--apply]
 //
 // **왜 지우지 않고 옮기나.** 2026-09-18 실측으로 접을 수 있는 xbox 86묶음 전부가 가격 이력을
 // 두 행 이상에 나눠 갖고 있었고, 그 행들 밑에 자식 DLC 83건이 달려 있었다. `games.parent_game_id`
 // 가 cascade 라 부모를 지우면 자식이 소리 없이 따라 죽는다. 그래서 지우기 전에 가진 것을 전부
 // 살아남는 행으로 옮기고, 마지막에 껍데기만 지운다.
+//
+// **한 묶음만 접고 싶을 때** `--external` 에 그 스토어 ID 를 준다. 이 도구는 한 번에 수십 묶음을
+// 지우므로, 고친 규칙이 새로 잡아낸 묶음 하나만 확인하고 접는 길이 있어야 한다.
 //
 // **무엇만 접나.** 기종 꼬리표(`(Xbox One)`, `— Windows`)만 다르고 나머지 이름이 같은 **본편** 묶음만.
 // 리마스터, 확장판, 에디션은 별개 상품이라 손대지 않는다(2026-09-15 2차 중복 정리에서 정한 선).
@@ -30,18 +33,30 @@ const DEVICE = "(windows|pc|xbox one|xbox series x/s|xbox series x[|]s|ps4|ps5)"
 const DEVICE_BARE = "(xbox one|xbox series x/s|xbox series x[|]s|ps4|ps5)";
 /** "Xbox One & Xbox Series X|S", "PS4 & PS5" 처럼 둘을 묶어 적는 꼴도 한 꼬리표다 */
 const PAIR = (d: string) => `${d}([[:space:]]*(&|and)[[:space:]]*${d})?`;
+/**
+ * "기본판" 꼬리 — 본편 그 자체를 가리키는 말만 넣는다.
+ *
+ * 왜 여기에만 에디션을 들이나(2026-09-21): 위 머리글대로 리마스터, 확장판, 디럭스는 값도 내용도
+ * 다른 별개 상품이라 접지 않는다. 그런데 "일반판" 은 **본편을 부르는 다른 이름**이다 —
+ * 접을 것이 없다고 두면 같은 게임이 두 행으로 남는다. 실제로 "디아블로 IV — 일반판"(Xbox)이
+ * 본편과 따로 앉아 홈 할인 줄 2, 3번을 같은 게임이 나란히 차지했다.
+ *
+ * 얼티밋, 디럭스, 컬렉션은 일부러 없다. 그것들은 사람이 볼 몫으로 남긴다.
+ */
+const BASE_EDITION = "(standard[[:space:]]+edition|일반판|통상판|제품판)";
 // 백슬래시를 안 쓴다 — Neon 드라이버가 생 SQL 의 백슬래시를 먹어 정규식이 조용히 빗나간다
 const TAIL = [
   `[(][[:space:]]*(for[[:space:]]+)?${PAIR(DEVICE)}[[:space:]]*[)]`,
   `[—–-][[:space:]]*(for[[:space:]]+)?${PAIR(DEVICE)}`,
   `[[:space:]](for[[:space:]]+)?${PAIR(DEVICE_BARE)}`,
+  `[—–:-]?[[:space:]]*${BASE_EDITION}`,
 ].join("|");
 const STRIP = (col: string) =>
   `regexp_replace(${col}, '[[:space:]]*(${TAIL})[[:space:]]*$', '', 'i')`;
 const NORM = (col: string) => `lower(regexp_replace(${STRIP(col)}, '[^[:alnum:]]+', '', 'g'))`;
 /** 주소에 남은 같은 꼬리표. 제목과 달리 이미 소문자, 붙임표 꼴이라 따로 적는다 */
 const SLUG_STRIP = (col: string) =>
-  `regexp_replace(${col}, '-(for-)?(windows|pc|xbox-one|xbox-series-x-s|ps4|ps5)(-(and|&)?-?(xbox-one|xbox-series-x-s|ps4|ps5))?$', '')`;
+  `regexp_replace(${col}, '-((for-)?(windows|pc|xbox-one|xbox-series-x-s|ps4|ps5)(-(and|&)?-?(xbox-one|xbox-series-x-s|ps4|ps5))?|standard-edition|일반판|통상판|제품판)$', '')`;
 
 /** 합칠 때 살아남는 행의 빈 칸만 메우는 칸들. 값이 있는 칸은 건드리지 않는다(AGENTS §7) */
 const FILLABLE = [
@@ -78,7 +93,9 @@ function arg(name: string): string | null {
 }
 
 /** 접을 수 있는 묶음만 가져온다 — 꼬리표를 뗀 이름이 하나로 모이고 전부 본편인 것 */
-async function loadGroups(source: string, limit: number): Promise<Group[]> {
+async function loadGroups(source: string, limit: number, externalId: string | null): Promise<Group[]> {
+  // 외부 ID 는 스토어가 주는 값이라 따옴표가 섞일 수 있다 — 리터럴로 잇기 전에 막는다
+  const only = externalId ? `and g.external_id = '${externalId.replace(/'/g, "''")}'` : "";
   const rows = await getDb().execute(sql.raw(`
     with refs as (
       select game_id, external_id from game_source_refs
@@ -87,7 +104,8 @@ async function loadGroups(source: string, limit: number): Promise<Group[]> {
       select external_id, array_agg(game_id) as ids from refs group by 1 having count(*) > 1
     ), foldable as (
       select g.external_id, g.ids from grp g
-      where (select count(distinct ${NORM("x.title_en")}) from games x where x.id = any(g.ids)) = 1
+      where true ${only}
+        and (select count(distinct ${NORM("x.title_en")}) from games x where x.id = any(g.ids)) = 1
         and (select bool_and(x.content_type = 'game') from games x where x.id = any(g.ids))
     )
     select f.external_id, x.id, x.title_en, ${STRIP("x.title_en")} as base_title, x.created_at,
@@ -232,8 +250,9 @@ async function mergeGroup(group: Group, survivor: Member): Promise<void> {
 async function main(): Promise<void> {
   const source = arg("--source") ?? "xbox";
   const limit = Number(arg("--limit") ?? 1000);
+  const externalId = arg("--external");
   const apply = process.argv.includes("--apply");
-  const groups = await loadGroups(source, limit);
+  const groups = await loadGroups(source, limit, externalId);
   if (groups.length === 0) {
     console.log(`[dedup] ${source} 에 접을 묶음이 없다`);
     return;

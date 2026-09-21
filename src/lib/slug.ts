@@ -86,6 +86,27 @@ const JP_EDITION_SUFFIXES = [
 ];
 
 /**
+ * 한국 스토어가 붙이는 판매 단위 표시. 일본 목록과 같은 자리에서 같은 방식으로 뗀다.
+ *
+ * 없어서 물렸다(2026-09-21 실측): "디아블로 IV — 일반판"(Xbox 9N8117TM8JL3)이 본편과 못 붙어
+ * 별개 게임으로 앉았고, 둘 다 인기 6위라 **홈 할인 줄 2, 3번을 같은 게임이 나란히 차지했다**.
+ * 라틴 목록의 "standard edition" 은 이미 떼고 있었다 — `Diablo® IV - Standard Edition` 은
+ * 붙는데 그 한국어판만 못 붙은 것이다. 언어가 규칙의 구멍이었다.
+ *
+ * **"판" 으로 끝나면 다 떼는 식은 못 쓴다.** 카탈로그에 "3:심판" 이 있다(실측). 그래서 접미어를
+ * 낱말로 못 박는다 — 목록에 있는 말만 뗀다.
+ *
+ * 일부러 넣지 않은 것:
+ *   체험판, 평가판 — 데모다. 본편에 흡수하면 무료 가격이 본편 가격을 덮는다(일본 목록과 같은 이유).
+ *   확장판 — 값도 내용도 다른 별개 상품이다(EDITION_SUFFIXES 가 expansion 을 안 떼는 것과 같다).
+ *   무료판 — 같은 게임의 무료 변종인지 딴 상품인지 표본으로 못 갈랐다(4건).
+ */
+const KO_EDITION_SUFFIXES = [
+  "일반판", "통상판", "제품판", "완전판", "결정판", "특별판", "한정판",
+  "디럭스판", "디지털판", "궁극판", "소장판", "염가판",
+];
+
+/**
  * 제목 뒤에 붙는 실행 플랫폼 표시. Xbox 카탈로그는 같은 게임의 PC 판을 "(Windows)" 로 구분해
  * 별개 SKU 로 내보낸다 — 우리에게는 같은 게임이므로 매칭 전에 지운다.
  */
@@ -140,11 +161,14 @@ const EDITION_TAIL = /\s[-–—:]\s(?:\S+\s){0,2}(?:edition|에디션)\s*$/i;
 /** 구분자 없이 붙는 꼬리("Vault Edition", "볼트 에디션") — 에디션 낱말과 그 앞 한 낱말까지 지운다 */
 const LOOSE_EDITION_TAIL = /\s(?:\S+\s)?(?:edition|에디션)$/;
 
-/** 꼬리를 떼되 통째로 사라지면 원본을 지킨다 — 빈 제목은 아무하고나 붙는다 */
-function stripJapaneseEditions(t: string): string {
+/**
+ * 꼬리를 떼되 통째로 사라지면 원본을 지킨다 — 빈 제목은 아무하고나 붙는다.
+ * 한국어, 일본어를 한 함수가 보는 이유: 둘 다 앞 공백을 요구하지 않는 목록이라 거는 방법이 같다.
+ */
+function stripCjkEditions(t: string): string {
   for (let cut = true; cut; ) {
     cut = false;
-    for (const suf of JP_EDITION_SUFFIXES) {
+    for (const suf of [...JP_EDITION_SUFFIXES, ...KO_EDITION_SUFFIXES]) {
       if (!t.endsWith(suf)) continue;
       const head = t.slice(0, -suf.length).trim();
       if (!head) continue;
@@ -162,7 +186,7 @@ export function normalizeTitle(title: string): string {
   let head = stripTrailingPlatform(stripDiacritics(title).replace(PLATFORM_MARKERS, ""));
   while (EDITION_TAIL.test(head)) head = head.replace(EDITION_TAIL, "");
 
-  const t = stripJapaneseEditions(
+  const t = stripCjkEditions(
     head
       .toLowerCase()
       .replace(/&/g, " and ")

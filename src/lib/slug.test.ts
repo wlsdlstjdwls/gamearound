@@ -74,6 +74,36 @@ describe("normalizeTitle", () => {
     });
   });
 
+  // 한국 스토어의 "판" 꼬리. 라틴 "standard edition" 은 떼면서 그 한국어판을 못 떼어
+  // "디아블로 IV — 일반판" 이 본편과 별개 게임으로 앉았다(2026-09-21 실측).
+  describe("한국어 판매 단위 꼬리", () => {
+    it.each([
+      ["디아블로 IV — 일반판", "디아블로 iv"],
+      ["디아블로® IV", "디아블로 iv"],
+      ["메탈기어 솔리드 델타 완전판", "메탈기어 솔리드 델타"],
+      ["용과 같이 0 제품판", "용과 같이 0"],
+      ["파이널 판타지 XVI 디럭스판", "파이널 판타지 xvi"],
+    ])("%s → %s", (input, expected) => {
+      expect(normalizeTitle(input)).toBe(expected);
+    });
+
+    it("일반판은 본편과 유사도 1.0 이라 흡수된다", () => {
+      expect(trigramSimilarity("디아블로® IV", "디아블로 IV — 일반판")).toBe(1);
+    });
+
+    it("데모와 별개 상품은 그대로 둔다", () => {
+      // 체험판을 본편에 흡수하면 무료 가격이 본편 가격을 덮는다
+      expect(normalizeTitle("몬스터 헌터 와일즈 체험판")).toBe("몬스터 헌터 와일즈 체험판");
+      // 확장판은 값도 내용도 다른 별개 상품이다
+      expect(normalizeTitle("스타크래프트 확장판")).toBe("스타크래프트 확장판");
+    });
+
+    it("'판' 으로 끝나는 진짜 제목은 지킨다", () => {
+      // 카탈로그에 실제로 있다 — 접미어를 낱말로 못 박은 이유
+      expect(normalizeTitle("기동전사 건담 3:심판")).toBe("기동전사 건담 3 심판");
+    });
+  });
+
   it("부제는 살리고 에디션 이름만 뗀다", () => {
     // 에디션 이름을 두 낱말까지만 보는 이유 — 부제가 통째로 날아가면 서로 다른 게임이 한 제목이 된다
     expect(normalizeTitle("Halo: Combat Evolved Anniversary Edition")).toBe("halo combat evolved");
