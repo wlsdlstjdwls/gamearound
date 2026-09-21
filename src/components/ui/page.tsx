@@ -164,7 +164,9 @@ export function PageHead({
  *  label 12px 대문자 자간: 값 묶음의 이름표(필터 기둥의 플랫폼, 정보 출처) — 제목이라기보다 꼬리표다 */
 export type SectionSize = "section" | "sub" | "label";
 
-const SECTION_SIZE: Record<SectionSize, string> = {
+/* Collapsible 이 같은 사다리를 써야 해서 내보낸다 — 접히는 마디와 안 접히는 마디의 제목 크기가
+   다르면 같은 화면에서 마디의 격이 달라 보인다 */
+export const SECTION_SIZE: Record<SectionSize, string> = {
   section: "text-[19px] font-extrabold tracking-[-0.04em] text-ink sm:text-[22px]",
   sub: "text-[17px] font-extrabold tracking-[-0.035em] text-ink sm:text-[18px]",
   label: "text-[12px] font-bold tracking-[0.08em] text-dim",

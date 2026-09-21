@@ -142,3 +142,48 @@ export function SpinnerIcon(p: IconProps) {
     </svg>
   );
 }
+
+/**
+ * 스팀덱 — 손잡이 둘에 화면 하나. 밸브 로고를 쓰지 않는 이유는 그게 상표라서다.
+ * 기기 실루엣은 사실만 말하고, 어느 등급인지는 옆 글자가 말한다.
+ */
+export function DeckIcon(p: IconProps) {
+  return (
+    <svg {...base(p)}>
+      <rect x="2" y="6" width="20" height="12" rx="4" />
+      <rect x="7.5" y="9.5" width="9" height="5" rx="1" />
+      <circle cx="5" cy="10" r="0.9" fill="currentColor" stroke="none" />
+      <circle cx="19" cy="14" r="0.9" fill="currentColor" stroke="none" />
+    </svg>
+  );
+}
+
+/** 모자람 — 부위 판정에서 "이건 안 된다" 자리. XIcon 과 달리 원 안에 담아 상태로 읽히게 한다 */
+export function XCircleIcon(p: IconProps) {
+  return (
+    <svg {...base(p)}>
+      <circle cx="12" cy="12" r="9" />
+      <path d="m15 9-6 6M9 9l6 6" />
+    </svg>
+  );
+}
+
+/** 충족 */
+export function CheckCircleIcon(p: IconProps) {
+  return (
+    <svg {...base(p)}>
+      <circle cx="12" cy="12" r="9" />
+      <path d="m8.5 12 2.5 2.5 4.5-5" />
+    </svg>
+  );
+}
+
+/** 확인 못 함 — 물음표가 아니라 가로줄이다. 물음표는 "네가 답하라" 로 읽힌다 */
+export function MinusCircleIcon(p: IconProps) {
+  return (
+    <svg {...base(p)}>
+      <circle cx="12" cy="12" r="9" />
+      <path d="M8.5 12h7" />
+    </svg>
+  );
+}
