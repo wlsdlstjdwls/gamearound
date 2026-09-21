@@ -3,15 +3,21 @@
 // 목록(/games)의 최신 출시순과 갈라 둔 이유: 그 화면은 "무엇이 나왔나" 를 묻는다.
 // 한 정렬에 겹쳐 두면 아직 못 사는 게임이 첫 페이지를 차지해 둘 다 못 읽는다.
 //
-// 달로 묶고 줄마다 날짜를 적는다. 날짜마다 머리를 달면 70줄에 머리가 60개라 목록이 안 보이고,
-// 달 머리 하나만 두면 "이번 주인가" 를 세어 봐야 한다 — 요일까지 줄에 적어 그 셈을 없앤다.
+// 달로 묶고 카드마다 날짜를 적는다. 날짜마다 머리를 달면 70장에 머리가 60개라 목록이 안 보이고,
+// 달 머리 하나만 두면 "이번 주인가" 를 세어 봐야 한다 — 요일까지 카드에 적어 그 셈을 없앤다.
+//
+// **줄에서 카드로 바꿨다**(2026-09-21). 이 화면이 답하는 질문은 "무엇을 기다리나" 인데, 아직 못 사는
+// 게임을 고르는 단서는 값도 평점도 아니고 커버 한 장이다 — 줄에서는 그 커버가 92px 였다.
+// 목록(/games)과 같은 격자, 같은 카드를 쓴다. 이 화면만 다른 모양이면 같은 게임이 화면마다
+// 다르게 생겨서, 목록에서 기억한 그림을 여기서 다시 찾아야 한다.
 import type { Metadata } from "next";
 import Link from "next/link";
-import { GameRow } from "@/components/game-row";
+import { GameCard } from "@/components/game-card";
 import { buttonClass } from "@/components/ui/button";
-import { Page, PageHead, ROWS, SectionHead } from "@/components/ui/page";
+import { Page, PageHead, SectionHead } from "@/components/ui/page";
 import { formatMonthLabel, formatReleaseDay } from "@/lib/format";
 import { UPCOMING_MESSAGES as M, upcomingCountText } from "@/lib/games/messages";
+import { GAMES_GRID_CLASS } from "@/lib/games/grid";
 import { stagger } from "@/lib/motion";
 import { ROUTES } from "@/lib/routes";
 import { getUpcomingGames } from "@/server/services/games";
@@ -49,12 +55,12 @@ export default async function UpcomingPage() {
         <p className="rounded-xl bg-surface-2 px-4 py-3.5 text-[13px] text-dim">{M.empty}</p>
       ) : (
         months.map((month) => (
-          <section key={month.key} className="flex flex-col gap-3.5">
+          <section key={month.key} className="flex flex-col gap-4">
             <SectionHead title={formatMonthLabel(month.key)} note={upcomingCountText(month.items.length)} />
-            <ul className={ROWS}>
+            <ul className={GAMES_GRID_CLASS}>
               {month.items.map((entry, i) => (
                 <li key={entry.game.slug} className="enter-item" style={stagger(i)}>
-                  <GameRow game={entry.game} variant="release" releaseText={formatReleaseDay(entry.releaseDate)} />
+                  <GameCard game={entry.game} variant="release" releaseText={formatReleaseDay(entry.releaseDate)} />
                 </li>
               ))}
             </ul>

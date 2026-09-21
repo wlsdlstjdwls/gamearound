@@ -101,10 +101,17 @@ export function GameCard({
   game,
   variant = "discount",
   highlight,
+  releaseText,
 }: {
   game: GameSummary;
   variant?: "discount" | "release";
   highlight?: CardHighlight;
+  /**
+   * 날짜 칸을 부르는 쪽이 정한 문구로 갈아 끼운다(GameRow 와 같은 계약).
+   * 출시예정 화면이 쓴다 — 그 화면의 날짜는 대표 가격 행이 아니라 **게임이 아는 가장 이른 날짜**라
+   * (PlayStation 이 출시일을 주지 않아 게임 단위로 묶는다) best.releaseDate 와 다른 값이다.
+   */
+  releaseText?: string;
 }) {
   const title = game.titleKo ?? game.titleEn;
   const best = game.best;
@@ -117,6 +124,7 @@ export function GameCard({
   const originalTitle = game.titleKo ? game.titleEn : null;
   const subtitleText = [originalTitle, genres.length > 0 ? genres.join(", ") : null].filter(Boolean).join(" | ");
   const storeLabel = best ? PLATFORM_LABEL[best.platform] ?? best.platform : null;
+  const releaseLabel = releaseText ?? (best?.releaseDate ? `${formatDate(best.releaseDate)} 출시` : "");
 
   return (
     <Link
@@ -178,13 +186,7 @@ export function GameCard({
         <span className="mt-auto flex flex-col gap-1.5 pt-1.5">
           <PlatformBadges platforms={game.platforms} highlight={highlight?.platforms} />
           <span className="text-[12px] text-dim">
-            {variant === "release"
-              ? best?.releaseDate
-                ? `${formatDate(best.releaseDate)} 출시`
-                : ""
-              : storeLabel
-                ? `${storeLabel} 최저`
-                : ""}
+            {variant === "release" ? releaseLabel : storeLabel ? `${storeLabel} 최저` : ""}
           </span>
         </span>
       </span>
