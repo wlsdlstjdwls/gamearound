@@ -234,6 +234,8 @@ export default async function GameDetailPage({ params }: Props) {
     freshness: getFreshness(p.lastSyncedAt, p.syncStatus),
   }));
   const best = cheapestPlatform(game.platforms);
+  /** 최저가가 0원 — 할인 알림을 걸 자리가 없다. 값이 없는 것(null)과 가른다 */
+  const isFree = best?.currentPrice === 0;
   // 어느 한 플랫폼이라도 "추가 콘텐츠 있음"이라고 했으면 DLC 블록을 띄운다.
   // 목록이 비어 있어도 그 사실 자체가 사용자에게 쓸모 있는 정보다.
   const hasAddOns = game.platforms.some((p) => p.hasAddOns === true);
@@ -333,15 +335,22 @@ export default async function GameDetailPage({ params }: Props) {
           <PriceHeadline game={game} recordedLow={recordedLow} />
 
           {/* 찜 버튼은 숨겼다(2026-09-21, 사용자 결정) — WishlistSlot 과 그 폴백은 그대로 둔다.
-              되살릴 때는 이 자리에 Suspense 한 겹을 되돌리면 된다(site-header 주석에 같이 적었다) */}
-          <div className="flex flex-wrap gap-2">
-            <Link
-              href={`${ROUTES.alerts}?game=${encodeURIComponent(game.slug)}`}
-              className={buttonClass({ variant: "primary", size: "lg", className: "min-w-[140px] flex-1" })}
-            >
-              할인 알림 받기
-            </Link>
-          </div>
+              되살릴 때는 이 자리에 Suspense 한 겹을 되돌리면 된다(site-header 주석에 같이 적었다)
+
+              무료 게임에는 이 버튼을 세우지 않는다(2026-09-21). 0원에는 내려갈 자리가 없어서
+              알림을 걸어 두면 영원히 울리지 않는 조건이 계정에 남는다. 값이 아예 없는 게임
+              (best === null)은 아직 안 긁었다는 뜻이라 버튼을 그대로 둔다 — 값이 붙는 순간
+              쓸모가 생기는 조건이다. */}
+          {!isFree && (
+            <div className="flex flex-wrap gap-2">
+              <Link
+                href={`${ROUTES.alerts}?game=${encodeURIComponent(game.slug)}`}
+                className={buttonClass({ variant: "primary", size: "lg", className: "min-w-[140px] flex-1" })}
+              >
+                할인 알림 받기
+              </Link>
+            </div>
+          )}
 
           <ScoreGrid game={game} />
 
