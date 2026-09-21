@@ -417,15 +417,30 @@ export default async function GameDetailPage({ params }: Props) {
 
       {/* 사양은 가격, 추가 콘텐츠 다음이다 — 살지 말지를 정한 뒤에 오는 질문이라서다.
           콘솔 전용 게임은 groups 가 비어 있어 칸 자체가 서지 않는다.
-          판정이 사양표보다 먼저 서는 이유: 사람이 묻는 것은 "돌아가나" 이고 표는 그 근거다.
-          플레이타임이 위 기둥으로 올라가면서 이 자리는 한 기둥이 됐다 — 판정 표와 사양 표는
-          같은 값을 결론과 근거로 두 번 말하므로 좌우로 갈라 놓으면 눈이 둘을 못 잇는다 */}
+
+          **두 기둥으로 갈랐다**(2026-09-21). 아침까지는 한 기둥이었고, 그 근거로 "결론과 근거를
+          좌우로 갈라 놓으면 눈이 둘을 못 잇는다" 를 적어 뒀었다. 재어 보니 그 값보다 키가 더 비쌌다 —
+          판정 칸 혼자 결론 면 + 부위 네 줄(각 줄이 근거까지 두 줄) + 단서 한 줄이라 화면 하나를
+          거의 다 쓰고, 그 아래 "파는 곳" 과 패치 기록이 통째로 접힘선 밖으로 밀렸다.
+          좌우로 세우면 같은 내용이 절반 높이에 들어오고, 둘이 한 화면에 같이 보이므로
+          "못 잇는다" 던 걱정도 오히려 줄었다(스크롤 없이 나란히 읽힌다).
+
+          왼쪽이 판정인 이유는 순서 때문이다 — 사람이 묻는 것은 "돌아가나" 이고 표는 그 근거다.
+          한 기둥으로 접히는 좁은 화면(lg 아래)에서는 소스 순서대로 판정이 위에 온다.
+
+          오른쪽 사양표는 펴 둔다. 접었던 이유가 "펴 두면 아래 마디를 화면 밖으로 민다" 하나였는데
+          (requirements-table 머리 주석), 제 기둥을 가진 지금은 밀 것이 없다. 접힌 채로 두면
+          그 기둥이 제목 한 줄만 남아 통째로 빈다. */}
       {game.requirements.length > 0 && (
-        <div className="flex min-w-0 flex-col gap-6">
-          <Suspense fallback={null}>
-            <CompatSlot groups={game.requirements} platforms={game.platforms} />
-          </Suspense>
-          <RequirementsSection groups={game.requirements} />
+        <div className="grid min-w-0 items-start gap-x-12 gap-y-6 lg:grid-cols-2">
+          <div className="min-w-0">
+            <Suspense fallback={null}>
+              <CompatSlot groups={game.requirements} platforms={game.platforms} />
+            </Suspense>
+          </div>
+          <div className="min-w-0">
+            <RequirementsSection groups={game.requirements} defaultOpen />
+          </div>
         </div>
       )}
 

@@ -69,19 +69,23 @@ function OsTable({ group }: { group: RequirementGroupDto }) {
 /**
  * 사양이 하나도 없으면 칸 자체를 세우지 않는다 — 콘솔 전용 게임에는 물어볼 축이 없다(설계 §7).
  *
- * 접어 두는 이유(2026-09-21): 이 표는 이 화면에서 가장 키가 큰 블록이다(윈도우, 맥 둘 다 있고
- * 최소, 권장 두 칸이면 여덟 줄 곱하기 둘). 그런데 바로 위의 판정 칸이 같은 값을 읽어 "돌아가나"에
- * 이미 답하고 있어서, 표까지 펴 두면 답을 두 번 말하면서 아래 마디를 화면 밖으로 밀어낸다.
- * 표를 펴는 사람은 판정을 못 믿거나 기기를 안 적은 사람이고, 그때는 한 번 누르면 된다.
- * 접힌 채로도 "어느 OS 가 있는지" 는 제목 옆에서 말한다.
+ * 접히는 이유(2026-09-21): 이 표는 이 화면에서 가장 키가 큰 블록이다(윈도우, 맥 둘 다 있고
+ * 최소, 권장 두 칸이면 여덟 줄 곱하기 둘). 한 기둥에 판정 칸과 세로로 쌓였을 때는 표까지 펴 두면
+ * 같은 답을 두 번 말하면서 아래 마디를 화면 밖으로 밀어냈다.
+ *
+ * **여는 기본값은 부르는 쪽이 정한다**(defaultOpen). 상세 화면은 이 표를 판정 칸 옆 기둥에
+ * 세우므로 펴 둬도 밀 것이 없고, 접어 두면 그 기둥이 제목 한 줄만 남아 통째로 빈다.
+ * 좁은 화면에서 한 기둥으로 접히면 다시 길어지지만, 그때는 이 표가 마지막 마디 근처라
+ * 아래로 밀 것이 남지 않는다. 접힌 채로도 "어느 OS 가 있는지" 는 제목 옆에서 말한다.
  */
-export function RequirementsSection({ groups }: { groups: RequirementGroupDto[] }) {
+export function RequirementsSection({ groups, defaultOpen = false }: { groups: RequirementGroupDto[]; defaultOpen?: boolean }) {
   if (groups.length === 0) return null;
   return (
     <Collapsible
       id="requirements-heading"
       title={GAME_MESSAGES.requirementHeading}
       note={groups.map((g) => OS_FAMILY_LABEL[g.osFamily]).join(", ")}
+      defaultOpen={defaultOpen}
     >
       <div className="flex flex-col gap-5 border-t border-line-strong pt-4">
         {groups.map((g) => (
