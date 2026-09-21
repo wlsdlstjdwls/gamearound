@@ -279,12 +279,18 @@ export default async function GameDetailPage({ params }: Props) {
             남는 좌우 여백은 가운데 정렬로 일부러 둔 것처럼 읽히게 했다 — 왼쪽에 붙여 두면
             "오른쪽이 비었다" 로 읽히고, 가운데 두면 "이게 이 그림의 크기다" 로 읽힌다.
 
+            sm:w-full 을 빼면 안 된다(2026-09-21 회귀). 부모가 flex-col 이라 자식은 기본 stretch 로
+            기둥 폭을 받는데, mx-auto 가 붙는 순간 auto 마진이 그 stretch 를 끈다. 그러면 폭이
+            shrink-to-fit 이 되고 안쪽은 position:absolute 인 이미지뿐이라 잴 것이 없어 0 이 된다 —
+            w-full 도 0 의 100%라 같이 0 이고, 결국 데스크탑에서만 커버가 통째로 사라졌다.
+            w-full 로 폭을 먼저 확정해 두면 max-w 가 400 에서 자르고 마진이 남은 자리를 가른다.
+
             좁은 화면(sm 아래)은 건드리지 않는다. 거기는 기둥이 하나뿐이라 이미 꽉 차 있고,
             4:3 은 세로 아트를 반쯤 보여 주되 인물과 로고가 모이는 가운데 띠를 남기는 선이다 —
             휴대폰에서 2:3 을 펴면 커버 하나가 첫 화면을 다 먹는다.
           */}
           <div
-            className={`enter-item relative ${game.portraitUrl ? "sm:mx-auto sm:max-w-[400px]" : ""}`}
+            className={`enter-item relative ${game.portraitUrl ? "sm:mx-auto sm:w-full sm:max-w-[400px]" : ""}`}
             style={stagger(0)}
           >
             <div
