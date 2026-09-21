@@ -6,6 +6,11 @@
 // 그것만 두면 키보드 사용자와 터치 사용자가 순서를 못 바꾼다. 그래서 진짜 조작은 버튼과 선택 상자이고,
 // 드래그는 마우스에게만 얹어 주는 지름길이다 — 드래그가 죽어도 판은 온전히 돌아간다.
 //
+// **끌리는 느낌**(2026-09-21): 커서는 평소 grab, 누르는 순간과 끄는 동안 grabbing 이다(globals.css 의 .grabbable).
+// 커서를 전역 규칙으로 뺀 이유는 끄는 동안 포인터가 카드 밖으로 나가기 때문이다 — 그때는 문서가 커서를 받아야 한다.
+// 끌려가는 카드 자신은 흐려지고 살짝 기운다. 브라우저가 만드는 반투명 미리보기와 원본이 똑같이 남아 있으면
+// 둘 중 무엇이 끌리는지 눈이 못 고른다.
+//
 // **기록을 접어 두는 이유**: 판은 네 칸을 한 화면에 세우는 자리다. 카드마다 기록을 펼쳐 두면
 // 카드 한 장이 화면 높이를 먹어 "한눈에 본다" 는 목적이 깨진다. 몇 줄이 쌓였는지는 접힌 채로 보인다.
 import { useCallback, useState, useTransition } from "react";
@@ -28,11 +33,20 @@ const PRIORITY_STYLE: Record<AdminTask["priority"], string> = {
 
 const ICON_BTN = "press rounded-[6px] border border-line px-1.5 py-0.5 text-[11px] text-mut transition-colors hover:border-line-strong hover:text-ink disabled:opacity-50";
 
-export function TaskCard({ task, onDragStart }: { task: AdminTask; onDragStart?: (id: string) => void }) {
+export function TaskCard({
+  task,
+  onDragStart,
+  onDragEnd,
+}: {
+  task: AdminTask;
+  onDragStart?: (id: string) => void;
+  onDragEnd?: () => void;
+}) {
   const [pending, start] = useTransition();
   const [state, setState] = useState<TaskActionState>(null);
   const [open, setOpen] = useState(false);
   const [editing, setEditing] = useState(false);
+  const [dragging, setDragging] = useState(false);
 
   const run = (fn: () => Promise<TaskActionState>) => start(async () => setState(await fn()));
   const stopEditing = useCallback(() => setEditing(false), []);
@@ -44,9 +58,22 @@ export function TaskCard({ task, onDragStart }: { task: AdminTask; onDragStart?:
       onDragStart={(e) => {
         e.dataTransfer.setData("text/plain", task.id);
         e.dataTransfer.effectAllowed = "move";
+        setDragging(true);
         onDragStart?.(task.id);
       }}
-      className={panelClass(cn("flex flex-col gap-2 p-3", pending && "opacity-60"))}
+      onDragEnd={() => {
+        setDragging(false);
+        onDragEnd?.();
+      }}
+      className={panelClass(
+        cn(
+          "flex flex-col gap-2 p-3 transition-[opacity,transform] duration-base",
+          // 고치는 중에는 글자를 고르는 자리라 손이 쥐어지면 안 된다
+          !editing && "grabbable",
+          dragging && "dragging rotate-[1.5deg] opacity-50",
+          pending && "opacity-60",
+        ),
+      )}
     >
       {editing ? (
         <TaskEditForm task={task} onDone={stopEditing} />

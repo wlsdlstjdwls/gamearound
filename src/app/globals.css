@@ -391,6 +391,37 @@ a {
   -webkit-tap-highlight-color: transparent;
   touch-action: manipulation;
 }
+
+/* 누를 수 있는 것에는 손가락 커서를 준다.
+   Tailwind v4 의 프리플라이트가 button 의 cursor: pointer 를 걷어 갔다 — 그래서 우리 화면의
+   버튼, 열고 접기, 선택 상자가 전부 화살표 커서였고 "눌리는 자리인지" 를 마우스가 말해 주지 않았다.
+   유틸리티로 한 곳씩 붙이지 않는 이유: 빠뜨린 자리가 생기고, 그 빠뜨림은 아무 데도 안 남는다. */
+button:not(:disabled),
+[role="button"]:not([aria-disabled="true"]),
+summary,
+label[for],
+select:not(:disabled) {
+  cursor: pointer;
+}
+button:disabled,
+[aria-disabled="true"] {
+  cursor: not-allowed;
+}
+
+/* 끌어 옮길 수 있는 것에는 움켜잡는 커서를 준다(할 일 판의 카드).
+   :active 를 같이 두는 이유: 드래그가 시작되기 전 "누른 순간" 부터 손이 쥐어져야 끌리는 느낌이 난다.
+   .dragging 은 실제로 끌려가는 동안 카드가 스스로 붙인다 — 그때는 포인터가 카드 밖으로 나가므로
+   커서를 문서(body)가 받아야 한다. */
+.grabbable {
+  cursor: grab;
+}
+.grabbable:active,
+.grabbable.dragging {
+  cursor: grabbing;
+}
+body:has(.grabbable.dragging) {
+  cursor: grabbing;
+}
 /* iOS: 16px 미만 입력은 포커스 시 화면이 확대된다 — 터치 기기에서만 16px 강제 */
 @media (hover: none) and (pointer: coarse) {
   input:not([type="checkbox"]):not([type="radio"]),
