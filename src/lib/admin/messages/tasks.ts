@@ -1,8 +1,8 @@
 // 관리자 작업 판 문구. 화면 문구는 한곳에 모은다(AGENTS §2).
 export const TASK_MESSAGES = {
-  // 관리자 메뉴(ADMIN_NAV.tasks)와 같은 말을 쓴다
-  title: "작업 판",
-  lead: "검수 큐는 수집이 쌓아 주지만, 직접 적어야 하는 일은 여기에 둬요. 칸을 옮겨 진행을 표시해요.",
+  // 관리자 메뉴(ADMIN_NAV.tasks)와 같은 말을 쓴다. "작업 판" 이던 이름을 버린 이유는 거기 주석에 있다
+  title: "할 일",
+  lead: "검수 큐는 수집이 쌓아 주지만, 직접 적어야 하는 일은 여기에 둬요. 카드를 끌어 칸을 옮기거나, 카드 안 선택 상자로 옮겨요.",
   add: "할 일 추가",
   titleLabel: "할 일",
   titlePlaceholder: "무엇을 할지 한 줄로",
@@ -14,9 +14,13 @@ export const TASK_MESSAGES = {
   sourceLabel: "소스 (선택)",
   submit: "추가",
   empty: "이 칸은 비어 있어요.",
+  /** 판 제목. 화면 제목("할 일")과 같은 말을 두 번 적지 않으려고 판이 하는 일을 적는다 */
+  boardTitle: "칸 넷",
+  /** 끌고 있는 동안 빈 칸이 스스로 말하는 자리 */
+  dropHere: "여기에 놓아요",
   clearDone: "끝난 일 치우기",
   clearDoneConfirm: "끝난 일을 모두 지울까요? 되돌릴 수 없어요.",
-  moveTo: "옮기기",
+  moveTo: "옮길 칸",
   up: "위로",
   down: "아래로",
   remove: "지우기",

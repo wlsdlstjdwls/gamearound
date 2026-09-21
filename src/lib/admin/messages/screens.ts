@@ -10,17 +10,21 @@
  * 메뉴에서 "매칭 대기" 를 누르고 들어간 화면 제목이 "매칭 검수 큐" 면 같은 곳인지 의심하게 된다.
  */
 export const ADMIN_NAV = {
+  /** 기둥 머리. 이 영역이 손님 화면이 아니라는 것을 한 번만 말한다 */
+  consoleTitle: "관리자",
+  backToSite: "서비스 화면으로",
   groupSync: "수집",
   groupReview: "검수",
-  groupShops: "매장",
-  groupTasks: "할 일",
+  /** 매장, 할 일. 하나짜리 묶음 둘을 합쳤다 — 기둥에서는 묶음마다 제목 한 줄이 그대로 높이가 된다 */
+  groupEtc: "그 밖",
   overview: "수집 현황",
   logs: "실행 로그",
   matches: "매칭 대기",
   companies: "회사 이름",
   products: "상품 매핑",
   shops: "입점 신청",
-  tasks: "작업 판",
+  /** 앞 이름은 "작업 판" 이었다 — "판" 이 무엇인지 눌러 보기 전에는 알 수 없다는 말을 들었다 */
+  tasks: "할 일",
   /** 배지가 뜻하는 바. 숫자만 있으면 남은 일인지 처리한 일인지 모른다 */
   badgeSuffix: "건 남음",
 } as const;
@@ -60,18 +64,32 @@ export const SYNC_STATUS_LABEL = {
 
 export const SYNC_MESSAGES = {
   title: "수집 현황",
-  lead: "스토어마다 마지막 수집이 어떻게 끝났는지 봐요. 여기서는 읽기만 해요. 다시 돌리는 건 GitHub Actions 에서 해요.",
+  lead: "스토어마다 마지막 수집이 무엇을 만졌는지 봐요. 여기서는 읽기만 해요. 다시 돌리는 건 GitHub Actions 에서 해요.",
   rerun: "Actions 에서 다시 돌리기",
   rerunHint: "NEXT_PUBLIC_GITHUB_REPO 를 넣으면 다시 돌리기 링크가 떠요.",
   disabled: "쉬는 중",
   noRun: "돈 적 없음",
   neverRan: "아직 한 번도 안 돌았어요.",
   finishedAt: "끝난 때",
-  running: "도는 중이거나 끊김",
+  running: "도는 중",
+  /** 끝났다는 기록 없이 오래 남은 실행. "도는 중" 과 가른다 — 며칠째 안 끝난 실행은 정상이 아니다 */
+  stalled: "끊김",
   processedFailed: "처리한 건 | 실패한 건",
   failedToday: "오늘 실패",
+  discovery: "신규 찾기",
+  discoverySummary: (pages: number, scanned: number, fresh: number) => `${pages}쪽에서 ${scanned}건 훑어 신규 ${fresh}건`,
+  /** 이 소스가 방금 만진 게임. 숫자가 아니라 이름이라야 "엉뚱한 걸 긁고 있나" 가 갈린다 */
+  recentTitles: "방금 만진 게임",
   errorSample: "에러 맛보기",
+  sourceLogs: "이 스토어 로그 보기",
   allLogs: "실행 로그 전체 보기",
+
+  /* 맨 위 요약 줄 — 소스별 배지가 전부 초록이어도 이 줄이 0이면 값이 안 들어오고 있다는 뜻이다 */
+  last24h: "최근 24시간",
+  totalNewGames: "새 게임",
+  totalSnapshots: "가격 기록",
+  totalRuns: "수집 실행",
+  totalFailed: "오늘 실패",
 } as const;
 
 export const LOG_MESSAGES = {
@@ -100,7 +118,7 @@ export const LOG_MESSAGES = {
 export const MATCH_MESSAGES = {
   title: "매칭 대기",
   lead:
-    "우리 게임과 스토어 상품이 같은 것인지 사람이 판정해요. 이름이 충분히 닮으면 수집이 이미 이었고, 애매한 것만 여기 서요. 이으면 그 게임 가격에 이 스토어가 붙고, 무르면 다시 올라오지 않아요.",
+    "왼쪽은 우리가 아는 게임, 오른쪽은 스토어가 준 상품이에요. 이름이 충분히 닮으면 수집이 이미 이었고, 애매한 것만 여기 서요. \"맞아요\" 를 누르면 그 게임 가격에 이 스토어가 붙고, \"아니에요\" 를 누르면 이 후보는 다시 올라오지 않아요.",
   note: (shown: number, total: number) =>
     total > shown ? `${total}건 중 ${shown}건 보는 중` : `${shown}건`,
   similarity: (lo: number, hi: number) => `닮은 정도 ${lo}~${hi}`,
@@ -110,7 +128,7 @@ export const MATCH_MESSAGES = {
   colSource: "스토어",
   colExternal: "스토어 안 번호",
   colConfidence: "닮은 정도",
-  colAction: "판정",
+  colAction: "같은 것인가요",
   noStoreTitle: "안 남음",
   open: "스토어에서 열기",
 } as const;
@@ -135,7 +153,7 @@ export const COMPANY_MESSAGES = {
 export const PRODUCT_MATCH_MESSAGES = {
   title: "상품 매핑",
   lead: (recheckDays: number) =>
-    `매장이 올린 물건을 우리 카탈로그와 맞대 본 결과예요. 이으면 그 게임 상세의 "파는 곳" 에 바로 뜨고, 무르면 그 후보는 다시 올라오지 않아요. 무른 상품은 ${recheckDays}일 뒤 다음 후보로 다시 판정해요.`,
+    `매장이 올린 물건을 우리 카탈로그와 맞대 본 결과예요. "맞아요" 를 누르면 그 게임 상세의 "파는 곳" 에 바로 뜨고, "아니에요" 를 누르면 그 후보는 다시 올라오지 않아요. 아니라고 한 상품은 ${recheckDays}일 뒤 다음 후보로 다시 물어봐요.`,
   queueTitle: "후보가 남은 상품",
   similarity: (lo: number, hi: number) => `닮은 정도 ${lo}~${hi}`,
   count: (n: number) => `${n}건`,
@@ -145,7 +163,7 @@ export const PRODUCT_MATCH_MESSAGES = {
   colConfidence: "닮은 정도",
   colShop: "올린 매장",
   colCheckedAt: "마지막으로 본 때",
-  colAction: "판정",
+  colAction: "같은 것인가요",
   noBarcode: "바코드 없음",
   viaSync: "연동으로 들어옴",
 } as const;
@@ -175,7 +193,7 @@ export const GAME_ADMIN_MESSAGES = {
   colUrl: "주소",
   colMatchedBy: "누가 이었나",
   colConfidence: "닮은 정도",
-  colAction: "판정",
+  colAction: "같은 것인가요",
   history: "고친 기록",
   historyCount: (n: number) => `최근 ${n}건`,
   historyEmpty: "아직 고친 적이 없어요.",
