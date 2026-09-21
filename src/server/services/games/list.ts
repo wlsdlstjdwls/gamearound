@@ -10,7 +10,7 @@ import { visiblePlatformsOnly } from "@/server/db/visibility";
 import { normalizeForSearch } from "@/lib/slug";
 import { DEFAULT_GAME_SORT, parsePlatformValues, type GamesQuery } from "@/lib/games-query";
 import { expandPlatformValues } from "@/lib/platform";
-import { POPULARITY_RANK_MAX_AGE_DAYS } from "@/lib/games/popularity";
+import { POPULARITY_RANK_MAX_AGE_DAYS, REVIEW_RANK_STEPS } from "@/lib/games/popularity";
 import type { GameSummary } from "./dto";
 import { attachBestPrice, type GameRow } from "./mappers";
 import { allOf, byCompanySlug, hasVisiblePlatform, inAnySubscription, mainGamesOnly, runsOnRig } from "./filters";
@@ -98,6 +98,11 @@ function platformAgg(platforms: Platform[]) {
        * 두 근거를 다 못 받는다 — 그건 PS 인기 목록을 붙여야 풀린다.
        */
       maxReviews: sql<number | null>`max(${gamePlatforms.userScoreCount})`.as("max_reviews"),
+      /**
+       * 기준 통화로 **값을 받고 파는** 행이 하나라도 있나. 평가 수를 순번 자리로 바꿀 자격이다.
+       * hasBaseCurrency 와 다른 값이다 — 저쪽은 가격이 있기만 하면 참이라 무료(0)도 참이 된다.
+       */
+      hasPaidPrice: sql<boolean>`bool_or(${gamePlatforms.currency} = ${DISPLAY_CURRENCY} and ${gamePlatforms.currentPrice} > 0)`.as("has_paid_price"),
       minRank: sql<number | null>`min(${gamePlatforms.popularityRank}) filter (
         where ${gamePlatforms.popularityRankAt} >= now() - make_interval(days => ${POPULARITY_RANK_MAX_AGE_DAYS})
       )`.as("min_rank"),
@@ -108,6 +113,16 @@ function platformAgg(platforms: Platform[]) {
     .where(and(eq(gamePlatforms.region, HOME_REGION), visiblePlatformsOnly(), platforms.length > 0 ? inArray(gamePlatforms.platform, platforms) : undefined))
     .groupBy(gamePlatforms.gameId)
     .as("agg");
+}
+
+/**
+ * 평가 수를 순번 자리로 바꾸는 SQL 식. 경계는 lib/games/popularity 의 표 하나만 본다 —
+ * 숫자를 여기 다시 적으면 두 문장이 갈라져 화면과 테스트가 다른 답을 낸다.
+ * 유료 행이 없으면 자리를 주지 않는다(근거는 표 옆 주석에 있다).
+ */
+function reviewRankExpr(agg: ReturnType<typeof platformAgg>) {
+  const steps = REVIEW_RANK_STEPS.map(([position, reviews]) => sql`when ${agg.maxReviews} >= ${reviews} then ${position}`);
+  return sql`case when ${agg.hasPaidPrice} then (case ${sql.join(steps, sql` `)} else null end) else null end`;
 }
 
 async function listGamesRaw(filter: GameListFilter): Promise<GameListResult> {
@@ -167,7 +182,11 @@ async function listGamesRaw(filter: GameListFilter): Promise<GameListResult> {
      * 뒷줄의 기준은 할인율순과 같게 둔다: 순위를 모르는 게임들 사이에서 답할 수 있는 질문이 그것뿐이다.
      */
     popular: [
-      sql`${agg.minRank} asc nulls last`,
+      // 순번이 있으면 그것으로, 없으면 평가 수를 자리로 바꿔 **같은 축에** 세운다.
+      // 이 한 줄이 없으면 순번 없는 게임은 전부 순번 보유 1,877건 뒤에서 시작한다(24칸 기준 78페이지 뒤).
+      // 자리가 같으면 실제 순번이 이긴다 — 스토어가 센 값이 우리가 환산한 값보다 낫다.
+      sql`coalesce(${agg.minRank}, ${reviewRankExpr(agg)}) asc nulls last`,
+      sql`(${agg.minRank} is not null) desc`,
       sql`${agg.hasBaseCurrency} desc`,
       // 순번이 없으면 평가 수로 센다. 둘 다 없을 때만 할인율로 떨어진다 —
       // 그 자리까지 오면 답할 수 있는 질문이 그것뿐이다

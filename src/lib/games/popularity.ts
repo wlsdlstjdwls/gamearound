@@ -16,3 +16,50 @@
  * 통째로 비지 않을 만큼의 여유다.
  */
 export const POPULARITY_RANK_MAX_AGE_DAYS = 14;
+
+/**
+ * 평가 수를 순번 자리로 바꾸는 보정표. `[자리, 그 자리에 필요한 평가 수]` 가 내림차순으로 온다.
+ *
+ * **왜 이런 표가 필요한가.** 순번을 주는 스토어는 steam 과 psstore 둘뿐이다. Xbox 는 순번이 0%고
+ * (목록 정렬을 못 바꾼다) 평가 수만 81% 준다. 그런데 정렬 첫 키가 순번이라 순번 없는 게임은
+ * **실측 1,877건 뒤에서** 시작했다 — 24칸 기준 78페이지 뒤라 Xbox 게임은 인기순에 사실상 없었다.
+ *
+ * **왜 이 숫자인가.** steam 은 순번과 평가 수를 **둘 다** 주는 유일한 소스다. 그 1,432건에서
+ * 둘의 관계를 실측했더니 순번 구간별 평가 수 중앙값이 단조로 떨어졌다
+ * (1~100위 56,114 / 101~300위 30,911 / 601~1000위 9,033 / 1501~2000위 2,878).
+ * 평가 수는 순번을 대신할 수 있는 값이다. 이 표는 그 1,432건의 평가 수 분포를 100자리마다 끊은 것이다.
+ * 즉 "그 자리를 차지한 게임이 실제로 받은 평가 수" 이지 지어낸 경계가 아니다.
+ *
+ * **1,300 에서 끊는 이유.** 1,400 자리의 경계가 평가 93 이고 1,500 부터는 4 다. 그 아래는
+ * 변별력이 없어 자리를 주는 것이 오히려 거짓말이 된다. 애매한 뒷줄은 섞지 않고 그대로 둔다.
+ *
+ * **낡으면 어떻게 고치나.** steam 순번 보유 행의 평가 수를 내림차순으로 세워 100번째마다 읽으면 된다.
+ * 카탈로그가 커지면 경계가 올라간다 — 2026-09-21 실측값이다.
+ */
+const REVIEW_RANK_TABLE: ReadonlyArray<readonly [position: number, reviews: number]> = [
+  [100, 180637], [200, 85683], [300, 46879], [400, 31038], [500, 19578],
+  [600, 12393], [700, 8650], [800, 5450], [900, 3465], [1000, 2231],
+  [1100, 1372], [1200, 777], [1300, 384],
+];
+
+/** 위 표를 SQL CASE 로 옮길 때 쓰는 읽기 전용 사본. 두 곳이 같은 숫자를 봐야 한다 */
+export const REVIEW_RANK_STEPS = REVIEW_RANK_TABLE;
+
+/**
+ * 평가 수를 순번 자리로 바꾼다. 자리를 줄 수 없으면 null 이다.
+ *
+ * **유료 게임에만 준다.** 무료 게임의 평가 수는 인기를 뜻하지 않는다 — Xbox 전용 무료 상위가
+ * Candy Crush Saga(127만), Microsoft Mahjong(38만), Microsoft Sudoku(15만)이고
+ * Forza Horizon 4 가 일곱 번째다. 값으로 캐주얼을 가르려 해도 안 된다(Crossout, Vigor,
+ * Trove, Throne and Liberty 는 진짜 무료 게임이다). 그래서 무료에는 자리를 주지 않고,
+ * 스토어가 실제 순번을 준 무료 게임만 앞에 선다(원신, Warframe 이 그 경우다).
+ *
+ * 값을 모르는 것(null)과 무료(0)를 섞지 않는다 — 가격이 없는 행은 근거가 없는 것이라 자리도 없다.
+ */
+export function pseudoRankFromReviews(reviews: number | null | undefined, paid: boolean): number | null {
+  if (!paid || reviews == null || !Number.isFinite(reviews)) return null;
+  for (const [position, needed] of REVIEW_RANK_TABLE) {
+    if (reviews >= needed) return position;
+  }
+  return null;
+}
