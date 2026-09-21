@@ -117,7 +117,16 @@ export default async function AdminDashboardPage() {
       </section>
 
       <section className="flex flex-col gap-3">
-        <SectionHead title="매칭 검수 큐" note={`유사도 0.7~0.9 | ${pending.length}건`} />
+        <SectionHead
+          title="매칭 검수 큐"
+          note={
+            // 남은 수와 지금 화면에 실은 수는 다르다 — 상한에 걸렸을 때 그 사실을 감추면
+            // 관리자는 다 처리했다고 믿고 화면을 닫는다
+            overview.pendingCount > pending.length
+              ? `유사도 0.7~0.9 | ${overview.pendingCount}건 중 ${pending.length}건`
+              : `유사도 0.7~0.9 | ${pending.length}건`
+          }
+        />
         {pending.length === 0 ? (
           <p className="rounded-xl border border-dashed border-line-strong bg-surface p-6 text-[13px] text-mut">
             검수 대기 중인 매핑이 없습니다.

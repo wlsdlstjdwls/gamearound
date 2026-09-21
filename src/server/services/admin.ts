@@ -73,11 +73,20 @@ export async function listSyncLogs(opts: { limit?: number; source?: SourceName }
 
 export type PendingMatch = SourceRefRow & { game: { id: string; slug: string; titleKo: string | null; titleEn: string } };
 
-export async function listPendingMatches(): Promise<PendingMatch[]> {
+/**
+ * 한 화면에 띄울 검수 큐 길이. 회사, 상품 검수 큐와 같은 값이다 — 더 길면 사람이 훑지 못한다.
+ * 상한이 없던 자리다. 지금은 45줄이라 티가 안 나지만 이 큐는 수집이 돌 때마다 자라고,
+ * 전수를 그리면 관리자가 실제로 보는 건 앞의 몇 줄인데 화면은 그 전부를 실어 나른다.
+ * 남은 수는 getSyncOverview().pendingCount 가 이미 세고 있으니 화면은 그 값을 쓴다.
+ */
+export const PENDING_MATCHES_LIMIT = 60;
+
+export async function listPendingMatches(limit: number = PENDING_MATCHES_LIMIT): Promise<PendingMatch[]> {
   await requireAdmin();
   return getDb().query.gameSourceRefs.findMany({
     where: eq(gameSourceRefs.matchedBy, "pending"),
     orderBy: [desc(gameSourceRefs.confidence)],
+    limit,
     with: { game: { columns: { id: true, slug: true, titleKo: true, titleEn: true } } },
   });
 }

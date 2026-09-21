@@ -1,33 +1,22 @@
 // 관리자 영역 공통 레이아웃. proxy 가드만 믿지 않고 여기서도 role 검사(§6). 페이지는 requireRoleOrForbid(), Server Action은 requireAdmin()으로 각각 재검증.
-import Link from "next/link";
+//
+// 메뉴의 "남은 일" 수는 **기다리지 않고** 약속째로 넘긴다. 이 레이아웃은 관리자 화면 전부의 길목이라,
+// 여기서 한 번 await 하면 그 비용이 모든 화면에 붙는다(회사 검수 수는 games 전수 훑기다).
+import { AdminNav } from "@/components/admin/admin-nav";
 import { Page } from "@/components/ui/page";
-import { ROUTES } from "@/lib/routes";
 import { requireRoleOrForbid } from "@/server/auth/guards";
-import { cardClass } from "@/components/ui/page";
+import { getAdminWorkCounts } from "@/server/services/admin-workload";
 
 export const dynamic = "force-dynamic";
 
-const NAV = [
-  { href: "/admin", label: "동기화 대시보드" },
-  { href: "/admin/sync-logs", label: "동기화 로그" },
-  { href: "/admin/companies", label: "회사 검수" },
-  { href: ROUTES.adminProducts, label: "상품 매핑 검수" },
-];
-
 export default async function AdminLayout({ children }: { children: React.ReactNode }) {
   const user = await requireRoleOrForbid("admin");
+  // 배지가 못 떠도 화면은 살아 있어야 한다 — 숫자는 거들 뿐이고 검수는 각 화면에서 한다
+  const counts = getAdminWorkCounts().catch(() => null);
 
   return (
     <Page gap={22}>
-      <nav aria-label="관리자 메뉴" className={cardClass("flex flex-wrap items-center gap-1 p-1.5 text-[12.5px]")}>
-        <span className="px-2 text-[11px] font-semibold uppercase tracking-[0.12em] text-dim">Admin</span>
-        {NAV.map((n) => (
-          <Link key={n.href} href={n.href} className="press rounded-lg px-3 py-1.5 text-mut transition-colors hover:bg-surface-2 hover:text-ink">
-            {n.label}
-          </Link>
-        ))}
-        <span className="ml-auto px-2 text-[11.5px] text-dim">{user.displayName ?? user.email}</span>
-      </nav>
+      <AdminNav user={user.displayName ?? user.email} counts={counts} />
       {children}
     </Page>
   );
