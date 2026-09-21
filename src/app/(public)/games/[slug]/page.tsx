@@ -18,7 +18,8 @@ import { Sheet } from "@/components/ui/sheet";
 import { PlatformPrices, type PlatformPriceItem } from "@/components/platform-prices";
 import { PlaytimeCard } from "@/components/playtime-card";
 import { CompatSection } from "@/components/compat-section";
-import { RequirementsSection } from "@/components/requirements-table";
+import { RequirementsBody } from "@/components/requirements-table";
+import { RunCheck } from "@/components/run-check";
 import { BackLink } from "@/components/ui/back-link";
 import { buttonClass } from "@/components/ui/button";
 import { Page, SectionHead } from "@/components/ui/page";
@@ -28,7 +29,7 @@ import { SELLING_MESSAGES } from "@/lib/shops/listing-messages";
 import { formatDate, PLATFORM_LABEL } from "@/lib/format";
 import { SITE } from "@/lib/site";
 import { getFreshness } from "@/lib/freshness";
-import { GAME_MESSAGES } from "@/lib/games/messages";
+import { COMPAT_MESSAGES, GAME_MESSAGES, OS_FAMILY_LABEL } from "@/lib/games/messages";
 import { stagger } from "@/lib/motion";
 import { gamePricesPath, ROUTES } from "@/lib/routes";
 import {
@@ -458,16 +459,17 @@ export default async function GameDetailPage({ params }: Props) {
           (requirements-table 머리 주석), 제 기둥을 가진 지금은 밀 것이 없다. 접힌 채로 두면
           그 기둥이 제목 한 줄만 남아 통째로 빈다. */}
       {game.requirements.length > 0 && (
-        <div className="grid min-w-0 items-start gap-x-12 gap-y-6 lg:grid-cols-2">
-          <div className="min-w-0">
+        <RunCheck
+          verdictTitle={COMPAT_MESSAGES.heading}
+          requirementTitle={GAME_MESSAGES.requirementHeading}
+          requirementNote={game.requirements.map((g) => OS_FAMILY_LABEL[g.osFamily]).join(", ")}
+          verdict={
             <Suspense fallback={null}>
               <CompatSlot groups={game.requirements} platforms={game.platforms} />
             </Suspense>
-          </div>
-          <div className="min-w-0">
-            <RequirementsSection groups={game.requirements} defaultOpen />
-          </div>
-        </div>
+          }
+          requirements={<RequirementsBody groups={game.requirements} />}
+        />
       )}
 
       <Suspense fallback={null}>

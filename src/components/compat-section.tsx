@@ -15,7 +15,7 @@
 //      그걸 모르면 사람이 할 수 있는 일(램 증설, 설정 낮추기)을 고를 수 없다.
 //      권장 판정도 같이 돌린다 — 최소를 넘은 사람이 다음에 묻는 것은 "쾌적한가" 하나다.
 import { useState } from "react";
-import { ROWS, SectionHead } from "@/components/ui/page";
+import { ROWS } from "@/components/ui/page";
 import { chipClass } from "@/components/ui/chip";
 import { Clamp } from "@/components/ui/tooltip";
 import { CheckCircleIcon, MinusCircleIcon, XCircleIcon } from "@/components/ui/icons";
@@ -148,9 +148,10 @@ export function CompatSection({
   const basis = group?.minimum ?? group?.recommended ?? null;
 
   return (
-    <section aria-labelledby="compat-heading" className="flex flex-col gap-3">
-      <SectionHead id="compat-heading" title={COMPAT_MESSAGES.heading} />
-      <div className="flex flex-col gap-3.5 border-t border-line-strong pt-4">
+    // 제목과 위쪽 헤어라인은 이 컴포넌트가 그리지 않는다(2026-09-21) — 사양표와 한 마디로 묶이면서
+    // 둘의 공통 머리를 RunCheck 가 맡는다. 여기서 또 그리면 선이 두 번 그어지고 기준선도 어긋난다
+    <section aria-labelledby="compat-heading">
+      <div className="flex flex-col gap-3.5">
         {(!device || editing) && (
           // 비회원에게 로그인부터 요구하지 않는다(설계 §4). 이 자리에서 바로 적게 하고 브라우저에 둔다
           <GuestDeviceForm

@@ -51,9 +51,14 @@ export function Sheet({
   triggerClassName,
   unstyledTrigger = false,
   side = "bottom",
+  open: openProp,
+  onOpenChange,
 }: {
-  /** 여는 버튼에 적을 말 */
-  label: React.ReactNode;
+  /**
+   * 여는 버튼에 적을 말. **바깥에서 여는 시트(open 을 준 경우)에는 주지 않는다** —
+   * 그때는 이 시트가 버튼을 그리지 않는다.
+   */
+  label?: React.ReactNode;
   /** 시트 머리에 적을 제목. 스크린 리더가 읽는 이름이기도 하다 */
   title: string;
   children: React.ReactNode;
@@ -66,6 +71,16 @@ export function Sheet({
   unstyledTrigger?: boolean;
   /** 어느 쪽에서 나오는가. 모양은 globals.css 의 .sheet[data-side="right"] 가 맡는다 */
   side?: "bottom" | "right";
+  /**
+   * 바깥이 여닫는 모드. 주면 이 시트는 **버튼을 그리지 않고** 이 값만 따른다.
+   *
+   * 왜 필요한가: 여는 자리가 버튼이 아닌 시트가 있다(할 일 카드는 카드 전체가 여는 자리다).
+   * 시트가 제 버튼을 직접 그리는 구조만 두면 그런 자리는 시트를 못 쓰고, 그러면 <dialog> 의
+   * 포커스 가두기, 배경 스크롤 잠금, 끌어내려 닫기, 화면 이동 시 닫기를 두 벌 갖게 된다.
+   */
+  open?: boolean;
+  /** 안에서 닫혔을 때(X, Esc, 막 클릭, 끌어내리기) 바깥에 알린다 */
+  onOpenChange?: (open: boolean) => void;
 }) {
   // 미는 방향. 바닥 시트는 아래로, 오른쪽 서랍은 오른쪽으로 — 나온 방향으로 되돌려 보내는 것이 닫기다
   const axis = side === "right" ? "x" : "y";
@@ -154,7 +169,7 @@ export function Sheet({
     );
   }, [resetStyles, axis, side]);
 
-  const openSheet = () => {
+  const openSheet = useCallback(() => {
     closingRef.current = false;
     interactableRef.current = false;
     openedAtRef.current = Date.now();
@@ -165,7 +180,18 @@ export function Sheet({
     // 포커스를 아예 놓지는 않는다 — <dialog> 의 포커스 가두기와 Esc 는 안쪽에 포커스가 있어야 산다
     panelRef.current?.focus({ preventScroll: true });
     setOpen(true);
-  };
+  }, [resetStyles]);
+
+  /*
+   * 바깥이 여닫는 모드. 실제 여닫기는 여전히 이 안에서 한다 — <dialog> 의 showModal 과 퇴장 모션은
+   * DOM 을 직접 만져야 하고, 그 일을 바깥으로 넘기면 부르는 자리마다 같은 코드를 갖게 된다.
+   * 바깥 값과 지금 상태가 어긋날 때만 움직인다(같으면 아무 일도 하지 않아 되먹임이 생기지 않는다).
+   */
+  useEffect(() => {
+    if (openProp === undefined) return;
+    if (openProp && !open) openSheet();
+    if (!openProp && open) close();
+  }, [openProp, open, openSheet, close]);
 
   // 안에 있는 링크를 눌러 화면이 바뀌면 같이 닫는다. 소프트 내비게이션이라 시트는 그대로 떠 있고,
   // 바뀐 화면이 그 뒤에 가려진 채 남는다 — 누른 사람 눈에는 아무 일도 안 일어난 것으로 보인다.
@@ -271,20 +297,26 @@ export function Sheet({
 
   return (
     <>
-      <button
-        type="button"
-        className={unstyledTrigger ? cn("press", triggerClassName) : buttonClass({ variant: "secondary", size: "sm", className: triggerClassName })}
-        onClick={openSheet}
-      >
-        {label}
-      </button>
+      {/* 바깥이 여닫는 모드에서는 버튼을 그리지 않는다 — 여는 자리는 이미 바깥에 있다 */}
+      {openProp === undefined && (
+        <button
+          type="button"
+          className={unstyledTrigger ? cn("press", triggerClassName) : buttonClass({ variant: "secondary", size: "sm", className: triggerClassName })}
+          onClick={openSheet}
+        >
+          {label}
+        </button>
+      )}
 
       <dialog
         ref={dialogRef}
         className="sheet"
         data-side={side}
         aria-labelledby={titleId}
-        onClose={() => setOpen(false)}
+        onClose={() => {
+          setOpen(false);
+          onOpenChange?.(false);
+        }}
         // Esc 는 브라우저가 곧장 닫아 버린다 — 막고 우리 퇴장 모션을 태운다
         onCancel={(e) => {
           e.preventDefault();
