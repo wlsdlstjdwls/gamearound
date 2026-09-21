@@ -9,11 +9,11 @@ import { AUTH_MESSAGES as M } from "@/lib/auth/messages";
 import { BrandSymbol } from "@/components/ui/logo";
 import { Page, Panel } from "@/components/ui/page";
 
-const LEAD_TITLE = ["위시리스트와 할인 알림은", "로그인 후 사용할 수 있어요"];
+const LEAD_TITLE = ["할인 알림과 기기 판정은", "로그인 후 사용할 수 있어요"];
 const LEAD_BODY = "가격은 로그인 없이도 전부 볼 수 있어요. 계정은 알림을 보낼 기기를 기억하는 데만 씁니다.";
 /** 계정이 무엇을 해 주는지 — 번호를 매기는 이유는 셋이 순서가 아니라 목록이라는 걸 눈으로 세게 하기 위해서다 */
 const LEAD_POINTS = [
-  "찜한 게임이 할인되면 웹푸시로 1회 알려드려요",
+  "조건을 걸어 둔 게임이 할인되면 웹푸시로 1회 알려드려요",
   "기기를 등록하면 게임이 돌아가는지 판정해 드려요",
   "플랫폼별 최저가를 한 화면에서 비교해요",
 ];

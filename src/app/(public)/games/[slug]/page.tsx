@@ -19,7 +19,6 @@ import { PlatformPrices, type PlatformPriceItem } from "@/components/platform-pr
 import { PlaytimeCard } from "@/components/playtime-card";
 import { CompatSection } from "@/components/compat-section";
 import { RequirementsSection } from "@/components/requirements-table";
-import { WishlistButton } from "@/components/wishlist-button";
 import { BackLink } from "@/components/ui/back-link";
 import { buttonClass } from "@/components/ui/button";
 import { Page, SectionHead } from "@/components/ui/page";
@@ -47,7 +46,6 @@ import {
 import { getRecordedLow, type RecordedLow } from "@/server/services/prices";
 import { getCurrentUser } from "@/server/services/users";
 import { listMyDevices } from "@/server/services/devices";
-import { isInWishlist } from "@/server/services/wishlist";
 import { decodeSlugParam } from "@/lib/slug";
 
 /** 검색결과, SNS 카드에 들어가는 설명 길이 상한 */
@@ -184,20 +182,6 @@ function StatGrid({ game }: { game: GameDetail }) {
 }
 
 /**
- * 찜 버튼 자리. 이것만 로그인 상태에 매달려 있다.
- *
- * 왜 따로 떼어 Suspense 로 감쌌나(2026-09-15): 세션 조회와 찜 여부는 각각 Neon 왕복 한 번씩이고
- * (실측 220ms), 둘은 서로를 참조해서 줄을 설 수밖에 없다. 그 440ms 를 페이지 본문이 기다리면
- * 가격도 뉴스도 "내가 이 게임을 찜했는지" 를 기다리는 꼴이 된다. 본문을 먼저 흘려보내고
- * 이 버튼만 늦게 앉힌다 — 자리는 폴백이 미리 잡아 두므로 늦게 와도 화면이 밀리지 않는다.
- */
-async function WishlistSlot({ gameId }: { gameId: string }) {
-  const user = await getCurrentUser();
-  const wished = user ? await isInWishlist(gameId) : false;
-  return <WishlistButton gameId={gameId} wished={wished} signedIn={Boolean(user)} />;
-}
-
-/**
  * 판정 칸. 찜 버튼과 같은 이유로 따로 떼어 Suspense 로 감쌌다 — 등록된 기기는 로그인에 매달린
  * 값이라, 본문이 세션 조회(실측 220ms)를 기다릴 이유가 없다.
  * 비회원은 devices 가 빈 배열이고, 그때 기기는 브라우저에서 읽는다(compat-section).
@@ -230,15 +214,6 @@ async function SellersSlot({ gameId }: { gameId: string }) {
       <SectionHead id="sellers-heading" title={SELLING_MESSAGES.title} note={SELLING_MESSAGES.lead} />
       <SellersSection sellers={sellers} />
     </section>
-  );
-}
-
-/** 아직 오지 않은 찜 버튼의 자리. 같은 크기여야 도착할 때 옆 버튼이 밀리지 않는다 */
-function WishlistSlotFallback() {
-  return (
-    <span aria-hidden className={buttonClass({ variant: "secondary", size: "lg", className: "pointer-events-none opacity-60" })}>
-      위시리스트
-    </span>
   );
 }
 
@@ -352,6 +327,8 @@ export default async function GameDetailPage({ params }: Props) {
         <div className="enter-item flex min-w-0 flex-col gap-6 lg:sticky lg:top-[80px]" style={stagger(4)}>
           <PriceHeadline game={game} recordedLow={recordedLow} />
 
+          {/* 찜 버튼은 숨겼다(2026-09-21, 사용자 결정) — WishlistSlot 과 그 폴백은 그대로 둔다.
+              되살릴 때는 이 자리에 Suspense 한 겹을 되돌리면 된다(site-header 주석에 같이 적었다) */}
           <div className="flex flex-wrap gap-2">
             <Link
               href={`${ROUTES.alerts}?game=${encodeURIComponent(game.slug)}`}
@@ -359,9 +336,6 @@ export default async function GameDetailPage({ params }: Props) {
             >
               할인 알림 받기
             </Link>
-            <Suspense fallback={<WishlistSlotFallback />}>
-              <WishlistSlot gameId={game.id} />
-            </Suspense>
           </div>
 
           <StatGrid game={game} />

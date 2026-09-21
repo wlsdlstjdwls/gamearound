@@ -15,7 +15,7 @@ import { ChevronDownIcon, LogOutIcon, SpinnerIcon } from "@/components/ui/icons"
 type MenuLink = { href: string; label: string; adminOnly?: boolean };
 
 const MENU_LINKS: MenuLink[] = [
-  { href: ROUTES.wishlist, label: "위시리스트" },
+  // 위시리스트는 숨겼다(2026-09-21) — site-header 주석 참고
   { href: ROUTES.alerts, label: "가격 알림" },
   { href: ROUTES.settings, label: "설정" },
   { href: ROUTES.admin, label: "관리자", adminOnly: true },

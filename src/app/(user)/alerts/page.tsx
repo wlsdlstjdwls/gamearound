@@ -53,8 +53,8 @@ export default async function AlertsPage({ searchParams }: { searchParams: Promi
       {alerts.length === 0 ? (
         <EmptyState
           title="등록된 알림이 없습니다"
-          description="게임 상세의 '할인 알림 받기' 버튼이나 위시리스트에서 조건을 만들 수 있습니다."
-          action={{ href: ROUTES.wishlist, label: "위시리스트로 이동" }}
+          description="게임 상세의 '할인 알림 받기' 버튼에서 조건을 만들 수 있습니다."
+          action={{ href: ROUTES.game, label: "게임 목록으로" }}
         />
       ) : (
         <section className="flex flex-col gap-3.5">

@@ -19,7 +19,7 @@ import { ROUTES, signInPath } from "@/lib/routes";
 import { useSession } from "@/components/auth/session-provider";
 import { useSignOut } from "@/components/auth/use-sign-out";
 import { buttonClass } from "@/components/ui/button";
-import { BellIcon, HeartIcon, LogOutIcon, MenuIcon, SpinnerIcon } from "@/components/ui/icons";
+import { BellIcon, LogOutIcon, MenuIcon, SpinnerIcon } from "@/components/ui/icons";
 import { Sheet } from "@/components/ui/sheet";
 import { Clamp } from "@/components/ui/tooltip";
 
@@ -30,7 +30,7 @@ const LINKS: MenuLink[] = [
   { href: ROUTES.game, label: "게임 목록" },
   { href: ROUTES.upcoming, label: "출시 예정" },
   // "다음 세일" 은 숨겼다(2026-09-21) — 넓은 화면 메뉴(site-header)와 같이 되돌린다
-  { href: ROUTES.wishlist, label: "위시리스트", icon: <HeartIcon size={17} /> },
+  // 위시리스트는 숨겼다(2026-09-21) — 넓은 화면 메뉴(site-header)와 같이 되돌린다
   { href: ROUTES.alerts, label: "가격 알림", icon: <BellIcon size={17} /> },
   { href: ROUTES.settings, label: "설정", authOnly: true },
   { href: ROUTES.admin, label: "관리자", authOnly: true, adminOnly: true },

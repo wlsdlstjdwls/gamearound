@@ -7,12 +7,12 @@ import { BrandLockup } from "@/components/ui/logo";
 import { SearchBox, SearchBoxFallback } from "@/components/search-box";
 import { SiteMenu } from "@/components/site-menu";
 import { SiteNavLink } from "@/components/site-nav-link";
-import { BellIcon, HeartIcon } from "@/components/ui/icons";
+import { BellIcon } from "@/components/ui/icons";
 
 /**
  * 머리띠 — 좁은 화면은 한 줄(심볼 + 검색칸 + 햄버거), 넓은 화면은 한 줄
  * (락업 + 글자 메뉴 | 검색칸 + 개인 자리). 리디자인에서 가르는 기준이 바뀌었다:
- * 왼쪽은 "무엇을 보러 가나"(목록, 출시 예정, 세일), 오른쪽은 "내 것"(검색, 위시리스트, 알림, 계정)이다.
+ * 왼쪽은 "무엇을 보러 가나"(목록, 출시 예정), 오른쪽은 "내 것"(검색, 알림, 계정)이다.
  *
  * 줄바꿈을 아예 없앤 이유(2026-09-15): flex-wrap 으로 흘려보내면 390px 에서 셋이 각자 줄을 차지해
  * 붙어 있는 머리띠가 161px 까지 자랐다. 화면의 5분의 1이 어느 화면에서나 늘 빠지는 값이다.
@@ -33,7 +33,7 @@ export function SiteHeader() {
         </Link>
 
         {/* 글자 메뉴는 로고 바로 옆에 붙는다 — 둘이 한 덩어리로 "이 서비스와 그 안의 갈래" 를 말하고,
-            검색칸과 개인 자리(위시리스트, 알림, 계정)는 반대쪽 끝으로 민다 */}
+            검색칸과 개인 자리(알림, 계정)는 반대쪽 끝으로 민다 */}
         <nav aria-label="주요 메뉴" className="hidden shrink-0 items-center gap-1 text-[14px] sm:flex">
           <SiteNavLink href={ROUTES.game}>게임 목록</SiteNavLink>
           <SiteNavLink href={ROUTES.upcoming}>출시 예정</SiteNavLink>
@@ -48,9 +48,8 @@ export function SiteHeader() {
         </Suspense>
 
         <div className="hidden shrink-0 items-center gap-1.5 sm:flex">
-          <SiteNavLink href={ROUTES.wishlist} icon={<HeartIcon size={19} />} iconOnly>
-            위시리스트
-          </SiteNavLink>
+          {/* 위시리스트는 메뉴에서 숨겼다(2026-09-21, 사용자 결정). 화면(/wishlist)과 자료는 그대로라
+              주소로는 열린다 — 되살릴 때는 이 줄과 site-menu, auth/user-menu, 게임 상세의 찜 버튼을 같이 되돌린다 */}
           <SiteNavLink href={ROUTES.alerts} icon={<BellIcon size={19} />} iconOnly>
             알림
           </SiteNavLink>
