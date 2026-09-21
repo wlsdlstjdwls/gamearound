@@ -281,6 +281,13 @@
       "when": 1789946197237,
       "tag": "0039_huge_cobalt_man",
       "breakpoints": true
+    },
+    {
+      "idx": 40,
+      "version": "7",
+      "when": 1789950888811,
+      "tag": "0040_eager_mastermind",
+      "breakpoints": true
     }
   ]
 }

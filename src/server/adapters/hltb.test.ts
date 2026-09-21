@@ -7,6 +7,12 @@ import { buildHltbSearchBody, HLTB_SEARCH_INIT_URL, HLTB_SEARCH_URL, parseHltbGa
 
 const fixture = (name: string): string => readFileSync(fileURLToPath(new URL(`./__fixtures__/${name}`, import.meta.url)), "utf8");
 
+/** __NEXT_DATA__ 한 벌만 담은 최소 페이지. 필드 하나를 재는 데 고정 파일을 늘리지 않는다 */
+const nextDataHtml = (game: Record<string, number>): string =>
+  `<html><body><script id="__NEXT_DATA__" type="application/json">${JSON.stringify({
+    props: { pageProps: { game: { data: { game: [game] } } } },
+  })}</script></body></html>`;
+
 describe("parseHltbGamePage", () => {
   it("__NEXT_DATA__ 의 초 단위 값을 시간(소수 1자리)으로 변환", () => {
     const snap = parseHltbGamePage(fixture("hltb-game.html"));
@@ -21,6 +27,18 @@ describe("parseHltbGamePage", () => {
   it("제보가 없어 값이 전부 0 이면 에러가 아니라 전부 null (2026-09-13 hltb partial 원인)", () => {
     const snap = parseHltbGamePage(fixture("hltb-game-no-data.html"));
     expect(snap.playtime).toEqual({ main: null, extra: null, completionist: null });
+  });
+
+  it("count_comp 를 기록 인원수로 싣는다 — 인기 축의 재료(schema 의 games.hltbLoggedCount)", () => {
+    expect(parseHltbGamePage(nextDataHtml({ comp_main: 3600, count_comp: 21465 })).loggedCount).toBe(21465);
+  });
+
+  it("count_comp 가 0 이면 0 그대로다 — null 로 접으면 '아무도 기록 안 함'이 '값 없음'이 된다", () => {
+    expect(parseHltbGamePage(nextDataHtml({ comp_main: 3600, count_comp: 0 })).loggedCount).toBe(0);
+  });
+
+  it("count_comp 가 없으면 null — sync 가 이 값으로 기존 값을 덮지 않는다(§7)", () => {
+    expect(parseHltbGamePage(fixture("hltb-game.html")).loggedCount).toBeNull();
   });
 
   it("아무것도 못 찾으면 재시도 불가 AdapterError (마크업 변경 감지)", () => {

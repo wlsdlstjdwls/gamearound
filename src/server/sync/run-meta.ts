@@ -75,6 +75,28 @@ async function applyPlaytime(ctx: Ctx, target: MetaTarget, snapshot: MetaSnapsho
   if (Object.keys(set).length > 0) ctx.changedSlugs.add(target.slug);
 }
 
+/**
+ * HLTB 기록 인원수를 games 에 반영한다 — 인기 축의 재료(schema 의 games.hltbLoggedCount).
+ *
+ * 플레이타임과 갈라 둔 이유: 두 값이 같은 응답에서 오지만 한쪽이 없다고 다른 쪽까지 버릴 이유가 없다.
+ * applyPlaytime 은 playtime 이 없으면 곧장 돌아가는데, 시간 제보가 0인 게임도 기록한 사람은 있다.
+ */
+export async function applyLoggedCount(ctx: Ctx, target: MetaTarget, snapshot: MetaSnapshot): Promise<void> {
+  const next = snapshot.loggedCount;
+  // null 이면 기존 값을 덮지 않는다(§7) — 페이지가 값을 안 준 것과 0명인 것은 다르다
+  if (next === null || next === undefined) return;
+  if (isLocked(ctx, "games", target.gameId, "hltbLoggedCount")) return;
+  const { db } = ctx;
+  const cur = await db.query.games.findFirst({
+    where: eq(games.id, target.gameId),
+    columns: { hltbLoggedCount: true },
+  });
+  // 값이 실제로 달라질 때만 쓴다 — 안 그러면 회차마다 캐시를 통째로 깬다(§7)
+  if (cur?.hltbLoggedCount === next) return;
+  await db.update(games).set({ hltbLoggedCount: next }).where(eq(games.id, target.gameId));
+  ctx.changedSlugs.add(target.slug);
+}
+
 async function applyScore(ctx: Ctx, target: MetaTarget, field: "opencriticScore" | "metacriticScore", score: number | null | undefined): Promise<void> {
   if (score === null || score === undefined) return; // 점수 없음 → 기존 값 유지
   const { db } = ctx;
@@ -115,7 +137,10 @@ export async function runMeta(ctx: Ctx, source: MetaSource, opts: RunOptions): P
     const target = targets[i];
     try {
       const snapshot = await fetchWithRetry(() => adapter.fetch(target.externalId));
-      if (source === "hltb") await applyPlaytime(ctx, target, snapshot);
+      if (source === "hltb") {
+        await applyPlaytime(ctx, target, snapshot);
+        await applyLoggedCount(ctx, target, snapshot);
+      }
       else if (source === "opencritic") await applyScore(ctx, target, "opencriticScore", snapshot.scores?.opencritic);
       else if (source === "wikidata_game") await applyAliasesFor(ctx, source, target, snapshot);
       else await applyScore(ctx, target, "metacriticScore", snapshot.scores?.metacritic);

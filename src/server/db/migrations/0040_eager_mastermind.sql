@@ -1,0 +1,1 @@
+ALTER TABLE "games" ADD COLUMN "hltb_logged_count" integer;

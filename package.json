@@ -27,7 +27,8 @@
     "portraits:backfill": "tsx scripts/backfill-portraits.ts",
     "e2e:shops": "node scripts/e2e-shops.mjs",
     "dedup:stores": "tsx scripts/merge-store-duplicates.ts",
-    "dedup:measure": "tsx scripts/measure-duplicates.ts"
+    "dedup:measure": "tsx scripts/measure-duplicates.ts",
+    "hltb:popularity": "tsx scripts/backfill-hltb-popularity.ts"
   },
   "dependencies": {
     "@neondatabase/serverless": "^1.1.0",

@@ -100,6 +100,12 @@ export interface MetaSnapshot {
    */
   aliases?: string[];
   playtime?: { main: number | null; extra: number | null; completionist: number | null };
+  /**
+   * 이 게임을 기록해 둔 이용자 수(HLTB). 플레이타임과 같은 응답에서 오지만 뜻이 달라 따로 둔다 —
+   * 저쪽은 "얼마나 걸리나" 이고 이쪽은 "몇 명이나 거쳤나" 다. 후자가 인기 축의 재료다
+   * (schema 의 games.hltbLoggedCount).
+   */
+  loggedCount?: number | null;
   scores?: { metacritic?: number | null; opencritic?: number | null };
   genres?: string[];
   multiplayer?: { localMax?: number; onlineMax?: number; coop?: boolean; pvp?: boolean };

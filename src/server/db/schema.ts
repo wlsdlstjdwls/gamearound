@@ -168,6 +168,25 @@ export const games = pgTable("games", {
    * 한/영을 한 컬럼에 합치지 않는 이유: similarity() 가 긴 문자열에서 희석돼 한글 질의가 임계값 아래로 떨어진다.
    * 생성 컬럼이라 크롤러가 따로 갱신하지 않는다 — title_en/title_ko 만 쓰면 자동으로 따라온다.
    */
+  /**
+   * HLTB 에 이 게임을 기록해 둔 사람 수(응답의 `count_comp`).
+   *
+   * **스토어가 아니라 게임에 붙는 유일한 인기 신호다.** 순번은 스토어가 주는 값이라
+   * steam 과 psstore 에만 있고(lib/games/popularity), Xbox 는 평가 수로 대신한다.
+   * 남는 것이 스위치와 Epic 인데, 두 스토어 다 정렬 입구가 없다는 것을 실측했다
+   * (각 어댑터의 listPopularPages 주석). 그 게임들이 인기 축에서 자리를 받을 길은
+   * 스토어 밖에 있고, HLTB 는 기기를 가리지 않는다.
+   *
+   * game_platforms 가 아니라 여기 두는 이유는 두 가지다. HLTB 는 게임 단위라 스토어 행에
+   * 나눠 담을 근거가 없고, 목록과 홈의 정렬이 games 를 이미 inner join 하고 있어
+   * 조인이 늘지 않는다 — 홈의 집계를 한 번 넓혔다가 0.7초에서 3.5초가 된 적이 있다(home.ts 주석).
+   *
+   * 왜 count_comp 인가: 게임 페이지의 __NEXT_DATA__ 가 주는 값 중 "몇 명이 이 게임을 거쳤나"에
+   * 가장 가깝다(2026-09-21 실측, 엘든 링 21,465). 검색 응답에만 있는 profile_popular 는
+   * 쓰지 않는다 — 그걸 쓰려면 매칭 때 한 번 더 물어야 하는데, count_comp 는 플레이타임 수집이
+   * 이미 받아 오는 같은 페이지에 들어 있어 요청이 늘지 않는다.
+   */
+  hltbLoggedCount: integer("hltb_logged_count"),
   titleEnNorm: text("title_en_norm").generatedAlwaysAs(
     sql`lower(regexp_replace(title_en, '[^[:alnum:]]+', '', 'g'))`,
   ),

@@ -35,6 +35,7 @@ export const HLTB_LABELS: Record<"main" | "extra" | "completionist", string[]> =
 };
 
 // __NEXT_DATA__ 내부 구조: props.pageProps.game.data.game[0].{comp_main,comp_plus,comp_100} (초 단위)
+// count_comp 는 시간이 아니라 사람 수다 — 이 게임을 기록해 둔 이용자 수(schema 의 games.hltbLoggedCount).
 const nextDataSchema = z.object({
   props: z.object({
     pageProps: z.object({
@@ -47,6 +48,7 @@ const nextDataSchema = z.object({
               comp_main: z.number().optional(),
               comp_plus: z.number().optional(),
               comp_100: z.number().optional(),
+              count_comp: z.number().optional(),
             }),
           ),
         }),
@@ -112,6 +114,9 @@ export function parseHltbGamePage(html: string): MetaSnapshot {
             extra: secondsToHours(g.comp_plus),
             completionist: secondsToHours(g.comp_100),
           },
+          // 0 은 "아직 아무도 기록하지 않았다" 는 사실이라 null 로 접지 않는다 —
+          // null 은 "이 페이지가 값을 주지 않았다" 여야 하고, sync 는 그 둘을 다르게 다룬다
+          loggedCount: g.count_comp ?? null,
         };
       }
     } catch {
