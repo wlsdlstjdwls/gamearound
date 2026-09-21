@@ -36,13 +36,15 @@ export function GamesGridSkeleton({ cards }: { cards: number }) {
   return (
     <div className={`${GAMES_GRID_CLASS} skeleton-delay`} aria-busy="true" aria-label="목록을 불러오는 중">
       {Array.from({ length: cards }).map((_, i) => (
-        // 커버 + 세 줄. 실물(game-card)과 같은 줄 수, 같은 여백이어야 본문이 올 때 격자가 밀리지 않는다
+        // 커버 + 네 줄(제목, 부제, 플랫폼 배지, 곁 문구). 실물(game-card)과 같은 줄 수, 같은 여백이어야
+        // 본문이 올 때 격자가 밀리지 않는다
         <div key={i} className="flex flex-col gap-3">
           <div className="skeleton aspect-[460/215] rounded-[var(--radius-cover)]" />
           <div className="flex flex-col gap-1 pt-3">
             <div className="skeleton h-[22px] w-4/5 rounded" />
             <div className="skeleton h-[17px] w-3/5 rounded" />
-            <div className="skeleton h-4 w-1/2 rounded" />
+            <div className="mt-1.5 skeleton h-[17px] w-2/5 rounded-full" />
+            <div className="mt-1.5 skeleton h-4 w-1/2 rounded" />
           </div>
         </div>
       ))}

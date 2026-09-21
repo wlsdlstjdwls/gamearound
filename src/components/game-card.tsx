@@ -6,6 +6,7 @@
 import { formatPrice } from "@/lib/currency";
 import Link from "next/link";
 import { formatDate, formatDiscount, PLATFORM_LABEL } from "@/lib/format";
+import { PlatformBadges } from "@/components/platform-badges";
 import type { GameSummary } from "@/server/services/games";
 import { SaleBadge } from "@/components/sale-badge";
 import { FadeImage } from "@/components/ui/fade-image";
@@ -77,12 +78,6 @@ export function DiscountStamp({ pct, size = "card" }: { pct: number | null; size
   );
 }
 
-/** 플랫폼 한 줄 — 배지 대신 회색 글자. 카드에서 면을 가진 것은 스탬프뿐이어야 한다 */
-function platformText(game: GameSummary): string | null {
-  const labels = (game.platforms ?? []).map((p) => PLATFORM_LABEL[p] ?? p);
-  return labels.length > 0 ? labels.join(", ") : null;
-}
-
 export function GameCard({ game, variant = "discount" }: { game: GameSummary; variant?: "discount" | "release" }) {
   const title = game.titleKo ?? game.titleEn;
   const best = game.best;
@@ -90,7 +85,6 @@ export function GameCard({ game, variant = "discount" }: { game: GameSummary; va
   // 캐시에 담긴 옛 모양 DTO 에는 이 배열이 없을 수 있다 — 카드 한 장이 화면 전체를 죽이지 않게 받아 준다
   // (판 올리는 자리는 lib/cache 의 DTO_CACHE_VERSION. 여기 기본값은 그 사이를 버티는 몫이다)
   const genres = game.genres ?? [];
-  const plats = platformText(game);
   // 부제 줄 — 원제와 장르. 둘 다 "이게 무슨 게임인지" 를 말하는 값이라 한 줄에 묶는다
   const subtitle = [game.titleKo ? game.titleEn : null, genres.length > 0 ? genres.join(", ") : null].filter(Boolean).join(" | ");
   const storeLabel = best ? PLATFORM_LABEL[best.platform] ?? best.platform : null;
@@ -133,15 +127,23 @@ export function GameCard({ game, variant = "discount" }: { game: GameSummary; va
           {variant !== "release" && hasDiscount && <SaleBadge variant="inline" discountName={null} discountEndsAt={best?.discountEndsAt} />}
         </span>
 
-        {variant === "release" ? (
-          <span className="mt-auto pt-0.5 text-[12px] text-dim">
-            {[best?.releaseDate ? `${formatDate(best.releaseDate)} 출시` : null, plats].filter(Boolean).join(" | ")}
+        {/* 마지막 줄 — 어느 기기로 할 수 있나(배지), 그리고 이 값이 어디 값인가(회색 글자).
+            플랫폼을 쉼표로 이은 글자에서 배지로 바꿨다(2026-09-21): 목록에서 던지는 질문은
+            "내 기기에 있나" 라서 글자 줄을 끝까지 읽는 것보다 모양으로 훑는 편이 빠르다.
+            배지가 줄 하나를 따로 쓰는 이유는 곁 문구와 한 줄을 다투면 둘 다 접혀서다
+            (같은 판단이 game-row 에도 있다). 줄 수가 늘었으니 뼈대도 같이 늘린다(games/skeletons) */}
+        <span className="mt-auto flex flex-col gap-1.5 pt-1.5">
+          <PlatformBadges platforms={game.platforms} />
+          <span className="text-[12px] text-dim">
+            {variant === "release"
+              ? best?.releaseDate
+                ? `${formatDate(best.releaseDate)} 출시`
+                : ""
+              : storeLabel
+                ? `${storeLabel} 최저`
+                : ""}
           </span>
-        ) : (
-          <span className="mt-auto pt-0.5 text-[12px] text-dim">
-            {[storeLabel ? `${storeLabel} 최저` : null, plats].filter(Boolean).join(" | ")}
-          </span>
-        )}
+        </span>
       </span>
     </Link>
   );

@@ -39,11 +39,11 @@ export function GameFilters({ facets, filter }: { facets: GameFacets; filter: Ga
       </details>
 
       {/* 넓은 화면: 왼쪽 기둥. 스크롤해도 따라오도록 붙여 둔다(헤더 높이만큼 띄운다).
-          기둥이 화면보다 길어지는 조합이 있어 안쪽에서 스크롤한다 — 안 그러면 아래쪽 무리에 손이 닿지 않는다 */}
-      <aside
-        aria-label="목록 필터"
-        className="hidden flex-col gap-[26px] lg:sticky lg:top-[80px] lg:flex lg:max-h-[calc(100vh-96px)] lg:overflow-y-auto"
-      >
+          안쪽 스크롤(max-h + overflow-y-auto)은 걷었다(2026-09-21): 장르 드롭다운이 펼쳐지면
+          그 목록이 기둥 안에 갇혀 잘렸고, 대신 기둥에 세로 스크롤바가 생겼다 — 고르려고 연 목록이
+          화면에 없는 셈이다. 무리가 셋(정렬, 플랫폼, 장르)뿐이라 기둥이 화면보다 길어질 일도 없어졌다.
+          다시 길어지면 안쪽 스크롤이 아니라 드롭다운을 띄우는 쪽을 고친다 */}
+      <aside aria-label="목록 필터" className="hidden flex-col gap-[26px] lg:sticky lg:top-[80px] lg:flex">
         <Groups facets={facets} filter={filter} />
       </aside>
     </>
