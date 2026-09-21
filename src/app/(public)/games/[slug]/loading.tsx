@@ -1,7 +1,9 @@
 // 상세 페이지 스켈레톤 — 본문과 같은 셸(Page), 같은 골격을 쓴다.
 // 블록 높이는 실제 상세 화면을 재서 맞춘 값이다(브레드크럼 24, 헤더 304, 본문 열 346, 사이드바 85/124).
 // 뼈대가 어긋나면 스켈레톤이 걷히는 순간 본문이 통째로 밀려 올라가고, 그게 페이드로는 못 가리는 깜빡임이 된다.
-// 세로 커버(3:4)를 기준으로 삼는다 — 가로 배너만 있는 게임은 소수다.
+// 세로 커버(2:3)를 기준으로 삼는다 — 가로 배너만 있는 게임은 소수다.
+// 2:3 인 이유는 원본이 그렇기 때문이다(page.tsx 커버 주석의 실측 표본 12건). 여기를 3:4 로 두면
+// 스켈레톤이 걷힐 때 커버 높이가 한 번 튄다.
 // enter={false} + skeleton-delay: 스켈레톤은 페이드하지 않고, 응답이 --skeleton-delay 보다 느릴 때만 떠오른다.
 // 곧바로 그리면 응답이 빠른 화면에서 한두 프레임만 번쩍이고 사라져 그게 깜빡임이 된다.
 import { Page } from "@/components/ui/page";
@@ -17,7 +19,7 @@ export default function GameDetailLoading() {
       {/* 헤더 — 커버 + 제목/버튼/요약/장르/설명 */}
       <div className="flex flex-wrap gap-5 sm:gap-6">
         {/* 본문과 같은 자리를 잡아야 교체될 때 화면이 밀리지 않는다 — 비율 전환도 같이 따라간다(page.tsx 주석) */}
-        <div className="skeleton aspect-[4/3] w-full shrink-0 rounded-xl sm:aspect-[3/4] sm:w-[190px]" />
+        <div className="skeleton aspect-[4/3] w-full shrink-0 rounded-xl sm:aspect-[2/3] sm:w-[190px]" />
         <div className="flex min-w-0 flex-1 flex-col gap-4 sm:min-w-[280px]">
           <div className="flex flex-wrap items-start justify-between gap-3">
             <div className="flex flex-col gap-1">

@@ -258,24 +258,50 @@ export default async function GameDetailPage({ params }: Props) {
           (조각이 하나라도 .enter-item 이면 감싼 section 은 애니메이션에서 빠진다 — 겹쳐 페이드 방지) */}
       <section className="grid items-start gap-x-9 gap-y-7 lg:grid-cols-[minmax(0,1.25fr)_minmax(280px,0.72fr)]">
         <div className="flex min-w-0 flex-col gap-5">
-          {/* 커버는 스탬프가 모서리 밖으로 나가므로 relative 상자와 overflow 상자를 갈라 둔다(game-card 와 같은 규칙) */}
-          <div className="enter-item relative" style={stagger(0)}>
+          {/*
+            커버는 스탬프가 모서리 밖으로 나가므로 relative 상자와 overflow 상자를 갈라 둔다(game-card 와 같은 규칙).
+
+            **세로 아트의 비율을 원본에 맞추고 폭을 300 에서 400 으로 넓혀 가운데로 옮겼다**(2026-09-21).
+
+            비율부터가 틀려 있었다. 넓은 화면의 칸이 3:4 였는데 원본을 재어 보니 **전부 2:3** 이다
+            (무작위 표본 12건, 1440x2160 / 720x1080 / 300x450, 12건 모두 0.667). object-cover 라
+            2:3 그림이 3:4 칸에 들어가면 위아래로 12%씩 잘린다 — 세로 아트에서 그 자리는 대개
+            로고와 인물 머리다. 칸을 2:3 으로 맞추면 잘리는 곳이 없다.
+
+            기둥을 꽉 채우지 않는 이유는 재어 보면 나온다. 최대폭 1200 에서 가로 간격 36 을 빼고
+            1.25 대 0.72 로 가르면 왼쪽 기둥은 약 738px 이다. 여기에 2:3 을 꽉 채우면 높이가 1,107px 이
+            되어 제목이 통째로 첫 화면 밖으로 밀린다 — 커버가 답하는 질문("무슨 게임인가")을 커버가
+            제목을 가려서 못 답하게 되는 셈이다. 400 은 높이가 600px 이라 오른쪽 결론 기둥(값, 점수,
+            플레이타임)과 키가 얼추 맞는다. 440 까지 가지 않은 것은 원본이 300px 인 건이 표본에 있어서다 —
+            그 이상은 없는 화소를 늘리는 값이다.
+
+            남는 좌우 여백은 가운데 정렬로 일부러 둔 것처럼 읽히게 했다 — 왼쪽에 붙여 두면
+            "오른쪽이 비었다" 로 읽히고, 가운데 두면 "이게 이 그림의 크기다" 로 읽힌다.
+
+            좁은 화면(sm 아래)은 건드리지 않는다. 거기는 기둥이 하나뿐이라 이미 꽉 차 있고,
+            4:3 은 세로 아트를 반쯤 보여 주되 인물과 로고가 모이는 가운데 띠를 남기는 선이다 —
+            휴대폰에서 2:3 을 펴면 커버 하나가 첫 화면을 다 먹는다.
+          */}
+          <div
+            className={`enter-item relative ${game.portraitUrl ? "sm:mx-auto sm:max-w-[400px]" : ""}`}
+            style={stagger(0)}
+          >
             <div
               className={`relative w-full overflow-hidden rounded-[var(--radius-cover-lg)] bg-surface-3 ${
-                // 세로 아트는 원본 비율에 맞춰 칸을 가른다 — 세로 아트를 가로 배너 칸에 넣으면 위아래가 잘려
-                // 로고가 사라지고, 가로 배너를 세로 칸에 넣으면 좌우가 잘린다.
-                // 4:3 은 세로 아트를 반 정도만 보여 주되 인물과 로고가 모이는 가운데 띠를 남기는 선이다
-                game.portraitUrl ? "aspect-[4/3] sm:aspect-[3/4] sm:max-w-[300px]" : "aspect-[460/215]"
+                game.portraitUrl ? "aspect-[4/3] sm:aspect-[2/3]" : "aspect-[460/215]"
               }`}
             >
               <CoverImage
                 src={game.portraitUrl ?? game.coverUrl}
                 alt={`${title} 커버`}
-                sizes="(max-width: 1023px) 100vw, 640px"
+                // 세로 아트는 sm 위에서 400 을 넘지 않는다 — 640 으로 두면 그만큼 큰 원본을 받아 놓고 버린다
+                sizes={game.portraitUrl ? "(max-width: 639px) 100vw, 400px" : "(max-width: 1023px) 100vw, 640px"}
                 priority
               />
             </div>
-            {/* 이 화면에서 면과 색을 가진 것은 이 도장 하나다 */}
+            {/* 이 화면에서 면과 색을 가진 것은 이 도장 하나다.
+                폭 제한을 이 바깥 상자에 건 이유가 여기 있다 — 안쪽 상자에만 걸면 도장은 기둥 왼쪽 끝에
+                남아 그림에서 떨어져 나온다 */}
             {best && <DiscountStamp pct={best.discountPct} size="hero" />}
           </div>
 
