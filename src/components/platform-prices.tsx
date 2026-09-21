@@ -228,8 +228,13 @@ export function PlatformPrices({
                 rel="noopener noreferrer"
                 className={cn(
                   "press tap inline-flex h-9 shrink-0 items-center rounded-xl px-[15px] text-[13px] font-semibold transition-colors duration-base",
-                  // 최저가 행의 버튼만 잉크로 채운다 — 이 화면에서 실제로 누를 자리는 대개 그 하나다
-                  rowKey(p) === bestKey ? "bg-ink text-on-ink hover:bg-ink-2" : "bg-surface-2 text-ink hover:bg-surface-3",
+                  // 최저가 행의 버튼만 채운다 — 이 화면에서 실제로 누를 자리는 대개 그 하나다.
+                  // 잉크(검정)에서 브랜드 보라로 바꿨다(2026-09-21). 검정은 이 표에서 글자색이기도 해서
+                  // 채운 버튼이 "진하게 칠한 글자 줄" 처럼 읽혔다 — 누를 곳이라는 신호가 모양뿐이었다.
+                  // 글자색을 --on-ink 로 두는 이유: --acc 는 테마마다 명도가 뒤집히고(라이트는 진한 보라,
+                  // 다크는 밝은 보라) --on-ink 도 같이 뒤집혀서, 이 짝이 두 테마 모두에서 대비를 지킨다.
+                  // 할인 스탬프가 쓰는 짝과 같다.
+                  rowKey(p) === bestKey ? "bg-acc text-on-ink hover:bg-acc-hover" : "bg-surface-2 text-ink hover:bg-surface-3",
                 )}
               >
                 스토어
