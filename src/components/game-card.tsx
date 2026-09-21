@@ -107,7 +107,7 @@ export function GameCard({
   variant?: "discount" | "release";
   highlight?: CardHighlight;
   /**
-   * 날짜 칸을 부르는 쪽이 정한 문구로 갈아 끼운다(GameRow 와 같은 계약).
+   * 날짜 칸을 부르는 쪽이 정한 문구로 갈아 끼운다.
    * 출시예정 화면이 쓴다 — 그 화면의 날짜는 대표 가격 행이 아니라 **게임이 아는 가장 이른 날짜**라
    * (PlayStation 이 출시일을 주지 않아 게임 단위로 묶는다) best.releaseDate 와 다른 값이다.
    */
@@ -182,7 +182,7 @@ export function GameCard({
             플랫폼을 쉼표로 이은 글자에서 배지로 바꿨다(2026-09-21): 목록에서 던지는 질문은
             "내 기기에 있나" 라서 글자 줄을 끝까지 읽는 것보다 모양으로 훑는 편이 빠르다.
             배지가 줄 하나를 따로 쓰는 이유는 곁 문구와 한 줄을 다투면 둘 다 접혀서다
-            (같은 판단이 game-row 에도 있다). 줄 수가 늘었으니 뼈대도 같이 늘린다(games/skeletons) */}
+            줄 수가 늘었으니 뼈대도 같이 늘린다(games/skeletons) */}
         <span className="mt-auto flex flex-col gap-1.5 pt-1.5">
           <PlatformBadges platforms={game.platforms} highlight={highlight?.platforms} />
           <span className="text-[12px] text-dim">
