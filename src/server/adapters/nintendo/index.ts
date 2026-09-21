@@ -102,6 +102,16 @@ export const nintendoAdapter: StoreAdapter = {
   },
 
   /**
+   * listPopularPages 를 두지 않는다 — 한국 eShop 은 **판매량 정렬을 내주지 않는다**(2026-09-21 실측).
+   *
+   * Magento 라 `product_list_order=bestsellers` 가 먹을 법한데, 검색 결과의 sorter select 에
+   * 달린 값이 relevance, price, release_date **셋뿐**이다. bestsellers 를 넣으면 거부가 아니라
+   * relevance 로 조용히 떨어진다 — 그래서 상태 코드만 보면 먹은 것처럼 보인다.
+   *
+   * 새 일본 스토어(store-jp.nintendo.com/ranking)에는 랭킹이 있지만 Akamai Queue-It 대기열
+   * (enqueuetoken)이 앞을 막아 자동 경로가 아니다. nintendo.co.jp/software/ranking 은 404 다.
+   */
+  /**
    * 검색 시드 × 페이지네이션으로 카탈로그를 페이지 단위로 흘려보낸다. 한 시드가 바닥나면 다음 시드로.
    * 아는 것을 걸러내고 멈출 시점을 정하는 일은 호출부 몫이다(adapters/types 의 discoverPages 주석).
    */
@@ -170,6 +180,16 @@ export const nintendoJpAdapter: StoreAdapter = {
     return parseJpSearch(await jpHttp.json(jpSearchUrl({ fq: jpDlcFq(icode), page: 1 })));
   },
 
+  /**
+   * listPopularPages 를 두지 않는다 — 일본 eShop 검색은 **정렬을 못 바꾼다**(2026-09-21 실측).
+   * Solr 이라 sort 가 먹을 법한데, score / hits_i / pv_i / rank_i / sales_i / sotsu_sort_i /
+   * dprice_sort_f 를 넣어 봐도 여덟 경우가 전부 **같은 순서**를 돌려준다. Xbox 와 같은 모양이다
+   * (adapters/xbox 의 listPopularPages 주석) — 파라미터가 무시되면 기본 순서의 뜻도 알 수 없다.
+   *
+   * 그래서 스위치 게임은 인기 축에서 자리를 못 받는다. 2026-09-21 실측 영향은 116건이다
+   * (자리 없고 평단 70점 이상). 그 안에 Mario Kart World(메타 86), Kirby Air Riders(88)가 있다 —
+   * 스위치 독점이라 다른 스토어의 순번을 빌려 올 수도 없다. 대체 축은 스토어 밖에서 찾아야 한다.
+   */
   /**
    * 카탈로그를 페이지로 흘려보낸다. 질의(JP_DISCOVER_FQ)가 스위치 본편, 판매 중인 것만 남기므로
    * 전체 34,919건이 아니라 약 14,900건을 훑는다 — 페이지당 50건이면 한 바퀴가 약 300페이지다.

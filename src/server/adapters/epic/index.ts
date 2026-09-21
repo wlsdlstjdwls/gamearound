@@ -126,6 +126,25 @@ export const epicAdapter: StoreAdapter = {
   },
 
   /**
+   * listPopularPages 를 두지 않는다 — Epic 카탈로그에는 **인기 정렬이 없다**(2026-09-21 실측).
+   *
+   * Xbox 와 막히는 방식이 다르다. 저쪽은 정렬 파라미터를 조용히 무시하는데, 여기는 화이트리스트를
+   * 서버가 검증해서 없는 값이면 400 을 준다(`errors.com.epicgames.catalog.invalid_sort_by`) —
+   * 덕분에 무엇이 있고 없는지가 분명하다. 31개를 넣어 보고 받아들인 것은 열하나뿐이다:
+   *   relevancy, title, currentPrice, discountPercentage,
+   *   releaseDate, pcReleaseDate, effectiveDate, viewableDate, creationDate, lastModifiedDate, featured
+   * 값, 날짜, 이름, 할인율이 전부다. popularity, topSellers, salesRank, trending, downloads,
+   * playerCount, wishlist, installs, mostPlayed 는 모두 400 이다. (`featured` 는 받아들이지만
+   * releaseDate 와 같은 순서를 줘서 뜻이 없다.)
+   *
+   * 스토어의 Top Sellers 컬렉션 페이지는 남은 문이지만 자동 경로가 아니다 — 서버가 목록을 안 박고
+   * (`__REACT_QUERY_INITIAL_QUERIES__` 에 launcherVersion 하나뿐), GraphQL 에 Collection 루트 필드가
+   * 없으며 인트로스펙션도 꺼져 있다. 붙인다면 브라우저로 질의를 떠 오는 일이 먼저다(psstore 해시와 같은 방식).
+   *
+   * 그때까지 Epic 게임은 인기 축에서 자리를 못 받는다. 2026-09-21 실측으로 그 영향은 25건이다
+   * (자리 없고 평단 70점 이상인 Epic 게임). 대부분은 다른 스토어에도 있어 그쪽 순번을 받는다.
+   */
+  /**
    * 카탈로그를 출시일 내림차순으로, 페이지 단위로 흘려보낸다.
    * 아는 것을 걸러내고 언제 멈출지는 호출부가 정한다(adapters/types 의 discoverPages 주석) —
    * 신작 N개만 끊어 돌려주면 그 N개가 다 등록된 순간 나머지 카탈로그가 영원히 안 들어온다.
