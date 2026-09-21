@@ -6,7 +6,7 @@ import { ROUTES } from "@/lib/routes";
 import { ADMIN_ACTION_MESSAGES, TASK_MESSAGES } from "@/lib/admin/messages";
 import { sourceEnum } from "@/server/db/schema";
 import { TASK_STATUSES } from "@/lib/admin/tasks";
-import { clearDone, createTask, deleteTask, moveTask, reorderTask } from "@/server/services/admin-tasks";
+import { addNote, clearDone, createTask, deleteNote, deleteTask, moveTask, reorderTask, updateTask } from "@/server/services/admin-tasks";
 import { requireAdmin } from "@/server/services/users";
 
 export type TaskActionState = { ok: true; message?: string } | { ok: false; error: string } | null;
@@ -14,6 +14,8 @@ export type TaskActionState = { ok: true; message?: string } | { ok: false; erro
 /** 제목 상한. 카드 한 장이 한눈에 읽혀야 하므로 길이를 화면이 아니라 여기서 막는다 */
 const TITLE_MAX = 200;
 const BODY_MAX = 4000;
+/** 기록 한 줄의 상한. 메모보다 짧게 둔다 — 길어지면 그건 기록이 아니라 새 할 일이다 */
+const NOTE_MAX = 2000;
 
 const statusSchema = z.enum(TASK_STATUSES);
 const createSchema = z.object({
@@ -96,6 +98,62 @@ export async function deleteTaskAction(id: string): Promise<TaskActionState> {
     await deleteTask(p.data);
     revalidate();
     return { ok: true, message: TASK_MESSAGES.removed };
+  } catch (e) {
+    return fail(e);
+  }
+}
+
+/** 카드 고치기 — 제목과 메모, 급함만. 칸과 순서는 각자의 액션이 맡는다(자취를 남겨야 해서) */
+export async function updateTaskAction(_prev: TaskActionState, form: FormData): Promise<TaskActionState> {
+  try {
+    await requireAdmin();
+    const p = z
+      .object({
+        id: z.uuid(),
+        title: z.string().trim().min(1, "할 일을 입력하세요").max(TITLE_MAX),
+        body: z.string().trim().max(BODY_MAX).optional(),
+        priority: z.enum(["high", "normal", "low"]).default("normal"),
+      })
+      .safeParse({
+        id: form.get("id"),
+        title: form.get("title"),
+        body: form.get("body") ?? undefined,
+        priority: form.get("priority") ?? undefined,
+      });
+    if (!p.success) return { ok: false, error: p.error.issues[0]?.message ?? TASK_MESSAGES.invalid };
+
+    await updateTask(p.data.id, { title: p.data.title, body: p.data.body ?? null, priority: p.data.priority });
+    revalidate();
+    return { ok: true, message: TASK_MESSAGES.saved };
+  } catch (e) {
+    return fail(e);
+  }
+}
+
+export async function addNoteAction(_prev: TaskActionState, form: FormData): Promise<TaskActionState> {
+  try {
+    await requireAdmin();
+    const p = z
+      .object({ taskId: z.uuid(), body: z.string().trim().min(1, TASK_MESSAGES.notePlaceholder).max(NOTE_MAX) })
+      .safeParse({ taskId: form.get("taskId"), body: form.get("body") });
+    if (!p.success) return { ok: false, error: p.error.issues[0]?.message ?? TASK_MESSAGES.invalid };
+
+    await addNote(p.data.taskId, p.data.body);
+    revalidate();
+    return { ok: true, message: TASK_MESSAGES.noteAdded };
+  } catch (e) {
+    return fail(e);
+  }
+}
+
+export async function deleteNoteAction(id: string): Promise<TaskActionState> {
+  try {
+    await requireAdmin();
+    const p = z.uuid().safeParse(id);
+    if (!p.success) return { ok: false, error: TASK_MESSAGES.invalid };
+    await deleteNote(p.data);
+    revalidate();
+    return { ok: true, message: TASK_MESSAGES.noteRemoved };
   } catch (e) {
     return fail(e);
   }

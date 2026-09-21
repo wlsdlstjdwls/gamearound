@@ -5,14 +5,14 @@
 import "server-only";
 import { and, asc, eq, isNotNull, sql } from "drizzle-orm";
 import { getDb } from "@/server/db/client";
-import { adminTasks, games, shops, type SourceName } from "@/server/db/schema";
+import { adminTaskNotes, adminTasks, games, shops, users, type SourceName } from "@/server/db/schema";
 import { createdBy, updatedBy } from "@/server/db/audit";
 import { requireAdmin } from "@/server/services/users";
-import type { Board, TaskPriority, TaskStatus } from "@/lib/admin/tasks";
+import type { Board, TaskNote, TaskPriority, TaskStatus } from "@/lib/admin/tasks";
 
 // 칸 목록과 DTO 모양은 클라이언트도 쓰므로 잎 파일에 있다(lib/admin/tasks). 여기서 재수출한다.
 export { TASK_STATUSES } from "@/lib/admin/tasks";
-export type { AdminTask, Board, TaskPriority, TaskStatus } from "@/lib/admin/tasks";
+export type { AdminTask, Board, TaskNote, TaskPriority, TaskStatus } from "@/lib/admin/tasks";
 
 /**
  * 끝난 일은 최근 것만 판에 남긴다. 판은 "지금 무엇을 하나" 를 보는 자리고,
@@ -24,10 +24,18 @@ function emptyBoard(): Board {
   return { backlog: [], todo: [], doing: [], done: [] };
 }
 
-/** 판 한 장. 질의 한 번으로 네 칸을 다 읽고 코드에서 가른다 — 칸마다 물으면 왕복이 넷이 된다 */
+/**
+ * 판 한 장. 질의 한 번으로 네 칸을 다 읽고 코드에서 가른다 — 칸마다 물으면 왕복이 넷이 된다.
+ *
+ * 기록은 두 번째 질의로 한꺼번에 읽어 **나란히** 보낸다(Promise.all). 카드를 펼칠 때마다 물으면
+ * 카드 수만큼 왕복이 늘고, Neon 왕복 하나가 220ms 다(neon-roundtrip-cost). 줄 세우지 않으므로
+ * 화면이 기다리는 시간은 여전히 왕복 한 번이다.
+ */
 export async function getBoard(): Promise<Board> {
   await requireAdmin();
-  const rows = await getDb()
+  const db = getDb();
+  const [rows, noteRows] = await Promise.all([
+    db
     .select({
       id: adminTasks.id,
       title: adminTasks.title,
@@ -49,7 +57,41 @@ export async function getBoard(): Promise<Board> {
     .from(adminTasks)
     .leftJoin(games, eq(games.id, adminTasks.gameId))
     .leftJoin(shops, eq(shops.id, adminTasks.shopId))
-    .orderBy(asc(adminTasks.sortOrder), asc(adminTasks.createdAt));
+    .orderBy(asc(adminTasks.sortOrder), asc(adminTasks.createdAt)),
+
+    // 기록 전부. 할 일별로 나누는 일은 코드가 한다 — 카드마다 물으면 왕복이 카드 수만큼 는다
+    db
+      .select({
+        id: adminTaskNotes.id,
+        taskId: adminTaskNotes.taskId,
+        kind: adminTaskNotes.kind,
+        body: adminTaskNotes.body,
+        fromStatus: adminTaskNotes.fromStatus,
+        toStatus: adminTaskNotes.toStatus,
+        createdAt: adminTaskNotes.createdAt,
+        authorName: users.displayName,
+        authorEmail: users.email,
+      })
+      .from(adminTaskNotes)
+      .leftJoin(users, eq(users.id, adminTaskNotes.createdBy))
+      .orderBy(asc(adminTaskNotes.createdAt)),
+  ]);
+
+  // 오래된 것이 위다 — 기록은 흘러온 순서로 읽어야 뜻이 통한다
+  const notesByTask = new Map<string, TaskNote[]>();
+  for (const n of noteRows) {
+    const list = notesByTask.get(n.taskId) ?? [];
+    list.push({
+      id: n.id,
+      kind: n.kind,
+      body: n.body,
+      from: n.fromStatus,
+      to: n.toStatus,
+      authorName: n.authorName?.trim() || n.authorEmail || null,
+      createdAt: n.createdAt,
+    });
+    notesByTask.set(n.taskId, list);
+  }
 
   const board = emptyBoard();
   for (const r of rows) {
@@ -66,6 +108,7 @@ export async function getBoard(): Promise<Board> {
       shop: r.shopId ? { id: r.shopId, name: r.shopName! } : null,
       source: (r.source as SourceName | null) ?? null,
       updatedAt: r.updatedAt,
+      notes: notesByTask.get(r.id) ?? [],
     });
   }
   // 끝난 칸만 최근 순으로 뒤집고 자른다 — 나머지 칸은 사람이 잡은 순서가 곧 우선순위다
@@ -139,10 +182,14 @@ export async function updateTask(
 export async function moveTask(id: string, to: TaskStatus): Promise<void> {
   const admin = await requireAdmin();
   const db = getDb();
-  const [top] = await db
-    .select({ min: sql<number>`coalesce(min(${adminTasks.sortOrder}), 0)::int` })
-    .from(adminTasks)
-    .where(eq(adminTasks.status, to));
+  const [[top], [before]] = await Promise.all([
+    db
+      .select({ min: sql<number>`coalesce(min(${adminTasks.sortOrder}), 0)::int` })
+      .from(adminTasks)
+      .where(eq(adminTasks.status, to)),
+    db.select({ status: adminTasks.status }).from(adminTasks).where(eq(adminTasks.id, id)),
+  ]);
+  if (!before) return;
 
   await db
     .update(adminTasks)
@@ -153,6 +200,43 @@ export async function moveTask(id: string, to: TaskStatus): Promise<void> {
       ...updatedBy("admin", admin.id),
     })
     .where(eq(adminTasks.id, id));
+
+  /*
+   * 옮긴 자취를 기록에 남긴다. 사람이 적지 않아도 "언제 시작했고 언제 끝냈나" 가 남아야
+   * 카드 하나가 곧 그 일의 이력이 된다 — 그게 이 판을 메모장과 가르는 자리다.
+   *
+   * 같은 칸으로 다시 놓는 것(드래그가 제자리에 떨어질 때)은 자취가 아니다. 그것까지 적으면
+   * 기록이 의미 없는 줄로 불어나 진짜 적은 글이 묻힌다.
+   */
+  if (before.status !== to) {
+    await db.insert(adminTaskNotes).values({
+      taskId: id,
+      kind: "move",
+      fromStatus: before.status,
+      toStatus: to,
+      ...createdBy("admin", admin.id),
+    });
+  }
+}
+
+/** 기록 한 줄 남기기. 후속 내용, 막힌 지점, 끝내며 남기는 말이 여기로 들어온다 */
+export async function addNote(taskId: string, body: string): Promise<void> {
+  const admin = await requireAdmin();
+  await getDb().insert(adminTaskNotes).values({
+    taskId,
+    kind: "note",
+    body: body.trim(),
+    ...createdBy("admin", admin.id),
+  });
+}
+
+/**
+ * 기록 지우기. 사람이 적은 글만 지운다 —
+ * 칸 이동 자취까지 지우게 두면 이력이 "고칠 수 있는 이야기" 가 되어 근거로 못 쓴다.
+ */
+export async function deleteNote(id: string): Promise<void> {
+  await requireAdmin();
+  await getDb().delete(adminTaskNotes).where(and(eq(adminTaskNotes.id, id), eq(adminTaskNotes.kind, "note")));
 }
 
 /**

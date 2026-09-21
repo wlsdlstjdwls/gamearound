@@ -25,6 +25,31 @@ export const TASK_MESSAGES = {
   moved: "옮겼어요",
   removed: "지웠어요",
   invalid: "잘못된 요청이에요",
+
+  // 카드 고치기 — 할 일의 제목과 메모는 "무엇을 하는 일인가" 라서 고쳐 쓰는 값이다
+  edit: "고치기",
+  save: "저장",
+  cancel: "취소",
+  saved: "고쳤어요",
+
+  /*
+   * 기록 — 진행과 완료가 쌓이는 자리. 메모(body)와 낱말을 가른 이유는 하는 일이 다르기 때문이다.
+   * 메모는 덮어쓰고, 기록은 쌓인다.
+   */
+  notes: "기록",
+  noteAdd: "남기기",
+  noteLabel: "기록 남기기",
+  notePlaceholder: "진행, 막힌 지점, 끝내며 남길 말",
+  noteEmpty: "아직 기록이 없어요.",
+  noteAdded: "기록했어요",
+  noteRemove: "지우기",
+  noteRemoveConfirm: "이 기록을 지울까요?",
+  noteRemoved: "기록을 지웠어요",
+  /** 칸 이동 자취 앞에 붙는 말. 앞뒤 칸은 파이프로 잇는다(AGENTS §4: 화살표 금지) */
+  noteMoved: "옮김",
+  /** 카드를 펼치고 접는 버튼 */
+  expand: "펼치기",
+  collapse: "접기",
 } as const;
 
 /** 칸 이름. enum 값과 화면 낱말을 잇는 유일한 자리 */

@@ -12,6 +12,24 @@ export type TaskStatus = (typeof TASK_STATUSES)[number];
 export const TASK_PRIORITIES = ["high", "normal", "low"] as const;
 export type TaskPriority = (typeof TASK_PRIORITIES)[number];
 
+/** 기록 갈래. `note` 는 사람이 적은 글, `move` 는 판이 남긴 칸 이동 자취 */
+export const TASK_NOTE_KINDS = ["note", "move"] as const;
+export type TaskNoteKind = (typeof TASK_NOTE_KINDS)[number];
+
+/** 할 일에 달린 기록 한 줄. 카드를 펼치면 시각순으로 보인다 */
+export interface TaskNote {
+  id: string;
+  kind: TaskNoteKind;
+  /** 사람이 적은 글. 칸 이동 자취는 비어 있다 */
+  body: string | null;
+  /** 칸 이동 자취의 앞뒤 칸. 화면이 여기에 이름을 붙인다 */
+  from: TaskStatus | null;
+  to: TaskStatus | null;
+  /** 적은 사람 */
+  authorName: string | null;
+  createdAt: Date;
+}
+
 export interface AdminTask {
   id: string;
   title: string;
@@ -26,6 +44,11 @@ export interface AdminTask {
   shop: { id: string; name: string } | null;
   source: SourceName | null;
   updatedAt: Date;
+  /**
+   * 이 할 일에 쌓인 기록. 판 질의가 한 번에 다 읽어 온다 —
+   * 카드를 펼칠 때마다 물으면 카드 수만큼 왕복이 늘고, Neon 왕복 하나가 220ms 다.
+   */
+  notes: TaskNote[];
 }
 
 export type Board = Record<TaskStatus, AdminTask[]>;

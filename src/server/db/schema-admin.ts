@@ -62,3 +62,52 @@ export const adminTasks = pgTable("admin_tasks", {
   // 게임 상세에서 "이 게임에 걸린 할 일" 을 되짚을 때 쓴다
   index("admin_tasks_game_idx").on(t.gameId).where(sql`game_id is not null`),
 ]);
+
+/**
+ * 기록 한 줄의 갈래.
+ *
+ * `note` 는 사람이 적은 글이다 — 후속 내용, 막힌 지점, 끝내며 남기는 말.
+ * `move` 는 판이 스스로 남긴 자취다(어느 칸에서 어느 칸으로).
+ *
+ * **왜 자취를 별도 로그가 아니라 같은 표에 넣나:** 카드를 열었을 때 사람이 보고 싶은 것은
+ * "이 일이 어떻게 흘러왔나" 하나다. 사람 글과 칸 이동이 다른 곳에 살면 화면이 둘을 시각순으로
+ * 다시 섞어야 하고, 그 섞는 코드가 두 표의 시각 필드를 계속 맞춰야 한다. 한 줄로 두면 질의 하나다.
+ */
+export const adminTaskNoteKindEnum = pgEnum("admin_task_note_kind", ["note", "move"]);
+
+/**
+ * 할 일에 달리는 기록. 후속 내용, 완료 내용, 주고받는 말이 여기 쌓인다.
+ *
+ * **왜 카드의 `body` 로는 모자라나:** `body` 는 "이 일이 무엇인가" 를 적는 자리라 고쳐 쓰는 값이다.
+ * 진행은 덮어쓰면 안 된다 — 지난주에 왜 막혔는지가 이번 주 판단의 근거다. 그래서 쌓이는 표를 따로 둔다.
+ *
+ * **왜 답글(계층)이 없나:** 이 판은 관리자가 쓴다. 답글을 두려면 parentId 와 들여쓰기 렌더가 붙는데,
+ * 쓰는 사람이 한둘인 판에서 그 구조는 읽기만 어렵게 한다. 시각순 한 줄이면 충분하다.
+ * 여럿이 쓰게 되는 날 parentId 를 더하면 된다 — 그때까지는 넣지 않는다.
+ *
+ * 할 일이 지워지면 기록도 함께 지운다(cascade). `gameId` 가 set null 인 것과 반대인 이유는,
+ * 게임은 할 일 바깥에서도 살지만 기록은 그 할 일 없이는 읽을 수 없는 글이기 때문이다.
+ */
+export const adminTaskNotes = pgTable("admin_task_notes", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  taskId: uuid("task_id")
+    .notNull()
+    .references(() => adminTasks.id, { onDelete: "cascade" }),
+  kind: adminTaskNoteKindEnum("kind").default("note").notNull(),
+
+  /** 사람이 적은 글. `move` 자취는 쓸 말이 없으므로 비운다 */
+  body: text("body"),
+
+  /*
+   * 칸 이동 자취의 앞뒤 칸. 화면 문구("할 일 에서 하는 중 으로")를 여기 굳혀 넣지 않는 이유는
+   * 칸 이름이 화면 낱말이기 때문이다 — 낱말을 바꾸면 지난 기록만 옛 이름으로 남는다.
+   * 원값을 적고 읽을 때 이름을 붙인다(TASK_STATUS_LABEL).
+   */
+  fromStatus: adminTaskStatusEnum("from_status"),
+  toStatus: adminTaskStatusEnum("to_status"),
+
+  ...auditColumns(),
+}, (t) => [
+  // 읽기는 늘 "이 할 일의 기록을 시각순으로" 하나다
+  index("admin_task_notes_task_idx").on(t.taskId, t.createdAt),
+]);
