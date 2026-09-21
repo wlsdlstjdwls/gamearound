@@ -5,6 +5,8 @@ import { gameGenres, gamePlatforms, gameRequirements, games, genres, HOME_REGION
 import { visiblePlatformsOnly } from "@/server/db/visibility";
 import { cheapestOf, DISPLAY_CURRENCY } from "@/lib/currency";
 import { PLATFORM_ORDER } from "@/lib/platform";
+import { PLATFORM_LABEL } from "@/lib/format";
+import { countText } from "@/lib/user-score";
 import type { GameDetail, GameSummary, PlatformDto, PublicGameDto, RequirementDto, RequirementGroupDto, UserScoreDto } from "./dto";
 
 export const iso = (d: Date | string | null | undefined): string | null => {
@@ -333,6 +335,42 @@ export function bestScore(platforms: PlatformDto[]): { value: number; note: stri
   if (oc !== undefined) return { value: oc, note: mc !== undefined ? `OpenCritic | 메타 ${mc}` : "OpenCritic" };
   if (mc !== undefined) return { value: mc, note: "메타크리틱" };
   return null;
+}
+
+/**
+ * 점수 한 줄 — 화면에 그대로 세울 값 묶음.
+ *
+ * 왜 따로 만들었나(2026-09-21): 세 점수가 화면에서 서로 다른 말로 서 있었다.
+ * 오픈크리틱은 "88", 메타크리틱은 bestScore 의 note 안에 "메타 85" 로 끼어 있었고,
+ * 유저 점수만 "94%" 였다. 셋 다 0~100 한 축의 값인데 하나만 단위를 달고 있으면
+ * 눈이 "94% 가 88 보다 좋은 건가" 를 매번 다시 계산한다.
+ *
+ * 그래서 값 자리는 셋 다 맨 숫자로 통일하고, 척도와 출처는 값 아래 회색 한 줄이 맡는다.
+ * 유저 점수의 % 를 지워도 뜻이 안 상하는 이유: 긍정 비율 94 와 별점 3.9(저장값 78)를
+ * 같은 축에 올리는 일은 저장할 때 이미 끝나 있다(lib/user-score 주석). 화면은 그 축을 그대로 쓴다.
+ */
+export type ScoreLine = { key: string; label: string; value: number; note: string | null };
+
+/** 100점 축임을 값 아래에서 한 번만 말한다 — 세 칸에 세 번 적으면 그게 잡음이다 */
+const SCORE_SCALE_NOTE = "100점 기준";
+
+export function scoreLines(platforms: PlatformDto[]): ScoreLine[] {
+  const lines: ScoreLine[] = [];
+  const oc = platforms.map((p) => p.opencriticScore).find((v): v is number => typeof v === "number");
+  const mc = platforms.map((p) => p.metacriticScore).find((v): v is number => typeof v === "number");
+  if (oc !== undefined) lines.push({ key: "opencritic", label: "오픈크리틱", value: Math.round(oc), note: SCORE_SCALE_NOTE });
+  if (mc !== undefined) lines.push({ key: "metacritic", label: "메타크리틱", value: Math.round(mc), note: SCORE_SCALE_NOTE });
+
+  const user = bestUserScore(platforms);
+  if (user) {
+    // 유저 점수만 단서가 둘이다(어느 스토어인지, 몇 명인지) — 평론가 점수는 매체 이름이 곧 라벨이라
+    // 더 말할 것이 없지만, 이쪽은 "스팀 48만명" 과 "Xbox 300명" 이 같은 숫자를 전혀 다른 무게로 만든다
+    const { score, platform } = user;
+    const who = PLATFORM_LABEL[platform] ?? platform;
+    const count = score.count > 0 ? ` | ${countText(score.count)}` : "";
+    lines.push({ key: "user", label: "유저 점수", value: Math.round(score.value), note: `${who}${count}` });
+  }
+  return lines;
 }
 
 /**
