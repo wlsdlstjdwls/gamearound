@@ -9,6 +9,7 @@ import Link from "next/link";
 import { Page, PageHead, Panel, SectionHead } from "@/components/ui/page";
 import { buttonClass } from "@/components/ui/button";
 import { BUSINESS_MESSAGES } from "@/lib/shops/messages";
+import { JoinSoonButton } from "@/components/shops/join-soon";
 import { ROUTES } from "@/lib/routes";
 import { stagger } from "@/lib/motion";
 
@@ -22,10 +23,10 @@ export default function BusinessPage() {
     <Page width="tight" gap={20}>
       <PageHead title={BUSINESS_MESSAGES.title} note={BUSINESS_MESSAGES.lead} />
 
+      {/* 신청은 아직 열지 않았다(2026-09-21) — 버튼을 지우지 않고 사유를 말하는 시트로 바꿨다.
+          되살릴 때는 이 자리를 ROUTES.shopsJoin 링크로 되돌린다(lib/shops/messages 의 soon* 주석) */}
       <div className="flex flex-wrap gap-2">
-        <Link href={ROUTES.shopsJoin} className={buttonClass({ variant: "primary" })}>
-          {BUSINESS_MESSAGES.ctaJoin}
-        </Link>
+        <JoinSoonButton />
         <Link href={ROUTES.shopsJoinStatus} className={buttonClass({ variant: "ghost" })}>
           {BUSINESS_MESSAGES.ctaStatus}
         </Link>
