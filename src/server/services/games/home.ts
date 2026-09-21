@@ -101,6 +101,17 @@ async function getHomeDataRaw(): Promise<HomeData> {
       // 스위치, Epic 은 스토어가 순번도 평가 수도 안 줘서 이 자리가 없으면 첫 화면에 영영 못 선다
       sql`coalesce(${rankAgg.minRank}, ${hltbRankExpr()}) asc nulls last`,
       sql`(${rankAgg.minRank} is not null) desc`,
+      /**
+       * 같은 인기 자리 안에서는 최신작이 먼저. 순번은 촘촘하지 않아 동점이 흔하다 —
+       * 2026-09-21 실측으로 홈 12칸 중 8칸이 동점이었다(6/6, 7/7, 12/12, 17/17).
+       * 그 동점을 할인율로 깨면 "많이 깎인 묵은 것" 이 이기는데, 그건 인기순으로 바꾸며
+       * 버린 기준이다(위 주석). 첫 화면은 같은 값이면 새것을 앞에 둔다.
+       *
+       * 출시일로 **거르지는** 않는다(3년 컷을 재어 보고 버렸다, 2026-09-21):
+       * Baldur's Gate 3, RimWorld 가 빠지고 그 자리를 세대 호환 번들 셋이 채웠다.
+       * 3년 지났다고 덜 유명한 것이 아니다 — 자리를 뺏는 것이 아니라 순서만 손본다.
+       */
+      sql`${gamePlatforms.releaseDate} desc nulls last`,
       desc(gamePlatforms.discountPct),
       desc(gamePlatforms.lastSyncedAt),
     )
