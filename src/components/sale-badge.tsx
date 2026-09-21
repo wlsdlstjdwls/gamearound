@@ -1,6 +1,11 @@
 "use client";
 // 할인 행사 배지 — 행사명("가을 세일")과 남은 기간("2일 남음").
 // 남은 기간은 마운트 후에만 계산한다(캐시된 RSC 시각으로 굳는 것 방지 — useNow).
+//
+// 행사명이 브랜드색인 이유(2026-09-21): 전에는 회색 면에 회색 글자라 "미드위크 할인" 이
+// 옆의 출시일, 버전 문자열과 같은 무게로 읽혔다. 그런데 이 말은 메타 정보가 아니라 **할인의 이름**이고,
+// 같은 줄의 할인율이 이미 브랜드색이다. 둘을 같은 색으로 묶어야 한 가지 사실로 읽힌다.
+// 빨강은 여기 쓰지 않는다 — 이 화면에서 빨강은 "마감 임박" 한 뜻만 갖는다(아래 danger).
 import { formatSaleWindow, saleRemaining } from "@/lib/format";
 import { useNow } from "@/components/use-now";
 
@@ -37,7 +42,7 @@ export function SaleBadge({ discountName, discountEndsAt, discountStartsAt, vari
   if (variant === "compact") {
     return (
       <span className="inline-flex flex-wrap items-baseline gap-x-1 text-[12px] text-dim">
-        {discountName && <span>{discountName}</span>}
+        {discountName && <span className="font-semibold text-acc">{discountName}</span>}
         {discountName && remaining && <span aria-hidden>|</span>}
         {remaining && <span className={remaining.urgent ? "font-semibold text-danger" : "text-mut"}>{remaining.text}</span>}
       </span>
@@ -46,7 +51,7 @@ export function SaleBadge({ discountName, discountEndsAt, discountStartsAt, vari
 
   return (
     <span className="inline-flex flex-wrap items-baseline gap-x-1.5 gap-y-0.5 text-[12.5px]">
-      {discountName && <span className="rounded-[5px] bg-surface-2 px-1.5 py-0.5 text-[11.5px] font-semibold text-ink-2">{discountName}</span>}
+      {discountName && <span className="rounded-[5px] bg-acc-soft px-1.5 py-0.5 text-[11.5px] font-bold text-acc">{discountName}</span>}
       {saleWindow && <span className="text-mut">{saleWindow}</span>}
       {remaining && <span className={remaining.urgent ? "font-semibold text-danger" : "text-dim"}>({remaining.text})</span>}
     </span>
