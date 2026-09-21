@@ -21,7 +21,8 @@ import Link from "next/link";
 import { useMemo, useState } from "react";
 import { Clamp } from "@/components/ui/tooltip";
 import { ChipButton } from "@/components/ui/chip";
-import { ROW, ROWS, SectionHead } from "@/components/ui/page";
+import { ROW, ROWS } from "@/components/ui/page";
+import { Collapsible } from "@/components/ui/collapsible";
 import { cn } from "@/lib/cn";
 import { cheapestOf, formatPrice } from "@/lib/currency";
 import { PLATFORM_LABEL, platformLabel } from "@/lib/format";
@@ -74,9 +75,11 @@ export function DlcSection({
   );
 
   return (
-    <section aria-labelledby={id} className="flex flex-col gap-3">
-      <SectionHead id={id} title={title} note={rows.length > 0 ? `${rows.length}개` : undefined} />
-
+    // 접어 두는 이유(2026-09-21): DLC 가 30줄까지 가는 게임이 있고, 그 30줄이 "파는 곳" 과
+    // 패치 기록을 화면 두 개 밖으로 밀었다. 그런데 본편을 보러 온 사람 대부분은 추가 콘텐츠를
+    // 안 연다 — 열 사람은 목적을 갖고 열고, 그때 건수는 제목 옆에서 이미 보인다.
+    <Collapsible id={id} title={title} note={rows.length > 0 ? `${rows.length}개` : undefined}>
+      <div className="flex flex-col gap-3">
       {platforms.length > 1 && (
         <ul className="flex flex-wrap gap-1.5" aria-label="플랫폼">
           <li>
@@ -125,6 +128,7 @@ export function DlcSection({
           ))}
         </ul>
       )}
-    </section>
+      </div>
+    </Collapsible>
   );
 }

@@ -25,15 +25,13 @@ import { Page, SectionHead } from "@/components/ui/page";
 import { SellersSection } from "@/components/shops/sellers-section";
 import { listSellersForGame } from "@/server/services/listings";
 import { SELLING_MESSAGES } from "@/lib/shops/listing-messages";
-import { formatDate, formatHours, PLATFORM_LABEL } from "@/lib/format";
-import { userScoreNoteText, userScoreValueText } from "@/lib/user-score";
+import { formatDate, PLATFORM_LABEL } from "@/lib/format";
 import { SITE } from "@/lib/site";
 import { getFreshness } from "@/lib/freshness";
 import { GAME_MESSAGES } from "@/lib/games/messages";
 import { stagger } from "@/lib/motion";
 import { gamePricesPath, ROUTES } from "@/lib/routes";
 import {
-  bestScore,
   bestUserScore,
   cheapestPlatform,
   displayTitle,
@@ -41,6 +39,7 @@ import {
   getGamePatchesCached,
   getPricePerHourScale,
   latestPatches,
+  scoreLines,
   type GameDetail,
 } from "@/server/services/games";
 import { getRecordedLow, type RecordedLow } from "@/server/services/prices";
@@ -78,7 +77,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   };
 }
 
-type StatCellProps = { label: string; value: string; note?: string };
+type StatCellProps = { label: string; value: string; note?: string | null };
 
 /**
  * 오른쪽 기둥의 값 한 칸 — 라벨 위, 큰 숫자 아래, 근거 한 줄.
@@ -140,42 +139,30 @@ function PriceHeadline({ game, recordedLow }: { game: GameDetail; recordedLow: R
 }
 
 /**
- * 값 표 — 출시일, 플레이타임, 평점.
+ * 점수 표 — 오픈크리틱, 메타크리틱, 유저 점수.
  *
  * 모르는 값의 칸은 아예 세우지 않는다(2026-09-15). 전에는 칸을 늘 그리고 값이 없으면 "-" 를 넣었는데,
- * 카탈로그 대부분이 플레이타임과 평점을 아직 안 갖고 있어서 화면에서 가장 큰 자리가 줄줄이 "-" 였다.
- * 그건 "아직 모은다" 가 아니라 "고장 났다" 로 읽힌다. 아는 게 값뿐이면 한 줄로 그 사실을 말한다 —
- * 모르는 것을 네 번 반복하는 것보다 한 번 적는 편이 짧고 정직하다.
+ * 카탈로그 대부분이 평점을 아직 안 갖고 있어서 화면에서 가장 큰 자리가 줄줄이 "-" 였다.
+ * 그건 "아직 모은다" 가 아니라 "고장 났다" 로 읽힌다. 아는 게 값뿐이면 한 줄로 그 사실을 말한다.
+ *
+ * **2026-09-21 — 세 점수를 한 축으로 폈다.** 전에는 오픈크리틱과 메타크리틱이 한 칸에 눌려 있고
+ * (메타는 note 안의 "메타 85" 였다) 유저 점수만 "94%" 로 단위를 달고 있었다. 셋 다 0~100 값인데
+ * 표기가 셋 다 달라서, 나란히 놓고도 어느 쪽이 높은지 한눈에 안 들어왔다. 값 자리는 맨 숫자로 맞추고
+ * 척도와 출처는 아래 회색 줄이 맡는다(services 의 scoreLines).
+ *
+ * **출시일을 뺐다.** 바로 왼쪽 제목 밑 줄이 같은 날짜를 이미 말한다 — 한 화면에 같은 값이 두 번 서면
+ * 읽는 사람은 둘이 다른 값인지 확인하느라 두 번 읽는다.
+ * **플레이타임도 뺐다.** 이 기둥 아래에 3종을 막대까지 붙여 말하는 칸이 통째로 내려왔다.
  */
-function StatGrid({ game }: { game: GameDetail }) {
-  const score = bestScore(game.platforms);
-  const user = bestUserScore(game.platforms);
-  const main = game.playtime?.mainStoryHours;
-  const cells: StatCellProps[] = [];
-
-  // 출시일은 게임 단위 값이다(dto 의 releaseDate 주석) — 플랫폼 탭마다 다른 값을 보여 주면
-  // PlayStation 탭에서만 빈칸이 된다. 여기서는 어느 탭을 보든 같은 한 값을 말한다
-  if (game.releaseDate) cells.push({ label: "출시일", value: formatDate(game.releaseDate) });
-  // 완전 정복 시간을 여기 붙이지 않는 이유(2026-09-15): 같은 화면의 플레이타임 칸이 3종을 막대까지 붙여 말한다
-  if (main) cells.push({ label: "메인 스토리", value: formatHours(main) });
-  if (score) cells.push({ label: "평론가 평점", value: String(score.value), note: score.note ?? undefined });
-  // 유저 점수를 평론가 점수 옆에 따로 세우는 이유: 두 값이 갈리는 게임이 있고, 그 사실 자체가
-  // 살지 말지를 정하는 정보다. 하나로 합치면 그 갈림이 사라진다
-  if (user) {
-    cells.push({
-      label: "유저 점수",
-      value: userScoreValueText(user.score.value, user.score.kind),
-      note: `${PLATFORM_LABEL[user.platform] ?? user.platform} | ${userScoreNoteText(user.score.kind, user.score.count)}`,
-    });
-  }
-
-  if (cells.length === 0) {
+function ScoreGrid({ game }: { game: GameDetail }) {
+  const lines = scoreLines(game.platforms);
+  if (lines.length === 0) {
     return <p className="border-t border-line pt-5 text-[12.5px] leading-[1.6] text-dim">{GAME_MESSAGES.summaryPending}</p>;
   }
   return (
     <dl className="grid grid-cols-2 gap-x-5 gap-y-[18px] border-t border-line pt-5">
-      {cells.map((c) => (
-        <StatCell key={c.label} {...c} />
+      {lines.map((c) => (
+        <StatCell key={c.key} label={c.label} value={String(c.value)} note={c.note} />
       ))}
     </dl>
   );
@@ -294,8 +281,12 @@ export default async function GameDetailPage({ params }: Props) {
             {/* 자식(DLC, 에디션)일 때만 선다 - 본편 화면에서는 아무것도 그리지 않는다 */}
             <ContentKindHead contentType={game.contentType} parent={game.parent} />
             <h1 className="text-[30px] font-extrabold leading-[1.1] tracking-[-0.045em] text-ink sm:text-[40px] sm:leading-[1.08]">{title}</h1>
+            {/* 장르를 이 줄에서 뺐다(2026-09-21). 전에는 "2020년 3월 12일 (목) 출시 | 스포츠, 액션, 캐주얼" 이
+                한 줄이었는데, 파이프 왼쪽은 이 게임의 사실(언제 나왔나)이고 오른쪽은 분류(어떤 갈래인가)라
+                성질이 다르다. 게다가 장르가 넷을 넘으면 줄이 접히면서 출시일이 장르 사이에 낀 것처럼 읽혔다.
+                여기는 "언제, 누가" 만 말하고, 장르는 아래 칩 줄이 맡는다 */}
             <p className="text-[13.5px] text-mut">
-              {[game.titleKo ? game.titleEn : null, game.releaseDate ? `${formatDate(game.releaseDate)} 출시` : null, game.genres.join(", ") || null]
+              {[game.titleKo ? game.titleEn : null, game.releaseDate ? `${formatDate(game.releaseDate)} 출시` : null]
                 .filter(Boolean)
                 .join(" | ")}
             </p>
@@ -308,9 +299,21 @@ export default async function GameDetailPage({ params }: Props) {
             </p>
           )}
 
+          {/* 장르 — 같은 화면의 칩들과 모양을 맞춘다. 누를 수 없는 칩인 이유는 장르 목록 화면이
+              아직 주소로만 살아 있어서다(목록 필터의 장르 축이 그 일을 한다) */}
+          {game.genres.length > 0 && (
+            <ul className="enter-item flex flex-wrap gap-1.5" style={stagger(3)} aria-label="장르">
+              {game.genres.map((g) => (
+                <li key={g} className="inline-flex items-center rounded-full bg-surface-2 px-[11px] py-[5px] text-[12.5px] text-ink-2">
+                  {g}
+                </li>
+              ))}
+            </ul>
+          )}
+
           {/* 플레이 방식, 스팀덱 등급, 네이티브 OS — 장르와 달리 "어떻게 즐기나" 를 말하는 값이라 한 줄에 모인다 */}
           {(hasPlayModes || game.platforms.length > 0) && (
-            <div className="enter-item flex flex-wrap items-center gap-1.5" style={stagger(3)}>
+            <div className="enter-item flex flex-wrap items-center gap-1.5" style={stagger(4)}>
               <MultiplayerBadges
                 localMaxPlayers={game.localMaxPlayers}
                 onlineMaxPlayers={game.onlineMaxPlayers}
@@ -323,8 +326,10 @@ export default async function GameDetailPage({ params }: Props) {
           )}
         </div>
 
-        {/* lg 아래에서는 붙이지 않는다 — 한 기둥으로 접히면 따라올 대상이 자기 자신뿐이다 */}
-        <div className="enter-item flex min-w-0 flex-col gap-6 lg:sticky lg:top-[80px]" style={stagger(4)}>
+        {/* lg 아래에서는 붙이지 않는다 — 한 기둥으로 접히면 따라올 대상이 자기 자신뿐이다.
+            sticky 인 기둥에 넣을 것을 고르는 기준은 "사는 결정에 직접 쓰이나" 다 —
+            값, 알림 버튼, 점수, 그리고 플레이타임까지 넷이 여기 산다. */}
+        <div className="enter-item flex min-w-0 flex-col gap-6 lg:sticky lg:top-[80px]" style={stagger(5)}>
           <PriceHeadline game={game} recordedLow={recordedLow} />
 
           {/* 찜 버튼은 숨겼다(2026-09-21, 사용자 결정) — WishlistSlot 과 그 폴백은 그대로 둔다.
@@ -338,7 +343,22 @@ export default async function GameDetailPage({ params }: Props) {
             </Link>
           </div>
 
-          <StatGrid game={game} />
+          <ScoreGrid game={game} />
+
+          {/*
+            플레이타임을 이 기둥으로 올렸다(2026-09-21).
+
+            전에는 화면 한참 아래에서 사양표와 나란히 두 칸을 이루고 있었다. 그런데 이 칸이 답하는
+            "얼마나 걸리나" 와 그 아래 "시간당 얼마인가" 는 값과 같은 질문의 뒷면이다 —
+            10만원이 비싼지는 100시간짜리인지 3시간짜리인지를 알아야 정해진다. 값에서 두 화면 아래
+            떨어져 있으면 둘을 머릿속에서 이어 붙여야 했다. 결론끼리 붙여 두면 그 일이 없어진다.
+
+            기둥이 좁아 막대가 짧아지는 문제는 남는다(실측 약 200px). 그래도 막대는 보조 그래픽이고
+            값은 늘 숫자로도 읽힌다 — 좁은 막대보다 먼 거리가 더 비쌌다.
+          */}
+          <div className="border-t border-line pt-5">
+            <PlaytimeCard playtime={game.playtime} currentPrice={best?.currentPrice ?? null} currency={best?.currency} scale={perHourScale} />
+          </div>
         </div>
       </section>
 
@@ -370,35 +390,34 @@ export default async function GameDetailPage({ params }: Props) {
         <UpgradeNotes upgrades={game.upgrades} />
       </section>
 
-      {/* 사양과 플레이타임은 나란히 둔다 — 하나는 "돌아가나", 하나는 "얼마나 걸리나" 로
-          둘 다 사기 전 마지막에 묻는 값이고, 어느 쪽도 한 줄을 다 쓸 만큼 길지 않다 */}
-      <div className="grid items-start gap-x-12 gap-y-10 lg:grid-cols-[repeat(auto-fit,minmax(min(340px,100%),1fr))]">
-        <div className="flex min-w-0 flex-col gap-6">
-          {/* 사양은 가격, 추가 콘텐츠 다음이다 — 살지 말지를 정한 뒤에 오는 질문이라서다.
-              콘솔 전용 게임은 groups 가 비어 있어 칸 자체가 서지 않는다.
-              판정이 사양표보다 먼저 서는 이유: 사람이 묻는 것은 "돌아가나" 이고 표는 그 근거다 */}
-          {game.requirements.length > 0 && (
-            <Suspense fallback={null}>
-              <CompatSlot groups={game.requirements} platforms={game.platforms} />
-            </Suspense>
-          )}
-          <RequirementsSection groups={game.requirements} />
-        </div>
-
-        <div className="min-w-0">
-          <PlaytimeCard playtime={game.playtime} currentPrice={best?.currentPrice ?? null} currency={best?.currency} scale={perHourScale} />
-        </div>
-      </div>
-
       {/* 에디션과 DLC 는 같은 줄 모양을 쓴다 - 묻는 것이 "제목과 값" 으로 같고,
           모양이 다르면 같은 화면에서 두 번 배워야 한다.
-          머리(건수)까지 DlcSection 안에 있다 - 플랫폼 칩으로 거른 건수를 말해야 해서다 */}
+          머리(건수)까지 DlcSection 안에 있다 - 플랫폼 칩으로 거른 건수를 말해야 해서다.
+
+          가격표 바로 밑으로 올렸다(2026-09-21). 둘 다 "얼마인가" 에 답하는 값이고, 에디션은
+          사실상 가격표의 연장이다 — 본편 5만원 옆에 디럭스 7만원이 있어야 고를 수 있다.
+          전에는 사양과 플레이타임을 건너뛴 자리에 있어서, 에디션을 비교하려면 값을 외운 채
+          화면 두 개를 내려가야 했다. 접혀 있으니 자리를 뺏지도 않는다. */}
       {game.editions.length > 0 && (
         <DlcSection id="edition-heading" title={GAME_MESSAGES.editionHeading} dlcs={game.editions} hasAddOns={false} />
       )}
 
       {(game.dlcs.length > 0 || hasAddOns) && (
         <DlcSection id="dlc-heading" title={GAME_MESSAGES.dlcHeading} dlcs={game.dlcs} hasAddOns={hasAddOns} />
+      )}
+
+      {/* 사양은 가격, 추가 콘텐츠 다음이다 — 살지 말지를 정한 뒤에 오는 질문이라서다.
+          콘솔 전용 게임은 groups 가 비어 있어 칸 자체가 서지 않는다.
+          판정이 사양표보다 먼저 서는 이유: 사람이 묻는 것은 "돌아가나" 이고 표는 그 근거다.
+          플레이타임이 위 기둥으로 올라가면서 이 자리는 한 기둥이 됐다 — 판정 표와 사양 표는
+          같은 값을 결론과 근거로 두 번 말하므로 좌우로 갈라 놓으면 눈이 둘을 못 잇는다 */}
+      {game.requirements.length > 0 && (
+        <div className="flex min-w-0 flex-col gap-6">
+          <Suspense fallback={null}>
+            <CompatSlot groups={game.requirements} platforms={game.platforms} />
+          </Suspense>
+          <RequirementsSection groups={game.requirements} />
+        </div>
       )}
 
       <Suspense fallback={null}>
