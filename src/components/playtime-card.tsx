@@ -34,7 +34,8 @@ const ITEMS: Array<{ key: ItemKey; label: string; barClass: string }> = [
   { key: "completionistHours", label: "완전 정복", barClass: "bg-acc-3" },
 ];
 
-const EMPTY_TEXT = "플레이타임 정보가 아직 없습니다.";
+/** 아직 안 모은 상태. "-습니다" 를 "-해요" 로 맞추면서 문구도 같이 골랐다(2026-09-21, 사용자 지정) */
+const EMPTY_TEXT = "플레이타임 정보가 아직 플레이 중이에요.";
 const MISSING_TEXT = "정보 없음";
 /** 스케일 기준: 해당 게임의 최댓값 = 100%. 게임마다 2시간짜리와 5,000시간짜리가 섞여 절대 기준은 의미가 없다 */
 const FULL_PCT = 100;
