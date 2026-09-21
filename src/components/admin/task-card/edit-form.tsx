@@ -1,79 +1,42 @@
 "use client";
 
-// 카드 고치기. 제목, 메모, 급함만 다룬다 — 칸과 순서는 자기 액션이 따로 있다(자취를 남겨야 해서).
+// 할 일 고치기 — 제목, 메모, 급함만 다룬다. 칸과 순서는 자기 액션이 따로 있다(자취를 남겨야 해서).
 //
-// 왜 별도 화면이 아니라 카드 자리에서 고치나: 이 판의 카드는 짧다. 고치려고 다른 화면으로 갔다 오면
-// 판 전체의 맥락(옆 칸에 무엇이 있는지)을 놓친다. 제자리에서 고치고 제자리에서 닫는다.
-import { useActionState, useEffect } from "react";
-import { TASK_MESSAGES, TASK_PRIORITY_LABEL } from "@/lib/admin/messages";
-import { TASK_PRIORITIES, type AdminTask } from "@/lib/admin/tasks";
+// 팝업 안에 산다(2026-09-21). 앞서는 카드 자리에서 고쳤는데, 카드 폭이 250px 안팎이라
+// 입력칸이 한 줄짜리로 납작해지고 라벨이 전부 sr-only 였다 — 무슨 칸인지 눈으로는 알 수 없었다.
+// 칸 모양은 추가 팝업과 같은 것을 쓴다(task-fields) — 같은 값을 두 모양으로 받으면 둘이 어긋난다.
+//
+// 저장해도 팝업을 닫지 않는다: 여기서 할 일이 고치기 하나가 아니다(기록을 남기러 온 김에 제목도 고친다).
+// 대신 저장됐다는 말을 그 자리에 남긴다 — 닫히지 않으면 눌렀는지 아닌지를 알 수 없다.
+import { useActionState } from "react";
+import { Button } from "@/components/ui/button";
+import { TASK_MESSAGES } from "@/lib/admin/messages";
+import { type AdminTask } from "@/lib/admin/tasks";
+import { TaskBasicFields } from "@/components/admin/task-fields";
 import { updateTaskAction, type TaskActionState } from "@/app/(admin)/admin/tasks/actions";
 
-const FIELD = "w-full rounded-[7px] border border-line bg-surface px-2 py-1.5 text-[16px] leading-[1.5] text-ink placeholder:text-dim sm:text-[12.5px]";
-
-export function TaskEditForm({ task, onDone }: { task: AdminTask; onDone: () => void }) {
+export function TaskEditForm({ task }: { task: AdminTask }) {
   const [state, formAction, pending] = useActionState<TaskActionState, FormData>(updateTaskAction, null);
 
-  // 저장이 끝나면 닫는다. 판은 액션이 revalidate 한 값으로 다시 그려진다
-  useEffect(() => {
-    if (state?.ok) onDone();
-  }, [state, onDone]);
-
   return (
-    <form action={formAction} className="flex flex-col gap-1.5">
+    <form action={formAction} className="flex flex-col gap-4">
       <input type="hidden" name="id" value={task.id} />
 
-      <label className="sr-only" htmlFor={`title-${task.id}`}>
-        {TASK_MESSAGES.titleLabel}
-      </label>
-      <input id={`title-${task.id}`} name="title" defaultValue={task.title} maxLength={200} className={FIELD} />
+      {/* key 를 카드 id 로 두는 이유: 팝업이 다른 카드로 바뀌어도 같은 폼이 재사용되면
+          앞 카드의 글이 남는다(defaultValue 는 첫 렌더에만 읽힌다) */}
+      <TaskBasicFields key={task.id} title={task.title} body={task.body} priority={task.priority} />
 
-      <label className="sr-only" htmlFor={`body-${task.id}`}>
-        {TASK_MESSAGES.bodyLabel}
-      </label>
-      <textarea
-        id={`body-${task.id}`}
-        name="body"
-        rows={3}
-        defaultValue={task.body ?? ""}
-        placeholder={TASK_MESSAGES.bodyPlaceholder}
-        className={`${FIELD} resize-y`}
-      />
-
-      <div className="flex items-center gap-1.5">
-        <label className="sr-only" htmlFor={`priority-${task.id}`}>
-          {TASK_MESSAGES.priorityLabel}
-        </label>
-        <select
-          id={`priority-${task.id}`}
-          name="priority"
-          defaultValue={task.priority}
-          className="rounded-[6px] border border-line bg-surface px-1.5 py-1 text-[11.5px] text-mut"
-        >
-          {TASK_PRIORITIES.map((p) => (
-            <option key={p} value={p}>
-              {TASK_PRIORITY_LABEL[p]}
-            </option>
-          ))}
-        </select>
-
-        <button
-          type="submit"
-          disabled={pending}
-          className="press ml-auto rounded-[7px] border border-acc px-2.5 py-1 text-[11.5px] text-acc transition-colors hover:bg-surface-2 disabled:opacity-60"
-        >
+      <div className="flex items-center gap-3">
+        <Button type="submit" variant="secondary" loading={pending}>
           {TASK_MESSAGES.save}
-        </button>
-        <button
-          type="button"
-          onClick={onDone}
-          className="press rounded-[7px] border border-line px-2.5 py-1 text-[11.5px] text-mut transition-colors hover:border-line-strong"
-        >
-          {TASK_MESSAGES.cancel}
-        </button>
+        </Button>
+        {state?.ok && state.message && <span className="animate-rise text-[12.5px] text-ok">{state.message}</span>}
+        {state && !state.ok && (
+          <span role="alert" className="animate-rise text-[12.5px] text-danger">
+            {state.error}
+          </span>
+        )}
       </div>
-
-      {state && !state.ok && <p className="text-[11.5px] text-danger">{state.error}</p>}
     </form>
   );
 }

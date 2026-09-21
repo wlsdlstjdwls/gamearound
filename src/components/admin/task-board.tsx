@@ -15,14 +15,22 @@ import { cn } from "@/lib/cn";
 import { TASK_MESSAGES, TASK_STATUS_LABEL } from "@/lib/admin/messages";
 import { TASK_STATUSES, type Board, type TaskStatus } from "@/lib/admin/tasks";
 import { TaskCard } from "@/components/admin/task-card";
+import { TaskDialog } from "@/components/admin/task-card/dialog";
 import { clearDoneAction, moveTaskAction, type TaskActionState } from "@/app/(admin)/admin/tasks/actions";
 
 export function TaskBoard({ board }: { board: Board }) {
+  /**
+   * 지금 열린 카드. **판이 들고 있다** — 카드가 들고 있으면 칸을 옮기는 순간 그 카드가 다른 칸에서
+   * 새로 그려지면서 팝업이 닫힌다(실측 2026-09-21). 옮기기는 팝업 안에서 하는 일이라 닫히면 안 된다.
+   */
+  const [openId, setOpenId] = useState<string | null>(null);
   const [dragOver, setDragOver] = useState<TaskStatus | null>(null);
   /** 지금 끌고 있는 카드가 원래 있던 칸. 없으면 아무것도 끌고 있지 않다 */
   const [dragFrom, setDragFrom] = useState<TaskStatus | null>(null);
   const [pending, start] = useTransition();
   const [state, setState] = useState<TaskActionState>(null);
+
+  const openTask = openId ? TASK_STATUSES.flatMap((s) => board[s]).find((t) => t.id === openId) : undefined;
 
   const endDrag = () => {
     setDragOver(null);
@@ -95,7 +103,13 @@ export function TaskBoard({ board }: { board: Board }) {
               ) : (
                 <ul className="flex flex-col gap-2">
                   {board[status].map((task) => (
-                    <TaskCard key={task.id} task={task} onDragStart={() => setDragFrom(status)} onDragEnd={endDrag} />
+                    <TaskCard
+                      key={task.id}
+                      task={task}
+                      onOpen={setOpenId}
+                      onDragStart={() => setDragFrom(status)}
+                      onDragEnd={endDrag}
+                    />
                   ))}
                 </ul>
               )}
@@ -103,6 +117,9 @@ export function TaskBoard({ board }: { board: Board }) {
           );
         })}
       </div>
+
+      {/* 열린 카드는 판이 다시 그려져도 같은 카드를 가리킨다 — 지워졌으면 팝업도 사라진다 */}
+      {openTask && <TaskDialog task={openTask} open onOpenChange={(v) => !v && setOpenId(null)} />}
     </section>
   );
 }
