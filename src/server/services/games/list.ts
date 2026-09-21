@@ -121,8 +121,11 @@ function platformAgg(platforms: Platform[]) {
  * 유료 행이 없으면 자리를 주지 않는다(근거는 표 옆 주석에 있다).
  */
 function reviewRankExpr(agg: ReturnType<typeof platformAgg>) {
-  const steps = REVIEW_RANK_STEPS.map(([position, reviews]) => sql`when ${agg.maxReviews} >= ${reviews} then ${position}`);
-  return sql`case when ${agg.hasPaidPrice} then (case ${sql.join(steps, sql` `)} else null end) else null end`;
+  // 자리와 경계에 ::int 를 붙인다. 안 붙이면 바인딩 파라미터가 text 로 추론돼
+  // coalesce(min_rank integer, ...) 가 42804(COALESCE types integer and text cannot be matched)로 깨진다.
+  // 빌드도 테스트도 SQL 을 돌리지 않아 이 사고는 배포 뒤에야 드러난다 — 목록 화면이 통째로 500 이 됐다.
+  const steps = REVIEW_RANK_STEPS.map(([position, reviews]) => sql`when ${agg.maxReviews} >= ${reviews}::int then ${position}::int`);
+  return sql`case when ${agg.hasPaidPrice} then (case ${sql.join(steps, sql` `)} else null::int end) else null::int end`;
 }
 
 async function listGamesRaw(filter: GameListFilter): Promise<GameListResult> {
