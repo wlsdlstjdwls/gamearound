@@ -17,6 +17,8 @@ export const ROUTES = {
   admin: "/admin",
   /** 상품 매핑 검수 — 매핑 배치(§5.2)가 후보만 남긴 상품을 사람이 마무리하는 자리 */
   adminProducts: "/admin/products",
+  /** 관리자 할 일 판. 자동으로 쌓이는 검수 큐와 달리 사람이 직접 적는 일이 사는 자리 */
+  adminTasks: "/admin/tasks",
   vendor: "/vendor",
   /** 매장(오프라인 판매처). 디지털 스토어와 낱말을 가르려고 shop 을 쓴다 — 설계서 §1 */
   shops: "/shops",

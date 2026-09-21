@@ -45,6 +45,10 @@ const GROUPS: Array<{ title: string; items: Item[] }> = [
     ],
   },
   {
+    title: "할 일",
+    items: [{ href: ROUTES.adminTasks, label: "판" }],
+  },
+  {
     title: "검수",
     items: [
       { href: "/admin/companies", label: "회사", pick: (c) => ({ n: c.companies, capped: c.companiesCapped }) },

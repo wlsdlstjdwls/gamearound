@@ -1,0 +1,113 @@
+"use server";
+// 할 일 판 Server Action. 각 액션은 requireAdmin() 으로 role 을 재검증한다(§6) — 서비스도 한 번 더 본다.
+import { revalidatePath } from "next/cache";
+import { z } from "zod";
+import { ROUTES } from "@/lib/routes";
+import { TASK_MESSAGES } from "@/lib/admin/messages";
+import { sourceEnum } from "@/server/db/schema";
+import { TASK_STATUSES } from "@/lib/admin/tasks";
+import { clearDone, createTask, deleteTask, moveTask, reorderTask } from "@/server/services/admin-tasks";
+import { requireAdmin } from "@/server/services/users";
+
+export type TaskActionState = { ok: true; message?: string } | { ok: false; error: string } | null;
+
+/** 제목 상한. 카드 한 장이 한눈에 읽혀야 하므로 길이를 화면이 아니라 여기서 막는다 */
+const TITLE_MAX = 200;
+const BODY_MAX = 4000;
+
+const statusSchema = z.enum(TASK_STATUSES);
+const createSchema = z.object({
+  title: z.string().trim().min(1, "할 일을 입력하세요").max(TITLE_MAX),
+  body: z.string().trim().max(BODY_MAX).optional(),
+  status: statusSchema.default("todo"),
+  priority: z.enum(["high", "normal", "low"]).default("normal"),
+  // 빈 문자열은 "안 걸었다" 로 읽는다 — 폼은 빈 칸을 안 보내는 게 아니라 빈 문자열을 보낸다
+  gameId: z.union([z.literal(""), z.uuid()]).optional(),
+  source: z.union([z.literal(""), z.enum(sourceEnum.enumValues)]).optional(),
+});
+
+function fail(e: unknown): TaskActionState {
+  return { ok: false, error: e instanceof Error ? e.message : "처리에 실패했습니다" };
+}
+
+function revalidate() {
+  revalidatePath(ROUTES.adminTasks);
+}
+
+export async function createTaskAction(_prev: TaskActionState, form: FormData): Promise<TaskActionState> {
+  try {
+    await requireAdmin();
+    const p = createSchema.safeParse({
+      title: form.get("title"),
+      body: form.get("body") ?? undefined,
+      status: form.get("status") ?? undefined,
+      priority: form.get("priority") ?? undefined,
+      gameId: form.get("gameId") ?? undefined,
+      source: form.get("source") ?? undefined,
+    });
+    if (!p.success) return { ok: false, error: p.error.issues[0]?.message ?? TASK_MESSAGES.invalid };
+
+    await createTask({
+      title: p.data.title,
+      body: p.data.body ?? null,
+      status: p.data.status,
+      priority: p.data.priority,
+      gameId: p.data.gameId || null,
+      source: p.data.source || null,
+    });
+    revalidate();
+    return { ok: true, message: TASK_MESSAGES.created };
+  } catch (e) {
+    return fail(e);
+  }
+}
+
+export async function moveTaskAction(id: string, to: string): Promise<TaskActionState> {
+  try {
+    await requireAdmin();
+    const p = z.object({ id: z.uuid(), to: statusSchema }).safeParse({ id, to });
+    if (!p.success) return { ok: false, error: TASK_MESSAGES.invalid };
+    await moveTask(p.data.id, p.data.to);
+    revalidate();
+    return { ok: true, message: TASK_MESSAGES.moved };
+  } catch (e) {
+    return fail(e);
+  }
+}
+
+export async function reorderTaskAction(id: string, dir: string): Promise<TaskActionState> {
+  try {
+    await requireAdmin();
+    const p = z.object({ id: z.uuid(), dir: z.enum(["up", "down"]) }).safeParse({ id, dir });
+    if (!p.success) return { ok: false, error: TASK_MESSAGES.invalid };
+    await reorderTask(p.data.id, p.data.dir);
+    revalidate();
+    return { ok: true };
+  } catch (e) {
+    return fail(e);
+  }
+}
+
+export async function deleteTaskAction(id: string): Promise<TaskActionState> {
+  try {
+    await requireAdmin();
+    const p = z.uuid().safeParse(id);
+    if (!p.success) return { ok: false, error: TASK_MESSAGES.invalid };
+    await deleteTask(p.data);
+    revalidate();
+    return { ok: true, message: TASK_MESSAGES.removed };
+  } catch (e) {
+    return fail(e);
+  }
+}
+
+export async function clearDoneAction(): Promise<TaskActionState> {
+  try {
+    await requireAdmin();
+    const n = await clearDone();
+    revalidate();
+    return { ok: true, message: `${n}건을 치웠어요` };
+  } catch (e) {
+    return fail(e);
+  }
+}

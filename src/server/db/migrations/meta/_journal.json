@@ -288,6 +288,13 @@
       "when": 1789950888811,
       "tag": "0040_eager_mastermind",
       "breakpoints": true
+    },
+    {
+      "idx": 41,
+      "version": "7",
+      "when": 1789951235229,
+      "tag": "0041_dizzy_mephisto",
+      "breakpoints": true
     }
   ]
 }
