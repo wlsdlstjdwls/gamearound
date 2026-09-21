@@ -59,7 +59,7 @@ export const wikidataAdapter: CompanyAdapter = {
       body: new URLSearchParams({ query: companyDetailQuery(candidates) }).toString(),
       context: query,
     });
-    const found = resolveSingleCompany(payload);
+    const found = resolveSingleCompany(payload, query);
     if (!found) return null;
     // 위키데이터에 영문 라벨이 없으면 스토어가 준 원문을 이름으로 쓴다 — Q번호를 화면에 띄우지 않기 위해
     return /^Q\d+$/.test(found.nameEn) ? { ...found, nameEn: query } : found;

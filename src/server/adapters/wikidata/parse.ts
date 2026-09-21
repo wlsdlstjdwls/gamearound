@@ -103,9 +103,25 @@ export function groupCompanies(payload: unknown): Map<string, CompanyInfo> {
 /**
  * 자동 확정 판정. 후보가 정확히 1건일 때만 값을 준다.
  * 동명이인을 자동 확정하면 국가가 틀린 채로 회사 화면에 박히고, 그 오류는 크롤러가 고쳐주지 않는다.
+ *
+ * 후보가 둘 이상일 때 **이름을 스스로 그렇게 부르는 회사**가 딱 하나면 그것으로 좁힌다(queryName 을 준 경우).
+ * 왜 필요했나(2026-09-21 실측): "Square Enix" 로 검색하면 Q207784(스퀘어 에닉스)와
+ * Q679933(아이도스 인터랙티브)이 함께 온다. 아이도스가 걸리는 이유는 별칭 "Square Enix Ltd" 가
+ * 법인 접미어를 떼면 같은 키가 되기 때문이다. 그래서 별칭이 아니라 **그 회사의 이름**이 일치하는지를 본다 —
+ * 아이도스의 이름은 "Eidos Interactive" 라서 빠지고, 남는 하나가 진짜 스퀘어 에닉스다.
+ * 게임 162개가 이 한 이름에 걸려 있었다.
+ *
+ * 이름이 진짜로 같은 동명 회사 둘은 여전히 null 이다 — 그 자리는 사람이 봐야 한다.
  */
-export function resolveSingleCompany(payload: unknown): CompanyInfo | null {
+export function resolveSingleCompany(payload: unknown, queryName?: string): CompanyInfo | null {
   const grouped = groupCompanies(payload);
-  if (grouped.size !== 1) return null;
-  return grouped.values().next().value ?? null;
+  if (grouped.size === 1) return grouped.values().next().value ?? null;
+  if (grouped.size === 0 || !queryName) return null;
+
+  const target = normalizeCompanyName(queryName);
+  if (!target) return null;
+  const named = [...grouped.values()].filter(
+    (c) => normalizeCompanyName(c.nameEn) === target || (c.nameKo ? normalizeCompanyName(c.nameKo) === target : false),
+  );
+  return named.length === 1 ? named[0] : null;
 }

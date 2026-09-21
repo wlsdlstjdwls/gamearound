@@ -95,6 +95,52 @@ describe("resolveSingleCompany", () => {
   it("후보가 없으면 null", () => {
     expect(resolveSingleCompany({ results: { bindings: [] } })).toBeNull();
   });
+
+  /*
+   * 2026-09-21 실측: "Square Enix" 검색에 아이도스 인터랙티브가 딸려 온다.
+   * 별칭("Square Enix Ltd")이 법인 접미어를 떼면 같은 키가 되기 때문이다.
+   * 이름을 스스로 그렇게 부르는 회사가 하나뿐이면 그것으로 좁힌다.
+   */
+  const SQUARE_ENIX = {
+    results: {
+      bindings: [
+        {
+          company: { value: "http://www.wikidata.org/entity/Q207784" },
+          labelEn: { value: "Square Enix" },
+          labelKo: { value: "스퀘어 에닉스" },
+          countryCode: { value: "jp" },
+        },
+        {
+          company: { value: "http://www.wikidata.org/entity/Q679933" },
+          labelEn: { value: "Eidos Interactive" },
+          labelKo: { value: "아이도스 인터랙티브" },
+          countryCode: { value: "gb" },
+        },
+      ],
+    },
+  };
+
+  it("이름이 일치하는 회사가 하나뿐이면 그것으로 좁힌다", () => {
+    expect(resolveSingleCompany(SQUARE_ENIX, "Square Enix")?.externalId).toBe("Q207784");
+    // 법인 접미어가 붙은 원문으로 물어도 같은 답이어야 한다
+    expect(resolveSingleCompany(SQUARE_ENIX, "SQUARE ENIX CO., LTD.")?.externalId).toBe("Q207784");
+  });
+
+  it("묻는 이름 없이는 좁히지 않는다 — 앞 동작을 그대로 지킨다", () => {
+    expect(resolveSingleCompany(SQUARE_ENIX)).toBeNull();
+  });
+
+  it("이름이 진짜로 같은 둘은 여전히 null — 그 자리는 사람이 본다", () => {
+    const homonyms = {
+      results: {
+        bindings: [
+          { company: { value: "http://www.wikidata.org/entity/Q1" }, labelEn: { value: "Apex" } },
+          { company: { value: "http://www.wikidata.org/entity/Q2" }, labelEn: { value: "Apex" } },
+        ],
+      },
+    };
+    expect(resolveSingleCompany(homonyms, "Apex")).toBeNull();
+  });
 });
 
 describe("exactSearchMatches", () => {
