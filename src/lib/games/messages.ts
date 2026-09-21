@@ -268,16 +268,6 @@ export function upgradeText(kind: UpgradeKind, toLabel: string, price: string | 
 }
 
 /**
- * 패치 속도 한 줄. 기록이 1건뿐이면 "간격"이 없어 건수만 말한다 —
- * 0 일이라고 적으면 "매일 고친다" 로 읽힌다.
- */
-export function patchSpeedText(averageIntervalDays: number | null, count: number): string {
-  if (count === 0) return "기록 없어요";
-  if (averageIntervalDays === null) return `기록 ${count}건`;
-  return `평균 ${averageIntervalDays}일마다 | ${count}건`;
-}
-
-/**
  * 출시예정 화면 문구.
  * "미정" 을 세지 않는 이유를 화면에 적는다 — 스토어가 날짜를 주지 않는 게임이 많고
  * (PlayStation 은 아예 주지 않는다) 그 사정을 숨기면 목록이 비어 보이는 것으로만 읽힌다.

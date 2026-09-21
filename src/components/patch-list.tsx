@@ -11,7 +11,7 @@
 import { Clamp } from "@/components/ui/tooltip";
 import { ROWS } from "@/components/ui/page";
 import { formatDate, platformLabel } from "@/lib/format";
-import { GAME_MESSAGES, patchSpeedText } from "@/lib/games/messages";
+import { GAME_MESSAGES } from "@/lib/games/messages";
 import { patchKindLabels } from "@/lib/patch-kind";
 import type { PatchNoteDto, PlatformPatchesDto } from "@/server/services/games";
 import type { Platform, Region } from "@/server/db/schema";
@@ -103,10 +103,11 @@ export function PatchSpeed({ groups }: { groups: PlatformPatchesDto[] }) {
       {groups.map((g) => (
         <div key={`${g.platform}:${g.region}`} className="flex items-baseline justify-between gap-2.5 py-[11px]">
           <dt className="text-[13.5px] font-bold text-ink">{platformLabel(g)}</dt>
-          <dd className="text-right">
-            <span className="block text-[13px] text-ink">{g.latestAt ? formatDate(g.latestAt) : "-"}</span>
-            <span className="text-[11.5px] text-dim">{patchSpeedText(g.averageIntervalDays, g.count)}</span>
-          </dd>
+          {/* 값은 "마지막으로 고친 날" 하나다(2026-09-21). 밑에 "평균 N일마다 | M건" 을 달았었는데,
+              그 평균은 우리가 모은 범위 안에서만 참이라 단서 없이는 읽는 사람을 속인다.
+              게다가 이 화면에서 패치가 답하는 질문은 "아직 돌보나" 하나이고 거기엔 날짜면 족하다.
+              건수와 간격은 services 가 계속 계산한다 — 다시 적을 자리가 생기면 값은 이미 있다 */}
+          <dd className="text-right text-[13px] text-ink">{g.latestAt ? formatDate(g.latestAt) : "-"}</dd>
         </div>
       ))}
     </dl>
