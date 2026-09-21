@@ -177,7 +177,7 @@ export default async function HomePage() {
           <SectionHead
             title="뉴스"
             action={
-              <Link href={ROUTES.game} className="text-[13px] text-acc hover:underline">
+              <Link href={ROUTES.news} className="text-[13px] text-acc hover:underline">
                 전체 보기
               </Link>
             }

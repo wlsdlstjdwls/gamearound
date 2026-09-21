@@ -7,6 +7,8 @@ export const ROUTES = {
   sales: "/sales",
   /** 출시예정. 목록의 "최신 출시순" 과 묻는 질문이 달라 화면을 가른다(services/games/upcoming) */
   upcoming: "/upcoming",
+  /** 게임 뉴스 전체. 홈은 최신 8건만 내주고 나머지는 여기서 읽는다(services/games/news) */
+  news: "/news",
   signIn: "/sign-in",
   signUp: "/sign-up",
   wishlist: "/wishlist",
