@@ -1,15 +1,21 @@
 // 검색 결과 — searchParams(q, sort) 처리 (§5.1). Route Handler 불필요.
-// 리디자인: 카드 그리드 → 가로 행 리스트. 제목, 플랫폼, 가격을 같은 축에서 비교할 수 있다.
-import { formatPrice } from "@/lib/currency";
+//
+// **목록과 같은 카드 격자를 쓴다**(2026-09-21). 한동안 가로 행이었고, 그 근거로 "제목, 플랫폼,
+// 가격을 같은 축에서 비교할 수 있다" 를 적어 뒀었다. 그 비교가 실제로 필요한 화면은 /games 이고,
+// 검색에 오는 사람은 이미 무엇을 찾을지 정한 뒤다 — 던지는 질문은 "이 중에 내가 찾던 그거가
+// 어느 것인가" 라서 답은 값이 아니라 그림이다. 행에서는 그 그림이 96px 였다.
+//
+// 게다가 이 화면만 다른 모양이면 같은 게임이 화면마다 다르게 생긴다. 검색 결과에서 고른 게임을
+// 목록에서 다시 만났을 때 같은 것인지 알아보려면 제목을 다시 읽어야 했다.
+// 카드는 직접 짜지 않고 GameCard 를 그대로 쓴다 — 손으로 짠 줄 마크업이 카드가 바뀔 때마다
+// 뒤처지던 자리다(장르, 할인 스탬프, 플랫폼 배지가 여기만 없거나 달랐다).
 import type { Metadata } from "next";
 import Link from "next/link";
-import { CoverImage } from "@/components/game-card";
+import { GameCard } from "@/components/game-card";
 import { EmptyState } from "@/components/empty-state";
-import { PlatformBadges } from "@/components/platform-badges";
-import { Page, PageHead, ROW, ROWS } from "@/components/ui/page";
+import { Page, PageHead } from "@/components/ui/page";
 import { chipClass } from "@/components/ui/chip";
-import { cn } from "@/lib/cn";
-import { formatDate, formatDiscount } from "@/lib/format";
+import { GAMES_GRID_CLASS } from "@/lib/games/grid";
 import { stagger } from "@/lib/motion";
 import { ROUTES } from "@/lib/routes";
 import { searchGames, type GameSummary } from "@/server/services/games";
@@ -82,7 +88,7 @@ export default async function SearchPage({ searchParams }: Props) {
   const results = sortResults(await searchGames(q), sort);
 
   return (
-    <Page gap={20}>
+    <Page gap={22}>
       <div className="flex flex-wrap items-baseline justify-between gap-x-3 gap-y-2">
         <PageHead
           title={<>&ldquo;{q}&rdquo; 검색 결과</>}
@@ -108,45 +114,12 @@ export default async function SearchPage({ searchParams }: Props) {
         <ReportBlock q={q} />
       ) : (
         <>
-          <ul className={ROWS}>
-              {results.map((g, i) => {
-                const title = g.titleKo ?? g.titleEn;
-                const best = g.best;
-                const hasDiscount = Boolean(best?.discountPct && best.discountPct > 0);
-                return (
-                  <li key={g.slug} className="enter-item" style={stagger(i)}>
-                    <Link href={`/games/${g.slug}`} className={cn(ROW, "flex flex-wrap items-center gap-4 py-3.5")}>
-                      <div className="relative aspect-[460/215] w-24 shrink-0 overflow-hidden rounded-[var(--radius-inset)] bg-surface-3">
-                        <CoverImage src={g.coverUrl} alt={`${title} 커버`} sizes="96px" />
-                      </div>
-                      <div className="min-w-[180px] flex-1">
-                        <p className="text-[14.5px] font-bold tracking-[-0.01em] text-ink">{title}</p>
-                        <p className="mt-0.5 text-[12px] text-dim">
-                          {g.titleKo ? `${g.titleEn} | ` : ""}
-                          {best?.releaseDate ? `${formatDate(best.releaseDate)} 출시` : "출시일 미상"}
-                        </p>
-                        <div className="mt-1.5">
-                          <PlatformBadges platforms={g.platforms} />
-                        </div>
-                      </div>
-                      <div className="ml-auto text-right">
-                        <p className="text-[17px] font-bold tracking-[-0.02em] text-ink">{formatPrice(best?.currentPrice, best?.currency)}</p>
-                        <p className="mt-0.5 text-[12px] text-dim">
-                          {hasDiscount && best ? (
-                            <>
-                              <span className="text-dim-2 line-through">{formatPrice(best.listPrice, best.currency)}</span>
-                              {" | "}
-                              {formatDiscount(best.discountPct)}
-                            </>
-                          ) : (
-                            "할인 없음"
-                          )}
-                        </p>
-                      </div>
-                    </Link>
-                  </li>
-                );
-              })}
+          <ul className={GAMES_GRID_CLASS}>
+            {results.map((g, i) => (
+              <li key={g.slug} className="enter-item" style={stagger(i)}>
+                <GameCard game={g} />
+              </li>
+            ))}
           </ul>
           <ReportBlock q={q} />
         </>
