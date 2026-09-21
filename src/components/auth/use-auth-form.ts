@@ -2,11 +2,9 @@
 // 인증 폼 공용 훅 — zod 스키마로 클라이언트 즉시 검증(blur/입력 중) + 서버 액션 결과(fieldErrors) 병합 + 성공 시 이동.
 // 서버 에러는 해당 필드를 다시 편집하기 전까지 유지된다. 제출 시 첫 오류 필드로 포커스.
 import { useCallback, useEffect, useRef, useState, type FocusEvent, type FormEvent, type KeyboardEvent, type RefObject } from "react";
-import { useRouter } from "next/navigation";
 import type { z } from "zod";
 import type { AuthActionState } from "@/app/(auth)/actions";
 import { fieldErrorsOf } from "@/lib/auth/schemas";
-import { useSession } from "@/components/auth/session-provider";
 
 type Options<S extends z.ZodType> = {
   schema: S;
@@ -16,8 +14,6 @@ type Options<S extends z.ZodType> = {
 };
 
 export function useAuthForm<S extends z.ZodType>({ schema, toInput, serverState }: Options<S>) {
-  const router = useRouter();
-  const session = useSession();
   const formRef = useRef<HTMLFormElement>(null);
   const [clientErrors, setClientErrors] = useState<Record<string, string>>({});
   const [editedSinceServer, setEditedSinceServer] = useState<Set<string>>(() => new Set());
@@ -32,15 +28,26 @@ export function useAuthForm<S extends z.ZodType>({ schema, toInput, serverState 
     if (serverState && !serverState.ok) setErrorSerial((n) => n + 1);
   }
 
-  // 성공: 세션 갱신 → soft navigation(replace: 뒤로가기로 로그인 폼에 돌아오지 않게).
-  // router.refresh()는 부르지 않는다 — push 직후 부르면 아직 커밋 전인 /sign-in 트리를 새 쿠키로 다시 그리고,
-  // (auth)/layout 의 redirect 가 목적지를 덮어써 홈으로 튄다. 목적지는 어차피 새 쿠키로 RSC 요청된다.
+  /*
+   * 성공하면 **문서를 통째로 새로 연다**(soft navigation 이 아니다).
+   *
+   * 예전에는 `session.refresh()` 로 헤더를 고치고 `router.replace()` 로 부드럽게 넘어갔다.
+   * 그런데 로그인은 됐는데 머리글만 "로그인" 버튼으로 남는 일이 반복됐다(2026-09-21 실측:
+   * 서버는 세션을 주는데 머리글은 비로그인, 새로고침하면 곧바로 정상). 부드러운 이동은 성공을
+   * **두 조각**에 나눠 맡긴다 — 새 쿠키가 붙는 시점과 클라이언트 상태를 고치는 요청이 따로 돌고,
+   * 둘 중 하나만 어긋나도 화면이 거짓말을 한 채 굳는다. 되돌릴 길도 새로고침뿐이다.
+   *
+   * 문서를 새로 열면 그 조각이 하나가 된다: 새 쿠키로 서버가 그리고, SessionProvider 도 새로 묻는다.
+   * 값은 로그인 한 번에 붙는 전체 로딩 한 번이고, 얻는 건 "로그인했는데 로그인 안 한 화면" 이
+   * 구조적으로 불가능해지는 것이다. 로그인은 자주 하는 일이 아니다.
+   *
+   * `replace` 를 쓴다 — 뒤로가기로 로그인 폼에 돌아오지 않게(기존 동작 유지).
+   */
   const navigating = Boolean(serverState?.ok);
   useEffect(() => {
     if (!serverState?.ok) return;
-    const target = serverState.redirectTo;
-    session.refresh().finally(() => router.replace(target));
-  }, [serverState, router, session]);
+    window.location.replace(serverState.redirectTo);
+  }, [serverState]);
 
   const validateAll = useCallback((): Record<string, string> => {
     const form = formRef.current;

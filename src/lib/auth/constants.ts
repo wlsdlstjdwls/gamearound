@@ -10,6 +10,18 @@ export const SESSION_RENEW_BELOW_SEC = SESSION_TTL_SEC / 2;
 /** 쿠키 토큰 바이트 수 (base64url 43자) */
 export const SESSION_TOKEN_BYTES = 32;
 
+/**
+ * 헤더가 /api/auth/me 로 세션을 물어볼 때의 재시도.
+ *
+ * 왜 재시도가 필요한가: 이 요청 한 번의 실패가 곧 "로그아웃 상태" 로 그려진다. 한 번 그렇게 그려지면
+ * 사람이 새로고침하기 전까지 고쳐지지 않는다 — 로그인은 됐는데 머리글만 계속 "로그인" 버튼인 상태다.
+ * 실패는 세션이 없다는 뜻이 아니라 **못 물어봤다** 는 뜻이므로, 둘을 갈라 보고 몇 번 더 물어본다.
+ *
+ * 세 번, 0.4초에서 배로 늘린다. 더 늘리면 진짜 비로그인 사용자가 머리글 자리가 빈 채로 기다린다.
+ */
+export const SESSION_PROBE_RETRIES = 3;
+export const SESSION_PROBE_BACKOFF_MS = 400;
+
 /** 입력 규칙 — zod 스키마와 UI 안내 문구가 같은 숫자를 본다 */
 export const EMAIL_MAX = 254;
 export const PASSWORD_MIN = 8;
