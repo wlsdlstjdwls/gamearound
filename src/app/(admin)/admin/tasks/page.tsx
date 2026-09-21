@@ -8,6 +8,7 @@ import { PageHead } from "@/components/ui/page";
 import { TaskAddForm } from "@/components/admin/task-add-form";
 import { TaskBoard } from "@/components/admin/task-board";
 import { TASK_MESSAGES } from "@/lib/admin/messages";
+import { TASK_STATUSES } from "@/lib/admin/tasks";
 import { sourceEnum } from "@/server/db/schema";
 import { getBoard } from "@/server/services/admin-tasks";
 
@@ -17,12 +18,14 @@ export const dynamic = "force-dynamic";
 
 export default async function AdminTasksPage() {
   const board = await getBoard();
+  // 건수는 화면 제목 옆에 붙인다 — 판 위에 또 제목을 세우면 "할 일" 과 같은 말이 두 번 선다
+  const total = TASK_STATUSES.reduce((n, s) => n + board[s].length, 0);
 
   return (
     <>
       <header className="flex flex-col gap-3">
         <div>
-          <PageHead title={TASK_MESSAGES.title} />
+          <PageHead title={TASK_MESSAGES.title} note={TASK_MESSAGES.count(total)} />
           <p className="mt-1 max-w-[560px] text-[13px] text-mut">{TASK_MESSAGES.lead}</p>
         </div>
         <TaskAddForm sources={sourceEnum.enumValues} />

@@ -12,7 +12,6 @@
 // 살리지 않는다 — 제자리에 놓는 건 아무것도 하지 않는 일이라 받을 자리처럼 보이면 안 된다.
 import { useState, useTransition } from "react";
 import { cn } from "@/lib/cn";
-import { SectionHead } from "@/components/ui/page";
 import { TASK_MESSAGES, TASK_STATUS_LABEL } from "@/lib/admin/messages";
 import { TASK_STATUSES, type Board, type TaskStatus } from "@/lib/admin/tasks";
 import { TaskCard } from "@/components/admin/task-card";
@@ -32,8 +31,9 @@ export function TaskBoard({ board }: { board: Board }) {
 
   return (
     <section className="flex flex-col gap-3">
-      <div className="flex flex-wrap items-center justify-between gap-2">
-        <SectionHead title={TASK_MESSAGES.boardTitle} note={`${TASK_STATUSES.reduce((n, s) => n + board[s].length, 0)}건`} />
+      {/* 판 위에 제목을 세우지 않는다 — 화면 제목이 이미 "할 일" 이고 건수도 그 옆에 선다.
+          여기 남는 건 끝난 일 치우기 하나뿐이라 오른쪽 끝에 혼자 선다 */}
+      <div className="flex flex-wrap items-center justify-end gap-2">
         {board.done.length > 0 && (
           <button
             type="button"

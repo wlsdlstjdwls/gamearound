@@ -14,8 +14,8 @@ export const TASK_MESSAGES = {
   sourceLabel: "소스 (선택)",
   submit: "추가",
   empty: "이 칸은 비어 있어요.",
-  /** 판 제목. 화면 제목("할 일")과 같은 말을 두 번 적지 않으려고 판이 하는 일을 적는다 */
-  boardTitle: "칸 넷",
+  /** 화면 제목 옆 건수. 판 위에 제목을 또 세우는 대신 이 자리 하나로 말한다 */
+  count: (n: number) => `${n}건`,
   /** 끌고 있는 동안 빈 칸이 스스로 말하는 자리 */
   dropHere: "여기에 놓아요",
   clearDone: "끝난 일 치우기",
