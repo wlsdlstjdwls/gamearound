@@ -6,7 +6,8 @@
 // 파는 곳이 없으면 칸 자체를 그리지 않는다(호출부가 판단한다). 카탈로그 7만 개 중 매장이 붙은 게임은
 // 아직 극소수라, 모든 게임 상세에 "아직 없어요" 를 한 칸 세우면 그 문장이 화면의 기본값이 된다.
 import Link from "next/link";
-import { cardClass } from "@/components/ui/page";
+import { ROW, ROWS } from "@/components/ui/page";
+import { cn } from "@/lib/cn";
 import { Clamp } from "@/components/ui/tooltip";
 import { formatPrice } from "@/lib/currency";
 import { shopPath } from "@/lib/routes";
@@ -22,13 +23,13 @@ const CONDITION_LABEL: Record<SellerDto["condition"], string> = {
 
 export function SellersSection({ sellers }: { sellers: SellerDto[] }) {
   return (
-    <ul className="flex flex-col gap-2">
+    <ul className={ROWS}>
       {sellers.map((s, i) => (
         // 같은 매장이 같은 게임을 신품과 중고 두 줄로 올릴 수 있다 — slug 만으로는 키가 겹친다
         <li key={`${s.shopSlug}-${s.condition}-${i}`}>
           <Link
             href={shopPath(s.shopSlug)}
-            className={cardClass("lift press flex flex-wrap items-baseline gap-x-3 gap-y-1 px-4 py-3 transition-colors hover:border-ink")}
+            className={cn(ROW, "flex flex-wrap items-baseline gap-x-3 gap-y-1 py-[13px]")}
           >
             <Clamp lines={1} className="min-w-0 flex-1 text-[13.5px] font-medium text-ink">
               {s.shopName}

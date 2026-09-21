@@ -7,7 +7,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { ShopReviewCard } from "@/components/shops/review-card";
-import { Card, Page, PageHead } from "@/components/ui/page";
+import { Panel, Page, PageHead } from "@/components/ui/page";
 import { chipClass } from "@/components/ui/chip";
 import { SHOP_ADMIN_MESSAGES } from "@/lib/shops/messages";
 import { ROUTES } from "@/lib/routes";
@@ -56,7 +56,7 @@ export default async function ShopsAdminPage({ searchParams }: Props) {
       </nav>
 
       {shops.length === 0 ? (
-        <Card className="px-4 py-6 text-center text-[13px] text-dim">{SHOP_ADMIN_MESSAGES.empty}</Card>
+        <Panel className="px-4 py-6 text-center text-[13px] text-dim">{SHOP_ADMIN_MESSAGES.empty}</Panel>
       ) : (
         <ul className="grid gap-3 sm:grid-cols-2">
           {shops.map((shop) => (

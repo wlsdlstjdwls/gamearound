@@ -5,7 +5,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { redirect } from "next/navigation";
-import { Card, Page, PageHead } from "@/components/ui/page";
+import { Panel, Page, PageHead } from "@/components/ui/page";
 import { buttonClass } from "@/components/ui/button";
 import { ROUTES, shopPath, vendorListingsPath } from "@/lib/routes";
 import { VENDOR_MESSAGES as M } from "@/lib/shops/listing-messages";
@@ -32,7 +32,7 @@ export default async function VendorPage() {
       {mine.length === 0 ? (
         // 직원 표에 행이 서는 것은 승인 순간이다(services/shops 의 reviewShop) —
         // 여기가 비었다는 것은 아직 승인 전이거나 신청도 안 했다는 뜻이다
-        <Card className="flex flex-col items-start gap-3 px-4 py-4">
+        <Panel className="flex flex-col items-start gap-3 px-4 py-4">
           <p className="text-[13px] text-mut">{M.noShop}</p>
           <p className="text-[12.5px] text-dim">{M.pendingNote}</p>
           <div className="flex flex-wrap gap-2">
@@ -43,12 +43,12 @@ export default async function VendorPage() {
               {M.openPublic}
             </Link>
           </div>
-        </Card>
+        </Panel>
       ) : (
         <ul className="flex flex-col gap-2.5">
           {mine.map((shop) => (
             <li key={shop.slug}>
-              <Card className="flex flex-wrap items-center gap-3 px-4 py-3.5">
+              <Panel className="flex flex-wrap items-center gap-3 px-4 py-3.5">
                 <div className="min-w-0 flex-1">
                   <p className="text-[14px] font-semibold text-ink">{shop.name}</p>
                   <p className="text-[12px] text-dim">{ROLE_LABEL[shop.role]}</p>
@@ -59,7 +59,7 @@ export default async function VendorPage() {
                 <Link href={shopPath(shop.slug)} className={buttonClass({ variant: "ghost", size: "sm" })}>
                   {M.openPublic}
                 </Link>
-              </Card>
+              </Panel>
             </li>
           ))}
         </ul>

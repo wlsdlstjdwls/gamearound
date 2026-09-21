@@ -3,7 +3,6 @@
 // loading.tsx 가 다시 뜨지 않는다. 그래서 경계를 페이지 안(Suspense)에 두고, 그 자리만 뼈대로 받는다.
 // 높이는 실제 화면을 재서 맞춘 값이다 — 어긋나면 본문이 들어올 때 통째로 밀려 그게 깜빡임이 된다.
 import { gamesContainerClass, type GameView } from "@/lib/games/view";
-import { cardClass } from "@/components/ui/page";
 
 /** 건수는 <p> 안에 들어간다 — div 를 쓰면 HTML 이 <p> 를 끊어 하이드레이션이 깨진다 */
 export function CountSkeleton() {
@@ -12,10 +11,10 @@ export function CountSkeleton() {
 
 export function FiltersSkeleton() {
   return (
-    <div className={cardClass("hidden flex-col gap-4 p-4 lg:flex")} aria-hidden>
-      {[3, 2, 2].map((rows, g) => (
-        <div key={g} className="flex flex-col gap-1.5">
-          <div className="skeleton h-3 w-12 rounded" />
+    <div className="hidden flex-col gap-[26px] lg:flex" aria-hidden>
+      {[7, 3, 5].map((rows, g) => (
+        <div key={g} className="flex flex-col gap-2.5">
+          <div className="skeleton h-3.5 w-14 rounded" />
           <div className="flex flex-wrap gap-1.5">
             {Array.from({ length: rows }).map((_, i) => (
               <div key={i} className="skeleton h-7 w-16 rounded-full" />
@@ -34,7 +33,7 @@ export function FiltersSkeleton() {
  *
  * 그래서 칸 수뿐 아니라 카드 안쪽 줄도 실물과 같은 수로 세운다(2026-09-15 실측: 뼈대 185px 대 실물 273px,
  * 12줄이면 1,000px 넘게 어긋나 본문이 올 때 화면이 통째로 밀렸다). 줄 높이는 game-card 의
- * 제목, 플랫폼 배지, 장르, 가격 네 줄을 잰 값이다.
+ * 제목 줄, 부제 줄, 스토어 줄 셋을 잰 값이다(2026-09-21 리디자인으로 네 줄에서 셋이 됐다).
  */
 export function GamesGridSkeleton({ cards, view = "card" }: { cards: number; view?: GameView }) {
   return (
@@ -42,8 +41,8 @@ export function GamesGridSkeleton({ cards, view = "card" }: { cards: number; vie
       {Array.from({ length: cards }).map((_, i) =>
         view === "list" ? (
           // 줄 뼈대도 실물과 같은 뼈대로 세운다 — 커버 폭, 여백, 줄 수가 같아야 본문이 올 때 안 밀린다
-          <div key={i} className={cardClass("flex items-center gap-3 p-2.5 sm:gap-3.5 sm:p-3")}>
-            <div className="skeleton aspect-[460/215] w-[92px] shrink-0 rounded-[8px] sm:w-[132px]" />
+          <div key={i} className="flex items-center gap-3 border-t border-line-soft py-3 first:border-line-strong sm:gap-3.5">
+            <div className="skeleton aspect-[460/215] w-[92px] shrink-0 rounded-[var(--radius-inset)] sm:w-[132px]" />
             <div className="flex min-w-0 flex-1 flex-col gap-[3px]">
               <div className="skeleton h-5 w-3/5 rounded" />
               <div className="skeleton h-4 w-2/5 rounded" />
@@ -52,13 +51,13 @@ export function GamesGridSkeleton({ cards, view = "card" }: { cards: number; vie
             <div className="skeleton h-6 w-20 shrink-0 rounded" />
           </div>
         ) : (
-          <div key={i} className={cardClass("overflow-hidden")}>
-            <div className="skeleton aspect-[460/215]" />
-            <div className="flex flex-col gap-[7px] p-[15px]">
-              <div className="skeleton h-5 w-4/5 rounded" />
-              <div className="skeleton h-[22px] w-1/2 rounded-md" />
-              <div className="skeleton h-4 w-3/5 rounded" />
-              <div className="skeleton h-[26px] w-2/5 rounded" />
+          // 커버 + 세 줄. 실물(game-card)과 같은 줄 수, 같은 여백이어야 본문이 올 때 격자가 밀리지 않는다
+          <div key={i} className="flex flex-col gap-3">
+            <div className="skeleton aspect-[460/215] rounded-[var(--radius-cover)]" />
+            <div className="flex flex-col gap-1 pt-3">
+              <div className="skeleton h-[22px] w-4/5 rounded" />
+              <div className="skeleton h-[17px] w-3/5 rounded" />
+              <div className="skeleton h-4 w-1/2 rounded" />
             </div>
           </div>
         ),

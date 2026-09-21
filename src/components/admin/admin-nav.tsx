@@ -21,7 +21,7 @@ import { Suspense, use } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { cn } from "@/lib/cn";
-import { cardClass } from "@/components/ui/page";
+import { panelClass } from "@/components/ui/page";
 import { ADMIN_NAV } from "@/lib/admin/messages";
 import { ROUTES } from "@/lib/routes";
 
@@ -95,7 +95,7 @@ export function AdminNav({ user, counts }: { user: string; counts: Promise<Admin
   const pathname = usePathname();
 
   return (
-    <nav aria-label="관리자 메뉴" className={cardClass("flex flex-wrap items-center gap-x-1 gap-y-1 p-2 text-sm")}>
+    <nav aria-label="관리자 메뉴" className={panelClass("flex flex-wrap items-center gap-x-1 gap-y-1 p-2 text-sm")}>
       {GROUPS.map((g, gi) => (
         <div key={g.title} className="flex items-center gap-1">
           {/* 묶음 사이 세로선. 첫 묶음 앞에는 두지 않는다 */}

@@ -11,7 +11,7 @@ import { requireRoleOrForbid } from "@/server/auth/guards";
 import { listPendingCompanies, PENDING_COMPANIES_LIMIT } from "@/server/services/admin-companies";
 import { listCompanies } from "@/server/services/companies";
 import { CompanyResolveButton } from "@/components/admin/company-resolve-button";
-import { PageHead, cardClass } from "@/components/ui/page";
+import { PageHead, ROWS } from "@/components/ui/page";
 import { COMPANY_MESSAGES } from "@/lib/admin/messages";
 import { Clamp } from "@/components/ui/tooltip";
 
@@ -38,11 +38,11 @@ export default async function AdminCompaniesPage() {
         </header>
 
         {pending.length === 0 ? (
-          <p className="rounded-xl border border-dashed border-line-strong bg-surface p-6 text-[13px] text-mut">
+          <p className="rounded-xl bg-surface-2 px-5 py-6 text-[13px] text-mut">
             {COMPANY_MESSAGES.empty}
           </p>
         ) : (
-          <div className={cardClass("overflow-x-auto")}>
+          <div className="overflow-x-auto">
             <table className="w-full text-[13px]">
               <thead className="border-b border-line text-left text-[11.5px] text-dim">
                 <tr>
@@ -74,9 +74,9 @@ export default async function AdminCompaniesPage() {
           {COMPANY_MESSAGES.knownTitle} <span className="text-[13px] font-normal text-dim">{COMPANY_MESSAGES.knownCount(known.total)}</span>
         </h2>
         {known.items.length === 0 ? (
-          <p className="rounded-xl border border-dashed border-line-strong bg-surface p-6 text-[13px] text-mut">{COMPANY_MESSAGES.knownEmpty}</p>
+          <p className="rounded-xl bg-surface-2 px-5 py-6 text-[13px] text-mut">{COMPANY_MESSAGES.knownEmpty}</p>
         ) : (
-          <ul className={cardClass("divide-y divide-line-soft")}>
+          <ul className={ROWS}>
             {known.items.map((c) => (
               <li key={c.slug} className="flex flex-wrap items-center gap-x-3 gap-y-1 px-3 py-2 text-[13px]">
                 <Link href={`${ROUTES.company}/${c.slug}`} className="font-semibold text-ink hover:text-acc">

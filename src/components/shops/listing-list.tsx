@@ -3,7 +3,7 @@
 // 매장주 화면(listing-rows)과 컴포넌트를 나눈 이유: 저쪽은 고치는 화면이라 클라이언트고
 // 폼이 줄마다 붙는다. 이쪽은 읽기만 하므로 서버 컴포넌트로 둔다(AGENTS §6).
 // 한 컴포넌트로 합치면 손님 화면까지 클라이언트 번들을 지고 간다.
-import { cardClass } from "@/components/ui/page";
+import { panelClass } from "@/components/ui/page";
 import { Clamp } from "@/components/ui/tooltip";
 import { formatPrice } from "@/lib/currency";
 import type { Currency } from "@/server/db/schema";
@@ -26,7 +26,7 @@ export function ListingList({ listings }: { listings: ListingDto[] }) {
   return (
     <ul className="flex flex-col gap-2">
       {listings.map((l) => (
-        <li key={l.id} className={cardClass("flex flex-wrap items-baseline gap-x-3 gap-y-1 px-4 py-3")}>
+        <li key={l.id} className={panelClass("flex flex-wrap items-baseline gap-x-3 gap-y-1 px-4 py-3")}>
           <Clamp lines={1} className="min-w-0 flex-1 text-[13.5px] font-medium text-ink">
             {l.productName}
           </Clamp>

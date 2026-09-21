@@ -9,7 +9,7 @@
 // 글 단위 주소가 있는 소스(Steam)만 제목이 링크가 되고, 없는 소스는 글자로 남는다 —
 // 열리지 않는 링크를 만들지 않기 위해서다.
 import { Clamp } from "@/components/ui/tooltip";
-import { cardClass } from "@/components/ui/page";
+import { ROWS } from "@/components/ui/page";
 import { formatDate, platformLabel } from "@/lib/format";
 import { GAME_MESSAGES, patchSpeedText } from "@/lib/games/messages";
 import { patchKindLabels } from "@/lib/patch-kind";
@@ -33,7 +33,7 @@ function KindChips({ title }: { title: string }) {
   return (
     <>
       {labels.map((label) => (
-        <span key={label} className="shrink-0 rounded-full border border-line px-[7px] py-[2px] text-[11px] text-mut">
+        <span key={label} className="shrink-0 rounded-full bg-surface-2 px-2 py-[2px] text-[11px] text-ink-2">
           {label}
         </span>
       ))}
@@ -48,7 +48,7 @@ export function PatchList({ items, showPlatform = false }: { items: Item[]; show
     return <p className="py-3 text-[13px] text-dim">{GAME_MESSAGES.patchNone}</p>;
   }
   return (
-    <ul className="divide-y divide-line-soft">
+    <ul className={ROWS}>
       {items.map((n) => (
         <li key={n.id} className="flex flex-wrap items-baseline gap-x-2.5 gap-y-1 py-[13px]">
           <VersionChip version={n.version} />
@@ -97,15 +97,15 @@ export function PatchList({ items, showPlatform = false }: { items: Item[]; show
 export function PatchSpeed({ groups }: { groups: PlatformPatchesDto[] }) {
   if (groups.length === 0) return null;
   return (
-    <dl className={cardClass("grid grid-cols-[repeat(auto-fit,minmax(160px,1fr))] divide-x divide-line-soft overflow-hidden")}>
+    // 칸을 세로선으로 가르던 격자를 헤어라인 줄로 바꿨다 — 스토어가 둘일 때와 넷일 때
+    // 칸 폭이 달라져 같은 표가 화면마다 다르게 읽혔다. 줄은 몇 개든 같은 모양이다
+    <dl className={ROWS}>
       {groups.map((g) => (
-        <div key={`${g.platform}:${g.region}`} className="flex flex-col gap-1 px-4 py-3.5">
-          <dt className="text-[11.5px] text-dim">{platformLabel(g)}</dt>
-          <dd className="flex flex-col gap-0.5">
-            <span className="text-[15px] font-bold tracking-[-0.02em] text-ink">
-              {g.latestAt ? formatDate(g.latestAt) : "-"}
-            </span>
-            <span className="text-[11.5px] text-mut">{patchSpeedText(g.averageIntervalDays, g.count)}</span>
+        <div key={`${g.platform}:${g.region}`} className="flex items-baseline justify-between gap-2.5 py-[11px]">
+          <dt className="text-[13.5px] font-bold text-ink">{platformLabel(g)}</dt>
+          <dd className="text-right">
+            <span className="block text-[13px] text-ink">{g.latestAt ? formatDate(g.latestAt) : "-"}</span>
+            <span className="text-[11.5px] text-dim">{patchSpeedText(g.averageIntervalDays, g.count)}</span>
           </dd>
         </div>
       ))}

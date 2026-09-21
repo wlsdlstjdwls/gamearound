@@ -21,7 +21,8 @@ import Link from "next/link";
 import { useMemo, useState } from "react";
 import { Clamp } from "@/components/ui/tooltip";
 import { ChipButton } from "@/components/ui/chip";
-import { SectionHead, cardClass } from "@/components/ui/page";
+import { ROW, ROWS, SectionHead } from "@/components/ui/page";
+import { cn } from "@/lib/cn";
 import { cheapestOf, formatPrice } from "@/lib/currency";
 import { PLATFORM_LABEL, platformLabel } from "@/lib/format";
 import { GAME_MESSAGES } from "@/lib/games/messages";
@@ -96,7 +97,7 @@ export function DlcSection({
       {rows.length === 0 ? (
         <p className="text-[13px] text-dim">{hasAddOns ? GAME_MESSAGES.dlcKnownButUnlisted : GAME_MESSAGES.dlcNone}</p>
       ) : (
-        <ul className="flex flex-col gap-1.5">
+        <ul className={ROWS}>
           {rows.map(({ dlc, best }, i) => (
             <li key={dlc.slug} className="enter-item" style={stagger(i)}>
               {/* 새 탭으로 연다 — DLC 를 훑는 사람은 본편 화면을 띄워 둔 채 하나씩 열어 본다.
@@ -105,18 +106,19 @@ export function DlcSection({
                 href={gamePath(dlc.slug)}
                 target="_blank"
                 rel="noopener noreferrer"
-                className={cardClass("flex items-center justify-between gap-3 px-4 py-2.5 transition-colors hover:border-ink")}
+                className={cn(ROW, "flex items-center justify-between gap-3.5 py-[13px]")}
               >
-                <Clamp lines={1} className="min-w-0 flex-1 text-[13px] text-ink">
+                <Clamp lines={1} className="min-w-0 flex-1 text-[14px] text-ink">
                   {dlc.title}
                 </Clamp>
                 <span className="sr-only">(새 창에서 열림)</span>
-                <span className="flex shrink-0 items-baseline gap-2 text-[12.5px]">
-                  {best?.discountPct ? <span className="font-semibold text-danger">-{best.discountPct}%</span> : null}
-                  <span className="font-semibold text-ink">{best ? formatPrice(best.currentPrice, best.currency) : "-"}</span>
+                <span className="flex shrink-0 items-baseline gap-3 text-[12.5px]">
+                  {/* 할인율은 브랜드색이다 — 빨강은 이 화면에서 "마감 임박" 이 이미 쓰고 있다 */}
+                  {best?.discountPct ? <span className="font-bold text-acc">-{best.discountPct}%</span> : null}
+                  <span className="text-[15px] font-extrabold tracking-[-0.03em] text-ink">{best ? formatPrice(best.currentPrice, best.currency) : "-"}</span>
                   {/* 플랫폼 이름은 칩을 골랐어도 적는다 — 나라가 다르면 이름이 달라지고(Switch 일본),
                       그 값은 한국 계정으로 못 사는 값이다 */}
-                  {best && <span className="text-dim">{platformLabel(best)}</span>}
+                  {best && <span className="w-12 text-right text-[12px] text-dim">{platformLabel(best)}</span>}
                 </span>
               </Link>
             </li>

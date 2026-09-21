@@ -8,8 +8,8 @@ type Props = {
   discountName: string | null | undefined;
   discountEndsAt: string | null | undefined;
   discountStartsAt?: string | null;
-  /** compact = 카드/탭용 한 줄, full = 상세 행용(기간 문자열까지) */
-  variant?: "compact" | "full";
+  /** compact = 카드/탭용 한 줄, full = 상세 행용(기간 문자열까지), inline = 남은 기간만(점 + 글자) */
+  variant?: "compact" | "full" | "inline";
 };
 
 export function SaleBadge({ discountName, discountEndsAt, discountStartsAt, variant = "compact" }: Props) {
@@ -18,6 +18,21 @@ export function SaleBadge({ discountName, discountEndsAt, discountStartsAt, vari
   const saleWindow = formatSaleWindow(discountStartsAt, discountEndsAt);
 
   if (!discountName && !remaining && !saleWindow) return null;
+
+  /*
+   * inline — 행사명을 버리고 남은 기간만 남긴다. 카드 메타 줄의 오른쪽 끝처럼
+   * 자리가 한 줄뿐이고 왼쪽에 이미 다른 값이 선 자리에 쓴다.
+   * 임박일 때만 점을 붙이는 이유: 점이 늘 있으면 "급하다" 는 신호가 아니라 장식이 된다.
+   */
+  if (variant === "inline") {
+    if (!remaining) return null;
+    return (
+      <span className={`inline-flex shrink-0 items-center gap-1.5 text-[12.5px] ${remaining.urgent ? "font-bold text-danger" : "text-mut"}`}>
+        {remaining.urgent && <span aria-hidden className="pulse-dot size-1.5 rounded-full bg-danger" />}
+        {remaining.text}
+      </span>
+    );
+  }
 
   if (variant === "compact") {
     return (

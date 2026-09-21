@@ -3,7 +3,8 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { AlertForm, AlertItemControls } from "@/components/alert-form";
 import { EmptyState } from "@/components/empty-state";
-import { Card, Page, PageHead } from "@/components/ui/page";
+import { Page, PageHead, ROWS, SectionHead } from "@/components/ui/page";
+import { buttonClass } from "@/components/ui/button";
 import { Clamp } from "@/components/ui/tooltip";
 import { PLATFORM_LABEL } from "@/lib/format";
 import { ALERT_RULE_TEXT, COLLECT_SCHEDULE_TEXT } from "@/lib/freshness";
@@ -20,18 +21,19 @@ export default async function AlertsPage({ searchParams }: { searchParams: Promi
   const active = alerts.filter((a) => a.isActive).length;
 
   return (
-    <Page width="narrow" gap={20}>
+    <Page width="narrow" gap={30}>
       <PageHead
         title="가격 알림"
+        note={`활성 ${active}개 | 일시중지 ${alerts.length - active}개`}
         action={
-          <p className="text-[13px] text-dim">
-            활성 {active}개 | 일시중지 {alerts.length - active}개
-          </p>
+          <Link href={ROUTES.settings} className={buttonClass({ variant: "secondary", className: "rounded-full" })}>
+            푸시 설정
+          </Link>
         }
       />
 
       {slug && !game && (
-        <p role="alert" className="rounded-[9px] border border-danger/35 bg-danger-soft px-3.5 py-2.5 text-[13px] text-danger">
+        <p role="alert" className="rounded-xl bg-danger-soft px-3.5 py-3 text-[13px] font-semibold text-danger">
           &lsquo;{slug}&rsquo; 게임을 찾을 수 없습니다.
         </p>
       )}
@@ -55,31 +57,32 @@ export default async function AlertsPage({ searchParams }: { searchParams: Promi
           action={{ href: ROUTES.wishlist, label: "위시리스트로 이동" }}
         />
       ) : (
-        <Card className="overflow-hidden">
-          <ul className="divide-y divide-line-soft">
-            {alerts.map((a, i) => (
-              <li
-                key={a.id}
-                className={`enter-item flex flex-wrap items-center gap-x-4 gap-y-2 px-4 py-[15px] ${a.isActive ? "" : "opacity-55"}`}
-                style={stagger(i)}
-              >
-                <div className="min-w-0 flex-1">
-                  <Link href={`/games/${a.game.slug}`} className="block text-[13.5px] font-semibold text-ink hover:text-acc">
-                    <Clamp>{a.game.titleKo ?? a.game.titleEn}</Clamp>
-                  </Link>
-                  <p className="text-[12px] text-dim">
-                    {a.platform ? PLATFORM_LABEL[a.platform] ?? a.platform : "전체 플랫폼"} | 할인 {a.minDiscountPct ?? 1}% 이상
-                  </p>
-                </div>
-                <span className="text-[12px] text-dim">{a.isActive ? "감시 중" : "일시중지"}</span>
-                <AlertItemControls id={a.id} isActive={a.isActive} />
-              </li>
-            ))}
-          </ul>
-        </Card>
+        <section className="flex flex-col gap-3.5">
+          <SectionHead title="내 알림" />
+        <ul className={ROWS}>
+          {alerts.map((a, i) => (
+            <li
+              key={a.id}
+              className={`enter-item flex flex-wrap items-center gap-x-4 gap-y-2 py-[15px] ${a.isActive ? "" : "opacity-55"}`}
+              style={stagger(i)}
+            >
+              <div className="min-w-0 flex-1">
+                <Link href={`/games/${a.game.slug}`} className="block text-[14px] font-bold tracking-[-0.02em] text-ink hover:text-acc">
+                  <Clamp>{a.game.titleKo ?? a.game.titleEn}</Clamp>
+                </Link>
+                <p className="text-[12px] text-dim">
+                  {a.platform ? PLATFORM_LABEL[a.platform] ?? a.platform : "전체 플랫폼"} | 할인 {a.minDiscountPct ?? 1}% 이상
+                </p>
+              </div>
+              <span className="text-[12px] text-dim">{a.isActive ? "감시 중" : "일시중지"}</span>
+              <AlertItemControls id={a.id} isActive={a.isActive} />
+            </li>
+          ))}
+        </ul>
+        </section>
       )}
 
-      <p className="text-[12px] leading-[1.8] text-dim">
+      <p className="max-w-[700px] text-[12px] leading-[1.85] text-dim">
         {COLLECT_SCHEDULE_TEXT} {ALERT_RULE_TEXT} 푸시 수신 설정은{" "}
         <Link href={ROUTES.settings} className="text-acc hover:underline">
           설정

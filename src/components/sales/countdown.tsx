@@ -15,18 +15,25 @@ import { useNow } from "@/components/use-now";
 const TICK_MS = 1000;
 const PLACEHOLDER = "--";
 
-export function Countdown({ targetIso, className }: { targetIso: string; className?: string }) {
+/** 진행 중인 회차 하나만 크게 센다(hero). 나머지 줄은 같은 값을 작게 쓴다 */
+export function Countdown({ targetIso, size = "row", className }: { targetIso: string; size?: "row" | "hero"; className?: string }) {
   const now = useNow(TICK_MS);
   const parts = now === null ? null : countdownParts(new Date(targetIso).getTime() - now);
+  const hero = size === "hero";
 
   return (
-    <div className={cn("flex items-baseline gap-1.5", className)}>
+    <div className={cn("flex items-baseline", hero ? "gap-2.5" : "gap-1.5", className)}>
       {COUNTDOWN_UNITS.map((unit) => (
         <div key={unit.key} className="flex items-baseline gap-0.5">
-          <span className="min-w-[2ch] text-right text-[20px] font-bold tabular-nums tracking-[-0.02em] text-ink">
+          <span
+            className={cn(
+              "min-w-[2ch] text-right font-extrabold tabular-nums",
+              hero ? "text-[32px] leading-none tracking-[-0.05em] text-acc sm:text-[44px]" : "text-[18px] tracking-[-0.03em] text-ink",
+            )}
+          >
             {parts ? String(parts[unit.key]).padStart(2, "0") : PLACEHOLDER}
           </span>
-          <span className="text-[12px] text-dim">{unit.label}</span>
+          <span className={hero ? "text-[13px] font-semibold text-acc" : "text-[12px] text-dim"}>{unit.label}</span>
         </div>
       ))}
     </div>

@@ -28,10 +28,11 @@ export function isGameView(v: string | undefined): v is GameView {
  * 목록을 담는 ul 의 class. 서버가 그리는 첫 페이지, 이어 붙이는 페이지, 기다리는 동안의 뼈대가
  * 모두 이 함수를 거쳐야 보기를 바꿀 때 폭이나 간격이 어긋나지 않는다(grid.ts 와 같은 규칙).
  *
- * 리스트는 한 줄이 곧 한 칸이라 격자가 필요 없다 — 세로로만 쌓고 간격만 준다.
+ * 리스트는 한 줄이 곧 한 칸이라 격자가 필요 없다 — 세로로만 쌓고, 줄 사이는 간격이 아니라
+ * 헤어라인(.rows)이 가른다. 판을 걷어낸 화면에서 간격만으로 세운 줄은 표가 아니라 흩어진 글로 읽힌다.
  */
 export function gamesContainerClass(view: GameView): string {
-  return view === "list" ? "flex flex-col gap-2" : GAMES_GRID_CLASS;
+  return view === "list" ? "rows flex flex-col" : GAMES_GRID_CLASS;
 }
 
 /**

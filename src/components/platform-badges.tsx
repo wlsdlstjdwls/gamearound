@@ -15,7 +15,9 @@ export function PlatformBadges({ platforms = [] }: { platforms?: Platform[] }) {
       {platforms.map((p) => (
         <li
           key={p}
-          className="rounded-[5px] border border-line bg-surface-3 px-1.5 py-[2px] text-[11px] font-semibold leading-none text-dim"
+          // 선을 걷고 면만 남긴다(2026-09-21 리디자인) — 한 줄에 배지가 다섯까지 서는데
+          // 테두리가 있으면 그 선들이 제목보다 먼저 읽힌다
+          className="rounded-full bg-surface-2 px-2 py-[3px] text-[11px] font-semibold leading-none text-mut"
         >
           {PLATFORM_LABEL[p] ?? p}
         </li>

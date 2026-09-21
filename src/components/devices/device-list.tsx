@@ -7,7 +7,7 @@ import { useState } from "react";
 import { deleteDeviceAction, setPrimaryDeviceAction } from "@/app/(user)/settings/devices/actions";
 import { DeviceForm, type ModelOption } from "@/components/devices/device-form";
 import { Button } from "@/components/ui/button";
-import { Card } from "@/components/ui/page";
+import { Panel } from "@/components/ui/page";
 import { DEVICE_MESSAGES, OS_FAMILY_LABEL } from "@/lib/games/messages";
 import { formatSizeMb } from "@/lib/format";
 import type { DeviceDto } from "@/server/services/devices";
@@ -40,7 +40,7 @@ export function DeviceList({
       <ul className="flex flex-col gap-3">
         {devices.map((d) => (
           <li key={d.id}>
-            <Card className="flex flex-col gap-3 p-4">
+            <Panel className="flex flex-col gap-3 p-4">
               <div className="flex flex-wrap items-start justify-between gap-2">
                 <div className="flex min-w-0 flex-col gap-1">
                   <div className="flex items-center gap-2">
@@ -73,16 +73,16 @@ export function DeviceList({
                   <DeviceForm device={d} cpuOptions={cpuOptions} gpuOptions={gpuOptions} onDone={() => setEditing(null)} />
                 </div>
               )}
-            </Card>
+            </Panel>
           </li>
         ))}
       </ul>
 
       {adding ? (
-        <Card className="flex flex-col gap-3 p-4">
+        <Panel className="flex flex-col gap-3 p-4">
           <h2 className="text-[14px] font-bold text-ink">{DEVICE_MESSAGES.addHeading}</h2>
           <DeviceForm cpuOptions={cpuOptions} gpuOptions={gpuOptions} onDone={() => setAdding(false)} />
-        </Card>
+        </Panel>
       ) : (
         <div>
           <Button variant="secondary" onClick={() => setAdding(true)}>

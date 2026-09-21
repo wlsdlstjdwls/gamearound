@@ -1,24 +1,45 @@
 // 홈 — "오늘 뭘 사면 되는가"에 먼저 답한다 (§5.1, 풀 라우트 캐시 1h + 태그 home)
 // 검색 폼은 헤더 검색창이 유일한 진입점이므로 히어로에서 제거했다(리디자인).
+//
+// 2026-09-21 리디자인: 흰 판과 테두리를 전부 걷어냈다. 화면을 가르는 것은 섹션 사이의 큰 여백과
+// 헤어라인 한 줄뿐이고, 색을 가진 것은 카드의 할인 스탬프와 마감 임박 표시뿐이다.
 import { formatPrice } from "@/lib/currency";
 import Link from "next/link";
-import { GameCard } from "@/components/game-card";
+import { CoverImage, GameCard } from "@/components/game-card";
 import { Clamp } from "@/components/ui/tooltip";
 import { NewsList } from "@/components/news-list";
 import { EmptyState } from "@/components/empty-state";
 import { SaleBadge } from "@/components/sale-badge";
-import { Card, Page, SectionHead } from "@/components/ui/page";
+import { Page, ROW, ROWS, SectionHead } from "@/components/ui/page";
+import { buttonClass } from "@/components/ui/button";
+import { chipClass } from "@/components/ui/chip";
 import { PLATFORM_LABEL } from "@/lib/format";
 import { stagger } from "@/lib/motion";
 import { ROUTES } from "@/lib/routes";
+import { cn } from "@/lib/cn";
 import { getHomeData, type GameSummary } from "@/server/services/games";
 
 // Next 가 정적으로 읽는 값이라 리터럴이어야 한다 — 근거, 수치는 lib/cache 의 LIST_REVALIDATE_SECONDS 와 같게 유지
 export const revalidate = 3600;
 
 // 오른쪽 뉴스(HOME_NEWS_LIMIT = 8)와 줄 수를 맞춘다 — 두 기둥의 길이가 크게 어긋나면
-// 짧은 쪽 아래가 빈 흰 판으로 남는다
+// 짧은 쪽 아래가 빈 자리로 남는다
 const ENDING_SOON_LIMIT = 8;
+
+/**
+ * 제목 옆 갈래 칩 — 누르면 목록의 같은 조건으로 넘어간다.
+ *
+ * 홈에서 직접 거르지 않는 이유: 홈은 캐시 한 벌(태그 home)로 모두에게 같은 값을 주는 화면이다.
+ * 여기에 조건을 달면 조합마다 캐시가 쪼개지고, 그 순간 홈이 목록의 축소판이 된다.
+ * 홈은 "지금 뭐가 싼가" 한 장만 보여 주고, 고르는 일은 목록이 받는다.
+ */
+const DEAL_FILTERS = [
+  { label: "전체", href: `${ROUTES.game}?sale=1` },
+  { label: PLATFORM_LABEL.steam, href: `${ROUTES.game}?sale=1&platform=steam` },
+  { label: PLATFORM_LABEL.ps5, href: `${ROUTES.game}?sale=1&platform=ps5` },
+  { label: PLATFORM_LABEL.xbox, href: `${ROUTES.game}?sale=1&platform=xbox` },
+  { label: PLATFORM_LABEL.switch, href: `${ROUTES.game}?sale=1&platform=switch` },
+] as const;
 
 function endsAtMs(g: GameSummary): number | null {
   const raw = g.best?.discountEndsAt;
@@ -56,29 +77,31 @@ export default async function HomePage() {
   const soon = endingSoon(discounts);
 
   return (
-    <Page pad="home" gap={36}>
+    <Page pad="home" gap={56}>
       {dbError && (
-        <div role="alert" className="rounded-xl border border-danger/40 bg-danger-soft px-4 py-3 text-[13px] text-danger">
+        <div role="alert" className="rounded-xl bg-danger-soft px-4 py-3 text-[13px] text-danger">
           데이터베이스에 연결할 수 없습니다. <code>.env.local</code>의 <code>DATABASE_URL</code>을 설정하고 <code>pnpm db:migrate</code>를 실행하세요.
         </div>
       )}
 
-      {/* 섹션 1 — 할인 중인 게임. 큰 머리글을 걷어낸 자리라(2026-09-15) 이 제목이 문서의 h1 이다.
-          머리글이 말하던 "지금 할인 중인 게임 N개" 는 바로 아래 격자가 그대로 보여 주던 값이었다 */}
-      <section aria-labelledby="discounts-heading" className="flex flex-col gap-4">
-        <SectionHead
-          className="enter-item"
-          style={stagger(0)}
-          id="discounts-heading"
-          as="h1"
-          title="할인 중인 게임"
-          note="플랫폼별 최저가 기준"
-          action={
-            <Link href={`${ROUTES.game}?sale=1`} className="text-[12.5px] text-acc hover:underline">
-              할인 전체 보기
-            </Link>
-          }
-        />
+      {/* 섹션 1 — 할인 중인 게임. 큰 머리글을 걷어낸 자리라(2026-09-15) 이 제목이 문서의 h1 이다 */}
+      <section aria-labelledby="discounts-heading" className="flex flex-col gap-[22px]">
+        <div className="enter-item flex flex-wrap items-end justify-between gap-x-6 gap-y-4" style={stagger(0)}>
+          <div>
+            <h1 id="discounts-heading" className="text-[26px] font-extrabold leading-[1.15] tracking-[-0.045em] text-ink sm:text-[34px]">
+              지금 할인 중
+            </h1>
+            <p className="mt-1.5 text-[13.5px] text-mut">한국 스토어 기준 플랫폼별 최저가</p>
+          </div>
+          <nav aria-label="할인 갈래" className="flex flex-wrap items-center gap-1.5 text-[13px]">
+            {DEAL_FILTERS.map((f, i) => (
+              <Link key={f.label} href={f.href} className={chipClass({ active: i === 0 })}>
+                {f.label}
+              </Link>
+            ))}
+          </nav>
+        </div>
+
         {discounts.length === 0 ? (
           <EmptyState
             title="지금 할인 중인 게임이 없습니다"
@@ -86,81 +109,89 @@ export default async function HomePage() {
             action={{ href: ROUTES.game, label: "전체 게임 목록 보기" }}
           />
         ) : (
-          <ul className="grid grid-cols-[repeat(auto-fit,minmax(238px,1fr))] gap-4">
-            {discounts.map((g, i) => (
-              <li key={g.slug} className="enter-item" style={stagger(i + 1)}>
-                <GameCard game={g} variant="discount" />
-              </li>
-            ))}
-          </ul>
+          <>
+            {/* 세로 간격이 가로보다 넓다(36 대 24): 스탬프가 커버 아래로 14px 나와 있어서
+                같은 간격이면 아랫줄 카드의 커버를 건드린다 */}
+            <ul className="grid grid-cols-[repeat(auto-fill,minmax(min(280px,100%),1fr))] gap-x-6 gap-y-9">
+              {discounts.map((g, i) => (
+                <li key={g.slug} className="enter-item" style={stagger(i + 1)}>
+                  <GameCard game={g} variant="discount" />
+                </li>
+              ))}
+            </ul>
+            <Link
+              href={`${ROUTES.game}?sale=1`}
+              className={buttonClass({ variant: "secondary", size: "lg", className: "mt-2 self-center rounded-full px-6" })}
+            >
+              할인 전체 보기
+            </Link>
+          </>
         )}
       </section>
 
       {/* 섹션 2 — 곧 끝나는 할인 / 최신 뉴스 */}
-      {/* items-start: 두 카드가 서로의 키를 따라가지 않게 한다. 기본값(stretch)이면 짧은 쪽 카드가
-          긴 쪽 높이까지 늘어나고, 늘어난 만큼이 그대로 빈 흰 판이 된다 */}
+      {/* items-start: 두 기둥이 서로의 키를 따라가지 않게 한다 */}
       {/* min() 을 씌우는 이유: auto-fit 의 minmax 는 화면이 그 값보다 좁아도 칸을 줄이지 않는다.
-          320px 기기에서 300px 칸 + 좌우 여백이 화면을 넘어 홈 전체가 가로로 밀렸다 */}
-      <section className="grid grid-cols-[repeat(auto-fit,minmax(min(300px,100%),1fr))] items-start gap-7">
-        <div className="enter-item flex flex-col gap-4" style={stagger(0)}>
-          <SectionHead title="곧 할인 마감" />
-          <Card className="px-4">
-            {soon.length === 0 ? (
-              <p className="py-5 text-[13px] text-dim">종료 시각이 공개된 할인이 없습니다.</p>
-            ) : (
-              <ul className="divide-y divide-line-soft">
-                {soon.map((g) => (
-                  /* 좁은 화면에서는 제목 줄과 값 줄, 두 줄로 세운다.
-                     전에는 넷을 한 줄에 흘려보냈고 390px 에서 제목, 스토어, 값, 남은 기간이 제각기 줄을 차지해
-                     한 항목이 서너 줄로 흩어졌다 — 그중 스토어 이름만 오른쪽 끝에 홀로 붙어 값처럼 읽혔다.
-                     넓은 화면(sm)에서는 원래대로 한 줄이다 */
-                  <li key={g.slug} className="flex flex-col gap-1 py-[13px] sm:flex-row sm:flex-wrap sm:items-baseline sm:gap-x-3">
-                    <Link href={`/games/${g.slug}`} className="min-w-0 flex-1 text-[13.5px] font-semibold text-ink hover:text-acc">
-                      <Clamp>{g.titleKo ?? g.titleEn}</Clamp>
-                    </Link>
-                    <div className="flex flex-wrap items-baseline gap-x-2.5 gap-y-1">
-                      <span className="text-[12px] text-dim">
-                        {g.best ? PLATFORM_LABEL[g.best.platform] ?? g.best.platform : "-"}
+          320px 기기에서 360px 칸 + 좌우 여백이 화면을 넘어 홈 전체가 가로로 밀렸다 */}
+      <section className="grid grid-cols-[repeat(auto-fit,minmax(min(360px,100%),1fr))] items-start gap-x-12 gap-y-10">
+        <div className="enter-item flex flex-col gap-3.5" style={stagger(0)}>
+          <SectionHead title="곧 마감" />
+          {soon.length === 0 ? (
+            <p className="border-t border-line-strong py-5 text-[13px] text-dim">종료 시각이 공개된 할인이 없습니다.</p>
+          ) : (
+            <ul className={ROWS}>
+              {soon.map((g) => (
+                <li key={g.slug}>
+                  <Link href={`/games/${g.slug}`} className={cn(ROW, "flex items-center gap-3.5 py-[13px]")}>
+                    {/* 썸네일을 세우는 이유: 제목만 늘어선 목록은 "무슨 게임인지" 를 글자로만 묻는다.
+                        카드와 같은 460:215 비율이라 같은 그림이 같은 모양으로 읽힌다 */}
+                    <span className="relative aspect-[460/215] w-16 shrink-0 overflow-hidden rounded-[var(--radius-inset)] bg-surface-3">
+                      <CoverImage src={g.coverUrl} alt="" sizes="64px" />
+                    </span>
+                    <span className="min-w-0 flex-1">
+                      <Clamp className="block text-[14.5px] font-bold tracking-[-0.02em] text-ink">{g.titleKo ?? g.titleEn}</Clamp>
+                      <span className="block text-[12px] text-dim">
+                        {[g.best ? PLATFORM_LABEL[g.best.platform] ?? g.best.platform : null, formatPrice(g.best?.currentPrice, g.best?.currency)]
+                          .filter(Boolean)
+                          .join(" | ")}
                       </span>
-                      {/* 할인가만 있으면 "싼지" 를 알 수 없다 — 정가를 옆에 같이 세워야 값이 뜻을 가진다 */}
-                      <span className="flex items-baseline gap-1.5">
-                        <span className="text-[13.5px] font-bold text-ink">{formatPrice(g.best?.currentPrice, g.best?.currency)}</span>
-                        {g.best?.listPrice != null && g.best.listPrice !== g.best.currentPrice && (
-                          <span className="text-[11.5px] text-dim-2 line-through">{formatPrice(g.best.listPrice, g.best.currency)}</span>
-                        )}
-                      </span>
-                      <SaleBadge discountName={null} discountEndsAt={g.best?.discountEndsAt} />
-                    </div>
-                  </li>
-                ))}
-              </ul>
-            )}
-          </Card>
+                    </span>
+                    <SaleBadge variant="inline" discountName={null} discountEndsAt={g.best?.discountEndsAt} />
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          )}
         </div>
 
-        <div className="enter-item flex flex-col gap-4" style={stagger(1)}>
-          <SectionHead title="최신 뉴스" />
-          <Card className="px-4">
-            <NewsList items={latestNews} showGame />
-          </Card>
+        <div className="enter-item flex flex-col gap-3.5" style={stagger(1)}>
+          <SectionHead
+            title="뉴스"
+            action={
+              <Link href={ROUTES.game} className="text-[13px] text-acc hover:underline">
+                전체 보기
+              </Link>
+            }
+          />
+          <NewsList items={latestNews} showGame />
         </div>
       </section>
 
       {/* 섹션 3 — 최근 출시 */}
       {recentReleases.length > 0 && (
-        <section aria-labelledby="releases-heading" className="flex flex-col gap-4">
+        <section aria-labelledby="releases-heading" className="flex flex-col gap-[18px]">
           <SectionHead
             className="enter-item"
             style={stagger(0)}
             id="releases-heading"
             title="최근 출시"
             action={
-              <Link href={`${ROUTES.game}?sort=release`} className="text-[12.5px] text-acc hover:underline">
+              <Link href={`${ROUTES.game}?sort=release`} className="text-[13px] text-acc hover:underline">
                 전체 게임 목록
               </Link>
             }
           />
-          <ul className="grid grid-cols-[repeat(auto-fit,minmax(238px,1fr))] gap-4">
+          <ul className="grid grid-cols-[repeat(auto-fill,minmax(min(220px,100%),1fr))] gap-x-5 gap-y-7">
             {recentReleases.map((g, i) => (
               <li key={g.slug} className="enter-item" style={stagger(i + 1)}>
                 <GameCard game={g} variant="release" />

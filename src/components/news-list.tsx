@@ -6,19 +6,22 @@ import { Clamp } from "@/components/ui/tooltip";
 import { FadeImage } from "@/components/ui/fade-image";
 import { newsThumbnailSrc } from "@/lib/news/thumbnail";
 import { ImageFallback } from "@/components/ui/image-fallback";
+import { ROW, ROWS } from "@/components/ui/page";
+import { cn } from "@/lib/cn";
 
 export function NewsList({ items, showGame = false }: { items: NewsDto[]; showGame?: boolean }) {
   if (items.length === 0) {
     return <p className="py-3 text-[13px] text-dim">관련 뉴스가 아직 없습니다.</p>;
   }
   return (
-    <ul className="divide-y divide-line-soft">
+    // 판이 없어진 화면에서 목록의 머리를 긋는 건 .rows 첫 줄의 진한 헤어라인이다(ui/page 의 ROWS)
+    <ul className={ROWS}>
       {items.map((n) => {
         // 주소는 서명해 우리 출처로 바꾼다 — 핫링크를 막는 매체가 있어 브라우저가 직접 받으면 403 이다.
         // 우리 쪽에서도 안 열리는 호스트면 null 이 와서 아예 요청하지 않는다(lib/news/thumbnail)
         const thumbnail = n.thumbnailUrl ? newsThumbnailSrc(n.thumbnailUrl) : null;
         return (
-          <li key={n.id} className="flex gap-3 py-[13px]">
+          <li key={n.id} className={cn(ROW, "flex gap-3 py-[13px]")}>
             <div className="relative h-12 w-[72px] shrink-0 overflow-hidden rounded-[7px] bg-surface-3">
               {/* 뉴스 썸네일은 외부 도메인이 불특정이라 next/image 최적화 대상에서 제외한다(unoptimized).
                   주소가 없을 때와 죽은 주소일 때 둘 다 브랜드 면으로 받는다 — 뉴스는 원문이 사라지면

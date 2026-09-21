@@ -7,7 +7,9 @@
 //      Neon 왕복(실측 220ms)을 기다릴 이유가 없다.
 // 규칙 자체는 lib/hardware/verdict 한 곳에 있다 — 서버가 판정할 일이 생겨도 같은 함수를 쓴다.
 import { useState } from "react";
-import { Card, SectionHead } from "@/components/ui/page";
+import { SectionHead } from "@/components/ui/page";
+import { chipClass } from "@/components/ui/chip";
+import { ROWS } from "@/components/ui/page";
 import { COMPAT_MESSAGES, OS_FAMILY_LABEL, VERDICT_LABEL, VERDICT_PART_LABEL } from "@/lib/games/messages";
 import { useGuestDevice, type CompatDevice } from "@/components/devices/guest-device";
 import { GuestDeviceForm } from "@/components/devices/guest-device-form";
@@ -68,7 +70,7 @@ export function CompatSection({
   return (
     <section aria-labelledby="compat-heading" className="flex flex-col gap-3">
       <SectionHead id="compat-heading" title={COMPAT_MESSAGES.heading} />
-      <Card className="flex flex-col gap-3.5 px-4 py-4">
+      <div className="flex flex-col gap-3.5 border-t border-line-strong pt-4">
         {(!device || editing) && (
           // 비회원에게 로그인부터 요구하지 않는다(설계 §4). 이 자리에서 바로 적게 하고 브라우저에 둔다
           <GuestDeviceForm
@@ -88,9 +90,7 @@ export function CompatSection({
                   type="button"
                   onClick={() => setSelected(d.id)}
                   aria-pressed={d.id === device.id}
-                  className={`press inline-flex min-h-[36px] items-center rounded-full border px-3 text-[12.5px] transition-colors ${
-                    d.id === device.id ? "border-ink bg-ink text-bg" : "border-line-strong text-ink-2 hover:border-ink"
-                  }`}
+                  className={chipClass({ active: d.id === device.id })}
                 >
                   {d.label}
                 </button>
@@ -109,12 +109,17 @@ export function CompatSection({
         {verdict && !editing && (
           <>
             <p className="text-[15px] font-bold text-ink">{VERDICT_LABEL[verdict.overall]}</p>
-            <ul className="flex flex-col gap-1.5">
+            {/* 항목별 판정은 헤어라인 표다 — 왼쪽은 무엇을, 오른쪽은 되는지. 눈이 오른쪽 기둥만 훑어도 답이 난다 */}
+            <ul className={ROWS}>
               {verdict.parts.map((p) => (
-                <li key={p.slot} className="flex items-start gap-2 text-[12.5px] leading-[1.6]">
-                  <StatusDot status={p.status} />
-                  <span className="w-[68px] shrink-0 text-dim">{VERDICT_PART_LABEL[p.slot]}</span>
-                  <span className={p.status === "below" ? "text-danger" : "text-mut"}>{statusText(p.status)}</span>
+                <li key={p.slot} className="flex items-baseline justify-between gap-2.5 py-[11px] text-[13px] leading-[1.6]">
+                  <span className="flex items-center gap-2 text-mut">
+                    <StatusDot status={p.status} />
+                    {VERDICT_PART_LABEL[p.slot]}
+                  </span>
+                  <span className={p.status === "below" ? "font-bold text-danger" : p.status === "unknown" ? "text-mut" : "font-bold text-ok"}>
+                    {statusText(p.status)}
+                  </span>
                 </li>
               ))}
             </ul>
@@ -131,7 +136,7 @@ export function CompatSection({
             )}
           </>
         )}
-      </Card>
+      </div>
     </section>
   );
 }

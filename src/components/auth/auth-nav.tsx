@@ -13,7 +13,7 @@ export function AuthNav() {
   const pathname = usePathname();
 
   if (status === "loading") {
-    return <span aria-hidden className="skeleton h-9 w-20 rounded-full" />;
+    return <span aria-hidden className="skeleton h-10 w-[72px] rounded-xl" />;
   }
   if (user) return <UserMenu user={user} />;
 
@@ -25,7 +25,7 @@ export function AuthNav() {
           {M.signUpCta}
         </Link>
       )}
-      <Link href={isAuthPage ? ROUTES.signIn : signInPath(pathname)} className={buttonClass({ size: "sm" })}>
+      <Link href={isAuthPage ? ROUTES.signIn : signInPath(pathname)} className={buttonClass({ className: "rounded-xl" })}>
         {M.signInCta}
       </Link>
     </div>

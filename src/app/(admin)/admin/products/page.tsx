@@ -5,7 +5,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { ProductMatchButtons } from "@/components/admin/product-match-buttons";
-import { Card, PageHead, SectionHead } from "@/components/ui/page";
+import {  PageHead, SectionHead } from "@/components/ui/page";
 import { Clamp } from "@/components/ui/tooltip";
 import { formatDateTime } from "@/lib/format";
 import { gamePath } from "@/lib/routes";
@@ -37,11 +37,11 @@ export default async function AdminProductMatchesPage() {
           note={`${PRODUCT_MATCH_MESSAGES.similarity(PENDING_MATCH_THRESHOLD, AUTO_MATCH_THRESHOLD)} | ${PRODUCT_MATCH_MESSAGES.count(queue.length)}`}
         />
         {queue.length === 0 ? (
-          <p className="rounded-xl border border-dashed border-line-strong bg-surface p-6 text-[13px] text-mut">
+          <p className="rounded-xl bg-surface-2 px-5 py-6 text-[13px] text-mut">
             {PRODUCT_MATCH_MESSAGES.empty}
           </p>
         ) : (
-          <Card className="overflow-x-auto">
+          <div className="overflow-x-auto">
             <div className={`${QUEUE_COLS} min-w-[900px] border-b border-line text-[11.5px] text-dim`}>
               <span>{PRODUCT_MATCH_MESSAGES.colProduct}</span>
               <span>{PRODUCT_MATCH_MESSAGES.colCandidate}</span>
@@ -80,7 +80,7 @@ export default async function AdminProductMatchesPage() {
                 </li>
               ))}
             </ul>
-          </Card>
+          </div>
         )}
       </section>
     </>

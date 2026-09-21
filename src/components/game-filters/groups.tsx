@@ -44,10 +44,11 @@ const byFamily = (f: PlatformFamily) => PLATFORM_ORDER.filter((p) => familyOf(p)
  */
 export const KEEP_SCROLL = { scroll: false } as const;
 
+/** 무리 하나. 이름표는 제목이 아니라 꼬리표라 작고 자간을 벌려 세운다(ui/page 의 SectionHead size="label" 과 같은 값) */
 function Group({ label, children }: { label: string; children: React.ReactNode }) {
   return (
-    <div className="flex flex-col gap-1.5">
-      <span className="text-[11.5px] text-dim">{label}</span>
+    <div className="flex flex-col gap-2.5">
+      <h2 className="text-[12px] font-bold tracking-[0.08em] text-dim">{label}</h2>
       <div className="flex flex-wrap gap-1.5">{children}</div>
     </div>
   );

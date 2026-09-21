@@ -10,7 +10,9 @@ import { SiteNavLink } from "@/components/site-nav-link";
 import { BellIcon, HeartIcon } from "@/components/ui/icons";
 
 /**
- * 머리띠 — 좁은 화면은 한 줄(심볼 + 검색칸 + 햄버거), 넓은 화면은 한 줄(락업 + 검색칸 + 펼친 메뉴).
+ * 머리띠 — 좁은 화면은 한 줄(심볼 + 검색칸 + 햄버거), 넓은 화면은 한 줄
+ * (락업 + 글자 메뉴 | 검색칸 + 개인 자리). 리디자인에서 가르는 기준이 바뀌었다:
+ * 왼쪽은 "무엇을 보러 가나"(목록, 출시 예정, 세일), 오른쪽은 "내 것"(검색, 위시리스트, 알림, 계정)이다.
  *
  * 줄바꿈을 아예 없앤 이유(2026-09-15): flex-wrap 으로 흘려보내면 390px 에서 셋이 각자 줄을 차지해
  * 붙어 있는 머리띠가 161px 까지 자랐다. 화면의 5분의 1이 어느 화면에서나 늘 빠지는 값이다.
@@ -19,13 +21,24 @@ import { BellIcon, HeartIcon } from "@/components/ui/icons";
  */
 export function SiteHeader() {
   return (
-    <header className="sticky top-0 z-40 border-b border-line bg-surface">
-      <div className="mx-auto flex w-full max-w-[var(--page-w)] items-center gap-2 px-5 py-2.5 sm:gap-4 sm:px-7 sm:py-4">
+    // 테두리도 흰 판도 없다(2026-09-21 리디자인) — 머리띠는 본문과 같은 바탕에 얹힌 채 따라온다.
+    // 선을 지운 자리는 아래 본문의 첫 헤어라인이 대신 받는다. 판이 남아 있으면 스크롤할 때
+    // 본문이 흰 띠 밑으로 들어가는 것이 보여, 화면이 두 겹으로 읽힌다.
+    <header className="sticky top-0 z-40 bg-bg">
+      <div className="mx-auto flex w-full max-w-[var(--page-w)] items-center gap-2 px-5 py-2.5 sm:gap-7 sm:px-6 sm:py-3.5">
         {/* 좁은 화면에서는 심볼만 남는다. 글자가 접혀도 링크의 이름은 남아야 하므로 aria-label 로 못 박는다 */}
         {/* tap: 좁은 화면에서는 심볼만 남아 26x32 였다 — 머리띠에서 가장 자주 눌리는 자리인데 손가락보다 작았다 */}
         <Link href={ROUTES.home} aria-label={SITE.name} className="press tap inline-flex shrink-0 items-center text-ink">
           <BrandLockup wordmarkClassName="hidden sm:inline" />
         </Link>
+
+        {/* 글자 메뉴는 로고 바로 옆에 붙는다 — 둘이 한 덩어리로 "이 서비스와 그 안의 갈래" 를 말하고,
+            검색칸과 개인 자리(위시리스트, 알림, 계정)는 반대쪽 끝으로 민다 */}
+        <nav aria-label="주요 메뉴" className="hidden shrink-0 items-center gap-1 text-[14px] sm:flex">
+          <SiteNavLink href={ROUTES.game}>게임 목록</SiteNavLink>
+          <SiteNavLink href={ROUTES.upcoming}>출시 예정</SiteNavLink>
+          <SiteNavLink href={ROUTES.sales}>다음 세일</SiteNavLink>
+        </nav>
 
         {/* useSearchParams 를 쓰는 검색창은 Suspense 경계 안에 둔다 —
             없으면 정적으로 뽑히는 화면(/_not-found 등)이 프리렌더 단계에서 실패한다 */}
@@ -33,18 +46,15 @@ export function SiteHeader() {
           <SearchBox />
         </Suspense>
 
-        <nav aria-label="주요 메뉴" className="hidden shrink-0 items-center gap-1 text-[13px] sm:flex">
-          <SiteNavLink href={ROUTES.game}>게임 목록</SiteNavLink>
-          <SiteNavLink href={ROUTES.upcoming}>출시 예정</SiteNavLink>
-          <SiteNavLink href={ROUTES.sales}>다음 세일</SiteNavLink>
-          <SiteNavLink href={ROUTES.wishlist} icon={<HeartIcon size={19} />}>
+        <div className="hidden shrink-0 items-center gap-1.5 sm:flex">
+          <SiteNavLink href={ROUTES.wishlist} icon={<HeartIcon size={19} />} iconOnly>
             위시리스트
           </SiteNavLink>
-          <SiteNavLink href={ROUTES.alerts} icon={<BellIcon size={19} />}>
+          <SiteNavLink href={ROUTES.alerts} icon={<BellIcon size={19} />} iconOnly>
             알림
           </SiteNavLink>
           <AuthNav />
-        </nav>
+        </div>
 
         <SiteMenu />
       </div>

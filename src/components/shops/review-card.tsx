@@ -7,7 +7,7 @@ import { useActionState } from "react";
 import { useFormStatus } from "react-dom";
 import { reviewShopAction } from "@/app/(admin)/shops/admin/actions";
 import { Button } from "@/components/ui/button";
-import { Card } from "@/components/ui/page";
+import { Panel } from "@/components/ui/page";
 import { FormMessage } from "@/components/ui/form-message";
 import { SHOP_ADMIN_MESSAGES, SHOP_MESSAGES } from "@/lib/shops/messages";
 import { SHOP_REASON_MAX } from "@/lib/shops/schemas";
@@ -40,7 +40,7 @@ export function ShopReviewCard({ shop }: { shop: ShopApplication }) {
   const [state, formAction] = useActionState(reviewShopAction, null);
 
   return (
-    <Card className="flex flex-col gap-3 px-4 py-4">
+    <Panel className="flex flex-col gap-3 px-4 py-4">
       <div className="flex flex-wrap items-baseline gap-x-2 gap-y-1">
         <h3 className="text-[14px] font-bold text-ink">{shop.name}</h3>
         <span className="text-[12px] text-dim">/{shop.slug}</span>
@@ -112,6 +112,6 @@ export function ShopReviewCard({ shop }: { shop: ShopApplication }) {
           ))}
         </div>
       </form>
-    </Card>
+    </Panel>
   );
 }

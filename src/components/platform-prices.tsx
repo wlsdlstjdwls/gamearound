@@ -15,7 +15,8 @@ import type { Platform } from "@/server/db/schema";
 import type { PlatformDto } from "@/server/services/games";
 import { SaleBadge } from "@/components/sale-badge";
 import { SubscriptionChips } from "@/components/subscription-badges";
-import { cardClass } from "@/components/ui/page";
+import { ROW, ROWS } from "@/components/ui/page";
+import { cn } from "@/lib/cn";
 
 export type PlatformPriceItem = PlatformDto & { freshness: Freshness };
 
@@ -69,7 +70,7 @@ export function PlatformPrices({
   quotedUserScorePlatform?: Platform | null;
 }) {
   if (platforms.length === 0) {
-    return <div className={cardClass("p-[18px] text-[13px] text-dim")}>플랫폼별 가격 정보가 아직 없어요.</div>;
+    return <p className="border-t border-line-strong py-5 text-[13px] text-dim">플랫폼별 가격 정보가 아직 없어요.</p>;
   }
 
   const rows = [...platforms].sort(byPrice);
@@ -77,28 +78,29 @@ export function PlatformPrices({
   const bestKey = rows[0].currentPrice !== null ? rowKey(rows[0]) : null;
 
   return (
-    <ul className={cardClass("divide-y divide-line-soft overflow-hidden")}>
+    <ul className={ROWS}>
       {rows.map((p) => {
         const hasDiscount = Boolean(p.discountPct && p.discountPct > 0);
         const meta = metaText(p, p.platform === quotedUserScorePlatform);
         return (
-          <li key={rowKey(p)} className="flex flex-wrap items-center gap-x-3 gap-y-2 px-4 py-3">
-            <span className="flex w-[104px] shrink-0 items-center gap-1.5 text-[13px] font-semibold text-ink">
-              {platformLabel(p)}
-              {rowKey(p) === bestKey && (
-                <span className="rounded-[5px] bg-acc px-1.5 py-[1px] text-[10.5px] font-bold text-on-ink">최저</span>
-              )}
+          <li key={rowKey(p)} className={cn(ROW, "flex flex-wrap items-center gap-x-4 gap-y-2 py-[15px]")}>
+            {/* 스토어 이름과 "최저" 표가 한 기둥에 선다 — 표를 면(배지)이 아니라 브랜드색 글자로 두는 이유는
+                이 화면에서 면을 가진 것이 히어로의 할인 스탬프 하나여야 해서다 */}
+            <span className="flex w-[124px] shrink-0 flex-col gap-0.5">
+              <span className="text-[15px] font-bold text-ink">{platformLabel(p)}</span>
+              {rowKey(p) === bestKey && <span className="text-[11.5px] font-bold text-acc">최저가</span>}
             </span>
 
             <div className="flex min-w-0 flex-1 basis-[200px] flex-col gap-1">
               <div className="flex flex-wrap items-baseline gap-x-2 gap-y-1">
-                <span className="text-[15px] font-bold tracking-[-0.02em] text-ink">{formatPrice(p.currentPrice, p.currency)}</span>
+                {/* 최저가 행만 값이 크다 — 행이 여덟 줄까지 가는데 전부 같은 크기면 "어디를 사면 되나" 가 안 보인다 */}
+                <span className={cn("font-extrabold tracking-[-0.035em] text-ink", rowKey(p) === bestKey ? "text-[24px]" : "text-[19px]")}>
+                  {formatPrice(p.currentPrice, p.currency)}
+                </span>
                 {hasDiscount && p.listPrice !== null && p.listPrice !== p.currentPrice && (
-                  <span className="text-[12px] text-dim-2 line-through">{formatPrice(p.listPrice, p.currency)}</span>
+                  <span className="text-[12.5px] text-dim-2 line-through">{formatPrice(p.listPrice, p.currency)}</span>
                 )}
-                {hasDiscount && (
-                  <span className="rounded-[5px] bg-acc px-1.5 py-[2px] text-[11px] font-bold text-on-ink">{formatDiscount(p.discountPct)}</span>
-                )}
+                {hasDiscount && <span className="text-[13px] font-bold text-acc">{formatDiscount(p.discountPct)}</span>}
                 {hasDiscount && <SaleBadge discountName={p.discountName} discountEndsAt={p.discountEndsAt} />}
               </div>
               {p.subscriptions.length > 0 && <SubscriptionChips subscriptions={p.subscriptions} />}
@@ -110,7 +112,11 @@ export function PlatformPrices({
                 href={p.storeUrl}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="press tap inline-flex shrink-0 items-center rounded-[8px] border border-line-strong px-3 py-1.5 text-[12.5px] font-semibold text-ink transition-colors duration-base hover:border-ink"
+                className={cn(
+                  "press tap inline-flex h-9 shrink-0 items-center rounded-xl px-[15px] text-[13px] font-semibold transition-colors duration-base",
+                  // 최저가 행의 버튼만 잉크로 채운다 — 이 화면에서 실제로 누를 자리는 대개 그 하나다
+                  rowKey(p) === bestKey ? "bg-ink text-on-ink hover:bg-ink-2" : "bg-surface-2 text-ink hover:bg-surface-3",
+                )}
               >
                 스토어
                 <span className="sr-only"> {platformLabel(p)} (새 창에서 열림)</span>

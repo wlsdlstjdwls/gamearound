@@ -8,7 +8,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { MatchReviewButtons } from "@/components/admin/match-review-buttons";
-import { Card, PageHead, SectionHead } from "@/components/ui/page";
+import {  PageHead, SectionHead } from "@/components/ui/page";
 import { Clamp } from "@/components/ui/tooltip";
 import { MATCH_MESSAGES, sourceLabel } from "@/lib/admin/messages";
 import { countPendingMatches, listPendingMatches } from "@/server/services/admin";
@@ -39,11 +39,11 @@ export default async function AdminMatchesPage() {
           note={MATCH_MESSAGES.similarity(PENDING_MATCH_THRESHOLD, AUTO_MATCH_THRESHOLD)}
         />
         {pending.length === 0 ? (
-          <p className="rounded-xl border border-dashed border-line-strong bg-surface p-6 text-[13px] text-mut">
+          <p className="rounded-xl bg-surface-2 px-5 py-6 text-[13px] text-mut">
             {MATCH_MESSAGES.empty}
           </p>
         ) : (
-          <Card className="overflow-x-auto">
+          <div className="overflow-x-auto">
             <div className={`${QUEUE_COLS} min-w-[960px] border-b border-line text-[11.5px] text-dim`}>
               <span>{MATCH_MESSAGES.colOurTitle}</span>
               <span>{MATCH_MESSAGES.colStoreTitle}</span>
@@ -81,7 +81,7 @@ export default async function AdminMatchesPage() {
                 </li>
               ))}
             </ul>
-          </Card>
+          </div>
         )}
       </section>
     </>

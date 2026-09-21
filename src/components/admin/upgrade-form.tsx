@@ -6,7 +6,7 @@ import { useActionState, useState, useTransition } from "react";
 import { deleteUpgradeAction, upsertUpgradeAction } from "@/app/(admin)/admin/actions";
 import { ActionStatus, SubmitButton } from "@/components/admin/submit-button";
 import type { AdminActionState } from "@/app/(admin)/admin/actions";
-import { cardClass } from "@/components/ui/page";
+import { panelClass } from "@/components/ui/page";
 import { PLATFORM_LABEL } from "@/lib/format";
 import type { Platform, UpgradeKind } from "@/server/db/schema";
 
@@ -73,7 +73,7 @@ export function UpgradeForm({
       {items.length > 0 && (
         <ul className="flex flex-col gap-1.5">
           {items.map((u) => (
-            <li key={u.id} className={cardClass("flex flex-wrap items-center gap-x-3 gap-y-1 px-3 py-2 text-[12.5px]")}>
+            <li key={u.id} className={panelClass("flex flex-wrap items-center gap-x-3 gap-y-1 px-3 py-2 text-[12.5px]")}>
               <span className="text-ink">
                 {PLATFORM_LABEL[u.fromPlatform] ?? u.fromPlatform} 에서 {PLATFORM_LABEL[u.toPlatform] ?? u.toPlatform}
               </span>
@@ -86,7 +86,7 @@ export function UpgradeForm({
         </ul>
       )}
 
-      <form action={formAction} className={cardClass("flex flex-col gap-2.5 p-4")}>
+      <form action={formAction} className={panelClass("flex flex-col gap-2.5 p-4")}>
         <input type="hidden" name="gameId" value={gameId} />
         <div className="grid gap-2 sm:grid-cols-4">
           <label className="flex flex-col gap-1 text-[11.5px] text-dim">

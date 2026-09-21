@@ -5,7 +5,7 @@ import { useActionState, useState, useTransition } from "react";
 import { addAliasAction, deleteAliasAction } from "@/app/(admin)/admin/actions";
 import type { AdminActionState } from "@/app/(admin)/admin/actions";
 import { ActionStatus, SubmitButton } from "@/components/admin/submit-button";
-import { cardClass } from "@/components/ui/page";
+import { panelClass } from "@/components/ui/page";
 import { ALIAS_MAX_LEN } from "@/lib/aliases";
 
 const inputCls =
@@ -50,7 +50,7 @@ export function AliasForm({ gameId, items }: { gameId: string; items: AliasItem[
       {items.length > 0 && (
         <ul className="flex flex-wrap gap-1.5">
           {items.map((a) => (
-            <li key={a.id} className={cardClass("flex items-center gap-2 px-3 py-1.5 text-[12.5px]")}>
+            <li key={a.id} className={panelClass("flex items-center gap-2 px-3 py-1.5 text-[12.5px]")}>
               <span className="text-ink">{a.alias}</span>
               <DeleteButton gameId={gameId} id={a.id} alias={a.alias} />
             </li>
@@ -58,7 +58,7 @@ export function AliasForm({ gameId, items }: { gameId: string; items: AliasItem[
         </ul>
       )}
 
-      <form action={formAction} className={cardClass("flex flex-col gap-2.5 p-4")}>
+      <form action={formAction} className={panelClass("flex flex-col gap-2.5 p-4")}>
         <input type="hidden" name="gameId" value={gameId} />
         <div className="grid gap-2 sm:grid-cols-[1fr_auto]">
           <label className="flex flex-col gap-1 text-[11.5px] text-dim">

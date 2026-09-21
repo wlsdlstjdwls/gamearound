@@ -9,7 +9,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { Page, PageHead, Card, SectionHead } from "@/components/ui/page";
+import { Page, PageHead, ROWS, SectionHead } from "@/components/ui/page";
 import { buttonClass } from "@/components/ui/button";
 import { ROUTES } from "@/lib/routes";
 import { SHOP_DIRECTORY_MESSAGES as M } from "@/lib/shops/messages";
@@ -47,20 +47,18 @@ export default async function ShopPage({ params }: Props) {
   const listings = await listPublicShopListings(found.shopId);
 
   return (
-    <Page width="tight" gap={20}>
+    <Page width="tight" gap={26}>
       <PageHead title={shop.name} note={suspended ? M.suspendedNotice : undefined} />
 
       {facts.length > 0 && (
-        <Card className="flex flex-col gap-2 px-4 py-4">
-          <dl className="flex flex-col gap-2">
-            {facts.map((f) => (
-              <div key={f.label} className="flex gap-3 text-[13px] leading-[1.7]">
-                <dt className="w-16 shrink-0 text-dim">{f.label}</dt>
-                <dd className="flex-1 text-ink">{f.value}</dd>
-              </div>
-            ))}
-          </dl>
-        </Card>
+        <dl className={ROWS}>
+          {facts.map((f) => (
+            <div key={f.label} className="flex justify-between gap-4 py-[13px] text-[13px] leading-[1.7]">
+              <dt className="shrink-0 text-dim">{f.label}</dt>
+              <dd className="text-right text-[13.5px] font-semibold text-ink">{f.value}</dd>
+            </div>
+          ))}
+        </dl>
       )}
 
       {shop.description && (
@@ -73,7 +71,7 @@ export default async function ShopPage({ params }: Props) {
       <section className="flex flex-col gap-3">
         <SectionHead title={M.listingsTitle} note={listings.length > 0 ? `${listings.length}건` : undefined} />
         {listings.length === 0 ? (
-          <Card className="px-4 py-6 text-center text-[13px] text-dim">{M.listingsEmpty}</Card>
+          <p className="rounded-xl bg-surface-2 px-4 py-6 text-center text-[13px] text-dim">{M.listingsEmpty}</p>
         ) : (
           <ListingList listings={listings} />
         )}

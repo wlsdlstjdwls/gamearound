@@ -4,7 +4,7 @@
 // 메일은 안 열릴 수 있고, 그때 사람은 "왜 안 되지" 를 물어볼 자리가 없다.
 import type { Metadata } from "next";
 import Link from "next/link";
-import { Card, Page, PageHead } from "@/components/ui/page";
+import { Panel, Page, PageHead } from "@/components/ui/page";
 import { buttonClass } from "@/components/ui/button";
 import { ROUTES, shopPath } from "@/lib/routes";
 import { SHOP_MESSAGES } from "@/lib/shops/messages";
@@ -31,14 +31,14 @@ export default async function ShopJoinStatusPage() {
       <PageHead title={SHOP_MESSAGES.statusTitle} />
 
       {!shop ? (
-        <Card className="flex flex-col items-start gap-3 px-4 py-4">
+        <Panel className="flex flex-col items-start gap-3 px-4 py-4">
           <p className="text-[13px] text-mut">{SHOP_MESSAGES.noApplication}</p>
           <Link href={ROUTES.shopsJoin} className={buttonClass({ variant: "primary" })}>
             {SHOP_MESSAGES.joinTitle}
           </Link>
-        </Card>
+        </Panel>
       ) : (
-        <Card className="flex flex-col gap-3 px-4 py-4">
+        <Panel className="flex flex-col gap-3 px-4 py-4">
           <div className="flex flex-col gap-1">
             <p className="text-[15px] font-bold text-ink">{head!.title}</p>
             {head!.note && <p className="text-[13px] leading-[1.7] text-mut">{head!.note}</p>}
@@ -81,7 +81,7 @@ export default async function ShopJoinStatusPage() {
               </Link>
             )}
           </div>
-        </Card>
+        </Panel>
       )}
     </Page>
   );

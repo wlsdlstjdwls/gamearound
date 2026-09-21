@@ -8,7 +8,7 @@
 // 고른 값은 즉시 html 의 data-theme 에 반영된다 — 되돌아가 확인할 필요 없이 이 화면에서 바로 바뀐다.
 import { useCallback, useSyncExternalStore } from "react";
 import { ChipButton } from "@/components/ui/chip";
-import { Card } from "@/components/ui/page";
+import { SectionHead } from "@/components/ui/page";
 import { DEFAULT_THEME, isTheme, THEMES, THEME_LABEL, THEME_MESSAGES, THEME_STORAGE_KEY, type Theme } from "@/lib/theme";
 
 /** 이 탭 안에서 값이 바뀐 것을 알리는 신호. storage 이벤트는 **다른** 탭에만 가므로 자기 탭은 이걸 듣는다 */
@@ -60,20 +60,18 @@ export function ThemeToggle() {
   const choose = useCallback((t: Theme) => applyTheme(t), []);
 
   return (
-    <Card className="flex flex-col gap-3.5 p-5">
-      <div className="flex flex-col gap-1">
-        <h2 className="text-[14px] font-bold text-ink">{THEME_MESSAGES.heading}</h2>
-        <p className="text-[12px] text-dim">{THEME_MESSAGES.note}</p>
-      </div>
+    <section className="flex flex-col gap-3.5">
+      <SectionHead title={THEME_MESSAGES.heading} size="sub" />
       {/* 라디오가 아니라 누름 상태(aria-pressed)로 둔다 — ChipButton 이 이미 그렇게 말하고 있고,
           같은 버튼에 role="radio" 를 얹으면 두 상태 속성이 서로 다른 말을 한다 */}
-      <div role="group" aria-label={THEME_MESSAGES.heading} className="flex flex-wrap gap-1.5">
+      <div role="group" aria-label={THEME_MESSAGES.heading} className="flex flex-wrap gap-1.5 border-t border-line-strong pt-4">
         {THEMES.map((t) => (
           <ChipButton key={t} active={theme === t} onClick={() => choose(t)}>
             {THEME_LABEL[t]}
           </ChipButton>
         ))}
       </div>
-    </Card>
+      <p className="text-[12px] text-dim">{THEME_MESSAGES.note}</p>
+    </section>
   );
 }

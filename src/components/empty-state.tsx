@@ -14,8 +14,8 @@ export function EmptyState({
   children?: React.ReactNode;
 }) {
   return (
-    <div role="status" className="flex flex-col items-start gap-2 rounded-xl border border-dashed border-line-strong bg-surface p-6">
-      <p className="text-[14px] font-bold text-ink">{title}</p>
+    <div role="status" className="flex flex-col items-start gap-2 rounded-[var(--radius-panel)] bg-surface-2 px-6 py-7">
+      <p className="text-[15px] font-extrabold tracking-[-0.02em] text-ink">{title}</p>
       {description && <p className="max-w-[540px] text-[13px] leading-[1.7] text-mut">{description}</p>}
       {children}
       {action && (

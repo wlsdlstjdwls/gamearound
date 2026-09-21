@@ -6,7 +6,9 @@ import Link from "next/link";
 import { CoverImage } from "@/components/game-card";
 import { EmptyState } from "@/components/empty-state";
 import { PlatformBadges } from "@/components/platform-badges";
-import { Card, Page, PageHead } from "@/components/ui/page";
+import { Page, PageHead, ROW, ROWS } from "@/components/ui/page";
+import { chipClass } from "@/components/ui/chip";
+import { cn } from "@/lib/cn";
 import { formatDate, formatDiscount } from "@/lib/format";
 import { stagger } from "@/lib/motion";
 import { ROUTES } from "@/lib/routes";
@@ -94,9 +96,7 @@ export default async function SearchPage({ searchParams }: Props) {
               key={s.key}
               href={`${ROUTES.search}?q=${encodeURIComponent(q)}&sort=${s.key}`}
               aria-current={s.key === sort ? "true" : undefined}
-              className={`press rounded-lg px-3 py-1.5 text-[12.5px] transition-colors duration-base ${
-                s.key === sort ? "bg-surface-2 font-semibold text-ink" : "text-dim hover:text-ink"
-              }`}
+              className={chipClass({ active: s.key === sort })}
             >
               {s.label}
             </Link>
@@ -108,16 +108,15 @@ export default async function SearchPage({ searchParams }: Props) {
         <ReportBlock q={q} />
       ) : (
         <>
-          <Card>
-            <ul className="divide-y divide-line-soft">
+          <ul className={ROWS}>
               {results.map((g, i) => {
                 const title = g.titleKo ?? g.titleEn;
                 const best = g.best;
                 const hasDiscount = Boolean(best?.discountPct && best.discountPct > 0);
                 return (
                   <li key={g.slug} className="enter-item" style={stagger(i)}>
-                    <Link href={`/games/${g.slug}`} className="flex flex-wrap items-center gap-4 p-4 transition-colors duration-base hover:bg-surface-4">
-                      <div className="relative h-14 w-24 shrink-0 overflow-hidden rounded-lg bg-surface-3">
+                    <Link href={`/games/${g.slug}`} className={cn(ROW, "flex flex-wrap items-center gap-4 py-3.5")}>
+                      <div className="relative aspect-[460/215] w-24 shrink-0 overflow-hidden rounded-[var(--radius-inset)] bg-surface-3">
                         <CoverImage src={g.coverUrl} alt={`${title} 커버`} sizes="96px" />
                       </div>
                       <div className="min-w-[180px] flex-1">
@@ -148,8 +147,7 @@ export default async function SearchPage({ searchParams }: Props) {
                   </li>
                 );
               })}
-            </ul>
-          </Card>
+          </ul>
           <ReportBlock q={q} />
         </>
       )}

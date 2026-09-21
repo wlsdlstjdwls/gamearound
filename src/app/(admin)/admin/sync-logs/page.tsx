@@ -9,7 +9,7 @@ import { ChipLink } from "@/components/ui/chip";
 import { isSourceName, listSyncLogs, SOURCES } from "@/server/services/admin";
 import { LOG_MESSAGES, SYNC_STATUS_LABEL, sourceLabel } from "@/lib/admin/messages";
 import { requireRoleOrForbid } from "@/server/auth/guards";
-import { PageHead, cardClass } from "@/components/ui/page";
+import { PageHead } from "@/components/ui/page";
 import { ROUTES } from "@/lib/routes";
 import { Clamp } from "@/components/ui/tooltip";
 
@@ -63,9 +63,9 @@ export default async function SyncLogsPage({ searchParams }: { searchParams: Pro
       </header>
 
       {logs.length === 0 ? (
-        <p className="rounded-xl border border-dashed border-line-strong bg-surface p-6 text-[13px] text-mut">{LOG_MESSAGES.empty}</p>
+        <p className="rounded-xl bg-surface-2 px-5 py-6 text-[13px] text-mut">{LOG_MESSAGES.empty}</p>
       ) : (
-        <div className={cardClass("overflow-x-auto")}>
+        <div className="overflow-x-auto">
           <table className="w-full text-[13px]">
             <thead className="border-b border-line text-left text-[11.5px] text-dim">
               <tr>

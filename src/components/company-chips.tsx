@@ -7,7 +7,9 @@ import { companyPath } from "@/lib/routes";
 import { COMPANY_ROLE_LABEL } from "@/lib/games/messages";
 import type { GameCompanyDto } from "@/server/services/games";
 
-const BASE = "inline-flex items-center gap-1 rounded-full px-[11px] py-1 text-[12px]";
+// 알약은 선이 아니라 면으로 선다(2026-09-21 리디자인). 한 화면에 이런 알약이 열 개 넘게 서는데
+// 테두리를 쓰면 그 선들이 본문보다 먼저 읽힌다
+const BASE = "inline-flex items-center gap-1 rounded-full bg-surface-2 px-[11px] py-[5px] text-[12.5px]";
 
 export function CompanyChips({
   companies,
@@ -25,7 +27,7 @@ export function CompanyChips({
           <li key={`${c.slug}:${c.role}`}>
             <Link
               href={companyPath(c.slug)}
-              className={`${BASE} press border border-line-strong text-ink-2 transition-colors hover:border-ink hover:text-ink`}
+              className={`${BASE} press text-ink-2 transition-colors hover:bg-surface-3 hover:text-ink`}
             >
               <span className="text-dim">{COMPANY_ROLE_LABEL[c.role]}</span>
               {c.name}

@@ -20,7 +20,7 @@ import {
 } from "@/lib/price-per-hour";
 import type { Currency } from "@/server/db/schema";
 import type { PlaytimeDto } from "@/server/services/games";
-import { cardClass } from "@/components/ui/page";
+import { SectionHead } from "@/components/ui/page";
 
 type ItemKey = keyof Omit<PlaytimeDto, "lastSyncedAt">;
 
@@ -121,7 +121,7 @@ function PlaytimeBars({ playtime, compact }: { playtime: PlaytimeDto | null; com
 /** 헤더 안에 얇게 넣는 형태(다른 화면에서 재사용) */
 export function PlaytimeStrip({ playtime }: { playtime: PlaytimeDto | null }) {
   return (
-    <section aria-labelledby="playtime-heading" className="rounded-[7px] border border-line bg-surface p-3">
+    <section aria-labelledby="playtime-heading" className="rounded-xl bg-surface-2 p-3.5">
       <h2 id="playtime-heading" className="mb-2 text-[11.5px] font-semibold text-dim">
         플레이타임
       </h2>
@@ -133,7 +133,7 @@ export function PlaytimeStrip({ playtime }: { playtime: PlaytimeDto | null }) {
 /** 숫자 + 단위. 눈금이 있든 없든 같은 크기로 읽히게 한 곳에서 만든다. 색만 판정에 따라 달라진다 */
 function PerHourAmount({ perHour, currency, verdict }: { perHour: number; currency: Currency; verdict?: PerHourVerdict }) {
   return (
-    <p className={`text-[20px] font-extrabold leading-none tracking-tight ${verdict ? AMOUNT_CLASS[verdict] : "text-ink"}`}>
+    <p className={`text-[22px] font-extrabold leading-none tracking-[-0.03em] ${verdict ? AMOUNT_CLASS[verdict] : "text-ink"}`}>
       {formatPrice(perHour, currency)}
       <span className="text-[11.5px] font-semibold text-dim">{PER_HOUR_MESSAGES.unit}</span>
     </p>
@@ -153,7 +153,7 @@ function PerHourScale({ perHour, currency, scale }: { perHour: number; currency:
   const showMedianLabel = Math.abs(mePct - medianPct) >= PER_HOUR_LABEL_GAP_PCT;
 
   return (
-    <div className="flex flex-col gap-2 border-t border-line-soft pt-2.5">
+    <div className="flex flex-col gap-2 border-t border-line pt-4">
       <div className="flex items-baseline justify-between gap-2">
         <PerHourAmount perHour={perHour} currency={currency} verdict={verdict} />
         <p className={`text-[11.5px] font-bold ${VERDICT_CLASS[verdict]}`}>{PER_HOUR_VERDICT_LABEL[verdict]}</p>
@@ -189,7 +189,7 @@ function PerHourScale({ perHour, currency, scale }: { perHour: number; currency:
 /** 눈금을 세울 수 없을 때 — 숫자만 말한다(통화가 다르거나 표본이 모자란 경우) */
 function PerHourPlain({ perHour, currency }: { perHour: number; currency: Currency }) {
   return (
-    <div className="flex items-baseline justify-between gap-2 border-t border-line-soft pt-2.5">
+    <div className="flex items-baseline justify-between gap-2 border-t border-line pt-4">
       <PerHourAmount perHour={perHour} currency={currency} />
       <p className="text-[11px] text-dim">{PER_HOUR_MESSAGES.basis}</p>
     </div>
@@ -212,12 +212,10 @@ export function PlaytimeCard({
   const perHour = pricePerHour(currentPrice, toPositiveNumber(playtime?.mainStoryHours));
 
   return (
-    <section aria-labelledby="playtime-card-heading" className={cardClass("flex flex-col gap-3 p-4")}>
+    <section aria-labelledby="playtime-card-heading" className="flex flex-col gap-3.5">
       {/* 출처, 갱신일 표기를 뺀 이유(2026-09-15): 어디서 온 값이고 언제 받았는지는
           이 칸을 읽는 사람이 묻는 것이 아니다. 묻는 것은 "얼마나 걸리나" 하나다 */}
-      <h2 id="playtime-card-heading" className="text-[13.5px] font-bold text-ink">
-        플레이타임
-      </h2>
+      <SectionHead id="playtime-card-heading" title="플레이타임" as="h2" />
       {hasAnyValue(playtime) ? <PlaytimeBars playtime={playtime} /> : <p className="text-[12.5px] text-dim">{EMPTY_TEXT}</p>}
       {perHour !== null &&
         (canPlaceOnScale(currency, scale) ? (

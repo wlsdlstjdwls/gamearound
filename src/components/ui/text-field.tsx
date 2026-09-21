@@ -30,9 +30,12 @@ export function TextField({ label, hideLabel, hint, error, trailing, wrapperClas
       <div
         key={invalid ? "invalid" : "valid"}
         className={cn(
-          "flex items-center rounded-[var(--radius-sm)] border bg-bg transition-[border-color,background-color] duration-base ease-standard",
-          "focus-within:border-ink focus-within:bg-surface",
-          invalid ? "animate-shake border-danger focus-within:border-danger" : "border-line-strong hover:border-dim",
+          // 테두리를 실제 border 가 아니라 안쪽 그림자로 두는 이유(2026-09-21 리디자인):
+          // 입력칸이 채운 판(--surface-2) 위에 서는 자리라 흰 면이 곧 "쓸 수 있는 칸" 이고,
+          // 거기에 1px 선까지 더하면 판 안의 판이 된다. 선은 포커스와 오류에서만 말한다
+          "flex items-center rounded-xl bg-surface transition-[box-shadow] duration-base ease-standard",
+          "shadow-[0_0_0_1px_var(--line)] focus-within:shadow-[0_0_0_1px_var(--acc),0_0_0_4px_var(--acc-glow)]",
+          invalid && "animate-shake shadow-[0_0_0_1px_var(--danger)] focus-within:shadow-[0_0_0_1px_var(--danger)]",
         )}
       >
         <input
@@ -40,8 +43,8 @@ export function TextField({ label, hideLabel, hint, error, trailing, wrapperClas
           aria-invalid={invalid || undefined}
           aria-describedby={[hint ? hintId : null, invalid ? errorId : null].filter(Boolean).join(" ") || undefined}
           className={cn(
-            "h-[42px] min-h-[42px] w-full flex-1 bg-transparent px-3.5 text-[14px] text-ink outline-none placeholder:text-dim",
-            "autofill:shadow-[inset_0_0_0_1000px_var(--bg)] autofill:[-webkit-text-fill-color:var(--ink)]",
+            "h-[46px] min-h-[46px] w-full flex-1 bg-transparent px-3.5 text-[14px] text-ink outline-none placeholder:text-dim",
+            "autofill:shadow-[inset_0_0_0_1000px_var(--surface)] autofill:[-webkit-text-fill-color:var(--ink)]",
             className,
           )}
           {...input}

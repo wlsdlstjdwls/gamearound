@@ -8,7 +8,8 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { EmptyState } from "@/components/empty-state";
 import { Pagination } from "@/components/pagination";
-import { Page, SectionHead, cardClass } from "@/components/ui/page";
+import { Page, PageHead, ROW, ROWS } from "@/components/ui/page";
+import { cn } from "@/lib/cn";
 import { Clamp } from "@/components/ui/tooltip";
 import { buttonClass } from "@/components/ui/button";
 import { stagger } from "@/lib/motion";
@@ -45,11 +46,14 @@ export default async function ShopsPage({ searchParams }: Props) {
   const result = await listActiveShops(q, pageNum);
 
   return (
-    <Page gap={20}>
-      <SectionHead title={M.title} note={result.total > 0 ? `${result.total}${M.countSuffix}` : undefined} />
-
-      {/* 검색은 서버 액션이 아니라 GET 이다 — 찾은 화면의 주소가 그대로 남아야 공유되고 뒤로 가기가 산다 */}
-      <form action={ROUTES.shops} method="get" className={cardClass("flex flex-wrap items-center gap-2 p-3")}>
+    <Page gap={26}>
+      {/* 검색칸이 제목 행 오른쪽에 붙는다 — 이 화면에서 할 일이 그것 하나라서다.
+          검색은 서버 액션이 아니라 GET 이다: 찾은 화면의 주소가 그대로 남아야 공유되고 뒤로 가기가 산다 */}
+      <PageHead
+        title={M.title}
+        note={result.total > 0 ? `${result.total}${M.countSuffix}` : undefined}
+        action={
+          <form action={ROUTES.shops} method="get" className="flex flex-wrap items-center gap-2">
         <label htmlFor="shop-q" className="sr-only">
           {M.searchLabel}
         </label>
@@ -59,12 +63,14 @@ export default async function ShopsPage({ searchParams }: Props) {
           defaultValue={q ?? ""}
           placeholder={M.searchPlaceholder}
           // 16px 미만이면 iOS 가 화면을 확대한다(AGENTS §6)
-          className="min-w-0 flex-1 rounded-lg border border-line bg-surface px-3 py-2 text-[16px] text-ink placeholder:text-dim focus-visible:border-ink focus-visible:outline-none"
+          className="h-10 min-w-0 flex-1 rounded-xl border border-transparent bg-surface-2 px-3.5 text-[16px] text-ink placeholder:text-dim focus-visible:border-acc focus-visible:outline-none sm:w-[220px] sm:flex-none"
         />
-        <button type="submit" className={buttonClass({ variant: "primary" })}>
-          {M.searchSubmit}
-        </button>
-      </form>
+            <button type="submit" className={buttonClass({ variant: "primary" })}>
+              {M.searchSubmit}
+            </button>
+          </form>
+        }
+      />
 
       {result.items.length === 0 ? (
         <EmptyState
@@ -73,20 +79,16 @@ export default async function ShopsPage({ searchParams }: Props) {
           action={{ href: ROUTES.business, label: M.emptyAction }}
         />
       ) : (
-        <ul className="grid grid-cols-1 gap-2.5 sm:grid-cols-2 lg:grid-cols-3">
+        <ul className={cn(ROWS, "sm:grid sm:grid-cols-2 sm:gap-x-10 lg:grid-cols-3")}>
           {result.items.map((shop, i) => (
             <li key={shop.slug} className="enter-item" style={stagger(i)}>
-              <Link
-                href={shopPath(shop.slug)}
-                className={cardClass("lift press flex h-full flex-col gap-1 px-4 py-3.5 transition-colors hover:border-ink")}
-              >
-                <Clamp lines={1} className="text-[14px] font-semibold text-ink">
+              <Link href={shopPath(shop.slug)} className={cn(ROW, "flex h-full flex-col gap-0.5 py-[13px]")}>
+                <Clamp lines={1} className="text-[14.5px] font-bold tracking-[-0.02em] text-ink">
                   {shop.name}
                 </Clamp>
                 <Clamp lines={2} className="text-[12px] text-dim">
-                  {whereLine(shop)}
+                  {[whereLine(shop), shop.phone].filter(Boolean).join(" | ")}
                 </Clamp>
-                {shop.phone && <span className="text-[12px] text-dim">{shop.phone}</span>}
               </Link>
             </li>
           ))}

@@ -18,12 +18,15 @@ import { cn } from "@/lib/cn";
 export function SiteNavLink({
   href,
   icon,
+  iconOnly = false,
   children,
   className,
 }: {
   href: string;
   /** 있으면 좁은 화면에서 글자 대신 이것만 보인다 */
   icon?: React.ReactNode;
+  /** 넓은 화면에서도 글자를 펴지 않는다 — 머리띠 오른쪽 끝의 개인 자리(위시리스트, 알림)용 */
+  iconOnly?: boolean;
   children: string;
   className?: string;
 }) {
@@ -38,15 +41,18 @@ export function SiteNavLink({
       className={cn(
         "press flex items-center justify-center rounded-lg transition-colors",
         // 그림만 선 칸은 정사각 터치 타깃을 갖는다. 글자가 돌아오는 넓은 화면에서는 원래 여백으로 돌아간다
-        icon
-          ? "size-[var(--touch-target)] sm:size-auto sm:gap-1.5 sm:px-3 sm:py-[7px]"
-          : "px-3 py-[7px]",
-        current ? "font-semibold text-ink" : "text-mut hover:text-ink",
+        icon && iconOnly
+          ? "size-[var(--touch-target)] sm:size-10"
+          : icon
+            ? "size-[var(--touch-target)] sm:size-auto sm:gap-1.5 sm:px-3 sm:py-[7px]"
+            : "px-3 py-[7px]",
+        // 안 고른 칸은 면을 갖지 않는다 — hover 에서만 바탕이 한 겹 깔린다(칩과 같은 규칙)
+        current ? "font-bold text-ink" : "text-mut hover:bg-surface-2 hover:text-ink",
         className,
       )}
     >
       {icon}
-      <span className={icon ? "sr-only sm:not-sr-only" : undefined}>{children}</span>
+      <span className={icon ? (iconOnly ? "sr-only" : "sr-only sm:not-sr-only") : undefined}>{children}</span>
     </Link>
   );
 }

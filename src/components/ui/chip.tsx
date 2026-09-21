@@ -15,15 +15,23 @@ const SIZE: Record<ChipSize, string> = {
   page: "h-8 min-w-8 justify-center px-3 text-[12.5px]",
 };
 
+/*
+ * 고른 칩과 안 고른 칩(2026-09-21 리디자인).
+ *
+ * 안 고른 칩에서 테두리를 걷어냈다. 필터 기둥에 칩이 스무 개 서면 테두리 스무 겹이 먼저 읽히고,
+ * 그 소음 속에서 "잉크로 채워진 한 칸" 을 찾는 일이 되레 어려워진다. 안 고른 값은 회색 글자로만
+ * 두고, 고른 값만 면을 갖는다 — 화면에서 채워진 면은 곧 "지금 걸린 조건" 이라는 뜻이다.
+ * hover 는 면을 미리 보여 주는 몫이다(--surface-2).
+ */
 const ACTIVE = "bg-ink font-semibold text-on-ink";
-const IDLE = "border border-line-strong text-mut hover:border-ink hover:text-ink";
+const IDLE = "text-mut hover:bg-surface-2 hover:text-ink";
 
 export function chipClass(opts: { active?: boolean; size?: ChipSize; className?: string } = {}): string {
   const { active = false, size = "md", className } = opts;
   return cn(
     // tap: 손가락 기기에서만 최소 높이를 44px 로 올린다(globals.css). 칩은 12~13px 글자라
     // 실제 높이가 30~33px 밖에 되지 않아 필터, 페이지 이동에서 옆 칩이 눌리는 자리였다
-    "press tap inline-flex items-center rounded-lg transition-colors duration-base",
+    "press tap inline-flex items-center rounded-full transition-colors duration-base",
     SIZE[size],
     active ? ACTIVE : IDLE,
     className,

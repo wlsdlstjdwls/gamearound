@@ -5,13 +5,13 @@
 // 가로로 눕히지 않는 이유: 플랫폼, 장르 칩이 줄바꿈하며 화면 위쪽을 몇 줄씩 먹어 정작 게임이 밀린다.
 // 좁은 화면에서 접어 두는 이유: 펴 둔 채로 두면 목록이 한 화면 아래로 밀린다 — details 라 JS 없이 열고 닫힌다.
 //
-// 걸린 조건은 맨 위 요약 줄이 맡는다(./active). 고르는 자리는 기둥 곳곳에 흩어져 있어서
-// "지금 무엇이 걸렸나" 와 "하나만 풀고 싶다" 를 그 자리에서 답할 수 없었다.
-import { cardClass } from "@/components/ui/page";
+// 걸린 조건은 목록 위 전폭 요약 줄이 맡는다(./active 를 page.tsx 가 직접 부른다).
+// 기둥 안에 있을 때는 좁은 화면에서 서랍을 열어야만 보였고, 넓은 화면에서도 스크롤을 내리면
+// 기둥 머리와 함께 사라졌다 — "지금 무엇이 걸렸나" 는 결과 바로 위에 있어야 답이 된다.
 import type { GamesQuery } from "@/lib/games-query";
 import type { GameFacets } from "@/server/services/games";
 import type { CompatDevice } from "@/components/devices/guest-device";
-import { ActiveFilters, activeFilterCount } from "./active";
+import { activeFilterCount } from "./active";
 import { Groups } from "./groups";
 
 export function GameFilters({ facets, filter, devices }: { facets: GameFacets; filter: GamesQuery; devices: CompatDevice[] }) {
@@ -24,15 +24,17 @@ export function GameFilters({ facets, filter, devices }: { facets: GameFacets; f
           걸린 조건이 있어도 펴 두지 않는다(2026-09-15): 이 무리가 700px 이라 조건을 걸고 들어온 화면은
           게임이 한 장도 안 보이는 채로 시작했다. 화면에 들어와서 하려던 일은 결과를 보는 것이지
           방금 고른 조건을 다시 읽는 것이 아니다 — 걸린 개수는 접힌 줄의 숫자 배지가 말한다 */}
-      <details className={cardClass("p-0 lg:hidden")}>
-        <summary className="flex cursor-pointer list-none items-center gap-2 px-4 py-3 text-[13px] font-semibold text-ink">
+      {/* 판이 아니라 위아래 헤어라인 두 줄로 자리를 표시한다(2026-09-21 리디자인) */}
+      <details className="border-y border-line lg:hidden">
+        <summary className="flex cursor-pointer list-none items-center gap-2.5 py-3.5 text-[14px] font-bold text-ink">
           필터와 정렬
           {applied > 0 && (
-            <span className="rounded-full bg-ink px-2 py-0.5 text-[11px] font-bold text-on-ink">{applied}</span>
+            <span className="inline-flex h-[22px] min-w-[22px] items-center justify-center rounded-full bg-ink px-[7px] text-[11.5px] font-bold text-on-ink">
+              {applied}
+            </span>
           )}
         </summary>
-        <div className="flex flex-col gap-3.5 border-t border-line px-4 py-3">
-          <ActiveFilters filter={filter} />
+        <div className="flex flex-col gap-5 pb-4 pt-1">
           <Groups facets={facets} filter={filter} devices={devices} />
         </div>
       </details>
@@ -41,9 +43,8 @@ export function GameFilters({ facets, filter, devices }: { facets: GameFacets; f
           기둥이 화면보다 길어지는 조합이 있어 안쪽에서 스크롤한다 — 안 그러면 아래쪽 무리에 손이 닿지 않는다 */}
       <aside
         aria-label="목록 필터"
-        className={cardClass("hidden flex-col gap-4 p-4 lg:sticky lg:top-[86px] lg:flex lg:max-h-[calc(100vh-102px)] lg:overflow-y-auto")}
+        className="hidden flex-col gap-[26px] lg:sticky lg:top-[80px] lg:flex lg:max-h-[calc(100vh-96px)] lg:overflow-y-auto"
       >
-        <ActiveFilters filter={filter} />
         <Groups facets={facets} filter={filter} devices={devices} />
       </aside>
     </>

@@ -5,7 +5,7 @@
 import { useActionState, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { TextField } from "@/components/ui/text-field";
-import { Card } from "@/components/ui/page";
+import { Panel } from "@/components/ui/page";
 import { TASK_MESSAGES, TASK_PRIORITY_LABEL, TASK_STATUS_LABEL } from "@/lib/admin/messages";
 import { TASK_STATUSES } from "@/lib/admin/tasks";
 import { createTaskAction, type TaskActionState } from "@/app/(admin)/admin/tasks/actions";
@@ -30,7 +30,7 @@ export function TaskAddForm({ sources }: { sources: readonly string[] }) {
   }
 
   return (
-    <Card className="p-4">
+    <Panel className="p-4">
       <form action={action} className="flex flex-col gap-3">
         <TextField
           name="title"
@@ -108,6 +108,6 @@ export function TaskAddForm({ sources }: { sources: readonly string[] }) {
           </Button>
         </div>
       </form>
-    </Card>
+    </Panel>
   );
 }

@@ -13,7 +13,8 @@ import type { GameSummary } from "@/server/services/games";
 import { CoverImage } from "@/components/game-card";
 import { PlatformBadges } from "@/components/platform-badges";
 import { SaleBadge } from "@/components/sale-badge";
-import { cardClass } from "@/components/ui/page";
+import { ROW } from "@/components/ui/page";
+import { cn } from "@/lib/cn";
 import { Clamp } from "@/components/ui/tooltip";
 
 /**
@@ -40,18 +41,20 @@ export function GameRow({
   return (
     <Link
       href={`/games/${game.slug}`}
-      className={cardClass("lift press group flex items-center gap-3 p-2.5 outline-none transition-colors duration-base hover:border-line-strong focus-visible:ring-2 focus-visible:ring-ink focus-visible:ring-offset-2 focus-visible:ring-offset-bg sm:gap-3.5 sm:p-3")}
+      className={cn(ROW, "cover-zoom group flex items-center gap-3 py-3 outline-none focus-visible:ring-2 focus-visible:ring-ink focus-visible:ring-offset-2 focus-visible:ring-offset-bg sm:gap-3.5")}
       aria-label={`${title} 상세 보기`}
     >
       {/* 커버는 줄 높이를 정하는 자리다. 카드와 같은 460:215 를 쓰되 폭만 줄인다 —
           비율이 달라지면 같은 그림이 목록에서 잘려 보인다 */}
-      <div className="relative aspect-[460/215] w-[92px] shrink-0 overflow-hidden rounded-[8px] bg-surface-3 sm:w-[132px]">
-        <CoverImage src={game.coverUrl} alt={`${title} 커버`} sizes="(max-width: 640px) 92px, 132px" />
+      <div className="relative aspect-[460/215] w-[92px] shrink-0 overflow-hidden rounded-[var(--radius-inset)] bg-surface-3 sm:w-[132px]">
+        <span className="cover-zoom-img absolute inset-0 block">
+          <CoverImage src={game.coverUrl} alt={`${title} 커버`} sizes="(max-width: 640px) 92px, 132px" />
+        </span>
       </div>
 
       {/* min-w-0: 없으면 잘리지 않는 긴 제목이 칸을 밀어 값 기둥을 화면 밖으로 내보낸다 */}
       <div className="flex min-w-0 flex-1 flex-col gap-[3px]">
-        <Clamp className="text-[14px] font-bold leading-snug tracking-[-0.01em] text-ink sm:text-[15px]">{title}</Clamp>
+        <Clamp className="text-[14px] font-bold leading-snug tracking-[-0.01em] text-ink transition-colors duration-fast group-hover:text-acc sm:text-[15px]">{title}</Clamp>
         {game.titleKo && <Clamp className="text-[11.5px] text-dim">{game.titleEn}</Clamp>}
         <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
           <PlatformBadges platforms={game.platforms} />
@@ -65,19 +68,17 @@ export function GameRow({
       ) : (
         best && (
           <div className="flex shrink-0 flex-col items-end gap-1">
-            {hasDiscount && (
-              <span className="rounded-[6px] bg-acc px-1.5 py-[2px] text-[11px] font-bold text-on-ink">
-                {formatDiscount(best.discountPct)}
-              </span>
-            )}
+            {/* 줄에서는 할인율이 값 왼쪽에 붙는다 — 카드의 스탬프 자리는 커버가 작아 쓸 수 없고,
+                오른쪽 값 기둥 안에서는 "얼마나 깎여서 얼마" 가 한 줄로 읽히는 편이 빠르다 */}
             <p className="flex items-baseline justify-end gap-1.5">
-              <span className="text-[15px] font-bold tracking-[-0.02em] text-ink sm:text-[17px]">
+              {hasDiscount && <span className="text-[12.5px] font-bold text-acc">{formatDiscount(best.discountPct)}</span>}
+              <span className="text-[15px] font-extrabold tracking-[-0.03em] text-ink sm:text-[17px]">
                 {formatPrice(best.currentPrice, best.currency)}
               </span>
+              {hasDiscount && best.listPrice !== null && (
+                <span className="text-[11.5px] text-dim-2 line-through">{formatPrice(best.listPrice, best.currency)}</span>
+              )}
             </p>
-            {hasDiscount && best.listPrice !== null && (
-              <span className="text-[11.5px] text-dim-2 line-through">{formatPrice(best.listPrice, best.currency)}</span>
-            )}
             {hasDiscount && <SaleBadge discountName={best.discountName} discountEndsAt={best.discountEndsAt} />}
           </div>
         )

@@ -11,7 +11,7 @@ import { useFormStatus } from "react-dom";
 import { removeListingAction, updateStockAction, type ListingState } from "@/app/(user)/vendor/[shopSlug]/listings/actions";
 import { buttonClass } from "@/components/ui/button";
 import { FormMessage } from "@/components/ui/form-message";
-import { cardClass } from "@/components/ui/page";
+import { panelClass } from "@/components/ui/page";
 import { Clamp } from "@/components/ui/tooltip";
 import { formatPrice } from "@/lib/currency";
 import type { Currency } from "@/server/db/schema";
@@ -47,7 +47,7 @@ function ListingRow({ shopSlug, listing }: { shopSlug: string; listing: ListingD
   const failed = (stockState && !stockState.ok && stockState.error) || (removeState && !removeState.ok && removeState.error);
 
   return (
-    <li className={cardClass("flex flex-col gap-2 px-4 py-3.5")}>
+    <li className={panelClass("flex flex-col gap-2 px-4 py-3.5")}>
       <div className="flex flex-wrap items-baseline gap-x-2 gap-y-1">
         <Clamp lines={1} className="min-w-0 flex-1 text-[14px] font-semibold text-ink">
           {listing.productName}

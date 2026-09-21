@@ -11,7 +11,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { ListingForm } from "@/components/shops/listing-form";
 import { ListingRows } from "@/components/shops/listing-rows";
-import { Card, Page, PageHead, SectionHead } from "@/components/ui/page";
+import { Panel, Page, PageHead, SectionHead } from "@/components/ui/page";
 import { buttonClass } from "@/components/ui/button";
 import { shopPath } from "@/lib/routes";
 import { LISTING_MESSAGES as M, VENDOR_MESSAGES } from "@/lib/shops/listing-messages";
@@ -45,7 +45,7 @@ export default async function VendorListingsPage({ params }: Props) {
       <section className="flex flex-col gap-3">
         <SectionHead title={M.title} note={listings.length > 0 ? `${listings.length}건` : undefined} />
         {listings.length === 0 ? (
-          <Card className="px-4 py-6 text-center text-[13px] text-dim">{M.empty}</Card>
+          <Panel className="px-4 py-6 text-center text-[13px] text-dim">{M.empty}</Panel>
         ) : (
           <ListingRows shopSlug={shop.slug} listings={listings} />
         )}
@@ -53,9 +53,9 @@ export default async function VendorListingsPage({ params }: Props) {
 
       <section className="flex flex-col gap-3">
         <SectionHead title={M.addTitle} />
-        <Card className="px-4 py-4">
+        <Panel className="px-4 py-4">
           <ListingForm shopSlug={shop.slug} hardware={hardware} />
-        </Card>
+        </Panel>
       </section>
     </Page>
   );

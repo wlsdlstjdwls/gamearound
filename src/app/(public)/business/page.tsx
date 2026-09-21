@@ -6,7 +6,7 @@
 // 없는 것을 있는 것처럼 적지 않는다 — 지금 단계는 A(안내)라 결제도 수수료도 없다(설계서 §12).
 import type { Metadata } from "next";
 import Link from "next/link";
-import { Page, PageHead, Card, SectionHead } from "@/components/ui/page";
+import { Page, PageHead, Panel, SectionHead } from "@/components/ui/page";
 import { buttonClass } from "@/components/ui/button";
 import { BUSINESS_MESSAGES } from "@/lib/shops/messages";
 import { ROUTES } from "@/lib/routes";
@@ -34,18 +34,18 @@ export default function BusinessPage() {
       <ul className="grid gap-3 sm:grid-cols-3">
         {BUSINESS_MESSAGES.points.map((p, i) => (
           <li key={p.title} className="enter-item" style={stagger(i)}>
-            <Card className="flex h-full flex-col gap-2 px-4 py-4">
+            <Panel className="flex h-full flex-col gap-2 px-4 py-4">
               <h2 className="text-[14px] font-bold text-ink">{p.title}</h2>
               <p className="text-[13px] leading-[1.7] text-mut">{p.body}</p>
-            </Card>
+            </Panel>
           </li>
         ))}
       </ul>
 
-      <Card className="flex flex-col gap-2 px-4 py-4">
+      <Panel className="flex flex-col gap-2 px-4 py-4">
         <h2 className="text-[14px] font-bold text-ink">{BUSINESS_MESSAGES.feeTitle}</h2>
         <p className="text-[13px] leading-[1.7] text-mut">{BUSINESS_MESSAGES.feeBody}</p>
-      </Card>
+      </Panel>
 
       <section className="flex flex-col gap-3">
         <SectionHead title={BUSINESS_MESSAGES.stepsTitle} />

@@ -92,15 +92,20 @@
 
   /* 라운드 — 리디자인 확정값 */
   --radius-xs: 6px; /* 배지, 태그 */
-  --radius-sm: 9px; /* 버튼, 입력 필드 */
+  --radius-sm: 11px; /* 버튼, 입력 필드 — 리디자인에서 면이 커지며 한 단 올렸다 */
   --radius-inset: 7px; /* 작은 인셋 박스, 썸네일 */
   --radius-md: 12px; /* 카드, 패널 */
   --radius-lg: 12px;
   --radius-xl: 12px;
+  /* 커버 이미지, 패널 — 리디자인에서 커버가 카드의 주역이 되면서 면이 커졌다.
+     같은 12px 를 쓰면 460x215 짜리 면에서 모서리가 거의 직각으로 읽힌다 */
+  --radius-cover: 14px; /* 목록 카드 커버 */
+  --radius-cover-lg: 16px; /* 상세 히어로 커버 */
+  --radius-panel: 18px; /* 채운 면 패널(로그인 상자 등) */
   --touch-target: 44px;
 
-  /* 레이아웃 최대폭 */
-  --page-w: 1120px;
+  /* 레이아웃 최대폭 — 리디자인 스펙 1200. 카드 격자가 한 줄에 4장 서는 최소 폭이다 */
+  --page-w: 1200px;
   --page-w-narrow: 860px;
   --page-w-tight: 720px;
 
@@ -325,6 +330,14 @@
   0%, 100% { opacity: 1; }
   50% { opacity: 0.35; }
 }
+/* 할인 스탬프 — 커버 모서리를 뚫고 나온 판이 도장처럼 찍힌다.
+   크게 들어와서 제자리보다 살짝 작아졌다가 앉는다. 회전을 -3도로 고정해 두는 이유는
+   똑바른 판이면 "배지" 로 읽히고, 기울어야 "찍힌 값" 으로 읽히기 때문이다. */
+@keyframes stamp-pop {
+  0% { opacity: 0; transform: scale(1.25) rotate(-6deg); }
+  60% { opacity: 1; transform: scale(0.97) rotate(-3deg); }
+  100% { opacity: 1; transform: scale(1) rotate(-3deg); }
+}
 
 /* ── 기본 ── */
 html {
@@ -450,6 +463,46 @@ a {
 /* 마감 임박 표시등. 값이 0 이면 붙이지 않는다 — 알릴 게 없는데 깜빡이면 소음이다 */
 .pulse-dot {
   animation: pulse-dot 2.4s var(--ease-standard) infinite;
+}
+
+/* 할인 스탬프. 순번은 style={stagger(i)} 로 넘긴다 —
+   커버가 먼저 떠오르고 그 위에 도장이 찍히는 순서여야 해서 카드보다 한 박자 늦다 */
+.stamp {
+  transform: rotate(-3deg);
+  animation: stamp-pop var(--duration-slow) var(--ease-out-emph) both;
+  animation-delay: var(--stagger, 0ms);
+}
+
+/* 하얀 판과 테두리를 걷어낸 자리의 구분 — 1px 헤어라인 한 줄이 전부다.
+   첫 줄만 진한 선을 쓰는 이유: 목록의 머리를 긋는 선과 항목 사이를 나누는 선은 무게가 달라야
+   "제목 - 목록" 이 한 덩어리로 읽힌다. ul/dl 어디에나 붙는다 */
+.rows > * {
+  border-top: 1px solid var(--line-soft);
+}
+.rows > *:first-child {
+  border-top-color: var(--line-strong);
+}
+
+/* 헤어라인 줄의 hover — 판을 깔지 않으므로 배경 한 겹으로만 답한다.
+   좌우 음수 마진은 부르는 쪽이 준다(줄마다 본문 정렬이 달라서다) */
+@media (hover: hover) and (pointer: fine) {
+  .row-hover:hover {
+    background: var(--surface-4);
+  }
+}
+.row-hover {
+  transition: background-color var(--duration-fast) var(--ease-standard);
+}
+
+/* 커버 확대 — 카드 전체가 뜨는 대신 그림만 자란다(.lift 를 카드에서 걷어낸 자리).
+   overflow:hidden 은 커버 쪽이 갖는다 */
+@media (hover: hover) and (pointer: fine) {
+  .cover-zoom:hover .cover-zoom-img {
+    transform: scale(1.03);
+  }
+}
+.cover-zoom-img {
+  transition: transform var(--duration-slow) var(--ease-standard);
 }
 
 /* 가로 막대 그래프: style={{ "--bar-w": "62%" }} (+ stagger(i)) 로 목표 폭 전달 */
@@ -685,6 +738,10 @@ a {
     scroll-behavior: auto !important;
   }
   .press:active:not(:disabled) {
+    transform: none;
+  }
+  /* 커버 확대는 시간이 아니라 상태다 — 시간만 0 으로 줄이면 hover 마다 그림이 툭 커진다 */
+  .cover-zoom:hover .cover-zoom-img {
     transform: none;
   }
 }

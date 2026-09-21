@@ -46,8 +46,10 @@ export function AlertForm({ game }: { game: FormGame }) {
   const [platform, setPlatform] = useState("all");
   const [minDiscount, setMinDiscount] = useState(DEFAULT_MIN_DISCOUNT);
 
+  // 새 알림 상자 — 이 화면에서 면을 가진 유일한 자리다. 연한 브랜드 면을 쓰는 이유는
+  // "지금 만들려던 것" 과 "이미 만들어 둔 것"(아래 줄 목록)을 색으로 가르기 위해서다
   return (
-    <form action={formAction} className="flex flex-col gap-4 rounded-xl border border-ink bg-surface p-5">
+    <form action={formAction} className="flex flex-col gap-[18px] rounded-[var(--radius-cover-lg)] bg-acc-soft p-6">
       <input type="hidden" name="gameId" value={game.id} />
       <input type="hidden" name="platform" value={platform} />
       <input type="hidden" name="minDiscountPct" value={minDiscount} />
@@ -67,10 +69,11 @@ export function AlertForm({ game }: { game: FormGame }) {
           <ImageFallback label="" className="h-[42px] w-[72px] rounded-[7px]" />
         )}
         <div className="min-w-0">
-          <h2 className="text-[14.5px] font-bold tracking-[-0.01em] text-ink">
+          <p className="text-[12px] font-bold tracking-[0.08em] text-acc">새 알림</p>
+          <h2 className="mt-1 text-[17px] font-extrabold tracking-[-0.035em] text-ink sm:text-[19px]">
             <Clamp>{game.title}</Clamp>
           </h2>
-          {game.priceNote && <p className="text-[12px] text-dim">{game.priceNote}</p>}
+          {game.priceNote && <p className="mt-0.5 text-[12.5px] text-mut">{game.priceNote}</p>}
         </div>
       </div>
 
@@ -99,16 +102,16 @@ export function AlertForm({ game }: { game: FormGame }) {
               step={1}
               value={minDiscount}
               onChange={(e) => setMinDiscount(Number(e.target.value))}
-              className="h-1 flex-1 cursor-pointer appearance-none rounded-full bg-surface-2 accent-[var(--ink)]"
-              style={{ background: `linear-gradient(to right, var(--ink) ${minDiscount}%, var(--surface-2) ${minDiscount}%)` }}
+              className="h-1 flex-1 cursor-pointer appearance-none rounded-full accent-[var(--ink)]"
+              style={{ background: `linear-gradient(to right, var(--ink) ${minDiscount}%, var(--surface) ${minDiscount}%)` }}
             />
-            <span className="w-[52px] shrink-0 text-right text-[15px] font-bold text-ink">-{minDiscount}%</span>
+            <span className="w-[56px] shrink-0 text-right text-[20px] font-extrabold tracking-[-0.035em] text-acc">-{minDiscount}%</span>
           </div>
           <p className="text-[11.5px] text-dim">1%로 두면 할인이 시작될 때마다 알립니다.</p>
         </div>
       </div>
 
-      <div className="flex flex-wrap items-center justify-between gap-3 border-t border-line-soft pt-4">
+      <div className="flex flex-wrap items-center justify-between gap-3 border-t border-line-strong pt-4">
         <p className="text-[12.5px] text-mut">{SEND_RULE_TEXT}</p>
         <div className="flex items-center gap-3">
           <StatusLine state={state} />

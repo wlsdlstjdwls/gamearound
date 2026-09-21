@@ -6,7 +6,7 @@
 //
 // 값이 없는 줄은 그리지 않는다. 멀티플레이 칩에서 배운 것과 같다 — 빈칸을 "-" 로 채우면
 // 화면에서 제일 큰 자리가 줄줄이 "-" 가 되고, 그건 "아직 모은다" 가 아니라 "고장 났다" 로 읽힌다.
-import { Card, SectionHead } from "@/components/ui/page";
+import { SectionHead } from "@/components/ui/page";
 import { formatSizeMb } from "@/lib/format";
 import { GAME_MESSAGES, OS_FAMILY_LABEL, REQUIREMENT_ROW_LABEL, REQUIREMENT_TIER_LABEL } from "@/lib/games/messages";
 import type { RequirementDto, RequirementGroupDto } from "@/server/services/games";
@@ -72,12 +72,12 @@ export function RequirementsSection({ groups }: { groups: RequirementGroupDto[] 
   return (
     <section aria-labelledby="requirements-heading" className="flex flex-col gap-3">
       <SectionHead id="requirements-heading" title={GAME_MESSAGES.requirementHeading} />
-      <Card className="flex flex-col gap-5 px-4 py-4">
+      <div className="flex flex-col gap-5 border-t border-line-strong pt-4">
         {groups.map((g) => (
           <OsTable key={g.osFamily} group={g} />
         ))}
         <p className="text-[11.5px] leading-[1.6] text-dim">{GAME_MESSAGES.requirementNote}</p>
-      </Card>
+      </div>
     </section>
   );
 }

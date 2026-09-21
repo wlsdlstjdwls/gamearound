@@ -8,7 +8,7 @@ import { EmptyState } from "@/components/empty-state";
 import { Pagination } from "@/components/pagination";
 import { ChipLink } from "@/components/ui/chip";
 import { BackLink } from "@/components/ui/back-link";
-import { Card, Page, PageHead, SectionHead } from "@/components/ui/page";
+import { Page, PageHead, SectionHead } from "@/components/ui/page";
 import { stagger } from "@/lib/motion";
 import { ROUTES, companyPath } from "@/lib/routes";
 import { firstParam } from "@/lib/games-query";
@@ -49,16 +49,6 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   return { title: `${company.name}${where}`, description: company.description ?? undefined };
 }
 
-/** 정보 행 하나. 값이 없으면 행 자체를 그리지 않는다 — 빈 칸이 줄지어 있으면 고장처럼 보인다 */
-function Fact({ label, children }: { label: string; children: React.ReactNode }) {
-  return (
-    <div className="flex flex-col gap-0.5">
-      <dt className="text-[11.5px] text-dim">{label}</dt>
-      <dd className="text-[13.5px] text-ink">{children}</dd>
-    </div>
-  );
-}
-
 export default async function CompanyPage({ params, searchParams }: Props) {
   const slug = decodeSlugParam((await params).slug);
   const sp = await searchParams;
@@ -70,54 +60,63 @@ export default async function CompanyPage({ params, searchParams }: Props) {
   const [company, result] = await Promise.all([getCompanyBySlug(slug), listCompanyGames(slug, role, pageNum)]);
   if (!company) notFound();
 
-  const hasFacts = Boolean(company.countryNameKo || company.foundedYear || company.hqNameKo || company.websiteUrl);
-
   return (
-    <Page pad="detail" gap={24}>
-      <header className="enter-item flex flex-col gap-3" style={stagger(0)}>
+    <Page pad="detail" gap={40}>
+      {/* 머리 — 왼쪽은 이름과 정체, 오른쪽은 숫자 셋. 숫자를 제목과 같은 줄에 세우는 이유는
+          "이 회사가 무엇을 얼마나 만들었나" 가 한 눈에 끝나야 해서다(2026-09-21 리디자인) */}
+      <header className="enter-item flex flex-col gap-4" style={stagger(0)}>
         <BackLink href={ROUTES.company}>회사 목록으로</BackLink>
-        <PageHead size="hero" title={company.name} />
-        {company.nameKo && company.nameEn !== company.nameKo && (
-          <p className="text-[13px] text-dim">{company.nameEn}</p>
-        )}
-        <p className="text-[13px] text-mut">
-          게임 {company.gameCount}개
-          {company.onSaleCount > 0 && (
-            <>
-              {" | "}
-              <span className="font-semibold text-ok">지금 할인 중 {company.onSaleCount}개</span>
-            </>
-          )}
-        </p>
-      </header>
+        <div className="flex flex-wrap items-end justify-between gap-x-6 gap-y-4">
+          <div className="min-w-0">
+            <PageHead size="hero" title={company.name} />
+            <p className="mt-2 text-[13.5px] text-mut">
+              {[
+                company.nameKo && company.nameEn !== company.nameKo ? company.nameEn : null,
+                company.countryNameKo,
+                company.foundedYear ? `${company.foundedYear}년 설립` : null,
+                company.hqNameKo,
+              ]
+                .filter(Boolean)
+                .join(" | ")}
+            </p>
+          </div>
 
-      {hasFacts && (
-        <Card className="enter-item px-5 py-4" style={stagger(1)}>
-          <dl className="grid grid-cols-2 gap-4 sm:grid-cols-4">
-            {company.countryNameKo && <Fact label="국가">{company.countryNameKo}</Fact>}
-            {company.foundedYear && <Fact label="설립">{company.foundedYear}년</Fact>}
-            {company.hqNameKo && <Fact label="본사">{company.hqNameKo}</Fact>}
+          <dl className="grid grid-cols-2 gap-x-7 gap-y-5 sm:grid-cols-3">
+            <div>
+              <dt className="text-[12px] text-dim">등록된 게임</dt>
+              <dd className="mt-1 text-[22px] font-extrabold tracking-[-0.04em] text-ink sm:text-[26px]">{company.gameCount}개</dd>
+            </div>
+            {company.onSaleCount > 0 && (
+              <div>
+                <dt className="text-[12px] text-dim">지금 할인 중</dt>
+                <dd className="mt-1 text-[22px] font-extrabold tracking-[-0.04em] text-acc sm:text-[26px]">{company.onSaleCount}개</dd>
+              </div>
+            )}
             {company.websiteUrl && (
-              <Fact label="공식 사이트">
-                <a
-                  href={company.websiteUrl}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="text-acc underline-offset-2 hover:underline"
-                >
-                  바로 가기
-                  <span className="sr-only">(새 창에서 열림)</span>
-                </a>
-              </Fact>
+              <div>
+                <dt className="text-[12px] text-dim">공식 사이트</dt>
+                <dd className="mt-1">
+                  <a
+                    href={company.websiteUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-[14px] font-semibold text-acc underline-offset-2 hover:underline"
+                  >
+                    바로 가기
+                    <span className="sr-only">(새 창에서 열림)</span>
+                  </a>
+                </dd>
+              </div>
             )}
           </dl>
-          {company.description && (
-            <p className="mt-4 border-t border-line-soft pt-3 text-[13px] leading-[1.7] text-mut">{company.description}</p>
-          )}
-        </Card>
-      )}
+        </div>
 
-      <section className="flex flex-col gap-3">
+        {company.description && (
+          <p className="max-w-[620px] border-t border-line pt-4 text-[13.5px] leading-[1.8] text-mut">{company.description}</p>
+        )}
+      </header>
+
+      <section className="flex flex-col gap-[18px]">
         <SectionHead
           title="이 회사의 게임"
           note={result.total > 0 ? `${result.total}개` : undefined}
@@ -141,7 +140,7 @@ export default async function CompanyPage({ params, searchParams }: Props) {
             action={{ href: ROUTES.game, label: "게임 목록 보기" }}
           />
         ) : (
-          <ul className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
+          <ul className="grid grid-cols-[repeat(auto-fill,minmax(min(220px,100%),1fr))] gap-x-5 gap-y-8">
             {result.items.map((g, i) => (
               <li key={g.slug} className="enter-item" style={stagger(i + 3)}>
                 <GameCard game={g} />

@@ -33,15 +33,17 @@ function trimQuery(raw: string): string {
  * 모서리를 완전히 굴리는 이유: 이 화면에서 유일하게 "무엇이든 써도 되는" 칸이라 각진 카드, 칩과 달라야 한다.
  */
 const FIELD_CLASS =
-  "tap flex h-9 items-center gap-2 rounded-full border border-transparent bg-surface-2 pl-3 pr-2 transition-[background-color,border-color,box-shadow] duration-base ease-standard focus-within:border-acc focus-within:bg-surface focus-within:shadow-[0_0_0_3px_var(--acc-glow)]";
+  "tap flex h-10 items-center gap-2.5 rounded-xl border border-transparent bg-surface-2 pl-3.5 pr-2 transition-[background-color,border-color,box-shadow] duration-base ease-standard focus-within:border-acc focus-within:bg-surface focus-within:shadow-[0_0_0_3px_var(--acc-glow)]";
 const INPUT_CLASS =
-  "min-w-0 flex-1 bg-transparent text-[13px] text-ink outline-none placeholder:text-dim [&::-webkit-search-cancel-button]:appearance-none";
+  "min-w-0 flex-1 bg-transparent text-[13.5px] text-ink outline-none placeholder:text-dim [&::-webkit-search-cancel-button]:appearance-none";
 /*
  * 헤더 안에서 이 칸이 차지하는 자리 — 로고와 메뉴 사이의 남는 폭을 전부 가져간다.
  * 최소 폭을 걸지 않는 이유: 320px 기기에서는 이 칸이 줄어들어야 로고와 햄버거가 한 줄에 남는다.
  * 최소 폭을 걸면 그 순간 셋이 각자 줄을 차지하고 머리띠가 세 배로 자란다.
+ * ml-auto: 넓은 화면에서는 왼쪽(로고, 메뉴)과 오른쪽(개인 자리) 사이의 남는 폭을 이 칸이 먹고
+ * 340px 에서 멈춘다 — 더 늘리면 검색칸이 머리띠의 주인공이 되어 로고와 무게가 뒤집힌다.
  */
-const FORM_CLASS = "min-w-0 max-w-[420px] flex-1";
+const FORM_CLASS = "ml-auto min-w-0 max-w-[340px] flex-1";
 /** 오른쪽 끝 자리 — 스피너와 지우기 버튼이 번갈아 선다. 폭을 고정해야 글자가 밀리지 않는다 */
 const TRAIL_CLASS = "flex size-7 shrink-0 items-center justify-center";
 

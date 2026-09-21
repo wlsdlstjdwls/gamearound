@@ -10,7 +10,7 @@ type Props = { platforms: Pick<PlatformDto, "deckCompat" | "nativeMac" | "native
 
 function Chip({ children }: { children: React.ReactNode }) {
   return (
-    <span className="inline-flex items-center rounded-full border border-line-strong px-[11px] py-1 text-[12px] text-ink-2">
+    <span className="inline-flex items-center rounded-full bg-surface-2 px-[11px] py-[5px] text-[12.5px] text-ink-2">
       {children}
     </span>
   );

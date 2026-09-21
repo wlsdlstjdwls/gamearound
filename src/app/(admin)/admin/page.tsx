@@ -12,7 +12,7 @@ import { ROUTES } from "@/lib/routes";
 import { getSyncOverview, type SyncOverviewItem } from "@/server/services/admin";
 import { getDisabledReason, isSource } from "@/server/adapters";
 import { requireRoleOrForbid } from "@/server/auth/guards";
-import { PageHead, cardClass } from "@/components/ui/page";
+import { PageHead } from "@/components/ui/page";
 import { Clamp } from "@/components/ui/tooltip";
 
 /** 카드에 노출할 에러 샘플 길이. 전문은 실행 로그 화면에서 본다 */
@@ -41,7 +41,9 @@ function SourceCard({ item }: { item: SyncOverviewItem }) {
   const disabledReason = isSource(item.source) ? getDisabledReason(item.source) : undefined;
 
   return (
-    <div className={cardClass(`flex flex-col gap-2.5 p-4 ${disabledReason ? "opacity-60" : ""}`)}>
+    // 소스 하나가 한 칸이다. 판 대신 위쪽 헤어라인 한 줄로 칸을 표시한다 —
+    // 소스가 여덟이라 판을 세우면 관리자 화면이 상자 여덟 개로 읽히고, 정작 볼 값(빨간 실패 수)이 묻힌다
+    <div className={`flex flex-col gap-2.5 border-t border-line pt-3.5 ${disabledReason ? "opacity-60" : ""}`}>
       <div className="flex items-center justify-between gap-2">
         {/* 스토어 이름은 한글로 띄우고, 로그를 맞대 볼 때 쓰는 원값은 그 밑에 작게 남긴다 */}
         <h3 className="min-w-0 text-[13.5px] font-bold text-ink">
@@ -91,11 +93,11 @@ export default async function AdminSyncOverviewPage() {
   const repo = process.env.NEXT_PUBLIC_GITHUB_REPO;
 
   return (
-    <section className="flex flex-col gap-4">
-      <header className="flex flex-wrap items-end justify-between gap-x-4 gap-y-2">
+    <section className="flex flex-col gap-6">
+      <header className="flex flex-wrap items-end justify-between gap-x-6 gap-y-4">
         <div>
           <PageHead title={SYNC_MESSAGES.title} />
-          <p className="mt-1 max-w-[560px] text-[13px] text-mut">{SYNC_MESSAGES.lead}</p>
+          <p className="mt-1.5 max-w-[620px] text-[13.5px] leading-[1.7] text-mut">{SYNC_MESSAGES.lead}</p>
         </div>
         {repo ? (
           <a href={`https://github.com/${repo}/actions`} target="_blank" rel="noreferrer" className={buttonClass({ variant: "secondary" })}>
@@ -107,7 +109,7 @@ export default async function AdminSyncOverviewPage() {
         )}
       </header>
 
-      <div className="grid grid-cols-[repeat(auto-fit,minmax(230px,1fr))] gap-3.5">
+      <div className="grid grid-cols-[repeat(auto-fit,minmax(min(230px,100%),1fr))] gap-x-8 gap-y-5">
         {overview.items.map((item) => (
           <SourceCard key={item.source} item={item} />
         ))}

@@ -64,30 +64,37 @@ export function ActiveFilters({ filter }: { filter: GamesQuery }) {
   if (list.length === 0) return null;
 
   return (
-    <div className="flex flex-col gap-2 border-b border-line-soft pb-3.5">
-      <div className="flex items-baseline justify-between gap-2">
-        <span className="text-[11.5px] text-dim">적용된 필터 {list.length}</span>
-        {/* 초기화는 기둥 맨 아래가 아니라 걸린 것 옆에 둔다 — 푸는 일과 같은 자리다 */}
-        <Link
-          {...KEEP_SCROLL}
-          href={gamesHref({ sort: filter.sort })}
-          prefetch={false}
-          className="press text-[11.5px] text-acc underline-offset-2 hover:underline"
-        >
-          모두 초기화
-        </Link>
-      </div>
+    // 목록 위를 가로지르는 띠 한 줄(2026-09-21 리디자인). 위아래 헤어라인이 이 줄을 결과에서 떼 놓는다 —
+    // 판을 깔면 걸린 조건이 결과보다 무거워 보이고, 선이 없으면 첫 카드 줄에 붙어 읽힌다
+    <div className="flex flex-wrap items-center gap-x-2 gap-y-2 border-y border-line py-3">
+      <span className="text-[12px] text-dim">걸린 조건</span>
       <ul className="flex flex-wrap gap-1.5">
         {list.map((f) => (
           <li key={f.key}>
-            {/* 칩 전체가 "이 조건을 푼다" 는 링크다. 글자와 X 를 따로 누르게 하면 터치에서 둘 다 작아진다 */}
-            <ChipNavLink {...KEEP_SCROLL} href={f.href} active aria-label={`${f.label} 필터 해제`} className="gap-1.5">
+            {/* 칩 전체가 "이 조건을 푼다" 는 링크다. 글자와 X 를 따로 누르게 하면 터치에서 둘 다 작아진다.
+                걸린 조건은 잉크가 아니라 연한 브랜드 면을 쓴다 — 고르는 칩(잉크 필)과 푸는 칩이
+                같은 모양이면 누르는 순간 무슨 일이 일어날지가 뒤집힌다 */}
+            <ChipNavLink
+              {...KEEP_SCROLL}
+              href={f.href}
+              aria-label={`${f.label} 필터 해제`}
+              className="gap-1.5 bg-acc-soft font-semibold text-acc hover:bg-acc-soft hover:text-acc"
+            >
               {f.label}
               <XIcon size={12} aria-hidden />
             </ChipNavLink>
           </li>
         ))}
       </ul>
+      {/* 초기화는 띠의 반대쪽 끝 — 하나씩 푸는 일과 한 번에 푸는 일을 같은 줄의 양 끝에 둔다 */}
+      <Link
+        {...KEEP_SCROLL}
+        href={gamesHref({ sort: filter.sort })}
+        prefetch={false}
+        className="press ml-auto text-[12.5px] text-mut underline-offset-2 hover:text-ink hover:underline"
+      >
+        전부 풀기
+      </Link>
     </div>
   );
 }

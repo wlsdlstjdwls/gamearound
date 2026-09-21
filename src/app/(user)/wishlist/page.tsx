@@ -15,7 +15,6 @@ import { stagger } from "@/lib/motion";
 import { ROUTES } from "@/lib/routes";
 import { ChipLink } from "@/components/ui/chip";
 import { listWishlist, type WishlistItem } from "@/server/services/wishlist";
-import { cardClass } from "@/components/ui/page";
 
 export const metadata: Metadata = { title: "위시리스트" };
 
@@ -48,15 +47,15 @@ export default async function WishlistPage({ searchParams }: Props) {
   const sorted = sort === "added" ? items : [...items].sort((a, b) => maxDiscount(b) - maxDiscount(a));
 
   return (
-    <Page gap={20}>
-      <header className="flex flex-wrap items-end justify-between gap-x-4 gap-y-2">
+    <Page gap={26}>
+      <header className="flex flex-wrap items-end justify-between gap-x-6 gap-y-4">
         <div>
           <PageHead title="위시리스트" />
-          <p className="mt-1 text-[13px] text-mut">
-            {items.length}개 중 <span className="font-semibold text-ok">{onSaleCount}개가 지금 할인 중</span>입니다.
+          <p className="mt-1.5 text-[13.5px] text-mut">
+            {items.length}개 중 <span className="font-bold text-acc">{onSaleCount}개가 지금 할인 중</span>이에요.
           </p>
         </div>
-        <div role="group" aria-label="정렬" className="flex gap-1">
+        <div role="group" aria-label="정렬" className="flex shrink-0 gap-1.5">
           {SORTS.map((s) => (
             <ChipLink
               key={s.key}
@@ -77,7 +76,7 @@ export default async function WishlistPage({ searchParams }: Props) {
         />
       ) : (
         // min(): 화면이 330px 보다 좁아도 칸이 줄어야 한다. 안 씌우면 360px 기기에서 카드가 화면 밖으로 나간다
-        <ul className="grid grid-cols-[repeat(auto-fit,minmax(min(330px,100%),1fr))] gap-4">
+        <ul className="grid grid-cols-[repeat(auto-fill,minmax(min(320px,100%),1fr))] gap-x-6 gap-y-7">
           {sorted.map(({ game }, i) => {
             // "최저" 표시는 같은 통화끼리만 뜻이 있다 — 기준을 lib/currency 한 곳에서만 정한다
             const cheapest = cheapestOf(game.platforms);
@@ -86,7 +85,9 @@ export default async function WishlistPage({ searchParams }: Props) {
             const stalest = game.platforms.find((p) => getFreshness(p.lastSyncedAt, p.syncStatus) !== "fresh");
 
             return (
-              <li key={game.id} className={cardClass("enter-item flex gap-3.5 p-4")} style={stagger(i)}>
+              // 판을 걷고 줄 사이는 헤어라인이 가른다 — 위시리스트는 "값을 훑는" 화면이라
+              // 카드 테두리가 스무 겹 서면 정작 값이 안 읽힌다
+              <li key={game.id} className="enter-item flex gap-3.5 border-t border-line-soft py-4 first:border-line-strong" style={stagger(i)}>
                 <Link href={`/games/${game.slug}`} className="shrink-0">
                   {game.coverUrl ? (
                     <FadeImage
@@ -95,17 +96,17 @@ export default async function WishlistPage({ searchParams }: Props) {
                       width={104}
                       height={60}
                       unoptimized
-                      className="h-[60px] w-[104px] rounded-lg object-cover"
-                      fallback={<ImageFallback label="" className="h-[60px] w-[104px] rounded-lg" />}
+                      className="h-[60px] w-[104px] rounded-[var(--radius-inset)] object-cover"
+                      fallback={<ImageFallback label="" className="h-[60px] w-[104px] rounded-[var(--radius-inset)]" />}
                     />
                   ) : (
-                    <ImageFallback label="" className="h-[60px] w-[104px] rounded-lg" />
+                    <ImageFallback label="" className="h-[60px] w-[104px] rounded-[var(--radius-inset)]" />
                   )}
                 </Link>
 
                 <div className="flex min-w-0 flex-1 flex-col gap-2">
                   <div className="flex items-start justify-between gap-2">
-                    <Link href={`/games/${game.slug}`} className="min-w-0 text-[14.5px] font-bold tracking-[-0.01em] text-ink hover:text-acc">
+                    <Link href={`/games/${game.slug}`} className="min-w-0 text-[15px] font-extrabold tracking-[-0.025em] text-ink hover:text-acc">
                       <Clamp>{title}</Clamp>
                     </Link>
                     <WishlistRemoveButton gameId={game.id} />
@@ -122,9 +123,9 @@ export default async function WishlistPage({ searchParams }: Props) {
                             <span className="w-[52px] shrink-0 text-dim">{PLATFORM_LABEL[p.platform] ?? p.platform}</span>
                             <span className={isLowest ? "font-bold text-ink" : "text-ink"}>{formatPrice(p.currentPrice, p.currency)}</span>
                             {p.discountPct ? (
-                              <span className="rounded-[5px] bg-surface-2 px-1.5 py-px text-[11px] text-ink-2">{formatDiscount(p.discountPct)}</span>
+                              <span className="font-bold text-acc">{formatDiscount(p.discountPct)}</span>
                             ) : null}
-                            {isLowest && pricedCount > 1 && <span className="font-semibold text-ok">최저가</span>}
+                            {isLowest && pricedCount > 1 && <span className="text-[11.5px] font-semibold text-mut">최저가</span>}
                           </li>
                         );
                       })}

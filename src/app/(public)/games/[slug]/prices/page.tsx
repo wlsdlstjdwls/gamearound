@@ -7,7 +7,7 @@ import { EmptyState } from "@/components/empty-state";
 import { PriceChart } from "@/components/price-chart";
 import { SaleBadge } from "@/components/sale-badge";
 import { BackLink } from "@/components/ui/back-link";
-import { Card, Page, PageHead, SectionHead } from "@/components/ui/page";
+import { Page, PageHead, SectionHead } from "@/components/ui/page";
 import { formatDate, formatDiscount, PLATFORM_LABEL } from "@/lib/format";
 import { bestDiscountOf, isAtBestDiscount } from "@/lib/price-stats";
 import { displayTitle, getGameBySlugCached } from "@/server/services/games";
@@ -43,7 +43,7 @@ export default async function PricesPage({ params }: Props) {
   const best = bestDeal(series);
 
   return (
-    <Page gap={20}>
+    <Page gap={30}>
       <BackLink href={`/games/${game.slug}`}>{title} 상세로</BackLink>
 
       <PageHead title="가격 변동 | 최근 1년" />
@@ -57,17 +57,15 @@ export default async function PricesPage({ params }: Props) {
       ) : (
         <>
           {best && (
-            <Card className="flex flex-wrap items-end justify-between gap-x-6 gap-y-3 p-[18px]">
+            <div className="flex flex-wrap items-end justify-between gap-x-6 gap-y-4 border-y border-line py-5">
               <div className="flex flex-col gap-1.5">
                 <span className="text-[13px] font-semibold text-mut">{PLATFORM_LABEL[best.platform] ?? best.platform}</span>
                 <div className="flex flex-wrap items-baseline gap-x-2.5 gap-y-1">
-                  <span className="text-2xl font-bold tracking-[-0.03em] text-ink">{formatPrice(best.currentPrice, best.currency)}</span>
+                  <span className="text-[30px] font-extrabold tracking-[-0.045em] text-ink sm:text-[36px]">{formatPrice(best.currentPrice, best.currency)}</span>
                   {best.discountPct && best.discountPct > 0 ? (
                     <>
                       <span className="text-[13px] text-dim-2 line-through">{formatPrice(best.listPrice, best.currency)}</span>
-                      <span className="rounded-[6px] bg-ink px-2 py-[3px] text-[11.5px] font-bold text-on-ink">
-                        {formatDiscount(best.discountPct)}
-                      </span>
+                      <span className="text-[14px] font-bold text-acc">{formatDiscount(best.discountPct)}</span>
                       <SaleBadge discountName={best.discountName} discountStartsAt={best.discountStartsAt} discountEndsAt={best.discountEndsAt} />
                     </>
                   ) : (
@@ -103,19 +101,19 @@ export default async function PricesPage({ params }: Props) {
                   </p>
                 </div>
               </div>
-            </Card>
+            </div>
           )}
 
-          <Card className="p-[18px]">
+          <div>
             <PriceChart series={series} />
             <p className="mt-2 text-right text-[11.5px] text-dim">음영 = 할인 진행 구간</p>
-          </Card>
+          </div>
 
           {/* 표 뷰(접근성 보조): 플랫폼별 현재가, 할인, 최저/최고 */}
           <section aria-labelledby="summary-heading" className="flex flex-col gap-3">
             <SectionHead id="summary-heading" title="플랫폼별 요약" note="기록된 스냅샷 기준" />
-            <Card className="overflow-hidden">
-              <div className={`${COLS} border-b border-line text-[11.5px] text-dim`}>
+            <div>
+              <div className={`${COLS} border-b border-line-strong text-[11.5px] text-dim`}>
                 <span>플랫폼</span>
                 <span>현재가</span>
                 <span>할인</span>
@@ -146,7 +144,7 @@ export default async function PricesPage({ params }: Props) {
                   );
                 })}
               </ul>
-            </Card>
+            </div>
           </section>
         </>
       )}

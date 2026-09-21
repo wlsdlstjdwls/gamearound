@@ -11,7 +11,7 @@
 import { useCallback, useState, useTransition } from "react";
 import Link from "next/link";
 import { cn } from "@/lib/cn";
-import { cardClass } from "@/components/ui/page";
+import { panelClass } from "@/components/ui/page";
 import { gamePath } from "@/lib/routes";
 import { TASK_MESSAGES, TASK_PRIORITY_LABEL, TASK_STATUS_LABEL } from "@/lib/admin/messages";
 import { TASK_STATUSES, type AdminTask } from "@/lib/admin/tasks";
@@ -46,7 +46,7 @@ export function TaskCard({ task, onDragStart }: { task: AdminTask; onDragStart?:
         e.dataTransfer.effectAllowed = "move";
         onDragStart?.(task.id);
       }}
-      className={cardClass(cn("flex flex-col gap-2 p-3", pending && "opacity-60"))}
+      className={panelClass(cn("flex flex-col gap-2 p-3", pending && "opacity-60"))}
     >
       {editing ? (
         <TaskEditForm task={task} onDone={stopEditing} />

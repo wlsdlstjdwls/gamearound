@@ -10,6 +10,7 @@ import { GameRow } from "@/components/game-row";
 import { GameViewToggle } from "@/components/game-view-toggle";
 import { EmptyState } from "@/components/empty-state";
 import { GameFilters } from "@/components/game-filters";
+import { ActiveFilters } from "@/components/game-filters/active";
 import { GameSort } from "@/components/game-sort";
 import { GamesInfinite } from "@/components/games-infinite";
 import { Page, PageHead } from "@/components/ui/page";
@@ -143,27 +144,35 @@ export default async function GamesPage({ searchParams }: Props) {
   const filtered = isFiltered(filter);
 
   return (
-    <Page gap={20}>
+    <Page gap={22}>
+      {/* 제목 줄 — 왼쪽은 "무엇을 보고 있나", 오른쪽은 "어떻게 세우고 어떻게 볼까".
+          거르지 않은 목록의 건수는 읽는 사람이 쓸 일이 없다 — 걸렀을 때만 "얼마나 남았나" 가 답이 된다 */}
       <PageHead
         title="게임 목록"
-        // 거르지 않은 목록의 건수는 읽는 사람이 쓸 일이 없다 — 걸렀을 때만 "얼마나 남았나" 가 답이 된다
-        // 건수와 보기 전환이 한 덩어리로 오른쪽에 선다. 보기 전환은 걸린 조건과 상관없이 늘 있다
+        note={
+          filtered ? (
+            <span aria-live="polite">
+              <Suspense key={boundaryKey} fallback={<CountSkeleton />}>
+                <ResultCount filter={filter} />
+              </Suspense>
+              {"가 조건에 맞아요"}
+            </span>
+          ) : undefined
+        }
         action={
-          <div className="flex items-center gap-3">
-            {filtered && (
-              <p className="text-[13px] text-dim" aria-live="polite">
-                <Suspense key={boundaryKey} fallback={<CountSkeleton />}>
-                  <ResultCount filter={filter} />
-                </Suspense>
-              </p>
-            )}
+          <div className="flex flex-wrap items-center gap-2">
+            <GameSort query={query} />
+            <span aria-hidden className="mx-1 hidden h-[18px] w-px bg-line-strong sm:block" />
             <GameViewToggle query={query} />
           </div>
         }
       />
 
+      {/* 걸린 조건 띠 — 결과 바로 위를 가로지른다(전폭). 필터 기둥 안이 아니라 여기인 이유는 ./active 주석 */}
+      <ActiveFilters filter={query} />
+
       {/* 넓은 화면에서만 두 기둥이 된다. 좁은 화면에서는 필터가 접힌 서랍으로 위에 한 줄만 차지한다 */}
-      <div className="grid items-start gap-5 lg:grid-cols-[252px_minmax(0,1fr)]">
+      <div className="grid items-start gap-x-10 gap-y-6 lg:grid-cols-[232px_minmax(0,1fr)]">
         {/* 필터 기둥에는 키를 주지 않는다 — 다시 세우면 고른 값이 뼈대로 한 번 사라졌다 돌아온다.
             선택지(facets)는 필터와 무관하게 같은 값이라 옛 기둥을 그대로 두는 편이 덜 튄다 */}
         <Suspense fallback={<FiltersSkeleton />}>
@@ -171,11 +180,7 @@ export default async function GamesPage({ searchParams }: Props) {
         </Suspense>
 
         {/* min-w-0: 격자 칸의 기본 최소 크기는 auto 라 안쪽의 잘리지 않는 제목이 칸을 밀어낸다(상세 화면 주석) */}
-        <div className="flex min-w-0 flex-col gap-5">
-          {/* 정렬은 목록 위에 선다 — 거르는 일이 아니라 줄 세우는 일이라 필터 기둥에 두지 않는다(game-sort 주석) */}
-          <div className="flex justify-end">
-            <GameSort query={query} />
-          </div>
+        <div className="flex min-w-0 flex-col gap-9">
           <Suspense key={boundaryKey} fallback={<GamesGridSkeleton cards={GAMES_PAGE_SIZE} view={view} />}>
             <Results filter={filter} view={view} />
           </Suspense>

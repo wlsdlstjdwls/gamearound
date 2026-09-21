@@ -6,7 +6,8 @@ import Link from "next/link";
 import { EmptyState } from "@/components/empty-state";
 import { Pagination } from "@/components/pagination";
 import { ChipLink } from "@/components/ui/chip";
-import { Page, SectionHead, cardClass } from "@/components/ui/page";
+import { Page, PageHead, ROW, ROWS } from "@/components/ui/page";
+import { cn } from "@/lib/cn";
 import { Clamp } from "@/components/ui/tooltip";
 import { stagger } from "@/lib/motion";
 import { ROUTES, companyPath } from "@/lib/routes";
@@ -38,14 +39,12 @@ export default async function CompaniesPage({ searchParams }: Props) {
   const [countries, result] = await Promise.all([getCountryFacets(), listCompanies(country, pageNum)]);
 
   return (
-    <Page gap={20}>
-      <SectionHead
-        title="게임 회사"
-        note={result.total > 0 ? `${result.total}곳` : undefined}
-      />
+    <Page gap={26}>
+      <PageHead title="게임 회사" note={result.total > 0 ? `${result.total}곳` : undefined} />
 
+      {/* 국가 칩은 판이 아니라 헤어라인 띠 안에 선다 — 목록의 "걸린 조건" 띠와 같은 규칙이다 */}
       {countries.length > 0 && (
-        <section aria-label="국가 필터" className={cardClass("flex flex-wrap gap-1.5 p-4")}>
+        <section aria-label="국가 필터" className="flex flex-wrap gap-1.5 border-y border-line py-3">
           <ChipLink href={companiesHref(undefined, 1)} active={!country}>
             전체
           </ChipLink>
@@ -64,16 +63,18 @@ export default async function CompaniesPage({ searchParams }: Props) {
           action={{ href: ROUTES.game, label: "게임 목록 보기" }}
         />
       ) : (
-        <ul className="grid grid-cols-1 gap-2.5 sm:grid-cols-2 lg:grid-cols-3">
+        // 셋씩 세우던 카드를 줄로 바꿨다 — 회사 카드에는 커버가 없어 판을 걷어내면 남는 게 글자 두 줄이고,
+        // 그 두 줄을 격자에 흩어 두면 훑을 때 눈이 좌우로 튄다
+        <ul className={cn(ROWS, "sm:grid sm:grid-cols-2 sm:gap-x-10 lg:grid-cols-3")}>
           {result.items.map((c, i) => (
             <li key={c.slug} className="enter-item" style={stagger(i)}>
-              <Link href={companyPath(c.slug)} className={cardClass("lift press flex flex-col gap-1 px-4 py-3.5 transition-colors hover:border-ink")}>
-                <Clamp lines={1} className="text-[14px] font-semibold text-ink">
+              <Link href={companyPath(c.slug)} className={cn(ROW, "flex items-baseline justify-between gap-3 py-[13px]")}>
+                <Clamp lines={1} className="min-w-0 text-[14.5px] font-bold tracking-[-0.02em] text-ink">
                   {c.name}
                 </Clamp>
-                <span className="text-[12px] text-dim">
+                <span className="shrink-0 text-[12px] text-dim">
                   {c.countryNameKo ? `${c.countryNameKo} | ` : ""}
-                  게임 {c.gameCount}개
+                  {c.gameCount}개
                 </span>
               </Link>
             </li>
