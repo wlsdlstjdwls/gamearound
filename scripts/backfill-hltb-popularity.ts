@@ -91,7 +91,17 @@ async function targetsOf(minScore: number, limit: number, ranked: boolean): Prom
        and a.score >= ${minScore}::int`
      }
        and g.hltb_logged_count is null
-     order by ${ranked ? sql`a.min_rank asc` : sql`a.score desc`}
+     order by ${
+       ranked
+         ? sql`a.min_rank asc`
+         // 순위를 주는 스토어가 하나도 없는 게임을 앞에 세운다. 점수순으로만 세우면 옛 Xbox
+         // 목록(Halo 3, Mass Effect 3)이 앞을 다 먹는데, 그쪽은 평가 수 보정이 이미 받아 주는
+         // 축이 있고 애초에 지금 인기작도 아니다. 이 일이 풀려고 하는 것은 스위치, Epic 이다.
+         : sql`case when exists (
+                 select 1 from game_platforms p
+                 where p.game_id = a.game_id and p.platform in ('switch', 'switch2', 'epic')
+               ) then 0 else 1 end, a.score desc`
+     }
      limit ${limit}::int
   `);
   return ((raw.rows ?? raw) as Array<Record<string, unknown>>).map((r) => ({

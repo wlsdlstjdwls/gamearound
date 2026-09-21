@@ -10,7 +10,7 @@ import { visiblePlatformsOnly } from "@/server/db/visibility";
 import { normalizeForSearch } from "@/lib/slug";
 import { DEFAULT_GAME_SORT, parsePlatformValues, type GamesQuery } from "@/lib/games-query";
 import { expandPlatformValues } from "@/lib/platform";
-import { POPULARITY_RANK_MAX_AGE_DAYS, REVIEW_RANK_STEPS } from "@/lib/games/popularity";
+import { HLTB_RANK_OFFSET, HLTB_RANK_STEPS, POPULARITY_RANK_MAX_AGE_DAYS, REVIEW_RANK_STEPS } from "@/lib/games/popularity";
 import type { GameSummary } from "./dto";
 import { attachBestPrice, type GameRow } from "./mappers";
 import { allOf, byCompanySlug, hasVisiblePlatform, inAnySubscription, mainGamesOnly, runsOnRig } from "./filters";
@@ -128,6 +128,17 @@ function reviewRankExpr(agg: ReturnType<typeof platformAgg>) {
   return sql`case when ${agg.hasPaidPrice} then (case ${sql.join(steps, sql` `)} else null::int end) else null::int end`;
 }
 
+/**
+ * HLTB 기록 인원수를 순번 자리로 바꾸는 SQL 식. 경계는 lib/games/popularity 의 표 하나만 본다.
+ *
+ * 평가 수 식과 달리 유료 조건이 없다(표 옆 주석의 근거). ::int 를 붙이는 이유는 같다 —
+ * 안 붙이면 바인딩이 text 로 추론돼 coalesce 가 42804 로 깨지고 목록이 통째로 500 이 된다.
+ */
+function hltbRankExpr() {
+  const steps = HLTB_RANK_STEPS.map(([position, logged]) => sql`when ${games.hltbLoggedCount} >= ${logged}::int then ${position + HLTB_RANK_OFFSET}::int`);
+  return sql`(case ${sql.join(steps, sql` `)} else null::int end)`;
+}
+
 async function listGamesRaw(filter: GameListFilter): Promise<GameListResult> {
   const db = getDb();
   const page = Math.max(filter.page ?? 1, 1);
@@ -185,14 +196,21 @@ async function listGamesRaw(filter: GameListFilter): Promise<GameListResult> {
      * 뒷줄의 기준은 할인율순과 같게 둔다: 순위를 모르는 게임들 사이에서 답할 수 있는 질문이 그것뿐이다.
      */
     popular: [
-      // 순번이 있으면 그것으로, 없으면 평가 수를 자리로 바꿔 **같은 축에** 세운다.
+      // 순번이 있으면 그것으로, 없으면 환산한 자리로 **같은 축에** 세운다.
       // 이 한 줄이 없으면 순번 없는 게임은 전부 순번 보유 1,877건 뒤에서 시작한다(24칸 기준 78페이지 뒤).
+      //
+      // 환산이 둘인 이유는 스토어마다 남는 것이 다르기 때문이다. Xbox 는 평가 수를 주고(81%),
+      // 스위치와 Epic 은 둘 다 안 줘서 스토어 밖 값(HLTB)이라야 자리를 받는다.
+      // least 로 묶는다 — 둘 중 하나만 있으면 그것이, 둘 다 있으면 **앞선 자리**가 답이다
+      // (Postgres 의 least 는 null 을 무시한다, 2026-09-21 확인).
+      //
       // 자리가 같으면 실제 순번이 이긴다 — 스토어가 센 값이 우리가 환산한 값보다 낫다.
-      sql`coalesce(${agg.minRank}, ${reviewRankExpr(agg)}) asc nulls last`,
+      sql`coalesce(${agg.minRank}, least(${reviewRankExpr(agg)}, ${hltbRankExpr()})) asc nulls last`,
       sql`(${agg.minRank} is not null) desc`,
       sql`${agg.hasBaseCurrency} desc`,
-      // 순번이 없으면 평가 수로 센다. 둘 다 없을 때만 할인율로 떨어진다 —
-      // 그 자리까지 오면 답할 수 있는 질문이 그것뿐이다
+      // 자리를 못 받은 뒷줄의 기준. 기록 인원수를 평가 수보다 앞에 두는 이유는 기기를 안 가려서다 —
+      // 평가 수는 Xbox 행이 있는 게임에만 있어 스위치, Epic 끼리는 비교가 안 된다
+      sql`${games.hltbLoggedCount} desc nulls last`,
       sql`${agg.maxReviews} desc nulls last`,
       sql`${agg.maxDiscount} desc nulls last`,
       sql`${agg.minPrice} asc nulls last`,

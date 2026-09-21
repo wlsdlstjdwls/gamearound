@@ -9,10 +9,22 @@ import { fillGenres, fillPlatforms, groupSummaries } from "./mappers";
 import { mainGamesOnly } from "./filters";
 import { DTO_CACHE_VERSION, LIST_REVALIDATE_SECONDS } from "@/lib/cache";
 import { DISPLAY_CURRENCY } from "@/lib/currency";
-import { POPULARITY_RANK_MAX_AGE_DAYS } from "@/lib/games/popularity";
+import { HLTB_RANK_OFFSET, HLTB_RANK_STEPS, POPULARITY_RANK_MAX_AGE_DAYS } from "@/lib/games/popularity";
 
 const HOME_LIMIT = 12;
 const HOME_NEWS_LIMIT = 8;
+
+/**
+ * HLTB 기록 인원수를 순번 자리로 바꾼다 — 목록(list.ts 의 hltbRankExpr)과 같은 표를 본다.
+ *
+ * 홈이 평가 수 환산은 못 쓰면서 이것은 쓰는 이유: 평가 수는 game_platforms 집계를 넓혀야 해서
+ * 0.7초가 3.5초가 됐지만(아래 rankAgg 주석), 기록 인원수는 games 컬럼이라 이미 있는
+ * inner join 에서 그냥 읽힌다. 조인도 집계도 늘지 않는다.
+ */
+function hltbRankExpr() {
+  const steps = HLTB_RANK_STEPS.map(([position, logged]) => sql`when ${games.hltbLoggedCount} >= ${logged}::int then ${position + HLTB_RANK_OFFSET}::int`);
+  return sql`(case ${sql.join(steps, sql` `)} else null::int end)`;
+}
 
 async function getHomeDataRaw(): Promise<HomeData> {
   const db = getDb();
@@ -72,8 +84,10 @@ async function getHomeDataRaw(): Promise<HomeData> {
    * 2026-09-21 에 PlayStation 순위를 붙여 "콘솔 독점작은 못 받는다" 던 한계를 풀었다 —
    * GTA VI 2위, 마블 울버린 3위, 고스트 오브 요테이 13위가 이 줄에 오른다.
    *
-   * 남은 한계는 Xbox 다. 그쪽은 목록 정렬을 바꿀 수 없어(adapters/xbox 의 discoverPages 주석)
-   * 순위를 못 받는다 — 대신 평가 수가 목록 정렬의 두 번째 키로 그 자리를 메운다.
+   * 순번을 아예 못 받는 스토어가 셋 남는다 — Xbox, 스위치, Epic. 셋 다 목록 정렬을 못 바꾼다
+   * (각 어댑터의 listPopularPages 주석). Xbox 는 평가 수가 목록 정렬에서 그 자리를 메우고,
+   * 평가 수조차 없는 스위치와 Epic 은 HLTB 기록 인원수가 메운다(아래 hltbRankExpr).
+   * 홈은 평가 수 환산을 안 쓴다 — 그 값은 집계를 넓혀야 해서 비용이 붙는다(rankAgg 주석).
    */
   const discountRows = await db
     .select({ game: games, gp: gamePlatforms })
@@ -83,7 +97,10 @@ async function getHomeDataRaw(): Promise<HomeData> {
     .where(and(mainGamesOnly(), homeRegion, visiblePlatformsOnly(), gt(gamePlatforms.discountPct, 0), gt(gamePlatforms.currentPrice, 0)))
     .orderBy(
       baseCurrencyFirst,
-      sql`${rankAgg.minRank} asc nulls last`,
+      // 순번이 없으면 HLTB 기록 인원수를 환산한 자리로 같은 축에 세운다(목록과 같은 표).
+      // 스위치, Epic 은 스토어가 순번도 평가 수도 안 줘서 이 자리가 없으면 첫 화면에 영영 못 선다
+      sql`coalesce(${rankAgg.minRank}, ${hltbRankExpr()}) asc nulls last`,
+      sql`(${rankAgg.minRank} is not null) desc`,
       desc(gamePlatforms.discountPct),
       desc(gamePlatforms.lastSyncedAt),
     )
