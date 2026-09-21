@@ -35,7 +35,8 @@ describe("날짜 표기", () => {
   const AT = "2026-09-14T17:00:00Z";
 
   it("KST 로 읽는다", () => {
-    expect(formatDate(AT)).toBe("2026. 09. 15.");
+    // 요일도 KST 달력에서 나와야 한다 — UTC 로는 9/14(월)이지만 한국에서는 9/15(화)다
+    expect(formatDate(AT)).toBe("2026년 9월 15일 (화)");
     expect(formatShortDateTime(AT)).toBe("9월 15일 02:00");
     expect(formatDateTime(AT)).toBe("26. 9. 15. 02:00");
   });

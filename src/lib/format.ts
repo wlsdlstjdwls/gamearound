@@ -41,6 +41,9 @@ function trimZero(v: string): string {
   return String(Number(v));
 }
 
+/** 요일 이름. 날짜 표기(formatDate)와 출시예정 목록(formatReleaseDay)이 같이 쓴다 */
+const WEEKDAY_LABEL = ["일", "월", "화", "수", "목", "금", "토"];
+
 /** 유효한 Date 로 바꾼다. 못 바꾸면 null — 화면에는 "-" 가 나간다 */
 function toDate(d: Date | string | null | undefined): Date | null {
   if (!d) return null;
@@ -59,11 +62,22 @@ export function formatSizeMb(mb: number | null | undefined): string {
   return `${Number(gb.toFixed(1))} GB`;
 }
 
+/**
+ * 화면에 쓰는 날짜 한 형태 — "2027년 11월 23일 (금)"(2026-09-21 통일).
+ *
+ * 전에는 "2017. 12. 21." 이었다. 점 세 개는 읽는 순서를 말해 주지 않아 나라마다 다르게 읽히고,
+ * 요일이 없으면 "이번 주인가" 를 세어 봐야 한다 — 출시일, 세일 기간처럼 날짜가 답이 되는 자리에서
+ * 그 한 번을 매번 사람이 했다. 요일 표기는 출시예정 목록(formatReleaseDay)이 이미 쓰던 규칙이라
+ * 두 화면이 같은 말을 하게 된다.
+ *
+ * 요일은 KST 달력 조각에서 만든다 — UTC 로 세면 한국 자정 언저리 값이 하루 어긋난다.
+ */
 export function formatDate(d: Date | string | null | undefined): string {
   const date = toDate(d);
   if (!date) return "-";
   const { year, month, day } = kstParts(date);
-  return `${year}. ${month}. ${day}.`;
+  const weekday = WEEKDAY_LABEL[new Date(Date.UTC(Number(year), Number(month) - 1, Number(day))).getUTCDay()];
+  return `${year}년 ${trimZero(month)}월 ${trimZero(day)}일 (${weekday})`;
 }
 
 /** 목록에 붙는 짧은 시각. 24시간제로 적는다 — 오전/오후 표기가 런타임마다 갈렸다(KST_PARTS 주석) */
@@ -151,12 +165,8 @@ export function formatSaleWindow(startsAt: string | null | undefined, endsAt: st
 }
 
 /**
- * 요일 이름. 출시예정 목록이 쓴다 — "9월 24일" 만으로는 그게 이번 주인지 다음 주인지 세어 봐야 한다.
- */
-const WEEKDAY_LABEL = ["일", "월", "화", "수", "목", "금", "토"];
-
-/**
- * date 컬럼 값("2026-09-24") → "9월 24일 (목)".
+ * date 컬럼 값("2026-09-24") → "9월 24일 (목)". formatDate 와 같은 규칙에서 **해를 뺀 꼴**이다 —
+ * 이 값이 서는 자리(출시예정 목록)는 바로 위 구분 머리가 이미 "2026년 9월" 이라고 말한다.
  *
  * KST 변환을 하지 않는 이유: 시각이 없는 날짜다. 이 값을 자정으로 놓고 시간대를 옮기면
  * 하루가 앞뒤로 밀린다 — 스토어가 말한 날짜를 그대로 읽는 것이 맞다.

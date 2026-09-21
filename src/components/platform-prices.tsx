@@ -10,7 +10,7 @@
 import { formatPrice } from "@/lib/currency";
 import { formatDate, formatDiscount, platformLabel } from "@/lib/format";
 import { countText, scoreToStars } from "@/lib/user-score";
-import { FRESHNESS_LABEL, type Freshness } from "@/lib/freshness";
+import { type Freshness } from "@/lib/freshness";
 import type { Platform } from "@/server/db/schema";
 import type { PlatformDto } from "@/server/services/games";
 import { SaleBadge } from "@/components/sale-badge";
@@ -54,10 +54,7 @@ function metaText(p: PlatformPriceItem, skipUserScore: boolean): string {
     parts.push(kind === "star_average" ? `평균 ${scoreToStars(value)}점` : `긍정 ${Math.round(value)}%`);
     if (count > 0) parts.push(countText(count));
   }
-  // 오래된 값은 사과가 아니라 단서로 적는다 — 그래야 "스토어에서 직접 확인" 이 다음 행동이 된다
-  // 라벨이 빈 구간(delayed)은 건너뛴다 — 빈 조각을 넣으면 파이프 구분자만 남는다
-  const freshnessLabel = FRESHNESS_LABEL[p.freshness];
-  if (freshnessLabel) parts.push(freshnessLabel);
+  // 신선도 문구는 붙이지 않는다(lib/freshness 주석) — 값은 그냥 값으로 세운다
   return parts.join(" | ");
 }
 

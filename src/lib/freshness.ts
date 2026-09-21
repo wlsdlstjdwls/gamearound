@@ -23,16 +23,12 @@ export function getFreshness(lastSyncedAt: Date | string | null | undefined, syn
   return "stale";
 }
 
-/**
- * 24~72시간 구간(delayed)은 문구를 달지 않는다(2026-09-17).
- * 하루 이틀 지난 값은 보는 사람이 달리 행동할 일이 없는데 "갱신 지연" 은 우리 사정을 고장처럼 알린다 —
- * 정말 손을 써야 하는 것은 사흘 넘은 값(stale)뿐이다. 구간 자체는 남긴다(정렬, 관리자 화면이 쓴다).
+/*
+ * 문구는 없다(2026-09-21, 사용자 결정). 사흘 넘은 값에 "정보가 오래됐을 수 있음" 을 달아 왔는데,
+ * 그 한 줄이 값마다 붙으면 화면 전체가 못 믿을 것처럼 읽힌다 — 값을 못 믿게 할 거면 안 보여 주는 게 맞고,
+ * 보여 줄 거면 그냥 보여 준다. 언제 기준인지는 collectedAtText 가 이미 말한다.
+ * 구간(Freshness)은 남긴다 — 정렬과 관리자 화면이 쓴다.
  */
-export const FRESHNESS_LABEL: Record<Freshness, string> = {
-  fresh: "",
-  delayed: "",
-  stale: "정보가 오래됐을 수 있음",
-};
 
 /**
  * "오늘 02:14 기준" / "어제 기준" / "3일 전 기준". 값이 없으면 "기준 시각 없음".
