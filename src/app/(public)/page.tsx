@@ -135,7 +135,7 @@ export default async function HomePage() {
           320px 기기에서 360px 칸 + 좌우 여백이 화면을 넘어 홈 전체가 가로로 밀렸다 */}
       <section className="grid grid-cols-[repeat(auto-fit,minmax(min(360px,100%),1fr))] items-start gap-x-12 gap-y-10">
         <div className="enter-item flex flex-col gap-3.5" style={stagger(0)}>
-          <SectionHead title="곧 마감" />
+          <SectionHead title="곧 할인 마감" />
           {soon.length === 0 ? (
             <p className="border-t border-line-strong py-5 text-[13px] text-dim">종료 시각이 공개된 할인이 없습니다.</p>
           ) : (
@@ -150,10 +150,19 @@ export default async function HomePage() {
                     </span>
                     <span className="min-w-0 flex-1">
                       <Clamp className="block text-[14.5px] font-bold tracking-[-0.02em] text-ink">{g.titleKo ?? g.titleEn}</Clamp>
-                      <span className="block text-[12px] text-dim">
-                        {[g.best ? PLATFORM_LABEL[g.best.platform] ?? g.best.platform : null, formatPrice(g.best?.currentPrice, g.best?.currency)]
-                          .filter(Boolean)
-                          .join(" | ")}
+                      {/* 값은 카드와 같은 문법으로 읽힌다 — 할인가가 굵고, 원래 값은 취소선 회색으로 그 옆에 선다.
+                          할인가만 적으면 "얼마나 싸졌나" 를 스탬프 없는 이 줄에서는 알 길이 없다 */}
+                      <span className="mt-0.5 flex flex-wrap items-baseline gap-x-1.5 text-[12px] text-dim">
+                        {g.best && (
+                          <>
+                            <span>{PLATFORM_LABEL[g.best.platform] ?? g.best.platform}</span>
+                            <span aria-hidden>|</span>
+                          </>
+                        )}
+                        <span className="font-bold text-ink">{formatPrice(g.best?.currentPrice, g.best?.currency)}</span>
+                        {g.best?.listPrice != null && g.best.listPrice !== g.best.currentPrice && (
+                          <span className="text-[11px] text-dim-2 line-through">{formatPrice(g.best.listPrice, g.best.currency)}</span>
+                        )}
                       </span>
                     </span>
                     <SaleBadge variant="inline" discountName={null} discountEndsAt={g.best?.discountEndsAt} />
