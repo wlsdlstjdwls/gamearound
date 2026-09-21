@@ -184,3 +184,29 @@ export function formatMonthLabel(key: string): string {
   if (!year || !month) return key;
   return `${year}년 ${month}월`;
 }
+
+/** "얼마나 지났나" 의 단위 경계(분). 초 단위는 쓰지 않는다 — 이 값은 신선도를 재는 자리에만 쓴다 */
+const AGO_JUST_NOW_MIN = 2;
+const AGO_MINUTES_MAX = 60;
+const AGO_HOURS_MAX = 60 * 24;
+
+/**
+ * 지난 시간 — "방금", "23분 전", "3시간 전", "2일 전".
+ *
+ * 왜 필요한가: 관리자 수집 현황에서 답해야 하는 질문은 "언제 끝났나" 가 아니라 **"최근인가"** 다.
+ * "26. 9. 21. 13:20" 을 읽고 지금과 빼는 일을 사람이 소스마다 하고 있었다(여덟 칸이면 여덟 번).
+ * 정확한 시각을 지우지는 않는다 — 로그와 맞대 볼 때 필요한 값이라 옆에 같이 둔다.
+ *
+ * now 를 인자로 받는 순수 함수다(saleRemaining 과 같은 이유) — 서버 컴포넌트 안에서 Date.now() 를
+ * 부르면 렌더가 순수하지 않다.
+ */
+export function formatAgo(d: Date | string | null | undefined, now: number): string {
+  const date = toDate(d);
+  if (!date) return "-";
+  const minutes = Math.floor((now - date.getTime()) / 60000);
+  // 시계가 어긋나 미래로 읽히는 값은 "방금" 으로 접는다 — 음수 시간을 화면에 적을 이유가 없다
+  if (minutes < AGO_JUST_NOW_MIN) return "방금";
+  if (minutes < AGO_MINUTES_MAX) return `${minutes}분 전`;
+  if (minutes < AGO_HOURS_MAX) return `${Math.floor(minutes / 60)}시간 전`;
+  return `${Math.floor(minutes / AGO_HOURS_MAX)}일 전`;
+}

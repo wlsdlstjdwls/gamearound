@@ -1,6 +1,6 @@
 // 포맷 유틸 테스트 — 할인 기간 표시(순수 함수, now 를 인자로 받는다)
 import { describe, expect, it } from "vitest";
-import { formatDate, formatDateTime, formatMonthLabel, formatReleaseDay, formatSaleWindow, formatShortDateTime, saleRemaining } from "./format";
+import { formatAgo, formatDate, formatDateTime, formatMonthLabel, formatReleaseDay, formatSaleWindow, formatShortDateTime, saleRemaining } from "./format";
 
 const NOW = Date.parse("2026-09-14T00:00:00Z");
 
@@ -70,5 +70,29 @@ describe("출시일 표기", () => {
   it("달 열쇠를 한국어 머리로 바꾼다", () => {
     expect(formatMonthLabel("2026-10")).toBe("2026년 10월");
     expect(formatMonthLabel("나중")).toBe("나중");
+  });
+});
+
+describe("formatAgo", () => {
+  const now = Date.UTC(2026, 8, 21, 12, 0, 0);
+  const ago = (min: number) => formatAgo(new Date(now - min * 60000), now);
+
+  it("단위가 바뀌는 자리를 적는다", () => {
+    expect(ago(0)).toBe("방금");
+    expect(ago(1)).toBe("방금");
+    expect(ago(2)).toBe("2분 전");
+    expect(ago(59)).toBe("59분 전");
+    expect(ago(60)).toBe("1시간 전");
+    expect(ago(60 * 24 - 1)).toBe("23시간 전");
+    expect(ago(60 * 24)).toBe("1일 전");
+    expect(ago(60 * 24 * 9)).toBe("9일 전");
+  });
+
+  it("시계가 어긋나 미래로 읽히는 값은 방금으로 접는다", () => {
+    expect(formatAgo(new Date(now + 60_000), now)).toBe("방금");
+  });
+
+  it("값이 없으면 대시", () => {
+    expect(formatAgo(null, now)).toBe("-");
   });
 });
