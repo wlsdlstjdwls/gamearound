@@ -15,6 +15,15 @@ export const ROUTES = {
   /** 내 기기 — 사양 판정의 한쪽 항이다(설계 §7 "설정") */
   settingsDevices: "/settings/devices",
   admin: "/admin",
+  /** 수집 실행 기록. 대시보드가 요약만 보여 주는 값의 전문이 여기 있다 */
+  adminSyncLogs: "/admin/sync-logs",
+  /**
+   * 매칭 대기 큐. `/admin` 안에 섞여 있던 자리를 뗐다 — 수집 현황은 읽기만 하는 화면이고
+   * 여기는 사람이 눌러야 줄이 줄어드는 화면이라, 섞여 있으면 메뉴가 "남은 일"을 셀 자리를 못 준다.
+   */
+  adminMatches: "/admin/matches",
+  /** 회사 이름 확정 큐 */
+  adminCompanies: "/admin/companies",
   /** 상품 매핑 검수 — 매핑 배치(§5.2)가 후보만 남긴 상품을 사람이 마무리하는 자리 */
   adminProducts: "/admin/products",
   /** 관리자 할 일 판. 자동으로 쌓이는 검수 큐와 달리 사람이 직접 적는 일이 사는 자리 */

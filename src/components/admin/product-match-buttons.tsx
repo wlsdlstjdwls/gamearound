@@ -3,6 +3,7 @@
 // 둘 다 확인 창을 띄우지 않는다 — 스무 줄을 훑는 화면에서 확인 창은 판정을 느리게만 한다.
 import { useState, useTransition } from "react";
 import { approveProductMatchAction, rejectProductMatchAction, type AdminActionState } from "@/app/(admin)/admin/actions";
+import { ADMIN_ACTION_MESSAGES as A } from "@/lib/admin/messages";
 
 export function ProductMatchButtons({ productId }: { productId: string }) {
   const [pending, start] = useTransition();
@@ -15,7 +16,7 @@ export function ProductMatchButtons({ productId }: { productId: string }) {
         onClick={() => start(async () => setState(await approveProductMatchAction(productId)))}
         className="press rounded-[7px] bg-ink px-[11px] py-[5px] text-[12px] font-semibold text-on-ink transition-colors hover:bg-ink-2 disabled:opacity-60"
       >
-        잇기
+        {A.link}
       </button>
       <button
         type="button"
@@ -23,7 +24,7 @@ export function ProductMatchButtons({ productId }: { productId: string }) {
         onClick={() => start(async () => setState(await rejectProductMatchAction(productId)))}
         className="press rounded-[7px] border border-line-strong px-[11px] py-[5px] text-[12px] text-mut transition-colors hover:border-danger hover:text-danger disabled:opacity-60"
       >
-        무르기
+        {A.unlink}
       </button>
       {state && !state.ok && <span className="text-[11.5px] text-danger">{state.error}</span>}
     </div>

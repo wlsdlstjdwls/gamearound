@@ -16,8 +16,10 @@ import { AliasForm } from "@/components/admin/alias-form";
 import { UpgradeForm } from "@/components/admin/upgrade-form";
 import { MatchReviewButtons } from "@/components/admin/match-review-buttons";
 import { PageHead, cardClass } from "@/components/ui/page";
+import { GAME_ADMIN_MESSAGES as M, MATCHED_BY_LABEL, SYNC_STATUS_LABEL, sourceLabel } from "@/lib/admin/messages";
+import { ROUTES } from "@/lib/routes";
 
-export const metadata: Metadata = { title: "게임 데이터 정정" };
+export const metadata: Metadata = { title: M.title };
 
 type GameRow = NonNullable<Awaited<ReturnType<typeof getGameForAdmin>>>;
 type PlatformRow = GameRow["platforms"][number];
@@ -83,26 +85,30 @@ export default async function AdminGamePage({ params }: { params: Promise<{ id: 
   return (
     <div className="flex flex-col gap-8">
       <header className="flex flex-col gap-1">
-        <p className="text-[12.5px] text-dim"><Link href="/admin" className="hover:text-ink">대시보드</Link> / 게임 정정</p>
+        <p className="text-[12.5px] text-dim">
+          <Link href={ROUTES.admin} className="hover:text-ink">{M.breadcrumb}</Link> / {M.here}
+        </p>
         <PageHead title={game.titleKo ?? game.titleEn} />
         <p className="text-[13px] text-mut">
           {game.titleEn} | <code className="text-xs">{game.slug}</code> |{" "}
-          <Link href={`/games/${game.slug}`} className="text-acc hover:underline">공개 페이지 보기</Link>
+          <Link href={`/games/${game.slug}`} className="text-acc hover:underline">{M.openPublic}</Link>
         </p>
+        {/* 이 화면에서 고친 값이 다음 수집에 날아가지 않는다는 사실이 이 화면의 전제다 */}
+        <p className="mt-1 max-w-[620px] text-[13px] text-mut">{M.lead}</p>
       </header>
 
       <section className="flex flex-col gap-3">
-        <h2 className="text-[17px] font-bold tracking-[-0.02em] text-ink">기본 정보 정정</h2>
-        <CorrectionForm table="games" rowId={game.id} gameId={game.id} fields={gameFields(game)} title="games 필드" />
+        <h2 className="text-[17px] font-bold tracking-[-0.02em] text-ink">{M.basics}</h2>
+        <CorrectionForm table="games" rowId={game.id} gameId={game.id} fields={gameFields(game)} title={M.basicsFormTitle} />
       </section>
 
       <section className="flex flex-col gap-3">
-        <h2 className="text-[17px] font-bold tracking-[-0.02em] text-ink">검색</h2>
+        <h2 className="text-[17px] font-bold tracking-[-0.02em] text-ink">{M.aliases}</h2>
         <AliasForm gameId={game.id} items={aliasRows.map((a) => ({ id: a.id, alias: a.alias }))} />
       </section>
 
       <section className="flex flex-col gap-3">
-        <h2 className="text-[17px] font-bold tracking-[-0.02em] text-ink">업그레이드</h2>
+        <h2 className="text-[17px] font-bold tracking-[-0.02em] text-ink">{M.upgrades}</h2>
         <UpgradeForm
           gameId={game.id}
           platforms={platformEnum.enumValues}
@@ -120,49 +126,51 @@ export default async function AdminGamePage({ params }: { params: Promise<{ id: 
       </section>
 
       <section className="flex flex-col gap-3">
-        <h2 className="text-[17px] font-bold tracking-[-0.02em] text-ink">플랫폼별 정정</h2>
+        <h2 className="text-[17px] font-bold tracking-[-0.02em] text-ink">{M.platforms}</h2>
         {game.platforms.length === 0 ? (
-          <p className="text-[13px] text-mut">등록된 플랫폼이 없습니다.</p>
+          <p className="text-[13px] text-mut">{M.platformsEmpty}</p>
         ) : (
           game.platforms.map((p) => (
             <div key={p.id} className="flex flex-col gap-2">
               <p className="text-[11.5px] text-dim">
-                {platformLabel(p)} | 현재가 {formatPrice(p.currentPrice, p.currency)} | 정가 {formatPrice(p.listPrice, p.currency)} | 마지막 수집 {formatDateTime(p.lastSyncedAt)} | {p.syncStatus ?? "-"}
+                {platformLabel(p)} | {M.currentPrice} {formatPrice(p.currentPrice, p.currency)} | {M.listPrice}{" "}
+                {formatPrice(p.listPrice, p.currency)} | {M.lastSynced} {formatDateTime(p.lastSyncedAt)} |{" "}
+                {p.syncStatus ? (SYNC_STATUS_LABEL[p.syncStatus] ?? p.syncStatus) : "-"}
               </p>
-              <CorrectionForm table="game_platforms" rowId={p.id} gameId={game.id} fields={platformFields(p)} title={`${platformLabel(p)} 필드`} />
+              <CorrectionForm table="game_platforms" rowId={p.id} gameId={game.id} fields={platformFields(p)} title={M.platformFormTitle(platformLabel(p))} />
             </div>
           ))
         )}
       </section>
 
       <section className="flex flex-col gap-3">
-        <h2 className="text-[17px] font-bold tracking-[-0.02em] text-ink">소스 매핑</h2>
+        <h2 className="text-[17px] font-bold tracking-[-0.02em] text-ink">{M.refs}</h2>
         {game.sourceRefs.length === 0 ? (
-          <p className="text-[13px] text-mut">매핑된 소스가 없습니다.</p>
+          <p className="text-[13px] text-mut">{M.refsEmpty}</p>
         ) : (
           <div className={cardClass("overflow-x-auto")}>
             <table className="w-full text-[13px]">
               <thead className="border-b border-line text-left text-[11.5px] text-dim">
                 <tr>
-                  <th className="px-3 py-2">소스</th>
-                  <th className="px-3 py-2">외부 ID</th>
-                  <th className="px-3 py-2">URL</th>
-                  <th className="px-3 py-2">매칭</th>
-                  <th className="px-3 py-2">유사도</th>
-                  <th className="px-3 py-2">처리</th>
+                  <th className="px-3 py-2">{M.colSource}</th>
+                  <th className="px-3 py-2">{M.colExternalId}</th>
+                  <th className="px-3 py-2">{M.colUrl}</th>
+                  <th className="px-3 py-2">{M.colMatchedBy}</th>
+                  <th className="px-3 py-2">{M.colConfidence}</th>
+                  <th className="px-3 py-2">{M.colAction}</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-line-soft">
                 {game.sourceRefs.map((r) => (
                   <tr key={r.source}>
-                    <td className="px-3 py-2">{r.source}</td>
+                    <td className="whitespace-nowrap px-3 py-2">{sourceLabel(r.source)}</td>
                     <td className="px-3 py-2 font-mono text-xs">{r.externalId}</td>
                     <td className="max-w-xs px-3 py-2">
                       {r.url ? <a href={r.url} target="_blank" rel="noreferrer" className="break-all text-[12px] text-acc hover:underline">{r.url}</a> : "-"}
                     </td>
                     <td className="px-3 py-2">
                       <span className={`rounded-[5px] px-1.5 py-0.5 text-[11.5px] font-semibold ${r.matchedBy === "pending" ? "bg-warn-soft text-warn" : r.matchedBy === "manual" ? "bg-ok-soft text-ok" : r.matchedBy === "none" ? "bg-surface-2 text-dim-2" : "bg-surface-2 text-ink-2"}`}>
-                        {r.matchedBy}
+                        {MATCHED_BY_LABEL[r.matchedBy] ?? r.matchedBy}
                       </span>
                     </td>
                     <td className="px-3 py-2">{r.confidence ?? "-"}</td>
@@ -177,20 +185,20 @@ export default async function AdminGamePage({ params }: { params: Promise<{ id: 
       </section>
 
       <section className="flex flex-col gap-3">
-        <h2 className="text-[17px] font-bold tracking-[-0.02em] text-ink">정정 이력 <span className="text-[13px] font-normal text-dim">최근 {game.corrections.length}건</span></h2>
+        <h2 className="text-[17px] font-bold tracking-[-0.02em] text-ink">{M.history} <span className="text-[13px] font-normal text-dim">{M.historyCount(game.corrections.length)}</span></h2>
         {game.corrections.length === 0 ? (
-          <p className="text-[13px] text-mut">정정 이력이 없습니다.</p>
+          <p className="text-[13px] text-mut">{M.historyEmpty}</p>
         ) : (
           <div className={cardClass("overflow-x-auto")}>
             <table className="w-full text-[13px]">
               <thead className="border-b border-line text-left text-[11.5px] text-dim">
                 <tr>
-                  <th className="px-3 py-2">일시</th>
-                  <th className="px-3 py-2">대상</th>
-                  <th className="px-3 py-2">필드</th>
-                  <th className="px-3 py-2">이전</th>
-                  <th className="px-3 py-2">이후</th>
-                  <th className="px-3 py-2">잠금</th>
+                  <th className="px-3 py-2">{M.colWhen}</th>
+                  <th className="px-3 py-2">{M.colTarget}</th>
+                  <th className="px-3 py-2">{M.colField}</th>
+                  <th className="px-3 py-2">{M.colBefore}</th>
+                  <th className="px-3 py-2">{M.colAfter}</th>
+                  <th className="px-3 py-2">{M.colLocked}</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-line-soft">
@@ -203,7 +211,7 @@ export default async function AdminGamePage({ params }: { params: Promise<{ id: 
                       <td className="px-3 py-2 font-mono text-xs">{c.field}</td>
                       <td className="max-w-xs break-all px-3 py-2 text-[11.5px] text-mut">{jsonText(c.before)}</td>
                       <td className="max-w-xs break-all px-3 py-2 text-xs">{jsonText(c.after)}</td>
-                      <td className="px-3 py-2 text-xs">{c.lockField ? "잠금" : "-"}</td>
+                      <td className="px-3 py-2 text-xs">{c.lockField ? M.locked : "-"}</td>
                     </tr>
                   );
                 })}

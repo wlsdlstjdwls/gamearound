@@ -33,19 +33,18 @@ export function startOfTodayInDisplayZone(now: Date = new Date()): Date {
 }
 
 /** 소스별 최근 sync_logs 1건 + 오늘(KST 자정 이후) 실패 횟수 */
-export async function getSyncOverview(): Promise<{ items: SyncOverviewItem[]; pendingCount: number }> {
+export async function getSyncOverview(): Promise<{ items: SyncOverviewItem[] }> {
   await requireAdmin();
   const db = getDb();
   const todayStart = startOfTodayInDisplayZone();
 
-  const [latestRows, failedRows, [pending]] = await Promise.all([
+  const [latestRows, failedRows] = await Promise.all([
     db.selectDistinctOn([syncLogs.source]).from(syncLogs).orderBy(syncLogs.source, desc(syncLogs.startedAt)),
     db
       .select({ source: syncLogs.source, n: count() })
       .from(syncLogs)
       .where(and(eq(syncLogs.status, "failed"), gte(syncLogs.startedAt, todayStart)))
       .groupBy(syncLogs.source),
-    db.select({ n: count() }).from(gameSourceRefs).where(eq(gameSourceRefs.matchedBy, "pending")),
   ]);
 
   const latestBySource = new Map(latestRows.map((r) => [r.source, r]));
@@ -55,7 +54,7 @@ export async function getSyncOverview(): Promise<{ items: SyncOverviewItem[]; pe
     latest: latestBySource.get(source) ?? null,
     failedToday: failedBySource.get(source) ?? 0,
   }));
-  return { items, pendingCount: Number(pending?.n ?? 0) };
+  return { items };
 }
 
 export async function listSyncLogs(opts: { limit?: number; source?: SourceName } = {}): Promise<SyncLogRow[]> {
@@ -77,9 +76,20 @@ export type PendingMatch = SourceRefRow & { game: { id: string; slug: string; ti
  * 한 화면에 띄울 검수 큐 길이. 회사, 상품 검수 큐와 같은 값이다 — 더 길면 사람이 훑지 못한다.
  * 상한이 없던 자리다. 지금은 45줄이라 티가 안 나지만 이 큐는 수집이 돌 때마다 자라고,
  * 전수를 그리면 관리자가 실제로 보는 건 앞의 몇 줄인데 화면은 그 전부를 실어 나른다.
- * 남은 수는 getSyncOverview().pendingCount 가 이미 세고 있으니 화면은 그 값을 쓴다.
+ * 남은 수는 countPendingMatches() 로 따로 센다 — 화면이 상한에 걸렸다는 사실을 감추면
+ * 관리자는 다 처리했다고 믿고 화면을 닫는다.
  */
 export const PENDING_MATCHES_LIMIT = 60;
+
+/** 판정을 기다리는 매칭 수. 화면이 싣는 수(PENDING_MATCHES_LIMIT)와 다를 수 있다 */
+export async function countPendingMatches(): Promise<number> {
+  await requireAdmin();
+  const [row] = await getDb()
+    .select({ n: count() })
+    .from(gameSourceRefs)
+    .where(eq(gameSourceRefs.matchedBy, "pending"));
+  return Number(row?.n ?? 0);
+}
 
 export async function listPendingMatches(limit: number = PENDING_MATCHES_LIMIT): Promise<PendingMatch[]> {
   await requireAdmin();

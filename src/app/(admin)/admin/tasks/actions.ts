@@ -3,7 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { ROUTES } from "@/lib/routes";
-import { TASK_MESSAGES } from "@/lib/admin/messages";
+import { ADMIN_ACTION_MESSAGES, TASK_MESSAGES } from "@/lib/admin/messages";
 import { sourceEnum } from "@/server/db/schema";
 import { TASK_STATUSES } from "@/lib/admin/tasks";
 import { clearDone, createTask, deleteTask, moveTask, reorderTask } from "@/server/services/admin-tasks";
@@ -27,7 +27,7 @@ const createSchema = z.object({
 });
 
 function fail(e: unknown): TaskActionState {
-  return { ok: false, error: e instanceof Error ? e.message : "처리에 실패했습니다" };
+  return { ok: false, error: e instanceof Error ? e.message : ADMIN_ACTION_MESSAGES.failed };
 }
 
 function revalidate() {

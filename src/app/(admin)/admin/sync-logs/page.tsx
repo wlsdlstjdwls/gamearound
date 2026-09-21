@@ -1,13 +1,19 @@
-// /admin/sync-logs — 최근 100건 테이블, ?source= 필터
+// /admin/sync-logs — 실행 로그. 최근 100건 테이블, ?source= 필터.
+//
+// 수집 현황이 스토어마다 "마지막 한 번" 만 보여 주는 값의 전문이 여기 있다.
+// 원값(ok, steam)을 그대로 띄우던 자리를 한글 이름표로 바꿨다 — partial 이 성공인지 실패인지
+// 영문으로는 판단이 안 선다. 다만 소스는 로그와 워크플로 이름을 맞대야 해서 원값을 함께 남긴다.
 import type { Metadata } from "next";
 import { formatDateTime } from "@/lib/format";
 import { ChipLink } from "@/components/ui/chip";
 import { isSourceName, listSyncLogs, SOURCES } from "@/server/services/admin";
+import { LOG_MESSAGES, SYNC_STATUS_LABEL, sourceLabel } from "@/lib/admin/messages";
 import { requireRoleOrForbid } from "@/server/auth/guards";
 import { PageHead, cardClass } from "@/components/ui/page";
+import { ROUTES } from "@/lib/routes";
 import { Clamp } from "@/components/ui/tooltip";
 
-export const metadata: Metadata = { title: "동기화 로그" };
+export const metadata: Metadata = { title: LOG_MESSAGES.title };
 
 const STATUS_STYLE: Record<string, string> = {
   ok: "text-ok",
@@ -20,9 +26,9 @@ const STATUS_STYLE: Record<string, string> = {
  * 예산을 올리거나 발견 시작점을 옮겨야 한다. 그래서 이 값만 경고색으로 띄운다.
  */
 const DISCOVERY_STOP: Record<string, { label: string; style: string }> = {
-  want: { label: "목표 달성", style: "text-ok" },
-  budget: { label: "예산 소진", style: "text-warn" },
-  "catalog-end": { label: "카탈로그 끝", style: "text-mut" },
+  want: { label: LOG_MESSAGES.stopWant, style: "text-ok" },
+  budget: { label: LOG_MESSAGES.stopBudget, style: "text-warn" },
+  "catalog-end": { label: LOG_MESSAGES.stopCatalogEnd, style: "text-mut" },
 };
 
 function durationSec(start: Date, end: Date | null): string {
@@ -40,41 +46,48 @@ export default async function SyncLogsPage({ searchParams }: { searchParams: Pro
   return (
     <section className="flex flex-col gap-4">
       <header className="flex flex-wrap items-end justify-between gap-2">
-        <PageHead title="동기화 로그" note={`최근 ${logs.length}건`} />
+        <div>
+          <PageHead title={LOG_MESSAGES.title} note={LOG_MESSAGES.recent(logs.length)} />
+          <p className="mt-1 max-w-[560px] text-[13px] text-mut">{LOG_MESSAGES.lead}</p>
+        </div>
         <div className="flex flex-wrap gap-1 text-xs">
-          <ChipLink href="/admin/sync-logs" active={!source} size="sm">전체</ChipLink>
+          <ChipLink href={ROUTES.adminSyncLogs} active={!source} size="sm">
+            {LOG_MESSAGES.all}
+          </ChipLink>
           {SOURCES.map((s) => (
-            <ChipLink key={s} href={`/admin/sync-logs?source=${s}`} active={source === s} size="sm">
-              {s}
+            <ChipLink key={s} href={`${ROUTES.adminSyncLogs}?source=${s}`} active={source === s} size="sm">
+              {sourceLabel(s)}
             </ChipLink>
           ))}
         </div>
       </header>
 
       {logs.length === 0 ? (
-        <p className="rounded-xl border border-dashed border-line-strong bg-surface p-6 text-[13px] text-mut">로그가 없습니다.</p>
+        <p className="rounded-xl border border-dashed border-line-strong bg-surface p-6 text-[13px] text-mut">{LOG_MESSAGES.empty}</p>
       ) : (
         <div className={cardClass("overflow-x-auto")}>
           <table className="w-full text-[13px]">
             <thead className="border-b border-line text-left text-[11.5px] text-dim">
               <tr>
-                <th className="px-3 py-2">#</th>
-                <th className="px-3 py-2">소스</th>
-                <th className="px-3 py-2">상태</th>
-                <th className="px-3 py-2">시작</th>
-                <th className="px-3 py-2">소요</th>
-                <th className="px-3 py-2">처리</th>
-                <th className="px-3 py-2">실패</th>
-                <th className="px-3 py-2">발견</th>
-                <th className="px-3 py-2">에러 샘플</th>
+                <th className="px-3 py-2">{LOG_MESSAGES.colId}</th>
+                <th className="px-3 py-2">{LOG_MESSAGES.colSource}</th>
+                <th className="px-3 py-2">{LOG_MESSAGES.colStatus}</th>
+                <th className="px-3 py-2">{LOG_MESSAGES.colStarted}</th>
+                <th className="px-3 py-2">{LOG_MESSAGES.colDuration}</th>
+                <th className="px-3 py-2">{LOG_MESSAGES.colProcessed}</th>
+                <th className="px-3 py-2">{LOG_MESSAGES.colFailed}</th>
+                <th className="px-3 py-2">{LOG_MESSAGES.colDiscovery}</th>
+                <th className="px-3 py-2">{LOG_MESSAGES.colError}</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-line-soft">
               {logs.map((l) => (
                 <tr key={l.id} className="align-top">
                   <td className="px-3 py-2 text-dim">{l.id}</td>
-                  <td className="px-3 py-2">{l.source}</td>
-                  <td className={`px-3 py-2 ${STATUS_STYLE[l.status] ?? ""}`}>{l.status}</td>
+                  <td className="whitespace-nowrap px-3 py-2">{sourceLabel(l.source)}</td>
+                  <td className={`whitespace-nowrap px-3 py-2 ${STATUS_STYLE[l.status] ?? ""}`}>
+                    {SYNC_STATUS_LABEL[l.status] ?? l.status}
+                  </td>
                   <td className="whitespace-nowrap px-3 py-2">{formatDateTime(l.startedAt)}</td>
                   <td className="px-3 py-2">{durationSec(l.startedAt, l.finishedAt)}</td>
                   <td className="px-3 py-2">{l.processed ?? 0}</td>
@@ -86,7 +99,8 @@ export default async function SyncLogsPage({ searchParams }: { searchParams: Pro
                           {DISCOVERY_STOP[l.discovery.stoppedBy]?.label ?? l.discovery.stoppedBy}
                         </span>
                         <span className="text-[11.5px] text-dim">
-                          {" "}{l.discovery.pages}페이지 | {l.discovery.scanned}건 훑어 신규 {l.discovery.fresh}
+                          {" "}
+                          {LOG_MESSAGES.discoverySummary(l.discovery.pages, l.discovery.scanned, l.discovery.fresh)}
                         </span>
                       </>
                     ) : (

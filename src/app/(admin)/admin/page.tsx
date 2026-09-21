@@ -1,20 +1,24 @@
-// /admin — 동기화 상태 대시보드 + 매칭 검수 큐 (§8 MVP 관리자). 읽기 전용 — 재실행은 GitHub Actions.
+// /admin — 수집 현황. 스토어별 마지막 실행이 어떻게 끝났는지만 본다. 읽기 전용 — 재실행은 GitHub Actions.
+//
+// 앞서 이 화면에는 매칭 검수 큐가 함께 살았다. 뗀 이유는 둘이 하는 일이 다르기 때문이다 —
+// 현황은 읽고 지나가는 자리고 큐는 눌러야 줄이 줄어드는 자리다. 섞여 있으면 메뉴가
+// "남은 일" 배지를 붙일 자리를 못 주고, 관리자는 큐가 어디 있는지 매번 대시보드를 뒤져야 했다.
 import type { Metadata } from "next";
 import Link from "next/link";
-import { MatchReviewButtons } from "@/components/admin/match-review-buttons";
-import { Card, PageHead, SectionHead } from "@/components/ui/page";
 import { buttonClass } from "@/components/ui/button";
 import { formatDateTime } from "@/lib/format";
-import { getSyncOverview, listPendingMatches, type SyncOverviewItem } from "@/server/services/admin";
+import { SYNC_MESSAGES, SYNC_STATUS_LABEL, sourceLabel } from "@/lib/admin/messages";
+import { ROUTES } from "@/lib/routes";
+import { getSyncOverview, type SyncOverviewItem } from "@/server/services/admin";
 import { getDisabledReason, isSource } from "@/server/adapters";
 import { requireRoleOrForbid } from "@/server/auth/guards";
-import { cardClass } from "@/components/ui/page";
+import { PageHead, cardClass } from "@/components/ui/page";
 import { Clamp } from "@/components/ui/tooltip";
 
-/** 대시보드 카드에 노출할 에러 샘플 길이. 전문은 로그 화면에서 본다 */
+/** 카드에 노출할 에러 샘플 길이. 전문은 실행 로그 화면에서 본다 */
 const ERROR_SAMPLE_PREVIEW_LEN = 300;
 
-export const metadata: Metadata = { title: "관리자 대시보드" };
+export const metadata: Metadata = { title: SYNC_MESSAGES.title };
 
 const STATUS_STYLE: Record<string, string> = {
   ok: "bg-ok-soft text-ok",
@@ -22,8 +26,6 @@ const STATUS_STYLE: Record<string, string> = {
   failed: "bg-danger-soft text-danger",
 };
 const BADGE = "rounded-[6px] px-2 py-0.5 text-[11.5px] font-semibold";
-// 우리 제목과 스토어 제목을 같은 너비로 나란히 둔다 — 검수자가 두 이름을 눈으로 맞대는 것이 이 화면의 일이다
-const QUEUE_COLS = "grid grid-cols-[minmax(0,2fr)_minmax(0,2fr)_90px_minmax(0,1.4fr)_64px_132px] gap-x-3 px-4 py-[13px]";
 
 function Metric({ label, value, alert = false }: { label: string; value: string; alert?: boolean }) {
   return (
@@ -41,26 +43,30 @@ function SourceCard({ item }: { item: SyncOverviewItem }) {
   return (
     <div className={cardClass(`flex flex-col gap-2.5 p-4 ${disabledReason ? "opacity-60" : ""}`)}>
       <div className="flex items-center justify-between gap-2">
-        <h3 className="text-[13.5px] font-bold text-ink">{item.source}</h3>
+        {/* 스토어 이름은 한글로 띄우고, 로그를 맞대 볼 때 쓰는 원값은 그 밑에 작게 남긴다 */}
+        <h3 className="min-w-0 text-[13.5px] font-bold text-ink">
+          <Clamp>{sourceLabel(item.source)}</Clamp>
+          <span className="mt-0.5 block font-mono text-[11px] font-normal text-dim">{item.source}</span>
+        </h3>
         {disabledReason ? (
-          <span className={`${BADGE} bg-surface-2 text-mut`} title={disabledReason}>
-            비활성
-          </span>
+          <span className={`${BADGE} shrink-0 bg-surface-2 text-mut`}>{SYNC_MESSAGES.disabled}</span>
         ) : l ? (
-          <span className={`${BADGE} ${STATUS_STYLE[l.status] ?? "bg-surface-2 text-mut"}`}>{l.status}</span>
+          <span className={`${BADGE} shrink-0 ${STATUS_STYLE[l.status] ?? "bg-surface-2 text-mut"}`}>
+            {SYNC_STATUS_LABEL[l.status] ?? l.status}
+          </span>
         ) : (
-          <span className={`${BADGE} bg-surface-2 text-mut`}>기록 없음</span>
+          <span className={`${BADGE} shrink-0 bg-surface-2 text-mut`}>{SYNC_MESSAGES.noRun}</span>
         )}
       </div>
 
       {l ? (
         <dl className="flex flex-col gap-1">
-          <Metric label="종료" value={l.finishedAt ? formatDateTime(l.finishedAt) : "실행 중/중단"} />
-          <Metric label="처리 | 실패" value={`${l.processed ?? 0} | ${l.failed ?? 0}`} />
-          <Metric label="오늘 실패" value={`${item.failedToday}회`} alert={item.failedToday > 0} />
+          <Metric label={SYNC_MESSAGES.finishedAt} value={l.finishedAt ? formatDateTime(l.finishedAt) : SYNC_MESSAGES.running} />
+          <Metric label={SYNC_MESSAGES.processedFailed} value={`${l.processed ?? 0} | ${l.failed ?? 0}`} />
+          <Metric label={SYNC_MESSAGES.failedToday} value={`${item.failedToday}회`} alert={item.failedToday > 0} />
           {l.errorSample && (
             <div className="mt-1">
-              <dt className="mb-1 text-[11.5px] text-dim">에러 샘플</dt>
+              <dt className="mb-1 text-[11.5px] text-dim">{SYNC_MESSAGES.errorSample}</dt>
               <dd className="rounded-[7px] bg-surface-4 px-2.5 py-2 font-mono text-[11px] leading-[1.55] text-mut">
                 <Clamp lines={3} className="break-all">
                   {l.errorSample.slice(0, ERROR_SAMPLE_PREVIEW_LEN)}
@@ -70,106 +76,46 @@ function SourceCard({ item }: { item: SyncOverviewItem }) {
           )}
         </dl>
       ) : (
-        <p className="text-[12px] text-dim">아직 실행된 적이 없습니다.</p>
+        <p className="text-[12px] text-dim">{SYNC_MESSAGES.neverRan}</p>
       )}
 
+      {/* 쉬는 까닭은 접어 두지 않는다 — 왜 안 도는지 모르면 고장으로 읽는다 */}
       {disabledReason && <p className="text-[11.5px] text-dim">{disabledReason}</p>}
     </div>
   );
 }
 
-export default async function AdminDashboardPage() {
+export default async function AdminSyncOverviewPage() {
   await requireRoleOrForbid("admin");
-  const [overview, pending] = await Promise.all([getSyncOverview(), listPendingMatches()]);
+  const overview = await getSyncOverview();
   const repo = process.env.NEXT_PUBLIC_GITHUB_REPO;
 
   return (
-    <>
-      <section className="flex flex-col gap-4">
-        <header className="flex flex-wrap items-end justify-between gap-x-4 gap-y-2">
-          <div>
-            <PageHead title="동기화 대시보드" />
-            <p className="mt-1 max-w-[560px] text-[13px] text-mut">
-              수집은 GitHub Actions 워커에서만 실행됩니다. 이 화면은 로그를 읽기만 합니다.
-            </p>
-          </div>
-          {repo ? (
-            <a href={`https://github.com/${repo}/actions`} target="_blank" rel="noreferrer" className={buttonClass({ variant: "secondary" })}>
-              Actions에서 재실행
-              <span className="sr-only"> (새 창에서 열림)</span>
-            </a>
-          ) : (
-            <span className="max-w-[320px] text-[11.5px] text-dim">
-              NEXT_PUBLIC_GITHUB_REPO를 설정하면 재실행 링크가 표시됩니다.
-            </span>
-          )}
-        </header>
-
-        <div className="grid grid-cols-[repeat(auto-fit,minmax(230px,1fr))] gap-3.5">
-          {overview.items.map((item) => (
-            <SourceCard key={item.source} item={item} />
-          ))}
+    <section className="flex flex-col gap-4">
+      <header className="flex flex-wrap items-end justify-between gap-x-4 gap-y-2">
+        <div>
+          <PageHead title={SYNC_MESSAGES.title} />
+          <p className="mt-1 max-w-[560px] text-[13px] text-mut">{SYNC_MESSAGES.lead}</p>
         </div>
-
-        <Link href="/admin/sync-logs" className="text-[12.5px] text-acc hover:underline">
-          전체 로그 보기
-        </Link>
-      </section>
-
-      <section className="flex flex-col gap-3">
-        <SectionHead
-          title="매칭 검수 큐"
-          note={
-            // 남은 수와 지금 화면에 실은 수는 다르다 — 상한에 걸렸을 때 그 사실을 감추면
-            // 관리자는 다 처리했다고 믿고 화면을 닫는다
-            overview.pendingCount > pending.length
-              ? `유사도 0.7~0.9 | ${overview.pendingCount}건 중 ${pending.length}건`
-              : `유사도 0.7~0.9 | ${pending.length}건`
-          }
-        />
-        {pending.length === 0 ? (
-          <p className="rounded-xl border border-dashed border-line-strong bg-surface p-6 text-[13px] text-mut">
-            검수 대기 중인 매핑이 없습니다.
-          </p>
+        {repo ? (
+          <a href={`https://github.com/${repo}/actions`} target="_blank" rel="noreferrer" className={buttonClass({ variant: "secondary" })}>
+            {SYNC_MESSAGES.rerun}
+            <span className="sr-only"> (새 창에서 열림)</span>
+          </a>
         ) : (
-          <Card className="overflow-x-auto">
-            <div className={`${QUEUE_COLS} min-w-[900px] border-b border-line text-[11.5px] text-dim`}>
-              <span>우리 제목</span>
-              <span>스토어 제목</span>
-              <span>소스</span>
-              <span>후보 외부 ID / URL</span>
-              <span>유사도</span>
-              <span>처리</span>
-            </div>
-            <ul className="min-w-[900px] divide-y divide-line-soft">
-              {pending.map((p) => (
-                <li key={`${p.gameId}-${p.source}`} className={`${QUEUE_COLS} items-center text-[13px] text-ink`}>
-                  <span className="min-w-0">
-                    <Link href={`/admin/games/${p.gameId}`} className="font-medium hover:text-acc">
-                      <Clamp>{p.game.titleKo ? `${p.game.titleKo} (${p.game.titleEn})` : p.game.titleEn}</Clamp>
-                    </Link>
-                  </span>
-                  {/* 매칭한 순간의 제목이다. 여기가 다른 게임 이름이면 그대로 거절하면 된다 */}
-                  <span className="min-w-0 text-mut">
-                    {p.matchedTitle ? <Clamp>{p.matchedTitle}</Clamp> : <span className="text-dim-2">기록 없음</span>}
-                  </span>
-                  <span className="text-mut">{p.source}</span>
-                  <span className="min-w-0 font-mono text-[12px] text-mut">
-                    <Clamp className="inline-block max-w-full align-bottom">{p.externalId}</Clamp>
-                    {p.url && (
-                      <a href={p.url} target="_blank" rel="noreferrer" className="ml-2 font-sans text-acc hover:underline">
-                        열기
-                      </a>
-                    )}
-                  </span>
-                  <span className="text-mut">{p.confidence ?? "-"}</span>
-                  <MatchReviewButtons gameId={p.gameId} source={p.source} />
-                </li>
-              ))}
-            </ul>
-          </Card>
+          <span className="max-w-[320px] text-[11.5px] text-dim">{SYNC_MESSAGES.rerunHint}</span>
         )}
-      </section>
-    </>
+      </header>
+
+      <div className="grid grid-cols-[repeat(auto-fit,minmax(230px,1fr))] gap-3.5">
+        {overview.items.map((item) => (
+          <SourceCard key={item.source} item={item} />
+        ))}
+      </div>
+
+      <Link href={ROUTES.adminSyncLogs} className="text-[13px] text-acc hover:underline">
+        {SYNC_MESSAGES.allLogs}
+      </Link>
+    </section>
   );
 }

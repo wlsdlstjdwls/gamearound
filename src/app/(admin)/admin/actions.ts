@@ -20,6 +20,7 @@ import { resolveCompanyName } from "@/server/services/admin-companies";
 import { approveProductMatch, rejectProductMatch } from "@/server/services/admin-products";
 import { deleteUpgrade, upsertUpgrade } from "@/server/services/admin-upgrades";
 import { requireAdmin } from "@/server/services/users";
+import { ADMIN_ACTION_MESSAGES as A } from "@/lib/admin/messages";
 
 export type AdminActionState = { ok: true; message?: string } | { ok: false; error: string } | null;
 
@@ -28,8 +29,8 @@ const matchSchema = z.object({ gameId: z.uuid(), source: sourceSchema });
 const manualRefSchema = z.object({
   gameId: z.uuid(),
   source: sourceSchema,
-  externalId: z.string().trim().min(1, "외부 ID를 입력하세요").max(200),
-  url: z.union([z.literal(""), z.url({ message: "URL 형식이 올바르지 않습니다" }).max(2048)]).optional(),
+  externalId: z.string().trim().min(1, A.externalIdRequired).max(200),
+  url: z.union([z.literal(""), z.url({ message: A.invalidUrl }).max(2048)]).optional(),
 });
 const correctionSchema = z.object({
   table: z.enum(["games", "game_platforms"]),
@@ -53,16 +54,18 @@ const upgradeSchema = z.object({
   kind: z.enum(upgradeKindEnum.enumValues),
   price: z.union([z.literal(""), z.coerce.number().int().min(0).max(10_000_000)]).optional(),
   storeExternalId: optionalText,
-  storeUrl: z.union([z.literal(""), z.url({ message: "URL 형식이 올바르지 않습니다" }).max(2048)]).optional(),
+  storeUrl: z.union([z.literal(""), z.url({ message: A.invalidUrl }).max(2048)]).optional(),
   note: optionalText,
 });
 
 function fail(e: unknown): AdminActionState {
-  return { ok: false, error: e instanceof Error ? e.message : "처리에 실패했습니다" };
+  return { ok: false, error: e instanceof Error ? e.message : A.failed };
 }
 
+// 매칭 판정은 대기 큐와 그 게임 화면 둘에 나타난다 — 둘 다 지운다.
+// 수집 현황(`/admin`)은 더 이상 이 큐를 싣지 않으니 무효화하지 않는다.
 function revalidateGame(gameId: string) {
-  revalidatePath("/admin");
+  revalidatePath(ROUTES.adminMatches);
   revalidatePath(`/admin/games/${gameId}`);
 }
 
@@ -70,10 +73,10 @@ export async function approveMatchAction(gameId: string, source: string): Promis
   try {
     await requireAdmin();
     const p = matchSchema.safeParse({ gameId, source });
-    if (!p.success) return { ok: false, error: "잘못된 요청입니다" };
+    if (!p.success) return { ok: false, error: A.invalid };
     await approveMatch(p.data.gameId, p.data.source);
     revalidateGame(p.data.gameId);
-    return { ok: true, message: "승인했습니다" };
+    return { ok: true, message: A.linked };
   } catch (e) {
     return fail(e);
   }
@@ -83,10 +86,10 @@ export async function rejectMatchAction(gameId: string, source: string): Promise
   try {
     await requireAdmin();
     const p = matchSchema.safeParse({ gameId, source });
-    if (!p.success) return { ok: false, error: "잘못된 요청입니다" };
+    if (!p.success) return { ok: false, error: A.invalid };
     await rejectMatch(p.data.gameId, p.data.source);
     revalidateGame(p.data.gameId);
-    return { ok: true, message: "거절(삭제)했습니다" };
+    return { ok: true, message: A.unlinked };
   } catch (e) {
     return fail(e);
   }
@@ -102,10 +105,10 @@ export async function setManualRefAction(_prev: AdminActionState, formData: Form
       externalId: formData.get("externalId"),
       url: formData.get("url") ?? "",
     });
-    if (!p.success) return { ok: false, error: p.error.issues[0]?.message ?? "입력값이 올바르지 않습니다" };
+    if (!p.success) return { ok: false, error: p.error.issues[0]?.message ?? A.invalidInput };
     await setManualRef(p.data.gameId, p.data.source, p.data.externalId, p.data.url ? p.data.url : null);
     revalidateGame(p.data.gameId);
-    return { ok: true, message: "수동 매핑을 저장했습니다" };
+    return { ok: true, message: A.manualRefSaved };
   } catch (e) {
     return fail(e);
   }
@@ -122,17 +125,17 @@ export async function correctFieldAction(_prev: AdminActionState, formData: Form
       value: formData.get("value") ?? "",
       lock: formData.get("lock") === "on" || formData.get("lock") === "true",
     });
-    if (!p.success) return { ok: false, error: p.error.issues[0]?.message ?? "입력값이 올바르지 않습니다" };
+    if (!p.success) return { ok: false, error: p.error.issues[0]?.message ?? A.invalidInput };
     const table: CorrectableTable = p.data.table;
-    if (!isCorrectableField(table, p.data.field)) return { ok: false, error: "허용되지 않은 필드입니다" };
+    if (!isCorrectableField(table, p.data.field)) return { ok: false, error: A.invalidField };
     const spec = (CORRECTABLE_FIELDS[table] as Record<string, { kind: "text" | "int" | "bool" | "date" }>)[p.data.field];
     const after = coerceFieldValue(spec.kind, p.data.value);
     const r = await correctField({ table, rowId: p.data.rowId, field: p.data.field, after, lock: p.data.lock });
 
     const gameId = z.uuid().safeParse(formData.get("gameId"));
     if (gameId.success) revalidateGame(gameId.data);
-    else revalidatePath("/admin");
-    return { ok: true, message: `정정 완료 (이전 값: ${r.before === null ? "없음" : String(r.before)})` };
+    else revalidatePath(ROUTES.adminMatches);
+    return { ok: true, message: A.corrected(r.before === null ? null : String(r.before)) };
   } catch (e) {
     return fail(e);
   }
@@ -152,7 +155,7 @@ export async function upsertUpgradeAction(_prev: AdminActionState, formData: For
       storeUrl: formData.get("storeUrl") ?? "",
       note: formData.get("note") ?? "",
     });
-    if (!p.success) return { ok: false, error: p.error.issues[0]?.message ?? "입력값이 올바르지 않습니다" };
+    if (!p.success) return { ok: false, error: p.error.issues[0]?.message ?? A.invalidInput };
     const d = p.data;
     const { created } = await upsertUpgrade({
       gameId: d.gameId,
@@ -165,7 +168,7 @@ export async function upsertUpgradeAction(_prev: AdminActionState, formData: For
       note: d.note ? d.note : null,
     });
     revalidateGame(d.gameId);
-    return { ok: true, message: created ? "업그레이드를 추가했습니다" : "업그레이드를 수정했습니다" };
+    return { ok: true, message: created ? A.upgradeAdded : A.upgradeUpdated };
   } catch (e) {
     return fail(e);
   }
@@ -176,10 +179,10 @@ export async function resolveCompanyAction(rawName: string): Promise<AdminAction
   try {
     await requireAdmin();
     const p = z.string().trim().min(1).max(200).safeParse(rawName);
-    if (!p.success) return { ok: false, error: "이름이 올바르지 않습니다" };
+    if (!p.success) return { ok: false, error: A.invalidName };
     const result = await resolveCompanyName(p.data);
     if (!result.ok) return { ok: false, error: result.message };
-    revalidatePath("/admin/companies");
+    revalidatePath(ROUTES.adminCompanies);
     // 회사 화면은 태그로 캐시하므로 붙은 회사만 무효화한다
     for (const slug of result.companySlugs) revalidateTag(`company:${slug}`, "max");
     return { ok: true, message: result.message };
@@ -196,13 +199,13 @@ export async function addAliasAction(_prev: AdminActionState, formData: FormData
   try {
     await requireAdmin();
     const p = aliasSchema.safeParse({ gameId: formData.get("gameId"), alias: formData.get("alias") });
-    if (!p.success) return { ok: false, error: p.error.issues[0]?.message ?? "입력값이 올바르지 않습니다" };
+    if (!p.success) return { ok: false, error: p.error.issues[0]?.message ?? A.invalidInput };
     const { created } = await addAlias(p.data.gameId, p.data.alias);
     revalidateGame(p.data.gameId);
     revalidateTag("home", "max");
     return created
-      ? { ok: true, message: `별칭 "${p.data.alias}" 을(를) 추가했습니다` }
-      : { ok: true, message: "이미 있는 별칭입니다" };
+      ? { ok: true, message: A.aliasAdded(p.data.alias) }
+      : { ok: true, message: A.aliasExists };
   } catch (e) {
     return fail(e);
   }
@@ -211,11 +214,11 @@ export async function addAliasAction(_prev: AdminActionState, formData: FormData
 export async function deleteAliasAction(gameId: string, id: number): Promise<AdminActionState> {
   try {
     await requireAdmin();
-    if (!z.uuid().safeParse(gameId).success) return { ok: false, error: "잘못된 요청입니다" };
+    if (!z.uuid().safeParse(gameId).success) return { ok: false, error: A.invalid };
     await deleteAlias(id);
     revalidateGame(gameId);
     revalidateTag("home", "max");
-    return { ok: true, message: "별칭을 삭제했습니다" };
+    return { ok: true, message: A.aliasRemoved };
   } catch (e) {
     return fail(e);
   }
@@ -224,10 +227,10 @@ export async function deleteAliasAction(gameId: string, id: number): Promise<Adm
 export async function deleteUpgradeAction(gameId: string, id: number): Promise<AdminActionState> {
   try {
     await requireAdmin();
-    if (!z.uuid().safeParse(gameId).success) return { ok: false, error: "잘못된 요청입니다" };
+    if (!z.uuid().safeParse(gameId).success) return { ok: false, error: A.invalid };
     await deleteUpgrade(id);
     revalidateGame(gameId);
-    return { ok: true, message: "업그레이드를 삭제했습니다" };
+    return { ok: true, message: A.upgradeRemoved };
   } catch (e) {
     return fail(e);
   }
@@ -241,10 +244,10 @@ export async function approveProductMatchAction(productId: string): Promise<Admi
   try {
     await requireAdmin();
     const p = z.uuid().safeParse(productId);
-    if (!p.success) return { ok: false, error: "잘못된 요청입니다" };
+    if (!p.success) return { ok: false, error: A.invalid };
     await approveProductMatch(p.data);
     revalidatePath(ROUTES.adminProducts);
-    return { ok: true, message: "상품에 게임을 이었습니다" };
+    return { ok: true, message: A.productLinked };
   } catch (e) {
     return fail(e);
   }
@@ -254,10 +257,10 @@ export async function rejectProductMatchAction(productId: string): Promise<Admin
   try {
     await requireAdmin();
     const p = z.uuid().safeParse(productId);
-    if (!p.success) return { ok: false, error: "잘못된 요청입니다" };
+    if (!p.success) return { ok: false, error: A.invalid };
     await rejectProductMatch(p.data);
     revalidatePath(ROUTES.adminProducts);
-    return { ok: true, message: "후보를 물렀습니다" };
+    return { ok: true, message: A.productUnlinked };
   } catch (e) {
     return fail(e);
   }

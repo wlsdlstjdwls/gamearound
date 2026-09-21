@@ -117,8 +117,10 @@ export const SHOP_DIRECTORY_MESSAGES = {
 
 /** 관리자 심사 화면(/shops/admin) */
 export const SHOP_ADMIN_MESSAGES = {
-  title: "입점 심사",
-  lead: "신청서를 확인하고 승인하거나 반려해요. 반려와 정지에는 사유를 적어요.",
+  // 관리자 메뉴(ADMIN_NAV.shops)와 **같은 말**이어야 한다 — 메뉴에서 본 이름과
+  // 들어간 화면 제목이 다르면 같은 곳인지 의심하게 된다.
+  title: "입점 신청",
+  lead: "매장이 낸 신청서를 확인하고 승인하거나 반려해요. 반려와 정지에는 사유를 적어요. 사유는 매장주에게 그대로 보여요.",
   pendingTab: "심사 대기",
   activeTab: "운영 중",
   suspendedTab: "정지",
