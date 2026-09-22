@@ -1,5 +1,7 @@
 // 공용 버튼 — variant/size/loading. 누름 모션(.press)과 터치 타깃 보장. Link가 필요하면 buttonClass()로 스타일만 가져간다.
-// 리디자인(2026-09-21): 주 버튼은 잉크 필, 보조는 투명 배경 + 1px 테두리. 그림자는 쓰지 않는다.
+// 리디자인(2026-09-21): 주 버튼은 잉크 필, 보조는 투명 배경 + 1px 테두리.
+// 2026-09-22: 주 버튼에만 그림자 한 겹을 돌려놨다 — 화면에서 누를 수 있는 것이 그것 하나뿐인 자리가
+// 많은데, 면만 있는 판은 "표시" 로도 읽힌다. 보조, ghost 는 그대로 평면이다(둘 다 배경이 없다).
 import type { ComponentProps, ReactNode } from "react";
 import { cn } from "@/lib/cn";
 import { SpinnerIcon } from "@/components/ui/icons";
@@ -8,7 +10,7 @@ export type ButtonVariant = "primary" | "secondary" | "ghost" | "danger";
 export type ButtonSize = "sm" | "md" | "lg";
 
 const VARIANT: Record<ButtonVariant, string> = {
-  primary: "bg-ink text-on-ink font-semibold hover:bg-ink-2",
+  primary: "bg-ink text-on-ink font-semibold shadow-1 hover:bg-ink-2 hover:shadow-2",
   // 흰 판이 사라진 화면이라 보조 버튼의 배경도 투명하다 — 판 위의 판으로 읽히지 않게 테두리만 남긴다
   secondary: "border border-line-strong bg-transparent text-ink hover:border-ink",
   ghost: "text-mut hover:bg-surface-2 hover:text-ink",

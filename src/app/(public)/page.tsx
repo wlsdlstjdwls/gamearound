@@ -145,7 +145,7 @@ export default async function HomePage() {
                   <Link href={`/games/${g.slug}`} className={cn(ROW, "flex items-center gap-3.5 py-[13px]")}>
                     {/* 썸네일을 세우는 이유: 제목만 늘어선 목록은 "무슨 게임인지" 를 글자로만 묻는다.
                         카드와 같은 460:215 비율이라 같은 그림이 같은 모양으로 읽힌다 */}
-                    <span className="relative aspect-[460/215] w-16 shrink-0 overflow-hidden rounded-[var(--radius-inset)] bg-surface-3">
+                    <span className="relative aspect-[460/215] w-16 shrink-0 overflow-hidden rounded-[var(--radius-inset)] bg-surface-3 shadow-hair">
                       <CoverImage src={g.coverUrl} alt="" sizes="64px" />
                     </span>
                     <span className="min-w-0 flex-1">

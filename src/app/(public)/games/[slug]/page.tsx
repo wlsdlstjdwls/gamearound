@@ -294,7 +294,7 @@ export default async function GameDetailPage({ params }: Props) {
             style={stagger(0)}
           >
             <div
-              className={`relative w-full overflow-hidden rounded-[var(--radius-cover-lg)] bg-surface-3 ${
+              className={`cover-elev relative w-full overflow-hidden rounded-[var(--radius-cover-lg)] bg-surface-3 ${
                 game.portraitUrl ? "aspect-[4/3] sm:aspect-[2/3]" : "aspect-[460/215]"
               }`}
             >

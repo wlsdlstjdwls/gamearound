@@ -134,8 +134,8 @@ export function GameCard({
     >
       {/* 스탬프가 모서리 밖으로 나가므로 커버의 overflow 와 카드의 relative 를 갈라 둔다 —
           한 상자가 둘을 겸하면 도장이 잘린다 */}
-      <span className="relative block">
-        <span className="relative block aspect-[460/215] w-full overflow-hidden rounded-[var(--radius-cover)] bg-surface-3">
+      <span className="cover-lift relative block">
+        <span className="cover-elev relative block aspect-[460/215] w-full overflow-hidden rounded-[var(--radius-cover)] bg-surface-3">
           <span className="cover-zoom-img absolute inset-0 block">
             <CoverImage src={game.coverUrl} alt={`${title} 커버`} />
           </span>

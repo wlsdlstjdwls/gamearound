@@ -71,10 +71,12 @@ export function Card({ className, children, ...rest }: React.ComponentProps<"div
 /**
  * 채운 면 — 테두리가 아니라 배경 한 겹으로 "여기는 따로 읽는 곳" 을 말한다.
  * 리디자인이 판을 남겨 둔 자리는 둘뿐이다: 입력 묶음(로그인 상자)과 인셋 안내문.
- * 그래서 색은 --surface-2 고정이고 테두리는 없다 — 면과 선을 같이 쓰면 판이 다시 두꺼워진다.
+ * 그래서 색은 --surface-2 고정이고 1px 테두리는 쓰지 않는다 — 면과 선을 같이 쓰면 판이 다시 두꺼워진다.
+ * 대신 헤어라인 링(--ring-hair)을 그림자로 한 줄 두른다(2026-09-22). 배경이 3% 어두워지면서
+ * 면 대 면의 경계가 번졌고, 그 자리를 선으로 메우면 레이아웃이 1px 씩 밀린다 — 그림자는 안 밀린다.
  */
 export function panelClass(className?: string): string {
-  return cn("rounded-[var(--radius-panel)] bg-surface-2", className);
+  return cn("rounded-[var(--radius-panel)] bg-surface-2 shadow-hair", className);
 }
 
 export function Panel({ className, children, ...rest }: React.ComponentProps<"div">) {
