@@ -16,6 +16,7 @@ import { AliasForm } from "@/components/admin/alias-form";
 import { UpgradeForm } from "@/components/admin/upgrade-form";
 import { MatchReviewButtons } from "@/components/admin/match-review-buttons";
 import { PageHead } from "@/components/ui/page";
+import { TableScroll } from "@/components/admin/table-scroll";
 import { GAME_ADMIN_MESSAGES as M, MATCHED_BY_LABEL, SYNC_STATUS_LABEL, sourceLabel } from "@/lib/admin/messages";
 import { ROUTES } from "@/lib/routes";
 
@@ -148,7 +149,7 @@ export default async function AdminGamePage({ params }: { params: Promise<{ id: 
         {game.sourceRefs.length === 0 ? (
           <p className="text-[13px] text-mut">{M.refsEmpty}</p>
         ) : (
-          <div className="overflow-x-auto">
+          <TableScroll minWidth={780}>
             <table className="w-full text-[13px]">
               <thead className="border-b border-line text-left text-[11.5px] text-dim">
                 <tr>
@@ -179,7 +180,7 @@ export default async function AdminGamePage({ params }: { params: Promise<{ id: 
                 ))}
               </tbody>
             </table>
-          </div>
+          </TableScroll>
         )}
         <ManualRefForm gameId={game.id} sources={SOURCES} />
       </section>
@@ -189,7 +190,7 @@ export default async function AdminGamePage({ params }: { params: Promise<{ id: 
         {game.corrections.length === 0 ? (
           <p className="text-[13px] text-mut">{M.historyEmpty}</p>
         ) : (
-          <div className="overflow-x-auto">
+          <TableScroll minWidth={780}>
             <table className="w-full text-[13px]">
               <thead className="border-b border-line text-left text-[11.5px] text-dim">
                 <tr>
@@ -217,7 +218,7 @@ export default async function AdminGamePage({ params }: { params: Promise<{ id: 
                 })}
               </tbody>
             </table>
-          </div>
+          </TableScroll>
         )}
       </section>
     </div>

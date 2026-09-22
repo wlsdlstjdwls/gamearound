@@ -12,6 +12,7 @@ import { listPendingCompanies, PENDING_COMPANIES_LIMIT } from "@/server/services
 import { listCompanies } from "@/server/services/companies";
 import { CompanyResolveButton } from "@/components/admin/company-resolve-button";
 import { PageHead, ROWS } from "@/components/ui/page";
+import { TableScroll } from "@/components/admin/table-scroll";
 import { COMPANY_MESSAGES } from "@/lib/admin/messages";
 import { Clamp } from "@/components/ui/tooltip";
 
@@ -42,7 +43,7 @@ export default async function AdminCompaniesPage() {
             {COMPANY_MESSAGES.empty}
           </p>
         ) : (
-          <div className="overflow-x-auto">
+          <TableScroll minWidth={420}>
             <table className="w-full text-[13px]">
               <thead className="border-b border-line text-left text-[11.5px] text-dim">
                 <tr>
@@ -65,7 +66,7 @@ export default async function AdminCompaniesPage() {
                 ))}
               </tbody>
             </table>
-          </div>
+          </TableScroll>
         )}
       </section>
 

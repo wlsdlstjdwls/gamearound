@@ -5,11 +5,11 @@ import { useActionState, useState, useTransition } from "react";
 import { addAliasAction, deleteAliasAction } from "@/app/(admin)/admin/actions";
 import type { AdminActionState } from "@/app/(admin)/admin/actions";
 import { ActionStatus, SubmitButton } from "@/components/admin/submit-button";
+import { Button } from "@/components/ui/button";
 import { panelClass } from "@/components/ui/page";
+import { ADMIN_FIELD } from "@/components/admin/field";
 import { ALIAS_MAX_LEN } from "@/lib/aliases";
 
-const inputCls =
-  "h-8 w-full rounded-[9px] border border-line-strong bg-bg px-3 text-[12.5px] text-ink outline-none transition-colors focus:border-ink focus:bg-surface";
 
 export type AliasItem = { id: number; alias: string };
 
@@ -20,18 +20,19 @@ function DeleteButton({ gameId, id, alias }: { gameId: string; id: number; alias
   return (
     <>
       {state && !state.ok && <span className="text-[11.5px] text-danger">{state.error}</span>}
-      <button
-        type="button"
+      <Button
+        size="sm"
+        variant="secondary"
         disabled={pending}
         aria-label={`별칭 ${alias} 삭제`}
         onClick={() => {
           if (!confirm(`별칭 "${alias}" 을(를) 지울까요?`)) return;
           start(async () => setState(await deleteAliasAction(gameId, id)));
         }}
-        className="press rounded-[7px] border border-line-strong px-[9px] py-[3px] text-[11.5px] text-mut transition-colors hover:border-danger hover:text-danger disabled:opacity-60"
+        className="px-2.5 text-[11.5px] hover:border-danger hover:text-danger"
       >
         삭제
-      </button>
+      </Button>
     </>
   );
 }
@@ -63,7 +64,7 @@ export function AliasForm({ gameId, items }: { gameId: string; items: AliasItem[
         <div className="grid gap-2 sm:grid-cols-[1fr_auto]">
           <label className="flex flex-col gap-1 text-[11.5px] text-dim">
             추가할 별칭
-            <input name="alias" maxLength={ALIAS_MAX_LEN} placeholder="해리포터" className={inputCls} required />
+            <input name="alias" maxLength={ALIAS_MAX_LEN} placeholder="해리포터" className={ADMIN_FIELD} required />
           </label>
           <span className="flex items-end">
             <SubmitButton label="추가" />

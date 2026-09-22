@@ -14,6 +14,7 @@
 // 끄는 일 자체는 use-board-drag 가 한다(2026-09-22). 네이티브 드래그앤드롭을 버린 이유는 그 파일에 있다.
 import { useState, useTransition } from "react";
 import { cn } from "@/lib/cn";
+import { Button } from "@/components/ui/button";
 import { TASK_MESSAGES, TASK_STATUS_LABEL } from "@/lib/admin/messages";
 import { TASK_STATUSES, type Board } from "@/lib/admin/tasks";
 import { TaskCard } from "@/components/admin/task-card";
@@ -41,17 +42,18 @@ export function TaskBoard({ board }: { board: Board }) {
           여기 남는 건 끝난 일 치우기 하나뿐이라 오른쪽 끝에 혼자 선다 */}
       <div className="flex flex-wrap items-center justify-end gap-2">
         {board.done.length > 0 && (
-          <button
-            type="button"
+          <Button
+            size="sm"
+            variant="secondary"
             disabled={pending}
             onClick={() => {
               if (!confirm(TASK_MESSAGES.clearDoneConfirm)) return;
               start(async () => setState(await clearDoneAction()));
             }}
-            className="press rounded-[7px] border border-line-strong px-2.5 py-1 text-[12px] text-mut transition-colors hover:border-danger hover:text-danger disabled:opacity-60"
+            className="hover:border-danger hover:text-danger"
           >
             {TASK_MESSAGES.clearDone}
-          </button>
+          </Button>
         )}
       </div>
 

@@ -71,7 +71,7 @@ export function TaskGamePicker({ initial }: { initial?: Picked | null }) {
           <button
             type="button"
             onClick={() => setPicked(null)}
-            className="press rounded-[7px] px-2 py-1 text-[12px] text-mut transition-colors hover:text-danger"
+            className="press tap inline-flex items-center rounded-[7px] px-2 py-1 text-[12px] text-mut transition-colors hover:text-danger"
           >
             {TASK_MESSAGES.gamePickClear}
           </button>

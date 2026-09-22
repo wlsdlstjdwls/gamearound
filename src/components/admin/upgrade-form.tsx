@@ -5,13 +5,13 @@
 import { useActionState, useState, useTransition } from "react";
 import { deleteUpgradeAction, upsertUpgradeAction } from "@/app/(admin)/admin/actions";
 import { ActionStatus, SubmitButton } from "@/components/admin/submit-button";
+import { Button } from "@/components/ui/button";
 import type { AdminActionState } from "@/app/(admin)/admin/actions";
 import { panelClass } from "@/components/ui/page";
+import { ADMIN_FIELD } from "@/components/admin/field";
 import { PLATFORM_LABEL } from "@/lib/format";
 import type { Platform, UpgradeKind } from "@/server/db/schema";
 
-const inputCls =
-  "h-8 w-full rounded-[9px] border border-line-strong bg-bg px-3 text-[12.5px] text-ink outline-none transition-colors focus:border-ink focus:bg-surface";
 
 const KIND_LABEL: Record<UpgradeKind, string> = {
   free: "무료",
@@ -36,17 +36,18 @@ function DeleteButton({ gameId, id }: { gameId: string; id: number }) {
   return (
     <span className="ml-auto flex items-center gap-2">
       {state && !state.ok && <span className="text-[11.5px] text-danger">{state.error}</span>}
-      <button
-        type="button"
+      <Button
+        size="sm"
+        variant="secondary"
         disabled={pending}
         onClick={() => {
           if (!confirm("이 업그레이드 정보를 지울까요?")) return;
           start(async () => setState(await deleteUpgradeAction(gameId, id)));
         }}
-        className="press rounded-[7px] border border-line-strong px-[11px] py-[5px] text-[12px] text-mut transition-colors hover:border-danger hover:text-danger disabled:opacity-60"
+        className="hover:border-danger hover:text-danger"
       >
         삭제
-      </button>
+      </Button>
     </span>
   );
 }
@@ -91,7 +92,7 @@ export function UpgradeForm({
         <div className="grid gap-2 sm:grid-cols-4">
           <label className="flex flex-col gap-1 text-[11.5px] text-dim">
             원본 플랫폼
-            <select name="fromPlatform" className={inputCls} defaultValue="switch">
+            <select name="fromPlatform" className={ADMIN_FIELD} defaultValue="switch">
               {platforms.map((p) => (
                 <option key={p} value={p}>
                   {PLATFORM_LABEL[p] ?? p}
@@ -101,7 +102,7 @@ export function UpgradeForm({
           </label>
           <label className="flex flex-col gap-1 text-[11.5px] text-dim">
             업그레이드 대상
-            <select name="toPlatform" className={inputCls} defaultValue="switch2">
+            <select name="toPlatform" className={ADMIN_FIELD} defaultValue="switch2">
               {platforms.map((p) => (
                 <option key={p} value={p}>
                   {PLATFORM_LABEL[p] ?? p}
@@ -113,7 +114,7 @@ export function UpgradeForm({
             방식
             <select
               name="kind"
-              className={inputCls}
+              className={ADMIN_FIELD}
               value={kind}
               onChange={(e) => setKind(e.target.value as UpgradeKind)}
             >
@@ -133,13 +134,13 @@ export function UpgradeForm({
               step={100}
               disabled={kind !== "paid"}
               placeholder={kind === "paid" ? "12000" : "유료일 때만"}
-              className={`${inputCls} disabled:opacity-50`}
+              className={`${ADMIN_FIELD} disabled:opacity-50`}
             />
           </label>
         </div>
         <div className="grid gap-2 sm:grid-cols-[1fr_1fr_auto]">
-          <input name="storeUrl" type="url" placeholder="스토어 URL (선택)" className={inputCls} />
-          <input name="note" placeholder="조건 메모 (선택, 예: 원본 소유 필요)" className={inputCls} />
+          <input name="storeUrl" type="url" placeholder="스토어 URL (선택)" className={ADMIN_FIELD} />
+          <input name="note" placeholder="조건 메모 (선택, 예: 원본 소유 필요)" className={ADMIN_FIELD} />
           <SubmitButton label="저장" />
         </div>
         <input type="hidden" name="storeExternalId" value="" />

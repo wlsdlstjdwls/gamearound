@@ -10,6 +10,7 @@ import { isSourceName, listSyncLogs, SOURCES } from "@/server/services/admin";
 import { LOG_MESSAGES, SYNC_STATUS_LABEL, sourceLabel } from "@/lib/admin/messages";
 import { requireRoleOrForbid } from "@/server/auth/guards";
 import { PageHead } from "@/components/ui/page";
+import { TableScroll } from "@/components/admin/table-scroll";
 import { ROUTES } from "@/lib/routes";
 import { Clamp } from "@/components/ui/tooltip";
 
@@ -65,7 +66,9 @@ export default async function SyncLogsPage({ searchParams }: { searchParams: Pro
       {logs.length === 0 ? (
         <p className="rounded-xl bg-surface-2 px-5 py-6 text-[13px] text-mut">{LOG_MESSAGES.empty}</p>
       ) : (
-        <div className="overflow-x-auto">
+        // 칸이 아홉이다 — 좁은 화면에서 줄이면 한 칸이 30px 이 되어 시각도 소스도 세로로 끊긴다.
+        // 이 표는 읽기만 하는 자리라 가로로 미는 것이 맞다(판정하는 표는 queue.tsx 를 쓴다)
+        <TableScroll minWidth={980}>
           <table className="w-full text-[13px]">
             <thead className="border-b border-line text-left text-[11.5px] text-dim">
               <tr>
@@ -122,7 +125,7 @@ export default async function SyncLogsPage({ searchParams }: { searchParams: Pro
               ))}
             </tbody>
           </table>
-        </div>
+        </TableScroll>
       )}
     </section>
   );

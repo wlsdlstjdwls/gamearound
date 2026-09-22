@@ -27,9 +27,15 @@ const PRIORITY_STYLE: Record<AdminTask["priority"], string> = {
   low: "bg-surface-3 text-dim",
 };
 
-/** 순서 단추. hover 전에는 흐리게 둔다 — 카드에서 먼저 읽혀야 하는 건 제목이다 */
+/**
+ * 순서 단추. hover 전에는 흐리게 둔다 — 카드에서 먼저 읽혀야 하는 건 제목이다.
+ *
+ * 손가락 기기에서는 처음부터 보인다(2026-09-22): hover 가 없는 화면에서 이 단추는 **영영 안 떴고**,
+ * 끌기까지 마우스 전용이라(use-board-drag) 휴대폰에서는 순서를 바꿀 길이 아예 없었다.
+ * `tap` 으로 높이도 44px 로 벌린다 — 11px 글자 한 줄은 손가락 목표가 못 된다.
+ */
 const ORDER_BTN =
-  "press rounded-[6px] px-1.5 py-0.5 text-[11px] text-dim opacity-0 transition-opacity hover:text-ink focus-visible:opacity-100 group-hover:opacity-100 disabled:opacity-40";
+  "press tap inline-flex items-center rounded-[6px] px-1.5 py-0.5 text-[11px] text-dim opacity-0 transition-opacity hover:text-ink focus-visible:opacity-100 group-hover:opacity-100 disabled:opacity-40 [@media(hover:none)]:opacity-100";
 
 export function TaskCard({
   task,

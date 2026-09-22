@@ -4,10 +4,10 @@ import { useActionState, useState } from "react";
 import { correctFieldAction } from "@/app/(admin)/admin/actions";
 import { ActionStatus, SubmitButton } from "@/components/admin/submit-button";
 import { panelClass } from "@/components/ui/page";
+import { ADMIN_FIELD } from "@/components/admin/field";
 
 export type FieldOption = { name: string; label: string; kind: "text" | "int" | "bool" | "date"; current: string | number | boolean | null };
 
-const inputCls = "h-8 w-full rounded-[9px] border border-line-strong bg-bg px-3 text-[12.5px] text-ink outline-none transition-colors focus:border-ink focus:bg-surface";
 
 function toInputValue(v: FieldOption["current"]): string {
   if (v === null || v === undefined) return "";
@@ -39,22 +39,22 @@ export function CorrectionForm({
       <input type="hidden" name="gameId" value={gameId} />
       <p className="text-[13px] font-bold text-ink">{title}</p>
       <div className="grid gap-2 sm:grid-cols-[12rem_1fr_auto_auto]">
-        <select name="field" value={fieldName} onChange={(e) => setFieldName(e.target.value)} className={inputCls}>
+        <select name="field" value={fieldName} onChange={(e) => setFieldName(e.target.value)} className={ADMIN_FIELD}>
           {fields.map((f) => (
             <option key={f.name} value={f.name}>{f.label}</option>
           ))}
         </select>
         {field?.kind === "bool" ? (
-          <select name="value" key={`${field.name}-bool`} defaultValue={toInputValue(field.current) || "false"} className={inputCls}>
+          <select name="value" key={`${field.name}-bool`} defaultValue={toInputValue(field.current) || "false"} className={ADMIN_FIELD}>
             <option value="true">예</option>
             <option value="false">아니오</option>
           </select>
         ) : field?.kind === "date" ? (
-          <input name="value" key={`${field.name}-date`} type="date" defaultValue={toInputValue(field.current)} className={inputCls} />
+          <input name="value" key={`${field.name}-date`} type="date" defaultValue={toInputValue(field.current)} className={ADMIN_FIELD} />
         ) : field?.kind === "int" ? (
-          <input name="value" key={`${field.name}-int`} type="number" step={1} defaultValue={toInputValue(field.current)} placeholder="비우면 null" className={inputCls} />
+          <input name="value" key={`${field.name}-int`} type="number" step={1} defaultValue={toInputValue(field.current)} placeholder="비우면 null" className={ADMIN_FIELD} />
         ) : (
-          <input name="value" key={`${field?.name}-text`} type="text" defaultValue={toInputValue(field?.current ?? null)} placeholder="비우면 null" className={inputCls} />
+          <input name="value" key={`${field?.name}-text`} type="text" defaultValue={toInputValue(field?.current ?? null)} placeholder="비우면 null" className={ADMIN_FIELD} />
         )}
         <label className="flex items-center gap-1.5 text-[11.5px] text-mut">
           <input type="checkbox" name="lock" defaultChecked className="accent-[var(--ink)]" />

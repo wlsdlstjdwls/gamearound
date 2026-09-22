@@ -8,6 +8,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { MatchReviewButtons } from "@/components/admin/match-review-buttons";
+import { QueueCell, QueueHead, QueueList, QueueRow } from "@/components/admin/queue";
 import {  PageHead, SectionHead } from "@/components/ui/page";
 import { Clamp } from "@/components/ui/tooltip";
 import { MATCH_MESSAGES, sourceLabel } from "@/lib/admin/messages";
@@ -17,8 +18,9 @@ import { requireRoleOrForbid } from "@/server/auth/guards";
 
 export const metadata: Metadata = { title: MATCH_MESSAGES.title };
 
-// 우리 제목과 스토어 제목을 같은 너비로 나란히 둔다 — 검수자가 두 이름을 눈으로 맞대는 것이 이 화면의 일이다
-const QUEUE_COLS = "grid grid-cols-[minmax(0,2fr)_minmax(0,2fr)_120px_minmax(0,1.4fr)_72px_132px] gap-x-3 px-4 py-[13px]";
+// 우리 제목과 스토어 제목을 같은 너비로 나란히 둔다 — 검수자가 두 이름을 눈으로 맞대는 것이 이 화면의 일이다.
+// 전부 md: 접두인 이유는 queue.tsx 머리 주석에 있다 — 좁은 화면에서 이 줄은 표가 아니라 카드다
+const QUEUE_COLS = "md:grid-cols-[minmax(0,2fr)_minmax(0,2fr)_120px_minmax(0,1.4fr)_72px_132px] md:gap-x-3 md:px-4 md:py-[13px]";
 
 export default async function AdminMatchesPage() {
   await requireRoleOrForbid("admin");
@@ -43,31 +45,34 @@ export default async function AdminMatchesPage() {
             {MATCH_MESSAGES.empty}
           </p>
         ) : (
-          <div className="overflow-x-auto">
-            <div className={`${QUEUE_COLS} min-w-[960px] border-b border-line text-[11.5px] text-dim`}>
-              <span>{MATCH_MESSAGES.colOurTitle}</span>
-              <span>{MATCH_MESSAGES.colStoreTitle}</span>
-              <span>{MATCH_MESSAGES.colSource}</span>
-              <span>{MATCH_MESSAGES.colExternal}</span>
-              <span>{MATCH_MESSAGES.colConfidence}</span>
-              <span>{MATCH_MESSAGES.colAction}</span>
-            </div>
-            <ul className="min-w-[960px] divide-y divide-line-soft">
+          <div>
+            <QueueHead
+              cols={QUEUE_COLS}
+              labels={[
+                MATCH_MESSAGES.colOurTitle,
+                MATCH_MESSAGES.colStoreTitle,
+                MATCH_MESSAGES.colSource,
+                MATCH_MESSAGES.colExternal,
+                MATCH_MESSAGES.colConfidence,
+                MATCH_MESSAGES.colAction,
+              ]}
+            />
+            <QueueList>
               {pending.map((p) => (
-                <li key={`${p.gameId}-${p.source}`} className={`${QUEUE_COLS} items-center text-[13px] text-ink`}>
-                  <span className="min-w-0">
+                <QueueRow key={`${p.gameId}-${p.source}`} cols={QUEUE_COLS}>
+                  <QueueCell label={MATCH_MESSAGES.colOurTitle}>
                     <Link href={`/admin/games/${p.gameId}`} className="font-medium hover:text-acc">
                       <Clamp>{p.game.titleKo ? `${p.game.titleKo} (${p.game.titleEn})` : p.game.titleEn}</Clamp>
                     </Link>
-                  </span>
+                  </QueueCell>
                   {/* 매칭한 순간의 제목이다. 여기가 다른 게임 이름이면 그대로 무르면 된다 */}
-                  <span className="min-w-0 text-mut">
+                  <QueueCell label={MATCH_MESSAGES.colStoreTitle} className="text-mut">
                     {p.matchedTitle ? <Clamp>{p.matchedTitle}</Clamp> : <span className="text-dim-2">{MATCH_MESSAGES.noStoreTitle}</span>}
-                  </span>
-                  <span className="min-w-0 text-mut">
+                  </QueueCell>
+                  <QueueCell label={MATCH_MESSAGES.colSource} className="text-mut">
                     <Clamp>{sourceLabel(p.source)}</Clamp>
-                  </span>
-                  <span className="min-w-0 font-mono text-[12px] text-mut">
+                  </QueueCell>
+                  <QueueCell label={MATCH_MESSAGES.colExternal} className="font-mono text-[12px] text-mut">
                     <Clamp className="inline-block max-w-full align-bottom">{p.externalId}</Clamp>
                     {p.url && (
                       <a href={p.url} target="_blank" rel="noreferrer" className="ml-2 font-sans text-acc hover:underline">
@@ -75,12 +80,16 @@ export default async function AdminMatchesPage() {
                         <span className="sr-only"> (새 창에서 열림)</span>
                       </a>
                     )}
-                  </span>
-                  <span className="text-mut">{p.confidence ?? "-"}</span>
-                  <MatchReviewButtons gameId={p.gameId} source={p.source} />
-                </li>
+                  </QueueCell>
+                  <QueueCell label={MATCH_MESSAGES.colConfidence} className="text-mut">
+                    {p.confidence ?? "-"}
+                  </QueueCell>
+                  <QueueCell>
+                    <MatchReviewButtons gameId={p.gameId} source={p.source} />
+                  </QueueCell>
+                </QueueRow>
               ))}
-            </ul>
+            </QueueList>
           </div>
         )}
       </section>

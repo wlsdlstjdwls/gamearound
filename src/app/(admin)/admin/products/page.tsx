@@ -5,6 +5,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { ProductMatchButtons } from "@/components/admin/product-match-buttons";
+import { QueueCell, QueueHead, QueueList, QueueRow } from "@/components/admin/queue";
 import {  PageHead, SectionHead } from "@/components/ui/page";
 import { Clamp } from "@/components/ui/tooltip";
 import { formatDateTime } from "@/lib/format";
@@ -17,8 +18,9 @@ import { PRODUCT_MATCH_MESSAGES } from "@/lib/admin/messages";
 
 export const metadata: Metadata = { title: PRODUCT_MATCH_MESSAGES.title };
 
-// 상품 이름과 후보 게임 제목을 같은 너비로 나란히 둔다 — 두 이름을 눈으로 맞대는 것이 이 화면의 일이다
-const QUEUE_COLS = "grid grid-cols-[minmax(0,2fr)_minmax(0,2fr)_64px_minmax(0,1fr)_120px_128px] gap-x-3 px-4 py-[13px]";
+// 상품 이름과 후보 게임 제목을 같은 너비로 나란히 둔다 — 두 이름을 눈으로 맞대는 것이 이 화면의 일이다.
+// 전부 md: 접두인 이유는 queue.tsx 머리 주석에 있다 — 좁은 화면에서 이 줄은 표가 아니라 카드다
+const QUEUE_COLS = "md:grid-cols-[minmax(0,2fr)_minmax(0,2fr)_64px_minmax(0,1fr)_120px_128px] md:gap-x-3 md:px-4 md:py-[13px]";
 
 export default async function AdminProductMatchesPage() {
   await requireRoleOrForbid("admin");
@@ -41,26 +43,29 @@ export default async function AdminProductMatchesPage() {
             {PRODUCT_MATCH_MESSAGES.empty}
           </p>
         ) : (
-          <div className="overflow-x-auto">
-            <div className={`${QUEUE_COLS} min-w-[900px] border-b border-line text-[11.5px] text-dim`}>
-              <span>{PRODUCT_MATCH_MESSAGES.colProduct}</span>
-              <span>{PRODUCT_MATCH_MESSAGES.colCandidate}</span>
-              <span>{PRODUCT_MATCH_MESSAGES.colConfidence}</span>
-              <span>{PRODUCT_MATCH_MESSAGES.colShop}</span>
-              <span>{PRODUCT_MATCH_MESSAGES.colCheckedAt}</span>
-              <span>{PRODUCT_MATCH_MESSAGES.colAction}</span>
-            </div>
-            <ul className="min-w-[900px] divide-y divide-line-soft">
+          <div>
+            <QueueHead
+              cols={QUEUE_COLS}
+              labels={[
+                PRODUCT_MATCH_MESSAGES.colProduct,
+                PRODUCT_MATCH_MESSAGES.colCandidate,
+                PRODUCT_MATCH_MESSAGES.colConfidence,
+                PRODUCT_MATCH_MESSAGES.colShop,
+                PRODUCT_MATCH_MESSAGES.colCheckedAt,
+                PRODUCT_MATCH_MESSAGES.colAction,
+              ]}
+            />
+            <QueueList>
               {queue.map((p) => (
-                <li key={p.productId} className={`${QUEUE_COLS} items-center text-[13px] text-ink`}>
-                  <span className="min-w-0">
+                <QueueRow key={p.productId} cols={QUEUE_COLS}>
+                  <QueueCell label={PRODUCT_MATCH_MESSAGES.colProduct}>
                     <Clamp>{p.productName}</Clamp>
                     {/* 바코드와 기종은 판정의 근거다 — 같은 이름이라도 기종이 다르면 다른 물건이다 */}
                     <span className="mt-0.5 block font-mono text-[11px] text-dim">
                       {[p.hardwareCode, p.barcode].filter(Boolean).join(" | ") || PRODUCT_MATCH_MESSAGES.noBarcode}
                     </span>
-                  </span>
-                  <span className="min-w-0 text-mut">
+                  </QueueCell>
+                  <QueueCell label={PRODUCT_MATCH_MESSAGES.colCandidate} className="text-mut">
                     <Link href={gamePath(p.candidate.slug)} target="_blank" rel="noreferrer" className="hover:text-acc">
                       <Clamp>{p.candidate.titleKo ?? p.candidate.titleEn}</Clamp>
                       <span className="sr-only"> (새 창에서 열림)</span>
@@ -70,16 +75,22 @@ export default async function AdminProductMatchesPage() {
                         <Clamp>{p.candidate.titleEn}</Clamp>
                       </span>
                     )}
-                  </span>
-                  <span className="text-mut">{p.confidence ?? "-"}</span>
-                  <span className="min-w-0 text-mut">
+                  </QueueCell>
+                  <QueueCell label={PRODUCT_MATCH_MESSAGES.colConfidence} className="text-mut">
+                    {p.confidence ?? "-"}
+                  </QueueCell>
+                  <QueueCell label={PRODUCT_MATCH_MESSAGES.colShop} className="text-mut">
                     {p.shopName ? <Clamp>{p.shopName}</Clamp> : <span className="text-dim-2">{PRODUCT_MATCH_MESSAGES.viaSync}</span>}
-                  </span>
-                  <span className="text-[12px] text-mut">{p.checkedAt ? formatDateTime(p.checkedAt) : "-"}</span>
-                  <ProductMatchButtons productId={p.productId} />
-                </li>
+                  </QueueCell>
+                  <QueueCell label={PRODUCT_MATCH_MESSAGES.colCheckedAt} className="text-[12px] text-mut">
+                    {p.checkedAt ? formatDateTime(p.checkedAt) : "-"}
+                  </QueueCell>
+                  <QueueCell>
+                    <ProductMatchButtons productId={p.productId} />
+                  </QueueCell>
+                </QueueRow>
               ))}
-            </ul>
+            </QueueList>
           </div>
         )}
       </section>

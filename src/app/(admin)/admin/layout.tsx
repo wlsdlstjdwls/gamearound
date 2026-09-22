@@ -23,8 +23,10 @@ export default async function AdminLayout({ children }: { children: React.ReactN
   // 1200 에서는 매칭 대기의 제목 칸이 잘리고 할 일 판의 칸 넷이 카드 글자보다 좁아졌다
   return (
     <Page width="wide" gap={18}>
-      {/* items-start: 기둥이 본문 높이를 따라 늘어나면 sticky 가 걸리지 않는다 */}
-      <div className="flex flex-col items-start gap-5 md:flex-row md:gap-8">
+      {/* md:items-start: 기둥이 본문 높이를 따라 늘어나면 sticky 가 걸리지 않는다.
+          좁은 화면까지 걸면 안 된다 — 세로로 쌓인 flex 에서 items-start 는 가로 stretch 를 꺼서
+          본문이 제 내용 폭으로 쪼그라든다(표와 격자가 화면을 다 쓰지 못한다) */}
+      <div className="flex flex-col gap-5 md:flex-row md:items-start md:gap-8">
         <AdminNav user={user.displayName ?? user.email} counts={counts} />
         <main className="flex min-w-0 flex-1 flex-col gap-[22px]">{children}</main>
       </div>

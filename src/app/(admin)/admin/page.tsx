@@ -167,7 +167,8 @@ function SourceCard({ item, titles, now }: { item: SyncOverviewItem; titles: Rec
       {/* 쉬는 까닭은 접어 두지 않는다 — 왜 안 도는지 모르면 고장으로 읽는다 */}
       {disabledReason && <p className="text-[11.5px] text-dim">{disabledReason}</p>}
 
-      <Link href={`${ROUTES.adminSyncLogs}?source=${item.source}`} className="text-[12px] text-acc hover:underline">
+      {/* tap: 카드 바닥의 이 한 줄이 소스마다 유일한 링크다 — 12px 글자 한 줄은 손가락 목표가 못 된다 */}
+      <Link href={`${ROUTES.adminSyncLogs}?source=${item.source}`} className="tap inline-flex w-fit items-center text-[12px] text-acc hover:underline">
         {SYNC_MESSAGES.sourceLogs}
       </Link>
     </div>
@@ -211,7 +212,7 @@ export default async function AdminSyncOverviewPage() {
         ))}
       </div>
 
-      <Link href={ROUTES.adminSyncLogs} className="text-[13px] text-acc hover:underline">
+      <Link href={ROUTES.adminSyncLogs} className="tap inline-flex w-fit items-center text-[13px] text-acc hover:underline">
         {SYNC_MESSAGES.allLogs}
       </Link>
     </section>
