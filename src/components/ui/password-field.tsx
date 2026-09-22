@@ -27,7 +27,9 @@ export function PasswordField({ strengthOf, ...field }: Props) {
             aria-label={visible ? AUTH_MESSAGES.hidePassword : AUTH_MESSAGES.showPassword}
             aria-pressed={visible}
             className={cn(
-              "press tap flex h-9 w-9 items-center justify-center rounded-[var(--radius-sm)] outline-none",
+              // 44px — 규약 §6 의 터치 타깃. 36px 이던 값을 올렸다(2026-09-22 실측).
+              // 칸 높이가 46px 이라 44px 까지는 칸 밖으로 넘치지 않는다.
+              "press tap flex h-11 w-11 items-center justify-center rounded-[var(--radius-sm)] outline-none",
               "focus-visible:ring-2 focus-visible:ring-ink",
               visible ? "text-ink" : "text-dim hover:text-mut",
             )}

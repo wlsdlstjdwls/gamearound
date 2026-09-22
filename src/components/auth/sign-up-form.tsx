@@ -74,7 +74,9 @@ export function SignUpForm({ next }: { next: string }) {
         <PasswordField
           ref={passwordRef}
           label="비밀번호"
-          placeholder={M.passwordHint}
+          // 자리글에 규칙을 또 적지 않는다(2026-09-22) — 바로 아래 hint 가 같은 문장을 들고 있어
+          // 칸 안과 칸 밖에 같은 말이 두 번 떴다. 규칙은 hint 한 곳에만 둔다(오류가 나면 그 자리를 오류가 갖는다)
+          placeholder="비밀번호 입력"
           hint={M.passwordHint}
           autoComplete="new-password"
           disabled={busy}
@@ -94,7 +96,19 @@ export function SignUpForm({ next }: { next: string }) {
 
       <div className="reveal" style={stagger(5)}>
         <Checkbox name="terms" disabled={busy} onChange={terms.onChange} onBlur={terms.onBlur} error={terms.error}>
-          <span className="text-ink">(필수)</span> {M.termsConsent}
+          {/* 두 문서는 링크다 — 동의하기 전에 읽을 길이 있어야 한다.
+              새 창으로 여는 이유: 같은 창에서 나가면 여기까지 채운 칸이 전부 날아간다 */}
+          <span className="text-ink">(필수)</span> {M.termsConsentLead}{" "}
+          <Link href={ROUTES.terms} target="_blank" rel="noreferrer" className="font-semibold text-acc-hover underline underline-offset-4">
+            {M.termsDocLabel}
+            <span className="sr-only"> (새 창에서 열림)</span>
+          </Link>
+          과{" "}
+          <Link href={ROUTES.privacy} target="_blank" rel="noreferrer" className="font-semibold text-acc-hover underline underline-offset-4">
+            {M.privacyDocLabel}
+            <span className="sr-only"> (새 창에서 열림)</span>
+          </Link>
+          {M.termsConsentTail}
         </Checkbox>
       </div>
 

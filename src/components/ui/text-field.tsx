@@ -43,7 +43,11 @@ export function TextField({ label, hideLabel, hint, error, trailing, wrapperClas
           aria-invalid={invalid || undefined}
           aria-describedby={[hint ? hintId : null, invalid ? errorId : null].filter(Boolean).join(" ") || undefined}
           className={cn(
-            "h-[46px] min-h-[46px] w-full flex-1 bg-transparent px-3.5 text-[14px] text-ink outline-none placeholder:text-dim",
+            // 글자 16px 은 취향이 아니라 규약이다(AGENTS.md §6) — iOS 사파리는 16px 미만 입력칸에
+            // 포커스가 가면 화면을 확대하고, 확대된 배율은 입력을 마쳐도 돌아오지 않는다.
+            // 14px 이던 값을 올렸다(2026-09-22 실측: 로그인, 가입의 모든 칸이 14px 이었다).
+            // 높이는 46px 그대로라 줄 위치는 밀리지 않는다 — 글자만 커진다.
+            "h-[46px] min-h-[46px] w-full flex-1 bg-transparent px-3.5 text-[16px] text-ink outline-none placeholder:text-dim",
             "autofill:shadow-[inset_0_0_0_1000px_var(--surface)] autofill:[-webkit-text-fill-color:var(--ink)]",
             className,
           )}

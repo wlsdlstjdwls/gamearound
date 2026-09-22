@@ -45,7 +45,15 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <script dangerouslySetInnerHTML={{ __html: THEME_INIT_SCRIPT }} />
         <SessionProvider>
           <SiteHeader />
-          <main className="flex-1">{children}</main>
+          {/*
+            flex flex-col 을 더한 이유(2026-09-22): flex-1 은 flex-grow 만 주고 CSS height 는 auto 로 남긴다.
+            그래서 안쪽에서 h-full 을 걸어도 백분율이 풀릴 기준이 없어 0 이 된다 — 로그인처럼 화면 높이만큼
+            늘어나 세로 가운데에 서야 하는 화면이 위에 붙어 버렸다. 여기를 flex 기둥으로 만들면 자식이
+            flex-1 한 줄로 남는 높이를 가져갈 수 있다(백분율을 안 쓴다).
+            자식은 화면마다 하나뿐이라 배치는 그대로고, 바뀌는 것은 margin 상쇄가 꺼지는 것뿐이다 —
+            모든 화면이 Page 의 padding 으로 위 여백을 잡고 있어 상쇄에 기대는 자리가 없다.
+          */}
+          <main className="flex flex-1 flex-col">{children}</main>
           <SiteFooter />
         </SessionProvider>
       </body>

@@ -34,8 +34,11 @@ function trimQuery(raw: string): string {
  */
 const FIELD_CLASS =
   "tap flex h-10 items-center gap-2.5 rounded-xl border border-transparent bg-surface-2 pl-3.5 pr-2 transition-[background-color,border-color,box-shadow] duration-base ease-standard focus-within:border-acc focus-within:bg-surface focus-within:shadow-[0_0_0_3px_var(--acc-glow)]";
+/* 글자 16px — 규약 §6. 13.5px 이던 값을 올렸다(2026-09-22): iOS 사파리가 16px 미만 입력칸에
+   포커스가 가면 화면을 확대하는데, 머리띠의 검색칸은 어느 화면에서나 손이 처음 닿는 칸이라
+   그 확대가 서비스의 첫인상이 된다. 칸 높이는 40px 그대로라 머리띠 높이(--header-h)는 안 움직인다. */
 const INPUT_CLASS =
-  "min-w-0 flex-1 bg-transparent text-[13.5px] text-ink outline-none placeholder:text-dim [&::-webkit-search-cancel-button]:appearance-none";
+  "min-w-0 flex-1 bg-transparent text-[16px] text-ink outline-none placeholder:text-dim [&::-webkit-search-cancel-button]:appearance-none";
 /*
  * 헤더 안에서 이 칸이 차지하는 자리 — 로고와 메뉴 사이의 남는 폭을 전부 가져간다.
  * 최소 폭을 걸지 않는 이유: 320px 기기에서는 이 칸이 줄어들어야 로고와 햄버거가 한 줄에 남는다.
