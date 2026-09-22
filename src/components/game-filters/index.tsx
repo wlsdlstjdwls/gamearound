@@ -1,42 +1,28 @@
-// /games 목록 필터 껍데기 — 넓은 화면은 왼쪽 기둥, 좁은 화면은 접는 서랍.
-// 이 파일 자체는 서버 컴포넌트다. 펼치는 목록을 우리 토큰으로 그려야 하는 드롭다운(ui/select)과
-// 누른 즉시 반응을 보여야 하는 칩(ui/chip-nav)만 클라이언트다.
+// /games 목록 필터 껍데기 — 넓은 화면은 왼쪽 기둥, 좁은 화면은 바닥에서 올라오는 시트.
+// 이 파일 자체는 서버 컴포넌트다. 시트 껍데기(./mobile)와, 펼치는 목록을 우리 토큰으로 그려야 하는
+// 드롭다운(ui/select), 누른 즉시 반응을 보여야 하는 칩(ui/chip-nav)만 클라이언트다.
 //
 // 가로로 눕히지 않는 이유: 플랫폼, 장르 칩이 줄바꿈하며 화면 위쪽을 몇 줄씩 먹어 정작 게임이 밀린다.
-// 좁은 화면에서 접어 두는 이유: 펴 둔 채로 두면 목록이 한 화면 아래로 밀린다 — details 라 JS 없이 열고 닫힌다.
 //
-// 걸린 조건은 목록 위 전폭 요약 줄이 맡는다(./active 를 page.tsx 가 직접 부른다).
-// 기둥 안에 있을 때는 좁은 화면에서 서랍을 열어야만 보였고, 넓은 화면에서도 스크롤을 내리면
-// 기둥 머리와 함께 사라졌다 — "지금 무엇이 걸렸나" 는 결과 바로 위에 있어야 답이 된다.
+// 좁은 화면을 시트로 바꾼 경위와 그 전 접는 서랍(details)이 안고 있던 문제 넷은 ./mobile 머리 주석에 있다.
+//
+// 걸린 조건은 이 껍데기가 같이 낸다(2026-09-22, 사용자 지정). 결과 위 전폭 띠에서 옮겨 왔다 —
+// 걸린 조건은 필터가 한 일의 결과라 고치는 자리 옆에 있어야 "풀고 다시 고른다" 가 한 자리에서 끝난다.
+// 넓은 화면은 기둥 맨 아래, 좁은 화면은 "필터" 단추 아래 제 줄이다(./active 의 두 모양).
 import type { GamesQuery } from "@/lib/games-query";
 import type { GameFacets } from "@/server/services/games";
-import { activeFilterCount } from "./active";
+import { ActiveFilters } from "./active";
 import { Groups } from "./groups";
+import { MobileFilters } from "./mobile";
 
 export function GameFilters({ facets, filter }: { facets: GameFacets; filter: GamesQuery }) {
-  const applied = activeFilterCount(filter);
-
   return (
     <>
-      {/* 좁은 화면: 접어 둔 서랍. 접힌 채로도 몇 개가 걸렸는지는 말해 준다 —
-          열어 보기 전에는 아무 표시가 없어서 걸어 둔 조건을 잊고 "결과가 왜 이것뿐이지" 로 읽혔다.
-          걸린 조건이 있어도 펴 두지 않는다(2026-09-15): 이 무리가 700px 이라 조건을 걸고 들어온 화면은
-          게임이 한 장도 안 보이는 채로 시작했다. 화면에 들어와서 하려던 일은 결과를 보는 것이지
-          방금 고른 조건을 다시 읽는 것이 아니다 — 걸린 개수는 접힌 줄의 숫자 배지가 말한다 */}
-      {/* 판이 아니라 위아래 헤어라인 두 줄로 자리를 표시한다(2026-09-21 리디자인) */}
-      <details className="border-y border-line lg:hidden">
-        <summary className="flex cursor-pointer list-none items-center gap-2.5 py-3.5 text-[14px] font-bold text-ink">
-          필터와 정렬
-          {applied > 0 && (
-            <span className="inline-flex h-[22px] min-w-[22px] items-center justify-center rounded-full bg-ink px-[7px] text-[11.5px] font-bold text-on-ink">
-              {applied}
-            </span>
-          )}
-        </summary>
-        <div className="flex flex-col gap-5 pb-4 pt-1">
-          <Groups facets={facets} filter={filter} />
-        </div>
-      </details>
+      {/* 좁은 화면: 단추 + 시트. 걸린 조건이 있어도 시트를 열어 두지 않는다(2026-09-15) —
+          화면에 들어와서 하려던 일은 결과를 보는 것이지 방금 고른 조건을 다시 읽는 것이 아니다.
+          개수 배지도 뗐다(2026-09-22, 사용자 지정): 바로 아래 줄에 걸린 조건이 이름 그대로 서 있고,
+          "2" 와 "PC ⨯ 콘솔 ⨯" 이 한 화면에서 같은 사실을 두 번 말할 이유가 없다 */}
+      <MobileFilters groups={<Groups facets={facets} filter={filter} variant="sheet" />} strip={<ActiveFilters filter={filter} variant="strip" />} />
 
       {/* 넓은 화면: 왼쪽 기둥. 스크롤해도 따라오도록 붙여 둔다(헤더 높이만큼 띄운다).
           안쪽 스크롤(max-h + overflow-y-auto)은 걷었다(2026-09-21): 장르 드롭다운이 펼쳐지면
@@ -45,6 +31,7 @@ export function GameFilters({ facets, filter }: { facets: GameFacets; filter: Ga
           다시 길어지면 안쪽 스크롤이 아니라 드롭다운을 띄우는 쪽을 고친다 */}
       <aside aria-label="목록 필터" className="hidden flex-col gap-[26px] lg:sticky lg:top-[80px] lg:flex">
         <Groups facets={facets} filter={filter} />
+        <ActiveFilters filter={filter} variant="column" />
       </aside>
     </>
   );

@@ -103,6 +103,27 @@ export function AlertCircleIcon(p: IconProps) {
   );
 }
 
+/** 딸린 것이 더 있다는 표시 — 플랫폼 줄의 추가 콘텐츠 버튼(components/platform-addons) */
+export function PlusIcon(p: IconProps) {
+  return (
+    <svg {...base(p)}>
+      <path d="M12 5v14" />
+      <path d="M5 12h14" />
+    </svg>
+  );
+}
+
+/** 더 볼 것이 있다는 표시 — 값 줄에 붙어 툴팁을 여는 자리(components/ui/tooltip 의 InfoTip) */
+export function InfoIcon(p: IconProps) {
+  return (
+    <svg {...base(p)}>
+      <circle cx="12" cy="12" r="9" />
+      <path d="M12 11v5" />
+      <path d="M12 7.5h.01" />
+    </svg>
+  );
+}
+
 /** 위시리스트 — 헤더 메뉴(좁은 화면은 글자 없이 이것만 선다) */
 export function HeartIcon(p: IconProps) {
   return (
@@ -130,6 +151,24 @@ export function MenuIcon(p: IconProps) {
       <path d="M4 6h16" />
       <path d="M4 12h16" />
       <path d="M4 18h16" />
+    </svg>
+  );
+}
+
+/**
+ * 필터 — 좁은 화면의 필터 시트를 여는 단추.
+ * 깔때기가 아니라 슬라이더 세 줄인 이유: 이 화면의 필터는 "거른다" 보다 "값을 맞춘다" 에 가깝고
+ * (정렬까지 같은 시트에 있다), 깔때기는 작은 크기에서 삼각형 얼룩으로만 보인다.
+ */
+export function FilterIcon(p: IconProps) {
+  return (
+    <svg {...base(p)}>
+      <path d="M4 7h10" />
+      <path d="M18 7h2" />
+      <path d="M4 17h4" />
+      <path d="M12 17h8" />
+      <circle cx="16" cy="7" r="2" />
+      <circle cx="10" cy="17" r="2" />
     </svg>
   );
 }

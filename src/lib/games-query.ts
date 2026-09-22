@@ -93,6 +93,14 @@ export type GamesQuery = {
   /** 구독(게임패스 등)으로 지금 플레이할 수 있는 게임만 */
   subscription?: boolean;
   /**
+   * 무료 게임을 뺀다(2026-09-22, 사용자 요청).
+   *
+   * 가격 상한(maxPrice)의 반대쪽 축이다 — 그쪽은 "얼마 이하" 를 고르는 값이라 0 을 고르면
+   * 무료만 남지만, 무료를 **빼는** 조건은 그 칸으로 표현할 수 없다(하한이 없다).
+   * 값이 아직 없는 게임(아직 안 긁은 스토어)은 빼지 않는다 — 모르는 것과 0원은 다르다.
+   */
+  hideFree?: boolean;
+  /**
    * 내 기기로 돌아가는 게임만. 값은 기기를 접은 문자열이다(lib/hardware/rig).
    * 기기 id 가 아니라 티어를 싣는 이유는 그 파일 머리 주석에 있다 — 여기서는 문자열로 두고
    * 조회하는 쪽이 parseRig 로 좁힌다(platform 을 문자열로 두는 것과 같은 이유다).
@@ -134,6 +142,7 @@ export function parseGamesQuery(sp: Record<string, string | string[] | undefined
     maxPrice: max,
     company: firstParam(sp.company),
     subscription: firstParam(sp.sub) === "1",
+    hideFree: firstParam(sp.nofree) === "1",
     rig: firstParam(sp.rig),
     sort: isGameSort(sort) ? sort : undefined,
     page: Number.isFinite(page) && page > 0 ? Math.floor(page) : 1,
@@ -156,6 +165,7 @@ export function gamesHref(current: GamesQuery, patch: Partial<GamesQuery> = {}):
   if (next.maxPrice !== undefined) params.set("max", String(next.maxPrice));
   if (next.company) params.set("company", next.company);
   if (next.subscription) params.set("sub", "1");
+  if (next.hideFree) params.set("nofree", "1");
   if (next.rig) params.set("rig", next.rig);
   if (next.sort && next.sort !== DEFAULT_GAME_SORT) params.set("sort", next.sort);
   if (next.page && next.page > 1) params.set("page", String(next.page));

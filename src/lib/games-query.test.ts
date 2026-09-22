@@ -15,7 +15,7 @@ describe("parseGamesQuery", () => {
   it("빈 쿼리는 1페이지 기본 필터", () => {
     expect(parseGamesQuery({})).toEqual({
       q: undefined, platform: undefined, genre: undefined, onSale: false, minDiscount: undefined,
-      company: undefined, subscription: false, sort: undefined, page: 1,
+      company: undefined, subscription: false, hideFree: false, sort: undefined, page: 1,
     });
   });
 
@@ -103,7 +103,7 @@ describe("gamesHref", () => {
   it("왕복: gamesHref 로 만든 주소를 parseGamesQuery 가 그대로 복원한다", () => {
     const filter = {
       q: "엘든 링", platform: "steam", genre: "RPG", onSale: true,
-      company: "fromsoftware", subscription: true, sort: "title" as const, page: 4,
+      company: "fromsoftware", subscription: true, hideFree: true, sort: "title" as const, page: 4,
     };
     const sp = Object.fromEntries(new URLSearchParams(gamesHref(filter).split("?")[1]));
     expect(parseGamesQuery(sp)).toEqual(filter);
@@ -118,6 +118,13 @@ describe("gamesHref", () => {
     expect(gamesHref({ subscription: true })).toBe("/games?sub=1");
     // 기본값(false)은 주소에 남기지 않는다 — 같은 화면이 두 개의 주소를 갖지 않게
     expect(gamesHref({ subscription: false })).toBe(ROUTES.game);
+  });
+
+  // 무료 제외는 가격 상한과 다른 축이다 — 그쪽은 "얼마 이하", 이쪽은 "0원을 뺀다"(lib/games-query 의 hideFree 주석)
+  it("무료 제외가 주소에 실린다", () => {
+    expect(gamesHref({ hideFree: true })).toBe("/games?nofree=1");
+    expect(gamesHref({ hideFree: false })).toBe(ROUTES.game);
+    expect(parseGamesQuery({ nofree: "1" }).hideFree).toBe(true);
   });
 });
 

@@ -151,6 +151,9 @@ async function listGamesRaw(filter: GameListFilter): Promise<GameListResult> {
   if (filter.maxPrice !== undefined) conds.push(sql`${agg.minPrice} <= ${filter.maxPrice}`);
   if (filter.company) conds.push(byCompanySlug(filter.company));
   if (filter.subscription) conds.push(inAnySubscription());
+  // 무료 제외 — 값을 **아는데 0원인** 게임만 뺀다. min_price 가 null 인 게임(아직 값을 못 긁은 스토어)은
+  // 남긴다: 모르는 것을 공짜로 단정하면 목록에서 조용히 사라지고, 값이 붙는 날 이유 없이 되돌아온다
+  if (filter.hideFree) conds.push(sql`(${agg.minPrice} is null or ${agg.minPrice} > 0)`);
   // 주소에 실린 기기. 모양이 어긋난 값은 parseRig 가 null 로 돌려줘 필터가 아예 안 걸린다
   const rig = parseRig(filter.rig);
   if (rig) conds.push(runsOnRig(rig));
@@ -253,6 +256,7 @@ function listKey(f: GameListFilter): string[] {
     f.maxPrice !== undefined ? String(f.maxPrice) : "",
     f.company ?? "",
     f.subscription ? "sub" : "",
+    f.hideFree ? "nofree" : "",
     // 기기는 티어로 실려서 같은 급의 컴퓨터를 쓰는 사람들이 한 캐시를 나눠 쓴다(lib/hardware/rig)
     f.rig ?? "",
     f.sort ?? DEFAULT_GAME_SORT,
@@ -279,7 +283,7 @@ const listByJson = cache(async (json: string): Promise<GameListResult> => {
 /** 목록 — 필터 조합별 1시간 캐시. 크롤러 완료 시 `home` 태그로 함께 무효화된다 */
 export async function listGames(filter: GameListFilter): Promise<GameListResult> {
   // 키 순서와 같은 순서로 다시 세워야 같은 필터가 늘 같은 문자열이 된다
-  const [q, platform, genre, onSale, minDiscount, maxPrice, company, subscription, rig, sort, page] = listKey(filter);
+  const [q, platform, genre, onSale, minDiscount, maxPrice, company, subscription, hideFree, rig, sort, page] = listKey(filter);
   return listByJson(JSON.stringify({
     q: q || undefined,
     platform: platform || undefined,
@@ -290,6 +294,7 @@ export async function listGames(filter: GameListFilter): Promise<GameListResult>
     maxPrice: (maxPrice === "" ? undefined : Number(maxPrice)) as GameListFilter["maxPrice"],
     company: company || undefined,
     subscription: subscription ? true : undefined,
+    hideFree: hideFree ? true : undefined,
     rig: rig || undefined,
     sort: sort as GameListFilter["sort"],
     page: Number(page),

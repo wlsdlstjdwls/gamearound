@@ -4,23 +4,42 @@
 // 높이는 실제 화면을 재서 맞춘 값이다 — 어긋나면 본문이 들어올 때 통째로 밀려 그게 깜빡임이 된다.
 import { GAMES_GRID_CLASS } from "@/lib/games/grid";
 import { CARD_SHELL } from "@/components/game-card";
+import { ActiveFilters } from "@/components/game-filters/active";
+import type { GamesQuery } from "@/lib/games-query";
 
-export function FiltersSkeleton() {
+/**
+ * 필터 기둥의 뼈대.
+ *
+ * **걸린 조건만은 진짜 값으로 세운다**(2026-09-22). 이 경계가 기다리는 것은 선택지(facets, Neon 왕복)인데,
+ * 걸린 조건은 주소에서 바로 나오는 값이라 기다릴 이유가 없다. 뼈대에 안 그리면 필터를 누를 때마다
+ * 조건 칩이 사라졌다 돌아온다 — 방금 누른 것이 먹혔는지 확인할 유일한 표시가 그 칩이다.
+ */
+export function FiltersSkeleton({ filter }: { filter: GamesQuery }) {
   return (
-    <div className="hidden flex-col gap-[26px] lg:flex" aria-hidden>
-      {/* 기둥에 서는 무리는 셋이다 — 정렬 드롭다운, 플랫폼 칩 셋, 장르 드롭다운(game-filters/groups).
-          뼈대가 실물보다 길면 본문이 올 때 기둥이 줄면서 목록까지 한 번 밀린다 */}
-      {[1, 3, 1].map((rows, g) => (
-        <div key={g} className="flex flex-col gap-2.5">
-          <div className="skeleton h-3.5 w-14 rounded" />
-          <div className="flex flex-wrap gap-1.5">
-            {Array.from({ length: rows }).map((_, i) => (
-              <div key={i} className="skeleton h-7 w-16 rounded-full" />
-            ))}
+    <>
+      {/* 좁은 화면: 시트 여는 단추만 뼈대고, 그 아래 조건 띠는 실물이다(game-filters/mobile 과 같은 줄 구성).
+          폭은 그림 16 + 사이 8 + "필터" + 좌우 여백을 잰 값이다 — 어긋나면 실물이 올 때 단추가 늘었다 줄어든다 */}
+      <div className="flex min-w-0 flex-col border-b border-line pb-2.5 lg:hidden">
+        <div className="skeleton h-[38px] w-[84px] rounded-full" aria-hidden />
+        <ActiveFilters filter={filter} variant="strip" />
+      </div>
+
+      <div className="hidden flex-col gap-[26px] lg:flex">
+        {/* 기둥에 서는 무리는 셋이다 — 정렬 드롭다운, 플랫폼 칩 셋, 장르 드롭다운(game-filters/groups).
+            뼈대가 실물보다 길면 본문이 올 때 기둥이 줄면서 목록까지 한 번 밀린다 */}
+        {[1, 3, 1].map((rows, g) => (
+          <div key={g} className="flex flex-col gap-2.5" aria-hidden>
+            <div className="skeleton h-3.5 w-14 rounded" />
+            <div className="flex flex-wrap gap-1.5">
+              {Array.from({ length: rows }).map((_, i) => (
+                <div key={i} className="skeleton h-7 w-16 rounded-full" />
+              ))}
+            </div>
           </div>
-        </div>
-      ))}
-    </div>
+        ))}
+        <ActiveFilters filter={filter} variant="column" />
+      </div>
+    </>
   );
 }
 
@@ -41,7 +60,7 @@ export function GamesGridSkeleton({ cards }: { cards: number }) {
         // 본문이 올 때 격자가 밀리지 않는다
         <div key={i} className={CARD_SHELL}>
           <div className="skeleton aspect-[460/215] rounded-[var(--radius-cover)]" />
-          <div className="flex flex-col gap-1 px-1 pt-3">
+          <div className="flex flex-col gap-1 px-1 pt-1.5">
             <div className="skeleton h-[22px] w-4/5 rounded" />
             <div className="skeleton h-[17px] w-3/5 rounded" />
             <div className="mt-1.5 skeleton h-[17px] w-2/5 rounded-full" />

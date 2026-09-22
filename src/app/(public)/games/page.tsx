@@ -12,7 +12,6 @@ import { Suspense } from "react";
 import { GameCard, highlightFromFilter } from "@/components/game-card";
 import { EmptyState } from "@/components/empty-state";
 import { GameFilters } from "@/components/game-filters";
-import { ActiveFilters } from "@/components/game-filters/active";
 import { GamesInfinite } from "@/components/games-infinite";
 import { Page, PageHead } from "@/components/ui/page";
 import { DEFAULT_GAME_SORT, SORT_LABEL, joinPlatformValues, parsePlatformValues, parseGamesQuery, type GamesQuery } from "@/lib/games-query";
@@ -64,7 +63,16 @@ export async function generateMetadata({ searchParams }: Props): Promise<Metadat
 /** 뭔가 걸러져 있는가 — 건수를 띄울지 정한다 */
 function isFiltered(f: GameListFilter): boolean {
   return Boolean(
-    f.q || f.platform || f.genre || f.onSale || f.minDiscount !== undefined || f.maxPrice !== undefined || f.company || f.subscription || f.rig,
+    f.q ||
+      f.platform ||
+      f.genre ||
+      f.onSale ||
+      f.minDiscount !== undefined ||
+      f.maxPrice !== undefined ||
+      f.company ||
+      f.subscription ||
+      f.hideFree ||
+      f.rig,
   );
 }
 
@@ -125,14 +133,11 @@ export default async function GamesPage({ searchParams }: Props) {
           건수("9,789개가 조건에 맞아요")도 앞서 뗐다 — 그 한 줄 때문에 목록과 같은 조회를 한 번 더 기다렸다 */}
       <PageHead title="게임 목록" hideTitle />
 
-      {/* 걸린 조건 띠 — 결과 바로 위를 가로지른다(전폭). 필터 기둥 안이 아니라 여기인 이유는 ./active 주석 */}
-      <ActiveFilters filter={query} />
-
       {/* 넓은 화면에서만 두 기둥이 된다. 좁은 화면에서는 필터가 접힌 서랍으로 위에 한 줄만 차지한다 */}
       <div className="grid items-start gap-x-10 gap-y-6 lg:grid-cols-[232px_minmax(0,1fr)]">
         {/* 필터 기둥에는 키를 주지 않는다 — 다시 세우면 고른 값이 뼈대로 한 번 사라졌다 돌아온다.
             선택지(facets)는 필터와 무관하게 같은 값이라 옛 기둥을 그대로 두는 편이 덜 튄다 */}
-        <Suspense fallback={<FiltersSkeleton />}>
+        <Suspense fallback={<FiltersSkeleton filter={query} />}>
           <FilterColumn filter={query} />
         </Suspense>
 
