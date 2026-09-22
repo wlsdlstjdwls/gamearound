@@ -73,11 +73,10 @@ export function CoverImage({
  * 오른쪽 위를 고른 이유: 아래 제목 줄의 가격이 오른쪽 끝에 서 있어서, 둘이 같은 기둥에 서면
  * "얼마나 싸졌나 - 얼마인가" 가 세로로 이어 읽힌다.
  *
- * 색도 같은 날 브랜드 보라에서 잉크로 바뀌었다. 보라는 팔레트 규약상 **뜻을 갖지 않는 색**이라
- * "싸다" 를 말할 자격이 없었고, 평평한 한 겹이라 카드에서 가장 세야 할 값이 가장 약했다.
- * 잉크는 라이트에서 검정 판 + 오프화이트 글자, 다크에서 밝은 판 + 먹색 글자다 —
- * 두 테마 모두 화면에서 가장 센 대비이고, 주 버튼이 이미 쓰는 규칙이라 새 규칙이 아니다.
- * 글자색은 반드시 text-on-ink 다. 흰색으로 못 박으면 다크에서 밝은 판 위 흰 글자가 된다.
+ * 색은 브랜드 보라(--acc)다. 같은 날 잉크로 바꿔 봤다가 되돌렸다 — 가볍게 읽히던 원인은
+ * 색이 아니라 **자리**였고(뚫고 나온 기울어진 도장), 그걸 고치니 보라도 충분히 섰다.
+ * 글자색은 반드시 text-on-ink 다. 흰색으로 못 박으면 다크에서 밝은 보라 위 흰 글자가 되고
+ * 대비가 2점대로 떨어진다.
  */
 export function DiscountStamp({ pct, size = "card" }: { pct: number | null; size?: "card" | "hero" }) {
   if (!pct || pct <= 0) return null;
@@ -85,7 +84,7 @@ export function DiscountStamp({ pct, size = "card" }: { pct: number | null; size
   return (
     <span
       className={cn(
-        "stamp absolute inline-flex items-baseline gap-px rounded-[var(--radius-inset)] bg-ink font-extrabold leading-none tracking-[-0.06em] text-on-ink shadow-2",
+        "stamp absolute inline-flex items-baseline gap-px rounded-[var(--radius-inset)] bg-acc font-extrabold leading-none tracking-[-0.06em] text-on-ink shadow-2",
         // 커버 **안쪽** 오른쪽 위. 아래 제목 줄의 값과 같은 기둥에 서서 "얼마나" 와 "얼마" 가 세로로 읽힌다
         hero ? "right-3 top-3 px-3.5 pb-[7px] pt-2 text-[26px] sm:text-[30px]" : "right-2 top-2 px-2.5 pb-1.5 pt-[7px] text-[19px]",
       )}
