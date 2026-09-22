@@ -6,19 +6,11 @@ import { DeviceList } from "@/components/devices/device-list";
 import { Page, PageHead } from "@/components/ui/page";
 import { DEVICE_MESSAGES } from "@/lib/games/messages";
 import { listModels, modelByKey } from "@/lib/hardware";
+import { PART_SUGGEST_LIMIT } from "@/lib/hardware/constants";
 import { requireUserOrRedirect } from "@/server/auth/guards";
 import { listMyDevices } from "@/server/services/devices";
 
 export const metadata: Metadata = { title: DEVICE_MESSAGES.heading };
-
-/**
- * 폼의 제안 목록에 내려보낼 부품 수.
- *
- * 사전 전체(300개가 넘는다)를 내려보내지 않는 이유는 화면 무게다. 제안이 없어도 입력은 되고
- * (자유 입력이라 매칭기가 알아본다) 옛 부품을 쓰는 사람은 이름을 정확히 아는 편이다 —
- * 제안이 필요한 쪽은 요즘 부품을 고르는 사람이라 빠른 것부터 자른다.
- */
-const SUGGEST_LIMIT = 80;
 
 export default async function DevicesPage() {
   await requireUserOrRedirect();
@@ -36,8 +28,8 @@ export default async function DevicesPage() {
       <PageHead title={DEVICE_MESSAGES.heading} note={DEVICE_MESSAGES.lead} />
       <DeviceList
         devices={withNames}
-        cpuOptions={listModels("cpu").slice(0, SUGGEST_LIMIT).map((m) => ({ key: m.key, name: m.name }))}
-        gpuOptions={listModels("gpu").slice(0, SUGGEST_LIMIT).map((m) => ({ key: m.key, name: m.name }))}
+        cpuOptions={listModels("cpu").slice(0, PART_SUGGEST_LIMIT).map((m) => ({ key: m.key, name: m.name }))}
+        gpuOptions={listModels("gpu").slice(0, PART_SUGGEST_LIMIT).map((m) => ({ key: m.key, name: m.name }))}
       />
     </Page>
   );

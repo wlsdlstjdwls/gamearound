@@ -3,6 +3,7 @@
 // 비회원의 기기는 여기 없다. 브라우저에 두고 판정도 브라우저에서 한다(components/compat-section) —
 // 로그인을 요구하면 이 기능을 아무도 안 쓴다는 것이 설계의 전제다.
 // 그래서 이 서비스는 "로그인한 사람이 여러 대를 관리하는" 쪽만 맡는다.
+import { cache } from "react";
 import { and, asc, desc, eq } from "drizzle-orm";
 import { getDb } from "@/server/db/client";
 import { userDevices, type OsFamily } from "@/server/db/schema";
@@ -37,8 +38,14 @@ function toDto(r: typeof userDevices.$inferSelect): DeviceDto {
   };
 }
 
-/** 내 기기 목록. 기본 기기가 먼저, 그다음 만든 순이다 — 화면이 첫 줄을 그대로 골라도 맞는 순서 */
-export async function listMyDevices(): Promise<DeviceDto[]> {
+/**
+ * 내 기기 목록. 기본 기기가 먼저, 그다음 만든 순이다 — 화면이 첫 줄을 그대로 골라도 맞는 순서.
+ *
+ * 요청 하나 안에서 캐시한다(2026-09-22). 같은 화면이 이 목록을 두 자리에서 읽는 일이 실제로 있었고
+ * (그때는 Neon 왕복 220ms 가 두 번이었다), 지금은 한 자리지만 캐시를 도로 걷지 않는다 —
+ * 읽는 자리가 느는 것은 흔하고, 이 감쌈은 비용이 없다. getCurrentUser 와 같은 방식이다.
+ */
+export const listMyDevices = cache(async (): Promise<DeviceDto[]> => {
   const u = await requireUser();
   const rows = await getDb()
     .select()
@@ -46,7 +53,7 @@ export async function listMyDevices(): Promise<DeviceDto[]> {
     .where(eq(userDevices.userId, u.id))
     .orderBy(desc(userDevices.isPrimary), asc(userDevices.createdAt));
   return rows.map(toDto);
-}
+});
 
 /**
  * 기기를 더한다. 첫 기기는 자동으로 기본 기기다 — 한 대뿐인데 "기본으로 지정" 을 누르게 하지 않는다.

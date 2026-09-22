@@ -7,7 +7,7 @@
 // 값이 없는 줄은 그리지 않는다. 멀티플레이 칩에서 배운 것과 같다 — 빈칸을 "-" 로 채우면
 // 화면에서 제일 큰 자리가 줄줄이 "-" 가 되고, 그건 "아직 모은다" 가 아니라 "고장 났다" 로 읽힌다.
 import { formatSizeMb } from "@/lib/format";
-import { GAME_MESSAGES, OS_FAMILY_LABEL, REQUIREMENT_ROW_LABEL, REQUIREMENT_TIER_LABEL } from "@/lib/games/messages";
+import { OS_FAMILY_LABEL, REQUIREMENT_ROW_LABEL, REQUIREMENT_TIER_LABEL } from "@/lib/games/messages";
 import type { RequirementDto, RequirementGroupDto } from "@/server/services/games";
 
 /** 표에 세울 줄과 그 값 꺼내는 법. 순서가 곧 화면 순서다 — 사용자가 먼저 보는 것부터 */
@@ -19,7 +19,7 @@ const ROWS: Array<{ key: keyof typeof REQUIREMENT_ROW_LABEL; valueOf: (r: Requir
   { key: "vramMb", valueOf: (r) => formatSizeMb(r.vramMb) },
   { key: "directxText", valueOf: (r) => r.directxText ?? "" },
   { key: "storageMb", valueOf: (r) => formatSizeMb(r.storageMb) },
-  { key: "noteText", valueOf: (r) => r.noteText ?? "" },
+  // "그 밖에"(note_text)는 여기 없다 — 뺀 근거는 lib/games/messages 의 REQUIREMENT_ROW_LABEL 주석
 ];
 
 function OsTable({ group }: { group: RequirementGroupDto }) {
@@ -79,7 +79,6 @@ export function RequirementsBody({ groups }: { groups: RequirementGroupDto[] }) 
       {groups.map((g) => (
         <OsTable key={g.osFamily} group={g} />
       ))}
-      <p className="text-[11.5px] leading-[1.6] text-dim">{GAME_MESSAGES.requirementNote}</p>
     </div>
   );
 }

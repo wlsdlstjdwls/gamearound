@@ -80,6 +80,18 @@ describe("judge", () => {
     expect(judge(device(), spec(), null).overall).toBe("meets_minimum");
   });
 
+  // 간이 폼이 저장공간을 안 받는다 — 우리가 안 물어본 값을 "안 적어 두셨어요" 로 되묻지 않는다
+  it("저장공간을 안 적은 기기에는 저장공간 줄을 세우지 않는다", () => {
+    const v = judge(device({ storageFreeMb: null }), spec(), null);
+    expect(v.parts.find((p) => p.slot === "storage")).toBeUndefined();
+    expect(v.hasUnknown).toBe(false);
+  });
+
+  it("저장공간을 적어 둔 기기에는 그대로 견준다", () => {
+    const v = judge(device({ storageFreeMb: 1024 }), spec(), null);
+    expect(v.parts.find((p) => p.slot === "storage")?.status).toBe("below");
+  });
+
   it("스토어가 요구값을 안 적은 부위는 모른다고 한다", () => {
     const v = judge(device(), spec({ ramMb: null, cpuTiers: [], gpuTiers: [] }), null);
     expect(v.parts.find((p) => p.slot === "ram")?.reason).toBe("no-requirement");

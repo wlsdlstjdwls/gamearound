@@ -22,7 +22,7 @@ import { cn } from "@/lib/cn";
 /** 요약 줄과 본문이 **반드시** 같은 값을 써야 두 기둥이 맞는다. 한 곳에서만 고친다 */
 const GRID = "grid min-w-0 items-start gap-x-12 gap-y-6 lg:grid-cols-2";
 
-function Title({ id, title, note }: { id: string; title: string; note?: string }) {
+function Title({ id, title, note }: { id: string; title: string; note?: React.ReactNode }) {
   return (
     <span className="flex min-w-0 flex-wrap items-baseline gap-x-2.5 gap-y-1">
       {/* summary 안이라 h2 를 쓴다 — 마디 제목의 격은 다른 마디와 같아야 한다(SECTION_SIZE) */}
@@ -36,6 +36,7 @@ function Title({ id, title, note }: { id: string; title: string; note?: string }
 
 export function RunCheck({
   verdictTitle,
+  verdictNote,
   requirementTitle,
   requirementNote,
   verdict,
@@ -43,6 +44,8 @@ export function RunCheck({
   defaultOpen = true,
 }: {
   verdictTitle: string;
+  /** 판정 제목 옆 한 줄 — 지금 어떤 기기로 재고 있는지(devices/device-note). 접힌 채로도 보여야 한다 */
+  verdictNote?: React.ReactNode;
   requirementTitle: string;
   /** 제목 옆 회색 문구(어느 OS 사양이 있는지). 접힌 상태에서 "안에 뭐가 있나" 를 말하는 자리다 */
   requirementNote?: string;
@@ -51,11 +54,11 @@ export function RunCheck({
   defaultOpen?: boolean;
 }) {
   return (
-    <details open={defaultOpen} className="group flex flex-col">
+    <details open={defaultOpen} className="disclosure group flex flex-col">
       {/* list-none 둘 다 필요하다 — 사파리는 ::-webkit-details-marker 로만 세모를 지운다(Collapsible 과 같은 규칙) */}
       <summary className="tap relative -mx-2.5 block cursor-pointer list-none rounded-[var(--radius-sm)] px-2.5 py-2 transition-colors duration-base hover:bg-surface-2 [&::-webkit-details-marker]:hidden">
         <span className={GRID}>
-          <Title id="compat-heading" title={verdictTitle} />
+          <Title id="compat-heading" title={verdictTitle} note={verdictNote} />
           {/* pr-9 는 세모와 글자가 겹치지 않게 띄우는 값이다. 칸의 폭은 안 바뀌므로 본문과 계속 맞는다 */}
           <span className="hidden pr-9 lg:block">
             <Title id="requirements-heading" title={requirementTitle} note={requirementNote} />

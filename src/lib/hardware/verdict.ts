@@ -88,14 +88,26 @@ function compareAmount(slot: PartSlot, deviceValue: number | null, requiredValue
   return { slot, status: deviceValue >= requiredValue ? "meets" : "below" };
 }
 
-/** 기기 한 대와 사양 한 벌을 견준다 */
+/**
+ * 기기 한 대와 사양 한 벌을 견준다.
+ *
+ * **저장공간은 적어 둔 사람에게만 묻는다**(2026-09-22, 사용자 지적: "내 기기 저장했는데도 이리 뜨는데").
+ * 간이 폼(비회원, devices/guest-device-form)은 저장공간 칸을 **아예 받지 않는다** — 칸이 늘수록
+ * 안 쓰기 때문이고, 남은 공간은 게임을 지우면 바로 달라지는 값이라 적어 둘 값도 아니다.
+ * 그런데 판정은 그 빈칸을 "기기에 안 적어 두셨어요 / 확인 못 함" 으로 되물었다. 우리가 안 받은 값을
+ * 사람이 빠뜨린 것처럼 말하는 줄이고, 덤으로 결론에 "일부 항목은 확인하지 못했어요" 까지 붙였다.
+ *
+ * 값이 있는 기기(계정에 등록하며 적어 둔 경우)에서는 그대로 견준다 — 규칙을 지운 것이 아니라
+ * 물어본 적 없는 것을 묻지 않게 한 것이다.
+ */
 export function judgeAgainst(device: DeviceSpec, spec: RequirementSpec): PartVerdict[] {
-  return [
+  const parts = [
     compareTier("cpu", deviceTier("cpu", device.cpuModelKey), requiredTier(spec.cpuTiers), device.cpuModelKey === null, spec.cpuTiers.length > 0),
     compareTier("gpu", deviceTier("gpu", device.gpuModelKey), requiredTier(spec.gpuTiers), device.gpuModelKey === null, spec.gpuTiers.length > 0),
     compareAmount("ram", device.ramMb, spec.ramMb),
-    compareAmount("storage", device.storageFreeMb, spec.storageMb),
   ];
+  if (device.storageFreeMb !== null) parts.push(compareAmount("storage", device.storageFreeMb, spec.storageMb));
+  return parts;
 }
 
 /** 부위 결과들 → 이 등급을 통과했나. 아는 것이 하나도 없으면 null(판정 불가) */
