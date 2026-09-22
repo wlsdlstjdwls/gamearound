@@ -1,6 +1,6 @@
 // 홈 데이터 — 할인, 신작, 뉴스 묶음. 캐시 태그 `home`(§4.5).
 import { unstable_cache } from "next/cache";
-import { and, desc, eq, gt, isNotNull, sql } from "drizzle-orm";
+import { and, asc, desc, eq, gt, isNotNull, sql } from "drizzle-orm";
 import { getDb } from "@/server/db/client";
 import { gamePlatforms, games, HOME_REGION, news } from "@/server/db/schema";
 import { visiblePlatformsOnly } from "@/server/db/visibility";
@@ -13,6 +13,8 @@ import { HLTB_RANK_OFFSET, HLTB_RANK_STEPS, POPULARITY_RANK_MAX_AGE_DAYS } from 
 
 const HOME_LIMIT = 12;
 const HOME_NEWS_LIMIT = 8;
+/** 곧 할인 마감 줄 — 오른쪽 뉴스(8건)와 줄 수를 맞춘다. 두 기둥의 길이가 어긋나면 짧은 쪽 아래가 빈다 */
+const HOME_ENDING_SOON_LIMIT = 8;
 
 /**
  * HLTB 기록 인원수를 순번 자리로 바꾼다 — 목록(list.ts 의 hltbRankExpr)과 같은 표를 본다.
@@ -117,6 +119,37 @@ async function getHomeDataRaw(): Promise<HomeData> {
     )
     .limit(HOME_LIMIT * 4);
 
+  /**
+   * 곧 끝나는 할인 — **따로 묻는다**(2026-09-22, 사용자 지정: "지금 할인 중 게임과 곧 할인 마감
+   * 게임이 겹치지 않게 해줘").
+   *
+   * 화면에서 거를 수 없는 문제였다. 전에는 홈이 discounts(12칸)에서 종료 시각 있는 것만 골라
+   * 이 줄을 만들었는데, 같은 12칸에서 고르니 겹치지 않을 방법이 없었다.
+   *
+   * 정렬 기준도 다르다 — 위 줄은 인기순이고 이 줄은 **빨리 끝나는 순**이다. 인기순 웅덩이를 넓혀
+   * 거기서 고르는 방법으로는 "가장 먼저 끝나는 할인" 이 그 웅덩이 밖에 있을 때 영영 못 잡는다.
+   *
+   * 넉넉히 받아 오는 이유(limit x 6): 게임 하나가 스토어 여러 줄로 오고(groupSummaries 가 접는다),
+   * 그중 위 줄과 겹치는 게임을 JS 에서 버려야 한다.
+   */
+  const endingSoonRows = await db
+    .select({ game: games, gp: gamePlatforms })
+    .from(gamePlatforms)
+    .innerJoin(games, eq(gamePlatforms.gameId, games.id))
+    .where(
+      and(
+        mainGamesOnly(),
+        homeRegion,
+        visiblePlatformsOnly(),
+        gt(gamePlatforms.discountPct, 0),
+        gt(gamePlatforms.currentPrice, 0),
+        // 이미 끝난 할인은 "곧 끝난다" 가 아니다. 종료 시각이 없는 행도 여기 설 수 없다
+        sql`${gamePlatforms.discountEndsAt} > now()`,
+      ),
+    )
+    .orderBy(asc(gamePlatforms.discountEndsAt), baseCurrencyFirst)
+    .limit(HOME_ENDING_SOON_LIMIT * 6);
+
   // 최근 출시: 출시일 desc (미래 출시 제외)
   const releaseRows = await db
     .select({ game: games, gp: gamePlatforms })
@@ -134,11 +167,20 @@ async function getHomeDataRaw(): Promise<HomeData> {
     .limit(HOME_NEWS_LIMIT);
 
   // 잘라 온 조인 행만으로는 배지가 빠진다 — 자른 뒤 게임 단위로 한 번 더 채운다(fillPlatforms 주석)
-  const fill = async (rows: typeof discountRows) => fillGenres(await fillPlatforms(groupSummaries(rows, HOME_LIMIT)));
-  const [discounts, recentReleases] = await Promise.all([fill(discountRows), fill(releaseRows)]);
+  const fill = async (rows: typeof discountRows, limit = HOME_LIMIT) => fillGenres(await fillPlatforms(groupSummaries(rows, limit)));
+  const [discounts, recentReleases, endingSoonAll] = await Promise.all([
+    fill(discountRows),
+    fill(releaseRows),
+    // 겹치는 것을 버린 뒤에 8칸을 채워야 해서 넉넉히 접는다
+    fill(endingSoonRows, HOME_ENDING_SOON_LIMIT * 3),
+  ]);
+  // 위 줄에 이미 선 게임은 뺀다 — 같은 카드가 한 화면에 두 번 서면 두 마디가 서로를 베낀 것처럼 읽힌다
+  const shown = new Set(discounts.map((g) => g.slug));
+  const endingSoon = endingSoonAll.filter((g) => !shown.has(g.slug)).slice(0, HOME_ENDING_SOON_LIMIT);
 
   return {
     discounts,
+    endingSoon,
     recentReleases,
     latestNews: newsRows.map(({ n, slug, titleKo, titleEn }) => ({
       id: n.id,

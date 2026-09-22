@@ -12,51 +12,14 @@ import { EmptyState } from "@/components/empty-state";
 import { SaleBadge } from "@/components/sale-badge";
 import { Page, ROW, ROWS, SectionHead } from "@/components/ui/page";
 import { buttonClass } from "@/components/ui/button";
-import { chipClass } from "@/components/ui/chip";
-import { PLATFORM_LABEL } from "@/lib/format";
+import { formatDiscount, PLATFORM_LABEL } from "@/lib/format";
 import { stagger } from "@/lib/motion";
 import { ROUTES } from "@/lib/routes";
 import { cn } from "@/lib/cn";
-import { getHomeData, type GameSummary } from "@/server/services/games";
+import { getHomeData } from "@/server/services/games";
 
 // Next 가 정적으로 읽는 값이라 리터럴이어야 한다 — 근거, 수치는 lib/cache 의 LIST_REVALIDATE_SECONDS 와 같게 유지
 export const revalidate = 3600;
-
-// 오른쪽 뉴스(HOME_NEWS_LIMIT = 8)와 줄 수를 맞춘다 — 두 기둥의 길이가 크게 어긋나면
-// 짧은 쪽 아래가 빈 자리로 남는다
-const ENDING_SOON_LIMIT = 8;
-
-/**
- * 제목 옆 갈래 칩 — 누르면 목록의 같은 조건으로 넘어간다.
- *
- * 홈에서 직접 거르지 않는 이유: 홈은 캐시 한 벌(태그 home)로 모두에게 같은 값을 주는 화면이다.
- * 여기에 조건을 달면 조합마다 캐시가 쪼개지고, 그 순간 홈이 목록의 축소판이 된다.
- * 홈은 "지금 뭐가 싼가" 한 장만 보여 주고, 고르는 일은 목록이 받는다.
- */
-const DEAL_FILTERS = [
-  { label: "전체", href: `${ROUTES.game}?sale=1` },
-  { label: PLATFORM_LABEL.steam, href: `${ROUTES.game}?sale=1&platform=steam` },
-  { label: PLATFORM_LABEL.ps5, href: `${ROUTES.game}?sale=1&platform=ps5` },
-  { label: PLATFORM_LABEL.xbox, href: `${ROUTES.game}?sale=1&platform=xbox` },
-  { label: PLATFORM_LABEL.switch, href: `${ROUTES.game}?sale=1&platform=switch` },
-] as const;
-
-function endsAtMs(g: GameSummary): number | null {
-  const raw = g.best?.discountEndsAt;
-  if (!raw) return null;
-  const t = new Date(raw).getTime();
-  return Number.isNaN(t) ? null : t;
-}
-
-/** 종료 시각이 있는 할인만, 빨리 끝나는 순 */
-function endingSoon(discounts: GameSummary[]): GameSummary[] {
-  return discounts
-    .map((g) => ({ g, t: endsAtMs(g) }))
-    .filter((x): x is { g: GameSummary; t: number } => x.t !== null && x.t > Date.now())
-    .sort((a, b) => a.t - b.t)
-    .slice(0, ENDING_SOON_LIMIT)
-    .map((x) => x.g);
-}
 
 type HomeData = Awaited<ReturnType<typeof getHomeData>>;
 
@@ -67,14 +30,14 @@ async function loadHomeData(): Promise<{ data: HomeData; dbError: string | null 
   } catch (e) {
     const msg = e instanceof Error ? e.message : String(e);
     console.error("[home] 데이터 조회 실패:", msg);
-    return { data: { discounts: [], recentReleases: [], latestNews: [] }, dbError: msg };
+    return { data: { discounts: [], endingSoon: [], recentReleases: [], latestNews: [] }, dbError: msg };
   }
 }
 
 export default async function HomePage() {
   const { data, dbError } = await loadHomeData();
-  const { discounts, recentReleases, latestNews } = data;
-  const soon = endingSoon(discounts);
+  // 곧 끝나는 할인은 서버가 따로 골라 준다 — 위 줄과 겹치지 않아야 해서다(services/games/home 주석)
+  const { discounts, endingSoon: soon, recentReleases, latestNews } = data;
 
   return (
     <Page pad="home" gap={56}>
@@ -86,20 +49,13 @@ export default async function HomePage() {
 
       {/* 섹션 1 — 할인 중인 게임. 큰 머리글을 걷어낸 자리라(2026-09-15) 이 제목이 문서의 h1 이다 */}
       <section aria-labelledby="discounts-heading" className="flex flex-col gap-[22px]">
-        <div className="enter-item flex flex-wrap items-end justify-between gap-x-6 gap-y-4" style={stagger(0)}>
-          <div>
-            <h1 id="discounts-heading" className="text-[26px] font-extrabold leading-[1.15] tracking-[-0.045em] text-ink sm:text-[34px]">
-              지금 할인 중
-            </h1>
-            <p className="mt-1.5 text-[13.5px] text-mut">한국 스토어 기준 플랫폼별 최저가</p>
-          </div>
-          <nav aria-label="할인 갈래" className="flex flex-wrap items-center gap-1.5 text-[13px]">
-            {DEAL_FILTERS.map((f, i) => (
-              <Link key={f.label} href={f.href} className={chipClass({ active: i === 0 })}>
-                {f.label}
-              </Link>
-            ))}
-          </nav>
+        {/* 곁말과 갈래 칩을 뗐다(2026-09-22, 사용자 지정). 칩은 목록의 플랫폼 필터와 같은 일을 하는
+            두 번째 입구였고, 곁말("한국 스토어 기준 플랫폼별 최저가")은 카드가 이미 스토어 이름을
+            줄마다 적고 있어 같은 말을 머리에서 한 번 더 하고 있었다 */}
+        <div className="enter-item" style={stagger(0)}>
+          <h1 id="discounts-heading" className="text-[26px] font-extrabold leading-[1.15] tracking-[-0.045em] text-ink sm:text-[34px]">
+            지금 할인 중
+          </h1>
         </div>
 
         {discounts.length === 0 ? (
@@ -110,9 +66,10 @@ export default async function HomePage() {
           />
         ) : (
           <>
-            {/* 세로 간격이 가로보다 넓다(36 대 24): 스탬프가 커버 아래로 14px 나와 있어서
-                같은 간격이면 아랫줄 카드의 커버를 건드린다 */}
-            <ul className="grid grid-cols-[repeat(auto-fill,minmax(min(280px,100%),1fr))] gap-x-6 gap-y-9">
+            {/* 세로 간격이 가로보다 넓다(28 대 24) — 카드가 판을 가졌고 hover 에서 4px 떠오르므로
+                줄 사이에 그 움직임이 앉을 자리가 필요하다. 36 이던 값은 커버 밖으로 나온 도장 때문이었고
+                그 도장은 없어졌다(game-card 의 DiscountStamp) */}
+            <ul className="grid grid-cols-[repeat(auto-fill,minmax(min(280px,100%),1fr))] gap-x-6 gap-y-7">
               {discounts.map((g, i) => (
                 <li key={g.slug} className="enter-item" style={stagger(i + 1)}>
                   <GameCard game={g} variant="discount" />
@@ -160,6 +117,12 @@ export default async function HomePage() {
                           </>
                         )}
                         <span className="font-bold text-ink">{formatPrice(g.best?.currentPrice, g.best?.currency)}</span>
+                        {/* 할인율을 값 옆에 세운다(2026-09-22, 사용자 지적: "할인율이 안보임").
+                            이 줄에는 커버 위 스탬프가 없어서, 취소선 정가만으로는 "얼마나 싸졌나" 를
+                            두 숫자를 머릿속에서 나눠 봐야 알 수 있었다. 카드의 스탬프와 같은 브랜드 색이다 */}
+                        {g.best?.discountPct != null && g.best.discountPct > 0 && (
+                          <span className="font-bold text-acc">{formatDiscount(g.best.discountPct)}</span>
+                        )}
                         {g.best?.listPrice != null && g.best.listPrice !== g.best.currentPrice && (
                           <span className="text-[11px] text-dim-2 line-through">{formatPrice(g.best.listPrice, g.best.currency)}</span>
                         )}
