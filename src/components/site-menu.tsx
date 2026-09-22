@@ -19,7 +19,7 @@ import { ROUTES, signInPath } from "@/lib/routes";
 import { useSession } from "@/components/auth/session-provider";
 import { useSignOut } from "@/components/auth/use-sign-out";
 import { buttonClass } from "@/components/ui/button";
-import { BellIcon, LogOutIcon, MenuIcon, SpinnerIcon } from "@/components/ui/icons";
+import { BellIcon, CalendarIcon, GamepadIcon, LogOutIcon, MenuIcon, ShieldIcon, SlidersIcon, SpinnerIcon } from "@/components/ui/icons";
 import { Sheet } from "@/components/ui/sheet";
 import { Clamp } from "@/components/ui/tooltip";
 
@@ -27,13 +27,13 @@ type MenuLink = { href: string; label: string; icon?: React.ReactNode; authOnly?
 
 /** 시트에 서는 차례. 헤더에 펴 두는 넓은 화면 메뉴(site-header)와 같은 순서를 지킨다 */
 const LINKS: MenuLink[] = [
-  { href: ROUTES.game, label: "게임 목록" },
-  { href: ROUTES.upcoming, label: "출시 예정" },
+  { href: ROUTES.game, label: "게임 목록", icon: <GamepadIcon size={17} /> },
+  { href: ROUTES.upcoming, label: "출시 예정", icon: <CalendarIcon size={17} /> },
   // "다음 세일" 은 숨겼다(2026-09-21) — 넓은 화면 메뉴(site-header)와 같이 되돌린다
   // 위시리스트는 숨겼다(2026-09-21) — 넓은 화면 메뉴(site-header)와 같이 되돌린다
   { href: ROUTES.alerts, label: "가격 알림", icon: <BellIcon size={17} /> },
-  { href: ROUTES.settings, label: "설정", authOnly: true },
-  { href: ROUTES.admin, label: "관리자", authOnly: true, adminOnly: true },
+  { href: ROUTES.settings, label: "설정", icon: <SlidersIcon size={17} />, authOnly: true },
+  { href: ROUTES.admin, label: "관리자", icon: <ShieldIcon size={17} />, authOnly: true, adminOnly: true },
 ];
 
 /** 한 줄. 터치 타깃은 줄 높이가 곧바로 맡는다 — 시트 안에서는 자리를 아낄 이유가 없다 */
@@ -49,7 +49,7 @@ function Row({ href, label, icon, current }: MenuLink & { current: boolean }) {
         current ? "bg-acc-soft font-semibold text-acc" : "text-mut hover:bg-surface-2 hover:text-ink",
       )}
     >
-      {/* 그림이 없는 줄도 글자 시작점은 같아야 한다 — 없으면 들쭉날쭉한 계단이 된다 */}
+      {/* 폭을 고정한다 — 그림이 빠지는 줄이 생겨도 글자 시작점이 계단처럼 어긋나지 않는다 */}
       <span aria-hidden className="flex w-[17px] shrink-0 justify-center">
         {icon}
       </span>

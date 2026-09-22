@@ -7,7 +7,7 @@
 import { cn } from "@/lib/cn";
 
 export type PageWidth = "default" | "tight" | "wide";
-export type PagePad = "home" | "detail" | "sub";
+export type PagePad = "home" | "detail" | "sub" | "admin";
 
 const WIDTH: Record<PageWidth, string> = {
   default: "max-w-[var(--page-w)]",
@@ -32,6 +32,12 @@ const PAD: Record<PagePad, string> = {
   home: "pt-8 pb-[90px]",
   detail: "pt-6 pb-10",
   sub: "pt-[22px] pb-20",
+  /*
+   * 관리자 셸. 좁은 화면에서만 아래 여백을 줄인다(2026-09-22, "컨텐츠와 푸터 사이 공백이 너무 크다").
+   * 거기서는 이 여백 밑에 바닥 띠 자리 56px 이 한 겹 더 깔려서(globals.css 의 body:has) 80 + 56 = 136px 이
+   * 내용과 푸터 사이에 남았다. 넓은 화면은 띠가 없으니 서브 화면과 같은 값을 그대로 쓴다.
+   */
+  admin: "pt-[22px] pb-6 md:pb-20",
 };
 
 export type PageProps = React.ComponentProps<"div"> & {

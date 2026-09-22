@@ -5,9 +5,16 @@ import { correctFieldAction } from "@/app/(admin)/admin/actions";
 import { ActionStatus, SubmitButton } from "@/components/admin/submit-button";
 import { panelClass } from "@/components/ui/page";
 import { ADMIN_FIELD } from "@/components/admin/field";
+import { FormSelect } from "@/components/ui/select";
 
 export type FieldOption = { name: string; label: string; kind: "text" | "int" | "bool" | "date"; current: string | number | boolean | null };
 
+
+/** 참/거짓 칸의 두 값. 화면 낱말은 여기서만 정한다 */
+const BOOL_CHOICES = [
+  { value: "true", label: "예" },
+  { value: "false", label: "아니오" },
+];
 
 function toInputValue(v: FieldOption["current"]): string {
   if (v === null || v === undefined) return "";
@@ -39,16 +46,23 @@ export function CorrectionForm({
       <input type="hidden" name="gameId" value={gameId} />
       <p className="text-[13px] font-bold text-ink">{title}</p>
       <div className="grid gap-2 sm:grid-cols-[12rem_1fr_auto_auto]">
-        <select name="field" value={fieldName} onChange={(e) => setFieldName(e.target.value)} className={ADMIN_FIELD}>
-          {fields.map((f) => (
-            <option key={f.name} value={f.name}>{f.label}</option>
-          ))}
-        </select>
+        <FormSelect
+          name="field"
+          label="고칠 칸"
+          hideLabel
+          value={fieldName}
+          onChange={setFieldName}
+          options={fields.map((f) => ({ value: f.name, label: f.label }))}
+        />
         {field?.kind === "bool" ? (
-          <select name="value" key={`${field.name}-bool`} defaultValue={toInputValue(field.current) || "false"} className={ADMIN_FIELD}>
-            <option value="true">예</option>
-            <option value="false">아니오</option>
-          </select>
+          <FormSelect
+            name="value"
+            label={field.label}
+            hideLabel
+            key={`${field.name}-bool`}
+            defaultValue={toInputValue(field.current) || "false"}
+            options={BOOL_CHOICES}
+          />
         ) : field?.kind === "date" ? (
           <input name="value" key={`${field.name}-date`} type="date" defaultValue={toInputValue(field.current)} className={ADMIN_FIELD} />
         ) : field?.kind === "int" ? (

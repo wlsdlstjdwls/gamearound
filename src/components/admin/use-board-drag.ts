@@ -7,9 +7,17 @@
 // 끄는 동안의 모양을 우리가 정하려면 끄는 일 자체를 우리가 해야 한다.
 // 덤: 끌리는 카드가 실제로 손을 따라온다(네이티브는 반투명 스크린샷이 따라왔고 카드는 제자리였다).
 //
-// **마우스에서만 켠다**: 터치로 카드를 끌려면 세로 스크롤과 가를 길목(길게 누르기)이 필요한데,
-// 그러면 판을 훑어 내리다 카드가 딸려 오는 일이 생긴다. 칸 옮기기의 본체는 팝업 안의 칸 단추다 —
-// 드래그는 마우스에게만 얹어 주는 지름길이다(task-card 주석의 a11y 근거와 같다).
+// **터치는 손잡이에서만 시작한다**(2026-09-22, "터치 드래그앤드랍이 안되네..? 그럼 어떻게 옮기지?!").
+// 앞서는 터치를 통째로 막아 두었다. 판을 훑어 내리다 카드가 딸려 오는 일을 막으려던 것인데,
+// 그 대가로 **휴대폰에서는 끌 길이 아예 없었다**.
+//
+// 길게 누르기로 가르지 않은 이유: 손가락이 닿는 순간 브라우저가 스크롤을 시작해 버리면
+// 그 뒤에 우리가 취소할 길이 없다. 스크롤을 끄려면 `touch-action: none` 을 미리 걸어야 하는데,
+// 카드 전체에 걸면 칸을 훑어 내리지 못한다. 그래서 **손잡이 한 조각에만** 걸었다(card.tsx 의 grip).
+// 손잡이에서 시작한 터치는 끌기고, 카드 어디서든 시작한 터치는 스크롤이다 — 둘이 겹치지 않는다.
+//
+// 칸 옮기기의 본체는 여전히 팝업 안의 칸 단추다(키보드로 되어야 한다). 끌기는 손과 마우스에게
+// 얹어 주는 지름길이다(task-card 주석의 a11y 근거와 같다).
 //
 // 카드 위치는 **DOM 을 직접 만져서** 옮긴다. 손이 움직일 때마다 state 를 바꾸면 판 전체가
 // 초당 수십 번 다시 그려지고, 그 사이 카드의 위로/아래로 버튼까지 매번 다시 만들어진다.
@@ -25,6 +33,12 @@ const DRAG_START_PX = 5;
 
 /** 칸이 스스로 붙이는 표. 끄는 동안 포인터 밑에 무엇이 있는지 이 값으로 찾는다 */
 export const DROP_ATTR = "data-drop-status";
+
+/**
+ * 손잡이가 스스로 붙이는 표. **이 조각에는 `touch-action: none` 이 걸려 있어야 한다**(card.tsx) —
+ * 그래야 손가락이 여기서 시작할 때 브라우저가 스크롤을 가로채지 않는다.
+ */
+export const HANDLE_ATTR = "data-drag-handle";
 
 /** 끄는 동안 문서가 입는 표. 커서와 글자 선택 금지는 globals.css 의 `body.dragging-card` 가 맡는다 */
 const BODY_CLASS = "dragging-card";
@@ -82,12 +96,31 @@ export function useBoardDrag(onDrop: (id: string, to: TaskStatus) => void) {
     [onDrop, setOverBoth],
   );
 
-  /** 카드가 누름을 넘겨 준다. 마우스 왼쪽 버튼만 받는다 */
+  /**
+   * 카드가 누름을 넘겨 준다. 마우스는 카드 어디서든, 손가락은 손잡이에서만 받는다.
+   * 마우스는 왼쪽 버튼만 — 오른쪽 버튼은 메뉴를 여는 일이다.
+   */
   const onPointerDown = useCallback(
     (e: React.PointerEvent<HTMLElement>, id: string, status: TaskStatus) => {
-      if (e.pointerType !== "mouse" || e.button !== 0) return;
-      // 카드 안의 버튼(위로, 아래로)에서 시작한 누름은 그 버튼의 일이다
-      if ((e.target as HTMLElement).closest("button")?.dataset.noDrag === "true") return;
+      const target = e.target as HTMLElement;
+      if (e.pointerType === "mouse") {
+        if (e.button !== 0) return;
+        // 카드 안의 버튼(위로, 아래로)에서 시작한 누름은 그 버튼의 일이다
+        if (target.closest("button")?.dataset.noDrag === "true") return;
+      } else if (!target.closest(`[${HANDLE_ATTR}]`)) {
+        // 손가락이 손잡이 밖에 닿았으면 그건 칸을 훑는 일이다 — 건드리지 않는다
+        return;
+      } else {
+        // 손가락은 **암묵 포인터 캡처**가 걸린다(터치 포인터의 기본값). 그대로 두면 끌리는 동안
+        // 모든 이벤트가 손잡이로 가는데, 그 손잡이가 든 카드에는 곧 pointer-events:none 이 붙는다
+        // (globals.css 의 .grabbable.dragging) — 그러면 손이 움직여도 pointermove 가 끊긴다.
+        // 캡처를 놓으면 이벤트가 평소대로 창까지 올라온다. 스크롤은 손잡이의 touch-action 이 이미 막았다.
+        try {
+          target.releasePointerCapture?.(e.pointerId);
+        } catch {
+          // 캡처가 안 걸려 있으면 던진다 — 그 경우가 바로 우리가 원하던 상태다
+        }
+      }
       session.current = { id, from: status, el: e.currentTarget, startX: e.clientX, startY: e.clientY, moved: false };
       droppedRef.current = false;
     },

@@ -287,16 +287,19 @@ export function AdminNav({ user, counts }: { user: string; counts: Promise<Admin
       </aside>
 
       {/*
-        좁은 화면 — 바닥 띠.
-        fixed 가 아니라 **sticky 다**: fixed 면 띠가 화면 바닥에 못 박혀 푸터 마지막 줄을 영영 덮는다.
-        sticky 는 제자리(본문 끝)를 가지면서 스크롤 동안만 바닥에 붙어 있다가, 본문이 끝나면
-        제자리로 돌아가 푸터에 자리를 내준다. 그래서 본문에 따로 아래 여백을 만들어 줄 필요도 없다.
-        order-last: 이 컴포넌트는 기둥이어야 해서 DOM 에서 본문보다 앞에 오는데, 띠는 뒤에 서야 한다.
-        -mx: 띠는 화면 좌우 끝까지 닿아야 띠로 읽힌다(본문 여백 안에 갇히면 카드처럼 보인다).
+        좁은 화면 — 바닥 띠. 화면 바닥에 **못 박는다**(fixed).
+        sticky 로 뒀더니 본문이 끝나는 자리에서 띠가 같이 올라가 버려 푸터가 띠 아래로 나왔고,
+        스켈레톤처럼 본문이 짧은 순간에는 띠가 화면 한가운데에 떴다(2026-09-22 사용자 지적).
+        모바일 앱의 띠는 내용과 함께 흐르지 않는다 — 늘 같은 자리에 있어야 손이 기억한다.
+
+        띠가 푸터를 덮지 않게 **문서 바닥에 띠 높이만큼 자리를 비우는 일은 globals.css 가 한다**
+        (`body:has([data-admin-tabbar])`). 푸터는 이 컴포넌트 바깥, 루트 레이아웃에 있어서
+        여기서는 닿지 않는다.
       */}
       <nav
+        data-admin-tabbar
         aria-label={ADMIN_NAV.menuTitle}
-        className="sticky bottom-0 -mx-5 order-last flex border-t border-line bg-bg/95 pb-[env(safe-area-inset-bottom)] backdrop-blur sm:-mx-7 md:hidden"
+        className="fixed inset-x-0 bottom-0 z-40 flex border-t border-line bg-bg/95 pb-[env(safe-area-inset-bottom)] backdrop-blur md:hidden"
       >
         {TABS.map((item) => {
           const active = isActive(pathname, item.href);

@@ -22,16 +22,14 @@ export default async function AdminLayout({ children }: { children: React.ReactN
   // 관리자만 1440(width="wide")을 쓴다(2026-09-22). 표와 판이 주인공인 화면이라 칸 수가 폭을 정한다 —
   // 1200 에서는 매칭 대기의 제목 칸이 잘리고 할 일 판의 칸 넷이 카드 글자보다 좁아졌다
   return (
-    <Page width="wide" gap={18}>
+    <Page width="wide" pad="admin" gap={18}>
       {/* md:items-start: 기둥이 본문 높이를 따라 늘어나면 sticky 가 걸리지 않는다.
           좁은 화면까지 걸면 안 된다 — 세로로 쌓인 flex 에서 items-start 는 가로 stretch 를 꺼서
           본문이 제 내용 폭으로 쪼그라든다(표와 격자가 화면을 다 쓰지 못한다).
 
-          min-h: 좁은 화면의 바닥 띠는 sticky 라 제자리가 본문 끝이다. 본문이 짧으면 그 자리가
-          화면 한가운데가 되어 띠가 허공에 뜬다 — 이 칸을 화면 높이만큼 잡아 두면 짧은 화면에서도
-          바닥에 선다. 102px 은 Page 의 위아래 여백(pt 22 + pb 80)이다: 그만큼 빼야 딱 한 화면이 되고,
-          안 빼면 아무것도 없는 화면이 102px 스크롤된다. */}
-      <div className="flex min-h-[calc(100svh-var(--header-h)-102px)] flex-col gap-5 md:min-h-0 md:flex-row md:items-start md:gap-8">
+          바닥 띠가 fixed 라 이 칸이 화면 높이를 붙들 이유는 없다 — 띠 자리는 globals.css 가
+          문서 바닥에 비운다(`body:has([data-admin-tabbar])`). */}
+      <div className="flex flex-col gap-5 md:flex-row md:items-start md:gap-8">
         <AdminNav user={user.displayName ?? user.email} counts={counts} />
         {/* main 이 아니라 div 인 이유: 루트 레이아웃이 이미 <main> 안에 children 을 넣는다.
             landmark 를 겹쳐 두면 낭독기가 "본문" 을 둘로 센다 */}

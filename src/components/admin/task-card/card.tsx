@@ -8,7 +8,12 @@
 // 순서만 카드에 남긴 이유: 순서는 옆 카드와 견줘서 정하는 값이라 판을 보면서 눌러야 한다.
 //
 // **드래그만 두지 않는 이유**(AGENTS §6 a11y): 드래그는 포인터 기기에만 있는 길이다.
-// 칸 옮기기는 팝업 안의 칸 단추가 맡고(키보드로 된다), 드래그는 마우스에게만 얹어 주는 지름길이다.
+// 칸 옮기기는 팝업 안의 칸 단추가 맡고(키보드로 된다), 드래그는 그 위에 얹어 주는 지름길이다.
+//
+// **손잡이**(2026-09-22): 손가락으로도 끌 수 있게 카드 아래에 잡는 자리를 하나 냈다.
+// 카드 전체를 손가락 끌기의 시작점으로 삼을 수는 없다 — 그러려면 카드에 touch-action: none 을
+// 걸어야 하고, 그러면 카드 위에서 칸을 훑어 내리지 못한다. 손잡이에서 시작하면 끌기,
+// 카드 어디서든 시작하면 스크롤이다(use-board-drag 주석).
 //
 // **끌리는 느낌**: 커서는 평소 grab, 누르는 순간과 끄는 동안 grabbing 이다(globals.css 의 .grabbable).
 // 끄는 일은 판이 쥔 훅(use-board-drag)이 한다 — 네이티브 드래그앤드롭을 쓰면 시작하는 순간
@@ -18,6 +23,7 @@ import { cn } from "@/lib/cn";
 import { panelClass } from "@/components/ui/page";
 import { TASK_MESSAGES, TASK_PRIORITY_LABEL } from "@/lib/admin/messages";
 import { type AdminTask, type TaskStatus } from "@/lib/admin/tasks";
+import { HANDLE_ATTR } from "@/components/admin/use-board-drag";
 import { reorderTaskAction, type TaskActionState } from "@/app/(admin)/admin/tasks/actions";
 
 /** 급함 표시. 보통은 아무 표시도 하지 않는다 — 전부 표시하면 어느 것도 눈에 띄지 않는다 */
@@ -111,8 +117,26 @@ export function TaskCard({
         >
           {TASK_MESSAGES.down}
         </button>
-        <span className="ml-auto text-[10.5px] text-dim opacity-0 transition-opacity group-hover:opacity-100">
-          {TASK_MESSAGES.openHint}
+
+        {/*
+          끄는 손잡이. touch-none 이 여기에만 걸린다 — 손가락이 이 위에서 시작하면 브라우저가
+          스크롤을 가져가지 않아 끌기가 된다(use-board-drag 의 HANDLE_ATTR 주석).
+          버튼이 아니라 span 인 이유: 눌러서 일어나는 일이 없다. 키보드로 칸을 옮기는 길은 팝업 안에 있고,
+          이것은 손에게만 있는 지름길이라 탭 순서에 끼면 "눌러도 아무 일도 안 일어나는 칸" 이 된다.
+        */}
+        <span
+          {...{ [HANDLE_ATTR]: "true" }}
+          aria-hidden
+          className="tap ml-auto flex cursor-grab touch-none items-center px-1.5 text-dim opacity-60 transition-opacity hover:opacity-100 [@media(hover:none)]:opacity-100"
+        >
+          <svg viewBox="0 0 12 12" className="w-3" fill="currentColor">
+            <circle cx="4" cy="2.5" r="1" />
+            <circle cx="8" cy="2.5" r="1" />
+            <circle cx="4" cy="6" r="1" />
+            <circle cx="8" cy="6" r="1" />
+            <circle cx="4" cy="9.5" r="1" />
+            <circle cx="8" cy="9.5" r="1" />
+          </svg>
         </span>
       </div>
 

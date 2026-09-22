@@ -10,8 +10,9 @@
 import { useActionState, useState } from "react";
 import { Button, buttonClass } from "@/components/ui/button";
 import { Sheet } from "@/components/ui/sheet";
+import { FormSelect } from "@/components/ui/select";
 import { TASK_MESSAGES } from "@/lib/admin/messages";
-import { Field, FIELD, TaskBasicFields, TaskStatusField } from "@/components/admin/task-fields";
+import { TaskBasicFields, TaskStatusField } from "@/components/admin/task-fields";
 import { TaskGamePicker } from "@/components/admin/task-game-picker";
 import { createTaskAction, type TaskActionState } from "@/app/(admin)/admin/tasks/actions";
 
@@ -37,23 +38,19 @@ export function TaskAddForm({ sources }: { sources: readonly string[] }) {
           카드 안에서 쓰던 때와 다를 바가 없어진다(2026-09-22 사용자 지적) */}
       <Sheet title={TASK_MESSAGES.addTitle} size="wide" open={open} onOpenChange={setOpen}>
         <form action={action} className="flex flex-col gap-4 pb-1 pt-2">
-          <p className="text-[13px] leading-[1.7] text-mut">{TASK_MESSAGES.addLead}</p>
-
           <TaskBasicFields />
           <TaskStatusField />
 
           <TaskGamePicker />
 
-          <Field id="task-source" label={TASK_MESSAGES.sourceLabel}>
-            <select id="task-source" name="source" defaultValue="" className={FIELD}>
-              <option value="">없음</option>
-              {sources.map((s) => (
-                <option key={s} value={s}>
-                  {s}
-                </option>
-              ))}
-            </select>
-          </Field>
+          {/* 시트 안은 손가락으로 고르는 자리라 lg 다 — 폼의 다른 칸과 높이를 맞춘다 */}
+          <FormSelect
+            name="source"
+            label={TASK_MESSAGES.sourceLabel}
+            size="lg"
+            defaultValue=""
+            options={[{ value: "", label: "없음" }, ...sources.map((s) => ({ value: s, label: s }))]}
+          />
 
           {state && !state.ok && (
             <p role="alert" className="animate-rise text-[12.5px] text-danger">

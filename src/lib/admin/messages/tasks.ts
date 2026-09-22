@@ -53,9 +53,7 @@ export const TASK_MESSAGES = {
    * 판은 보는 자리, 팝업은 쓰는 자리로 갈랐다. 카드에는 읽을 것만 남는다.
    */
   addTitle: "할 일 추가",
-  addLead: "제목만 있으면 돼요. 나머지는 나중에 카드에서 채워도 괜찮아요.",
   detailTitle: "할 일",
-  openHint: "눌러서 고치고 기록을 남겨요",
   basics: "내용",
   place: "놓인 칸",
   /** 팝업 안에서 위험한 일은 맨 아래 따로 선다 — 저장 버튼 옆에 두면 손이 미끄러진다 */
@@ -89,10 +87,10 @@ export const TASK_MESSAGES = {
 
 /** 칸 이름. enum 값과 화면 낱말을 잇는 유일한 자리 */
 export const TASK_STATUS_LABEL = {
-  backlog: "언젠가",
+  backlog: "작업대기",
   todo: "할 일",
-  doing: "하는 중",
-  done: "끝",
+  doing: "처리 중",
+  done: "완료",
 } as const;
 
 export const TASK_PRIORITY_LABEL = {

@@ -226,3 +226,56 @@ export function MinusCircleIcon(p: IconProps) {
     </svg>
   );
 }
+
+/* ── 좁은 화면 전체 메뉴(site-menu)의 줄 그림 ──
+   메뉴 줄에 그림을 붙인 이유(2026-09-22 사용자 요청): 시트 안에서 줄은 글자 하나뿐이라
+   훑을 때 걸리는 것이 없었다. 그림이 있으면 같은 자리를 두 번째부터는 모양으로 찾는다.
+   넷 다 같은 규칙으로 그린다 — 24 격자, 2px 선, 채움 없음(base). */
+
+/** 게임 목록 — 패드. 목록 화면의 주인공이 게임이라 목록 줄이 아니라 물건을 그린다 */
+export function GamepadIcon(p: IconProps) {
+  return (
+    <svg {...base(p)}>
+      <path d="M6 12h4" />
+      <path d="M8 10v4" />
+      <circle cx="15.5" cy="11.5" r="1" />
+      <circle cx="18" cy="14" r="1" />
+      <path d="M17.5 18h-11A3.5 3.5 0 0 1 3 14.5v-1A5.5 5.5 0 0 1 8.5 8h7a5.5 5.5 0 0 1 5.5 5.5v1a3.5 3.5 0 0 1-3.5 3.5Z" />
+    </svg>
+  );
+}
+
+/** 출시 예정 — 달력. 이 화면이 세는 것은 개수가 아니라 날짜다 */
+export function CalendarIcon(p: IconProps) {
+  return (
+    <svg {...base(p)}>
+      <rect x="3" y="5" width="18" height="16" rx="2.5" />
+      <path d="M3 10h18" />
+      <path d="M8 3v4" />
+      <path d="M16 3v4" />
+    </svg>
+  );
+}
+
+/** 설정 — 슬라이더. 톱니는 16px 에서 톱니가 뭉개져 회색 원으로만 보인다 */
+export function SlidersIcon(p: IconProps) {
+  return (
+    <svg {...base(p)}>
+      <path d="M5 6h14" />
+      <path d="M5 12h14" />
+      <path d="M5 18h14" />
+      <circle cx="9" cy="6" r="2" />
+      <circle cx="15" cy="12" r="2" />
+      <circle cx="9" cy="18" r="2" />
+    </svg>
+  );
+}
+
+/** 관리자 — 방패. 이 줄만 아무나 못 들어가는 자리라는 것을 모양으로 말한다 */
+export function ShieldIcon(p: IconProps) {
+  return (
+    <svg {...base(p)}>
+      <path d="M12 3l7 3v5.5c0 4.2-2.9 7.9-7 9.5-4.1-1.6-7-5.3-7-9.5V6l7-3Z" />
+    </svg>
+  );
+}

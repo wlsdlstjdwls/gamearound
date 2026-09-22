@@ -11,7 +11,6 @@ import { NewsList } from "@/components/news-list";
 import { EmptyState } from "@/components/empty-state";
 import { SaleBadge } from "@/components/sale-badge";
 import { Page, ROW, ROWS, SectionHead } from "@/components/ui/page";
-import { buttonClass } from "@/components/ui/button";
 import { formatDiscount, PLATFORM_LABEL } from "@/lib/format";
 import { stagger } from "@/lib/motion";
 import { ROUTES } from "@/lib/routes";
@@ -52,10 +51,18 @@ export default async function HomePage() {
         {/* 곁말과 갈래 칩을 뗐다(2026-09-22, 사용자 지정). 칩은 목록의 플랫폼 필터와 같은 일을 하는
             두 번째 입구였고, 곁말("한국 스토어 기준 플랫폼별 최저가")은 카드가 이미 스토어 이름을
             줄마다 적고 있어 같은 말을 머리에서 한 번 더 하고 있었다 */}
-        <div className="enter-item" style={stagger(0)}>
+        {/* 전체 보기는 제목 줄 오른쪽 끝에 붙인다(2026-09-22 사용자 요청) — 아래 뉴스, 최근 출시와 같은 자리다.
+            격자 밑에 있던 큰 단추는 뗐다: 같은 곳으로 가는 입구가 한 마디에 둘이면 둘 다 덜 읽히고,
+            좁은 화면에서는 카드 열두 장을 다 지나야 보여서 사실상 없는 입구였다 */}
+        <div className="enter-item flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1" style={stagger(0)}>
           <h1 id="discounts-heading" className="text-[26px] font-extrabold leading-[1.15] tracking-[-0.045em] text-ink sm:text-[34px]">
             지금 할인 중
           </h1>
+          {discounts.length > 0 && (
+            <Link href={`${ROUTES.game}?sale=1`} className="tap ml-auto inline-flex items-center text-[13px] text-acc hover:underline">
+              전체 보기
+            </Link>
+          )}
         </div>
 
         {discounts.length === 0 ? (
@@ -76,12 +83,6 @@ export default async function HomePage() {
                 </li>
               ))}
             </ul>
-            <Link
-              href={`${ROUTES.game}?sale=1`}
-              className={buttonClass({ variant: "secondary", size: "lg", className: "mt-2 self-center rounded-full px-6" })}
-            >
-              할인 전체 보기
-            </Link>
           </>
         )}
       </section>

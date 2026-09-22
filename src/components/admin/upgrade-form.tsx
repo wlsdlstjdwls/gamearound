@@ -9,6 +9,7 @@ import { Button } from "@/components/ui/button";
 import type { AdminActionState } from "@/app/(admin)/admin/actions";
 import { panelClass } from "@/components/ui/page";
 import { ADMIN_FIELD } from "@/components/admin/field";
+import { FormSelect } from "@/components/ui/select";
 import { PLATFORM_LABEL } from "@/lib/format";
 import type { Platform, UpgradeKind } from "@/server/db/schema";
 
@@ -90,41 +91,25 @@ export function UpgradeForm({
       <form action={formAction} className={panelClass("flex flex-col gap-2.5 p-4")}>
         <input type="hidden" name="gameId" value={gameId} />
         <div className="grid gap-2 sm:grid-cols-4">
-          <label className="flex flex-col gap-1 text-[11.5px] text-dim">
-            원본 플랫폼
-            <select name="fromPlatform" className={ADMIN_FIELD} defaultValue="switch">
-              {platforms.map((p) => (
-                <option key={p} value={p}>
-                  {PLATFORM_LABEL[p] ?? p}
-                </option>
-              ))}
-            </select>
-          </label>
-          <label className="flex flex-col gap-1 text-[11.5px] text-dim">
-            업그레이드 대상
-            <select name="toPlatform" className={ADMIN_FIELD} defaultValue="switch2">
-              {platforms.map((p) => (
-                <option key={p} value={p}>
-                  {PLATFORM_LABEL[p] ?? p}
-                </option>
-              ))}
-            </select>
-          </label>
-          <label className="flex flex-col gap-1 text-[11.5px] text-dim">
-            방식
-            <select
-              name="kind"
-              className={ADMIN_FIELD}
-              value={kind}
-              onChange={(e) => setKind(e.target.value as UpgradeKind)}
-            >
-              {kinds.map((k) => (
-                <option key={k} value={k}>
-                  {KIND_LABEL[k]}
-                </option>
-              ))}
-            </select>
-          </label>
+          <FormSelect
+            name="fromPlatform"
+            label="원본 플랫폼"
+            defaultValue="switch"
+            options={platforms.map((p) => ({ value: p, label: PLATFORM_LABEL[p] ?? p }))}
+          />
+          <FormSelect
+            name="toPlatform"
+            label="업그레이드 대상"
+            defaultValue="switch2"
+            options={platforms.map((p) => ({ value: p, label: PLATFORM_LABEL[p] ?? p }))}
+          />
+          <FormSelect
+            name="kind"
+            label="방식"
+            value={kind}
+            onChange={(v) => setKind(v as UpgradeKind)}
+            options={kinds.map((k) => ({ value: k, label: KIND_LABEL[k] }))}
+          />
           <label className="flex flex-col gap-1 text-[11.5px] text-dim">
             가격 (KRW)
             <input

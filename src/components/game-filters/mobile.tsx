@@ -41,7 +41,14 @@ export function MobileFilters({ groups, strip }: { groups: React.ReactNode; stri
         onClick={() => setOpen(true)}
         className="tap press inline-flex w-fit items-center gap-2 rounded-full border border-line-strong bg-surface py-2 pl-3.5 pr-4 text-[13.5px] font-bold text-ink shadow-hair transition-colors duration-base hover:bg-surface-2"
       >
-        <FilterIcon size={16} className="text-dim" />
+        {/*
+          1px 내린다(2026-09-22 사용자 지적: "필터 아이콘이랑 문구랑 위아래 정렬 안맞음").
+          상자로는 이미 가운데였다 — 어긋난 건 **잉크**다. 실측: 그림의 잉크는 99.8~110.5,
+          "필터" 의 잉크는 99~113 이라 글자가 아래로 2.5px 더 내려간다(한글은 밑선 아래를 거의 안 쓰는데
+          글꼴 상자는 그 자리를 잡아 둔다). 그래서 가운데를 맞추면 그림이 0.87px 높게 보인다.
+          translate 로 미는 이유: 여백으로 밀면 flex 가 절반만 먹고(0.5px) 줄 높이에도 영향을 준다.
+        */}
+        <FilterIcon size={16} className="translate-y-[1px] text-dim" />
         {GAMES_FILTER_MESSAGES.sheetTitle}
       </button>
 
