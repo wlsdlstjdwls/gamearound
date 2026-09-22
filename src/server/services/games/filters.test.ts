@@ -4,17 +4,20 @@ import { describe, expect, it } from "vitest";
 import { type SQL } from "drizzle-orm";
 import { PgDialect } from "drizzle-orm/pg-core";
 import { hasVisiblePlatform, mainGamesOnly, runsOnRig } from "./filters";
-import { HIDDEN_PLATFORMS } from "@/lib/platform";
+import { HIDDEN_PLATFORMS, HIDDEN_REGIONS } from "@/lib/platform";
 
 const dialect = new PgDialect();
 const render = (q: SQL<unknown>) => dialect.sqlToQuery(q);
 
 describe("hasVisiblePlatform", () => {
-  it("지역을 보지 않는다 — 이 조건의 존재 이유다", () => {
-    // 한국 행이 없는 게임(2026-09-18 실측 477건, 전부 일본 스위치)을 검색어 질의가 받으려면
-    // 플랫폼 확인이 region 을 걸어서는 안 된다
+  // 2026-09-22 에 뒤집힌 규칙이다. 전에는 "지역을 보지 않는다" 가 이 조건의 존재 이유였는데
+  // (한국 행이 없는 일본 전용 게임도 검색으로는 찾게 하려던 자리) 일본을 통째로 내리면서
+  // 숨긴 지역만 가진 게임은 검색에서도 빠지는 것이 맞게 됐다. 나라 이름을 박아 두지 않는 이유는
+  // 스토어 이름을 안 박는 이유와 같다 — 목록이 비면 조건도 서지 않는 것이 맞다
+  it("숨긴 지역은 조건에 들어가고, 숨긴 것이 없으면 안 들어간다", () => {
     const { sql: text } = render(hasVisiblePlatform([]));
-    expect(text).not.toContain("region");
+    if (HIDDEN_REGIONS.length > 0) expect(text).toContain("region");
+    else expect(text).not.toContain("region");
   });
 
   it("그 게임의 행만 본다 (상관 조건)", () => {
@@ -25,23 +28,23 @@ describe("hasVisiblePlatform", () => {
 
   // 특정 스토어 이름을 박아 두지 않는다(2026-09-18) — 숨김 목록이 비면 조건 자체가 서지 않는 것이 맞다.
   // 전에는 "not in 이 있다" 로 단정해 뒀는데, 목록이 빈 순간 규칙이 멀쩡한데도 테스트가 깨졌다
-  it("숨긴 스토어는 값마다 자리표시자로 빠진다", () => {
+  it("숨긴 스토어, 숨긴 지역은 값마다 자리표시자로 빠진다", () => {
     const { sql: text, params } = render(hasVisiblePlatform([]));
     // 배열을 통째로 넘기면 자리표시자 하나에 배열이 묶여 조건이 조용히 어긋난다
-    expect(params).toEqual([...HIDDEN_PLATFORMS]);
-    if (HIDDEN_PLATFORMS.length > 0) expect(text).toContain("not in");
+    expect(params).toEqual([...HIDDEN_PLATFORMS, ...HIDDEN_REGIONS]);
+    if (HIDDEN_PLATFORMS.length + HIDDEN_REGIONS.length > 0) expect(text).toContain("not in");
     else expect(text).not.toContain("not in");
   });
 
   it("고른 플랫폼이 있으면 그중 하나여야 한다", () => {
     const { sql: text, params } = render(hasVisiblePlatform(["switch", "switch2"]));
     expect(text).toContain(" in ");
-    expect(params).toEqual([...HIDDEN_PLATFORMS, "switch", "switch2"]);
+    expect(params).toEqual([...HIDDEN_PLATFORMS, ...HIDDEN_REGIONS, "switch", "switch2"]);
   });
 
   it("고른 플랫폼이 없으면 플랫폼 조건을 붙이지 않는다", () => {
     const { params } = render(hasVisiblePlatform([]));
-    expect(params).toHaveLength(HIDDEN_PLATFORMS.length);
+    expect(params).toHaveLength(HIDDEN_PLATFORMS.length + HIDDEN_REGIONS.length);
   });
 });
 

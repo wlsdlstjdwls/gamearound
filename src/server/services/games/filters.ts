@@ -5,7 +5,7 @@
 // 그래서 조건을 여기 한 곳에 두고 테스트를 붙인다.
 import { and, eq, isNull, sql, type SQL } from "drizzle-orm";
 import { gameCompanies, gamePlatforms, gameRequirementFloors, gameSourceRefs, gameSubscriptions, games, companies, subscriptions, type Platform } from "@/server/db/schema";
-import { HIDDEN_PLATFORMS } from "@/lib/platform";
+import { HIDDEN_PLATFORMS, HIDDEN_REGIONS } from "@/lib/platform";
 import type { RigSpec } from "@/lib/hardware/rig";
 
 /**
@@ -126,20 +126,23 @@ export function isOrphanMainGame(): SQL {
 /**
  * 보이는 스토어 행을 하나라도 가진 게임. 플랫폼 값을 주면 그중 하나여야 한다.
  *
- * **지역을 보지 않는 것이 이 조건의 전부다.** 목록의 기본 집계(platformAgg)는 한국 행만 세고
- * inner join 으로 붙어서, 한국에 없는 게임(2026-09-18 실측 477건, 전부 일본 스위치)은
- * 플랫폼 필터를 걸든 말든 목록에서 통째로 사라진다. 검색어가 있는 질의는 그 게임도 보여야 해서
- * 집계를 left join 으로 바꾸는데, 그러면 플랫폼 필터를 강제하던 힘까지 같이 풀린다 —
- * 그 자리를 이 조건이 대신 받는다.
+ * 검색어가 있는 질의는 집계를 left join 으로 붙이는데(한국 행이 없는 게임도 받으려고),
+ * 그러면 플랫폼 필터를 강제하던 힘이 같이 풀린다 — 그 자리를 이 조건이 대신 받는다.
+ *
+ * **숨긴 지역도 본다**(2026-09-22). 전에는 일부러 지역을 안 봤다: 한국 행이 없는 게임
+ * (실측 477건, 전부 일본 스위치)을 검색으로는 찾게 하려던 자리였다. 그런데 일본을 통째로 내리면서
+ * (lib/platform 의 HIDDEN_REGIONS) 그 게임들은 "한국에서 못 사는 게임" 이 됐고, 검색으로도
+ * 보여 줄 이유가 없어졌다. 숨긴 지역 행밖에 없는 게임은 이 조건에서 떨어진다.
  */
 export function hasVisiblePlatform(platforms: Platform[]): SQL {
   // 목록을 그대로 두고 조각만 붙이는 자리라 exists 안에서 조건을 이어 붙인다.
   // 배열은 자리표시자 하나로 묶이지 않는다 — sql.join 으로 값마다 자리표시자를 만든다
   const values = (vals: readonly string[]): SQL => sql.join(vals.map((v) => sql`${v}`), sql`, `);
   const notHidden = HIDDEN_PLATFORMS.length > 0 ? sql` and ${gamePlatforms.platform} not in (${values(HIDDEN_PLATFORMS)})` : sql``;
+  const notHiddenRegion = HIDDEN_REGIONS.length > 0 ? sql` and ${gamePlatforms.region} not in (${values(HIDDEN_REGIONS)})` : sql``;
   const onlyPicked = platforms.length > 0 ? sql` and ${gamePlatforms.platform} in (${values(platforms)})` : sql``;
   return sql`exists (
     select 1 from ${gamePlatforms}
-    where ${gamePlatforms.gameId} = ${games.id}${notHidden}${onlyPicked}
+    where ${gamePlatforms.gameId} = ${games.id}${notHidden}${notHiddenRegion}${onlyPicked}
   )`;
 }

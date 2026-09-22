@@ -5,7 +5,7 @@
 // 무엇이 숨겨져 있는지는 HIDDEN_PLATFORMS 가 정하고, 여기서는 **그 목록대로 동작하는지**만 본다 —
 // 목록이 비어 있는 지금도 의미가 있는 확인이다.
 import { describe, expect, it } from "vitest";
-import { HIDDEN_PLATFORMS } from "@/lib/platform";
+import { HIDDEN_PLATFORMS, HIDDEN_REGIONS } from "@/lib/platform";
 import { keepVisiblePlatforms, visiblePlatformsOnly } from "./visibility";
 
 describe("keepVisiblePlatforms", () => {
@@ -22,6 +22,28 @@ describe("keepVisiblePlatforms", () => {
   it("빈 목록도 그대로 돌려준다", () => {
     expect(keepVisiblePlatforms([])).toEqual([]);
   });
+
+  it("숨긴 지역 행을 뺀다", () => {
+    const rows = [{ platform: "switch", region: "KR" }, ...HIDDEN_REGIONS.map((region) => ({ platform: "switch", region }))];
+    expect(keepVisiblePlatforms(rows)).toEqual([{ platform: "switch", region: "KR" }]);
+  });
+
+  it("지역을 안 읽어 온 행은 지역으로 거르지 않는다", () => {
+    expect(keepVisiblePlatforms([{ platform: "steam" }])).toEqual([{ platform: "steam" }]);
+  });
+
+  // 링크 없는 행은 psprices 병합분이고 크론이 다시 찾아가지 않는다(visibility 의 linkedOnly 주석)
+  it("스토어 링크가 없는 행을 뺀다", () => {
+    const rows = [
+      { platform: "steam", storeUrl: "https://store.steampowered.com/app/1" },
+      { platform: "switch2", storeUrl: null },
+    ];
+    expect(keepVisiblePlatforms(rows).map((r) => r.platform)).toEqual(["steam"]);
+  });
+
+  it("링크를 안 읽어 온 행은 링크로 거르지 않는다", () => {
+    expect(keepVisiblePlatforms([{ platform: "ps5" }])).toEqual([{ platform: "ps5" }]);
+  });
 });
 
 describe("visiblePlatformsOnly", () => {
@@ -31,7 +53,7 @@ describe("visiblePlatformsOnly", () => {
    */
   it("숨긴 목록에 맞는 조건을 돌려준다", () => {
     const condition = visiblePlatformsOnly();
-    if (HIDDEN_PLATFORMS.length === 0) expect(condition).toBeUndefined();
+    if (HIDDEN_PLATFORMS.length === 0 && HIDDEN_REGIONS.length === 0) expect(condition).toBeUndefined();
     else expect(condition).toBeDefined();
   });
 });

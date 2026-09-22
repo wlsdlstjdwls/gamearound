@@ -6,7 +6,7 @@
 //
 // 가르는 기준은 **기기**가 아니라 **살 수 있는 물건**이다. Epic 과 Steam 은 둘 다 PC 로 받는
 // 같은 게임을 파는 곳이라 한 갈래에 둔다.
-import type { Platform } from "@/server/db/schema";
+import type { Platform, Region } from "@/server/db/schema";
 
 export const PLATFORM_FAMILIES = ["pc", "console"] as const;
 export type PlatformFamily = (typeof PLATFORM_FAMILIES)[number];
@@ -45,6 +45,18 @@ const ALL_FAMILY_PLATFORMS: Record<PlatformFamily, Platform[]> = {
  * 화면 질의는 `server/db/visibility` 하나만 탄다.
  */
 export const HIDDEN_PLATFORMS: Platform[] = []
+
+/**
+ * 화면에서 숨기는 **지역**. 플랫폼과 같은 규칙이다 — 데이터는 지우지 않고 내보내기만 멈춘다.
+ *
+ * 일본을 내린 이유(2026-09-22, 사용자 결정): 한국 계정으로는 못 사는 값이다. 목록의 기본 집계는
+ * 원래 한국 행만 세지만(list 의 platformAgg), 검색어가 있는 질의는 한국 행이 없는 게임까지 받게
+ * 열어 둔 자리가 있었다(실측 477건, 전부 일본 스위치). 그래서 제목을 치면 살 수 없는 게임이 나왔고,
+ * 상세에는 "Nintendo 일본" 줄이 엔화 값을 달고 서 있었다.
+ *
+ * 되살리려면 이 배열을 비운다 — 질의 조건은 이 목록이 비면 아예 서지 않는다(server/db/visibility).
+ */
+export const HIDDEN_REGIONS: Region[] = ["JP"];
 
 const isHidden = (p: Platform): boolean => HIDDEN_PLATFORMS.includes(p);
 
