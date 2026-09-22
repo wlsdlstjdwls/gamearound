@@ -4,7 +4,7 @@
 import { RATE_LIMIT } from "@/lib/auth/constants";
 import { AUTH_MESSAGES as M } from "@/lib/auth/messages";
 import { fieldErrorsOf, signInInputFromForm, signInSchema, signUpInputFromForm, signUpSchema } from "@/lib/auth/schemas";
-import { safeNextPath } from "@/lib/routes";
+import { ROUTES, safeNextPath } from "@/lib/routes";
 import { checkRateLimit, getRequestMeta, hashKeyPart } from "@/server/auth/rate-limit";
 import { createSession, invalidateCurrentSession } from "@/server/auth/session";
 import { createUser, EmailTakenError, verifyCredentials } from "@/server/services/users";
@@ -17,6 +17,18 @@ export type AuthActionState =
 function nextFrom(fd: FormData): string {
   const v = fd.get("next");
   return safeNextPath(typeof v === "string" ? v : null);
+}
+
+/**
+ * 가입 직후 갈 곳. `?next=` 로 어디를 가려던 중이었다면 그곳이 우선이고(장바구니 같은 흐름을 끊지 않는다),
+ * 그냥 가입한 사람만 온보딩으로 보낸다.
+ *
+ * 로그인(재방문)에는 걸지 않는다 — 온보딩은 계정마다 한 번이고, 재개는 /welcome 이 알아서 한다.
+ * 이미 마친 사람이 /welcome 에 닿아도 설정으로 비켜 준다(welcome/page.tsx).
+ */
+function afterSignUp(fd: FormData): string {
+  const next = nextFrom(fd);
+  return next === ROUTES.home ? ROUTES.welcome : next;
 }
 
 /** useActionState용 (prevState, formData) */
@@ -32,7 +44,7 @@ export async function signUpAction(_prev: AuthActionState, formData: FormData): 
   try {
     const user = await createUser(parsed.data);
     await createSession(user.id, meta);
-    return { ok: true, redirectTo: nextFrom(formData) };
+    return { ok: true, redirectTo: afterSignUp(formData) };
   } catch (e) {
     if (e instanceof EmailTakenError) return { ok: false, fieldErrors: { email: M.emailTaken } };
     console.error("[auth] 회원가입 실패:", e instanceof Error ? e.message : e);

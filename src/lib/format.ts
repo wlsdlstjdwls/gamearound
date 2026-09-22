@@ -3,6 +3,14 @@
 import type { Region } from "@/server/db/schema";
 export const DISPLAY_TIME_ZONE = "Asia/Seoul";
 
+/**
+ * 개수 표기("1,234"). 정수의 세 자리 끊기는 ICU 판이 달라도 같은 글자라서
+ * 이 함수만은 Intl 을 그대로 쓴다 — 위 주석의 하이드레이션 함정은 날짜, 시각 표기 쪽 이야기다.
+ */
+export function formatCount(n: number): string {
+  return n.toLocaleString("ko-KR");
+}
+
 export function formatDiscount(pct: number | null | undefined): string {
   if (!pct || pct <= 0) return "";
   return `-${pct}%`;

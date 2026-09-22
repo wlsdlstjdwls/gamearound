@@ -1101,3 +1101,18 @@ body.dragging-card {
 .disclosure[open]::details-content {
   block-size: auto;
 }
+
+/* ── 온보딩 전용 화면 ──
+ * 첫 로그인 온보딩(/welcome)은 머리띠와 푸터를 감춘다. 이 화면에서 빠져나가는 문은
+ * 우상단 "나중에 할게요" 하나여야 한다 — 머리띠의 메뉴가 그대로 있으면 사람이 도중에
+ * 다른 화면으로 새고, 그 순간 답은 절반만 남는다(재개 지점은 남지만 되돌아올 이유가 사라진다).
+ *
+ * 루트 레이아웃이 머리띠와 푸터를 그리므로 라우트 그룹 레이아웃으로는 뺄 수 없다.
+ * :has() 로 감추는 쪽을 고른 이유: 루트를 (site)/(onboarding) 두 그룹으로 가르면
+ * 지금 도는 모든 화면의 경로가 한 칸씩 움직이고, 그 이사에서 얻는 것이 이 두 줄뿐이다.
+ * 설계는 docs/기획_첫로그인_온보딩_개인화_2026-09-22.md.
+ */
+body:has([data-onboarding]) > header,
+body:has([data-onboarding]) > footer {
+  display: none;
+}

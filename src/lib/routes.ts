@@ -14,6 +14,11 @@ export const ROUTES = {
   wishlist: "/wishlist",
   alerts: "/alerts",
   settings: "/settings",
+  /**
+   * 첫 로그인 온보딩. /welcome 은 재개 지점으로 넘기기만 하고, 실제 화면은 /welcome/<단계> 다.
+   * 단계를 주소로 가르는 이유는 lib/onboarding/steps 머리 주석에 있다(뒤로가기).
+   */
+  welcome: "/welcome",
   /** 내 기기 — 사양 판정의 한쪽 항이다(설계 §7 "설정") */
   settingsDevices: "/settings/devices",
   admin: "/admin",
@@ -52,6 +57,11 @@ export const ROUTES = {
   /** 뉴스 썸네일 프록시 — 매체 CDN 이 핫링크를 막아 서버가 대신 받는다(lib/news/thumbnail) */
   apiNewsThumbnail: "/api/news/thumbnail",
 } as const;
+
+/** 온보딩 단계 주소. 단계 키는 lib/onboarding/steps 의 ONBOARDING_STEPS 다 */
+export function welcomeStepPath(step: string): string {
+  return `${ROUTES.welcome}/${step}`;
+}
 
 /** 로그인 후 돌아갈 경로를 붙인 로그인 URL. next가 없거나 안전하지 않으면 붙이지 않는다 */
 export function signInPath(next?: string | null): string {

@@ -14,12 +14,14 @@ import {
   companyRoleEnum,
   contentTypeEnum,
   currencyEnum,
+  dealStyleEnum,
   deckCompatEnum,
   gameOriginEnum,
   gameVisibilityEnum,
   osFamilyEnum,
   partKindEnum,
   platformEnum,
+  playTimeStyleEnum,
   regionEnum,
   requirementTierEnum,
   roleEnum,
@@ -57,6 +59,8 @@ export type GameOrigin = (typeof gameOriginEnum.enumValues)[number];
 export type GameVisibility = (typeof gameVisibilityEnum.enumValues)[number];
 export type CompanyRole = (typeof companyRoleEnum.enumValues)[number];
 export type UpgradeKind = (typeof upgradeKindEnum.enumValues)[number];
+export type DealStyle = (typeof dealStyleEnum.enumValues)[number];
+export type PlayTimeStyle = (typeof playTimeStyleEnum.enumValues)[number];
 
 export const games = pgTable("games", {
   id: uuid("id").primaryKey().defaultRandom(),
@@ -616,6 +620,48 @@ export const users = pgTable("users", {
   ...auditColumns(),
 });
 
+/**
+ * 개인화 취향 한 줄 — 온보딩(첫 로그인)이 채우고, 목록/홈/알림 기본값이 읽는다.
+ * 설계는 docs/기획_첫로그인_온보딩_개인화_2026-09-22.md.
+ *
+ * 왜 배열인가(별도 테이블이 아니라): 이 값들은 다른 행과 이어질 엔티티가 아니라 **그 사람의
+ * 한 시점 취향**이다. 플랫폼, 장르, 구독을 각각 테이블로 쪼개면 화면 한 번에 조인이 셋 붙는데,
+ * 정작 하는 일은 "겹치나"(&&) 한 번뿐이다. 장르는 games 쪽도 텍스트라 같은 연산으로 끝난다.
+ *
+ * 행을 미리 만들지 않는다 — 첫 진입 때 upsert 한다. 가입 시점에 만들어 두면
+ * "동의한 적 없는 빈 동의 행" 이 사용자 수만큼 생기고, 그 행의 생성일이 동의일로 오해된다.
+ */
+export const userProfiles = pgTable("user_profiles", {
+  userId: uuid("user_id").references(() => users.id, { onDelete: "cascade" }).primaryKey(),
+  /** 주로 쓰는 플랫폼. 빈 배열은 "안 골랐다" 가 아니라 "고르지 않기로 했다" 다(건너뛰면 null) */
+  platforms: platformEnum("platforms").array(),
+  /**
+   * 좋아하는 장르. **이름이 아니라 genres.id** 를 담는다 — 장르는 정규화된 테이블이고
+   * 이름은 바뀔 수 있다(lib/genres 가 소스 표기를 우리 어휘로 계속 옮긴다).
+   * FK 배열은 Postgres 가 못 걸어 주므로 없는 id 는 읽는 쪽에서 조인으로 자연히 떨어진다.
+   */
+  favoriteGenreIds: integer("favorite_genre_ids").array(),
+  dealStyle: dealStyleEnum("deal_style"),
+  playTimeStyle: playTimeStyleEnum("play_time_style"),
+  /** subscriptions.key 값. FK 를 안 거는 이유는 key 가 코드 참조용 안정 식별자라서다 —
+   *  구독 행이 사라져도 사람이 답한 사실은 남는 편이 낫고, 모르는 키는 화면에서 조용히 버린다 */
+  subscriptionKeys: text("subscription_keys").array(),
+  /**
+   * 개인화 동의 시각. null 이면 **성향 칸을 읽지 않는다**(값이 남아 있어도).
+   * 철회는 이 값을 null 로 되돌리면서 위 칸들을 같은 트랜잭션에서 지운다 — 둘이 따로 놀면
+   * "껐는데 남아 있다" 가 된다.
+   */
+  personalizationConsentAt: timestamp("personalization_consent_at", { withTimezone: true }),
+  /** 재개 지점(lib/onboarding 의 단계 키). 중간에 창을 닫아도 다음 로그인에 여기서 다시 연다 */
+  onboardingStep: text("onboarding_step"),
+  onboardingDoneAt: timestamp("onboarding_done_at", { withTimezone: true }),
+  ...auditColumns(),
+}, (t) => [
+  // 개인화 목록 질의가 platforms && $1, favorite_genres && $1 로 들어간다 — 겹침 연산은 GIN 이다
+  index("user_profiles_platforms_idx").using("gin", t.platforms),
+  index("user_profiles_genres_idx").using("gin", t.favoriteGenreIds),
+]);
+
 // 서버 세션(쿠키에는 랜덤 토큰, DB에는 sha256 해시만). 만료, 강제 로그아웃은 행 삭제로 처리.
 export const sessions = pgTable("sessions", {
   id: text("id").primaryKey(), // sha256(token) hex
@@ -844,11 +890,15 @@ export const patchNotesRelations = relations(patchNotes, ({ one }) => ({
 export const playtimesRelations = relations(playtimes, ({ one }) => ({
   game: one(games, { fields: [playtimes.gameId], references: [games.id] }),
 }));
-export const usersRelations = relations(users, ({ many }) => ({
+export const usersRelations = relations(users, ({ many, one }) => ({
+  profile: one(userProfiles, { fields: [users.id], references: [userProfiles.userId] }),
   wishlists: many(wishlists),
   pushSubscriptions: many(pushSubscriptions),
   priceAlerts: many(priceAlerts),
   sessions: many(sessions),
+}));
+export const userProfilesRelations = relations(userProfiles, ({ one }) => ({
+  user: one(users, { fields: [userProfiles.userId], references: [users.id] }),
 }));
 export const sessionsRelations = relations(sessions, ({ one }) => ({
   user: one(users, { fields: [sessions.userId], references: [users.id] }),

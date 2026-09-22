@@ -107,3 +107,21 @@ export const requirementTierEnum = pgEnum("requirement_tier", ["minimum", "recom
 
 /** 판정이 견주는 부품. 메모리, 저장공간은 숫자라 후보가 필요 없고 이 둘만 "A 또는 B" 로 온다 */
 export const partKindEnum = pgEnum("part_kind", ["cpu", "gpu"]);
+
+/**
+ * 할인을 얼마나 기다리는 사람인가(온보딩 4단계). 값이 곧 price_alerts 의 기본 임계값으로 번역된다 —
+ * 그 대응표는 lib/onboarding 이 들고 있다. 여기에 퍼센트를 적지 않는 이유는, 임계값은 우리가
+ * 언제든 조정할 수 있는 정책이고 사람이 답한 것은 "성향" 이라 둘의 수명이 다르기 때문이다.
+ *   full_price   신작이면 정가에도 산다
+ *   wait_small   조금만 깎여도 산다
+ *   wait_deep    반값은 돼야 산다
+ *   historic_low 역대 최저가가 아니면 안 산다
+ */
+export const dealStyleEnum = pgEnum("deal_style", ["full_price", "wait_small", "wait_deep", "historic_low"]);
+
+/**
+ * 한 게임에 붙어 있을 수 있는 시간(온보딩 5단계). HLTB 의 main 값으로 거를 때 쓴다.
+ * endless 를 medium/long 과 가르는 이유: 로그라이크, 대전, 라이브 서비스는 "몇 시간" 이 아예 없는
+ * 축이라 시간으로 거르면 통째로 사라진다. 이 답을 고른 사람에게는 시간 필터를 걸지 않는다.
+ */
+export const playTimeStyleEnum = pgEnum("play_time_style", ["short", "medium", "long", "endless"]);

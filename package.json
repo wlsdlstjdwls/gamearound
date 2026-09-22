@@ -25,6 +25,7 @@
     "parts:rematch": "tsx scripts/rematch-parts.ts",
     "floors:backfill": "tsx scripts/backfill-floors.ts",
     "portraits:backfill": "tsx scripts/backfill-portraits.ts",
+    "e2e:onboarding": "node scripts/e2e-onboarding.mjs",
     "e2e:shops": "node scripts/e2e-shops.mjs",
     "dedup:stores": "tsx scripts/merge-store-duplicates.ts",
     "dedup:measure": "tsx scripts/measure-duplicates.ts",
