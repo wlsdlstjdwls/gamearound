@@ -1,7 +1,7 @@
 "use client";
 // 인증 폼 공용 훅 — zod 스키마로 클라이언트 즉시 검증(blur/입력 중) + 서버 액션 결과(fieldErrors) 병합 + 성공 시 이동.
 // 서버 에러는 해당 필드를 다시 편집하기 전까지 유지된다. 제출 시 첫 오류 필드로 포커스.
-import { useCallback, useEffect, useRef, useState, type FocusEvent, type FormEvent, type KeyboardEvent, type RefObject } from "react";
+import { startTransition, useCallback, useEffect, useRef, useState, type FocusEvent, type FormEvent, type KeyboardEvent, type RefObject } from "react";
 import type { z } from "zod";
 import type { AuthActionState } from "@/app/(auth)/actions";
 import { fieldErrorsOf } from "@/lib/auth/schemas";
@@ -11,9 +11,11 @@ type Options<S extends z.ZodType> = {
   /** FormData → 스키마 입력 (schemas.ts의 *InputFromForm) */
   toInput: (fd: FormData) => unknown;
   serverState: AuthActionState;
+  /** useActionState 가 준 액션. <form action> 에 걸지 말고 이 훅에 넘긴다 — 이유는 onSubmit 주석 */
+  submit: (formData: FormData) => void;
 };
 
-export function useAuthForm<S extends z.ZodType>({ schema, toInput, serverState }: Options<S>) {
+export function useAuthForm<S extends z.ZodType>({ schema, toInput, serverState, submit }: Options<S>) {
   const formRef = useRef<HTMLFormElement>(null);
   const [clientErrors, setClientErrors] = useState<Record<string, string>>({});
   const [editedSinceServer, setEditedSinceServer] = useState<Set<string>>(() => new Set());
@@ -85,18 +87,36 @@ export function useAuthForm<S extends z.ZodType>({ schema, toInput, serverState 
     [validateField],
   );
 
+  /*
+   * 기본 제출을 **항상** 막고 액션을 직접 태운다(2026-09-23).
+   *
+   * React 19 는 `<form action={fn}>` 으로 제출하면 액션을 돌리기 직전에 네이티브 `form.reset()` 을 부른다
+   * (react-dom 의 startHostTransition → requestFormReset, 커밋에서 `fiber.stateNode.reset()`).
+   * 성공하면 어차피 화면을 떠나니 문제가 없지만, **실패하면 사용자가 친 값이 전부 사라진다** —
+   * 가입은 칸이 다섯이라 "이미 가입된 이메일이에요" 한 줄에 닉네임, 이메일, 비밀번호 둘을 다시 쳐야 했다.
+   *
+   * 값을 되살리는 길(액션이 값을 돌려주고 defaultValue 로 다시 깔기)도 있지만, 그러면 비밀번호가
+   * 서버 왕복에 실려야 하고 초기화와 복구 사이에 칸이 비는 순간이 생긴다. 초기화를 **아예 일으키지 않는**
+   * 쪽이 짧다 — 폼에 action 을 걸지 않으면 React 의 그 경로가 열리지 않는다.
+   *
+   * 대신 JS 없이 제출되는 길은 포기한다. 이 폼은 이미 JS 가 있어야 산다(성공 이동이 window.location.replace 다).
+   */
   const onSubmit = useCallback(
     (e: FormEvent<HTMLFormElement>) => {
-      const errors = validateAll();
-      if (Object.keys(errors).length === 0) return; // 서버 액션 진행
       e.preventDefault();
-      setClientErrors(errors);
-      setErrorSerial((n) => n + 1);
-      const first = Object.keys(errors)[0];
-      const el = formRef.current?.querySelector<HTMLElement>(`[name="${first}"]`);
-      el?.focus();
+      const form = e.currentTarget;
+      const errors = validateAll();
+      if (Object.keys(errors).length > 0) {
+        setClientErrors(errors);
+        setErrorSerial((n) => n + 1);
+        const first = Object.keys(errors)[0];
+        form.querySelector<HTMLElement>(`[name="${first}"]`)?.focus();
+        return;
+      }
+      // useActionState 의 액션을 손으로 부를 때는 transition 안이어야 한다(pending 이 그 위에서 산다)
+      startTransition(() => submit(new FormData(form)));
     },
-    [validateAll],
+    [submit, validateAll],
   );
 
   const errors: Record<string, string> = { ...clientErrors };

@@ -18,12 +18,15 @@ export function SignInForm({ next }: { next: string }) {
     schema: signInSchema,
     toInput: signInInputFromForm,
     serverState: state,
+    submit: formAction,
   });
   const passwordRef = useRef<HTMLInputElement>(null);
   const busy = pending || navigating;
 
+  // <form> 에 action 을 걸지 않는다 — 걸면 React 19 가 제출 때마다 form.reset() 을 불러
+  // 실패한 폼의 칸이 전부 비워진다. 액션은 useAuthForm 의 onSubmit 이 직접 태운다(근거는 그 주석에)
   return (
-    <form ref={formRef} action={formAction} onSubmit={onSubmit} noValidate className="space-y-4">
+    <form ref={formRef} onSubmit={onSubmit} noValidate className="space-y-4">
       <input type="hidden" name="next" value={next} />
 
       {formError && (

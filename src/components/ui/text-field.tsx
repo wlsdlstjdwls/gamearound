@@ -28,8 +28,13 @@ export function TextField({ label, hideLabel, hint, error, trailing, wrapperClas
         {label}
       </label>
       <div
-        key={invalid ? "invalid" : "valid"}
         className={cn(
+          // key 를 붙이지 않는다(2026-09-23). 예전에는 key={invalid ? "invalid" : "valid"} 로 shake 를 다시 태웠는데,
+          // key 가 바뀌면 이 div 와 **안의 <input> 이 통째로 새로 만들어진다** — 치던 값이 날아갔다.
+          // 오류가 뜰 때(blur)도, 오류를 고치는 중에 오류가 사라질 때도 칸이 비었다.
+          // shake 는 key 없이도 정상이다: animate-shake 가 없다가 붙는 순간 애니메이션이 처음부터 돈다.
+          // (같은 칸에 다른 오류가 이어 뜨는 경우는 key 가 있던 시절에도 "invalid" 로 같아서 replay 가 없었다)
+          //
           // 테두리를 실제 border 가 아니라 안쪽 그림자로 두는 이유(2026-09-21 리디자인):
           // 입력칸이 채운 판(--surface-2) 위에 서는 자리라 흰 면이 곧 "쓸 수 있는 칸" 이고,
           // 거기에 1px 선까지 더하면 판 안의 판이 된다. 선은 포커스와 오류에서만 말한다
