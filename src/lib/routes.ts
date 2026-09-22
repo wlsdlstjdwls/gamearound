@@ -143,9 +143,11 @@ export function afterSignUpPath(next: string): string {
  * 둘이 다른 곳을 가리키면 경주가 되고, 2026-09-22 실측으로는 **레이아웃이 이긴다**
  * (가입한 사람이 온보딩 대신 홈으로 떨어졌다). 그래서 답을 afterSignUpPath 하나로 모은다.
  */
-export function afterAuthPath(pathWithSearch: string | null | undefined): string {
+export function afterAuthPath(pathWithSearch: string | null | undefined, onboarding = true): string {
   const explicit = nextFromPathWithSearch(pathWithSearch);
   if (explicit !== ROUTES.home) return explicit;
   const path = (pathWithSearch ?? "").split("?")[0];
-  return path === ROUTES.signUp ? afterSignUpPath(ROUTES.home) : ROUTES.home;
+  // onboarding=false 는 온보딩을 보지 않는 계정(관리자)이다. 여기서 안 걸러도 /welcome 이
+  // 되돌려 보내지만, 그러면 가입 직후 화면이 한 번 깜빡인다 — 판단이 서는 자리에서 끝낸다
+  return onboarding && path === ROUTES.signUp ? afterSignUpPath(ROUTES.home) : ROUTES.home;
 }

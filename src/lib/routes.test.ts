@@ -63,4 +63,10 @@ describe("afterSignUpPath / afterAuthPath (가입 직후 갈 곳)", () => {
   it("가입 화면에서는 레이아웃과 액션의 답이 같다", () => {
     expect(afterAuthPath("/sign-up")).toBe(afterSignUpPath(ROUTES.home));
   });
+
+  // 온보딩을 안 보는 계정(관리자)은 가입 화면에서도 홈으로. 가려던 곳이 있으면 그건 그대로 존중한다
+  it("온보딩 대상이 아니면 가입 화면도 홈으로", () => {
+    expect(afterAuthPath("/sign-up", false)).toBe(ROUTES.home);
+    expect(afterAuthPath("/sign-up?next=%2Fadmin", false)).toBe("/admin");
+  });
 });

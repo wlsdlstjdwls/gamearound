@@ -6,7 +6,7 @@ import { cache } from "react";
 import { and, asc, eq, exists, inArray, sql } from "drizzle-orm";
 import { getDb } from "@/server/db/client";
 import { createdBy, updatedBy } from "@/server/db/audit";
-import { gameGenres, gamePlatforms, games, genres, subscriptions, userProfiles, type DealStyle, type PlayTimeStyle, type Platform } from "@/server/db/schema";
+import { gameGenres, gamePlatforms, games, genres, subscriptions, userProfiles, type DealStyle, type PlayTimeStyle, type Platform, type Role } from "@/server/db/schema";
 import { requireUser } from "@/server/services/users";
 import { GENRE_CHOICE_NAMES } from "@/lib/onboarding/constants";
 import type { OnboardingStep } from "@/lib/onboarding/steps";
@@ -57,6 +57,17 @@ export const getMyProfile = cache(async (): Promise<ProfileDto> => {
   const [row] = await getDb().select().from(userProfiles).where(eq(userProfiles.userId, u.id)).limit(1);
   return row ? toDto(row) : EMPTY;
 });
+
+/**
+ * 온보딩을 보여 줄 사람인가.
+ *
+ * 관리자는 제외한다(사용자 요청 2026-09-22) — 관리자 계정은 화면을 개인화해서 쓰는 계정이 아니라
+ * 남의 데이터를 판정하는 계정이라, 목록과 홈이 제 취향으로 걸러지면 **검수하려던 것이 안 보인다**.
+ * 판단을 한 함수로 뽑아 둔 이유는 물어보는 자리가 둘 이상이기 때문이다(온보딩 입구, 인증 리다이렉트).
+ */
+export function isOnboardingAudience(role: Role): boolean {
+  return role !== "admin";
+}
 
 /**
  * 개인화가 실제로 켜져 있나. 읽는 쪽(목록, 홈)은 이 함수만 보면 된다 —
