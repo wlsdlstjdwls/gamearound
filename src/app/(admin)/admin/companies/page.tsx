@@ -12,11 +12,14 @@ import { listPendingCompanies, PENDING_COMPANIES_LIMIT } from "@/server/services
 import { listCompanies } from "@/server/services/companies";
 import { CompanyResolveButton } from "@/components/admin/company-resolve-button";
 import { PageHead, ROWS } from "@/components/ui/page";
-import { TableScroll } from "@/components/admin/table-scroll";
+import { DataCell, DataHead, DataList, DataRow } from "@/components/admin/data-rows";
 import { COMPANY_MESSAGES } from "@/lib/admin/messages";
 import { Clamp } from "@/components/ui/tooltip";
 
 export const metadata: Metadata = { title: COMPANY_MESSAGES.title };
+
+// 좁은 화면에서는 한 이름이 카드 한 장이다(data-rows.tsx 머리 주석)
+const PENDING_COLS = "md:grid-cols-[minmax(0,1fr)_120px_200px] md:gap-x-3 md:px-3 md:py-2";
 
 export default async function AdminCompaniesPage() {
   await requireRoleOrForbid("admin");
@@ -43,30 +46,24 @@ export default async function AdminCompaniesPage() {
             {COMPANY_MESSAGES.empty}
           </p>
         ) : (
-          <TableScroll minWidth={420}>
-            <table className="w-full text-[13px]">
-              <thead className="border-b border-line text-left text-[11.5px] text-dim">
-                <tr>
-                  <th className="px-3 py-2">{COMPANY_MESSAGES.colName}</th>
-                  <th className="px-3 py-2">{COMPANY_MESSAGES.colGameCount}</th>
-                  <th className="px-3 py-2">{COMPANY_MESSAGES.colAction}</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-line-soft">
-                {pending.map((p) => (
-                  <tr key={p.name}>
-                    <td className="max-w-[320px] px-3 py-2 text-ink">
-                      <Clamp>{p.name}</Clamp>
-                    </td>
-                    <td className="px-3 py-2 text-mut">{p.gameCount}</td>
-                    <td className="px-3 py-2">
-                      <CompanyResolveButton name={p.name} />
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </TableScroll>
+          <div>
+            <DataHead cols={PENDING_COLS} labels={[COMPANY_MESSAGES.colName, COMPANY_MESSAGES.colGameCount, COMPANY_MESSAGES.colAction]} />
+            <DataList>
+              {pending.map((p) => (
+                <DataRow key={p.name} cols={PENDING_COLS}>
+                  <DataCell label={COMPANY_MESSAGES.colName} className="text-ink">
+                    <Clamp>{p.name}</Clamp>
+                  </DataCell>
+                  <DataCell label={COMPANY_MESSAGES.colGameCount} className="text-mut">
+                    {p.gameCount}
+                  </DataCell>
+                  <DataCell>
+                    <CompanyResolveButton name={p.name} />
+                  </DataCell>
+                </DataRow>
+              ))}
+            </DataList>
+          </div>
         )}
       </section>
 

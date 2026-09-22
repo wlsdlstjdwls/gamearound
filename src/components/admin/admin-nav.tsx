@@ -1,6 +1,6 @@
 "use client";
 
-// 관리자 메뉴 — 넓은 화면은 왼쪽 기둥, 좁은 화면은 가로로 미는 한 줄.
+// 관리자 메뉴 — 넓은 화면은 왼쪽 기둥, 좁은 화면은 **바닥에 붙은 띠**(모바일 앱과 같은 자리).
 //
 // **왜 기둥인가**(2026-09-21 구조 교체): 앞 판은 일곱 칸을 머리 위 한 줄에 늘어놓았다.
 // 그 줄은 본문 폭을 그대로 나눠 쓰기 때문에 칸이 늘수록 하나하나가 좁아지고, 늘어난 만큼
@@ -18,6 +18,17 @@
 // 고른 칸은 **브랜드 보라 면**이다. 앞서 쓰던 --surface-3 은 메뉴가 얹힌 --surface-2 와 한 단
 // 차이라 훑어서는 어느 칸이 켜져 있는지 보이지 않았다. 칩과 같은 짝(bg-acc + text-on-ink)이다.
 //
+// **좁은 화면은 왜 바닥 띠인가**(2026-09-22, "상단 메뉴가 보기 불편하다" → "모바일앱처럼 하단에"):
+// 앞 판은 칸 일곱을 머리 위에서 가로로 미는 한 줄에 늘어놓았다. 화면에 들어오는 건 둘 반이고
+// 미끄러진다는 표시가 없어서 나머지가 있다는 사실 자체가 안 보였다. 세 번째 칸은 늘 글자가 잘린 채
+// 서 있었고, 지금 보는 화면이 오른쪽 끝이면 그 표시(보라 면)조차 화면 밖이었다.
+// 바닥은 손가락이 이미 가 있는 자리라 칸이 다섯이면 미는 일 없이 전부 닿는다.
+//
+// **다섯 칸에 일곱을 어떻게 넣나**: 넣지 않는다. 자주 가는 넷을 세우고 마지막 칸은 더보기다.
+// 더보기는 기둥과 **똑같은 메뉴**를 시트로 펴므로 일곱 전부와 서비스 화면으로 가는 길이 거기 있다.
+// 넷을 고른 기준은 "거기서 할 일이 있는가" 다 — 실행 로그는 읽기만 하는 자리고(수집 현황에서도 간다),
+// 아직 열지 않은 칸 둘은 눌러도 사유만 말한다.
+//
 // 남은 일 수는 **약속(Promise)으로 받아 배지 자리에서만 기다린다.** 회사 검수 수를 뽑는 질의가
 // games 전수 훑기(실측 27ms, 왕복까지 두 번)라서, 그 값을 메뉴가 기다리면 관리자가 누르는
 // 모든 화면이 그만큼 늦게 뜬다. 메뉴는 먼저 그리고 숫자만 나중에 앉힌다.
@@ -25,7 +36,8 @@ import { Suspense, use, useState, type ComponentType } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { cn } from "@/lib/cn";
-import { panelClass } from "@/components/ui/page";
+import { Sheet } from "@/components/ui/sheet";
+import { MenuIcon } from "@/components/ui/icons";
 import { ADMIN_NAV, ADMIN_SOON } from "@/lib/admin/messages";
 import { COMING_SOON } from "@/lib/messages/coming-soon";
 import { ROUTES } from "@/lib/routes";
@@ -173,34 +185,90 @@ function ItemBody({
   );
 }
 
+/**
+ * 바닥 띠에 세울 칸. **GROUPS 에서 골라 온다** — 여기서 이름과 그림을 다시 적으면
+ * 기둥과 띠가 다른 말을 하기 시작한다(주소만 적고 나머지는 원본에서 끌어온다).
+ */
+const TAB_HREFS: readonly string[] = [ROUTES.admin, ROUTES.adminMatches, ROUTES.adminCompanies, ROUTES.adminTasks];
+const TABS = TAB_HREFS.map((href) => {
+  const item = ITEMS.find((i) => i.href === href);
+  if (!item) throw new Error(`바닥 띠에 세울 칸이 GROUPS 에 없다: ${href}`);
+  return item;
+});
+
+/** 바닥 띠 칸 하나의 속. 그림은 켜진 칸만 브랜드 색 알약을 입는다 */
+function TabBody({ item, active, counts }: { item: Item; active: boolean; counts: Promise<AdminNavCounts | null> }) {
+  const { Icon } = item;
+  return (
+    <>
+      <span
+        className={cn(
+          "relative flex h-7 w-[46px] items-center justify-center rounded-full transition-colors duration-base",
+          active ? "bg-acc-soft text-acc" : "text-dim",
+        )}
+      >
+        <Icon size={19} />
+        {item.pick && (
+          // 배지는 그림 위 오른쪽 귀퉁이에 얹는다. 켜진 칸이어도 색을 바꾸지 않는다 —
+          // 바닥 띠의 켜짐은 면이 아니라 색이라, 배지가 그 색에 묻힐 일이 없다
+          <Suspense fallback={null}>
+            <Badge counts={counts} pick={item.pick} active={false} className="absolute -right-1.5 -top-1" />
+          </Suspense>
+        )}
+      </span>
+      <span className={cn("text-[10.5px] leading-none", active ? "font-bold text-acc" : "text-dim")}>{item.label}</span>
+    </>
+  );
+}
+
 export function AdminNav({ user, counts }: { user: string; counts: Promise<AdminNavCounts | null> }) {
   const pathname = usePathname();
   /** 지금 사유를 말하고 있는 칸. 한 번에 하나만 뜬다 */
   const [soon, setSoon] = useState<Item | null>(null);
+  const [menuOpen, setMenuOpen] = useState(false);
 
   /** 링크와 버튼이 같은 모양이어야 한다. 아직 열지 않은 칸만 버튼이고 나머지는 전부 링크다 */
-  const itemClass = (active: boolean, wide: boolean) =>
+  const itemClass = (active: boolean) =>
     cn(
-      "press flex min-h-[var(--touch-target)] items-center rounded-lg transition-colors",
-      wide ? "gap-2.5 px-3 text-[14px]" : "shrink-0 gap-1.5 px-3 text-[13.5px] whitespace-nowrap",
-      active ? "bg-acc font-semibold text-on-ink" : cn("font-medium text-mut", wide && "hover:bg-surface-2 hover:text-ink"),
+      "press flex min-h-[var(--touch-target)] items-center gap-2.5 rounded-lg px-3 text-[14px] transition-colors",
+      active ? "bg-acc font-semibold text-on-ink" : "font-medium text-mut hover:bg-surface-2 hover:text-ink",
     );
 
-  const render = (item: Item, wide: boolean) => {
+  const render = (item: Item) => {
     const active = isActive(pathname, item.href);
-    const body = (
-      <ItemBody item={item} active={active} counts={counts} iconSize={wide ? 18 : 16} badgeClassName={wide ? "ml-auto" : undefined} />
-    );
+    const body = <ItemBody item={item} active={active} counts={counts} iconSize={18} badgeClassName="ml-auto" />;
     return item.soon ? (
-      <button key={item.href} type="button" onClick={() => setSoon(item)} className={cn(itemClass(active, wide), "w-full text-left")}>
+      <button key={item.href} type="button" onClick={() => setSoon(item)} className={cn(itemClass(active), "w-full text-left")}>
         {body}
       </button>
     ) : (
-      <Link key={item.href} href={item.href} aria-current={active ? "page" : undefined} className={itemClass(active, wide)}>
+      <Link key={item.href} href={item.href} aria-current={active ? "page" : undefined} className={itemClass(active)}>
         {body}
       </Link>
     );
   };
+
+  /** 칸 전부. 기둥과 더보기 시트가 **같은 것**을 쓴다 — 둘을 따로 그리면 칸이 늘 때 한쪽을 빠뜨린다 */
+  const menu = (
+    <div className="flex flex-col gap-4">
+      {GROUPS.map((g) => (
+        <div key={g.key} className="flex flex-col gap-0.5">
+          {g.title && <p className="px-3 pb-1 text-[11px] font-bold tracking-[0.1em] text-dim-2">{g.title}</p>}
+          {g.items.map(render)}
+        </div>
+      ))}
+    </div>
+  );
+
+  const backLink = (
+    <Link href={ROUTES.home} className="press tap flex items-center rounded-lg px-3 text-[12.5px] text-dim transition-colors hover:text-ink">
+      {ADMIN_NAV.backToSite}
+    </Link>
+  );
+
+  /** 띠에 세운 넷 중 어디에도 없는 화면(게임 고치기 등)에서는 더보기가 켜진 칸이다 */
+  const onTab = TABS.some((t) => isActive(pathname, t.href));
+  const tabClass = "press flex min-h-[var(--touch-target)] flex-1 flex-col items-center justify-center gap-1 py-1.5";
 
   return (
     <>
@@ -211,28 +279,53 @@ export function AdminNav({ user, counts }: { user: string; counts: Promise<Admin
           <p className="mt-0.5 truncate text-[11.5px] text-dim">{user}</p>
         </div>
 
-        <nav aria-label="관리자 메뉴" className="flex flex-col gap-4">
-          {GROUPS.map((g) => (
-            <div key={g.key} className="flex flex-col gap-0.5">
-              {g.title && <p className="px-3 pb-1 text-[11px] font-bold tracking-[0.1em] text-dim-2">{g.title}</p>}
-              {g.items.map((item) => render(item, true))}
-            </div>
-          ))}
+        <nav aria-label={ADMIN_NAV.menuTitle} className="flex flex-col gap-4">
+          {menu}
         </nav>
 
-        <Link href={ROUTES.home} className="press mt-1 rounded-lg px-3 py-2 text-[12.5px] text-dim transition-colors hover:text-ink">
-          {ADMIN_NAV.backToSite}
-        </Link>
+        {backLink}
       </aside>
 
-      {/* 좁은 화면 — 가로로 미는 한 줄. 기둥을 세울 폭이 없고, 관리자 화면을 손에서 보는 일은 드물다.
-          묶음 제목은 싣지 않는다(제목까지 세우면 한 줄이 두 배로 길어져 미는 거리가 그만큼 는다) */}
+      {/*
+        좁은 화면 — 바닥 띠.
+        fixed 가 아니라 **sticky 다**: fixed 면 띠가 화면 바닥에 못 박혀 푸터 마지막 줄을 영영 덮는다.
+        sticky 는 제자리(본문 끝)를 가지면서 스크롤 동안만 바닥에 붙어 있다가, 본문이 끝나면
+        제자리로 돌아가 푸터에 자리를 내준다. 그래서 본문에 따로 아래 여백을 만들어 줄 필요도 없다.
+        order-last: 이 컴포넌트는 기둥이어야 해서 DOM 에서 본문보다 앞에 오는데, 띠는 뒤에 서야 한다.
+        -mx: 띠는 화면 좌우 끝까지 닿아야 띠로 읽힌다(본문 여백 안에 갇히면 카드처럼 보인다).
+      */}
       <nav
-        aria-label="관리자 메뉴"
-        className={panelClass("-mx-1 flex gap-1 overflow-x-auto px-1 py-1 md:hidden [scrollbar-width:none]")}
+        aria-label={ADMIN_NAV.menuTitle}
+        className="sticky bottom-0 -mx-5 order-last flex border-t border-line bg-bg/95 pb-[env(safe-area-inset-bottom)] backdrop-blur sm:-mx-7 md:hidden"
       >
-        {ITEMS.map((item) => render(item, false))}
+        {TABS.map((item) => {
+          const active = isActive(pathname, item.href);
+          return (
+            <Link key={item.href} href={item.href} aria-current={active ? "page" : undefined} className={tabClass}>
+              <TabBody item={item} active={active} counts={counts} />
+            </Link>
+          );
+        })}
+        <button type="button" onClick={() => setMenuOpen(true)} aria-haspopup="dialog" aria-expanded={menuOpen} className={tabClass}>
+          <span
+            className={cn(
+              "flex h-7 w-[46px] items-center justify-center rounded-full transition-colors duration-base",
+              !onTab ? "bg-acc-soft text-acc" : "text-dim",
+            )}
+          >
+            <MenuIcon size={19} />
+          </span>
+          <span className={cn("text-[10.5px] leading-none", !onTab ? "font-bold text-acc" : "text-dim")}>{ADMIN_NAV.more}</span>
+        </button>
       </nav>
+
+      {/* 고른 칸으로 가면 주소가 바뀌고, 시트는 그때 스스로 닫힌다(ui/sheet 의 경로 감시) */}
+      <Sheet title={ADMIN_NAV.menuTitle} open={menuOpen} onOpenChange={setMenuOpen}>
+        <nav aria-label={ADMIN_NAV.menuTitle} className="flex flex-col gap-4 pb-1 pt-2">
+          {menu}
+          <div className="border-t border-line pt-2">{backLink}</div>
+        </nav>
+      </Sheet>
 
       {/* 판은 메뉴 바깥에 하나만 둔다 — 칸마다 두면 안 열린 판이 일곱 개 떠 있게 된다 */}
       <ComingSoon

@@ -8,7 +8,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { MatchReviewButtons } from "@/components/admin/match-review-buttons";
-import { QueueCell, QueueHead, QueueList, QueueRow } from "@/components/admin/queue";
+import { DataCell, DataHead, DataList, DataRow } from "@/components/admin/data-rows";
 import {  PageHead, SectionHead } from "@/components/ui/page";
 import { Clamp } from "@/components/ui/tooltip";
 import { MATCH_MESSAGES, sourceLabel } from "@/lib/admin/messages";
@@ -19,7 +19,7 @@ import { requireRoleOrForbid } from "@/server/auth/guards";
 export const metadata: Metadata = { title: MATCH_MESSAGES.title };
 
 // 우리 제목과 스토어 제목을 같은 너비로 나란히 둔다 — 검수자가 두 이름을 눈으로 맞대는 것이 이 화면의 일이다.
-// 전부 md: 접두인 이유는 queue.tsx 머리 주석에 있다 — 좁은 화면에서 이 줄은 표가 아니라 카드다
+// 전부 md: 접두인 이유는 data-rows.tsx 머리 주석에 있다 — 좁은 화면에서 이 줄은 표가 아니라 카드다
 const QUEUE_COLS = "md:grid-cols-[minmax(0,2fr)_minmax(0,2fr)_120px_minmax(0,1.4fr)_72px_132px] md:gap-x-3 md:px-4 md:py-[13px]";
 
 export default async function AdminMatchesPage() {
@@ -46,7 +46,7 @@ export default async function AdminMatchesPage() {
           </p>
         ) : (
           <div>
-            <QueueHead
+            <DataHead
               cols={QUEUE_COLS}
               labels={[
                 MATCH_MESSAGES.colOurTitle,
@@ -57,22 +57,22 @@ export default async function AdminMatchesPage() {
                 MATCH_MESSAGES.colAction,
               ]}
             />
-            <QueueList>
+            <DataList>
               {pending.map((p) => (
-                <QueueRow key={`${p.gameId}-${p.source}`} cols={QUEUE_COLS}>
-                  <QueueCell label={MATCH_MESSAGES.colOurTitle}>
+                <DataRow key={`${p.gameId}-${p.source}`} cols={QUEUE_COLS}>
+                  <DataCell label={MATCH_MESSAGES.colOurTitle}>
                     <Link href={`/admin/games/${p.gameId}`} className="font-medium hover:text-acc">
                       <Clamp>{p.game.titleKo ? `${p.game.titleKo} (${p.game.titleEn})` : p.game.titleEn}</Clamp>
                     </Link>
-                  </QueueCell>
+                  </DataCell>
                   {/* 매칭한 순간의 제목이다. 여기가 다른 게임 이름이면 그대로 무르면 된다 */}
-                  <QueueCell label={MATCH_MESSAGES.colStoreTitle} className="text-mut">
+                  <DataCell label={MATCH_MESSAGES.colStoreTitle} className="text-mut">
                     {p.matchedTitle ? <Clamp>{p.matchedTitle}</Clamp> : <span className="text-dim-2">{MATCH_MESSAGES.noStoreTitle}</span>}
-                  </QueueCell>
-                  <QueueCell label={MATCH_MESSAGES.colSource} className="text-mut">
+                  </DataCell>
+                  <DataCell label={MATCH_MESSAGES.colSource} className="text-mut">
                     <Clamp>{sourceLabel(p.source)}</Clamp>
-                  </QueueCell>
-                  <QueueCell label={MATCH_MESSAGES.colExternal} className="font-mono text-[12px] text-mut">
+                  </DataCell>
+                  <DataCell label={MATCH_MESSAGES.colExternal} className="font-mono text-[12px] text-mut">
                     <Clamp className="inline-block max-w-full align-bottom">{p.externalId}</Clamp>
                     {p.url && (
                       <a href={p.url} target="_blank" rel="noreferrer" className="ml-2 font-sans text-acc hover:underline">
@@ -80,16 +80,16 @@ export default async function AdminMatchesPage() {
                         <span className="sr-only"> (새 창에서 열림)</span>
                       </a>
                     )}
-                  </QueueCell>
-                  <QueueCell label={MATCH_MESSAGES.colConfidence} className="text-mut">
+                  </DataCell>
+                  <DataCell label={MATCH_MESSAGES.colConfidence} className="text-mut">
                     {p.confidence ?? "-"}
-                  </QueueCell>
-                  <QueueCell>
+                  </DataCell>
+                  <DataCell>
                     <MatchReviewButtons gameId={p.gameId} source={p.source} />
-                  </QueueCell>
-                </QueueRow>
+                  </DataCell>
+                </DataRow>
               ))}
-            </QueueList>
+            </DataList>
           </div>
         )}
       </section>

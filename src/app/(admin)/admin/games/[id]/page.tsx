@@ -16,11 +16,15 @@ import { AliasForm } from "@/components/admin/alias-form";
 import { UpgradeForm } from "@/components/admin/upgrade-form";
 import { MatchReviewButtons } from "@/components/admin/match-review-buttons";
 import { PageHead } from "@/components/ui/page";
-import { TableScroll } from "@/components/admin/table-scroll";
+import { DataCell, DataHead, DataList, DataRow } from "@/components/admin/data-rows";
 import { GAME_ADMIN_MESSAGES as M, MATCHED_BY_LABEL, SYNC_STATUS_LABEL, sourceLabel } from "@/lib/admin/messages";
 import { ROUTES } from "@/lib/routes";
 
 export const metadata: Metadata = { title: M.title };
+
+// 좁은 화면에서는 한 줄이 카드 한 장이다(data-rows.tsx 머리 주석)
+const REF_COLS = "md:grid-cols-[110px_minmax(0,1fr)_minmax(0,1.4fr)_110px_78px_150px] md:gap-x-3 md:px-3 md:py-2";
+const HISTORY_COLS = "md:grid-cols-[150px_minmax(0,1fr)_minmax(0,1fr)_minmax(0,1.2fr)_minmax(0,1.2fr)_70px] md:gap-x-3 md:px-3 md:py-2";
 
 type GameRow = NonNullable<Awaited<ReturnType<typeof getGameForAdmin>>>;
 type PlatformRow = GameRow["platforms"][number];
@@ -149,38 +153,48 @@ export default async function AdminGamePage({ params }: { params: Promise<{ id: 
         {game.sourceRefs.length === 0 ? (
           <p className="text-[13px] text-mut">{M.refsEmpty}</p>
         ) : (
-          <TableScroll minWidth={780}>
-            <table className="w-full text-[13px]">
-              <thead className="border-b border-line text-left text-[11.5px] text-dim">
-                <tr>
-                  <th className="px-3 py-2">{M.colSource}</th>
-                  <th className="px-3 py-2">{M.colExternalId}</th>
-                  <th className="px-3 py-2">{M.colUrl}</th>
-                  <th className="px-3 py-2">{M.colMatchedBy}</th>
-                  <th className="px-3 py-2">{M.colConfidence}</th>
-                  <th className="px-3 py-2">{M.colAction}</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-line-soft">
-                {game.sourceRefs.map((r) => (
-                  <tr key={r.source}>
-                    <td className="whitespace-nowrap px-3 py-2">{sourceLabel(r.source)}</td>
-                    <td className="px-3 py-2 font-mono text-xs">{r.externalId}</td>
-                    <td className="max-w-xs px-3 py-2">
-                      {r.url ? <a href={r.url} target="_blank" rel="noreferrer" className="break-all text-[12px] text-acc hover:underline">{r.url}</a> : "-"}
-                    </td>
-                    <td className="px-3 py-2">
-                      <span className={`rounded-[5px] px-1.5 py-0.5 text-[11.5px] font-semibold ${r.matchedBy === "pending" ? "bg-warn-soft text-warn" : r.matchedBy === "manual" ? "bg-ok-soft text-ok" : r.matchedBy === "none" ? "bg-surface-2 text-dim-2" : "bg-surface-2 text-ink-2"}`}>
-                        {MATCHED_BY_LABEL[r.matchedBy] ?? r.matchedBy}
-                      </span>
-                    </td>
-                    <td className="px-3 py-2">{r.confidence ?? "-"}</td>
-                    <td className="px-3 py-2">{r.matchedBy === "pending" ? <MatchReviewButtons gameId={game.id} source={r.source} /> : <span className="text-[12px] text-dim-2">-</span>}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </TableScroll>
+          <div>
+            <DataHead
+              cols={REF_COLS}
+              labels={[M.colSource, M.colExternalId, M.colUrl, M.colMatchedBy, M.colConfidence, M.colAction]}
+            />
+            <DataList>
+              {game.sourceRefs.map((r) => (
+                <DataRow key={r.source} cols={REF_COLS}>
+                  <DataCell label={M.colSource} className="md:whitespace-nowrap">
+                    {sourceLabel(r.source)}
+                  </DataCell>
+                  <DataCell label={M.colExternalId} className="font-mono text-xs">
+                    {r.externalId}
+                  </DataCell>
+                  <DataCell label={M.colUrl}>
+                    {r.url ? (
+                      <a href={r.url} target="_blank" rel="noreferrer" className="break-all text-[12px] text-acc hover:underline">
+                        {r.url}
+                      </a>
+                    ) : (
+                      "-"
+                    )}
+                  </DataCell>
+                  <DataCell label={M.colMatchedBy}>
+                    <span
+                      className={`inline-block rounded-[5px] px-1.5 py-0.5 text-[11.5px] font-semibold ${r.matchedBy === "pending" ? "bg-warn-soft text-warn" : r.matchedBy === "manual" ? "bg-ok-soft text-ok" : r.matchedBy === "none" ? "bg-surface-2 text-dim-2" : "bg-surface-2 text-ink-2"}`}
+                    >
+                      {MATCHED_BY_LABEL[r.matchedBy] ?? r.matchedBy}
+                    </span>
+                  </DataCell>
+                  <DataCell label={M.colConfidence}>{r.confidence ?? "-"}</DataCell>
+                  <DataCell>
+                    {r.matchedBy === "pending" ? (
+                      <MatchReviewButtons gameId={game.id} source={r.source} />
+                    ) : (
+                      <span className="text-[12px] text-dim-2">-</span>
+                    )}
+                  </DataCell>
+                </DataRow>
+              ))}
+            </DataList>
+          </div>
         )}
         <ManualRefForm gameId={game.id} sources={SOURCES} />
       </section>
@@ -190,35 +204,39 @@ export default async function AdminGamePage({ params }: { params: Promise<{ id: 
         {game.corrections.length === 0 ? (
           <p className="text-[13px] text-mut">{M.historyEmpty}</p>
         ) : (
-          <TableScroll minWidth={780}>
-            <table className="w-full text-[13px]">
-              <thead className="border-b border-line text-left text-[11.5px] text-dim">
-                <tr>
-                  <th className="px-3 py-2">{M.colWhen}</th>
-                  <th className="px-3 py-2">{M.colTarget}</th>
-                  <th className="px-3 py-2">{M.colField}</th>
-                  <th className="px-3 py-2">{M.colBefore}</th>
-                  <th className="px-3 py-2">{M.colAfter}</th>
-                  <th className="px-3 py-2">{M.colLocked}</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-line-soft">
-                {game.corrections.map((c) => {
-                  const target = c.table === "games" ? "games" : `${c.table} | ${platformById.get(c.rowId) ? platformLabel(platformById.get(c.rowId) as PlatformRow) : c.rowId.slice(0, 8)}`;
-                  return (
-                    <tr key={c.id} className="align-top">
-                      <td className="whitespace-nowrap px-3 py-2">{formatDateTime(c.createdAt)}</td>
-                      <td className="px-3 py-2 text-xs">{target}</td>
-                      <td className="px-3 py-2 font-mono text-xs">{c.field}</td>
-                      <td className="max-w-xs break-all px-3 py-2 text-[11.5px] text-mut">{jsonText(c.before)}</td>
-                      <td className="max-w-xs break-all px-3 py-2 text-xs">{jsonText(c.after)}</td>
-                      <td className="px-3 py-2 text-xs">{c.lockField ? M.locked : "-"}</td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
-          </TableScroll>
+          <div>
+            <DataHead cols={HISTORY_COLS} labels={[M.colWhen, M.colTarget, M.colField, M.colBefore, M.colAfter, M.colLocked]} />
+            <DataList>
+              {game.corrections.map((c) => {
+                const target =
+                  c.table === "games"
+                    ? "games"
+                    : `${c.table} | ${platformById.get(c.rowId) ? platformLabel(platformById.get(c.rowId) as PlatformRow) : c.rowId.slice(0, 8)}`;
+                return (
+                  <DataRow key={c.id} cols={HISTORY_COLS} align="start">
+                    <DataCell label={M.colWhen} className="md:whitespace-nowrap">
+                      {formatDateTime(c.createdAt)}
+                    </DataCell>
+                    <DataCell label={M.colTarget} className="text-xs">
+                      {target}
+                    </DataCell>
+                    <DataCell label={M.colField} className="font-mono text-xs">
+                      {c.field}
+                    </DataCell>
+                    <DataCell label={M.colBefore} className="break-all text-[11.5px] text-mut">
+                      {jsonText(c.before)}
+                    </DataCell>
+                    <DataCell label={M.colAfter} className="break-all text-xs">
+                      {jsonText(c.after)}
+                    </DataCell>
+                    <DataCell label={M.colLocked} className="text-xs">
+                      {c.lockField ? M.locked : "-"}
+                    </DataCell>
+                  </DataRow>
+                );
+              })}
+            </DataList>
+          </div>
         )}
       </section>
     </div>
