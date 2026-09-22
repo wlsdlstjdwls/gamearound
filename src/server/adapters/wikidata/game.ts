@@ -139,14 +139,16 @@ export function spreadNames(games: VerifiedGame[]): SearchCandidate[] {
   return out;
 }
 
-/** 별칭 후보를 모은다. 빈 값과 중복은 버리고, 원문 표기는 그대로 둔다(정규화는 DB 생성 컬럼이 한다) */
+/**
+ * 별칭 후보를 모은다. 빈 값과 중복은 버리고, 원문 표기는 그대로 둔다(정규화는 DB 생성 컬럼이 한다).
+ * 질의가 UNION 이라 이름 하나가 한 행이고, 그 이름이 라벨인지 시리즈인지는 여기서 가리지 않는다 —
+ * 어느 쪽이든 검색에 걸려야 하는 말이라 쓰임이 같다(constants 의 gameAliasQuery 주석).
+ */
 export function collectAliases(bindings: Binding[]): string[] {
   const out = new Set<string>();
   for (const b of bindings) {
-    for (const key of ["series", "based", "alt"]) {
-      const v = b[key]?.value?.trim();
-      if (v) out.add(v);
-    }
+    const v = b.name?.value?.trim();
+    if (v) out.add(v);
   }
   return [...out];
 }

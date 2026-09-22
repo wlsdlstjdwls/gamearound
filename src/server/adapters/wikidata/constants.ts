@@ -134,6 +134,12 @@ export function searchUrl(name: string, language: string): string {
  */
 export const GAME_CLASS = "Q7889";
 
+/**
+ * 별칭 질의 한 항목이 받을 이름 상한. UNION 이라 한 행이 이름 하나다 —
+ * 실측 5행(PUBG), 많아야 수십 행이라 200 이면 잘릴 일이 없다.
+ */
+export const ALIAS_QUERY_LIMIT = 200;
+
 
 
 /**
@@ -157,18 +163,30 @@ export function gameVerifyQuery(entityIds: readonly string[]): string {
 
 /**
  * 게임 한 항목에서 검색 별칭이 될 값을 모은다.
+ *   rdfs:label     "배틀그라운드", "마인크래프트"  — 그 나라에서 부르는 이름
  *   P179 시리즈    "젤다의 전설", "철권"        — 연관검색어의 본줄기
  *   P144 원작      "해리 포터", "사이버펑크"     — 원작이 다른 매체인 게임
  *   skos:altLabel  "TOTK", "TK8", "botw 2"    — 약칭, 통칭
  * 한국어, 영어, 다국어(mul)만 받는다 — 나머지 언어까지 받으면 별칭이 수십 개로 불어나고 검색에 잡음만 는다.
  * mul 을 넣는 이유는 SPARQL_NAME_LANGS 주석 참고("CS2" 같은 약칭이 거기 들어 있다).
  * (2026-09-15 실측: 호그와트 레거시에서 "해리 포터", "Harry Potter", "Wizard Game" 이 나온다.)
+ *
+ * **항목 자신의 라벨(rdfs:label)이 여기 있어야 한다.** 스토어가 영문 제목만 주는 게임이 본편의
+ * 89%(2026-09-22 실측 14,114/15,888)라, 한국 사람이 치는 말은 제목 어디에도 없고 별칭에만 있다.
+ * 예전에는 altLabel 만 받아서 "배틀그라운드" 가 통째로 빠졌다 — 위키데이터 Q28937399 는
+ * 한국어 라벨이 "배틀그라운드", altLabel 이 "배그" 라서 약칭만 들어오고 정식 통칭이 없었다.
+ * 그래서 "배그" 로는 찾히고 "배틀그라운드" 로는 0건이었다(2026-09-22 실측).
+ *
+ * UNION 으로 이름 하나를 한 행에 두는 이유: OPTIONAL 네 개를 나열하면 값들이 곱해진다
+ * (시리즈 3 × 원작 3 × altLabel 20 = 180행). 그 곱이 LIMIT 을 넘기면 뒤쪽 이름이 조용히 잘린다.
  */
 export function gameAliasQuery(entityId: string): string {
-  return `SELECT ?series ?based ?alt WHERE {
+  return `SELECT ?name WHERE {
   VALUES ?item { wd:${entityId} }
-  OPTIONAL { ?item wdt:P179 ?s . ?s rdfs:label ?series . FILTER(lang(?series) in (${SPARQL_NAME_LANGS})) }
-  OPTIONAL { ?item wdt:P144 ?b . ?b rdfs:label ?based . FILTER(lang(?based) in (${SPARQL_NAME_LANGS})) }
-  OPTIONAL { ?item skos:altLabel ?alt . FILTER(lang(?alt) in (${SPARQL_NAME_LANGS})) }
-} LIMIT 100`;
+  { ?item rdfs:label ?name }
+  UNION { ?item skos:altLabel ?name }
+  UNION { ?item wdt:P179 ?s . ?s rdfs:label ?name }
+  UNION { ?item wdt:P144 ?b . ?b rdfs:label ?name }
+  FILTER(lang(?name) in (${SPARQL_NAME_LANGS}))
+} LIMIT ${ALIAS_QUERY_LIMIT}`;
 }

@@ -32,17 +32,25 @@ describe("exactGameMatches", () => {
 });
 
 describe("collectAliases", () => {
-  it("시리즈, 원작, 별칭을 한 집합으로 모으고 중복을 접는다", () => {
+  it("이름을 한 집합으로 모으고 중복을 접는다", () => {
     const rows = [
-      { series: { value: "젤다의 전설" }, alt: { value: "TOTK" } },
-      { series: { value: "젤다의 전설" }, alt: { value: "Tears of the Kingdom" } },
-      { based: { value: "해리 포터" } },
+      { name: { value: "젤다의 전설" } },
+      { name: { value: "TOTK" } },
+      { name: { value: "젤다의 전설" } },
+      { name: { value: "해리 포터" } },
     ];
-    expect(collectAliases(rows).sort()).toEqual(["TOTK", "Tears of the Kingdom", "젤다의 전설", "해리 포터"].sort());
+    expect(collectAliases(rows).sort()).toEqual(["TOTK", "젤다의 전설", "해리 포터"].sort());
+  });
+
+  it("항목 자신의 라벨도 별칭으로 받는다 — 한국 사람이 치는 말이 제목이 아니라 여기 있다", () => {
+    // 2026-09-22 실측(Q28937399): 라벨이 "배틀그라운드", altLabel 이 "배그" 라
+    // 라벨을 빼면 "배틀그라운드" 검색이 0건이 된다
+    const rows = [{ name: { value: "배틀그라운드" } }, { name: { value: "배그" } }, { name: { value: "PUBG: Battlegrounds" } }];
+    expect(collectAliases(rows)).toContain("배틀그라운드");
   });
 
   it("빈 값은 버린다", () => {
-    expect(collectAliases([{ series: { value: "  " } }, {}])).toEqual([]);
+    expect(collectAliases([{ name: { value: "  " } }, {}])).toEqual([]);
   });
 });
 
