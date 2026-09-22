@@ -20,6 +20,18 @@ const EDGE = 8;
 /** 잘림 판정 오차 — 소수점 레이아웃에서 1px 미만 차이는 잘린 게 아니다 */
 const OVERFLOW_SLACK = 1;
 
+/**
+ * 터치 기기에서 말풍선을 여는 방법. hover 가 없어 둘로 갈린다
+ * (2026-09-22, 사용자 지적: "모바일에서 툴팁이 버튼눌러도 안나오네").
+ *
+ * "tap"   — 한 번 누르면 열고 다시 누르면 닫는다. **누르는 것 말고 할 일이 없는 요소**용(InfoTip 의 "i").
+ * "press" — 길게 눌러야 연다. 한 번 누름이 이미 다른 뜻인 요소용(링크를 감싼 Clamp) —
+ *           여기서 탭으로 열면 링크를 못 누른다.
+ *
+ * 기본이 "press" 인 이유: 잘린 글자(Clamp)가 이 훅의 주된 손님이고, 그쪽은 늘 무언가를 감싸고 있다.
+ */
+export type TooltipOpenBy = "tap" | "press";
+
 type Pos = { top: number; left: number };
 
 /** 기본은 위, 위쪽 공간이 모자라면 아래. 가로는 화면 안으로 밀어 넣는다(트리거 중앙 기준) */
@@ -37,7 +49,7 @@ function place(trigger: DOMRect, tip: DOMRect): Pos {
  * 트리거 요소에 붙일 핸들러와 말풍선 노드를 돌려준다.
  * enabled=false 면 아무 일도 하지 않는다 — 글자가 실제로 잘렸을 때만 켜기 위한 스위치.
  */
-export function useTooltip<T extends HTMLElement>(label: string, enabled: boolean) {
+export function useTooltip<T extends HTMLElement>(label: string, enabled: boolean, openBy: TooltipOpenBy = "press") {
   const ref = useRef<T | null>(null);
   const tipRef = useRef<HTMLDivElement | null>(null);
   const timerRef = useRef<number | null>(null);
@@ -56,6 +68,14 @@ export function useTooltip<T extends HTMLElement>(label: string, enabled: boolea
     setOpen(false);
     setPos(null);
   }, [clearTimer]);
+
+  /** 지연 없이 곧바로 연다. 탭에는 setTimeout(0) 도 늦다 — 같은 탭의 pointerup 이 먼저 와 타이머를 지운다 */
+  const openNow = useCallback(() => {
+    if (!enabled) return;
+    clearTimer();
+    openRef.current = true;
+    setOpen(true);
+  }, [clearTimer, enabled]);
 
   const openAfter = useCallback(
     (delay: number) => {
@@ -125,9 +145,19 @@ export function useTooltip<T extends HTMLElement>(label: string, enabled: boolea
     onPointerLeave: close,
     onPointerCancel: close,
     onPointerDown: (e: React.PointerEvent<T>) => {
-      // 마우스 클릭은 닫고, 터치는 길게 누름으로 연다(탭 한 번은 링크 이동이어야 한다)
-      if (e.pointerType === "mouse") close();
-      else openAfter(LONG_PRESS_MS);
+      // 마우스는 올리기만 해도 이미 봤다 — 누름은 닫는 뜻이다
+      if (e.pointerType === "mouse") {
+        close();
+        return;
+      }
+      // 터치는 요소 성격에 따라 갈린다(TooltipOpenBy). 탭으로 여는 자리는 한 번 더 누르면 닫는다 —
+      // 바깥 누름은 document 가 받지만 자기 자신은 그 그물에 안 걸린다(ref.contains 가 참이라 그냥 지나간다)
+      if (openBy === "tap") {
+        if (openRef.current) close();
+        else openNow();
+        return;
+      }
+      openAfter(LONG_PRESS_MS);
     },
     onPointerUp: () => {
       if (!openRef.current) clearTimer();
@@ -223,11 +253,14 @@ export function Clamp({
  * 늘 펴 둘 필요가 없다. 자리를 비우되 버리지는 않는 방법이 말풍선이다.
  *
  * label 은 줄바꿈으로 여러 사실을 담을 수 있다(말풍선이 pre-line 이다).
- * button 으로 세우는 이유: 터치 기기에서 툴팁에 닿는 유일한 길이 길게 누름인데, 그걸 받으려면
- * 포커스와 포인터 이벤트를 받는 요소여야 한다.
+ * button 으로 세우는 이유: 포커스와 포인터 이벤트를 둘 다 받아야 키보드, 터치 양쪽에서 열린다.
+ *
+ * **터치에서는 탭으로 연다**(2026-09-22, 사용자 지적: "모바일에서 툴팁이 버튼눌러도 안나오네").
+ * 길게 누름만 받던 시절에는 보통 탭이 pointerup 에서 타이머째 지워져 아무 일도 일어나지 않았다.
+ * 이 버튼은 눌러서 할 일이 말풍선 하나뿐이라 탭을 양보할 곳이 없다 — Clamp 와 갈리는 지점이 여기다.
  */
 export function InfoTip({ label, className }: { label: string; className?: string }) {
-  const { triggerProps, tooltip } = useTooltip<HTMLButtonElement>(label, label.length > 0);
+  const { triggerProps, tooltip } = useTooltip<HTMLButtonElement>(label, label.length > 0, "tap");
   if (!label) return null;
   return (
     <>
