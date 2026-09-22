@@ -197,7 +197,17 @@ function PerHourPlain({ perHour, currency }: { perHour: number; currency: Curren
   );
 }
 
-/** 상세 사이드바 카드 — 하단에 "시간당 가격" 파생 지표 */
+/**
+ * 시간당 가격을 화면에서 내렸다(2026-09-22, 사용자 결정). **지우지 않는다** —
+ * 눈금(getPricePerHourScale), 판정, 문구가 모두 살아 있고 이 한 줄만 true 로 돌리면 되돌아온다.
+ *
+ * 왜 내렸나: 이 칸은 "₩959/시간 | 보통 | 이 게임 | 메인 스토리 기준 | 게임 1,747개와 비교했어요" 로
+ * 다섯 조각을 말하는데, 그 다섯이 답하는 질문("이 값이 비싼가")은 바로 위 값과 점수가 이미 반쯤
+ * 답하고 있었다. 좁은 오른쪽 기둥에서 가장 키가 큰 조각이기도 했다.
+ */
+const SHOW_PRICE_PER_HOUR = false;
+
+/** 상세 사이드바 카드 — 하단에 "시간당 가격" 파생 지표(지금은 내려 둠, SHOW_PRICE_PER_HOUR) */
 export function PlaytimeCard({
   playtime,
   currentPrice,
@@ -210,7 +220,7 @@ export function PlaytimeCard({
   /** 카탈로그 분포. 없으면 눈금 없이 숫자만 선다 */
   scale?: PricePerHourScale | null;
 }) {
-  const perHour = pricePerHour(currentPrice, toPositiveNumber(playtime?.mainStoryHours));
+  const perHour = SHOW_PRICE_PER_HOUR ? pricePerHour(currentPrice, toPositiveNumber(playtime?.mainStoryHours)) : null;
 
   return (
     <section aria-labelledby="playtime-card-heading" className="flex flex-col gap-3.5">

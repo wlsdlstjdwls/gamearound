@@ -1,4 +1,7 @@
-// DLC, 에디션 목록 — 기획서 F5.
+// 에디션 목록(과 되살릴 때를 위한 추가 콘텐츠 마디) — 기획서 F5.
+//
+// 추가 콘텐츠는 2026-09-22 에 플랫폼 행의 시트로 옮겼다(components/platform-addons).
+// 이 마디는 에디션이 쓰고, 줄 모양은 둘이 dlc-rows 로 함께 쓴다.
 // DLC 는 games 행이라 자기 상세 화면도 갖는다. 여기서는 제목과 값만 보여주고 나머지는 그 화면에 맡긴다.
 //
 // "목록은 없는데 스토어가 추가 콘텐츠가 있다고만 알려준" 상태를 따로 다룬다.
@@ -17,19 +20,14 @@
 // 칩은 그 30건 안에서만 거른다 — 자식이 수백 개인 게임에서 "Xbox 3개" 는 화면에 온 것의 수이지 전부가 아니다.
 "use client";
 
-import Link from "next/link";
 import { useMemo, useState } from "react";
-import { Clamp } from "@/components/ui/tooltip";
 import { ChipButton } from "@/components/ui/chip";
-import { ROW, ROWS } from "@/components/ui/page";
+import { DlcRows } from "@/components/dlc-rows";
 import { Collapsible } from "@/components/ui/collapsible";
-import { cn } from "@/lib/cn";
-import { cheapestOf, formatPrice } from "@/lib/currency";
-import { PLATFORM_LABEL, platformLabel } from "@/lib/format";
+import { cheapestOf } from "@/lib/currency";
+import { PLATFORM_LABEL } from "@/lib/format";
 import { GAME_MESSAGES } from "@/lib/games/messages";
 import { PLATFORM_ORDER } from "@/lib/platform";
-import { gamePath } from "@/lib/routes";
-import { stagger } from "@/lib/motion";
 import type { Platform } from "@/server/db/schema";
 import type { DlcDto, PlatformDto } from "@/server/services/games";
 
@@ -100,33 +98,7 @@ export function DlcSection({
       {rows.length === 0 ? (
         <p className="text-[13px] text-dim">{hasAddOns ? GAME_MESSAGES.dlcKnownButUnlisted : GAME_MESSAGES.dlcNone}</p>
       ) : (
-        <ul className={ROWS}>
-          {rows.map(({ dlc, best }, i) => (
-            <li key={dlc.slug} className="enter-item" style={stagger(i)}>
-              {/* 새 탭으로 연다 — DLC 를 훑는 사람은 본편 화면을 띄워 둔 채 하나씩 열어 본다.
-                  같은 탭에서 열면 볼 때마다 뒤로 가기를 눌러 본편으로 돌아와야 한다 */}
-              <Link
-                href={gamePath(dlc.slug)}
-                target="_blank"
-                rel="noopener noreferrer"
-                className={cn(ROW, "flex items-center justify-between gap-3.5 py-[13px]")}
-              >
-                <Clamp lines={1} className="min-w-0 flex-1 text-[14px] text-ink">
-                  {dlc.title}
-                </Clamp>
-                <span className="sr-only">(새 창에서 열림)</span>
-                <span className="flex shrink-0 items-baseline gap-3 text-[12.5px]">
-                  {/* 할인율은 브랜드색이다 — 빨강은 이 화면에서 "마감 임박" 이 이미 쓰고 있다 */}
-                  {best?.discountPct ? <span className="font-bold text-acc">-{best.discountPct}%</span> : null}
-                  <span className="text-[15px] font-extrabold tracking-[-0.03em] text-ink">{best ? formatPrice(best.currentPrice, best.currency) : "-"}</span>
-                  {/* 플랫폼 이름은 칩을 골랐어도 적는다 — 나라가 다르면 이름이 달라지고(Switch 일본),
-                      그 값은 한국 계정으로 못 사는 값이다 */}
-                  {best && <span className="w-12 text-right text-[12px] text-dim">{platformLabel(best)}</span>}
-                </span>
-              </Link>
-            </li>
-          ))}
-        </ul>
+        <DlcRows rows={rows} />
       )}
       </div>
     </Collapsible>

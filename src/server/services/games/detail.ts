@@ -159,6 +159,7 @@ export async function getGameBySlug(slug: string): Promise<GameDetail | null> {
         slug: gc.company.slug,
         name: companyDisplayName(gc.company),
         countryNameKo: gc.company.countryNameKo,
+        countryCode: gc.company.countryCode,
         role: gc.role,
       }))
       // 개발사를 먼저 보여준다 — 사용자가 먼저 찾는 쪽이다

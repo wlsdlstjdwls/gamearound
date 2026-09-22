@@ -1,4 +1,7 @@
 // 게임 상세의 개발사, 배급사 표시.
+// **나라는 여기서 적지 않는다**(2026-09-22, 사용자 지정). 회사마다 "(대한민국)" 을 괄호로 달면
+// 칩 셋이 서는 줄에 같은 나라가 세 번 적히고, 그 괄호가 회사 이름보다 자리를 더 먹었다.
+// 나라는 게임의 성질이지 칩마다의 성질이 아니라서 위 출시일 줄이 국기 한 장으로 한 번만 말한다.
 // 회사 엔티티로 승격된 것은 회사 화면으로 가는 링크가 되고, 아직 승격되지 않은 것은
 // games.developer / publisher 문자열 그대로 링크 없이 보여준다(폴백).
 // 폴백을 "정보 없음"으로 처리하지 않는 이유: 이름은 아는데 회사 페이지만 없는 상태라 사용자에게는 정보가 맞다.
@@ -31,7 +34,6 @@ export function CompanyChips({
             >
               <span className="text-dim">{COMPANY_ROLE_LABEL[c.role]}</span>
               {c.name}
-              {c.countryNameKo && <span className="text-dim">({c.countryNameKo})</span>}
             </Link>
           </li>
         ))}

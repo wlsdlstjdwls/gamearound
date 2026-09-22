@@ -7,7 +7,7 @@ import { cheapestOf, DISPLAY_CURRENCY } from "@/lib/currency";
 import { PLATFORM_ORDER } from "@/lib/platform";
 import { PLATFORM_LABEL } from "@/lib/format";
 import { countText } from "@/lib/user-score";
-import type { GameDetail, GameSummary, PlatformDto, PublicGameDto, RequirementDto, RequirementGroupDto, UserScoreDto } from "./dto";
+import type { GameCompanyDto, GameDetail, GameSummary, PlatformDto, PublicGameDto, RequirementDto, RequirementGroupDto, UserScoreDto } from "./dto";
 
 export const iso = (d: Date | string | null | undefined): string | null => {
   if (!d) return null;
@@ -318,6 +318,25 @@ export function toPublicGameDto(g: GameDetail): PublicGameDto {
 }
 
 /**
+ * "어디 게임인가" 한 줄. 상세의 출시일 줄이 국기와 나라 이름으로 쓴다.
+ *
+ * **개발사를 먼저 본다.** 배급사는 지역 배급사인 경우가 흔해서(일본 게임의 북미 배급사)
+ * 그 나라를 적으면 물음에 틀린 답을 한다. 개발사에 나라가 없을 때만 배급사로 내려간다.
+ *
+ * 나라 이름이 `http` 로 시작하면 버린다 — 위키데이터가 값 대신 내부 식별자 URL 을 주는 행이 있고
+ * (genid, 폴란드 회사 1건 실측), 그게 그대로 화면에 실리면 주소 문자열이 나라 이름 자리에 선다.
+ */
+export function originCountry(companies: GameCompanyDto[]): { countryCode: string; countryNameKo: string } | null {
+  const usable = companies.flatMap((c) =>
+    c.countryCode && c.countryNameKo && !c.countryNameKo.startsWith("http")
+      ? [{ role: c.role, countryCode: c.countryCode, countryNameKo: c.countryNameKo }]
+      : [],
+  );
+  const pick = usable.find((c) => c.role === "developer") ?? usable[0];
+  return pick ? { countryCode: pick.countryCode, countryNameKo: pick.countryNameKo } : null;
+}
+
+/**
  * 현재가가 가장 싼 플랫폼. 통화가 섞였을 때의 규칙은 lib/currency 의 cheapestOf 가 갖는다.
  * 상세 화면과 공유 이미지가 같은 기준으로 "최저가"를 말해야 해서 여기로 올렸다.
  */
@@ -345,21 +364,25 @@ export function bestScore(platforms: PlatformDto[]): { value: number; note: stri
  * 유저 점수만 "94%" 였다. 셋 다 0~100 한 축의 값인데 하나만 단위를 달고 있으면
  * 눈이 "94% 가 88 보다 좋은 건가" 를 매번 다시 계산한다.
  *
- * 그래서 값 자리는 셋 다 맨 숫자로 통일하고, 척도와 출처는 값 아래 회색 한 줄이 맡는다.
+ * 그래서 값 자리는 셋 다 맨 숫자로 통일하고, 척도는 숫자 옆 꼬리(/100), 출처만 값 아래 한 줄이 맡는다.
  * 유저 점수의 % 를 지워도 뜻이 안 상하는 이유: 긍정 비율 94 와 별점 3.9(저장값 78)를
  * 같은 축에 올리는 일은 저장할 때 이미 끝나 있다(lib/user-score 주석). 화면은 그 축을 그대로 쓴다.
  */
-export type ScoreLine = { key: string; label: string; value: number; note: string | null };
+export type ScoreLine = { key: string; label: string; value: number; suffix: string; note: string | null };
 
-/** 100점 축임을 값 아래에서 한 번만 말한다 — 세 칸에 세 번 적으면 그게 잡음이다 */
-const SCORE_SCALE_NOTE = "100점 기준";
+/**
+ * 척도는 값 옆에 붙인다 — 아래 줄을 쓰지 않는다(2026-09-22).
+ * "100점 기준" 을 회색 줄로 내렸더니 평론가 두 칸이 나란히 같은 문장을 반복하며 각각 두 줄을 먹었다.
+ * 축은 숫자를 읽는 순간에만 필요한 단서라서, 줄을 따로 내줄 값이 아니라 숫자에 붙는 꼬리다.
+ */
+const SCORE_SCALE_SUFFIX = "/100";
 
 export function scoreLines(platforms: PlatformDto[]): ScoreLine[] {
   const lines: ScoreLine[] = [];
   const oc = platforms.map((p) => p.opencriticScore).find((v): v is number => typeof v === "number");
   const mc = platforms.map((p) => p.metacriticScore).find((v): v is number => typeof v === "number");
-  if (oc !== undefined) lines.push({ key: "opencritic", label: "오픈크리틱", value: Math.round(oc), note: SCORE_SCALE_NOTE });
-  if (mc !== undefined) lines.push({ key: "metacritic", label: "메타크리틱", value: Math.round(mc), note: SCORE_SCALE_NOTE });
+  if (oc !== undefined) lines.push({ key: "opencritic", label: "오픈크리틱", value: Math.round(oc), suffix: SCORE_SCALE_SUFFIX, note: null });
+  if (mc !== undefined) lines.push({ key: "metacritic", label: "메타크리틱", value: Math.round(mc), suffix: SCORE_SCALE_SUFFIX, note: null });
 
   const user = bestUserScore(platforms);
   if (user) {
@@ -368,7 +391,7 @@ export function scoreLines(platforms: PlatformDto[]): ScoreLine[] {
     const { score, platform } = user;
     const who = PLATFORM_LABEL[platform] ?? platform;
     const count = score.count > 0 ? ` | ${countText(score.count)}` : "";
-    lines.push({ key: "user", label: "유저 점수", value: Math.round(score.value), note: `${who}${count}` });
+    lines.push({ key: "user", label: "유저 점수", value: Math.round(score.value), suffix: SCORE_SCALE_SUFFIX, note: `${who}${count}` });
   }
   return lines;
 }

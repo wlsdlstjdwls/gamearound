@@ -4,11 +4,12 @@ import type { Metadata } from "next";
 import { Suspense } from "react";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { CoverImage, DiscountStamp } from "@/components/game-card";
+import { CoverImage } from "@/components/game-card";
 import { CompanyChips } from "@/components/company-chips";
 import { SaleBadge } from "@/components/sale-badge";
 import { ContentKindHead } from "@/components/content-kind-head";
 import { DlcSection } from "@/components/dlc-list";
+import { GameHeadbar } from "@/components/game-headbar";
 import { UpgradeNotes } from "@/components/upgrade-note";
 import { MultiplayerBadges } from "@/components/multiplayer-badges";
 import { PcSupportBadges } from "@/components/pc-support-badges";
@@ -21,6 +22,9 @@ import { CompatSection } from "@/components/compat-section";
 import { RequirementsBody } from "@/components/requirements-table";
 import { RunCheck } from "@/components/run-check";
 import { BackLink } from "@/components/ui/back-link";
+import { InfoTip } from "@/components/ui/tooltip";
+import { Flag } from "@/components/ui/flag";
+import { cn } from "@/lib/cn";
 import { buttonClass } from "@/components/ui/button";
 import { Page, SectionHead } from "@/components/ui/page";
 import { SellersSection } from "@/components/shops/sellers-section";
@@ -30,6 +34,8 @@ import { formatDate, PLATFORM_LABEL } from "@/lib/format";
 import { SITE } from "@/lib/site";
 import { getFreshness } from "@/lib/freshness";
 import { COMPAT_MESSAGES, GAME_MESSAGES, OS_FAMILY_LABEL } from "@/lib/games/messages";
+import { requirementSummary } from "@/lib/games/requirement-summary";
+import { VerdictNote } from "@/components/devices/verdict-note";
 import { stagger } from "@/lib/motion";
 import { gamePricesPath, ROUTES } from "@/lib/routes";
 import {
@@ -40,6 +46,7 @@ import {
   getGamePatchesCached,
   getPricePerHourScale,
   latestPatches,
+  originCountry,
   scoreLines,
   type GameDetail,
 } from "@/server/services/games";
@@ -78,19 +85,32 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   };
 }
 
-type StatCellProps = { label: string; value: string; note?: string | null };
+type StatCellProps = { label: string; value: string; suffix?: string | null; note?: string | null };
 
 /**
- * 오른쪽 기둥의 값 한 칸 — 라벨 위, 큰 숫자 아래, 근거 한 줄.
+ * 오른쪽 기둥의 값 한 칸 — 라벨 위, 숫자 아래.
  * 격자 칸을 세로선으로 가르지 않는다(2026-09-21 리디자인): 칸 수가 둘일 때와 넷일 때
  * 선의 개수가 달라져 같은 표가 게임마다 다르게 보였다. 가르는 일은 여백이 한다.
+ *
+ * 척도는 note 가 아니라 suffix 로 받는다(2026-09-22) — 축 표기가 아래 줄을 차지하면
+ * 값 하나에 세 줄이 되고, 평론가 두 칸은 같은 문장을 나란히 반복한다.
+ *
+ * **근거 줄(note)을 말풍선으로 내렸다**(2026-09-22, 사용자 지정: "Steam | 3.3만명 -> 툴팁으로").
+ * "어느 스토어의 몇 명인가" 는 점수를 믿을지 정할 때 한 번 보는 값인데, 늘 펴 두면 칸마다
+ * 세 줄이 되어 점수 셋이 화면 하나를 먹었다. 라벨 옆 "i" 가 그 값을 갖는다 —
+ * 표 안의 값 줄이 같은 규칙을 이미 쓰고 있다(platform-prices 의 InfoTip).
  */
-function StatCell({ label, value, note }: StatCellProps) {
+function StatCell({ label, value, suffix, note }: StatCellProps) {
   return (
-    <div>
-      <dt className="text-[12px] text-dim">{label}</dt>
-      <dd className="mt-1 text-[20px] font-extrabold tracking-[-0.03em] text-ink sm:text-[22px]">{value}</dd>
-      {note && <dd className="mt-0.5 text-[11.5px] leading-[1.5] text-mut">{note}</dd>}
+    <div className="min-w-0">
+      <dt className="flex items-center gap-0.5 text-[12px] text-dim">
+        <span className="truncate">{label}</span>
+        {note && <InfoTip label={note} className="size-[15px]" />}
+      </dt>
+      <dd className="mt-0.5 text-[19px] font-extrabold tracking-[-0.03em] text-ink">
+        {value}
+        {suffix && <span className="ml-0.5 text-[11px] font-semibold tracking-normal text-mut">{suffix}</span>}
+      </dd>
     </div>
   );
 }
@@ -149,7 +169,7 @@ function PriceHeadline({ game, recordedLow }: { game: GameDetail; recordedLow: R
  * **2026-09-21 — 세 점수를 한 축으로 폈다.** 전에는 오픈크리틱과 메타크리틱이 한 칸에 눌려 있고
  * (메타는 note 안의 "메타 85" 였다) 유저 점수만 "94%" 로 단위를 달고 있었다. 셋 다 0~100 값인데
  * 표기가 셋 다 달라서, 나란히 놓고도 어느 쪽이 높은지 한눈에 안 들어왔다. 값 자리는 맨 숫자로 맞추고
- * 척도와 출처는 아래 회색 줄이 맡는다(services 의 scoreLines).
+ * 척도는 숫자 옆 작은 "/100", 출처(유저 점수의 스토어와 표본 수)만 아래 줄이 맡는다(services 의 scoreLines).
  *
  * **출시일을 뺐다.** 바로 왼쪽 제목 밑 줄이 같은 날짜를 이미 말한다 — 한 화면에 같은 값이 두 번 서면
  * 읽는 사람은 둘이 다른 값인지 확인하느라 두 번 읽는다.
@@ -161,9 +181,12 @@ function ScoreGrid({ game }: { game: GameDetail }) {
     return <p className="border-t border-line pt-5 text-[12.5px] leading-[1.6] text-dim">{GAME_MESSAGES.summaryPending}</p>;
   }
   return (
-    <dl className="grid grid-cols-2 gap-x-5 gap-y-[18px] border-t border-line pt-5">
+    /* 한 줄에 다 세운다(2026-09-22, 사용자 지적: "해당 영역은 너무 많은 자리를 차지해").
+       2단 격자는 점수가 셋일 때 두 줄이 되고, 아래 줄에 칸 하나만 남아 그 옆이 통째로 비었다.
+       칸 수만큼 나누면(2~3) 점수가 몇 개든 한 줄이고 높이가 게임마다 달라지지 않는다 */
+    <dl className={cn("grid gap-x-3 border-t border-line pt-4", lines.length >= 3 ? "grid-cols-3" : "grid-cols-2")}>
       {lines.map((c) => (
-        <StatCell key={c.key} label={c.label} value={String(c.value)} note={c.note} />
+        <StatCell key={c.key} label={c.label} value={String(c.value)} suffix={c.suffix} note={c.note} />
       ))}
     </dl>
   );
@@ -175,8 +198,7 @@ function ScoreGrid({ game }: { game: GameDetail }) {
  * 비회원은 devices 가 빈 배열이고, 그때 기기는 브라우저에서 읽는다(compat-section).
  */
 async function CompatSlot({ groups, platforms }: { groups: GameDetail["requirements"]; platforms: GameDetail["platforms"] }) {
-  const user = await getCurrentUser();
-  const devices = user ? await listMyDevices() : [];
+  const devices = await myDevices();
   return (
     <CompatSection
       groups={groups}
@@ -205,6 +227,35 @@ async function SellersSlot({ gameId }: { gameId: string }) {
   );
 }
 
+/**
+ * 로그인했으면 등록한 기기, 아니면 빈 목록. 두 자리(판정 칸, 제목 옆 한 줄)가 같은 답을 써야 해서
+ * 한 함수로 둔다 — 질의 자체는 요청 안에서 캐시된다(services/devices 의 listMyDevices).
+ */
+async function myDevices() {
+  const user = await getCurrentUser();
+  return user ? await listMyDevices() : [];
+}
+
+/**
+ * 마디 제목 옆의 판정 한 마디. 세션에 매달린 값이라(등록한 기기) 본문을 기다리게 하지 않는다 —
+ * 비회원은 이 슬롯이 빈 목록을 넘겨도 컴포넌트가 브라우저의 기기를 스스로 읽는다.
+ */
+async function VerdictNoteSlot({ groups }: { groups: GameDetail["requirements"] }) {
+  const devices = await myDevices();
+  return (
+    <VerdictNote
+      devices={devices.map((d) => ({ ...d, id: d.id, label: d.label }))}
+      groups={groups.map((g) => ({
+        osFamily: g.osFamily,
+        minimum: g.minimum ? { cpuTiers: g.minimum.cpuTiers, gpuTiers: g.minimum.gpuTiers, ramMb: g.minimum.ramMb, storageMb: g.minimum.storageMb } : null,
+        recommended: g.recommended
+          ? { cpuTiers: g.recommended.cpuTiers, gpuTiers: g.recommended.gpuTiers, ramMb: g.recommended.ramMb, storageMb: g.recommended.storageMb }
+          : null,
+      }))}
+    />
+  );
+}
+
 export default async function GameDetailPage({ params }: Props) {
   const slug = decodeSlugParam((await params).slug);
 
@@ -230,6 +281,8 @@ export default async function GameDetailPage({ params }: Props) {
   if (!game) notFound();
 
   const title = displayTitle(game);
+  // 이 게임이 어디서 만들어졌나. 개발사 우선이고, 고르는 규칙은 mappers 의 originCountry 가 갖는다
+  const origin = originCountry(game.companies);
   const platforms: PlatformPriceItem[] = game.platforms.map((p) => ({
     ...p,
     freshness: getFreshness(p.lastSyncedAt, p.syncStatus),
@@ -237,9 +290,6 @@ export default async function GameDetailPage({ params }: Props) {
   const best = cheapestPlatform(game.platforms);
   /** 최저가가 0원 — 할인 알림을 걸 자리가 없다. 값이 없는 것(null)과 가른다 */
   const isFree = best?.currentPrice === 0;
-  // 어느 한 플랫폼이라도 "추가 콘텐츠 있음"이라고 했으면 DLC 블록을 띄운다.
-  // 목록이 비어 있어도 그 사실 자체가 사용자에게 쓸모 있는 정보다.
-  const hasAddOns = game.platforms.some((p) => p.hasAddOns === true);
   // 플레이 방식 칩이 하나라도 서는지 — 장르와 사이의 구분선을 그릴지 정한다
   const hasPlayModes =
     game.supportsSolo ||
@@ -249,7 +299,11 @@ export default async function GameDetailPage({ params }: Props) {
     Boolean(game.onlineMaxPlayers);
 
   return (
-    <Page pad="detail" gap={44}>
+    /* 마디 사이 44 에서 30 으로, 다시 22 로 줄였다(2026-09-22, 사용자 지적 두 번).
+       히어로의 오른쪽 기둥은 sticky 라 아래로 길고, 왼쪽은 커버가 끝나면 곧 바닥이다 —
+       그 짧은 쪽 아래에 큰 여백이 붙으면 "플랫폼 정보" 제목이 히어로에서 떨어져 나온 것처럼 읽혔다.
+       마디가 서로 안 붙는 일은 제목 크기(SECTION_SIZE.section, 22px)가 이미 하고 있다 */
+    <Page pad="detail" gap={22}>
       <BackLink href={ROUTES.game}>게임 목록으로</BackLink>
 
       {/* 섹션 1 — 헤더 블록. 왼쪽은 "무슨 게임인가", 오른쪽은 "지금 사도 되나" 다.
@@ -257,7 +311,7 @@ export default async function GameDetailPage({ params }: Props) {
           안쪽 조각마다 .enter-item 을 붙이는 이유: 헤더는 300px 넘는 덩어리라 통째로 페이드하면
           화면이 한 번에 툭 던져진다. 커버, 제목, 요약, 장르, 설명 순으로 들어와야 목록 화면과 결이 같다.
           (조각이 하나라도 .enter-item 이면 감싼 section 은 애니메이션에서 빠진다 — 겹쳐 페이드 방지) */}
-      <section className="grid items-start gap-x-9 gap-y-7 lg:grid-cols-[minmax(0,1.25fr)_minmax(280px,0.72fr)]">
+      <section className="grid items-start gap-x-9 gap-y-6 pb-1 lg:grid-cols-[minmax(0,1.25fr)_minmax(280px,0.72fr)]">
         <div className="flex min-w-0 flex-col gap-5">
           {/*
             커버는 스탬프가 모서리 밖으로 나가므로 relative 상자와 overflow 상자를 갈라 둔다(game-card 와 같은 규칙).
@@ -272,9 +326,13 @@ export default async function GameDetailPage({ params }: Props) {
             기둥을 꽉 채우지 않는 이유는 재어 보면 나온다. 최대폭 1200 에서 가로 간격 36 을 빼고
             1.25 대 0.72 로 가르면 왼쪽 기둥은 약 738px 이다. 여기에 2:3 을 꽉 채우면 높이가 1,107px 이
             되어 제목이 통째로 첫 화면 밖으로 밀린다 — 커버가 답하는 질문("무슨 게임인가")을 커버가
-            제목을 가려서 못 답하게 되는 셈이다. 400 은 높이가 600px 이라 오른쪽 결론 기둥(값, 점수,
-            플레이타임)과 키가 얼추 맞는다. 440 까지 가지 않은 것은 원본이 300px 인 건이 표본에 있어서다 —
-            그 이상은 없는 화소를 늘리는 값이다.
+            제목을 가려서 못 답하게 되는 셈이다.
+
+            **400 에서 300 으로 줄였다**(2026-09-22, 사용자 지적: "이미지 영역이 너무 높이가 높아 보여").
+            400 은 높이가 600px 이라 첫 화면에서 커버 아래 제목과 설명이 거의 안 보였다 — 세로 아트는
+            가로 아트와 달리 폭을 조금만 줘도 높이가 1.5배로 자란다. 300 이면 높이 450px 이라 제목,
+            회사, 설명 첫 줄까지 커버와 한 화면에 같이 선다. 원본이 300px 인 건이 표본에 있어
+            이 아래로는 굳이 내릴 이유도 없다(더 줄여도 받는 파일이 같다).
 
             남는 좌우 여백은 가운데 정렬로 일부러 둔 것처럼 읽히게 했다 — 왼쪽에 붙여 두면
             "오른쪽이 비었다" 로 읽히고, 가운데 두면 "이게 이 그림의 크기다" 로 읽힌다.
@@ -290,7 +348,7 @@ export default async function GameDetailPage({ params }: Props) {
             휴대폰에서 2:3 을 펴면 커버 하나가 첫 화면을 다 먹는다.
           */}
           <div
-            className={`enter-item relative ${game.portraitUrl ? "sm:mx-auto sm:w-full sm:max-w-[400px]" : ""}`}
+            className={`enter-item relative ${game.portraitUrl ? "sm:mx-auto sm:w-full sm:max-w-[300px]" : ""}`}
             style={stagger(0)}
           >
             <div
@@ -301,15 +359,14 @@ export default async function GameDetailPage({ params }: Props) {
               <CoverImage
                 src={game.portraitUrl ?? game.coverUrl}
                 alt={`${title} 커버`}
-                // 세로 아트는 sm 위에서 400 을 넘지 않는다 — 640 으로 두면 그만큼 큰 원본을 받아 놓고 버린다
-                sizes={game.portraitUrl ? "(max-width: 639px) 100vw, 400px" : "(max-width: 1023px) 100vw, 640px"}
+                // 세로 아트는 sm 위에서 300 을 넘지 않는다 — 640 으로 두면 그만큼 큰 원본을 받아 놓고 버린다
+                sizes={game.portraitUrl ? "(max-width: 639px) 100vw, 300px" : "(max-width: 1023px) 100vw, 640px"}
                 priority
               />
             </div>
-            {/* 이 화면에서 면과 색을 가진 것은 이 도장 하나다.
-                폭 제한을 이 바깥 상자에 건 이유가 여기 있다 — 안쪽 상자에만 걸면 도장은 기둥 왼쪽 끝에
-                남아 그림에서 떨어져 나온다 */}
-            {best && <DiscountStamp pct={best.discountPct} size="hero" />}
+            {/* 커버에는 할인율을 찍지 않는다(2026-09-22, 사용자 지정). 상세에 들어온 사람은 바로 오른쪽에서
+                값과 할인율을 이미 읽는다 — 그림 위의 도장은 같은 사실을 두 번 말하면서 아트를 가린다.
+                목록 카드(game-card)에는 그대로 있다: 거기서는 값이 작고, 훑는 눈이 잡을 표시가 그것뿐이다 */}
           </div>
 
           <div className="enter-item flex flex-col gap-2.5 pt-2.5" style={stagger(1)}>
@@ -320,10 +377,27 @@ export default async function GameDetailPage({ params }: Props) {
                 한 줄이었는데, 파이프 왼쪽은 이 게임의 사실(언제 나왔나)이고 오른쪽은 분류(어떤 갈래인가)라
                 성질이 다르다. 게다가 장르가 넷을 넘으면 줄이 접히면서 출시일이 장르 사이에 낀 것처럼 읽혔다.
                 여기는 "언제, 누가" 만 말하고, 장르는 아래 칩 줄이 맡는다 */}
-            <p className="text-[13.5px] text-mut">
+            {/* 나라는 이 줄의 끝에 국기 한 장과 이름으로 선다(2026-09-22, 사용자 지정: 회사 칩의
+                "(대한민국)" 괄호를 걷고 출시일 옆으로). 나라는 회사마다가 아니라 이 게임의 성질이라
+                한 번만 적으면 되고, 그 한 번이 "언제, 어디" 를 함께 말하는 이 줄에 붙는 게 맞다.
+                국기를 왼쪽에 두지 않는 이유: 이 줄의 첫 값은 원제(또는 출시일)여야 눈이 제목에서
+                바로 이어 읽는다 — 국기가 앞에 서면 매번 그림부터 읽고 글자로 되돌아온다 */}
+            <p className="flex flex-wrap items-center gap-x-1.5 gap-y-1 text-[13.5px] text-mut">
               {[game.titleKo ? game.titleEn : null, game.releaseDate ? `${formatDate(game.releaseDate)} 출시` : null]
                 .filter(Boolean)
-                .join(" | ")}
+                .map((text, i) => (
+                  <span key={text as string} className="inline-flex items-center gap-x-1.5">
+                    {i > 0 && <span className="text-dim-2">|</span>}
+                    {text}
+                  </span>
+                ))}
+              {origin && (
+                <span className="inline-flex items-center gap-x-1.5">
+                  <span className="text-dim-2">|</span>
+                  <Flag code={origin.countryCode} />
+                  {origin.countryNameKo}
+                </span>
+              )}
             </p>
             <CompanyChips companies={game.companies} developer={game.developer} publisher={game.publisher} />
           </div>
@@ -346,25 +420,12 @@ export default async function GameDetailPage({ params }: Props) {
             </ul>
           )}
 
-          {/* 플레이 방식, 스팀덱 등급, 네이티브 OS — 장르와 달리 "어떻게 즐기나" 를 말하는 값이라 한 줄에 모인다 */}
-          {(hasPlayModes || game.platforms.length > 0) && (
-            <div className="enter-item flex flex-wrap items-center gap-1.5" style={stagger(4)}>
-              <MultiplayerBadges
-                localMaxPlayers={game.localMaxPlayers}
-                onlineMaxPlayers={game.onlineMaxPlayers}
-                supportsSolo={game.supportsSolo}
-                supportsCoop={game.supportsCoop}
-                supportsPvp={game.supportsPvp}
-              />
-              <PcSupportBadges platforms={game.platforms} />
-            </div>
-          )}
         </div>
 
         {/* lg 아래에서는 붙이지 않는다 — 한 기둥으로 접히면 따라올 대상이 자기 자신뿐이다.
             sticky 인 기둥에 넣을 것을 고르는 기준은 "사는 결정에 직접 쓰이나" 다 —
             값, 알림 버튼, 점수, 그리고 플레이타임까지 넷이 여기 산다. */}
-        <div className="enter-item flex min-w-0 flex-col gap-6 lg:sticky lg:top-[80px]" style={stagger(5)}>
+        <div className="enter-item flex min-w-0 flex-col gap-5 lg:sticky lg:top-[80px]" style={stagger(4)}>
           <PriceHeadline game={game} recordedLow={recordedLow} />
 
           {/* 찜 버튼은 숨겼다(2026-09-21, 사용자 결정) — WishlistSlot 과 그 폴백은 그대로 둔다.
@@ -378,7 +439,9 @@ export default async function GameDetailPage({ params }: Props) {
             <div className="flex flex-wrap gap-2">
               <Link
                 href={`${ROUTES.alerts}?game=${encodeURIComponent(game.slug)}`}
-                className={buttonClass({ variant: "primary", size: "lg", className: "min-w-[140px] flex-1" })}
+                // 잉크가 아니라 브랜드 보라다(2026-09-22, 사용자 지정) — 이 화면에서 누를 자리의 으뜸이고,
+                // 최저가 스토어 버튼, 칩과 같은 색이어야 "누르는 것" 이 한 색으로 읽힌다
+                className={buttonClass({ variant: "accent", size: "lg", className: "min-w-[140px] flex-1" })}
               >
                 할인 알림 받기
               </Link>
@@ -386,6 +449,23 @@ export default async function GameDetailPage({ params }: Props) {
           )}
 
           <ScoreGrid game={game} />
+
+          {/* 플레이 방식, 스팀덱 등급, 네이티브 OS — "어떻게 즐기나" 를 말하는 값이라 한 줄에 모인다.
+              왼쪽(무슨 게임인가)에서 오른쪽(사도 되나)으로 옮겼다(2026-09-22, 사용자 지정).
+              "솔로" 와 "스팀덱 검증됨" 은 장르처럼 게임을 설명하는 말이 아니라 **내 조건에 맞나**를
+              가르는 값이다 — 혼자 할 사람과 덱을 든 사람에게는 값, 점수와 같은 무게로 읽힌다 */}
+          {(hasPlayModes || game.platforms.length > 0) && (
+            <div className="flex flex-wrap items-center gap-1.5 border-t border-line pt-4">
+              <MultiplayerBadges
+                localMaxPlayers={game.localMaxPlayers}
+                onlineMaxPlayers={game.onlineMaxPlayers}
+                supportsSolo={game.supportsSolo}
+                supportsCoop={game.supportsCoop}
+                supportsPvp={game.supportsPvp}
+              />
+              <PcSupportBadges platforms={game.platforms} />
+            </div>
+          )}
 
           {/*
             플레이타임을 이 기둥으로 올렸다(2026-09-21).
@@ -404,6 +484,22 @@ export default async function GameDetailPage({ params }: Props) {
         </div>
       </section>
 
+      {/* 히어로가 머리띠에 가리는 순간부터 제목과 최저가를 머리띠 자리에 띄운다(2026-09-22).
+          센티넬이 여기 서야 "히어로를 지나쳤나" 가 된다 — 더 위에 두면 스크롤 첫 픽셀에서 켜진다 */}
+      <GameHeadbar
+        title={title}
+        price={best && best.currentPrice !== null ? formatPrice(best.currentPrice, best.currency) : null}
+        listPrice={
+          best && best.discountPct && best.listPrice !== null && best.listPrice !== best.currentPrice
+            ? formatPrice(best.listPrice, best.currency)
+            : null
+        }
+        discountPct={best?.discountPct ?? null}
+        // 나라별로 여러 행인 플랫폼(스위치 한국, 일본)이 배지로 두 번 서지 않게 접는다
+        platforms={[...new Set(game.platforms.map((p) => p.platform))]}
+        alertHref={isFree ? null : `${ROUTES.alerts}?game=${encodeURIComponent(game.slug)}`}
+      />
+
       {/*
         섹션 2 이후 — 근거. 한 마디가 한 줄을 통째로 쓴다(2026-09-21 리디자인).
 
@@ -420,32 +516,36 @@ export default async function GameDetailPage({ params }: Props) {
       <section aria-labelledby="platforms-heading" className="enter-item flex min-w-0 flex-col gap-3.5" style={stagger(5)}>
         <SectionHead
           id="platforms-heading"
-          title="플랫폼별 가격"
+          title="플랫폼 정보"
           action={
             <Link href={gamePricesPath(game.slug)} className="text-[13px] text-acc hover:underline">
               가격 변동 그래프
             </Link>
           }
         />
-        {/* 요약 바가 인용한 스토어의 유저 점수는 행 안에서 또 적지 않는다(platform-prices 주석) */}
-        <PlatformPrices platforms={platforms} quotedUserScorePlatform={bestUserScore(game.platforms)?.platform ?? null} />
+        {/* 요약 바가 인용한 스토어의 유저 점수는 행 안에서 또 적지 않는다(platform-prices 주석).
+            추가 콘텐츠는 이 표의 행 안에서 연다(2026-09-22) — 아래에 마디를 따로 두지 않는 이유는
+            components/platform-addons 머리 주석에 있다 */}
+        <PlatformPrices
+          platforms={platforms}
+          quotedUserScorePlatform={bestUserScore(game.platforms)?.platform ?? null}
+          dlcs={game.dlcs}
+        />
         <UpgradeNotes upgrades={game.upgrades} />
       </section>
 
-      {/* 에디션과 DLC 는 같은 줄 모양을 쓴다 - 묻는 것이 "제목과 값" 으로 같고,
-          모양이 다르면 같은 화면에서 두 번 배워야 한다.
+      {/* 에디션 — 줄 모양은 추가 콘텐츠 시트와 같다(components/dlc-rows).
           머리(건수)까지 DlcSection 안에 있다 - 플랫폼 칩으로 거른 건수를 말해야 해서다.
 
           가격표 바로 밑으로 올렸다(2026-09-21). 둘 다 "얼마인가" 에 답하는 값이고, 에디션은
           사실상 가격표의 연장이다 — 본편 5만원 옆에 디럭스 7만원이 있어야 고를 수 있다.
-          전에는 사양과 플레이타임을 건너뛴 자리에 있어서, 에디션을 비교하려면 값을 외운 채
-          화면 두 개를 내려가야 했다. 접혀 있으니 자리를 뺏지도 않는다. */}
+          접혀 있으니 자리를 뺏지도 않는다.
+
+          추가 콘텐츠와 달리 마디로 남는 이유(2026-09-22): 에디션은 **본편을 대신 사는 물건**이라
+          플랫폼을 고르기 전에 견줘야 한다. 추가 콘텐츠는 이미 산 사람이 기기를 정한 뒤 보는 값이라
+          그 기기의 줄 안에서 연다. */}
       {game.editions.length > 0 && (
         <DlcSection id="edition-heading" title={GAME_MESSAGES.editionHeading} dlcs={game.editions} hasAddOns={false} />
-      )}
-
-      {(game.dlcs.length > 0 || hasAddOns) && (
-        <DlcSection id="dlc-heading" title={GAME_MESSAGES.dlcHeading} dlcs={game.dlcs} hasAddOns={hasAddOns} />
       )}
 
       {/* 사양은 가격, 추가 콘텐츠 다음이다 — 살지 말지를 정한 뒤에 오는 질문이라서다.
@@ -468,8 +568,17 @@ export default async function GameDetailPage({ params }: Props) {
       {game.requirements.length > 0 && (
         <RunCheck
           verdictTitle={COMPAT_MESSAGES.heading}
+          // 접힌 채로도 답이 보여야 한다 — 이 자리에 서는 것은 "충족인가 미달인가" 한 마디다(devices/verdict-note).
+          // 내 부품 이름을 적었다가 사용자가 바로잡은 자리이기도 하다
+          verdictNote={
+            <Suspense fallback={null}>
+              <VerdictNoteSlot groups={game.requirements} />
+            </Suspense>
+          }
           requirementTitle={GAME_MESSAGES.requirementHeading}
-          requirementNote={game.requirements.map((g) => OS_FAMILY_LABEL[g.osFamily]).join(", ")}
+          // OS 이름 대신 사양 요약을 적는다(2026-09-22) — 표를 펴면 OS 머리는 그 안에 있고,
+          // 접힌 상태에서 궁금한 것은 "무엇을 요구하나" 다(lib/games/requirement-summary)
+          requirementNote={requirementSummary(game.requirements) ?? game.requirements.map((g) => OS_FAMILY_LABEL[g.osFamily]).join(", ")}
           verdict={
             <Suspense fallback={null}>
               <CompatSlot groups={game.requirements} platforms={game.platforms} />
