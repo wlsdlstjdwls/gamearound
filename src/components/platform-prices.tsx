@@ -238,7 +238,7 @@ function PriceRow({
 }) {
   const hasDiscount = Boolean(p.discountPct && p.discountPct > 0);
   return (
-    <li className={cn(ROW, "flex min-w-0 items-center gap-x-2.5 py-[11px]")}>
+    <li className={cn(ROW, "flex min-w-0 flex-wrap items-center gap-x-2.5 gap-y-2 py-[11px]")}>
       {/* 최저가 표시가 이 기둥 맨 위에 선다(2026-09-22, 사용자 지정: "최저가 뱃지는 Steam 위에").
           줄 가운데에 있을 때는 값과 버튼 사이에 끼어 그 줄만 길어졌고, 여덟 줄을 훑는 눈이
           "어느 스토어가 싼가" 를 찾으려면 줄마다 중간까지 읽어야 했다. 이름 위에 두면
@@ -283,35 +283,46 @@ function PriceRow({
         )}
       </span>
 
-      {/* 추가 콘텐츠가 스토어 버튼 왼쪽에 선다 — 오른쪽 끝은 이 화면에서 "나가는 문" 자리다 */}
-      {addons}
+      {/* 누르는 것들 — 좁은 화면에서는 통째로 **아랫줄**로 내려간다(2026-09-22 실측).
+          한 줄이 요구하는 폭은 416px 인데(이름 96 + 값 149 + 버튼 59, 66 + 사이 30) 390px 기기에
+          남는 자리는 335px 이라, 넘친 만큼 스토어 버튼이 화면 밖으로 밀려나 있었다
+          (문서 폭 430 대 화면 390 — 가로 스크롤이 생겼다).
+          줄 안에서 더 깎을 것이 없다: 이름을 자르면 어느 스토어인지가 사라지고, 값을 줄이면
+          이 표가 답하려던 것이 사라진다. 그래서 **읽는 값(이름, 가격)은 첫 줄에 그대로 두고
+          누르는 것만 내린다**. 오른쪽에 붙이는 이유는 왼쪽에 두면 다음 줄의 이름 기둥과 겹쳐 읽혀서다.
+          한 줄로 되돌아오는 지점은 sm(640) 이다 — 계산상 471px 부터 들어가지만 그 사이를 따로 가르면
+          토큰에 없는 중단점이 하나 더 생긴다. 넓은 화면의 배치는 이 묶음이 shrink-0 이라 그대로다 */}
+      <div className="flex w-full shrink-0 items-center justify-end gap-2.5 sm:w-auto">
+        {/* 추가 콘텐츠가 스토어 버튼 왼쪽에 선다 — 오른쪽 끝은 이 화면에서 "나가는 문" 자리다 */}
+        {addons}
 
-      {/*
-        링크가 없어도 **버튼 자리는 지킨다**(2026-09-22, 사용자 지정). 전에는 "링크 없음" 이라는
-        회색 글자로 바꿔 세웠는데, 줄마다 오른쪽 끝의 모양이 달라져 표가 들쭉날쭉했고
-        그 글자가 값보다 눈에 걸렸다. 같은 자리에 같은 모양으로 두되 눌리지 않게 한다 —
-        "여기는 원래 나가는 문인데 지금은 못 연다" 가 한눈에 읽힌다.
-      */}
-      {p.storeUrl ? (
-        <a
-          href={p.storeUrl}
-          target="_blank"
-          rel="noopener noreferrer"
-          // 최저가 행만 브랜드 필이다 — 이 화면에서 실제로 누를 자리는 대개 그 하나다(ui/button 주석)
-          className={buttonClass({ variant: isBest ? "accent" : "soft", size: "row", className: "shrink-0" })}
-        >
-          스토어
-          <span className="sr-only"> {platformLabel(p)} (새 창에서 열림)</span>
-        </a>
-      ) : (
-        <span
-          aria-disabled="true"
-          className={buttonClass({ variant: "soft", size: "row", className: "pointer-events-none shrink-0 opacity-45" })}
-        >
-          스토어
-          <span className="sr-only"> {STORE_LINK_MISSING}</span>
-        </span>
-      )}
+        {/*
+          링크가 없어도 **버튼 자리는 지킨다**(2026-09-22, 사용자 지정). 전에는 "링크 없음" 이라는
+          회색 글자로 바꿔 세웠는데, 줄마다 오른쪽 끝의 모양이 달라져 표가 들쭉날쭉했고
+          그 글자가 값보다 눈에 걸렸다. 같은 자리에 같은 모양으로 두되 눌리지 않게 한다 —
+          "여기는 원래 나가는 문인데 지금은 못 연다" 가 한눈에 읽힌다.
+        */}
+        {p.storeUrl ? (
+          <a
+            href={p.storeUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            // 최저가 행만 브랜드 필이다 — 이 화면에서 실제로 누를 자리는 대개 그 하나다(ui/button 주석)
+            className={buttonClass({ variant: isBest ? "accent" : "soft", size: "row", className: "shrink-0" })}
+          >
+            스토어
+            <span className="sr-only"> {platformLabel(p)} (새 창에서 열림)</span>
+          </a>
+        ) : (
+          <span
+            aria-disabled="true"
+            className={buttonClass({ variant: "soft", size: "row", className: "pointer-events-none shrink-0 opacity-45" })}
+          >
+            스토어
+            <span className="sr-only"> {STORE_LINK_MISSING}</span>
+          </span>
+        )}
+      </div>
     </li>
   );
 }
