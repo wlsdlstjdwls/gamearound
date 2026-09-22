@@ -173,6 +173,11 @@
      한 쌍이 어긋나면 덮지 못한 띄가 바 아래로 비친다 */
   --header-h: 64px;
 
+  /* 출시예정의 달 건너뛰기 띠 높이(components 가 아니라 여기 두는 이유: 그 띠는 머리띠 바로 아래에
+     붙어 서므로, 닻으로 내려오는 마디가 머리띠와 **이 띠를 둘 다** 빼야 가려지지 않는다).
+     재서 적은 값이 아니라 **못 박은 값**이다 — 띠에 이 높이를 그대로 물려 두 값이 어긋날 수 없게 했다 */
+  --month-nav-h: 46px;
+
   --font-sans: "Pretendard Variable", Pretendard, -apple-system, BlinkMacSystemFont, "Apple SD Gothic Neo", "Segoe UI", Roboto,
     "Noto Sans KR", "Malgun Gothic", sans-serif;
 

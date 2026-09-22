@@ -91,7 +91,7 @@ export default async function UpcomingPage() {
       {months.length > 1 && (
         <nav
           aria-label="달로 건너뛰기"
-          className="sticky top-[var(--header-h)] z-20 -mx-5 flex gap-4 overflow-x-auto border-b border-line bg-bg/95 px-5 py-2.5 backdrop-blur [scrollbar-width:none] sm:-mx-7 sm:px-7"
+          className="sticky top-[var(--header-h)] z-20 -mx-5 flex h-[var(--month-nav-h)] items-center gap-4 overflow-x-auto border-b border-line bg-bg/95 px-5 backdrop-blur [scrollbar-width:none] sm:-mx-7 sm:px-7"
         >
           {byYear(months).map((group) => (
             <div key={group.year} className="flex shrink-0 items-center gap-1.5">
@@ -117,8 +117,10 @@ export default async function UpcomingPage() {
         <p className="rounded-xl bg-surface-2 px-4 py-3.5 text-[13px] text-dim">{M.empty}</p>
       ) : (
         months.map((month) => (
-          // scroll-mt: 닻으로 내려왔을 때 제목이 머리띠 밑에 깔리지 않게 그 높이만큼 띄운다
-          <section key={month.key} id={monthAnchor(month.key)} className="flex scroll-mt-[calc(var(--header-h)+16px)] flex-col gap-4">
+          // scroll-mt: 닻으로 내려왔을 때 제목이 가려지지 않게 위에 떠 있는 것들의 높이만큼 띄운다.
+          // 머리띠만 빼면 모자란다(2026-09-22, 사용자 지적: "버튼누르면 스크롤이동되는데 헤더에 가려지네") —
+          // 그 아래 달 건너뛰기 띠가 한 겹 더 서 있어서, 뺄 것이 둘이다
+          <section key={month.key} id={monthAnchor(month.key)} className="flex scroll-mt-[calc(var(--header-h)+var(--month-nav-h)+16px)] flex-col gap-4">
             <SectionHead title={formatMonthLabel(month.key)} note={upcomingCountText(month.items.length, month.total)} />
             <ul className={GAMES_GRID_CLASS}>
               {month.items.map((entry, i) => (
