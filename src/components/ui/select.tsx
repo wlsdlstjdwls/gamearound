@@ -22,21 +22,35 @@ export interface SelectOption {
 /** 열린 목록의 최대 높이(px). 이보다 길면 안에서 스크롤한다 — 화면 밖으로 자라지 않게 */
 const LIST_MAX_H = 280;
 
+/**
+ * 칸 크기. 기본(sm)은 232px 기둥에 서는 조밀한 값이고, lg 는 손가락으로 고르는 자리다
+ * (모바일 필터 시트). 시트에서 sm 을 그대로 쓰면 36px 짜리 칸이 화면 폭을 가득 채운 채 서서,
+ * 폭은 큰데 높이만 낮은 눌리지 않을 것 같은 상자가 된다.
+ */
+const FIELD_SIZE = {
+  sm: { field: "h-9 px-3 text-[12.5px]", label: "text-[11.5px]", option: "px-2.5 py-[7px] text-[12.5px]" },
+  lg: { field: "h-11 px-3.5 text-[14px]", label: "text-[12px]", option: "px-3 py-2.5 text-[14px]" },
+} as const;
+export type SelectSize = keyof typeof FIELD_SIZE;
+
 export function Select({
   label,
   value,
   options,
   className,
   scroll = true,
+  size = "sm",
 }: {
   label: string;
   value: string;
   options: SelectOption[];
   className?: string;
+  size?: SelectSize;
   /** 고른 뒤 맨 위로 올릴지. 제자리에서 거르는 자리(목록 필터)는 false */
   scroll?: boolean;
 }) {
   const router = useRouter();
+  const box = FIELD_SIZE[size];
   const id = useId();
   const [open, setOpen] = useState(false);
   const selectedIdx = Math.max(0, options.findIndex((o) => o.value === value));
@@ -73,7 +87,13 @@ export function Select({
   };
 
   const onKeyDown = (e: React.KeyboardEvent) => {
-    if (e.key === "Escape") { setOpen(false); return; }
+    // 목록이 열려 있을 때의 Esc 는 목록만 닫는다. 위로 흘려보내면 시트(<dialog>)가 같이 닫힌다 —
+    // 모바일 필터 시트 안에서 장르를 고르다 Esc 를 누르면 필터 전체가 사라졌다(2026-09-22 실측)
+    if (e.key === "Escape") {
+      if (open) { e.preventDefault(); e.stopPropagation(); }
+      setOpen(false);
+      return;
+    }
     if (!open && (e.key === "Enter" || e.key === " " || e.key === "ArrowDown" || e.key === "ArrowUp")) {
       e.preventDefault();
       setActiveIdx(selectedIdx);
@@ -94,7 +114,7 @@ export function Select({
 
   return (
     <div ref={rootRef} className={cn("relative flex flex-col gap-1.5", className)}>
-      <span id={`${id}-label`} className="text-[11.5px] text-dim">{label}</span>
+      <span id={`${id}-label`} className={cn(box.label, "text-dim")}>{label}</span>
       <button
         type="button"
         aria-haspopup="listbox"
@@ -103,7 +123,8 @@ export function Select({
         onClick={() => { setActiveIdx(selectedIdx); setOpen((v) => !v); }}
         onKeyDown={onKeyDown}
         className={cn(
-          "press tap flex h-9 w-full items-center gap-2 rounded-[var(--radius-sm)] border bg-surface px-3 text-left text-[12.5px] transition-colors duration-base",
+          "press tap flex w-full items-center gap-2 rounded-[var(--radius-sm)] border bg-surface text-left transition-colors duration-base",
+          box.field,
           open ? "border-ink text-ink" : "border-line-strong text-mut hover:border-ink hover:text-ink",
         )}
       >
@@ -137,7 +158,8 @@ export function Select({
                   onMouseEnter={() => setActiveIdx(i)}
                   onClick={() => choose(i)}
                   className={cn(
-                    "tap flex w-full items-center rounded-[var(--radius-inset)] px-2.5 py-[7px] text-left text-[12.5px] transition-colors duration-base",
+                    "tap flex w-full items-center rounded-[var(--radius-inset)] text-left transition-colors duration-base",
+                    box.option,
                     isSelected ? "font-semibold text-ink" : "text-mut",
                     i === activeIdx && "bg-surface-2 text-ink",
                   )}

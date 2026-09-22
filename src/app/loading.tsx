@@ -18,7 +18,7 @@ export default function RootLoading() {
         {Array.from({ length: SKELETON_CARDS }).map((_, i) => (
           <div key={i} className={CARD_SHELL}>
             <div className="skeleton aspect-[460/215] rounded-[var(--radius-cover)]" />
-            <div className="flex flex-col gap-1 px-1 pt-3">
+            <div className="flex flex-col gap-1 px-1 pt-1.5">
               <div className="skeleton h-[22px] w-4/5 rounded" />
               <div className="skeleton h-[17px] w-3/5 rounded" />
               <div className="skeleton h-4 w-1/2 rounded" />

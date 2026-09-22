@@ -7,6 +7,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { cn } from "@/lib/cn";
+import { InfoIcon } from "@/components/ui/icons";
 
 /** 열림 지연 — 목록 위를 스치듯 지나갈 때 말풍선이 줄줄이 뜨는 것을 막는다 */
 const OPEN_DELAY_MS = 140;
@@ -141,7 +142,9 @@ export function useTooltip<T extends HTMLElement>(label: string, enabled: boolea
             aria-hidden
             // z: 헤더 드롭다운(z-50)보다 위. 위치를 재기 전 한 프레임은 감춰 둔다(측정용으로만 그린다)
             className={cn(
-              "pointer-events-none fixed z-[60] max-w-[280px] -translate-x-1/2 rounded-[var(--radius-inset)] bg-ink px-2.5 py-1.5 text-[12px] font-medium leading-[1.5] text-on-ink",
+              // whitespace-pre-line: 줄바꿈이 든 문구(InfoTip 이 여러 사실을 줄로 나눠 넘긴다)를 그대로 편다.
+              // 한 줄짜리 문구에는 아무 영향이 없다
+              "pointer-events-none fixed z-[60] max-w-[280px] -translate-x-1/2 whitespace-pre-line rounded-[var(--radius-inset)] bg-ink px-2.5 py-1.5 text-[12px] font-medium leading-[1.6] text-on-ink shadow-2",
               pos ? "animate-fade-in" : "invisible",
             )}
             style={{ top: pos?.top ?? 0, left: pos?.left ?? 0 }}
@@ -207,6 +210,39 @@ export function Clamp({
       <span {...triggerProps} className={cn("block", LINE_CLASS[lines], className)}>
         {children}
       </span>
+      {tooltip}
+    </>
+  );
+}
+
+/**
+ * 값 줄 옆의 작은 "i" — 누르거나 올리면 딸린 사실을 말풍선으로 편다(2026-09-22, 사용자 지정).
+ *
+ * 왜 필요한가: 상세의 값 줄이 "출시 2018년 12월 7일 (금) | 평균 4.8점 | 1.4천명" 처럼 길어지면서
+ * 정작 큰 글씨(값)보다 회색 줄이 먼저 눈에 걸렸다. 이 사실들은 **살지 정한 다음에 확인하는 값**이라
+ * 늘 펴 둘 필요가 없다. 자리를 비우되 버리지는 않는 방법이 말풍선이다.
+ *
+ * label 은 줄바꿈으로 여러 사실을 담을 수 있다(말풍선이 pre-line 이다).
+ * button 으로 세우는 이유: 터치 기기에서 툴팁에 닿는 유일한 길이 길게 누름인데, 그걸 받으려면
+ * 포커스와 포인터 이벤트를 받는 요소여야 한다.
+ */
+export function InfoTip({ label, className }: { label: string; className?: string }) {
+  const { triggerProps, tooltip } = useTooltip<HTMLButtonElement>(label, label.length > 0);
+  if (!label) return null;
+  return (
+    <>
+      <button
+        type="button"
+        // 스크린리더에는 말풍선 대신 글자를 그대로 준다 — 말풍선은 시각 처리라 aria-hidden 이다
+        aria-label={label}
+        className={cn(
+          "press inline-flex size-[18px] shrink-0 items-center justify-center rounded-full text-dim-2 transition-colors duration-base hover:text-ink focus-visible:text-ink",
+          className,
+        )}
+        {...triggerProps}
+      >
+        <InfoIcon size={14} />
+      </button>
       {tooltip}
     </>
   );

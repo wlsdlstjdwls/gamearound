@@ -5,10 +5,8 @@
 //
 // 본문은 담지 않는다(§10 저작권). 제목을 누르면 매체 원문이 새 창으로 열린다.
 import type { Metadata } from "next";
-import Link from "next/link";
 import { NewsList } from "@/components/news-list";
 import { Pagination } from "@/components/pagination";
-import { buttonClass } from "@/components/ui/button";
 import { Page, PageHead } from "@/components/ui/page";
 import { NEWS_MESSAGES as M, newsCountText } from "@/lib/news/messages";
 import { ROUTES } from "@/lib/routes";
@@ -35,17 +33,11 @@ export default async function NewsPage({ searchParams }: Props) {
 
   return (
     <Page gap={30}>
-      <PageHead
-        title={M.title}
-        note={total > 0 ? newsCountText(total) : undefined}
-        action={
-          <Link href={ROUTES.game} className={buttonClass({ variant: "secondary", className: "rounded-full" })}>
-            {M.browseGames}
-          </Link>
-        }
-      >
-        <p className="w-full max-w-[620px] text-[13.5px] leading-[1.7] text-mut">{M.lead}</p>
-      </PageHead>
+      {/* 머리말과 "전체 게임 보기" 버튼을 뗐다(2026-09-22, 사용자 지정, 출시예정 화면과 같은 손질).
+          머리말이 말하던 사실(본문은 저장하지 않는다)은 목록 자체가 이미 보여 준다 —
+          줄마다 매체 이름이 붙고 누르면 새 창으로 나간다. 버튼은 머리띠 메뉴와 같은 자리로 가는
+          두 번째 입구였다. 문구는 지우지 않고 남긴다 — 검색결과, SNS 카드의 설명이 그 값을 쓴다 */}
+      <PageHead title={M.title} note={total > 0 ? newsCountText(total) : undefined} />
 
       {items.length === 0 ? (
         <p className="rounded-xl bg-surface-2 px-4 py-3.5 text-[13px] text-dim">{M.empty}</p>

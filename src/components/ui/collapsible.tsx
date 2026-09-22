@@ -29,7 +29,8 @@ export function Collapsible({
   children: React.ReactNode;
 }) {
   return (
-    <details open={defaultOpen} className={cn("group flex flex-col", className)}>
+    // disclosure: 여닫기 전이(globals.css). 클래스 하나로만 붙는다 — 이 파일은 서버 컴포넌트로 남는다
+    <details open={defaultOpen} className={cn("disclosure group flex flex-col", className)}>
       {/* list-none 둘 다 필요하다 — 사파리는 ::-webkit-details-marker 로만 세모를 지운다.
 
           **누를 수 있다는 티를 냈다**(2026-09-21). 전에는 제목 줄 오른쪽에 회색 세모 하나뿐이라,
