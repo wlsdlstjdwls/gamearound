@@ -4,6 +4,8 @@
 /** 입점 랜딩(/business) — 매장을 데려오는 화면이라 "무엇이 되는가" 부터 말한다 */
 export const BUSINESS_MESSAGES = {
   title: "게임 매장을 손님에게 알려요",
+  /** 푸터 줄에 서는 짧은 이름. title 은 랜딩 머리글이라 줄로 쓰기엔 길다 */
+  navLabel: "매장 입점",
   lead: "동네 게임 매장, 중고 게임 판매처를 찾는 사람에게 우리 매장을 보여줘요. 입점은 무료예요.",
   ctaJoin: "입점 신청하기",
   ctaStatus: "신청 상태 보기",
@@ -122,6 +124,15 @@ export const SHOP_DIRECTORY_MESSAGES = {
   listingsEmpty: "아직 올라온 물건이 없어요.",
   backToDirectory: "매장 찾기로",
   suspendedNotice: "지금은 쉬고 있는 매장이에요.",
+  /*
+   * 푸터에서는 매장 찾기를 아직 열지 않는다(2026-09-22 사용자 결정) — 입점한 매장이 0곳이라
+   * 들어오면 빈 목록만 본다. 화면(/shops)과 질의는 그대로 살아 있고 주소로는 열린다.
+   * 입점 신청의 준비 중 문구(BUSINESS_MESSAGES.soon*)와 짝이다 — 되살릴 때 둘을 같이 본다.
+   */
+  soonTitle: "매장 찾기",
+  soonLead: "매장 찾기는 아직 열지 않았어요",
+  soonBody:
+    "매장 페이지와 검색은 다 만들어 뒀고, 입점한 매장이 쌓이기를 기다리고 있어요. 첫 매장이 들어오면 바로 열어요.",
 } as const;
 
 /** 관리자 심사 화면(/shops/admin) */
