@@ -19,12 +19,13 @@
 // (lib/platform 의 PLATFORM_FAMILIES) 같은 말을 여기서도 쓴다 — 화면마다 다른 축으로 묶으면 두 번 배운다.
 // 묶음 안의 순서 규칙(싼 순 + 세대 붙이기)은 그대로다. 갈래 자체의 순서는 PC 가 먼저다(PLATFORM_FAMILIES).
 import { formatPrice } from "@/lib/currency";
-import { formatDate, formatDiscount, PLATFORM_LABEL, platformLabel, REGION_SUFFIX } from "@/lib/format";
+import { formatDate, PLATFORM_LABEL, platformLabel, REGION_SUFFIX } from "@/lib/format";
 import { brandKeyOf, brandOf, familyOf, PLATFORM_BRANDS, PLATFORM_FAMILIES, PLATFORM_FAMILY_LABEL, PLATFORM_ORDER, type PlatformFamily } from "@/lib/platform";
 import { countText, scoreToStars } from "@/lib/user-score";
 import { type Freshness } from "@/lib/freshness";
 import type { Platform, Region } from "@/server/db/schema";
 import type { DlcDto, PlatformDto } from "@/server/services/games";
+import { DiscountText } from "@/components/ui/discount";
 import { SaleBadge } from "@/components/sale-badge";
 import { SubscriptionChips } from "@/components/subscription-badges";
 import { PlatformAddons } from "@/components/platform-addons";
@@ -259,7 +260,7 @@ function PriceRow({
         <span className={cn("font-extrabold tracking-[-0.035em] text-ink", isBest ? "text-[21px]" : "text-[17px]")}>
           {formatPrice(p.currentPrice, p.currency)}
         </span>
-        {hasDiscount && <span className="text-[12.5px] font-bold text-acc">{formatDiscount(p.discountPct)}</span>}
+        {hasDiscount && <span className="text-[12.5px] font-bold text-acc"><DiscountText pct={p.discountPct} /></span>}
         {hasDiscount && p.listPrice !== null && p.listPrice !== p.currentPrice && (
           <span className="hidden text-[12px] text-dim-2 line-through xl:inline">{formatPrice(p.listPrice, p.currency)}</span>
         )}

@@ -6,9 +6,10 @@
 import { Fragment } from "react";
 import { formatPrice } from "@/lib/currency";
 import Link from "next/link";
-import { formatDate, formatDiscount, PLATFORM_LABEL } from "@/lib/format";
+import { formatDate, PLATFORM_LABEL } from "@/lib/format";
 import { parsePlatformValues } from "@/lib/games-query";
 import { expandPlatformValues } from "@/lib/platform";
+import { DiscountText } from "@/components/ui/discount";
 import { PlatformBadges } from "@/components/platform-badges";
 import type { Platform } from "@/server/db/schema";
 import type { GameSummary } from "@/server/services/games";
@@ -73,7 +74,7 @@ export function DiscountStamp({ pct }: { pct: number | null }) {
   if (!pct || pct <= 0) return null;
   return (
     <span className="inline-flex shrink-0 items-baseline rounded-[var(--radius-inset)] bg-acc px-[7px] py-[3px] text-[12px] font-extrabold leading-none tracking-[-0.04em] text-on-ink">
-      {formatDiscount(pct)}
+      <DiscountText pct={pct} />
     </span>
   );
 }

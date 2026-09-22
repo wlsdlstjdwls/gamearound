@@ -5,13 +5,14 @@
 // 헤어라인 한 줄뿐이고, 색을 가진 것은 카드의 할인 스탬프와 마감 임박 표시뿐이다.
 import { formatPrice } from "@/lib/currency";
 import Link from "next/link";
+import { DiscountText } from "@/components/ui/discount";
 import { CoverImage, GameCard } from "@/components/game-card";
 import { Clamp } from "@/components/ui/tooltip";
 import { NewsList } from "@/components/news-list";
 import { EmptyState } from "@/components/empty-state";
 import { SaleBadge } from "@/components/sale-badge";
 import { Page, ROW, ROWS, SectionHead } from "@/components/ui/page";
-import { formatDiscount, PLATFORM_LABEL } from "@/lib/format";
+import { PLATFORM_LABEL } from "@/lib/format";
 import { stagger } from "@/lib/motion";
 import { ROUTES } from "@/lib/routes";
 import { cn } from "@/lib/cn";
@@ -122,7 +123,7 @@ export default async function HomePage() {
                             이 줄에는 커버 위 스탬프가 없어서, 취소선 정가만으로는 "얼마나 싸졌나" 를
                             두 숫자를 머릿속에서 나눠 봐야 알 수 있었다. 카드의 스탬프와 같은 브랜드 색이다 */}
                         {g.best?.discountPct != null && g.best.discountPct > 0 && (
-                          <span className="font-bold text-acc">{formatDiscount(g.best.discountPct)}</span>
+                          <span className="font-bold text-acc"><DiscountText pct={g.best.discountPct} /></span>
                         )}
                         {g.best?.listPrice != null && g.best.listPrice !== g.best.currentPrice && (
                           <span className="text-[11px] text-dim-2 line-through">{formatPrice(g.best.listPrice, g.best.currency)}</span>

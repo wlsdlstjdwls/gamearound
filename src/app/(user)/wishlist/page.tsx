@@ -3,13 +3,14 @@
 import { cheapestOf, formatPrice } from "@/lib/currency";
 import type { Metadata } from "next";
 import Link from "next/link";
+import { DiscountText } from "@/components/ui/discount";
 import { EmptyState } from "@/components/empty-state";
 import { WishlistRemoveButton } from "@/components/wishlist-button";
 import { FadeImage } from "@/components/ui/fade-image";
 import { ImageFallback } from "@/components/ui/image-fallback";
 import { Page, PageHead } from "@/components/ui/page";
 import { Clamp } from "@/components/ui/tooltip";
-import { formatDiscount, PLATFORM_LABEL } from "@/lib/format";
+import { PLATFORM_LABEL } from "@/lib/format";
 import { collectedAtText, getFreshness } from "@/lib/freshness";
 import { stagger } from "@/lib/motion";
 import { ROUTES } from "@/lib/routes";
@@ -123,7 +124,7 @@ export default async function WishlistPage({ searchParams }: Props) {
                             <span className="w-[52px] shrink-0 text-dim">{PLATFORM_LABEL[p.platform] ?? p.platform}</span>
                             <span className={isLowest ? "font-bold text-ink" : "text-ink"}>{formatPrice(p.currentPrice, p.currency)}</span>
                             {p.discountPct ? (
-                              <span className="font-bold text-acc">{formatDiscount(p.discountPct)}</span>
+                              <span className="font-bold text-acc"><DiscountText pct={p.discountPct} /></span>
                             ) : null}
                             {isLowest && pricedCount > 1 && <span className="text-[11.5px] font-semibold text-mut">최저가</span>}
                           </li>

@@ -3,12 +3,13 @@
 import { cheapestOf, formatPrice } from "@/lib/currency";
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
+import { DiscountText } from "@/components/ui/discount";
 import { EmptyState } from "@/components/empty-state";
 import { PriceChart } from "@/components/price-chart";
 import { SaleBadge } from "@/components/sale-badge";
 import { BackLink } from "@/components/ui/back-link";
 import { Page, PageHead, SectionHead } from "@/components/ui/page";
-import { formatDate, formatDiscount, PLATFORM_LABEL } from "@/lib/format";
+import { formatDate, PLATFORM_LABEL } from "@/lib/format";
 import { bestDiscountOf, isAtBestDiscount } from "@/lib/price-stats";
 import { displayTitle, getGameBySlugCached } from "@/server/services/games";
 import { getPriceHistory, type PriceSeries } from "@/server/services/prices";
@@ -65,7 +66,7 @@ export default async function PricesPage({ params }: Props) {
                   {best.discountPct && best.discountPct > 0 ? (
                     <>
                       <span className="text-[13px] text-dim-2 line-through">{formatPrice(best.listPrice, best.currency)}</span>
-                      <span className="text-[14px] font-bold text-acc">{formatDiscount(best.discountPct)}</span>
+                      <span className="text-[14px] font-bold text-acc"><DiscountText pct={best.discountPct} /></span>
                       <SaleBadge discountName={best.discountName} discountStartsAt={best.discountStartsAt} discountEndsAt={best.discountEndsAt} />
                     </>
                   ) : (
@@ -82,7 +83,7 @@ export default async function PricesPage({ params }: Props) {
                     if (!top) return <p className="text-[15px] font-bold text-dim">할인 기록 없음</p>;
                     return (
                       <p className="text-[15px] font-bold text-ink">
-                        {formatDiscount(top.discountPct)}
+                        <DiscountText pct={top.discountPct} />
                         <span className="ml-1 text-[12px] font-normal text-mut">{formatPrice(top.price, best.currency)}</span>
                         {isAtBestDiscount(best.discountPct, top) ? (
                           <span className="ml-1 text-[12px] font-normal text-ok">지금이 그때예요</span>
@@ -131,9 +132,9 @@ export default async function PricesPage({ params }: Props) {
                     <li key={s.platform} className={`${COLS} text-[13px] text-ink`}>
                       <span className="font-semibold">{PLATFORM_LABEL[s.platform] ?? s.platform}</span>
                       <span>{formatPrice(s.currentPrice, s.currency)}</span>
-                      <span className={onSale ? "text-ok" : "text-dim"}>{onSale ? formatDiscount(s.discountPct) : "-"}</span>
+                      <span className={onSale ? "text-ok" : "text-dim"}>{onSale ? <DiscountText pct={s.discountPct} /> : "-"}</span>
                       <span className={top ? "text-mut" : "text-dim"}>
-                        {top ? formatDiscount(top.discountPct) : "-"}
+                        {top ? <DiscountText pct={top.discountPct} /> : "-"}
                       </span>
                       <span>{formatPrice(Math.min(...prices), s.currency)}</span>
                       <span className="text-mut">{formatPrice(Math.max(...prices), s.currency)}</span>
