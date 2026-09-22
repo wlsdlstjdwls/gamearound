@@ -1,0 +1,239 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="../support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css">
+<style>
+:root{
+--bg:#faf9f7;--surface:#ffffff;--surface-2:#f0eee9;--surface-3:#edeae4;--surface-4:#f4f2ed;
+--line:#e6e3dd;--line-soft:#f0eee9;--line-strong:#dfdcd5;
+--ink:#1c1c1a;--ink-2:#3f3d39;--mut:#5c5a55;--dim:#8c8a84;--dim-2:#a8a59e;
+--acc:#5b34c7;--acc-hover:#4a29a6;--acc-soft:#efeafb;--acc-glow:rgba(91,52,199,.18);--acc-on-ink:#9182f0;
+--danger:#a6462e;--danger-soft:#f6e9e5;--ok:#2a6a4c;--ok-soft:#eaf1ec;--warn:#8a6a2e;--on-ink:#faf9f7;
+--font-sans:"Pretendard Variable",Pretendard,-apple-system,"Apple SD Gothic Neo","Segoe UI",sans-serif;
+color-scheme:light;
+}
+:root[data-theme="dark"]{
+color-scheme:dark;
+--bg:#131312;--surface:#1b1b1a;--surface-2:#242422;--surface-3:#2b2b28;--surface-4:#201f1e;
+--line:#3d3d39;--line-soft:#343431;--line-strong:#4a4a45;
+--ink:#f0efec;--ink-2:#d3d1cc;--mut:#a8a59e;--dim:#85827c;--dim-2:#757169;
+--acc:#9182f0;--acc-hover:#a99df4;--acc-soft:#251f4a;--acc-glow:rgba(145,130,240,.22);--acc-on-ink:#5b34c7;
+--danger:#e08a72;--danger-soft:#3a211a;--ok:#5fb98c;--ok-soft:#122b20;--warn:#d4a64e;--on-ink:#131312;
+}
+*{box-sizing:border-box;}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--font-sans);word-break:keep-all;overflow-wrap:break-word;-webkit-font-smoothing:antialiased;font-variant-numeric:tabular-nums;}
+a{color:inherit;text-decoration:none;}
+ul,li,p,h1,h2,h3{margin:0;padding:0;list-style:none;}
+@keyframes f-up{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:none}}
+@keyframes f-stamp{0%{opacity:0;transform:scale(1.25) rotate(-6deg)}60%{opacity:1;transform:scale(.97) rotate(-3deg)}100%{transform:scale(1) rotate(-3deg)}}
+@keyframes f-blink{0%,100%{opacity:1}50%{opacity:.3}}
+.f-up{animation:f-up 480ms cubic-bezier(.25,1.02,.36,1) both}
+.f-stamp{animation:f-stamp 520ms cubic-bezier(.25,1.02,.36,1) both;transform:rotate(-3deg)}
+.f-blink{animation:f-blink 2s ease-in-out infinite}
+.f-card .f-cover{transition:transform 480ms cubic-bezier(.25,.8,.25,1)}
+.f-card:hover .f-cover{transform:scale(1.03)}
+.f-card .f-title{transition:color 160ms}
+.f-card:hover .f-title{color:var(--acc)}
+.f-chip{transition:background-color 160ms,color 160ms}
+.f-chip:hover{background:var(--surface-2);color:var(--ink)}
+.f-row{transition:background-color 160ms}
+.f-row:hover{background:var(--surface-4)}
+</style>
+</helmet>
+
+<div data-screen-label="F01 홈" style="background:var(--bg);min-height:100vh">
+  <div style="display:flex;align-items:center;gap:12px;padding:12px 24px 0">
+    <button onClick="{{ toggleTheme }}" style="border:1px solid var(--line-strong);background:transparent;color:var(--mut);height:26px;padding:0 10px;font:inherit;font-size:11.5px;cursor:pointer;border-radius:6px">{{ themeLabel }}</button>
+  </div>
+
+  <header style="position:sticky;top:0;z-index:10;background:var(--bg)">
+    <div style="margin:0 auto;display:flex;width:100%;max-width:1200px;align-items:center;gap:28px;padding:18px 24px 14px">
+      <a href="#" aria-label="gamearound" style="display:inline-flex;flex-shrink:0;align-items:center;gap:9px">
+        <svg width="28" height="28" viewBox="0 0 32 32" aria-hidden="true"><path fill="currentColor" fill-rule="evenodd" d="M11.6 7.4h8.8c5.4 0 8.9 3.5 9.7 9.1l.6 4.2c.5 3.4-1.3 5.9-4.2 5.9-2.2 0-3.5-1.2-4.6-3.1l-1.6-2.8c-.5-.9-1.1-1.3-2.1-1.3h-4.4c-1 0-1.6.4-2.1 1.3l-1.6 2.8c-1.1 1.9-2.4 3.1-4.6 3.1-2.9 0-4.7-2.5-4.2-5.9l.6-4.2c.8-5.6 4.3-9.1 9.7-9.1zM8.6 11.2h2.4v2.6h2.6v2.4h-2.6v2.6H8.6v-2.6H6v-2.4h2.6zM20.9 12.2a1.5 1.5 0 1 0 3 0a1.5 1.5 0 1 0 -3 0zM18.1 15a1.5 1.5 0 1 0 3 0a1.5 1.5 0 1 0 -3 0zM23.7 15a1.5 1.5 0 1 0 3 0a1.5 1.5 0 1 0 -3 0zM20.9 17.8a1.5 1.5 0 1 0 3 0a1.5 1.5 0 1 0 -3 0z"></path><circle cx="22.4" cy="12.2" r="1.5" fill="var(--acc)"></circle></svg>
+        <span style="font-weight:800;letter-spacing:-.04em;font-size:19px">gamearound</span>
+      </a>
+      <nav aria-label="주요 메뉴" style="display:flex;align-items:center;gap:4px;font-size:14px">
+        <a href="#" aria-current="page" style="padding:7px 12px;border-radius:8px;font-weight:700">할인</a>
+        <a href="#" class="f-chip" style="padding:7px 12px;border-radius:8px;color:var(--mut)">게임 목록</a>
+        <a href="#" class="f-chip" style="padding:7px 12px;border-radius:8px;color:var(--mut)">출시 예정</a>
+        <a href="#" class="f-chip" style="padding:7px 12px;border-radius:8px;color:var(--mut)">다음 세일</a>
+      </nav>
+      <form role="search" style="margin-left:auto;min-width:0;max-width:340px;flex:1">
+        <div style="display:flex;height:40px;align-items:center;gap:9px;border-radius:10px;background:var(--surface-2);padding:0 14px">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true" style="flex-shrink:0;color:var(--dim)"><circle cx="11" cy="11" r="7"></circle><path d="m20 20-3.2-3.2"></path></svg>
+          <span style="flex:1;min-width:0;font-size:13.5px;color:var(--dim);white-space:nowrap;overflow:hidden">게임 제목 검색</span>
+        </div>
+      </form>
+      <div style="display:flex;flex-shrink:0;align-items:center;gap:6px">
+        <a href="#" aria-label="위시리스트" class="f-chip" style="display:inline-flex;align-items:center;justify-content:center;width:40px;height:40px;border-radius:10px;color:var(--mut)"><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 20s-7-4.4-7-9.2A4 4 0 0 1 12 8a4 4 0 0 1 7 2.8c0 4.8-7 9.2-7 9.2Z"></path></svg></a>
+        <a href="#" aria-label="알림 3건" class="f-chip" style="position:relative;display:inline-flex;align-items:center;justify-content:center;width:40px;height:40px;border-radius:10px;color:var(--mut)"><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18 9a6 6 0 1 0-12 0c0 5-2 6.5-2 6.5h16S18 14 18 9Z"></path><path d="M13.7 19a2 2 0 0 1-3.4 0"></path></svg><span style="position:absolute;top:8px;right:9px;width:7px;height:7px;border-radius:999px;background:var(--acc);box-shadow:0 0 0 2px var(--bg)"></span></a>
+        <a href="#" style="display:inline-flex;align-items:center;height:40px;padding:0 16px;border-radius:10px;background:var(--ink);color:var(--on-ink);font-size:13.5px;font-weight:700">로그인</a>
+      </div>
+    </div>
+  </header>
+
+  <main style="margin:0 auto;display:flex;width:100%;max-width:1200px;flex-direction:column;gap:56px;padding:20px 24px 96px">
+
+    <section style="display:flex;flex-direction:column;gap:22px">
+      <div class="f-up" style="display:flex;flex-wrap:wrap;align-items:flex-end;justify-content:space-between;gap:16px 24px">
+        <div>
+          <h1 style="font-size:34px;font-weight:800;line-height:1.15;letter-spacing:-.045em">지금 할인 중 <span style="color:var(--acc)">42</span></h1>
+          <p style="margin-top:6px;font-size:13.5px;color:var(--mut)">한국 스토어 기준 플랫폼별 최저가 | 오늘 02:14 수집 | 다음 10:10</p>
+        </div>
+        <div style="display:flex;flex-wrap:wrap;align-items:center;gap:6px;font-size:13px">
+          <a href="#" style="padding:8px 14px;border-radius:999px;background:var(--ink);color:var(--on-ink);font-weight:600">전체</a>
+          <a href="#" class="f-chip" style="padding:8px 14px;border-radius:999px;color:var(--mut)">Steam</a>
+          <a href="#" class="f-chip" style="padding:8px 14px;border-radius:999px;color:var(--mut)">PlayStation</a>
+          <a href="#" class="f-chip" style="padding:8px 14px;border-radius:999px;color:var(--mut)">Xbox</a>
+          <a href="#" class="f-chip" style="padding:8px 14px;border-radius:999px;color:var(--mut)">Switch</a>
+          <span style="width:1px;height:18px;background:var(--line-strong);margin:0 6px"></span>
+          <a href="#" class="f-chip" style="padding:8px 12px;border-radius:999px;color:var(--ink);font-weight:600">할인율순</a>
+          <a href="#" class="f-chip" style="padding:8px 12px;border-radius:999px;color:var(--mut)">마감순</a>
+          <a href="#" class="f-chip" style="padding:8px 12px;border-radius:999px;color:var(--mut)">가격순</a>
+        </div>
+      </div>
+      <ul style="display:grid;grid-template-columns:repeat(auto-fill,minmax(min(300px,100%),1fr));gap:36px 24px">{{ dealCards }}</ul>
+      <a href="#" style="align-self:center;margin-top:8px;display:inline-flex;align-items:center;height:44px;padding:0 24px;border-radius:999px;border:1px solid var(--line-strong);font-size:13.5px;font-weight:600">할인 42개 전부 보기</a>
+    </section>
+
+    <section style="display:grid;grid-template-columns:repeat(auto-fit,minmax(min(360px,100%),1fr));gap:40px 48px;align-items:start">
+      <div style="display:flex;flex-direction:column;gap:14px">
+        <h2 style="font-size:22px;font-weight:800;letter-spacing:-.04em">곧 마감</h2>
+        <ul>{{ endingRows }}</ul>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:14px">
+        <div style="display:flex;align-items:baseline;justify-content:space-between"><h2 style="font-size:22px;font-weight:800;letter-spacing:-.04em">뉴스</h2><a href="#" style="font-size:13px;color:var(--acc)">더 보기</a></div>
+        <ul>{{ newsRows }}</ul>
+      </div>
+    </section>
+
+    <section style="display:flex;flex-direction:column;gap:18px">
+      <div style="display:flex;align-items:baseline;justify-content:space-between"><h2 style="font-size:22px;font-weight:800;letter-spacing:-.04em">최근 출시</h2><a href="#" style="font-size:13px;color:var(--acc)">전체 게임 목록</a></div>
+      <ul style="display:grid;grid-template-columns:repeat(auto-fill,minmax(min(220px,100%),1fr));gap:28px 20px">{{ releaseCards }}</ul>
+    </section>
+  </main>
+
+  <footer style="border-top:1px solid var(--line);padding:24px;font-size:12px;color:var(--dim)">
+    <div style="margin:0 auto;display:flex;width:100%;max-width:1200px;flex-wrap:wrap;justify-content:space-between;gap:12px">
+      <nav style="display:flex;flex-wrap:wrap;gap:18px"><a href="#">매장 찾기</a><a href="#">매장 입점</a><a href="#">이용약관</a><a href="#" style="font-weight:600;color:var(--mut)">개인정보처리방침</a></nav>
+      <p>© 2026 gamearound</p>
+    </div>
+  </footer>
+</div>
+
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:1280}}">
+const DEALS = [
+  { ko: "호그와트 레거시", en: "Hogwarts Legacy", price: "19,800원", list: "66,000원", pct: 70, store: "Steam", plats: "Steam | PS5 | PS4 | Switch", genres: "액션 RPG, 어드벤처", ends: "18시간 남음", urgent: true, low: true },
+  { ko: "엘든 링", en: "ELDEN RING", price: "21,384원", list: "64,800원", pct: 67, store: "Steam", plats: "Steam | PS5 | PS4 | Xbox", genres: "액션 RPG, 오픈월드", ends: "2일 남음", urgent: true, low: false },
+  { ko: "레드 데드 리뎀션 2", en: "Red Dead Redemption 2", price: "23,100원", list: "66,000원", pct: 65, store: "Xbox", plats: "Steam | Xbox | PS4", genres: "액션 어드벤처, 오픈월드", ends: "4일 남음", urgent: false, low: true },
+  { ko: "사이버펑크 2077", en: "Cyberpunk 2077", price: "26,400원", list: "66,000원", pct: 60, store: "PS5", plats: "Steam | PS5 | Xbox", genres: "액션 RPG, FPS", ends: "2일 남음", urgent: true, low: false },
+  { ko: "디아블로 IV", en: "Diablo IV", price: "35,750원", list: "71,500원", pct: 50, store: "Steam", plats: "Steam | Xbox", genres: "액션 RPG, 핵앤슬래시", ends: "6일 남음", urgent: false, low: false },
+  { ko: "발더스 게이트 3", en: "Baldur's Gate 3", price: "47,600원", list: "68,000원", pct: 30, store: "Steam", plats: "Steam | PS5", genres: "RPG, 턴제 전략", ends: "5일 남음", urgent: false, low: false },
+];
+
+const ENDING = [
+  { ko: "호그와트 레거시", store: "Steam", price: "19,800원", ends: "18시간", urgent: true },
+  { ko: "엘든 링", store: "Steam", price: "21,384원", ends: "2일", urgent: true },
+  { ko: "사이버펑크 2077", store: "PS5", price: "26,400원", ends: "2일", urgent: true },
+  { ko: "레드 데드 리뎀션 2", store: "Xbox", price: "23,100원", ends: "4일", urgent: false },
+  { ko: "디아블로 IV", store: "Steam", price: "35,750원", ends: "6일", urgent: false },
+  { ko: "스타필드", store: "Xbox", price: "39,600원", ends: "8일", urgent: false },
+];
+
+const NEWS = [
+  { t: "스팀 가을 세일, 9월 16일 오전 2시 종료", s: "게임메카", d: "9. 14." },
+  { t: "엘든 링 나이트레인, 첫 대규모 밸런스 패치 공개", s: "인벤", d: "9. 14." },
+  { t: "PS 스토어 9월 할인, 1차 목록 공개", s: "루리웹", d: "9. 13." },
+  { t: "호그와트 레거시 스위치 2 버전 프레임 개선 패치", s: "디스이즈게임", d: "9. 13." },
+  { t: "실크송 출시 첫 주 판매량 300만 장 돌파", s: "게임어바웃", d: "9. 13." },
+  { t: "몬스터 헌터 와일즈 무료 대형 업데이트 일정 공지", s: "인벤", d: "9. 12." },
+];
+
+const RELEASES = [
+  { ko: "실크송", en: "Hollow Knight: Silksong", plats: "Steam | Switch | PS5", date: "9월 12일" },
+  { ko: "Hades II", en: null, plats: "Steam | Switch 2", date: "9월 9일" },
+  { ko: "몬스터 헌터 와일즈", en: "Monster Hunter Wilds", plats: "Steam | PS5 | Xbox", date: "9월 4일" },
+  { ko: "메트로이드 프라임 4", en: "Metroid Prime 4: Beyond", plats: "Switch | Switch 2", date: "8월 28일" },
+  { ko: "페르소나 6", en: "Persona 6", plats: "Steam | PS5", date: "8월 21일" },
+];
+
+const e = React.createElement;
+const BRAND_D = "M11.6 7.4h8.8c5.4 0 8.9 3.5 9.7 9.1l.6 4.2c.5 3.4-1.3 5.9-4.2 5.9-2.2 0-3.5-1.2-4.6-3.1l-1.6-2.8c-.5-.9-1.1-1.3-2.1-1.3h-4.4c-1 0-1.6.4-2.1 1.3l-1.6 2.8c-1.1 1.9-2.4 3.1-4.6 3.1-2.9 0-4.7-2.5-4.2-5.9l.6-4.2c.8-5.6 4.3-9.1 9.7-9.1zM8.6 11.2h2.4v2.6h2.6v2.4h-2.6v2.6H8.6v-2.6H6v-2.4h2.6zM20.9 12.2a1.5 1.5 0 1 0 3 0a1.5 1.5 0 1 0 -3 0zM18.1 15a1.5 1.5 0 1 0 3 0a1.5 1.5 0 1 0 -3 0zM23.7 15a1.5 1.5 0 1 0 3 0a1.5 1.5 0 1 0 -3 0zM20.9 17.8a1.5 1.5 0 1 0 3 0a1.5 1.5 0 1 0 -3 0z";
+
+function cover(radius) {
+  return e("span", { style: { position: "relative", display: "block", width: "100%", aspectRatio: "460 / 215", borderRadius: radius, background: "var(--surface-3)", overflow: "hidden" } },
+    e("span", { className: "f-cover", style: { position: "absolute", inset: 0, display: "flex", alignItems: "center", justifyContent: "center" } },
+      e("svg", { width: 32, height: 32, viewBox: "0 0 32 32", "aria-hidden": true, style: { width: "22%", height: "auto", color: "var(--dim-2)" } },
+        e("path", { fill: "currentColor", fillRule: "evenodd", d: BRAND_D }),
+        e("circle", { cx: 22.4, cy: 12.2, r: 1.5, fill: "var(--acc)" }))));
+}
+
+class Component extends DCLogic {
+  state = { theme: "light" };
+  renderVals() {
+    const dark = this.state.theme === "dark";
+    return {
+      themeLabel: dark ? "라이트" : "다크",
+      toggleTheme: () => { const next = dark ? "light" : "dark"; document.documentElement.dataset.theme = next; this.setState({ theme: next }); },
+
+      dealCards: DEALS.map((g, i) =>
+        e("li", { key: g.ko, className: "f-up", style: { animationDelay: `${60 + i * 50}ms` } },
+          e("a", { href: "#", className: "f-card", style: { display: "flex", flexDirection: "column", gap: 12 } },
+            e("span", { style: { position: "relative", display: "block" } },
+              cover(14),
+              // 스탬프 — 커버 왼쪽 아래 모서리를 뚫고 나온다. 이 화면의 유일한 장식이자 가장 먼저 읽히는 값
+              e("span", { className: "f-stamp", style: { position: "absolute", left: -8, bottom: -14, display: "inline-flex", alignItems: "baseline", gap: 1, background: "var(--acc)", color: "#faf9f7", padding: "6px 12px 5px", borderRadius: 6, fontSize: 26, fontWeight: 800, letterSpacing: "-.05em", lineHeight: 1, boxShadow: "0 6px 18px -6px var(--acc-glow)", animationDelay: `${200 + i * 50}ms` } }, `-${g.pct}`, e("span", { style: { fontSize: 15, fontWeight: 700 } }, "%")),
+              g.low ? e("span", { style: { position: "absolute", right: 10, top: 10, background: "rgba(28,28,26,.82)", color: "#faf9f7", padding: "4px 8px", borderRadius: 6, fontSize: 11, fontWeight: 700 } }, "기록 최저가") : null),
+            e("span", { style: { display: "flex", flexDirection: "column", gap: 4, paddingTop: 12 } },
+              e("span", { style: { display: "flex", alignItems: "baseline", justifyContent: "space-between", gap: 10 } },
+                e("span", { className: "f-title", style: { fontSize: 17, fontWeight: 800, letterSpacing: "-.03em", minWidth: 0, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" } }, g.ko),
+                e("span", { style: { display: "flex", alignItems: "baseline", gap: 6, flexShrink: 0 } },
+                  e("span", { style: { fontSize: 18, fontWeight: 800, letterSpacing: "-.03em" } }, g.price),
+                  e("span", { style: { fontSize: 12, color: "var(--dim-2)", textDecoration: "line-through" } }, g.list))),
+              e("span", { style: { display: "flex", alignItems: "baseline", justifyContent: "space-between", gap: 10, fontSize: 12.5, color: "var(--mut)" } },
+                e("span", { style: { minWidth: 0, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" } }, `${g.en} | ${g.genres}`),
+                e("span", { style: { flexShrink: 0, display: "inline-flex", alignItems: "center", gap: 6, fontWeight: g.urgent ? 700 : 500, color: g.urgent ? "var(--danger)" : "var(--mut)" } },
+                  g.urgent ? e("span", { className: "f-blink", style: { width: 6, height: 6, borderRadius: 999, background: "var(--danger)" } }) : null,
+                  g.ends)),
+              e("span", { style: { fontSize: 12, color: "var(--dim)" } }, `${g.store} 최저 | ${g.plats}`))))),
+
+      endingRows: ENDING.map((r, i) =>
+        e("li", { key: r.ko, style: { borderTop: i === 0 ? "1px solid var(--line-strong)" : "1px solid var(--line-soft)" } },
+          e("a", { href: "#", className: "f-row", style: { display: "flex", alignItems: "center", gap: 14, padding: "13px 6px", margin: "0 -6px", borderRadius: 8 } },
+            e("span", { style: { width: 64, aspectRatio: "460 / 215", borderRadius: 6, background: "var(--surface-3)", flexShrink: 0 } }),
+            e("span", { style: { minWidth: 0, flex: 1 } },
+              e("span", { style: { display: "block", fontSize: 14.5, fontWeight: 700, letterSpacing: "-.02em", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" } }, r.ko),
+              e("span", { style: { display: "block", fontSize: 12, color: "var(--dim)" } }, `${r.store} | ${r.price}`)),
+            e("span", { style: { flexShrink: 0, fontSize: 14, fontWeight: 800, letterSpacing: "-.02em", color: r.urgent ? "var(--danger)" : "var(--ink)" } }, r.ends))),
+      ),
+
+      newsRows: NEWS.map((n, i) =>
+        e("li", { key: n.t, style: { borderTop: i === 0 ? "1px solid var(--line-strong)" : "1px solid var(--line-soft)" } },
+          e("a", { href: "#", className: "f-row", style: { display: "flex", alignItems: "baseline", gap: 14, padding: "13px 6px", margin: "0 -6px", borderRadius: 8 } },
+            e("span", { style: { minWidth: 0, flex: 1, fontSize: 14, fontWeight: 600, lineHeight: 1.45 } }, n.t),
+            e("span", { style: { flexShrink: 0, fontSize: 12, color: "var(--dim)" } }, `${n.s} | ${n.d}`))),
+      ),
+
+      releaseCards: RELEASES.map((g, i) =>
+        e("li", { key: g.ko, className: "f-up", style: { animationDelay: `${80 + i * 40}ms` } },
+          e("a", { href: "#", className: "f-card", style: { display: "flex", flexDirection: "column", gap: 10 } },
+            cover(12),
+            e("span", { style: { display: "flex", flexDirection: "column", gap: 3 } },
+              e("span", { className: "f-title", style: { fontSize: 15, fontWeight: 800, letterSpacing: "-.03em" } }, g.ko),
+              e("span", { style: { fontSize: 12.5, color: "var(--mut)" } }, `${g.date} 출시 | ${g.plats}`)))),
+      ),
+    };
+  }
+}
+
+</script>
+</body>
+</html>

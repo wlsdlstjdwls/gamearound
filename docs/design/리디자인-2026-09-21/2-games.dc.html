@@ -1,0 +1,636 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="../support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<meta name="design_doc_mode" content="canvas">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css">
+<style>
+:root{
+--bg:#faf9f7;--surface:#ffffff;--surface-2:#f0eee9;--surface-3:#edeae4;--surface-4:#f4f2ed;
+--line:#e6e3dd;--line-soft:#f0eee9;--line-strong:#dfdcd5;
+--ink:#1c1c1a;--ink-2:#3f3d39;--mut:#5c5a55;--dim:#8c8a84;--dim-2:#a8a59e;
+--acc:#5b34c7;--acc-hover:#4a29a6;--acc-soft:#efeafb;--acc-glow:rgba(91,52,199,.18);--acc-on-ink:#9182f0;
+--acc-2:color-mix(in oklab,var(--acc) 58%,var(--surface));--acc-3:color-mix(in oklab,var(--acc) 30%,var(--surface));
+--danger:#a6462e;--danger-soft:#f6e9e5;--ok:#2a6a4c;--ok-soft:#eaf1ec;--warn:#8a6a2e;--warn-soft:#f6efe2;--price-bad:#c4452c;--on-ink:#faf9f7;
+--store-steam:#2a78d6;--store-ps5:#eda100;--store-xbox:#008300;--store-switch:#4a3aa7;
+--font-sans:"Pretendard Variable",Pretendard,-apple-system,"Apple SD Gothic Neo","Segoe UI",sans-serif;
+color-scheme:light;
+}
+:root[data-theme="dark"]{
+color-scheme:dark;
+--bg:#131312;--surface:#1b1b1a;--surface-2:#242422;--surface-3:#2b2b28;--surface-4:#201f1e;
+--line:#3d3d39;--line-soft:#343431;--line-strong:#4a4a45;
+--ink:#f0efec;--ink-2:#d3d1cc;--mut:#a8a59e;--dim:#85827c;--dim-2:#757169;
+--acc:#9182f0;--acc-hover:#a99df4;--acc-soft:#251f4a;--acc-glow:rgba(145,130,240,.22);--acc-on-ink:#5b34c7;
+--danger:#e08a72;--danger-soft:#3a211a;--ok:#5fb98c;--ok-soft:#122b20;--warn:#d4a64e;--warn-soft:#33270f;--price-bad:#f0705a;--on-ink:#131312;
+--store-steam:#5b9ce8;--store-ps5:#f2b93a;--store-xbox:#3fb23f;--store-switch:#8d7df0;
+}
+*{box-sizing:border-box;}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--font-sans);word-break:keep-all;overflow-wrap:break-word;-webkit-font-smoothing:antialiased;font-variant-numeric:tabular-nums;}
+a{color:inherit;text-decoration:none;}
+ul,li,p,h1,h2,h3,dl,dd,dt,figure,table{margin:0;padding:0;list-style:none;border-collapse:collapse;}
+@keyframes f-up{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:none}}
+@keyframes f-stamp{0%{opacity:0;transform:scale(1.25) rotate(-6deg)}60%{opacity:1;transform:scale(.97) rotate(-3deg)}100%{transform:scale(1) rotate(-3deg)}}
+@keyframes f-blink{0%,100%{opacity:1}50%{opacity:.3}}
+@keyframes f-bar{from{transform:scaleX(0)}to{transform:scaleX(1)}}
+@keyframes f-draw{from{stroke-dashoffset:1400}to{stroke-dashoffset:0}}
+.f-up{animation:f-up 480ms cubic-bezier(.25,1.02,.36,1) both}
+.f-stamp{animation:f-stamp 520ms cubic-bezier(.25,1.02,.36,1) both;transform:rotate(-3deg)}
+.f-blink{animation:f-blink 2s ease-in-out infinite}
+.f-bar{transform-origin:left;animation:f-bar 640ms cubic-bezier(.25,1.02,.36,1) both}
+.f-draw{stroke-dasharray:1400;animation:f-draw 1.5s cubic-bezier(.25,1.02,.36,1) both}
+.f-card .f-cover{transition:transform 480ms cubic-bezier(.25,.8,.25,1)}
+.f-card:hover .f-cover{transform:scale(1.03)}
+.f-card .f-title{transition:color 160ms}
+.f-card:hover .f-title{color:var(--acc)}
+.f-chip{transition:background-color 160ms,color 160ms}
+.f-chip:hover{background:var(--surface-2);color:var(--ink)}
+.f-row{transition:background-color 160ms}
+.f-row:hover{background:var(--surface-4)}
+.f-screen{max-width:1200px;margin:0 auto;padding:0 24px}
+.g-list{display:grid;grid-template-columns:232px minmax(0,1fr);gap:40px;align-items:start}
+.g-detail{display:grid;grid-template-columns:minmax(0,1.25fr) minmax(280px,.72fr);gap:36px;align-items:start}
+.g-filters{display:flex;flex-direction:column;gap:26px;position:sticky;top:16px}
+.g-drawer{display:none}
+.f-screen{container-type:inline-size}
+@container (max-width:760px){
+.g-list,.g-detail{grid-template-columns:minmax(0,1fr);gap:26px}
+.g-filters{display:none}
+.g-drawer{display:block}
+.g-sticky{position:static}
+}
+@media (max-width:820px){
+.g-list,.g-detail{grid-template-columns:minmax(0,1fr);gap:26px}
+.g-filters{display:none}
+.g-drawer{display:block}
+.g-sticky{position:static}
+}
+</style>
+</helmet>
+
+<section style="padding:16px 0 8px">
+  <div style="display:flex;align-items:center;gap:12px;padding:0 24px">
+    <span style="font-size:11.5px;letter-spacing:.12em;color:var(--dim-2)">5안 | 게임 화면 4종</span>
+    <button onClick="{{ toggleTheme }}" style="border:1px solid var(--line-strong);background:transparent;color:var(--mut);height:26px;padding:0 10px;font:inherit;font-size:11.5px;cursor:pointer;border-radius:6px">{{ themeLabel }}</button>
+  </div>
+</section>
+
+<section data-screen-label="게임 목록" style="border-top:1px solid var(--line);background:var(--bg);padding:0 0 80px">
+  <p class="f-screen" style="padding-top:14px;font-size:11.5px;letter-spacing:.12em;color:var(--dim-2)">01 게임 목록 /games</p>
+  {{ header }}
+  <main class="f-screen" style="display:flex;flex-direction:column;gap:22px;padding-top:12px">
+    <div style="display:flex;flex-wrap:wrap;align-items:flex-end;justify-content:space-between;gap:14px 24px">
+      <div>
+        <h1 style="font-size:32px;font-weight:800;letter-spacing:-.045em">게임 목록</h1>
+        <p style="margin-top:6px;font-size:13.5px;color:var(--mut)">6,047개 중 <strong style="font-weight:700;color:var(--ink)">128개</strong>가 조건에 맞아요 | 오늘 02:14 수집</p>
+      </div>
+      <div style="display:flex;flex-wrap:wrap;align-items:center;gap:6px;font-size:13px">
+        <a href="#" class="f-chip" style="padding:8px 12px;border-radius:999px;color:var(--ink);font-weight:600">할인율순</a>
+        <a href="#" class="f-chip" style="padding:8px 12px;border-radius:999px;color:var(--mut)">가격순</a>
+        <a href="#" class="f-chip" style="padding:8px 12px;border-radius:999px;color:var(--mut)">출시순</a>
+        <a href="#" class="f-chip" style="padding:8px 12px;border-radius:999px;color:var(--mut)">평점순</a>
+        <span style="width:1px;height:18px;background:var(--line-strong);margin:0 6px"></span>
+        <a href="#" aria-label="격자 보기" style="display:inline-flex;align-items:center;justify-content:center;width:34px;height:34px;border-radius:8px;background:var(--surface-2)"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><rect x="3" y="3" width="7" height="7"></rect><rect x="14" y="3" width="7" height="7"></rect><rect x="3" y="14" width="7" height="7"></rect><rect x="14" y="14" width="7" height="7"></rect></svg></a>
+        <a href="#" aria-label="목록 보기" class="f-chip" style="display:inline-flex;align-items:center;justify-content:center;width:34px;height:34px;border-radius:8px;color:var(--mut)"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M4 6h16M4 12h16M4 18h16"></path></svg></a>
+      </div>
+    </div>
+
+    <div style="display:flex;flex-wrap:wrap;align-items:center;gap:8px;border-top:1px solid var(--line);border-bottom:1px solid var(--line);padding:12px 0">
+      <span style="font-size:12px;color:var(--dim)">걸린 조건</span>
+      <a href="#" style="display:inline-flex;align-items:center;gap:7px;padding:6px 12px;border-radius:999px;background:var(--acc-soft);font-size:12.5px;font-weight:600;color:var(--acc)">Steam <span aria-hidden="true">✕</span></a>
+      <a href="#" style="display:inline-flex;align-items:center;gap:7px;padding:6px 12px;border-radius:999px;background:var(--acc-soft);font-size:12.5px;font-weight:600;color:var(--acc)">할인 중 <span aria-hidden="true">✕</span></a>
+      <a href="#" style="display:inline-flex;align-items:center;gap:7px;padding:6px 12px;border-radius:999px;background:var(--acc-soft);font-size:12.5px;font-weight:600;color:var(--acc)">3만원 이하 <span aria-hidden="true">✕</span></a>
+      <a href="#" style="margin-left:auto;font-size:12.5px;color:var(--mut)">전부 풀기</a>
+    </div>
+
+    <details class="g-drawer" style="border-top:1px solid var(--line);border-bottom:1px solid var(--line)">
+      <summary style="display:flex;cursor:pointer;list-style:none;align-items:center;gap:9px;padding:14px 0;font-size:14px;font-weight:700">
+        필터와 정렬
+        <span style="display:inline-flex;align-items:center;justify-content:center;min-width:22px;height:22px;padding:0 7px;border-radius:999px;background:var(--ink);color:var(--on-ink);font-size:11.5px;font-weight:700">3</span>
+      </summary>
+      <p style="padding:0 0 16px;font-size:12.5px;line-height:1.7;color:var(--mut)">플랫폼, 가격, 할인, 장르, 내 기기 조건을 여기서 고릅니다. 좁은 화면에서는 접어 두어 목록이 먼저 보이게 해요.</p>
+    </details>
+
+    <div class="g-list">
+      <aside aria-label="목록 필터" class="g-filters">
+        <div style="display:flex;flex-direction:column;gap:10px">
+          <h2 style="font-size:12px;letter-spacing:.08em;font-weight:700;color:var(--dim)">플랫폼</h2>
+          <ul style="display:flex;flex-wrap:wrap;gap:6px;font-size:12.5px">
+            <li><a href="#" style="display:inline-flex;padding:6px 11px;border-radius:999px;background:var(--ink);color:var(--on-ink);font-weight:600">Steam</a></li>
+            <li><a href="#" class="f-chip" style="display:inline-flex;padding:6px 11px;border-radius:999px;color:var(--mut)">PC</a></li>
+            <li><a href="#" class="f-chip" style="display:inline-flex;padding:6px 11px;border-radius:999px;color:var(--mut)">PS5</a></li>
+            <li><a href="#" class="f-chip" style="display:inline-flex;padding:6px 11px;border-radius:999px;color:var(--mut)">PS4</a></li>
+            <li><a href="#" class="f-chip" style="display:inline-flex;padding:6px 11px;border-radius:999px;color:var(--mut)">Xbox</a></li>
+            <li><a href="#" class="f-chip" style="display:inline-flex;padding:6px 11px;border-radius:999px;color:var(--mut)">Switch</a></li>
+            <li><a href="#" class="f-chip" style="display:inline-flex;padding:6px 11px;border-radius:999px;color:var(--mut)">Switch 2</a></li>
+          </ul>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:10px">
+          <h2 style="font-size:12px;letter-spacing:.08em;font-weight:700;color:var(--dim)">가격</h2>
+          <ul style="display:flex;flex-direction:column;gap:2px;font-size:13px">
+            <li><a href="#" class="f-row" style="display:flex;justify-content:space-between;padding:7px 8px;margin:0 -8px;border-radius:8px;color:var(--mut)">무료 <span style="color:var(--dim-2)">312</span></a></li>
+            <li><a href="#" class="f-row" style="display:flex;justify-content:space-between;padding:7px 8px;margin:0 -8px;border-radius:8px;background:var(--surface-2);font-weight:600">3만원 이하 <span style="color:var(--dim)">128</span></a></li>
+            <li><a href="#" class="f-row" style="display:flex;justify-content:space-between;padding:7px 8px;margin:0 -8px;border-radius:8px;color:var(--mut)">5만원 이하 <span style="color:var(--dim-2)">1,204</span></a></li>
+            <li><a href="#" class="f-row" style="display:flex;justify-content:space-between;padding:7px 8px;margin:0 -8px;border-radius:8px;color:var(--mut)">전체 <span style="color:var(--dim-2)">6,047</span></a></li>
+          </ul>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:10px">
+          <h2 style="font-size:12px;letter-spacing:.08em;font-weight:700;color:var(--dim)">할인</h2>
+          <ul style="display:flex;flex-direction:column;gap:2px;font-size:13px">
+            <li><a href="#" class="f-row" style="display:flex;justify-content:space-between;padding:7px 8px;margin:0 -8px;border-radius:8px;background:var(--surface-2);font-weight:600">할인 중 <span style="color:var(--dim)">42</span></a></li>
+            <li><a href="#" class="f-row" style="display:flex;justify-content:space-between;padding:7px 8px;margin:0 -8px;border-radius:8px;color:var(--mut)">50% 이상 <span style="color:var(--dim-2)">18</span></a></li>
+            <li><a href="#" class="f-row" style="display:flex;justify-content:space-between;padding:7px 8px;margin:0 -8px;border-radius:8px;color:var(--mut)">구독 포함 <span style="color:var(--dim-2)">86</span></a></li>
+          </ul>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:10px">
+          <h2 style="font-size:12px;letter-spacing:.08em;font-weight:700;color:var(--dim)">장르</h2>
+          <ul style="display:flex;flex-wrap:wrap;gap:6px;font-size:12.5px">
+            <li><a href="#" class="f-chip" style="display:inline-flex;padding:6px 11px;border-radius:999px;color:var(--mut)">액션</a></li>
+            <li><a href="#" class="f-chip" style="display:inline-flex;padding:6px 11px;border-radius:999px;color:var(--mut)">RPG</a></li>
+            <li><a href="#" class="f-chip" style="display:inline-flex;padding:6px 11px;border-radius:999px;color:var(--mut)">어드벤처</a></li>
+            <li><a href="#" class="f-chip" style="display:inline-flex;padding:6px 11px;border-radius:999px;color:var(--mut)">전략</a></li>
+            <li><a href="#" class="f-chip" style="display:inline-flex;padding:6px 11px;border-radius:999px;color:var(--mut)">인디</a></li>
+            <li><a href="#" class="f-chip" style="display:inline-flex;padding:6px 11px;border-radius:999px;color:var(--mut)">스포츠</a></li>
+          </ul>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:8px;border-top:1px solid var(--line);padding-top:16px">
+          <h2 style="font-size:12px;letter-spacing:.08em;font-weight:700;color:var(--dim)">내 기기</h2>
+          <a href="#" style="display:inline-flex;align-items:center;justify-content:center;height:38px;border-radius:10px;background:var(--surface-2);font-size:13px;font-weight:600">내 기기로 돌아가요</a>
+          <p style="font-size:11.5px;line-height:1.6;color:var(--dim)">기기를 적어 두면 돌아가는 게임만 골라 볼 수 있어요. 로그인 없이도 돼요. 사양을 아는 PC 게임만 이 조건으로 걸러요.</p>
+        </div>
+      </aside>
+
+      <div style="display:flex;min-width:0;flex-direction:column;gap:36px">
+        <ul style="display:grid;grid-template-columns:repeat(auto-fill,minmax(min(280px,100%),1fr));gap:36px 24px">{{ listCards }}</ul>
+        <p style="text-align:center;font-size:13px;color:var(--dim)">더 불러오는 중이에요</p>
+      </div>
+    </div>
+  </main>
+</section>
+
+<section data-screen-label="게임 상세" style="border-top:1px solid var(--line);background:var(--bg);padding:0 0 80px">
+  <p class="f-screen" style="padding-top:14px;font-size:11.5px;letter-spacing:.12em;color:var(--dim-2)">02 게임 상세 /games/[slug]</p>
+  {{ header }}
+  <main class="f-screen" style="display:flex;flex-direction:column;gap:44px;padding-top:12px">
+
+    <div class="g-detail">
+      <div style="display:flex;flex-direction:column;gap:20px">
+        <a href="#" style="display:inline-flex;align-items:center;gap:5px;font-size:12.5px;color:var(--mut)">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m14.5 5-7 7 7 7"></path></svg>
+          게임 목록으로
+        </a>
+        <div style="position:relative">
+          <figure style="position:relative;margin:0;width:100%;aspect-ratio:460 / 215;border-radius:16px;background:var(--surface-3);overflow:hidden;display:flex;align-items:center;justify-content:center">{{ bigMark }}</figure>
+          <span class="f-stamp" style="position:absolute;left:-10px;bottom:-16px;display:inline-flex;align-items:baseline;gap:1px;background:var(--acc);color:#faf9f7;padding:8px 15px 7px;border-radius:8px;font-size:34px;font-weight:800;letter-spacing:-.05em;line-height:1;box-shadow:0 8px 22px -8px var(--acc-glow)">-67<span style="font-size:19px;font-weight:700">%</span></span>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:10px;padding-top:10px">
+          <h1 style="font-size:40px;font-weight:800;line-height:1.08;letter-spacing:-.045em">엘든 링</h1>
+          <p style="font-size:13.5px;color:var(--mut)">ELDEN RING | 2022. 02. 25. 출시 | 액션 RPG, 오픈월드</p>
+          <p style="font-size:13px;color:var(--dim)">프롬 소프트웨어 개발(일본) | 반다이남코 배급(일본)</p>
+        </div>
+        <p style="max-width:620px;font-size:14px;line-height:1.8;color:var(--mut)">광활한 대지와 미궁 같은 던전이 이어지는 새로운 세계에서, 은밀히 숨겨진 위협과 도전에 맞서며 자신만의 이야기를 만들어 가세요. 지금까지의 작품보다 훨씬 넓은 세계를 자유롭게 탐험할 수 있습니다.</p>
+        <ul style="display:flex;flex-wrap:wrap;gap:6px;font-size:12.5px">
+          <li style="padding:5px 11px;border-radius:999px;background:var(--surface-2);color:var(--ink-2)">솔로</li>
+          <li style="padding:5px 11px;border-radius:999px;background:var(--surface-2);color:var(--ink-2)">협동</li>
+          <li style="padding:5px 11px;border-radius:999px;background:var(--surface-2);color:var(--ink-2)">PvP</li>
+          <li style="padding:5px 11px;border-radius:999px;background:var(--surface-2);color:var(--ink-2)">온라인 최대 4인</li>
+          <li style="padding:5px 11px;border-radius:999px;background:var(--surface-2);color:var(--ink-2)">스팀덱 검증됨</li>
+        </ul>
+      </div>
+
+      <div class="g-sticky" style="display:flex;flex-direction:column;gap:24px;position:sticky;top:16px">
+        <div style="display:flex;flex-direction:column;gap:6px">
+          <p style="font-size:12px;color:var(--dim)">지금 최저가 | Steam</p>
+          <p style="display:flex;align-items:baseline;gap:10px"><span style="font-size:44px;font-weight:800;letter-spacing:-.045em;line-height:1">21,384원</span><span style="font-size:14px;color:var(--dim-2);text-decoration:line-through">64,800원</span></p>
+          <p style="display:inline-flex;align-items:center;gap:7px;font-size:13px;font-weight:700;color:var(--danger)"><span class="f-blink" aria-hidden="true" style="width:6px;height:6px;border-radius:999px;background:var(--danger)"></span>가을 세일 2일 남음</p>
+          <p style="font-size:12.5px;color:var(--mut)">기록 최저가 19,440원 | 2026. 06. 27. (지금보다 1,944원 쌌어요)</p>
+        </div>
+        <div style="display:flex;flex-wrap:wrap;gap:8px">
+          <a href="#" style="display:inline-flex;flex:1;min-width:140px;align-items:center;justify-content:center;height:46px;border-radius:12px;background:var(--ink);color:var(--on-ink);font-size:14px;font-weight:700">할인 알림 받기</a>
+          <button type="button" style="display:inline-flex;align-items:center;justify-content:center;gap:7px;height:46px;padding:0 18px;border-radius:12px;border:1px solid var(--line-strong);background:transparent;color:var(--ink);font:inherit;font-size:14px;cursor:pointer">
+            <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 20s-7-4.4-7-9.2A4 4 0 0 1 12 8a4 4 0 0 1 7 2.8c0 4.8-7 9.2-7 9.2Z"></path></svg>
+            찜하기
+          </button>
+        </div>
+        <dl style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:18px 20px;border-top:1px solid var(--line);padding-top:20px">
+          <div><dt style="font-size:12px;color:var(--dim)">메인 스토리</dt><dd style="margin-top:4px;font-size:22px;font-weight:800;letter-spacing:-.03em">58.5시간</dd><dd style="margin-top:2px;font-size:11.5px;color:var(--mut)">완전 정복 133시간</dd></div>
+          <div><dt style="font-size:12px;color:var(--dim)">평론가 평점</dt><dd style="margin-top:4px;font-size:22px;font-weight:800;letter-spacing:-.03em">96</dd><dd style="margin-top:2px;font-size:11.5px;color:var(--mut)">OpenCritic 리뷰 128건</dd></div>
+          <div><dt style="font-size:12px;color:var(--dim)">유저 점수</dt><dd style="margin-top:4px;font-size:22px;font-weight:800;letter-spacing:-.03em">긍정 92%</dd><dd style="margin-top:2px;font-size:11.5px;color:var(--mut)">Steam 78.4만건</dd></div>
+          <div><dt style="font-size:12px;color:var(--dim)">시간당 가격</dt><dd style="margin-top:4px;font-size:22px;font-weight:800;letter-spacing:-.03em;color:var(--acc)">366원</dd><dd style="margin-top:2px;font-size:11.5px;color:var(--acc);font-weight:600">싼 편 <span style="color:var(--mut);font-weight:400">| 2,481개 비교</span></dd></div>
+        </dl>
+      </div>
+    </div>
+
+    <section style="display:flex;flex-direction:column;gap:14px">
+      <div style="display:flex;flex-wrap:wrap;align-items:baseline;justify-content:space-between;gap:8px">
+        <h2 style="font-size:22px;font-weight:800;letter-spacing:-.04em">플랫폼별 가격</h2>
+        <a href="#" style="font-size:13px;color:var(--acc)">가격 변동 그래프</a>
+      </div>
+      <ul>{{ priceRows }}</ul>
+      <p style="font-size:12px;line-height:1.7;color:var(--dim)">Switch 일본 가격은 2일 전 수집한 값이고 한국 계정으로는 구매할 수 없어 최저가 판정에서 제외했어요.</p>
+    </section>
+
+    <section style="display:grid;grid-template-columns:repeat(auto-fit,minmax(min(340px,100%),1fr));gap:40px 48px;align-items:start">
+      <div style="display:flex;flex-direction:column;gap:14px">
+        <div style="display:flex;flex-wrap:wrap;align-items:baseline;justify-content:space-between;gap:8px">
+          <h2 style="font-size:22px;font-weight:800;letter-spacing:-.04em">내 PC 로 돌아갈까요</h2>
+          <span style="display:inline-flex;align-items:center;gap:7px;font-size:13px;font-weight:700;color:var(--ok)"><span aria-hidden="true" style="width:7px;height:7px;border-radius:999px;background:var(--ok)"></span>권장 사양을 넘어요</span>
+        </div>
+        <div style="display:flex;flex-wrap:wrap;align-items:center;gap:6px;font-size:12.5px">
+          <a href="#" style="padding:6px 12px;border-radius:999px;background:var(--ink);color:var(--on-ink);font-weight:600">데스크탑</a>
+          <a href="#" class="f-chip" style="padding:6px 12px;border-radius:999px;color:var(--mut)">맥북 프로</a>
+          <a href="#" style="margin-left:auto;font-size:12.5px;color:var(--acc)">기기 다시 적기</a>
+        </div>
+        <dl style="display:flex;flex-direction:column">
+          <div style="display:flex;align-items:baseline;justify-content:space-between;gap:10px;border-top:1px solid var(--line-strong);padding:11px 0"><dt style="font-size:13px;color:var(--mut)">프로세서</dt><dd style="font-size:13px;font-weight:700;color:var(--ok)">충족</dd></div>
+          <div style="display:flex;align-items:baseline;justify-content:space-between;gap:10px;border-top:1px solid var(--line-soft);padding:11px 0"><dt style="font-size:13px;color:var(--mut)">그래픽</dt><dd style="font-size:13px;font-weight:700;color:var(--ok)">충족</dd></div>
+          <div style="display:flex;align-items:baseline;justify-content:space-between;gap:10px;border-top:1px solid var(--line-soft);padding:11px 0"><dt style="font-size:13px;color:var(--mut)">메모리</dt><dd style="font-size:13px;font-weight:700;color:var(--ok)">충족</dd></div>
+          <div style="display:flex;align-items:baseline;justify-content:space-between;gap:10px;border-top:1px solid var(--line-soft);padding:11px 0"><dt style="font-size:13px;color:var(--mut)">저장공간</dt><dd style="font-size:13px;color:var(--mut)">확인 못 함</dd></div>
+        </dl>
+        <p style="font-size:11.5px;line-height:1.7;color:var(--dim)">일부 항목은 확인하지 못했어요. 스토어에 적힌 사양과 견준 결과예요. 실제 구동은 게임 설정과 기기 상태에 따라 달라요.</p>
+        <details><summary style="cursor:pointer;list-style:none;font-size:13px;font-weight:700;color:var(--acc)">구동 사양 표 보기</summary>{{ specTable }}</details>
+      </div>
+
+      <div style="display:flex;flex-direction:column;gap:14px">
+        <h2 style="font-size:22px;font-weight:800;letter-spacing:-.04em">플레이타임</h2>
+        <dl style="display:flex;flex-direction:column;gap:14px">{{ playtimeRows }}</dl>
+        <div style="display:flex;flex-direction:column;gap:8px;border-top:1px solid var(--line);padding-top:16px">
+          <div style="display:flex;align-items:baseline;justify-content:space-between;gap:8px">
+            <p style="font-size:13px;color:var(--mut)">시간당 가격 | 메인 스토리 기준</p>
+            <p style="display:flex;align-items:baseline;gap:6px"><span style="font-size:22px;font-weight:800;letter-spacing:-.03em;color:var(--acc)">366원</span><span style="font-size:12px;font-weight:700;color:var(--acc)">싼 편</span></p>
+          </div>
+          <div style="position:relative;height:26px" aria-hidden="true">
+            <div style="position:absolute;left:0;right:0;top:5px;height:4px;border-radius:999px;background:var(--surface-2)"></div>
+            <div style="position:absolute;top:5px;height:4px;border-radius:999px;background:var(--line-strong);left:26%;width:38%"></div>
+            <div style="position:absolute;top:1px;height:12px;width:1px;background:var(--dim-2);left:46%"><span style="position:absolute;left:-16px;top:14px;width:32px;text-align:center;font-size:9.5px;color:var(--dim-2)">중간</span></div>
+            <div style="position:absolute;top:0;height:14px;width:3px;border-radius:999px;background:var(--acc);left:12%"><span style="position:absolute;left:-15px;top:15px;width:34px;text-align:center;font-size:9.5px;font-weight:700;color:var(--acc)">이 게임</span></div>
+          </div>
+          <p style="margin-top:8px;font-size:11.5px;color:var(--dim)">게임 2,481개와 비교했어요.</p>
+        </div>
+      </div>
+    </section>
+
+    <section style="display:flex;flex-direction:column;gap:14px">
+      <div style="display:flex;flex-wrap:wrap;align-items:baseline;justify-content:space-between;gap:8px">
+        <h2 style="display:flex;align-items:baseline;gap:9px;font-size:22px;font-weight:800;letter-spacing:-.04em">추가 콘텐츠 <span style="font-size:14px;font-weight:600;color:var(--dim)">3개</span></h2>
+        <div style="display:flex;flex-wrap:wrap;gap:6px;font-size:12.5px">
+          <a href="#" style="padding:6px 11px;border-radius:999px;background:var(--ink);color:var(--on-ink);font-weight:600">전체</a>
+          <a href="#" class="f-chip" style="padding:6px 11px;border-radius:999px;color:var(--mut)">Steam</a>
+          <a href="#" class="f-chip" style="padding:6px 11px;border-radius:999px;color:var(--mut)">PS5</a>
+          <a href="#" class="f-chip" style="padding:6px 11px;border-radius:999px;color:var(--mut)">Xbox</a>
+        </div>
+      </div>
+      <ul>{{ dlcRows }}</ul>
+    </section>
+
+    <section style="display:grid;grid-template-columns:repeat(auto-fit,minmax(min(340px,100%),1fr));gap:40px 48px;align-items:start">
+      <div style="display:flex;flex-direction:column;gap:14px">
+        <div style="display:flex;flex-wrap:wrap;align-items:baseline;justify-content:space-between;gap:8px">
+          <h2 style="font-size:22px;font-weight:800;letter-spacing:-.04em">패치 기록</h2>
+          <a href="#" style="font-size:13px;color:var(--acc)">전체 보기</a>
+        </div>
+        <dl style="display:flex;flex-direction:column">
+          <div style="display:flex;align-items:baseline;justify-content:space-between;gap:10px;border-top:1px solid var(--line-strong);padding:11px 0"><dt style="font-size:13.5px;font-weight:700">Steam</dt><dd style="text-align:right"><span style="display:block;font-size:13px">2026. 09. 02.</span><span style="font-size:11.5px;color:var(--dim)">평균 24일마다 | 18건</span></dd></div>
+          <div style="display:flex;align-items:baseline;justify-content:space-between;gap:10px;border-top:1px solid var(--line-soft);padding:11px 0"><dt style="font-size:13.5px;font-weight:700">PS5</dt><dd style="text-align:right"><span style="display:block;font-size:13px">2026. 08. 21.</span><span style="font-size:11.5px;color:var(--dim)">평균 31일마다 | 9건</span></dd></div>
+          <div style="display:flex;align-items:baseline;justify-content:space-between;gap:10px;border-top:1px solid var(--line-soft);padding:11px 0"><dt style="font-size:13.5px;font-weight:700">Xbox</dt><dd style="text-align:right"><span style="display:block;font-size:13px">2026. 08. 21.</span><span style="font-size:11.5px;color:var(--dim)">기록 4건</span></dd></div>
+        </dl>
+        <div style="display:flex;flex-direction:column;gap:8px;border-top:1px solid var(--line);padding-top:16px">
+          <h3 style="font-size:12px;letter-spacing:.08em;font-weight:700;color:var(--dim)">정보 출처</h3>
+          <ul style="display:flex;flex-wrap:wrap;gap:6px;font-size:12px">
+            <li><a href="#" style="display:inline-flex;padding:5px 11px;border-radius:999px;background:var(--surface-2);color:var(--ink-2)">Steam</a></li>
+            <li><a href="#" style="display:inline-flex;padding:5px 11px;border-radius:999px;background:var(--surface-2);color:var(--ink-2)">HowLongToBeat</a></li>
+            <li><a href="#" style="display:inline-flex;padding:5px 11px;border-radius:999px;background:var(--surface-2);color:var(--ink-2)">OpenCritic</a></li>
+            <li style="padding:5px 11px;border-radius:999px;border:1px dashed var(--line-strong);color:var(--dim-2)">Metacritic</li>
+          </ul>
+          <p style="font-size:11.5px;color:var(--dim)">마지막 갱신 2026. 09. 14. 02:14</p>
+        </div>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:14px">
+        <h2 style="font-size:22px;font-weight:800;letter-spacing:-.04em">관련 뉴스</h2>
+        <ul>{{ detailNewsRows }}</ul>
+      </div>
+    </section>
+  </main>
+</section>
+
+<section data-screen-label="가격 변동 그래프" style="border-top:1px solid var(--line);background:var(--bg);padding:0 0 80px">
+  <p class="f-screen" style="padding-top:14px;font-size:11.5px;letter-spacing:.12em;color:var(--dim-2)">03 가격 변동 /games/[slug]/prices</p>
+  {{ header }}
+  <main class="f-screen" style="display:flex;flex-direction:column;gap:30px;padding-top:12px">
+    <div style="display:flex;flex-direction:column;gap:14px">
+      <a href="#" style="display:inline-flex;align-items:center;gap:5px;font-size:12.5px;color:var(--mut)">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m14.5 5-7 7 7 7"></path></svg>
+        엘든 링
+      </a>
+      <div style="display:flex;flex-wrap:wrap;align-items:flex-end;justify-content:space-between;gap:14px 24px">
+        <div>
+          <h1 style="font-size:32px;font-weight:800;letter-spacing:-.045em">가격 변동</h1>
+          <p style="margin-top:6px;font-size:13.5px;color:var(--mut)">최근 1년 | 값이 바뀐 시점만 기록해요</p>
+        </div>
+        <div style="display:flex;flex-wrap:wrap;gap:6px;font-size:13px">
+          <a href="#" style="padding:8px 14px;border-radius:999px;background:var(--ink);color:var(--on-ink);font-weight:600">1년</a>
+          <a href="#" class="f-chip" style="padding:8px 14px;border-radius:999px;color:var(--mut)">6개월</a>
+          <a href="#" class="f-chip" style="padding:8px 14px;border-radius:999px;color:var(--mut)">3개월</a>
+        </div>
+      </div>
+    </div>
+
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(min(220px,100%),1fr));gap:20px 32px;border-top:1px solid var(--line);border-bottom:1px solid var(--line);padding:20px 0">
+      <div><p style="font-size:12px;color:var(--dim)">지금 가장 싼 곳</p><p style="margin-top:5px;display:flex;align-items:baseline;gap:8px"><span style="font-size:30px;font-weight:800;letter-spacing:-.04em">21,384원</span><span style="font-size:13px;font-weight:700;color:var(--acc)">-67%</span></p><p style="margin-top:3px;font-size:12px;color:var(--mut)">Steam | 정가 64,800원</p></div>
+      <div><p style="font-size:12px;color:var(--dim)">기록 최저가</p><p style="margin-top:5px;font-size:30px;font-weight:800;letter-spacing:-.04em;color:var(--acc)">19,440원</p><p style="margin-top:3px;font-size:12px;color:var(--mut)">2026. 06. 27. | 지금보다 1,944원 쌌어요</p></div>
+      <div><p style="font-size:12px;color:var(--dim)">기록 최고가</p><p style="margin-top:5px;font-size:30px;font-weight:800;letter-spacing:-.04em">64,800원</p><p style="margin-top:3px;font-size:12px;color:var(--mut)">할인 없던 구간</p></div>
+      <div><p style="font-size:12px;color:var(--dim)">기록 수</p><p style="margin-top:5px;font-size:30px;font-weight:800;letter-spacing:-.04em">38건</p><p style="margin-top:3px;font-size:12px;color:var(--mut)">2025. 09. 14. 부터</p></div>
+    </div>
+
+    <div style="display:flex;flex-direction:column;gap:14px">
+      <div style="display:flex;flex-wrap:wrap;align-items:center;gap:18px;font-size:12.5px;color:var(--mut)">
+        <span style="display:inline-flex;align-items:center;gap:7px"><span aria-hidden="true" style="width:16px;height:2.5px;background:var(--store-steam)"></span>Steam</span>
+        <span style="display:inline-flex;align-items:center;gap:7px"><span aria-hidden="true" style="width:16px;height:2px;background:var(--store-ps5)"></span>PS5</span>
+        <span style="display:inline-flex;align-items:center;gap:7px"><span aria-hidden="true" style="width:16px;height:2px;background:var(--store-xbox)"></span>Xbox</span>
+        <span style="margin-left:auto;display:inline-flex;align-items:center;gap:7px"><span aria-hidden="true" style="width:14px;height:10px;background:var(--acc-soft)"></span>할인 진행 구간</span>
+      </div>
+      <div style="position:relative">
+        <svg viewBox="0 0 900 280" preserveAspectRatio="none" style="width:100%;height:280px" aria-hidden="true">
+          <line x1="0" y1="40" x2="900" y2="40" stroke="var(--line)"></line>
+          <line x1="0" y1="110" x2="900" y2="110" stroke="var(--line)"></line>
+          <line x1="0" y1="180" x2="900" y2="180" stroke="var(--line)"></line>
+          <line x1="0" y1="250" x2="900" y2="250" stroke="var(--line)"></line>
+          <rect x="120" y="0" width="70" height="280" fill="var(--acc-soft)"></rect>
+          <rect x="400" y="0" width="60" height="280" fill="var(--acc-soft)"></rect>
+          <rect x="760" y="0" width="140" height="280" fill="var(--acc-soft)"></rect>
+          <line x1="0" y1="236" x2="900" y2="236" stroke="var(--acc)" stroke-dasharray="4 5" opacity=".55"></line>
+          <path class="f-draw" d="M0 30 H120 V150 H190 V30 H400 V190 H460 V30 H760 V214 H890" fill="none" stroke="var(--store-steam)" stroke-width="2.5"></path>
+          <path class="f-draw" d="M0 46 H260 V120 H330 V46 H600 V96 H700 V46 H890" fill="none" stroke="var(--store-ps5)" stroke-width="2" style="animation-delay:120ms"></path>
+          <path class="f-draw" d="M0 60 H180 V60 H320 V132 H420 V60 H820 V150 H890" fill="none" stroke="var(--store-xbox)" stroke-width="2" style="animation-delay:240ms"></path>
+          <circle cx="890" cy="214" r="5" fill="var(--store-steam)"></circle>
+        </svg>
+        <div style="display:flex;justify-content:space-between;margin-top:8px;font-size:11.5px;color:var(--dim)"><span>2025. 09.</span><span>11.</span><span>2026. 01.</span><span>03.</span><span>05.</span><span>07.</span><span>09.</span></div>
+      </div>
+      <p style="max-width:760px;font-size:12px;line-height:1.8;color:var(--dim)">가격은 값이 바뀐 시점에만 기록됩니다. 수집을 시작한 뒤 아직 가격이 바뀌지 않은 플랫폼은 선이 평평하게 보입니다. 할인 기간은 스토어가 공개하는 경우에만 표시합니다. 보라 점선은 기록 최저가입니다.</p>
+    </div>
+
+    <div style="display:flex;flex-direction:column;gap:12px">
+      <h2 style="font-size:22px;font-weight:800;letter-spacing:-.04em">플랫폼별 요약</h2>
+      {{ chartTable }}
+    </div>
+  </main>
+</section>
+
+<section data-screen-label="검색 결과" style="border-top:1px solid var(--line);background:var(--bg);padding:0 0 80px">
+  <p class="f-screen" style="padding-top:14px;font-size:11.5px;letter-spacing:.12em;color:var(--dim-2)">04 검색 결과 /search?q=</p>
+  {{ headerSearch }}
+  <main class="f-screen" style="display:flex;flex-direction:column;gap:22px;padding-top:12px">
+    <div style="display:flex;flex-wrap:wrap;align-items:flex-end;justify-content:space-between;gap:14px 24px">
+      <div>
+        <h1 style="font-size:32px;font-weight:800;letter-spacing:-.045em">&ldquo;엘든&rdquo; 검색 결과</h1>
+        <p style="margin-top:6px;font-size:13.5px;color:var(--mut)">6건 | 한글과 영문 제목을 함께 찾아요</p>
+      </div>
+      <div style="display:flex;flex-wrap:wrap;gap:6px;font-size:13px">
+        <a href="#" style="padding:8px 12px;border-radius:999px;background:var(--surface-2);font-weight:600">관련도순</a>
+        <a href="#" class="f-chip" style="padding:8px 12px;border-radius:999px;color:var(--mut)">할인율순</a>
+        <a href="#" class="f-chip" style="padding:8px 12px;border-radius:999px;color:var(--mut)">가격순</a>
+      </div>
+    </div>
+    <ul>{{ searchRows }}</ul>
+    <div style="display:flex;flex-direction:column;align-items:flex-start;gap:10px;border-radius:14px;border:1px dashed var(--line-strong);padding:22px">
+      <p style="font-size:15px;font-weight:700">찾는 게임이 없나요?</p>
+      <p style="max-width:540px;font-size:13px;line-height:1.7;color:var(--mut)">제목의 일부만 넣거나 영문 제목으로 다시 검색해 보세요. 아직 수집되지 않은 게임일 수 있어요.</p>
+      <a href="#" style="margin-top:2px;display:inline-flex;align-items:center;height:38px;padding:0 16px;border-radius:10px;background:var(--surface-2);font-size:13px;font-weight:600">전체 목록에서 찾기</a>
+    </div>
+  </main>
+</section>
+
+<footer style="border-top:1px solid var(--line);padding:24px;font-size:12px;color:var(--dim)">
+  <div class="f-screen" style="display:flex;flex-wrap:wrap;justify-content:space-between;gap:12px;padding:0">
+    <nav style="display:flex;flex-wrap:wrap;gap:18px"><a href="#">매장 찾기</a><a href="#">매장 입점</a><a href="#">이용약관</a><a href="#" style="font-weight:600;color:var(--mut)">개인정보처리방침</a></nav>
+    <p>© 2026 gamearound</p>
+  </div>
+</footer>
+
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:1280}}">
+const e = React.createElement;
+const BRAND_D = "M11.6 7.4h8.8c5.4 0 8.9 3.5 9.7 9.1l.6 4.2c.5 3.4-1.3 5.9-4.2 5.9-2.2 0-3.5-1.2-4.6-3.1l-1.6-2.8c-.5-.9-1.1-1.3-2.1-1.3h-4.4c-1 0-1.6.4-2.1 1.3l-1.6 2.8c-1.1 1.9-2.4 3.1-4.6 3.1-2.9 0-4.7-2.5-4.2-5.9l.6-4.2c.8-5.6 4.3-9.1 9.7-9.1zM8.6 11.2h2.4v2.6h2.6v2.4h-2.6v2.6H8.6v-2.6H6v-2.4h2.6zM20.9 12.2a1.5 1.5 0 1 0 3 0a1.5 1.5 0 1 0 -3 0zM18.1 15a1.5 1.5 0 1 0 3 0a1.5 1.5 0 1 0 -3 0zM23.7 15a1.5 1.5 0 1 0 3 0a1.5 1.5 0 1 0 -3 0zM20.9 17.8a1.5 1.5 0 1 0 3 0a1.5 1.5 0 1 0 -3 0z";
+
+function mark(width) {
+  return e("svg", { width: 32, height: 32, viewBox: "0 0 32 32", "aria-hidden": true, style: { width, height: "auto", color: "var(--dim-2)" } },
+    e("path", { fill: "currentColor", fillRule: "evenodd", d: BRAND_D }),
+    e("circle", { cx: 22.4, cy: 12.2, r: 1.5, fill: "var(--acc)" }));
+}
+
+/** 커버 자리. 부모가 크기를 정하고, hover 확대는 .f-cover 가 맡는다 */
+function cover(style) {
+  return e("span", { style: { position: "relative", display: "block", background: "var(--surface-3)", overflow: "hidden", flexShrink: 0, ...style } },
+    e("span", { className: "f-cover", style: { position: "absolute", inset: 0, display: "flex", alignItems: "center", justifyContent: "center" } }, mark("24%")));
+}
+
+const ICON = { size: 19, viewBox: "0 0 24 24", fill: "none", stroke: "currentColor", strokeWidth: 2, strokeLinecap: "round", strokeLinejoin: "round", "aria-hidden": true };
+function icon(d, size) {
+  return e("svg", { width: size ?? 19, height: size ?? 19, viewBox: "0 0 24 24", fill: "none", stroke: "currentColor", strokeWidth: 2, strokeLinecap: "round", strokeLinejoin: "round", "aria-hidden": true },
+    d.map((p, i) => e("path", { key: i, d: p })));
+}
+
+/** 공용 머리띠. 화면마다 활성 메뉴와 검색칸 내용만 다르다 */
+function header({ active = "게임 목록", query = null } = {}) {
+  const link = (label) =>
+    e("a", { key: label, href: "#", "aria-current": label === active ? "page" : undefined, className: label === active ? undefined : "f-chip",
+      style: { padding: "7px 12px", borderRadius: 8, fontSize: 14, fontWeight: label === active ? 700 : 400, color: label === active ? "var(--ink)" : "var(--mut)" } }, label);
+  return e("header", { style: { position: "relative", zIndex: 2, background: "var(--bg)" } },
+    e("div", { className: "f-screen", style: { display: "flex", alignItems: "center", gap: 28, padding: "12px 24px 16px" } },
+      e("a", { href: "#", "aria-label": "gamearound", style: { display: "inline-flex", flexShrink: 0, alignItems: "center", gap: 9 } },
+        e("svg", { width: 28, height: 28, viewBox: "0 0 32 32", "aria-hidden": true },
+          e("path", { fill: "currentColor", fillRule: "evenodd", d: BRAND_D }),
+          e("circle", { cx: 22.4, cy: 12.2, r: 1.5, fill: "var(--acc)" })),
+        e("span", { style: { fontWeight: 800, letterSpacing: "-.04em", fontSize: 19 } }, "gamearound")),
+      e("nav", { "aria-label": "주요 메뉴", style: { display: "flex", alignItems: "center", gap: 4 } },
+        ["할인", "게임 목록", "출시 예정", "다음 세일"].map(link)),
+      e("form", { role: "search", style: { marginLeft: "auto", minWidth: 0, maxWidth: 340, flex: 1 } },
+        e("div", { style: { display: "flex", height: 40, alignItems: "center", gap: 9, borderRadius: 10, background: query ? "var(--surface)" : "var(--surface-2)", boxShadow: query ? "0 0 0 1px var(--ink)" : "none", padding: "0 14px" } },
+          e("svg", { width: 16, height: 16, viewBox: "0 0 24 24", fill: "none", stroke: "currentColor", strokeWidth: 2, strokeLinecap: "round", strokeLinejoin: "round", "aria-hidden": true, style: { flexShrink: 0, color: "var(--dim)" } },
+            e("circle", { cx: 11, cy: 11, r: 7 }), e("path", { d: "m20 20-3.2-3.2" })),
+          e("span", { style: { flex: 1, minWidth: 0, fontSize: 13.5, color: query ? "var(--ink)" : "var(--dim)", fontWeight: query ? 600 : 400, whiteSpace: "nowrap", overflow: "hidden" } }, query ?? "게임 제목 검색"),
+          query ? e("span", { style: { fontSize: 13, color: "var(--dim)" } }, "✕") : null)),
+      e("div", { style: { display: "flex", flexShrink: 0, alignItems: "center", gap: 6 } },
+        e("a", { href: "#", "aria-label": "위시리스트", className: "f-chip", style: { display: "inline-flex", alignItems: "center", justifyContent: "center", width: 40, height: 40, borderRadius: 10, color: "var(--mut)" } },
+          icon(["M12 20s-7-4.4-7-9.2A4 4 0 0 1 12 8a4 4 0 0 1 7 2.8c0 4.8-7 9.2-7 9.2Z"])),
+        e("a", { href: "#", "aria-label": "알림 3건", className: "f-chip", style: { position: "relative", display: "inline-flex", alignItems: "center", justifyContent: "center", width: 40, height: 40, borderRadius: 10, color: "var(--mut)" } },
+          icon(["M18 9a6 6 0 1 0-12 0c0 5-2 6.5-2 6.5h16S18 14 18 9Z", "M13.7 19a2 2 0 0 1-3.4 0"]),
+          e("span", { style: { position: "absolute", top: 8, right: 9, width: 7, height: 7, borderRadius: 999, background: "var(--acc)", boxShadow: "0 0 0 2px var(--bg)" } })),
+        e("a", { href: "#", style: { display: "inline-flex", alignItems: "center", height: 40, padding: "0 16px", borderRadius: 10, background: "var(--ink)", color: "var(--on-ink)", fontSize: 13.5, fontWeight: 700 } }, "로그인"))));
+}
+
+const LIST = [
+  { ko: "엘든 링", en: "ELDEN RING", price: "21,384원", list: "64,800원", pct: 67, store: "Steam", plats: "Steam | PS5 | PS4 | Xbox", genres: "액션 RPG, 오픈월드", ends: "2일 남음", urgent: true, low: false },
+  { ko: "사이버펑크 2077", en: "Cyberpunk 2077", price: "26,400원", list: "66,000원", pct: 60, store: "Steam", plats: "Steam | PS5 | Xbox", genres: "액션 RPG, FPS", ends: "2일 남음", urgent: true, low: true },
+  { ko: "호그와트 레거시", en: "Hogwarts Legacy", price: "19,800원", list: "66,000원", pct: 70, store: "Steam", plats: "Steam | PS5 | PS4 | Switch", genres: "액션 RPG, 어드벤처", ends: "18시간 남음", urgent: true, low: true },
+  { ko: "디아블로 IV", en: "Diablo IV", price: "35,750원", list: "71,500원", pct: 50, store: "Steam", plats: "Steam | Xbox", genres: "액션 RPG, 핵앤슬래시", ends: "6일 남음", urgent: false, low: false },
+  { ko: "발더스 게이트 3", en: "Baldur's Gate 3", price: "47,600원", list: "68,000원", pct: 30, store: "Steam", plats: "Steam | PS5", genres: "RPG, 턴제 전략", ends: "5일 남음", urgent: false, low: false },
+  { ko: "스타듀 밸리", en: "Stardew Valley", price: "8,250원", list: "16,500원", pct: 50, store: "Steam", plats: "Steam | Switch | PS4", genres: "시뮬레이션, RPG", ends: "9일 남음", urgent: false, low: false },
+];
+
+const PRICES = [
+  { store: "Steam", best: true, price: "21,384원", list: "64,800원", pct: 67, ends: "가을 세일 2일 남음", urgent: true, sub: null, meta: "1.16.0 | 유저 긍정 92%" },
+  { store: "Xbox", best: false, price: "25,920원", list: "64,800원", pct: 60, ends: "4일 남음", urgent: false, sub: "Game Pass 콘솔 포함", meta: "유저 긍정 88% | 리뷰 1.2만건" },
+  { store: "PS5", best: false, price: "32,400원", list: "64,800원", pct: 50, ends: "9월 할인 9일 남음", urgent: false, sub: null, meta: "유저 평균 4.6점 | 리뷰 3.4만건" },
+  { store: "Switch 일본", best: false, price: "7,590엔", list: null, pct: 0, ends: null, urgent: false, sub: null, meta: "2일 전 수집 | 스토어에서 확인 권장" },
+];
+
+const SPECS = [
+  ["운영체제", "Windows 10", "Windows 10/11"],
+  ["프로세서", "Intel Core i5-8400 / AMD Ryzen 3 3300X", "Intel Core i7-8700K / AMD Ryzen 5 3600X"],
+  ["메모리", "12 GB", "16 GB"],
+  ["그래픽", "NVIDIA GTX 1060 3GB / AMD RX 580 4GB", "NVIDIA GTX 1070 8GB / AMD RX Vega 56 8GB"],
+  ["DirectX", "Version 12", "Version 12"],
+  ["저장공간", "60 GB", "60 GB"],
+];
+
+const PLAYTIME = [
+  { k: "메인 스토리", v: "58.5시간", pct: 44, c: "var(--acc)" },
+  { k: "메인 + 서브", v: "101시간", pct: 76, c: "var(--acc-2)" },
+  { k: "완전 정복", v: "133시간", pct: 100, c: "var(--acc-3)" },
+];
+
+const DLCS = [
+  { t: "ELDEN RING Shadow of the Erdtree", pct: 30, price: "29,050원", store: "Steam" },
+  { t: "ELDEN RING Digital Artbook & Original Soundtrack", pct: 0, price: "12,500원", store: "Steam" },
+  { t: "ELDEN RING Deluxe Edition 업그레이드", pct: 0, price: "24,200원", store: "PS5" },
+];
+
+const DETAIL_NEWS = [
+  { t: "엘든 링 나이트레인, 첫 대규모 밸런스 패치 공개", s: "인벤", d: "9. 14." },
+  { t: "프롬소프트웨어, 차기작 티저 영상 공개", s: "루리웹", d: "9. 11." },
+  { t: "엘든 링 DLC 그림자의 나무, 누적 판매 500만 장", s: "게임메카", d: "9. 08." },
+  { t: "엘든 링 나이트레인 신규 보스 추가 예고", s: "디스이즈게임", d: "9. 05." },
+];
+
+const CHART_ROWS = [
+  ["Steam", "21,384원", "-67%", "19,440원", "64,800원", "18건"],
+  ["PS5", "32,400원", "-50%", "29,160원", "64,800원", "11건"],
+  ["Xbox", "25,920원", "-60%", "22,680원", "64,800원", "9건"],
+];
+
+const SEARCH = [
+  { ko: "엘든 링", en: "ELDEN RING", date: "2022. 02. 25. 출시", plats: "Steam | PS5 | PS4 | Xbox", genres: "액션 RPG, 오픈월드", price: "21,384원", list: "64,800원", pct: 67 },
+  { ko: "엘든 링 나이트레인", en: "ELDEN RING NIGHTREIGN", date: "2025. 05. 30. 출시", plats: "Steam | PS5 | Xbox", genres: "액션, 협동", price: "44,800원", list: null, pct: 0 },
+  { ko: "엘든 링 그림자의 나무", en: "ELDEN RING Shadow of the Erdtree", date: "2024. 06. 21. 출시", plats: "Steam | PS5 | Xbox", genres: "추가 콘텐츠", price: "29,050원", list: "41,500원", pct: 30 },
+  { ko: "엘든 링 디럭스 에디션", en: "ELDEN RING Deluxe Edition", date: "2022. 02. 25. 출시", plats: "Steam | PS5", genres: "에디션", price: "31,752원", list: "79,800원", pct: 60 },
+];
+
+class Component extends DCLogic {
+  state = { theme: "light" };
+  renderVals() {
+    const dark = this.state.theme === "dark";
+    return {
+      themeLabel: dark ? "라이트" : "다크",
+      toggleTheme: () => { const next = dark ? "light" : "dark"; document.documentElement.dataset.theme = next; this.setState({ theme: next }); },
+      header: header({ active: "게임 목록" }),
+      headerSearch: header({ active: "게임 목록", query: "엘든" }),
+      bigMark: mark("18%"),
+
+      listCards: LIST.map((g, i) =>
+        e("li", { key: g.ko, className: "f-up", style: { animationDelay: `${60 + i * 45}ms` } },
+          e("a", { href: "#", className: "f-card", style: { display: "flex", flexDirection: "column", gap: 12 } },
+            e("span", { style: { position: "relative", display: "block" } },
+              cover({ width: "100%", aspectRatio: "460 / 215", borderRadius: 14 }),
+              e("span", { className: "f-stamp", style: { position: "absolute", left: -8, bottom: -14, display: "inline-flex", alignItems: "baseline", gap: 1, background: "var(--acc)", color: "#faf9f7", padding: "6px 12px 5px", borderRadius: 6, fontSize: 24, fontWeight: 800, letterSpacing: "-.05em", lineHeight: 1, boxShadow: "0 6px 18px -6px var(--acc-glow)", animationDelay: `${200 + i * 45}ms` } }, `-${g.pct}`, e("span", { style: { fontSize: 14, fontWeight: 700 } }, "%")),
+              g.low ? e("span", { style: { position: "absolute", right: 10, top: 10, background: "rgba(28,28,26,.82)", color: "#faf9f7", padding: "4px 8px", borderRadius: 6, fontSize: 11, fontWeight: 700 } }, "기록 최저가") : null),
+            e("span", { style: { display: "flex", flexDirection: "column", gap: 4, paddingTop: 12 } },
+              e("span", { style: { display: "flex", alignItems: "baseline", justifyContent: "space-between", gap: 10 } },
+                e("span", { className: "f-title", style: { fontSize: 16, fontWeight: 800, letterSpacing: "-.03em", minWidth: 0, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" } }, g.ko),
+                e("span", { style: { display: "flex", alignItems: "baseline", gap: 6, flexShrink: 0 } },
+                  e("span", { style: { fontSize: 17, fontWeight: 800, letterSpacing: "-.03em" } }, g.price),
+                  e("span", { style: { fontSize: 11.5, color: "var(--dim-2)", textDecoration: "line-through" } }, g.list))),
+              e("span", { style: { display: "flex", alignItems: "baseline", justifyContent: "space-between", gap: 10, fontSize: 12.5, color: "var(--mut)" } },
+                e("span", { style: { minWidth: 0, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" } }, `${g.en} | ${g.genres}`),
+                e("span", { style: { flexShrink: 0, display: "inline-flex", alignItems: "center", gap: 6, fontWeight: g.urgent ? 700 : 500, color: g.urgent ? "var(--danger)" : "var(--mut)" } },
+                  g.urgent ? e("span", { className: "f-blink", style: { width: 6, height: 6, borderRadius: 999, background: "var(--danger)" } }) : null, g.ends)),
+              e("span", { style: { fontSize: 12, color: "var(--dim)" } }, `${g.store} 최저 | ${g.plats}`))))),
+
+      priceRows: PRICES.map((p, i) =>
+        e("li", { key: p.store, style: { borderTop: i === 0 ? "1px solid var(--line-strong)" : "1px solid var(--line-soft)" } },
+          e("div", { className: "f-row", style: { display: "flex", flexWrap: "wrap", alignItems: "center", gap: "8px 16px", padding: "15px 8px", margin: "0 -8px", borderRadius: 10 } },
+            e("span", { style: { display: "flex", width: 132, flexShrink: 0, flexDirection: "column", gap: 2 } },
+              e("span", { style: { fontSize: 15, fontWeight: 700 } }, p.store),
+              p.best ? e("span", { style: { fontSize: 11.5, fontWeight: 700, color: "var(--acc)" } }, "최저가") : null),
+            e("span", { style: { display: "flex", minWidth: 0, flex: 1, flexBasis: 200, flexDirection: "column", gap: 4 } },
+              e("span", { style: { display: "flex", flexWrap: "wrap", alignItems: "baseline", columnGap: 10, rowGap: 2 } },
+                e("span", { style: { fontSize: p.best ? 26 : 20, fontWeight: 800, letterSpacing: "-.035em" } }, p.price),
+                p.list ? e("span", { style: { fontSize: 12.5, color: "var(--dim-2)", textDecoration: "line-through" } }, p.list) : null,
+                p.pct ? e("span", { style: { fontSize: 13, fontWeight: 700, color: "var(--acc)" } }, `-${p.pct}%`) : e("span", { style: { fontSize: 12.5, color: "var(--mut)" } }, "할인 없음"),
+                p.ends ? e("span", { style: { fontSize: 12.5, fontWeight: p.urgent ? 700 : 400, color: p.urgent ? "var(--danger)" : "var(--mut)" } }, p.ends) : null),
+              p.sub ? e("span", { style: { alignSelf: "flex-start", padding: "2px 8px", borderRadius: 999, background: "var(--acc-soft)", fontSize: 11.5, fontWeight: 600, color: "var(--acc)" } }, p.sub) : null,
+              e("span", { style: { fontSize: 12, color: "var(--dim)" } }, p.meta)),
+            e("a", { href: "#", style: { flexShrink: 0, display: "inline-flex", alignItems: "center", height: 36, padding: "0 15px", borderRadius: 10, background: p.best ? "var(--ink)" : "var(--surface-2)", color: p.best ? "var(--on-ink)" : "var(--ink)", fontSize: 13, fontWeight: 600 } }, "스토어"))),
+      ),
+
+      specTable: e("table", { style: { width: "100%", marginTop: 14, fontSize: 12.5, textAlign: "left" } },
+        e("thead", null, e("tr", { style: { borderBottom: "1px solid var(--line-strong)" } },
+          e("th", { scope: "col", style: { width: 92, padding: "9px 12px 9px 0", fontSize: 12, fontWeight: 700, color: "var(--dim)" } }, "윈도우"),
+          e("th", { scope: "col", style: { padding: "9px 12px 9px 0", fontWeight: 700 } }, "최소"),
+          e("th", { scope: "col", style: { padding: "9px 0", fontWeight: 700 } }, "권장"))),
+        e("tbody", null, SPECS.map(([k, min, rec]) =>
+          e("tr", { key: k, style: { borderBottom: "1px solid var(--line-soft)", verticalAlign: "top" } },
+            e("th", { scope: "row", style: { padding: "9px 12px 9px 0", textAlign: "left", fontWeight: 500, color: "var(--dim)" } }, k),
+            e("td", { style: { padding: "9px 12px 9px 0", lineHeight: 1.6, color: "var(--mut)" } }, min),
+            e("td", { style: { padding: "9px 0", lineHeight: 1.6, color: "var(--mut)" } }, rec))))),
+
+      playtimeRows: PLAYTIME.map((p, i) =>
+        e("div", { key: p.k, style: { display: "flex", flexDirection: "column", gap: 7 } },
+          e("div", { style: { display: "flex", alignItems: "baseline", justifyContent: "space-between", gap: 8 } },
+            e("dt", { style: { fontSize: 13, color: "var(--mut)" } }, p.k),
+            e("dd", { style: { fontSize: 17, fontWeight: 800, letterSpacing: "-.03em" } }, p.v)),
+          e("div", { "aria-hidden": true, style: { height: 6, borderRadius: 999, background: "var(--surface-2)", overflow: "hidden" } },
+            e("div", { className: "f-bar", style: { height: "100%", width: `${p.pct}%`, borderRadius: 999, background: p.c, animationDelay: `${160 + i * 80}ms` } })))),
+
+      dlcRows: DLCS.map((d, i) =>
+        e("li", { key: d.t, style: { borderTop: i === 0 ? "1px solid var(--line-strong)" : "1px solid var(--line-soft)" } },
+          e("a", { href: "#", className: "f-row", style: { display: "flex", alignItems: "center", justifyContent: "space-between", gap: 14, padding: "13px 8px", margin: "0 -8px", borderRadius: 10 } },
+            e("span", { style: { minWidth: 0, flex: 1, fontSize: 14, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" } }, d.t),
+            e("span", { style: { display: "flex", flexShrink: 0, alignItems: "baseline", gap: 12 } },
+              d.pct ? e("span", { style: { fontSize: 12.5, fontWeight: 700, color: "var(--acc)" } }, `-${d.pct}%`) : null,
+              e("span", { style: { fontSize: 15, fontWeight: 800, letterSpacing: "-.03em" } }, d.price),
+              e("span", { style: { width: 48, textAlign: "right", fontSize: 12, color: "var(--dim)" } }, d.store))))),
+
+      detailNewsRows: DETAIL_NEWS.map((n, i) =>
+        e("li", { key: n.t, style: { borderTop: i === 0 ? "1px solid var(--line-strong)" : "1px solid var(--line-soft)" } },
+          e("a", { href: "#", className: "f-row", style: { display: "flex", alignItems: "baseline", gap: 14, padding: "13px 8px", margin: "0 -8px", borderRadius: 10 } },
+            e("span", { style: { minWidth: 0, flex: 1, fontSize: 14, fontWeight: 600, lineHeight: 1.45 } }, n.t),
+            e("span", { style: { flexShrink: 0, fontSize: 12, color: "var(--dim)" } }, `${n.s} | ${n.d}`)))),
+
+      chartTable: e("table", { style: { width: "100%", fontSize: 13.5, textAlign: "left" } },
+        e("thead", null, e("tr", { style: { borderBottom: "1px solid var(--line-strong)" } },
+          ["플랫폼", "현재가", "할인", "최저(기록)", "최고(기록)", "기록 수"].map((h, i) =>
+            e("th", { key: h, scope: "col", style: { padding: "10px 12px 10px 0", fontSize: 12, fontWeight: 700, color: "var(--dim)", textAlign: i === 0 ? "left" : "right" } }, h)))),
+        e("tbody", null, CHART_ROWS.map((r) =>
+          e("tr", { key: r[0], className: "f-row", style: { borderBottom: "1px solid var(--line-soft)" } },
+            r.map((c, i) =>
+              e("td", { key: i, style: { padding: "13px 12px 13px 0", textAlign: i === 0 ? "left" : "right", fontWeight: i === 0 || i === 1 ? 700 : 400, color: i === 2 ? "var(--acc)" : "var(--ink)" } }, c)))))),
+
+      searchRows: SEARCH.map((g, i) =>
+        e("li", { key: g.en, className: "f-up", style: { borderTop: i === 0 ? "1px solid var(--line-strong)" : "1px solid var(--line-soft)", animationDelay: `${60 + i * 45}ms` } },
+          e("a", { href: "#", className: "f-row f-card", style: { display: "flex", flexWrap: "wrap", alignItems: "center", gap: "10px 18px", padding: "14px 8px", margin: "0 -8px", borderRadius: 10 } },
+            cover({ width: 132, aspectRatio: "460 / 215", borderRadius: 10 }),
+            e("span", { style: { display: "flex", minWidth: 180, flex: 1, flexDirection: "column", gap: 3 } },
+              e("span", { className: "f-title", style: { fontSize: 17, fontWeight: 800, letterSpacing: "-.03em" } }, g.ko),
+              e("span", { style: { fontSize: 12.5, color: "var(--mut)" } }, `${g.en} | ${g.date}`),
+              e("span", { style: { fontSize: 12, color: "var(--dim)" } }, `${g.genres} | ${g.plats}`)),
+            e("span", { style: { flexShrink: 0, textAlign: "right" } },
+              e("span", { style: { display: "block", fontSize: 20, fontWeight: 800, letterSpacing: "-.035em" } }, g.price),
+              g.pct
+                ? e("span", { style: { display: "flex", justifyContent: "flex-end", gap: 7, marginTop: 2, fontSize: 12 } },
+                    e("span", { style: { color: "var(--dim-2)", textDecoration: "line-through" } }, g.list),
+                    e("span", { style: { fontWeight: 700, color: "var(--acc)" } }, `-${g.pct}%`))
+                : e("span", { style: { display: "block", marginTop: 2, fontSize: 12, color: "var(--mut)" } }, "할인 없음"))))),
+    };
+  }
+}
+
+</script>
+</body>
+</html>

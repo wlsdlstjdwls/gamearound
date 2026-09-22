@@ -1,0 +1,474 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="../support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<meta name="design_doc_mode" content="canvas">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css">
+<style>
+:root{
+--bg:#faf9f7;--surface:#ffffff;--surface-2:#f0eee9;--surface-3:#edeae4;--surface-4:#f4f2ed;
+--line:#e6e3dd;--line-soft:#f0eee9;--line-strong:#dfdcd5;
+--ink:#1c1c1a;--ink-2:#3f3d39;--mut:#5c5a55;--dim:#8c8a84;--dim-2:#a8a59e;
+--acc:#5b34c7;--acc-hover:#4a29a6;--acc-soft:#efeafb;--acc-glow:rgba(91,52,199,.18);--acc-on-ink:#9182f0;
+--danger:#a6462e;--danger-soft:#f6e9e5;--ok:#2a6a4c;--ok-soft:#eaf1ec;--warn:#8a6a2e;--warn-soft:#f6efe2;--on-ink:#faf9f7;
+--font-sans:"Pretendard Variable",Pretendard,-apple-system,"Apple SD Gothic Neo","Segoe UI",sans-serif;
+color-scheme:light;
+}
+:root[data-theme="dark"]{
+color-scheme:dark;
+--bg:#131312;--surface:#1b1b1a;--surface-2:#242422;--surface-3:#2b2b28;--surface-4:#201f1e;
+--line:#3d3d39;--line-soft:#343431;--line-strong:#4a4a45;
+--ink:#f0efec;--ink-2:#d3d1cc;--mut:#a8a59e;--dim:#85827c;--dim-2:#757169;
+--acc:#9182f0;--acc-hover:#a99df4;--acc-soft:#251f4a;--acc-glow:rgba(145,130,240,.22);--acc-on-ink:#5b34c7;
+--danger:#e08a72;--danger-soft:#3a211a;--ok:#5fb98c;--ok-soft:#122b20;--warn:#d4a64e;--warn-soft:#33270f;--on-ink:#131312;
+}
+*{box-sizing:border-box;}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--font-sans);word-break:keep-all;overflow-wrap:break-word;-webkit-font-smoothing:antialiased;font-variant-numeric:tabular-nums;}
+a{color:inherit;text-decoration:none;}
+ul,li,p,h1,h2,h3,dl,dd,dt,figure{margin:0;padding:0;list-style:none;}
+@keyframes f-up{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:none}}
+@keyframes f-stamp{0%{opacity:0;transform:scale(1.25) rotate(-6deg)}60%{opacity:1;transform:scale(.97) rotate(-3deg)}100%{transform:scale(1) rotate(-3deg)}}
+@keyframes f-blink{0%,100%{opacity:1}50%{opacity:.3}}
+.f-up{animation:f-up 480ms cubic-bezier(.25,1.02,.36,1) both}
+.f-stamp{animation:f-stamp 520ms cubic-bezier(.25,1.02,.36,1) both;transform:rotate(-3deg)}
+.f-blink{animation:f-blink 2s ease-in-out infinite}
+.f-card .f-cover{transition:transform 480ms cubic-bezier(.25,.8,.25,1)}
+.f-card:hover .f-cover{transform:scale(1.03)}
+.f-card .f-title{transition:color 160ms}
+.f-card:hover .f-title{color:var(--acc)}
+.f-chip{transition:background-color 160ms,color 160ms}
+.f-chip:hover{background:var(--surface-2);color:var(--ink)}
+.f-row{transition:background-color 160ms}
+.f-row:hover{background:var(--surface-4)}
+.f-field{transition:box-shadow 160ms,background-color 160ms}
+.f-field:focus-within{background:var(--surface);box-shadow:0 0 0 1px var(--ink)}
+.f-screen{max-width:1200px;margin:0 auto;padding:0 24px}
+.f-narrow{max-width:860px;margin:0 auto;padding:0 24px}
+.f-tight{max-width:720px;margin:0 auto;padding:0 24px}
+</style>
+</helmet>
+
+<section style="padding:16px 0 8px">
+  <div style="display:flex;align-items:center;gap:12px;padding:0 24px">
+    <span style="font-size:11.5px;letter-spacing:.12em;color:var(--dim-2)">5안 | 내 계정 | 관리자 5종</span>
+    <button onClick="{{ toggleTheme }}" style="border:1px solid var(--line-strong);background:transparent;color:var(--mut);height:26px;padding:0 10px;font:inherit;font-size:11.5px;cursor:pointer;border-radius:6px">{{ themeLabel }}</button>
+  </div>
+</section>
+
+<section data-screen-label="위시리스트" style="border-top:1px solid var(--line);background:var(--bg);padding:0 0 80px">
+  <p class="f-screen" style="padding-top:14px;font-size:11.5px;letter-spacing:.12em;color:var(--dim-2)">09 위시리스트 /wishlist</p>
+  {{ header }}
+  <main class="f-screen" style="display:flex;flex-direction:column;gap:26px;padding-top:12px">
+    <div style="display:flex;flex-wrap:wrap;align-items:flex-end;justify-content:space-between;gap:14px 24px">
+      <div>
+        <h1 style="font-size:32px;font-weight:800;letter-spacing:-.045em">위시리스트</h1>
+        <p style="margin-top:6px;font-size:13.5px;color:var(--mut)">12개 중 <strong style="font-weight:700;color:var(--acc)">3개가 지금 할인 중</strong>입니다.</p>
+      </div>
+      <div style="display:flex;flex-shrink:0;align-items:center;gap:6px;font-size:13px">
+        <a href="#" style="white-space:nowrap;padding:8px 14px;border-radius:999px;background:var(--ink);color:var(--on-ink);font-weight:600">할인 중 먼저</a>
+        <a href="#" class="f-chip" style="white-space:nowrap;padding:8px 14px;border-radius:999px;color:var(--mut)">추가순</a>
+      </div>
+    </div>
+    <ul style="display:grid;grid-template-columns:repeat(auto-fill,minmax(min(300px,100%),1fr));gap:36px 24px">{{ wishCards }}</ul>
+    <div style="display:flex;flex-direction:column;align-items:flex-start;gap:10px;border-radius:14px;border:1px dashed var(--line-strong);padding:22px">
+      <p style="font-size:15px;font-weight:700">빈 위시리스트는 이렇게 보여요</p>
+      <p style="max-width:540px;font-size:13px;line-height:1.7;color:var(--mut)">게임 상세에서 찜해 두면 할인이 시작될 때 이 자리에서 먼저 보여 드려요.</p>
+      <a href="#" style="margin-top:2px;display:inline-flex;align-items:center;height:38px;padding:0 16px;border-radius:10px;background:var(--surface-2);font-size:13px;font-weight:600">할인 목록 보기</a>
+    </div>
+  </main>
+</section>
+
+<section data-screen-label="가격 알림" style="border-top:1px solid var(--line);background:var(--bg);padding:0 0 80px">
+  <p class="f-narrow" style="padding-top:14px;font-size:11.5px;letter-spacing:.12em;color:var(--dim-2)">10 가격 알림 /alerts</p>
+  {{ header }}
+  <main class="f-narrow" style="display:flex;flex-direction:column;gap:30px;padding-top:12px">
+    <div style="display:flex;flex-wrap:wrap;align-items:flex-end;justify-content:space-between;gap:14px 24px">
+      <div>
+        <h1 style="font-size:32px;font-weight:800;letter-spacing:-.045em">가격 알림</h1>
+        <p style="margin-top:6px;font-size:13.5px;color:var(--mut)">활성 3개 | 일시중지 1개</p>
+      </div>
+      <a href="#" class="f-chip" style="display:inline-flex;align-items:center;height:40px;padding:0 16px;border-radius:10px;background:var(--surface-2);font-size:13.5px;font-weight:600">푸시 설정</a>
+    </div>
+
+    <div style="display:flex;flex-direction:column;gap:18px;border-radius:16px;background:var(--acc-soft);padding:24px">
+      <div style="display:flex;align-items:center;gap:14px">
+        <span style="width:108px;aspect-ratio:460 / 215;border-radius:9px;background:var(--surface-3);flex-shrink:0"></span>
+        <div style="min-width:0">
+          <p style="font-size:12px;letter-spacing:.08em;font-weight:700;color:var(--acc)">새 알림</p>
+          <p style="margin-top:4px;font-size:19px;font-weight:800;letter-spacing:-.035em">엘든 링</p>
+          <p style="margin-top:2px;font-size:12.5px;color:var(--mut)">현재 최저 21,384원 | Steam | 정가 64,800원</p>
+        </div>
+      </div>
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(min(240px,100%),1fr));gap:20px">
+        <div style="display:flex;flex-direction:column;gap:9px">
+          <p style="font-size:12.5px;color:var(--mut)">어느 플랫폼을 볼까요</p>
+          <div style="display:flex;flex-wrap:wrap;gap:6px;font-size:12.5px">
+            <a href="#" style="padding:7px 13px;border-radius:999px;background:var(--ink);color:var(--on-ink);font-weight:600">전체</a>
+            <a href="#" style="padding:7px 13px;border-radius:999px;background:var(--surface);color:var(--mut)">Steam</a>
+            <a href="#" style="padding:7px 13px;border-radius:999px;background:var(--surface);color:var(--mut)">PS5</a>
+            <a href="#" style="padding:7px 13px;border-radius:999px;background:var(--surface);color:var(--mut)">Xbox</a>
+          </div>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:9px">
+          <div style="display:flex;align-items:baseline;justify-content:space-between;gap:8px">
+            <p style="font-size:12.5px;color:var(--mut)">이 정도 할인이면 알려주세요</p>
+            <p style="font-size:20px;font-weight:800;letter-spacing:-.035em;color:var(--acc)">-60%</p>
+          </div>
+          <div style="position:relative;height:20px" aria-hidden="true">
+            <div style="position:absolute;left:0;right:0;top:8px;height:4px;border-radius:999px;background:var(--surface)"></div>
+            <div style="position:absolute;left:0;top:8px;height:4px;width:60%;border-radius:999px;background:var(--ink)"></div>
+            <div style="position:absolute;left:60%;top:2px;margin-left:-8px;width:16px;height:16px;border-radius:999px;background:var(--surface);box-shadow:0 0 0 1.5px var(--ink)"></div>
+          </div>
+          <p style="font-size:11.5px;color:var(--mut)">21,384원 이하가 되면 알려드려요</p>
+        </div>
+      </div>
+      <div style="display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:12px;border-top:1px solid var(--line-strong);padding-top:16px">
+        <p style="font-size:12.5px;color:var(--mut)">조건 충족 시 웹푸시로 1회 발송합니다.</p>
+        <button type="button" style="display:inline-flex;align-items:center;height:42px;padding:0 20px;border-radius:12px;border:none;background:var(--ink);color:var(--on-ink);font:inherit;font-size:14px;font-weight:700;cursor:pointer">알림 만들기</button>
+      </div>
+    </div>
+
+    <div style="display:flex;flex-direction:column;gap:14px">
+      <h2 style="font-size:22px;font-weight:800;letter-spacing:-.04em">내 알림</h2>
+      <ul>{{ alertRows }}</ul>
+    </div>
+
+    <p style="max-width:700px;font-size:12px;line-height:1.85;color:var(--dim)">가격 수집은 하루 세 번(02:10 / 10:10 / 18:10 KST)이며 정확한 시각을 보장하지 않습니다. 알림은 할인율이 조건 이상이고 직전 수집보다 가격이 내려갔을 때 발송됩니다. 푸시 수신 설정은 설정에서 켤 수 있습니다.</p>
+  </main>
+</section>
+
+<section data-screen-label="설정" style="border-top:1px solid var(--line);background:var(--bg);padding:0 0 80px">
+  <p class="f-tight" style="padding-top:14px;font-size:11.5px;letter-spacing:.12em;color:var(--dim-2)">11 설정 /settings</p>
+  {{ header }}
+  <main class="f-tight" style="display:flex;flex-direction:column;gap:34px;padding-top:12px">
+    <h1 style="font-size:32px;font-weight:800;letter-spacing:-.045em">설정</h1>
+
+    <section style="display:flex;flex-direction:column;gap:14px">
+      <div style="display:flex;flex-wrap:wrap;align-items:baseline;justify-content:space-between;gap:10px">
+        <h2 style="font-size:18px;font-weight:800;letter-spacing:-.035em">계정</h2>
+        <button type="button" class="f-chip" style="display:inline-flex;align-items:center;height:34px;padding:0 14px;border-radius:999px;border:none;background:var(--surface-2);font:inherit;font-size:12.5px;font-weight:600;color:var(--ink);cursor:pointer">로그아웃</button>
+      </div>
+      <dl style="display:flex;flex-direction:column">
+        <div style="display:flex;justify-content:space-between;gap:16px;border-top:1px solid var(--line-strong);padding:13px 0"><dt style="font-size:13px;color:var(--dim)">닉네임</dt><dd style="font-size:13.5px;font-weight:600">지원</dd></div>
+        <div style="display:flex;justify-content:space-between;gap:16px;border-top:1px solid var(--line-soft);padding:13px 0"><dt style="font-size:13px;color:var(--dim)">이메일</dt><dd style="font-size:13.5px;font-weight:600">wlsdlstjdwls12@gmail.com</dd></div>
+        <div style="display:flex;justify-content:space-between;gap:16px;border-top:1px solid var(--line-soft);padding:13px 0"><dt style="font-size:13px;color:var(--dim)">권한</dt><dd style="font-size:13.5px;font-weight:600">관리자</dd></div>
+        <div style="display:flex;justify-content:space-between;gap:16px;border-top:1px solid var(--line-soft);padding:13px 0"><dt style="font-size:13px;color:var(--dim)">가입일</dt><dd style="font-size:13.5px;font-weight:600">2026. 08. 30.</dd></div>
+      </dl>
+    </section>
+
+    <section style="display:flex;flex-direction:column;gap:14px">
+      <h2 style="font-size:18px;font-weight:800;letter-spacing:-.035em">웹푸시 알림</h2>
+      <div style="display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:14px;border-top:1px solid var(--line-strong);padding:16px 0">
+        <div style="min-width:0">
+          <p style="font-size:14.5px;font-weight:700">이 브라우저에서 할인 알림 받기</p>
+          <p style="margin-top:3px;font-size:12.5px;color:var(--mut)">조건을 만족한 게임만 1회 발송합니다.</p>
+        </div>
+        <span aria-hidden="true" style="position:relative;width:46px;height:26px;border-radius:999px;background:var(--ink);flex-shrink:0"><span style="position:absolute;top:3px;right:3px;width:20px;height:20px;border-radius:999px;background:var(--on-ink)"></span></span>
+      </div>
+      <div style="border-radius:12px;background:var(--surface-2);padding:14px 16px">
+        <p style="font-size:12.5px;font-weight:600">연결된 기기 2대</p>
+        <p style="margin-top:4px;font-size:12.5px;color:var(--mut)">MacBook Pro (오늘) | iPhone (9월 2일)</p>
+      </div>
+    </section>
+
+    <section style="display:flex;flex-direction:column;gap:14px">
+      <h2 style="font-size:18px;font-weight:800;letter-spacing:-.035em">화면 테마</h2>
+      <div style="display:flex;flex-wrap:wrap;gap:6px;font-size:13px;border-top:1px solid var(--line-strong);padding-top:16px">
+        <button type="button" style="padding:9px 16px;border-radius:999px;border:none;background:var(--ink);color:var(--on-ink);font:inherit;font-weight:600;cursor:pointer">시스템 설정</button>
+        <button type="button" class="f-chip" style="padding:9px 16px;border-radius:999px;border:none;background:transparent;color:var(--mut);font:inherit;cursor:pointer">라이트</button>
+        <button type="button" class="f-chip" style="padding:9px 16px;border-radius:999px;border:none;background:transparent;color:var(--mut);font:inherit;cursor:pointer">다크</button>
+      </div>
+      <p style="font-size:12px;color:var(--dim)">테마는 기기마다 따로 기억해요.</p>
+    </section>
+
+    <section style="display:flex;flex-direction:column;gap:14px">
+      <div style="display:flex;flex-wrap:wrap;align-items:baseline;justify-content:space-between;gap:10px">
+        <h2 style="font-size:18px;font-weight:800;letter-spacing:-.035em">내 기기</h2>
+        <button type="button" class="f-chip" style="display:inline-flex;align-items:center;height:34px;padding:0 14px;border-radius:999px;border:none;background:var(--surface-2);font:inherit;font-size:12.5px;font-weight:600;color:var(--ink);cursor:pointer">기기 추가</button>
+      </div>
+      <p style="font-size:12.5px;color:var(--mut)">등록해 두면 게임 상세에서 이 기기로 돌아가는지 바로 알려줘요.</p>
+      <ul>{{ deviceRows }}</ul>
+    </section>
+
+    <section style="display:flex;flex-direction:column;gap:12px">
+      <h2 style="font-size:18px;font-weight:800;letter-spacing:-.035em">알림 동작</h2>
+      <ul style="display:flex;flex-direction:column;gap:8px;border-top:1px solid var(--line-strong);padding-top:16px;font-size:12.5px;line-height:1.75;color:var(--mut)">
+        <li>가격 수집은 하루 세 번(02:10 / 10:10 / 18:10 KST)이며 정확한 시각을 보장하지 않습니다.</li>
+        <li>알림은 할인율이 조건 이상이고 직전 수집보다 가격이 내려갔을 때 발송됩니다.</li>
+        <li>만료된 기기 구독은 자동으로 정리됩니다.</li>
+      </ul>
+    </section>
+  </main>
+</section>
+
+<section data-screen-label="로그인 가입" style="border-top:1px solid var(--line);background:var(--bg);padding:0 0 80px">
+  <p class="f-screen" style="padding-top:14px;font-size:11.5px;letter-spacing:.12em;color:var(--dim-2)">12 로그인 /sign-in | 가입 /sign-up</p>
+  {{ headerGuest }}
+  <main class="f-screen" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(min(320px,100%),1fr));gap:48px;align-items:start;padding-top:40px">
+    <div style="display:flex;flex-direction:column;gap:18px">
+      <h1 style="font-size:40px;font-weight:800;line-height:1.2;letter-spacing:-.045em">위시리스트와 할인 알림은<br>로그인 후 사용할 수 있어요</h1>
+      <p style="max-width:420px;font-size:14px;line-height:1.85;color:var(--mut)">가격은 로그인 없이도 전부 볼 수 있어요. 계정은 알림을 보낼 기기를 기억하는 데만 씁니다.</p>
+      <ul style="display:flex;flex-direction:column;gap:12px;margin-top:6px">
+        <li style="display:flex;align-items:baseline;gap:10px;font-size:13.5px;color:var(--mut)"><span style="font-size:15px;font-weight:800;color:var(--acc)">1</span>찜한 게임이 할인되면 웹푸시로 1회 알려드려요</li>
+        <li style="display:flex;align-items:baseline;gap:10px;font-size:13.5px;color:var(--mut)"><span style="font-size:15px;font-weight:800;color:var(--acc)">2</span>기기를 등록하면 게임이 돌아가는지 판정해 드려요</li>
+        <li style="display:flex;align-items:baseline;gap:10px;font-size:13.5px;color:var(--mut)"><span style="font-size:15px;font-weight:800;color:var(--acc)">3</span>플랫폼별 최저가를 한 화면에서 비교해요</li>
+      </ul>
+    </div>
+
+    <div style="display:flex;flex-direction:column;gap:18px;border-radius:18px;background:var(--surface-2);padding:28px">
+      <div style="display:flex;gap:4px;font-size:13.5px">
+        <a href="#" style="padding:8px 16px;border-radius:999px;background:var(--surface);font-weight:700">로그인</a>
+        <a href="#" class="f-chip" style="padding:8px 16px;border-radius:999px;color:var(--mut)">회원가입</a>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:7px">
+        <label for="email" style="font-size:12.5px;color:var(--mut)">이메일</label>
+        <div class="f-field" style="display:flex;height:46px;align-items:center;border-radius:12px;background:var(--surface);padding:0 14px;box-shadow:0 0 0 1px var(--line)">
+          <input id="email" type="email" placeholder="you@example.com" style="width:100%;border:none;background:transparent;font:inherit;font-size:14px;color:var(--ink);outline:none">
+        </div>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:7px">
+        <label for="pw" style="font-size:12.5px;color:var(--mut)">비밀번호</label>
+        <div class="f-field" style="display:flex;height:46px;align-items:center;gap:10px;border-radius:12px;background:var(--surface);padding:0 14px;box-shadow:0 0 0 1px var(--line)">
+          <input id="pw" type="password" placeholder="8자 이상, 영문과 숫자 포함" style="flex:1;min-width:0;border:none;background:transparent;font:inherit;font-size:14px;color:var(--ink);outline:none">
+          <button type="button" aria-label="비밀번호 표시" style="display:inline-flex;align-items:center;border:none;background:transparent;color:var(--dim);cursor:pointer;padding:0">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12Z"></path><circle cx="12" cy="12" r="3"></circle></svg>
+          </button>
+        </div>
+      </div>
+      <label style="display:flex;align-items:center;gap:9px;font-size:13px;color:var(--mut)">
+        <span aria-hidden="true" style="display:inline-flex;align-items:center;justify-content:center;width:18px;height:18px;border-radius:5px;background:var(--ink);color:var(--on-ink);flex-shrink:0">
+          <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l4.5 4.5L19 7.5"></path></svg>
+        </span>
+        로그인 상태 유지 (30일)
+      </label>
+      <button type="button" style="display:inline-flex;align-items:center;justify-content:center;height:50px;border-radius:12px;border:none;background:var(--ink);color:var(--on-ink);font:inherit;font-size:15px;font-weight:700;cursor:pointer">로그인</button>
+      <p style="font-size:12.5px;color:var(--dim)">아직 계정이 없나요? <a href="#" style="font-weight:700;color:var(--acc)">가입하기</a></p>
+      <p role="alert" style="display:flex;align-items:center;gap:8px;border-radius:10px;background:var(--danger-soft);padding:11px 13px;font-size:12.5px;font-weight:600;color:var(--danger)">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex-shrink:0"><circle cx="12" cy="12" r="9"></circle><path d="M12 8v5"></path><path d="M12 16.5h.01"></path></svg>
+        이메일 또는 비밀번호가 올바르지 않아요
+      </p>
+    </div>
+  </main>
+</section>
+
+<section data-screen-label="관리자 대시보드" style="border-top:1px solid var(--line);background:var(--bg);padding:0 0 80px">
+  <p class="f-screen" style="padding-top:14px;font-size:11.5px;letter-spacing:.12em;color:var(--dim-2)">13 관리자 /admin</p>
+  {{ header }}
+  <main class="f-screen" style="display:flex;flex-direction:column;gap:34px;padding-top:12px">
+    <div style="display:flex;flex-wrap:wrap;align-items:flex-end;justify-content:space-between;gap:14px 24px">
+      <div>
+        <h1 style="font-size:32px;font-weight:800;letter-spacing:-.045em">동기화 대시보드</h1>
+        <p style="margin-top:6px;max-width:620px;font-size:13.5px;line-height:1.7;color:var(--mut)">수집은 GitHub Actions 워커에서만 실행됩니다. 이 화면은 로그를 읽기만 합니다.</p>
+      </div>
+      <a href="#" class="f-chip" style="display:inline-flex;align-items:center;height:40px;padding:0 16px;border-radius:10px;background:var(--surface-2);font-size:13.5px;font-weight:600">Actions 에서 재실행</a>
+    </div>
+
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(min(200px,100%),1fr));gap:20px 32px;border-top:1px solid var(--line);border-bottom:1px solid var(--line);padding:20px 0">
+      <div><p style="font-size:12px;color:var(--dim)">마지막 수집</p><p style="margin-top:5px;font-size:26px;font-weight:800;letter-spacing:-.04em">02:14</p><p style="margin-top:3px;font-size:12px;color:var(--mut)">다음 10:10</p></div>
+      <div><p style="font-size:12px;color:var(--dim)">처리한 게임</p><p style="margin-top:5px;font-size:26px;font-weight:800;letter-spacing:-.04em">6,047</p><p style="margin-top:3px;font-size:12px;color:var(--mut)">가격 변동 128건</p></div>
+      <div><p style="font-size:12px;color:var(--dim)">오늘 실패</p><p style="margin-top:5px;font-size:26px;font-weight:800;letter-spacing:-.04em;color:var(--danger)">3</p><p style="margin-top:3px;font-size:12px;color:var(--mut)">모두 HLTB 조회</p></div>
+      <div><p style="font-size:12px;color:var(--dim)">검수 대기</p><p style="margin-top:5px;font-size:26px;font-weight:800;letter-spacing:-.04em;color:var(--warn)">6</p><p style="margin-top:3px;font-size:12px;color:var(--mut)">유사도 0.7~0.9</p></div>
+    </div>
+
+    <section style="display:flex;flex-direction:column;gap:14px">
+      <h2 style="font-size:22px;font-weight:800;letter-spacing:-.04em">소스별 상태</h2>
+      <ul>{{ sourceRows }}</ul>
+    </section>
+
+    <section style="display:flex;flex-direction:column;gap:14px">
+      <div style="display:flex;flex-wrap:wrap;align-items:baseline;justify-content:space-between;gap:8px">
+        <h2 style="display:flex;align-items:baseline;gap:9px;font-size:22px;font-weight:800;letter-spacing:-.04em">매칭 검수 큐 <span style="font-size:14px;font-weight:600;color:var(--dim)">6건</span></h2>
+        <span style="font-size:12.5px;color:var(--mut)">유사도 0.7~0.9 구간만 사람이 봅니다</span>
+      </div>
+      <ul>{{ reviewRows }}</ul>
+    </section>
+  </main>
+</section>
+
+<footer style="border-top:1px solid var(--line);padding:24px;font-size:12px;color:var(--dim)">
+  <div class="f-screen" style="display:flex;flex-wrap:wrap;justify-content:space-between;gap:12px;padding:0">
+    <nav style="display:flex;flex-wrap:wrap;gap:18px"><a href="#">매장 찾기</a><a href="#">매장 입점</a><a href="#">이용약관</a><a href="#" style="font-weight:600;color:var(--mut)">개인정보처리방침</a></nav>
+    <p>© 2026 gamearound</p>
+  </div>
+</footer>
+
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:1280}}">
+const e = React.createElement;
+const BRAND_D = "M11.6 7.4h8.8c5.4 0 8.9 3.5 9.7 9.1l.6 4.2c.5 3.4-1.3 5.9-4.2 5.9-2.2 0-3.5-1.2-4.6-3.1l-1.6-2.8c-.5-.9-1.1-1.3-2.1-1.3h-4.4c-1 0-1.6.4-2.1 1.3l-1.6 2.8c-1.1 1.9-2.4 3.1-4.6 3.1-2.9 0-4.7-2.5-4.2-5.9l.6-4.2c.8-5.6 4.3-9.1 9.7-9.1zM8.6 11.2h2.4v2.6h2.6v2.4h-2.6v2.6H8.6v-2.6H6v-2.4h2.6zM20.9 12.2a1.5 1.5 0 1 0 3 0a1.5 1.5 0 1 0 -3 0zM18.1 15a1.5 1.5 0 1 0 3 0a1.5 1.5 0 1 0 -3 0zM23.7 15a1.5 1.5 0 1 0 3 0a1.5 1.5 0 1 0 -3 0zM20.9 17.8a1.5 1.5 0 1 0 3 0a1.5 1.5 0 1 0 -3 0z";
+
+function mark(width) {
+  return e("svg", { width: 32, height: 32, viewBox: "0 0 32 32", "aria-hidden": true, style: { width, height: "auto", color: "var(--dim-2)" } },
+    e("path", { fill: "currentColor", fillRule: "evenodd", d: BRAND_D }),
+    e("circle", { cx: 22.4, cy: 12.2, r: 1.5, fill: "var(--acc)" }));
+}
+function cover(style) {
+  return e("span", { style: { position: "relative", display: "block", background: "var(--surface-3)", overflow: "hidden", flexShrink: 0, ...style } },
+    e("span", { className: "f-cover", style: { position: "absolute", inset: 0, display: "flex", alignItems: "center", justifyContent: "center" } }, mark("24%")));
+}
+function icon(d, size) {
+  return e("svg", { width: size ?? 19, height: size ?? 19, viewBox: "0 0 24 24", fill: "none", stroke: "currentColor", strokeWidth: 2, strokeLinecap: "round", strokeLinejoin: "round", "aria-hidden": true },
+    d.map((p, i) => e("path", { key: i, d: p })));
+}
+
+function header(signedIn) {
+  const link = (label) =>
+    e("a", { key: label, href: "#", className: "f-chip", style: { padding: "7px 12px", borderRadius: 8, fontSize: 14, color: "var(--mut)" } }, label);
+  return e("header", { style: { position: "relative", zIndex: 2, background: "var(--bg)" } },
+    e("div", { className: "f-screen", style: { display: "flex", alignItems: "center", gap: 28, padding: "12px 24px 16px" } },
+      e("a", { href: "#", "aria-label": "gamearound", style: { display: "inline-flex", flexShrink: 0, alignItems: "center", gap: 9 } },
+        e("svg", { width: 28, height: 28, viewBox: "0 0 32 32", "aria-hidden": true },
+          e("path", { fill: "currentColor", fillRule: "evenodd", d: BRAND_D }),
+          e("circle", { cx: 22.4, cy: 12.2, r: 1.5, fill: "var(--acc)" })),
+        e("span", { style: { fontWeight: 800, letterSpacing: "-.04em", fontSize: 19 } }, "gamearound")),
+      e("nav", { "aria-label": "주요 메뉴", style: { display: "flex", alignItems: "center", gap: 4 } },
+        ["할인", "게임 목록", "출시 예정", "다음 세일"].map(link)),
+      e("form", { role: "search", style: { marginLeft: "auto", minWidth: 0, maxWidth: 340, flex: 1 } },
+        e("div", { style: { display: "flex", height: 40, alignItems: "center", gap: 9, borderRadius: 10, background: "var(--surface-2)", padding: "0 14px" } },
+          e("svg", { width: 16, height: 16, viewBox: "0 0 24 24", fill: "none", stroke: "currentColor", strokeWidth: 2, strokeLinecap: "round", strokeLinejoin: "round", "aria-hidden": true, style: { flexShrink: 0, color: "var(--dim)" } },
+            e("circle", { cx: 11, cy: 11, r: 7 }), e("path", { d: "m20 20-3.2-3.2" })),
+          e("span", { style: { flex: 1, minWidth: 0, fontSize: 13.5, color: "var(--dim)", whiteSpace: "nowrap", overflow: "hidden" } }, "게임 제목 검색"))),
+      e("div", { style: { display: "flex", flexShrink: 0, alignItems: "center", gap: 6 } },
+        e("a", { href: "#", "aria-label": "위시리스트", className: "f-chip", style: { display: "inline-flex", alignItems: "center", justifyContent: "center", width: 40, height: 40, borderRadius: 10, color: "var(--mut)" } },
+          icon(["M12 20s-7-4.4-7-9.2A4 4 0 0 1 12 8a4 4 0 0 1 7 2.8c0 4.8-7 9.2-7 9.2Z"])),
+        e("a", { href: "#", "aria-label": "알림 3건", className: "f-chip", style: { position: "relative", display: "inline-flex", alignItems: "center", justifyContent: "center", width: 40, height: 40, borderRadius: 10, color: "var(--mut)" } },
+          icon(["M18 9a6 6 0 1 0-12 0c0 5-2 6.5-2 6.5h16S18 14 18 9Z", "M13.7 19a2 2 0 0 1-3.4 0"]),
+          e("span", { style: { position: "absolute", top: 8, right: 9, width: 7, height: 7, borderRadius: 999, background: "var(--acc)", boxShadow: "0 0 0 2px var(--bg)" } })),
+        signedIn
+          ? e("span", { style: { display: "inline-flex", alignItems: "center", gap: 9, paddingLeft: 4 } },
+              e("span", { style: { width: 36, height: 36, borderRadius: 999, background: "var(--surface-3)", display: "inline-block" } }),
+              e("span", { style: { fontSize: 13.5, fontWeight: 600 } }, "지원"))
+          : e("a", { href: "#", style: { display: "inline-flex", alignItems: "center", height: 40, padding: "0 16px", borderRadius: 10, background: "var(--ink)", color: "var(--on-ink)", fontSize: 13.5, fontWeight: 700 } }, "로그인"))));
+}
+
+const WISH = [
+  { ko: "엘든 링", en: "ELDEN RING", pct: 67, price: "21,384원", list: "64,800원", store: "Steam 최저", others: "PS5 32,400원 | Xbox 25,920원", state: "알림 조건 충족", tone: "acc" },
+  { ko: "호그와트 레거시", en: "Hogwarts Legacy", pct: 70, price: "19,800원", list: "66,000원", store: "Steam 최저", others: "PS5 23,100원 | Switch 26,400원", state: "18시간 뒤 마감", tone: "danger" },
+  { ko: "사이버펑크 2077", en: "Cyberpunk 2077", pct: 60, price: "26,400원", list: "66,000원", store: "PS5 최저", others: "Steam 26,400원 | Xbox 29,700원", state: "2일 뒤 마감", tone: "danger" },
+  { ko: "파이널 판타지 VII 리버스", en: "Final Fantasy VII Rebirth", pct: 0, price: "82,500원", list: null, store: "PS5 최저", others: "Steam 82,500원", state: "2일 전 수집 | 스토어에서 확인 권장", tone: "warn" },
+  { ko: "젤다의 전설 지혜의 투영", en: "Echoes of Wisdom", pct: 0, price: "64,800원", list: null, store: "Switch 최저", others: "Switch 2 64,800원", state: "할인 알림 만들기", tone: "link" },
+];
+
+const ALERTS = [
+  { ko: "엘든 링", cond: "전체 플랫폼 | 할인 50% 이상", state: "조건 충족", tone: "acc", on: true },
+  { ko: "발더스 게이트 3", cond: "Steam | 할인 40% 이상", state: "감시 중", tone: "mut", on: true },
+  { ko: "고스트 오브 쓰시마", cond: "PS5 | 할인 60% 이상", state: "데이터 2일 전", tone: "warn", on: true },
+  { ko: "스타필드", cond: "Xbox | 할인 70% 이상", state: "일시중지", tone: "dim", on: false },
+];
+
+const DEVICES = [
+  { label: "데스크탑", spec: "Windows 11 | Ryzen 7 5800X | RTX 4070 | 32GB", primary: true },
+  { label: "맥북 프로", spec: "macOS 15 | M3 Pro | 18GB", primary: false },
+];
+
+const SOURCES = [
+  { name: "Steam", state: "정상", tone: "ok", done: "02:14", metrics: "처리 6,047 | 실패 0", err: null },
+  { name: "Xbox", state: "정상", tone: "ok", done: "02:16", metrics: "처리 1,284 | 실패 0", err: null },
+  { name: "PS Store", state: "일부 실패", tone: "warn", done: "02:19", metrics: "처리 2,104 | 실패 12", err: "concept 매칭 실패: ps-concept-10000234 (HTTP 404)" },
+  { name: "Nintendo", state: "정상", tone: "ok", done: "02:21", metrics: "처리 903 | 실패 0", err: null },
+  { name: "HowLongToBeat", state: "실패", tone: "danger", done: "02:24", metrics: "처리 0 | 실패 3", err: "GET /api/search/site/init 403 Forbidden (UA 차단 의심, HLTB_SEARCH_USER_AGENT 확인)" },
+  { name: "OpenCritic", state: "비활성", tone: "dim", done: "-", metrics: "쿼터 소진", err: null },
+];
+
+const MATCH = [
+  { ko: "엘든 링 나이트레인", en: "ELDEN RING NIGHTREIGN", src: "PS Store", cand: "ELDEN RING NIGHTREIGN (PS5)", score: "0.87" },
+  { ko: "드래곤즈 도그마 2", en: "Dragon's Dogma 2", src: "Xbox", cand: "Dragon's Dogma II Deluxe", score: "0.81" },
+  { ko: "페르소나 3 리로드", en: "Persona 3 Reload", src: "Nintendo", cand: "Persona 3 Reload Digital Deluxe", score: "0.78" },
+  { ko: "스파이더맨 2", en: "Marvel's Spider-Man 2", src: "PS Store", cand: "Marvel's Spider-Man 2 Digital Deluxe", score: "0.74" },
+];
+
+const TONE = { acc: "var(--acc)", danger: "var(--danger)", warn: "var(--warn)", ok: "var(--ok)", mut: "var(--mut)", dim: "var(--mut)", link: "var(--acc)" };
+
+class Component extends DCLogic {
+  state = { theme: "light" };
+  renderVals() {
+    const dark = this.state.theme === "dark";
+    return {
+      themeLabel: dark ? "라이트" : "다크",
+      toggleTheme: () => { const next = dark ? "light" : "dark"; document.documentElement.dataset.theme = next; this.setState({ theme: next }); },
+      header: header(true),
+      headerGuest: header(false),
+
+      wishCards: WISH.map((g, i) =>
+        e("li", { key: g.en, className: "f-up", style: { animationDelay: `${60 + i * 45}ms` } },
+          e("div", { className: "f-card", style: { display: "flex", flexDirection: "column", gap: 12 } },
+            e("span", { style: { position: "relative", display: "block" } },
+              cover({ width: "100%", aspectRatio: "460 / 215", borderRadius: 14 }),
+              g.pct
+                ? e("span", { className: "f-stamp", style: { position: "absolute", left: -8, bottom: -14, display: "inline-flex", alignItems: "baseline", gap: 1, background: "var(--acc)", color: "#faf9f7", padding: "6px 12px 5px", borderRadius: 6, fontSize: 24, fontWeight: 800, letterSpacing: "-.05em", lineHeight: 1, boxShadow: "0 6px 18px -6px var(--acc-glow)", animationDelay: `${200 + i * 45}ms` } }, `-${g.pct}`, e("span", { style: { fontSize: 14, fontWeight: 700 } }, "%"))
+                : null,
+              e("button", { type: "button", "aria-label": "위시리스트에서 제거", style: { position: "absolute", right: 10, top: 10, display: "inline-flex", alignItems: "center", justifyContent: "center", width: 28, height: 28, borderRadius: 999, border: "none", background: "rgba(28,28,26,.72)", color: "#faf9f7", fontSize: 13, cursor: "pointer" } }, "✕")),
+            e("span", { style: { display: "flex", flexDirection: "column", gap: 4, paddingTop: 12 } },
+              e("span", { style: { display: "flex", alignItems: "baseline", justifyContent: "space-between", gap: 10 } },
+                e("a", { href: "#", className: "f-title", style: { fontSize: 16, fontWeight: 800, letterSpacing: "-.03em", minWidth: 0, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" } }, g.ko),
+                e("span", { style: { display: "flex", alignItems: "baseline", gap: 6, flexShrink: 0 } },
+                  e("span", { style: { fontSize: 17, fontWeight: 800, letterSpacing: "-.03em" } }, g.price),
+                  g.list ? e("span", { style: { fontSize: 11.5, color: "var(--dim-2)", textDecoration: "line-through" } }, g.list) : null)),
+              e("span", { style: { fontSize: 12.5, color: "var(--mut)" } }, `${g.en} | ${g.store}`),
+              e("span", { style: { fontSize: 12, color: "var(--dim)" } }, g.others),
+              e("span", { style: { marginTop: 2, fontSize: 12.5, fontWeight: g.tone === "mut" ? 400 : 600, color: TONE[g.tone] } }, g.state))))),
+
+      alertRows: ALERTS.map((a, i) =>
+        e("li", { key: a.ko, style: { borderTop: i === 0 ? "1px solid var(--line-strong)" : "1px solid var(--line-soft)", opacity: a.on ? 1 : .72 } },
+          e("div", { className: "f-row", style: { display: "flex", flexWrap: "wrap", alignItems: "center", gap: "8px 16px", padding: "15px 8px", margin: "0 -8px", borderRadius: 10 } },
+            e("span", { style: { display: "flex", minWidth: 180, flex: 1, flexDirection: "column", gap: 3 } },
+              e("a", { href: "#", style: { fontSize: 15, fontWeight: 700, letterSpacing: "-.02em" } }, a.ko),
+              e("span", { style: { fontSize: 12.5, color: "var(--dim)" } }, a.cond)),
+            e("span", { style: { flexShrink: 0, fontSize: 12.5, fontWeight: 600, color: TONE[a.tone] } }, a.state),
+            e("span", { "aria-hidden": true, style: { position: "relative", flexShrink: 0, width: 42, height: 24, borderRadius: 999, background: a.on ? "var(--ink)" : "var(--line-strong)" } },
+              e("span", { style: { position: "absolute", top: 3, left: a.on ? 21 : 3, width: 18, height: 18, borderRadius: 999, background: a.on ? "var(--on-ink)" : "var(--surface)" } })),
+            e("button", { type: "button", "aria-label": "알림 삭제", style: { flexShrink: 0, border: "none", background: "transparent", color: "var(--dim)", fontSize: 13, cursor: "pointer" } }, "✕"))),
+      ),
+
+      deviceRows: DEVICES.map((d, i) =>
+        e("li", { key: d.label, style: { borderTop: i === 0 ? "1px solid var(--line-strong)" : "1px solid var(--line-soft)" } },
+          e("div", { className: "f-row", style: { display: "flex", flexWrap: "wrap", alignItems: "center", gap: "8px 14px", padding: "14px 8px", margin: "0 -8px", borderRadius: 10 } },
+            e("span", { style: { display: "flex", minWidth: 180, flex: 1, flexDirection: "column", gap: 3 } },
+              e("span", { style: { display: "flex", alignItems: "baseline", gap: 8 } },
+                e("span", { style: { fontSize: 14.5, fontWeight: 700 } }, d.label),
+                d.primary ? e("span", { style: { fontSize: 11.5, fontWeight: 700, color: "var(--acc)" } }, "기본 기기") : null),
+              e("span", { style: { fontSize: 12, color: "var(--dim)" } }, d.spec)),
+            e("button", { type: "button", className: "f-chip", style: { flexShrink: 0, height: 32, padding: "0 12px", borderRadius: 999, border: "none", background: "var(--surface-2)", font: "inherit", fontSize: 12.5, color: "var(--ink)", cursor: "pointer" } }, "수정"),
+            e("button", { type: "button", style: { flexShrink: 0, height: 32, padding: "0 12px", borderRadius: 999, border: "none", background: "transparent", font: "inherit", fontSize: 12.5, color: "var(--danger)", cursor: "pointer" } }, "지우기"))),
+      ),
+
+      sourceRows: SOURCES.map((s, i) =>
+        e("li", { key: s.name, style: { borderTop: i === 0 ? "1px solid var(--line-strong)" : "1px solid var(--line-soft)", opacity: s.tone === "dim" ? .6 : 1 } },
+          e("div", { style: { display: "flex", flexWrap: "wrap", alignItems: "flex-start", gap: "8px 18px", padding: "15px 0" } },
+            e("span", { style: { display: "flex", width: 150, flexShrink: 0, alignItems: "center", gap: 8 } },
+              e("span", { "aria-hidden": true, style: { width: 7, height: 7, borderRadius: 999, background: TONE[s.tone], flexShrink: 0 } }),
+              e("span", { style: { fontSize: 15, fontWeight: 700 } }, s.name)),
+            e("span", { style: { display: "flex", minWidth: 220, flex: 1, flexDirection: "column", gap: 4 } },
+              e("span", { style: { display: "flex", flexWrap: "wrap", alignItems: "baseline", gap: 12, fontSize: 12.5 } },
+                e("span", { style: { fontWeight: 700, color: TONE[s.tone] } }, s.state),
+                e("span", { style: { color: "var(--mut)" } }, s.metrics),
+                e("span", { style: { color: "var(--dim)" } }, `종료 ${s.done}`)),
+              s.err ? e("span", { style: { borderRadius: 8, background: "var(--surface-2)", padding: "8px 10px", fontSize: 11.5, lineHeight: 1.55, color: "var(--mut)" } }, s.err) : null))),
+      ),
+
+      reviewRows: MATCH.map((m, i) =>
+        e("li", { key: m.en, style: { borderTop: i === 0 ? "1px solid var(--line-strong)" : "1px solid var(--line-soft)" } },
+          e("div", { style: { display: "flex", flexWrap: "wrap", alignItems: "center", gap: "8px 16px", padding: "14px 0" } },
+            e("span", { style: { display: "flex", minWidth: 200, flex: 1, flexDirection: "column", gap: 2 } },
+              e("span", { style: { fontSize: 14.5, fontWeight: 700, letterSpacing: "-.02em", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" } }, m.ko),
+              e("span", { style: { fontSize: 11.5, color: "var(--dim)", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" } }, m.en)),
+            e("span", { style: { width: 92, flexShrink: 0, fontSize: 12.5, color: "var(--mut)" } }, m.src),
+            e("span", { style: { display: "flex", minWidth: 200, flex: 1, fontSize: 12.5, color: "var(--mut)", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" } }, m.cand),
+            e("span", { style: { width: 52, flexShrink: 0, fontSize: 14, fontWeight: 800, letterSpacing: "-.02em" } }, m.score),
+            e("span", { style: { display: "flex", flexShrink: 0, gap: 6 } },
+              e("button", { type: "button", style: { height: 32, padding: "0 13px", borderRadius: 999, border: "none", background: "var(--ink)", color: "var(--on-ink)", font: "inherit", fontSize: 12.5, fontWeight: 600, cursor: "pointer" } }, "승인"),
+              e("button", { type: "button", className: "f-chip", style: { height: 32, padding: "0 13px", borderRadius: 999, border: "none", background: "var(--surface-2)", color: "var(--ink)", font: "inherit", fontSize: 12.5, cursor: "pointer" } }, "거절")))),
+      ),
+    };
+  }
+}
+
+</script>
+</body>
+</html>
