@@ -22,8 +22,14 @@ export function generateImageMetadata() {
   }));
 }
 
-export default function Icon({ id }: { id: string }) {
-  const spec = ICONS.find((icon) => icon.id === id) ?? ICONS[ICONS.length - 1];
+// id 는 **Promise** 다(Next 16 breaking change — 문서: 02-guides/upgrading/version-16.md 의
+// "Async parameters for icon, and open-graph Image"). 15 까지는 문자열이었다.
+// 문자열로 알고 비교하면 find 가 영영 못 찾고 뒤의 기본값만 나간다 — 그래서 16px 축약형이
+// 한 번도 안 나가고 /icon/16 과 /icon/32 가 **같은 32px 파일**이었다(2026-09-23 실측: md5 동일).
+// 조용히 죽는 자리다. 500 이 안 뜨고 200 으로 엉뚱한 크기가 나간다.
+export default async function Icon({ id }: { id: Promise<string> }) {
+  const key = await id;
+  const spec = ICONS.find((icon) => icon.id === key) ?? ICONS[ICONS.length - 1];
   return new ImageResponse(
     (
       <img
