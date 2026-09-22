@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { nextFromPathWithSearch, ROUTES, safeNextPath, signInPath } from "./routes";
+import { afterAuthPath, afterSignUpPath, nextFromPathWithSearch, ROUTES, safeNextPath, signInPath } from "./routes";
 
 describe("safeNextPath (오픈 리다이렉트 방지)", () => {
   it.each([
@@ -38,5 +38,29 @@ describe("nextFromPathWithSearch (layout에서 next 해석)", () => {
     [undefined, ROUTES.home],
   ])("%s → %s", (input, expected) => {
     expect(nextFromPathWithSearch(input)).toBe(expected);
+  });
+});
+
+
+describe("afterSignUpPath / afterAuthPath (가입 직후 갈 곳)", () => {
+  it("그냥 가입하면 온보딩으로", () => expect(afterSignUpPath(ROUTES.home)).toBe(ROUTES.welcome));
+  it("가려던 곳이 있으면 그곳이 우선", () => expect(afterSignUpPath("/games/a")).toBe("/games/a"));
+
+  /*
+   * 레이아웃과 액션이 같은 답을 내는지 — 이게 어긋나서 가입한 사람이 홈으로 떨어졌다(2026-09-22).
+   * 둘이 동시에 움직이므로 "어느 쪽이 이기든 같은 곳" 이어야 한다.
+   */
+  it.each([
+    ["/sign-up", ROUTES.welcome],
+    ["/sign-up?next=%2Fwishlist", "/wishlist"],
+    ["/sign-in", ROUTES.home],
+    ["/sign-in?next=%2Fadmin", "/admin"],
+    [null, ROUTES.home],
+  ])("%s → %s", (input, expected) => {
+    expect(afterAuthPath(input)).toBe(expected);
+  });
+
+  it("가입 화면에서는 레이아웃과 액션의 답이 같다", () => {
+    expect(afterAuthPath("/sign-up")).toBe(afterSignUpPath(ROUTES.home));
   });
 });

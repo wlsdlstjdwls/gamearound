@@ -125,3 +125,27 @@ export function nextFromPathWithSearch(pathWithSearch: string | null | undefined
   if (q === -1) return ROUTES.home;
   return safeNextPath(new URLSearchParams(pathWithSearch.slice(q + 1)).get("next"));
 }
+
+/**
+ * 가입 직후 갈 곳. `?next=` 로 어디를 가려던 중이었다면 그곳이 우선이고(장바구니 같은 흐름을 끊지 않는다),
+ * 그냥 가입한 사람만 온보딩으로 보낸다.
+ */
+export function afterSignUpPath(next: string): string {
+  return next === ROUTES.home ? ROUTES.welcome : next;
+}
+
+/**
+ * 이미 로그인한 사람이 인증 화면에 닿았을 때 돌려보낼 곳.
+ *
+ * **서버 액션의 답과 같아야 한다.** 가입이 성공하면 두 가지가 동시에 움직인다 —
+ * 액션이 돌려준 redirectTo 로 클라이언트가 문서를 새로 열고(use-auth-form), 같은 순간
+ * 다시 그려진 인증 레이아웃이 "이미 로그인한 사람" 을 보고 제 갈 곳으로 보낸다.
+ * 둘이 다른 곳을 가리키면 경주가 되고, 2026-09-22 실측으로는 **레이아웃이 이긴다**
+ * (가입한 사람이 온보딩 대신 홈으로 떨어졌다). 그래서 답을 afterSignUpPath 하나로 모은다.
+ */
+export function afterAuthPath(pathWithSearch: string | null | undefined): string {
+  const explicit = nextFromPathWithSearch(pathWithSearch);
+  if (explicit !== ROUTES.home) return explicit;
+  const path = (pathWithSearch ?? "").split("?")[0];
+  return path === ROUTES.signUp ? afterSignUpPath(ROUTES.home) : ROUTES.home;
+}

@@ -33,7 +33,7 @@ export function ChoiceCard({ multiple = false, name, value, label, note, default
     <label
       htmlFor={id}
       className={cn(
-        "group/choice press tap relative flex min-h-[104px] cursor-pointer flex-col justify-end gap-1 rounded-[var(--radius-panel)] p-4",
+        "group/choice press tap relative flex min-h-[104px] cursor-pointer flex-col justify-center gap-1 rounded-[var(--radius-panel)] p-4",
         "bg-surface-2 shadow-hair transition-[background-color,box-shadow,opacity] duration-base ease-standard",
         // 고른 카드는 **면이 바뀌고 링이 생긴다**. 테두리(border)로 하지 않는 이유는 1px 이 생기면서
         // 안쪽 글자가 밀려 카드가 미세하게 들썩이기 때문이다 — 그림자는 자리를 안 먹는다

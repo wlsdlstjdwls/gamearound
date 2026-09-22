@@ -4,7 +4,7 @@
 import { RATE_LIMIT } from "@/lib/auth/constants";
 import { AUTH_MESSAGES as M } from "@/lib/auth/messages";
 import { fieldErrorsOf, signInInputFromForm, signInSchema, signUpInputFromForm, signUpSchema } from "@/lib/auth/schemas";
-import { ROUTES, safeNextPath } from "@/lib/routes";
+import { afterSignUpPath, safeNextPath } from "@/lib/routes";
 import { checkRateLimit, getRequestMeta, hashKeyPart } from "@/server/auth/rate-limit";
 import { createSession, invalidateCurrentSession } from "@/server/auth/session";
 import { createUser, EmailTakenError, verifyCredentials } from "@/server/services/users";
@@ -20,15 +20,14 @@ function nextFrom(fd: FormData): string {
 }
 
 /**
- * 가입 직후 갈 곳. `?next=` 로 어디를 가려던 중이었다면 그곳이 우선이고(장바구니 같은 흐름을 끊지 않는다),
- * 그냥 가입한 사람만 온보딩으로 보낸다.
+ * 가입 직후 갈 곳. 규칙 자체는 lib/routes 의 afterSignUpPath 에 있다 — 인증 레이아웃도 같은 함수를
+ * 봐야 한다(둘이 다르면 경주가 되고 레이아웃이 이긴다. 그 실측은 afterAuthPath 주석에).
  *
  * 로그인(재방문)에는 걸지 않는다 — 온보딩은 계정마다 한 번이고, 재개는 /welcome 이 알아서 한다.
- * 이미 마친 사람이 /welcome 에 닿아도 설정으로 비켜 준다(welcome/page.tsx).
+ * 이미 마친 사람이 /welcome 에 닿아도 홈으로 비켜 준다(welcome/page.tsx).
  */
 function afterSignUp(fd: FormData): string {
-  const next = nextFrom(fd);
-  return next === ROUTES.home ? ROUTES.welcome : next;
+  return afterSignUpPath(nextFrom(fd));
 }
 
 /** useActionState용 (prevState, formData) */

@@ -8,8 +8,10 @@
 // 2) 폼 판이 760px 이었다 — 칸 두 개를 담는 판으로는 너무 넓어 라벨과 칸 사이가 허전했다.
 //    오른쪽 칸을 400px 로 못 박는다. 왼쪽 카피는 남는 폭을 가져간다.
 // 3) 좁은 화면에서 **폼이 첫 화면 밖에 있었다** — 카피 블록(제목 + 본문 + 목록 셋)을 다 지나야 칸이 나온다.
-//    이 화면에 온 사람은 로그인하러 온 사람이다. 좁은 화면에서는 목록 셋을 폼 **아래**로 내린다.
+//    이 화면에 온 사람은 로그인하러 온 사람이다. 좁은 화면에서는 카피를 통째로 폼 **아래**로 내린다.
 //    같은 markup 을 두 벌 두지 않으려고(§3) 격자 칸 배치로만 순서를 바꾼다 — DOM 은 한 벌이다.
+//    (2026-09-22 2차 실측: 목록만 내려서는 모자랐다. 가입 탭은 제목이 세 줄로 접혀 제출 버튼이
+//     390x844 에서 951px 에 있었다 — 첫 화면 밖이다. 화면 정체성은 머리띠의 로고가 이미 말한다.)
 // 4) 제목의 <br/> 이 낱말을 붙여 버렸다. 접근성 트리에 "판정은로그인" 으로 들어간다(낭독기가 그대로 읽는다).
 //    줄바꿈을 block span 으로 바꾸면 이름 계산에 낱말 경계가 생긴다.
 import Link from "next/link";
@@ -29,7 +31,7 @@ const LEAD: Record<"signIn" | "signUp", { title: readonly [string, string]; body
     body: "가격은 로그인 없이도 전부 볼 수 있어요. 계정은 알림을 보낼 기기를 기억하는 데만 써요.",
   },
   signUp: {
-    title: ["가격은 우리가 보고 있을게요", "싸지면 알려드릴게요"],
+    title: ["가격은 우리가 볼게요", "싸지면 알려드릴게요"],
     body: `${SITE.name} 계정은 무료예요. 조건을 걸어 두면 그 값이 될 때까지 대신 지켜봐요.`,
   },
 };
@@ -78,7 +80,7 @@ export function AuthCard({
     // 좁은 화면에서는 내용이 화면보다 길어 가운데 정렬이 의미를 잃고 그대로 위에서부터 흐른다.
     <Page pad="home" className="flex-1 justify-center">
       <div className="grid items-center gap-x-14 gap-y-9 lg:grid-cols-[minmax(0,1fr)_400px]">
-        <div className="reveal flex flex-col gap-[18px] lg:col-start-1 lg:row-start-1" style={stagger(0)}>
+        <div className="reveal row-start-2 flex flex-col gap-[18px] lg:col-start-1 lg:row-start-1" style={stagger(0)}>
           <Link href={ROUTES.home} aria-label={`${SITE.name} 홈`} className="press w-fit">
             <BrandSymbol size={34} />
           </Link>
@@ -91,7 +93,7 @@ export function AuthCard({
         </div>
 
         {/* 격자에서 오른쪽 칸 전체를 세로로 관통한다 — 왼쪽이 카피 + 목록 두 줄로 갈려도 판은 한 덩어리다 */}
-        <Panel className="reveal flex flex-col gap-[18px] p-6 sm:p-7 lg:col-start-2 lg:row-start-1 lg:row-span-2" style={stagger(1)}>
+        <Panel className="reveal row-start-1 flex flex-col gap-[18px] p-6 sm:p-7 lg:col-start-2 lg:row-start-1 lg:row-span-2" style={stagger(1)}>
           <div className="flex gap-1">
             <Tab href={withNext(ROUTES.signIn)} active={mode === "signIn"}>
               {M.signInCta}
@@ -104,9 +106,8 @@ export function AuthCard({
           {children}
         </Panel>
 
-        {/* DOM 상 폼 뒤 — 좁은 화면에서 이 목록이 폼을 화면 밖으로 밀지 않게 한다.
-            넓은 화면에서만 왼쪽 칸 둘째 줄로 올라가 카피 아래에 붙는다 */}
-        <ul className="reveal flex flex-col gap-3 lg:col-start-1 lg:row-start-2 lg:mt-1.5" style={stagger(2)}>
+        {/* 좁은 화면에서는 셋째 줄. 넓은 화면에서만 왼쪽 칸 둘째 줄로 올라가 카피 아래에 붙는다 */}
+        <ul className="reveal row-start-3 flex flex-col gap-3 lg:col-start-1 lg:row-start-2 lg:mt-1.5" style={stagger(2)}>
           {LEAD_POINTS.map((point, i) => (
             <li key={point} className="flex items-baseline gap-2.5 text-[13.5px] text-mut">
               <span aria-hidden className="text-[15px] font-extrabold text-acc">

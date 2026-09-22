@@ -34,8 +34,8 @@ export function DoneBody({ count, listHref, summary }: { count: number | null; l
             <p className="text-[14px] text-mut">{M.done.countEmpty}</p>
           ) : (
             <p className="text-[15px] leading-[1.6] text-ink-2">
-              {M.done.countLead}{" "}
-              <strong className="text-[26px] font-extrabold tracking-[-0.03em] text-acc align-middle">{formatCount(count)}</strong>
+              {M.done.countLead}
+              <strong className="mx-1.5 align-middle text-[26px] font-extrabold tracking-[-0.03em] text-acc">{formatCount(count)}</strong>
               {M.done.countTail}
             </p>
           )}
