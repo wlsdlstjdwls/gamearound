@@ -116,6 +116,8 @@ export type GameCompanyDto = {
   /** 화면에 그대로 쓸 이름. 한국어명이 있으면 한국어, 없으면 영문 */
   name: string;
   countryNameKo: string | null;
+  /** ISO 3166-1 alpha-2. 국기를 그리는 열쇠다 — 나라 이름만으로는 어느 도형인지 못 고른다 */
+  countryCode: string | null;
   role: CompanyRole;
 };
 
@@ -297,6 +299,11 @@ export type GameSummary = {
 
 export type HomeData = {
   discounts: GameSummary[];
+  /**
+   * 곧 끝나는 할인. **discounts 와 겹치지 않는다**(2026-09-22, 사용자 지정) —
+   * 전에는 화면이 discounts 에서 걸러 만들었고, 그 배열이 12칸뿐이라 두 마디가 같은 게임을 두 번 세웠다.
+   */
+  endingSoon: GameSummary[];
   recentReleases: GameSummary[];
   latestNews: NewsDto[];
 };
