@@ -398,13 +398,13 @@
   0%, 100% { opacity: 1; }
   50% { opacity: 0.35; }
 }
-/* 할인 스탬프 — 커버 모서리를 뚫고 나온 판이 도장처럼 찍힌다.
-   크게 들어와서 제자리보다 살짝 작아졌다가 앉는다. 회전을 -3도로 고정해 두는 이유는
-   똑바른 판이면 "배지" 로 읽히고, 기울어야 "찍힌 값" 으로 읽히기 때문이다. */
+/* 할인 배지 — 커버 오른쪽 위에 앉는다.
+   기울인 "도장" 이었다가 2026-09-22 에 똑바른 배지로 돌아왔다(아래 .stamp 주석 참조).
+   그래서 회전이 빠졌다 — 크게 들어와 제자리보다 살짝 작아졌다가 앉는 것만 남는다. */
 @keyframes stamp-pop {
-  0% { opacity: 0; transform: scale(1.25) rotate(-6deg); }
-  60% { opacity: 1; transform: scale(0.97) rotate(-3deg); }
-  100% { opacity: 1; transform: scale(1) rotate(-3deg); }
+  0% { opacity: 0; transform: scale(1.2); }
+  60% { opacity: 1; transform: scale(0.97); }
+  100% { opacity: 1; transform: none; }
 }
 
 /* 준비 중 그림 — 아직 열지 않은 화면이 "고장" 이 아니라 "아직" 이라고 말하는 자리.
@@ -599,8 +599,15 @@ body:has(.grabbable.dragging) {
 
 /* 할인 스탬프. 순번은 style={stagger(i)} 로 넘긴다 —
    커버가 먼저 떠오르고 그 위에 도장이 찍히는 순서여야 해서 카드보다 한 박자 늦다 */
+/*
+ * 할인 배지.
+ *
+ * 2026-09-21 리디자인은 이것을 **기울어진 도장**으로 만들어 커버 왼쪽 아래를 뚫고 나오게 했다.
+ * 2026-09-22 에 되돌린다 — 값을 찾는 사람이 눈으로 훑는 자리는 카드 모서리지 커버 밑동이 아니고,
+ * 기운 판은 "장식" 으로 읽혀 정작 숫자가 늦게 읽힌다. 다른 스토어가 전부 모서리에 붙이는 이유다.
+ * 회전도 걷었다. 기울임은 도장의 문법이고, 이건 배지다.
+ */
 .stamp {
-  transform: rotate(-3deg);
   animation: stamp-pop var(--duration-slow) var(--ease-out-emph) both;
   animation-delay: var(--stagger, 0ms);
 }

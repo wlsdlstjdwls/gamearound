@@ -66,9 +66,14 @@ export function CoverImage({
  * 반대쪽으로 뒤집히는 값이라 두 테마에서 모두 도장 글자가 읽힌다.
  */
 /*
- * 할인 도장 — 커버 왼쪽 아래를 뚫고 나온 판.
+ * 할인 배지 — 커버 오른쪽 위 모서리.
  *
- * 색이 브랜드 보라에서 잉크로 바뀌었다(2026-09-22). 보라는 팔레트 규약상 **뜻을 갖지 않는 색**이라
+ * 자리가 2026-09-22 에 바뀌었다. 그 전에는 커버 왼쪽 **아래**를 뚫고 나온 기울어진 도장이었다 —
+ * 값을 찾는 눈이 가는 자리가 아니었고, 기운 판은 장식으로 읽혀 숫자가 늦게 읽혔다.
+ * 오른쪽 위를 고른 이유: 아래 제목 줄의 가격이 오른쪽 끝에 서 있어서, 둘이 같은 기둥에 서면
+ * "얼마나 싸졌나 - 얼마인가" 가 세로로 이어 읽힌다.
+ *
+ * 색도 같은 날 브랜드 보라에서 잉크로 바뀌었다. 보라는 팔레트 규약상 **뜻을 갖지 않는 색**이라
  * "싸다" 를 말할 자격이 없었고, 평평한 한 겹이라 카드에서 가장 세야 할 값이 가장 약했다.
  * 잉크는 라이트에서 검정 판 + 오프화이트 글자, 다크에서 밝은 판 + 먹색 글자다 —
  * 두 테마 모두 화면에서 가장 센 대비이고, 주 버튼이 이미 쓰는 규칙이라 새 규칙이 아니다.
@@ -81,7 +86,8 @@ export function DiscountStamp({ pct, size = "card" }: { pct: number | null; size
     <span
       className={cn(
         "stamp absolute inline-flex items-baseline gap-px rounded-[var(--radius-inset)] bg-ink font-extrabold leading-none tracking-[-0.06em] text-on-ink shadow-2",
-        hero ? "-bottom-4 -left-2.5 px-4 pb-2 pt-[9px] text-[30px] sm:text-[36px]" : "-bottom-3.5 -left-2 px-3.5 pb-1.5 pt-2 text-[26px]",
+        // 커버 **안쪽** 오른쪽 위. 아래 제목 줄의 값과 같은 기둥에 서서 "얼마나" 와 "얼마" 가 세로로 읽힌다
+        hero ? "right-3 top-3 px-3.5 pb-[7px] pt-2 text-[26px] sm:text-[30px]" : "right-2 top-2 px-2.5 pb-1.5 pt-[7px] text-[19px]",
       )}
     >
       {/* 숫자와 % 를 따로 쓰는 이유: 같은 크기면 "%"가 숫자만큼 자리를 먹어 값이 작아 보인다 */}
@@ -148,14 +154,11 @@ export function GameCard({
       className={cn(CARD_SHELL, "cover-zoom group outline-none focus-visible:ring-2 focus-visible:ring-ink focus-visible:ring-offset-2 focus-visible:ring-offset-bg")}
       aria-label={`${title} 상세 보기`}
     >
-      {/* 스탬프가 모서리 밖으로 나가므로 커버의 overflow 와 카드의 relative 를 갈라 둔다 —
-          한 상자가 둘을 겸하면 도장이 잘린다 */}
-      <span className="relative block">
-        {/* 판 안이라 그림자를 겹치지 않는다 — 가장자리를 긋는 링 한 줄이면 밝은 커버가 흰 판에 번지지 않는다 */}
-        <span className="relative block aspect-[460/215] w-full overflow-hidden rounded-[var(--radius-cover)] bg-surface-3 shadow-hair">
-          <span className="cover-zoom-img absolute inset-0 block">
-            <CoverImage src={game.coverUrl} alt={`${title} 커버`} />
-          </span>
+      {/* 판 안이라 그림자를 겹치지 않는다 — 가장자리를 긋는 링 한 줄이면 밝은 커버가 흰 판에 번지지 않는다.
+          배지가 모서리 안에 앉으므로 상자는 하나면 된다(뚫고 나오던 시절에는 둘로 갈라 뒀다) */}
+      <span className="relative block aspect-[460/215] w-full overflow-hidden rounded-[var(--radius-cover)] bg-surface-3 shadow-hair">
+        <span className="cover-zoom-img absolute inset-0 block">
+          <CoverImage src={game.coverUrl} alt={`${title} 커버`} />
         </span>
         {hasDiscount && best && <DiscountStamp pct={best.discountPct} />}
       </span>
