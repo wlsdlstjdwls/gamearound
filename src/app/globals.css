@@ -34,7 +34,9 @@
    * 화면의 다른 색은 이미 말을 하고 있다: 빨강은 "마감 임박, 비싸다", 호박은 "수집이 늦다",
    * 초록은 "싸다, 충족". 브랜드가 그 중 하나를 빌려 쓰면 로고와 링크가 뜻을 가진 것처럼 읽힌다.
    * 직전까지 --acc 가 --ok 와 같은 딥 그린이었고, 그래서 "성공"과 "브랜드"가 같은 색으로 말했다.
-   * 쓰는 자리: 로고, 링크, 할인율 배지, 선택 표시. 판정("좋다")에는 쓰지 않는다 — 그 자리는 --ok.
+   * 쓰는 자리: 로고, 링크, 선택 표시. 판정("좋다")에는 쓰지 않는다 — 그 자리는 --ok.
+   * 할인 도장은 2026-09-22 에 여기서 뺐다 — 평평한 보라 한 겹이 "싸다" 를 말하기엔 가벼웠고,
+   * 애초에 뜻을 갖지 않기로 한 색이라 값에 붙을 자리가 아니었다. 지금은 --ink 가 맡는다.
    */
   --acc: #5b34c7; /* 오프화이트 대비 7.23:1 */
   --acc-hover: #4a29a6; /* 9.24:1 */
@@ -118,6 +120,10 @@
      1px 이 안쪽에서 잘려 이미지가 밀리지 않는다. 밝은 커버(흰 배경 아트)가 판 위에서
      경계 없이 번지던 것을 이 한 줄이 잡는다 */
   --ring-hair: inset 0 0 0 1px rgba(28, 28, 26, 0.08);
+  /* 목록 카드 한 벌. 커버보다 링을 옅게 잡는다 — 카드는 흰 판이라 가장자리가 이미 배경과 갈린다.
+     그림자는 반대로 커버보다 멀리 깐다(한 덩어리가 통째로 뜨는 것이라 접지면이 넓다) */
+  --elev-card: inset 0 0 0 1px rgba(28, 28, 26, 0.06), 0 1px 2px rgba(28, 28, 26, 0.05), 0 10px 24px -8px rgba(28, 28, 26, 0.14);
+  --elev-card-hover: inset 0 0 0 1px rgba(28, 28, 26, 0.08), 0 4px 8px rgba(28, 28, 26, 0.06), 0 20px 40px -10px rgba(28, 28, 26, 0.22);
   /* 커버 한 벌 = 링 + 그림자. box-shadow 는 유틸 둘로 겹칠 수 없어 한 토큰으로 묶는다 */
   --elev-cover: inset 0 0 0 1px rgba(28, 28, 26, 0.08), 0 2px 4px rgba(28, 28, 26, 0.05), 0 8px 18px -6px rgba(28, 28, 26, 0.12);
   --elev-cover-hover: inset 0 0 0 1px rgba(28, 28, 26, 0.1), 0 6px 12px rgba(28, 28, 26, 0.07), 0 20px 38px -10px rgba(28, 28, 26, 0.22);
@@ -214,6 +220,8 @@
     --elev-2: 0 2px 6px rgba(0, 0, 0, 0.45), 0 10px 22px -6px rgba(0, 0, 0, 0.6);
     --elev-3: 0 6px 14px rgba(0, 0, 0, 0.5), 0 22px 44px -10px rgba(0, 0, 0, 0.7);
     --ring-hair: inset 0 0 0 1px rgba(240, 239, 236, 0.09);
+    --elev-card: inset 0 0 0 1px rgba(240, 239, 236, 0.07), 0 2px 6px rgba(0, 0, 0, 0.45), 0 12px 26px -8px rgba(0, 0, 0, 0.6);
+    --elev-card-hover: inset 0 0 0 1px rgba(240, 239, 236, 0.13), 0 6px 14px rgba(0, 0, 0, 0.5), 0 24px 46px -10px rgba(0, 0, 0, 0.72);
     --elev-cover: inset 0 0 0 1px rgba(240, 239, 236, 0.09), 0 2px 6px rgba(0, 0, 0, 0.45), 0 10px 22px -6px rgba(0, 0, 0, 0.6);
     --elev-cover-hover: inset 0 0 0 1px rgba(240, 239, 236, 0.15), 0 6px 14px rgba(0, 0, 0, 0.5), 0 22px 44px -10px rgba(0, 0, 0, 0.7);
   }
@@ -267,6 +275,8 @@
   --elev-2: 0 2px 6px rgba(0, 0, 0, 0.45), 0 10px 22px -6px rgba(0, 0, 0, 0.6);
   --elev-3: 0 6px 14px rgba(0, 0, 0, 0.5), 0 22px 44px -10px rgba(0, 0, 0, 0.7);
   --ring-hair: inset 0 0 0 1px rgba(240, 239, 236, 0.09);
+  --elev-card: inset 0 0 0 1px rgba(240, 239, 236, 0.07), 0 2px 6px rgba(0, 0, 0, 0.45), 0 12px 26px -8px rgba(0, 0, 0, 0.6);
+  --elev-card-hover: inset 0 0 0 1px rgba(240, 239, 236, 0.13), 0 6px 14px rgba(0, 0, 0, 0.5), 0 24px 46px -10px rgba(0, 0, 0, 0.72);
   --elev-cover: inset 0 0 0 1px rgba(240, 239, 236, 0.09), 0 2px 6px rgba(0, 0, 0, 0.45), 0 10px 22px -6px rgba(0, 0, 0, 0.6);
   --elev-cover-hover: inset 0 0 0 1px rgba(240, 239, 236, 0.15), 0 6px 14px rgba(0, 0, 0, 0.5), 0 22px 44px -10px rgba(0, 0, 0, 0.7);
 }
@@ -633,16 +643,32 @@ body:has(.grabbable.dragging) {
   box-shadow: var(--elev-cover);
   transition: box-shadow var(--duration-base) var(--ease-standard);
 }
-/* 떠오르는 것은 커버가 아니라 **커버를 감싼 상자**다 — 할인 스탬프가 그 상자 안에 같이 있어서,
-   커버만 올리면 도장이 제자리에 남아 떨어져 나간 것처럼 보인다 */
-.cover-lift {
-  transition: transform var(--duration-base) var(--ease-out-emph);
-}
 @media (hover: hover) and (pointer: fine) {
   .cover-zoom:hover .cover-elev {
     box-shadow: var(--elev-cover-hover);
   }
-  .cover-zoom:hover .cover-lift {
+}
+
+/*
+ * 목록 카드의 판 — 2026-09-22 에 **목록 카드에만** 되돌렸다.
+ *
+ * 리디자인(2026-09-21)이 판을 전부 걷은 뒤 카드는 "커버 그림 + 그 아래 떠 있는 글자" 가 됐다.
+ * 커버에만 그림자를 얹어 봤지만(같은 날 앞 커밋 95ebe41) 옛 값과 나란히 놓고 보니 차이가 눈에
+ * 안 띄었다 — 떠야 하는 것은 커버가 아니라 **카드 한 덩어리**였기 때문이다.
+ *
+ * 그때 문제(판 안의 판 안의 목록)가 돌아오지 않는 이유: 판은 여기 한 겹뿐이다.
+ * cardClass() 는 여전히 빈 함수고, 안쪽의 커버, 배지, 목록은 판을 갖지 않는다.
+ * 카드가 격자의 맨 바깥이라 겹칠 판이 없다.
+ */
+.card-panel {
+  background: var(--surface);
+  border-radius: var(--radius-panel);
+  box-shadow: var(--elev-card);
+  transition: box-shadow var(--duration-base) var(--ease-standard), transform var(--duration-base) var(--ease-out-emph);
+}
+@media (hover: hover) and (pointer: fine) {
+  .card-panel:hover {
+    box-shadow: var(--elev-card-hover);
     transform: translateY(-4px);
   }
 }

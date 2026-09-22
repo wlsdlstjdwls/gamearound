@@ -65,14 +65,23 @@ export function CoverImage({
  * 다크에서 밝은 보라 위에 흰 글자가 얹혀 대비가 2점대로 떨어진다(실측). --on-ink 는 테마마다
  * 반대쪽으로 뒤집히는 값이라 두 테마에서 모두 도장 글자가 읽힌다.
  */
+/*
+ * 할인 도장 — 커버 왼쪽 아래를 뚫고 나온 판.
+ *
+ * 색이 브랜드 보라에서 잉크로 바뀌었다(2026-09-22). 보라는 팔레트 규약상 **뜻을 갖지 않는 색**이라
+ * "싸다" 를 말할 자격이 없었고, 평평한 한 겹이라 카드에서 가장 세야 할 값이 가장 약했다.
+ * 잉크는 라이트에서 검정 판 + 오프화이트 글자, 다크에서 밝은 판 + 먹색 글자다 —
+ * 두 테마 모두 화면에서 가장 센 대비이고, 주 버튼이 이미 쓰는 규칙이라 새 규칙이 아니다.
+ * 글자색은 반드시 text-on-ink 다. 흰색으로 못 박으면 다크에서 밝은 판 위 흰 글자가 된다.
+ */
 export function DiscountStamp({ pct, size = "card" }: { pct: number | null; size?: "card" | "hero" }) {
   if (!pct || pct <= 0) return null;
   const hero = size === "hero";
   return (
     <span
       className={cn(
-        "stamp absolute inline-flex items-baseline gap-px rounded-[var(--radius-inset)] bg-acc font-extrabold leading-none tracking-[-0.05em] text-on-ink shadow-[0_6px_18px_-6px_var(--acc-glow)]",
-        hero ? "-bottom-4 -left-2.5 px-[15px] pb-[7px] pt-2 text-[28px] sm:text-[34px]" : "-bottom-3.5 -left-2 px-3 pb-[5px] pt-1.5 text-[24px]",
+        "stamp absolute inline-flex items-baseline gap-px rounded-[var(--radius-inset)] bg-ink font-extrabold leading-none tracking-[-0.06em] text-on-ink shadow-2",
+        hero ? "-bottom-4 -left-2.5 px-4 pb-2 pt-[9px] text-[30px] sm:text-[36px]" : "-bottom-3.5 -left-2 px-3.5 pb-1.5 pt-2 text-[26px]",
       )}
     >
       {/* 숫자와 % 를 따로 쓰는 이유: 같은 크기면 "%"가 숫자만큼 자리를 먹어 값이 작아 보인다 */}
@@ -96,6 +105,13 @@ export type CardHighlight = { platforms?: Platform[]; genre?: string | null };
 export function highlightFromFilter(filter: { platform?: string; genre?: string }): CardHighlight {
   return { platforms: expandPlatformValues(parsePlatformValues(filter.platform)), genre: filter.genre ?? null };
 }
+
+/**
+ * 카드 껍데기 — 판, 여백, 세로 흐름.
+ * 상수로 뽑은 이유: 뼈대 둘(games/skeletons, app/loading)이 같은 모양을 그려야 본문이 올 때
+ * 격자가 밀리지 않는다. 판을 되돌린 2026-09-22 에 그 셋이 실제로 어긋났다.
+ */
+export const CARD_SHELL = "card-panel flex h-full flex-col gap-3 p-2.5 pb-3.5";
 
 export function GameCard({
   game,
@@ -129,13 +145,14 @@ export function GameCard({
   return (
     <Link
       href={`/games/${game.slug}`}
-      className="cover-zoom group flex h-full flex-col gap-3 outline-none focus-visible:ring-2 focus-visible:ring-ink focus-visible:ring-offset-4 focus-visible:ring-offset-bg"
+      className={cn(CARD_SHELL, "cover-zoom group outline-none focus-visible:ring-2 focus-visible:ring-ink focus-visible:ring-offset-2 focus-visible:ring-offset-bg")}
       aria-label={`${title} 상세 보기`}
     >
       {/* 스탬프가 모서리 밖으로 나가므로 커버의 overflow 와 카드의 relative 를 갈라 둔다 —
           한 상자가 둘을 겸하면 도장이 잘린다 */}
-      <span className="cover-lift relative block">
-        <span className="cover-elev relative block aspect-[460/215] w-full overflow-hidden rounded-[var(--radius-cover)] bg-surface-3">
+      <span className="relative block">
+        {/* 판 안이라 그림자를 겹치지 않는다 — 가장자리를 긋는 링 한 줄이면 밝은 커버가 흰 판에 번지지 않는다 */}
+        <span className="relative block aspect-[460/215] w-full overflow-hidden rounded-[var(--radius-cover)] bg-surface-3 shadow-hair">
           <span className="cover-zoom-img absolute inset-0 block">
             <CoverImage src={game.coverUrl} alt={`${title} 커버`} />
           </span>
@@ -143,7 +160,7 @@ export function GameCard({
         {hasDiscount && best && <DiscountStamp pct={best.discountPct} />}
       </span>
 
-      <span className="flex flex-1 flex-col gap-1 pt-3">
+      <span className="flex flex-1 flex-col gap-1 px-1 pt-3">
         {/* 제목과 값이 같은 기준선에 선다 — 목록을 내려 읽을 때 왼쪽은 이름, 오른쪽은 값의 기둥이 된다 */}
         <span className="flex items-baseline justify-between gap-2.5">
           <Clamp className="text-[16px] font-extrabold tracking-[-0.03em] text-ink transition-colors duration-fast group-hover:text-acc">

@@ -3,6 +3,7 @@
 // loading.tsx 가 다시 뜨지 않는다. 그래서 경계를 페이지 안(Suspense)에 두고, 그 자리만 뼈대로 받는다.
 // 높이는 실제 화면을 재서 맞춘 값이다 — 어긋나면 본문이 들어올 때 통째로 밀려 그게 깜빡임이 된다.
 import { GAMES_GRID_CLASS } from "@/lib/games/grid";
+import { CARD_SHELL } from "@/components/game-card";
 
 export function FiltersSkeleton() {
   return (
@@ -38,9 +39,9 @@ export function GamesGridSkeleton({ cards }: { cards: number }) {
       {Array.from({ length: cards }).map((_, i) => (
         // 커버 + 네 줄(제목, 부제, 플랫폼 배지, 곁 문구). 실물(game-card)과 같은 줄 수, 같은 여백이어야
         // 본문이 올 때 격자가 밀리지 않는다
-        <div key={i} className="flex flex-col gap-3">
+        <div key={i} className={CARD_SHELL}>
           <div className="skeleton aspect-[460/215] rounded-[var(--radius-cover)]" />
-          <div className="flex flex-col gap-1 pt-3">
+          <div className="flex flex-col gap-1 px-1 pt-3">
             <div className="skeleton h-[22px] w-4/5 rounded" />
             <div className="skeleton h-[17px] w-3/5 rounded" />
             <div className="mt-1.5 skeleton h-[17px] w-2/5 rounded-full" />
