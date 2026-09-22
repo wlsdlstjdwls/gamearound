@@ -8,6 +8,9 @@
 //
 // 자취(move)는 지우지 못한다. 지울 수 있으면 이력이 "고쳐 쓸 수 있는 이야기" 가 되어 근거로 못 쓴다.
 //
+// 적는 칸은 팝업 바닥에 붙어 있다(2026-09-22, sticky) — 기록이 길어져도 한 줄 남기는 데
+// 스크롤이 들지 않아야 한다. 이 마디가 팝업의 마지막이 아니어도 상관없다: sticky 는 제 부모 안에서만 붙는다.
+//
 // 모양(2026-09-21): 팝업으로 옮기면서 세로 줄기를 세웠다. 사람이 적은 글과 자취가 섞여 서는 자리라
 // 둘을 색이나 배경으로 가르면 목록이 얼룩덜룩해진다 — 줄기 위의 점 하나로만 가른다
 // (적은 글은 브랜드 보라 점, 자취는 회색 테두리 점).
@@ -86,22 +89,31 @@ export function TaskNotes({ taskId, notes }: { taskId: string; notes: TaskNote[]
         </ul>
       )}
 
-      <form action={formAction} className="flex flex-col gap-2">
+      {/*
+       * 적는 칸은 팝업 바닥에 붙는다(2026-09-22). 기록은 쌓이는 값이라, 줄이 길어질수록
+       * 한 줄 적으려고 지나야 하는 스크롤도 같이 길어졌다 — 가장 자주 하는 일이 가장 멀리 있었다.
+       * sticky 라 자리를 차지하지 않고, 위로 흐르는 기록을 가리는 만큼만 바탕을 깐다.
+       */}
+      <form action={formAction} className="sticky bottom-0 -mx-4 flex flex-col gap-2 bg-surface px-4 pb-1 pt-3">
+        {/* 밑에서 올라오는 기록이 칸 밑으로 툭 잘리지 않게, 바탕이 시작되는 자리를 흐린다 */}
+        <span aria-hidden className="pointer-events-none absolute inset-x-0 -top-4 h-4 bg-gradient-to-b from-transparent to-surface" />
         <input type="hidden" name="taskId" value={taskId} />
         <label className="sr-only" htmlFor={`note-${taskId}`}>
           {TASK_MESSAGES.noteLabel}
         </label>
-        <textarea
-          ref={boxRef}
-          id={`note-${taskId}`}
-          name="body"
-          rows={3}
-          placeholder={TASK_MESSAGES.notePlaceholder}
-          className={cn(FIELD, "resize-y")}
-        />
-        <Button type="submit" variant="secondary" loading={posting} className="self-end">
-          {TASK_MESSAGES.noteAdd}
-        </Button>
+        <div className="flex items-end gap-2">
+          <textarea
+            ref={boxRef}
+            id={`note-${taskId}`}
+            name="body"
+            rows={2}
+            placeholder={TASK_MESSAGES.notePlaceholder}
+            className={cn(FIELD, "flex-1 resize-y")}
+          />
+          <Button type="submit" variant="secondary" loading={posting} className="shrink-0">
+            {TASK_MESSAGES.noteAdd}
+          </Button>
+        </div>
       </form>
 
       {error && (

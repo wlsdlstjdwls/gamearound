@@ -7,6 +7,8 @@ import { ADMIN_ACTION_MESSAGES, TASK_MESSAGES } from "@/lib/admin/messages";
 import { sourceEnum } from "@/server/db/schema";
 import { TASK_STATUSES } from "@/lib/admin/tasks";
 import { addNote, clearDone, createTask, deleteNote, deleteTask, moveTask, reorderTask, updateTask } from "@/server/services/admin-tasks";
+import { searchShopGames } from "@/server/services/shop-games";
+import type { ShopGameOptionDto } from "@/lib/shops/game-option";
 import { requireAdmin } from "@/server/services/users";
 
 export type TaskActionState = { ok: true; message?: string } | { ok: false; error: string } | null;
@@ -113,16 +115,24 @@ export async function updateTaskAction(_prev: TaskActionState, form: FormData): 
         title: z.string().trim().min(1, "할 일을 입력하세요").max(TITLE_MAX),
         body: z.string().trim().max(BODY_MAX).optional(),
         priority: z.enum(["high", "normal", "low"]).default("normal"),
+        gameId: z.union([z.literal(""), z.uuid()]).optional(),
       })
       .safeParse({
         id: form.get("id"),
         title: form.get("title"),
         body: form.get("body") ?? undefined,
         priority: form.get("priority") ?? undefined,
+        gameId: form.get("gameId") ?? undefined,
       });
     if (!p.success) return { ok: false, error: p.error.issues[0]?.message ?? TASK_MESSAGES.invalid };
 
-    await updateTask(p.data.id, { title: p.data.title, body: p.data.body ?? null, priority: p.data.priority });
+    await updateTask(p.data.id, {
+      title: p.data.title,
+      body: p.data.body ?? null,
+      priority: p.data.priority,
+      // 폼이 이 칸을 안 보냈으면 건드리지 않는다. 빈 문자열은 "뗐다" 라서 null 로 적는다
+      gameId: p.data.gameId === undefined ? undefined : p.data.gameId || null,
+    });
     revalidate();
     return { ok: true, message: TASK_MESSAGES.saved };
   } catch (e) {
@@ -157,6 +167,18 @@ export async function deleteNoteAction(id: string): Promise<TaskActionState> {
   } catch (e) {
     return fail(e);
   }
+}
+
+/**
+ * 붙일 게임 찾기. 매장 상품 폼과 같은 질의를 쓴다(searchShopGames) —
+ * 관리자가 붙이려는 대상은 손님 목록에서 걸러진 행(임시, 일본판, DLC)일 때가 많고,
+ * `services/games` 쪽은 전부 mainGamesOnly() 를 거쳐 그런 행을 영영 안 보여 준다.
+ */
+export async function searchTaskGamesAction(term: string): Promise<ShopGameOptionDto[]> {
+  await requireAdmin();
+  const q = term.trim();
+  if (q.length < 2) return [];
+  return searchShopGames(q);
 }
 
 export async function clearDoneAction(): Promise<TaskActionState> {

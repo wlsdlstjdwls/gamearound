@@ -12,6 +12,7 @@ import { Button, buttonClass } from "@/components/ui/button";
 import { Sheet } from "@/components/ui/sheet";
 import { TASK_MESSAGES } from "@/lib/admin/messages";
 import { Field, FIELD, TaskBasicFields, TaskStatusField } from "@/components/admin/task-fields";
+import { TaskGamePicker } from "@/components/admin/task-game-picker";
 import { createTaskAction, type TaskActionState } from "@/app/(admin)/admin/tasks/actions";
 
 export function TaskAddForm({ sources }: { sources: readonly string[] }) {
@@ -32,30 +33,27 @@ export function TaskAddForm({ sources }: { sources: readonly string[] }) {
       </button>
       {state?.ok && state.message && <span className="text-[12px] text-ok">{state.message}</span>}
 
-      <Sheet title={TASK_MESSAGES.addTitle} open={open} onOpenChange={setOpen}>
+      {/* size="wide": 이 시트는 입력이 주인공이다. 내용이 정하는 폭은 메모 칸을 한 줄 스무 자로 눌러,
+          카드 안에서 쓰던 때와 다를 바가 없어진다(2026-09-22 사용자 지적) */}
+      <Sheet title={TASK_MESSAGES.addTitle} size="wide" open={open} onOpenChange={setOpen}>
         <form action={action} className="flex flex-col gap-4 pb-1 pt-2">
           <p className="text-[13px] leading-[1.7] text-mut">{TASK_MESSAGES.addLead}</p>
 
           <TaskBasicFields />
           <TaskStatusField />
 
-          <div className="grid gap-4 sm:grid-cols-2">
-            {/* 게임은 ID 로 건다. 검색을 붙이는 건 다음 일이다 — 지금은 검수 화면에서 ID 를 복사해 온다 */}
-            <Field id="task-game" label={TASK_MESSAGES.gameLabel}>
-              <input id="task-game" name="gameId" placeholder="uuid" autoComplete="off" className={FIELD} />
-            </Field>
+          <TaskGamePicker />
 
-            <Field id="task-source" label={TASK_MESSAGES.sourceLabel}>
-              <select id="task-source" name="source" defaultValue="" className={FIELD}>
-                <option value="">없음</option>
-                {sources.map((s) => (
-                  <option key={s} value={s}>
-                    {s}
-                  </option>
-                ))}
-              </select>
-            </Field>
-          </div>
+          <Field id="task-source" label={TASK_MESSAGES.sourceLabel}>
+            <select id="task-source" name="source" defaultValue="" className={FIELD}>
+              <option value="">없음</option>
+              {sources.map((s) => (
+                <option key={s} value={s}>
+                  {s}
+                </option>
+              ))}
+            </select>
+          </Field>
 
           {state && !state.ok && (
             <p role="alert" className="animate-rise text-[12.5px] text-danger">

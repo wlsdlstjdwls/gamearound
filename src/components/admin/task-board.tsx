@@ -2,20 +2,24 @@
 
 // 할 일 판. 칸 넷을 가로로 세우고, 카드를 칸 사이로 옮긴다.
 //
-// 드래그는 여기서 받는다(카드가 보낸다). 드롭은 **칸 전체**가 받는다 — 카드 사이의 가는 틈을 노리게 하면
-// 빗나가는 일이 잦고, 이 판은 칸 안 순서를 드래그로 바꾸지 않으므로 정확한 지점이 필요 없다.
+// 드롭은 **칸 전체**가 받는다 — 카드 사이의 가는 틈을 노리게 하면 빗나가는 일이 잦고,
+// 이 판은 칸 안 순서를 끌어서 바꾸지 않으므로 정확한 지점이 필요 없다.
 // 칸 안 순서는 카드의 위로/아래로 버튼이 맡는다(키보드로도 되어야 하므로).
 //
 // **끌리는 동안 판이 달라 보여야 한다**(2026-09-21): 앞 판은 끌어도 화면이 그대로여서 "지금 뭔가를
 // 끌고 있다" 는 사실을 사람이 스스로 기억해야 했다. 지금은 끄는 동안 모든 칸이 받을 자리로 살아나고
 // (테두리가 진해진다), 마우스가 올라간 칸만 브랜드 보라로 채워진다. 끌던 카드가 원래 있던 칸은
 // 살리지 않는다 — 제자리에 놓는 건 아무것도 하지 않는 일이라 받을 자리처럼 보이면 안 된다.
+//
+// 끄는 일 자체는 use-board-drag 가 한다(2026-09-22). 네이티브 드래그앤드롭을 버린 이유는 그 파일에 있다.
 import { useState, useTransition } from "react";
 import { cn } from "@/lib/cn";
 import { TASK_MESSAGES, TASK_STATUS_LABEL } from "@/lib/admin/messages";
-import { TASK_STATUSES, type Board, type TaskStatus } from "@/lib/admin/tasks";
+import { TASK_STATUSES, type Board } from "@/lib/admin/tasks";
 import { TaskCard } from "@/components/admin/task-card";
 import { TaskDialog } from "@/components/admin/task-card/dialog";
+import { TaskQuickAdd } from "@/components/admin/task-quick-add";
+import { DROP_ATTR, useBoardDrag } from "@/components/admin/use-board-drag";
 import { clearDoneAction, moveTaskAction, type TaskActionState } from "@/app/(admin)/admin/tasks/actions";
 
 export function TaskBoard({ board }: { board: Board }) {
@@ -24,18 +28,12 @@ export function TaskBoard({ board }: { board: Board }) {
    * 새로 그려지면서 팝업이 닫힌다(실측 2026-09-21). 옮기기는 팝업 안에서 하는 일이라 닫히면 안 된다.
    */
   const [openId, setOpenId] = useState<string | null>(null);
-  const [dragOver, setDragOver] = useState<TaskStatus | null>(null);
-  /** 지금 끌고 있는 카드가 원래 있던 칸. 없으면 아무것도 끌고 있지 않다 */
-  const [dragFrom, setDragFrom] = useState<TaskStatus | null>(null);
   const [pending, start] = useTransition();
   const [state, setState] = useState<TaskActionState>(null);
 
-  const openTask = openId ? TASK_STATUSES.flatMap((s) => board[s]).find((t) => t.id === openId) : undefined;
+  const drag = useBoardDrag((id, to) => start(async () => setState(await moveTaskAction(id, to))));
 
-  const endDrag = () => {
-    setDragOver(null);
-    setDragFrom(null);
-  };
+  const openTask = openId ? TASK_STATUSES.flatMap((s) => board[s]).find((t) => t.id === openId) : undefined;
 
   return (
     <section className="flex flex-col gap-3">
@@ -62,24 +60,13 @@ export function TaskBoard({ board }: { board: Board }) {
       {/* 칸이 넷이라 좁은 화면에서는 둘씩 접는다 — 넷을 억지로 세우면 카드 폭이 글자보다 좁아진다 */}
       <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
         {TASK_STATUSES.map((status) => {
-          const over = dragOver === status;
+          const over = drag.over === status;
           // 끌고 있고, 여기가 그 카드가 있던 칸이 아니면 "받을 수 있는 자리"
-          const droppable = dragFrom !== null && dragFrom !== status;
+          const droppable = drag.from !== null && drag.from !== status;
           return (
             <div
               key={status}
-              onDragOver={(e) => {
-                e.preventDefault();
-                e.dataTransfer.dropEffect = "move";
-                setDragOver(status);
-              }}
-              onDragLeave={() => setDragOver((s) => (s === status ? null : s))}
-              onDrop={(e) => {
-                e.preventDefault();
-                endDrag();
-                const id = e.dataTransfer.getData("text/plain");
-                if (id) start(async () => setState(await moveTaskAction(id, status)));
-              }}
+              {...{ [DROP_ATTR]: status }}
               className={cn(
                 "flex min-h-[140px] flex-col gap-2 rounded-xl border border-dashed p-2 transition-colors duration-base",
                 over && droppable
@@ -96,22 +83,27 @@ export function TaskBoard({ board }: { board: Board }) {
                 </span>
               </h3>
 
-              {board[status].length === 0 ? (
-                <p className="px-1 py-3 text-[11.5px] text-dim">
-                  {droppable ? TASK_MESSAGES.dropHere : TASK_MESSAGES.empty}
-                </p>
-              ) : (
+              {board[status].length > 0 && (
                 <ul className="flex flex-col gap-2">
                   {board[status].map((task) => (
                     <TaskCard
                       key={task.id}
                       task={task}
+                      status={status}
                       onOpen={setOpenId}
-                      onDragStart={() => setDragFrom(status)}
-                      onDragEnd={endDrag}
+                      onPointerDown={drag.onPointerDown}
+                      onClickCapture={drag.swallowClick}
                     />
                   ))}
                 </ul>
+              )}
+
+              {/* 빈 칸에도 적는 자리는 남는다 — 빈 칸일수록 첫 줄을 적기 쉬워야 한다.
+                  끌고 있는 동안에는 치우고 "여기에 놓아요" 가 대신 선다(지금 할 일은 적기가 아니다) */}
+              {drag.from !== null ? (
+                <p className="px-1 py-3 text-[11.5px] text-dim">{droppable ? TASK_MESSAGES.dropHere : TASK_MESSAGES.empty}</p>
+              ) : (
+                <TaskQuickAdd status={status} />
               )}
             </div>
           );

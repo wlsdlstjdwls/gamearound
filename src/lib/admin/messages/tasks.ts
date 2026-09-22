@@ -2,7 +2,7 @@
 export const TASK_MESSAGES = {
   // 관리자 메뉴(ADMIN_NAV.tasks)와 같은 말을 쓴다. "작업 판" 이던 이름을 버린 이유는 거기 주석에 있다
   title: "할 일",
-  lead: "검수 큐는 수집이 쌓아 주지만, 직접 적어야 하는 일은 여기에 둬요. 카드를 누르면 고치고 기록을 남길 수 있고, 끌어서 칸을 옮겨요.",
+  lead: "검수 큐는 수집이 쌓아 주지만, 직접 적어야 하는 일은 여기에 둬요. 칸 안에서 한 줄로 바로 적고, 카드를 누르면 고치고 기록을 남겨요. 마우스로는 끌어서 칸을 옮겨요.",
   add: "할 일 추가",
   titleLabel: "할 일",
   titlePlaceholder: "무엇을 할지 한 줄로",
@@ -10,7 +10,6 @@ export const TASK_MESSAGES = {
   bodyPlaceholder: "배경, 다음 수, 막힌 지점",
   priorityLabel: "급함",
   statusLabel: "놓을 칸",
-  gameLabel: "게임 ID (선택)",
   sourceLabel: "소스 (선택)",
   submit: "추가",
   empty: "이 칸은 비어 있어요.",
@@ -20,10 +19,8 @@ export const TASK_MESSAGES = {
   dropHere: "여기에 놓아요",
   clearDone: "끝난 일 치우기",
   clearDoneConfirm: "끝난 일을 모두 지울까요? 되돌릴 수 없어요.",
-  moveTo: "옮길 칸",
   up: "위로",
   down: "아래로",
-  remove: "지우기",
   removeConfirm: "이 할 일을 지울까요?",
   created: "추가했어요",
   moved: "옮겼어요",
@@ -31,7 +28,6 @@ export const TASK_MESSAGES = {
   invalid: "잘못된 요청이에요",
 
   // 카드 고치기 — 할 일의 제목과 메모는 "무엇을 하는 일인가" 라서 고쳐 쓰는 값이다
-  edit: "고치기",
   save: "저장",
   cancel: "취소",
   saved: "고쳤어요",
@@ -51,9 +47,6 @@ export const TASK_MESSAGES = {
   noteRemoved: "기록을 지웠어요",
   /** 칸 이동 자취 앞에 붙는 말. 앞뒤 칸은 파이프로 잇는다(AGENTS §4: 화살표 금지) */
   noteMoved: "옮김",
-  /** 카드를 펼치고 접는 버튼 */
-  expand: "펼치기",
-  collapse: "접기",
 
   /*
    * 팝업(2026-09-21) — 적기, 고치기, 기록이 전부 카드 안 작은 칸에서 일어나 쓰기 힘들다는 말을 들었다.
@@ -62,17 +55,36 @@ export const TASK_MESSAGES = {
   addTitle: "할 일 추가",
   addLead: "제목만 있으면 돼요. 나머지는 나중에 카드에서 채워도 괜찮아요.",
   detailTitle: "할 일",
-  open: "열기",
   openHint: "눌러서 고치고 기록을 남겨요",
   basics: "내용",
   place: "놓인 칸",
-  linked: "붙인 대상",
-  noLinked: "붙인 대상이 없어요.",
   /** 팝업 안에서 위험한 일은 맨 아래 따로 선다 — 저장 버튼 옆에 두면 손이 미끄러진다 */
   dangerZone: "이 할 일 지우기",
   /** 마지막으로 고친 때 */
   updatedAt: "마지막으로 고친 때",
   noteCount: (n: number) => `기록 ${n}`,
+
+  /*
+   * 칸 안 한 줄 추가(2026-09-22) — 생각난 일을 적는 데 네 동작(버튼, 팝업, 칸 고르기, 저장)이 들던 것을
+   * 세 동작(누르기, 치기, 엔터)으로 줄인다. 칸은 누른 자리가 정한다.
+   */
+  quickAdd: "한 줄 추가",
+  quickAddPlaceholder: "무엇을 할지 한 줄로",
+  quickAddHint: "엔터로 추가하고 계속 적어요. 줄바꿈은 시프트+엔터, 그만두려면 Esc.",
+
+  /*
+   * 붙인 대상 고르기(2026-09-22) — 앞서는 uuid 를 다른 화면에서 복사해 와야 했다.
+   * 그 길은 "게임에 매인 할 일" 이라는 이 판의 이유를 쓰지 않게 만든다(붙이는 값이 비싸면 아무도 안 붙인다).
+   */
+  gamePickLabel: "붙일 게임 (선택)",
+  gamePickPlaceholder: "제목 일부",
+  gamePickHint: "못 찾아도 할 일은 만들 수 있어요.",
+  gamePickOpen: "게임 열기",
+  gamePickSearch: "찾기",
+  gamePickSearching: "찾는 중",
+  gamePickEmpty: "찾은 게임이 없어요. 제목을 줄이거나 영문으로 쳐 봐요.",
+  gamePickClear: "떼기",
+  gamePickPicked: "붙인 게임",
 } as const;
 
 /** 칸 이름. enum 값과 화면 낱말을 잇는 유일한 자리 */

@@ -157,7 +157,7 @@ export async function createTask(input: CreateTaskInput): Promise<string> {
 
 export async function updateTask(
   id: string,
-  patch: { title?: string; body?: string | null; priority?: TaskPriority; dueAt?: Date | null },
+  patch: { title?: string; body?: string | null; priority?: TaskPriority; dueAt?: Date | null; gameId?: string | null },
 ): Promise<void> {
   const admin = await requireAdmin();
   await getDb()
@@ -167,6 +167,8 @@ export async function updateTask(
       ...(patch.body !== undefined ? { body: patch.body?.trim() || null } : {}),
       ...(patch.priority !== undefined ? { priority: patch.priority } : {}),
       ...(patch.dueAt !== undefined ? { dueAt: patch.dueAt } : {}),
+      // null 은 "뗐다" 는 뜻이라 그대로 적는다 — 여기서는 수집이 아니라 사람이 쥔 값이다(§7 의 null 규칙 밖)
+      ...(patch.gameId !== undefined ? { gameId: patch.gameId } : {}),
       ...updatedBy("admin", admin.id),
     })
     .where(eq(adminTasks.id, id));

@@ -10,11 +10,12 @@
 // 저장 버튼 안에 묶으면 "제목만 고쳤는데 자취가 남는" 일이 생긴다.
 //
 // 지우기는 맨 아래 따로 선다. 저장 옆에 두면 손이 미끄러진다.
+//
+// "붙인 대상" 마디를 없앴다(2026-09-22): 게임을 고르는 칸이 고치기 폼 안에 생기면서 같은 값이
+// 한 팝업에 두 번 섰다. 게임 상세로 가는 길은 고른 칩 옆으로 옮겼고, 매장과 소스도 그 아래 붙였다.
 import { useState, useTransition } from "react";
-import Link from "next/link";
 import { cn } from "@/lib/cn";
 import { formatDateTime } from "@/lib/format";
-import { gamePath } from "@/lib/routes";
 import { Sheet } from "@/components/ui/sheet";
 import { TASK_MESSAGES, TASK_STATUS_LABEL } from "@/lib/admin/messages";
 import { TASK_STATUSES, type AdminTask } from "@/lib/admin/tasks";
@@ -38,13 +39,13 @@ export function TaskDialog({ task, open, onOpenChange }: { task: AdminTask; open
 
   const run = (fn: () => Promise<TaskActionState>) => start(async () => setState(await fn()));
 
+  // 시트 머리에 **이 할 일의 제목**을 적는다(2026-09-22). "할 일" 이라고만 적혀 있으면
+  // 판이 가려진 상태에서 지금 무엇을 보고 있는지 알 길이 제목 입력칸 안뿐이었다.
   return (
-    <Sheet title={TASK_MESSAGES.detailTitle} open={open} onOpenChange={onOpenChange}>
+    <Sheet title={task.title} size="wide" open={open} onOpenChange={onOpenChange}>
       <div className={cn("flex flex-col gap-6 pb-2 pt-2", pending && "opacity-70")}>
-        <Part title={TASK_MESSAGES.basics}>
-          <TaskEditForm task={task} />
-        </Part>
-
+        {/* 칸이 맨 위에 선다 — 팝업을 여는 이유의 절반은 "이걸 다음 칸으로 옮기려고" 다.
+            앞서는 고치기 폼 아래라 옮기려면 스크롤을 지나야 했다 */}
         <Part title={TASK_MESSAGES.place}>
           <div className="flex flex-wrap gap-1.5">
             {TASK_STATUSES.map((s) => {
@@ -70,21 +71,8 @@ export function TaskDialog({ task, open, onOpenChange }: { task: AdminTask; open
           </div>
         </Part>
 
-        {/* 붙인 대상. 이 줄이 이 판을 외부 도구와 가르는 자리다 — 할 일에서 그 행으로 바로 간다 */}
-        <Part title={TASK_MESSAGES.linked}>
-          {task.game || task.shop || task.source ? (
-            <div className="flex flex-wrap items-center gap-1.5 text-[12.5px]">
-              {task.game && (
-                <Link href={gamePath(task.game.slug)} className="rounded-lg bg-surface-3 px-2 py-1 text-acc hover:underline">
-                  {task.game.title}
-                </Link>
-              )}
-              {task.shop && <span className="rounded-lg bg-surface-3 px-2 py-1 text-mut">{task.shop.name}</span>}
-              {task.source && <span className="rounded-lg bg-surface-3 px-2 py-1 font-mono text-[12px] text-mut">{task.source}</span>}
-            </div>
-          ) : (
-            <p className="text-[12.5px] text-dim">{TASK_MESSAGES.noLinked}</p>
-          )}
+        <Part title={TASK_MESSAGES.basics}>
+          <TaskEditForm task={task} />
         </Part>
 
         <Part title={TASK_MESSAGES.notes}>

@@ -51,6 +51,7 @@ export function Sheet({
   triggerClassName,
   unstyledTrigger = false,
   side = "bottom",
+  size = "auto",
   open: openProp,
   onOpenChange,
 }: {
@@ -71,6 +72,13 @@ export function Sheet({
   unstyledTrigger?: boolean;
   /** 어느 쪽에서 나오는가. 모양은 globals.css 의 .sheet[data-side="right"] 가 맡는다 */
   side?: "bottom" | "right";
+  /**
+   * 넓은 화면에서의 판 폭. 기본은 내용이 정한다(auto, 상한 620).
+   * `wide` 는 폭을 **고정**한다 — 입력이 주인공인 시트(할 일 추가, 할 일 고치기)가 쓴다.
+   * 내용이 정하는 폭은 입력칸 하나짜리 폼을 340px 로 눌러, 카드 안에서 쓰던 때와 다를 바가 없어진다.
+   * 좁은 화면에서는 어느 쪽이든 화면 폭을 다 쓰므로 이 값이 하는 일이 없다.
+   */
+  size?: "auto" | "wide";
   /**
    * 바깥이 여닫는 모드. 주면 이 시트는 **버튼을 그리지 않고** 이 값만 따른다.
    *
@@ -325,6 +333,7 @@ export function Sheet({
         ref={dialogRef}
         className="sheet"
         data-side={side}
+        data-size={size}
         aria-labelledby={titleId}
         onClose={() => {
           appliedRef.current = false;

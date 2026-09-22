@@ -19,8 +19,10 @@ export default async function AdminLayout({ children }: { children: React.ReactN
   // 배지가 못 떠도 화면은 살아 있어야 한다 — 숫자는 거들 뿐이고 검수는 각 화면에서 한다
   const counts = getAdminWorkCounts().catch(() => null);
 
+  // 관리자만 1440(width="wide")을 쓴다(2026-09-22). 표와 판이 주인공인 화면이라 칸 수가 폭을 정한다 —
+  // 1200 에서는 매칭 대기의 제목 칸이 잘리고 할 일 판의 칸 넷이 카드 글자보다 좁아졌다
   return (
-    <Page gap={18}>
+    <Page width="wide" gap={18}>
       {/* items-start: 기둥이 본문 높이를 따라 늘어나면 sticky 가 걸리지 않는다 */}
       <div className="flex flex-col items-start gap-5 md:flex-row md:gap-8">
         <AdminNav user={user.displayName ?? user.email} counts={counts} />
