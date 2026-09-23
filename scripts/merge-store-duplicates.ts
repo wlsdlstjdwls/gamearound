@@ -14,6 +14,11 @@
 // 리마스터, 확장판, 에디션은 별개 상품이라 손대지 않는다(2026-09-15 2차 중복 정리에서 정한 선).
 // 판단이 갈리는 묶음은 건드리지 않는다 — 사람이 볼 몫이다.
 //
+// **사람이 판정한 한 쌍을 접을 때** `--pair <지울 slug>:<남길 slug>` 를 준다(여러 번 줄 수 있다).
+// 위의 "무엇만 접나" 조건을 건너뛴다 — 에디션 이름이 달라도 같은 스토어 상품을 두 행이 나눠 가진 경우,
+// psprices 껍데기가 한글 주소로 따로 앉은 경우처럼 규칙으로는 못 잡지만 사람이 본 묶음이 있다
+// (2026-09-23 PS 순위 판정표). 옮기는 길은 규칙 묶음과 같다 — 그 부분을 다시 짜지 않으려고 여기에 붙였다.
+//
 // 되돌리기: `--apply` 는 지우기 전에 백업 표 셋(`dupmerge_games_*`, `dupmerge_platforms_*`,
 // `dupmerge_map_*`)에 원본을 넣는다. 표 이름의 날짜가 회차다.
 import path from "node:path";
@@ -247,12 +252,46 @@ async function mergeGroup(group: Group, survivor: Member): Promise<void> {
       and not exists (select 1 from games g2 where g2.slug = ${SLUG_STRIP("s.slug")})`));
 }
 
+/** `--pair` 로 받은 쌍을 묶음 꼴로 만든다. 남길 행을 맨 앞에 둔다 */
+async function loadPairs(pairs: string[]): Promise<Group[]> {
+  const groups: Group[] = [];
+  for (const pair of pairs) {
+    const [loserSlug, survivorSlug] = pair.split(":");
+    if (!loserSlug || !survivorSlug) throw new Error(`--pair 는 <지울 slug>:<남길 slug> 꼴이다: ${pair}`);
+    const members: Member[] = [];
+    for (const slug of [survivorSlug, loserSlug]) {
+      const rows = await getDb().execute(sql`
+        select x.id, x.title_en, x.created_at,
+          (select count(*) from game_platforms gp where gp.game_id = x.id) as platforms,
+          (select count(*) from game_platforms gp join price_snapshots ps on ps.game_platform_id = gp.id
+           where gp.game_id = x.id) as snapshots,
+          (select count(*) from games c where c.parent_game_id = x.id) as kids
+        from games x where x.slug = ${slug}`);
+      const r = (rows.rows as Record<string, string>[])[0];
+      if (!r) throw new Error(`없는 slug: ${slug}`);
+      members.push({
+        id: r.id, titleEn: r.title_en, baseTitle: r.title_en, snapshots: Number(r.snapshots),
+        platforms: Number(r.platforms), kids: Number(r.kids), createdAt: String(r.created_at),
+      });
+    }
+    groups.push({ externalId: `pair:${survivorSlug}`, members });
+  }
+  return groups;
+}
+
+function allArgs(name: string): string[] {
+  return process.argv.flatMap((a, i) => (a === name && process.argv[i + 1] ? [process.argv[i + 1]] : []));
+}
+
 async function main(): Promise<void> {
   const source = arg("--source") ?? "xbox";
   const limit = Number(arg("--limit") ?? 1000);
   const externalId = arg("--external");
   const apply = process.argv.includes("--apply");
-  const groups = await loadGroups(source, limit, externalId);
+  const pairs = allArgs("--pair");
+  const groups = pairs.length > 0 ? await loadPairs(pairs) : await loadGroups(source, limit, externalId);
+  // 쌍은 사람이 남길 쪽을 정했다 — 규칙(꼬리표 없는 이름, 가진 것이 많은 행)으로 뒤집지 않는다
+  const survivorFor = (g: Group) => (pairs.length > 0 ? g.members[0] : pickSurvivor(g.members));
   if (groups.length === 0) {
     console.log(`[dedup] ${source} 에 접을 묶음이 없다`);
     return;
@@ -264,7 +303,7 @@ async function main(): Promise<void> {
   let kids = 0;
   let snapshots = 0;
   for (const g of groups) {
-    const survivor = pickSurvivor(g.members);
+    const survivor = survivorFor(g);
     for (const m of g.members) {
       if (m.id === survivor.id) continue;
       losers.push(m.id);
@@ -277,7 +316,7 @@ async function main(): Promise<void> {
   console.log(`[dedup] ${source}: ${groups.length}묶음, 게임 ${groups.length + losers.length}행 에서 ${groups.length}행 으로`);
   console.log(`[dedup] 옮길 것: 자식 DLC ${kids}건, 껍데기에 달린 가격 이력 ${snapshots}건`);
   for (const g of groups.slice(0, 5)) {
-    const s = pickSurvivor(g.members);
+    const s = survivorFor(g);
     const folded = g.members.filter((m) => m.id !== s.id).map((m) => m.titleEn).join(", ");
     console.log(`  ${g.externalId}  남길 것: ${s.titleEn}  | 접을 것: ${folded}`);
   }
@@ -290,7 +329,7 @@ async function main(): Promise<void> {
   console.log(`[dedup] 백업 표: dupmerge_games_${STAMP}, dupmerge_platforms_${STAMP}, dupmerge_map_${STAMP}`);
   let done = 0;
   for (const g of groups) {
-    await mergeGroup(g, pickSurvivor(g.members));
+    await mergeGroup(g, survivorFor(g));
     done++;
     if (done % 10 === 0) console.log(`[dedup] ${done}/${groups.length} 묶음`);
   }
