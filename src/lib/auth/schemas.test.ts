@@ -30,6 +30,18 @@ describe("signUpSchema", () => {
     expect(r.success).toBe(false);
     if (!r.success) expect(fieldErrorsOf(r.error).terms).toBe(M.termsRequired);
   });
+  it.each(["ㅇㅏㄴㅕㅇ", "ㅋㅋㅋ", "철수ㅋ", "ab\uFFA1"])("낱자가 섞인 닉네임 %s → displayNameJamo", (displayName) => {
+    const r = signUpSchema.safeParse({ ...valid, displayName });
+    expect(r.success).toBe(false);
+    if (!r.success) expect(fieldErrorsOf(r.error).displayName).toBe(M.displayNameJamo);
+  });
+  it("NFD 로 들어온 온전한 한글은 통과하고 NFC 로 저장된다", () => {
+    const nfd = "게이머".normalize("NFD");
+    expect(nfd).not.toBe("게이머"); // 전제: 정말 조각으로 들어왔다
+    const r = signUpSchema.safeParse({ ...valid, displayName: nfd });
+    expect(r.success).toBe(true);
+    if (r.success) expect(r.data.displayName).toBe("게이머");
+  });
   it("닉네임 특수문자 거부", () => {
     const r = signUpSchema.safeParse({ ...valid, displayName: "a<b>" });
     expect(r.success).toBe(false);

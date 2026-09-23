@@ -15,6 +15,7 @@ export const AUTH_MESSAGES = {
   displayNameRequired: "닉네임을 입력해 주세요",
   displayNameLength: `닉네임은 ${DISPLAY_NAME_MIN}~${DISPLAY_NAME_MAX}자로 입력해 주세요`,
   displayNameInvalid: "닉네임에는 공백 외 특수문자를 쓸 수 없어요",
+  displayNameJamo: "자음이나 모음만 따로 쓸 수 없어요. 완성된 글자로 입력해 주세요",
   termsRequired: "이용약관에 동의해 주세요",
   // 결과 — 계정 존재 여부를 드러내지 않는다(열거 방지)
   invalidCredentials: "이메일 또는 비밀번호가 올바르지 않아요",

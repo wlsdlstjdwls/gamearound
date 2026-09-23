@@ -35,13 +35,27 @@ export const passwordLooseSchema = z.string({ message: M.passwordRequired }).min
 // 한글, 영문, 숫자, 공백, ._- 허용
 const DISPLAY_NAME_RE = /^[\p{L}\p{N} ._-]+$/u;
 
+/*
+ * 완성되지 않은 한글 낱자(2026-09-23). \p{L} 이 ㄱ, ㅏ 같은 호환 자모도 "글자" 로 쳐서 "ㅇㅏㄴㅕㅇ" 이 닉네임으로 들어왔다.
+ * 호환 자모(ㄱ~ㆎ), 첫가끝 조각(U+1100 대와 확장 A, B), 반각 자모까지 본다. fitin-app 은 /[ㄱ-ㅣ]/ 만 보는데
+ * 그러면 옛 자모와 반각이 샌다.
+ *
+ * NFC 로 모은 **뒤에** 검사한다 — 맥에서 들어오는 NFD 는 "가" 를 첫가끝 조각 둘로 보내는데, 그건 온전한 글자다.
+ * 모아도 남는 조각만 낱자다. "ㅋㅋㅋ" 도 여기 걸린다(쓰고 싶은 사람이 있겠지만 그 한 가지만 열어 둘 기준이 없다).
+ */
+const STANDALONE_JAMO_RE = /[\u1100-\u11FF\u3131-\u318E\uA960-\uA97F\uD7B0-\uD7FF\uFFA0-\uFFDC]/u;
+const toNfc = (v: string) => v.normalize("NFC");
+
 export const displayNameSchema = z
   .string({ message: M.displayNameRequired })
   .trim()
   .min(1, M.displayNameRequired)
   .min(DISPLAY_NAME_MIN, M.displayNameLength)
   .max(DISPLAY_NAME_MAX, M.displayNameLength)
-  .regex(DISPLAY_NAME_RE, M.displayNameInvalid);
+  .regex(DISPLAY_NAME_RE, M.displayNameInvalid)
+  .refine((v) => !STANDALONE_JAMO_RE.test(toNfc(v)), M.displayNameJamo)
+  // 검사한 모양 그대로 저장한다 — NFD 로 들어온 이름이 NFC 이름과 다른 문자열로 남지 않게
+  .transform(toNfc);
 
 export const signInSchema = z.object({
   email: emailSchema,
