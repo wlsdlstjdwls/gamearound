@@ -2,6 +2,7 @@
 import { z } from "zod";
 import { DISPLAY_NAME_MAX, DISPLAY_NAME_MIN, EMAIL_MAX, PASSWORD_MAX, PASSWORD_MIN } from "@/lib/auth/constants";
 import { AUTH_MESSAGES as M } from "@/lib/auth/messages";
+import { isWeakPassword } from "@/lib/auth/weak-password";
 
 /** 이메일 정규화: 앞뒤 공백 제거 + 소문자. DB unique와 로그인 조회가 같은 규칙을 쓴다 */
 export function normalizeEmail(raw: string): string {
@@ -24,7 +25,9 @@ export const passwordSchema = z
   .min(1, M.passwordRequired)
   .min(PASSWORD_MIN, M.passwordTooShort)
   .max(PASSWORD_MAX, M.passwordTooLong)
-  .refine((v) => HAS_LETTER.test(v) && HAS_DIGIT.test(v), M.passwordWeak);
+  .refine((v) => HAS_LETTER.test(v) && HAS_DIGIT.test(v), M.passwordWeak)
+  // 기본 규칙을 통과한 뒤에만 의미가 있다 — 순서가 곧 오류 우선순위다(fieldErrorsOf 는 칸마다 첫 오류만 쓴다)
+  .refine((v) => !isWeakPassword(v), M.passwordCommon);
 
 /** 로그인용: 길이 규칙만 (규칙이 바뀌어도 기존 사용자가 로그인은 되어야 함) */
 export const passwordLooseSchema = z.string({ message: M.passwordRequired }).min(1, M.passwordRequired).max(PASSWORD_MAX, M.passwordTooLong);

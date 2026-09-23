@@ -30,6 +30,17 @@ export const PASSWORD_MAX = 128;
 export const DISPLAY_NAME_MIN = 2;
 export const DISPLAY_NAME_MAX = 20;
 
+/**
+ * 쉬운 비밀번호 판정 문턱(lib/auth/weak-password). 가입에만 건다 — 로그인은 loose 스키마라 기존 계정은 안 잠긴다.
+ *
+ * 서로 다른 글자 4개: "aaaaaaa1", "11111111a", "abababab1" 처럼 8자를 채웠어도 사실상 한두 글자인 것을 거른다.
+ * 5는 과했다 — "tetris44" 같은 평범한 조합이 걸린다.
+ * 연속은 4글자까지 봐준다(5글자부터 거절): "a1234567", "12345abc" 를 거른다. 4글자를 막으면 "abcd" 나 "1234" 가
+ * 든 평범한 조합까지 걸린다 — 그 흔한 꼴("abcd1234" 등)은 weak-password 의 목록이 따로 잡는다.
+ */
+export const PASSWORD_MIN_DISTINCT_CHARS = 4;
+export const PASSWORD_MAX_SEQUENTIAL_RUN = 4;
+
 /** 레이트리밋 (Upstash Redis 고정 윈도우) */
 export const RATE_LIMIT = {
   /** 로그인: IP당 15분에 20회, 이메일당 15분에 10회 */

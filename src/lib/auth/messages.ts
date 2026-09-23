@@ -10,6 +10,7 @@ export const AUTH_MESSAGES = {
   passwordTooShort: `비밀번호는 ${PASSWORD_MIN}자 이상이어야 해요`,
   passwordTooLong: "비밀번호가 너무 길어요",
   passwordWeak: "영문과 숫자를 함께 넣어 주세요",
+  passwordCommon: "너무 쉬운 비밀번호예요. 흔한 조합, 반복, 연속된 글자는 피해 주세요",
   passwordConfirmMismatch: "비밀번호가 서로 달라요",
   displayNameRequired: "닉네임을 입력해 주세요",
   displayNameLength: `닉네임은 ${DISPLAY_NAME_MIN}~${DISPLAY_NAME_MAX}자로 입력해 주세요`,
