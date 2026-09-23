@@ -23,6 +23,11 @@ type Options<S extends z.ZodType> = {
 export function useAuthForm<S extends z.ZodType>({ schema, toInput, serverState, submit, remoteChecks }: Options<S>) {
   const formRef = useRef<HTMLFormElement>(null);
   const [clientErrors, setClientErrors] = useState<Record<string, string>>({});
+  // onBlur 가 지금 떠 있는 오류를 보려고 둔다 — state 를 의존성에 넣으면 칸마다 핸들러가 매번 새로 생긴다
+  const clientErrorsRef = useRef(clientErrors);
+  useEffect(() => {
+    clientErrorsRef.current = clientErrors;
+  }, [clientErrors]);
   const [editedSinceServer, setEditedSinceServer] = useState<Set<string>>(() => new Set());
   // 같은 에러가 연속으로 와도 shake가 다시 돌도록 카운터
   const [errorSerial, setErrorSerial] = useState(0);
@@ -88,6 +93,14 @@ export function useAuthForm<S extends z.ZodType>({ schema, toInput, serverState,
   const onBlur = useCallback(
     (e: FocusEvent<HTMLInputElement>) => {
       const { name, value } = e.currentTarget;
+      // 링크를 누르러 떠나는 blur 는 검증하지 않는다(2026-09-24, 사용자 신고: "로그인 버튼이 안 눌리고 가입하기를 눌러야 진행된다").
+      // 가입 화면은 닉네임 칸이 자동 포커스라, "로그인" 을 누르는 mousedown 이 곧 이 blur 다. 여기서 오류 문구가 서면
+      // 칸 아래가 한 줄 늘어 링크가 손가락 밑에서 빠지고, mouseup 이 다른 자리에 떨어져 click 이 성립하지 않았다.
+      // 떠나는 사람에게 "닉네임을 입력해요" 를 알릴 이유도 없다. 가입하기를 먼저 누르면 오류가 이미 서 있어 안 밀렸던 것.
+      if (e.relatedTarget instanceof HTMLAnchorElement) return;
+      // 사파리는 링크를 눌러도 포커스를 옮기지 않아 relatedTarget 이 비어 온다 — 손대지 않은 빈 칸은 그래서 따로 건너뛴다.
+      // 빈 칸의 "입력해요" 는 제출 때 onSubmit 이 한꺼번에 말한다
+      if (value === "" && !(name in clientErrorsRef.current)) return;
       if (validateField(name)) return;
       const check = remoteChecks?.[name];
       if (!check) return;
