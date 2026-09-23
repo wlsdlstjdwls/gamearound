@@ -2,7 +2,7 @@
 // 가격 알림 폼/컨트롤 (클라이언트). Server Action은 src/app/(user)/alerts/actions.ts
 // 리디자인: 플랫폼은 select 대신 칩 버튼, 최소 할인율은 숫자 입력 대신 슬라이더.
 import { useActionState, useState, useTransition } from "react";
-import { useFormStatus } from "react-dom";
+import { ActionForm, useActionFormPending } from "@/components/ui/action-form";
 import { createAlertAction, deleteAlertAction, toggleAlertAction, type ActionState } from "@/app/(user)/alerts/actions";
 import { FadeImage } from "@/components/ui/fade-image";
 import { ImageFallback } from "@/components/ui/image-fallback";
@@ -21,7 +21,7 @@ const DEFAULT_MIN_DISCOUNT = 50;
 const SEND_RULE_TEXT = "조건 충족 시 웹푸시로 1회 발송합니다.";
 
 function SubmitButton({ label, pendingLabel }: { label: string; pendingLabel: string }) {
-  const { pending } = useFormStatus();
+  const pending = useActionFormPending();
   return (
     <Button type="submit" loading={pending} loadingLabel={pendingLabel}>
       {label}
@@ -42,14 +42,14 @@ type FormGame = { id: string; slug: string; title: string; coverUrl?: string | n
 
 /** 새 알림 생성 폼 — /alerts?game=<slug> 로 진입했을 때 상단에 노출 */
 export function AlertForm({ game }: { game: FormGame }) {
-  const [state, formAction] = useActionState(createAlertAction, null);
+  const [state, formAction, submitting] = useActionState(createAlertAction, null);
   const [platform, setPlatform] = useState("all");
   const [minDiscount, setMinDiscount] = useState(DEFAULT_MIN_DISCOUNT);
 
   // 새 알림 상자 — 이 화면에서 면을 가진 유일한 자리다. 연한 브랜드 면을 쓰는 이유는
   // "지금 만들려던 것" 과 "이미 만들어 둔 것"(아래 줄 목록)을 색으로 가르기 위해서다
   return (
-    <form action={formAction} className="flex flex-col gap-[18px] rounded-[var(--radius-cover-lg)] bg-acc-soft p-6">
+    <ActionForm action={formAction} state={state} pending={submitting} className="flex flex-col gap-[18px] rounded-[var(--radius-cover-lg)] bg-acc-soft p-6">
       <input type="hidden" name="gameId" value={game.id} />
       <input type="hidden" name="platform" value={platform} />
       <input type="hidden" name="minDiscountPct" value={minDiscount} />
@@ -118,7 +118,7 @@ export function AlertForm({ game }: { game: FormGame }) {
           <SubmitButton label="알림 만들기" pendingLabel="저장 중…" />
         </div>
       </div>
-    </form>
+    </ActionForm>
   );
 }
 

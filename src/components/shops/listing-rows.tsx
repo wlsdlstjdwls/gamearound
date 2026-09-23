@@ -7,7 +7,7 @@
 // 내리기에 confirm() 을 쓰지 않는다 — 브라우저 모달은 되돌릴 자리를 주지 않으면서 손만 한 번 더 쓰게 한다.
 // 지금 지워지는 것은 판매 줄뿐이고 상품(products)은 남는다. 같은 값으로 다시 올릴 수 있다.
 import { useActionState } from "react";
-import { useFormStatus } from "react-dom";
+import { ActionForm, useActionFormPending } from "@/components/ui/action-form";
 import { removeListingAction, updateStockAction, type ListingState } from "@/app/(user)/vendor/[shopSlug]/listings/actions";
 import { buttonClass } from "@/components/ui/button";
 import { FormMessage } from "@/components/ui/form-message";
@@ -33,7 +33,7 @@ const STATUS_LABEL: Record<ListingDto["status"], string> = {
 };
 
 function PendingButton({ label, variant }: { label: string; variant: "secondary" | "ghost" }) {
-  const { pending } = useFormStatus();
+  const pending = useActionFormPending();
   return (
     <button type="submit" disabled={pending} className={buttonClass({ variant, size: "sm" })}>
       {label}
@@ -42,8 +42,8 @@ function PendingButton({ label, variant }: { label: string; variant: "secondary"
 }
 
 function ListingRow({ shopSlug, listing }: { shopSlug: string; listing: ListingDto }) {
-  const [stockState, stockAction] = useActionState<ListingState, FormData>(updateStockAction.bind(null, shopSlug), null);
-  const [removeState, removeAction] = useActionState<ListingState, FormData>(removeListingAction.bind(null, shopSlug), null);
+  const [stockState, stockAction, stockActionPending] = useActionState<ListingState, FormData>(updateStockAction.bind(null, shopSlug), null);
+  const [removeState, removeAction, removeActionPending] = useActionState<ListingState, FormData>(removeListingAction.bind(null, shopSlug), null);
   const failed = (stockState && !stockState.ok && stockState.error) || (removeState && !removeState.ok && removeState.error);
 
   return (
@@ -70,7 +70,7 @@ function ListingRow({ shopSlug, listing }: { shopSlug: string; listing: ListingD
       )}
 
       <div className="flex flex-wrap items-end gap-2">
-        <form action={stockAction} className="flex items-end gap-2">
+        <ActionForm action={stockAction} state={stockState} pending={stockActionPending} className="flex items-end gap-2">
           <input type="hidden" name="listingId" value={listing.id} />
           <div className="flex flex-col gap-1">
             <label htmlFor={`stock-${listing.id}`} className="text-[11.5px] text-dim">
@@ -87,12 +87,12 @@ function ListingRow({ shopSlug, listing }: { shopSlug: string; listing: ListingD
             />
           </div>
           <PendingButton label={M.stockSave} variant="secondary" />
-        </form>
+        </ActionForm>
 
-        <form action={removeAction}>
+        <ActionForm action={removeAction} state={removeState} pending={removeActionPending}>
           <input type="hidden" name="listingId" value={listing.id} />
           <PendingButton label={M.remove} variant="ghost" />
-        </form>
+        </ActionForm>
       </div>
     </li>
   );

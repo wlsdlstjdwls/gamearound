@@ -8,6 +8,7 @@
 //
 // 성공하면 스스로 닫는다. 닫힌 뒤 판은 액션이 revalidate 한 값으로 다시 그려진다.
 import { useActionState, useState } from "react";
+import { ActionForm } from "@/components/ui/action-form";
 import { Button, buttonClass } from "@/components/ui/button";
 import { Sheet } from "@/components/ui/sheet";
 import { FormSelect } from "@/components/ui/select";
@@ -37,7 +38,7 @@ export function TaskAddForm({ sources }: { sources: readonly string[] }) {
       {/* size="wide": 이 시트는 입력이 주인공이다. 내용이 정하는 폭은 메모 칸을 한 줄 스무 자로 눌러,
           카드 안에서 쓰던 때와 다를 바가 없어진다(2026-09-22 사용자 지적) */}
       <Sheet title={TASK_MESSAGES.addTitle} size="wide" open={open} onOpenChange={setOpen}>
-        <form action={action} className="flex flex-col gap-4 pb-1 pt-2">
+        <ActionForm action={action} state={state} pending={pending} className="flex flex-col gap-4 pb-1 pt-2">
           <TaskBasicFields />
           <TaskStatusField />
 
@@ -67,7 +68,7 @@ export function TaskAddForm({ sources }: { sources: readonly string[] }) {
               {TASK_MESSAGES.cancel}
             </Button>
           </div>
-        </form>
+        </ActionForm>
       </Sheet>
     </div>
   );

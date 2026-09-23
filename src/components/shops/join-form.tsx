@@ -7,7 +7,7 @@
 // 증빙 업로드는 아직 없다. 파일을 받으려면 저장소를 먼저 붙여야 하는데(§12), 그 전에
 // "올려 주세요" 칸만 세워 두면 올린 파일이 아무 데도 안 남는다. 사업자번호로 심사한다.
 import { useActionState, useState } from "react";
-import { useFormStatus } from "react-dom";
+import { ActionForm, useActionFormPending } from "@/components/ui/action-form";
 import { applyForShopAction } from "@/app/(user)/shops/join/actions";
 import { Button } from "@/components/ui/button";
 import { FormMessage } from "@/components/ui/form-message";
@@ -22,7 +22,7 @@ const ADDRESS_TYPES = [
 ] as const;
 
 function SubmitButton() {
-  const { pending } = useFormStatus();
+  const pending = useActionFormPending();
   return (
     <Button type="submit" loading={pending} loadingLabel="보내는 중">
       {SHOP_MESSAGES.submit}
@@ -32,11 +32,11 @@ function SubmitButton() {
 
 /** 반려된 신청서는 적어 둔 값을 되돌려 준다 — 처음부터 다시 적게 하면 고치는 것이 아니라 새로 쓰는 것이다 */
 export function ShopJoinForm({ current }: { current: ShopApplication | null }) {
-  const [state, formAction] = useActionState(applyForShopAction, null);
+  const [state, formAction, submitting] = useActionState(applyForShopAction, null);
   const [addressType, setAddressType] = useState<string>(current?.addressType ?? "offline");
 
   return (
-    <form action={formAction} className="flex flex-col gap-4">
+    <ActionForm action={formAction} state={state} pending={submitting} className="flex flex-col gap-4">
       {state && !state.ok && (
         <FormMessage tone="error" replayKey={state.error}>
           {state.error}
@@ -120,6 +120,6 @@ export function ShopJoinForm({ current }: { current: ShopApplication | null }) {
       <div>
         <SubmitButton />
       </div>
-    </form>
+    </ActionForm>
   );
 }

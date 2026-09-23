@@ -8,7 +8,7 @@
 // 사진은 아직 없다. 파일을 받으려면 저장소를 먼저 붙여야 하고, 그 전에 칸만 세우면
 // 올린 사진이 아무 데도 안 남는다 — 입점 신청의 증빙 칸과 같은 이유로 미뤘다.
 import { useActionState } from "react";
-import { useFormStatus } from "react-dom";
+import { ActionForm, useActionFormPending } from "@/components/ui/action-form";
 import { createListingAction, type ListingState } from "@/app/(user)/vendor/[shopSlug]/listings/actions";
 import { GamePicker } from "@/components/shops/game-picker";
 import { Button } from "@/components/ui/button";
@@ -34,7 +34,7 @@ const SELECT_CLASS =
   "w-full rounded-[var(--radius-sm)] border border-line-strong bg-bg px-3 py-2.5 text-[16px] text-ink transition-colors hover:border-dim focus-visible:border-ink focus-visible:outline-none";
 
 function SubmitButton() {
-  const { pending } = useFormStatus();
+  const pending = useActionFormPending();
   return (
     <Button type="submit" loading={pending} loadingLabel="올리는 중">
       {M.submit}
@@ -44,10 +44,10 @@ function SubmitButton() {
 
 export function ListingForm({ shopSlug, hardware }: { shopSlug: string; hardware: Array<{ code: string; nameKo: string }> }) {
   const action = createListingAction.bind(null, shopSlug);
-  const [state, formAction] = useActionState<ListingState, FormData>(action, null);
+  const [state, formAction, submitting] = useActionState<ListingState, FormData>(action, null);
 
   return (
-    <form action={formAction} className="flex flex-col gap-4">
+    <ActionForm action={formAction} state={state} pending={submitting} className="flex flex-col gap-4">
       {state && !state.ok && (
         <FormMessage tone="error" replayKey={state.error}>
           {state.error}
@@ -121,6 +121,6 @@ export function ListingForm({ shopSlug, hardware }: { shopSlug: string; hardware
       <div>
         <SubmitButton />
       </div>
-    </form>
+    </ActionForm>
   );
 }

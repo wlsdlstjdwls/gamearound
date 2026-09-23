@@ -3,6 +3,7 @@
 // 닌텐도 스토어 수집이 막혀 있는 동안 사람이 넣는 경로다. 어댑터가 붙어도 이 화면은 남는다
 // (크롤러가 못 읽는 조건, 예외를 사람이 적는 자리).
 import { useActionState, useState, useTransition } from "react";
+import { ActionForm } from "@/components/ui/action-form";
 import { deleteUpgradeAction, upsertUpgradeAction } from "@/app/(admin)/admin/actions";
 import { ActionStatus, SubmitButton } from "@/components/admin/submit-button";
 import { Button } from "@/components/ui/button";
@@ -64,7 +65,7 @@ export function UpgradeForm({
   kinds: readonly UpgradeKind[];
   items: UpgradeItem[];
 }) {
-  const [state, formAction] = useActionState(upsertUpgradeAction, null);
+  const [state, formAction, submitting] = useActionState(upsertUpgradeAction, null);
   // 유료일 때만 가격 칸을 연다 — 무료인데 금액이 남아 있으면 무엇이 맞는지 화면에서 알 수 없다
   const [kind, setKind] = useState<UpgradeKind>("paid");
 
@@ -88,7 +89,7 @@ export function UpgradeForm({
         </ul>
       )}
 
-      <form action={formAction} className={panelClass("flex flex-col gap-2.5 p-4")}>
+      <ActionForm action={formAction} state={state} pending={submitting} className={panelClass("flex flex-col gap-2.5 p-4")}>
         <input type="hidden" name="gameId" value={gameId} />
         <div className="grid gap-2 sm:grid-cols-4">
           <FormSelect
@@ -130,7 +131,7 @@ export function UpgradeForm({
         </div>
         <input type="hidden" name="storeExternalId" value="" />
         <ActionStatus state={state} />
-      </form>
+      </ActionForm>
     </section>
   );
 }

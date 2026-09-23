@@ -4,7 +4,7 @@
 // 사유 칸을 늘 펴 두는 이유: 반려와 정지는 사유가 **필수**다(lib/shops/schemas). 눌러야 나타나는 칸이면
 // 누른 뒤에 막히고, 그때 관리자는 "왜 안 되지" 를 화면에서 읽어야 한다.
 import { useActionState } from "react";
-import { useFormStatus } from "react-dom";
+import { ActionForm, useActionFormPending } from "@/components/ui/action-form";
 import { reviewShopAction } from "@/app/(admin)/shops/admin/actions";
 import { Button } from "@/components/ui/button";
 import { Panel } from "@/components/ui/page";
@@ -28,7 +28,7 @@ function decisionsFor(status: ShopApplication["status"]): Decision[] {
 }
 
 function DecisionButton({ decision }: { decision: Decision }) {
-  const { pending } = useFormStatus();
+  const pending = useActionFormPending();
   return (
     <Button type="submit" name="decision" value={decision.value} variant={decision.variant} size="sm" disabled={pending}>
       {decision.label}
@@ -37,7 +37,7 @@ function DecisionButton({ decision }: { decision: Decision }) {
 }
 
 export function ShopReviewCard({ shop }: { shop: ShopApplication }) {
-  const [state, formAction] = useActionState(reviewShopAction, null);
+  const [state, formAction, submitting] = useActionState(reviewShopAction, null);
 
   return (
     <Panel className="flex flex-col gap-3 px-4 py-4">
@@ -94,7 +94,7 @@ export function ShopReviewCard({ shop }: { shop: ShopApplication }) {
         </FormMessage>
       )}
 
-      <form action={formAction} className="flex flex-col gap-2">
+      <ActionForm action={formAction} state={state} pending={submitting} className="flex flex-col gap-2">
         <input type="hidden" name="shopId" value={shop.id} />
         <label className="sr-only" htmlFor={`reason-${shop.id}`}>
           {SHOP_MESSAGES.reasonLabel}
@@ -111,7 +111,7 @@ export function ShopReviewCard({ shop }: { shop: ShopApplication }) {
             <DecisionButton key={d.value} decision={d} />
           ))}
         </div>
-      </form>
+      </ActionForm>
     </Panel>
   );
 }

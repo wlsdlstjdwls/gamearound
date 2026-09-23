@@ -14,7 +14,8 @@
 // 모양(2026-09-21): 팝업으로 옮기면서 세로 줄기를 세웠다. 사람이 적은 글과 자취가 섞여 서는 자리라
 // 둘을 색이나 배경으로 가르면 목록이 얼룩덜룩해진다 — 줄기 위의 점 하나로만 가른다
 // (적은 글은 브랜드 보라 점, 자취는 회색 테두리 점).
-import { useActionState, useEffect, useRef, useState, useTransition } from "react";
+import { useActionState, useState, useTransition } from "react";
+import { ActionForm } from "@/components/ui/action-form";
 import { cn } from "@/lib/cn";
 import { formatDateTime } from "@/lib/format";
 import { Button } from "@/components/ui/button";
@@ -37,12 +38,6 @@ export function TaskNotes({ taskId, notes }: { taskId: string; notes: TaskNote[]
   const [state, formAction, posting] = useActionState<TaskActionState, FormData>(addNoteAction, null);
   const [pending, start] = useTransition();
   const [removeState, setRemoveState] = useState<TaskActionState>(null);
-  const boxRef = useRef<HTMLTextAreaElement>(null);
-
-  // 남기고 나면 칸을 비운다 — 액션이 성공했을 때만. 실패하면 적은 글이 사라지면 안 된다
-  useEffect(() => {
-    if (state?.ok && boxRef.current) boxRef.current.value = "";
-  }, [state]);
 
   const error = (state && !state.ok && state.error) || (removeState && !removeState.ok && removeState.error) || null;
 
@@ -94,7 +89,7 @@ export function TaskNotes({ taskId, notes }: { taskId: string; notes: TaskNote[]
        * 한 줄 적으려고 지나야 하는 스크롤도 같이 길어졌다 — 가장 자주 하는 일이 가장 멀리 있었다.
        * sticky 라 자리를 차지하지 않고, 위로 흐르는 기록을 가리는 만큼만 바탕을 깐다.
        */}
-      <form action={formAction} className="sticky bottom-0 -mx-4 flex flex-col gap-2 bg-surface px-4 pb-1 pt-3">
+      <ActionForm action={formAction} state={state} pending={posting} className="sticky bottom-0 -mx-4 flex flex-col gap-2 bg-surface px-4 pb-1 pt-3">
         {/* 밑에서 올라오는 기록이 칸 밑으로 툭 잘리지 않게, 바탕이 시작되는 자리를 흐린다 */}
         <span aria-hidden className="pointer-events-none absolute inset-x-0 -top-4 h-4 bg-gradient-to-b from-transparent to-surface" />
         <input type="hidden" name="taskId" value={taskId} />
@@ -103,7 +98,6 @@ export function TaskNotes({ taskId, notes }: { taskId: string; notes: TaskNote[]
         </label>
         <div className="flex items-end gap-2">
           <textarea
-            ref={boxRef}
             id={`note-${taskId}`}
             name="body"
             rows={2}
@@ -114,7 +108,7 @@ export function TaskNotes({ taskId, notes }: { taskId: string; notes: TaskNote[]
             {TASK_MESSAGES.noteAdd}
           </Button>
         </div>
-      </form>
+      </ActionForm>
 
       {error && (
         <p role="alert" className="animate-rise text-[12.5px] text-danger">

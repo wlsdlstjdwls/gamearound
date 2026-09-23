@@ -2,6 +2,7 @@
 // 검색 별칭 입력 — 제목에 없는 말로 게임을 찾게 하는 자리(server/services/admin-aliases).
 // 스토어가 주지 않는 값(시리즈명, 원작명, 약칭)이라 사람이 넣는다.
 import { useActionState, useState, useTransition } from "react";
+import { ActionForm } from "@/components/ui/action-form";
 import { addAliasAction, deleteAliasAction } from "@/app/(admin)/admin/actions";
 import type { AdminActionState } from "@/app/(admin)/admin/actions";
 import { ActionStatus, SubmitButton } from "@/components/admin/submit-button";
@@ -38,7 +39,7 @@ function DeleteButton({ gameId, id, alias }: { gameId: string; id: number; alias
 }
 
 export function AliasForm({ gameId, items }: { gameId: string; items: AliasItem[] }) {
-  const [state, formAction] = useActionState(addAliasAction, null);
+  const [state, formAction, submitting] = useActionState(addAliasAction, null);
 
   return (
     <section className="flex flex-col gap-2.5">
@@ -59,7 +60,7 @@ export function AliasForm({ gameId, items }: { gameId: string; items: AliasItem[
         </ul>
       )}
 
-      <form action={formAction} className={panelClass("flex flex-col gap-2.5 p-4")}>
+      <ActionForm action={formAction} state={state} pending={submitting} className={panelClass("flex flex-col gap-2.5 p-4")}>
         <input type="hidden" name="gameId" value={gameId} />
         <div className="grid gap-2 sm:grid-cols-[1fr_auto]">
           <label className="flex flex-col gap-1 text-[11.5px] text-dim">
@@ -71,7 +72,7 @@ export function AliasForm({ gameId, items }: { gameId: string; items: AliasItem[
           </span>
         </div>
         <ActionStatus state={state} />
-      </form>
+      </ActionForm>
     </section>
   );
 }

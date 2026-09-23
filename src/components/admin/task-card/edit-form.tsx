@@ -9,6 +9,7 @@
 // 저장해도 팝업을 닫지 않는다: 여기서 할 일이 고치기 하나가 아니다(기록을 남기러 온 김에 제목도 고친다).
 // 대신 저장됐다는 말을 그 자리에 남긴다 — 닫히지 않으면 눌렀는지 아닌지를 알 수 없다.
 import { useActionState } from "react";
+import { ActionForm } from "@/components/ui/action-form";
 import { Button } from "@/components/ui/button";
 import { TASK_MESSAGES } from "@/lib/admin/messages";
 import { type AdminTask } from "@/lib/admin/tasks";
@@ -20,7 +21,7 @@ export function TaskEditForm({ task }: { task: AdminTask }) {
   const [state, formAction, pending] = useActionState<TaskActionState, FormData>(updateTaskAction, null);
 
   return (
-    <form action={formAction} className="flex flex-col gap-4">
+    <ActionForm action={formAction} state={state} pending={pending} className="flex flex-col gap-4">
       <input type="hidden" name="id" value={task.id} />
 
       {/* key 를 카드 id 로 두는 이유: 팝업이 다른 카드로 바뀌어도 같은 폼이 재사용되면
@@ -56,6 +57,6 @@ export function TaskEditForm({ task }: { task: AdminTask }) {
           </span>
         )}
       </div>
-    </form>
+    </ActionForm>
   );
 }

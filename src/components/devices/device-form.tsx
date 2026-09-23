@@ -5,7 +5,7 @@
 // 고르는 목록이 스크롤 벽이 되고, 사람은 자기 부품을 정식 이름으로 기억하지 않는다("1060").
 // 적은 대로 받아 우리 매칭기가 알아본다 — 사양 문구를 알아보는 그 매칭기와 같은 것이다.
 import { useActionState, useState } from "react";
-import { useFormStatus } from "react-dom";
+import { ActionForm, useActionFormPending } from "@/components/ui/action-form";
 import { saveDeviceAction, type ActionState } from "@/app/(user)/settings/devices/actions";
 import { Button } from "@/components/ui/button";
 import { DetectButton } from "./detect-button";
@@ -22,7 +22,7 @@ export type ModelOption = { key: string; name: string };
 const OS_OPTIONS: OsFamily[] = ["windows", "mac", "linux"];
 
 function SubmitButton({ editing }: { editing: boolean }) {
-  const { pending } = useFormStatus();
+  const pending = useActionFormPending();
   return (
     <Button type="submit" loading={pending} loadingLabel="저장하는 중">
       {editing ? "저장" : "기기 추가"}
@@ -41,7 +41,7 @@ export function DeviceForm({
   gpuOptions: ModelOption[];
   onDone?: () => void;
 }) {
-  const [state, formAction] = useActionState(async (prev: ActionState, fd: FormData) => {
+  const [state, formAction, submitting] = useActionState(async (prev: ActionState, fd: FormData) => {
     const next = await saveDeviceAction(prev, fd);
     if (next?.ok) onDone?.();
     return next;
@@ -51,7 +51,7 @@ export function DeviceForm({
   const [gpu, setGpu] = useState(device?.gpuName ?? "");
 
   return (
-    <form action={formAction} className="flex flex-col gap-4">
+    <ActionForm action={formAction} state={state} pending={submitting} className="flex flex-col gap-4">
       {device && <input type="hidden" name="id" value={device.id} />}
       <input type="hidden" name="osFamily" value={os} />
 
@@ -137,6 +137,6 @@ export function DeviceForm({
       <div className="flex justify-end">
         <SubmitButton editing={Boolean(device)} />
       </div>
-    </form>
+    </ActionForm>
   );
 }

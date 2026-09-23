@@ -1,6 +1,7 @@
 "use client";
 // 필드 정정 폼 (§4.4 data_corrections). 필드 select + 값 input(타입별) + lock 체크
 import { useActionState, useState } from "react";
+import { ActionForm } from "@/components/ui/action-form";
 import { correctFieldAction } from "@/app/(admin)/admin/actions";
 import { ActionStatus, SubmitButton } from "@/components/admin/submit-button";
 import { panelClass } from "@/components/ui/page";
@@ -35,12 +36,12 @@ export function CorrectionForm({
   fields: FieldOption[];
   title: string;
 }) {
-  const [state, formAction] = useActionState(correctFieldAction, null);
+  const [state, formAction, submitting] = useActionState(correctFieldAction, null);
   const [fieldName, setFieldName] = useState(fields[0]?.name ?? "");
   const field = fields.find((f) => f.name === fieldName) ?? fields[0];
 
   return (
-    <form action={formAction} className={panelClass("flex flex-col gap-2.5 p-4")}>
+    <ActionForm action={formAction} state={state} pending={submitting} className={panelClass("flex flex-col gap-2.5 p-4")}>
       <input type="hidden" name="table" value={table} />
       <input type="hidden" name="rowId" value={rowId} />
       <input type="hidden" name="gameId" value={gameId} />
@@ -82,6 +83,6 @@ export function CorrectionForm({
         </p>
       )}
       <ActionStatus state={state} />
-    </form>
+    </ActionForm>
   );
 }
