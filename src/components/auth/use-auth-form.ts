@@ -13,9 +13,14 @@ type Options<S extends z.ZodType> = {
   serverState: AuthActionState;
   /** useActionState 가 준 액션. <form action> 에 걸지 말고 이 훅에 넘긴다 — 이유는 onSubmit 주석 */
   submit: (formData: FormData) => void;
+  /**
+   * 칸을 떠날 때 서버에 묻는 확인(가입의 이메일 중복 등). 오류 문구를 돌려주고, 문제없거나 답을 못 하면 null.
+   * onBlur 가 이 참조에 매여 있으니 렌더마다 새로 만들지 말고 모듈 상수로 넘긴다.
+   */
+  remoteChecks?: Readonly<Record<string, (value: string) => Promise<string | null>>>;
 };
 
-export function useAuthForm<S extends z.ZodType>({ schema, toInput, serverState, submit }: Options<S>) {
+export function useAuthForm<S extends z.ZodType>({ schema, toInput, serverState, submit, remoteChecks }: Options<S>) {
   const formRef = useRef<HTMLFormElement>(null);
   const [clientErrors, setClientErrors] = useState<Record<string, string>>({});
   const [editedSinceServer, setEditedSinceServer] = useState<Set<string>>(() => new Set());
@@ -58,8 +63,9 @@ export function useAuthForm<S extends z.ZodType>({ schema, toInput, serverState,
     return parsed.success ? {} : fieldErrorsOf(parsed.error);
   }, [schema, toInput]);
 
+  /** 그 칸의 오류를 갱신하고, 오류가 있으면 문구를 돌려준다 */
   const validateField = useCallback(
-    (name: string) => {
+    (name: string): string | undefined => {
       const all = validateAll();
       setClientErrors((prev) => {
         const next = { ...prev };
@@ -67,11 +73,35 @@ export function useAuthForm<S extends z.ZodType>({ schema, toInput, serverState,
         else delete next[name];
         return next;
       });
+      return all[name];
     },
     [validateAll],
   );
 
-  const onBlur = useCallback((e: FocusEvent<HTMLInputElement>) => validateField(e.currentTarget.name), [validateField]);
+  /*
+   * 칸을 떠날 때: 칸 안에서 가를 수 있는 것(zod)을 먼저 보고, 통과했을 때만 서버에 묻는다(remoteChecks).
+   *
+   * 답이 오기 전에 칸을 고쳤으면 그 답은 버린다 — 옛 값에 대한 오류가 새 값 위에 뜨면 안 된다.
+   * 고치기 시작하면 onChange 의 재검증이 이 오류를 지운다(zod 는 통과하니까). 다시 떠나면 다시 묻는다.
+   * 제출을 막지는 않는다: 서버가 제출 때 같은 답을 하므로, 여기 답은 "미리 알려 주기" 일 뿐이다.
+   */
+  const onBlur = useCallback(
+    (e: FocusEvent<HTMLInputElement>) => {
+      const { name, value } = e.currentTarget;
+      if (validateField(name)) return;
+      const check = remoteChecks?.[name];
+      if (!check) return;
+      void check(value)
+        .catch(() => null)
+        .then((message) => {
+          if (!message) return;
+          const current = formRef.current?.elements.namedItem(name);
+          if (!(current instanceof HTMLInputElement) || current.value !== value) return;
+          setClientErrors((prev) => ({ ...prev, [name]: message }));
+        });
+    },
+    [remoteChecks, validateField],
+  );
 
   const onChange = useCallback(
     (e: FormEvent<HTMLInputElement>) => {

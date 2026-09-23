@@ -3,11 +3,11 @@
 // 리다이렉트는 클라이언트가 수행한다(헤더 SessionProvider 갱신 후 soft navigation) — 액션은 redirectTo만 돌려준다.
 import { RATE_LIMIT } from "@/lib/auth/constants";
 import { AUTH_MESSAGES as M } from "@/lib/auth/messages";
-import { fieldErrorsOf, signInInputFromForm, signInSchema, signUpInputFromForm, signUpSchema } from "@/lib/auth/schemas";
+import { emailSchema, fieldErrorsOf, signInInputFromForm, signInSchema, signUpInputFromForm, signUpSchema } from "@/lib/auth/schemas";
 import { afterSignUpPath, safeNextPath } from "@/lib/routes";
 import { checkRateLimit, getRequestMeta, hashKeyPart } from "@/server/auth/rate-limit";
 import { createSession, invalidateCurrentSession } from "@/server/auth/session";
-import { createUser, EmailTakenError, verifyCredentials } from "@/server/services/users";
+import { createUser, EmailTakenError, isEmailRegistered, verifyCredentials } from "@/server/services/users";
 
 export type AuthActionState =
   | { ok: true; redirectTo: string }
@@ -48,6 +48,27 @@ export async function signUpAction(_prev: AuthActionState, formData: FormData): 
     if (e instanceof EmailTakenError) return { ok: false, fieldErrors: { email: M.emailTaken } };
     console.error("[auth] 회원가입 실패:", e instanceof Error ? e.message : e);
     return { ok: false, error: M.serverError };
+  }
+}
+
+/**
+ * 가입 폼 이메일 칸의 중복 확인(칸을 떠날 때). 답을 못 하면 null — 칸에 아무것도 띄우지 않고 제출에 맡긴다.
+ *
+ * 계정이 있는지를 드러내는 창구다. 새로 새는 정보는 없다(가입 제출도 "이미 가입된 이메일이에요" 로 답한다).
+ * 다만 칸 하나로 물을 수 있어 가장 싼 창구가 되므로 따로 막는다(RATE_LIMIT.emailCheckPerIp).
+ */
+export async function checkEmailTakenAction(rawEmail: unknown): Promise<{ taken: boolean } | null> {
+  const parsed = emailSchema.safeParse(rawEmail);
+  if (!parsed.success) return null;
+
+  const meta = await getRequestMeta();
+  if (!(await checkRateLimit(`emailcheck:ip:${hashKeyPart(meta.ip)}`, RATE_LIMIT.emailCheckPerIp))) return null;
+
+  try {
+    return { taken: await isEmailRegistered(parsed.data) };
+  } catch (e) {
+    console.error("[auth] 이메일 중복 확인 실패:", e instanceof Error ? e.message : e);
+    return null;
   }
 }
 

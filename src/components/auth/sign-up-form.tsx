@@ -1,7 +1,7 @@
 "use client";
 import Link from "next/link";
 import { useActionState, useRef, useState } from "react";
-import { signUpAction } from "@/app/(auth)/actions";
+import { checkEmailTakenAction, signUpAction } from "@/app/(auth)/actions";
 import { DISPLAY_NAME_MAX } from "@/lib/auth/constants";
 import { AUTH_MESSAGES as M } from "@/lib/auth/messages";
 import { signUpInputFromForm, signUpSchema } from "@/lib/auth/schemas";
@@ -14,6 +14,14 @@ import { FormMessage } from "@/components/ui/form-message";
 import { PasswordField } from "@/components/ui/password-field";
 import { TextField } from "@/components/ui/text-field";
 
+/**
+ * 이메일 칸을 떠날 때 중복을 묻는다(2026-09-23) — 다섯 칸을 다 채우고 눌러야 "이미 가입된 이메일" 을 알던 것을 앞당긴다.
+ * 모듈 상수인 이유는 useAuthForm 의 remoteChecks 주석에.
+ */
+const REMOTE_CHECKS = {
+  email: async (value: string) => ((await checkEmailTakenAction(value))?.taken ? M.emailTaken : null),
+};
+
 export function SignUpForm({ next }: { next: string }) {
   const [state, formAction, pending] = useActionState(signUpAction, null);
   const { formRef, formError, errorSerial, fieldProps, onSubmit, navigating } = useAuthForm({
@@ -21,6 +29,7 @@ export function SignUpForm({ next }: { next: string }) {
     toInput: signUpInputFromForm,
     serverState: state,
     submit: formAction,
+    remoteChecks: REMOTE_CHECKS,
   });
   const emailRef = useRef<HTMLInputElement>(null);
   const passwordRef = useRef<HTMLInputElement>(null);

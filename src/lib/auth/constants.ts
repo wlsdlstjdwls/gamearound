@@ -48,6 +48,13 @@ export const RATE_LIMIT = {
   signInPerEmail: { limit: 10, windowSec: 15 * 60 },
   /** 회원가입: IP당 1시간에 5회 */
   signUpPerIp: { limit: 5, windowSec: 60 * 60 },
+  /**
+   * 가입 폼 이메일 중복 확인: IP당 15분에 10회.
+   * 사람은 이메일 칸을 두세 번 떠날 뿐이다. 이 창구는 칸 하나로 계정 존재를 물을 수 있는 **가장 싼 조회 창구**라,
+   * 가입 제출(1시간 5회)보다 넉넉하되 넉넉함이 그대로 대량 조회 능력이 되지 않게 좁게 둔다.
+   * 막히면 칸에 아무것도 안 띄우고 제출에 맡긴다 — 제출이 어차피 같은 답을 한다.
+   */
+  emailCheckPerIp: { limit: 10, windowSec: 15 * 60 },
   /** 푸시 구독: 사용자당 분당 10회 (§1) */
   pushPerUser: { limit: 10, windowSec: 60 },
 } as const;

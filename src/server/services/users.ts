@@ -35,6 +35,12 @@ export async function findUserByEmail(email: string): Promise<UserRow | null> {
   return row ?? null;
 }
 
+/** 가입 폼이 칸에서 묻는 중복 확인. 행 전체(비밀번호 해시 포함)를 끌어올 이유가 없어 id 하나만 본다 */
+export async function isEmailRegistered(email: string): Promise<boolean> {
+  const row = await getDb().query.users.findFirst({ columns: { id: true }, where: eq(users.email, normalizeEmail(email)) });
+  return Boolean(row);
+}
+
 export class EmailTakenError extends Error {
   constructor() {
     super(AUTH_MESSAGES.emailTaken);
