@@ -130,8 +130,13 @@ export function ActiveFilters({ filter, variant = "column" }: { filter: GamesQue
     return (
       // -mx + px: 칩이 잘리는 자리가 본문 여백이 아니라 화면 끝이어야 "옆으로 더 있다" 로 읽힌다.
       // [scrollbar-width:none] — 줄 하나짜리 띠 아래 스크롤바가 서면 그 자체가 두 번째 줄이 된다
-      // (관리자 메뉴가 같은 처리를 쓴다). 스크롤 가능하다는 사실은 칩이 잘린 모양이 말한다
-      <div className="-mx-5 flex items-center gap-1.5 overflow-x-auto pl-5 pt-3 [scrollbar-width:none] sm:-mx-7 sm:pl-7">
+      // (관리자 메뉴가 같은 처리를 쓴다). 스크롤 가능하다는 사실은 칩이 잘린 모양이 말한다.
+      //
+      // overflow-y-hidden + pb-2 -mb-2(2026-09-24, 사용자 신고: "뱃지 영역과 전부 풀기가 위아래로 움직인다").
+      // overflow-x 를 auto 로 두면 overflow-y 도 auto 로 계산된다. 손가락 기기에서 칩의 44px 덧면(.tap-inset::after)이
+      // 칩 아래로 8px 넘쳐 띠가 세로로 8px 미끄러졌다. 세로는 잘라 막고, 그 8px 은 아래 여백으로 품어
+      // 덧면(누르는 범위)이 잘리지 않게 한다. -mb-2 로 되돌려 아래 목록과의 간격은 그대로다
+      <div className="-mx-5 -mb-2 flex items-center gap-1.5 overflow-x-auto overflow-y-hidden pb-2 pl-5 pt-3 [scrollbar-width:none] sm:-mx-7 sm:pl-7">
         <ul className="flex flex-nowrap items-center gap-1.5">
           {list.map((f) => (
             <li key={f.key} className="shrink-0">
