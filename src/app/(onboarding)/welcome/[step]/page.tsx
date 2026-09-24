@@ -8,6 +8,7 @@ import { redirect } from "next/navigation";
 import { ROUTES, welcomeStepPath } from "@/lib/routes";
 import { gamesHref } from "@/lib/games-query";
 import { DEAL_STYLE_CHOICES, GENRE_PICK_MAX, PLATFORM_CHOICES, PLAY_TIME_CHOICES } from "@/lib/onboarding/constants";
+import { summarizeProfile } from "@/lib/onboarding/summary";
 import { ONBOARDING_MESSAGES as M } from "@/lib/onboarding/messages";
 import { personalQuery } from "@/lib/onboarding/query";
 import { isStep, type OnboardingStep, type StepContext } from "@/lib/onboarding/steps";
@@ -16,7 +17,7 @@ import { listGames } from "@/server/services/games";
 import { OnboardingShell } from "@/components/onboarding/shell";
 import { PickGroup, type PickOption } from "@/components/onboarding/pick-group";
 import { IntroBody } from "@/components/onboarding/intro-body";
-import { DoneBody, type DoneSummaryRow } from "@/components/onboarding/done-body";
+import { DoneBody } from "@/components/onboarding/done-body";
 import { submitStepAction } from "../actions";
 
 type Props = {
@@ -161,7 +162,7 @@ async function questionFor(step: Exclude<OnboardingStep, "intro" | "done">, prof
  * 따로 만들면 "N개라더니 목록은 다르다" 가 된다.
  */
 async function DonePage({ ctx }: { ctx: StepContext }) {
-  const [profile, genreChoices] = await Promise.all([getMyProfile(), listGenreChoices()]);
+  const [profile, genreChoices, subscriptionChoices] = await Promise.all([getMyProfile(), listGenreChoices(), listSubscriptionChoices()]);
   const genreNames = (profile.favoriteGenreIds ?? [])
     .map((id) => genreChoices.find((g) => g.id === id)?.name)
     .filter((n): n is string => Boolean(n));
@@ -172,16 +173,8 @@ async function DonePage({ ctx }: { ctx: StepContext }) {
     .then((r) => r.total)
     .catch(() => null);
 
-  const summary: DoneSummaryRow[] = [];
-  const platformLabels = (profile.platforms ?? [])
-    .map((p) => PLATFORM_CHOICES.find((c) => c.value === p)?.label)
-    .filter((l): l is string => Boolean(l));
-  if (platformLabels.length) summary.push({ label: "플랫폼", value: platformLabels.join(", ") });
-  if (genreNames.length) summary.push({ label: "장르", value: genreNames.join(", ") });
-  const deal = DEAL_STYLE_CHOICES.find((c) => c.value === profile.dealStyle);
-  if (deal) summary.push({ label: "할인", value: deal.label });
-  const play = PLAY_TIME_CHOICES.find((c) => c.value === profile.playTimeStyle);
-  if (play) summary.push({ label: "플레이타임", value: play.label });
+  // 설정 화면과 같은 줄이다(summary.ts) — 여기서 본 값이 설정에서 보이는 값이어야 한다
+  const summary = summarizeProfile(profile, { genres: genreChoices, subscriptions: subscriptionChoices });
 
   return <DoneBody count={count} listHref={count === null ? ROUTES.game : gamesHref(query)} summary={summary} />;
 }

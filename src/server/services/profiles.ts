@@ -73,8 +73,8 @@ export const getMyProfile = cache(async (): Promise<ProfileDto> => {
  * `!== "admin"` 으로 두면 새 역할이 생기는 날 아무도 모르게 온보딩을 만난다.
  *
  * 판단을 한 함수로 뽑아 둔 이유는 물어보는 자리가 둘 이상이기 때문이다(온보딩 입구, 인증 리다이렉트).
- * 개인화 값 자체는 이 계정들도 가질 수 있다 — 막는 것은 **첫 로그인에 붙잡는 일**뿐이고,
- * 설정 화면에서 직접 답하는 길은 열어 둔다(5회차).
+ * 설정 화면의 개인화 마디도 이 판단을 따른다(5회차) — 답하는 길이 온보딩 단계뿐이라
+ * 마디를 보여 주면 누르는 순간 온보딩 레이아웃에 막혀 홈으로 튕긴다.
  */
 export function isOnboardingAudience(role: Role): boolean {
   return role === "user";

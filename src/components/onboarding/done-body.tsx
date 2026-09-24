@@ -13,10 +13,10 @@ import { ONBOARDING_MESSAGES as M } from "@/lib/onboarding/messages";
 import { buttonClass } from "@/components/ui/button";
 import { CheckIcon } from "@/components/ui/icons";
 import { Panel } from "@/components/ui/page";
+import type { ProfileSummaryRow } from "@/lib/onboarding/summary";
 
-export type DoneSummaryRow = { label: string; value: string };
 
-export function DoneBody({ count, listHref, summary }: { count: number | null; listHref: string; summary: DoneSummaryRow[] }) {
+export function DoneBody({ count, listHref, summary }: { count: number | null; listHref: string; summary: ProfileSummaryRow[] }) {
   return (
     <div data-onboarding className="flex min-h-svh flex-col items-center justify-center bg-bg px-4 py-10">
       <div className="flex w-full max-w-[560px] flex-col">
