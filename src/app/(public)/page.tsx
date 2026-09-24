@@ -9,6 +9,7 @@ import { DiscountText } from "@/components/ui/discount";
 import { CoverImage, GameCard } from "@/components/game-card";
 import { Clamp } from "@/components/ui/tooltip";
 import { NewsList } from "@/components/news-list";
+import { PersonalDeals } from "@/components/personal-deals";
 import { EmptyState } from "@/components/empty-state";
 import { SaleBadge } from "@/components/sale-badge";
 import { Page, ROW, ROWS, SectionHead } from "@/components/ui/page";
@@ -87,6 +88,9 @@ export default async function HomePage() {
           </>
         )}
       </section>
+
+      {/* 취향 할인 — 개인화를 켠 사람에게만, 마운트 뒤 따로 받는다(홈 캐시를 깨지 않으려고. components/personal-deals 주석) */}
+      <PersonalDeals />
 
       {/* 섹션 2 — 곧 끝나는 할인 / 최신 뉴스 */}
       {/* items-start: 두 기둥이 서로의 키를 따라가지 않게 한다 */}

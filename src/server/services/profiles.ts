@@ -10,6 +10,10 @@ import { gameGenres, gamePlatforms, games, genres, subscriptions, userProfiles, 
 import { requireUser } from "@/server/services/users";
 import { GENRE_CHOICE_NAMES } from "@/lib/onboarding/constants";
 import type { OnboardingStep } from "@/lib/onboarding/steps";
+import { dealFloor } from "@/lib/onboarding/personal";
+import { personalQuery } from "@/lib/onboarding/query";
+import { gamesHref } from "@/lib/games-query";
+import { getPersonalDeals, type GameSummary } from "@/server/services/games";
 
 /** 화면이 받는 취향 한 벌 */
 export type ProfileDto = {
@@ -228,4 +232,26 @@ export async function countPersonalizedGames(p: ProfileDto): Promise<number> {
 
   const [row] = await db.select({ n: sql<number>`count(*)::int` }).from(games).where(and(...wheres));
   return row?.n ?? 0;
+}
+
+/** 홈 취향 할인 줄 한 벌. `href` 는 "전체 보기" 가 여는 목록 주소다 */
+export type PersonalDealsDto = { items: GameSummary[]; href: string };
+
+/**
+ * 내 취향 할인. 개인화를 안 켰으면 null — 화면은 그 줄을 아예 안 그린다(빈 줄을 "추천 없음" 으로 보여 주지 않는다).
+ *
+ * "전체 보기" 주소는 결과 화면과 같은 personalQuery 에 할인 조건만 얹는다. 줄은 장르를 "하나라도" 로
+ * 거르지만 목록의 genre 칸은 값 하나만 받는다(query.ts 주석) — 그래서 목록이 줄보다 좁을 수 있다.
+ * 숫자를 약속하지 않는 링크라 그 차이는 거짓말이 되지 않는다.
+ */
+export async function getMyPersonalDeals(): Promise<PersonalDealsDto | null> {
+  const p = await getMyProfile();
+  if (!isPersonalized(p)) return null;
+  const [items, choices] = await Promise.all([
+    getPersonalDeals({ platforms: p.platforms, genreIds: p.favoriteGenreIds, subscriptionKeys: p.subscriptionKeys, floor: dealFloor(p.dealStyle) }),
+    p.favoriteGenreIds?.length ? listGenreChoices() : Promise.resolve([]),
+  ]);
+  const nameById = new Map(choices.map((c) => [c.id, c.name]));
+  const genreNames = (p.favoriteGenreIds ?? []).map((id) => nameById.get(id)).filter((n): n is string => Boolean(n));
+  return { items, href: gamesHref(personalQuery({ platforms: p.platforms, genreNames }), { onSale: true }) };
 }

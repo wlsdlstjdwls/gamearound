@@ -76,3 +76,13 @@ export const ONBOARDING_MESSAGES = {
     redo: "다시 답하기",
   },
 } as const;
+
+/** 온보딩에서 받은 값이 쓰이는 자리의 문구(4회차). 온보딩 화면 밖에 뜨지만 같은 값을 말하므로 여기에 둔다 */
+export const PERSONAL_MESSAGES = {
+  dealsTitle: "내 취향에 맞는 할인",
+  /** 무엇으로 골랐는지 말해야 "왜 이게 떴지" 가 안 생긴다 */
+  dealsNote: "고른 기기, 장르, 할인 기준으로 골랐어요",
+  dealsMore: "전체 보기",
+  /** 알림 폼에서 첫 값이 취향에서 왔을 때 */
+  alertFromProfile: "온보딩에서 고른 할인 기준으로 맞춰 뒀어요",
+} as const;

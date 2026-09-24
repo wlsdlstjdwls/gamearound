@@ -11,13 +11,17 @@ import { ALERT_RULE_TEXT, COLLECT_SCHEDULE_TEXT } from "@/lib/freshness";
 import { stagger } from "@/lib/motion";
 import { ROUTES } from "@/lib/routes";
 import { findGameBySlug, listAlerts } from "@/server/services/alerts";
+import { getMyProfile, isPersonalized } from "@/server/services/profiles";
+import { alertDefaults } from "@/lib/onboarding/personal";
 
 export const metadata: Metadata = { title: "가격 알림" };
 
 export default async function AlertsPage({ searchParams }: { searchParams: Promise<{ game?: string | string[] }> }) {
   const sp = await searchParams;
   const slug = typeof sp.game === "string" ? sp.game.trim() : "";
-  const [game, alerts] = await Promise.all([slug ? findGameBySlug(slug) : Promise.resolve(null), listAlerts()]);
+  const [game, alerts, profile] = await Promise.all([slug ? findGameBySlug(slug) : Promise.resolve(null), listAlerts(), getMyProfile()]);
+  // 개인화를 끈 사람의 값은 남아 있어도 읽지 않는다(profiles 의 isPersonalized 주석)
+  const defaults = isPersonalized(profile) ? alertDefaults(profile) : undefined;
   const active = alerts.filter((a) => a.isActive).length;
 
   return (
@@ -47,6 +51,7 @@ export default async function AlertsPage({ searchParams }: { searchParams: Promi
             coverUrl: game.coverUrl,
             priceNote: game.titleKo ? game.titleEn : null,
           }}
+          defaults={defaults}
         />
       )}
 

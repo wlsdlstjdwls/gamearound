@@ -11,6 +11,8 @@ import { PLATFORM_ORDER } from "@/lib/platform";
 import { Button } from "@/components/ui/button";
 import { ChipButton } from "@/components/ui/chip";
 import { Clamp } from "@/components/ui/tooltip";
+import type { AlertDefaults } from "@/lib/onboarding/personal";
+import { PERSONAL_MESSAGES } from "@/lib/onboarding/messages";
 
 export const PLATFORM_OPTIONS: { value: string; label: string }[] = [
   { value: "all", label: "전체 플랫폼" },
@@ -41,10 +43,12 @@ export function StatusLine({ state }: { state: ActionState }) {
 type FormGame = { id: string; slug: string; title: string; coverUrl?: string | null; priceNote?: string | null };
 
 /** 새 알림 생성 폼 — /alerts?game=<slug> 로 진입했을 때 상단에 노출 */
-export function AlertForm({ game }: { game: FormGame }) {
+export function AlertForm({ game, defaults }: { game: FormGame; defaults?: AlertDefaults }) {
   const [state, formAction, submitting] = useActionState(createAlertAction, null);
-  const [platform, setPlatform] = useState("all");
-  const [minDiscount, setMinDiscount] = useState(DEFAULT_MIN_DISCOUNT);
+  // 첫 값은 온보딩 취향에서 온다(설계 §9 의 4회차). 취향이 없으면 폼의 기본값이다
+  const [platform, setPlatform] = useState<string>(defaults?.platform ?? "all");
+  const [minDiscount, setMinDiscount] = useState(defaults?.minDiscountPct ?? DEFAULT_MIN_DISCOUNT);
+  const fromProfile = defaults?.minDiscountPct != null;
 
   // 새 알림 상자 — 이 화면에서 면을 가진 유일한 자리다. 연한 브랜드 면을 쓰는 이유는
   // "지금 만들려던 것" 과 "이미 만들어 둔 것"(아래 줄 목록)을 색으로 가르기 위해서다
@@ -108,6 +112,7 @@ export function AlertForm({ game }: { game: FormGame }) {
             <span className="w-[56px] shrink-0 text-right text-[20px] font-extrabold tracking-[-0.035em] text-acc">-{minDiscount}%</span>
           </div>
           <p className="text-[11.5px] text-dim">1%로 두면 할인이 시작될 때마다 알립니다.</p>
+          {fromProfile && <p className="text-[11.5px] text-acc">{PERSONAL_MESSAGES.alertFromProfile}</p>}
         </div>
       </div>
 
