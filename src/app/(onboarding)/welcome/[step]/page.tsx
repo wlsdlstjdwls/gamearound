@@ -18,6 +18,10 @@ import { OnboardingShell } from "@/components/onboarding/shell";
 import { PickGroup, type PickOption } from "@/components/onboarding/pick-group";
 import { IntroBody } from "@/components/onboarding/intro-body";
 import { DoneBody } from "@/components/onboarding/done-body";
+import { DeviceStepFields } from "@/components/onboarding/device-step";
+import { Panel } from "@/components/ui/page";
+import { listMyDevices } from "@/server/services/devices";
+import { OS_FAMILY_LABEL } from "@/lib/games/messages";
 import { submitStepAction } from "../actions";
 
 type Props = {
@@ -55,6 +59,8 @@ export default async function WelcomeStepPage({ params, searchParams }: Props) {
     );
   }
 
+  if (step === "device") return <DeviceStepPage ctx={ctx} />;
+
   const q = await questionFor(step, profile);
   return (
     <OnboardingShell
@@ -91,7 +97,7 @@ type Question = {
   requireAnswer: boolean;
 };
 
-async function questionFor(step: Exclude<OnboardingStep, "intro" | "done">, profile: Awaited<ReturnType<typeof getMyProfile>>): Promise<Question> {
+async function questionFor(step: Exclude<OnboardingStep, "intro" | "device" | "done">, profile: Awaited<ReturnType<typeof getMyProfile>>): Promise<Question> {
   switch (step) {
     case "platforms":
       return {
@@ -155,6 +161,38 @@ async function questionFor(step: Exclude<OnboardingStep, "intro" | "done">, prof
       };
     }
   }
+}
+
+/**
+ * 기기 단계. 카드 고르기가 아니라 칸 채우기라 questionFor 에 섞지 않는다.
+ *
+ * 이미 기기가 있는 사람에게는 칸을 안 보여 준다 — 설정에서 공들여 적은 기기 옆에 "내 PC" 를 하나 더
+ * 만들면 기본 기기가 뒤바뀌거나 같은 기기가 두 대가 된다. 고치는 자리는 설정의 기기 화면 하나다.
+ */
+async function DeviceStepPage({ ctx }: { ctx: StepContext }) {
+  const devices = await listMyDevices();
+  const primary = devices[0];
+  return (
+    <OnboardingShell
+      step="device"
+      ctx={ctx}
+      title={primary ? [M.device.existingTitle] : M.device.title}
+      subtitle={primary ? M.device.existingNote : M.device.subtitle}
+      note={primary ? undefined : M.device.note}
+      action={submitStepAction}
+      submitLabel={primary ? M.next : M.device.save}
+      skippable={!primary}
+    >
+      <StepField step="device" />
+      {primary ? (
+        <Panel className="px-4 py-3.5 text-[14px] text-ink">
+          {primary.label} | {OS_FAMILY_LABEL[primary.osFamily]}
+        </Panel>
+      ) : (
+        <DeviceStepFields />
+      )}
+    </OnboardingShell>
+  );
 }
 
 /**

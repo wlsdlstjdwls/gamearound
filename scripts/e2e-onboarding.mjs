@@ -137,11 +137,30 @@ if (!cookie) {
   fd.append("platforms", "ps5");
   const res = await post("/welcome/platforms", fd, cookie);
   const to = await redirectedTo(res);
-  check("플랫폼 저장 → 다음 단계(genres)", (to ?? "").includes("/welcome/genres"), to ?? "");
+  check("PC 를 고른 플랫폼 저장 → 기기 단계", (to ?? "").includes("/welcome/device"), to ?? "");
 
   const back = await get("/welcome/platforms", cookie);
   const checkedSteam = /value="steam"[^>]*checked|checked[^>]*value="steam"/.test(back.html);
   check("되돌아가면 고른 플랫폼이 체크돼 있다", checkedSteam);
+}
+
+// 5-1) 기기 단계 — 칸이 그려지고, 채워 저장하면 기본 기기가 생긴다
+{
+  const page = await get("/welcome/device", cookie);
+  check("기기 단계에 그래픽 칸이 있다", page.html.includes('name="gpuText"'));
+  const { fd } = await actionFields("/welcome/device", cookie);
+  fd.set("step", "device");
+  fd.set("label", "내 PC");
+  fd.set("osFamily", "windows");
+  fd.set("gpuText", "GeForce GTX 1060");
+  fd.set("ramGb", "16");
+  const res = await post("/welcome/device", fd, cookie);
+  const to = await redirectedTo(res);
+  check("기기 저장 → genres", (to ?? "").includes("/welcome/genres"), to ?? "");
+
+  // 되돌아오면 칸 대신 "이미 등록한 기기" 를 보여 준다(두 대가 안 생기는 것은 액션이 기기 수를 보고 막는다)
+  const again = await get("/welcome/device", cookie);
+  check("되돌아오면 이미 등록한 기기로 보여 준다", again.html.includes("이미 등록한 기기가 있어요") && !again.html.includes('name="gpuText"'));
 }
 
 // 6) 건너뛰기는 값을 저장하지 않고 넘어간다

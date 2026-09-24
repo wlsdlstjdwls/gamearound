@@ -4,11 +4,15 @@
 //
 // 저장은 **단계마다 즉시**다(설계 §3). 마지막에 몰아서 저장하면 중간에 창을 닫은 사람의 답이
 // 통째로 사라진다 — 재개 지점(onboarding_step)도 같이 여기서 올린다.
+import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { ROUTES, welcomeStepPath } from "@/lib/routes";
 import { dealStyleSchema, genresSchema, platformsSchema, playTimeSchema, stepSchema, subscriptionsSchema } from "@/lib/onboarding/schemas";
 import { nextStep, type OnboardingStep, type StepContext } from "@/lib/onboarding/steps";
 import { finishOnboarding, getMyProfile, grantConsent, saveStep } from "@/server/services/profiles";
+import { deviceSchema } from "@/lib/hardware/device-schemas";
+import { readDeviceForm } from "@/lib/hardware/device-input";
+import { addDevice, listMyDevices } from "@/server/services/devices";
 import type { Platform } from "@/server/db/schema";
 
 /** 건너뛰기도 제출이다 — 값을 저장하지 않고 다음 단계로만 넘긴다(그 단계 칸은 null 로 남는다) */
@@ -51,6 +55,15 @@ async function saveAnswer(step: OnboardingStep, fd: FormData): Promise<void> {
       const parsed = platformsSchema.safeParse({ platforms: fd.getAll("platforms").map(String) });
       if (!parsed.success) return;
       await saveStep({ platforms: parsed.data.platforms as Platform[] });
+      return;
+    }
+    case "device": {
+      // 이미 기기가 있으면 더하지 않는다 — 뒤로 갔다 다시 누른 사람에게 같은 기기가 두 대 생긴다
+      if ((await listMyDevices()).length > 0) return;
+      const parsed = deviceSchema.safeParse({ ...readDeviceForm(fd).values, isPrimary: true });
+      if (!parsed.success) return;
+      await addDevice(parsed.data);
+      revalidatePath(ROUTES.settingsDevices);
       return;
     }
     case "genres": {

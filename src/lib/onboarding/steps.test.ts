@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import { ONBOARDING_STEPS, isStep, nextStep, prevStep, stepProgress, visibleSteps, type StepContext } from "./steps";
 
 const ctx: StepContext = { platforms: null };
+const pc: StepContext = { platforms: ["steam", "ps5"] };
 
 describe("isStep", () => {
   it("아는 단계만 통과시킨다", () => {
@@ -17,14 +18,26 @@ describe("isStep", () => {
 });
 
 describe("nextStep / prevStep", () => {
-  it("정의된 순서대로 이어진다", () => {
+  it("PC 를 고르면 정의된 순서대로 전부 이어진다", () => {
     const walked: string[] = ["intro"];
-    let cur = nextStep("intro", ctx);
+    let cur = nextStep("intro", pc);
     while (cur) {
       walked.push(cur);
-      cur = nextStep(cur, ctx);
+      cur = nextStep(cur, pc);
     }
     expect(walked).toEqual([...ONBOARDING_STEPS]);
+  });
+
+  it("PC 를 안 고르면 기기 단계를 건너뛴다 — 콘솔만 쓰는 사람에게 CPU 를 묻지 않는다", () => {
+    const consoleOnly: StepContext = { platforms: ["ps5", "switch"] };
+    expect(nextStep("platforms", consoleOnly)).toBe("genres");
+    expect(prevStep("genres", consoleOnly)).toBe("platforms");
+    expect(nextStep("platforms", ctx)).toBe("genres");
+  });
+
+  it("기기 단계에 선 채 PC 를 지우면 뒤로 물러서지 않고 앞으로 보낸다", () => {
+    expect(nextStep("device", ctx)).toBe("genres");
+    expect(prevStep("device", ctx)).toBe("platforms");
   });
 
   it("마지막 뒤에는 없다 — 여기서 null 이 아니면 결과 화면이 자기 자신으로 돈다", () => {
@@ -37,9 +50,11 @@ describe("nextStep / prevStep", () => {
   });
 
   it("앞뒤가 서로를 되짚는다", () => {
-    for (const s of ONBOARDING_STEPS) {
-      const n = nextStep(s, ctx);
-      if (n) expect(prevStep(n, ctx)).toBe(s);
+    for (const c of [ctx, pc]) {
+      for (const s of visibleSteps(c)) {
+        const n = nextStep(s, c);
+        if (n) expect(prevStep(n, c)).toBe(s);
+      }
     }
   });
 });
@@ -51,8 +66,10 @@ describe("stepProgress", () => {
   });
 
   it("뒤로 가지 않는다 — 막대가 줄면 사람이 진행을 잃었다고 읽는다", () => {
-    const seen = visibleSteps(ctx).map((s) => stepProgress(s, ctx));
-    for (let i = 1; i < seen.length; i += 1) expect(seen[i]).toBeGreaterThan(seen[i - 1]);
+    for (const c of [ctx, pc]) {
+      const seen = visibleSteps(c).map((s) => stepProgress(s, c));
+      for (let i = 1; i < seen.length; i += 1) expect(seen[i]).toBeGreaterThan(seen[i - 1]);
+    }
   });
 
   it("0 과 1 사이에 머문다", () => {

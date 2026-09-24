@@ -6,7 +6,7 @@
 import type { Platform } from "@/server/db/schema";
 
 /** 주소 세그먼트이자 재개 지점(user_profiles.onboarding_step)에 저장되는 값 */
-export const ONBOARDING_STEPS = ["intro", "platforms", "genres", "deal-style", "play-time", "subscriptions", "done"] as const;
+export const ONBOARDING_STEPS = ["intro", "platforms", "device", "genres", "deal-style", "play-time", "subscriptions", "done"] as const;
 
 export type OnboardingStep = (typeof ONBOARDING_STEPS)[number];
 
@@ -16,16 +16,25 @@ export type StepContext = {
 };
 
 /**
- * PC 로 치는 플랫폼. 기기 사양 단계(다음 회차)가 이 답에 걸린다 —
+ * PC 로 치는 플랫폼. 기기 사양 단계가 이 답에 걸린다 —
  * 콘솔만 쓰는 사람에게 CPU, GPU 를 묻는 것은 답이 없는 질문이다.
  */
 export const PC_PLATFORMS: readonly Platform[] = ["steam", "epic"];
 
+/** 고른 플랫폼에 PC 가 하나라도 있는가 */
+export function playsOnPc(platforms: Platform[] | null): boolean {
+  return (platforms ?? []).some((p) => PC_PLATFORMS.includes(p));
+}
+
 /**
- * 그 단계를 보여줄지. 조건부 단계가 하나도 없는 지금은 전부 true 지만, 규칙이 사는 자리를
- * 미리 만들어 둔다 — 조건이 화면 컴포넌트로 흩어지면 진행률이 거짓말을 시작한다.
+ * 그 단계를 보여줄지. 규칙을 여기 한 곳에 둔다 — 조건이 화면 컴포넌트로 흩어지면 진행률이 거짓말을 시작한다.
+ *
+ * 기기 단계는 PC 를 **골랐을 때만** 연다. 플랫폼을 건너뛴 사람(null)도 닫는다 — 모르는 사람에게
+ * 사양을 묻는 것보다, PC 를 쓰는 사람이 설정의 기기 화면에서 스스로 적는 편이 덜 성가시다.
  */
-const VISIBLE_WHEN: Partial<Record<OnboardingStep, (ctx: StepContext) => boolean>> = {};
+const VISIBLE_WHEN: Partial<Record<OnboardingStep, (ctx: StepContext) => boolean>> = {
+  device: (ctx) => playsOnPc(ctx.platforms),
+};
 
 export function isStep(value: string): value is OnboardingStep {
   return (ONBOARDING_STEPS as readonly string[]).includes(value);
