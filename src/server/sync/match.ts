@@ -1,13 +1,14 @@
 // 소스 간 게임 매칭 — 설계서 §4.2.
 // 제목 정규화 → adapter.search(영문, 필요하면 한국어까지) → trigram 유사도 상위 후보 → 임계값에 따라 auto / pending / 미매칭.
 // matched_by="manual" 행은 크롤러가 절대 덮어쓰지 않는다.
-import { and, eq, isNull, lt, or, sql } from "drizzle-orm";
+import { and, eq, inArray, isNull, lt, ne, or, sql } from "drizzle-orm";
 import { getDb } from "@/server/db/client";
 import { gameSourceRefs, games } from "@/server/db/schema";
 import { updatedBy } from "@/server/db/audit";
 import { getSearchableAdapter, getDisabledReason, isSourceEnabled, type SearchableSource } from "@/server/adapters";
 import type { SearchCandidate, Source } from "@/server/adapters/types";
 import { normalizeTitle, seriesConflict, trigramSimilarity } from "@/lib/slug";
+import { MATCHED_FOR_SYNC } from "./constants";
 
 export const AUTO_MATCH_THRESHOLD = 0.9;
 export const PENDING_MATCH_THRESHOLD = 0.7;
@@ -133,6 +134,17 @@ export function refRowFor(best: BestCandidate | null): RefRow {
 }
 
 /**
+ * 그 외부 ID 를 다른 게임이 이미 쥐고 있으면 auto 를 pending 으로 내린다.
+ *
+ * 외부 ID 하나는 가격 하나다. 2026-09-24 실측: PS 검색 후보는 제목이 상품(번들) 이름, ID 는 그 상품의 콘셉트라
+ * "Black Ops 6 - Cross-Gen Bundle" 이 1.00 으로 맞고 "Call of Duty" 허브 콘셉트를 받아 갔다(psstore 89개 번호를 229행이 공유).
+ * 떼지 않고 pending 인 이유: 어느 쪽이 주인인지 제목만으로 못 가린다 — 사람이 매칭 큐에서 본다.
+ */
+export function guardTakenRef(row: RefRow, takenByOther: boolean): RefRow {
+  return row.matchedBy === "auto" && takenByOther ? { ...row, matchedBy: "pending" } : row;
+}
+
+/**
  * 제목으로 후보를 찾는다. 영문으로 한 번, 그래도 확실하지 않으면 한국어로 한 번 더.
  *
  * 왜 두 번 묻나: 스토어 카탈로그는 그 나라 말로 적혀 있다. 한국 PS, 닌텐도 스토어에서
@@ -161,6 +173,16 @@ async function searchBestCandidate(
   return best;
 }
 
+/** 같은 소스에서 이 외부 ID 로 수집되는(auto, manual) 다른 게임이 있는가 */
+async function refTakenByOther(gameId: string, source: Source, externalId: string): Promise<boolean> {
+  const hit = await getDb().query.gameSourceRefs.findFirst({
+    where: and(eq(gameSourceRefs.source, source), eq(gameSourceRefs.externalId, externalId), ne(gameSourceRefs.gameId, gameId),
+      inArray(gameSourceRefs.matchedBy, MATCHED_FOR_SYNC)),
+    columns: { gameId: true },
+  });
+  return Boolean(hit);
+}
+
 /** 게임 1개를 소스 1개에 매칭 시도. manual 이면 건너뜀. DB 에 upsert 까지 수행 */
 export async function matchGameToSource(gameId: string, source: SearchableSource): Promise<MatchResult> {
   const db = getDb();
@@ -177,7 +199,8 @@ export async function matchGameToSource(gameId: string, source: SearchableSource
 
   const adapter = getSearchableAdapter(source);
   const best = await searchBestCandidate(adapter, game);
-  const row = refRowFor(best);
+  const found = refRowFor(best);
+  const row = guardTakenRef(found, found.matchedBy === "auto" && (await refTakenByOther(gameId, source, found.externalId)));
 
   // none 행은 pending 까지만 덮는다. pending 은 "사람이 판단해 달라" 는 뜻인데, 판정 규칙이 좋아져
   // 이제 후보조차 아니라고 말한다면 그 대기표는 우리가 더 이상 믿지 않는 옛 판단이다.

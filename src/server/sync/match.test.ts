@@ -1,7 +1,7 @@
 // 매칭 임계값 테스트 (§4.2) — trigram 유사도 + classifyMatch/pickBestCandidate 순수 함수만. DB/네트워크 없음
 import { describe, expect, it } from "vitest";
 import { normalizeTitle, slugify, trigramSimilarity } from "@/lib/slug";
-import { AUTO_MATCH_THRESHOLD, classifyMatch, findGameByTitle, NO_CANDIDATE_EXTERNAL_ID, NONE_RETRY_DAYS, noneRetryCutoff, PENDING_MATCH_THRESHOLD, pickBestCandidate, refRowFor } from "@/server/sync/match";
+import { AUTO_MATCH_THRESHOLD, classifyMatch, findGameByTitle, guardTakenRef, NO_CANDIDATE_EXTERNAL_ID, NONE_RETRY_DAYS, noneRetryCutoff, PENDING_MATCH_THRESHOLD, pickBestCandidate, refRowFor } from "@/server/sync/match";
 import { matchNewsToGame } from "@/server/sync/run-news";
 
 describe("classifyMatch", () => {
@@ -156,5 +156,19 @@ describe("한글 정규화 (NFKD 자모 분해 회귀)", () => {
 
   it("라틴 문자 악센트 제거는 그대로 동작한다", () => {
     expect(normalizeTitle("Pokémon Légendes")).toBe("pokemon legendes");
+  });
+});
+
+describe("guardTakenRef", () => {
+  const auto = { externalId: "10001130", url: null, matchedTitle: "Call of Duty®: Black Ops 6 - Cross-Gen Bundle", matchedBy: "auto" as const, confidence: "1.00" };
+  it("다른 게임이 쥔 외부 ID 면 auto 를 pending 으로 내린다", () => {
+    expect(guardTakenRef(auto, true).matchedBy).toBe("pending");
+  });
+  it("아무도 안 쥐었으면 그대로 둔다", () => {
+    expect(guardTakenRef(auto, false)).toBe(auto);
+  });
+  it("auto 가 아닌 판정은 건드리지 않는다", () => {
+    const none = { ...auto, matchedBy: "none" as const };
+    expect(guardTakenRef(none, true)).toBe(none);
   });
 });
