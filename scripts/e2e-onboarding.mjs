@@ -8,7 +8,8 @@
 //  4) 결과 화면에 닿는 순간 마침이 찍혀, 다시 /welcome 을 열면 붙잡지 않는다
 const base = process.argv[2] ?? "http://127.0.0.1:4000";
 const email = `e2e-onb+${Date.now()}@example.com`;
-const password = "Test1234!";
+// 쉬운 비번은 가입에서 거절된다(lib/auth/weak-password) — 흔한 꼴을 피한 값
+const password = "Gm!9vQz2-onb";
 let failures = 0;
 
 try {
@@ -62,20 +63,33 @@ async function get(path, cookie) {
 }
 
 // 0) 가입 — next 를 안 주면 온보딩으로 가야 한다
+//
+// 가입 폼은 2026-09-23(62e6215)부터 <form action> 이 아니라 onSubmit 으로 액션을 부른다(React 19 의 form.reset 회피).
+// 그래서 페이지에 $ACTION 숨김 칸이 없다 — 액션 ID 를 dev 매니페스트에서 찾아 Next-Action 헤더로 직접 부른다.
+// 인자는 (prevState, formData) 둘이라 React 의 인코딩대로 "0" 에 [null, "$K1"], 칸은 "_1_" 접두로 싣는다(react-server-dom 의 FormData 인코딩).
 let cookie;
 {
-  const { fd } = await actionFields("/sign-up");
-  fd.set("displayName", "온보딩테스터");
-  fd.set("email", email);
-  fd.set("password", password);
-  fd.set("passwordConfirm", password);
-  fd.set("terms", "on");
-  const res = await post("/sign-up", fd);
-  const raw = res.headers.getSetCookie?.() ?? [];
-  cookie = raw.find((c) => c.startsWith("sjd_session="))?.split(";")[0];
-  const html = await res.text();
+  const { readFile } = await import("node:fs/promises");
+  const manifest = JSON.parse(await readFile(".next/dev/server/server-reference-manifest.json", "utf8"));
+  const ids = Object.entries(manifest.node ?? {})
+    .filter(([, e]) => Object.keys(e.workers ?? {}).some((k) => k.includes("sign-up")))
+    .map(([id]) => id);
+  let html = "";
+  // 그 페이지의 액션이 여럿이다(가입, 이메일 중복 확인, 머리글 로그아웃). 세션 쿠키를 새로 주는 것이 가입이다
+  for (const id of ids) {
+    const fd = new FormData();
+    for (const [k, v] of Object.entries({ displayName: "온보딩테스터", email, password, passwordConfirm: password, terms: "on" })) fd.set(`_1_${k}`, v);
+    // 루트는 **마지막에** 싣는다. 서버(busboy)는 칸을 흘려받으며 루트를 푸는데, 루트가 먼저 오면
+    // 아직 안 도착한 폼 칸을 빈 것으로 읽는다. 브라우저의 encodeReply 도 루트를 끝에 붙인다
+    fd.set("0", JSON.stringify([null, "$K1"]));
+    const res = await fetch(base + "/sign-up", { method: "POST", headers: { "Next-Action": id, accept: "text/x-component" }, body: fd, redirect: "manual" });
+    // 값이 빈 쿠키는 로그아웃 액션이 지우는 것이다 — 같은 머리글에 로그아웃도 걸려 있다
+    cookie = (res.headers.getSetCookie?.() ?? []).find((c) => /^sjd_session=[^;]/.test(c))?.split(";")[0];
+    html = await res.text();
+    if (cookie) break;
+  }
   check("가입 성공 → 세션 쿠키", Boolean(cookie));
-  check("가입 직후 갈 곳이 /welcome", html.includes('\\"/welcome\\"') || html.includes('"/welcome"'), "액션 결과의 redirectTo");
+  check("가입 직후 갈 곳이 /welcome", html.includes('"/welcome"'), "액션 결과의 redirectTo");
 }
 if (!cookie) {
   console.log("\n세션을 못 받아 이후 검사를 건너뜁니다.");
