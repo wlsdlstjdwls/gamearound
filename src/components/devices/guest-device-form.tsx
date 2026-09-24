@@ -31,21 +31,7 @@ import { useDetectedSpec } from "./use-detected-spec";
 import { ROUTES } from "@/lib/routes";
 import type { OsFamily } from "@/server/db/schema";
 import { saveGuestDevice, type CompatDevice } from "./guest-device";
-
-/**
- * 입력칸 — 공용 TextField 와 같은 차림이다(흰 면 + 헤어라인, 포커스에서 브랜드 링).
- * 컴포넌트를 그대로 쓰지 않는 이유는 글자 크기 하나다: 이 폼은 16px 여야 한다(iOS 가 그 아래에서 화면을 당긴다).
- * cn 은 단순 이어붙이기라 TextField 의 14px 를 밖에서 못 덮는다 — 같은 값을 여기 한 번 적는다.
- */
-const FIELD_CLASS =
-  "h-[46px] w-full rounded-xl bg-surface px-3.5 text-[16px] text-ink outline-none transition-[box-shadow] duration-base ease-standard " +
-  "shadow-[0_0_0_1px_var(--line)] placeholder:text-dim focus:shadow-[0_0_0_1px_var(--acc),0_0_0_4px_var(--acc-glow)]";
-
-/** 칸 이름. TextField 의 라벨과 같은 크기, 같은 색이다 */
-const LABEL_CLASS = "mb-1.5 block text-[12.5px] font-medium text-mut";
-
-/** 칸 밑 한 줄(무엇을 조심하라는 말). 그 칸에만 해당하는 말이라 칸 밑에 붙인다 */
-const HINT_CLASS = "mt-1.5 text-[11.5px] leading-[1.6] text-dim";
+import { FIELD_CLASS, HINT_CLASS, LABEL_CLASS } from "./field-style";
 
 export function GuestDeviceForm({
   current,
