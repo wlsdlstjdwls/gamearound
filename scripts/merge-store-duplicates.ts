@@ -163,6 +163,21 @@ async function moveRows(table: string, keys: string[], loser: string, survivor: 
   ));
 }
 
+/**
+ * 남는 행의 약한 ref(미매칭 기록 none, 검수 대기 pending)가 접히는 행의 확정 ref(auto, manual)를 이기지 않게 한다.
+ *
+ * 왜: game_source_refs 는 (게임, 소스) PK 라 moveRows 는 겹치면 남는 행의 것을 둔다. 그게 none 이어도.
+ * 그러면 가격 행은 mergePlatforms 로 옮겨졌는데 그 상품을 가리키는 ref 가 사라져 **다시 수집되지 않는다**.
+ * 2026-09-24 중복 정리에서 합친 행 10곳이 이렇게 고아가 됐다(Palia, 헬블레이드 2, Far Cry 4, 5 등).
+ */
+async function yieldWeakRefs(loser: string, survivor: string): Promise<void> {
+  await getDb().execute(sql.raw(`
+    delete from game_source_refs s
+    where s.game_id = '${survivor}' and s.matched_by in ('none', 'pending')
+      and exists (select 1 from game_source_refs l
+                  where l.game_id = '${loser}' and l.source = s.source and l.matched_by in ('auto', 'manual'))`));
+}
+
 /** 플랫폼 행 합치기. 같은 (플랫폼, 지역) 행이 이미 있으면 이력만 옮기고 껍데기를 지운다 */
 async function mergePlatforms(loser: string, survivor: string): Promise<void> {
   const db = getDb();
@@ -217,6 +232,7 @@ async function mergeGroup(group: Group, survivor: Member): Promise<void> {
        where parent_game_id = '${loser.id}'`,
     ));
     await mergePlatforms(loser.id, survivor.id);
+    await yieldWeakRefs(loser.id, survivor.id);
     await moveRows("game_source_refs", ["source"], loser.id, survivor.id);
     await moveRows("game_aliases", ["alias_norm"], loser.id, survivor.id);
     await moveRows("game_genres", ["genre_id"], loser.id, survivor.id);
