@@ -40,6 +40,13 @@ export const STEAM_APP_TYPE_DEMO = 1;
  * 부모 없이 혼자 서는 상품이다("AKIBA LOST - アキバロスト Soundtrack").
  */
 export const STEAM_APP_TYPE_MUSIC = 11;
+/**
+ * 게임이 아닌 앱(EStoreAppType 6). Soundpad(629520), Wallpaper Engine(431960) 이 6, 엘든 링이 0 이다(2026-09-24 실측).
+ * 본편 판정으로 두면 평가 수가 많아 인기순 앞줄에 온다(Wallpaper Engine 241위, Soundpad 1801위).
+ * 카탈로그 스팀 본편 5,186건 중 64건이 6 이었고 전부 영상 편집기, 도트 툴, 오버레이 같은 앱이었다(오탐 0).
+ * appdetails 의 문자열 type 은 Soundpad 도 "game" 이라 이 숫자가 유일한 신호다.
+ */
+export const STEAM_APP_TYPE_SOFTWARE = 6;
 export const STEAM_ASSET_BASE_URL = "https://shared.akamai.steamstatic.com/store_item_assets";
 
 /**

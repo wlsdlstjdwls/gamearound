@@ -309,6 +309,13 @@
       "when": 1790068152460,
       "tag": "0043_curvy_nova",
       "breakpoints": true
+    },
+    {
+      "idx": 44,
+      "version": "7",
+      "when": 1790230249814,
+      "tag": "0044_mushy_mimic",
+      "breakpoints": true
     }
   ]
 }

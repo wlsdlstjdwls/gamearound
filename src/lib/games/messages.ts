@@ -20,6 +20,8 @@ export const CONTENT_KIND_LABEL: Record<Exclude<ContentType, "game">, string> = 
   demo: "체험판",
   /** 본편에 딸린 것이 아니라 혼자 서는 사운드트랙 상품. 딸린 쪽은 dlc 로 온다 */
   music: "사운드트랙",
+  /** 게임이 아닌 앱(영상 편집기, 배경화면 도구). 목록에는 안 나오고 주소로만 열린다 */
+  software: "소프트웨어",
 };
 
 /**

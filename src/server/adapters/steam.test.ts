@@ -204,6 +204,15 @@ describe("parseStoreItems 의 종류 판정", () => {
     expect(parseStoreItems(withParent, withParent).get("7")?.contentType).toBe("demo");
   });
 
+  // Soundpad, Wallpaper Engine 이 6 이다(2026-09-24 실측). 본편으로 새면 인기순 앞줄을 차지한다
+  it("type 6 은 소프트웨어다", () => {
+    expect(parseStoreItems(items(6), items(6)).get("7")?.contentType).toBe("software");
+  });
+
+  it("type 0 은 본편이다", () => {
+    expect(parseStoreItems(items(0), items(0)).get("7")?.contentType).toBe("game");
+  });
+
   it("type 11 은 사운드트랙이다", () => {
     expect(parseStoreItems(items(11), items(11)).get("7")?.contentType).toBe("music");
   });

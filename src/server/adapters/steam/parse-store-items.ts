@@ -1,7 +1,7 @@
 // GetItems 응답 파서 — 배치 조회 경로. 가격, 할인 기간, 에셋, 멀티플레이 추론이 여기서 나온다.
 import { AdapterError, type StoreSnapshot } from "../types";
 import { storeItemsSchema, type StoreItem } from "./schemas";
-import { PLAYER_CATEGORY, STEAM_DECK_COMPAT, STEAM_APP_TYPE_DEMO, STEAM_APP_TYPE_DLC, STEAM_APP_TYPE_MUSIC, STEAM_ASSET_BASE_URL, STEAM_GENRE_TAG_IDS, STEAM_STORE_APP_URL } from "./constants";
+import { PLAYER_CATEGORY, STEAM_DECK_COMPAT, STEAM_APP_TYPE_DEMO, STEAM_APP_TYPE_DLC, STEAM_APP_TYPE_MUSIC, STEAM_APP_TYPE_SOFTWARE, STEAM_ASSET_BASE_URL, STEAM_GENRE_TAG_IDS, STEAM_STORE_APP_URL } from "./constants";
 import { steamDiscountLabel } from "./parse-discount";
 import { ratioToScore } from "@/lib/user-score";
 
@@ -85,10 +85,11 @@ function isUsableItem(item: StoreItem): boolean {
 }
 
 /** GetItems 의 type 과 부모 신호로 레코드의 성격을 정한다. 순서의 근거는 호출부 주석에 있다 */
-function steamContentType(type: number | undefined, parentAppid: string | null): "game" | "dlc" | "demo" | "music" {
+function steamContentType(type: number | undefined, parentAppid: string | null): "game" | "dlc" | "demo" | "music" | "software" {
   if (type === STEAM_APP_TYPE_DEMO) return "demo";
   if (type === STEAM_APP_TYPE_DLC || parentAppid !== null) return "dlc";
   if (type === STEAM_APP_TYPE_MUSIC) return "music";
+  if (type === STEAM_APP_TYPE_SOFTWARE) return "software";
   return "game";
 }
 

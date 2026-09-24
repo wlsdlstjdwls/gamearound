@@ -48,7 +48,7 @@ export const regionEnum = pgEnum("region", ["KR", "JP"]);
  * 사운드트랙이었다(2026-09-16 실측). 본편에 딸린 사운드트랙은 dlc 로 오지만 이쪽은 부모 없이
  * 혼자 서서, 가르지 않으면 출시예정 목록이 OST 로 찬다.
  */
-export const contentTypeEnum = pgEnum("content_type", ["game", "dlc", "edition", "bundle", "demo", "music"]);
+export const contentTypeEnum = pgEnum("content_type", ["game", "dlc", "edition", "bundle", "demo", "music", "software"]);
 
 /**
  * 이 게임 행을 누가 만들었나 — 매장 설계서 §6.

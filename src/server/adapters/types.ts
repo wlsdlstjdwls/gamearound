@@ -58,8 +58,9 @@ export interface StoreSnapshot {
    * demo, music 이 있는 이유: 출시예정 목록에는 체험판과 사운드트랙이 섞여 온다
    * (steam comingsoon 100건 중 체험판 10건, 사운드트랙 7건 — 2026-09-16 실측).
    * 본편으로 등록하면 출시예정 화면이 그 17%로 찬다.
+   * software 는 게임이 아닌 앱(Wallpaper Engine, Soundpad)이다 — 인기순 앞줄을 차지해서 뺀다.
    */
-  contentType?: "game" | "dlc" | "demo" | "music" | null;
+  contentType?: "game" | "dlc" | "demo" | "music" | "software" | null;
   /**
    * 이 스토어가 "지금 이 구독에 포함돼 있다"고 말한 구독 키 목록(subscriptions.key).
    *
