@@ -11,7 +11,7 @@ import {
   type StoreSnapshot,
 } from "./types";
 import { createHttpClient, notFoundAs } from "./http";
-import { isCurrencyItemTitle, isPreOrderExtraTitle } from "@/lib/games/content-kind";
+import { xboxContentType } from "./xbox-content-type";
 import { sleep } from "@/lib/async";
 
 export const XBOX_CATALOG_URL = "https://displaycatalog.mp.microsoft.com/v7.0";
@@ -51,8 +51,6 @@ export const XBOX_ADDON_PARENT_RELATION = "addOnParent";
  * 지금은 손해가 없지만, 목록이 30개에서 잘려 보이면 이 한계를 먼저 의심할 것.
  */
 export const XBOX_ADDONS_KEY = (productId: string): string => `PRODUCTADDONS_${productId}`;
-/** ProductKind 가 이 값이면 본편이 아니라 추가 콘텐츠다. 본편은 "Game" 으로 온다 */
-export const XBOX_ADDON_KIND = "Durable";
 /** 상태 키 뒤에서 products 배열을 찾을 때 넘겨다볼 글자 수. 한 줄짜리 900KB HTML 이라 창을 둬야 한다 */
 export const XBOX_ADDONS_SCAN_WINDOW = 20_000;
 
@@ -88,7 +86,10 @@ const productSchema = z.object({
    */
   // 추가 콘텐츠 상품은 이 값이 null 로 온다(2026-09-14 실측) — optional 만으로는 파싱이 통째로 실패해서
   // DLC 가 한 건도 등록되지 않았다. "모른다"와 "없다"를 갈라 두려면 nullish 여야 한다
-  Properties: z.object({ HasAddOns: z.boolean().nullish() }).optional(),
+  // IsDemo, Categories 는 종류 판정에 쓴다(xbox-content-type). 둘 다 null 로 오는 상품이 있다(실측: DiO Dungeon 2 의 Categories)
+  Properties: z
+    .object({ HasAddOns: z.boolean().nullish(), IsDemo: z.boolean().nullish(), Categories: z.array(z.string()).nullish() })
+    .nullish(),
   LocalizedProperties: z
     .array(
       z.object({
@@ -279,10 +280,13 @@ export function parseXboxProduct(raw: unknown, productId: string, rawEn?: unknow
   const product = parsed.data;
 
   const title = product.LocalizedProperties[0]?.ProductTitle?.trim() || productId;
-  // ProductKind 가 "Game" 이어도 예약 특전, 예약 팩은 본편이 아니다 — 스토어가 안 가르는 자리다(lib/games/content-kind).
-  // Sku.Properties.IsPreOrder 는 못 쓴다: 예약 중인 **본편**의 SKU 에도 true 가 실린다(2026-09-18 원문 확인)
-  // 게임 안 재화, 교환권도 ProductKind 가 "Game" 으로 온다(실측: Forza Horizon 6 Car Voucher 4)
-  const isDlc = product.ProductKind === XBOX_ADDON_KIND || isPreOrderExtraTitle(title) || isCurrencyItemTitle(title);
+  const contentType = xboxContentType({
+    productKind: product.ProductKind,
+    isDemo: product.Properties?.IsDemo,
+    categories: product.Properties?.Categories,
+    title,
+  });
+  const isDlc = contentType === "dlc";
   const price = pickKrwPurchase(product);
   const discountPct = price && price.list > 0 && price.current < price.list ? Math.round(((price.list - price.current) / price.list) * 100) : 0;
 
@@ -298,7 +302,7 @@ export function parseXboxProduct(raw: unknown, productId: string, rawEn?: unknow
     discountStartsAt: discountPct > 0 ? price?.startsAt ?? null : null,
     discountEndsAt: discountPct > 0 ? price?.endsAt ?? null : null,
     releaseDate: toIsoDate(product.MarketProperties[0]?.OriginalReleaseDate),
-    contentType: isDlc ? "dlc" : "game",
+    contentType,
     // 본편 쪽에서 물으면 이 자리가 비어 있다 — 부모를 말해 주는 건 추가 콘텐츠 응답뿐이다
     parentExternalId: isDlc ? xboxAddOnParentId(product) : null,
     // DLC 자신에게는 "추가 콘텐츠 유무"가 의미 없다 — null 은 모른다는 뜻이라 기존 값을 덮지 않는다

@@ -170,6 +170,18 @@ describe("parseXboxProduct", () => {
     expect(snap.parentExternalId).toBe("PARENT000001");
   });
 
+  it("스토어가 체험판이라고 하면 contentType 을 demo 로 싣는다", () => {
+    const raw = {
+      Products: [{
+        ProductId: "DEMO00000001",
+        ProductKind: "Game",
+        Properties: { IsDemo: true, Categories: ["Action & adventure"], HasAddOns: false },
+        LocalizedProperties: [{ ProductTitle: "Clea 2 Demo" }],
+      }],
+    };
+    expect(parseXboxProduct(raw, "DEMO00000001").contentType).toBe("demo");
+  });
+
   it("본편에는 부모를 달지 않는다 — 그 자리는 늘 비어 있다", () => {
     const raw = {
       Products: [{
