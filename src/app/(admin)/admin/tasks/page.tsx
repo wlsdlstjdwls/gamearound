@@ -9,6 +9,7 @@ import { TaskAddForm } from "@/components/admin/task-add-form";
 import { TaskBoard } from "@/components/admin/task-board";
 import { TASK_MESSAGES } from "@/lib/admin/messages";
 import { TASK_STATUSES } from "@/lib/admin/tasks";
+import { requireRoleOrForbid } from "@/server/auth/guards";
 import { sourceEnum } from "@/server/db/schema";
 import { getBoard } from "@/server/services/admin-tasks";
 
@@ -17,6 +18,10 @@ export const metadata: Metadata = { title: TASK_MESSAGES.title };
 export const dynamic = "force-dynamic";
 
 export default async function AdminTasksPage() {
+  // 레이아웃도 같은 검사를 하지만 레이아웃과 페이지는 **나란히** 렌더된다. 이 줄이 없으면 일반 계정이 들어왔을 때
+  // 레이아웃의 redirect 가 이기는 사이 getBoard 의 requireAdmin 이 던져 운영 로그에 "권한이 없습니다" 가 찍혔다.
+  // 서비스 쪽 검사는 그대로 둔다 — 이건 로그를 막는 줄이지 방어를 옮기는 줄이 아니다
+  await requireRoleOrForbid("admin");
   const board = await getBoard();
   // 건수는 화면 제목 옆에 붙인다 — 판 위에 또 제목을 세우면 "할 일" 과 같은 말이 두 번 선다
   const total = TASK_STATUSES.reduce((n, s) => n + board[s].length, 0);
