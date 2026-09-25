@@ -16,6 +16,7 @@ import type { StoreSnapshot } from "@/server/adapters/types";
 import { normalizeCompanyName } from "@/lib/company-name";
 import { errorMessage } from "@/lib/errors";
 import { MATCHED_FOR_SYNC, WRITE_BATCH_SIZE } from "./constants";
+import { correctedContentType } from "./content-type-fix";
 import { isLocked, recordError, type Ctx } from "./context";
 import { companyNamesOf, findCompaniesByAliases } from "./company-writer";
 import { createGameFromSnapshot, isTitleEnRecovery, planGameMeta, planSlugRename, type GameRow } from "./game-writer";
@@ -379,6 +380,11 @@ export async function applyStore(ctx: Ctx, source: StoreSource, fetched: Fetched
         metaUpdates.push(ctx.db.update(games).set({ ...set, updatedAt: ctx.now }).where(eq(games.id, gameId)));
         ctx.changedSlugs.add(slug);
       }
+    }
+    // 한 번 틀린 종류가 영원히 남지 않게 스토어 답으로 바로잡는다(판단은 content-type-fix)
+    if (cur && correctedContentType(cur, snapshot.contentType) && !isLocked(ctx, "games", gameId, "content_type")) {
+      metaUpdates.push(ctx.db.update(games).set({ contentType: "game", updatedAt: ctx.now }).where(eq(games.id, gameId)));
+      ctx.changedSlugs.add(slug);
     }
     // 지역까지 봐야 한다 — 같은 게임, 같은 기기라도 나라가 다르면 다른 행이고, 섞으면 일본 가격이 한국 행을 덮는다
     const region = snapshot.region ?? HOME_REGION;
