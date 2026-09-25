@@ -223,6 +223,14 @@ describe("parseStoreItems 의 종류 판정", () => {
     expect(parseStoreItems(withParent, withParent).get("7")?.contentType).toBe("dlc");
   });
 
+  // 옛 앱(Call of Duty 2003, Civilization IV)은 parent_appid 에 제 appid 를 적어 온다(2026-09-26 실측)
+  it("부모 칸이 자기 자신이면 부모가 없는 것으로 본다", () => {
+    const self = items(0, { related_items: { parent_appid: 7 } });
+    const got = parseStoreItems(self, self).get("7");
+    expect(got?.contentType).toBe("game");
+    expect(got?.parentExternalId).toBeNull();
+  });
+
   it("type 0 은 본편, type 4 는 DLC", () => {
     expect(parseStoreItems(items(0), items(0)).get("7")?.contentType).toBe("game");
     expect(parseStoreItems(items(4), items(4)).get("7")?.contentType).toBe("dlc");

@@ -119,7 +119,9 @@ export function parseStoreItems(rawKo: unknown, rawEn?: unknown): Map<string, St
     const titleEn = enNames.get(appid) || nameKo;
     if (!titleEn) continue; // 제목이 없으면 게임 마스터를 만들 수 없다
     const parent = item.related_items?.parent_appid;
-    const parentAppid = parent === undefined || parent === 0 ? null : String(parent);
+    // 옛 앱은 부모 칸에 제 자신을 적어 온다(2026-09-26 실측: Call of Duty 2003(2620), Civilization IV(3900), Bloodlines(2600)).
+    // 그걸 부모로 읽으면 본편이 dlc 로 굳는다 — 자기 자신은 부모가 아니다
+    const parentAppid = parent === undefined || parent === 0 || String(parent) === appid ? null : String(parent);
     const discount = item.best_purchase_option?.active_discounts?.[0];
     const { listPrice, currentPrice, discountPct } = priceOf(item);
     out.set(appid, {
