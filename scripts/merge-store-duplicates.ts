@@ -226,10 +226,18 @@ async function mergeGroup(group: Group, survivor: Member): Promise<void> {
   const db = getDb();
   for (const loser of group.members) {
     if (loser.id === survivor.id) continue;
+    // 남는 행이 지는 행의 자식이었다면 지는 행의 자리(본편 여부, 부모)를 물려받는다.
+    // 이걸 빼면 아래 자식 옮기기가 남는 행 자신을 잡아 제 자신을 부모로 가리키게 된다 —
+    // 2026-09-25 실측 9건(Lost Judgment, 유니콘 오버로드 등)이 dlc 로 앉아 목록에서 사라져 있었다
+    await db.execute(sql.raw(
+      `update games s set content_type = l.content_type, parent_game_id = nullif(l.parent_game_id, s.id),
+         updated_source = '${ACTOR}', updated_at = now()
+       from games l where s.id = '${survivor.id}' and l.id = '${loser.id}' and s.parent_game_id = l.id`,
+    ));
     // 자식을 먼저 옮긴다. 이 한 줄을 빠뜨리면 마지막 delete 가 자식 DLC 를 데리고 간다
     await db.execute(sql.raw(
       `update games set parent_game_id = '${survivor.id}', updated_source = '${ACTOR}', updated_at = now()
-       where parent_game_id = '${loser.id}'`,
+       where parent_game_id = '${loser.id}' and id <> '${survivor.id}'`,
     ));
     await mergePlatforms(loser.id, survivor.id);
     await yieldWeakRefs(loser.id, survivor.id);
