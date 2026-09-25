@@ -27,6 +27,12 @@ describe("parseWebglRenderer", () => {
     expect(parseWebglRenderer("")).toBeNull();
     expect(parseWebglRenderer("ANGLE (Google Inc., SwiftShader, Vulkan)")).toBeNull();
   });
+
+  it("소프트웨어 렌더러는 괄호가 겹쳐도 null — 조각이 그래픽 이름 행세를 하지 않는다", () => {
+    expect(parseWebglRenderer("ANGLE (Google, Vulkan 1.3.0 (SwiftShader Device (Subzero) (0x0000C0DE)), SwiftShader driver)")).toBeNull();
+    expect(parseWebglRenderer("llvmpipe (LLVM 15.0.7, 256 bits)")).toBeNull();
+    expect(parseWebglRenderer("ANGLE (Microsoft, Microsoft Basic Render Driver Direct3D11 vs_5_0 ps_5_0, D3D11)")).toBeNull();
+  });
 });
 
 describe("osFamilyFromUserAgent", () => {

@@ -10,7 +10,7 @@
 // - CPU 모델은 브라우저가 아예 모른다. `hardwareConcurrency` 는 코어 수지 모델이 아니다.
 //   코어 수로 모델을 되짚는 것은 추측이고, 이 축에서 추측은 "모르면 모른다고 한다" 를 깬다.
 import type { OsFamily } from "@/server/db/schema";
-import { WEBGL_NOISE_WORDS } from "./constants";
+import { SOFTWARE_RENDERER_WORDS, WEBGL_NOISE_WORDS } from "./constants";
 
 /**
  * WebGL 렌더러 문자열에서 부품 이름만 뽑는다.
@@ -24,6 +24,9 @@ import { WEBGL_NOISE_WORDS } from "./constants";
  */
 export function parseWebglRenderer(raw: string): string | null {
   if (!raw) return null;
+  // 소프트웨어 렌더러는 꼴을 가리지 않고 빈손이다 — 잘라 낸 조각이 그래픽 이름 행세를 한다
+  const lower = raw.toLowerCase();
+  if (SOFTWARE_RENDERER_WORDS.some((w) => lower.includes(w.toLowerCase()))) return null;
   let s = raw.trim();
 
   const angle = s.match(/^ANGLE\s*\((.*)\)$/i);

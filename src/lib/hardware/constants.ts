@@ -14,6 +14,16 @@ export const WEBGL_NOISE_WORDS = [
 ] as const;
 
 /**
+ * GPU 없이 CPU 로 그리는 렌더러 이름. 이 말이 렌더러 문자열 어디에든 있으면 부품을 못 읽은 것이다.
+ *
+ * 잡음 낱말(위)로 걷어 내는 것으로는 모자란다 — 2026-09-25 실측으로 헤드리스 크롬은
+ * `ANGLE (Google, Vulkan 1.3.0 (SwiftShader Device (Subzero) (0x0000C0DE)), SwiftShader driver)` 를 주고,
+ * 겹친 괄호 탓에 파서가 "1.3.0 )" 을 그래픽 이름으로 칸에 채웠다. 가상 PC, 원격 데스크톱,
+ * GPU 가속을 끈 브라우저가 같은 꼴(llvmpipe, Microsoft Basic Render Driver)을 준다.
+ */
+export const SOFTWARE_RENDERER_WORDS = ["SwiftShader", "llvmpipe", "softpipe", "Microsoft Basic Render"] as const;
+
+/**
  * 폼의 제안 목록에 내려보낼 부품 수(빠른 것부터).
  *
  * 사전 전체(300개가 넘는다)를 목록으로 펴지 않는 이유는 화면 무게다. 제안이 없어도 입력은 되고
