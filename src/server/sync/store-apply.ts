@@ -15,7 +15,7 @@ import type { StoreSource } from "@/server/adapters";
 import type { StoreSnapshot } from "@/server/adapters/types";
 import { normalizeCompanyName } from "@/lib/company-name";
 import { errorMessage } from "@/lib/errors";
-import { WRITE_BATCH_SIZE } from "./constants";
+import { MATCHED_FOR_SYNC, WRITE_BATCH_SIZE } from "./constants";
 import { isLocked, recordError, type Ctx } from "./context";
 import { companyNamesOf, findCompaniesByAliases } from "./company-writer";
 import { createGameFromSnapshot, isTitleEnRecovery, planGameMeta, planSlugRename, type GameRow } from "./game-writer";
@@ -92,12 +92,16 @@ async function loadExisting(
  *
  * 후보가 여럿이면 본편(`game`) 하나만 고르고, 그래도 안 가려지면 **붙이지 않는다** —
  * 부모 없는 DLC 는 목록에 안 뜰 뿐 되살릴 수 있지만, 엉뚱한 부모는 화면에 그대로 거짓말로 나간다.
+ *
+ * 확정 ref(auto, manual)만 후보다. 미매칭 기록(none)과 검수 대기(pending)는 "이 번호가 이 행이 아닐 수 있다"
+ * 는 표시다 — 2026-09-25 실측으로 THE FINALS 콘셉트 번호를 none 으로 쥔 DLC 껍데기 둘이 DLC 30개를 거느렸다.
  */
 export function resolveParents(
-  refs: Array<{ externalId: string; gameId: string; contentType: GameRow["contentType"] }>,
+  refs: Array<{ externalId: string; gameId: string; contentType: GameRow["contentType"]; matchedBy: string }>,
 ): Map<string, string> {
   const candidates = new Map<string, typeof refs>();
   for (const r of refs) {
+    if (!(MATCHED_FOR_SYNC as readonly string[]).includes(r.matchedBy)) continue;
     const list = candidates.get(r.externalId);
     if (list) list.push(r);
     else candidates.set(r.externalId, [r]);
@@ -130,7 +134,7 @@ async function planParentLinks(
 
   const parentIds = Array.from(new Set(pending.map((p) => p.snapshot.parentExternalId as string)));
   const refs = await ctx.db
-    .select({ externalId: gameSourceRefs.externalId, gameId: gameSourceRefs.gameId, contentType: games.contentType })
+    .select({ externalId: gameSourceRefs.externalId, gameId: gameSourceRefs.gameId, contentType: games.contentType, matchedBy: gameSourceRefs.matchedBy })
     .from(gameSourceRefs)
     .innerJoin(games, eq(games.id, gameSourceRefs.gameId))
     .where(and(eq(gameSourceRefs.source, source), inArray(gameSourceRefs.externalId, parentIds)));

@@ -49,8 +49,8 @@ describe("withDiscoveredMedia", () => {
 });
 
 describe("resolveParents", () => {
-  const ref = (externalId: string, gameId: string, contentType: "game" | "dlc" | "edition") =>
-    ({ externalId, gameId, contentType }) as const;
+  const ref = (externalId: string, gameId: string, contentType: "game" | "dlc" | "edition", matchedBy = "auto") =>
+    ({ externalId, gameId, contentType, matchedBy }) as const;
 
   it("후보가 하나면 종류를 안 따지고 그 행이 부모다", () => {
     expect(resolveParents([ref("10000248", "g1", "edition")]).get("10000248")).toBe("g1");
@@ -68,6 +68,12 @@ describe("resolveParents", () => {
   it("본편이 둘이면 붙이지 않는다 — 엉뚱한 부모보다 부모 없음이 낫다", () => {
     const map = resolveParents([ref("228748", "fortnite", "game"), ref("228748", "rocket", "game")]);
     expect(map.has("228748")).toBe(false);
+  });
+
+  it("미매칭, 검수 대기 ref 는 후보가 아니다 — 본편 번호를 none 으로 쥔 DLC 껍데기", () => {
+    expect(resolveParents([ref("10006873", "shell", "dlc", "none")]).has("10006873")).toBe(false);
+    const map = resolveParents([ref("10006873", "shell", "dlc", "none"), ref("10006873", "bundle", "game", "pending"), ref("10006873", "finals", "dlc")]);
+    expect(map.get("10006873")).toBe("finals");
   });
 
   it("본편이 하나도 없으면 붙이지 않는다", () => {
