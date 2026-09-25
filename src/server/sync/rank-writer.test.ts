@@ -12,9 +12,10 @@ const ranked = (id: string, rank: number): SearchCandidate => ({
 });
 
 /** gameSourceRefs 조회만 흉내 낸다 — 넘긴 행을 그대로 돌려주는 체인 */
-function fakeDb(refs: Array<{ externalId: string; gameId: string }>): Db {
+function fakeDb(refs: Array<{ externalId: string; gameId: string; matchedBy?: string }>): Db {
+  const rows = refs.map((r) => ({ matchedBy: "auto", ...r }));
   return {
-    select: () => ({ from: () => ({ where: async () => refs }) }),
+    select: () => ({ from: () => ({ where: async () => rows }) }),
   } as unknown as Db;
 }
 
@@ -38,6 +39,20 @@ describe("resolveRankRows", () => {
     const db = fakeDb([{ externalId: "5", gameId: "g5" }]);
     const rows = await resolveRankRows(db, "steam", [ranked("5", 900), ranked("5", 3)]);
     expect(rows).toEqual([{ gameId: "g5", rank: 3 }]);
+  });
+
+  it("검수 대기, 미매칭 ref 는 순위를 받지 않는다 — 콘셉트 번호를 빌려 쥔 에디션, 번들", async () => {
+    const db = fakeDb([
+      { externalId: "10001130", gameId: "g-bo7", matchedBy: "auto" },
+      { externalId: "10001130", gameId: "g-bundle", matchedBy: "pending" },
+      { externalId: "212581", gameId: "g-tabs", matchedBy: "none" },
+      { externalId: "212581", gameId: "g-wot", matchedBy: "manual" },
+    ]);
+    const rows = await resolveRankRows(db, "psstore", [ranked("10001130", 18), ranked("212581", 141)]);
+    expect(rows).toEqual([
+      { gameId: "g-bo7", rank: 18 },
+      { gameId: "g-wot", rank: 141 },
+    ]);
   });
 
   it("순번 없는 후보만 오면 조회 자체를 하지 않는다", async () => {

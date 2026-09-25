@@ -11,7 +11,7 @@ import type { Db } from "@/server/db/client";
 import type { StoreSource } from "@/server/adapters";
 import type { SearchCandidate, StoreAdapter } from "@/server/adapters/types";
 import { errorMessage } from "@/lib/errors";
-import { POPULARITY_RANK_PAGES, POPULARITY_RANK_PAGES_DEFAULT, SOURCE_PLATFORMS, SOURCE_REGION } from "./constants";
+import { MATCHED_FOR_SYNC, POPULARITY_RANK_PAGES, POPULARITY_RANK_PAGES_DEFAULT, SOURCE_PLATFORMS, SOURCE_REGION } from "./constants";
 import type { Ctx } from "./context";
 
 /** 순번이 달린 후보를 (게임, 순번) 쌍으로 푼 것 */
@@ -27,6 +27,11 @@ export interface RankRow {
  *
  * 한 게임에 같은 소스의 ref 가 둘 이상일 수 있다(에디션 SKU). 그때는 **더 높은 순위**(작은 수)를
  * 남긴다 — 본편과 디럭스판이 각각 순위에 있으면 그 게임의 인기는 둘 중 앞선 쪽이다.
+ *
+ * 확정 ref(auto, manual)만 순위를 받는다. 검수 대기(pending)와 미매칭 기록(none)은 "이 번호가 이 게임이
+ * 아닐 수 있다" 는 표시다 — 2026-09-25 실측으로 PS 콘셉트 10001130(블랙 옵스 7)을 pending 으로 쥔
+ * COD 세대 호환 번들 셋이 전부 18위를 받아 인기순 첫 화면에 나란히 섰고, none 으로 남은 TABS 가
+ * 월드 오브 탱크 순위(141위)를 받았다. 가드(shared-external-id)가 가격은 막았는데 순위만 새고 있었다.
  */
 export async function resolveRankRows(db: Db, source: StoreSource, ranked: SearchCandidate[]): Promise<RankRow[]> {
   const rankOf = new Map<string, number>();
@@ -38,12 +43,14 @@ export async function resolveRankRows(db: Db, source: StoreSource, ranked: Searc
   if (rankOf.size === 0) return [];
 
   const refs = await db
-    .select({ externalId: gameSourceRefs.externalId, gameId: gameSourceRefs.gameId })
+    .select({ externalId: gameSourceRefs.externalId, gameId: gameSourceRefs.gameId, matchedBy: gameSourceRefs.matchedBy })
     .from(gameSourceRefs)
     .where(and(eq(gameSourceRefs.source, source), inArray(gameSourceRefs.externalId, [...rankOf.keys()])));
 
   const best = new Map<string, number>();
   for (const r of refs) {
+    // 질의에서 거르지 않고 여기서 거른다 — 한 페이지 ref 는 100건 안팎이라 값이 같고, 판단이 테스트에 드러난다
+    if (!(MATCHED_FOR_SYNC as readonly string[]).includes(r.matchedBy)) continue;
     const rank = rankOf.get(r.externalId);
     if (rank === undefined) continue;
     const prev = best.get(r.gameId);
