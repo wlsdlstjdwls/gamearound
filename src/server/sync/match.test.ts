@@ -133,6 +133,24 @@ describe("findGameByTitle (역방향 매칭)", () => {
     expect(findGameByTitle("전혀 다른 게임", rows)).toBeNull();
   });
 
+  it("제목이 같은 에디션 행이 먼저 와도 본편에 붙는다 (SAO Last Recollection 실측)", () => {
+    const title = "SWORD ART ONLINE Last Recollection";
+    const sao = [
+      { id: "dlx", slug: "sao-lr-deluxe-edition", titleEn: title, titleKo: null, contentType: "edition" as const, parentGameId: "main" },
+      { id: "main", slug: "sao-lr", titleEn: title, titleKo: null, contentType: "game" as const, parentGameId: null },
+    ];
+    expect(findGameByTitle(title, sao)?.game.id).toBe("main");
+    expect(findGameByTitle(title, [...sao].reverse())?.game.id).toBe("main");
+  });
+
+  it("유사도가 더 높으면 본편이 아니어도 그 행이다", () => {
+    const pass = [
+      { id: "main", slug: "g", titleEn: "Game", titleKo: null, contentType: "game" as const, parentGameId: null },
+      { id: "pass", slug: "g-season-pass", titleEn: "Game Season Pass", titleKo: null, contentType: "dlc" as const, parentGameId: "main" },
+    ];
+    expect(findGameByTitle("Game Season Pass", pass)?.game.id).toBe("pass");
+  });
+
   it("기존 게임이 없으면 null", () => {
     expect(findGameByTitle("Stardew Valley", [])).toBeNull();
   });

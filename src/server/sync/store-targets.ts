@@ -238,7 +238,14 @@ async function linkRef(
  */
 export async function loadGameTitles(db: Db): Promise<GameTitleRow[]> {
   return db
-    .select({ id: games.id, slug: games.slug, titleEn: games.titleEn, titleKo: games.titleKo })
+    .select({
+      id: games.id,
+      slug: games.slug,
+      titleEn: games.titleEn,
+      titleKo: games.titleKo,
+      contentType: games.contentType,
+      parentGameId: games.parentGameId,
+    })
     .from(games)
     .where(eq(games.crawlExcluded, false));
 }
