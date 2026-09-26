@@ -43,3 +43,17 @@ export const LISTING_CSV_MAX_BYTES = 512 * 1024;
 
 /** 결과 화면에 적는 실패 줄 수. 넘는 것은 개수만 센다 — 500줄이 다 틀리면 화면이 오류로 덮인다 */
 export const LISTING_CSV_ERROR_SAMPLE = 20;
+
+/**
+ * 카메라 스캔에서 한 장을 읽고 다음 장까지 쉬는 시간(ms).
+ *
+ * 매 프레임(16ms)마다 읽으면 저가 안드로이드에서 영상이 끊긴다. 사람이 바코드를 화면에 맞추는 데
+ * 반 초는 걸리니 초당 다섯 번이면 기다림을 못 느낀다.
+ */
+export const BARCODE_SCAN_INTERVAL_MS = 200;
+
+/**
+ * 카메라가 찾을 바코드 종류. 게임 패키지에 붙는 것은 EAN 13(한국, 유럽, 일본 JAN 포함), UPC A(북미)이고,
+ * 작은 물건에 EAN 8, UPC E 가 붙는다. QR 까지 찾으면 포장의 이벤트 QR 을 바코드로 읽는다.
+ */
+export const BARCODE_SCAN_FORMATS = ["ean_13", "ean_8", "upc_a", "upc_e"] as const;

@@ -3,6 +3,7 @@ import { describe, expect, it } from "vitest";
 import {
   LISTING_PRICE_MAX,
   LISTING_STOCK_MAX,
+  barcodeLookupSchema,
   listingCreateSchema,
   listingStockSchema,
   normalizeBarcode,
@@ -84,5 +85,16 @@ describe("listingStockSchema", () => {
 
   it("listingId 가 uuid 가 아니면 막는다 — 폼에 남의 값을 박아 보내는 자리다", () => {
     expect(listingStockSchema.safeParse({ listingId: "1", onHand: "1" }).success).toBe(false);
+  });
+});
+
+describe("barcodeLookupSchema", () => {
+  it("띄어쓴 바코드를 숫자만 남겨 받는다", () => {
+    expect(barcodeLookupSchema.parse({ barcode: "4902370 550733" }).barcode).toBe("4902370550733");
+  });
+
+  it("빈 값과 모자란 자릿수는 묻지 않는다", () => {
+    expect(barcodeLookupSchema.safeParse({ barcode: "" }).success).toBe(false);
+    expect(barcodeLookupSchema.safeParse({ barcode: "49023" }).success).toBe(false);
   });
 });

@@ -56,3 +56,8 @@ export const listingStockSchema = z.object({
 export type ListingStockInput = z.infer<typeof listingStockSchema>;
 
 export const listingRemoveSchema = z.object({ listingId: z.uuid(LISTING_MESSAGES.badRequest) });
+
+/** 바코드 조회. 자릿수가 모자라면 묻지 않는다 — 스캐너가 끊겨 앞 몇 자리만 들어온 값으로 엉뚱한 상품을 찾지 않게 */
+export const barcodeLookupSchema = z.object({
+  barcode: barcodeField.refine((v) => v !== "", LISTING_MESSAGES.barcodeInvalid),
+});

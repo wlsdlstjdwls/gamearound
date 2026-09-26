@@ -7,15 +7,17 @@
 //
 // 사진은 아직 없다. 파일을 받으려면 저장소를 먼저 붙여야 하고, 그 전에 칸만 세우면
 // 올린 사진이 아무 데도 안 남는다 — 입점 신청의 증빙 칸과 같은 이유로 미뤘다.
-import { useActionState } from "react";
+import { useActionState, useCallback, useRef } from "react";
 import { ActionForm, useActionFormPending } from "@/components/ui/action-form";
 import { createListingAction, type ListingState } from "@/app/(user)/vendor/[shopSlug]/listings/actions";
+import { BarcodeField } from "@/components/shops/barcode-field";
 import { GamePicker } from "@/components/shops/game-picker";
 import { Button } from "@/components/ui/button";
 import { FormMessage } from "@/components/ui/form-message";
 import { TextField } from "@/components/ui/text-field";
 import { LISTING_MESSAGES as M } from "@/lib/shops/listing-messages";
-import { BARCODE_MAX, LISTING_PRICE_MAX, LISTING_STOCK_MAX, PRODUCT_NAME_MAX } from "@/lib/shops/listing-schemas";
+import { LISTING_PRICE_MAX, LISTING_STOCK_MAX, PRODUCT_NAME_MAX } from "@/lib/shops/listing-schemas";
+import type { BarcodeHitDto } from "@/server/services/listings";
 
 const CONDITIONS = [
   { value: "used", label: M.conditionUsed },
@@ -45,6 +47,15 @@ function SubmitButton() {
 export function ListingForm({ shopSlug, hardware }: { shopSlug: string; hardware: Array<{ code: string; nameKo: string }> }) {
   const action = createListingAction.bind(null, shopSlug);
   const [state, formAction, submitting] = useActionState<ListingState, FormData>(action, null);
+  const nameRef = useRef<HTMLInputElement>(null);
+  const hardwareRef = useRef<HTMLSelectElement>(null);
+
+  // 이미 있는 바코드면 그 상품의 이름과 기종을 채운다. 어차피 그 상품에 붙어 올라가니(services/listings 의
+  // findOrCreateProduct) 다른 이름을 적어 봐야 안 남는다 — 적은 것과 남는 것이 어긋나지 않게 미리 보여 준다
+  const onBarcodeHit = useCallback((hit: BarcodeHitDto) => {
+    if (nameRef.current) nameRef.current.value = hit.name;
+    if (hardwareRef.current && hit.hardwareCode) hardwareRef.current.value = hit.hardwareCode;
+  }, []);
 
   return (
     <ActionForm action={formAction} state={state} pending={submitting} className="flex flex-col gap-4">
@@ -62,14 +73,15 @@ export function ListingForm({ shopSlug, hardware }: { shopSlug: string; hardware
       {/* 게임을 먼저 고른다. 안 걸고 올린 상품은 그 게임 상세의 "파는 곳" 에 영원히 안 뜬다 */}
       <GamePicker />
 
-      <TextField name="name" label={M.productNameLabel} hint={M.productNameHint} maxLength={PRODUCT_NAME_MAX} required />
-      <TextField name="barcode" label={M.barcodeLabel} hint={M.barcodeHint} maxLength={BARCODE_MAX} inputMode="numeric" />
+      {/* 바코드가 이름보다 먼저다 — 찍으면 이름이 채워진다 */}
+      <BarcodeField shopSlug={shopSlug} onHit={onBarcodeHit} />
+      <TextField ref={nameRef} name="name" label={M.productNameLabel} hint={M.productNameHint} maxLength={PRODUCT_NAME_MAX} required />
 
       <div className="flex flex-col gap-1.5">
         <label htmlFor="hardwareCode" className="text-[12.5px] font-medium text-mut">
           {M.hardwareLabel}
         </label>
-        <select id="hardwareCode" name="hardwareCode" defaultValue="" className={SELECT_CLASS}>
+        <select ref={hardwareRef} id="hardwareCode" name="hardwareCode" defaultValue="" className={SELECT_CLASS}>
           <option value="">{M.hardwareNone}</option>
           {hardware.map((h) => (
             <option key={h.code} value={h.code}>

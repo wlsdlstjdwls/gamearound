@@ -11,17 +11,19 @@ import { vendorListingsPath, shopPath } from "@/lib/routes";
 import { CSV_MESSAGES, LISTING_MESSAGES } from "@/lib/shops/listing-messages";
 import { LISTING_CSV_MAX_BYTES, LISTING_CSV_MAX_ROWS } from "@/lib/shops/constants";
 import { readListingCsv } from "@/lib/shops/listing-csv";
-import { listingCreateSchema, listingRemoveSchema, listingStockSchema } from "@/lib/shops/listing-schemas";
+import { barcodeLookupSchema, listingCreateSchema, listingRemoveSchema, listingStockSchema } from "@/lib/shops/listing-schemas";
 import { SHOP_GAME_MESSAGES } from "@/lib/shops/game-messages";
 import { needsResearch, shopGameCreateSchema, shopGameSearchSchema } from "@/lib/shops/game-schemas";
 import type { ShopGameOptionDto } from "@/lib/shops/game-option";
 import { openShopForAction } from "@/server/auth/shop-access";
 import {
   createListing,
+  findProductByBarcode,
   importListingsCsv,
   listHardwareModels,
   removeListing,
   updateListingStock,
+  type BarcodeHitDto,
 } from "@/server/services/listings";
 import { createShopGame, searchShopGames } from "@/server/services/shop-games";
 
@@ -163,4 +165,15 @@ export async function importCsvAction(shopSlug: string, _prev: CsvImportState, f
     unstable_rethrow(e);
     return { ok: false, error: e instanceof Error ? e.message : LISTING_MESSAGES.badRequest };
   }
+}
+
+/**
+ * 바코드로 이미 있는 상품 찾기. 폼이 스캔(또는 엔터) 직후 부른다.
+ * 매장 권한을 여기서도 본다 — 상품 사전을 바코드로 훑는 창구를 로그인한 아무에게나 열지 않는다.
+ */
+export async function lookupBarcodeAction(shopSlug: string, barcode: string): Promise<BarcodeHitDto | null> {
+  await openShop(shopSlug);
+  const parsed = barcodeLookupSchema.safeParse({ barcode });
+  if (!parsed.success) return null;
+  return findProductByBarcode(parsed.data.barcode);
 }
