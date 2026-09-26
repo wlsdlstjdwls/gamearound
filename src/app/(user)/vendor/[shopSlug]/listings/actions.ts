@@ -3,7 +3,7 @@
 //
 // 매장 권한을 여기서 다시 본다. 레이아웃이 로그인을 봤다는 것은 "사람인가" 까지만 답한 것이고,
 // **남의 매장** 은 그것으로 안 막힌다 — 폼에 남의 shopId 를 박아 보내는 것이 이 도메인의 첫 공격이다
-// (guards 의 requireShopRole 주석, 설계서 §10).
+// (server/auth/shop-access, 설계서 §10).
 import { revalidatePath } from "next/cache";
 import type { AuditSource } from "@/server/db/audit";
 import { vendorListingsPath, shopPath } from "@/lib/routes";
@@ -12,30 +12,15 @@ import { listingCreateSchema, listingRemoveSchema, listingStockSchema } from "@/
 import { SHOP_GAME_MESSAGES } from "@/lib/shops/game-messages";
 import { needsResearch, shopGameCreateSchema, shopGameSearchSchema } from "@/lib/shops/game-schemas";
 import type { ShopGameOptionDto } from "@/lib/shops/game-option";
-import { requireShopRole } from "@/server/auth/guards";
-import { findShopBySlug } from "@/server/services/shops";
+import { openShopForAction } from "@/server/auth/shop-access";
 import { createListing, removeListing, updateListingStock } from "@/server/services/listings";
 import { createShopGame, searchShopGames } from "@/server/services/shop-games";
 
 export type ListingState = { ok: true; message: string } | { ok: false; error: string } | null;
 
-/**
- * slug 로 매장을 찾고 권한까지 확인한다. 세 액션이 같은 앞머리를 쓴다 —
- * 한 군데만 빠져도 그 액션 하나가 남의 매장에 열린다.
- *
- * 관리자가 대신 고친 일은 감사 컬럼에 `admin` 으로 남는다. 매장이 고친 일은 `shop:{id}` 다 —
- * 나중에 "내가 안 했는데" 라는 말이 나올 때 답이 되는 것이 그 한 줄이다(설계서 §10).
- */
-async function openShop(shopSlug: string) {
-  const shop = await findShopBySlug(shopSlug);
-  if (!shop) throw new Error(LISTING_MESSAGES.notFound);
-  const access = await requireShopRole(shop.id, "owner", "manager", "staff");
-  return {
-    shop,
-    actor: access.isAdminOverride
-      ? ({ source: "admin" as const, userId: access.user.id })
-      : ({ source: `shop:${shop.id}` as const, userId: access.user.id }),
-  };
+/** 세 액션이 같은 앞머리를 쓴다 — 권한과 감사 출처는 server/auth/shop-access 가 정한다 */
+function openShop(shopSlug: string) {
+  return openShopForAction(shopSlug, LISTING_MESSAGES.notFound, "owner", "manager", "staff");
 }
 
 /** 고친 값이 손님 화면에도 바로 보여야 한다 — 매장 페이지가 캐시를 안 쓰므로 경로만 밀어 준다 */

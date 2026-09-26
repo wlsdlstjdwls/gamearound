@@ -13,7 +13,8 @@ import { ListingForm } from "@/components/shops/listing-form";
 import { ListingRows } from "@/components/shops/listing-rows";
 import { Panel, Page, PageHead, SectionHead } from "@/components/ui/page";
 import { buttonClass } from "@/components/ui/button";
-import { shopPath } from "@/lib/routes";
+import { shopPath, vendorStaffPath } from "@/lib/routes";
+import { STAFF_MESSAGES } from "@/lib/shops/staff-messages";
 import { LISTING_MESSAGES as M, VENDOR_MESSAGES } from "@/lib/shops/listing-messages";
 import { requireShopRole } from "@/server/auth/guards";
 import { findShopBySlug } from "@/server/services/shops";
@@ -39,6 +40,9 @@ export default async function VendorListingsPage({ params }: Props) {
       <div className="flex flex-wrap gap-2">
         <Link href={shopPath(shop.slug)} className={buttonClass({ variant: "ghost", size: "sm" })}>
           {VENDOR_MESSAGES.openPublic}
+        </Link>
+        <Link href={vendorStaffPath(shop.slug)} className={buttonClass({ variant: "ghost", size: "sm" })}>
+          {STAFF_MESSAGES.openStaff}
         </Link>
       </div>
 

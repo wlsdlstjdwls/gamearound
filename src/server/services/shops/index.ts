@@ -3,6 +3,8 @@
 //   core   기본 조회와 권한("이 사람이 이 매장을 만질 수 있나")
 //   apply  입점 신청과 심사
 //   public 손님이 보는 매장 찾기, 매장 페이지
+//   staff  직원 초대, 수락, 내보내기
 export * from "./core";
 export * from "./apply";
 export * from "./public";
+export * from "./staff";

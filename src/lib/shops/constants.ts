@@ -16,3 +16,15 @@ export const SHOPS_PAGE_SIZE = 12;
  * 밀어내면서까지 세울 자리가 아니다. 다 보려면 매장 찾기로 간다.
  */
 export const SELLING_PAGE_SIZE = 8;
+
+/**
+ * 직원 초대 링크의 수명(일).
+ *
+ * 메일이 아니라 사람이 메신저로 링크를 건네는 흐름이라(메일 수단이 레포에 없다) 받는 사람이
+ * 그날 안 열 수 있다. 하루는 짧고, 한 달이면 그만둔 알바에게 보낸 링크가 너무 오래 산다.
+ * 한 주면 "이번 주 안에 합류" 라는 매장 쪽 감각과 맞는다. 늘리지 말고 다시 보내게 한다.
+ */
+export const STAFF_INVITE_TTL_DAYS = 7;
+
+/** 초대 토큰의 바이트 수. 세션 토큰(lib/auth/constants)과 같은 강도로 둔다 — 둘 다 "이걸 쥐면 들어온다" 다 */
+export const STAFF_INVITE_TOKEN_BYTES = 32;

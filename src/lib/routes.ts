@@ -95,8 +95,9 @@ export function companyPath(slug: string): string {
 /**
  * 매장 slug 로 쓸 수 없는 말. `/shops/[slug]` 가 `/shops/admin` 같은 고정 경로를 가리면
  * 그 화면이 통째로 가려진다 — 입점 신청에서 이 목록을 막는다.
+ * `invite` 는 반대 방향이다: `/vendor/invite/[token]` 이 고정 경로라 그 이름의 매장은 콘솔이 가려진다.
  */
-export const RESERVED_SHOP_SLUGS = ["admin", "join", "new", "search", "api"] as const;
+export const RESERVED_SHOP_SLUGS = ["admin", "join", "new", "search", "api", "invite"] as const;
 
 export function shopPath(slug: string): string {
   return `${ROUTES.shops}/${encodeURIComponent(slug)}`;
@@ -110,6 +111,16 @@ export function vendorShopPath(slug: string): string {
 /** 매장주의 판매 목록. 매장 하나짜리 매장주는 /vendor 가 곧장 여기로 보낸다 */
 export function vendorListingsPath(slug: string): string {
   return `${vendorShopPath(slug)}/listings`;
+}
+
+/** 직원 목록과 초대 */
+export function vendorStaffPath(slug: string): string {
+  return `${vendorShopPath(slug)}/staff`;
+}
+
+/** 직원 초대 수락. 토큰은 원문이 곧 열쇠라 경로에만 싣고 어디에도 적지 않는다 */
+export function staffInvitePath(token: string): string {
+  return `${ROUTES.vendor}/invite/${encodeURIComponent(token)}`;
 }
 
 /** 가격 변동 그래프 — 게임 상세의 하위 화면 */
