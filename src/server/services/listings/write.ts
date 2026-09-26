@@ -8,6 +8,7 @@ import { productComponents, products, shopListings, shopStockEvents, type Listin
 import { createdBy, updatedBy, type AuditSource } from "@/server/db/audit";
 import { LISTING_MESSAGES } from "@/lib/shops/listing-messages";
 import { normalizeBarcode, type ListingCreateInput, type ListingStockInput } from "@/lib/shops/listing-schemas";
+import { deleteBlobs, listPhotoUrls } from "./photos";
 
 /**
  * 상품을 찾거나 만든다.
@@ -135,9 +136,12 @@ export async function updateListingStock(
  */
 export async function removeListing(listingId: string, shopId: string): Promise<void> {
   const db = getDb();
+  // 사진 행은 cascade 로 함께 사라지지만 Blob 파일은 남는다 — 주소를 먼저 받아 두고, 줄이 실제로 지워졌을 때만 치운다
+  const photoUrls = await listPhotoUrls(listingId);
   const result = await db
     .delete(shopListings)
     .where(and(eq(shopListings.id, listingId), eq(shopListings.shopId, shopId)))
     .returning({ id: shopListings.id });
   if (result.length === 0) throw new Error(LISTING_MESSAGES.notFound);
+  await deleteBlobs(photoUrls);
 }

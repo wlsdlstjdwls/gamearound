@@ -107,3 +107,16 @@ export const CSV_MESSAGES = {
   statusUnknown: (v: string) => `공개는 판매 중, 작성 중, 숨김, 품절 중 하나예요: ${v}`,
   valueRequired: (col: string) => `${col} 칸이 비었어요.`,
 } as const;
+
+/** 판매 줄의 실물 사진(/vendor/[shopSlug]/listings) */
+export const PHOTO_MESSAGES = {
+  add: "사진 추가",
+  remove: "사진 지우기",
+  uploading: (done: number, total: number) => `사진 올리는 중이에요 (${done}/${total})`,
+  full: (max: number) => `사진은 물건 하나에 ${max}장까지예요.`,
+  unreadable: "이 사진을 읽을 수 없어요. 다른 사진으로 해 주세요.",
+  failed: "사진을 올리지 못했어요. 잠시 뒤 다시 해 주세요.",
+  notFound: "그 사진을 찾을 수 없어요.",
+  forbidden: "이 물건에 사진을 올릴 권한이 없어요.",
+  alt: (name: string, n: number) => `${name} 사진 ${n}`,
+} as const;

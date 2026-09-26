@@ -113,6 +113,12 @@ export function vendorListingsPath(slug: string): string {
   return `${vendorShopPath(slug)}/listings`;
 }
 
+/**
+ * 판매 줄 사진 업로드 토큰 발급(Vercel Blob 클라이언트 업로드의 handleUploadUrl).
+ * 파일은 브라우저가 Blob 으로 곧장 보내고, 이 경로는 권한을 보고 토큰만 내준다
+ */
+export const SHOP_PHOTO_UPLOAD_PATH = "/api/shops/photos/upload";
+
 /** 직원 목록과 초대 */
 export function vendorStaffPath(slug: string): string {
   return `${vendorShopPath(slug)}/staff`;

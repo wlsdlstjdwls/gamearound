@@ -316,6 +316,13 @@
       "when": 1790230249814,
       "tag": "0044_mushy_mimic",
       "breakpoints": true
+    },
+    {
+      "idx": 45,
+      "version": "7",
+      "when": 1790423502575,
+      "tag": "0045_pink_dagger",
+      "breakpoints": true
     }
   ]
 }

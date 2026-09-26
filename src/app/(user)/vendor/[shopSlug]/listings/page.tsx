@@ -17,7 +17,7 @@ import { STAFF_MESSAGES } from "@/lib/shops/staff-messages";
 import { CSV_MESSAGES, LISTING_MESSAGES as M, VENDOR_MESSAGES } from "@/lib/shops/listing-messages";
 import { requireShopRole } from "@/server/auth/guards";
 import { findShopBySlug } from "@/server/services/shops";
-import { listHardwareModels, listShopListings } from "@/server/services/listings";
+import { listHardwareModels, listPhotosForListings, listShopListings } from "@/server/services/listings";
 
 type Props = { params: Promise<{ shopSlug: string }> };
 
@@ -31,6 +31,8 @@ export default async function VendorListingsPage({ params }: Props) {
   await requireShopRole(shop.id, "owner", "manager", "staff");
 
   const [listings, hardware] = await Promise.all([listShopListings(shop.id), listHardwareModels()]);
+  // 판매 줄을 받은 뒤에 묻는다 — 줄 id 가 있어야 한 번에 묶어 받는다(줄마다 묻지 않는다)
+  const photos = await listPhotosForListings(listings.map((l) => l.id));
 
   return (
     <Page width="tight" gap={20}>
@@ -50,7 +52,7 @@ export default async function VendorListingsPage({ params }: Props) {
         {listings.length === 0 ? (
           <Panel className="px-4 py-6 text-center text-[13px] text-dim">{M.empty}</Panel>
         ) : (
-          <ListingRows shopSlug={shop.slug} listings={listings} />
+          <ListingRows shopSlug={shop.slug} shopId={shop.id} listings={listings} photos={photos} />
         )}
       </section>
 

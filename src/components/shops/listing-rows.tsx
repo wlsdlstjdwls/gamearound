@@ -17,7 +17,8 @@ import { formatPrice } from "@/lib/currency";
 import type { Currency } from "@/server/db/schema";
 import { LISTING_MESSAGES as M } from "@/lib/shops/listing-messages";
 import { LISTING_STOCK_MAX } from "@/lib/shops/listing-schemas";
-import type { ListingDto } from "@/server/services/listings";
+import type { ListingDto, ListingPhotoDto } from "@/server/services/listings";
+import { ListingPhotos } from "@/components/shops/listing-photos";
 
 const CONDITION_LABEL: Record<ListingDto["condition"], string> = {
   sealed: M.conditionSealed,
@@ -41,7 +42,17 @@ function PendingButton({ label, variant }: { label: string; variant: "secondary"
   );
 }
 
-function ListingRow({ shopSlug, listing }: { shopSlug: string; listing: ListingDto }) {
+function ListingRow({
+  shopSlug,
+  shopId,
+  listing,
+  photos,
+}: {
+  shopSlug: string;
+  shopId: string;
+  listing: ListingDto;
+  photos: ListingPhotoDto[];
+}) {
   const [stockState, stockAction, stockActionPending] = useActionState<ListingState, FormData>(updateStockAction.bind(null, shopSlug), null);
   const [removeState, removeAction, removeActionPending] = useActionState<ListingState, FormData>(removeListingAction.bind(null, shopSlug), null);
   const failed = (stockState && !stockState.ok && stockState.error) || (removeState && !removeState.ok && removeState.error);
@@ -62,6 +73,8 @@ function ListingRow({ shopSlug, listing }: { shopSlug: string; listing: ListingD
         {listing.hardwareNameKo ? ` | ${listing.hardwareNameKo}` : ""}
         {listing.barcode ? ` | ${listing.barcode}` : ""}
       </p>
+
+      <ListingPhotos shopSlug={shopSlug} shopId={shopId} listingId={listing.id} listingName={listing.productName} photos={photos} />
 
       {failed && (
         <FormMessage tone="error" replayKey={String(failed)}>
@@ -98,11 +111,22 @@ function ListingRow({ shopSlug, listing }: { shopSlug: string; listing: ListingD
   );
 }
 
-export function ListingRows({ shopSlug, listings }: { shopSlug: string; listings: ListingDto[] }) {
+export function ListingRows({
+  shopSlug,
+  shopId,
+  listings,
+  photos,
+}: {
+  shopSlug: string;
+  shopId: string;
+  listings: ListingDto[];
+  /** 판매 줄 id 로 묶은 사진. 한 번에 받아 온다(services/listings 의 listPhotosForListings) */
+  photos: Record<string, ListingPhotoDto[]>;
+}) {
   return (
     <ul className="flex flex-col gap-2.5">
       {listings.map((l) => (
-        <ListingRow key={l.id} shopSlug={shopSlug} listing={l} />
+        <ListingRow key={l.id} shopSlug={shopSlug} shopId={shopId} listing={l} photos={photos[l.id] ?? []} />
       ))}
     </ul>
   );

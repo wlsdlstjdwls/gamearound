@@ -239,11 +239,44 @@ export const productComponentsRelations = relations(productComponents, ({ one })
   game: one(games, { fields: [productComponents.gameId], references: [games.id] }),
 }));
 
+/**
+ * 판매 줄의 실물 사진 — 설계서 §4 shop_listing_photos. 중고와 레트로는 실물 사진이 없으면 안 팔린다.
+ *
+ * 파일은 Vercel Blob(공개 저장소 gamearound-shop-photos)에 있고 여기는 주소만 적는다.
+ * `pathname` 을 따로 두는 이유: 지울 때 Blob 이 받는 열쇠이고, 주소 문자열에서 매번 떼어 내면
+ * 저장소 호스트가 바뀌는 날 지우기가 조용히 빗나간다.
+ *
+ * 설계서는 중고 한 점(unitId)에도 사진을 달게 그렸지만 한 점 단위 화면이 아직 없다. 그 화면이 설 때 열을 더한다.
+ */
+export const shopListingPhotos = pgTable("shop_listing_photos", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  // 판매 줄을 지우면 행은 함께 사라진다. **Blob 파일은 cascade 가 못 지운다** — 서비스(removeListing)가 먼저 지운다
+  listingId: uuid("listing_id").references(() => shopListings.id, { onDelete: "cascade" }).notNull(),
+  url: text("url").notNull(),
+  pathname: text("pathname").notNull(),
+  /** 줄임 뒤의 크기. 화면이 자리를 미리 잡아 사진이 뜰 때 글이 밀리지 않게 한다 */
+  width: integer("width").notNull(),
+  height: integer("height").notNull(),
+  byteSize: integer("byte_size").notNull(),
+  /** 첫 장이 매장 페이지의 대표 사진이다 */
+  sortOrder: integer("sort_order").default(0).notNull(),
+  ...auditColumns(),
+}, (t) => [
+  index("shop_listing_photos_listing_idx").on(t.listingId, t.sortOrder),
+  // 같은 파일을 두 번 등록하지 않는다(업로드 뒤 등록 요청이 두 번 와도 한 줄)
+  uniqueIndex("shop_listing_photos_pathname_uq").on(t.pathname),
+]);
+
 export const shopListingsRelations = relations(shopListings, ({ one, many }) => ({
   shop: one(shops, { fields: [shopListings.shopId], references: [shops.id] }),
   product: one(products, { fields: [shopListings.productId], references: [products.id] }),
   units: many(shopListingUnits),
   stockEvents: many(shopStockEvents),
+  photos: many(shopListingPhotos),
+}));
+
+export const shopListingPhotosRelations = relations(shopListingPhotos, ({ one }) => ({
+  listing: one(shopListings, { fields: [shopListingPhotos.listingId], references: [shopListings.id] }),
 }));
 
 export const shopListingUnitsRelations = relations(shopListingUnits, ({ one }) => ({

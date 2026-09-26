@@ -29,6 +29,8 @@ export type ListingDto = {
   onHand: number;
   /** 언제나 onHand - held. 화면은 이 값만 본다(§12.1) */
   available: number;
+  /** 첫 사진(대표). 매장 페이지가 줄 옆에 작게 띄운다. 없으면 null */
+  coverPhotoUrl: string | null;
 };
 
 /** 게임 상세의 "파는 곳" 한 줄 — 매장과 그 매장이 매긴 값 */
@@ -64,6 +66,8 @@ const listingColumns = {
   currency: shopListings.currency,
   onHand: shopListings.onHand,
   held: shopListings.held,
+  // 줄마다 사진 표를 한 번 더 묻지 않고 같은 질의 안에서 첫 장만 집는다(인덱스 listing_id, sort_order 를 탄다)
+  coverPhotoUrl: sql<string | null>`(select p.url from shop_listing_photos p where p.listing_id = ${shopListings.id} order by p.sort_order, p.created_at limit 1)`,
 };
 
 /** 질의가 돌려주는 날것. DTO 에서 계산 필드를 빼고 held 를 더한 모양과 같다 */

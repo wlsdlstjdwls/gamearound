@@ -57,3 +57,30 @@ export const BARCODE_SCAN_INTERVAL_MS = 200;
  * 작은 물건에 EAN 8, UPC E 가 붙는다. QR 까지 찾으면 포장의 이벤트 QR 을 바코드로 읽는다.
  */
 export const BARCODE_SCAN_FORMATS = ["ean_13", "ean_8", "upc_a", "upc_e"] as const;
+
+/**
+ * 판매 줄 하나에 붙이는 사진 장수 상한.
+ *
+ * 중고 한 물건을 앞, 뒤, 옆, 카트리지, 설명서, 흠집 정도로 찍으면 대여섯 장이다. 여덟이면 넉넉하고,
+ * 매장 하나가 물건 500개를 올려도 4,000장이라 Blob 저장비(장당 300KB 남짓, 1.2GB)가 한 달 몇 센트다.
+ */
+export const LISTING_PHOTO_MAX = 8;
+
+/**
+ * 올리기 전에 브라우저에서 줄이는 긴 변(px). 휴대폰 원본(4000px 대, 3~8MB)을 그대로 올리면
+ * 업로드가 느리고 손님 화면도 무겁다. 매장 페이지에서 가장 크게 보이는 자리가 800px 남짓이라
+ * 레티나 두 배를 쳐도 1600 이면 된다.
+ */
+export const PHOTO_MAX_EDGE = 1600;
+
+/** 줄인 사진의 압축 품질(0~1). 0.82 부근부터 글자(설명서, 라벨)가 뭉개지지 않으면서 파일이 300KB 안팎이 된다 */
+export const PHOTO_QUALITY = 0.82;
+
+/**
+ * 업로드 토큰이 허락하는 한 장의 최대 크기. 줄인 뒤의 값이라 넉넉히 잡는다(1600px 사진이 이 크기를 넘는 일은 없다).
+ * 토큰에 크기를 걸어 두는 이유: 줄이는 단계를 건너뛴 요청이 원본을 그대로 밀어 넣지 못하게.
+ */
+export const PHOTO_MAX_BYTES = 3 * 1024 * 1024;
+
+/** 저장소가 받는 형식. 줄이는 단계가 이 둘 중 하나로 굽는다(사파리 구형은 webp 로 못 구워 jpeg 로 떨어진다) */
+export const PHOTO_CONTENT_TYPES = ["image/webp", "image/jpeg"] as const;
