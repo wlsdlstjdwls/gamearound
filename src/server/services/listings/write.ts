@@ -1,10 +1,10 @@
 // 판매 줄 쓰기 — 올리기, 재고 고치기, 내리기. 설계서 §4, §8, §12.5.
 //
-// 손입력(과 앞으로 붙을 CSV, 연동)이 이 파일의 **같은 함수**를 지나야 한다(설계서 §8). 갈리면 재고 이력이 한쪽에만 남는다.
+// 손입력과 CSV 가 이 파일의 **같은 함수**를 지난다(설계서 §8). 갈리면 재고 이력이 한쪽에만 남는다.
 import "server-only";
 import { and, eq } from "drizzle-orm";
 import { getDb } from "@/server/db/client";
-import { productComponents, products, shopListings, shopStockEvents } from "@/server/db/schema";
+import { productComponents, products, shopListings, shopStockEvents, type ListingSource } from "@/server/db/schema";
 import { createdBy, updatedBy, type AuditSource } from "@/server/db/audit";
 import { LISTING_MESSAGES } from "@/lib/shops/listing-messages";
 import { normalizeBarcode, type ListingCreateInput, type ListingStockInput } from "@/lib/shops/listing-schemas";
@@ -47,11 +47,16 @@ async function findOrCreateProduct(input: ListingCreateInput, actor: { source: A
 
 /**
  * 물건 하나 올리기. 상품과 판매 줄을 한 번에 만든다(listing-schemas 의 listingCreateSchema 주석).
+ * 손입력과 CSV 가 **같은 함수**를 지난다(설계서 §8) — 갈리면 재고 이력이 한쪽에만 남는다. `via` 가 그 경로다.
  *
  * 같은 매장이 같은 상품, 같은 상태를 두 줄로 올리는 것은 DB 가 막는다
  * (`shop_listings_shop_product_condition_uq`). 막힌 것을 사람이 읽을 문장으로 바꿔 던진다.
  */
-export async function createListing(input: ListingCreateInput, actor: { source: AuditSource; userId?: string }): Promise<void> {
+export async function createListing(
+  input: ListingCreateInput,
+  actor: { source: AuditSource; userId?: string },
+  via: ListingSource = "manual",
+): Promise<string> {
   const db = getDb();
   const productId = await findOrCreateProduct(input, actor);
   const now = new Date();
@@ -66,6 +71,7 @@ export async function createListing(input: ListingCreateInput, actor: { source: 
         onHand: input.onHand,
         status: input.status,
         stockUpdatedAt: now,
+        source: via,
         ...createdBy(actor.source, actor.userId),
       })
       .returning({ id: shopListings.id });
@@ -75,9 +81,10 @@ export async function createListing(input: ListingCreateInput, actor: { source: 
       listingId: row.id,
       beforeQty: 0,
       afterQty: input.onHand,
-      reason: "manual",
+      reason: via,
       ...createdBy(actor.source, actor.userId),
     });
+    return row.id;
   } catch (e) {
     if (String(e).includes("shop_listings_shop_product_condition_uq")) throw new Error(LISTING_MESSAGES.duplicate);
     throw e;

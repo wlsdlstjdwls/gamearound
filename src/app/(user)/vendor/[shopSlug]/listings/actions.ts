@@ -5,15 +5,24 @@
 // **남의 매장** 은 그것으로 안 막힌다 — 폼에 남의 shopId 를 박아 보내는 것이 이 도메인의 첫 공격이다
 // (server/auth/shop-access, 설계서 §10).
 import { revalidatePath } from "next/cache";
+import { unstable_rethrow } from "next/navigation";
 import type { AuditSource } from "@/server/db/audit";
 import { vendorListingsPath, shopPath } from "@/lib/routes";
-import { LISTING_MESSAGES } from "@/lib/shops/listing-messages";
+import { CSV_MESSAGES, LISTING_MESSAGES } from "@/lib/shops/listing-messages";
+import { LISTING_CSV_MAX_BYTES, LISTING_CSV_MAX_ROWS } from "@/lib/shops/constants";
+import { readListingCsv } from "@/lib/shops/listing-csv";
 import { listingCreateSchema, listingRemoveSchema, listingStockSchema } from "@/lib/shops/listing-schemas";
 import { SHOP_GAME_MESSAGES } from "@/lib/shops/game-messages";
 import { needsResearch, shopGameCreateSchema, shopGameSearchSchema } from "@/lib/shops/game-schemas";
 import type { ShopGameOptionDto } from "@/lib/shops/game-option";
 import { openShopForAction } from "@/server/auth/shop-access";
-import { createListing, removeListing, updateListingStock } from "@/server/services/listings";
+import {
+  createListing,
+  importListingsCsv,
+  listHardwareModels,
+  removeListing,
+  updateListingStock,
+} from "@/server/services/listings";
 import { createShopGame, searchShopGames } from "@/server/services/shop-games";
 
 export type ListingState = { ok: true; message: string } | { ok: false; error: string } | null;
@@ -121,6 +130,37 @@ export async function removeListingAction(shopSlug: string, _prev: ListingState,
     refresh(shopSlug);
     return { ok: true, message: LISTING_MESSAGES.removed };
   } catch (e) {
+    return { ok: false, error: e instanceof Error ? e.message : LISTING_MESSAGES.badRequest };
+  }
+}
+
+export type CsvImportState = { ok: true; message: string; errors: string[] } | { ok: false; error: string } | null;
+
+/**
+ * CSV 한 파일 반영. 파일 자체가 아니라 **글자로 풀린 본문**(`csv`)을 받는다 —
+ * 엑셀의 한글 CSV 는 EUC-KR 이라 서버가 바이트를 받으면 인코딩을 다시 맞혀야 한다. 브라우저가 풀어 보낸다
+ * (components/shops/listing-csv-form 의 readCsvText).
+ */
+export async function importCsvAction(shopSlug: string, _prev: CsvImportState, formData: FormData): Promise<CsvImportState> {
+  try {
+    const { shop, actor } = await openShop(shopSlug);
+    const text = String(formData.get("csv") ?? "");
+    if (!text.trim()) return { ok: false, error: CSV_MESSAGES.fileRequired };
+    // 브라우저도 막지만 손으로 만든 요청은 그걸 안 거친다
+    if (Buffer.byteLength(text, "utf8") > LISTING_CSV_MAX_BYTES) return { ok: false, error: CSV_MESSAGES.fileTooBig };
+
+    const read = readListingCsv(text, await listHardwareModels());
+    if (!read.ok) return { ok: false, error: read.error };
+    if (read.rows.length > LISTING_CSV_MAX_ROWS) return { ok: false, error: CSV_MESSAGES.tooManyRows(LISTING_CSV_MAX_ROWS) };
+
+    const r = await importListingsCsv(shop.id, read.rows, actor);
+    refresh(shopSlug);
+    const errors = r.errors.map((e) => CSV_MESSAGES.failedLine(e.line, e.error));
+    if (r.failed > r.errors.length) errors.push(CSV_MESSAGES.moreFailed(r.failed - r.errors.length));
+    return { ok: true, message: CSV_MESSAGES.result(r), errors };
+  } catch (e) {
+    // 권한 없음, 세션 만료 이동을 오류 문구로 삼키지 않는다(staff/actions 의 fail 주석)
+    unstable_rethrow(e);
     return { ok: false, error: e instanceof Error ? e.message : LISTING_MESSAGES.badRequest };
   }
 }

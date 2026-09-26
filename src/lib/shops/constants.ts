@@ -28,3 +28,18 @@ export const STAFF_INVITE_TTL_DAYS = 7;
 
 /** 초대 토큰의 바이트 수. 세션 토큰(lib/auth/constants)과 같은 강도로 둔다 — 둘 다 "이걸 쥐면 들어온다" 다 */
 export const STAFF_INVITE_TOKEN_BYTES = 32;
+
+/**
+ * CSV 한 번에 받는 줄 수 상한.
+ *
+ * 줄마다 판매 줄과 재고 이력을 쓰는 왕복이 붙는다. 운영(iad1, Neon us-east-1)에서 왕복이 한 자릿수 ms 라
+ * 500줄이면 수 초 안에 끝나고 함수 시간 한도(300초)와 거리가 멀다. 이보다 큰 매장은 파일을 나눠 올리거나
+ * 연동(설계서 §8)으로 넣을 일이다 — 손으로 관리하는 동네 매장 재고가 이 수를 넘는 일은 드물다.
+ */
+export const LISTING_CSV_MAX_ROWS = 500;
+
+/** CSV 파일 크기 상한(바이트). 500줄 x 줄당 200바이트 남짓의 다섯 배 — 서버 액션 본문 한도(1MB) 안쪽이다 */
+export const LISTING_CSV_MAX_BYTES = 512 * 1024;
+
+/** 결과 화면에 적는 실패 줄 수. 넘는 것은 개수만 센다 — 500줄이 다 틀리면 화면이 오류로 덮인다 */
+export const LISTING_CSV_ERROR_SAMPLE = 20;

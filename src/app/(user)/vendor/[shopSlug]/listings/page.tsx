@@ -3,19 +3,18 @@
 // 목록과 추가 폼을 한 화면에 둔다. 매장이 재고를 적는 일은 "올리고 바로 다음 것을 올리는" 반복이라
 // 추가를 다른 화면으로 보내면 그 왕복이 물건 수만큼 는다.
 //
-// 바코드 스캔과 CSV 는 아직 없다(설계서 §11 은 둘 다 그렸다). 스캐너는 카메라 권한과 기기별
-// 차이를 실측해야 하고, CSV 는 매장마다 다른 열 이름을 맞추는 일이 본체다. 손입력이 먼저 서야
-// 그 둘이 무엇으로 들어올지 정해진다.
+// CSV 는 손입력 아래에 둔다. 매일 쓰는 것은 한 건씩 올리는 폼이고, 파일은 처음 입점할 때나 재고를 몰아 맞출 때 쓴다.
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import { ListingCsvForm } from "@/components/shops/listing-csv-form";
 import { ListingForm } from "@/components/shops/listing-form";
 import { ListingRows } from "@/components/shops/listing-rows";
 import { Panel, Page, PageHead, SectionHead } from "@/components/ui/page";
 import { buttonClass } from "@/components/ui/button";
 import { shopPath, vendorStaffPath } from "@/lib/routes";
 import { STAFF_MESSAGES } from "@/lib/shops/staff-messages";
-import { LISTING_MESSAGES as M, VENDOR_MESSAGES } from "@/lib/shops/listing-messages";
+import { CSV_MESSAGES, LISTING_MESSAGES as M, VENDOR_MESSAGES } from "@/lib/shops/listing-messages";
 import { requireShopRole } from "@/server/auth/guards";
 import { findShopBySlug } from "@/server/services/shops";
 import { listHardwareModels, listShopListings } from "@/server/services/listings";
@@ -59,6 +58,13 @@ export default async function VendorListingsPage({ params }: Props) {
         <SectionHead title={M.addTitle} />
         <Panel className="px-4 py-4">
           <ListingForm shopSlug={shop.slug} hardware={hardware} />
+        </Panel>
+      </section>
+
+      <section className="flex flex-col gap-3">
+        <SectionHead title={CSV_MESSAGES.title} />
+        <Panel className="px-4 py-4">
+          <ListingCsvForm shopSlug={shop.slug} />
         </Panel>
       </section>
     </Page>

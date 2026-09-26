@@ -74,3 +74,28 @@ export const SELLING_MESSAGES = {
   shopListingsEmpty: "아직 올라온 물건이 없어요.",
   more: "매장 페이지 보기",
 } as const;
+
+/** CSV 로 한 번에 올리기(/vendor/[shopSlug]/listings) */
+export const CSV_MESSAGES = {
+  title: "CSV 로 한 번에 올리기",
+  lead: "엑셀에서 CSV 로 저장한 파일을 올려요. 바코드가 같거나, 바코드 없이 이름과 상태가 같은 물건은 새로 올리지 않고 값과 수량을 고쳐요.",
+  columns: "열: 상품명(필수), 바코드, 기종, 상태(중고, 새 제품, 미개봉), 판매가(필수), 수량(필수), 공개(판매 중, 작성 중, 숨김, 품절)",
+  template: "양식 받기",
+  fileLabel: "CSV 파일",
+  submit: "올리기",
+  submitting: "올리는 중",
+  result: (r: { created: number; updated: number; unchanged: number; failed: number }) =>
+    `새로 ${r.created}건, 고침 ${r.updated}건, 그대로 ${r.unchanged}건, 실패 ${r.failed}건이에요.`,
+  failedLine: (line: number, error: string) => `${line}번째 줄: ${error}`,
+  moreFailed: (n: number) => `그 밖에 ${n}건이 더 실패했어요.`,
+
+  fileRequired: "CSV 파일을 골라 주세요.",
+  fileTooBig: "파일이 너무 커요. 나눠서 올려 주세요.",
+  tooManyRows: (max: number) => `한 번에 ${max}줄까지 올릴 수 있어요. 나눠서 올려 주세요.`,
+  empty: "파일에 올릴 줄이 없어요.",
+  headerMissing: (col: string) => `머리글에 '${col}' 열이 없어요. 양식을 받아 맞춰 주세요.`,
+  hardwareUnknown: (v: string) => `모르는 기종이에요: ${v}`,
+  conditionUnknown: (v: string) => `상태는 중고, 새 제품, 미개봉 중 하나예요: ${v}`,
+  statusUnknown: (v: string) => `공개는 판매 중, 작성 중, 숨김, 품절 중 하나예요: ${v}`,
+  valueRequired: (col: string) => `${col} 칸이 비었어요.`,
+} as const;

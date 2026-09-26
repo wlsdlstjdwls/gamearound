@@ -58,6 +58,7 @@ export const unitGradeEnum = pgEnum("unit_grade", ["S", "A", "B", "C"]);
 
 export type ListingCondition = (typeof listingConditionEnum.enumValues)[number];
 export type ListingStatus = (typeof listingStatusEnum.enumValues)[number];
+export type ListingSource = (typeof listingSourceEnum.enumValues)[number];
 export type PackageType = (typeof packageTypeEnum.enumValues)[number];
 
 /**

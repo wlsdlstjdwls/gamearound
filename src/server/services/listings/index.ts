@@ -4,6 +4,8 @@
 // 라우트는 SQL 을 직접 쓰지 않는다(AGENTS §1).
 //
 //   read    판매 목록, 파는 곳, 기종 사전 조회
-//   write   올리기, 재고 고치기, 내리기
+//   write   올리기, 재고 고치기, 내리기(손입력과 CSV 가 같이 지난다)
+//   import  CSV 한 파일을 줄마다 반영
 export * from "./read";
 export * from "./write";
+export * from "./import";
