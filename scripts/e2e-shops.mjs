@@ -1,4 +1,4 @@
-// 매장 축 끝단 시험 — 가입, 입점 신청, 승인, 물건 등록, CSV, 바코드 조회, 직원 초대를 서버 액션으로 한 바퀴.
+// 매장 축 끝단 시험 — 가입, 입점 신청, 승인, 물건 등록, CSV, 바코드 조회, 사진(Blob), 직원 초대를 서버 액션으로 한 바퀴.
 // 사용: node scripts/e2e-shops.mjs [baseUrl]   (기본 http://127.0.0.1:4000, dev 서버가 떠 있어야 한다)
 //
 // **DB 에 실제로 행을 만든다.** 로컬 DB 가 곧 운영이다. 시험 계정, 매장, 상품은 끝에서 스스로 지우고
@@ -16,6 +16,8 @@
 import { config as loadEnv } from "dotenv";
 import { neon } from "@neondatabase/serverless";
 import { readFile } from "node:fs/promises";
+import { del, head, list } from "@vercel/blob";
+import { upload } from "@vercel/blob/client";
 
 loadEnv({ path: ".env.local", quiet: true });
 const sql = neon(process.env.DATABASE_URL);
@@ -190,7 +192,7 @@ async function main() {
 
   // 6) 물건 등록 — 상품과 판매 줄이 한 폼에서 같이 생긴다
   {
-    await listingAction("createListingAction", [shop.slug, null, "$K1"], {
+    const created = await listingAction("createListingAction", [shop.slug, null, "$K1"], {
       name: `시험 상품 ${stamp}`,
       barcode: BARCODE,
       hardwareCode: "",
@@ -200,7 +202,7 @@ async function main() {
       onHand: "3",
     });
     const rows = await sql`select l.price_minor, l.on_hand, l.source from shop_listings l where l.shop_id = ${ids.shopId}`;
-    check("6. 물건 등록 → 판매 줄 1, 값과 재고 그대로", rows.length === 1 && rows[0].price_minor === 35000 && rows[0].on_hand === 3, JSON.stringify(rows));
+    check("6. 물건 등록 → 판매 줄 1, 값과 재고 그대로", rows.length === 1 && rows[0].price_minor === 35000 && rows[0].on_hand === 3, rows.length ? JSON.stringify(rows) : `http=${created.status} ${created.text.slice(-300)}`);
     const ev = await sql`select after_qty, reason from shop_stock_events where listing_id in (select id from shop_listings where shop_id = ${ids.shopId})`;
     check("6b. 재고 이력이 첫 줄부터(manual)", ev.length === 1 && ev[0].reason === "manual", JSON.stringify(ev));
   }
@@ -247,6 +249,59 @@ async function main() {
       select before_qty, after_qty, reason from shop_stock_events
       where listing_id in (select id from shop_listings where shop_id = ${ids.shopId}) and reason = 'csv' order by before_qty`;
     check("10e. 재고 이력: 3 에서 5, 0 에서 2 (csv)", ev.length === 2 && ev.some((e) => e.before_qty === 3 && e.after_qty === 5), JSON.stringify(ev));
+  }
+
+  // P) 사진 — 토큰은 이 매장 판매 줄 경로에만 나오고, 올린 파일은 등록, 지우기, 줄 내리기 때 저장소에서도 사라진다
+  {
+    // 가장 작은 온전한 JPEG(1x1). 저장소는 내용이 아니라 형식(contentType)을 본다
+    const JPEG = Buffer.from(
+      "/9j/4AAQSkZJRgABAQEASABIAAD/2wBDAP//////////////////////////////////////////////////////////////////////////////////////wgALCAABAAEBAREA/8QAFBABAAAAAAAAAAAAAAAAAAAAAP/aAAgBAQABPxA=",
+      "base64",
+    );
+    const [first] = await sql`
+      select l.id from shop_listings l join products p on p.id = l.product_id
+      where l.shop_id = ${ids.shopId} and p.name = ${`CSV 상품 ${stamp}`}`;
+    const listingId = first.id;
+    const put = (pathname) =>
+      upload(pathname, JPEG, {
+        access: "public",
+        handleUploadUrl: `${base}/api/shops/photos/upload`,
+        clientPayload: JSON.stringify({ shopSlug: shop.slug, listingId }),
+        headers: { cookie: ownerCookie },
+        contentType: "image/jpeg",
+      });
+    const photoAction = (name, args) => callAction({ page: listingsPage, file: "listings/photo-actions", name, cookie: ownerCookie, args });
+
+    const foreign = await put(`shops/${ids.shopId}/listings/00000000-0000-4000-8000-000000000000/x.jpg`).then(
+      () => "올라감",
+      (e) => String(e?.message ?? e),
+    );
+    check("P1. 남의 판매 줄 경로로는 토큰이 안 나온다", foreign !== "올라감", foreign.slice(0, 80));
+
+    const blob = await put(`shops/${ids.shopId}/listings/${listingId}/photo.jpg`);
+    await photoAction("registerPhotoAction", [shop.slug, { listingId, url: blob.url, pathname: blob.pathname, width: 1, height: 1 }]);
+    const rows = await sql`select id, byte_size from shop_listing_photos where listing_id = ${listingId}`;
+    check("P2. 올리고 등록하면 사진 행이 서고 크기는 저장소 값", rows.length === 1 && rows[0].byte_size === JPEG.length, JSON.stringify(rows));
+
+    // 공개 매장 페이지에 보이려면 작성 중을 판매 중으로 — CSV 로 공개만 바꾼다
+    await listingAction("importCsvAction", [shop.slug, null, "$K1"], {
+      csv: `상품명,상태,판매가,수량,공개
+
+CSV 상품 ${stamp},새 제품,12000,2,판매 중`,
+    });
+    const html = await fetch(`${base}/shops/${shop.slug}`).then((r) => r.text());
+    check("P3. 매장 페이지에 대표 사진이 뜬다", html.includes(encodeURIComponent(blob.url)) || html.includes(blob.url));
+
+    await photoAction("removePhotoAction", [shop.slug, rows[0].id]);
+    const gone = await head(blob.url).then(() => false, () => true);
+    const left = (await sql`select count(*)::int as n from shop_listing_photos where listing_id = ${listingId}`)[0].n;
+    check("P4. 사진을 지우면 행과 저장소 파일이 같이 사라진다", gone && left === 0, `저장소 ${gone ? "없음" : "남음"}, 행 ${left}`);
+
+    const again = await put(`shops/${ids.shopId}/listings/${listingId}/photo.jpg`);
+    await photoAction("registerPhotoAction", [shop.slug, { listingId, url: again.url, pathname: again.pathname, width: 1, height: 1 }]);
+    await listingAction("removeListingAction", [shop.slug, null, "$K1"], { listingId });
+    const gone2 = await head(again.url).then(() => false, () => true);
+    check("P5. 물건을 내리면 그 사진 파일도 저장소에서 사라진다", gone2);
   }
 
   // 11) 직원 초대 — 대표가 만들고, 다른 계정은 못 받고, 초대받은 계정만 합류한다
@@ -335,6 +390,12 @@ async function cleanup() {
     await sql`delete from shop_staff_invites where shop_id = ${ids.shopId}`;
     await sql`delete from shop_staff where shop_id = ${ids.shopId}`;
     await sql`delete from shops where id = ${ids.shopId}`;
+  }
+  // 시험 매장 경로 아래 남은 사진 파일(중간에 실패했을 때)을 저장소에서도 치운다
+  if (ids.shopId) {
+    const { blobs } = await list({ prefix: `shops/${ids.shopId}/` });
+    if (blobs.length) await del(blobs.map((b) => b.url));
+    console.log(`저장소에 남아 있던 시험 사진 ${blobs.length}장 지움`);
   }
   const users = [ids.ownerId, ids.staffId, ids.adminId].filter(Boolean);
   if (users.length > 0) {
