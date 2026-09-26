@@ -23,6 +23,7 @@ import { createGameFromSnapshot, isTitleEnRecovery, planGameMeta, planSlugRename
 import { planPlatform, type PlatformPlan, type PlatformRow } from "./platform-writer";
 import { gamesWithRef, ignoreDiscovery, loadGameTitles, type StoreTarget } from "./store-targets";
 import { findGameByTitle } from "./match";
+import { loadRootParents } from "./parent-root";
 import { syncSnapshotSubscriptions } from "./subscription-writer";
 
 /** 수집 결과 1건 — 대상과 그 대상에서 받아온 스냅샷 */
@@ -141,10 +142,13 @@ async function planParentLinks(
     .where(and(eq(gameSourceRefs.source, source), inArray(gameSourceRefs.externalId, parentIds)));
 
   const parentByExternalId = resolveParents(refs);
+  // 스토어가 가리킨 행이 우리 쪽에선 에디션일 수 있다 — 맨 위 본편에 붙인다(parent-root)
+  const rootOf = await loadRootParents(ctx, Array.from(new Set(parentByExternalId.values())));
 
   const out: Statement[] = [];
   for (const { gameId, snapshot } of pending) {
-    const parentGameId = parentByExternalId.get(snapshot.parentExternalId as string);
+    const found = parentByExternalId.get(snapshot.parentExternalId as string);
+    const parentGameId = found && (rootOf.get(found) ?? found);
     if (!parentGameId || parentGameId === gameId) continue;
     out.push(
       ctx.db.update(games).set({ contentType: "dlc", parentGameId, updatedAt: ctx.now }).where(eq(games.id, gameId)),

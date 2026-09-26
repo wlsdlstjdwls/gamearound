@@ -15,6 +15,7 @@ import { DEFAULT_FETCH_BATCH_SIZE, DLC_FETCH_PER_RUN_BY_SOURCE, DLC_PER_GAME_MAX
 import { recordError, type Ctx } from "./context";
 import { createGameFromSnapshot } from "./game-writer";
 import { upsertPlatform } from "./platform-writer";
+import { loadRootParents } from "./parent-root";
 import { fetchWithRetry } from "./retry";
 import { withDiscoveredMedia } from "./store-apply";
 import { candidateAsTarget } from "./store-targets";
@@ -93,6 +94,8 @@ export async function syncDlcs(
   for (const g of groups) for (const c of g.candidates ?? []) candidateById.set(c.externalId, c);
 
   const snapshots = await fetchDlcSnapshots(ctx, source, adapter, newIds);
+  // 스토어가 본편이라고 한 행이 우리 쪽에선 에디션일 수 있다 — 맨 위 본편에 붙인다(parent-root)
+  const rootOf = await loadRootParents(ctx, Array.from(new Set(groups.map((g) => g.parentGameId))));
   let created = 0;
   for (const [externalId, priced] of snapshots) {
     const group = parentByExternalId.get(externalId);
@@ -101,7 +104,8 @@ export async function syncDlcs(
     const candidate = candidateById.get(externalId);
     const snapshot = candidate ? withDiscoveredMedia(priced, candidateAsTarget(candidate, null)) : priced;
     try {
-      const child = await createGameFromSnapshot(ctx, snapshot, { contentType: "dlc", parentGameId: group.parentGameId });
+      const parentGameId = rootOf.get(group.parentGameId) ?? group.parentGameId;
+      const child = await createGameFromSnapshot(ctx, snapshot, { contentType: "dlc", parentGameId });
       await upsertPlatform(ctx, child.id, child.slug, snapshot);
       // 본편 화면에 DLC 목록이 새로 뜨므로 본편 캐시도 무효화해야 한다
       ctx.changedSlugs.add(group.parentSlug);
