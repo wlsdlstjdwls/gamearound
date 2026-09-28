@@ -101,6 +101,8 @@ export async function createListingAction(shopSlug: string, _prev: ListingState,
     refresh(shopSlug);
     return { ok: true, message: LISTING_MESSAGES.added };
   } catch (e) {
+    // 권한 없음, 세션 만료 이동을 오류 문구로 삼키지 않는다(아래 importCsvAction 과 같은 이유)
+    unstable_rethrow(e);
     return { ok: false, error: e instanceof Error ? e.message : LISTING_MESSAGES.badRequest };
   }
 }
@@ -118,6 +120,8 @@ export async function updateStockAction(shopSlug: string, _prev: ListingState, f
     refresh(shopSlug);
     return { ok: true, message: LISTING_MESSAGES.saved };
   } catch (e) {
+    // 권한 없음, 세션 만료 이동을 오류 문구로 삼키지 않는다(아래 importCsvAction 과 같은 이유)
+    unstable_rethrow(e);
     return { ok: false, error: e instanceof Error ? e.message : LISTING_MESSAGES.badRequest };
   }
 }
@@ -132,6 +136,8 @@ export async function removeListingAction(shopSlug: string, _prev: ListingState,
     refresh(shopSlug);
     return { ok: true, message: LISTING_MESSAGES.removed };
   } catch (e) {
+    // 권한 없음, 세션 만료 이동을 오류 문구로 삼키지 않는다(아래 importCsvAction 과 같은 이유)
+    unstable_rethrow(e);
     return { ok: false, error: e instanceof Error ? e.message : LISTING_MESSAGES.badRequest };
   }
 }
