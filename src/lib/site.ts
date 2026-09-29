@@ -24,9 +24,9 @@ export const SITE = {
   contactEmail: "wlsdlstjdwls12@gmail.com",
   /** PWA, 브라우저 UI 색. globals.css 의 --bg / --ink 와 같은 값이어야 한다 */
   themeColor: "#1c1c1a",
-  backgroundColor: "#faf9f7",
+  backgroundColor: "#f2f4f6",
   /** 다크에서의 바탕. globals.css 다크 블록의 --bg 와 같은 값 */
-  backgroundColorDark: "#131312",
+  backgroundColorDark: "#0f1115",
   /** 브랜드 악센트. globals.css 의 --acc 와 같은 값 — 로고, 아이콘의 버튼 하나가 이 색이다 */
   accentColor: "#5b34c7",
 } as const;
