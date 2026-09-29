@@ -105,16 +105,14 @@ export function highlightFromFilter(filter: { platform?: string; genre?: string 
  * 커버가 460:215 라 가로로 길어서 그 빈 띠가 카드 하나에서 유난히 넓게 읽혔다.
  */
 /*
- * 좁은 화면(sm 미만)에서는 카드가 **가로로 눕는다**(2026-09-29, 사용자: "가시성이 너무 떨어져").
- * 세로 카드 한 장이 390px 화면 높이의 3분의 1을 먹어, 한 화면에 게임이 한 장 남짓만 보였다 —
- * 가격 비교 화면에서 한 번에 견줄 수 있는 것이 하나뿐이었다. 커버를 왼쪽 기둥으로 돌리면
- * 제목과 값이 같은 크기로 서면서 한 화면에 다섯 장 안팎이 선다(스팀 모바일 검색, 다나와 목록형과 같은 문법).
+ * 좁은 화면에서 카드를 가로로 눕혀 봤다가 같은 날 되돌렸다(2026-09-29, 사용자: "모바일의 경우도 그냥
+ * 동일하게 카드 형태로"). 한 화면에 보이는 장 수보다 커버 그림이 카드의 얼굴인 쪽을 골랐다.
  */
-export const CARD_SHELL = "card-panel flex h-full flex-row gap-3 p-2 sm:flex-col sm:gap-1.5 sm:p-2.5 sm:pb-3.5";
+export const CARD_SHELL = "card-panel flex h-full flex-col gap-1.5 p-2.5 pb-3.5";
 
-/** 커버 상자. 뼈대도 같은 값을 써야 좁은 화면에서 왼쪽 기둥 폭이 어긋나지 않는다 */
+/** 커버 상자. 뼈대도 같은 값을 써야 본문이 올 때 격자가 밀리지 않는다 */
 export const COVER_CLASS =
-  "relative block aspect-[460/215] w-[38%] shrink-0 self-start overflow-hidden rounded-[var(--radius-inset)] bg-surface-3 shadow-hair sm:w-full sm:rounded-[var(--radius-cover)]";
+  "relative block aspect-[460/215] w-full overflow-hidden rounded-[var(--radius-cover)] bg-surface-3 shadow-hair";
 
 export function GameCard({
   game,
@@ -156,14 +154,14 @@ export function GameCard({
         aria-label={`${title} 상세 보기`}
       >
         {/* 판 안이라 그림자를 겹치지 않는다 — 가장자리를 긋는 링 한 줄이면 밝은 커버가 흰 판에 번지지 않는다.
-            좁은 화면에서는 커버가 왼쪽 기둥이 된다(COVER_CLASS 주석) */}
+            커버 위에 얹는 것이 없어 상자는 하나면 된다 */}
         <span className={COVER_CLASS}>
           <span className="cover-zoom-img absolute inset-0 block">
-            <CoverImage src={game.coverUrl} alt={`${title} 커버`} sizes="(max-width: 640px) 38vw, 25vw" />
+            <CoverImage src={game.coverUrl} alt={`${title} 커버`} sizes="(max-width: 640px) 100vw, 25vw" />
           </span>
         </span>
 
-        <span className="flex min-w-0 flex-1 flex-col gap-1 py-0.5 sm:px-1 sm:pt-1.5">
+        <span className="flex min-w-0 flex-1 flex-col gap-1 px-1 pt-1.5">
           {/* 제목은 줄 하나를 혼자 쓴다(2026-09-29, 사용자: "가시성이 너무 떨어져").
               전에는 값과 한 줄을 나눠 서서, 할인 중인 카드에서 제목에 남는 폭이 80px 안팎이었다 —
               "어쌔신 ..." 처럼 두세 글자만 보이고 나머지는 말풍선에 숨었다. 두 줄까지 펴고 그 뒤를 자른다 */}
@@ -172,8 +170,8 @@ export function GameCard({
           </Clamp>
 
           {/* 값 줄 — "얼마나 싸졌나 - 얼마인가 - 원래 얼마였나" 가 왼쪽에서 오른쪽으로 읽힌다.
-              남은 기간은 여기 두지 않는다 — 가로 카드(좁은 화면)에서 넷이 한 줄을 못 버텨 기간이 혼자
-              다음 줄로 떨어졌다. 맨 아래 "어디 최저" 줄의 오른쪽 끝으로 보냈다.
+              남은 기간은 여기 두지 않는다 — 넷이 한 줄을 못 버티면 기간이 혼자 다음 줄로 떨어진다.
+              맨 아래 "어디 최저" 줄의 오른쪽 끝으로 보냈다.
 
               값은 갈래를 가리지 않고 선다(2026-09-22, 사용자 지적: "최근 출시 영역에서는 금액이 안나옴").
               **값을 모르면 줄 자체를 세우지 않는다**(같은 날 사용자 지정: "금액이 없으면 '-' 이것도
@@ -191,10 +189,9 @@ export function GameCard({
             </span>
           )}
 
-          {/* 부제(원제, 장르)는 넓은 화면에서만 — 좁은 화면의 가로 카드에서는 제목 두 줄과 값이 먼저다.
-              고른 장르 하나만 색이 달라야 해서 조각으로 쪼갠다 — 말풍선에 쓸 글자는 따로 만들어 Clamp 에 준다 */}
+          {/* 부제 — 원제와 장르. 고른 장르 하나만 색이 달라야 해서 조각으로 쪼갠다 — 말풍선에 쓸 글자는 따로 만들어 Clamp 에 준다 */}
           {subtitleText && (
-            <span className="hidden text-[13px] text-mut sm:block">
+            <span className="text-[13px] text-mut">
               <Clamp text={subtitleText}>
                 {originalTitle}
                 {originalTitle && genres.length > 0 ? " | " : null}
