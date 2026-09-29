@@ -311,7 +311,12 @@ export default async function GameDetailPage({ params }: Props) {
           안쪽 조각마다 .enter-item 을 붙이는 이유: 헤더는 300px 넘는 덩어리라 통째로 페이드하면
           화면이 한 번에 툭 던져진다. 커버, 제목, 요약, 장르, 설명 순으로 들어와야 목록 화면과 결이 같다.
           (조각이 하나라도 .enter-item 이면 감싼 section 은 애니메이션에서 빠진다 — 겹쳐 페이드 방지) */}
-      <section className="grid items-start gap-x-9 gap-y-6 pb-1 lg:grid-cols-[minmax(0,1.25fr)_minmax(280px,0.72fr)]">
+      {/* 왼쪽 기둥을 둘로 갈랐다(2026-09-29, 사용자: "가시성이 너무 떨어져"). 한 기둥으로 접히는 좁은 화면에서
+          값 칸이 설명과 장르 **아래**에 서서, 휴대폰 첫 화면에 값이 한 번도 안 보였다 — 가격 비교 화면의
+          첫 질문이 스크롤 두 번 밑에 있었다. 문서 순서를 "커버, 제목 - 값 - 설명" 으로 두고, 넓은 화면에서는
+          오른쪽 기둥이 두 줄을 걸쳐 서게 해 배치가 전과 같다. 줄 높이를 auto_1fr 로 박는 이유: 오른쪽 기둥이
+          더 길면 남는 높이가 첫 줄로 가서 제목과 설명 사이가 벌어진다 — 둘째 줄이 받게 한다 */}
+      <section className="grid items-start gap-x-9 gap-y-6 pb-1 lg:grid-cols-[minmax(0,1.25fr)_minmax(280px,0.72fr)] lg:grid-rows-[auto_1fr]">
         <div className="flex min-w-0 flex-col gap-5">
           {/*
             커버는 스탬프가 모서리 밖으로 나가므로 relative 상자와 overflow 상자를 갈라 둔다(game-card 와 같은 규칙).
@@ -402,6 +407,9 @@ export default async function GameDetailPage({ params }: Props) {
             <CompanyChips companies={game.companies} developer={game.developer} publisher={game.publisher} />
           </div>
 
+        </div>
+
+        <div className="flex min-w-0 flex-col gap-5 lg:col-start-1 lg:row-start-2">
           {game.description && (
             <p className="enter-item max-w-[620px] text-[14px] leading-[1.8] text-mut" style={stagger(2)}>
               {game.description}
@@ -425,7 +433,7 @@ export default async function GameDetailPage({ params }: Props) {
         {/* lg 아래에서는 붙이지 않는다 — 한 기둥으로 접히면 따라올 대상이 자기 자신뿐이다.
             sticky 인 기둥에 넣을 것을 고르는 기준은 "사는 결정에 직접 쓰이나" 다 —
             값, 알림 버튼, 점수, 그리고 플레이타임까지 넷이 여기 산다. */}
-        <div className="enter-item flex min-w-0 flex-col gap-5 lg:sticky lg:top-[80px]" style={stagger(4)}>
+        <div className="enter-item row-start-2 flex min-w-0 flex-col gap-5 lg:sticky lg:top-[80px] lg:col-start-2 lg:row-span-2 lg:row-start-1" style={stagger(4)}>
           <PriceHeadline game={game} recordedLow={recordedLow} />
 
           {/* 찜 버튼은 숨겼다(2026-09-21, 사용자 결정) — WishlistSlot 과 그 폴백은 그대로 둔다.
