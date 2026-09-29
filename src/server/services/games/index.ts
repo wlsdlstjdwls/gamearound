@@ -5,7 +5,7 @@ export type * from "./dto";
 export { bestScore, bestUserScore, cheapestPlatform, displayTitle, originCountry, scoreLines, toPublicGameDto } from "./mappers";
 export type { ScoreLine } from "./mappers";
 export { getHomeData } from "./home";
-export { getPersonalDeals, PERSONAL_DEALS_LIMIT } from "./personal";
+export { getPersonalDeals } from "./personal";
 export type { PersonalDealsFilter } from "./personal";
 export { listNews, NEWS_PAGE_SIZE } from "./news";
 export type { NewsListResult } from "./news";

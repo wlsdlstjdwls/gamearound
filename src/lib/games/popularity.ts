@@ -42,6 +42,16 @@ const REVIEW_RANK_TABLE: ReadonlyArray<readonly [position: number, reviews: numb
   [1100, 1372], [1200, 777], [1300, 384],
 ];
 
+/**
+ * 할인 줄의 "별점 높은순" 이 점수를 믿기 시작하는 평가 수(2026-09-29 사용자 지정: 100명).
+ *
+ * 점수만 보면 다섯 명이 준 100점이 5만 명이 준 90점을 이긴다. 할인 줄에서 별점은 판매 순번 다음,
+ * 환산 자리 앞에 서는 키라 여기를 통과한 행은 수천 개의 순번 없는 게임 앞에 선다 — 문턱이 없으면
+ * 그 앞줄을 평가 몇 개짜리 인디가 차지한다. 100 은 평가 수 환산표가 자리를 주기 시작하는 384 보다 낮아,
+ * 환산 자리를 못 받은 괜찮은 게임도 별점으로는 앞에 설 수 있다.
+ */
+export const RATING_MIN_REVIEWS = 100;
+
 /** 위 표를 SQL CASE 로 옮길 때 쓰는 읽기 전용 사본. 두 곳이 같은 숫자를 봐야 한다 */
 export const REVIEW_RANK_STEPS = REVIEW_RANK_TABLE;
 

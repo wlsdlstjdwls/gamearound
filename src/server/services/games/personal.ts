@@ -1,9 +1,12 @@
-// 취향 할인 줄 — 온보딩에서 받은 플랫폼, 장르, 할인 성향, 구독으로 홈의 할인을 거른다(설계 §9 의 4회차).
+// 개인화 할인 줄 — 온보딩에서 받은 플랫폼, 장르, 할인 성향, 구독으로 홈 "지금 할인 중" 을 다시 짠다(설계 §9 의 4회차).
 //
-// 캐시를 걸지 않는다. 사람마다 조건이 달라 캐시 열쇠가 사용자 수만큼 생기고, 줄이 작아(8칸)
-// 질의 하나로 끝난다. 홈 본문(풀 라우트 캐시)은 이 질의를 모른다 — 줄은 마운트 뒤 따로 받아 온다
+// 2026-09-29 사용자 지정: 홈 첫 줄 밑의 "내 취향 할인" 둘째 줄을 없애고 **첫 줄 자체**를 개인화한다.
+// 취향에 맞는 할인을 먼저 세우고, 없거나 모자라면 공통 줄(home.ts, 판매 순번 → 별점 → 환산 랭킹)로 채운다.
+//
+// 캐시를 걸지 않는다. 사람마다 조건이 달라 캐시 열쇠가 사용자 수만큼 생기고, 질의 하나로 끝난다.
+// 홈 본문(풀 라우트 캐시)은 이 질의를 모른다 — 줄은 마운트 뒤 따로 받아 갈아 끼운다
 // (api/me/picks, 홈의 정적 캐시를 깨지 않으려고. SessionProvider 주석과 같은 이유다).
-import { and, desc, eq, gte, gt, inArray, sql } from "drizzle-orm";
+import { and, eq, gte, gt, inArray, sql } from "drizzle-orm";
 import { getDb } from "@/server/db/client";
 import { gameGenres, gamePlatforms, games, gameSubscriptions, HOME_REGION, priceSnapshots, subscriptions, type Platform } from "@/server/db/schema";
 import { visiblePlatformsOnly } from "@/server/db/visibility";
@@ -11,10 +14,9 @@ import type { DealFloor } from "@/lib/onboarding/personal";
 import type { GameSummary } from "./dto";
 import { fillGenres, fillPlatforms, groupSummaries } from "./mappers";
 import { mainGamesOnly } from "./filters";
-import { baseCurrencyFirst, hltbRankExpr, popularityRankAgg } from "./popularity-order";
-
-/** 줄 칸 수. 홈 첫 줄(12칸) 밑에 붙는 둘째 줄이라 더 짧게 — 한 줄에 네 장씩 두 줄이다 */
-export const PERSONAL_DEALS_LIMIT = 8;
+import { dealOrder, popularityRankAgg } from "./popularity-order";
+import { getHomeData, HOME_LIMIT } from "./home";
+import { fillDeals } from "./fill-deals";
 
 export type PersonalDealsFilter = {
   platforms: readonly Platform[] | null;
@@ -23,7 +25,7 @@ export type PersonalDealsFilter = {
   floor: DealFloor;
 };
 
-export async function getPersonalDeals(f: PersonalDealsFilter): Promise<GameSummary[]> {
+async function getPickedDeals(f: PersonalDealsFilter): Promise<GameSummary[]> {
   const db = getDb();
   const rankAgg = popularityRankAgg(db);
   const wheres = [
@@ -59,14 +61,22 @@ export async function getPersonalDeals(f: PersonalDealsFilter): Promise<GameSumm
     .innerJoin(games, eq(gamePlatforms.gameId, games.id))
     .leftJoin(rankAgg, eq(rankAgg.gameId, games.id))
     .where(and(...wheres))
-    // 홈 첫 줄과 같은 순서(services/games/home 주석) — 원화 먼저, 인기, 최신작, 할인율
-    .orderBy(
-      baseCurrencyFirst(),
-      sql`coalesce(${rankAgg.minRank}, ${hltbRankExpr()}) asc nulls last`,
-      sql`${gamePlatforms.releaseDate} desc nulls last`,
-      desc(gamePlatforms.discountPct),
-    )
-    .limit(PERSONAL_DEALS_LIMIT * 4);
+    // 공통 줄과 같은 순서 — 취향 칸 뒤에 이어 붙는 칸과 잣대가 같아야 한다(popularity-order 머리 주석)
+    .orderBy(...dealOrder(rankAgg))
+    .limit(HOME_LIMIT * 4);
 
-  return fillGenres(await fillPlatforms(groupSummaries(rows, PERSONAL_DEALS_LIMIT)));
+  return fillGenres(await fillPlatforms(groupSummaries(rows, HOME_LIMIT)));
+}
+
+/**
+ * 개인화한 홈 첫 줄. 공통 줄은 캐시된 getHomeData 를 그대로 쓴다 — 채울 칸을 위해 질의를 또 돌리지 않는다.
+ * 두 벌은 서로 기다릴 이유가 없어 나란히 받는다(왕복 수가 화면 속도를 정한다).
+ *
+ * "곧 할인 마감" 에 선 게임은 취향 칸에서 뺀다. 그 줄은 공통 첫 줄과 겹치지 않게 골라져 있는데
+ * (home.ts, 2026-09-22 사용자 지정) 첫 줄을 갈아 끼우면 그 약속이 깨진다. 공통 줄은 애초에 겹치지 않는다.
+ */
+export async function getPersonalDeals(f: PersonalDealsFilter): Promise<GameSummary[]> {
+  const [picked, home] = await Promise.all([getPickedDeals(f), getHomeData()]);
+  const endingSoon = new Set(home.endingSoon.map((g) => g.slug));
+  return fillDeals(picked.filter((g) => !endingSoon.has(g.slug)), home.discounts, HOME_LIMIT);
 }

@@ -18,7 +18,7 @@ export async function revokePersonalizationAction(): Promise<RevokeState> {
     console.error("[settings] 개인화 끄기 실패", errorMessage(e));
     return { ok: false, error: M.settings.offFailed };
   }
-  // 홈 취향 줄은 /api/me/picks 가 매번 새로 읽으므로 여기서 무효화할 것은 설정 화면뿐이다
+  // 홈 할인 줄의 개인화는 /api/me/picks 가 매번 새로 읽으므로 여기서 무효화할 것은 설정 화면뿐이다
   revalidatePath(ROUTES.settings);
   return { ok: true };
 }

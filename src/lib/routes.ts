@@ -53,7 +53,7 @@ export const ROUTES = {
   privacy: "/privacy",
   company: "/companies",
   apiAuthMe: "/api/auth/me",
-  /** 홈 취향 할인 줄. 홈 캐시를 깨지 않으려고 마운트 뒤 따로 받는다(api/me/picks 주석) */
+  /** 홈 할인 줄의 개인화판. 홈 캐시를 깨지 않으려고 마운트 뒤 따로 받아 갈아 끼운다(api/me/picks 주석) */
   apiMePicks: "/api/me/picks",
   apiPushSubscribe: "/api/push/subscribe",
   /** 뉴스 썸네일 프록시 — 매체 CDN 이 핫링크를 막아 서버가 대신 받는다(lib/news/thumbnail) */

@@ -8,9 +8,10 @@ import type { HomeData } from "./dto";
 import { fillGenres, fillPlatforms, groupSummaries } from "./mappers";
 import { mainGamesOnly } from "./filters";
 import { DTO_CACHE_VERSION, LIST_REVALIDATE_SECONDS } from "@/lib/cache";
-import { baseCurrencyFirst as baseCurrencyFirstExpr, hltbRankExpr, popularityRankAgg } from "./popularity-order";
+import { baseCurrencyFirst as baseCurrencyFirstExpr, dealOrder, popularityRankAgg } from "./popularity-order";
 
-const HOME_LIMIT = 12;
+/** 홈 첫 줄 칸 수. 개인화 줄(personal.ts)도 같은 칸 수로 이 줄을 갈아 끼운다 */
+export const HOME_LIMIT = 12;
 const HOME_NEWS_LIMIT = 8;
 /** 곧 할인 마감 줄 — 오른쪽 뉴스(8건)와 줄 수를 맞춘다. 두 기둥의 길이가 어긋나면 짧은 쪽 아래가 빈다 */
 const HOME_ENDING_SOON_LIMIT = 8;
@@ -22,11 +23,12 @@ async function getHomeDataRaw(): Promise<HomeData> {
   const homeRegion = eq(gamePlatforms.region, HOME_REGION);
   const baseCurrencyFirst = baseCurrencyFirstExpr();
 
-  // 게임 단위 인기 자리 — 취향 할인 줄(personal.ts)과 같은 조각을 쓴다
+  // 게임 단위 인기 자리 — 개인화 줄(personal.ts)과 같은 조각을 쓴다
   const rankAgg = popularityRankAgg(db);
 
   /**
-   * 오늘의 할인: 원화 우선 → **인기순** → 할인율 desc. 게임당 1개로 묶기 위해 넉넉히 가져와 JS에서 dedupe.
+   * 오늘의 할인: 순서는 dealOrder(판매 순번 → 별점 → 환산 랭킹, 2026-09-29). 게임당 1개로 묶기 위해 넉넉히 가져와 JS에서 dedupe.
+   * 개인화를 켠 사람에게는 이 줄이 personal.ts 의 줄로 갈아 끼워지고, 이 줄은 그 모자란 칸을 채운다.
    *
    * 2026-09-21 에 할인율순에서 인기순으로 바꿨다. 할인율로 세우면 "가장 많이 깎인 것" 이 오는데
    * 그건 대개 묵은 게임이다(lib/games-query 의 MIN_DISCOUNT_STEPS 주석이 이미 알던 사실이다).
@@ -40,9 +42,13 @@ async function getHomeDataRaw(): Promise<HomeData> {
    * GTA VI 2위, 마블 울버린 3위, 고스트 오브 요테이 13위가 이 줄에 오른다.
    *
    * 순번을 아예 못 받는 스토어가 셋 남는다 — Xbox, 스위치, Epic. 셋 다 목록 정렬을 못 바꾼다
-   * (각 어댑터의 listPopularPages 주석). Xbox 는 평가 수가 목록 정렬에서 그 자리를 메우고,
-   * 평가 수조차 없는 스위치와 Epic 은 HLTB 기록 인원수가 메운다(아래 hltbRankExpr).
-   * 홈은 평가 수 환산을 안 쓴다 — 그 값은 집계를 넓혀야 해서 비용이 붙는다(rankAgg 주석).
+   * (각 어댑터의 listPopularPages 주석). Xbox 는 평가 수가, 평가 수조차 없는 스위치와 Epic 은
+   * HLTB 기록 인원수가 그 자리를 메운다. 평가 수는 게임 단위로 모으지 않고 할인 행의 값만 읽는다 —
+   * 집계를 넓히면 비용이 붙는다(rankAgg 주석, dealOrder 의 rowReviewRankExpr).
+   *
+   * 같은 자리 안에서 최신작을 먼저 두는 이유(2026-09-21 실측): 순번은 촘촘하지 않아 홈 12칸 중 8칸이
+   * 동점이었고, 그걸 할인율로 깨면 "많이 깎인 묵은 것" 이 이겼다. 출시일로 **거르지는** 않는다 —
+   * 3년 컷을 재어 보니 Baldur's Gate 3, RimWorld 가 빠지고 세대 호환 번들 셋이 그 자리를 채웠다.
    */
   const discountRows = await db
     .select({ game: games, gp: gamePlatforms })
@@ -50,26 +56,7 @@ async function getHomeDataRaw(): Promise<HomeData> {
     .innerJoin(games, eq(gamePlatforms.gameId, games.id))
     .leftJoin(rankAgg, eq(rankAgg.gameId, games.id))
     .where(and(mainGamesOnly(), homeRegion, visiblePlatformsOnly(), gt(gamePlatforms.discountPct, 0), gt(gamePlatforms.currentPrice, 0)))
-    .orderBy(
-      baseCurrencyFirst,
-      // 순번이 없으면 HLTB 기록 인원수를 환산한 자리로 같은 축에 세운다(목록과 같은 표).
-      // 스위치, Epic 은 스토어가 순번도 평가 수도 안 줘서 이 자리가 없으면 첫 화면에 영영 못 선다
-      sql`coalesce(${rankAgg.minRank}, ${hltbRankExpr()}) asc nulls last`,
-      sql`(${rankAgg.minRank} is not null) desc`,
-      /**
-       * 같은 인기 자리 안에서는 최신작이 먼저. 순번은 촘촘하지 않아 동점이 흔하다 —
-       * 2026-09-21 실측으로 홈 12칸 중 8칸이 동점이었다(6/6, 7/7, 12/12, 17/17).
-       * 그 동점을 할인율로 깨면 "많이 깎인 묵은 것" 이 이기는데, 그건 인기순으로 바꾸며
-       * 버린 기준이다(위 주석). 첫 화면은 같은 값이면 새것을 앞에 둔다.
-       *
-       * 출시일로 **거르지는** 않는다(3년 컷을 재어 보고 버렸다, 2026-09-21):
-       * Baldur's Gate 3, RimWorld 가 빠지고 그 자리를 세대 호환 번들 셋이 채웠다.
-       * 3년 지났다고 덜 유명한 것이 아니다 — 자리를 뺏는 것이 아니라 순서만 손본다.
-       */
-      sql`${gamePlatforms.releaseDate} desc nulls last`,
-      desc(gamePlatforms.discountPct),
-      desc(gamePlatforms.lastSyncedAt),
-    )
+    .orderBy(...dealOrder(rankAgg))
     .limit(HOME_LIMIT * 4);
 
   /**

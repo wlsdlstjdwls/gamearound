@@ -1,10 +1,10 @@
-// 인기순 정렬 조각 — 홈 첫 줄과 취향 할인 줄이 같은 순서를 쓴다.
-// 두 줄이 순서를 따로 정하면 "홈에서 1등이던 게임이 내 줄에서는 뒤에 있다" 가 생긴다.
-import { and, isNotNull, sql } from "drizzle-orm";
+// 인기순 정렬 조각 — 홈 첫 줄의 공통 순서와 개인화 순서가 같은 식을 쓴다.
+// 두 벌이 순서를 따로 정하면 "취향 칸 다음에 채운 칸" 이 서로 다른 잣대로 줄을 선다.
+import { and, desc, isNotNull, sql } from "drizzle-orm";
 import type { getDb } from "@/server/db/client";
 import { gamePlatforms, games } from "@/server/db/schema";
 import { DISPLAY_CURRENCY } from "@/lib/currency";
-import { HLTB_RANK_OFFSET, HLTB_RANK_STEPS, POPULARITY_RANK_MAX_AGE_DAYS } from "@/lib/games/popularity";
+import { HLTB_RANK_OFFSET, HLTB_RANK_STEPS, POPULARITY_RANK_MAX_AGE_DAYS, RATING_MIN_REVIEWS, REVIEW_RANK_STEPS } from "@/lib/games/popularity";
 
 type Db = ReturnType<typeof getDb>;
 
@@ -61,4 +61,42 @@ export function popularityRankAgg(db: Db) {
  */
 export function baseCurrencyFirst() {
   return sql`(${gamePlatforms.currency} = ${DISPLAY_CURRENCY}) desc`;
+}
+
+/**
+ * 평가 수를 순번 자리로 바꾸는 식 — **행 단위**다. 목록(list.ts 의 reviewRankExpr)은 게임 단위 집계의
+ * 최댓값을 보지만, 홈에서 그 집계를 넓히면 0.7초가 3.5초가 된다(popularityRankAgg 주석).
+ * 할인 행에 붙은 평가 수만 읽으면 조인도 집계도 늘지 않는다. 유료 조건은 할인 질의의
+ * `current_price > 0` 이 이미 걸고 있다(무료에 자리를 주지 않는 근거는 표 옆 주석).
+ * ::int 는 바인딩이 text 로 추론돼 least/coalesce 가 깨지는 것을 막는다(list.ts 의 같은 주석).
+ */
+function rowReviewRankExpr() {
+  const steps = REVIEW_RANK_STEPS.map(([position, reviews]) => sql`when ${gamePlatforms.userScoreCount} >= ${reviews}::int then ${position}::int`);
+  return sql`(case ${sql.join(steps, sql` `)} else null::int end)`;
+}
+
+/**
+ * 할인 줄 순서(2026-09-29 사용자 지정: "판매량 높은순, 별점 높은순, 랭킹 높은순").
+ *
+ * 1. 판매 순번 — 스토어가 준 진짜 순번(psstore 는 30일 판매, steam 은 topsellers). 판매량을 공개하는
+ *    스토어가 없어 이것이 판매량에 가장 가까운 값이다
+ * 2. 별점 — 그 할인 행의 유저 점수, 평가 수가 RATING_MIN_REVIEWS 이상일 때만. steam 은 긍정 비율,
+ *    Xbox 는 별점 x 20 이라 뜻이 조금 다르지만 둘 다 0~100 에서 높을수록 좋은 값이다(schema 의 userScore 주석)
+ * 3. 랭킹 — 순번이 없는 게임에 주는 환산 자리(평가 수 환산, HLTB 환산 중 앞선 쪽)
+ * 4. 동점 깨기 — 최신작, 할인율, 최근 갱신
+ *
+ * 판매량과 랭킹을 이렇게 가른 이유: 둘 다 "인기순위" 라는 같은 칸을 가리켜서, 진짜 순번을 판매량 쪽에,
+ * 환산으로 만든 자리를 랭킹 쪽에 두었다. 별점이 그 사이에 서므로 순번 없는 게임끼리는 별점이 먼저 가른다.
+ * 기준 통화 우선이 맨 앞인 이유는 baseCurrencyFirst 주석과 같다.
+ */
+export function dealOrder(rankAgg: ReturnType<typeof popularityRankAgg>) {
+  return [
+    baseCurrencyFirst(),
+    sql`${rankAgg.minRank} asc nulls last`,
+    sql`(case when ${gamePlatforms.userScoreCount} >= ${RATING_MIN_REVIEWS}::int then ${gamePlatforms.userScore} else null::int end) desc nulls last`,
+    sql`least(${rowReviewRankExpr()}, ${hltbRankExpr()}) asc nulls last`,
+    sql`${gamePlatforms.releaseDate} desc nulls last`,
+    desc(gamePlatforms.discountPct),
+    desc(gamePlatforms.lastSyncedAt),
+  ];
 }

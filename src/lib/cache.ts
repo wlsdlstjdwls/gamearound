@@ -83,7 +83,11 @@
  * 옛 값에는 필드가 없어 국기 자리가 조용히 빈다 — 죽지는 않지만 한 시간 동안 아무 게임에도
  * 국기가 안 뜬다. v13 과 같은 모양이다.
  */
-export const DTO_CACHE_VERSION = "v22";
+/**
+ * v23(2026-09-29): 홈 할인 줄 순서가 판매 순번 → **별점** → 환산 랭킹이 됐다(popularity-order 의 dealOrder).
+ * 순번 없는 게임끼리의 자리가 통째로 바뀐다 — v17 과 같은 모양이라 안 올리면 옛 순서가 한 시간을 더 산다.
+ */
+export const DTO_CACHE_VERSION = "v23";
 
 /** 목록, 검색, 홈처럼 태그 무효화로 갱신되는 화면의 기본 재검증 주기(초) */
 export const LIST_REVALIDATE_SECONDS = 3600;

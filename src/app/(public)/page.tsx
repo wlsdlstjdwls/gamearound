@@ -9,7 +9,7 @@ import { DiscountText } from "@/components/ui/discount";
 import { CoverImage, GameCard } from "@/components/game-card";
 import { Clamp } from "@/components/ui/tooltip";
 import { NewsList } from "@/components/news-list";
-import { PersonalDeals } from "@/components/personal-deals";
+import { HomeDeals } from "@/components/home-deals";
 import { EmptyState } from "@/components/empty-state";
 import { SaleBadge } from "@/components/sale-badge";
 import { Page, ROW, ROWS, SectionHead } from "@/components/ui/page";
@@ -74,23 +74,10 @@ export default async function HomePage() {
             action={{ href: ROUTES.game, label: "전체 게임 목록 보기" }}
           />
         ) : (
-          <>
-            {/* 세로 간격이 가로보다 넓다(28 대 24) — 카드가 판을 가졌고 hover 에서 4px 떠오르므로
-                줄 사이에 그 움직임이 앉을 자리가 필요하다. 36 이던 값은 커버 밖으로 나온 도장 때문이었고
-                그 도장은 없어졌다(game-card 의 DiscountStamp) */}
-            <ul className="grid grid-cols-[repeat(auto-fill,minmax(min(280px,100%),1fr))] gap-x-6 gap-y-7">
-              {discounts.map((g, i) => (
-                <li key={g.slug} className="enter-item" style={stagger(i + 1)}>
-                  <GameCard game={g} variant="discount" />
-                </li>
-              ))}
-            </ul>
-          </>
+          // 개인화한 사람에게는 마운트 뒤 취향 줄로 갈아 끼워진다(components/home-deals 주석)
+          <HomeDeals initial={discounts} />
         )}
       </section>
-
-      {/* 취향 할인 — 개인화를 켠 사람에게만, 마운트 뒤 따로 받는다(홈 캐시를 깨지 않으려고. components/personal-deals 주석) */}
-      <PersonalDeals />
 
       {/* 섹션 2 — 곧 끝나는 할인 / 최신 뉴스 */}
       {/* items-start: 두 기둥이 서로의 키를 따라가지 않게 한다 */}
