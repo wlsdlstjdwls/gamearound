@@ -20,10 +20,10 @@ export default function RootLoading() {
         {Array.from({ length: SKELETON_CARDS }).map((_, i) => (
           <div key={i} className={CARD_SHELL}>
             <div className={cn(COVER_CLASS, "skeleton")} />
-            <div className="flex flex-col gap-1 px-1 pt-1.5">
+            <div className="flex flex-col gap-1 px-1">
               <div className="skeleton h-[22px] w-4/5 rounded" />
               <div className="skeleton h-[26px] w-3/5 rounded" />
-              <div className="skeleton h-[18px] w-3/5 rounded" />
+              <div className="hidden skeleton h-[18px] w-3/5 rounded sm:block" />
               <div className="mt-1 skeleton h-[17px] w-2/5 rounded-full" />
               <div className="mt-1.5 skeleton h-4 w-1/2 rounded" />
             </div>

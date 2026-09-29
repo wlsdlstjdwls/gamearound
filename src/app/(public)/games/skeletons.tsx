@@ -51,7 +51,7 @@ export function FiltersSkeleton({ filter }: { filter: GamesQuery }) {
  *
  * 그래서 칸 수뿐 아니라 카드 안쪽 줄도 실물과 같은 수로 세운다(2026-09-15 실측: 뼈대 185px 대 실물 273px,
  * 12줄이면 1,000px 넘게 어긋나 본문이 올 때 화면이 통째로 밀렸다). 줄 높이는 game-card 의
- * 제목, 값, 부제, 배지, 스토어 줄을 잰 값이다(2026-09-29 제목과 값이 줄을 나눴다).
+ * 제목, 값, 부제(넓은 화면만), 배지, 스토어 줄을 잰 값이다(2026-09-29 제목과 값이 줄을 나눴다).
  */
 export function GamesGridSkeleton({ cards }: { cards: number }) {
   return (
@@ -61,10 +61,10 @@ export function GamesGridSkeleton({ cards }: { cards: number }) {
         // 본문이 올 때 격자가 밀리지 않는다
         <div key={i} className={CARD_SHELL}>
           <div className={cn(COVER_CLASS, "skeleton")} />
-          <div className="flex flex-col gap-1 px-1 pt-1.5">
+          <div className="flex flex-col gap-1 px-1">
             <div className="skeleton h-[22px] w-4/5 rounded" />
             <div className="skeleton h-[26px] w-3/5 rounded" />
-            <div className="skeleton h-[18px] w-3/5 rounded" />
+            <div className="hidden skeleton h-[18px] w-3/5 rounded sm:block" />
             <div className="mt-1 skeleton h-[17px] w-2/5 rounded-full" />
             <div className="mt-1.5 skeleton h-4 w-1/2 rounded" />
           </div>

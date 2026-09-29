@@ -24,7 +24,9 @@ export function SiteHeader() {
     // 테두리도 흰 판도 없다(2026-09-21 리디자인) — 머리띠는 본문과 같은 바탕에 얹힌 채 따라온다.
     // 선을 지운 자리는 아래 본문의 첫 헤어라인이 대신 받는다. 판이 남아 있으면 스크롤할 때
     // 본문이 흰 띠 밑으로 들어가는 것이 보여, 화면이 두 겹으로 읽힌다.
-    <header className="sticky top-0 z-40 bg-bg">
+    // 바탕이 흰색이 된 뒤(2026-09-29 커머스 정보형) 아래 헤어라인 한 줄을 되돌렸다 — 흰 머리띠가 흰 본문 위를
+    // 지나갈 때 경계가 없으면 스크롤한 글자가 머리띠 밑으로 사라지는 게 아니라 잘려 보인다
+    <header className="sticky top-0 z-40 border-b border-line-soft bg-bg">
       <div className="mx-auto flex w-full max-w-[var(--page-w)] items-center gap-2 px-5 py-2.5 sm:gap-7 sm:px-6 sm:py-3.5">
         {/* 좁은 화면에서는 심볼만 남는다. 글자가 접혀도 링크의 이름은 남아야 하므로 aria-label 로 못 박는다 */}
         {/* tap: 좁은 화면에서는 심볼만 남아 26x32 였다 — 머리띠에서 가장 자주 눌리는 자리인데 손가락보다 작았다 */}

@@ -14,9 +14,12 @@
 // 최소 폭이 홈(280)보다 좁은 이유: 이 화면은 왼쪽에 232px 필터 기둥이 선다. 1200px 기둥에서
 // 목록에 남는 폭은 880px 인데, 280 으로 두면 3열에 888px 이 필요해 8px 차이로 2열이 된다 —
 // 데스크톱 한 화면에 카드가 넷만 남았다. 258 은 그 자리에서 3열이 서는 값이다(3x258 + 2x24 = 822).
-export const GAMES_GRID_CLASS = "grid grid-cols-[repeat(auto-fill,minmax(min(258px,100%),1fr))] gap-x-6 gap-y-9";
+//
+// 2026-09-29(커머스 정보형): 카드 판을 걷으면서 칸을 좁혔다. 좁은 화면은 **두 줄 고정**(한 줄이면 커버 하나가
+// 화면 3분의 1을 먹는다), 넓은 화면은 최소 200 — 필터 기둥 옆 880px 에 4열이 선다.
+export const GAMES_GRID_CLASS = "grid grid-cols-2 gap-x-3 gap-y-7 sm:grid-cols-[repeat(auto-fill,minmax(200px,1fr))] sm:gap-x-5 sm:gap-y-9";
 
 // 홈 할인 격자. 280 이던 최소 폭을 목록과 같은 줄로 내렸다(2026-09-29) — 1200px 기둥에서 3열로 서면
 // 카드 한 장이 380px 이 넘어 커버만 크고 한 화면에 여섯 장이 전부였다. 240 이면 4열이 선다.
 // 세로 간격이 가로보다 넓은 이유: 카드가 hover 에서 4px 떠오르므로 줄 사이에 그 움직임이 앉을 자리가 필요하다
-export const HOME_GRID_CLASS = "grid grid-cols-[repeat(auto-fill,minmax(min(240px,100%),1fr))] gap-x-5 gap-y-7";
+export const HOME_GRID_CLASS = GAMES_GRID_CLASS;

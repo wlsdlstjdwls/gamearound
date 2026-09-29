@@ -58,7 +58,7 @@ export default async function HomePage() {
             격자 밑에 있던 큰 단추는 뗐다: 같은 곳으로 가는 입구가 한 마디에 둘이면 둘 다 덜 읽히고,
             좁은 화면에서는 카드 열두 장을 다 지나야 보여서 사실상 없는 입구였다 */}
         <div className="enter-item flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1" style={stagger(0)}>
-          <h1 id="discounts-heading" className="text-[26px] font-extrabold leading-[1.15] tracking-[-0.045em] text-ink sm:text-[34px]">
+          <h1 id="discounts-heading" className="text-[22px] font-extrabold leading-[1.2] tracking-[-0.03em] text-ink sm:text-[26px]">
             지금 할인 중
           </h1>
           {discounts.length > 0 && (

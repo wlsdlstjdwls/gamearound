@@ -20,23 +20,47 @@ import type { Platform } from "@/server/db/schema";
  * 걸렀는지가 카드 안에서 사라졌다. 고른 값에 색을 주면 거른 조건과 결과가 같은 자리에서 읽힌다.
  * 꽉 찬 --acc 가 아니라 --acc-soft 인 이유: 카드에서 꽉 찬 면은 할인 스탬프 하나여야 한다.
  */
-export function PlatformBadges({ platforms = [], highlight = [] }: { platforms?: Platform[]; highlight?: Platform[] }) {
+/**
+ * lowest: 지금 값이 가장 싼 플랫폼. 그 배지 위에 "최저" 말풍선이 선다(2026-09-29, 사용자 제안).
+ * 전에는 카드 맨 아래에 "Steam 최저" 라는 글자 줄이 따로 있었다 — 배지 줄에서 Steam 을 한 번,
+ * 그 아래 글자에서 한 번 더 읽어야 했다. 말풍선이 배지를 가리키면 한 자리에서 끝난다.
+ * 말풍선이 배지 위로 올라가 있으므로 이 값을 줄 때는 줄 위에 그 높이만큼 자리를 비운다(pt-4).
+ * 최저 배지는 **맨 앞으로** 옮긴다 — 배지가 두 줄로 접히면 둘째 줄 배지의 말풍선이 첫 줄 배지를 덮었다.
+ * 맨 앞이면 늘 첫 줄이라 말풍선이 비워 둔 위쪽 자리에만 선다. "가장 싼 곳부터" 읽히는 순서이기도 하다.
+ */
+export function PlatformBadges({
+  platforms = [],
+  highlight = [],
+  lowest = null,
+}: {
+  platforms?: Platform[];
+  highlight?: Platform[];
+  lowest?: Platform | null;
+}) {
   if (platforms.length === 0) return <span className="text-[12px] text-dim">플랫폼 정보 없음</span>;
   const picked = new Set(highlight);
+  const ordered = lowest && platforms.includes(lowest) ? [lowest, ...platforms.filter((p) => p !== lowest)] : platforms;
   return (
-    <span role="list" aria-label="지원 플랫폼" className="flex flex-wrap gap-1">
-      {platforms.map((p) => (
+    <span role="list" aria-label="지원 플랫폼" className={cn("flex flex-wrap gap-1", lowest && platforms.includes(lowest) && "pt-4")}>
+      {ordered.map((p) => (
         <span
           key={p}
           role="listitem"
           // 선을 걷고 면만 남긴다(2026-09-21 리디자인) — 한 줄에 배지가 다섯까지 서는데
           // 테두리가 있으면 그 선들이 제목보다 먼저 읽힌다
           className={cn(
-            "rounded-full px-2 py-1 text-[12px] font-semibold leading-none",
+            "relative rounded-full px-2 py-1 text-[12px] font-semibold leading-none",
             picked.has(p) ? "bg-acc-soft text-acc" : "bg-surface-2 text-mut",
+            p === lowest && "text-ink ring-1 ring-acc ring-inset",
           )}
         >
           {PLATFORM_LABEL[p] ?? p}
+          {p === lowest && (
+            // 글자색은 text-on-ink — 흰색으로 박으면 다크에서 밝은 보라 위 흰 글자가 2점대다
+            <span className="bubble-tail absolute bottom-[calc(100%+4px)] left-1/2 -translate-x-1/2 whitespace-nowrap rounded-[var(--radius-xs)] bg-acc px-1.5 py-[3px] text-[10.5px] font-bold leading-none text-on-ink">
+              최저
+            </span>
+          )}
         </span>
       ))}
     </span>
