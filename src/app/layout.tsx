@@ -1,4 +1,10 @@
 import type { Metadata, Viewport } from "next";
+// Pretendard 를 실제로 불러온다(2026-09-29). 전에는 --font-sans 첫 자리에 이름만 있고 어디서도 받지 않아
+// 윈도우는 한글을 맑은 고딕으로, 맥은 SF 로 그렸다 — 사람마다 다른 글꼴이었다.
+// 동적 서브셋을 고른 이유: 파일이 92조각으로 나뉘어 unicode-range 로 그 화면에 쓰인 글자 조각만 받는다
+// (통짜 가변 폰트는 2MB 가 넘는다). next/font/local 은 unicode-range 조각을 못 받아 CSS 를 그대로 들인다 —
+// 번들러가 url() 의 woff2 를 우리 정적 자산으로 옮겨 주므로 외부 CDN 에 기대지 않는다
+import "pretendard/dist/web/variable/pretendardvariable-dynamic-subset.css";
 import "./globals.css";
 import { SITE } from "@/lib/site";
 import { THEME_INIT_SCRIPT } from "@/lib/theme";
