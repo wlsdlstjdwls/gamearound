@@ -48,8 +48,10 @@ export function SiteNavLink({
           : icon
             ? "size-[var(--touch-target)] sm:size-auto sm:gap-1.5 sm:px-3 sm:py-[7px]"
             : "px-3 py-[7px]",
-        // 안 고른 칸은 면을 갖지 않는다 — hover 에서만 바탕이 한 겹 깔린다(칩과 같은 규칙)
-        current ? "font-bold text-acc" : "text-mut hover:bg-surface-2 hover:text-ink",
+        // 안 고른 칸은 면을 갖지 않는다 — hover 에서만 바탕이 한 겹 깔린다(칩과 같은 규칙).
+        // 안 고른 글자를 --mut 에서 --ink-2 로 올렸다(2026-09-29, 가시성 지적) — 회색 14px 이라 메뉴가
+        // 있는 줄도 몰랐다. 고른 칸과의 차이는 이제 굵기가 아니라 색(보라)이 맡는다
+        current ? "font-bold text-acc" : "text-ink-2 hover:bg-surface-2 hover:text-ink",
         className,
       )}
     >

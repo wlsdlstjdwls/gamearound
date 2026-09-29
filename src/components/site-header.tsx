@@ -34,7 +34,7 @@ export function SiteHeader() {
 
         {/* 글자 메뉴는 로고 바로 옆에 붙는다 — 둘이 한 덩어리로 "이 서비스와 그 안의 갈래" 를 말하고,
             검색칸과 개인 자리(알림, 계정)는 반대쪽 끝으로 민다 */}
-        <nav aria-label="주요 메뉴" className="hidden shrink-0 items-center gap-1 text-[14px] sm:flex">
+        <nav aria-label="주요 메뉴" className="hidden shrink-0 items-center gap-1 text-[15px] font-semibold sm:flex">
           <SiteNavLink href={ROUTES.game}>게임 목록</SiteNavLink>
           <SiteNavLink href={ROUTES.upcoming}>출시 예정</SiteNavLink>
           {/* "다음 세일" 은 메뉴에서 숨겼다(2026-09-21, 사용자 결정). 화면(/sales)과 자료는 그대로라
