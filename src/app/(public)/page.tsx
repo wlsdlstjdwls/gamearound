@@ -4,6 +4,7 @@
 // 2026-09-21 리디자인: 흰 판과 테두리를 전부 걷어냈다. 화면을 가르는 것은 섹션 사이의 큰 여백과
 // 헤어라인 한 줄뿐이고, 색을 가진 것은 카드의 할인 스탬프와 마감 임박 표시뿐이다.
 import { formatPrice } from "@/lib/currency";
+import { HOME_GRID_CLASS } from "@/lib/games/grid";
 import Link from "next/link";
 import { DiscountText } from "@/components/ui/discount";
 import { CoverImage, GameCard } from "@/components/game-card";
@@ -156,7 +157,7 @@ export default async function HomePage() {
               </Link>
             }
           />
-          <ul className="grid grid-cols-[repeat(auto-fill,minmax(min(220px,100%),1fr))] gap-x-5 gap-y-7">
+          <ul className={HOME_GRID_CLASS}>
             {recentReleases.map((g, i) => (
               <li key={g.slug} className="enter-item" style={stagger(i + 1)}>
                 <GameCard game={g} variant="release" />

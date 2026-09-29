@@ -73,7 +73,7 @@ export function CoverImage({
 export function DiscountStamp({ pct }: { pct: number | null }) {
   if (!pct || pct <= 0) return null;
   return (
-    <span className="inline-flex shrink-0 items-baseline rounded-[var(--radius-inset)] bg-acc px-[7px] py-[3px] text-[12px] font-extrabold leading-none tracking-[-0.04em] text-on-ink">
+    <span className="inline-flex shrink-0 items-baseline rounded-[var(--radius-inset)] bg-acc px-[7px] py-[4px] text-[13px] font-extrabold leading-none tracking-[-0.04em] text-on-ink">
       <DiscountText pct={pct} />
     </span>
   );
@@ -104,7 +104,17 @@ export function highlightFromFilter(filter: { platform?: string; genre?: string 
  * 공백이 많아"). 여기 gap 과 아래 글자 묶음의 pt 가 더해지던 값이라 실제로는 24px 이 비어 있었고,
  * 커버가 460:215 라 가로로 길어서 그 빈 띠가 카드 하나에서 유난히 넓게 읽혔다.
  */
-export const CARD_SHELL = "card-panel flex h-full flex-col gap-1.5 p-2.5 pb-3.5";
+/*
+ * 좁은 화면(sm 미만)에서는 카드가 **가로로 눕는다**(2026-09-29, 사용자: "가시성이 너무 떨어져").
+ * 세로 카드 한 장이 390px 화면 높이의 3분의 1을 먹어, 한 화면에 게임이 한 장 남짓만 보였다 —
+ * 가격 비교 화면에서 한 번에 견줄 수 있는 것이 하나뿐이었다. 커버를 왼쪽 기둥으로 돌리면
+ * 제목과 값이 같은 크기로 서면서 한 화면에 다섯 장 안팎이 선다(스팀 모바일 검색, 다나와 목록형과 같은 문법).
+ */
+export const CARD_SHELL = "card-panel flex h-full flex-row gap-3 p-2 sm:flex-col sm:gap-1.5 sm:p-2.5 sm:pb-3.5";
+
+/** 커버 상자. 뼈대도 같은 값을 써야 좁은 화면에서 왼쪽 기둥 폭이 어긋나지 않는다 */
+export const COVER_CLASS =
+  "relative block aspect-[460/215] w-[38%] shrink-0 self-start overflow-hidden rounded-[var(--radius-inset)] bg-surface-3 shadow-hair sm:w-full sm:rounded-[var(--radius-cover)]";
 
 export function GameCard({
   game,
@@ -146,40 +156,45 @@ export function GameCard({
         aria-label={`${title} 상세 보기`}
       >
         {/* 판 안이라 그림자를 겹치지 않는다 — 가장자리를 긋는 링 한 줄이면 밝은 커버가 흰 판에 번지지 않는다.
-            커버 위에 얹는 것이 없어져(할인율 배지가 값 옆으로 내려갔다) 상자는 하나면 된다 */}
-        <span className="relative block aspect-[460/215] w-full overflow-hidden rounded-[var(--radius-cover)] bg-surface-3 shadow-hair">
+            좁은 화면에서는 커버가 왼쪽 기둥이 된다(COVER_CLASS 주석) */}
+        <span className={COVER_CLASS}>
           <span className="cover-zoom-img absolute inset-0 block">
-            <CoverImage src={game.coverUrl} alt={`${title} 커버`} />
+            <CoverImage src={game.coverUrl} alt={`${title} 커버`} sizes="(max-width: 640px) 38vw, 25vw" />
           </span>
         </span>
 
-        <span className="flex flex-1 flex-col gap-1 px-1 pt-1.5">
-          {/* 제목과 값이 같은 기준선에 선다 — 목록을 내려 읽을 때 왼쪽은 이름, 오른쪽은 값의 기둥이 된다 */}
-          <span className="flex items-baseline justify-between gap-2.5">
-            <Clamp className="text-[16px] font-extrabold tracking-[-0.03em] text-ink transition-colors duration-fast group-hover:text-acc">
-              {title}
-            </Clamp>
-            {/* 값은 갈래를 가리지 않고 선다(2026-09-22, 사용자 지적: "최근 출시 영역에서는 금액이 안나옴").
-                전에는 release 갈래에서 값을 통째로 감췄는데, 출시 갈래의 카드에도 파는 곳이 있으면
-                "얼마인가" 는 여전히 첫 질문이다.
+        <span className="flex min-w-0 flex-1 flex-col gap-1 py-0.5 sm:px-1 sm:pt-1.5">
+          {/* 제목은 줄 하나를 혼자 쓴다(2026-09-29, 사용자: "가시성이 너무 떨어져").
+              전에는 값과 한 줄을 나눠 서서, 할인 중인 카드에서 제목에 남는 폭이 80px 안팎이었다 —
+              "어쌔신 ..." 처럼 두세 글자만 보이고 나머지는 말풍선에 숨었다. 두 줄까지 펴고 그 뒤를 자른다 */}
+          <Clamp lines={2} className="text-[15px] font-extrabold leading-snug tracking-[-0.02em] text-ink transition-colors duration-fast group-hover:text-acc sm:text-[16px]">
+            {title}
+          </Clamp>
 
-                **값을 모르면 줄 자체를 세우지 않는다**(같은 날 사용자 지정: "금액이 없으면 '-' 이것도
-                보여주지마"). best 가 있어도 currentPrice 가 null 인 행이 있다 — formatPrice 는 그때
-                "-" 를 돌려주는데, 카드에서 그 한 글자는 "값이 0 인가" 로도 "고장인가" 로도 읽힌다.
-                모르는 것은 적지 않는 것이 이 화면의 규칙이다(점수 칸과 같다) */}
-            {best && best.currentPrice !== null && (
-              <span className="flex shrink-0 items-baseline gap-1.5">
-                {hasDiscount && <DiscountStamp pct={best.discountPct} />}
-                <span className="text-[17px] font-extrabold tracking-[-0.03em] text-ink">{formatPrice(best.currentPrice, best.currency)}</span>
-                {hasDiscount && best.listPrice !== null && (
-                  <span className="text-[11.5px] text-dim-2 line-through">{formatPrice(best.listPrice, best.currency)}</span>
-                )}
+          {/* 값 줄 — "얼마나 싸졌나 - 얼마인가 - 원래 얼마였나" 가 왼쪽에서 오른쪽으로 읽힌다.
+              남은 기간은 여기 두지 않는다 — 가로 카드(좁은 화면)에서 넷이 한 줄을 못 버텨 기간이 혼자
+              다음 줄로 떨어졌다. 맨 아래 "어디 최저" 줄의 오른쪽 끝으로 보냈다.
+
+              값은 갈래를 가리지 않고 선다(2026-09-22, 사용자 지적: "최근 출시 영역에서는 금액이 안나옴").
+              **값을 모르면 줄 자체를 세우지 않는다**(같은 날 사용자 지정: "금액이 없으면 '-' 이것도
+              보여주지마"). best 가 있어도 currentPrice 가 null 인 행이 있다 — formatPrice 는 그때
+              "-" 를 돌려주는데, 카드에서 그 한 글자는 "값이 0 인가" 로도 "고장인가" 로도 읽힌다 */}
+          {best && best.currentPrice !== null && (
+            <span className="flex flex-wrap items-center gap-x-1.5 gap-y-0.5">
+              {hasDiscount && <DiscountStamp pct={best.discountPct} />}
+              <span className="text-[17px] font-extrabold tracking-[-0.03em] text-ink sm:text-[19px]">
+                {formatPrice(best.currentPrice, best.currency)}
               </span>
-            )}
-          </span>
+              {hasDiscount && best.listPrice !== null && (
+                <span className="text-[12.5px] text-dim-2 line-through">{formatPrice(best.listPrice, best.currency)}</span>
+              )}
+            </span>
+          )}
 
-          <span className="flex items-baseline justify-between gap-2.5 text-[12.5px] text-mut">
-            {subtitleText ? (
+          {/* 부제(원제, 장르)는 넓은 화면에서만 — 좁은 화면의 가로 카드에서는 제목 두 줄과 값이 먼저다.
+              고른 장르 하나만 색이 달라야 해서 조각으로 쪼갠다 — 말풍선에 쓸 글자는 따로 만들어 Clamp 에 준다 */}
+          {subtitleText && (
+            <span className="hidden text-[13px] text-mut sm:block">
               <Clamp text={subtitleText}>
                 {originalTitle}
                 {originalTitle && genres.length > 0 ? " | " : null}
@@ -191,21 +206,18 @@ export function GameCard({
                   </Fragment>
                 ))}
               </Clamp>
-            ) : (
-              <span />
-            )}
-            {variant !== "release" && hasDiscount && <SaleBadge variant="inline" discountName={null} discountEndsAt={best?.discountEndsAt} />}
-          </span>
+            </span>
+          )}
 
           {/* 마지막 줄 — 어느 기기로 할 수 있나(배지), 그리고 이 값이 어디 값인가(회색 글자).
               플랫폼을 쉼표로 이은 글자에서 배지로 바꿨다(2026-09-21): 목록에서 던지는 질문은
               "내 기기에 있나" 라서 글자 줄을 끝까지 읽는 것보다 모양으로 훑는 편이 빠르다.
-              배지가 줄 하나를 따로 쓰는 이유는 곁 문구와 한 줄을 다투면 둘 다 접혀서다
-              줄 수가 늘었으니 뼈대도 같이 늘린다(games/skeletons) */}
-          <span className="mt-auto flex flex-col gap-1.5 pt-1.5">
+              줄 수를 바꾸면 뼈대도 같이 바꾼다(games/skeletons, app/loading) */}
+          <span className="mt-auto flex flex-col gap-1.5 pt-1">
             <PlatformBadges platforms={game.platforms} highlight={highlight?.platforms} />
-            <span className="text-[12px] text-dim">
-              {variant === "release" ? releaseLabel : storeLabel ? `${storeLabel} 최저` : ""}
+            <span className="flex items-center justify-between gap-2 text-[12.5px] text-dim">
+              <span className="truncate">{variant === "release" ? releaseLabel : storeLabel ? `${storeLabel} 최저` : ""}</span>
+              {variant !== "release" && hasDiscount && <SaleBadge variant="inline" discountName={null} discountEndsAt={best?.discountEndsAt} />}
             </span>
           </span>
         </span>

@@ -2,6 +2,7 @@
 // 회사 정보가 비어 있어도 화면이 서야 한다. 게임 목록만으로도 이 화면은 쓸모가 있기 때문에
 // "정보 없음"으로 막지 않고 헤더만 줄여서 낸다.
 import type { Metadata } from "next";
+import { HOME_GRID_CLASS } from "@/lib/games/grid";
 import { notFound } from "next/navigation";
 import { GameCard } from "@/components/game-card";
 import { EmptyState } from "@/components/empty-state";
@@ -140,7 +141,7 @@ export default async function CompanyPage({ params, searchParams }: Props) {
             action={{ href: ROUTES.game, label: "게임 목록 보기" }}
           />
         ) : (
-          <ul className="grid grid-cols-[repeat(auto-fill,minmax(min(220px,100%),1fr))] gap-x-5 gap-y-8">
+          <ul className={HOME_GRID_CLASS}>
             {result.items.map((g, i) => (
               <li key={g.slug} className="enter-item" style={stagger(i + 3)}>
                 <GameCard game={g} />

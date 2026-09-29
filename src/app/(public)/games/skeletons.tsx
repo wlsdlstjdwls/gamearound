@@ -3,7 +3,8 @@
 // loading.tsx 가 다시 뜨지 않는다. 그래서 경계를 페이지 안(Suspense)에 두고, 그 자리만 뼈대로 받는다.
 // 높이는 실제 화면을 재서 맞춘 값이다 — 어긋나면 본문이 들어올 때 통째로 밀려 그게 깜빡임이 된다.
 import { GAMES_GRID_CLASS } from "@/lib/games/grid";
-import { CARD_SHELL } from "@/components/game-card";
+import { CARD_SHELL, COVER_CLASS } from "@/components/game-card";
+import { cn } from "@/lib/cn";
 import { ActiveFilters } from "@/components/game-filters/active";
 import type { GamesQuery } from "@/lib/games-query";
 
@@ -50,7 +51,7 @@ export function FiltersSkeleton({ filter }: { filter: GamesQuery }) {
  *
  * 그래서 칸 수뿐 아니라 카드 안쪽 줄도 실물과 같은 수로 세운다(2026-09-15 실측: 뼈대 185px 대 실물 273px,
  * 12줄이면 1,000px 넘게 어긋나 본문이 올 때 화면이 통째로 밀렸다). 줄 높이는 game-card 의
- * 제목 줄, 부제 줄, 스토어 줄 셋을 잰 값이다(2026-09-21 리디자인으로 네 줄에서 셋이 됐다).
+ * 제목, 값, 부제(넓은 화면만), 배지, 스토어 줄을 잰 값이다(2026-09-29 제목과 값이 줄을 나눴다).
  */
 export function GamesGridSkeleton({ cards }: { cards: number }) {
   return (
@@ -59,11 +60,12 @@ export function GamesGridSkeleton({ cards }: { cards: number }) {
         // 커버 + 네 줄(제목, 부제, 플랫폼 배지, 곁 문구). 실물(game-card)과 같은 줄 수, 같은 여백이어야
         // 본문이 올 때 격자가 밀리지 않는다
         <div key={i} className={CARD_SHELL}>
-          <div className="skeleton aspect-[460/215] rounded-[var(--radius-cover)]" />
-          <div className="flex flex-col gap-1 px-1 pt-1.5">
+          <div className={cn(COVER_CLASS, "skeleton")} />
+          <div className="flex min-w-0 flex-1 flex-col gap-1 py-0.5 sm:px-1 sm:pt-1.5">
             <div className="skeleton h-[22px] w-4/5 rounded" />
-            <div className="skeleton h-[17px] w-3/5 rounded" />
-            <div className="mt-1.5 skeleton h-[17px] w-2/5 rounded-full" />
+            <div className="skeleton h-[26px] w-3/5 rounded" />
+            <div className="hidden skeleton h-[18px] w-3/5 rounded sm:block" />
+            <div className="mt-1 skeleton h-[17px] w-2/5 rounded-full" />
             <div className="mt-1.5 skeleton h-4 w-1/2 rounded" />
           </div>
         </div>

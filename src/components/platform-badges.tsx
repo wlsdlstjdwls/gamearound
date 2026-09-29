@@ -21,7 +21,7 @@ import type { Platform } from "@/server/db/schema";
  * 꽉 찬 --acc 가 아니라 --acc-soft 인 이유: 카드에서 꽉 찬 면은 할인 스탬프 하나여야 한다.
  */
 export function PlatformBadges({ platforms = [], highlight = [] }: { platforms?: Platform[]; highlight?: Platform[] }) {
-  if (platforms.length === 0) return <span className="text-[11.5px] text-dim">플랫폼 정보 없음</span>;
+  if (platforms.length === 0) return <span className="text-[12px] text-dim">플랫폼 정보 없음</span>;
   const picked = new Set(highlight);
   return (
     <span role="list" aria-label="지원 플랫폼" className="flex flex-wrap gap-1">
@@ -32,7 +32,7 @@ export function PlatformBadges({ platforms = [], highlight = [] }: { platforms?:
           // 선을 걷고 면만 남긴다(2026-09-21 리디자인) — 한 줄에 배지가 다섯까지 서는데
           // 테두리가 있으면 그 선들이 제목보다 먼저 읽힌다
           className={cn(
-            "rounded-full px-2 py-[3px] text-[11px] font-semibold leading-none",
+            "rounded-full px-2 py-1 text-[12px] font-semibold leading-none",
             picked.has(p) ? "bg-acc-soft text-acc" : "bg-surface-2 text-mut",
           )}
         >

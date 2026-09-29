@@ -10,6 +10,7 @@ import { GameCard } from "@/components/game-card";
 import { useSession } from "@/components/auth/session-provider";
 import { stagger } from "@/lib/motion";
 import { ROUTES } from "@/lib/routes";
+import { HOME_GRID_CLASS } from "@/lib/games/grid";
 import type { GameSummary } from "@/server/services/games";
 
 export function HomeDeals({ initial }: { initial: GameSummary[] }) {
@@ -32,9 +33,7 @@ export function HomeDeals({ initial }: { initial: GameSummary[] }) {
   const items = userId && personal?.length ? personal : initial;
 
   return (
-    // 세로 간격이 가로보다 넓다(28 대 24) — 카드가 판을 가졌고 hover 에서 4px 떠오르므로
-    // 줄 사이에 그 움직임이 앉을 자리가 필요하다
-    <ul className="grid grid-cols-[repeat(auto-fill,minmax(min(280px,100%),1fr))] gap-x-6 gap-y-7">
+    <ul className={HOME_GRID_CLASS}>
       {items.map((g, i) => (
         <li key={g.slug} className="enter-item" style={stagger(i + 1)}>
           <GameCard game={g} variant="discount" />
