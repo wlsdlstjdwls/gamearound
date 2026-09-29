@@ -3,7 +3,7 @@
 // (2026-09-29 사용자 지정: 둘째 줄이던 "내 취향 할인" 을 없애고 첫 줄 자체를 개인화).
 //
 // 클라이언트에서 받는 이유: 홈 본문은 풀 라우트 캐시라 사람마다 다른 줄을 서버에서 그리면 캐시가 깨진다
-// (SessionProvider, api/me/picks 주석과 같은 이유). 칸 수가 같아(12) 갈아 끼워도 첫 화면이 밀리지 않는다.
+// (SessionProvider, api/me/picks 주석과 같은 이유). 칸 수가 같아(HOME_LIMIT) 갈아 끼워도 첫 화면이 밀리지 않는다.
 // 받기 전이나 실패하면 공통 줄이 그대로 남는다 — 빈 칸이나 스켈레톤을 끼우지 않는다.
 import { useEffect, useState } from "react";
 import { GameCard } from "@/components/game-card";

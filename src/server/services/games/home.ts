@@ -10,8 +10,12 @@ import { mainGamesOnly } from "./filters";
 import { DTO_CACHE_VERSION, LIST_REVALIDATE_SECONDS } from "@/lib/cache";
 import { baseCurrencyFirst as baseCurrencyFirstExpr, dealOrder, popularityRankAgg } from "./popularity-order";
 
-/** 홈 첫 줄 칸 수. 개인화 줄(personal.ts)도 같은 칸 수로 이 줄을 갈아 끼운다 */
-export const HOME_LIMIT = 12;
+/**
+ * 홈 첫 줄 칸 수. 개인화 줄(personal.ts)도 같은 칸 수로 이 줄을 갈아 끼운다.
+ * 12 에서 20 으로(2026-09-29, 사용자: "카드 크기를 줄인거면 갯수를 더 늘려야"). 카드 최소폭이 200 으로 줄어
+ * 넓은 화면이 5열이 됐고, 12 는 5로 안 나눠져 마지막 줄이 두 칸만 섰다. 20 은 2, 4, 5열 모두 꽉 찬다
+ */
+export const HOME_LIMIT = 20;
 const HOME_NEWS_LIMIT = 8;
 /** 곧 할인 마감 줄 — 오른쪽 뉴스(8건)와 줄 수를 맞춘다. 두 기둥의 길이가 어긋나면 짧은 쪽 아래가 빈다 */
 const HOME_ENDING_SOON_LIMIT = 8;

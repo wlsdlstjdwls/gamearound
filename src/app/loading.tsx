@@ -6,7 +6,7 @@ import { CARD_SHELL, COVER_CLASS } from "@/components/game-card";
 import { HOME_GRID_CLASS } from "@/lib/games/grid";
 import { cn } from "@/lib/cn";
 
-const SKELETON_CARDS = 8;
+const SKELETON_CARDS = 10; // 2, 5열에서 꽉 차는 수 — 실물(HOME_LIMIT 20)의 첫 화면만 채우면 된다
 
 export default function RootLoading() {
   return (
@@ -20,12 +20,11 @@ export default function RootLoading() {
         {Array.from({ length: SKELETON_CARDS }).map((_, i) => (
           <div key={i} className={CARD_SHELL}>
             <div className={cn(COVER_CLASS, "skeleton")} />
-            <div className="flex flex-col gap-1 px-1">
+            <div className="flex flex-col gap-1.5 px-1">
+              <div className="mt-4 skeleton h-5 w-2/5 rounded-full" />
               <div className="skeleton h-[22px] w-4/5 rounded" />
-              <div className="skeleton h-[26px] w-3/5 rounded" />
-              <div className="hidden skeleton h-[18px] w-3/5 rounded sm:block" />
-              <div className="mt-1 skeleton h-[17px] w-2/5 rounded-full" />
-              <div className="mt-1.5 skeleton h-4 w-1/2 rounded" />
+              <div className="mt-1.5 skeleton h-[18px] w-1/3 rounded" />
+              <div className="skeleton h-7 w-3/5 rounded" />
             </div>
           </div>
         ))}

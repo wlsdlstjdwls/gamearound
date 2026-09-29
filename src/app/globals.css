@@ -828,6 +828,19 @@ body.dragging-card {
   border-top-color: var(--acc);
 }
 
+/* 말풍선이 제자리에서 둥실 뜬다(2026-09-29, 사용자 요청: "붕붕 뜨는 애니메이션").
+   가운데 정렬은 Tailwind 의 translate 속성이 맡고 여기서는 transform 만 건드려 둘이 겹치지 않는다.
+   높이 3px, 한 바퀴 2.4초 — 이보다 크거나 빠르면 "눌러라" 는 신호로 읽혀 카드 전체가 들떠 보인다.
+   카드마다 어긋나게 뜨도록 등장 순번(--stagger)을 지연으로 받는다. 모션 축소는 전역 킬스위치가 처리한다 */
+@keyframes bubble-bob {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-3px); }
+}
+.bubble-bob {
+  animation: bubble-bob 2.4s var(--ease-standard) infinite both;
+  animation-delay: var(--stagger, 0ms);
+}
+
 /* 가로 막대 그래프: style={{ "--bar-w": "62%" }} (+ stagger(i)) 로 목표 폭 전달 */
 .bar-grow {
   width: var(--bar-w, 0%);

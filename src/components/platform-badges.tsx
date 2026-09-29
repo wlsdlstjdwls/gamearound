@@ -51,13 +51,15 @@ export function PlatformBadges({
           className={cn(
             "relative rounded-full px-2 py-1 text-[12px] font-semibold leading-none",
             picked.has(p) ? "bg-acc-soft text-acc" : "bg-surface-2 text-mut",
-            p === lowest && "text-ink ring-1 ring-acc ring-inset",
+            // 최저 배지는 말풍선과 같은 보라 계열로 묶는다 — 회색 배지 위에 보라 말풍선만 떠 있으면
+            // 둘이 따로 논다(2026-09-29 사용자 지적). 연한 보라 면 + 보라 글자라 말풍선(꽉 찬 보라)과 한 쌍이다
+            p === lowest && "bg-acc-soft font-bold text-acc",
           )}
         >
           {PLATFORM_LABEL[p] ?? p}
           {p === lowest && (
             // 글자색은 text-on-ink — 흰색으로 박으면 다크에서 밝은 보라 위 흰 글자가 2점대다
-            <span className="bubble-tail absolute bottom-[calc(100%+4px)] left-1/2 -translate-x-1/2 whitespace-nowrap rounded-[var(--radius-xs)] bg-acc px-1.5 py-[3px] text-[10.5px] font-bold leading-none text-on-ink">
+            <span className="bubble-tail bubble-bob absolute bottom-[calc(100%+4px)] left-1/2 -translate-x-1/2 whitespace-nowrap rounded-full bg-acc px-2 py-[3px] text-[10.5px] font-bold leading-none text-on-ink shadow-1">
               최저
             </span>
           )}

@@ -1,5 +1,5 @@
 // GET /api/me/picks — 홈 "지금 할인 중" 줄(HomeDeals)이 마운트 뒤 부른다(설계 §9 의 4회차).
-// 개인화한 사람이면 취향으로 다시 짠 12칸을, 아니면 null 을 준다 — null 이면 서버가 그린 공통 줄이 그대로 남는다.
+// 개인화한 사람이면 취향으로 다시 짠 HOME_LIMIT 칸을, 아니면 null 을 준다 — null 이면 서버가 그린 공통 줄이 그대로 남는다.
 // 홈 본문은 풀 라우트 캐시(revalidate=3600)라 cookies() 를 읽을 수 없다 — /api/auth/me 와 같은 이유로 따로 뺐다.
 import { NextResponse } from "next/server";
 import { errorMessage } from "@/lib/errors";

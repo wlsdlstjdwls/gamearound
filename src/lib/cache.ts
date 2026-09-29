@@ -87,7 +87,11 @@
  * v23(2026-09-29): 홈 할인 줄 순서가 판매 순번 → **별점** → 환산 랭킹이 됐다(popularity-order 의 dealOrder).
  * 순번 없는 게임끼리의 자리가 통째로 바뀐다 — v17 과 같은 모양이라 안 올리면 옛 순서가 한 시간을 더 산다.
  */
-export const DTO_CACHE_VERSION = "v23";
+/**
+ * v24(2026-09-29): 홈 첫 줄과 최근 출시가 12칸에서 20칸이 됐다(services/games/home 의 HOME_LIMIT).
+ * 모양은 같지만 안 올리면 한 시간 동안 12칸 줄이 5열 격자에 이 빠진 채 선다.
+ */
+export const DTO_CACHE_VERSION = "v24";
 
 /** 목록, 검색, 홈처럼 태그 무효화로 갱신되는 화면의 기본 재검증 주기(초) */
 export const LIST_REVALIDATE_SECONDS = 3600;
