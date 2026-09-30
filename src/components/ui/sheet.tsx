@@ -237,28 +237,19 @@ export function Sheet({
   }, [open]);
 
   // 열려 있는 동안 뒤 화면이 스크롤되지 않게 한다 — showModal 은 클릭만 막고 휠은 막지 않는다.
-  // 스크롤 위치는 fixed 로 묶어 두었다가 닫을 때 그대로 돌려놓는다. 안 그러면 닫는 순간 맨 위로 튄다
+  // **html 만** 잠근다. html 의 overflow 는 뷰포트로 올라가 페이지 스크롤을 막고 스크롤 위치도 그대로 둔다.
+  // body 까지 hidden 을 걸면 안 된다 — html 이 이미 visible 이 아니면 body 의 값은 뷰포트로 안 올라가고
+  // body 자신이 스크롤 상자가 된다. 그러면 sticky 머리바(site-header)가 스크롤 0 인 body 에 붙어
+  // 제자리(문서 맨 위)로 돌아가서, 스크롤을 내린 채 시트를 열면 헤더가 화면 밖으로 사라졌다(2026-09-30 실측:
+  // scrollY 1500 에서 헤더 top -1500). 예전에 있던 body position: fixed 묶기도 같은 결과라 뺐다.
+  // 시트 안 스크롤이 뒤로 번지는 건 본문 칸의 overscroll-contain 이 막는다.
   useEffect(() => {
     if (!open) return;
     const html = document.documentElement;
-    const body = document.body;
-    const previous = { html: html.style.overflow, overflow: body.style.overflow, position: body.style.position, top: body.style.top, width: body.style.width };
-    const scrollY = window.scrollY;
-
+    const previous = html.style.overflow;
     html.style.overflow = "hidden";
-    body.style.overflow = "hidden";
-    if (scrollY > 0) {
-      body.style.position = "fixed";
-      body.style.top = `-${scrollY}px`;
-      body.style.width = "100%";
-    }
     return () => {
-      html.style.overflow = previous.html;
-      body.style.overflow = previous.overflow;
-      body.style.position = previous.position;
-      body.style.top = previous.top;
-      body.style.width = previous.width;
-      if (scrollY > 0) window.scrollTo(0, scrollY);
+      html.style.overflow = previous;
     };
   }, [open]);
 
