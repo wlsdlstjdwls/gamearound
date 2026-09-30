@@ -22,11 +22,11 @@ import type { Platform } from "@/server/db/schema";
  * 꽉 찬 --acc 가 아니라 --acc-soft 인 이유: 카드에서 꽉 찬 면은 할인 스탬프 하나여야 한다.
  */
 /**
- * lowest: 지금 값이 가장 싼 플랫폼. 그 배지 위에 "최저" 말풍선이 선다(2026-09-29, 사용자 제안).
- * 전에는 카드 맨 아래에 "Steam 최저" 라는 글자 줄이 따로 있었다 — 배지 줄에서 Steam 을 한 번,
- * 그 아래 글자에서 한 번 더 읽어야 했다. 말풍선이 배지를 가리키면 한 자리에서 끝난다.
- * 최저 배지는 **맨 앞으로** 옮긴다 — 배지가 두 줄로 접히면 둘째 줄 배지의 말풍선이 첫 줄 배지를 덮었다.
- * 맨 앞이면 늘 첫 줄이라 말풍선이 비워 둔 위쪽 자리에만 선다. "가장 싼 곳부터" 읽히는 순서이기도 하다.
+ * lowest: 지금 값이 가장 싼 플랫폼. 그 배지가 **맨 앞**에 서고 연한 보라 면을 얻는다.
+ * 전에는 카드 맨 아래 "Steam 최저" 글자 줄(09-29 에 걷음)이었다가, 배지 위에 둥실 뜨는 "최저" 말풍선이었다.
+ * 말풍선은 같은 날 다시 걷었다(2026-09-30, 사용자: "번잡스럽다") — 카드마다 움직이는 보라 덩어리가
+ * 값보다 먼저 눈을 끌었다. 자리(맨 앞)와 색만으로 "여기가 제일 싸다" 를 말하고, 글자는 화면 낭독기에만 준다.
+ * 맨 앞이면 "+N" 으로 접히는 쪽에 들어가지도 않는다.
  */
 export function PlatformBadges({
   platforms = [],
@@ -70,21 +70,14 @@ export function PlatformBadges({
       // 선을 걷고 면만 남긴다(2026-09-21 리디자인) — 한 줄에 배지가 다섯까지 서는데
       // 테두리가 있으면 그 선들이 제목보다 먼저 읽힌다
       className={cn(
-        "relative whitespace-nowrap rounded-full px-2 py-1 text-[12px] font-semibold leading-none",
+        "whitespace-nowrap rounded-full px-2 py-1 text-[12px] font-semibold leading-none",
         !inPanel && visibility(i),
         picked.has(p) ? "bg-acc-soft text-acc" : "bg-surface-2 text-mut",
-        // 최저 배지는 말풍선과 같은 보라 계열로 묶는다 — 회색 배지 위에 보라 말풍선만 떠 있으면
-        // 둘이 따로 논다(2026-09-29 사용자 지적). 연한 보라 면 + 보라 글자라 말풍선(꽉 찬 보라)과 한 쌍이다
         p === lowest && "bg-acc-soft font-bold text-acc",
       )}
     >
       {PLATFORM_LABEL[p] ?? p}
-      {p === lowest && (
-        // 글자색은 text-on-ink — 흰색으로 박으면 다크에서 밝은 보라 위 흰 글자가 2점대다
-        <span className="bubble-tail bubble-bob absolute bottom-[calc(100%+4px)] left-1/2 -translate-x-1/2 whitespace-nowrap rounded-full bg-acc px-2 py-[3px] text-[10.5px] font-bold leading-none text-on-ink shadow-1">
-          최저
-        </span>
-      )}
+      {p === lowest && <span className="sr-only"> 최저가</span>}
     </span>
   );
 
@@ -103,9 +96,7 @@ export function PlatformBadges({
     );
   };
   return (
-    // 말풍선이 배지 위로 뜨므로 그 높이만큼 위를 비운다(pt-4) — 배지 줄이 제목 아래로 내려오면서(09-30)
-    // 커버 가장자리에 걸쳐 둘 수 없게 됐다. 비우지 않으면 말풍선이 제목 둘째 줄을 덮는다
-    <span role="list" aria-label="지원 플랫폼" className={cn("flex flex-wrap gap-1", hasLowest && "pt-4")}>
+    <span role="list" aria-label="지원 플랫폼" className="flex flex-wrap gap-1">
       {ordered.slice(0, shown).map((p, i) => badge(p, i))}
       {/* 좁은 폭, 넓은 폭 토글이 같은 수에서 끊기면 하나만 둔다 */}
       {narrow === wide ? (

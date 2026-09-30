@@ -22,7 +22,7 @@ export default function RootLoading() {
             <div className={cn(COVER_CLASS, "skeleton")} />
             <div className="flex flex-col gap-1.5 px-1">
               <div className="skeleton h-[40px] w-4/5 rounded" />
-              <div className="mt-4 skeleton h-5 w-2/5 rounded-full" />
+              <div className="skeleton h-5 w-2/5 rounded-full" />
               <div className="mt-1 skeleton h-7 w-3/5 rounded" />
             </div>
           </div>
