@@ -14,14 +14,13 @@
 // 끄는 일 자체는 use-board-drag 가 한다(2026-09-22). 네이티브 드래그앤드롭을 버린 이유는 그 파일에 있다.
 import { useState, useTransition } from "react";
 import { cn } from "@/lib/cn";
-import { Button } from "@/components/ui/button";
 import { TASK_MESSAGES, TASK_STATUS_LABEL } from "@/lib/admin/messages";
 import { TASK_STATUSES, type Board, type TaskAssignee } from "@/lib/admin/tasks";
 import { TaskCard } from "@/components/admin/task-card";
 import { TaskDialog } from "@/components/admin/task-card/dialog";
 import { TaskQuickAdd } from "@/components/admin/task-quick-add";
 import { DROP_ATTR, useBoardDrag } from "@/components/admin/use-board-drag";
-import { clearDoneAction, moveTaskAction, type TaskActionState } from "@/app/(admin)/admin/tasks/actions";
+import { moveTaskAction, type TaskActionState } from "@/app/(admin)/admin/tasks/actions";
 
 export function TaskBoard({ board, assignees }: { board: Board; assignees: TaskAssignee[] }) {
   /**
@@ -29,7 +28,7 @@ export function TaskBoard({ board, assignees }: { board: Board; assignees: TaskA
    * 새로 그려지면서 팝업이 닫힌다(실측 2026-09-21). 옮기기는 팝업 안에서 하는 일이라 닫히면 안 된다.
    */
   const [openId, setOpenId] = useState<string | null>(null);
-  const [pending, start] = useTransition();
+  const [, start] = useTransition();
   const [state, setState] = useState<TaskActionState>(null);
 
   const drag = useBoardDrag((id, to) => start(async () => setState(await moveTaskAction(id, to))));
@@ -38,25 +37,7 @@ export function TaskBoard({ board, assignees }: { board: Board; assignees: TaskA
 
   return (
     <section className="flex flex-col gap-3">
-      {/* 판 위에 제목을 세우지 않는다 — 화면 제목이 이미 "할 일" 이고 건수도 그 옆에 선다.
-          여기 남는 건 끝난 일 치우기 하나뿐이라 오른쪽 끝에 혼자 선다 */}
-      <div className="flex flex-wrap items-center justify-end gap-2">
-        {board.done.length > 0 && (
-          <Button
-            size="sm"
-            variant="secondary"
-            disabled={pending}
-            onClick={() => {
-              if (!confirm(TASK_MESSAGES.clearDoneConfirm)) return;
-              start(async () => setState(await clearDoneAction()));
-            }}
-            className="hover:border-danger hover:text-danger"
-          >
-            {TASK_MESSAGES.clearDone}
-          </Button>
-        )}
-      </div>
-
+      {/* 판 위에 제목도 버튼도 세우지 않는다 — 끝난 일 치우기는 "할 일 추가" 줄로 갔다(TaskClearDone) */}
       {state && !state.ok && <p className="text-[12px] text-danger">{state.error}</p>}
 
       {/* 칸이 넷이라 좁은 화면에서는 둘씩 접는다 — 넷을 억지로 세우면 카드 폭이 글자보다 좁아진다 */}
