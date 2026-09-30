@@ -114,8 +114,9 @@ export function highlightFromFilter(filter: { platform?: string; genre?: string 
  * 판 없는 카드는 이웃 카드의 글자와 섞였다. 판은 회색 바탕 위 흰 면 한 겹이다.
  * 좁은 화면은 두 줄 격자라(lib/games/grid) 한 화면에 네 장이 선다.
  */
-/** 카드에서 펴 두는 플랫폼 배지 수 — 넘으면 "+N"(2026-09-30 사용자 지정: "3개 플랫폼 이상일 때는 더보기") */
-const BADGE_LIMIT = 3;
+/** 카드에서 펴 두는 플랫폼 배지 수 — 넘으면 "+N"(2026-09-30 사용자 지정: 셋에서 "2개만 보여주고 더보기" 로 줄였다.
+ *  모바일 두 줄 격자의 170px 칸에서 셋은 두 줄로 접혔다) */
+const BADGE_LIMIT = 2;
 
 export const CARD_SHELL = "card-panel flex h-full flex-col gap-2 p-2 pb-3 sm:p-2.5 sm:pb-3.5";
 
