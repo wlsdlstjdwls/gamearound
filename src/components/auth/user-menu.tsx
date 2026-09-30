@@ -96,7 +96,9 @@ export function UserMenu({ user }: { user: PublicUser }) {
         className={cn(
           "press flex h-9 items-center gap-2 rounded-full border pl-1 pr-2.5 outline-none transition-colors",
           "focus-visible:ring-2 focus-visible:ring-ink focus-visible:ring-offset-2 focus-visible:ring-offset-bg",
-          open ? "border-ink bg-surface" : "border-line-strong hover:border-ink hover:bg-surface",
+          // 평소에도 흰 판을 깐다 — 머리띠가 회색 바탕(--bg)이라 투명이면 이름 글자가 바탕에 떠서 버튼으로 안 읽혔다(2026-09-30)
+          "bg-surface",
+          open ? "border-ink" : "border-line-strong hover:border-ink",
         )}
       >
         <span aria-hidden className="flex h-[30px] w-[30px] items-center justify-center rounded-full bg-surface-3 text-[12px] font-bold text-ink-2">
