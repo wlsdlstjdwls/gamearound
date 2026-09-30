@@ -51,7 +51,8 @@ export const ONBOARDING_MESSAGES = {
   genres: {
     title: ["어떤 장르를", "좋아하세요?"],
     subtitle: "홈에 이 장르의 할인을 먼저 올려 드릴게요",
-    note: "셋까지 고르면 가장 잘 맞아요",
+    /** 상한은 화면이 막는다(GENRE_PICK_MAX) — 막히기 전에 몇 개까지인지 먼저 말한다 */
+    note: (max: number) => `${max}개까지 고를 수 있어요`,
   },
 
   dealStyle: {

@@ -115,7 +115,7 @@ async function questionFor(step: Exclude<OnboardingStep, "intro" | "device" | "d
       return {
         title: M.genres.title,
         subtitle: M.genres.subtitle,
-        note: M.genres.note,
+        note: M.genres.note(GENRE_PICK_MAX),
         name: "genreIds",
         options: choices.map((g) => ({ value: String(g.id), label: g.name })),
         multiple: true,
