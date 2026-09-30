@@ -75,7 +75,7 @@ export function DiscountStamp({ pct }: { pct: number | null }) {
   return (
     // 면을 걷고 글자만 남겼다(2026-09-29, 커머스 정보형) — 판이 없는 카드에서 꽉 찬 보라 면은 커버 다음으로
     // 센 덩어리라 값보다 먼저 읽혔다. 값과 같은 크기, 같은 굵기의 색 숫자면 "얼마나 - 얼마" 가 한 호흡이다
-    <span className="inline-flex shrink-0 items-baseline text-[18px] font-extrabold tracking-[-0.03em] text-acc sm:text-[19px]">
+    <span className="inline-flex shrink-0 items-baseline text-[21px] font-extrabold tracking-[-0.03em] text-acc sm:text-[19px]">
       <DiscountText pct={pct} />
     </span>
   );
@@ -112,11 +112,13 @@ export function highlightFromFilter(filter: { platform?: string; genre?: string 
  *
  * 같은 날 판(.card-panel)을 걷었다가 곧바로 되돌렸다(사용자: "카드 구분이 안되네") — 흰 바탕에
  * 판 없는 카드는 이웃 카드의 글자와 섞였다. 판은 회색 바탕 위 흰 면 한 겹이다.
- * 좁은 화면은 두 줄 격자라(lib/games/grid) 한 화면에 네 장이 선다.
+ * 좁은 화면은 한 줄에 한 장이다(lib/games/grid).
  */
 /** 카드에서 펴 두는 플랫폼 배지 수 — 넘으면 "+N"(2026-09-30 사용자 지정: 셋에서 "2개만 보여주고 더보기" 로 줄였다.
- *  모바일 두 줄 격자의 170px 칸에서 셋은 두 줄로 접혔다) */
+ *  넓은 화면 네 줄 격자의 270px 칸에서 셋은 이름이 긴 스토어(Epic Games)가 끼면 두 줄로 접혔다) */
 const BADGE_LIMIT = 2;
+/** 좁은 화면(한 줄에 한 장)에서 펴 두는 수 — 카드가 넓어 셋이 한 줄에 선다(2026-09-30 사용자 지정) */
+const BADGE_LIMIT_NARROW = 3;
 
 export const CARD_SHELL = "card-panel flex h-full flex-col gap-2 p-2 pb-3 sm:p-2.5 sm:pb-3.5";
 
@@ -161,7 +163,7 @@ export function GameCard({
         {/* 판 안이라 그림자를 겹치지 않는다 — 가장자리를 긋는 링 한 줄이면 밝은 커버가 흰 판에 번지지 않는다 */}
         <span className={COVER_CLASS}>
           <span className="cover-zoom-img absolute inset-0 block">
-            <CoverImage src={game.coverUrl} alt={`${title} 커버`} sizes="(max-width: 768px) 50vw, 25vw" />
+            <CoverImage src={game.coverUrl} alt={`${title} 커버`} sizes="(max-width: 640px) 100vw, (max-width: 768px) 50vw, 25vw" />
           </span>
         </span>
 
@@ -173,7 +175,7 @@ export function GameCard({
             href={`/games/${game.slug}`}
             className="outline-none after:absolute after:inset-0 after:rounded-[var(--radius-panel)] focus-visible:after:ring-2 focus-visible:after:ring-ink focus-visible:after:ring-offset-2 focus-visible:after:ring-offset-bg"
           >
-            <Clamp lines={2} className="text-[15px] font-semibold leading-[1.35] tracking-[-0.015em] text-ink transition-colors duration-fast group-hover:text-acc">
+            <Clamp lines={2} className="text-[16px] font-semibold leading-[1.35] tracking-[-0.015em] text-ink transition-colors duration-fast group-hover:text-acc sm:text-[15px]">
               {title}
             </Clamp>
           </Link>
@@ -196,7 +198,7 @@ export function GameCard({
 
           {/* 기기 줄 — 셋까지 펴고 나머지는 "+N"(PlatformBadges 의 limit). 최저 말풍선이 맨 앞 배지 위에 뜬다.
               남은 기간은 넓은 화면에서 이 줄 오른쪽 끝에 선다 — 값 줄 끝에 두면 값, 정가 뒤에 못 붙고
-              혼자 다음 줄로 떨어졌다. 두 줄 격자(좁은 화면)는 칸이 170px 이라 값 줄 끝으로 간다.
+              혼자 다음 줄로 떨어졌다.
               플랫폼을 쉼표로 이은 글자에서 배지로 바꾼 이유(2026-09-21): 모양으로 훑는 편이 빠르다 */}
           <div className="flex items-end justify-between gap-2">
             <PlatformBadges
@@ -204,9 +206,10 @@ export function GameCard({
               highlight={highlight?.platforms}
               lowest={best?.currentPrice != null ? best.platform : null}
               limit={BADGE_LIMIT}
+              narrowLimit={BADGE_LIMIT_NARROW}
             />
             {variant !== "release" && hasDiscount && (
-              <span className="hidden shrink-0 pb-0.5 sm:block">
+              <span className="shrink-0 pb-0.5">
                 <SaleBadge variant="inline" discountName={null} discountEndsAt={best?.discountEndsAt} />
               </span>
             )}
@@ -222,20 +225,15 @@ export function GameCard({
             {best && best.currentPrice !== null && (
               <>
                 {hasDiscount && <DiscountStamp pct={best.discountPct} />}
-                <span className="text-[18px] font-extrabold tracking-[-0.03em] text-ink sm:text-[19px]">
+                <span className="text-[21px] font-extrabold tracking-[-0.03em] text-ink sm:text-[19px]">
                   {formatPrice(best.currentPrice, best.currency)}
                 </span>
                 {hasDiscount && best.listPrice !== null && (
-                  <span className="text-[12.5px] text-dim-2 line-through">{formatPrice(best.listPrice, best.currency)}</span>
+                  <span className="text-[13px] text-dim-2 line-through sm:text-[12.5px]">{formatPrice(best.listPrice, best.currency)}</span>
                 )}
               </>
             )}
             {variant === "release" && releaseLabel && <span className="ml-auto text-[12.5px] text-dim">{releaseLabel}</span>}
-            {variant !== "release" && hasDiscount && (
-              <span className="ml-auto sm:hidden">
-                <SaleBadge variant="inline" discountName={null} discountEndsAt={best?.discountEndsAt} />
-              </span>
-            )}
           </div>
         </div>
       </div>

@@ -33,6 +33,7 @@ export function PlatformBadges({
   highlight = [],
   lowest = null,
   limit,
+  narrowLimit = limit,
 }: {
   platforms?: Platform[];
   highlight?: Platform[];
@@ -43,14 +44,26 @@ export function PlatformBadges({
    * 최저 배지는 맨 앞이라 늘 펴진 쪽에 있다.
    */
   limit?: number;
+  /**
+   * 좁은 화면(sm 아래)에서 펴 두는 수(2026-09-30, 사용자: "모바일에서는 플랫폼 3개까지").
+   * 모바일은 카드가 한 줄에 한 장이라 폭이 넓다. 서버는 화면 폭을 모르므로 두 경우를 다 그려 두고
+   * CSS 로 하나만 보인다 — 경계 칸의 배지와 "+N" 토글이 폭마다 한 벌씩이다.
+   */
+  narrowLimit?: number;
 }) {
   if (platforms.length === 0) return <span className="text-[12px] text-dim">플랫폼 정보 없음</span>;
   const picked = new Set(highlight);
   const hasLowest = lowest !== null && platforms.includes(lowest);
   const ordered = hasLowest ? [lowest, ...platforms.filter((p) => p !== lowest)] : platforms;
-  const cut = limit !== undefined && ordered.length > limit ? limit : ordered.length;
+  const cutOf = (n: number | undefined) => (n !== undefined && ordered.length > n ? n : ordered.length);
+  const wide = cutOf(limit);
+  const narrow = cutOf(narrowLimit);
+  const shown = Math.max(wide, narrow);
 
-  const badge = (p: Platform) => (
+  // i 번째 배지가 어느 폭에서 펴지는가 — 둘 다면 늘, 한쪽만이면 그 폭에서만
+  const visibility = (i: number) => (i < wide && i < narrow ? "" : i < narrow ? "sm:hidden" : "hidden sm:inline-block");
+
+  const badge = (p: Platform, i = 0, inPanel = false) => (
     <span
       key={p}
       role="listitem"
@@ -58,6 +71,7 @@ export function PlatformBadges({
       // 테두리가 있으면 그 선들이 제목보다 먼저 읽힌다
       className={cn(
         "relative whitespace-nowrap rounded-full px-2 py-1 text-[12px] font-semibold leading-none",
+        !inPanel && visibility(i),
         picked.has(p) ? "bg-acc-soft text-acc" : "bg-surface-2 text-mut",
         // 최저 배지는 말풍선과 같은 보라 계열로 묶는다 — 회색 배지 위에 보라 말풍선만 떠 있으면
         // 둘이 따로 논다(2026-09-29 사용자 지적). 연한 보라 면 + 보라 글자라 말풍선(꽉 찬 보라)과 한 쌍이다
@@ -74,16 +88,33 @@ export function PlatformBadges({
     </span>
   );
 
-  const rest = ordered.slice(cut);
+  const toggle = (from: number, className: string) => {
+    const rest = ordered.slice(from);
+    if (rest.length === 0) return null;
+    return (
+      <MoreToggle
+        count={rest.length}
+        label={`플랫폼 ${rest.length}개 더 보기`}
+        wrapClassName={className}
+        className="bg-surface-2 text-dim hover:bg-surface-3 hover:text-ink"
+      >
+        {rest.map((p) => badge(p, 0, true))}
+      </MoreToggle>
+    );
+  };
   return (
     // 말풍선이 배지 위로 뜨므로 그 높이만큼 위를 비운다(pt-4) — 배지 줄이 제목 아래로 내려오면서(09-30)
     // 커버 가장자리에 걸쳐 둘 수 없게 됐다. 비우지 않으면 말풍선이 제목 둘째 줄을 덮는다
     <span role="list" aria-label="지원 플랫폼" className={cn("flex flex-wrap gap-1", hasLowest && "pt-4")}>
-      {ordered.slice(0, cut).map(badge)}
-      {rest.length > 0 && (
-        <MoreToggle count={rest.length} label={`플랫폼 ${rest.length}개 더 보기`} className="bg-surface-2 text-dim hover:bg-surface-3 hover:text-ink">
-          {rest.map(badge)}
-        </MoreToggle>
+      {ordered.slice(0, shown).map((p, i) => badge(p, i))}
+      {/* 좁은 폭, 넓은 폭 토글이 같은 수에서 끊기면 하나만 둔다 */}
+      {narrow === wide ? (
+        toggle(wide, "inline-flex")
+      ) : (
+        <>
+          {toggle(narrow, "inline-flex sm:hidden")}
+          {toggle(wide, "hidden sm:inline-flex")}
+        </>
       )}
     </span>
   );

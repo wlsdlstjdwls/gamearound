@@ -18,8 +18,10 @@
 // 2026-09-30: 열 수를 **못 박았다**(사용자: "한 행에 4개씩", "게임 목록에서는 한 행에 3개씩").
 // 최소폭(auto-fill)으로 두면 홈(1200)은 5열, 목록(필터 옆 880)은 4열로 화면마다 카드 크기가 달랐다.
 // 목록은 왼쪽에 필터 기둥이 서서 3열이어야 카드 폭이 홈 4열과 같아진다(약 270px) — 같은 카드가 같은 크기다.
-// 칸 수(HOME_LIMIT 24, GAMES_PAGE_SIZE 36)는 2, 3, 4 로 모두 나눠떨어진다 — 마지막 줄이 이 빠지지 않는다.
-const GRID_BASE = "grid grid-cols-2 gap-x-3 gap-y-4 md:grid-cols-3 md:gap-x-5 md:gap-y-6";
+// 칸 수(HOME_LIMIT 24, GAMES_PAGE_SIZE 36)는 1, 2, 3, 4 로 모두 나눠떨어진다 — 마지막 줄이 이 빠지지 않는다.
+// 좁은 화면은 **한 줄에 한 장**(2026-09-30, 사용자: "모바일은 1행에 1개씩, 컨텐츠가 너무 작아서 안보여").
+// 두 줄이면 칸이 170px 이라 제목이 두 줄로 잘리고 값, 배지가 12px 대로 눌렸다. sm(640) 부터 둘.
+const GRID_BASE = "grid grid-cols-1 gap-4 sm:grid-cols-2 sm:gap-x-4 md:grid-cols-3 md:gap-x-5 md:gap-y-6";
 /** 필터 기둥 옆 목록(게임 목록) — 넓은 화면 3열 */
 export const GAMES_GRID_CLASS = GRID_BASE;
 
