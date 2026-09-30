@@ -31,7 +31,7 @@ import { SubscriptionChips } from "@/components/subscription-badges";
 import { PlatformAddons } from "@/components/platform-addons";
 import { buttonClass } from "@/components/ui/button";
 import { InfoTip } from "@/components/ui/tooltip";
-import { ROW, ROWS, SECTION_SIZE } from "@/components/ui/page";
+import { SECTION_SIZE } from "@/components/ui/page";
 import { cn } from "@/lib/cn";
 
 export type PlatformPriceItem = PlatformDto & { freshness: Freshness };
@@ -173,58 +173,46 @@ function absentBrands(sold: Set<Platform>): { key: string; label: string; family
  * 배지가 옆에 없으니 이 기둥이 재야 할 것은 가장 긴 이름 하나뿐이다("Nintendo 일본" 실측 96px).
  * 줄인 54px 은 그대로 값 쪽으로 간다 — 값이 잘리던 원인의 절반이 이 기둥이었다.
  */
-const NAME_COL = "w-[96px] shrink-0";
-
 /**
- * 파는 곳이 아닌 한 줄. 지역 접미어도 세대 배지도 붙이지 않는다 —
- * 팔지 않는 곳에 "Nintendo 일본" 이라고 쓰면 "일본에는 있다" 로 읽히고,
- * 세대 배지는 "그 세대만 없다" 로 읽힌다. 여기 서는 줄은 묶음 전체가 없는 경우뿐이다.
+ * 파는 곳이 아닌 스토어들 — 줄마다 세우지 않고 표 아래 **한 줄**로 모은다(2026-09-30).
+ * 타일로 바꾸면서 빈 타일을 세우면 "서비스하지 않음" 이 값 타일과 같은 무게로 자리를 먹는다.
+ * 지역 접미어도 세대 배지도 붙이지 않는다 — "Nintendo 일본" 은 "일본에는 있다" 로 읽힌다.
  */
-function AbsentRow({ label }: { label: string }) {
+function AbsentLine({ labels }: { labels: string[] }) {
+  if (labels.length === 0) return null;
   return (
-    <li className={cn(ROW, "flex min-w-0 items-center gap-x-2.5 py-[11px]")}>
-      <span className={cn(NAME_COL, "truncate text-[14px] text-dim")}>{label}</span>
-      <span className="text-[13px] text-dim-2">{ABSENT_TEXT}</span>
-    </li>
+    <p className="text-[13px] text-dim">
+      <span className="font-semibold text-mut">{ABSENT_TEXT}</span> {labels.join(", ")}
+    </p>
   );
 }
 
 /**
- * 파는 곳이 아닌 줄에 적는 말(2026-09-21, 사용자 지정).
- *
- * 이 화면에서 "-해요" 를 안 쓰는 유일한 자리다(UI 규약 §6 의 예외). 나머지 줄이 전부 값을
- * 말하는 표 안에서, 이 줄만 말을 걸면 값이 아니라 안내문으로 읽혀 눈이 거기 걸린다.
- * 표의 다른 칸("정보 없음", "링크 없음")과 같은 명사형으로 맞춘 말이다.
+ * 파는 곳이 아닌 자리에 적는 말(2026-09-21, 사용자 지정).
+ * 이 화면에서 "-해요" 를 안 쓰는 유일한 자리다(UI 규약 §6 의 예외) — 값을 말하는 표 안에서
+ * 이 말만 말을 걸면 안내문으로 읽혀 눈이 거기 걸린다. 명사형으로 맞춘 말이다.
  */
 const ABSENT_TEXT = "서비스하지 않음";
 
-/** 링크가 아직 없는 줄의 버튼에 붙는 말. 버튼은 그대로 서고 눌리지만 않는다(PriceRow 주석) */
+/** 링크가 아직 없는 타일의 버튼에 붙는 말. 버튼은 그대로 서고 눌리지만 않는다(PriceTile 주석) */
 const STORE_LINK_MISSING = "스토어 링크를 아직 못 찾았어요";
 
 /**
- * 한 줄 — 이름(+세대 배지), 값, 버튼들.
+ * 스토어 한 곳 = 타일 한 장(2026-09-30, 사용자: "플랫폼 정보 좀 가시성 높게").
  *
- * **값이 잘리지 않는 것이 이 줄의 첫 규칙이다**(2026-09-22, 사용자 지적: "금액이 잘려").
- * 전에는 값과 곁가지(세일 배지, 구독 칩)가 한 overflow-hidden 상자에 같이 들어 있었다.
- * 그 상자는 자리가 모자라면 안쪽을 잘라 내는데, 값이 그 상자의 첫 자식이라 뒤엣것이 밀려 들어오면
- * 값의 오른쪽 자릿수부터 사라졌다. 지금은 두 상자로 가른다:
- *   - 값 묶음(값, 할인율, 정가, "i")은 shrink-0 — 절대 줄지 않는다.
- *   - 곁가지 묶음(구독 칩)만 min-w-0 flex-1 overflow-hidden — 좁아지면 여기부터 잘린다.
+ * 전에는 PC, 콘솔 두 기둥에 줄로 섰다. 한 줄에 이름, 값, 할인율, 정가, "i", 구독 칩, 버튼 둘이
+ * 가로로 끼어 있어서 기둥 폭(약 540px)에 다 못 서고 정가가 접히고 버튼이 아랫줄로 떨어졌다.
+ * 줄마다 모양이 달라 "어디가 싼가" 를 훑기 어려웠다.
  *
- * **세대 배지는 이름 아래로 내려간다**(같은 날 사용자 지정: "PS5 뱃지 형태로 PlayStation 밑으로").
- * 옆에 두면 이름 기둥이 배지 폭까지 재야 해서 150px 이 필요했고, 그 폭이 값을 밀어내고 있었다.
- * 아래로 내리면 기둥이 96px 로 줄고, "PlayStation" 과 "PS5" 가 위아래로 읽혀 어느 쪽이
- * 스토어 이름이고 어느 쪽이 세대인지가 더 분명해진다.
+ * 타일은 같은 순서(이름 - 값 - 버튼)를 세로로 쌓아 폭을 요구하지 않는다. 값은 줄마다 같은 자리,
+ * 같은 크기에 서고(22px), 최저가 타일만 보라 테두리와 연한 보라 면을 얻는다 — 목록 카드의
+ * "최저" 말풍선과 같은 색 문법이다.
  *
- * 정가 취소선은 xl 아래에서 접힌다 — 할인율(-20%)이 같은 말을 더 짧게 한다.
- *
- * **줄에 overflow-hidden 을 걸지 않는다**(2026-09-22, 사용자 지적: "버튼이 옆 컨텐츠를 가리진
- * 않지만 가려져서 안보여져"). 옆 갈래로 삐져나가는 것을 막으려고 줄 전체를 잘랐더니, 잘리는 쪽이
- * 줄의 **끝** 이라 하필 거기 선 버튼 둘(추가 콘텐츠, 스토어)이 사라졌다. 넘침을 막는 자리는
- * 안쪽 곁가지 상자 하나여야 한다 — 거기만 잘리면 잃는 것이 구독 칩뿐이고, 그 값은 구독 탭이 따로 말한다.
- * 같은 날 "최저가" 배지를 이름 기둥으로 올리고 행사 줄을 표 위로 뺀 것도 이 계산의 일부다.
+ * 세대 배지(PS5)는 이름 옆에 선다 — 타일은 폭이 남아 예전처럼 이름 아래로 내릴 이유가 없다.
+ * 값 묶음은 줄바꿈하지 않는다(2026-09-22 "금액이 잘려" 이후의 첫 규칙): 값, 할인율은 한 줄, 정가는 아랫줄.
+ * 링크가 없어도 **버튼 자리는 지킨다**(2026-09-22, 사용자 지정) — 같은 자리 같은 모양, 눌리지만 않는다.
  */
-function PriceRow({
+function PriceTile({
   p,
   isBest,
   tip,
@@ -237,78 +225,57 @@ function PriceRow({
   addons: React.ReactNode;
 }) {
   const hasDiscount = Boolean(p.discountPct && p.discountPct > 0);
+  // 무료면 "최저가" 를 세우지 않는다(2026-09-22, 사용자 지정) — 0원은 비교의 대상이 아니다
+  const showBest = isBest && p.currentPrice !== 0;
   return (
-    <li className={cn(ROW, "flex min-w-0 flex-wrap items-center gap-x-2.5 gap-y-2 py-[11px]")}>
-      {/* 최저가 표시가 이 기둥 맨 위에 선다(2026-09-22, 사용자 지정: "최저가 뱃지는 Steam 위에").
-          줄 가운데에 있을 때는 값과 버튼 사이에 끼어 그 줄만 길어졌고, 여덟 줄을 훑는 눈이
-          "어느 스토어가 싼가" 를 찾으려면 줄마다 중간까지 읽어야 했다. 이름 위에 두면
-          기둥 하나만 세로로 훑어도 답이 나온다 — 자리를 비운 만큼 값과 버튼도 넉넉해진다 */}
-      <span className={cn(NAME_COL, "flex flex-col items-start gap-[3px]")}>
-        {/* 무료면 배지를 세우지 않는다(2026-09-22, 사용자 지정). 값이 이미 "무료" 라고 적혀 있는데
-            그 위에 "최저가" 를 또 붙이면 깎아서 싸진 값처럼 읽힌다 — 0원은 비교의 대상이 아니다.
-            값 크기와 버튼 강조는 그대로 둔다: 무료 줄은 여전히 이 표에서 실제로 누를 자리다 */}
-        {isBest && p.currentPrice !== 0 && (
-          <span className="rounded-full bg-acc-soft px-[7px] py-[2px] text-[10.5px] font-bold leading-[1.45] text-acc">최저가</span>
-        )}
-        <span className="max-w-full truncate text-[14.5px] font-bold text-ink">{brandNameOf(p)}</span>
+    <li
+      className={cn(
+        "flex min-w-0 flex-col gap-3 rounded-[var(--radius-md)] p-4",
+        showBest ? "bg-acc-soft ring-2 ring-acc ring-inset" : "bg-surface-4 shadow-hair",
+      )}
+    >
+      <div className="flex min-w-0 items-center gap-1.5">
+        <span className="truncate text-[15px] font-bold text-ink">{brandNameOf(p)}</span>
         <GenerationBadge platform={p.platform} />
-      </span>
+        {showBest && (
+          <span className="ml-auto shrink-0 rounded-full bg-acc px-2 py-[3px] text-[11px] font-bold leading-none text-on-ink">최저가</span>
+        )}
+      </div>
 
-      {/* 값 묶음 — 줄지도 잘리지도 않는다(머리 주석) */}
-      <span className="flex shrink-0 items-baseline gap-2 whitespace-nowrap">
-        {/* 최저가 행만 값이 크다 — 행이 여덟 줄까지 가는데 전부 같은 크기면 "어디를 사면 되나" 가 안 보인다 */}
-        <span className={cn("font-extrabold tracking-[-0.035em] text-ink", isBest ? "text-[21px]" : "text-[17px]")}>
-          {formatPrice(p.currentPrice, p.currency)}
+      <div className="flex flex-col gap-0.5">
+        <span className="flex items-baseline gap-1.5 whitespace-nowrap">
+          {hasDiscount && (
+            <span className="text-[20px] font-extrabold tracking-[-0.03em] text-acc">
+              <DiscountText pct={p.discountPct} />
+            </span>
+          )}
+          <span className="text-[22px] font-extrabold tracking-[-0.035em] text-ink">{formatPrice(p.currentPrice, p.currency)}</span>
+          {/* self-center: 이 묶음은 items-baseline 인데 버튼의 기준선은 아이콘 아래변이라 반 칸 낮게 선다 */}
+          <InfoTip label={tip} className="self-center" />
         </span>
-        {hasDiscount && <span className="text-[12.5px] font-bold text-acc"><DiscountText pct={p.discountPct} /></span>}
-        {hasDiscount && p.listPrice !== null && p.listPrice !== p.currentPrice && (
-          <span className="hidden text-[12px] text-dim-2 line-through xl:inline">{formatPrice(p.listPrice, p.currency)}</span>
-        )}
-        {/* 값 옆에 붙는다 — 이 사실들은 값에 딸린 것이지 줄 전체의 꼬리표가 아니다.
-            self-center 가 필요하다(2026-09-22, 사용자 지적: "툴팁 버튼이 위아래 정렬이 안맞아"):
-            이 묶음은 items-baseline 인데 버튼은 inline-flex 라 제 기준선이 안쪽 아이콘의 아래변이다.
-            그대로 두면 동그라미가 숫자 기준선까지 내려앉아 반 칸 낮게 선다 */}
-        <InfoTip label={tip} className="self-center" />
-      </span>
+        <span className="flex min-h-[18px] flex-wrap items-center gap-x-2 gap-y-1 text-[12.5px]">
+          {hasDiscount && p.listPrice !== null && p.listPrice !== p.currentPrice && (
+            <span className="text-dim-2 line-through">{formatPrice(p.listPrice, p.currency)}</span>
+          )}
+          {/* 구독 칩은 값 아래 곁줄에 — 구독 여부는 구독 탭이 따로 말하므로 넘치면 잘려도 된다 */}
+          {p.subscriptions.length > 0 && (
+            <span className="flex min-w-0 overflow-hidden">
+              <SubscriptionChips subscriptions={p.subscriptions} />
+            </span>
+          )}
+        </span>
+      </div>
 
-      {/* 곁가지 — 남는 자리에 흘리고, 좁아지면 여기부터 잘린다.
-          세일 배지(행사 이름, 남은 기간)는 여기 없다(2026-09-22, 사용자 제안: "할인 이름은
-          가격표 위에 표기하는게 어떰..?") — 표 **위 한 줄**로 올라갔다. 근거는 SaleHeadline 주석 */}
-      <span className="flex min-w-0 flex-1 items-center gap-2 overflow-hidden">
-        {/* 구독 칩은 줄 끝에 흘린다. 자리가 없으면 잘린다 — 구독 여부는 구독 탭이 따로 말한다 */}
-        {p.subscriptions.length > 0 && (
-          <span className="hidden min-w-0 lg:flex">
-            <SubscriptionChips subscriptions={p.subscriptions} />
-          </span>
-        )}
-      </span>
-
-      {/* 누르는 것들 — 좁은 화면에서는 통째로 **아랫줄**로 내려간다(2026-09-22 실측).
-          한 줄이 요구하는 폭은 416px 인데(이름 96 + 값 149 + 버튼 59, 66 + 사이 30) 390px 기기에
-          남는 자리는 335px 이라, 넘친 만큼 스토어 버튼이 화면 밖으로 밀려나 있었다
-          (문서 폭 430 대 화면 390 — 가로 스크롤이 생겼다).
-          줄 안에서 더 깎을 것이 없다: 이름을 자르면 어느 스토어인지가 사라지고, 값을 줄이면
-          이 표가 답하려던 것이 사라진다. 그래서 **읽는 값(이름, 가격)은 첫 줄에 그대로 두고
-          누르는 것만 내린다**. 오른쪽에 붙이는 이유는 왼쪽에 두면 다음 줄의 이름 기둥과 겹쳐 읽혀서다.
-          한 줄로 되돌아오는 지점은 sm(640) 이다 — 계산상 471px 부터 들어가지만 그 사이를 따로 가르면
-          토큰에 없는 중단점이 하나 더 생긴다. 넓은 화면의 배치는 이 묶음이 shrink-0 이라 그대로다 */}
-      <div className="flex w-full shrink-0 items-center justify-end gap-2.5 sm:w-auto">
-        {/* 추가 콘텐츠가 스토어 버튼 왼쪽에 선다 — 오른쪽 끝은 이 화면에서 "나가는 문" 자리다 */}
+      {/* 누르는 것들은 타일 바닥에 — 오른쪽 끝(스토어)이 이 화면에서 "나가는 문" 자리다 */}
+      <div className="mt-auto flex items-center gap-2">
         {addons}
-
-        {/*
-          링크가 없어도 **버튼 자리는 지킨다**(2026-09-22, 사용자 지정). 전에는 "링크 없음" 이라는
-          회색 글자로 바꿔 세웠는데, 줄마다 오른쪽 끝의 모양이 달라져 표가 들쭉날쭉했고
-          그 글자가 값보다 눈에 걸렸다. 같은 자리에 같은 모양으로 두되 눌리지 않게 한다 —
-          "여기는 원래 나가는 문인데 지금은 못 연다" 가 한눈에 읽힌다.
-        */}
         {p.storeUrl ? (
           <a
             href={p.storeUrl}
             target="_blank"
             rel="noopener noreferrer"
-            // 최저가 행만 브랜드 필이다 — 이 화면에서 실제로 누를 자리는 대개 그 하나다(ui/button 주석)
-            className={buttonClass({ variant: isBest ? "accent" : "soft", size: "row", className: "shrink-0" })}
+            // 최저가 타일만 브랜드 필이다 — 이 화면에서 실제로 누를 자리는 대개 그 하나다(ui/button 주석)
+            className={buttonClass({ variant: isBest ? "accent" : "soft", size: "row", className: "ml-auto shrink-0 flex-1" })}
           >
             스토어
             <span className="sr-only"> {platformLabel(p)} (새 창에서 열림)</span>
@@ -316,7 +283,7 @@ function PriceRow({
         ) : (
           <span
             aria-disabled="true"
-            className={buttonClass({ variant: "soft", size: "row", className: "pointer-events-none shrink-0 opacity-45" })}
+            className={buttonClass({ variant: "soft", size: "row", className: "pointer-events-none ml-auto shrink-0 flex-1 opacity-45" })}
           >
             스토어
             <span className="sr-only"> {STORE_LINK_MISSING}</span>
@@ -328,25 +295,16 @@ function PriceRow({
 }
 
 /**
- * 갈래 하나(PC | 콘솔).
- *
- * **면을 걷었다**(2026-09-22, 사용자 지적: "PC / 콘솔 영역 배경색 구려"). 같은 날 아침에
- * 경계가 안 보인다는 지적으로 --surface-2 판을 입혔는데, 그 회색 면이 옆 마디, 카드와 다른 색이라
- * 이 마디만 화면에서 한 겹 꺼진 것처럼 보였다. 판을 다 걷은 리디자인 방향과도 어긋난다.
- *
- * 경계는 이름표 아래 굵은 헤어라인이 대신 긋는다 — 목록의 첫 줄이 이미 --line-strong 이고
- * (globals 의 .rows), 이름표를 그 선 바로 위에 올리면 "여기부터 이 묶음" 이 선 하나로 읽힌다.
- * 면과 달리 선은 배경색을 바꾸지 않아 옆 갈래와 색이 갈리지 않는다.
- *
- * min-w-0 이 없으면 이 칸이 옆 칸을 침범한다(2026-09-22, 사용자 지적: "PC 컨텐츠가 콘솔 영역으로
- * 넘어가버려"). 격자 칸의 기본 최소 크기는 auto 라 "안쪽이 줄바꿈 없이 요구하는 폭" 아래로는
- * 절대 안 줄어드는데, 줄 안에 shrink-0 인 값 묶음과 버튼 셋이 있어서 그 요구 폭이 칸보다 컸다.
+ * 갈래 하나(PC | 콘솔) — 이름표 + 타일 격자.
+ * 갈래를 옆으로 나란히 세우던 것(2026-09-22)을 위아래로 바꿨다(2026-09-30): 옆으로 가르면 기둥 폭이
+ * 반이 되어 줄이 못 섰다. 타일은 한 장이 작아 위아래로 쌓아도 갈래 하나가 한두 줄이다.
+ * 좁은 화면 1열, sm 2열, lg 4열 — 스토어는 갈래마다 많아야 넷이라 넓은 화면에서 한 줄에 선다.
  */
 function FamilyBlock({ label, children }: { label: string; children: React.ReactNode }) {
   return (
-    <div className="flex min-w-0 flex-col gap-2">
+    <div className="flex min-w-0 flex-col gap-2.5">
       <h3 className={SECTION_SIZE.label}>{label}</h3>
-      <ul className={ROWS}>{children}</ul>
+      <ul className="grid gap-2.5 sm:grid-cols-2 lg:grid-cols-4">{children}</ul>
     </div>
   );
 }
@@ -406,16 +364,11 @@ export function PlatformPrices({
     <div className="flex flex-col gap-3">
       {saleRow && <SaleHeadline row={saleRow} />}
 
-      {/* 갈래 둘을 **가로로** 세운다(2026-09-22, 사용자 지적). 세로로 쌓으면 여덟 줄이 화면 하나를
-          통째로 먹고 그 아래 판정, 파는 곳이 접힘선 밖으로 밀린다. 넓은 화면에서만 가른다 —
-          좁은 화면에서 반으로 자르면 값과 버튼이 한 줄에 못 선다.
-          items-start 가 필요하다: 기본 stretch 면 줄 수가 적은 쪽(PC 둘)의 헤어라인이 반대쪽 높이까지 늘어난다 */}
-      <div className="grid items-start gap-x-10 gap-y-6 lg:grid-cols-2">
+      <div className="flex flex-col gap-5">
         {PLATFORM_FAMILIES.map((family) => {
           const familyRows = rows.filter((r) => familyOf(r.platform) === family);
-          const familyAbsent = absent.filter((a) => a.family === family);
-          // 갈래 전체가 비면 이름표도 세우지 않는다 — 빈 제목은 "여기 뭔가 빠졌다" 로 읽힌다
-          if (familyRows.length === 0 && familyAbsent.length === 0) return null;
+          // 파는 곳이 없는 갈래는 이름표도 세우지 않는다 — 없는 곳은 아래 한 줄(AbsentLine)이 말한다
+          if (familyRows.length === 0) return null;
           return (
             <FamilyBlock key={family} label={PLATFORM_FAMILY_LABEL[family]}>
               {familyRows.map((p) => {
@@ -423,7 +376,7 @@ export function PlatformPrices({
                 // 열어 봤자 빈 시트인 버튼은 누른 사람을 두 번 움직이게 한다
                 const mine = dlcs.filter((d) => d.platforms.some((dp) => dp.platform === p.platform));
                 return (
-                  <PriceRow
+                  <PriceTile
                     key={rowKey(p)}
                     p={p}
                     isBest={rowKey(p) === bestKey}
@@ -436,12 +389,10 @@ export function PlatformPrices({
                   />
                 );
               })}
-              {familyAbsent.map((a) => (
-                <AbsentRow key={a.key} label={a.label} />
-              ))}
             </FamilyBlock>
           );
         })}
+        <AbsentLine labels={absent.map((a) => a.label)} />
       </div>
     </div>
   );
