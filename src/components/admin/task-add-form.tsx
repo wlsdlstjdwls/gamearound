@@ -13,11 +13,12 @@ import { Button, buttonClass } from "@/components/ui/button";
 import { Sheet } from "@/components/ui/sheet";
 import { FormSelect } from "@/components/ui/select";
 import { TASK_MESSAGES } from "@/lib/admin/messages";
-import { TaskBasicFields, TaskStatusField } from "@/components/admin/task-fields";
+import type { TaskAssignee } from "@/lib/admin/tasks";
+import { TaskAssigneeField, TaskBasicFields, TaskStatusField } from "@/components/admin/task-fields";
 import { TaskGamePicker } from "@/components/admin/task-game-picker";
 import { createTaskAction, type TaskActionState } from "@/app/(admin)/admin/tasks/actions";
 
-export function TaskAddForm({ sources }: { sources: readonly string[] }) {
+export function TaskAddForm({ sources, assignees }: { sources: readonly string[]; assignees: TaskAssignee[] }) {
   const [open, setOpen] = useState(false);
   // 넣고 나면 닫는다 — 성공했을 때만. 실패하면 적은 글이 사라지면 안 된다.
   // 닫는 일을 액션 안에서 하는 이유: 결과를 보고 effect 로 닫으면 렌더가 한 번 더 돈다(react-hooks 규칙).
@@ -41,6 +42,7 @@ export function TaskAddForm({ sources }: { sources: readonly string[] }) {
         <ActionForm action={action} state={state} pending={pending} className="flex flex-col gap-4 pb-1 pt-2">
           <TaskBasicFields />
           <TaskStatusField />
+          <TaskAssigneeField assignees={assignees} />
 
           <TaskGamePicker />
 

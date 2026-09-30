@@ -9,7 +9,7 @@
 import { index, integer, pgEnum, pgTable, text, timestamp, uuid } from "drizzle-orm/pg-core";
 import { sql } from "drizzle-orm";
 import { auditColumns } from "./audit";
-import { games } from "./schema";
+import { games, users } from "./schema";
 import { sourceEnum } from "./schema-enums";
 import { shops } from "./schema-shops";
 
@@ -54,6 +54,14 @@ export const adminTasks = pgTable("admin_tasks", {
   gameId: uuid("game_id").references(() => games.id, { onDelete: "set null" }),
   shopId: uuid("shop_id").references(() => shops.id, { onDelete: "set null" }),
   source: sourceEnum("source"),
+
+  /*
+   * 담당자(2026-09-30, 사용자 요청: "일 등록할 때 담당자 지정"). 판을 쓰는 사람이 둘 이상이 되면서
+   * "누가 쥔 일인가" 가 카드에 서야 했다. 비워 둘 수 있다 — 아무도 안 쥔 일도 판에 산다.
+   * 계정이 지워지면 할 일은 남고 담당만 비운다(set null) — 그 일은 여전히 해야 할 일이다.
+   * created_by 와 따로 두는 이유: 적은 사람과 할 사람은 다르다.
+   */
+  assigneeId: uuid("assignee_id").references(() => users.id, { onDelete: "set null" }),
 
   ...auditColumns(),
 }, (t) => [

@@ -30,6 +30,12 @@ export interface TaskNote {
   createdAt: Date;
 }
 
+/** 담당자 한 사람. 이름은 표시 이름, 없으면 이메일이다 */
+export interface TaskAssignee {
+  id: string;
+  name: string;
+}
+
 export interface AdminTask {
   id: string;
   title: string;
@@ -43,6 +49,8 @@ export interface AdminTask {
   game: { id: string; slug: string; title: string } | null;
   shop: { id: string; name: string } | null;
   source: SourceName | null;
+  /** 이 일을 쥔 사람. 비어 있으면 아무도 안 쥔 일이다 */
+  assignee: TaskAssignee | null;
   updatedAt: Date;
   /**
    * 이 할 일에 쌓인 기록. 판 질의가 한 번에 다 읽어 온다 —

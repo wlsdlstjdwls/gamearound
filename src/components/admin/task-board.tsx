@@ -16,14 +16,14 @@ import { useState, useTransition } from "react";
 import { cn } from "@/lib/cn";
 import { Button } from "@/components/ui/button";
 import { TASK_MESSAGES, TASK_STATUS_LABEL } from "@/lib/admin/messages";
-import { TASK_STATUSES, type Board } from "@/lib/admin/tasks";
+import { TASK_STATUSES, type Board, type TaskAssignee } from "@/lib/admin/tasks";
 import { TaskCard } from "@/components/admin/task-card";
 import { TaskDialog } from "@/components/admin/task-card/dialog";
 import { TaskQuickAdd } from "@/components/admin/task-quick-add";
 import { DROP_ATTR, useBoardDrag } from "@/components/admin/use-board-drag";
 import { clearDoneAction, moveTaskAction, type TaskActionState } from "@/app/(admin)/admin/tasks/actions";
 
-export function TaskBoard({ board }: { board: Board }) {
+export function TaskBoard({ board, assignees }: { board: Board; assignees: TaskAssignee[] }) {
   /**
    * 지금 열린 카드. **판이 들고 있다** — 카드가 들고 있으면 칸을 옮기는 순간 그 카드가 다른 칸에서
    * 새로 그려지면서 팝업이 닫힌다(실측 2026-09-21). 옮기기는 팝업 안에서 하는 일이라 닫히면 안 된다.
@@ -70,17 +70,19 @@ export function TaskBoard({ board }: { board: Board }) {
               key={status}
               {...{ [DROP_ATTR]: status }}
               className={cn(
+                // 칸은 흰 본문 판 위의 회색 골이고 카드는 그 위에 다시 뜬 흰 판이다(2026-09-30) —
+                // 앞서는 칸, 카드, 바탕이 다 회색 계열이라 셋이 한 면으로 붙어 보였다
                 "flex min-h-[140px] flex-col gap-2 rounded-xl border border-dashed p-2 transition-colors duration-base",
                 over && droppable
                   ? "border-acc bg-acc-soft"
                   : droppable
-                    ? "border-line-strong bg-surface-4"
-                    : "border-line bg-surface-4/40",
+                    ? "border-line-strong bg-surface-3"
+                    : "border-transparent bg-surface-2",
               )}
             >
               <h3 className="flex items-center justify-between px-1 py-0.5 text-[12.5px] font-bold text-mut">
                 {TASK_STATUS_LABEL[status]}
-                <span className="rounded-full bg-surface-3 px-1.5 text-[11px] font-semibold tabular-nums text-dim">
+                <span className="rounded-full bg-surface px-1.5 text-[11px] font-semibold tabular-nums text-mut">
                   {board[status].length}
                 </span>
               </h3>
@@ -113,7 +115,7 @@ export function TaskBoard({ board }: { board: Board }) {
       </div>
 
       {/* 열린 카드는 판이 다시 그려져도 같은 카드를 가리킨다 — 지워졌으면 팝업도 사라진다 */}
-      {openTask && <TaskDialog task={openTask} open onOpenChange={(v) => !v && setOpenId(null)} />}
+      {openTask && <TaskDialog task={openTask} assignees={assignees} open onOpenChange={(v) => !v && setOpenId(null)} />}
     </section>
   );
 }

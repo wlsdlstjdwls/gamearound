@@ -20,7 +20,7 @@
 // 커서가 브라우저 것이 되어 우리가 정한 모양이 통째로 풀린다(2026-09-22 사용자 지적).
 import { useState, useTransition } from "react";
 import { cn } from "@/lib/cn";
-import { panelClass } from "@/components/ui/page";
+import { raisedClass } from "@/components/ui/page";
 import { TASK_MESSAGES, TASK_PRIORITY_LABEL } from "@/lib/admin/messages";
 import { type AdminTask, type TaskStatus } from "@/lib/admin/tasks";
 import { HANDLE_ATTR } from "@/components/admin/use-board-drag";
@@ -72,7 +72,7 @@ export function TaskCard({
     <li
       onPointerDown={(e) => onPointerDown?.(e, task.id, status)}
       onClickCapture={onClickCapture}
-      className={panelClass(cn("grabbable group flex flex-col transition-[opacity] duration-base", pending && "opacity-60"))}
+      className={raisedClass(cn("grabbable group flex flex-col transition-[opacity] duration-base", pending && "opacity-60"))}
     >
       {/* 카드 전체가 여는 자리다. 안에 링크를 넣지 않는 이유는 버튼 안의 링크가 못 눌리기 때문이다 —
           붙인 대상으로 가는 길은 팝업 안에 있다 */}
@@ -90,6 +90,8 @@ export function TaskCard({
         {task.body && <p className="line-clamp-2 whitespace-pre-wrap text-[12px] leading-[1.6] text-mut">{task.body}</p>}
 
         <div className="flex flex-wrap items-center gap-1.5 text-[11px]">
+          {/* 담당자를 맨 앞에 둔다 — 판을 훑는 눈이 먼저 찾는 것은 "내 일인가" 다 */}
+          {task.assignee && <span className="rounded-[6px] bg-acc-soft px-1.5 py-0.5 font-semibold text-acc">{task.assignee.name}</span>}
           {task.game && <span className="rounded-[6px] bg-surface-3 px-1.5 py-0.5 text-acc">{task.game.title}</span>}
           {task.shop && <span className="rounded-[6px] bg-surface-3 px-1.5 py-0.5 text-mut">{task.shop.name}</span>}
           {task.source && <span className="rounded-[6px] bg-surface-3 px-1.5 py-0.5 font-mono text-mut">{task.source}</span>}

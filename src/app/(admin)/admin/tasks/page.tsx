@@ -11,7 +11,7 @@ import { TASK_MESSAGES } from "@/lib/admin/messages";
 import { TASK_STATUSES } from "@/lib/admin/tasks";
 import { requireRoleOrForbid } from "@/server/auth/guards";
 import { sourceEnum } from "@/server/db/schema";
-import { getBoard } from "@/server/services/admin-tasks";
+import { getBoard, listAssignees } from "@/server/services/admin-tasks";
 
 export const metadata: Metadata = { title: TASK_MESSAGES.title };
 // 판은 늘 지금 값을 봐야 한다 — 옮기고 돌아왔는데 옛 판이 뜨면 두 번 옮긴다
@@ -22,7 +22,8 @@ export default async function AdminTasksPage() {
   // 레이아웃의 redirect 가 이기는 사이 getBoard 의 requireAdmin 이 던져 운영 로그에 "권한이 없습니다" 가 찍혔다.
   // 서비스 쪽 검사는 그대로 둔다 — 이건 로그를 막는 줄이지 방어를 옮기는 줄이 아니다
   await requireRoleOrForbid("admin");
-  const board = await getBoard();
+  // 담당자 후보는 판과 나란히 읽는다 — 줄 세우면 왕복이 하나 더 붙는다(neon-roundtrip-cost)
+  const [board, assignees] = await Promise.all([getBoard(), listAssignees()]);
   // 건수는 화면 제목 옆에 붙인다 — 판 위에 또 제목을 세우면 "할 일" 과 같은 말이 두 번 선다
   const total = TASK_STATUSES.reduce((n, s) => n + board[s].length, 0);
 
@@ -33,10 +34,10 @@ export default async function AdminTasksPage() {
           <PageHead title={TASK_MESSAGES.title} note={TASK_MESSAGES.count(total)} />
           <p className="mt-1 max-w-[560px] text-[13px] text-mut">{TASK_MESSAGES.lead}</p>
         </div>
-        <TaskAddForm sources={sourceEnum.enumValues} />
+        <TaskAddForm sources={sourceEnum.enumValues} assignees={assignees} />
       </header>
 
-      <TaskBoard board={board} />
+      <TaskBoard board={board} assignees={assignees} />
     </>
   );
 }

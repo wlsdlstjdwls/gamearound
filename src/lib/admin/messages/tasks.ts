@@ -11,6 +11,9 @@ export const TASK_MESSAGES = {
   priorityLabel: "급함",
   statusLabel: "놓을 칸",
   sourceLabel: "소스 (선택)",
+  /** 담당자(2026-09-30). 비워 둘 수 있어서 "없음" 이 첫 칸이다 */
+  assigneeLabel: "담당자",
+  assigneeNone: "없음",
   submit: "추가",
   empty: "이 칸은 비어 있어요.",
   /** 화면 제목 옆 건수. 판 위에 제목을 또 세우는 대신 이 자리 하나로 말한다 */

@@ -18,7 +18,7 @@ import { cn } from "@/lib/cn";
 import { formatDateTime } from "@/lib/format";
 import { Sheet } from "@/components/ui/sheet";
 import { TASK_MESSAGES, TASK_STATUS_LABEL } from "@/lib/admin/messages";
-import { TASK_STATUSES, type AdminTask } from "@/lib/admin/tasks";
+import { TASK_STATUSES, type AdminTask, type TaskAssignee } from "@/lib/admin/tasks";
 import { TaskEditForm } from "@/components/admin/task-card/edit-form";
 import { TaskNotes } from "@/components/admin/task-card/notes";
 import { deleteTaskAction, moveTaskAction, type TaskActionState } from "@/app/(admin)/admin/tasks/actions";
@@ -33,7 +33,17 @@ function Part({ title, children }: { title: string; children: React.ReactNode })
   );
 }
 
-export function TaskDialog({ task, open, onOpenChange }: { task: AdminTask; open: boolean; onOpenChange: (v: boolean) => void }) {
+export function TaskDialog({
+  task,
+  assignees,
+  open,
+  onOpenChange,
+}: {
+  task: AdminTask;
+  assignees: TaskAssignee[];
+  open: boolean;
+  onOpenChange: (v: boolean) => void;
+}) {
   const [pending, start] = useTransition();
   const [state, setState] = useState<TaskActionState>(null);
 
@@ -72,7 +82,7 @@ export function TaskDialog({ task, open, onOpenChange }: { task: AdminTask; open
         </Part>
 
         <Part title={TASK_MESSAGES.basics}>
-          <TaskEditForm task={task} />
+          <TaskEditForm task={task} assignees={assignees} />
         </Part>
 
         <Part title={TASK_MESSAGES.notes}>

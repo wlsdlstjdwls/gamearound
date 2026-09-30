@@ -28,6 +28,7 @@ const createSchema = z.object({
   // 빈 문자열은 "안 걸었다" 로 읽는다 — 폼은 빈 칸을 안 보내는 게 아니라 빈 문자열을 보낸다
   gameId: z.union([z.literal(""), z.uuid()]).optional(),
   source: z.union([z.literal(""), z.enum(sourceEnum.enumValues)]).optional(),
+  assigneeId: z.union([z.literal(""), z.uuid()]).optional(),
 });
 
 function fail(e: unknown): TaskActionState {
@@ -48,6 +49,7 @@ export async function createTaskAction(_prev: TaskActionState, form: FormData): 
       priority: form.get("priority") ?? undefined,
       gameId: form.get("gameId") ?? undefined,
       source: form.get("source") ?? undefined,
+      assigneeId: form.get("assigneeId") ?? undefined,
     });
     if (!p.success) return { ok: false, error: p.error.issues[0]?.message ?? TASK_MESSAGES.invalid };
 
@@ -58,6 +60,7 @@ export async function createTaskAction(_prev: TaskActionState, form: FormData): 
       priority: p.data.priority,
       gameId: p.data.gameId || null,
       source: p.data.source || null,
+      assigneeId: p.data.assigneeId || null,
     });
     revalidate();
     return { ok: true, message: TASK_MESSAGES.created };
@@ -105,7 +108,7 @@ export async function deleteTaskAction(id: string): Promise<TaskActionState> {
   }
 }
 
-/** 카드 고치기 — 제목과 메모, 급함만. 칸과 순서는 각자의 액션이 맡는다(자취를 남겨야 해서) */
+/** 카드 고치기 — 제목과 메모, 급함, 게임, 담당자. 칸과 순서는 각자의 액션이 맡는다(자취를 남겨야 해서) */
 export async function updateTaskAction(_prev: TaskActionState, form: FormData): Promise<TaskActionState> {
   try {
     await requireAdmin();
@@ -116,6 +119,7 @@ export async function updateTaskAction(_prev: TaskActionState, form: FormData): 
         body: z.string().trim().max(BODY_MAX).optional(),
         priority: z.enum(["high", "normal", "low"]).default("normal"),
         gameId: z.union([z.literal(""), z.uuid()]).optional(),
+        assigneeId: z.union([z.literal(""), z.uuid()]).optional(),
       })
       .safeParse({
         id: form.get("id"),
@@ -123,6 +127,7 @@ export async function updateTaskAction(_prev: TaskActionState, form: FormData): 
         body: form.get("body") ?? undefined,
         priority: form.get("priority") ?? undefined,
         gameId: form.get("gameId") ?? undefined,
+        assigneeId: form.get("assigneeId") ?? undefined,
       });
     if (!p.success) return { ok: false, error: p.error.issues[0]?.message ?? TASK_MESSAGES.invalid };
 
@@ -132,6 +137,8 @@ export async function updateTaskAction(_prev: TaskActionState, form: FormData): 
       priority: p.data.priority,
       // 폼이 이 칸을 안 보냈으면 건드리지 않는다. 빈 문자열은 "뗐다" 라서 null 로 적는다
       gameId: p.data.gameId === undefined ? undefined : p.data.gameId || null,
+      // 담당자도 같은 규칙이다 — 안 보냈으면 그대로, 빈 문자열이면 뗀다
+      assigneeId: p.data.assigneeId === undefined ? undefined : p.data.assigneeId || null,
     });
     revalidate();
     return { ok: true, message: TASK_MESSAGES.saved };
