@@ -50,9 +50,18 @@ export interface AdminNavCounts {
   shops: number;
   companies: number;
   companiesCapped: boolean;
+  tasksTodo: number;
+  tasksDoing: number;
 }
 
 type Pick = { n: number; capped?: boolean };
+
+/**
+ * 배지 한 개. `tone` 은 뜻이다 — "남음" 은 쌓인 일(호박), "진행" 은 이미 손댄 일(브랜드 보라).
+ * 할 일 칸만 둘을 단다(할 일 칸 건수, 하는 중 칸 건수). 한 숫자로 합치면 "시작도 안 한 일" 과
+ * "하다 만 일" 이 섞여 어느 쪽이 밀렸는지 못 읽는다.
+ */
+type BadgeSpec = { pick: (c: AdminNavCounts) => Pick; tone?: "pending" | "doing" };
 
 type Item = {
   href: string;
@@ -60,6 +69,8 @@ type Item = {
   Icon: ComponentType<{ size?: number }>;
   /** 이 칸에 남은 일 수를 뽑는 함수. 없으면 배지를 달지 않는다(읽기 전용 화면) */
   pick?: (c: AdminNavCounts) => Pick;
+  /** 둘째 배지. 넓은 화면 기둥에만 선다 — 바닥 띠의 그림 귀퉁이에는 하나만 들어간다 */
+  pick2?: BadgeSpec;
   /**
    * 아직 열지 않은 칸. 주면 링크가 아니라 사유를 말하는 판을 여는 버튼이 된다.
    * 화면은 그대로 살아 있어 주소로는 열린다 — 막는 건 이 한 줄뿐이다.
@@ -96,7 +107,13 @@ const GROUPS: Array<{ key: string; title?: string; items: Item[] }> = [
     title: ADMIN_NAV.groupEtc,
     items: [
       { href: ROUTES.shopsAdmin, label: ADMIN_NAV.shops, Icon: StoreIcon, soon: ADMIN_SOON.shops },
-      { href: ROUTES.adminTasks, label: ADMIN_NAV.tasks, Icon: CheckListIcon },
+      {
+        href: ROUTES.adminTasks,
+        label: ADMIN_NAV.tasks,
+        Icon: CheckListIcon,
+        pick: (c) => ({ n: c.tasksTodo }),
+        pick2: { pick: (c) => ({ n: c.tasksDoing }), tone: "doing" },
+      },
     ],
   },
 ];
@@ -114,11 +131,13 @@ function isActive(pathname: string, href: string): boolean {
 function Badge({
   counts,
   pick,
+  tone = "pending",
   active,
   className,
 }: {
   counts: Promise<AdminNavCounts | null>;
   pick: (c: AdminNavCounts) => Pick;
+  tone?: BadgeSpec["tone"];
   active: boolean;
   className?: string;
 }) {
@@ -132,14 +151,14 @@ function Badge({
         "rounded-full px-1.5 py-px text-[11.5px] font-semibold tabular-nums",
         // 고른 칸은 이미 보라 면이다 — 그 위에 주황 배지를 얹으면 색이 둘 다 소리친다.
         // 같은 면 안에서 한 겹 밝은 자리로만 말한다
-        active ? "bg-on-ink/20 text-on-ink" : "bg-warn-soft text-warn",
+        active ? "bg-on-ink/20 text-on-ink" : tone === "doing" ? "bg-acc-soft text-acc" : "bg-warn-soft text-warn",
         className,
       )}
     >
       {n}
       {capped ? "+" : ""}
       {/* 숫자만 있으면 남은 일인지 처리한 일인지 모른다 — 읽는 기계에는 뜻을 붙여 준다 */}
-      <span className="sr-only"> {ADMIN_NAV.badgeSuffix}</span>
+      <span className="sr-only"> {tone === "doing" ? ADMIN_NAV.badgeDoingSuffix : ADMIN_NAV.badgeSuffix}</span>
     </span>
   );
 }
@@ -167,6 +186,19 @@ function ItemBody({
         // 숫자가 늦어도 메뉴는 이미 눌리는 상태여야 한다 — 그래서 배지만 따로 기다린다
         <Suspense fallback={null}>
           <Badge counts={counts} pick={item.pick} active={active} className={badgeClassName} />
+        </Suspense>
+      )}
+      {item.pick2 && (
+        // 첫 배지가 ml-auto 로 오른쪽 끝에 붙고 둘째는 그 곁에 선다. 첫 배지가 0 이라 안 그려지면
+        // 둘째가 첫 span 이 되어 ml-auto 를 그대로 쥔다
+        <Suspense fallback={null}>
+          <Badge
+            counts={counts}
+            pick={item.pick2.pick}
+            tone={item.pick2.tone}
+            active={active}
+            className={cn(badgeClassName, "[&:not(:first-of-type)]:ml-0")}
+          />
         </Suspense>
       )}
       {/* 아직 열지 않은 칸은 그렇게 보여야 한다 — 눌러 보고 알게 하면 매번 같은 실망을 한다 */}
