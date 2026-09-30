@@ -26,7 +26,8 @@ import { InfoTip } from "@/components/ui/tooltip";
 import { Flag } from "@/components/ui/flag";
 import { cn } from "@/lib/cn";
 import { buttonClass } from "@/components/ui/button";
-import { Page, SectionHead } from "@/components/ui/page";
+import { Page, SectionHead, sectionCardClass } from "@/components/ui/page";
+import { DiscountText } from "@/components/ui/discount";
 import { SellersSection } from "@/components/shops/sellers-section";
 import { listSellersForGame } from "@/server/services/listings";
 import { SELLING_MESSAGES } from "@/lib/shops/listing-messages";
@@ -132,7 +133,14 @@ function PriceHeadline({ game, recordedLow }: { game: GameDetail; recordedLow: R
         {["지금 최저가", best ? PLATFORM_LABEL[best.platform] ?? best.platform : null].filter(Boolean).join(" | ")}
       </p>
       <p className="flex flex-wrap items-baseline gap-x-2.5 gap-y-1">
-        <span className="text-[34px] font-extrabold leading-none tracking-[-0.045em] text-ink sm:text-[44px]">
+        {/* 할인율은 값 **앞** 같은 줄에 보라 숫자로 선다 — 목록 카드(DiscountStamp)와 같은 문법이라
+            카드에서 본 "-40% ₩38,880" 이 상세에서도 같은 모양으로 이어진다(2026-09-30) */}
+        {hasDiscount && best?.discountPct && (
+          <span className="text-[30px] font-extrabold leading-none tracking-[-0.04em] text-acc sm:text-[38px]">
+            <DiscountText pct={best.discountPct} />
+          </span>
+        )}
+        <span className="text-[30px] font-extrabold leading-none tracking-[-0.04em] text-ink sm:text-[38px]">
           {best ? formatPrice(best.currentPrice, best.currency) : "-"}
         </span>
         {hasDiscount && best?.listPrice != null && (
@@ -220,7 +228,7 @@ async function SellersSlot({ gameId }: { gameId: string }) {
   // 파는 곳이 없으면 칸을 아예 안 그린다 — 근거는 SellersSection 머리 주석
   if (sellers.length === 0) return null;
   return (
-    <section aria-labelledby="sellers-heading" className="flex flex-col gap-3">
+    <section aria-labelledby="sellers-heading" className={sectionCardClass("flex flex-col gap-3")}>
       <SectionHead id="sellers-heading" title={SELLING_MESSAGES.title} note={SELLING_MESSAGES.lead} />
       <SellersSection sellers={sellers} />
     </section>
@@ -377,7 +385,7 @@ export default async function GameDetailPage({ params }: Props) {
           <div className="enter-item flex flex-col gap-2.5 pt-2.5" style={stagger(1)}>
             {/* 자식(DLC, 에디션)일 때만 선다 - 본편 화면에서는 아무것도 그리지 않는다 */}
             <ContentKindHead contentType={game.contentType} parent={game.parent} />
-            <h1 className="text-[30px] font-extrabold leading-[1.1] tracking-[-0.045em] text-ink sm:text-[40px] sm:leading-[1.08]">{title}</h1>
+            <h1 className="text-[26px] font-extrabold leading-[1.15] tracking-[-0.035em] text-ink sm:text-[32px] sm:leading-[1.12]">{title}</h1>
             {/* 장르를 이 줄에서 뺐다(2026-09-21). 전에는 "2020년 3월 12일 (목) 출시 | 스포츠, 액션, 캐주얼" 이
                 한 줄이었는데, 파이프 왼쪽은 이 게임의 사실(언제 나왔나)이고 오른쪽은 분류(어떤 갈래인가)라
                 성질이 다르다. 게다가 장르가 넷을 넘으면 줄이 접히면서 출시일이 장르 사이에 낀 것처럼 읽혔다.
@@ -433,7 +441,14 @@ export default async function GameDetailPage({ params }: Props) {
         {/* lg 아래에서는 붙이지 않는다 — 한 기둥으로 접히면 따라올 대상이 자기 자신뿐이다.
             sticky 인 기둥에 넣을 것을 고르는 기준은 "사는 결정에 직접 쓰이나" 다 —
             값, 알림 버튼, 점수, 그리고 플레이타임까지 넷이 여기 산다. */}
-        <div className="enter-item row-start-2 flex min-w-0 flex-col gap-5 lg:sticky lg:top-[80px] lg:col-start-2 lg:row-span-2 lg:row-start-1" style={stagger(4)}>
+        {/* 결론 기둥은 흰 판 한 장이다(2026-09-30, sectionCardClass) — 회색 바탕 위에서 "여기가 사는 자리" 로 떠야 한다.
+            커머스 상세의 구매 박스와 같은 자리, 같은 역할이다 */}
+        <div
+          className={sectionCardClass(
+            "enter-item row-start-2 flex min-w-0 flex-col gap-5 lg:sticky lg:top-[80px] lg:col-start-2 lg:row-span-2 lg:row-start-1",
+          )}
+          style={stagger(4)}
+        >
           <PriceHeadline game={game} recordedLow={recordedLow} />
 
           {/* 찜 버튼은 숨겼다(2026-09-21, 사용자 결정) — WishlistSlot 과 그 폴백은 그대로 둔다.
@@ -521,7 +536,7 @@ export default async function GameDetailPage({ params }: Props) {
         자식 컴포넌트가 min-w-0, flex-1 을 아무리 붙여도 그 값은 칸까지 올라온다.
         긴 DLC 제목 하나가 상세 본문 전체를 520px 로 밀어 화면 밖으로 내보냈다(390px 기기, ea-sports-fc-26).
       */}
-      <section aria-labelledby="platforms-heading" className="enter-item flex min-w-0 flex-col gap-3.5" style={stagger(5)}>
+      <section aria-labelledby="platforms-heading" className={sectionCardClass("enter-item flex min-w-0 flex-col gap-3.5")} style={stagger(5)}>
         <SectionHead
           id="platforms-heading"
           title="플랫폼 정보"
@@ -553,7 +568,9 @@ export default async function GameDetailPage({ params }: Props) {
           플랫폼을 고르기 전에 견줘야 한다. 추가 콘텐츠는 이미 산 사람이 기기를 정한 뒤 보는 값이라
           그 기기의 줄 안에서 연다. */}
       {game.editions.length > 0 && (
-        <DlcSection id="edition-heading" title={GAME_MESSAGES.editionHeading} dlcs={game.editions} hasAddOns={false} />
+        <div className={sectionCardClass("min-w-0")}>
+          <DlcSection id="edition-heading" title={GAME_MESSAGES.editionHeading} dlcs={game.editions} hasAddOns={false} />
+        </div>
       )}
 
       {/* 사양은 가격, 추가 콘텐츠 다음이다 — 살지 말지를 정한 뒤에 오는 질문이라서다.
@@ -574,6 +591,7 @@ export default async function GameDetailPage({ params }: Props) {
           "돌아가나" 는 콘솔로 살 사람에겐 아예 묻지 않는 질문이라, 묻는 사람만 열게 한다.
           제목 줄에 어느 OS 사양이 있는지(requirementNote)를 적어 두는 것은 그래서다. */}
       {game.requirements.length > 0 && (
+        <div className={sectionCardClass("min-w-0")}>
         <RunCheck
           verdictTitle={COMPAT_MESSAGES.heading}
           // 접힌 채로도 답이 보여야 한다 — 이 자리에 서는 것은 "충족인가 미달인가" 한 마디다(devices/verdict-note).
@@ -595,14 +613,16 @@ export default async function GameDetailPage({ params }: Props) {
           requirements={<RequirementsBody groups={game.requirements} />}
           defaultOpen={false}
         />
+        </div>
       )}
 
       <Suspense fallback={null}>
         <SellersSlot gameId={game.id} />
       </Suspense>
 
-      <div className="grid items-start gap-x-12 gap-y-10 lg:grid-cols-[repeat(auto-fit,minmax(min(340px,100%),1fr))]">
-        <div className="flex min-w-0 flex-col gap-6">
+      <div className="grid items-start gap-x-6 gap-y-6 lg:grid-cols-[repeat(auto-fit,minmax(min(340px,100%),1fr))]">
+        {(patchGroups.length > 0 || game.sourceRefs.length > 0) && (
+        <div className={sectionCardClass("flex min-w-0 flex-col gap-6")}>
           {patchGroups.length > 0 && (
             <section aria-labelledby="patches-heading" className="flex flex-col gap-3.5">
               {/* 목록은 시트 안에 둔다 — 상세에서 자리를 가장 많이 먹던 블록인데,
@@ -651,8 +671,9 @@ export default async function GameDetailPage({ params }: Props) {
             </section>
           )}
         </div>
+        )}
 
-        <section aria-labelledby="news-heading" className="flex min-w-0 flex-col gap-3.5">
+        <section aria-labelledby="news-heading" className={sectionCardClass("flex min-w-0 flex-col gap-3.5")}>
           <SectionHead id="news-heading" title="관련 뉴스" />
           <NewsList items={game.news} />
         </section>

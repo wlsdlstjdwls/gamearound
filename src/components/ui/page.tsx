@@ -95,6 +95,16 @@ export function panelClass(className?: string): string {
   return cn("rounded-[var(--radius-panel)] bg-surface-2 shadow-hair", className);
 }
 
+/**
+ * 마디 카드 — 회색 바탕 위에 흰 판 한 겹(2026-09-30, 상세 화면을 커머스 정보형으로).
+ * Panel(회청 면)과 다른 점: 이건 "위에 얹힌 한 덩어리" 이고 Panel 은 "판 안의 움푹한 칸" 이다.
+ * .card-panel(목록 카드)을 쓰지 않는 이유 — 그건 hover 에서 떠오른다. 마디는 누르는 것이 아니다.
+ * 판 안에 또 판을 넣지 않는다 — 안쪽 구분은 헤어라인(.rows)과 Panel 이 맡는다.
+ */
+export function sectionCardClass(className?: string): string {
+  return cn("rounded-[var(--radius-panel)] bg-surface p-4 shadow-[var(--elev-card)] sm:p-6", className);
+}
+
 export function Panel({ className, children, ...rest }: React.ComponentProps<"div">) {
   return (
     <div className={panelClass(className)} {...rest}>
