@@ -92,6 +92,9 @@
   /* 2026-09-30(사용자: "최소 사양 미충족 색상이 너무 어두워") #c8402a -> #e03131. 회청 바탕으로 옮긴 뒤
      벽돌기가 남은 빨강이 회색 면 위에서 탁하게 가라앉았다. 흰 판 4.51:1 — 본문 기준을 지키는 가장 밝은 빨강이다 */
   --verdict-bad: #e03131;
+  /* --verdict-bad 면 위 글자(사양 미충족 배지). --on-ink(#f9fafb)는 이 빨강 위에서 4.32:1 로 모자라 순백을 쓴다(4.51:1).
+     다크는 면이 밝은 빨강이라 반대로 먹색이다 — 그래서 흰색을 컴포넌트에 박지 않고 토큰으로 둔다 */
+  --on-verdict: #ffffff;
   --on-ink: #f9fafb; /* 잉크 배경 위 텍스트 */
   /* 시트, 팝업 뒤를 덮는 막. 검정이 아니라 먹색을 깔아 오프화이트, 커버 이미지와 온도를 맞춘다 */
   --overlay: rgba(25, 31, 40, 0.42);
@@ -246,6 +249,7 @@
     --warn-soft: #33270f;
     --price-bad: #f0705a;
     --verdict-bad: #ff6b6b;
+    --on-verdict: #0f1115;
     --on-ink: #0f1115;
     --overlay: rgba(0, 0, 0, 0.62);
 
@@ -302,6 +306,7 @@
   --warn-soft: #33270f;
   --price-bad: #f0705a;
   --verdict-bad: #ff6b6b;
+  --on-verdict: #0f1115;
   --on-ink: #0f1115;
   --overlay: rgba(0, 0, 0, 0.62);
 
@@ -355,6 +360,7 @@
   --color-warn-soft: var(--warn-soft);
   --color-price-bad: var(--price-bad);
   --color-verdict-bad: var(--verdict-bad);
+  --color-on-verdict: var(--on-verdict);
   --color-on-ink: var(--on-ink);
 
   --color-store-steam: var(--store-steam);

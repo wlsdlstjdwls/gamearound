@@ -36,14 +36,18 @@ export function verdictForDevice(
 }
 
 /**
- * 판정 한 마디의 차림. 미충족은 **중립 면 + 빨간 글자**다(2026-09-22, compat-section 과 같은 규칙) —
- * 빨간 면 위 빨간 글자를 걷어낸 자리이고, 두 자리가 같은 차림이어야 접었다 폈을 때 색이 안 바뀐다.
- * 모르는 것에는 색을 주지 않는다.
+ * 판정 한 마디의 차림. 모르는 것에는 색을 주지 않는다.
+ *
+ * 미충족은 **꽉 찬 밝은 빨강 + 흰 글자**다(2026-09-30, 사용자: "최소 사양 미충족 뱃지 색상이 어두워").
+ * 전에는 중립 면(--surface-3) + --danger 글자였는데, 회색 면 위 벽돌색 글자가 11px 에서 탁하게 가라앉았다.
+ * 09-22 에 걷은 "빨간 면 위 빨간 글자" 로 돌아간 것이 아니다 — 면과 글자가 반대편이라 겹치지 않는다.
+ * 글자는 --on-verdict 다(라이트 순백 4.51:1, 다크 먹색) — 흰색을 박으면 다크의 밝은 빨강 위에서 대비가 무너지고,
+ * --on-ink(#f9fafb)는 라이트에서 4.32:1 로 본문 기준에 모자란다.
  */
 const TONE: Record<OverallVerdict, string> = {
   meets_recommended: "bg-ok-soft text-ok",
   meets_minimum: "bg-ok-soft text-ok",
-  below_minimum: "bg-surface-3 text-danger",
+  below_minimum: "bg-verdict-bad text-on-verdict",
   unknown: "bg-surface-2 text-mut",
 };
 
