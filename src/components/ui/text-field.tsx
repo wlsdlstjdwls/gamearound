@@ -12,10 +12,12 @@ export type TextFieldProps = Omit<ComponentProps<"input">, "size"> & {
   hint?: ReactNode;
   error?: string | null;
   trailing?: ReactNode;
+  /** 칸 바로 밑에 뜨는 판(제안 목록, components/ui/suggest). 칸 상자를 기준으로 선다 */
+  popup?: ReactNode;
   wrapperClassName?: string;
 };
 
-export function TextField({ label, hideLabel, hint, error, trailing, wrapperClassName, className, id: idProp, ...input }: TextFieldProps) {
+export function TextField({ label, hideLabel, hint, error, trailing, popup, wrapperClassName, className, id: idProp, ...input }: TextFieldProps) {
   const autoId = useId();
   const id = idProp ?? autoId;
   const hintId = `${id}-hint`;
@@ -38,7 +40,7 @@ export function TextField({ label, hideLabel, hint, error, trailing, wrapperClas
           // 테두리를 실제 border 가 아니라 안쪽 그림자로 두는 이유(2026-09-21 리디자인):
           // 입력칸이 채운 판(--surface-2) 위에 서는 자리라 흰 면이 곧 "쓸 수 있는 칸" 이고,
           // 거기에 1px 선까지 더하면 판 안의 판이 된다. 선은 포커스와 오류에서만 말한다
-          "flex items-center rounded-xl bg-surface transition-[box-shadow] duration-base ease-standard",
+          "relative flex items-center rounded-xl bg-surface transition-[box-shadow] duration-base ease-standard",
           "shadow-[0_0_0_1px_var(--line)] focus-within:shadow-[0_0_0_1px_var(--acc),0_0_0_4px_var(--acc-glow)]",
           invalid && "animate-shake shadow-[0_0_0_1px_var(--danger)] focus-within:shadow-[0_0_0_1px_var(--danger)]",
         )}
@@ -59,6 +61,7 @@ export function TextField({ label, hideLabel, hint, error, trailing, wrapperClas
           {...input}
         />
         {trailing && <div className="flex shrink-0 items-center pr-1.5">{trailing}</div>}
+        {popup}
       </div>
       {invalid ? (
         <p id={errorId} role="alert" className="mt-1.5 flex items-start gap-1 text-xs text-danger animate-rise">

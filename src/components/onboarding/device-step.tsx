@@ -7,13 +7,14 @@
 // 감지값은 비회원 폼과 같은 규칙으로 채운다: 사람이 고른 값만 상태로 두고, 안 고른 칸은 감지가 채운다.
 // 사파리처럼 그래픽을 뭉개는 브라우저에서는 칸을 비워 두고 넘어간다 — 온보딩에서 부품 고르기로 붙잡지 않는다.
 import { useMemo, useState } from "react";
+import { usePartSuggest } from "@/components/devices/use-part-suggest";
 import { chipClass } from "@/components/ui/chip";
 import { Panel } from "@/components/ui/page";
 import { useDetectedSpec } from "@/components/devices/use-detected-spec";
 import { FIELD_CLASS, HINT_CLASS, LABEL_CLASS } from "@/components/devices/field-style";
 import { DEVICE_MESSAGES, OS_FAMILY_LABEL } from "@/lib/games/messages";
 import { listModels } from "@/lib/hardware";
-import { PART_SUGGEST_LIMIT, RAM_QUICK_GB } from "@/lib/hardware/constants";
+import { RAM_QUICK_GB } from "@/lib/hardware/constants";
 import { ONBOARDING_MESSAGES } from "@/lib/onboarding/messages";
 import type { OsFamily } from "@/server/db/schema";
 
@@ -24,6 +25,7 @@ export function DeviceStepFields() {
   const detected = useDetectedSpec();
   const [osPick, setOsPick] = useState<OsFamily | null>(null);
   const [gpuPick, setGpuPick] = useState<string | null>(null);
+  const [cpu, setCpu] = useState("");
   const [ram, setRam] = useState("");
 
   const os = osPick ?? detected?.osFamily ?? "windows";
@@ -31,8 +33,11 @@ export function DeviceStepFields() {
   // 서버 그림(detected === null)에서는 아무 말도 하지 않는다 — "못 읽었다" 와 "아직 안 읽었다" 는 다르다
   const autoNote = detected === null ? null : detected.gpuName ? DEVICE_MESSAGES.autoFilled : DEVICE_MESSAGES.autoFailed;
 
-  const cpuOptions = useMemo(() => listModels("cpu").slice(0, PART_SUGGEST_LIMIT), []);
-  const gpuOptions = useMemo(() => listModels("gpu").slice(0, PART_SUGGEST_LIMIT), []);
+  // 사전 전체를 넘긴다 — 몇 줄을 띄울지는 친 글자로 거른 뒤에 정한다(usePartSuggest)
+  const cpuOptions = useMemo(() => listModels("cpu"), []);
+  const gpuOptions = useMemo(() => listModels("gpu"), []);
+  const gpuSuggest = usePartSuggest("onboarding-gpu", gpuOptions, gpu, setGpuPick);
+  const cpuSuggest = usePartSuggest("onboarding-cpu", cpuOptions, cpu, setCpu);
 
   return (
     <Panel className="flex flex-col gap-4 p-4">
@@ -56,21 +61,10 @@ export function DeviceStepFields() {
         <label className={LABEL_CLASS} htmlFor="onboarding-gpu">
           {M.gpu}
         </label>
-        <input
-          id="onboarding-gpu"
-          name="gpuText"
-          value={gpu}
-          onChange={(e) => setGpuPick(e.target.value)}
-          list="onboarding-gpu-models"
-          placeholder="GeForce GTX 1060"
-          aria-describedby="onboarding-gpu-hint"
-          className={FIELD_CLASS}
-        />
-        <datalist id="onboarding-gpu-models">
-          {gpuOptions.map((m) => (
-            <option key={m.key} value={m.name} />
-          ))}
-        </datalist>
+        <div className="relative">
+          <input name="gpuText" {...gpuSuggest.inputProps} placeholder="GeForce GTX 1060" aria-describedby="onboarding-gpu-hint" className={FIELD_CLASS} />
+          {gpuSuggest.popup}
+        </div>
         <p id="onboarding-gpu-hint" className={HINT_CLASS}>
           {DEVICE_MESSAGES.gpuHint}
         </p>
@@ -80,19 +74,10 @@ export function DeviceStepFields() {
         <label className={LABEL_CLASS} htmlFor="onboarding-cpu">
           {M.cpu}
         </label>
-        <input
-          id="onboarding-cpu"
-          name="cpuText"
-          list="onboarding-cpu-models"
-          placeholder="Core i5 8400"
-          aria-describedby="onboarding-cpu-hint"
-          className={FIELD_CLASS}
-        />
-        <datalist id="onboarding-cpu-models">
-          {cpuOptions.map((m) => (
-            <option key={m.key} value={m.name} />
-          ))}
-        </datalist>
+        <div className="relative">
+          <input name="cpuText" {...cpuSuggest.inputProps} placeholder="Core i5 8400" aria-describedby="onboarding-cpu-hint" className={FIELD_CLASS} />
+          {cpuSuggest.popup}
+        </div>
         <p id="onboarding-cpu-hint" className={HINT_CLASS}>
           {DEVICE_MESSAGES.cpuHint}
         </p>

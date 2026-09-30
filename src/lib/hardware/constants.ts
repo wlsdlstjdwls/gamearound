@@ -24,16 +24,14 @@ export const WEBGL_NOISE_WORDS = [
 export const SOFTWARE_RENDERER_WORDS = ["SwiftShader", "llvmpipe", "softpipe", "Microsoft Basic Render"] as const;
 
 /**
- * 폼의 제안 목록에 내려보낼 부품 수(빠른 것부터).
+ * 부품 칸 제안 목록에 한 번에 보이는 줄 수(components/ui/suggest).
  *
- * 사전 전체(300개가 넘는다)를 목록으로 펴지 않는 이유는 화면 무게다. 제안이 없어도 입력은 되고
- * (자유 입력이라 매칭기가 알아본다) 옛 부품을 쓰는 사람은 이름을 정확히 아는 편이다 —
- * 제안이 필요한 쪽은 요즘 부품을 고르는 사람이다.
- *
- * 설정 화면과 상세의 간이 폼이 같은 수를 쓴다(2026-09-22). 두 자리의 제안 목록 길이가 다르면
- * 같은 부품을 한쪽에서만 고를 수 있게 된다.
+ * 예전에는 datalist 에 내려보낼 부품 수(80)였다 — 브라우저가 거르게 두려고 사전의 앞부분을 통째로 줬다.
+ * 지금은 친 글자로 **사전 전체**(부품 300여 개)에서 거르고(lib/hardware/suggest) 그 앞 몇 줄만 띄운다.
+ * 여덟인 이유: 44px 줄 여덟이 모바일에서 자판 위에 남는 높이와 맞는다. 더 보고 싶으면 한 글자 더 치는 편이 빠르다.
+ * 설정, 온보딩, 상세 간이 폼이 같은 수를 쓴다.
  */
-export const PART_SUGGEST_LIMIT = 80;
+export const PART_SUGGEST_LIMIT = 8;
 
 /**
  * 메모리 빠른 선택(GB). 숫자를 손으로 치는 대신 누르게 한다 — 이 칸은 사람이 이미 아는 값이고

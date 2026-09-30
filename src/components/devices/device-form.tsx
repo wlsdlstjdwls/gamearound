@@ -4,12 +4,14 @@
 // 부품을 드롭다운이 아니라 **자유 입력 + 제안 목록**으로 받는 이유: 사전이 300개가 넘어
 // 고르는 목록이 스크롤 벽이 되고, 사람은 자기 부품을 정식 이름으로 기억하지 않는다("1060").
 // 적은 대로 받아 우리 매칭기가 알아본다 — 사양 문구를 알아보는 그 매칭기와 같은 것이다.
-import { useActionState, useState } from "react";
+import { useActionState, useId, useState } from "react";
 import { ActionForm, useActionFormPending } from "@/components/ui/action-form";
 import { saveDeviceAction, type ActionState } from "@/app/(user)/settings/devices/actions";
 import { Button } from "@/components/ui/button";
 import { DetectButton } from "./detect-button";
+import { usePartSuggest } from "./use-part-suggest";
 import { Checkbox } from "@/components/ui/checkbox";
+import { chipClass } from "@/components/ui/chip";
 import { TextField } from "@/components/ui/text-field";
 import { DEVICE_LABEL_MAX, mbToGb } from "@/lib/hardware/device-schemas";
 import { DEVICE_MESSAGES, OS_FAMILY_LABEL } from "@/lib/games/messages";
@@ -49,6 +51,11 @@ export function DeviceForm({
   const [os, setOs] = useState<OsFamily>(device?.osFamily ?? "windows");
   // 감지가 채울 칸만 controlled 로 둔다. 나머지를 다 옮기면 폼이 상태 덩어리가 되고 얻는 것이 없다
   const [gpu, setGpu] = useState(device?.gpuName ?? "");
+  // 부품 칸은 제안 목록이 값을 알아야 해서 프로세서도 controlled 다. id 는 폼이 한 화면에 둘(고치기, 더하기) 설 수 있어 useId
+  const [cpu, setCpu] = useState(device?.cpuName ?? "");
+  const uid = useId();
+  const cpuSuggest = usePartSuggest(`${uid}-cpu`, cpuOptions, cpu, setCpu);
+  const gpuSuggest = usePartSuggest(`${uid}-gpu`, gpuOptions, gpu, setGpu);
 
   return (
     <ActionForm action={formAction} state={state} pending={submitting} className="flex flex-col gap-4">
@@ -74,9 +81,8 @@ export function DeviceForm({
               type="button"
               onClick={() => setOs(value)}
               aria-pressed={os === value}
-              className={`press inline-flex min-h-[44px] items-center rounded-full border px-4 text-[13px] transition-colors ${
-                os === value ? "border-ink bg-ink text-bg" : "border-line-strong text-ink-2 hover:border-ink"
-              }`}
+              // 온보딩, 상세 간이 폼과 같은 칩이다 — 여기만 검정 알약이라 같은 질문이 화면마다 달라 보였다(2026-09-30)
+              className={chipClass({ active: os === value, size: "lg", outline: true })}
             >
               {OS_FAMILY_LABEL[value]}
             </button>
@@ -92,34 +98,9 @@ export function DeviceForm({
         }}
       />
 
-      <TextField
-        label="프로세서"
-        name="cpuText"
-        defaultValue={device?.cpuName ?? ""}
-        list="cpu-models"
-        placeholder="Core i5 8400"
-        hint={DEVICE_MESSAGES.partHint}
-      />
-      <datalist id="cpu-models">
-        {cpuOptions.map((m) => (
-          <option key={m.key} value={m.name} />
-        ))}
-      </datalist>
+      <TextField label="프로세서" name="cpuText" {...cpuSuggest.inputProps} popup={cpuSuggest.popup} placeholder="Core i5 8400" hint={DEVICE_MESSAGES.partHint} />
 
-      <TextField
-        label="그래픽"
-        name="gpuText"
-        value={gpu}
-        onChange={(e) => setGpu(e.target.value)}
-        list="gpu-models"
-        placeholder="GeForce GTX 1060"
-        hint={DEVICE_MESSAGES.partHint}
-      />
-      <datalist id="gpu-models">
-        {gpuOptions.map((m) => (
-          <option key={m.key} value={m.name} />
-        ))}
-      </datalist>
+      <TextField label="그래픽" name="gpuText" {...gpuSuggest.inputProps} popup={gpuSuggest.popup} placeholder="GeForce GTX 1060" hint={DEVICE_MESSAGES.partHint} />
 
       <div className="grid grid-cols-2 gap-3">
         <TextField label="메모리 (GB)" name="ramGb" type="number" inputMode="numeric" min={1} step={1} defaultValue={mbToGb(device?.ramMb ?? null) ?? ""} placeholder="16" />

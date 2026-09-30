@@ -8,7 +8,7 @@
 // **2026-09-22 — 적는 수고를 줄였다(사용자 요청).** 브라우저가 스스로 아는 것은 그래픽과 OS 둘뿐이고
 // (CPU 와 메모리는 브라우저가 아예 모르거나 8GB 에서 잘린다 — lib/hardware/detect 주석)
 // 그 둘은 **버튼을 누르지 않아도 처음에 자동으로 채운다.** 사람이 할 일은 남은 둘이고,
-// 그것도 자판을 덜 쓰게 했다: 부품은 사전 제안 목록(datalist), 메모리는 빠른 선택 칩.
+// 그것도 자판을 덜 쓰게 했다: 부품은 사전 제안 목록(usePartSuggest), 메모리는 빠른 선택 칩.
 //
 // **2026-09-22 2차 — 차림을 화면과 맞췄다(사용자: "UI나 색상도 구려서 못쓸 정도").**
 // 고친 것 셋이다.
@@ -28,7 +28,8 @@ import { Panel } from "@/components/ui/page";
 import { DetectButton } from "./detect-button";
 import { COMPAT_MESSAGES, DEVICE_MESSAGES, OS_FAMILY_LABEL } from "@/lib/games/messages";
 import { findModel, listModels, modelByKey } from "@/lib/hardware";
-import { PART_SUGGEST_LIMIT, RAM_QUICK_GB } from "@/lib/hardware/constants";
+import { RAM_QUICK_GB } from "@/lib/hardware/constants";
+import { usePartSuggest } from "./use-part-suggest";
 import { useDetectedSpec } from "./use-detected-spec";
 import { ROUTES } from "@/lib/routes";
 import type { OsFamily } from "@/server/db/schema";
@@ -68,8 +69,10 @@ export function GuestDeviceForm({
   const autoNote = auto === null ? null : auto.gpuName ? DEVICE_MESSAGES.autoFilled : DEVICE_MESSAGES.autoFailed;
 
   // 사전은 이미 이 번들 안에 있다(findModel 이 쓴다) — 제안 목록은 그 표를 그대로 편 것뿐이라 공짜다
-  const cpuOptions = useMemo(() => listModels("cpu").slice(0, PART_SUGGEST_LIMIT), []);
-  const gpuOptions = useMemo(() => listModels("gpu").slice(0, PART_SUGGEST_LIMIT), []);
+  const cpuOptions = useMemo(() => listModels("cpu"), []);
+  const gpuOptions = useMemo(() => listModels("gpu"), []);
+  const cpuSuggest = usePartSuggest("guest-cpu", cpuOptions, cpu, setCpu);
+  const gpuSuggest = usePartSuggest("guest-gpu", gpuOptions, gpu, setGpuPick);
 
   function save() {
     const ramGb = Number(ram);
@@ -114,20 +117,11 @@ export function GuestDeviceForm({
           <label className={LABEL_CLASS} htmlFor="guest-cpu">
             프로세서
           </label>
-          {/* 제안 목록(datalist)은 계정 폼과 같은 사전, 같은 길이다(PART_SUGGEST_LIMIT) */}
-          <input
-            id="guest-cpu"
-            value={cpu}
-            onChange={(e) => setCpu(e.target.value)}
-            list="guest-cpu-models"
-            placeholder="Core i5 8400"
-            className={FIELD_CLASS}
-          />
-          <datalist id="guest-cpu-models">
-            {cpuOptions.map((m) => (
-              <option key={m.key} value={m.name} />
-            ))}
-          </datalist>
+          {/* 제안 목록은 계정 폼과 같은 사전, 같은 줄 수다(usePartSuggest) */}
+          <div className="relative">
+            <input {...cpuSuggest.inputProps} placeholder="Core i5 8400" className={FIELD_CLASS} />
+            {cpuSuggest.popup}
+          </div>
           <p className={HINT_CLASS}>{DEVICE_MESSAGES.cpuHint}</p>
         </div>
 
@@ -135,19 +129,10 @@ export function GuestDeviceForm({
           <label className={LABEL_CLASS} htmlFor="guest-gpu">
             그래픽
           </label>
-          <input
-            id="guest-gpu"
-            value={gpu}
-            onChange={(e) => setGpuPick(e.target.value)}
-            list="guest-gpu-models"
-            placeholder="GeForce GTX 1060"
-            className={FIELD_CLASS}
-          />
-          <datalist id="guest-gpu-models">
-            {gpuOptions.map((m) => (
-              <option key={m.key} value={m.name} />
-            ))}
-          </datalist>
+          <div className="relative">
+            <input {...gpuSuggest.inputProps} placeholder="GeForce GTX 1060" className={FIELD_CLASS} />
+            {gpuSuggest.popup}
+          </div>
           {/* 브라우저가 읽은 값이 게임용 그래픽이 아닐 수 있다는 사실은 이 칸 옆에서만 뜻이 있다 */}
           <p className={HINT_CLASS}>{DEVICE_MESSAGES.gpuHint}</p>
         </div>

@@ -6,7 +6,6 @@ import { DeviceList } from "@/components/devices/device-list";
 import { Page, PageHead } from "@/components/ui/page";
 import { DEVICE_MESSAGES } from "@/lib/games/messages";
 import { listModels, modelByKey } from "@/lib/hardware";
-import { PART_SUGGEST_LIMIT } from "@/lib/hardware/constants";
 import { requireUserOrRedirect } from "@/server/auth/guards";
 import { listMyDevices } from "@/server/services/devices";
 
@@ -28,8 +27,8 @@ export default async function DevicesPage() {
       <PageHead title={DEVICE_MESSAGES.heading} note={DEVICE_MESSAGES.lead} />
       <DeviceList
         devices={withNames}
-        cpuOptions={listModels("cpu").slice(0, PART_SUGGEST_LIMIT).map((m) => ({ key: m.key, name: m.name }))}
-        gpuOptions={listModels("gpu").slice(0, PART_SUGGEST_LIMIT).map((m) => ({ key: m.key, name: m.name }))}
+        cpuOptions={listModels("cpu").map((m) => ({ key: m.key, name: m.name }))}
+        gpuOptions={listModels("gpu").map((m) => ({ key: m.key, name: m.name }))}
       />
     </Page>
   );
