@@ -447,12 +447,6 @@
   from { width: 0; }
   to { width: var(--bar-w, 0%); }
 }
-/* 마감 임박 표시등 — 숫자 옆의 작은 점이 천천히 숨 쉰다.
-   크기나 위치가 아니라 투명도만 건드린다: 레이아웃을 밀지 않고, 시선만 끌어야 하는 자리다. */
-@keyframes pulse-dot {
-  0%, 100% { opacity: 1; }
-  50% { opacity: 0.35; }
-}
 /* 할인 배지 — 커버 오른쪽 위에 앉는다.
    기울인 "도장" 이었다가 2026-09-22 에 똑바른 배지로 돌아왔다(아래 .stamp 주석 참조).
    그래서 회전이 빠졌다 — 크게 들어와 제자리보다 살짝 작아졌다가 앉는 것만 남는다. */
@@ -722,11 +716,6 @@ body.dragging-card {
 .page-enter .enter-late {
   animation: settle var(--duration-base) var(--ease-standard) both;
   animation-delay: var(--stagger, 0ms);
-}
-
-/* 마감 임박 표시등. 값이 0 이면 붙이지 않는다 — 알릴 게 없는데 깜빡이면 소음이다 */
-.pulse-dot {
-  animation: pulse-dot 2.4s var(--ease-standard) infinite;
 }
 
 /* 할인 스탬프. 순번은 style={stagger(i)} 로 넘긴다 —

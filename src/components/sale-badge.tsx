@@ -7,26 +7,26 @@
 // 같은 줄의 할인율이 이미 브랜드색이다. 둘을 같은 색으로 묶어야 한 가지 사실로 읽힌다.
 // 빨강은 여기 쓰지 않는다 — 이 화면에서 빨강은 "마감 임박" 한 뜻만 갖는다(아래 danger).
 //
-// 남은 기간은 **알약**이다(2026-09-30, 사용자: "16시간 남음, 2일 남음 색상이 별로야").
-// 앞서는 맨 글자였다 — 임박은 벽돌색 굵은 글자, 아니면 회색 글자에 괄호. 벽돌색은 회청 바탕에서 갈색으로 읽혔고,
-// 회색 괄호는 출시일 같은 메타와 무게가 같아 "시간이 간다" 는 말로 안 읽혔다. 이제 둘 다 면을 갖는다:
-// 임박은 옅은 빨강 면 + 진한 빨강 글자 + 같은 색 테두리, 아니면 중립 면 + 짙은 글자.
-// 면을 꽉 찬 빨강으로 칠하지 않는 이유 — 카드마다 선 자리라 스무 장이 한 화면에 빨간 딱지로 깔린다.
+// 남은 기간은 **시계 + 글자**다. 면도 테두리도 없다(2026-09-30 두 번 손질).
+// 처음엔 맨 글자였는데 벽돌색이라 갈색으로 읽혔다("색상이 별로"). 같은 날 옅은 분홍 면 + 빨강 테두리 +
+// 뛰는 점의 알약으로 바꿨더니 "촌스럽다" — 카드마다 분홍 딱지가 붙어 화면이 시끄러워졌다.
+// 급함은 면이 아니라 **글자색 하나**로 말한다: 임박은 맑은 빨강(--danger) 굵은 글자, 아니면 보조 회색.
+// 시계 그림은 "남은 시간" 이라는 뜻을 글자보다 먼저 알려서, 가격 옆 숫자와 섞이지 않게 한다.
 import { formatSaleWindow, saleRemaining, type SaleRemaining } from "@/lib/format";
 import { useNow } from "@/components/use-now";
 import { ClockIcon } from "@/components/ui/icons";
 import { cn } from "@/lib/cn";
 
-/** 남은 기간 알약. 임박일 때만 점이 뛴다 — 점이 늘 있으면 "급하다" 가 아니라 장식이 된다 */
+/** 남은 기간. 색 하나로만 급함을 말한다 — 면을 깔면 카드마다 딱지가 붙는다 */
 function Remaining({ remaining }: { remaining: SaleRemaining }) {
   return (
     <span
       className={cn(
-        "inline-flex shrink-0 items-center gap-1 self-center rounded-full px-2 py-[3px] text-[11.5px] font-semibold leading-none tabular-nums",
-        remaining.urgent ? "bg-danger-soft text-danger shadow-[inset_0_0_0_1px_var(--danger-line)]" : "bg-surface-2 text-ink-2",
+        "inline-flex shrink-0 items-center gap-1 self-center text-[12px] leading-none tabular-nums",
+        remaining.urgent ? "font-semibold text-danger" : "font-medium text-dim",
       )}
     >
-      {remaining.urgent ? <span aria-hidden className="pulse-dot size-1.5 rounded-full bg-danger" /> : <ClockIcon size={12} />}
+      <ClockIcon size={13} strokeWidth={2.2} />
       {remaining.text}
     </span>
   );
@@ -36,7 +36,7 @@ type Props = {
   discountName: string | null | undefined;
   discountEndsAt: string | null | undefined;
   discountStartsAt?: string | null;
-  /** compact = 카드/탭용 한 줄, full = 상세 행용(기간 문자열까지), inline = 남은 기간만(점 + 글자) */
+  /** compact = 카드/탭용 한 줄, full = 상세 행용(기간 문자열까지), inline = 남은 기간만(시계 + 글자) */
   variant?: "compact" | "full" | "inline";
 };
 
