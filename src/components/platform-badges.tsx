@@ -24,7 +24,8 @@ import type { Platform } from "@/server/db/schema";
  * lowest: 지금 값이 가장 싼 플랫폼. 그 배지 위에 "최저" 말풍선이 선다(2026-09-29, 사용자 제안).
  * 전에는 카드 맨 아래에 "Steam 최저" 라는 글자 줄이 따로 있었다 — 배지 줄에서 Steam 을 한 번,
  * 그 아래 글자에서 한 번 더 읽어야 했다. 말풍선이 배지를 가리키면 한 자리에서 끝난다.
- * 말풍선이 배지 위로 올라가 있으므로 이 값을 줄 때는 줄 위에 그 높이만큼 자리를 비운다(pt-4).
+ * 말풍선은 배지 위 빈 줄을 따로 차지하지 않는다 — 위쪽 커버 가장자리에 걸쳐 뜬다(2026-09-30,
+ * 사용자: "카드가 너무 세로로 길어졌는데"). 자리를 비워 두던 16px 이 카드마다 한 줄씩 늘리고 있었다.
  * 최저 배지는 **맨 앞으로** 옮긴다 — 배지가 두 줄로 접히면 둘째 줄 배지의 말풍선이 첫 줄 배지를 덮었다.
  * 맨 앞이면 늘 첫 줄이라 말풍선이 비워 둔 위쪽 자리에만 선다. "가장 싼 곳부터" 읽히는 순서이기도 하다.
  */
@@ -41,7 +42,7 @@ export function PlatformBadges({
   const picked = new Set(highlight);
   const ordered = lowest && platforms.includes(lowest) ? [lowest, ...platforms.filter((p) => p !== lowest)] : platforms;
   return (
-    <span role="list" aria-label="지원 플랫폼" className={cn("flex flex-wrap gap-1", lowest && platforms.includes(lowest) && "pt-4")}>
+    <span role="list" aria-label="지원 플랫폼" className="flex flex-wrap gap-1">
       {ordered.map((p) => (
         <span
           key={p}
@@ -49,7 +50,7 @@ export function PlatformBadges({
           // 선을 걷고 면만 남긴다(2026-09-21 리디자인) — 한 줄에 배지가 다섯까지 서는데
           // 테두리가 있으면 그 선들이 제목보다 먼저 읽힌다
           className={cn(
-            "relative rounded-full px-2 py-1 text-[12px] font-semibold leading-none",
+            "relative whitespace-nowrap rounded-full px-2 py-1 text-[12px] font-semibold leading-none",
             picked.has(p) ? "bg-acc-soft text-acc" : "bg-surface-2 text-mut",
             // 최저 배지는 말풍선과 같은 보라 계열로 묶는다 — 회색 배지 위에 보라 말풍선만 떠 있으면
             // 둘이 따로 논다(2026-09-29 사용자 지적). 연한 보라 면 + 보라 글자라 말풍선(꽉 찬 보라)과 한 쌍이다

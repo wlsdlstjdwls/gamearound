@@ -75,7 +75,7 @@ export function DiscountStamp({ pct }: { pct: number | null }) {
   return (
     // 면을 걷고 글자만 남겼다(2026-09-29, 커머스 정보형) — 판이 없는 카드에서 꽉 찬 보라 면은 커버 다음으로
     // 센 덩어리라 값보다 먼저 읽혔다. 값과 같은 크기, 같은 굵기의 색 숫자면 "얼마나 - 얼마" 가 한 호흡이다
-    <span className="inline-flex shrink-0 items-baseline text-[18px] font-extrabold tracking-[-0.03em] text-acc sm:text-[20px]">
+    <span className="inline-flex shrink-0 items-baseline text-[18px] font-extrabold tracking-[-0.03em] text-acc sm:text-[19px]">
       <DiscountText pct={pct} />
     </span>
   );
@@ -162,17 +162,27 @@ export function GameCard({
           </span>
         </span>
 
-        <span className="flex min-w-0 flex-1 flex-col gap-1.5 px-1">
+        <span className="flex min-w-0 flex-1 flex-col gap-1 px-1">
           {/* 제목은 줄 하나를 혼자 쓴다(2026-09-29, 사용자: "가시성이 너무 떨어져").
               전에는 값과 한 줄을 나눠 서서, 할인 중인 카드에서 제목에 남는 폭이 80px 안팎이었다 —
               "어쌔신 ..." 처럼 두세 글자만 보이고 나머지는 말풍선에 숨었다. 두 줄까지 펴고 그 뒤를 자른다 */}
           {/* 순서(2026-09-29, 사용자: "카드 디자인도 가시성 좋게"): 기기 - 이름 - 값.
               배지를 커버 바로 밑으로 올렸다 — "내 기기에 있나" 는 커버와 함께 한눈에 걸러지는 질문이고,
-              최저 말풍선이 커버 아래 빈 띠에 서면 옆 글자와 부딪히지 않는다.
+              최저 말풍선은 커버 아래 가장자리에 걸쳐 떠서 줄을 따로 먹지 않는다.
               플랫폼을 쉼표로 이은 글자에서 배지로 바꾼 이유(2026-09-21): 모양으로 훑는 편이 빠르다 */}
-          <PlatformBadges platforms={game.platforms} highlight={highlight?.platforms} lowest={best?.currentPrice != null ? best.platform : null} />
+          {/* 남은 기간은 배지 줄 오른쪽 끝에 선다 — 값 줄 끝에 두면 넓은 화면에서도 값, 정가 뒤에 못 붙고
+              혼자 다음 줄로 떨어져 카드가 한 줄씩 길어졌다. 배지 줄은 대개 짧아 자리가 남는다.
+              두 줄 격자(좁은 화면)는 반대다 — 칸이 170px 이라 배지가 세로로 쌓였다. 거기서는 값 줄 끝으로 간다 */}
+          <span className="flex items-start justify-between gap-2">
+            <PlatformBadges platforms={game.platforms} highlight={highlight?.platforms} lowest={best?.currentPrice != null ? best.platform : null} />
+            {variant !== "release" && hasDiscount && (
+              <span className="hidden shrink-0 pt-0.5 sm:block">
+                <SaleBadge variant="inline" discountName={null} discountEndsAt={best?.discountEndsAt} />
+              </span>
+            )}
+          </span>
 
-          <Clamp lines={2} className="text-[15px] font-semibold leading-snug tracking-[-0.015em] text-ink transition-colors duration-fast group-hover:text-acc">
+          <Clamp lines={2} className="text-[15px] font-semibold leading-[1.35] tracking-[-0.015em] text-ink transition-colors duration-fast group-hover:text-acc">
             {title}
           </Clamp>
 
@@ -192,32 +202,29 @@ export function GameCard({
             </span>
           )}
 
-          {/* 값 묶음은 카드 **바닥**에 붙는다(mt-auto) — 같은 줄 카드끼리 값이 한 높이에 서서 가로로 견줄 수 있다.
-              윗줄: 정가(취소선)와 남은 기간, 아랫줄: 할인율과 값. 두 줄 격자(좁은 화면)의 170px 칸에서
-              넷이 한 줄을 못 버텨 둘씩 나눴다.
+          {/* 값 줄은 카드 **바닥**에 붙는다(mt-auto) — 같은 줄 카드끼리 값이 한 높이에 서서 가로로 견줄 수 있다.
+              할인율, 값, 정가를 한 줄에 흘린다. 좁으면 접힌다 — 값을 자르지 않는다.
+              정가를 윗줄로 따로 두던 것(2026-09-29)을 걷었다: 카드마다 한 줄이 늘어 세로로 길어졌다(09-30 지적).
 
               값은 갈래를 가리지 않고 선다(2026-09-22, 사용자 지적: "최근 출시 영역에서는 금액이 안나옴").
-              **값을 모르면 줄 자체를 세우지 않는다**(같은 날 사용자 지정: "금액이 없으면 '-' 이것도
+              **값을 모르면 값을 세우지 않는다**(같은 날 사용자 지정: "금액이 없으면 '-' 이것도
               보여주지마") — 카드에서 "-" 한 글자는 "값이 0 인가" 로도 "고장인가" 로도 읽힌다 */}
-          <span className="mt-auto flex flex-col gap-0.5 pt-1.5">
-            {variant === "release"
-              ? releaseLabel && <span className="text-[12.5px] text-dim">{releaseLabel}</span>
-              : hasDiscount && (
-                  <span className="flex items-center justify-between gap-2">
-                    {best?.listPrice != null ? (
-                      <span className="text-[12.5px] text-dim-2 line-through">{formatPrice(best.listPrice, best.currency)}</span>
-                    ) : (
-                      <span />
-                    )}
-                    <SaleBadge variant="inline" discountName={null} discountEndsAt={best?.discountEndsAt} />
-                  </span>
-                )}
+          <span className="mt-auto flex flex-wrap items-baseline gap-x-1.5 gap-y-0.5 pt-1">
             {best && best.currentPrice !== null && (
-              <span className="flex flex-wrap items-baseline gap-x-1.5">
+              <>
                 {hasDiscount && <DiscountStamp pct={best.discountPct} />}
-                <span className="text-[18px] font-extrabold tracking-[-0.03em] text-ink sm:text-[20px]">
+                <span className="text-[18px] font-extrabold tracking-[-0.03em] text-ink sm:text-[19px]">
                   {formatPrice(best.currentPrice, best.currency)}
                 </span>
+                {hasDiscount && best.listPrice !== null && (
+                  <span className="text-[12.5px] text-dim-2 line-through">{formatPrice(best.listPrice, best.currency)}</span>
+                )}
+              </>
+            )}
+            {variant === "release" && releaseLabel && <span className="ml-auto text-[12.5px] text-dim">{releaseLabel}</span>}
+            {variant !== "release" && hasDiscount && (
+              <span className="ml-auto sm:hidden">
+                <SaleBadge variant="inline" discountName={null} discountEndsAt={best?.discountEndsAt} />
               </span>
             )}
           </span>
