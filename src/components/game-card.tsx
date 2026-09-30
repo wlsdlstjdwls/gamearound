@@ -114,6 +114,9 @@ export function highlightFromFilter(filter: { platform?: string; genre?: string 
  * 판 없는 카드는 이웃 카드의 글자와 섞였다. 판은 회색 바탕 위 흰 면 한 겹이다.
  * 좁은 화면은 두 줄 격자라(lib/games/grid) 한 화면에 네 장이 선다.
  */
+/** 카드에서 펴 두는 플랫폼 배지 수 — 넘으면 "+N"(2026-09-30 사용자 지정: "3개 플랫폼 이상일 때는 더보기") */
+const BADGE_LIMIT = 3;
+
 export const CARD_SHELL = "card-panel flex h-full flex-col gap-2 p-2 pb-3 sm:p-2.5 sm:pb-3.5";
 
 /** 커버 상자. 뼈대도 같은 값을 써야 본문이 올 때 격자가 밀리지 않는다 */
@@ -149,42 +152,30 @@ export function GameCard({
     // 그림이 제자리로 돌아와 카드 안에서 커서를 옮길 때마다 붙었다 떨어졌다 한다.
     // 링크 바깥에 두는 이유: 이 껍데기는 포인터만 듣고 아무것도 그리지 않으므로 누를 면(a)을 나누지 않는다
     <PointerParallax className="block h-full">
-      <Link
-        href={`/games/${game.slug}`}
-        className={cn(CARD_SHELL, "cover-zoom group outline-none focus-visible:ring-2 focus-visible:ring-ink focus-visible:ring-offset-2 focus-visible:ring-offset-bg")}
-        aria-label={`${title} 상세 보기`}
-      >
-        {/* 판 안이라 그림자를 겹치지 않는다 — 가장자리를 긋는 링 한 줄이면 밝은 커버가 흰 판에 번지지 않는다.
-            커버 위에 얹는 것이 없어 상자는 하나면 된다 */}
+      {/* 카드 전체를 덮는 것은 **제목 링크의 ::after** 다(2026-09-30). 전에는 카드 통째가 <a> 였는데,
+          배지 "+N" 더보기 버튼을 넣으면 링크 안의 버튼이 되어(누르면 상세로 넘어간다, 중첩 대화형 요소)
+          카드는 div 로, 누를 면은 제목 링크가 늘어나 덮는 방식으로 바꿨다. 버튼만 z-10 으로 그 위에 뜬다.
+          포커스 링도 ::after 에 그려 카드 모양 그대로 선다 */}
+      <div className={cn(CARD_SHELL, "cover-zoom group relative")}>
+        {/* 판 안이라 그림자를 겹치지 않는다 — 가장자리를 긋는 링 한 줄이면 밝은 커버가 흰 판에 번지지 않는다 */}
         <span className={COVER_CLASS}>
           <span className="cover-zoom-img absolute inset-0 block">
-            <CoverImage src={game.coverUrl} alt={`${title} 커버`} sizes="(max-width: 640px) 50vw, 20vw" />
+            <CoverImage src={game.coverUrl} alt={`${title} 커버`} sizes="(max-width: 768px) 50vw, 25vw" />
           </span>
         </span>
 
-        <span className="flex min-w-0 flex-1 flex-col gap-1 px-1">
-          {/* 제목은 줄 하나를 혼자 쓴다(2026-09-29, 사용자: "가시성이 너무 떨어져").
-              전에는 값과 한 줄을 나눠 서서, 할인 중인 카드에서 제목에 남는 폭이 80px 안팎이었다 —
-              "어쌔신 ..." 처럼 두세 글자만 보이고 나머지는 말풍선에 숨었다. 두 줄까지 펴고 그 뒤를 자른다 */}
-          {/* 순서(2026-09-29, 사용자: "카드 디자인도 가시성 좋게"): 기기 - 이름 - 값.
-              배지를 커버 바로 밑으로 올렸다 — "내 기기에 있나" 는 커버와 함께 한눈에 걸러지는 질문이고,
-              최저 말풍선은 커버 아래 가장자리에 걸쳐 떠서 줄을 따로 먹지 않는다.
-              플랫폼을 쉼표로 이은 글자에서 배지로 바꾼 이유(2026-09-21): 모양으로 훑는 편이 빠르다 */}
-          {/* 남은 기간은 배지 줄 오른쪽 끝에 선다 — 값 줄 끝에 두면 넓은 화면에서도 값, 정가 뒤에 못 붙고
-              혼자 다음 줄로 떨어져 카드가 한 줄씩 길어졌다. 배지 줄은 대개 짧아 자리가 남는다.
-              두 줄 격자(좁은 화면)는 반대다 — 칸이 170px 이라 배지가 세로로 쌓였다. 거기서는 값 줄 끝으로 간다 */}
-          <span className="flex items-start justify-between gap-2">
-            <PlatformBadges platforms={game.platforms} highlight={highlight?.platforms} lowest={best?.currentPrice != null ? best.platform : null} />
-            {variant !== "release" && hasDiscount && (
-              <span className="hidden shrink-0 pt-0.5 sm:block">
-                <SaleBadge variant="inline" discountName={null} discountEndsAt={best?.discountEndsAt} />
-              </span>
-            )}
-          </span>
-
-          <Clamp lines={2} className="text-[15px] font-semibold leading-[1.35] tracking-[-0.015em] text-ink transition-colors duration-fast group-hover:text-acc">
-            {title}
-          </Clamp>
+        <div className="flex min-w-0 flex-1 flex-col gap-1.5 px-1">
+          {/* 제목은 줄 하나를 혼자 쓴다(2026-09-29, 사용자: "가시성이 너무 떨어져") — 두 줄까지 펴고 그 뒤를 자른다.
+              순서는 이름 - 기기 - 값(2026-09-30, 사용자: "플랫폼 뱃지가 제목 아래에 있는게 낫지 않나").
+              카드를 훑는 눈은 그림 다음에 이름을 찾는다 — 배지가 그 사이에 서면 한 번 건너뛰어야 했다 */}
+          <Link
+            href={`/games/${game.slug}`}
+            className="outline-none after:absolute after:inset-0 after:rounded-[var(--radius-panel)] focus-visible:after:ring-2 focus-visible:after:ring-ink focus-visible:after:ring-offset-2 focus-visible:after:ring-offset-bg"
+          >
+            <Clamp lines={2} className="text-[15px] font-semibold leading-[1.35] tracking-[-0.015em] text-ink transition-colors duration-fast group-hover:text-acc">
+              {title}
+            </Clamp>
+          </Link>
 
           {/* 부제는 장르로 거를 때만 선다 — 늘 서 있으면 회색 한 줄이 카드마다 잘린 채 붙어 값보다 먼저 읽혔다.
               거를 때는 "왜 이 게임이 여기 있나" 를 말해 주는 값이라 남긴다(고른 장르만 보라) */}
@@ -202,14 +193,31 @@ export function GameCard({
             </span>
           )}
 
+          {/* 기기 줄 — 셋까지 펴고 나머지는 "+N"(PlatformBadges 의 limit). 최저 말풍선이 맨 앞 배지 위에 뜬다.
+              남은 기간은 넓은 화면에서 이 줄 오른쪽 끝에 선다 — 값 줄 끝에 두면 값, 정가 뒤에 못 붙고
+              혼자 다음 줄로 떨어졌다. 두 줄 격자(좁은 화면)는 칸이 170px 이라 값 줄 끝으로 간다.
+              플랫폼을 쉼표로 이은 글자에서 배지로 바꾼 이유(2026-09-21): 모양으로 훑는 편이 빠르다 */}
+          <div className="flex items-end justify-between gap-2">
+            <PlatformBadges
+              platforms={game.platforms}
+              highlight={highlight?.platforms}
+              lowest={best?.currentPrice != null ? best.platform : null}
+              limit={BADGE_LIMIT}
+            />
+            {variant !== "release" && hasDiscount && (
+              <span className="hidden shrink-0 pb-0.5 sm:block">
+                <SaleBadge variant="inline" discountName={null} discountEndsAt={best?.discountEndsAt} />
+              </span>
+            )}
+          </div>
+
           {/* 값 줄은 카드 **바닥**에 붙는다(mt-auto) — 같은 줄 카드끼리 값이 한 높이에 서서 가로로 견줄 수 있다.
               할인율, 값, 정가를 한 줄에 흘린다. 좁으면 접힌다 — 값을 자르지 않는다.
-              정가를 윗줄로 따로 두던 것(2026-09-29)을 걷었다: 카드마다 한 줄이 늘어 세로로 길어졌다(09-30 지적).
 
               값은 갈래를 가리지 않고 선다(2026-09-22, 사용자 지적: "최근 출시 영역에서는 금액이 안나옴").
               **값을 모르면 값을 세우지 않는다**(같은 날 사용자 지정: "금액이 없으면 '-' 이것도
               보여주지마") — 카드에서 "-" 한 글자는 "값이 0 인가" 로도 "고장인가" 로도 읽힌다 */}
-          <span className="mt-auto flex flex-wrap items-baseline gap-x-1.5 gap-y-0.5 pt-1">
+          <div className="mt-auto flex flex-wrap items-baseline gap-x-1.5 gap-y-0.5 pt-1">
             {best && best.currentPrice !== null && (
               <>
                 {hasDiscount && <DiscountStamp pct={best.discountPct} />}
@@ -227,9 +235,9 @@ export function GameCard({
                 <SaleBadge variant="inline" discountName={null} discountEndsAt={best?.discountEndsAt} />
               </span>
             )}
-          </span>
-        </span>
-      </Link>
+          </div>
+        </div>
+      </div>
     </PointerParallax>
   );
 }

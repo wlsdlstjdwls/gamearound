@@ -15,7 +15,7 @@ import { GameCard } from "@/components/game-card";
 import { EmptyState } from "@/components/empty-state";
 import { Page, PageHead } from "@/components/ui/page";
 import { chipClass } from "@/components/ui/chip";
-import { GAMES_GRID_CLASS } from "@/lib/games/grid";
+import { HOME_GRID_CLASS } from "@/lib/games/grid";
 import { stagger } from "@/lib/motion";
 import { ROUTES } from "@/lib/routes";
 import { searchGames, type GameSummary } from "@/server/services/games";
@@ -114,7 +114,7 @@ export default async function SearchPage({ searchParams }: Props) {
         <ReportBlock q={q} />
       ) : (
         <>
-          <ul className={GAMES_GRID_CLASS}>
+          <ul className={HOME_GRID_CLASS}>
             {results.map((g, i) => (
               <li key={g.slug} className="enter-item" style={stagger(i)}>
                 <GameCard game={g} />

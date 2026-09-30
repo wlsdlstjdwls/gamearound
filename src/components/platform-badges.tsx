@@ -8,6 +8,7 @@
 // 그 안에 ul 을 넣으면 브라우저가 상자를 밖으로 끌어내 서버 HTML 과 어긋난다 — 하이드레이션이 깨지고
 // 그 트리를 클라이언트가 통째로 다시 그린다. 목록 의미는 aria 로 준다.
 import { cn } from "@/lib/cn";
+import { MoreToggle } from "@/components/ui/more-toggle";
 import { PLATFORM_LABEL } from "@/lib/format";
 import type { Platform } from "@/server/db/schema";
 
@@ -24,8 +25,6 @@ import type { Platform } from "@/server/db/schema";
  * lowest: 지금 값이 가장 싼 플랫폼. 그 배지 위에 "최저" 말풍선이 선다(2026-09-29, 사용자 제안).
  * 전에는 카드 맨 아래에 "Steam 최저" 라는 글자 줄이 따로 있었다 — 배지 줄에서 Steam 을 한 번,
  * 그 아래 글자에서 한 번 더 읽어야 했다. 말풍선이 배지를 가리키면 한 자리에서 끝난다.
- * 말풍선은 배지 위 빈 줄을 따로 차지하지 않는다 — 위쪽 커버 가장자리에 걸쳐 뜬다(2026-09-30,
- * 사용자: "카드가 너무 세로로 길어졌는데"). 자리를 비워 두던 16px 이 카드마다 한 줄씩 늘리고 있었다.
  * 최저 배지는 **맨 앞으로** 옮긴다 — 배지가 두 줄로 접히면 둘째 줄 배지의 말풍선이 첫 줄 배지를 덮었다.
  * 맨 앞이면 늘 첫 줄이라 말풍선이 비워 둔 위쪽 자리에만 선다. "가장 싼 곳부터" 읽히는 순서이기도 하다.
  */
@@ -33,39 +32,59 @@ export function PlatformBadges({
   platforms = [],
   highlight = [],
   lowest = null,
+  limit,
 }: {
   platforms?: Platform[];
   highlight?: Platform[];
   lowest?: Platform | null;
+  /**
+   * 이만큼만 펴고 나머지는 "+N" 으로 접는다(2026-09-30, 사용자: "3개 플랫폼 이상일 때는 더보기 버튼").
+   * 배지가 두세 줄로 접히면 카드마다 키가 달라져 값 줄이 들쭉날쭉했다. 한 줄에 서는 셋까지만 편다.
+   * 최저 배지는 맨 앞이라 늘 펴진 쪽에 있다.
+   */
+  limit?: number;
 }) {
   if (platforms.length === 0) return <span className="text-[12px] text-dim">플랫폼 정보 없음</span>;
   const picked = new Set(highlight);
-  const ordered = lowest && platforms.includes(lowest) ? [lowest, ...platforms.filter((p) => p !== lowest)] : platforms;
-  return (
-    <span role="list" aria-label="지원 플랫폼" className="flex flex-wrap gap-1">
-      {ordered.map((p) => (
-        <span
-          key={p}
-          role="listitem"
-          // 선을 걷고 면만 남긴다(2026-09-21 리디자인) — 한 줄에 배지가 다섯까지 서는데
-          // 테두리가 있으면 그 선들이 제목보다 먼저 읽힌다
-          className={cn(
-            "relative whitespace-nowrap rounded-full px-2 py-1 text-[12px] font-semibold leading-none",
-            picked.has(p) ? "bg-acc-soft text-acc" : "bg-surface-2 text-mut",
-            // 최저 배지는 말풍선과 같은 보라 계열로 묶는다 — 회색 배지 위에 보라 말풍선만 떠 있으면
-            // 둘이 따로 논다(2026-09-29 사용자 지적). 연한 보라 면 + 보라 글자라 말풍선(꽉 찬 보라)과 한 쌍이다
-            p === lowest && "bg-acc-soft font-bold text-acc",
-          )}
-        >
-          {PLATFORM_LABEL[p] ?? p}
-          {p === lowest && (
-            // 글자색은 text-on-ink — 흰색으로 박으면 다크에서 밝은 보라 위 흰 글자가 2점대다
-            <span className="bubble-tail bubble-bob absolute bottom-[calc(100%+4px)] left-1/2 -translate-x-1/2 whitespace-nowrap rounded-full bg-acc px-2 py-[3px] text-[10.5px] font-bold leading-none text-on-ink shadow-1">
-              최저
-            </span>
-          )}
+  const hasLowest = lowest !== null && platforms.includes(lowest);
+  const ordered = hasLowest ? [lowest, ...platforms.filter((p) => p !== lowest)] : platforms;
+  const cut = limit !== undefined && ordered.length > limit ? limit : ordered.length;
+
+  const badge = (p: Platform) => (
+    <span
+      key={p}
+      role="listitem"
+      // 선을 걷고 면만 남긴다(2026-09-21 리디자인) — 한 줄에 배지가 다섯까지 서는데
+      // 테두리가 있으면 그 선들이 제목보다 먼저 읽힌다
+      className={cn(
+        "relative whitespace-nowrap rounded-full px-2 py-1 text-[12px] font-semibold leading-none",
+        picked.has(p) ? "bg-acc-soft text-acc" : "bg-surface-2 text-mut",
+        // 최저 배지는 말풍선과 같은 보라 계열로 묶는다 — 회색 배지 위에 보라 말풍선만 떠 있으면
+        // 둘이 따로 논다(2026-09-29 사용자 지적). 연한 보라 면 + 보라 글자라 말풍선(꽉 찬 보라)과 한 쌍이다
+        p === lowest && "bg-acc-soft font-bold text-acc",
+      )}
+    >
+      {PLATFORM_LABEL[p] ?? p}
+      {p === lowest && (
+        // 글자색은 text-on-ink — 흰색으로 박으면 다크에서 밝은 보라 위 흰 글자가 2점대다
+        <span className="bubble-tail bubble-bob absolute bottom-[calc(100%+4px)] left-1/2 -translate-x-1/2 whitespace-nowrap rounded-full bg-acc px-2 py-[3px] text-[10.5px] font-bold leading-none text-on-ink shadow-1">
+          최저
         </span>
-      ))}
+      )}
+    </span>
+  );
+
+  const rest = ordered.slice(cut);
+  return (
+    // 말풍선이 배지 위로 뜨므로 그 높이만큼 위를 비운다(pt-4) — 배지 줄이 제목 아래로 내려오면서(09-30)
+    // 커버 가장자리에 걸쳐 둘 수 없게 됐다. 비우지 않으면 말풍선이 제목 둘째 줄을 덮는다
+    <span role="list" aria-label="지원 플랫폼" className={cn("flex flex-wrap gap-1", hasLowest && "pt-4")}>
+      {ordered.slice(0, cut).map(badge)}
+      {rest.length > 0 && (
+        <MoreToggle count={rest.length} label={`플랫폼 ${rest.length}개 더 보기`} className="bg-surface-2 text-dim hover:bg-surface-3 hover:text-ink">
+          {rest.map(badge)}
+        </MoreToggle>
+      )}
     </span>
   );
 }

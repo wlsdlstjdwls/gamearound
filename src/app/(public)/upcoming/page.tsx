@@ -19,7 +19,7 @@ import { GameCard } from "@/components/game-card";
 import { Page, PageHead, SectionHead } from "@/components/ui/page";
 import { formatMonthLabel, formatReleaseDay } from "@/lib/format";
 import { UPCOMING_MESSAGES as M, upcomingCountText } from "@/lib/games/messages";
-import { GAMES_GRID_CLASS } from "@/lib/games/grid";
+import { HOME_GRID_CLASS } from "@/lib/games/grid";
 import { stagger } from "@/lib/motion";
 import { getUpcomingGames } from "@/server/services/games";
 
@@ -122,7 +122,7 @@ export default async function UpcomingPage() {
           // 그 아래 달 건너뛰기 띠가 한 겹 더 서 있어서, 뺄 것이 둘이다
           <section key={month.key} id={monthAnchor(month.key)} className="flex scroll-mt-[calc(var(--header-h)+var(--month-nav-h)+16px)] flex-col gap-4">
             <SectionHead title={formatMonthLabel(month.key)} note={upcomingCountText(month.items.length, month.total)} />
-            <ul className={GAMES_GRID_CLASS}>
+            <ul className={HOME_GRID_CLASS}>
               {month.items.map((entry, i) => (
                 <li key={entry.game.slug} className="enter-item" style={stagger(i)}>
                   <GameCard game={entry.game} variant="release" releaseText={formatReleaseDay(entry.releaseDate)} />

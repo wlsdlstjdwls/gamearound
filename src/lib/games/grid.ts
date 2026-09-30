@@ -15,12 +15,16 @@
 // 목록에 남는 폭은 880px 인데, 280 으로 두면 3열에 888px 이 필요해 8px 차이로 2열이 된다 —
 // 데스크톱 한 화면에 카드가 넷만 남았다. 258 은 그 자리에서 3열이 서는 값이다(3x258 + 2x24 = 822).
 //
-// 2026-09-30: 열 수를 **못 박았다**(사용자: "한 행에 4개씩"). 좁은 화면 2, md 3, lg 4.
+// 2026-09-30: 열 수를 **못 박았다**(사용자: "한 행에 4개씩", "게임 목록에서는 한 행에 3개씩").
 // 최소폭(auto-fill)으로 두면 홈(1200)은 5열, 목록(필터 옆 880)은 4열로 화면마다 카드 크기가 달랐다.
+// 목록은 왼쪽에 필터 기둥이 서서 3열이어야 카드 폭이 홈 4열과 같아진다(약 270px) — 같은 카드가 같은 크기다.
 // 칸 수(HOME_LIMIT 24, GAMES_PAGE_SIZE 36)는 2, 3, 4 로 모두 나눠떨어진다 — 마지막 줄이 이 빠지지 않는다.
-export const GAMES_GRID_CLASS = "grid grid-cols-2 gap-x-3 gap-y-4 md:grid-cols-3 md:gap-x-5 md:gap-y-6 lg:grid-cols-4";
+const GRID_BASE = "grid grid-cols-2 gap-x-3 gap-y-4 md:grid-cols-3 md:gap-x-5 md:gap-y-6";
+/** 필터 기둥 옆 목록(게임 목록) — 넓은 화면 3열 */
+export const GAMES_GRID_CLASS = GRID_BASE;
 
 // 홈 할인 격자. 280 이던 최소 폭을 목록과 같은 줄로 내렸다(2026-09-29) — 1200px 기둥에서 3열로 서면
 // 카드 한 장이 380px 이 넘어 커버만 크고 한 화면에 여섯 장이 전부였다. 240 이면 4열이 선다.
 // 세로 간격이 가로보다 넓은 이유: 카드가 hover 에서 4px 떠오르므로 줄 사이에 그 움직임이 앉을 자리가 필요하다
-export const HOME_GRID_CLASS = GAMES_GRID_CLASS;
+/** 기둥 없이 폭을 다 쓰는 격자(홈, 검색, 출시예정, 회사) — 넓은 화면 4열 */
+export const HOME_GRID_CLASS = `${GRID_BASE} lg:grid-cols-4`;
