@@ -65,7 +65,7 @@ export function PlatformAddons({
       {rows.length === 0 ? (
         <p className="text-[13px] text-dim">{GAME_MESSAGES.dlcKnownButUnlisted}</p>
       ) : (
-        <DlcRows rows={rows} />
+        <DlcRows rows={rows} inSheet />
       )}
     </Sheet>
   );

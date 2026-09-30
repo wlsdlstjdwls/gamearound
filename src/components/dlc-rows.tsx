@@ -5,7 +5,7 @@
 // 둘이 다르게 생기면 같은 것을 한 화면에서 두 번 배워야 한다.
 import Link from "next/link";
 import { Clamp } from "@/components/ui/tooltip";
-import { ROW, ROWS } from "@/components/ui/page";
+import { ROW, ROWS, SHEET_ROW, SHEET_ROWS } from "@/components/ui/page";
 import { cn } from "@/lib/cn";
 import { formatPrice } from "@/lib/currency";
 import { platformLabel } from "@/lib/format";
@@ -15,9 +15,10 @@ import type { DlcDto, PlatformDto } from "@/server/services/games";
 
 export type DlcRow = { dlc: DlcDto; best: PlatformDto | null };
 
-export function DlcRows({ rows }: { rows: DlcRow[] }) {
+/** inSheet: 플랫폼 행 시트 안이면 헤어라인 대신 줄마다 판을 깐다(SHEET_ROWS 주석) */
+export function DlcRows({ rows, inSheet = false }: { rows: DlcRow[]; inSheet?: boolean }) {
   return (
-    <ul className={ROWS}>
+    <ul className={inSheet ? SHEET_ROWS : ROWS}>
       {rows.map(({ dlc, best }, i) => (
         <li key={dlc.slug} className="enter-item" style={stagger(i)}>
           {/* 새 탭으로 연다 — DLC 를 훑는 사람은 본편 화면을 띄워 둔 채 하나씩 열어 본다.
@@ -26,7 +27,7 @@ export function DlcRows({ rows }: { rows: DlcRow[] }) {
             href={gamePath(dlc.slug)}
             target="_blank"
             rel="noopener noreferrer"
-            className={cn(ROW, "flex items-center justify-between gap-3.5 py-[13px]")}
+            className={cn(inSheet ? SHEET_ROW : ROW, "flex items-center justify-between gap-3.5 py-[13px]")}
           >
             <Clamp lines={1} className="min-w-0 flex-1 text-[14px] text-ink">
               {dlc.title}

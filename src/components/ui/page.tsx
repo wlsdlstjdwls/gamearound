@@ -131,6 +131,16 @@ export const ROWS = "rows";
 /** 헤어라인 줄 하나 — 좌우로 6px 넘겨 hover 면이 글자보다 살짝 넓게 깔린다 */
 export const ROW = "row-hover -mx-1.5 rounded-lg px-1.5";
 
+/*
+ * 시트(팝업) 안의 목록 — 헤어라인 대신 줄마다 옅은 판을 깐다(2026-09-30 사용자 지적).
+ *
+ * 헤어라인(ROWS)은 제목 아래 이어지는 본문 목록의 문법이다. 시트에서는 머리 줄 바로 밑에 진한 첫 선이
+ * 하나 더 그어져 "선이 두 번" 이 되고, 흰 시트 위의 1px 옅은 선은 줄 사이를 거의 못 가른다.
+ * 판 사이 틈(gap)이 곧 구분선이라 선을 따로 긋지 않는다.
+ */
+export const SHEET_ROWS = "flex flex-col gap-1.5";
+export const SHEET_ROW = "rounded-lg bg-surface-2 px-3 transition-colors duration-fast hover:bg-surface-3";
+
 /**
  * 화면 제목 행 — 한 화면에 하나뿐인 h1 자리.
  *

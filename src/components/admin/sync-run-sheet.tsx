@@ -5,7 +5,7 @@
 // 서버 컴포넌트다 — 목록은 서버에서 그려 시트(클라이언트)의 children 으로 넘긴다. 열 때 기다림이 없다.
 import Link from "next/link";
 import { Sheet } from "@/components/ui/sheet";
-import { ROW, ROWS } from "@/components/ui/page";
+import { SHEET_ROW, SHEET_ROWS } from "@/components/ui/page";
 import { Clamp } from "@/components/ui/tooltip";
 import { SYNC_MESSAGES } from "@/lib/admin/messages";
 import { syncFieldLabels } from "@/lib/admin/sync-fields";
@@ -19,14 +19,14 @@ const TAG = "rounded-[6px] px-1.5 py-0.5 text-[11px] font-semibold";
 function ItemRow({ item, traced }: { item: RunItem; traced: boolean }) {
   const labels = syncFieldLabels(item.fields);
   return (
-    <li className={cn(ROW, "flex flex-col gap-1.5 py-2.5")}>
+    <li className={cn(SHEET_ROW, "flex flex-col gap-1.5 py-2.5")}>
       <Link href={gamePath(item.slug)} className="min-w-0 text-[13.5px] font-semibold text-ink hover:underline">
         <Clamp>{item.title ?? item.slug}</Clamp>
       </Link>
       <div className="flex flex-wrap gap-1">
         {item.created && <span className={cn(TAG, "bg-acc-soft text-acc")}>{SYNC_MESSAGES.runItemsCreated}</span>}
         {labels.map((l) => (
-          <span key={l} className={cn(TAG, "bg-surface-3 text-ink")}>
+          <span key={l} className={cn(TAG, "bg-surface text-ink")}>
             {l}
           </span>
         ))}
@@ -60,7 +60,7 @@ export function SyncRunSheet({ sourceName, run, now }: { sourceName: string; run
           </span>
         ))}
       </p>
-      <ul className={cn(ROWS, "mt-3")}>
+      <ul className={cn(SHEET_ROWS, "mt-3")}>
         {run.items.map((item) => (
           <ItemRow key={item.slug} item={item} traced={run.traced === true} />
         ))}
