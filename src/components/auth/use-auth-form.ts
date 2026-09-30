@@ -93,6 +93,11 @@ export function useAuthForm<S extends z.ZodType>({ schema, toInput, serverState,
   const onBlur = useCallback(
     (e: FocusEvent<HTMLInputElement>) => {
       const { name, value } = e.currentTarget;
+      // 제출 중이라 칸이 disabled 로 바뀌며 난 blur 는 검증하지 않는다(2026-09-30, 사용자 신고: "비번 치고 엔터 치면
+      // 빨간 경고가 뜨면서 로그인은 된다"). 크롬은 포커스된 칸이 비활성화되면 blur 를 쏘는데, 그 순간 검증이 읽는
+      // FormData 는 **disabled 칸을 빼고** 만들어진다 — 방금 친 비밀번호를 빈 값으로 보고 "입력해요" 를 세웠다.
+      // 버튼을 눌러 제출하면 포커스가 이미 버튼에 있어 이 blur 가 안 나서 엔터에서만 드러났다
+      if (e.currentTarget.disabled) return;
       // 링크를 누르러 떠나는 blur 는 검증하지 않는다(2026-09-24, 사용자 신고: "로그인 버튼이 안 눌리고 가입하기를 눌러야 진행된다").
       // 가입 화면은 닉네임 칸이 자동 포커스라, "로그인" 을 누르는 mousedown 이 곧 이 blur 다. 여기서 오류 문구가 서면
       // 칸 아래가 한 줄 늘어 링크가 손가락 밑에서 빠지고, mouseup 이 다른 자리에 떨어져 click 이 성립하지 않았다.
