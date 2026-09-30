@@ -51,7 +51,24 @@ export interface DiscoveryResult {
  * stoppedBy="budget" 이 며칠째 이어지면 그게 포화 신호다 — 아는 것만 나오는 구간이 페이지 예산보다 길다는 뜻이라
  * 예산을 올리거나 발견 시작점을 옮겨야 한다. 그 시점을 놓치면 신규가 조용히 0건으로 굳는다.
  */
-export type DiscoveryLog = Omit<DiscoveryResult, "fresh"> & { fresh: number };
+export type DiscoveryLog = Omit<DiscoveryResult, "fresh"> & {
+  fresh: number;
+  /** 이어 읽는 소스만: 이번 실행이 시작한 쪽. 실행마다 앞으로 나가는지 로그에서 보려고 남긴다 */
+  startPage?: number;
+};
+
+/**
+ * 다음 실행이 시작할 쪽(resumableDiscovery 소스).
+ *   catalog-end — 끝까지 읽었다. 처음으로 돌아간다(그 사이 목록 앞쪽에 새것이 끼었을 수 있다)
+ *   want — 목표를 채워 쪽 **중간에서** 멈췄다. 마지막 쪽을 다시 읽는다 — 그 쪽의 남은 후보를 안 잃으려고.
+ *          이미 등록한 것은 다음에 "아는 것" 으로 걸러지므로 다시 읽어도 두 번 만들지 않는다
+ *   budget — 예산을 다 쓴 쪽의 다음 쪽부터
+ */
+export function nextDiscoveryCursor(startPage: number, result: Pick<DiscoveryResult, "pages" | "stoppedBy">): number {
+  if (result.stoppedBy === "catalog-end") return 1;
+  if (result.pages === 0) return startPage;
+  return result.stoppedBy === "want" ? startPage + result.pages - 1 : startPage + result.pages;
+}
 
 export interface CollectOptions {
   /** 이번 실행에서 찾을 신규 후보 수 */

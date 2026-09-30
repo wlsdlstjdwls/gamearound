@@ -21,7 +21,7 @@ import { isLocked, recordError, type Ctx } from "./context";
 import { companyNamesOf, findCompaniesByAliases } from "./company-writer";
 import { createGameFromSnapshot, isTitleEnRecovery, planGameMeta, planSlugRename, type GameRow } from "./game-writer";
 import { planPlatform, type PlatformPlan, type PlatformRow } from "./platform-writer";
-import { gamesWithRef, ignoreDiscovery, loadGameTitles, type StoreTarget } from "./store-targets";
+import { gamesByTitleCode, gamesWithRef, ignoreDiscovery, loadGameTitles, type StoreTarget } from "./store-targets";
 import { findGameByTitle } from "./match";
 import { loadRootParents } from "./parent-root";
 import { syncSnapshotSubscriptions } from "./subscription-writer";
@@ -313,17 +313,26 @@ export async function applyStore(ctx: Ctx, source: StoreSource, fetched: Fetched
   const newTargets = fetched.filter(({ target }) => !(target.gameId && target.slug));
   const titles = newTargets.length > 0 ? await loadGameTitles(ctx.db) : [];
   const refOwned = newTargets.length > 0 ? await gamesWithRef(ctx.db, source) : new Set<string>();
+  // 작품 코드로도 한 번 더 본다(2026-09-30). 발견 단계도 코드로 맞추지만 그건 **목록이 코드를 줄 때만**이다 —
+  // 한국 닌텐도 목록은 코드를 안 주고 상품 HTML 에만 있다. 제목은 나라마다 표기가 달라(한글, 일본어, 영문)
+  // 유사도가 0 인 같은 게임이 있어서, 코드를 여기서 안 보면 일본에서 먼저 들어온 게임이 한 벌 더 생긴다.
+  const codes = newTargets.map(({ snapshot }) => snapshot.titleCode).filter((c): c is string => !!c);
+  const codeOwner = codes.length > 0 ? await gamesByTitleCode(ctx.db, codes) : new Map<string, { id: string; slug: string }>();
 
   for (const { target, snapshot } of newTargets) {
     try {
       const titleEn = snapshot.meta?.titleEn;
-      const hit = titleEn ? findGameByTitle(titleEn, titles) : null;
+      const byCode = snapshot.titleCode ? codeOwner.get(snapshot.titleCode) : undefined;
+      const byTitle = !byCode && titleEn ? findGameByTitle(titleEn, titles) : null;
+      const hit = byCode ? { game: byCode, similarity: 1 } : byTitle;
       if (hit && refOwned.has(hit.game.id)) {
         // 그 게임에는 이 소스 가격이 이미 있다 — 여기서 덮으면 본편 가격이 에디션 가격으로 바뀐다
         await ignoreDiscovery(ctx.db, source, {
           externalId: target.externalId,
           gameId: hit.game.id,
-          reason: `${hit.game.slug} 의 다른 SKU (상세 제목으로 확인)`,
+          reason: byCode
+            ? `${hit.game.slug} 의 다른 판매 단위 (상세의 작품 코드 ${snapshot.titleCode})`
+            : `${hit.game.slug} 의 다른 SKU (상세 제목으로 확인)`,
           now: ctx.now,
         });
         continue;
@@ -348,6 +357,13 @@ export async function applyStore(ctx: Ctx, source: StoreSource, fetched: Fetched
       const enriched = withDiscoveredMedia(snapshot, target);
       const created = await createGameFromSnapshot(ctx, enriched, { contentType: snapshot.contentType ?? "game" });
       ctx.changedSlugs.add(created.slug);
+      // 같은 실행의 뒤 후보가 방금 만든 게임을 알아보게 한다 — 목록은 실행 머리에 한 번 읽어서
+      // 이게 없으면 한 실행 안에서 같은 게임(한 작품의 두 SKU)이 두 벌 생긴다
+      if (enriched.meta?.titleEn) {
+        titles.push({ id: created.id, slug: created.slug, titleEn: enriched.meta.titleEn, titleKo: enriched.meta.titleKo ?? null });
+      }
+      if (snapshot.titleCode) codeOwner.set(snapshot.titleCode, { id: created.id, slug: created.slug });
+      refOwned.add(created.id);
       noteTouched(ctx.touched, created.slug, [], true);
       applied.push({ gameId: created.id, slug: created.slug, snapshot: enriched });
     } catch (e) {

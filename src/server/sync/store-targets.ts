@@ -7,10 +7,20 @@ import type { SearchCandidate } from "@/server/adapters/types";
 import { errorMessage } from "@/lib/errors";
 import { normalizeTitle } from "@/lib/slug";
 import { findGameByTitle, type GameTitleRow } from "./match";
-import { collectFreshCandidates, seedQuota } from "./discover";
+import { collectFreshCandidates, nextDiscoveryCursor, seedQuota } from "./discover";
 import { resolveRankRows, writePopularityRanks } from "./rank-writer";
 import { missingRefExcluded } from "./missing-refs";
-import { DISCOVERY_PAGE_BUDGET, MATCHED_FOR_SYNC, REFRESH_MAIN_SHARE, SOURCE_PLATFORMS, SOURCE_REGION } from "./constants";
+import {
+  DISCOVERY_CURSOR_TTL_SEC,
+  DISCOVERY_PAGE_BUDGET,
+  DISCOVERY_RETRY_UNMATCHED_SOURCES,
+  discoveryCursorKey,
+  MATCHED_FOR_SYNC,
+  REFRESH_MAIN_SHARE,
+  SOURCE_PLATFORMS,
+  SOURCE_REGION,
+} from "./constants";
+import { getRedis } from "@/server/redis";
 import { fetchWithRetry } from "./retry";
 import type { Ctx } from "./context";
 
@@ -166,20 +176,38 @@ async function refreshRows(
 /**
  * 이 소스에서 이미 아는 externalId 집합 — 매핑된 것(game_source_refs)과 수집하지 않기로 한 것(discovery_ignores).
  * 무시 목록까지 봐야 에디션 SKU 가 매 실행 "신규" 로 잡혀 시드 몫을 먹는 일이 없다.
+ * 매칭에서 떨어진 ID(none)를 아는 것으로 칠지는 소스마다 다르다(DISCOVERY_RETRY_UNMATCHED_SOURCES 주석).
  */
 async function knownExternalIds(db: Db, source: StoreSource, ids: string[]): Promise<Set<string>> {
   if (ids.length === 0) return new Set();
+  const retryUnmatched = DISCOVERY_RETRY_UNMATCHED_SOURCES.includes(source);
   const [refs, ignored] = await Promise.all([
     db
       .select({ externalId: gameSourceRefs.externalId })
       .from(gameSourceRefs)
-      .where(and(eq(gameSourceRefs.source, source), inArray(gameSourceRefs.externalId, ids))),
+      .where(
+        and(
+          eq(gameSourceRefs.source, source),
+          inArray(gameSourceRefs.externalId, ids),
+          retryUnmatched ? ne(gameSourceRefs.matchedBy, "none") : undefined,
+        ),
+      ),
     db
       .select({ externalId: discoveryIgnores.externalId })
       .from(discoveryIgnores)
       .where(and(eq(discoveryIgnores.source, source), inArray(discoveryIgnores.externalId, ids))),
   ]);
   return new Set([...refs, ...ignored].map((r) => r.externalId));
+}
+
+/** 이 소스의 ref 가 매칭 탈락 기록(none)뿐인 게임 */
+async function gamesWithOnlyUnmatchedRef(db: Db, source: StoreSource): Promise<Set<string>> {
+  // PK 가 (game_id, source) 라 게임당 이 소스 ref 는 한 줄이다 — none 인 줄이 곧 "탈락 기록뿐" 이다
+  const rows = await db
+    .select({ gameId: gameSourceRefs.gameId })
+    .from(gameSourceRefs)
+    .where(and(eq(gameSourceRefs.source, source), eq(gameSourceRefs.matchedBy, "none")));
+  return new Set(rows.map((r) => r.gameId));
 }
 
 /** 이 소스에 이미 ref 가 붙은 게임 id 집합. 같은 게임의 두 번째 SKU 를 가려내는 데 쓴다 */
@@ -192,7 +220,7 @@ export async function gamesWithRef(db: Db, source: StoreSource): Promise<Set<str
  * 작품 코드 → 그 코드를 가진 게임. 같은 작품이면 나라가 달라도 같은 코드라
  * "일본에서 발견한 이 상품이 우리가 이미 아는 게임인가" 를 제목 없이 판정한다.
  */
-async function gamesByTitleCode(db: Db, codes: string[]): Promise<Map<string, { id: string; slug: string }>> {
+export async function gamesByTitleCode(db: Db, codes: string[]): Promise<Map<string, { id: string; slug: string }>> {
   const wanted = Array.from(new Set(codes));
   if (wanted.length === 0) return new Map();
   const rows = await db
@@ -278,8 +306,9 @@ async function seedTargets(ctx: Ctx, source: StoreSource, seedWant: number, page
   // 이 발견 걸음이 주운 순번만 센다. ctx.rankedCount 는 0단계(listPopularPages)가 이미 쓴 것을
   // 포함하고 있어서, 그걸 그대로 적으면 같은 수를 두 번 말한다
   let rankedHere = 0;
+  const startPage = adapter.resumableDiscovery ? await readDiscoveryCursor(source) : undefined;
   const result = await fetchWithRetry(() =>
-    collectFreshCandidates(adapter.discoverPages!(), {
+    collectFreshCandidates(adapter.discoverPages!(startPage), {
       want: seedWant,
       pageBudget: pageBudget ?? DISCOVERY_PAGE_BUDGET[source] ?? 0,
       unknownOf: async (ids) => {
@@ -302,8 +331,15 @@ async function seedTargets(ctx: Ctx, source: StoreSource, seedWant: number, page
     }),
   );
   const { fresh } = result;
+  if (startPage !== undefined) await writeDiscoveryCursor(source, nextDiscoveryCursor(startPage, result));
   // 콘솔 줄은 워크플로 로그가 지워지면 사라진다 — 포화 판단에 쓰려면 실행 기록으로 남아야 한다
-  ctx.discovery = { pages: result.pages, scanned: result.scanned, fresh: fresh.length, stoppedBy: result.stoppedBy };
+  ctx.discovery = {
+    pages: result.pages,
+    scanned: result.scanned,
+    fresh: fresh.length,
+    stoppedBy: result.stoppedBy,
+    ...(startPage !== undefined ? { startPage } : {}),
+  };
   console.log(
     `[sync:${source}] 발견 ${result.pages}페이지, ${result.scanned}건 훑어 신규 ${fresh.length}건 (중단 사유: ${result.stoppedBy})` +
       (rankedHere > 0 ? `, 걸으며 순번 ${rankedHere}건 더 기록` : ""),
@@ -324,6 +360,10 @@ async function seedTargets(ctx: Ctx, source: StoreSource, seedWant: number, page
   // 스토어는 같은 게임을 에디션, 플랫폼별 SKU 로 여러 벌 내보낸다. 그 게임에 이 소스 ref 가 이미 있으면
   // 두 번째 SKU 는 수집하지 않는다 — 수집하면 본편 가격이 에디션 가격(보통 더 비싸다)으로 덮인다.
   const refOwned = await gamesWithRef(db, source);
+  // 매칭에서 떨어진 기록(none)만 가진 게임. refOwned 에 들어 있어 아래에서 "다른 SKU" 로 걸러지는데,
+  // 이유가 다르다 — 매칭은 "닮지 않았다" 고 했고 발견은 "닮았다" 고 한다. 두 판정이 엇갈리면
+  // 새 게임으로도, 그 게임의 ref 로도 만들지 않고 사람 몫으로 남긴다(중복도 오매칭도 안 만드는 쪽)
+  const unmatchedOnly = DISCOVERY_RETRY_UNMATCHED_SOURCES.includes(source) ? await gamesWithOnlyUnmatchedRef(db, source) : new Set<string>();
   const newTitles = new Set<string>(); // 이번 실행에서 새 게임으로 보낸 제목 — 한 실행 안의 SKU 중복도 막는다
 
   const out: StoreTarget[] = [];
@@ -359,7 +399,10 @@ async function seedTargets(ctx: Ctx, source: StoreSource, seedWant: number, page
       continue;
     }
     if (refOwned.has(hit.game.id)) {
-      await ignore(c.externalId, hit.game.id, `${hit.game.slug} 의 다른 SKU (에디션, 플랫폼판)`);
+      const reason = unmatchedOnly.has(hit.game.id)
+        ? `${hit.game.slug} 와 제목이 닮았지만 매칭은 탈락시킨 후보 — 사람 판정 몫`
+        : `${hit.game.slug} 의 다른 SKU (에디션, 플랫폼판)`;
+      await ignore(c.externalId, hit.game.id, reason);
       continue;
     }
     await linkRef(db, source, hit.game.id, c, hit.similarity, ctx.now);
@@ -371,4 +414,26 @@ async function seedTargets(ctx: Ctx, source: StoreSource, seedWant: number, page
     `[sync:${source}] 신규 ${fresh.length}건 (기존 게임에 흡수 ${absorbed}, 새 게임 ${out.length - absorbed}, 중복 SKU 제외 ${ignored})`,
   );
   return out;
+}
+
+/**
+ * 지난 실행이 멈춘 쪽. 못 읽으면(키 없음, Redis 장애) 1쪽 — 처음부터 읽는 것은 느릴 뿐 틀리지 않는다.
+ * 커서 때문에 발견이 멈추면 안 된다: 발견은 부가 작업이고 그 부가 작업의 부가 값이 이것이다.
+ */
+async function readDiscoveryCursor(source: StoreSource): Promise<number> {
+  try {
+    const v = Number(await getRedis().get(discoveryCursorKey(source)));
+    return Number.isInteger(v) && v >= 1 ? v : 1;
+  } catch (e) {
+    console.warn(`[sync:${source}] 발견 커서 읽기 실패 — 1쪽부터: ${errorMessage(e)}`);
+    return 1;
+  }
+}
+
+async function writeDiscoveryCursor(source: StoreSource, page: number): Promise<void> {
+  try {
+    await getRedis().set(discoveryCursorKey(source), String(page), { ex: DISCOVERY_CURSOR_TTL_SEC });
+  } catch (e) {
+    console.warn(`[sync:${source}] 발견 커서 쓰기 실패 — 다음 실행은 같은 쪽부터: ${errorMessage(e)}`);
+  }
 }

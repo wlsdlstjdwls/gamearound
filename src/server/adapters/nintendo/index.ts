@@ -10,13 +10,15 @@ import { sleep } from "@/lib/async";
 import { AdapterError, type SearchCandidate, type StoreAdapter, type StoreSnapshot } from "../types";
 import { createHttpClient, notFoundAs } from "../http";
 import {
-  DISCOVERY_MAX_PAGES,
-  DISCOVERY_QUERIES,
   EC_PRICE_BATCH,
   JP_DISCOVER_FQ,
   jpDlcFq,
   JP_SEARCH_PAGE_SIZE,
   JP_SEARCH_URL,
+  KR_CATALOG_INTERVAL_MS,
+  KR_CATALOG_PAGE_MS,
+  KR_CATALOG_PAGE_SIZE,
+  KR_CATALOG_URL,
   NINTENDO_BASE_URL,
   nintendoProductUrl,
   jpProductUrl,
@@ -24,11 +26,13 @@ import {
 import { ecPriceUrl, parseEcPrices, type EcPrice } from "./price-api";
 import { parseNintendoProduct, parseNintendoSearch, requireBody } from "./parse-kr";
 import { parseJpSearch } from "./search-jp";
+import { parseKrCatalog } from "./catalog-kr";
 
 export * from "./constants";
 export * from "./parse-kr";
 export * from "./price-api";
 export * from "./search-jp";
+export * from "./catalog-kr";
 
 // eShop 은 HTML 크롤이라 봇 차단을 피하려 한국어 Accept-Language 를 명시한다. 타임아웃도 API 보다 길게 잡는다.
 const krHttp = createHttpClient({
@@ -112,20 +116,24 @@ export const nintendoAdapter: StoreAdapter = {
    * (enqueuetoken)이 앞을 막아 자동 경로가 아니다. nintendo.co.jp/software/ranking 은 404 다.
    */
   /**
-   * 검색 시드 × 페이지네이션으로 카탈로그를 페이지 단위로 흘려보낸다. 한 시드가 바닥나면 다음 시드로.
-   * 아는 것을 걸러내고 멈출 시점을 정하는 일은 호출부 몫이다(adapters/types 의 discoverPages 주석).
+   * 카탈로그 전체 목록을 startPage 쪽부터 끝까지 흘려보낸다(catalog-kr 주석: 검색 시드를 이걸로 바꾼 이유).
+   * 어디서 시작할지는 호출부가 정한다 — 지난 실행이 멈춘 쪽을 기억하는 일은 DB, Redis 를 보는 sync 몫이다.
+   * 걸러 낸 뒤 0건인 쪽(굿즈만 있는 쪽)도 빈 배열로 흘려보낸다 — 건너뛰면 호출부가 센 쪽 수와
+   * 실제 쪽 번호가 어긋나 다음 시작점이 틀린다.
    */
-  async *discoverPages(): AsyncGenerator<SearchCandidate[]> {
-    for (const q of DISCOVERY_QUERIES) {
-      for (let page = 1; page <= DISCOVERY_MAX_PAGES; page++) {
-        const u = new URL(`${NINTENDO_BASE_URL}/catalogsearch/result/`);
-        u.searchParams.set("q", q);
-        u.searchParams.set("p", String(page));
-        const found = parseNintendoSearch(requireBody(await krHttp.text(u.toString()), `discover:${q}:${page}`));
-        if (found.length === 0) break; // 이 시드는 끝 — 다음 시드로
-        yield found;
-        await sleep(nintendoAdapter.minIntervalMs);
-      }
+  resumableDiscovery: true,
+  discoverPageMs: KR_CATALOG_PAGE_MS,
+  async *discoverPages(startPage = 1): AsyncGenerator<SearchCandidate[]> {
+    for (let page = Math.max(1, startPage); ; page++) {
+      const u = new URL(KR_CATALOG_URL);
+      u.searchParams.set("storeId", "1");
+      u.searchParams.set("currencyCode", "KRW");
+      u.searchParams.set("searchCriteria[pageSize]", String(KR_CATALOG_PAGE_SIZE));
+      u.searchParams.set("searchCriteria[currentPage]", String(page));
+      const { candidates, rawCount } = parseKrCatalog(await krHttp.json(u.toString()));
+      if (rawCount === 0) return;
+      yield candidates;
+      await sleep(KR_CATALOG_INTERVAL_MS);
     }
   },
 };

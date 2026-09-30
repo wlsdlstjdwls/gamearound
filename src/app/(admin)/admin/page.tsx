@@ -131,7 +131,7 @@ function SourceCard({ item, run, now }: { item: SyncOverviewItem; run: RunItems 
           <Metric label={SYNC_MESSAGES.processedFailed} value={`${l.processed ?? 0} | ${l.failed ?? 0}`} />
           <Metric label={SYNC_MESSAGES.failedToday} value={`${item.failedToday}회`} alert={item.failedToday > 0} />
           {d && (
-            <Metric label={SYNC_MESSAGES.discovery} value={SYNC_MESSAGES.discoverySummary(d.pages, d.scanned, d.fresh)} />
+            <Metric label={SYNC_MESSAGES.discovery} value={SYNC_MESSAGES.discoverySummary(d.pages, d.scanned, d.fresh, d.startPage)} />
           )}
         </dl>
       ) : (

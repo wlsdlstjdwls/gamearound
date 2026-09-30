@@ -74,15 +74,17 @@ function estimateMs(source: (typeof CRON_SOURCES)[number], mode: CronMode): numb
   const patchRequests = PATCH_SOURCES.includes(source) ? (PATCH_LIST_PER_RUN_BY_SOURCE[source] ?? PATCH_LIST_PER_RUN) : 0;
   const requirementRequests = adapter.fetchRequirements ? REQUIREMENTS_PER_RUN : 0;
 
+  // 목록 쪽은 따로 센다 — 목록 간격이 상세 간격과 다른 소스가 있다(nintendo: 목록 한 쪽 6초, 상세 4초)
+  const pageMs = plan.pageBudget * (adapter.discoverPageMs ?? adapter.minIntervalMs);
   const requests =
-    plan.pageBudget + plan.match + detailItems + Math.ceil(batchedItems / perRequest) + dlcListRequests + dlcFetchRequests +
+    plan.match + detailItems + Math.ceil(batchedItems / perRequest) + dlcListRequests + dlcFetchRequests +
     patchRequests + requirementRequests;
   // 새로 들어오는 것(시드 + 새 DLC)과 이미 아는 것을 갈라 센다
   const newItems = plan.seedTop + dlcFetchItems;
   const updatedItems = Math.max(plan.limit - plan.seedTop, 0);
   const newItemMs = CRON_DB_MS_PER_NEW_ITEM_BY_SOURCE[source] ?? CRON_DB_MS_PER_NEW_ITEM;
   const applyMs = newItems * newItemMs + updatedItems * CRON_DB_MS_PER_ITEM;
-  return (requests * adapter.minIntervalMs + applyMs) * CRON_SAFETY_FACTOR;
+  return (pageMs + requests * adapter.minIntervalMs + applyMs) * CRON_SAFETY_FACTOR;
 }
 
 describe("CRON_PLAN", () => {

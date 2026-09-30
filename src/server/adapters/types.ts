@@ -238,7 +238,18 @@ export interface SourceAdapter<T extends StoreSnapshot | MetaSnapshot | NewsItem
    * 어디까지 아는지는 DB 를 보는 호출부(sync/store-targets)만 알기 때문에, 거르는 일도 멈출 시점도 호출부가 정한다.
    * 요청 간격(minIntervalMs)은 페이지를 넘길 때마다 어댑터가 지킨다.
    */
-  discoverPages?(): AsyncIterable<SearchCandidate[]>;
+  discoverPages?(startPage?: number): AsyncIterable<SearchCandidate[]>;
+  /**
+   * discoverPages 가 startPage 를 받아 **그 쪽부터** 읽을 수 있다(순서가 고정된 전수 목록).
+   * 켜면 sync 가 지난 실행이 멈춘 쪽을 기억해 넘긴다(store-targets 의 발견 커서). 끄면 늘 처음부터다 —
+   * 인기순, 관련도순처럼 순서가 매번 바뀌는 목록은 쪽 번호를 기억해 봐야 뜻이 없다.
+   */
+  resumableDiscovery?: boolean;
+  /**
+   * 발견 목록 한 쪽에 드는 시간(ms). 비우면 minIntervalMs 로 센다. 크론 몫 어림(cron-plan.test)만 쓴다 —
+   * 목록 요청 간격이 상세 요청 간격과 다른 소스(nintendo 는 목록 1초, 상세 4초)를 위해 있다.
+   */
+  discoverPageMs?: number;
   /** 소스별 요청 간격(ms). 크롤 대상은 보수적으로 */
   minIntervalMs: number;
 }

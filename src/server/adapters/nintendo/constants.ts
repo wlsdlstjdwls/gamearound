@@ -80,16 +80,30 @@ export const DIGITAL_ID = /^\d{10,}$/;
 export const PLATFORM_SWITCH2 = /switch\s*2/i;
 
 /**
- * 한국 카탈로그 발견용 검색 시드. Magento 카테고리 페이지(/digital)는 클라이언트 렌더라 ?p= 가 먹지 않고,
- * GraphQL 도 꺼져 있다(2026-09-14 확인). 서버 렌더되는 검색 결과만 페이지네이션이 동작하므로
- * 흔한 글자를 질의로 넣어 훑는다. 시드 간 중복은 호출부가 제거한다.
+ * 한국 카탈로그 전체 목록(Magento REST). 로그인 없이 열리고 상품마다 이름, 주소(nsuid), 판매 가능 여부를 준다.
+ *
+ * 2026-09-30 에 검색 시드("a", "e" ... 23개 × 24건/쪽)를 이걸로 바꿨다. 검색 시드 발견은 실행마다
+ * "a" 1쪽부터 다시 읽었고 크론 예산이 12쪽이라 **늘 같은 288건**만 봤다 — 한국 스토어 본편 9,697건 중
+ * 우리가 아는 건 844건이었는데 발견 56회 중 29회가 신규 0건이었다(2026-09-30 실측).
+ * 이 목록은 순서가 고정된 전수라 "어디까지 읽었나" 를 쪽 번호 하나로 기억해 이어 읽을 수 있다(sync/store-targets).
+ * 실측: 100건/쪽, 전체 10,107건 = 102쪽, 응답 중앙값 4.7초.
  */
-export const DISCOVERY_QUERIES = [
-  "a", "e", "i", "o", "u", "s", "t", "r", "n", "l", "the", "1", "2",
-  "의", "이", "스", "리", "드", "마", "게임", "어", "라", "트",
-];
-/** 검색 결과 1페이지에 24건. 시드 하나가 이 페이지 수를 넘기면 다음 시드로 넘어간다 */
-export const DISCOVERY_MAX_PAGES = 60;
+export const KR_CATALOG_URL = `${NINTENDO_BASE_URL}/rest/default/V1/products-render-info`;
+/** 한 쪽 건수. 100 보다 크게 받으면 응답이 커져 느려질 뿐 요청 수는 이미 충분히 적다 */
+export const KR_CATALOG_PAGE_SIZE = 100;
+/**
+ * 쪽 사이 간격. 상품 HTML(4초)보다 짧게 둔다 — JSON API 한 번이 100건이라 요청 수 자체가 적고,
+ * 2026-09-30 에 1초 간격으로 103쪽을 연달아 받았을 때 차단이 없었다.
+ */
+export const KR_CATALOG_INTERVAL_MS = 1000;
+/** 쪽 한 장에 드는 시간(응답 4.7초 + 간격 1초). 크론 몫 어림에 쓴다(cron-plan.test) */
+export const KR_CATALOG_PAGE_MS = 6000;
+/**
+ * 본편 nsuid 접두어. 7005 는 추가 콘텐츠, 7007 은 묶음이다(2026-09-26 실측).
+ * 추가 콘텐츠를 목록에서 받지 않는 이유는 일본과 같다(JP_DISCOVER_FQ) — 어느 본편 것인지 몰라
+ * 독립 게임으로 만들면 카탈로그가 오염된다.
+ */
+export const KR_MAIN_GAME_NSUID_PREFIX = "7001";
 
 export const nintendoProductUrl = (id: string): string => `${NINTENDO_BASE_URL}/${id}`;
 

@@ -99,7 +99,9 @@ export const SYNC_MESSAGES = {
   processedFailed: "처리한 건 | 실패한 건",
   failedToday: "오늘 실패",
   discovery: "신규 찾기",
-  discoverySummary: (pages: number, scanned: number, fresh: number) => `${pages}쪽에서 ${scanned}건 훑어 신규 ${fresh}건`,
+  /** startPage 는 이어 읽는 소스만 준다 — 실행마다 앞으로 나가는지가 보여야 "같은 데만 본다" 가 갈린다 */
+  discoverySummary: (pages: number, scanned: number, fresh: number, startPage?: number) =>
+    `${startPage ? `${startPage}쪽부터 ` : ""}${pages}쪽에서 ${scanned}건 훑어 신규 ${fresh}건`,
   /*
    * "가져온 게임" 시트 — 마지막 기록 실행이 만진 게임과 바뀐 값(2026-09-30, "방금 만진 게임" 세 줄을 대신한다).
    * 제목이 먼저인 이유는 그대로다: 숫자가 아니라 이름이라야 "엉뚱한 걸 긁고 있나" 가 갈린다
@@ -110,9 +112,14 @@ export const SYNC_MESSAGES = {
     processed > shown
       ? `${ago} 시작한 실행이에요. 처리한 ${processed.toLocaleString("ko-KR")}건 가운데 ${shown.toLocaleString("ko-KR")}건을 보여줘요. 새로 등록한 것과 값이 바뀐 것이 먼저 와요.`
       : `${ago} 시작한 실행이에요.`,
+  /** 되짚은 목록(admin-activity 의 traceRunItems)에만 붙는다 — 모르는 것을 "바뀐 값 없음" 으로 읽히지 않게 */
+  runItemsTraced: "이 실행은 가져온 값 기록을 남기기 전이라, 가격과 새로 등록만 보여요. 다음 수집부터는 바뀐 항목이 전부 나와요.",
   runItemsCreated: "새로 등록",
   runItemsChanged: "값 바뀜",
   runItemsSame: "그대로",
+  /** 되짚은 목록은 가격만 알아서 셈의 이름도 가격으로 좁힌다 */
+  runItemsPriceChanged: "가격 바뀜",
+  runItemsPriceSame: "가격 그대로",
   /** 가져와 견줬지만 달라진 칸이 없다 — 실패가 아니다 */
   runItemsNoChange: "바뀐 값 없음",
   errorSample: "에러 맛보기",

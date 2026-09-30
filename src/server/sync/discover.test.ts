@@ -1,6 +1,6 @@
 // 발견 수집기 테스트 — 네트워크, DB 없음. 페이지는 가짜 async iterable, 아는 것은 Set 으로 준다.
 import { describe, expect, it } from "vitest";
-import { collectFreshCandidates, seedQuota } from "./discover";
+import { collectFreshCandidates, seedQuota, nextDiscoveryCursor } from "./discover";
 import type { SearchCandidate } from "@/server/adapters/types";
 
 const candidate = (id: string): SearchCandidate => ({ externalId: id, title: `게임 ${id}`, url: `https://x/${id}` });
@@ -180,5 +180,20 @@ describe("collectFreshCandidates 의 순번 수집(onRanked)", () => {
       onRanked: async (r) => void seen.push(r),
     });
     expect(seen.flat().map((c) => c.rank)).toEqual([5]);
+  });
+});
+
+describe("nextDiscoveryCursor", () => {
+  it("끝까지 읽었으면 처음으로", () => {
+    expect(nextDiscoveryCursor(40, { pages: 63, stoppedBy: "catalog-end" })).toBe(1);
+  });
+  it("목표를 채워 멈췄으면 마지막 쪽을 다시 읽는다 — 그 쪽의 남은 후보를 안 잃게", () => {
+    expect(nextDiscoveryCursor(40, { pages: 2, stoppedBy: "want" })).toBe(41);
+  });
+  it("예산을 다 썼으면 다음 쪽부터", () => {
+    expect(nextDiscoveryCursor(40, { pages: 10, stoppedBy: "budget" })).toBe(50);
+  });
+  it("한 쪽도 못 읽었으면 제자리", () => {
+    expect(nextDiscoveryCursor(40, { pages: 0, stoppedBy: "want" })).toBe(40);
   });
 });

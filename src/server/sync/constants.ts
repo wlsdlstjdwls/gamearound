@@ -139,7 +139,7 @@ export const LOCAL_SEED_PLAN: Partial<Record<Source, { seedTop: number; limit?: 
 export const CRON_SOURCES = ["nintendo", "nintendo_jp", "epic", "steam", "psstore", "xbox"] as const;
 // 주기는 vercel.json 의 crons 에 있다 — JSON 이라 주석을 못 달아 근거를 여기 적는다(시각은 UTC).
 //   /api/cron/crawl/nintendo/prices       15 */6 * * *          하루 4회 × 300건 = 1,200건/일
-//   /api/cron/crawl/nintendo/discover     45 1,7,13,19 * * *    하루 4회 × 20건 = 80건/일 (신규는 상품 HTML 이라 4초 간격을 탄다)
+//   /api/cron/crawl/nintendo/discover     45 1,7,13,19 * * *    하루 4회 × 60건 = 240건/일 (신규는 상품 HTML 이라 4초 간격을 탄다)
 //   /api/cron/crawl/nintendo_jp/prices    35 */12 * * *         하루 2회 × 300건 = 600건/일
 //   /api/cron/crawl/nintendo_jp/discover  5 2,14 * * *          하루 2회 × 60건 = 120건/일 (한 바퀴가 약 300페이지)
 // 일본 몫을 2026-09-16 에 반으로 줄였다(넷에서 둘로). 이유는 산수다 — JP 행이 585개인데 하루 1,200건을
@@ -281,9 +281,16 @@ export const CRON_PLAN: Record<CronSource, Record<CronMode, CronRunPlan>> = {
   nintendo: {
     // 가격이 배치 50건/요청이라 요청은 6회(24초)뿐이고 남는 건 반영 시간이다: (24 + 300×0.4)×1.15 = 166초
     prices: { limit: 300, seedTop: 0, pageBudget: 0, match: 0 },
-    // 신규 20건은 상품 HTML 단건 조회다(batchPricesOnly "detail") — 여기만 4초 간격을 그대로 탄다.
-    // 요청 (12페이지 + 매칭 3 + 신규 20) × 4초 = 140초, 반영 24건 × 0.4초 → 합 172초
-    discover: { limit: 24, seedTop: 20, pageBudget: 12, match: 3, seedShare: 1 },
+    // 2026-09-30 에 20건에서 60건으로 올렸다. 20건이던 때는 발견이 늘 같은 288건만 봐서(adapters/nintendo 의
+    // KR_CATALOG_URL 주석) 몫이 비어도 티가 안 났는데, 목록을 이어 읽게 되면서 몫이 곧 하루 유입량이 됐다
+    // (한국 본편 9,697건 중 모르는 것 약 8,000건, 20건 × 4회로는 100일이 넘는다).
+    // 신규는 여전히 상품 HTML 단건 조회다(batchPricesOnly "detail"). 목록으로만 등록하지 않는 이유:
+    // 작품 코드(일본, 다른 스토어와 같은 게임인지 가르는 유일한 구조적 근거)와 발매일이 HTML 에만 있다 —
+    // 그걸 빼고 제목으로만 등록하면 중복 게임이 생긴다.
+    // 목록 10쪽 × 6초 = 60초 + 요청 (매칭 3 + 신규 60) × 4초 = 252초 + 반영 60건 × 1.8초 = 108초 → × 1.15 = 483초.
+    // 목록 10쪽 = 1,000건이면 모르는 것이 8할인 지금은 1~2쪽에서 60건이 찬다. 10쪽은 포화된 뒤를 위한 값이다
+    // (그때는 한 실행이 10쪽씩 앞으로 나가 하루 40쪽, 이틀 반에 한 바퀴를 돈다).
+    discover: { limit: 60, seedTop: 60, pageBudget: 10, match: 3, seedShare: 1 },
     // 간격 4초라 제일 비싸다. 검색은 제목 두 개(영문, 한글)까지 나가므로 건당 최대 8.4초로 센다 → 60건 580초
     match: { limit: 0, seedTop: 0, pageBudget: 0, match: 60 },
   },
@@ -460,10 +467,10 @@ export const SEEDABLE_SOURCES: Source[] = ["steam", "psstore", "xbox", "nintendo
 export const DISCOVERY_PAGE_BUDGET: Partial<Record<StoreSource, number>> = {
   // 1.5초 × 80 ≈ 2분. 페이지당 100건이라 이미 아는 8,000건 구간을 건너뛰고도 신규를 만난다
   steam: 80,
-  // 4초 × 150 ≈ 10분. 검색 결과가 페이지당 24건이라 한 실행에 3,600건까지 훑는다.
-  // 이 값은 **로컬 실행에서만** 쓰인다 — 닌텐도는 Actions 워크플로에 없고, 크론은 pageBudget 12 를
-  // 직접 넘긴다(CRON_PLAN). 그래서 Actions 무료 분과 함수 300초 어디에도 영향이 없다.
-  nintendo: 150,
+  // 6초 × 110 ≈ 11분. 전체 목록이 100건/쪽, 102쪽이라 한 실행에 한 바퀴를 다 돈다.
+  // 이 값은 **로컬 실행에서만** 쓰인다 — 닌텐도는 Actions 워크플로에 없고, 크론은 pageBudget 을
+  // 직접 넘긴다(CRON_PLAN). 그래서 Actions 무료 분과 함수 시간 어디에도 영향이 없다.
+  nintendo: 110,
   // 1초 × 200 ≈ 3.5분. 카탈로그 한 바퀴가 약 175페이지(40건/page)
   epic: 200,
   // 1.5초 × 60 ≈ 90초. KR 16,991건이 페이지당 43~48건이라 한 바퀴는 340페이지 — 며칠에 걸쳐 채운다
@@ -473,6 +480,31 @@ export const DISCOVERY_PAGE_BUDGET: Partial<Record<StoreSource, number>> = {
   // 1초 × 90 ≈ 1.5분. 서버가 페이지를 24건으로 깎아 KR 7,571건이 316페이지다
   psstore: 90,
 };
+/**
+ * 발견 커서(이어 읽을 쪽 번호)를 두는 Redis 키. resumableDiscovery 를 켠 어댑터만 쓴다(store-targets).
+ * DB 가 아니라 Redis 에 두는 이유: 잃어도 되는 값이다 — 사라지면 1쪽부터 다시 읽을 뿐 데이터는 안 틀린다.
+ * 그런 값에 테이블과 마이그레이션을 들이지 않는다.
+ */
+export const discoveryCursorKey = (source: StoreSource): string => `discover:cursor:${source}`;
+/**
+ * 커서 수명. 크론이 하루 4회 돌면 늘 새로 쓰이므로 사실상 만료되지 않는다.
+ * 한 달을 두는 이유는 소스를 끄고 오래 뒀다 켰을 때다 — 그 사이 목록이 바뀌었을 테니 처음부터 읽는 게 낫다.
+ */
+export const DISCOVERY_CURSOR_TTL_SEC = 30 * 24 * 3600;
+/**
+ * 매칭에서 떨어진 ID(matched_by "none")도 발견에서는 **모르는 것**으로 보는 소스.
+ *
+ * 왜 필요했나(2026-09-30 실측): 매칭 모드는 "우리 게임 X 가 이 스토어에 있나" 를 제목으로 찾다가,
+ * 닮지 않은 후보 E 를 (X, E, none) 으로 적어 둔다. 발견은 그 E 까지 "이미 아는 것" 으로 쳐서
+ * **E 는 영영 새 게임으로도 등록되지 않았다** — 한국 닌텐도에서만 877건. E 는 X 가 아니라고 판정된 것이지
+ * 카탈로그에 없어도 된다고 판정된 것이 아니다.
+ *
+ * 닌텐도만 켠 이유: 다른 스토어도 같은 구멍일 수 있지만(psstore none 4,250, xbox 6,158, epic 5,338)
+ * 한꺼번에 열면 애매하게 떨어졌던 후보가 새 게임으로 쏟아진다. 중복 방지(작품 코드, 제목, 이미 ref 가
+ * 있는 게임의 두 번째 SKU 거르기)가 이 소스에서 버티는지 본 뒤에 넓힌다.
+ */
+export const DISCOVERY_RETRY_UNMATCHED_SOURCES: StoreSource[] = ["nintendo"];
+
 /**
  * 신규 시드가 한 배치에서 가져갈 수 있는 몫의 상한. 시드는 대상 목록 맨 앞에 붙으므로
  * 상한이 없으면 카탈로그가 비어 있는 초기에 시드가 배치를 통째로 먹고 기존 게임 가격이 안 갱신된다.
