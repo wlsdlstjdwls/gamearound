@@ -8,13 +8,15 @@ import { getDb } from "@/server/db/client";
 import { getCompanyAdapter } from "@/server/adapters";
 import { errorMessage } from "@/lib/errors";
 import { attachCompany } from "@/server/sync/company-writer";
-import { listCompanyTargets, listPendingCompanyNames } from "@/server/sync/run-companies";
+import { clearMisses, listCompanyTargets, listPendingCompanyNames } from "@/server/sync/run-companies";
+import { normalizeCompanyName } from "@/lib/company-name";
 import { loadLockedFields, type Ctx } from "@/server/sync/context";
 
 /** 한 화면에 띄울 검수 큐 길이. 더 길면 사람이 훑지 못한다 */
 export const PENDING_COMPANIES_LIMIT = 60;
 
-export type PendingCompany = { name: string; gameCount: number };
+/** outcome 은 수집이 이미 물어보고 못 붙인 사유다. null 이면 아직 안 물어본 이름이다 */
+export type PendingCompany = { name: string; gameCount: number; outcome: "not_found" | "ambiguous" | null };
 
 export async function listPendingCompanies(limit: number = PENDING_COMPANIES_LIMIT): Promise<PendingCompany[]> {
   return listPendingCompanyNames(getDb(), limit);
@@ -40,7 +42,7 @@ async function adminCtx(): Promise<Ctx> {
 }
 
 export type ResolveResult =
-  | { ok: true; message: string; companySlugs: string[] }
+  | { ok: true; message: string; companySlugs: string[]; gameSlugs: string[] }
   | { ok: false; message: string };
 
 /**
@@ -59,13 +61,16 @@ export async function resolveCompanyName(rawName: string): Promise<ResolveResult
     if (!info) return { ok: false, message: "위키데이터에서 이 이름으로 회사 하나를 확정하지 못했어요" };
 
     // 이 이름을 쓰는 게임을 모아 한 번에 연결한다 — 큐에 뜬 이름은 여러 게임에 걸려 있다
-    const targets = await listCompanyTargets(ctx.db, PENDING_COMPANIES_LIMIT);
-    const links = targets.find((t) => t.rawName === name)?.links ?? [];
+    const key = normalizeCompanyName(name);
+    const targets = await listCompanyTargets(ctx.db);
+    const links = targets.find((t) => normalizeCompanyName(t.rawName) === key)?.links ?? [];
     await attachCompany(ctx, info, name, links);
+    await clearMisses(ctx.db, [name]);
     return {
       ok: true,
       message: `${info.nameKo ?? info.nameEn} 로 붙였어요 (게임 ${links.length}개)`,
       companySlugs: Array.from(ctx.changedCompanySlugs),
+      gameSlugs: links.flatMap((l) => (l.slug ? [l.slug] : [])),
     };
   } catch (e) {
     return { ok: false, message: errorMessage(e) };

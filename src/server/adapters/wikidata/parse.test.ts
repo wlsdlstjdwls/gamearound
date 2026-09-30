@@ -1,6 +1,7 @@
 // 위키데이터 파서 테스트 — 네트워크 없음. 실측 응답 모양을 그대로 케이스로 만든다.
 import { describe, expect, it } from "vitest";
-import { entityId, exactSearchMatches, groupCompanies, resolveSingleCompany, toIsoDate } from "./parse";
+import type { CompanyInfo } from "../types";
+import { chunkCandidates, entityId, exactSearchMatches, groupCompanies, resolveCandidates, resolveSingleCompany, toIsoDate } from "./parse";
 
 /** 2026-09-14 실측 응답을 줄인 것. OPTIONAL 때문에 한 회사가 여러 행으로 쪼개져 온다 */
 const FROMSOFTWARE = {
@@ -164,5 +165,76 @@ describe("exactSearchMatches", () => {
   it("응답이 비었거나 형태가 다르면 빈 배열", () => {
     expect(exactSearchMatches({}, "Nintendo")).toEqual([]);
     expect(exactSearchMatches(hits, "   ")).toEqual([]);
+  });
+});
+
+const company = (externalId: string, nameEn: string, nameKo: string | null = null): CompanyInfo => ({
+  externalId,
+  nameEn,
+  nameKo,
+  countryCode: null,
+  countryNameKo: null,
+  foundedAt: null,
+  hqNameKo: null,
+  websiteUrl: null,
+  description: null,
+});
+
+describe("chunkCandidates", () => {
+  it("한 이름의 후보는 한 묶음 안에 둔다", () => {
+    const byName = new Map([
+      ["A", ["Q1", "Q2"]],
+      ["B", ["Q3", "Q4"]],
+      ["C", ["Q5"]],
+    ]);
+    expect(chunkCandidates(byName, 3)).toEqual([["Q1", "Q2"], ["Q3", "Q4", "Q5"]]);
+  });
+
+  it("여러 이름이 나눠 가진 후보는 한 번만 싣는다", () => {
+    const byName = new Map([
+      ["Square Enix", ["Q207784", "Q679933"]],
+      ["SQUARE ENIX CO., LTD.", ["Q207784"]],
+    ]);
+    expect(chunkCandidates(byName, 100)).toEqual([["Q207784", "Q679933"]]);
+  });
+
+  it("후보 없는 이름은 질의를 만들지 않는다", () => {
+    expect(chunkCandidates(new Map([["없는 회사", []]]), 100)).toEqual([]);
+  });
+});
+
+describe("resolveCandidates", () => {
+  it("검색 0건은 not_found, 후보는 있는데 회사 상세가 안 오면 ambiguous", () => {
+    const out = resolveCandidates(
+      new Map([
+        ["Tiny Studio", []],
+        ["Rebellion", ["Q100"]], // 동명 노래가 잡혀 회사 분류에서 떨어진 경우
+      ]),
+      new Map(),
+    );
+    expect(out.get("Tiny Studio")).toEqual({ status: "not_found" });
+    expect(out.get("Rebellion")).toEqual({ status: "ambiguous" });
+  });
+
+  it("묶어 받은 상세에서 자기 후보만 보고 판정한다 — 남의 후보가 섞이면 멀쩡한 이름이 모호해진다", () => {
+    const details = new Map([
+      ["Q207784", company("Q207784", "Square Enix")],
+      ["Q679933", company("Q679933", "Eidos Interactive")],
+      ["Q2414469", company("Q2414469", "FromSoftware")],
+    ]);
+    const out = resolveCandidates(
+      new Map([
+        ["Square Enix", ["Q207784", "Q679933"]],
+        ["FromSoftware, Inc.", ["Q2414469"]],
+      ]),
+      details,
+    );
+    expect(out.get("Square Enix")).toMatchObject({ status: "found", info: { externalId: "Q207784" } });
+    expect(out.get("FromSoftware, Inc.")).toMatchObject({ status: "found", info: { externalId: "Q2414469" } });
+  });
+
+  it("영문 라벨이 없어 Q번호가 이름 자리에 온 회사는 우리 표기로 덮는다", () => {
+    const out = resolveCandidates(new Map([["Nexon", ["Q9"]]]), new Map([["Q9", company("Q9", "Q9", "넥슨")]]));
+    expect(out.get("Nexon")).toMatchObject({ status: "found", info: { nameEn: "Nexon", nameKo: "넥슨" } });
   });
 });

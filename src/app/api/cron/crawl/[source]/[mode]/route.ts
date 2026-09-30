@@ -1,5 +1,6 @@
 // GET /api/cron/crawl/<source>/<mode> — 서울 리전 함수에서 도는 수집 진입점.
-// 예: /api/cron/crawl/nintendo/prices, /api/cron/crawl/epic/discover, /api/cron/crawl/wikidata_game/match
+// 예: /api/cron/crawl/nintendo/prices, /api/cron/crawl/epic/discover, /api/cron/crawl/wikidata_game/match,
+//     /api/cron/crawl/wikidata/collect(회사)
 //
 // 소스는 두 갈래다. 스토어(CRON_SOURCES)는 prices/discover/match 를, 메타 소스(CRON_META_SOURCES)는
 // match/collect 를 받는다 — 메타에는 가격도 발견도 없다. 몫도 표를 따로 본다(CRON_META_PLAN).
@@ -62,7 +63,8 @@ export async function GET(req: NextRequest, ctx: { params: Promise<{ source: str
     }
     const plan = CRON_META_PLAN[metaSource][metaMode];
     const startedAt = Date.now();
-    const matched = plan.match > 0 ? await matchUnmatchedGames(metaSource, plan.match) : null;
+    // 회사(wikidata)는 매칭 단계가 없는 소스라 match 몫이 늘 0 이다 — 타입도 여기서 좁힌다
+    const matched = plan.match > 0 && isSearchableSource(metaSource) ? await matchUnmatchedGames(metaSource, plan.match) : null;
     const result = plan.limit > 0 ? await runSource(metaSource, { limit: plan.limit }) : { status: "ok" as const, processed: 0, failed: 0 };
     return NextResponse.json(
       { source: metaSource, mode: metaMode, plan, matched, ...result, durationMs: Date.now() - startedAt },

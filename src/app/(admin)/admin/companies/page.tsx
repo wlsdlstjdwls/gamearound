@@ -1,6 +1,8 @@
 // /admin/companies — 회사 이름 확정 큐.
 // 자동 확정은 이름이 정확히 일치하는 회사가 위키데이터에 딱 하나일 때만 한다. 여기 쌓이는 이름은
 // 후보가 0건이거나 2건 이상이어서 배치가 판단을 미룬 것들이다. 사람이 보고 다시 조회한다.
+// 2026-09-30 부터 게임 수 순이다 — 최근 수정 순이던 때는 게임 2개짜리 이름이 앞에 서고
+// Square Enix(162), Rebellion(112) 같은 큰 이름이 화면에 잘 안 떴다.
 //
 // 화면 이름을 "회사" 에서 "회사 이름" 으로 바꿨다 — 회사를 만드는 자리가 아니라
 // 수집이 주워 온 **이름 문자열**을 어느 회사로 볼지 정하는 자리다. 앞 이름은 그 구분을 지웠다.
@@ -53,6 +55,9 @@ export default async function AdminCompaniesPage() {
                 <DataRow key={p.name} cols={PENDING_COLS}>
                   <DataCell label={COMPANY_MESSAGES.colName} className="text-ink">
                     <Clamp>{p.name}</Clamp>
+                    <p className="mt-0.5 text-[11.5px] text-dim">
+                      {p.outcome ? COMPANY_MESSAGES.outcome[p.outcome] : COMPANY_MESSAGES.notTriedYet}
+                    </p>
                   </DataCell>
                   <DataCell label={COMPANY_MESSAGES.colGameCount} className="text-mut">
                     {p.gameCount}

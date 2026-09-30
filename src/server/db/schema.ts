@@ -771,6 +771,25 @@ export const companyAliases = pgTable("company_aliases", {
   ...auditColumns(),
 });
 
+/**
+ * 위키데이터로 못 붙인 회사 이름과, 언제 다시 물어볼지.
+ *
+ * 왜 필요했나(2026-09-30): 회사 수집은 "회사가 안 붙은 게임" 에서 이름을 모아 묻는데, 못 붙인 이름은
+ * 게임이 여전히 안 붙은 채라 다음 회차에 또 뽑혔다. 못 붙이는 이름의 절반은 위키데이터에 아예 없는
+ * 작은 회사라, 몫 대부분을 어제 실패한 이름을 다시 묻는 데 썼다. 여기 적힌 이름은 retry_at 까지 건너뛴다.
+ *
+ * 붙이는 데 성공하면 행을 지운다 — 남겨 두면 관리자 검수 큐에 "못 붙임" 으로 잘못 읽힌다.
+ */
+export const companyLookupMisses = pgTable("company_lookup_misses", {
+  nameNorm: text("name_norm").primaryKey(), // lib/company-name.ts 의 normalizeCompanyName 결과
+  nameRaw: text("name_raw").notNull(),
+  // not_found = 검색에 이름이 정확히 일치하는 항목이 없다, ambiguous = 있었지만 회사 하나로 못 좁혔다
+  outcome: text("outcome").$type<"not_found" | "ambiguous">().notNull(),
+  missCount: integer("miss_count").default(1).notNull(),
+  retryAt: timestamp("retry_at", { withTimezone: true }).notNull(),
+  ...auditColumns(),
+});
+
 export const gameCompanies = pgTable("game_companies", {
   gameId: uuid("game_id").references(() => games.id, { onDelete: "cascade" }).notNull(),
   companyId: uuid("company_id").references(() => companies.id, { onDelete: "cascade" }).notNull(),

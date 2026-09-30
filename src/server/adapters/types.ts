@@ -137,7 +137,36 @@ export interface CompanyInfo {
 export interface CompanyAdapter {
   source: Source;
   lookup(name: string): Promise<CompanyInfo | null>;
+  /**
+   * 이름 여러 개를 한 번에 묻는다. 수집 배치가 쓴다 — 이름마다 lookup 을 부르면 느린 상세 질의가
+   * 이름 수만큼 나가지만, 여기서는 후보를 모아 몇 번으로 끝낸다.
+   * 결과에 없는 이름은 "이번에 못 물었다"(마감, 오류)는 뜻이다 — 못 찾았다는 뜻이 아니다.
+   */
+  lookupMany(names: string[], opts: CompanyLookupOptions): Promise<CompanyLookupBatch>;
   minIntervalMs: number;
+}
+
+/** 이름 하나의 판정. not_found 와 ambiguous 를 가르는 이유는 사람이 볼 때 할 일이 달라서다 */
+export type CompanyLookup =
+  | { status: "found"; info: CompanyInfo }
+  /** 검색에 이름이 정확히 일치하는 항목이 없다 — 위키데이터에 없는 회사거나 우리 표기가 약칭이다 */
+  | { status: "not_found" }
+  /** 후보는 있었지만 회사 하나로 못 좁혔다(동명 회사, 회사가 아닌 동명 항목) */
+  | { status: "ambiguous" };
+
+export interface CompanyLookupOptions {
+  /** 이 시각(epoch ms)을 넘기면 남은 이름은 묻지 않고 돌아온다. 함수 실행 상한 안에 끝내기 위해서다 */
+  deadline?: number;
+  /**
+   * 요청 하나를 감싸는 재시도. 재시도 정책은 sync 가 정한다(sync/retry) — 어댑터가 정하면
+   * 배치 전체를 다시 도는 것 말고는 방법이 없어 이미 받은 검색 결과까지 버리게 된다.
+   */
+  retry?: <T>(fn: () => Promise<T>) => Promise<T>;
+}
+
+export interface CompanyLookupBatch {
+  results: Map<string, CompanyLookup>;
+  errors: Array<{ name: string; error: unknown }>;
 }
 
 /**

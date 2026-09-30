@@ -51,6 +51,26 @@ export const VERIFY_MAX_CANDIDATES = 10;
  * 회사 1건이 검색 최대 2회 + SPARQL 1회라 간격당 요청이 3회까지 몰린다. 5초로 올린다.
  */
 export const WIKIDATA_MIN_INTERVAL_MS = 5000;
+
+/**
+ * 묶음 조회(lookupMany)의 검색 요청 간격. 위 5초는 이름 하나에 검색 두 번 + SPARQL 한 번이 몰리던
+ * 옛 경로의 값이다. 묶음 경로는 검색만 먼저 줄 세우고 SPARQL 은 따로 몇 번만 치므로 간격당 요청이 하나다.
+ * 2026-09-21 일괄 스크립트가 250ms 로 400개 이름을 돌려 429 없이 끝났다(918초). 크론은 매일 돌므로
+ * 여유를 두어 두 배로 잡는다.
+ */
+export const WIKIDATA_SEARCH_INTERVAL_MS = 500;
+
+/**
+ * 상세 SPARQL 한 번에 담을 후보 Q번호 상한. 2026-09-21 실측으로 120개까지 한 번에 받았다(1.9초).
+ * 한 회사가 여러 행으로 오므로 질의의 LIMIT 은 후보 수에 비례해 늘린다(SPARQL_ROWS_PER_CANDIDATE).
+ */
+export const SPARQL_BATCH_MAX_CANDIDATES = 100;
+/**
+ * 후보 하나가 차지할 수 있는 행 수의 넉넉한 상한. 회사 분류 셋 중 둘에 걸리고(x2) 영문 라벨 en, mul(x2),
+ * 국가, 본사, 사이트가 둘씩이면 32행이다. 잘리면 뒤쪽 이름이 조용히 "못 좁힘" 으로 떨어지고
+ * 한동안 다시 안 물으므로(COMPANY_MISS_RETRY_DAYS) 크게 잡는다. 행이 많아도 응답은 수백 KB 다.
+ */
+export const SPARQL_ROWS_PER_CANDIDATE = 50;
 /** SPARQL 은 일반 REST 보다 느리다. 좁힌 질의는 실측 1.5초지만(2026-09-14) 여유를 둔다 */
 export const WIKIDATA_TIMEOUT_MS = 30_000;
 
@@ -64,7 +84,7 @@ export const WIKIDATA_TIMEOUT_MS = 30_000;
  * P17 국가, P571 설립, P159 본사, P856 공식 웹사이트, P297 ISO 3166-1 alpha-2.
  * 국가 코드는 국가 항목에 붙어 있어 한 단계 더 들어간다.
  */
-export function companyDetailQuery(entityIds: readonly string[]): string {
+export function companyDetailQuery(entityIds: readonly string[], rowLimit = 200): string {
   const values = entityIds.map((q) => `wd:${q}`).join(" ");
   const classes = COMPANY_CLASSES.map((q) => `wd:${q}`).join(" ");
   return `SELECT ?company ?labelEn ?labelKo ?descKo ?countryLabel ?countryCode ?inception ?hqLabel ?website WHERE {
@@ -80,7 +100,7 @@ export function companyDetailQuery(entityIds: readonly string[]): string {
   OPTIONAL { ?company wdt:P856 ?website }
   SERVICE wikibase:label { bd:serviceParam wikibase:language "${LABEL_LANGUAGES}". }
 }
-LIMIT 200`;
+LIMIT ${rowLimit}`;
 }
 
 /**

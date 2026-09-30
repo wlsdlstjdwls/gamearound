@@ -178,13 +178,18 @@ export const MATCH_MESSAGES = {
 export const COMPANY_MESSAGES = {
   title: "회사 이름",
   lead:
-    "수집이 만난 회사 이름 중 위키데이터에서 하나로 좁히지 못한 것들이에요. 후보가 없거나 둘 이상이라 배치가 판단을 미뤘어요. 사람이 보고 다시 조회해요.",
+    "회사가 아직 안 붙은 이름이에요. 게임이 많이 걸린 이름부터 보여 줘요. 수집이 매일 위키데이터에 물어보고, 못 붙인 이름은 한 달 쉬었다 다시 물어봐요. 큰 이름은 사람이 보고 다시 조회해요.",
   pendingTitle: "확정 못 한 이름",
   limitHint: (n: number) => `한 번에 ${n}건까지 봐요`,
   empty: "확정할 이름이 없어요. 수집이 돌면 새 이름이 여기 쌓여요.",
   colName: "회사 이름",
   colGameCount: "이 이름을 쓰는 게임",
   colAction: "조회",
+  outcome: {
+    not_found: "위키데이터에 같은 이름이 없어요",
+    ambiguous: "후보가 여럿이거나 회사가 아니에요",
+  },
+  notTriedYet: "아직 안 물어봤어요",
   knownTitle: "확정한 회사",
   knownCount: (n: number) => `${n}곳`,
   knownEmpty: "아직 확정한 회사가 없어요.",

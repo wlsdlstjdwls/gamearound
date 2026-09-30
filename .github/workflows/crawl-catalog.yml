@@ -1,4 +1,8 @@
-# 회사 정보(wikidata)와 구독 카탈로그(gamepass) 수집.
+# 구독 카탈로그(gamepass) 수집.
+#
+# 2026-09-30 에 회사 정보(wikidata)도 여기서 뺐다 — 서울 리전 Vercel 크론(/api/cron/crawl/wikidata/collect)이
+# 하루 2회 맡는다. 주 1회 150개 이름으로는 한 주에 새로 들어오는 게임의 회사 이름도 못 따라갔고,
+# 09-28 월요일 회차처럼 Actions 결제가 막힌 날엔 한 주를 통째로 잃었다. 같은 이유로 둘을 같이 두지 않는다.
 #
 # 2026-09-17 에 검색 별칭(wikidata_game)을 여기서 뺐다 — 서울 리전 Vercel 크론으로 옮겼다
 # (몫과 주기의 근거는 sync/constants 의 CRON_META_PLAN). 두 곳에서 같이 돌리면 Redis 락에 걸려
@@ -11,13 +15,8 @@ name: crawl-catalog
 
 on:
   schedule:
-    # 주기 2일. 별칭 단계를 크론으로 보낸 뒤 이 워크플로는 거의 공짜가 됐다 —
-    # gamepass 는 요청이 2회뿐이고(카탈로그가 월 2회 안팎으로 바뀌어 격일로 충분하다),
-    # 나머지 비용은 월요일에만 도는 회사 수집 23분 × 4.3 = 월 약 99분이 전부다.
-    # 이전에는 이 자리가 월 459분이었다(그 전부가 별칭 단계였다).
+    # 주기 2일. gamepass 는 요청이 2회뿐이다(카탈로그가 월 2회 안팎으로 바뀌어 격일로 충분하다).
     - cron: "30 4 */2 * *"
-    # wikidata(회사)는 주 1회. 설립일, 국가는 사실상 안 바뀌고 공개 SPARQL 에 예의를 지켜야 한다.
-    - cron: "0 5 * * 1"
   workflow_dispatch:
     inputs:
       limit:
@@ -40,9 +39,8 @@ env:
 jobs:
   crawl:
     runs-on: ubuntu-latest
-    # 별칭 단계(약 24분)를 크론으로 보낸 뒤 45 에서 내렸다. 남은 것은 gamepass 2분과
-    # 월요일 회사 수집 23분이라 30분이면 든다.
-    timeout-minutes: 30
+    # 별칭 단계와 회사 수집을 크론으로 보낸 뒤 남은 것은 gamepass 2분이다.
+    timeout-minutes: 15
     steps:
       - uses: actions/checkout@v4
 
@@ -63,8 +61,3 @@ jobs:
         continue-on-error: true
         run: pnpm crawl --source=gamepass --no-match $CRAWL_LIMIT_ARG
 
-      # 회사 정보 — 월요일 실행분에서만. 다른 날은 같은 워크플로가 gamepass 만 돌린다
-      - name: crawl wikidata
-        if: github.event.schedule == '0 5 * * 1' || github.event_name == 'workflow_dispatch'
-        continue-on-error: true
-        run: pnpm crawl --source=wikidata --no-match $CRAWL_LIMIT_ARG

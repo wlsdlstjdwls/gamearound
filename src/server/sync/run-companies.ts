@@ -2,121 +2,235 @@
 // 가격 배치와 분리한 이유: 회사 정보는 사실상 안 바뀌는데 외부 응답은 느리다.
 // 이걸 스토어 수집에 섞으면 가격 배치가 백과사전 응답 속도에 묶인다.
 //
-// 대상 선정은 "아직 회사로 승격되지 않은 이름" 우선이다. 이미 아는 회사는 COMPANY_REFRESH_DAYS 가 지나야 다시 본다.
-import { and, eq, inArray, isNull, lt, or, sql } from "drizzle-orm";
-import { companies, companyAliases, gameCompanies, games, type CompanyRole } from "@/server/db/schema";
+// 2026-09-30 에 순서를 바꿨다. 예전에는 회사 없는 게임을 updatedAt 순으로 몇백 건만 훑어 이름을 모았고,
+// 못 붙인 이름을 기록하지 않아 다음 회차에 같은 이름을 또 물었다. 지금은:
+//   1. 회사 없는 게임 전부를 이름으로 묶어 **게임 수가 많은 이름부터** 세운다(카탈로그를 실제로 덮는 순서)
+//   2. 이미 아는 이름(company_aliases)은 외부 질의 없이 전부 잇는다 — 몫을 쓰지 않는다
+//   3. 최근에 못 붙인 이름(company_lookup_misses)은 retry_at 까지 건너뛴다
+//   4. 남은 이름을 몫만큼 어댑터의 묶음 조회(lookupMany)로 한 번에 묻는다
+// 이미 아는 회사의 재조회(COMPANY_REFRESH_DAYS)는 몫이 남을 때만 한다.
+import { and, eq, gt, inArray, isNull, lt, or, sql } from "drizzle-orm";
+import { companies, companyLookupMisses, gameCompanies, games, type CompanyRole } from "@/server/db/schema";
 import { getCompanyAdapter, type CompanySource } from "@/server/adapters";
+import type { CompanyLookup } from "@/server/adapters/types";
+import { createdBy, updatedBy } from "@/server/db/audit";
 import { normalizeCompanyName } from "@/lib/company-name";
-import { sleep } from "@/lib/async";
-import { BATCH_SIZE, COMPANY_REFRESH_DAYS } from "./constants";
+import { BATCH_SIZE, COMPANY_MISS_RETRY_DAYS, COMPANY_REFRESH_DAYS, COMPANY_SEARCH_DEADLINE_MS } from "./constants";
 import type { Db } from "@/server/db/client";
 import { recordError, type Ctx, type RunOptions } from "./context";
 import { fetchWithRetry } from "./retry";
-import { attachCompany, companyNamesOf, findCompanyByAlias, linkGameCompany } from "./company-writer";
+import { attachCompany, companyNamesOf, findCompaniesByAliases } from "./company-writer";
+
+const DAY_MS = 24 * 60 * 60 * 1000;
+/** 한 문장에 넣을 행 수. Neon HTTP 한 요청의 파라미터가 너무 많아지지 않게 끊는다 */
+const WRITE_CHUNK = 500;
+
+export interface CompanyTargetLink {
+  gameId: string;
+  role: CompanyRole;
+  /** 붙인 뒤 게임 화면 캐시를 털기 위해 같이 들고 다닌다 */
+  slug?: string;
+}
 
 /** 한 회사 이름과, 그 이름을 쓰는 게임들 */
 export interface CompanyTarget {
   rawName: string;
-  links: Array<{ gameId: string; role: CompanyRole }>;
-}
-
-function refreshCutoff(now: Date): Date {
-  return new Date(now.getTime() - COMPANY_REFRESH_DAYS * 24 * 60 * 60 * 1000);
+  links: CompanyTargetLink[];
 }
 
 /**
- * games.developer / publisher 문자열을 훑어 아직 회사로 승격되지 않은 이름을 모은다.
- * 한 이름이 여러 게임에 걸리므로 이름 단위로 묶는다 — 같은 회사를 게임 수만큼 조회하면 예산이 안 나온다.
+ * 회사가 하나도 안 붙은 게임의 개발사, 배급사 문자열을 이름 단위로 묶어 **게임 수가 많은 순**으로 돌려준다.
+ * 같은 표기 조합끼리는 DB 에서 먼저 묶는다 — 게임 9천여 건을 행으로 받으면 1MB 가 오간다(2026-09-30 실측).
  */
-export async function listCompanyTargets(db: Db, limit: number): Promise<CompanyTarget[]> {
-  // 회사 연결이 하나도 없는 게임부터 본다. 이미 연결된 게임을 다시 훑어봐야 새로 붙을 이름이 거의 없다.
+export async function listCompanyTargets(db: Db): Promise<CompanyTarget[]> {
   const rows = await db
-    .select({ id: games.id, developer: games.developer, publisher: games.publisher })
+    .select({
+      developer: games.developer,
+      publisher: games.publisher,
+      games: sql<Array<{ id: string; slug: string }>>`json_agg(json_build_object('id', ${games.id}, 'slug', ${games.slug}))`,
+    })
     .from(games)
     .leftJoin(gameCompanies, eq(gameCompanies.gameId, games.id))
     .where(and(isNull(gameCompanies.gameId), or(sql`${games.developer} is not null`, sql`${games.publisher} is not null`)))
-    .orderBy(games.updatedAt)
-    .limit(limit * 4); // 이름 단위로 묶이면서 줄어들기 때문에 게임은 넉넉히 훑는다
+    .groupBy(games.developer, games.publisher);
 
   const byName = new Map<string, CompanyTarget>();
   for (const row of rows) {
     for (const { name, role } of companyNamesOf(row.developer, row.publisher)) {
       const key = normalizeCompanyName(name);
       if (!key) continue;
+      const links = row.games.map((g) => ({ gameId: g.id, slug: g.slug, role }));
       const hit = byName.get(key);
-      if (hit) hit.links.push({ gameId: row.id, role });
-      else byName.set(key, { rawName: name, links: [{ gameId: row.id, role }] });
-      if (byName.size >= limit) break;
+      if (hit) hit.links.push(...links);
+      else byName.set(key, { rawName: name, links });
     }
-    if (byName.size >= limit) break;
   }
-  return Array.from(byName.values());
+  return [...byName.values()].sort((a, b) => b.links.length - a.links.length || a.rawName.localeCompare(b.rawName));
+}
+
+/** 아직 쉬는 중인(retry_at 이 안 지난) 못 붙인 이름. 키는 정규화한 이름 */
+export async function loadActiveMisses(db: Db, now: Date): Promise<Map<string, "not_found" | "ambiguous">> {
+  const rows = await db
+    .select({ nameNorm: companyLookupMisses.nameNorm, outcome: companyLookupMisses.outcome })
+    .from(companyLookupMisses)
+    .where(gt(companyLookupMisses.retryAt, now));
+  return new Map(rows.map((r) => [r.nameNorm, r.outcome]));
 }
 
 /** 이미 아는 회사 중 오래 안 본 것 — 이름이 아니라 회사 단위로 갱신한다 */
 async function listStaleCompanies(ctx: Ctx, limit: number): Promise<CompanyTarget[]> {
   if (limit <= 0) return [];
+  const cutoff = new Date(ctx.now.getTime() - COMPANY_REFRESH_DAYS * DAY_MS);
   const rows = await ctx.db
     .select({ nameEn: companies.nameEn })
     .from(companies)
-    .where(or(isNull(companies.lastSyncedAt), lt(companies.lastSyncedAt, refreshCutoff(ctx.now))))
+    .where(or(isNull(companies.lastSyncedAt), lt(companies.lastSyncedAt, cutoff)))
     .orderBy(sql`${companies.lastSyncedAt} asc nulls first`)
     .limit(limit);
   return rows.map((r) => ({ rawName: r.nameEn, links: [] }));
 }
 
-/**
- * 이미 해결된 이름은 외부 질의 없이 바로 잇는다.
- * 별칭 표가 커질수록 이 지름길이 배치 대부분을 흡수한다 — 위키데이터를 때리는 횟수가 줄어든다.
- */
-async function linkFromAlias(ctx: Ctx, target: CompanyTarget): Promise<boolean> {
-  const companyId = await findCompanyByAlias(ctx.db, target.rawName);
-  if (!companyId) return false;
-  for (const { gameId, role } of target.links) await linkGameCompany(ctx.db, gameId, companyId, role);
-  return true;
+/** 게임과 회사를 한꺼번에 잇는다. 서울 리전에서 Neon 왕복이 220ms 라 게임마다 한 문장씩 보내면 몫이 녹는다 */
+async function linkMany(ctx: Ctx, rows: Array<{ gameId: string; companyId: string; role: CompanyRole }>): Promise<void> {
+  for (let i = 0; i < rows.length; i += WRITE_CHUNK) {
+    const chunk = rows.slice(i, i + WRITE_CHUNK).map((r) => ({ ...r, ...createdBy(`crawler:${ctx.source}`) }));
+    await ctx.db.insert(gameCompanies).values(chunk).onConflictDoNothing();
+  }
+}
+
+function noteLinkedGames(ctx: Ctx, links: CompanyTargetLink[]): void {
+  for (const l of links) if (l.slug) ctx.changedSlugs.add(l.slug);
+}
+
+/** 못 붙인 이름을 적는다. 다시 못 붙이면 횟수만 올리고 쉬는 기간을 새로 잡는다 */
+async function recordMisses(ctx: Ctx, misses: Array<{ rawName: string; outcome: "not_found" | "ambiguous" }>): Promise<void> {
+  const retryAt = new Date(ctx.now.getTime() + COMPANY_MISS_RETRY_DAYS * DAY_MS);
+  const actor = `crawler:${ctx.source}` as const;
+  const values = misses
+    .map((m) => ({ nameNorm: normalizeCompanyName(m.rawName), nameRaw: m.rawName, outcome: m.outcome, retryAt, ...createdBy(actor) }))
+    .filter((v) => v.nameNorm);
+  for (let i = 0; i < values.length; i += WRITE_CHUNK) {
+    await ctx.db
+      .insert(companyLookupMisses)
+      .values(values.slice(i, i + WRITE_CHUNK))
+      .onConflictDoUpdate({
+        target: companyLookupMisses.nameNorm,
+        set: {
+          nameRaw: sql`excluded.name_raw`,
+          outcome: sql`excluded.outcome`,
+          retryAt: sql`excluded.retry_at`,
+          missCount: sql`${companyLookupMisses.missCount} + 1`,
+          ...updatedBy(actor),
+        },
+      });
+  }
+}
+
+/** 붙인 이름은 못 붙인 기록에서 지운다 — 남아 있으면 검수 큐가 "못 붙임" 으로 잘못 읽는다 */
+export async function clearMisses(db: Db, rawNames: string[]): Promise<void> {
+  const norms = [...new Set(rawNames.map(normalizeCompanyName).filter(Boolean))];
+  for (let i = 0; i < norms.length; i += WRITE_CHUNK) {
+    await db.delete(companyLookupMisses).where(inArray(companyLookupMisses.nameNorm, norms.slice(i, i + WRITE_CHUNK)));
+  }
 }
 
 export async function runCompanies(ctx: Ctx, source: CompanySource, opts: RunOptions): Promise<void> {
+  const startedAt = Date.now();
   const adapter = getCompanyAdapter(source);
   const limit = opts.limit ?? BATCH_SIZE[source];
 
-  const fresh = await listCompanyTargets(ctx.db, limit);
+  const [all, misses] = await Promise.all([listCompanyTargets(ctx.db), loadActiveMisses(ctx.db, ctx.now)]);
+
+  // 이미 아는 이름은 외부 질의 없이 잇는다. 별칭 표가 커질수록 이 지름길이 대부분을 흡수한다
+  const known = await findCompaniesByAliases(ctx.db, all.map((t) => t.rawName));
+  const aliasLinks: Array<{ gameId: string; companyId: string; role: CompanyRole }> = [];
+  const unknown: CompanyTarget[] = [];
+  for (const target of all) {
+    const hit = known.get(normalizeCompanyName(target.rawName));
+    if (!hit) {
+      unknown.push(target);
+      continue;
+    }
+    for (const l of target.links) aliasLinks.push({ gameId: l.gameId, companyId: hit.companyId, role: l.role });
+    noteLinkedGames(ctx, target.links);
+    ctx.processed++;
+  }
+  await linkMany(ctx, aliasLinks);
+
+  const fresh = unknown.filter((t) => !misses.has(normalizeCompanyName(t.rawName))).slice(0, limit);
   const stale = await listStaleCompanies(ctx, limit - fresh.length);
   const targets = [...fresh, ...stale];
+  if (targets.length === 0) return;
 
-  for (const [i, target] of targets.entries()) {
+  const { results, errors } = await adapter.lookupMany(
+    targets.map((t) => t.rawName),
+    { deadline: startedAt + COMPANY_SEARCH_DEADLINE_MS, retry: (fn) => fetchWithRetry(fn) },
+  );
+  for (const { name, error } of errors) recordError(ctx, `company:${name}`, error);
+
+  const found: string[] = [];
+  const missed: Array<{ rawName: string; outcome: "not_found" | "ambiguous" }> = [];
+  const staleMissed: string[] = [];
+  for (const target of targets) {
+    const verdict: CompanyLookup | undefined = results.get(target.rawName);
+    if (!verdict) continue; // 마감이나 오류로 이번에 못 물었다 — 다음 회차에 다시 뽑힌다
+    if (verdict.status !== "found") {
+      if (target.links.length > 0) missed.push({ rawName: target.rawName, outcome: verdict.status });
+      // 재조회 대상(이미 아는 회사)은 검수 큐와 무관하지만 확인한 시각은 찍는다 — 안 찍으면 매 회차 맨 앞에 다시 선다
+      else staleMissed.push(target.rawName);
+      ctx.processed++;
+      continue;
+    }
     try {
-      if (await linkFromAlias(ctx, target)) {
-        ctx.processed++;
-        continue;
-      }
-      // 외부 질의는 별칭에 없는 이름에만. 간격은 어댑터가 선언한 값을 그대로 지킨다
-      if (i > 0) await sleep(adapter.minIntervalMs);
-      // 429 로 한 건을 통째로 버리지 않는다 — 위키데이터는 과요청을 만나면 몇 분간 막으므로 물러섰다 다시 묻는다
-      const info = await fetchWithRetry(() => adapter.lookup(target.rawName));
-      if (!info) {
-        // 후보가 없거나 모호함. 회사를 만들지 않고 넘어간다 — 관리자 검수 큐에서 사람이 정한다.
-        ctx.processed++;
-        continue;
-      }
-      await attachCompany(ctx, info, target.rawName, target.links);
+      await attachCompany(ctx, verdict.info, target.rawName, target.links);
+      noteLinkedGames(ctx, target.links);
+      found.push(target.rawName);
       ctx.processed++;
     } catch (e) {
       recordError(ctx, `company:${target.rawName}`, e);
     }
   }
+
+  try {
+    await recordMisses(ctx, missed);
+    await clearMisses(ctx.db, found);
+    if (staleMissed.length > 0) {
+      await ctx.db.update(companies).set({ lastSyncedAt: ctx.now }).where(inArray(companies.nameEn, staleMissed));
+    }
+  } catch (e) {
+    recordError(ctx, "company:misses", e);
+  }
 }
 
-/** 관리자 검수 큐 — 회사로 승격되지 않은 이름과 그 이름을 쓰는 게임 수 */
-export async function listPendingCompanyNames(db: Db, limit: number): Promise<Array<{ name: string; gameCount: number }>> {
-  const targets = await listCompanyTargets(db, limit);
+/**
+ * 관리자 검수 큐 — 회사로 승격되지 않은 이름과 그 이름을 쓰는 게임 수. 게임 수가 많은 이름부터.
+ * 못 붙인 기록이 있으면 그 사유를 같이 준다 — 사람이 볼 때 "위키데이터에 없다" 와 "동명이 여럿" 은 할 일이 다르다.
+ */
+export async function listPendingCompanyNames(
+  db: Db,
+  limit: number,
+): Promise<Array<{ name: string; gameCount: number; outcome: "not_found" | "ambiguous" | null }>> {
+  const [targets, misses] = await Promise.all([listCompanyTargets(db), loadActiveMisses(db, new Date())]);
   if (targets.length === 0) return [];
-  const norms = targets.map((t) => normalizeCompanyName(t.rawName)).filter(Boolean);
-  const known = norms.length
-    ? await db.select({ aliasNorm: companyAliases.aliasNorm }).from(companyAliases).where(inArray(companyAliases.aliasNorm, norms))
-    : [];
-  const knownSet = new Set(known.map((k) => k.aliasNorm));
+  const known = await findCompaniesByAliases(db, targets.map((t) => t.rawName));
   return targets
-    .filter((t) => !knownSet.has(normalizeCompanyName(t.rawName)))
-    .map((t) => ({ name: t.rawName, gameCount: t.links.length }));
+    .filter((t) => !known.has(normalizeCompanyName(t.rawName)))
+    .slice(0, limit)
+    .map((t) => ({ name: t.rawName, gameCount: t.links.length, outcome: misses.get(normalizeCompanyName(t.rawName)) ?? null }));
+}
+
+/**
+ * 메뉴 배지용 대략의 수 — 회사 없는 게임의 (개발사, 배급사) 표기 조합을 상한까지 센다.
+ * 이름 단위로 정확히 세려면 카탈로그를 훑어 쪼개고 묶어야 해서 모든 관리자 화면에 1MB 가 붙는다.
+ * 배지는 "쌓였나" 만 말하면 되고 상한에 닿으면 어차피 "이상" 으로 읽힌다.
+ */
+export async function countPendingCompanyGroups(db: Db, cap: number): Promise<number> {
+  const rows = await db
+    .select({ one: sql<number>`1` })
+    .from(games)
+    .leftJoin(gameCompanies, eq(gameCompanies.gameId, games.id))
+    .where(and(isNull(gameCompanies.gameId), or(sql`${games.developer} is not null`, sql`${games.publisher} is not null`)))
+    .groupBy(games.developer, games.publisher)
+    .limit(cap);
+  return rows.length;
 }

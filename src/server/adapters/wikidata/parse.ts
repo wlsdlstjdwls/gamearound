@@ -1,6 +1,6 @@
 // 위키데이터 응답(검색 API, SPARQL)을 CompanyInfo 로 바꾸는 순수 파서. 네트워크를 모른다.
 import { normalizeCompanyName } from "@/lib/company-name";
-import type { CompanyInfo } from "../types";
+import type { CompanyInfo, CompanyLookup } from "../types";
 
 /** SPARQL JSON 결과의 최소 형태만 본다 — 나머지 필드는 쓰지 않는다 */
 interface Binding {
@@ -134,4 +134,55 @@ export function pickCompany(candidates: CompanyInfo[], queryName?: string): Comp
     (c) => normalizeCompanyName(c.nameEn) === target || (c.nameKo ? normalizeCompanyName(c.nameKo) === target : false),
   );
   return named.length === 1 ? named[0] : null;
+}
+
+/**
+ * 이름별 후보 목록을 상세 질의 여러 번으로 나눈다. 한 이름의 후보는 한 질의 안에 둔다 —
+ * 쪼개지면 그 이름의 판정이 반쪽 후보로 내려진다.
+ *
+ * 왜 묶나(2026-09-21 실측): 상세 SPARQL 은 이름마다 한 번 치면 이름당 평균 60초였다(502, 타임아웃, 429).
+ * 후보를 VALUES 로 못박는 질의라 여러 이름의 후보를 한 번에 담을 수 있고, 10개든 120개든 걸리는 시간은
+ * 개수가 아니라 그날 엔드포인트 상태가 정했다(3.3초 ~ 6.6초).
+ */
+export function chunkCandidates(candidatesByName: ReadonlyMap<string, readonly string[]>, maxPerChunk: number): string[][] {
+  const chunks: string[][] = [];
+  let current = new Set<string>();
+  for (const ids of candidatesByName.values()) {
+    if (ids.length === 0) continue;
+    const added = ids.filter((id) => !current.has(id));
+    if (current.size > 0 && current.size + added.length > maxPerChunk) {
+      chunks.push([...current]);
+      current = new Set();
+    }
+    for (const id of ids) current.add(id);
+  }
+  if (current.size > 0) chunks.push([...current]);
+  return chunks;
+}
+
+/**
+ * 모아 받은 상세(회사 분류를 통과한 것만)를 이름별 판정으로 되돌린다. 규칙은 pickCompany 하나다.
+ * 후보가 있었는데 상세가 하나도 안 온 이름은 ambiguous 다 — 검색이 노래, 동음이의 항목을 잡았고
+ * 그것들이 회사 분류에서 떨어져 나간 경우다(우리 이름이 약칭일 때 흔하다).
+ */
+export function resolveCandidates(
+  candidatesByName: ReadonlyMap<string, readonly string[]>,
+  details: ReadonlyMap<string, CompanyInfo>,
+): Map<string, CompanyLookup> {
+  const out = new Map<string, CompanyLookup>();
+  for (const [name, ids] of candidatesByName) {
+    if (ids.length === 0) {
+      out.set(name, { status: "not_found" });
+      continue;
+    }
+    const infos = ids.map((id) => details.get(id)).filter((c): c is CompanyInfo => c !== undefined);
+    const picked = pickCompany(infos, name);
+    if (!picked) {
+      out.set(name, { status: "ambiguous" });
+      continue;
+    }
+    // 위키데이터에 영문 라벨이 없으면 스토어가 준 원문을 이름으로 쓴다 — Q번호를 화면에 띄우지 않기 위해
+    out.set(name, { status: "found", info: /^Q\d+$/.test(picked.nameEn) ? { ...picked, nameEn: name } : picked });
+  }
+  return out;
 }

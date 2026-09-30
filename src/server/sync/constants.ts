@@ -30,8 +30,8 @@ export const BATCH_SIZE: Record<Source, number> = {
   opencritic: 150,
   metacritic: 150,
   rss: RSS_FEEDS.length,
-  // 위키데이터 공개 SPARQL 은 질의 1건이 수백 ms 에서 수 초다. 2초 간격 × 150 = 최대 ~7분.
-  // 회사는 거의 안 바뀌므로 한 번에 다 훑을 필요가 없다 — lastSyncedAt 이 오래된 것부터 잘라 간다.
+  // 손으로 돌릴 때(pnpm crawl --source=wikidata)의 기본 몫. 정기 실행은 크론이 CRON_META_PLAN 몫으로 돈다.
+  // 묶음 조회라 이름당 약 2초다(CRON_META_MS_PER_ITEM) — 150 이면 6분 안쪽.
   wikidata: 150,
   // 위키데이터 게임 조회는 별칭 한 덩어리라 응답이 작다. 병목은 요청 간격 5초뿐이다
   // (회사 경로가 2초에서 429 를 맞고 올려 둔 값). 40건 ≈ 3.5분이라 다른 메타 소스와 함께 돌 수 있다.
@@ -381,9 +381,14 @@ export const CRON_PLAN: Record<CronSource, Record<CronMode, CronRunPlan>> = {
  * 위키데이터는 IP 를 가리지 않아 리전 제약도 없다 — 서울이든 미국이든 똑같이 열린다.
  *
  * **두 곳에서 같이 돌리지 않는다** — 같은 소스를 두 실행이 잡으면 Redis 락에 걸려 한쪽이 빈손이 된다.
- * 그래서 crawl-catalog.yml 에서 wikidata_game 단계를 뺐다. 그 워크플로에는 gamepass 와 회사 수집만 남는다.
+ * 그래서 crawl-catalog.yml 에서 wikidata_game 단계를 뺐다(회사 수집도 2026-09-30 에 뒤따라 뺐다).
  */
-export const CRON_META_SOURCES = ["wikidata_game"] as const;
+/**
+ * wikidata(회사)는 2026-09-30 에 crawl-catalog.yml 의 주 1회에서 여기로 옮겼다. 옮긴 이유도 산수다 —
+ * 주 150개 이름으로는 한 주에 새로 들어오는 게임(3,541건/7일)의 회사 이름도 못 따라갔다.
+ * 회사 소스에는 매칭 단계가 없다 — collect 모드만 크론에 건다(match 몫은 0).
+ */
+export const CRON_META_SOURCES = ["wikidata_game", "wikidata"] as const;
 export type CronMetaSource = (typeof CRON_META_SOURCES)[number];
 
 /**
@@ -425,6 +430,11 @@ export interface CronMetaRunPlan {
  */
 export const CRON_META_MS_PER_ITEM: Record<CronMetaSource, Record<CronMetaMode, number>> = {
   wikidata_game: { match: 8930, collect: 7310 },
+  // 회사 묶음 조회(adapters/wikidata lookupMany). 매칭 단계가 없어 match 는 쓰이지 않는다.
+  // collect 2.2초 = 2026-09-30 실측 1.55초(실제 대기 이름 40개를 묶음 조회로 62초, 검색 간격 500ms, 상세 질의 포함)에
+  // 붙이는 쓰기 몫을 얹은 값이다. 붙는 이름이 15%(6/40)이고 한 번 붙일 때 서울 리전에서 Neon 왕복 여섯 번(1.3초)이라
+  // 이름당 0.2초꼴이다. 크론의 첫 durationMs 로 다시 잰다.
+  wikidata: { match: 0, collect: 2200 },
 };
 
 /**
@@ -454,6 +464,12 @@ export const CRON_META_PLAN: Record<CronMetaSource, Record<CronMetaMode, CronMet
     match: { limit: 0, match: 58, runsPerDay: 4 },
     // 71 × 7.31초 × 1.15 = 597초. 88 로 잡았다가 실측 643초를 맞은 자리다(위 상수 주석)
     collect: { limit: 71, match: 0, runsPerDay: 4 },
+  },
+  wikidata: {
+    match: { limit: 0, match: 0, runsPerDay: 0 },
+    // 230 × 2.2초 × 1.15 = 582초. 하루 2회 460개 이름 — 못 붙인 이름은 30일 쉬므로(COMPANY_MISS_RETRY_DAYS)
+    // 같은 이름을 다시 묻느라 몫을 쓰지 않는다. 별칭으로 바로 잇는 게임은 이 몫과 상관없이 전부 잇는다
+    collect: { limit: 230, match: 0, runsPerDay: 2 },
   },
 };
 
@@ -830,6 +846,21 @@ export const SUBSCRIPTION_MIN_CATALOG_SIZE = 100;
  * 짧게 잡으면 위키데이터에 예의 없는 트래픽만 만든다.
  */
 export const COMPANY_REFRESH_DAYS = 90;
+
+/**
+ * 못 붙인 회사 이름을 다시 물을 때까지 쉬는 날(company_lookup_misses.retry_at).
+ * 위키데이터는 자라지만 작은 회사 항목이 새로 생기는 속도는 달 단위다. 그보다 짧으면
+ * 어제 없던 이름을 매일 다시 묻느라 새 이름을 볼 몫이 사라진다 — 2026-09-30 까지 정확히 그 상태였다.
+ */
+export const COMPANY_MISS_RETRY_DAYS = 30;
+
+/**
+ * 회사 묶음 조회에서 검색 단계를 끊는 시각(실행 시작부터). 묶음 경로는 검색을 전부 끝낸 뒤에야
+ * 상세 질의와 DB 쓰기를 하므로, 429 백오프가 겹쳐 함수 상한(800초)에 잘리면 그때까지 찾은 것까지 다 잃는다.
+ * 검색을 여기서 멈추고 남은 시간을 상세 질의와 쓰기에 준다. 몫(CRON_META_PLAN)은 이보다 일찍 끝나게 잡혀 있어
+ * 평소에는 닿지 않는 안전선이다.
+ */
+export const COMPANY_SEARCH_DEADLINE_MS = 480_000;
 
 /**
  * 믿을 수 있는 출시일의 범위(연도). 밖에 있으면 값을 버리고 기존 값을 지킨다.

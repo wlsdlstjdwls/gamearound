@@ -4,15 +4,16 @@
 // 값들을 한 묶음(Promise.all)으로 센다. 줄 세우면 왕복이 그대로 쌓이고, 이 값들은
 // 본문이 아니라 메뉴에 붙으므로 본문보다 느려지면 안 된다(§Neon 왕복 비용).
 //
-// 회사 검수만 정확한 수가 아니라 상한(limit)까지 센 값이다 — 그 큐는 게임을 훑어 이름으로 묶는
-// 계산이라 전수를 세려면 카탈로그 전체를 훑어야 하고, 화면도 같은 상한까지만 보여 준다.
+// 회사 검수만 정확한 수가 아니라 상한(limit)까지 센 대략의 값이다 — 그 큐는 게임을 훑어 이름으로 묶는
+// 계산이라 정확히 세려면 카탈로그를 통째로 받아야 한다. 배지는 (개발사, 배급사) 표기 조합 수로 대신 센다.
 import "server-only";
 import { and, count, eq, inArray, isNotNull, isNull } from "drizzle-orm";
 import { getDb } from "@/server/db/client";
 import { adminTasks, gameSourceRefs } from "@/server/db/schema";
 import { products } from "@/server/db/schema-products";
 import { shops } from "@/server/db/schema-shops";
-import { listPendingCompanies, PENDING_COMPANIES_LIMIT } from "@/server/services/admin-companies";
+import { PENDING_COMPANIES_LIMIT } from "@/server/services/admin-companies";
+import { countPendingCompanyGroups } from "@/server/sync/run-companies";
 import { requireAdmin } from "@/server/services/users";
 
 export interface AdminWorkCounts {
@@ -46,7 +47,7 @@ export async function getAdminWorkCounts(): Promise<AdminWorkCounts> {
       .from(products)
       .where(and(isNull(products.gameId), isNotNull(products.gameMatchSuggestedId))),
     db.select({ n: count() }).from(shops).where(eq(shops.status, "pending")),
-    listPendingCompanies(),
+    countPendingCompanyGroups(db, PENDING_COMPANIES_LIMIT),
     // 두 칸을 한 질의로 센다 — 칸마다 물으면 왕복이 하나 더 붙는다
     db
       .select({ status: adminTasks.status, n: count() })
@@ -60,8 +61,8 @@ export async function getAdminWorkCounts(): Promise<AdminWorkCounts> {
     matches: matches?.n ?? 0,
     products: pendingProducts?.n ?? 0,
     shops: pendingShops?.n ?? 0,
-    companies: companies.length,
-    companiesCapped: companies.length >= PENDING_COMPANIES_LIMIT,
+    companies,
+    companiesCapped: companies >= PENDING_COMPANIES_LIMIT,
     tasksTodo: tasksOf("todo"),
     tasksDoing: tasksOf("doing"),
   };

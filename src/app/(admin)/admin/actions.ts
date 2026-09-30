@@ -185,6 +185,8 @@ export async function resolveCompanyAction(rawName: string): Promise<AdminAction
     revalidatePath(ROUTES.adminCompanies);
     // 회사 화면은 태그로 캐시하므로 붙은 회사만 무효화한다
     for (const slug of result.companySlugs) revalidateTag(`company:${slug}`, "max");
+    // 게임 상세도 회사를 그리므로 붙은 게임의 태그를 같이 턴다
+    for (const slug of result.gameSlugs) revalidateTag(`game:${slug}`, "max");
     return { ok: true, message: result.message };
   } catch (e) {
     return fail(e);
