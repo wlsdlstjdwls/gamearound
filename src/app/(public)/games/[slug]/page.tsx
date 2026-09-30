@@ -16,7 +16,7 @@ import { PcSupportBadges } from "@/components/pc-support-badges";
 import { NewsList } from "@/components/news-list";
 import { PatchList, PatchSpeed } from "@/components/patch-list";
 import { Sheet } from "@/components/ui/sheet";
-import { PlatformPrices, type PlatformPriceItem } from "@/components/platform-prices";
+import { PlatformPrices, PlatformSaleNote, type PlatformPriceItem } from "@/components/platform-prices";
 import { PlaytimeCard } from "@/components/playtime-card";
 import { CompatSection } from "@/components/compat-section";
 import { RequirementsBody } from "@/components/requirements-table";
@@ -529,6 +529,8 @@ export default async function GameDetailPage({ params }: Props) {
         <SectionHead
           id="platforms-heading"
           title="플랫폼 정보"
+          // 행사 이름과 남은 기간은 제목 옆 곁말 자리다(2026-09-30, 사용자 지정) — 근거는 PlatformSaleNote 주석
+          note={<PlatformSaleNote platforms={game.platforms} />}
           action={
             <Link href={gamePricesPath(game.slug)} className="text-[13px] text-acc hover:underline">
               가격 변동 그래프

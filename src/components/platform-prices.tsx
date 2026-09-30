@@ -167,23 +167,19 @@ function absentBrands(sold: Set<Platform>): { key: string; label: string; family
 }
 
 /**
- * 값 줄과 같은 왼쪽 기둥 폭. 스토어 이름의 시작점이 어긋나면 두 무리가 한 표로 안 읽힌다.
- *
- * 150 에서 96 으로 줄였다(2026-09-22, 사용자 지정으로 세대 배지가 이름 **아래**로 내려가면서).
- * 배지가 옆에 없으니 이 기둥이 재야 할 것은 가장 긴 이름 하나뿐이다("Nintendo 일본" 실측 96px).
- * 줄인 54px 은 그대로 값 쪽으로 간다 — 값이 잘리던 원인의 절반이 이 기둥이었다.
- */
-/**
- * 파는 곳이 아닌 스토어들 — 줄마다 세우지 않고 표 아래 **한 줄**로 모은다(2026-09-30).
- * 타일로 바꾸면서 빈 타일을 세우면 "서비스하지 않음" 이 값 타일과 같은 무게로 자리를 먹는다.
+ * 파는 곳이 아닌 스토어 = 흐린 타일 한 장(2026-09-30, 사용자: "서비스하지 않아도 카드는 만들어놔도 좋을듯").
+ * 같은 날 아침에는 표 아래 한 줄로 모았는데, 그러면 "Nintendo 에는 없다" 를 찾으려고 타일 격자와
+ * 아래 글자 줄을 두 번 읽어야 했다. 같은 격자, 같은 자리에 서면 스토어 목록이 늘 같은 모양이다.
+ * 값 타일과 섞여 읽히지 않게 면을 빼고 점선만 두른다, 글자도 흐린 색이다. 높이는 넓은 화면에서만
+ * 값 타일에 맞춘다(격자 한 줄이 들쭉날쭉하지 않게) — 한 줄에 한 장인 좁은 화면에서는 빈 칸이 된다.
  * 지역 접미어도 세대 배지도 붙이지 않는다 — "Nintendo 일본" 은 "일본에는 있다" 로 읽힌다.
  */
-function AbsentLine({ labels }: { labels: string[] }) {
-  if (labels.length === 0) return null;
+function AbsentTile({ label }: { label: string }) {
   return (
-    <p className="text-[13px] text-dim">
-      <span className="font-semibold text-mut">{ABSENT_TEXT}</span> {labels.join(", ")}
-    </p>
+    <li className="flex min-w-0 flex-col justify-between gap-3 rounded-[var(--radius-md)] border border-dashed border-line-strong p-4 sm:min-h-[132px]">
+      <span className="truncate text-[15px] font-bold text-dim">{label}</span>
+      <span className="text-[13px] text-dim">{ABSENT_TEXT}</span>
+    </li>
   );
 }
 
@@ -310,22 +306,27 @@ function FamilyBlock({ label, children }: { label: string; children: React.React
 }
 
 /**
- * 표 위 한 줄 — 지금 도는 행사의 이름과 남은 기간(2026-09-22, 사용자 제안).
+ * 지금 도는 행사의 이름과 남은 기간 — "플랫폼 정보" **제목 옆**에 선다(2026-09-30, 사용자 지정).
  *
- * 전에는 최저가 **행 안**에 있었다. 거기서는 두 가지가 나빴다. 하나, 행사 이름("특별 할인",
- * "가을 세일")은 그 줄 하나가 아니라 **표 전체에 걸린 사정**인데 한 줄의 꼬리표처럼 보였다.
- * 둘, 줄에서 가장 잘 잘리는 자리에 있어서 좁은 화면에서는 늘 먼저 사라지는 값이었다.
- *
- * 표 위로 올리면 제목("플랫폼 정보")과 표 사이에서 "이 값들은 지금 행사 중이다" 를 먼저 말한다.
- * 어느 스토어의 행사인지는 그 스토어 이름을 같이 적어 밝힌다 — 행사는 스토어마다 다르다.
+ * 처음엔 최저가 행 안에 있었고(한 줄의 꼬리표처럼 보였고, 좁으면 먼저 잘렸다), 2026-09-22 에
+ * 표 위 한 줄로 올렸다. 그 한 줄이 제목과 표 사이에 따로 서서 자리를 먹어, 제목 옆 곁말 자리로 옮겼다.
+ * 행사는 스토어마다 달라서 어느 스토어의 행사인지를 앞에 적는다. 값은 **최저가 행**의 것이다 —
+ * 표에서 실제로 살 자리가 그 줄이고, 그 줄의 행사가 이 화면의 행사다.
  */
-function SaleHeadline({ row }: { row: PlatformPriceItem }) {
-  if (!row.discountName && !row.discountEndsAt) return null;
+export function PlatformSaleNote({ platforms }: { platforms: PlatformDto[] }) {
+  const cheapest = [...platforms].sort(byPrice)[0] ?? null;
+  if (!cheapest || !cheapest.discountPct || cheapest.discountPct <= 0) return null;
+  if (!cheapest.discountName && !cheapest.discountEndsAt) return null;
   return (
-    <p className="flex flex-wrap items-baseline gap-x-2 gap-y-1">
-      <span className="text-[12px] font-semibold text-dim">{brandNameOf(row)}</span>
-      <SaleBadge discountName={row.discountName} discountEndsAt={row.discountEndsAt} discountStartsAt={row.discountStartsAt} variant="full" />
-    </p>
+    <span className="inline-flex flex-wrap items-baseline gap-x-2 gap-y-1">
+      <span className="text-[12px] font-semibold text-dim">{brandNameOf(cheapest)}</span>
+      <SaleBadge
+        discountName={cheapest.discountName}
+        discountEndsAt={cheapest.discountEndsAt}
+        discountStartsAt={cheapest.discountStartsAt}
+        variant="full"
+      />
+    </span>
   );
 }
 
@@ -357,18 +358,16 @@ export function PlatformPrices({
   // 묶음이 앞으로 올라온 날 엉뚱한 줄에 "최저가" 가 붙는다(정렬을 바꾸며 실제로 깨졌던 자리)
   const cheapest = [...platforms].sort(byPrice)[0] ?? null;
   const bestKey = cheapest?.currentPrice != null ? rowKey(cheapest) : null;
-  // 행사 줄은 최저가 행의 것을 쓴다 — 표에서 실제로 살 자리가 그 줄이고, 그 줄의 행사가 이 화면의 행사다
-  const saleRow = cheapest && cheapest.discountPct && cheapest.discountPct > 0 ? cheapest : null;
 
   return (
     <div className="flex flex-col gap-3">
-      {saleRow && <SaleHeadline row={saleRow} />}
 
       <div className="flex flex-col gap-5">
         {PLATFORM_FAMILIES.map((family) => {
           const familyRows = rows.filter((r) => familyOf(r.platform) === family);
-          // 파는 곳이 없는 갈래는 이름표도 세우지 않는다 — 없는 곳은 아래 한 줄(AbsentLine)이 말한다
-          if (familyRows.length === 0) return null;
+          const familyAbsent = absent.filter((a) => a.family === family);
+          // 갈래 전체가 비면 이름표도 세우지 않는다 — 빈 제목은 "여기 뭔가 빠졌다" 로 읽힌다
+          if (familyRows.length === 0 && familyAbsent.length === 0) return null;
           return (
             <FamilyBlock key={family} label={PLATFORM_FAMILY_LABEL[family]}>
               {familyRows.map((p) => {
@@ -389,10 +388,12 @@ export function PlatformPrices({
                   />
                 );
               })}
+              {familyAbsent.map((a) => (
+                <AbsentTile key={a.key} label={a.label} />
+              ))}
             </FamilyBlock>
           );
         })}
-        <AbsentLine labels={absent.map((a) => a.label)} />
       </div>
     </div>
   );
