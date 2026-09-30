@@ -412,7 +412,7 @@ export default async function GameDetailPage({ params }: Props) {
                 </span>
               )}
             </p>
-            <CompanyChips companies={game.companies} developer={game.developer} publisher={game.publisher} />
+            <CompanyChips companies={game.companies} developer={game.developer} publisher={game.publisher} genres={game.genres} />
           </div>
 
         </div>
@@ -424,17 +424,6 @@ export default async function GameDetailPage({ params }: Props) {
             </p>
           )}
 
-          {/* 장르 — 같은 화면의 칩들과 모양을 맞춘다. 누를 수 없는 칩인 이유는 장르 목록 화면이
-              아직 주소로만 살아 있어서다(목록 필터의 장르 축이 그 일을 한다) */}
-          {game.genres.length > 0 && (
-            <ul className="enter-item flex flex-wrap gap-1.5" style={stagger(3)} aria-label="장르">
-              {game.genres.map((g) => (
-                <li key={g} className="inline-flex items-center rounded-full bg-surface-2 px-[11px] py-[5px] text-[12.5px] text-ink-2">
-                  {g}
-                </li>
-              ))}
-            </ul>
-          )}
 
         </div>
 
