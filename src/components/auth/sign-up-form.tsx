@@ -109,8 +109,11 @@ export function SignUpForm({ next }: { next: string }) {
       <div className="reveal" style={stagger(5)}>
         <Checkbox name="terms" disabled={busy} onChange={terms.onChange} onBlur={terms.onBlur} error={terms.error}>
           {/* 두 문서는 링크다 — 동의하기 전에 읽을 길이 있어야 한다.
-              새 창으로 여는 이유: 같은 창에서 나가면 여기까지 채운 칸이 전부 날아간다 */}
-          <span className="text-ink">(필수)</span> {M.termsConsentLead}{" "}
+              새 창으로 여는 이유: 같은 창에서 나가면 여기까지 채운 칸이 전부 날아간다.
+              한 줄로 묶는다(2026-09-30 사용자 요청) — 서비스 이름을 앞에서 빼서 넓은 화면에는 한 줄에 들어간다.
+              좁은 화면(sm 미만)은 글자 폭이 칸보다 넓어 묶으면 가로로 넘치므로 그때만 줄을 바꾼다 */}
+          <span className="sm:whitespace-nowrap">
+          <span className="text-ink">(필수)</span>{" "}
           <Link href={ROUTES.terms} target="_blank" rel="noreferrer" className="font-semibold text-acc-hover underline underline-offset-4">
             {M.termsDocLabel}
             <span className="sr-only"> (새 창에서 열림)</span>
@@ -121,6 +124,7 @@ export function SignUpForm({ next }: { next: string }) {
             <span className="sr-only"> (새 창에서 열림)</span>
           </Link>
           {M.termsConsentTail}
+          </span>
         </Checkbox>
       </div>
 

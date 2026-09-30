@@ -37,7 +37,6 @@ export const AUTH_MESSAGES = {
    * 동의 문구는 조각으로 둔다 — 두 문서 이름이 **눌러서 읽을 수 있는 링크**여야 해서다.
    * 한 문장으로 붙여 두었더니 읽어 보지 않고 동의하는 것 말고는 길이 없었다(2026-09-22).
    */
-  termsConsentLead: `${SITE.name}`,
   termsDocLabel: "이용약관",
   privacyDocLabel: "개인정보처리방침",
   termsConsentTail: "에 동의해요.",
