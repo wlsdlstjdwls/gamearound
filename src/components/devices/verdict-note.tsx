@@ -12,6 +12,7 @@
 import { judge, type OverallVerdict, type Verdict } from "@/lib/hardware/verdict";
 import { VERDICT_SHORT_LABEL } from "@/lib/games/messages";
 import { cn } from "@/lib/cn";
+import { CheckCircleIcon, XCircleIcon } from "@/components/ui/icons";
 import { useGuestDevice, type CompatDevice } from "./guest-device";
 
 /** 이 판정이 읽는 사양 묶음. 서비스 DTO 의 부분집합이라 타입을 그대로 들이지 않는다 */
@@ -38,17 +39,20 @@ export function verdictForDevice(
 /**
  * 판정 한 마디의 차림. 모르는 것에는 색을 주지 않는다.
  *
- * 미충족은 **꽉 찬 밝은 빨강 + 흰 글자**다(2026-09-30, 사용자: "최소 사양 미충족 뱃지 색상이 어두워").
- * 전에는 중립 면(--surface-3) + --danger 글자였는데, 회색 면 위 벽돌색 글자가 11px 에서 탁하게 가라앉았다.
- * 09-22 에 걷은 "빨간 면 위 빨간 글자" 로 돌아간 것이 아니다 — 면과 글자가 반대편이라 겹치지 않는다.
- * 글자는 --on-verdict 다(라이트 순백 4.51:1, 다크 먹색) — 흰색을 박으면 다크의 밝은 빨강 위에서 대비가 무너지고,
- * --on-ink(#f9fafb)는 라이트에서 4.32:1 로 본문 기준에 모자란다.
+ * 미충족은 **옅은 빨강 면 + 진한 빨강 글자 + 같은 색 테두리 + X 표시**다(2026-09-30 두 번째 손질,
+ * 사용자: "글자 색상이 별로야, 뱃지 배경도 잘 안 보이고").
+ * 같은 날 오전엔 꽉 찬 밝은 빨강 + 흰 글자였다. 11px 흰 글자가 채도 높은 빨강 위에서 번져 읽혔고,
+ * 제목 옆 곁말치고 너무 소리쳤다. 그 전(중립 회색 면 + 벽돌색 글자)은 면이 흰 마디 카드에 녹아 안 보였다.
+ * 둘 다 피하는 길이 테두리다 — 면은 옅게 두되 같은 색 선 한 줄이 알약의 경계를 세운다.
+ * 09-22 에 걷은 "빨간 면 위 빨간 글자" 와 다른 점: 그때는 결론 마디 전체를 칠했고 벽돌색 둘이 겹쳐 탁했다.
+ * 지금 --danger 는 맑은 빨강이고(옅은 면 위 4.84:1), 칠하는 것은 알약 하나다.
+ * 충족 쪽도 같은 모양(옅은 초록 면 + 테두리)으로 맞췄다 — 한 자리에 두 모양이 번갈아 서면 비교가 안 된다.
  */
-const TONE: Record<OverallVerdict, string> = {
-  meets_recommended: "bg-ok-soft text-ok",
-  meets_minimum: "bg-ok-soft text-ok",
-  below_minimum: "bg-verdict-bad text-on-verdict",
-  unknown: "bg-surface-2 text-mut",
+const TONE: Record<OverallVerdict, { cls: string; Icon: typeof CheckCircleIcon | null }> = {
+  meets_recommended: { cls: "bg-ok-soft text-ok shadow-[inset_0_0_0_1px_var(--ok-line)]", Icon: CheckCircleIcon },
+  meets_minimum: { cls: "bg-ok-soft text-ok shadow-[inset_0_0_0_1px_var(--ok-line)]", Icon: CheckCircleIcon },
+  below_minimum: { cls: "bg-danger-soft text-danger shadow-[inset_0_0_0_1px_var(--danger-line)]", Icon: XCircleIcon },
+  unknown: { cls: "bg-surface-2 text-mut", Icon: null },
 };
 
 export function VerdictNote({ devices, groups }: { devices: CompatDevice[]; groups: VerdictGroup[] }) {
@@ -58,8 +62,10 @@ export function VerdictNote({ devices, groups }: { devices: CompatDevice[]; grou
   const { verdict } = verdictForDevice(device, groups);
   // 기기를 아직 안 적었거나 그 OS 사양이 없으면 아무 말도 하지 않는다 — 마디를 열면 폼과 안내가 서 있다
   if (!verdict || verdict.overall === "unknown") return null;
+  const { cls, Icon } = TONE[verdict.overall];
   return (
-    <span className={cn("inline-flex shrink-0 items-center rounded-full px-2.5 py-[3px] text-[11.5px] font-bold leading-none", TONE[verdict.overall])}>
+    <span className={cn("inline-flex shrink-0 items-center gap-1 rounded-full py-1 pl-2 pr-2.5 text-[12px] font-bold leading-none", cls)}>
+      {Icon && <Icon size={13} strokeWidth={2.4} />}
       {VERDICT_SHORT_LABEL[verdict.overall]}
     </span>
   );

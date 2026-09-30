@@ -65,11 +65,20 @@
    */
   --acc-2: color-mix(in oklab, var(--acc) 58%, var(--surface));
   --acc-3: color-mix(in oklab, var(--acc) 30%, var(--surface));
-  --danger: #a6462e; /* 마감 임박 */
-  --danger-soft: #f6e9e5;
+  /*
+   * 마감 임박, 오류. 2026-09-30(사용자: "16시간 남음, 2일 남음 색상이 별로야") 벽돌색 #a6462e 를 걷었다.
+   * 그 값은 따뜻한 오프화이트 시절에 맞춘 저채도 빨강이라, 회청 바탕으로 옮긴 뒤로는 갈색으로 읽혔다
+   * (--verdict-bad 가 같은 이유로 먼저 밝아졌다). 흰 판 5.36:1, 제 옅은 면(--danger-soft) 위 4.84:1 —
+   * 옅은 면 위에서도 본문 기준(4.5)을 지키는 가장 밝은 빨강이다.
+   */
+  --danger: #cc2929;
+  --danger-soft: #fff0f0;
+  /* 옅은 면 알약의 테두리(안쪽 그림자). 흰 판 위의 옅은 분홍은 면만으로는 경계가 번져 "배경이 안 보인다" 가 됐다 */
+  --danger-line: color-mix(in oklab, var(--danger) 26%, transparent);
   /* 충족, 성공, 최저가. --acc 와 같은 값이 아니다 — 위 주석 참조 */
   --ok: #2a6a4c; /* 6.11:1 */
   --ok-soft: #eaf1ec;
+  --ok-line: color-mix(in oklab, var(--ok) 24%, transparent); /* --danger-line 과 같은 짝 */
   --warn: #8a6a2e; /* 데이터 지연 */
   --warn-soft: #f6efe2;
   /*
@@ -92,9 +101,6 @@
   /* 2026-09-30(사용자: "최소 사양 미충족 색상이 너무 어두워") #c8402a -> #e03131. 회청 바탕으로 옮긴 뒤
      벽돌기가 남은 빨강이 회색 면 위에서 탁하게 가라앉았다. 흰 판 4.51:1 — 본문 기준을 지키는 가장 밝은 빨강이다 */
   --verdict-bad: #e03131;
-  /* --verdict-bad 면 위 글자(사양 미충족 배지). --on-ink(#f9fafb)는 이 빨강 위에서 4.32:1 로 모자라 순백을 쓴다(4.51:1).
-     다크는 면이 밝은 빨강이라 반대로 먹색이다 — 그래서 흰색을 컴포넌트에 박지 않고 토큰으로 둔다 */
-  --on-verdict: #ffffff;
   --on-ink: #f9fafb; /* 잉크 배경 위 텍스트 */
   /* 시트, 팝업 뒤를 덮는 막. 검정이 아니라 먹색을 깔아 오프화이트, 커버 이미지와 온도를 맞춘다 */
   --overlay: rgba(25, 31, 40, 0.42);
@@ -241,15 +247,14 @@
     --acc-soft: #251f4a;
     --acc-glow: rgba(145, 130, 240, 0.22);
     --acc-on-ink: #5b34c7; /* 다크에서 "잉크" 는 밝은 판이다 — 그 위에는 라이트의 진한 보라가 선다 */
-    --danger: #e08a72;
-    --danger-soft: #3a211a;
+    --danger: #ff8a8a;
+    --danger-soft: #3b1d1f;
     --ok: #5fb98c;
     --ok-soft: #122b20;
     --warn: #d4a64e;
     --warn-soft: #33270f;
     --price-bad: #f0705a;
     --verdict-bad: #ff6b6b;
-    --on-verdict: #0f1115;
     --on-ink: #0f1115;
     --overlay: rgba(0, 0, 0, 0.62);
 
@@ -298,15 +303,14 @@
   --acc-soft: #251f4a;
   --acc-glow: rgba(145, 130, 240, 0.22);
   --acc-on-ink: #5b34c7;
-  --danger: #e08a72;
-  --danger-soft: #3a211a;
+  --danger: #ff8a8a;
+  --danger-soft: #3b1d1f;
   --ok: #5fb98c;
   --ok-soft: #122b20;
   --warn: #d4a64e;
   --warn-soft: #33270f;
   --price-bad: #f0705a;
   --verdict-bad: #ff6b6b;
-  --on-verdict: #0f1115;
   --on-ink: #0f1115;
   --overlay: rgba(0, 0, 0, 0.62);
 
@@ -360,7 +364,6 @@
   --color-warn-soft: var(--warn-soft);
   --color-price-bad: var(--price-bad);
   --color-verdict-bad: var(--verdict-bad);
-  --color-on-verdict: var(--on-verdict);
   --color-on-ink: var(--on-ink);
 
   --color-store-steam: var(--store-steam);

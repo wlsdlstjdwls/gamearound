@@ -246,6 +246,15 @@ export function GamepadIcon(p: IconProps) {
 }
 
 /** 출시 예정 — 달력. 이 화면이 세는 것은 개수가 아니라 날짜다 */
+export function ClockIcon(p: IconProps) {
+  return (
+    <svg {...base(p)}>
+      <circle cx="12" cy="12" r="9" />
+      <path d="M12 7.5V12l3 2" />
+    </svg>
+  );
+}
+
 export function CalendarIcon(p: IconProps) {
   return (
     <svg {...base(p)}>
