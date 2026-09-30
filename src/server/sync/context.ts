@@ -8,6 +8,7 @@ import { errorMessage } from "@/lib/errors";
 import { ERROR_SAMPLE_MAX } from "./constants";
 import type { DispatchSummary, PriceChange } from "./dispatch-alerts";
 import type { DiscoveryLog } from "./discover";
+import type { TouchedMap } from "./touched";
 
 export interface RunOptions {
   /** 배치 크기 덮어쓰기 */
@@ -54,6 +55,8 @@ export interface Ctx {
    * 실패가 아니라 "안 쓴 것" 이라 failed 와 따로 센다 — 이 수가 갑자기 뛰면 스토어 응답이 바뀐 것이다.
    */
   droppedPrices: number;
+  /** 만진 게임과 바뀐 칸. run-source 가 sync_logs.items 로 남긴다(근거는 touched.ts) */
+  touched: TouchedMap;
   /** 이번 실행이 카탈로그 발견을 돌렸다면 그 요약. run-source 가 sync_logs 에 그대로 남긴다 */
   discovery?: DiscoveryLog;
   /**
@@ -74,7 +77,7 @@ export async function createContext(source: Source, now: Date = new Date()): Pro
     db, source, now,
     locks: await loadLockedFields(db),
     processed: 0, failed: 0, errors: [],
-    changedSlugs: new Set(), changedCompanySlugs: new Set(), priceChanges: [], droppedPrices: 0,
+    changedSlugs: new Set(), changedCompanySlugs: new Set(), priceChanges: [], droppedPrices: 0, touched: new Map(),
   };
 }
 

@@ -9,6 +9,7 @@ import { isLocked, recordError, type Ctx, type RunOptions } from "./context";
 import { applyAliases } from "./alias-writer";
 import { usefulAliases } from "@/server/adapters/wikidata/game";
 import { fetchWithRetry } from "./retry";
+import { noteTouched } from "./touched";
 
 export interface MetaTarget {
   gameId: string;
@@ -69,10 +70,14 @@ async function applyPlaytime(ctx: Ctx, target: MetaTarget, snapshot: MetaSnapsho
   if (!existing) {
     await db.insert(playtimes).values({ gameId: target.gameId, ...set, lastSyncedAt: ctx.now }).onConflictDoNothing();
     ctx.changedSlugs.add(target.slug);
+    noteTouched(ctx.touched, target.slug, Object.keys(set));
     return;
   }
   await db.update(playtimes).set({ ...set, lastSyncedAt: ctx.now }).where(eq(playtimes.gameId, target.gameId));
-  if (Object.keys(set).length > 0) ctx.changedSlugs.add(target.slug);
+  if (Object.keys(set).length > 0) {
+    ctx.changedSlugs.add(target.slug);
+    noteTouched(ctx.touched, target.slug, Object.keys(set));
+  }
 }
 
 /**
@@ -95,6 +100,7 @@ export async function applyLoggedCount(ctx: Ctx, target: MetaTarget, snapshot: M
   if (cur?.hltbLoggedCount === next) return;
   await db.update(games).set({ hltbLoggedCount: next }).where(eq(games.id, target.gameId));
   ctx.changedSlugs.add(target.slug);
+  noteTouched(ctx.touched, target.slug, ["hltbLoggedCount"]);
 }
 
 async function applyScore(ctx: Ctx, target: MetaTarget, field: "opencriticScore" | "metacriticScore", score: number | null | undefined): Promise<void> {
@@ -113,7 +119,10 @@ async function applyScore(ctx: Ctx, target: MetaTarget, field: "opencriticScore"
   }
   // 다음 배치 순서를 위해 games.updated_at 갱신
   await db.update(games).set({ updatedAt: ctx.now }).where(eq(games.id, target.gameId));
-  if (changed) ctx.changedSlugs.add(target.slug);
+  if (changed) {
+    ctx.changedSlugs.add(target.slug);
+    noteTouched(ctx.touched, target.slug, [field]);
+  }
 }
 
 /**
@@ -145,6 +154,7 @@ export async function runMeta(ctx: Ctx, source: MetaSource, opts: RunOptions): P
       else if (source === "wikidata_game") await applyAliasesFor(ctx, source, target, snapshot);
       else await applyScore(ctx, target, "metacriticScore", snapshot.scores?.metacritic);
       ctx.processed++;
+      noteTouched(ctx.touched, target.slug);
     } catch (e) {
       recordError(ctx, `${source}:${target.externalId}`, e);
     }

@@ -120,6 +120,7 @@ async function main(): Promise<void> {
     changedCompanySlugs: new Set<string>(),
     priceChanges: [],
     droppedPrices: 0,
+    touched: new Map(),
   } satisfies Ctx;
 
   let added = 0;

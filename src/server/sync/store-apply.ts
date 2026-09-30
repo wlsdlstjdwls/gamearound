@@ -25,6 +25,7 @@ import { gamesWithRef, ignoreDiscovery, loadGameTitles, type StoreTarget } from 
 import { findGameByTitle } from "./match";
 import { loadRootParents } from "./parent-root";
 import { syncSnapshotSubscriptions } from "./subscription-writer";
+import { noteTouched, PLATFORM_ROW_FIELD } from "./touched";
 
 /** 수집 결과 1건 — 대상과 그 대상에서 받아온 스냅샷 */
 export interface Fetched {
@@ -347,6 +348,7 @@ export async function applyStore(ctx: Ctx, source: StoreSource, fetched: Fetched
       const enriched = withDiscoveredMedia(snapshot, target);
       const created = await createGameFromSnapshot(ctx, enriched, { contentType: snapshot.contentType ?? "game" });
       ctx.changedSlugs.add(created.slug);
+      noteTouched(ctx.touched, created.slug, [], true);
       applied.push({ gameId: created.id, slug: created.slug, snapshot: enriched });
     } catch (e) {
       recordError(ctx, `${source}:${target.externalId}:db`, e);
@@ -366,6 +368,8 @@ export async function applyStore(ctx: Ctx, source: StoreSource, fetched: Fetched
   const updates: Array<{ slug: string; plan: Extract<PlatformPlan, { kind: "update" }>; snapshot: StoreSnapshot }> = [];
   for (const { gameId, slug, snapshot } of applied) {
     const cur = gameById.get(gameId);
+    // 바뀐 것이 없어도 적는다 — "가져와 견줬는데 그대로였다" 도 이 실행이 한 일이다
+    noteTouched(ctx.touched, slug);
     // 소스를 가리지 않는다. 권위(덮어쓸 수 있는가)는 planGameMeta 가 META_OVERWRITE_SOURCES 로 가른다 —
     // 예전에는 여기서 steam 만 통과시켜서, 스팀에 없는 게임은 등록 순간의 값에 영원히 멈춰 있었다.
     if (snapshot.meta && cur) {
@@ -383,19 +387,26 @@ export async function applyStore(ctx: Ctx, source: StoreSource, fetched: Fetched
       if (Object.keys(set).length > 0) {
         metaUpdates.push(ctx.db.update(games).set({ ...set, updatedAt: ctx.now }).where(eq(games.id, gameId)));
         ctx.changedSlugs.add(slug);
+        noteTouched(ctx.touched, slug, Object.keys(set));
       }
     }
     // 한 번 틀린 종류가 영원히 남지 않게 스토어 답으로 바로잡는다(판단은 content-type-fix)
     if (cur && correctedContentType(cur, snapshot.contentType) && !isLocked(ctx, "games", gameId, "content_type")) {
       metaUpdates.push(ctx.db.update(games).set({ contentType: "game", updatedAt: ctx.now }).where(eq(games.id, gameId)));
       ctx.changedSlugs.add(slug);
+      noteTouched(ctx.touched, slug, ["contentType"]);
     }
     // 지역까지 봐야 한다 — 같은 게임, 같은 기기라도 나라가 다르면 다른 행이고, 섞으면 일본 가격이 한국 행을 덮는다
     const region = snapshot.region ?? HOME_REGION;
     const existing = platformsByGame.get(gameId)?.find((p) => p.platform === snapshot.platform && p.region === region);
     const plan = planPlatform(ctx, existing, gameId, snapshot);
-    if (plan.kind === "insert") inserts.push({ slug, plan, snapshot });
-    else updates.push({ slug, plan, snapshot });
+    if (plan.kind === "insert") {
+      inserts.push({ slug, plan, snapshot });
+      noteTouched(ctx.touched, slug, plan.snapshot ? [PLATFORM_ROW_FIELD, "currentPrice"] : [PLATFORM_ROW_FIELD]);
+    } else {
+      updates.push({ slug, plan, snapshot });
+      noteTouched(ctx.touched, slug, Object.keys(plan.set));
+    }
   }
 
   // 4. 쓰기

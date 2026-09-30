@@ -8,6 +8,7 @@ import { relations, sql } from "drizzle-orm";
 // 발견 요약의 형태는 sync/discover 가 정한다. 타입만 가져오므로 런타임 의존은 생기지 않는다 —
 // 여기서 모양을 한 번 더 적으면 두 곳이 말없이 어긋난다
 import type { DiscoveryLog } from "@/server/sync/discover";
+import type { SyncLogItem } from "@/server/sync/touched";
 import { auditColumns } from "./audit";
 // 열거형은 잎 파일에 있다(schema-enums.ts 머리 주석: 순환 때문에 갈랐다). 여기서 재수출한다.
 import {
@@ -716,6 +717,11 @@ export const syncLogs = pgTable("sync_logs", {
   // 이 값들은 따로 질의하는 지표가 아니라 "이 실행의 발견이 어디서 멈췄나" 를 함께 읽는 한 덩어리다.
   // 포화 여부는 discovery->>'stoppedBy' = 'budget' 으로 센다.
   discovery: jsonb("discovery").$type<DiscoveryLog>(),
+  /**
+   * 이 실행이 만진 게임과 바뀐 칸(sync/touched). 수집 현황의 "가져온 게임" 시트가 읽는다.
+   * 따로 테이블을 두지 않은 이유: 실행 단위로만 읽고, 게임 쪽에서 거꾸로 찾을 일이 없다.
+   */
+  items: jsonb("items").$type<SyncLogItem[]>(),
   startedAt: timestamp("started_at", { withTimezone: true }).notNull(),
   finishedAt: timestamp("finished_at", { withTimezone: true }),
   ...auditColumns(),

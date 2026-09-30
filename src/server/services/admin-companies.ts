@@ -35,6 +35,7 @@ async function adminCtx(): Promise<Ctx> {
     changedCompanySlugs: new Set(),
     priceChanges: [],
     droppedPrices: 0,
+    touched: new Map(),
   };
 }
 

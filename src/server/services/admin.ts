@@ -1,5 +1,5 @@
 // 관리자 서비스 (§8 MVP: sync 대시보드, 매칭 검수 큐, 필드 정정). 모든 함수는 requireAdmin()으로 시작.
-import { and, count, desc, eq, gte, inArray, or } from "drizzle-orm";
+import { and, count, desc, eq, getTableColumns, gte, inArray, or } from "drizzle-orm";
 import { getDb } from "@/server/db/client";
 import {
   dataCorrections,
@@ -13,7 +13,16 @@ import {
 import { requireAdmin } from "@/server/services/users";
 import { DISPLAY_TIME_ZONE } from "@/lib/format";
 
-export type SyncLogRow = typeof syncLogs.$inferSelect;
+/**
+ * 로그 한 줄에서 items(만진 게임 목록)는 뺀다. 한 줄에 수백 건이 실려 있어 로그 표 100줄이면
+ * 수 MB 가 된다 — 그 목록은 "가져온 게임" 시트만 읽고, 시트는 따로 집는다(admin-activity).
+ */
+const syncLogColumns = (() => {
+  const { items, ...rest } = getTableColumns(syncLogs);
+  void items;
+  return rest;
+})();
+export type SyncLogRow = Omit<typeof syncLogs.$inferSelect, "items">;
 export type SourceRefRow = typeof gameSourceRefs.$inferSelect;
 export type CorrectionRow = typeof dataCorrections.$inferSelect;
 
@@ -39,7 +48,7 @@ export async function getSyncOverview(): Promise<{ items: SyncOverviewItem[] }> 
   const todayStart = startOfTodayInDisplayZone();
 
   const [latestRows, failedRows] = await Promise.all([
-    db.selectDistinctOn([syncLogs.source]).from(syncLogs).orderBy(syncLogs.source, desc(syncLogs.startedAt)),
+    db.selectDistinctOn([syncLogs.source], syncLogColumns).from(syncLogs).orderBy(syncLogs.source, desc(syncLogs.startedAt)),
     db
       .select({ source: syncLogs.source, n: count() })
       .from(syncLogs)
@@ -61,7 +70,7 @@ export async function listSyncLogs(opts: { limit?: number; source?: SourceName }
   await requireAdmin();
   const limit = Math.min(Math.max(opts.limit ?? 100, 1), 500);
   return getDb()
-    .select()
+    .select(syncLogColumns)
     .from(syncLogs)
     .where(opts.source ? eq(syncLogs.source, opts.source) : undefined)
     .orderBy(desc(syncLogs.startedAt))

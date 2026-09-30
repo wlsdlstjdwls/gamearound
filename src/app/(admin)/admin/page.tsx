@@ -7,8 +7,9 @@
 // (상태 배지, 처리 건수)은 **돌았다**까지만 말하고 **무엇을 했는지**는 말하지 않았다. 셋을 더했다:
 //   1. 맨 위 24시간 요약 — 새 게임, 가격 기록, 실행 수. 소스 하나하나를 보기 전에 "오늘 이 서비스에
 //      값이 들어오긴 했나" 를 한 줄로 답한다. 이 줄이 0이면 아래 배지가 전부 초록이어도 고장이다.
-//   2. 소스마다 **방금 만진 게임 제목**. 닌텐도 일본 칸에 일본어 제목이 서면 그 소스는 제 카탈로그를
-//      보고 있다는 뜻이고, 며칠째 같은 제목에 머물면 큐 선두가 막힌 것이다(admin-activity 주석).
+//   2. 소스마다 **가져온 게임**. 처음엔 제목 세 줄이었는데 2026-09-30 에 시트로 바꿨다 — 제목만으로는
+//      "무엇을 가져왔나"(가격인지 커버인지 확인만 했는지)가 안 보였다. 이제 마지막 기록 실행이 만진 게임과
+//      바뀐 값을 버튼 하나 뒤의 시트에 싣는다(admin-activity, sync/touched 주석).
 //   3. "도는 중" 과 "끊김" 을 가른다. 앞 화면은 끝나지 않은 실행을 전부 "도는 중이거나 끊김" 한 말로
 //      적었다 — 그래서 며칠째 안 끝난 실행이 정상처럼 보였다(wikidata_game 실측).
 import type { Metadata } from "next";
@@ -18,10 +19,11 @@ import { formatAgo, formatDateTime } from "@/lib/format";
 import { SYNC_MESSAGES, SYNC_STATUS_LABEL, sourceLabel } from "@/lib/admin/messages";
 import { ROUTES } from "@/lib/routes";
 import { getSyncOverview, type SyncLogRow, type SyncOverviewItem } from "@/server/services/admin";
-import { getSyncActivity, RUNNING_GRACE_MINUTES, type RecentTitle } from "@/server/services/admin-activity";
+import { getSyncActivity, RUNNING_GRACE_MINUTES, type RunItems } from "@/server/services/admin-activity";
 import { getDisabledReason, isSource } from "@/server/adapters";
 import { requireRoleOrForbid } from "@/server/auth/guards";
-import { PageHead, Panel } from "@/components/ui/page";
+import { PageHead, Panel, raisedClass } from "@/components/ui/page";
+import { SyncRunSheet } from "@/components/admin/sync-run-sheet";
 import { Clamp } from "@/components/ui/tooltip";
 
 /** 카드에 노출할 에러 샘플 길이. 전문은 실행 로그 화면에서 본다 */
@@ -94,32 +96,17 @@ function Totals({
   );
 }
 
-/** 이 소스가 방금 만진 것. 제목 몇 줄이면 "엉뚱한 카탈로그를 긁고 있나" 가 눈으로 갈린다 */
-function RecentTitles({ titles }: { titles: RecentTitle[] }) {
-  return (
-    <div>
-      <p className="mb-1 text-[11.5px] text-dim">{SYNC_MESSAGES.recentTitles}</p>
-      <ul className="flex flex-col gap-0.5">
-        {titles.map((t) => (
-          <li key={`${t.title}-${t.checkedAt.getTime()}`} className="min-w-0 text-[12px] text-mut">
-            <Clamp>{t.title}</Clamp>
-          </li>
-        ))}
-      </ul>
-    </div>
-  );
-}
-
-function SourceCard({ item, titles, now }: { item: SyncOverviewItem; titles: RecentTitle[]; now: number }) {
+function SourceCard({ item, run, now }: { item: SyncOverviewItem; run: RunItems | undefined; now: number }) {
   const l = item.latest;
   const disabledReason = isSource(item.source) ? getDisabledReason(item.source) : undefined;
   const tone = statusOf(l, disabledReason, now);
   const d = l?.discovery;
 
   return (
-    // 소스 하나가 한 칸이다. 판 대신 위쪽 헤어라인 한 줄로 칸을 표시한다 —
-    // 소스가 여덟이라 판을 세우면 관리자 화면이 상자 여덟 개로 읽히고, 정작 볼 값(빨간 실패 수)이 묻힌다
-    <div className={`flex flex-col gap-2.5 border-t border-line pt-3.5 ${disabledReason ? "opacity-60" : ""}`}>
+    // 소스 하나가 흰 판 한 장이다. 예전엔 판 대신 위쪽 헤어라인 한 줄로 칸을 갈랐는데, 격자에서 칸이
+    // 가로로 이어지면 선이 한 줄로 붙어 어느 값이 어느 스토어 것인지 안 갈렸다(2026-09-30 사용자: "구분이 잘 안되네").
+    // 관리자 셸이 회색 바탕 위 흰 판이라(할 일 카드와 같은 면) 판 한 겹이면 상자 속 상자가 되지 않는다
+    <div className={raisedClass(`flex flex-col gap-2.5 p-4 ${disabledReason ? "opacity-60" : ""}`)}>
       <div className="flex items-center justify-between gap-2">
         {/* 스토어 이름은 한글로 띄우고, 로그를 맞대 볼 때 쓰는 원값은 그 밑에 작게 남긴다 */}
         <h3 className="min-w-0 text-[13.5px] font-bold text-ink">
@@ -151,7 +138,7 @@ function SourceCard({ item, titles, now }: { item: SyncOverviewItem; titles: Rec
         <p className="text-[12px] text-dim">{SYNC_MESSAGES.neverRan}</p>
       )}
 
-      {titles.length > 0 && <RecentTitles titles={titles} />}
+      {run && run.items.length > 0 && <SyncRunSheet sourceName={sourceLabel(item.source)} run={run} now={now} />}
 
       {l?.errorSample && (
         <div>
@@ -206,9 +193,9 @@ export default async function AdminSyncOverviewPage() {
 
       <Totals newGames={activity.newGames} snapshots={activity.priceSnapshots} runs={activity.runs} failedToday={failedToday} />
 
-      <div className="grid grid-cols-[repeat(auto-fit,minmax(min(250px,100%),1fr))] gap-x-8 gap-y-5">
+      <div className="grid grid-cols-[repeat(auto-fit,minmax(min(250px,100%),1fr))] gap-3">
         {overview.items.map((item) => (
-          <SourceCard key={item.source} item={item} titles={activity.recent.get(item.source) ?? []} now={activity.asOf} />
+          <SourceCard key={item.source} item={item} run={activity.lastRuns.get(item.source)} now={activity.asOf} />
         ))}
       </div>
 

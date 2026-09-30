@@ -40,6 +40,12 @@ export const BATCH_SIZE: Record<Source, number> = {
   // 컬렉션 수만큼만 요청한다. 배치 개념이 없어 형식상의 값이다
   gamepass: Object.keys(GAMEPASS_COLLECTIONS).length,
 };
+/**
+ * 실행 한 번이 sync_logs.items 에 남기는 게임 수 상한(sync/touched).
+ * 300 인 이유: 스팀 한 회차가 1,500건이라 다 담으면 한 줄이 100KB 를 넘는다. 사람이 시트에서
+ * 실제로 훑는 건 앞의 몇십 줄이고, 앞에는 새로 만든 것과 바뀐 것이 먼저 선다(확인만 한 것은 뒤).
+ */
+export const SYNC_LOG_ITEMS_MAX = 300;
 /** fetchMany 는 있는데 batchSize 를 선언하지 않은 어댑터용 기본값 */
 export const DEFAULT_FETCH_BATCH_SIZE = 50;
 

@@ -18,6 +18,7 @@ import { runNews } from "./run-news";
 import { runStore } from "./run-store";
 import { runCompanies } from "./run-companies";
 import { runSubscriptions } from "./run-subscriptions";
+import { touchedForLog } from "./touched";
 
 export type { RunOptions, RunResult } from "./context";
 
@@ -71,7 +72,16 @@ export async function runSource(source: Source, opts: RunOptions = {}): Promise<
     await db
       .update(syncLogs)
       // 발견을 돌리지 않은 실행은 null 로 남긴다 — "0페이지" 와 "안 돌렸다" 는 다른 이야기다
-      .set({ status, processed: ctx.processed, failed: ctx.failed, errorSample, discovery: ctx.discovery ?? null, finishedAt: new Date() })
+      .set({
+        status,
+        processed: ctx.processed,
+        failed: ctx.failed,
+        errorSample,
+        discovery: ctx.discovery ?? null,
+        // 만진 게임이 없는 실행(뉴스, 구독, 빈 배치)은 null — "0건" 과 "기록 안 함" 을 가른다
+        items: ctx.touched.size + ctx.changedSlugs.size > 0 ? touchedForLog(ctx.touched, ctx.changedSlugs) : null,
+        finishedAt: new Date(),
+      })
       .where(eq(syncLogs.id, logId));
 
     return { source, status, processed: ctx.processed, failed: ctx.failed, changed: ctx.changedSlugs.size, errorSample: errorSample ?? undefined, alerts };

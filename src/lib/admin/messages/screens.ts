@@ -100,8 +100,21 @@ export const SYNC_MESSAGES = {
   failedToday: "오늘 실패",
   discovery: "신규 찾기",
   discoverySummary: (pages: number, scanned: number, fresh: number) => `${pages}쪽에서 ${scanned}건 훑어 신규 ${fresh}건`,
-  /** 이 소스가 방금 만진 게임. 숫자가 아니라 이름이라야 "엉뚱한 걸 긁고 있나" 가 갈린다 */
-  recentTitles: "방금 만진 게임",
+  /*
+   * "가져온 게임" 시트 — 마지막 기록 실행이 만진 게임과 바뀐 값(2026-09-30, "방금 만진 게임" 세 줄을 대신한다).
+   * 제목이 먼저인 이유는 그대로다: 숫자가 아니라 이름이라야 "엉뚱한 걸 긁고 있나" 가 갈린다
+   */
+  runItemsOpen: (n: number) => `가져온 게임 ${n.toLocaleString("ko-KR")}건`,
+  runItemsTitle: (source: string) => `${source}에서 가져온 게임`,
+  runItemsLead: (ago: string, processed: number, shown: number) =>
+    processed > shown
+      ? `${ago} 시작한 실행이에요. 처리한 ${processed.toLocaleString("ko-KR")}건 가운데 ${shown.toLocaleString("ko-KR")}건을 보여줘요. 새로 등록한 것과 값이 바뀐 것이 먼저 와요.`
+      : `${ago} 시작한 실행이에요.`,
+  runItemsCreated: "새로 등록",
+  runItemsChanged: "값 바뀜",
+  runItemsSame: "그대로",
+  /** 가져와 견줬지만 달라진 칸이 없다 — 실패가 아니다 */
+  runItemsNoChange: "바뀐 값 없음",
   errorSample: "에러 맛보기",
   sourceLogs: "이 스토어 로그 보기",
   allLogs: "실행 로그 전체 보기",
