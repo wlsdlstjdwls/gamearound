@@ -2,7 +2,6 @@
 export const TASK_MESSAGES = {
   // 관리자 메뉴(ADMIN_NAV.tasks)와 같은 말을 쓴다. "작업 판" 이던 이름을 버린 이유는 거기 주석에 있다
   title: "할 일",
-  lead: "검수 큐는 수집이 쌓아 주지만, 직접 적어야 하는 일은 여기에 둬요. 칸 안에서 한 줄로 바로 적고, 카드를 누르면 고치고 기록을 남겨요. 마우스로는 끌어서 칸을 옮겨요.",
   add: "할 일 추가",
   titleLabel: "할 일",
   titlePlaceholder: "무엇을 할지 한 줄로",

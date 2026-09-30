@@ -30,10 +30,9 @@ export default async function AdminTasksPage() {
   return (
     <>
       <header className="flex flex-col gap-3">
-        <div>
-          <PageHead title={TASK_MESSAGES.title} note={TASK_MESSAGES.count(total)} />
-          <p className="mt-1 max-w-[560px] text-[13px] text-mut">{TASK_MESSAGES.lead}</p>
-        </div>
+        {/* 쓰는 법 안내 한 단락을 걷었다(2026-09-30, 사용자: "문구는 없애라"). 판을 매일 쓰는 사람에게
+            그 단락은 판을 한 줄 아래로 미는 일만 했다 — 칸마다 선 "한 줄 추가" 가 이미 쓰는 법을 말한다 */}
+        <PageHead title={TASK_MESSAGES.title} note={TASK_MESSAGES.count(total)} />
         <TaskAddForm sources={sourceEnum.enumValues} assignees={assignees} />
       </header>
 
