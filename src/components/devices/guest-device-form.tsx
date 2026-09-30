@@ -18,6 +18,8 @@
 //      1px 테두리 + 배경색 bg 는 판 위에서 칸이 파인 것처럼 보였다.
 //   3) 폼 전체를 판(Panel) 안에 넣고 칸마다 라벨을 세웠다. 자리표시자만 있던 때는 무엇을 적는 칸인지가
 //      글자를 치는 순간 사라졌다.
+// **2026-09-30** — 칩을 테두리 짝(outline)으로. 테두리 없는 칩은 회색 글자만 남아 "8GB 16GB" 가
+// 고를 칸이 아니라 바탕에 적힌 글씨로 읽혔다(사용자 지적). 칩이 몇 개 안 서는 입력 자리라 기둥의 소음 사정이 없다.
 import { useMemo, useState } from "react";
 import Link from "next/link";
 import { buttonClass } from "@/components/ui/button";
@@ -98,7 +100,7 @@ export function GuestDeviceForm({
                 type="button"
                 onClick={() => setOsPick(value)}
                 aria-pressed={os === value}
-                className={chipClass({ active: os === value, size: "sm" })}
+                className={chipClass({ active: os === value, size: "sm", outline: true })}
               >
                 {OS_FAMILY_LABEL[value]}
               </button>
@@ -170,7 +172,7 @@ export function GuestDeviceForm({
                   type="button"
                   onClick={() => setRam(String(gb))}
                   aria-pressed={ram === String(gb)}
-                  className={chipClass({ active: ram === String(gb), size: "sm" })}
+                  className={chipClass({ active: ram === String(gb), size: "sm", outline: true })}
                 >
                   {gb}GB
                 </button>

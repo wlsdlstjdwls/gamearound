@@ -44,7 +44,7 @@ export function DeviceStepFields() {
         <ul className="flex flex-wrap gap-1.5" aria-label={M.os}>
           {OS_OPTIONS.map((value) => (
             <li key={value}>
-              <button type="button" onClick={() => setOsPick(value)} aria-pressed={os === value} className={chipClass({ active: os === value, size: "sm" })}>
+              <button type="button" onClick={() => setOsPick(value)} aria-pressed={os === value} className={chipClass({ active: os === value, size: "sm", outline: true })}>
                 {OS_FAMILY_LABEL[value]}
               </button>
             </li>
@@ -115,7 +115,7 @@ export function DeviceStepFields() {
         <ul className="mt-2 flex flex-wrap gap-1.5" aria-label={M.ram}>
           {RAM_QUICK_GB.map((gb) => (
             <li key={gb}>
-              <button type="button" onClick={() => setRam(String(gb))} aria-pressed={ram === String(gb)} className={chipClass({ active: ram === String(gb), size: "sm" })}>
+              <button type="button" onClick={() => setRam(String(gb))} aria-pressed={ram === String(gb)} className={chipClass({ active: ram === String(gb), size: "sm", outline: true })}>
                 {gb}GB
               </button>
             </li>
