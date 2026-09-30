@@ -221,7 +221,16 @@ function TabBody({ item, active, counts }: { item: Item; active: boolean; counts
   );
 }
 
-export function AdminNav({ user, counts }: { user: string; counts: Promise<AdminNavCounts | null> }) {
+export function AdminNav({
+  user,
+  counts,
+  className,
+}: {
+  user: string;
+  counts: Promise<AdminNavCounts | null>;
+  /** 넓은 화면 기둥의 면. 레이아웃이 본문 판과 같은 흰 판을 준다 — 바닥 띠에는 붙지 않는다 */
+  className?: string;
+}) {
   const pathname = usePathname();
   /** 지금 사유를 말하고 있는 칸. 한 번에 하나만 뜬다 */
   const [soon, setSoon] = useState<Item | null>(null);
@@ -273,7 +282,7 @@ export function AdminNav({ user, counts }: { user: string; counts: Promise<Admin
   return (
     <>
       {/* 넓은 화면 — 왼쪽 기둥. 본문이 길어도 메뉴는 따라온다 */}
-      <aside className="sticky top-[84px] hidden w-[196px] shrink-0 flex-col gap-5 md:flex">
+      <aside className={cn("sticky top-[84px] hidden w-[212px] shrink-0 flex-col gap-5 md:flex", className)}>
         <div className="px-3">
           <p className="text-[15px] font-bold tracking-[-0.02em] text-ink">{ADMIN_NAV.consoleTitle}</p>
           <p className="mt-0.5 truncate text-[11.5px] text-dim">{user}</p>
@@ -299,7 +308,7 @@ export function AdminNav({ user, counts }: { user: string; counts: Promise<Admin
       <nav
         data-admin-tabbar
         aria-label={ADMIN_NAV.menuTitle}
-        className="fixed inset-x-0 bottom-0 z-40 flex border-t border-line bg-bg/95 pb-[env(safe-area-inset-bottom)] backdrop-blur md:hidden"
+        className="fixed inset-x-0 bottom-0 z-40 flex border-t border-line bg-surface/95 pb-[env(safe-area-inset-bottom)] backdrop-blur md:hidden"
       >
         {TABS.map((item) => {
           const active = isActive(pathname, item.href);

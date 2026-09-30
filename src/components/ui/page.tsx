@@ -102,7 +102,15 @@ export function panelClass(className?: string): string {
  * 판 안에 또 판을 넣지 않는다 — 안쪽 구분은 헤어라인(.rows)과 Panel 이 맡는다.
  */
 export function sectionCardClass(className?: string): string {
-  return cn("rounded-[var(--radius-panel)] bg-surface p-4 shadow-[var(--elev-card)] sm:p-6", className);
+  return raisedClass(cn("p-4 sm:p-6", className));
+}
+
+/**
+ * 흰 판 한 겹, 안쪽 여백 없이 — 마디 카드보다 작은 덩어리(관리자 할 일 카드, 관리자 메뉴 기둥)가 쓴다.
+ * 마디 카드와 같은 면, 같은 그림자라 둘이 한 화면에 서도 다른 물건으로 읽히지 않는다.
+ */
+export function raisedClass(className?: string): string {
+  return cn("rounded-[var(--radius-panel)] bg-surface shadow-[var(--elev-card)]", className);
 }
 
 export function Panel({ className, children, ...rest }: React.ComponentProps<"div">) {
