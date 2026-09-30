@@ -16,7 +16,7 @@ import type { RunItem, RunItems } from "@/server/services/admin-activity";
 
 const TAG = "rounded-[6px] px-1.5 py-0.5 text-[11px] font-semibold";
 
-function ItemRow({ item }: { item: RunItem }) {
+function ItemRow({ item, traced }: { item: RunItem; traced: boolean }) {
   const labels = syncFieldLabels(item.fields);
   return (
     <li className={cn(ROW, "flex flex-col gap-1.5 py-2.5")}>
@@ -30,7 +30,8 @@ function ItemRow({ item }: { item: RunItem }) {
             {l}
           </span>
         ))}
-        {!item.created && labels.length === 0 && <span className="text-[11.5px] text-dim">{SYNC_MESSAGES.runItemsNoChange}</span>}
+        {/* 되짚은 목록에서 칸이 비었다는 건 "모른다" 이지 "그대로" 가 아니다 — 그 말은 머리 한 줄이 한다 */}
+        {!item.created && labels.length === 0 && !traced && <span className="text-[11.5px] text-dim">{SYNC_MESSAGES.runItemsNoChange}</span>}
       </div>
     </li>
   );
@@ -42,8 +43,8 @@ export function SyncRunSheet({ sourceName, run, now }: { sourceName: string; run
   const same = run.items.length - created - changed;
   const counts = [
     { label: SYNC_MESSAGES.runItemsCreated, n: created },
-    { label: SYNC_MESSAGES.runItemsChanged, n: changed },
-    { label: SYNC_MESSAGES.runItemsSame, n: same },
+    { label: run.traced ? SYNC_MESSAGES.runItemsPriceChanged : SYNC_MESSAGES.runItemsChanged, n: changed },
+    { label: run.traced ? SYNC_MESSAGES.runItemsPriceSame : SYNC_MESSAGES.runItemsSame, n: same },
   ];
 
   return (
@@ -51,6 +52,7 @@ export function SyncRunSheet({ sourceName, run, now }: { sourceName: string; run
       <p className="pt-2 text-[12.5px] leading-[1.6] text-mut">
         {SYNC_MESSAGES.runItemsLead(formatAgo(run.startedAt, now), run.processed, run.items.length)}
       </p>
+      {run.traced && <p className="mt-1.5 text-[12px] leading-[1.6] text-dim">{SYNC_MESSAGES.runItemsTraced}</p>}
       <p className="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-[12.5px] text-mut">
         {counts.map((c) => (
           <span key={c.label}>
@@ -60,7 +62,7 @@ export function SyncRunSheet({ sourceName, run, now }: { sourceName: string; run
       </p>
       <ul className={cn(ROWS, "mt-3")}>
         {run.items.map((item) => (
-          <ItemRow key={item.slug} item={item} />
+          <ItemRow key={item.slug} item={item} traced={run.traced === true} />
         ))}
       </ul>
     </Sheet>

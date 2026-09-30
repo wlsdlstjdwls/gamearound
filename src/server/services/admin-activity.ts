@@ -12,10 +12,12 @@
 // 질의는 두 단이다. 소스별 마지막 실행의 items 를 먼저 집고, 거기 적힌 slug 로 제목을 한 번에 집는다.
 // items 안의 slug 를 games 와 한 문장으로 조인하면 jsonb 를 풀어 헤친 뒤 조인해 계획이 무거워진다.
 import "server-only";
-import { inArray, sql } from "drizzle-orm";
+import { and, between, desc, inArray, sql } from "drizzle-orm";
 import { getDb } from "@/server/db/client";
 import { requireAdmin } from "@/server/services/users";
-import { games, type SourceName } from "@/server/db/schema";
+import { gamePlatforms, games, type SourceName } from "@/server/db/schema";
+import { STORE_SOURCES, type StoreSource } from "@/server/adapters";
+import { SOURCE_PLATFORMS, SOURCE_REGION, SYNC_LOG_ITEMS_MAX } from "@/server/sync/constants";
 import type { SyncLogItem } from "@/server/sync/touched";
 
 /**
@@ -41,6 +43,11 @@ export interface RunItems {
   /** 그 실행이 처리한 수. items 는 상한(SYNC_LOG_ITEMS_MAX)에서 잘리므로 둘이 다를 수 있다 */
   processed: number;
   items: RunItem[];
+  /**
+   * sync_logs.items 가 없던 실행을 DB 흔적으로 되짚은 목록이다(traceRunItems). 가격과 새로 등록만 알고
+   * 다른 칸이 바뀌었는지는 모른다 — 화면이 그 사실을 한 줄로 밝힌다.
+   */
+  traced?: boolean;
 }
 
 export interface SyncActivity {
@@ -67,7 +74,9 @@ export async function getSyncActivity(): Promise<SyncActivity> {
   type RunRow = { source: SourceName; started_at: string; processed: number | null; items: SyncLogItem[] };
   type TotalRow = { new_games: string; snapshots: string; runs: string };
 
-  const [runRes, totalRes] = await Promise.all([
+  type WindowRow = { source: SourceName; started_at: string; finished_at: string; processed: number | null };
+
+  const [runRes, totalRes, windowRes] = await Promise.all([
     db.execute(sql`
       select distinct on (source) source, started_at, processed, items
       from sync_logs
@@ -79,6 +88,14 @@ export async function getSyncActivity(): Promise<SyncActivity> {
         (select count(*) from games where created_at >= now() - interval '24 hours') as new_games,
         (select count(*) from price_snapshots where captured_at >= now() - interval '24 hours') as snapshots,
         (select count(*) from sync_logs where started_at >= now() - interval '24 hours') as runs
+    `),
+    // 스토어 소스의 마지막으로 끝난(무언가 처리한) 실행 창. items 가 아직 없는 소스를 되짚는 데 쓴다
+    db.execute(sql`
+      select distinct on (source) source, started_at, finished_at, processed
+      from sync_logs
+      where finished_at is not null and processed > 0
+        and source in (${sql.join(STORE_SOURCES.map((s) => sql`${s}`), sql`, `)})
+      order by source, started_at desc
     `),
   ]);
 
@@ -108,6 +125,14 @@ export async function getSyncActivity(): Promise<SyncActivity> {
     });
   }
 
+  // 기록이 아직 없는 스토어 소스는 마지막 실행 창을 DB 흔적으로 되짚는다
+  const traced = await Promise.all(
+    (windowRes.rows as WindowRow[])
+      .filter((w) => !lastRuns.has(w.source))
+      .map(async (w) => [w.source, await traceRunItems(w.source as StoreSource, w)] as const),
+  );
+  for (const [source, run] of traced) if (run.items.length > 0) lastRuns.set(source, run);
+
   return {
     lastRuns,
     asOf: Date.now(),
@@ -115,4 +140,55 @@ export async function getSyncActivity(): Promise<SyncActivity> {
     priceSnapshots: Number(totals?.snapshots ?? 0),
     runs: Number(totals?.runs ?? 0),
   };
+}
+
+/**
+ * sync_logs.items 를 남기기 전(2026-09-30 배포 전) 실행을 DB 흔적으로 되짚는다.
+ *
+ * 왜 두나: items 는 새 코드로 수집이 한 번 돌아야 생긴다. 그 전까지 시트가 비어 있으면 화면이 "버튼이 없다" 로
+ * 끝난다(사용자가 바로 그걸 물었다). 스토어 소스는 흔적이 셋 남는다 — 그 실행 창 안에 갱신된 스토어 행
+ * (game_platforms.last_synced_at), 그 창에 찍힌 가격 기록, 그 창에 만들어진 게임. 셋이면 "무엇을 가져왔나" 의
+ * 뼈대는 선다. 다른 칸(이미지, 출시일)이 바뀌었는지는 흔적이 없어 모른다.
+ *
+ * 마지막 실행 창만 정확하다 — last_synced_at 은 다음 실행이 덮어쓰니 옛 실행은 되짚을 수 없다. 그래서 마지막만 본다.
+ * 비용: last_synced_at 에 인덱스가 없어 game_platforms 를 훑는다(2026-09-30 실측 여섯 소스 합 0.85초).
+ * items 가 쌓이면 이 경로는 저절로 안 탄다 — 인덱스를 새로 들이지 않는 이유다.
+ */
+async function traceRunItems(
+  source: StoreSource,
+  w: { started_at: string; finished_at: string; processed: number | null },
+): Promise<RunItems> {
+  const db = getDb();
+  const start = new Date(w.started_at);
+  const end = new Date(w.finished_at);
+  const created = sql<boolean>`${games.createdAt} >= ${start.toISOString()}::timestamptz`;
+  const priced = sql<boolean>`exists (
+    select 1 from price_snapshots ps
+    where ps.game_platform_id = ${gamePlatforms.id}
+      and ps.captured_at between ${start.toISOString()}::timestamptz and ${end.toISOString()}::timestamptz
+  )`;
+  const rows = await db
+    .select({ slug: games.slug, title: sql<string>`coalesce(${games.titleKo}, ${games.titleEn})`, created, priced })
+    .from(gamePlatforms)
+    .innerJoin(games, sql`${games.id} = ${gamePlatforms.gameId}`)
+    .where(
+      and(
+        inArray(gamePlatforms.platform, SOURCE_PLATFORMS[source]),
+        sql`${gamePlatforms.region} = ${SOURCE_REGION[source]}`,
+        between(gamePlatforms.lastSyncedAt, start, end),
+      ),
+    )
+    // items 와 같은 순서 — 새로 등록, 가격 바뀜, 그대로
+    .orderBy(desc(created), desc(priced))
+    .limit(SYNC_LOG_ITEMS_MAX);
+
+  const seen = new Set<string>();
+  const items: RunItem[] = [];
+  for (const r of rows) {
+    // 한 게임이 기기 둘(ps5, ps4)로 두 줄 나올 수 있다
+    if (seen.has(r.slug)) continue;
+    seen.add(r.slug);
+    items.push({ slug: r.slug, title: r.title, fields: r.priced ? ["currentPrice"] : [], created: r.created });
+  }
+  return { startedAt: start, processed: w.processed ?? 0, items, traced: true };
 }
