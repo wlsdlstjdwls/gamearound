@@ -2,69 +2,48 @@
 
 // 할 일 판 위의 거르기 줄(2026-10-01).
 //
-// 묶음은 넷이고 성격이 다르다 — 그래서 칩 모양도 다르다.
-// - 올린 사람: **켬끔 둘**(내가 올린, 남이 올린). 하나만 고르는 라디오가 아니다 — 사용자 요청이
-//   "각각 보이게 가리게" 였다. 그래서 체크 네모(ChipCheck)를 단다. 둘 다 끄면 판이 비는 것도 그대로 둔다
-//   (스스로 끈 것이고, 칸마다 "0 / n" 이 무엇이 숨었는지 말한다).
-// - 담당: 하나만 고른다(전체, 내 담당, 담당 없음). 내 담당과 담당 없음은 동시에 참일 수 없다.
-// - 분류: 여럿을 고른다. 하나도 안 고르면 거르지 않는다.
-// - 급함만: 켬끔 하나.
+// 한 줄에 셋이다: 보기 칩 넷(하나만 고른다), 분류 드롭다운 하나, 급함만 켬끔.
+// 1차는 칩이 열둘이었고 "복잡해서 불편하지 않을까" 라는 말을 들었다 — 줄인 이유는 lib/admin/task-filter 주석에 있다.
+// 분류를 칩 다섯 대신 드롭다운으로 둔 이유: 보기 칩과 같은 모양으로 나란히 서면 두 줄이 한 덩어리로 읽힌다.
+// 보기는 매번 바꾸는 값, 분류는 가끔 거는 값이라 손에 닿는 무게도 다르게 둔다.
 //
 // 상태는 판(task-board)이 쥔다. 이 줄은 그리기만 한다 — 거른 결과로 칸 수를 세는 것도 판의 일이라서다.
 import { ChipButton, ChipCheck } from "@/components/ui/chip";
+import { FormSelect } from "@/components/ui/select";
 import { TASK_CATEGORY_LABEL, TASK_FILTER_MESSAGES } from "@/lib/admin/messages";
 import { TASK_CATEGORIES, type TaskCategory } from "@/lib/admin/tasks";
-import { DEFAULT_TASK_FILTER, TASK_ASSIGNEE_SCOPES, isDefaultTaskFilter, type TaskFilter } from "@/lib/admin/task-filter";
+import { DEFAULT_TASK_FILTER, TASK_VIEWS, isDefaultTaskFilter, type TaskFilter } from "@/lib/admin/task-filter";
 
-/** 묶음 하나: 앞에 짧은 이름, 뒤에 칩. 좁은 화면에서는 칩이 다음 줄로 접힌다 */
-function Group({ label, children }: { label: string; children: React.ReactNode }) {
-  return (
-    <div role="group" aria-label={label} className="flex flex-wrap items-center gap-1">
-      <span aria-hidden className="mr-1 text-[11.5px] font-medium text-dim">
-        {label}
-      </span>
-      {children}
-    </div>
-  );
-}
+/** 분류 드롭다운의 "거르지 않음" 값. 빈 문자열이라 enum 값과 겹치지 않는다 */
+const ANY = "";
+const CATEGORY_CHOICES = [
+  { value: ANY, label: TASK_FILTER_MESSAGES.categoryAll },
+  ...TASK_CATEGORIES.map((c) => ({ value: c, label: TASK_CATEGORY_LABEL[c] })),
+];
 
 export function TaskFilterBar({ filter, onChange }: { filter: TaskFilter; onChange: (next: TaskFilter) => void }) {
   const set = (patch: Partial<TaskFilter>) => onChange({ ...filter, ...patch });
-  const toggleCategory = (c: TaskCategory) =>
-    set({ categories: filter.categories.includes(c) ? filter.categories.filter((x) => x !== c) : [...filter.categories, c] });
 
   return (
-    <div
-      role="region"
-      aria-label={TASK_FILTER_MESSAGES.label}
-      className="flex flex-wrap items-center gap-x-5 gap-y-2 rounded-xl bg-surface-2 px-3 py-2"
-    >
-      <Group label={TASK_FILTER_MESSAGES.author}>
-        <ChipButton size="sm" className="tap" active={filter.mine} onClick={() => set({ mine: !filter.mine })}>
-          <ChipCheck on={filter.mine} />
-          {TASK_FILTER_MESSAGES.mine}
-        </ChipButton>
-        <ChipButton size="sm" className="tap" active={filter.others} onClick={() => set({ others: !filter.others })}>
-          <ChipCheck on={filter.others} />
-          {TASK_FILTER_MESSAGES.others}
-        </ChipButton>
-      </Group>
-
-      <Group label={TASK_FILTER_MESSAGES.assignee}>
-        {TASK_ASSIGNEE_SCOPES.map((scope) => (
-          <ChipButton key={scope} size="sm" className="tap" active={filter.assignee === scope} onClick={() => set({ assignee: scope })}>
-            {TASK_FILTER_MESSAGES.assigneeScope[scope]}
+    <div role="region" aria-label={TASK_FILTER_MESSAGES.label} className="flex flex-wrap items-center gap-x-3 gap-y-2">
+      <div role="group" aria-label={TASK_FILTER_MESSAGES.view} className="flex flex-wrap items-center gap-1">
+        {TASK_VIEWS.map((v) => (
+          <ChipButton key={v} size="sm" className="tap" active={filter.view === v} onClick={() => set({ view: v })}>
+            {TASK_FILTER_MESSAGES.views[v]}
           </ChipButton>
         ))}
-      </Group>
+      </div>
 
-      <Group label={TASK_FILTER_MESSAGES.category}>
-        {TASK_CATEGORIES.map((c) => (
-          <ChipButton key={c} size="sm" className="tap" active={filter.categories.includes(c)} onClick={() => toggleCategory(c)}>
-            {TASK_CATEGORY_LABEL[c]}
-          </ChipButton>
-        ))}
-      </Group>
+      {/* 폭을 고정한다 — "데이터 정리" 를 고르면 칸이 늘어 옆 칩이 밀리는 걸 막는다 */}
+      <FormSelect
+        name="cat"
+        label={TASK_FILTER_MESSAGES.category}
+        hideLabel
+        options={CATEGORY_CHOICES}
+        value={filter.category ?? ANY}
+        onChange={(v) => set({ category: (v || null) as TaskCategory | null })}
+        className="w-[132px]"
+      />
 
       <ChipButton size="sm" className="tap" active={filter.urgent} onClick={() => set({ urgent: !filter.urgent })}>
         <ChipCheck on={filter.urgent} />

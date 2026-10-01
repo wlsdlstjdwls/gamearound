@@ -61,8 +61,6 @@ export function TaskBoard({
     () => Object.fromEntries(TASK_STATUSES.map((s) => [s, board[s].filter((t) => matchesTaskFilter(t, filter, meId))])) as Board,
     [board, filter, meId],
   );
-  // 분류 하나만 걸린 판에서 한 줄 추가로 적은 일은 그 분류로 들어간다(TaskQuickAdd 주석)
-  const quickCategory = filter.categories.length === 1 ? filter.categories[0] : undefined;
 
   const drag = useBoardDrag((id, to) => start(async () => setState(await moveTaskAction(id, to))));
 
@@ -126,7 +124,7 @@ export function TaskBoard({
               {drag.from !== null ? (
                 <p className="px-1 py-3 text-[11.5px] text-dim">{droppable ? TASK_MESSAGES.dropHere : TASK_MESSAGES.empty}</p>
               ) : (
-                <TaskQuickAdd status={status} category={quickCategory} />
+                <TaskQuickAdd status={status} category={filter.category ?? undefined} />
               )}
             </div>
           );

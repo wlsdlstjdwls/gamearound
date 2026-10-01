@@ -116,17 +116,15 @@ export const TASK_CATEGORY_LABEL = {
 } as const;
 
 /*
- * 판 위 거르기 줄(2026-10-01, 사용자 요청: "내가 올린 것, 다른 사람이 올린 것을 토글로 보이고 가리게",
- * "내 담당만 보기, 카테고리 필터"). 묶음 이름은 칩 줄 앞에 서는 짧은 말이다.
+ * 판 위 거르기 줄(2026-10-01, 사용자 요청: "내가 올린 것, 다른 사람이 올린 것 구분", "내 담당만 보기, 카테고리 필터").
+ * 같은 날 칩 열둘에서 여섯으로 줄였다(lib/admin/task-filter 주석).
  */
 export const TASK_FILTER_MESSAGES = {
   label: "할 일 거르기",
-  author: "올린 사람",
-  mine: "내가 올린",
-  others: "남이 올린",
-  assignee: "담당",
-  assigneeScope: { all: "전체", me: "내 담당", none: "담당 없음" },
+  view: "보기",
+  views: { all: "전체", assigned: "내 담당", mine: "내가 올린", others: "남이 올린" },
   category: "분류",
+  categoryAll: "모든 분류",
   urgent: "급함만",
   reset: "거르기 풀기",
   /** 칸 머리 건수. 걸러졌을 때만 전체 수를 같이 보인다 — 숨은 카드가 있다는 걸 놓치지 않게 */
