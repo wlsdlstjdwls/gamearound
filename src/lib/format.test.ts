@@ -1,6 +1,6 @@
 // 포맷 유틸 테스트 — 할인 기간 표시(순수 함수, now 를 인자로 받는다)
 import { describe, expect, it } from "vitest";
-import { formatAgo, formatDate, formatDateTime, formatMonthLabel, formatReleaseDay, formatSaleWindow, formatShortDateTime, saleRemaining } from "./format";
+import { formatAgo, formatDate, formatDateTime, formatLongDateTime, formatMonthLabel, formatReleaseDay, formatSaleWindow, formatShortDateTime, saleRemaining } from "./format";
 
 const NOW = Date.parse("2026-09-14T00:00:00Z");
 
@@ -39,6 +39,8 @@ describe("날짜 표기", () => {
     expect(formatDate(AT)).toBe("2026년 9월 15일 (화)");
     expect(formatShortDateTime(AT)).toBe("9월 15일 02:00");
     expect(formatDateTime(AT)).toBe("26. 9. 15. 02:00");
+    expect(formatLongDateTime(AT)).toBe("2026년 9월 15일 02:00");
+    expect(formatLongDateTime(null)).toBe("-");
   });
 
   it("오전/오후 대신 24시간제로 적는다", () => {

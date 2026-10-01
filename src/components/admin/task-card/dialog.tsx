@@ -16,7 +16,7 @@
 import { useState, useTransition } from "react";
 import { cn } from "@/lib/cn";
 import { SEGMENT, SEGMENT_ITEM, SEGMENT_ITEM_ON } from "@/components/admin/task-fields";
-import { formatDateTime } from "@/lib/format";
+import { formatLongDateTime } from "@/lib/format";
 import { Sheet } from "@/components/ui/sheet";
 import { TASK_MESSAGES, TASK_STATUS_LABEL } from "@/lib/admin/messages";
 import { TASK_STATUSES, type AdminTask, type TaskAssignee } from "@/lib/admin/tasks";
@@ -100,7 +100,7 @@ export function TaskDialog({
           {/* 올린 사람은 고친 때와 한 줄에 선다 — 둘 다 "이 카드의 내력" 이라 고치는 칸들과 떼어 둔다 */}
           <span className="text-[12.5px] text-dim">
             {TASK_MESSAGES.author} {task.author?.name ?? TASK_MESSAGES.authorUnknown} | {TASK_MESSAGES.updatedAt}{" "}
-            {formatDateTime(task.updatedAt)}
+            {formatLongDateTime(task.updatedAt)}
           </span>
           <button
             type="button"

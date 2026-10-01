@@ -17,23 +17,25 @@
 import { useActionState, useState, useTransition } from "react";
 import { ActionForm } from "@/components/ui/action-form";
 import { cn } from "@/lib/cn";
-import { formatDateTime } from "@/lib/format";
+import { formatLongDateTime } from "@/lib/format";
 import { Button } from "@/components/ui/button";
 import { TASK_MESSAGES, TASK_STATUS_LABEL, TASK_STATUS_TO_PARTICLE } from "@/lib/admin/messages";
 import type { TaskNote, TaskStatus } from "@/lib/admin/tasks";
-import { STATUS_FILL } from "@/components/admin/task-tone";
 import { FIELD } from "@/components/admin/task-fields";
 import { addNoteAction, deleteNoteAction, type TaskActionState } from "@/app/(admin)/admin/tasks/actions";
 
 /** 칸 이름 앞에 칸 색 점 — 판의 칸 머리와 같은 색이라 "어디서 어디로" 가 글자 전에 갈린다 */
-/** 칸 이름. 칩이 아니라 굵은 글자다 — 칩으로 감싸면 복사했을 때 줄마다 끊겼다. 앞의 색 점은 판의 칸 머리와 같은 색이다 */
-function StatusName({ status }: { status: TaskStatus | null }) {
+/**
+ * 칸 이름. 칩이 아니라 글자다 — 칩으로 감싸면 복사했을 때 줄마다 끊겼다.
+ * 색 점은 걷었다(사용자: "색 동그라미는 빼고 차라리 현재 상태에 강조"). 바뀐 뒤의 칸(current)만 보라 굵은 글자로 세운다 —
+ * 읽는 사람이 알고 싶은 건 "그래서 지금 어디인가" 다.
+ */
+function StatusName({ status, current = false }: { status: TaskStatus | null; current?: boolean }) {
   if (!status) return <>-</>;
-  return (
-    <>
-      <span aria-hidden className={cn("mr-1 inline-block size-2 rounded-full align-middle", STATUS_FILL[status])} />
-      <strong className="font-semibold text-ink">{TASK_STATUS_LABEL[status]}</strong>
-    </>
+  return current ? (
+    <strong className="font-bold text-acc">{TASK_STATUS_LABEL[status]}</strong>
+  ) : (
+    <span className="text-ink">{TASK_STATUS_LABEL[status]}</span>
   );
 }
 
@@ -50,11 +52,11 @@ function MoveLine({ note }: { note: TaskNote }) {
       <div className="flex items-center gap-2">
         {note.authorName && <span className="truncate text-[13.5px] font-bold text-ink">{note.authorName}</span>}
         <span className="rounded-md bg-surface-3 px-1.5 py-0.5 text-[12px] font-semibold text-mut">{TASK_MESSAGES.noteMoved}</span>
-        <span className="text-[12.5px] tabular-nums text-mut">{formatDateTime(note.createdAt)}</span>
+        <span className="text-[12.5px] tabular-nums text-mut">{formatLongDateTime(note.createdAt)}</span>
       </div>
-      {/* 한 줄 평문이다: "할 일 -> 처리 중으로 변경되었습니다"(사용자가 정한 꼴, messages 주석) */}
+      {/* 한 줄 평문이다: "할 일 → 처리 중으로 변경되었습니다"(사용자가 정한 꼴, messages 주석) */}
       <p className="text-[14px] leading-[1.6] text-mut">
-        <StatusName status={note.from} /> {TASK_MESSAGES.noteMovedArrow} <StatusName status={note.to} />
+        <StatusName status={note.from} /> {TASK_MESSAGES.noteMovedArrow} <StatusName status={note.to} current />
         {note.to ? TASK_STATUS_TO_PARTICLE[note.to] : ""} {TASK_MESSAGES.noteMovedTail}
       </p>
     </div>
@@ -84,7 +86,7 @@ export function TaskNotes({ taskId, notes }: { taskId: string; notes: TaskNote[]
                 <div className="flex flex-col gap-1.5">
                   <div className="flex items-center gap-2">
                     {n.authorName && <span className="truncate text-[13.5px] font-bold text-ink">{n.authorName}</span>}
-                    <span className="text-[12.5px] tabular-nums text-mut">{formatDateTime(n.createdAt)}</span>
+                    <span className="text-[12.5px] tabular-nums text-mut">{formatLongDateTime(n.createdAt)}</span>
                     <button
                       type="button"
                       disabled={pending}

@@ -96,6 +96,17 @@ export function formatDateTime(d: Date | string | null | undefined): string {
   return `${year.slice(-2)}. ${trimZero(month)}. ${trimZero(day)}. ${hour}:${minute}`;
 }
 
+/**
+ * 연월일을 글자로 적는 시각 — "2026년 10월 1일 14:34". 관리자 할 일 기록이 쓴다(2026-10-01 사용자가 정한 꼴).
+ * "26. 10. 1." 의 점 셋은 무엇이 연이고 일인지 읽는 사람이 맞춰야 했다. 시각은 남긴다 — 같은 날 기록이 여러 줄 쌓인다.
+ */
+export function formatLongDateTime(d: Date | string | null | undefined): string {
+  const date = toDate(d);
+  if (!date) return "-";
+  const { year, month, day, hour, minute } = kstParts(date);
+  return `${year}년 ${trimZero(month)}월 ${trimZero(day)}일 ${hour}:${minute}`;
+}
+
 /** 100시간 미만은 소수 첫째 자리까지, 그 이상은 정수+천단위 콤마 (HLTB 값은 5,000시간대까지 나온다) */
 const HOURS_DECIMAL_MAX = 100;
 
