@@ -20,16 +20,33 @@ import { cn } from "@/lib/cn";
 import { formatDateTime } from "@/lib/format";
 import { Button } from "@/components/ui/button";
 import { TASK_MESSAGES, TASK_STATUS_LABEL } from "@/lib/admin/messages";
-import type { TaskNote } from "@/lib/admin/tasks";
+import type { TaskNote, TaskStatus } from "@/lib/admin/tasks";
+import { STATUS_FILL } from "@/components/admin/task-tone";
 import { FIELD } from "@/components/admin/task-fields";
 import { addNoteAction, deleteNoteAction, type TaskActionState } from "@/app/(admin)/admin/tasks/actions";
 
-/** 자취 한 줄의 앞뒤 칸. 화살표 대신 파이프로 잇는다(AGENTS §4) */
+/** 칸 이름 앞에 칸 색 점 — 판의 칸 머리와 같은 색이라 "어디서 어디로" 가 글자 전에 갈린다 */
+function StatusName({ status }: { status: TaskStatus | null }) {
+  if (!status) return <span>-</span>;
+  return (
+    <span className="inline-flex items-center gap-1">
+      <span aria-hidden className={cn("size-1.5 rounded-full", STATUS_FILL[status])} />
+      {TASK_STATUS_LABEL[status]}
+    </span>
+  );
+}
+
+/**
+ * 칸 이동 자취 한 줄. 사람이 적은 글보다 **작고 흐리게** 둔다(2026-10-01, 사용자: "기록 쪽이 눈에 안 띈다") —
+ * 둘이 같은 무게로 섞여 있으면 정작 읽어야 할 사람 글이 자취 사이에 묻힌다. 화살표 대신 파이프로 잇는다(AGENTS §4).
+ */
 function MoveLine({ note }: { note: TaskNote }) {
   return (
-    <p className="text-[12.5px] text-mut">
-      <span className="mr-1.5 rounded-[5px] bg-surface-3 px-1.5 py-0.5 text-[10.5px] text-dim">{TASK_MESSAGES.noteMoved}</span>
-      {note.from ? TASK_STATUS_LABEL[note.from] : "-"} | {note.to ? TASK_STATUS_LABEL[note.to] : "-"}
+    <p className="flex flex-wrap items-center gap-x-1.5 gap-y-0.5 text-[11.5px] text-dim">
+      <span className="font-medium">{TASK_MESSAGES.noteMoved}</span>
+      <StatusName status={note.from} /> | <StatusName status={note.to} />
+      <span className="tabular-nums">{formatDateTime(note.createdAt)}</span>
+      {note.authorName && <span>{note.authorName}</span>}
     </p>
   );
 }
@@ -44,7 +61,7 @@ export function TaskNotes({ taskId, notes }: { taskId: string; notes: TaskNote[]
   return (
     <div className="flex flex-col gap-4">
       {notes.length === 0 ? (
-        <p className="text-[12.5px] text-dim">{TASK_MESSAGES.noteEmpty}</p>
+        <p className="rounded-xl border border-dashed border-line-strong px-3 py-3 text-center text-[12.5px] text-dim">{TASK_MESSAGES.noteEmpty}</p>
       ) : (
         // 줄기는 목록 왼쪽에 1px 선으로 깔고, 점이 그 위에 앉는다
         <ul className="flex flex-col gap-3.5 border-l border-line pl-4">
@@ -53,32 +70,33 @@ export function TaskNotes({ taskId, notes }: { taskId: string; notes: TaskNote[]
               <span
                 aria-hidden
                 className={cn(
-                  "absolute -left-[21px] top-[5px] size-[9px] rounded-full",
-                  n.kind === "note" ? "bg-acc" : "border border-line-strong bg-bg",
+                  "absolute -left-[21px] rounded-full",
+                  n.kind === "note" ? "top-[12px] size-[9px] bg-acc" : "top-[5px] size-[7px] border border-line-strong bg-bg",
                 )}
               />
               {n.kind === "move" ? (
                 <MoveLine note={n} />
               ) : (
-                <p className="whitespace-pre-wrap text-[13px] leading-[1.7] text-ink">{n.body}</p>
+                // 사람 글은 말풍선 판에 담는다 — 누가, 언제가 머리에 서고 본문이 그 아래다
+                <div className="flex flex-col gap-1 rounded-xl bg-surface-2 px-3 py-2.5">
+                  <div className="flex items-center gap-2 text-[11.5px]">
+                    {n.authorName && <span className="truncate font-semibold text-ink">{n.authorName}</span>}
+                    <span className="tabular-nums text-dim">{formatDateTime(n.createdAt)}</span>
+                    <button
+                      type="button"
+                      disabled={pending}
+                      onClick={() => {
+                        if (!confirm(TASK_MESSAGES.noteRemoveConfirm)) return;
+                        start(async () => setRemoveState(await deleteNoteAction(n.id)));
+                      }}
+                      className="press ml-auto rounded-[5px] px-1.5 py-0.5 text-dim transition-colors hover:text-danger disabled:opacity-50"
+                    >
+                      {TASK_MESSAGES.noteRemove}
+                    </button>
+                  </div>
+                  <p className="whitespace-pre-wrap text-[13.5px] leading-[1.65] text-ink">{n.body}</p>
+                </div>
               )}
-              <div className="flex items-center gap-2 text-[11px] text-dim">
-                <span className="tabular-nums">{formatDateTime(n.createdAt)}</span>
-                {n.authorName && <span className="truncate">{n.authorName}</span>}
-                {n.kind === "note" && (
-                  <button
-                    type="button"
-                    disabled={pending}
-                    onClick={() => {
-                      if (!confirm(TASK_MESSAGES.noteRemoveConfirm)) return;
-                      start(async () => setRemoveState(await deleteNoteAction(n.id)));
-                    }}
-                    className="press ml-auto rounded-[5px] px-1.5 py-0.5 transition-colors hover:text-danger disabled:opacity-50"
-                  >
-                    {TASK_MESSAGES.noteRemove}
-                  </button>
-                )}
-              </div>
             </li>
           ))}
         </ul>
@@ -89,7 +107,8 @@ export function TaskNotes({ taskId, notes }: { taskId: string; notes: TaskNote[]
        * 한 줄 적으려고 지나야 하는 스크롤도 같이 길어졌다 — 가장 자주 하는 일이 가장 멀리 있었다.
        * sticky 라 자리를 차지하지 않고, 위로 흐르는 기록을 가리는 만큼만 바탕을 깐다.
        */}
-      <ActionForm action={formAction} state={state} pending={posting} className="sticky bottom-0 -mx-4 flex flex-col gap-2 bg-surface px-4 pb-1 pt-3">
+      {/* -bottom-5: 시트 본문의 아래 여백(pb-5)까지 내려 붙인다 — bottom-0 이면 그 여백 위에 멈춰 밑으로 기록이 비쳤다(고치기 폼 저장 줄과 같은 이유) */}
+      <ActionForm action={formAction} state={state} pending={posting} className="sticky -bottom-5 -mx-4 flex flex-col gap-2 bg-surface px-4 pb-5 pt-3">
         {/* 밑에서 올라오는 기록이 칸 밑으로 툭 잘리지 않게, 바탕이 시작되는 자리를 흐린다 */}
         <span aria-hidden className="pointer-events-none absolute inset-x-0 -top-4 h-4 bg-gradient-to-b from-transparent to-surface" />
         <input type="hidden" name="taskId" value={taskId} />
@@ -104,7 +123,7 @@ export function TaskNotes({ taskId, notes }: { taskId: string; notes: TaskNote[]
             placeholder={TASK_MESSAGES.notePlaceholder}
             className={cn(FIELD, "flex-1 resize-y")}
           />
-          <Button type="submit" variant="secondary" loading={posting} className="shrink-0">
+          <Button type="submit" variant="primary" loading={posting} className="shrink-0">
             {TASK_MESSAGES.noteAdd}
           </Button>
         </div>

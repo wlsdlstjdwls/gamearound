@@ -86,7 +86,7 @@ export function TaskDialog({
           <TaskEditForm task={task} assignees={assignees} />
         </Part>
 
-        <Part title={TASK_MESSAGES.notes}>
+        <Part title={task.notes.length > 0 ? TASK_MESSAGES.noteCount(task.notes.length) : TASK_MESSAGES.notes}>
           <TaskNotes taskId={task.id} notes={task.notes} />
         </Part>
 
