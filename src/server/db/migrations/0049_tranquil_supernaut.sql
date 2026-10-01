@@ -1,0 +1,2 @@
+CREATE TYPE "public"."admin_task_category" AS ENUM('task', 'bug', 'idea', 'data', 'etc');--> statement-breakpoint
+ALTER TABLE "admin_tasks" ADD COLUMN "category" "admin_task_category" DEFAULT 'task' NOT NULL;

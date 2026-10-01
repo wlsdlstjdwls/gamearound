@@ -96,8 +96,10 @@ export function TaskDialog({
         )}
 
         <div className="flex flex-wrap items-center justify-between gap-3 border-t border-line pt-4">
+          {/* 올린 사람은 고친 때와 한 줄에 선다 — 둘 다 "이 카드의 내력" 이라 고치는 칸들과 떼어 둔다 */}
           <span className="text-[11.5px] text-dim">
-            {TASK_MESSAGES.updatedAt} {formatDateTime(task.updatedAt)}
+            {TASK_MESSAGES.author} {task.author?.name ?? TASK_MESSAGES.authorUnknown} | {TASK_MESSAGES.updatedAt}{" "}
+            {formatDateTime(task.updatedAt)}
           </span>
           <button
             type="button"

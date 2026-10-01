@@ -19,6 +19,8 @@ const personName = (name: string | null, email: string | null): string | null =>
 
 /** 담당자 조인용 별칭. 판 질의에서 users 가 "적은 사람" 이 아니라 "쥔 사람" 이라는 것을 이름으로 드러낸다 */
 const assignee = alias(users, "assignee");
+/** 올린 사람 조인용 별칭. created_by 를 잇는다(감사 컬럼). 기록의 적은 사람과는 다른 조인이다 */
+const author = alias(users, "author");
 
 /**
  * 끝난 일은 최근 것만 판에 남긴다. 판은 "지금 무엇을 하나" 를 보는 자리고,
@@ -48,6 +50,7 @@ export async function getBoard(): Promise<Board> {
       body: adminTasks.body,
       status: adminTasks.status,
       priority: adminTasks.priority,
+      category: adminTasks.category,
       sortOrder: adminTasks.sortOrder,
       dueAt: adminTasks.dueAt,
       doneAt: adminTasks.doneAt,
@@ -62,11 +65,15 @@ export async function getBoard(): Promise<Board> {
       assigneeId: assignee.id,
       assigneeName: assignee.displayName,
       assigneeEmail: assignee.email,
+      authorId: author.id,
+      authorName: author.displayName,
+      authorEmail: author.email,
     })
     .from(adminTasks)
     .leftJoin(games, eq(games.id, adminTasks.gameId))
     .leftJoin(shops, eq(shops.id, adminTasks.shopId))
     .leftJoin(assignee, eq(assignee.id, adminTasks.assigneeId))
+    .leftJoin(author, eq(author.id, adminTasks.createdBy))
     .orderBy(asc(adminTasks.sortOrder), asc(adminTasks.createdAt)),
 
     // 기록 전부. 할 일별로 나누는 일은 코드가 한다 — 카드마다 물으면 왕복이 카드 수만큼 는다
@@ -111,6 +118,7 @@ export async function getBoard(): Promise<Board> {
       body: r.body,
       status: r.status,
       priority: r.priority,
+      category: r.category,
       sortOrder: r.sortOrder,
       dueAt: r.dueAt,
       doneAt: r.doneAt,
@@ -118,6 +126,7 @@ export async function getBoard(): Promise<Board> {
       shop: r.shopId ? { id: r.shopId, name: r.shopName! } : null,
       source: (r.source as SourceName | null) ?? null,
       assignee: r.assigneeId ? { id: r.assigneeId, name: personName(r.assigneeName, r.assigneeEmail)! } : null,
+      author: r.authorId ? { id: r.authorId, name: personName(r.authorName, r.authorEmail)! } : null,
       updatedAt: r.updatedAt,
       notes: notesByTask.get(r.id) ?? [],
     });

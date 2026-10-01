@@ -21,7 +21,7 @@
 import { useState, useTransition } from "react";
 import { cn } from "@/lib/cn";
 import { raisedClass } from "@/components/ui/page";
-import { TASK_MESSAGES, TASK_PRIORITY_LABEL } from "@/lib/admin/messages";
+import { TASK_CATEGORY_LABEL, TASK_MESSAGES, TASK_PRIORITY_LABEL } from "@/lib/admin/messages";
 import { type AdminTask, type TaskStatus } from "@/lib/admin/tasks";
 import { HANDLE_ATTR } from "@/components/admin/use-board-drag";
 import { reorderTaskAction, type TaskActionState } from "@/app/(admin)/admin/tasks/actions";
@@ -31,6 +31,19 @@ const PRIORITY_STYLE: Record<AdminTask["priority"], string> = {
   high: "bg-danger-soft text-danger",
   normal: "",
   low: "bg-surface-3 text-dim",
+};
+
+/**
+ * 분류 표시(2026-10-01). 기본 분류(할 일)는 아무 표시도 하지 않는다 — 급함과 같은 이유다.
+ * 색은 뜻에 맞춰 토큰에서만 고른다: 버그는 경고, 아이디어는 브랜드, 데이터 정리는 초록, 기타는 회색.
+ * 빨강(danger)은 급함 "높음" 몫이라 쓰지 않는다 — 버그가 다 급해 보이면 급함 표시가 묻힌다.
+ */
+const CATEGORY_STYLE: Record<AdminTask["category"], string> = {
+  task: "",
+  bug: "bg-warn-soft text-warn",
+  idea: "bg-acc-soft text-acc",
+  data: "bg-ok-soft text-ok",
+  etc: "bg-surface-3 text-mut",
 };
 
 /**
@@ -79,6 +92,11 @@ export function TaskCard({
       <button type="button" onClick={() => onOpen(task.id)} className="flex w-full flex-col gap-2 p-3 text-left">
         <div className="flex items-start justify-between gap-2">
           <p className="min-w-0 flex-1 text-[13px] font-semibold leading-[1.45] text-ink">{task.title}</p>
+          {task.category !== "task" && (
+            <span className={cn("shrink-0 rounded-[6px] px-1.5 py-0.5 text-[10.5px] font-semibold", CATEGORY_STYLE[task.category])}>
+              {TASK_CATEGORY_LABEL[task.category]}
+            </span>
+          )}
           {task.priority !== "normal" && (
             <span className={cn("shrink-0 rounded-[6px] px-1.5 py-0.5 text-[10.5px] font-semibold", PRIORITY_STYLE[task.priority])}>
               {TASK_PRIORITY_LABEL[task.priority]}

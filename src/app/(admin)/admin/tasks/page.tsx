@@ -10,6 +10,7 @@ import { TaskBoard } from "@/components/admin/task-board";
 import { TaskClearDone } from "@/components/admin/task-clear-done";
 import { TASK_MESSAGES } from "@/lib/admin/messages";
 import { TASK_STATUSES } from "@/lib/admin/tasks";
+import { parseTaskFilter } from "@/lib/admin/task-filter";
 import { requireRoleOrForbid } from "@/server/auth/guards";
 import { sourceEnum } from "@/server/db/schema";
 import { getBoard, listAssignees } from "@/server/services/admin-tasks";
@@ -18,13 +19,13 @@ export const metadata: Metadata = { title: TASK_MESSAGES.title };
 // 판은 늘 지금 값을 봐야 한다 — 옮기고 돌아왔는데 옛 판이 뜨면 두 번 옮긴다
 export const dynamic = "force-dynamic";
 
-export default async function AdminTasksPage() {
+export default async function AdminTasksPage({ searchParams }: { searchParams: Promise<Record<string, string | string[] | undefined>> }) {
   // 레이아웃도 같은 검사를 하지만 레이아웃과 페이지는 **나란히** 렌더된다. 이 줄이 없으면 일반 계정이 들어왔을 때
   // 레이아웃의 redirect 가 이기는 사이 getBoard 의 requireAdmin 이 던져 운영 로그에 "권한이 없습니다" 가 찍혔다.
   // 서비스 쪽 검사는 그대로 둔다 — 이건 로그를 막는 줄이지 방어를 옮기는 줄이 아니다
-  await requireRoleOrForbid("admin");
+  const me = await requireRoleOrForbid("admin");
   // 담당자 후보는 판과 나란히 읽는다 — 줄 세우면 왕복이 하나 더 붙는다(neon-roundtrip-cost)
-  const [board, assignees] = await Promise.all([getBoard(), listAssignees()]);
+  const [board, assignees, params] = await Promise.all([getBoard(), listAssignees(), searchParams]);
   // 건수는 화면 제목 옆에 붙인다 — 판 위에 또 제목을 세우면 "할 일" 과 같은 말이 두 번 선다
   const total = TASK_STATUSES.reduce((n, s) => n + board[s].length, 0);
 
@@ -41,7 +42,7 @@ export default async function AdminTasksPage() {
         </div>
       </header>
 
-      <TaskBoard board={board} assignees={assignees} />
+      <TaskBoard board={board} assignees={assignees} meId={me.id} initialFilter={parseTaskFilter(params)} />
     </>
   );
 }

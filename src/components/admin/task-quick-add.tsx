@@ -14,10 +14,20 @@
 import { useRef, useState, useTransition } from "react";
 import { cn } from "@/lib/cn";
 import { TASK_MESSAGES } from "@/lib/admin/messages";
-import type { TaskStatus } from "@/lib/admin/tasks";
+import type { TaskCategory, TaskStatus } from "@/lib/admin/tasks";
 import { createTaskAction } from "@/app/(admin)/admin/tasks/actions";
 
-export function TaskQuickAdd({ status }: { status: TaskStatus }) {
+export function TaskQuickAdd({
+  status,
+  category,
+}: {
+  status: TaskStatus;
+  /**
+   * 새 줄의 분류. 판이 분류 하나로 걸러져 있으면 그 분류로 적는다 — "아이디어" 만 보는 판에서 적은 줄이
+   * 기본 분류로 들어가 적자마자 사라지면 안 된다. 안 주면 서버 기본값이다
+   */
+  category?: TaskCategory;
+}) {
   const [open, setOpen] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [pending, start] = useTransition();
@@ -35,6 +45,7 @@ export function TaskQuickAdd({ status }: { status: TaskStatus }) {
     const form = new FormData();
     form.set("title", title);
     form.set("status", status);
+    if (category) form.set("category", category);
     start(async () => {
       const res = await createTaskAction(null, form);
       if (res?.ok) {

@@ -12,6 +12,13 @@ export type TaskStatus = (typeof TASK_STATUSES)[number];
 export const TASK_PRIORITIES = ["high", "normal", "low"] as const;
 export type TaskPriority = (typeof TASK_PRIORITIES)[number];
 
+/**
+ * 할 일 갈래(2026-10-01). 순서가 곧 셀렉트와 필터 칩의 순서다. 첫 값이 기본값이다(DB default 와 같다).
+ * "긴급" 은 없다 — 급함 축(TASK_PRIORITIES)이 이미 그 뜻을 쥐고 있다.
+ */
+export const TASK_CATEGORIES = ["task", "bug", "idea", "data", "etc"] as const;
+export type TaskCategory = (typeof TASK_CATEGORIES)[number];
+
 /** 기록 갈래. `note` 는 사람이 적은 글, `move` 는 판이 남긴 칸 이동 자취 */
 export const TASK_NOTE_KINDS = ["note", "move"] as const;
 export type TaskNoteKind = (typeof TASK_NOTE_KINDS)[number];
@@ -42,6 +49,7 @@ export interface AdminTask {
   body: string | null;
   status: TaskStatus;
   priority: TaskPriority;
+  category: TaskCategory;
   sortOrder: number;
   dueAt: Date | null;
   doneAt: Date | null;
@@ -51,6 +59,8 @@ export interface AdminTask {
   source: SourceName | null;
   /** 이 일을 쥔 사람. 비어 있으면 아무도 안 쥔 일이다 */
   assignee: TaskAssignee | null;
+  /** 올린 사람. 담당자와 따로 둔다 — 적은 사람과 할 사람은 다르다. 계정이 지워졌으면 비어 있다 */
+  author: TaskAssignee | null;
   updatedAt: Date;
   /**
    * 이 할 일에 쌓인 기록. 판 질의가 한 번에 다 읽어 온다 —

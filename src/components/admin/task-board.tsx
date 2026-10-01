@@ -12,17 +12,36 @@
 // 살리지 않는다 — 제자리에 놓는 건 아무것도 하지 않는 일이라 받을 자리처럼 보이면 안 된다.
 //
 // 끄는 일 자체는 use-board-drag 가 한다(2026-09-22). 네이티브 드래그앤드롭을 버린 이유는 그 파일에 있다.
-import { useState, useTransition } from "react";
+//
+// **거르기**(2026-10-01): 판이 받은 카드를 화면에서 거른다(lib/admin/task-filter 주석에 이유). 조건은 판이 쥐고
+// 바뀔 때마다 주소에 적는다. router 로 바꾸지 않고 history.replaceState 를 쓴다 — router 는 서버 컴포넌트를
+// 다시 그리러 가서 칩 한 번에 왕복 하나가 붙는다. 거른 판에서 끌어 옮겨도 서버는 칸 전체로 순서를 매긴다
+// (moveTask 는 받는 칸의 최솟값만 본다) — 숨은 카드의 순서는 그대로다.
+import { useMemo, useState, useTransition } from "react";
 import { cn } from "@/lib/cn";
-import { TASK_MESSAGES, TASK_STATUS_LABEL } from "@/lib/admin/messages";
+import { TASK_FILTER_MESSAGES, TASK_MESSAGES, TASK_STATUS_LABEL } from "@/lib/admin/messages";
 import { TASK_STATUSES, type Board, type TaskAssignee } from "@/lib/admin/tasks";
+import { isDefaultTaskFilter, matchesTaskFilter, serializeTaskFilter, type TaskFilter } from "@/lib/admin/task-filter";
+import { TaskFilterBar } from "@/components/admin/task-filter-bar";
 import { TaskCard } from "@/components/admin/task-card";
 import { TaskDialog } from "@/components/admin/task-card/dialog";
 import { TaskQuickAdd } from "@/components/admin/task-quick-add";
 import { DROP_ATTR, useBoardDrag } from "@/components/admin/use-board-drag";
 import { moveTaskAction, type TaskActionState } from "@/app/(admin)/admin/tasks/actions";
 
-export function TaskBoard({ board, assignees }: { board: Board; assignees: TaskAssignee[] }) {
+export function TaskBoard({
+  board,
+  assignees,
+  meId,
+  initialFilter,
+}: {
+  board: Board;
+  assignees: TaskAssignee[];
+  /** 지금 보는 관리자. "내가 올린", "내 담당" 을 가르는 기준이다 */
+  meId: string;
+  /** 주소에서 읽은 첫 조건. 페이지가 읽어 준다 — useSearchParams 를 쓰면 판 전체가 Suspense 경계를 요구한다 */
+  initialFilter: TaskFilter;
+}) {
   /**
    * 지금 열린 카드. **판이 들고 있다** — 카드가 들고 있으면 칸을 옮기는 순간 그 카드가 다른 칸에서
    * 새로 그려지면서 팝업이 닫힌다(실측 2026-09-21). 옮기기는 팝업 안에서 하는 일이라 닫히면 안 된다.
@@ -31,6 +50,20 @@ export function TaskBoard({ board, assignees }: { board: Board; assignees: TaskA
   const [, start] = useTransition();
   const [state, setState] = useState<TaskActionState>(null);
 
+  const [filter, setFilter] = useState(initialFilter);
+  const changeFilter = (next: TaskFilter) => {
+    setFilter(next);
+    const q = serializeTaskFilter(next).toString();
+    window.history.replaceState(null, "", q ? `?${q}` : window.location.pathname);
+  };
+  const filtered = !isDefaultTaskFilter(filter);
+  const shown = useMemo(
+    () => Object.fromEntries(TASK_STATUSES.map((s) => [s, board[s].filter((t) => matchesTaskFilter(t, filter, meId))])) as Board,
+    [board, filter, meId],
+  );
+  // 분류 하나만 걸린 판에서 한 줄 추가로 적은 일은 그 분류로 들어간다(TaskQuickAdd 주석)
+  const quickCategory = filter.categories.length === 1 ? filter.categories[0] : undefined;
+
   const drag = useBoardDrag((id, to) => start(async () => setState(await moveTaskAction(id, to))));
 
   const openTask = openId ? TASK_STATUSES.flatMap((s) => board[s]).find((t) => t.id === openId) : undefined;
@@ -38,6 +71,7 @@ export function TaskBoard({ board, assignees }: { board: Board; assignees: TaskA
   return (
     <section className="flex flex-col gap-3">
       {/* 판 위에 제목도 버튼도 세우지 않는다 — 끝난 일 치우기는 "할 일 추가" 줄로 갔다(TaskClearDone) */}
+      <TaskFilterBar filter={filter} onChange={changeFilter} />
       {state && !state.ok && <p className="text-[12px] text-danger">{state.error}</p>}
 
       {/* 칸이 넷이라 좁은 화면에서는 둘씩 접는다 — 넷을 억지로 세우면 카드 폭이 글자보다 좁아진다 */}
@@ -63,14 +97,18 @@ export function TaskBoard({ board, assignees }: { board: Board; assignees: TaskA
             >
               <h3 className="flex items-center justify-between px-1 py-0.5 text-[12.5px] font-bold text-mut">
                 {TASK_STATUS_LABEL[status]}
-                <span className="rounded-full bg-surface px-1.5 text-[11px] font-semibold tabular-nums text-mut">
-                  {board[status].length}
+                {/* 걸러졌으면 "보이는 수 / 전체" — 숨은 카드가 있다는 걸 칸이 스스로 말한다 */}
+                <span
+                  className="rounded-full bg-surface px-1.5 text-[11px] font-semibold tabular-nums text-mut"
+                  aria-label={filtered ? TASK_FILTER_MESSAGES.columnCountLabel(shown[status].length, board[status].length) : undefined}
+                >
+                  {filtered ? TASK_FILTER_MESSAGES.columnCount(shown[status].length, board[status].length) : board[status].length}
                 </span>
               </h3>
 
-              {board[status].length > 0 && (
+              {shown[status].length > 0 && (
                 <ul className="flex flex-col gap-2">
-                  {board[status].map((task) => (
+                  {shown[status].map((task) => (
                     <TaskCard
                       key={task.id}
                       task={task}
@@ -88,7 +126,7 @@ export function TaskBoard({ board, assignees }: { board: Board; assignees: TaskA
               {drag.from !== null ? (
                 <p className="px-1 py-3 text-[11.5px] text-dim">{droppable ? TASK_MESSAGES.dropHere : TASK_MESSAGES.empty}</p>
               ) : (
-                <TaskQuickAdd status={status} />
+                <TaskQuickAdd status={status} category={quickCategory} />
               )}
             </div>
           );

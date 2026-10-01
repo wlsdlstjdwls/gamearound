@@ -8,6 +8,8 @@ export const TASK_MESSAGES = {
   bodyLabel: "메모",
   bodyPlaceholder: "배경, 다음 수, 막힌 지점",
   priorityLabel: "급함",
+  /** 갈래(2026-10-01). 셀렉트 라벨이자 필터 줄의 묶음 이름이다 */
+  categoryLabel: "분류",
   statusLabel: "놓을 칸",
   sourceLabel: "소스 (선택)",
   /** 담당자(2026-09-30). 비워 둘 수 있어서 "없음" 이 첫 칸이다 */
@@ -62,6 +64,9 @@ export const TASK_MESSAGES = {
   dangerZone: "이 할 일 지우기",
   /** 마지막으로 고친 때 */
   updatedAt: "마지막으로 고친 때",
+  /** 올린 사람(2026-10-01). 계정이 지워졌으면 이름 대신 이 말이 선다 */
+  author: "올린 사람",
+  authorUnknown: "알 수 없음",
   noteCount: (n: number) => `기록 ${n}`,
 
   /*
@@ -99,4 +104,32 @@ export const TASK_PRIORITY_LABEL = {
   high: "높음",
   normal: "보통",
   low: "낮음",
+} as const;
+
+/** 갈래 이름. 순서는 TASK_CATEGORIES 가 정한다 */
+export const TASK_CATEGORY_LABEL = {
+  task: "할 일",
+  bug: "버그",
+  idea: "아이디어",
+  data: "데이터 정리",
+  etc: "기타",
+} as const;
+
+/*
+ * 판 위 거르기 줄(2026-10-01, 사용자 요청: "내가 올린 것, 다른 사람이 올린 것을 토글로 보이고 가리게",
+ * "내 담당만 보기, 카테고리 필터"). 묶음 이름은 칩 줄 앞에 서는 짧은 말이다.
+ */
+export const TASK_FILTER_MESSAGES = {
+  label: "할 일 거르기",
+  author: "올린 사람",
+  mine: "내가 올린",
+  others: "남이 올린",
+  assignee: "담당",
+  assigneeScope: { all: "전체", me: "내 담당", none: "담당 없음" },
+  category: "분류",
+  urgent: "급함만",
+  reset: "거르기 풀기",
+  /** 칸 머리 건수. 걸러졌을 때만 전체 수를 같이 보인다 — 숨은 카드가 있다는 걸 놓치지 않게 */
+  columnCount: (shown: number, total: number) => `${shown} / ${total}`,
+  columnCountLabel: (shown: number, total: number) => `전체 ${total}건 중 ${shown}건 보임`,
 } as const;

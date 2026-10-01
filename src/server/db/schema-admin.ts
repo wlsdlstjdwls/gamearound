@@ -25,6 +25,15 @@ export const adminTaskStatusEnum = pgEnum("admin_task_status", ["backlog", "todo
 /** 급함. 색만 다르게 쓰고 정렬에는 쓰지 않는다 — 순서는 사람이 직접 잡는다(sortOrder) */
 export const adminTaskPriorityEnum = pgEnum("admin_task_priority", ["high", "normal", "low"]);
 
+/**
+ * 할 일의 갈래(2026-10-01, 사용자 요청: "카테고리를 미리 지어놓고 셀렉박스로"). 판이 칸으로 흐름을 보여 준다면
+ * 이건 "무슨 성격의 일인가" 다 — 필터로 걸러 볼 때 쓴다.
+ *
+ * "긴급" 은 일부러 넣지 않았다. 급함 축(priority)이 이미 있어서, 넣으면 같은 뜻이 두 군데 산다.
+ * 관리자가 고치는 표가 아니라 enum 인 이유: 쓰는 사람이 둘이고 갈래가 바뀔 일이 드물다. 늘릴 때는 ADD VALUE 한 줄이다.
+ */
+export const adminTaskCategoryEnum = pgEnum("admin_task_category", ["task", "bug", "idea", "data", "etc"]);
+
 export const adminTasks = pgTable("admin_tasks", {
   id: uuid("id").primaryKey().defaultRandom(),
   title: text("title").notNull(),
@@ -32,6 +41,7 @@ export const adminTasks = pgTable("admin_tasks", {
   body: text("body"),
   status: adminTaskStatusEnum("status").default("todo").notNull(),
   priority: adminTaskPriorityEnum("priority").default("normal").notNull(),
+  category: adminTaskCategoryEnum("category").default("task").notNull(),
 
   /*
    * 칸 안에서의 순서. 작을수록 위다.

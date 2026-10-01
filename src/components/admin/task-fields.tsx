@@ -9,8 +9,20 @@
 // 넓은 화면에서만 13.5px 로 줄인다.
 import { useId } from "react";
 import { cn } from "@/lib/cn";
-import { TASK_MESSAGES, TASK_PRIORITY_LABEL, TASK_STATUS_LABEL } from "@/lib/admin/messages";
-import { TASK_PRIORITIES, TASK_STATUSES, type TaskAssignee, type TaskPriority, type TaskStatus } from "@/lib/admin/tasks";
+import { FormSelect } from "@/components/ui/select";
+import { TASK_CATEGORY_LABEL, TASK_MESSAGES, TASK_PRIORITY_LABEL, TASK_STATUS_LABEL } from "@/lib/admin/messages";
+import {
+  TASK_CATEGORIES,
+  TASK_PRIORITIES,
+  TASK_STATUSES,
+  type TaskAssignee,
+  type TaskCategory,
+  type TaskPriority,
+  type TaskStatus,
+} from "@/lib/admin/tasks";
+
+/** 갈래 고르는 칸의 항목. 값이 다섯이라 칩으로 늘어놓으면 급함 줄과 두 줄이 같은 모양으로 겹쳐 읽힌다 — 그래서 셀렉트다 */
+const CATEGORY_CHOICES = TASK_CATEGORIES.map((c) => ({ value: c, label: TASK_CATEGORY_LABEL[c] }));
 
 /** 입력칸 한 겹. 테두리를 안쪽 그림자로 두는 규칙은 TextField 와 같다(판 위의 판을 만들지 않는다) */
 export const FIELD = cn(
@@ -40,8 +52,18 @@ export function Field({ label, hint, children, id }: { label: string; hint?: str
   );
 }
 
-/** 제목 + 메모 + 급함. 추가와 고치기가 함께 쓴다 — 기본값만 다르다 */
-export function TaskBasicFields({ title, body, priority }: { title?: string; body?: string | null; priority?: TaskPriority }) {
+/** 제목 + 분류 + 메모 + 급함. 추가와 고치기가 함께 쓴다 — 기본값만 다르다 */
+export function TaskBasicFields({
+  title,
+  body,
+  priority,
+  category,
+}: {
+  title?: string;
+  body?: string | null;
+  priority?: TaskPriority;
+  category?: TaskCategory;
+}) {
   const id = useId();
   return (
     <>
@@ -57,6 +79,15 @@ export function TaskBasicFields({ title, body, priority }: { title?: string; bod
           className={FIELD}
         />
       </Field>
+
+      {/* 라벨은 FormSelect 가 스스로 단다(버튼에 aria 로 이어 둔다) — Field 로 감싸면 라벨이 둘이 된다 */}
+      <FormSelect
+        name="category"
+        label={TASK_MESSAGES.categoryLabel}
+        options={CATEGORY_CHOICES}
+        defaultValue={category ?? TASK_CATEGORIES[0]}
+        size="lg"
+      />
 
       <Field id={`${id}-body`} label={TASK_MESSAGES.bodyLabel}>
         <textarea

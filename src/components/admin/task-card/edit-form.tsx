@@ -26,7 +26,7 @@ export function TaskEditForm({ task, assignees }: { task: AdminTask; assignees: 
 
       {/* key 를 카드 id 로 두는 이유: 팝업이 다른 카드로 바뀌어도 같은 폼이 재사용되면
           앞 카드의 글이 남는다(defaultValue 는 첫 렌더에만 읽힌다) */}
-      <TaskBasicFields key={task.id} title={task.title} body={task.body} priority={task.priority} />
+      <TaskBasicFields key={task.id} title={task.title} body={task.body} priority={task.priority} category={task.category} />
 
       {/* key 는 기본 칸과 같은 이유다 — 다른 카드로 바뀌면 고른 담당자도 갈아 끼운다 */}
       <TaskAssigneeField key={`${task.id}-${task.assignee?.id ?? "none"}`} assignees={assignees} defaultValue={task.assignee?.id} />

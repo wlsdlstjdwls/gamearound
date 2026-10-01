@@ -5,13 +5,14 @@ import { getDb } from "@/server/db/client";
 import { adminTaskNotes, adminTasks, type SourceName } from "@/server/db/schema";
 import { createdBy, updatedBy } from "@/server/db/audit";
 import { requireAdmin } from "@/server/services/users";
-import type { TaskPriority, TaskStatus } from "@/lib/admin/tasks";
+import type { TaskCategory, TaskPriority, TaskStatus } from "@/lib/admin/tasks";
 
 export interface CreateTaskInput {
   title: string;
   body?: string | null;
   status?: TaskStatus;
   priority?: TaskPriority;
+  category?: TaskCategory;
   gameId?: string | null;
   shopId?: string | null;
   source?: SourceName | null;
@@ -35,6 +36,7 @@ export async function createTask(input: CreateTaskInput): Promise<string> {
       body: input.body?.trim() || null,
       status,
       priority: input.priority ?? "normal",
+      category: input.category ?? "task",
       sortOrder: (top?.min ?? 0) - 1,
       gameId: input.gameId || null,
       shopId: input.shopId || null,
@@ -52,6 +54,7 @@ export async function updateTask(
     title?: string;
     body?: string | null;
     priority?: TaskPriority;
+    category?: TaskCategory;
     dueAt?: Date | null;
     gameId?: string | null;
     assigneeId?: string | null;
@@ -64,6 +67,7 @@ export async function updateTask(
       ...(patch.title !== undefined ? { title: patch.title.trim() } : {}),
       ...(patch.body !== undefined ? { body: patch.body?.trim() || null } : {}),
       ...(patch.priority !== undefined ? { priority: patch.priority } : {}),
+      ...(patch.category !== undefined ? { category: patch.category } : {}),
       ...(patch.dueAt !== undefined ? { dueAt: patch.dueAt } : {}),
       // null 은 "뗐다" 는 뜻이라 그대로 적는다 — 여기서는 수집이 아니라 사람이 쥔 값이다(§7 의 null 규칙 밖)
       ...(patch.gameId !== undefined ? { gameId: patch.gameId } : {}),
