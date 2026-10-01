@@ -21,6 +21,7 @@
 import { useState, useTransition } from "react";
 import { cn } from "@/lib/cn";
 import { raisedClass } from "@/components/ui/page";
+import { formatAgo } from "@/lib/format";
 import { TASK_CATEGORY_LABEL, TASK_MESSAGES, TASK_PRIORITY_LABEL } from "@/lib/admin/messages";
 import { type AdminTask, type TaskStatus } from "@/lib/admin/tasks";
 import { HANDLE_ATTR } from "@/components/admin/use-board-drag";
@@ -58,12 +59,15 @@ const ORDER_BTN =
 
 export function TaskCard({
   task,
+  now,
   status,
   onOpen,
   onPointerDown,
   onClickCapture,
 }: {
   task: AdminTask;
+  /** "3일 전" 의 기준 시각. 서버가 정해 내려 준다 — 카드에서 Date.now() 를 부르면 서버와 브라우저 값이 갈려 하이드레이션이 어긋난다 */
+  now: number;
   /** 이 카드가 놓인 칸. 끌기를 시작할 때 "어디서 떠났는가" 가 필요하다 */
   status: TaskStatus;
   /**
@@ -80,6 +84,8 @@ export function TaskCard({
   const [state, setState] = useState<TaskActionState>(null);
 
   const run = (fn: () => Promise<TaskActionState>) => start(async () => setState(await fn()));
+  // 사람이 적은 글 중 가장 최근 것. 칸 이동 자취는 "어디까지 왔나" 를 말해 주지 않아 뺀다(기록은 오래된 것이 앞이다)
+  const latestNote = task.notes.findLast((n) => n.kind === "note" && n.body);
 
   return (
     <li
@@ -108,13 +114,26 @@ export function TaskCard({
         {task.body && <p className="line-clamp-2 whitespace-pre-wrap text-[12px] leading-[1.6] text-mut">{task.body}</p>}
 
         <div className="flex flex-wrap items-center gap-1.5 text-[11px]">
-          {/* 담당자를 맨 앞에 둔다 — 판을 훑는 눈이 먼저 찾는 것은 "내 일인가" 다 */}
-          {task.assignee && <span className="rounded-[6px] bg-acc-soft px-1.5 py-0.5 font-semibold text-acc">{task.assignee.name}</span>}
+          {/* 담당자를 맨 앞에 둔다 — 판을 훑는 눈이 먼저 찾는 것은 "내 일인가" 다.
+              비었어도 칸을 비워 두지 않는다(2026-10-01): 칩이 없으면 "아무도 안 쥔 일" 이 판에서 안 보여 아무도 안 가져간다.
+              올린 사람은 카드에 없다 — 사용자: "올린 사람보단 담당자". 팝업과 "내가 올린" 보기에 남았다 */}
+          {task.assignee ? (
+            <span className="rounded-[6px] bg-acc-soft px-1.5 py-0.5 font-semibold text-acc">{task.assignee.name}</span>
+          ) : (
+            <span className="rounded-[6px] border border-dashed border-line-strong px-1.5 py-0.5 text-dim">{TASK_MESSAGES.cardNoAssignee}</span>
+          )}
           {task.game && <span className="rounded-[6px] bg-surface-3 px-1.5 py-0.5 text-acc">{task.game.title}</span>}
           {task.shop && <span className="rounded-[6px] bg-surface-3 px-1.5 py-0.5 text-mut">{task.shop.name}</span>}
           {task.source && <span className="rounded-[6px] bg-surface-3 px-1.5 py-0.5 font-mono text-mut">{task.source}</span>}
-          {task.notes.length > 0 && <span className="text-dim">{TASK_MESSAGES.noteCount(task.notes.length)}</span>}
         </div>
+
+        {/* 최근 기록 한 줄(2026-10-01) — 건수만으로는 일이 어디까지 왔는지 모른다. 전문은 팝업에 있다 */}
+        {latestNote && (
+          <p className="truncate text-[11.5px] text-mut">
+            <span className="font-medium text-dim">{TASK_MESSAGES.cardLatestNote}</span> {latestNote.body}
+          </p>
+        )}
+
       </button>
 
       {/* data-no-drag: 이 버튼에서 시작한 누름은 끌기가 아니라 그 버튼의 일이다 */}
@@ -138,6 +157,13 @@ export function TaskCard({
           {TASK_MESSAGES.down}
         </button>
 
+        {/* 고친 때와 기록 수. 상대 시간이라 "오래 멈춘 카드" 가 한눈에 보인다.
+            순서 단추 줄에 얹은 이유: 그 줄은 평소 비어 있다(단추가 hover 에만 뜬다) — 따로 한 줄을 세우면 카드만 길어진다 */}
+        <span className="ml-auto text-[10.5px] tabular-nums text-dim">
+          {formatAgo(task.updatedAt, now)}
+          {task.notes.length > 0 && ` | ${TASK_MESSAGES.noteCount(task.notes.length)}`}
+        </span>
+
         {/*
           끄는 손잡이. touch-none 이 여기에만 걸린다 — 손가락이 이 위에서 시작하면 브라우저가
           스크롤을 가져가지 않아 끌기가 된다(use-board-drag 의 HANDLE_ATTR 주석).
@@ -147,7 +173,7 @@ export function TaskCard({
         <span
           {...{ [HANDLE_ATTR]: "true" }}
           aria-hidden
-          className="tap ml-auto flex cursor-grab touch-none items-center px-1.5 text-dim opacity-60 transition-opacity hover:opacity-100 [@media(hover:none)]:opacity-100"
+          className="tap flex cursor-grab touch-none items-center px-1.5 text-dim opacity-60 transition-opacity hover:opacity-100 [@media(hover:none)]:opacity-100"
         >
           <svg viewBox="0 0 12 12" className="w-3" fill="currentColor">
             <circle cx="4" cy="2.5" r="1" />

@@ -39,7 +39,7 @@ function emptyBoard(): Board {
  * 카드 수만큼 왕복이 늘고, Neon 왕복 하나가 220ms 다(neon-roundtrip-cost). 줄 세우지 않으므로
  * 화면이 기다리는 시간은 여전히 왕복 한 번이다.
  */
-export async function getBoard(): Promise<Board> {
+export async function getBoard(): Promise<{ board: Board; asOf: number }> {
   await requireAdmin();
   const db = getDb();
   const [rows, noteRows] = await Promise.all([
@@ -135,7 +135,8 @@ export async function getBoard(): Promise<Board> {
   board.done = board.done
     .sort((a, b) => (b.doneAt?.getTime() ?? 0) - (a.doneAt?.getTime() ?? 0))
     .slice(0, DONE_VISIBLE_LIMIT);
-  return board;
+  // 읽은 시각을 같이 준다 — 카드의 "3일 전" 기준이다. 렌더 안에서 Date.now() 를 부르면 렌더가 순수하지 않다(수집 현황의 asOf 와 같은 방식)
+  return { board, asOf: Date.now() };
 }
 
 /**

@@ -68,6 +68,9 @@ export const TASK_MESSAGES = {
   author: "올린 사람",
   authorUnknown: "알 수 없음",
   noteCount: (n: number) => `기록 ${n}`,
+  /** 카드 위 짧은 말(2026-10-01). 팝업의 담당자 칸 "없음" 과 가른다 — 카드에서는 무엇이 없는지까지 말해야 한다 */
+  cardNoAssignee: "담당 없음",
+  cardLatestNote: "최근 기록",
 
   /*
    * 칸 안 한 줄 추가(2026-09-22) — 생각난 일을 적는 데 네 동작(버튼, 팝업, 칸 고르기, 저장)이 들던 것을

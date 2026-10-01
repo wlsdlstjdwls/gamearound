@@ -34,6 +34,7 @@ export function TaskBoard({
   assignees,
   meId,
   initialFilter,
+  now,
 }: {
   board: Board;
   assignees: TaskAssignee[];
@@ -41,6 +42,8 @@ export function TaskBoard({
   meId: string;
   /** 주소에서 읽은 첫 조건. 페이지가 읽어 준다 — useSearchParams 를 쓰면 판 전체가 Suspense 경계를 요구한다 */
   initialFilter: TaskFilter;
+  /** 카드의 "3일 전" 기준 시각. 페이지가 판을 읽은 시각이다 */
+  now: number;
 }) {
   /**
    * 지금 열린 카드. **판이 들고 있다** — 카드가 들고 있으면 칸을 옮기는 순간 그 카드가 다른 칸에서
@@ -110,6 +113,7 @@ export function TaskBoard({
                     <TaskCard
                       key={task.id}
                       task={task}
+                      now={now}
                       status={status}
                       onOpen={setOpenId}
                       onPointerDown={drag.onPointerDown}
