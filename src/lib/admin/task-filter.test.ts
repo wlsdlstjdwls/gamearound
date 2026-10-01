@@ -1,5 +1,14 @@
 import { describe, expect, it } from "vitest";
-import { DEFAULT_TASK_FILTER, countTaskFilters, isDefaultTaskFilter, matchesTaskFilter, parseTaskFilter, serializeTaskFilter } from "@/lib/admin/task-filter";
+import {
+  DEFAULT_TASK_FILTER,
+  countTaskFilters,
+  hasTaskFilterParams,
+  isDefaultTaskFilter,
+  matchesTaskFilter,
+  parseTaskFilter,
+  parseTaskFilterCookie,
+  serializeTaskFilter,
+} from "@/lib/admin/task-filter";
 
 const ME = "me-id";
 const OTHER = "other-id";
@@ -29,6 +38,24 @@ describe("parseTaskFilter", () => {
   it("기본값은 주소에 아무것도 싣지 않는다", () => {
     expect(serializeTaskFilter(DEFAULT_TASK_FILTER).toString()).toBe("");
     expect(isDefaultTaskFilter(DEFAULT_TASK_FILTER)).toBe(true);
+  });
+});
+
+describe("쿠키", () => {
+  it("쿠키 값과 조건이 왕복한다", () => {
+    const f = { view: "mine" as const, category: "bug" as const, urgent: false };
+    expect(parseTaskFilterCookie(serializeTaskFilter(f).toString())).toEqual(f);
+  });
+
+  it("없거나 깨진 쿠키는 기본값이다", () => {
+    expect(parseTaskFilterCookie(undefined)).toEqual(DEFAULT_TASK_FILTER);
+    expect(parseTaskFilterCookie("%%%")).toEqual(DEFAULT_TASK_FILTER);
+  });
+
+  it("주소에 조건이 있는지만 본다", () => {
+    expect(hasTaskFilterParams({})).toBe(false);
+    expect(hasTaskFilterParams({ other: "1" })).toBe(false);
+    expect(hasTaskFilterParams({ view: "all" })).toBe(true);
   });
 });
 

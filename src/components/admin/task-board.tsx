@@ -17,11 +17,19 @@
 // 바뀔 때마다 주소에 적는다. router 로 바꾸지 않고 history.replaceState 를 쓴다 — router 는 서버 컴포넌트를
 // 다시 그리러 가서 칩 한 번에 왕복 하나가 붙는다. 거른 판에서 끌어 옮겨도 서버는 칸 전체로 순서를 매긴다
 // (moveTask 는 받는 칸의 최솟값만 본다) — 숨은 카드의 순서는 그대로다.
-import { useMemo, useState, useTransition } from "react";
+import { useEffect, useMemo, useState, useTransition } from "react";
 import { cn } from "@/lib/cn";
 import { TASK_FILTER_MESSAGES, TASK_MESSAGES, TASK_STATUS_LABEL } from "@/lib/admin/messages";
 import { TASK_STATUSES, type Board, type TaskAssignee } from "@/lib/admin/tasks";
-import { countTaskFilters, isDefaultTaskFilter, matchesTaskFilter, serializeTaskFilter, type TaskFilter } from "@/lib/admin/task-filter";
+import {
+  TASK_FILTER_COOKIE,
+  TASK_FILTER_COOKIE_MAX_AGE,
+  countTaskFilters,
+  isDefaultTaskFilter,
+  matchesTaskFilter,
+  serializeTaskFilter,
+  type TaskFilter,
+} from "@/lib/admin/task-filter";
 import { STATUS_FILL } from "@/components/admin/task-tone";
 import { TaskFilterBar } from "@/components/admin/task-filter-bar";
 import { TaskCard } from "@/components/admin/task-card";
@@ -59,7 +67,15 @@ export function TaskBoard({
     setFilter(next);
     const q = serializeTaskFilter(next).toString();
     window.history.replaceState(null, "", q ? `?${q}` : window.location.pathname);
+    // 다음에 맨 주소로 들어와도 이 조건이 서게 남긴다. 기본값으로 풀면 쿠키도 지운다(max-age=0)
+    document.cookie = `${TASK_FILTER_COOKIE}=${encodeURIComponent(q)}; path=${window.location.pathname}; max-age=${q ? TASK_FILTER_COOKIE_MAX_AGE : 0}; samesite=lax`;
   };
+  // 쿠키로 되살린 조건이면 주소에도 올린다 — 주소창과 판이 다른 조건을 말하면 그 주소를 남에게 줄 때 어긋난다.
+  // 상태는 건드리지 않는다(이미 같은 값이다). 첫 그림에서 한 번만 본다
+  useEffect(() => {
+    const q = serializeTaskFilter(initialFilter).toString();
+    if (q && !window.location.search) window.history.replaceState(null, "", `?${q}`);
+  }, [initialFilter]);
   const filtered = !isDefaultTaskFilter(filter);
   const shown = useMemo(
     () => Object.fromEntries(TASK_STATUSES.map((s) => [s, board[s].filter((t) => matchesTaskFilter(t, filter, meId))])) as Board,

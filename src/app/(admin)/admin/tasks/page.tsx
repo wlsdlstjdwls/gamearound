@@ -4,13 +4,14 @@
 // 두 가지를 한 화면에 섞지 않은 이유: 쌓이는 속도가 다르다. 검수 큐는 하루에도 수십 줄이 붙지만
 // 할 일은 사람이 적는 만큼만 는다. 섞으면 적은 쪽이 파묻힌다.
 import type { Metadata } from "next";
+import { cookies } from "next/headers";
 import { PageHead } from "@/components/ui/page";
 import { TaskAddForm } from "@/components/admin/task-add-form";
 import { TaskBoard } from "@/components/admin/task-board";
 import { TaskClearDone } from "@/components/admin/task-clear-done";
 import { TASK_MESSAGES } from "@/lib/admin/messages";
 import { TASK_STATUSES } from "@/lib/admin/tasks";
-import { parseTaskFilter } from "@/lib/admin/task-filter";
+import { TASK_FILTER_COOKIE, hasTaskFilterParams, parseTaskFilter, parseTaskFilterCookie } from "@/lib/admin/task-filter";
 import { requireRoleOrForbid } from "@/server/auth/guards";
 import { sourceEnum } from "@/server/db/schema";
 import { getBoard, listAssignees } from "@/server/services/admin-tasks";
@@ -25,7 +26,9 @@ export default async function AdminTasksPage({ searchParams }: { searchParams: P
   // 서비스 쪽 검사는 그대로 둔다 — 이건 로그를 막는 줄이지 방어를 옮기는 줄이 아니다
   const me = await requireRoleOrForbid("admin");
   // 담당자 후보는 판과 나란히 읽는다 — 줄 세우면 왕복이 하나 더 붙는다(neon-roundtrip-cost)
-  const [{ board, asOf }, assignees, params] = await Promise.all([getBoard(), listAssignees(), searchParams]);
+  const [{ board, asOf }, assignees, params, jar] = await Promise.all([getBoard(), listAssignees(), searchParams, cookies()]);
+  // 첫 조건: 주소에 실렸으면 주소, 아니면 지난번에 고른 것(쿠키). 메뉴의 맨 주소로 들어와도 지난 조건이 선다
+  const initialFilter = hasTaskFilterParams(params) ? parseTaskFilter(params) : parseTaskFilterCookie(jar.get(TASK_FILTER_COOKIE)?.value);
   // 건수는 화면 제목 옆에 붙인다 — 판 위에 또 제목을 세우면 "할 일" 과 같은 말이 두 번 선다
   const total = TASK_STATUSES.reduce((n, s) => n + board[s].length, 0);
 
@@ -42,7 +45,7 @@ export default async function AdminTasksPage({ searchParams }: { searchParams: P
         </div>
       </header>
 
-      <TaskBoard board={board} assignees={assignees} meId={me.id} initialFilter={parseTaskFilter(params)} now={asOf} />
+      <TaskBoard board={board} assignees={assignees} meId={me.id} initialFilter={initialFilter} now={asOf} />
     </>
   );
 }
