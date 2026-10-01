@@ -35,11 +35,16 @@ import { reorderTaskAction, type TaskActionState } from "@/app/(admin)/admin/tas
  * 끌기까지 마우스 전용이라(use-board-drag) 휴대폰에서는 순서를 바꿀 길이 아예 없었다.
  * `tap` 으로 높이도 44px 로 벌린다 — 11px 글자 한 줄은 손가락 목표가 못 된다.
  *
- * 투명하게 두지 않고 자리째 숨긴다(2026-10-01): 투명한 단추도 폭을 먹어서, 같은 줄의 담당자 이름과
- * "23시간 전 | 기록 2" 가 좁은 카드에서 두 줄로 꺾였다. 키보드로 카드에 들어오면 focus-within 으로 선다.
+ * 평소에는 폭이 0 이다(2026-10-01): 투명한 단추도 폭을 먹어서, 같은 줄의 담당자 이름과
+ * "23시간 전 | 기록 2" 가 좁은 카드에서 두 줄로 꺾였다. 그렇다고 display 로 껐다 켜면 hover 때 줄이 툭 튀었다
+ * (사용자: "딱딱하게 움직인다"). 그래서 감싼 칸(ORDER_SLOT)의 최대 폭과 투명도를 함께 풀어 미끄러지듯 연다.
  */
+/** 순서 단추 둘을 감싼 칸. 열린 폭(max-w-24)은 "위로", "아래로" 두 단추가 들어가는 만큼이다 */
+const ORDER_SLOT =
+  "flex max-w-0 items-center overflow-hidden opacity-0 transition-[max-width,opacity] duration-base ease-standard group-focus-within:max-w-24 group-focus-within:opacity-100 group-hover:max-w-24 group-hover:opacity-100 [@media(hover:none)]:max-w-24 [@media(hover:none)]:opacity-100";
+
 const ORDER_BTN =
-  "press tap hidden items-center rounded-[6px] px-1.5 py-0.5 text-[11px] text-dim hover:text-ink group-focus-within:inline-flex group-hover:inline-flex disabled:opacity-40 [@media(hover:none)]:inline-flex";
+  "press tap inline-flex shrink-0 items-center rounded-[6px] px-1.5 py-0.5 text-[11px] text-dim hover:text-ink disabled:opacity-40";
 
 export function TaskCard({
   task,
@@ -152,24 +157,26 @@ export function TaskCard({
         ) : (
           <span className="ml-1 whitespace-nowrap text-[11px] text-dim">{TASK_MESSAGES.cardNoAssignee}</span>
         )}
-        <button
-          type="button"
-          data-no-drag="true"
-          className={ORDER_BTN}
-          disabled={pending}
-          onClick={() => run(() => reorderTaskAction(task.id, "up"))}
-        >
-          {TASK_MESSAGES.up}
-        </button>
-        <button
-          type="button"
-          data-no-drag="true"
-          className={ORDER_BTN}
-          disabled={pending}
-          onClick={() => run(() => reorderTaskAction(task.id, "down"))}
-        >
-          {TASK_MESSAGES.down}
-        </button>
+        <span className={ORDER_SLOT}>
+          <button
+            type="button"
+            data-no-drag="true"
+            className={ORDER_BTN}
+            disabled={pending}
+            onClick={() => run(() => reorderTaskAction(task.id, "up"))}
+          >
+            {TASK_MESSAGES.up}
+          </button>
+          <button
+            type="button"
+            data-no-drag="true"
+            className={ORDER_BTN}
+            disabled={pending}
+            onClick={() => run(() => reorderTaskAction(task.id, "down"))}
+          >
+            {TASK_MESSAGES.down}
+          </button>
+        </span>
 
         {/* 고친 때와 기록 수. 상대 시간이라 "오래 멈춘 카드" 가 한눈에 보인다.
             순서 단추 줄에 얹은 이유: 그 줄은 평소 비어 있다(단추가 hover 에만 뜬다) — 따로 한 줄을 세우면 카드만 길어진다 */}
