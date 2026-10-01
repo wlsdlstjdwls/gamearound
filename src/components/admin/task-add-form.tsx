@@ -14,7 +14,7 @@ import { Sheet } from "@/components/ui/sheet";
 import { FormSelect } from "@/components/ui/select";
 import { TASK_MESSAGES } from "@/lib/admin/messages";
 import type { TaskAssignee } from "@/lib/admin/tasks";
-import { TaskAssigneeField, TaskBasicFields, TaskStatusField } from "@/components/admin/task-fields";
+import { TaskBasicFields, TaskMetaFields, TaskStatusField } from "@/components/admin/task-fields";
 import { TaskGamePicker } from "@/components/admin/task-game-picker";
 import { createTaskAction, type TaskActionState } from "@/app/(admin)/admin/tasks/actions";
 
@@ -41,8 +41,8 @@ export function TaskAddForm({ sources, assignees }: { sources: readonly string[]
       <Sheet title={TASK_MESSAGES.addTitle} size="wide" open={open} onOpenChange={setOpen}>
         <ActionForm action={action} state={state} pending={pending} className="flex flex-col gap-4 pb-1 pt-2">
           <TaskBasicFields />
+          <TaskMetaFields assignees={assignees} />
           <TaskStatusField />
-          <TaskAssigneeField assignees={assignees} />
 
           <TaskGamePicker />
 

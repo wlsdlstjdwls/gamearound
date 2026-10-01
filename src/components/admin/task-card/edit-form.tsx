@@ -13,7 +13,7 @@ import { ActionForm } from "@/components/ui/action-form";
 import { Button } from "@/components/ui/button";
 import { TASK_MESSAGES } from "@/lib/admin/messages";
 import { type AdminTask, type TaskAssignee } from "@/lib/admin/tasks";
-import { TaskAssigneeField, TaskBasicFields } from "@/components/admin/task-fields";
+import { TaskBasicFields, TaskMetaFields } from "@/components/admin/task-fields";
 import { TaskGamePicker } from "@/components/admin/task-game-picker";
 import { updateTaskAction, type TaskActionState } from "@/app/(admin)/admin/tasks/actions";
 
@@ -26,11 +26,17 @@ export function TaskEditForm({ task, assignees }: { task: AdminTask; assignees: 
 
       {/* key 를 카드 id 로 두는 이유: 팝업이 다른 카드로 바뀌어도 같은 폼이 재사용되면
           앞 카드의 글이 남는다(defaultValue 는 첫 렌더에만 읽힌다) */}
-      <TaskBasicFields key={task.id} title={task.title} body={task.body} priority={task.priority} category={task.category} />
+      <TaskBasicFields key={task.id} title={task.title} body={task.body} />
 
-      {/* key 는 기본 칸과 같은 이유다 — 다른 카드로 바뀌면 고른 담당자도 갈아 끼운다.
-          접두어는 아래 게임 칸과 가르려고 단다 — 둘 다 비면 `<id>-none` 으로 같아져 형제 key 가 겹쳤다(2026-10-01) */}
-      <TaskAssigneeField key={`assignee-${task.id}-${task.assignee?.id ?? "none"}`} assignees={assignees} defaultValue={task.assignee?.id} />
+      {/* key 는 기본 칸과 같은 이유다 — 다른 카드로 바뀌면 고른 값도 갈아 끼운다.
+          접두어는 아래 게임 칸과 가르려고 단다 — 접두어 없이 `<id>-none` 꼴이면 형제 key 가 겹쳤다(2026-10-01) */}
+      <TaskMetaFields
+        key={`meta-${task.id}`}
+        assignees={assignees}
+        category={task.category}
+        priority={task.priority}
+        assigneeId={task.assignee?.id}
+      />
 
       {/* 붙인 게임도 여기서 바꾼다(2026-09-22) — 앞서는 만들 때 한 번 걸면 끝이라
           잘못 건 것을 떼려면 할 일을 지우고 다시 만들어야 했다.

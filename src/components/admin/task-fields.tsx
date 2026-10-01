@@ -5,6 +5,11 @@
 // 추가 폼은 라벨이 보이는 16px 칸, 카드 안 고치기 폼은 라벨 없는 12.5px 칸이었다.
 // 그래서 "추가할 때는 보이던 급함 고르는 칸이 고칠 때는 어디 갔지" 가 생긴다.
 //
+// **조밀하게 다시 짰다**(2026-10-01, 사용자: "입력하는 건 많지 않은데 너무 많은 영역을 차지한다").
+// 앞서는 분류, 급함, 담당자가 저마다 한 줄을 통째로 쓰고 고르는 칸이 44px 큰 버튼이라, 값 셋 고르는 데
+// 팝업 높이의 절반이 들었다. 지금은 셋이 한 줄에 나란히 서고(TaskMetaFields), 고르는 칸은 거르기 줄과 같은
+// 낮은 세그먼트다. 손가락 기기에서는 `.tap` 이 44px 로 되돌린다(globals.css) — 조밀함은 마우스 화면 몫이다.
+//
 // 입력 글자는 16px 다 — 이보다 작으면 iOS 가 포커스에서 화면을 확대한다(AGENTS §6).
 // 넓은 화면에서만 13.5px 로 줄인다.
 import { useId } from "react";
@@ -21,28 +26,34 @@ import {
   type TaskStatus,
 } from "@/lib/admin/tasks";
 
-/** 갈래 고르는 칸의 항목. 값이 다섯이라 칩으로 늘어놓으면 급함 줄과 두 줄이 같은 모양으로 겹쳐 읽힌다 — 그래서 셀렉트다 */
+/** 분류 고르는 칸의 항목. 값이 다섯이라 세그먼트로 늘어놓으면 한 칸 폭에 안 들어간다 — 그래서 셀렉트다 */
 const CATEGORY_CHOICES = TASK_CATEGORIES.map((c) => ({ value: c, label: TASK_CATEGORY_LABEL[c] }));
 
 /** 입력칸 한 겹. 테두리를 안쪽 그림자로 두는 규칙은 TextField 와 같다(판 위의 판을 만들지 않는다) */
 export const FIELD = cn(
-  "w-full rounded-xl bg-surface px-3.5 py-3 text-[16px] leading-[1.55] text-ink outline-none placeholder:text-dim sm:text-[13.5px]",
+  "w-full rounded-xl bg-surface px-3.5 py-2.5 text-[16px] leading-[1.55] text-ink outline-none placeholder:text-dim sm:text-[13.5px]",
   "shadow-[0_0_0_1px_var(--line)] transition-[box-shadow] duration-base ease-standard",
   "focus:shadow-[0_0_0_1px_var(--acc),0_0_0_4px_var(--acc-glow)]",
 );
 
-/** 한 줄 칩으로 고르는 라디오(급함, 담당자, 놓을 칸). 셋이 같은 모양이어야 한 폼으로 읽힌다 */
-const RADIO_CHIP = cn(
-  "bg-surface text-mut shadow-[0_0_0_1px_var(--line)] hover:text-ink",
-  "has-[:checked]:bg-acc has-[:checked]:font-semibold has-[:checked]:text-on-ink has-[:checked]:shadow-none",
-  "has-[:focus-visible]:shadow-[0_0_0_1px_var(--acc),0_0_0_4px_var(--acc-glow)]",
-);
-
 export const FIELD_LABEL = "mb-1.5 block text-[12.5px] font-medium text-mut";
+
+/**
+ * 세그먼트(한 판 위에 칸이 서고 고른 칸만 흰 면으로 떠오른다). 판 위 거르기 줄의 보기 세그먼트와 같은 모양이다 —
+ * 같은 화면 안에서 "하나를 고르는 칸" 이 두 모양이면 둘이 다른 일을 하는 것처럼 읽힌다.
+ */
+export const SEGMENT = "flex gap-0.5 rounded-xl bg-surface-2 p-1";
+/** 세그먼트의 칸. 라디오를 감싼 label 이면 :checked 로, 버튼이면 `on` 으로 뜬다 */
+export const SEGMENT_ITEM = cn(
+  "press tap flex h-7 min-w-0 flex-1 cursor-pointer items-center justify-center whitespace-nowrap rounded-lg px-2 text-[13px] text-mut transition-colors duration-base hover:text-ink",
+  "has-[:checked]:bg-surface has-[:checked]:font-semibold has-[:checked]:text-ink has-[:checked]:shadow-1",
+  "has-[:focus-visible]:ring-2 has-[:focus-visible]:ring-acc",
+);
+export const SEGMENT_ITEM_ON = "bg-surface font-semibold text-ink shadow-1";
 
 export function Field({ label, hint, children, id }: { label: string; hint?: string; id: string; children: React.ReactNode }) {
   return (
-    <div>
+    <div className="min-w-0">
       <label htmlFor={id} className={FIELD_LABEL}>
         {label}
       </label>
@@ -52,18 +63,34 @@ export function Field({ label, hint, children, id }: { label: string; hint?: str
   );
 }
 
-/** 제목 + 분류 + 메모 + 급함. 추가와 고치기가 함께 쓴다 — 기본값만 다르다 */
-export function TaskBasicFields({
-  title,
-  body,
-  priority,
-  category,
+/** 라디오 세그먼트 한 줄. 급함과 놓을 칸이 쓴다 */
+function RadioSegment<T extends string>({
+  id,
+  name,
+  values,
+  labels,
+  defaultValue,
 }: {
-  title?: string;
-  body?: string | null;
-  priority?: TaskPriority;
-  category?: TaskCategory;
+  id: string;
+  name: string;
+  values: readonly T[];
+  labels: Record<T, string>;
+  defaultValue: T;
 }) {
+  return (
+    <div className={SEGMENT}>
+      {values.map((v, i) => (
+        <label key={v} className={SEGMENT_ITEM}>
+          <input type="radio" name={name} value={v} id={i === 0 ? id : undefined} defaultChecked={defaultValue === v} className="sr-only" />
+          {labels[v]}
+        </label>
+      ))}
+    </div>
+  );
+}
+
+/** 제목 + 메모. 추가와 고치기가 함께 쓴다 — 기본값만 다르다 */
+export function TaskBasicFields({ title, body }: { title?: string; body?: string | null }) {
   const id = useId();
   return (
     <>
@@ -80,86 +107,61 @@ export function TaskBasicFields({
         />
       </Field>
 
-      {/* 라벨은 FormSelect 가 스스로 단다(버튼에 aria 로 이어 둔다) — Field 로 감싸면 라벨이 둘이 된다 */}
-      <FormSelect
-        name="category"
-        label={TASK_MESSAGES.categoryLabel}
-        options={CATEGORY_CHOICES}
-        defaultValue={category ?? TASK_CATEGORIES[0]}
-        size="lg"
-      />
-
+      {/* 세 줄이다 — 메모는 배경 한두 줄이 대부분이고, 길면 칸이 스스로 늘어난다(resize-y) */}
       <Field id={`${id}-body`} label={TASK_MESSAGES.bodyLabel}>
         <textarea
           id={`${id}-body`}
           name="body"
-          rows={4}
+          rows={3}
           defaultValue={body ?? ""}
           placeholder={TASK_MESSAGES.bodyPlaceholder}
           className={cn(FIELD, "resize-y")}
         />
-      </Field>
-
-      <Field id={`${id}-priority`} label={TASK_MESSAGES.priorityLabel}>
-        {/* 급함은 세 값뿐이라 드롭다운을 열 이유가 없다 — 한 줄에 다 서면 고르는 데 한 번이면 된다 */}
-        <div className="flex gap-1.5">
-          {TASK_PRIORITIES.map((p, i) => (
-            <label
-              key={p}
-              className={cn(
-                "press flex min-h-[var(--touch-target)] flex-1 cursor-pointer items-center justify-center rounded-xl text-[13.5px] transition-colors",
-                RADIO_CHIP,
-              )}
-            >
-              <input
-                type="radio"
-                name="priority"
-                value={p}
-                id={i === 0 ? `${id}-priority` : undefined}
-                defaultChecked={(priority ?? "normal") === p}
-                className="sr-only"
-              />
-              {TASK_PRIORITY_LABEL[p]}
-            </label>
-          ))}
-        </div>
       </Field>
     </>
   );
 }
 
 /**
- * 담당자 고르기(2026-09-30). 급함과 같은 한 줄 칩이다 — 후보가 관리자 계정뿐이라 몇 안 되고,
- * 드롭다운을 열면 고르는 데 두 번이 든다. 넘치면 줄을 바꿔 선다.
- * "없음" 은 빈 문자열로 보낸다 — 서버가 그걸 "아무도 안 쥐었다" 로 읽는다.
+ * 분류 + 급함 + 담당자 — 한 줄에 셋. 좁은 화면에서는 세로로 쌓인다.
+ *
+ * 담당자를 칩 줄에서 셀렉트로 바꿨다(2026-10-01). 칩은 한 번에 고르는 대신 한 줄을 통째로 먹었고,
+ * 관리자가 늘면 줄바꿈으로 더 커진다. "없음" 은 빈 문자열로 보낸다 — 서버가 그걸 "아무도 안 쥐었다" 로 읽는다.
  */
-export function TaskAssigneeField({ assignees, defaultValue }: { assignees: TaskAssignee[]; defaultValue?: string | null }) {
+export function TaskMetaFields({
+  assignees,
+  category,
+  priority,
+  assigneeId,
+}: {
+  assignees: TaskAssignee[];
+  category?: TaskCategory;
+  priority?: TaskPriority;
+  assigneeId?: string | null;
+}) {
   const id = useId();
-  const choices = [{ id: "", name: TASK_MESSAGES.assigneeNone }, ...assignees];
+  const assigneeChoices = [{ value: "", label: TASK_MESSAGES.assigneeNone }, ...assignees.map((a) => ({ value: a.id, label: a.name }))];
   return (
-    <Field id={id} label={TASK_MESSAGES.assigneeLabel}>
-      <div className="flex flex-wrap gap-1.5">
-        {choices.map((a, i) => (
-          <label
-            key={a.id || "none"}
-            className={cn(
-              "press flex min-h-[var(--touch-target)] flex-1 cursor-pointer items-center justify-center rounded-xl px-3 text-[13.5px] transition-colors",
-              RADIO_CHIP,
-            )}
-          >
-            <input
-              type="radio"
-              name="assigneeId"
-              value={a.id}
-              id={i === 0 ? id : undefined}
-              defaultChecked={(defaultValue ?? "") === a.id}
-              className="sr-only"
-            />
-            {a.name}
-          </label>
-        ))}
+    <div className="grid gap-3 sm:grid-cols-3">
+      {/* 셀렉트는 라벨을 스스로 단다(버튼에 aria 로 잇는다). 눈에 보이는 라벨만 Field 와 같은 모양으로 따로 세운다 */}
+      <div className="min-w-0">
+        <span aria-hidden className={FIELD_LABEL}>
+          {TASK_MESSAGES.categoryLabel}
+        </span>
+        <FormSelect name="category" label={TASK_MESSAGES.categoryLabel} hideLabel options={CATEGORY_CHOICES} defaultValue={category ?? TASK_CATEGORIES[0]} />
       </div>
-    </Field>
+
+      <Field id={`${id}-priority`} label={TASK_MESSAGES.priorityLabel}>
+        <RadioSegment id={`${id}-priority`} name="priority" values={TASK_PRIORITIES} labels={TASK_PRIORITY_LABEL} defaultValue={priority ?? "normal"} />
+      </Field>
+
+      <div className="min-w-0">
+        <span aria-hidden className={FIELD_LABEL}>
+          {TASK_MESSAGES.assigneeLabel}
+        </span>
+        <FormSelect name="assigneeId" label={TASK_MESSAGES.assigneeLabel} hideLabel options={assigneeChoices} defaultValue={assigneeId ?? ""} />
+      </div>
+    </div>
   );
 }
 
@@ -168,20 +170,7 @@ export function TaskStatusField({ defaultValue = "todo" }: { defaultValue?: Task
   const id = useId();
   return (
     <Field id={id} label={TASK_MESSAGES.statusLabel}>
-      <div className="flex flex-wrap gap-1.5">
-        {TASK_STATUSES.map((s, i) => (
-          <label
-            key={s}
-            className={cn(
-              "press flex min-h-[var(--touch-target)] flex-1 cursor-pointer items-center justify-center rounded-xl px-3 text-[13.5px] transition-colors",
-              RADIO_CHIP,
-            )}
-          >
-            <input type="radio" name="status" value={s} id={i === 0 ? id : undefined} defaultChecked={defaultValue === s} className="sr-only" />
-            {TASK_STATUS_LABEL[s]}
-          </label>
-        ))}
-      </div>
+      <RadioSegment id={id} name="status" values={TASK_STATUSES} labels={TASK_STATUS_LABEL} defaultValue={defaultValue} />
     </Field>
   );
 }

@@ -15,6 +15,7 @@
 // 한 팝업에 두 번 섰다. 게임 상세로 가는 길은 고른 칩 옆으로 옮겼고, 매장과 소스도 그 아래 붙였다.
 import { useState, useTransition } from "react";
 import { cn } from "@/lib/cn";
+import { SEGMENT, SEGMENT_ITEM, SEGMENT_ITEM_ON } from "@/components/admin/task-fields";
 import { formatDateTime } from "@/lib/format";
 import { Sheet } from "@/components/ui/sheet";
 import { TASK_MESSAGES, TASK_STATUS_LABEL } from "@/lib/admin/messages";
@@ -53,11 +54,12 @@ export function TaskDialog({
   // 판이 가려진 상태에서 지금 무엇을 보고 있는지 알 길이 제목 입력칸 안뿐이었다.
   return (
     <Sheet title={task.title} size="wide" open={open} onOpenChange={onOpenChange}>
-      <div className={cn("flex flex-col gap-6 pb-2 pt-2", pending && "opacity-70")}>
+      <div className={cn("flex flex-col gap-5 pb-2 pt-2", pending && "opacity-70")}>
         {/* 칸이 맨 위에 선다 — 팝업을 여는 이유의 절반은 "이걸 다음 칸으로 옮기려고" 다.
             앞서는 고치기 폼 아래라 옮기려면 스크롤을 지나야 했다 */}
         <Part title={TASK_MESSAGES.place}>
-          <div className="flex flex-wrap gap-1.5">
+          {/* 고치기 폼의 급함 칸과 같은 세그먼트다(task-fields). 앞서는 44px 큰 버튼 넷이 한 줄을 통째로 먹었다 */}
+          <div className={SEGMENT}>
             {TASK_STATUSES.map((s) => {
               const here = task.status === s;
               return (
@@ -67,12 +69,7 @@ export function TaskDialog({
                   disabled={pending || here}
                   aria-current={here ? "true" : undefined}
                   onClick={() => run(() => moveTaskAction(task.id, s))}
-                  className={cn(
-                    "press flex min-h-[var(--touch-target)] flex-1 items-center justify-center rounded-xl px-3 text-[13.5px] transition-colors",
-                    here
-                      ? "bg-acc font-semibold text-on-ink"
-                      : "bg-surface text-mut shadow-[0_0_0_1px_var(--line)] hover:text-ink disabled:opacity-60",
-                  )}
+                  className={cn(SEGMENT_ITEM, here ? SEGMENT_ITEM_ON : "disabled:opacity-60")}
                 >
                   {TASK_STATUS_LABEL[s]}
                 </button>
