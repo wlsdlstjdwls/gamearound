@@ -26,13 +26,14 @@ import { FIELD } from "@/components/admin/task-fields";
 import { addNoteAction, deleteNoteAction, type TaskActionState } from "@/app/(admin)/admin/tasks/actions";
 
 /** 칸 이름 앞에 칸 색 점 — 판의 칸 머리와 같은 색이라 "어디서 어디로" 가 글자 전에 갈린다 */
+/** 칸 이름. 칩이 아니라 굵은 글자다 — 칩으로 감싸면 복사했을 때 줄마다 끊겼다. 앞의 색 점은 판의 칸 머리와 같은 색이다 */
 function StatusName({ status }: { status: TaskStatus | null }) {
-  if (!status) return <span>-</span>;
+  if (!status) return <>-</>;
   return (
-    <span className="inline-flex items-center gap-1 rounded-md bg-surface-2 px-1.5 py-0.5 font-semibold text-ink">
-      <span aria-hidden className={cn("size-2 rounded-full", STATUS_FILL[status])} />
-      {TASK_STATUS_LABEL[status]}
-    </span>
+    <>
+      <span aria-hidden className={cn("mr-1 inline-block size-2 rounded-full align-middle", STATUS_FILL[status])} />
+      <strong className="font-semibold text-ink">{TASK_STATUS_LABEL[status]}</strong>
+    </>
   );
 }
 
@@ -43,7 +44,7 @@ function StatusName({ status }: { status: TaskStatus | null }) {
 function MoveLine({ note }: { note: TaskNote }) {
   // 두 줄이다(2026-10-01, 사용자: "1줄로 바뀌면서 뭐가 뭔지 모르겠다, 어디서 어떻게 바뀐 건지 모르겠다").
   // 한 줄에 표식, 칸, 시각, 이름을 다 붙이니 "할 일 | 처리 중 15:00 시험관리자" 가 어디서 끊기는지 안 읽혔다.
-  // 사람 글과 같은 머리(누가, 언제)를 세우고, 무엇이 바뀌었는지는 문장으로 풀어 아래에 둔다
+  // 사람 글과 같은 머리(누가, 언제)를 세우고, 무엇이 바뀌었는지는 아래 한 줄 평문으로 둔다
   return (
     <div className="flex flex-col gap-1.5">
       <div className="flex items-center gap-2">
@@ -51,13 +52,10 @@ function MoveLine({ note }: { note: TaskNote }) {
         <span className="rounded-md bg-surface-3 px-1.5 py-0.5 text-[12px] font-semibold text-mut">{TASK_MESSAGES.noteMoved}</span>
         <span className="text-[12.5px] tabular-nums text-mut">{formatDateTime(note.createdAt)}</span>
       </div>
-      <p className="flex flex-wrap items-center gap-x-1 gap-y-1 text-[14px] text-mut">
-        <StatusName status={note.from} />
-        <span>{TASK_MESSAGES.noteMovedFrom}</span>
-        <StatusName status={note.to} />
-        <span>
-          {note.to ? TASK_STATUS_TO_PARTICLE[note.to] : ""} {TASK_MESSAGES.noteMovedTail}
-        </span>
+      {/* 한 줄 평문이다: "할 일 -> 처리 중으로 변경되었습니다"(사용자가 정한 꼴, messages 주석) */}
+      <p className="text-[14px] leading-[1.6] text-mut">
+        <StatusName status={note.from} /> {TASK_MESSAGES.noteMovedArrow} <StatusName status={note.to} />
+        {note.to ? TASK_STATUS_TO_PARTICLE[note.to] : ""} {TASK_MESSAGES.noteMovedTail}
       </p>
     </div>
   );
