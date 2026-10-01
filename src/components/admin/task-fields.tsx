@@ -32,24 +32,28 @@ const CATEGORY_CHOICES = TASK_CATEGORIES.map((c) => ({ value: c, label: TASK_CAT
 /** 입력칸 한 겹. 테두리를 안쪽 그림자로 두는 규칙은 TextField 와 같다(판 위의 판을 만들지 않는다) */
 export const FIELD = cn(
   "w-full rounded-xl bg-surface px-3.5 py-2.5 text-[16px] leading-[1.55] text-ink outline-none placeholder:text-dim sm:text-[13.5px]",
-  "shadow-[0_0_0_1px_var(--line)] transition-[box-shadow] duration-base ease-standard",
+  // 테두리는 line-strong 이다(2026-10-01, 사용자: "구분이 잘 안 돼 눈에 안 들어온다") — line 은 흰 판 위에서 칸 경계가 거의 안 보였다
+  "shadow-[0_0_0_1px_var(--line-strong)] transition-[box-shadow] duration-base ease-standard",
   "focus:shadow-[0_0_0_1px_var(--acc),0_0_0_4px_var(--acc-glow)]",
 );
 
-export const FIELD_LABEL = "mb-1.5 block text-[12.5px] font-medium text-mut";
+export const FIELD_LABEL = "mb-1.5 block text-[12.5px] font-semibold text-mut";
 
 /**
- * 세그먼트(한 판 위에 칸이 서고 고른 칸만 흰 면으로 떠오른다). 판 위 거르기 줄의 보기 세그먼트와 같은 모양이다 —
+ * 세그먼트(한 판 위에 칸이 서고 고른 칸만 브랜드 보라로 채워진다).
+ * 처음엔 고른 칸을 흰 면으로 띄웠는데 회색 판 위 흰 칸은 대비가 약해 "뭐가 선택된지 구분이 안 된다" 는 말을 들었다(2026-10-01). 판 위 거르기 줄의 보기 세그먼트와 같은 모양이다 —
  * 같은 화면 안에서 "하나를 고르는 칸" 이 두 모양이면 둘이 다른 일을 하는 것처럼 읽힌다.
  */
 export const SEGMENT = "flex gap-0.5 rounded-xl bg-surface-2 p-1";
 /** 세그먼트의 칸. 라디오를 감싼 label 이면 :checked 로, 버튼이면 `on` 으로 뜬다 */
 export const SEGMENT_ITEM = cn(
   "press tap flex h-7 min-w-0 flex-1 cursor-pointer items-center justify-center whitespace-nowrap rounded-lg px-2 text-[13px] text-mut transition-colors duration-base hover:text-ink",
-  "has-[:checked]:bg-surface has-[:checked]:font-semibold has-[:checked]:text-ink has-[:checked]:shadow-1",
+  "has-[:checked]:bg-acc has-[:checked]:font-semibold has-[:checked]:text-on-ink has-[:checked]:shadow-1",
   "has-[:focus-visible]:ring-2 has-[:focus-visible]:ring-acc",
 );
-export const SEGMENT_ITEM_ON = "bg-surface font-semibold text-ink shadow-1";
+export const SEGMENT_ITEM_ON = "bg-acc font-semibold text-on-ink shadow-1";
+/** 우선순위 높음을 고르면 빨강으로 채운다 — 카드 띠와 같은 색이라 "이건 급한 일" 이 고를 때부터 보인다 */
+const SEGMENT_ITEM_URGENT = "has-[:checked]:bg-danger";
 
 export function Field({ label, hint, children, id }: { label: string; hint?: string; id: string; children: React.ReactNode }) {
   return (
@@ -70,17 +74,20 @@ function RadioSegment<T extends string>({
   values,
   labels,
   defaultValue,
+  itemClass,
 }: {
   id: string;
   name: string;
   values: readonly T[];
   labels: Record<T, string>;
   defaultValue: T;
+  /** 값마다 덧붙일 모양(고른 색을 바꿀 때) */
+  itemClass?: Partial<Record<T, string>>;
 }) {
   return (
     <div className={SEGMENT}>
       {values.map((v, i) => (
-        <label key={v} className={SEGMENT_ITEM}>
+        <label key={v} className={cn(SEGMENT_ITEM, itemClass?.[v])}>
           <input type="radio" name={name} value={v} id={i === 0 ? id : undefined} defaultChecked={defaultValue === v} className="sr-only" />
           {labels[v]}
         </label>
@@ -152,7 +159,14 @@ export function TaskMetaFields({
       </div>
 
       <Field id={`${id}-priority`} label={TASK_MESSAGES.priorityLabel}>
-        <RadioSegment id={`${id}-priority`} name="priority" values={TASK_PRIORITIES} labels={TASK_PRIORITY_LABEL} defaultValue={priority ?? "normal"} />
+        <RadioSegment
+          id={`${id}-priority`}
+          name="priority"
+          values={TASK_PRIORITIES}
+          labels={TASK_PRIORITY_LABEL}
+          defaultValue={priority ?? "normal"}
+          itemClass={{ high: SEGMENT_ITEM_URGENT }}
+        />
       </Field>
 
       <div className="min-w-0">

@@ -7,7 +7,8 @@ export const TASK_MESSAGES = {
   titlePlaceholder: "무엇을 할지 한 줄로",
   bodyLabel: "메모",
   bodyPlaceholder: "배경, 다음 수, 막힌 지점",
-  priorityLabel: "급함",
+  /** "급함" 이던 이름(2026-10-01 사용자가 "우선순위" 로). enum 이름(priority)과도 맞는다 */
+  priorityLabel: "우선순위",
   /** 갈래(2026-10-01). 셀렉트 라벨이자 필터 줄의 묶음 이름이다 */
   categoryLabel: "분류",
   statusLabel: "놓을 칸",
@@ -133,7 +134,7 @@ export const TASK_FILTER_MESSAGES = {
   categoryAll: "모든 분류",
   /** 드롭다운 항목. 건수는 남은 일 기준이다 */
   categoryOption: (label: string, n: number) => `${label} ${n}`,
-  urgent: "급함만",
+  urgent: "우선순위 높음",
   reset: "거르기 풀기",
   /** 칸 머리 건수. 걸러졌을 때만 전체 수를 같이 보인다 — 숨은 카드가 있다는 걸 놓치지 않게 */
   columnCount: (shown: number, total: number) => `${shown} / ${total}`,

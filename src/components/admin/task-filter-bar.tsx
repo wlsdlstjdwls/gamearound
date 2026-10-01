@@ -21,13 +21,13 @@ import { URGENT_FILL } from "@/components/admin/task-tone";
 /** 분류 드롭다운의 "거르지 않음" 값. 빈 문자열이라 enum 값과 겹치지 않는다 */
 const ANY = "";
 
-/** 건수 알. 고른 칸에서는 브랜드 색으로 바뀐다 — 숫자가 칸 이름보다 먼저 읽히면 안 되므로 작게 둔다 */
+/** 건수 알. 고른 칸(보라 면) 위에서는 흰 글자로 뒤집힌다 — 숫자가 칸 이름보다 먼저 읽히면 안 되므로 작게 둔다 */
 function Count({ n, on }: { n: number; on: boolean }) {
   return (
     <span
       className={cn(
         "min-w-[18px] rounded-full px-1.5 text-center text-[10.5px] font-semibold tabular-nums leading-[18px]",
-        on ? "bg-acc-soft text-acc" : "bg-surface-3 text-dim",
+        on ? "bg-on-ink/20 text-on-ink" : "bg-surface-3 text-dim",
       )}
     >
       {n}
@@ -69,7 +69,8 @@ export function TaskFilterBar({
               onClick={() => set({ view: v })}
               className={cn(
                 "press tap flex items-center justify-center gap-1.5 whitespace-nowrap rounded-lg px-2 py-1.5 sm:px-3 text-[12.5px] transition-colors duration-base",
-                on ? "bg-surface font-semibold text-ink shadow-1" : "text-mut hover:text-ink",
+                // 고른 칸은 보라로 채운다 — 흰 면만 띄우면 회색 판 위에서 대비가 약했다(팝업 세그먼트와 같은 모양)
+                on ? "bg-acc font-semibold text-on-ink shadow-1" : "text-mut hover:text-ink",
               )}
             >
               {TASK_FILTER_MESSAGES.views[v]}

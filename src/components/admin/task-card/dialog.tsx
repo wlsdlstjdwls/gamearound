@@ -24,11 +24,15 @@ import { TaskEditForm } from "@/components/admin/task-card/edit-form";
 import { TaskNotes } from "@/components/admin/task-card/notes";
 import { deleteTaskAction, moveTaskAction, type TaskActionState } from "@/app/(admin)/admin/tasks/actions";
 
-/** 팝업 안의 마디 제목 — 본문 제목(SectionHead)보다 작다. 여기서 갈리는 건 화면이 아니라 일이다 */
+/**
+ * 팝업 안의 마디 — 본문 제목(SectionHead)보다 작다. 여기서 갈리는 건 화면이 아니라 일이다.
+ * 마디 사이에 헤어라인을 긋고 제목을 잉크로 세운다(2026-10-01) — 앞서는 11.5px 흐린 제목뿐이라
+ * 놓인 칸, 내용, 기록이 한 덩어리로 흘러 "어디까지가 무엇인지" 가 안 갈렸다.
+ */
 function Part({ title, children }: { title: string; children: React.ReactNode }) {
   return (
-    <section className="flex flex-col gap-2">
-      <h3 className="text-[11.5px] font-bold tracking-[0.08em] text-dim-2">{title}</h3>
+    <section className="flex flex-col gap-3 border-t border-line pt-4 first:border-t-0 first:pt-0">
+      <h3 className="text-[13px] font-bold text-ink">{title}</h3>
       {children}
     </section>
   );

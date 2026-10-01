@@ -19,11 +19,13 @@ import type { ShopGameOptionDto } from "@/lib/shops/game-option";
 import { FIELD, FIELD_LABEL } from "@/components/admin/task-fields";
 import { searchTaskGamesAction } from "@/app/(admin)/admin/tasks/actions";
 
-/** 후보 한 줄에 적는 말. 같은 제목이 여럿일 때 영문과 배급사로 가른다 */
-function optionLabel(g: ShopGameOptionDto): string {
-  const name = g.titleKo ?? g.titleEn;
-  const note = [g.titleKo && g.titleEn !== g.titleKo ? g.titleEn : null, g.publisher].filter(Boolean).join(" | ");
-  return note ? `${name} (${note})` : name;
+/**
+ * 후보 한 줄의 덧말. 같은 제목이 여럿일 때 영문과 배급사로 가른다.
+ * 제목과 한 줄에 괄호로 붙이던 것을 아랫줄로 내렸다(2026-10-01, 사용자: "목록이 구분이 잘 안 된다") —
+ * 괄호 속 영문이 제목만큼 진해서 어디까지가 한 후보인지가 안 읽혔다.
+ */
+function optionNote(g: ShopGameOptionDto): string {
+  return [g.titleKo && g.titleEn !== g.titleKo ? g.titleEn : null, g.publisher].filter(Boolean).join(" | ");
 }
 
 /**
@@ -58,8 +60,8 @@ export function TaskGamePicker({ initial }: { initial?: Picked | null }) {
       <span className={FIELD_LABEL}>{TASK_MESSAGES.gamePickLabel}</span>
 
       {picked ? (
-        <div className="flex flex-wrap items-center gap-2 rounded-xl bg-surface-3 px-3 py-2.5">
-          <span className="min-w-0 flex-1 text-[13.5px] text-acc">{picked.title}</span>
+        <div className="flex flex-wrap items-center gap-2 rounded-xl bg-acc-soft px-3 py-2.5 shadow-[0_0_0_1px_var(--acc)]">
+          <span className="min-w-0 flex-1 text-[13.5px] font-semibold text-acc">{picked.title}</span>
           {picked.slug && (
             <Link
               href={gamePath(picked.slug)}
@@ -104,18 +106,23 @@ export function TaskGamePicker({ initial }: { initial?: Picked | null }) {
 
           {results && results.length > 0 && (
             // 후보가 길어도 폼이 밀리지 않게 자리를 정해 두고 그 안에서 굴린다
-            <ul className="flex max-h-[216px] flex-col gap-1 overflow-y-auto overscroll-contain">
-              {results.map((g) => (
-                <li key={g.id}>
-                  <button
-                    type="button"
-                    onClick={() => setPicked({ id: g.id, title: g.titleKo ?? g.titleEn })}
-                    className="press w-full rounded-[10px] bg-surface px-3 py-2.5 text-left text-[13px] text-ink shadow-[0_0_0_1px_var(--line)] transition-colors hover:text-acc"
-                  >
-                    {optionLabel(g)}
-                  </button>
-                </li>
-              ))}
+            // 후보는 한 상자 안에 헤어라인으로 갈라 세운다 — 칸마다 테두리를 두르면 테두리 무늬가 먼저 읽혔다
+            <ul className="max-h-[216px] divide-y divide-line overflow-y-auto overscroll-contain rounded-xl shadow-[0_0_0_1px_var(--line-strong)]">
+              {results.map((g) => {
+                const note = optionNote(g);
+                return (
+                  <li key={g.id}>
+                    <button
+                      type="button"
+                      onClick={() => setPicked({ id: g.id, title: g.titleKo ?? g.titleEn })}
+                      className="press flex w-full flex-col gap-0.5 bg-surface px-3 py-2 text-left transition-colors hover:bg-acc-soft"
+                    >
+                      <span className="text-[13.5px] font-semibold text-ink">{g.titleKo ?? g.titleEn}</span>
+                      {note && <span className="truncate text-[11.5px] text-dim">{note}</span>}
+                    </button>
+                  </li>
+                );
+              })}
             </ul>
           )}
           {results && results.length === 0 && <p className="text-[12px] text-dim">{TASK_MESSAGES.gamePickEmpty}</p>}
