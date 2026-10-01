@@ -34,9 +34,12 @@ import { reorderTaskAction, type TaskActionState } from "@/app/(admin)/admin/tas
  * 손가락 기기에서는 처음부터 보인다(2026-09-22): hover 가 없는 화면에서 이 단추는 **영영 안 떴고**,
  * 끌기까지 마우스 전용이라(use-board-drag) 휴대폰에서는 순서를 바꿀 길이 아예 없었다.
  * `tap` 으로 높이도 44px 로 벌린다 — 11px 글자 한 줄은 손가락 목표가 못 된다.
+ *
+ * 투명하게 두지 않고 자리째 숨긴다(2026-10-01): 투명한 단추도 폭을 먹어서, 같은 줄의 담당자 이름과
+ * "23시간 전 | 기록 2" 가 좁은 카드에서 두 줄로 꺾였다. 키보드로 카드에 들어오면 focus-within 으로 선다.
  */
 const ORDER_BTN =
-  "press tap inline-flex items-center rounded-[6px] px-1.5 py-0.5 text-[11px] text-dim opacity-0 transition-opacity hover:text-ink focus-visible:opacity-100 group-hover:opacity-100 disabled:opacity-40 [@media(hover:none)]:opacity-100";
+  "press tap hidden items-center rounded-[6px] px-1.5 py-0.5 text-[11px] text-dim hover:text-ink group-focus-within:inline-flex group-hover:inline-flex disabled:opacity-40 [@media(hover:none)]:inline-flex";
 
 export function TaskCard({
   task,
@@ -132,22 +135,23 @@ export function TaskCard({
       {/* data-no-drag: 이 버튼에서 시작한 누름은 끌기가 아니라 그 버튼의 일이다 */}
       <div className="flex items-center gap-1 px-2 pb-1.5">
         {/*
-          담당자는 이름 칩 대신 첫 글자 동그라미다(2026-10-01) — 판을 훑을 때 "누구 일인가" 가 모양으로 갈린다.
-          내 담당은 채워 칠하고 남의 담당은 옅게, 담당이 없으면 점선 빈 동그라미다(칩 글자 "담당 없음" 이 카드마다 반복돼 소음이었다).
+          담당자 이름(2026-10-01). 첫 글자 동그라미로 줄였다가 사용자가 "그냥 이름 나오게" 해서 되돌렸다 — 둘뿐이라도 글자 하나로는 누군지 다시 읽어야 했다.
+          내 담당은 채워 칠하고 남의 담당은 옅게. 담당이 없으면 흐린 글자만 둔다(테두리 칩은 카드마다 반복돼 소음이었다).
           올린 사람은 카드에 없다 — 사용자: "올린 사람보단 담당자".
-          맨 아래 줄에 두는 이유: 따로 줄을 세우면 담당 없는 카드가 빈 동그라미 하나로 한 줄을 먹는다.
+          맨 아래 줄에 두는 이유: 따로 줄을 세우면 카드마다 한 줄씩 길어진다.
         */}
-        <span
-          role="img"
-          aria-label={task.assignee ? TASK_MESSAGES.cardAssignee(task.assignee.name) : TASK_MESSAGES.cardNoAssignee}
-          className={cn(
-            "ml-1 mr-0.5 grid h-[22px] w-[22px] shrink-0 place-items-center rounded-full text-[11px] font-bold",
-            !task.assignee && "border border-dashed border-line-strong",
-            task.assignee && (mine ? "bg-acc text-on-ink" : "bg-acc-soft text-acc"),
-          )}
-        >
-          {task.assignee?.name.slice(0, 1)}
-        </span>
+        {task.assignee ? (
+          <span
+            className={cn(
+              "ml-1 min-w-0 max-w-[50%] truncate whitespace-nowrap rounded-[6px] px-1.5 py-0.5 text-[11px] font-semibold",
+              mine ? "bg-acc text-on-ink" : "bg-acc-soft text-acc",
+            )}
+          >
+            {task.assignee.name}
+          </span>
+        ) : (
+          <span className="ml-1 whitespace-nowrap text-[11px] text-dim">{TASK_MESSAGES.cardNoAssignee}</span>
+        )}
         <button
           type="button"
           data-no-drag="true"
@@ -169,7 +173,7 @@ export function TaskCard({
 
         {/* 고친 때와 기록 수. 상대 시간이라 "오래 멈춘 카드" 가 한눈에 보인다.
             순서 단추 줄에 얹은 이유: 그 줄은 평소 비어 있다(단추가 hover 에만 뜬다) — 따로 한 줄을 세우면 카드만 길어진다 */}
-        <span className="ml-auto text-[10.5px] tabular-nums text-dim">
+        <span className="ml-auto whitespace-nowrap text-[10.5px] tabular-nums text-dim">
           {formatAgo(task.updatedAt, now)}
           {task.notes.length > 0 && ` | ${TASK_MESSAGES.noteCount(task.notes.length)}`}
         </span>

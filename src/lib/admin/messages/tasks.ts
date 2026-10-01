@@ -34,7 +34,8 @@ export const TASK_MESSAGES = {
   // 카드 고치기 — 할 일의 제목과 메모는 "무엇을 하는 일인가" 라서 고쳐 쓰는 값이다
   save: "저장",
   cancel: "취소",
-  saved: "고쳤어요",
+  /** 사용자가 정한 말(2026-10-01: "그냥 저장 완료로") — -해요체 규칙의 예외다 */
+  saved: "저장 완료",
 
   /*
    * 기록 — 진행과 완료가 쌓이는 자리. 메모(body)와 낱말을 가른 이유는 하는 일이 다르기 때문이다.
@@ -71,8 +72,6 @@ export const TASK_MESSAGES = {
   /** 카드 위 짧은 말(2026-10-01). 팝업의 담당자 칸 "없음" 과 가른다 — 카드에서는 무엇이 없는지까지 말해야 한다 */
   cardNoAssignee: "담당 없음",
   cardLatestNote: "최근 기록",
-  /** 아바타의 낭독 이름. 화면에는 첫 글자만 선다 */
-  cardAssignee: (name: string) => `담당 ${name}`,
   /** 처리 중인데 오래 안 고친 카드(lib/admin/tasks 의 staleDays) */
   cardStale: (days: number) => `${days}일째 멈춤`,
 
