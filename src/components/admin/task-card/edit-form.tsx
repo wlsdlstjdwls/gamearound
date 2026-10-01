@@ -50,8 +50,13 @@ export function TaskEditForm({ task, assignees }: { task: AdminTask; assignees: 
         </div>
       )}
 
-      <div className="flex items-center gap-3">
-        <Button type="submit" variant="secondary" loading={pending}>
+      {/*
+        저장 줄은 폼 바닥에 붙는다(2026-10-01, 사용자: "할일 상세에서 수정하고 저장하는 게 없다").
+        앞서는 게임 검색 칸 아래에 테두리 버튼으로 있어서, 팝업을 스크롤해 내려가야 보였고 보여도 버튼으로 안 읽혔다.
+        sticky 는 제 부모(이 폼) 안에서만 붙는다 — 아래 기록 마디의 붙박이 입력칸과 겹치지 않는다(notes 와 같은 방식).
+      */}
+      <div className="sticky bottom-0 z-10 -mx-4 flex items-center gap-3 border-t border-line bg-surface px-4 py-3">
+        <Button type="submit" variant="primary" loading={pending}>
           {TASK_MESSAGES.save}
         </Button>
         {state?.ok && state.message && <span className="animate-rise text-[12.5px] text-ok">{state.message}</span>}
