@@ -28,8 +28,9 @@ export function TaskEditForm({ task, assignees }: { task: AdminTask; assignees: 
           앞 카드의 글이 남는다(defaultValue 는 첫 렌더에만 읽힌다) */}
       <TaskBasicFields key={task.id} title={task.title} body={task.body} priority={task.priority} category={task.category} />
 
-      {/* key 는 기본 칸과 같은 이유다 — 다른 카드로 바뀌면 고른 담당자도 갈아 끼운다 */}
-      <TaskAssigneeField key={`${task.id}-${task.assignee?.id ?? "none"}`} assignees={assignees} defaultValue={task.assignee?.id} />
+      {/* key 는 기본 칸과 같은 이유다 — 다른 카드로 바뀌면 고른 담당자도 갈아 끼운다.
+          접두어는 아래 게임 칸과 가르려고 단다 — 둘 다 비면 `<id>-none` 으로 같아져 형제 key 가 겹쳤다(2026-10-01) */}
+      <TaskAssigneeField key={`assignee-${task.id}-${task.assignee?.id ?? "none"}`} assignees={assignees} defaultValue={task.assignee?.id} />
 
       {/* 붙인 게임도 여기서 바꾼다(2026-09-22) — 앞서는 만들 때 한 번 걸면 끝이라
           잘못 건 것을 떼려면 할 일을 지우고 다시 만들어야 했다.
@@ -37,7 +38,7 @@ export function TaskEditForm({ task, assignees }: { task: AdminTask; assignees: 
       <TaskGamePicker
         // 붙인 게임이 바뀌면 칸을 갈아 끼운다 — 저장한 뒤 그 자리에서 "게임 열기" 가 서야 하고,
         // 그 링크는 서버가 준 slug 로만 만들 수 있다(방금 고른 후보에는 slug 가 없다)
-        key={`${task.id}-${task.game?.id ?? "none"}`}
+        key={`game-${task.id}-${task.game?.id ?? "none"}`}
         initial={task.game ? { id: task.game.id, title: task.game.title, slug: task.game.slug } : null}
       />
 
