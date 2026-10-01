@@ -21,7 +21,8 @@ import { useMemo, useState, useTransition } from "react";
 import { cn } from "@/lib/cn";
 import { TASK_FILTER_MESSAGES, TASK_MESSAGES, TASK_STATUS_LABEL } from "@/lib/admin/messages";
 import { TASK_STATUSES, type Board, type TaskAssignee } from "@/lib/admin/tasks";
-import { isDefaultTaskFilter, matchesTaskFilter, serializeTaskFilter, type TaskFilter } from "@/lib/admin/task-filter";
+import { countTaskFilters, isDefaultTaskFilter, matchesTaskFilter, serializeTaskFilter, type TaskFilter } from "@/lib/admin/task-filter";
+import { STATUS_FILL } from "@/components/admin/task-tone";
 import { TaskFilterBar } from "@/components/admin/task-filter-bar";
 import { TaskCard } from "@/components/admin/task-card";
 import { TaskDialog } from "@/components/admin/task-card/dialog";
@@ -64,6 +65,11 @@ export function TaskBoard({
     () => Object.fromEntries(TASK_STATUSES.map((s) => [s, board[s].filter((t) => matchesTaskFilter(t, filter, meId))])) as Board,
     [board, filter, meId],
   );
+  // 거르기 칩 옆 건수. 끝난 칸은 세지 않는다 — "내 담당 5" 가 끝낸 일까지 세면 남은 몫을 못 읽는다
+  const counts = useMemo(
+    () => countTaskFilters(TASK_STATUSES.filter((s) => s !== "done").flatMap((s) => board[s]), meId),
+    [board, meId],
+  );
 
   const drag = useBoardDrag((id, to) => start(async () => setState(await moveTaskAction(id, to))));
 
@@ -72,7 +78,7 @@ export function TaskBoard({
   return (
     <section className="flex flex-col gap-3">
       {/* 판 위에 제목도 버튼도 세우지 않는다 — 끝난 일 치우기는 "할 일 추가" 줄로 갔다(TaskClearDone) */}
-      <TaskFilterBar filter={filter} onChange={changeFilter} />
+      <TaskFilterBar filter={filter} counts={counts} onChange={changeFilter} />
       {state && !state.ok && <p className="text-[12px] text-danger">{state.error}</p>}
 
       {/* 칸이 넷이라 좁은 화면에서는 둘씩 접는다 — 넷을 억지로 세우면 카드 폭이 글자보다 좁아진다 */}
@@ -97,7 +103,11 @@ export function TaskBoard({
               )}
             >
               <h3 className="flex items-center justify-between px-1 py-0.5 text-[12.5px] font-bold text-mut">
-                {TASK_STATUS_LABEL[status]}
+                {/* 칸마다 색 점(2026-10-01) — 넷이 같은 회색 골이라 상태가 글자로만 갈렸다. 색은 메뉴 배지와 같은 짝이다 */}
+                <span className="flex items-center gap-1.5">
+                  <span aria-hidden className={cn("h-2 w-2 rounded-full", STATUS_FILL[status])} />
+                  {TASK_STATUS_LABEL[status]}
+                </span>
                 {/* 걸러졌으면 "보이는 수 / 전체" — 숨은 카드가 있다는 걸 칸이 스스로 말한다 */}
                 <span
                   className="rounded-full bg-surface px-1.5 text-[11px] font-semibold tabular-nums text-mut"
@@ -114,6 +124,7 @@ export function TaskBoard({
                       key={task.id}
                       task={task}
                       now={now}
+                      meId={meId}
                       status={status}
                       onOpen={setOpenId}
                       onPointerDown={drag.onPointerDown}

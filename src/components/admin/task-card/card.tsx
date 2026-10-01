@@ -23,29 +23,10 @@ import { cn } from "@/lib/cn";
 import { raisedClass } from "@/components/ui/page";
 import { formatAgo } from "@/lib/format";
 import { TASK_CATEGORY_LABEL, TASK_MESSAGES, TASK_PRIORITY_LABEL } from "@/lib/admin/messages";
-import { type AdminTask, type TaskStatus } from "@/lib/admin/tasks";
+import { staleDays, type AdminTask, type TaskStatus } from "@/lib/admin/tasks";
+import { CATEGORY_BADGE, PRIORITY_BADGE, cardStripe } from "@/components/admin/task-tone";
 import { HANDLE_ATTR } from "@/components/admin/use-board-drag";
 import { reorderTaskAction, type TaskActionState } from "@/app/(admin)/admin/tasks/actions";
-
-/** 급함 표시. 보통은 아무 표시도 하지 않는다 — 전부 표시하면 어느 것도 눈에 띄지 않는다 */
-const PRIORITY_STYLE: Record<AdminTask["priority"], string> = {
-  high: "bg-danger-soft text-danger",
-  normal: "",
-  low: "bg-surface-3 text-dim",
-};
-
-/**
- * 분류 표시(2026-10-01). 기본 분류(할 일)는 아무 표시도 하지 않는다 — 급함과 같은 이유다.
- * 색은 뜻에 맞춰 토큰에서만 고른다: 버그는 경고, 아이디어는 브랜드, 데이터 정리는 초록, 기타는 회색.
- * 빨강(danger)은 급함 "높음" 몫이라 쓰지 않는다 — 버그가 다 급해 보이면 급함 표시가 묻힌다.
- */
-const CATEGORY_STYLE: Record<AdminTask["category"], string> = {
-  task: "",
-  bug: "bg-warn-soft text-warn",
-  idea: "bg-acc-soft text-acc",
-  data: "bg-ok-soft text-ok",
-  etc: "bg-surface-3 text-mut",
-};
 
 /**
  * 순서 단추. hover 전에는 흐리게 둔다 — 카드에서 먼저 읽혀야 하는 건 제목이다.
@@ -60,6 +41,7 @@ const ORDER_BTN =
 export function TaskCard({
   task,
   now,
+  meId,
   status,
   onOpen,
   onPointerDown,
@@ -68,6 +50,8 @@ export function TaskCard({
   task: AdminTask;
   /** "3일 전" 의 기준 시각. 서버가 정해 내려 준다 — 카드에서 Date.now() 를 부르면 서버와 브라우저 값이 갈려 하이드레이션이 어긋난다 */
   now: number;
+  /** 지금 보는 관리자. 내 담당 카드는 아바타를 채워 칠한다 — 판에서 "내 일" 이 먼저 보이게 */
+  meId: string;
   /** 이 카드가 놓인 칸. 끌기를 시작할 때 "어디서 떠났는가" 가 필요하다 */
   status: TaskStatus;
   /**
@@ -86,58 +70,84 @@ export function TaskCard({
   const run = (fn: () => Promise<TaskActionState>) => start(async () => setState(await fn()));
   // 사람이 적은 글 중 가장 최근 것. 칸 이동 자취는 "어디까지 왔나" 를 말해 주지 않아 뺀다(기록은 오래된 것이 앞이다)
   const latestNote = task.notes.findLast((n) => n.kind === "note" && n.body);
+  const stale = staleDays(task, now);
+  const stripe = cardStripe(task);
+  const mine = task.assignee?.id === meId;
 
   return (
     <li
       onPointerDown={(e) => onPointerDown?.(e, task.id, status)}
       onClickCapture={onClickCapture}
-      className={raisedClass(cn("grabbable group flex flex-col transition-[opacity] duration-base", pending && "opacity-60"))}
+      className={raisedClass(
+        cn(
+          "grabbable group relative flex flex-col overflow-hidden transition-[opacity] duration-base",
+          // 끝난 일은 흐리게 — 판의 무게는 아직 남은 일에 있어야 한다. 손을 대면 다시 또렷해진다
+          status === "done" && "opacity-60 hover:opacity-100 focus-within:opacity-100",
+          pending && "opacity-60",
+        ),
+      )}
     >
+      {/* 왼쪽 띠(2026-10-01). 급함 높음은 빨강, 아니면 분류 색이다(task-tone). 배지를 읽기 전에 색으로 먼저 갈린다 */}
+      {stripe && <span aria-hidden className={cn("absolute inset-y-0 left-0 w-[3px]", stripe)} />}
       {/* 카드 전체가 여는 자리다. 안에 링크를 넣지 않는 이유는 버튼 안의 링크가 못 눌리기 때문이다 —
           붙인 대상으로 가는 길은 팝업 안에 있다 */}
       <button type="button" onClick={() => onOpen(task.id)} className="flex w-full flex-col gap-2 p-3 text-left">
         <div className="flex items-start justify-between gap-2">
           <p className="min-w-0 flex-1 text-[13px] font-semibold leading-[1.45] text-ink">{task.title}</p>
           {task.category !== "task" && (
-            <span className={cn("shrink-0 rounded-[6px] px-1.5 py-0.5 text-[10.5px] font-semibold", CATEGORY_STYLE[task.category])}>
+            <span className={cn("shrink-0 rounded-[6px] px-1.5 py-0.5 text-[10.5px] font-semibold", CATEGORY_BADGE[task.category])}>
               {TASK_CATEGORY_LABEL[task.category]}
             </span>
           )}
           {task.priority !== "normal" && (
-            <span className={cn("shrink-0 rounded-[6px] px-1.5 py-0.5 text-[10.5px] font-semibold", PRIORITY_STYLE[task.priority])}>
+            <span className={cn("shrink-0 rounded-[6px] px-1.5 py-0.5 text-[10.5px] font-semibold", PRIORITY_BADGE[task.priority])}>
               {TASK_PRIORITY_LABEL[task.priority]}
             </span>
           )}
         </div>
 
-        {/* 메모는 두 줄까지만. 카드가 길어지면 네 칸을 한 화면에 세운다는 판의 목적이 깨진다 */}
-        {task.body && <p className="line-clamp-2 whitespace-pre-wrap text-[12px] leading-[1.6] text-mut">{task.body}</p>}
-
-        <div className="flex flex-wrap items-center gap-1.5 text-[11px]">
-          {/* 담당자를 맨 앞에 둔다 — 판을 훑는 눈이 먼저 찾는 것은 "내 일인가" 다.
-              비었어도 칸을 비워 두지 않는다(2026-10-01): 칩이 없으면 "아무도 안 쥔 일" 이 판에서 안 보여 아무도 안 가져간다.
-              올린 사람은 카드에 없다 — 사용자: "올린 사람보단 담당자". 팝업과 "내가 올린" 보기에 남았다 */}
-          {task.assignee ? (
-            <span className="rounded-[6px] bg-acc-soft px-1.5 py-0.5 font-semibold text-acc">{task.assignee.name}</span>
-          ) : (
-            <span className="rounded-[6px] border border-dashed border-line-strong px-1.5 py-0.5 text-dim">{TASK_MESSAGES.cardNoAssignee}</span>
-          )}
-          {task.game && <span className="rounded-[6px] bg-surface-3 px-1.5 py-0.5 text-acc">{task.game.title}</span>}
-          {task.shop && <span className="rounded-[6px] bg-surface-3 px-1.5 py-0.5 text-mut">{task.shop.name}</span>}
-          {task.source && <span className="rounded-[6px] bg-surface-3 px-1.5 py-0.5 font-mono text-mut">{task.source}</span>}
-        </div>
-
-        {/* 최근 기록 한 줄(2026-10-01) — 건수만으로는 일이 어디까지 왔는지 모른다. 전문은 팝업에 있다 */}
-        {latestNote && (
-          <p className="truncate text-[11.5px] text-mut">
+        {/*
+          맥락 한 줄(2026-10-01, 사용자: 메모 두 줄이 카드 절반을 먹는다). 최근 기록이 있으면 그것을, 없으면 메모 첫 줄을 쓴다 —
+          일이 어디까지 왔는지가 처음 적은 배경보다 판에서 더 쓸모 있다. 전문은 팝업에 있다.
+        */}
+        {latestNote ? (
+          <p className="truncate text-[12px] text-mut">
             <span className="font-medium text-dim">{TASK_MESSAGES.cardLatestNote}</span> {latestNote.body}
           </p>
+        ) : (
+          task.body && <p className="truncate text-[12px] text-mut">{task.body}</p>
         )}
 
+        {/* 붙임표 줄은 붙은 것이 있을 때만 선다 — 빈 줄이 카드마다 높이를 먹었다 */}
+        {(stale !== null || task.game || task.shop || task.source) && (
+          <div className="flex flex-wrap items-center gap-1.5 text-[11px]">
+            {stale !== null && <span className="rounded-[6px] bg-warn-soft px-1.5 py-0.5 font-semibold text-warn">{TASK_MESSAGES.cardStale(stale)}</span>}
+            {task.game && <span className="rounded-[6px] bg-surface-3 px-1.5 py-0.5 text-acc">{task.game.title}</span>}
+            {task.shop && <span className="rounded-[6px] bg-surface-3 px-1.5 py-0.5 text-mut">{task.shop.name}</span>}
+            {task.source && <span className="rounded-[6px] bg-surface-3 px-1.5 py-0.5 font-mono text-mut">{task.source}</span>}
+          </div>
+        )}
       </button>
 
       {/* data-no-drag: 이 버튼에서 시작한 누름은 끌기가 아니라 그 버튼의 일이다 */}
       <div className="flex items-center gap-1 px-2 pb-1.5">
+        {/*
+          담당자는 이름 칩 대신 첫 글자 동그라미다(2026-10-01) — 판을 훑을 때 "누구 일인가" 가 모양으로 갈린다.
+          내 담당은 채워 칠하고 남의 담당은 옅게, 담당이 없으면 점선 빈 동그라미다(칩 글자 "담당 없음" 이 카드마다 반복돼 소음이었다).
+          올린 사람은 카드에 없다 — 사용자: "올린 사람보단 담당자".
+          맨 아래 줄에 두는 이유: 따로 줄을 세우면 담당 없는 카드가 빈 동그라미 하나로 한 줄을 먹는다.
+        */}
+        <span
+          role="img"
+          aria-label={task.assignee ? TASK_MESSAGES.cardAssignee(task.assignee.name) : TASK_MESSAGES.cardNoAssignee}
+          className={cn(
+            "ml-1 mr-0.5 grid h-[22px] w-[22px] shrink-0 place-items-center rounded-full text-[11px] font-bold",
+            !task.assignee && "border border-dashed border-line-strong",
+            task.assignee && (mine ? "bg-acc text-on-ink" : "bg-acc-soft text-acc"),
+          )}
+        >
+          {task.assignee?.name.slice(0, 1)}
+        </span>
         <button
           type="button"
           data-no-drag="true"

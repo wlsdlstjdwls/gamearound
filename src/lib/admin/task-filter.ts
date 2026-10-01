@@ -69,3 +69,22 @@ export function matchesTaskFilter(task: Pick<AdminTask, "author" | "assignee" | 
   if (f.urgent && task.priority !== "high") return false;
   return true;
 }
+
+/** 거르기 칩 옆 건수. 칸마다 다른 칸을 기본값으로 두고 센다 — "내 담당 3" 은 지금 걸린 분류와 상관없이 내 몫 전체다 */
+export interface TaskFilterCounts {
+  views: Record<TaskView, number>;
+  categories: Record<TaskCategory, number>;
+  urgent: number;
+}
+
+export function countTaskFilters(tasks: Pick<AdminTask, "author" | "assignee" | "category" | "priority">[], meId: string): TaskFilterCounts {
+  const count = (f: TaskFilter) => tasks.filter((t) => matchesTaskFilter(t, f, meId)).length;
+  return {
+    views: Object.fromEntries(TASK_VIEWS.map((view) => [view, count({ ...DEFAULT_TASK_FILTER, view })])) as Record<TaskView, number>,
+    categories: Object.fromEntries(TASK_CATEGORIES.map((category) => [category, count({ ...DEFAULT_TASK_FILTER, category })])) as Record<
+      TaskCategory,
+      number
+    >,
+    urgent: count({ ...DEFAULT_TASK_FILTER, urgent: true }),
+  };
+}

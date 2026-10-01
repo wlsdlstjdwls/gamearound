@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { DEFAULT_TASK_FILTER, isDefaultTaskFilter, matchesTaskFilter, parseTaskFilter, serializeTaskFilter } from "@/lib/admin/task-filter";
+import { DEFAULT_TASK_FILTER, countTaskFilters, isDefaultTaskFilter, matchesTaskFilter, parseTaskFilter, serializeTaskFilter } from "@/lib/admin/task-filter";
 
 const ME = "me-id";
 const OTHER = "other-id";
@@ -60,5 +60,19 @@ describe("matchesTaskFilter", () => {
     expect(matchesTaskFilter(task({ category: "bug", priority: "high" }), f, ME)).toBe(true);
     expect(matchesTaskFilter(task({ category: "bug" }), f, ME)).toBe(false);
     expect(matchesTaskFilter(task({ priority: "high" }), f, ME)).toBe(false);
+  });
+});
+
+describe("countTaskFilters", () => {
+  it("칸마다 따로 센다", () => {
+    const tasks = [
+      task({ assignee: { id: ME, name: "나" }, category: "bug", priority: "high" }),
+      task({ author: { id: OTHER, name: "남" }, category: "bug" }),
+      task({ author: { id: OTHER, name: "남" }, category: "idea" }),
+    ];
+    const c = countTaskFilters(tasks, ME);
+    expect(c.views).toEqual({ all: 3, assigned: 1, mine: 1, others: 2 });
+    expect(c.categories).toEqual({ task: 0, bug: 2, idea: 1, data: 0, etc: 0 });
+    expect(c.urgent).toBe(1);
   });
 });

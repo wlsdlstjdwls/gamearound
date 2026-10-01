@@ -71,6 +71,10 @@ export const TASK_MESSAGES = {
   /** 카드 위 짧은 말(2026-10-01). 팝업의 담당자 칸 "없음" 과 가른다 — 카드에서는 무엇이 없는지까지 말해야 한다 */
   cardNoAssignee: "담당 없음",
   cardLatestNote: "최근 기록",
+  /** 아바타의 낭독 이름. 화면에는 첫 글자만 선다 */
+  cardAssignee: (name: string) => `담당 ${name}`,
+  /** 처리 중인데 오래 안 고친 카드(lib/admin/tasks 의 staleDays) */
+  cardStale: (days: number) => `${days}일째 멈춤`,
 
   /*
    * 칸 안 한 줄 추가(2026-09-22) — 생각난 일을 적는 데 네 동작(버튼, 팝업, 칸 고르기, 저장)이 들던 것을
@@ -128,6 +132,8 @@ export const TASK_FILTER_MESSAGES = {
   views: { all: "전체", assigned: "내 담당", mine: "내가 올린", others: "남이 올린" },
   category: "분류",
   categoryAll: "모든 분류",
+  /** 드롭다운 항목. 건수는 남은 일 기준이다 */
+  categoryOption: (label: string, n: number) => `${label} ${n}`,
   urgent: "급함만",
   reset: "거르기 풀기",
   /** 칸 머리 건수. 걸러졌을 때만 전체 수를 같이 보인다 — 숨은 카드가 있다는 걸 놓치지 않게 */

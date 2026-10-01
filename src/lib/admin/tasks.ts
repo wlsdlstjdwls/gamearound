@@ -19,6 +19,21 @@ export type TaskPriority = (typeof TASK_PRIORITIES)[number];
 export const TASK_CATEGORIES = ["task", "bug", "idea", "data", "etc"] as const;
 export type TaskCategory = (typeof TASK_CATEGORIES)[number];
 
+/**
+ * 멈춤 판정(2026-10-01). 처리 중인데 이만큼 아무도 안 고친 카드에 표시를 단다 — 판을 보는 이유의 절반이
+ * "뭐가 막혔나" 다. 7일인 이유: 판을 쓰는 사람이 둘이고 주 단위로 일한다. 한 주를 넘긴 "하는 중" 은 사실상 멈춘 일이다.
+ * 할 일, 작업대기 칸은 안 본다 — 거기 오래 있는 건 순서가 뒤라서지 막혀서가 아니다.
+ */
+export const TASK_STALE_DAYS = 7;
+const DAY_MS = 24 * 60 * 60 * 1000;
+
+/** 멈춘 날수. 멈춤이 아니면 null */
+export function staleDays(task: { status: TaskStatus; updatedAt: Date }, now: number): number | null {
+  if (task.status !== "doing") return null;
+  const days = Math.floor((now - task.updatedAt.getTime()) / DAY_MS);
+  return days >= TASK_STALE_DAYS ? days : null;
+}
+
 /** 기록 갈래. `note` 는 사람이 적은 글, `move` 는 판이 남긴 칸 이동 자취 */
 export const TASK_NOTE_KINDS = ["note", "move"] as const;
 export type TaskNoteKind = (typeof TASK_NOTE_KINDS)[number];
