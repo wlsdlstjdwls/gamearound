@@ -19,7 +19,7 @@ import { ActionForm } from "@/components/ui/action-form";
 import { cn } from "@/lib/cn";
 import { formatDateTime } from "@/lib/format";
 import { Button } from "@/components/ui/button";
-import { TASK_MESSAGES, TASK_STATUS_LABEL } from "@/lib/admin/messages";
+import { TASK_MESSAGES, TASK_STATUS_LABEL, TASK_STATUS_TO_PARTICLE } from "@/lib/admin/messages";
 import type { TaskNote, TaskStatus } from "@/lib/admin/tasks";
 import { STATUS_FILL } from "@/components/admin/task-tone";
 import { FIELD } from "@/components/admin/task-fields";
@@ -29,7 +29,7 @@ import { addNoteAction, deleteNoteAction, type TaskActionState } from "@/app/(ad
 function StatusName({ status }: { status: TaskStatus | null }) {
   if (!status) return <span>-</span>;
   return (
-    <span className="inline-flex items-center gap-1">
+    <span className="inline-flex items-center gap-1 rounded-md bg-surface-2 px-1.5 py-0.5 font-semibold text-ink">
       <span aria-hidden className={cn("size-2 rounded-full", STATUS_FILL[status])} />
       {TASK_STATUS_LABEL[status]}
     </span>
@@ -41,13 +41,25 @@ function StatusName({ status }: { status: TaskStatus | null }) {
  * 둘이 같은 무게로 섞여 있으면 정작 읽어야 할 사람 글이 자취 사이에 묻힌다. 화살표 대신 파이프로 잇는다(AGENTS §4).
  */
 function MoveLine({ note }: { note: TaskNote }) {
+  // 두 줄이다(2026-10-01, 사용자: "1줄로 바뀌면서 뭐가 뭔지 모르겠다, 어디서 어떻게 바뀐 건지 모르겠다").
+  // 한 줄에 표식, 칸, 시각, 이름을 다 붙이니 "할 일 | 처리 중 15:00 시험관리자" 가 어디서 끊기는지 안 읽혔다.
+  // 사람 글과 같은 머리(누가, 언제)를 세우고, 무엇이 바뀌었는지는 문장으로 풀어 아래에 둔다
   return (
-    <p className="flex flex-wrap items-center gap-x-1.5 gap-y-0.5 text-[13px] text-mut">
-      <span className="font-medium">{TASK_MESSAGES.noteMoved}</span>
-      <StatusName status={note.from} /> | <StatusName status={note.to} />
-      <span className="tabular-nums">{formatDateTime(note.createdAt)}</span>
-      {note.authorName && <span>{note.authorName}</span>}
-    </p>
+    <div className="flex flex-col gap-1.5">
+      <div className="flex items-center gap-2">
+        {note.authorName && <span className="truncate text-[13.5px] font-bold text-ink">{note.authorName}</span>}
+        <span className="rounded-md bg-surface-3 px-1.5 py-0.5 text-[12px] font-semibold text-mut">{TASK_MESSAGES.noteMoved}</span>
+        <span className="text-[12.5px] tabular-nums text-mut">{formatDateTime(note.createdAt)}</span>
+      </div>
+      <p className="flex flex-wrap items-center gap-x-1 gap-y-1 text-[14px] text-mut">
+        <StatusName status={note.from} />
+        <span>{TASK_MESSAGES.noteMovedFrom}</span>
+        <StatusName status={note.to} />
+        <span>
+          {note.to ? TASK_STATUS_TO_PARTICLE[note.to] : ""} {TASK_MESSAGES.noteMovedTail}
+        </span>
+      </p>
+    </div>
   );
 }
 

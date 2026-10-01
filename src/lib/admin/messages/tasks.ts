@@ -52,7 +52,11 @@ export const TASK_MESSAGES = {
   noteRemoveConfirm: "이 기록을 지울까요?",
   noteRemoved: "기록을 지웠어요",
   /** 칸 이동 자취 앞에 붙는 말. 앞뒤 칸은 파이프로 잇는다(AGENTS §4: 화살표 금지) */
-  noteMoved: "옮김",
+  /** 칸 이동 자취의 머리 표식(사람 글과 가르는 자리) */
+  noteMoved: "칸 이동",
+  /** 칸 이동 문장의 조각. "[할 일]에서 [처리 중]으로 옮겼어요" — 칸 이름은 화면이 칩으로 그린다 */
+  noteMovedFrom: "에서",
+  noteMovedTail: "옮겼어요",
 
   /*
    * 팝업(2026-09-21) — 적기, 고치기, 기록이 전부 카드 안 작은 칸에서 일어나 쓰기 힘들다는 말을 들었다.
@@ -105,6 +109,14 @@ export const TASK_STATUS_LABEL = {
   todo: "할 일",
   doing: "처리 중",
   done: "완료",
+} as const;
+
+/** 칸 이름 뒤 "(으)로". 받침에 따라 갈린다(ㄹ 받침은 "로") — 칸이 넷뿐이라 규칙을 쓰지 않고 적어 둔다 */
+export const TASK_STATUS_TO_PARTICLE = {
+  backlog: "로",
+  todo: "로",
+  doing: "으로",
+  done: "로",
 } as const;
 
 export const TASK_PRIORITY_LABEL = {
