@@ -50,9 +50,9 @@ export function TaskEditForm({ task, assignees }: { task: AdminTask; assignees: 
 
       {/* 매장과 소스는 읽기만 한다 — 붙는 자리가 화면이 아니다(매장 할 일은 매장 쪽에서, 소스는 만들 때) */}
       {(task.shop || task.source) && (
-        <div className="flex flex-wrap items-center gap-1.5 text-[12.5px]">
+        <div className="flex flex-wrap items-center gap-1.5 text-[13.5px]">
           {task.shop && <span className="rounded-lg bg-surface-3 px-2 py-1 text-mut">{task.shop.name}</span>}
-          {task.source && <span className="rounded-lg bg-surface-3 px-2 py-1 font-mono text-[12px] text-mut">{task.source}</span>}
+          {task.source && <span className="rounded-lg bg-surface-3 px-2 py-1 font-mono text-[13px] text-mut">{task.source}</span>}
         </div>
       )}
 
@@ -67,9 +67,9 @@ export function TaskEditForm({ task, assignees }: { task: AdminTask; assignees: 
         <Button type="submit" variant="primary" loading={pending}>
           {TASK_MESSAGES.save}
         </Button>
-        {state?.ok && state.message && <span className="animate-rise text-[12.5px] text-ok">{state.message}</span>}
+        {state?.ok && state.message && <span className="animate-rise text-[13.5px] text-ok">{state.message}</span>}
         {state && !state.ok && (
-          <span role="alert" className="animate-rise text-[12.5px] text-danger">
+          <span role="alert" className="animate-rise text-[13.5px] text-danger">
             {state.error}
           </span>
         )}

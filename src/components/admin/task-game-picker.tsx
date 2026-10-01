@@ -61,11 +61,11 @@ export function TaskGamePicker({ initial }: { initial?: Picked | null }) {
 
       {picked ? (
         <div className="flex flex-wrap items-center gap-2 rounded-xl bg-acc-soft px-3 py-2.5 shadow-[0_0_0_1px_var(--acc)]">
-          <span className="min-w-0 flex-1 text-[13.5px] font-semibold text-acc">{picked.title}</span>
+          <span className="min-w-0 flex-1 text-[14.5px] font-semibold text-acc">{picked.title}</span>
           {picked.slug && (
             <Link
               href={gamePath(picked.slug)}
-              className="press rounded-[7px] px-2 py-1 text-[12px] text-mut transition-colors hover:text-acc"
+              className="press rounded-[7px] px-2 py-1 text-[13px] text-mut transition-colors hover:text-acc"
             >
               {TASK_MESSAGES.gamePickOpen}
             </Link>
@@ -73,7 +73,7 @@ export function TaskGamePicker({ initial }: { initial?: Picked | null }) {
           <button
             type="button"
             onClick={() => setPicked(null)}
-            className="press tap inline-flex items-center rounded-[7px] px-2 py-1 text-[12px] text-mut transition-colors hover:text-danger"
+            className="press tap inline-flex items-center rounded-[7px] px-2 py-1 text-[13px] text-mut transition-colors hover:text-danger"
           >
             {TASK_MESSAGES.gamePickClear}
           </button>
@@ -98,7 +98,7 @@ export function TaskGamePicker({ initial }: { initial?: Picked | null }) {
               type="button"
               onClick={runSearch}
               disabled={pending}
-              className="press shrink-0 rounded-xl bg-surface px-4 text-[13.5px] text-mut shadow-[0_0_0_1px_var(--line)] transition-colors hover:text-ink disabled:opacity-60"
+              className="press shrink-0 rounded-xl bg-surface px-4 text-[14.5px] text-mut shadow-[0_0_0_1px_var(--line)] transition-colors hover:text-ink disabled:opacity-60"
             >
               {pending ? TASK_MESSAGES.gamePickSearching : TASK_MESSAGES.gamePickSearch}
             </button>
@@ -117,16 +117,16 @@ export function TaskGamePicker({ initial }: { initial?: Picked | null }) {
                       onClick={() => setPicked({ id: g.id, title: g.titleKo ?? g.titleEn })}
                       className="press flex w-full flex-col gap-0.5 bg-surface px-3 py-2 text-left transition-colors hover:bg-acc-soft"
                     >
-                      <span className="text-[13.5px] font-semibold text-ink">{g.titleKo ?? g.titleEn}</span>
-                      {note && <span className="truncate text-[11.5px] text-dim">{note}</span>}
+                      <span className="text-[14.5px] font-semibold text-ink">{g.titleKo ?? g.titleEn}</span>
+                      {note && <span className="truncate text-[12.5px] text-dim">{note}</span>}
                     </button>
                   </li>
                 );
               })}
             </ul>
           )}
-          {results && results.length === 0 && <p className="text-[12px] text-dim">{TASK_MESSAGES.gamePickEmpty}</p>}
-          {!results && <p className="text-[11.5px] text-dim">{TASK_MESSAGES.gamePickHint}</p>}
+          {results && results.length === 0 && <p className="text-[13px] text-dim">{TASK_MESSAGES.gamePickEmpty}</p>}
+          {!results && <p className="text-[12.5px] text-dim">{TASK_MESSAGES.gamePickHint}</p>}
         </>
       )}
     </div>

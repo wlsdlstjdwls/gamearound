@@ -26,7 +26,7 @@ function Count({ n, on }: { n: number; on: boolean }) {
   return (
     <span
       className={cn(
-        "min-w-[18px] rounded-full px-1.5 text-center text-[10.5px] font-semibold tabular-nums leading-[18px]",
+        "min-w-[18px] rounded-full px-1.5 text-center text-[11.5px] font-semibold tabular-nums leading-[18px]",
         on ? "bg-on-ink/20 text-on-ink" : "bg-surface-3 text-dim",
       )}
     >
@@ -68,7 +68,7 @@ export function TaskFilterBar({
               aria-pressed={on}
               onClick={() => set({ view: v })}
               className={cn(
-                "press tap flex items-center justify-center gap-1.5 whitespace-nowrap rounded-lg px-2 py-1.5 sm:px-3 text-[12.5px] transition-colors duration-base",
+                "press tap flex items-center justify-center gap-1.5 whitespace-nowrap rounded-lg px-2 py-1.5 sm:px-3 text-[13.5px] transition-colors duration-base",
                 // 고른 칸은 보라로 채운다 — 흰 면만 띄우면 회색 판 위에서 대비가 약했다(팝업 세그먼트와 같은 모양)
                 on ? "bg-acc font-semibold text-on-ink shadow-1" : "text-mut hover:text-ink",
               )}
@@ -97,13 +97,13 @@ export function TaskFilterBar({
         aria-pressed={filter.urgent}
         onClick={() => set({ urgent: !filter.urgent })}
         className={cn(
-          "press tap flex items-center gap-1.5 rounded-xl px-3 py-2 text-[12.5px] transition-colors duration-base",
+          "press tap flex items-center gap-1.5 rounded-xl px-3 py-2 text-[13.5px] transition-colors duration-base",
           filter.urgent ? "bg-danger-soft font-semibold text-danger" : "bg-surface-2 text-mut hover:text-ink",
         )}
       >
         {counts.urgent > 0 && <span aria-hidden className={cn("h-2 w-2 rounded-full", URGENT_FILL)} />}
         {TASK_FILTER_MESSAGES.urgent}
-        <span className="text-[11px] font-semibold tabular-nums">{counts.urgent}</span>
+        <span className="text-[12px] font-semibold tabular-nums">{counts.urgent}</span>
       </button>
 
       {/* 아무것도 안 걸었으면 풀 것이 없다 — 늘 서 있으면 "뭔가 걸려 있나" 를 매번 확인하게 된다 */}
@@ -111,7 +111,7 @@ export function TaskFilterBar({
         <button
           type="button"
           onClick={() => onChange(DEFAULT_TASK_FILTER)}
-          className="press tap ml-auto text-[12px] font-medium text-acc hover:underline"
+          className="press tap ml-auto text-[13px] font-medium text-acc hover:underline"
         >
           {TASK_FILTER_MESSAGES.reset}
         </button>

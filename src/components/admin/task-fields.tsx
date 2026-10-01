@@ -31,13 +31,13 @@ const CATEGORY_CHOICES = TASK_CATEGORIES.map((c) => ({ value: c, label: TASK_CAT
 
 /** 입력칸 한 겹. 테두리를 안쪽 그림자로 두는 규칙은 TextField 와 같다(판 위의 판을 만들지 않는다) */
 export const FIELD = cn(
-  "w-full rounded-xl bg-surface px-3.5 py-2.5 text-[16px] leading-[1.55] text-ink outline-none placeholder:text-dim sm:text-[13.5px]",
+  "w-full rounded-xl bg-surface px-3.5 py-2.5 text-[16px] leading-[1.55] text-ink outline-none placeholder:text-dim sm:text-[14.5px]",
   // 테두리는 line-strong 이다(2026-10-01, 사용자: "구분이 잘 안 돼 눈에 안 들어온다") — line 은 흰 판 위에서 칸 경계가 거의 안 보였다
   "shadow-[0_0_0_1px_var(--line-strong)] transition-[box-shadow] duration-base ease-standard",
   "focus:shadow-[0_0_0_1px_var(--acc),0_0_0_4px_var(--acc-glow)]",
 );
 
-export const FIELD_LABEL = "mb-1.5 block text-[12.5px] font-semibold text-mut";
+export const FIELD_LABEL = "mb-1.5 block text-[13.5px] font-semibold text-mut";
 
 /**
  * 세그먼트(한 판 위에 칸이 서고 고른 칸만 브랜드 보라로 채워진다).
@@ -47,7 +47,7 @@ export const FIELD_LABEL = "mb-1.5 block text-[12.5px] font-semibold text-mut";
 export const SEGMENT = "flex gap-0.5 rounded-xl bg-surface-2 p-1";
 /** 세그먼트의 칸. 라디오를 감싼 label 이면 :checked 로, 버튼이면 `on` 으로 뜬다 */
 export const SEGMENT_ITEM = cn(
-  "press tap flex h-7 min-w-0 flex-1 cursor-pointer items-center justify-center whitespace-nowrap rounded-lg px-2 text-[13px] text-mut transition-colors duration-base hover:text-ink",
+  "press tap flex h-9 min-w-0 flex-1 cursor-pointer items-center justify-center whitespace-nowrap rounded-lg px-2 text-[14px] text-mut transition-colors duration-base hover:text-ink",
   "has-[:checked]:bg-acc has-[:checked]:font-semibold has-[:checked]:text-on-ink has-[:checked]:shadow-1",
   "has-[:focus-visible]:ring-2 has-[:focus-visible]:ring-acc",
 );
@@ -62,7 +62,7 @@ export function Field({ label, hint, children, id }: { label: string; hint?: str
         {label}
       </label>
       {children}
-      {hint && <p className="mt-1.5 text-[11.5px] text-dim">{hint}</p>}
+      {hint && <p className="mt-1.5 text-[12.5px] text-dim">{hint}</p>}
     </div>
   );
 }
@@ -155,7 +155,14 @@ export function TaskMetaFields({
         <span aria-hidden className={FIELD_LABEL}>
           {TASK_MESSAGES.categoryLabel}
         </span>
-        <FormSelect name="category" label={TASK_MESSAGES.categoryLabel} hideLabel options={CATEGORY_CHOICES} defaultValue={category ?? TASK_CATEGORIES[0]} />
+        <FormSelect
+          name="category"
+          label={TASK_MESSAGES.categoryLabel}
+          hideLabel
+          size="lg"
+          options={CATEGORY_CHOICES}
+          defaultValue={category ?? TASK_CATEGORIES[0]}
+        />
       </div>
 
       <Field id={`${id}-priority`} label={TASK_MESSAGES.priorityLabel}>
@@ -173,7 +180,7 @@ export function TaskMetaFields({
         <span aria-hidden className={FIELD_LABEL}>
           {TASK_MESSAGES.assigneeLabel}
         </span>
-        <FormSelect name="assigneeId" label={TASK_MESSAGES.assigneeLabel} hideLabel options={assigneeChoices} defaultValue={assigneeId ?? ""} />
+        <FormSelect name="assigneeId" label={TASK_MESSAGES.assigneeLabel} hideLabel size="lg" options={assigneeChoices} defaultValue={assigneeId ?? ""} />
       </div>
     </div>
   );

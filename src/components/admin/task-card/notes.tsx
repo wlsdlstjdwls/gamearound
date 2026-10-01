@@ -30,7 +30,7 @@ function StatusName({ status }: { status: TaskStatus | null }) {
   if (!status) return <span>-</span>;
   return (
     <span className="inline-flex items-center gap-1">
-      <span aria-hidden className={cn("size-1.5 rounded-full", STATUS_FILL[status])} />
+      <span aria-hidden className={cn("size-2 rounded-full", STATUS_FILL[status])} />
       {TASK_STATUS_LABEL[status]}
     </span>
   );
@@ -42,7 +42,7 @@ function StatusName({ status }: { status: TaskStatus | null }) {
  */
 function MoveLine({ note }: { note: TaskNote }) {
   return (
-    <p className="flex flex-wrap items-center gap-x-1.5 gap-y-0.5 text-[11.5px] text-dim">
+    <p className="flex flex-wrap items-center gap-x-1.5 gap-y-0.5 text-[13px] text-mut">
       <span className="font-medium">{TASK_MESSAGES.noteMoved}</span>
       <StatusName status={note.from} /> | <StatusName status={note.to} />
       <span className="tabular-nums">{formatDateTime(note.createdAt)}</span>
@@ -61,27 +61,20 @@ export function TaskNotes({ taskId, notes }: { taskId: string; notes: TaskNote[]
   return (
     <div className="flex flex-col gap-4">
       {notes.length === 0 ? (
-        <p className="rounded-xl border border-dashed border-line-strong px-3 py-3 text-center text-[12.5px] text-dim">{TASK_MESSAGES.noteEmpty}</p>
+        <p className="rounded-xl border border-dashed border-line-strong px-3 py-3 text-center text-[13.5px] text-dim">{TASK_MESSAGES.noteEmpty}</p>
       ) : (
-        // 줄기는 목록 왼쪽에 1px 선으로 깔고, 점이 그 위에 앉는다
-        <ul className="flex flex-col gap-3.5 border-l border-line pl-4">
+        // 줄기 선과 점, 말풍선을 걷었다(2026-10-01, 사용자: "가독성이 너무 떨어진다") — 장식이 글보다 먼저 읽혔다.
+        // 지금은 헤어라인으로 가른 목록이다: 사람 글은 이름(굵게), 시각이 한 줄, 본문이 그 아래 넉넉한 줄간격으로 선다.
+        <ul className="flex flex-col divide-y divide-line">
           {notes.map((n) => (
-            <li key={n.id} className="relative flex flex-col gap-1">
-              <span
-                aria-hidden
-                className={cn(
-                  "absolute -left-[21px] rounded-full",
-                  n.kind === "note" ? "top-[12px] size-[9px] bg-acc" : "top-[5px] size-[7px] border border-line-strong bg-bg",
-                )}
-              />
+            <li key={n.id} className="py-3 first:pt-0 last:pb-0">
               {n.kind === "move" ? (
                 <MoveLine note={n} />
               ) : (
-                // 사람 글은 말풍선 판에 담는다 — 누가, 언제가 머리에 서고 본문이 그 아래다
-                <div className="flex flex-col gap-1 rounded-xl bg-surface-2 px-3 py-2.5">
-                  <div className="flex items-center gap-2 text-[11.5px]">
-                    {n.authorName && <span className="truncate font-semibold text-ink">{n.authorName}</span>}
-                    <span className="tabular-nums text-dim">{formatDateTime(n.createdAt)}</span>
+                <div className="flex flex-col gap-1.5">
+                  <div className="flex items-center gap-2">
+                    {n.authorName && <span className="truncate text-[13.5px] font-bold text-ink">{n.authorName}</span>}
+                    <span className="text-[12.5px] tabular-nums text-mut">{formatDateTime(n.createdAt)}</span>
                     <button
                       type="button"
                       disabled={pending}
@@ -89,12 +82,12 @@ export function TaskNotes({ taskId, notes }: { taskId: string; notes: TaskNote[]
                         if (!confirm(TASK_MESSAGES.noteRemoveConfirm)) return;
                         start(async () => setRemoveState(await deleteNoteAction(n.id)));
                       }}
-                      className="press ml-auto rounded-[5px] px-1.5 py-0.5 text-dim transition-colors hover:text-danger disabled:opacity-50"
+                      className="press ml-auto rounded-[5px] px-1.5 py-0.5 text-[12.5px] text-mut transition-colors hover:text-danger disabled:opacity-50"
                     >
                       {TASK_MESSAGES.noteRemove}
                     </button>
                   </div>
-                  <p className="whitespace-pre-wrap text-[13.5px] leading-[1.65] text-ink">{n.body}</p>
+                  <p className="whitespace-pre-wrap text-[15px] leading-[1.7] text-ink">{n.body}</p>
                 </div>
               )}
             </li>
@@ -130,7 +123,7 @@ export function TaskNotes({ taskId, notes }: { taskId: string; notes: TaskNote[]
       </ActionForm>
 
       {error && (
-        <p role="alert" className="animate-rise text-[12.5px] text-danger">
+        <p role="alert" className="animate-rise text-[13.5px] text-danger">
           {error}
         </p>
       )}

@@ -34,7 +34,7 @@ export function TaskAddForm({ sources, assignees }: { sources: readonly string[]
       <button type="button" onClick={() => setOpen(true)} className={buttonClass({ variant: "primary" })}>
         {TASK_MESSAGES.add}
       </button>
-      {state?.ok && state.message && <span className="text-[12px] text-ok">{state.message}</span>}
+      {state?.ok && state.message && <span className="text-[13px] text-ok">{state.message}</span>}
 
       {/* size="wide": 이 시트는 입력이 주인공이다. 내용이 정하는 폭은 메모 칸을 한 줄 스무 자로 눌러,
           카드 안에서 쓰던 때와 다를 바가 없어진다(2026-09-22 사용자 지적) */}
@@ -56,7 +56,7 @@ export function TaskAddForm({ sources, assignees }: { sources: readonly string[]
           />
 
           {state && !state.ok && (
-            <p role="alert" className="animate-rise text-[12.5px] text-danger">
+            <p role="alert" className="animate-rise text-[13.5px] text-danger">
               {state.error}
             </p>
           )}

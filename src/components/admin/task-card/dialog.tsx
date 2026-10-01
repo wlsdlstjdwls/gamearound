@@ -32,7 +32,7 @@ import { deleteTaskAction, moveTaskAction, type TaskActionState } from "@/app/(a
 function Part({ title, children }: { title: string; children: React.ReactNode }) {
   return (
     <section className="flex flex-col gap-3 border-t border-line pt-4 first:border-t-0 first:pt-0">
-      <h3 className="text-[13px] font-bold text-ink">{title}</h3>
+      <h3 className="text-[14px] font-bold text-ink">{title}</h3>
       {children}
     </section>
   );
@@ -91,14 +91,14 @@ export function TaskDialog({
         </Part>
 
         {state && !state.ok && (
-          <p role="alert" className="animate-rise text-[12.5px] text-danger">
+          <p role="alert" className="animate-rise text-[13.5px] text-danger">
             {state.error}
           </p>
         )}
 
         <div className="flex flex-wrap items-center justify-between gap-3 border-t border-line pt-4">
           {/* 올린 사람은 고친 때와 한 줄에 선다 — 둘 다 "이 카드의 내력" 이라 고치는 칸들과 떼어 둔다 */}
-          <span className="text-[11.5px] text-dim">
+          <span className="text-[12.5px] text-dim">
             {TASK_MESSAGES.author} {task.author?.name ?? TASK_MESSAGES.authorUnknown} | {TASK_MESSAGES.updatedAt}{" "}
             {formatDateTime(task.updatedAt)}
           </span>
@@ -110,7 +110,7 @@ export function TaskDialog({
               onOpenChange(false);
               run(() => deleteTaskAction(task.id));
             }}
-            className="press rounded-xl px-3 py-2 text-[12.5px] text-mut transition-colors hover:bg-danger-soft hover:text-danger disabled:opacity-60"
+            className="press rounded-xl px-3 py-2 text-[13.5px] text-mut transition-colors hover:bg-danger-soft hover:text-danger disabled:opacity-60"
           >
             {TASK_MESSAGES.dangerZone}
           </button>

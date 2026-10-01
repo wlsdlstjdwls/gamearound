@@ -95,7 +95,7 @@ export function TaskBoard({
     <section className="flex flex-col gap-3">
       {/* 판 위에 제목도 버튼도 세우지 않는다 — 끝난 일 치우기는 "할 일 추가" 줄로 갔다(TaskClearDone) */}
       <TaskFilterBar filter={filter} counts={counts} onChange={changeFilter} />
-      {state && !state.ok && <p className="text-[12px] text-danger">{state.error}</p>}
+      {state && !state.ok && <p className="text-[13px] text-danger">{state.error}</p>}
 
       {/* 칸이 넷이라 좁은 화면에서는 둘씩 접는다 — 넷을 억지로 세우면 카드 폭이 글자보다 좁아진다 */}
       <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
@@ -118,7 +118,7 @@ export function TaskBoard({
                     : "border-transparent bg-surface-2",
               )}
             >
-              <h3 className="flex items-center justify-between px-1 py-0.5 text-[12.5px] font-bold text-mut">
+              <h3 className="flex items-center justify-between px-1 py-0.5 text-[13.5px] font-bold text-mut">
                 {/* 칸마다 색 점(2026-10-01) — 넷이 같은 회색 골이라 상태가 글자로만 갈렸다. 색은 메뉴 배지와 같은 짝이다 */}
                 <span className="flex items-center gap-1.5">
                   <span aria-hidden className={cn("h-2 w-2 rounded-full", STATUS_FILL[status])} />
@@ -126,7 +126,7 @@ export function TaskBoard({
                 </span>
                 {/* 걸러졌으면 "보이는 수 / 전체" — 숨은 카드가 있다는 걸 칸이 스스로 말한다 */}
                 <span
-                  className="rounded-full bg-surface px-1.5 text-[11px] font-semibold tabular-nums text-mut"
+                  className="rounded-full bg-surface px-1.5 text-[12px] font-semibold tabular-nums text-mut"
                   aria-label={filtered ? TASK_FILTER_MESSAGES.columnCountLabel(shown[status].length, board[status].length) : undefined}
                 >
                   {filtered ? TASK_FILTER_MESSAGES.columnCount(shown[status].length, board[status].length) : board[status].length}
@@ -153,7 +153,7 @@ export function TaskBoard({
               {/* 빈 칸에도 적는 자리는 남는다 — 빈 칸일수록 첫 줄을 적기 쉬워야 한다.
                   끌고 있는 동안에는 치우고 "여기에 놓아요" 가 대신 선다(지금 할 일은 적기가 아니다) */}
               {drag.from !== null ? (
-                <p className="px-1 py-3 text-[11.5px] text-dim">{droppable ? TASK_MESSAGES.dropHere : TASK_MESSAGES.empty}</p>
+                <p className="px-1 py-3 text-[12.5px] text-dim">{droppable ? TASK_MESSAGES.dropHere : TASK_MESSAGES.empty}</p>
               ) : (
                 <TaskQuickAdd status={status} category={filter.category ?? undefined} />
               )}

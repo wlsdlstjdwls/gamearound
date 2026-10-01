@@ -44,7 +44,7 @@ const ORDER_SLOT =
   "flex max-w-0 items-center overflow-hidden opacity-0 transition-[max-width,opacity] duration-base ease-standard group-focus-within:max-w-24 group-focus-within:opacity-100 group-hover:max-w-24 group-hover:opacity-100 [@media(hover:none)]:max-w-24 [@media(hover:none)]:opacity-100";
 
 const ORDER_BTN =
-  "press tap inline-flex shrink-0 items-center rounded-[6px] px-1.5 py-0.5 text-[11px] text-dim hover:text-ink disabled:opacity-40";
+  "press tap inline-flex shrink-0 items-center rounded-[6px] px-1.5 py-0.5 text-[12px] text-dim hover:text-ink disabled:opacity-40";
 
 export function TaskCard({
   task,
@@ -101,14 +101,14 @@ export function TaskCard({
           붙인 대상으로 가는 길은 팝업 안에 있다 */}
       <button type="button" onClick={() => onOpen(task.id)} className="flex w-full flex-col gap-2 p-3 text-left">
         <div className="flex items-start justify-between gap-2">
-          <p className="min-w-0 flex-1 text-[13px] font-semibold leading-[1.45] text-ink">{task.title}</p>
+          <p className="min-w-0 flex-1 text-[14px] font-semibold leading-[1.45] text-ink">{task.title}</p>
           {task.category !== "task" && (
-            <span className={cn("shrink-0 rounded-[6px] px-1.5 py-0.5 text-[10.5px] font-semibold", CATEGORY_BADGE[task.category])}>
+            <span className={cn("shrink-0 rounded-[6px] px-1.5 py-0.5 text-[11.5px] font-semibold", CATEGORY_BADGE[task.category])}>
               {TASK_CATEGORY_LABEL[task.category]}
             </span>
           )}
           {task.priority !== "normal" && (
-            <span className={cn("shrink-0 rounded-[6px] px-1.5 py-0.5 text-[10.5px] font-semibold", PRIORITY_BADGE[task.priority])}>
+            <span className={cn("shrink-0 rounded-[6px] px-1.5 py-0.5 text-[11.5px] font-semibold", PRIORITY_BADGE[task.priority])}>
               {TASK_PRIORITY_LABEL[task.priority]}
             </span>
           )}
@@ -119,16 +119,16 @@ export function TaskCard({
           일이 어디까지 왔는지가 처음 적은 배경보다 판에서 더 쓸모 있다. 전문은 팝업에 있다.
         */}
         {latestNote ? (
-          <p className="truncate text-[12px] text-mut">
+          <p className="truncate text-[13px] text-mut">
             <span className="font-medium text-dim">{TASK_MESSAGES.cardLatestNote}</span> {latestNote.body}
           </p>
         ) : (
-          task.body && <p className="truncate text-[12px] text-mut">{task.body}</p>
+          task.body && <p className="truncate text-[13px] text-mut">{task.body}</p>
         )}
 
         {/* 붙임표 줄은 붙은 것이 있을 때만 선다 — 빈 줄이 카드마다 높이를 먹었다 */}
         {(stale !== null || task.game || task.shop || task.source) && (
-          <div className="flex flex-wrap items-center gap-1.5 text-[11px]">
+          <div className="flex flex-wrap items-center gap-1.5 text-[12px]">
             {stale !== null && <span className="rounded-[6px] bg-warn-soft px-1.5 py-0.5 font-semibold text-warn">{TASK_MESSAGES.cardStale(stale)}</span>}
             {task.game && <span className="rounded-[6px] bg-surface-3 px-1.5 py-0.5 text-acc">{task.game.title}</span>}
             {task.shop && <span className="rounded-[6px] bg-surface-3 px-1.5 py-0.5 text-mut">{task.shop.name}</span>}
@@ -148,14 +148,14 @@ export function TaskCard({
         {task.assignee ? (
           <span
             className={cn(
-              "ml-1 min-w-0 max-w-[50%] truncate whitespace-nowrap rounded-[6px] px-1.5 py-0.5 text-[11px] font-semibold",
+              "ml-1 min-w-0 max-w-[50%] truncate whitespace-nowrap rounded-[6px] px-1.5 py-0.5 text-[12px] font-semibold",
               mine ? "bg-acc text-on-ink" : "bg-acc-soft text-acc",
             )}
           >
             {task.assignee.name}
           </span>
         ) : (
-          <span className="ml-1 whitespace-nowrap text-[11px] text-dim">{TASK_MESSAGES.cardNoAssignee}</span>
+          <span className="ml-1 whitespace-nowrap text-[12px] text-dim">{TASK_MESSAGES.cardNoAssignee}</span>
         )}
         <span className={ORDER_SLOT}>
           <button
@@ -180,7 +180,7 @@ export function TaskCard({
 
         {/* 고친 때와 기록 수. 상대 시간이라 "오래 멈춘 카드" 가 한눈에 보인다.
             순서 단추 줄에 얹은 이유: 그 줄은 평소 비어 있다(단추가 hover 에만 뜬다) — 따로 한 줄을 세우면 카드만 길어진다 */}
-        <span className="ml-auto whitespace-nowrap text-[10.5px] tabular-nums text-dim">
+        <span className="ml-auto whitespace-nowrap text-[11.5px] tabular-nums text-dim">
           {formatAgo(task.updatedAt, now)}
           {task.notes.length > 0 && ` | ${TASK_MESSAGES.noteCount(task.notes.length)}`}
         </span>
@@ -208,7 +208,7 @@ export function TaskCard({
       </div>
 
       {state && !state.ok && (
-        <p role="alert" className="px-3 pb-2 text-[11.5px] text-danger">
+        <p role="alert" className="px-3 pb-2 text-[12.5px] text-danger">
           {state.error}
         </p>
       )}
