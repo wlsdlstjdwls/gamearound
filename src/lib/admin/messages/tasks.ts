@@ -128,7 +128,7 @@ export const TASK_CATEGORY_LABEL = {
 export const TASK_FILTER_MESSAGES = {
   label: "할 일 거르기",
   view: "보기",
-  views: { all: "전체", assigned: "내 담당", mine: "내가 올린", others: "남이 올린" },
+  views: { all: "전체 보기", assigned: "내 담당", mine: "내 등록" },
   category: "분류",
   categoryAll: "모든 분류",
   /** 드롭다운 항목. 건수는 남은 일 기준이다 */

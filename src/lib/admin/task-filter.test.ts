@@ -60,21 +60,21 @@ describe("쿠키", () => {
 });
 
 describe("matchesTaskFilter", () => {
-  const by = (view: "all" | "assigned" | "mine" | "others") => ({ ...DEFAULT_TASK_FILTER, view });
+  const by = (view: "all" | "assigned" | "mine") => ({ ...DEFAULT_TASK_FILTER, view });
 
   it("기본값은 다 보인다", () => {
     expect(matchesTaskFilter(task(), DEFAULT_TASK_FILTER, ME)).toBe(true);
     expect(matchesTaskFilter(task({ author: null }), DEFAULT_TASK_FILTER, ME)).toBe(true);
   });
 
-  it("내가 올린, 남이 올린은 서로 반대편이다", () => {
-    const theirs = task({ author: { id: OTHER, name: "남" } });
+  it("내 등록은 내가 올린 것만 보인다", () => {
     expect(matchesTaskFilter(task(), by("mine"), ME)).toBe(true);
-    expect(matchesTaskFilter(theirs, by("mine"), ME)).toBe(false);
-    expect(matchesTaskFilter(theirs, by("others"), ME)).toBe(true);
-    expect(matchesTaskFilter(task(), by("others"), ME)).toBe(false);
-    // 올린 사람을 모르는 카드는 남이 올린 쪽이다
-    expect(matchesTaskFilter(task({ author: null }), by("others"), ME)).toBe(true);
+    expect(matchesTaskFilter(task({ author: { id: OTHER, name: "남" } }), by("mine"), ME)).toBe(false);
+    expect(matchesTaskFilter(task({ author: null }), by("mine"), ME)).toBe(false);
+  });
+
+  it("뺀 보기(others)는 옛 주소에서 와도 전체로 돌아간다", () => {
+    expect(parseTaskFilter({ view: "others" }).view).toBe("all");
   });
 
   it("내 담당은 올린 사람과 상관없다", () => {
@@ -98,7 +98,7 @@ describe("countTaskFilters", () => {
       task({ author: { id: OTHER, name: "남" }, category: "idea" }),
     ];
     const c = countTaskFilters(tasks, ME);
-    expect(c.views).toEqual({ all: 3, assigned: 1, mine: 1, others: 2 });
+    expect(c.views).toEqual({ all: 3, assigned: 1, mine: 1 });
     expect(c.categories).toEqual({ task: 0, bug: 2, idea: 1, data: 0, etc: 0 });
     expect(c.urgent).toBe(1);
   });

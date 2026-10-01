@@ -11,18 +11,20 @@
 //
 // **칸이 셋뿐인 이유**(같은 날 2차, 사용자: "사용하기에는 복잡해서 불편하진 않으려나"): 1차는 올린 사람 켬끔 둘,
 // 담당 셋, 분류 다섯, 급함 — 칩 열둘이었다. 올린 사람과 담당은 둘 다 "내 일인가 남의 일인가" 를 묻는데
-// 그걸 두 줄로 물어 사람이 머리로 조합해야 했다. 지금은 보기 하나(하나만 고른다), 분류 하나, 급함 하나다.
+// 그걸 두 줄로 물어 사람이 머리로 조합해야 했다. 지금은 보기 하나(전체 보기, 내 담당, 내 등록 중 하나), 분류 하나, 급함 하나다.
 // 담당 없음 보기는 뺐다 — 판을 쓰는 사람이 둘이라 찾을 일이 드물다.
 //
 // 주소에는 **기본값과 다른 것만** 싣는다. 아무것도 안 건 판은 맨 주소(/admin/tasks)라야 메뉴 링크와 같은 화면이다.
 import { TASK_CATEGORIES, type AdminTask, type TaskCategory } from "@/lib/admin/tasks";
 
 /** 보기. 칩 순서가 곧 이 순서다. all 은 거르지 않는다 */
-export const TASK_VIEWS = ["all", "assigned", "mine", "others"] as const;
+// "남이 올린" 은 같은 날 뺐다(사용자: "내 등록, 전체 보기 이런 느낌의 토글") — 남이 올린 것만 따로 볼 일은 드물고,
+// 전체 보기가 그 몫을 한다. 옛 주소나 쿠키의 view=others 는 모르는 값이라 전체로 돌아간다.
+export const TASK_VIEWS = ["all", "assigned", "mine"] as const;
 export type TaskView = (typeof TASK_VIEWS)[number];
 
 export interface TaskFilter {
-  /** assigned = 내 담당, mine = 내가 올린, others = 남이 올린(올린 사람을 모르는 카드도 여기 든다) */
+  /** assigned = 내 담당, mine = 내 등록(내가 올린 것) */
   view: TaskView;
   /** null 이면 분류로 거르지 않는다 */
   category: TaskCategory | null;
@@ -84,7 +86,6 @@ export function isDefaultTaskFilter(f: TaskFilter): boolean {
 export function matchesTaskFilter(task: Pick<AdminTask, "author" | "assignee" | "category" | "priority">, f: TaskFilter, meId: string): boolean {
   if (f.view === "assigned" && task.assignee?.id !== meId) return false;
   if (f.view === "mine" && task.author?.id !== meId) return false;
-  if (f.view === "others" && task.author?.id === meId) return false;
   if (f.category && task.category !== f.category) return false;
   if (f.urgent && task.priority !== "high") return false;
   return true;

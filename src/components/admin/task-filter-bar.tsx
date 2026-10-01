@@ -53,11 +53,11 @@ export function TaskFilterBar({
   return (
     <div role="region" aria-label={TASK_FILTER_MESSAGES.label} className="flex flex-wrap items-center gap-x-3 gap-y-2">
       {/* 세그먼트 — 한 판 위에 넷이 서고 고른 칸만 흰 면으로 떠오른다.
-          좁은 화면에서는 2x2 로 선다 — 줄바꿈에 맡기면 셋과 하나로 접혀 넷째 칸이 다른 묶음처럼 보였다(390px 실측) */}
+          좁은 화면에서는 세 칸 격자로 한 줄에 선다 — 줄바꿈에 맡기면 칸이 따로 떨어져 다른 묶음처럼 보였다(390px 실측) */}
       <div
         role="group"
         aria-label={TASK_FILTER_MESSAGES.view}
-        className="grid w-full grid-cols-2 gap-0.5 rounded-xl bg-surface-2 p-1 sm:flex sm:w-auto"
+        className="grid w-full grid-cols-3 gap-0.5 rounded-xl bg-surface-2 p-1 sm:flex sm:w-auto"
       >
         {TASK_VIEWS.map((v) => {
           const on = filter.view === v;
@@ -68,7 +68,7 @@ export function TaskFilterBar({
               aria-pressed={on}
               onClick={() => set({ view: v })}
               className={cn(
-                "press tap flex items-center justify-center gap-1.5 rounded-lg px-3 py-1.5 text-[12.5px] transition-colors duration-base",
+                "press tap flex items-center justify-center gap-1.5 whitespace-nowrap rounded-lg px-2 py-1.5 sm:px-3 text-[12.5px] transition-colors duration-base",
                 on ? "bg-surface font-semibold text-ink shadow-1" : "text-mut hover:text-ink",
               )}
             >
