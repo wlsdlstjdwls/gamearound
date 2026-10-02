@@ -38,6 +38,15 @@ export function staleDays(task: { status: TaskStatus; updatedAt: Date }, now: nu
 export const TASK_NOTE_KINDS = ["note", "move"] as const;
 export type TaskNoteKind = (typeof TASK_NOTE_KINDS)[number];
 
+/** 첨부 파일 하나(2026-10-02). 이미지면 화면이 작은 그림으로, 아니면 이름과 크기로 보인다 */
+export interface TaskAttachment {
+  id: string;
+  url: string;
+  name: string;
+  contentType: string;
+  size: number;
+}
+
 /** 할 일에 달린 기록 한 줄. 카드를 펼치면 시각순으로 보인다 */
 export interface TaskNote {
   id: string;
@@ -50,6 +59,8 @@ export interface TaskNote {
   /** 적은 사람 */
   authorName: string | null;
   createdAt: Date;
+  /** 이 기록에 붙은 파일. 글 없이 파일만 남긴 기록도 있다 */
+  attachments: TaskAttachment[];
 }
 
 /** 담당자 한 사람. 이름은 표시 이름, 없으면 이메일이다 */
@@ -82,6 +93,8 @@ export interface AdminTask {
    * 카드를 펼칠 때마다 물으면 카드 수만큼 왕복이 늘고, Neon 왕복 하나가 220ms 다.
    */
   notes: TaskNote[];
+  /** 카드 본문에 붙은 파일(기록에 붙은 것은 그 기록에 있다) */
+  attachments: TaskAttachment[];
 }
 
 export type Board = Record<TaskStatus, AdminTask[]>;

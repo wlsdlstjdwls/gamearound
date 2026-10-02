@@ -13,15 +13,19 @@ import {
   deleteNote,
   deleteTask,
   moveTask,
+  registerAttachment,
+  removeAttachment,
   reorderTask,
   restoreTask,
   updateTask,
 } from "@/server/services/admin-tasks";
+import { attachmentRegisterSchema, type AttachmentRegisterInput } from "@/lib/admin/task-attachments";
 import { searchShopGames } from "@/server/services/shop-games";
 import type { ShopGameOptionDto } from "@/lib/shops/game-option";
 import { requireAdmin } from "@/server/services/users";
 
-export type TaskActionState = { ok: true; message?: string } | { ok: false; error: string } | null;
+/** `id` 는 방금 만든 할 일, 기록의 id 다 — 화면이 거기에 파일을 이어 붙인다(첨부, 2026-10-02) */
+export type TaskActionState = { ok: true; message?: string; id?: string } | { ok: false; error: string } | null;
 
 /** 제목 상한. 카드 한 장이 한눈에 읽혀야 하므로 길이를 화면이 아니라 여기서 막는다 */
 const TITLE_MAX = 200;
@@ -68,7 +72,7 @@ export async function createTaskAction(_prev: TaskActionState, form: FormData): 
     });
     if (!p.success) return { ok: false, error: p.error.issues[0]?.message ?? TASK_MESSAGES.invalid };
 
-    await createTask({
+    const id = await createTask({
       title: p.data.title,
       body: p.data.body ?? null,
       status: p.data.status,
@@ -79,7 +83,7 @@ export async function createTaskAction(_prev: TaskActionState, form: FormData): 
       assigneeId: p.data.assigneeId || null,
     });
     revalidate();
-    return { ok: true, message: TASK_MESSAGES.created };
+    return { ok: true, message: TASK_MESSAGES.created, id };
   } catch (e) {
     return fail(e);
   }
@@ -171,13 +175,15 @@ export async function addNoteAction(_prev: TaskActionState, form: FormData): Pro
   try {
     await requireAdmin();
     const p = z
-      .object({ taskId: z.uuid(), body: z.string().trim().min(1, TASK_MESSAGES.notePlaceholder).max(NOTE_MAX) })
-      .safeParse({ taskId: form.get("taskId"), body: form.get("body") });
+      .object({ taskId: z.uuid(), body: z.string().trim().max(NOTE_MAX), hasFiles: z.literal("1").optional() })
+      .safeParse({ taskId: form.get("taskId"), body: form.get("body") ?? "", hasFiles: form.get("hasFiles") ?? undefined });
     if (!p.success) return { ok: false, error: p.error.issues[0]?.message ?? TASK_MESSAGES.invalid };
+    // 글이 비어도 파일을 붙이러 온 기록이면 받는다 — 갈무리 한 장이 곧 기록인 때가 있다
+    if (!p.data.body && !p.data.hasFiles) return { ok: false, error: TASK_MESSAGES.notePlaceholder };
 
-    await addNote(p.data.taskId, p.data.body);
+    const id = await addNote(p.data.taskId, p.data.body);
     revalidate();
-    return { ok: true, message: TASK_MESSAGES.noteAdded };
+    return { ok: true, message: TASK_MESSAGES.noteAdded, id };
   } catch (e) {
     return fail(e);
   }
@@ -229,6 +235,33 @@ export async function restoreTaskAction(id: string): Promise<TaskActionState> {
     await restoreTask(p.data);
     revalidate();
     return { ok: true, message: TASK_MESSAGES.restored };
+  } catch (e) {
+    return fail(e);
+  }
+}
+
+/** 브라우저가 Blob 으로 올린 파일을 할 일(또는 기록)에 적는다. 파일이 정말 거기 있는지는 서비스가 저장소에 묻는다 */
+export async function registerAttachmentAction(input: AttachmentRegisterInput): Promise<TaskActionState> {
+  try {
+    await requireAdmin();
+    const p = attachmentRegisterSchema.safeParse(input);
+    if (!p.success) return { ok: false, error: TASK_MESSAGES.invalid };
+    await registerAttachment(p.data);
+    revalidate();
+    return { ok: true };
+  } catch (e) {
+    return fail(e);
+  }
+}
+
+export async function removeAttachmentAction(id: string): Promise<TaskActionState> {
+  try {
+    await requireAdmin();
+    const p = z.uuid().safeParse(id);
+    if (!p.success) return { ok: false, error: TASK_MESSAGES.invalid };
+    await removeAttachment(p.data);
+    revalidate();
+    return { ok: true };
   } catch (e) {
     return fail(e);
   }

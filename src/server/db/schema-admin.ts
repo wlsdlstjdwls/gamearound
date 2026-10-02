@@ -136,3 +136,34 @@ export const adminTaskNotes = pgTable("admin_task_notes", {
   // 읽기는 늘 "이 할 일의 기록을 시각순으로" 하나다
   index("admin_task_notes_task_idx").on(t.taskId, t.createdAt),
 ]);
+
+/**
+ * 할 일 첨부(2026-10-02, 사용자: "할 일 작성할 때 이미지나 파일, 본글과 댓글 둘 다").
+ *
+ * 파일은 Vercel Blob 에 있고 이 표는 주소만 쥔다 — 매장 상품 사진과 같은 길이다(브라우저가 Blob 으로 곧장 올리고
+ * 우리 서버는 토큰만 내준다). 본문 첨부와 기록 첨부를 한 표에 둔다: `note_id` 가 비면 카드 본문의 것이다.
+ * 표를 둘로 가르면 "이 할 일의 파일 전부" 를 지울 때 두 표를 따로 훑어야 한다.
+ *
+ * 할 일, 기록이 지워지면 행은 cascade 로 같이 지운다. **Blob 파일은 cascade 가 못 지운다** — 지우는 서비스가
+ * 주소를 먼저 모아 두었다가 행을 지운 뒤 파일을 지운다(services/admin-tasks/attachments). 걷기(archived_at)는
+ * 파일을 그대로 둔다 — 지난 일 화면에서 다시 열어 봐야 한다.
+ */
+export const adminTaskAttachments = pgTable("admin_task_attachments", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  taskId: uuid("task_id")
+    .notNull()
+    .references(() => adminTasks.id, { onDelete: "cascade" }),
+  /** 기록에 달린 파일이면 그 기록. 비어 있으면 카드 본문 첨부다 */
+  noteId: uuid("note_id").references(() => adminTaskNotes.id, { onDelete: "cascade" }),
+  url: text("url").notNull(),
+  /** 저장소 안 경로. 등록할 때 이 할 일 접두 아래인지 본다 */
+  pathname: text("pathname").notNull(),
+  /** 올린 사람이 붙인 파일 이름. 저장 경로는 확장자만 쓰므로(무작위 꼬리) 이름은 여기에만 산다 */
+  name: text("name").notNull(),
+  contentType: text("content_type").notNull(),
+  byteSize: integer("byte_size").notNull(),
+  ...auditColumns(),
+}, (t) => [
+  // 읽기는 "이 할 일들의 파일" 하나다. 기록 첨부도 task_id 를 같이 적어 두어 이 인덱스 하나로 다 읽는다
+  index("admin_task_attachments_task_idx").on(t.taskId, t.createdAt),
+]);

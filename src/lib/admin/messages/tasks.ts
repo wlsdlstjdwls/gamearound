@@ -166,3 +166,26 @@ export const TASK_FILTER_MESSAGES = {
   columnCount: (shown: number, total: number) => `${shown} / ${total}`,
   columnCountLabel: (shown: number, total: number) => `전체 ${total}건 중 ${shown}건 보임`,
 } as const;
+
+/** 할 일 첨부(2026-10-02). 카드 본문과 기록에 파일을 붙인다 */
+export const TASK_ATTACHMENT_MESSAGES = {
+  part: "첨부",
+  add: "파일 올리기",
+  attach: "파일 첨부",
+  uploading: (done: number, total: number) => `올리는 중 ${done + 1}/${total}`,
+  hint: (maxMb: number) => `이미지, PDF, 글 파일(txt, log, csv, json), zip | 한 파일 ${maxMb}MB까지`,
+  empty: "붙인 파일이 없어요.",
+  remove: "지우기",
+  removeConfirm: "이 파일을 지울까요? 저장소에서도 지워져요.",
+  unpick: "빼기",
+  count: (n: number) => `첨부 ${n}`,
+  openImage: (name: string) => `${name} 원본 보기`,
+  newWindow: "(새 창에서 열림)",
+  badType: (name: string) => `${name}: 받지 않는 형식이에요.`,
+  tooBig: (name: string, maxMb: number) => `${name}: ${maxMb}MB를 넘어요.`,
+  full: (max: number) => `파일은 할 일 하나에 ${max}개까지예요.`,
+  failed: "파일을 올리지 못했어요. 잠시 뒤 다시 해 주세요.",
+  forbidden: "이 할 일에 파일을 올릴 수 없어요.",
+  /** 할 일, 기록은 만들어졌는데 파일만 실패했을 때. 글까지 다시 적지 않게 무엇이 남았는지 말한다 */
+  partial: (what: string) => `${what} 저장했지만 파일을 올리지 못했어요. 열어서 다시 올려 주세요.`,
+} as const;

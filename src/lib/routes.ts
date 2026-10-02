@@ -121,6 +121,9 @@ export function vendorListingsPath(slug: string): string {
  */
 export const SHOP_PHOTO_UPLOAD_PATH = "/api/shops/photos/upload";
 
+/** 할 일 첨부 업로드 토큰 발급. 매장 사진과 같은 방식이다(관리자만 받는다) */
+export const TASK_ATTACHMENT_UPLOAD_PATH = "/api/admin/tasks/attachments/upload";
+
 /** 직원 목록과 초대 */
 export function vendorStaffPath(slug: string): string {
   return `${vendorShopPath(slug)}/staff`;

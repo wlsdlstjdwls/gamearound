@@ -7,9 +7,9 @@ import "server-only";
 import { asc, desc, eq, inArray, isNotNull, isNull, type SQL } from "drizzle-orm";
 import { alias } from "drizzle-orm/pg-core";
 import { getDb } from "@/server/db/client";
-import { adminTaskNotes, adminTasks, games, shops, users, type SourceName } from "@/server/db/schema";
+import { adminTaskAttachments, adminTaskNotes, adminTasks, games, shops, users, type SourceName } from "@/server/db/schema";
 import { requireAdmin } from "@/server/services/users";
-import type { AdminTask, ArchivedTask, Board, TaskAssignee, TaskNote } from "@/lib/admin/tasks";
+import type { AdminTask, ArchivedTask, Board, TaskAssignee, TaskAttachment, TaskNote } from "@/lib/admin/tasks";
 
 /**
  * 담당자 이름. 표시 이름이 비었으면 이메일을 쓴다 — 빈 칸으로 두면 "담당 없음" 과 구별이 안 된다.
@@ -105,13 +105,42 @@ async function readTasks(where: SQL, order: SQL[], limit?: number): Promise<(Adm
       .where(ids ? inArray(adminTaskNotes.taskId, ids) : where)
       .orderBy(asc(adminTaskNotes.createdAt));
 
+  // 첨부도 기록과 같은 방식이다 — 본문 것과 기록 것을 한 번에 읽어 코드에서 가른다
+  const fileQuery = (ids?: string[]) =>
+    db
+      .select({
+        id: adminTaskAttachments.id,
+        taskId: adminTaskAttachments.taskId,
+        noteId: adminTaskAttachments.noteId,
+        url: adminTaskAttachments.url,
+        name: adminTaskAttachments.name,
+        contentType: adminTaskAttachments.contentType,
+        size: adminTaskAttachments.byteSize,
+      })
+      .from(adminTaskAttachments)
+      .innerJoin(adminTasks, eq(adminTasks.id, adminTaskAttachments.taskId))
+      .where(ids ? inArray(adminTaskAttachments.taskId, ids) : where)
+      .orderBy(asc(adminTaskAttachments.createdAt));
+
   let rows: Awaited<typeof taskQuery>;
   let noteRows: Awaited<ReturnType<typeof noteQuery>>;
+  let fileRows: Awaited<ReturnType<typeof fileQuery>>;
   if (limit === undefined) {
-    [rows, noteRows] = await Promise.all([taskQuery, noteQuery()]);
+    [rows, noteRows, fileRows] = await Promise.all([taskQuery, noteQuery(), fileQuery()]);
   } else {
     rows = await taskQuery.limit(limit);
-    noteRows = rows.length > 0 ? await noteQuery(rows.map((r) => r.id)) : [];
+    const ids = rows.map((r) => r.id);
+    [noteRows, fileRows] = ids.length > 0 ? await Promise.all([noteQuery(ids), fileQuery(ids)]) : [[], []];
+  }
+
+  // 파일을 붙은 자리(본문이면 할 일, 기록이면 그 기록)로 가른다
+  const filesByTask = new Map<string, TaskAttachment[]>();
+  const filesByNote = new Map<string, TaskAttachment[]>();
+  for (const { taskId, noteId, ...file } of fileRows) {
+    const [map, key] = noteId ? [filesByNote, noteId] : [filesByTask, taskId];
+    const list = map.get(key) ?? [];
+    list.push(file);
+    map.set(key, list);
   }
 
   // 오래된 것이 위다 — 기록은 흘러온 순서로 읽어야 뜻이 통한다
@@ -126,6 +155,7 @@ async function readTasks(where: SQL, order: SQL[], limit?: number): Promise<(Adm
       to: n.toStatus,
       authorName: personName(n.authorName, n.authorEmail),
       createdAt: n.createdAt,
+      attachments: filesByNote.get(n.id) ?? [],
     });
     notesByTask.set(n.taskId, list);
   }
@@ -148,6 +178,7 @@ async function readTasks(where: SQL, order: SQL[], limit?: number): Promise<(Adm
     author: r.authorId ? { id: r.authorId, name: personName(r.authorName, r.authorEmail)! } : null,
     updatedAt: r.updatedAt,
     notes: notesByTask.get(r.id) ?? [],
+    attachments: filesByTask.get(r.id) ?? [],
   }));
 }
 

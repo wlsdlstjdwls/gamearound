@@ -7,6 +7,7 @@
 // 표 행을 지울 때 Blob 파일도 같이 지운다. cascade 는 행만 지우고 파일은 남긴다 — 남은 파일은 아무도 안 보는데 저장비만 먹는다.
 import "server-only";
 import { del, head } from "@vercel/blob";
+import { deleteBlobs } from "@/server/services/blob-files";
 import { and, asc, eq, inArray, sql } from "drizzle-orm";
 import { getDb } from "@/server/db/client";
 import { shopListingPhotos, shopListings } from "@/server/db/schema";
@@ -109,14 +110,8 @@ export async function removeListingPhoto(photoId: string, shopId: string): Promi
   await deleteBlobs([photo.url]);
 }
 
-/**
- * Blob 파일 지우기. 실패해도 던지지 않는다 — 행은 이미 지웠고, 파일 하나가 남는 것이
- * 지우기 버튼이 오류를 내는 것보다 낫다. 남은 파일은 `vercel blob list` 로 경로 접두를 보고 치운다.
- */
-export async function deleteBlobs(urls: string[]): Promise<void> {
-  if (urls.length === 0) return;
-  await del(urls).catch((e) => console.error("[photos] blob 지우기 실패", urls.length, e));
-}
+// Blob 파일 지우기는 할 일 첨부와 같이 쓰려고 뽑았다(services/blob-files). 호출부 경로는 그대로 둔다
+export { deleteBlobs };
 
 /** 판매 줄을 내리기 전에 부른다 — cascade 가 행은 지우지만 파일은 못 지운다 */
 export async function listPhotoUrls(listingId: string): Promise<string[]> {

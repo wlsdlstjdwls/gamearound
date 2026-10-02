@@ -17,6 +17,7 @@ import { TASK_CATEGORY_LABEL, TASK_MESSAGES } from "@/lib/admin/messages";
 import type { ArchivedTask } from "@/lib/admin/tasks";
 import { CATEGORY_BADGE } from "@/components/admin/task-tone";
 import { TaskNotes } from "@/components/admin/task-card/notes";
+import { AttachmentList } from "@/components/admin/task-attachments";
 import { restoreTaskAction, type TaskActionState } from "@/app/(admin)/admin/tasks/actions";
 
 function ArchiveRow({ task }: { task: ArchivedTask }) {
@@ -43,6 +44,7 @@ function ArchiveRow({ task }: { task: ArchivedTask }) {
 
         <div className="flex flex-col gap-4 border-t border-line bg-surface-2/40 px-4 py-4">
           {task.body && <p className="whitespace-pre-wrap text-[14.5px] leading-[1.7] text-ink">{task.body}</p>}
+          <AttachmentList items={task.attachments} />
           {task.game && (
             <Link href={gamePath(task.game.slug)} className="w-fit text-[13.5px] font-semibold text-acc hover:underline">
               {task.game.title}

@@ -22,7 +22,7 @@ import { useState, useTransition } from "react";
 import { cn } from "@/lib/cn";
 import { raisedClass } from "@/components/ui/page";
 import { formatAgo } from "@/lib/format";
-import { TASK_CATEGORY_LABEL, TASK_MESSAGES, TASK_PRIORITY_LABEL } from "@/lib/admin/messages";
+import { TASK_ATTACHMENT_MESSAGES, TASK_CATEGORY_LABEL, TASK_MESSAGES, TASK_PRIORITY_LABEL } from "@/lib/admin/messages";
 import { staleDays, type AdminTask, type TaskStatus } from "@/lib/admin/tasks";
 import { CATEGORY_BADGE, PRIORITY_BADGE, cardStripe } from "@/components/admin/task-tone";
 import { HANDLE_ATTR } from "@/components/admin/use-board-drag";
@@ -78,6 +78,8 @@ export function TaskCard({
   const run = (fn: () => Promise<TaskActionState>) => start(async () => setState(await fn()));
   // 사람이 적은 글 중 가장 최근 것. 칸 이동 자취는 "어디까지 왔나" 를 말해 주지 않아 뺀다(기록은 오래된 것이 앞이다)
   const latestNote = task.notes.findLast((n) => n.kind === "note" && n.body);
+  // 첨부 수는 본문 것과 기록 것을 합친다 — 카드에서 궁금한 건 "자료가 붙어 있나" 지 어디 붙었나가 아니다
+  const fileCount = task.attachments.length + task.notes.reduce((n, note) => n + note.attachments.length, 0);
   const stale = staleDays(task, now);
   const stripe = cardStripe(task);
   const mine = task.assignee?.id === meId;
@@ -183,6 +185,7 @@ export function TaskCard({
         <span className="ml-auto whitespace-nowrap text-[11.5px] tabular-nums text-dim">
           {formatAgo(task.updatedAt, now)}
           {task.notes.length > 0 && ` | ${TASK_MESSAGES.noteCount(task.notes.length)}`}
+          {fileCount > 0 && ` | ${TASK_ATTACHMENT_MESSAGES.count(fileCount)}`}
         </span>
 
         {/*

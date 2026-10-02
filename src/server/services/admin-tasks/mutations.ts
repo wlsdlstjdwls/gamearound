@@ -5,6 +5,8 @@ import { getDb } from "@/server/db/client";
 import { adminTaskNotes, adminTasks, type SourceName } from "@/server/db/schema";
 import { createdBy, updatedBy } from "@/server/db/audit";
 import { requireAdmin } from "@/server/services/users";
+import { deleteBlobs } from "@/server/services/blob-files";
+import { attachmentUrls } from "./attachments";
 import type { TaskCategory, TaskPriority, TaskStatus } from "@/lib/admin/tasks";
 
 export interface CreateTaskInput {
@@ -124,15 +126,22 @@ export async function moveTask(id: string, to: TaskStatus): Promise<void> {
   }
 }
 
-/** 기록 한 줄 남기기. 후속 내용, 막힌 지점, 끝내며 남기는 말이 여기로 들어온다 */
-export async function addNote(taskId: string, body: string): Promise<void> {
+/**
+ * 기록 한 줄 남기기. 후속 내용, 막힌 지점, 끝내며 남기는 말이 여기로 들어온다.
+ * 글 없이 파일만 남기는 기록도 있다(첨부, 2026-10-02) — 그때 body 는 비운다. 새 기록의 id 를 돌려준다(파일을 그 기록에 붙인다).
+ */
+export async function addNote(taskId: string, body: string): Promise<string> {
   const admin = await requireAdmin();
-  await getDb().insert(adminTaskNotes).values({
-    taskId,
-    kind: "note",
-    body: body.trim(),
-    ...createdBy("admin", admin.id),
-  });
+  const [row] = await getDb()
+    .insert(adminTaskNotes)
+    .values({
+      taskId,
+      kind: "note",
+      body: body.trim() || null,
+      ...createdBy("admin", admin.id),
+    })
+    .returning({ id: adminTaskNotes.id });
+  return row!.id;
 }
 
 /**
@@ -141,7 +150,13 @@ export async function addNote(taskId: string, body: string): Promise<void> {
  */
 export async function deleteNote(id: string): Promise<void> {
   await requireAdmin();
-  await getDb().delete(adminTaskNotes).where(and(eq(adminTaskNotes.id, id), eq(adminTaskNotes.kind, "note")));
+  // 기록에 붙은 파일도 같이 치운다(deleteTask 와 같은 이유로 주소를 먼저 모은다)
+  const urls = await attachmentUrls({ noteId: id });
+  const rows = await getDb()
+    .delete(adminTaskNotes)
+    .where(and(eq(adminTaskNotes.id, id), eq(adminTaskNotes.kind, "note")))
+    .returning({ id: adminTaskNotes.id });
+  if (rows.length > 0) await deleteBlobs(urls);
 }
 
 /**
@@ -182,9 +197,12 @@ export async function reorderTask(id: string, dir: "up" | "down"): Promise<void>
   );
 }
 
+/** 할 일 지우기. 첨부 파일 주소를 먼저 모은다 — cascade 가 행은 지우지만 저장소 파일은 못 지운다 */
 export async function deleteTask(id: string): Promise<void> {
   await requireAdmin();
+  const urls = await attachmentUrls({ taskId: id });
   await getDb().delete(adminTasks).where(eq(adminTasks.id, id));
+  await deleteBlobs(urls);
 }
 
 /**

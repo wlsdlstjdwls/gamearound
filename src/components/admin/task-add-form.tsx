@@ -12,10 +12,12 @@ import { ActionForm } from "@/components/ui/action-form";
 import { Button, buttonClass } from "@/components/ui/button";
 import { Sheet } from "@/components/ui/sheet";
 import { FormSelect } from "@/components/ui/select";
-import { TASK_MESSAGES } from "@/lib/admin/messages";
+import { TASK_ATTACHMENT_MESSAGES, TASK_MESSAGES } from "@/lib/admin/messages";
 import type { TaskAssignee } from "@/lib/admin/tasks";
 import { TaskBasicFields, TaskMetaFields, TaskStatusField } from "@/components/admin/task-fields";
 import { TaskGamePicker } from "@/components/admin/task-game-picker";
+import { AttachmentPicker } from "@/components/admin/task-attachments";
+import { uploadTaskFiles } from "@/components/admin/task-attachment-upload";
 import { createTaskAction, type TaskActionState } from "@/app/(admin)/admin/tasks/actions";
 
 export function TaskAddForm({ sources, assignees }: { sources: readonly string[]; assignees: TaskAssignee[] }) {
@@ -23,10 +25,21 @@ export function TaskAddForm({ sources, assignees }: { sources: readonly string[]
   // 넣고 나면 닫는다 — 성공했을 때만. 실패하면 적은 글이 사라지면 안 된다.
   // 닫는 일을 액션 안에서 하는 이유: 결과를 보고 effect 로 닫으면 렌더가 한 번 더 돈다(react-hooks 규칙).
   // 액션은 이미 전환(transition) 안이라 여기서 상태를 바꾸는 것이 제자리다.
+  // 고른 파일(아직 안 올렸다). 할 일을 먼저 만들어 id 를 받은 뒤 그 아래로 올린다 — 경로가 할 일 id 를 품어야 한다
+  const [files, setFiles] = useState<File[]>([]);
+  const [pickerKey, setPickerKey] = useState(0);
+  const [uploading, setUploading] = useState<{ done: number; total: number } | null>(null);
   const [state, action, pending] = useActionState<TaskActionState, FormData>(async (prev, form) => {
     const next = await createTaskAction(prev, form);
-    if (next?.ok) setOpen(false);
-    return next;
+    if (!next?.ok) return next;
+    const failed = next.id && files.length > 0 ? await uploadTaskFiles(next.id, files, null, (done, total) => setUploading({ done, total })) : null;
+    setUploading(null);
+    setFiles([]);
+    // 고르기 칸을 새로 끼운다 — 앞서 거른 파일의 사유 글이 다음 글에까지 남지 않게
+    setPickerKey((k) => k + 1);
+    // 할 일은 이미 만들어졌다. 파일만 실패했으면 닫고 판에 그 말을 남긴다 — 열어 둔 채 다시 누르면 같은 할 일이 둘 생긴다
+    setOpen(false);
+    return failed ? { ok: false, error: TASK_ATTACHMENT_MESSAGES.partial(TASK_MESSAGES.title) } : next;
   }, null);
 
   return (
@@ -35,6 +48,11 @@ export function TaskAddForm({ sources, assignees }: { sources: readonly string[]
         {TASK_MESSAGES.add}
       </button>
       {state?.ok && state.message && <span className="text-[13px] text-ok">{state.message}</span>}
+      {state && !state.ok && !open && (
+        <span role="alert" className="text-[13px] text-danger">
+          {state.error}
+        </span>
+      )}
 
       {/* size="wide": 이 시트는 입력이 주인공이다. 내용이 정하는 폭은 메모 칸을 한 줄 스무 자로 눌러,
           카드 안에서 쓰던 때와 다를 바가 없어진다(2026-09-22 사용자 지적) */}
@@ -45,6 +63,8 @@ export function TaskAddForm({ sources, assignees }: { sources: readonly string[]
           <TaskStatusField />
 
           <TaskGamePicker />
+
+          <AttachmentPicker key={pickerKey} value={files} onChange={setFiles} />
 
           {/* 시트 안은 손가락으로 고르는 자리라 lg 다 — 폼의 다른 칸과 높이를 맞춘다 */}
           <FormSelect
@@ -64,7 +84,7 @@ export function TaskAddForm({ sources, assignees }: { sources: readonly string[]
           {/* 버튼은 폼 맨 아래에 붙인다 — 시트는 안이 스크롤되므로 떠 있는 바를 만들면 내용이 그 밑에 숨는다 */}
           <div className="flex gap-2 pt-1">
             <Button type="submit" size="lg" loading={pending} className="flex-1">
-              {TASK_MESSAGES.submit}
+              {uploading ? TASK_ATTACHMENT_MESSAGES.uploading(uploading.done, uploading.total) : TASK_MESSAGES.submit}
             </Button>
             <Button type="button" variant="secondary" size="lg" onClick={() => setOpen(false)}>
               {TASK_MESSAGES.cancel}

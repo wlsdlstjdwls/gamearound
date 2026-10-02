@@ -18,10 +18,11 @@ import { cn } from "@/lib/cn";
 import { SEGMENT, SEGMENT_ITEM, SEGMENT_ITEM_ON } from "@/components/admin/task-fields";
 import { formatLongDateTime } from "@/lib/format";
 import { Sheet } from "@/components/ui/sheet";
-import { TASK_MESSAGES, TASK_STATUS_LABEL } from "@/lib/admin/messages";
+import { TASK_ATTACHMENT_MESSAGES, TASK_MESSAGES, TASK_STATUS_LABEL } from "@/lib/admin/messages";
 import { TASK_STATUSES, type AdminTask, type TaskAssignee } from "@/lib/admin/tasks";
 import { TaskEditForm } from "@/components/admin/task-card/edit-form";
 import { TaskNotes } from "@/components/admin/task-card/notes";
+import { TaskAttachmentsPart } from "@/components/admin/task-attachments";
 import { deleteTaskAction, moveTaskAction, type TaskActionState } from "@/app/(admin)/admin/tasks/actions";
 
 /**
@@ -84,6 +85,11 @@ export function TaskDialog({
 
         <Part title={TASK_MESSAGES.basics}>
           <TaskEditForm task={task} assignees={assignees} />
+        </Part>
+
+        {/* 본문 첨부는 내용과 기록 사이다 — "이 일이 무엇인가" 에 딸린 자료라 내용 바로 밑, 쌓이는 기록보다 위에 선다 */}
+        <Part title={task.attachments.length > 0 ? TASK_ATTACHMENT_MESSAGES.count(task.attachments.length) : TASK_ATTACHMENT_MESSAGES.part}>
+          <TaskAttachmentsPart taskId={task.id} items={task.attachments} />
         </Part>
 
         <Part title={task.notes.length > 0 ? TASK_MESSAGES.noteCount(task.notes.length) : TASK_MESSAGES.notes}>

@@ -19,9 +19,11 @@ import { ActionForm } from "@/components/ui/action-form";
 import { cn } from "@/lib/cn";
 import { formatLongDateTime } from "@/lib/format";
 import { Button } from "@/components/ui/button";
-import { TASK_MESSAGES, TASK_STATUS_LABEL, TASK_STATUS_TO_PARTICLE } from "@/lib/admin/messages";
+import { TASK_ATTACHMENT_MESSAGES, TASK_MESSAGES, TASK_STATUS_LABEL, TASK_STATUS_TO_PARTICLE } from "@/lib/admin/messages";
 import type { TaskNote, TaskStatus } from "@/lib/admin/tasks";
 import { FIELD } from "@/components/admin/task-fields";
+import { AttachmentList, AttachmentPicker } from "@/components/admin/task-attachments";
+import { uploadTaskFiles } from "@/components/admin/task-attachment-upload";
 import { addNoteAction, deleteNoteAction, type TaskActionState } from "@/app/(admin)/admin/tasks/actions";
 
 /** 칸 이름 앞에 칸 색 점 — 판의 칸 머리와 같은 색이라 "어디서 어디로" 가 글자 전에 갈린다 */
@@ -68,7 +70,21 @@ function MoveLine({ note }: { note: TaskNote }) {
  * 더 적을 일이 생기면 판으로 되돌린 뒤 적는다. 걷은 채로 기록이 늘면 "끝낸 일" 이 끝나지 않은 일이 된다.
  */
 export function TaskNotes({ taskId, notes, readOnly = false }: { taskId: string; notes: TaskNote[]; readOnly?: boolean }) {
-  const [state, formAction, posting] = useActionState<TaskActionState, FormData>(addNoteAction, null);
+  // 고른 파일(아직 안 올렸다). 기록을 먼저 적어 id 를 받은 뒤 그 기록에 붙인다 — 파일만 먼저 올리면 붙일 자리가 없다
+  const [files, setFiles] = useState<File[]>([]);
+  const [pickerKey, setPickerKey] = useState(0);
+  const [uploading, setUploading] = useState<{ done: number; total: number } | null>(null);
+  const [state, formAction, posting] = useActionState<TaskActionState, FormData>(async (prev, form) => {
+    if (files.length > 0) form.set("hasFiles", "1");
+    const next = await addNoteAction(prev, form);
+    if (!next?.ok || !next.id || files.length === 0) return next;
+    const failed = await uploadTaskFiles(taskId, files, next.id, (done, total) => setUploading({ done, total }));
+    setUploading(null);
+    setFiles([]);
+    // 고르기 칸을 새로 끼운다 — 앞서 거른 파일의 사유 글이 다음 글에까지 남지 않게
+    setPickerKey((k) => k + 1);
+    return failed ? { ok: false, error: TASK_ATTACHMENT_MESSAGES.partial(TASK_MESSAGES.notes) } : next;
+  }, null);
   const [pending, start] = useTransition();
   const [removeState, setRemoveState] = useState<TaskActionState>(null);
 
@@ -105,7 +121,8 @@ export function TaskNotes({ taskId, notes, readOnly = false }: { taskId: string;
                     </button>
                     )}
                   </div>
-                  <p className="whitespace-pre-wrap text-[15px] leading-[1.7] text-ink">{n.body}</p>
+                  {n.body && <p className="whitespace-pre-wrap text-[15px] leading-[1.7] text-ink">{n.body}</p>}
+                  <AttachmentList items={n.attachments} removable={!readOnly} />
                 </div>
               )}
             </li>
@@ -136,9 +153,10 @@ export function TaskNotes({ taskId, notes, readOnly = false }: { taskId: string;
             className={cn(FIELD, "flex-1 resize-y")}
           />
           <Button type="submit" variant="primary" loading={posting} className="shrink-0">
-            {TASK_MESSAGES.noteAdd}
+            {uploading ? TASK_ATTACHMENT_MESSAGES.uploading(uploading.done, uploading.total) : TASK_MESSAGES.noteAdd}
           </Button>
         </div>
+        <AttachmentPicker key={pickerKey} value={files} onChange={setFiles} compact />
       </ActionForm>
       )}
 
