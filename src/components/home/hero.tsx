@@ -5,7 +5,9 @@
 //
 // 브랜드가 말하는 자리는 약속 문장의 한 낱말("제일 싼 곳")뿐이다. 판을 두르거나 그라데이션을 깔지 않는다 —
 // 바로 아래 세일 배너가 짙은 판이라 둘이 겹치면 첫 화면이 무거운 덩어리 둘로 시작한다.
+import Link from "next/link";
 import { formatShortDateTime } from "@/lib/format";
+import { ROUTES } from "@/lib/routes";
 import { HOME_MESSAGES as M } from "@/lib/home/messages";
 import { brandKeyOf, PLATFORM_ORDER } from "@/lib/platform";
 import type { HomeStats } from "@/server/services/games/dto";
@@ -31,6 +33,14 @@ export function HomeHero({ stats }: { stats: HomeStats }) {
           {M.heroTail}
         </h1>
         <p className="text-[14.5px] text-mut">{M.heroSub}</p>
+        {/* 다시 올 이유. 알림(웹푸시)은 이미 돌고 있었는데 들어가는 길이 게임 상세와 머리글 종 그림뿐이었다.
+            로그인 전이면 로그인 뒤 이 화면으로 돌아온다((user) 레이아웃의 next) */}
+        <p className="mt-1 flex flex-wrap items-center gap-x-2 text-[13.5px] text-mut">
+          {M.alertPitch}
+          <Link href={ROUTES.alerts} className="tap inline-flex items-center font-semibold text-acc hover:underline">
+            {M.alertCta}
+          </Link>
+        </p>
       </div>
 
       {/* 숫자는 크게, 이름은 작게 — 읽는 순서가 "몇이냐" 다음 "무엇이냐" 다 */}

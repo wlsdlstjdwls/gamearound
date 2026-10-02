@@ -14,6 +14,9 @@ export const HOME_MESSAGES = {
   statOnSale: "지금 할인 중",
   statStores: "스토어",
   syncedAt: (when: string) => `${when} 기준`,
+  /** 재방문 입구(2026-10-02). 알림과 웹푸시는 이미 있었고 홈이 말하지 않았을 뿐이다 */
+  alertPitch: "원하는 값이 되면 알려 드려요.",
+  alertCta: "가격 알림 받기",
 
   discountsTitle: "지금 할인 중",
   storeDealsTitle: "스토어만 바꿔도 더 싸요",
