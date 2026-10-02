@@ -8,6 +8,13 @@ import { parseFeed, RSS_FEEDS } from "./news-rss";
 const fixture = (name: string): string => readFileSync(fileURLToPath(new URL(`./__fixtures__/${name}`, import.meta.url)), "utf8");
 const NOW = new Date("2026-09-11T00:00:00Z");
 
+describe("parseFeed 제목 엔티티", () => {
+  it("두 겹 인코딩된 제목을 글자로 푼다(게임메카 실측)", () => {
+    const xml = `<?xml version="1.0"?><rss><channel><item><title>&amp;#039;셀린&amp;#039; 열린다 &amp;quot;주 5일&amp;quot;</title><link>https://www.gamemeca.com/view.php?gid=1</link></item></channel></rss>`;
+    expect(parseFeed(xml, "게임메카", NOW)[0].title).toBe(`'셀린' 열린다 "주 5일"`);
+  });
+});
+
 describe("parseFeed (RSS 2.0)", () => {
   const items = parseFeed(fixture("rss-feed.xml"), "Example", NOW);
 

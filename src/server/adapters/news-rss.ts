@@ -4,6 +4,7 @@ import { XMLParser } from "fast-xml-parser";
 import { load } from "cheerio";
 import { AdapterError, type NewsAdapter, type NewsItem, type SearchCandidate } from "./types";
 import { createHttpClient } from "./http";
+import { decodeHtmlEntities } from "@/lib/html-entities";
 
 /**
  * 피드 목록(§11-4 확정, 2026-09-11 응답 확인). externalId = name.
@@ -61,6 +62,15 @@ function text(v: unknown): string | null {
     if (typeof t === "number") return String(t);
   }
   return null;
+}
+
+/**
+ * 제목은 파서가 한 겹 벗긴 뒤에도 엔티티가 남을 수 있다 — 두 겹으로 인코딩해 보내는 매체가 있다
+ * (게임메카, lib/html-entities 주석). 링크, 날짜는 그런 일이 없어 제목에만 건다
+ */
+function titleOf(v: unknown): string | null {
+  const t = text(v);
+  return t === null ? null : decodeHtmlEntities(t).trim() || null;
 }
 
 function attr(v: unknown, name: string): string | null {
@@ -122,7 +132,7 @@ function parseRssItems(channel: Node, sourceName: string, now: Date): NewsItem[]
   const out: NewsItem[] = [];
   for (const raw of items) {
     if (!isNode(raw)) continue;
-    const title = text(raw.title);
+    const title = titleOf(raw.title);
     const url = text(raw.link) ?? attr(raw.link, "href") ?? text(raw.guid);
     if (!title || !url || !/^https?:\/\//.test(url)) continue;
     const publishedAt = toIso(text(raw.pubDate) ?? text(raw["dc:date"]), now);
@@ -143,7 +153,7 @@ function parseAtomEntries(feed: Node, sourceName: string, now: Date): NewsItem[]
   const out: NewsItem[] = [];
   for (const raw of entries) {
     if (!isNode(raw)) continue;
-    const title = text(raw.title);
+    const title = titleOf(raw.title);
     const url = atomLink(raw);
     if (!title || !url || !/^https?:\/\//.test(url)) continue;
     const publishedAt = toIso(text(raw.published) ?? text(raw.updated), now);
