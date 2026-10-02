@@ -109,8 +109,11 @@ export function TaskBoard({
       <TaskFilterBar filter={filter} counts={counts} onChange={changeFilter} />
       {state && !state.ok && <p className="text-[13px] text-danger">{state.error}</p>}
 
-      {/* 칸 셋. 중간 폭에서는 둘씩 접는다 — 셋을 억지로 세우면 카드 폭이 글자보다 좁아진다 */}
-      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+      {/* 칸 셋. 중간 폭에서는 둘씩 접는다 — 셋을 억지로 세우면 카드 폭이 글자보다 좁아진다.
+          좁은 화면에도 grid-cols-1 을 **적어야 한다**(2026-10-02 실측): 틀을 안 적으면 암묵 칸이 auto 라
+          카드 제목(truncate 는 한 줄로 편 글자 폭을 최소 폭으로 낸다)만큼 늘어나, 390px 화면에서 칸이 438px 이
+          되고 문서가 가로로 밀렸다. grid-cols-1 은 minmax(0, 1fr) 라 칸이 화면 폭을 넘지 않는다 */}
+      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
         {BOARD_STATUSES.map((status) => {
           const over = drag.over === status;
           // 끌고 있으면 받을 수 있는 자리다. 원래 칸도 받는다(자리 바꾸기) — 끝 칸만은 제 칸에서 자리가 없다
@@ -124,7 +127,7 @@ export function TaskBoard({
               className={cn(
                 // 칸은 흰 본문 판 위의 회색 골이고 카드는 그 위에 다시 뜬 흰 판이다(2026-09-30) —
                 // 앞서는 칸, 카드, 바탕이 다 회색 계열이라 셋이 한 면으로 붙어 보였다
-                "flex min-h-[140px] flex-col gap-2 rounded-xl border border-dashed p-2 transition-colors duration-base",
+                "flex min-h-[140px] min-w-0 flex-col gap-2 rounded-xl border border-dashed p-2 transition-colors duration-base",
                 over && droppable
                   ? "border-acc bg-acc-soft"
                   : droppable
