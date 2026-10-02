@@ -26,6 +26,7 @@ import { GAMES_FILTER_MESSAGES } from "@/lib/games/messages";
 import type { GameFacets } from "@/server/services/games";
 import type { RunningSaleDto } from "@/server/services/sales";
 import { RUNNING_SALE_MESSAGES } from "@/lib/sales/messages";
+import { HideAfter } from "@/components/sales/hide-after";
 
 /** "고르지 않음" 을 나타내는 값. 빈 문자열을 쓰면 현재 값 비교가 undefined 와 헷갈린다 */
 const ALL = "__all__";
@@ -145,11 +146,13 @@ export function Groups({
         {/* 세일 칩은 **세일이 열려 있을 때만** 선다(2026-10-02). 홈 배너와 같은 판정이라 둘이 늘 같이 서고 같이 내려간다.
             늘 세워 두지 않는 이유: 세일이 없는 열한 달 동안 눌러도 아무 일도 안 일어나는 칩이 된다 */}
         {sale && (
-          <ChipNavLink {...KEEP_SCROLL} {...chip} href={href({ event: filter.event === sale.key ? undefined : sale.key })} active={filter.event === sale.key}>
-            <ChipCheck on={filter.event === sale.key} />
-            {RUNNING_SALE_MESSAGES.chip(sale.name)}
-            <span className="sr-only">{filter.event === sale.key ? GAMES_FILTER_MESSAGES.toggleOn : GAMES_FILTER_MESSAGES.toggleOff}</span>
-          </ChipNavLink>
+          <HideAfter untilIso={sale.endsAt}>
+            <ChipNavLink {...KEEP_SCROLL} {...chip} href={href({ event: filter.event === sale.key ? undefined : sale.key })} active={filter.event === sale.key}>
+              <ChipCheck on={filter.event === sale.key} />
+              {RUNNING_SALE_MESSAGES.chip(sale.name)}
+              <span className="sr-only">{filter.event === sale.key ? GAMES_FILTER_MESSAGES.toggleOn : GAMES_FILTER_MESSAGES.toggleOff}</span>
+            </ChipNavLink>
+          </HideAfter>
         )}
         <ChipNavLink {...KEEP_SCROLL} {...chip} href={href({ hideFree: !filter.hideFree })} active={Boolean(filter.hideFree)}>
           {/* 네모와 체크가 있어야 '켬/끔' 이 옆 칩 없이도 읽힌다(ui/chip 의 ChipCheck 주석) */}
