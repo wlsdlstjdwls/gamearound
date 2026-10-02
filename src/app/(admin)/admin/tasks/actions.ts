@@ -16,7 +16,6 @@ import {
   moveTask,
   registerAttachment,
   removeAttachment,
-  reorderTask,
   restoreTask,
   updateTask,
 } from "@/server/services/admin-tasks";
@@ -90,27 +89,15 @@ export async function createTaskAction(_prev: TaskActionState, form: FormData): 
   }
 }
 
-export async function moveTaskAction(id: string, to: string): Promise<TaskActionState> {
+/** 칸 옮기기와 자리 바꾸기. `before` 는 끌어 놓은 자리(그 카드 앞, null 이면 맨 끝). 안 주면 받는 칸 맨 위다(moveTask 주석) */
+export async function moveTaskAction(id: string, to: string, before?: string | null): Promise<TaskActionState> {
   try {
     await requireAdmin();
-    const p = z.object({ id: z.uuid(), to: statusSchema }).safeParse({ id, to });
+    const p = z.object({ id: z.uuid(), to: statusSchema, before: z.uuid().nullable().optional() }).safeParse({ id, to, before });
     if (!p.success) return { ok: false, error: TASK_MESSAGES.invalid };
-    await moveTask(p.data.id, p.data.to);
+    await moveTask(p.data.id, p.data.to, p.data.before);
     revalidate();
     return { ok: true, message: TASK_MESSAGES.moved };
-  } catch (e) {
-    return fail(e);
-  }
-}
-
-export async function reorderTaskAction(id: string, dir: string): Promise<TaskActionState> {
-  try {
-    await requireAdmin();
-    const p = z.object({ id: z.uuid(), dir: z.enum(["up", "down"]) }).safeParse({ id, dir });
-    if (!p.success) return { ok: false, error: TASK_MESSAGES.invalid };
-    await reorderTask(p.data.id, p.data.dir);
-    revalidate();
-    return { ok: true };
   } catch (e) {
     return fail(e);
   }

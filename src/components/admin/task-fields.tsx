@@ -17,9 +17,9 @@ import { cn } from "@/lib/cn";
 import { FormSelect } from "@/components/ui/select";
 import { TASK_CATEGORY_LABEL, TASK_MESSAGES, TASK_PRIORITY_LABEL, TASK_STATUS_LABEL } from "@/lib/admin/messages";
 import {
+  BOARD_STATUSES,
   TASK_CATEGORIES,
   TASK_PRIORITIES,
-  TASK_STATUSES,
   type TaskAssignee,
   type TaskCategory,
   type TaskPriority,
@@ -191,7 +191,7 @@ export function TaskStatusField({ defaultValue = "todo" }: { defaultValue?: Task
   const id = useId();
   return (
     <Field id={id} label={TASK_MESSAGES.statusLabel}>
-      <RadioSegment id={id} name="status" values={TASK_STATUSES} labels={TASK_STATUS_LABEL} defaultValue={defaultValue} />
+      <RadioSegment id={id} name="status" values={BOARD_STATUSES} labels={TASK_STATUS_LABEL} defaultValue={defaultValue} />
     </Field>
   );
 }

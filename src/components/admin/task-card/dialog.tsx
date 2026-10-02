@@ -19,7 +19,7 @@ import { SEGMENT, SEGMENT_ITEM, SEGMENT_ITEM_ON } from "@/components/admin/task-
 import { formatLongDateTime } from "@/lib/format";
 import { Sheet } from "@/components/ui/sheet";
 import { TASK_ATTACHMENT_MESSAGES, TASK_MESSAGES, TASK_STATUS_LABEL } from "@/lib/admin/messages";
-import { TASK_STATUSES, type AdminTask, type TaskAssignee } from "@/lib/admin/tasks";
+import { BOARD_STATUSES, type AdminTask, type TaskAssignee } from "@/lib/admin/tasks";
 import { TaskEditForm } from "@/components/admin/task-card/edit-form";
 import { TaskNotes } from "@/components/admin/task-card/notes";
 import { TaskAttachmentsPart } from "@/components/admin/task-attachments";
@@ -65,7 +65,7 @@ export function TaskDialog({
         <Part title={TASK_MESSAGES.place}>
           {/* 고치기 폼의 급함 칸과 같은 세그먼트다(task-fields). 앞서는 44px 큰 버튼 넷이 한 줄을 통째로 먹었다 */}
           <div className={SEGMENT}>
-            {TASK_STATUSES.map((s) => {
+            {BOARD_STATUSES.map((s) => {
               const here = task.status === s;
               return (
                 <button

@@ -9,6 +9,14 @@ import type { SourceName } from "@/server/db/schema";
 export const TASK_STATUSES = ["backlog", "todo", "doing", "done"] as const;
 export type TaskStatus = (typeof TASK_STATUSES)[number];
 
+/**
+ * 판에 세우는 칸(2026-10-02). 작업대기(backlog)는 화면에서 뺐다 — 사용자: "작업대기 칸은 필요 없지 않나, 영역이 넓어지잖아".
+ * 할 일 칸이 이미 "아직 안 시작한 일" 을 다 받고 있었고, 뺄 때 작업대기 카드는 0건이었다.
+ * **enum 에서는 지우지 않는다**(숨긴다 ≠ 지운다) — 되살리려면 여기에 다시 넣으면 된다.
+ * 서버 검증(statusSchema)은 넷 다 받는다. 판에 없는 칸으로 옮길 길은 화면에 없다.
+ */
+export const BOARD_STATUSES = ["todo", "doing", "done"] as const satisfies readonly TaskStatus[];
+
 export const TASK_PRIORITIES = ["high", "normal", "low"] as const;
 export type TaskPriority = (typeof TASK_PRIORITIES)[number];
 

@@ -1,10 +1,12 @@
 "use client";
 
-// 할 일 판. 칸 넷을 가로로 세우고, 카드를 칸 사이로 옮긴다.
+// 할 일 판. 칸 셋(할 일, 하는 중, 끝)을 가로로 세우고, 카드를 칸 사이로, 칸 안에서 끌어 옮긴다.
+// 작업대기 칸은 2026-10-02 화면에서 뺐다(lib/admin/tasks 의 BOARD_STATUSES).
 //
-// 드롭은 **칸 전체**가 받는다 — 카드 사이의 가는 틈을 노리게 하면 빗나가는 일이 잦고,
-// 이 판은 칸 안 순서를 끌어서 바꾸지 않으므로 정확한 지점이 필요 없다.
-// 칸 안 순서는 카드의 위로/아래로 버튼이 맡는다(키보드로도 되어야 하므로).
+// 드롭은 **칸 전체**가 받는다 — 카드 사이의 가는 틈을 노리게 하면 빗나가는 일이 잦다.
+// 칸 안 자리는 포인터 높이로 정하고, 놓일 자리에 보라 줄을 긋는다(use-board-drag).
+// 앞서 칸 안 순서를 맡던 위로/아래로 단추는 걷었다(2026-10-02, 사용자: "위로 아래로 지우고 드래그로").
+// 끝 칸은 순서가 끝낸 시각이라 자리 줄을 긋지 않는다.
 //
 // **끌리는 동안 판이 달라 보여야 한다**(2026-09-21): 앞 판은 끌어도 화면이 그대로여서 "지금 뭔가를
 // 끌고 있다" 는 사실을 사람이 스스로 기억해야 했다. 지금은 끄는 동안 모든 칸이 받을 자리로 살아나고
@@ -16,11 +18,11 @@
 // **거르기**(2026-10-01): 판이 받은 카드를 화면에서 거른다(lib/admin/task-filter 주석에 이유). 조건은 판이 쥐고
 // 바뀔 때마다 주소에 적는다. router 로 바꾸지 않고 history.replaceState 를 쓴다 — router 는 서버 컴포넌트를
 // 다시 그리러 가서 칩 한 번에 왕복 하나가 붙는다. 거른 판에서 끌어 옮겨도 서버는 칸 전체로 순서를 매긴다
-// (moveTask 는 받는 칸의 최솟값만 본다) — 숨은 카드의 순서는 그대로다.
-import { useEffect, useMemo, useState, useTransition } from "react";
+// (moveTask 는 놓은 자리를 카드 id 로 받는다) — 숨은 카드는 제 순서를 지킨다.
+import { Fragment, useEffect, useMemo, useState, useTransition } from "react";
 import { cn } from "@/lib/cn";
 import { TASK_FILTER_MESSAGES, TASK_MESSAGES, TASK_STATUS_LABEL } from "@/lib/admin/messages";
-import { TASK_STATUSES, unreadNoteCount, type Board, type TaskAssignee } from "@/lib/admin/tasks";
+import { BOARD_STATUSES, TASK_STATUSES, unreadNoteCount, type Board, type TaskAssignee } from "@/lib/admin/tasks";
 import {
   TASK_FILTER_COOKIE,
   TASK_FILTER_COOKIE_MAX_AGE,
@@ -93,13 +95,13 @@ export function TaskBoard({
   );
   // 거르기 칩 옆 건수. 끝난 칸은 세지 않는다 — "내 담당 5" 가 끝낸 일까지 세면 남은 몫을 못 읽는다
   const counts = useMemo(
-    () => countTaskFilters(TASK_STATUSES.filter((s) => s !== "done").flatMap((s) => board[s]), meId),
+    () => countTaskFilters(BOARD_STATUSES.filter((s) => s !== "done").flatMap((s) => board[s]), meId),
     [board, meId],
   );
 
-  const drag = useBoardDrag((id, to) => start(async () => setState(await moveTaskAction(id, to))));
+  const drag = useBoardDrag((id, to, before) => start(async () => setState(await moveTaskAction(id, to, before))));
 
-  const openTask = openId ? TASK_STATUSES.flatMap((s) => board[s]).find((t) => t.id === openId) : undefined;
+  const openTask = openId ? BOARD_STATUSES.flatMap((s) => board[s]).find((t) => t.id === openId) : undefined;
 
   return (
     <section className="flex flex-col gap-3">
@@ -107,12 +109,14 @@ export function TaskBoard({
       <TaskFilterBar filter={filter} counts={counts} onChange={changeFilter} />
       {state && !state.ok && <p className="text-[13px] text-danger">{state.error}</p>}
 
-      {/* 칸이 넷이라 좁은 화면에서는 둘씩 접는다 — 넷을 억지로 세우면 카드 폭이 글자보다 좁아진다 */}
-      <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-        {TASK_STATUSES.map((status) => {
+      {/* 칸 셋. 중간 폭에서는 둘씩 접는다 — 셋을 억지로 세우면 카드 폭이 글자보다 좁아진다 */}
+      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+        {BOARD_STATUSES.map((status) => {
           const over = drag.over === status;
-          // 끌고 있고, 여기가 그 카드가 있던 칸이 아니면 "받을 수 있는 자리"
-          const droppable = drag.from !== null && drag.from !== status;
+          // 끌고 있으면 받을 수 있는 자리다. 원래 칸도 받는다(자리 바꾸기) — 끝 칸만은 제 칸에서 자리가 없다
+          const droppable = drag.from !== null && !(drag.from === status && status === "done");
+          // 놓일 자리 줄. 이 칸 위에 있고 자리를 받는 칸일 때만 긋는다
+          const marking = over && droppable && status !== "done";
           return (
             <div
               key={status}
@@ -146,8 +150,9 @@ export function TaskBoard({
               {shown[status].length > 0 && (
                 <ul className="flex flex-col gap-2">
                   {shown[status].map((task) => (
-                    <TaskCard
-                      key={task.id}
+                    <Fragment key={task.id}>
+                      {marking && drag.before === task.id && <DropMarker />}
+                        <TaskCard
                       task={task}
                       now={now}
                       meId={meId}
@@ -156,8 +161,10 @@ export function TaskBoard({
                       onOpen={openCard}
                       onPointerDown={drag.onPointerDown}
                       onClickCapture={drag.swallowClick}
-                    />
+                      />
+                    </Fragment>
                   ))}
+                  {marking && drag.before === null && <DropMarker />}
                 </ul>
               )}
 
@@ -176,5 +183,17 @@ export function TaskBoard({
       {/* 열린 카드는 판이 다시 그려져도 같은 카드를 가리킨다 — 지워졌으면 팝업도 사라진다 */}
       {openTask && <TaskDialog task={openTask} assignees={assignees} open onOpenChange={(v) => !v && setOpenId(null)} />}
     </section>
+  );
+}
+
+/**
+ * 놓일 자리 줄. 높이 0 에 위아래 음수 여백으로 칸의 gap 을 되갚는다 — 줄이 들어서며 카드를 밀면
+ * 카드 가운데 선이 움직여 자리가 다시 바뀌고, 줄이 위아래로 떨린다.
+ */
+function DropMarker() {
+  return (
+    <li aria-hidden className="relative -my-1 h-0">
+      <span className="absolute inset-x-1 -top-px h-0.5 rounded-full bg-acc" />
+    </li>
   );
 }

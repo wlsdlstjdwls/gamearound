@@ -11,7 +11,6 @@ export {
   deleteTask,
   markTaskSeen,
   moveTask,
-  reorderTask,
   restoreTask,
   updateTask,
   type CreateTaskInput,

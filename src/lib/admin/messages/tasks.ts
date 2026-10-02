@@ -34,8 +34,6 @@ export const TASK_MESSAGES = {
   doneAt: "끝낸 때",
   restore: "판으로 되돌리기",
   restored: "판의 완료 칸으로 되돌렸어요",
-  up: "위로",
-  down: "아래로",
   removeConfirm: "이 할 일을 지울까요?",
   created: "추가했어요",
   moved: "옮겼어요",

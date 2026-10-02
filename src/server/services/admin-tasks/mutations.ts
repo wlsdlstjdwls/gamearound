@@ -1,6 +1,6 @@
 // 관리자 할 일 판 서비스 — 쓰기 쪽(만들기, 고치기, 옮기기, 기록). 읽기는 board.ts.
 import "server-only";
-import { and, asc, eq, isNotNull, isNull, sql } from "drizzle-orm";
+import { and, asc, eq, isNotNull, isNull, ne, sql } from "drizzle-orm";
 import { getDb } from "@/server/db/client";
 import { adminTaskNotes, adminTaskReads, adminTasks, type SourceName } from "@/server/db/schema";
 import { createdBy, updatedBy } from "@/server/db/audit";
@@ -80,46 +80,70 @@ export async function updateTask(
 }
 
 /**
- * 칸을 옮긴다. 옮긴 카드는 받는 칸 맨 위에 놓는다 —
- * 방금 "하는 중" 으로 끌어온 일이 그 칸 바닥에 깔리면 판을 보는 의미가 없다.
+ * 칸을 옮기거나 같은 칸 안에서 자리를 바꾼다(2026-10-02, 위로/아래로 단추를 걷고 끌기로 합쳤다).
+ *
+ * `before` 를 주면 그 카드 바로 앞에 놓고(null 이면 칸 맨 끝), 칸 전체에 번호를 새로 매긴다.
+ * 끌어 놓는 사람은 "이 둘 사이" 를 가리키므로 번호 하나만 고쳐서는 그 자리를 못 만든다 — 같은 번호가 겹친 칸도 있다.
+ * 자리를 카드 id 로 받는 이유: 판은 거른 채로 끌 수 있다. 화면의 몇 번째를 받으면 숨은 카드 때문에 엉뚱한 자리에 선다.
+ *
+ * `before` 를 안 주면(팝업의 칸 단추) 받는 칸 맨 위에 놓는다 — 방금 "하는 중" 으로 옮긴 일이 바닥에 깔리면 판을 보는 의미가 없다.
+ * 끝난 칸은 순서가 끝낸 시각이라(board.ts) 자리를 받지 않는다.
  *
  * `done` 으로 갈 때만 doneAt 을 찍고, 거기서 나오면 지운다. 되돌린 일이 끝난 시각을 갖고 있으면
  * 나중에 "언제 끝냈나" 를 물을 때 거짓말을 한다.
  */
-export async function moveTask(id: string, to: TaskStatus): Promise<void> {
+export async function moveTask(id: string, to: TaskStatus, before?: string | null): Promise<void> {
   const admin = await requireAdmin();
   const db = getDb();
-  const [[top], [before]] = await Promise.all([
-    db
+  const [me] = await db.select({ status: adminTasks.status }).from(adminTasks).where(eq(adminTasks.id, id));
+  if (!me) return;
+  const sameColumn = me.status === to;
+  // 끝난 칸 안에서 놓는 건 할 일이 없다 — 거기서 doneAt 을 다시 찍으면 끝낸 시각이 거짓이 된다
+  if (sameColumn && to === "done") return;
+
+  const statusPatch = sameColumn ? {} : { status: to, doneAt: to === "done" ? new Date() : null };
+
+  if (before === undefined || to === "done") {
+    const [top] = await db
       .select({ min: sql<number>`coalesce(min(${adminTasks.sortOrder}), 0)::int` })
       .from(adminTasks)
-      .where(eq(adminTasks.status, to)),
-    db.select({ status: adminTasks.status }).from(adminTasks).where(eq(adminTasks.id, id)),
-  ]);
-  if (!before) return;
-
-  await db
-    .update(adminTasks)
-    .set({
-      status: to,
-      sortOrder: (top?.min ?? 0) - 1,
-      doneAt: to === "done" ? new Date() : null,
-      ...updatedBy("admin", admin.id),
-    })
-    .where(eq(adminTasks.id, id));
+      .where(eq(adminTasks.status, to));
+    await db
+      .update(adminTasks)
+      .set({ ...statusPatch, sortOrder: (top?.min ?? 0) - 1, ...updatedBy("admin", admin.id) })
+      .where(eq(adminTasks.id, id));
+  } else {
+    const siblings = await db
+      .select({ id: adminTasks.id })
+      .from(adminTasks)
+      // 걷은 일은 판에 없다 — 번호를 같이 매길 까닭이 없다
+      .where(and(eq(adminTasks.status, to), isNull(adminTasks.archivedAt), ne(adminTasks.id, id)))
+      .orderBy(asc(adminTasks.sortOrder), asc(adminTasks.createdAt));
+    const order = siblings.map((r) => r.id);
+    const at = before ? order.indexOf(before) : -1;
+    order.splice(at < 0 ? order.length : at, 0, id);
+    await Promise.all(
+      order.map((taskId, i) =>
+        db
+          .update(adminTasks)
+          .set({ ...(taskId === id ? statusPatch : {}), sortOrder: i, ...updatedBy("admin", admin.id) })
+          .where(eq(adminTasks.id, taskId)),
+      ),
+    );
+  }
 
   /*
    * 옮긴 자취를 기록에 남긴다. 사람이 적지 않아도 "언제 시작했고 언제 끝냈나" 가 남아야
    * 카드 하나가 곧 그 일의 이력이 된다 — 그게 이 판을 메모장과 가르는 자리다.
    *
-   * 같은 칸으로 다시 놓는 것(드래그가 제자리에 떨어질 때)은 자취가 아니다. 그것까지 적으면
+   * 같은 칸 안에서 자리만 바꾼 것은 자취가 아니다. 그것까지 적으면
    * 기록이 의미 없는 줄로 불어나 진짜 적은 글이 묻힌다.
    */
-  if (before.status !== to) {
+  if (!sameColumn) {
     await db.insert(adminTaskNotes).values({
       taskId: id,
       kind: "move",
-      fromStatus: before.status,
+      fromStatus: me.status,
       toStatus: to,
       ...createdBy("admin", admin.id),
     });
@@ -157,44 +181,6 @@ export async function deleteNote(id: string): Promise<void> {
     .where(and(eq(adminTaskNotes.id, id), eq(adminTaskNotes.kind, "note")))
     .returning({ id: adminTaskNotes.id });
   if (rows.length > 0) await deleteBlobs(urls);
-}
-
-/**
- * 같은 칸 안에서 한 칸 위/아래로. 드래그 대신 이걸 두는 이유는 키보드로도 순서를 바꿀 수 있어야 해서다
- * (AGENTS §6 a11y). 드래그는 마우스에만 있는 길이라, 그것만 두면 순서 바꾸기가 특정 입력기기 전용이 된다.
- */
-export async function reorderTask(id: string, dir: "up" | "down"): Promise<void> {
-  const admin = await requireAdmin();
-  const db = getDb();
-
-  const [me] = await db
-    .select({ status: adminTasks.status, sortOrder: adminTasks.sortOrder, createdAt: adminTasks.createdAt })
-    .from(adminTasks)
-    .where(eq(adminTasks.id, id));
-  if (!me) return;
-
-  const siblings = await db
-    .select({ id: adminTasks.id, sortOrder: adminTasks.sortOrder })
-    .from(adminTasks)
-    // 걷은 일은 판에 없다 — 이웃으로 치면 "아래로" 가 보이지 않는 카드와 자리를 바꿔 아무 일도 안 일어난 것처럼 보인다
-    .where(and(eq(adminTasks.status, me.status), isNull(adminTasks.archivedAt)))
-    .orderBy(asc(adminTasks.sortOrder), asc(adminTasks.createdAt));
-
-  const at = siblings.findIndex((s) => s.id === id);
-  const swapWith = dir === "up" ? at - 1 : at + 1;
-  if (at < 0 || swapWith < 0 || swapWith >= siblings.length) return;
-
-  // 이웃과 자리를 맞바꾼다. 같은 번호가 겹쳐 있어도 인덱스 기준으로 새 번호를 주므로 순서가 확정된다
-  const reordered = [...siblings];
-  [reordered[at], reordered[swapWith]] = [reordered[swapWith]!, reordered[at]!];
-  await Promise.all(
-    reordered.map((s, i) =>
-      db
-        .update(adminTasks)
-        .set({ sortOrder: i, ...updatedBy("admin", admin.id) })
-        .where(eq(adminTasks.id, s!.id)),
-    ),
-  );
 }
 
 /** 할 일 지우기. 첨부 파일 주소를 먼저 모은다 — cascade 가 행은 지우지만 저장소 파일은 못 지운다 */
