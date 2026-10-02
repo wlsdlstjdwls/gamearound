@@ -3,6 +3,11 @@
 // 할 일 판. 칸 셋(할 일, 하는 중, 끝)을 가로로 세우고, 카드를 칸 사이로, 칸 안에서 끌어 옮긴다.
 // 작업대기 칸은 2026-10-02 화면에서 뺐다(lib/admin/tasks 의 BOARD_STATUSES).
 //
+// **좁은 화면은 옆으로 넘기는 줄이다**(2026-10-02, 사용자 지정). 칸 셋을 위아래로 쌓으면 완료 칸까지
+// 할 일 칸의 카드를 다 지나야 닿았다. 지금은 칸 하나가 화면 폭의 88% 를 먹고 다음 칸 끝이 비쳐
+// "옆에 더 있다" 를 말한다. 위의 칸 이름 줄은 지금 보는 칸을 짚고, 누르면 그 칸으로 넘어간다.
+// 칸마다 "모아보기" 가 그 칸을 목록 시트로 연다(task-column-sheet).
+//
 // 드롭은 **칸 전체**가 받는다 — 카드 사이의 가는 틈을 노리게 하면 빗나가는 일이 잦다.
 // 칸 안 자리는 포인터 높이로 정하고, 놓일 자리에 보라 줄을 긋는다(use-board-drag).
 // 앞서 칸 안 순서를 맡던 위로/아래로 단추는 걷었다(2026-10-02, 사용자: "위로 아래로 지우고 드래그로").
@@ -19,10 +24,10 @@
 // 바뀔 때마다 주소에 적는다. router 로 바꾸지 않고 history.replaceState 를 쓴다 — router 는 서버 컴포넌트를
 // 다시 그리러 가서 칩 한 번에 왕복 하나가 붙는다. 거른 판에서 끌어 옮겨도 서버는 칸 전체로 순서를 매긴다
 // (moveTask 는 놓은 자리를 카드 id 로 받는다) — 숨은 카드는 제 순서를 지킨다.
-import { Fragment, useEffect, useMemo, useState, useTransition } from "react";
+import { Fragment, useEffect, useMemo, useRef, useState, useTransition } from "react";
 import { cn } from "@/lib/cn";
 import { TASK_FILTER_MESSAGES, TASK_MESSAGES, TASK_STATUS_LABEL } from "@/lib/admin/messages";
-import { BOARD_STATUSES, TASK_STATUSES, unreadNoteCount, type Board, type TaskAssignee } from "@/lib/admin/tasks";
+import { BOARD_STATUSES, TASK_STATUSES, unreadNoteCount, type AdminTask, type Board, type TaskAssignee, type TaskStatus } from "@/lib/admin/tasks";
 import {
   TASK_FILTER_COOKIE,
   TASK_FILTER_COOKIE_MAX_AGE,
@@ -36,6 +41,7 @@ import { STATUS_FILL } from "@/components/admin/task-tone";
 import { TaskFilterBar } from "@/components/admin/task-filter-bar";
 import { TaskCard } from "@/components/admin/task-card";
 import { TaskDialog } from "@/components/admin/task-card/dialog";
+import { TaskColumnSheet } from "@/components/admin/task-column-sheet";
 import { TaskQuickAdd } from "@/components/admin/task-quick-add";
 import { DROP_ATTR, useBoardDrag } from "@/components/admin/use-board-drag";
 import { markTaskSeenAction, moveTaskAction, type TaskActionState } from "@/app/(admin)/admin/tasks/actions";
@@ -102,6 +108,26 @@ export function TaskBoard({
   const drag = useBoardDrag((id, to, before) => start(async () => setState(await moveTaskAction(id, to, before))));
 
   const openTask = openId ? BOARD_STATUSES.flatMap((s) => board[s]).find((t) => t.id === openId) : undefined;
+  const unreadOf = (task: AdminTask) => unreadNoteCount(task.notes, meId, seenNow[task.id] ?? seen[task.id]);
+
+  // 모아보기 시트가 연 칸. 팝업(openId)과 따로 쥔다 — 줄을 눌러 팝업이 떠도 목록은 밑에 남는다
+  const [listStatus, setListStatus] = useState<TaskStatus | null>(null);
+
+  // 좁은 화면의 넘기는 줄. 지금 보이는 칸은 스크롤 위치로 센다 — 칸 폭이 같아서 나눗셈 하나로 끝난다
+  const trackRef = useRef<HTMLDivElement>(null);
+  const [visible, setVisible] = useState(0);
+  const onTrackScroll = () => {
+    const track = trackRef.current;
+    const first = track?.firstElementChild as HTMLElement | null;
+    if (!track || !first) return;
+    setVisible(Math.min(BOARD_STATUSES.length - 1, Math.round(track.scrollLeft / (first.offsetWidth || 1))));
+  };
+  // scrollIntoView 를 쓰지 않는다 — 칸이 화면보다 길면 문서까지 세로로 끌어내린다(2026-10-02 실측). 줄만 옆으로 민다
+  const goColumn = (i: number) => {
+    const track = trackRef.current;
+    const col = track?.children[i] as HTMLElement | undefined;
+    if (track && col) track.scrollTo({ left: col.offsetLeft - track.offsetLeft - track.clientLeft, behavior: "smooth" });
+  };
 
   return (
     <section className="flex flex-col gap-3">
@@ -109,11 +135,37 @@ export function TaskBoard({
       <TaskFilterBar filter={filter} counts={counts} onChange={changeFilter} />
       {state && !state.ok && <p className="text-[13px] text-danger">{state.error}</p>}
 
+      {/* 좁은 화면 전용 칸 이름 줄 — 넓은 화면에서는 칸 셋이 다 보여 짚을 일이 없다 */}
+      <div role="group" aria-label={TASK_MESSAGES.columnTabs} className="grid grid-cols-3 gap-0.5 rounded-xl bg-surface-2 p-1 sm:hidden">
+        {BOARD_STATUSES.map((status, i) => (
+          <button
+            key={status}
+            type="button"
+            aria-pressed={visible === i}
+            onClick={() => goColumn(i)}
+            className={cn(
+              "press tap flex items-center justify-center gap-1.5 rounded-lg px-2 py-1.5 text-[13.5px] transition-colors duration-base",
+              visible === i ? "bg-surface font-semibold text-ink shadow-1" : "text-mut",
+            )}
+          >
+            <span aria-hidden className={cn("h-2 w-2 rounded-full", STATUS_FILL[status])} />
+            {TASK_STATUS_LABEL[status]}
+            <span className="text-[12px] tabular-nums text-dim">{shown[status].length}</span>
+          </button>
+        ))}
+      </div>
+
       {/* 칸 셋. 중간 폭에서는 둘씩 접는다 — 셋을 억지로 세우면 카드 폭이 글자보다 좁아진다.
           좁은 화면에도 grid-cols-1 을 **적어야 한다**(2026-10-02 실측): 틀을 안 적으면 암묵 칸이 auto 라
           카드 제목(truncate 는 한 줄로 편 글자 폭을 최소 폭으로 낸다)만큼 늘어나, 390px 화면에서 칸이 438px 이
           되고 문서가 가로로 밀렸다. grid-cols-1 은 minmax(0, 1fr) 라 칸이 화면 폭을 넘지 않는다 */}
-      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
+      {/* 좁은 화면: 옆으로 넘기는 줄(snap). 칸이 88% 라 다음 칸 끝이 비친다. 넓은 화면: 격자.
+          items-start 는 좁은 화면에만 — 늘이면 빈 칸이 가장 긴 칸만큼 키를 먹어 회색 골이 화면 아래까지 이어졌다 */}
+      <div
+        ref={trackRef}
+        onScroll={onTrackScroll}
+        className="-mx-1 flex items-start snap-x snap-mandatory gap-3 overflow-x-auto overscroll-x-contain px-1 pb-1 [scrollbar-width:none] sm:mx-0 sm:grid sm:grid-cols-2 sm:items-stretch sm:overflow-visible sm:px-0 sm:pb-0 lg:grid-cols-3"
+      >
         {BOARD_STATUSES.map((status) => {
           const over = drag.over === status;
           // 끌고 있으면 받을 수 있는 자리다. 원래 칸도 받는다(자리 바꾸기) — 끝 칸만은 제 칸에서 자리가 없다
@@ -127,7 +179,7 @@ export function TaskBoard({
               className={cn(
                 // 칸은 흰 본문 판 위의 회색 골이고 카드는 그 위에 다시 뜬 흰 판이다(2026-09-30) —
                 // 앞서는 칸, 카드, 바탕이 다 회색 계열이라 셋이 한 면으로 붙어 보였다
-                "flex min-h-[140px] min-w-0 flex-col gap-2 rounded-xl border border-dashed p-2 transition-colors duration-base",
+                "flex min-h-[140px] w-[88%] min-w-0 shrink-0 snap-start flex-col gap-2 rounded-xl border border-dashed p-2 transition-colors duration-base sm:w-auto",
                 over && droppable
                   ? "border-acc bg-acc-soft"
                   : droppable
@@ -141,6 +193,14 @@ export function TaskBoard({
                   <span aria-hidden className={cn("h-2.5 w-2.5 rounded-full", STATUS_FILL[status])} />
                   {TASK_STATUS_LABEL[status]}
                 </span>
+                {/* 모아보기 — 글자 단추. 칸 머리의 무게를 건수보다 앞세우지 않는다 */}
+                <button
+                  type="button"
+                  onClick={() => setListStatus(status)}
+                  className="press tap ml-auto mr-2 rounded-md px-1.5 text-[12.5px] font-medium text-acc hover:underline"
+                >
+                  {TASK_MESSAGES.columnCollect}
+                </button>
                 {/* 걸러졌으면 "보이는 수 / 전체" — 숨은 카드가 있다는 걸 칸이 스스로 말한다 */}
                 <span
                   className="rounded-full bg-surface px-1.5 text-[12px] font-semibold tabular-nums text-mut"
@@ -160,7 +220,7 @@ export function TaskBoard({
                       now={now}
                       meId={meId}
                       status={status}
-                      unread={unreadNoteCount(task.notes, meId, seenNow[task.id] ?? seen[task.id])}
+                      unread={unreadOf(task)}
                       onOpen={openCard}
                       onPointerDown={drag.onPointerDown}
                       onClickCapture={drag.swallowClick}
@@ -182,6 +242,20 @@ export function TaskBoard({
           );
         })}
       </div>
+
+      {listStatus && (
+        <TaskColumnSheet
+          status={listStatus}
+          tasks={shown[listStatus]}
+          now={now}
+          meId={meId}
+          unreadOf={unreadOf}
+          category={filter.category ?? undefined}
+          open
+          onOpenChange={(v) => !v && setListStatus(null)}
+          onOpenTask={openCard}
+        />
+      )}
 
       {/* 열린 카드는 판이 다시 그려져도 같은 카드를 가리킨다 — 지워졌으면 팝업도 사라진다 */}
       {openTask && <TaskDialog task={openTask} assignees={assignees} open onOpenChange={(v) => !v && setOpenId(null)} />}

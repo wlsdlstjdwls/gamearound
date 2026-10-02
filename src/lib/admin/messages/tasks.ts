@@ -22,6 +22,11 @@ export const TASK_MESSAGES = {
   count: (n: number) => `${n}건`,
   /** 끌고 있는 동안 빈 칸이 스스로 말하는 자리 */
   dropHere: "여기에 놓아요",
+  /** 칸 머리의 목록 시트 단추(2026-10-02, 사용자가 정한 말) */
+  columnCollect: "모아보기",
+  columnSheetTitle: (label: string, n: number) => `${label} ${n}건`,
+  /** 좁은 화면에서 칸을 옆으로 넘기는 줄의 이름 — 낭독기가 읽는다 */
+  columnTabs: "칸 고르기",
   /** 치우기는 걷기다(2026-10-02) — 지우지 않으므로 묻지 않는다. 걷은 일은 지난 일에서 다시 본다 */
   clearDone: "끝난 일 치우기",
   archived: (n: number) => `${n}건을 치웠어요. 지난 일에서 다시 볼 수 있어요.`,
