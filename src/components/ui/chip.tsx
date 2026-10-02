@@ -62,8 +62,15 @@ const IDLE = "text-mut hover:bg-surface-2 hover:text-ink";
 const ACTIVE_OUTLINE = "border border-acc bg-acc font-semibold text-on-ink hover:bg-acc-hover";
 const IDLE_OUTLINE = "border border-line-strong bg-surface text-ink shadow-hair hover:border-ink hover:bg-surface-2";
 
-export function chipClass(opts: { active?: boolean; size?: ChipSize; className?: string; compact?: boolean; outline?: boolean } = {}): string {
-  const { active = false, size = "md", className, compact = false, outline = false } = opts;
+/**
+ * filled: 고른 상태는 아니지만 고른 칩과 같은 면을 쓰는 칩(걸린 조건의 해제 칩).
+ * className 으로 면을 덮어쓰면 안 되는 이유(2026-10-02, 사용자: "호버하면 글자가 안 보인다"):
+ * cn 은 클래스를 합치기만 하고 겹친 것을 지우지 않는다. IDLE 의 hover:bg-surface-2 와 덮어쓴
+ * hover:bg-acc-hover 가 둘 다 남아 CSS 순서로 밝은 면이 이겼고, 그 위에 흰 글자가 섰다.
+ */
+export function chipClass(opts: { active?: boolean; filled?: boolean; size?: ChipSize; className?: string; compact?: boolean; outline?: boolean } = {}): string {
+  const { active = false, filled = false, size = "md", className, compact = false, outline = false } = opts;
+  const on = active || filled;
   return cn(
     // tap: 손가락 기기에서만 최소 높이를 44px 로 올린다(globals.css). 칩은 12~13px 글자라
     // 실제 높이가 30~33px 밖에 되지 않아 필터, 페이지 이동에서 옆 칩이 눌리는 자리였다.
@@ -74,7 +81,7 @@ export function chipClass(opts: { active?: boolean; size?: ChipSize; className?:
     "press inline-flex items-center rounded-full transition-colors duration-base",
     compact ? "tap-inset" : "tap",
     SIZE[size],
-    outline ? (active ? ACTIVE_OUTLINE : IDLE_OUTLINE) : active ? ACTIVE : IDLE,
+    outline ? (on ? ACTIVE_OUTLINE : IDLE_OUTLINE) : on ? ACTIVE : IDLE,
     className,
   );
 }

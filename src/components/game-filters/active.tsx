@@ -96,8 +96,9 @@ function FilterChip({ f }: { f: ActiveFilter }) {
       href={f.href}
       size="xs"
       compact
+      filled
       aria-label={`${f.label} 필터 해제`}
-      className="shrink-0 gap-1 bg-acc font-bold text-on-ink hover:bg-acc-hover hover:text-on-ink"
+      className="shrink-0 gap-1 font-bold"
     >
       {f.label}
       <XIcon size={11} aria-hidden />

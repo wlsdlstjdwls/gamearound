@@ -27,6 +27,8 @@ function PendingVeil() {
 
 type ChipNavLinkProps = Omit<ComponentProps<typeof Link>, "className" | "prefetch"> & {
   active?: boolean;
+  /** 고른 칩과 같은 면이지만 aria-current 는 안 단다(chipClass 의 filled 주석) */
+  filled?: boolean;
   size?: ChipSize;
   className?: string;
   /** 44px 탭 범위를 상자가 아니라 덧면으로 준다(chip.tsx 주석) */
@@ -35,7 +37,7 @@ type ChipNavLinkProps = Omit<ComponentProps<typeof Link>, "className" | "prefetc
   outline?: boolean;
 };
 
-export function ChipNavLink({ active = false, size, className, compact, outline, children, ...rest }: ChipNavLinkProps) {
+export function ChipNavLink({ active = false, filled = false, size, className, compact, outline, children, ...rest }: ChipNavLinkProps) {
   const [warm, setWarm] = useState(false);
   const warmUp = () => setWarm(true);
 
@@ -49,7 +51,7 @@ export function ChipNavLink({ active = false, size, className, compact, outline,
       // compact 에서는 overflow-hidden 을 걷는다 — 그 모드의 탭 범위는 칩 **밖으로** 8px 넘긴
       // 덧면이라(globals.css 의 .tap-inset) 잘라 내면 손가락 목표가 도로 칩 크기가 된다.
       // 막(PendingVeil)이 튀어나올 걱정은 없다: .chip-pending 이 border-radius 를 물려받는다
-      className={chipClass({ active, size, compact, outline, className: `relative ${compact ? "" : "overflow-hidden"} ${className ?? ""}`.trim() })}
+      className={chipClass({ active, filled, size, compact, outline, className: `relative ${compact ? "" : "overflow-hidden"} ${className ?? ""}`.trim() })}
       {...rest}
     >
       {children}
