@@ -1,23 +1,24 @@
 // 홈 — "오늘 뭘 사면 되는가"에 먼저 답한다 (§5.1, 풀 라우트 캐시 1h + 태그 home)
-// 검색 폼은 헤더 검색창이 유일한 진입점이므로 히어로에서 제거했다(리디자인).
+// 검색 폼은 헤더 검색창이 유일한 진입점이므로 히어로에 검색창을 두지 않는다(리디자인).
 //
-// 2026-09-21 리디자인: 흰 판과 테두리를 전부 걷어냈다. 화면을 가르는 것은 섹션 사이의 큰 여백과
-// 헤어라인 한 줄뿐이고, 색을 가진 것은 카드의 할인 스탬프와 마감 임박 표시뿐이다.
-import { formatPrice } from "@/lib/currency";
-import { HOME_GRID_CLASS } from "@/lib/games/grid";
+// 2026-10-02 재구성(사용자: "디자인도 없고 투박하다, 서비스적으로 어필하려면"): 같은 카드 격자 44칸을 걷고
+// 줄마다 모양을 갈랐다 — 머리 약속(HomeHero), 할인 격자, 옆으로 넘기는 줄(Rail), 번호 목록(HomeRanking),
+// 두 기둥(곧 마감, 뉴스). 격자는 첫 줄 하나만 남겼다. 모양이 바뀌는 곳이 마디가 바뀌는 곳이다.
+// 줄 순서는 "왜 여기 왔나" 순이다: 무엇이 싸나(할인) - 어디서 사면 더 싸나(스토어 차이, 이 서비스만 말할 수 있는 값) -
+// 무엇이 팔리나(순위) - 가볍게 살 것(만 원 이하) - 놓치면 안 될 것(마감), 새 소식 - 새로 나온 것(출시).
 import Link from "next/link";
-import { DiscountText } from "@/components/ui/discount";
-import { CoverImage, GameCard } from "@/components/game-card";
-import { Clamp } from "@/components/ui/tooltip";
+import { GameCard } from "@/components/game-card";
 import { NewsList } from "@/components/news-list";
 import { HomeDeals } from "@/components/home-deals";
 import { EmptyState } from "@/components/empty-state";
-import { SaleBadge } from "@/components/sale-badge";
-import { Page, ROW, ROWS, SectionHead } from "@/components/ui/page";
-import { PLATFORM_LABEL } from "@/lib/format";
+import { Page, SectionHead } from "@/components/ui/page";
+import { Rail } from "@/components/ui/rail";
+import { HomeHero } from "@/components/home/hero";
+import { HomeRanking } from "@/components/home/ranking";
+import { EndingSoonList } from "@/components/home/ending-soon";
+import { HOME_MESSAGES as M } from "@/lib/home/messages";
 import { stagger } from "@/lib/motion";
 import { ROUTES } from "@/lib/routes";
-import { cn } from "@/lib/cn";
 import { getHomeData, listGames } from "@/server/services/games";
 import type { GameSummary } from "@/server/services/games/dto";
 import { getRunningSteamSale, type RunningSaleDto } from "@/server/services/sales";
@@ -25,6 +26,18 @@ import { HomeSaleBanner, SALE_BANNER_PREVIEW } from "@/components/home-sale-bann
 
 // Next 가 정적으로 읽는 값이라 리터럴이어야 한다 — 근거, 수치는 lib/cache 의 LIST_REVALIDATE_SECONDS 와 같게 유지
 export const revalidate = 3600;
+
+/** DB 가 안 열릴 때 홈 셸만 세우는 빈 값 */
+const EMPTY_HOME = {
+  discounts: [],
+  endingSoon: [],
+  recentReleases: [],
+  latestNews: [],
+  storeDeals: [],
+  popular: [],
+  budget: [],
+  stats: { trackedGames: 0, onSaleGames: 0, syncedAt: null },
+};
 
 type HomeData = Awaited<ReturnType<typeof getHomeData>>;
 
@@ -35,7 +48,7 @@ async function loadHomeData(): Promise<{ data: HomeData; dbError: string | null 
   } catch (e) {
     const msg = e instanceof Error ? e.message : String(e);
     console.error("[home] 데이터 조회 실패:", msg);
-    return { data: { discounts: [], endingSoon: [], recentReleases: [], latestNews: [] }, dbError: msg };
+    return { data: { ...EMPTY_HOME }, dbError: msg };
   }
 }
 
@@ -58,7 +71,7 @@ export default async function HomePage() {
   // 두 조회는 서로 기다릴 이유가 없다 — 줄 세우면 Neon 왕복이 둘이 된다
   const [{ data, dbError }, runningSale] = await Promise.all([loadHomeData(), loadRunningSale()]);
   // 곧 끝나는 할인은 서버가 따로 골라 준다 — 위 줄과 겹치지 않아야 해서다(services/games/home 주석)
-  const { discounts, endingSoon: soon, recentReleases, latestNews } = data;
+  const { discounts, endingSoon, recentReleases, latestNews, storeDeals, popular, budget, stats } = data;
 
   return (
     <Page pad="home" gap={56}>
@@ -68,27 +81,21 @@ export default async function HomePage() {
         </div>
       )}
 
-      {runningSale && <HomeSaleBanner sale={runningSale.sale} preview={runningSale.preview} />}
+      {/* 머리와 세일 배너는 한 덩어리로 붙인다 — 약속 바로 밑에 "지금 그 약속이 이렇게 지켜진다" 가 와야 한다 */}
+      <div className="flex flex-col gap-7">
+        {!dbError && <HomeHero stats={stats} />}
+        {runningSale && <HomeSaleBanner sale={runningSale.sale} preview={runningSale.preview} />}
+      </div>
 
-      {/* 섹션 1 — 할인 중인 게임. 큰 머리글을 걷어낸 자리라(2026-09-15) 이 제목이 문서의 h1 이다 */}
+      {/* 1 — 할인 격자. 개인화한 사람에게는 마운트 뒤 취향 줄로 갈아 끼워진다(components/home-deals 주석) */}
       <section aria-labelledby="discounts-heading" className="flex flex-col gap-[22px]">
-        {/* 곁말과 갈래 칩을 뗐다(2026-09-22, 사용자 지정). 칩은 목록의 플랫폼 필터와 같은 일을 하는
-            두 번째 입구였고, 곁말("한국 스토어 기준 플랫폼별 최저가")은 카드가 이미 스토어 이름을
-            줄마다 적고 있어 같은 말을 머리에서 한 번 더 하고 있었다 */}
-        {/* 전체 보기는 제목 줄 오른쪽 끝에 붙인다(2026-09-22 사용자 요청) — 아래 뉴스, 최근 출시와 같은 자리다.
-            격자 밑에 있던 큰 단추는 뗐다: 같은 곳으로 가는 입구가 한 마디에 둘이면 둘 다 덜 읽히고,
-            좁은 화면에서는 카드 열두 장을 다 지나야 보여서 사실상 없는 입구였다 */}
-        <div className="enter-item flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1" style={stagger(0)}>
-          <h1 id="discounts-heading" className="text-[22px] font-extrabold leading-[1.2] tracking-[-0.03em] text-ink sm:text-[26px]">
-            지금 할인 중
-          </h1>
-          {discounts.length > 0 && (
-            <Link href={`${ROUTES.game}?sale=1`} className="tap ml-auto inline-flex items-center text-[13px] text-acc hover:underline">
-              전체 보기
-            </Link>
-          )}
-        </div>
-
+        <SectionHead
+          className="enter-item"
+          style={stagger(0)}
+          id="discounts-heading"
+          title={M.discountsTitle}
+          action={discounts.length > 0 && <SeeAll href={`${ROUTES.game}?sale=1`} />}
+        />
         {discounts.length === 0 ? (
           <EmptyState
             title="지금 할인 중인 게임이 없습니다"
@@ -96,97 +103,86 @@ export default async function HomePage() {
             action={{ href: ROUTES.game, label: "전체 게임 목록 보기" }}
           />
         ) : (
-          // 개인화한 사람에게는 마운트 뒤 취향 줄로 갈아 끼워진다(components/home-deals 주석)
-          <HomeDeals initial={discounts} />
+          // 좁은 화면은 여덟 장까지만(2026-10-02). 한 줄에 한 장이라 스물넷이면 같은 카드가 6,000px 이어져
+          // 아래의 다른 줄에 닿기 전에 손을 놓는다. 나머지는 머리의 "전체 보기" 가 받는다. 넓은 화면은 그대로 24
+          <div className="max-sm:[&_li:nth-child(n+9)]:hidden">
+            <HomeDeals initial={discounts} />
+          </div>
         )}
       </section>
 
-      {/* 섹션 2 — 곧 끝나는 할인 / 최신 뉴스 */}
-      {/* items-start: 두 기둥이 서로의 키를 따라가지 않게 한다 */}
-      {/* min() 을 씌우는 이유: auto-fit 의 minmax 는 화면이 그 값보다 좁아도 칸을 줄이지 않는다.
-          320px 기기에서 360px 칸 + 좌우 여백이 화면을 넘어 홈 전체가 가로로 밀렸다 */}
+      {/* 2 — 스토어만 바꿔도 더 싼 게임. 카드마다 초록 판정 줄이 "어디서 얼마" 를 말한다(lib/games/saving) */}
+      <RailSection id="store-deals" title={M.storeDealsTitle} note={M.storeDealsNote} games={storeDeals} />
+
+      {/* 3 — 인기 순위. 번호 목록이라 격자와 줄 사이에서 모양이 한 번 더 바뀐다 */}
+      {popular.length > 0 && (
+        <section aria-labelledby="popular-heading" className="flex flex-col gap-3">
+          <SectionHead id="popular-heading" title={M.popularTitle} note={M.popularNote} action={<SeeAll href={ROUTES.game} />} />
+          <HomeRanking games={popular} />
+        </section>
+      )}
+
+      {/* 4 — 만 원 이하. 같은 줄 모양이지만 사이에 순위 목록이 끼어 둘이 붙어 보이지 않는다 */}
+      <RailSection id="budget" title={M.budgetTitle} games={budget} href={`${ROUTES.game}?sale=1`} />
+
+      {/* 5 — 곧 끝나는 할인 / 최신 뉴스.
+          min() 을 씌우는 이유: auto-fit 의 minmax 는 화면이 그 값보다 좁아도 칸을 줄이지 않는다.
+          320px 기기에서 360px 칸 + 좌우 여백이 화면을 넘어 홈 전체가 가로로 밀렸다. items-start: 두 기둥이 서로의 키를 따라가지 않게 한다 */}
       <section className="grid grid-cols-[repeat(auto-fit,minmax(min(360px,100%),1fr))] items-start gap-x-12 gap-y-10">
         <div className="enter-item flex flex-col gap-3.5" style={stagger(0)}>
-          <SectionHead title="곧 할인 마감" />
-          {soon.length === 0 ? (
-            <p className="border-t border-line-strong py-5 text-[13px] text-dim">종료 시각이 공개된 할인이 없습니다.</p>
+          <SectionHead title={M.endingSoonTitle} />
+          {endingSoon.length === 0 ? (
+            <p className="border-t border-line-strong py-5 text-[13px] text-dim">{M.endingSoonEmpty}</p>
           ) : (
-            <ul className={ROWS}>
-              {soon.map((g) => (
-                <li key={g.slug}>
-                  <Link href={`/games/${g.slug}`} className={cn(ROW, "flex items-center gap-3.5 py-[13px]")}>
-                    {/* 썸네일을 세우는 이유: 제목만 늘어선 목록은 "무슨 게임인지" 를 글자로만 묻는다.
-                        카드와 같은 460:215 비율이라 같은 그림이 같은 모양으로 읽힌다 */}
-                    <span className="relative aspect-[460/215] w-16 shrink-0 overflow-hidden rounded-[var(--radius-inset)] bg-surface-3 shadow-hair">
-                      <CoverImage src={g.coverUrl} alt="" sizes="64px" />
-                    </span>
-                    <span className="min-w-0 flex-1">
-                      <Clamp className="block text-[14.5px] font-bold tracking-[-0.02em] text-ink">{g.titleKo ?? g.titleEn}</Clamp>
-                      {/* 값은 카드와 같은 문법으로 읽힌다 — 할인가가 굵고, 원래 값은 취소선 회색으로 그 옆에 선다.
-                          할인가만 적으면 "얼마나 싸졌나" 를 스탬프 없는 이 줄에서는 알 길이 없다 */}
-                      <span className="mt-0.5 flex flex-wrap items-baseline gap-x-1.5 text-[12px] text-dim">
-                        {g.best && (
-                          <>
-                            <span>{PLATFORM_LABEL[g.best.platform] ?? g.best.platform}</span>
-                            <span aria-hidden>|</span>
-                          </>
-                        )}
-                        <span className="font-bold text-ink">{formatPrice(g.best?.currentPrice, g.best?.currency)}</span>
-                        {/* 할인율을 값 옆에 세운다(2026-09-22, 사용자 지적: "할인율이 안보임").
-                            이 줄에는 커버 위 스탬프가 없어서, 취소선 정가만으로는 "얼마나 싸졌나" 를
-                            두 숫자를 머릿속에서 나눠 봐야 알 수 있었다. 카드의 스탬프와 같은 브랜드 색이다 */}
-                        {g.best?.discountPct != null && g.best.discountPct > 0 && (
-                          <span className="font-bold text-acc"><DiscountText pct={g.best.discountPct} /></span>
-                        )}
-                        {g.best?.listPrice != null && g.best.listPrice !== g.best.currentPrice && (
-                          <span className="text-[11px] text-dim-2 line-through">{formatPrice(g.best.listPrice, g.best.currency)}</span>
-                        )}
-                      </span>
-                    </span>
-                    <SaleBadge variant="inline" discountName={null} discountEndsAt={g.best?.discountEndsAt} />
-                  </Link>
-                </li>
-              ))}
-            </ul>
+            <EndingSoonList games={endingSoon} />
           )}
         </div>
-
         <div className="enter-item flex flex-col gap-3.5" style={stagger(1)}>
-          <SectionHead
-            title="뉴스"
-            action={
-              <Link href={ROUTES.news} className="text-[13px] text-acc hover:underline">
-                전체 보기
-              </Link>
-            }
-          />
+          <SectionHead title={M.newsTitle} action={<SeeAll href={ROUTES.news} />} />
           <NewsList items={latestNews} showGame />
         </div>
       </section>
 
-      {/* 섹션 3 — 최근 출시 */}
-      {recentReleases.length > 0 && (
-        <section aria-labelledby="releases-heading" className="flex flex-col gap-[18px]">
-          <SectionHead
-            className="enter-item"
-            style={stagger(0)}
-            id="releases-heading"
-            title="최근 출시"
-            action={
-              <Link href={`${ROUTES.game}?sort=release`} className="text-[13px] text-acc hover:underline">
-                전체 게임 목록
-              </Link>
-            }
-          />
-          <ul className={HOME_GRID_CLASS}>
-            {recentReleases.map((g, i) => (
-              <li key={g.slug} className="enter-item" style={stagger(i + 1)}>
-                <GameCard game={g} variant="release" />
-              </li>
-            ))}
-          </ul>
-        </section>
-      )}
+      {/* 6 — 최근 출시. 격자 20칸이던 것을 줄로(2026-10-02) — 끝에 전체 목록이 있다 */}
+      <RailSection id="releases" title={M.releasesTitle} games={recentReleases} variant="release" href={`${ROUTES.game}?sort=release`} linkLabel={M.allGames} />
     </Page>
+  );
+}
+
+function SeeAll({ href, label = M.seeAll }: { href: string; label?: string }) {
+  return (
+    <Link href={href} className="tap inline-flex items-center text-[13px] text-acc hover:underline">
+      {label}
+    </Link>
+  );
+}
+
+/** 옆으로 넘기는 줄 한 마디. 비면 마디째 안 세운다 — 제목만 선 빈 줄은 고장으로 읽힌다 */
+function RailSection({
+  id,
+  title,
+  note,
+  games,
+  variant,
+  href,
+  linkLabel,
+}: {
+  id: string;
+  title: string;
+  note?: string;
+  games: GameSummary[];
+  variant?: "discount" | "release";
+  href?: string;
+  linkLabel?: string;
+}) {
+  if (games.length === 0) return null;
+  return (
+    <section aria-labelledby={`${id}-heading`} className="flex flex-col gap-3">
+      <SectionHead id={`${id}-heading`} title={title} note={note} action={href && <SeeAll href={href} label={linkLabel} />} />
+      <Rail
+        labels={{ prev: M.railPrev, next: M.railNext }}
+        items={games.map((g) => ({ key: g.slug, node: <GameCard game={g} variant={variant} /> }))}
+      />
+    </section>
   );
 }

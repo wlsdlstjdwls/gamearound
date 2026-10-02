@@ -8,6 +8,8 @@ import type { HomeData } from "./dto";
 import { fillGenres, fillPlatforms, groupSummaries } from "./mappers";
 import { mainGamesOnly } from "./filters";
 import { showcaseReady } from "./exposure";
+import { getHomeExtras } from "./home-rows";
+import { HOME_RAIL_LIMIT } from "@/lib/home/rows";
 import { DTO_CACHE_VERSION, LIST_REVALIDATE_SECONDS } from "@/lib/cache";
 import { baseCurrencyFirst as baseCurrencyFirstExpr, dealOrder, popularityRankAgg } from "./popularity-order";
 
@@ -55,7 +57,7 @@ async function getHomeDataRaw(): Promise<HomeData> {
    * 동점이었고, 그걸 할인율로 깨면 "많이 깎인 묵은 것" 이 이겼다. 출시일로 **거르지는** 않는다 —
    * 3년 컷을 재어 보니 Baldur's Gate 3, RimWorld 가 빠지고 세대 호환 번들 셋이 그 자리를 채웠다.
    */
-  const discountRows = await db
+  const discountRowsQ = db
     .select({ game: games, gp: gamePlatforms })
     .from(gamePlatforms)
     .innerJoin(games, eq(gamePlatforms.gameId, games.id))
@@ -77,7 +79,7 @@ async function getHomeDataRaw(): Promise<HomeData> {
    * 넉넉히 받아 오는 이유(limit x 6): 게임 하나가 스토어 여러 줄로 오고(groupSummaries 가 접는다),
    * 그중 위 줄과 겹치는 게임을 JS 에서 버려야 한다.
    */
-  const endingSoonRows = await db
+  const endingSoonRowsQ = db
     .select({ game: games, gp: gamePlatforms })
     .from(gamePlatforms)
     .innerJoin(games, eq(gamePlatforms.gameId, games.id))
@@ -99,7 +101,7 @@ async function getHomeDataRaw(): Promise<HomeData> {
 
   // 최근 출시: 출시일 desc (미래 출시 제외). 진열 조건을 거는 이유는 exposure 머리 표 —
   // 하루 수십 건씩 나오는 소품이 24칸을 다 먹어 "최근 출시" 가 처음 듣는 이름뿐이었다
-  const releaseRows = await db
+  const releaseRowsQ = db
     .select({ game: games, gp: gamePlatforms })
     .from(gamePlatforms)
     .innerJoin(games, eq(gamePlatforms.gameId, games.id))
@@ -107,29 +109,45 @@ async function getHomeDataRaw(): Promise<HomeData> {
     .orderBy(desc(gamePlatforms.releaseDate), baseCurrencyFirst)
     .limit(HOME_LIMIT * 4);
 
-  const newsRows = await db
+  const newsRowsQ = db
     .select({ n: news, slug: games.slug, titleKo: games.titleKo, titleEn: games.titleEn })
     .from(news)
     .leftJoin(games, eq(news.gameId, games.id))
     .orderBy(desc(news.publishedAt))
     .limit(HOME_NEWS_LIMIT);
 
+  // 질의는 서로 기다리지 않는다(2026-10-02) — 전에는 넷을 줄 세워 왕복이 네 번 쌓였다(neon-roundtrip-cost)
+  const [discountRows, endingSoonRows, releaseRows, newsRows, extras] = await Promise.all([
+    discountRowsQ,
+    endingSoonRowsQ,
+    releaseRowsQ,
+    newsRowsQ,
+    getHomeExtras(),
+  ]);
+
   // 잘라 온 조인 행만으로는 배지가 빠진다 — 자른 뒤 게임 단위로 한 번 더 채운다(fillPlatforms 주석)
   const fill = async (rows: typeof discountRows, limit = HOME_LIMIT) => fillGenres(await fillPlatforms(groupSummaries(rows, limit)));
   const [discounts, recentReleases, endingSoonAll] = await Promise.all([
     fill(discountRows),
-    fill(releaseRows),
+    // 최근 출시는 옆으로 넘기는 줄이 됐다(2026-10-02) — 칸 수가 그 줄의 것이다
+    fill(releaseRows, HOME_RAIL_LIMIT),
     // 겹치는 것을 버린 뒤에 8칸을 채워야 해서 넉넉히 접는다
     fill(endingSoonRows, HOME_ENDING_SOON_LIMIT * 3),
   ]);
   // 위 줄에 이미 선 게임은 뺀다 — 같은 카드가 한 화면에 두 번 서면 두 마디가 서로를 베낀 것처럼 읽힌다
   const shown = new Set(discounts.map((g) => g.slug));
   const endingSoon = endingSoonAll.filter((g) => !shown.has(g.slug)).slice(0, HOME_ENDING_SOON_LIMIT);
+  // 둘째 판 줄도 첫 줄과 겹치지 않게 — 인기 순위만 예외다(HomeData 주석)
+  const unseen = (list: typeof discounts) => list.filter((g) => !shown.has(g.slug)).slice(0, HOME_RAIL_LIMIT);
 
   return {
     discounts,
     endingSoon,
     recentReleases,
+    storeDeals: unseen(extras.storeDeals),
+    popular: extras.popular,
+    budget: unseen(extras.budget),
+    stats: extras.stats,
     latestNews: newsRows.map(({ n, slug, titleKo, titleEn }) => ({
       id: n.id,
       title: n.title,

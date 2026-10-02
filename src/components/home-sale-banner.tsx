@@ -10,7 +10,7 @@
 // 넷 다 상세로 가는 링크다(사용자 요청). 보여 준 게임을 눌러 볼 수 없으면 그림이 광고판으로만 남는다.
 //
 // 서버 컴포넌트다. 초가 움직이는 칸만 클라이언트(Countdown)라 그 칸만 하이드레이션된다.
-// 제목을 h 태그로 두지 않는 이유: 바로 아래 "지금 할인 중" 이 이 문서의 h1 이다(app/(public)/page 주석).
+// 제목을 h 태그로 두지 않는 이유: 바로 위 홈 머리(components/home/hero)가 이 문서의 h1 이다.
 import Link from "next/link";
 import { CoverImage } from "@/components/game-card";
 import { Countdown } from "@/components/sales/countdown";
