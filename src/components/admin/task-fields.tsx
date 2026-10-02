@@ -37,7 +37,7 @@ export const FIELD = cn(
   "focus:shadow-[0_0_0_1px_var(--acc),0_0_0_4px_var(--acc-glow)]",
 );
 
-export const FIELD_LABEL = "mb-1.5 block text-[13.5px] font-semibold text-mut";
+export const FIELD_LABEL = "mb-1 block text-[13.5px] font-semibold text-mut sm:mb-1.5";
 
 /**
  * 세그먼트(한 판 위에 칸이 서고 고른 칸만 브랜드 보라로 채워진다).
@@ -55,9 +55,22 @@ export const SEGMENT_ITEM_ON = "bg-acc font-semibold text-on-ink shadow-1";
 /** 우선순위 높음을 고르면 빨강으로 채운다 — 카드 띠와 같은 색이라 "이건 급한 일" 이 고를 때부터 보인다 */
 const SEGMENT_ITEM_URGENT = "has-[:checked]:bg-danger";
 
-export function Field({ label, hint, children, id }: { label: string; hint?: string; id: string; children: React.ReactNode }) {
+export function Field({
+  label,
+  hint,
+  children,
+  id,
+  className,
+}: {
+  label: string;
+  hint?: string;
+  id: string;
+  /** 격자 안 자리(칸 수, 순서)를 바깥이 정할 때 */
+  className?: string;
+  children: React.ReactNode;
+}) {
   return (
-    <div className="min-w-0">
+    <div className={cn("min-w-0", className)}>
       <label htmlFor={id} className={FIELD_LABEL}>
         {label}
       </label>
@@ -149,7 +162,9 @@ export function TaskMetaFields({
   const id = useId();
   const assigneeChoices = [{ value: "", label: TASK_MESSAGES.assigneeNone }, ...assignees.map((a) => ({ value: a.id, label: a.name }))];
   return (
-    <div className="grid gap-3 sm:grid-cols-3">
+    // 좁은 화면은 두 줄이다(2026-10-02, 사용자: "모바일 할일 상세는 컴팩트화가 덜 됐다") — 앞서는 셋이 한 줄씩
+    // 세 줄을 먹었다. 셀렉트 둘이 한 줄에 나란히 서고, 값이 셋인 우선순위 세그먼트만 아래 한 줄을 다 쓴다(반 폭에선 낱말이 꺾인다)
+    <div className="grid grid-cols-2 gap-x-2 gap-y-2.5 sm:grid-cols-3 sm:gap-3">
       {/* 셀렉트는 라벨을 스스로 단다(버튼에 aria 로 잇는다). 눈에 보이는 라벨만 Field 와 같은 모양으로 따로 세운다 */}
       <div className="min-w-0">
         <span aria-hidden className={FIELD_LABEL}>
@@ -165,7 +180,7 @@ export function TaskMetaFields({
         />
       </div>
 
-      <Field id={`${id}-priority`} label={TASK_MESSAGES.priorityLabel}>
+      <Field id={`${id}-priority`} label={TASK_MESSAGES.priorityLabel} className="order-last col-span-2 sm:order-none sm:col-span-1">
         <RadioSegment
           id={`${id}-priority`}
           name="priority"

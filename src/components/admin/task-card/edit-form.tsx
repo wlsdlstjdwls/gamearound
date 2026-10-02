@@ -21,7 +21,7 @@ export function TaskEditForm({ task, assignees }: { task: AdminTask; assignees: 
   const [state, formAction, pending] = useActionState<TaskActionState, FormData>(updateTaskAction, null);
 
   return (
-    <ActionForm action={formAction} state={state} pending={pending} className="flex flex-col gap-4">
+    <ActionForm action={formAction} state={state} pending={pending} className="flex flex-col gap-3 sm:gap-4">
       <input type="hidden" name="id" value={task.id} />
 
       {/* key 를 카드 id 로 두는 이유: 팝업이 다른 카드로 바뀌어도 같은 폼이 재사용되면
@@ -63,7 +63,7 @@ export function TaskEditForm({ task, assignees }: { task: AdminTask; assignees: 
         -bottom-5 와 pb-5 는 시트 본문의 아래 여백(ui/sheet 의 pb-5)과 짝이다 — bottom-0 이면 그 여백 위에 멈춰
         줄 밑으로 스크롤된 내용이 비쳤다(2026-10-01 사용자 지적). 여백만큼 내려 붙인다(줄이 그 여백까지 덮는다).
       */}
-      <div className="sticky -bottom-5 z-10 -mx-4 flex items-center gap-3 border-t border-line bg-surface px-4 py-4">
+      <div className="sticky -bottom-5 z-10 -mx-4 flex items-center gap-3 border-t border-line bg-surface px-4 py-3 sm:py-4">
         <Button type="submit" variant="primary" loading={pending}>
           {TASK_MESSAGES.save}
         </Button>

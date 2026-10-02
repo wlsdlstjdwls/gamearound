@@ -32,7 +32,7 @@ import { deleteTaskAction, moveTaskAction, type TaskActionState } from "@/app/(a
  */
 function Part({ title, children }: { title: string; children: React.ReactNode }) {
   return (
-    <section className="flex flex-col gap-3 border-t border-line pt-4 first:border-t-0 first:pt-0">
+    <section className="flex flex-col gap-2 border-t border-line pt-3 first:border-t-0 first:pt-0 sm:gap-3 sm:pt-4">
       <h3 className="text-[14px] font-bold text-ink">{title}</h3>
       {children}
     </section>
@@ -59,7 +59,7 @@ export function TaskDialog({
   // 판이 가려진 상태에서 지금 무엇을 보고 있는지 알 길이 제목 입력칸 안뿐이었다.
   return (
     <Sheet title={task.title} size="wide" open={open} onOpenChange={onOpenChange}>
-      <div className={cn("flex flex-col gap-5 pb-2 pt-2", pending && "opacity-70")}>
+      <div className={cn("flex flex-col gap-3.5 pb-2 pt-2 sm:gap-5", pending && "opacity-70")}>
         {/* 칸이 맨 위에 선다 — 팝업을 여는 이유의 절반은 "이걸 다음 칸으로 옮기려고" 다.
             앞서는 고치기 폼 아래라 옮기려면 스크롤을 지나야 했다 */}
         <Part title={TASK_MESSAGES.place}>
@@ -102,7 +102,7 @@ export function TaskDialog({
           </p>
         )}
 
-        <div className="flex flex-wrap items-center justify-between gap-3 border-t border-line pt-4">
+        <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-1 border-t border-line pt-3 sm:pt-4">
           {/* 올린 사람은 고친 때와 한 줄에 선다 — 둘 다 "이 카드의 내력" 이라 고치는 칸들과 떼어 둔다 */}
           <span className="text-[12.5px] text-dim">
             {TASK_MESSAGES.author} {task.author?.name ?? TASK_MESSAGES.authorUnknown} | {TASK_MESSAGES.updatedAt}{" "}
