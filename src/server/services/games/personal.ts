@@ -14,6 +14,7 @@ import type { DealFloor } from "@/lib/onboarding/personal";
 import type { GameSummary } from "./dto";
 import { fillGenres, fillPlatforms, groupSummaries } from "./mappers";
 import { mainGamesOnly } from "./filters";
+import { showcaseReady } from "./exposure";
 import { dealOrder, popularityRankAgg } from "./popularity-order";
 import { getHomeData, HOME_LIMIT } from "./home";
 import { fillDeals } from "./fill-deals";
@@ -30,6 +31,8 @@ async function getPickedDeals(f: PersonalDealsFilter): Promise<GameSummary[]> {
   const rankAgg = popularityRankAgg(db);
   const wheres = [
     mainGamesOnly(),
+    // 공통 줄(home.ts)과 같은 진열 조건 — 취향 칸만 소품을 세우면 두 칸의 결이 갈린다
+    showcaseReady(),
     eq(gamePlatforms.region, HOME_REGION),
     visiblePlatformsOnly(),
     gt(gamePlatforms.currentPrice, 0),

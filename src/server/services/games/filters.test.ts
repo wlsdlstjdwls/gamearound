@@ -5,6 +5,7 @@ import { type SQL } from "drizzle-orm";
 import { PgDialect } from "drizzle-orm/pg-core";
 import { hasVisiblePlatform, mainGamesOnly, runsOnRig } from "./filters";
 import { HIDDEN_PLATFORMS, HIDDEN_REGIONS } from "@/lib/platform";
+import { showcaseReady } from "./exposure";
 
 const dialect = new PgDialect();
 const render = (q: SQL<unknown>) => dialect.sqlToQuery(q);
@@ -71,6 +72,11 @@ describe("mainGamesOnly", () => {
     expect(text).toContain('"game_source_refs"."game_id" = "games"."id"');
   });
 
+  it("커버 없는 게임을 뺀다 — 회색 칸은 깨진 화면으로 읽힌다(노출 체크리스트 1번)", () => {
+    const { sql: text } = render(mainGamesOnly());
+    expect(text).toContain('"games"."cover_url" is not null');
+  });
+
   it("매장 발 임시 게임을 뺀다 — 스토어 ID 가 붙어도 승격 전에는 목록에 안 나온다", () => {
     const { sql: text, params } = render(mainGamesOnly());
     expect(text).toContain('"games"."visibility"');
@@ -97,5 +103,19 @@ describe("runsOnRig", () => {
   it("기기의 OS 사양만 본다", () => {
     const { params } = render(runsOnRig({ osFamily: "mac", cpuTier: null, gpuTier: 12, ramMb: null }));
     expect(params).toContain("mac");
+  });
+});
+
+describe("showcaseReady", () => {
+  it("한국 가격과 알려진 게임 신호를 함께 요구한다", () => {
+    const { sql: text } = render(showcaseReady());
+    expect(text).toContain('"game_platforms"."current_price" is not null');
+    expect(text).toContain('"games"."title_ko" is not null');
+    expect(text).toContain("popularity_rank");
+  });
+
+  it("한글 제목은 문턱이 아니라 신호 중 하나다 — or 로만 붙는다", () => {
+    const { sql: text } = render(showcaseReady());
+    expect(text).toMatch(/title_ko" is not null\s+or /);
   });
 });

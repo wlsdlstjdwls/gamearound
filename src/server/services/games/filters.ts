@@ -7,6 +7,7 @@ import { and, eq, isNull, sql, type SQL } from "drizzle-orm";
 import { gameCompanies, gamePlatforms, gameRequirementFloors, gameSourceRefs, gameSubscriptions, games, companies, HOME_REGION, subscriptions, type Platform } from "@/server/db/schema";
 import { HIDDEN_PLATFORMS, HIDDEN_REGIONS } from "@/lib/platform";
 import type { RigSpec } from "@/lib/hardware/rig";
+import { hasCover } from "./exposure";
 
 /**
  * 스토어와 이어져 있는 게임. 매칭(auto, manual)이 하나라도 있어야 한다.
@@ -43,7 +44,8 @@ function matchedToStore(): SQL {
  * 아직 사람이 확인하지 않은 행이 전체 목록으로 샌다. 승격은 `visibility` 를 올리는 일이어야 한다.
  */
 export function mainGamesOnly(): SQL {
-  return and(eq(games.contentType, "game"), eq(games.visibility, "public"), matchedToStore())!;
+  // 커버 없는 게임도 여기서 빠진다(2026-10-02, 노출 체크리스트 1번 — services/games/exposure 머리 표)
+  return and(eq(games.contentType, "game"), eq(games.visibility, "public"), hasCover(), matchedToStore())!;
 }
 
 /** 특정 회사의 게임만(개발, 배급 무관). 회사 화면과 목록 필터가 같은 조건을 쓴다 */

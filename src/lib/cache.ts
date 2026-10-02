@@ -92,7 +92,11 @@
  * 모양은 같지만 안 올리면 한 시간 동안 12칸 줄이 5열 격자에 이 빠진 채 선다.
  */
 /** v25(2026-09-30): 홈 칸 20 → 24(격자가 2, 3, 4열로 고정). v24 와 같은 이유 */
-export const DTO_CACHE_VERSION = "v25";
+/**
+ * v26(2026-10-02): 노출 체크리스트(services/games/exposure). 커버 없는 게임이 모든 목록에서 빠지고
+ * 홈 진열 줄은 알려진 게임만 세운다 — 안 올리면 한 시간 동안 걸러야 할 카드가 그대로 선다
+ */
+export const DTO_CACHE_VERSION = "v26";
 
 /** 목록, 검색, 홈처럼 태그 무효화로 갱신되는 화면의 기본 재검증 주기(초) */
 export const LIST_REVALIDATE_SECONDS = 3600;

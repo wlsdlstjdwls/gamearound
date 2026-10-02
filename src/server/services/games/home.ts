@@ -7,6 +7,7 @@ import { visiblePlatformsOnly } from "@/server/db/visibility";
 import type { HomeData } from "./dto";
 import { fillGenres, fillPlatforms, groupSummaries } from "./mappers";
 import { mainGamesOnly } from "./filters";
+import { showcaseReady } from "./exposure";
 import { DTO_CACHE_VERSION, LIST_REVALIDATE_SECONDS } from "@/lib/cache";
 import { baseCurrencyFirst as baseCurrencyFirstExpr, dealOrder, popularityRankAgg } from "./popularity-order";
 
@@ -59,7 +60,7 @@ async function getHomeDataRaw(): Promise<HomeData> {
     .from(gamePlatforms)
     .innerJoin(games, eq(gamePlatforms.gameId, games.id))
     .leftJoin(rankAgg, eq(rankAgg.gameId, games.id))
-    .where(and(mainGamesOnly(), homeRegion, visiblePlatformsOnly(), gt(gamePlatforms.discountPct, 0), gt(gamePlatforms.currentPrice, 0)))
+    .where(and(mainGamesOnly(), showcaseReady(), homeRegion, visiblePlatformsOnly(), gt(gamePlatforms.discountPct, 0), gt(gamePlatforms.currentPrice, 0)))
     .orderBy(...dealOrder(rankAgg))
     .limit(HOME_LIMIT * 4);
 
@@ -83,6 +84,8 @@ async function getHomeDataRaw(): Promise<HomeData> {
     .where(
       and(
         mainGamesOnly(),
+        // 이 줄이 제일 오염됐었다(2026-10-02) — 빨리 끝나는 순이라 아무도 모르는 Xbox 소품이 8칸을 다 채웠다
+        showcaseReady(),
         homeRegion,
         visiblePlatformsOnly(),
         gt(gamePlatforms.discountPct, 0),
@@ -94,12 +97,13 @@ async function getHomeDataRaw(): Promise<HomeData> {
     .orderBy(asc(gamePlatforms.discountEndsAt), baseCurrencyFirst)
     .limit(HOME_ENDING_SOON_LIMIT * 6);
 
-  // 최근 출시: 출시일 desc (미래 출시 제외)
+  // 최근 출시: 출시일 desc (미래 출시 제외). 진열 조건을 거는 이유는 exposure 머리 표 —
+  // 하루 수십 건씩 나오는 소품이 24칸을 다 먹어 "최근 출시" 가 처음 듣는 이름뿐이었다
   const releaseRows = await db
     .select({ game: games, gp: gamePlatforms })
     .from(gamePlatforms)
     .innerJoin(games, eq(gamePlatforms.gameId, games.id))
-    .where(and(mainGamesOnly(), homeRegion, visiblePlatformsOnly(), isNotNull(gamePlatforms.releaseDate), sql`${gamePlatforms.releaseDate} <= current_date`))
+    .where(and(mainGamesOnly(), showcaseReady(), homeRegion, visiblePlatformsOnly(), isNotNull(gamePlatforms.releaseDate), sql`${gamePlatforms.releaseDate} <= current_date`))
     .orderBy(desc(gamePlatforms.releaseDate), baseCurrencyFirst)
     .limit(HOME_LIMIT * 4);
 
