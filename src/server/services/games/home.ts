@@ -149,7 +149,6 @@ async function getHomeDataRaw(): Promise<HomeData> {
     storeDeals: unseen(extras.storeDeals),
     popular: extras.popular,
     budget: unseen(extras.budget),
-    stats: extras.stats,
     latestNews: newsRows.map(({ n, slug, titleKo, titleEn }) => ({
       id: n.id,
       title: n.title,

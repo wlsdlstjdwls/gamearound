@@ -97,7 +97,7 @@
  * 홈 진열 줄은 알려진 게임만 세운다 — 안 올리면 한 시간 동안 걸러야 할 카드가 그대로 선다
  */
 /**
- * v27(2026-10-02): 홈 재구성 — HomeData 에 줄 셋(storeDeals, popular, budget)과 머리 숫자(stats)가,
+ * v27(2026-10-02): 홈 재구성 — HomeData 에 줄 셋(storeDeals, popular, budget)이,
  * GameSummary 에 판정(saving)이 붙었다. 옛 캐시에는 이 값이 없어 홈 머리가 통째로 안 선다
  */
 export const DTO_CACHE_VERSION = "v27";

@@ -2,7 +2,7 @@
 // 검색 폼은 헤더 검색창이 유일한 진입점이므로 히어로에 검색창을 두지 않는다(리디자인).
 //
 // 2026-10-02 재구성(사용자: "디자인도 없고 투박하다, 서비스적으로 어필하려면"): 같은 카드 격자 44칸을 걷고
-// 줄마다 모양을 갈랐다 — 머리 약속(HomeHero), 할인 격자, 옆으로 넘기는 줄(Rail), 번호 목록(HomeRanking),
+// 줄마다 모양을 갈랐다 — 할인 격자, 옆으로 넘기는 줄(Rail), 번호 목록(HomeRanking),
 // 두 기둥(곧 마감, 뉴스). 격자는 첫 줄 하나만 남겼다. 모양이 바뀌는 곳이 마디가 바뀌는 곳이다.
 // 줄 순서는 "왜 여기 왔나" 순이다: 무엇이 싸나(할인) - 어디서 사면 더 싸나(스토어 차이, 이 서비스만 말할 수 있는 값) -
 // 무엇이 팔리나(순위) - 가볍게 살 것(만 원 이하) - 놓치면 안 될 것(마감), 새 소식 - 새로 나온 것(출시).
@@ -13,7 +13,6 @@ import { HomeDeals } from "@/components/home-deals";
 import { EmptyState } from "@/components/empty-state";
 import { Page, SectionHead } from "@/components/ui/page";
 import { Rail } from "@/components/ui/rail";
-import { HomeHero } from "@/components/home/hero";
 import { HomeRanking } from "@/components/home/ranking";
 import { EndingSoonList } from "@/components/home/ending-soon";
 import { HOME_MESSAGES as M } from "@/lib/home/messages";
@@ -36,7 +35,6 @@ const EMPTY_HOME = {
   storeDeals: [],
   popular: [],
   budget: [],
-  stats: { trackedGames: 0, onSaleGames: 0, syncedAt: null },
 };
 
 type HomeData = Awaited<ReturnType<typeof getHomeData>>;
@@ -71,7 +69,7 @@ export default async function HomePage() {
   // 두 조회는 서로 기다릴 이유가 없다 — 줄 세우면 Neon 왕복이 둘이 된다
   const [{ data, dbError }, runningSale] = await Promise.all([loadHomeData(), loadRunningSale()]);
   // 곧 끝나는 할인은 서버가 따로 골라 준다 — 위 줄과 겹치지 않아야 해서다(services/games/home 주석)
-  const { discounts, endingSoon, recentReleases, latestNews, storeDeals, popular, budget, stats } = data;
+  const { discounts, endingSoon, recentReleases, latestNews, storeDeals, popular, budget } = data;
 
   return (
     <Page pad="home" gap={56}>
@@ -81,18 +79,15 @@ export default async function HomePage() {
         </div>
       )}
 
-      {/* 머리와 세일 배너는 한 덩어리로 붙인다 — 약속 바로 밑에 "지금 그 약속이 이렇게 지켜진다" 가 와야 한다 */}
-      <div className="flex flex-col gap-7">
-        {!dbError && <HomeHero stats={stats} />}
-        {runningSale && <HomeSaleBanner sale={runningSale.sale} preview={runningSale.preview} />}
-      </div>
+      {runningSale && <HomeSaleBanner sale={runningSale.sale} preview={runningSale.preview} />}
 
-      {/* 1 — 할인 격자. 개인화한 사람에게는 마운트 뒤 취향 줄로 갈아 끼워진다(components/home-deals 주석) */}
+      {/* 1 — 할인 격자. 머리 약속을 걷어 이 제목이 다시 문서의 h1 이다(2026-10-02). 개인화한 사람에게는 마운트 뒤 취향 줄로 갈아 끼워진다(components/home-deals 주석) */}
       <section aria-labelledby="discounts-heading" className="flex flex-col gap-[22px]">
         <SectionHead
           className="enter-item"
           style={stagger(0)}
           id="discounts-heading"
+          as="h1"
           title={M.discountsTitle}
           action={discounts.length > 0 && <SeeAll href={`${ROUTES.game}?sale=1`} />}
         />

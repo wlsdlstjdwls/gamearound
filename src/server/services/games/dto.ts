@@ -303,16 +303,6 @@ export type GameSummary = {
   saving?: StoreSaving | null;
 };
 
-/** 홈 머리의 살아 있는 숫자(services/games/home-rows 의 stats) */
-export type HomeStats = {
-  /** 목록에 서는 본편 수 — 목록 화면의 전체 건수와 같은 잣대다 */
-  trackedGames: number;
-  /** 지금 한국 스토어 어디서든 할인 중인 본편 수 */
-  onSaleGames: number;
-  /** 한국 값이 마지막으로 갱신된 때. 수집이 한 번도 안 돈 DB 면 null */
-  syncedAt: string | null;
-};
-
 export type HomeData = {
   discounts: GameSummary[];
   /**
@@ -328,7 +318,6 @@ export type HomeData = {
   popular: GameSummary[];
   /** 만 원 이하 할인. 위 할인 줄과 겹치지 않는다 */
   budget: GameSummary[];
-  stats: HomeStats;
 };
 
 /** 공개 API(/api/v1) 용 DTO — 내부 id 제외 */

@@ -1,16 +1,16 @@
-// 홈의 둘째 판 줄들 — 스토어 값 차이, 인기 순위, 만 원 이하, 머리 숫자(2026-10-02 홈 재구성).
+// 홈의 둘째 판 줄들 — 스토어 값 차이, 인기 순위, 만 원 이하(2026-10-02 홈 재구성).
 //
 // home.ts 에서 가른 이유: 그 파일은 첫 줄(할인), 곧 마감, 최근 출시, 뉴스를 이미 들고 있고 줄마다 긴 근거 주석이 붙는다.
-// 여기 넷은 모두 "진열 줄" 이라 같은 조건(mainGamesOnly + showcaseReady)을 쓴다 — 조건은 exposure 한곳이다.
+// 여기 셋은 모두 "진열 줄" 이라 같은 조건(mainGamesOnly + showcaseReady)을 쓴다 — 조건은 exposure 한곳이다.
 // 질의는 둘씩만 함께 띄운다 — 한꺼번에 띄우면 Neon 이 메모리 부족으로 죽는다(home.ts 의 같은 주석, 2026-10-02 실측).
-import { and, asc, count, countDistinct, eq, gt, lte, max, sql, type SQL } from "drizzle-orm";
+import { and, asc, eq, gt, lte, sql, type SQL } from "drizzle-orm";
 import { getDb } from "@/server/db/client";
 import { gamePlatforms, games, HOME_REGION } from "@/server/db/schema";
 import { visiblePlatformsOnly } from "@/server/db/visibility";
 import { DISPLAY_CURRENCY } from "@/lib/currency";
 import { SAVING_GROUPS, SAVING_MIN_AMOUNT } from "@/lib/games/saving";
 import { HOME_BUDGET_PRICE, HOME_RAIL_LIMIT, HOME_RANK_LIMIT } from "@/lib/home/rows";
-import type { GameSummary, HomeStats } from "./dto";
+import type { GameSummary } from "./dto";
 import { fillGenres, fillPlatforms, groupSummaries } from "./mappers";
 import { mainGamesOnly } from "./filters";
 import { showcaseReady } from "./exposure";
@@ -95,20 +95,7 @@ async function underBudget(db: Db): Promise<GameSummary[]> {
   return groupSummaries(rows, HOME_RAIL_LIMIT * 2);
 }
 
-/** 머리 숫자 셋. 화면 목록과 같은 잣대(mainGamesOnly)로 센다 — 머리의 숫자와 목록 건수가 어긋나면 머리가 거짓말이 된다 */
-async function stats(db: Db): Promise<HomeStats> {
-  // 셋을 줄 세운다 — 앞 둘은 본편 전수를 세는 무거운 질의다(getHomeExtras 의 둘씩 띄우기 주석)
-  const [tracked] = await db.select({ n: count() }).from(games).where(mainGamesOnly());
-  const [onSale] = await db
-    .select({ n: countDistinct(games.id) })
-    .from(gamePlatforms)
-    .innerJoin(games, eq(gamePlatforms.gameId, games.id))
-    .where(and(mainGamesOnly(), eq(gamePlatforms.region, HOME_REGION), visiblePlatformsOnly(), gt(gamePlatforms.discountPct, 0)));
-  const [synced] = await db.select({ at: max(gamePlatforms.lastSyncedAt) }).from(gamePlatforms).where(eq(gamePlatforms.region, HOME_REGION));
-  return { trackedGames: tracked?.n ?? 0, onSaleGames: onSale?.n ?? 0, syncedAt: synced?.at ? synced.at.toISOString() : null };
-}
-
-export type HomeExtras = { storeDeals: GameSummary[]; popular: GameSummary[]; budget: GameSummary[]; stats: HomeStats };
+export type HomeExtras = { storeDeals: GameSummary[]; popular: GameSummary[]; budget: GameSummary[] };
 
 /** 넷을 한꺼번에. 판정(saving), 배지, 장르는 자른 뒤에 채운다 — 잘라 온 조인 행만으로는 배지가 빠진다(fillPlatforms 주석) */
 export async function getHomeExtras(): Promise<HomeExtras> {
@@ -116,9 +103,8 @@ export async function getHomeExtras(): Promise<HomeExtras> {
   // 둘씩만 함께 — 넷을 한꺼번에 띄우면 Neon 컴퓨트가 공유 메모리 부족으로 질의를 죽인다(home.ts 주석)
   const [deals, popular] = await Promise.all([storeDeals(db), popularNow(db)]);
   const budget = await underBudget(db);
-  const homeStats = await stats(db);
   // 채우기는 슬러그로 집는 가벼운 질의라 셋을 함께 띄워도 된다
   const fill = async (list: GameSummary[]) => fillGenres(await fillPlatforms(list));
   const [a, b, c] = await Promise.all([fill(deals), fill(popular), fill(budget)]);
-  return { storeDeals: a, popular: b, budget: c, stats: homeStats };
+  return { storeDeals: a, popular: b, budget: c };
 }
