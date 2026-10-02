@@ -6,7 +6,7 @@
 // 화면은 그 값으로 바로 가는 링크를 만든다.
 //
 // 파일을 가른 이유는 shops, products 와 같다. schema.ts 에서 재수출하므로 호출부 import 경로는 그대로다.
-import { index, integer, pgEnum, pgTable, text, timestamp, uuid } from "drizzle-orm/pg-core";
+import { index, integer, pgEnum, pgTable, primaryKey, text, timestamp, uuid } from "drizzle-orm/pg-core";
 import { sql } from "drizzle-orm";
 import { auditColumns } from "./audit";
 import { games, users } from "./schema";
@@ -167,3 +167,20 @@ export const adminTaskAttachments = pgTable("admin_task_attachments", {
   // 읽기는 "이 할 일들의 파일" 하나다. 기록 첨부도 task_id 를 같이 적어 두어 이 인덱스 하나로 다 읽는다
   index("admin_task_attachments_task_idx").on(t.taskId, t.createdAt),
 ]);
+
+/**
+ * 할 일을 사람마다 마지막으로 연 때(2026-10-02, 사용자: "기록 새로 달리면 카드에도 표시").
+ * 카드의 "새 기록 N" 은 **남이 적은 기록 중 내가 그 카드를 연 뒤에 달린 것**이다. 시각 하나로 셀 수 있어서
+ * 기록마다 읽음 행을 두지 않는다 — 카드 하나를 열면 그 카드의 기록을 다 본 것이다.
+ * 할 일이나 사람이 지워지면 같이 지운다(cascade) — 남은 행은 셀 대상이 없다.
+ */
+export const adminTaskReads = pgTable("admin_task_reads", {
+  taskId: uuid("task_id")
+    .notNull()
+    .references(() => adminTasks.id, { onDelete: "cascade" }),
+  userId: uuid("user_id")
+    .notNull()
+    .references(() => users.id, { onDelete: "cascade" }),
+  seenAt: timestamp("seen_at", { withTimezone: true }).notNull(),
+  ...auditColumns(),
+}, (t) => [primaryKey({ columns: [t.taskId, t.userId] })]);

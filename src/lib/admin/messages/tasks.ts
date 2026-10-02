@@ -91,6 +91,8 @@ export const TASK_MESSAGES = {
   /** 카드 위 짧은 말(2026-10-01). 팝업의 담당자 칸 "없음" 과 가른다 — 카드에서는 무엇이 없는지까지 말해야 한다 */
   cardNoAssignee: "담당 없음",
   cardLatestNote: "최근 기록",
+  /** 내가 연 뒤 남이 단 기록 수(2026-10-02) */
+  cardUnread: (n: number) => `새 기록 ${n}`,
   /** 처리 중인데 오래 안 고친 카드(lib/admin/tasks 의 staleDays) */
   cardStale: (days: number) => `${days}일째 멈춤`,
 

@@ -12,6 +12,7 @@ import {
   createTask,
   deleteNote,
   deleteTask,
+  markTaskSeen,
   moveTask,
   registerAttachment,
   removeAttachment,
@@ -265,4 +266,14 @@ export async function removeAttachmentAction(id: string): Promise<TaskActionStat
   } catch (e) {
     return fail(e);
   }
+}
+
+/**
+ * 카드를 열었다고 적는다. 판을 다시 그리지 않는다(revalidate 없음) — 판은 연 순간 제 손으로 표시를 끈다.
+ * 다시 그리면 카드 하나 열 때마다 판 전체를 다시 읽는다. 실패해도 조용히 넘긴다: 표시가 한 번 더 남는 것뿐이다.
+ */
+export async function markTaskSeenAction(id: string): Promise<void> {
+  const p = z.uuid().safeParse(id);
+  if (!p.success) return;
+  await markTaskSeen(p.data).catch(() => undefined);
 }

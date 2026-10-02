@@ -26,7 +26,7 @@ export default async function AdminTasksPage({ searchParams }: { searchParams: P
   // 서비스 쪽 검사는 그대로 둔다 — 이건 로그를 막는 줄이지 방어를 옮기는 줄이 아니다
   const me = await requireRoleOrForbid("admin");
   // 담당자 후보는 판과 나란히 읽는다 — 줄 세우면 왕복이 하나 더 붙는다(neon-roundtrip-cost)
-  const [{ board, asOf }, assignees, params, jar] = await Promise.all([getBoard(), listAssignees(), searchParams, cookies()]);
+  const [{ board, asOf, seen }, assignees, params, jar] = await Promise.all([getBoard(), listAssignees(), searchParams, cookies()]);
   // 첫 조건: 주소에 실렸으면 주소, 아니면 지난번에 고른 것(쿠키). 메뉴의 맨 주소로 들어와도 지난 조건이 선다
   const initialFilter = hasTaskFilterParams(params) ? parseTaskFilter(params) : parseTaskFilterCookie(jar.get(TASK_FILTER_COOKIE)?.value);
   // 건수는 화면 제목 옆에 붙인다 — 판 위에 또 제목을 세우면 "할 일" 과 같은 말이 두 번 선다
@@ -45,7 +45,7 @@ export default async function AdminTasksPage({ searchParams }: { searchParams: P
         </div>
       </header>
 
-      <TaskBoard board={board} assignees={assignees} meId={me.id} initialFilter={initialFilter} now={asOf} />
+      <TaskBoard board={board} assignees={assignees} meId={me.id} initialFilter={initialFilter} now={asOf} seen={seen} />
     </>
   );
 }

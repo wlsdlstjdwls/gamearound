@@ -9,6 +9,7 @@ export {
   createTask,
   deleteNote,
   deleteTask,
+  markTaskSeen,
   moveTask,
   reorderTask,
   restoreTask,

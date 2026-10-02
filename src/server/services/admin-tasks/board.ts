@@ -7,7 +7,7 @@ import "server-only";
 import { asc, desc, eq, inArray, isNotNull, isNull, type SQL } from "drizzle-orm";
 import { alias } from "drizzle-orm/pg-core";
 import { getDb } from "@/server/db/client";
-import { adminTaskAttachments, adminTaskNotes, adminTasks, games, shops, users, type SourceName } from "@/server/db/schema";
+import { adminTaskAttachments, adminTaskNotes, adminTaskReads, adminTasks, games, shops, users, type SourceName } from "@/server/db/schema";
 import { requireAdmin } from "@/server/services/users";
 import type { AdminTask, ArchivedTask, Board, TaskAssignee, TaskAttachment, TaskNote } from "@/lib/admin/tasks";
 
@@ -96,6 +96,7 @@ async function readTasks(where: SQL, order: SQL[], limit?: number): Promise<(Adm
         fromStatus: adminTaskNotes.fromStatus,
         toStatus: adminTaskNotes.toStatus,
         createdAt: adminTaskNotes.createdAt,
+        authorId: adminTaskNotes.createdBy,
         authorName: users.displayName,
         authorEmail: users.email,
       })
@@ -153,6 +154,7 @@ async function readTasks(where: SQL, order: SQL[], limit?: number): Promise<(Adm
       body: n.body,
       from: n.fromStatus,
       to: n.toStatus,
+      authorId: n.authorId,
       authorName: personName(n.authorName, n.authorEmail),
       createdAt: n.createdAt,
       attachments: filesByNote.get(n.id) ?? [],
@@ -183,9 +185,13 @@ async function readTasks(where: SQL, order: SQL[], limit?: number): Promise<(Adm
 }
 
 /** 판 한 장. 질의 한 번으로 네 칸을 다 읽고 코드에서 가른다 — 칸마다 물으면 왕복이 넷이 된다. 걷은 일은 빠진다 */
-export async function getBoard(): Promise<{ board: Board; asOf: number }> {
-  await requireAdmin();
-  const tasks = await readTasks(isNull(adminTasks.archivedAt), [asc(adminTasks.sortOrder), asc(adminTasks.createdAt)]);
+export async function getBoard(): Promise<{ board: Board; asOf: number; seen: Record<string, number> }> {
+  const admin = await requireAdmin();
+  // 내가 카드마다 마지막으로 연 때 — 카드의 "새 기록" 셈 기준이다. 판 질의와 나란히 읽는다(왕복을 줄 세우지 않는다)
+  const [tasks, reads] = await Promise.all([
+    readTasks(isNull(adminTasks.archivedAt), [asc(adminTasks.sortOrder), asc(adminTasks.createdAt)]),
+    getDb().select({ taskId: adminTaskReads.taskId, seenAt: adminTaskReads.seenAt }).from(adminTaskReads).where(eq(adminTaskReads.userId, admin.id)),
+  ]);
   const board = emptyBoard();
   for (const t of tasks) board[t.status].push(t);
   // 끝난 칸만 최근 순으로 뒤집고 자른다 — 나머지 칸은 사람이 잡은 순서가 곧 우선순위다
@@ -193,7 +199,7 @@ export async function getBoard(): Promise<{ board: Board; asOf: number }> {
     .sort((a, b) => (b.doneAt?.getTime() ?? 0) - (a.doneAt?.getTime() ?? 0))
     .slice(0, DONE_VISIBLE_LIMIT);
   // 읽은 시각을 같이 준다 — 카드의 "3일 전" 기준이다. 렌더 안에서 Date.now() 를 부르면 렌더가 순수하지 않다(수집 현황의 asOf 와 같은 방식)
-  return { board, asOf: Date.now() };
+  return { board, asOf: Date.now(), seen: Object.fromEntries(reads.map((r) => [r.taskId, r.seenAt.getTime()])) };
 }
 
 /** 지난 일 — 판에서 걷은 할 일. 걷은 때 최근 순이다(찾으러 오는 건 대개 방금 걷은 것이다) */

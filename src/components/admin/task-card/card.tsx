@@ -49,6 +49,7 @@ const ORDER_BTN =
 export function TaskCard({
   task,
   now,
+  unread,
   meId,
   status,
   onOpen,
@@ -58,6 +59,8 @@ export function TaskCard({
   task: AdminTask;
   /** "3일 전" 의 기준 시각. 서버가 정해 내려 준다 — 카드에서 Date.now() 를 부르면 서버와 브라우저 값이 갈려 하이드레이션이 어긋난다 */
   now: number;
+  /** 내가 이 카드를 연 뒤 남이 단 기록 수(lib/admin/tasks 의 unreadNoteCount). 0 이면 표시가 없다 */
+  unread: number;
   /** 지금 보는 관리자. 내 담당 카드는 아바타를 채워 칠한다 — 판에서 "내 일" 이 먼저 보이게 */
   meId: string;
   /** 이 카드가 놓인 칸. 끌기를 시작할 때 "어디서 떠났는가" 가 필요하다 */
@@ -101,16 +104,22 @@ export function TaskCard({
       {stripe && <span aria-hidden className={cn("absolute inset-y-0 left-0 w-[3px]", stripe)} />}
       {/* 카드 전체가 여는 자리다. 안에 링크를 넣지 않는 이유는 버튼 안의 링크가 못 눌리기 때문이다 —
           붙인 대상으로 가는 길은 팝업 안에 있다 */}
-      <button type="button" onClick={() => onOpen(task.id)} className="flex w-full flex-col gap-2 p-3 text-left">
+      {/* 카드를 키웠다(2026-10-02, 사용자: "카드가 너무 작다") — 제목 15px, 글자 한 단계, 여백 한 단계. 맥락은 한 줄 그대로다(아래 주석의 10-01 지적). 폭은 칸이 정하니 안쪽을 늘렸다 */}
+      <button type="button" onClick={() => onOpen(task.id)} className="flex w-full flex-col gap-2.5 p-3.5 text-left">
+        {/* 새 기록(2026-10-02, 사용자: "기록 새로 달리면 카드에도 표시"). 판에서 제일 먼저 봐야 할 표시라 맨 위 채운 빨강이다.
+            열면 꺼진다 — 기준은 내가 이 카드를 마지막으로 연 때다(admin_task_reads) */}
+        {unread > 0 && (
+          <span className="w-fit rounded-full bg-danger px-2 py-0.5 text-[12px] font-bold text-on-ink">{TASK_MESSAGES.cardUnread(unread)}</span>
+        )}
         <div className="flex items-start justify-between gap-2">
-          <p className="min-w-0 flex-1 text-[14px] font-semibold leading-[1.45] text-ink">{task.title}</p>
+          <p className="min-w-0 flex-1 text-[15px] font-semibold leading-[1.45] text-ink">{task.title}</p>
           {task.category !== "task" && (
-            <span className={cn("shrink-0 rounded-[6px] px-1.5 py-0.5 text-[11.5px] font-semibold", CATEGORY_BADGE[task.category])}>
+            <span className={cn("shrink-0 rounded-[6px] px-1.5 py-0.5 text-[12px] font-semibold", CATEGORY_BADGE[task.category])}>
               {TASK_CATEGORY_LABEL[task.category]}
             </span>
           )}
           {task.priority !== "normal" && (
-            <span className={cn("shrink-0 rounded-[6px] px-1.5 py-0.5 text-[11.5px] font-semibold", PRIORITY_BADGE[task.priority])}>
+            <span className={cn("shrink-0 rounded-[6px] px-1.5 py-0.5 text-[12px] font-semibold", PRIORITY_BADGE[task.priority])}>
               {TASK_PRIORITY_LABEL[task.priority]}
             </span>
           )}
@@ -121,11 +130,11 @@ export function TaskCard({
           일이 어디까지 왔는지가 처음 적은 배경보다 판에서 더 쓸모 있다. 전문은 팝업에 있다.
         */}
         {latestNote ? (
-          <p className="truncate text-[13px] text-mut">
+          <p className="truncate text-[13.5px] text-mut">
             <span className="font-medium text-dim">{TASK_MESSAGES.cardLatestNote}</span> {latestNote.body}
           </p>
         ) : (
-          task.body && <p className="truncate text-[13px] text-mut">{task.body}</p>
+          task.body && <p className="truncate text-[13.5px] text-mut">{task.body}</p>
         )}
 
         {/* 붙임표 줄은 붙은 것이 있을 때만 선다 — 빈 줄이 카드마다 높이를 먹었다 */}
@@ -140,7 +149,7 @@ export function TaskCard({
       </button>
 
       {/* data-no-drag: 이 버튼에서 시작한 누름은 끌기가 아니라 그 버튼의 일이다 */}
-      <div className="flex items-center gap-1 px-2 pb-1.5">
+      <div className="flex items-center gap-1 px-2.5 pb-2">
         {/*
           담당자 이름(2026-10-01). 첫 글자 동그라미로 줄였다가 사용자가 "그냥 이름 나오게" 해서 되돌렸다 — 둘뿐이라도 글자 하나로는 누군지 다시 읽어야 했다.
           내 담당은 채워 칠하고 남의 담당은 옅게. 담당이 없으면 흐린 글자만 둔다(테두리 칩은 카드마다 반복돼 소음이었다).
@@ -182,7 +191,7 @@ export function TaskCard({
 
         {/* 고친 때와 기록 수. 상대 시간이라 "오래 멈춘 카드" 가 한눈에 보인다.
             순서 단추 줄에 얹은 이유: 그 줄은 평소 비어 있다(단추가 hover 에만 뜬다) — 따로 한 줄을 세우면 카드만 길어진다 */}
-        <span className="ml-auto whitespace-nowrap text-[11.5px] tabular-nums text-dim">
+        <span className="ml-auto whitespace-nowrap text-[12px] tabular-nums text-dim">
           {formatAgo(task.updatedAt, now)}
           {task.notes.length > 0 && ` | ${TASK_MESSAGES.noteCount(task.notes.length)}`}
           {fileCount > 0 && ` | ${TASK_ATTACHMENT_MESSAGES.count(fileCount)}`}

@@ -56,7 +56,8 @@ export interface TaskNote {
   /** 칸 이동 자취의 앞뒤 칸. 화면이 여기에 이름을 붙인다 */
   from: TaskStatus | null;
   to: TaskStatus | null;
-  /** 적은 사람 */
+  /** 적은 사람. id 는 "새 기록" 셈에서 내 글을 빼는 데 쓴다 */
+  authorId: string | null;
   authorName: string | null;
   createdAt: Date;
   /** 이 기록에 붙은 파일. 글 없이 파일만 남긴 기록도 있다 */
@@ -102,4 +103,19 @@ export type Board = Record<TaskStatus, AdminTask[]>;
 /** 판에서 걷은 할 일(지난 일 화면). 카드 모양은 판과 같고 걷은 시각만 더 있다 */
 export interface ArchivedTask extends AdminTask {
   archivedAt: Date;
+}
+
+/**
+ * "새 기록" 을 세기 시작한 때(2026-10-02, 이 기능이 생긴 날 KST 자정). 한 번도 안 연 카드는 이때 뒤의 기록만 센다 —
+ * 기준이 없으면 기능을 켜는 순간 지난 기록 전부가 "새 기록" 으로 판을 덮는다.
+ */
+export const NEW_NOTE_EPOCH = Date.parse("2026-10-02T00:00:00+09:00");
+
+/**
+ * 카드의 "새 기록" 수 — 남이 적은 글 중 내가 그 카드를 마지막으로 연 뒤에 달린 것.
+ * 칸 이동 자취는 안 센다(판을 보면 이미 보인다). 내 글도 안 센다(내가 적은 걸 새로 볼 일은 없다).
+ */
+export function unreadNoteCount(notes: Pick<TaskNote, "kind" | "authorId" | "createdAt">[], meId: string, seenAt: number | undefined): number {
+  const since = seenAt ?? NEW_NOTE_EPOCH;
+  return notes.filter((n) => n.kind === "note" && n.authorId !== meId && n.createdAt.getTime() > since).length;
 }

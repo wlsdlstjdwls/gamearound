@@ -2,7 +2,7 @@
 import "server-only";
 import { and, asc, eq, isNotNull, isNull, sql } from "drizzle-orm";
 import { getDb } from "@/server/db/client";
-import { adminTaskNotes, adminTasks, type SourceName } from "@/server/db/schema";
+import { adminTaskNotes, adminTaskReads, adminTasks, type SourceName } from "@/server/db/schema";
 import { createdBy, updatedBy } from "@/server/db/audit";
 import { requireAdmin } from "@/server/services/users";
 import { deleteBlobs } from "@/server/services/blob-files";
@@ -232,4 +232,17 @@ export async function restoreTask(id: string): Promise<void> {
     .update(adminTasks)
     .set({ archivedAt: null, ...updatedBy("admin", admin.id) })
     .where(and(eq(adminTasks.id, id), isNotNull(adminTasks.archivedAt)));
+}
+
+/**
+ * 이 카드를 지금 열었다고 적는다(새 기록 셈의 기준). 카드를 열 때마다 불리므로 한 줄 upsert 로 끝낸다.
+ * updated_* 감사 칸은 시각과 함께 갈아 끼운다 — 이 행을 고치는 사람은 늘 그 행의 주인이다.
+ */
+export async function markTaskSeen(taskId: string): Promise<void> {
+  const admin = await requireAdmin();
+  const now = new Date();
+  await getDb()
+    .insert(adminTaskReads)
+    .values({ taskId, userId: admin.id, seenAt: now, ...createdBy("admin", admin.id) })
+    .onConflictDoUpdate({ target: [adminTaskReads.taskId, adminTaskReads.userId], set: { seenAt: now, ...updatedBy("admin", admin.id) } });
 }

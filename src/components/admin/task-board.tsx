@@ -20,7 +20,7 @@
 import { useEffect, useMemo, useState, useTransition } from "react";
 import { cn } from "@/lib/cn";
 import { TASK_FILTER_MESSAGES, TASK_MESSAGES, TASK_STATUS_LABEL } from "@/lib/admin/messages";
-import { TASK_STATUSES, type Board, type TaskAssignee } from "@/lib/admin/tasks";
+import { TASK_STATUSES, unreadNoteCount, type Board, type TaskAssignee } from "@/lib/admin/tasks";
 import {
   TASK_FILTER_COOKIE,
   TASK_FILTER_COOKIE_MAX_AGE,
@@ -36,7 +36,7 @@ import { TaskCard } from "@/components/admin/task-card";
 import { TaskDialog } from "@/components/admin/task-card/dialog";
 import { TaskQuickAdd } from "@/components/admin/task-quick-add";
 import { DROP_ATTR, useBoardDrag } from "@/components/admin/use-board-drag";
-import { moveTaskAction, type TaskActionState } from "@/app/(admin)/admin/tasks/actions";
+import { markTaskSeenAction, moveTaskAction, type TaskActionState } from "@/app/(admin)/admin/tasks/actions";
 
 export function TaskBoard({
   board,
@@ -44,6 +44,7 @@ export function TaskBoard({
   meId,
   initialFilter,
   now,
+  seen,
 }: {
   board: Board;
   assignees: TaskAssignee[];
@@ -53,12 +54,21 @@ export function TaskBoard({
   initialFilter: TaskFilter;
   /** 카드의 "3일 전" 기준 시각. 페이지가 판을 읽은 시각이다 */
   now: number;
+  /** 내가 카드마다 마지막으로 연 때(ms). "새 기록" 셈의 기준이다 */
+  seen: Record<string, number>;
 }) {
   /**
    * 지금 열린 카드. **판이 들고 있다** — 카드가 들고 있으면 칸을 옮기는 순간 그 카드가 다른 칸에서
    * 새로 그려지면서 팝업이 닫힌다(실측 2026-09-21). 옮기기는 팝업 안에서 하는 일이라 닫히면 안 된다.
    */
   const [openId, setOpenId] = useState<string | null>(null);
+  // 이번 화면에서 연 카드. 서버에 적고 판을 다시 읽지 않으므로(markTaskSeenAction) 표시는 여기서 끈다
+  const [seenNow, setSeenNow] = useState<Record<string, number>>({});
+  const openCard = (id: string) => {
+    setOpenId(id);
+    setSeenNow((prev) => ({ ...prev, [id]: Date.now() }));
+    void markTaskSeenAction(id);
+  };
   const [, start] = useTransition();
   const [state, setState] = useState<TaskActionState>(null);
 
@@ -121,7 +131,7 @@ export function TaskBoard({
               <h3 className="flex items-center justify-between px-1 py-0.5 text-[13.5px] font-bold text-mut">
                 {/* 칸마다 색 점(2026-10-01) — 넷이 같은 회색 골이라 상태가 글자로만 갈렸다. 색은 메뉴 배지와 같은 짝이다 */}
                 <span className="flex items-center gap-1.5">
-                  <span aria-hidden className={cn("h-2 w-2 rounded-full", STATUS_FILL[status])} />
+                  <span aria-hidden className={cn("h-2.5 w-2.5 rounded-full", STATUS_FILL[status])} />
                   {TASK_STATUS_LABEL[status]}
                 </span>
                 {/* 걸러졌으면 "보이는 수 / 전체" — 숨은 카드가 있다는 걸 칸이 스스로 말한다 */}
@@ -142,7 +152,8 @@ export function TaskBoard({
                       now={now}
                       meId={meId}
                       status={status}
-                      onOpen={setOpenId}
+                      unread={unreadNoteCount(task.notes, meId, seenNow[task.id] ?? seen[task.id])}
+                      onOpen={openCard}
                       onPointerDown={drag.onPointerDown}
                       onClickCapture={drag.swallowClick}
                     />
