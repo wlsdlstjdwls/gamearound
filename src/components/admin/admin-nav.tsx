@@ -57,7 +57,7 @@ export interface AdminNavCounts {
 type Pick = { n: number; capped?: boolean };
 
 /**
- * 배지 한 개. `tone` 은 뜻이다 — "남음" 은 쌓인 일(호박), "진행" 은 이미 손댄 일(브랜드 보라).
+ * 배지 한 개. `tone` 은 뜻이다 — "남음" 은 쌓인 일(채운 보라), "진행" 은 이미 손댄 일(브랜드 보라).
  * 할 일 칸만 둘을 단다(할 일 칸 건수, 하는 중 칸 건수). 한 숫자로 합치면 "시작도 안 한 일" 과
  * "하다 만 일" 이 섞여 어느 쪽이 밀렸는지 못 읽는다.
  */
@@ -151,7 +151,10 @@ function Badge({
         "rounded-full px-1.5 py-px text-[11.5px] font-semibold tabular-nums",
         // 고른 칸은 이미 보라 면이다 — 그 위에 주황 배지를 얹으면 색이 둘 다 소리친다.
         // 같은 면 안에서 한 겹 밝은 자리로만 말한다
-        active ? "bg-on-ink/20 text-on-ink" : tone === "doing" ? "bg-acc-soft text-acc" : "bg-warn-soft text-warn",
+        // 남음은 브랜드 보라를 채워 칠한다(2026-10-02, 사용자: "배지 색이 너무 구리다"). 호박(warn)은 "데이터 지연"
+        // 경고색이라 메뉴가 탁한 갈색 얼룩으로 보였고, 무채 회색으로 바꾸자 "흐리다" 했다 — 건수는 눈에 걸려야 한다.
+        // 진행은 옅은 보라로 둬 같은 칸의 두 배지가 채움과 옅음으로 갈린다
+        active ? "bg-on-ink/20 text-on-ink" : tone === "doing" ? "bg-acc-soft text-acc" : "bg-acc text-on-ink",
         className,
       )}
     >
