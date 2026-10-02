@@ -18,9 +18,10 @@ import { PLATFORM_LABEL } from "@/lib/format";
 import { stagger } from "@/lib/motion";
 import { ROUTES } from "@/lib/routes";
 import { cn } from "@/lib/cn";
-import { getHomeData } from "@/server/services/games";
+import { getHomeData, listGames } from "@/server/services/games";
+import type { GameSummary } from "@/server/services/games/dto";
 import { getRunningSteamSale, type RunningSaleDto } from "@/server/services/sales";
-import { HomeSaleBanner } from "@/components/home-sale-banner";
+import { HomeSaleBanner, SALE_BANNER_PREVIEW } from "@/components/home-sale-banner";
 
 // Next 가 정적으로 읽는 값이라 리터럴이어야 한다 — 근거, 수치는 lib/cache 의 LIST_REVALIDATE_SECONDS 와 같게 유지
 export const revalidate = 3600;
@@ -39,9 +40,14 @@ async function loadHomeData(): Promise<{ data: HomeData; dbError: string | null 
 }
 
 /** 배너는 덤이다 — 이 조회가 실패해도 홈은 그대로 서야 해서 실패를 "배너 없음" 으로 접는다 */
-async function loadRunningSale(): Promise<RunningSaleDto | null> {
+async function loadRunningSale(): Promise<{ sale: RunningSaleDto; preview: GameSummary[] } | null> {
   try {
-    return await getRunningSteamSale();
+    const sale = await getRunningSteamSale();
+    if (!sale) return null;
+    // 배너의 커버는 배너가 여는 목록의 첫 줄과 같다(인기순). 세일이 없는 날에는 이 왕복이 아예 없다.
+    // 넷의 두 배를 넘기는 이유: 커버 없는 게임을 배너가 거르고 나서도 네 칸이 차야 한다
+    const list = await listGames({ event: sale.key });
+    return { sale, preview: list.items.slice(0, SALE_BANNER_PREVIEW * 2) };
   } catch (e) {
     console.error("[home] 세일 판정 실패:", e instanceof Error ? e.message : String(e));
     return null;
@@ -62,7 +68,7 @@ export default async function HomePage() {
         </div>
       )}
 
-      {runningSale && <HomeSaleBanner sale={runningSale} />}
+      {runningSale && <HomeSaleBanner sale={runningSale.sale} preview={runningSale.preview} />}
 
       {/* 섹션 1 — 할인 중인 게임. 큰 머리글을 걷어낸 자리라(2026-09-15) 이 제목이 문서의 h1 이다 */}
       <section aria-labelledby="discounts-heading" className="flex flex-col gap-[22px]">

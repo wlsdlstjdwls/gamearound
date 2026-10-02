@@ -27,7 +27,9 @@ export const RUNNING_SALE_MESSAGES = {
   title: (name: string) => `스팀 ${name}`,
   count: (n: number) => `${n.toLocaleString("ko-KR")}개 게임 할인 중`,
   untilEnd: "종료까지",
+  endsAt: (when: string) => `${when} 종료`,
   cta: "세일 게임 보기",
+  previewLabel: "세일 중인 인기 게임",
   chip: (name: string) => `스팀 ${name}`,
 } as const;
 
