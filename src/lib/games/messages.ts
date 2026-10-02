@@ -361,3 +361,11 @@ export function upcomingCountText(shown: number, total: number): string {
   const all = `${total.toLocaleString("ko-KR")}개`;
   return shown < total ? `${all} 중 ${shown.toLocaleString("ko-KR")}개` : all;
 }
+
+/**
+ * 카드의 판정 한 줄(lib/games/saving). 조사를 안 붙이려고 "에서" 로 잇는다 —
+ * "Steam이", "Epic Games가" 처럼 스토어 이름마다 받침이 갈린다.
+ */
+export const SAVING_MESSAGES = {
+  line: (store: string, amount: string) => `${store}에서 ${amount} 더 싸요`,
+} as const;

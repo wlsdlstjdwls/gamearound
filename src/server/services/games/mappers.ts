@@ -7,6 +7,7 @@ import { cheapestOf, DISPLAY_CURRENCY } from "@/lib/currency";
 import { PLATFORM_ORDER } from "@/lib/platform";
 import { PLATFORM_LABEL } from "@/lib/format";
 import { countText } from "@/lib/user-score";
+import { storeSaving } from "@/lib/games/saving";
 import type { GameCompanyDto, GameDetail, GameSummary, PlatformDto, PublicGameDto, RequirementDto, RequirementGroupDto, UserScoreDto } from "./dto";
 
 export const iso = (d: Date | string | null | undefined): string | null => {
@@ -183,20 +184,25 @@ export function groupSummaries(rows: Array<{ game: GameRow; gp: PlatformRow }>, 
  */
 export async function fillPlatforms(items: GameSummary[]): Promise<GameSummary[]> {
   if (items.length === 0) return items;
+  // 값과 지역도 같이 받는다 — 같은 왕복에서 스토어 사이 값 차이(saving)를 잰다(2026-10-02, lib/games/saving)
   const rows = await getDb()
-    .select({ slug: games.slug, platform: gamePlatforms.platform })
+    .select({ slug: games.slug, platform: gamePlatforms.platform, region: gamePlatforms.region, price: gamePlatforms.currentPrice, currency: gamePlatforms.currency })
     .from(gamePlatforms)
     .innerJoin(games, eq(games.id, gamePlatforms.gameId))
     .where(and(inArray(games.slug, items.map((i) => i.slug)), visiblePlatformsOnly()));
   const bySlug = new Map<string, Platform[]>();
+  const homeRows = new Map<string, typeof rows>();
   for (const r of rows) {
     const list = bySlug.get(r.slug) ?? [];
     list.push(r.platform);
     bySlug.set(r.slug, list);
+    // 한국 값끼리만 견준다 — 같은 스토어의 다른 나라 값은 살 수 있는 값이 아니다
+    if (r.region === HOME_REGION) homeRows.set(r.slug, [...(homeRows.get(r.slug) ?? []), r]);
   }
   for (const item of items) {
     const list = bySlug.get(item.slug);
     if (list) item.platforms = distinctPlatforms(list);
+    item.saving = storeSaving(homeRows.get(item.slug) ?? []);
   }
   return items;
 }

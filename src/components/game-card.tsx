@@ -6,7 +6,9 @@
 import { Fragment } from "react";
 import { formatPrice } from "@/lib/currency";
 import Link from "next/link";
-import { formatDate } from "@/lib/format";
+import { formatDate, PLATFORM_LABEL } from "@/lib/format";
+import { SAVING_MESSAGES } from "@/lib/games/messages";
+import type { StoreSaving } from "@/lib/games/saving";
 import { parsePlatformValues } from "@/lib/games-query";
 import { expandPlatformValues } from "@/lib/platform";
 import { DiscountText } from "@/components/ui/discount";
@@ -70,6 +72,20 @@ export function CoverImage({
  * 글자색은 반드시 text-on-ink 다. 흰색으로 못 박으면 다크에서 밝은 보라 위 흰 글자가 되고
  * 대비가 2점대로 떨어진다(--acc 는 테마마다 반대쪽으로 뒤집힌다).
  */
+/**
+ * 판정 한 줄 — "Epic Games에서 51,000원 더 싸요"(2026-10-02, lib/games/saving 의 근거).
+ * 색은 --ok 다. 이 화면에서 초록은 "싸다, 충족" 한 가지만 말한다(globals.css 의 --acc 주석).
+ * 잘리지 않게 줄을 바꾼다 — 이 줄에서 잘려 나가는 건 금액이다.
+ */
+export function SavingLine({ saving, className }: { saving: StoreSaving | null | undefined; className?: string }) {
+  if (!saving) return null;
+  return (
+    <p className={cn("text-[13px] font-semibold leading-[1.35] text-ok", className)}>
+      {SAVING_MESSAGES.line(PLATFORM_LABEL[saving.cheaper] ?? saving.cheaper, formatPrice(saving.amount, saving.currency))}
+    </p>
+  );
+}
+
 export function DiscountStamp({ pct }: { pct: number | null }) {
   if (!pct || pct <= 0) return null;
   return (
@@ -214,6 +230,8 @@ export function GameCard({
               </span>
             )}
           </div>
+
+          <SavingLine saving={game.saving} />
 
           {/* 값 줄은 카드 **바닥**에 붙는다(mt-auto) — 같은 줄 카드끼리 값이 한 높이에 서서 가로로 견줄 수 있다.
               할인율, 값, 정가를 한 줄에 흘린다. 좁으면 접힌다 — 값을 자르지 않는다.

@@ -1,5 +1,6 @@
 // 공개 DTO — route, 컴포넌트가 받는 모양. 모두 JSON 직렬화 가능(Date → ISO 문자열).
 // DB 행 타입을 그대로 노출하지 않는 이유: 스키마가 바뀌어도 화면 계약은 유지돼야 한다.
+import type { StoreSaving } from "@/lib/games/saving";
 import type { CompanyRole, ContentType, Currency, DeckCompat, OsFamily, Platform, Region, RequirementTier, SyncStatus, UpgradeKind, UserScoreKind } from "@/server/db/schema";
 
 /**
@@ -295,6 +296,21 @@ export type GameSummary = {
    * 상세의 genres 와 달리 잘린 목록이다. 전부 보려면 상세로 간다.
    */
   genres: string[];
+  /**
+   * 같은 기기에서 스토어만 바꿔 아끼는 값(lib/games/saving). 없으면 null — 카드는 판정 줄을 안 세운다.
+   * 선택 속성인 이유: 채우는 건 fillPlatforms 다. 그걸 안 거치는 요약은 판정이 없다
+   */
+  saving?: StoreSaving | null;
+};
+
+/** 홈 머리의 살아 있는 숫자(services/games/home-rows 의 stats) */
+export type HomeStats = {
+  /** 목록에 서는 본편 수 — 목록 화면의 전체 건수와 같은 잣대다 */
+  trackedGames: number;
+  /** 지금 한국 스토어 어디서든 할인 중인 본편 수 */
+  onSaleGames: number;
+  /** 한국 값이 마지막으로 갱신된 때. 수집이 한 번도 안 돈 DB 면 null */
+  syncedAt: string | null;
 };
 
 export type HomeData = {
@@ -306,6 +322,13 @@ export type HomeData = {
   endingSoon: GameSummary[];
   recentReleases: GameSummary[];
   latestNews: NewsDto[];
+  /** 같은 기기에서 스토어만 바꿔도 더 싼 게임(lib/games/saving). 위 할인 줄과 겹치지 않는다 */
+  storeDeals: GameSummary[];
+  /** 스토어 순번이 있는 지금 인기 게임 순위. 다른 줄과 겹쳐도 둔다 — 순위는 순서 자체가 정보다 */
+  popular: GameSummary[];
+  /** 만 원 이하 할인. 위 할인 줄과 겹치지 않는다 */
+  budget: GameSummary[];
+  stats: HomeStats;
 };
 
 /** 공개 API(/api/v1) 용 DTO — 내부 id 제외 */
