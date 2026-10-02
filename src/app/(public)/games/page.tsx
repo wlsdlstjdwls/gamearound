@@ -20,6 +20,7 @@ import { isPlatformFamily, isPlatformValue, PLATFORM_FAMILY_LABEL, PLATFORM_VALU
 import { stagger } from "@/lib/motion";
 import { ROUTES } from "@/lib/routes";
 import { GAMES_PAGE_SIZE, getGameFacets, listGames, type GameListFilter } from "@/server/services/games";
+import { getRunningSteamSale, type RunningSaleDto } from "@/server/services/sales";
 import { FiltersSkeleton, GamesGridSkeleton } from "./skeletons";
 
 // Next 가 정적으로 읽는 값이라 리터럴이어야 한다 — 근거, 수치는 lib/cache 의 LIST_REVALIDATE_SECONDS 와 같게 유지
@@ -84,8 +85,9 @@ function isFiltered(f: GameListFilter): boolean {
  * 줄일 수 있는 것은 "기다리는 동안 보여 줄 것" 뿐이다. 껍데기는 즉시 내보내고 값이 필요한 자리만 감싼다.
  */
 async function FilterColumn({ filter }: { filter: GamesQuery }) {
-  const facets = await getGameFacets();
-  return <GameFilters facets={facets} filter={filter} />;
+  // 세일 칩은 덤이다 — 판정이 실패해도 필터 기둥은 서야 해서 실패를 "세일 없음" 으로 접는다
+  const [facets, sale] = await Promise.all([getGameFacets(), getRunningSteamSale().catch((): RunningSaleDto | null => null)]);
+  return <GameFilters facets={facets} filter={filter} sale={sale} />;
 }
 
 async function Results({ filter }: { filter: GameListFilter }) {

@@ -24,6 +24,8 @@ import { Select, type SelectOption } from "@/components/ui/select";
 import { DEFAULT_GAME_SORT, GAME_SORTS, SORT_LABEL, gamesHref, joinPlatformValues, parsePlatformValues, type GamesQuery } from "@/lib/games-query";
 import { GAMES_FILTER_MESSAGES } from "@/lib/games/messages";
 import type { GameFacets } from "@/server/services/games";
+import type { RunningSaleDto } from "@/server/services/sales";
+import { RUNNING_SALE_MESSAGES } from "@/lib/sales/messages";
 
 /** "고르지 않음" 을 나타내는 값. 빈 문자열을 쓰면 현재 값 비교가 undefined 와 헷갈린다 */
 const ALL = "__all__";
@@ -63,7 +65,18 @@ function Group({ label, sheet, children }: { label: string; sheet: boolean; chil
  * 칩과 드롭다운을 가르는 기준은 개수다. 서넛이면 칩이 빠르고(한 번에 다 보이고 한 번에 눌린다),
  * 열 개를 넘으면 드롭다운이 낫다(안 고른 값이 자리를 차지하지 않는다).
  */
-export function Groups({ facets, filter, variant = "column" }: { facets: GameFacets; filter: GamesQuery; variant?: GroupsVariant }) {
+export function Groups({
+  facets,
+  filter,
+  sale = null,
+  variant = "column",
+}: {
+  facets: GameFacets;
+  filter: GamesQuery;
+  /** 지금 데이터로 확인된 스팀 정기 세일(services/sales). 있을 때만 조건 칩이 하나 더 선다 */
+  sale?: RunningSaleDto | null;
+  variant?: GroupsVariant;
+}) {
   const sheet = variant === "sheet";
   /*
    * 시트 안의 칩은 크다(ui/chip 의 SIZE.lg 주석).
@@ -129,6 +142,15 @@ export function Groups({ facets, filter, variant = "column" }: { facets: GameFac
           그 칸은 상한만 있어서 "0원을 빼라" 를 적을 자리가 없다.
           칩 하나가 켜고 끄는 값이라 드롭다운을 쓰지 않는다 — 고를 값이 둘(켬, 끔)뿐이다 */}
       <Group label="조건" sheet={sheet}>
+        {/* 세일 칩은 **세일이 열려 있을 때만** 선다(2026-10-02). 홈 배너와 같은 판정이라 둘이 늘 같이 서고 같이 내려간다.
+            늘 세워 두지 않는 이유: 세일이 없는 열한 달 동안 눌러도 아무 일도 안 일어나는 칩이 된다 */}
+        {sale && (
+          <ChipNavLink {...KEEP_SCROLL} {...chip} href={href({ event: filter.event === sale.key ? undefined : sale.key })} active={filter.event === sale.key}>
+            <ChipCheck on={filter.event === sale.key} />
+            {RUNNING_SALE_MESSAGES.chip(sale.name)}
+            <span className="sr-only">{filter.event === sale.key ? GAMES_FILTER_MESSAGES.toggleOn : GAMES_FILTER_MESSAGES.toggleOff}</span>
+          </ChipNavLink>
+        )}
         <ChipNavLink {...KEEP_SCROLL} {...chip} href={href({ hideFree: !filter.hideFree })} active={Boolean(filter.hideFree)}>
           {/* 네모와 체크가 있어야 '켬/끔' 이 옆 칩 없이도 읽힌다(ui/chip 의 ChipCheck 주석) */}
           <ChipCheck on={Boolean(filter.hideFree)} />

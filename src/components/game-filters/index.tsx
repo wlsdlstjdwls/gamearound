@@ -11,18 +11,19 @@
 // 넓은 화면은 기둥 맨 아래, 좁은 화면은 "필터" 단추 아래 제 줄이다(./active 의 두 모양).
 import type { GamesQuery } from "@/lib/games-query";
 import type { GameFacets } from "@/server/services/games";
+import type { RunningSaleDto } from "@/server/services/sales";
 import { ActiveFilters } from "./active";
 import { Groups } from "./groups";
 import { MobileFilters } from "./mobile";
 
-export function GameFilters({ facets, filter }: { facets: GameFacets; filter: GamesQuery }) {
+export function GameFilters({ facets, filter, sale = null }: { facets: GameFacets; filter: GamesQuery; sale?: RunningSaleDto | null }) {
   return (
     <>
       {/* 좁은 화면: 단추 + 시트. 걸린 조건이 있어도 시트를 열어 두지 않는다(2026-09-15) —
           화면에 들어와서 하려던 일은 결과를 보는 것이지 방금 고른 조건을 다시 읽는 것이 아니다.
           개수 배지도 뗐다(2026-09-22, 사용자 지정): 바로 아래 줄에 걸린 조건이 이름 그대로 서 있고,
           "2" 와 "PC ⨯ 콘솔 ⨯" 이 한 화면에서 같은 사실을 두 번 말할 이유가 없다 */}
-      <MobileFilters groups={<Groups facets={facets} filter={filter} variant="sheet" />} strip={<ActiveFilters filter={filter} variant="strip" />} />
+      <MobileFilters groups={<Groups facets={facets} filter={filter} sale={sale} variant="sheet" />} strip={<ActiveFilters filter={filter} variant="strip" />} />
 
       {/* 넓은 화면: 왼쪽 기둥. 스크롤해도 따라오도록 붙여 둔다(헤더 높이만큼 띄운다).
           안쪽 스크롤(max-h + overflow-y-auto)은 걷었다(2026-09-21): 장르 드롭다운이 펼쳐지면
@@ -30,7 +31,7 @@ export function GameFilters({ facets, filter }: { facets: GameFacets; filter: Ga
           화면에 없는 셈이다. 무리가 셋(정렬, 플랫폼, 장르)뿐이라 기둥이 화면보다 길어질 일도 없어졌다.
           다시 길어지면 안쪽 스크롤이 아니라 드롭다운을 띄우는 쪽을 고친다 */}
       <aside aria-label="목록 필터" className="hidden flex-col gap-[26px] lg:sticky lg:top-[80px] lg:flex">
-        <Groups facets={facets} filter={filter} />
+        <Groups facets={facets} filter={filter} sale={sale} />
         <ActiveFilters filter={filter} variant="column" />
       </aside>
     </>
