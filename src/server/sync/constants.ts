@@ -156,6 +156,14 @@ export const CRON_SOURCES = ["nintendo", "nintendo_jp", "epic", "steam", "psstor
 //
 // 발견만 맡는 네 소스(2026-09-15 추가). 하루 2회씩, 20분 간격으로 흩어 둔다:
 //   /api/cron/crawl/steam/discover    10 4,16 * * *     하루 2회 × 140건
+//   /api/cron/crawl/steam/prices      20 17,18 * * *    하루 2회 × 700건 — 세일 문이 열린 직후를 잡는 자리(2026-10-02 추가)
+//     스팀 할인은 태평양 오전 10시(서머타임 17:00Z, 아니면 18:00Z)에 바뀐다. Actions 의 crawl-prices 도
+//     그 시각(10 17)에 예약돼 있지만 **실제로는 4~6시간 늦게 돈다** — 2026-09-29~10-01 sync_logs 실측으로
+//     17:10 예약이 21:22, 21:23, 21:46 에 시작했다. 그래서 2026 가을 세일이 열리고 4시간 반 동안 아무 값도 안 바뀌었고,
+//     홈 배너(services/sales)도 그만큼 늦었다. Vercel 크론은 정시에 돈다(위 소스들의 sync_logs 가 매번 :10, :50 이다).
+//     두 시각인 이유: 겨울, 설 세일은 18:00Z 에 열린다(lib/sales/calendar 의 startHourUtc).
+//     Actions 회차는 그대로 둔다 — 이쪽은 700건이라 스팀 11,222행의 일부만 돌고, 나머지는 그쪽이 덮는다.
+//     Actions 가 정시에 와서 락이 겹치면 한쪽이 빈손으로 끝날 뿐이고, 어느 쪽이든 값은 그 시각에 들어온다.
 //   /api/cron/crawl/xbox/discover     50 4,16 * * *     하루 2회 × 180건 (KR 16,991건)
 // 넷 중 둘은 껐고 크론도 뺐다. 몫은 아래 CRON_PLAN 에 그대로 남겨 둔다 — 다시 켤 때 근거를 다시 재지 않으려고다.
 //
@@ -313,7 +321,8 @@ export const CRON_PLAN: Record<CronSource, Record<CronMode, CronRunPlan>> = {
   // 2026-09-15 첫 배포에서 이 차이를 빼먹고 한 소스를 400건으로 잡았다가 760초를 맞았다 — 상한 800초의 95%다.
   // 손으로 곱하지 말 것. cron-plan.test 의 estimateMs 가 DLC 단계까지 세고, 그게 이 숫자들의 출처다.
   steam: {
-    // 가격은 Actions 가 맡으므로 이 몫은 손으로 돌릴 때만 쓴다(신규가 없어 건당 0.4초로 싸다).
+    // 가격은 Actions 가 맡고, 이 몫은 세일 문이 열린 직후 크론 두 회차(20 17,18)와 손으로 돌릴 때 쓴다
+    // (신규가 없어 건당 0.4초로 싸다). 크론에 올린 이유는 CRON_SOURCES 아래 주기 표에 있다.
     // 2026-09-15 에 1,000 에서 800 으로 내렸다. 이 모드가 느려진 게 아니라, 새 DLC 등록 몫
     // (DLC_FETCH_PER_RUN_BY_SOURCE.steam 40건 × 1.8초)을 이제 제대로 세기 때문이다 —
     // DLC 단계는 prices 모드에서도 똑같이 돈다(sync/run-store 4단계).
