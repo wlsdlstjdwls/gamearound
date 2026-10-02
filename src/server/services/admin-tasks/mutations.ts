@@ -1,6 +1,6 @@
 // 관리자 할 일 판 서비스 — 쓰기 쪽(만들기, 고치기, 옮기기, 기록). 읽기는 board.ts.
 import "server-only";
-import { and, asc, eq, isNotNull, sql } from "drizzle-orm";
+import { and, asc, eq, isNotNull, isNull, sql } from "drizzle-orm";
 import { getDb } from "@/server/db/client";
 import { adminTaskNotes, adminTasks, type SourceName } from "@/server/db/schema";
 import { createdBy, updatedBy } from "@/server/db/audit";
@@ -161,7 +161,8 @@ export async function reorderTask(id: string, dir: "up" | "down"): Promise<void>
   const siblings = await db
     .select({ id: adminTasks.id, sortOrder: adminTasks.sortOrder })
     .from(adminTasks)
-    .where(eq(adminTasks.status, me.status))
+    // 걷은 일은 판에 없다 — 이웃으로 치면 "아래로" 가 보이지 않는 카드와 자리를 바꿔 아무 일도 안 일어난 것처럼 보인다
+    .where(and(eq(adminTasks.status, me.status), isNull(adminTasks.archivedAt)))
     .orderBy(asc(adminTasks.sortOrder), asc(adminTasks.createdAt));
 
   const at = siblings.findIndex((s) => s.id === id);
@@ -186,12 +187,31 @@ export async function deleteTask(id: string): Promise<void> {
   await getDb().delete(adminTasks).where(eq(adminTasks.id, id));
 }
 
-/** 끝난 일 치우기. 판을 정리하는 유일한 길이다 — 하나씩 지우면 아무도 안 치운다 */
-export async function clearDone(): Promise<number> {
-  await requireAdmin();
+/**
+ * 끝난 일 치우기 — 판에서 **걷는다**(지우지 않는다). 판을 정리하는 유일한 길이다 — 하나씩 지우면 아무도 안 치운다.
+ *
+ * 2026-10-02 까지는 DELETE 였다. 기록이 cascade 로 같이 사라져 끝낸 일의 이력을 다시 볼 길이 없었다
+ * (사용자: "치우기는 숨김이어야 한다"). 이제 archived_at 만 찍고, 걷은 일은 지난 일 화면에서 본다.
+ * 판에 안 보이던 끝난 일(DONE_VISIBLE_LIMIT 밖)도 같이 걷는다 — 칸에 안 보여도 끝난 일이다.
+ */
+export async function archiveDone(): Promise<number> {
+  const admin = await requireAdmin();
   const rows = await getDb()
-    .delete(adminTasks)
-    .where(and(eq(adminTasks.status, "done"), isNotNull(adminTasks.doneAt)))
+    .update(adminTasks)
+    .set({ archivedAt: new Date(), ...updatedBy("admin", admin.id) })
+    .where(and(eq(adminTasks.status, "done"), isNotNull(adminTasks.doneAt), isNull(adminTasks.archivedAt)))
     .returning({ id: adminTasks.id });
   return rows.length;
+}
+
+/**
+ * 걷은 일을 판으로 되돌린다. 칸은 그대로(완료)다 — 걷기 전 자리가 완료 칸뿐이라 되돌릴 곳도 거기다.
+ * 다시 하려면 판에서 칸을 옮긴다. 그래야 칸 이동 자취가 남는다.
+ */
+export async function restoreTask(id: string): Promise<void> {
+  const admin = await requireAdmin();
+  await getDb()
+    .update(adminTasks)
+    .set({ archivedAt: null, ...updatedBy("admin", admin.id) })
+    .where(and(eq(adminTasks.id, id), isNotNull(adminTasks.archivedAt)));
 }

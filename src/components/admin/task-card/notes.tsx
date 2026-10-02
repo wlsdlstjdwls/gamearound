@@ -63,7 +63,11 @@ function MoveLine({ note }: { note: TaskNote }) {
   );
 }
 
-export function TaskNotes({ taskId, notes }: { taskId: string; notes: TaskNote[] }) {
+/**
+ * `readOnly` 는 지난 일 화면 몫이다(2026-10-02) — 걷은 일은 되짚어 보는 자리라 적는 칸과 지우기 단추를 걷는다.
+ * 더 적을 일이 생기면 판으로 되돌린 뒤 적는다. 걷은 채로 기록이 늘면 "끝낸 일" 이 끝나지 않은 일이 된다.
+ */
+export function TaskNotes({ taskId, notes, readOnly = false }: { taskId: string; notes: TaskNote[]; readOnly?: boolean }) {
   const [state, formAction, posting] = useActionState<TaskActionState, FormData>(addNoteAction, null);
   const [pending, start] = useTransition();
   const [removeState, setRemoveState] = useState<TaskActionState>(null);
@@ -87,6 +91,7 @@ export function TaskNotes({ taskId, notes }: { taskId: string; notes: TaskNote[]
                   <div className="flex items-center gap-2">
                     {n.authorName && <span className="truncate text-[13.5px] font-bold text-ink">{n.authorName}</span>}
                     <span className="text-[12.5px] tabular-nums text-mut">{formatLongDateTime(n.createdAt)}</span>
+                    {!readOnly && (
                     <button
                       type="button"
                       disabled={pending}
@@ -98,6 +103,7 @@ export function TaskNotes({ taskId, notes }: { taskId: string; notes: TaskNote[]
                     >
                       {TASK_MESSAGES.noteRemove}
                     </button>
+                    )}
                   </div>
                   <p className="whitespace-pre-wrap text-[15px] leading-[1.7] text-ink">{n.body}</p>
                 </div>
@@ -113,6 +119,7 @@ export function TaskNotes({ taskId, notes }: { taskId: string; notes: TaskNote[]
        * sticky 라 자리를 차지하지 않고, 위로 흐르는 기록을 가리는 만큼만 바탕을 깐다.
        */}
       {/* -bottom-5: 시트 본문의 아래 여백(pb-5)까지 내려 붙인다 — bottom-0 이면 그 여백 위에 멈춰 밑으로 기록이 비쳤다(고치기 폼 저장 줄과 같은 이유) */}
+      {!readOnly && (
       <ActionForm action={formAction} state={state} pending={posting} className="sticky -bottom-5 -mx-4 flex flex-col gap-2 bg-surface px-4 pb-5 pt-3">
         {/* 밑에서 올라오는 기록이 칸 밑으로 툭 잘리지 않게, 바탕이 시작되는 자리를 흐린다 */}
         <span aria-hidden className="pointer-events-none absolute inset-x-0 -top-4 h-4 bg-gradient-to-b from-transparent to-surface" />
@@ -133,6 +140,7 @@ export function TaskNotes({ taskId, notes }: { taskId: string; notes: TaskNote[]
           </Button>
         </div>
       </ActionForm>
+      )}
 
       {error && (
         <p role="alert" className="animate-rise text-[13.5px] text-danger">

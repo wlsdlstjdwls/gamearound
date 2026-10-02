@@ -85,3 +85,8 @@ export interface AdminTask {
 }
 
 export type Board = Record<TaskStatus, AdminTask[]>;
+
+/** 판에서 걷은 할 일(지난 일 화면). 카드 모양은 판과 같고 걷은 시각만 더 있다 */
+export interface ArchivedTask extends AdminTask {
+  archivedAt: Date;
+}

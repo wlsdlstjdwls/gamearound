@@ -1,0 +1,1 @@
+ALTER TABLE "admin_tasks" ADD COLUMN "archived_at" timestamp with time zone;

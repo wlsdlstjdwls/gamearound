@@ -1,15 +1,15 @@
-// 관리자 할 일 판 서비스 — 읽기 쪽(판 한 장, 담당자 후보). 쓰기는 mutations.ts.
+// 관리자 할 일 판 서비스 — 읽기 쪽(판 한 장, 지난 일, 담당자 후보). 쓰기는 mutations.ts.
 // 300줄을 넘어 갈랐다(담당자 축, 2026-09-30). 호출부는 폴더의 index.ts 로 그대로 들어온다.
 //
 // 화면까지 Drizzle 행을 흘리지 않는다(AGENTS §1) — 판은 붙인 대상(게임, 매장)의 이름까지 보여 줘야 하는데
 // 그건 행에 없는 값이라, DTO 를 만드는 자리가 어차피 필요하다.
 import "server-only";
-import { asc, eq } from "drizzle-orm";
+import { asc, desc, eq, inArray, isNotNull, isNull, type SQL } from "drizzle-orm";
 import { alias } from "drizzle-orm/pg-core";
 import { getDb } from "@/server/db/client";
 import { adminTaskNotes, adminTasks, games, shops, users, type SourceName } from "@/server/db/schema";
 import { requireAdmin } from "@/server/services/users";
-import type { Board, TaskAssignee, TaskNote } from "@/lib/admin/tasks";
+import type { AdminTask, ArchivedTask, Board, TaskAssignee, TaskNote } from "@/lib/admin/tasks";
 
 /**
  * 담당자 이름. 표시 이름이 비었으면 이메일을 쓴다 — 빈 칸으로 두면 "담당 없음" 과 구별이 안 된다.
@@ -33,17 +33,23 @@ function emptyBoard(): Board {
 }
 
 /**
- * 판 한 장. 질의 한 번으로 네 칸을 다 읽고 코드에서 가른다 — 칸마다 물으면 왕복이 넷이 된다.
+ * 걷은 일은 최근 것만 읽는다. "지난 일" 은 찾아보는 자리라 끝없이 늘어놓을 까닭이 없고,
+ * 기록까지 한 번에 읽으므로 상한이 없으면 질의 하나가 해마다 무거워진다. 판 쓰는 사람이 둘이라 석 달치쯤 된다.
+ */
+export const ARCHIVE_VISIBLE_LIMIT = 100;
+
+/**
+ * 할 일 여럿과 그 기록을 DTO 로. 판과 지난 일 화면이 같이 쓴다 — 두 화면이 카드 한 장을 다른 모양으로 만들면
+ * 지난 일에서 연 카드만 담당자나 게임이 빠지는 식으로 어긋난다.
  *
  * 기록은 두 번째 질의로 한꺼번에 읽어 **나란히** 보낸다(Promise.all). 카드를 펼칠 때마다 물으면
  * 카드 수만큼 왕복이 늘고, Neon 왕복 하나가 220ms 다(neon-roundtrip-cost). 줄 세우지 않으므로
- * 화면이 기다리는 시간은 여전히 왕복 한 번이다.
+ * 화면이 기다리는 시간은 여전히 왕복 한 번이다. 기록 질의도 같은 조건(걷었나)으로 할 일과 이어 거른다 —
+ * 판이 걷은 일의 기록까지 끌고 오지 않게.
  */
-export async function getBoard(): Promise<{ board: Board; asOf: number }> {
-  await requireAdmin();
+async function readTasks(where: SQL, order: SQL[], limit?: number): Promise<(AdminTask & { archivedAt: Date | null })[]> {
   const db = getDb();
-  const [rows, noteRows] = await Promise.all([
-    db
+  const taskQuery = db
     .select({
       id: adminTasks.id,
       title: adminTasks.title,
@@ -54,6 +60,7 @@ export async function getBoard(): Promise<{ board: Board; asOf: number }> {
       sortOrder: adminTasks.sortOrder,
       dueAt: adminTasks.dueAt,
       doneAt: adminTasks.doneAt,
+      archivedAt: adminTasks.archivedAt,
       source: adminTasks.source,
       updatedAt: adminTasks.updatedAt,
       gameId: games.id,
@@ -74,9 +81,12 @@ export async function getBoard(): Promise<{ board: Board; asOf: number }> {
     .leftJoin(shops, eq(shops.id, adminTasks.shopId))
     .leftJoin(assignee, eq(assignee.id, adminTasks.assigneeId))
     .leftJoin(author, eq(author.id, adminTasks.createdBy))
-    .orderBy(asc(adminTasks.sortOrder), asc(adminTasks.createdAt)),
+    .where(where)
+    .orderBy(...order);
 
-    // 기록 전부. 할 일별로 나누는 일은 코드가 한다 — 카드마다 물으면 왕복이 카드 수만큼 는다
+  // 기록은 할 일과 같은 조건으로 거른다. 상한이 있는 쪽(지난 일)은 할 일 id 를 먼저 알아야 해서 줄 세운다 —
+  // 상한 없이 기록을 다 읽는 것보다 왕복 하나가 싸다(걷은 일의 기록은 해마다 쌓인다)
+  const noteQuery = (ids?: string[]) =>
     db
       .select({
         id: adminTaskNotes.id,
@@ -90,9 +100,19 @@ export async function getBoard(): Promise<{ board: Board; asOf: number }> {
         authorEmail: users.email,
       })
       .from(adminTaskNotes)
+      .innerJoin(adminTasks, eq(adminTasks.id, adminTaskNotes.taskId))
       .leftJoin(users, eq(users.id, adminTaskNotes.createdBy))
-      .orderBy(asc(adminTaskNotes.createdAt)),
-  ]);
+      .where(ids ? inArray(adminTaskNotes.taskId, ids) : where)
+      .orderBy(asc(adminTaskNotes.createdAt));
+
+  let rows: Awaited<typeof taskQuery>;
+  let noteRows: Awaited<ReturnType<typeof noteQuery>>;
+  if (limit === undefined) {
+    [rows, noteRows] = await Promise.all([taskQuery, noteQuery()]);
+  } else {
+    rows = await taskQuery.limit(limit);
+    noteRows = rows.length > 0 ? await noteQuery(rows.map((r) => r.id)) : [];
+  }
 
   // 오래된 것이 위다 — 기록은 흘러온 순서로 읽어야 뜻이 통한다
   const notesByTask = new Map<string, TaskNote[]>();
@@ -110,33 +130,46 @@ export async function getBoard(): Promise<{ board: Board; asOf: number }> {
     notesByTask.set(n.taskId, list);
   }
 
+  return rows.map((r) => ({
+    id: r.id,
+    title: r.title,
+    body: r.body,
+    status: r.status,
+    priority: r.priority,
+    category: r.category,
+    sortOrder: r.sortOrder,
+    dueAt: r.dueAt,
+    doneAt: r.doneAt,
+    archivedAt: r.archivedAt,
+    game: r.gameId ? { id: r.gameId, slug: r.gameSlug!, title: r.gameTitleKo ?? r.gameTitleEn! } : null,
+    shop: r.shopId ? { id: r.shopId, name: r.shopName! } : null,
+    source: (r.source as SourceName | null) ?? null,
+    assignee: r.assigneeId ? { id: r.assigneeId, name: personName(r.assigneeName, r.assigneeEmail)! } : null,
+    author: r.authorId ? { id: r.authorId, name: personName(r.authorName, r.authorEmail)! } : null,
+    updatedAt: r.updatedAt,
+    notes: notesByTask.get(r.id) ?? [],
+  }));
+}
+
+/** 판 한 장. 질의 한 번으로 네 칸을 다 읽고 코드에서 가른다 — 칸마다 물으면 왕복이 넷이 된다. 걷은 일은 빠진다 */
+export async function getBoard(): Promise<{ board: Board; asOf: number }> {
+  await requireAdmin();
+  const tasks = await readTasks(isNull(adminTasks.archivedAt), [asc(adminTasks.sortOrder), asc(adminTasks.createdAt)]);
   const board = emptyBoard();
-  for (const r of rows) {
-    board[r.status].push({
-      id: r.id,
-      title: r.title,
-      body: r.body,
-      status: r.status,
-      priority: r.priority,
-      category: r.category,
-      sortOrder: r.sortOrder,
-      dueAt: r.dueAt,
-      doneAt: r.doneAt,
-      game: r.gameId ? { id: r.gameId, slug: r.gameSlug!, title: r.gameTitleKo ?? r.gameTitleEn! } : null,
-      shop: r.shopId ? { id: r.shopId, name: r.shopName! } : null,
-      source: (r.source as SourceName | null) ?? null,
-      assignee: r.assigneeId ? { id: r.assigneeId, name: personName(r.assigneeName, r.assigneeEmail)! } : null,
-      author: r.authorId ? { id: r.authorId, name: personName(r.authorName, r.authorEmail)! } : null,
-      updatedAt: r.updatedAt,
-      notes: notesByTask.get(r.id) ?? [],
-    });
-  }
+  for (const t of tasks) board[t.status].push(t);
   // 끝난 칸만 최근 순으로 뒤집고 자른다 — 나머지 칸은 사람이 잡은 순서가 곧 우선순위다
   board.done = board.done
     .sort((a, b) => (b.doneAt?.getTime() ?? 0) - (a.doneAt?.getTime() ?? 0))
     .slice(0, DONE_VISIBLE_LIMIT);
   // 읽은 시각을 같이 준다 — 카드의 "3일 전" 기준이다. 렌더 안에서 Date.now() 를 부르면 렌더가 순수하지 않다(수집 현황의 asOf 와 같은 방식)
   return { board, asOf: Date.now() };
+}
+
+/** 지난 일 — 판에서 걷은 할 일. 걷은 때 최근 순이다(찾으러 오는 건 대개 방금 걷은 것이다) */
+export async function listArchived(): Promise<ArchivedTask[]> {
+  await requireAdmin();
+  const tasks = await readTasks(isNotNull(adminTasks.archivedAt), [desc(adminTasks.archivedAt), desc(adminTasks.doneAt)], ARCHIVE_VISIBLE_LIMIT);
+  return tasks.map((t) => ({ ...t, archivedAt: t.archivedAt! }));
 }
 
 /**

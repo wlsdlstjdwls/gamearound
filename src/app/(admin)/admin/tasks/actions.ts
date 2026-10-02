@@ -6,7 +6,17 @@ import { ROUTES } from "@/lib/routes";
 import { ADMIN_ACTION_MESSAGES, TASK_MESSAGES } from "@/lib/admin/messages";
 import { sourceEnum } from "@/server/db/schema";
 import { TASK_CATEGORIES, TASK_STATUSES } from "@/lib/admin/tasks";
-import { addNote, clearDone, createTask, deleteNote, deleteTask, moveTask, reorderTask, updateTask } from "@/server/services/admin-tasks";
+import {
+  addNote,
+  archiveDone,
+  createTask,
+  deleteNote,
+  deleteTask,
+  moveTask,
+  reorderTask,
+  restoreTask,
+  updateTask,
+} from "@/server/services/admin-tasks";
 import { searchShopGames } from "@/server/services/shop-games";
 import type { ShopGameOptionDto } from "@/lib/shops/game-option";
 import { requireAdmin } from "@/server/services/users";
@@ -38,7 +48,9 @@ function fail(e: unknown): TaskActionState {
 }
 
 function revalidate() {
+  // 지난 일 화면도 같이 — 걷기, 되돌리기, 기록이 두 화면에 함께 걸린다
   revalidatePath(ROUTES.adminTasks);
+  revalidatePath(ROUTES.adminTasksArchive);
 }
 
 export async function createTaskAction(_prev: TaskActionState, form: FormData): Promise<TaskActionState> {
@@ -196,12 +208,27 @@ export async function searchTaskGamesAction(term: string): Promise<ShopGameOptio
   return searchShopGames(q);
 }
 
-export async function clearDoneAction(): Promise<TaskActionState> {
+/** 끝난 일 치우기 — 판에서 걷는다(지우지 않는다). 걷은 일은 지난 일 화면에 남는다 */
+export async function archiveDoneAction(): Promise<TaskActionState> {
   try {
     await requireAdmin();
-    const n = await clearDone();
+    const n = await archiveDone();
     revalidate();
-    return { ok: true, message: `${n}건을 치웠어요` };
+    return { ok: true, message: TASK_MESSAGES.archived(n) };
+  } catch (e) {
+    return fail(e);
+  }
+}
+
+/** 걷은 일을 판(완료 칸)으로 되돌린다 */
+export async function restoreTaskAction(id: string): Promise<TaskActionState> {
+  try {
+    await requireAdmin();
+    const p = z.uuid().safeParse(id);
+    if (!p.success) return { ok: false, error: TASK_MESSAGES.invalid };
+    await restoreTask(p.data);
+    revalidate();
+    return { ok: true, message: TASK_MESSAGES.restored };
   } catch (e) {
     return fail(e);
   }

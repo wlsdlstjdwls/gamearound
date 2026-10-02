@@ -35,6 +35,8 @@ export const ROUTES = {
   adminProducts: "/admin/products",
   /** 관리자 할 일 판. 자동으로 쌓이는 검수 큐와 달리 사람이 직접 적는 일이 사는 자리 */
   adminTasks: "/admin/tasks",
+  /** 판에서 걷은 할 일(2026-10-02). 치우기가 지우기였던 때는 이력이 남지 않았다 */
+  adminTasksArchive: "/admin/tasks/archive",
   vendor: "/vendor",
   /** 매장(오프라인 판매처). 디지털 스토어와 낱말을 가르려고 shop 을 쓴다 — 설계서 §1 */
   shops: "/shops",

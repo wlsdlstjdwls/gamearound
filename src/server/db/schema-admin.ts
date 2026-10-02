@@ -55,6 +55,13 @@ export const adminTasks = pgTable("admin_tasks", {
   dueAt: timestamp("due_at", { withTimezone: true }),
   /** done 으로 옮긴 시각. 판을 정리할 때 "언제 끝낸 일" 인지 보려고 남긴다 */
   doneAt: timestamp("done_at", { withTimezone: true }),
+  /*
+   * 판에서 걷은 시각(2026-10-02, 사용자: "끝난 일 치우기는 숨김이어야 한다").
+   * 앞서 치우기는 DELETE 였고 기록까지 cascade 로 사라졌다 — 끝낸 일의 이력이 남지 않으면 판이 근거가 못 된다.
+   * 값이 있으면 판에서 빠지고 "지난 일" 화면에만 선다. 비우면 판으로 돌아온다.
+   * 걷은 사람은 따로 두지 않는다 — 걷기는 UPDATE 라 updated_by 가 이미 그 사람이다.
+   */
+  archivedAt: timestamp("archived_at", { withTimezone: true }),
 
   /*
    * 할 일이 가리키는 대상. 셋 다 선택이고 동시에 채워도 된다.
