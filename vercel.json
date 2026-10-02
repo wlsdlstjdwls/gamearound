@@ -53,6 +53,10 @@
       "schedule": "20 17,18 * * *"
     },
     {
+      "path": "/api/cron/crawl/xbox/prices",
+      "schedule": "20 0,6,12,18 * * *"
+    },
+    {
       "path": "/api/cron/crawl/xbox/discover",
       "schedule": "50 4,16 * * *"
     },
