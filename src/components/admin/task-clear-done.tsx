@@ -12,6 +12,7 @@
 import Link from "next/link";
 import { useState, useTransition } from "react";
 import { Button, buttonClass } from "@/components/ui/button";
+import { ClockIcon } from "@/components/ui/icons";
 import { TASK_MESSAGES } from "@/lib/admin/messages";
 import { ROUTES } from "@/lib/routes";
 import { archiveDoneAction, type TaskActionState } from "@/app/(admin)/admin/tasks/actions";
@@ -27,7 +28,9 @@ export function TaskClearDone({ doneCount }: { doneCount: number }) {
           {state.ok ? state.message : state.error}
         </p>
       )}
-      <Link href={ROUTES.adminTasksArchive} className={buttonClass({ variant: "ghost", size: "sm" })}>
+      {/* 테두리 단추 + 시계 그림이다(2026-10-02, 사용자: "지난 일 버튼이 눈에 안 띈다") — ghost 는 글자 한 조각으로 읽혔다 */}
+      <Link href={ROUTES.adminTasksArchive} className={buttonClass({ variant: "secondary", size: "sm" })}>
+        <ClockIcon size={15} />
         {TASK_MESSAGES.archiveLink}
       </Link>
       {doneCount > 0 && (
