@@ -126,15 +126,20 @@ export function TaskCard({
         </div>
 
         {/*
-          맥락 한 줄(2026-10-01, 사용자: 메모 두 줄이 카드 절반을 먹는다). 최근 기록이 있으면 그것을, 없으면 메모 첫 줄을 쓴다 —
-          일이 어디까지 왔는지가 처음 적은 배경보다 판에서 더 쓸모 있다. 전문은 팝업에 있다.
+          메모와 최근 기록을 **둘 다** 보인다(2026-10-02, 사용자: "내용도 더 보이면 좋겠다").
+          10-01 에는 "메모 두 줄이 카드 절반을 먹는다" 해서 둘 중 하나를 한 줄로 줄였는데, 그러자 카드만 보고는 무슨 일인지
+          알 수 없어 매번 팝업을 열어야 했다. 지금은 메모 세 줄, 최근 기록 두 줄까지 — 기록은 옅은 면에 넣어 메모와 갈라 읽힌다.
+          더 긴 글은 팝업에 있다.
         */}
-        {latestNote ? (
-          <p className="truncate text-[13.5px] text-mut">
-            <span className="font-medium text-dim">{TASK_MESSAGES.cardLatestNote}</span> {latestNote.body}
-          </p>
-        ) : (
-          task.body && <p className="truncate text-[13.5px] text-mut">{task.body}</p>
+        {task.body && <p className="line-clamp-3 whitespace-pre-line text-[13.5px] leading-[1.55] text-mut">{task.body}</p>}
+        {latestNote && (
+          <div className="rounded-lg bg-surface-2 px-2.5 py-2">
+            <p className="text-[12px] font-semibold text-dim">
+              {TASK_MESSAGES.cardLatestNote}
+              {latestNote.authorName && ` | ${latestNote.authorName}`}
+            </p>
+            <p className="mt-0.5 line-clamp-2 whitespace-pre-line text-[13px] leading-[1.5] text-ink">{latestNote.body}</p>
+          </div>
         )}
 
         {/* 붙임표 줄은 붙은 것이 있을 때만 선다 — 빈 줄이 카드마다 높이를 먹었다 */}
