@@ -84,6 +84,12 @@ export type GamesQuery = {
   platform?: string;
   genre?: string;
   onSale?: boolean;
+  /**
+   * 지금 열린 스팀 정기 세일에 든 게임만. 값은 lib/sales/calendar 의 세일 키("autumn")다.
+   * 종료 시각 대신 키를 싣는 이유: 주소가 사람이 읽을 수 있고, 회차가 바뀌어도 같은 주소가 그해 회차를 가리킨다.
+   * 그 세일이 지금 안 열려 있으면 조회가 조건을 걸지 않는다(services/games/list).
+   */
+  event?: string;
   /** 이 할인율 이상만. onSale 과 같은 축이라 둘 중 하나만 선다(gamesHref 가 맞춰 지운다) */
   minDiscount?: MinDiscount;
   /** 이 금액 이하만(원). 0 은 무료 */
@@ -138,6 +144,7 @@ export function parseGamesQuery(sp: Record<string, string | string[] | undefined
     platform: firstParam(sp.platform),
     genre: firstParam(sp.genre),
     onSale: firstParam(sp.sale) === "1",
+    event: firstParam(sp.event),
     minDiscount: off,
     maxPrice: max,
     company: firstParam(sp.company),
@@ -161,6 +168,7 @@ export function gamesHref(current: GamesQuery, patch: Partial<GamesQuery> = {}):
   if (next.genre) params.set("genre", next.genre);
   if (next.minDiscount) params.set("off", String(next.minDiscount));
   else if (next.onSale) params.set("sale", "1");
+  if (next.event) params.set("event", next.event);
   // 0 은 "무료" 라는 뜻이 있는 값이라 falsy 로 접으면 안 된다
   if (next.maxPrice !== undefined) params.set("max", String(next.maxPrice));
   if (next.company) params.set("company", next.company);

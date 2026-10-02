@@ -13,7 +13,8 @@ import { expandPlatformValues } from "@/lib/platform";
 import { HLTB_RANK_OFFSET, HLTB_RANK_STEPS, POPULARITY_RANK_MAX_AGE_DAYS, REVIEW_RANK_STEPS } from "@/lib/games/popularity";
 import type { GameSummary } from "./dto";
 import { attachBestPrice, type GameRow } from "./mappers";
-import { allOf, byCompanySlug, hasVisiblePlatform, inAnySubscription, mainGamesOnly, runsOnRig } from "./filters";
+import { allOf, byCompanySlug, hasVisiblePlatform, inAnySubscription, inSteamSale, mainGamesOnly, runsOnRig } from "./filters";
+import { runningSaleEndsAt } from "@/lib/sales/detect";
 import { parseRig } from "@/lib/hardware/rig";
 import { titleMatch, titleMatches } from "./title-search";
 import { DTO_CACHE_VERSION, LIST_REVALIDATE_SECONDS } from "@/lib/cache";
@@ -147,6 +148,9 @@ async function listGamesRaw(filter: GameListFilter): Promise<GameListResult> {
   // 최소 할인율은 "할인 중" 을 포함하는 조건이라 둘이 같이 오면 강한 쪽만 건다
   if (filter.minDiscount) conds.push(sql`${agg.maxDiscount} >= ${filter.minDiscount}`);
   else if (filter.onSale) conds.push(sql`${agg.maxDiscount} > 0`);
+  // 세일이 끝났거나 모르는 키면 조건을 안 건다 — 지난 배너의 링크가 빈 목록으로 열리지 않게
+  const saleEndsAt = filter.event ? runningSaleEndsAt(filter.event, new Date()) : null;
+  if (saleEndsAt) conds.push(inSteamSale(saleEndsAt));
   // 가격 상한은 기준 통화 가격이 있는 게임에만 뜻이 있다 — min_price 가 null 이면 조건이 자동으로 걸러 낸다
   if (filter.maxPrice !== undefined) conds.push(sql`${agg.minPrice} <= ${filter.maxPrice}`);
   if (filter.company) conds.push(byCompanySlug(filter.company));
@@ -252,6 +256,7 @@ function listKey(f: GameListFilter): string[] {
     f.platform ?? "",
     f.genre ?? "",
     f.onSale ? "sale" : "",
+    f.event ?? "",
     f.minDiscount ? String(f.minDiscount) : "",
     f.maxPrice !== undefined ? String(f.maxPrice) : "",
     f.company ?? "",
@@ -283,12 +288,13 @@ const listByJson = cache(async (json: string): Promise<GameListResult> => {
 /** 목록 — 필터 조합별 1시간 캐시. 크롤러 완료 시 `home` 태그로 함께 무효화된다 */
 export async function listGames(filter: GameListFilter): Promise<GameListResult> {
   // 키 순서와 같은 순서로 다시 세워야 같은 필터가 늘 같은 문자열이 된다
-  const [q, platform, genre, onSale, minDiscount, maxPrice, company, subscription, hideFree, rig, sort, page] = listKey(filter);
+  const [q, platform, genre, onSale, event, minDiscount, maxPrice, company, subscription, hideFree, rig, sort, page] = listKey(filter);
   return listByJson(JSON.stringify({
     q: q || undefined,
     platform: platform || undefined,
     genre: genre || undefined,
     onSale: onSale ? true : undefined,
+    event: event || undefined,
     minDiscount: (minDiscount ? Number(minDiscount) : undefined) as GameListFilter["minDiscount"],
     // 0("무료")과 "고르지 않음"을 가르는 자리 — 빈 문자열만 undefined 다
     maxPrice: (maxPrice === "" ? undefined : Number(maxPrice)) as GameListFilter["maxPrice"],

@@ -18,6 +18,19 @@ export const SALES_MESSAGES = {
   browseGames: "할인 중인 게임 보기",
 } as const;
 
+/**
+ * 홈 배너와 목록 칩 문구 — 데이터로 확인된 세일만 말한다(lib/sales/detect).
+ * "스팀" 을 앞에 붙이는 이유: 세일 이름("가을 세일")만으로는 어느 스토어 행사인지 모른다.
+ */
+export const RUNNING_SALE_MESSAGES = {
+  label: "지금 진행 중",
+  title: (name: string) => `스팀 ${name}`,
+  count: (n: number) => `${n.toLocaleString("ko-KR")}개 게임 할인 중`,
+  untilEnd: "종료까지",
+  cta: "세일 게임 보기",
+  chip: (name: string) => `스팀 ${name}`,
+} as const;
+
 /** 카운트다운 칸 이름. 순서가 곧 표시 순서다 */
 export const COUNTDOWN_UNITS = [
   { key: "days", label: "일" },

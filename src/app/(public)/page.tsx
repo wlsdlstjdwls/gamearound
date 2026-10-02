@@ -19,6 +19,8 @@ import { stagger } from "@/lib/motion";
 import { ROUTES } from "@/lib/routes";
 import { cn } from "@/lib/cn";
 import { getHomeData } from "@/server/services/games";
+import { getRunningSteamSale, type RunningSaleDto } from "@/server/services/sales";
+import { HomeSaleBanner } from "@/components/home-sale-banner";
 
 // Next 가 정적으로 읽는 값이라 리터럴이어야 한다 — 근거, 수치는 lib/cache 의 LIST_REVALIDATE_SECONDS 와 같게 유지
 export const revalidate = 3600;
@@ -36,8 +38,19 @@ async function loadHomeData(): Promise<{ data: HomeData; dbError: string | null 
   }
 }
 
+/** 배너는 덤이다 — 이 조회가 실패해도 홈은 그대로 서야 해서 실패를 "배너 없음" 으로 접는다 */
+async function loadRunningSale(): Promise<RunningSaleDto | null> {
+  try {
+    return await getRunningSteamSale();
+  } catch (e) {
+    console.error("[home] 세일 판정 실패:", e instanceof Error ? e.message : String(e));
+    return null;
+  }
+}
+
 export default async function HomePage() {
-  const { data, dbError } = await loadHomeData();
+  // 두 조회는 서로 기다릴 이유가 없다 — 줄 세우면 Neon 왕복이 둘이 된다
+  const [{ data, dbError }, runningSale] = await Promise.all([loadHomeData(), loadRunningSale()]);
   // 곧 끝나는 할인은 서버가 따로 골라 준다 — 위 줄과 겹치지 않아야 해서다(services/games/home 주석)
   const { discounts, endingSoon: soon, recentReleases, latestNews } = data;
 
@@ -48,6 +61,8 @@ export default async function HomePage() {
           데이터베이스에 연결할 수 없습니다. <code>.env.local</code>의 <code>DATABASE_URL</code>을 설정하고 <code>pnpm db:migrate</code>를 실행하세요.
         </div>
       )}
+
+      {runningSale && <HomeSaleBanner sale={runningSale} />}
 
       {/* 섹션 1 — 할인 중인 게임. 큰 머리글을 걷어낸 자리라(2026-09-15) 이 제목이 문서의 h1 이다 */}
       <section aria-labelledby="discounts-heading" className="flex flex-col gap-[22px]">

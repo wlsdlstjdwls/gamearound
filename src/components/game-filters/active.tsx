@@ -23,6 +23,8 @@ import { isPlatformFamily, PLATFORM_FAMILY_LABEL, PLATFORM_VALUE_ORDER } from "@
 import { gamesHref, joinPlatformValues, maxPriceLabel, parsePlatformValues, type GamesQuery } from "@/lib/games-query";
 import { ChipNavLink } from "@/components/ui/chip-nav";
 import { GAMES_FILTER_MESSAGES, RIG_FILTER_MESSAGES } from "@/lib/games/messages";
+import { STEAM_SALES } from "@/lib/sales/calendar";
+import { RUNNING_SALE_MESSAGES } from "@/lib/sales/messages";
 import { KEEP_SCROLL } from "./groups";
 import { SECTION_SIZE } from "@/components/ui/page";
 import { cn } from "@/lib/cn";
@@ -58,6 +60,9 @@ export function activeFilters(filter: GamesQuery): ActiveFilter[] {
   } else if (filter.onSale) {
     list.push({ key: "onSale", label: "할인 중", href: href({ onSale: false }) });
   }
+  // 세일 칩은 할인 칩 바로 뒤 — 같은 축(할인)의 더 좁은 조건이다. 모르는 키는 조회도 안 걸러서 칩도 안 세운다
+  const sale = filter.event ? STEAM_SALES.find((s) => s.key === filter.event) : undefined;
+  if (sale) list.push({ key: "event", label: RUNNING_SALE_MESSAGES.chip(sale.name), href: href({ event: undefined }) });
   if (filter.maxPrice !== undefined) {
     list.push({ key: "maxPrice", label: maxPriceLabel(filter.maxPrice), href: href({ maxPrice: undefined }) });
   }

@@ -67,6 +67,7 @@ function isFiltered(f: GameListFilter): boolean {
       f.platform ||
       f.genre ||
       f.onSale ||
+      f.event ||
       f.minDiscount !== undefined ||
       f.maxPrice !== undefined ||
       f.company ||

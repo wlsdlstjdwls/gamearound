@@ -4,7 +4,7 @@
 // 그 조건을 각 파일에 흩어 놓으면 언젠가 한 곳이 빠지고, 그 화면에서만 DLC 가 본편처럼 섞여 나온다.
 // 그래서 조건을 여기 한 곳에 두고 테스트를 붙인다.
 import { and, eq, isNull, sql, type SQL } from "drizzle-orm";
-import { gameCompanies, gamePlatforms, gameRequirementFloors, gameSourceRefs, gameSubscriptions, games, companies, subscriptions, type Platform } from "@/server/db/schema";
+import { gameCompanies, gamePlatforms, gameRequirementFloors, gameSourceRefs, gameSubscriptions, games, companies, HOME_REGION, subscriptions, type Platform } from "@/server/db/schema";
 import { HIDDEN_PLATFORMS, HIDDEN_REGIONS } from "@/lib/platform";
 import type { RigSpec } from "@/lib/hardware/rig";
 
@@ -76,6 +76,20 @@ export function inAnySubscription(): SQL {
     select 1 from ${gameSubscriptions}
     inner join ${gamePlatforms} on ${gamePlatforms.id} = ${gameSubscriptions.gamePlatformId}
     where ${gamePlatforms.gameId} = ${games.id} and ${gameSubscriptions.removedAt} is null
+  )`;
+}
+
+/**
+ * 지금 열린 스팀 정기 세일에 든 게임 — 스팀 한국 행이 할인 중이고 그 종료 시각이 세일 종료와 같다.
+ * 같은 판정을 홈 배너(services/sales)가 게임 수로 센다. 두 자리의 조건이 어긋나면 배너의 숫자와
+ * 링크한 목록의 건수가 달라진다 — 그래서 종료 시각 비교를 초까지 같게 둔다(lib/sales/detect 주석).
+ */
+export function inSteamSale(endsAt: Date): SQL {
+  // ::timestamptz 를 붙인다 — 바인딩이 text 로 추론되면 비교가 깨진다(list 의 reviewRankExpr 주석과 같은 함정)
+  return sql`exists (
+    select 1 from ${gamePlatforms}
+    where ${gamePlatforms.gameId} = ${games.id} and ${gamePlatforms.platform} = 'steam' and ${gamePlatforms.region} = ${HOME_REGION}
+      and ${gamePlatforms.discountPct} > 0 and ${gamePlatforms.discountEndsAt} = ${endsAt.toISOString()}::timestamptz
   )`;
 }
 
