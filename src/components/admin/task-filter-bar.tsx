@@ -45,20 +45,17 @@ export function TaskFilterBar({
   onChange: (next: TaskFilter) => void;
 }) {
   const set = (patch: Partial<TaskFilter>) => onChange({ ...filter, ...patch });
+  const viewChoices = TASK_VIEWS.map((v) => ({ value: v, label: TASK_FILTER_MESSAGES.categoryOption(TASK_FILTER_MESSAGES.views[v], counts.views[v]) }));
   const categoryChoices = [
     { value: ANY, label: TASK_FILTER_MESSAGES.categoryAll },
     ...TASK_CATEGORIES.map((c) => ({ value: c, label: TASK_FILTER_MESSAGES.categoryOption(TASK_CATEGORY_LABEL[c], counts.categories[c]) })),
   ];
 
   return (
-    <div role="region" aria-label={TASK_FILTER_MESSAGES.label} className="flex flex-wrap items-center gap-x-3 gap-y-2">
+    <div role="region" aria-label={TASK_FILTER_MESSAGES.label} className="flex flex-wrap items-center gap-2 sm:gap-x-3">
       {/* 세그먼트 — 한 판 위에 넷이 서고 고른 칸만 흰 면으로 떠오른다.
           좁은 화면에서는 세 칸 격자로 한 줄에 선다 — 줄바꿈에 맡기면 칸이 따로 떨어져 다른 묶음처럼 보였다(390px 실측) */}
-      <div
-        role="group"
-        aria-label={TASK_FILTER_MESSAGES.view}
-        className="grid w-full grid-cols-3 gap-0.5 rounded-xl bg-surface-2 p-1 sm:flex sm:w-auto"
-      >
+      <div role="group" aria-label={TASK_FILTER_MESSAGES.view} className="hidden gap-0.5 rounded-xl bg-surface-2 p-1 sm:flex">
         {TASK_VIEWS.map((v) => {
           const on = filter.view === v;
           return (
@@ -80,6 +77,19 @@ export function TaskFilterBar({
         })}
       </div>
 
+      {/* 좁은 화면의 보기는 드롭다운이다(2026-10-02, 사용자: "모바일 할 일 화면이 너무 복잡해졌다").
+          세그먼트가 한 줄을 통째로 먹고 바로 밑 칸 이름 줄과 같은 모양이라, 비슷한 판 두 줄이 서로 다른 일을 했다.
+          드롭다운으로 접으면 보기, 분류, 우선순위가 한 줄에 선다 */}
+      <FormSelect
+        name="view"
+        label={TASK_FILTER_MESSAGES.view}
+        hideLabel
+        options={viewChoices}
+        value={filter.view}
+        onChange={(v) => set({ view: v as TaskFilter["view"] })}
+        className={cn("w-[108px] rounded-[var(--radius-sm)] sm:hidden", filter.view !== DEFAULT_TASK_FILTER.view && "ring-2 ring-acc")}
+      />
+
       {/* 분류가 걸려 있으면 칸 테두리를 브랜드 색으로 둘러 "지금 걸려 있다" 를 보인다 — 드롭다운은 닫혀 있으면 값이 글자뿐이다 */}
       <FormSelect
         name="cat"
@@ -88,7 +98,7 @@ export function TaskFilterBar({
         options={categoryChoices}
         value={filter.category ?? ANY}
         onChange={(v) => set({ category: (v || null) as TaskCategory | null })}
-        className={cn("w-[150px] rounded-[var(--radius-sm)]", filter.category && "ring-2 ring-acc")}
+        className={cn("w-[108px] rounded-[var(--radius-sm)] sm:w-[150px]", filter.category && "ring-2 ring-acc")}
       />
 
       {/* 급함만. 급한 일이 하나라도 있으면 빨간 점이 늘 서 있다 — 거르기 전에 "급한 게 있다" 가 보여야 한다 */}
@@ -102,7 +112,11 @@ export function TaskFilterBar({
         )}
       >
         {counts.urgent > 0 && <span aria-hidden className={cn("h-2 w-2 rounded-full", URGENT_FILL)} />}
-        {TASK_FILTER_MESSAGES.urgent}
+        <span className="hidden sm:inline">{TASK_FILTER_MESSAGES.urgent}</span>
+        <span className="sm:hidden">
+          <span className="sr-only">{TASK_FILTER_MESSAGES.urgent}</span>
+          <span aria-hidden>{TASK_FILTER_MESSAGES.urgentShort}</span>
+        </span>
         <span className="text-[12px] font-semibold tabular-nums">{counts.urgent}</span>
       </button>
 

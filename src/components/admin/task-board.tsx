@@ -3,10 +3,12 @@
 // 할 일 판. 칸 셋(할 일, 하는 중, 끝)을 가로로 세우고, 카드를 칸 사이로, 칸 안에서 끌어 옮긴다.
 // 작업대기 칸은 2026-10-02 화면에서 뺐다(lib/admin/tasks 의 BOARD_STATUSES).
 //
-// **좁은 화면은 옆으로 넘기는 줄이다**(2026-10-02, 사용자 지정). 칸 셋을 위아래로 쌓으면 완료 칸까지
-// 할 일 칸의 카드를 다 지나야 닿았다. 지금은 칸 하나가 화면 폭의 88% 를 먹고 다음 칸 끝이 비쳐
-// "옆에 더 있다" 를 말한다. 위의 칸 이름 줄은 지금 보는 칸을 짚고, 누르면 그 칸으로 넘어간다.
-// 칸마다 "모아보기" 가 그 칸을 목록 시트로 연다(task-column-sheet).
+// **좁은 화면은 칸 하나씩 본다**(2026-10-02, 사용자 지정). 칸 셋을 위아래로 쌓으면 완료 칸까지
+// 할 일 칸의 카드를 다 지나야 닿았다. 위의 칸 이름 줄이 지금 보는 칸을 짚고, 누르거나 옆으로 밀면 넘어간다.
+// 같은 날 저녁 "모바일 할 일 화면이 너무 복잡해졌다" 를 듣고 좁은 화면의 칸 껍데기를 걷었다 — 칸 이름 줄,
+// 칸 머리(이름, 모아보기, 건수), 옆 칸 끝 비침, 회색 골이 같은 말을 네 번 했다. 지금 좁은 화면의 칸은 화면 폭을
+// 다 쓰는 카드 목록뿐이고, 이름과 건수는 위 줄 한 곳이 말한다. 모아보기(task-column-sheet)는 넓은 화면에만 선다 —
+// 좁은 화면에서는 칸이 곧 전체 목록이다.
 //
 // 드롭은 **칸 전체**가 받는다 — 카드 사이의 가는 틈을 노리게 하면 빗나가는 일이 잦다.
 // 칸 안 자리는 포인터 높이로 정하고, 놓일 자리에 보라 줄을 긋는다(use-board-drag).
@@ -159,7 +161,7 @@ export function TaskBoard({
           좁은 화면에도 grid-cols-1 을 **적어야 한다**(2026-10-02 실측): 틀을 안 적으면 암묵 칸이 auto 라
           카드 제목(truncate 는 한 줄로 편 글자 폭을 최소 폭으로 낸다)만큼 늘어나, 390px 화면에서 칸이 438px 이
           되고 문서가 가로로 밀렸다. grid-cols-1 은 minmax(0, 1fr) 라 칸이 화면 폭을 넘지 않는다 */}
-      {/* 좁은 화면: 옆으로 넘기는 줄(snap). 칸이 88% 라 다음 칸 끝이 비친다. 넓은 화면: 격자.
+      {/* 좁은 화면: 칸 하나가 화면 폭을 다 쓰고 옆으로 넘긴다(snap). 넓은 화면: 격자.
           items-start 는 좁은 화면에만 — 늘이면 빈 칸이 가장 긴 칸만큼 키를 먹어 회색 골이 화면 아래까지 이어졌다 */}
       <div
         ref={trackRef}
@@ -179,15 +181,18 @@ export function TaskBoard({
               className={cn(
                 // 칸은 흰 본문 판 위의 회색 골이고 카드는 그 위에 다시 뜬 흰 판이다(2026-09-30) —
                 // 앞서는 칸, 카드, 바탕이 다 회색 계열이라 셋이 한 면으로 붙어 보였다
-                "flex min-h-[140px] w-[88%] min-w-0 shrink-0 snap-start flex-col gap-2 rounded-xl border border-dashed p-2 transition-colors duration-base sm:w-auto",
+                "flex w-full min-w-0 shrink-0 snap-start flex-col gap-2 rounded-xl border border-dashed transition-colors duration-base sm:min-h-[140px] sm:w-auto sm:p-2",
                 over && droppable
                   ? "border-acc bg-acc-soft"
                   : droppable
                     ? "border-line-strong bg-surface-3"
                     : "border-transparent bg-surface-2",
+                // 좁은 화면은 골을 걷는다 — 칸이 하나만 보이니 칸 경계가 할 일이 없다. 끌기는 마우스에서만 켜져(use-board-drag) 위 색도 여기선 안 쓰인다
+                "max-sm:border-0 max-sm:bg-transparent",
               )}
             >
-              <h3 className="flex items-center justify-between px-1 py-0.5 text-[13.5px] font-bold text-mut">
+              {/* 칸 머리는 넓은 화면에만 — 좁은 화면에서는 위 칸 이름 줄이 같은 말(이름, 건수)을 한다 */}
+              <h3 className="hidden items-center justify-between px-1 py-0.5 text-[13.5px] font-bold text-mut sm:flex">
                 {/* 칸마다 색 점(2026-10-01) — 넷이 같은 회색 골이라 상태가 글자로만 갈렸다. 색은 메뉴 배지와 같은 짝이다 */}
                 <span className="flex items-center gap-1.5">
                   <span aria-hidden className={cn("h-2.5 w-2.5 rounded-full", STATUS_FILL[status])} />

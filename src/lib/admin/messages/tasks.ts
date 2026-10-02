@@ -166,6 +166,8 @@ export const TASK_FILTER_MESSAGES = {
   /** 드롭다운 항목. 건수는 남은 일 기준이다 */
   categoryOption: (label: string, n: number) => `${label} ${n}`,
   urgent: "우선순위 높음",
+  /** 좁은 화면의 같은 칩 — 보기, 분류 드롭다운과 한 줄에 서야 해서 줄인다(앞의 "우선순위" 는 화면 낭독이 읽는다) */
+  urgentShort: "높음만",
   reset: "거르기 풀기",
   /** 칸 머리 건수. 걸러졌을 때만 전체 수를 같이 보인다 — 숨은 카드가 있다는 걸 놓치지 않게 */
   columnCount: (shown: number, total: number) => `${shown} / ${total}`,
