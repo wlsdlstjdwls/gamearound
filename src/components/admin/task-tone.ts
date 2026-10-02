@@ -34,12 +34,12 @@ export const PRIORITY_BADGE: Record<TaskPriority, string> = {
 /** 급함 높음의 칠. 카드 띠에서는 분류보다 앞선다 — 급한 일이 판에서 먼저 보여야 한다 */
 export const URGENT_FILL = "bg-danger";
 
-/** 칸 머리 점 */
+/** 칸 머리 점. 글자용 --warn, --ok 는 점에서 탁해서 점 전용 토큰을 쓴다(globals.css --status-*) */
 export const STATUS_FILL: Record<TaskStatus, string> = {
-  backlog: "bg-line-strong",
-  todo: "bg-warn",
-  doing: "bg-acc",
-  done: "bg-ok",
+  backlog: "bg-status-backlog",
+  todo: "bg-status-todo",
+  doing: "bg-status-doing",
+  done: "bg-status-done",
 };
 
 /** 카드 왼쪽 띠의 칠. 급함이 분류를 이긴다. 그을 것이 없으면 빈 문자열 */

@@ -82,6 +82,15 @@
   --warn: #8a6a2e; /* 데이터 지연 */
   --warn-soft: #f6efe2;
   /*
+   * 할 일 판 칸 머리 점(2026-10-02, 사용자: "동그라미 색상이 구리다"). --warn, --ok 를 그대로 쓰니 8px 점에서
+   * 갈색, 짙은 풀색으로 탁하게 읽혔다 — 그 둘은 글자에 얹는 값이라 일부러 어둡게 잡은 색이다.
+   * 점은 글자가 아니라 면이라 대비 기준이 없다. 같은 뜻(메뉴 배지와 짝: 할 일 호박, 처리 중 보라)을 맑은 채도로 다시 뽑았다.
+   */
+  --status-backlog: #b0b8c1;
+  --status-todo: #f5a524;
+  --status-doing: #7c5cff;
+  --status-done: #20b26b;
+  /*
    * 가격 판정 — 시간당 가격이 카탈로그 분포에서 어느 편인지.
    * "싼 편"은 브랜드 색(--acc)이 맡는다(2026-09-15 교체): 초록은 이 화면에서 --ok 와 같은 말을 하고 있었고,
    * 플레이타임 칸만 다른 색 계열로 떠 브랜드가 지워진 자리처럼 보였다.
@@ -253,6 +262,10 @@
     --ok-soft: #122b20;
     --warn: #d4a64e;
     --warn-soft: #33270f;
+    --status-backlog: #5c646e;
+    --status-todo: #f0b03f;
+    --status-doing: #9182f0;
+    --status-done: #3cc684;
     --price-bad: #f0705a;
     --verdict-bad: #ff6b6b;
     --on-ink: #0f1115;
@@ -309,6 +322,10 @@
   --ok-soft: #122b20;
   --warn: #d4a64e;
   --warn-soft: #33270f;
+  --status-backlog: #5c646e;
+  --status-todo: #f0b03f;
+  --status-doing: #9182f0;
+  --status-done: #3cc684;
   --price-bad: #f0705a;
   --verdict-bad: #ff6b6b;
   --on-ink: #0f1115;
@@ -362,6 +379,10 @@
   --color-ok-soft: var(--ok-soft);
   --color-warn: var(--warn);
   --color-warn-soft: var(--warn-soft);
+  --color-status-backlog: var(--status-backlog);
+  --color-status-todo: var(--status-todo);
+  --color-status-doing: var(--status-doing);
+  --color-status-done: var(--status-done);
   --color-price-bad: var(--price-bad);
   --color-verdict-bad: var(--verdict-bad);
   --color-on-ink: var(--on-ink);
