@@ -116,14 +116,14 @@ async function getHomeDataRaw(): Promise<HomeData> {
     .orderBy(desc(news.publishedAt))
     .limit(HOME_NEWS_LIMIT);
 
-  // 질의는 서로 기다리지 않는다(2026-10-02) — 전에는 넷을 줄 세워 왕복이 네 번 쌓였다(neon-roundtrip-cost)
-  const [discountRows, endingSoonRows, releaseRows, newsRows, extras] = await Promise.all([
-    discountRowsQ,
-    endingSoonRowsQ,
-    releaseRowsQ,
-    newsRowsQ,
-    getHomeExtras(),
-  ]);
+  /*
+   * **무거운 질의는 둘씩만 함께 띄운다**(2026-10-02 실측). 홈 질의 열 개 남짓을 한꺼번에 띄웠더니 Neon 이
+   * "out of memory"(53200), "could not resize shared memory segment ... No space left on device"(53100) 로 죽었다 —
+   * 질의마다 병렬 작업자가 붙어 공유 메모리를 나눠 쓰는데 작은 컴퓨트가 그 합을 못 버틴다.
+   * 줄 세우는 값은 거의 없다: 운영 함수는 Neon 옆(iad1)이라 왕복이 한 자릿수 ms 다(AGENTS §5).
+   */
+  const [discountRows, endingSoonRows] = await Promise.all([discountRowsQ, endingSoonRowsQ]);
+  const [releaseRows, newsRows] = await Promise.all([releaseRowsQ, newsRowsQ]);
 
   // 잘라 온 조인 행만으로는 배지가 빠진다 — 자른 뒤 게임 단위로 한 번 더 채운다(fillPlatforms 주석)
   const fill = async (rows: typeof discountRows, limit = HOME_LIMIT) => fillGenres(await fillPlatforms(groupSummaries(rows, limit)));
@@ -137,6 +137,8 @@ async function getHomeDataRaw(): Promise<HomeData> {
   // 위 줄에 이미 선 게임은 뺀다 — 같은 카드가 한 화면에 두 번 서면 두 마디가 서로를 베낀 것처럼 읽힌다
   const shown = new Set(discounts.map((g) => g.slug));
   const endingSoon = endingSoonAll.filter((g) => !shown.has(g.slug)).slice(0, HOME_ENDING_SOON_LIMIT);
+  // 둘째 판 줄은 첫 판이 다 끝난 뒤에 묻는다 — 위의 둘씩 띄우기와 같은 이유
+  const extras = await getHomeExtras();
   // 둘째 판 줄도 첫 줄과 겹치지 않게 — 인기 순위만 예외다(HomeData 주석)
   const unseen = (list: typeof discounts) => list.filter((g) => !shown.has(g.slug)).slice(0, HOME_RAIL_LIMIT);
 
