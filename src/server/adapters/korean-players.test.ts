@@ -53,6 +53,10 @@ describe("parseEpicKorean", () => {
     expect(parseEpicKorean(["AUDIO: English, Korean | TEXT: English, Korean"])).toEqual({ text: true, voice: true });
   });
 
+  it("목록 끝의 마침표를 떼고 읽는다", () => {
+    expect(parseEpicKorean(["TEXT: English, Korean. ", "AUDIO: English, Korean."])).toEqual({ text: true, voice: true });
+  });
+
   it("머리말이 없으면 음성인지 글자인지 몰라 짐작하지 않는다", () => {
     expect(parseEpicKorean(["English, Korean"])).toBeUndefined();
   });

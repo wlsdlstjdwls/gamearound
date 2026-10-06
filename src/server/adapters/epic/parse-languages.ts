@@ -9,7 +9,8 @@ import { EPIC_KOREAN_LABEL, EPIC_LANGUAGE_AUDIO, EPIC_LANGUAGE_TEXT } from "./co
 function section(joined: string, label: string): string[] | null {
   const m = joined.match(new RegExp(`${label}\\s*:\\s*([^|]*)`, "i"));
   if (!m) return null;
-  return m[1].split(",").map((s) => s.trim()).filter(Boolean);
+  // 목록 끝에 마침표가 붙어 온다("..., Portuguese - Brazil.", 2026-10-06 실측 Spider-Man 2). 떼지 않으면 끝에 선 한국어를 놓친다
+  return m[1].split(",").map((s) => s.trim().replace(/\.+$/, "").trim()).filter(Boolean);
 }
 
 /**
