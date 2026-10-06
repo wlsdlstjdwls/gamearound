@@ -11,6 +11,7 @@ import { ContentKindHead } from "@/components/content-kind-head";
 import { DlcSection } from "@/components/dlc-list";
 import { GameHeadbar } from "@/components/game-headbar";
 import { UpgradeNotes } from "@/components/upgrade-note";
+import { KoreanSupportBadges } from "@/components/korean-support-badges";
 import { MultiplayerBadges } from "@/components/multiplayer-badges";
 import { PcSupportBadges } from "@/components/pc-support-badges";
 import { NewsList } from "@/components/news-list";
@@ -462,7 +463,7 @@ export default async function GameDetailPage({ params }: Props) {
 
           <ScoreGrid game={game} />
 
-          {/* 플레이 방식, 스팀덱 등급, 네이티브 OS — "어떻게 즐기나" 를 말하는 값이라 한 줄에 모인다.
+          {/* 플레이 방식, 스팀덱 등급, 네이티브 OS, 한국어 — "어떻게 즐기나" 를 말하는 값이라 한 줄에 모인다.
               왼쪽(무슨 게임인가)에서 오른쪽(사도 되나)으로 옮겼다(2026-09-22, 사용자 지정).
               "솔로" 와 "스팀덱 검증됨" 은 장르처럼 게임을 설명하는 말이 아니라 **내 조건에 맞나**를
               가르는 값이다 — 혼자 할 사람과 덱을 든 사람에게는 값, 점수와 같은 무게로 읽힌다 */}
@@ -476,6 +477,7 @@ export default async function GameDetailPage({ params }: Props) {
                 supportsPvp={game.supportsPvp}
               />
               <PcSupportBadges platforms={game.platforms} />
+              <KoreanSupportBadges platforms={game.platforms} />
             </div>
           )}
 

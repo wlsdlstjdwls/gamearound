@@ -45,6 +45,9 @@ export type PlatformDto = {
   nativeWindows: boolean | null;
   nativeMac: boolean | null;
   nativeLinux: boolean | null;
+  /** 이 판의 한국어 지원(화면, 자막) / 한국어 음성. 스토어가 말하지 않았으면 null 이다(false 와 다르다) */
+  koText: boolean | null;
+  koVoice: boolean | null;
   /**
    * 이 플랫폼에서 이 게임을 포함하는 구독. 게임 단위가 아니라 플랫폼 단위로 매다는 이유:
    * Game Pass 는 Xbox 에서만 유효한데 게임 위에 붙여 두면 PS 탭을 보는 사람에게도

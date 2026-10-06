@@ -41,6 +41,16 @@ export const NATIVE_OS_LABEL = {
   linux: "리눅스 지원",
 } as const;
 
+/**
+ * 한국어 칩. 판마다 다르므로 칩 옆에 그 판의 스토어 이름을 붙인다(components/korean-support-badges).
+ * "지원" 은 화면이나 자막 중 하나라도 한국어라는 뜻이다 — 둘을 가르는 스토어가 없어 한 말로 묶는다.
+ */
+export const KOREAN_SUPPORT_LABEL = {
+  text: "한국어 지원",
+  voice: "한국어 음성",
+  none: "한국어 미지원",
+} as const;
+
 /** 사양표의 OS 이름. "PC" 라고 적지 않는다 — 맥도 리눅스도 PC 다 */
 export const OS_FAMILY_LABEL: Record<OsFamily, string> = {
   windows: "윈도우",
