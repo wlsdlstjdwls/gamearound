@@ -6,7 +6,7 @@
 // Cloudflare 가 앞에 있어 브라우저 헤더(Origin, Referer, sec-fetch-*)가 없으면 403 챌린지 HTML 이 온다 —
 // 크롤러 UA 만으로는 통과하지 못해 이 어댑터만 UA 를 브라우저 값으로 덮어쓴다(§10 의 UA 명시 예외).
 // 헤더를 다 맞춰도 Node 는 막힌다(constants 의 EPIC_ENABLE_ENV 주석). 지금은 비활성 소스다.
-import { type SearchCandidate, type StoreAdapter, type StoreSnapshot } from "../types";
+import { AdapterError, type SearchCandidate, type StoreAdapter, type StoreSnapshot } from "../types";
 import { createHttpClient } from "../http";
 import { sleep } from "@/lib/async";
 import {
@@ -54,10 +54,18 @@ const http = createHttpClient({
  * (constants 의 EPIC_CONTENT_URL 주석). 한 클라이언트로 묶으면 열려 있는 경로까지
  * curl 프로세스를 띄우고 프록시 요금을 쓴다.
  */
+/**
+ * 콘텐츠 API 에 그 상품 페이지가 없다(404). 새 형식 주소(`이름-6자리해시`)의 상품이 전부 이렇다 —
+ * 2026-10-06 실측으로 사양 대상 3,343건 중 2,857건이 그 주소였고, 표본 5건이 모두 404 였다.
+ * 이 API 는 옛 주소 체계의 페이지만 안다.
+ */
+class EpicContentMissing extends AdapterError {}
+
 const contentHttp = createHttpClient({
   source: "epic",
   label: "Epic 콘텐츠",
   headers: EPIC_BROWSER_HEADERS,
+  onStatus: (status, ctx) => (status === 404 ? new EpicContentMissing(`Epic 콘텐츠 없음 (${ctx})`, "epic", false) : undefined),
 });
 
 async function graphql(query: string, variables: Record<string, unknown>, context: string): Promise<unknown> {
@@ -83,7 +91,15 @@ export const epicAdapter: StoreAdapter = {
   async fetchRequirements(storeUrl: string): Promise<RequirementsResult> {
     const slug = epicProductSlug(storeUrl);
     if (!slug) return { requirements: [] };
-    const raw = await contentHttp.json(EPIC_CONTENT_URL(slug), { context: `requirements:${slug}` });
+    let raw: unknown;
+    try {
+      raw = await contentHttp.json(EPIC_CONTENT_URL(slug), { context: `requirements:${slug}` });
+    } catch (e) {
+      // 페이지가 없으면 "사양 없음" 이 답이다. 실패로 던지면 물어봤다는 기록이 안 남아,
+      // 이 행들이 매 회차 대기열 앞을 다시 차지하고 뒤의 게임은 영영 차례가 안 온다(실측: 3,343건 중 86건만 물어봤다)
+      if (e instanceof EpicContentMissing) return { requirements: [] };
+      throw e;
+    }
     // 같은 응답에 지원 언어도 실려 온다 — 따로 묻지 않는다
     return { requirements: parseEpicRequirements(raw), korean: parseEpicContentKorean(raw) };
   },

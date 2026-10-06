@@ -1,8 +1,9 @@
 // Epic 사양 파서 테스트 — fixture 기반(store-content.ak.epicgames.com, locale=en-US), 네트워크 없음
-import { describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import { readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import { epicProductSlug, parseEpicRequirements } from "./epic/parse-requirements";
+import { epicAdapter } from "./epic";
 
 const fixture = (name: string) =>
   JSON.parse(readFileSync(fileURLToPath(new URL(`./__fixtures__/${name}`, import.meta.url)), "utf8"));
@@ -72,5 +73,20 @@ describe("epicProductSlug", () => {
   it("주소가 없거나 모양이 다르면 null — 그 게임은 사양을 안 묻는다", () => {
     expect(epicProductSlug(null)).toBeNull();
     expect(epicProductSlug("https://store.epicgames.com/ko/browse")).toBeNull();
+  });
+});
+
+// 새 형식 주소(이름-6자리해시)는 콘텐츠 API 에 없다. 404 를 실패로 던지면 물어봤다는 기록이 안 남아 대기열 앞을 영영 막는다
+describe("epicAdapter.fetchRequirements", () => {
+  afterEach(() => vi.unstubAllGlobals());
+
+  it("콘텐츠 페이지가 없으면(404) 사양 없음으로 답한다", async () => {
+    vi.stubGlobal("fetch", vi.fn(async () => new Response("not found", { status: 404 })));
+    await expect(epicAdapter.fetchRequirements!("https://store.epicgames.com/ko/p/sunblockers-83e34a")).resolves.toEqual({ requirements: [] });
+  });
+
+  it("그 밖의 실패는 그대로 던진다(다음 회차가 다시 묻는다)", async () => {
+    vi.stubGlobal("fetch", vi.fn(async () => new Response("forbidden", { status: 403 })));
+    await expect(epicAdapter.fetchRequirements!("https://store.epicgames.com/ko/p/it-takes-two")).rejects.toThrow("403");
   });
 });
