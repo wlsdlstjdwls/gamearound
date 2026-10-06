@@ -34,10 +34,12 @@ import { SellersSection } from "@/components/shops/sellers-section";
 import { IndieGameSection } from "@/components/indie/game-section";
 import { listSellersForGame } from "@/server/services/listings";
 import { SELLING_MESSAGES } from "@/lib/shops/listing-messages";
-import { formatDate, PLATFORM_LABEL } from "@/lib/format";
+import { formatDate, kstDateKey, PLATFORM_LABEL } from "@/lib/format";
 import { SITE } from "@/lib/site";
 import { getFreshness } from "@/lib/freshness";
-import { COMPAT_MESSAGES, GAME_MESSAGES, OS_FAMILY_LABEL } from "@/lib/games/messages";
+import { COMPAT_MESSAGES, GAME_MESSAGES, OS_FAMILY_LABEL, PREORDER_LABEL, preorderHeadlineNote, releaseLineText } from "@/lib/games/messages";
+import { isPreorder } from "@/lib/games/preorder";
+import { Tag } from "@/components/ui/tag";
 import { requirementSummary } from "@/lib/games/requirement-summary";
 import { VerdictNote } from "@/components/devices/verdict-note";
 import { stagger } from "@/lib/motion";
@@ -129,6 +131,8 @@ function StatCell({ label, value, suffix, note }: StatCellProps) {
 function PriceHeadline({ game, recordedLow }: { game: GameDetail; recordedLow: RecordedLow | null }) {
   const best = cheapestPlatform(game.platforms);
   const hasDiscount = Boolean(best?.discountPct && best.discountPct > 0);
+  // 최저가 판이 예약 상품이면 그 값은 "지금 받는 값" 이 아니다 — 값 옆 딱지와 아래 안내로 말한다
+  const preorder = best ? isPreorder(best) : false;
 
   return (
     <div className="flex flex-col gap-1.5">
@@ -149,7 +153,9 @@ function PriceHeadline({ game, recordedLow }: { game: GameDetail; recordedLow: R
         {hasDiscount && best?.listPrice != null && (
           <span className="text-[14px] text-dim-2 line-through">{formatPrice(best.listPrice, best.currency)}</span>
         )}
+        {preorder && <Tag className="self-center px-2 py-1 text-[13px]">{PREORDER_LABEL}</Tag>}
       </p>
+      {preorder && best?.releaseDate && <p className="text-[13px] font-semibold text-acc">{preorderHeadlineNote(formatDate(best.releaseDate))}</p>}
       {/* 행사명과 남은 기간. 임박하면 점이 숨 쉰다 — 이 화면에서 빨강을 쓰는 유일한 자리다 */}
       {best && hasDiscount && (
         <SaleBadge discountName={best.discountName} discountEndsAt={best.discountEndsAt} discountStartsAt={best.discountStartsAt} variant="full" />
@@ -401,7 +407,7 @@ export default async function GameDetailPage({ params }: Props) {
                 국기를 왼쪽에 두지 않는 이유: 이 줄의 첫 값은 원제(또는 출시일)여야 눈이 제목에서
                 바로 이어 읽는다 — 국기가 앞에 서면 매번 그림부터 읽고 글자로 되돌아온다 */}
             <p className="flex flex-wrap items-center gap-x-1.5 gap-y-1 text-[13.5px] text-mut">
-              {[game.titleKo ? game.titleEn : null, game.releaseDate ? `${formatDate(game.releaseDate)} 출시` : null]
+              {[game.titleKo ? game.titleEn : null, game.releaseDate ? releaseLineText(formatDate(game.releaseDate), game.releaseDate.slice(0, 10) > kstDateKey(new Date())) : null]
                 .filter(Boolean)
                 .map((text, i) => (
                   <span key={text as string} className="inline-flex items-center gap-x-1.5">

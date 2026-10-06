@@ -58,6 +58,15 @@ export const KOREAN_SUPPORT_LABEL = {
 export const PREORDER_LABEL = "사전예약";
 export const PREORDER_HINT = "출시 전이지만 이 스토어에서 지금 예약 구매할 수 있어요";
 
+/**
+ * 상세 값 자리의 예약 안내(2026-10-06, 사용자 지적: "사전예약인지 플랫폼에 다니까 모르겠던데").
+ * 배지가 스토어 줄에만 있으면 화면 맨 위의 큰 값이 "지금 살 수 있는 값" 으로 읽힌다 — 언제 받는지를 값 바로 밑에서 말한다.
+ */
+export const preorderHeadlineNote = (date: string) => `${date} 출시 예정 | 지금 예약 구매할 수 있어요`;
+
+/** 제목 밑 줄의 출시일. 아직 안 나온 게임에 "출시" 라고만 적으면 이미 나온 것으로 읽힌다 */
+export const releaseLineText = (date: string, upcoming: boolean) => `${date} ${upcoming ? "출시 예정" : "출시"}`;
+
 /** 사양표의 OS 이름. "PC" 라고 적지 않는다 — 맥도 리눅스도 PC 다 */
 export const OS_FAMILY_LABEL: Record<OsFamily, string> = {
   windows: "윈도우",
