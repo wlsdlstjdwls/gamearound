@@ -16,10 +16,12 @@
 // 다르게 생겨서, 목록에서 기억한 그림을 여기서 다시 찾아야 한다.
 import type { Metadata } from "next";
 import { GameCard } from "@/components/game-card";
+import { UpcomingMonthNav } from "@/components/upcoming-month-nav";
 import { Page, PageHead, SectionHead } from "@/components/ui/page";
 import { formatMonthLabel, formatReleaseDay } from "@/lib/format";
 import { UPCOMING_MESSAGES as M, upcomingCountText } from "@/lib/games/messages";
 import { HOME_GRID_CLASS } from "@/lib/games/grid";
+import { monthAnchor } from "@/lib/games/upcoming";
 import { stagger } from "@/lib/motion";
 import { getUpcomingGames } from "@/server/services/games";
 
@@ -30,30 +32,6 @@ export const metadata: Metadata = {
   title: M.title,
   description: M.lead,
 };
-
-/** 달 마디의 닻. 달 열쇠("2026-10")를 그대로 쓰면 주소에 그 달이 보인다 — 공유한 링크가 말이 된다 */
-const monthAnchor = (key: string) => `m${key}`;
-
-/**
- * 건너뛰기 줄을 연도로 묶는다(2026-09-22 2차, 사용자 지적: "너무 투박하잖아 구분도 잘 안되고,
- * 년도도 반복되고").
- *
- * 처음에는 "2026년 9월", "2026년 10월" ... 을 칩으로 늘어놓았다. 한 화면에 여덟 칸이면 "2026년" 이
- * 네 번, "2027년" 이 네 번 반복되는데 **그 글자는 칸을 가르는 데 아무 일도 안 한다** — 눈이 가려야
- * 하는 것은 달이고, 연도는 어디서 바뀌는지만 알면 된다. 연도를 묶음 머리로 한 번만 세우고
- * 칸에는 달만 남기면 읽을 글자가 절반으로 준다.
- */
-function byYear(months: { key: string; total: number }[]): { year: string; months: { key: string; month: string; total: number }[] }[] {
-  const out: { year: string; months: { key: string; month: string; total: number }[] }[] = [];
-  for (const m of months) {
-    const [year, month] = m.key.split("-");
-    // 달 열쇠는 날짜 오름차순이라 같은 해가 반드시 붙어 온다 — 맨 뒤 묶음만 보면 된다
-    const last = out[out.length - 1];
-    const bucket = last?.year === year ? last : (out.push({ year, months: [] }), out[out.length - 1]);
-    bucket.months.push({ key: m.key, month: `${Number(month)}월`, total: m.total });
-  }
-  return out;
-}
 
 export default async function UpcomingPage() {
   const months = await getUpcomingGames();
@@ -68,50 +46,10 @@ export default async function UpcomingPage() {
           같은 자리로 가는 두 번째 입구였다. 담는 기준은 맨 아래 각주(M.basis)가 그대로 갖는다 */}
       <PageHead title={M.title} hideTitle />
 
-      {/*
-        달 건너뛰기 줄(2026-09-22, 사용자 지적: "이러면 9월 이후로 있는 지 안보이잖아" →
-        "너무 투박하잖아" → "아래로 스크롤하면 더이상 고르지도 못하고").
-
-        무엇을 푸는가: 달마다 자르고 나서도 첫 화면에는 이번 달 24장뿐이라, 다음 달이 있는지 알려면
-        스크롤을 끝까지 내려 봐야 한다. 어느 달이 있고 몇 개가 있는지는 **목록을 읽기 전에** 답할
-        질문이라 맨 위에 둔다. 닻 링크라 JS 없이 동작한다.
-
-        세 번 고쳐 지금 모양이 된 이유:
-          1) **연도를 묶음 머리로 뺐다**(byYear). 칩마다 "2026년" 을 붙이면 같은 글자가 네 번 서고,
-             정작 눈이 골라야 하는 달이 그 뒤에 묻힌다.
-          2) **줄을 붙여 둔다**(sticky). 목록을 내려 읽는 동안에도 다음 달로 갈 수 있어야 한다 —
-             맨 위에만 있으면 한 달을 다 본 사람이 다시 꼭대기로 올라가야 다음 달을 고른다.
-             머리띠(--header-h) 바로 아래에 서고, 뒤가 비쳐 보이면 카드와 겹쳐 읽히므로 면을 깐다.
-          3) **좌우 여백 밖까지 면을 편다**(-mx + px). 안 그러면 붙어 있는 띠의 양옆으로 카드가
-             지나가는 것이 보인다. 넘치면 가로로 밀고, 스크롤바는 감춘다(줄 하나짜리 띠라 그 자체가
-             두 번째 줄이 된다).
-
-        달이 하나뿐이면 세우지 않는다 — 건너뛸 데가 없는 건너뛰기 줄은 제목을 한 번 더 쓰는 일이다.
-      */}
-      {months.length > 1 && (
-        <nav
-          aria-label="달로 건너뛰기"
-          className="sticky top-[var(--header-h)] z-20 -mx-5 flex h-[var(--month-nav-h)] items-center gap-4 overflow-x-auto border-b border-line bg-bg/95 px-5 backdrop-blur [scrollbar-width:none] sm:-mx-7 sm:px-7"
-        >
-          {byYear(months).map((group) => (
-            <div key={group.year} className="flex shrink-0 items-center gap-1.5">
-              {/* 연도는 누르는 것이 아니라 묶음 이름표다 — 꼬리표 크기, 자간을 벌려 칩과 격을 가른다 */}
-              <span className="shrink-0 text-[11px] font-bold tracking-[0.08em] text-dim-2">{group.year}</span>
-              {group.months.map((m) => (
-                <a
-                  key={m.key}
-                  href={`#${monthAnchor(m.key)}`}
-                  className="press shrink-0 rounded-full bg-surface-2 px-2.5 py-1 text-[12.5px] font-bold text-ink-2 transition-colors duration-base hover:bg-surface-3 hover:text-ink"
-                >
-                  {m.month}
-                  {/* 건수는 같은 칩 안에서 한 단 물러난다 — 고르는 값은 달이고 숫자는 그 달의 크기다 */}
-                  <span className="ml-1 text-[11.5px] font-medium text-dim">{m.total}</span>
-                </a>
-              ))}
-            </div>
-          ))}
-        </nav>
-      )}
+      {/* 달 탭 띠(components/upcoming-month-nav). 맨 위에 두는 이유: 어느 달이 있고 몇 개인지는 목록을 읽기 전에
+          답할 질문이다. 붙어 서서(sticky) 내려 읽는 동안 지금 어느 달인지 켜 주고, 다음 달로 바로 건너뛰게 한다.
+          달이 하나뿐이면 세우지 않는다 — 건너뛸 데가 없는 띠는 제목을 한 번 더 쓰는 일이다 */}
+      {months.length > 1 && <UpcomingMonthNav months={months.map(({ key, total }) => ({ key, total }))} />}
 
       {months.length === 0 ? (
         <p className="rounded-xl bg-surface-2 px-4 py-3.5 text-[13px] text-dim">{M.empty}</p>
