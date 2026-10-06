@@ -120,6 +120,11 @@ export const STEAM_DECK_COMPAT: Record<number, DeckCompat> = {
  * 상품 경로는 koreana("한국어"), 사양 경로는 english("Korean")로 받는다.
  */
 export const STEAM_KOREAN_LABELS = ["한국어", "Korean"] as const;
+/**
+ * GetItems supported_languages 의 한국어 번호(ELanguage). 2026-10-06 실측: 엘든 링의 elanguage 순서
+ * 0, 2, 3, 1, 5, 10, 4, 12, ... 가 appdetails 의 영어, 프랑스어, 이탈리아어, 독일어, 스페인어, 일본어, 한국어, 폴란드어 ... 와 한 칸씩 맞는다.
+ */
+export const STEAM_ELANGUAGE_KOREAN = 4;
 /** 음성 지원 표시. 언어 이름 바로 뒤에 붙는다 */
 export const STEAM_VOICE_MARK = "<strong>*</strong>";
 

@@ -140,6 +140,21 @@ export const storeItemSchema = z.object({
         .optional(),
     })
     .optional(),
+  /**
+   * 지원 언어(data_request.include_supported_languages). appdetails 의 문자열과 달리 화면/자막과 음성을 칸으로 가른다.
+   * 2026-10-06 실측(엘든 링, 잇 테이크 투): elanguage 순서가 appdetails 의 언어 순서와 그대로 맞아 한국어 자리를 확인했다
+   * (STEAM_ELANGUAGE_KOREAN). 요청 수는 늘지 않고 응답만 조금 커진다.
+   */
+  supported_languages: z
+    .array(
+      z.object({
+        elanguage: z.number().optional(),
+        supported: z.boolean().optional(),
+        full_audio: z.boolean().optional(),
+        subtitles: z.boolean().optional(),
+      }),
+    )
+    .optional(),
   tagids: z.array(z.number()).default([]),
 });
 

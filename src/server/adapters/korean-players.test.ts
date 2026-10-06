@@ -3,7 +3,7 @@
 import { describe, expect, it } from "vitest";
 import { readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
-import { parseSteamKorean } from "./steam";
+import { parseSteamKorean, steamItemKorean } from "./steam";
 import { parseEpicContentKorean, parseEpicKorean } from "./epic";
 import { parseXboxKorean, parseXboxMultiplayer } from "./xbox-attributes";
 import { parseXboxProduct } from "./xbox";
@@ -41,6 +41,31 @@ describe("parseSteamKorean", () => {
   it("문자열이 없으면 모른다", () => {
     expect(parseSteamKorean(undefined)).toBeUndefined();
     expect(parseSteamKorean("  ")).toBeUndefined();
+  });
+});
+
+describe("steamItemKorean", () => {
+  // GetItems 실응답 일부(2026-10-06). 4 가 한국어다
+  it("한국어 줄의 자막과 음성 칸을 읽는다(엘든 링: 자막만)", () => {
+    expect(
+      steamItemKorean([
+        { elanguage: 0, supported: true, full_audio: true, subtitles: true },
+        { elanguage: 4, supported: true, full_audio: false, subtitles: true },
+      ]),
+    ).toEqual({ text: true, voice: false });
+  });
+
+  it("한국어 음성이 있으면 음성도 지원한다", () => {
+    expect(steamItemKorean([{ elanguage: 4, supported: true, full_audio: true, subtitles: true }])).toEqual({ text: true, voice: true });
+  });
+
+  it("목록에 한국어 줄이 없으면 둘 다 없다고 말한다", () => {
+    expect(steamItemKorean([{ elanguage: 0, supported: true, full_audio: true, subtitles: true }])).toEqual({ text: false, voice: false });
+  });
+
+  it("목록이 없거나 비면 모른다", () => {
+    expect(steamItemKorean(undefined)).toBeUndefined();
+    expect(steamItemKorean([])).toBeUndefined();
   });
 });
 

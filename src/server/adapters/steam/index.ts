@@ -53,6 +53,8 @@ function storeItemsUrl(appids: string[], language: "koreana" | "english", full: 
           include_release: true,
           include_platforms: true,
           include_reviews: true,
+          // 한국어 지원(자막, 음성). 이것도 요청 수는 그대로다(schemas 의 supported_languages 주석)
+          include_supported_languages: true,
           include_tag_count: 20,
         }
       : { include_basic_info: true },

@@ -3,6 +3,7 @@ import { AdapterError, type StoreSnapshot } from "../types";
 import { storeItemsSchema, type StoreItem } from "./schemas";
 import { PLAYER_CATEGORY, STEAM_DECK_COMPAT, STEAM_APP_TYPE_DEMO, STEAM_APP_TYPE_DLC, STEAM_APP_TYPE_MUSIC, STEAM_APP_TYPE_SOFTWARE, STEAM_ASSET_BASE_URL, STEAM_GENRE_TAG_IDS, STEAM_STORE_APP_URL } from "./constants";
 import { steamDiscountLabel } from "./parse-discount";
+import { steamItemKorean } from "./parse-languages";
 import { ratioToScore } from "@/lib/user-score";
 
 export function steamAssetUrl(
@@ -124,6 +125,7 @@ export function parseStoreItems(rawKo: unknown, rawEn?: unknown): Map<string, St
     const parentAppid = parent === undefined || parent === 0 || String(parent) === appid ? null : String(parent);
     const discount = item.best_purchase_option?.active_discounts?.[0];
     const { listPrice, currentPrice, discountPct } = priceOf(item);
+    const korean = steamItemKorean(item.supported_languages);
     out.set(appid, {
       platform: "steam",
       storeExternalId: appid,
@@ -142,6 +144,8 @@ export function parseStoreItems(rawKo: unknown, rawEn?: unknown): Map<string, St
       parentExternalId: parentAppid,
       userScore: userScoreOf(item),
       ...runtimeOf(item),
+      koText: korean?.text,
+      koVoice: korean?.voice,
       // 본편의 DLC 목록은 GetItems 가 주지 않는다. 목록이 필요하면 appdetails 경로(fetch)를 써야 한다
       meta: {
         titleEn,
