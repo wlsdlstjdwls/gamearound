@@ -25,6 +25,7 @@ import {
 } from "./constants";
 import { parsePsstoreConcept, parsePsstoreDlc, parsePsstoreGrid, parsePsstoreProduct, parsePsstoreSearch } from "./parse";
 import { parsePsstoreAddOnIds } from "./add-ons";
+import { psstoreStandardProductIdFromConcept } from "./standard-product";
 
 export * from "./constants";
 export * from "./parse";
@@ -110,7 +111,23 @@ export const psstoreAdapter: StoreAdapter = {
     }
     if (!/^\d+$/.test(externalId)) throw new AdapterError(`PlayStation 외부 ID 형식 오류: ${externalId}`, "psstore", false);
     const raw = await op("conceptRetrieveForCtasWithPrice", { conceptId: externalId }, PSSTORE_QUERY_HASHES.conceptDetail, externalId);
-    return parsePsstoreConcept(raw, externalId);
+    const snap = parsePsstoreConcept(raw, externalId);
+    // 기본 상품이 에디션이면 일반판 값을 한 번 더 묻는다(근거는 standard-product). 드문 경우에만 나가는 요청이다
+    const standardId = psstoreStandardProductIdFromConcept(raw);
+    if (!standardId) return snap;
+    try {
+      await sleep(psstoreAdapter.minIntervalMs);
+      const std = parsePsstoreDlc(
+        await op("productRetrieveForCtasWithPrice", { productId: standardId }, PSSTORE_QUERY_HASHES.productDetail, standardId),
+        standardId,
+      );
+      if (std.currentPrice == null || std.currentPrice <= 0 || (snap.currentPrice != null && std.currentPrice >= snap.currentPrice)) return snap;
+      return { ...snap, listPrice: std.listPrice, currentPrice: std.currentPrice, discountPct: std.discountPct, discountEndsAt: std.discountEndsAt };
+    } catch (e) {
+      // 일반판 조회가 실패해도 콘셉트 값은 살린다 — 에디션 값이 빈칸보다는 낫다
+      console.warn(`[psstore] 일반판 값 조회 실패 (${standardId}): ${errorMessage(e)}`);
+      return snap;
+    }
   },
 
   /**
