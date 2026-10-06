@@ -11,6 +11,7 @@ import { ContentKindHead } from "@/components/content-kind-head";
 import { DlcSection } from "@/components/dlc-list";
 import { GameHeadbar } from "@/components/game-headbar";
 import { UpgradeNotes } from "@/components/upgrade-note";
+import { GameViewBeacon } from "@/components/game-view-beacon";
 import { KoreanSupportBadges } from "@/components/korean-support-badges";
 import { MultiplayerBadges } from "@/components/multiplayer-badges";
 import { PcSupportBadges } from "@/components/pc-support-badges";
@@ -314,6 +315,8 @@ export default async function GameDetailPage({ params }: Props) {
        마디가 서로 안 붙는 일은 제목 크기(SECTION_SIZE.section, 22px)가 이미 하고 있다 */
     <Page pad="detail" gap={22}>
       <BackLink href={ROUTES.game}>게임 목록으로</BackLink>
+      {/* 조회 기록 — 수집이 사람들이 보는 게임을 먼저 갱신하게 한다(server/game-views). 화면에는 아무것도 안 그린다 */}
+      <GameViewBeacon slug={game.slug} />
 
       {/* 섹션 1 — 헤더 블록. 왼쪽은 "무슨 게임인가", 오른쪽은 "지금 사도 되나" 다.
           오른쪽 기둥은 스크롤을 따라온다 — 아래 가격표와 사양을 읽는 동안에도 결론이 화면에 남아야 한다.

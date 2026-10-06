@@ -60,6 +60,8 @@ export const ROUTES = {
   apiPushSubscribe: "/api/push/subscribe",
   /** 뉴스 썸네일 프록시 — 매체 CDN 이 핫링크를 막아 서버가 대신 받는다(lib/news/thumbnail) */
   apiNewsThumbnail: "/api/news/thumbnail",
+  /** 게임 상세 조회 기록. 수집이 사람들이 보는 게임을 먼저 갱신하는 데 쓴다(server/game-views) */
+  apiGameView: "/api/games/view",
 } as const;
 
 /** 온보딩 단계 주소. 단계 키는 lib/onboarding/steps 의 ONBOARDING_STEPS 다 */
