@@ -7,11 +7,13 @@ import { Fragment } from "react";
 import { formatPrice } from "@/lib/currency";
 import Link from "next/link";
 import { formatDate, PLATFORM_LABEL } from "@/lib/format";
-import { SAVING_MESSAGES } from "@/lib/games/messages";
+import { PREORDER_LABEL, SAVING_MESSAGES } from "@/lib/games/messages";
+import { isPreorder } from "@/lib/games/preorder";
 import type { StoreSaving } from "@/lib/games/saving";
 import { parsePlatformValues } from "@/lib/games-query";
 import { expandPlatformValues } from "@/lib/platform";
 import { DiscountText } from "@/components/ui/discount";
+import { Tag } from "@/components/ui/tag";
 import { PlatformBadges } from "@/components/platform-badges";
 import type { Platform } from "@/server/db/schema";
 import type { GameSummary } from "@/server/services/games";
@@ -165,6 +167,8 @@ export function GameCard({
   // (판 올리는 자리는 lib/cache 의 DTO_CACHE_VERSION. 여기 기본값은 그 사이를 버티는 몫이다)
   const genres = game.genres ?? [];
   const releaseLabel = releaseText ?? (best?.releaseDate ? `${formatDate(best.releaseDate)} 출시` : "");
+  // 대표 가격 행 하나만 본다 — 배지는 옆에 선 **그 값**이 예약 값이라는 말이다(다른 스토어는 이미 팔 수도 있다)
+  const preorder = best ? isPreorder(best) : false;
 
   return (
     // 미는 범위는 **카드 한 장 전체**다(2026-09-22, 사용자 지정) — 커버에만 걸면 제목이나 값 위에서
@@ -242,6 +246,8 @@ export function GameCard({
           <div className="mt-auto flex flex-wrap items-baseline gap-x-1.5 gap-y-0.5 pt-1">
             {best && best.currentPrice !== null && (
               <>
+                {/* 값 앞에 선다 — 값을 읽기 전에 "지금 사면 출시 날 받는 값" 이라는 걸 먼저 알아야 한다 */}
+                {preorder && <Tag className="self-center">{PREORDER_LABEL}</Tag>}
                 {hasDiscount && <DiscountStamp pct={best.discountPct} />}
                 <span className="text-[21px] font-extrabold tracking-[-0.03em] text-ink sm:text-[19px]">
                   {formatPrice(best.currentPrice, best.currency)}

@@ -51,6 +51,13 @@ export const KOREAN_SUPPORT_LABEL = {
   none: "한국어 미지원",
 } as const;
 
+/**
+ * 사전예약 배지(lib/games/preorder). "예약 구매" 가 아니라 "사전예약" 인 이유: 한국 스토어와 매장이 다 이 말을 쓴다.
+ * 말풍선 문구는 배지가 무엇을 근거로 섰는지 말한다 — 우리 판정이 아니라 스토어가 출시 전에 값을 붙였다는 사실이다.
+ */
+export const PREORDER_LABEL = "사전예약";
+export const PREORDER_HINT = "출시 전이지만 이 스토어에서 지금 예약 구매할 수 있어요";
+
 /** 사양표의 OS 이름. "PC" 라고 적지 않는다 — 맥도 리눅스도 PC 다 */
 export const OS_FAMILY_LABEL: Record<OsFamily, string> = {
   windows: "윈도우",

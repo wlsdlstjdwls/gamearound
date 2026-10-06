@@ -25,7 +25,10 @@ import { countText, scoreToStars } from "@/lib/user-score";
 import { type Freshness } from "@/lib/freshness";
 import type { Platform, Region } from "@/server/db/schema";
 import type { DlcDto, PlatformDto } from "@/server/services/games";
+import { PREORDER_HINT, PREORDER_LABEL } from "@/lib/games/messages";
+import { isPreorder } from "@/lib/games/preorder";
 import { DiscountText } from "@/components/ui/discount";
+import { Tag } from "@/components/ui/tag";
 import { SaleBadge } from "@/components/sale-badge";
 import { SubscriptionChips } from "@/components/subscription-badges";
 import { PlatformAddons } from "@/components/platform-addons";
@@ -68,6 +71,8 @@ function byPrice(a: PlatformDto, b: PlatformDto): number {
  */
 function tipText(p: PlatformPriceItem, skipUserScore: boolean): string {
   const lines: string[] = [];
+  // 배지가 왜 섰는지는 여기서 말한다 — 배지 글자 넷으로는 "누가 그렇다고 했나" 를 못 담는다
+  if (isPreorder(p)) lines.push(PREORDER_HINT);
   if (p.releaseDate) lines.push(`출시 ${formatDate(p.releaseDate)}`);
   if (p.currentVersion) lines.push(`버전 ${p.currentVersion}`);
   if (p.userScore && !skipUserScore) {
@@ -250,6 +255,8 @@ function PriceTile({
           <InfoTip label={tip} className="self-center" />
         </span>
         <span className="flex min-h-[18px] flex-wrap items-center gap-x-2 gap-y-1 text-[12.5px]">
+          {/* 스토어마다 따로 본다 — PS 는 예약 중이어도 스팀은 이미 팔 수 있다(lib/games/preorder) */}
+          {isPreorder(p) && <Tag>{PREORDER_LABEL}</Tag>}
           {hasDiscount && p.listPrice !== null && p.listPrice !== p.currentPrice && (
             <span className="text-dim-2 line-through">{formatPrice(p.listPrice, p.currency)}</span>
           )}

@@ -88,6 +88,15 @@ export function formatDate(d: Date | string | null | undefined): string {
   return `${year}년 ${trimZero(month)}월 ${trimZero(day)}일 (${weekday})`;
 }
 
+/**
+ * KST 달력 날짜 열쇠 — "2026-10-06". DB 의 date 칸(출시일)과 글자 그대로 견줄 수 있는 꼴이다.
+ * toISOString().slice(0, 10) 을 쓰지 않는 이유: 그건 UTC 날짜라 한국 오전 9시 전에는 어제가 된다.
+ */
+export function kstDateKey(date: Date): string {
+  const { year, month, day } = kstParts(date);
+  return `${year}-${month}-${day}`;
+}
+
 /** 목록에 붙는 짧은 시각. 24시간제로 적는다 — 오전/오후 표기가 런타임마다 갈렸다(KST_PARTS 주석) */
 export function formatDateTime(d: Date | string | null | undefined): string {
   const date = toDate(d);
