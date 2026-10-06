@@ -19,10 +19,12 @@ import {
   MATCHED_FOR_SYNC,
   REFRESH_POPULAR_MIN_AGE_HOURS,
   REFRESH_POPULAR_SHARE_BY_SOURCE,
+  REFRESH_VIEWED_SHARE,
   SOURCE_PLATFORMS,
   SOURCE_REGION,
 } from "./constants";
 import { getRedis } from "@/server/redis";
+import { recentlyViewedSlugs } from "@/server/game-views";
 import { fetchWithRetry } from "./retry";
 import type { Ctx } from "./context";
 
@@ -87,13 +89,17 @@ export async function listStoreTargets(ctx: Ctx, source: StoreSource, opts: Stor
   // 본편을 먼저 채우고 남는 자리에 나머지(DLC, 에디션, 번들, 체험판)를 넣는다.
   // 한 번에 뽑지 않는 이유는 REFRESH_MAIN_SHARE 주석에 있다 — 한 줄로 세우면 DLC 가 많은 스토어에서
   // 본편이 뒤로 밀린다. 본편이 몫보다 적으면 남는 자리는 그대로 나머지가 가져간다.
-  // 인기 몫이 있는 소스(Xbox)는 본편 몫의 앞자리를 인기순으로 먼저 채운다(REFRESH_POPULAR_SHARE_BY_SOURCE 주석)
-  const shares = refreshShares(limit, REFRESH_POPULAR_SHARE_BY_SOURCE[source]);
+  // 맨 앞자리는 최근 7일 안에 누가 상세를 연 게임이다(REFRESH_VIEWED_SHARE 주석). 그다음 인기 몫이 있는
+  // 소스(Xbox)는 인기순으로, 남는 본편 몫은 오래된 순으로 채운다(REFRESH_POPULAR_SHARE_BY_SOURCE 주석)
+  const shares = refreshShares(limit, REFRESH_POPULAR_SHARE_BY_SOURCE[source], REFRESH_VIEWED_SHARE);
+  const viewedSlugs = shares.viewed > 0 ? await recentlyViewedSlugs(ctx.now) : [];
+  const viewedRows = await refreshRows(db, source, platforms, region, { viewedSlugs, limit: viewedSlugs.length > 0 ? shares.viewed : 0 });
   const popularRows = await refreshRows(db, source, platforms, region, { mainOnly: true, popular: true, limit: shares.popular });
-  // 아주 묵은 인기작은 오래된 순에도 걸린다 — 겹친 만큼 더 받아 와서 걸러야 본편 몫이 줄지 않는다
-  const picked = new Set(popularRows.map((r) => `${r.gameId}:${r.externalId}`));
+  // 아주 묵은 인기작, 조회작은 오래된 순에도 걸린다 — 겹친 만큼 더 받아 와서 걸러야 본편 몫이 줄지 않는다
+  const front = [...viewedRows, ...popularRows];
+  const picked = new Set(front.map((r) => `${r.gameId}:${r.externalId}`));
   const oldestMain = await refreshRows(db, source, platforms, region, { mainOnly: true, limit: shares.main });
-  const mainRows = [...popularRows, ...oldestMain.filter((r) => !picked.has(`${r.gameId}:${r.externalId}`))].slice(0, shares.main);
+  const mainRows = [...front, ...oldestMain.filter((r) => !picked.has(`${r.gameId}:${r.externalId}`))].slice(0, shares.main);
   const restRows = await refreshRows(db, source, platforms, region, {
     mainOnly: false,
     limit: limit - mainRows.length,
@@ -135,6 +141,8 @@ export async function listStoreTargets(ctx: Ctx, source: StoreSource, opts: Stor
 /**
  * 갱신 대상 한 묶음 — 이 소스가 아는 게임 중 가장 오래 갱신 안 된 것부터.
  * popular 이면 순번, 평가 수가 있는 행만 인기순으로 고르고, 최근에 돈 행은 건너뛴다(REFRESH_POPULAR_MIN_AGE_HOURS).
+ * viewedSlugs 면 그 게임들만 오래된 순으로 고르고, 같은 규칙으로 최근에 돈 행은 건너뛴다. 본편, DLC 를 가리지 않는다 —
+ * 사람이 연 화면이 DLC 상세였다면 그 DLC 값이 신선해야 한다.
  *
  * 지역을 조건에 넣지 않으면 한 게임에 한국, 일본 행이 둘 다 붙어 같은 대상이 두 번 나오고,
  * 갱신 순서(lastSyncedAt)도 남의 나라 행을 보고 정해진다.
@@ -144,7 +152,7 @@ async function refreshRows(
   source: StoreSource,
   platforms: Platform[],
   region: Region,
-  opts: { mainOnly: boolean; limit: number; popular?: boolean },
+  opts: { mainOnly?: boolean; limit: number; popular?: boolean; viewedSlugs?: string[] },
 ): Promise<Array<{ gameId: string; externalId: string; slug: string; platform: Platform | null }>> {
   if (opts.limit <= 0) return [];
   return db
@@ -174,11 +182,18 @@ async function refreshRows(
         // 스토어가 연달아 "없다" 고 한 ref 는 뺀다 — 영구 제외가 아니라 한 달에 한 번만 다시 묻는다.
         // 안 빼면 매 회차 같은 건이 실패해 실행이 늘 partial 로 끝난다(sync/missing-refs 주석)
         not(missingRefExcluded()),
-        opts.mainOnly ? eq(games.contentType, "game") : ne(games.contentType, "game"),
+        opts.mainOnly === true ? eq(games.contentType, "game") : opts.mainOnly === false ? ne(games.contentType, "game") : undefined,
         opts.popular
           ? sql`(${gamePlatforms.popularityRank} is not null or ${gamePlatforms.userScoreCount} is not null)
               and (${gamePlatforms.lastSyncedAt} is null
                 or ${gamePlatforms.lastSyncedAt} < now() - make_interval(hours => ${REFRESH_POPULAR_MIN_AGE_HOURS}::int))`
+          : undefined,
+        opts.viewedSlugs
+          ? and(
+              inArray(games.slug, opts.viewedSlugs),
+              sql`(${gamePlatforms.lastSyncedAt} is null
+                or ${gamePlatforms.lastSyncedAt} < now() - make_interval(hours => ${REFRESH_POPULAR_MIN_AGE_HOURS}::int))`,
+            )
           : undefined,
       ),
     )
