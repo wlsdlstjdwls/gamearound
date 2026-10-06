@@ -78,7 +78,7 @@ export const EPIC_BROWSER_HEADERS: Record<string, string> = {
 
 /** 목록, 단건이 함께 쓰는 오퍼 필드 */
 const OFFER_FIELDS = `
-  title id namespace description effectiveDate offerType
+  title id namespace description effectiveDate releaseDate offerType
   productSlug urlSlug developerDisplayName publisherDisplayName
   keyImages { type url }
   catalogNs { mappings { pageSlug pageType } }

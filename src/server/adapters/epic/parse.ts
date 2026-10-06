@@ -24,6 +24,7 @@ const offerSchema = z.object({
   namespace: z.string(),
   description: z.string().nullish(),
   effectiveDate: z.string().nullish(),
+  releaseDate: z.string().nullish(),
   offerType: z.string().nullish(),
   productSlug: z.string().nullish(),
   urlSlug: z.string().nullish(),
@@ -143,7 +144,11 @@ export function toEpicSnapshot(offer: EpicOffer, titleEn?: string | null): Store
     discountStartsAt: rule?.startsAt ?? null,
     discountEndsAt: rule?.endsAt ?? null,
     discountName: rule?.name ?? null,
-    releaseDate: epicReleaseDate(offer.effectiveDate),
+    // releaseDate 가 출시일이고 effectiveDate 는 상품이 스토어에 걸린 날이다(2026-10-06 서울 실측).
+    // 둘이 같은 게임이 많아 오래 티가 안 났는데, 예약을 먼저 연 게임은 effectiveDate 가 예약 시작일이다 —
+    // Rayman Legends Retold 는 effectiveDate 6월 2일, releaseDate 12월 3일이었고 출시 예정 게임 36건이 이렇게 과거로 앉았다.
+    // effectiveDate 는 releaseDate 가 없을 때만 쓴다(EXODUS 는 반대로 effectiveDate 가 2099 미정이고 releaseDate 가 있었다)
+    releaseDate: epicReleaseDate(offer.releaseDate) ?? epicReleaseDate(offer.effectiveDate),
     contentType: EPIC_DLC_OFFER_TYPES.has(offer.offerType ?? "") ? "dlc" : "game",
     // Epic 독점작은 Steam 에 없어 이 스냅샷으로 게임 마스터를 새로 만든다 → meta 가 있어야 한다.
     //

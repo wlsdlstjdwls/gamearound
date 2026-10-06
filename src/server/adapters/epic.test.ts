@@ -96,6 +96,17 @@ describe("parseEpicSearch", () => {
     expect(candidate.url).toBe("https://store.epicgames.com/ko/p/judas");
   });
 
+  it("출시일은 releaseDate 가 effectiveDate(스토어에 걸린 날)보다 우선이다 (Rayman Legends Retold)", () => {
+    const snap = toEpicSnapshot(offer({ effectiveDate: "2026-06-02T22:00:00.000Z", releaseDate: "2026-12-03T10:00:00.000Z" }));
+    expect(snap.releaseDate).toBe("2026-12-03");
+  });
+
+  it("releaseDate 가 없거나 미정이면 effectiveDate 로, effectiveDate 가 미정이면 releaseDate 로", () => {
+    expect(toEpicSnapshot(offer({ releaseDate: null })).releaseDate).toBe("2024-03-01");
+    expect(toEpicSnapshot(offer({ releaseDate: "2099-01-01T00:00:00.000Z" })).releaseDate).toBe("2024-03-01");
+    expect(toEpicSnapshot(offer({ effectiveDate: "2099-01-01T00:00:00.000Z", releaseDate: "2027-04-07T00:00:00.000Z" })).releaseDate).toBe("2027-04-07");
+  });
+
   it("미발표작(2099 센티널)은 출시일을 비운다", () => {
     const snap = toEpicSnapshot(parseEpicSearch(fixture("epic-search.json"))[0]);
     expect(snap.releaseDate).toBeNull();
