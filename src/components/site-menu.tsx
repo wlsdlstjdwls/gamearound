@@ -22,6 +22,7 @@ import { buttonClass } from "@/components/ui/button";
 import { BellIcon, CalendarIcon, GamepadIcon, LogOutIcon, MenuIcon, ShieldIcon, SlidersIcon, SpinnerIcon } from "@/components/ui/icons";
 import { Sheet } from "@/components/ui/sheet";
 import { Clamp } from "@/components/ui/tooltip";
+import { INDIE_MESSAGES } from "@/lib/indie/messages";
 
 type MenuLink = { href: string; label: string; icon?: React.ReactNode; authOnly?: boolean; adminOnly?: boolean };
 
@@ -29,6 +30,7 @@ type MenuLink = { href: string; label: string; icon?: React.ReactNode; authOnly?
 const LINKS: MenuLink[] = [
   { href: ROUTES.game, label: "게임 목록", icon: <GamepadIcon size={17} /> },
   { href: ROUTES.upcoming, label: "출시 예정", icon: <CalendarIcon size={17} /> },
+  { href: ROUTES.indie, label: INDIE_MESSAGES.title, icon: <GamepadIcon size={17} /> },
   // "다음 세일" 은 숨겼다(2026-09-21) — 넓은 화면 메뉴(site-header)와 같이 되돌린다
   // 위시리스트는 숨겼다(2026-09-21) — 넓은 화면 메뉴(site-header)와 같이 되돌린다
   { href: ROUTES.alerts, label: "가격 알림", icon: <BellIcon size={17} /> },

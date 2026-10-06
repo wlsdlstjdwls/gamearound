@@ -38,6 +38,8 @@ export * from "./schema-enums";
 export * from "./schema-shops";
 // 상품, 재고도 같은 이유로 갈라 뒀다(schema-products.ts).
 export * from "./schema-products";
+// 인디 홍보 글도 사람이 쓰는 세계라 갈라 뒀다(schema-indie.ts). 크롤러가 건드리지 않는다.
+export * from "./schema-indie";
 
 
 /** 화면과 수집의 기준 지역. 이 값이 아닌 행은 "참고 가격" 으로만 보여 준다 */

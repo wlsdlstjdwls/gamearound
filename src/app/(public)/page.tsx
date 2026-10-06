@@ -22,6 +22,10 @@ import { getHomeData, listGames } from "@/server/services/games";
 import type { GameSummary } from "@/server/services/games/dto";
 import { getRunningSteamSale, type RunningSaleDto } from "@/server/services/sales";
 import { HomeSaleBanner, SALE_BANNER_PREVIEW } from "@/components/home-sale-banner";
+import { IndieCard } from "@/components/indie/indie-card";
+import { INDIE_MESSAGES } from "@/lib/indie/messages";
+import type { IndieCardDto } from "@/lib/indie/dto";
+import { listIndieForHome } from "@/server/services/indie";
 
 // Next 가 정적으로 읽는 값이라 리터럴이어야 한다 — 근거, 수치는 lib/cache 의 LIST_REVALIDATE_SECONDS 와 같게 유지
 export const revalidate = 3600;
@@ -65,9 +69,19 @@ async function loadRunningSale(): Promise<{ sale: RunningSaleDto; preview: GameS
   }
 }
 
+/** 인디 줄도 덤이다 — 실패하면 줄이 안 설 뿐 홈은 선다. 이 페이지 ISR 에 얹혀 있어 쓰기 경로가 revalidatePath 로 민다 */
+async function loadIndie(): Promise<IndieCardDto[]> {
+  try {
+    return await listIndieForHome();
+  } catch (e) {
+    console.error("[home] 인디 줄 조회 실패:", e instanceof Error ? e.message : String(e));
+    return [];
+  }
+}
+
 export default async function HomePage() {
   // 두 조회는 서로 기다릴 이유가 없다 — 줄 세우면 Neon 왕복이 둘이 된다
-  const [{ data, dbError }, runningSale] = await Promise.all([loadHomeData(), loadRunningSale()]);
+  const [{ data, dbError }, runningSale, indie] = await Promise.all([loadHomeData(), loadRunningSale(), loadIndie()]);
   // 곧 끝나는 할인은 서버가 따로 골라 준다 — 위 줄과 겹치지 않아야 해서다(services/games/home 주석)
   const { discounts, endingSoon, recentReleases, latestNews, storeDeals, popular, budget } = data;
 
@@ -119,6 +133,15 @@ export default async function HomePage() {
 
       {/* 4 — 만 원 이하. 같은 줄 모양이지만 사이에 순위 목록이 끼어 둘이 붙어 보이지 않는다 */}
       <RailSection id="budget" title={M.budgetTitle} games={budget} href={`${ROUTES.game}?sale=1`} />
+
+      {/* 4.5 — 인디 개발자가 직접 올린 게임. 할인 줄들 뒤, 마감 기둥 앞이다 — 사러 온 사람의 첫 질문을 막지 않으면서
+          "새 게임" 을 찾는 눈에는 걸린다. 몇 장 안 되면 줄째 안 선다(lib/indie/constants 의 INDIE_HOME_MIN) */}
+      {indie.length > 0 && (
+        <section aria-labelledby="indie-heading" className="flex flex-col gap-3">
+          <SectionHead id="indie-heading" title={INDIE_MESSAGES.homeTitle} note={INDIE_MESSAGES.homeNote} action={<SeeAll href={ROUTES.indie} />} />
+          <Rail labels={INDIE_MESSAGES.rail} items={indie.map((p) => ({ key: p.slug, node: <IndieCard post={p} /> }))} />
+        </section>
+      )}
 
       {/* 5 — 곧 끝나는 할인 / 최신 뉴스.
           min() 을 씌우는 이유: auto-fit 의 minmax 는 화면이 그 값보다 좁아도 칸을 줄이지 않는다.

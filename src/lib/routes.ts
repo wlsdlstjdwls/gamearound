@@ -50,6 +50,12 @@ export const ROUTES = {
    * 경로 분리는 실수 방지일 뿐이고, 진짜 방어는 requireRoleOrForbid("admin") 이다.
    */
   shopsAdmin: "/shops/admin",
+  /** 인디 홍보 — 개발자가 직접 쓰는 소개 글. 공개 목록과 상세는 누구나, 쓰기와 내 글은 로그인 */
+  indie: "/indie",
+  indieNew: "/indie/new",
+  indieMine: "/indie/mine",
+  /** 인디 홍보 글 신고, 게임 연결 확인 */
+  adminIndie: "/admin/indie",
   forbidden: "/403",
   terms: "/terms",
   privacy: "/privacy",
@@ -122,6 +128,19 @@ export function vendorListingsPath(slug: string): string {
  * 파일은 브라우저가 Blob 으로 곧장 보내고, 이 경로는 권한을 보고 토큰만 내준다
  */
 export const SHOP_PHOTO_UPLOAD_PATH = "/api/shops/photos/upload";
+
+/** 인디 홍보 글 그림 업로드 토큰 발급. 매장 사진과 같은 방식이다(글쓴이만 받는다) */
+export const INDIE_IMAGE_UPLOAD_PATH = "/api/indie/images/upload";
+
+/** 인디 홍보 글 공개 화면 */
+export function indiePath(slug: string): string {
+  return `${ROUTES.indie}/${encodeURIComponent(slug)}`;
+}
+
+/** 인디 홍보 글 고치기. slug 가 아니라 id 로 가른다 — 제목을 고쳐도 고치던 화면 주소가 살아 있어야 한다 */
+export function indieEditPath(id: string): string {
+  return `${ROUTES.indieMine}/${encodeURIComponent(id)}`;
+}
 
 /** 할 일 첨부 업로드 토큰 발급. 매장 사진과 같은 방식이다(관리자만 받는다) */
 export const TASK_ATTACHMENT_UPLOAD_PATH = "/api/admin/tasks/attachments/upload";

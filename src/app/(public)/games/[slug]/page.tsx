@@ -31,6 +31,7 @@ import { buttonClass } from "@/components/ui/button";
 import { Page, SectionHead, sectionCardClass } from "@/components/ui/page";
 import { DiscountText } from "@/components/ui/discount";
 import { SellersSection } from "@/components/shops/sellers-section";
+import { IndieGameSection } from "@/components/indie/game-section";
 import { listSellersForGame } from "@/server/services/listings";
 import { SELLING_MESSAGES } from "@/lib/shops/listing-messages";
 import { formatDate, PLATFORM_LABEL } from "@/lib/format";
@@ -614,6 +615,11 @@ export default async function GameDetailPage({ params }: Props) {
 
       <Suspense fallback={null}>
         <SellersSlot gameId={game.id} />
+      </Suspense>
+
+      {/* 개발자가 올린 소개 글. 파는 곳처럼 캐시 밖에서 따로 받는다 — 숨김, 연결 확인이 바로 반영돼야 한다 */}
+      <Suspense fallback={null}>
+        <IndieGameSection gameId={game.id} />
       </Suspense>
 
       <div className="grid items-start gap-x-6 gap-y-6 lg:grid-cols-[repeat(auto-fit,minmax(min(340px,100%),1fr))]">
