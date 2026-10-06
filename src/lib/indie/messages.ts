@@ -62,6 +62,18 @@ export const INDIE_MESSAGES = {
   hiddenNotice: "이 글은 지금 숨겨져 있어서 나만 볼 수 있어요.",
   noCoverNotice: "대표 그림이 없어서 목록과 홈에는 아직 안 보여요. 고치기 화면에서 그림을 올려 주세요.",
   notFound: "글을 찾을 수 없어요",
+  /** 목록 머리 판 */
+  heroLabel: "인디 쇼케이스",
+  heroTitle: "개발자가 직접 소개하는 게임",
+  heroLead: "스토어에서 지나치기 쉬운 작은 게임을, 만든 사람이 직접 들고 왔어요. 만들고 있는 게임도 먼저 만나 보세요.",
+  heroPoints: ["올리면 바로 공개돼요", "소개는 무료예요", "스토어에 있는 게임이면 가격 비교 화면에도 붙어요"],
+  featuredLabel: "새로 올라왔어요",
+  ctaTileTitle: "내 게임도 소개해 보세요",
+  ctaTileBody: "만들고 있는 게임도 괜찮아요. 대표 그림 한 장이면 목록에 올라가요.",
+  /** 상세 오른쪽 카드 */
+  infoTitle: "게임 정보",
+  stage: "개발 단계",
+  posted: "올린 날",
 } as const;
 
 /** 쓰기, 고치기 폼과 검증 */

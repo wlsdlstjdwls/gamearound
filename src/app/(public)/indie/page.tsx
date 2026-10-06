@@ -2,14 +2,18 @@
 //
 // 캐시를 걸지 않는다(services/indie/read 주석). 올린 사람이 곧장 자기 글을 보러 오고, 신고로 숨은 글은 바로 빠져야 한다.
 // 거르기는 개발 단계 하나뿐이다 — 글 수가 적은 동안 칩을 늘리면 칩마다 빈 화면이 된다.
+//
+// 머리는 어두운 판(IndieListHero)이고 격자 끝에는 "내 게임도 소개해 보세요" 칸이 선다(2026-10-06 사용자: "심심하다").
+// 글이 몇 장 안 되는 지금은 그 칸이 빈자리를 메우면서 올리는 길을 한 번 더 건넨다.
 import type { Metadata } from "next";
 import Link from "next/link";
 import { EmptyState } from "@/components/empty-state";
 import { IndieCard } from "@/components/indie/indie-card";
 import { Pagination } from "@/components/pagination";
-import { buttonClass } from "@/components/ui/button";
+import { IndieListHero } from "@/components/indie/list-hero";
 import { ChipLink } from "@/components/ui/chip";
-import { Page, PageHead } from "@/components/ui/page";
+import { PlusIcon } from "@/components/ui/icons";
+import { Page } from "@/components/ui/page";
 import { firstParam } from "@/lib/games-query";
 import { INDIE_STAGES } from "@/lib/indie/constants";
 import { INDIE_MESSAGES as M, INDIE_STAGE_LABEL } from "@/lib/indie/messages";
@@ -44,20 +48,8 @@ export default async function IndiePage({ searchParams }: Props) {
 
   return (
     <Page gap={22}>
-      <PageHead
-        title={M.title}
-        note={M.lead}
-        action={
-          <div className="flex flex-wrap items-center gap-2">
-            <Link href={ROUTES.indieMine} className={buttonClass({ variant: "ghost" })}>
-              {M.mine}
-            </Link>
-            <Link href={ROUTES.indieNew} className={buttonClass({ variant: "primary" })}>
-              {M.cta}
-            </Link>
-          </div>
-        }
-      />
+      {/* 새로 올라온 게임은 첫 쪽, 거르지 않은 화면에서만 크게 세운다 — 거른 화면에서 다른 단계 게임이 머리에 서면 어긋난다 */}
+      <IndieListHero featured={!stage && result.page === 1 ? (result.items[0] ?? null) : null} />
 
       <nav aria-label={M.stageFilterLabel} className="flex flex-wrap gap-1.5">
         <ChipLink href={indieHref(undefined)} active={!stage} aria-current={!stage ? "page" : undefined}>
@@ -79,6 +71,18 @@ export default async function IndiePage({ searchParams }: Props) {
               <IndieCard post={post} />
             </li>
           ))}
+          <li className="enter-item" style={stagger(result.items.length)}>
+            <Link
+              href={ROUTES.indieNew}
+              className="press flex h-full min-h-[220px] flex-col items-center justify-center gap-2 rounded-[var(--radius-panel)] border-2 border-dashed border-line-strong px-6 py-8 text-center transition-colors duration-fast hover:border-acc hover:bg-acc-soft"
+            >
+              <span aria-hidden className="flex size-11 items-center justify-center rounded-full bg-acc-soft text-acc">
+                <PlusIcon size={20} />
+              </span>
+              <span className="text-[15px] font-bold text-ink">{M.ctaTileTitle}</span>
+              <span className="max-w-[260px] text-[12.5px] leading-[1.6] text-mut">{M.ctaTileBody}</span>
+            </Link>
+          </li>
         </ul>
       )}
 
