@@ -23,10 +23,32 @@ const SPACED_PREFIXES = ["the"];
  * 스토어가 한 칸에 여러 회사를 몰아넣는 구분자.
  * 닌텐도 장르 파서와 달리 여기서는 가운뎃점을 쓰지 않으므로 후보에 넣지 않는다.
  */
-const MULTI_SEPARATORS = /\s*(?:\/|,|;|\||&|\band\b)\s*/gi;
+const HARD_SEPARATORS = /\s*(?:\/|,|;|\|)\s*/g;
+/**
+ * `&`, `and` 는 구분자이기도 하고 이름의 일부이기도 하다.
+ * 2026-10-06 실측: "Magnin & Associates"(게임 43), "Image & Form Games", "Mountain and Sea Studio",
+ * "Two and a Half Studios" 가 쪼개져 "Magnin", "Associates" 같은 없는 회사가 검수 큐 상위를 먹었다.
+ * 진짜 두 회사("Infinity Ward and Sledgehammer Games")는 양쪽이 다 두 낱말 이상이라, 그때만 쪼갠다.
+ * 한 낱말 회사끼리의 조합("Maxis & Blind Squirrel")은 통째로 남는다 — 없는 회사를 만드는 쪽보다 덜 해롭다.
+ */
+const SOFT_SEPARATORS = /\s*(?:&|\band\b)\s*/gi;
+
+/**
+ * 스토어가 HTML 엔티티를 풀지 않고 준다(실측: "CRAFTS &amp; MEISTER Co., Ltd.", "Petr &quot;Glubo&quot; Sykora").
+ * 안 풀면 "amp" 라는 회사 조각이 생긴다.
+ */
+const NAMED_ENTITIES: Record<string, string> = { amp: "&", quot: '"', apos: "'", lt: "<", gt: ">", nbsp: " " };
+
+function decodeEntities(input: string): string {
+  return input.replace(/&(#x[0-9a-f]+|#\d+|[a-z]+);/gi, (match, body: string) => {
+    if (body[0] !== "#") return NAMED_ENTITIES[body.toLowerCase()] ?? match;
+    const code = body[1] === "x" || body[1] === "X" ? parseInt(body.slice(2), 16) : parseInt(body.slice(1), 10);
+    return Number.isFinite(code) && code > 0 && code <= 0x10ffff ? String.fromCodePoint(code) : match;
+  });
+}
 
 function stripMarks(input: string): string {
-  return input.replace(/[™®©]/g, "");
+  return decodeEntities(input).replace(/[™®©]/g, "");
 }
 
 /**
@@ -95,7 +117,7 @@ export function normalizeCompanyName(raw: string): string {
 export function splitCompanyNames(raw: string): string[] {
   const cleaned = cleanCompanyName(raw);
   if (!cleaned) return [];
-  const parts = cleaned.split(MULTI_SEPARATORS).map((p) => p.trim()).filter(Boolean);
+  const parts = cleaned.split(HARD_SEPARATORS).flatMap(splitSoft).map((p) => p.trim()).filter(Boolean);
   if (parts.length <= 1) return [cleaned];
   if (parts.some((p) => p.length < 2)) return [cleaned];
   // "FromSoftware, Inc." 의 쉼표는 회사 구분자가 아니라 법인 형태 앞의 구두점이다(steam 실측).
@@ -113,7 +135,18 @@ export function splitCompanyNames(raw: string): string[] {
   return out;
 }
 
-const LEGAL_SUFFIX_SET = new Set(LEGAL_SUFFIXES);
+/** `&`, `and` 는 양쪽 조각이 모두 두 낱말 이상일 때만 구분자로 본다(SOFT_SEPARATORS 참고) */
+function splitSoft(piece: string): string[] {
+  const parts = piece.split(SOFT_SEPARATORS).map((p) => p.trim()).filter(Boolean);
+  if (parts.length <= 1) return [piece];
+  return parts.every((p) => p.split(/\s+/).length >= 2) ? parts : [piece];
+}
+
+/**
+ * 쪼개기를 되돌리는 판정에만 쓰는 법인 표기. "GmbH & Co. KG" 의 "Co. KG" 조각을 잡는다.
+ * LEGAL_SUFFIXES 에 넣지 않는 이유: 정규화 키가 바뀌면 이미 쌓인 company_aliases 가 안 맞는다.
+ */
+const LEGAL_SUFFIX_SET = new Set([...LEGAL_SUFFIXES, "co kg", "kg"]);
 
 /** 이 조각이 법인 형태 표기뿐인가 ("Inc.", "Co., Ltd") */
 function isLegalSuffixOnly(part: string): boolean {

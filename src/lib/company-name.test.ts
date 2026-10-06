@@ -65,6 +65,25 @@ describe("splitCompanyNames", () => {
     expect(splitCompanyNames("Rockstar Games")).toEqual(["Rockstar Games"]);
   });
 
+  it("& 와 and 는 양쪽이 다 두 낱말 이상일 때만 쪼갠다", () => {
+    // 한쪽이 한 낱말이면 이름의 일부다. 쪼개면 "Associates" 라는 회사가 생긴다(2026-10-06 실측)
+    expect(splitCompanyNames("Magnin & Associates")).toEqual(["Magnin & Associates"]);
+    expect(splitCompanyNames("Mountain and Sea Studio")).toEqual(["Mountain and Sea Studio"]);
+    expect(splitCompanyNames("Two and a Half Studios")).toEqual(["Two and a Half Studios"]);
+    expect(splitCompanyNames("Infinity Ward and Sledgehammer Games")).toEqual(["Infinity Ward", "Sledgehammer Games"]);
+    expect(splitCompanyNames("Chibig, Undercoders & Talpa Games")).toEqual(["Chibig", "Undercoders & Talpa Games"]);
+  });
+
+  it("법인 표기 앞의 & 도 구분자가 아니다", () => {
+    expect(splitCompanyNames("Barrel Roll Games GmbH & Co. KG")).toEqual(["Barrel Roll Games GmbH & Co. KG"]);
+  });
+
+  it("HTML 엔티티를 풀고 나서 본다", () => {
+    // 안 풀면 "amp" 라는 회사 조각이 생긴다
+    expect(splitCompanyNames("CRAFTS &amp; MEISTER Co., Ltd.")).toEqual(["CRAFTS & MEISTER Co., Ltd."]);
+    expect(cleanCompanyName("Petr &quot;Glubo&quot; Sykora")).toBe('Petr "Glubo" Sykora');
+  });
+
   it("중복은 하나로", () => {
     expect(splitCompanyNames("Sega / Sega")).toEqual(["Sega"]);
   });
