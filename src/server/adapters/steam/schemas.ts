@@ -26,6 +26,12 @@ export const appDataSchema = z.object({
   publishers: z.array(z.string()).optional(),
   price_overview: priceOverviewSchema.optional(),
   categories: z.array(z.object({ id: z.number(), description: z.string() })).optional(),
+  /**
+   * 지원 언어. 목록이 아니라 HTML 문자열 하나로 온다(2026-10-06 실측, 엘든 링):
+   * "영어<strong>*</strong>, 프랑스어, ..., 한국어, ...<br><strong>*</strong>음성이 지원되는 언어".
+   * 별표가 붙은 언어가 음성 지원이다. 화면과 자막은 가르지 않는다.
+   */
+  supported_languages: z.string().optional(),
   genres: z.array(z.object({ id: z.union([z.string(), z.number()]), description: z.string() })).optional(),
   release_date: z.object({ coming_soon: z.boolean().optional(), date: z.string().optional() }).optional(),
   /**

@@ -1,7 +1,8 @@
 // 사양 요청 대상 선정 테스트 — 순수 함수만. DB, 네트워크는 건드리지 않는다.
 import { describe, expect, it } from "vitest";
 import { REQUIREMENTS_REFRESH_DAYS } from "./constants";
-import { pickRequirementTargets, type RequirementRow } from "./requirements";
+import type { Ctx } from "./context";
+import { pickRequirementTargets, planKorean, type RequirementRow } from "./requirements";
 
 const NOW = new Date("2026-09-18T00:00:00Z");
 const daysAgo = (n: number) => new Date(NOW.getTime() - n * 24 * 60 * 60 * 1000);
@@ -15,7 +16,7 @@ const targets = [{ gameId: "g1", slug: "elden-ring" }];
 describe("pickRequirementTargets", () => {
   it("한 번도 물어보지 않은 게임을 고른다", () => {
     expect(pickRequirementTargets(targets, [row()], NOW)).toEqual([
-      { platformId: "p1", gameId: "g1", platform: "steam", slug: "elden-ring", key: "1245620" },
+      { platformId: "p1", gameId: "g1", platform: "steam", slug: "elden-ring", key: "1245620", koText: null, koVoice: null },
     ]);
   });
 
@@ -63,5 +64,28 @@ describe("pickRequirementTargets — 열쇠 고르기", () => {
   it("열쇠가 없는 행은 아예 줄에 세우지 않는다 — 매 회차 몫만 먹는다", () => {
     const r = row({ platform: "epic", storeUrl: null });
     expect(pickRequirementTargets(targets, [r], NOW, 10, "storeUrl")).toEqual([]);
+  });
+});
+
+// 사양 응답에 같이 오는 한국어 지원 — 바뀐 칸만, 응답이 말한 칸만, 잠기지 않은 칸만 쓴다
+describe("planKorean", () => {
+  const ctx = (locks: string[] = []) => ({ locks: new Set(locks) }) as unknown as Ctx;
+  const pick = { platformId: "p1", koText: null, koVoice: null };
+
+  it("빈 칸을 채운다", () => {
+    expect(planKorean(ctx(), pick, { text: true, voice: false })).toEqual({ koText: true, koVoice: false });
+  });
+
+  it("값이 그대로면 아무것도 쓰지 않는다(캐시를 흔들지 않는다)", () => {
+    expect(planKorean(ctx(), { ...pick, koText: true, koVoice: false }, { text: true, voice: false })).toEqual({});
+  });
+
+  it("응답이 말하지 않은 칸은 건드리지 않는다", () => {
+    expect(planKorean(ctx(), { ...pick, koVoice: true }, { text: true })).toEqual({ koText: true });
+    expect(planKorean(ctx(), pick, undefined)).toEqual({});
+  });
+
+  it("관리자가 잠근 칸은 건드리지 않는다", () => {
+    expect(planKorean(ctx(["game_platforms:p1:ko_text"]), pick, { text: false, voice: false })).toEqual({ koVoice: false });
   });
 });

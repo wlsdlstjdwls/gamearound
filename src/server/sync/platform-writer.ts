@@ -12,8 +12,9 @@ import { RELEASE_DATE_MAX_YEARS_AHEAD, RELEASE_DATE_MIN_YEAR } from "./constants
 
 // hasAddOns 도 여기 규칙을 그대로 탄다 — 주지 않는 소스는 undefined 라 기존 값을 덮지 않는다.
 // 덱 등급, OS 네이티브 지원(steam 만 준다)도 같은 규칙이다: 밸브가 아직 안 본 게임은 null 로 와 기존 등급을 지키고,
-// 다른 스토어는 필드 자체가 없어 건드리지 않는다
-const PLATFORM_FIELDS = ["storeExternalId", "storeUrl", "releaseDate", "currentVersion", "listPrice", "currentPrice", "discountPct", "hasAddOns", "currency", "titleCode", "deckCompat", "nativeWindows", "nativeMac", "nativeLinux"] as const;
+// 다른 스토어는 필드 자체가 없어 건드리지 않는다.
+// 한국어 지원(koText, koVoice)도 같다 — 음성을 구분해 주지 않는 스토어는 undefined 라 다른 경로(사양 응답)가 채운 값을 지킨다
+const PLATFORM_FIELDS = ["storeExternalId", "storeUrl", "releaseDate", "currentVersion", "listPrice", "currentPrice", "discountPct", "hasAddOns", "currency", "titleCode", "deckCompat", "nativeWindows", "nativeMac", "nativeLinux", "koText", "koVoice"] as const;
 const PRICE_FIELDS = new Set<string>(["listPrice", "currentPrice", "discountPct"]);
 
 /** ISO 문자열 → Date. 빈 값/파싱 실패는 null */
@@ -164,6 +165,8 @@ export function planPlatform(ctx: Ctx, existing: PlatformRow | undefined, gameId
         nativeWindows: snapshot.nativeWindows ?? null,
         nativeMac: snapshot.nativeMac ?? null,
         nativeLinux: snapshot.nativeLinux ?? null,
+        koText: snapshot.koText ?? null,
+        koVoice: snapshot.koVoice ?? null,
         ...userScoreSet(snapshot),
         ...meta,
         lastSyncedAt: ctx.now,

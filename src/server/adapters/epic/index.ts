@@ -26,12 +26,14 @@ import {
   EPIC_SEARCH_QUERY,
 } from "./constants";
 import { epicExternalId, parseEpicExternalId, parseEpicOffer, parseEpicSearch, toEpicCandidate } from "./parse";
+import { parseEpicContentKorean } from "./parse-languages";
 import { epicProductSlug, parseEpicRequirements } from "./parse-requirements";
-import type { RequirementSnapshot } from "../types";
+import type { RequirementsResult } from "../types";
 
 export * from "./constants";
 export * from "./parse";
 export * from "./parse-requirements";
+export * from "./parse-languages";
 
 // ---- 네트워크 ----
 
@@ -78,11 +80,12 @@ export const epicAdapter: StoreAdapter = {
    * 주소에서 slug 를 못 뽑으면 빈 배열이다. 그 게임은 "물어봤지만 없더라" 로 기록되고
    * 다음 회차에 다시 줄 서지 않는다 — slug 없는 행은 다시 물어도 같은 답이다.
    */
-  async fetchRequirements(storeUrl: string): Promise<RequirementSnapshot[]> {
+  async fetchRequirements(storeUrl: string): Promise<RequirementsResult> {
     const slug = epicProductSlug(storeUrl);
-    if (!slug) return [];
+    if (!slug) return { requirements: [] };
     const raw = await contentHttp.json(EPIC_CONTENT_URL(slug), { context: `requirements:${slug}` });
-    return parseEpicRequirements(raw);
+    // 같은 응답에 지원 언어도 실려 온다 — 따로 묻지 않는다
+    return { requirements: parseEpicRequirements(raw), korean: parseEpicContentKorean(raw) };
   },
 
   async search(query: string): Promise<SearchCandidate[]> {

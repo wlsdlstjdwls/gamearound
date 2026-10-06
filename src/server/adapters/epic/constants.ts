@@ -108,3 +108,12 @@ export const EPIC_ADDON_QUERY = `query addons($country: String!, $locale: String
     elements { ${OFFER_FIELDS} }
   } }
 }`;
+
+/**
+ * 콘텐츠 API requirements.languages 의 갈래 머리말과 한국어 표기. 배급사가 손으로 적는 문장이라
+ * 한 항목에 둘이 같이 오기도 하고("AUDIO: ... | TEXT: ...") 따로 오기도 한다(2026-10-06 실측, 잇 테이크 투, 앨런 웨이크 2).
+ * 응답 로케일이 en-US 라 언어 이름은 영어다(EPIC_CONTENT_URL).
+ */
+export const EPIC_LANGUAGE_AUDIO = "AUDIO";
+export const EPIC_LANGUAGE_TEXT = "TEXT";
+export const EPIC_KOREAN_LABEL = "Korean";

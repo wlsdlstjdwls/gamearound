@@ -50,6 +50,9 @@ export const jpProductUrl = (nsuid: string): string => `https://ec.nintendo.com/
 /** 일본 검색의 hard 값 → 우리 플랫폼. BEE 는 Switch 2 의 개발 코드명이다 */
 export const JP_HARD_PLATFORM: Record<string, Platform> = { "1_HAC": "switch", "05_BEE": "switch2" };
 
+/** 대응언어 목록 안의 한국어 표기 */
+export const NINTENDO_KOREAN_LABEL = "한국어";
+
 export const NINTENDO_SELECTORS = {
   searchLink: "a.product-item-link",
   title: 'span[itemprop="name"]',
@@ -60,6 +63,11 @@ export const NINTENDO_SELECTORS = {
   publisher: ".product-attribute.publisher .product-attribute-val",
   gameCategory: ".product-attribute.game_category .product-attribute-val",
   players: ".product-attribute.no_of_players .product-attribute-val",
+  // 인터넷 통신 플레이 인원수. 로컬 통신(no_of_players_local_wireless)은 본체 여러 대를 잇는 방식이라
+  // "로컬 인원" 칸의 뜻(한 화면)과 달라 담지 않는다(2026-10-06 실측, 마리오 카트 8 디럭스: 1~4 / 로컬 통신 2~8 / 인터넷 2~12)
+  playersOnline: ".product-attribute.no_of_players_online .product-attribute-val",
+  // 대응언어. "한국어, 영어, ..." 쉼표 목록이다. 화면, 자막, 음성은 가르지 않는다
+  languages: ".product-attribute.supported_languages .product-attribute-val",
   ogImage: 'meta[property="og:image"]',
 } as const;
 

@@ -115,6 +115,14 @@ export const STEAM_DECK_COMPAT: Record<number, DeckCompat> = {
   3: "verified",
 };
 
+/**
+ * appdetails supported_languages 안의 한국어 표기. 요청 언어를 따라 바뀐다 —
+ * 상품 경로는 koreana("한국어"), 사양 경로는 english("Korean")로 받는다.
+ */
+export const STEAM_KOREAN_LABELS = ["한국어", "Korean"] as const;
+/** 음성 지원 표시. 언어 이름 바로 뒤에 붙는다 */
+export const STEAM_VOICE_MARK = "<strong>*</strong>";
+
 /** GetItems 의 supported_player_categoryids → 멀티플레이 추론 (§11-7: 인원수는 알 수 없음) */
 export const PLAYER_CATEGORY = {
   solo: [2],

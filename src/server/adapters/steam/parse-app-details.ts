@@ -1,5 +1,6 @@
 // appdetails 응답 파서 — 단건 조회 경로(GetItems 가 실패하거나 배치가 아닌 경우).
-import { AdapterError, type RequirementSnapshot, type StoreSnapshot } from "../types";
+import { AdapterError, type RequirementSnapshot, type RequirementsResult, type StoreSnapshot } from "../types";
+import { steamKoreanOf } from "./parse-languages";
 import { parseRequirements } from "./parse-requirements";
 import { appDetailsResponseSchema, type SteamAppData } from "./schemas";
 import { STEAM_STORE_APP_URL } from "./constants";
@@ -99,6 +100,7 @@ export function parseAppDetails(rawKo: unknown, appid: string, rawEn?: unknown):
   // 두 신호를 모두 보는 이유: Steam 은 일부 확장팩을 type="game" 으로 두면서 fullgame 만 채워 준다.
   const isDlc = (ko.type ?? en?.type) === "dlc" || Boolean(parentExternalId);
   const dlcExternalIds = (ko.dlc ?? en?.dlc ?? []).map(String);
+  const korean = steamKoreanOf(ko) ?? steamKoreanOf(en);
 
   return {
     platform: "steam",
@@ -116,6 +118,8 @@ export function parseAppDetails(rawKo: unknown, appid: string, rawEn?: unknown):
     hasAddOns: isDlc ? null : dlcExternalIds.length > 0,
     // 덱 등급은 이 응답에 없다(배치 경로에만 있다 — schemas 의 platforms 주석). OS 세 개만 옮긴다
     ...nativeOsOf(ko.platforms ?? en?.platforms),
+    koText: korean?.text,
+    koVoice: korean?.voice,
     meta: {
       titleEn,
       titleKo,
@@ -157,6 +161,16 @@ export function parseDlcIds(raw: unknown, appid: string): string[] {
 export function parseAppRequirements(raw: unknown, appid: string): RequirementSnapshot[] {
   const data = extractAppData(raw, appid);
   return data ? parseRequirements(data) : [];
+}
+
+/**
+ * 사양 요청 한 번의 답 전체 — 사양과 한국어 지원. 같은 응답에 둘 다 실려 오므로 한 번에 꺼낸다
+ * (types 의 RequirementsResult 주석). 언어는 요청이 english 라 "Korean" 으로 온다.
+ */
+export function parseAppRequirementsResult(raw: unknown, appid: string): RequirementsResult {
+  const data = extractAppData(raw, appid);
+  if (!data) return { requirements: [] };
+  return { requirements: parseRequirements(data), korean: steamKoreanOf(data) };
 }
 
 /**

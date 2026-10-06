@@ -132,6 +132,15 @@ export function planGameMeta(ctx: Ctx, cur: GameRow, meta: NonNullable<StoreSnap
     if (fillOnly && cur[field as keyof typeof cur]) return;
     if (cur[field as keyof typeof cur] !== value) set[field] = value;
   };
+  // 인원수는 큰 값이 이긴다. 같은 게임이라도 스토어마다 판이 달라 숫자가 다르다(마리오 카트처럼 스위치 판 4인, 다른 판 2인).
+  // 덮어쓰기로 두면 두 스토어가 번갈아 값을 뒤집으며 수집마다 UPDATE 와 캐시 무효화를 만든다.
+  // "이 게임은 어느 판에서든 최대 N인까지 된다" 는 뜻으로 읽는다
+  const considerMax = (field: "localMaxPlayers" | "onlineMaxPlayers", value: number | undefined) => {
+    if (value === undefined || value <= 0) return;
+    if (isLocked(ctx, "games", gameId, field)) return;
+    const have = cur[field];
+    if ((have ?? 0) < value) set[field] = value;
+  };
   // 권위 없는 소스는 빈 칸만 채운다 — 근거는 META_OVERWRITE_SOURCES 주석(스토어끼리 같은 값을 번갈아 뒤집는 것을 막는다)
   const fillOnly = !META_OVERWRITE_SOURCES.includes(ctx.source);
   // title_en 만은 예외를 둔다. 한글이 든 영문 이름은 "채워진 값" 이 아니라 잘못 채워진 값이라
@@ -151,8 +160,8 @@ export function planGameMeta(ctx: Ctx, cur: GameRow, meta: NonNullable<StoreSnap
     consider("supportsSolo", meta.multiplayer.solo);
     consider("supportsCoop", meta.multiplayer.coop);
     consider("supportsPvp", meta.multiplayer.pvp);
-    consider("localMaxPlayers", meta.multiplayer.localMax);
-    consider("onlineMaxPlayers", meta.multiplayer.onlineMax);
+    considerMax("localMaxPlayers", meta.multiplayer.localMax);
+    considerMax("onlineMaxPlayers", meta.multiplayer.onlineMax);
   }
   return set;
 }

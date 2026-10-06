@@ -309,6 +309,18 @@ export const gamePlatforms = pgTable("game_platforms", {
   nativeWindows: boolean("native_windows"),
   nativeMac: boolean("native_mac"),
   nativeLinux: boolean("native_linux"),
+  /**
+   * 그 스토어 판이 한국어 글자(화면, 자막)를 지원하는가 / 한국어 음성(더빙)을 지원하는가.
+   *
+   * 게임이 아니라 여기(game_platforms)에 두는 이유: 같은 게임이라도 판마다 다르다.
+   * PC 판은 한국어인데 스위치 판은 영어, 일본어뿐인 게임이 흔하다(2026-10-06 실측, 닌텐도 70010000015567).
+   * 게임 위에 하나로 올리면 "한국어 지원" 을 믿고 스위치 판을 산 사람이 속는다.
+   *
+   * 수집 원가 0: 이미 받는 응답에서 줍는다(Xbox SupportedLanguages, 닌텐도 대응언어, 스팀과 에픽은 사양 응답).
+   * 음성을 구분해 주지 않는 스토어(Xbox 카탈로그, 닌텐도)는 ko_voice 가 NULL 로 남는다 — 모르는 것이지 없는 게 아니다.
+   */
+  koText: boolean("ko_text"),
+  koVoice: boolean("ko_voice"),
   ...auditColumns(),
 }, (t) => [
   uniqueIndex("gp_game_platform_region_uq").on(t.gameId, t.platform, t.region),

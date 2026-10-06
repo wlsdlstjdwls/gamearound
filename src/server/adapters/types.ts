@@ -49,6 +49,12 @@ export interface StoreSnapshot {
   nativeWindows?: boolean | null;
   nativeMac?: boolean | null;
   nativeLinux?: boolean | null;
+  /**
+   * 이 판이 한국어 글자(화면, 자막) / 한국어 음성을 지원하는가. schema 의 ko_text 주석.
+   * 스토어가 구분해 주지 않는 값은 undefined 로 둔다 — false 는 "지원 안 한다" 는 단언이다.
+   */
+  koText?: boolean | null;
+  koVoice?: boolean | null;
   /** 본편이 알려주는 DLC 외부 ID 목록. steam appdetails 의 dlc 배열 (2026-09-14 실측) */
   dlcExternalIds?: string[];
   /** DLC 가 알려주는 본편 외부 ID. steam appdetails 의 fullgame.appid */
@@ -340,7 +346,7 @@ export type StoreAdapter = SourceAdapter<StoreSnapshot> & {
    * 빈도와 건수는 sync/requirements 가 막는다(listDlcIds 와 같은 경로다).
    * 콘솔 스토어에는 이 메서드를 두지 않는다. 사양이라는 개념 자체가 없다.
    */
-  fetchRequirements?(key: string): Promise<RequirementSnapshot[]>;
+  fetchRequirements?(key: string): Promise<RequirementsResult>;
   /**
    * 위 메서드에 넘길 키를 어디서 읽을지. 비우면 store_external_id.
    * 에픽의 외부 ID 는 `namespace:offerId` 인데 사양을 주는 콘텐츠 API 는 그것을 모르고 페이지
@@ -353,6 +359,22 @@ export type StoreAdapter = SourceAdapter<StoreSnapshot> & {
  * 사양 한 덩어리(한 OS, 한 등급). 스토어가 준 원문과 우리가 뽑아낸 값을 함께 나른다 —
  * 원문을 같이 저장해야 파서를 고친 뒤 재수집 없이 다시 돌릴 수 있다(schema 의 game_requirements 주석).
  */
+/**
+ * 사양 요청 한 번의 답. 사양 말고 언어 지원도 같이 싣는다 —
+ * 스팀 appdetails, 에픽 콘텐츠 API 는 사양 옆에 지원 언어를 같이 주는데, 다른 경로로 받으면 같은 응답을 한 번 더 받게 된다.
+ * korean 이 undefined 면 그 응답이 언어를 말하지 않았다는 뜻이라 기존 값을 건드리지 않는다.
+ */
+export interface RequirementsResult {
+  requirements: RequirementSnapshot[];
+  korean?: KoreanSupport;
+}
+
+/** 한국어 지원. 값을 모르는 칸은 undefined 다(StoreSnapshot.koText 주석) */
+export interface KoreanSupport {
+  text?: boolean;
+  voice?: boolean;
+}
+
 export interface RequirementSnapshot {
   osFamily: OsFamily;
   tier: RequirementTier;

@@ -125,3 +125,30 @@ describe("isTitleEnRecovery", () => {
     expect(isTitleEnRecovery("게임개발 스토리", null)).toBe(false);
   });
 });
+
+// 인원수는 큰 값이 이긴다 — 스토어마다 판이 달라 숫자가 다르고, 덮어쓰면 두 스토어가 번갈아 뒤집는다
+describe("planGameMeta 인원수", () => {
+  const players = (local: number | null, online: number | null) => game({ localMaxPlayers: local, onlineMaxPlayers: online });
+
+  it("빈 칸은 채운다", () => {
+    expect(planGameMeta(ctx("xbox"), players(null, null), meta({ multiplayer: { localMax: 2, onlineMax: 6 } }))).toEqual({
+      localMaxPlayers: 2,
+      onlineMaxPlayers: 6,
+    });
+  });
+
+  it("더 작은 값으로는 내리지 않는다", () => {
+    expect(planGameMeta(ctx("xbox"), players(4, 12), meta({ multiplayer: { localMax: 2, onlineMax: 6 } }))).toEqual({});
+  });
+
+  it("더 큰 값으로는 올린다", () => {
+    expect(planGameMeta(ctx("nintendo"), players(2, 6), meta({ multiplayer: { localMax: 4, onlineMax: 12 } }))).toEqual({
+      localMaxPlayers: 4,
+      onlineMaxPlayers: 12,
+    });
+  });
+
+  it("잠긴 칸은 건드리지 않는다", () => {
+    expect(planGameMeta(ctx("nintendo", ["games:g-1:local_max_players"]), players(2, null), meta({ multiplayer: { localMax: 4 } }))).toEqual({});
+  });
+});

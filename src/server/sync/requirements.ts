@@ -13,11 +13,11 @@
 import { and, eq, inArray } from "drizzle-orm";
 import { gamePlatforms, gameRequirementParts, gameRequirements, type Platform } from "@/server/db/schema";
 import type { StoreSource } from "@/server/adapters";
-import type { RequirementSnapshot, StoreAdapter } from "@/server/adapters/types";
+import type { KoreanSupport, RequirementSnapshot, StoreAdapter } from "@/server/adapters/types";
 import { sleep } from "@/lib/async";
 import { extractParts, PART_MATCH_VERSION } from "@/lib/hardware";
 import { REQUIREMENTS_PER_RUN, REQUIREMENTS_REFRESH_DAYS, SOURCE_PLATFORMS, SOURCE_REGION } from "./constants";
-import { recordError, type Ctx } from "./context";
+import { isLocked, recordError, type Ctx } from "./context";
 import { refreshFloors } from "./requirement-floors";
 import { fetchWithRetry } from "./retry";
 import { runStatements, type Applied, type Statement } from "./store-apply";
@@ -35,6 +35,9 @@ export interface RequirementRow {
   /** 에픽은 사양을 페이지 slug 로 묻는다. 그 slug 가 들어 있는 자리가 여기뿐이다(StoreAdapter.requirementsKey) */
   storeUrl: string | null;
   requirementsListedAt: Date | null;
+  /** 사양 응답에 같이 오는 한국어 지원의 지금 값. 달라졌을 때만 쓰려고 들고 다닌다(planKorean) */
+  koText?: boolean | null;
+  koVoice?: boolean | null;
 }
 
 /** 이번 실행에서 사양을 물어볼 게임 1건 */
@@ -44,6 +47,8 @@ export interface RequirementPick {
   platform: Platform;
   slug: string;
   key: string;
+  koText: boolean | null;
+  koVoice: boolean | null;
 }
 
 /**
@@ -57,10 +62,11 @@ export function pickRequirementTargets(
   now: Date,
   max: number = REQUIREMENTS_PER_RUN,
   requirementsKey: "externalId" | "storeUrl" = "externalId",
+  refreshDays: number = REQUIREMENTS_REFRESH_DAYS,
 ): RequirementPick[] {
   const slugByGame = new Map(targets.map((t) => [t.gameId, t.slug]));
   const keyOf = (r: RequirementRow) => (requirementsKey === "storeUrl" ? r.storeUrl : r.storeExternalId);
-  const staleBefore = now.getTime() - REQUIREMENTS_REFRESH_DAYS * DAY_MS;
+  const staleBefore = now.getTime() - refreshDays * DAY_MS;
 
   const stale = rows.filter((r) => {
     // 열쇠가 없는 행은 물어볼 방법이 없다. 여기서 빼지 않으면 그 행이 매 회차 몫을 먹고
@@ -77,9 +83,28 @@ export function pickRequirementTargets(
     if (out.length >= max) break;
     if (seen.has(row.gameId)) continue;
     seen.add(row.gameId);
-    out.push({ platformId: row.id, gameId: row.gameId, platform: row.platform, slug: slugByGame.get(row.gameId)!, key: keyOf(row)! });
+    out.push({ platformId: row.id, gameId: row.gameId, platform: row.platform, slug: slugByGame.get(row.gameId)!, key: keyOf(row)!, koText: row.koText ?? null, koVoice: row.koVoice ?? null });
   }
   return out;
+}
+
+/**
+ * 사양 응답에 실려 온 한국어 지원 → 플랫폼 행에 쓸 값. 바뀐 칸만 담는다.
+ *
+ * 사양과 달리 여기는 견주고 쓴다: 이 값은 상세 화면에 바로 서므로, 바뀌었을 때만 그 게임의 캐시를 풀어야 한다.
+ * 견줄 기존 값은 대상을 고를 때 이미 읽어 왔다(RequirementRow) — 왕복이 늘지 않는다.
+ * 응답이 말하지 않은 칸(undefined)과 잠긴 칸은 건드리지 않는다(§7).
+ */
+export function planKorean(
+  ctx: Ctx,
+  pick: Pick<RequirementPick, "platformId" | "koText" | "koVoice">,
+  korean: KoreanSupport | undefined,
+): { koText?: boolean; koVoice?: boolean } {
+  const set: { koText?: boolean; koVoice?: boolean } = {};
+  if (!korean) return set;
+  if (korean.text !== undefined && korean.text !== pick.koText && !isLocked(ctx, "game_platforms", pick.platformId, "koText")) set.koText = korean.text;
+  if (korean.voice !== undefined && korean.voice !== pick.koVoice && !isLocked(ctx, "game_platforms", pick.platformId, "koVoice")) set.koVoice = korean.voice;
+  return set;
 }
 
 /**
@@ -178,6 +203,8 @@ export async function syncRequirements(
   adapter: StoreAdapter,
   applied: Applied[],
   max: number = REQUIREMENTS_PER_RUN,
+  /** 다시 묻기까지 기다릴 날수. 백필이 이미 물어본 행을 다시 물을 때만 줄인다(scripts/backfill-requirements --korean) */
+  refreshDays: number = REQUIREMENTS_REFRESH_DAYS,
 ): Promise<number> {
   if (!adapter.fetchRequirements) return 0;
   const targets = applied
@@ -193,6 +220,8 @@ export async function syncRequirements(
       storeExternalId: gamePlatforms.storeExternalId,
       storeUrl: gamePlatforms.storeUrl,
       requirementsListedAt: gamePlatforms.requirementsListedAt,
+      koText: gamePlatforms.koText,
+      koVoice: gamePlatforms.koVoice,
     })
     .from(gamePlatforms)
     .where(
@@ -203,19 +232,21 @@ export async function syncRequirements(
       ),
     );
 
-  const picks = pickRequirementTargets(targets, rows, ctx.now, max, adapter.requirementsKey);
+  const picks = pickRequirementTargets(targets, rows, ctx.now, max, adapter.requirementsKey, refreshDays);
   if (picks.length === 0) return 0;
 
   const statements: Statement[] = [];
   let received = 0;
   for (const [i, pick] of picks.entries()) {
     try {
-      const snapshots = await fetchWithRetry(() => adapter.fetchRequirements!(pick.key));
+      const { requirements: snapshots, korean } = await fetchWithRetry(() => adapter.fetchRequirements!(pick.key));
+      const koSet = planKorean(ctx, pick, korean);
       // 사양이 없는 게임도 답이다 — 물어봤다는 사실을 남겨야 다음 실행이 같은 게임을 또 묻지 않는다.
-      // 옛 인디 게임에는 사양 칸이 통째로 비어 있는 경우가 있다
+      // 옛 인디 게임에는 사양 칸이 통째로 비어 있는 경우가 있다. 한국어 지원도 같은 행이라 한 문장에 싣는다
       statements.push(
-        ctx.db.update(gamePlatforms).set({ requirementsListedAt: ctx.now }).where(eq(gamePlatforms.id, pick.platformId)),
+        ctx.db.update(gamePlatforms).set({ requirementsListedAt: ctx.now, ...koSet }).where(eq(gamePlatforms.id, pick.platformId)),
       );
+      if (Object.keys(koSet).length > 0) ctx.changedSlugs.add(pick.slug);
       if (snapshots.length > 0) {
         statements.push(...planRequirements(ctx, pick.gameId, pick.platform, snapshots));
         received += snapshots.length;

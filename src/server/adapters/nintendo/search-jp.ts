@@ -16,6 +16,10 @@ const itemSchema = z.object({
   maker: z.string().nullish(),
   genre: z.array(z.string()).nullish(),
   player: z.array(z.string()).nullish(),
+  // 인터넷 통신 인원. player 와 같은 "2-12" 꼴이다(2026-10-06 실측, 마리오 카트 8 디럭스). 로컬 통신(lplayer)은
+  // 본체 여러 대를 잇는 방식이라 담지 않는다(한국 스토어와 같은 기준, NINTENDO_SELECTORS.playersOnline)
+  // 표본이 적어 배열인지 문자열 하나인지 못 박지 못했다 — 둘 다 받는다
+  nplayer: z.union([z.array(z.string()), z.string()]).nullish(),
   iurl: z.string().nullish(),
 });
 
@@ -67,6 +71,7 @@ export function parseJpSearch(raw: unknown): SearchCandidate[] {
     if (!platform || seen.has(item.id)) continue;
     seen.add(item.id);
     const players = parseJpPlayers(item.player);
+    const playersOnline = parseJpPlayers(typeof item.nplayer === "string" ? [item.nplayer] : item.nplayer);
     out.push({
       externalId: item.id,
       title: cleanJpTitle(item.title),
@@ -83,7 +88,8 @@ export function parseJpSearch(raw: unknown): SearchCandidate[] {
         coverUrl: item.iurl ? jpImageUrl(item.iurl) : null,
         publisher: item.maker ?? null,
         genres: item.genre ?? [],
-        multiplayer: players ? { localMax: players, solo: true, coop: players > 1 } : undefined,
+        // 협동 여부는 어림하지 않는다(parse-kr 의 같은 자리 주석)
+        multiplayer: players || playersOnline ? { localMax: players ?? undefined, onlineMax: playersOnline ?? undefined, solo: true } : undefined,
       },
     });
   }

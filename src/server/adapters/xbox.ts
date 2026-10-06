@@ -11,6 +11,7 @@ import {
   type StoreSnapshot,
 } from "./types";
 import { createHttpClient, notFoundAs } from "./http";
+import { parseXboxKorean, parseXboxMultiplayer } from "./xbox-attributes";
 import { xboxContentType } from "./xbox-content-type";
 import { sleep } from "@/lib/async";
 
@@ -88,7 +89,13 @@ const productSchema = z.object({
   // DLC 가 한 건도 등록되지 않았다. "모른다"와 "없다"를 갈라 두려면 nullish 여야 한다
   // IsDemo, Categories 는 종류 판정에 쓴다(xbox-content-type). 둘 다 null 로 오는 상품이 있다(실측: DiO Dungeon 2 의 Categories)
   Properties: z
-    .object({ HasAddOns: z.boolean().nullish(), IsDemo: z.boolean().nullish(), Categories: z.array(z.string()).nullish() })
+    .object({
+      HasAddOns: z.boolean().nullish(),
+      IsDemo: z.boolean().nullish(),
+      Categories: z.array(z.string()).nullish(),
+      // 인원 속성(xbox-attributes). 인원이 아닌 속성(4K, HDR 등)은 Maximum 이 null 로 섞여 온다
+      Attributes: z.array(z.object({ Name: z.string().nullish(), Maximum: z.number().nullish() })).nullish(),
+    })
     .nullish(),
   LocalizedProperties: z
     .array(
@@ -133,7 +140,17 @@ const productSchema = z.object({
       }),
     )
     .default([]),
-  DisplaySkuAvailabilities: z.array(z.object({ Availabilities: z.array(availabilitySchema).default([]) })).default([]),
+  DisplaySkuAvailabilities: z
+    .array(
+      z.object({
+        // 지원 언어는 SKU 마다 따로 온다(xbox-attributes). 없는 SKU 가 있어 통째로 nullish 다
+        Sku: z
+          .object({ MarketProperties: z.array(z.object({ SupportedLanguages: z.array(z.string()).nullish() })).nullish() })
+          .nullish(),
+        Availabilities: z.array(availabilitySchema).default([]),
+      }),
+    )
+    .default([]),
 });
 
 /**
@@ -307,8 +324,16 @@ export function parseXboxProduct(raw: unknown, productId: string, rawEn?: unknow
     parentExternalId: isDlc ? xboxAddOnParentId(product) : null,
     // DLC 자신에게는 "추가 콘텐츠 유무"가 의미 없다 — null 은 모른다는 뜻이라 기존 값을 덮지 않는다
     hasAddOns: isDlc ? null : product.Properties?.HasAddOns ?? null,
+    koText: xboxKoreanOf(product)?.text,
     meta: xboxMeta(product, rawEn ? titleOf(rawEn, productId) : null),
   };
+}
+
+/** SKU 들의 지원 언어에서 한국어 여부. 음성은 이 응답에 없다(xbox-attributes 주석) */
+function xboxKoreanOf(product: z.infer<typeof productSchema>) {
+  return parseXboxKorean(
+    product.DisplaySkuAvailabilities.flatMap((d) => (d.Sku?.MarketProperties ?? []).map((m) => m.SupportedLanguages)),
+  );
 }
 
 /**
@@ -350,6 +375,7 @@ function xboxMeta(
     portraitUrl: xboxImageUrl(lp?.Images ?? [], XBOX_IMAGE_TALL),
     developer: lp?.DeveloperName?.trim() || null,
     publisher: lp?.PublisherName?.trim() || null,
+    multiplayer: parseXboxMultiplayer(product.Properties?.Attributes),
   };
 }
 

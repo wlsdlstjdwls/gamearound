@@ -1,11 +1,12 @@
 // 한국 eShop 상품, 검색 HTML 파서. 셀렉터는 constants 에만 둔다(§10).
 import { load, type CheerioAPI } from "cheerio";
 import type { Platform } from "@/server/db/schema";
-import { AdapterError, type SearchCandidate, type StoreSnapshot } from "../types";
+import { AdapterError, type KoreanSupport, type SearchCandidate, type StoreSnapshot } from "../types";
 import {
   DIGITAL_ID,
   KR_SKU_CODE,
   KR_SKU_PATTERN,
+  NINTENDO_KOREAN_LABEL,
   NINTENDO_SELECTORS,
   PLATFORM_SWITCH2,
   nintendoProductUrl,
@@ -50,6 +51,17 @@ export function parseNintendoPlayers(raw: string | null | undefined): number | n
 }
 
 /**
+ * 대응언어 "한국어, 영어, ..." → 한국어 지원(글자만). 칸이 비면 undefined(모른다)다 —
+ * 잇 테이크 투(70070000014923)처럼 언어 줄 자체가 없는 상품이 있다(2026-10-06 실측).
+ * 음성은 닌텐도가 가르지 않아 늘 비운다.
+ */
+export function parseNintendoKorean(raw: string | null | undefined): KoreanSupport | undefined {
+  const list = (raw ?? "").split(",").map((s) => s.trim()).filter(Boolean);
+  if (list.length === 0) return undefined;
+  return { text: list.includes(NINTENDO_KOREAN_LABEL) };
+}
+
+/**
  * 상품 HTML 에서 작품 코드. 못 찾으면 null 이고, 그러면 이 게임은 일본 쪽과 코드로 이어지지 않는다
  * (제목 유사도로 한 번 더 시도하므로 수집이 멈추지는 않는다).
  */
@@ -84,6 +96,7 @@ export function parseNintendoProduct(html: string, id: string): StoreSnapshot {
   //   titleEn — 새 게임을 만들 때 반드시 있어야 하는 값이라 비워 둘 수 없다(game-writer 가 없으면 던진다).
   //             다만 영문 제목은 아니므로 이미 값이 있는 게임을 덮지는 않는다(META_OVERWRITE_SOURCES).
   const players = parseNintendoPlayers($(NINTENDO_SELECTORS.players).first().text());
+  const playersOnline = parseNintendoPlayers($(NINTENDO_SELECTORS.playersOnline).first().text());
   return {
     platform,
     storeExternalId: id,
@@ -93,14 +106,16 @@ export function parseNintendoProduct(html: string, id: string): StoreSnapshot {
     currentPrice: finalPrice,
     discountPct,
     releaseDate: parseNintendoDate($(NINTENDO_SELECTORS.releaseDate).first().text()),
+    koText: parseNintendoKorean($(NINTENDO_SELECTORS.languages).first().text())?.text,
     meta: {
       titleEn: title,
       titleKo: title,
       coverUrl: $(NINTENDO_SELECTORS.ogImage).first().attr("content")?.trim() || null,
       publisher: $(NINTENDO_SELECTORS.publisher).first().text().trim() || null,
       genres: parseNintendoGenres($(NINTENDO_SELECTORS.gameCategory).first().text()),
-      // 로컬 인원수만 표기된다. 솔로 가능 여부는 1명 플레이가 포함되는지로 판단
-      multiplayer: players ? { localMax: players, solo: true, coop: players > 1 } : undefined,
+      // 협동 여부는 말하지 않는다. 예전에는 "2명 이상이면 협동" 으로 어림했는데, 그러면 마리오 카트 같은
+      // 대전 게임이 협동으로 찍힌다(2026-10-06). 닌텐도 페이지에는 협동과 대전을 가르는 칸이 없다
+      multiplayer: players || playersOnline ? { localMax: players ?? undefined, onlineMax: playersOnline ?? undefined, solo: true } : undefined,
     },
   };
 }
