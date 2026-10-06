@@ -4,6 +4,7 @@
 // 서버가 확인할 수 있는 것은 **토큰을 내줄 때 받은 경로**와 **등록할 때 받은 경로**뿐이다. 둘 다 이 접두로
 // 시작해야 한다고 정해 두면, 남의 매장 경로로 토큰을 받거나 남의 사진을 내 물건에 등록하는 길이 막힌다.
 import { z } from "zod";
+import { isDirectChildPath } from "@/lib/blob-path";
 
 export function photoPathPrefix(shopId: string, listingId: string): string {
   return `shops/${shopId}/listings/${listingId}/`;
@@ -11,10 +12,7 @@ export function photoPathPrefix(shopId: string, listingId: string): string {
 
 /** 경로가 이 매장, 이 판매 줄 아래인가. `..` 로 접두를 빠져나가는 꼴도 막는다 */
 export function isOwnPhotoPath(pathname: string, shopId: string, listingId: string): boolean {
-  const prefix = photoPathPrefix(shopId, listingId);
-  if (!pathname.startsWith(prefix)) return false;
-  const rest = pathname.slice(prefix.length);
-  return rest.length > 0 && !rest.includes("/") && !rest.includes("..");
+  return isDirectChildPath(pathname, photoPathPrefix(shopId, listingId));
 }
 
 /** 긴 변이 maxEdge 를 넘으면 비율을 지켜 줄인다. 작은 사진은 키우지 않는다 */

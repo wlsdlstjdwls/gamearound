@@ -11,7 +11,7 @@ import { ActionForm, useActionFormPending } from "@/components/ui/action-form";
 import { applyForShopAction } from "@/app/(user)/shops/join/actions";
 import { Button } from "@/components/ui/button";
 import { FormMessage } from "@/components/ui/form-message";
-import { TextField } from "@/components/ui/text-field";
+import { TEXTAREA_CLASS, TextField } from "@/components/ui/text-field";
 import { SHOP_MESSAGES } from "@/lib/shops/messages";
 import { SHOP_DESCRIPTION_MAX, SHOP_NAME_MAX, SHOP_SLUG_MAX } from "@/lib/shops/schemas";
 import type { ShopApplication } from "@/server/services/shops";
@@ -113,7 +113,7 @@ export function ShopJoinForm({ current }: { current: ShopApplication | null }) {
           defaultValue={current?.description ?? ""}
           maxLength={SHOP_DESCRIPTION_MAX}
           rows={3}
-          className="w-full rounded-[var(--radius-sm)] border border-line-strong bg-bg px-3.5 py-2.5 text-[16px] leading-[1.7] text-ink outline-none transition-colors placeholder:text-dim focus:border-ink"
+          className={TEXTAREA_CLASS}
         />
       </div>
 

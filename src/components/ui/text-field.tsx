@@ -78,3 +78,9 @@ export function TextField({ label, hideLabel, hint, error, trailing, popup, wrap
     </div>
   );
 }
+
+/**
+ * 여러 줄 입력칸 모양. 입점 신청과 인디 홍보 글이 같이 쓴다(AGENTS §3). 글자 16px 은 iOS 확대 방지(AGENTS §6)
+ */
+export const TEXTAREA_CLASS =
+  "w-full rounded-[var(--radius-sm)] border border-line-strong bg-bg px-3.5 py-2.5 text-[16px] leading-[1.7] text-ink outline-none transition-colors placeholder:text-dim focus:border-ink";
