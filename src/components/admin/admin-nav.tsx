@@ -43,7 +43,7 @@ import { COMING_SOON } from "@/lib/messages/coming-soon";
 import { ROUTES } from "@/lib/routes";
 import { BoxIcon, BuildingIcon, CheckListIcon, LinkIcon, LogIcon, PulseIcon, StoreIcon } from "@/components/admin/nav-icons";
 import { ComingSoon } from "@/components/ui/coming-soon";
-import { GamepadIcon } from "@/components/ui/icons";
+import { CalendarIcon, GamepadIcon } from "@/components/ui/icons";
 
 export interface AdminNavCounts {
   matches: number;
@@ -54,6 +54,7 @@ export interface AdminNavCounts {
   tasksTodo: number;
   tasksDoing: number;
   indie: number;
+  preorder: number;
 }
 
 type Pick = { n: number; capped?: boolean };
@@ -101,6 +102,7 @@ const GROUPS: Array<{ key: string; title?: string; items: Item[] }> = [
         Icon: BuildingIcon,
         pick: (c) => ({ n: c.companies, capped: c.companiesCapped }),
       },
+      { href: ROUTES.adminPreorder, label: ADMIN_NAV.preorder, Icon: CalendarIcon, pick: (c) => ({ n: c.preorder }) },
       { href: ROUTES.adminProducts, label: ADMIN_NAV.products, Icon: BoxIcon, soon: ADMIN_SOON.products },
     ],
   },

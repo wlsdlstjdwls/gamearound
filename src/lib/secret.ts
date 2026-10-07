@@ -21,3 +21,12 @@ export function bearerToken(header: string | null | undefined): string | null {
   if (!header || !header.startsWith(prefix)) return null;
   return header.slice(prefix.length);
 }
+
+/**
+ * 수집 경로(/api/cron/crawl/**) 인증. Vercel Cron 이 붙이는 Bearer CRON_SECRET 과, 손으로 돌릴 때 쓰는
+ * x-crawl-secret(크롤러와 같은 시크릿) 둘 다 받는다. 수집 경로가 둘 이상이라 규칙을 한곳에 둔다.
+ */
+export function isCrawlRequest(headers: Headers): boolean {
+  if (secretMatches(bearerToken(headers.get("authorization")), process.env.CRON_SECRET)) return true;
+  return secretMatches(headers.get("x-crawl-secret"), process.env.CRAWL_SECRET);
+}

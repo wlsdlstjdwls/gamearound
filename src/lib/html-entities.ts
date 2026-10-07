@@ -21,6 +21,9 @@ const NAMED: Readonly<Record<string, string>> = {
   rdquo: "”",
   ndash: "–",
   mdash: "—",
+  // 한국닌텐도 뉴스 본문(2026-10-07): "Pok&eacute;mon", 판매처 나열 "G마켓&middot;옥션"
+  eacute: "é",
+  middot: "·",
 };
 
 /**

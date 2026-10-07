@@ -32,6 +32,7 @@ import { Page, SectionHead, sectionCardClass } from "@/components/ui/page";
 import { DiscountText } from "@/components/ui/discount";
 import { SellersSection } from "@/components/shops/sellers-section";
 import { IndieGameSection } from "@/components/indie/game-section";
+import { PreorderBonusesSection } from "@/components/preorder-bonuses-section";
 import { listSellersForGame } from "@/server/services/listings";
 import { SELLING_MESSAGES } from "@/lib/shops/listing-messages";
 import { formatDate, kstDateKey, PLATFORM_LABEL } from "@/lib/format";
@@ -618,6 +619,11 @@ export default async function GameDetailPage({ params }: Props) {
         />
         </div>
       )}
+
+      {/* 예약 특전. 파는 곳 바로 위 — 같은 질문("어디서 살까")의 답이다. 숨김이 바로 반영되게 캐시 밖에서 받는다 */}
+      <Suspense fallback={null}>
+        <PreorderBonusesSection gameId={game.id} />
+      </Suspense>
 
       <Suspense fallback={null}>
         <SellersSlot gameId={game.id} />

@@ -56,6 +56,8 @@ export const ROUTES = {
   indieMine: "/indie/mine",
   /** 인디 홍보 글 신고, 게임 연결 확인 */
   adminIndie: "/admin/indie",
+  /** 예약 특전 글 검토 — 게임을 못 이었거나 특전을 못 뽑은 글이 여기 남는다 */
+  adminPreorder: "/admin/preorder",
   forbidden: "/403",
   terms: "/terms",
   privacy: "/privacy",

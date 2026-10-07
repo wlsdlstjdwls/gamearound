@@ -30,7 +30,7 @@ import {
   type CronMode,
   type CronSource,
 } from "@/server/sync/constants";
-import { bearerToken, secretMatches } from "@/lib/secret";
+import { isCrawlRequest } from "@/lib/secret";
 
 // 라우트 세그먼트 설정은 정적으로 읽히는 값이어야 해서 리터럴을 쓴다(AGENTS §2 예외).
 // 800 = 함수 실행 상한. CRON_PLAN 의 몫이 이 수치에서 역산한 값이라 둘은 같이 움직인다.
@@ -39,13 +39,8 @@ import { bearerToken, secretMatches } from "@/lib/secret";
 export const maxDuration = 800;
 export const dynamic = "force-dynamic";
 
-function authorized(req: NextRequest): boolean {
-  if (secretMatches(bearerToken(req.headers.get("authorization")), process.env.CRON_SECRET)) return true;
-  return secretMatches(req.headers.get("x-crawl-secret"), process.env.CRAWL_SECRET);
-}
-
 export async function GET(req: NextRequest, ctx: { params: Promise<{ source: string; mode: string }> }) {
-  if (!authorized(req)) return NextResponse.json({ error: "unauthorized" }, { status: 401 });
+  if (!isCrawlRequest(req.headers)) return NextResponse.json({ error: "unauthorized" }, { status: 401 });
 
   const params = await ctx.params;
   // 메타 소스를 먼저 가른다. 모드도 몫도 표가 다르니 갈래를 여기서 끝내고 스토어 경로로 내려보내지 않는다

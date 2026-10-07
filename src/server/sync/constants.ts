@@ -958,3 +958,16 @@ export const PRODUCT_MATCH_CANDIDATES = 5;
 export const PRODUCT_MATCH_RECHECK_DAYS = 7;
 /** 하루 한 번 도는 정리 크론이 한 회차에 볼 상품 수. 네트워크를 안 쓰므로 스토어 몫과 무관하다 */
 export const PRODUCT_MATCH_BATCH = 200;
+
+/**
+ * 예약 특전 수집(sync/preorder-bonuses)이 한 번에 읽는 뉴스 목록 쪽 수.
+ * 특전 글은 월 1건 안팎이고(2026-04~10 실측 여섯 건) 목록 한 쪽이 24건이라, 하루 두 번 1쪽만 보면 놓치지 않는다.
+ * 처음 채울 때만 손으로 쪽 수를 늘려 부른다(크론 경로의 ?pages=). 상한은 실측한 여섯 건이 다 들어가는 쪽 수에 여유를 둔 값이다.
+ */
+export const PREORDER_PAGES_DEFAULT = 1;
+export const PREORDER_PAGES_MAX = 12;
+/**
+ * 상세 화면에 특전을 띄우는 기간. 발매 뒤에도 "재고 소진 시까지" 주는 판매처가 있어 바로 내리지 않고,
+ * 한 달이 지나면 남은 재고가 거의 없어 내린다. 발매일을 모르면 계속 띄운다.
+ */
+export const PREORDER_SHOW_AFTER_RELEASE_DAYS = 30;
