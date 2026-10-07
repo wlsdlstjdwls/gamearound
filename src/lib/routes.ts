@@ -11,6 +11,9 @@ export const ROUTES = {
   news: "/news",
   signIn: "/sign-in",
   signUp: "/sign-up",
+  /** 비밀번호 재설정 1단계(메일 받기). 2단계는 메일 링크가 여는 resetPassword 다 */
+  forgotPassword: "/forgot-password",
+  resetPassword: "/reset-password",
   wishlist: "/wishlist",
   alerts: "/alerts",
   settings: "/settings",
@@ -92,6 +95,20 @@ export function signInPath(next?: string | null): string {
   return safe === ROUTES.home ? ROUTES.signIn : `${ROUTES.signIn}?next=${encodeURIComponent(safe)}`;
 }
 
+/**
+ * 재설정 흐름의 결과 표시. 상태를 주소 꼬리에 싣는 이유: 성공하면 useAuthForm 이 문서를 새로 연다 —
+ * 클라이언트 상태로 들고 있으면 그 순간 사라진다.
+ */
+export const RESET_FLAG = { sent: "sent", done: "reset" } as const;
+
+export function forgotSentPath(): string {
+  return `${ROUTES.forgotPassword}?${RESET_FLAG.sent}=1`;
+}
+
+export function resetDonePath(): string {
+  return `${ROUTES.signIn}?${RESET_FLAG.done}=1`;
+}
+
 // "//evil.com", 백슬래시, "@", 공백/제어문자는 origin 뒤에 붙였을 때 다른 호스트로 해석되거나 헤더 인젝션이 된다
 const UNSAFE_NEXT = /^\/\/|[@\\]|[\s\x00-\x1f]/;
 
@@ -101,7 +118,7 @@ const UNSAFE_NEXT = /^\/\/|[@\\]|[\s\x00-\x1f]/;
  */
 export function safeNextPath(raw: string | null | undefined): string {
   if (!raw || !raw.startsWith("/") || UNSAFE_NEXT.test(raw)) return ROUTES.home;
-  if (raw.startsWith(ROUTES.signIn) || raw.startsWith(ROUTES.signUp)) return ROUTES.home;
+  if ([ROUTES.signIn, ROUTES.signUp, ROUTES.forgotPassword, ROUTES.resetPassword].some((p) => raw.startsWith(p))) return ROUTES.home;
   return raw;
 }
 

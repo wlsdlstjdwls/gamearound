@@ -13,6 +13,8 @@ describe("safeNextPath (오픈 리다이렉트 방지)", () => {
     ["/a b", ROUTES.home],
     ["/sign-in?next=/x", ROUTES.home],
     ["/sign-up", ROUTES.home],
+    ["/forgot-password", ROUTES.home],
+    ["/reset-password?token=x", ROUTES.home],
     ["", ROUTES.home],
     [null, ROUTES.home],
     [undefined, ROUTES.home],

@@ -72,6 +72,17 @@ export const signUpSchema = z
   })
   .refine((v) => v.password === v.passwordConfirm, { message: M.passwordConfirmMismatch, path: ["passwordConfirm"] });
 
+export const forgotPasswordSchema = z.object({ email: emailSchema });
+
+/** 재설정은 가입과 같은 비밀번호 규칙을 쓴다 — 여기서 느슨하면 쉬운 비번이 재설정으로 들어온다 */
+export const resetPasswordSchema = z
+  .object({
+    token: z.string().min(1, M.resetInvalid),
+    password: passwordSchema,
+    passwordConfirm: z.string({ message: M.passwordConfirmMismatch }),
+  })
+  .refine((v) => v.password === v.passwordConfirm, { message: M.passwordConfirmMismatch, path: ["passwordConfirm"] });
+
 export type SignInInput = z.infer<typeof signInSchema>;
 export type SignUpInput = z.infer<typeof signUpSchema>;
 
@@ -88,6 +99,14 @@ export function fieldErrorsOf(error: z.ZodError): Record<string, string> {
 /** FormData → 스키마 입력 객체 (체크박스는 "on" 문자열이므로 boolean으로) */
 export function signInInputFromForm(fd: FormData): unknown {
   return { email: fd.get("email"), password: fd.get("password") };
+}
+
+export function forgotPasswordInputFromForm(fd: FormData): unknown {
+  return { email: fd.get("email") };
+}
+
+export function resetPasswordInputFromForm(fd: FormData): unknown {
+  return { token: fd.get("token"), password: fd.get("password"), passwordConfirm: fd.get("passwordConfirm") };
 }
 
 export function signUpInputFromForm(fd: FormData): unknown {

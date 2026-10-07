@@ -1,5 +1,5 @@
 // 인증 UI/서버 공용 문구. 하드코딩 금지 — 문구 수정은 여기서만.
-import { DISPLAY_NAME_MAX, DISPLAY_NAME_MIN, PASSWORD_MIN } from "@/lib/auth/constants";
+import { DISPLAY_NAME_MAX, DISPLAY_NAME_MIN, PASSWORD_MIN, RESET_TOKEN_TTL_MIN } from "@/lib/auth/constants";
 import { SITE } from "@/lib/site";
 
 export const AUTH_MESSAGES = {
@@ -44,6 +44,21 @@ export const AUTH_MESSAGES = {
   noAccount: "아직 계정이 없나요?",
   hasAccount: "이미 계정이 있나요?",
   passwordHint: `${PASSWORD_MIN}자 이상, 영문과 숫자 포함`,
+  // 비밀번호 재설정 — 요청 결과는 계정이 있든 없든 같은 문장이다(열거 방지)
+  forgotLink: "비밀번호를 잊었나요?",
+  forgotTitle: "비밀번호 재설정",
+  forgotSubtitle: "가입한 이메일로 재설정 링크를 보내 드려요",
+  forgotCta: "재설정 링크 받기",
+  forgotSent: `가입된 이메일이라면 재설정 링크를 보냈어요. 메일함과 스팸함을 확인해 주세요. 링크는 ${RESET_TOKEN_TTL_MIN}분 동안만 열려요.`,
+  forgotUnavailable: "지금은 메일을 보낼 수 없어요. 잠시 후 다시 시도해 주세요",
+  resetSubtitle: "새로 쓸 비밀번호를 입력해 주세요",
+  resetCta: "비밀번호 바꾸기",
+  resetInvalid: "링크가 만료됐거나 이미 쓴 링크예요. 재설정 링크를 다시 받아 주세요",
+  resetRequestAgain: "재설정 링크 다시 받기",
+  resetDone: "비밀번호를 바꿨어요. 새 비밀번호로 로그인해 주세요",
+  newPasswordLabel: "새 비밀번호",
+  newPasswordConfirmLabel: "새 비밀번호 확인",
+  backToSignIn: "로그인으로 돌아가기",
   showPassword: "비밀번호 표시",
   hidePassword: "비밀번호 숨기기",
 } as const;

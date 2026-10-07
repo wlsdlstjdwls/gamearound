@@ -25,7 +25,9 @@ import { BrandSymbol } from "@/components/ui/logo";
 import { Page, Panel } from "@/components/ui/page";
 
 /** 카피는 탭마다 다르다 — 가입 탭에서 "로그인 후 사용할 수 있어요" 가 걸려 있으면 화면이 딴말을 한다 */
-const LEAD: Record<"signIn" | "signUp", { title: readonly [string, string]; body: string }> = {
+export type AuthCardMode = "signIn" | "signUp" | "reset";
+
+const LEAD: Record<AuthCardMode, { title: readonly [string, string]; body: string }> = {
   signIn: {
     title: ["할인 알림과 기기 판정은", "로그인 후 사용할 수 있어요"],
     body: "가격은 로그인 없이도 전부 볼 수 있어요. 계정은 알림을 보낼 기기를 기억하는 데만 써요.",
@@ -33,6 +35,11 @@ const LEAD: Record<"signIn" | "signUp", { title: readonly [string, string]; body
   signUp: {
     title: ["가격은 우리가 볼게요", "싸지면 알려드릴게요"],
     body: `${SITE.name} 계정은 무료예요. 조건을 걸어 두면 그 값이 될 때까지 대신 지켜봐요.`,
+  },
+  // 재설정은 로그인 탭의 연장이다 — 두 탭 다 켜지 않고, 왼쪽 카피만 지금 하는 일을 말한다
+  reset: {
+    title: ["비밀번호를 잊어도", "계정은 그대로예요"],
+    body: "가입한 이메일로 링크를 보내 드려요. 새 비밀번호를 정하면 다른 기기의 로그인은 모두 풀려요.",
   },
 };
 
@@ -67,7 +74,7 @@ export function AuthCard({
   next,
   children,
 }: {
-  mode: "signIn" | "signUp";
+  mode: AuthCardMode;
   subtitle: string;
   next: string;
   children: ReactNode;

@@ -54,6 +54,12 @@ export function SignInForm({ next }: { next: string }) {
 
       <div className="reveal" style={stagger(2)}>
         <PasswordField ref={passwordRef} label="비밀번호" placeholder="비밀번호" autoComplete="current-password" disabled={busy} {...fieldProps("password")} />
+        {/* 칸 바로 밑, 오른쪽 — 비밀번호를 못 떠올린 사람의 눈이 머무는 자리다. 줄 높이를 44px 로 맞춰 터치 타깃을 지킨다 */}
+        <div className="flex justify-end">
+          <Link href={ROUTES.forgotPassword} className="inline-flex h-11 items-center text-[13px] text-mut underline-offset-4 hover:text-ink hover:underline">
+            {M.forgotLink}
+          </Link>
+        </div>
       </div>
 
       <div className="reveal pt-1" style={stagger(3)}>

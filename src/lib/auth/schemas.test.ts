@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { fieldErrorsOf, normalizeEmail, signInSchema, signUpSchema } from "./schemas";
+import { fieldErrorsOf, normalizeEmail, resetPasswordSchema, signInSchema, signUpSchema } from "./schemas";
 import { AUTH_MESSAGES as M } from "./messages";
 
 const valid = { displayName: "손전등맨", email: "  Foo@Example.COM ", password: "tetris4life", passwordConfirm: "tetris4life", terms: true };
@@ -61,4 +61,22 @@ describe("signInSchema", () => {
 
 describe("normalizeEmail", () => {
   it("trim + lowercase", () => expect(normalizeEmail(" A@B.Com ")).toBe("a@b.com"));
+});
+
+describe("resetPasswordSchema", () => {
+  it("가입과 같은 규칙 — 쉬운 비번은 재설정으로도 못 들어온다", () => {
+    const r = resetPasswordSchema.safeParse({ token: "t", password: "password1", passwordConfirm: "password1" });
+    expect(r.success).toBe(false);
+    if (!r.success) expect(fieldErrorsOf(r.error).password).toBe(M.passwordCommon);
+  });
+
+  it("확인 칸이 다르면 그 칸에 오류", () => {
+    const r = resetPasswordSchema.safeParse({ token: "t", password: "tetris4life", passwordConfirm: "tetris4lifx" });
+    expect(r.success).toBe(false);
+    if (!r.success) expect(fieldErrorsOf(r.error).passwordConfirm).toBe(M.passwordConfirmMismatch);
+  });
+
+  it("토큰이 비면 거절", () => {
+    expect(resetPasswordSchema.safeParse({ token: "", password: "tetris4life", passwordConfirm: "tetris4life" }).success).toBe(false);
+  });
 });

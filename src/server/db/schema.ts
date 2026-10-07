@@ -690,6 +690,21 @@ export const sessions = pgTable("sessions", {
   ...auditColumns(),
 }, (t) => [index("sessions_user_idx").on(t.userId), index("sessions_expires_idx").on(t.expiresAt)]);
 
+/**
+ * 비밀번호 재설정 링크. 세션처럼 메일에는 랜덤 토큰, 여기에는 sha256 해시만 둔다 — 표가 새도 링크를 못 만든다.
+ * 쓴 행은 지우지 않고 used_at 을 찍는다: 같은 링크를 두 번 누른 사람에게 "이미 쓴 링크" 라고 답할 근거이자,
+ * 누가 언제 재설정했는지의 기록이다. 새로 요청하면 그 사람의 안 쓴 행은 전부 쓴 것으로 닫는다(services/password-reset).
+ */
+export const passwordResetTokens = pgTable("password_reset_tokens", {
+  id: text("id").primaryKey(), // sha256(token) hex
+  userId: uuid("user_id").references(() => users.id, { onDelete: "cascade" }).notNull(),
+  expiresAt: timestamp("expires_at", { withTimezone: true }).notNull(),
+  usedAt: timestamp("used_at", { withTimezone: true }),
+  /** 요청한 쪽. 남의 메일 주소로 누가 요청했는지 볼 때 쓴다 */
+  ip: text("ip"),
+  ...auditColumns(),
+}, (t) => [index("password_reset_tokens_user_idx").on(t.userId)]);
+
 export const wishlists = pgTable("wishlists", {
   userId: uuid("user_id").references(() => users.id, { onDelete: "cascade" }).notNull(),
   gameId: uuid("game_id").references(() => games.id, { onDelete: "cascade" }).notNull(),

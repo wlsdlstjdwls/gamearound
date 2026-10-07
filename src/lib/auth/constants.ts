@@ -55,6 +55,15 @@ export const RATE_LIMIT = {
    * 막히면 칸에 아무것도 안 띄우고 제출에 맡긴다 — 제출이 어차피 같은 답을 한다.
    */
   emailCheckPerIp: { limit: 10, windowSec: 15 * 60 },
+  /**
+   * 재설정 메일 요청: IP당 1시간 5회, 이메일당 1시간 3회.
+   * 이메일 축이 따로 있는 이유는 남의 메일함에 우리 메일을 쏟아붓는 데 쓰이지 않게 하려는 것이다 —
+   * IP 를 바꿔 가며 같은 주소를 두드려도 그 주소로는 한 시간에 세 통이 끝이다.
+   */
+  resetRequestPerIp: { limit: 5, windowSec: 60 * 60 },
+  resetRequestPerEmail: { limit: 3, windowSec: 60 * 60 },
+  /** 새 비밀번호 제출: IP당 15분 10회. 토큰은 추측할 수 없는 길이라 이건 서버 부하 방어다 */
+  resetSubmitPerIp: { limit: 10, windowSec: 15 * 60 },
   /** 푸시 구독: 사용자당 분당 10회 (§1) */
   pushPerUser: { limit: 10, windowSec: 60 },
 } as const;
@@ -65,7 +74,15 @@ export const RATE_LIMIT = {
 export const USER_ROUTE_PREFIXES: readonly string[] = [ROUTES.wishlist, ROUTES.alerts, ROUTES.settings, ROUTES.shopsJoin, ROUTES.welcome, ROUTES.indieNew, ROUTES.indieMine];
 export const ADMIN_ROUTE_PREFIXES: readonly string[] = [ROUTES.admin, ROUTES.shopsAdmin];
 export const VENDOR_ROUTE_PREFIXES: readonly string[] = [ROUTES.vendor];
-export const AUTH_PAGE_PREFIXES: readonly string[] = [ROUTES.signIn, ROUTES.signUp];
+export const AUTH_PAGE_PREFIXES: readonly string[] = [ROUTES.signIn, ROUTES.signUp, ROUTES.forgotPassword, ROUTES.resetPassword];
+
+/** 재설정 토큰 바이트 수 (base64url 43자). 세션 토큰과 같은 길이 — 추측으로 맞힐 수 없어야 한다 */
+export const RESET_TOKEN_BYTES = 32;
+/**
+ * 재설정 링크 수명 30분. 메일을 열어 바로 누르는 데는 넉넉하고, 메일함이 털렸을 때 열려 있는 창은 짧다.
+ * 한 번 쓰면 끝이고, 새로 요청하면 앞의 링크는 죽는다(services/password-reset).
+ */
+export const RESET_TOKEN_TTL_MIN = 30;
 
 /** 관리자 부트스트랩: ADMIN_EMAILS 환경변수(쉼표 구분)에 있는 이메일은 가입/로그인 시 admin으로 승격 */
 export const ADMIN_EMAILS_ENV = "ADMIN_EMAILS";
