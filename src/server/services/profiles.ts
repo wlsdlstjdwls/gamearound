@@ -7,10 +7,13 @@ import { and, asc, eq, exists, inArray, sql } from "drizzle-orm";
 import { getDb } from "@/server/db/client";
 import { createdBy, updatedBy } from "@/server/db/audit";
 import { gameGenres, gamePlatforms, games, genres, subscriptions, userProfiles, type DealStyle, type PlayTimeStyle, type Platform, type Role } from "@/server/db/schema";
-import { requireUser } from "@/server/services/users";
+import { getCurrentUser, requireUser } from "@/server/services/users";
 import { GENRE_CHOICE_NAMES } from "@/lib/onboarding/constants";
 import type { OnboardingStep } from "@/lib/onboarding/steps";
 import { dealFloor } from "@/lib/onboarding/personal";
+import { personalQuery } from "@/lib/onboarding/query";
+import { PLATFORM_LABEL } from "@/lib/format";
+import type { GamesQuery } from "@/lib/games-query";
 import { getPersonalDeals, type GameSummary } from "@/server/services/games";
 
 /** 화면이 받는 취향 한 벌 */
@@ -240,4 +243,31 @@ export async function getMyHomeDeals(): Promise<GameSummary[] | null> {
   const p = await getMyProfile();
   if (!isPersonalized(p)) return null;
   return getPersonalDeals({ platforms: p.platforms, genreIds: p.favoriteGenreIds, subscriptionKeys: p.subscriptionKeys, floor: dealFloor(p.dealStyle) });
+}
+
+/** 목록에 먼저 걸 취향 조건과, 화면이 "무엇으로 걸렀는지" 를 말할 이름들 */
+export type ListPreset = { query: GamesQuery; labels: string[] };
+
+/**
+ * 게임 목록의 개인화 기본 조건. 걸 것이 없으면 null — 목록은 지금처럼 전체를 보여 준다.
+ *
+ * null 인 경우: 비로그인, 온보딩을 안 보는 계정(관리자 등, isOnboardingAudience 주석), 개인화 끔,
+ * 플랫폼도 장르도 안 고름. 비로그인을 throw 가 아니라 null 로 받는 이유는 목록이 공개 화면이라서다.
+ *
+ * 조건은 결과 화면의 "내 조건으로 보기" 와 같은 personalQuery 를 쓴다 — 두 자리가 다르면 같은 사람이
+ * 두 갈래 목록을 본다. 할인 성향과 구독은 싣지 않는다: 목록을 할인 중인 게임만으로 줄이면 "목록" 이 아니다.
+ */
+export async function getMyListPreset(): Promise<ListPreset | null> {
+  const u = await getCurrentUser();
+  if (!u || !isOnboardingAudience(u.role)) return null;
+  const p = await getMyProfile();
+  if (!isPersonalized(p) || (!p.platforms?.length && !p.favoriteGenreIds?.length)) return null;
+
+  const genreChoices = p.favoriteGenreIds?.length ? await listGenreChoices() : [];
+  const genreNames = (p.favoriteGenreIds ?? []).map((id) => genreChoices.find((g) => g.id === id)?.name).filter((n): n is string => Boolean(n));
+  const query = personalQuery({ platforms: p.platforms, genreNames });
+  if (!query.platform && !query.genre) return null;
+
+  const labels = [...(p.platforms ?? []).map((v) => PLATFORM_LABEL[v] ?? v), ...(query.genre ? [query.genre] : [])];
+  return { query, labels };
 }

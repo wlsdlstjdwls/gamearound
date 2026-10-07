@@ -112,6 +112,12 @@ export type GamesQuery = {
    * 조회하는 쪽이 parseRig 로 좁힌다(platform 을 문자열로 두는 것과 같은 이유다).
    */
   rig?: string;
+  /**
+   * 개인화 기본 조건을 끈다(`all=1`). 개인화한 사람이 아무 조건 없이 /games 에 오면 취향 조건이 먼저 걸리는데,
+   * 그 사람이 "전체 보기" 를 누르거나 걸린 조건을 하나씩 지워 빈 목록 주소에 닿았을 때 다시 취향이 걸리면 안 된다.
+   * 그래서 취향이 걸린 목록에서 만든 링크는 전부 이 값을 실어 나른다(gamesHref). 조회 조건에는 쓰이지 않는다.
+   */
+  all?: boolean;
   sort?: GameSort;
   /** 1-based */
   page?: number;
@@ -151,6 +157,7 @@ export function parseGamesQuery(sp: Record<string, string | string[] | undefined
     subscription: firstParam(sp.sub) === "1",
     hideFree: firstParam(sp.nofree) === "1",
     rig: firstParam(sp.rig),
+    all: firstParam(sp.all) === "1",
     sort: isGameSort(sort) ? sort : undefined,
     page: Number.isFinite(page) && page > 0 ? Math.floor(page) : 1,
   };
@@ -175,6 +182,7 @@ export function gamesHref(current: GamesQuery, patch: Partial<GamesQuery> = {}):
   if (next.subscription) params.set("sub", "1");
   if (next.hideFree) params.set("nofree", "1");
   if (next.rig) params.set("rig", next.rig);
+  if (next.all) params.set("all", "1");
   if (next.sort && next.sort !== DEFAULT_GAME_SORT) params.set("sort", next.sort);
   if (next.page && next.page > 1) params.set("page", String(next.page));
   const qs = params.toString();

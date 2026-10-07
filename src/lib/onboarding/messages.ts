@@ -104,6 +104,15 @@ export const ONBOARDING_MESSAGES = {
     unanswered: "아직 안 골랐어요",
   },
 
+  /** 게임 목록 위 한 줄 — 취향 조건이 걸렸는지, 어떻게 푸는지 */
+  list: {
+    applied: "내 조건으로 골라 보여 드려요",
+    all: "전체 게임을 보고 있어요",
+    showAll: "전체 보기",
+    showMine: "내 조건으로 보기",
+    change: "조건 바꾸기",
+  },
+
   /** 설정에서 칸 하나만 고치러 온 질문 화면. 순서가 없으니 진행 막대, 건너뛰기를 감춘다 */
   edit: {
     save: "저장할게요",

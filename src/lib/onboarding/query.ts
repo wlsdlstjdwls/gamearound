@@ -6,6 +6,27 @@
 import { PLATFORM_VALUE_SEP, type GamesQuery } from "@/lib/games-query";
 import type { Platform } from "@/server/db/schema";
 
+/**
+ * 사람이 목록 조건을 직접 걸었는가. 정렬과 쪽 번호는 조건이 아니다 — 정렬만 바꾼 주소에도 취향은 걸린다.
+ * all(개인화 끔)도 여기서 참으로 친다: 그 주소는 "취향 없이 보겠다" 를 이미 말했다.
+ */
+export function hasExplicitListFilter(q: GamesQuery): boolean {
+  return Boolean(
+    q.all ||
+      q.q ||
+      q.platform ||
+      q.genre ||
+      q.onSale ||
+      q.event ||
+      q.minDiscount !== undefined ||
+      q.maxPrice !== undefined ||
+      q.company ||
+      q.subscription ||
+      q.hideFree ||
+      q.rig,
+  );
+}
+
 /** 취향에서 목록 질의로. 고른 것이 없으면 그 칸은 비운다(거르지 않는다) */
 export function personalQuery(input: { platforms?: readonly Platform[] | null; genreNames?: readonly string[] | null }): GamesQuery {
   const platform = input.platforms?.length ? [...input.platforms].join(PLATFORM_VALUE_SEP) : undefined;

@@ -13,12 +13,15 @@ import { GameCard, highlightFromFilter } from "@/components/game-card";
 import { EmptyState } from "@/components/empty-state";
 import { GameFilters } from "@/components/game-filters";
 import { GamesInfinite } from "@/components/games-infinite";
+import { PersonalListNote } from "@/components/personal-list-note";
 import { Page, PageHead } from "@/components/ui/page";
-import { DEFAULT_GAME_SORT, SORT_LABEL, joinPlatformValues, parsePlatformValues, parseGamesQuery, type GamesQuery } from "@/lib/games-query";
+import { DEFAULT_GAME_SORT, SORT_LABEL, gamesHref, joinPlatformValues, parsePlatformValues, parseGamesQuery, type GamesQuery } from "@/lib/games-query";
 import { PLATFORM_LABEL } from "@/lib/format";
 import { isPlatformFamily, isPlatformValue, PLATFORM_FAMILY_LABEL, PLATFORM_VALUE_ORDER } from "@/lib/platform";
 import { stagger } from "@/lib/motion";
 import { ROUTES } from "@/lib/routes";
+import { hasExplicitListFilter } from "@/lib/onboarding/query";
+import { getMyListPreset } from "@/server/services/profiles";
 import { GAMES_PAGE_SIZE, getGameFacets, listGames, type GameListFilter } from "@/server/services/games";
 import { getRunningSteamSale, type RunningSaleDto } from "@/server/services/sales";
 import { FiltersSkeleton, GamesGridSkeleton } from "./skeletons";
@@ -100,7 +103,7 @@ async function Results({ filter }: { filter: GameListFilter }) {
       <EmptyState
         title="조건에 맞는 게임이 없습니다"
         description={filtered ? "필터를 줄이면 더 많은 게임이 보입니다." : "조건에 맞는 게임이 아직 없어요."}
-        action={filtered ? { href: ROUTES.game, label: "필터 초기화" } : { href: ROUTES.home, label: "홈으로" }}
+        action={filtered ? { href: filter.all ? gamesHref({ all: true }) : ROUTES.game, label: "필터 초기화" } : { href: ROUTES.home, label: "홈으로" }}
       />
     );
   }
@@ -123,7 +126,16 @@ async function Results({ filter }: { filter: GameListFilter }) {
 }
 
 export default async function GamesPage({ searchParams }: Props) {
-  const query = readQuery(await searchParams);
+  const raw = readQuery(await searchParams);
+  /*
+   * 개인화 기본 조건(2026-10-07 사용자 요청). 사람이 조건을 하나도 안 걸고 왔을 때만 취향을 먼저 건다 —
+   * 주소에 조건이 있으면 주소가 이긴다(공유받은 링크가 남의 취향으로 바뀌면 안 된다).
+   * 걸린 목록의 링크는 전부 all=1 을 싣는다(games-query 의 all 주석): 조건을 지워 나가다 빈 주소에 닿아도
+   * 취향으로 되돌아가지 않게. 취향을 못 읽어도 목록은 서야 해서 실패는 "취향 없음" 으로 접는다.
+   */
+  const preset = hasExplicitListFilter({ ...raw, all: false }) ? null : await getMyListPreset().catch(() => null);
+  const applied = preset !== null && !raw.all;
+  const query: GamesQuery = applied ? { ...raw, ...preset.query, all: true } : raw;
   const filter: GameListFilter = query;
   // 필터가 바뀌면 경계를 새로 세운다 — 키가 같으면 React 는 이것을 갱신으로 보고
   // 새 값이 올 때까지 옛 목록을 그대로 둔다. 눌렀는데 아무 일도 안 일어나는 것처럼 보이는 자리다.
@@ -135,6 +147,9 @@ export default async function GamesPage({ searchParams }: Props) {
           이미 하고 있어, 화면에는 첫 카드 줄이 바로 오는 편이 낫다.
           건수("9,789개가 조건에 맞아요")도 앞서 뗐다 — 그 한 줄 때문에 목록과 같은 조회를 한 번 더 기다렸다 */}
       <PageHead title="게임 목록" hideTitle />
+
+      {/* 두 기둥 위에 한 줄 — 필터 기둥에 넣으면 좁은 화면에서 접힌 서랍 안으로 숨는다 */}
+      {preset && <PersonalListNote applied={applied} labels={preset.labels} sort={raw.sort} />}
 
       {/* 넓은 화면에서만 두 기둥이 된다. 좁은 화면에서는 필터가 접힌 서랍으로 위에 한 줄만 차지한다 */}
       <div className="grid items-start gap-x-10 gap-y-6 lg:grid-cols-[232px_minmax(0,1fr)]">

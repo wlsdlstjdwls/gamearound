@@ -15,7 +15,7 @@ describe("parseGamesQuery", () => {
   it("빈 쿼리는 1페이지 기본 필터", () => {
     expect(parseGamesQuery({})).toEqual({
       q: undefined, platform: undefined, genre: undefined, onSale: false, minDiscount: undefined,
-      company: undefined, subscription: false, hideFree: false, sort: undefined, page: 1,
+      company: undefined, subscription: false, hideFree: false, all: false, sort: undefined, page: 1,
     });
   });
 
@@ -103,7 +103,7 @@ describe("gamesHref", () => {
   it("왕복: gamesHref 로 만든 주소를 parseGamesQuery 가 그대로 복원한다", () => {
     const filter = {
       q: "엘든 링", platform: "steam", genre: "RPG", onSale: true,
-      company: "fromsoftware", subscription: true, hideFree: true, sort: "title" as const, page: 4,
+      company: "fromsoftware", subscription: true, hideFree: true, all: true, sort: "title" as const, page: 4,
     };
     const sp = Object.fromEntries(new URLSearchParams(gamesHref(filter).split("?")[1]));
     expect(parseGamesQuery(sp)).toEqual(filter);
