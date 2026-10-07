@@ -1,7 +1,7 @@
 // 원산지 고르기 — 상세 화면의 출시일 줄이 국기 하나를 여기서 받는다.
 // 회사가 여럿 붙는 게임이 흔해서(개발 스튜디오 + 모회사 + 지역 배급사) "어느 줄을 고르나" 가 규칙이다.
 import { describe, expect, it } from "vitest";
-import { originCountry } from "./mappers";
+import { originCountry, shouldReplaceBest } from "./mappers";
 import type { GameCompanyDto } from "./dto";
 
 const company = (p: Partial<GameCompanyDto>): GameCompanyDto => ({
@@ -42,5 +42,20 @@ describe("originCountry", () => {
     expect(originCountry([])).toBeNull();
     expect(originCountry([company({ countryCode: "KR", countryNameKo: null })])).toBeNull();
     expect(originCountry([company({ countryCode: null, countryNameKo: "대한민국" })])).toBeNull();
+  });
+});
+
+describe("shouldReplaceBest", () => {
+  it("값 모르는 대표는 값 있는 행에 자리를 내준다", () => {
+    expect(shouldReplaceBest({ currentPrice: null, currency: "KRW" }, { currentPrice: 40900, currency: "KRW" })).toBe(true);
+  });
+  it("값 있는 대표는 값 모르는 행에 안 밀린다", () => {
+    expect(shouldReplaceBest({ currentPrice: 40900, currency: "KRW" }, { currentPrice: null, currency: "KRW" })).toBe(false);
+  });
+  it("외화 대표는 원화 행에 자리를 내준다", () => {
+    expect(shouldReplaceBest({ currentPrice: 799, currency: "JPY" }, { currentPrice: 2100, currency: "KRW" })).toBe(true);
+  });
+  it("둘 다 원화면 먼저 온 행을 지킨다", () => {
+    expect(shouldReplaceBest({ currentPrice: 30000, currency: "KRW" }, { currentPrice: 10000, currency: "KRW" })).toBe(false);
   });
 });

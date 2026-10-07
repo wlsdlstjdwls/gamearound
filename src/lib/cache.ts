@@ -106,7 +106,10 @@
 /**
  * v29(2026-10-07): 출시예정 한 달 목록이 "이달의 기대작" 몫을 빼고 센다. 옛 캐시는 기대작이 날짜순에도 한 번 더 선다
  */
-export const DTO_CACHE_VERSION = "v29";
+/**
+ * v30(2026-10-07): 카드 대표 가격이 값 없는 행에 묶이던 것을 고쳤다(mappers 의 shouldReplaceBest). 옛 캐시엔 값 없는 카드가 남는다
+ */
+export const DTO_CACHE_VERSION = "v30";
 
 /** 목록, 검색, 홈처럼 태그 무효화로 갱신되는 화면의 기본 재검증 주기(초) */
 export const LIST_REVALIDATE_SECONDS = 3600;

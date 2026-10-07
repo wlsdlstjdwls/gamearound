@@ -87,7 +87,7 @@ function statusText(status: PartVerdict["status"]): string {
 }
 
 function whyText(reason: PartVerdict["reason"]): string | null {
-  if (reason === "no-requirement") return COMPAT_MESSAGES.whyNoRequirement;
+  // no-requirement(스토어가 사양을 안 적음)는 덧말 없이 "미확인" 만 둔다(2026-10-07, 사용자 지정)
   if (reason === "no-device") return COMPAT_MESSAGES.whyNoDevice;
   if (reason === "unknown-model") return COMPAT_MESSAGES.whyUnknownModel;
   return null;

@@ -148,18 +148,32 @@ function bestOf(gp: PlatformRow): NonNullable<GameSummary["best"]> {
   };
 }
 
-/** games ⨝ game_platforms 조인 행 목록을 게임 단위로 묶어 요약 생성. 대표(best)는 기준 통화 우선. */
+/**
+ * 대표 가격을 새 행으로 갈아 끼울까. 순수 함수(mappers.test).
+ *
+ * 1. 값을 아는 행이 모르는 행을 이긴다(2026-10-07, 사용자: hela-of-mice-magic 이 Epic ₩40,900 인데 카드에 값이 없었다).
+ *    먼저 온 Xbox 행이 값 null 이라 대표가 되고, 뒤의 Epic 행이 그 자리를 못 뺏었다 — 상세는 cheapestOf 로 다시 골라 멀쩡했다.
+ * 2. 기준 통화가 이긴다. 한국에서 볼 화면이라 "₩2,100" 이 "¥799" 보다 언제나 나은 답이다(환산은 하지 않는다).
+ * 그 밖에는 먼저 온 행을 지킨다 — 목록 질의가 정렬한 순서(할인 깊은 행 먼저 등)를 여기서 뒤집지 않는다.
+ */
+export function shouldReplaceBest(
+  current: { currentPrice: number | null; currency: string } | null,
+  candidate: { currentPrice: number | null; currency: string },
+): boolean {
+  if (current === null) return true;
+  if (current.currentPrice === null) return candidate.currentPrice !== null;
+  if (candidate.currentPrice === null) return false;
+  return current.currency !== DISPLAY_CURRENCY && candidate.currency === DISPLAY_CURRENCY;
+}
+
+/** games ⨝ game_platforms 조인 행 목록을 게임 단위로 묶어 요약 생성. 대표(best)는 shouldReplaceBest 가 고른다. */
 export function groupSummaries(rows: Array<{ game: GameRow; gp: PlatformRow }>, limit: number): GameSummary[] {
   const map = new Map<string, GameSummary>();
   for (const { game, gp } of rows) {
     const existing = map.get(game.id);
     if (existing) {
       if (!existing.platforms.includes(gp.platform)) existing.platforms.push(gp.platform);
-      // 대표 가격은 기준 통화가 이긴다. 먼저 온 행이 엔화고 뒤에 원화 행이 오면 갈아 끼운다 —
-      // 한국에서 볼 화면이라 "₩2,100" 이 "¥799" 보다 언제나 나은 답이다(환산은 하지 않는다).
-      if (existing.best && existing.best.currency !== DISPLAY_CURRENCY && gp.currency === DISPLAY_CURRENCY) {
-        existing.best = bestOf(gp);
-      }
+      if (shouldReplaceBest(existing.best, gp)) existing.best = bestOf(gp);
       continue;
     }
     map.set(game.id, {
