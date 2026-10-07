@@ -119,6 +119,18 @@ export const PSSTORE_KOREAN_LANGUAGE = "한국어";
  */
 export const PSSTORE_COVER_ROLE = "GAMEHUB_COVER_ART";
 export const PSSTORE_PORTRAIT_ROLE = "PORTRAIT_BANNER";
+/**
+ * 커버 역할의 대체 순서. 옛 PS4 상품은 GAMEHUB_COVER_ART 가 없다(2026-10-07 실측: Link-a-Pix, 과카멜리,
+ * Fall of Light, Futuridium). 그때는 가로 키아트인 BACKGROUND, 그마저 없으면 1:1 MASTER 를 쓴다 —
+ * 정사각이라도 빈 커버보다 낫다(커버 없는 본편은 목록에서 빠진다).
+ */
+export const PSSTORE_COVER_ROLES = [PSSTORE_COVER_ROLE, "BACKGROUND", "MASTER"] as const;
+/**
+ * 검색 결과 상품의 분류(storeDisplayClassification) 중 본편 상품. 검색은 DLC 상품도 섞어 주고
+ * 그 상품의 콘셉트는 본편 콘셉트라, 분류를 안 보면 "황금 나무의 그림자" 커버가 엘든 링에 붙는다(2026-10-07 실측:
+ * 그 DLC 는 MAP, 레벨 팩은 LEVEL, 그 밖의 추가 콘텐츠는 OTHER 로 온다).
+ */
+export const PSSTORE_FULL_GAME_CLASSIFICATION = "FULL_GAME";
 
 /**
  * 이미지 CDN 은 w 를 그대로 쓰지 않고 사전 크기로 올림한다(2026-09-14 실측).

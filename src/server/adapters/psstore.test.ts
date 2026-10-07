@@ -6,6 +6,7 @@ import { AdapterError } from "./types";
 import {
   parsePsstoreConcept,
   parsePsstoreGrid,
+  psstoreCoverUrl,
   psstoreImageUrl,
   parsePsstoreProduct,
   parsePsstoreSearch,
@@ -131,7 +132,7 @@ describe("parsePsstoreSearch, parsePsstoreProduct", () => {
     const hits = parsePsstoreSearch({
       data: { universalSearch: { results: [{ id: "HP0700-PPSA04608_00-ELDENRING0000000", name: "ELDEN RING (한국어판)" }] } },
     });
-    expect(hits).toEqual([{ productId: "HP0700-PPSA04608_00-ELDENRING0000000", title: "ELDEN RING" }]);
+    expect(hits).toEqual([{ productId: "HP0700-PPSA04608_00-ELDENRING0000000", title: "ELDEN RING", coverUrl: null, portraitUrl: null }]);
 
     const candidate = parsePsstoreProduct({
       data: { productRetrieve: { id: "HP0700-PPSA04608_00-ELDENRING0000000", invariantName: "ELDEN RING PS4 & PS5", concept: { id: "10000333" } } },
@@ -141,6 +142,37 @@ describe("parsePsstoreSearch, parsePsstoreProduct", () => {
       title: "ELDEN RING PS4 & PS5",
       url: "https://store.playstation.com/ko-kr/concept/10000333",
     });
+  });
+
+  // 콘셉트, 상품 상세 어디에도 이미지가 없다 — 매칭으로 붙은 콘셉트는 검색 응답의 그림이 유일한 출처다
+  it("본편 상품은 커버, 세로 아트를 들고 온다", () => {
+    const elden = parsePsstoreSearch(fixture("psstore-search.json")).find((h) => h.productId === "HP0700-PPSA04608_00-ELDENRING0000000");
+    expect(elden?.coverUrl).toMatch(/^https:\/\/image\.api\.playstation\.com\/.+\?w=640$/);
+    expect(elden?.portraitUrl).toMatch(/\?w=600$/);
+  });
+
+  // 검색의 DLC 상품도 상세가 본편 콘셉트로 바꿔 준다. 그 그림을 쓰면 DLC 커버가 본편에 붙는다
+  it("본편 아닌 상품(MAP, LEVEL)의 그림은 버린다", () => {
+    const hits = parsePsstoreSearch(fixture("psstore-search.json"));
+    for (const id of ["HP0700-PPSA04608_00-ELDENRINGDLC0000", "UP2045-CUSA07098_00-ASIA000000000002"]) {
+      const hit = hits.find((h) => h.productId === id);
+      expect(hit).toBeDefined();
+      expect(hit?.coverUrl).toBeNull();
+      expect(hit?.portraitUrl).toBeNull();
+    }
+  });
+
+  it("GAMEHUB_COVER_ART 가 없는 옛 PS4 본편은 BACKGROUND 로 대신한다", () => {
+    const fx = fixture("psstore-search.json") as { data: { universalSearch: { results: Array<{ id: string; media: Array<{ role: string; url: string }> }> } } };
+    const raw = fx.data.universalSearch.results.find((r) => r.id === "UP2045-CUSA07098_00-ASIA000000000000")!;
+    const background = raw.media.find((m) => m.role === "BACKGROUND")!.url;
+    const hit = parsePsstoreSearch(fx).find((h) => h.productId === raw.id);
+    expect(hit?.coverUrl).toBe(`${background.split("?")[0]}?w=640`);
+  });
+
+  it("커버 역할이 MASTER 뿐이면 그거라도 쓴다", () => {
+    expect(psstoreCoverUrl([{ role: "MASTER", type: "IMAGE", url: "https://x/m.png" }])).toBe("https://x/m.png?w=640");
+    expect(psstoreCoverUrl([{ role: "SCREENSHOT", type: "IMAGE", url: "https://x/s.png" }])).toBeNull();
   });
 
   it("콘셉트가 없는 상품은 후보에서 뺀다", () => {

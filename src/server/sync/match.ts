@@ -9,6 +9,7 @@ import { getSearchableAdapter, getDisabledReason, isSourceEnabled, type Searchab
 import type { SearchCandidate, Source } from "@/server/adapters/types";
 import { normalizeTitle, seriesConflict, trigramSimilarity } from "@/lib/slug";
 import { MATCHED_FOR_SYNC } from "./constants";
+import { fillMatchedMedia } from "./match-media";
 
 export const AUTO_MATCH_THRESHOLD = 0.9;
 export const PENDING_MATCH_THRESHOLD = 0.7;
@@ -194,7 +195,10 @@ export async function matchGameToSource(gameId: string, source: SearchableSource
     .onConflictDoUpdate({ target: [gameSourceRefs.gameId, gameSourceRefs.source], set: values, setWhere });
 
   if (!best) return { gameId, source, decision: "no-candidates" };
-  if (row.matchedBy === "auto") await promoteShopGame(gameId, source);
+  if (row.matchedBy === "auto") {
+    await promoteShopGame(gameId, source);
+    await fillMatchedMedia(gameId, source, best.candidate);
+  }
   return { gameId, source, decision: row.matchedBy, externalId: row.externalId, similarity: best.similarity };
 }
 

@@ -1,4 +1,4 @@
-// PlayStation Store 응답 파서 — 목록(콘셉트 격자), 콘셉트 상세, 검색.
+// PlayStation Store 응답 파서 — 목록(콘셉트 격자), 콘셉트 상세, 상품 상세. 검색은 search.ts.
 // 형식 검증은 zod 로 하고, 실패는 재시도해도 같은 결과라 retryable=false 로 올린다.
 import { z } from "zod";
 import { isCurrencyItemTitle } from "@/lib/games/content-kind";
@@ -6,7 +6,7 @@ import { AdapterError, type SearchCandidate, type StoreSnapshot } from "../types
 import type { Platform } from "@/server/db/schema";
 import {
   PSSTORE_CONCEPT_URL,
-  PSSTORE_COVER_ROLE,
+  PSSTORE_COVER_ROLES,
   PSSTORE_COVER_WIDTH,
   PSSTORE_INCLUSION_CTA,
   PSSTORE_PORTRAIT_ROLE,
@@ -24,7 +24,7 @@ export { psstoreCleanTitle };
 const productRefSchema = z.object({ id: z.string(), name: z.string().nullish() });
 
 /** 역할별 대표 이미지. 영상(type="VIDEO")도 같은 배열에 섞여 온다 */
-const mediaSchema = z.object({ role: z.string().nullish(), type: z.string().nullish(), url: z.string().nullish() });
+export const mediaSchema = z.object({ role: z.string().nullish(), type: z.string().nullish(), url: z.string().nullish() });
 
 const gridSchema = z.object({
   data: z.object({
@@ -77,13 +77,6 @@ const conceptSchema = z.object({
   }),
 });
 
-const searchSchema = z.object({
-  data: z.object({
-    universalSearch: z.object({
-      results: z.array(z.object({ id: z.string(), name: z.string().nullish() })).nullish(),
-    }),
-  }),
-});
 
 const productSchema = z.object({
   data: z.object({
@@ -100,7 +93,7 @@ const productSchema = z.object({
   }),
 });
 
-const fail = (what: string, e: z.ZodError): never => {
+export const psstoreFail = (what: string, e: z.ZodError): never => {
   throw new AdapterError(`PlayStation ${what} 응답 형식 오류: ${e.message}`, "psstore", false);
 };
 
@@ -114,10 +107,19 @@ export function psstoreImageUrl(media: Media[] | null | undefined, role: string,
   return `${hit.url.split("?")[0]}?w=${width}`;
 }
 
+/** 커버는 역할 대체 순서(PSSTORE_COVER_ROLES)대로 처음 있는 것 */
+export function psstoreCoverUrl(media: Media[] | null | undefined): string | null {
+  for (const role of PSSTORE_COVER_ROLES) {
+    const url = psstoreImageUrl(media, role, PSSTORE_COVER_WIDTH);
+    if (url) return url;
+  }
+  return null;
+}
+
 /** 목록 응답 → 후보. 콘셉트(게임) 단위라 에디션 중복이 없다 */
 export function parsePsstoreGrid(raw: unknown, firstRank?: number): SearchCandidate[] {
   const parsed = gridSchema.safeParse(raw);
-  if (!parsed.success) fail("목록", parsed.error);
+  if (!parsed.success) psstoreFail("목록", parsed.error);
   const concepts = parsed.data!.data.categoryGridRetrieve.concepts ?? [];
   const out: SearchCandidate[] = [];
   const seen = new Set<string>();
@@ -133,7 +135,7 @@ export function parsePsstoreGrid(raw: unknown, firstRank?: number): SearchCandid
       title,
       url: `${PSSTORE_CONCEPT_URL}/${c.id}`,
       // 상세에는 이미지가 없다 — 여기서 안 들고 가면 PS 단독 게임은 커버가 영영 빈다
-      coverUrl: psstoreImageUrl(c.media, PSSTORE_COVER_ROLE, PSSTORE_COVER_WIDTH),
+      coverUrl: psstoreCoverUrl(c.media),
       portraitUrl: psstoreImageUrl(c.media, PSSTORE_PORTRAIT_ROLE, PSSTORE_PORTRAIT_WIDTH),
       ...(firstRank === undefined ? {} : { rank: firstRank + i }),
     });
@@ -192,7 +194,7 @@ export function psstoreSubscriptionKeys(webctas: Array<z.infer<typeof ctaSchema>
 /** 콘셉트 상세 → 스냅샷. 가격은 구매 버튼만 쓰고, 구독 가입가 버튼은 구독 축으로 보낸다 */
 export function parsePsstoreConcept(raw: unknown, conceptId: string): StoreSnapshot {
   const parsed = conceptSchema.safeParse(raw);
-  if (!parsed.success) fail("콘셉트", parsed.error);
+  if (!parsed.success) psstoreFail("콘셉트", parsed.error);
   const concept = parsed.data!.data.conceptRetrieve;
   if (!concept) throw new AdapterError(`PlayStation 게임 없음: ${conceptId}`, "psstore", false);
 
@@ -237,20 +239,10 @@ export function parsePsstoreConcept(raw: unknown, conceptId: string): StoreSnaps
   };
 }
 
-/** 검색 응답 → 상품 id 목록. 콘셉트 id 는 여기 없어 상세를 한 번 더 봐야 한다 */
-export function parsePsstoreSearch(raw: unknown): Array<{ productId: string; title: string | null }> {
-  const parsed = searchSchema.safeParse(raw);
-  if (!parsed.success) fail("검색", parsed.error);
-  return (parsed.data!.data.universalSearch.results ?? []).map((r) => ({
-    productId: r.id,
-    title: psstoreCleanTitle(r.name),
-  }));
-}
-
 /** 상품 상세 → 그 상품이 속한 콘셉트 후보 */
 export function parsePsstoreProduct(raw: unknown): SearchCandidate | null {
   const parsed = productSchema.safeParse(raw);
-  if (!parsed.success) fail("상품", parsed.error);
+  if (!parsed.success) psstoreFail("상품", parsed.error);
   const p = parsed.data!.data.productRetrieve;
   const conceptId = p?.concept?.id;
   if (!p || !conceptId) return null;
@@ -270,7 +262,7 @@ export function parsePsstoreProduct(raw: unknown): SearchCandidate | null {
  */
 export function parsePsstoreDlc(raw: unknown, productId: string): StoreSnapshot {
   const parsed = productSchema.safeParse(raw);
-  if (!parsed.success) fail("DLC 상품", parsed.error);
+  if (!parsed.success) psstoreFail("DLC 상품", parsed.error);
   const p = parsed.data!.data.productRetrieve;
   if (!p) throw new AdapterError(`PlayStation 상품 없음: ${productId}`, "psstore", false);
 

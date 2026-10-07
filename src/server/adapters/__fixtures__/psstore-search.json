@@ -1,0 +1,275 @@
+{
+  "data": {
+    "universalSearch": {
+      "results": [
+        {
+          "__typename": "Product",
+          "id": "UP2045-CUSA07098_00-ASIA000000000000",
+          "name": "Guacamelee! 2 (한국어판)",
+          "storeDisplayClassification": "FULL_GAME",
+          "media": [
+            {
+              "role": "MASTER",
+              "type": "IMAGE",
+              "url": "https://image.api.playstation.com/cdn/UP2045/CUSA07098_00/lU3RA9m4DWVVilrUXrYz8O0jHTG4YayxXMTBsuREP36s7SGgdjkaJMNHF1u9NS8u.png"
+            },
+            {
+              "role": "BACKGROUND",
+              "type": "IMAGE",
+              "url": "https://image.api.playstation.com/cdn/UP2045/CUSA07098_00/ErCONO81eRA8KX2Pys1tIcULKpcbIsJ8.png"
+            },
+            {
+              "role": "SCREENSHOT",
+              "type": "IMAGE",
+              "url": "https://image.api.playstation.com/cdn/UP2045/CUSA07098_00/FREE_CONTENTU9YfUwC1emtPiyK1tLAx/1.jpg"
+            },
+            {
+              "role": "SCREENSHOT",
+              "type": "IMAGE",
+              "url": "https://image.api.playstation.com/cdn/UP2045/CUSA07098_00/FREE_CONTENTY7zjIkAKkryI6d6kZ07e/2.jpg"
+            },
+            {
+              "role": "SCREENSHOT",
+              "type": "IMAGE",
+              "url": "https://image.api.playstation.com/cdn/UP2045/CUSA07098_00/FREE_CONTENTgAGELPpJ8hy3RTjpK0Lx/3.jpg"
+            }
+          ]
+        },
+        {
+          "__typename": "Product",
+          "id": "UP2045-CUSA07098_00-ASIA000000000002",
+          "name": "Guacamelee! 2 - The Proving Grounds (Challenge Level) (한국어판)",
+          "storeDisplayClassification": "LEVEL",
+          "media": [
+            {
+              "role": "MASTER",
+              "type": "IMAGE",
+              "url": "https://image.api.playstation.com/cdn/UP2045/CUSA07098_00/JLKUGnebTCEp3LNGaxJCLcKQbVpWPQEERsDA2XZLdieFrsKgHAyjZxVIUJ5dTiUS.png"
+            }
+          ]
+        },
+        {
+          "__typename": "Product",
+          "id": "HP0700-PPSA04608_00-ELDENRING0000000",
+          "name": "ELDEN RING PS4 & PS5 (중국어(간체자), 한국어, 태국어, 중국어(번체자))",
+          "storeDisplayClassification": "FULL_GAME",
+          "media": [
+            {
+              "role": "BACKGROUND",
+              "type": "IMAGE",
+              "url": "https://image.api.playstation.com/vulcan/ap/rnd/202108/0410/0d6AZS0pUgbUdbL4xZ1Owkl9.png"
+            },
+            {
+              "role": "EDITION_KEY_ART",
+              "type": "IMAGE",
+              "url": "https://image.api.playstation.com/vulcan/ap/rnd/202108/0410/D8mYIXWja8knuqYlwqcqVpi1.jpg"
+            },
+            {
+              "role": "FOUR_BY_THREE_BANNER",
+              "type": "IMAGE",
+              "url": "https://image.api.playstation.com/vulcan/ap/rnd/202108/0410/UAnLUUMdxA9cow8TEe8IfhuC.png"
+            },
+            {
+              "role": "GAMEHUB_COVER_ART",
+              "type": "IMAGE",
+              "url": "https://image.api.playstation.com/vulcan/ap/rnd/202108/0410/wUFMWIuEGCA6SEoWNBI7D1GP.jpg"
+            },
+            {
+              "role": "LOGO",
+              "type": "IMAGE",
+              "url": "https://image.api.playstation.com/vulcan/ap/rnd/202108/0410/eD7wvrVDwryldKtQKsTCGm7w.png"
+            },
+            {
+              "role": "PORTRAIT_BANNER",
+              "type": "IMAGE",
+              "url": "https://image.api.playstation.com/vulcan/ap/rnd/202108/0410/Qfw5KNFAaoVJjwSt2oO8oHUt.png"
+            },
+            {
+              "role": "SCREENSHOT",
+              "type": "IMAGE",
+              "url": "https://image.api.playstation.com/vulcan/ap/rnd/202107/1306/cHBWsNraSmlLuUhyzBIMKtmT.jpg"
+            },
+            {
+              "role": "SCREENSHOT",
+              "type": "IMAGE",
+              "url": "https://image.api.playstation.com/vulcan/ap/rnd/202107/1306/eGgdicMUd2PsvKL9uAVHV9dm.jpg"
+            },
+            {
+              "role": "SCREENSHOT",
+              "type": "IMAGE",
+              "url": "https://image.api.playstation.com/vulcan/ap/rnd/202107/1306/DU3b4KUDTRHSf6mLE0kS3orc.jpg"
+            },
+            {
+              "role": "SCREENSHOT",
+              "type": "IMAGE",
+              "url": "https://image.api.playstation.com/vulcan/ap/rnd/202107/1306/jAQPoBvsgfV455bIRLl1L592.jpg"
+            },
+            {
+              "role": "SCREENSHOT",
+              "type": "IMAGE",
+              "url": "https://image.api.playstation.com/vulcan/ap/rnd/202107/1306/ULEYtghSByX6oHbyGsllSXe4.jpg"
+            },
+            {
+              "role": "SCREENSHOT",
+              "type": "IMAGE",
+              "url": "https://image.api.playstation.com/vulcan/ap/rnd/202107/1604/EQaIKwme6VwBzkBBj6EVuSWS.jpg"
+            },
+            {
+              "role": "SCREENSHOT",
+              "type": "IMAGE",
+              "url": "https://image.api.playstation.com/vulcan/ap/rnd/202107/1306/zGkTPf7MDdxoVbfvC7gHeIHW.jpg"
+            },
+            {
+              "role": "SCREENSHOT",
+              "type": "IMAGE",
+              "url": "https://image.api.playstation.com/vulcan/ap/rnd/202107/1306/CAiRKYhdwf71NLEuqvel0OYp.jpg"
+            },
+            {
+              "role": "SCREENSHOT",
+              "type": "IMAGE",
+              "url": "https://image.api.playstation.com/vulcan/ap/rnd/202107/1604/1wzWVrSHxXcnV2weUkUhLoN8.jpg"
+            },
+            {
+              "role": "SCREENSHOT",
+              "type": "IMAGE",
+              "url": "https://image.api.playstation.com/vulcan/ap/rnd/202107/1306/jE5pM16xoR54C1YivEFrmUeu.jpg"
+            },
+            {
+              "role": "MASTER",
+              "type": "IMAGE",
+              "url": "https://image.api.playstation.com/vulcan/ap/rnd/202108/0410/np2Eb60bDep9fDWtqNNSzqZI.png"
+            }
+          ]
+        },
+        {
+          "__typename": "Product",
+          "id": "HP0700-PPSA04608_00-ELDENRINGDLC0000",
+          "name": "ELDEN RING 황금 나무의 그림자 PS4 & PS5 (한국어판)",
+          "storeDisplayClassification": "MAP",
+          "media": [
+            {
+              "role": "GAMEHUB_COVER_ART",
+              "type": "IMAGE",
+              "url": "https://image.api.playstation.com/vulcan/ap/rnd/202402/0713/5eec986de2675a1514f58d8ba40f3ee13a6faeefc4cf6d30.png"
+            },
+            {
+              "role": "SCREENSHOT",
+              "type": "IMAGE",
+              "url": "https://image.api.playstation.com/vulcan/ap/rnd/202402/0713/578113b569883569e45f0a4fdca62293bdd1e50c2dcff5b6.jpg"
+            },
+            {
+              "role": "SCREENSHOT",
+              "type": "IMAGE",
+              "url": "https://image.api.playstation.com/vulcan/ap/rnd/202402/0713/88f98d1bf4ca9b7246e5fa40bb25c18a81eb277511432b7a.jpg"
+            },
+            {
+              "role": "SCREENSHOT",
+              "type": "IMAGE",
+              "url": "https://image.api.playstation.com/vulcan/ap/rnd/202402/0713/3ab525e4a0685941abd35a136825639463a40df3ce6e1d72.jpg"
+            },
+            {
+              "role": "MASTER",
+              "type": "IMAGE",
+              "url": "https://image.api.playstation.com/vulcan/ap/rnd/202402/0713/d956c0df3a0cfe7c1b8e81c684ecff8a9a141c4f1f38578c.png"
+            }
+          ]
+        },
+        {
+          "__typename": "Product",
+          "id": "HP2005-CUSA16754_00-ASPS000000000001",
+          "name": "Link-a-Pix Deluxe (한국어판)",
+          "storeDisplayClassification": "FULL_GAME",
+          "media": [
+            {
+              "role": "MASTER",
+              "type": "IMAGE",
+              "url": "https://image.api.playstation.com/vulcan/img/cfn/11307cK_9oHM4xYQjd8dAkQzfvomxXvTWZ7QQ-pGFRT9JxrcErjVHd34TX2HeeicAmtZ2qhg0MV7GDIL-gJraRFPgJEXMHdy.png"
+            },
+            {
+              "role": "BACKGROUND",
+              "type": "IMAGE",
+              "url": "https://image.api.playstation.com/vulcan/img/cfn/11307oXJj9ggR8VDjMl7J-sJCWYzqzVS6e2OgplOemU8QWPAfEJJ_ds6lzNF8doSIthPPFGcpSblpebQ9Ba4N7SN9fksyBaI.png"
+            },
+            {
+              "role": "SCREENSHOT",
+              "type": "IMAGE",
+              "url": "https://image.api.playstation.com/vulcan/img/cfn/113073_B567l1PNQ9-n6QKpQqCRGp9c55MymEymARgJgpgIUbdEai22OjLm6TGQMEBXi2vAvLv8Ac96erHCaFFLr3OMg25Cc.jpg"
+            },
+            {
+              "role": "SCREENSHOT",
+              "type": "IMAGE",
+              "url": "https://image.api.playstation.com/vulcan/img/cfn/11307JduVtEQDM_tvGG8N1U2LcKAMGGvBqUWVHArnU1PMsJoV9zC3F_WQ6M_ZkEIcSg-PmGh18XbcK_SNk5n3nCNa-42z6l2.jpg"
+            },
+            {
+              "role": "SCREENSHOT",
+              "type": "IMAGE",
+              "url": "https://image.api.playstation.com/vulcan/img/cfn/113074xp_m68B9pcua4gH4-LeMOENRnzQtp49SY_9FYD74uQ1o-KpY5k1K8__RZPOOfNqgjOEURI61vFwN295F5vEe8Mphw6.jpg"
+            }
+          ]
+        },
+        {
+          "__typename": "Concept",
+          "id": "10017111",
+          "name": "Pixel Run Arena",
+          "media": [
+            {
+              "role": "GAMEHUB_COVER_ART",
+              "type": "IMAGE",
+              "url": "https://image.api.playstation.com/vulcan/ap/rnd/202512/1400/4741ea442b6ad448e3cac270e807ff6655a5574ce7ec8b0c.jpg"
+            },
+            {
+              "role": "LOGO",
+              "type": "IMAGE",
+              "url": "https://image.api.playstation.com/vulcan/ap/rnd/202512/1400/721efcc822305c1112689f84a224a39c6e1de8d121786168.png"
+            },
+            {
+              "role": "SCREENSHOT",
+              "type": "IMAGE",
+              "url": "https://image.api.playstation.com/vulcan/ap/rnd/202512/1400/d9ba10e6abea6cb2e920dc825c4846092f39ac3668d44f6a.jpg"
+            },
+            {
+              "role": "SCREENSHOT",
+              "type": "IMAGE",
+              "url": "https://image.api.playstation.com/vulcan/ap/rnd/202512/1400/5be348cc34a46b0147565efb3be028d34a3ce201b21211ff.jpg"
+            },
+            {
+              "role": "SCREENSHOT",
+              "type": "IMAGE",
+              "url": "https://image.api.playstation.com/vulcan/ap/rnd/202512/1400/760e96a137ac4ab3b1810c9ec3dc0a893fe9204e79853a98.jpg"
+            },
+            {
+              "role": "SCREENSHOT",
+              "type": "IMAGE",
+              "url": "https://image.api.playstation.com/vulcan/ap/rnd/202512/1400/5109e9582715b5bb31e2ae33f05879f43a7c56e67420f8ee.jpg"
+            },
+            {
+              "role": "SCREENSHOT",
+              "type": "IMAGE",
+              "url": "https://image.api.playstation.com/vulcan/ap/rnd/202512/1400/490fa6906fd5a17ce653cca1ce521196400196b61f6cae5c.jpg"
+            },
+            {
+              "role": "SCREENSHOT",
+              "type": "IMAGE",
+              "url": "https://image.api.playstation.com/vulcan/ap/rnd/202512/1400/39d3ac911f6caf8ebe95c1a1918386a80dc90ad48aa9c533.jpg"
+            },
+            {
+              "role": "SCREENSHOT",
+              "type": "IMAGE",
+              "url": "https://image.api.playstation.com/vulcan/ap/rnd/202512/1400/ee3b8fd16359832fb7ca2e6f29ac78c2484dbf6c128f1988.jpg"
+            },
+            {
+              "role": "SCREENSHOT",
+              "type": "IMAGE",
+              "url": "https://image.api.playstation.com/vulcan/ap/rnd/202512/1400/b27d3a71365a2da42f5c9dec198cde102f7c14afef41451d.jpg"
+            },
+            {
+              "role": "MASTER",
+              "type": "IMAGE",
+              "url": "https://image.api.playstation.com/vulcan/ap/rnd/202512/1400/61d72b8e132210946f6dd619452d94aaf1c56ca041b1f35d.png"
+            }
+          ]
+        }
+      ]
+    }
+  }
+}

@@ -23,12 +23,14 @@ import {
   PSSTORE_QUERY_HASHES,
   PSSTORE_SEARCH_LOOKUP_MAX,
 } from "./constants";
-import { parsePsstoreConcept, parsePsstoreDlc, parsePsstoreGrid, parsePsstoreProduct, parsePsstoreSearch } from "./parse";
+import { parsePsstoreConcept, parsePsstoreDlc, parsePsstoreGrid, parsePsstoreProduct } from "./parse";
+import { parsePsstoreSearch } from "./search";
 import { parsePsstoreAddOnIds } from "./add-ons";
 import { psstoreStandardProductIdFromConcept } from "./standard-product";
 
 export * from "./constants";
 export * from "./parse";
+export * from "./search";
 export * from "./add-ons";
 
 const http = createHttpClient({ source: "psstore", label: "PlayStation", headers: PSSTORE_HEADERS });
@@ -81,22 +83,28 @@ export const psstoreAdapter: StoreAdapter = {
       PSSTORE_QUERY_HASHES.search,
       `search:${query}`,
     );
-    const out: SearchCandidate[] = [];
-    const seen = new Set<string>();
+    // 콘셉트별 후보. 같은 콘셉트의 DLC 상품이 본편 상품보다 먼저 올 수 있어(그림 없음),
+    // 뒤에 온 본편 상품의 그림으로 빈 칸만 채운다 — 후보 순서는 처음 본 자리를 지킨다
+    const byConcept = new Map<string, SearchCandidate>();
     for (const hit of parsePsstoreSearch(raw).slice(0, PSSTORE_SEARCH_LOOKUP_MAX)) {
       await sleep(psstoreAdapter.minIntervalMs);
       try {
         const detail = await op("productRetrieveForCtasWithPrice", { productId: hit.productId }, PSSTORE_QUERY_HASHES.productDetail, hit.productId);
         const candidate = parsePsstoreProduct(detail);
-        if (!candidate || seen.has(candidate.externalId)) continue;
-        seen.add(candidate.externalId);
-        out.push(candidate);
+        if (!candidate) continue;
+        const prev = byConcept.get(candidate.externalId);
+        if (prev) {
+          prev.coverUrl ??= hit.coverUrl;
+          prev.portraitUrl ??= hit.portraitUrl;
+          continue;
+        }
+        byConcept.set(candidate.externalId, { ...candidate, coverUrl: hit.coverUrl, portraitUrl: hit.portraitUrl });
       } catch (e) {
         // 한 건이 실패해도 나머지 후보는 쓸 수 있다 — 매칭은 후보가 하나만 맞아도 된다
         console.warn(`[psstore] 검색 후보 조회 실패 (${hit.productId}): ${errorMessage(e)}`);
       }
     }
-    return out;
+    return [...byConcept.values()];
   },
 
   /**
