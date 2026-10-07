@@ -103,7 +103,10 @@
 /**
  * v28(2026-10-06): PlatformDto 에 한국어 지원(koText, koVoice)이 붙었다. 옛 캐시에는 이 값이 없어 칩이 안 선다
  */
-export const DTO_CACHE_VERSION = "v28";
+/**
+ * v29(2026-10-07): 출시예정 한 달 목록이 "이달의 기대작" 몫을 빼고 센다. 옛 캐시는 기대작이 날짜순에도 한 번 더 선다
+ */
+export const DTO_CACHE_VERSION = "v29";
 
 /** 목록, 검색, 홈처럼 태그 무효화로 갱신되는 화면의 기본 재검증 주기(초) */
 export const LIST_REVALIDATE_SECONDS = 3600;

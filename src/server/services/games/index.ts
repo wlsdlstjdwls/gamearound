@@ -9,7 +9,7 @@ export { getPersonalDeals } from "./personal";
 export type { PersonalDealsFilter } from "./personal";
 export { listNews, NEWS_PAGE_SIZE } from "./news";
 export type { NewsListResult } from "./news";
-export { getUpcomingMonthPage, getUpcomingMonths, UPCOMING_PAGE_SIZE, UPCOMING_WINDOW_DAYS } from "./upcoming";
+export { getUpcomingMonthPage, getUpcomingMonthPicks, getUpcomingMonths, UPCOMING_PAGE_SIZE, UPCOMING_WINDOW_DAYS } from "./upcoming";
 export type { UpcomingEntry, UpcomingMonthTab, UpcomingPage } from "./upcoming";
 export { searchGames } from "./search";
 export { GAMES_PAGE_SIZE, getGameFacets, listGames } from "./list";

@@ -13,6 +13,7 @@ import { getDb } from "@/server/db/client";
 import { gamePlatforms, games, HOME_REGION } from "@/server/db/schema";
 import { visiblePlatformsOnly } from "@/server/db/visibility";
 import { DTO_CACHE_VERSION, LIST_REVALIDATE_SECONDS } from "@/lib/cache";
+import { POPULARITY_RANK_MAX_AGE_DAYS } from "@/lib/games/popularity";
 import type { GameSummary } from "./dto";
 import { fillGenres, groupSummaries } from "./mappers";
 import { mainGamesOnly } from "./filters";
@@ -31,6 +32,18 @@ export const UPCOMING_PAGE_SIZE = 24;
  * (2026-09-18 실측: 1년 초과 2건). 기다릴 수 있는 거리까지만 보여 준다.
  */
 export const UPCOMING_WINDOW_DAYS = 365;
+
+/**
+ * "이달의 기대작" 몫(2026-10-07, 사용자: "그 달에 GTA 같은 인기 유망주가 상단에 나오면").
+ * 날짜순만으로는 10월 465개 사이에 Phantom Blade Zero 가 29일 자리에 묻혔다.
+ *
+ * 근거는 스토어 인기 순번 하나다 — 출시 전 게임은 평가 수도 HLTB 기록도 없어(10월 465개 중 9, 4건)
+ * 목록 인기순의 둘째, 셋째 키가 여기서는 안 선다. 순번은 PS 예약 순위가 채워 준다(GTA VI 1위).
+ * 넷은 넓은 화면 격자 한 줄이다. 300위 컷은 실측으로 잡았다: 그 안은 이름 있는 기대작이고
+ * 400위 밖부터 "Police Car Simulator" 류가 섞인다. 컷을 넘는 게임이 없는 달은 이 줄을 아예 세우지 않는다.
+ */
+export const UPCOMING_PICK_LIMIT = 4;
+export const UPCOMING_PICK_RANK_MAX = 300;
 
 /** 한 게임의 출시예정 한 줄. releaseDate 는 게임이 아는 가장 이른 날짜(플랫폼 무관) */
 export type UpcomingEntry = {
@@ -58,7 +71,11 @@ function earliestCte() {
   const visible = visiblePlatformsOnly();
   return sql`
     with earliest as (
-      select ${gamePlatforms.gameId} as game_id, min(${gamePlatforms.releaseDate}) as release_date
+      select ${gamePlatforms.gameId} as game_id, min(${gamePlatforms.releaseDate}) as release_date,
+        -- 낡은 순번은 버린다 — 목록 인기순과 같은 규칙(services/games/list 의 minRank 주석)
+        min(${gamePlatforms.popularityRank}) filter (
+          where ${gamePlatforms.popularityRankAt} >= now() - make_interval(days => ${POPULARITY_RANK_MAX_AGE_DAYS}::int)
+        ) as rank
       from ${gamePlatforms}
       inner join ${games} on ${games.id} = ${gamePlatforms.gameId}
       where ${mainGamesOnly()}
@@ -83,22 +100,52 @@ async function getUpcomingMonthsRaw(): Promise<UpcomingMonthTab[]> {
   return res.rows.map((r) => ({ key: r.key, total: Number(r.total) }));
 }
 
+/**
+ * 한 달의 기대작 id 를 고르는 조각. 기대작 줄과 날짜순 목록이 **같은 조각**을 써야 한다 —
+ * 날짜순은 이 몫을 빼고 세므로, 두 곳의 고르는 규칙이 갈리면 한 게임이 두 번 서거나 아무 데도 안 선다.
+ * earliestCte() 다음에 붙는다(그 CTE 를 읽는다).
+ */
+function picksCte(key: string) {
+  return sql`, picks as (
+      select game_id from earliest
+      where substr(release_date::text, 1, 7) = ${key} and rank <= ${UPCOMING_PICK_RANK_MAX}::int
+      order by rank asc, game_id asc
+      limit ${UPCOMING_PICK_LIMIT}::int
+    )`;
+}
+
+async function getUpcomingMonthPicksRaw(key: string): Promise<UpcomingEntry[]> {
+  if (!UPCOMING_MONTH_KEY.test(key)) return [];
+  const res = await getDb().execute<{ game_id: string; release_date: string }>(sql`
+    ${earliestCte()}${picksCte(key)}
+    select e.game_id, e.release_date::text as release_date
+    from earliest e inner join picks p on p.game_id = e.game_id
+    order by e.rank asc, e.game_id asc
+  `);
+  return toEntries(res.rows);
+}
+
 async function getUpcomingMonthPageRaw(key: string, page: number): Promise<UpcomingPage> {
   if (!UPCOMING_MONTH_KEY.test(key)) return { items: [], hasMore: false };
-  const db = getDb();
   const offset = (Math.max(1, page) - 1) * UPCOMING_PAGE_SIZE;
   // 한 장보다 하나 더 받아 "다음 장이 있나" 를 센다 — count 질의를 따로 보내면 왕복이 하나 는다
-  const ranked = await db.execute<{ game_id: string; release_date: string }>(sql`
-    ${earliestCte()}
+  const ranked = await getDb().execute<{ game_id: string; release_date: string }>(sql`
+    ${earliestCte()}${picksCte(key)}
     select game_id, release_date::text as release_date
     from earliest
     where substr(release_date::text, 1, 7) = ${key}
+      and game_id not in (select game_id from picks)
     order by release_date asc, game_id asc
     limit ${UPCOMING_PAGE_SIZE + 1}::int offset ${offset}::int
   `);
   const hasMore = ranked.rows.length > UPCOMING_PAGE_SIZE;
-  const dates = ranked.rows.slice(0, UPCOMING_PAGE_SIZE);
-  if (dates.length === 0) return { items: [], hasMore: false };
+  return { items: await toEntries(ranked.rows.slice(0, UPCOMING_PAGE_SIZE)), hasMore };
+}
+
+/** 고른 (게임, 날짜) 순서 그대로 카드 DTO 를 채운다 */
+async function toEntries(dates: { game_id: string; release_date: string }[]): Promise<UpcomingEntry[]> {
+  if (dates.length === 0) return [];
+  const db = getDb();
 
   // 고른 게임의 행을 전부 읽는다. 홈과 달리 fillPlatforms 가 필요 없다 —
   // 조인 결과를 상위 N행으로 자르지 않고 게임 id 로 좁히므로 플랫폼이 잘리지 않는다
@@ -118,7 +165,7 @@ async function getUpcomingMonthPageRaw(key: string, page: number): Promise<Upcom
     const game = slug ? bySlug.get(slug) : undefined;
     if (game) items.push({ game, releaseDate: release_date });
   }
-  return { items, hasMore };
+  return items;
 }
 
 /** 출시예정 달 탭 — 태그 `home`. 수집이 새 출시일을 넣으면 크롤러가 무효화한다 */
@@ -127,7 +174,13 @@ export const getUpcomingMonths = unstable_cache(getUpcomingMonthsRaw, [DTO_CACHE
   revalidate: LIST_REVALIDATE_SECONDS,
 });
 
-/** 한 달의 한 장. 달과 장 번호가 캐시 열쇠에 들어간다(unstable_cache 는 인자를 열쇠에 더한다) */
+/** 한 달의 기대작 줄. 날짜순 목록과 같은 태그, 같은 수명이라 둘이 엇갈려 낡지 않는다 */
+export const getUpcomingMonthPicks = unstable_cache(getUpcomingMonthPicksRaw, [DTO_CACHE_VERSION, "upcoming-month-picks"], {
+  tags: ["home"],
+  revalidate: LIST_REVALIDATE_SECONDS,
+});
+
+/** 한 달의 한 장(기대작 몫은 빼고). 달과 장 번호가 캐시 열쇠에 들어간다(unstable_cache 는 인자를 열쇠에 더한다) */
 export const getUpcomingMonthPage = unstable_cache(getUpcomingMonthPageRaw, [DTO_CACHE_VERSION, "upcoming-month-page"], {
   tags: ["home"],
   revalidate: LIST_REVALIDATE_SECONDS,

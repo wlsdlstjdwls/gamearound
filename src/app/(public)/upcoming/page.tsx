@@ -27,7 +27,7 @@ import { UPCOMING_MESSAGES as M, upcomingCountText } from "@/lib/games/messages"
 import { HOME_GRID_CLASS } from "@/lib/games/grid";
 import { pickUpcomingMonth, UPCOMING_MONTH_PARAM } from "@/lib/games/upcoming";
 import { stagger } from "@/lib/motion";
-import { getUpcomingMonthPage, getUpcomingMonths, UPCOMING_PAGE_SIZE } from "@/server/services/games";
+import { getUpcomingMonthPage, getUpcomingMonthPicks, getUpcomingMonths, UPCOMING_PAGE_SIZE } from "@/server/services/games";
 import { GamesGridSkeleton } from "@/app/(public)/games/skeletons";
 import { loadMoreUpcoming } from "./actions";
 
@@ -41,17 +41,44 @@ export const metadata: Metadata = {
 
 type Props = { searchParams: Promise<Record<string, string | string[] | undefined>> };
 
-/** 고른 달의 첫 장. 서버가 그리고, 그 아래는 이어 붙이기가 맡는다(games-infinite) */
+/**
+ * 고른 달 = 기대작 한 줄 + 날짜순 전체(2026-10-07). 서버가 첫 장을 그리고, 그 아래는 이어 붙이기가 맡는다(games-infinite).
+ * 기대작은 날짜순에서 빠진다(services/games/upcoming 의 picksCte) — 한 화면에 같은 카드가 두 번 서지 않는다.
+ * 두 질의를 나란히 보낸다 — 줄 세우면 Neon 왕복이 둘이 되고, 화면 속도는 질의 수가 아니라 줄 세운 왕복 수가 정한다.
+ * 기대작이 없는 달은 소제목도 세우지 않는다 — "날짜순 전체" 한 마디만 서면 무엇과 갈라 둔 것인지가 없다.
+ */
 async function MonthGames({ monthKey }: { monthKey: string }) {
-  const { items, hasMore } = await getUpcomingMonthPage(monthKey, 1);
-  return (
+  const [picks, { items, hasMore }] = await Promise.all([getUpcomingMonthPicks(monthKey), getUpcomingMonthPage(monthKey, 1)]);
+  const list = (
     <GamesInfinite load={loadMoreUpcoming.bind(null, monthKey)} initialHasMore={hasMore} gridClass={HOME_GRID_CLASS}>
       {items.map((entry, i) => (
-        <li key={entry.game.slug} className="enter-item" style={stagger(i)}>
+        <li key={entry.game.slug} className="enter-item" style={stagger(picks.length + i)}>
           <GameCard game={entry.game} variant="release" releaseText={formatReleaseDay(entry.releaseDate)} />
         </li>
       ))}
     </GamesInfinite>
+  );
+  if (picks.length === 0) return list;
+
+  return (
+    <div className="flex flex-col gap-8">
+      <section aria-labelledby="upcoming-picks-heading" className="flex flex-col gap-3.5">
+        <SectionHead id="upcoming-picks-heading" as="h3" size="sub" title={M.picksTitle} note={M.picksNote} />
+        <ul className={HOME_GRID_CLASS}>
+          {picks.map((entry, i) => (
+            <li key={entry.game.slug} className="enter-item" style={stagger(i)}>
+              <GameCard game={entry.game} variant="release" releaseText={formatReleaseDay(entry.releaseDate)} />
+            </li>
+          ))}
+        </ul>
+      </section>
+      {items.length > 0 && (
+        <section aria-labelledby="upcoming-rest-heading" className="flex flex-col gap-3.5">
+          <SectionHead id="upcoming-rest-heading" as="h3" size="sub" title={M.restTitle} />
+          {list}
+        </section>
+      )}
+    </div>
   );
 }
 
