@@ -27,7 +27,10 @@ export function SiteHeader() {
     // 본문이 흰 띠 밑으로 들어가는 것이 보여, 화면이 두 겹으로 읽힌다.
     // 바탕이 흰색이 된 뒤(2026-09-29 커머스 정보형) 아래 헤어라인 한 줄을 되돌렸다 — 흰 머리띠가 흰 본문 위를
     // 지나갈 때 경계가 없으면 스크롤한 글자가 머리띠 밑으로 사라지는 게 아니라 잘려 보인다
-    <header className="sticky top-0 z-40 border-b border-line-soft bg-bg">
+    // 2026-10-07(사용자 선택) 흰 판으로 다시 올렸다. 바탕과 같은 색이면 머리띠가 어디서 끝나는지 선 하나에만 기댔다.
+    // "두 겹으로 읽힌다" 는 걱정은 맨 위에서는 그림자가 없고 스크롤한 뒤에만 뜨게(.header-lift) 해서 푼다 —
+    // 그때는 본문이 밑으로 들어가는 게 보이는 편이 오히려 맞는 말이다
+    <header className="header-lift sticky top-0 z-40 border-b border-line bg-surface">
       <div className="mx-auto flex w-full max-w-[var(--page-w)] items-center gap-2 px-5 py-2.5 sm:gap-7 sm:px-6 sm:py-3.5">
         {/* 좁은 화면에서는 심볼만 남는다. 글자가 접혀도 링크의 이름은 남아야 하므로 aria-label 로 못 박는다 */}
         {/* tap: 좁은 화면에서는 심볼만 남아 26x32 였다 — 머리띠에서 가장 자주 눌리는 자리인데 손가락보다 작았다 */}

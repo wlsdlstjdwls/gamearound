@@ -30,12 +30,15 @@ function trimQuery(raw: string): string {
  * 읽히지 않아 그냥 선이 그어진 빈칸으로 보였고, 34px 높이가 옆 링크들과도 어긋났다.
  * 그다음엔 바탕을 한 단 가라앉혀(--surface-2) 파인 자리로 만들었는데, 머리띠가 회색 바탕(--bg)으로
  * 바뀐 뒤로는(2026-09-29 가시성 회차) 두 색이 #eef0f3 대 #f2f4f6 이라 칸이 바탕에 녹았다(2026-09-30 사용자 지적).
- * 지금은 흰 판(--surface) + 입력 테두리(--line-strong)로 바탕 위에 띄운다 — 다른 입력칸과 같은 짝이다.
+ * 그다음엔 흰 판(--surface) + 입력 테두리(--line-strong)로 바탕 위에 띄웠다.
+ * 머리띠가 다시 흰 판이 된 뒤(2026-10-07) 칸은 바탕색(--bg)으로 한 단 파고 테두리를 같이 둔다 — 흰 위 흰은 위에 적은
+ * 첫 실패 그대로라서다. 연보라 바탕이 흰 머리띠와 4% 벌어져 있어 테두리만 남았을 때와 달리 면으로 읽힌다.
+ * 포커스에서는 흰 판으로 떠올라 "지금 쓰는 중" 을 면으로도 말한다.
  * 포커스에서만 브랜드 테두리와 글로우를 켠다 — 평소에는 조용하고 손이 닿은 순간에만 말한다.
  * 모서리를 완전히 굴리는 이유: 이 화면에서 유일하게 "무엇이든 써도 되는" 칸이라 각진 카드, 칩과 달라야 한다.
  */
 const FIELD_CLASS =
-  "tap flex h-10 items-center gap-2.5 rounded-xl border border-line-strong bg-surface pl-3.5 pr-2 transition-[border-color,box-shadow] duration-base ease-standard focus-within:border-acc focus-within:shadow-[0_0_0_3px_var(--acc-glow)]";
+  "tap flex h-10 items-center gap-2.5 rounded-xl border border-line-strong bg-bg pl-3.5 pr-2 transition-[border-color,box-shadow,background-color] duration-base ease-standard focus-within:border-acc focus-within:bg-surface focus-within:shadow-[0_0_0_3px_var(--acc-glow)]";
 /* 글자 16px — 규약 §6. 13.5px 이던 값을 올렸다(2026-09-22): iOS 사파리가 16px 미만 입력칸에
    포커스가 가면 화면을 확대하는데, 머리띠의 검색칸은 어느 화면에서나 손이 처음 닿는 칸이라
    그 확대가 서비스의 첫인상이 된다. 칸 높이는 40px 그대로라 머리띠 높이(--header-h)는 안 움직인다. */

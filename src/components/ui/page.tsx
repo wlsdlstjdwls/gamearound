@@ -212,8 +212,10 @@ export type SectionSize = "section" | "sub" | "label";
 
 /* Collapsible 이 같은 사다리를 써야 해서 내보낸다 — 접히는 마디와 안 접히는 마디의 제목 크기가
    다르면 같은 화면에서 마디의 격이 달라 보인다 */
+/* section 을 22 에서 25 로 올렸다(2026-10-07, 가시성 회차). 홈을 훑을 때 진열 줄 제목이 카드 제목(15~16px)과
+   한 단밖에 차이가 안 나 줄과 줄이 어디서 갈리는지 안 보였다. "전체 보기" 는 반대로 한 단 내렸다(app/(public)/page) */
 export const SECTION_SIZE: Record<SectionSize, string> = {
-  section: "text-[19px] font-extrabold tracking-[-0.04em] text-ink sm:text-[22px]",
+  section: "text-[21px] font-extrabold tracking-[-0.04em] text-ink sm:text-[25px]",
   sub: "text-[17px] font-extrabold tracking-[-0.035em] text-ink sm:text-[18px]",
   label: "text-[12px] font-bold tracking-[0.08em] text-dim",
 };

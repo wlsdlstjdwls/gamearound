@@ -141,10 +141,11 @@ function PriceHeadline({ game, recordedLow }: { game: GameDetail; recordedLow: R
         {["지금 최저가", best ? PLATFORM_LABEL[best.platform] ?? best.platform : null].filter(Boolean).join(" | ")}
       </p>
       <p className="flex flex-wrap items-baseline gap-x-2.5 gap-y-1">
-        {/* 할인율은 값 **앞** 같은 줄에 보라 숫자로 선다 — 목록 카드(DiscountStamp)와 같은 문법이라
-            카드에서 본 "-40% ₩38,880" 이 상세에서도 같은 모양으로 이어진다(2026-09-30) */}
+        {/* 할인율은 값 **앞** 같은 줄에 선다 — 목록 카드(DiscountStamp)와 같은 문법이라
+            카드에서 본 "-40% ₩38,880" 이 상세에서도 같은 모양으로 이어진다(2026-09-30).
+            카드가 채운 보라 면으로 바뀌어(2026-10-07) 여기도 같이 바꿨다. 값보다 작게 두는 것도 같은 규칙이다 */}
         {hasDiscount && best?.discountPct && (
-          <span className="text-[30px] font-extrabold leading-none tracking-[-0.04em] text-acc sm:text-[38px]">
+          <span className="self-center rounded-[var(--radius-xs)] bg-acc px-2 py-1 text-[22px] font-extrabold leading-none tracking-[-0.03em] text-on-ink sm:text-[26px]">
             <DiscountText pct={best.discountPct} />
           </span>
         )}

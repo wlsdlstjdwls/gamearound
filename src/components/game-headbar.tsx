@@ -94,8 +94,8 @@ export function GameHeadbar({
           <div
             data-on={on}
             aria-hidden={!on}
-            // z-50 은 머리띠(z-40) 위다. 배경은 본문과 같은 바탕색 — 머리띠가 그렇듯 판을 두지 않는다
-            className="headbar fixed inset-x-0 top-0 z-50 h-[var(--header-h)] border-b border-line bg-bg"
+            // z-50 은 머리띠(z-40) 위다. 배경은 머리띠와 같은 흰 판(2026-10-07) — 덮는 자리라 둘이 다르면 바뀌는 순간 색이 번쩍인다
+            className="headbar fixed inset-x-0 top-0 z-50 h-[var(--header-h)] border-b border-line bg-surface"
           >
             <div className="mx-auto flex h-full w-full max-w-[var(--page-w)] items-center gap-3 px-5 sm:gap-4 sm:px-6">
               <Link

@@ -169,7 +169,8 @@ export default async function HomePage() {
 
 function SeeAll({ href, label = M.seeAll }: { href: string; label?: string }) {
   return (
-    <Link href={href} className="tap inline-flex items-center text-[13px] text-acc hover:underline">
+    // 제목보다 먼저 읽히지 않게 회색으로 물린다(2026-10-07). 보라는 hover 에서만 — 화면의 보라는 할인율이 먼저 가져간다
+    <Link href={href} className="tap inline-flex items-center text-[12.5px] font-medium text-mut hover:text-acc hover:underline">
       {label}
     </Link>
   );

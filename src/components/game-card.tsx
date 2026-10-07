@@ -92,8 +92,11 @@ export function DiscountStamp({ pct }: { pct: number | null }) {
   if (!pct || pct <= 0) return null;
   return (
     // 면을 걷고 글자만 남겼다(2026-09-29, 커머스 정보형) — 판이 없는 카드에서 꽉 찬 보라 면은 커버 다음으로
-    // 센 덩어리라 값보다 먼저 읽혔다. 값과 같은 크기, 같은 굵기의 색 숫자면 "얼마나 - 얼마" 가 한 호흡이다
-    <span className="inline-flex shrink-0 items-baseline text-[21px] font-extrabold tracking-[-0.03em] text-acc sm:text-[19px]">
+    // 센 덩어리라 값보다 먼저 읽혔다.
+    // 2026-10-07(사용자 선택) 채운 면으로 되돌렸다. 카드가 이제 흰 판 위라 덩어리가 판 안에 갇히고, 연보라 바탕으로
+    // 옮긴 뒤 보라 글자만으로는 숫자 둘(할인율, 값)이 같은 무게로 붙어 읽혔다. 값보다 작게 두어 "값이 주인" 은 지킨다.
+    // self-center: 값과 baseline 으로 맞추면 면이 위로 떠 보인다(글자 크기가 다르다)
+    <span className="inline-flex shrink-0 items-center self-center rounded-[var(--radius-xs)] bg-acc px-1.5 py-0.5 text-[15px] font-extrabold leading-none tracking-[-0.02em] text-on-ink sm:text-[14px]">
       <DiscountText pct={pct} />
     </span>
   );
@@ -249,7 +252,7 @@ export function GameCard({
                 {/* 값 앞에 선다 — 값을 읽기 전에 "지금 사면 출시 날 받는 값" 이라는 걸 먼저 알아야 한다 */}
                 {preorder && <Tag className="self-center">{PREORDER_LABEL}</Tag>}
                 {hasDiscount && <DiscountStamp pct={best.discountPct} />}
-                <span className="text-[21px] font-extrabold tracking-[-0.03em] text-ink sm:text-[19px]">
+                <span className="text-[22px] font-extrabold tracking-[-0.03em] text-ink sm:text-[20px]">
                   {formatPrice(best.currentPrice, best.currency)}
                 </span>
                 {hasDiscount && best.listPrice !== null && (
