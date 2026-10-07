@@ -1,12 +1,15 @@
 // 할인 알림 발송 — 설계서 §7. run-source 가 감지한 가격 변동 목록을 받아 조건에 맞는 price_alerts 에 웹푸시.
-// 조건: is_active AND game_id 일치 AND (platform 일치 또는 null) AND discountPct >= minDiscountPct AND 직전 스냅샷 대비 가격 하락
-import { and, eq, or, isNull, lte } from "drizzle-orm";
+// 조건: is_active AND game_id 일치 AND (platform 일치 또는 null) AND 직전 스냅샷 대비 가격 하락
+//   AND (discountPct >= minDiscountPct 또는 원화 값 <= targetPrice). 목표가는 2026-10-07 에 붙었다(lib/alerts/condition).
+// SQL 로 후보를 좁힌 뒤 같은 판정 함수(meetsCondition)로 한 번 더 거른다 — 화면의 "지금 조건에 맞아요" 와 발송이 갈리지 않게.
+import { and, eq, or, isNull, isNotNull } from "drizzle-orm";
 import { getDb } from "@/server/db/client";
 import { alertDeliveries, gamePlatforms, games, priceAlerts, pushSubscriptions } from "@/server/db/schema";
 import { markOnce } from "@/server/redis";
 import { sendPush } from "@/server/push/webpush";
 import { PLATFORM_LABEL } from "@/lib/format";
 import { formatPrice } from "@/lib/currency";
+import { meetsCondition } from "@/lib/alerts/condition";
 
 /** run-source → dispatch 로 넘기는 변동 1건 */
 export interface PriceChange {
@@ -68,7 +71,15 @@ export async function dispatchPriceAlerts(changes: PriceChange[]): Promise<Dispa
           eq(priceAlerts.gameId, gp.gameId),
           eq(priceAlerts.isActive, true),
           or(isNull(priceAlerts.platform), eq(priceAlerts.platform, gp.platform)),
-          lte(priceAlerts.minDiscountPct, discountPct),
+          or(isNotNull(priceAlerts.minDiscountPct), isNotNull(priceAlerts.targetPrice)),
+        ),
+      )
+      .then((list) =>
+        list.filter((a) =>
+          meetsCondition(
+            { minDiscountPct: a.minDiscountPct, targetPrice: a.targetPrice },
+            { platform: gp.platform, currentPrice: change.newPrice, currency: gp.currency, discountPct },
+          ),
         ),
       );
     summary.alertsMatched += alerts.length;
@@ -76,8 +87,8 @@ export async function dispatchPriceAlerts(changes: PriceChange[]): Promise<Dispa
 
     const title = gp.titleKo ?? gp.titleEn;
     const payload = {
-      title: `${title} 할인 중`,
-      body: `${PLATFORM_LABEL[gp.platform] ?? gp.platform} ${formatPrice(change.newPrice, gp.currency)} (${discountPct}% 할인)`,
+      title: discountPct > 0 ? `${title} 할인 중` : `${title} 가격이 내려갔어요`,
+      body: `${PLATFORM_LABEL[gp.platform] ?? gp.platform} ${formatPrice(change.newPrice, gp.currency)}${discountPct > 0 ? ` (${discountPct}% 할인)` : ""}`,
       url: `/games/${gp.slug}`,
       tag: `price:${gp.id}`,
     };

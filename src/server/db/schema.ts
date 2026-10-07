@@ -732,6 +732,12 @@ export const priceAlerts = pgTable("price_alerts", {
   gameId: uuid("game_id").references(() => games.id, { onDelete: "cascade" }).notNull(),
   platform: platformEnum("platform"),          // null = 모든 플랫폼
   minDiscountPct: integer("min_discount_pct").default(1), // 1 = 할인 발생 시
+  /**
+   * 목표가(2026-10-07, 가격 알림 고도화). 원화 최소 단위 정수(lib/currency 규칙). 이 값 이하로 내려가면 알린다.
+   * 할인율 조건과 **둘 중 하나**를 쓴다 — 목표가를 고르면 minDiscountPct 를 null 로 둔다(발송 쪽은 둘 중 채워진 것만 본다).
+   * 원화가 아닌 행(일본 스위치 등)에는 견주지 않는다 — 환산하지 않는다는 통화 규칙 그대로다
+   */
+  targetPrice: integer("target_price"),
   isActive: boolean("is_active").default(true).notNull(),
   ...auditColumns(),
 }, (t) => [index("pa_game_active_idx").on(t.gameId, t.isActive)]);

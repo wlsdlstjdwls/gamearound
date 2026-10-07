@@ -68,4 +68,4 @@ const collectTimesText = COLLECT_HOURS_KST
 export const COLLECT_SCHEDULE_TEXT =
   `가격은 하루 ${COLLECT_HOURS_KST.length === 2 ? "두" : String(COLLECT_HOURS_KST.length)} 번(${collectTimesText} KST) 확인하고, 정확한 시각을 보장하지 않아요.`;
 export const ALERT_RULE_TEXT =
-  "알림은 할인율이 조건 이상이고 직전에 확인한 값보다 가격이 내려갔을 때 보내요.";
+  "알림은 조건(할인율이나 목표가)에 맞고, 직전에 확인한 값보다 가격이 내려간 순간에 보내요.";

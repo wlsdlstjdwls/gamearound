@@ -1,8 +1,10 @@
 // 가격 알림 서비스 (§7). Next.js는 조건 저장만 담당하고 발송은 크롤러(GH Actions)가 수행.
 // 모든 변경 함수는 requireUser() 후 userId 일치(소유자) 조건을 WHERE에 포함한다.
-import { and, desc, eq, isNull } from "drizzle-orm";
+import { and, desc, eq, inArray, isNull, max, sql } from "drizzle-orm";
 import { getDb } from "@/server/db/client";
-import { games, priceAlerts, type Platform } from "@/server/db/schema";
+import { alertDeliveries, gamePlatforms, games, HOME_REGION, priceAlerts, type Platform } from "@/server/db/schema";
+import { visiblePlatformsOnly } from "@/server/db/visibility";
+import { alertStatus, type AlertStatus } from "@/lib/alerts/condition";
 import { requireUser } from "@/server/services/users";
 import { ownedByCurrentSession } from "@/server/auth/session";
 import { AUTH_MESSAGES } from "@/lib/auth/messages";
@@ -10,8 +12,28 @@ import { AUTH_MESSAGES } from "@/lib/auth/messages";
 export type AlertRow = typeof priceAlerts.$inferSelect;
 export type AlertWithGame = AlertRow & { game: { id: string; slug: string; titleKo: string | null; titleEn: string; coverUrl: string | null } };
 
-export type CreateAlertInput = { gameId: string; platform: Platform | null; minDiscountPct: number };
-export type UpdateAlertPatch = Partial<{ platform: Platform | null; minDiscountPct: number; isActive: boolean }>;
+/** 조건은 둘 중 하나만 채운다(schema 의 targetPrice 주석) */
+export type CreateAlertInput = { gameId: string; platform: Platform | null; minDiscountPct: number | null; targetPrice: number | null };
+export type UpdateAlertPatch = Partial<{ platform: Platform | null; minDiscountPct: number | null; targetPrice: number | null; isActive: boolean }>;
+
+/**
+ * 목록 화면이 받는 알림 한 줄(2026-10-07 고도화). 행 타입을 그대로 흘리지 않는다(규약 §1) —
+ * 지금 가격 상태와 마지막 발송 시각은 다른 테이블에서 와서 화면이 한 덩어리로 받아야 한다.
+ */
+export type AlertView = {
+  id: string;
+  platform: Platform | null;
+  minDiscountPct: number | null;
+  targetPrice: number | null;
+  isActive: boolean;
+  game: { slug: string; title: string; coverUrl: string | null };
+  status: AlertStatus;
+  lastSentAt: Date | null;
+};
+
+/** 목록 머리의 숫자 셋. "최근" 은 발송 중복 방지 창(7일)과 같은 거리다 — 그 안이 "요즘 받은 알림" 이다 */
+export type AlertsOverview = { views: AlertView[]; active: number; metNow: number; sentRecent: number };
+export const ALERT_RECENT_DAYS = 7;
 
 /** 알림 폼 상단에 표시할 게임을 slug로 조회. 없으면 null */
 export async function findGameBySlug(slug: string) {
@@ -40,6 +62,73 @@ export async function listAlerts(): Promise<AlertWithGame[]> {
   return rows;
 }
 
+/**
+ * 내 알림 + 지금 상태. 알림을 먼저 받고(소유자 서브질의 한 왕복), 그 게임들의 가격 행과 발송 기록을
+ * **나란히** 받는다 — 줄 세우면 왕복이 셋이 된다.
+ * 가격 행은 한국 지역, 보이는 플랫폼만 본다(목록, 상세와 같은 기준).
+ */
+export async function listAlertViews(): Promise<AlertsOverview> {
+  const alerts = await listAlerts();
+  if (alerts.length === 0) return { views: [], active: 0, metNow: 0, sentRecent: 0 };
+  const db = getDb();
+  const gameIds = [...new Set(alerts.map((a) => a.gameId))];
+  const alertIds = alerts.map((a) => a.id);
+  const [rows, sent] = await Promise.all([
+    db
+      .select({
+        gameId: gamePlatforms.gameId,
+        platform: gamePlatforms.platform,
+        currentPrice: gamePlatforms.currentPrice,
+        currency: gamePlatforms.currency,
+        discountPct: gamePlatforms.discountPct,
+      })
+      .from(gamePlatforms)
+      .where(and(inArray(gamePlatforms.gameId, gameIds), eq(gamePlatforms.region, HOME_REGION), visiblePlatformsOnly())),
+    db
+      .select({
+        alertId: alertDeliveries.alertId,
+        last: max(alertDeliveries.sentAt),
+        // ::int — 자리표시자 값은 타입이 없어 make_interval 인자를 못 고른다(출시예정의 date + $1 과 같은 함정)
+        recent: sql<number>`count(*) filter (where ${alertDeliveries.sentAt} >= now() - make_interval(days => ${ALERT_RECENT_DAYS}::int))::int`,
+      })
+      .from(alertDeliveries)
+      .where(inArray(alertDeliveries.alertId, alertIds))
+      .groupBy(alertDeliveries.alertId),
+  ]);
+  const lastBy = new Map(sent.map((r) => [r.alertId, r.last]));
+
+  const views = alerts.map<AlertView>((a) => ({
+    id: a.id,
+    platform: a.platform,
+    minDiscountPct: a.minDiscountPct,
+    targetPrice: a.targetPrice,
+    isActive: a.isActive,
+    game: { slug: a.game.slug, title: a.game.titleKo ?? a.game.titleEn, coverUrl: a.game.coverUrl },
+    status: alertStatus(
+      { minDiscountPct: a.minDiscountPct, targetPrice: a.targetPrice },
+      rows.filter((r) => r.gameId === a.gameId),
+      a.platform,
+    ),
+    lastSentAt: lastBy.get(a.id) ?? null,
+  }));
+  return {
+    views,
+    active: views.filter((v) => v.isActive).length,
+    metNow: views.filter((v) => v.isActive && v.status.met).length,
+    sentRecent: sent.reduce((n, r) => n + Number(r.recent), 0),
+  };
+}
+
+/** 이 게임에 이미 만든 알림(가장 최근 하나). 폼을 그 값으로 채워 "조건 바꾸기" 가 된다 */
+export async function findMyAlertForGame(gameId: string): Promise<AlertRow | null> {
+  const u = await requireUser();
+  const row = await getDb().query.priceAlerts.findFirst({
+    where: and(eq(priceAlerts.userId, u.id), eq(priceAlerts.gameId, gameId)),
+    orderBy: [desc(priceAlerts.isActive), desc(priceAlerts.id)],
+  });
+  return row ?? null;
+}
+
 export async function createAlert(input: CreateAlertInput): Promise<AlertRow> {
   const u = await requireUser();
   const db = getDb();
@@ -56,14 +145,14 @@ export async function createAlert(input: CreateAlertInput): Promise<AlertRow> {
   if (existing) {
     const [row] = await db
       .update(priceAlerts)
-      .set({ minDiscountPct: input.minDiscountPct, isActive: true })
+      .set({ minDiscountPct: input.minDiscountPct, targetPrice: input.targetPrice, isActive: true })
       .where(and(eq(priceAlerts.id, existing.id), eq(priceAlerts.userId, u.id)))
       .returning();
     return row;
   }
   const [row] = await db
     .insert(priceAlerts)
-    .values({ userId: u.id, gameId: input.gameId, platform: input.platform, minDiscountPct: input.minDiscountPct, isActive: true })
+    .values({ userId: u.id, gameId: input.gameId, platform: input.platform, minDiscountPct: input.minDiscountPct, targetPrice: input.targetPrice, isActive: true })
     .returning();
   return row;
 }
