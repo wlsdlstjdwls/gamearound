@@ -10,7 +10,7 @@ import Link from "next/link";
 import type { ReactNode } from "react";
 import { cn } from "@/lib/cn";
 import { stagger } from "@/lib/motion";
-import { ROUTES, welcomeStepPath } from "@/lib/routes";
+import { ROUTES, WELCOME_FROM_PARAM, WELCOME_FROM_SETTINGS, welcomeStepPath } from "@/lib/routes";
 import { SITE } from "@/lib/site";
 import { ONBOARDING_MESSAGES as M } from "@/lib/onboarding/messages";
 import {
@@ -36,6 +36,7 @@ export function OnboardingShell({
   skippable = true,
   requireAnswer = false,
   initialAnswered = false,
+  editing = false,
   children,
 }: {
   step: OnboardingStep;
@@ -52,17 +53,31 @@ export function OnboardingShell({
   requireAnswer?: boolean;
   /** 되돌아와 답이 이미 채워진 상태로 열린 단계인가 */
   initialAnswered?: boolean;
+  /**
+   * 설정에서 칸 하나만 고치러 왔는가. 참이면 뒤로, 나가기가 설정을 가리키고 진행 막대와 건너뛰기가 빠진다 —
+   * 순서 안에 있는 화면이 아니라서 "3/7" 이나 "건너뛸게요" 는 뜻이 없다. 저장 뒤 목적지는 액션이 정한다.
+   */
+  editing?: boolean;
   children: ReactNode;
 }) {
-  const back = prevStep(step, ctx);
+  const back = editing ? null : prevStep(step, ctx);
   const progress = stepProgress(step, ctx);
+  const showSkip = skippable && !editing;
 
   return (
     <div data-onboarding className="flex min-h-svh flex-col bg-bg">
       {/* 머리 — 뒤로, 진행 막대, 나가기. 진행 막대에 퍼센트를 적지 않는 이유는 steps.ts 주석 */}
       <div className="sticky top-0 z-10 bg-bg/92 backdrop-blur">
         <div className="mx-auto flex w-full max-w-[var(--page-w)] items-center gap-2 px-4 pt-[max(env(safe-area-inset-top),10px)] sm:px-7">
-          {back ? (
+          {editing ? (
+            <Link
+              href={ROUTES.settings}
+              aria-label={M.edit.back}
+              className="press tap -ml-2 flex size-11 items-center justify-center rounded-full text-mut hover:text-ink"
+            >
+              <ChevronLeftIcon size={20} />
+            </Link>
+          ) : back ? (
             <Link
               href={welcomeStepPath(back)}
               aria-label={M.back}
@@ -81,14 +96,15 @@ export function OnboardingShell({
             <BrandSymbol size={24} />
           </Link>
           <Link
-            href={ROUTES.home}
+            href={editing ? ROUTES.settings : ROUTES.home}
             className="press tap ml-auto -mr-1 flex h-11 items-center rounded-full px-3 text-[13px] text-mut hover:text-ink"
           >
-            {M.exit}
+            {editing ? M.edit.exit : M.exit}
             <XIcon size={15} className="ml-1.5" />
           </Link>
         </div>
         {/* 3px 막대. role=progressbar 로 낭독기에도 진행이 전달된다 */}
+        {!editing && (
         <div
           role="progressbar"
           aria-label={M.progressLabel}
@@ -102,9 +118,11 @@ export function OnboardingShell({
             style={{ width: `${Math.max(progress * 100, 2)}%` }}
           />
         </div>
+        )}
       </div>
 
       <form action={action} className="flex flex-1 flex-col">
+        {editing && <input type="hidden" name={WELCOME_FROM_PARAM} value={WELCOME_FROM_SETTINGS} />}
         <AnswerGate required={requireAnswer} initialAnswered={initialAnswered}>
           {/*
             내용과 바닥 버튼을 **한 덩어리**로 묶는다. 둘을 form 의 형제로 두고 각자 가운데를 잡게 하면
@@ -167,8 +185,8 @@ export function OnboardingShell({
               )}
             >
               <div className="mx-auto w-full max-w-[560px] px-4 pb-[max(env(safe-area-inset-bottom),14px)] pt-3 sm:px-6">
-                <OnboardingSubmit label={submitLabel ?? M.next} />
-                {skippable && (
+                <OnboardingSubmit label={editing ? M.edit.save : (submitLabel ?? M.next)} />
+                {showSkip && (
                   <button
                     type="submit"
                     name="skip"

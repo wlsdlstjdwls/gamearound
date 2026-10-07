@@ -75,6 +75,15 @@ export function welcomeStepPath(step: string): string {
   return `${ROUTES.welcome}/${step}`;
 }
 
+/** 설정에서 칸 하나만 고치러 들어온 표식(?from=settings). 저장하면 다음 단계 대신 설정으로 돌아간다 */
+export const WELCOME_FROM_PARAM = "from";
+export const WELCOME_FROM_SETTINGS = "settings";
+
+/** 설정 화면의 "바꾸기" 가 여는 주소 — 온보딩과 같은 질문 화면을 쓰되 한 칸만 고치고 돌아온다 */
+export function welcomeEditPath(step: string): string {
+  return `${welcomeStepPath(step)}?${WELCOME_FROM_PARAM}=${WELCOME_FROM_SETTINGS}`;
+}
+
 /** 로그인 후 돌아갈 경로를 붙인 로그인 URL. next가 없거나 안전하지 않으면 붙이지 않는다 */
 export function signInPath(next?: string | null): string {
   const safe = safeNextPath(next);

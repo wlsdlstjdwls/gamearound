@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { summarizeProfile, SUMMARY_LABELS } from "./summary";
+import { profileFields, summarizeProfile, SUMMARY_LABELS } from "./summary";
 
 const names = {
   genres: [
@@ -29,5 +29,19 @@ describe("summarizeProfile", () => {
 
   it("이름을 못 찾은 값은 뺀다", () => {
     expect(summarizeProfile({ ...empty, favoriteGenreIds: [99], subscriptionKeys: ["gone"] }, names)).toEqual([]);
+  });
+});
+
+describe("profileFields", () => {
+  it("안 답한 칸도 늘 다섯 칸을 같은 순서로 돌려준다 — 설정 화면이 거기서 채운다", () => {
+    const fields = profileFields(empty, names);
+    expect(fields.map((f) => f.step)).toEqual(["platforms", "genres", "deal-style", "play-time", "subscriptions"]);
+    expect(fields.every((f) => f.value === null)).toBe(true);
+  });
+
+  it("이름을 못 찾은 값만 남았으면 안 답한 칸과 같다", () => {
+    const fields = profileFields({ ...empty, favoriteGenreIds: [99], dealStyle: "wait_deep" }, names);
+    expect(fields.find((f) => f.step === "genres")?.value).toBeNull();
+    expect(fields.find((f) => f.step === "deal-style")?.value).not.toBeNull();
   });
 });

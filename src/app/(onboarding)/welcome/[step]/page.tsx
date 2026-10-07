@@ -5,7 +5,7 @@
 //
 // route 는 조회와 렌더만 한다(규약 §1). 저장은 actions.ts, 값은 services/profiles 가 맡는다.
 import { redirect } from "next/navigation";
-import { ROUTES, welcomeStepPath } from "@/lib/routes";
+import { ROUTES, WELCOME_FROM_PARAM, WELCOME_FROM_SETTINGS, welcomeStepPath } from "@/lib/routes";
 import { gamesHref } from "@/lib/games-query";
 import { DEAL_STYLE_CHOICES, GENRE_PICK_MAX, PLATFORM_CHOICES, PLAY_TIME_CHOICES } from "@/lib/onboarding/constants";
 import { summarizeProfile } from "@/lib/onboarding/summary";
@@ -61,6 +61,8 @@ export default async function WelcomeStepPage({ params, searchParams }: Props) {
 
   if (step === "device") return <DeviceStepPage ctx={ctx} />;
 
+  // 설정의 "바꾸기" 로 온 화면인가. 기기 단계는 고치는 자리가 설정의 기기 화면이라 여기까지 오지 않는다
+  const editing = (await searchParams)[WELCOME_FROM_PARAM] === WELCOME_FROM_SETTINGS;
   const q = await questionFor(step, profile);
   return (
     <OnboardingShell
@@ -72,6 +74,7 @@ export default async function WelcomeStepPage({ params, searchParams }: Props) {
       action={submitStepAction}
       requireAnswer={q.requireAnswer}
       initialAnswered={q.selected.length > 0}
+      editing={editing}
     >
       <StepField step={step} />
       <PickGroup name={q.name} options={q.options} multiple={q.multiple} defaultSelected={q.selected} max={q.max} />

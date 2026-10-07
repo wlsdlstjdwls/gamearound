@@ -6,7 +6,7 @@
 // 통째로 사라진다 — 재개 지점(onboarding_step)도 같이 여기서 올린다.
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
-import { ROUTES, welcomeStepPath } from "@/lib/routes";
+import { ROUTES, WELCOME_FROM_PARAM, WELCOME_FROM_SETTINGS, welcomeStepPath } from "@/lib/routes";
 import { dealStyleSchema, genresSchema, platformsSchema, playTimeSchema, stepSchema, subscriptionsSchema } from "@/lib/onboarding/schemas";
 import { nextStep, type OnboardingStep, type StepContext } from "@/lib/onboarding/steps";
 import { finishOnboarding, getMyProfile, grantConsent, saveStep } from "@/server/services/profiles";
@@ -35,6 +35,13 @@ export async function submitStepAction(formData: FormData): Promise<void> {
   }
 
   if (!skip) await saveAnswer(step, formData);
+
+  // 설정에서 칸 하나만 고치러 온 제출 — 다음 단계로 밀지 않고 돌아간다. 재개 지점(onboarding_step)도 건드리지 않는다:
+  // 온보딩을 중간에 멈춘 사람이 설정에서 한 칸 고쳤다고 재개 지점이 그 칸으로 옮겨 가면 이어서 답하기가 엉뚱한 데서 열린다
+  if (formData.get(WELCOME_FROM_PARAM) === WELCOME_FROM_SETTINGS) {
+    revalidatePath(ROUTES.settings);
+    redirect(ROUTES.settings);
+  }
 
   // 다음 단계 계산은 **저장 뒤에** 한다 — 플랫폼 답이 조건부 단계를 켜고 끄기 때문이다
   const profile = await getMyProfile();
