@@ -26,6 +26,8 @@ export interface RunOptions {
    * (크론 discover 모드)에서만 그렇게 한다.
    */
   seedShare?: number;
+  /** 가격만 주는 배치 소스에서 상세로 따로 받을 기존 행 수(CronRunPlan.detailTop) */
+  detailTop?: number;
 }
 
 export interface RunResult {

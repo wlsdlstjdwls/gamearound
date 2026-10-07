@@ -227,6 +227,13 @@ export interface CronRunPlan {
    * 그 절반이 prices 모드가 이미 하는 일과 겹친다.
    */
   seedShare?: number;
+  /**
+   * 가격만 주는 배치 소스(batchPricesOnly "detail")에서 이번 회차에 **상품 HTML 로 따로 받을 기존 행** 수.
+   * 한국어 지원(ko_text)이 빈 본편 행만 고른다. 한국 eShop 은 대응언어를 상품 HTML 에만 적어서,
+   * 배치(가격 API)만 도는 갱신으로는 신규 등록 때 놓친 행이 영영 안 찬다(2026-10-07 실측, 빈 행 2,327건).
+   * limit 안에서 자리만 차지하지만 배치 대신 건마다 요청이 나가 시간은 는다.
+   */
+  detailTop?: number;
 }
 
 /**
@@ -294,8 +301,10 @@ export const CRON_SAFETY_FACTOR = 1.15;
 
 export const CRON_PLAN: Record<CronSource, Record<CronMode, CronRunPlan>> = {
   nintendo: {
-    // 가격이 배치 50건/요청이라 요청은 6회(24초)뿐이고 남는 건 반영 시간이다: (24 + 300×0.4)×1.15 = 166초
-    prices: { limit: 300, seedTop: 0, pageBudget: 0, match: 0 },
+    // 가격이 배치 50건/요청이라 요청은 6회(24초)뿐이고 남는 건 반영 시간이다: (24 + 300×0.4)×1.15 = 166초.
+    // 2026-10-07 에 상세 몫 80 을 얹었다(사용자 승인, 함수 시간 하루 +30분 안쪽): 요청 (220/50 → 5회 + 80) × 4초 = 340초
+    // + 반영 300 × 0.4 = 120초 → × 1.15 = 529초. 늘어난 몫은 80 × 4초 × 하루 4회 = 약 21분이다.
+    prices: { limit: 300, seedTop: 0, pageBudget: 0, match: 0, detailTop: 80 },
     // 2026-09-30 에 20건에서 60건으로 올렸다. 20건이던 때는 발견이 늘 같은 288건만 봐서(adapters/nintendo 의
     // KR_CATALOG_URL 주석) 몫이 비어도 티가 안 났는데, 목록을 이어 읽게 되면서 몫이 곧 하루 유입량이 됐다
     // (한국 본편 9,697건 중 모르는 것 약 8,000건, 20건 × 4회로는 100일이 넘는다).

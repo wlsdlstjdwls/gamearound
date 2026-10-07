@@ -46,6 +46,12 @@ export interface StoreTarget {
   titleCode?: string | null;
   releaseDate?: string | null;
   meta?: StoreSnapshotMeta;
+  /**
+   * 기존 게임이어도 배치 말고 상세로 받으라는 표시(batchPricesOnly "detail" 소스만 본다).
+   * 가격 API 는 기기도 작품 코드도 대응언어도 안 줘서, 발견이 기존 게임에 흡수한 상품을 배치로 받으면
+   * 기기가 기본값 switch 로 박힌다(2026-10-07 실측: 스위치2 전용 Pokopia, Sports Resort 가 switch 로 들어왔다).
+   */
+  needsDetail?: boolean;
 }
 
 type StoreSnapshotMeta = NonNullable<import("@/server/adapters/types").StoreSnapshot["meta"]>;
@@ -77,6 +83,8 @@ export interface StoreTargetOptions {
   pageBudget?: number;
   /** 시드가 가져갈 몫의 비율. 비우면 소스별 값 또는 기본값 (seedQuota) */
   seedShare?: number;
+  /** 상세로 따로 받을 기존 행 수(CronRunPlan.detailTop). 한국어 지원이 빈 본편 행만 고른다 */
+  detailTop?: number;
 }
 
 export async function listStoreTargets(ctx: Ctx, source: StoreSource, opts: StoreTargetOptions): Promise<StoreTarget[]> {
@@ -92,6 +100,10 @@ export async function listStoreTargets(ctx: Ctx, source: StoreSource, opts: Stor
   // 맨 앞자리는 최근 7일 안에 누가 상세를 연 게임이다(REFRESH_VIEWED_SHARE 주석). 그다음 인기 몫이 있는
   // 소스(Xbox)는 인기순으로, 남는 본편 몫은 오래된 순으로 채운다(REFRESH_POPULAR_SHARE_BY_SOURCE 주석)
   const shares = refreshShares(limit, REFRESH_POPULAR_SHARE_BY_SOURCE[source], REFRESH_VIEWED_SHARE);
+  // 상세 몫은 맨 앞에 둔다 — 뒤에 두면 limit 에 잘려 몫이 0 이 되는 회차가 생긴다. 고르는 순서가 오래된 순이라
+  // 페이지에 대응언어 줄이 없어 끝내 안 차는 행도 받은 뒤엔 뒤로 밀려 머리를 막지 않는다
+  const detailRows = opts.detailTop ? await refreshRows(db, source, platforms, region, { mainOnly: true, koMissing: true, limit: opts.detailTop }) : [];
+  const detailKeys = new Set(detailRows.map((r) => `${r.gameId}:${r.externalId}`));
   const viewedSlugs = shares.viewed > 0 ? await recentlyViewedSlugs(ctx.now) : [];
   const viewedRows = await refreshRows(db, source, platforms, region, { viewedSlugs, limit: viewedSlugs.length > 0 ? shares.viewed : 0 });
   const popularRows = await refreshRows(db, source, platforms, region, { mainOnly: true, popular: true, limit: shares.popular });
@@ -104,7 +116,7 @@ export async function listStoreTargets(ctx: Ctx, source: StoreSource, opts: Stor
     mainOnly: false,
     limit: limit - mainRows.length,
   });
-  const rows = [...mainRows, ...restRows];
+  const rows = [...detailRows, ...mainRows, ...restRows];
 
   const seen = new Set<string>();
   const targets: StoreTarget[] = [];
@@ -112,7 +124,13 @@ export async function listStoreTargets(ctx: Ctx, source: StoreSource, opts: Stor
     const key = `${r.gameId}:${r.externalId}`;
     if (seen.has(key)) continue; // psstore/nintendo 는 플랫폼 2개 조인으로 중복 가능
     seen.add(key);
-    targets.push({ gameId: r.gameId, slug: r.slug, externalId: r.externalId, platform: r.platform ?? undefined });
+    targets.push({
+      gameId: r.gameId,
+      slug: r.slug,
+      externalId: r.externalId,
+      platform: r.platform ?? undefined,
+      ...(detailKeys.has(key) ? { needsDetail: true } : {}),
+    });
   }
 
   // 신규 시드 (§4.2-1). 발견은 부가 작업이다 — 스토어가 목록을 안 주더라도(차단, 개편)
@@ -152,7 +170,7 @@ async function refreshRows(
   source: StoreSource,
   platforms: Platform[],
   region: Region,
-  opts: { mainOnly?: boolean; limit: number; popular?: boolean; viewedSlugs?: string[] },
+  opts: { mainOnly?: boolean; limit: number; popular?: boolean; viewedSlugs?: string[]; koMissing?: boolean },
 ): Promise<Array<{ gameId: string; externalId: string; slug: string; platform: Platform | null }>> {
   if (opts.limit <= 0) return [];
   return db
@@ -188,6 +206,7 @@ async function refreshRows(
               and (${gamePlatforms.lastSyncedAt} is null
                 or ${gamePlatforms.lastSyncedAt} < now() - make_interval(hours => ${REFRESH_POPULAR_MIN_AGE_HOURS}::int))`
           : undefined,
+        opts.koMissing ? sql`${gamePlatforms.koText} is null and ${gamePlatforms.storeUrl} is not null` : undefined,
         opts.viewedSlugs
           ? and(
               inArray(games.slug, opts.viewedSlugs),
@@ -259,7 +278,10 @@ export async function gamesByTitleCode(db: Db, codes: string[]): Promise<Map<str
     .select({ code: gamePlatforms.titleCode, id: games.id, slug: games.slug })
     .from(gamePlatforms)
     .innerJoin(games, eq(games.id, gamePlatforms.gameId))
-    .where(inArray(gamePlatforms.titleCode, wanted));
+    .where(inArray(gamePlatforms.titleCode, wanted))
+    // 본편과 그 DLC 가 작품 코드를 함께 쓴다(2026-10-07 실측: 오비탈스 본편과 디럭스 업그레이드 팩이 둘 다 AAYYA).
+    // 아무 행이나 집으면 한국 본편이 일본 DLC 행에 흡수된다 — 부모 없는 본편을 먼저 고른다
+    .orderBy(sql`(${games.contentType} = 'game' and ${games.parentGameId} is null) desc`);
   const out = new Map<string, { id: string; slug: string }>();
   for (const r of rows) if (r.code && !out.has(r.code)) out.set(r.code, { id: r.id, slug: r.slug });
   return out;
@@ -415,7 +437,7 @@ async function seedTargets(ctx: Ctx, source: StoreSource, seedWant: number, page
       }
       await linkRef(db, source, byCode.id, c, 1, ctx.now);
       refOwned.add(byCode.id);
-      out.push(candidateAsTarget(c, byCode));
+      out.push({ ...candidateAsTarget(c, byCode), needsDetail: true });
       absorbed++;
       continue;
     }
@@ -439,7 +461,8 @@ async function seedTargets(ctx: Ctx, source: StoreSource, seedWant: number, page
     }
     await linkRef(db, source, hit.game.id, c, hit.similarity, ctx.now);
     refOwned.add(hit.game.id);
-    out.push(candidateAsTarget(c, hit.game));
+    // 흡수한 대상도 이 소스로는 처음 받는 것이다 — 신규와 같이 상세로 받아야 기기, 작품 코드가 맞게 선다(needsDetail 주석)
+    out.push({ ...candidateAsTarget(c, hit.game), needsDetail: true });
     absorbed++;
   }
   console.log(

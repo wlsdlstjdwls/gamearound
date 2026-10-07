@@ -28,6 +28,7 @@ export async function runStore(ctx: Ctx, source: StoreSource, opts: RunOptions):
     seedTop: opts.seedTop,
     pageBudget: opts.pageBudget,
     seedShare: opts.seedShare,
+    detailTop: opts.detailTop,
   });
   console.log(`[sync:${source}] 대상 ${targets.length}건 (신규 시드 ${targets.filter((t) => t.gameId === null).length})`);
 

@@ -97,6 +97,7 @@ export async function GET(req: NextRequest, ctx: { params: Promise<{ source: str
           seedTop: plan.seedTop,
           pageBudget: plan.pageBudget,
           seedShare: plan.seedShare,
+          detailTop: plan.detailTop,
         })
       : { status: "ok" as const, processed: 0, failed: 0 };
 

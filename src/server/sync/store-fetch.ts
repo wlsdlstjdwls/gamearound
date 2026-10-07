@@ -39,13 +39,15 @@ export async function fetchStoreBatched(ctx: Ctx, source: StoreSource, adapter: 
 
   // 배치가 가격만 주는 소스(nintendo)는 신규 등록 대상을 단건 상세로 따로 받는다 —
   // 제목, 이미지가 없으면 게임을 만들 수 없다. 발견 목록이 상세까지 준 소스(nintendo_jp)는 그럴 필요가 없다.
+  // 기존 게임이어도 상세를 달라고 표시한 대상(needsDetail: 발견이 흡수한 것, 상세 몫)은 같은 길로 보낸다.
   const fetched: Fetched = [];
   let batchable = targets;
   if (adapter.batchPricesOnly === "detail") {
-    const needDetail = targets.filter((t) => !t.gameId);
-    batchable = targets.filter((t) => t.gameId);
+    const wantsDetail = (t: StoreTarget) => !t.gameId || t.needsDetail === true;
+    const needDetail = targets.filter(wantsDetail);
+    batchable = targets.filter((t) => !wantsDetail(t));
     if (needDetail.length > 0) {
-      console.log(`[sync:${source}] 신규 ${needDetail.length}건은 상세 조회로 받는다 (배치는 가격만 준다)`);
+      console.log(`[sync:${source}] ${needDetail.length}건은 상세 조회로 받는다 (배치는 가격만 준다)`);
       fetched.push(...(await fetchStoreOneByOne(ctx, source, adapter, needDetail)));
     }
   }

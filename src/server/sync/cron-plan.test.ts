@@ -56,7 +56,8 @@ function estimateMs(source: (typeof CRON_SOURCES)[number], mode: CronMode): numb
   if (mode === "match") {
     return (plan.match * 2 * adapter.minIntervalMs + plan.match * CRON_DB_MS_PER_ITEM) * CRON_SAFETY_FACTOR;
   }
-  const detailItems = adapter.batchPricesOnly === "detail" ? plan.seedTop : 0;
+  // 상세 몫(detailTop)도 배치를 못 타고 건마다 상품 HTML 을 한 번 연다
+  const detailItems = adapter.batchPricesOnly === "detail" ? plan.seedTop + (plan.detailTop ?? 0) : 0;
   const batchedItems = Math.max(plan.limit - detailItems, 0);
   const perRequest = adapter.fetchMany ? (adapter.batchSize ?? DEFAULT_FETCH_BATCH_SIZE) : 1;
 
