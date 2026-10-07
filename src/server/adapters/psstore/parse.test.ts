@@ -108,6 +108,9 @@ describe("parsePsstoreConcept", () => {
     // 같은 값을 두 컬럼에 넣지 않는다 — titleKo 는 영문명과 다를 때만 채운다
     expect(snap.meta?.titleKo).toBeNull();
     expect(snap.currentPrice).toBe(32400);
+    // 뗀 언어 괄호는 버리지 않고 한국어 지원으로 읽는다. 음성은 괄호가 말하지 않아 모른다
+    expect(snap.koText).toBe(true);
+    expect(snap.koVoice).toBeUndefined();
   });
 
   it("이름이 아예 없으면 meta 를 만들지 않는다 — 없는 제목을 지어내지 않는다", () => {
@@ -121,6 +124,8 @@ describe("parsePsstoreConcept", () => {
       },
     };
     expect(parsePsstoreConcept(nameless, "999999").meta).toBeUndefined();
+    // 언어 괄호가 없으면 한국어 지원도 모른다 — false 로 덮지 않는다
+    expect(parsePsstoreConcept(nameless, "999999").koText).toBeUndefined();
   });
 });
 

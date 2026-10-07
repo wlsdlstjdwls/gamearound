@@ -9,7 +9,6 @@ import {
   PSSTORE_COVER_ROLE,
   PSSTORE_COVER_WIDTH,
   PSSTORE_INCLUSION_CTA,
-  PSSTORE_LANGUAGE_SUFFIX,
   PSSTORE_PORTRAIT_ROLE,
   PSSTORE_PRODUCT_URL,
   PSSTORE_PORTRAIT_WIDTH,
@@ -17,8 +16,12 @@ import {
   PSSTORE_PS5_TITLE_ID,
   PSSTORE_UPSELL_APPLICABILITY,
 } from "./constants";
+import { parsePsstoreKorean, psstoreCleanTitle, psstoreConceptKorean } from "./language";
+// 제목 정리는 언어 괄호 판정과 같은 괄호를 다뤄 language.ts 로 옮겼다. 기존 호출부('./parse')를 위해 다시 내보낸다
+export { psstoreCleanTitle };
 
-const productRefSchema = z.object({ id: z.string() });
+// name 은 한국어 판정에만 쓴다 — 같은 콘셉트의 다른 판이 한국어판일 수 있다(language.ts)
+const productRefSchema = z.object({ id: z.string(), name: z.string().nullish() });
 
 /** 역할별 대표 이미지. 영상(type="VIDEO")도 같은 배열에 섞여 온다 */
 const mediaSchema = z.object({ role: z.string().nullish(), type: z.string().nullish(), url: z.string().nullish() });
@@ -100,12 +103,6 @@ const productSchema = z.object({
 const fail = (what: string, e: z.ZodError): never => {
   throw new AdapterError(`PlayStation ${what} 응답 형식 오류: ${e.message}`, "psstore", false);
 };
-
-/** 지원 언어 표기를 뗀 제목. "PRAGMATA (한국어, 영어)" → "PRAGMATA" */
-export function psstoreCleanTitle(name: string | null | undefined): string | null {
-  const cleaned = (name ?? "").replace(PSSTORE_LANGUAGE_SUFFIX, "").trim();
-  return cleaned || null;
-}
 
 type Media = z.infer<typeof mediaSchema>;
 
@@ -233,6 +230,8 @@ export function parsePsstoreConcept(raw: unknown, conceptId: string): StoreSnaps
     // (lib/games/content-kind — 숫자를 함께 요구해서 "CoA: 아틀란의 크리스탈" 같은 본편은 안 걸린다)
     contentType: isCurrencyItemTitle(titleKo) || isCurrencyItemTitle(titleEn) ? "dlc" : undefined,
     subscriptionKeys: psstoreSubscriptionKeys(dp?.webctas),
+    // 한국어 글자 지원은 상품명 꼬리 언어 괄호에서 읽는다. 기본 상품만 보면 일어판이 한국어판을 가린다(language.ts)
+    koText: psstoreConceptKorean(dp?.name, (concept.products ?? []).map((p) => p.name))?.text,
     // 이미지는 콘셉트 상세에 없다 — 발견 단계(parsePsstoreGrid)가 들고 온 값을 반영 단계에서 얹는다
     meta: titleEn ? { titleEn, titleKo: titleKo && titleKo !== titleEn ? titleKo : null } : undefined,
   };
@@ -296,6 +295,7 @@ export function parsePsstoreDlc(raw: unknown, productId: string): StoreSnapshot 
     discountEndsAt: discountPct > 0 ? psstoreEpochToIso(price?.endTime) : null,
     contentType: "dlc",
     parentExternalId: p.concept?.id ?? null,
+    koText: parsePsstoreKorean(p.name)?.text,
     meta: titleEn ? { titleEn, titleKo: titleKo && titleKo !== titleEn ? titleKo : null } : undefined,
   };
 }
