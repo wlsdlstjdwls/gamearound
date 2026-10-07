@@ -23,6 +23,7 @@ import { BellIcon, CalendarIcon, GamepadIcon, LogOutIcon, MenuIcon, ShieldIcon, 
 import { Sheet } from "@/components/ui/sheet";
 import { Clamp } from "@/components/ui/tooltip";
 import { INDIE_MESSAGES } from "@/lib/indie/messages";
+import { Tag } from "@/components/ui/tag";
 
 type MenuLink = { href: string; label: string; icon?: React.ReactNode; authOnly?: boolean; adminOnly?: boolean };
 
@@ -101,9 +102,9 @@ export function SiteMenu() {
                   <Clamp>{user.email}</Clamp>
                 </p>
                 {user.role !== "user" && (
-                  <span className="mt-1 inline-block rounded-[5px] bg-acc-soft px-1.5 py-0.5 text-[11px] font-semibold text-acc">
+                  <Tag tight={false} small className="mt-1">
                     {ROLE_LABEL[user.role]}
-                  </span>
+                  </Tag>
                 )}
               </div>
               <button

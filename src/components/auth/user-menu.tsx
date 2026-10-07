@@ -11,6 +11,7 @@ import { ROUTES } from "@/lib/routes";
 import type { PublicUser } from "@/server/services/users";
 import { useSignOut } from "@/components/auth/use-sign-out";
 import { ChevronDownIcon, LogOutIcon, SpinnerIcon } from "@/components/ui/icons";
+import { Tag } from "@/components/ui/tag";
 
 type MenuLink = { href: string; label: string; adminOnly?: boolean };
 
@@ -126,7 +127,7 @@ export function UserMenu({ user }: { user: PublicUser }) {
             <p className="text-xs text-dim">
               <Clamp>{user.email}</Clamp>
             </p>
-            {user.role !== "user" && <span className="mt-1 inline-block rounded-[5px] bg-acc-soft px-1.5 py-0.5 text-[11px] font-semibold text-acc">{ROLE_LABEL[user.role]}</span>}
+            {user.role !== "user" && <Tag tight={false} small className="mt-1">{ROLE_LABEL[user.role]}</Tag>}
           </div>
           <div className="py-1.5">
             {links.map((l) => (

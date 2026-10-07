@@ -11,6 +11,7 @@ import { buttonClass } from "@/components/ui/button";
 import { CONTENT_KIND_LABEL, PARENT_LINK_LABEL } from "@/lib/games/messages";
 import { gamePath } from "@/lib/routes";
 import type { ContentType } from "@/server/db/schema";
+import { Tag } from "@/components/ui/tag";
 
 export function ContentKindHead({
   contentType,
@@ -30,7 +31,7 @@ export function ContentKindHead({
     <div className={className} style={style}>
       <div className="flex flex-wrap items-center gap-2">
         {kind && (
-          <span className="rounded-[5px] bg-acc-soft px-1.5 py-0.5 text-[11.5px] font-semibold text-acc">{kind}</span>
+          <Tag tight={false}>{kind}</Tag>
         )}
         {parent && (
           // 제목을 버튼 안에 그대로 적는다 - "본편 보기" 로만 적으면 어느 게임으로 가는지 누르기 전까지 모른다.

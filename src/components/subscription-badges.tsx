@@ -12,6 +12,7 @@
 // 모양도 알약 + 점에서 옆 배지들과 같은 사각 태그(--radius-xs)로 맞춘다. 한 행 안에서 배지가 세 가지 모양으로 서 있었다.
 import { subscriptionChipText } from "@/lib/games/messages";
 import type { SubscriptionDto } from "@/server/services/games";
+import { tagClass } from "@/components/ui/tag";
 
 /** 한 플랫폼이 포함된 구독들. 없으면 아무것도 그리지 않는다 */
 export function SubscriptionChips({ subscriptions }: { subscriptions: SubscriptionDto[] }) {
@@ -19,7 +20,7 @@ export function SubscriptionChips({ subscriptions }: { subscriptions: Subscripti
   return (
     <ul className="flex flex-wrap items-baseline gap-1" aria-label="구독 포함">
       {subscriptions.map((s) => (
-        <li key={s.key} className="rounded-[5px] bg-acc-soft px-1.5 py-0.5 text-[11.5px] font-semibold text-acc">
+        <li key={s.key} className={tagClass({ tight: false })}>
           {subscriptionChipText(s.label)}
         </li>
       ))}
