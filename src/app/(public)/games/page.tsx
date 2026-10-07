@@ -78,6 +78,7 @@ function isFiltered(f: GameListFilter): boolean {
       f.company ||
       f.subscription ||
       f.hideFree ||
+      f.korean ||
       f.rig,
   );
 }

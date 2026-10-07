@@ -99,6 +99,8 @@ function platformAgg(platforms: Platform[]) {
        * 기준 통화로 **값을 받고 파는** 행이 하나라도 있나. 평가 수를 순번 자리로 바꿀 자격이다.
        * hasBaseCurrency 와 다른 값이다 — 저쪽은 가격이 있기만 하면 참이라 무료(0)도 참이 된다.
        */
+      /** 한국어 지원을 밝힌 행이 하나라도 있나. 모르는 행(null)은 bool_or 가 건너뛴다 */
+      koText: sql<boolean | null>`bool_or(${gamePlatforms.koText})`.as("ko_text"),
       hasPaidPrice: sql<boolean>`bool_or(${gamePlatforms.currency} = ${DISPLAY_CURRENCY} and ${gamePlatforms.currentPrice} > 0)`.as("has_paid_price"),
       minRank: sql<number | null>`min(${gamePlatforms.popularityRank}) filter (
         where ${gamePlatforms.popularityRankAt} >= now() - make_interval(days => ${POPULARITY_RANK_MAX_AGE_DAYS})
@@ -158,6 +160,8 @@ async function listGamesRaw(filter: GameListFilter): Promise<GameListResult> {
   // 무료 제외 — 값을 **아는데 0원인** 게임만 뺀다. min_price 가 null 인 게임(아직 값을 못 긁은 스토어)은
   // 남긴다: 모르는 것을 공짜로 단정하면 목록에서 조용히 사라지고, 값이 붙는 날 이유 없이 되돌아온다
   if (filter.hideFree) conds.push(sql`(${agg.minPrice} is null or ${agg.minPrice} > 0)`);
+  // 한국어 — 집계가 이미 한국 행, 고른 플랫폼만 모아서 "고른 기기에서 한국어" 가 된다(games-query 의 korean 주석)
+  if (filter.korean) conds.push(sql`${agg.koText} is true`);
   // 주소에 실린 기기. 모양이 어긋난 값은 parseRig 가 null 로 돌려줘 필터가 아예 안 걸린다
   const rig = parseRig(filter.rig);
   if (rig) conds.push(runsOnRig(rig));
@@ -262,6 +266,7 @@ function listKey(f: GameListFilter): string[] {
     f.company ?? "",
     f.subscription ? "sub" : "",
     f.hideFree ? "nofree" : "",
+    f.korean ? "ko" : "",
     // 기기는 티어로 실려서 같은 급의 컴퓨터를 쓰는 사람들이 한 캐시를 나눠 쓴다(lib/hardware/rig)
     f.rig ?? "",
     f.sort ?? DEFAULT_GAME_SORT,
@@ -288,7 +293,7 @@ const listByJson = cache(async (json: string): Promise<GameListResult> => {
 /** 목록 — 필터 조합별 1시간 캐시. 크롤러 완료 시 `home` 태그로 함께 무효화된다 */
 export async function listGames(filter: GameListFilter): Promise<GameListResult> {
   // 키 순서와 같은 순서로 다시 세워야 같은 필터가 늘 같은 문자열이 된다
-  const [q, platform, genre, onSale, event, minDiscount, maxPrice, company, subscription, hideFree, rig, sort, page] = listKey(filter);
+  const [q, platform, genre, onSale, event, minDiscount, maxPrice, company, subscription, hideFree, korean, rig, sort, page] = listKey(filter);
   return listByJson(JSON.stringify({
     q: q || undefined,
     platform: platform || undefined,
@@ -301,6 +306,7 @@ export async function listGames(filter: GameListFilter): Promise<GameListResult>
     company: company || undefined,
     subscription: subscription ? true : undefined,
     hideFree: hideFree ? true : undefined,
+    korean: korean ? true : undefined,
     rig: rig || undefined,
     sort: sort as GameListFilter["sort"],
     page: Number(page),

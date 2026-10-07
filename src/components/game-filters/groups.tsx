@@ -138,7 +138,7 @@ export function Groups({
         <Select label="장르" value={filter.genre ?? ALL} options={genreOptions} scroll={false} size={sheet ? "lg" : "sm"} />
       )}
 
-      {/* 거르는 조건 — 지금은 하나뿐이지만 무리로 세운다(2026-09-22, 사용자 요청).
+      {/* 거르는 조건 — 처음엔 하나뿐이었지만 무리로 세웠다(2026-09-22, 사용자 요청). 한국어 지원은 2026-10-07 에 더했다.
           "무료 제외" 를 가격 칸(maxPrice)에 못 얹는 이유는 lib/games-query 의 hideFree 주석에 있다:
           그 칸은 상한만 있어서 "0원을 빼라" 를 적을 자리가 없다.
           칩 하나가 켜고 끄는 값이라 드롭다운을 쓰지 않는다 — 고를 값이 둘(켬, 끔)뿐이다 */}
@@ -162,6 +162,11 @@ export function Groups({
           <span className="sr-only">
             {filter.hideFree ? GAMES_FILTER_MESSAGES.toggleOn : GAMES_FILTER_MESSAGES.toggleOff}
           </span>
+        </ChipNavLink>
+        <ChipNavLink {...KEEP_SCROLL} {...chip} href={href({ korean: !filter.korean })} active={Boolean(filter.korean)}>
+          <ChipCheck on={Boolean(filter.korean)} />
+          {GAMES_FILTER_MESSAGES.korean}
+          <span className="sr-only">{filter.korean ? GAMES_FILTER_MESSAGES.toggleOn : GAMES_FILTER_MESSAGES.toggleOff}</span>
         </ChipNavLink>
       </Group>
     </>

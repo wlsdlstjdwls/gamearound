@@ -107,6 +107,12 @@ export type GamesQuery = {
    */
   hideFree?: boolean;
   /**
+   * 한국어(화면이나 자막)를 지원한다고 스토어가 밝힌 게임만(`ko=1`). 고른 플랫폼이 있으면 그 플랫폼 행에서 본다.
+   * 지원 여부를 아직 모르는 게임(값이 빈 행)은 뺀다 — "확인된 것만" 이 이 칩의 뜻이다. 그래서 수집이 언어를 채울수록
+   * 결과가 는다(2026-10-07 실측 채움률: 에픽 73%, 스위치 52%, 스팀 38%, Xbox 33%, PS 2%).
+   */
+  korean?: boolean;
+  /**
    * 내 기기로 돌아가는 게임만. 값은 기기를 접은 문자열이다(lib/hardware/rig).
    * 기기 id 가 아니라 티어를 싣는 이유는 그 파일 머리 주석에 있다 — 여기서는 문자열로 두고
    * 조회하는 쪽이 parseRig 로 좁힌다(platform 을 문자열로 두는 것과 같은 이유다).
@@ -156,6 +162,7 @@ export function parseGamesQuery(sp: Record<string, string | string[] | undefined
     company: firstParam(sp.company),
     subscription: firstParam(sp.sub) === "1",
     hideFree: firstParam(sp.nofree) === "1",
+    korean: firstParam(sp.ko) === "1",
     rig: firstParam(sp.rig),
     all: firstParam(sp.all) === "1",
     sort: isGameSort(sort) ? sort : undefined,
@@ -181,6 +188,7 @@ export function gamesHref(current: GamesQuery, patch: Partial<GamesQuery> = {}):
   if (next.company) params.set("company", next.company);
   if (next.subscription) params.set("sub", "1");
   if (next.hideFree) params.set("nofree", "1");
+  if (next.korean) params.set("ko", "1");
   if (next.rig) params.set("rig", next.rig);
   if (next.all) params.set("all", "1");
   if (next.sort && next.sort !== DEFAULT_GAME_SORT) params.set("sort", next.sort);

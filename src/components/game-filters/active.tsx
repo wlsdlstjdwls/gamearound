@@ -71,6 +71,7 @@ export function activeFilters(filter: GamesQuery): ActiveFilter[] {
   }
   if (filter.subscription) list.push({ key: "subscription", label: "구독 포함", href: href({ subscription: false }) });
   if (filter.hideFree) list.push({ key: "hideFree", label: GAMES_FILTER_MESSAGES.hideFree, href: href({ hideFree: false }) });
+  if (filter.korean) list.push({ key: "korean", label: GAMES_FILTER_MESSAGES.korean, href: href({ korean: false }) });
   // 기기는 값이 아니라 사람마다 다른 기준이라 문구로만 말한다 — 주소의 티어 숫자를 그대로 적어도 읽히지 않는다
   if (filter.rig) list.push({ key: "rig", label: RIG_FILTER_MESSAGES.chip, href: href({ rig: undefined }) });
   if (filter.company) list.push({ key: "company", label: `회사 ${filter.company}`, href: href({ company: undefined }) });

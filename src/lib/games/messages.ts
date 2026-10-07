@@ -251,6 +251,8 @@ export const RIG_FILTER_MESSAGES = {
  */
 export const GAMES_FILTER_MESSAGES = {
   hideFree: "무료 제외",
+  /** 자막만 있어도 켠다 — 음성까지 가르는 스토어가 적다(상세 칩이 화면, 음성을 따로 보여 준다) */
+  korean: "한국어 지원",
   /*
    * 켜고 끄는 칩의 상태를 말로 적은 짝. 화면에는 네모와 체크로만 서 있어(ui/chip 의 ChipCheck)
    * 읽어 주는 기기에는 글자가 없다 — 칩 안 sr-only 로만 쓴다.

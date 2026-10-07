@@ -23,6 +23,7 @@ export function hasExplicitListFilter(q: GamesQuery): boolean {
       q.company ||
       q.subscription ||
       q.hideFree ||
+      q.korean ||
       q.rig,
   );
 }

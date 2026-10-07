@@ -15,7 +15,7 @@ describe("parseGamesQuery", () => {
   it("빈 쿼리는 1페이지 기본 필터", () => {
     expect(parseGamesQuery({})).toEqual({
       q: undefined, platform: undefined, genre: undefined, onSale: false, minDiscount: undefined,
-      company: undefined, subscription: false, hideFree: false, all: false, sort: undefined, page: 1,
+      company: undefined, subscription: false, hideFree: false, korean: false, all: false, sort: undefined, page: 1,
     });
   });
 
@@ -103,7 +103,7 @@ describe("gamesHref", () => {
   it("왕복: gamesHref 로 만든 주소를 parseGamesQuery 가 그대로 복원한다", () => {
     const filter = {
       q: "엘든 링", platform: "steam", genre: "RPG", onSale: true,
-      company: "fromsoftware", subscription: true, hideFree: true, all: true, sort: "title" as const, page: 4,
+      company: "fromsoftware", subscription: true, hideFree: true, korean: true, all: true, sort: "title" as const, page: 4,
     };
     const sp = Object.fromEntries(new URLSearchParams(gamesHref(filter).split("?")[1]));
     expect(parseGamesQuery(sp)).toEqual(filter);
@@ -125,6 +125,13 @@ describe("gamesHref", () => {
     expect(gamesHref({ hideFree: true })).toBe("/games?nofree=1");
     expect(gamesHref({ hideFree: false })).toBe(ROUTES.game);
     expect(parseGamesQuery({ nofree: "1" }).hideFree).toBe(true);
+  });
+
+  it("한국어 지원은 ko=1 로 싣고 꺼지면 주소에서 빠진다", () => {
+    expect(gamesHref({ korean: true })).toBe("/games?ko=1");
+    expect(gamesHref({ korean: false })).toBe(ROUTES.game);
+    expect(parseGamesQuery({ ko: "1" }).korean).toBe(true);
+    expect(parseGamesQuery({ ko: "true" }).korean).toBe(false);
   });
 });
 
