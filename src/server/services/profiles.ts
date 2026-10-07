@@ -25,6 +25,8 @@ export type ProfileDto = {
   subscriptionKeys: string[] | null;
   /** null 이면 개인화를 쓰지 않는다 — 값이 남아 있어도 읽는 쪽이 무시해야 한다 */
   consentedAt: Date | null;
+  /** 잠시 끔(값은 남기고 읽지만 않는다). schema 의 personalizationPausedAt 주석 */
+  pausedAt: Date | null;
   onboardingStep: OnboardingStep | null;
   onboardingDoneAt: Date | null;
 };
@@ -36,6 +38,7 @@ const EMPTY: ProfileDto = {
   playTimeStyle: null,
   subscriptionKeys: null,
   consentedAt: null,
+  pausedAt: null,
   onboardingStep: null,
   onboardingDoneAt: null,
 };
@@ -48,6 +51,7 @@ function toDto(r: typeof userProfiles.$inferSelect): ProfileDto {
     playTimeStyle: r.playTimeStyle,
     subscriptionKeys: r.subscriptionKeys,
     consentedAt: r.personalizationConsentAt,
+    pausedAt: r.personalizationPausedAt,
     onboardingStep: (r.onboardingStep as OnboardingStep | null) ?? null,
     onboardingDoneAt: r.onboardingDoneAt,
   };
@@ -82,14 +86,26 @@ export function isOnboardingAudience(role: Role): boolean {
 }
 
 /**
- * 개인화가 실제로 켜져 있나. 읽는 쪽(목록, 홈)은 이 함수만 보면 된다 —
- * "동의했는가" 와 "값이 있는가" 를 각자 판단하면 언젠가 한쪽이 빠진다.
+ * 개인화를 **스스로 켤 수 있는** 사람인가 — 위의 "첫 로그인에 온보딩을 들이미는가" 와 다른 질문이다.
+ *
+ * 관리자를 넣었다(2026-10-07, 사용자: "관리자도 개인화 설정은 가능하도록"). 위 주석의 걱정(목록이 취향으로
+ * 걸려 보려던 게 안 보인다)은 **억지로 켜질 때**의 일이다. 관리자는 첫 로그인에 끌려가지 않고(인증 레이아웃은
+ * 여전히 isOnboardingAudience 를 본다) 설정에서 제 손으로 켜고, 언제든 토글로 멈출 수 있다.
+ * 게임사, 매장은 여전히 뺀다 — 화면을 제 상품 기준으로 봐야 하는 계정이다. 화이트리스트인 이유는 위와 같다.
  */
-export function isPersonalized(p: ProfileDto): boolean {
-  return p.consentedAt !== null;
+export function canPersonalize(role: Role): boolean {
+  return role === "user" || role === "admin";
 }
 
-type ProfilePatch = Partial<Omit<ProfileDto, "consentedAt" | "onboardingDoneAt">>;
+/**
+ * 개인화가 실제로 켜져 있나. 읽는 쪽(목록, 홈, 알림)은 이 함수만 보면 된다 —
+ * "동의했는가", "잠시 껐는가", "값이 있는가" 를 각자 판단하면 언젠가 한쪽이 빠진다.
+ */
+export function isPersonalized(p: ProfileDto): boolean {
+  return p.consentedAt !== null && p.pausedAt === null;
+}
+
+type ProfilePatch = Partial<Omit<ProfileDto, "consentedAt" | "pausedAt" | "onboardingDoneAt">>;
 
 /**
  * 한 단계의 답을 저장한다. 행이 없으면 만들고 있으면 덮는다.
@@ -145,12 +161,45 @@ export async function revokeConsent(): Promise<void> {
     .update(userProfiles)
     .set({
       personalizationConsentAt: null,
+      personalizationPausedAt: null,
       platforms: null,
       favoriteGenreIds: null,
       dealStyle: null,
       playTimeStyle: null,
       subscriptionKeys: null,
       onboardingStep: null,
+      onboardingDoneAt: null,
+      ...updatedBy("user", u.id),
+    })
+    .where(eq(userProfiles.userId, u.id));
+}
+
+/** 사이트에 개인화를 적용할지(설정의 토글). 값은 건드리지 않는다 — 다시 켜면 답한 그대로 돌아온다 */
+export async function setPersonalizationPaused(paused: boolean): Promise<void> {
+  const u = await requireUser();
+  await getDb()
+    .update(userProfiles)
+    .set({ personalizationPausedAt: paused ? new Date() : null, ...updatedBy("user", u.id) })
+    .where(eq(userProfiles.userId, u.id));
+}
+
+/**
+ * 답 초기화 — 받은 값을 지우고 첫 질문부터 다시 받는다. **동의는 남긴다**(철회와 다른 점).
+ * 초기화를 누른 사람은 "다시 고르겠다" 는 뜻이지 "그만 쓰겠다" 가 아니다 — 동의까지 지우면
+ * 소개 화면과 동의 단계를 한 번 더 넘겨야 한다. 잠시 끔도 같이 푼다: 새로 답한 값이 바로 보여야 한다.
+ */
+export async function resetPersonalization(): Promise<void> {
+  const u = await requireUser();
+  await getDb()
+    .update(userProfiles)
+    .set({
+      platforms: null,
+      favoriteGenreIds: null,
+      dealStyle: null,
+      playTimeStyle: null,
+      subscriptionKeys: null,
+      personalizationPausedAt: null,
+      onboardingStep: "platforms",
       onboardingDoneAt: null,
       ...updatedBy("user", u.id),
     })
@@ -251,7 +300,7 @@ export type ListPreset = { query: GamesQuery; labels: string[] };
 /**
  * 게임 목록의 개인화 기본 조건. 걸 것이 없으면 null — 목록은 지금처럼 전체를 보여 준다.
  *
- * null 인 경우: 비로그인, 온보딩을 안 보는 계정(관리자 등, isOnboardingAudience 주석), 개인화 끔,
+ * null 인 경우: 비로그인, 개인화를 못 켜는 계정(게임사, 매장. canPersonalize 주석), 개인화 끔이나 잠시 끔,
  * 플랫폼도 장르도 안 고름. 비로그인을 throw 가 아니라 null 로 받는 이유는 목록이 공개 화면이라서다.
  *
  * 조건은 결과 화면의 "내 조건으로 보기" 와 같은 personalQuery 를 쓴다 — 두 자리가 다르면 같은 사람이
@@ -259,7 +308,7 @@ export type ListPreset = { query: GamesQuery; labels: string[] };
  */
 export async function getMyListPreset(): Promise<ListPreset | null> {
   const u = await getCurrentUser();
-  if (!u || !isOnboardingAudience(u.role)) return null;
+  if (!u || !canPersonalize(u.role)) return null;
   const p = await getMyProfile();
   if (!isPersonalized(p) || (!p.platforms?.length && !p.favoriteGenreIds?.length)) return null;
 

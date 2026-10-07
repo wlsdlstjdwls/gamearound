@@ -6,14 +6,15 @@
 import { redirect } from "next/navigation";
 import { ROUTES } from "@/lib/routes";
 import { requireUserOrRedirect } from "@/server/auth/guards";
-import { isOnboardingAudience } from "@/server/services/profiles";
+import { canPersonalize } from "@/server/services/profiles";
 
 export const dynamic = "force-dynamic";
 
 export default async function OnboardingLayout({ children }: { children: React.ReactNode }) {
   const user = await requireUserOrRedirect();
-  // 관리자는 온보딩을 보지 않는다(사용자 요청 2026-09-22). 막는 자리를 여기 하나로 두는 이유는
+  // 개인화를 못 켜는 계정(게임사, 매장)은 여기서 막는다. 막는 자리를 여기 하나로 두는 이유는
   // 들어오는 문이 여럿이기 때문이다 — 가입 직후 리다이렉트, /welcome 재개, 주소 직접 입력.
-  if (!isOnboardingAudience(user.role)) redirect(ROUTES.home);
+  // 관리자는 2026-10-07 부터 들어온다(설정에서 스스로 켜는 길). 첫 로그인에 끌려오지 않는 건 인증 레이아웃이 따로 지킨다
+  if (!canPersonalize(user.role)) redirect(ROUTES.home);
   return children;
 }

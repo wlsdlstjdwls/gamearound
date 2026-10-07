@@ -19,7 +19,7 @@ import { ROLE_LABEL } from "@/lib/auth/constants";
 import { formatDate } from "@/lib/format";
 import { requireUserOrRedirect } from "@/server/auth/guards";
 import { countMyPushSubscriptions } from "@/server/services/push";
-import { getMyProfile, isOnboardingAudience, listGenreChoices, listSubscriptionChoices } from "@/server/services/profiles";
+import { canPersonalize, getMyProfile, listGenreChoices, listSubscriptionChoices } from "@/server/services/profiles";
 
 export const metadata: Metadata = { title: "설정" };
 
@@ -59,7 +59,7 @@ export default async function SettingsPage() {
         <p className="text-[11.5px] text-dim">닉네임, 비밀번호 변경은 곧 추가됩니다.</p>
       </section>
 
-      {isOnboardingAudience(user.role) && <PersonalizationSection profile={profile} names={{ genres, subscriptions }} />}
+      {canPersonalize(user.role) && <PersonalizationSection profile={profile} names={{ genres, subscriptions }} />}
 
       <PushToggle initialCount={pushCount} />
 

@@ -5,9 +5,10 @@
 // 고치는 화면은 새로 만들지 않고 온보딩 질문 화면을 편집 모드로 연다(welcomeEditPath) —
 // 질문, 선택지, 상한이 이미 거기 있고 두 벌을 두면 한쪽이 뒤처진다.
 //
-// 상태가 셋이다 — 꺼짐, 켜졌지만 온보딩 중간, 마침. 꺼진 사람은 동의부터 받아야 해서 칸 링크를 주지 않는다.
+// 상태가 셋이다 — 꺼짐(동의 없음), 켜졌지만 온보딩 중간, 마침. 켜진 둘은 사이트 적용 토글로 잠시 멈출 수 있다(2026-10-07). 꺼진 사람은 동의부터 받아야 해서 칸 링크를 주지 않는다.
 import Link from "next/link";
 import { PersonalizationOff } from "@/components/settings/personalization-off";
+import { PersonalizationApplyToggle, PersonalizationReset } from "@/components/settings/personalization-controls";
 import { buttonClass } from "@/components/ui/button";
 import { ROWS, SectionHead } from "@/components/ui/page";
 import { ONBOARDING_MESSAGES } from "@/lib/onboarding/messages";
@@ -17,7 +18,7 @@ import { ROUTES, welcomeEditPath, welcomeStepPath } from "@/lib/routes";
 const M = ONBOARDING_MESSAGES.settings;
 
 type Props = {
-  profile: SummaryInput & { consentedAt: Date | null; onboardingDoneAt: Date | null };
+  profile: SummaryInput & { consentedAt: Date | null; pausedAt: Date | null; onboardingDoneAt: Date | null };
   names: SummaryNames;
 };
 
@@ -39,6 +40,8 @@ export function PersonalizationSection({ profile, names }: Props) {
   return (
     <section className="flex flex-col gap-3.5">
       <SectionHead title={M.sectionTitle} size="sub" />
+      {/* 맨 위에 둔다 — 이 마디에서 가장 자주 만질 손잡이다. 칸 값은 꺼 둬도 그대로 보인다(값이 남는다는 증거) */}
+      <PersonalizationApplyToggle initialApplied={profile.pausedAt === null} />
       <dl className={ROWS}>
         {fields.map((f) => (
           <div key={f.step} className="flex items-center justify-between gap-4 py-[9px]">
@@ -65,6 +68,7 @@ export function PersonalizationSection({ profile, names }: Props) {
         <Link href={finished ? welcomeStepPath("platforms") : ROUTES.welcome} className={buttonClass({ size: "sm", variant: "secondary" })}>
           {finished ? M.redo : M.resume}
         </Link>
+        <PersonalizationReset />
         <PersonalizationOff />
       </div>
     </section>

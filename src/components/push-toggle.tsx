@@ -1,6 +1,7 @@
 "use client";
 // 웹푸시 구독 토글 (§7). 권한, 구독 순서는 use-push-subscription 이 맡고 여기는 스위치 모양만 그린다
 import { SectionHead } from "@/components/ui/page";
+import { Switch } from "@/components/ui/switch";
 import { PUSH_MESSAGES as M } from "@/lib/push/messages";
 import { usePushSubscription } from "@/components/push/use-push-subscription";
 
@@ -20,24 +21,7 @@ export function PushToggle({ initialCount }: { initialCount: number }) {
             {M.status[status]}
           </p>
         </div>
-        <button
-          type="button"
-          role="switch"
-          aria-checked={on}
-          aria-label="웹푸시 알림"
-          disabled={disabled && !on}
-          onClick={on ? unsubscribe : subscribe}
-          // 보이는 스위치는 24px 이지만 손가락이 닿는 넓이는 44px 이다 — 판을 키우면 알약이 세로로 늘어난다.
-          // 위아래로만 벌린다: 오른쪽 끝에 홀로 서 있어 겹칠 이웃이 없다(검색칸 지우기 버튼과 같은 수법)
-          className={`press relative flex h-[26px] w-[46px] shrink-0 items-center rounded-full p-[3px] transition-colors duration-base after:absolute after:-inset-y-2.5 after:inset-x-0 after:content-[''] disabled:opacity-60 ${
-            on ? "bg-ink" : "bg-line-strong"
-          }`}
-        >
-          <span
-            aria-hidden
-            className={`h-5 w-5 rounded-full transition-transform duration-base ease-out-emph ${on ? "translate-x-5 bg-on-ink" : "bg-surface"}`}
-          />
-        </button>
+        <Switch on={on} label="웹푸시 알림" disabled={disabled && !on} onToggle={on ? unsubscribe : subscribe} />
       </div>
 
       {/* 인셋 안내문 — 리디자인이 판을 남겨 둔 두 자리 중 하나다(ui/page 의 Panel 주석) */}

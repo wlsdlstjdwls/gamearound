@@ -669,6 +669,12 @@ export const userProfiles = pgTable("user_profiles", {
    * "껐는데 남아 있다" 가 된다.
    */
   personalizationConsentAt: timestamp("personalization_consent_at", { withTimezone: true }),
+  /**
+   * 개인화 잠시 끔(2026-10-07, 사용자: "토글로 사이트에 적용할지 말지"). 동의 철회와 다르다 —
+   * 철회는 값을 지우고, 이건 값을 그대로 두고 **읽는 쪽만 멈춘다**. 다시 켜면 답한 그대로 돌아온다.
+   * 불리언이 아니라 시각인 이유: 언제 껐는지가 남아야 "켜 놨는데 왜 안 나오지" 를 되짚을 수 있다
+   */
+  personalizationPausedAt: timestamp("personalization_paused_at", { withTimezone: true }),
   /** 재개 지점(lib/onboarding 의 단계 키). 중간에 창을 닫아도 다음 로그인에 여기서 다시 연다 */
   onboardingStep: text("onboarding_step"),
   onboardingDoneAt: timestamp("onboarding_done_at", { withTimezone: true }),

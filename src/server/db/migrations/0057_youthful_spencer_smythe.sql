@@ -1,0 +1,1 @@
+ALTER TABLE "user_profiles" ADD COLUMN "personalization_paused_at" timestamp with time zone;
