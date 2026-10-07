@@ -28,7 +28,8 @@ export const INDIE_LINK_LABEL: Record<IndieLinkKind, string> = {
 
 /** 공개 화면(목록, 상세, 홈 줄, 게임 상세 마디) */
 export const INDIE_MESSAGES = {
-  navLabel: "인디",
+  /** 2026-10-07 "인디" 에서 늘렸다 — 낱말 하나로는 장르 필터처럼 읽혀 화면 이름(title)과 같은 말로 맞췄다 */
+  navLabel: "인디 게임",
   title: "인디 게임",
   lead: "개발자가 직접 소개하는 게임이에요. 만들고 있는 게임도, 막 나온 게임도 올릴 수 있어요.",
   countSuffix: "개",

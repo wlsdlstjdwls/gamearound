@@ -288,3 +288,13 @@ export function ShieldIcon(p: IconProps) {
     </svg>
   );
 }
+
+/** 스토어 — 장바구니 가방. "이 스토어에서는 아직 확인 중" 자리(플랫폼 정보의 빈 타일)에 선다 */
+export function StoreIcon(p: IconProps) {
+  return (
+    <svg {...base(p)}>
+      <path d="M5 8h14l-1.2 11.1a2 2 0 0 1-2 1.9H8.2a2 2 0 0 1-2-1.9L5 8Z" />
+      <path d="M9 8V6.5a3 3 0 0 1 6 0V8" />
+    </svg>
+  );
+}

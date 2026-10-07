@@ -25,7 +25,9 @@ import { countText, scoreToStars } from "@/lib/user-score";
 import { type Freshness } from "@/lib/freshness";
 import type { Platform, Region } from "@/server/db/schema";
 import type { DlcDto, PlatformDto } from "@/server/services/games";
-import { PREORDER_HINT, PREORDER_LABEL } from "@/lib/games/messages";
+import { GAME_MESSAGES, PREORDER_HINT, PREORDER_LABEL } from "@/lib/games/messages";
+import { PendingNote } from "@/components/ui/pending-note";
+import { ClockIcon, StoreIcon } from "@/components/ui/icons";
 import { isPreorder } from "@/lib/games/preorder";
 import { DiscountText } from "@/components/ui/discount";
 import { Tag } from "@/components/ui/tag";
@@ -178,22 +180,19 @@ function absentBrands(sold: Set<Platform>): { key: string; label: string; family
  * 값 타일과 섞여 읽히지 않게 면을 빼고 점선만 두른다, 글자도 흐린 색이다. 높이는 넓은 화면에서만
  * 값 타일에 맞춘다(격자 한 줄이 들쭉날쭉하지 않게) — 한 줄에 한 장인 좁은 화면에서는 빈 칸이 된다.
  * 지역 접미어도 세대 배지도 붙이지 않는다 — "Nintendo 일본" 은 "일본에는 있다" 로 읽힌다.
+ *
+ * 2026-10-07(사용자: "부드럽게, 밋밋하니 아이콘으로 칸을 채워") "서비스하지 않음" 명사형을 걷고
+ * "-해요" 문구 + 가방 아이콘으로 바꿨다(GAME_MESSAGES.storeChecking). 예전엔 표 안에서 말을 걸면
+ * 눈이 걸린다고 명사형을 골랐는데, 타일 한 장이 통째로 그 말뿐이라 걸릴 다른 값이 없다.
  */
 function AbsentTile({ label }: { label: string }) {
   return (
     <li className="flex min-w-0 flex-col justify-between gap-3 rounded-[var(--radius-md)] border border-dashed border-line-strong p-4 sm:min-h-[132px]">
       <span className="truncate text-[15px] font-bold text-dim">{label}</span>
-      <span className="text-[13px] text-dim">{ABSENT_TEXT}</span>
+      <PendingNote icon={<StoreIcon size={15} />}>{GAME_MESSAGES.storeChecking}</PendingNote>
     </li>
   );
 }
-
-/**
- * 파는 곳이 아닌 자리에 적는 말(2026-09-21, 사용자 지정).
- * 이 화면에서 "-해요" 를 안 쓰는 유일한 자리다(UI 규약 §6 의 예외) — 값을 말하는 표 안에서
- * 이 말만 말을 걸면 안내문으로 읽혀 눈이 거기 걸린다. 명사형으로 맞춘 말이다.
- */
-const ABSENT_TEXT = "서비스하지 않음";
 
 /** 링크가 아직 없는 타일의 버튼에 붙는 말. 버튼은 그대로 서고 눌리지만 않는다(PriceTile 주석) */
 const STORE_LINK_MISSING = "스토어 링크를 아직 못 찾았어요";
@@ -250,7 +249,14 @@ function PriceTile({
               <DiscountText pct={p.discountPct} />
             </span>
           )}
-          <span className="text-[22px] font-extrabold tracking-[-0.035em] text-ink">{formatPrice(p.currentPrice, p.currency)}</span>
+          {/* 값을 아직 못 받았으면 "-" 대신 말로 한다(2026-10-07) — 22px "-" 는 0원으로도 고장으로도 읽혔다 */}
+          {p.currentPrice === null ? (
+            <PendingNote icon={<ClockIcon size={15} />} className="self-center">
+              {GAME_MESSAGES.pricePending}
+            </PendingNote>
+          ) : (
+            <span className="text-[22px] font-extrabold tracking-[-0.035em] text-ink">{formatPrice(p.currentPrice, p.currency)}</span>
+          )}
           {/* self-center: 이 묶음은 items-baseline 인데 버튼의 기준선은 아이콘 아래변이라 반 칸 낮게 선다 */}
           <InfoTip label={tip} className="self-center" />
         </span>

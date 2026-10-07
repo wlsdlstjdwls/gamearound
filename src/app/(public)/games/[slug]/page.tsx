@@ -29,6 +29,8 @@ import { Flag } from "@/components/ui/flag";
 import { cn } from "@/lib/cn";
 import { buttonClass } from "@/components/ui/button";
 import { Page, SectionHead, sectionCardClass } from "@/components/ui/page";
+import { PendingNote } from "@/components/ui/pending-note";
+import { ClockIcon } from "@/components/ui/icons";
 import { DiscountText } from "@/components/ui/discount";
 import { SellersSection } from "@/components/shops/sellers-section";
 import { IndieGameSection } from "@/components/indie/game-section";
@@ -149,9 +151,14 @@ function PriceHeadline({ game, recordedLow }: { game: GameDetail; recordedLow: R
             <DiscountText pct={best.discountPct} />
           </span>
         )}
-        <span className="text-[30px] font-extrabold leading-none tracking-[-0.04em] text-ink sm:text-[38px]">
-          {best ? formatPrice(best.currentPrice, best.currency) : "-"}
-        </span>
+        {/* 값을 모르면 38px "-" 대신 말로 한다(2026-10-07, 플랫폼 타일과 같은 표시) */}
+        {best && best.currentPrice !== null ? (
+          <span className="text-[30px] font-extrabold leading-none tracking-[-0.04em] text-ink sm:text-[38px]">{formatPrice(best.currentPrice, best.currency)}</span>
+        ) : (
+          <PendingNote icon={<ClockIcon size={18} />} size="lg">
+            {GAME_MESSAGES.pricePending}
+          </PendingNote>
+        )}
         {hasDiscount && best?.listPrice != null && (
           <span className="text-[14px] text-dim-2 line-through">{formatPrice(best.listPrice, best.currency)}</span>
         )}
@@ -657,7 +664,9 @@ export default async function GameDetailPage({ params }: Props) {
           )}
 
           {game.sourceRefs.length > 0 && (
-            <section aria-labelledby="sources-heading" className="flex flex-col gap-2.5 border-t border-line pt-4">
+            // 위 구분선을 걷었다(2026-10-07, 사용자: "카드 위에 왜 빈 줄이 그어져 있지"). 마디를 흰 카드로 나눈 뒤로는
+            // 선이 아무것도 가르지 않고 빈 줄처럼만 보였다 — 이 꼬리표는 카드 사이 간격이 이미 떼어 놓는다
+            <section aria-labelledby="sources-heading" className="flex flex-col gap-2.5">
               <h2 id="sources-heading" className="text-[12px] font-bold tracking-[0.08em] text-dim">
                 정보 출처
               </h2>
