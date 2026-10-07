@@ -4,6 +4,7 @@ import { readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import { epicProductSlug, parseEpicRequirements } from "./epic/parse-requirements";
 import { epicAdapter } from "./epic";
+import { parseEpicConfigKorean } from "./epic/parse-languages";
 
 const fixture = (name: string) =>
   JSON.parse(readFileSync(fileURLToPath(new URL(`./__fixtures__/${name}`, import.meta.url)), "utf8"));
@@ -88,5 +89,25 @@ describe("epicAdapter.fetchRequirements", () => {
   it("그 밖의 실패는 그대로 던진다(다음 회차가 다시 묻는다)", async () => {
     vi.stubGlobal("fetch", vi.fn(async () => new Response("forbidden", { status: 403 })));
     await expect(epicAdapter.fetchRequirements!("https://store.epicgames.com/ko/p/it-takes-two")).rejects.toThrow("403");
+  });
+});
+
+describe("parseEpicConfigKorean (스토어 설정, 2026-10-07 서울 실측)", () => {
+  const fx = fixture("epic-store-config.json") as Record<string, unknown>;
+
+  it("한국어로 적힌 목록에서 자막과 음성 모두", () => {
+    expect(parseEpicConfigKorean(fx.crimsonDesert)).toEqual({ text: true, voice: true });
+  });
+
+  it("영문 표기(Korean)도 읽고, 빈 음성 목록은 모름", () => {
+    expect(parseEpicConfigKorean(fx.potionCraft)).toEqual({ text: true, voice: undefined });
+  });
+
+  it("목록에 한국어가 없으면 미지원", () => {
+    expect(parseEpicConfigKorean(fx.hotWheels)).toEqual({ text: false, voice: undefined });
+  });
+
+  it("모양이 다르면 모름", () => {
+    expect(parseEpicConfigKorean({ errors: [{}] })).toBeUndefined();
   });
 });

@@ -16,7 +16,7 @@ const targets = [{ gameId: "g1", slug: "elden-ring" }];
 describe("pickRequirementTargets", () => {
   it("한 번도 물어보지 않은 게임을 고른다", () => {
     expect(pickRequirementTargets(targets, [row()], NOW)).toEqual([
-      { platformId: "p1", gameId: "g1", platform: "steam", slug: "elden-ring", key: "1245620", koText: null, koVoice: null },
+      { platformId: "p1", gameId: "g1", platform: "steam", slug: "elden-ring", key: "1245620", externalId: "1245620", koText: null, koVoice: null },
     ]);
   });
 

@@ -47,6 +47,8 @@ export interface RequirementPick {
   platform: Platform;
   slug: string;
   key: string;
+  /** 열쇠가 store_url 인 소스가 다른 길로 다시 물을 때 쓴다(StoreAdapter.fetchRequirements 주석) */
+  externalId: string | null;
   koText: boolean | null;
   koVoice: boolean | null;
 }
@@ -83,7 +85,7 @@ export function pickRequirementTargets(
     if (out.length >= max) break;
     if (seen.has(row.gameId)) continue;
     seen.add(row.gameId);
-    out.push({ platformId: row.id, gameId: row.gameId, platform: row.platform, slug: slugByGame.get(row.gameId)!, key: keyOf(row)!, koText: row.koText ?? null, koVoice: row.koVoice ?? null });
+    out.push({ platformId: row.id, gameId: row.gameId, platform: row.platform, slug: slugByGame.get(row.gameId)!, key: keyOf(row)!, externalId: row.storeExternalId, koText: row.koText ?? null, koVoice: row.koVoice ?? null });
   }
   return out;
 }
@@ -239,7 +241,7 @@ export async function syncRequirements(
   let received = 0;
   for (const [i, pick] of picks.entries()) {
     try {
-      const { requirements: snapshots, korean } = await fetchWithRetry(() => adapter.fetchRequirements!(pick.key));
+      const { requirements: snapshots, korean } = await fetchWithRetry(() => adapter.fetchRequirements!(pick.key, pick.externalId ?? undefined));
       const koSet = planKorean(ctx, pick, korean);
       // 사양이 없는 게임도 답이다 — 물어봤다는 사실을 남겨야 다음 실행이 같은 게임을 또 묻지 않는다.
       // 옛 인디 게임에는 사양 칸이 통째로 비어 있는 경우가 있다. 한국어 지원도 같은 행이라 한 문장에 싣는다

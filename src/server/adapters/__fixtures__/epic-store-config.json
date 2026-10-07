@@ -1,0 +1,101 @@
+{
+ "crimsonDesert": {
+  "data": {
+   "Product": {
+    "sandbox": {
+     "configuration": [
+      {
+       "configs": {
+        "supportedAudio": [
+         "중국어(간체)",
+         "영어",
+         "한국어"
+        ],
+        "supportedText": [
+         "독일어",
+         "중국어(번체)",
+         "중국어(간체)",
+         "프랑스어",
+         "영어",
+         "포르투갈어(브라질)",
+         "한국어",
+         "스페인어(스페인)",
+         "스페인어(라틴 아메리카)",
+         "일본어",
+         "터키어",
+         "폴란드어",
+         "이탈리아어",
+         "러시아어"
+        ]
+       }
+      },
+      {},
+      {}
+     ]
+    }
+   }
+  }
+ },
+ "potionCraft": {
+  "data": {
+   "Product": {
+    "sandbox": {
+     "configuration": [
+      {
+       "configs": {
+        "supportedAudio": [],
+        "supportedText": [
+         "German",
+         "Japanese",
+         "French",
+         "Czech",
+         "Russian",
+         "Turkish",
+         "Spanish (Spain)",
+         "Italian",
+         "English",
+         "Polish",
+         "Portuguese (Brazil)",
+         "Korean",
+         "Chinese (Simplified)",
+         "Thai"
+        ]
+       }
+      },
+      {}
+     ]
+    }
+   }
+  }
+ },
+ "hotWheels": {
+  "data": {
+   "Product": {
+    "sandbox": {
+     "configuration": [
+      {
+       "configs": {
+        "supportedAudio": [],
+        "supportedText": [
+         "중국어(간체)",
+         "중국어(번체)",
+         "영어",
+         "프랑스어",
+         "독일어",
+         "이탈리아어",
+         "일본어",
+         "폴란드어",
+         "포르투갈어(브라질)",
+         "스페인어(라틴 아메리카)",
+         "스페인어(스페인)",
+         "터키어"
+        ]
+       }
+      },
+      {}
+     ]
+    }
+   }
+  }
+ }
+}

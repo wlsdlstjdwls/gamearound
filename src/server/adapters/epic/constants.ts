@@ -117,3 +117,13 @@ export const EPIC_ADDON_QUERY = `query addons($country: String!, $locale: String
 export const EPIC_LANGUAGE_AUDIO = "AUDIO";
 export const EPIC_LANGUAGE_TEXT = "TEXT";
 export const EPIC_KOREAN_LABEL = "Korean";
+
+/**
+ * 스토어 설정 질의 — 콘텐츠 API 가 모르는 새 형식 주소(이름-6자리해시) 상품의 지원 언어를 여기서 받는다.
+ * sandboxId 는 외부 ID 앞 칸(namespace)이다. 2026-10-07 서울 리전 실측: 표본 5건 모두 응답했고(붉은사막, Potion Craft,
+ * MENACE, Hot Wheels, Ergenekon), 값은 로케일에 따라 "한국어" 또는 "Korean" 으로 온다.
+ * 음성 목록이 빈 배열인 게임이 있다(Potion Craft, Hot Wheels) — 음성이 없는지 안 적었는지 몰라 모름으로 둔다.
+ */
+export const EPIC_CONFIG_QUERY = `query q($locale:String!,$sandboxId:String!){Product{sandbox(sandboxId:$sandboxId){configuration(locale:$locale){... on StoreConfiguration{configs{supportedAudio supportedText}}}}}}`;
+/** 설정 응답의 한국어 표기. 상품마다 로케일을 따르기도 하고 영문으로 두기도 한다 */
+export const EPIC_KOREAN_NAMES = ["한국어", "korean"] as const;

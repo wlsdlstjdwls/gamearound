@@ -10,6 +10,7 @@ import { AdapterError, type SearchCandidate, type StoreAdapter, type StoreSnapsh
 import { createHttpClient } from "../http";
 import { sleep } from "@/lib/async";
 import {
+  EPIC_CONFIG_QUERY,
   EPIC_ADDON_CATEGORY,
   EPIC_ADDON_PAGE_SIZE,
   EPIC_ADDON_QUERY,
@@ -26,9 +27,9 @@ import {
   EPIC_SEARCH_QUERY,
 } from "./constants";
 import { epicExternalId, parseEpicExternalId, parseEpicOffer, parseEpicSearch, toEpicCandidate } from "./parse";
-import { parseEpicContentKorean } from "./parse-languages";
+import { parseEpicConfigKorean, parseEpicContentKorean } from "./parse-languages";
 import { epicProductSlug, parseEpicRequirements } from "./parse-requirements";
-import type { RequirementsResult } from "../types";
+import type { KoreanSupport, RequirementsResult } from "../types";
 
 export * from "./constants";
 export * from "./parse";
@@ -77,6 +78,12 @@ async function graphql(query: string, variables: Record<string, unknown>, contex
   });
 }
 
+/** 새 형식 주소 상품의 한국어 지원. 외부 ID 앞 칸이 sandboxId 다 */
+async function fetchConfigKorean(externalId: string): Promise<KoreanSupport | undefined> {
+  const { namespace } = parseEpicExternalId(externalId);
+  return parseEpicConfigKorean(await graphql(EPIC_CONFIG_QUERY, { locale: EPIC_LOCALE, sandboxId: namespace }, `config:${externalId}`));
+}
+
 export const epicAdapter: StoreAdapter = {
   source: "epic",
   minIntervalMs: 1000,
@@ -88,7 +95,7 @@ export const epicAdapter: StoreAdapter = {
    * 주소에서 slug 를 못 뽑으면 빈 배열이다. 그 게임은 "물어봤지만 없더라" 로 기록되고
    * 다음 회차에 다시 줄 서지 않는다 — slug 없는 행은 다시 물어도 같은 답이다.
    */
-  async fetchRequirements(storeUrl: string): Promise<RequirementsResult> {
+  async fetchRequirements(storeUrl: string, externalId?: string): Promise<RequirementsResult> {
     const slug = epicProductSlug(storeUrl);
     if (!slug) return { requirements: [] };
     let raw: unknown;
@@ -97,7 +104,8 @@ export const epicAdapter: StoreAdapter = {
     } catch (e) {
       // 페이지가 없으면 "사양 없음" 이 답이다. 실패로 던지면 물어봤다는 기록이 안 남아,
       // 이 행들이 매 회차 대기열 앞을 다시 차지하고 뒤의 게임은 영영 차례가 안 온다(실측: 3,343건 중 86건만 물어봤다)
-      if (e instanceof EpicContentMissing) return { requirements: [] };
+      // 한국어 지원만은 스토어 설정 질의로 받을 수 있다(constants 의 EPIC_CONFIG_QUERY) — 사양은 그쪽에서 받지 않는다
+      if (e instanceof EpicContentMissing) return { requirements: [], korean: externalId ? await fetchConfigKorean(externalId) : undefined };
       throw e;
     }
     // 같은 응답에 지원 언어도 실려 온다 — 따로 묻지 않는다

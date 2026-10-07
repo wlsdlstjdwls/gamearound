@@ -346,7 +346,8 @@ export type StoreAdapter = SourceAdapter<StoreSnapshot> & {
    * 빈도와 건수는 sync/requirements 가 막는다(listDlcIds 와 같은 경로다).
    * 콘솔 스토어에는 이 메서드를 두지 않는다. 사양이라는 개념 자체가 없다.
    */
-  fetchRequirements?(key: string): Promise<RequirementsResult>;
+  /** externalId: 열쇠가 storeUrl 인 소스(에픽)가 주소로 못 찾을 때 외부 ID 로 다시 물을 수 있게 같이 넘긴다 */
+  fetchRequirements?(key: string, externalId?: string): Promise<RequirementsResult>;
   /**
    * 위 메서드에 넘길 키를 어디서 읽을지. 비우면 store_external_id.
    * 에픽의 외부 ID 는 `namespace:offerId` 인데 사양을 주는 콘텐츠 API 는 그것을 모르고 페이지
