@@ -186,14 +186,23 @@ for (const [step, name, value, nextPath] of [
   check(`${step} 저장 → ${nextPath}`, (to ?? "").includes(nextPath), to ?? "");
 }
 
-// 8) 마지막 질문 → 결과
+// 8) 구독 → 알림 → 결과. 알림 단계는 저장할 답이 없다 — 구독 행은 브라우저의 버튼이 만든다(서버만으로는 못 친다)
 {
   const { fd } = await actionFields("/welcome/subscriptions", cookie);
   fd.set("step", "subscriptions");
   fd.set("skip", "1");
   const res = await post("/welcome/subscriptions", fd, cookie);
   const to = await redirectedTo(res);
-  check("마지막 질문 → /welcome/done", (to ?? "").includes("/welcome/done"), to ?? "");
+  check("구독 → /welcome/notify", (to ?? "").includes("/welcome/notify"), to ?? "");
+}
+{
+  const r = await get("/welcome/notify", cookie);
+  check("알림 화면 200", r.status === 200, String(r.status));
+  const { fd } = await actionFields("/welcome/notify", cookie);
+  fd.set("step", "notify");
+  const res = await post("/welcome/notify", fd, cookie);
+  const to = await redirectedTo(res);
+  check("알림 → /welcome/done", (to ?? "").includes("/welcome/done"), to ?? "");
 }
 
 // 9) 결과 화면이 실제로 서고, 받은 값을 되읊는다

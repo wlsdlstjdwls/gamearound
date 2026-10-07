@@ -73,6 +73,15 @@ export const ONBOARDING_MESSAGES = {
     note: "구독이 없으면 그냥 넘어가세요",
   },
 
+  notify: {
+    title: ["할인되면", "알려 드릴까요?"],
+    subtitle: "알림을 걸어 둔 게임이 그 값까지 내려가면 이 기기로 알려 드려요",
+    note: "다른 브라우저, 기기에서는 따로 켜야 해요. 설정에서 언제든 끌 수 있어요",
+    enable: "알림 켤게요",
+    enabling: "켜는 중…",
+    enabled: "알림이 켜졌어요",
+  },
+
   done: {
     title: "다 됐어요",
     subtitle: "받은 값으로 화면을 맞춰 뒀어요. 설정에서 언제든 바꿀 수 있어요",

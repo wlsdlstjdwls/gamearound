@@ -6,7 +6,9 @@
 import type { Platform } from "@/server/db/schema";
 
 /** 주소 세그먼트이자 재개 지점(user_profiles.onboarding_step)에 저장되는 값 */
-export const ONBOARDING_STEPS = ["intro", "platforms", "device", "genres", "deal-style", "play-time", "subscriptions", "done"] as const;
+// notify(웹푸시 권한)는 맨 끝에 둔다(설계 §2 의 7번). 브라우저 권한 창은 한 번 거절하면 다시 못 띄운다 —
+// 앞의 질문으로 "무엇을 알려 줄지" 가 정해진 뒤에 물어야 허락받을 확률이 높다.
+export const ONBOARDING_STEPS = ["intro", "platforms", "device", "genres", "deal-style", "play-time", "subscriptions", "notify", "done"] as const;
 
 export type OnboardingStep = (typeof ONBOARDING_STEPS)[number];
 

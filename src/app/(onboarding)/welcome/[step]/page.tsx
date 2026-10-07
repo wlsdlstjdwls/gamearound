@@ -19,6 +19,7 @@ import { PickGroup, type PickOption } from "@/components/onboarding/pick-group";
 import { IntroBody } from "@/components/onboarding/intro-body";
 import { DoneBody } from "@/components/onboarding/done-body";
 import { DeviceStepFields } from "@/components/onboarding/device-step";
+import { NotifyStepBody } from "@/components/onboarding/notify-step";
 import { Panel } from "@/components/ui/page";
 import { listMyDevices } from "@/server/services/devices";
 import { OS_FAMILY_LABEL } from "@/lib/games/messages";
@@ -60,6 +61,7 @@ export default async function WelcomeStepPage({ params, searchParams }: Props) {
   }
 
   if (step === "device") return <DeviceStepPage ctx={ctx} />;
+  if (step === "notify") return <NotifyStepPage ctx={ctx} />;
 
   // 설정의 "바꾸기" 로 온 화면인가. 기기 단계는 고치는 자리가 설정의 기기 화면이라 여기까지 오지 않는다
   const editing = (await searchParams)[WELCOME_FROM_PARAM] === WELCOME_FROM_SETTINGS;
@@ -100,7 +102,7 @@ type Question = {
   requireAnswer: boolean;
 };
 
-async function questionFor(step: Exclude<OnboardingStep, "intro" | "device" | "done">, profile: Awaited<ReturnType<typeof getMyProfile>>): Promise<Question> {
+async function questionFor(step: Exclude<OnboardingStep, "intro" | "device" | "notify" | "done">, profile: Awaited<ReturnType<typeof getMyProfile>>): Promise<Question> {
   switch (step) {
     case "platforms":
       return {
@@ -194,6 +196,20 @@ async function DeviceStepPage({ ctx }: { ctx: StepContext }) {
       ) : (
         <DeviceStepFields />
       )}
+    </OnboardingShell>
+  );
+}
+
+/**
+ * 알림 단계. 저장할 답이 없다 — 구독 행(push_subscriptions) 자체가 답이고, 그것은 버튼이 브라우저에서 바로 만든다.
+ * 권한 창은 사람이 누른 순간에만 띄운다(브라우저가 사용자 동작 없는 권한 요청을 막는다). 그래서 "다음" 과 따로 둔다 —
+ * "다음" 이 권한까지 묻게 하면 알림을 원하지 않는 사람도 권한 창을 거쳐야 넘어간다.
+ */
+function NotifyStepPage({ ctx }: { ctx: StepContext }) {
+  return (
+    <OnboardingShell step="notify" ctx={ctx} title={M.notify.title} subtitle={M.notify.subtitle} note={M.notify.note} action={submitStepAction}>
+      <StepField step="notify" />
+      <NotifyStepBody />
     </OnboardingShell>
   );
 }

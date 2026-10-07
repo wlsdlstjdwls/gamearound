@@ -40,6 +40,13 @@ describe("nextStep / prevStep", () => {
     expect(prevStep("device", ctx)).toBe("platforms");
   });
 
+  it("알림 단계는 기기와 상관없이 결과 바로 앞에 선다 — 무엇을 알려 줄지 정한 뒤에 권한을 묻는다", () => {
+    for (const c of [ctx, pc]) {
+      expect(nextStep("subscriptions", c)).toBe("notify");
+      expect(nextStep("notify", c)).toBe("done");
+    }
+  });
+
   it("마지막 뒤에는 없다 — 여기서 null 이 아니면 결과 화면이 자기 자신으로 돈다", () => {
     expect(nextStep("done", ctx)).toBeNull();
   });
