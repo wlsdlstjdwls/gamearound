@@ -377,15 +377,9 @@ export const UPCOMING_MESSAGES = {
   basis: "스토어마다 출시일이 다르면 가장 이른 날짜로 세웠어요. PlayStation 은 출시일을 공개하지 않아 다른 스토어에도 없는 게임은 담기지 않아요.",
 } as const;
 
-/**
- * 달 머리 옆 건수. 그 달에 몇 개가 몰려 있는지가 훑는 사람의 다음 질문이다.
- *
- * 잘린 달은 그 사실을 적는다(2026-09-22). 이번 달에만 271건이 몰려 있는데(실측) 화면에는 24장만
- * 세운다 — 전체 건수만 적으면 "271개" 밑에 24장이 서서 나머지가 어디 갔는지 말하지 않는 화면이 된다.
- */
-export function upcomingCountText(shown: number, total: number): string {
-  const all = `${total.toLocaleString("ko-KR")}개`;
-  return shown < total ? `${all} 중 ${shown.toLocaleString("ko-KR")}개` : all;
+/** 달 머리 옆 건수. 그 달에 몇 개가 몰려 있는지가 훑는 사람의 다음 질문이다. 2026-10-07 부터 달은 잘리지 않는다 */
+export function upcomingCountText(total: number): string {
+  return `${total.toLocaleString("ko-KR")}개`;
 }
 
 /**

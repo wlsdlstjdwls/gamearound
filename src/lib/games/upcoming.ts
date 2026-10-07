@@ -1,10 +1,24 @@
 // 출시예정 화면의 달 탭 띠가 쓰는 순수 함수.
 //
-// 서버 화면(page)과 클라이언트 띠(upcoming-month-nav)가 같은 닻 이름을 써야 해서 여기 둔다 —
+// 서버 화면(page)과 클라이언트 띠(upcoming-month-nav)가 같은 규칙을 써야 해서 여기 둔다 —
 // "use client" 파일에서 내보낸 함수는 서버 컴포넌트에서 평범한 함수로 부를 수 없다.
+//
+// 2026-10-07: 달마다 닻(#m2026-10)으로 내려가던 한 화면짜리를 걷고, 고른 달 하나를 ?month= 로 세운다
+// (services/games/upcoming 의 UPCOMING_PAGE_SIZE 주석). 스크롤 위치로 "지금 읽는 달" 을 재던 함수도 같이 걷었다.
+import { ROUTES } from "@/lib/routes";
 
-/** 달 마디의 닻. 달 열쇠("2026-10")를 그대로 쓰면 주소에 그 달이 보인다 — 공유한 링크가 말이 된다 */
-export const monthAnchor = (key: string) => `m${key}`;
+/** 달을 고르는 주소 값의 이름 */
+export const UPCOMING_MONTH_PARAM = "month";
+
+/** 그 달을 세운 출시예정 주소. 첫 달(기본)은 꼬리 없이 둔다 — 같은 화면이 늘 같은 주소여야 캐시가 쪼개지지 않는다 */
+export function upcomingMonthHref(key: string, firstKey: string | undefined): string {
+  return key === firstKey ? ROUTES.upcoming : `${ROUTES.upcoming}?${UPCOMING_MONTH_PARAM}=${key}`;
+}
+
+/** 주소가 고른 달. 없거나 목록에 없는 달이면 첫 달(가장 가까운 달)이다 */
+export function pickUpcomingMonth(keys: readonly string[], requested: string | undefined): string | undefined {
+  return requested && keys.includes(requested) ? requested : keys[0];
+}
 
 export type MonthTab = { key: string; month: string; total: number };
 export type YearGroup = { year: string; months: MonthTab[] };
@@ -27,18 +41,4 @@ export function byYear(months: { key: string; total: number }[]): YearGroup[] {
     bucket.months.push({ key: m.key, month: `${Number(month)}월`, total: m.total });
   }
   return out;
-}
-
-/**
- * 지금 읽고 있는 달. 마디 윗변(문서 기준, 위에서부터 오름차순)과 눈금(가려지는 띠 아래 선)을 받아
- * 눈금을 이미 지나간 마지막 마디를 고른다. 아무것도 안 지났으면 첫 달이다 — 맨 위에서도 탭 하나는 켜져 있어야
- * "지금 어디" 가 읽힌다.
- */
-export function activeMonthIndex(tops: number[], line: number): number {
-  let idx = 0;
-  for (let i = 0; i < tops.length; i++) {
-    if (tops[i] <= line) idx = i;
-    else break;
-  }
-  return idx;
 }

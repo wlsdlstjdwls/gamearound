@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { activeMonthIndex, byYear, monthAnchor } from "./upcoming";
+import { byYear, pickUpcomingMonth, upcomingMonthHref } from "./upcoming";
 
 describe("byYear", () => {
   it("연도가 바뀌는 자리에서만 묶음을 새로 연다", () => {
@@ -25,11 +25,17 @@ describe("byYear", () => {
   });
 });
 
-describe("activeMonthIndex", () => {
-  const tops = [100, 900, 1500];
-  it("아무것도 안 지났으면 첫 달", () => expect(activeMonthIndex(tops, 50)).toBe(0));
-  it("눈금을 지난 마지막 마디", () => expect(activeMonthIndex(tops, 1000)).toBe(1));
-  it("눈금과 같은 자리는 지난 것으로 친다", () => expect(activeMonthIndex(tops, 1500)).toBe(2));
+describe("pickUpcomingMonth", () => {
+  const keys = ["2026-10", "2026-11"];
+  it("주소가 고른 달이 있으면 그 달", () => expect(pickUpcomingMonth(keys, "2026-11")).toBe("2026-11"));
+  it("없거나 목록에 없는 달이면 첫 달", () => {
+    expect(pickUpcomingMonth(keys, undefined)).toBe("2026-10");
+    expect(pickUpcomingMonth(keys, "2030-01")).toBe("2026-10");
+  });
+  it("달이 하나도 없으면 undefined", () => expect(pickUpcomingMonth([], "2026-10")).toBeUndefined());
 });
 
-it("monthAnchor", () => expect(monthAnchor("2026-10")).toBe("m2026-10"));
+describe("upcomingMonthHref", () => {
+  it("첫 달은 꼬리 없는 주소 — 같은 화면이 늘 같은 주소", () => expect(upcomingMonthHref("2026-10", "2026-10")).toBe("/upcoming"));
+  it("다른 달은 ?month=", () => expect(upcomingMonthHref("2026-11", "2026-10")).toBe("/upcoming?month=2026-11"));
+});

@@ -9,61 +9,41 @@
 //      띠는 그냥 날짜 나열이었다. 읽고 있는 달을 브랜드 보라 면으로 켠다(고른 칩과 같은 말, chip.tsx).
 //   3) 연도 경계가 칩 사이 글자 하나로만 보였다. 연도를 진한 글자로 세우고 새 해 앞에 세로 선을 긋는다.
 //
-// 스크롤 위치는 스크롤 이벤트 + rAF 로 잰다. IntersectionObserver 로는 "눈금을 지난 마지막 마디" 를
-// 바로 물을 수 없다 — 마디가 화면보다 길면 아무 경계도 안 지나는 동안 상태가 안 바뀐다.
-// 마디는 많아야 열둘이라 한 프레임에 열두 번 재는 값은 무시할 만하다.
+// 2026-10-07: 띠가 닻이 아니라 **달을 고르는 탭**이 됐다(사용자 지적: "한 화면에 모든 달의 게임을 뿌리는게 문제").
+// 누르면 같은 화면이 그 달만 다시 세운다(?month=). 고른 탭은 응답을 기다리지 않고 바로 켠다 —
+// 서버가 그 달을 그리는 동안 옛 탭이 켜져 있으면 "눌렀는데 안 먹었다" 로 읽힌다.
 import { useEffect, useRef, useState } from "react";
+import Link from "next/link";
 import { cn } from "@/lib/cn";
-import { activeMonthIndex, byYear, monthAnchor } from "@/lib/games/upcoming";
+import { byYear, upcomingMonthHref } from "@/lib/games/upcoming";
 
-/** 띠 아래 이 선을 지난 마디를 "지금 읽는 달" 로 친다. page 의 scroll-mt(16px)보다 커야 닻으로 내려온 달이 바로 켜진다 */
-const ACTIVE_LINE_OFFSET_PX = 24;
-
-function cssPx(name: string): number {
-  const n = Number.parseFloat(getComputedStyle(document.documentElement).getPropertyValue(name));
-  return Number.isFinite(n) ? n : 0;
-}
-
-export function UpcomingMonthNav({ months }: { months: { key: string; total: number }[] }) {
-  const [active, setActive] = useState(0);
+export function UpcomingMonthNav({ months, activeKey }: { months: { key: string; total: number }[]; activeKey: string }) {
+  const [picked, setPicked] = useState(activeKey);
+  const [prevActive, setPrevActive] = useState(activeKey);
   const navRef = useRef<HTMLElement>(null);
+  const firstKey = months[0]?.key;
 
-  useEffect(() => {
-    let frame = 0;
-    const measure = () => {
-      frame = 0;
-      const line = cssPx("--header-h") + cssPx("--month-nav-h") + ACTIVE_LINE_OFFSET_PX;
-      const tops = months.map((m) => document.getElementById(monthAnchor(m.key))?.getBoundingClientRect().top ?? Infinity);
-      setActive(activeMonthIndex(tops, line));
-    };
-    const onScroll = () => {
-      if (!frame) frame = requestAnimationFrame(measure);
-    };
-    measure();
-    window.addEventListener("scroll", onScroll, { passive: true });
-    window.addEventListener("resize", onScroll);
-    return () => {
-      window.removeEventListener("scroll", onScroll);
-      window.removeEventListener("resize", onScroll);
-      if (frame) cancelAnimationFrame(frame);
-    };
-  }, [months]);
+  // 서버가 다른 달을 세웠으면(뒤로가기, 주소 직접 입력) 그쪽을 따른다 — effect 가 아니라 렌더에서 맞춘다
+  if (activeKey !== prevActive) {
+    setPrevActive(activeKey);
+    setPicked(activeKey);
+  }
 
   // 켜진 탭이 띠 밖으로 밀려 있으면 띠만 가로로 민다. scrollIntoView 는 문서까지 세로로 움직여서 쓰지 않는다
   useEffect(() => {
     const nav = navRef.current;
-    const tab = nav?.querySelector<HTMLElement>('[aria-current="true"]');
+    const tab = nav?.querySelector<HTMLElement>('[aria-current="page"]');
     if (!nav || !tab) return;
     const left = tab.offsetLeft - nav.offsetLeft;
     if (left < nav.scrollLeft || left + tab.offsetWidth > nav.scrollLeft + nav.clientWidth) {
       nav.scrollTo({ left: left - nav.clientWidth / 2 + tab.offsetWidth / 2, behavior: "smooth" });
     }
-  }, [active]);
+  }, [picked]);
 
   return (
     <nav
       ref={navRef}
-      aria-label="달로 건너뛰기"
+      aria-label="달 고르기"
       className="sticky top-[var(--header-h)] z-20 -mx-5 flex h-[var(--month-nav-h)] items-center gap-3 overflow-x-auto border-b border-line bg-bg/95 px-5 backdrop-blur [scrollbar-width:none] sm:-mx-7 sm:px-7"
     >
       {byYear(months).map((group, gi) => (
@@ -71,14 +51,13 @@ export function UpcomingMonthNav({ months }: { months: { key: string; total: num
           {/* 연도는 누르는 것이 아니라 묶음 이름표다. 옅게 두면 경계가 안 보여서 진한 글자로 세운다 */}
           <span className="mr-0.5 shrink-0 text-[13px] font-bold text-ink-2 tabular-nums">{group.year}</span>
           {group.months.map((m) => {
-            const i = months.findIndex((x) => x.key === m.key);
-            const on = i === active;
+            const on = m.key === picked;
             return (
-              <a
+              <Link
                 key={m.key}
-                href={`#${monthAnchor(m.key)}`}
-                aria-current={on ? "true" : undefined}
-                onClick={() => setActive(i)}
+                href={upcomingMonthHref(m.key, firstKey)}
+                aria-current={on ? "page" : undefined}
+                onClick={() => setPicked(m.key)}
                 className={cn(
                   "press tap flex min-w-[56px] shrink-0 flex-col items-center justify-center rounded-xl px-3 py-1 leading-tight transition-colors duration-base",
                   // 두 상태 모두 테두리 1px 을 둘러야 켜고 끌 때 높이가 안 어긋난다
@@ -90,7 +69,7 @@ export function UpcomingMonthNav({ months }: { months: { key: string; total: num
                 <span className={cn("text-[11.5px] font-medium tabular-nums", on ? "text-on-ink/80" : "text-mut")}>
                   {m.total.toLocaleString("ko-KR")}개
                 </span>
-              </a>
+              </Link>
             );
           })}
         </div>

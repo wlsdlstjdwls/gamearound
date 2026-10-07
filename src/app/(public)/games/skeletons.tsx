@@ -53,9 +53,10 @@ export function FiltersSkeleton({ filter }: { filter: GamesQuery }) {
  * 12줄이면 1,000px 넘게 어긋나 본문이 올 때 화면이 통째로 밀렸다). 줄 높이는 game-card 의
  * 배지, 제목, 값 두 줄을 잰 값이다(2026-09-29 제목과 값이 줄을 나눴다).
  */
-export function GamesGridSkeleton({ cards }: { cards: number }) {
+/** gridClass: 출시예정처럼 넓은 화면에서 네 칸인 격자도 같은 뼈대를 쓴다 */
+export function GamesGridSkeleton({ cards, gridClass = GAMES_GRID_CLASS }: { cards: number; gridClass?: string }) {
   return (
-    <div className={`${GAMES_GRID_CLASS} skeleton-delay`} aria-busy="true" aria-label="목록을 불러오는 중">
+    <div className={`${gridClass} skeleton-delay`} aria-busy="true" aria-label="목록을 불러오는 중">
       {Array.from({ length: cards }).map((_, i) => (
         // 커버 + 세 줄(제목 두 줄, 배지, 값). 실물(game-card)과 같은 줄 수, 같은 여백이어야
         // 본문이 올 때 격자가 밀리지 않는다

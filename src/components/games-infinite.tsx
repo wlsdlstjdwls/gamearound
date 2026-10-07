@@ -7,14 +7,16 @@
 //
 // 첫 페이지는 서버가 그려서 내려보낸다(children) — 로봇과 JS 가 꺼진 브라우저가 보는 것이 그 한 장이고,
 // 그 아래부터만 이 컴포넌트가 맡는다. 이어 붙이는 카드도 서버가 그린다(games/actions 주석).
+//
+// 다음 장을 부르는 함수(load)를 밖에서 받는다 — 게임 목록과 출시예정(달 하나)이 같은 이어 붙이기를 쓴다.
+// 서버 액션에 조건을 bind 해서 넘기면 조건이 클라이언트 상태로 새지 않고 액션 인자로만 간다.
 import { useCallback, useEffect, useRef, useState, useTransition } from "react";
 import { Button } from "@/components/ui/button";
 import { SpinnerIcon } from "@/components/ui/icons";
-import { loadMoreGames } from "@/app/(public)/games/actions";
+import type { MorePage } from "@/app/(public)/games/actions";
 import { GAMES_GRID_CLASS } from "@/lib/games/grid";
 import { markPageEntered } from "@/lib/motion";
 import { GAMES_LIST_MESSAGES } from "@/lib/games/messages";
-import type { GameListFilter } from "@/server/services/games";
 
 /**
  * 바닥에서 이만큼 남았을 때 미리 부른다. 카드 한 줄 높이(약 250px)의 두 배 —
@@ -23,12 +25,15 @@ import type { GameListFilter } from "@/server/services/games";
 const PREFETCH_MARGIN = "500px";
 
 export function GamesInfinite({
-  filter,
+  load,
   initialHasMore,
+  gridClass = GAMES_GRID_CLASS,
   children,
 }: {
-  filter: GameListFilter;
+  /** page 번째 장(2부터)을 그려서 돌려주는 서버 액션 */
+  load: (page: number) => Promise<MorePage>;
   initialHasMore: boolean;
+  gridClass?: string;
   children: React.ReactNode;
 }) {
   const [pages, setPages] = useState<React.ReactNode[]>([]);
@@ -50,7 +55,7 @@ export function GamesInfinite({
     setFailed(false);
     startTransition(async () => {
       try {
-        const { nodes, hasMore: more } = await loadMoreGames(filter, nextPage);
+        const { nodes, hasMore: more } = await load(nextPage);
         setPages((prev) => [...prev, nodes]);
         setNextPage((p) => p + 1);
         setHasMore(more);
@@ -61,7 +66,7 @@ export function GamesInfinite({
         busy.current = false;
       }
     });
-  }, [filter, nextPage, hasMore]);
+  }, [load, nextPage, hasMore]);
 
   // 관찰자에게 건네는 "늘 최신인" 콜백. 관찰자가 loadMore 를 직접 붙잡으면 페이지를 한 장 붙일 때마다
   // 콜백 정체가 바뀌어 관찰자를 다시 만들게 되는데, 갓 만든 관찰자는 이미 걸쳐 있는 표적을
@@ -86,7 +91,7 @@ export function GamesInfinite({
 
   return (
     <>
-      <ul className={GAMES_GRID_CLASS}>
+      <ul className={gridClass}>
         {children}
         {pages}
       </ul>

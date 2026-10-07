@@ -25,6 +25,7 @@ import { getMyListPreset } from "@/server/services/profiles";
 import { GAMES_PAGE_SIZE, getGameFacets, listGames, type GameListFilter } from "@/server/services/games";
 import { getRunningSteamSale, type RunningSaleDto } from "@/server/services/sales";
 import { FiltersSkeleton, GamesGridSkeleton } from "./skeletons";
+import { loadMoreGames } from "./actions";
 
 // Next 가 정적으로 읽는 값이라 리터럴이어야 한다 — 근거, 수치는 lib/cache 의 LIST_REVALIDATE_SECONDS 와 같게 유지
 export const revalidate = 3600;
@@ -114,7 +115,7 @@ async function Results({ filter }: { filter: GameListFilter }) {
         {SORT_LABEL[filter.sort ?? DEFAULT_GAME_SORT]} 게임 {result.total}개
       </h2>
       {/* 첫 페이지는 여기서 서버가 그린다. 두 번째 장부터는 같은 ul 안에 클라이언트가 이어 붙인다 */}
-      <GamesInfinite filter={filter} initialHasMore={result.page < result.totalPages}>
+      <GamesInfinite load={loadMoreGames.bind(null, filter)} initialHasMore={result.page < result.totalPages}>
         {result.items.map((g, i) => (
           <li key={g.slug} className="enter-item" style={stagger(i)}>
             <GameCard game={g} variant={filter.sort === "release" ? "release" : "discount"} highlight={highlight} />
