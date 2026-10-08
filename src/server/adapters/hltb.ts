@@ -1,6 +1,8 @@
 // HowLongToBeat 어댑터 — 설계서 §4.1. 게임 페이지 HTML을 cheerio 로 파싱해 플레이타임 추출.
 // 검색은 2단계다(2026-09-12 재구현): GET /api/search/site/init 로 1회용 토큰을 받고,
 // POST /api/search/site 에 헤더 3종(x-auth-token/x-hp-key/x-hp-val)과 본문 hpKey 필드를 함께 보낸다.
+// 2026-10 즈음 init 이 token 하나만 주도록 바뀌었다(hpKey/hpVal 이 빠짐) — 그 뒤로 매칭 600건이 전부
+// "형식 변경" 으로 실패했다. 둘은 이제 선택이다: 오면 보내고, 없으면 token 만 보낸다(2026-10-08 실측, token 만으로 검색 200).
 // 토큰은 재사용 가능하며 만료 시 403 이 오므로 그때 한 번만 재발급해 재시도한다(사이트 프런트엔드와 동일).
 import { load } from "cheerio";
 import { z } from "zod";
@@ -64,17 +66,28 @@ const searchResponseSchema = z.object({
 /** /api/search/site/init 응답 — 검색 1건에 필요한 토큰 3종 */
 const searchTokenSchema = z.object({
   token: z.string().min(1),
-  hpKey: z.string().min(1),
-  hpVal: z.string().min(1),
+  hpKey: z.string().min(1).optional(),
+  hpVal: z.string().min(1).optional(),
 });
 export type HltbSearchToken = z.infer<typeof searchTokenSchema>;
 
 // ---- 순수 파서 ----
 
 /** 초 → 시간(소수 1자리). 0 이하면 null (HLTB 는 데이터 없음을 0으로 표시) */
+/**
+ * 저장할 수 있는 가장 큰 시간. playtimes 칸이 numeric(5,1) 이라 이 위는 INSERT 가 통째로 실패한다.
+ * 실측(2026-10-08): HLTB 11986 이 완주 19,591시간을 줘서 crawl-meta 가 09-29 부터 매번 partial(빨간불)이었다.
+ * 사용자 제보의 오타라 칸을 넓히지 않고 버린다 — 만 시간 넘는 플레이타임은 화면에 띄울 값이 아니다.
+ */
+export const PLAYTIME_HOURS_MAX = 9999.9;
+
+function plausibleHours(h: number): number | null {
+  return h > PLAYTIME_HOURS_MAX ? null : h;
+}
+
 export function secondsToHours(sec: number | undefined): number | null {
   if (sec === undefined || !Number.isFinite(sec) || sec <= 0) return null;
-  return Math.round((sec / 3600) * 10) / 10;
+  return plausibleHours(Math.round((sec / 3600) * 10) / 10);
 }
 
 /** "11½ Hours", "12 Hours", "45 Mins", "--" 같은 텍스트 → 시간. 파싱 불가 시 null */
@@ -88,7 +101,7 @@ export function parseHoursText(text: string): number | null {
   const n = whole + half;
   if (n <= 0) return null;
   if (m[3].startsWith("min")) return Math.round((n / 60) * 10) / 10;
-  return n;
+  return plausibleHours(n);
 }
 
 function emptyPlaytime(): NonNullable<MetaSnapshot["playtime"]> {
@@ -183,7 +196,7 @@ const searchHttp = createHttpClient({
   headers: { ...COMMON_HEADERS, "User-Agent": HLTB_SEARCH_USER_AGENT },
 });
 
-/** 검색 본문. hpKey 필드에 hpVal 을 넣는 것까지가 서버 검증 대상이다(프런트엔드와 동일). */
+/** 검색 본문. init 이 hpKey 를 주면 그 필드에 hpVal 을 넣는다(옛 서버 검증 대상). 안 주면 넣지 않는다 */
 export function buildHltbSearchBody(query: string, token: HltbSearchToken): Record<string, unknown> {
   const emptyFilter = { mode: "include", values: [] as string[] };
   return {
@@ -209,7 +222,7 @@ export function buildHltbSearchBody(query: string, token: HltbSearchToken): Reco
       randomizer: 0,
     },
     useCache: true,
-    [token.hpKey]: token.hpVal,
+    ...(token.hpKey && token.hpVal ? { [token.hpKey]: token.hpVal } : {}),
   };
 }
 
@@ -237,8 +250,7 @@ async function postSearch(query: string, token: HltbSearchToken): Promise<Respon
     headers: {
       "Content-Type": "application/json",
       "x-auth-token": token.token,
-      "x-hp-key": token.hpKey,
-      "x-hp-val": token.hpVal,
+      ...(token.hpKey && token.hpVal ? { "x-hp-key": token.hpKey, "x-hp-val": token.hpVal } : {}),
     },
     body: JSON.stringify(buildHltbSearchBody(query, token)),
   });

@@ -3,7 +3,7 @@ import { describe, expect, it } from "vitest";
 import { readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import { AdapterError } from "./types";
-import { buildHltbSearchBody, HLTB_SEARCH_INIT_URL, HLTB_SEARCH_URL, parseHltbGamePage, parseHltbSearch, parseHoursText, secondsToHours } from "./hltb";
+import { buildHltbSearchBody, HLTB_SEARCH_INIT_URL, HLTB_SEARCH_URL, parseHltbGamePage, parseHltbSearch, parseHoursText, PLAYTIME_HOURS_MAX, secondsToHours } from "./hltb";
 
 const fixture = (name: string): string => readFileSync(fileURLToPath(new URL(`./__fixtures__/${name}`, import.meta.url)), "utf8");
 
@@ -59,6 +59,11 @@ describe("parseHoursText / secondsToHours", () => {
     expect(secondsToHours(0)).toBeNull();
     expect(secondsToHours(undefined)).toBeNull();
   });
+  it("저장 칸(numeric(5,1))을 넘는 시간은 버린다 (HLTB 11986 완주 19,591시간 실측)", () => {
+    expect(secondsToHours(19591.4 * 3600)).toBeNull();
+    expect(secondsToHours(PLAYTIME_HOURS_MAX * 3600)).toBe(PLAYTIME_HOURS_MAX);
+    expect(parseHoursText("12000 Hours")).toBeNull();
+  });
 });
 
 describe("parseHltbSearch", () => {
@@ -78,6 +83,13 @@ describe("buildHltbSearchBody", () => {
   it("hpKey 필드에 hpVal 을 넣는다 (서버 검증 대상)", () => {
     const body = buildHltbSearchBody("elden ring", token);
     expect(body[token.hpKey]).toBe(token.hpVal);
+  });
+
+  it("init 이 token 만 주면 hp 필드를 넣지 않는다 (2026-10 응답 형식)", () => {
+    const tokenOnly = JSON.parse(fixture("hltb-search-init-token-only.json")) as { token: string };
+    const body = buildHltbSearchBody("elden ring", tokenOnly);
+    expect(Object.keys(body)).not.toContain("undefined");
+    expect(body.searchTerms).toEqual(["elden", "ring"]);
   });
 
   it("검색어를 공백으로 나누고 빈 토큰을 버린다", () => {
