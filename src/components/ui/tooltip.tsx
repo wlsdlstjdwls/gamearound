@@ -190,8 +190,11 @@ export function useTooltip<T extends HTMLElement>(label: string, enabled: boolea
 
 export type ClampLines = 1 | 2 | 3;
 
+// 여러 줄 자르기에는 block 을 섞지 않는다(2026-10-08 실측). line-clamp 는 display:-webkit-box 로 서는데,
+// cn 은 단순 이어 붙이기라 같이 붙은 block 이 생성 CSS 순서로 이겨 2, 3줄 자르기가 사이트 전체에서 안 먹었다
+// (실행 로그의 에러 맛보기가 한 줄에 열 줄씩 늘어났다). 한 줄 truncate 는 block 위에서만 선다.
 const LINE_CLASS: Record<ClampLines, string> = {
-  1: "truncate",
+  1: "block truncate",
   2: "line-clamp-2",
   3: "line-clamp-3",
 };
@@ -237,7 +240,7 @@ export function Clamp({
 
   return (
     <>
-      <span {...triggerProps} className={cn("block", LINE_CLASS[lines], className)}>
+      <span {...triggerProps} className={cn(LINE_CLASS[lines], className)}>
         {children}
       </span>
       {tooltip}
