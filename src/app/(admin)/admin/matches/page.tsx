@@ -15,12 +15,9 @@ import { MATCH_MESSAGES, sourceLabel } from "@/lib/admin/messages";
 import { countPendingMatches, listPendingMatches } from "@/server/services/admin";
 import { AUTO_MATCH_THRESHOLD, PENDING_MATCH_THRESHOLD } from "@/server/sync/match";
 import { requireRoleOrForbid } from "@/server/auth/guards";
+import { MATCH_QUEUE_COLS } from "@/lib/admin/table-cols";
 
 export const metadata: Metadata = { title: MATCH_MESSAGES.title };
-
-// 우리 제목과 스토어 제목을 같은 너비로 나란히 둔다 — 검수자가 두 이름을 눈으로 맞대는 것이 이 화면의 일이다.
-// 전부 md: 접두인 이유는 data-rows.tsx 머리 주석에 있다 — 좁은 화면에서 이 줄은 표가 아니라 카드다
-const QUEUE_COLS = "md:grid-cols-[minmax(0,2fr)_minmax(0,2fr)_120px_minmax(0,1.4fr)_72px_132px] md:gap-x-3 md:px-4 md:py-[13px]";
 
 export default async function AdminMatchesPage() {
   await requireRoleOrForbid("admin");
@@ -47,7 +44,7 @@ export default async function AdminMatchesPage() {
         ) : (
           <div>
             <DataHead
-              cols={QUEUE_COLS}
+              cols={MATCH_QUEUE_COLS}
               labels={[
                 MATCH_MESSAGES.colOurTitle,
                 MATCH_MESSAGES.colStoreTitle,
@@ -59,7 +56,7 @@ export default async function AdminMatchesPage() {
             />
             <DataList>
               {pending.map((p) => (
-                <DataRow key={`${p.gameId}-${p.source}`} cols={QUEUE_COLS}>
+                <DataRow key={`${p.gameId}-${p.source}`} cols={MATCH_QUEUE_COLS}>
                   <DataCell label={MATCH_MESSAGES.colOurTitle}>
                     <Link href={`/admin/games/${p.gameId}`} className="font-medium hover:text-acc">
                       <Clamp>{p.game.titleKo ? `${p.game.titleKo} (${p.game.titleEn})` : p.game.titleEn}</Clamp>

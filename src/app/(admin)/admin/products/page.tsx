@@ -15,12 +15,9 @@ import { listSuggestedProductMatches } from "@/server/services/admin-products";
 import { AUTO_MATCH_THRESHOLD, PENDING_MATCH_THRESHOLD } from "@/server/sync/match";
 import { PRODUCT_MATCH_RECHECK_DAYS } from "@/server/sync/constants";
 import { PRODUCT_MATCH_MESSAGES } from "@/lib/admin/messages";
+import { PRODUCT_QUEUE_COLS } from "@/lib/admin/table-cols";
 
 export const metadata: Metadata = { title: PRODUCT_MATCH_MESSAGES.title };
-
-// 상품 이름과 후보 게임 제목을 같은 너비로 나란히 둔다 — 두 이름을 눈으로 맞대는 것이 이 화면의 일이다.
-// 전부 md: 접두인 이유는 data-rows.tsx 머리 주석에 있다 — 좁은 화면에서 이 줄은 표가 아니라 카드다
-const QUEUE_COLS = "md:grid-cols-[minmax(0,2fr)_minmax(0,2fr)_64px_minmax(0,1fr)_120px_128px] md:gap-x-3 md:px-4 md:py-[13px]";
 
 export default async function AdminProductMatchesPage() {
   await requireRoleOrForbid("admin");
@@ -45,7 +42,7 @@ export default async function AdminProductMatchesPage() {
         ) : (
           <div>
             <DataHead
-              cols={QUEUE_COLS}
+              cols={PRODUCT_QUEUE_COLS}
               labels={[
                 PRODUCT_MATCH_MESSAGES.colProduct,
                 PRODUCT_MATCH_MESSAGES.colCandidate,
@@ -57,7 +54,7 @@ export default async function AdminProductMatchesPage() {
             />
             <DataList>
               {queue.map((p) => (
-                <DataRow key={p.productId} cols={QUEUE_COLS}>
+                <DataRow key={p.productId} cols={PRODUCT_QUEUE_COLS}>
                   <DataCell label={PRODUCT_MATCH_MESSAGES.colProduct}>
                     <Clamp>{p.productName}</Clamp>
                     {/* 바코드와 기종은 판정의 근거다 — 같은 이름이라도 기종이 다르면 다른 물건이다 */}

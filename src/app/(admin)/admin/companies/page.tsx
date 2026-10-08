@@ -17,11 +17,9 @@ import { PageHead, ROWS } from "@/components/ui/page";
 import { DataCell, DataHead, DataList, DataRow } from "@/components/admin/data-rows";
 import { COMPANY_MESSAGES } from "@/lib/admin/messages";
 import { Clamp } from "@/components/ui/tooltip";
+import { COMPANY_PENDING_COLS } from "@/lib/admin/table-cols";
 
 export const metadata: Metadata = { title: COMPANY_MESSAGES.title };
-
-// 좁은 화면에서는 한 이름이 카드 한 장이다(data-rows.tsx 머리 주석)
-const PENDING_COLS = "md:grid-cols-[minmax(0,1fr)_120px_200px] md:gap-x-3 md:px-3 md:py-2";
 
 export default async function AdminCompaniesPage() {
   await requireRoleOrForbid("admin");
@@ -49,10 +47,10 @@ export default async function AdminCompaniesPage() {
           </p>
         ) : (
           <div>
-            <DataHead cols={PENDING_COLS} labels={[COMPANY_MESSAGES.colName, COMPANY_MESSAGES.colGameCount, COMPANY_MESSAGES.colAction]} />
+            <DataHead cols={COMPANY_PENDING_COLS} labels={[COMPANY_MESSAGES.colName, COMPANY_MESSAGES.colGameCount, COMPANY_MESSAGES.colAction]} />
             <DataList>
               {pending.map((p) => (
-                <DataRow key={p.name} cols={PENDING_COLS}>
+                <DataRow key={p.name} cols={COMPANY_PENDING_COLS}>
                   <DataCell label={COMPANY_MESSAGES.colName} className="text-ink">
                     <Clamp>{p.name}</Clamp>
                     <p className="mt-0.5 text-[11.5px] text-dim">

@@ -15,6 +15,7 @@ import { DataCell, DataHead, DataList, DataRow } from "@/components/admin/data-r
 import { ROUTES } from "@/lib/routes";
 import { Clamp } from "@/components/ui/tooltip";
 import { SYNC_BADGE_SHAPE, SYNC_STATUS_BADGE } from "@/components/admin/sync-tone";
+import { SYNC_LOG_COLS } from "@/lib/admin/table-cols";
 
 export const metadata: Metadata = { title: LOG_MESSAGES.title };
 
@@ -60,14 +61,6 @@ function MobileRunHead({ log: l }: { log: SyncLog }) {
   );
 }
 
-// 칸이 아홉이다. 넓은 화면에서만 표로 서고, 좁은 화면에서는 실행 하나가 카드 한 장이 된다
-// (data-rows.tsx 머리 주석). 번호는 줄을 가리키는 값이라 맨 앞에 좁게 둔다.
-// 에러 맛보기는 칸이 아니라 **줄 밑 한 줄**이다(2026-10-08) — 아홉째 칸으로 두었을 때 남는 폭이 150px 남짓이라
-// 고정폭 글자가 낱자로 꺾여 줄 하나가 열 줄로 늘었고, 그 몇 줄이 화면을 먹어 정상 실행이 안 보였다.
-// 에러가 있는 줄만 밑에 전체 폭으로 두 줄까지 펴고, 머리 칸은 여덟이다. 숫자 칸은 글자 폭만큼만 준다.
-const LOG_COLS =
-  "md:grid-cols-[52px_128px_84px_120px_84px_56px_48px_minmax(0,1fr)] md:gap-x-3 md:px-3 md:py-2.5";
-
 export default async function SyncLogsPage({ searchParams }: { searchParams: Promise<{ source?: string | string[] }> }) {
   await requireRoleOrForbid("admin");
   const sp = await searchParams;
@@ -99,7 +92,7 @@ export default async function SyncLogsPage({ searchParams }: { searchParams: Pro
       ) : (
         <div>
           <DataHead
-            cols={LOG_COLS}
+            cols={SYNC_LOG_COLS}
             labels={[
               LOG_MESSAGES.colId,
               LOG_MESSAGES.colSource,
@@ -113,7 +106,7 @@ export default async function SyncLogsPage({ searchParams }: { searchParams: Pro
           />
           <DataList>
             {logs.map((l) => (
-              <DataRow key={l.id} cols={LOG_COLS} align="start">
+              <DataRow key={l.id} cols={SYNC_LOG_COLS} align="start">
                 <MobileRunHead log={l} />
                 <DataCell label={LOG_MESSAGES.colId} wideOnly className="text-dim">
                   {l.id}

@@ -19,12 +19,9 @@ import { PageHead } from "@/components/ui/page";
 import { DataCell, DataHead, DataList, DataRow } from "@/components/admin/data-rows";
 import { GAME_ADMIN_MESSAGES as M, MATCHED_BY_LABEL, SYNC_STATUS_LABEL, sourceLabel } from "@/lib/admin/messages";
 import { ROUTES } from "@/lib/routes";
+import { GAME_REF_COLS, GAME_HISTORY_COLS } from "@/lib/admin/table-cols";
 
 export const metadata: Metadata = { title: M.title };
-
-// 좁은 화면에서는 한 줄이 카드 한 장이다(data-rows.tsx 머리 주석)
-const REF_COLS = "md:grid-cols-[110px_minmax(0,1fr)_minmax(0,1.4fr)_110px_78px_150px] md:gap-x-3 md:px-3 md:py-2";
-const HISTORY_COLS = "md:grid-cols-[150px_minmax(0,1fr)_minmax(0,1fr)_minmax(0,1.2fr)_minmax(0,1.2fr)_70px] md:gap-x-3 md:px-3 md:py-2";
 
 type GameRow = NonNullable<Awaited<ReturnType<typeof getGameForAdmin>>>;
 type PlatformRow = GameRow["platforms"][number];
@@ -155,12 +152,12 @@ export default async function AdminGamePage({ params }: { params: Promise<{ id: 
         ) : (
           <div>
             <DataHead
-              cols={REF_COLS}
+              cols={GAME_REF_COLS}
               labels={[M.colSource, M.colExternalId, M.colUrl, M.colMatchedBy, M.colConfidence, M.colAction]}
             />
             <DataList>
               {game.sourceRefs.map((r) => (
-                <DataRow key={r.source} cols={REF_COLS}>
+                <DataRow key={r.source} cols={GAME_REF_COLS}>
                   <DataCell label={M.colSource} className="md:whitespace-nowrap">
                     {sourceLabel(r.source)}
                   </DataCell>
@@ -205,7 +202,7 @@ export default async function AdminGamePage({ params }: { params: Promise<{ id: 
           <p className="text-[13px] text-mut">{M.historyEmpty}</p>
         ) : (
           <div>
-            <DataHead cols={HISTORY_COLS} labels={[M.colWhen, M.colTarget, M.colField, M.colBefore, M.colAfter, M.colLocked]} />
+            <DataHead cols={GAME_HISTORY_COLS} labels={[M.colWhen, M.colTarget, M.colField, M.colBefore, M.colAfter, M.colLocked]} />
             <DataList>
               {game.corrections.map((c) => {
                 const target =
@@ -213,7 +210,7 @@ export default async function AdminGamePage({ params }: { params: Promise<{ id: 
                     ? "games"
                     : `${c.table} | ${platformById.get(c.rowId) ? platformLabel(platformById.get(c.rowId) as PlatformRow) : c.rowId.slice(0, 8)}`;
                 return (
-                  <DataRow key={c.id} cols={HISTORY_COLS} align="start">
+                  <DataRow key={c.id} cols={GAME_HISTORY_COLS} align="start">
                     <DataCell label={M.colWhen} className="md:whitespace-nowrap">
                       {formatDateTime(c.createdAt)}
                     </DataCell>
