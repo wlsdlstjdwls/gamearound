@@ -298,3 +298,26 @@ export function StoreIcon(p: IconProps) {
     </svg>
   );
 }
+
+/* ── 온보딩 퀘스트 지도의 칸 그림(2026-10-08) — 위와 같은 규칙(24 격자, 2px 선, 채움 없음) ── */
+
+/** 기기 단계 — 모니터 */
+export function MonitorIcon(p: IconProps) {
+  return (
+    <svg {...base(p)}>
+      <rect x="3" y="4" width="18" height="12" rx="2" />
+      <path d="M8 20h8" />
+      <path d="M12 16v4" />
+    </svg>
+  );
+}
+
+/** 할인 성향 단계 — 가격표 */
+export function TagIcon(p: IconProps) {
+  return (
+    <svg {...base(p)}>
+      <path d="M3 12V4.5A1.5 1.5 0 0 1 4.5 3H12l9 9-9 9-9-9Z" />
+      <circle cx="7.5" cy="7.5" r="1.5" />
+    </svg>
+  );
+}

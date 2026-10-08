@@ -422,6 +422,7 @@
   --animate-scale-in: scale-in var(--duration-base) var(--ease-out-emph) both;
   --animate-shake: shake 420ms var(--ease-standard) both;
   --animate-pop: pop 420ms var(--ease-out-emph);
+  --animate-flip-in: flip-in var(--duration-slow) var(--ease-out-emph) both;
   --animate-shimmer: shimmer 1.5s ease-in-out infinite;
 }
 
@@ -451,6 +452,13 @@
   20%, 80% { transform: translateX(2px); }
   30%, 50%, 70% { transform: translateX(-4px); }
   40%, 60% { transform: translateX(4px); }
+}
+/* 온보딩 결과의 칭호 카드 — 뒤집혀 있던 카드가 돌아 앞면을 보인다(2026-10-08 게임처럼 진행 회차).
+   원근(perspective)을 키프레임 안에 두는 이유: 부모에 perspective 를 걸면 그 부모가 쌓임 맥락이 되어
+   카드 밖 요소의 겹침 순서가 바뀐다 */
+@keyframes flip-in {
+  from { opacity: 0; transform: perspective(900px) rotateY(-75deg) scale(0.96); }
+  to { opacity: 1; transform: none; }
 }
 @keyframes pop {
   0% { transform: scale(1); }

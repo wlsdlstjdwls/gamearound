@@ -82,6 +82,21 @@ export const ONBOARDING_MESSAGES = {
     enabled: "알림이 켜졌어요",
   },
 
+  /** 게임처럼 진행하는 장치(2026-10-08) — 머리의 퀘스트 지도와 결과의 칭호 카드 */
+  quest: {
+    /** 낭독기용 진행 문구. 화면에는 숫자를 적지 않는다(전체 칸 수가 사람마다 다르다 — steps.ts) */
+    stage: (n: number) => `${n}번째 스테이지`,
+    cardLabel: "내 칭호",
+    level: (n: number) => `레벨 ${n}`,
+    slots: (filled: number, total: number) => `슬롯 ${filled}/${total}`,
+    /**
+     * 칭호의 앞말은 할인 성향, 뒷말은 플레이타임 취향에서 온다. 성향을 놀리지 않는 말로 고른다 —
+     * 정가에 사는 사람도, 역대 최저가만 기다리는 사람도 칭찬으로 읽혀야 한다. none 은 그 질문을 건너뛴 사람이다.
+     */
+    adjective: { full_price: "망설임 없는", wait_small: "눈치 빠른", wait_deep: "끈기 있는", historic_low: "최저가를 노리는", none: "자유로운" },
+    noun: { short: "스피드러너", medium: "모험가", long: "탐험가", endless: "무한 도전자", none: "게이머" },
+  },
+
   done: {
     title: "다 됐어요",
     subtitle: "받은 값으로 화면을 맞춰 뒀어요. 설정에서 언제든 바꿀 수 있어요",

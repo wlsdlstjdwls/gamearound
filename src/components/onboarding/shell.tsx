@@ -13,11 +13,13 @@ import { stagger } from "@/lib/motion";
 import { ROUTES, WELCOME_FROM_PARAM, WELCOME_FROM_SETTINGS, welcomeStepPath } from "@/lib/routes";
 import { SITE } from "@/lib/site";
 import { ONBOARDING_MESSAGES as M } from "@/lib/onboarding/messages";
-import { litCells, prevStep, type OnboardingStep, type StepContext } from "@/lib/onboarding/steps";
+import { prevStep, type OnboardingStep, type StepContext } from "@/lib/onboarding/steps";
+import { questNodes } from "@/lib/onboarding/quest";
+import type { ProfileFieldStep } from "@/lib/onboarding/summary";
 import { BrandSymbol } from "@/components/ui/logo";
 import { ChevronLeftIcon, XIcon } from "@/components/ui/icons";
 import { AnswerGate } from "@/components/onboarding/answer-gate";
-import { ChargeGauge } from "@/components/onboarding/charge-gauge";
+import { QuestMap } from "@/components/onboarding/quest-map";
 import { OnboardingSubmit } from "@/components/onboarding/submit";
 
 /**
@@ -39,6 +41,7 @@ export function OnboardingShell({
   requireAnswer = false,
   initialAnswered = false,
   editing = false,
+  filled = [],
   children,
 }: {
   step: OnboardingStep;
@@ -63,14 +66,18 @@ export function OnboardingShell({
    * 순서 안에 있는 화면이 아니라서 "3/7" 이나 "건너뛸게요" 는 뜻이 없다. 저장 뒤 목적지는 액션이 정한다.
    */
   editing?: boolean;
+  /** 이미 채운 슬롯(quest.ts filledSlots). 머리 지도가 지나온 칸을 채운 칸과 빈 칸으로 가른다 */
+  filled?: readonly ProfileFieldStep[];
   children: ReactNode;
 }) {
   const back = editing ? null : prevStep(step, ctx);
   const showSkip = skippable && !editing;
 
   return (
+    // 답 여부(AnswerGate)를 폼 밖 머리까지 펼친다 — 머리 지도의 지금 칸이 고르는 순간 채워져야 한다
+    <AnswerGate required={requireAnswer} initialAnswered={initialAnswered}>
     <div data-onboarding className="flex min-h-svh flex-col bg-bg">
-      {/* 머리 — 뒤로, 진행 게이지, 나가기. 게이지를 한 줄 가운데에 두어 따로 띠를 먹지 않는다 */}
+      {/* 머리 — 뒤로, 퀘스트 지도, 나가기. 지도를 한 줄 가운데에 두어 따로 띠를 먹지 않는다 */}
       <div className="sticky top-0 z-10 bg-bg/92 backdrop-blur">
         <div className="mx-auto flex w-full max-w-[var(--page-w)] items-center gap-2 px-4 pb-1 pt-[max(env(safe-area-inset-top),4px)] sm:px-7">
           {editing ? (
@@ -99,21 +106,22 @@ export function OnboardingShell({
           >
             <BrandSymbol size={24} />
           </Link>
-          {/* 설정에서 칸 하나만 고치러 온 화면은 순서 밖이라 게이지가 뜻이 없다 */}
-          {!editing && <ChargeGauge lit={litCells(step, ctx)} className="mx-2 max-w-[360px] flex-1 sm:mx-auto" />}
+          {/* 설정에서 칸 하나만 고치러 온 화면은 순서 밖이라 지도가 뜻이 없다 */}
+          {!editing && <QuestMap nodes={questNodes(step, ctx, filled)} className="mx-1 max-w-[400px] flex-1 sm:mx-auto" />}
           <Link
             href={editing ? ROUTES.settings : ROUTES.home}
+            aria-label={editing ? M.edit.exit : M.exit}
             className="press tap ml-auto -mr-1 flex h-11 items-center rounded-full px-3 text-[13px] text-mut hover:text-ink"
           >
-            {editing ? M.edit.exit : M.exit}
-            <XIcon size={15} className="ml-1.5" />
+            {/* 좁은 화면은 X 하나로 — 글자 폭만큼 지도 칸이 좁아진다. 이름은 aria-label 이 지킨다 */}
+            <span className="hidden sm:inline">{editing ? M.edit.exit : M.exit}</span>
+            <XIcon size={15} className="sm:ml-1.5" />
           </Link>
         </div>
       </div>
 
       <form action={action} className="flex flex-1 flex-col">
         {editing && <input type="hidden" name={WELCOME_FROM_PARAM} value={WELCOME_FROM_SETTINGS} />}
-        <AnswerGate required={requireAnswer} initialAnswered={initialAnswered}>
           {/*
             내용과 바닥 버튼을 **한 덩어리**로 묶는다. 둘을 form 의 형제로 두고 각자 가운데를 잡게 하면
             서로를 민다 — 내용의 my-auto 가 남는 자리를 전부 먹어 버튼이 화면 바닥으로 떨어지고,
@@ -200,8 +208,8 @@ export function OnboardingShell({
               </div>
             </div>
           </div>
-        </AnswerGate>
       </form>
     </div>
+    </AnswerGate>
   );
 }

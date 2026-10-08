@@ -78,14 +78,3 @@ export function stepProgress(current: OnboardingStep, ctx: StepContext): number 
   if (i <= 0) return 0;
   return i / (list.length - 1);
 }
-
-/**
- * 진행 게이지의 칸 수. 로고 손전등 격자가 12칸이라 같은 수로 맞췄다 — 칸이 하나씩 켜지는 것이
- * "손전등을 충전한다" 로 읽히게 하려는 것이다. 칸 수가 사람마다 달라지지 않게 고정한다(단계 수는 사람마다 다르다).
- */
-export const GAUGE_CELLS = 12;
-
-/** 지금 켜진 칸 수. stepProgress 를 칸으로 옮긴 것이라 뒤로 가지 않는 성질도 그대로다 */
-export function litCells(current: OnboardingStep, ctx: StepContext): number {
-  return Math.round(stepProgress(current, ctx) * GAUGE_CELLS);
-}

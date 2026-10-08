@@ -8,7 +8,8 @@ import { redirect } from "next/navigation";
 import { ROUTES, WELCOME_FROM_PARAM, WELCOME_FROM_SETTINGS, welcomeStepPath } from "@/lib/routes";
 import { gamesHref } from "@/lib/games-query";
 import { DEAL_STYLE_CHOICES, GENRE_PICK_MAX, PLATFORM_CHOICES, PLAY_TIME_CHOICES } from "@/lib/onboarding/constants";
-import { summarizeProfile } from "@/lib/onboarding/summary";
+import { summarizeProfile, type ProfileFieldStep } from "@/lib/onboarding/summary";
+import { filledSlots, playerTitle } from "@/lib/onboarding/quest";
 import { ONBOARDING_MESSAGES as M } from "@/lib/onboarding/messages";
 import { personalQuery } from "@/lib/onboarding/query";
 import { isStep, type OnboardingStep, type StepContext } from "@/lib/onboarding/steps";
@@ -40,6 +41,8 @@ export default async function WelcomeStepPage({ params, searchParams }: Props) {
   if (step !== "intro" && !profile.consentedAt) redirect(welcomeStepPath("intro"));
 
   const ctx: StepContext = { platforms: profile.platforms };
+  // 머리 지도가 지나온 칸을 채운 칸과 빈 칸으로 가르는 데 쓴다
+  const filled = filledSlots(profile);
 
   if (step === "done") return <DonePage ctx={ctx} />;
 
@@ -49,6 +52,7 @@ export default async function WelcomeStepPage({ params, searchParams }: Props) {
       <OnboardingShell
         step={step}
         ctx={ctx}
+        filled={filled}
         title={M.intro.title}
         action={submitStepAction}
         submitLabel={M.intro.start}
@@ -60,8 +64,8 @@ export default async function WelcomeStepPage({ params, searchParams }: Props) {
     );
   }
 
-  if (step === "device") return <DeviceStepPage ctx={ctx} />;
-  if (step === "notify") return <NotifyStepPage ctx={ctx} />;
+  if (step === "device") return <DeviceStepPage ctx={ctx} filled={filled} />;
+  if (step === "notify") return <NotifyStepPage ctx={ctx} filled={filled} />;
 
   // 설정의 "바꾸기" 로 온 화면인가. 기기 단계는 고치는 자리가 설정의 기기 화면이라 여기까지 오지 않는다
   const editing = (await searchParams)[WELCOME_FROM_PARAM] === WELCOME_FROM_SETTINGS;
@@ -70,6 +74,7 @@ export default async function WelcomeStepPage({ params, searchParams }: Props) {
     <OnboardingShell
       step={step}
       ctx={ctx}
+      filled={filled}
       title={q.title}
       subtitle={q.subtitle}
       action={submitStepAction}
@@ -169,13 +174,14 @@ async function questionFor(step: Exclude<OnboardingStep, "intro" | "device" | "n
  * 이미 기기가 있는 사람에게는 칸을 안 보여 준다 — 설정에서 공들여 적은 기기 옆에 "내 PC" 를 하나 더
  * 만들면 기본 기기가 뒤바뀌거나 같은 기기가 두 대가 된다. 고치는 자리는 설정의 기기 화면 하나다.
  */
-async function DeviceStepPage({ ctx }: { ctx: StepContext }) {
+async function DeviceStepPage({ ctx, filled }: { ctx: StepContext; filled: ProfileFieldStep[] }) {
   const devices = await listMyDevices();
   const primary = devices[0];
   return (
     <OnboardingShell
       step="device"
       ctx={ctx}
+      filled={filled}
       title={primary ? [M.device.existingTitle] : M.device.title}
       subtitle={primary ? M.device.existingNote : M.device.subtitle}
       note={primary ? undefined : M.device.note}
@@ -200,9 +206,9 @@ async function DeviceStepPage({ ctx }: { ctx: StepContext }) {
  * 권한 창은 사람이 누른 순간에만 띄운다(브라우저가 사용자 동작 없는 권한 요청을 막는다). 그래서 "다음" 과 따로 둔다 —
  * "다음" 이 권한까지 묻게 하면 알림을 원하지 않는 사람도 권한 창을 거쳐야 넘어간다.
  */
-function NotifyStepPage({ ctx }: { ctx: StepContext }) {
+function NotifyStepPage({ ctx, filled }: { ctx: StepContext; filled: ProfileFieldStep[] }) {
   return (
-    <OnboardingShell step="notify" ctx={ctx} title={M.notify.title} subtitle={M.notify.subtitle} note={M.notify.note} action={submitStepAction}>
+    <OnboardingShell step="notify" ctx={ctx} filled={filled} title={M.notify.title} subtitle={M.notify.subtitle} note={M.notify.note} action={submitStepAction}>
       <StepField step="notify" />
       <NotifyStepBody />
     </OnboardingShell>
@@ -228,5 +234,12 @@ async function DonePage({ ctx }: { ctx: StepContext }) {
   // 설정 화면과 같은 줄이다(summary.ts) — 여기서 본 값이 설정에서 보이는 값이어야 한다
   const summary = summarizeProfile(profile, { genres: genreChoices, subscriptions: subscriptionChoices });
 
-  return <DoneBody count={count} listHref={count === null ? ROUTES.game : gamesHref(query)} summary={summary} />;
+  return (
+    <DoneBody
+      count={count}
+      listHref={count === null ? ROUTES.game : gamesHref(query)}
+      summary={summary}
+      quest={{ title: playerTitle(profile), filled: filledSlots(profile) }}
+    />
+  );
 }

@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { GAUGE_CELLS, ONBOARDING_STEPS, isStep, litCells, nextStep, prevStep, stepProgress, visibleSteps, type StepContext } from "./steps";
+import { ONBOARDING_STEPS, isStep, nextStep, prevStep, stepProgress, visibleSteps, type StepContext } from "./steps";
 
 const ctx: StepContext = { platforms: null };
 const pc: StepContext = { platforms: ["steam", "ps5"] };
@@ -85,19 +85,5 @@ describe("stepProgress", () => {
       expect(p).toBeGreaterThanOrEqual(0);
       expect(p).toBeLessThanOrEqual(1);
     }
-  });
-});
-
-describe("litCells", () => {
-  it("단계마다 적어도 한 칸은 더 켜진다 — 눌렀는데 게이지가 그대로면 안 넘어간 줄 안다", () => {
-    for (const c of [ctx, pc]) {
-      const seen = visibleSteps(c).map((s) => litCells(s, c));
-      for (let i = 1; i < seen.length; i += 1) expect(seen[i]).toBeGreaterThan(seen[i - 1]);
-    }
-  });
-
-  it("intro 는 0칸, done 은 전부", () => {
-    expect(litCells("intro", ctx)).toBe(0);
-    expect(litCells("done", pc)).toBe(GAUGE_CELLS);
   });
 });
