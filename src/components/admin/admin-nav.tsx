@@ -27,7 +27,7 @@
 // **다섯 칸에 일곱을 어떻게 넣나**: 넣지 않는다. 자주 가는 넷을 세우고 마지막 칸은 더보기다.
 // 더보기는 기둥과 **똑같은 메뉴**를 시트로 펴므로 일곱 전부와 서비스 화면으로 가는 길이 거기 있다.
 // 넷을 고른 기준은 "거기서 할 일이 있는가" 다 — 실행 로그는 읽기만 하는 자리고(수집 현황에서도 간다),
-// 아직 열지 않은 칸 둘은 눌러도 사유만 말한다.
+// 상품 매핑과 입점 신청은 들어올 물건이 아직 드물다(배지가 서면 더보기에서도 보인다).
 //
 // 남은 일 수는 **약속(Promise)으로 받아 배지 자리에서만 기다린다.** 회사 검수 수를 뽑는 질의가
 // games 전수 훑기(실측 27ms, 왕복까지 두 번)라서, 그 값을 메뉴가 기다리면 관리자가 누르는
@@ -38,7 +38,7 @@ import { usePathname } from "next/navigation";
 import { cn } from "@/lib/cn";
 import { Sheet } from "@/components/ui/sheet";
 import { MenuIcon } from "@/components/ui/icons";
-import { ADMIN_NAV, ADMIN_SOON } from "@/lib/admin/messages";
+import { ADMIN_NAV } from "@/lib/admin/messages";
 import { COMING_SOON } from "@/lib/messages/coming-soon";
 import { ROUTES } from "@/lib/routes";
 import { BoxIcon, BuildingIcon, CheckListIcon, LinkIcon, LogIcon, PulseIcon, StoreIcon } from "@/components/admin/nav-icons";
@@ -77,6 +77,7 @@ type Item = {
   /**
    * 아직 열지 않은 칸. 주면 링크가 아니라 사유를 말하는 판을 여는 버튼이 된다.
    * 화면은 그대로 살아 있어 주소로는 열린다 — 막는 건 이 한 줄뿐이다.
+   * 지금은 이 표시를 단 칸이 없다(2026-10-08 상품 매핑, 입점 신청을 열었다). 다시 닫을 자리라 틀은 남긴다.
    */
   soon?: { lead: string; body: string };
 };
@@ -103,14 +104,14 @@ const GROUPS: Array<{ key: string; title?: string; items: Item[] }> = [
         pick: (c) => ({ n: c.companies, capped: c.companiesCapped }),
       },
       { href: ROUTES.adminPreorder, label: ADMIN_NAV.preorder, Icon: CalendarIcon, pick: (c) => ({ n: c.preorder }) },
-      { href: ROUTES.adminProducts, label: ADMIN_NAV.products, Icon: BoxIcon, soon: ADMIN_SOON.products },
+      { href: ROUTES.adminProducts, label: ADMIN_NAV.products, Icon: BoxIcon, pick: (c) => ({ n: c.products }) },
     ],
   },
   {
     key: "etc",
     title: ADMIN_NAV.groupEtc,
     items: [
-      { href: ROUTES.shopsAdmin, label: ADMIN_NAV.shops, Icon: StoreIcon, soon: ADMIN_SOON.shops },
+      { href: ROUTES.shopsAdmin, label: ADMIN_NAV.shops, Icon: StoreIcon, pick: (c) => ({ n: c.shops }) },
       { href: ROUTES.adminIndie, label: ADMIN_NAV.indie, Icon: GamepadIcon, pick: (c) => ({ n: c.indie }) },
       {
         href: ROUTES.adminTasks,
