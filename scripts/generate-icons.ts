@@ -4,51 +4,32 @@
 // app/icon.tsx, app/apple-icon.tsx 는 Next 가 알아서 만들어 주지만 두 자리는 실제 파일이어야 한다:
 //   - favicon.ico : /favicon.ico 를 직접 찾아가는 구형 브라우저, RSS 리더, 일부 크롤러 몫
 //   - public/icon-*.png : manifest 와 Service Worker 푸시 알림이 URL 로 참조한다(번들 밖이라 import 불가)
-// 어느 쪽도 lib/brand.ts 와 같은 좌표를 쓰므로, 심볼을 고치면 여기서 다시 뽑아야 한다.
+// 어느 쪽도 lib/brand.ts 와 같은 격자를 쓰므로, 심볼을 고치면 여기서 다시 뽑아야 한다.
 import { writeFile } from "node:fs/promises";
 import path from "node:path";
 import { ImageResponse } from "next/og";
-import { BRAND_COLOR, brandSymbolDataUri, MASKABLE_SAFE_RATIO, type BrandSymbolVariant } from "@/lib/brand";
+import { brandSymbolDataUri, MASKABLE_SAFE_RATIO } from "@/lib/brand";
 
 type IconSpec = {
   size: number;
-  variant: BrandSymbolVariant;
-  accent: string;
-  /** 없으면 투명 배경 */
-  background?: string;
-  /** 배경 대비 심볼 비율 */
+  /** 판 모서리 둥글기. OS 가 모양을 깎는 자리(maskable)는 0 */
+  radius?: number;
+  /** 판 대비 심볼 비율 */
   inset?: number;
 };
 
-/** 파비콘: 16 은 축약형 + 채도 보정, 32 는 정식 */
-const FAVICON_SPECS: readonly IconSpec[] = [
-  { size: 16, variant: "mini", accent: BRAND_COLOR.accentMicro },
-  { size: 32, variant: "full", accent: BRAND_COLOR.accent },
-];
+/** 파비콘. 전부 보라 판(tile) — 투명 바탕은 탭 색에 묻힌다 */
+const FAVICON_SPECS: readonly IconSpec[] = [{ size: 16 }, { size: 32 }];
 
-/** PWA, 푸시 알림용. 홈 화면에 놓이므로 투명이 아니라 잉크 배경을 깐다 */
+/** PWA, 푸시 알림용. maskable 은 OS 가 모양을 깎으므로 판을 꽉 채우고 심볼을 안전영역 안에 넣는다 */
 const PWA_ICONS: readonly (IconSpec & { file: string })[] = [
-  { file: "icon-192.png", size: 192, variant: "full", accent: BRAND_COLOR.accentOnInk, background: BRAND_COLOR.ink },
-  { file: "icon-512.png", size: 512, variant: "full", accent: BRAND_COLOR.accentOnInk, background: BRAND_COLOR.ink },
-  {
-    file: "icon-maskable-512.png",
-    size: 512,
-    variant: "full",
-    accent: BRAND_COLOR.accentOnInk,
-    background: BRAND_COLOR.ink,
-    inset: MASKABLE_SAFE_RATIO,
-  },
+  { file: "icon-192.png", size: 192 },
+  { file: "icon-512.png", size: 512 },
+  { file: "icon-maskable-512.png", size: 512, radius: 0, inset: MASKABLE_SAFE_RATIO },
 ];
 
-async function renderPng({ size, variant, accent, background, inset }: IconSpec): Promise<Buffer> {
-  const src = brandSymbolDataUri({
-    variant,
-    accent,
-    background,
-    inset,
-    size,
-    body: background ? BRAND_COLOR.bg : BRAND_COLOR.ink,
-  });
+async function renderPng({ size, radius, inset }: IconSpec): Promise<Buffer> {
+  const src = brandSymbolDataUri({ variant: "tile", radius, inset, size });
   // JSX 없이 엘리먼트 모양만 넘긴다 — 이 스크립트를 위해 파일 확장자를 .tsx 로 바꿀 이유가 없다.
   const element = { type: "img", props: { width: size, height: size, src } } as never;
   const response = new ImageResponse(element, { width: size, height: size });

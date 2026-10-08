@@ -38,7 +38,7 @@ export default async function OpengraphImage() {
       >
         <div style={{ display: "flex", alignItems: "center", gap: 18 }}>
           <img width={SYMBOL_SIZE} height={SYMBOL_SIZE} src={brandSymbolDataUri({ size: SYMBOL_SIZE })} alt="" />
-          <span style={{ fontSize: 36, fontWeight: 700, letterSpacing: "-0.035em" }}>{SITE.name}</span>
+          <span style={{ fontSize: 36, fontWeight: 700, letterSpacing: "0.03em" }}>{SITE.name}</span>
         </div>
 
         <div

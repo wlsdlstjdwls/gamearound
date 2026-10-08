@@ -63,6 +63,7 @@
   --acc-soft: #efeafb; /* 배지 배경 — 이 위의 --acc 글자가 6.46:1 */
   --acc-glow: rgba(91, 52, 199, 0.18);
   --acc-on-ink: #9182f0; /* 잉크 배경 위 악센트 5.41:1 — --acc 는 2.24:1 이라 검정에 묻힌다 */
+  --beam: #ffb21e; /* 로고 손전등 빛. 글자색으로 쓰지 않는다(흰 바탕 대비 1.8:1) — 그림 전용. lib/brand.ts 의 BRAND_COLOR.beam 과 같은 값 */
   /*
    * 브랜드 색의 밝기 사다리 — 한 그래픽 안에서 여러 값을 나란히 보일 때 쓴다(플레이타임 막대 3종).
    * 색상(hue)을 바꾸지 않는 이유: 저채도 정보형 화면에서 색이 갈리면 각 색이 뜻을 가진 것처럼 읽힌다.
@@ -377,6 +378,7 @@
   --color-acc-hover: var(--acc-hover);
   --color-acc-soft: var(--acc-soft);
   --color-acc-on-ink: var(--acc-on-ink);
+  --color-beam: var(--beam);
   --color-acc-2: var(--acc-2);
   --color-acc-3: var(--acc-3);
   --color-danger: var(--danger);

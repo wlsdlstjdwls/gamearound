@@ -10,13 +10,13 @@ const TAGLINE = "플랫폼별 할인 알림";
 
 export const SITE = {
   /** 브랜드 표기 — UI, PWA, 문서에 그대로 노출된다 */
-  name: "gamearound",
+  name: "GAMEAROUND",
   headline: HEADLINE,
   tagline: TAGLINE,
   /** 검색결과, SNS 카드용 한 줄 설명. 두 문장을 합쳐 쓴다 */
   description: `${HEADLINE}. ${TAGLINE}.`,
   /** 페이지 타이틀 템플릿 (Next metadata.title.template) */
-  titleTemplate: "%s | gamearound",
+  titleTemplate: "%s | GAMEAROUND",
   locale: "ko",
   /** 저작권 표기의 시작 연도. 푸터가 매년 바뀌지 않도록 연도는 렌더 시점에 붙인다 */
   foundedYear: 2026,
@@ -27,7 +27,7 @@ export const SITE = {
   backgroundColor: "#f5f3fa",
   /** 다크에서의 바탕. globals.css 다크 블록의 --bg 와 같은 값 */
   backgroundColorDark: "#0f1115",
-  /** 브랜드 악센트. globals.css 의 --acc 와 같은 값 — 로고, 아이콘의 버튼 하나가 이 색이다 */
+  /** 브랜드 악센트. globals.css 의 --acc 와 같은 값 — 로고 몸통, 아이콘 판이 이 색이다 */
   accentColor: "#5b34c7",
 } as const;
 

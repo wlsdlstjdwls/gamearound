@@ -1,87 +1,74 @@
-// 브랜드 심볼(게임패드)의 기하 정보와 아이콘 전용 색 보정값.
+// 브랜드 심볼(도트 손전등)의 격자와 아이콘 전용 색.
 // 심볼은 화면 컴포넌트(components/ui/logo.tsx), 파비콘/앱 아이콘(app/icon.tsx, apple-icon.tsx),
 // SNS 이미지(opengraph-image.tsx), 정적 PNG 생성 스크립트 네 곳에서 쓰인다.
-// path 문자열이 네 벌로 흩어지면 실루엣을 고칠 때 반드시 한 곳이 남으므로 여기서만 정의한다.
+// 격자가 네 벌로 흩어지면 그림을 고칠 때 반드시 한 곳이 남으므로 여기서만 정의한다.
 //
-// 실루엣 규칙(왜 이 좌표인지):
-//  - 32 그리드. 16px 로 줄였을 때 좌표가 짝수 픽셀에 떨어진다.
-//  - 디테일은 y=15 에 정렬한다. 광학 중심이 기하 중심(16)보다 1px 위여야 아이콘이 가라앉아 보이지 않는다.
-//  - 그립은 바깥으로만 벌어지고 아래로 늘어지지 않는다. 늘어뜨리면 안드로이드 원형 마스크에서 잘린다.
-//  - 가운데 노치 깊이는 2.5 까지. 더 파면 16px 에서 바디가 두 조각으로 갈라져 보인다.
+// 왜 손전등인가(2026-10-08 사용자 선택): 이 서비스의 첫 이름이 "손전등"이었다(docs/손전등_개발설계서.md).
+// 여러 스토어 가격판을 비춰 제일 싼 곳을 찾는다는 일을 그대로 그린다. 컨트롤러는 게임 사이트마다 있어
+// 구별이 안 됐고, 검정 한 덩어리라 무겁다는 말이 나와 몸통을 브랜드 보라로 바꿨다.
+//
+// 격자 규칙(왜 이 모양인지):
+//  - 12칸. 픽셀 결이 곧 게임 느낌이라 곡선으로 다듬지 않는다. 그리는 쪽은 crispEdges 로 칸 사이 틈을 막는다.
+//  - 빛은 가운데(Y)가 진하고 가장자리(T)가 옅다. 옅은 칸은 같은 노랑의 투명도로 낸다 — 색을 하나 더 두면
+//    보라 타일 위에서 탁한 갈색이 된다(시안에서 실측).
+//  - 손잡이 홈 두 줄은 칸을 비워서 낸다. 바탕색으로 덧칠하면 흰 헤더와 연보라 페이지에서 홈 색이 어긋난다.
 //
 // OG 이미지와 아이콘은 CSS 바깥(satori, 정적 PNG)에서 그려지므로 globals.css 토큰을 참조할 수 없다.
 // 그래서 BRAND_COLOR 가 토큰 값을 손으로 옮겨 들고 있다 — 토큰을 고치면 이쪽도 같이 고친다.
-//
-// 방향키와 버튼은 배경색으로 덧칠하지 않고 evenodd 로 실제로 뚫는다.
-// 덧칠하면 헤더(--surface, 흰색)와 페이지(--bg, 오프화이트) 위에서 구멍 색이 어긋난다.
 
 import { SITE } from "@/lib/site";
 
-/** 심볼 좌표계 한 변 */
-export const BRAND_VIEWBOX = 32;
+/** X 몸통, Y 빛 가운데, T 빛 가장자리, . 빈 칸 */
+const GRID = [
+  "............",
+  "...........T",
+  ".........TTT",
+  "......XXYTTT",
+  "XXXXXXXXYYTT",
+  "X.X.XXXXYYYT",
+  "X.X.XXXXYYYT",
+  "XXXXXXXXYYTT",
+  "......XXYTTT",
+  ".........TTT",
+  "...........T",
+  "............",
+] as const;
 
-/** 게임패드 바디 외곽. 모든 변형이 이 실루엣을 공유한다 */
-const BODY =
-  "M11.6 7.4h8.8c5.4 0 8.9 3.5 9.7 9.1l.6 4.2c.5 3.4-1.3 5.9-4.2 5.9-2.2 0-3.5-1.2-4.6-3.1l-1.6-2.8c-.5-.9-1.1-1.3-2.1-1.3h-4.4c-1 0-1.6.4-2.1 1.3l-1.6 2.8c-1.1 1.9-2.4 3.1-4.6 3.1-2.9 0-4.7-2.5-4.2-5.9l.6-4.2c.8-5.6 4.3-9.1 9.7-9.1z";
+/** 심볼 좌표계 한 변(칸 수) */
+export const BRAND_VIEWBOX = GRID.length;
 
-/** 왼쪽 방향키 */
-const DPAD = "M8.6 11.2h2.4v2.6h2.6v2.4h-2.6v2.6H8.6v-2.6H6v-2.4h2.6z";
+export type BrandCellKind = "body" | "beam" | "beamEdge";
 
-type Dot = { cx: number; cy: number; r: number };
+const KIND: Record<string, BrandCellKind | undefined> = { X: "body", Y: "beam", T: "beamEdge" };
 
-/**
- * 오른쪽 버튼 4개 중 위쪽 하나만 악센트다 —
- * "여러 스토어 중 지금 최저가인 한 곳"이라는 서비스의 서사를 아이콘이 계속 반복한다.
- */
-const BUTTON_ACCENT: Dot = { cx: 22.4, cy: 12.2, r: 1.5 };
-const BUTTONS: readonly Dot[] = [
-  { cx: 19.6, cy: 15, r: 1.5 },
-  { cx: 25.2, cy: 15, r: 1.5 },
-  { cx: 22.4, cy: 17.8, r: 1.5 },
-];
+/** 가로로 이어진 같은 종류의 칸을 한 직사각형으로 묶은 것. rect 수를 칸 수(60여 개)에서 20개 남짓으로 줄인다 */
+export type BrandRun = { x: number; y: number; w: number; kind: BrandCellKind };
 
-/**
- * 16px 전용 축약형. 방향키와 버튼 4개는 16px 에서 한 덩어리로 뭉치므로
- * 그 크기에서는 점 두 개만 남긴 변형을 쓴다(왼쪽 구멍, 오른쪽 악센트).
- */
-const MINI_HOLE: Dot = { cx: 9.8, cy: 15, r: 2.4 };
-const MINI_ACCENT: Dot = { cx: 22.2, cy: 15, r: 2.4 };
+export const BRAND_RUNS: readonly BrandRun[] = GRID.flatMap((row, y) => {
+  const runs: BrandRun[] = [];
+  [...row].forEach((ch, x) => {
+    const kind = KIND[ch];
+    if (!kind) return;
+    const last = runs[runs.length - 1];
+    if (last && last.kind === kind && last.x + last.w === x) last.w += 1;
+    else runs.push({ x, y, w: 1, kind });
+  });
+  return runs;
+});
 
-/** 원을 path 로. 바디와 한 path 에 합쳐야 evenodd 로 구멍이 뚫린다 */
-function dotPath({ cx, cy, r }: Dot): string {
-  return `M${cx - r} ${cy}a${r} ${r} 0 1 0 ${r * 2} 0a${r} ${r} 0 1 0 ${-r * 2} 0z`;
-}
-
-export type BrandSymbolVariant = "full" | "mini";
-
-/** 바디 + 뚫린 디테일을 합친 단일 path. fill-rule="evenodd" 로 그려야 한다 */
-export function brandBodyPath(variant: BrandSymbolVariant = "full"): string {
-  const holes =
-    variant === "full"
-      ? [DPAD, dotPath(BUTTON_ACCENT), ...BUTTONS.map(dotPath)]
-      : [dotPath(MINI_HOLE), dotPath(MINI_ACCENT)];
-  return [BODY, ...holes].join("");
-}
-
-/** 구멍 위에 덮어 그리는 악센트 버튼 */
-export function brandAccentDot(variant: BrandSymbolVariant = "full"): Dot {
-  return variant === "full" ? BUTTON_ACCENT : MINI_ACCENT;
-}
+/** 빛 가장자리 칸의 투명도. 흰 바탕 위 노랑 기준 — 타일 위(흰 칸)는 BEAM_EDGE_ON_TILE_OPACITY */
+export const BEAM_EDGE_OPACITY = 0.45;
+const BEAM_EDGE_ON_TILE_OPACITY = 0.35;
 
 /**
- * 아이콘 색. ink / bg / accent 는 SITE 가 원천이고, 나머지 둘은 그 자리에서만 필요한 보정값이다.
- * globals.css 의 --acc 를 그대로 쓰면 두 경우에 사실상 안 보인다:
- *  - 잉크 배경 위(앱 아이콘, 반전 락업): 명도 차가 부족해 검정에 묻힌다(2.24:1).
- *  - 16px 파비콘: 점이 작아 어두운 보라가 검정으로 읽힌다.
+ * 아이콘 색. ink / bg / accent 는 SITE 가 원천이고, beam 은 globals.css 의 --beam 과 같은 값이다.
  */
 export const BRAND_COLOR = {
   ink: SITE.themeColor,
   bg: SITE.backgroundColor,
   accent: SITE.accentColor,
-  /** 잉크 배경 위에 얹는 악센트. globals.css 의 --acc-on-ink 와 같은 값 */
-  accentOnInk: "#9182f0",
-  /** 16px 이하에서만 쓰는 명도 보정 악센트 — 점이 작아 어두운 보라는 검정으로 읽힌다 */
-  accentMicro: "#6a3fd6",
+  /** 손전등 빛. globals.css 의 --beam 과 같은 값 */
+  beam: "#ffb21e",
   /** 카드, 칩 바탕. globals.css 의 --surface 와 같은 값 */
   surface: "#ffffff",
   /** 테두리. globals.css 의 --line 과 같은 값 */
@@ -95,18 +82,25 @@ export const BRAND_COLOR = {
 /** 안드로이드 maskable 안전영역 — 바깥 10%는 잘려나간다고 보고 심볼을 그 안에 넣는다 */
 export const MASKABLE_SAFE_RATIO = 0.8;
 
+/**
+ * plain: 투명 바탕에 보라 몸통(헤더, OG).
+ * tile: 보라 판에 흰 몸통(파비콘, 앱 아이콘). 작은 칸에서 투명 바탕은 브라우저 탭 색에 묻혀서 판을 깐다.
+ */
+export type BrandSymbolVariant = "plain" | "tile";
+
 type SvgOptions = {
   variant?: BrandSymbolVariant;
-  /** 바디 색 */
-  body?: string;
-  /** 악센트 버튼 색 */
-  accent?: string;
-  /** 깔아줄 배경색. 없으면 투명(구멍으로 바탕이 비친다) */
-  background?: string;
-  /** 배경 대비 심볼이 차지하는 비율. maskable 안전영역을 맞출 때 쓴다 */
+  /** tile 판의 모서리 둥글기(판 한 변 대비). iOS, 안드로이드처럼 OS 가 깎는 자리는 0 */
+  radius?: number;
+  /** 판 대비 심볼이 차지하는 비율. maskable 안전영역을 맞출 때 쓴다 */
   inset?: number;
   size?: number;
 };
+
+/** tile 판 기본 둥글기 — 시안의 30칸 판에 rx 7 을 그대로 비율로 옮겼다 */
+const TILE_RADIUS = 7 / 30;
+/** tile 에서 심볼이 판 안에 차지하는 비율(시안: 30칸 판에 22칸 심볼) */
+const TILE_INSET = 22 / 30;
 
 /**
  * 심볼을 SVG 문자열로 만든다.
@@ -114,27 +108,25 @@ type SvgOptions = {
  * 아이콘/OG 생성 쪽은 React 컴포넌트가 아니라 이 문자열을 쓴다.
  */
 export function brandSymbolSvg(options: SvgOptions = {}): string {
-  const {
-    variant = "full",
-    body = BRAND_COLOR.ink,
-    accent = BRAND_COLOR.accent,
-    background,
-    inset = 1,
-    size = BRAND_VIEWBOX,
-  } = options;
+  const { variant = "plain", radius = TILE_RADIUS, size = BRAND_VIEWBOX } = options;
+  const tile = variant === "tile";
+  const inset = options.inset ?? (tile ? TILE_INSET : 1);
 
-  const dot = brandAccentDot(variant);
   const scaled = BRAND_VIEWBOX / inset;
   const offset = (scaled - BRAND_VIEWBOX) / 2;
   const viewBox = `${-offset} ${-offset} ${scaled} ${scaled}`;
 
-  const layers = [
-    background ? `<rect x="${-offset}" y="${-offset}" width="${scaled}" height="${scaled}" fill="${background}"/>` : "",
-    `<path d="${brandBodyPath(variant)}" fill="${body}" fill-rule="evenodd"/>`,
-    `<circle cx="${dot.cx}" cy="${dot.cy}" r="${dot.r}" fill="${accent}"/>`,
-  ].join("");
+  const fill: Record<BrandCellKind, string> = {
+    body: tile ? "#ffffff" : BRAND_COLOR.accent,
+    beam: BRAND_COLOR.beam,
+    beamEdge: tile ? `#ffffff" opacity="${BEAM_EDGE_ON_TILE_OPACITY}` : `${BRAND_COLOR.beam}" opacity="${BEAM_EDGE_OPACITY}`,
+  };
+  const board = tile
+    ? `<rect x="${-offset}" y="${-offset}" width="${scaled}" height="${scaled}" rx="${scaled * radius}" fill="${BRAND_COLOR.accent}"/>`
+    : "";
+  const cells = BRAND_RUNS.map((r) => `<rect x="${r.x}" y="${r.y}" width="${r.w}" height="1" fill="${fill[r.kind]}"/>`).join("");
 
-  return `<svg xmlns="http://www.w3.org/2000/svg" width="${size}" height="${size}" viewBox="${viewBox}">${layers}</svg>`;
+  return `<svg xmlns="http://www.w3.org/2000/svg" width="${size}" height="${size}" viewBox="${viewBox}">${board}<g shape-rendering="crispEdges">${cells}</g></svg>`;
 }
 
 /** satori 의 img src 로 넘길 data URI */

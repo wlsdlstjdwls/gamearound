@@ -1,6 +1,6 @@
 /* gamearound Service Worker — 웹푸시 수신 전용(§7). 오프라인 캐시는 홈 셸 최소만. */
 // 이름 문자열은 src/lib/site.ts 의 SITE.name 과 맞춘다 (SW 는 번들 밖이라 import 불가).
-const SITE_NAME = "gamearound";
+const SITE_NAME = "GAMEAROUND";
 const CACHE_NAME = `${SITE_NAME}-shell-v1`;
 const SHELL_URLS = ["/"];
 

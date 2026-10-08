@@ -16,7 +16,7 @@ import { cn } from "@/lib/cn";
 export function ImageFallback({ label, className }: { label: string; className?: string }) {
   return (
     <div role="img" aria-label={label} className={cn("flex h-full w-full items-center justify-center bg-surface-3", className)}>
-      <BrandSymbol size={32} className="h-auto w-[34%] min-w-[18px] max-w-[64px] text-dim-2" />
+      <BrandSymbol size={32} tone="mono" className="h-auto w-[34%] min-w-[18px] max-w-[64px] text-dim-2" />
     </div>
   );
 }
