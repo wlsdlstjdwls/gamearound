@@ -10,6 +10,7 @@ import {
   coerceFieldValue,
   correctField,
   isCorrectableField,
+  isSourceName,
   rejectMatch,
   setManualRef,
   type CorrectableTable,
@@ -20,6 +21,7 @@ import { resolveCompanyName } from "@/server/services/admin-companies";
 import { approveProductMatch, rejectProductMatch } from "@/server/services/admin-products";
 import { deleteUpgrade, upsertUpgrade } from "@/server/services/admin-upgrades";
 import { requireAdmin } from "@/server/services/users";
+import { getSyncRunItems, type RunItems } from "@/server/services/admin-activity";
 import { ADMIN_ACTION_MESSAGES as A } from "@/lib/admin/messages";
 
 export type AdminActionState = { ok: true; message?: string } | { ok: false; error: string } | null;
@@ -266,4 +268,14 @@ export async function rejectProductMatchAction(productId: string): Promise<Admin
   } catch (e) {
     return fail(e);
   }
+}
+
+/**
+ * 수집 현황 "가져온 게임" 시트의 줄. 화면은 셈만 싣고 줄은 시트를 열 때 받는다(admin-activity 머리 주석).
+ * 읽기 전용이라 revalidate 하지 않는다. 모르는 소스나 기록 없음은 null — 시트가 "못 불러왔어요" 로 받는다.
+ */
+export async function loadSyncRunItemsAction(source: string): Promise<RunItems | null> {
+  await requireAdmin();
+  if (!isSourceName(source)) return null;
+  return getSyncRunItems(source);
 }

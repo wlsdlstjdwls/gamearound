@@ -9,8 +9,16 @@
 // 바뀐 칸을 싣는다(sync_logs.items, 쓰는 쪽은 sync/touched). 제목 셋도 이 목록의 앞머리로 대신된다 —
 // 일본 칸에 일본어 제목이 서는지, 며칠째 같은 실행에 머무는지는 시트의 제목과 시각이 그대로 말한다.
 //
-// 질의는 두 단이다. 소스별 마지막 실행의 items 를 먼저 집고, 거기 적힌 slug 로 제목을 한 번에 집는다.
-// items 안의 slug 를 games 와 한 문장으로 조인하면 jsonb 를 풀어 헤친 뒤 조인해 계획이 무거워진다.
+// **화면은 셈만 받고, 목록은 시트를 열 때 받는다**(2026-10-08, 사용자: "수집현황 화면은 조회가 안되는데").
+// 앞에는 소스 열다섯의 items 전부(1,808줄)를 화면을 열 때마다 실어, 닫힌 시트 안에 미리 그려 두었다.
+// 실측: 질의는 2.3초에 다 왔는데 응답은 19.5초 — 나머지 17초가 그 1,808줄을 그리는 데 들었다
+// (시트당 20줄로 자르자 4.6초). 사람은 시트를 하나 열까 말까인데 열다섯 개 몫을 늘 치르고 있었다.
+// 그래서 getSyncActivity 는 소스별 건수(새로 등록, 값 바뀜, 그대로)만 SQL 로 세고, 줄은
+// getSyncRunItems 가 소스 하나 몫만 판다(관리자 액션 loadSyncRunItemsAction 이 시트를 열 때 부른다).
+//
+// 줄을 팔 때 제목은 **같은 문장에서** 붙인다. 앞에는 slug 를 받아 제목을 다시 물었다 — "조인하면 계획이
+// 무거워진다" 가 이유였는데 실측은 반대였다: 풀어 헤친 2,005줄이 games_slug_unique 를 짚고 DB 안 13.7ms 에
+// 끝났고, 무거운 쪽은 slug 를 실어 나르는 둘째 왕복(1.5초)이었다(Neon 왕복 비용).
 import "server-only";
 import { and, between, desc, inArray, sql } from "drizzle-orm";
 import { getDb } from "@/server/db/client";
@@ -37,6 +45,19 @@ export interface RunItem {
   created: boolean;
 }
 
+/** 화면이 카드에 싣는 소스 하나의 마지막 기록 실행 — 줄은 없고 셈만 있다 */
+export interface RunSummary {
+  startedAt: Date;
+  /** 그 실행이 처리한 수. 기록된 줄(total)은 상한(SYNC_LOG_ITEMS_MAX)에서 잘리므로 둘이 다를 수 있다 */
+  processed: number;
+  /** 기록된 줄 수 */
+  total: number;
+  created: number;
+  /** 새로 등록이 아니면서 바뀐 칸이 하나라도 있는 줄. 되짚은 실행이면 가격이 바뀐 줄이다 */
+  changed: number;
+  traced?: boolean;
+}
+
 /** 소스 하나의 마지막 기록 실행 */
 export interface RunItems {
   startedAt: Date;
@@ -51,8 +72,8 @@ export interface RunItems {
 }
 
 export interface SyncActivity {
-  /** 소스별 마지막 기록 실행이 만진 게임 */
-  lastRuns: Map<SourceName, RunItems>;
+  /** 소스별 마지막 기록 실행의 셈. 줄은 getSyncRunItems 로 따로 받는다 */
+  lastRuns: Map<SourceName, RunSummary>;
   /** 최근 24시간 동안 새로 등록된 게임 */
   newGames: number;
   /** 최근 24시간 동안 찍힌 가격 스냅샷 */
@@ -71,17 +92,25 @@ export async function getSyncActivity(): Promise<SyncActivity> {
   await requireAdmin();
   const db = getDb();
 
-  type RunRow = { source: SourceName; started_at: string; processed: number | null; items: SyncLogItem[] };
+  type SummaryRow = { source: SourceName; started_at: string; processed: number | null; total: number; created: string; changed: string };
   type TotalRow = { new_games: string; snapshots: string; runs: string };
 
-  type WindowRow = { source: SourceName; started_at: string; finished_at: string; processed: number | null };
-
   const [runRes, totalRes, windowRes] = await Promise.all([
+    // 셈은 소스별 마지막 실행 열댓 줄에서만 푼다 — distinct on 을 안쪽에 두지 않으면 바깥 셈이 sync_logs
+    // 전 행의 items 를 풀어 헤친다
     db.execute(sql`
-      select distinct on (source) source, started_at, processed, items
-      from sync_logs
-      where items is not null
-      order by source, started_at desc
+      select l.source, l.started_at, l.processed,
+        jsonb_array_length(l.items) as total,
+        (select count(*) from jsonb_array_elements(l.items) e(it) where (e.it->>'created')::boolean is true) as created,
+        (select count(*) from jsonb_array_elements(l.items) e(it)
+           where (e.it->>'created')::boolean is not true
+             and jsonb_array_length(coalesce(e.it->'fields', '[]'::jsonb)) > 0) as changed
+      from (
+        select distinct on (source) source, started_at, processed, items
+        from sync_logs
+        where items is not null
+        order by source, started_at desc
+      ) l
     `),
     db.execute(sql`
       select
@@ -89,49 +118,26 @@ export async function getSyncActivity(): Promise<SyncActivity> {
         (select count(*) from price_snapshots where captured_at >= now() - interval '24 hours') as snapshots,
         (select count(*) from sync_logs where started_at >= now() - interval '24 hours') as runs
     `),
-    // 스토어 소스의 마지막으로 끝난(무언가 처리한) 실행 창. items 가 아직 없는 소스를 되짚는 데 쓴다
-    db.execute(sql`
-      select distinct on (source) source, started_at, finished_at, processed
-      from sync_logs
-      where finished_at is not null and processed > 0
-        and source in (${sql.join(STORE_SOURCES.map((s) => sql`${s}`), sql`, `)})
-      order by source, started_at desc
-    `),
+    lastWindows(STORE_SOURCES),
   ]);
 
-  const runRows = runRes.rows as RunRow[];
-  const slugs = [...new Set(runRows.flatMap((r) => r.items.map((it) => it.slug)))];
-  const titleRows =
-    slugs.length === 0
-      ? []
-      : await db
-          .select({ slug: games.slug, title: sql<string>`coalesce(${games.titleKo}, ${games.titleEn})` })
-          .from(games)
-          .where(inArray(games.slug, slugs));
-  const titleBySlug = new Map(titleRows.map((r) => [r.slug, r.title]));
-
   const totals = (totalRes.rows as TotalRow[])[0];
-  const lastRuns = new Map<SourceName, RunItems>();
-  for (const row of runRows) {
+  const lastRuns = new Map<SourceName, RunSummary>();
+  for (const row of runRes.rows as SummaryRow[]) {
     lastRuns.set(row.source, {
       startedAt: new Date(row.started_at),
       processed: row.processed ?? 0,
-      items: row.items.map((it) => ({
-        slug: it.slug,
-        title: titleBySlug.get(it.slug) ?? null,
-        fields: it.fields,
-        created: it.created === true,
-      })),
+      total: Number(row.total),
+      created: Number(row.created),
+      changed: Number(row.changed),
     });
   }
 
   // 기록이 아직 없는 스토어 소스는 마지막 실행 창을 DB 흔적으로 되짚는다
   const traced = await Promise.all(
-    (windowRes.rows as WindowRow[])
-      .filter((w) => !lastRuns.has(w.source))
-      .map(async (w) => [w.source, await traceRunItems(w.source as StoreSource, w)] as const),
+    windowRes.filter((w) => !lastRuns.has(w.source)).map(async (w) => [w.source, await traceRunItems(w.source as StoreSource, w)] as const),
   );
-  for (const [source, run] of traced) if (run.items.length > 0) lastRuns.set(source, run);
+  for (const [source, run] of traced) if (run.items.length > 0) lastRuns.set(source, summarize(run));
 
   return {
     lastRuns,
@@ -140,6 +146,64 @@ export async function getSyncActivity(): Promise<SyncActivity> {
     priceSnapshots: Number(totals?.snapshots ?? 0),
     runs: Number(totals?.runs ?? 0),
   };
+}
+
+/**
+ * 소스 하나의 마지막 기록 실행이 만진 줄 — 시트를 열 때만 부른다(머리 주석).
+ * 기록이 없는 스토어 소스는 getSyncActivity 와 같은 길로 되짚는다. 둘 다 없으면 null.
+ */
+export async function getSyncRunItems(source: SourceName): Promise<RunItems | null> {
+  await requireAdmin();
+  const db = getDb();
+  type ItemsRow = { started_at: string; processed: number | null; items: (SyncLogItem & { title: string | null })[] };
+
+  // 제목은 지워진 게임이면 null 이다(left join) — 화면이 slug 를 대신 띄운다. 순서는 items 에 적힌 그대로
+  const res = await db.execute(sql`
+    select l.started_at, l.processed,
+      (select coalesce(jsonb_agg(e.it || jsonb_build_object('title', coalesce(g.title_ko, g.title_en)) order by e.ord), '[]'::jsonb)
+         from jsonb_array_elements(l.items) with ordinality as e(it, ord)
+         left join games g on g.slug = e.it->>'slug') as items
+    from (
+      select started_at, processed, items
+      from sync_logs
+      where source = ${source} and items is not null
+      order by started_at desc
+      limit 1
+    ) l
+  `);
+  const row = (res.rows as ItemsRow[])[0];
+  if (row) {
+    return {
+      startedAt: new Date(row.started_at),
+      processed: row.processed ?? 0,
+      items: row.items.map((it) => ({ slug: it.slug, title: it.title ?? null, fields: it.fields, created: it.created === true })),
+    };
+  }
+
+  const store = STORE_SOURCES.find((s) => s === source);
+  if (!store) return null;
+  const [w] = await lastWindows([store]);
+  return w ? traceRunItems(store, w) : null;
+}
+
+type WindowRow = { source: SourceName; started_at: string; finished_at: string; processed: number | null };
+
+/** 스토어 소스의 마지막으로 끝난(무언가 처리한) 실행 창. items 가 아직 없는 소스를 되짚는 데 쓴다 */
+async function lastWindows(sources: readonly StoreSource[]): Promise<WindowRow[]> {
+  const res = await getDb().execute(sql`
+    select distinct on (source) source, started_at, finished_at, processed
+    from sync_logs
+    where finished_at is not null and processed > 0
+      and source in (${sql.join(sources.map((s) => sql`${s}`), sql`, `)})
+    order by source, started_at desc
+  `);
+  return res.rows as WindowRow[];
+}
+
+function summarize(run: RunItems): RunSummary {
+  const created = run.items.filter((i) => i.created).length;
+  const changed = run.items.filter((i) => !i.created && i.fields.length > 0).length;
+  return { startedAt: run.startedAt, processed: run.processed, total: run.items.length, created, changed, traced: run.traced };
 }
 
 /**

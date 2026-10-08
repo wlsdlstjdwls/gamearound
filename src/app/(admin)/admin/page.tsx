@@ -23,7 +23,7 @@ import { formatAgo, formatDateTime } from "@/lib/format";
 import { SYNC_MESSAGES, SYNC_STATUS_LABEL, sourceLabel } from "@/lib/admin/messages";
 import { ROUTES } from "@/lib/routes";
 import { getSyncOverview, type SyncLogRow, type SyncOverviewItem } from "@/server/services/admin";
-import { getSyncActivity, RUNNING_GRACE_MINUTES, type RunItems } from "@/server/services/admin-activity";
+import { getSyncActivity, RUNNING_GRACE_MINUTES, type RunSummary } from "@/server/services/admin-activity";
 import { getDisabledReason, isSource } from "@/server/adapters";
 import { requireRoleOrForbid } from "@/server/auth/guards";
 import { PageHead, Panel, raisedClass } from "@/components/ui/page";
@@ -108,7 +108,7 @@ function Totals({
   );
 }
 
-function SourceCard({ item, tone, run, now }: { item: SyncOverviewItem; tone: Tone; run: RunItems | undefined; now: number }) {
+function SourceCard({ item, tone, run, now }: { item: SyncOverviewItem; tone: Tone; run: RunSummary | undefined; now: number }) {
   const l = item.latest;
   const disabledReason = disabledReasonOf(item);
   const d = l?.discovery;
@@ -151,7 +151,7 @@ function SourceCard({ item, tone, run, now }: { item: SyncOverviewItem; tone: To
         <p className="text-[12px] text-dim">{SYNC_MESSAGES.neverRan}</p>
       )}
 
-      {run && run.items.length > 0 && <SyncRunSheet sourceName={sourceLabel(item.source)} run={run} now={now} />}
+      {run && run.total > 0 && <SyncRunSheet source={item.source} sourceName={sourceLabel(item.source)} run={run} now={now} />}
 
       {l?.errorSample && (
         <div>

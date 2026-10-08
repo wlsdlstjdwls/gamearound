@@ -1,9 +1,16 @@
+"use client";
 // 수집 현황 소스 칸의 "가져온 게임 N건" 시트 — 마지막 기록 실행이 만진 게임과 바뀐 값.
 //
 // 칸 안에 펼치지 않고 시트로 띄운 이유(2026-09-30 사용자 요청): 소스가 열 칸 넘게 서는 화면이라
 // 목록을 칸마다 펼치면 한 칸이 수백 줄이 되고, 정작 한눈에 볼 상태 배지와 실패 수가 밀려난다.
-// 서버 컴포넌트다 — 목록은 서버에서 그려 시트(클라이언트)의 children 으로 넘긴다. 열 때 기다림이 없다.
+//
+// **줄은 시트를 열 때 받는다**(2026-10-08). 앞에는 서버에서 줄을 다 그려 children 으로 넘겼다 — 열 때 기다림은
+// 없었지만, 닫힌 시트 열다섯 개 몫 1,808줄을 화면을 열 때마다 그려 응답이 19.5초 걸렸다(admin-activity 머리 주석).
+// 이제 셈(머리 두 줄)은 화면이 싣고, 줄만 처음 열 때 한 번 받아 둔다. 다시 열면 받은 것을 그대로 쓴다.
 import Link from "next/link";
+import { useState, useTransition } from "react";
+import { loadSyncRunItemsAction } from "@/app/(admin)/admin/actions";
+import { buttonClass } from "@/components/ui/button";
 import { Sheet } from "@/components/ui/sheet";
 import { SHEET_ROW, SHEET_ROWS } from "@/components/ui/page";
 import { Clamp } from "@/components/ui/tooltip";
@@ -12,7 +19,7 @@ import { syncFieldLabels } from "@/lib/admin/sync-fields";
 import { cn } from "@/lib/cn";
 import { formatAgo } from "@/lib/format";
 import { gamePath } from "@/lib/routes";
-import type { RunItem, RunItems } from "@/server/services/admin-activity";
+import type { RunItem, RunSummary } from "@/server/services/admin-activity";
 
 const TAG = "rounded-[6px] px-1.5 py-0.5 text-[11px] font-semibold";
 
@@ -37,34 +44,63 @@ function ItemRow({ item, traced }: { item: RunItem; traced: boolean }) {
   );
 }
 
-export function SyncRunSheet({ sourceName, run, now }: { sourceName: string; run: RunItems; now: number }) {
-  const created = run.items.filter((i) => i.created).length;
-  const changed = run.items.filter((i) => !i.created && i.fields.length > 0).length;
-  const same = run.items.length - created - changed;
+/** 아직 안 받음, 받음, 못 받음. 못 받았으면 다음에 열 때 다시 묻는다 */
+type Load = { state: "idle" } | { state: "done"; items: RunItem[] } | { state: "failed" };
+
+export function SyncRunSheet({ source, sourceName, run, now }: { source: string; sourceName: string; run: RunSummary; now: number }) {
+  const [open, setOpen] = useState(false);
+  const [load, setLoad] = useState<Load>({ state: "idle" });
+  const [pending, startTransition] = useTransition();
+
+  const same = run.total - run.created - run.changed;
   const counts = [
-    { label: SYNC_MESSAGES.runItemsCreated, n: created },
-    { label: run.traced ? SYNC_MESSAGES.runItemsPriceChanged : SYNC_MESSAGES.runItemsChanged, n: changed },
+    { label: SYNC_MESSAGES.runItemsCreated, n: run.created },
+    { label: run.traced ? SYNC_MESSAGES.runItemsPriceChanged : SYNC_MESSAGES.runItemsChanged, n: run.changed },
     { label: run.traced ? SYNC_MESSAGES.runItemsPriceSame : SYNC_MESSAGES.runItemsSame, n: same },
   ];
 
+  const openSheet = () => {
+    setOpen(true);
+    if (load.state === "done" || pending) return;
+    startTransition(async () => {
+      try {
+        const res = await loadSyncRunItemsAction(source);
+        setLoad(res ? { state: "done", items: res.items } : { state: "failed" });
+      } catch {
+        setLoad({ state: "failed" });
+      }
+    });
+  };
+
   return (
-    <Sheet label={SYNC_MESSAGES.runItemsOpen(run.items.length)} title={SYNC_MESSAGES.runItemsTitle(sourceName)} size="wide" triggerClassName="w-fit">
-      <p className="pt-2 text-[12.5px] leading-[1.6] text-mut">
-        {SYNC_MESSAGES.runItemsLead(formatAgo(run.startedAt, now), run.processed, run.items.length)}
-      </p>
-      {run.traced && <p className="mt-1.5 text-[12px] leading-[1.6] text-dim">{SYNC_MESSAGES.runItemsTraced}</p>}
-      <p className="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-[12.5px] text-mut">
-        {counts.map((c) => (
-          <span key={c.label}>
-            {c.label} <b className="font-bold tabular-nums text-ink">{c.n.toLocaleString("ko-KR")}</b>
-          </span>
-        ))}
-      </p>
-      <ul className={cn(SHEET_ROWS, "mt-3")}>
-        {run.items.map((item) => (
-          <ItemRow key={item.slug} item={item} traced={run.traced === true} />
-        ))}
-      </ul>
-    </Sheet>
+    <>
+      <button type="button" className={buttonClass({ variant: "secondary", size: "sm", className: "w-fit" })} onClick={openSheet}>
+        {SYNC_MESSAGES.runItemsOpen(run.total)}
+      </button>
+      <Sheet title={SYNC_MESSAGES.runItemsTitle(sourceName)} size="wide" open={open} onOpenChange={setOpen}>
+        <p className="pt-2 text-[12.5px] leading-[1.6] text-mut">
+          {SYNC_MESSAGES.runItemsLead(formatAgo(run.startedAt, now), run.processed, run.total)}
+        </p>
+        {run.traced && <p className="mt-1.5 text-[12px] leading-[1.6] text-dim">{SYNC_MESSAGES.runItemsTraced}</p>}
+        <p className="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-[12.5px] text-mut">
+          {counts.map((c) => (
+            <span key={c.label}>
+              {c.label} <b className="font-bold tabular-nums text-ink">{c.n.toLocaleString("ko-KR")}</b>
+            </span>
+          ))}
+        </p>
+        {load.state === "done" ? (
+          <ul className={cn(SHEET_ROWS, "mt-3")}>
+            {load.items.map((item) => (
+              <ItemRow key={item.slug} item={item} traced={run.traced === true} />
+            ))}
+          </ul>
+        ) : (
+          <p role="status" className="mt-4 rounded-xl bg-surface-2 px-4 py-5 text-[13px] text-mut">
+            {load.state === "failed" && !pending ? SYNC_MESSAGES.runItemsLoadFailed : SYNC_MESSAGES.runItemsLoading}
+          </p>
+        )}
+      </Sheet>
+    </>
   );
 }

@@ -126,6 +126,9 @@ export const SYNC_MESSAGES = {
   runItemsPriceSame: "가격 그대로",
   /** 가져와 견줬지만 달라진 칸이 없다 — 실패가 아니다 */
   runItemsNoChange: "바뀐 값 없음",
+  /** 줄은 시트를 열 때 받는다(admin-activity 머리 주석) */
+  runItemsLoading: "목록을 불러오는 중이에요.",
+  runItemsLoadFailed: "목록을 못 불러왔어요. 시트를 닫았다가 다시 열어 보세요.",
   errorSample: "에러 맛보기",
   sourceLogs: "이 스토어 로그 보기",
   allLogs: "실행 로그 전체 보기",
