@@ -9,12 +9,12 @@ const ROWS = 8; // 한 화면에 보이는 줄 수면 된다 — 큐 전체 길�
 export default function AdminMatchesLoading() {
   return (
     <SkeletonBody>
-      <AdminHeadSkeleton width="w-36" />
+      <AdminHeadSkeleton width="w-36" leadLines={2} />
       <div className="flex flex-col gap-3">
         <SectionHeadSkeleton width="w-52" />
         <DataTableSkeleton
           cols={MATCH_QUEUE_COLS}
-          cells={["h-4 w-4/5", "h-4 w-3/4", "h-4 w-16", "h-4 w-2/3", "h-4 w-8", "h-8 w-[124px] rounded-[9px]"]}
+          cells={["h-4 w-4/5", "h-4 w-3/4", "h-4 w-16", "h-4 w-2/3", "h-4 w-8", ["h-8 w-[60px] rounded-[9px]", "h-8 w-[72px] rounded-[9px]"]]}
           rows={ROWS}
         />
       </div>

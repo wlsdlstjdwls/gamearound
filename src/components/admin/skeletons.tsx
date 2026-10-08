@@ -8,12 +8,28 @@ import { Bone, PageHeadSkeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/cn";
 import { ROWS } from "@/components/ui/page";
 
-/** 관리자 화면 머리 — PageHead 아래 13px 설명 한 줄(lead)이 거의 모든 화면에 붙는다 */
-export function AdminHeadSkeleton({ width = "w-40", lead = true, action }: { width?: string; lead?: boolean; action?: string }) {
+/**
+ * 관리자 화면 머리 — PageHead 아래 13px 설명 문단(lead)이 거의 모든 화면에 붙는다.
+ * leadLines: 설명이 넓은 화면에서 몇 줄로 접히는지. 매칭, 상품처럼 안내가 긴 화면은 두 줄이다(2026-10-08 캡처 비교)
+ */
+export function AdminHeadSkeleton({
+  width = "w-40",
+  lead = true,
+  leadLines = 1,
+  action,
+}: {
+  width?: string;
+  lead?: boolean;
+  leadLines?: number;
+  action?: string;
+}) {
   return (
     <div className="flex flex-col gap-1.5">
       <PageHeadSkeleton width={width} action={action} />
-      {lead && <Bone className="h-4 w-[460px] max-w-full" />}
+      {lead &&
+        Array.from({ length: leadLines }).map((_, i) => (
+          <Bone key={i} className={cn("h-4 max-w-full", i === leadLines - 1 ? "w-[460px]" : "w-[600px]")} />
+        ))}
     </div>
   );
 }
@@ -53,7 +69,8 @@ export function DataTableSkeleton({
   mobileSummary = false,
 }: {
   cols: string;
-  cells: string[];
+  /** 칸마다 막대 클래스. 배열을 주면 그 칸에 막대를 세로로 쌓는다(매칭의 "맞아요", "아니에요" 단추 둘) */
+  cells: Array<string | string[]>;
   rows: number;
   mobileSummary?: boolean;
 }) {
@@ -67,16 +84,38 @@ export function DataTableSkeleton({
       <div className="divide-y divide-line-soft">
         {Array.from({ length: rows }).map((_, r) => (
           <div key={r} className={cn("flex flex-col gap-2 py-3.5 md:grid md:items-center md:gap-y-0", cols)}>
+            {/* 좁은 화면 요약 카드 — 실행 로그 실물(MobileRunHead + 이름표 줄 둘)을 따른다: 소스 이름과 결과 배지,
+                시각과 건수 한 줄, 이름표/값 두 줄. 두 줄만 그렸더니 줄 하나가 63 대 160px 로 어긋났다(2026-10-08 캡처) */}
             {mobileSummary && (
-              <div className="flex flex-col gap-1.5 md:hidden">
-                <Bone className="h-4 w-32" />
-                <Bone className="h-3 w-48" />
+              <div className="flex flex-col gap-2 py-1 md:hidden">
+                <div className="flex items-center justify-between gap-3">
+                  <Bone className="h-4 w-28" />
+                  <Bone className="h-[22px] w-14 rounded-full" />
+                </div>
+                <Bone className="h-3.5 w-52" />
+                {[0, 1].map((j) => (
+                  <div key={j} className="mt-1 flex gap-3">
+                    <Bone className="h-3.5 w-14 shrink-0" />
+                    <div className="flex flex-1 flex-col gap-1.5">
+                      <Bone className="h-3.5 w-24" />
+                      <Bone className="h-3.5 w-4/5" />
+                    </div>
+                  </div>
+                ))}
               </div>
             )}
             {cells.map((cell, i) => (
               <div key={i} className={cn(mobileSummary ? "hidden" : "flex", "min-w-0 items-center gap-2.5 md:block")}>
                 <Bone className="h-3 w-[88px] shrink-0 md:hidden" />
-                <Bone className={cell} />
+                {Array.isArray(cell) ? (
+                  <div className="flex flex-col items-start gap-2">
+                    {cell.map((c, j) => (
+                      <Bone key={j} className={c} />
+                    ))}
+                  </div>
+                ) : (
+                  <Bone className={cell} />
+                )}
               </div>
             ))}
           </div>

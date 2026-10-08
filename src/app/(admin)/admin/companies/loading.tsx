@@ -11,12 +11,12 @@ export default function AdminCompaniesLoading() {
   return (
     <SkeletonBody className="gap-8">
       <div className="flex flex-col gap-3">
-        <AdminHeadSkeleton width="w-32" />
+        <AdminHeadSkeleton width="w-32" leadLines={2} />
         <div className="flex items-end justify-between gap-2">
           <AdminH2Skeleton width="w-32" />
           <Bone className="h-3 w-40" />
         </div>
-        <DataTableSkeleton cols={COMPANY_PENDING_COLS} cells={["h-9 w-3/5", "h-4 w-8", "h-8 w-[112px] rounded-[9px]"]} rows={PENDING_ROWS} />
+        <DataTableSkeleton cols={COMPANY_PENDING_COLS} cells={[["h-4 w-40", "h-3 w-56"], "h-4 w-8", "h-8 w-[112px] rounded-[9px]"]} rows={PENDING_ROWS} />
       </div>
       <div className="flex flex-col gap-3">
         <AdminH2Skeleton width="w-36" />

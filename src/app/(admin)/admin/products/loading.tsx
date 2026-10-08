@@ -9,7 +9,7 @@ const ROWS = 8;
 export default function AdminProductsLoading() {
   return (
     <SkeletonBody>
-      <AdminHeadSkeleton width="w-36" />
+      <AdminHeadSkeleton width="w-36" leadLines={2} />
       <div className="flex flex-col gap-3">
         <SectionHeadSkeleton width="w-60" />
         <DataTableSkeleton
