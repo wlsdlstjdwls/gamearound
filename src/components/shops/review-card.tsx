@@ -8,6 +8,8 @@ import { ActionForm, useActionFormPending } from "@/components/ui/action-form";
 import { reviewShopAction } from "@/app/(admin)/shops/admin/actions";
 import { Button } from "@/components/ui/button";
 import { Panel } from "@/components/ui/page";
+import { ADMIN_FIELD } from "@/components/admin/field";
+import { formatDate } from "@/lib/format";
 import { FormMessage } from "@/components/ui/form-message";
 import { SHOP_ADMIN_MESSAGES, SHOP_MESSAGES } from "@/lib/shops/messages";
 import { SHOP_REASON_MAX } from "@/lib/shops/schemas";
@@ -67,11 +69,11 @@ export function ShopReviewCard({ shop }: { shop: ShopApplication }) {
         )}
         <div className="flex gap-2">
           <dt className="w-[76px] shrink-0 text-dim">{SHOP_ADMIN_MESSAGES.ownerLabel}</dt>
-          <dd className="text-mut">{shop.ownerEmail ?? "알 수 없음"}</dd>
+          <dd className="text-mut">{shop.ownerEmail ?? SHOP_ADMIN_MESSAGES.unknownOwner}</dd>
         </div>
         <div className="flex gap-2">
           <dt className="w-[76px] shrink-0 text-dim">{SHOP_ADMIN_MESSAGES.appliedAtLabel}</dt>
-          <dd className="text-mut">{shop.appliedAt.toLocaleDateString("ko-KR")}</dd>
+          <dd className="text-mut">{formatDate(shop.appliedAt)}</dd>
         </div>
         {shop.statusReason && (
           <div className="flex gap-2">
@@ -104,7 +106,8 @@ export function ShopReviewCard({ shop }: { shop: ShopApplication }) {
           name="reason"
           maxLength={SHOP_REASON_MAX}
           placeholder={SHOP_ADMIN_MESSAGES.reasonPlaceholder}
-          className="h-[42px] w-full rounded-[var(--radius-sm)] border border-line-strong bg-bg px-3.5 text-[16px] text-ink outline-none transition-colors placeholder:text-dim focus:border-ink"
+          // 다른 관리자 폼과 같은 칸이다 — 좁은 화면에서만 손가락 크기로 키운다(components/admin/field)
+          className={`${ADMIN_FIELD} placeholder:text-dim`}
         />
         <div className="flex flex-wrap gap-1.5">
           {decisionsFor(shop.status).map((d) => (

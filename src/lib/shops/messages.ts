@@ -141,6 +141,8 @@ export const SHOP_ADMIN_MESSAGES = {
   // 들어간 화면 제목이 다르면 같은 곳인지 의심하게 된다.
   title: "입점 신청",
   lead: "매장이 낸 신청서를 확인하고 승인하거나 반려해요. 반려와 정지에는 사유를 적어요. 사유는 매장주에게 그대로 보여요.",
+  tabsLabel: "신청 상태",
+  unknownOwner: "알 수 없음",
   pendingTab: "심사 대기",
   activeTab: "운영 중",
   suspendedTab: "정지",
