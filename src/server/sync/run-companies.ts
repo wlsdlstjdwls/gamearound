@@ -9,17 +9,23 @@
 //   3. 최근에 못 붙인 이름(company_lookup_misses)은 retry_at 까지 건너뛴다
 //   4. 남은 이름을 몫만큼 어댑터의 묶음 조회(lookupMany)로 한 번에 묻는다
 // 이미 아는 회사의 재조회(COMPANY_REFRESH_DAYS)는 몫이 남을 때만 한다.
+//
+// 2026-10-08: 4 의 몫은 출시예정, 최근 조회 게임의 이름부터 쓴다(company-priority). 게임 수 순만 쓰면
+// 출시예정 화면의 신작 회사가 대기열 끝에 서서 "나라" 칸이 오래 빈다.
 import { and, eq, gt, inArray, isNull, lt, or, sql } from "drizzle-orm";
-import { companies, companyLookupMisses, gameCompanies, games, type CompanyRole } from "@/server/db/schema";
+import { companies, companyLookupMisses, gameCompanies, gamePlatforms, games, type CompanyRole } from "@/server/db/schema";
 import { getCompanyAdapter, type CompanySource } from "@/server/adapters";
 import type { CompanyLookup } from "@/server/adapters/types";
 import { createdBy, updatedBy } from "@/server/db/audit";
 import { normalizeCompanyName } from "@/lib/company-name";
+import { DISPLAY_TIME_ZONE } from "@/lib/format";
+import { recentlyViewedSlugs } from "@/server/game-views";
 import { BATCH_SIZE, COMPANY_MISS_RETRY_DAYS, COMPANY_REFRESH_DAYS, COMPANY_SEARCH_DEADLINE_MS } from "./constants";
 import type { Db } from "@/server/db/client";
 import { recordError, type Ctx, type RunOptions } from "./context";
 import { fetchWithRetry } from "./retry";
 import { attachCompany, companyNamesOf, findCompaniesByAliases } from "./company-writer";
+import { prioritizeCompanyTargets } from "./company-priority";
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 /** 한 문장에 넣을 행 수. Neon HTTP 한 요청의 파라미터가 너무 많아지지 않게 끊는다 */
@@ -30,6 +36,8 @@ export interface CompanyTargetLink {
   role: CompanyRole;
   /** 붙인 뒤 게임 화면 캐시를 털기 위해 같이 들고 다닌다 */
   slug?: string;
+  /** 출시일이 아직 안 온 게임(어느 판이든). 조회 순서를 앞당기는 데만 쓴다 */
+  upcoming?: boolean;
 }
 
 /** 한 회사 이름과, 그 이름을 쓰는 게임들 */
@@ -47,7 +55,11 @@ export async function listCompanyTargets(db: Db): Promise<CompanyTarget[]> {
     .select({
       developer: games.developer,
       publisher: games.publisher,
-      games: sql<Array<{ id: string; slug: string }>>`json_agg(json_build_object('id', ${games.id}, 'slug', ${games.slug}))`,
+      // 출시일은 판(game_platforms)마다 있다 — 한 판이라도 미래면 출시예정 화면에 뜬다. 오늘은 한국 날짜로 센다
+      games: sql<Array<{ id: string; slug: string; upcoming: boolean }>>`json_agg(json_build_object(
+        'id', ${games.id}, 'slug', ${games.slug},
+        'upcoming', exists (select 1 from ${gamePlatforms} gp where gp.game_id = ${games.id}
+          and gp.release_date > (now() at time zone ${DISPLAY_TIME_ZONE})::date)))`,
     })
     .from(games)
     .leftJoin(gameCompanies, eq(gameCompanies.gameId, games.id))
@@ -59,7 +71,7 @@ export async function listCompanyTargets(db: Db): Promise<CompanyTarget[]> {
     for (const { name, role } of companyNamesOf(row.developer, row.publisher)) {
       const key = normalizeCompanyName(name);
       if (!key) continue;
-      const links = row.games.map((g) => ({ gameId: g.id, slug: g.slug, role }));
+      const links = row.games.map((g) => ({ gameId: g.id, slug: g.slug, role, upcoming: g.upcoming }));
       const hit = byName.get(key);
       if (hit) hit.links.push(...links);
       else byName.set(key, { rawName: name, links });
@@ -139,7 +151,11 @@ export async function runCompanies(ctx: Ctx, source: CompanySource, opts: RunOpt
   const adapter = getCompanyAdapter(source);
   const limit = opts.limit ?? BATCH_SIZE[source];
 
-  const [all, misses] = await Promise.all([listCompanyTargets(ctx.db), loadActiveMisses(ctx.db, ctx.now)]);
+  const [all, misses, viewed] = await Promise.all([
+    listCompanyTargets(ctx.db),
+    loadActiveMisses(ctx.db, ctx.now),
+    recentlyViewedSlugs(ctx.now),
+  ]);
 
   // 이미 아는 이름은 외부 질의 없이 잇는다. 별칭 표가 커질수록 이 지름길이 대부분을 흡수한다
   const known = await findCompaniesByAliases(ctx.db, all.map((t) => t.rawName));
@@ -157,7 +173,8 @@ export async function runCompanies(ctx: Ctx, source: CompanySource, opts: RunOpt
   }
   await linkMany(ctx, aliasLinks);
 
-  const fresh = unknown.filter((t) => !misses.has(normalizeCompanyName(t.rawName))).slice(0, limit);
+  const waiting = unknown.filter((t) => !misses.has(normalizeCompanyName(t.rawName)));
+  const fresh = prioritizeCompanyTargets(waiting, new Set(viewed)).slice(0, limit);
   const stale = await listStaleCompanies(ctx, limit - fresh.length);
   const targets = [...fresh, ...stale];
   if (targets.length === 0) return;
