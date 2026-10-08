@@ -50,7 +50,11 @@ export const ONBOARDING_MESSAGES = {
     os: "운영체제",
     cpu: "프로세서",
     gpu: "그래픽",
-    ram: "메모리 (GB)",
+    ram: "메모리",
+    /** 메모리 칸 뒤 단위 */
+    gb: "GB",
+    /** 브라우저가 읽어 채운 칸 옆 배지. 긴 안내 문장(DEVICE_MESSAGES.autoFilled)을 대신한다 */
+    auto: "자동으로 읽었어요",
   },
 
   genres: {

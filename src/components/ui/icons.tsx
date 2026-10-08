@@ -321,3 +321,37 @@ export function TagIcon(p: IconProps) {
     </svg>
   );
 }
+
+/* ── 기기 입력 줄의 부품 그림(2026-10-08) — 줄 왼쪽 칸에 서서 무엇을 적는 줄인지 글보다 먼저 말한다 ── */
+
+/** 프로세서 — 다리 달린 칩 */
+export function CpuIcon(p: IconProps) {
+  return (
+    <svg {...base(p)}>
+      <rect x="6" y="6" width="12" height="12" rx="2" />
+      <rect x="9.5" y="9.5" width="5" height="5" rx="0.5" />
+      <path d="M9 2.5V6M15 2.5V6M9 18v3.5M15 18v3.5M2.5 9H6M2.5 15H6M18 9h3.5M18 15h3.5" />
+    </svg>
+  );
+}
+
+/** 그래픽 — 팬 달린 카드 */
+export function GpuIcon(p: IconProps) {
+  return (
+    <svg {...base(p)}>
+      <rect x="2.5" y="6" width="19" height="11" rx="2" />
+      <circle cx="9" cy="11.5" r="2.5" />
+      <path d="M15 10h3.5M15 13h3.5M5 17v2.5" />
+    </svg>
+  );
+}
+
+/** 메모리 — 램 막대 */
+export function MemoryIcon(p: IconProps) {
+  return (
+    <svg {...base(p)}>
+      <rect x="2.5" y="7" width="19" height="9" rx="1.5" />
+      <path d="M6.5 10.5v2M10 10.5v2M14 10.5v2M17.5 10.5v2M5 16v2.5M19 16v2.5" />
+    </svg>
+  );
+}
