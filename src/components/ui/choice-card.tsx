@@ -39,9 +39,11 @@ export type ChoiceCardProps = {
    */
   onClick?: (e: MouseEvent<HTMLLabelElement>) => void;
   className?: string;
+  /** 이 칸을 설명하는 다른 요소(에러 문구 등)의 id */
+  describedBy?: string;
 };
 
-export function ChoiceCard({ multiple = false, name, value, label, note, leading, footer, defaultChecked, checked, onChange, disabled, onClick, className }: ChoiceCardProps) {
+export function ChoiceCard({ multiple = false, name, value, label, note, leading, footer, defaultChecked, checked, onChange, disabled, onClick, className, describedBy }: ChoiceCardProps) {
   const id = useId();
   return (
     <label
@@ -63,6 +65,8 @@ export function ChoiceCard({ multiple = false, name, value, label, note, leading
         checked={checked}
         onChange={onChange}
         disabled={disabled}
+        aria-describedby={describedBy}
+        aria-invalid={describedBy ? true : undefined}
         className="peer sr-only"
       />
       {/* 우상단 표시 — 고르기 전에도 자리를 비워 두어야 "고를 수 있는 칸" 이라는 것이 누르기 전에 읽힌다 */}

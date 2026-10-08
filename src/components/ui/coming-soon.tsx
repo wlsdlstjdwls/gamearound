@@ -11,9 +11,8 @@
 import { Sheet } from "@/components/ui/sheet";
 import { buttonClass } from "@/components/ui/button";
 import { COMING_SOON } from "@/lib/messages/coming-soon";
+import { RIPPLE_DELAYS_MS } from "@/lib/motion";
 
-/** 물결 둘의 시작 어긋남(ms). 둘이 같이 나가면 물결 사이가 끊겨 심장박동처럼 보인다 */
-const RIPPLE_DELAYS = [0, 1400];
 
 /** 톱니. 스피너가 아니라 "만드는 중" 을 뜻하므로 이가 굵고 느리다 */
 function GearIcon() {
@@ -39,7 +38,7 @@ function GearIcon() {
 function SoonGraphic() {
   return (
     <div className="relative flex size-28 shrink-0 items-center justify-center">
-      {RIPPLE_DELAYS.map((delay) => (
+      {RIPPLE_DELAYS_MS.map((delay) => (
         <span
           key={delay}
           aria-hidden

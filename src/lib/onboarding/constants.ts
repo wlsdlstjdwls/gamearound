@@ -121,8 +121,11 @@ export const DEAL_STYLE_PATIENCE: Record<DealStyle, number> = { full_price: 1, w
 
 export const PLAY_TIME_LENGTH: Record<PlayTimeStyle, number> = { short: 1, medium: 2, long: 3, endless: 4 };
 
-/** 플랫폼 카드 왼쪽 그림 — 상표 대신 기기 모양으로 가른다(로고는 쓸 권리도 자산도 없다) */
+/** 플랫폼 카드 그림 — 상표 대신 기기 모양으로 가른다(로고는 쓸 권리도 자산도 없다) */
 export type PlatformShape = "pc" | "console" | "handheld";
+
+/** 선택 카드 그림 종류. pass 는 구독 카드(티켓) — 구독은 기기가 아니라 "들고 있는 패스" 다 */
+export type PickShape = PlatformShape | "pass";
 
 export const PLATFORM_SHAPE: Partial<Record<Platform, PlatformShape>> = {
   steam: "pc",

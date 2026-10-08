@@ -13,6 +13,12 @@ export function stagger(i: number, stepMs: number = STAGGER_STEP_MS): CSSPropert
   return { "--stagger": `${Math.min(i, STAGGER_MAX_INDEX) * stepMs}ms` } as CSSProperties;
 }
 
+/**
+ * 퍼지는 물결(.soon-ripple) 둘의 시작 어긋남(ms). 둘이 같이 나가면 물결 사이가 끊겨 심장박동처럼 보인다.
+ * 준비 중 그림(coming-soon)과 온보딩 알림 키가 같이 쓴다.
+ */
+export const RIPPLE_DELAYS_MS = [0, 1400] as const;
+
 /** 등장이 끝난 셸에 붙는 표식. 이 값이 붙으면 같은 자리를 다시 그려도 등장하지 않는다(globals.css) */
 export const ENTERED_ATTR = "data-entered";
 

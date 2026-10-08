@@ -10,13 +10,13 @@
 // - 상한이 있는 화면(장르): 위쪽 인벤토리 칸에 고른 것이 하나씩 장착된다(inventory-bar). 꽉 찬 뒤 잠긴 카드를 누르면
 //   칸 줄이 흔들린다 — 잠긴 카드가 그냥 무반응이면 고장으로 읽힌다.
 // - 게이지가 있는 선택지(성향, 플레이타임): 카드 아래 도트 게이지(pixel-meter).
-// - 기기 모양이 있는 선택지(플랫폼): 이름 왼쪽 그림.
+// - 그림이 있는 선택지(플랫폼은 기기 모양, 구독은 패스 티켓): 이름 위 그림 칸. 고르면 칸이 보라로 켜진다.
 // 무엇을 붙일지는 선택지 데이터(PickOption)가 정한다 — 단계 이름으로 분기하지 않는다.
 import { useEffect, useState, type ReactNode } from "react";
 import { stagger } from "@/lib/motion";
-import { METER_MAX, type PlatformShape } from "@/lib/onboarding/constants";
+import { METER_MAX, type PickShape } from "@/lib/onboarding/constants";
 import { ChoiceCard, ChoiceGrid } from "@/components/ui/choice-card";
-import { GamepadIcon, HandheldIcon, MonitorIcon } from "@/components/ui/icons";
+import { GamepadIcon, HandheldIcon, MonitorIcon, TicketIcon } from "@/components/ui/icons";
 import { useAnswerGate } from "@/components/onboarding/answer-gate";
 import { InventoryBar } from "@/components/onboarding/inventory-bar";
 import { PixelMeter } from "@/components/onboarding/pixel-meter";
@@ -25,16 +25,20 @@ export type PickOption = {
   value: string;
   label: string;
   note?: string;
-  /** 이름 왼쪽 기기 그림 */
-  shape?: PlatformShape;
+  /** 이름 위 그림(기기 모양, 구독 패스) */
+  shape?: PickShape;
   /** 카드 아래 도트 게이지. peak 는 꼭대기 칸을 빛 색으로 */
   meter?: { level: number; caption: string; peak?: boolean };
 };
 
-const SHAPE_ICON: Record<PlatformShape, ReactNode> = {
+/** 3열 촘촘한 격자에 둘 이름의 최대 글자 수. "Epic Games"(10) 는 들어가고 "Game Pass 콘솔"(12) 은 넘친다(360 폭 실측) */
+const DENSE_LABEL_MAX = 10;
+
+const SHAPE_ICON: Record<PickShape, ReactNode> = {
   pc: <MonitorIcon size={17} />,
   console: <GamepadIcon size={17} />,
   handheld: <HandheldIcon size={17} />,
+  pass: <TicketIcon size={17} />,
 };
 
 export function PickGroup({
@@ -80,8 +84,9 @@ export function PickGroup({
   return (
     <div className="flex flex-col gap-3">
       {max !== undefined && <InventoryBar items={equipped} max={max} onRemove={(v) => toggle(v, false)} shakeKey={blocked} />}
-      {/* 둘째 줄이 하나도 없으면 촘촘한 격자로 — 플랫폼, 장르, 구독처럼 이름만 있는 선택지다 */}
-      <ChoiceGrid dense={options.every((o) => !o.note)}>
+      {/* 둘째 줄이 없고 이름이 짧으면 촘촘한 격자로(플랫폼, 장르). 구독은 이름만 있어도 길어서
+          ("PlayStation Plus 디럭스") 3열에서 "PlayStatio / n Plus" 로 동강 났다 — 그런 묶음은 2열에 둔다 */}
+      <ChoiceGrid dense={options.every((o) => !o.note && o.label.length <= DENSE_LABEL_MAX)}>
         {options.map((o, i) => {
           const checked = selected.includes(o.value);
           const locked = full && !checked;

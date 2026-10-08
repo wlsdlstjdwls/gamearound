@@ -17,7 +17,7 @@ import { getMyProfile, listGenreChoices, listSubscriptionChoices } from "@/serve
 import { listGames } from "@/server/services/games";
 import { OnboardingShell } from "@/components/onboarding/shell";
 import { PickGroup, type PickOption } from "@/components/onboarding/pick-group";
-import { IntroBody } from "@/components/onboarding/intro-body";
+import { IntroBody, IntroHero } from "@/components/onboarding/intro-body";
 import { DoneBody } from "@/components/onboarding/done-body";
 import { DeviceStepFields } from "@/components/onboarding/device-step";
 import { NotifyStepBody } from "@/components/onboarding/notify-step";
@@ -53,7 +53,9 @@ export default async function WelcomeStepPage({ params, searchParams }: Props) {
         step={step}
         ctx={ctx}
         filled={filled}
+        hero={<IntroHero />}
         title={M.intro.title}
+        subtitle={M.intro.subtitle}
         action={submitStepAction}
         submitLabel={M.intro.start}
         skippable
@@ -160,7 +162,7 @@ async function questionFor(step: Exclude<OnboardingStep, "intro" | "device" | "n
         title: M.subscriptions.title,
         subtitle: M.subscriptions.subtitle,
         name: "subscriptionKeys",
-        options: choices.map((s) => ({ value: s.key, label: s.label })),
+        options: choices.map((s) => ({ value: s.key, label: s.label, shape: "pass" as const })),
         multiple: true,
         selected: profile.subscriptionKeys ?? [],
         requireAnswer: false,

@@ -42,6 +42,7 @@ export function OnboardingShell({
   initialAnswered = false,
   editing = false,
   filled = [],
+  hero,
   children,
 }: {
   step: OnboardingStep;
@@ -66,6 +67,8 @@ export function OnboardingShell({
    * 순서 안에 있는 화면이 아니라서 "3/7" 이나 "건너뛸게요" 는 뜻이 없다. 저장 뒤 목적지는 액션이 정한다.
    */
   editing?: boolean;
+  /** 제목 위 그림(첫 화면의 손전등). 넓은 화면에서는 왼쪽 기둥에 함께 선다 */
+  hero?: ReactNode;
   /** 이미 채운 슬롯(quest.ts filledSlots). 머리 지도가 지나온 칸을 채운 칸과 빈 칸으로 가른다 */
   filled?: readonly ProfileFieldStep[];
   children: ReactNode;
@@ -137,6 +140,7 @@ export function OnboardingShell({
           <div className="flex flex-1 flex-col sm:my-auto sm:flex-initial">
             <div className={cn("mx-auto flex w-full max-w-[560px] flex-col px-4 pb-3 pt-3 sm:px-6 sm:py-6", DESK_COLUMNS)}>
               <div className="reveal flex flex-col gap-1 lg:col-start-1 lg:row-start-1 lg:self-center" style={stagger(0)}>
+                {hero}
                 <h1 className="text-[23px] font-extrabold leading-[1.25] tracking-[-0.045em] text-ink sm:text-[28px] lg:text-[32px]">
                   {title.map((line) => (
                     <span key={line} className="block">

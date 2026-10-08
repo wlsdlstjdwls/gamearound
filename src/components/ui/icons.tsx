@@ -356,6 +356,16 @@ export function MemoryIcon(p: IconProps) {
   );
 }
 
+/** 구독 패스 — 한쪽에 절취선이 있는 티켓. 온보딩 구독 카드 */
+export function TicketIcon(p: IconProps) {
+  return (
+    <svg {...base(p)}>
+      <path d="M3 8a2 2 0 0 0 2-2h14a2 2 0 0 0 2 2v8a2 2 0 0 0-2 2H5a2 2 0 0 0-2-2V8Z" />
+      <path d="M15 6v2M15 11v2M15 16v2" />
+    </svg>
+  );
+}
+
 /** 휴대 기기(스위치) — 양옆에 손잡이가 붙은 화면. 온보딩 플랫폼 카드에서 PC(모니터), 콘솔(패드)과 가른다 */
 export function HandheldIcon(p: IconProps) {
   return (
