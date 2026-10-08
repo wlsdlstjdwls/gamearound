@@ -12,6 +12,9 @@ export const ONBOARDING_MESSAGES = {
   skip: "건너뛸게요",
   saving: "저장 중…",
   progressLabel: "온보딩 진행률",
+  /** 상한이 있는 다중선택(장르) 카드 위 숫자 */
+  pickCount: (n: number, max: number) => `${n} / ${max}`,
+  pickFull: "다 골랐어요. 바꾸려면 하나를 풀어 주세요",
 
   intro: {
     title: ["몇 가지만 여쭤볼게요", "화면을 맞춰 드릴게요"],

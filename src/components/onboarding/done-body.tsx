@@ -5,13 +5,18 @@
 //
 // 이 화면에 "다음" 은 없다 — 마침은 도착하는 순간 이미 찍혔다(actions 의 next === "done").
 // 그래서 껍데기(shell)를 쓰지 않고 제 배치를 갖는다.
+//
+// 머리는 체크 동그라미 대신 다 켜진 게이지와 손전등이다(2026-10-08) — 단계마다 한 칸씩 켜 온 게이지가
+// 여기서 끝까지 차야 "다 모았다" 가 이어진다. 숫자는 게이지가 다 찬 뒤 도장처럼 찍힌다(.stamp).
 import Link from "next/link";
 import { formatCount } from "@/lib/format";
 import { stagger } from "@/lib/motion";
 import { ROUTES } from "@/lib/routes";
 import { ONBOARDING_MESSAGES as M } from "@/lib/onboarding/messages";
 import { buttonClass } from "@/components/ui/button";
-import { CheckIcon } from "@/components/ui/icons";
+import { BrandSymbol } from "@/components/ui/logo";
+import { ChargeGauge } from "@/components/onboarding/charge-gauge";
+import { GAUGE_CELLS } from "@/lib/onboarding/steps";
 import { Panel } from "@/components/ui/page";
 import type { ProfileSummaryRow } from "@/lib/onboarding/summary";
 
@@ -21,9 +26,8 @@ export function DoneBody({ count, listHref, summary }: { count: number | null; l
     <div data-onboarding className="flex min-h-svh flex-col items-center justify-center bg-bg px-4 py-10">
       <div className="flex w-full max-w-[560px] flex-col">
         <div className="reveal flex flex-col items-center gap-4 text-center" style={stagger(0)}>
-          <span aria-hidden className="animate-pop flex size-14 items-center justify-center rounded-full bg-acc text-on-ink">
-            <CheckIcon size={26} />
-          </span>
+          <BrandSymbol size={64} className="animate-pop" />
+          <ChargeGauge lit={GAUGE_CELLS} className="w-full max-w-[200px]" />
           <h1 className="text-[28px] font-extrabold leading-[1.2] tracking-[-0.045em] text-ink sm:text-[32px]">{M.done.title}</h1>
           <p className="text-[13.5px] leading-[1.7] text-mut">{M.done.subtitle}</p>
         </div>
@@ -35,7 +39,7 @@ export function DoneBody({ count, listHref, summary }: { count: number | null; l
           ) : (
             <p className="text-[15px] leading-[1.6] text-ink-2">
               {M.done.countLead}
-              <strong className="mx-1.5 align-middle text-[26px] font-extrabold tracking-[-0.03em] text-acc">{formatCount(count)}</strong>
+              <strong style={stagger(3)} className="stamp mx-1.5 inline-block align-middle text-[26px] font-extrabold tracking-[-0.03em] text-acc">{formatCount(count)}</strong>
               {M.done.countTail}
             </p>
           )}

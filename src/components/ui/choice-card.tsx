@@ -9,7 +9,7 @@
 // 상한이 없는 화면은 비제어가 코드가 짧다 — 한쪽으로 통일하지 않은 이유가 그것이다.
 //
 // 카드 전체가 터치 타깃이다 — 규약 §6 의 44px 을 여유 있게 넘긴다(최소 높이 104px).
-import { useId, type ChangeEvent, type ReactNode } from "react";
+import { useId, type ChangeEvent, type MouseEvent, type ReactNode } from "react";
 import { cn } from "@/lib/cn";
 import { CheckIcon } from "@/components/ui/icons";
 
@@ -25,13 +25,20 @@ export type ChoiceCardProps = {
   checked?: boolean;
   onChange?: (e: ChangeEvent<HTMLInputElement>) => void;
   disabled?: boolean;
+  /**
+   * 카드 전체를 누른 순간. 잠긴(disabled) 카드도 label 의 클릭은 온다 — 상한에 걸린 카드를 눌렀을 때
+   * "왜 안 눌리지" 를 알려 주는 자리가 이것이다(온보딩 장르).
+   */
+  onClick?: (e: MouseEvent<HTMLLabelElement>) => void;
+  className?: string;
 };
 
-export function ChoiceCard({ multiple = false, name, value, label, note, defaultChecked, checked, onChange, disabled }: ChoiceCardProps) {
+export function ChoiceCard({ multiple = false, name, value, label, note, defaultChecked, checked, onChange, disabled, onClick, className }: ChoiceCardProps) {
   const id = useId();
   return (
     <label
       htmlFor={id}
+      onClick={onClick}
       className={cn(
         "group/choice press tap relative flex min-h-[104px] cursor-pointer flex-col justify-center gap-1 rounded-[var(--radius-panel)] p-4",
         "bg-surface-2 shadow-hair transition-[background-color,box-shadow,opacity] duration-base ease-standard",
@@ -42,6 +49,7 @@ export function ChoiceCard({ multiple = false, name, value, label, note, default
         // 상한에 걸려 잠긴 카드. pointer-events 를 끄지 않는 이유는 아래 input 의 disabled 가
         // 이미 클릭과 키보드를 막기 때문이다 — 끄면 낭독기가 카드를 통째로 건너뛴다
         disabled && "opacity-45",
+        className,
       )}
     >
       <input

@@ -13,16 +13,12 @@ import { stagger } from "@/lib/motion";
 import { ROUTES, WELCOME_FROM_PARAM, WELCOME_FROM_SETTINGS, welcomeStepPath } from "@/lib/routes";
 import { SITE } from "@/lib/site";
 import { ONBOARDING_MESSAGES as M } from "@/lib/onboarding/messages";
-import {
-  prevStep,
-  stepProgress,
-  type OnboardingStep,
-  type StepContext,
-} from "@/lib/onboarding/steps";
+import { litCells, prevStep, type OnboardingStep, type StepContext } from "@/lib/onboarding/steps";
 import { BrandSymbol } from "@/components/ui/logo";
 import { ChevronLeftIcon, XIcon } from "@/components/ui/icons";
 import { Panel } from "@/components/ui/page";
 import { AnswerGate } from "@/components/onboarding/answer-gate";
+import { ChargeGauge } from "@/components/onboarding/charge-gauge";
 import { OnboardingSubmit } from "@/components/onboarding/submit";
 
 export function OnboardingShell({
@@ -61,14 +57,13 @@ export function OnboardingShell({
   children: ReactNode;
 }) {
   const back = editing ? null : prevStep(step, ctx);
-  const progress = stepProgress(step, ctx);
   const showSkip = skippable && !editing;
 
   return (
     <div data-onboarding className="flex min-h-svh flex-col bg-bg">
-      {/* 머리 — 뒤로, 진행 막대, 나가기. 진행 막대에 퍼센트를 적지 않는 이유는 steps.ts 주석 */}
+      {/* 머리 — 뒤로, 진행 게이지, 나가기. 게이지를 한 줄 가운데에 두어 따로 띠를 먹지 않는다 */}
       <div className="sticky top-0 z-10 bg-bg/92 backdrop-blur">
-        <div className="mx-auto flex w-full max-w-[var(--page-w)] items-center gap-2 px-4 pt-[max(env(safe-area-inset-top),10px)] sm:px-7">
+        <div className="mx-auto flex w-full max-w-[var(--page-w)] items-center gap-2 px-4 pb-1 pt-[max(env(safe-area-inset-top),4px)] sm:px-7">
           {editing ? (
             <Link
               href={ROUTES.settings}
@@ -95,6 +90,8 @@ export function OnboardingShell({
           >
             <BrandSymbol size={24} />
           </Link>
+          {/* 설정에서 칸 하나만 고치러 온 화면은 순서 밖이라 게이지가 뜻이 없다 */}
+          {!editing && <ChargeGauge lit={litCells(step, ctx)} className="mx-2 max-w-[360px] flex-1 sm:mx-auto" />}
           <Link
             href={editing ? ROUTES.settings : ROUTES.home}
             className="press tap ml-auto -mr-1 flex h-11 items-center rounded-full px-3 text-[13px] text-mut hover:text-ink"
@@ -103,22 +100,6 @@ export function OnboardingShell({
             <XIcon size={15} className="ml-1.5" />
           </Link>
         </div>
-        {/* 3px 막대. role=progressbar 로 낭독기에도 진행이 전달된다 */}
-        {!editing && (
-        <div
-          role="progressbar"
-          aria-label={M.progressLabel}
-          aria-valuemin={0}
-          aria-valuemax={100}
-          aria-valuenow={Math.round(progress * 100)}
-          className="mt-2 h-[3px] w-full bg-surface-2"
-        >
-          <div
-            className="h-full bg-acc transition-[width] duration-slow ease-out-emph"
-            style={{ width: `${Math.max(progress * 100, 2)}%` }}
-          />
-        </div>
-        )}
       </div>
 
       <form action={action} className="flex flex-1 flex-col">
