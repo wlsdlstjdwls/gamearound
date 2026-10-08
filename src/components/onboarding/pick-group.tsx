@@ -59,13 +59,13 @@ export function PickGroup({
   }
 
   return (
-    <div className="flex flex-col gap-3">
+    <div className="flex flex-col gap-2.5">
       {max !== undefined && (
-        <p className="flex items-center gap-2 text-[13px] text-mut" aria-live="polite">
+        <p className="flex items-center gap-2 text-[12.5px] text-mut" aria-live="polite">
           <span
             key={`${selected.length}-${blocked}`}
             className={cn(
-              "inline-flex h-7 items-center rounded-full px-3 text-[13px] font-bold tabular-nums",
+              "inline-flex h-6 items-center rounded-full px-3 text-[13px] font-bold tabular-nums",
               full ? "bg-acc text-on-ink" : "bg-acc-soft text-acc",
               blocked > 0 ? "animate-shake" : selected.length > 0 && "animate-pop",
             )}
@@ -75,7 +75,8 @@ export function PickGroup({
           {full && <span>{M.pickFull}</span>}
         </p>
       )}
-      <ChoiceGrid>
+      {/* 둘째 줄이 하나도 없으면 촘촘한 격자로 — 장르, 구독처럼 이름만 있는 선택지다 */}
+      <ChoiceGrid dense={options.every((o) => !o.note)}>
         {options.map((o, i) => {
           const checked = selected.includes(o.value);
           const locked = full && !checked;
@@ -96,7 +97,7 @@ export function PickGroup({
                   toggle(o.value, e.target.checked);
                 }}
                 onClick={locked ? () => setBlocked((n) => n + 1) : undefined}
-                className="flex-1"
+                className="min-w-0 flex-1"
               />
             </div>
           );

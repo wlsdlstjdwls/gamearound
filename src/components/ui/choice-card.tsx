@@ -8,7 +8,9 @@
 // 제어/비제어 둘 다 받는다. 고른 개수에 상한이 있는 화면(장르)은 제어가 필요하고,
 // 상한이 없는 화면은 비제어가 코드가 짧다 — 한쪽으로 통일하지 않은 이유가 그것이다.
 //
-// 카드 전체가 터치 타깃이다 — 규약 §6 의 44px 을 여유 있게 넘긴다(최소 높이 104px).
+// 카드 전체가 터치 타깃이다 — 규약 §6 의 44px 을 넘긴다(최소 높이 56px).
+// 104px 이었다가 2026-10-08 에 낮췄다(사용자: "한 화면에 스크롤 없이 딱딱 들어와야"). 장르 17칸이 2열 104px 이면
+// 390x700 에서 775px 이 넘쳤다 — 카드는 눌리는 면만 넉넉하면 되고, 높이는 질문 하나가 한눈에 들어오는 쪽이 먼저다.
 import { useId, type ChangeEvent, type MouseEvent, type ReactNode } from "react";
 import { cn } from "@/lib/cn";
 import { CheckIcon } from "@/components/ui/icons";
@@ -40,7 +42,7 @@ export function ChoiceCard({ multiple = false, name, value, label, note, default
       htmlFor={id}
       onClick={onClick}
       className={cn(
-        "group/choice press tap relative flex min-h-[104px] cursor-pointer flex-col justify-center gap-1 rounded-[var(--radius-panel)] p-4",
+        "group/choice press tap relative flex min-h-14 cursor-pointer flex-col justify-center gap-0.5 rounded-[var(--radius-panel)] py-2.5 pl-3.5 pr-8",
         "bg-surface-2 shadow-hair transition-[background-color,box-shadow,opacity] duration-base ease-standard",
         // 고른 카드는 **면이 바뀌고 링이 생긴다**. 테두리(border)로 하지 않는 이유는 1px 이 생기면서
         // 안쪽 글자가 밀려 카드가 미세하게 들썩이기 때문이다 — 그림자는 자리를 안 먹는다
@@ -68,24 +70,28 @@ export function ChoiceCard({ multiple = false, name, value, label, note, default
       <span
         aria-hidden
         className={cn(
-          "absolute right-3.5 top-3.5 flex size-5 items-center justify-center rounded-full border transition-[background-color,border-color] duration-base",
+          "absolute right-2.5 top-2.5 flex size-[18px] items-center justify-center rounded-full border transition-[background-color,border-color] duration-base",
           "border-line-strong text-transparent",
           "peer-checked:animate-pop peer-checked:border-acc peer-checked:bg-acc peer-checked:text-on-ink",
         )}
       >
-        <CheckIcon size={12} />
+        <CheckIcon size={11} />
       </span>
-      <span className="text-[15px] font-bold leading-[1.35] tracking-[-0.02em] text-ink">{label}</span>
-      {note && <span className="text-[12.5px] leading-[1.5] text-mut">{note}</span>}
+      {/* 전역 keep-all 이라 "멀티플레이어" 같은 긴 낱말은 좁은 칸에서 못 꺾인다 — 넘치면 아무 데서나 꺾는다 */}
+      <span className="text-[14.5px] font-bold leading-[1.3] tracking-[-0.02em] text-ink [overflow-wrap:anywhere]">{label}</span>
+      {note && <span className="text-[12px] leading-[1.4] text-mut">{note}</span>}
     </label>
   );
 }
 
 /**
- * 카드 격자 — 좁은 화면 2열, 넓은 화면 3열.
- * 한 줄에 넷을 두지 않는 이유: 카드가 좁아지면 둘째 줄(note)이 두 줄로 접히고,
+ * 카드 격자 — 둘째 줄(note)이 있는 선택지는 폭과 상관없이 2열. 3열이던 때 넷짜리 성향 질문이 3+1 로 갈라졌다(2026-10-08).
+ * 더 촘촘히 두지 않는 이유: 카드가 좁아지면 둘째 줄(note)이 두 줄로 접히고,
  * 그러면 같은 줄의 카드 높이가 서로 달라져 격자가 들쭉날쭉해진다.
+ *
+ * dense: 둘째 줄이 없는 짧은 이름들(장르, 구독). 그 걱정이 없으니 3열, 넓은 화면 4열로 촘촘히 놓는다 —
+ * 장르 17칸을 한 화면에 넣는 방법이 이것뿐이다.
  */
-export function ChoiceGrid({ children, className }: { children: ReactNode; className?: string }) {
-  return <div className={cn("grid grid-cols-2 gap-2.5 sm:grid-cols-3", className)}>{children}</div>;
+export function ChoiceGrid({ children, className, dense = false }: { children: ReactNode; className?: string; dense?: boolean }) {
+  return <div className={cn("grid", dense ? "grid-cols-3 gap-1.5 sm:grid-cols-4 sm:gap-2" : "grid-cols-2 gap-2", className)}>{children}</div>;
 }

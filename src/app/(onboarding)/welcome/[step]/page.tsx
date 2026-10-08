@@ -72,7 +72,6 @@ export default async function WelcomeStepPage({ params, searchParams }: Props) {
       ctx={ctx}
       title={q.title}
       subtitle={q.subtitle}
-      note={q.note}
       action={submitStepAction}
       requireAnswer={q.requireAnswer}
       initialAnswered={q.selected.length > 0}
@@ -90,9 +89,8 @@ function StepField({ step }: { step: OnboardingStep }) {
 }
 
 type Question = {
-  title: readonly [string, string];
+  title: readonly [string, string] | readonly [string];
   subtitle: string;
-  note: string;
   name: string;
   options: PickOption[];
   multiple: boolean;
@@ -108,9 +106,10 @@ async function questionFor(step: Exclude<OnboardingStep, "intro" | "device" | "n
       return {
         title: M.platforms.title,
         subtitle: M.platforms.subtitle,
-        note: M.platforms.note,
         name: "platforms",
-        options: PLATFORM_CHOICES.map((c) => ({ value: c.value, label: c.label, note: c.note })),
+        // 둘째 줄("PC")을 싣지 않는다 — Steam, Epic 이 PC 인 건 이름이 말하고, 둘째 줄이 하나라도 있으면
+        // 격자가 촘촘해지지 못해(ChoiceGrid dense) 일곱 칸이 네 줄을 먹는다
+        options: PLATFORM_CHOICES.map((c) => ({ value: c.value, label: c.label })),
         multiple: true,
         selected: profile.platforms ?? [],
         requireAnswer: false,
@@ -120,7 +119,6 @@ async function questionFor(step: Exclude<OnboardingStep, "intro" | "device" | "n
       return {
         title: M.genres.title,
         subtitle: M.genres.subtitle,
-        note: M.genres.note(GENRE_PICK_MAX),
         name: "genreIds",
         options: choices.map((g) => ({ value: String(g.id), label: g.name })),
         multiple: true,
@@ -133,7 +131,6 @@ async function questionFor(step: Exclude<OnboardingStep, "intro" | "device" | "n
       return {
         title: M.dealStyle.title,
         subtitle: M.dealStyle.subtitle,
-        note: M.dealStyle.note,
         name: "dealStyle",
         options: DEAL_STYLE_CHOICES.map((c) => ({ value: c.value, label: c.label, note: c.note })),
         multiple: false,
@@ -145,7 +142,6 @@ async function questionFor(step: Exclude<OnboardingStep, "intro" | "device" | "n
       return {
         title: M.playTime.title,
         subtitle: M.playTime.subtitle,
-        note: M.playTime.note,
         name: "playTimeStyle",
         options: PLAY_TIME_CHOICES.map((c) => ({ value: c.value, label: c.label, note: c.note })),
         multiple: false,
@@ -157,7 +153,6 @@ async function questionFor(step: Exclude<OnboardingStep, "intro" | "device" | "n
       return {
         title: M.subscriptions.title,
         subtitle: M.subscriptions.subtitle,
-        note: M.subscriptions.note,
         name: "subscriptionKeys",
         options: choices.map((s) => ({ value: s.key, label: s.label })),
         multiple: true,

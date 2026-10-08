@@ -16,10 +16,16 @@ import { ONBOARDING_MESSAGES as M } from "@/lib/onboarding/messages";
 import { litCells, prevStep, type OnboardingStep, type StepContext } from "@/lib/onboarding/steps";
 import { BrandSymbol } from "@/components/ui/logo";
 import { ChevronLeftIcon, XIcon } from "@/components/ui/icons";
-import { Panel } from "@/components/ui/page";
 import { AnswerGate } from "@/components/onboarding/answer-gate";
 import { ChargeGauge } from "@/components/onboarding/charge-gauge";
 import { OnboardingSubmit } from "@/components/onboarding/submit";
+
+/**
+ * 넓은 화면(lg)의 두 기둥 — 왼쪽은 질문(제목, 부제, 안내), 오른쪽은 답하는 칸(2026-10-08 사용자 제안).
+ * 질문 글을 옆으로 빼면 답하는 칸이 세로를 통째로 쓴다 — 위아래로 쌓을 때는 제목과 부제가 입력 칸을 화면 밑으로 밀었다.
+ * 바닥 버튼도 같은 틀을 써서 오른쪽 기둥 아래에 선다. 좁은 화면은 그대로 위아래로 쌓는다(폭이 없다).
+ */
+const DESK_COLUMNS = "lg:grid lg:max-w-[1040px] lg:grid-cols-[320px_minmax(0,1fr)] lg:gap-x-14";
 
 export function OnboardingShell({
   step,
@@ -37,10 +43,13 @@ export function OnboardingShell({
 }: {
   step: OnboardingStep;
   ctx: StepContext;
-  /** 두 줄로 끊어 준다. <br/> 을 쓰지 않는 이유는 auth-card 와 같다(접근성 이름이 붙어 버린다) */
+  /**
+   * 한 줄이 기본이다(2026-10-08). 두 줄 제목이 질문마다 40px 씩 먹어 입력 칸을 밀었다.
+   * 두 줄을 넘길 때 <br/> 을 쓰지 않는 이유는 auth-card 와 같다(접근성 이름이 붙어 버린다)
+   */
   title: readonly [string, string] | readonly [string];
   subtitle?: string;
-  /** 카드 아래 인셋 안내. 헷갈릴 규칙을 못 박는 자리다 */
+  /** 카드 아래 한 줄 안내. 꼭 필요한 단계만 쓴다 — 질문 칸을 미는 만큼 값어치가 있어야 한다 */
   note?: ReactNode;
   action: (formData: FormData) => void | Promise<void>;
   submitLabel?: string;
@@ -118,9 +127,9 @@ export function OnboardingShell({
             덩어리가 화면 높이를 다 받아야(flex-1) 버튼의 mt-auto 가 바닥을 잡는다.
           */}
           <div className="flex flex-1 flex-col sm:my-auto sm:flex-initial">
-            <div className="mx-auto flex w-full max-w-[560px] flex-col px-4 py-7 sm:px-6">
-              <div className="reveal flex flex-col gap-2" style={stagger(0)}>
-                <h1 className="text-[26px] font-extrabold leading-[1.22] tracking-[-0.045em] text-ink sm:text-[32px]">
+            <div className={cn("mx-auto flex w-full max-w-[560px] flex-col px-4 pb-3 pt-3 sm:px-6 sm:py-6", DESK_COLUMNS)}>
+              <div className="reveal flex flex-col gap-1 lg:col-start-1 lg:row-start-1 lg:self-center" style={stagger(0)}>
+                <h1 className="text-[23px] font-extrabold leading-[1.25] tracking-[-0.045em] text-ink sm:text-[28px] lg:text-[32px]">
                   {title.map((line) => (
                     <span key={line} className="block">
                       {line}
@@ -128,23 +137,24 @@ export function OnboardingShell({
                   ))}
                 </h1>
                 {subtitle && (
-                  <p className="text-[13.5px] leading-[1.7] text-mut">
+                  <p className="text-[13px] leading-[1.55] text-mut lg:mt-1 lg:text-[14px]">
                     {subtitle}
                   </p>
                 )}
+                {/* 넓은 화면은 안내 줄도 왼쪽 기둥에 둔다. 좁은 화면 것은 답하는 칸 뒤에 따로 그린다(아래) —
+                    한 요소를 두 자리로 옮기려고 격자 줄을 나누면 오른쪽 기둥이 짧을 때 제목이 위로 뜬다 */}
+                {note && <p className="mt-4 hidden text-[12.5px] leading-[1.55] text-dim lg:block">{note}</p>}
               </div>
 
-              <div className="reveal mt-7" style={stagger(1)}>
+              <div className="reveal mt-4 lg:col-start-2 lg:row-start-1 lg:mt-0 lg:self-center" style={stagger(1)}>
                 {children}
               </div>
 
+              {/* 판(Panel)에 담지 않고 한 줄 글자로 둔다 — 판 하나가 60px 을 먹어 입력 칸을 스크롤 밑으로 밀었다 */}
               {note && (
-                <Panel
-                  className="reveal mt-5 px-4 py-3.5 text-[13px] leading-[1.6] text-mut"
-                  style={stagger(2)}
-                >
+                <p className="reveal mt-3 text-[12px] leading-[1.55] text-dim lg:hidden" style={stagger(2)}>
                   {note}
-                </Panel>
+                </p>
               )}
             </div>
 
@@ -165,19 +175,28 @@ export function OnboardingShell({
                 "before:pointer-events-none before:absolute before:inset-x-0 before:-top-6 before:h-6 before:bg-gradient-to-t before:from-bg",
               )}
             >
-              <div className="mx-auto w-full max-w-[560px] px-4 pb-[max(env(safe-area-inset-bottom),14px)] pt-3 sm:px-6">
-                <OnboardingSubmit label={editing ? M.edit.save : (submitLabel ?? M.next)} />
+              {/*
+                건너뛰기를 "다음" 옆 한 줄에 둔다(2026-10-08) — 밑에 따로 한 줄을 주면 44px 이 질문 칸에서 빠진다.
+                DOM 에서는 "다음" 이 먼저다(flex-row-reverse 로 보이는 자리만 바꾼다): 엔터 제출은 폼의 **첫** 제출 버튼을
+                누른 것으로 치므로, 건너뛰기가 앞서 있으면 엔터가 답을 버리고 넘어간다.
+              */}
+              <div className={cn("mx-auto w-full max-w-[560px] px-4 pb-[max(env(safe-area-inset-bottom),12px)] pt-2.5 sm:px-6", DESK_COLUMNS)}>
+                <div className="flex flex-row-reverse items-center gap-2 lg:col-start-2">
+                <div className="min-w-0 flex-1">
+                  <OnboardingSubmit label={editing ? M.edit.save : (submitLabel ?? M.next)} />
+                </div>
                 {showSkip && (
                   <button
                     type="submit"
                     name="skip"
                     value="1"
                     formNoValidate
-                    className="press tap mx-auto mt-1 flex h-11 items-center justify-center rounded-full px-4 text-[13px] text-mut hover:text-ink"
+                    className="press tap flex h-11 shrink-0 items-center justify-center rounded-full px-3 text-[13px] text-mut hover:text-ink"
                   >
                     {M.skip}
                   </button>
                 )}
+                </div>
               </div>
             </div>
           </div>
