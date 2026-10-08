@@ -3,8 +3,8 @@
 // loading.tsx 가 다시 뜨지 않는다. 그래서 경계를 페이지 안(Suspense)에 두고, 그 자리만 뼈대로 받는다.
 // 높이는 실제 화면을 재서 맞춘 값이다 — 어긋나면 본문이 들어올 때 통째로 밀려 그게 깜빡임이 된다.
 import { GAMES_GRID_CLASS } from "@/lib/games/grid";
-import { CARD_SHELL, COVER_CLASS } from "@/components/game-card";
-import { cn } from "@/lib/cn";
+import { GameCardSkeleton } from "@/components/game-card-skeleton";
+import { Bone } from "@/components/ui/skeleton";
 import { ActiveFilters } from "@/components/game-filters/active";
 import type { GamesQuery } from "@/lib/games-query";
 
@@ -26,18 +26,33 @@ export function FiltersSkeleton({ filter }: { filter: GamesQuery }) {
       </div>
 
       <div className="hidden flex-col gap-[26px] lg:flex">
-        {/* 기둥에 서는 무리는 셋이다 — 정렬 드롭다운, 플랫폼 칩 셋, 장르 드롭다운(game-filters/groups).
-            뼈대가 실물보다 길면 본문이 올 때 기둥이 줄면서 목록까지 한 번 밀린다 */}
-        {[1, 3, 1].map((rows, g) => (
-          <div key={g} className="flex flex-col gap-2.5" aria-hidden>
-            <div className="skeleton h-3.5 w-14 rounded" />
-            <div className="flex flex-wrap gap-1.5">
-              {Array.from({ length: rows }).map((_, i) => (
-                <div key={i} className="skeleton h-7 w-16 rounded-full" />
-              ))}
-            </div>
+        {/* 기둥은 game-filters/groups 와 같은 넷이다 — 정렬 드롭다운(아래 헤어라인), 플랫폼 칩, 장르 드롭다운, 조건 칩.
+            드롭다운을 칩 막대로 그렸더니(2026-10-08 까지) 기둥 폭을 다 쓰는 실물과 모양이 달라 걷힐 때 기둥이 바뀌어 보였다.
+            드롭다운 높이 36 은 ui/select 의 sm, 이름표와의 사이 6 은 그 gap-1.5 다 */}
+        <div className="flex flex-col gap-1.5 border-b border-line-soft pb-[18px]" aria-hidden>
+          <Bone className="h-3.5 w-8" />
+          <Bone className="h-9 w-full rounded-[var(--radius-sm)]" />
+        </div>
+        <div className="flex flex-col gap-2.5" aria-hidden>
+          <Bone className="h-3.5 w-14" />
+          <div className="flex flex-wrap gap-1.5">
+            {["w-14", "w-11", "w-12"].map((w) => (
+              <Bone key={w} className={`h-[31px] rounded-full ${w}`} />
+            ))}
           </div>
-        ))}
+        </div>
+        <div className="flex flex-col gap-1.5" aria-hidden>
+          <Bone className="h-3.5 w-8" />
+          <Bone className="h-9 w-full rounded-[var(--radius-sm)]" />
+        </div>
+        <div className="flex flex-col gap-2.5" aria-hidden>
+          <Bone className="h-3.5 w-8" />
+          <div className="flex flex-wrap gap-1.5">
+            {["w-[92px]", "w-[100px]"].map((w) => (
+              <Bone key={w} className={`h-[31px] rounded-full ${w}`} />
+            ))}
+          </div>
+        </div>
         <ActiveFilters filter={filter} variant="column" />
       </div>
     </>
@@ -58,16 +73,7 @@ export function GamesGridSkeleton({ cards, gridClass = GAMES_GRID_CLASS }: { car
   return (
     <div className={`${gridClass} skeleton-delay`} aria-busy="true" aria-label="목록을 불러오는 중">
       {Array.from({ length: cards }).map((_, i) => (
-        // 커버 + 세 줄(제목 두 줄, 배지, 값). 실물(game-card)과 같은 줄 수, 같은 여백이어야
-        // 본문이 올 때 격자가 밀리지 않는다
-        <div key={i} className={CARD_SHELL}>
-          <div className={cn(COVER_CLASS, "skeleton")} />
-          <div className="flex flex-col gap-1.5 px-1">
-            <div className="skeleton h-[40px] w-4/5 rounded" />
-            <div className="skeleton h-5 w-2/5 rounded-full" />
-            <div className="mt-1 skeleton h-7 w-3/5 rounded" />
-          </div>
-        </div>
+        <GameCardSkeleton key={i} />
       ))}
     </div>
   );

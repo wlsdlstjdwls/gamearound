@@ -21,3 +21,8 @@ export const NOT_FOUND_MESSAGES = {
   title: "페이지를 찾을 수 없어요",
   body: "주소가 잘못됐거나 목록에 없는 게임이에요. 제목으로 다시 검색해 보세요.",
 } as const;
+
+/** 스켈레톤(loading.tsx)이 낭독기에 알리는 말. 화면마다 따로 두지 않는다 — 기다리는 일은 어디서나 같다 */
+export const LOADING_MESSAGES = {
+  label: "불러오는 중이에요",
+} as const;
