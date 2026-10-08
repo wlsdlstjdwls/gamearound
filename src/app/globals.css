@@ -423,6 +423,7 @@
   --animate-shake: shake 420ms var(--ease-standard) both;
   --animate-pop: pop 420ms var(--ease-out-emph);
   --animate-flip-in: flip-in var(--duration-slow) var(--ease-out-emph) both;
+  --animate-pick: pick var(--duration-slow) var(--ease-spring);
   --animate-shimmer: shimmer 1.5s ease-in-out infinite;
 }
 
@@ -456,6 +457,12 @@
 /* 온보딩 결과의 칭호 카드 — 뒤집혀 있던 카드가 돌아 앞면을 보인다(2026-10-08 게임처럼 진행 회차).
    원근(perspective)을 키프레임 안에 두는 이유: 부모에 perspective 를 걸면 그 부모가 쌓임 맥락이 되어
    카드 밖 요소의 겹침 순서가 바뀐다 */
+/* 게임 키(.key)를 고른 순간 — 눌렸다가 살짝 부풀어 앉는다. pop(1.12)은 칩 크기용이라 큰 카드에는 과하다 */
+@keyframes pick {
+  0% { transform: scale(0.96); }
+  55% { transform: scale(1.03); }
+  100% { transform: none; }
+}
 @keyframes flip-in {
   from { opacity: 0; transform: perspective(900px) rotateY(-75deg) scale(0.96); }
   to { opacity: 1; transform: none; }
@@ -881,6 +888,51 @@ li:has([data-more-open]) {
 .press:active:not(:disabled) {
   transform: scale(0.97);
 }
+/*
+ * 게임 키 — 온보딩 선택 카드(2026-10-08 사용자: "선택하는 것도 그대로다, 게임하듯이").
+ * 아래로 4px 두께가 있는 판이다. 누르면 그 두께만큼 내려앉고(translateY), 고르면 테두리와 두께가 보라로 바뀐다.
+ * .press(축소)를 쓰지 않는 이유: 축소는 "눌렸다" 지 "버튼이 들어갔다" 가 아니다 — 두께가 있는 판은 내려앉아야 손맛이 산다.
+ * 테두리와 두께를 둘 다 box-shadow 로 그린다. border 로 그리면 고를 때 굵기가 바뀌며 안쪽 글자가 들썩인다.
+ */
+.key {
+  --key-ring: var(--line);
+  --key-edge: var(--line-strong);
+  background: var(--surface);
+  box-shadow: inset 0 0 0 1.5px var(--key-ring), 0 4px 0 var(--key-edge);
+  transition: transform var(--duration-fast) var(--ease-standard), box-shadow var(--duration-fast) var(--ease-standard),
+    background-color var(--duration-base) var(--ease-standard);
+}
+/* data-on: 체크박스 없이 고른 상태를 입는 키(온보딩 장르 인벤토리 칸) */
+.key:has(:checked),
+.key[data-on] {
+  --key-ring: var(--acc);
+  --key-edge: var(--acc);
+  background: var(--acc-soft);
+  animation: pick var(--duration-slow) var(--ease-spring);
+}
+.key:has(:focus-visible) {
+  box-shadow: inset 0 0 0 2px var(--acc), 0 4px 0 var(--key-edge), 0 0 0 5px var(--acc-glow);
+}
+.key:active:not(:has(:disabled)) {
+  transform: translateY(3px);
+  box-shadow: inset 0 0 0 1.5px var(--key-ring), 0 1px 0 var(--key-edge);
+}
+.key:has(:disabled) {
+  opacity: 0.45;
+}
+/*
+ * 키 차림의 입력 줄(온보딩 기기 단계). 같은 두께와 테두리를 입되 눌러 내려앉지 않는다 — 글을 쓰려고 누른 줄이
+ * 꺼지면 커서가 들썩인다. 포커스가 들어오면 테두리와 두께가 보라로 켜진다(고른 키와 같은 말).
+ */
+.key-field {
+  background: var(--surface);
+  box-shadow: inset 0 0 0 1.5px var(--line), 0 4px 0 var(--line-strong);
+  transition: box-shadow var(--duration-base) var(--ease-standard);
+}
+.key-field:focus-within {
+  box-shadow: inset 0 0 0 2px var(--acc), 0 4px 0 var(--acc), 0 0 0 5px var(--acc-glow);
+}
+
 /* 호버 가능한 기기에서만 살짝 떠오름 (터치에선 sticky hover 방지) */
 @media (hover: hover) and (pointer: fine) {
   .lift:hover:not(:disabled) {
@@ -1113,7 +1165,8 @@ li:has([data-more-open]) {
     transition-duration: 0.01ms !important;
     scroll-behavior: auto !important;
   }
-  .press:active:not(:disabled) {
+  .press:active:not(:disabled),
+  .key:active:not(:has(:disabled)) {
     transform: none;
   }
   /* 커버 확대는 시간이 아니라 상태다 — 시간만 0 으로 줄이면 hover 마다 그림이 툭 커진다 */

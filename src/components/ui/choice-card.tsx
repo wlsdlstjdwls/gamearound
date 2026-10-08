@@ -8,9 +8,11 @@
 // 제어/비제어 둘 다 받는다. 고른 개수에 상한이 있는 화면(장르)은 제어가 필요하고,
 // 상한이 없는 화면은 비제어가 코드가 짧다 — 한쪽으로 통일하지 않은 이유가 그것이다.
 //
-// 카드 전체가 터치 타깃이다 — 규약 §6 의 44px 을 넘긴다(최소 높이 56px).
-// 104px 이었다가 2026-10-08 에 낮췄다(사용자: "한 화면에 스크롤 없이 딱딱 들어와야"). 장르 17칸이 2열 104px 이면
-// 390x700 에서 775px 이 넘쳤다 — 카드는 눌리는 면만 넉넉하면 되고, 높이는 질문 하나가 한눈에 들어오는 쪽이 먼저다.
+// 차림은 게임 키(.key, globals.css)다(2026-10-08 사용자: "선택하는 것도 그대로다, 게임하듯이"). 아래로 두께가 있어
+// 누르면 내려앉고, 고르면 보라로 바뀌며 한 번 튄다. 회색 판에 체크만 붙던 예전 카드는 "설문지" 로 읽혔다.
+// 질문마다 다른 장치는 두 자리로 받는다 — leading(이름 왼쪽 그림, 예: 기기 모양)과 footer(카드 아래, 예: 게이지).
+//
+// 카드 전체가 터치 타깃이다 — 규약 §6 의 44px 을 넘긴다(최소 높이 56px). 104px 이었다가 한 화면에 넣으려고 낮췄다.
 import { useId, type ChangeEvent, type MouseEvent, type ReactNode } from "react";
 import { cn } from "@/lib/cn";
 import { CheckIcon } from "@/components/ui/icons";
@@ -23,6 +25,10 @@ export type ChoiceCardProps = {
   label: ReactNode;
   /** 카드 안 둘째 줄. 고르는 기준이 이름만으로 모호할 때만 채운다 */
   note?: ReactNode;
+  /** 이름 왼쪽 그림 칸 */
+  leading?: ReactNode;
+  /** 카드 아래 장치(게이지 등) */
+  footer?: ReactNode;
   defaultChecked?: boolean;
   checked?: boolean;
   onChange?: (e: ChangeEvent<HTMLInputElement>) => void;
@@ -35,22 +41,16 @@ export type ChoiceCardProps = {
   className?: string;
 };
 
-export function ChoiceCard({ multiple = false, name, value, label, note, defaultChecked, checked, onChange, disabled, onClick, className }: ChoiceCardProps) {
+export function ChoiceCard({ multiple = false, name, value, label, note, leading, footer, defaultChecked, checked, onChange, disabled, onClick, className }: ChoiceCardProps) {
   const id = useId();
   return (
     <label
       htmlFor={id}
       onClick={onClick}
       className={cn(
-        "group/choice press tap relative flex min-h-14 cursor-pointer flex-col justify-center gap-0.5 rounded-[var(--radius-panel)] py-2.5 pl-3.5 pr-8",
-        "bg-surface-2 shadow-hair transition-[background-color,box-shadow,opacity] duration-base ease-standard",
-        // 고른 카드는 **면이 바뀌고 링이 생긴다**. 테두리(border)로 하지 않는 이유는 1px 이 생기면서
-        // 안쪽 글자가 밀려 카드가 미세하게 들썩이기 때문이다 — 그림자는 자리를 안 먹는다
-        "has-[:checked]:bg-acc-soft has-[:checked]:shadow-[0_0_0_2px_var(--acc)]",
-        "has-[:focus-visible]:shadow-[0_0_0_2px_var(--acc),0_0_0_5px_var(--acc-glow)]",
-        // 상한에 걸려 잠긴 카드. pointer-events 를 끄지 않는 이유는 아래 input 의 disabled 가
-        // 이미 클릭과 키보드를 막기 때문이다 — 끄면 낭독기가 카드를 통째로 건너뛴다
-        disabled && "opacity-45",
+        "group/choice key tap relative flex cursor-pointer flex-col justify-center gap-2 rounded-[14px] pl-3 pr-8",
+        // 이름 한 줄뿐인 카드는 48px 로 — 장르 17칸이 360x640 에서 37px 넘쳤다. 손가락 범위(44px)는 그대로 넘긴다
+        leading || note || footer ? "min-h-14 py-2.5" : "min-h-12 py-2",
         className,
       )}
     >
@@ -65,8 +65,7 @@ export function ChoiceCard({ multiple = false, name, value, label, note, default
         disabled={disabled}
         className="peer sr-only"
       />
-      {/* 우상단 동그라미 — 고르기 전에도 자리를 비워 두어야 "고를 수 있는 칸" 이라는 것이
-          카드를 누르기 전에 읽힌다 */}
+      {/* 우상단 표시 — 고르기 전에도 자리를 비워 두어야 "고를 수 있는 칸" 이라는 것이 누르기 전에 읽힌다 */}
       <span
         aria-hidden
         className={cn(
@@ -77,9 +76,25 @@ export function ChoiceCard({ multiple = false, name, value, label, note, default
       >
         <CheckIcon size={11} />
       </span>
-      {/* 전역 keep-all 이라 "멀티플레이어" 같은 긴 낱말은 좁은 칸에서 못 꺾인다 — 넘치면 아무 데서나 꺾는다 */}
-      <span className="text-[14.5px] font-bold leading-[1.3] tracking-[-0.02em] text-ink [overflow-wrap:anywhere]">{label}</span>
-      {note && <span className="text-[12px] leading-[1.4] text-mut">{note}</span>}
+      {/* 그림은 이름 위에 둔다 — 3열 촘촘한 격자에서 옆에 두면 "Epic Games" 가 한 글자 폭으로 짓눌린다 */}
+      <span className="flex min-w-0 flex-col items-start gap-1.5">
+        {leading && (
+          <span
+            aria-hidden
+            className="flex size-8 shrink-0 items-center justify-center rounded-[9px] bg-surface-2 text-mut transition-[background-color,color] duration-base group-has-[:checked]/choice:bg-acc group-has-[:checked]/choice:text-on-ink"
+          >
+            {leading}
+          </span>
+        )}
+        <span className="flex min-w-0 flex-col gap-0.5">
+          {/* 전역 keep-all 이라 "멀티플레이어" 같은 긴 낱말은 좁은 칸에서 못 꺾인다 — 넘치면 아무 데서나 꺾는다 */}
+          <span className="text-[14.5px] font-bold leading-[1.3] tracking-[-0.02em] text-ink [overflow-wrap:anywhere] group-has-[:checked]/choice:text-acc">
+            {label}
+          </span>
+          {note && <span className="text-[12px] leading-[1.4] text-mut">{note}</span>}
+        </span>
+      </span>
+      {footer}
     </label>
   );
 }
@@ -89,9 +104,14 @@ export function ChoiceCard({ multiple = false, name, value, label, note, default
  * 더 촘촘히 두지 않는 이유: 카드가 좁아지면 둘째 줄(note)이 두 줄로 접히고,
  * 그러면 같은 줄의 카드 높이가 서로 달라져 격자가 들쭉날쭉해진다.
  *
- * dense: 둘째 줄이 없는 짧은 이름들(장르, 구독). 그 걱정이 없으니 3열, 넓은 화면 4열로 촘촘히 놓는다 —
+ * dense: 둘째 줄이 없는 짧은 이름들(플랫폼, 장르, 구독). 그 걱정이 없으니 3열, 넓은 화면 4열로 촘촘히 놓는다 —
  * 장르 17칸을 한 화면에 넣는 방법이 이것뿐이다.
+ * 세로 간격이 가로보다 넓은 이유: 카드 아래 두께(4px)가 다음 줄을 먹는다.
  */
 export function ChoiceGrid({ children, className, dense = false }: { children: ReactNode; className?: string; dense?: boolean }) {
-  return <div className={cn("grid", dense ? "grid-cols-3 gap-1.5 sm:grid-cols-4 sm:gap-2" : "grid-cols-2 gap-2", className)}>{children}</div>;
+  return (
+    <div className={cn("grid", dense ? "grid-cols-3 gap-x-1.5 gap-y-2.5 sm:grid-cols-4 sm:gap-x-2" : "grid-cols-2 gap-x-2 gap-y-3", className)}>
+      {children}
+    </div>
+  );
 }

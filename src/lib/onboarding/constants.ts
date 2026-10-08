@@ -99,5 +99,37 @@ export const GENRE_CHOICE_NAMES: readonly string[] = [
   "음악",
 ];
 
+/**
+ * 장르 카드에만 쓰는 짧은 이름. 카탈로그 이름은 그대로 두고(목록, 설정, 결과 화면은 원래 이름) 좁은 카드에서만 줄인다 —
+ * "대규모 멀티플레이어" 가 3열 카드(360 폭)에서 세 줄로 꺾여 혼자 카드 높이를 늘렸다(2026-10-08).
+ */
+export const GENRE_CARD_LABEL: Readonly<Record<string, string>> = {
+  "대규모 멀티플레이어": "MMO",
+};
+
 /** 장르는 최대 몇 개까지. 넘으면 "전부 좋아함" 과 같아져 추천이 무의미해진다 */
 export const GENRE_PICK_MAX = 5;
+
+/**
+ * 게임처럼 고르는 장치의 값(2026-10-08 사용자: "선택하는 것도 게임하듯이").
+ * 성향과 플레이타임은 카드마다 도트 게이지를 단다 — 넷 중 몇 번째인지가 눈으로 비교된다(인내심 1~4칸, 길이 1~4칸).
+ * 둘 다 선택지가 넷이라 칸 수도 4다. 선택지가 늘면 이 수와 아래 표를 같이 고친다.
+ */
+export const METER_MAX = 4;
+
+export const DEAL_STYLE_PATIENCE: Record<DealStyle, number> = { full_price: 1, wait_small: 2, wait_deep: 3, historic_low: 4 };
+
+export const PLAY_TIME_LENGTH: Record<PlayTimeStyle, number> = { short: 1, medium: 2, long: 3, endless: 4 };
+
+/** 플랫폼 카드 왼쪽 그림 — 상표 대신 기기 모양으로 가른다(로고는 쓸 권리도 자산도 없다) */
+export type PlatformShape = "pc" | "console" | "handheld";
+
+export const PLATFORM_SHAPE: Partial<Record<Platform, PlatformShape>> = {
+  steam: "pc",
+  epic: "pc",
+  ps5: "console",
+  ps4: "console",
+  xbox: "console",
+  switch: "handheld",
+  switch2: "handheld",
+};

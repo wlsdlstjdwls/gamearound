@@ -34,12 +34,13 @@ const INPUT_CLASS = "h-7 w-full min-w-0 bg-transparent text-[16px] font-semibold
 
 /**
  * 세그먼트 한 칸 — 운영체제와 메모리 빠른 선택이 같은 모양을 쓴다.
- * 고른 칸은 바탕 위로 떠오른 흰 면(shadow-1). 높이가 44px 보다 작아 터치 기기에서는 덧면(tap-inset)으로 손가락 범위를 채운다.
+ * 고른 칸은 아래 두께가 달린 보라 키. 높이가 44px 보다 작아 터치 기기에서는 덧면(tap-inset)으로 손가락 범위를 채운다.
  */
 function segmentClass(active: boolean): string {
   return cn(
     "press tap-inset flex h-9 items-center justify-center rounded-[9px] px-2.5 text-[13.5px] transition-[background-color,color,box-shadow] duration-base ease-standard",
-    active ? "bg-surface font-bold text-acc shadow-1" : "font-medium text-mut hover:text-ink",
+    // 고른 칸은 보라 키 — 아래 두께(acc-hover)까지 달아 선택 카드(.key)와 같은 말을 한다
+    active ? "bg-acc font-bold text-on-ink shadow-[0_3px_0_var(--acc-hover)]" : "font-medium text-mut hover:text-ink",
   );
 }
 
@@ -47,8 +48,9 @@ function segmentClass(active: boolean): string {
 function PartRow({ icon, label, htmlFor, badge, children }: { icon: ReactNode; label: string; htmlFor: string; badge?: ReactNode; children: ReactNode }) {
   return (
     // relative: 부품 제안 목록(suggest popup)이 이 줄 폭으로 펼쳐진다
-    <div className="relative flex items-center gap-3 rounded-xl bg-surface px-3 py-2.5 shadow-[0_0_0_1px_var(--line)] transition-[box-shadow] duration-base ease-standard focus-within:shadow-[0_0_0_1.5px_var(--acc),0_0_0_4px_var(--acc-glow)]">
-      <span aria-hidden className="flex size-10 shrink-0 items-center justify-center rounded-[10px] bg-acc-soft text-acc">
+    <div className="key-field group/part relative flex items-center gap-3 rounded-[14px] px-3 py-2.5">
+      {/* 그림 칸은 포커스가 들어오면 보라로 켜진다 — 지금 채우는 부품 슬롯이 어느 것인지 */}
+      <span aria-hidden className="flex size-10 shrink-0 items-center justify-center rounded-[10px] bg-acc-soft text-acc transition-[background-color,color] duration-base group-focus-within/part:bg-acc group-focus-within/part:text-on-ink">
         {icon}
       </span>
       <div className="flex min-w-0 flex-1 flex-col">

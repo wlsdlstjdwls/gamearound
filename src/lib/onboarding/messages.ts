@@ -60,16 +60,23 @@ export const ONBOARDING_MESSAGES = {
   genres: {
     title: ["좋아하는 장르는?"],
     subtitle: "이 장르의 할인을 홈에 먼저 올려 드려요",
+    /** 고른 장르가 들어가는 칸 묶음(인벤토리)의 이름. 낭독기용 */
+    inventory: "고른 장르",
+    /** 인벤토리 칸을 누르면 그 장르를 뺀다 */
+    remove: (name: string) => `${name} 빼기`,
   },
 
   dealStyle: {
     title: ["할인을 얼마나 기다리세요?"],
     subtitle: "알림을 걸 때 기본값으로 채워 둘게요",
+    /** 카드 아래 게이지 이름 */
+    meter: "인내심",
   },
 
   playTime: {
     title: ["한 번 잡으면 얼마나 하세요?"],
     subtitle: "플레이타임이 맞는 게임을 먼저 보여 드려요",
+    meter: "플레이 길이",
   },
 
   subscriptions: {

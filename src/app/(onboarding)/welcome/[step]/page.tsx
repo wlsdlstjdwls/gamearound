@@ -7,7 +7,7 @@
 import { redirect } from "next/navigation";
 import { ROUTES, WELCOME_FROM_PARAM, WELCOME_FROM_SETTINGS, welcomeStepPath } from "@/lib/routes";
 import { gamesHref } from "@/lib/games-query";
-import { DEAL_STYLE_CHOICES, GENRE_PICK_MAX, PLATFORM_CHOICES, PLAY_TIME_CHOICES } from "@/lib/onboarding/constants";
+import { DEAL_STYLE_CHOICES, DEAL_STYLE_PATIENCE, GENRE_CARD_LABEL, GENRE_PICK_MAX, PLATFORM_CHOICES, PLATFORM_SHAPE, PLAY_TIME_CHOICES, PLAY_TIME_LENGTH } from "@/lib/onboarding/constants";
 import { summarizeProfile, type ProfileFieldStep } from "@/lib/onboarding/summary";
 import { filledSlots, playerTitle } from "@/lib/onboarding/quest";
 import { ONBOARDING_MESSAGES as M } from "@/lib/onboarding/messages";
@@ -114,7 +114,7 @@ async function questionFor(step: Exclude<OnboardingStep, "intro" | "device" | "n
         name: "platforms",
         // 둘째 줄("PC")을 싣지 않는다 — Steam, Epic 이 PC 인 건 이름이 말하고, 둘째 줄이 하나라도 있으면
         // 격자가 촘촘해지지 못해(ChoiceGrid dense) 일곱 칸이 네 줄을 먹는다
-        options: PLATFORM_CHOICES.map((c) => ({ value: c.value, label: c.label })),
+        options: PLATFORM_CHOICES.map((c) => ({ value: c.value, label: c.label, shape: PLATFORM_SHAPE[c.value] })),
         multiple: true,
         selected: profile.platforms ?? [],
         requireAnswer: false,
@@ -125,7 +125,7 @@ async function questionFor(step: Exclude<OnboardingStep, "intro" | "device" | "n
         title: M.genres.title,
         subtitle: M.genres.subtitle,
         name: "genreIds",
-        options: choices.map((g) => ({ value: String(g.id), label: g.name })),
+        options: choices.map((g) => ({ value: String(g.id), label: GENRE_CARD_LABEL[g.name] ?? g.name })),
         multiple: true,
         selected: (profile.favoriteGenreIds ?? []).map(String),
         max: GENRE_PICK_MAX,
@@ -137,7 +137,7 @@ async function questionFor(step: Exclude<OnboardingStep, "intro" | "device" | "n
         title: M.dealStyle.title,
         subtitle: M.dealStyle.subtitle,
         name: "dealStyle",
-        options: DEAL_STYLE_CHOICES.map((c) => ({ value: c.value, label: c.label, note: c.note })),
+        options: DEAL_STYLE_CHOICES.map((c) => ({ value: c.value, label: c.label, note: c.note, meter: { level: DEAL_STYLE_PATIENCE[c.value], caption: M.dealStyle.meter } })),
         multiple: false,
         selected: profile.dealStyle ? [profile.dealStyle] : [],
         // 단일선택은 "안 고름" 이 뜻을 갖지 못한다 — 건너뛰기가 그 자리를 이미 맡고 있다
@@ -148,7 +148,8 @@ async function questionFor(step: Exclude<OnboardingStep, "intro" | "device" | "n
         title: M.playTime.title,
         subtitle: M.playTime.subtitle,
         name: "playTimeStyle",
-        options: PLAY_TIME_CHOICES.map((c) => ({ value: c.value, label: c.label, note: c.note })),
+        // 끝이 없는 것만 꼭대기 칸을 빛 색으로 — "길다" 가 아니라 "끝이 없다" 는 다른 종류라는 것을 색으로 가른다
+        options: PLAY_TIME_CHOICES.map((c) => ({ value: c.value, label: c.label, note: c.note, meter: { level: PLAY_TIME_LENGTH[c.value], caption: M.playTime.meter, peak: c.value === "endless" } })),
         multiple: false,
         selected: profile.playTimeStyle ? [profile.playTimeStyle] : [],
         requireAnswer: true,

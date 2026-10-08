@@ -355,3 +355,15 @@ export function MemoryIcon(p: IconProps) {
     </svg>
   );
 }
+
+/** 휴대 기기(스위치) — 양옆에 손잡이가 붙은 화면. 온보딩 플랫폼 카드에서 PC(모니터), 콘솔(패드)과 가른다 */
+export function HandheldIcon(p: IconProps) {
+  return (
+    <svg {...base(p)}>
+      <rect x="6.5" y="6" width="11" height="12" rx="1" />
+      <path d="M6.5 6H5a2.5 2.5 0 0 0-2.5 2.5v7A2.5 2.5 0 0 0 5 18h1.5M17.5 6H19a2.5 2.5 0 0 1 2.5 2.5v7A2.5 2.5 0 0 1 19 18h-1.5" />
+      <circle cx="4.5" cy="10" r="0.6" />
+      <circle cx="19.5" cy="14" r="0.6" />
+    </svg>
+  );
+}
