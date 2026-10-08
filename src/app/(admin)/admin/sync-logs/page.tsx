@@ -5,7 +5,7 @@
 // 영문으로는 판단이 안 선다. 다만 소스는 로그와 워크플로 이름을 맞대야 해서 원값을 함께 남긴다.
 import type { Metadata } from "next";
 import { cn } from "@/lib/cn";
-import { formatDateTime } from "@/lib/format";
+import { formatDateTime, formatDuration } from "@/lib/format";
 import { ChipLink } from "@/components/ui/chip";
 import { isSourceName, listSyncLogs, SOURCES } from "@/server/services/admin";
 import { LOG_MESSAGES, SYNC_STATUS_LABEL, sourceLabel } from "@/lib/admin/messages";
@@ -14,14 +14,9 @@ import { PageHead } from "@/components/ui/page";
 import { DataCell, DataHead, DataList, DataRow } from "@/components/admin/data-rows";
 import { ROUTES } from "@/lib/routes";
 import { Clamp } from "@/components/ui/tooltip";
+import { SYNC_BADGE_SHAPE, SYNC_STATUS_BADGE } from "@/components/admin/sync-tone";
 
 export const metadata: Metadata = { title: LOG_MESSAGES.title };
-
-const STATUS_STYLE: Record<string, string> = {
-  ok: "text-ok",
-  partial: "text-warn",
-  failed: "text-danger",
-};
 
 /**
  * 발견 중단 사유. "예산 소진" 이 이어지면 포화 신호다 — 아는 것만 나오는 구간이 페이지 예산보다 길다는 뜻이라
@@ -33,15 +28,45 @@ const DISCOVERY_STOP: Record<string, { label: string; style: string }> = {
   "catalog-end": { label: LOG_MESSAGES.stopCatalogEnd, style: "text-mut" },
 };
 
-function durationSec(start: Date, end: Date | null): string {
-  if (!end) return "-";
-  return `${Math.max(0, Math.round((end.getTime() - start.getTime()) / 1000))}s`;
+function duration(start: Date, end: Date | null): string {
+  return end ? formatDuration(end.getTime() - start.getTime()) : "-";
+}
+
+type SyncLog = Awaited<ReturnType<typeof listSyncLogs>>[number];
+
+function StatusBadge({ status }: { status: SyncLog["status"] }) {
+  return <span className={cn(SYNC_BADGE_SHAPE, SYNC_STATUS_BADGE[status])}>{SYNC_STATUS_LABEL[status] ?? status}</span>;
+}
+
+/**
+ * 좁은 화면에서 실행 하나의 머리 두 줄. 표의 일곱 칸(번호~실패)을 여기 접는다 — 칸마다 이름표를 단
+ * 카드로는 실행 하나가 아홉 줄이었다(DataCell wideOnly 주석). 신규 찾기와 에러는 값이 있을 때만 밑에 선다.
+ */
+function MobileRunHead({ log: l }: { log: SyncLog }) {
+  const failed = l.failed ?? 0;
+  return (
+    <div className="flex flex-col gap-1 md:hidden">
+      <div className="flex items-center justify-between gap-2">
+        <span className="min-w-0 font-semibold">{sourceLabel(l.source)}</span>
+        <StatusBadge status={l.status} />
+      </div>
+      <p className="text-[12px] text-mut tabular-nums">
+        {formatDateTime(l.startedAt)} | {duration(l.startedAt, l.finishedAt)} | {LOG_MESSAGES.colProcessed} {l.processed ?? 0} |{" "}
+        <span className={failed > 0 ? "font-semibold text-danger" : undefined}>
+          {LOG_MESSAGES.colFailed} {failed}
+        </span>
+      </p>
+    </div>
+  );
 }
 
 // 칸이 아홉이다. 넓은 화면에서만 표로 서고, 좁은 화면에서는 실행 하나가 카드 한 장이 된다
 // (data-rows.tsx 머리 주석). 번호는 줄을 가리키는 값이라 맨 앞에 좁게 둔다.
+// 에러 맛보기는 칸이 아니라 **줄 밑 한 줄**이다(2026-10-08) — 아홉째 칸으로 두었을 때 남는 폭이 150px 남짓이라
+// 고정폭 글자가 낱자로 꺾여 줄 하나가 열 줄로 늘었고, 그 몇 줄이 화면을 먹어 정상 실행이 안 보였다.
+// 에러가 있는 줄만 밑에 전체 폭으로 두 줄까지 펴고, 머리 칸은 여덟이다. 숫자 칸은 글자 폭만큼만 준다.
 const LOG_COLS =
-  "md:grid-cols-[62px_104px_76px_150px_70px_58px_58px_minmax(0,1.2fr)_minmax(0,2fr)] md:gap-x-3 md:px-3 md:py-2";
+  "md:grid-cols-[52px_128px_84px_120px_84px_56px_48px_minmax(0,1fr)] md:gap-x-3 md:px-3 md:py-2.5";
 
 export default async function SyncLogsPage({ searchParams }: { searchParams: Promise<{ source?: string | string[] }> }) {
   await requireRoleOrForbid("admin");
@@ -84,37 +109,40 @@ export default async function SyncLogsPage({ searchParams }: { searchParams: Pro
               LOG_MESSAGES.colProcessed,
               LOG_MESSAGES.colFailed,
               LOG_MESSAGES.colDiscovery,
-              LOG_MESSAGES.colError,
             ]}
           />
           <DataList>
             {logs.map((l) => (
               <DataRow key={l.id} cols={LOG_COLS} align="start">
-                <DataCell label={LOG_MESSAGES.colId} className="text-dim">
+                <MobileRunHead log={l} />
+                <DataCell label={LOG_MESSAGES.colId} wideOnly className="text-dim">
                   {l.id}
                 </DataCell>
-                <DataCell label={LOG_MESSAGES.colSource} className="md:whitespace-nowrap">
+                <DataCell label={LOG_MESSAGES.colSource} wideOnly className="md:whitespace-nowrap">
                   {sourceLabel(l.source)}
                 </DataCell>
-                <DataCell label={LOG_MESSAGES.colStatus} className={cn("md:whitespace-nowrap", STATUS_STYLE[l.status])}>
-                  {SYNC_STATUS_LABEL[l.status] ?? l.status}
+                <DataCell label={LOG_MESSAGES.colStatus} wideOnly>
+                  <StatusBadge status={l.status} />
                 </DataCell>
-                <DataCell label={LOG_MESSAGES.colStarted} className="md:whitespace-nowrap">
+                <DataCell label={LOG_MESSAGES.colStarted} wideOnly className="tabular-nums">
                   {formatDateTime(l.startedAt)}
                 </DataCell>
-                <DataCell label={LOG_MESSAGES.colDuration}>{durationSec(l.startedAt, l.finishedAt)}</DataCell>
-                <DataCell label={LOG_MESSAGES.colProcessed}>{l.processed ?? 0}</DataCell>
-                <DataCell label={LOG_MESSAGES.colFailed} className={(l.failed ?? 0) > 0 ? "font-semibold text-danger" : undefined}>
+                <DataCell label={LOG_MESSAGES.colDuration} wideOnly className="tabular-nums">
+                  {duration(l.startedAt, l.finishedAt)}
+                </DataCell>
+                <DataCell label={LOG_MESSAGES.colProcessed} wideOnly className="tabular-nums">
+                  {l.processed ?? 0}
+                </DataCell>
+                <DataCell label={LOG_MESSAGES.colFailed} wideOnly className={cn("tabular-nums", (l.failed ?? 0) > 0 ? "font-semibold text-danger" : "text-dim")}>
                   {l.failed ?? 0}
                 </DataCell>
-                <DataCell label={LOG_MESSAGES.colDiscovery}>
+                <DataCell label={LOG_MESSAGES.colDiscovery} wideOnly={!l.discovery}>
                   {l.discovery ? (
                     <>
                       <span className={DISCOVERY_STOP[l.discovery.stoppedBy]?.style ?? ""}>
                         {DISCOVERY_STOP[l.discovery.stoppedBy]?.label ?? l.discovery.stoppedBy}
                       </span>
-                      <span className="text-[11.5px] text-dim">
-                        {" "}
+                      <span className="block text-[11.5px] text-dim">
                         {LOG_MESSAGES.discoverySummary(l.discovery.pages, l.discovery.scanned, l.discovery.fresh)}
                       </span>
                     </>
@@ -122,17 +150,17 @@ export default async function SyncLogsPage({ searchParams }: { searchParams: Pro
                     <span className="text-dim-2">-</span>
                   )}
                 </DataCell>
-                <DataCell label={LOG_MESSAGES.colError}>
-                  {l.errorSample ? (
-                    <code className="font-mono text-[11px] text-mut">
-                      <Clamp lines={2} className="break-all">
+                {/* 에러가 없는 줄은 밑줄을 아예 세우지 않는다. 고정폭 글꼴을 걷었다 — 한글이 섞인 에러 문구는
+                    고정폭에서 낱자 사이가 벌어져 안 읽혔다. 전문은 잘렸을 때만 뜨는 말풍선(Clamp)으로 본다 */}
+                {l.errorSample && (
+                  <DataCell label={LOG_MESSAGES.colError} className="md:col-span-full md:mt-2">
+                    <div className="md:rounded-[7px] md:bg-surface-2 md:px-3 md:py-2">
+                      <Clamp lines={2} className="break-words text-[12px] leading-[1.55] text-mut">
                         {l.errorSample}
                       </Clamp>
-                    </code>
-                  ) : (
-                    <span className="text-dim-2">-</span>
-                  )}
-                </DataCell>
+                    </div>
+                  </DataCell>
+                )}
               </DataRow>
             ))}
           </DataList>

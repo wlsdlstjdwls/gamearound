@@ -1,6 +1,6 @@
 // 포맷 유틸 테스트 — 할인 기간 표시(순수 함수, now 를 인자로 받는다)
 import { describe, expect, it } from "vitest";
-import { formatAgo, formatDate, formatDateTime, formatLongDateTime, formatMonthLabel, formatReleaseDay, formatSaleWindow, formatShortDateTime, saleRemaining } from "./format";
+import { formatAgo, formatDate, formatDuration, formatDateTime, formatLongDateTime, formatMonthLabel, formatReleaseDay, formatSaleWindow, formatShortDateTime, saleRemaining } from "./format";
 
 const NOW = Date.parse("2026-09-14T00:00:00Z");
 
@@ -96,5 +96,19 @@ describe("formatAgo", () => {
 
   it("값이 없으면 대시", () => {
     expect(formatAgo(null, now)).toBe("-");
+  });
+});
+
+describe("formatDuration", () => {
+  it("단위가 바뀌는 자리를 적는다", () => {
+    expect(formatDuration(0)).toBe("0초");
+    expect(formatDuration(59_400)).toBe("59초");
+    expect(formatDuration(509_000)).toBe("8분 29초");
+    expect(formatDuration(600_000)).toBe("10분");
+    expect(formatDuration(3_600_000)).toBe("1시간");
+    expect(formatDuration(19_591 * 3_600_000 + 61_000)).toBe("19591시간 1분");
+  });
+  it("음수는 0초로 접는다", () => {
+    expect(formatDuration(-5000)).toBe("0초");
   });
 });

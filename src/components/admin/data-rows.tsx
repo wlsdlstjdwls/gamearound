@@ -61,10 +61,24 @@ export function DataRow({
  *
  * 이름표 폭을 고정하는 이유: 카드 안에서 값의 시작점이 줄마다 다르면 훑어 내려가며 읽을 수 없다.
  * 88px 은 이 화면들에서 가장 긴 이름표("스토어가 준 제목")가 두 줄로 접히지 않는 폭이다.
+ *
+ * `wideOnly` 는 표에서만 서는 칸이다(2026-10-08). 칸이 아홉인 실행 로그는 카드 한 장이 아홉 줄이라
+ * 백 건이 휴대폰에서 28,000px 이었다 — 그런 화면은 좁은 화면용 요약 한 덩어리를 따로 세우고
+ * 표 칸은 넓은 화면에만 남긴다. display 를 두 번 선언하지 않도록 flex 와 hidden 중 하나만 붙인다.
  */
-export function DataCell({ label, className, children }: { label?: string; className?: string; children: React.ReactNode }) {
+export function DataCell({
+  label,
+  wideOnly = false,
+  className,
+  children,
+}: {
+  label?: string;
+  wideOnly?: boolean;
+  className?: string;
+  children: React.ReactNode;
+}) {
   return (
-    <div className={cn("flex min-w-0 items-baseline gap-2.5 md:block", className)}>
+    <div className={cn(wideOnly ? "hidden" : "flex", "min-w-0 items-baseline gap-2.5 md:block", className)}>
       {label && <span className="w-[88px] shrink-0 text-[11.5px] leading-[1.5] text-dim md:hidden">{label}</span>}
       <div className="min-w-0 flex-1">{children}</div>
     </div>

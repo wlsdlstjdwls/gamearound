@@ -238,3 +238,16 @@ export function formatAgo(d: Date | string | null | undefined, now: number): str
   if (minutes < AGO_HOURS_MAX) return `${Math.floor(minutes / 60)}시간 전`;
   return `${Math.floor(minutes / AGO_HOURS_MAX)}일 전`;
 }
+
+/**
+ * 걸린 시간("8분 29초"). 실행 로그가 "509s" 로 적던 자리 — 초만 늘어놓으면 사람이 60으로 나눠 읽어야 했다.
+ * 한 시간을 넘기면 초는 버린다(그 단위에서 초는 판단에 안 쓰인다).
+ */
+export function formatDuration(ms: number): string {
+  const sec = Math.max(0, Math.round(ms / 1000));
+  if (sec < 60) return `${sec}초`;
+  const min = Math.floor(sec / 60);
+  if (min < 60) return sec % 60 === 0 ? `${min}분` : `${min}분 ${sec % 60}초`;
+  const rest = min % 60;
+  return rest === 0 ? `${Math.floor(min / 60)}시간` : `${Math.floor(min / 60)}시간 ${rest}분`;
+}
