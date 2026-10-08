@@ -154,7 +154,13 @@ export function OnboardingShell({
                 {note && <p className="mt-4 hidden text-[12.5px] leading-[1.55] text-dim lg:block">{note}</p>}
               </div>
 
-              <div className="reveal mt-4 lg:col-start-2 lg:row-start-1 lg:mt-0 lg:self-center" style={stagger(1)}>
+              {/*
+                칸에 포커스가 있을 때만 이 덩어리를 바닥 띠 위로 올린다(focus-within:z-20). 2026-10-08 사용자 신고:
+                "프로세서 항목이 버튼 뒤로 간다" — 부품 제안 목록(z-30)이 .reveal 의 쌓임 맥락에 갇혀(애니메이션이 끝난 뒤에도
+                fill 이 남아 맥락을 만든다) DOM 에서 뒤에 오는 sticky 바닥 띠 밑에 깔렸다. 늘 올려 두면 스크롤할 때
+                카드가 바닥 띠 위로 지나가므로, 목록이 열릴 수 있는 순간(입력 중)에만 올린다.
+              */}
+              <div className="reveal relative mt-4 focus-within:z-20 lg:col-start-2 lg:row-start-1 lg:mt-0 lg:self-center" style={stagger(1)}>
                 {children}
               </div>
 
