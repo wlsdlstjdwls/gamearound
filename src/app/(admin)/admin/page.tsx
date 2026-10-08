@@ -12,6 +12,10 @@
 //      바뀐 값을 버튼 하나 뒤의 시트에 싣는다(admin-activity, sync/touched 주석).
 //   3. "도는 중" 과 "끊김" 을 가른다. 앞 화면은 끝나지 않은 실행을 전부 "도는 중이거나 끊김" 한 말로
 //      적었다 — 그래서 며칠째 안 끝난 실행이 정상처럼 보였다(wikidata_game 실측).
+//
+// 2026-10-08 손질 — "가시성이 안 좋다". 카드 열다섯이 같은 무게로 서서 손볼 곳(일부 실패, 끊김)이
+// 작은 배지 하나로만 갈렸다. 손볼 카드를 **앞으로 당기고** 왼쪽에 띠를 긋는다. 순서는 바꾸되 무엇을
+// 보여 주는지는 그대로다 — 정상 카드 사이의 순서(서비스의 SOURCES 순서)는 유지한다.
 import type { Metadata } from "next";
 import Link from "next/link";
 import { buttonClass } from "@/components/ui/button";
@@ -25,33 +29,41 @@ import { requireRoleOrForbid } from "@/server/auth/guards";
 import { PageHead, Panel, raisedClass } from "@/components/ui/page";
 import { SyncRunSheet } from "@/components/admin/sync-run-sheet";
 import { Clamp } from "@/components/ui/tooltip";
+import { cn } from "@/lib/cn";
+import { SYNC_BADGE_SHAPE, SYNC_STATUS_BADGE, SYNC_STATUS_STRIPE } from "@/components/admin/sync-tone";
 
 /** 카드에 노출할 에러 샘플 길이. 전문은 실행 로그 화면에서 본다 */
 const ERROR_SAMPLE_PREVIEW_LEN = 300;
 
 export const metadata: Metadata = { title: SYNC_MESSAGES.title };
 
-const BADGE = "rounded-[6px] px-2 py-0.5 text-[11.5px] font-semibold";
+/**
+ * 카드 머리의 상태 한 칸. 색과 말이 같은 곳에서 나와야 둘이 어긋나지 않는다.
+ * rank 는 카드를 세우는 순서다 — 사람이 손봐야 하는 것(끊김, 실패)이 앞이고, 쉬는 소스가 맨 뒤다.
+ */
+type Tone = { label: string; style: string; stripe: string; rank: number; live?: boolean };
 
-/** 카드 머리의 상태 한 칸. 색과 말이 같은 곳에서 나와야 둘이 어긋나지 않는다 */
-type Tone = { label: string; style: string; live?: boolean };
+const RANK = { stalled: 0, failed: 1, partial: 2, running: 3, ok: 4, idle: 5 } as const;
 
 function statusOf(latest: SyncLogRow | null, disabledReason: string | undefined, now: number): Tone {
-  if (disabledReason) return { label: SYNC_MESSAGES.disabled, style: "bg-surface-3 text-mut" };
-  if (!latest) return { label: SYNC_MESSAGES.noRun, style: "bg-surface-3 text-mut" };
+  if (disabledReason) return { label: SYNC_MESSAGES.disabled, style: "bg-surface-3 text-mut", stripe: "", rank: RANK.idle };
+  if (!latest) return { label: SYNC_MESSAGES.noRun, style: "bg-surface-3 text-mut", stripe: "", rank: RANK.idle };
   if (!latest.finishedAt) {
     const mins = (now - latest.startedAt.getTime()) / 60000;
     return mins <= RUNNING_GRACE_MINUTES
-      ? { label: SYNC_MESSAGES.running, style: "bg-acc-soft text-acc", live: true }
-      : { label: SYNC_MESSAGES.stalled, style: "bg-danger-soft text-danger" };
+      ? { label: SYNC_MESSAGES.running, style: "bg-acc-soft text-acc", stripe: "", rank: RANK.running, live: true }
+      : { label: SYNC_MESSAGES.stalled, style: SYNC_STATUS_BADGE.failed, stripe: SYNC_STATUS_STRIPE.failed, rank: RANK.stalled };
   }
-  const style =
-    latest.status === "ok"
-      ? "bg-ok-soft text-ok"
-      : latest.status === "partial"
-        ? "bg-warn-soft text-warn"
-        : "bg-danger-soft text-danger";
-  return { label: SYNC_STATUS_LABEL[latest.status] ?? latest.status, style };
+  return {
+    label: SYNC_STATUS_LABEL[latest.status] ?? latest.status,
+    style: SYNC_STATUS_BADGE[latest.status],
+    stripe: SYNC_STATUS_STRIPE[latest.status],
+    rank: RANK[latest.status],
+  };
+}
+
+function disabledReasonOf(item: SyncOverviewItem): string | undefined {
+  return isSource(item.source) ? getDisabledReason(item.source) : undefined;
 }
 
 function Metric({ label, value, alert = false }: { label: string; value: string; alert?: boolean }) {
@@ -96,24 +108,25 @@ function Totals({
   );
 }
 
-function SourceCard({ item, run, now }: { item: SyncOverviewItem; run: RunItems | undefined; now: number }) {
+function SourceCard({ item, tone, run, now }: { item: SyncOverviewItem; tone: Tone; run: RunItems | undefined; now: number }) {
   const l = item.latest;
-  const disabledReason = isSource(item.source) ? getDisabledReason(item.source) : undefined;
-  const tone = statusOf(l, disabledReason, now);
+  const disabledReason = disabledReasonOf(item);
   const d = l?.discovery;
 
   return (
     // 소스 하나가 흰 판 한 장이다. 예전엔 판 대신 위쪽 헤어라인 한 줄로 칸을 갈랐는데, 격자에서 칸이
     // 가로로 이어지면 선이 한 줄로 붙어 어느 값이 어느 스토어 것인지 안 갈렸다(2026-09-30 사용자: "구분이 잘 안되네").
     // 관리자 셸이 회색 바탕 위 흰 판이라(할 일 카드와 같은 면) 판 한 겹이면 상자 속 상자가 되지 않는다
-    <div className={raisedClass(`flex flex-col gap-2.5 p-4 ${disabledReason ? "opacity-60" : ""}`)}>
+    // 띠는 손볼 카드에만 긋는다 — 할 일 카드의 띠와 같은 모양이다(task-card)
+    <div className={raisedClass(cn("relative flex flex-col gap-2.5 overflow-hidden p-4", disabledReason && "opacity-60"))}>
+      {tone.stripe && <span aria-hidden className={cn("absolute inset-y-0 left-0 w-[3px]", tone.stripe)} />}
       <div className="flex items-center justify-between gap-2">
         {/* 스토어 이름은 한글로 띄우고, 로그를 맞대 볼 때 쓰는 원값은 그 밑에 작게 남긴다 */}
         <h3 className="min-w-0 text-[13.5px] font-bold text-ink">
           <Clamp>{sourceLabel(item.source)}</Clamp>
           <span className="mt-0.5 block font-mono text-[11px] font-normal text-dim">{item.source}</span>
         </h3>
-        <span className={`${BADGE} inline-flex shrink-0 items-center gap-1.5 ${tone.style}`}>
+        <span className={cn(SYNC_BADGE_SHAPE, tone.style)}>
           {/* 도는 중인 칸만 점이 숨 쉰다. 멈춘 화면에서 움직이는 것은 "지금 일어나는 일" 뿐이어야 한다 */}
           {tone.live && <span aria-hidden className="size-1.5 animate-pulse rounded-full bg-acc" />}
           {tone.label}
@@ -143,16 +156,22 @@ function SourceCard({ item, run, now }: { item: SyncOverviewItem; run: RunItems 
       {l?.errorSample && (
         <div>
           <p className="mb-1 text-[11.5px] text-dim">{SYNC_MESSAGES.errorSample}</p>
-          <p className="rounded-[7px] bg-surface-4 px-2.5 py-2 font-mono text-[11px] leading-[1.55] text-mut">
-            <Clamp lines={3} className="break-all">
+          {/* 고정폭 글꼴을 걷었다 — 한글이 섞인 에러 문구가 낱자 사이로 벌어져 안 읽혔다(실행 로그와 같은 결정) */}
+          <div className="rounded-[7px] bg-surface-4 px-2.5 py-2 text-[12px] leading-[1.55] text-mut">
+            <Clamp lines={3} className="break-words">
               {l.errorSample.slice(0, ERROR_SAMPLE_PREVIEW_LEN)}
             </Clamp>
-          </p>
+          </div>
         </div>
       )}
 
       {/* 쉬는 까닭은 접어 두지 않는다 — 왜 안 도는지 모르면 고장으로 읽는다 */}
-      {disabledReason && <p className="text-[11.5px] text-dim">{disabledReason}</p>}
+      {/* 다만 사유 전문은 몇 줄씩 길다 — 세 줄로 자르고 전문은 말풍선으로 본다 */}
+      {disabledReason && (
+        <Clamp lines={3} className="text-[12px] leading-[1.55] text-dim">
+          {disabledReason}
+        </Clamp>
+      )}
 
       {/* tap: 카드 바닥의 이 한 줄이 소스마다 유일한 링크다 — 12px 글자 한 줄은 손가락 목표가 못 된다 */}
       <Link href={`${ROUTES.adminSyncLogs}?source=${item.source}`} className="tap inline-flex w-fit items-center text-[12px] text-acc hover:underline">
@@ -168,6 +187,10 @@ export default async function AdminSyncOverviewPage() {
   const [overview, activity] = await Promise.all([getSyncOverview(), getSyncActivity()]);
   const repo = process.env.NEXT_PUBLIC_GITHUB_REPO;
   const failedToday = overview.items.reduce((n, it) => n + it.failedToday, 0);
+  // sort 는 안정 정렬이라 같은 칸끼리는 서비스가 준 순서 그대로다
+  const cards = overview.items
+    .map((item) => ({ item, tone: statusOf(item.latest, disabledReasonOf(item), activity.asOf) }))
+    .sort((a, b) => a.tone.rank - b.tone.rank);
 
   return (
     <section className="flex flex-col gap-6">
@@ -194,8 +217,8 @@ export default async function AdminSyncOverviewPage() {
       <Totals newGames={activity.newGames} snapshots={activity.priceSnapshots} runs={activity.runs} failedToday={failedToday} />
 
       <div className="grid grid-cols-[repeat(auto-fit,minmax(min(250px,100%),1fr))] gap-3">
-        {overview.items.map((item) => (
-          <SourceCard key={item.source} item={item} run={activity.lastRuns.get(item.source)} now={activity.asOf} />
+        {cards.map(({ item, tone }) => (
+          <SourceCard key={item.source} item={item} tone={tone} run={activity.lastRuns.get(item.source)} now={activity.asOf} />
         ))}
       </div>
 
