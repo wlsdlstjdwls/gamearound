@@ -79,7 +79,8 @@ export function ShopJoinForm({ current }: { current: ShopApplication | null }) {
           <TextField
             name="slug"
             label={M.slugLabel}
-            hint={M.slugHint}
+            // 쓸 수 있는 글자가 좁은 칸이라 규칙을 빨강으로 세운다(2026-10-12 사용자) — 회색이면 안 읽고 지나친다
+            hint={<span className="font-medium text-danger">{M.slugHint}</span>}
             leading={`${ROUTES.shops}/`}
             placeholder={M.slugPlaceholder}
             defaultValue={current?.slug ?? ""}
