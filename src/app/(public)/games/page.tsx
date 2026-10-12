@@ -12,13 +12,15 @@ import { Suspense } from "react";
 import { GameCard, highlightFromFilter } from "@/components/game-card";
 import { EmptyState } from "@/components/empty-state";
 import { GameFilters, type PersonalFilter } from "@/components/game-filters";
+import { FilterStateProvider, PendingResults } from "@/components/game-filters/optimistic";
 import { GamesInfinite } from "@/components/games-infinite";
 import { Page, PageHead } from "@/components/ui/page";
-import { DEFAULT_GAME_SORT, SORT_LABEL, gamesHref, joinPlatformValues, parsePlatformValues, parseGamesQuery, type GamesQuery } from "@/lib/games-query";
+import { DEFAULT_GAME_SORT, SORT_LABEL, gamesHref, parsePlatformValues, type GamesQuery } from "@/lib/games-query";
 import { PLATFORM_LABEL } from "@/lib/format";
-import { isPlatformFamily, isPlatformValue, PLATFORM_FAMILY_LABEL, PLATFORM_VALUE_ORDER } from "@/lib/platform";
+import { isPlatformFamily, PLATFORM_FAMILY_LABEL } from "@/lib/platform";
 import { stagger } from "@/lib/motion";
 import { ROUTES } from "@/lib/routes";
+import { readGamesQuery } from "@/lib/games/read-query";
 import { hasExplicitListFilter } from "@/lib/onboarding/query";
 import { getMyListPreset } from "@/server/services/profiles";
 import { GAMES_PAGE_SIZE, getGameFacets, listGames, type GameListFilter } from "@/server/services/games";
@@ -37,19 +39,8 @@ function platformFilterLabel(v: string): string {
   return isPlatformFamily(v) ? PLATFORM_FAMILY_LABEL[v] : PLATFORM_LABEL[v] ?? v;
 }
 
-/**
- * 쿼리스트링 → 조회 필터. 모르는 플랫폼 값은 버려 항상 유효한 목록이 나오게 한다.
- * 여러 값이 실려 오므로(`platform=ps5,switch`) 토큰마다 걸러 낸 뒤 정해진 순서로 다시 잇는다 —
- * 같은 선택이 늘 같은 문자열이어야 목록 캐시 키가 쪼개지지 않는다.
- *
- * 낱개 스토어 값은 고르는 자리가 없어졌지만(game-filters/groups) 여기서는 계속 받는다 —
- * 밖에서 들어온 주소(`platform=steam`)와 회사, 상세 화면의 링크가 그 값을 쓴다.
- */
-function readQuery(sp: Search): GamesQuery {
-  const q = parseGamesQuery(sp);
-  const picked = parsePlatformValues(q.platform).filter(isPlatformValue);
-  return { ...q, platform: joinPlatformValues(picked, PLATFORM_VALUE_ORDER) };
-}
+/** 쿼리스트링 → 조회 필터. 읽는 규칙은 lib/games/read-query 한 곳이다 — 필터가 누른 순간 먼저 그릴 때도 같은 규칙으로 읽는다 */
+const readQuery = readGamesQuery;
 
 export async function generateMetadata({ searchParams }: Props): Promise<Metadata> {
   const f = readQuery(await searchParams);
@@ -144,7 +135,9 @@ export default async function GamesPage({ searchParams }: Props) {
   // 취향 토글(필터 맨 위). 정렬은 들고 간다 — 취향을 껐다고 고른 정렬까지 풀리면 다시 골라야 한다.
   // 끄면 all=1 로 간다: 조건을 지워 나가다 빈 주소에 닿아도 취향으로 되돌아가지 않게(games-query 의 all 주석)
   const personal: PersonalFilter | null = preset
-    ? { applied, labels: preset.labels, href: applied ? gamesHref({ sort: raw.sort, all: true }) : gamesHref({ sort: raw.sort }) }
+    ? applied
+      ? { applied, labels: preset.labels, href: gamesHref({ sort: raw.sort, all: true }), nextQuery: { sort: raw.sort, all: true } }
+      : { applied, labels: preset.labels, href: gamesHref({ sort: raw.sort }), nextQuery: { ...preset.query, sort: raw.sort, all: true } }
     : null;
 
   return (
@@ -155,6 +148,8 @@ export default async function GamesPage({ searchParams }: Props) {
       <PageHead title="게임 목록" hideTitle />
 
       {/* 넓은 화면에서만 두 기둥이 된다. 좁은 화면에서는 필터가 접힌 서랍으로 위에 한 줄만 차지한다 */}
+      {/* 필터를 누른 순간 기둥이 새 조건으로 먼저 바뀌고, 목록은 흐려진 채 기다린다(game-filters/optimistic) */}
+      <FilterStateProvider filter={query}>
       <div className="grid items-start gap-x-10 gap-y-6 lg:grid-cols-[232px_minmax(0,1fr)]">
         {/* 필터 기둥에는 키를 주지 않는다 — 다시 세우면 고른 값이 뼈대로 한 번 사라졌다 돌아온다.
             선택지(facets)는 필터와 무관하게 같은 값이라 옛 기둥을 그대로 두는 편이 덜 튄다 */}
@@ -163,12 +158,13 @@ export default async function GamesPage({ searchParams }: Props) {
         </Suspense>
 
         {/* min-w-0: 격자 칸의 기본 최소 크기는 auto 라 안쪽의 잘리지 않는 제목이 칸을 밀어낸다(상세 화면 주석) */}
-        <div className="flex min-w-0 flex-col gap-9">
+        <PendingResults className="flex min-w-0 flex-col gap-9">
           <Suspense key={boundaryKey} fallback={<GamesGridSkeleton cards={GAMES_PAGE_SIZE} />}>
             <Results filter={filter} />
           </Suspense>
-        </div>
+        </PendingResults>
       </div>
+      </FilterStateProvider>
     </Page>
   );
 }

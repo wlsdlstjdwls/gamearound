@@ -222,10 +222,13 @@ export function Select({
   scroll = true,
   size = "sm",
   hideLabel = false,
+  onNavigate,
 }: {
   label: string;
   /** 이름표를 밖에서 더 크게 그린 자리(목록 필터 무리)는 감춘다. 낭독기 이름으로는 남는다 */
   hideLabel?: boolean;
+  /** 주소로 가는 일을 대신 맡을 함수. 목록 필터는 화면을 먼저 바꾸고 간다(game-filters/optimistic) */
+  onNavigate?: (href: string) => void;
   value: string;
   options: SelectOption[];
   className?: string;
@@ -244,7 +247,9 @@ export function Select({
       size={size}
       onPick={(v) => {
         const opt = options.find((o) => o.value === v);
-        if (opt && opt.value !== value) router.push(opt.href, { scroll });
+        if (!opt || opt.value === value) return;
+        if (onNavigate) onNavigate(opt.href);
+        else router.push(opt.href, { scroll });
       }}
     />
   );

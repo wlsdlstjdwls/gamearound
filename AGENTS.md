@@ -102,6 +102,16 @@ route(page/action/api)  →  server/services  →  server/adapters | server/db
 - a11y: label 연결, 에러는 `aria-describedby`, 탭/메뉴는 키보드 이동, 바깥 클릭은 `mousedown` + `touchstart`.
 - 한국어 UI 문구는 "-해요"체.
 - 서버 컴포넌트가 기본. `"use client"` 는 상태, 이벤트가 실제로 필요한 컴포넌트에만 붙인다.
+- **누른 순간 화면이 먼저 바뀐다.** 토글, 칩, 탭, 정렬, 쪽 번호, 찜처럼 눌러서 상태가 바뀌는 컨트롤은 서버 응답을 기다리지 않는다 —
+  조회는 느려도 되지만 반응 없는 단추는 고장으로 읽힌다(로컬은 Neon 왕복 때문에 몇 초씩 걸린다, 2026-10-12 사용자 지시).
+  - 주소(searchParams)로 거르는 자리: 같은 경로 안 이동이라 `loading.tsx` 가 안 뜬다. `useOptimistic` + `startTransition(router.push)` 로
+    고른 값과 그 값에 딸린 표시(걸린 조건 줄 등)를 먼저 그리고, 결과 자리는 흐리게 둔다. 본보기는 `components/game-filters/optimistic.tsx`.
+    클라이언트가 먼저 그릴 값은 서버와 **같은 읽기 함수**로 계산한다(`lib/games/read-query`) — 다르면 한 번 바뀌었다 되돌아간다.
+  - 서버 액션으로 바꾸는 자리: 누르는 즉시 바꾸고 실패하면 되돌린다(`settings/personalization-controls` 가 본보기). `disabled` 로 흐리기만 하면 안 된다.
+  - 켜고 끄는 칩은 `ChipNavLink toggle`, 값 하나는 `useOptimisticToggle`(`ui/chip-nav`). 맨 `ChipLink`/`<Link>` 로 상태 칩을 만들지 않는다.
+  - 확인: 고친 뒤 실제로 눌러서 "누른 뒤 표시가 바뀌는 시간" 을 잰다(헤드리스 브라우저 CDP 로 클릭 후 두 프레임 뒤 상태를 읽으면 된다).
+- 서버 컴포넌트가 `"use client"` 파일의 **문자열 상수**를 import 하지 않는다 — 값이 아니라 클라이언트 참조가 와서 className 이 통째로 빠진다(2026-10-12 푸터 사고).
+  공유 상수는 클라이언트가 아닌 모듈(`constants.ts` 등)에 둔다.
 
 ## 7. 데이터 반영 규칙 (sync)
 

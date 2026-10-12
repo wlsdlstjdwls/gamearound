@@ -1,4 +1,7 @@
+"use client";
 // 지금 걸려 있는 조건을 한 자리에 모아 보여 주고, 거기서 바로 하나씩 푼다.
+//
+// 클라이언트 조각이다(2026-10-12): 필터를 누른 순간 이 줄도 새 조건으로 바뀌어야 한다(./optimistic, 사용자: "필터 아래 걸린 조건도 보이잖아").
 //
 // 왜 필요한가: 조건은 축이 여럿인데(플랫폼, 장르, 할인, 가격, 기기, 조건, 회사) 고르는 자리는 기둥 곳곳에
 // 흩어져 있다. "PS5 만 빼고 싶다" 를 하려면 그 칩이 어느 무리에 있었는지부터 다시 찾아야 했고,
@@ -26,7 +29,8 @@ import { GAMES_FILTER_MESSAGES, RIG_FILTER_MESSAGES } from "@/lib/games/messages
 import { STEAM_SALES } from "@/lib/sales/calendar";
 import { runningSaleEndsAt } from "@/lib/sales/detect";
 import { RUNNING_SALE_MESSAGES } from "@/lib/sales/messages";
-import { FILTER_LABEL, KEEP_SCROLL } from "./groups";
+import { FILTER_LABEL, KEEP_SCROLL } from "./constants";
+import { useFilterClick, useFilterQuery } from "./optimistic";
 import { cn } from "@/lib/cn";
 import Link from "next/link";
 
@@ -93,10 +97,12 @@ export function activeFilters(filter: GamesQuery): ActiveFilter[] {
  * 이 칩은 **제 높이가 곧 띠 한 줄의 높이**라 그 몇 px 이 띠 두께 그 자체다.
  */
 function FilterChip({ f }: { f: ActiveFilter }) {
+  const click = useFilterClick();
   return (
     <ChipNavLink
       {...KEEP_SCROLL}
       href={f.href}
+      onClick={click(f.href)}
       size="xs"
       compact
       filled
@@ -111,10 +117,13 @@ function FilterChip({ f }: { f: ActiveFilter }) {
 
 /** 전부 푸는 링크. 하나씩 푸는 일과 한 번에 푸는 일이 같은 묶음 안에 있어야 한다 */
 function ClearAll({ filter, className }: { filter: GamesQuery; className?: string }) {
+  const click = useFilterClick();
+  const to = gamesHref({ sort: filter.sort });
   return (
     <Link
       {...KEEP_SCROLL}
-      href={gamesHref({ sort: filter.sort })}
+      href={to}
+      onClick={click(to)}
       prefetch={false}
       className={cn("press shrink-0 text-[12px] text-mut underline-offset-2 hover:text-ink hover:underline", className)}
     >
@@ -131,7 +140,8 @@ export type ActiveFiltersVariant = "column" | "strip";
  *
  * 두 모양을 한 함수가 낸다(머리 주석): 넓은 화면은 기둥 안에 쌓고, 좁은 화면은 "필터" 줄 옆에 눕힌다.
  */
-export function ActiveFilters({ filter, variant = "column" }: { filter: GamesQuery; variant?: ActiveFiltersVariant }) {
+export function ActiveFilters({ filter: serverFilter, variant = "column" }: { filter: GamesQuery; variant?: ActiveFiltersVariant }) {
+  const filter = useFilterQuery(serverFilter);
   const list = activeFilters(filter);
   if (list.length === 0) return null;
 

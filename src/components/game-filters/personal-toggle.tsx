@@ -14,6 +14,8 @@ import Link from "next/link";
 import { SwitchTrack } from "@/components/ui/switch";
 import { Clamp } from "@/components/ui/tooltip";
 import { isPlainClick, useOptimisticToggle } from "@/components/ui/chip-nav";
+import type { GamesQuery } from "@/lib/games-query";
+import { useFilterClick } from "./optimistic";
 import { cn } from "@/lib/cn";
 import { ONBOARDING_MESSAGES } from "@/lib/onboarding/messages";
 
@@ -26,17 +28,24 @@ export type PersonalFilter = {
   labels: readonly string[];
   /** 누르면 갈 주소 — 켜져 있으면 끈 주소, 꺼져 있으면 켠 주소 */
   href: string;
+  /**
+   * 누른 뒤 먼저 그릴 조건. 켤 때 주소는 빈 "/games" 인데 서버가 취향 조건을 얹어 그리므로,
+   * 주소만 읽으면 칩이 "조건 없음" 으로 한 번 갔다가 취향으로 돌아온다. 그래서 페이지가 결과를 미리 계산해 준다
+   */
+  nextQuery: GamesQuery;
 };
 
 export function PersonalToggle({ personal, sheet }: { personal: PersonalFilter; sheet: boolean }) {
-  const { labels, href } = personal;
+  const { labels, href, nextQuery } = personal;
   const [applied, setApplied] = useOptimisticToggle(personal.applied);
+  const click = useFilterClick()(href, nextQuery);
   return (
     <Link
       // 거르는 자리라 맨 위로 튀지 않는다(groups 의 KEEP_SCROLL 과 같은 이유). 그 파일을 가져오면 서로를 부른다
       scroll={false}
       onClick={(e) => {
         if (isPlainClick(e)) setApplied(!applied);
+        click?.(e);
       }}
       href={href}
       className={cn(

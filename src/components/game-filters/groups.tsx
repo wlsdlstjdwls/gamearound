@@ -1,4 +1,8 @@
+"use client";
 // 기둥에서 고르는 자리 — 정렬, 플랫폼, 장르.
+//
+// 클라이언트 조각이다(2026-10-12): 누른 순간 칩과 드롭다운이 새 조건으로 바뀌어야 해서(./optimistic) 서버 값 대신
+// useFilterQuery 가 주는 "먼저 그릴 조건" 으로 그린다. 공유 상수는 ./constants 에 있다(클라이언트 파일 상수 사고).
 // 고르는 것은 곧 그 주소로 가는 일이다(상태는 전부 쿼리스트링에 있다).
 //
 // 정렬이 여기 있는 이유(2026-09-21): 목록 위 칩 줄에서 기둥으로 들여왔다. 칩 다섯이 제목 줄
@@ -27,6 +31,8 @@ import type { RunningSaleDto } from "@/server/services/sales";
 import { RUNNING_SALE_MESSAGES } from "@/lib/sales/messages";
 import { HideAfter } from "@/components/sales/hide-after";
 import { PersonalToggle, type PersonalFilter } from "./personal-toggle";
+import { FILTER_LABEL, KEEP_SCROLL } from "./constants";
+import { useFilterClick, useFilterNavigate, useFilterQuery } from "./optimistic";
 
 /** "고르지 않음" 을 나타내는 값. 빈 문자열을 쓰면 현재 값 비교가 undefined 와 헷갈린다 */
 const ALL = "__all__";
@@ -34,13 +40,6 @@ const ALL = "__all__";
 /** 갈래에 속한 플랫폼. 갈래 칩을 세울지 정할 때만 쓴다(그 갈래에 게임이 하나라도 붙어 있는가) */
 const byFamily = (f: PlatformFamily) => PLATFORM_ORDER.filter((p) => familyOf(p) === f);
 
-/**
- * 필터를 고르는 일은 "다른 곳으로 가는" 일이 아니라 "보던 자리에서 거르는" 일이다.
- * 기본값(scroll)대로 두면 누를 때마다 맨 위로 튄다 — 왼쪽 기둥은 붙어 있어 필터는 계속 보이는데
- * 보고 있던 줄만 사라진다. 게다가 목록이 뼈대로 바뀌며 문서가 짧아지는 순간이 겹쳐
- * 위로 튀었다가 본문이 오면 다시 내려오는 것처럼 보인다.
- */
-export const KEEP_SCROLL = { scroll: false } as const;
 
 /**
  * 어디에 선 무리인가. 기둥(column)은 232px 안의 조밀한 값이고, 시트(sheet)는 손가락으로 고르는 자리다.
@@ -49,12 +48,7 @@ export const KEEP_SCROLL = { scroll: false } as const;
  */
 export type GroupsVariant = "column" | "sheet";
 
-/**
- * 무리 하나. 이름표는 13.5px 먹색 굵은 글자다(2026-10-12, 사용자: "필터 가시성 높게").
- * 예전 꼬리표(12px 회색, 자간 벌림)는 흰 판 위에서 칩보다 흐려 무리가 어디서 갈리는지 안 읽혔다.
- */
-export const FILTER_LABEL = "text-[13.5px] font-bold tracking-[-0.02em] text-ink";
-
+/** 무리 하나. 이름표 모양(FILTER_LABEL)의 근거는 ./constants */
 function Group({ label, sheet, children }: { label: string; sheet: boolean; children: React.ReactNode }) {
   return (
     <div className={sheet ? "flex flex-col gap-3" : "flex flex-col gap-2.5"}>
@@ -73,7 +67,7 @@ function Group({ label, sheet, children }: { label: string; sheet: boolean; chil
  */
 export function Groups({
   facets,
-  filter,
+  filter: serverFilter,
   sale = null,
   personal = null,
   variant = "column",
@@ -86,6 +80,9 @@ export function Groups({
   personal?: PersonalFilter | null;
   variant?: GroupsVariant;
 }) {
+  const filter = useFilterQuery(serverFilter);
+  const click = useFilterClick();
+  const go = useFilterNavigate();
   const sheet = variant === "sheet";
   /*
    * 시트 안의 칩은 크다(ui/chip 의 SIZE.lg 주석).
@@ -97,6 +94,8 @@ export function Groups({
    */
   const chip = sheet ? ({ size: "lg", outline: true } as const) : ({ outline: true } as const);
   const href = (patch: Partial<GamesQuery>) => gamesHref(filter, { ...patch, page: 1 });
+  /** 칩 하나의 이동 — 주소, 먼저 그리기(onClick), 제자리 유지를 한 묶음으로 건넨다 */
+  const nav = (h: string) => ({ ...KEEP_SCROLL, href: h, onClick: click(h) });
 
   // 실제로 게임이 붙어 있는 플랫폼만 고를 수 있다(facets)
   const available = new Set(facets.platforms.map((p) => p.platform));
@@ -136,15 +135,15 @@ export function Groups({
         <span aria-hidden className={FILTER_LABEL}>
           정렬
         </span>
-        <Select label="정렬" hideLabel value={filter.sort ?? DEFAULT_GAME_SORT} options={sortOptions} scroll={false} size="lg" />
+        <Select label="정렬" hideLabel value={filter.sort ?? DEFAULT_GAME_SORT} options={sortOptions} scroll={false} onNavigate={go} size="lg" />
       </div>
 
       <Group label="플랫폼" sheet={sheet}>
-        <ChipNavLink {...KEEP_SCROLL} {...chip} href={href({ platform: undefined })} active={picked.length === 0}>
+        <ChipNavLink {...nav(href({ platform: undefined }))} {...chip} active={picked.length === 0}>
           전체
         </ChipNavLink>
         {families.map((f) => (
-          <ChipNavLink key={f} {...KEEP_SCROLL} {...chip} href={familyHref(f)} active={pickedSet.has(f)}>
+          <ChipNavLink key={f} {...nav(familyHref(f))} {...chip} active={pickedSet.has(f)}>
             {PLATFORM_FAMILY_LABEL[f]}
           </ChipNavLink>
         ))}
@@ -155,7 +154,7 @@ export function Groups({
           <span aria-hidden className={FILTER_LABEL}>
             장르
           </span>
-          <Select label="장르" hideLabel value={filter.genre ?? ALL} options={genreOptions} scroll={false} size="lg" />
+          <Select label="장르" hideLabel value={filter.genre ?? ALL} options={genreOptions} scroll={false} onNavigate={go} size="lg" />
         </div>
       )}
 
@@ -168,13 +167,13 @@ export function Groups({
             늘 세워 두지 않는 이유: 세일이 없는 열한 달 동안 눌러도 아무 일도 안 일어나는 칩이 된다 */}
         {sale && (
           <HideAfter untilIso={sale.endsAt}>
-            <ChipNavLink {...KEEP_SCROLL} {...chip} href={href({ event: filter.event === sale.key ? undefined : sale.key })} active={filter.event === sale.key} toggle>
+            <ChipNavLink {...nav(href({ event: filter.event === sale.key ? undefined : sale.key }))} {...chip} active={filter.event === sale.key} toggle>
               {RUNNING_SALE_MESSAGES.chip(sale.name)}
               <span className="sr-only">{filter.event === sale.key ? GAMES_FILTER_MESSAGES.toggleOn : GAMES_FILTER_MESSAGES.toggleOff}</span>
             </ChipNavLink>
           </HideAfter>
         )}
-        <ChipNavLink {...KEEP_SCROLL} {...chip} href={href({ hideFree: !filter.hideFree })} active={Boolean(filter.hideFree)} toggle>
+        <ChipNavLink {...nav(href({ hideFree: !filter.hideFree }))} {...chip} active={Boolean(filter.hideFree)} toggle>
           {/* toggle: 앞에 체크 네모가 서고(켬/끔이 옆 칩 없이도 읽힌다), 누른 순간 켜짐이 바뀐다(ui/chip-nav) */}
           {GAMES_FILTER_MESSAGES.hideFree}
           {/* 화면에 보이는 것은 네모뿐이라, 읽어 주는 기기에는 상태를 말로 준다 */}
@@ -182,7 +181,7 @@ export function Groups({
             {filter.hideFree ? GAMES_FILTER_MESSAGES.toggleOn : GAMES_FILTER_MESSAGES.toggleOff}
           </span>
         </ChipNavLink>
-        <ChipNavLink {...KEEP_SCROLL} {...chip} href={href({ korean: !filter.korean })} active={Boolean(filter.korean)} toggle>
+        <ChipNavLink {...nav(href({ korean: !filter.korean }))} {...chip} active={Boolean(filter.korean)} toggle>
           {GAMES_FILTER_MESSAGES.korean}
           <span className="sr-only">{filter.korean ? GAMES_FILTER_MESSAGES.toggleOn : GAMES_FILTER_MESSAGES.toggleOff}</span>
         </ChipNavLink>
