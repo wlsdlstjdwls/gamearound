@@ -8,7 +8,7 @@
 // 목록(/games)의 "최신 출시순" 과 다른 화면인 이유: 그쪽은 "무엇이 나왔나" 를 묻고
 // 여기는 "무엇을 기다리나" 를 묻는다. 정렬 하나로 겹쳐 두면 첫 페이지가 서로를 가린다.
 import { unstable_cache } from "next/cache";
-import { and, eq, gt, inArray, sql } from "drizzle-orm";
+import { and, eq, inArray, sql } from "drizzle-orm";
 import { getDb } from "@/server/db/client";
 import { gamePlatforms, games, HOME_REGION } from "@/server/db/schema";
 import { visiblePlatformsOnly } from "@/server/db/visibility";
@@ -81,11 +81,14 @@ function earliestCte() {
       where ${mainGamesOnly()}
         and ${eq(gamePlatforms.region, HOME_REGION)}
         ${visible ? sql`and ${visible}` : sql``}
-        and ${gt(gamePlatforms.releaseDate, sql`current_date`)}
+      group by ${gamePlatforms.gameId}
+      -- 미래 날짜를 where 에서 먼저 거르면 안 된다. 이미 나온 게임도 미래 날짜 행이 하나만 있으면
+      -- 그 행이 "가장 이른 날" 이 돼 출시예정에 선다(2026-10-12 붉은사막: 스팀, Xbox, Epic 은 3월 출시인데
+      -- PS 행 하나가 12-31 이라 12월 출시예정에 떴다). 모든 날짜의 최솟값이 미래인 게임만 남긴다.
+      having min(${gamePlatforms.releaseDate}) > current_date
         -- ::int 캐스트가 필요하다 — 자리표시자로 나가는 값은 타입이 없어서
         -- Postgres 가 date + $1 의 연산자를 못 고른다(2026-09-18 실측: 이 화면이 통째로 500 이었다)
-        and ${gamePlatforms.releaseDate} <= current_date + ${UPCOMING_WINDOW_DAYS}::int
-      group by ${gamePlatforms.gameId}
+        and min(${gamePlatforms.releaseDate}) <= current_date + ${UPCOMING_WINDOW_DAYS}::int
     )`;
 }
 
