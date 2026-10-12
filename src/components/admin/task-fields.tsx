@@ -155,23 +155,76 @@ export function TaskBasicFields({ title, body }: { title?: string; body?: string
 }
 
 /**
- * 분류 + 급함 + 담당자 — 한 줄에 셋. 좁은 화면에서는 세로로 쌓인다.
- *
- * 담당자를 칩 줄에서 셀렉트로 바꿨다(2026-10-01). 칩은 한 번에 고르는 대신 한 줄을 통째로 먹었고,
- * 관리자가 늘면 줄바꿈으로 더 커진다. "없음" 은 빈 문자열로 보낸다 — 서버가 그걸 "아무도 안 쥐었다" 로 읽는다.
+ * 팝업 안의 마디 — 본문 제목(SectionHead)보다 작다. 여기서 갈리는 건 화면이 아니라 일이다.
+ * 마디 사이에 헤어라인을 긋고 제목을 잉크로 세운다(2026-10-01) — 앞서는 11.5px 흐린 제목뿐이라
+ * 놓인 칸, 내용, 기록이 한 덩어리로 흘러 "어디까지가 무엇인지" 가 안 갈렸다.
+ * 팝업(dialog)과 고치기 폼(edit-form)이 함께 쓴다 — 고치기 폼이 "내용" 마디 머리를 스스로 단다(놓인 칸 줄이 그 위에 서야 해서).
  */
-export function TaskMetaFields({
-  assignees,
-  category,
-  priority,
-  assigneeId,
-}: {
-  assignees: TaskAssignee[];
-  category?: TaskCategory;
-  priority?: TaskPriority;
-  assigneeId?: string | null;
-}) {
+export function TaskPart({ title, children }: { title: string; children: React.ReactNode }) {
+  return (
+    <section className="flex flex-col gap-2 border-t border-line pt-3 first:border-t-0 first:pt-0">
+      <h3 className="text-[14px] font-bold text-ink">{title}</h3>
+      {children}
+    </section>
+  );
+}
+
+/**
+ * 한 줄에 눕는 이름표(놓인 칸, 분류). 좁은 화면은 둘이 위아래로 쌓이므로 폭을 맞춰 칸의 왼쪽 선을 세운다 —
+ * 안 맞추면 "분류" 가 짧아 셀렉트가 세그먼트보다 왼쪽에서 시작한다
+ */
+export const INLINE_LABEL = "w-[52px] shrink-0 text-[14px] font-bold text-ink sm:w-auto";
+
+/**
+ * 분류. "없음" 이 없는 다섯 값이라 셀렉트다.
+ * `inline` 은 고치기 팝업의 맨 윗줄(놓인 칸 옆)에 설 때다(2026-10-12, 사용자: "놓인 칸 줄었으니 옆에 분류를 두자").
+ */
+export function TaskCategoryField({ category, inline }: { category?: TaskCategory; inline?: boolean }) {
+  const select = (
+    <FormSelect name="category" label={TASK_MESSAGES.categoryLabel} hideLabel size="lg" options={CATEGORY_CHOICES} defaultValue={category ?? TASK_CATEGORIES[0]} />
+  );
+  if (inline) {
+    return (
+      <div className="flex min-w-0 items-center gap-3">
+        <span aria-hidden className={INLINE_LABEL}>
+          {TASK_MESSAGES.categoryLabel}
+        </span>
+        <div className="min-w-0 flex-1 sm:w-[180px] sm:flex-none">{select}</div>
+      </div>
+    );
+  }
+  // 셀렉트는 라벨을 스스로 단다(버튼에 aria 로 잇는다). 눈에 보이는 라벨만 Field 와 같은 모양으로 따로 세운다
+  return (
+    <div className="min-w-0">
+      <span aria-hidden className={FIELD_LABEL}>
+        {TASK_MESSAGES.categoryLabel}
+      </span>
+      {select}
+    </div>
+  );
+}
+
+export function TaskPriorityField({ priority, className }: { priority?: TaskPriority; className?: string }) {
   const id = useId();
+  return (
+    <Field id={`${id}-priority`} label={TASK_MESSAGES.priorityLabel} className={className}>
+      <RadioSegment
+        id={`${id}-priority`}
+        name="priority"
+        values={TASK_PRIORITIES}
+        labels={TASK_PRIORITY_LABEL}
+        defaultValue={priority ?? "normal"}
+        itemClass={{ high: SEGMENT_ITEM_URGENT }}
+      />
+    </Field>
+  );
+}
+
+/**
+ * 담당자. 칩 줄에서 셀렉트로 바꿨다(2026-10-01) — 칩은 한 줄을 통째로 먹었고 관리자가 늘면 줄바꿈으로 더 커진다.
+ * "없음" 은 빈 문자열로 보낸다 — 서버가 그걸 "아무도 안 쥐었다" 로 읽는다.
+ */
+export function TaskAssigneeField({ assignees, assigneeId, className }: { assignees: TaskAssignee[]; assigneeId?: string | null; className?: string }) {
   // "모두" 는 "없음" 바로 뒤 — 사람 이름보다 앞에 둬야 관리자가 늘어도 자리가 안 바뀐다
   const assigneeChoices = [
     { value: "", label: TASK_MESSAGES.assigneeNone },
@@ -179,41 +232,24 @@ export function TaskMetaFields({
     ...assignees.map((a) => ({ value: a.id, label: a.name })),
   ];
   return (
-    // 좁은 화면은 두 줄이다(2026-10-02, 사용자: "모바일 할일 상세는 컴팩트화가 덜 됐다") — 앞서는 셋이 한 줄씩
-    // 세 줄을 먹었다. 셀렉트 둘이 한 줄에 나란히 서고, 값이 셋인 우선순위 세그먼트만 아래 한 줄을 다 쓴다(반 폭에선 낱말이 꺾인다)
+    <div className={cn("min-w-0", className)}>
+      <span aria-hidden className={FIELD_LABEL}>
+        {TASK_MESSAGES.assigneeLabel}
+      </span>
+      <FormSelect name="assigneeId" label={TASK_MESSAGES.assigneeLabel} hideLabel size="lg" options={assigneeChoices} defaultValue={assigneeId ?? ""} />
+    </div>
+  );
+}
+
+/** 분류 + 우선순위 + 담당자 — 추가 팝업이 쓴다. 고치기 팝업은 분류를 맨 윗줄로 올려 셋을 따로 놓는다(edit-form) */
+export function TaskMetaFields({ assignees }: { assignees: TaskAssignee[] }) {
+  return (
+    // 좁은 화면은 두 줄이다(2026-10-02, 사용자: "모바일 할일 상세는 컴팩트화가 덜 됐다") — 셀렉트 둘이 한 줄에 나란히 서고,
+    // 값이 셋인 우선순위 세그먼트만 아래 한 줄을 다 쓴다(반 폭에선 낱말이 꺾인다)
     <div className="grid grid-cols-2 gap-x-2 gap-y-2.5 sm:grid-cols-3 sm:gap-x-3">
-      {/* 셀렉트는 라벨을 스스로 단다(버튼에 aria 로 잇는다). 눈에 보이는 라벨만 Field 와 같은 모양으로 따로 세운다 */}
-      <div className="min-w-0">
-        <span aria-hidden className={FIELD_LABEL}>
-          {TASK_MESSAGES.categoryLabel}
-        </span>
-        <FormSelect
-          name="category"
-          label={TASK_MESSAGES.categoryLabel}
-          hideLabel
-          size="lg"
-          options={CATEGORY_CHOICES}
-          defaultValue={category ?? TASK_CATEGORIES[0]}
-        />
-      </div>
-
-      <Field id={`${id}-priority`} label={TASK_MESSAGES.priorityLabel} className="order-last col-span-2 sm:order-none sm:col-span-1">
-        <RadioSegment
-          id={`${id}-priority`}
-          name="priority"
-          values={TASK_PRIORITIES}
-          labels={TASK_PRIORITY_LABEL}
-          defaultValue={priority ?? "normal"}
-          itemClass={{ high: SEGMENT_ITEM_URGENT }}
-        />
-      </Field>
-
-      <div className="min-w-0">
-        <span aria-hidden className={FIELD_LABEL}>
-          {TASK_MESSAGES.assigneeLabel}
-        </span>
-        <FormSelect name="assigneeId" label={TASK_MESSAGES.assigneeLabel} hideLabel size="lg" options={assigneeChoices} defaultValue={assigneeId ?? ""} />
-      </div>
+      <TaskCategoryField />
+      <TaskPriorityField className="order-last col-span-2 sm:order-none sm:col-span-1" />
+      <TaskAssigneeField assignees={assignees} />
     </div>
   );
 }

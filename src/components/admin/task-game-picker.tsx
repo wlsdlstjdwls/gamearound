@@ -53,12 +53,14 @@ export function TaskGamePicker({ initial }: { initial?: Picked | null }) {
   };
 
   return (
-    <div className="flex flex-col gap-2">
+    // 이름표를 칸 묶음 밖에 둔다 — 다른 칸(분류, 담당자)처럼 이름표 아래 4px 에 칸이 서야 한 줄에 놓였을 때 높이가 맞는다(2026-10-12)
+    <div className="flex min-w-0 flex-col">
       {/* 이 칸은 늘 있어야 한다 — 없으면 폼이 gameId 를 아예 안 보내고, 서버는 그것을
           "건드리지 말라" 로 읽어 뗀 게임이 그대로 남는다 */}
       <input type="hidden" name="gameId" value={picked?.id ?? ""} />
       <span className={FIELD_LABEL}>{TASK_MESSAGES.gamePickLabel}</span>
 
+      <div className="flex flex-col gap-2">
       {picked ? (
         <div className="flex flex-wrap items-center gap-2 rounded-xl bg-acc-soft px-3 py-2.5 shadow-[0_0_0_1px_var(--acc)]">
           <span className="min-w-0 flex-1 text-[14.5px] font-semibold text-acc">{picked.title}</span>
@@ -129,6 +131,7 @@ export function TaskGamePicker({ initial }: { initial?: Picked | null }) {
           {!results && <p className="text-[12.5px] text-dim">{TASK_MESSAGES.gamePickHint}</p>}
         </>
       )}
+      </div>
     </div>
   );
 }

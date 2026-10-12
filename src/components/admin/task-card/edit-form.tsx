@@ -13,40 +13,60 @@ import { ActionForm } from "@/components/ui/action-form";
 import { Button } from "@/components/ui/button";
 import { TASK_MESSAGES } from "@/lib/admin/messages";
 import { assigneeValue, type AdminTask, type TaskAssignee } from "@/lib/admin/tasks";
-import { TaskBasicFields, TaskMetaFields } from "@/components/admin/task-fields";
+import { TaskAssigneeField, TaskBasicFields, TaskCategoryField, TaskPart, TaskPriorityField } from "@/components/admin/task-fields";
 import { TaskGamePicker } from "@/components/admin/task-game-picker";
 import { updateTaskAction, type TaskActionState } from "@/app/(admin)/admin/tasks/actions";
 
-export function TaskEditForm({ task, assignees }: { task: AdminTask; assignees: TaskAssignee[] }) {
+export function TaskEditForm({
+  task,
+  assignees,
+  place,
+}: {
+  task: AdminTask;
+  assignees: TaskAssignee[];
+  /**
+   * 놓인 칸 고르기(팝업이 그려 넘긴다). 분류와 한 줄에 서야 해서 폼 안으로 들어온다(2026-10-12).
+   * 폼 안에 있어도 저장과 묶이지 않는다 — 칸 단추는 type="button" 이고 제 액션(moveTaskAction)을 탄다
+   */
+  place: React.ReactNode;
+}) {
   const [state, formAction, pending] = useActionState<TaskActionState, FormData>(updateTaskAction, null);
 
   return (
     <ActionForm action={formAction} state={state} pending={pending} className="flex flex-col gap-3">
       <input type="hidden" name="id" value={task.id} />
 
-      {/* key 를 카드 id 로 두는 이유: 팝업이 다른 카드로 바뀌어도 같은 폼이 재사용되면
-          앞 카드의 글이 남는다(defaultValue 는 첫 렌더에만 읽힌다) */}
-      <TaskBasicFields key={task.id} title={task.title} body={task.body} />
+      {/*
+        맨 윗줄: 놓인 칸 | 분류(2026-10-12, 사용자: "놓인 칸 줄었으니 옆에 분류를 두자"). 둘 다 "이 일이 어디에 무엇으로 서 있나" 다.
+        좁은 화면은 두 줄로 쌓는다 — 세그먼트 셋과 셀렉트 하나가 390px 한 줄에 들어가면 낱말이 꺾인다.
+        key 를 카드 id 로 두는 이유: 팝업이 다른 카드로 바뀌어도 같은 폼이 재사용되면 앞 카드의 값이 남는다(defaultValue 는 첫 렌더에만 읽힌다).
+        접두어는 형제 key 가 겹치지 않게 단다(2026-10-01 `<id>-none` 충돌)
+      */}
+      <div className="flex flex-col gap-2.5 sm:flex-row sm:items-center sm:gap-8">
+        {place}
+        <TaskCategoryField key={`cat-${task.id}`} inline category={task.category} />
+      </div>
 
-      {/* key 는 기본 칸과 같은 이유다 — 다른 카드로 바뀌면 고른 값도 갈아 끼운다.
-          접두어는 아래 게임 칸과 가르려고 단다 — 접두어 없이 `<id>-none` 꼴이면 형제 key 가 겹쳤다(2026-10-01) */}
-      <TaskMetaFields
-        key={`meta-${task.id}`}
-        assignees={assignees}
-        category={task.category}
-        priority={task.priority}
-        assigneeId={assigneeValue(task)}
-      />
+      <TaskPart title={TASK_MESSAGES.basics}>
+        <TaskBasicFields key={task.id} title={task.title} body={task.body} />
 
-      {/* 붙인 게임도 여기서 바꾼다(2026-09-22) — 앞서는 만들 때 한 번 걸면 끝이라
-          잘못 건 것을 떼려면 할 일을 지우고 다시 만들어야 했다.
-          key 는 같은 이유로 카드 id 다: 팝업이 다른 카드로 바뀌면 고른 값도 갈아 끼워야 한다 */}
-      <TaskGamePicker
-        // 붙인 게임이 바뀌면 칸을 갈아 끼운다 — 저장한 뒤 그 자리에서 "게임 열기" 가 서야 하고,
-        // 그 링크는 서버가 준 slug 로만 만들 수 있다(방금 고른 후보에는 slug 가 없다)
-        key={`game-${task.id}-${task.game?.id ?? "none"}`}
-        initial={task.game ? { id: task.game.id, title: task.game.title, slug: task.game.slug } : null}
-      />
+        {/*
+          우선순위 | 담당자 | 붙일 게임 한 줄(2026-10-12 같은 요청). 좁은 화면은 우선순위와 담당자가 반씩, 게임이 아랫줄 전체다.
+          붙인 게임도 여기서 바꾼다(2026-09-22) — 앞서는 만들 때 한 번 걸면 끝이라 잘못 건 것을 떼려면 할 일을 지우고 다시 만들어야 했다
+        */}
+        <div className="grid grid-cols-2 items-start gap-x-2 gap-y-2.5 sm:grid-cols-3 sm:gap-x-3">
+          <TaskPriorityField key={`pri-${task.id}`} priority={task.priority} />
+          <TaskAssigneeField key={`who-${task.id}`} assignees={assignees} assigneeId={assigneeValue(task)} />
+          <div className="col-span-2 min-w-0 sm:col-span-1">
+            <TaskGamePicker
+              // 붙인 게임이 바뀌면 칸을 갈아 끼운다 — 저장한 뒤 그 자리에서 "게임 열기" 가 서야 하고,
+              // 그 링크는 서버가 준 slug 로만 만들 수 있다(방금 고른 후보에는 slug 가 없다)
+              key={`game-${task.id}-${task.game?.id ?? "none"}`}
+              initial={task.game ? { id: task.game.id, title: task.game.title, slug: task.game.slug } : null}
+            />
+          </div>
+        </div>
+      </TaskPart>
 
       {/* 매장과 소스는 읽기만 한다 — 붙는 자리가 화면이 아니다(매장 할 일은 매장 쪽에서, 소스는 만들 때) */}
       {(task.shop || task.source) && (

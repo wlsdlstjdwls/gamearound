@@ -15,7 +15,7 @@
 // 한 팝업에 두 번 섰다. 게임 상세로 가는 길은 고른 칩 옆으로 옮겼고, 매장과 소스도 그 아래 붙였다.
 import { useState, useTransition } from "react";
 import { cn } from "@/lib/cn";
-import { SEGMENT, SEGMENT_ITEM, SEGMENT_ITEM_ON } from "@/components/admin/task-fields";
+import { INLINE_LABEL, SEGMENT, SEGMENT_ITEM, SEGMENT_ITEM_ON, TaskPart } from "@/components/admin/task-fields";
 import { formatLongDateTime } from "@/lib/format";
 import { Sheet } from "@/components/ui/sheet";
 import { TASK_ATTACHMENT_MESSAGES, TASK_MESSAGES, TASK_STATUS_LABEL } from "@/lib/admin/messages";
@@ -24,20 +24,6 @@ import { TaskEditForm } from "@/components/admin/task-card/edit-form";
 import { TaskNotes } from "@/components/admin/task-card/notes";
 import { TaskAttachmentsPart } from "@/components/admin/task-attachments";
 import { deleteTaskAction, moveTaskAction, type TaskActionState } from "@/app/(admin)/admin/tasks/actions";
-
-/**
- * 팝업 안의 마디 — 본문 제목(SectionHead)보다 작다. 여기서 갈리는 건 화면이 아니라 일이다.
- * 마디 사이에 헤어라인을 긋고 제목을 잉크로 세운다(2026-10-01) — 앞서는 11.5px 흐린 제목뿐이라
- * 놓인 칸, 내용, 기록이 한 덩어리로 흘러 "어디까지가 무엇인지" 가 안 갈렸다.
- */
-function Part({ title, children }: { title: string; children: React.ReactNode }) {
-  return (
-    <section className="flex flex-col gap-2 border-t border-line pt-3 first:border-t-0 first:pt-0">
-      <h3 className="text-[14px] font-bold text-ink">{title}</h3>
-      {children}
-    </section>
-  );
-}
 
 export function TaskDialog({
   task,
@@ -55,50 +41,51 @@ export function TaskDialog({
 
   const run = (fn: () => Promise<TaskActionState>) => start(async () => setState(await fn()));
 
+  // 칸이 맨 위에 선다 — 팝업을 여는 이유의 절반은 "이걸 다음 칸으로 옮기려고" 다.
+  // 앞서는 고치기 폼 아래라 옮기려면 스크롤을 지나야 했다
+  // 이름과 세그먼트를 한 줄에 눕힌다(2026-10-12, 사용자: "놓인 칸 영역도 너무 크다") — 앞에는 제목 한 줄, 창 폭 전체 세그먼트 한 줄로
+  // 두 줄을 먹었다. 값이 셋뿐이라 칸 폭은 300px 이면 충분하다
+  const placeRow = (
+    <div className="flex min-w-0 items-center gap-3">
+      <span className={INLINE_LABEL}>{TASK_MESSAGES.place}</span>
+      {/* 고치기 폼의 급함 칸과 같은 세그먼트다(task-fields). 앞서는 44px 큰 버튼 넷이 한 줄을 통째로 먹었다 */}
+      <div className={cn(SEGMENT, "min-w-0 flex-1 sm:w-[300px] sm:flex-none")}>
+        {BOARD_STATUSES.map((s) => {
+          const here = task.status === s;
+          return (
+            <button
+              key={s}
+              type="button"
+              disabled={pending || here}
+              aria-current={here ? "true" : undefined}
+              onClick={() => run(() => moveTaskAction(task.id, s))}
+              className={cn(SEGMENT_ITEM, here ? SEGMENT_ITEM_ON : "disabled:opacity-60")}
+            >
+              {TASK_STATUS_LABEL[s]}
+            </button>
+          );
+        })}
+      </div>
+    </div>
+  );
+
   // 시트 머리에 **이 할 일의 제목**을 적는다(2026-09-22). "할 일" 이라고만 적혀 있으면
   // 판이 가려진 상태에서 지금 무엇을 보고 있는지 알 길이 제목 입력칸 안뿐이었다.
   return (
     <Sheet title={task.title} size="wide" open={open} onOpenChange={onOpenChange}>
       {/* 마디 사이를 좁은 화면 값으로 맞췄다(2026-10-12, 사용자: "창이 좀 더 컴팩트해도 될 듯") — 넓은 화면만 한 단계씩 더 벌어져 있었다 */}
       <div className={cn("flex flex-col gap-3.5 pb-2 pt-1", pending && "opacity-70")}>
-        {/* 칸이 맨 위에 선다 — 팝업을 여는 이유의 절반은 "이걸 다음 칸으로 옮기려고" 다.
-            앞서는 고치기 폼 아래라 옮기려면 스크롤을 지나야 했다 */}
-        {/* 이름과 세그먼트를 한 줄에 눕힌다(2026-10-12, 사용자: "놓인 칸 영역도 너무 크다") — 앞에는 제목 한 줄, 창 폭 전체 세그먼트 한 줄로
-            두 줄을 먹었다. 값이 셋뿐이라 칸 폭은 320px 이면 충분하다. 다른 마디와 같은 Part 를 안 쓰는 이유가 이 한 줄이다 */}
-        <section className="flex items-center gap-3">
-          <h3 className="shrink-0 text-[14px] font-bold text-ink">{TASK_MESSAGES.place}</h3>
-          {/* 고치기 폼의 급함 칸과 같은 세그먼트다(task-fields). 앞서는 44px 큰 버튼 넷이 한 줄을 통째로 먹었다 */}
-          <div className={cn(SEGMENT, "min-w-0 flex-1 sm:max-w-[320px]")}>
-            {BOARD_STATUSES.map((s) => {
-              const here = task.status === s;
-              return (
-                <button
-                  key={s}
-                  type="button"
-                  disabled={pending || here}
-                  aria-current={here ? "true" : undefined}
-                  onClick={() => run(() => moveTaskAction(task.id, s))}
-                  className={cn(SEGMENT_ITEM, here ? SEGMENT_ITEM_ON : "disabled:opacity-60")}
-                >
-                  {TASK_STATUS_LABEL[s]}
-                </button>
-              );
-            })}
-          </div>
-        </section>
-
-        <Part title={TASK_MESSAGES.basics}>
-          <TaskEditForm task={task} assignees={assignees} />
-        </Part>
+        {/* 놓인 칸은 고치기 폼 맨 윗줄에 분류와 함께 선다(edit-form 의 place). 칸 옮기기 자체는 여전히 저장과 따로 간다 */}
+        <TaskEditForm task={task} assignees={assignees} place={placeRow} />
 
         {/* 본문 첨부는 내용과 기록 사이다 — "이 일이 무엇인가" 에 딸린 자료라 내용 바로 밑, 쌓이는 기록보다 위에 선다 */}
-        <Part title={task.attachments.length > 0 ? TASK_ATTACHMENT_MESSAGES.count(task.attachments.length) : TASK_ATTACHMENT_MESSAGES.part}>
+        <TaskPart title={task.attachments.length > 0 ? TASK_ATTACHMENT_MESSAGES.count(task.attachments.length) : TASK_ATTACHMENT_MESSAGES.part}>
           <TaskAttachmentsPart taskId={task.id} items={task.attachments} />
-        </Part>
+        </TaskPart>
 
-        <Part title={task.notes.length > 0 ? TASK_MESSAGES.noteCount(task.notes.length) : TASK_MESSAGES.notes}>
+        <TaskPart title={task.notes.length > 0 ? TASK_MESSAGES.noteCount(task.notes.length) : TASK_MESSAGES.notes}>
           <TaskNotes taskId={task.id} notes={task.notes} />
-        </Part>
+        </TaskPart>
 
         {state && !state.ok && (
           <p role="alert" className="animate-rise text-[13.5px] text-danger">
