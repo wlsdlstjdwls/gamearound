@@ -207,21 +207,28 @@ export const TASK_ATTACHMENT_MESSAGES = {
 } as const;
 
 /*
- * 텔레그램 알림 문구(2026-10-12). 채널은 알리기만 하고, 의논은 판의 기록 칸에서 한다 — 그래서 끝줄에 늘 카드 주소를 단다.
- * 머리는 대괄호 꼬리표로 연다: 알림 목록 미리보기에 첫 줄만 보여서, 무슨 일인지가 거기서 갈려야 한다.
+ * 텔레그램 알림 문구(2026-10-12). 채널은 알리기만 하고, 의논은 판의 기록 칸에서 한다 — 그래서 끝에 늘 카드 열기 링크를 단다.
+ * 첫 줄은 그림 글자와 사건 이름이다: 알림 목록 미리보기에 첫 줄만 보여서, 무슨 일인지가 거기서 갈려야 한다.
+ * 같은 날 사용자가 "줄바꿈이 안 돼서 보기 힘들다" 고 해 꼬리표 한 줄에 몰아 쓰던 것을 머리, 제목, 항목, 링크 마디로 갈랐다.
  */
 export const TASK_NOTIFY_MESSAGES = {
-  created: "[새 할 일]",
-  assigned: "[담당자 지정]",
-  moved: "[상태 변경]",
-  note: "[기록]",
-  /** 칸 이동 한 줄. 화살표 글자 대신 조사로 잇는다(AGENTS §4) */
-  movedLine: (from: string, to: string, particle: string) => `${from}에서 ${to}${particle} 옮겼어요`,
-  meta: (category: string, priority: string) => `${category} | 우선순위 ${priority}`,
-  assignee: (name: string) => `담당자: ${name}`,
-  actor: (name: string) => `한 사람: ${name}`,
+  created: "🆕 새 할 일",
+  assigned: "👤 담당자 지정",
+  moved: "🔄 상태 변경",
+  note: "💬 새 기록",
+  category: "분류",
+  priority: "우선순위",
+  assignee: "담당자",
+  status: "상태",
+  /** 상태 변경 칸의 값. 화살표 글자 대신 조사로 잇는다(AGENTS §4) */
+  movedValue: (from: string, to: string, particle: string) => `${from}에서 ${to}${particle}`,
+  /** 사건을 낸 사람. 새 카드는 올린 사람, 나머지는 바꾼 사람이다 */
+  createdBy: "올린 사람",
+  changedBy: "바꾼 사람",
+  noteBy: "적은 사람",
   /** 글 없이 파일만 남긴 기록 */
   noteFilesOnly: "파일을 남겼어요",
   /** 이름을 모를 때(탈퇴한 계정 등) */
   unknownPerson: "알 수 없음",
+  openCard: "카드 열기",
 } as const;

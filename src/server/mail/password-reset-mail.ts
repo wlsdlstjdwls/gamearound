@@ -2,14 +2,11 @@
 // HTML 은 메일 클라이언트(지메일, 네이버 메일)가 <style> 을 떼는 일이 흔해 전부 인라인 스타일이다.
 // 버튼이 안 눌리는 클라이언트를 위해 주소를 글자로도 한 번 더 적는다.
 import { RESET_TOKEN_TTL_MIN } from "@/lib/auth/constants";
+import { escapeHtml } from "@/lib/html-entities";
 import { SITE } from "@/lib/site";
 import type { MailMessage } from "@/server/mail/send";
 
 const SUBJECT = `[${SITE.name}] 비밀번호 재설정 링크예요`;
-
-function escapeHtml(v: string): string {
-  return v.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
-}
 
 export function passwordResetMail(to: string, link: string): MailMessage {
   const lines = [

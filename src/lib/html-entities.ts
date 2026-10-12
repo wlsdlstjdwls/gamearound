@@ -55,3 +55,11 @@ export function decodeHtmlEntities(s: string): string {
   }
   return out;
 }
+
+/**
+ * HTML 에 글자를 그대로 싣기 위한 이스케이프(푸는 쪽의 반대). 재설정 메일과 텔레그램 알림(parse_mode HTML)이 같이 쓴다.
+ * 사람이 친 글(할 일 제목, 기록)에 `<` 가 섞이면 텔레그램은 태그로 읽다 400 을 낸다.
+ */
+export function escapeHtml(v: string): string {
+  return v.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
+}

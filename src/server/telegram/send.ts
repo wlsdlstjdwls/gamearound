@@ -16,7 +16,9 @@ export function telegramConfigured(): boolean {
 
 /**
  * 관리자 채널로 글 한 통. 실패하면 던진다 — 부르는 쪽은 응답을 이미 돌려준 뒤라 로그로만 남긴다.
- * parse_mode 를 쓰지 않는다: 할 일 제목은 사람이 친 글이라 `_`, `*`, `<` 를 이스케이프 없이 넣으면 400 이 난다. 주소는 텔레그램이 알아서 링크로 만든다.
+ * 글은 텔레그램 HTML 이다(parse_mode HTML). 부르는 쪽이 사람이 친 글을 이스케이프해 넘긴다 — 안 하면 `<` 하나에 400 이 난다.
+ * MarkdownV2 를 안 고른 이유: 이스케이프할 글자가 18개라 제목의 `.`, `-` 하나도 빠뜨리면 실패한다. HTML 은 셋이다.
+ * 상한으로 자르면 닫는 태그가 잘려 400 이 나지만, 기록 본문을 미리 잘라 넣으므로(task-notify) 상한에 닿을 일이 없다.
  */
 export async function sendAdminTelegram(text: string): Promise<void> {
   const token = process.env[TELEGRAM_BOT_TOKEN_ENV]?.trim();
@@ -29,6 +31,7 @@ export async function sendAdminTelegram(text: string): Promise<void> {
     body: JSON.stringify({
       chat_id: chatId,
       text: text.slice(0, TELEGRAM_TEXT_MAX),
+      parse_mode: "HTML",
       // 링크 미리보기는 관리자 로그인 화면 카드라 쓸모가 없고 글만 길어진다
       link_preview_options: { is_disabled: true },
     }),
