@@ -13,6 +13,7 @@
 import { createContext, useContext, useOptimistic, useTransition, type MouseEvent } from "react";
 import { useRouter } from "next/navigation";
 import { isPlainClick } from "@/components/ui/chip-nav";
+import { PendingBar } from "@/components/ui/nav-pending";
 import { queryFromHref } from "@/lib/games/read-query";
 import type { GamesQuery } from "@/lib/games-query";
 import { cn } from "@/lib/cn";
@@ -71,8 +72,11 @@ export function useFilterNavigate(): ((href: string) => void) | undefined {
 export function PendingResults({ className, children }: { className?: string; children: React.ReactNode }) {
   const pending = useContext(FilterContext)?.pending ?? false;
   return (
-    <div aria-busy={pending || undefined} className={cn("transition-opacity duration-base", pending && "opacity-50", className)}>
-      {children}
-    </div>
+    <>
+      <PendingBar on={pending} />
+      <div aria-busy={pending || undefined} className={cn("transition-opacity duration-base", pending && "opacity-50", className)}>
+        {children}
+      </div>
+    </>
   );
 }

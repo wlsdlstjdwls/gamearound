@@ -74,12 +74,24 @@ export function NavChip({ href, group, active = false, size, className, compact,
   );
 }
 
+/**
+ * 다시 조회 중 띠 — 머리띠 바로 아래 고정(globals.css 의 .pending-bar). 장식이라 낭독기에서 숨긴다 —
+ * 기다린다는 사실은 결과 자리의 aria-busy 가 말한다.
+ * 결과 자리(흐려지는 div) 밖에 둔다: 안에 두면 띠까지 반투명이 된다.
+ */
+export function PendingBar({ on }: { on: boolean }) {
+  return on ? <span aria-hidden className="pending-bar" /> : null;
+}
+
 /** 결과 자리. 누를 수는 있다(가려 막지 않는다) — 기다리는 동안 다른 칩으로 바꿔 누를 수 있어야 한다 */
 export function PendingRegion({ className, children }: { className?: string; children: React.ReactNode }) {
   const pending = useContext(ScopeContext)?.pending ?? false;
   return (
-    <div aria-busy={pending || undefined} className={cn("transition-opacity duration-base", pending && "opacity-50", className)}>
-      {children}
-    </div>
+    <>
+      <PendingBar on={pending} />
+      <div aria-busy={pending || undefined} className={cn("transition-opacity duration-base", pending && "opacity-50", className)}>
+        {children}
+      </div>
+    </>
   );
 }

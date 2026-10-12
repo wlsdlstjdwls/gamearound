@@ -523,6 +523,43 @@
   18% { opacity: 0.4; }
   100% { opacity: 0; transform: scale(1.5); }
 }
+/* 다시 조회 중 띠 — 필터, 탭, 쪽 번호를 누른 뒤 새 결과가 올 때까지 머리띠 바로 아래에 선다(ui/nav-pending, game-filters/optimistic).
+   2026-10-12 사용자: "다시 조회할 때 로딩바 같은 건 안 보여주니?". 목록을 흐리게만 두면 스크롤을 내린 사람은 머리띠 쪽에서
+   아무 일도 안 일어나는 것처럼 본다 — 화면 맨 위 고정 띠는 어디를 보고 있든 보인다.
+   뜨는 데 --duration-fast 만큼 늦춘다: 미리 받아 둔 주소는 한두 프레임에 끝나는데 그때마다 띠가 번쩍이면 안 된다.
+   움직이는 막대는 "기다리는 중" 의 뜻이라 끝없이 돈다. 모션 축소에서는 전역 킬스위치가 멈추므로 아래에서 꽉 찬 막대로 바꾼다 */
+.pending-bar {
+  position: fixed;
+  left: 0;
+  right: 0;
+  top: var(--header-h);
+  z-index: 39;
+  height: 3px;
+  overflow: hidden;
+  pointer-events: none;
+  background: var(--acc-soft);
+  animation: fade-in var(--duration-base) var(--ease-standard) var(--duration-fast) both;
+}
+.pending-bar::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 40%;
+  border-radius: 999px;
+  background: var(--acc);
+  animation: pending-slide 1.1s var(--ease-standard) infinite;
+}
+@media (prefers-reduced-motion: reduce) {
+  .pending-bar::before {
+    width: 100%;
+    opacity: 0.6;
+  }
+}
+@keyframes pending-slide {
+  from { transform: translateX(-100%); }
+  to { transform: translateX(250%); }
+}
 @keyframes soon-float {
   0%, 100% { transform: translateY(0); }
   50% { transform: translateY(-5px); }
