@@ -21,7 +21,7 @@ export function TaskEditForm({ task, assignees }: { task: AdminTask; assignees: 
   const [state, formAction, pending] = useActionState<TaskActionState, FormData>(updateTaskAction, null);
 
   return (
-    <ActionForm action={formAction} state={state} pending={pending} className="flex flex-col gap-3 sm:gap-4">
+    <ActionForm action={formAction} state={state} pending={pending} className="flex flex-col gap-3">
       <input type="hidden" name="id" value={task.id} />
 
       {/* key 를 카드 id 로 두는 이유: 팝업이 다른 카드로 바뀌어도 같은 폼이 재사용되면

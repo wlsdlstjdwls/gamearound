@@ -38,7 +38,7 @@ export const FIELD = cn(
   "focus:shadow-[0_0_0_1px_var(--acc),0_0_0_4px_var(--acc-glow)]",
 );
 
-export const FIELD_LABEL = "mb-1 block text-[13.5px] font-semibold text-mut sm:mb-1.5";
+export const FIELD_LABEL = "mb-1 block text-[13.5px] font-semibold text-mut";
 
 /**
  * 세그먼트(한 판 위에 칸이 서고 고른 칸만 브랜드 보라로 채워진다).
@@ -110,6 +110,13 @@ function RadioSegment<T extends string>({
   );
 }
 
+/** 글 높이에 칸을 맞춘다. 높이를 비운 뒤 재야 줄었을 때도 따라 줄어든다(rows 가 바닥이다) */
+function fitToContent(el: HTMLTextAreaElement | null) {
+  if (!el) return;
+  el.style.height = "auto";
+  el.style.height = `${el.scrollHeight}px`;
+}
+
 /** 제목 + 메모. 추가와 고치기가 함께 쓴다 — 기본값만 다르다 */
 export function TaskBasicFields({ title, body }: { title?: string; body?: string | null }) {
   const id = useId();
@@ -128,12 +135,16 @@ export function TaskBasicFields({ title, body }: { title?: string; body?: string
         />
       </Field>
 
-      {/* 세 줄이다 — 메모는 배경 한두 줄이 대부분이고, 길면 칸이 스스로 늘어난다(resize-y) */}
+      {/* 세 줄에서 시작해 적힌 글 높이만큼 늘어난다(2026-10-12, 사용자: "이미 입력된 메모가 가려져서 보기 힘들다").
+          앞에는 세 줄에 멈추고 나머지를 칸 안 스크롤로 숨겨, 긴 메모는 손으로 칸을 늘려야 다 보였다.
+          CSS field-sizing 은 사파리가 아직 못 따라와 높이를 직접 잰다 */}
       <Field id={`${id}-body`} label={TASK_MESSAGES.bodyLabel}>
         <textarea
           id={`${id}-body`}
           name="body"
           rows={3}
+          ref={fitToContent}
+          onInput={(e) => fitToContent(e.currentTarget)}
           defaultValue={body ?? ""}
           placeholder={TASK_MESSAGES.bodyPlaceholder}
           className={cn(FIELD, "resize-y")}
@@ -170,7 +181,7 @@ export function TaskMetaFields({
   return (
     // 좁은 화면은 두 줄이다(2026-10-02, 사용자: "모바일 할일 상세는 컴팩트화가 덜 됐다") — 앞서는 셋이 한 줄씩
     // 세 줄을 먹었다. 셀렉트 둘이 한 줄에 나란히 서고, 값이 셋인 우선순위 세그먼트만 아래 한 줄을 다 쓴다(반 폭에선 낱말이 꺾인다)
-    <div className="grid grid-cols-2 gap-x-2 gap-y-2.5 sm:grid-cols-3 sm:gap-3">
+    <div className="grid grid-cols-2 gap-x-2 gap-y-2.5 sm:grid-cols-3 sm:gap-x-3">
       {/* 셀렉트는 라벨을 스스로 단다(버튼에 aria 로 잇는다). 눈에 보이는 라벨만 Field 와 같은 모양으로 따로 세운다 */}
       <div className="min-w-0">
         <span aria-hidden className={FIELD_LABEL}>
