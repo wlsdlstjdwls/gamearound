@@ -63,9 +63,12 @@ export function TaskDialog({
       <div className={cn("flex flex-col gap-3.5 pb-2 pt-1", pending && "opacity-70")}>
         {/* 칸이 맨 위에 선다 — 팝업을 여는 이유의 절반은 "이걸 다음 칸으로 옮기려고" 다.
             앞서는 고치기 폼 아래라 옮기려면 스크롤을 지나야 했다 */}
-        <Part title={TASK_MESSAGES.place}>
+        {/* 이름과 세그먼트를 한 줄에 눕힌다(2026-10-12, 사용자: "놓인 칸 영역도 너무 크다") — 앞에는 제목 한 줄, 창 폭 전체 세그먼트 한 줄로
+            두 줄을 먹었다. 값이 셋뿐이라 칸 폭은 320px 이면 충분하다. 다른 마디와 같은 Part 를 안 쓰는 이유가 이 한 줄이다 */}
+        <section className="flex items-center gap-3">
+          <h3 className="shrink-0 text-[14px] font-bold text-ink">{TASK_MESSAGES.place}</h3>
           {/* 고치기 폼의 급함 칸과 같은 세그먼트다(task-fields). 앞서는 44px 큰 버튼 넷이 한 줄을 통째로 먹었다 */}
-          <div className={SEGMENT}>
+          <div className={cn(SEGMENT, "min-w-0 flex-1 sm:max-w-[320px]")}>
             {BOARD_STATUSES.map((s) => {
               const here = task.status === s;
               return (
@@ -82,7 +85,7 @@ export function TaskDialog({
               );
             })}
           </div>
-        </Part>
+        </section>
 
         <Part title={TASK_MESSAGES.basics}>
           <TaskEditForm task={task} assignees={assignees} />
