@@ -186,10 +186,11 @@ export function TaskCard({
         {/*
           작성자 | 담당자(2026-10-12, 사용자가 시안으로 준 모양). 10-01 에는 "올린 사람보단 담당자" 라 작성자를 뺐었는데,
           판을 쓰는 사람이 늘면서 누가 올린 일인지도 카드에서 보여야 했다. 둘을 나란히 세워 "적은 사람과 할 사람" 을 한눈에 가른다.
+          둘은 왼쪽에 붙여 세운다(2026-10-12, 사용자: "왼쪽에 붙어있는 게 아니라 너무 꽉 차 있다") — 반씩 나눠 폭을 다 쓰면 담당자가 카드 가운데로 밀려 떠 보였다.
           앞에 바닥 줄에 있던 담당 이름표는 이 줄과 겹쳐 걷었다. 내 몫(내 담당, "모두")은 이름을 보라로 칠한다
         */}
-        <div className="mt-2 flex items-center gap-3">
-          <div className="flex min-w-0 flex-1 items-center gap-2">
+        <div className="mt-2 flex items-center gap-4">
+          <div className="flex min-w-0 max-w-[45%] items-center gap-2">
             <UserIcon size={16} className="shrink-0 text-dim" />
             <div className="min-w-0 leading-[1.3]">
               <p className="text-[12px] text-mut">{TASK_MESSAGES.cardAuthor}</p>
@@ -197,7 +198,7 @@ export function TaskCard({
             </div>
           </div>
           <span aria-hidden className="h-7 w-px shrink-0 bg-line" />
-          <div className="flex min-w-0 flex-1 items-center gap-2">
+          <div className="flex min-w-0 max-w-[45%] items-center gap-2">
             <UserIcon size={16} className="shrink-0 text-acc" />
             <div className="min-w-0 leading-[1.3]">
               <p className="text-[12px] text-mut">{TASK_MESSAGES.assigneeLabel}</p>
