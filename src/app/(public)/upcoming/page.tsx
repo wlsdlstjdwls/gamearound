@@ -23,11 +23,11 @@ import { UpcomingMonthNav } from "@/components/upcoming-month-nav";
 import { Page, PageHead, SectionHead } from "@/components/ui/page";
 import { formatMonthLabel, formatReleaseDay } from "@/lib/format";
 import { firstParam } from "@/lib/games-query";
-import { UPCOMING_MESSAGES as M, upcomingCountText } from "@/lib/games/messages";
+import { UPCOMING_MESSAGES as M, upcomingAddonParentText, upcomingCountText } from "@/lib/games/messages";
 import { HOME_GRID_CLASS } from "@/lib/games/grid";
 import { pickUpcomingMonth, UPCOMING_MONTH_PARAM } from "@/lib/games/upcoming";
 import { stagger } from "@/lib/motion";
-import { getUpcomingMonthPage, getUpcomingMonthPicks, getUpcomingMonths, UPCOMING_PAGE_SIZE } from "@/server/services/games";
+import { getUpcomingAddons, getUpcomingMonthPage, getUpcomingMonthPicks, getUpcomingMonths, UPCOMING_ADDON_LIMIT, UPCOMING_PAGE_SIZE } from "@/server/services/games";
 import { GamesGridSkeleton } from "@/app/(public)/games/skeletons";
 import { loadMoreUpcoming } from "./actions";
 
@@ -82,6 +82,33 @@ async function MonthGames({ monthKey }: { monthKey: string }) {
   );
 }
 
+/**
+ * 기다리는 추가 콘텐츠(2026-10-12). 달 탭과 상관없이 늘 같은 줄이다 — 출시 전 DLC 는 마흔 남짓이라
+ * 달로 쪼개면 칸마다 한두 장이 된다(services/games/upcoming-addons). 담을 것이 없으면 마디째 세우지 않는다.
+ * 달 목록 아래에 둔다: 이 화면의 본론은 "어떤 게임이 나오나" 이고 DLC 는 그 곁가지다.
+ */
+async function UpcomingAddons() {
+  const addons = await getUpcomingAddons();
+  if (addons.length === 0) return null;
+  return (
+    <section aria-labelledby="upcoming-addons-heading" className="flex flex-col gap-4">
+      <SectionHead id="upcoming-addons-heading" title={M.addonsTitle} note={M.addonsNote} />
+      <ul className={HOME_GRID_CLASS}>
+        {addons.map((entry, i) => (
+          <li key={entry.game.slug} className="enter-item" style={stagger(i)}>
+            <GameCard
+              game={entry.game}
+              variant="release"
+              releaseText={formatReleaseDay(entry.releaseDate)}
+              subtitle={entry.parentTitle ? upcomingAddonParentText(entry.parentTitle) : undefined}
+            />
+          </li>
+        ))}
+      </ul>
+    </section>
+  );
+}
+
 export default async function UpcomingPage({ searchParams }: Props) {
   const months = await getUpcomingMonths();
   const activeKey = pickUpcomingMonth(
@@ -109,6 +136,10 @@ export default async function UpcomingPage({ searchParams }: Props) {
           </Suspense>
         </section>
       )}
+
+      <Suspense fallback={<GamesGridSkeleton cards={UPCOMING_ADDON_LIMIT} gridClass={HOME_GRID_CLASS} />}>
+        <UpcomingAddons />
+      </Suspense>
 
       {/* 각주는 면을 깔지 않는다 — 이 화면에서 면을 가진 것은 빈 상태 안내 하나뿐이고,
           각주까지 판을 쓰면 읽는 순서가 "각주가 먼저" 로 뒤집힌다 */}

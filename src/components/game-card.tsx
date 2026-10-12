@@ -152,6 +152,7 @@ export function GameCard({
   variant = "discount",
   highlight,
   releaseText,
+  subtitle,
 }: {
   game: GameSummary;
   variant?: "discount" | "release";
@@ -162,6 +163,8 @@ export function GameCard({
    * (PlayStation 이 출시일을 주지 않아 게임 단위로 묶는다) best.releaseDate 와 다른 값이다.
    */
   releaseText?: string;
+  /** 제목 아래 회색 한 줄. 출시예정의 추가 콘텐츠 카드가 본편 이름을 적는다 — DLC 제목만으로는 무엇에 붙는지 모를 때가 많다 */
+  subtitle?: string;
 }) {
   const title = game.titleKo ?? game.titleEn;
   const best = game.best;
@@ -203,7 +206,13 @@ export function GameCard({
             </Clamp>
           </Link>
 
-          {/* 부제는 장르로 거를 때만 선다 — 늘 서 있으면 회색 한 줄이 카드마다 잘린 채 붙어 값보다 먼저 읽혔다.
+          {subtitle && (
+            <span className="text-[12.5px] text-dim">
+              <Clamp>{subtitle}</Clamp>
+            </span>
+          )}
+
+          {/* 장르 부제는 장르로 거를 때만 선다 — 늘 서 있으면 회색 한 줄이 카드마다 잘린 채 붙어 값보다 먼저 읽혔다.
               거를 때는 "왜 이 게임이 여기 있나" 를 말해 주는 값이라 남긴다(고른 장르만 보라) */}
           {highlight?.genre && genres.length > 0 && (
             <span className="text-[12.5px] text-dim">

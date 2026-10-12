@@ -125,7 +125,7 @@ async function getUpcomingMonthPicksRaw(key: string): Promise<UpcomingEntry[]> {
     from earliest e inner join picks p on p.game_id = e.game_id
     order by e.rank asc, e.game_id asc
   `);
-  return toEntries(res.rows);
+  return toUpcomingEntries(res.rows);
 }
 
 async function getUpcomingMonthPageRaw(key: string, page: number): Promise<UpcomingPage> {
@@ -142,11 +142,11 @@ async function getUpcomingMonthPageRaw(key: string, page: number): Promise<Upcom
     limit ${UPCOMING_PAGE_SIZE + 1}::int offset ${offset}::int
   `);
   const hasMore = ranked.rows.length > UPCOMING_PAGE_SIZE;
-  return { items: await toEntries(ranked.rows.slice(0, UPCOMING_PAGE_SIZE)), hasMore };
+  return { items: await toUpcomingEntries(ranked.rows.slice(0, UPCOMING_PAGE_SIZE)), hasMore };
 }
 
 /** 고른 (게임, 날짜) 순서 그대로 카드 DTO 를 채운다 */
-async function toEntries(dates: { game_id: string; release_date: string }[]): Promise<UpcomingEntry[]> {
+export async function toUpcomingEntries(dates: { game_id: string; release_date: string }[]): Promise<UpcomingEntry[]> {
   if (dates.length === 0) return [];
   const db = getDb();
 

@@ -387,8 +387,16 @@ export const UPCOMING_MESSAGES = {
   picksNote: "스토어 인기 순위가 높은 게임이에요",
   /** 기대작 아래, 나머지 전부 */
   restTitle: "날짜순 전체",
+  /** 달 탭과 따로 서는 DLC 줄(2026-10-12, 사용자: "기다리는 DLC도 좋다") */
+  addonsTitle: "기다리는 추가 콘텐츠",
+  addonsNote: "인기 게임의 확장팩과 추가 이야기를 날짜순으로 모았어요",
   basis: "스토어마다 출시일이 다르면 가장 이른 날짜로 세웠어요. PlayStation 은 출시일을 공개하지 않아 다른 스토어에도 없는 게임은 담기지 않아요.",
 } as const;
+
+/** 추가 콘텐츠 카드의 부제 — 무엇에 붙는 콘텐츠인지. DLC 제목만으로는 본편을 모르는 게 흔하다("DayZ Badlands" 는 알아도 "Kinship" 은 모른다) */
+export function upcomingAddonParentText(parentTitle: string): string {
+  return `${parentTitle} 추가 콘텐츠`;
+}
 
 /** 달 머리 옆 건수. 그 달에 몇 개가 몰려 있는지가 훑는 사람의 다음 질문이다. 2026-10-07 부터 달은 잘리지 않는다 */
 export function upcomingCountText(total: number): string {
