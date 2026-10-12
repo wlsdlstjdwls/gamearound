@@ -8,7 +8,7 @@ import { gamePlatforms, priceSnapshots, HOME_REGION, type Platform, type Region 
 import type { StoreSnapshot } from "@/server/adapters/types";
 import { DISPLAY_CURRENCY } from "@/lib/currency";
 import { isLocked, type Ctx } from "./context";
-import { RELEASE_DATE_MAX_YEARS_AHEAD, RELEASE_DATE_MIN_YEAR } from "./constants";
+import { RELEASE_DATE_MAX_YEARS_AHEAD, RELEASE_DATE_MIN_YEAR, RELEASE_DATE_PRECISE_PLATFORMS, RELEASE_DATE_YEAR_PLACEHOLDER_MD } from "./constants";
 
 // hasAddOns 도 여기 규칙을 그대로 탄다 — 주지 않는 소스는 undefined 라 기존 값을 덮지 않는다.
 // 덱 등급, OS 네이티브 지원(steam 만 준다)도 같은 규칙이다: 밸브가 아직 안 본 게임은 null 로 와 기존 등급을 지키고,
@@ -107,14 +107,19 @@ export type PlatformRow = typeof gamePlatforms.$inferSelect;
  * 스토어가 "미정" 을 먼 미래(xbox 의 9998년)로 적어 보내는 일이 있어서, 그대로 쓰면
  * 출시예정 목록의 정렬과 집계가 그 한 줄에 끌려간다. 값을 고쳐 쓰지 않고 **버리는** 이유:
  * 무엇으로 고칠지 우리가 알 수 없고, 버리면 PLATFORM_FIELDS 의 널 무시 규칙을 타 기존 값이 살아남는다.
+ * 미래의 12-31 도 같은 이유로 버린다 — "그해 중" 의 자리표시다(constants 의 RELEASE_DATE_YEAR_PLACEHOLDER_MD).
  */
-export function withSaneReleaseDate(snapshot: StoreSnapshot): StoreSnapshot {
+export function withSaneReleaseDate(snapshot: StoreSnapshot, now: Date = new Date()): StoreSnapshot {
   const raw = snapshot.releaseDate;
   if (!raw) return snapshot;
   const year = new Date(raw).getUTCFullYear();
-  const maxYear = new Date().getUTCFullYear() + RELEASE_DATE_MAX_YEARS_AHEAD;
-  if (!Number.isNaN(year) && year >= RELEASE_DATE_MIN_YEAR && year <= maxYear) return snapshot;
-  return { ...snapshot, releaseDate: null };
+  const maxYear = now.getUTCFullYear() + RELEASE_DATE_MAX_YEARS_AHEAD;
+  const inRange = !Number.isNaN(year) && year >= RELEASE_DATE_MIN_YEAR && year <= maxYear;
+  const yearPlaceholder =
+    !RELEASE_DATE_PRECISE_PLATFORMS.has(snapshot.platform) &&
+    raw.slice(5, 10) === RELEASE_DATE_YEAR_PLACEHOLDER_MD &&
+    raw.slice(0, 10) > now.toISOString().slice(0, 10);
+  return inRange && !yearPlaceholder ? snapshot : { ...snapshot, releaseDate: null };
 }
 
 /** 이 플랫폼 행에 무엇을 쓸지. 실행은 호출부가 한다 */

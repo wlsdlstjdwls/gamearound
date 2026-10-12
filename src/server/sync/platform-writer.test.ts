@@ -275,6 +275,16 @@ describe("출시일 소독", () => {
     }
   });
 
+  // "그해 중" 을 12-31 로 적는다(2026-10-12 실측: 미래 날짜 중 Epic 54%, Steam 9% 가 12-31)
+  it("미래의 12-31 은 자리표시라 버리고, 지난 12-31 과 PS 의 12-31 은 둔다", () => {
+    const now = new Date("2026-10-12T00:00:00Z");
+    expect(withSaneReleaseDate(snapshot({ releaseDate: "2026-12-31" }), now).releaseDate).toBeNull();
+    expect(withSaneReleaseDate(snapshot({ releaseDate: "2027-12-31" }), now).releaseDate).toBeNull();
+    expect(withSaneReleaseDate(snapshot({ releaseDate: "2025-12-31" }), now).releaseDate).toBe("2025-12-31");
+    expect(withSaneReleaseDate(snapshot({ releaseDate: "2026-12-30" }), now).releaseDate).toBe("2026-12-30");
+    expect(withSaneReleaseDate(snapshot({ platform: "ps5", releaseDate: "2026-12-31" }), now).releaseDate).toBe("2026-12-31");
+  });
+
   it("값이 없으면 스냅샷을 그대로 돌려준다", () => {
     const s = snapshot();
     expect(withSaneReleaseDate(s)).toBe(s);

@@ -942,6 +942,18 @@ export const RELEASE_DATE_MIN_YEAR = 1970;
 export const RELEASE_DATE_MAX_YEARS_AHEAD = 10;
 
 /**
+ * "그해 중" 을 12-31 로 적는 자리표시(2026-10-12 실측). 미래 날짜 중 12-31 의 몫이 Epic 117/218(54%),
+ * Steam 45/508(9%) 이었다 — 고르게 퍼졌다면 1% 도 안 된다. 지난 날짜에서는 12-31 이 앞뒤 날과 비슷하다
+ * (Steam 5, Epic 5) — 진짜 12-31 출시는 드물게 있으니 **미래의** 12-31 만 버린다.
+ * KINGDOM HEARTS IV 가 2027-12-31, 붉은사막이 PS 에서 2026-12-31 로 들어와 출시예정에 섰다.
+ *
+ * PlayStation 은 뺀다. 그 소스는 정확도(type)를 함께 주고 어댑터가 YEAR 를 이미 버린다(adapters/psstore/release-date) —
+ * 거기서 살아남은 12-31 은 스토어가 날짜까지 확정한 값이다.
+ */
+export const RELEASE_DATE_YEAR_PLACEHOLDER_MD = "12-31";
+export const RELEASE_DATE_PRECISE_PLATFORMS: ReadonlySet<string> = new Set(["ps4", "ps5"]);
+
+/**
  * 한 실행에서 그 소스에 허용할 매칭(검색) 건수 상한. 적어 두지 않은 소스는 상한이 없다.
  *
  * opencritic 만 있는 이유: 이 API 는 검색에 별도 한도를 매긴다 — 하루 25건이고, 전체 요청 한도(200)와
