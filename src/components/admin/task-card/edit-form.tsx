@@ -7,20 +7,20 @@
 // 칸 모양은 추가 팝업과 같은 것을 쓴다(task-fields) — 같은 값을 두 모양으로 받으면 둘이 어긋난다.
 //
 // 저장해도 팝업을 닫지 않는다: 여기서 할 일이 고치기 하나가 아니다(기록을 남기러 온 김에 제목도 고친다).
-// 대신 저장됐다는 말을 그 자리에 남긴다 — 닫히지 않으면 눌렀는지 아닌지를 알 수 없다.
-import { useActionState } from "react";
+// 대신 저장됐다는 말을 저장 버튼 옆(팝업 머리)에 남긴다 — 닫히지 않으면 눌렀는지 아닌지를 알 수 없다.
 import { ActionForm } from "@/components/ui/action-form";
-import { Button } from "@/components/ui/button";
 import { TASK_MESSAGES } from "@/lib/admin/messages";
 import { assigneeValue, type AdminTask, type TaskAssignee } from "@/lib/admin/tasks";
 import { TaskAssigneeField, TaskBasicFields, TaskCategoryField, TaskPart, TaskPriorityField } from "@/components/admin/task-fields";
 import { TaskGamePicker } from "@/components/admin/task-game-picker";
-import { updateTaskAction, type TaskActionState } from "@/app/(admin)/admin/tasks/actions";
+import type { TaskActionState } from "@/app/(admin)/admin/tasks/actions";
 
 export function TaskEditForm({
   task,
   assignees,
   place,
+  formId,
+  form,
 }: {
   task: AdminTask;
   assignees: TaskAssignee[];
@@ -29,11 +29,15 @@ export function TaskEditForm({
    * 폼 안에 있어도 저장과 묶이지 않는다 — 칸 단추는 type="button" 이고 제 액션(moveTaskAction)을 탄다
    */
   place: React.ReactNode;
+  /** 머리의 저장 버튼이 form 속성으로 가리킬 id */
+  formId: string;
+  /** useActionState 의 세 값. 팝업이 쥔다 — 저장 버튼(머리)과 폼(본문)이 같은 진행 상태를 봐야 한다 */
+  form: { state: TaskActionState; action: (formData: FormData) => void; pending: boolean };
 }) {
-  const [state, formAction, pending] = useActionState<TaskActionState, FormData>(updateTaskAction, null);
+  const { state, action, pending } = form;
 
   return (
-    <ActionForm action={formAction} state={state} pending={pending} className="flex flex-col gap-3">
+    <ActionForm id={formId} action={action} state={state} pending={pending} className="flex flex-col gap-3">
       <input type="hidden" name="id" value={task.id} />
 
       {/*
@@ -76,24 +80,12 @@ export function TaskEditForm({
         </div>
       )}
 
-      {/*
-        저장 줄은 폼 바닥에 붙는다(2026-10-01, 사용자: "할일 상세에서 수정하고 저장하는 게 없다").
-        앞서는 게임 검색 칸 아래에 테두리 버튼으로 있어서, 팝업을 스크롤해 내려가야 보였고 보여도 버튼으로 안 읽혔다.
-        sticky 는 제 부모(이 폼) 안에서만 붙는다 — 아래 기록 마디의 붙박이 입력칸과 겹치지 않는다(notes 와 같은 방식).
-        -bottom-5 와 pb-5 는 시트 본문의 아래 여백(ui/sheet 의 pb-5)과 짝이다 — bottom-0 이면 그 여백 위에 멈춰
-        줄 밑으로 스크롤된 내용이 비쳤다(2026-10-01 사용자 지적). 여백만큼 내려 붙인다(줄이 그 여백까지 덮는다).
-      */}
-      <div className="sticky -bottom-5 z-10 -mx-4 flex items-center gap-3 border-t border-line bg-surface px-4 py-3 sm:py-4">
-        <Button type="submit" variant="primary" loading={pending}>
-          {TASK_MESSAGES.save}
-        </Button>
-        {state?.ok && state.message && <span className="animate-rise text-[13.5px] text-ok">{state.message}</span>}
-        {state && !state.ok && (
-          <span role="alert" className="animate-rise text-[13.5px] text-danger">
-            {state.error}
-          </span>
-        )}
-      </div>
+      {/* 저장 버튼은 팝업 머리에 있다(dialog, 2026-10-12). 실패 사유는 고친 칸들 바로 아래 남긴다 — 머리에는 긴 문장이 들어갈 폭이 없다 */}
+      {state && !state.ok && (
+        <p role="alert" className="animate-rise text-[13.5px] text-danger">
+          {state.error}
+        </p>
+      )}
     </ActionForm>
   );
 }

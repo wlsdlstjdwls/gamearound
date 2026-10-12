@@ -13,17 +13,18 @@
 //
 // "붙인 대상" 마디를 없앴다(2026-09-22): 게임을 고르는 칸이 고치기 폼 안에 생기면서 같은 값이
 // 한 팝업에 두 번 섰다. 게임 상세로 가는 길은 고른 칩 옆으로 옮겼고, 매장과 소스도 그 아래 붙였다.
-import { useState, useTransition } from "react";
+import { useActionState, useId, useState, useTransition } from "react";
 import { cn } from "@/lib/cn";
 import { INLINE_LABEL, SEGMENT, SEGMENT_ITEM, SEGMENT_ITEM_ON, TaskPart } from "@/components/admin/task-fields";
 import { formatLongDateTime } from "@/lib/format";
 import { Sheet } from "@/components/ui/sheet";
+import { Button } from "@/components/ui/button";
 import { TASK_ATTACHMENT_MESSAGES, TASK_MESSAGES, TASK_STATUS_LABEL } from "@/lib/admin/messages";
 import { BOARD_STATUSES, type AdminTask, type TaskAssignee } from "@/lib/admin/tasks";
 import { TaskEditForm } from "@/components/admin/task-card/edit-form";
 import { TaskNotes } from "@/components/admin/task-card/notes";
 import { TaskAttachmentsPart } from "@/components/admin/task-attachments";
-import { deleteTaskAction, moveTaskAction, type TaskActionState } from "@/app/(admin)/admin/tasks/actions";
+import { deleteTaskAction, moveTaskAction, updateTaskAction, type TaskActionState } from "@/app/(admin)/admin/tasks/actions";
 
 export function TaskDialog({
   task,
@@ -40,6 +41,9 @@ export function TaskDialog({
   const [state, setState] = useState<TaskActionState>(null);
 
   const run = (fn: () => Promise<TaskActionState>) => start(async () => setState(await fn()));
+  // 고치기 폼의 상태는 팝업이 쥔다 — 저장 버튼이 머리에 서서(2026-10-12, 사용자 요청) 폼 밖이 됐다
+  const formId = useId();
+  const [saveState, saveAction, saving] = useActionState<TaskActionState, FormData>(updateTaskAction, null);
 
   // 칸이 맨 위에 선다 — 팝업을 여는 이유의 절반은 "이걸 다음 칸으로 옮기려고" 다.
   // 앞서는 고치기 폼 아래라 옮기려면 스크롤을 지나야 했다
@@ -72,11 +76,31 @@ export function TaskDialog({
   // 시트 머리에 **이 할 일의 제목**을 적는다(2026-09-22). "할 일" 이라고만 적혀 있으면
   // 판이 가려진 상태에서 지금 무엇을 보고 있는지 알 길이 제목 입력칸 안뿐이었다.
   return (
-    <Sheet title={task.title} size="wide" open={open} onOpenChange={onOpenChange}>
+    <Sheet
+      title={task.title}
+      size="wide"
+      open={open}
+      onOpenChange={onOpenChange}
+      actions={
+        <>
+          {/* 저장 완료는 버튼 옆 짧은 말이다. 제목이 길면 제목 쪽이 말줄임으로 물러난다(sheet 머리) */}
+          {saveState?.ok && saveState.message && !saving && <span className="animate-rise whitespace-nowrap text-[13px] text-ok">{saveState.message}</span>}
+          <Button type="submit" form={formId} size="sm" loading={saving}>
+            {TASK_MESSAGES.save}
+          </Button>
+        </>
+      }
+    >
       {/* 마디 사이를 좁은 화면 값으로 맞췄다(2026-10-12, 사용자: "창이 좀 더 컴팩트해도 될 듯") — 넓은 화면만 한 단계씩 더 벌어져 있었다 */}
       <div className={cn("flex flex-col gap-3.5 pb-2 pt-1", pending && "opacity-70")}>
         {/* 놓인 칸은 고치기 폼 맨 윗줄에 분류와 함께 선다(edit-form 의 place). 칸 옮기기 자체는 여전히 저장과 따로 간다 */}
-        <TaskEditForm task={task} assignees={assignees} place={placeRow} />
+        <TaskEditForm
+          task={task}
+          assignees={assignees}
+          place={placeRow}
+          formId={formId}
+          form={{ state: saveState, action: saveAction, pending: saving }}
+        />
 
         {/* 본문 첨부는 내용과 기록 사이다 — "이 일이 무엇인가" 에 딸린 자료라 내용 바로 밑, 쌓이는 기록보다 위에 선다 */}
         <TaskPart title={task.attachments.length > 0 ? TASK_ATTACHMENT_MESSAGES.count(task.attachments.length) : TASK_ATTACHMENT_MESSAGES.part}>

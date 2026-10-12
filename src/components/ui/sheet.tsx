@@ -47,6 +47,7 @@ const EXIT_FALLBACK_MS = 320;
 export function Sheet({
   label,
   title,
+  actions,
   children,
   triggerClassName,
   unstyledTrigger = false,
@@ -62,6 +63,12 @@ export function Sheet({
   label?: React.ReactNode;
   /** 시트 머리에 적을 제목. 스크린 리더가 읽는 이름이기도 하다 */
   title: string;
+  /**
+   * 머리 오른쪽, 닫기 버튼 앞에 서는 행동(2026-10-12, 할 일 고치기 팝업의 저장).
+   * 본문 바닥에 붙인 저장 줄은 긴 메모 아래로 밀려 스크롤해야 보였고, 좁은 화면에서는 화면 아래 한 줄을 늘 먹었다.
+   * 머리는 스크롤과 상관없이 늘 보인다. 폼 밖이므로 제출 버튼은 form 속성으로 폼을 가리킨다
+   */
+  actions?: React.ReactNode;
   children: React.ReactNode;
   triggerClassName?: string;
   /**
@@ -369,9 +376,11 @@ export function Sheet({
             onPointerUp={endDrag}
             onPointerCancel={endDrag}
           >
-            <h2 id={titleId} className="min-w-0 text-[15px] font-bold tracking-[-0.02em] text-ink">
+            {/* 행동이 함께 서면 제목은 한 줄로 자른다 — 꺾이면 머리가 두 줄이 되어 본문을 먹는다. 전체 제목은 본문 첫 칸에 있다 */}
+            <h2 id={titleId} className={cn("min-w-0 text-[15px] font-bold tracking-[-0.02em] text-ink", actions != null && "truncate")}>
               {title}
             </h2>
+            {actions && <div className="ml-auto flex shrink-0 items-center gap-2">{actions}</div>}
             <button
               type="button"
               onClick={close}
