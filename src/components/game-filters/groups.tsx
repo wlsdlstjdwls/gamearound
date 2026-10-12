@@ -27,6 +27,7 @@ import type { GameFacets } from "@/server/services/games";
 import type { RunningSaleDto } from "@/server/services/sales";
 import { RUNNING_SALE_MESSAGES } from "@/lib/sales/messages";
 import { HideAfter } from "@/components/sales/hide-after";
+import { PersonalToggle, type PersonalFilter } from "./personal-toggle";
 
 /** "고르지 않음" 을 나타내는 값. 빈 문자열을 쓰면 현재 값 비교가 undefined 와 헷갈린다 */
 const ALL = "__all__";
@@ -49,11 +50,16 @@ export const KEEP_SCROLL = { scroll: false } as const;
  */
 export type GroupsVariant = "column" | "sheet";
 
-/** 무리 하나. 이름표는 제목이 아니라 꼬리표라 작고 자간을 벌려 세운다(ui/page 의 SectionHead size="label" 과 같은 값) */
+/**
+ * 무리 하나. 이름표는 13.5px 먹색 굵은 글자다(2026-10-12, 사용자: "필터 가시성 높게").
+ * 예전 꼬리표(12px 회색, 자간 벌림)는 흰 판 위에서 칩보다 흐려 무리가 어디서 갈리는지 안 읽혔다.
+ */
+export const FILTER_LABEL = "text-[13.5px] font-bold tracking-[-0.02em] text-ink";
+
 function Group({ label, sheet, children }: { label: string; sheet: boolean; children: React.ReactNode }) {
   return (
     <div className={sheet ? "flex flex-col gap-3" : "flex flex-col gap-2.5"}>
-      <h2 className="text-[12px] font-bold tracking-[0.08em] text-dim">{label}</h2>
+      <h2 className={FILTER_LABEL}>{label}</h2>
       <div className={sheet ? "flex flex-wrap gap-2" : "flex flex-wrap gap-1.5"}>{children}</div>
     </div>
   );
@@ -70,12 +76,15 @@ export function Groups({
   facets,
   filter,
   sale = null,
+  personal = null,
   variant = "column",
 }: {
   facets: GameFacets;
   filter: GamesQuery;
   /** 지금 데이터로 확인된 스팀 정기 세일(services/sales). 있을 때만 조건 칩이 하나 더 선다 */
   sale?: RunningSaleDto | null;
+  /** 온보딩 취향이 있는 사람에게만 맨 위 "내 취향" 토글이 선다(./personal-toggle) */
+  personal?: PersonalFilter | null;
   variant?: GroupsVariant;
 }) {
   const sheet = variant === "sheet";
@@ -118,9 +127,17 @@ export function Groups({
 
   return (
     <>
+      {/* 취향은 아래 무리 전부를 한꺼번에 채우는 스위치라 맨 위에 선다 */}
+      {personal && <PersonalToggle personal={personal} sheet={sheet} />}
+
       {/* 정렬은 거르는 일이 아니다 — 아래 헤어라인으로 필터 무리와 층을 가른다 */}
-      <div className={sheet ? "border-b border-line-soft pb-6" : "border-b border-line-soft pb-[18px]"}>
-        <Select label="정렬" value={filter.sort ?? DEFAULT_GAME_SORT} options={sortOptions} scroll={false} size={sheet ? "lg" : "sm"} />
+      {/* 드롭다운은 기둥에서도 큰 칸(lg)이다 — 작은 칸(h-9, 12.5px)은 흰 판 위에서 칩보다 약해 보였다.
+          이름표는 Select 의 작은 회색 이름표를 감추고 무리와 같은 FILTER_LABEL 로 밖에서 그린다 */}
+      <div className={sheet ? "flex flex-col gap-3 border-b border-line pb-6" : "flex flex-col gap-2.5 border-b border-line pb-5"}>
+        <span aria-hidden className={FILTER_LABEL}>
+          정렬
+        </span>
+        <Select label="정렬" hideLabel value={filter.sort ?? DEFAULT_GAME_SORT} options={sortOptions} scroll={false} size="lg" />
       </div>
 
       <Group label="플랫폼" sheet={sheet}>
@@ -135,7 +152,12 @@ export function Groups({
       </Group>
 
       {facets.genres.length > 0 && (
-        <Select label="장르" value={filter.genre ?? ALL} options={genreOptions} scroll={false} size={sheet ? "lg" : "sm"} />
+        <div className={sheet ? "flex flex-col gap-3" : "flex flex-col gap-2.5"}>
+          <span aria-hidden className={FILTER_LABEL}>
+            장르
+          </span>
+          <Select label="장르" hideLabel value={filter.genre ?? ALL} options={genreOptions} scroll={false} size="lg" />
+        </div>
       )}
 
       {/* 거르는 조건 — 처음엔 하나뿐이었지만 무리로 세웠다(2026-09-22, 사용자 요청). 한국어 지원은 2026-10-07 에 더했다.

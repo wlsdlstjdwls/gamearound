@@ -15,23 +15,39 @@ import type { RunningSaleDto } from "@/server/services/sales";
 import { ActiveFilters } from "./active";
 import { Groups } from "./groups";
 import { MobileFilters } from "./mobile";
+import type { PersonalFilter } from "./personal-toggle";
+import { raisedClass } from "@/components/ui/page";
 
-export function GameFilters({ facets, filter, sale = null }: { facets: GameFacets; filter: GamesQuery; sale?: RunningSaleDto | null }) {
+export type { PersonalFilter };
+
+export function GameFilters({
+  facets,
+  filter,
+  sale = null,
+  personal = null,
+}: {
+  facets: GameFacets;
+  filter: GamesQuery;
+  sale?: RunningSaleDto | null;
+  personal?: PersonalFilter | null;
+}) {
   return (
     <>
       {/* 좁은 화면: 단추 + 시트. 걸린 조건이 있어도 시트를 열어 두지 않는다(2026-09-15) —
           화면에 들어와서 하려던 일은 결과를 보는 것이지 방금 고른 조건을 다시 읽는 것이 아니다.
           개수 배지도 뗐다(2026-09-22, 사용자 지정): 바로 아래 줄에 걸린 조건이 이름 그대로 서 있고,
           "2" 와 "PC ⨯ 콘솔 ⨯" 이 한 화면에서 같은 사실을 두 번 말할 이유가 없다 */}
-      <MobileFilters groups={<Groups facets={facets} filter={filter} sale={sale} variant="sheet" />} strip={<ActiveFilters filter={filter} variant="strip" />} />
+      <MobileFilters groups={<Groups facets={facets} filter={filter} sale={sale} personal={personal} variant="sheet" />} strip={<ActiveFilters filter={filter} variant="strip" />} />
 
       {/* 넓은 화면: 왼쪽 기둥. 스크롤해도 따라오도록 붙여 둔다(헤더 높이만큼 띄운다).
           안쪽 스크롤(max-h + overflow-y-auto)은 걷었다(2026-09-21): 장르 드롭다운이 펼쳐지면
           그 목록이 기둥 안에 갇혀 잘렸고, 대신 기둥에 세로 스크롤바가 생겼다 — 고르려고 연 목록이
           화면에 없는 셈이다. 무리가 셋(정렬, 플랫폼, 장르)뿐이라 기둥이 화면보다 길어질 일도 없어졌다.
           다시 길어지면 안쪽 스크롤이 아니라 드롭다운을 띄우는 쪽을 고친다 */}
-      <aside aria-label="목록 필터" className="hidden flex-col gap-[26px] lg:sticky lg:top-[80px] lg:flex">
-        <Groups facets={facets} filter={filter} sale={sale} />
+      {/* 흰 판 한 장에 올렸다(2026-10-12, 사용자: "필터 디자인 개선, 가시성 높게"). 오른쪽 게임 카드가 전부 흰 판이라
+          바탕에 그대로 선 필터 글자만 회색 안개처럼 흐렸다. 판은 이 한 겹뿐이고 안쪽은 헤어라인이 가른다 */}
+      <aside aria-label="목록 필터" className={raisedClass("hidden flex-col gap-5 p-5 lg:sticky lg:top-[80px] lg:flex")}>
+        <Groups facets={facets} filter={filter} sale={sale} personal={personal} />
         <ActiveFilters filter={filter} variant="column" />
       </aside>
     </>

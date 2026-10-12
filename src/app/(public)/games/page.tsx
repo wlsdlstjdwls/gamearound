@@ -11,9 +11,8 @@ import type { Metadata } from "next";
 import { Suspense } from "react";
 import { GameCard, highlightFromFilter } from "@/components/game-card";
 import { EmptyState } from "@/components/empty-state";
-import { GameFilters } from "@/components/game-filters";
+import { GameFilters, type PersonalFilter } from "@/components/game-filters";
 import { GamesInfinite } from "@/components/games-infinite";
-import { PersonalListNote } from "@/components/personal-list-note";
 import { Page, PageHead } from "@/components/ui/page";
 import { DEFAULT_GAME_SORT, SORT_LABEL, gamesHref, joinPlatformValues, parsePlatformValues, parseGamesQuery, type GamesQuery } from "@/lib/games-query";
 import { PLATFORM_LABEL } from "@/lib/format";
@@ -89,10 +88,10 @@ function isFiltered(f: GameListFilter): boolean {
  * 조회 자체는 DB 에서 10~20ms 고 지연의 거의 전부가 Neon(us-east-1) 왕복이라,
  * 줄일 수 있는 것은 "기다리는 동안 보여 줄 것" 뿐이다. 껍데기는 즉시 내보내고 값이 필요한 자리만 감싼다.
  */
-async function FilterColumn({ filter }: { filter: GamesQuery }) {
+async function FilterColumn({ filter, personal }: { filter: GamesQuery; personal: PersonalFilter | null }) {
   // 세일 칩은 덤이다 — 판정이 실패해도 필터 기둥은 서야 해서 실패를 "세일 없음" 으로 접는다
   const [facets, sale] = await Promise.all([getGameFacets(), getRunningSteamSale().catch((): RunningSaleDto | null => null)]);
-  return <GameFilters facets={facets} filter={filter} sale={sale} />;
+  return <GameFilters facets={facets} filter={filter} sale={sale} personal={personal} />;
 }
 
 async function Results({ filter }: { filter: GameListFilter }) {
@@ -142,6 +141,11 @@ export default async function GamesPage({ searchParams }: Props) {
   // 필터가 바뀌면 경계를 새로 세운다 — 키가 같으면 React 는 이것을 갱신으로 보고
   // 새 값이 올 때까지 옛 목록을 그대로 둔다. 눌렀는데 아무 일도 안 일어나는 것처럼 보이는 자리다.
   const boundaryKey = JSON.stringify(filter);
+  // 취향 토글(필터 맨 위). 정렬은 들고 간다 — 취향을 껐다고 고른 정렬까지 풀리면 다시 골라야 한다.
+  // 끄면 all=1 로 간다: 조건을 지워 나가다 빈 주소에 닿아도 취향으로 되돌아가지 않게(games-query 의 all 주석)
+  const personal: PersonalFilter | null = preset
+    ? { applied, labels: preset.labels, href: applied ? gamesHref({ sort: raw.sort, all: true }) : gamesHref({ sort: raw.sort }) }
+    : null;
 
   return (
     <Page gap={22}>
@@ -150,15 +154,12 @@ export default async function GamesPage({ searchParams }: Props) {
           건수("9,789개가 조건에 맞아요")도 앞서 뗐다 — 그 한 줄 때문에 목록과 같은 조회를 한 번 더 기다렸다 */}
       <PageHead title="게임 목록" hideTitle />
 
-      {/* 두 기둥 위에 한 줄 — 필터 기둥에 넣으면 좁은 화면에서 접힌 서랍 안으로 숨는다 */}
-      {preset && <PersonalListNote applied={applied} labels={preset.labels} sort={raw.sort} />}
-
       {/* 넓은 화면에서만 두 기둥이 된다. 좁은 화면에서는 필터가 접힌 서랍으로 위에 한 줄만 차지한다 */}
       <div className="grid items-start gap-x-10 gap-y-6 lg:grid-cols-[232px_minmax(0,1fr)]">
         {/* 필터 기둥에는 키를 주지 않는다 — 다시 세우면 고른 값이 뼈대로 한 번 사라졌다 돌아온다.
             선택지(facets)는 필터와 무관하게 같은 값이라 옛 기둥을 그대로 두는 편이 덜 튄다 */}
         <Suspense fallback={<FiltersSkeleton filter={query} />}>
-          <FilterColumn filter={query} />
+          <FilterColumn filter={query} personal={personal} />
         </Suspense>
 
         {/* min-w-0: 격자 칸의 기본 최소 크기는 auto 라 안쪽의 잘리지 않는 제목이 칸을 밀어낸다(상세 화면 주석) */}

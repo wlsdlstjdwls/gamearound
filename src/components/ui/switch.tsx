@@ -6,6 +6,21 @@
 // 위아래로만 벌린다: 보통 줄 오른쪽 끝에 홀로 서 있어 겹칠 이웃이 없다(검색칸 지우기 버튼과 같은 수법)
 import { cn } from "@/lib/cn";
 
+/**
+ * 스위치의 그림만 — 알약과 손잡이. 버튼이 아니라 링크로 켜고 끄는 자리(목록 필터의 "내 취향")가
+ * 같은 그림을 쓰려고 뗐다. 누르는 상자는 부르는 쪽이 갖는다.
+ */
+export function SwitchTrack({ on, className }: { on: boolean; className?: string }) {
+  return (
+    <span
+      aria-hidden
+      className={cn("flex h-[26px] w-[46px] shrink-0 items-center rounded-full p-[3px] transition-colors duration-base", on ? "bg-ink" : "bg-line-strong", className)}
+    >
+      <span className={cn("h-5 w-5 rounded-full transition-transform duration-base ease-out-emph", on ? "translate-x-5 bg-on-ink" : "bg-surface")} />
+    </span>
+  );
+}
+
 export function Switch({
   on,
   label,
@@ -29,12 +44,11 @@ export function Switch({
       disabled={disabled}
       onClick={onToggle}
       className={cn(
-        "press relative flex h-[26px] w-[46px] shrink-0 items-center rounded-full p-[3px] transition-colors duration-base after:absolute after:-inset-y-2.5 after:inset-x-0 after:content-[''] disabled:opacity-60",
-        on ? "bg-ink" : "bg-line-strong",
+        "press relative flex shrink-0 rounded-full after:absolute after:-inset-y-2.5 after:inset-x-0 after:content-[''] disabled:opacity-60",
         className,
       )}
     >
-      <span aria-hidden className={cn("h-5 w-5 rounded-full transition-transform duration-base ease-out-emph", on ? "translate-x-5 bg-on-ink" : "bg-surface")} />
+      <SwitchTrack on={on} />
     </button>
   );
 }

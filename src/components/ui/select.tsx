@@ -221,8 +221,11 @@ export function Select({
   className,
   scroll = true,
   size = "sm",
+  hideLabel = false,
 }: {
   label: string;
+  /** 이름표를 밖에서 더 크게 그린 자리(목록 필터 무리)는 감춘다. 낭독기 이름으로는 남는다 */
+  hideLabel?: boolean;
   value: string;
   options: SelectOption[];
   className?: string;
@@ -234,6 +237,7 @@ export function Select({
   return (
     <SelectCore
       label={label}
+      hideLabel={hideLabel}
       selectedValue={value}
       options={options}
       className={className}

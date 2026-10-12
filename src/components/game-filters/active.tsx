@@ -26,8 +26,7 @@ import { GAMES_FILTER_MESSAGES, RIG_FILTER_MESSAGES } from "@/lib/games/messages
 import { STEAM_SALES } from "@/lib/sales/calendar";
 import { runningSaleEndsAt } from "@/lib/sales/detect";
 import { RUNNING_SALE_MESSAGES } from "@/lib/sales/messages";
-import { KEEP_SCROLL } from "./groups";
-import { SECTION_SIZE } from "@/components/ui/page";
+import { FILTER_LABEL, KEEP_SCROLL } from "./groups";
 import { cn } from "@/lib/cn";
 import Link from "next/link";
 
@@ -168,7 +167,7 @@ export function ActiveFilters({ filter, variant = "column" }: { filter: GamesQue
     // 기둥 안의 한 무리. 위 헤어라인이 무리 사이를 가른다 — 무리마다 이름표를 다는 기둥의 규칙과 같다
     <div className="flex flex-col gap-2 border-t border-line pt-4">
       <div className="flex items-baseline justify-between gap-2">
-        <span className={SECTION_SIZE.label}>걸린 조건</span>
+        <span className={FILTER_LABEL}>걸린 조건</span>
         <ClearAll filter={filter} />
       </div>
       <ul className="flex flex-wrap gap-1.5">

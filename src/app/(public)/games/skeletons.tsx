@@ -2,6 +2,7 @@
 // 왜 loading.tsx 가 아니라 여기인가: 필터를 눌러 주소만 바뀌는 이동은 같은 세그먼트 안의 갱신이라
 // loading.tsx 가 다시 뜨지 않는다. 그래서 경계를 페이지 안(Suspense)에 두고, 그 자리만 뼈대로 받는다.
 // 높이는 실제 화면을 재서 맞춘 값이다 — 어긋나면 본문이 들어올 때 통째로 밀려 그게 깜빡임이 된다.
+import { raisedClass } from "@/components/ui/page";
 import { GAMES_GRID_CLASS } from "@/lib/games/grid";
 import { GameCardSkeleton } from "@/components/game-card-skeleton";
 import { Bone } from "@/components/ui/skeleton";
@@ -25,28 +26,29 @@ export function FiltersSkeleton({ filter }: { filter: GamesQuery }) {
         <ActiveFilters filter={filter} variant="strip" />
       </div>
 
-      <div className="hidden flex-col gap-[26px] lg:flex">
+      <div className={raisedClass("hidden flex-col gap-5 p-5 lg:flex")}>
         {/* 기둥은 game-filters/groups 와 같은 넷이다 — 정렬 드롭다운(아래 헤어라인), 플랫폼 칩, 장르 드롭다운, 조건 칩.
-            드롭다운을 칩 막대로 그렸더니(2026-10-08 까지) 기둥 폭을 다 쓰는 실물과 모양이 달라 걷힐 때 기둥이 바뀌어 보였다.
-            드롭다운 높이 36 은 ui/select 의 sm, 이름표와의 사이 6 은 그 gap-1.5 다 */}
-        <div className="flex flex-col gap-1.5 border-b border-line-soft pb-[18px]" aria-hidden>
-          <Bone className="h-3.5 w-8" />
-          <Bone className="h-9 w-full rounded-[var(--radius-sm)]" />
+            흰 판 한 장 안에 선다(game-filters/index). 드롭다운은 ui/select 의 lg(44px), 이름표는 FILTER_LABEL(13.5px) 줄이고
+            이름표와의 사이 10 은 gap-2.5 다. 취향 토글은 뼈대에 그리지 않는다 — 취향이 있는 사람만 보는 칸이라
+            모두에게 그리면 없는 사람의 기둥이 걷힐 때 위로 당겨진다 */}
+        <div className="flex flex-col gap-2.5 border-b border-line pb-5" aria-hidden>
+          <Bone className="h-4 w-8" />
+          <Bone className="h-11 w-full rounded-[var(--radius-sm)]" />
         </div>
         <div className="flex flex-col gap-2.5" aria-hidden>
-          <Bone className="h-3.5 w-14" />
+          <Bone className="h-4 w-14" />
           <div className="flex flex-wrap gap-1.5">
             {["w-14", "w-11", "w-12"].map((w) => (
               <Bone key={w} className={`h-[31px] rounded-full ${w}`} />
             ))}
           </div>
         </div>
-        <div className="flex flex-col gap-1.5" aria-hidden>
-          <Bone className="h-3.5 w-8" />
-          <Bone className="h-9 w-full rounded-[var(--radius-sm)]" />
+        <div className="flex flex-col gap-2.5" aria-hidden>
+          <Bone className="h-4 w-8" />
+          <Bone className="h-11 w-full rounded-[var(--radius-sm)]" />
         </div>
         <div className="flex flex-col gap-2.5" aria-hidden>
-          <Bone className="h-3.5 w-8" />
+          <Bone className="h-4 w-8" />
           <div className="flex flex-wrap gap-1.5">
             {["w-[92px]", "w-[100px]"].map((w) => (
               <Bone key={w} className={`h-[31px] rounded-full ${w}`} />
