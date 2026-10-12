@@ -7,11 +7,11 @@
 // 같은 얼굴이어야 하고, 회청 면(Panel) 몇 장만 서 있던 예전 모양은 바탕과 거의 구별되지 않았다.
 // 혜택 셋과 절차는 흰 마디 카드에 담는다 — 상세 화면과 같은 문법이다.
 //
-// 없는 것을 있는 것처럼 적지 않는다 — 지금 단계는 A(안내)라 결제도 수수료도 없다(설계서 §12).
+// 결제, 수수료, "무료" 안내는 적지 않는다(2026-10-12 사용자 결정으로 걷었다).
 import type { Metadata } from "next";
 import Link from "next/link";
 import { INK_CTA, INK_CTA_GHOST, InkHero, InkHeroHead } from "@/components/ui/ink-hero";
-import { Page, Panel, SectionHead, sectionCardClass } from "@/components/ui/page";
+import { Page, SectionHead, sectionCardClass } from "@/components/ui/page";
 import { BUSINESS_MESSAGES as M } from "@/lib/shops/messages";
 import { ROUTES } from "@/lib/routes";
 import { stagger } from "@/lib/motion";
@@ -64,11 +64,6 @@ export default function BusinessPage() {
             </li>
           ))}
         </ol>
-        {/* 결제, 수수료 안내는 절차 판 안의 움푹한 칸이다 — 따로 판을 세우면 혜택 셋과 같은 무게로 읽힌다 */}
-        <Panel className="flex flex-col gap-1 px-4 py-3.5">
-          <h3 className="text-[13.5px] font-bold text-ink">{M.feeTitle}</h3>
-          <p className="text-[12.5px] leading-[1.7] text-mut">{M.feeBody}</p>
-        </Panel>
       </section>
     </Page>
   );

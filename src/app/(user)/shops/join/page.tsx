@@ -22,7 +22,7 @@ export default async function ShopJoinPage() {
 
   return (
     <Page width="tight" gap={18}>
-      <PageHead title={SHOP_MESSAGES.joinTitle} note={SHOP_MESSAGES.joinLead} />
+      <PageHead title={SHOP_MESSAGES.joinTitle} />
       <ShopJoinForm current={mine} />
     </Page>
   );

@@ -6,7 +6,7 @@ export const BUSINESS_MESSAGES = {
   title: "게임 매장을 손님에게 알려요",
   /** 푸터 줄에 서는 짧은 이름. title 은 랜딩 머리글이라 줄로 쓰기엔 길다 */
   navLabel: "매장 입점",
-  lead: "동네 게임 매장, 중고 게임 판매처를 찾는 사람에게 우리 매장을 보여줘요. 입점은 무료예요.",
+  lead: "동네 게임 매장, 중고 게임 판매처를 찾는 사람에게 우리 매장을 보여줘요.",
   ctaJoin: "입점 신청하기",
   ctaStatus: "신청 상태 보기",
   points: [
@@ -23,9 +23,6 @@ export const BUSINESS_MESSAGES = {
       body: "매장 계정을 나눠 쓰지 않아요. 직원마다 계정이 있고, 누가 무엇을 고쳤는지 기록이 남아요.",
     },
   ],
-  /** 수수료와 결제는 A(안내) 단계에 없다. 없는 것을 있는 것처럼 적지 않는다(설계서 §12) */
-  feeTitle: "지금은 결제도 수수료도 없어요",
-  feeBody: "손님이 매장 정보를 보고 직접 찾아가거나 연락해요. 예약과 결제는 매장이 원할 때 뒤에 붙일 계획이에요.",
   stepsTitle: "입점은 이렇게 해요",
   steps: [
     "가입하고 입점 신청서를 적어요.",
@@ -37,8 +34,15 @@ export const BUSINESS_MESSAGES = {
 /** 신청 폼, 상태 화면, 검증이 함께 쓰는 문구 */
 export const SHOP_MESSAGES = {
   joinTitle: "입점 신청",
-  joinLead: "심사에 필요한 것만 물어요. 승인 뒤에 매장 소개와 영업시간을 채울 수 있어요.",
   statusTitle: "신청 상태",
+
+  /** 신청서 묶음 이름. 칸 아홉 개를 한 줄로 세우면 어디까지가 필수인지 안 읽힌다 */
+  groupShop: "매장 정보",
+  groupBusiness: "사업자, 연락처",
+  groupPlace: "매장 위치",
+  groupAbout: "매장 소개",
+  optional: "선택",
+  slugPlaceholder: "my-game-shop",
 
   shopTypeLabel: "매장 갈래",
   shopTypeBusiness: "사업자 매장",
@@ -85,7 +89,13 @@ export const SHOP_MESSAGES = {
   reasonLabel: "사유",
   reapply: "신청서 고쳐서 다시 내기",
   viewMyShop: "내 매장 페이지 보기",
-  noApplication: "아직 낸 신청서가 없어요.",
+  noApplication: "아직 낸 신청서가 없어요",
+  noApplicationNote: "신청서를 내면 이 화면에서 심사가 어디까지 왔는지 볼 수 있어요.",
+  statusRejected: "다시 확인이 필요해요",
+  statusRejectedNote: "아래 사유를 고쳐서 다시 내 주세요.",
+  /** 상태 화면의 단계 표시. 입점 랜딩의 절차(BUSINESS_MESSAGES.steps)와 같은 세 걸음을 짧게 부른다 */
+  trackerLabel: "심사 진행",
+  trackerSteps: ["신청서 내기", "사업자 확인", "매장 열림"],
 } as const;
 
 /**
@@ -107,7 +117,7 @@ export const SHOP_DIRECTORY_MESSAGES = {
   emptyAction: "입점 안내 보기",
   /** 목록 끝 칸. 매장이 몇 곳 안 되는 동안 빈자리를 메우면서 입점 길을 한 번 더 건넨다(인디 목록과 같은 이유) */
   ctaTileTitle: "우리 매장도 올려 보세요",
-  ctaTileBody: "입점은 무료예요. 신청서를 내면 보통 1~2일 안에 확인해요.",
+  ctaTileBody: "신청서를 내면 보통 1~2일 안에 확인해요.",
   onlineOnly: "온라인만 팔아요",
   noAddress: "매장 주소가 없어요",
   phoneLabel: "연락처",
