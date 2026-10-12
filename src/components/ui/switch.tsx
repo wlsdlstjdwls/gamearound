@@ -1,7 +1,8 @@
 // 켜고 끄는 스위치 — 웹푸시(push-toggle)와 개인화 적용(settings/personalization-toggle)이 같은 모양을 쓴다.
 // 두 곳에 같은 마크업이 생겨 뽑았다(규약 §3, 2026-10-07).
 //
-// 켜짐은 잉크 면이다 — 보라는 "고른 값" 의 색이라(chip) 켜짐까지 보라면 설정 화면이 고른 칩처럼 읽힌다.
+// 켜짐은 브랜드 보라 면이다(2026-10-12, 사용자: "토글은 왜 검은색이냐"). 예전엔 "보라는 고른 칩의 색" 이라 먹색이었는데,
+// 먹색 알약은 꺼진 단추나 글자 덩어리처럼 읽혀 켜졌다는 말이 약했다. 칩과 같은 색이어도 모양(알약+손잡이)이 달라 헷갈리지 않는다.
 // 보이는 스위치는 26px 이지만 손가락이 닿는 넓이는 44px 이다 — 판을 키우면 알약이 세로로 늘어난다.
 // 위아래로만 벌린다: 보통 줄 오른쪽 끝에 홀로 서 있어 겹칠 이웃이 없다(검색칸 지우기 버튼과 같은 수법)
 import { cn } from "@/lib/cn";
@@ -14,7 +15,7 @@ export function SwitchTrack({ on, className }: { on: boolean; className?: string
   return (
     <span
       aria-hidden
-      className={cn("flex h-[26px] w-[46px] shrink-0 items-center rounded-full p-[3px] transition-colors duration-base", on ? "bg-ink" : "bg-line-strong", className)}
+      className={cn("flex h-[26px] w-[46px] shrink-0 items-center rounded-full p-[3px] transition-colors duration-base", on ? "bg-acc" : "bg-line-strong", className)}
     >
       <span className={cn("h-5 w-5 rounded-full transition-transform duration-base ease-out-emph", on ? "translate-x-5 bg-on-ink" : "bg-surface")} />
     </span>
