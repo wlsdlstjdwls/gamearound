@@ -10,6 +10,8 @@ export const SHOP_NAME_MAX = 40;
 export const SHOP_SLUG_MIN = 3;
 export const SHOP_SLUG_MAX = 30;
 export const SHOP_DESCRIPTION_MAX = 300;
+/** 매장 소개는 필수다(2026-10-12 사용자) — 손님이 매장 페이지에서 처음 읽는 글이라 비면 빈 매장으로 보인다 */
+export const SHOP_DESCRIPTION_MIN = 10;
 export const SHOP_ADDRESS_MAX = 120;
 /** 반려, 정지 사유. 매장주 화면에 그대로 뜨는 글이라 한 문단을 넘기지 않는다 */
 export const SHOP_REASON_MAX = 200;
@@ -53,7 +55,11 @@ export const shopApplicationSchema = z
     address: z.string().trim().max(SHOP_ADDRESS_MAX).optional(),
     addressDetail: z.string().trim().max(SHOP_ADDRESS_MAX).optional(),
     phone: z.string().trim().optional(),
-    description: z.string().trim().max(SHOP_DESCRIPTION_MAX, SHOP_MESSAGES.descriptionTooLong).optional(),
+    description: z
+      .string()
+      .trim()
+      .min(SHOP_DESCRIPTION_MIN, SHOP_MESSAGES.descriptionTooShort)
+      .max(SHOP_DESCRIPTION_MAX, SHOP_MESSAGES.descriptionTooLong),
   })
   .superRefine((v, ctx) => {
     if (v.shopType === "business") {

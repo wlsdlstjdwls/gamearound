@@ -12,11 +12,17 @@ function application(over: Record<string, unknown> = {}) {
     addressType: "offline",
     address: "서울시 어딘가 1로 2",
     phone: "02-123-4567",
+    description: "중고 게임과 레트로 게임을 주로 파는 동네 매장이에요.",
     ...over,
   };
 }
 
 describe("shopApplicationSchema", () => {
+  it("매장 소개는 필수다 — 비거나 너무 짧으면 막는다", () => {
+    expect(shopApplicationSchema.safeParse(application({ description: "" })).success).toBe(false);
+    expect(shopApplicationSchema.safeParse(application({ description: "짧아요" })).success).toBe(false);
+  });
+
   it("사업자번호의 하이픈을 받아서 숫자 10자리로 본다 — 사람은 적힌 대로 옮겨 적는다", () => {
     expect(shopApplicationSchema.safeParse(application()).success).toBe(true);
     expect(normalizeBizRegNo("123-45-67890")).toBe("1234567890");

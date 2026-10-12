@@ -41,7 +41,7 @@ export const SHOP_MESSAGES = {
   groupBusiness: "사업자, 연락처",
   groupPlace: "매장 위치",
   groupAbout: "매장 소개",
-  optional: "선택",
+  descriptionPlaceholder: "어떤 게임을 주로 파는지, 매장 분위기를 적어 주세요",
   slugPlaceholder: "my-game-shop",
 
   shopTypeLabel: "매장 갈래",
@@ -51,7 +51,7 @@ export const SHOP_MESSAGES = {
   shopTypePersonalClosed: "개인 판매자 입점은 아직 열지 않았어요.",
   nameLabel: "매장 이름",
   slugLabel: "매장 주소",
-  slugHint: "영문 소문자, 숫자, 붙임표만 써요. 승인 뒤에는 바꾸기 어려워요.",
+  slugHint: "영문 소문자, 숫자, -",
   bizRegNoLabel: "사업자등록번호",
   addressTypeLabel: "매장 형태",
   addressTypeOffline: "오프라인 매장",
@@ -74,6 +74,7 @@ export const SHOP_MESSAGES = {
   addressRequired: "오프라인 매장은 주소가 있어야 해요.",
   phoneInvalid: "연락처를 다시 확인해 주세요.",
   descriptionTooLong: "매장 소개가 너무 길어요.",
+  descriptionTooShort: "매장 소개를 10자 이상 적어 주세요.",
   reasonRequired: "사유를 적어 주세요. 매장주 화면에 그대로 보여요.",
   badRequest: "잘못된 요청이에요.",
 

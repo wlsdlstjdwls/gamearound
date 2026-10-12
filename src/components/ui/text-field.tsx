@@ -12,12 +12,14 @@ export type TextFieldProps = Omit<ComponentProps<"input">, "size"> & {
   hint?: ReactNode;
   error?: string | null;
   trailing?: ReactNode;
+  /** 칸 왼쪽 고정 글자(주소 앞부분 등). 값이 아니라 보여 주기만 한다 — 입력값에 섞이지 않는다 */
+  leading?: ReactNode;
   /** 칸 바로 밑에 뜨는 판(제안 목록, components/ui/suggest). 칸 상자를 기준으로 선다 */
   popup?: ReactNode;
   wrapperClassName?: string;
 };
 
-export function TextField({ label, hideLabel, hint, error, trailing, popup, wrapperClassName, className, id: idProp, ...input }: TextFieldProps) {
+export function TextField({ label, hideLabel, hint, error, leading, trailing, popup, wrapperClassName, className, id: idProp, ...input }: TextFieldProps) {
   const autoId = useId();
   const id = idProp ?? autoId;
   const hintId = `${id}-hint`;
@@ -45,6 +47,7 @@ export function TextField({ label, hideLabel, hint, error, trailing, popup, wrap
           invalid && "animate-shake shadow-[0_0_0_1px_var(--danger)] focus-within:shadow-[0_0_0_1px_var(--danger)]",
         )}
       >
+        {leading && <span className="shrink-0 pl-3.5 text-[15px] text-dim select-none">{leading}</span>}
         <input
           id={id}
           aria-invalid={invalid || undefined}
@@ -54,7 +57,8 @@ export function TextField({ label, hideLabel, hint, error, trailing, popup, wrap
             // 포커스가 가면 화면을 확대하고, 확대된 배율은 입력을 마쳐도 돌아오지 않는다.
             // 14px 이던 값을 올렸다(2026-09-22 실측: 로그인, 가입의 모든 칸이 14px 이었다).
             // 높이는 46px 그대로라 줄 위치는 밀리지 않는다 — 글자만 커진다.
-            "h-[46px] min-h-[46px] w-full flex-1 bg-transparent px-3.5 text-[16px] text-ink outline-none placeholder:text-dim",
+            "h-[46px] min-h-[46px] w-full min-w-0 flex-1 bg-transparent px-3.5 text-[16px] text-ink outline-none placeholder:text-dim",
+            leading ? "pl-0.5" : null,
             "autofill:shadow-[inset_0_0_0_1000px_var(--surface)] autofill:[-webkit-text-fill-color:var(--ink)]",
             className,
           )}
@@ -80,7 +84,9 @@ export function TextField({ label, hideLabel, hint, error, trailing, popup, wrap
 }
 
 /**
- * 여러 줄 입력칸 모양. 입점 신청과 인디 홍보 글이 같이 쓴다(AGENTS §3). 글자 16px 은 iOS 확대 방지(AGENTS §6)
+ * 여러 줄 입력칸 모양. 입점 신청과 인디 홍보 글이 같이 쓴다(AGENTS §3). 글자 16px 은 iOS 확대 방지(AGENTS §6).
+ * 한 줄 칸(TextField)과 같은 얼굴이다 — 흰 면 + 안쪽 그림자 테두리, 포커스에 보라 링(2026-10-12).
+ * 예전에는 회청 면 + 진한 1px 테두리라 같은 폼 안에서 혼자 다른 물건처럼 보였다.
  */
 export const TEXTAREA_CLASS =
-  "w-full rounded-[var(--radius-sm)] border border-line-strong bg-bg px-3.5 py-2.5 text-[16px] leading-[1.7] text-ink outline-none transition-colors placeholder:text-dim focus:border-ink";
+  "block w-full resize-y rounded-xl bg-surface px-3.5 py-3 text-[16px] leading-[1.7] text-ink outline-none placeholder:text-dim shadow-[0_0_0_1px_var(--line)] transition-[box-shadow] duration-base ease-standard focus:shadow-[0_0_0_1px_var(--acc),0_0_0_4px_var(--acc-glow)]";

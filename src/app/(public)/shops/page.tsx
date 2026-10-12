@@ -51,7 +51,7 @@ export default async function ShopsPage({ searchParams }: Props) {
           검색은 서버 액션이 아니라 GET 이다: 찾은 화면의 주소가 그대로 남아야 공유되고 뒤로 가기가 산다 */}
       <PageHead
         title={M.title}
-        note={result.total > 0 ? `${result.total}${M.countSuffix}` : M.lead}
+        note={result.total > 0 ? `${result.total}${M.countSuffix}` : undefined}
         action={
           <form action={ROUTES.shops} method="get" className="flex flex-wrap items-center gap-2">
         <label htmlFor="shop-q" className="sr-only">
@@ -75,7 +75,7 @@ export default async function ShopsPage({ searchParams }: Props) {
       {/* 검색어로 거른 화면이 비면 그 사실을 말한다. 거르지 않은 화면은 비어도 입점 칸이 격자에 선다 —
           "아직 없어요" 판 하나보다 첫 매장이 설 자리를 보여 주는 편이 매장주에게 다음 행동을 준다 */}
       {q && result.items.length === 0 ? (
-        <EmptyState title={M.empty} description={M.lead} action={{ href: ROUTES.business, label: M.emptyAction }} />
+        <EmptyState title={M.empty} action={{ href: ROUTES.business, label: M.emptyAction }} />
       ) : (
         <ul className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {result.items.map((shop, i) => (
