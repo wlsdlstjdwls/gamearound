@@ -17,6 +17,7 @@ import {
   PSSTORE_UPSELL_APPLICABILITY,
 } from "./constants";
 import { parsePsstoreKorean, psstoreCleanTitle, psstoreConceptKorean } from "./language";
+import { psstoreReleaseDate } from "./release-date";
 // 제목 정리는 언어 괄호 판정과 같은 괄호를 다뤄 language.ts 로 옮겼다. 기존 호출부('./parse')를 위해 다시 내보낸다
 export { psstoreCleanTitle };
 
@@ -62,7 +63,7 @@ const conceptSchema = z.object({
     conceptRetrieve: z
       .object({
         id: z.string(),
-        releaseDate: z.object({ value: z.string().nullish() }).nullish(),
+        releaseDate: z.object({ type: z.string().nullish(), value: z.string().nullish() }).nullish(),
         products: z.array(productRefSchema).nullish(),
         defaultProduct: z
           .object({
@@ -226,7 +227,7 @@ export function parsePsstoreConcept(raw: unknown, conceptId: string): StoreSnaps
     discountPct: price ? discountPct : null,
     // 종료 시각은 할인 중일 때만 의미가 있다 — 상시 판매 구간의 값을 "할인 종료"로 오해하지 않게
     discountEndsAt: discountPct > 0 ? psstoreEpochToIso(price?.endTime) : null,
-    releaseDate: concept.releaseDate?.value ? concept.releaseDate.value.slice(0, 10) : null,
+    releaseDate: psstoreReleaseDate(concept.releaseDate),
     // 콘셉트는 보통 본편이지만 재화 상품도 자기 콘셉트를 갖는다(실측: "디아블로 IV — 500 백금화",
     // "Battlefield V — Battlefield 화폐 6000"). PS 는 콘셉트에 분류 값을 주지 않아 제목으로만 가른다
     // (lib/games/content-kind — 숫자를 함께 요구해서 "CoA: 아틀란의 크리스탈" 같은 본편은 안 걸린다)

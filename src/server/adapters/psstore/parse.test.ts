@@ -45,7 +45,7 @@ describe("parsePsstoreConcept", () => {
     data: {
       conceptRetrieve: {
         id: "234567",
-        releaseDate: { value: "2020-12-10T00:00:00Z" },
+        releaseDate: { type: "DAY_MONTH_YEAR", value: "2020-12-10T00:00:00Z" },
         products: [{ id: "EP4497-PPSA04029_00-0000000000000N22" }],
         defaultProduct: {
           id: "EP4497-PPSA04029_00-0000000000000N22",
@@ -92,7 +92,7 @@ describe("parsePsstoreConcept", () => {
       data: {
         conceptRetrieve: {
           id: "218800",
-          releaseDate: { value: "2019-02-14T00:00:00Z" },
+          releaseDate: { type: "DAY_MONTH_YEAR", value: "2019-02-14T00:00:00Z" },
           products: [{ id: "KP5014-CUSA12715_00-ASIAFULLGAME0000" }],
           defaultProduct: {
             id: "KP5014-CUSA12715_00-ASIAFULLGAME0000",

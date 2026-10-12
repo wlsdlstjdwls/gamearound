@@ -72,7 +72,8 @@ describe("parsePsstoreConcept", () => {
     expect(snap.currentPrice).toBe(55840);
     expect(snap.discountPct).toBe(20);
     expect(snap.discountEndsAt).not.toBeNull();
-    expect(snap.releaseDate).toBe("2026-04-16");
+    // 원본은 "2026-04-16T15:00:00Z"(한국 자정). 앞 10글자를 자르던 시절엔 04-16 이었고 스팀은 04-17 이다
+    expect(snap.releaseDate).toBe("2026-04-17");
     expect(snap.meta?.titleEn).toBe("PRAGMATA");
   });
 
