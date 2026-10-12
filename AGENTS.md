@@ -109,6 +109,8 @@ route(page/action/api)  →  server/services  →  server/adapters | server/db
     클라이언트가 먼저 그릴 값은 서버와 **같은 읽기 함수**로 계산한다(`lib/games/read-query`) — 다르면 한 번 바뀌었다 되돌아간다.
   - 서버 액션으로 바꾸는 자리: 누르는 즉시 바꾸고 실패하면 되돌린다(`settings/personalization-controls` 가 본보기). `disabled` 로 흐리기만 하면 안 된다.
   - 켜고 끄는 칩은 `ChipNavLink toggle`, 값 하나는 `useOptimisticToggle`(`ui/chip-nav`). 맨 `ChipLink`/`<Link>` 로 상태 칩을 만들지 않는다.
+  - 하나만 고르는 탭, 정렬, 국가, 쪽 번호는 `ui/nav-pending` 의 `NavChip`(같은 `group` 끼리 하나만 켜짐)을 쓰고, 화면을 `NavPendingScope` 로,
+    결과 자리를 `PendingRegion` 으로 감싼다. `Pagination` 은 이미 NavChip 이다.
   - 확인: 고친 뒤 실제로 눌러서 "누른 뒤 표시가 바뀌는 시간" 을 잰다(헤드리스 브라우저 CDP 로 클릭 후 두 프레임 뒤 상태를 읽으면 된다).
 - 서버 컴포넌트가 `"use client"` 파일의 **문자열 상수**를 import 하지 않는다 — 값이 아니라 클라이언트 참조가 와서 className 이 통째로 빠진다(2026-10-12 푸터 사고).
   공유 상수는 클라이언트가 아닌 모듈(`constants.ts` 등)에 둔다.
