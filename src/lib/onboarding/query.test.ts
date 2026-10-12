@@ -55,6 +55,10 @@ describe("isPresetApplied", () => {
     expect(isPresetApplied({ ...preset, all: true, korean: true }, preset)).toBe(true);
   });
 
+  it("플랫폼 순서만 다르면 같은 선택이다 — 취향은 고른 순서, 주소는 정해진 순서로 실린다", () => {
+    expect(isPresetApplied({ platform: "epic,steam", genre: "어드벤처", all: true, korean: true }, preset)).toBe(true);
+  });
+
   it("취향 값을 사람이 바꿨으면 꺼진 것이다", () => {
     expect(isPresetApplied({ platform: "console", genre: "어드벤처", all: true }, preset)).toBe(false);
   });

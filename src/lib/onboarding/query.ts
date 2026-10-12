@@ -3,7 +3,7 @@
 // 이 함수가 온보딩의 **값이 실제로 쓰이는 첫 자리**다(설계 §9 의 4회차). 결과 화면이 "지금 조건에
 // 맞는 게임 N개" 를 세는 데 쓰고, 그 화면의 "내 조건으로 보기" 가 같은 값으로 주소를 만든다.
 // 세는 질의와 링크가 같은 함수를 봐야 "N개라더니 목록은 다르다" 가 생기지 않는다.
-import { PLATFORM_VALUE_SEP, type GamesQuery } from "@/lib/games-query";
+import { PLATFORM_VALUE_SEP, parsePlatformValues, type GamesQuery } from "@/lib/games-query";
 import type { Platform } from "@/server/db/schema";
 
 /**
@@ -50,5 +50,16 @@ export function personalQuery(input: { platforms?: readonly Platform[] | null; g
  */
 export function isPresetApplied(q: GamesQuery, preset: GamesQuery): boolean {
   if (!hasExplicitListFilter({ ...q, all: false })) return !q.all;
-  return (preset.platform === undefined || q.platform === preset.platform) && (preset.genre === undefined || q.genre === preset.genre);
+  return samePlatformValues(q.platform, preset.platform) && (preset.genre === undefined || q.genre === preset.genre);
+}
+
+/**
+ * 플랫폼 값은 **모음으로** 견준다. 취향은 고른 순서대로("epic,steam") 실리고 주소는 정해진 순서로
+ * 다시 세워져("steam,epic") 돌아온다 — 글자로 견주면 같은 선택이 다르다고 나와 토글이 꺼졌다(2026-10-12 사용자 신고).
+ */
+function samePlatformValues(current: string | undefined, preset: string | undefined): boolean {
+  if (preset === undefined) return true;
+  const a = new Set(parsePlatformValues(current));
+  const b = new Set(parsePlatformValues(preset));
+  return a.size === b.size && [...b].every((v) => a.has(v));
 }
