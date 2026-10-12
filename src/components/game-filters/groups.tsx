@@ -18,7 +18,6 @@
 // (주소, 회사, 상세 화면의 링크가 쓴다) 고르는 자리에서는 뺀다 — 스토어 아홉 칸이 기둥 위쪽을
 // 두 줄씩 먹으면서 정작 "PC 냐 콘솔이냐" 라는 첫 물음을 가렸다.
 import { PLATFORM_FAMILIES, PLATFORM_FAMILY_LABEL, FAMILY_PLATFORMS, familyOf, PLATFORM_ORDER, PLATFORM_VALUE_ORDER, type PlatformFamily } from "@/lib/platform";
-import { ChipCheck } from "@/components/ui/chip";
 import { ChipNavLink } from "@/components/ui/chip-nav";
 import { Select, type SelectOption } from "@/components/ui/select";
 import { DEFAULT_GAME_SORT, GAME_SORTS, SORT_LABEL, gamesHref, joinPlatformValues, parsePlatformValues, type GamesQuery } from "@/lib/games-query";
@@ -169,24 +168,21 @@ export function Groups({
             늘 세워 두지 않는 이유: 세일이 없는 열한 달 동안 눌러도 아무 일도 안 일어나는 칩이 된다 */}
         {sale && (
           <HideAfter untilIso={sale.endsAt}>
-            <ChipNavLink {...KEEP_SCROLL} {...chip} href={href({ event: filter.event === sale.key ? undefined : sale.key })} active={filter.event === sale.key}>
-              <ChipCheck on={filter.event === sale.key} />
+            <ChipNavLink {...KEEP_SCROLL} {...chip} href={href({ event: filter.event === sale.key ? undefined : sale.key })} active={filter.event === sale.key} toggle>
               {RUNNING_SALE_MESSAGES.chip(sale.name)}
               <span className="sr-only">{filter.event === sale.key ? GAMES_FILTER_MESSAGES.toggleOn : GAMES_FILTER_MESSAGES.toggleOff}</span>
             </ChipNavLink>
           </HideAfter>
         )}
-        <ChipNavLink {...KEEP_SCROLL} {...chip} href={href({ hideFree: !filter.hideFree })} active={Boolean(filter.hideFree)}>
-          {/* 네모와 체크가 있어야 '켬/끔' 이 옆 칩 없이도 읽힌다(ui/chip 의 ChipCheck 주석) */}
-          <ChipCheck on={Boolean(filter.hideFree)} />
+        <ChipNavLink {...KEEP_SCROLL} {...chip} href={href({ hideFree: !filter.hideFree })} active={Boolean(filter.hideFree)} toggle>
+          {/* toggle: 앞에 체크 네모가 서고(켬/끔이 옆 칩 없이도 읽힌다), 누른 순간 켜짐이 바뀐다(ui/chip-nav) */}
           {GAMES_FILTER_MESSAGES.hideFree}
           {/* 화면에 보이는 것은 네모뿐이라, 읽어 주는 기기에는 상태를 말로 준다 */}
           <span className="sr-only">
             {filter.hideFree ? GAMES_FILTER_MESSAGES.toggleOn : GAMES_FILTER_MESSAGES.toggleOff}
           </span>
         </ChipNavLink>
-        <ChipNavLink {...KEEP_SCROLL} {...chip} href={href({ korean: !filter.korean })} active={Boolean(filter.korean)}>
-          <ChipCheck on={Boolean(filter.korean)} />
+        <ChipNavLink {...KEEP_SCROLL} {...chip} href={href({ korean: !filter.korean })} active={Boolean(filter.korean)} toggle>
           {GAMES_FILTER_MESSAGES.korean}
           <span className="sr-only">{filter.korean ? GAMES_FILTER_MESSAGES.toggleOn : GAMES_FILTER_MESSAGES.toggleOff}</span>
         </ChipNavLink>
