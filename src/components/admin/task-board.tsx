@@ -103,8 +103,13 @@ export function TaskBoard({
   );
   // 거르기 칩 옆 건수. 끝난 칸은 세지 않는다 — "내 담당 5" 가 끝낸 일까지 세면 남은 몫을 못 읽는다
   const counts = useMemo(
-    () => countTaskFilters(BOARD_STATUSES.filter((s) => s !== "done").flatMap((s) => board[s]), meId),
-    [board, meId],
+    () =>
+      countTaskFilters(
+        BOARD_STATUSES.filter((s) => s !== "done").flatMap((s) => board[s]),
+        meId,
+        assignees.map((a) => a.id),
+      ),
+    [board, meId, assignees],
   );
 
   const drag = useBoardDrag((id, to, before) => start(async () => setState(await moveTaskAction(id, to, before))));
@@ -134,7 +139,7 @@ export function TaskBoard({
   return (
     <section className="flex flex-col gap-3">
       {/* 판 위에 제목도 버튼도 세우지 않는다 — 끝난 일 치우기는 "할 일 추가" 줄로 갔다(TaskClearDone) */}
-      <TaskFilterBar filter={filter} counts={counts} onChange={changeFilter} />
+      <TaskFilterBar filter={filter} counts={counts} assignees={assignees} onChange={changeFilter} />
       {state && !state.ok && <p className="text-[13px] text-danger">{state.error}</p>}
 
       {/* 좁은 화면 전용 칸 이름 줄 — 넓은 화면에서는 칸 셋이 다 보여 짚을 일이 없다 */}

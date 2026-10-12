@@ -2,7 +2,7 @@
 
 // 할 일 판 위의 거르기 줄(2026-10-01).
 //
-// 한 줄에 셋이다: 보기(하나만 고른다), 분류 드롭다운, 급함만.
+// 한 줄에 넷이다: 보기(하나만 고른다), 분류 드롭다운, 담당자 드롭다운(2026-10-12), 급함만.
 // 1차는 칩이 열둘이었고 "복잡해서 불편하지 않을까" 라는 말을 들었다 — 줄인 이유는 lib/admin/task-filter 주석에 있다.
 //
 // **보기를 세그먼트로 묶었다**(같은 날 3차, 사용자: "필터 기능도 가시성 있게"). 앞 판은 안 고른 칩이 회색 글자뿐이라
@@ -14,8 +14,15 @@
 import { cn } from "@/lib/cn";
 import { FormSelect } from "@/components/ui/select";
 import { TASK_CATEGORY_LABEL, TASK_FILTER_MESSAGES } from "@/lib/admin/messages";
-import { TASK_CATEGORIES, type TaskCategory } from "@/lib/admin/tasks";
-import { DEFAULT_TASK_FILTER, TASK_VIEWS, isDefaultTaskFilter, type TaskFilter, type TaskFilterCounts } from "@/lib/admin/task-filter";
+import { TASK_ASSIGNEE_ALL, TASK_CATEGORIES, type TaskAssignee, type TaskCategory } from "@/lib/admin/tasks";
+import {
+  DEFAULT_TASK_FILTER,
+  TASK_ASSIGNEE_NONE,
+  TASK_VIEWS,
+  isDefaultTaskFilter,
+  type TaskFilter,
+  type TaskFilterCounts,
+} from "@/lib/admin/task-filter";
 import { URGENT_FILL } from "@/components/admin/task-tone";
 
 /** 분류 드롭다운의 "거르지 않음" 값. 빈 문자열이라 enum 값과 겹치지 않는다 */
@@ -38,10 +45,13 @@ function Count({ n, on }: { n: number; on: boolean }) {
 export function TaskFilterBar({
   filter,
   counts,
+  assignees,
   onChange,
 }: {
   filter: TaskFilter;
   counts: TaskFilterCounts;
+  /** 담당자 드롭다운의 사람들(관리자 전부). 팝업의 담당자 칸과 같은 목록이다 */
+  assignees: TaskAssignee[];
   onChange: (next: TaskFilter) => void;
 }) {
   const set = (patch: Partial<TaskFilter>) => onChange({ ...filter, ...patch });
@@ -49,6 +59,13 @@ export function TaskFilterBar({
   const categoryChoices = [
     { value: ANY, label: TASK_FILTER_MESSAGES.categoryAll },
     ...TASK_CATEGORIES.map((c) => ({ value: c, label: TASK_FILTER_MESSAGES.categoryOption(TASK_CATEGORY_LABEL[c], counts.categories[c]) })),
+  ];
+  const option = (value: string, label: string) => ({ value, label: TASK_FILTER_MESSAGES.categoryOption(label, counts.assignees[value] ?? 0) });
+  const assigneeChoices = [
+    { value: ANY, label: TASK_FILTER_MESSAGES.assigneeAny },
+    ...assignees.map((a) => option(a.id, a.name)),
+    option(TASK_ASSIGNEE_ALL, TASK_FILTER_MESSAGES.assigneeAllOnly),
+    option(TASK_ASSIGNEE_NONE, TASK_FILTER_MESSAGES.assigneeNone),
   ];
 
   return (
@@ -99,6 +116,18 @@ export function TaskFilterBar({
         value={filter.category ?? ANY}
         onChange={(v) => set({ category: (v || null) as TaskCategory | null })}
         className={cn("w-[108px] rounded-[var(--radius-sm)] sm:w-[150px]", filter.category && "ring-2 ring-acc")}
+      />
+
+      {/* 담당자(2026-10-12, 사용자: "필터에 담당자도 조회 가능하게"). 사람 이름이 먼저 서고 "모두 지정", "담당 없음" 은 뒤다 —
+          찾는 건 대개 사람이다. 걸려 있으면 분류처럼 테두리를 두른다 */}
+      <FormSelect
+        name="who"
+        label={TASK_FILTER_MESSAGES.assignee}
+        hideLabel
+        options={assigneeChoices}
+        value={filter.assignee ?? ANY}
+        onChange={(v) => set({ assignee: v || null })}
+        className={cn("w-[108px] rounded-[var(--radius-sm)] sm:w-[150px]", filter.assignee && "ring-2 ring-acc")}
       />
 
       {/* 급함만. 급한 일이 하나라도 있으면 빨간 점이 늘 서 있다 — 거르기 전에 "급한 게 있다" 가 보여야 한다 */}

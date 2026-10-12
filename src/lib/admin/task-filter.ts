@@ -15,7 +15,7 @@
 // 담당 없음 보기는 뺐다 — 판을 쓰는 사람이 둘이라 찾을 일이 드물다.
 //
 // 주소에는 **기본값과 다른 것만** 싣는다. 아무것도 안 건 판은 맨 주소(/admin/tasks)라야 메뉴 링크와 같은 화면이다.
-import { TASK_CATEGORIES, isAssignedTo, type AdminTask, type TaskCategory } from "@/lib/admin/tasks";
+import { TASK_ASSIGNEE_ALL, TASK_CATEGORIES, isAssignedTo, type AdminTask, type TaskCategory } from "@/lib/admin/tasks";
 
 /** 보기. 칩 순서가 곧 이 순서다. all 은 거르지 않는다 */
 // "남이 올린" 은 같은 날 뺐다(사용자: "내 등록, 전체 보기 이런 느낌의 토글") — 남이 올린 것만 따로 볼 일은 드물고,
@@ -30,12 +30,24 @@ export interface TaskFilter {
   category: TaskCategory | null;
   /** 급함 높음만 */
   urgent: boolean;
+  /**
+   * 담당자로 거르기(2026-10-12, 사용자: "필터에 담당자도 조회 가능하게"). null 이면 거르지 않는다.
+   * 사용자 id 하나, "모두" 지정(TASK_ASSIGNEE_ALL), 담당 없음(TASK_ASSIGNEE_NONE) 중 하나다.
+   * "내 담당" 보기와 겹쳐 보이지만 그건 나만 묻고, 이건 남의 몫을 본다 — 회의 때 "저 사람 일 뭐 남았지" 를 묻는 자리다.
+   */
+  assignee: string | null;
 }
 
-export const DEFAULT_TASK_FILTER: TaskFilter = { view: "all", category: null, urgent: false };
+/** 담당자 거르기의 "담당 없음". 사용자 id(uuid)와 겹치지 않는 낱말이다 */
+export const TASK_ASSIGNEE_NONE = "none";
+
+export const DEFAULT_TASK_FILTER: TaskFilter = { view: "all", category: null, urgent: false, assignee: null };
 
 /** 주소 쿼리 이름. 짧게 둔다 — 북마크해서 다시 쓰는 주소다 */
-export const TASK_FILTER_PARAM = { view: "view", category: "cat", urgent: "urgent" } as const;
+export const TASK_FILTER_PARAM = { view: "view", category: "cat", urgent: "urgent", assignee: "who" } as const;
+
+/** 주소의 담당자 값으로 받는 꼴. 그 밖의 값은 버린다 — 지워진 계정 id 는 꼴이 맞아 남지만 0건으로 서고 "거르기 풀기" 로 풀린다 */
+const ASSIGNEE_PARAM = /^([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}|all|none)$/i;
 
 /** 마지막 조건을 담는 쿠키. 값은 주소 쿼리와 같은 꼴이다(serializeTaskFilter) */
 export const TASK_FILTER_COOKIE = "admin_tasks_filter";
@@ -66,6 +78,7 @@ export function parseTaskFilter(params: ParamSource): TaskFilter {
     view: oneOf(TASK_VIEWS, first(params[TASK_FILTER_PARAM.view])) ?? "all",
     category: oneOf(TASK_CATEGORIES, first(params[TASK_FILTER_PARAM.category])) ?? null,
     urgent: first(params[TASK_FILTER_PARAM.urgent]) === ON,
+    assignee: ASSIGNEE_PARAM.exec(first(params[TASK_FILTER_PARAM.assignee]) ?? "")?.[0].toLowerCase() ?? null,
   };
 }
 
@@ -75,6 +88,7 @@ export function serializeTaskFilter(f: TaskFilter): URLSearchParams {
   if (f.view !== "all") q.set(TASK_FILTER_PARAM.view, f.view);
   if (f.category) q.set(TASK_FILTER_PARAM.category, f.category);
   if (f.urgent) q.set(TASK_FILTER_PARAM.urgent, ON);
+  if (f.assignee) q.set(TASK_FILTER_PARAM.assignee, f.assignee);
   return q;
 }
 
@@ -82,13 +96,26 @@ export function isDefaultTaskFilter(f: TaskFilter): boolean {
   return serializeTaskFilter(f).size === 0;
 }
 
+type TaskFilterTarget = Pick<AdminTask, "author" | "assignee" | "assignedAll" | "category" | "priority">;
+
+/**
+ * 담당자 거르기 한 칸. 사람을 고르면 그 사람 담당에 **"모두" 담당도 든다** — "모두" 는 그 사람에게도 걸린 일이라
+ * 빼면 그 사람의 남은 몫이 적게 보인다("내 담당" 보기와 같은 규칙, isAssignedTo).
+ */
+function matchesAssignee(task: TaskFilterTarget, assignee: string): boolean {
+  if (assignee === TASK_ASSIGNEE_NONE) return !task.assignee && !task.assignedAll;
+  if (assignee === TASK_ASSIGNEE_ALL) return task.assignedAll;
+  return isAssignedTo(task, assignee);
+}
+
 /** 카드 한 장이 조건에 맞는가. 칸끼리는 전부 AND 다 */
-export function matchesTaskFilter(task: Pick<AdminTask, "author" | "assignee" | "assignedAll" | "category" | "priority">, f: TaskFilter, meId: string): boolean {
+export function matchesTaskFilter(task: TaskFilterTarget, f: TaskFilter, meId: string): boolean {
   // "모두" 담당은 누구의 "내 담당" 에도 든다
   if (f.view === "assigned" && !isAssignedTo(task, meId)) return false;
   if (f.view === "mine" && task.author?.id !== meId) return false;
   if (f.category && task.category !== f.category) return false;
   if (f.urgent && task.priority !== "high") return false;
+  if (f.assignee && !matchesAssignee(task, f.assignee)) return false;
   return true;
 }
 
@@ -97,9 +124,11 @@ export interface TaskFilterCounts {
   views: Record<TaskView, number>;
   categories: Record<TaskCategory, number>;
   urgent: number;
+  /** 담당자 드롭다운 항목별 건수. 열쇠는 거르기 값(사용자 id, "all", "none")이다 */
+  assignees: Record<string, number>;
 }
 
-export function countTaskFilters(tasks: Pick<AdminTask, "author" | "assignee" | "assignedAll" | "category" | "priority">[], meId: string): TaskFilterCounts {
+export function countTaskFilters(tasks: TaskFilterTarget[], meId: string, assigneeIds: readonly string[] = []): TaskFilterCounts {
   const count = (f: TaskFilter) => tasks.filter((t) => matchesTaskFilter(t, f, meId)).length;
   return {
     views: Object.fromEntries(TASK_VIEWS.map((view) => [view, count({ ...DEFAULT_TASK_FILTER, view })])) as Record<TaskView, number>,
@@ -108,5 +137,9 @@ export function countTaskFilters(tasks: Pick<AdminTask, "author" | "assignee" | 
       number
     >,
     urgent: count({ ...DEFAULT_TASK_FILTER, urgent: true }),
+    assignees: Object.fromEntries(
+      [TASK_ASSIGNEE_ALL, TASK_ASSIGNEE_NONE, ...assigneeIds].map((assignee) => [assignee, count({ ...DEFAULT_TASK_FILTER, assignee })]),
+    ),
   };
 }
+

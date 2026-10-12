@@ -169,6 +169,11 @@ export const TASK_FILTER_MESSAGES = {
   categoryAll: "모든 분류",
   /** 드롭다운 항목. 건수는 남은 일 기준이다 */
   categoryOption: (label: string, n: number) => `${label} ${n}`,
+  /** 담당자 드롭다운(2026-10-12). "모두 지정" 은 담당을 "모두" 로 둔 일만, 사람 이름은 그 사람 담당과 "모두" 담당을 함께 센다 */
+  assignee: "담당자",
+  assigneeAny: "모든 담당자",
+  assigneeAllOnly: "모두 지정",
+  assigneeNone: "담당 없음",
   urgent: "우선순위 높음",
   /** 좁은 화면의 같은 칩 — 보기, 분류 드롭다운과 한 줄에 서야 해서 줄인다(앞의 "우선순위" 는 화면 낭독이 읽는다) */
   urgentShort: "높음만",
