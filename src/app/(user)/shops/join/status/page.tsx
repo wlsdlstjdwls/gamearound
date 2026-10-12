@@ -2,9 +2,10 @@
 //
 // 심사 중, 반려 사유, 재신청이 한 화면에서 끝난다. 반려를 메일로만 알리지 않는 이유:
 // 메일은 안 열릴 수 있고, 그때 사람은 "왜 안 되지" 를 물어볼 자리가 없다.
+// 상태 판은 흰 마디 카드다 — 회청 Panel 은 바탕(--bg)과 거의 같은 색이라 판이 안 보였다.
 import type { Metadata } from "next";
 import Link from "next/link";
-import { Panel, Page, PageHead } from "@/components/ui/page";
+import { Page, PageHead, sectionCardClass } from "@/components/ui/page";
 import { buttonClass } from "@/components/ui/button";
 import { ROUTES, shopPath } from "@/lib/routes";
 import { SHOP_MESSAGES } from "@/lib/shops/messages";
@@ -31,14 +32,14 @@ export default async function ShopJoinStatusPage() {
       <PageHead title={SHOP_MESSAGES.statusTitle} />
 
       {!shop ? (
-        <Panel className="flex flex-col items-start gap-3 px-4 py-4">
+        <div className={sectionCardClass("flex flex-col items-start gap-3")}>
           <p className="text-[13px] text-mut">{SHOP_MESSAGES.noApplication}</p>
           <Link href={ROUTES.shopsJoin} className={buttonClass({ variant: "primary" })}>
             {SHOP_MESSAGES.joinTitle}
           </Link>
-        </Panel>
+        </div>
       ) : (
-        <Panel className="flex flex-col gap-3 px-4 py-4">
+        <div className={sectionCardClass("flex flex-col gap-3")}>
           <div className="flex flex-col gap-1">
             <p className="text-[15px] font-bold text-ink">{head!.title}</p>
             {head!.note && <p className="text-[13px] leading-[1.7] text-mut">{head!.note}</p>}
@@ -81,7 +82,7 @@ export default async function ShopJoinStatusPage() {
               </Link>
             )}
           </div>
-        </Panel>
+        </div>
       )}
     </Page>
   );

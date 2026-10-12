@@ -6,13 +6,12 @@
 // 머리는 어두운 판(IndieListHero)이고 격자 끝에는 "내 게임도 소개해 보세요" 칸이 선다(2026-10-06 사용자: "심심하다").
 // 글이 몇 장 안 되는 지금은 그 칸이 빈자리를 메우면서 올리는 길을 한 번 더 건넨다.
 import type { Metadata } from "next";
-import Link from "next/link";
 import { EmptyState } from "@/components/empty-state";
 import { IndieCard } from "@/components/indie/indie-card";
 import { Pagination } from "@/components/pagination";
 import { IndieListHero } from "@/components/indie/list-hero";
 import { ChipLink } from "@/components/ui/chip";
-import { PlusIcon } from "@/components/ui/icons";
+import { CtaTile } from "@/components/ui/cta-tile";
 import { Page } from "@/components/ui/page";
 import { firstParam } from "@/lib/games-query";
 import { INDIE_STAGES } from "@/lib/indie/constants";
@@ -72,16 +71,7 @@ export default async function IndiePage({ searchParams }: Props) {
             </li>
           ))}
           <li className="enter-item" style={stagger(result.items.length)}>
-            <Link
-              href={ROUTES.indieNew}
-              className="press flex h-full min-h-[220px] flex-col items-center justify-center gap-2 rounded-[var(--radius-panel)] border-2 border-dashed border-line-strong px-6 py-8 text-center transition-colors duration-fast hover:border-acc hover:bg-acc-soft"
-            >
-              <span aria-hidden className="flex size-11 items-center justify-center rounded-full bg-acc-soft text-acc">
-                <PlusIcon size={20} />
-              </span>
-              <span className="text-[15px] font-bold text-ink">{M.ctaTileTitle}</span>
-              <span className="max-w-[260px] text-[12.5px] leading-[1.6] text-mut">{M.ctaTileBody}</span>
-            </Link>
+            <CtaTile href={ROUTES.indieNew} title={M.ctaTileTitle} body={M.ctaTileBody} />
           </li>
         </ul>
       )}

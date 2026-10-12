@@ -9,15 +9,6 @@ export const BUSINESS_MESSAGES = {
   lead: "동네 게임 매장, 중고 게임 판매처를 찾는 사람에게 우리 매장을 보여줘요. 입점은 무료예요.",
   ctaJoin: "입점 신청하기",
   ctaStatus: "신청 상태 보기",
-  /*
-   * 입점 신청을 아직 열지 않았다(2026-09-21 사용자 결정). 버튼은 그대로 두고 시트로 사유를 말한다 —
-   * 랜딩을 다 읽고 누른 사람에게 아무 일도 일어나지 않으면 고장으로 읽힌다.
-   * 되살릴 때는 이 네 줄과 business/page.tsx 의 JoinSoonButton 한 줄을 같이 되돌린다.
-   */
-  soonTitle: "입점 신청",
-  soonLead: "입점 신청은 아직 열지 않았어요",
-  soonBody:
-    "매장 페이지와 판매 목록은 다 만들어 뒀고, 사업자 확인 절차를 준비하고 있어요. 열리면 이 화면에서 바로 신청할 수 있어요.",
   points: [
     {
       title: "찾는 사람에게 보여요",
@@ -114,6 +105,9 @@ export const SHOP_DIRECTORY_MESSAGES = {
   empty: "찾는 조건에 맞는 매장이 없어요.",
   emptyAll: "아직 입점한 매장이 없어요.",
   emptyAction: "입점 안내 보기",
+  /** 목록 끝 칸. 매장이 몇 곳 안 되는 동안 빈자리를 메우면서 입점 길을 한 번 더 건넨다(인디 목록과 같은 이유) */
+  ctaTileTitle: "우리 매장도 올려 보세요",
+  ctaTileBody: "입점은 무료예요. 신청서를 내면 보통 1~2일 안에 확인해요.",
   onlineOnly: "온라인만 팔아요",
   noAddress: "매장 주소가 없어요",
   phoneLabel: "연락처",
@@ -124,15 +118,6 @@ export const SHOP_DIRECTORY_MESSAGES = {
   listingsEmpty: "아직 올라온 물건이 없어요.",
   backToDirectory: "매장 찾기로",
   suspendedNotice: "지금은 쉬고 있는 매장이에요.",
-  /*
-   * 푸터에서는 매장 찾기를 아직 열지 않는다(2026-09-22 사용자 결정) — 입점한 매장이 0곳이라
-   * 들어오면 빈 목록만 본다. 화면(/shops)과 질의는 그대로 살아 있고 주소로는 열린다.
-   * 입점 신청의 준비 중 문구(BUSINESS_MESSAGES.soon*)와 짝이다 — 되살릴 때 둘을 같이 본다.
-   */
-  soonTitle: "매장 찾기",
-  soonLead: "매장 찾기는 아직 열지 않았어요",
-  soonBody:
-    "매장 페이지와 검색은 다 만들어 뒀고, 입점한 매장이 쌓이기를 기다리고 있어요. 첫 매장이 들어오면 바로 열어요.",
 } as const;
 
 /** 관리자 심사 화면(/shops/admin) */

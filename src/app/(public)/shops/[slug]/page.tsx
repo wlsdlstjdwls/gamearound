@@ -9,7 +9,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { Page, PageHead, ROWS, SectionHead } from "@/components/ui/page";
+import { Page, PageHead, SectionHead, sectionCardClass } from "@/components/ui/page";
 import { buttonClass } from "@/components/ui/button";
 import { ROUTES } from "@/lib/routes";
 import { SHOP_DIRECTORY_MESSAGES as M } from "@/lib/shops/messages";
@@ -50,25 +50,30 @@ export default async function ShopPage({ params }: Props) {
     <Page width="tight" gap={26}>
       <PageHead title={shop.name} note={suspended ? M.suspendedNotice : undefined} />
 
-      {facts.length > 0 && (
-        <dl className={ROWS}>
-          {facts.map((f) => (
-            <div key={f.label} className="flex justify-between gap-4 py-[13px] text-[13px] leading-[1.7]">
-              <dt className="shrink-0 text-dim">{f.label}</dt>
-              <dd className="text-right text-[13.5px] font-semibold text-ink">{f.value}</dd>
+      {/* 정보와 소개는 흰 마디 카드 한 장, 파는 물건은 또 한 장 — 상세 화면과 같은 문법이다.
+          판 안의 구분은 헤어라인(정보 줄)과 회청 칸(물건 줄)이 맡는다 */}
+      {(facts.length > 0 || shop.description) && (
+        <section className={sectionCardClass("flex flex-col gap-5")}>
+          {facts.length > 0 && (
+            <dl className="flex flex-col divide-y divide-line">
+              {facts.map((f) => (
+                <div key={f.label} className="flex justify-between gap-4 py-[13px] text-[13px] leading-[1.7] first:pt-0 last:pb-0">
+                  <dt className="shrink-0 text-dim">{f.label}</dt>
+                  <dd className="text-right text-[13.5px] font-semibold text-ink">{f.value}</dd>
+                </div>
+              ))}
+            </dl>
+          )}
+          {shop.description && (
+            <div className="flex flex-col gap-2">
+              <SectionHead title={M.aboutLabel} size="sub" />
+              <p className="whitespace-pre-line text-[13.5px] leading-[1.7] text-mut">{shop.description}</p>
             </div>
-          ))}
-        </dl>
-      )}
-
-      {shop.description && (
-        <section className="flex flex-col gap-3">
-          <SectionHead title={M.aboutLabel} />
-          <p className="whitespace-pre-line text-[13px] leading-[1.7] text-mut">{shop.description}</p>
+          )}
         </section>
       )}
 
-      <section className="flex flex-col gap-3">
+      <section className={sectionCardClass("flex flex-col gap-3")}>
         <SectionHead title={M.listingsTitle} note={listings.length > 0 ? `${listings.length}건` : undefined} />
         {listings.length === 0 ? (
           <p className="rounded-xl bg-surface-2 px-4 py-6 text-center text-[13px] text-dim">{M.listingsEmpty}</p>

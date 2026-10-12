@@ -8,8 +8,8 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { EmptyState } from "@/components/empty-state";
 import { Pagination } from "@/components/pagination";
-import { Page, PageHead, ROW, ROWS } from "@/components/ui/page";
-import { cn } from "@/lib/cn";
+import { CtaTile } from "@/components/ui/cta-tile";
+import { Page, PageHead } from "@/components/ui/page";
 import { Clamp } from "@/components/ui/tooltip";
 import { buttonClass } from "@/components/ui/button";
 import { stagger } from "@/lib/motion";
@@ -51,7 +51,7 @@ export default async function ShopsPage({ searchParams }: Props) {
           검색은 서버 액션이 아니라 GET 이다: 찾은 화면의 주소가 그대로 남아야 공유되고 뒤로 가기가 산다 */}
       <PageHead
         title={M.title}
-        note={result.total > 0 ? `${result.total}${M.countSuffix}` : undefined}
+        note={result.total > 0 ? `${result.total}${M.countSuffix}` : M.lead}
         action={
           <form action={ROUTES.shops} method="get" className="flex flex-wrap items-center gap-2">
         <label htmlFor="shop-q" className="sr-only">
@@ -63,7 +63,7 @@ export default async function ShopsPage({ searchParams }: Props) {
           defaultValue={q ?? ""}
           placeholder={M.searchPlaceholder}
           // 16px 미만이면 iOS 가 화면을 확대한다(AGENTS §6)
-          className="h-10 min-w-0 flex-1 rounded-xl border border-transparent bg-surface-2 px-3.5 text-[16px] text-ink placeholder:text-dim focus-visible:border-acc focus-visible:outline-none sm:w-[220px] sm:flex-none"
+          className="h-10 min-w-0 flex-1 rounded-xl border border-line bg-surface px-3.5 text-[16px] text-ink placeholder:text-dim focus-visible:border-acc focus-visible:outline-none sm:w-[220px] sm:flex-none"
         />
             <button type="submit" className={buttonClass({ variant: "primary" })}>
               {M.searchSubmit}
@@ -72,26 +72,35 @@ export default async function ShopsPage({ searchParams }: Props) {
         }
       />
 
-      {result.items.length === 0 ? (
-        <EmptyState
-          title={q ? M.empty : M.emptyAll}
-          description={M.lead}
-          action={{ href: ROUTES.business, label: M.emptyAction }}
-        />
+      {/* 검색어로 거른 화면이 비면 그 사실을 말한다. 거르지 않은 화면은 비어도 입점 칸이 격자에 선다 —
+          "아직 없어요" 판 하나보다 첫 매장이 설 자리를 보여 주는 편이 매장주에게 다음 행동을 준다 */}
+      {q && result.items.length === 0 ? (
+        <EmptyState title={M.empty} description={M.lead} action={{ href: ROUTES.business, label: M.emptyAction }} />
       ) : (
-        <ul className={cn(ROWS, "sm:grid sm:grid-cols-2 sm:gap-x-10 lg:grid-cols-3")}>
+        <ul className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {result.items.map((shop, i) => (
             <li key={shop.slug} className="enter-item" style={stagger(i)}>
-              <Link href={shopPath(shop.slug)} className={cn(ROW, "flex h-full flex-col gap-0.5 py-[13px]")}>
-                <Clamp lines={1} className="text-[14.5px] font-bold tracking-[-0.02em] text-ink">
+              <Link href={shopPath(shop.slug)} className="card-panel press flex h-full flex-col gap-1.5 px-5 py-4">
+                <Clamp lines={1} className="text-[15px] font-bold tracking-[-0.02em] text-ink">
                   {shop.name}
                 </Clamp>
-                <Clamp lines={2} className="text-[12px] text-dim">
+                <Clamp lines={2} className="text-[12.5px] leading-[1.6] text-mut">
                   {[whereLine(shop), shop.phone].filter(Boolean).join(" | ")}
                 </Clamp>
               </Link>
             </li>
           ))}
+          {/* 입점 칸은 마지막 쪽에만 — 쪽마다 서면 매장 사이에 광고가 끼어든 것처럼 읽힌다 */}
+          {result.page >= result.totalPages ? (
+            <li className="enter-item" style={stagger(result.items.length)}>
+              <CtaTile
+                href={ROUTES.business}
+                title={result.items.length === 0 ? M.emptyAll : M.ctaTileTitle}
+                body={M.ctaTileBody}
+                compact={result.items.length > 0}
+              />
+            </li>
+          ) : null}
         </ul>
       )}
 
