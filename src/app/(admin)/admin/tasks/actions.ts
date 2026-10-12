@@ -14,6 +14,7 @@ import {
   deleteTask,
   markTaskSeen,
   moveTask,
+  queueTaskNotice,
   registerAttachment,
   removeAttachment,
   restoreTask,
@@ -69,7 +70,7 @@ function revalidate() {
 
 export async function createTaskAction(_prev: TaskActionState, form: FormData): Promise<TaskActionState> {
   try {
-    await requireAdmin();
+    const admin = await requireAdmin();
     const p = createSchema.safeParse({
       title: form.get("title"),
       body: form.get("body") ?? undefined,
@@ -92,6 +93,8 @@ export async function createTaskAction(_prev: TaskActionState, form: FormData): 
       source: p.data.source || null,
       ...splitAssignee(p.data.assigneeId),
     });
+    // 새 카드 알림이 담당자도 싣는다 — 만들면서 건 담당자로 "담당자 지정" 을 따로 보내지 않는다
+    queueTaskNotice(id, { kind: "created" }, admin);
     revalidate();
     return { ok: true, message: TASK_MESSAGES.created, id };
   } catch (e) {
@@ -102,10 +105,11 @@ export async function createTaskAction(_prev: TaskActionState, form: FormData): 
 /** 칸 옮기기와 자리 바꾸기. `before` 는 끌어 놓은 자리(그 카드 앞, null 이면 맨 끝). 안 주면 받는 칸 맨 위다(moveTask 주석) */
 export async function moveTaskAction(id: string, to: string, before?: string | null): Promise<TaskActionState> {
   try {
-    await requireAdmin();
+    const admin = await requireAdmin();
     const p = z.object({ id: z.uuid(), to: statusSchema, before: z.uuid().nullable().optional() }).safeParse({ id, to, before });
     if (!p.success) return { ok: false, error: TASK_MESSAGES.invalid };
-    await moveTask(p.data.id, p.data.to, p.data.before);
+    const moved = await moveTask(p.data.id, p.data.to, p.data.before);
+    if (moved) queueTaskNotice(p.data.id, { kind: "moved", ...moved }, admin);
     revalidate();
     return { ok: true, message: TASK_MESSAGES.moved };
   } catch (e) {
@@ -129,7 +133,7 @@ export async function deleteTaskAction(id: string): Promise<TaskActionState> {
 /** 카드 고치기 — 제목과 메모, 급함, 갈래, 게임, 담당자. 칸과 순서는 각자의 액션이 맡는다(자취를 남겨야 해서) */
 export async function updateTaskAction(_prev: TaskActionState, form: FormData): Promise<TaskActionState> {
   try {
-    await requireAdmin();
+    const admin = await requireAdmin();
     const p = z
       .object({
         id: z.uuid(),
@@ -152,7 +156,7 @@ export async function updateTaskAction(_prev: TaskActionState, form: FormData): 
       });
     if (!p.success) return { ok: false, error: p.error.issues[0]?.message ?? TASK_MESSAGES.invalid };
 
-    await updateTask(p.data.id, {
+    const { assigneeChanged } = await updateTask(p.data.id, {
       title: p.data.title,
       body: p.data.body ?? null,
       priority: p.data.priority,
@@ -162,6 +166,7 @@ export async function updateTaskAction(_prev: TaskActionState, form: FormData): 
       // 담당자도 같은 규칙이다 — 안 보냈으면 그대로, 빈 문자열이면 뗀다. "모두" 는 따로 칸이 있다
       ...splitAssignee(p.data.assigneeId),
     });
+    if (assigneeChanged) queueTaskNotice(p.data.id, { kind: "assigned" }, admin);
     revalidate();
     return { ok: true, message: TASK_MESSAGES.saved };
   } catch (e) {
@@ -171,7 +176,7 @@ export async function updateTaskAction(_prev: TaskActionState, form: FormData): 
 
 export async function addNoteAction(_prev: TaskActionState, form: FormData): Promise<TaskActionState> {
   try {
-    await requireAdmin();
+    const admin = await requireAdmin();
     const p = z
       .object({ taskId: z.uuid(), body: z.string().trim().max(NOTE_MAX), hasFiles: z.literal("1").optional() })
       .safeParse({ taskId: form.get("taskId"), body: form.get("body") ?? "", hasFiles: form.get("hasFiles") ?? undefined });
@@ -180,6 +185,7 @@ export async function addNoteAction(_prev: TaskActionState, form: FormData): Pro
     if (!p.data.body && !p.data.hasFiles) return { ok: false, error: TASK_MESSAGES.notePlaceholder };
 
     const id = await addNote(p.data.taskId, p.data.body);
+    queueTaskNotice(p.data.taskId, { kind: "note", body: p.data.body }, admin);
     revalidate();
     return { ok: true, message: TASK_MESSAGES.noteAdded, id };
   } catch (e) {

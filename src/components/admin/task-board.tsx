@@ -47,6 +47,7 @@ import { TaskColumnSheet } from "@/components/admin/task-column-sheet";
 import { TaskQuickAdd } from "@/components/admin/task-quick-add";
 import { DROP_ATTR, useBoardDrag } from "@/components/admin/use-board-drag";
 import { markTaskSeenAction, moveTaskAction, type TaskActionState } from "@/app/(admin)/admin/tasks/actions";
+import { TASK_OPEN_PARAM } from "@/lib/routes";
 
 export function TaskBoard({
   board,
@@ -55,6 +56,7 @@ export function TaskBoard({
   initialFilter,
   now,
   seen,
+  initialOpenId,
 }: {
   board: Board;
   assignees: TaskAssignee[];
@@ -66,14 +68,24 @@ export function TaskBoard({
   now: number;
   /** 내가 카드마다 마지막으로 연 때(ms). "새 기록" 셈의 기준이다 */
   seen: Record<string, number>;
+  /** 주소(`?task=`)로 바로 열 카드. 텔레그램 알림의 링크가 이걸 싣는다 */
+  initialOpenId?: string | null;
 }) {
   /**
    * 지금 열린 카드. **판이 들고 있다** — 카드가 들고 있으면 칸을 옮기는 순간 그 카드가 다른 칸에서
    * 새로 그려지면서 팝업이 닫힌다(실측 2026-09-21). 옮기기는 팝업 안에서 하는 일이라 닫히면 안 된다.
    */
-  const [openId, setOpenId] = useState<string | null>(null);
+  const [openId, setOpenId] = useState<string | null>(initialOpenId ?? null);
   // 이번 화면에서 연 카드. 서버에 적고 판을 다시 읽지 않으므로(markTaskSeenAction) 표시는 여기서 끈다
-  const [seenNow, setSeenNow] = useState<Record<string, number>>({});
+  const [seenNow, setSeenNow] = useState<Record<string, number>>(() => (initialOpenId ? { [initialOpenId]: now } : {}));
+  // 링크로 연 카드도 연 것으로 적고, 주소에서 그 값을 걷는다 — 남겨 두면 닫은 뒤 새로 고칠 때마다 팝업이 다시 뜬다
+  useEffect(() => {
+    if (!initialOpenId) return;
+    void markTaskSeenAction(initialOpenId);
+    const url = new URL(window.location.href);
+    url.searchParams.delete(TASK_OPEN_PARAM);
+    window.history.replaceState(null, "", `${url.pathname}${url.search}`);
+  }, [initialOpenId]);
   const openCard = (id: string) => {
     setOpenId(id);
     setSeenNow((prev) => ({ ...prev, [id]: Date.now() }));

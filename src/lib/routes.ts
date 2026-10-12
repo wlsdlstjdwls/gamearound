@@ -224,3 +224,10 @@ export function afterAuthPath(pathWithSearch: string | null | undefined, onboard
   // 되돌려 보내지만, 그러면 가입 직후 화면이 한 번 깜빡인다 — 판단이 서는 자리에서 끝낸다
   return onboarding && path === ROUTES.signUp ? afterSignUpPath(ROUTES.home) : ROUTES.home;
 }
+
+/** 할 일 판의 카드 하나를 바로 여는 주소. 텔레그램 알림이 이 주소를 싣는다(판이 열리며 그 카드 팝업이 뜬다) */
+export const TASK_OPEN_PARAM = "task";
+
+export function adminTaskPath(id: string): string {
+  return `${ROUTES.adminTasks}?${TASK_OPEN_PARAM}=${encodeURIComponent(id)}`;
+}

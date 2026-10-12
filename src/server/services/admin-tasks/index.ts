@@ -15,4 +15,5 @@ export {
   updateTask,
   type CreateTaskInput,
 } from "./mutations";
+export { queueTaskNotice, type TaskNotifyActor } from "./notify";
 export { countAttachments, registerAttachment, removeAttachment, taskExists } from "./attachments";

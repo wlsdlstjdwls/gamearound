@@ -53,6 +53,10 @@ export async function createTask(input: CreateTaskInput): Promise<string> {
   return row!.id;
 }
 
+/**
+ * 카드 고치기. 담당자가 실제로 바뀌었는지 돌려준다 — 텔레그램 "담당자 지정" 알림은 바뀐 때만 나간다
+ * (고치기 폼은 저장할 때마다 담당자 칸을 같이 보내므로, 보냈다는 것만으로는 바뀐 게 아니다).
+ */
 export async function updateTask(
   id: string,
   patch: {
@@ -65,9 +69,15 @@ export async function updateTask(
     assigneeId?: string | null;
     assignedAll?: boolean;
   },
-): Promise<void> {
+): Promise<{ assigneeChanged: boolean }> {
   const admin = await requireAdmin();
-  await getDb()
+  const db = getDb();
+  const touchesAssignee = patch.assigneeId !== undefined || patch.assignedAll !== undefined;
+  // 담당자를 건드릴 때만 앞 값을 읽는다 — 제목만 고치는 저장에 왕복을 하나 더 붙이지 않는다
+  const [before] = touchesAssignee
+    ? await db.select({ assigneeId: adminTasks.assigneeId, assignedAll: adminTasks.assignedAll }).from(adminTasks).where(eq(adminTasks.id, id))
+    : [];
+  const [after] = await db
     .update(adminTasks)
     .set({
       ...(patch.title !== undefined ? { title: patch.title.trim() } : {}),
@@ -82,7 +92,11 @@ export async function updateTask(
       ...(patch.assignedAll !== undefined ? { assignedAll: patch.assignedAll, ...(patch.assignedAll ? { assigneeId: null } : {}) } : {}),
       ...updatedBy("admin", admin.id),
     })
-    .where(eq(adminTasks.id, id));
+    .where(eq(adminTasks.id, id))
+    .returning({ assigneeId: adminTasks.assigneeId, assignedAll: adminTasks.assignedAll });
+  const assigneeChanged =
+    Boolean(before && after) && (before!.assigneeId !== after!.assigneeId || before!.assignedAll !== after!.assignedAll);
+  return { assigneeChanged };
 }
 
 /**
@@ -97,15 +111,17 @@ export async function updateTask(
  *
  * `done` 으로 갈 때만 doneAt 을 찍고, 거기서 나오면 지운다. 되돌린 일이 끝난 시각을 갖고 있으면
  * 나중에 "언제 끝냈나" 를 물을 때 거짓말을 한다.
+ *
+ * 칸이 바뀌었으면 앞뒤 칸을 돌려준다(텔레그램 "상태 변경" 알림). 같은 칸 안 자리 바꾸기는 null 이다.
  */
-export async function moveTask(id: string, to: TaskStatus, before?: string | null): Promise<void> {
+export async function moveTask(id: string, to: TaskStatus, before?: string | null): Promise<{ from: TaskStatus; to: TaskStatus } | null> {
   const admin = await requireAdmin();
   const db = getDb();
   const [me] = await db.select({ status: adminTasks.status }).from(adminTasks).where(eq(adminTasks.id, id));
-  if (!me) return;
+  if (!me) return null;
   const sameColumn = me.status === to;
   // 끝난 칸 안에서 놓는 건 할 일이 없다 — 거기서 doneAt 을 다시 찍으면 끝낸 시각이 거짓이 된다
-  if (sameColumn && to === "done") return;
+  if (sameColumn && to === "done") return null;
 
   const statusPatch = sameColumn ? {} : { status: to, doneAt: to === "done" ? new Date() : null };
 
@@ -153,7 +169,9 @@ export async function moveTask(id: string, to: TaskStatus, before?: string | nul
       toStatus: to,
       ...createdBy("admin", admin.id),
     });
+    return { from: me.status, to };
   }
+  return null;
 }
 
 /**

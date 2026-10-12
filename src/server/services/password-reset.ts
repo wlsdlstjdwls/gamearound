@@ -15,24 +15,13 @@ import { hashPassword } from "@/server/auth/password";
 import { createdBy, updatedBy } from "@/server/db/audit";
 import { getDb } from "@/server/db/client";
 import { passwordResetTokens, sessions, users } from "@/server/db/schema";
-import { APP_URL_ENV } from "@/server/mail/constants";
+import { appOrigin } from "@/server/app-origin";
 import { passwordResetMail } from "@/server/mail/password-reset-mail";
 import { mailConfigured, sendMail } from "@/server/mail/send";
 import { findUserByEmail } from "@/server/services/users";
 
 function hashResetToken(token: string): string {
   return createHash("sha256").update(token).digest("hex");
-}
-
-/** 메일 링크의 기준 주소. 없으면 재설정은 꺼진 것으로 본다(이유는 mail/constants 의 APP_URL_ENV 주석) */
-function appOrigin(): string | null {
-  const raw = process.env[APP_URL_ENV]?.trim();
-  if (!raw) return null;
-  try {
-    return new URL(raw).origin;
-  } catch {
-    return null;
-  }
 }
 
 /** 메일을 보낼 수단과 링크 주소가 다 있는가. 없으면 폼이 "지금은 보낼 수 없어요" 로 답한다 */

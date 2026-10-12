@@ -205,3 +205,23 @@ export const TASK_ATTACHMENT_MESSAGES = {
   /** 할 일, 기록은 만들어졌는데 파일만 실패했을 때. 글까지 다시 적지 않게 무엇이 남았는지 말한다 */
   partial: (what: string) => `${what} 저장했지만 파일을 올리지 못했어요. 열어서 다시 올려 주세요.`,
 } as const;
+
+/*
+ * 텔레그램 알림 문구(2026-10-12). 채널은 알리기만 하고, 의논은 판의 기록 칸에서 한다 — 그래서 끝줄에 늘 카드 주소를 단다.
+ * 머리는 대괄호 꼬리표로 연다: 알림 목록 미리보기에 첫 줄만 보여서, 무슨 일인지가 거기서 갈려야 한다.
+ */
+export const TASK_NOTIFY_MESSAGES = {
+  created: "[새 할 일]",
+  assigned: "[담당자 지정]",
+  moved: "[상태 변경]",
+  note: "[기록]",
+  /** 칸 이동 한 줄. 화살표 글자 대신 조사로 잇는다(AGENTS §4) */
+  movedLine: (from: string, to: string, particle: string) => `${from}에서 ${to}${particle} 옮겼어요`,
+  meta: (category: string, priority: string) => `${category} | 우선순위 ${priority}`,
+  assignee: (name: string) => `담당자: ${name}`,
+  actor: (name: string) => `한 사람: ${name}`,
+  /** 글 없이 파일만 남긴 기록 */
+  noteFilesOnly: "파일을 남겼어요",
+  /** 이름을 모를 때(탈퇴한 계정 등) */
+  unknownPerson: "알 수 없음",
+} as const;

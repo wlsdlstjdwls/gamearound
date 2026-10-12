@@ -11,6 +11,7 @@ import { TaskBoard } from "@/components/admin/task-board";
 import { TaskClearDone } from "@/components/admin/task-clear-done";
 import { TASK_MESSAGES } from "@/lib/admin/messages";
 import { TASK_STATUSES } from "@/lib/admin/tasks";
+import { TASK_OPEN_PARAM } from "@/lib/routes";
 import { TASK_FILTER_COOKIE, hasTaskFilterParams, parseTaskFilter, parseTaskFilterCookie } from "@/lib/admin/task-filter";
 import { requireRoleOrForbid } from "@/server/auth/guards";
 import { sourceEnum } from "@/server/db/schema";
@@ -31,6 +32,9 @@ export default async function AdminTasksPage({ searchParams }: { searchParams: P
   const initialFilter = hasTaskFilterParams(params) ? parseTaskFilter(params) : parseTaskFilterCookie(jar.get(TASK_FILTER_COOKIE)?.value);
   // 건수는 화면 제목 옆에 붙인다 — 판 위에 또 제목을 세우면 "할 일" 과 같은 말이 두 번 선다
   const total = TASK_STATUSES.reduce((n, s) => n + board[s].length, 0);
+  // 텔레그램 알림 링크가 실어 온 카드. 판에 없는 id(걷었거나 지운 일)면 판이 조용히 아무것도 안 연다
+  const openParam = params[TASK_OPEN_PARAM];
+  const initialOpenId = typeof openParam === "string" ? openParam : null;
 
   return (
     <>
@@ -45,7 +49,7 @@ export default async function AdminTasksPage({ searchParams }: { searchParams: P
         </div>
       </header>
 
-      <TaskBoard board={board} assignees={assignees} meId={me.id} initialFilter={initialFilter} now={asOf} seen={seen} />
+      <TaskBoard board={board} assignees={assignees} meId={me.id} initialFilter={initialFilter} now={asOf} seen={seen} initialOpenId={initialOpenId} />
     </>
   );
 }

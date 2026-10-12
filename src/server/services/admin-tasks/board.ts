@@ -15,7 +15,7 @@ import type { AdminTask, ArchivedTask, Board, TaskAssignee, TaskAttachment, Task
  * 담당자 이름. 표시 이름이 비었으면 이메일을 쓴다 — 빈 칸으로 두면 "담당 없음" 과 구별이 안 된다.
  * 기록의 적은 사람도 같은 규칙이다.
  */
-const personName = (name: string | null, email: string | null): string | null => name?.trim() || email || null;
+export const personName = (name: string | null, email: string | null): string | null => name?.trim() || email || null;
 
 /** 담당자 조인용 별칭. 판 질의에서 users 가 "적은 사람" 이 아니라 "쥔 사람" 이라는 것을 이름으로 드러낸다 */
 const assignee = alias(users, "assignee");
