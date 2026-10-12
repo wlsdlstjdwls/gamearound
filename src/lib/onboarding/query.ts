@@ -39,3 +39,16 @@ export function personalQuery(input: { platforms?: readonly Platform[] | null; g
   const genre = input.genreNames?.length ? input.genreNames[0] : undefined;
   return { platform, genre };
 }
+
+/**
+ * 취향이 지금 목록에 걸려 있는가 — 필터 맨 위 "내 취향" 토글이 켜져 보일지(game-filters/personal-toggle).
+ *
+ * 두 경우다. 사람이 아무 조건도 안 걸고 왔으면(all 도 없으면) 서버가 취향을 얹는다.
+ * 취향이 걸린 채로 다른 칩을 눌렀으면 주소에 all=1 과 취향 값이 그대로 실려 온다 — 이때도 켜진 것이다.
+ * 예전에는 두 번째 경우를 "사람이 직접 건 조건" 으로만 봐서 토글이 통째로 사라졌다(2026-10-12 사용자 신고).
+ * 취향 값 중 하나라도 사람이 바꿨으면(플랫폼을 콘솔로 바꾸는 등) 더는 취향으로 거르는 중이 아니다.
+ */
+export function isPresetApplied(q: GamesQuery, preset: GamesQuery): boolean {
+  if (!hasExplicitListFilter({ ...q, all: false })) return !q.all;
+  return (preset.platform === undefined || q.platform === preset.platform) && (preset.genre === undefined || q.genre === preset.genre);
+}

@@ -13,6 +13,7 @@ import { GameCard, highlightFromFilter } from "@/components/game-card";
 import { EmptyState } from "@/components/empty-state";
 import { GameFilters, type PersonalFilter } from "@/components/game-filters";
 import { FilterStateProvider, PendingResults } from "@/components/game-filters/optimistic";
+import { PendingBar } from "@/components/ui/nav-pending";
 import { GamesInfinite } from "@/components/games-infinite";
 import { Page, PageHead } from "@/components/ui/page";
 import { DEFAULT_GAME_SORT, SORT_LABEL, gamesHref, parsePlatformValues, type GamesQuery } from "@/lib/games-query";
@@ -21,7 +22,7 @@ import { isPlatformFamily, PLATFORM_FAMILY_LABEL } from "@/lib/platform";
 import { stagger } from "@/lib/motion";
 import { ROUTES } from "@/lib/routes";
 import { readGamesQuery } from "@/lib/games/read-query";
-import { hasExplicitListFilter } from "@/lib/onboarding/query";
+import { hasExplicitListFilter, isPresetApplied } from "@/lib/onboarding/query";
 import { getMyListPreset } from "@/server/services/profiles";
 import { GAMES_PAGE_SIZE, getGameFacets, listGames, type GameListFilter } from "@/server/services/games";
 import { getRunningSteamSale, type RunningSaleDto } from "@/server/services/sales";
@@ -125,9 +126,11 @@ export default async function GamesPage({ searchParams }: Props) {
    * 걸린 목록의 링크는 전부 all=1 을 싣는다(games-query 의 all 주석): 조건을 지워 나가다 빈 주소에 닿아도
    * 취향으로 되돌아가지 않게. 취향을 못 읽어도 목록은 서야 해서 실패는 "취향 없음" 으로 접는다.
    */
-  const preset = hasExplicitListFilter({ ...raw, all: false }) ? null : await getMyListPreset().catch(() => null);
-  const applied = preset !== null && !raw.all;
-  const query: GamesQuery = applied ? { ...raw, ...preset.query, all: true } : raw;
+  // 취향은 늘 읽는다 — 다른 칩을 눌러 주소에 조건이 생겨도 토글은 남아 있어야 한다(2026-10-12 사용자: "다른 필터 누르니 내 취향 버튼이 사라진다").
+  // 얹는 것은 사람이 아무 조건도 안 걸었을 때만이다. 조건이 있으면 주소가 이긴다(공유받은 링크가 남의 취향으로 바뀌면 안 된다)
+  const preset = await getMyListPreset().catch(() => null);
+  const applied = preset !== null && isPresetApplied(raw, preset.query);
+  const query: GamesQuery = preset !== null && !hasExplicitListFilter({ ...raw, all: false }) && !raw.all ? { ...raw, ...preset.query, all: true } : raw;
   const filter: GameListFilter = query;
   // 필터가 바뀌면 경계를 새로 세운다 — 키가 같으면 React 는 이것을 갱신으로 보고
   // 새 값이 올 때까지 옛 목록을 그대로 둔다. 눌렀는데 아무 일도 안 일어나는 것처럼 보이는 자리다.
@@ -159,7 +162,9 @@ export default async function GamesPage({ searchParams }: Props) {
 
         {/* min-w-0: 격자 칸의 기본 최소 크기는 auto 라 안쪽의 잘리지 않는 제목이 칸을 밀어낸다(상세 화면 주석) */}
         <PendingResults className="flex min-w-0 flex-col gap-9">
-          <Suspense key={boundaryKey} fallback={<GamesGridSkeleton cards={GAMES_PAGE_SIZE} />}>
+          {/* 뼈대가 떠 있는 동안에도 로딩 띠를 세운다. 전환은 새 화면이 커밋되는 순간(뼈대가 뜨는 순간) 끝나서
+              그 뒤로는 PendingResults 의 띠가 꺼진다 — 정작 기다리는 시간의 대부분이 이 뼈대 구간이다 */}
+          <Suspense key={boundaryKey} fallback={<><PendingBar on /><GamesGridSkeleton cards={GAMES_PAGE_SIZE} /></>}>
             <Results filter={filter} />
           </Suspense>
         </PendingResults>

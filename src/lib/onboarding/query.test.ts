@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { gamesHref } from "@/lib/games-query";
 import { ROUTES } from "@/lib/routes";
-import { hasExplicitListFilter, personalQuery } from "./query";
+import { hasExplicitListFilter, isPresetApplied, personalQuery } from "./query";
 
 describe("personalQuery", () => {
   it("고른 것이 없으면 아무것도 거르지 않는다", () => {
@@ -37,5 +37,25 @@ describe("hasExplicitListFilter", () => {
 
   it("전체 보기 표식은 링크를 따라 다닌다 — 걸린 조건을 다 지워도 취향으로 되돌아가지 않는다", () => {
     expect(gamesHref({ all: true, platform: "ps5" }, { platform: undefined })).toBe(`${ROUTES.game}?all=1`);
+  });
+});
+
+describe("isPresetApplied", () => {
+  const preset = { platform: "steam,epic", genre: "어드벤처" };
+
+  it("아무 조건도 없으면 서버가 취향을 얹으니 켜진 것이다", () => {
+    expect(isPresetApplied({}, preset)).toBe(true);
+  });
+
+  it("취향을 끈 주소(all=1 만)는 꺼진 것이다", () => {
+    expect(isPresetApplied({ all: true }, preset)).toBe(false);
+  });
+
+  it("취향이 걸린 채 다른 칩을 눌러도 켜진 채다 — 토글이 사라지면 안 된다", () => {
+    expect(isPresetApplied({ ...preset, all: true, korean: true }, preset)).toBe(true);
+  });
+
+  it("취향 값을 사람이 바꿨으면 꺼진 것이다", () => {
+    expect(isPresetApplied({ platform: "console", genre: "어드벤처", all: true }, preset)).toBe(false);
   });
 });
