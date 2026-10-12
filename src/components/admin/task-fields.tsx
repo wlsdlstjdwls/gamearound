@@ -110,9 +110,19 @@ function RadioSegment<T extends string>({
   );
 }
 
-/** 글 높이에 칸을 맞춘다. 높이를 비운 뒤 재야 줄었을 때도 따라 줄어든다(rows 가 바닥이다) */
-function fitToContent(el: HTMLTextAreaElement | null) {
+/**
+ * 글 높이에 칸을 맞춘다. 높이를 비운 뒤 재야 줄었을 때도 따라 줄어든다(rows 가 바닥이다).
+ *
+ * 잰 값이 0 이면 높이를 쓰지 않는다(2026-10-12): 카드 팝업은 닫힌 <dialog>(display: none) 안에서 먼저 마운트되고
+ * showModal 은 그 뒤 effect 에서 불린다. 그 순간 재면 scrollHeight 가 0 이라 칸이 0px 로 박혀 메모가 잘린 채 열렸다.
+ * 그럴 땐 rows 높이를 그대로 두고 한 프레임 뒤(팝업이 열린 뒤) 한 번만 다시 잰다 — 계속 기다리면 닫힌 채 남은 칸이 프레임마다 돈다.
+ */
+function fitToContent(el: HTMLTextAreaElement | null, retry = true) {
   if (!el) return;
+  if (el.getClientRects().length === 0) {
+    if (retry) requestAnimationFrame(() => fitToContent(el, false));
+    return;
+  }
   el.style.height = "auto";
   el.style.height = `${el.scrollHeight}px`;
 }
