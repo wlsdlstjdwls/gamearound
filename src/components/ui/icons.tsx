@@ -377,3 +377,13 @@ export function HandheldIcon(p: IconProps) {
     </svg>
   );
 }
+
+/** 사람 — 할 일 카드의 작성자, 담당자 칸(2026-10-12 시안). 칠한 모양이다: 13px 남짓으로 작게 서서 선만으로는 흐렸다 */
+export function UserIcon(p: IconProps) {
+  return (
+    <svg {...base(p)} fill="currentColor" stroke="none">
+      <circle cx="12" cy="7.5" r="4" />
+      <path d="M4 20.5c0-4 3.6-6.5 8-6.5s8 2.5 8 6.5Z" />
+    </svg>
+  );
+}

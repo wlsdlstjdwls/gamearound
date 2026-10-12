@@ -15,7 +15,7 @@
 // 담당 없음 보기는 뺐다 — 판을 쓰는 사람이 둘이라 찾을 일이 드물다.
 //
 // 주소에는 **기본값과 다른 것만** 싣는다. 아무것도 안 건 판은 맨 주소(/admin/tasks)라야 메뉴 링크와 같은 화면이다.
-import { TASK_CATEGORIES, type AdminTask, type TaskCategory } from "@/lib/admin/tasks";
+import { TASK_CATEGORIES, isAssignedTo, type AdminTask, type TaskCategory } from "@/lib/admin/tasks";
 
 /** 보기. 칩 순서가 곧 이 순서다. all 은 거르지 않는다 */
 // "남이 올린" 은 같은 날 뺐다(사용자: "내 등록, 전체 보기 이런 느낌의 토글") — 남이 올린 것만 따로 볼 일은 드물고,
@@ -83,8 +83,9 @@ export function isDefaultTaskFilter(f: TaskFilter): boolean {
 }
 
 /** 카드 한 장이 조건에 맞는가. 칸끼리는 전부 AND 다 */
-export function matchesTaskFilter(task: Pick<AdminTask, "author" | "assignee" | "category" | "priority">, f: TaskFilter, meId: string): boolean {
-  if (f.view === "assigned" && task.assignee?.id !== meId) return false;
+export function matchesTaskFilter(task: Pick<AdminTask, "author" | "assignee" | "assignedAll" | "category" | "priority">, f: TaskFilter, meId: string): boolean {
+  // "모두" 담당은 누구의 "내 담당" 에도 든다
+  if (f.view === "assigned" && !isAssignedTo(task, meId)) return false;
   if (f.view === "mine" && task.author?.id !== meId) return false;
   if (f.category && task.category !== f.category) return false;
   if (f.urgent && task.priority !== "high") return false;
@@ -98,7 +99,7 @@ export interface TaskFilterCounts {
   urgent: number;
 }
 
-export function countTaskFilters(tasks: Pick<AdminTask, "author" | "assignee" | "category" | "priority">[], meId: string): TaskFilterCounts {
+export function countTaskFilters(tasks: Pick<AdminTask, "author" | "assignee" | "assignedAll" | "category" | "priority">[], meId: string): TaskFilterCounts {
   const count = (f: TaskFilter) => tasks.filter((t) => matchesTaskFilter(t, f, meId)).length;
   return {
     views: Object.fromEntries(TASK_VIEWS.map((view) => [view, count({ ...DEFAULT_TASK_FILTER, view })])) as Record<TaskView, number>,

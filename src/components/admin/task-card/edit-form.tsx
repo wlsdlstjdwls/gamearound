@@ -12,7 +12,7 @@ import { useActionState } from "react";
 import { ActionForm } from "@/components/ui/action-form";
 import { Button } from "@/components/ui/button";
 import { TASK_MESSAGES } from "@/lib/admin/messages";
-import { type AdminTask, type TaskAssignee } from "@/lib/admin/tasks";
+import { assigneeValue, type AdminTask, type TaskAssignee } from "@/lib/admin/tasks";
 import { TaskBasicFields, TaskMetaFields } from "@/components/admin/task-fields";
 import { TaskGamePicker } from "@/components/admin/task-game-picker";
 import { updateTaskAction, type TaskActionState } from "@/app/(admin)/admin/tasks/actions";
@@ -35,7 +35,7 @@ export function TaskEditForm({ task, assignees }: { task: AdminTask; assignees: 
         assignees={assignees}
         category={task.category}
         priority={task.priority}
-        assigneeId={task.assignee?.id}
+        assigneeId={assigneeValue(task)}
       />
 
       {/* 붙인 게임도 여기서 바꾼다(2026-09-22) — 앞서는 만들 때 한 번 걸면 끝이라

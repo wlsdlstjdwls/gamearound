@@ -4,6 +4,7 @@
 // 서비스에 두면 클라이언트 묶음이 그 파일을 통째로 끌고 오고, 거기 붙은 server-only 와 next/headers 가
 // 빌드를 세운다. 값은 여기, 질의는 서비스에 둔다.
 import type { SourceName } from "@/server/db/schema";
+import { TASK_MESSAGES } from "@/lib/admin/messages/tasks";
 
 /** 판의 칸 순서. 화면이 이 순서 그대로 왼쪽부터 세운다 */
 export const TASK_STATUSES = ["backlog", "todo", "doing", "done"] as const;
@@ -72,6 +73,27 @@ export interface TaskNote {
   attachments: TaskAttachment[];
 }
 
+/**
+ * 담당자 칸에서 "모두" 를 고른 값(2026-10-12). 폼은 담당자를 사용자 id 하나로 보내는데, "모두" 는 사람이 아니라서
+ * uuid 와 겹칠 수 없는 낱말로 보낸다. 서버는 이걸 assigned_all 로 옮겨 적는다.
+ */
+export const TASK_ASSIGNEE_ALL = "all";
+
+/** 이 일이 내 몫인가 — 내가 담당이거나 "모두" 담당이면 그렇다. "내 담당" 거르기와 카드의 내 것 표시가 같이 쓴다 */
+export function isAssignedTo(task: Pick<AdminTask, "assignee" | "assignedAll">, meId: string): boolean {
+  return task.assignedAll || task.assignee?.id === meId;
+}
+
+/** 화면에 적는 담당자 이름. 아무도 안 쥐었으면 null — 비었을 때 무엇을 적을지는 자리마다 다르다("없음", "담당 없음") */
+export function assigneeName(task: Pick<AdminTask, "assignee" | "assignedAll">): string | null {
+  return task.assignedAll ? TASK_MESSAGES.assigneeAll : (task.assignee?.name ?? null);
+}
+
+/** 담당자 칸의 값(폼의 기본값). 없으면 빈 문자열이다 */
+export function assigneeValue(task: Pick<AdminTask, "assignee" | "assignedAll">): string {
+  return task.assignedAll ? TASK_ASSIGNEE_ALL : (task.assignee?.id ?? "");
+}
+
 /** 담당자 한 사람. 이름은 표시 이름, 없으면 이메일이다 */
 export interface TaskAssignee {
   id: string;
@@ -92,8 +114,10 @@ export interface AdminTask {
   game: { id: string; slug: string; title: string } | null;
   shop: { id: string; name: string } | null;
   source: SourceName | null;
-  /** 이 일을 쥔 사람. 비어 있으면 아무도 안 쥔 일이다 */
+  /** 이 일을 쥔 사람. 비어 있으면 아무도 안 쥔 일이다(assignedAll 이 켜져 있으면 "모두" 다) */
   assignee: TaskAssignee | null;
+  /** "모두" 담당(2026-10-12). 켜져 있으면 assignee 는 비어 있다 */
+  assignedAll: boolean;
   /** 올린 사람. 담당자와 따로 둔다 — 적은 사람과 할 사람은 다르다. 계정이 지워졌으면 비어 있다 */
   author: TaskAssignee | null;
   updatedAt: Date;

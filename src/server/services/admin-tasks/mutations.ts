@@ -19,6 +19,8 @@ export interface CreateTaskInput {
   shopId?: string | null;
   source?: SourceName | null;
   assigneeId?: string | null;
+  /** "모두" 담당. 켜면 assigneeId 는 무시하고 비운다 */
+  assignedAll?: boolean;
 }
 
 /** 새 할 일은 자기 칸 맨 위에 놓는다 — 방금 적은 것이 화면 밖에 있으면 적은 보람이 없다 */
@@ -43,7 +45,8 @@ export async function createTask(input: CreateTaskInput): Promise<string> {
       gameId: input.gameId || null,
       shopId: input.shopId || null,
       source: input.source || null,
-      assigneeId: input.assigneeId || null,
+      assigneeId: input.assignedAll ? null : input.assigneeId || null,
+      assignedAll: input.assignedAll ?? false,
       ...createdBy("admin", admin.id),
     })
     .returning({ id: adminTasks.id });
@@ -60,6 +63,7 @@ export async function updateTask(
     dueAt?: Date | null;
     gameId?: string | null;
     assigneeId?: string | null;
+    assignedAll?: boolean;
   },
 ): Promise<void> {
   const admin = await requireAdmin();
@@ -74,6 +78,8 @@ export async function updateTask(
       // null 은 "뗐다" 는 뜻이라 그대로 적는다 — 여기서는 수집이 아니라 사람이 쥔 값이다(§7 의 null 규칙 밖)
       ...(patch.gameId !== undefined ? { gameId: patch.gameId } : {}),
       ...(patch.assigneeId !== undefined ? { assigneeId: patch.assigneeId } : {}),
+      // 담당자 칸은 사람 하나와 "모두" 중 하나다 — "모두" 를 켜면 사람 칸을 비운다
+      ...(patch.assignedAll !== undefined ? { assignedAll: patch.assignedAll, ...(patch.assignedAll ? { assigneeId: null } : {}) } : {}),
       ...updatedBy("admin", admin.id),
     })
     .where(eq(adminTasks.id, id));

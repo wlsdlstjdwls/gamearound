@@ -16,6 +16,7 @@ const OTHER = "other-id";
 const task = (over: Partial<Parameters<typeof matchesTaskFilter>[0]> = {}) => ({
   author: { id: ME, name: "나" },
   assignee: null,
+  assignedAll: false,
   category: "task" as const,
   priority: "normal" as const,
   ...over,
@@ -79,6 +80,8 @@ describe("matchesTaskFilter", () => {
 
   it("내 담당은 올린 사람과 상관없다", () => {
     expect(matchesTaskFilter(task({ author: { id: OTHER, name: "남" }, assignee: { id: ME, name: "나" } }), by("assigned"), ME)).toBe(true);
+    // "모두" 담당은 누구에게나 내 담당이다
+    expect(matchesTaskFilter(task({ author: { id: OTHER, name: "남" }, assignedAll: true }), by("assigned"), ME)).toBe(true);
     expect(matchesTaskFilter(task(), by("assigned"), ME)).toBe(false);
   });
 

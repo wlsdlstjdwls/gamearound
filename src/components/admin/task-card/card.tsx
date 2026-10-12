@@ -23,7 +23,8 @@ import { cn } from "@/lib/cn";
 import { raisedClass } from "@/components/ui/page";
 import { formatAgo } from "@/lib/format";
 import { TASK_ATTACHMENT_MESSAGES, TASK_CATEGORY_LABEL, TASK_MESSAGES, TASK_PRIORITY_LABEL } from "@/lib/admin/messages";
-import { staleDays, type AdminTask, type TaskStatus } from "@/lib/admin/tasks";
+import { assigneeName, isAssignedTo, staleDays, type AdminTask, type TaskStatus } from "@/lib/admin/tasks";
+import { UserIcon } from "@/components/ui/icons";
 import { CATEGORY_BADGE, PRIORITY_BADGE, cardStripe } from "@/components/admin/task-tone";
 import { CARD_ATTR, HANDLE_ATTR } from "@/components/admin/use-board-drag";
 
@@ -38,7 +39,9 @@ import { CARD_ATTR, HANDLE_ATTR } from "@/components/admin/use-board-drag";
  * 카드 전체가 아니라 본문(여는 버튼)에 건다: 아래 줄은 손가락 기기에서 .tap 으로 44px 까지 커진다.
  * 카드 전체에 걸면 그 화면에서만 본문이 그만큼 잘린다.
  */
-const CARD_BODY_HEIGHT = "h-[112px]";
+// 안쪽 칸 높이다(2026-10-12). 앞에는 여는 버튼 전체(위아래 여백 포함 112px)에 걸었는데, 작성자/담당자 줄이 버튼 안으로 들어오면서
+// 여백(py-2.5 = 20px)을 뺀 글 칸에만 건다 — 글이 보이는 높이는 그대로다
+const CARD_BODY_HEIGHT = "h-[92px]";
 
 /**
  * 남은 높이를 줄 수로 바꿔 그만큼만 보인다. overflow 로 자르기만 하면 마지막 줄이 허리에서 잘리고 말줄임표도 없다.
@@ -104,7 +107,8 @@ export function TaskCard({
   const fileCount = task.attachments.length + task.notes.reduce((n, note) => n + note.attachments.length, 0);
   const stale = staleDays(task, now);
   const stripe = cardStripe(task);
-  const mine = task.assignee?.id === meId;
+  const mine = isAssignedTo(task, meId);
+  const assigned = assigneeName(task);
 
   return (
     <li
@@ -124,7 +128,8 @@ export function TaskCard({
       {/* 카드 전체가 여는 자리다. 안에 링크를 넣지 않는 이유는 버튼 안의 링크가 못 눌리기 때문이다 —
           붙인 대상으로 가는 길은 팝업 안에 있다 */}
       {/* 카드를 키웠다(2026-10-02, 사용자: "카드가 너무 작다") — 제목 15px, 글자 한 단계, 여백 한 단계. 맥락은 한 줄 그대로다(아래 주석의 10-01 지적). 폭은 칸이 정하니 안쪽을 늘렸다 */}
-      <button type="button" onClick={() => onOpen(task.id)} className={cn("flex w-full shrink-0 flex-col gap-1 overflow-hidden px-3 py-2.5 text-left", CARD_BODY_HEIGHT)}>
+      <button type="button" onClick={() => onOpen(task.id)} className="flex w-full shrink-0 flex-col overflow-hidden px-3 pt-2.5 pb-2 text-left">
+        <div className={cn("flex w-full flex-col gap-1 overflow-hidden", CARD_BODY_HEIGHT)}>
         {/* 새 기록(2026-10-02, 사용자: "기록 새로 달리면 카드에도 표시"). 판에서 제일 먼저 봐야 할 표시라 맨 위 채운 빨강이다.
             열면 꺼진다 — 기준은 내가 이 카드를 마지막으로 연 때다(admin_task_reads) */}
         <div className="flex shrink-0 items-start justify-between gap-2">
@@ -176,31 +181,38 @@ export function TaskCard({
             {task.source && <span className="rounded-[6px] bg-surface-3 px-1.5 font-mono text-mut">{task.source}</span>}
           </div>
         )}
+        </div>
+
+        {/*
+          작성자 | 담당자(2026-10-12, 사용자가 시안으로 준 모양). 10-01 에는 "올린 사람보단 담당자" 라 작성자를 뺐었는데,
+          판을 쓰는 사람이 늘면서 누가 올린 일인지도 카드에서 보여야 했다. 둘을 나란히 세워 "적은 사람과 할 사람" 을 한눈에 가른다.
+          앞에 바닥 줄에 있던 담당 이름표는 이 줄과 겹쳐 걷었다. 내 몫(내 담당, "모두")은 이름을 보라로 칠한다
+        */}
+        <div className="mt-2 flex items-center gap-3">
+          <div className="flex min-w-0 flex-1 items-center gap-2">
+            <UserIcon size={16} className="shrink-0 text-dim" />
+            <div className="min-w-0 leading-[1.3]">
+              <p className="text-[12px] text-mut">{TASK_MESSAGES.cardAuthor}</p>
+              <p className="truncate text-[13px] font-semibold text-ink">{task.author?.name ?? TASK_MESSAGES.authorUnknown}</p>
+            </div>
+          </div>
+          <span aria-hidden className="h-7 w-px shrink-0 bg-line" />
+          <div className="flex min-w-0 flex-1 items-center gap-2">
+            <UserIcon size={16} className="shrink-0 text-acc" />
+            <div className="min-w-0 leading-[1.3]">
+              <p className="text-[12px] text-mut">{TASK_MESSAGES.assigneeLabel}</p>
+              <p className={cn("truncate text-[13px] font-semibold", !assigned ? "text-mut" : mine ? "text-acc" : "text-ink")}>
+                {assigned ?? TASK_MESSAGES.assigneeNone}
+              </p>
+            </div>
+          </div>
+        </div>
       </button>
 
       {/* data-no-drag: 이 버튼에서 시작한 누름은 끌기가 아니라 그 버튼의 일이다 */}
-      <div className="flex shrink-0 items-center gap-1 px-2.5 pb-1.5">
-        {/*
-          담당자 이름(2026-10-01). 첫 글자 동그라미로 줄였다가 사용자가 "그냥 이름 나오게" 해서 되돌렸다 — 둘뿐이라도 글자 하나로는 누군지 다시 읽어야 했다.
-          내 담당은 채워 칠하고 남의 담당은 옅게. 담당이 없으면 흐린 글자만 둔다(테두리 칩은 카드마다 반복돼 소음이었다).
-          올린 사람은 카드에 없다 — 사용자: "올린 사람보단 담당자".
-          맨 아래 줄에 두는 이유: 따로 줄을 세우면 카드마다 한 줄씩 길어진다.
-        */}
-        {task.assignee ? (
-          <span
-            className={cn(
-              "ml-1 min-w-0 max-w-[50%] truncate whitespace-nowrap rounded-[6px] px-1.5 py-0.5 text-[12px] font-semibold",
-              mine ? "bg-acc text-on-ink" : "bg-acc-soft text-acc",
-            )}
-          >
-            {task.assignee.name}
-          </span>
-        ) : (
-          <span className="ml-1 whitespace-nowrap text-[12px] text-dim">{TASK_MESSAGES.cardNoAssignee}</span>
-        )}
-
-        {/* 고친 때와 기록 수. 상대 시간이라 "오래 멈춘 카드" 가 한눈에 보인다.
-            담당자 줄에 얹은 이유: 따로 한 줄을 세우면 카드만 길어진다 */}
+      {/* 바닥 줄: 고친 때, 기록 수, 손잡이. 담당 이름표는 위 작성자/담당자 줄로 옮겼다(2026-10-12) */}
+      <div className="mx-3 flex shrink-0 items-center gap-1 border-t border-line pt-1 pb-1.5">
+        {/* 고친 때와 기록 수. 상대 시간이라 "오래 멈춘 카드" 가 한눈에 보인다 */}
         <span className="ml-auto whitespace-nowrap text-[12px] tabular-nums text-dim">
           {formatAgo(task.updatedAt, now)}
           {task.notes.length > 0 && ` | ${TASK_MESSAGES.noteCount(task.notes.length)}`}

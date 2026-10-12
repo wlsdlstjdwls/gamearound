@@ -5,7 +5,7 @@ import { z } from "zod";
 import { ROUTES } from "@/lib/routes";
 import { ADMIN_ACTION_MESSAGES, TASK_MESSAGES } from "@/lib/admin/messages";
 import { sourceEnum } from "@/server/db/schema";
-import { TASK_CATEGORIES, TASK_STATUSES } from "@/lib/admin/tasks";
+import { TASK_ASSIGNEE_ALL, TASK_CATEGORIES, TASK_STATUSES } from "@/lib/admin/tasks";
 import {
   addNote,
   archiveDone,
@@ -35,6 +35,16 @@ const NOTE_MAX = 2000;
 
 const statusSchema = z.enum(TASK_STATUSES);
 const categorySchema = z.enum(TASK_CATEGORIES);
+// 담당자 칸: 빈 문자열(없음), "모두", 사용자 id 하나
+const assigneeSchema = z.union([z.literal(""), z.literal(TASK_ASSIGNEE_ALL), z.uuid()]).optional();
+
+/** 담당자 칸 값을 두 칼럼으로 가른다. 안 보냈으면(undefined) 둘 다 건드리지 않는다 */
+function splitAssignee(v: string | undefined): { assigneeId?: string | null; assignedAll?: boolean } {
+  if (v === undefined) return {};
+  if (v === TASK_ASSIGNEE_ALL) return { assigneeId: null, assignedAll: true };
+  return { assigneeId: v || null, assignedAll: false };
+}
+
 const createSchema = z.object({
   title: z.string().trim().min(1, "할 일을 입력하세요").max(TITLE_MAX),
   body: z.string().trim().max(BODY_MAX).optional(),
@@ -44,7 +54,7 @@ const createSchema = z.object({
   // 빈 문자열은 "안 걸었다" 로 읽는다 — 폼은 빈 칸을 안 보내는 게 아니라 빈 문자열을 보낸다
   gameId: z.union([z.literal(""), z.uuid()]).optional(),
   source: z.union([z.literal(""), z.enum(sourceEnum.enumValues)]).optional(),
-  assigneeId: z.union([z.literal(""), z.uuid()]).optional(),
+  assigneeId: assigneeSchema,
 });
 
 function fail(e: unknown): TaskActionState {
@@ -80,7 +90,7 @@ export async function createTaskAction(_prev: TaskActionState, form: FormData): 
       category: p.data.category,
       gameId: p.data.gameId || null,
       source: p.data.source || null,
-      assigneeId: p.data.assigneeId || null,
+      ...splitAssignee(p.data.assigneeId),
     });
     revalidate();
     return { ok: true, message: TASK_MESSAGES.created, id };
@@ -129,7 +139,7 @@ export async function updateTaskAction(_prev: TaskActionState, form: FormData): 
         // 안 보냈으면 건드리지 않는다 — 기본값을 주면 갈래 칸이 없는 폼이 전부 "할 일" 로 되돌린다
         category: categorySchema.optional(),
         gameId: z.union([z.literal(""), z.uuid()]).optional(),
-        assigneeId: z.union([z.literal(""), z.uuid()]).optional(),
+        assigneeId: assigneeSchema,
       })
       .safeParse({
         id: form.get("id"),
@@ -149,8 +159,8 @@ export async function updateTaskAction(_prev: TaskActionState, form: FormData): 
       category: p.data.category,
       // 폼이 이 칸을 안 보냈으면 건드리지 않는다. 빈 문자열은 "뗐다" 라서 null 로 적는다
       gameId: p.data.gameId === undefined ? undefined : p.data.gameId || null,
-      // 담당자도 같은 규칙이다 — 안 보냈으면 그대로, 빈 문자열이면 뗀다
-      assigneeId: p.data.assigneeId === undefined ? undefined : p.data.assigneeId || null,
+      // 담당자도 같은 규칙이다 — 안 보냈으면 그대로, 빈 문자열이면 뗀다. "모두" 는 따로 칸이 있다
+      ...splitAssignee(p.data.assigneeId),
     });
     revalidate();
     return { ok: true, message: TASK_MESSAGES.saved };

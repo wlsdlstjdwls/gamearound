@@ -12,7 +12,7 @@ import { cn } from "@/lib/cn";
 import { formatAgo } from "@/lib/format";
 import { Sheet } from "@/components/ui/sheet";
 import { TASK_CATEGORY_LABEL, TASK_MESSAGES, TASK_PRIORITY_LABEL, TASK_STATUS_LABEL } from "@/lib/admin/messages";
-import type { AdminTask, TaskStatus } from "@/lib/admin/tasks";
+import { assigneeName, isAssignedTo, type AdminTask, type TaskStatus } from "@/lib/admin/tasks";
 import { CATEGORY_BADGE, PRIORITY_BADGE, cardStripe } from "@/components/admin/task-tone";
 import { TaskQuickAdd } from "@/components/admin/task-quick-add";
 
@@ -47,7 +47,7 @@ export function TaskColumnSheet({
           <ul className="flex flex-col divide-y divide-line-soft">
             {tasks.map((task) => (
               <li key={task.id}>
-                <Row task={task} now={now} mine={task.assignee?.id === meId} unread={unreadOf(task)} onOpen={onOpenTask} />
+                <Row task={task} now={now} mine={isAssignedTo(task, meId)} unread={unreadOf(task)} onOpen={onOpenTask} />
               </li>
             ))}
           </ul>
@@ -80,7 +80,7 @@ function Row({ task, now, mine, unread, onOpen }: { task: AdminTask; now: number
         {task.priority !== "normal" && (
           <span className={cn("shrink-0 rounded-[6px] px-1.5 py-px font-semibold", PRIORITY_BADGE[task.priority])}>{TASK_PRIORITY_LABEL[task.priority]}</span>
         )}
-        <span className={cn("min-w-0 truncate", mine && "font-semibold text-acc")}>{task.assignee?.name ?? TASK_MESSAGES.cardNoAssignee}</span>
+        <span className={cn("min-w-0 truncate", mine && "font-semibold text-acc")}>{assigneeName(task) ?? TASK_MESSAGES.cardNoAssignee}</span>
         <span className="ml-auto shrink-0 tabular-nums">{formatAgo(task.updatedAt, now)}</span>
       </span>
     </button>

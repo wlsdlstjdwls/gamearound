@@ -1,0 +1,1 @@
+ALTER TABLE "admin_tasks" ADD COLUMN "assigned_all" boolean DEFAULT false NOT NULL;

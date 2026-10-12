@@ -6,7 +6,7 @@
 // 화면은 그 값으로 바로 가는 링크를 만든다.
 //
 // 파일을 가른 이유는 shops, products 와 같다. schema.ts 에서 재수출하므로 호출부 import 경로는 그대로다.
-import { index, integer, pgEnum, pgTable, primaryKey, text, timestamp, uuid } from "drizzle-orm/pg-core";
+import { boolean, index, integer, pgEnum, pgTable, primaryKey, text, timestamp, uuid } from "drizzle-orm/pg-core";
 import { sql } from "drizzle-orm";
 import { auditColumns } from "./audit";
 import { games, users } from "./schema";
@@ -79,6 +79,13 @@ export const adminTasks = pgTable("admin_tasks", {
    * created_by 와 따로 두는 이유: 적은 사람과 할 사람은 다르다.
    */
   assigneeId: uuid("assignee_id").references(() => users.id, { onDelete: "set null" }),
+
+  /*
+   * "모두" 담당(2026-10-12, 사용자 요청: "담당자 항목 중에 모두 추가"). 판을 쓰는 사람 전부가 쥔 일이다.
+   * assignee_id 를 특별한 값으로 채우지 않고 칸을 따로 둔 이유: assignee_id 는 users 를 가리키는 외래키라
+   * "모두" 를 담을 자리가 없다. 켜져 있으면 assignee_id 는 비운다(둘이 함께 켜진 행은 쓰기 쪽이 만들지 않는다).
+   */
+  assignedAll: boolean("assigned_all").notNull().default(false),
 
   ...auditColumns(),
 }, (t) => [

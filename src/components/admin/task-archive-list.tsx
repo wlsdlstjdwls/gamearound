@@ -14,7 +14,7 @@ import { cn } from "@/lib/cn";
 import { formatLongDateTime } from "@/lib/format";
 import { gamePath } from "@/lib/routes";
 import { TASK_CATEGORY_LABEL, TASK_MESSAGES } from "@/lib/admin/messages";
-import type { ArchivedTask } from "@/lib/admin/tasks";
+import { assigneeName, type ArchivedTask } from "@/lib/admin/tasks";
 import { CATEGORY_BADGE } from "@/components/admin/task-tone";
 import { TaskNotes } from "@/components/admin/task-card/notes";
 import { AttachmentList } from "@/components/admin/task-attachments";
@@ -35,7 +35,7 @@ function ArchiveRow({ task }: { task: ArchivedTask }) {
             <span className="min-w-0 truncate text-[15px] font-semibold text-ink">{task.title}</span>
           </span>
           <span className="text-[12.5px] tabular-nums text-mut">
-            {task.assignee?.name ?? TASK_MESSAGES.cardNoAssignee}
+            {assigneeName(task) ?? TASK_MESSAGES.cardNoAssignee}
             {task.doneAt && ` | ${TASK_MESSAGES.doneAt} ${formatLongDateTime(task.doneAt)}`}
             {` | ${TASK_MESSAGES.archivedAt} ${formatLongDateTime(task.archivedAt)}`}
             {task.notes.length > 0 && ` | ${TASK_MESSAGES.noteCount(task.notes.length)}`}

@@ -18,6 +18,7 @@ import { FormSelect } from "@/components/ui/select";
 import { TASK_CATEGORY_LABEL, TASK_MESSAGES, TASK_PRIORITY_LABEL, TASK_STATUS_LABEL } from "@/lib/admin/messages";
 import {
   BOARD_STATUSES,
+  TASK_ASSIGNEE_ALL,
   TASK_CATEGORIES,
   TASK_PRIORITIES,
   type TaskAssignee,
@@ -160,7 +161,12 @@ export function TaskMetaFields({
   assigneeId?: string | null;
 }) {
   const id = useId();
-  const assigneeChoices = [{ value: "", label: TASK_MESSAGES.assigneeNone }, ...assignees.map((a) => ({ value: a.id, label: a.name }))];
+  // "모두" 는 "없음" 바로 뒤 — 사람 이름보다 앞에 둬야 관리자가 늘어도 자리가 안 바뀐다
+  const assigneeChoices = [
+    { value: "", label: TASK_MESSAGES.assigneeNone },
+    { value: TASK_ASSIGNEE_ALL, label: TASK_MESSAGES.assigneeAll },
+    ...assignees.map((a) => ({ value: a.id, label: a.name })),
+  ];
   return (
     // 좁은 화면은 두 줄이다(2026-10-02, 사용자: "모바일 할일 상세는 컴팩트화가 덜 됐다") — 앞서는 셋이 한 줄씩
     // 세 줄을 먹었다. 셀렉트 둘이 한 줄에 나란히 서고, 값이 셋인 우선순위 세그먼트만 아래 한 줄을 다 쓴다(반 폭에선 낱말이 꺾인다)
