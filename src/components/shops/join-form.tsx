@@ -42,14 +42,14 @@ function SubmitButton() {
 /** 묶음 하나 — 번호 동그라미 + 제목, 그 아래 칸 격자(넓은 화면 두 칸) */
 function Group({ id, no, title, children }: { id: string; no: number; title: string; children: React.ReactNode }) {
   return (
-    <section aria-labelledby={id} className="flex flex-col gap-4 py-6 first:pt-0 last:pb-0">
-      <h2 id={id} className="flex items-center gap-2.5 text-[15px] font-bold tracking-[-0.02em] text-ink">
-        <span aria-hidden className="flex size-6 items-center justify-center rounded-full bg-acc-soft text-[12px] font-extrabold text-acc">
+    <section aria-labelledby={id} className="flex flex-col gap-3 py-4 first:pt-0 last:pb-0">
+      <h2 id={id} className="flex items-center gap-2 text-[13.5px] font-bold tracking-[-0.02em] text-ink">
+        <span aria-hidden className="flex size-5 items-center justify-center rounded-full bg-acc text-[11px] font-extrabold text-on-ink">
           {no}
         </span>
         {title}
       </h2>
-      <div className="grid min-w-0 items-start gap-x-3 gap-y-4 sm:grid-cols-2">{children}</div>
+      <div className="grid min-w-0 items-start gap-x-3 gap-y-3 sm:grid-cols-2">{children}</div>
     </section>
   );
 }
@@ -61,7 +61,7 @@ export function ShopJoinForm({ current }: { current: ShopApplication | null }) {
   const [descLength, setDescLength] = useState(current?.description?.length ?? 0);
 
   return (
-    <ActionForm action={formAction} state={state} pending={submitting} className={sectionCardClass("flex flex-col gap-6")}>
+    <ActionForm action={formAction} state={state} pending={submitting} className={sectionCardClass("flex flex-col gap-4")}>
       {state && !state.ok && (
         <FormMessage tone="error" replayKey={state.error}>
           {state.error}
@@ -75,12 +75,14 @@ export function ShopJoinForm({ current }: { current: ShopApplication | null }) {
 
       <div className="flex flex-col divide-y divide-line">
         <Group id="shop-g-shop" no={1} title={M.groupShop}>
-          <TextField name="name" label={M.nameLabel} defaultValue={current?.name ?? ""} maxLength={SHOP_NAME_MAX} required autoComplete="organization" />
+          <TextField compact name="name" label={M.nameLabel} defaultValue={current?.name ?? ""} maxLength={SHOP_NAME_MAX} required autoComplete="organization" />
           <TextField
+            compact
             name="slug"
             label={M.slugLabel}
-            // 쓸 수 있는 글자가 좁은 칸이라 규칙을 빨강으로 세운다(2026-10-12 사용자) — 회색이면 안 읽고 지나친다
-            hint={<span className="font-medium text-danger">{M.slugHint}</span>}
+            // 쓸 수 있는 글자가 좁은 칸이라 규칙을 빨강으로 세운다(2026-10-12 사용자) — 회색이면 안 읽고 지나친다.
+            // 칸 아래 줄을 따로 먹지 않게 이름표 줄 오른쪽에 둔다
+            aside={<span className="font-semibold text-danger">{M.slugHint}</span>}
             leading={`${ROUTES.shops}/`}
             placeholder={M.slugPlaceholder}
             defaultValue={current?.slug ?? ""}
@@ -93,8 +95,8 @@ export function ShopJoinForm({ current }: { current: ShopApplication | null }) {
         </Group>
 
         <Group id="shop-g-biz" no={2} title={M.groupBusiness}>
-          <TextField name="bizRegNo" label={M.bizRegNoLabel} defaultValue={current?.bizRegNo ?? ""} required inputMode="numeric" placeholder="123-45-67890" />
-          <TextField name="phone" label={M.phoneLabel} defaultValue={current?.phone ?? ""} inputMode="tel" autoComplete="tel" placeholder="02-123-4567" />
+          <TextField compact name="bizRegNo" label={M.bizRegNoLabel} defaultValue={current?.bizRegNo ?? ""} required inputMode="numeric" placeholder="123-45-67890" />
+          <TextField compact name="phone" label={M.phoneLabel} defaultValue={current?.phone ?? ""} inputMode="tel" autoComplete="tel" placeholder="02-123-4567" />
         </Group>
 
         <Group id="shop-g-place" no={3} title={M.groupPlace}>
@@ -105,7 +107,7 @@ export function ShopJoinForm({ current }: { current: ShopApplication | null }) {
                 <label
                   key={t.value}
                   className={cn(
-                    "press flex min-h-[42px] cursor-pointer items-center justify-center rounded-[10px] text-[14px] font-semibold transition-[background-color,color,box-shadow] duration-base ease-standard has-[:focus-visible]:ring-2 has-[:focus-visible]:ring-acc",
+                    "press tap flex min-h-9 cursor-pointer items-center justify-center rounded-[10px] text-[13.5px] font-semibold transition-[background-color,color,box-shadow] duration-base ease-standard has-[:focus-visible]:ring-2 has-[:focus-visible]:ring-acc",
                     on ? "bg-surface text-ink shadow-2" : "text-dim hover:text-ink",
                   )}
                 >
@@ -118,14 +120,14 @@ export function ShopJoinForm({ current }: { current: ShopApplication | null }) {
           {/* 온라인만 하는 매장에는 주소 칸이 서지 않는다 — 안 쓰는 칸을 비워 두게 하면 그 칸이 늘 마지막까지 남는다 */}
           {addressType === "offline" && (
             <>
-              <TextField name="address" label={M.addressLabel} defaultValue={current?.address ?? ""} required autoComplete="street-address" />
-              <TextField name="addressDetail" label={M.addressDetailLabel} defaultValue={""} />
+              <TextField compact name="address" label={M.addressLabel} defaultValue={current?.address ?? ""} required autoComplete="street-address" />
+              <TextField compact name="addressDetail" label={M.addressDetailLabel} defaultValue={""} />
             </>
           )}
         </Group>
 
         <Group id="shop-g-about" no={4} title={M.groupAbout}>
-          <div className="flex flex-col gap-1.5 sm:col-span-2">
+          <div className="relative sm:col-span-2">
             {/* 이름표는 묶음 제목과 같은 말이라 화면에서는 숨긴다 */}
             <label htmlFor="shop-description" className="sr-only">
               {M.descriptionLabel}
@@ -138,19 +140,19 @@ export function ShopJoinForm({ current }: { current: ShopApplication | null }) {
               minLength={SHOP_DESCRIPTION_MIN}
               maxLength={SHOP_DESCRIPTION_MAX}
               required
-              rows={4}
+              rows={3}
               placeholder={M.descriptionPlaceholder}
-              className={TEXTAREA_CLASS}
+              className={cn(TEXTAREA_CLASS, "pb-7")}
             />
             {/* 하한에 못 미치면 보라로 — 아직 더 적어야 한다는 표시. 넘으면 회색으로 물러난다 */}
-            <span aria-hidden className={cn("self-end text-[12px] tabular-nums", descLength < SHOP_DESCRIPTION_MIN ? "text-acc" : "text-dim")}>
+            <span aria-hidden className={cn("pointer-events-none absolute right-3 bottom-2.5 text-[12px] tabular-nums", descLength < SHOP_DESCRIPTION_MIN ? "text-acc" : "text-dim")}>
               {descLength}/{SHOP_DESCRIPTION_MAX}
             </span>
           </div>
         </Group>
       </div>
 
-      <div className="flex justify-end border-t border-line pt-6">
+      <div className="flex justify-end">
         <SubmitButton />
       </div>
     </ActionForm>

@@ -14,12 +14,16 @@ export type TextFieldProps = Omit<ComponentProps<"input">, "size"> & {
   trailing?: ReactNode;
   /** 칸 왼쪽 고정 글자(주소 앞부분 등). 값이 아니라 보여 주기만 한다 — 입력값에 섞이지 않는다 */
   leading?: ReactNode;
+  /** 이름표 줄 오른쪽 끝 짧은 글(규칙, 글자 수). 칸 아래 힌트 줄을 따로 쓰지 않아 세로가 준다 */
+  aside?: ReactNode;
+  /** 44px 칸(터치 타깃 하한). 칸이 많은 폼에서 세로를 줄인다. 글자는 16px 그대로(iOS 확대 방지) */
+  compact?: boolean;
   /** 칸 바로 밑에 뜨는 판(제안 목록, components/ui/suggest). 칸 상자를 기준으로 선다 */
   popup?: ReactNode;
   wrapperClassName?: string;
 };
 
-export function TextField({ label, hideLabel, hint, error, leading, trailing, popup, wrapperClassName, className, id: idProp, ...input }: TextFieldProps) {
+export function TextField({ label, hideLabel, hint, error, leading, aside, compact = false, trailing, popup, wrapperClassName, className, id: idProp, ...input }: TextFieldProps) {
   const autoId = useId();
   const id = idProp ?? autoId;
   const hintId = `${id}-hint`;
@@ -28,9 +32,16 @@ export function TextField({ label, hideLabel, hint, error, leading, trailing, po
 
   return (
     <div className={cn("group/field", wrapperClassName)}>
-      <label htmlFor={id} className={cn("mb-1.5 block text-[12.5px] font-medium text-mut transition-colors group-focus-within/field:text-ink", hideLabel && "sr-only")}>
-        {label}
-      </label>
+      <div className={cn("mb-1.5 flex items-baseline justify-between gap-2", hideLabel && "sr-only")}>
+        <label htmlFor={id} className="block text-[12.5px] font-medium text-mut transition-colors group-focus-within/field:text-ink">
+          {label}
+        </label>
+        {aside && (
+          <span id={`${id}-aside`} className="text-[11.5px]">
+            {aside}
+          </span>
+        )}
+      </div>
       <div
         className={cn(
           // key 를 붙이지 않는다(2026-09-23). 예전에는 key={invalid ? "invalid" : "valid"} 로 shake 를 다시 태웠는데,
@@ -51,13 +62,14 @@ export function TextField({ label, hideLabel, hint, error, leading, trailing, po
         <input
           id={id}
           aria-invalid={invalid || undefined}
-          aria-describedby={[hint ? hintId : null, invalid ? errorId : null].filter(Boolean).join(" ") || undefined}
+          aria-describedby={[aside ? `${id}-aside` : null, hint ? hintId : null, invalid ? errorId : null].filter(Boolean).join(" ") || undefined}
           className={cn(
             // 글자 16px 은 취향이 아니라 규약이다(AGENTS.md §6) — iOS 사파리는 16px 미만 입력칸에
             // 포커스가 가면 화면을 확대하고, 확대된 배율은 입력을 마쳐도 돌아오지 않는다.
             // 14px 이던 값을 올렸다(2026-09-22 실측: 로그인, 가입의 모든 칸이 14px 이었다).
             // 높이는 46px 그대로라 줄 위치는 밀리지 않는다 — 글자만 커진다.
-            "h-[46px] min-h-[46px] w-full min-w-0 flex-1 bg-transparent px-3.5 text-[16px] text-ink outline-none placeholder:text-dim",
+            compact ? "h-11 min-h-11" : "h-[46px] min-h-[46px]",
+            "w-full min-w-0 flex-1 bg-transparent px-3.5 text-[16px] text-ink outline-none placeholder:text-dim",
             leading ? "pl-0.5" : null,
             "autofill:shadow-[inset_0_0_0_1000px_var(--surface)] autofill:[-webkit-text-fill-color:var(--ink)]",
             className,
