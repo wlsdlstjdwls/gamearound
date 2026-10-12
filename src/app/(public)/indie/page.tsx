@@ -10,7 +10,6 @@ import { EmptyState } from "@/components/empty-state";
 import { IndieCard } from "@/components/indie/indie-card";
 import { Pagination } from "@/components/pagination";
 import { IndieListHero } from "@/components/indie/list-hero";
-import { ChipLink } from "@/components/ui/chip";
 import { CtaTile } from "@/components/ui/cta-tile";
 import { Page } from "@/components/ui/page";
 import { firstParam } from "@/lib/games-query";
@@ -20,6 +19,7 @@ import { stagger } from "@/lib/motion";
 import { ROUTES } from "@/lib/routes";
 import type { IndieStage } from "@/server/db/schema";
 import { listIndiePosts } from "@/server/services/indie";
+import { NavChip, NavPendingScope, PendingRegion } from "@/components/ui/nav-pending";
 
 export const metadata: Metadata = { title: M.title, description: M.lead };
 
@@ -47,20 +47,22 @@ export default async function IndiePage({ searchParams }: Props) {
 
   return (
     <Page gap={22}>
+      <NavPendingScope>
       {/* 새로 올라온 게임은 첫 쪽, 거르지 않은 화면에서만 크게 세운다 — 거른 화면에서 다른 단계 게임이 머리에 서면 어긋난다 */}
       <IndieListHero featured={!stage && result.page === 1 ? (result.items[0] ?? null) : null} />
 
       <nav aria-label={M.stageFilterLabel} className="flex flex-wrap gap-1.5">
-        <ChipLink href={indieHref(undefined)} active={!stage} aria-current={!stage ? "page" : undefined}>
+        <NavChip group="stage" current="page" href={indieHref(undefined)} active={!stage}>
           {M.allStages}
-        </ChipLink>
+        </NavChip>
         {INDIE_STAGES.map((s) => (
-          <ChipLink key={s} href={indieHref(s)} active={stage === s} aria-current={stage === s ? "page" : undefined}>
+          <NavChip key={s} group="stage" current="page" href={indieHref(s)} active={stage === s}>
             {INDIE_STAGE_LABEL[s]}
-          </ChipLink>
+          </NavChip>
         ))}
       </nav>
 
+      <PendingRegion>
       {result.items.length === 0 ? (
         <EmptyState title={stage ? M.emptyStage : M.empty} description={M.emptyDescription} action={{ href: ROUTES.indieNew, label: M.cta }} />
       ) : (
@@ -75,8 +77,10 @@ export default async function IndiePage({ searchParams }: Props) {
           </li>
         </ul>
       )}
+      </PendingRegion>
 
       {result.totalPages > 1 && <Pagination page={result.page} totalPages={result.totalPages} hrefFor={(p) => indieHref(stage, p)} />}
+      </NavPendingScope>
     </Page>
   );
 }

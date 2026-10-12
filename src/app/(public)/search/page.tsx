@@ -10,16 +10,15 @@
 // 카드는 직접 짜지 않고 GameCard 를 그대로 쓴다 — 손으로 짠 줄 마크업이 카드가 바뀔 때마다
 // 뒤처지던 자리다(장르, 할인 스탬프, 플랫폼 배지가 여기만 없거나 달랐다).
 import type { Metadata } from "next";
-import Link from "next/link";
 import { GameCard } from "@/components/game-card";
 import { EmptyState } from "@/components/empty-state";
 import { Page, PageHead } from "@/components/ui/page";
-import { chipClass } from "@/components/ui/chip";
 import { HOME_GRID_CLASS } from "@/lib/games/grid";
 import { stagger } from "@/lib/motion";
 import { ROUTES } from "@/lib/routes";
 import { searchGames, type GameSummary } from "@/server/services/games";
 import { MAX_PARAM_LEN } from "@/lib/games-query";
+import { NavChip, NavPendingScope, PendingRegion } from "@/components/ui/nav-pending";
 
 // Next 가 정적으로 읽는 값이라 리터럴이어야 한다 — 근거, 수치는 lib/cache 의 LIST_REVALIDATE_SECONDS 와 같게 유지
 export const revalidate = 3600;
@@ -89,6 +88,7 @@ export default async function SearchPage({ searchParams }: Props) {
 
   return (
     <Page gap={22}>
+      <NavPendingScope>
       <div className="flex flex-wrap items-baseline justify-between gap-x-3 gap-y-2">
         <PageHead
           title={<>&ldquo;{q}&rdquo; 검색 결과</>}
@@ -98,18 +98,14 @@ export default async function SearchPage({ searchParams }: Props) {
         />
         <div role="group" aria-label="정렬" className="flex gap-1">
           {SORTS.map((s) => (
-            <Link
-              key={s.key}
-              href={`${ROUTES.search}?q=${encodeURIComponent(q)}&sort=${s.key}`}
-              aria-current={s.key === sort ? "true" : undefined}
-              className={chipClass({ active: s.key === sort })}
-            >
+            <NavChip key={s.key} group="sort" href={`${ROUTES.search}?q=${encodeURIComponent(q)}&sort=${s.key}`} active={s.key === sort}>
               {s.label}
-            </Link>
+            </NavChip>
           ))}
         </div>
       </div>
 
+      <PendingRegion>
       {results.length === 0 ? (
         <ReportBlock q={q} />
       ) : (
@@ -124,6 +120,8 @@ export default async function SearchPage({ searchParams }: Props) {
           <ReportBlock q={q} />
         </>
       )}
+      </PendingRegion>
+      </NavPendingScope>
     </Page>
   );
 }

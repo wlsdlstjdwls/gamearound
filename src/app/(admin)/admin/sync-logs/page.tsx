@@ -6,7 +6,6 @@
 import type { Metadata } from "next";
 import { cn } from "@/lib/cn";
 import { formatDateTime, formatDuration } from "@/lib/format";
-import { ChipLink } from "@/components/ui/chip";
 import { isSourceName, listSyncLogs, SOURCES } from "@/server/services/admin";
 import { LOG_MESSAGES, SYNC_STATUS_LABEL, sourceLabel } from "@/lib/admin/messages";
 import { requireRoleOrForbid } from "@/server/auth/guards";
@@ -16,6 +15,7 @@ import { ROUTES } from "@/lib/routes";
 import { Clamp } from "@/components/ui/tooltip";
 import { SYNC_BADGE_SHAPE, SYNC_STATUS_BADGE } from "@/components/admin/sync-tone";
 import { SYNC_LOG_COLS } from "@/lib/admin/table-cols";
+import { NavChip, NavPendingScope, PendingRegion } from "@/components/ui/nav-pending";
 
 export const metadata: Metadata = { title: LOG_MESSAGES.title };
 
@@ -69,6 +69,7 @@ export default async function SyncLogsPage({ searchParams }: { searchParams: Pro
   const logs = await listSyncLogs({ source });
 
   return (
+    <NavPendingScope>
     <section className="flex flex-col gap-4">
       <header className="flex flex-wrap items-end justify-between gap-2">
         <div>
@@ -76,17 +77,18 @@ export default async function SyncLogsPage({ searchParams }: { searchParams: Pro
           <p className="mt-1 max-w-[560px] text-[13px] text-mut">{LOG_MESSAGES.lead}</p>
         </div>
         <div className="flex flex-wrap gap-1 text-xs">
-          <ChipLink href={ROUTES.adminSyncLogs} active={!source} size="sm">
+          <NavChip group="source" href={ROUTES.adminSyncLogs} active={!source} size="sm">
             {LOG_MESSAGES.all}
-          </ChipLink>
+          </NavChip>
           {SOURCES.map((s) => (
-            <ChipLink key={s} href={`${ROUTES.adminSyncLogs}?source=${s}`} active={source === s} size="sm">
+            <NavChip key={s} group="source" href={`${ROUTES.adminSyncLogs}?source=${s}`} active={source === s} size="sm">
               {sourceLabel(s)}
-            </ChipLink>
+            </NavChip>
           ))}
         </div>
       </header>
 
+      <PendingRegion>
       {logs.length === 0 ? (
         <p className="rounded-xl bg-surface-2 px-5 py-6 text-[13px] text-mut">{LOG_MESSAGES.empty}</p>
       ) : (
@@ -159,6 +161,8 @@ export default async function SyncLogsPage({ searchParams }: { searchParams: Pro
           </DataList>
         </div>
       )}
+      </PendingRegion>
     </section>
+    </NavPendingScope>
   );
 }

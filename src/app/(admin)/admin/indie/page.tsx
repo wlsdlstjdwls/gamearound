@@ -6,7 +6,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { IndieModeration } from "@/components/admin/indie-moderation";
-import { ChipLink } from "@/components/ui/chip";
 import { PageHead, ROWS } from "@/components/ui/page";
 import { formatDate } from "@/lib/format";
 import { firstParam } from "@/lib/games-query";
@@ -14,6 +13,7 @@ import { INDIE_ADMIN_MESSAGES as A, INDIE_MESSAGES } from "@/lib/indie/messages"
 import { gamePath, indiePath, ROUTES } from "@/lib/routes";
 import { requireRoleOrForbid } from "@/server/auth/guards";
 import { INDIE_ADMIN_TABS, listIndieForAdmin, type IndieAdminTab } from "@/server/services/indie";
+import { NavChip, NavPendingScope, PendingRegion } from "@/components/ui/nav-pending";
 
 export const metadata: Metadata = { title: A.title };
 
@@ -32,6 +32,7 @@ export default async function AdminIndiePage({ searchParams }: Props) {
   const rows = await listIndieForAdmin(tab);
 
   return (
+    <NavPendingScope>
     <div className="flex flex-col gap-5">
       <div>
         <PageHead title={A.title} />
@@ -40,12 +41,13 @@ export default async function AdminIndiePage({ searchParams }: Props) {
 
       <nav aria-label={A.title} className="flex flex-wrap gap-1.5">
         {INDIE_ADMIN_TABS.map((t) => (
-          <ChipLink key={t} href={tabHref(t)} active={tab === t} aria-current={tab === t ? "page" : undefined}>
+          <NavChip key={t} group="tab" current="page" href={tabHref(t)} active={tab === t}>
             {TAB_LABEL[t]}
-          </ChipLink>
+          </NavChip>
         ))}
       </nav>
 
+      <PendingRegion>
       {rows.length === 0 ? (
         <p className="rounded-xl bg-surface-2 px-5 py-6 text-[13px] text-mut">{A.empty}</p>
       ) : (
@@ -88,6 +90,8 @@ export default async function AdminIndiePage({ searchParams }: Props) {
           ))}
         </ul>
       )}
+      </PendingRegion>
     </div>
+    </NavPendingScope>
   );
 }

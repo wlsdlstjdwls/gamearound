@@ -14,8 +14,8 @@ import { PLATFORM_LABEL } from "@/lib/format";
 import { collectedAtText, getFreshness } from "@/lib/freshness";
 import { stagger } from "@/lib/motion";
 import { ROUTES } from "@/lib/routes";
-import { ChipLink } from "@/components/ui/chip";
 import { listWishlist, type WishlistItem } from "@/server/services/wishlist";
+import { NavChip, NavPendingScope, PendingRegion } from "@/components/ui/nav-pending";
 
 export const metadata: Metadata = { title: "위시리스트" };
 
@@ -49,6 +49,7 @@ export default async function WishlistPage({ searchParams }: Props) {
 
   return (
     <Page gap={26}>
+      <NavPendingScope>
       <header className="flex flex-wrap items-end justify-between gap-x-6 gap-y-4">
         <div>
           <PageHead title="위시리스트" />
@@ -58,17 +59,14 @@ export default async function WishlistPage({ searchParams }: Props) {
         </div>
         <div role="group" aria-label="정렬" className="flex shrink-0 gap-1.5">
           {SORTS.map((s) => (
-            <ChipLink
-              key={s.key}
-              href={s.key === "sale" ? ROUTES.wishlist : `${ROUTES.wishlist}?sort=${s.key}`}
-              active={s.key === sort}
-            >
+            <NavChip key={s.key} group="sort" href={s.key === "sale" ? ROUTES.wishlist : `${ROUTES.wishlist}?sort=${s.key}`} active={s.key === sort}>
               {s.label}
-            </ChipLink>
+            </NavChip>
           ))}
         </div>
       </header>
 
+      <PendingRegion>
       {items.length === 0 ? (
         <EmptyState
           title="아직 찜한 게임이 없습니다"
@@ -148,6 +146,8 @@ export default async function WishlistPage({ searchParams }: Props) {
           })}
         </ul>
       )}
+      </PendingRegion>
+      </NavPendingScope>
     </Page>
   );
 }

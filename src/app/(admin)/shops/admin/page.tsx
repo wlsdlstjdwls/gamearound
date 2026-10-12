@@ -8,15 +8,14 @@
 // 주소는 `/admin` 밖이어도 껍데기는 관리자 화면과 같다 — 관리자 레이아웃이 라우트 그룹 `(admin)` 에 있어서다.
 // 앞서는 레이아웃이 `(admin)/admin` 에만 있어 메뉴에서 이 칸을 누르면 기둥과 흰 판이 통째로 사라졌다(2026-10-08).
 import type { Metadata } from "next";
-import Link from "next/link";
 import { ShopReviewCard } from "@/components/shops/review-card";
 import { PageHead } from "@/components/ui/page";
-import { chipClass } from "@/components/ui/chip";
 import { SHOP_ADMIN_MESSAGES } from "@/lib/shops/messages";
 import { ROUTES } from "@/lib/routes";
 import { requireRoleOrForbid } from "@/server/auth/guards";
 import { listShopsByStatus } from "@/server/services/shops";
 import type { ShopStatus } from "@/server/db/schema";
+import { NavChip, NavPendingScope, PendingRegion } from "@/components/ui/nav-pending";
 
 export const metadata: Metadata = { title: SHOP_ADMIN_MESSAGES.title };
 // 심사 화면은 늘 지금 값을 봐야 한다 — 승인하고 새로 고쳤는데 옛 목록이 뜨면 두 번 누른다
@@ -42,7 +41,7 @@ export default async function ShopsAdminPage({ searchParams }: Props) {
   const shops = await listShopsByStatus(status);
 
   return (
-    <>
+    <NavPendingScope>
       <section className="flex flex-col gap-2">
         <PageHead title={SHOP_ADMIN_MESSAGES.title} />
         <p className="max-w-[620px] text-[13px] text-mut">{SHOP_ADMIN_MESSAGES.lead}</p>
@@ -51,17 +50,13 @@ export default async function ShopsAdminPage({ searchParams }: Props) {
       <section className="flex flex-col gap-3">
         <nav aria-label={SHOP_ADMIN_MESSAGES.tabsLabel} className="flex flex-wrap gap-1.5">
           {TABS.map((t) => (
-            <Link
-              key={t.status}
-              href={t.status === "pending" ? ROUTES.shopsAdmin : `${ROUTES.shopsAdmin}?status=${t.status}`}
-              aria-current={t.status === status ? "true" : undefined}
-              className={chipClass({ active: t.status === status })}
-            >
+            <NavChip key={t.status} group="status" href={t.status === "pending" ? ROUTES.shopsAdmin : `${ROUTES.shopsAdmin}?status=${t.status}`} active={t.status === status}>
               {t.label}
-            </Link>
+            </NavChip>
           ))}
         </nav>
 
+        <PendingRegion>
         {shops.length === 0 ? (
           // 빈 칸 안내는 다른 관리자 큐와 같은 회색 면이다 — 흰 판 위에서 "비었다" 가 한 덩어리로 읽힌다
           <p className="rounded-xl bg-surface-2 px-5 py-6 text-[13px] text-mut">{SHOP_ADMIN_MESSAGES.empty}</p>
@@ -76,7 +71,8 @@ export default async function ShopsAdminPage({ searchParams }: Props) {
             ))}
           </ul>
         )}
+        </PendingRegion>
       </section>
-    </>
+    </NavPendingScope>
   );
 }

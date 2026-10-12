@@ -11,6 +11,7 @@ import { Page, PageHead } from "@/components/ui/page";
 import { NEWS_MESSAGES as M, newsCountText } from "@/lib/news/messages";
 import { ROUTES } from "@/lib/routes";
 import { listNews } from "@/server/services/games";
+import { NavPendingScope, PendingRegion } from "@/components/ui/nav-pending";
 
 // Next 가 정적으로 읽는 값이라 리터럴이어야 한다 — 근거, 수치는 lib/cache 의 LIST_REVALIDATE_SECONDS 와 같게 유지
 export const revalidate = 3600;
@@ -33,6 +34,7 @@ export default async function NewsPage({ searchParams }: Props) {
 
   return (
     <Page gap={30}>
+      <NavPendingScope>
       {/* 머리말과 "전체 게임 보기" 버튼을 뗐다(2026-09-22, 사용자 지정, 출시예정 화면과 같은 손질).
           머리말이 말하던 사실(본문은 저장하지 않는다)은 목록 자체가 이미 보여 준다 —
           줄마다 매체 이름이 붙고 누르면 새 창으로 나간다. 버튼은 머리띠 메뉴와 같은 자리로 가는
@@ -43,10 +45,13 @@ export default async function NewsPage({ searchParams }: Props) {
         <p className="rounded-xl bg-surface-2 px-4 py-3.5 text-[13px] text-dim">{M.empty}</p>
       ) : (
         <>
-          <NewsList items={items} showGame />
+          <PendingRegion>
+            <NewsList items={items} showGame />
+          </PendingRegion>
           <Pagination page={page} totalPages={totalPages} hrefFor={(p) => (p === 1 ? ROUTES.news : `${ROUTES.news}?page=${p}`)} />
         </>
       )}
+      </NavPendingScope>
     </Page>
   );
 }

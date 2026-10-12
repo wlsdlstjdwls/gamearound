@@ -5,7 +5,6 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { EmptyState } from "@/components/empty-state";
 import { Pagination } from "@/components/pagination";
-import { ChipLink } from "@/components/ui/chip";
 import { Page, PageHead, ROW, ROWS } from "@/components/ui/page";
 import { cn } from "@/lib/cn";
 import { Clamp } from "@/components/ui/tooltip";
@@ -13,6 +12,7 @@ import { stagger } from "@/lib/motion";
 import { ROUTES, companyPath } from "@/lib/routes";
 import { firstParam } from "@/lib/games-query";
 import { getCountryFacets, listCompanies } from "@/server/services/companies";
+import { NavChip, NavPendingScope, PendingRegion } from "@/components/ui/nav-pending";
 
 // Next 가 정적으로 읽는 값이라 리터럴이어야 한다 — lib/cache 의 LIST_REVALIDATE_SECONDS 와 같게 유지
 export const revalidate = 3600;
@@ -40,22 +40,24 @@ export default async function CompaniesPage({ searchParams }: Props) {
 
   return (
     <Page gap={26}>
+      <NavPendingScope>
       <PageHead title="게임 회사" note={result.total > 0 ? `${result.total}곳` : undefined} />
 
       {/* 국가 칩은 판이 아니라 헤어라인 띠 안에 선다 — 목록의 "걸린 조건" 띠와 같은 규칙이다 */}
       {countries.length > 0 && (
         <section aria-label="국가 필터" className="flex flex-wrap gap-1.5 border-y border-line py-3">
-          <ChipLink href={companiesHref(undefined, 1)} active={!country}>
+          <NavChip group="country" href={companiesHref(undefined, 1)} active={!country}>
             전체
-          </ChipLink>
+          </NavChip>
           {countries.map((c) => (
-            <ChipLink key={c.code} href={companiesHref(c.code, 1)} active={country === c.code}>
+            <NavChip key={c.code} group="country" href={companiesHref(c.code, 1)} active={country === c.code}>
               {c.name} <span className="opacity-55">{c.count}</span>
-            </ChipLink>
+            </NavChip>
           ))}
         </section>
       )}
 
+      <PendingRegion>
       {result.items.length === 0 ? (
         <EmptyState
           title="아직 회사 정보를 모으는 중이에요"
@@ -81,10 +83,12 @@ export default async function CompaniesPage({ searchParams }: Props) {
           ))}
         </ul>
       )}
+      </PendingRegion>
 
       {result.totalPages > 1 && (
         <Pagination page={result.page} totalPages={result.totalPages} hrefFor={(p) => companiesHref(country, p)} />
       )}
+      </NavPendingScope>
     </Page>
   );
 }

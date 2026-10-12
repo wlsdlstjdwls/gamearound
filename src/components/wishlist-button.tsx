@@ -2,7 +2,7 @@
 // 계약: 상세 페이지(P3)가 사용. props { gameId, wished, signedIn }. 내부에서 Server Action toggleWishlistAction 호출.
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useState, useTransition } from "react";
+import { useOptimistic, useState, useTransition } from "react";
 import { signInPath } from "@/lib/routes";
 import { buttonClass } from "@/components/ui/button";
 import { removeFromWishlistAction, toggleWishlistAction } from "@/app/(user)/wishlist/actions";
@@ -11,6 +11,8 @@ export function WishlistButton({ gameId, wished: initial, signedIn }: { gameId: 
   const [wished, setWished] = useState(initial);
   const [error, setError] = useState<string | null>(null);
   const [pending, start] = useTransition();
+  // 하트는 누른 순간 바뀐다(AGENTS §6). 응답이 오면 서버가 말한 값으로 맞추고, 실패하면 전환이 끝나며 저절로 되돌아간다
+  const [shownWished, setShownWished] = useOptimistic(wished);
   const pathname = usePathname();
 
   if (!signedIn) {
@@ -26,18 +28,19 @@ export function WishlistButton({ gameId, wished: initial, signedIn }: { gameId: 
       <button
         type="button"
         disabled={pending}
-        aria-pressed={wished}
+        aria-pressed={shownWished}
         onClick={() =>
           start(async () => {
+            setShownWished(!wished);
             setError(null);
             const r = await toggleWishlistAction(gameId);
             if (r.ok) setWished(r.wished);
             else setError(r.error);
           })
         }
-        className={buttonClass({ variant: "secondary", className: wished ? "border-ink font-semibold" : undefined })}
+        className={buttonClass({ variant: "secondary", className: shownWished ? "border-ink font-semibold" : undefined })}
       >
-        {pending ? "…" : wished ? "♥ 위시리스트" : "♡ 위시리스트"}
+        {shownWished ? "♥ 위시리스트" : "♡ 위시리스트"}
       </button>
       {error && <span className="text-[11.5px] text-danger">{error}</span>}
     </span>

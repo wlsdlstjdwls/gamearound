@@ -17,6 +17,7 @@ import { ROUTES, shopPath } from "@/lib/routes";
 import { firstParam } from "@/lib/games-query";
 import { SHOP_DIRECTORY_MESSAGES as M } from "@/lib/shops/messages";
 import { listActiveShops, type ShopPublic } from "@/server/services/shops";
+import { NavPendingScope, PendingRegion } from "@/components/ui/nav-pending";
 
 export const metadata: Metadata = { title: M.title, description: M.lead };
 
@@ -47,6 +48,7 @@ export default async function ShopsPage({ searchParams }: Props) {
 
   return (
     <Page gap={26}>
+      <NavPendingScope>
       {/* 검색칸이 제목 행 오른쪽에 붙는다 — 이 화면에서 할 일이 그것 하나라서다.
           검색은 서버 액션이 아니라 GET 이다: 찾은 화면의 주소가 그대로 남아야 공유되고 뒤로 가기가 산다 */}
       <PageHead
@@ -74,6 +76,7 @@ export default async function ShopsPage({ searchParams }: Props) {
 
       {/* 검색어로 거른 화면이 비면 그 사실을 말한다. 거르지 않은 화면은 비어도 입점 칸이 격자에 선다 —
           "아직 없어요" 판 하나보다 첫 매장이 설 자리를 보여 주는 편이 매장주에게 다음 행동을 준다 */}
+      <PendingRegion>
       {q && result.items.length === 0 ? (
         <EmptyState title={M.empty} action={{ href: ROUTES.business, label: M.emptyAction }} />
       ) : (
@@ -103,10 +106,12 @@ export default async function ShopsPage({ searchParams }: Props) {
           ) : null}
         </ul>
       )}
+      </PendingRegion>
 
       {result.totalPages > 1 && (
         <Pagination page={result.page} totalPages={result.totalPages} hrefFor={(p) => shopsHref(q, p)} />
       )}
+      </NavPendingScope>
     </Page>
   );
 }

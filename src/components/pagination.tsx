@@ -1,7 +1,11 @@
-// 페이지네이션 — 현재 페이지 주변 창만 노출. 링크 기반이라 클라이언트 JS 가 필요 없다.
-import Link from "next/link";
+// 페이지네이션 — 현재 페이지 주변 창만 노출.
+// 칸은 NavChip(ui/nav-pending)이다 — 화면이 NavPendingScope 로 감싸여 있으면 누른 번호가 곧장 켜지고 목록이 흐려진다
+// (2026-10-12, 누른 뒤 몇 초 동안 아무 변화가 없던 문제). 틀이 없는 화면에서는 평범한 링크로 동작한다.
 import { pageWindow } from "@/lib/pagination";
-import { chipClass } from "@/components/ui/chip";
+import { NavChip } from "@/components/ui/nav-pending";
+
+/** 쪽 번호는 한 무리다 — 같은 화면의 다른 고르는 줄(탭, 국가)과 켜짐이 섞이지 않게 이름을 둔다 */
+const GROUP = "page";
 
 export function Pagination({
   page,
@@ -17,9 +21,9 @@ export function Pagination({
   return (
     <nav aria-label="페이지 이동" className="flex flex-wrap items-center justify-center gap-1.5 pt-2">
       {page > 1 && (
-        <Link href={hrefFor(page - 1)} rel="prev" className={chipClass({ size: "page" })}>
+        <NavChip group={GROUP} scroll href={hrefFor(page - 1)} rel="prev" size="page">
           이전
-        </Link>
+        </NavChip>
       )}
       {pageWindow(page, totalPages).map((n, i) =>
         n === null ? (
@@ -27,21 +31,15 @@ export function Pagination({
             …
           </span>
         ) : (
-          <Link
-            key={n}
-            href={hrefFor(n)}
-            aria-label={`${n}페이지`}
-            aria-current={n === page ? "page" : undefined}
-            className={chipClass({ active: n === page, size: "page" })}
-          >
+          <NavChip key={n} group={GROUP} scroll current="page" href={hrefFor(n)} aria-label={`${n}페이지`} active={n === page} size="page">
             {n}
-          </Link>
+          </NavChip>
         ),
       )}
       {page < totalPages && (
-        <Link href={hrefFor(page + 1)} rel="next" className={chipClass({ size: "page" })}>
+        <NavChip group={GROUP} scroll href={hrefFor(page + 1)} rel="next" size="page">
           다음
-        </Link>
+        </NavChip>
       )}
     </nav>
   );

@@ -7,7 +7,6 @@ import { notFound } from "next/navigation";
 import { GameCard } from "@/components/game-card";
 import { EmptyState } from "@/components/empty-state";
 import { Pagination } from "@/components/pagination";
-import { ChipLink } from "@/components/ui/chip";
 import { BackLink } from "@/components/ui/back-link";
 import { Page, PageHead, SectionHead } from "@/components/ui/page";
 import { stagger } from "@/lib/motion";
@@ -15,6 +14,7 @@ import { ROUTES, companyPath } from "@/lib/routes";
 import { firstParam } from "@/lib/games-query";
 import { getCompanyBySlug, listCompanyGames, type CompanyRoleFilter } from "@/server/services/companies";
 import { decodeSlugParam } from "@/lib/slug";
+import { NavChip, NavPendingScope, PendingRegion } from "@/components/ui/nav-pending";
 
 // Next 가 정적으로 읽는 값이라 리터럴이어야 한다 — lib/cache 의 LIST_REVALIDATE_SECONDS 와 같게 유지
 export const revalidate = 3600;
@@ -63,6 +63,7 @@ export default async function CompanyPage({ params, searchParams }: Props) {
 
   return (
     <Page pad="detail" gap={40}>
+      <NavPendingScope>
       {/* 머리 — 왼쪽은 이름과 정체, 오른쪽은 숫자 셋. 숫자를 제목과 같은 줄에 세우는 이유는
           "이 회사가 무엇을 얼마나 만들었나" 가 한 눈에 끝나야 해서다(2026-09-21 리디자인) */}
       <header className="enter-item flex flex-col gap-4" style={stagger(0)}>
@@ -126,14 +127,15 @@ export default async function CompanyPage({ params, searchParams }: Props) {
           action={
             <div className="flex gap-1.5">
               {ROLE_TABS.map((t) => (
-                <ChipLink key={t.key} href={href(slug, t.key, 1)} active={role === t.key} size="sm">
+                <NavChip key={t.key} group="role" href={href(slug, t.key, 1)} active={role === t.key} size="sm">
                   {t.label}
-                </ChipLink>
+                </NavChip>
               ))}
             </div>
           }
         />
 
+        <PendingRegion>
         {result.items.length === 0 ? (
           <EmptyState
             title="여기에 보여줄 게임이 아직 없어요"
@@ -149,11 +151,13 @@ export default async function CompanyPage({ params, searchParams }: Props) {
             ))}
           </ul>
         )}
+        </PendingRegion>
       </section>
 
       {result.totalPages > 1 && (
         <Pagination page={result.page} totalPages={result.totalPages} hrefFor={(p) => href(slug, role, p)} />
       )}
+      </NavPendingScope>
     </Page>
   );
 }
