@@ -16,6 +16,7 @@ import { Rail } from "@/components/ui/rail";
 import { HomeRanking } from "@/components/home/ranking";
 import { EndingSoonList } from "@/components/home/ending-soon";
 import { HOME_MESSAGES as M } from "@/lib/home/messages";
+import { homeDbFailure, type HomeDbFailure } from "@/lib/home/db-failure";
 import { stagger } from "@/lib/motion";
 import { ROUTES } from "@/lib/routes";
 import { getHomeData, listGames } from "@/server/services/games";
@@ -43,14 +44,15 @@ const EMPTY_HOME = {
 
 type HomeData = Awaited<ReturnType<typeof getHomeData>>;
 
-/** DB 미설정/미연결 시에도 홈 셸은 뜨도록 빈 데이터로 폴백 (로컬 첫 실행용) */
-async function loadHomeData(): Promise<{ data: HomeData; dbError: string | null }> {
+/** DB 가 안 열릴 때: 운영 실행 중이면 던져 직전 캐시를 지키고, 빌드와 개발에서는 빈 셸로 접는다(lib/home/db-failure) */
+async function loadHomeData(): Promise<{ data: HomeData; dbFailure: HomeDbFailure | null }> {
   try {
-    return { data: await getHomeData(), dbError: null };
+    return { data: await getHomeData(), dbFailure: null };
   } catch (e) {
-    const msg = e instanceof Error ? e.message : String(e);
-    console.error("[home] 데이터 조회 실패:", msg);
-    return { data: { ...EMPTY_HOME }, dbError: msg };
+    console.error("[home] 데이터 조회 실패:", e instanceof Error ? e.message : String(e));
+    const mode = homeDbFailure({ nodeEnv: process.env.NODE_ENV, nextPhase: process.env.NEXT_PHASE });
+    if (mode === "rethrow") throw e;
+    return { data: { ...EMPTY_HOME }, dbFailure: mode };
   }
 }
 
@@ -81,15 +83,15 @@ async function loadIndie(): Promise<IndieCardDto[]> {
 
 export default async function HomePage() {
   // 두 조회는 서로 기다릴 이유가 없다 — 줄 세우면 Neon 왕복이 둘이 된다
-  const [{ data, dbError }, runningSale, indie] = await Promise.all([loadHomeData(), loadRunningSale(), loadIndie()]);
+  const [{ data, dbFailure }, runningSale, indie] = await Promise.all([loadHomeData(), loadRunningSale(), loadIndie()]);
   // 곧 끝나는 할인은 서버가 따로 골라 준다 — 위 줄과 겹치지 않아야 해서다(services/games/home 주석)
   const { discounts, endingSoon, recentReleases, latestNews, storeDeals, popular, budget } = data;
 
   return (
     <Page pad="home" gap={56}>
-      {dbError && (
+      {dbFailure && (
         <div role="alert" className="rounded-xl bg-danger-soft px-4 py-3 text-[13px] text-danger">
-          데이터베이스에 연결할 수 없습니다. <code>.env.local</code>의 <code>DATABASE_URL</code>을 설정하고 <code>pnpm db:migrate</code>를 실행하세요.
+          {dbFailure === "dev-hint" ? M.devDbHint : M.dataUnavailable}
         </div>
       )}
 
@@ -105,11 +107,12 @@ export default async function HomePage() {
           title={M.discountsTitle}
           action={discounts.length > 0 && <SeeAll href={`${ROUTES.game}?sale=1`} />}
         />
-        {discounts.length === 0 ? (
+        {/* DB 가 안 열린 날 "할인 없음" 을 세우면 사실이 아닌 말이 된다 — 위 안내 한 줄로 충분하다 */}
+        {dbFailure ? null : discounts.length === 0 ? (
           <EmptyState
-            title="지금 할인 중인 게임이 없습니다"
-            description="할인 중인 게임이 확인되면 이 자리에 표시돼요."
-            action={{ href: ROUTES.game, label: "전체 게임 목록 보기" }}
+            title={M.discountsEmptyTitle}
+            description={M.discountsEmptyBody}
+            action={{ href: ROUTES.game, label: M.discountsEmptyAction }}
           />
         ) : (
           // 좁은 화면은 여덟 장까지만(2026-10-02). 한 줄에 한 장이라 스물넷이면 같은 카드가 6,000px 이어져
