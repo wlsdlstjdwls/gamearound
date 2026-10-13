@@ -7,6 +7,16 @@ export const SESSION_COOKIE_NAME = "sjd_session";
 export const SESSION_TTL_SEC = 60 * 60 * 24 * 30;
 /** 남은 수명이 이 값 아래로 내려가면 만료를 연장한다 (15일) */
 export const SESSION_RENEW_BELOW_SEC = SESSION_TTL_SEC / 2;
+/**
+ * 세션 사본(Redis)을 DB 확인 없이 믿는 시간(lib/auth/session-cache).
+ * 60초: 판매자 승인 같은 권한 변경이 늦게 보이는 최대 시간이다. 그보다 길면 "승인됐는데 메뉴가 안 보인다" 가 되고,
+ * 짧으면 페이지마다 DB 를 깨우던 때와 다르지 않다. 폐기(로그아웃, 비번 재설정)는 사본을 지워서 이 시간과 무관하다.
+ */
+export const SESSION_CACHE_FRESH_SEC = 60;
+/** 세션 사본 Redis 키 앞머리. 토큰 원문이 아니라 sessions.id(토큰 sha256)를 붙인다 */
+export const SESSION_CACHE_KEY_PREFIX = "sess:";
+/** 사람별 세션 사본 목록(Redis 집합). 비번 재설정이 그 사람의 사본을 한꺼번에 지우는 데 쓴다 */
+export const SESSION_CACHE_USER_KEY_PREFIX = "sess-user:";
 /** 쿠키 토큰 바이트 수 (base64url 43자) */
 export const SESSION_TOKEN_BYTES = 32;
 

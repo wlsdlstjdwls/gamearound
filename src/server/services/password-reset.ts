@@ -12,6 +12,7 @@ import { and, eq, gt, isNull } from "drizzle-orm";
 import { RESET_TOKEN_BYTES, RESET_TOKEN_TTL_MIN } from "@/lib/auth/constants";
 import { ROUTES } from "@/lib/routes";
 import { hashPassword } from "@/server/auth/password";
+import { dropCachedSessionsOfUser } from "@/server/auth/session-cache";
 import { createdBy, updatedBy } from "@/server/db/audit";
 import { getDb } from "@/server/db/client";
 import { passwordResetTokens, sessions, users } from "@/server/db/schema";
@@ -82,5 +83,7 @@ export async function resetPasswordWithToken(token: string, newPassword: string)
   const passwordHash = await hashPassword(newPassword);
   await db.update(users).set({ passwordHash, ...updatedBy("user", claimed.userId) }).where(eq(users.id, claimed.userId));
   await db.delete(sessions).where(eq(sessions.userId, claimed.userId));
+  // 세션 사본도 지운다 — 남기면 비번을 바꾼 뒤에도 옛 기기가 사본으로 로그인 상태를 이어 간다
+  await dropCachedSessionsOfUser(claimed.userId);
   return true;
 }

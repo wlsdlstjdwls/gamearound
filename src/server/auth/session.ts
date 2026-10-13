@@ -1,5 +1,6 @@
 // 서버 세션 — 쿠키에는 랜덤 토큰, DB(sessions)에는 sha256 해시. DB가 털려도 쿠키를 위조할 수 없다.
 // 슬라이딩 만료: 남은 수명이 절반 아래면 연장. Server Action/Route Handler에서만 호출(cookies() 쓰기 가능 컨텍스트).
+// 확인 결과는 Redis 사본을 같이 둔다(server/auth/session-cache) — 평소에는 DB 왕복을 덜고, DB 가 안 열리면 로그인을 지킨다.
 import "server-only";
 import { createHash, randomBytes } from "node:crypto";
 import { cookies } from "next/headers";
@@ -8,6 +9,9 @@ import type { PgColumn } from "drizzle-orm/pg-core";
 import { getDb } from "@/server/db/client";
 import { sessions, users } from "@/server/db/schema";
 import { SESSION_COOKIE_NAME, SESSION_RENEW_BELOW_SEC, SESSION_TOKEN_BYTES, SESSION_TTL_SEC } from "@/lib/auth/constants";
+import { sessionCacheState } from "@/lib/auth/session-cache";
+import { isDbUnavailable } from "@/lib/db-errors";
+import { dropCachedSession, dropCachedSessionsOfUser, readCachedSession, writeCachedSession } from "@/server/auth/session-cache";
 
 export type SessionUser = typeof users.$inferSelect;
 export type SessionRow = typeof sessions.$inferSelect;
@@ -62,6 +66,23 @@ export async function createSession(userId: string, meta: { userAgent?: string |
  */
 export async function validateSessionToken(token: string, opts: { renewCookie?: boolean } = {}): Promise<{ user: SessionUser; session: SessionRow } | null> {
   const id = hashSessionToken(token);
+  const cached = await readCachedSession(id);
+  const now = Date.now();
+  const state = cached ? sessionCacheState(cached, now) : null;
+  if (cached && state === "fresh") return { user: cached.user, session: cached.session };
+  try {
+    const result = await validateFromDb(id, token, opts);
+    if (result) await writeCachedSession(id, result.user, result.session);
+    else if (cached) await dropCachedSession(id);
+    return result;
+  } catch (e) {
+    // DB 가 안 열린 것일 때만 사본으로 버틴다. 다른 실패(질의 버그)를 사본으로 덮으면 고장을 못 본다
+    if (cached && state === "stale" && isDbUnavailable(e)) return { user: cached.user, session: cached.session };
+    throw e;
+  }
+}
+
+async function validateFromDb(id: string, token: string, opts: { renewCookie?: boolean }): Promise<{ user: SessionUser; session: SessionRow } | null> {
   const db = getDb();
   const row = await db.query.sessions.findFirst({ where: eq(sessions.id, id), with: { user: true } });
   if (!row) return null;
@@ -137,11 +158,16 @@ export async function ownedByCurrentSession(column: PgColumn): Promise<SQL | nul
 export async function invalidateCurrentSession(): Promise<void> {
   const token = await readSessionToken();
   await clearSessionCookie();
-  if (token) await getDb().delete(sessions).where(eq(sessions.id, hashSessionToken(token)));
+  if (!token) return;
+  // 사본을 DB 보다 먼저 지운다 — DB 삭제가 터져도 사본이 이 세션을 되살리지 않게(쿠키를 먼저 지우는 것과 같은 이유)
+  await dropCachedSession(hashSessionToken(token));
+  await getDb().delete(sessions).where(eq(sessions.id, hashSessionToken(token)));
 }
 
 /** 특정 사용자의 다른 기기 세션 전부 폐기 (비밀번호 변경 등 — 확장 지점) */
 export async function invalidateUserSessions(userId: string, exceptToken?: string): Promise<void> {
+  // 사본은 남길 세션까지 다 지운다 — 남은 것은 다음 확인에서 DB 를 한 번 물어 다시 생긴다
+  await dropCachedSessionsOfUser(userId);
   const db = getDb();
   if (exceptToken) {
     const keep = hashSessionToken(exceptToken);
