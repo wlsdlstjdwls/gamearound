@@ -140,24 +140,24 @@ export const LOCAL_SEED_PLAN: Partial<Record<Source, { seedTop: number; limit?: 
  */
 export const CRON_SOURCES = ["nintendo", "nintendo_jp", "epic", "steam", "psstore", "xbox"] as const;
 // 주기는 vercel.json 의 crons 에 있다 — JSON 이라 주석을 못 달아 근거를 여기 적는다(시각은 UTC).
-//   /api/cron/crawl/nintendo/prices       15 */6 * * *          하루 4회 × 300건 = 1,200건/일
-//   /api/cron/crawl/nintendo/discover     45 1,7,13,19 * * *    하루 4회 × 60건 = 240건/일 (신규는 상품 HTML 이라 4초 간격을 탄다)
-//   /api/cron/crawl/nintendo_jp/prices    35 */12 * * *         하루 2회 × 300건 = 600건/일
-//   /api/cron/crawl/nintendo_jp/discover  5 2,14 * * *          하루 2회 × 60건 = 120건/일 (한 바퀴가 약 300페이지)
+//   /api/cron/crawl/nintendo/prices       15 0,6,12,18 * * *    하루 4회 × 300건 = 1,200건/일
+//   /api/cron/crawl/nintendo/discover     50 6,18 * * *         하루 2회 × 60건 = 120건/일 (신규는 상품 HTML 이라 4초 간격을 탄다. 2026-10-13 넷에서 둘로)
+//   /api/cron/crawl/nintendo_jp/prices    35 0,12 * * *         하루 2회 × 300건 = 600건/일
+//   /api/cron/crawl/nintendo_jp/discover  5 6,18 * * *          하루 2회 × 60건 = 120건/일 (한 바퀴가 약 300페이지)
 // 일본 몫을 2026-09-16 에 반으로 줄였다(넷에서 둘로). 이유는 산수다 — JP 행이 585개인데 하루 1,200건을
 // 돌고 있었다. 같은 행을 하루에 두 번 다시 묻고 있던 것이다. 600건이면 하루 한 바퀴다.
 // 더 줄이지 않는 이유: 일본에만 있는 스위치 작품이 목록에 안 나올 뿐 데이터로는 값이 있고
 // (KR, JP 둘 다 가진 게임 135건은 상세에서 엔화를 참고로 보여 준다), title_code 가 지역 간 동일 작품
 // 판정의 유일한 근거다(JP 474/585 가 코드를 갖는데 KR 은 270/1,118 뿐이다).
-//   /api/cron/crawl/epic/prices           25 */6 * * *          하루 4회 × 110건 = 440건/일 (DLC 몫을 떼며 120에서 내렸다)
-//   /api/cron/crawl/epic/discover         55 3,9,15,21 * * *    하루 4회 × 60건 = 240건/일 (한 바퀴가 175페이지)
+//   /api/cron/crawl/epic/prices           25 0,6,12,18 * * *    하루 4회 × 110건 = 440건/일 (DLC 몫을 떼며 120에서 내렸다)
+//   /api/cron/crawl/epic/discover         55 6,18 * * *         하루 2회 × 60건 = 120건/일 (한 바퀴가 175페이지. 2026-10-13 넷에서 둘로)
 // 가격 갱신 주기를 발견보다 성기게 두는 이유(2026-09-14): 카탈로그가 비어 있는 단계에서는
 // 같은 몇십 건을 하루에 열두 번 다시 묻는 것보다 새 게임을 들이는 쪽이 낫다. 보유가 갱신 몫을
 // 따라잡으면(닌텐도 168건, Epic 520건) 그때 prices 주기를 다시 촘촘하게 한다.
 // 분을 0 으로 두지 않는 이유: Vercel 크론은 정각에 몰리고, 몰리면 실행이 뒤로 밀린다.
 //
-// 발견만 맡는 네 소스(2026-09-15 추가). 하루 2회씩, 20분 간격으로 흩어 둔다:
-//   /api/cron/crawl/steam/discover    10 4,16 * * *     하루 2회 × 140건
+// 발견만 맡는 네 소스(2026-09-15 추가). 하루 2회씩, 아래 창 안에 둔다:
+//   /api/cron/crawl/steam/discover    10 6,12 * * *     하루 2회 × 140건 (18시 창은 스팀 가격 18:20 과 락이 겹쳐 12시로)
 //   /api/cron/crawl/steam/prices      20 17,18 * * *    하루 2회 × 700건 — 세일 문이 열린 직후를 잡는 자리(2026-10-02 추가)
 //     스팀 할인은 태평양 오전 10시(서머타임 17:00Z, 아니면 18:00Z)에 바뀐다. Actions 의 crawl-prices 도
 //     그 시각(10 17)에 예약돼 있지만 **실제로는 4~6시간 늦게 돈다** — 2026-09-29~10-01 sync_logs 실측으로
@@ -166,32 +166,37 @@ export const CRON_SOURCES = ["nintendo", "nintendo_jp", "epic", "steam", "psstor
 //     두 시각인 이유: 겨울, 설 세일은 18:00Z 에 열린다(lib/sales/calendar 의 startHourUtc).
 //     Actions 회차는 그대로 둔다 — 이쪽은 700건이라 스팀 11,222행의 일부만 돌고, 나머지는 그쪽이 덮는다.
 //     Actions 가 정시에 와서 락이 겹치면 한쪽이 빈손으로 끝날 뿐이고, 어느 쪽이든 값은 그 시각에 들어온다.
-//   /api/cron/crawl/xbox/discover     50 4,16 * * *     하루 2회 × 180건 (KR 16,991건)
+//   /api/cron/crawl/xbox/discover     40 6,18 * * *     하루 2회 × 180건 (KR 16,991건)
 //   /api/cron/crawl/xbox/prices       20 0,6,12,18 * * *  하루 4회 × 800건 = 3,200건/일 (2026-10-02 추가)
 //     Actions 에서 하루 200건이던 것을 옮겼다 — 32,526행 한 바퀴가 163일이라 세일이 열려도 몇 주 뒤에야 값이 들어왔다.
 //     0시를 첫 회차로 둔 이유: Xbox 할인은 대부분 00:00Z(한국 오전 9시)에 시작한다
 //     (최근 60일 discount_starts_at 시각 분포: 0시 658건, 19시 37건, 10시 25건).
-//     Xbox 의 다른 크론(발견 4:50, 16:50, 매칭 8:40, 20:40)과 Actions 백업(예약 17:10, 실제 21시대 시작)과 안 겹친다.
+//     Xbox 의 다른 크론(발견 6:40, 18:40, 매칭 12:50)은 가격 회차(약 6분)가 끝난 뒤에 온다.
 // 넷 중 둘은 껐고 크론도 뺐다. 몫은 아래 CRON_PLAN 에 그대로 남겨 둔다 — 다시 켤 때 근거를 다시 재지 않으려고다.
 //
 // psstore 는 2026-09-16 에 껐다가 같은 날 되살리며 **가격까지 크론으로 옮겼다**:
-//   /api/cron/crawl/psstore/prices    45 */6 * * *   하루 4회 × 300건 = 1,200건/일
-//   /api/cron/crawl/psstore/discover  30 4,16 * * *   하루 2회 × 120건
+//   /api/cron/crawl/psstore/prices    45 0,6,12,18 * * *   하루 4회 × 300건 = 1,200건/일
+//   /api/cron/crawl/psstore/discover  0 6,18 * * *    하루 2회 × 120건
 // Actions 로 되돌리지 않은 이유: 그 자리는 하루 2회 × 200건(408건/일)이 한계였고 그 속도로는
 // 한 바퀴가 108일이다. 43,405행 중 98.7%가 출시일을 모르는 상태라(ps4 122/2,416, ps5 424/2,365)
 // 그 주기로는 화면에 보이는 값이 영영 안 채워진다. 크론 1회는 800초까지 쓸 수 있어 300건이 들어가고,
 // Actions 분도 12.3분/회를 통째로 돌려받는다. 두 곳에서 같이 돌리지 않는다 — Redis 락에 걸려 한쪽이 빈손이 된다.
 // 갱신이 본편부터 도는 것은 REFRESH_MAIN_SHARE 가 맡는다(43,405행 중 본편은 4,781행뿐이다).
 //
-// 교차 매칭은 2026-09-16 에 자기 모드를 받았다(CRON_MODES 의 match). 하루 2회씩, 20분 간격으로 흩어 둔다:
-//   /api/cron/crawl/steam/match        20 8,20 * * *    하루 2회 × 150건
-//   /api/cron/crawl/xbox/match         40 8,20 * * *    하루 2회 × 150건
-//   /api/cron/crawl/psstore/match      0 9,21 * * *     하루 2회 × 200건
-//   /api/cron/crawl/epic/match         20 9,21 * * *    하루 2회 × 200건
-//   /api/cron/crawl/nintendo/match     40 9,21 * * *    하루 2회 × 60건 (간격 4초라 제일 적다)
-//   /api/cron/crawl/nintendo_jp/match  0 10,22 * * *    하루 2회 × 200건
-// 시각을 오전 8~10시, 오후 8~10시(UTC)에 몰아 둔 이유: 가격과 발견이 쓰지 않는 시간대다.
-// 같은 소스를 두 실행이 동시에 잡으면 Redis 락에 걸려 한쪽이 빈손으로 끝난다.
+// 교차 매칭은 2026-09-16 에 자기 모드를 받았다(CRON_MODES 의 match). 2026-10-13 에 하루 2회에서 1회로 줄였다:
+//   /api/cron/crawl/steam/match        50 0 * * *       하루 1회 × 150건
+//   /api/cron/crawl/xbox/match         50 12 * * *      하루 1회 × 150건
+//   /api/cron/crawl/psstore/match      5 12 * * *       하루 1회 × 200건
+//   /api/cron/crawl/epic/match         5 0 * * *        하루 1회 × 200건
+//   /api/cron/crawl/nintendo/match     55 12 * * *      하루 1회 × 60건 (간격 4초라 제일 적다)
+//   /api/cron/crawl/nintendo_jp/match  5 12 * * *       하루 1회 × 200건
+// 같은 소스의 가격 회차와 25분 넘게 띄운다. 같은 소스를 두 실행이 동시에 잡으면 Redis 락에 걸려 한쪽이 빈손으로 끝난다.
+//
+// **DB 를 쓰는 실행은 0, 6, 12, 18시(UTC) 창과 스팀 세일 자리(17시)에만 둔다(2026-10-13).**
+// Neon 무료 compute 한도(월 100 CU-시간)를 열이틀 만에 넘겨 DB 가 정지됐다. 크론이 매시간 :05~:55 로 흩어져 있어
+// DB 가 마지막 질의 뒤 5분을 쉬지 못해 하루 24시간 깨어 있었다. 창으로 모으면 하루 약 5~6시간만 깨어 있다.
+// 가격 회차의 시각과 횟수는 그대로다 — 할인 반영 속도는 안 바뀐다. 줄인 것은 발견(닌텐도, 에픽 넷에서 둘), 매칭(둘에서 하나),
+// 위키데이터 별칭(넷에서 둘)뿐이다. 새 크론을 더할 때도 이 창 안에 넣는다. 창 밖에 하나만 둬도 그 시간 동안 DB 가 깬다.
 //
 // 크론 자리를 더 늘릴 때 발견 쪽으로 기울지 말 것 — 굶은 것은 발견이 아니라 갱신 주기였다
 // (psstore 하루 408건으로 한 바퀴 108일, xbox 587건으로 52일).
@@ -470,28 +475,30 @@ export const CRON_META_MS_PER_ITEM: Record<CronMetaSource, Record<CronMetaMode, 
  * 손으로 곱하지 말 것 — cron-plan.test 가 같은 식으로 다시 세고 넘치면 막는다.
  *
  * 주기는 vercel.json 에 있다(시각은 UTC). 회차 수는 runsPerDay 에 같이 적는다:
- *   /api/cron/crawl/wikidata_game/match    0 5,11,17,23 * * *    하루 4회 × 58건 = 232건/일
- *   /api/cron/crawl/wikidata_game/collect  30 5,11,17,23 * * *   하루 4회 × 71건 = 284건/일
+ *   /api/cron/crawl/wikidata_game/match    0 0,12 * * *          하루 2회 × 58건 = 116건/일
+ *   /api/cron/crawl/wikidata_game/collect  30 0,18 * * *         하루 2회 × 71건 = 142건/일
+ *   /api/cron/crawl/wikidata/collect       40 0,12 * * *         하루 2회 × 230개 이름
+ * 2026-10-13 에 넷에서 둘로 줄였다 — DB 를 깨우는 창을 줄이려고(CRON_SOURCES 주석의 창). 별칭은 급한 값이 아니다.
  *
  * collect 하루 몫이 match 보다 많아야 하는 이유: 매칭한 것 중 auto 로 붙는 만큼이 조회 대기줄에
  * 새로 선다. 붙는 비율은 어떤 게임이 줄에 섰느냐로 갈린다 — 2026-09-17 실측으로 인기 한글 제목
  * 표본은 91%(118건 중 107), 생성일 순으로 도는 크론 큐 표본은 78%(60건 중 47)였다.
- * 높은 쪽으로 세도 232 × 0.91 = 211건이라 collect 284건 안에 든다.
+ * 높은 쪽으로 세도 116 × 0.91 = 106건이라 collect 142건 안에 든다.
  * collect 가 그보다 적으면 줄이 계속 길어진다 — crawl-catalog.yml 의 match=120 대 limit=60 이
  * 정확히 그 상태였다. 회차당 건수로는 이 관계가 안 보인다(71 < 60 이 아니다). 하루로 세야 보인다.
  *
  * 한 바퀴: 매칭 대기 14,263건(2026-09-17) 기준 약 62일. 신규 유입은 하루 수십 건까지 떨어졌으므로
  * (최근 7일 등록 10,419 → 3,791 → 428 → 53) 한 바퀴를 돌고 나면 이 몫은 남아돈다. 그때 주기를 줄인다.
  *
- * 시각은 기존 크론이 비워 둔 자리다(5, 11, 17, 23시 UTC). 다른 소스와 겹쳐도 락은 소스별이라 상관없지만
+ * 시각은 DB 창(0, 12, 18시 UTC) 안이다. 다른 소스와 겹쳐도 락은 소스별이라 상관없지만
  * match 와 collect 는 같은 소스라 30분 띄운다 — 겹치면 한쪽이 빈손이 된다.
  */
 export const CRON_META_PLAN: Record<CronMetaSource, Record<CronMetaMode, CronMetaRunPlan>> = {
   wikidata_game: {
     // 58 × 8.93초 × 1.15 = 596초. 실측 60건 535.6초(여유 없이 쓰면 616초)
-    match: { limit: 0, match: 58, runsPerDay: 4 },
+    match: { limit: 0, match: 58, runsPerDay: 2 },
     // 71 × 7.31초 × 1.15 = 597초. 88 로 잡았다가 실측 643초를 맞은 자리다(위 상수 주석)
-    collect: { limit: 71, match: 0, runsPerDay: 4 },
+    collect: { limit: 71, match: 0, runsPerDay: 2 },
   },
   wikidata: {
     match: { limit: 0, match: 0, runsPerDay: 0 },
