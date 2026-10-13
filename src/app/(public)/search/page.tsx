@@ -12,6 +12,8 @@
 import type { Metadata } from "next";
 import { GameCard } from "@/components/game-card";
 import { EmptyState } from "@/components/empty-state";
+import { DbUnavailable } from "@/components/db-unavailable";
+import { nullIfDbUnavailable } from "@/lib/db-errors";
 import { Page, PageHead } from "@/components/ui/page";
 import { HOME_GRID_CLASS } from "@/lib/games/grid";
 import { stagger } from "@/lib/motion";
@@ -84,7 +86,16 @@ export default async function SearchPage({ searchParams }: Props) {
     );
   }
 
-  const results = sortResults(await searchGames(q), sort);
+  const found = await nullIfDbUnavailable(searchGames(q));
+  if (!found) {
+    return (
+      <Page gap={20}>
+        <PageHead title={<>&ldquo;{q}&rdquo; 검색 결과</>} />
+        <DbUnavailable retryHref={`${ROUTES.search}?q=${encodeURIComponent(q)}`} />
+      </Page>
+    );
+  }
+  const results = sortResults(found, sort);
 
   return (
     <Page gap={22}>

@@ -11,6 +11,8 @@ import type { Metadata } from "next";
 import { Suspense } from "react";
 import { GameCard, highlightFromFilter } from "@/components/game-card";
 import { EmptyState } from "@/components/empty-state";
+import { DbUnavailable } from "@/components/db-unavailable";
+import { nullIfDbUnavailable } from "@/lib/db-errors";
 import { GameFilters, type PersonalFilter } from "@/components/game-filters";
 import { FilterStateProvider, PendingResults } from "@/components/game-filters/optimistic";
 import { PendingBar } from "@/components/ui/nav-pending";
@@ -82,12 +84,15 @@ function isFiltered(f: GameListFilter): boolean {
  */
 async function FilterColumn({ filter, personal }: { filter: GamesQuery; personal: PersonalFilter | null }) {
   // 세일 칩은 덤이다 — 판정이 실패해도 필터 기둥은 서야 해서 실패를 "세일 없음" 으로 접는다
-  const [facets, sale] = await Promise.all([getGameFacets(), getRunningSteamSale().catch((): RunningSaleDto | null => null)]);
+  const [facets, sale] = await Promise.all([nullIfDbUnavailable(getGameFacets()), getRunningSteamSale().catch((): RunningSaleDto | null => null)]);
+  // DB 가 안 열린 날에는 기둥을 비운다 — 선택지 없는 필터는 눌러도 아무 일이 없어 고장으로 읽힌다. 안내는 결과 자리가 한다
+  if (!facets) return null;
   return <GameFilters facets={facets} filter={filter} sale={sale} personal={personal} />;
 }
 
 async function Results({ filter }: { filter: GameListFilter }) {
-  const result = await listGames(filter);
+  const result = await nullIfDbUnavailable(listGames(filter));
+  if (!result) return <DbUnavailable retryHref={gamesHref(filter)} />;
   const highlight = highlightFromFilter(filter);
 
   if (result.items.length === 0) {
