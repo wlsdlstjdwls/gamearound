@@ -17,6 +17,7 @@
 // 다르게 생겨서, 목록에서 기억한 그림을 여기서 다시 찾아야 한다.
 import type { Metadata } from "next";
 import { Suspense } from "react";
+import { DbUnavailable } from "@/components/db-unavailable";
 import { GameCard } from "@/components/game-card";
 import { GamesInfinite } from "@/components/games-infinite";
 import { UpcomingMonthNav } from "@/components/upcoming-month-nav";
@@ -27,6 +28,8 @@ import { UPCOMING_MESSAGES as M, upcomingAddonParentText, upcomingCountText } fr
 import { HOME_GRID_CLASS } from "@/lib/games/grid";
 import { pickUpcomingMonth, UPCOMING_MONTH_PARAM } from "@/lib/games/upcoming";
 import { stagger } from "@/lib/motion";
+import { nullIfDbUnavailable } from "@/lib/db-errors";
+import { ROUTES } from "@/lib/routes";
 import { getUpcomingAddons, getUpcomingMonthPage, getUpcomingMonthPicks, getUpcomingMonths, UPCOMING_ADDON_LIMIT, UPCOMING_PAGE_SIZE } from "@/server/services/games";
 import { GamesGridSkeleton } from "@/app/(public)/games/skeletons";
 import { loadMoreUpcoming } from "./actions";
@@ -48,7 +51,9 @@ type Props = { searchParams: Promise<Record<string, string | string[] | undefine
  * 기대작이 없는 달은 소제목도 세우지 않는다 — "날짜순 전체" 한 마디만 서면 무엇과 갈라 둔 것인지가 없다.
  */
 async function MonthGames({ monthKey }: { monthKey: string }) {
-  const [picks, { items, hasMore }] = await Promise.all([getUpcomingMonthPicks(monthKey), getUpcomingMonthPage(monthKey, 1)]);
+  const loaded = await nullIfDbUnavailable(Promise.all([getUpcomingMonthPicks(monthKey), getUpcomingMonthPage(monthKey, 1)]));
+  if (!loaded) return <DbUnavailable retryHref={ROUTES.upcoming} />;
+  const [picks, { items, hasMore }] = loaded;
   const list = (
     <GamesInfinite load={loadMoreUpcoming.bind(null, monthKey)} initialHasMore={hasMore} gridClass={HOME_GRID_CLASS}>
       {items.map((entry, i) => (
@@ -88,8 +93,9 @@ async function MonthGames({ monthKey }: { monthKey: string }) {
  * 달 목록 아래에 둔다: 이 화면의 본론은 "어떤 게임이 나오나" 이고 DLC 는 그 곁가지다.
  */
 async function UpcomingAddons() {
-  const addons = await getUpcomingAddons();
-  if (addons.length === 0) return null;
+  // DLC 줄은 곁가지라 DB 가 안 열린 날엔 줄째 안 세운다 — 안내는 달 목록 자리 하나로 충분하다
+  const addons = await nullIfDbUnavailable(getUpcomingAddons());
+  if (!addons || addons.length === 0) return null;
   return (
     <section aria-labelledby="upcoming-addons-heading" className="flex flex-col gap-4">
       <SectionHead id="upcoming-addons-heading" title={M.addonsTitle} note={M.addonsNote} />
@@ -110,10 +116,21 @@ async function UpcomingAddons() {
 }
 
 export default async function UpcomingPage({ searchParams }: Props) {
-  const months = await getUpcomingMonths();
+  // 주소부터 읽는다 — 그래야 Next 가 이 화면을 요청 때 그리는 화면으로 알고 빌드 때 미리 그리지 않는다.
+  // 질의를 먼저 보내면 빌드가 DB 를 친다. 캐시 없는 빌드 머신에서 DB 가 안 열리면 배포가 통째로 실패한다(2026-10-13 실측)
+  const requested = firstParam((await searchParams)[UPCOMING_MONTH_PARAM]);
+  const months = await nullIfDbUnavailable(getUpcomingMonths());
+  if (!months) {
+    return (
+      <Page gap={30}>
+        <PageHead title={M.title} hideTitle />
+        <DbUnavailable retryHref={ROUTES.upcoming} />
+      </Page>
+    );
+  }
   const activeKey = pickUpcomingMonth(
     months.map((m) => m.key),
-    firstParam((await searchParams)[UPCOMING_MONTH_PARAM]),
+    requested,
   );
   const active = months.find((m) => m.key === activeKey);
 
