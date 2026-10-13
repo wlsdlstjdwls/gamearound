@@ -1,5 +1,6 @@
 "use server";
 // 인디 홍보 글 관리 Server Action — 숨기기, 되살리기, 게임 연결 확인과 끊기. 관리자 role 을 다시 본다(§6).
+import { actionError } from "@/lib/db-errors";
 import { revalidatePath } from "next/cache";
 import { indiePath, ROUTES } from "@/lib/routes";
 import { INDIE_ADMIN_MESSAGES as A, INDIE_FORM_MESSAGES as M } from "@/lib/indie/messages";
@@ -25,6 +26,6 @@ export async function moderateIndiePostAction(_prev: IndieModerationState, formD
     revalidatePath(indiePath(slug));
     return { ok: true, message: A.done };
   } catch (e) {
-    return { ok: false, error: e instanceof Error ? e.message : M.badRequest };
+    return { ok: false, error: actionError(e, M.badRequest) };
   }
 }

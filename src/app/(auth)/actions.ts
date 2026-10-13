@@ -1,6 +1,8 @@
 "use server";
 // 인증 Server Action (§5.2: 호출자가 우리 UI → Server Action). zod 검증 → 레이트리밋 → 서비스 → 세션 쿠키.
 // 리다이렉트는 클라이언트가 수행한다(헤더 SessionProvider 갱신 후 soft navigation) — 액션은 redirectTo만 돌려준다.
+import { unavailableOr } from "@/lib/db-errors";
+import { MAINTENANCE_MESSAGES } from "@/lib/messages";
 import { RATE_LIMIT } from "@/lib/auth/constants";
 import { AUTH_MESSAGES as M } from "@/lib/auth/messages";
 import { emailSchema, fieldErrorsOf, signInInputFromForm, signInSchema, signUpInputFromForm, signUpSchema } from "@/lib/auth/schemas";
@@ -47,7 +49,7 @@ export async function signUpAction(_prev: AuthActionState, formData: FormData): 
   } catch (e) {
     if (e instanceof EmailTakenError) return { ok: false, fieldErrors: { email: M.emailTaken } };
     console.error("[auth] 회원가입 실패:", e instanceof Error ? e.message : e);
-    return { ok: false, error: M.serverError };
+    return { ok: false, error: unavailableOr(e, M.serverError, MAINTENANCE_MESSAGES.auth) };
   }
 }
 
@@ -90,7 +92,7 @@ export async function signInAction(_prev: AuthActionState, formData: FormData): 
     return { ok: true, redirectTo: nextFrom(formData) };
   } catch (e) {
     console.error("[auth] 로그인 실패:", e instanceof Error ? e.message : e);
-    return { ok: false, error: M.serverError };
+    return { ok: false, error: unavailableOr(e, M.serverError, MAINTENANCE_MESSAGES.auth) };
   }
 }
 

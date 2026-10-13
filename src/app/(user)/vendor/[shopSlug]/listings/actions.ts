@@ -4,6 +4,7 @@
 // 매장 권한을 여기서 다시 본다. 레이아웃이 로그인을 봤다는 것은 "사람인가" 까지만 답한 것이고,
 // **남의 매장** 은 그것으로 안 막힌다 — 폼에 남의 shopId 를 박아 보내는 것이 이 도메인의 첫 공격이다
 // (server/auth/shop-access, 설계서 §10).
+import { actionError } from "@/lib/db-errors";
 import { revalidatePath } from "next/cache";
 import { unstable_rethrow } from "next/navigation";
 import type { AuditSource } from "@/server/db/audit";
@@ -103,7 +104,7 @@ export async function createListingAction(shopSlug: string, _prev: ListingState,
   } catch (e) {
     // 권한 없음, 세션 만료 이동을 오류 문구로 삼키지 않는다(아래 importCsvAction 과 같은 이유)
     unstable_rethrow(e);
-    return { ok: false, error: e instanceof Error ? e.message : LISTING_MESSAGES.badRequest };
+    return { ok: false, error: actionError(e, LISTING_MESSAGES.badRequest) };
   }
 }
 
@@ -122,7 +123,7 @@ export async function updateStockAction(shopSlug: string, _prev: ListingState, f
   } catch (e) {
     // 권한 없음, 세션 만료 이동을 오류 문구로 삼키지 않는다(아래 importCsvAction 과 같은 이유)
     unstable_rethrow(e);
-    return { ok: false, error: e instanceof Error ? e.message : LISTING_MESSAGES.badRequest };
+    return { ok: false, error: actionError(e, LISTING_MESSAGES.badRequest) };
   }
 }
 
@@ -138,7 +139,7 @@ export async function removeListingAction(shopSlug: string, _prev: ListingState,
   } catch (e) {
     // 권한 없음, 세션 만료 이동을 오류 문구로 삼키지 않는다(아래 importCsvAction 과 같은 이유)
     unstable_rethrow(e);
-    return { ok: false, error: e instanceof Error ? e.message : LISTING_MESSAGES.badRequest };
+    return { ok: false, error: actionError(e, LISTING_MESSAGES.badRequest) };
   }
 }
 
@@ -169,7 +170,7 @@ export async function importCsvAction(shopSlug: string, _prev: CsvImportState, f
   } catch (e) {
     // 권한 없음, 세션 만료 이동을 오류 문구로 삼키지 않는다(staff/actions 의 fail 주석)
     unstable_rethrow(e);
-    return { ok: false, error: e instanceof Error ? e.message : LISTING_MESSAGES.badRequest };
+    return { ok: false, error: actionError(e, LISTING_MESSAGES.badRequest) };
   }
 }
 

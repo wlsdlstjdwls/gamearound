@@ -26,3 +26,21 @@ export const NOT_FOUND_MESSAGES = {
 export const LOADING_MESSAGES = {
   label: "불러오는 중이에요",
 } as const;
+
+/**
+ * DB 가 아예 안 열릴 때(lib/db-errors 의 isDbUnavailable) 쓰는 말. 원인(한도, 장애)은 적지 않는다 —
+ * 회원이 할 수 있는 일은 기다리는 것뿐이라 "잠시 뒤" 를 말한다.
+ */
+export const MAINTENANCE_MESSAGES = {
+  write: "지금은 점검 중이라 저장할 수 없어요. 잠시 뒤에 다시 시도해 주세요.",
+  auth: "지금은 점검 중이라 로그인과 가입을 잠시 쓸 수 없어요. 잠시 뒤에 다시 시도해 주세요.",
+  read: "지금 게임 정보를 불러오지 못하고 있어요. 잠시 뒤에 다시 들러 주세요.",
+  readTitle: "지금 게임 정보를 불러오지 못하고 있어요",
+  readBody: "잠깐 사이의 문제일 수 있어요. 조금 뒤에 다시 들러 주세요.",
+  retry: "다시 시도",
+} as const;
+
+/** 액션이 원인을 말할 수 없을 때의 기본 실패 문구 */
+export const ACTION_MESSAGES = {
+  failed: "처리하지 못했어요. 잠시 뒤에 다시 시도해 주세요.",
+} as const;

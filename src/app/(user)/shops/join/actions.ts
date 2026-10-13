@@ -1,6 +1,7 @@
 "use server";
 // 입점 신청 Server Action — zod 로 검증하고 서비스로 넘긴다(설계서 §5.2).
 // proxy 가 로그인을 보지만 여기서 다시 본다(§6) — 액션은 주소로 직접 불릴 수 있다.
+import { actionError } from "@/lib/db-errors";
 import { revalidatePath } from "next/cache";
 import { ROUTES } from "@/lib/routes";
 import { SHOP_MESSAGES } from "@/lib/shops/messages";
@@ -34,6 +35,6 @@ export async function applyForShopAction(_prev: ShopJoinState, formData: FormDat
     revalidatePath(ROUTES.shopsJoin);
     return { ok: true, message: SHOP_MESSAGES.applied };
   } catch (e) {
-    return { ok: false, error: e instanceof Error ? e.message : SHOP_MESSAGES.badRequest };
+    return { ok: false, error: actionError(e, SHOP_MESSAGES.badRequest) };
   }
 }

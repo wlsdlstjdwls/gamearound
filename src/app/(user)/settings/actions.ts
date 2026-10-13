@@ -3,6 +3,7 @@
 //
 // 실패를 던지지 않고 돌려주는 이유: 끄기는 확인창까지 거친 뒤라, 에러 화면으로 튀면
 // "껐는지 안 껐는지" 를 사람이 알 수 없다. 버튼 옆에 한 줄로 말하는 편이 낫다.
+import { unavailableOr } from "@/lib/db-errors";
 import { revalidatePath } from "next/cache";
 import { ROUTES } from "@/lib/routes";
 import { ONBOARDING_MESSAGES as M } from "@/lib/onboarding/messages";
@@ -16,7 +17,7 @@ export async function revokePersonalizationAction(): Promise<RevokeState> {
     await revokeConsent();
   } catch (e) {
     console.error("[settings] 개인화 끄기 실패", errorMessage(e));
-    return { ok: false, error: M.settings.offFailed };
+    return { ok: false, error: unavailableOr(e, M.settings.offFailed) };
   }
   // 홈 할인 줄의 개인화는 /api/me/picks 가 매번 새로 읽으므로 여기서 무효화할 것은 설정 화면뿐이다
   revalidatePath(ROUTES.settings);
@@ -29,7 +30,7 @@ export async function setPersonalizationAppliedAction(applied: boolean): Promise
     await setPersonalizationPaused(!applied);
   } catch (e) {
     console.error("[settings] 개인화 적용 바꾸기 실패", errorMessage(e));
-    return { ok: false, error: M.settings.applyFailed };
+    return { ok: false, error: unavailableOr(e, M.settings.applyFailed) };
   }
   // 목록 기본 조건(getMyListPreset)은 요청마다 읽지만, 설정 화면의 요약은 이 경로 캐시에 있다
   revalidatePath(ROUTES.settings);
@@ -42,7 +43,7 @@ export async function resetPersonalizationAction(): Promise<RevokeState> {
     await resetPersonalization();
   } catch (e) {
     console.error("[settings] 개인화 초기화 실패", errorMessage(e));
-    return { ok: false, error: M.settings.resetFailed };
+    return { ok: false, error: unavailableOr(e, M.settings.resetFailed) };
   }
   revalidatePath(ROUTES.settings);
   return { ok: true };

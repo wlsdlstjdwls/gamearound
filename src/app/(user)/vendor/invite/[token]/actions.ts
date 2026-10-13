@@ -1,5 +1,6 @@
 "use server";
 // 직원 초대 수락 — 설계서 §9. 판정 규칙은 lib/shops/staff-schemas 의 judgeInvite 한 곳이다.
+import { actionError } from "@/lib/db-errors";
 import { redirect, unstable_rethrow } from "next/navigation";
 import { vendorListingsPath } from "@/lib/routes";
 import { STAFF_MESSAGES } from "@/lib/shops/staff-messages";
@@ -16,7 +17,7 @@ export async function acceptInviteAction(token: string): Promise<AcceptState> {
     slug = await acceptStaffInvite(token, { id: user.id, email: user.email });
   } catch (e) {
     unstable_rethrow(e);
-    return { ok: false, error: e instanceof Error ? e.message : STAFF_MESSAGES.badRequest };
+    return { ok: false, error: actionError(e, STAFF_MESSAGES.badRequest) };
   }
   // redirect 는 예외로 동작한다 — try 밖에서 불러야 위 catch 가 삼키지 않는다
   redirect(vendorListingsPath(slug));

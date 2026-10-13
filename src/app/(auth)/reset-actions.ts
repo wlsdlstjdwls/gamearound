@@ -1,6 +1,8 @@
 "use server";
 // 비밀번호 재설정 Server Action 둘 — 링크 받기, 새 비밀번호 저장. 로그인/가입 액션과 같은 모양(zod → 레이트리밋 → 서비스)이다.
 // 성공하면 redirectTo 만 돌려주고 이동은 useAuthForm 이 한다(문서를 새로 연다).
+import { unavailableOr } from "@/lib/db-errors";
+import { MAINTENANCE_MESSAGES } from "@/lib/messages";
 import { after } from "next/server";
 import { RATE_LIMIT } from "@/lib/auth/constants";
 import { AUTH_MESSAGES as M } from "@/lib/auth/messages";
@@ -53,6 +55,6 @@ export async function resetPasswordAction(_prev: AuthActionState, formData: Form
     return { ok: true, redirectTo: resetDonePath() };
   } catch (e) {
     console.error("[auth] 비밀번호 재설정 실패:", e instanceof Error ? e.message : e);
-    return { ok: false, error: M.serverError };
+    return { ok: false, error: unavailableOr(e, M.serverError, MAINTENANCE_MESSAGES.auth) };
   }
 }

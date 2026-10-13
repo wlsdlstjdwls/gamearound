@@ -5,6 +5,8 @@
 // 사전이 300개가 넘어 고르는 목록이 스크롤 벽이 된다. 게다가 사람은 자기 부품을 정식 이름으로
 // 기억하지 않는다("1060", "지포스 1060 6기가"). 사양 문구를 알아보는 매칭기가 이미 있으므로
 // 같은 것을 여기에도 쓴다 — 못 알아보면 그 사실을 그 자리에서 말한다(지어내지 않는다).
+import { actionError } from "@/lib/db-errors";
+import { ACTION_MESSAGES } from "@/lib/messages";
 import { revalidatePath } from "next/cache";
 import { deviceSchema } from "@/lib/hardware/device-schemas";
 import { readDeviceForm } from "@/lib/hardware/device-input";
@@ -18,7 +20,7 @@ export type ActionState = { ok: true; message?: string } | { ok: false; error: s
 const idSchema = z.uuid({ message: "잘못된 기기 ID예요" });
 
 function fail(e: unknown): ActionState {
-  return { ok: false, error: e instanceof Error ? e.message : "처리하지 못했어요" };
+  return { ok: false, error: actionError(e, ACTION_MESSAGES.failed) };
 }
 
 /** 못 알아본 부품이 있으면 저장은 하되 그 사실을 말한다 — 조용히 빈칸으로 두면 판정이 왜 비는지 모른다 */

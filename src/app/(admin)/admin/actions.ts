@@ -1,5 +1,6 @@
 "use server";
 // 관리자 Server Action (§5.2). 각 액션은 requireAdmin()으로 role 재검증(§6) 후 서비스 호출.
+import { actionError } from "@/lib/db-errors";
 import { revalidatePath, revalidateTag } from "next/cache";
 import { z } from "zod";
 import { platformEnum, sourceEnum, upgradeKindEnum } from "@/server/db/schema";
@@ -61,7 +62,7 @@ const upgradeSchema = z.object({
 });
 
 function fail(e: unknown): AdminActionState {
-  return { ok: false, error: e instanceof Error ? e.message : A.failed };
+  return { ok: false, error: actionError(e, A.failed) };
 }
 
 // 매칭 판정은 대기 큐와 그 게임 화면 둘에 나타난다 — 둘 다 지운다.

@@ -4,6 +4,7 @@
 // 초대, 취소, 내보내기는 **대표만** 한다. 매니저까지 열면 매니저가 다른 매니저를 들이고 내보내는 길이 생기고,
 // 그러면 "누가 이 사람을 들였나" 의 답이 대표 손을 떠난다. 역할이 더 필요해지면 그때 넓힌다.
 // 관리자는 requireShopRole 이 늘 통과시키고, 그 일은 감사 컬럼에 admin 으로 남는다.
+import { actionError } from "@/lib/db-errors";
 import { revalidatePath } from "next/cache";
 import { unstable_rethrow } from "next/navigation";
 import { vendorStaffPath, staffInvitePath } from "@/lib/routes";
@@ -25,7 +26,7 @@ function openAsOwner(shopSlug: string) {
  */
 function fail(e: unknown): StaffState {
   unstable_rethrow(e);
-  return { ok: false, error: e instanceof Error ? e.message : STAFF_MESSAGES.badRequest };
+  return { ok: false, error: actionError(e, STAFF_MESSAGES.badRequest) };
 }
 
 export async function inviteStaffAction(shopSlug: string, _prev: StaffState, formData: FormData): Promise<StaffState> {

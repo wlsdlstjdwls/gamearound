@@ -1,5 +1,7 @@
 "use server";
 // 가격 알림 Server Action (§5.2). zod 검증 후 서비스 호출. 서비스 내부에서 requireUser() 재검증(§6).
+import { actionError } from "@/lib/db-errors";
+import { ACTION_MESSAGES } from "@/lib/messages";
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { platformEnum } from "@/server/db/schema";
@@ -32,7 +34,7 @@ const createSchema = z.discriminatedUnion("mode", [
 const idSchema = z.uuid({ message: "잘못된 알림 ID입니다" });
 
 function fail(e: unknown): ActionState {
-  return { ok: false, error: e instanceof Error ? e.message : "처리에 실패했습니다" };
+  return { ok: false, error: actionError(e, ACTION_MESSAGES.failed) };
 }
 
 /** useActionState용: (prevState, formData) */

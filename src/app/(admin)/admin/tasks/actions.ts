@@ -1,5 +1,6 @@
 "use server";
 // 할 일 판 Server Action. 각 액션은 requireAdmin() 으로 role 을 재검증한다(§6) — 서비스도 한 번 더 본다.
+import { actionError } from "@/lib/db-errors";
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { ROUTES } from "@/lib/routes";
@@ -59,7 +60,7 @@ const createSchema = z.object({
 });
 
 function fail(e: unknown): TaskActionState {
-  return { ok: false, error: e instanceof Error ? e.message : ADMIN_ACTION_MESSAGES.failed };
+  return { ok: false, error: actionError(e, ADMIN_ACTION_MESSAGES.failed) };
 }
 
 function revalidate() {

@@ -1,5 +1,6 @@
 "use server";
 // 예약 특전 글 판정 Server Action — 게임 잇기(공개까지), 공개, 숨기기. 관리자 role 을 다시 본다(§6).
+import { actionError } from "@/lib/db-errors";
 import { revalidatePath } from "next/cache";
 import { gamePath, ROUTES } from "@/lib/routes";
 import { PREORDER_MESSAGES } from "@/lib/preorder/messages";
@@ -26,6 +27,6 @@ export async function moderatePreorderPostAction(_prev: PreorderModerationState,
     if (gameSlug) revalidatePath(gamePath(gameSlug));
     return { ok: true, message: A.done };
   } catch (e) {
-    return { ok: false, error: e instanceof Error ? e.message : A.badRequest };
+    return { ok: false, error: actionError(e, A.badRequest) };
   }
 }

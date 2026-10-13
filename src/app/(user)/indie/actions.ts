@@ -3,6 +3,7 @@
 //
 // 레이아웃이 로그인을 보지만 여기서 다시 본다 — 액션은 주소로 직접 불릴 수 있다.
 // 신고 액션도 여기 있다: 공개 상세에서 부르지만 하는 일은 "로그인한 사람의 쓰기" 라 같은 자리에 둔다.
+import { actionError } from "@/lib/db-errors";
 import { revalidatePath } from "next/cache";
 import { unstable_rethrow } from "next/navigation";
 import { indieEditPath, indiePath, ROUTES } from "@/lib/routes";
@@ -45,7 +46,7 @@ function refresh(slug: string, postId?: string): void {
 function fail(e: unknown): { ok: false; error: string } {
   // 세션 만료 이동을 오류 문구로 삼키지 않는다(vendor 액션들과 같은 규칙)
   unstable_rethrow(e);
-  return { ok: false, error: e instanceof Error && e.message ? e.message : M.badRequest };
+  return { ok: false, error: actionError(e, M.badRequest) };
 }
 
 /** 폼 값을 검증 전 꼴로 모은다. 링크는 칸마다 종류, 주소 짝이고 주소가 빈 칸은 버린다 */

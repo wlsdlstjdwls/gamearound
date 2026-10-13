@@ -1,6 +1,7 @@
 "use server";
 // 입점 심사 Server Action. 경로를 /admin 밖으로 뺀 것은 실수 방지고, 권한 검사는 여기다(설계서 §11).
 // 페이지가 막혀 있어도 액션은 주소로 직접 불릴 수 있다 — 그래서 액션마다 다시 본다(§6).
+import { actionError } from "@/lib/db-errors";
 import { revalidatePath } from "next/cache";
 import { ROUTES } from "@/lib/routes";
 import { SHOP_ADMIN_MESSAGES, SHOP_MESSAGES } from "@/lib/shops/messages";
@@ -33,6 +34,6 @@ export async function reviewShopAction(_prev: ShopReviewState, formData: FormDat
     revalidatePath(ROUTES.shopsJoinStatus);
     return { ok: true, message: DONE[parsed.data.decision] ?? SHOP_ADMIN_MESSAGES.approved };
   } catch (e) {
-    return { ok: false, error: e instanceof Error ? e.message : SHOP_MESSAGES.badRequest };
+    return { ok: false, error: actionError(e, SHOP_MESSAGES.badRequest) };
   }
 }

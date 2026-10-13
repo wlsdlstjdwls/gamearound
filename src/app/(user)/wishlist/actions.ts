@@ -1,5 +1,7 @@
 "use server";
 // 위시리스트 Server Action (§5.2). 서비스 내부에서 requireUser()로 auth 재검증(§6).
+import { actionError } from "@/lib/db-errors";
+import { ACTION_MESSAGES } from "@/lib/messages";
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { removeFromWishlist, toggleWishlist } from "@/server/services/wishlist";
@@ -15,7 +17,7 @@ export async function toggleWishlistAction(gameId: string): Promise<{ ok: true; 
     revalidatePath("/wishlist");
     return { ok: true, wished: r.wished };
   } catch (e) {
-    return { ok: false, error: e instanceof Error ? e.message : "실패" };
+    return { ok: false, error: actionError(e, ACTION_MESSAGES.failed) };
   }
 }
 
@@ -28,6 +30,6 @@ export async function removeFromWishlistAction(gameId: string): Promise<{ ok: tr
     revalidatePath("/wishlist");
     return { ok: true };
   } catch (e) {
-    return { ok: false, error: e instanceof Error ? e.message : "실패" };
+    return { ok: false, error: actionError(e, ACTION_MESSAGES.failed) };
   }
 }

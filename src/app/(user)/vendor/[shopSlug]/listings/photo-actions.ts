@@ -3,6 +3,7 @@
 //
 // 판매 목록 액션(actions.ts)과 파일을 가른 이유: 사진은 Blob 저장소와 오가는 별개 흐름이고,
 // 한 파일에 두면 곧 300줄을 넘는다(AGENTS §4). 권한 앞머리는 같은 것을 쓴다(server/auth/shop-access).
+import { actionError } from "@/lib/db-errors";
 import { revalidatePath } from "next/cache";
 import { unstable_rethrow } from "next/navigation";
 import { shopPath, vendorListingsPath } from "@/lib/routes";
@@ -25,7 +26,7 @@ function refresh(shopSlug: string): void {
 function fail(e: unknown): PhotoResult {
   // 권한 없음, 세션 만료 이동을 오류 문구로 삼키지 않는다(staff/actions 의 fail 주석)
   unstable_rethrow(e);
-  return { ok: false, error: e instanceof Error ? e.message : PHOTO_MESSAGES.failed };
+  return { ok: false, error: actionError(e, PHOTO_MESSAGES.failed) };
 }
 
 /** Blob 에 올린 사진을 판매 줄에 적는다. 주소를 믿지 않고 서비스가 저장소에 되묻는다 */
