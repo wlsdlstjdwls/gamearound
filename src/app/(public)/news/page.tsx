@@ -4,6 +4,8 @@
 // 뉴스와 목록이 같은 축이어서가 아니다 — 이 화면이 그 링크의 도착지다.
 //
 // 본문은 담지 않는다(§10 저작권). 제목을 누르면 매체 원문이 새 창으로 열린다.
+import { DbUnavailable } from "@/components/db-unavailable";
+import { DB_DOWN, orDbDown } from "@/lib/db-errors";
 import type { Metadata } from "next";
 import { NewsList } from "@/components/news-list";
 import { Pagination } from "@/components/pagination";
@@ -30,7 +32,17 @@ function readPage(raw: string | string[] | undefined): number {
 }
 
 export default async function NewsPage({ searchParams }: Props) {
-  const { items, total, page, totalPages } = await listNews(readPage((await searchParams).page));
+  const loaded = await orDbDown(listNews(readPage((await searchParams).page)));
+  // DB 가 안 열린 날: 제목은 세우고 목록 자리에만 안내를 둔다(components/db-unavailable)
+  if (loaded === DB_DOWN) {
+    return (
+      <Page gap={30}>
+        <PageHead title={M.title} />
+        <DbUnavailable retryHref={ROUTES.news} />
+      </Page>
+    );
+  }
+  const { items, total, page, totalPages } = loaded;
 
   return (
     <Page gap={30}>

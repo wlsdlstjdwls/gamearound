@@ -5,13 +5,15 @@
 //
 // 머리는 어두운 판(IndieListHero)이고 격자 끝에는 "내 게임도 소개해 보세요" 칸이 선다(2026-10-06 사용자: "심심하다").
 // 글이 몇 장 안 되는 지금은 그 칸이 빈자리를 메우면서 올리는 길을 한 번 더 건넨다.
+import { DbUnavailable } from "@/components/db-unavailable";
+import { DB_DOWN, orDbDown } from "@/lib/db-errors";
 import type { Metadata } from "next";
 import { EmptyState } from "@/components/empty-state";
 import { IndieCard } from "@/components/indie/indie-card";
 import { Pagination } from "@/components/pagination";
 import { IndieListHero } from "@/components/indie/list-hero";
 import { CtaTile } from "@/components/ui/cta-tile";
-import { Page } from "@/components/ui/page";
+import { Page, PageHead } from "@/components/ui/page";
 import { firstParam } from "@/lib/games-query";
 import { INDIE_STAGES } from "@/lib/indie/constants";
 import { INDIE_MESSAGES as M, INDIE_STAGE_LABEL } from "@/lib/indie/messages";
@@ -43,7 +45,17 @@ export default async function IndiePage({ searchParams }: Props) {
   const sp = await searchParams;
   const stage = parseStage(firstParam(sp.stage));
   const pageNum = Math.max(Number(firstParam(sp.page)) || 1, 1);
-  const result = await listIndiePosts(stage, pageNum);
+  const loaded = await orDbDown(listIndiePosts(stage, pageNum));
+  // DB 가 안 열린 날: 제목은 세우고 목록 자리에만 안내를 둔다(components/db-unavailable)
+  if (loaded === DB_DOWN) {
+    return (
+      <Page gap={22}>
+        <PageHead title={M.title} />
+        <DbUnavailable retryHref={ROUTES.indie} />
+      </Page>
+    );
+  }
+  const result = loaded;
 
   return (
     <Page gap={22}>

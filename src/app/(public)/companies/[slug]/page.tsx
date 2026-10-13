@@ -1,6 +1,8 @@
 // 회사 상세 — 회사 정보 + 그 회사의 게임 목록(개발작, 배급작 탭).
 // 회사 정보가 비어 있어도 화면이 서야 한다. 게임 목록만으로도 이 화면은 쓸모가 있기 때문에
 // "정보 없음"으로 막지 않고 헤더만 줄여서 낸다.
+import { DbUnavailablePage } from "@/components/db-unavailable";
+import { DB_DOWN, orDbDown } from "@/lib/db-errors";
 import type { Metadata } from "next";
 import { HOME_GRID_CLASS } from "@/lib/games/grid";
 import { notFound } from "next/navigation";
@@ -44,7 +46,8 @@ function href(slug: string, role: CompanyRoleFilter, page: number): string {
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const slug = decodeSlugParam((await params).slug);
-  const company = await getCompanyBySlug(slug);
+  const company = await orDbDown(getCompanyBySlug(slug));
+  if (company === DB_DOWN) return {};
   if (!company) return { title: "회사를 찾을 수 없어요" };
   const where = company.countryNameKo ? ` (${company.countryNameKo})` : "";
   return { title: `${company.name}${where}`, description: company.description ?? undefined };
@@ -58,7 +61,10 @@ export default async function CompanyPage({ params, searchParams }: Props) {
   const pageNum = Math.max(Number(firstParam(sp.page)) || 1, 1);
 
   // 목록도 slug 로 조회한다 — 회사 행이 오기를 기다릴 이유가 없다(왕복 한 번이 200ms 대)
-  const [company, result] = await Promise.all([getCompanyBySlug(slug), listCompanyGames(slug, role, pageNum)]);
+  const loaded = await orDbDown(Promise.all([getCompanyBySlug(slug), listCompanyGames(slug, role, pageNum)]));
+  // 장애를 404 로 그리지 않는다(lib/db-errors 의 orDbDown 주석)
+  if (loaded === DB_DOWN) return <DbUnavailablePage retryHref={companyPath(slug)} />;
+  const [company, result] = loaded;
   if (!company) notFound();
 
   return (

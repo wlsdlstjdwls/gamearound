@@ -11,6 +11,7 @@ import { GameCard } from "@/components/game-card";
 import { NewsList } from "@/components/news-list";
 import { HomeDeals } from "@/components/home-deals";
 import { EmptyState } from "@/components/empty-state";
+import { DbUnavailable } from "@/components/db-unavailable";
 import { Page, SectionHead } from "@/components/ui/page";
 import { Rail } from "@/components/ui/rail";
 import { HomeRanking } from "@/components/home/ranking";
@@ -87,13 +88,17 @@ export default async function HomePage() {
   // 곧 끝나는 할인은 서버가 따로 골라 준다 — 위 줄과 겹치지 않아야 해서다(services/games/home 주석)
   const { discounts, endingSoon, recentReleases, latestNews, storeDeals, popular, budget } = data;
 
+  // DB 가 안 열린 날에는 줄을 하나도 세우지 않는다. 빈 줄은 "할인 마감이 없어요", "뉴스가 없어요" 처럼 사실이 아닌 말을 한다
+  if (dbFailure) {
+    return (
+      <Page pad="home">
+        <DbUnavailable size="page" retryHref={ROUTES.home} footnote={dbFailure === "dev-hint" ? M.devDbHint : undefined} />
+      </Page>
+    );
+  }
+
   return (
     <Page pad="home" gap={56}>
-      {dbFailure && (
-        <div role="alert" className="rounded-xl bg-danger-soft px-4 py-3 text-[13px] text-danger">
-          {dbFailure === "dev-hint" ? M.devDbHint : M.dataUnavailable}
-        </div>
-      )}
 
       {runningSale && <HomeSaleBanner sale={runningSale.sale} preview={runningSale.preview} />}
 
@@ -107,8 +112,7 @@ export default async function HomePage() {
           title={M.discountsTitle}
           action={discounts.length > 0 && <SeeAll href={`${ROUTES.game}?sale=1`} />}
         />
-        {/* DB 가 안 열린 날 "할인 없음" 을 세우면 사실이 아닌 말이 된다 — 위 안내 한 줄로 충분하다 */}
-        {dbFailure ? null : discounts.length === 0 ? (
+        {discounts.length === 0 ? (
           <EmptyState
             title={M.discountsEmptyTitle}
             description={M.discountsEmptyBody}

@@ -83,12 +83,23 @@ export function unavailableOr(e: unknown, fallback: string, unavailable: string 
  * 캐시(unstable_cache)에 값이 있으면 애초에 DB 까지 안 가므로, 이 null 은 "처음 여는 조합" 에서만 나온다.
  */
 export async function nullIfDbUnavailable<T>(p: Promise<T>): Promise<T | null> {
+  const r = await orDbDown(p);
+  return r === DB_DOWN ? null : r;
+}
+
+/**
+ * "DB 가 안 열림" 표식. 상세처럼 null 이 이미 "없는 게임"(404) 을 뜻하는 조회에서는 nullIfDbUnavailable 을 못 쓴다 —
+ * 장애를 404 로 그리면 검색엔진이 멀쩡한 게임 주소를 지운다. 그래서 다른 값으로 돌려준다.
+ */
+export const DB_DOWN = Symbol("db-down");
+
+export async function orDbDown<T>(p: Promise<T>): Promise<T | typeof DB_DOWN> {
   try {
     return await p;
   } catch (e) {
     if (isDbUnavailable(e)) {
       console.error("[db] 안 열림, 안내로 접는다:", e instanceof Error ? e.message : String(e));
-      return null;
+      return DB_DOWN;
     }
     throw e;
   }

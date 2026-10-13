@@ -6,12 +6,14 @@
 //
 // 파는 물건은 판매 중과 품절만 보인다 — 작성 중과 숨김은 매장이 아직 안 내놓기로 한 줄이다
 // (services/listings 의 listPublicShopListings 주석).
+import { DbUnavailablePage } from "@/components/db-unavailable";
+import { DB_DOWN, orDbDown } from "@/lib/db-errors";
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { Page, PageHead, SectionHead, sectionCardClass } from "@/components/ui/page";
 import { buttonClass } from "@/components/ui/button";
-import { ROUTES } from "@/lib/routes";
+import { ROUTES, shopPath } from "@/lib/routes";
 import { SHOP_DIRECTORY_MESSAGES as M } from "@/lib/shops/messages";
 import { findPublicShopBySlug, type ShopPublic } from "@/server/services/shops";
 import { listPublicShopListings } from "@/server/services/listings";
@@ -21,7 +23,8 @@ type Props = { params: Promise<{ slug: string }> };
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { slug } = await params;
-  const found = await findPublicShopBySlug(slug);
+  const found = await orDbDown(findPublicShopBySlug(slug));
+  if (found === DB_DOWN) return {};
   if (!found) return { title: M.title };
   return { title: found.shop.name, description: found.shop.description ?? M.lead };
 }
@@ -40,11 +43,14 @@ function factsOf(shop: ShopPublic): Array<{ label: string; value: string }> {
 
 export default async function ShopPage({ params }: Props) {
   const { slug } = await params;
-  const found = await findPublicShopBySlug(slug);
+  const found = await orDbDown(findPublicShopBySlug(slug));
+  // 장애를 404 로 그리지 않는다(lib/db-errors 의 orDbDown 주석)
+  if (found === DB_DOWN) return <DbUnavailablePage retryHref={shopPath(slug)} />;
   if (!found) notFound();
   const { shop, suspended } = found;
   const facts = factsOf(shop);
-  const listings = await listPublicShopListings(found.shopId);
+  const listings = await orDbDown(listPublicShopListings(found.shopId));
+  if (listings === DB_DOWN) return <DbUnavailablePage retryHref={shopPath(slug)} />;
 
   return (
     <Page width="tight" gap={26}>

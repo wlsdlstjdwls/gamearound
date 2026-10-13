@@ -6,7 +6,7 @@
 // 소프트 이동은 그 상태를 그대로 들고 가서 같은 자리에서 또 넘어질 수 있다 — 새로 불러오면 깨끗하다.
 import { useEffect } from "react";
 import { buttonClass } from "@/components/ui/button";
-import { PageHead } from "@/components/ui/page";
+import { StatusPanel } from "@/components/ui/status-panel";
 import { ERROR_MESSAGES } from "@/lib/messages";
 import { ROUTES } from "@/lib/routes";
 
@@ -15,23 +15,32 @@ export function ErrorNotice({ error, onRetry }: { error: Error & { digest?: stri
     console.error(error);
   }, [error]);
   return (
-    <div className="mx-auto flex max-w-[var(--page-w)] flex-col items-start gap-2 px-7 py-20">
-      <PageHead title={ERROR_MESSAGES.title} />
-      <p className="max-w-[460px] text-[13.5px] leading-[1.75] text-mut">{ERROR_MESSAGES.body}</p>
-      <div className="mt-3 flex gap-2">
-        <button type="button" onClick={onRetry} className={buttonClass()}>
-          {ERROR_MESSAGES.retry}
-        </button>
-        <a href={ROUTES.home} className={buttonClass({ variant: "secondary" })}>
-          {ERROR_MESSAGES.home}
-        </a>
-      </div>
-      {error.digest && (
-        <p className="mt-4 text-[11.5px] leading-[1.6] text-dim-2">
-          {ERROR_MESSAGES.codeLabel} {error.digest}
-          <span className="sr-only">. {ERROR_MESSAGES.codeHelp}</span>
-        </p>
-      )}
+    // 모양은 DB 장애 안내와 같은 판이다(components/ui/status-panel 주석) — 어떤 사고든 한 얼굴로 보인다
+    <div className="w-full px-5 sm:px-7">
+      <StatusPanel
+        size="page"
+        role="alert"
+        title={ERROR_MESSAGES.title}
+        body={ERROR_MESSAGES.body}
+        actions={
+          <>
+            <button type="button" onClick={onRetry} className={buttonClass()}>
+              {ERROR_MESSAGES.retry}
+            </button>
+            <a href={ROUTES.home} className={buttonClass({ variant: "secondary" })}>
+              {ERROR_MESSAGES.home}
+            </a>
+          </>
+        }
+        footnote={
+          error.digest && (
+            <>
+              {ERROR_MESSAGES.codeLabel} {error.digest}
+              <span className="sr-only">. {ERROR_MESSAGES.codeHelp}</span>
+            </>
+          )
+        }
+      />
     </div>
   );
 }

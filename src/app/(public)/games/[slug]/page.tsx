@@ -1,4 +1,6 @@
 // 게임 상세 — 결론 → 근거 순 (§5.1). 데이터는 tag 캐시(getGameBySlugCached), 로그인 의존 데이터(찜 여부)는 캐시 밖에서 조회
+import { DbUnavailablePage } from "@/components/db-unavailable";
+import { DB_DOWN, orDbDown } from "@/lib/db-errors";
 import { formatPrice } from "@/lib/currency";
 import type { Metadata } from "next";
 import { Suspense } from "react";
@@ -46,7 +48,7 @@ import { Tag } from "@/components/ui/tag";
 import { requirementSummary } from "@/lib/games/requirement-summary";
 import { VerdictNote } from "@/components/devices/verdict-note";
 import { stagger } from "@/lib/motion";
-import { gamePricesPath, ROUTES } from "@/lib/routes";
+import { gamePath, gamePricesPath, ROUTES } from "@/lib/routes";
 import {
   bestUserScore,
   cheapestPlatform,
@@ -80,7 +82,9 @@ type Props = { params: Promise<{ slug: string }> };
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const slug = decodeSlugParam((await params).slug);
-  const game = await getGameBySlugCached(slug);
+  const game = await orDbDown(getGameBySlugCached(slug));
+  // DB 가 안 열린 날은 기본 제목으로 둔다 — "찾을 수 없음" 을 적으면 멀쩡한 주소가 없는 게임으로 색인된다
+  if (game === DB_DOWN) return {};
   if (!game) return { title: "게임을 찾을 수 없음" };
   const title = displayTitle(game);
   const description =
@@ -294,7 +298,7 @@ export default async function GameDetailPage({ params }: Props) {
    *
    * 세션과 찜 여부는 여기서 기다리지 않는다 — WishlistSlot 이 Suspense 안에서 따로 받아 온다(아래 주석).
    */
-  const [game, patchGroups, perHourScale, recordedLow] = await Promise.all([
+  const loaded = await orDbDown(Promise.all([
     getGameBySlugCached(slug),
     // 패치 기록은 상세 조회와 같은 태그(`game:<slug>`)로 따로 캐시된다 — 붙는 테이블이 game_platforms 라
     // 상세 질의에 얹으면 화면이 안 쓰는 행까지 통째로 끌려온다
@@ -303,7 +307,10 @@ export default async function GameDetailPage({ params }: Props) {
     getPricePerHourScale(),
     // 기록상 최저가. 지금보다 쌌던 적이 있을 때만 값이 온다(services/prices 의 getRecordedLow 주석)
     getRecordedLow(slug),
-  ]);
+  ]));
+  // 장애를 404 로 그리지 않는다(orDbDown 주석) — 판 하나를 세우고 다시 시도하게 둔다
+  if (loaded === DB_DOWN) return <DbUnavailablePage retryHref={gamePath(slug)} />;
+  const [game, patchGroups, perHourScale, recordedLow] = loaded;
   if (!game) notFound();
 
   const title = displayTitle(game);

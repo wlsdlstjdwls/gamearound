@@ -4,6 +4,8 @@
 // 목록에 없는 화면을 보여 주는 것이 캐시로 아끼는 왕복 하나보다 비싸다.
 //
 // 거리순이 아니라 이름순인 이유는 SHOP_DIRECTORY_MESSAGES 주석에 있다 — 좌표를 아직 안 받는다.
+import { DbUnavailable } from "@/components/db-unavailable";
+import { DB_DOWN, orDbDown } from "@/lib/db-errors";
 import type { Metadata } from "next";
 import Link from "next/link";
 import { EmptyState } from "@/components/empty-state";
@@ -44,7 +46,17 @@ export default async function ShopsPage({ searchParams }: Props) {
   const sp = await searchParams;
   const q = firstParam(sp.q)?.trim() || undefined;
   const pageNum = Math.max(Number(firstParam(sp.page)) || 1, 1);
-  const result = await listActiveShops(q, pageNum);
+  const loaded = await orDbDown(listActiveShops(q, pageNum));
+  // DB 가 안 열린 날: 제목은 세우고 목록 자리에만 안내를 둔다(components/db-unavailable)
+  if (loaded === DB_DOWN) {
+    return (
+      <Page gap={26}>
+        <PageHead title={M.title} />
+        <DbUnavailable retryHref={ROUTES.shops} />
+      </Page>
+    );
+  }
+  const result = loaded;
 
   return (
     <Page gap={26}>

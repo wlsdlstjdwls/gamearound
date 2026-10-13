@@ -20,8 +20,6 @@ export const HOME_MESSAGES = {
   discountsEmptyTitle: "지금 할인 중인 게임이 없어요",
   discountsEmptyBody: "할인 중인 게임이 확인되면 이 자리에 표시돼요.",
   discountsEmptyAction: "전체 게임 목록 보기",
-  /** DB 가 안 열릴 때 회원에게 보이는 말. 원인은 적지 않는다(lib/messages 주석) */
-  dataUnavailable: "지금 게임 정보를 불러오지 못하고 있어요. 잠시 뒤에 다시 들러 주세요.",
   /** 개발 환경에서만 보인다(lib/home/db-failure) */
   devDbHint: "DB 에 연결하지 못했어요. .env.local 의 DATABASE_URL 을 확인하고 pnpm db:migrate 를 실행하세요.",
 } as const;

@@ -579,6 +579,25 @@
 .soon-float {
   animation: soon-float 3.4s var(--ease-standard) infinite;
 }
+
+/* 장애 그림 — 로고 손전등의 빛이 깜빡인다(components/ui/status-panel, 2026-10-13).
+   준비 중 그림(물결, 톱니)과 말이 다르다: 그쪽은 "만드는 중", 이쪽은 "잠깐 꺼졌다 다시 켜지는 중" 이다.
+   그래서 빛만 움직이고 몸통은 가만히 둔다. 고르게 오르내리면 숨 쉬는 것처럼 보여 "정상 동작" 으로 읽혀서,
+   켜질 듯 말 듯 두 번 튀었다가 오래 꺼져 있는 불규칙한 박자로 둔다.
+   opacity 가 아니라 fill-opacity 를 움직인다 — 빛 가장자리 칸은 opacity 속성(BEAM_EDGE_OPACITY)을 이미 쓰고 있어,
+   opacity 를 덮으면 가장자리가 가운데만큼 진해진다. 둘은 곱해지므로 가장자리는 늘 옅게 남는다. */
+@keyframes beam-flicker {
+  0%, 100% { fill-opacity: 0.18; }
+  6% { fill-opacity: 1; }
+  10% { fill-opacity: 0.3; }
+  16% { fill-opacity: 0.9; }
+  30% { fill-opacity: 0.85; }
+  38% { fill-opacity: 0.18; }
+}
+.beam-flicker .brand-beam {
+  animation: beam-flicker 3.6s steps(1, end) infinite;
+}
+/* 모션을 줄인 사람에게는 꺼진 손전등으로 멈춘다. 전역 킬스위치는 첫 프레임에 세우는데, 첫 프레임이 꺼진 쪽이라 그대로 맞다 */
 .soon-gear {
   animation: spin-slow 6s linear infinite;
 }

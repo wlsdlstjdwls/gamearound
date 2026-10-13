@@ -56,7 +56,8 @@ export function BrandSymbol({ size = DEFAULT_SYMBOL_SIZE, tone = "default", clas
           y={r.y}
           width={r.w}
           height={1}
-          className={cls[r.kind]}
+          // 빛 칸 표식 — 장애 그림이 빛만 깜빡이게 집는 자리다(globals.css 의 .beam-flicker)
+          className={cn(cls[r.kind], r.kind !== "body" && "brand-beam")}
           opacity={r.kind === "beamEdge" ? BEAM_EDGE_OPACITY : undefined}
         />
       ))}

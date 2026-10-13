@@ -20,13 +20,13 @@ import { GamesInfinite } from "@/components/games-infinite";
 import { Page, PageHead } from "@/components/ui/page";
 import { DEFAULT_GAME_SORT, SORT_LABEL, gamesHref, parsePlatformValues, type GamesQuery } from "@/lib/games-query";
 import { PLATFORM_LABEL } from "@/lib/format";
-import { isPlatformFamily, PLATFORM_FAMILY_LABEL } from "@/lib/platform";
+import { isPlatformFamily, PLATFORM_FAMILY_LABEL, PLATFORM_ORDER } from "@/lib/platform";
 import { stagger } from "@/lib/motion";
 import { ROUTES } from "@/lib/routes";
 import { readGamesQuery } from "@/lib/games/read-query";
 import { hasExplicitListFilter, isPresetApplied } from "@/lib/onboarding/query";
 import { getMyListPreset } from "@/server/services/profiles";
-import { GAMES_PAGE_SIZE, getGameFacets, listGames, type GameListFilter } from "@/server/services/games";
+import { GAMES_PAGE_SIZE, getGameFacets, listGames, type GameFacets, type GameListFilter } from "@/server/services/games";
 import { getRunningSteamSale, type RunningSaleDto } from "@/server/services/sales";
 import { FiltersSkeleton, GamesGridSkeleton } from "./skeletons";
 import { loadMoreGames } from "./actions";
@@ -41,6 +41,13 @@ type Props = { searchParams: Promise<Search> };
 function platformFilterLabel(v: string): string {
   return isPlatformFamily(v) ? PLATFORM_FAMILY_LABEL[v] : PLATFORM_LABEL[v] ?? v;
 }
+
+/**
+ * DB 가 안 열린 날의 선택지. 플랫폼은 고정 목록이라 그대로 세우고, 장르는 DB 에만 있어 비운다(빈 장르는 드롭다운째 안 선다).
+ * 필터를 통째로 걷지 않는 이유(2026-10-13 사용자: "필터는 보여져야 되는 거 아님?"): 기둥이 사라지면 화면이 무너진 것으로 보이고,
+ * 고른 조건이 그대로 보여야 다시 시도했을 때 무엇을 다시 묻는지 안다. 건수는 0 으로 두지만 기둥은 건수를 그리지 않는다.
+ */
+const OUTAGE_FACETS: GameFacets = { platforms: PLATFORM_ORDER.map((platform) => ({ platform, count: 0 })), genres: [], total: 0 };
 
 /** 쿼리스트링 → 조회 필터. 읽는 규칙은 lib/games/read-query 한 곳이다 — 필터가 누른 순간 먼저 그릴 때도 같은 규칙으로 읽는다 */
 const readQuery = readGamesQuery;
@@ -85,9 +92,7 @@ function isFiltered(f: GameListFilter): boolean {
 async function FilterColumn({ filter, personal }: { filter: GamesQuery; personal: PersonalFilter | null }) {
   // 세일 칩은 덤이다 — 판정이 실패해도 필터 기둥은 서야 해서 실패를 "세일 없음" 으로 접는다
   const [facets, sale] = await Promise.all([nullIfDbUnavailable(getGameFacets()), getRunningSteamSale().catch((): RunningSaleDto | null => null)]);
-  // DB 가 안 열린 날에는 기둥을 비운다 — 선택지 없는 필터는 눌러도 아무 일이 없어 고장으로 읽힌다. 안내는 결과 자리가 한다
-  if (!facets) return null;
-  return <GameFilters facets={facets} filter={filter} sale={sale} personal={personal} />;
+  return <GameFilters facets={facets ?? OUTAGE_FACETS} filter={filter} sale={sale} personal={personal} />;
 }
 
 async function Results({ filter }: { filter: GameListFilter }) {

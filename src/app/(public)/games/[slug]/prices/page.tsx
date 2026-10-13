@@ -1,5 +1,8 @@
 // 가격 그래프 — 최근 1년 price_snapshots → 클라이언트 차트에 JSON prop (§5.1)
 // 가격은 "값이 바뀐 시점"만 기록되므로 기록이 적은 게임은 그래프가 거의 평평하다. 대신 현재 할인, 행사 기간을 함께 보여준다.
+import { DbUnavailablePage } from "@/components/db-unavailable";
+import { DB_DOWN, orDbDown } from "@/lib/db-errors";
+import { gamePricesPath } from "@/lib/routes";
 import { cheapestOf, formatPrice } from "@/lib/currency";
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
@@ -19,7 +22,8 @@ type Props = { params: Promise<{ slug: string }> };
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const slug = decodeSlugParam((await params).slug);
-  const game = await getGameBySlugCached(slug);
+  const game = await orDbDown(getGameBySlugCached(slug));
+  if (game === DB_DOWN) return {};
   if (!game) return { title: "게임을 찾을 수 없음" };
   return { title: `${displayTitle(game)} 가격 변동`, description: `${displayTitle(game)}의 최근 1년 플랫폼별 가격 변동 그래프` };
 }
@@ -38,7 +42,9 @@ const COLS = "grid grid-cols-[repeat(auto-fit,minmax(110px,1fr))] gap-x-3 px-4 p
 export default async function PricesPage({ params }: Props) {
   const slug = decodeSlugParam((await params).slug);
   // 둘 다 slug 만 있으면 된다 — 줄 세울 이유가 없다(왕복 한 번이 200ms 대)
-  const [game, series] = await Promise.all([getGameBySlugCached(slug), getPriceHistory(slug, { days: 365 })]);
+  const loaded = await orDbDown(Promise.all([getGameBySlugCached(slug), getPriceHistory(slug, { days: 365 })]));
+  if (loaded === DB_DOWN) return <DbUnavailablePage retryHref={gamePricesPath(slug)} />;
+  const [game, series] = loaded;
   if (!game) notFound();
   const title = displayTitle(game);
   const best = bestDeal(series);

@@ -6,6 +6,8 @@
 // 머리는 대표 그림을 흐리게 깐 어두운 판이다(2026-10-06 사용자: "화면이 심심하다"). 흰 판만 줄 서 있으면
 // 그 게임의 색이 화면 어디에도 안 남는다 — 스토어 상점 화면처럼 게임 그림이 화면의 분위기를 정하게 둔다.
 // 아래는 두 기둥: 읽을 것(영상, 소개, 스크린샷)과 확인할 것(게임 정보 카드)을 가른다.
+import { DbUnavailablePage } from "@/components/db-unavailable";
+import { DB_DOWN, orDbDown } from "@/lib/db-errors";
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
@@ -30,7 +32,8 @@ type Props = { params: Promise<{ slug: string }> };
 const PILL = "inline-flex items-center rounded-full px-3 py-1 text-[12px] font-semibold ring-1 ring-[color-mix(in_oklab,var(--on-ink)_28%,transparent)]";
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
-  const post = await getIndiePostBySlug(decodeSlugParam((await params).slug));
+  const post = await orDbDown(getIndiePostBySlug(decodeSlugParam((await params).slug)));
+  if (post === DB_DOWN) return {};
   if (!post || post.status !== "published") return { title: M.notFound, robots: { index: false } };
   const cover = post.images[0];
   return {
@@ -42,7 +45,10 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 
 export default async function IndieDetailPage({ params }: Props) {
   const slug = decodeSlugParam((await params).slug);
-  const [post, viewer] = await Promise.all([getIndiePostBySlug(slug), getCurrentUser().catch(() => null)]);
+  const loaded = await orDbDown(Promise.all([getIndiePostBySlug(slug), getCurrentUser().catch(() => null)]));
+  // 장애를 404 로 그리지 않는다(lib/db-errors 의 orDbDown 주석)
+  if (loaded === DB_DOWN) return <DbUnavailablePage retryHref={indiePath(slug)} />;
+  const [post, viewer] = loaded;
   if (!post) notFound();
   const canEdit = viewer !== null && (viewer.id === post.authorUserId || viewer.role === "admin");
   if (post.status !== "published" && !canEdit) notFound();

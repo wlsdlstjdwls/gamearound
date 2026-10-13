@@ -1,6 +1,8 @@
 // 회사 목록 — 국가 칩으로 좁히고 게임 수 순으로 본다.
 // 헤더 메뉴에 올리지 않는 이유: 회사 데이터가 충분히 쌓이기 전까지는 게임 상세의 회사 칩이 유일한 진입점이어야
 // 빈 목록을 사용자에게 먼저 보여주지 않는다.
+import { DbUnavailable } from "@/components/db-unavailable";
+import { DB_DOWN, orDbDown } from "@/lib/db-errors";
 import type { Metadata } from "next";
 import Link from "next/link";
 import { EmptyState } from "@/components/empty-state";
@@ -36,7 +38,17 @@ export default async function CompaniesPage({ searchParams }: Props) {
   const country = firstParam(sp.country);
   const pageNum = Math.max(Number(firstParam(sp.page)) || 1, 1);
 
-  const [countries, result] = await Promise.all([getCountryFacets(), listCompanies(country, pageNum)]);
+  const loaded = await orDbDown(Promise.all([getCountryFacets(), listCompanies(country, pageNum)]));
+  // DB 가 안 열린 날: 제목은 세우고 목록 자리에만 안내를 둔다(components/db-unavailable)
+  if (loaded === DB_DOWN) {
+    return (
+      <Page gap={26}>
+        <PageHead title="게임 회사" />
+        <DbUnavailable retryHref={ROUTES.company} />
+      </Page>
+    );
+  }
+  const [countries, result] = loaded;
 
   return (
     <Page gap={26}>
