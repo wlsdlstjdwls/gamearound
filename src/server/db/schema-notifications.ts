@@ -5,7 +5,7 @@ import { pgTable, pgEnum, uuid, text, timestamp, index } from "drizzle-orm/pg-co
 import { auditColumns } from "./audit";
 import { users } from "./schema";
 
-export const notificationKindEnum = pgEnum("notification_kind", ["price_drop", "comment", "approval"]);
+export const notificationKindEnum = pgEnum("notification_kind", ["price_drop", "comment", "approval", "release"]);
 export type NotificationKind = (typeof notificationKindEnum.enumValues)[number];
 
 export const notifications = pgTable(

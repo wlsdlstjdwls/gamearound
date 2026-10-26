@@ -9,7 +9,7 @@
 import { useEffect, useOptimistic, useSyncExternalStore, useTransition } from "react";
 import { useLoginGate, useResume } from "@/components/auth/login-gate";
 import { useSession } from "@/components/auth/session-provider";
-import { HeartIcon } from "@/components/ui/icons";
+import { BellIcon, HeartIcon } from "@/components/ui/icons";
 import { useToast } from "@/components/ui/toast";
 import { toggleWishBySlugAction, wishedSlugsAction } from "@/app/(user)/wishlist/actions";
 import { WISHLIST_MESSAGES as M } from "@/lib/wishlist/messages";
@@ -60,7 +60,11 @@ function forget() {
   emit();
 }
 
-export function WishHeart({ slug, title, className }: { slug: string; title: string; className?: string }) {
+/**
+ * variant "release": 출시 예정 줄 끝의 "출시 알림" 단추(목업 월별 보기). 하는 일은 찜과 같다 —
+ * 찜한 게임이 출시되면 알림함으로 알려 준다(sync/release-alerts 머리 주석: 찜과 출시 알림을 두 칸에 따로 담지 않는 이유).
+ */
+export function WishHeart({ slug, title, className, variant = "heart" }: { slug: string; title: string; className?: string; variant?: "heart" | "release" }) {
   const { user } = useSession();
   const userId = user?.id ?? null;
   useSyncExternalStore(subscribe, () => version, () => 0);
@@ -86,13 +90,35 @@ export function WishHeart({ slug, title, className }: { slug: string; title: str
       if (!r.ok) return toast(r.error);
       known.set(slug, r.wished);
       emit();
-      toast(r.wished ? M.added : M.removed);
+      toast(variant === "release" ? (r.wished ? M.releaseAdded : M.releaseRemoved) : r.wished ? M.added : M.removed);
     });
 
   // 로그인 뒤 이어하기 — 이미 찜한 게임이면 그대로 둔다(토글이라 한 번 더 누르면 풀린다)
   useResume(action, () => {
     if (!wished) toggle(true);
   }, Boolean(userId) && known.has(slug));
+
+  if (variant === "release") {
+    return (
+      <button
+        type="button"
+        aria-pressed={shown}
+        aria-label={`${title} ${shown ? M.releaseOn : M.releaseOff}`}
+        onClick={() => gate(action, () => toggle(!wished))}
+        className={cn(
+          "press tap inline-flex size-9 shrink-0 items-center justify-center gap-1.5 rounded-full text-[13px] font-semibold transition-colors sm:w-auto sm:px-3.5",
+          shown ? "bg-acc-soft text-acc" : "bg-acc text-on-ink hover:bg-acc-hover",
+          className,
+        )}
+      >
+        <BellIcon size={15} />
+        {/* 좁은 화면은 종만 — 줄에 날짜, 그림, 제목이 이미 서 있어 글자까지 서면 제목이 한 글자씩 잘린다 */}
+        <span aria-hidden className="hidden sm:inline">
+          {shown ? M.releaseOn : M.releaseOff}
+        </span>
+      </button>
+    );
+  }
 
   return (
     <button

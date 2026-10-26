@@ -10,4 +10,6 @@ export const NOTIFICATION_MESSAGES = {
   priceDrop: (gameTitle: string, priceText: string) => `${gameTitle} 가격이 ${priceText}(으)로 내려갔어요`,
   approved: (gameTitle: string) => `'${gameTitle}' 등록이 승인됐어요`,
   rejected: (gameTitle: string) => `'${gameTitle}' 등록이 반려됐어요. 사유를 확인해 주세요`,
+  /** 출시 알림(찜한 출시 예정 게임이 나왔다, sync/release-alerts) */
+  released: (gameTitle: string) => `찜한 '${gameTitle}' 출시 소식이 왔어요`,
 } as const;

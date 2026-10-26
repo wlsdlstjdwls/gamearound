@@ -999,3 +999,9 @@ export const PREORDER_PAGES_MAX = 12;
  * 한 달이 지나면 남은 재고가 거의 없어 내린다. 발매일을 모르면 계속 띄운다.
  */
 export const PREORDER_SHOW_AFTER_RELEASE_DAYS = 30;
+
+/**
+ * 출시 알림(sync/release-alerts)이 거슬러 보는 날 수. 하루 크론이 실패해 하루 이틀 빠져도 그 사이 출시분을 놓치지 않는다.
+ * 사흘을 넘기면 "출시됐어요" 가 소식이 아니라 옛말이 된다 — 그보다 늦은 것은 보내지 않는다.
+ */
+export const RELEASE_ALERT_LOOKBACK_DAYS = 3;

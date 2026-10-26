@@ -4,8 +4,8 @@
 // 카드 격자에서는 날짜가 카드 바닥 작은 글자라 같은 날 나오는 게임을 세어 봐야 했다.
 // 전체 보기와 이달의 기대작은 카드 격자 그대로다(목업도 전체 보기는 카드다).
 //
-// 목업 줄 끝의 "출시 알림" 은 찜 하트로 갈음한다. 가격 알림은 출시 뒤에 적용하기로 미결이고(기획서 9.3 의 8번),
-// 찜한 게임은 내 찜 목록에서 출시를 지켜볼 수 있다.
+// 줄 끝은 목업대로 "출시 알림" 단추다. 누르면 그 게임을 찜하고, 출시되면 알림함으로 알려 준다(sync/release-alerts).
+// 가격 알림은 출시 뒤에 적용하기로 미결이라(기획서 9.3 의 8번) 여기 두지 않는다.
 import Link from "next/link";
 import { CoverImage } from "@/components/game-card";
 import { WishHeart } from "@/components/wish-heart";
@@ -39,7 +39,7 @@ export function UpcomingRow({ entry }: { entry: UpcomingEntry }) {
         <CoverImage src={entry.game.coverUrl} alt="" sizes="132px" />
       </span>
       <div className="flex min-w-0 flex-1 flex-col gap-1">
-        {/* 줄 전체를 덮는 것은 제목 링크의 ::after 다(카드와 같은 수법) — 하트만 z-10 으로 그 위에 뜬다 */}
+        {/* 줄 전체를 덮는 것은 제목 링크의 ::after 다(카드와 같은 수법) — 출시 알림 단추만 z-10 으로 그 위에 뜬다 */}
         <Link href={`/games/${entry.game.slug}`} className="outline-none after:absolute after:inset-0 after:rounded-[var(--radius-md)] focus-visible:after:ring-2 focus-visible:after:ring-ink">
           <Clamp className="text-[15px] font-semibold text-ink group-hover:text-acc sm:text-[16px]">{title}</Clamp>
         </Link>
@@ -48,7 +48,7 @@ export function UpcomingRow({ entry }: { entry: UpcomingEntry }) {
         </span>
       </div>
       <span className="hidden shrink-0 rounded-full bg-acc-soft px-2.5 py-1 text-[12px] font-semibold text-acc sm:inline">{M.rowTag}</span>
-      <WishHeart slug={entry.game.slug} title={title} className="relative z-10 shrink-0 shadow-none" />
+      <WishHeart slug={entry.game.slug} title={title} variant="release" className="relative z-10" />
     </div>
   );
 }
