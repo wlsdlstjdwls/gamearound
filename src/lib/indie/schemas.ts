@@ -8,6 +8,8 @@ import {
   INDIE_BODY_MAX,
   INDIE_BODY_MIN,
   INDIE_DEVELOPER_MAX,
+  INDIE_GENRE_MAX,
+  INDIE_GENRES,
   INDIE_HIDE_REASON_MAX,
   INDIE_LINK_KINDS,
   INDIE_LINK_MAX,
@@ -59,6 +61,11 @@ const linkSchema = z.object({
   url: z.string().trim().max(INDIE_URL_MAX, M.linkInvalid).refine(isHttpsUrl, M.linkInvalid),
 });
 
+const storeLinkSchema = z.object({
+  platform: z.enum(INDIE_PLATFORMS),
+  url: z.string().trim().max(INDIE_URL_MAX, M.linkInvalid).refine(isHttpsUrl, M.linkInvalid),
+});
+
 export const indiePostSchema = z.object({
   title: z.string().trim().min(1, M.titleRequired).max(INDIE_TITLE_MAX, M.titleTooLong(INDIE_TITLE_MAX)),
   tagline: z.string().trim().min(1, M.taglineRequired).max(INDIE_TAGLINE_MAX, M.taglineTooLong(INDIE_TAGLINE_MAX)),
@@ -66,6 +73,12 @@ export const indiePostSchema = z.object({
   body: z.string().trim().min(INDIE_BODY_MIN, M.bodyTooShort(INDIE_BODY_MIN)).max(INDIE_BODY_MAX, M.bodyTooLong(INDIE_BODY_MAX)),
   stage: z.enum(INDIE_STAGES),
   platforms: z.array(z.enum(INDIE_PLATFORMS)).min(1, M.platformsRequired).transform((xs) => [...new Set(xs)]),
+  genres: z
+    .array(z.enum(INDIE_GENRES))
+    .transform((xs) => [...new Set(xs)])
+    .pipe(z.array(z.enum(INDIE_GENRES)).min(1, M.genresRequired).max(INDIE_GENRE_MAX, M.genresTooMany(INDIE_GENRE_MAX))),
+  /** 고른 플랫폼의 스토어 링크. 빈칸은 폼이 이미 뺐다 — 스토어 페이지가 아직 없는 개발 중 게임이 있어서다 */
+  storeLinks: z.array(storeLinkSchema).max(INDIE_PLATFORMS.length),
   releaseNote: z
     .string()
     .trim()

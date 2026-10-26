@@ -1,6 +1,6 @@
 // 포맷 유틸 테스트 — 할인 기간 표시(순수 함수, now 를 인자로 받는다)
 import { describe, expect, it } from "vitest";
-import { formatAgo, formatDate, formatDuration, formatDateTime, formatLongDateTime, formatMonthLabel, formatReleaseDay, formatSaleWindow, formatShortDateTime, saleRemaining } from "./format";
+import { formatAgo, formatDate, formatDuration, formatDateTime, formatLongDateTime, formatMonthLabel, formatReleaseDay, formatSaleWindow, formatShortDateTime, saleRemaining, formatDotDate } from "./format";
 
 const NOW = Date.parse("2026-09-14T00:00:00Z");
 
@@ -110,5 +110,12 @@ describe("formatDuration", () => {
   });
   it("음수는 0초로 접는다", () => {
     expect(formatDuration(-5000)).toBe("0초");
+  });
+});
+
+describe("formatDotDate", () => {
+  it("한국 날짜를 점으로 잇는다(UTC 전날 밤이 한국 다음 날)", () => {
+    expect(formatDotDate("2026-10-25T16:30:00Z")).toBe("2026.10.26");
+    expect(formatDotDate(null)).toBe("-");
   });
 });

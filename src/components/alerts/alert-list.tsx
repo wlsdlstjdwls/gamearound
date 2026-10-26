@@ -8,6 +8,7 @@
 // 꺼 둔 알림은 흐리게 두되 지우지 않는다 — 다시 켤 자리가 같은 줄에 있어야 한다.
 import Link from "next/link";
 import { AlertItemControls } from "@/components/alert-form";
+import { PriceAlertButton } from "@/components/price-alert-button";
 import { FadeImage } from "@/components/ui/fade-image";
 import { ImageFallback } from "@/components/ui/image-fallback";
 import { Clamp } from "@/components/ui/tooltip";
@@ -75,9 +76,15 @@ export function AlertList({ views }: { views: AlertView[] }) {
           <div className="flex w-full items-center justify-between gap-3 sm:w-auto sm:flex-col sm:items-end sm:gap-1.5">
             <span className="text-[11.5px] text-dim">{v.lastSentAt ? M.lastSent(formatDate(v.lastSentAt)) : M.neverSent}</span>
             <div className="flex items-center gap-1">
-              <Link href={`${ROUTES.alerts}?game=${encodeURIComponent(v.game.slug)}`} className="press tap mr-1.5 inline-flex items-center text-[12.5px] font-semibold text-acc hover:underline">
-                {M.editCondition}
-              </Link>
+              {/* "수정" 은 상세에서 열던 그 팝업(M-02)을 다시 연다(기획서 S-26). 목표가, 할인율 같은 세밀한 조건은
+                  팝업 아래 "자세한 조건" 링크가 이 화면의 폼으로 데려간다 */}
+              {v.options.length > 0 ? (
+                <PriceAlertButton gameId={v.game.id} gameSlug={v.game.slug} options={v.options} label={M.edit} variant="secondary" size="sm" slot={`list-${v.id}`} className="mr-1" />
+              ) : (
+                <Link href={`${ROUTES.alerts}?game=${encodeURIComponent(v.game.slug)}`} className="press tap mr-1.5 inline-flex items-center text-[12.5px] font-semibold text-acc hover:underline">
+                  {M.editCondition}
+                </Link>
+              )}
               <AlertItemControls id={v.id} isActive={v.isActive} />
             </div>
           </div>

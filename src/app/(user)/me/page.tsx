@@ -30,7 +30,7 @@ export default async function MePage({ searchParams }: Props) {
         <AvatarEditor userId={user.id} name={name} initialUrl={user.avatarUrl} />
       </section>
       <NavPendingScope>
-        <div className="flex gap-1.5">
+        <div role="group" aria-label={M.title} className="flex gap-1.5">
           <NavChip group="tab" current="page" href={ROUTES.me} active={tab === "posts"}>
             {M.tabPosts}
           </NavChip>
@@ -38,8 +38,10 @@ export default async function MePage({ searchParams }: Props) {
             {M.tabSaved}
           </NavChip>
         </div>
-        <PendingRegion className="mt-4">
+        {/* 목록은 흰 판 한 장 안에(목업 actPage 의 .bcd) — 게시판 목록과 같은 줄 모양이다 */}
+        <PendingRegion className="mt-3 rounded-[var(--radius-md)] bg-surface p-3 shadow-hair sm:p-4">
           <PostList
+            bare
             posts={posts}
             empty={tab === "saved" ? { title: M.savedEmpty, description: M.savedEmptyLead } : { title: M.postsEmpty, description: M.postsEmptyLead, action: { href: writePath(), label: COMMUNITY_MESSAGES.write } }}
           />

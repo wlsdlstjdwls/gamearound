@@ -16,6 +16,8 @@ import { GameLinkPicker } from "@/components/indie/game-link-picker";
 import {
   INDIE_BODY_MAX,
   INDIE_DEVELOPER_MAX,
+  INDIE_GENRE_MAX,
+  INDIE_GENRES,
   INDIE_LINK_KINDS,
   INDIE_LINK_MAX,
   INDIE_PLATFORMS,
@@ -24,8 +26,10 @@ import {
   INDIE_TAGLINE_MAX,
   INDIE_TITLE_MAX,
   INDIE_URL_MAX,
+  storeLinkPlatform,
+  type IndiePlatform,
 } from "@/lib/indie/constants";
-import { INDIE_FORM_MESSAGES as M, INDIE_LINK_LABEL, INDIE_PLATFORM_LABEL, INDIE_STAGE_LABEL } from "@/lib/indie/messages";
+import { INDIE_FORM_MESSAGES as M, INDIE_GENRE_LABEL, INDIE_LINK_LABEL, INDIE_PLATFORM_LABEL, INDIE_STAGE_LABEL } from "@/lib/indie/messages";
 import type { IndieDetailDto } from "@/lib/indie/dto";
 
 const LINK_OPTIONS = INDIE_LINK_KINDS.map((k) => ({ value: k, label: INDIE_LINK_LABEL[k] }));
@@ -47,12 +51,29 @@ export function IndiePostForm({ post }: { post?: IndieDetailDto }) {
   const [state, formAction, submitting] = useActionState<IndieFormState, FormData>(action, null);
   const [stage, setStage] = useState<string>(post?.stage ?? INDIE_STAGES[0]);
   const [platforms, setPlatforms] = useState<Set<string>>(new Set(post?.platforms ?? []));
+  const [genres, setGenres] = useState<Set<string>>(new Set(post?.genres ?? []));
+  // 저장된 링크를 둘로 가른다 — "store:<플랫폼>" 은 플랫폼별 칸으로, 나머지는 그 밖의 링크 칸으로(lib/indie/constants)
+  const storeLinks = new Map<IndiePlatform, string>();
+  const otherLinks = (post?.links ?? []).filter((l) => {
+    const p = storeLinkPlatform(l.kind);
+    if (p) storeLinks.set(p, l.url);
+    return !p;
+  });
   // 링크 칸은 적은 만큼 + 빈칸 하나. 다섯 칸을 늘 세우면 빈칸이 폼 길이를 두 배로 만든다
-  const [linkRows, setLinkRows] = useState(Math.min(Math.max(post?.links.length ?? 0, 1), INDIE_LINK_MAX));
+  const [linkRows, setLinkRows] = useState(Math.min(Math.max(otherLinks.length, 1), INDIE_LINK_MAX));
 
   useEffect(() => {
     if (state?.ok && state.redirectTo) router.push(state.redirectTo);
   }, [state, router]);
+
+  function toggleGenre(g: string) {
+    setGenres((cur) => {
+      const next = new Set(cur);
+      if (next.has(g)) next.delete(g);
+      else next.add(g);
+      return next;
+    });
+  }
 
   function togglePlatform(p: string) {
     setPlatforms((cur) => {
@@ -85,7 +106,7 @@ export function IndiePostForm({ post }: { post?: IndieDetailDto }) {
         <legend className={`mb-1.5 ${LABEL}`}>{M.stageLabel}</legend>
         <div className="flex flex-wrap gap-1.5">
           {INDIE_STAGES.map((s) => (
-            <label key={s} className={chipClass({ active: stage === s, className: "cursor-pointer has-[:focus-visible]:ring-2 has-[:focus-visible]:ring-ink" })}>
+            <label key={s} className={chipClass({ active: stage === s, outline: true, className: "cursor-pointer has-[:focus-visible]:ring-2 has-[:focus-visible]:ring-ink" })}>
               <input type="radio" name="stage" value={s} checked={stage === s} onChange={() => setStage(s)} className="sr-only" />
               {INDIE_STAGE_LABEL[s]}
             </label>
@@ -97,11 +118,52 @@ export function IndiePostForm({ post }: { post?: IndieDetailDto }) {
         <legend className={`mb-1.5 ${LABEL}`}>{M.platformsLabel}</legend>
         <div className="flex flex-wrap gap-1.5">
           {INDIE_PLATFORMS.map((p) => (
-            <label key={p} className={chipClass({ active: platforms.has(p), className: "cursor-pointer has-[:focus-visible]:ring-2 has-[:focus-visible]:ring-ink" })}>
+            <label key={p} className={chipClass({ active: platforms.has(p), outline: true, className: "cursor-pointer has-[:focus-visible]:ring-2 has-[:focus-visible]:ring-ink" })}>
               <input type="checkbox" name="platforms" value={p} checked={platforms.has(p)} onChange={() => togglePlatform(p)} className="sr-only" />
               {INDIE_PLATFORM_LABEL[p]}
             </label>
           ))}
+        </div>
+      </fieldset>
+
+      {/* 고른 플랫폼마다 스토어 링크 칸이 생긴다(기획서 S-23, 목업 indreg). 고른 순서가 아니라 플랫폼 순서로 세운다 —
+          칸이 누를 때마다 자리를 바꾸면 적던 칸을 놓친다. 끈 플랫폼의 칸은 사라지고 액션도 그 값을 안 읽는다 */}
+      {platforms.size > 0 && (
+        <fieldset className="flex flex-col gap-2.5 rounded-[var(--radius-md)] bg-surface-2 p-3.5">
+          <legend className={`float-left mb-1 ${LABEL}`}>{M.storeLinksLabel}</legend>
+          <p className={`clear-left ${HINT}`}>{M.storeLinksHint}</p>
+          {INDIE_PLATFORMS.filter((p) => platforms.has(p)).map((p) => (
+            <TextField
+              key={p}
+              name={`storeLink-${p}`}
+              label={M.storeLinkLabel(INDIE_PLATFORM_LABEL[p])}
+              defaultValue={storeLinks.get(p) ?? ""}
+              maxLength={INDIE_URL_MAX}
+              inputMode="url"
+              autoCapitalize="none"
+              spellCheck={false}
+              placeholder="https://"
+            />
+          ))}
+        </fieldset>
+      )}
+
+      <fieldset className="flex flex-col gap-1.5">
+        <legend className={`mb-1.5 ${LABEL}`}>
+          {M.genresLabel} <span className="text-dim">{M.genresHint(INDIE_GENRE_MAX)}</span>
+        </legend>
+        <div className="flex flex-wrap gap-1.5">
+          {INDIE_GENRES.map((g) => {
+            const on = genres.has(g);
+            // 셋을 다 고르면 나머지는 막는다 — 넷째를 눌렀다가 저장할 때 오류를 듣게 하지 않는다
+            const full = !on && genres.size >= INDIE_GENRE_MAX;
+            return (
+              <label key={g} className={chipClass({ active: on, outline: true, className: `cursor-pointer has-[:focus-visible]:ring-2 has-[:focus-visible]:ring-ink ${full ? "opacity-50" : ""}` })}>
+                <input type="checkbox" name="genres" value={g} checked={on} disabled={full} onChange={() => toggleGenre(g)} className="sr-only" />
+                {INDIE_GENRE_LABEL[g]}
+              </label>
+            );
+          })}
         </div>
       </fieldset>
 
@@ -147,7 +209,7 @@ export function IndiePostForm({ post }: { post?: IndieDetailDto }) {
               label={M.linkKindLabel(i + 1)}
               hideLabel
               options={LINK_OPTIONS}
-              defaultValue={post?.links[i]?.kind ?? INDIE_LINK_KINDS[0]}
+              defaultValue={otherLinks[i]?.kind ?? INDIE_LINK_KINDS[0]}
               size="lg"
               className="sm:w-[150px]"
             />
@@ -155,7 +217,7 @@ export function IndiePostForm({ post }: { post?: IndieDetailDto }) {
               name={`linkUrl-${i}`}
               label={M.linkUrlLabel(i + 1)}
               hideLabel
-              defaultValue={post?.links[i]?.url ?? ""}
+              defaultValue={otherLinks[i]?.url ?? ""}
               maxLength={INDIE_URL_MAX}
               inputMode="url"
               autoCapitalize="none"

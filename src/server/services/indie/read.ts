@@ -6,8 +6,9 @@
 // 공개 화면은 "published 이고 커버가 있는 글" 만 본다. 커버 없는 카드는 회색 칸이라 목록이 고장 나 보인다
 // (홈 노출 체크리스트: 커버 필수). 상세는 커버가 없어도 열린다 — 글쓴이가 링크를 먼저 퍼뜨릴 수 있다.
 import "server-only";
-import { and, asc, count, desc, eq, inArray, isNotNull, sql } from "drizzle-orm";
+import { and, asc, count, desc, eq, ilike, inArray, isNotNull, or, sql } from "drizzle-orm";
 import { getDb } from "@/server/db/client";
+import { containsPattern } from "@/lib/like-pattern";
 import { games, indiePostImages, indiePosts, type IndieStage } from "@/server/db/schema";
 import { displayTitle } from "@/server/services/games";
 import { INDIE_HOME_LIMIT, INDIE_HOME_MIN, INDIE_PAGE_SIZE, type IndiePlatform } from "@/lib/indie/constants";
@@ -50,24 +51,48 @@ export const cardColumns = {
   developerName: indiePosts.developerName,
   stage: indiePosts.stage,
   platforms: indiePosts.platforms,
+  genres: indiePosts.genres,
+  likeCount: indiePosts.likeCount,
+  viewCount: indiePosts.viewCount,
+  // 공개 카드의 "등록일" 은 승인된 날이다 — 승인 전에는 어디에도 안 섰으니 신청한 날을 적으면 "오래된 게임" 으로 읽힌다
+  registeredAt: sql<Date>`coalesce(${indiePosts.reviewedAt}, ${indiePosts.createdAt})`,
 };
 
-export type CardRow = { id: string; slug: string; title: string; tagline: string; developerName: string; stage: IndieStage; platforms: string[] };
+export type CardRow = {
+  id: string;
+  slug: string;
+  title: string;
+  tagline: string;
+  developerName: string;
+  stage: IndieStage;
+  platforms: string[];
+  genres: string[];
+  likeCount: number;
+  viewCount: number;
+  registeredAt: Date | string;
+};
 
 export async function toCards(rows: CardRow[]): Promise<IndieCardDto[]> {
   const images = await imagesFor(rows.map((r) => r.id));
-  return rows.flatMap(({ id, platforms, ...r }) => {
+  return rows.flatMap(({ id, platforms, registeredAt, ...r }) => {
     const cover = images.get(id)?.[0];
-    // 질의가 커버 있는 글만 골랐지만, 사이에 그림이 지워졌을 수 있다
-    return cover ? [{ ...r, platforms: platforms as IndiePlatform[], cover }] : [];
+    // 질의가 커버 있는 글만 골랐지만, 사이에 그림이 지워졌을 수 있다.
+    // registeredAt 은 sql 식이라 드라이버가 문자열로 줄 수 있다 — Date 로 한 번 펴서 ISO 로 적는다
+    return cover ? [{ ...r, platforms: platforms as IndiePlatform[], registeredAt: new Date(registeredAt).toISOString(), cover }] : [];
   });
 }
 
 export type IndieListResult = { items: IndieCardDto[]; total: number; page: number; totalPages: number };
 
-export async function listIndiePosts(stage: IndieStage | undefined, page: number): Promise<IndieListResult> {
+/**
+ * 공개 목록. q 는 이름, 한 줄 소개, 만든 사람의 부분 일치다(목업 "게임 이름, 소개 검색").
+ */
+export async function listIndiePosts(stage: IndieStage | undefined, page: number, q = ""): Promise<IndieListResult> {
   const db = getDb();
-  const where = stage ? and(isPublic, eq(indiePosts.stage, stage)) : isPublic;
+  const term = q.trim();
+  const like = containsPattern(term);
+  const search = term ? or(ilike(indiePosts.title, like), ilike(indiePosts.tagline, like), ilike(indiePosts.developerName, like)) : undefined;
+  const where = and(isPublic, stage ? eq(indiePosts.stage, stage) : undefined, search);
   const [rows, [{ n }]] = await Promise.all([
     db
       .select(cardColumns)
@@ -116,6 +141,7 @@ export async function getIndiePostBySlug(slug: string): Promise<IndieDetailDto |
     developerName: p.developerName,
     stage: p.stage,
     platforms: p.platforms as IndiePlatform[],
+    genres: p.genres,
     releaseNote: p.releaseNote,
     links: p.links,
     youtubeId: p.youtubeId,
@@ -172,10 +198,14 @@ export async function listMyIndiePosts(userId: string): Promise<IndieMineRowDto[
       slug: indiePosts.slug,
       title: indiePosts.title,
       stage: indiePosts.stage,
+      platforms: indiePosts.platforms,
+      genres: indiePosts.genres,
       status: indiePosts.status,
       statusReason: indiePosts.statusReason,
       review: indiePosts.review,
       reviewReason: indiePosts.reviewReason,
+      likeCount: indiePosts.likeCount,
+      viewCount: indiePosts.viewCount,
       createdAt: indiePosts.createdAt,
       updatedAt: indiePosts.updatedAt,
       hasCover: sql<boolean>`${hasCover}`,
@@ -183,5 +213,5 @@ export async function listMyIndiePosts(userId: string): Promise<IndieMineRowDto[
     .from(indiePosts)
     .where(eq(indiePosts.authorUserId, userId))
     .orderBy(desc(indiePosts.createdAt));
-  return rows.map((r) => ({ ...r, hasCover: Boolean(r.hasCover), createdAt: r.createdAt.toISOString(), updatedAt: r.updatedAt.toISOString() }));
+  return rows.map((r) => ({ ...r, platforms: r.platforms as IndiePlatform[], hasCover: Boolean(r.hasCover), createdAt: r.createdAt.toISOString(), updatedAt: r.updatedAt.toISOString() }));
 }

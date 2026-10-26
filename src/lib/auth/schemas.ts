@@ -69,6 +69,9 @@ export const signUpSchema = z
     password: passwordSchema,
     passwordConfirm: z.string({ message: M.passwordConfirmMismatch }),
     terms: z.literal(true, { message: M.termsRequired }),
+    privacy: z.literal(true, { message: M.privacyRequired }),
+    /** 가격 알림 이메일 받기(선택). 동의 기록으로 남는다(server/db/schema-consents) */
+    alertEmail: z.boolean(),
   })
   .refine((v) => v.password === v.passwordConfirm, { message: M.passwordConfirmMismatch, path: ["passwordConfirm"] });
 
@@ -116,5 +119,7 @@ export function signUpInputFromForm(fd: FormData): unknown {
     password: fd.get("password"),
     passwordConfirm: fd.get("passwordConfirm"),
     terms: fd.get("terms") === "on",
+    privacy: fd.get("privacy") === "on",
+    alertEmail: fd.get("alertEmail") === "on",
   };
 }

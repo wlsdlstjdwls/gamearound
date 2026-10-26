@@ -21,8 +21,8 @@ import { FadeImage } from "@/components/ui/fade-image";
 import { Page, SectionHead, sectionCardClass } from "@/components/ui/page";
 import { cn } from "@/lib/cn";
 import { formatDate } from "@/lib/format";
-import { INDIE_LINK_LABEL, INDIE_MESSAGES as M, INDIE_PLATFORM_LABEL, INDIE_STAGE_LABEL, INDIE_REVIEW_MESSAGES as RV } from "@/lib/indie/messages";
-import type { IndieLinkKind } from "@/lib/indie/constants";
+import { genreLabels, INDIE_MESSAGES as M, INDIE_PLATFORM_LABEL, INDIE_STAGE_LABEL, INDIE_REVIEW_MESSAGES as RV, linkLabel } from "@/lib/indie/messages";
+import { storeLinkPlatform } from "@/lib/indie/constants";
 import { gamePath, indieEditPath, indiePath, ROUTES } from "@/lib/routes";
 import { decodeSlugParam } from "@/lib/slug";
 import { getIndiePostBySlug } from "@/server/services/indie";
@@ -59,10 +59,16 @@ export default async function IndieDetailPage({ params }: Props) {
   if (post.review === "approved" && post.status === "published") await recordIndieView(post.id, post.authorUserId).catch(() => {});
 
   const [cover, ...shots] = post.images;
+  // 플랫폼별 구매하러 가기(기획서 S-19, 목업 mgDetail) — 고른 플랫폼 중 스토어 링크를 적은 것만 단추가 된다
+  const stores = post.links.flatMap((l) => {
+    const p = storeLinkPlatform(l.kind);
+    return p && post.platforms.includes(p) ? [{ platform: p, url: l.url }] : [];
+  });
   const info: Array<{ label: string; value: string | null }> = [
     { label: M.by, value: post.developerName },
     { label: M.stage, value: INDIE_STAGE_LABEL[post.stage] },
     { label: M.platforms, value: post.platforms.map((p) => INDIE_PLATFORM_LABEL[p]).join(", ") },
+    { label: M.genres, value: genreLabels(post.genres).join(", ") || null },
     { label: M.release, value: post.releaseNote },
     { label: M.posted, value: formatDate(post.createdAt) },
   ].filter((m) => Boolean(m.value));
@@ -139,7 +145,7 @@ export default async function IndieDetailPage({ params }: Props) {
                       i === 0 ? "bg-on-ink text-ink" : "ring-1 ring-[color-mix(in_oklab,var(--on-ink)_35%,transparent)] hover:bg-[color-mix(in_oklab,var(--on-ink)_12%,transparent)]",
                     )}
                   >
-                    {INDIE_LINK_LABEL[l.kind as IndieLinkKind] ?? l.kind}
+                    {linkLabel(l.kind)}
                     <span className="sr-only">{M.newWindow}</span>
                   </a>
                 ))}
@@ -173,6 +179,29 @@ export default async function IndieDetailPage({ params }: Props) {
                   className="absolute inset-0 h-full w-full"
                 />
               </div>
+            </section>
+          )}
+
+          {stores.length > 0 && (
+            <section aria-labelledby="indie-buy" className={sectionCardClass("flex flex-col gap-3")}>
+              <SectionHead id="indie-buy" title={M.buyTitle} />
+              <ul className="grid grid-cols-1 gap-2.5 sm:grid-cols-2">
+                {stores.map((st) => (
+                  <li key={st.platform}>
+                    <a
+                      href={st.url}
+                      target="_blank"
+                      rel="noopener noreferrer nofollow ugc"
+                      className="lift press flex min-h-[var(--touch-target)] flex-col gap-0.5 rounded-[var(--radius-md)] bg-surface-2 px-4 py-3 transition-colors hover:bg-acc-soft"
+                    >
+                      <span className="text-[12px] text-dim">{INDIE_PLATFORM_LABEL[st.platform]}</span>
+                      <span className="text-[14.5px] font-bold text-ink">{M.storeOf(INDIE_PLATFORM_LABEL[st.platform])}</span>
+                      <span className="text-[13px] font-semibold text-acc">{M.buyCta}</span>
+                      <span className="sr-only">{M.newWindow}</span>
+                    </a>
+                  </li>
+                ))}
+              </ul>
             </section>
           )}
 
@@ -233,7 +262,7 @@ export default async function IndieDetailPage({ params }: Props) {
 
           {post.links[0] && (
             <a href={post.links[0].url} target="_blank" rel="noopener noreferrer nofollow ugc" className={buttonClass({ variant: "primary", fullWidth: true })}>
-              {INDIE_LINK_LABEL[post.links[0].kind as IndieLinkKind] ?? post.links[0].kind}
+              {linkLabel(post.links[0].kind)}
               <span className="sr-only">{M.newWindow}</span>
             </a>
           )}

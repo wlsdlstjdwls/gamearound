@@ -1,5 +1,6 @@
 // 인디 홍보 글 검증 테스트 — 순수 함수만(AGENTS §8).
 import { describe, expect, it } from "vitest";
+import { storeLinkKind, storeLinkPlatform } from "./constants";
 import { indieImagePrefix, indiePostSchema, isHttpsUrl, isOwnIndieImagePath, parseYoutubeId } from "./schemas";
 
 const POST = "0f8fad5b-d9cb-469f-a165-70867728950e";
@@ -51,7 +52,9 @@ describe("indiePostSchema", () => {
     platforms: ["pc", "pc", "switch"],
     releaseNote: "",
     youtube: "",
-    links: [{ kind: "store", url: "https://store.steampowered.com/app/1" }],
+    genres: ["simulation", "simulation"],
+    storeLinks: [{ platform: "pc", url: "https://store.steampowered.com/app/1" }],
+    links: [{ kind: "site", url: "https://example.com" }],
     gameId: null,
   };
 
@@ -71,5 +74,22 @@ describe("indiePostSchema", () => {
   it("https 가 아닌 링크와 플랫폼 없음은 막는다", () => {
     expect(indiePostSchema.safeParse({ ...base, links: [{ kind: "site", url: "javascript:alert(1)" }] }).success).toBe(false);
     expect(indiePostSchema.safeParse({ ...base, platforms: [] }).success).toBe(false);
+    expect(indiePostSchema.safeParse({ ...base, storeLinks: [{ platform: "pc", url: "http://store.example.com" }] }).success).toBe(false);
+  });
+
+  it("장르는 하나 이상, 셋까지 받고 중복을 접는다", () => {
+    expect(indiePostSchema.parse(base).genres).toEqual(["simulation"]);
+    expect(indiePostSchema.safeParse({ ...base, genres: [] }).success).toBe(false);
+    expect(indiePostSchema.safeParse({ ...base, genres: ["action", "rpg", "puzzle", "card"] }).success).toBe(false);
+    expect(indiePostSchema.safeParse({ ...base, genres: ["shooter"] }).success).toBe(false);
+  });
+});
+
+describe("플랫폼별 스토어 링크 종류", () => {
+  it("store:<플랫폼> 을 오가고, 모르는 플랫폼과 다른 종류는 null", () => {
+    expect(storeLinkPlatform(storeLinkKind("switch"))).toBe("switch");
+    expect(storeLinkPlatform("store:dreamcast")).toBeNull();
+    expect(storeLinkPlatform("store")).toBeNull();
+    expect(storeLinkPlatform("site")).toBeNull();
   });
 });

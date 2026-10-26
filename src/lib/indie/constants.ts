@@ -10,6 +10,30 @@ export const INDIE_STAGES = ["in_development", "demo", "early_access", "released
 export const INDIE_PLATFORMS = ["pc", "playstation", "xbox", "switch", "mobile", "web"] as const;
 export type IndiePlatform = (typeof INDIE_PLATFORMS)[number];
 
+/**
+ * 장르 키(기획서 S-23 "장르 필수, 복수 선택"). 카탈로그 게임의 장르(lib/genres)를 안 쓰는 이유: 저쪽은 스토어가 주는
+ * 낱말을 모은 긴 목록이라 등록 폼에서 고르기엔 너무 많다. 목업 등록 폼의 여덟 갈래에 목업 표본에 있던 레이싱을 더했다.
+ */
+export const INDIE_GENRES = ["action", "rpg", "adventure", "puzzle", "simulation", "platformer", "card", "racing", "other"] as const;
+export type IndieGenre = (typeof INDIE_GENRES)[number];
+/** 한 게임이 고를 수 있는 장르 수. 카드 한 줄에 셋까지 들어간다 — 다 고르면 장르가 아무것도 말하지 않는다 */
+export const INDIE_GENRE_MAX = 3;
+
+/**
+ * 플랫폼별 스토어 링크(기획서 S-23 "선택한 플랫폼마다 스토어 링크 입력란이 생김", S-19 "플랫폼별 구매하러 가기").
+ * 따로 칸을 만들지 않고 links 에 종류 "store:<플랫폼>" 으로 싣는다 — 링크 묶음은 이미 jsonb 라 마이그레이션이 필요 없다.
+ */
+export const STORE_LINK_PREFIX = "store:";
+export function storeLinkKind(p: IndiePlatform): string {
+  return `${STORE_LINK_PREFIX}${p}`;
+}
+/** "store:pc" 면 pc, 아니면 null */
+export function storeLinkPlatform(kind: string): IndiePlatform | null {
+  if (!kind.startsWith(STORE_LINK_PREFIX)) return null;
+  const p = kind.slice(STORE_LINK_PREFIX.length);
+  return (INDIE_PLATFORMS as readonly string[]).includes(p) ? (p as IndiePlatform) : null;
+}
+
 /** 바깥 링크 종류. 스토어 하나로 묶은 이유: 스팀, itch.io, 구글 플레이를 칸마다 나누면 빈칸만 는다 */
 export const INDIE_LINK_KINDS = ["store", "demo", "site", "community", "funding"] as const;
 export type IndieLinkKind = (typeof INDIE_LINK_KINDS)[number];

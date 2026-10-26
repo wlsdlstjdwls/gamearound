@@ -9,7 +9,7 @@ import { displayNameSchema, emailSchema, fieldErrorsOf, signInInputFromForm, sig
 import { afterSignUpPath, safeNextPath } from "@/lib/routes";
 import { checkRateLimit, getRequestMeta, hashKeyPart } from "@/server/auth/rate-limit";
 import { createSession, invalidateCurrentSession } from "@/server/auth/session";
-import { createUser, DisplayNameTakenError, EmailTakenError, isDisplayNameTaken, isEmailRegistered, verifyCredentials } from "@/server/services/users";
+import { createUser, DisplayNameTakenError, EmailTakenError, isDisplayNameTaken, isEmailRegistered, recordSignUpConsents, verifyCredentials } from "@/server/services/users";
 
 export type AuthActionState =
   | { ok: true; redirectTo: string }
@@ -44,6 +44,8 @@ export async function signUpAction(_prev: AuthActionState, formData: FormData): 
 
   try {
     const user = await createUser(parsed.data);
+    // 동의 기록 실패는 가입을 되돌리지 않는다(services/users 의 recordSignUpConsents 주석)
+    await recordSignUpConsents(user.id, { alertEmail: parsed.data.alertEmail }).catch((e) => console.error("[auth] 가입 동의 기록 실패:", e instanceof Error ? e.message : e));
     await createSession(user.id, meta);
     return { ok: true, redirectTo: afterSignUp(formData) };
   } catch (e) {

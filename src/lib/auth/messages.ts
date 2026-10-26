@@ -17,6 +17,7 @@ export const AUTH_MESSAGES = {
   displayNameInvalid: "닉네임에는 공백 외 특수문자를 쓸 수 없어요",
   displayNameJamo: "자음이나 모음만 따로 쓸 수 없어요. 완성된 글자로 입력해 주세요",
   termsRequired: "이용약관에 동의해 주세요",
+  privacyRequired: "개인정보 수집, 이용에 동의해 주세요",
   // 결과 — 계정 존재 여부를 드러내지 않는다(열거 방지)
   invalidCredentials: "이메일 또는 비밀번호가 올바르지 않아요",
   emailTaken: "이미 가입된 이메일이에요. 로그인해 주세요",
@@ -40,6 +41,12 @@ export const AUTH_MESSAGES = {
   termsDocLabel: "이용약관",
   privacyDocLabel: "개인정보처리방침",
   termsConsentTail: "에 동의해요.",
+  // 가입 동의 넷(기획서 v2.0 S-27, 목업 regv). 필수 둘은 문서 이름을 링크로 단다
+  consentAll: "전체 동의",
+  consentRequired: "(필수)",
+  consentOptional: "(선택)",
+  privacyConsentLabel: "개인정보 수집, 이용",
+  alertEmailConsent: "가격 알림 이메일을 받아요",
   pending: "확인 중…",
   displayNameTaken: "이미 쓰고 있는 닉네임이에요",
   noAccount: "아직 계정이 없나요?",

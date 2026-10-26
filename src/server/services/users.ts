@@ -3,7 +3,8 @@ import "server-only";
 import { cache } from "react";
 import { eq, sql } from "drizzle-orm";
 import { getDb } from "@/server/db/client";
-import { users, type Role } from "@/server/db/schema";
+import { userConsents, users, type ConsentKind, type Role } from "@/server/db/schema";
+import { createdBy } from "@/server/db/audit";
 import { ADMIN_EMAILS_ENV } from "@/lib/auth/constants";
 import { AUTH_MESSAGES } from "@/lib/auth/messages";
 import { normalizeEmail } from "@/lib/auth/schemas";
@@ -89,6 +90,21 @@ export async function createUser(input: { email: string; password: string; displ
     if (typeof e === "object" && e && "code" in e && (e as { code?: string }).code === "23505") throw new EmailTakenError();
     throw e;
   }
+}
+
+/**
+ * 가입 동의 기록(기획서 v2.0 S-27). 필수 둘(이용약관, 개인정보)은 늘, 가격 알림 이메일은 고른 사람만 한 행씩 적는다.
+ * 계정 행과 따로 적는다 — neon-http 는 묶음 트랜잭션을 못 열어 "계정은 있는데 기록은 실패" 가 날 수 있다.
+ * 그때 가입 자체를 실패로 돌리면 사람은 "실패" 를 보는데 계정은 이미 있어 다시 가입하면 "이미 가입된 이메일" 을 만난다.
+ * 그래서 호출부(signUpAction)는 실패를 로그로만 남긴다. 필수 동의는 가입 폼이 막지 않으면 계정이 생길 수 없어서
+ * 기록이 빠져도 "동의 없이 가입" 은 없다 — 빠지는 것은 동의 시각과 선택 동의 하나다.
+ */
+export async function recordSignUpConsents(userId: string, opts: { alertEmail: boolean }): Promise<void> {
+  const kinds: ConsentKind[] = ["terms", "privacy", ...(opts.alertEmail ? (["alert_email"] as const) : [])];
+  await getDb()
+    .insert(userConsents)
+    .values(kinds.map((kind) => ({ userId, kind, ...createdBy("user", userId) })))
+    .onConflictDoNothing();
 }
 
 /**

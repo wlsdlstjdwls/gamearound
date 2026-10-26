@@ -3,6 +3,7 @@ import { formatPrice } from "@/lib/currency";
 
 export const ALERT_MESSAGES = {
   title: "가격 알림",
+  lead: "고른 플랫폼에서 다음 할인이 시작되면 알려 드려요. 수정을 누르면 플랫폼과 받는 방법을 다시 고를 수 있어요.",
   pushSettings: "푸시 설정",
   /** 머리 숫자 셋의 이름 */
   statActive: "켜 둔 알림",
@@ -19,6 +20,8 @@ export const ALERT_MESSAGES = {
   allPlatforms: "전체 플랫폼",
   paused: "꺼 둠",
   editCondition: "조건 바꾸기",
+  /** 목록 줄의 "수정" — 가격 알림 팝업(M-02)을 다시 연다 */
+  edit: "수정",
   remove: "알림 지우기",
   removeConfirm: "이 알림을 지울까요?",
   toggle: "알림 켜기, 끄기",

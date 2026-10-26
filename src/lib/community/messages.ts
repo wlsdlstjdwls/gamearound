@@ -1,8 +1,35 @@
 // 게시판 화면 문구. "-해요" 체.
+import type { PostCategory } from "@/server/db/schema";
 export const COMMUNITY_MESSAGES = {
   boardTitle: "게임 게시판",
-  boardLead: "직접 해 본 사람의 리뷰와 공략, 개발자가 올리는 홍보를 한곳에서 봐요.",
+  boardLead: "리뷰, 공략, 홍보까지 지금 반응이 좋은 글부터 만나 보세요.",
   loungeTitle: "개발자 라운지",
+  // 대시보드 홈(S-10, S-16) — 목업의 블록 설명 문구
+  risingNote: "짧은 시간에 반응이 몰린 글이에요",
+  risingFlag: "급상승",
+  rankLabel: (n: number) => `${n}위`,
+  waitingCommentNote: "아직 댓글이 없는 리뷰, 공략이에요. 의견을 남겨 주세요",
+  waitingAnswerNote: "아직 답변이 달리지 않았어요. 먼저 답해 주세요",
+  zeroComments: "댓글 0",
+  zeroAnswers: "답변 0",
+  totalCount: (n: number) => `총 ${n.toLocaleString("ko-KR")}개`,
+  risingEmpty: "아직 급상승 글이 없어요",
+  waitingEmpty: "모든 글에 댓글이 달렸어요",
+  newsEmptyLead: "새 글이 올라오면 이곳에 보여요.",
+  statusLabel: "게시판 현황",
+  countValue: (n: number) => `${n.toLocaleString("ko-KR")}개`,
+  promoBoardLink: "홍보 게시판",
+  view: "보기",
+  promoGuideTitle: "내 게임, 프로젝트를 알려 보세요",
+  risingRule: "급상승 인기글은 최근 3일 안에 올라온 글 중 시간당 반응(좋아요 + 댓글 x 2)이 높은 순이에요.",
+  // 목록(S-11~13, S-17, S-20, S-21) 머리
+  boardSideLabel: "게시판",
+  boardHeadSuffix: "게시판",
+  allPostsHead: "전체 게시글",
+  postCount: (n: number) => `${n.toLocaleString("ko-KR")}개 글`,
+  searchResult: (q: string, n: number) => `"${q}" 검색 결과 ${n.toLocaleString("ko-KR")}개`,
+  popularLead: (period: string) => `${period} 동안 이 게시판에서 반응이 좋은 글이에요.`,
+  boardFootnote: "각 게시판 안에서 전체글과 인기글을 바꿔 가며 지금 게시판의 글만 비교해 볼 수 있어요.",
   write: "글쓰기",
   allPosts: "전체 글",
   allPostsLink: "전체 글 보기",
@@ -17,7 +44,7 @@ export const COMMUNITY_MESSAGES = {
   promoWrite: "홍보 글 쓰기",
   tabAll: "전체글",
   tabPopular: "인기글",
-  searchPlaceholder: "검색어를 입력해요",
+  searchPlaceholder: "제목, 내용 검색",
   search: "검색",
   searchReset: "검색 초기화",
   emptyTitle: "아직 글이 없어요",
@@ -70,6 +97,17 @@ export const COMMUNITY_MESSAGES = {
   failed: "처리하지 못했어요. 잠시 뒤 다시 해 주세요",
   notFound: "글을 찾을 수 없어요",
 } as const;
+
+/** 목록 머리 설명과 글쓰기 단추 이름(목업 rbPage, lgPage). 카테고리 하나짜리 게시판은 그 카테고리, 묶음은 소속 전체 글 */
+export const BOARD_PAGE_COPY: Record<PostCategory | "boardAll" | "loungeAll", { lead: string; write: string }> = {
+  boardAll: { lead: "리뷰, 공략, 홍보를 한곳에서 모아 보세요.", write: "글쓰기" },
+  review: { lead: "게임을 직접 해 본 사람들의 리뷰를 읽고 남겨 보세요.", write: "리뷰 작성" },
+  guide: { lead: "막히는 구간과 플레이 팁을 사람들이 직접 정리해요.", write: "공략 작성" },
+  promo: { lead: "내가 만든 게임이나 진행 중인 프로젝트를 소개해 보세요.", write: "홍보 작성" },
+  loungeAll: { lead: "개발일지와 질문, 피드백을 한곳에서 모아 보세요.", write: "글쓰기" },
+  devlog: { lead: "게임을 만들어 가는 과정을 기록하고 나눠요.", write: "개발일지 작성" },
+  qna: { lead: "막히는 부분을 묻고, 내 게임에 대한 피드백을 받아 보세요.", write: "질문 작성" },
+};
 
 export function postCountText(n: number): string {
   return `${n.toLocaleString("ko-KR")}개`;

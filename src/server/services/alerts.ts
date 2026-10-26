@@ -26,7 +26,10 @@ export type AlertView = {
   minDiscountPct: number | null;
   targetPrice: number | null;
   isActive: boolean;
-  game: { slug: string; title: string; coverUrl: string | null };
+  /** id 와 options 는 목록의 "수정" 이 가격 알림 팝업(M-02)을 다시 열 때 쓴다(기획서 S-26 "수정(M-02 재오픈)") */
+  game: { id: string; slug: string; title: string; coverUrl: string | null };
+  /** 그 게임을 파는 플랫폼과 지금 값 — 팝업이 플랫폼마다 현재가를 적는다 */
+  options: Array<{ platform: Platform; currentPrice: number | null; currency: (typeof gamePlatforms.$inferSelect)["currency"] }>;
   status: AlertStatus;
   lastSentAt: Date | null;
 };
@@ -103,7 +106,8 @@ export async function listAlertViews(): Promise<AlertsOverview> {
     minDiscountPct: a.minDiscountPct,
     targetPrice: a.targetPrice,
     isActive: a.isActive,
-    game: { slug: a.game.slug, title: a.game.titleKo ?? a.game.titleEn, coverUrl: a.game.coverUrl },
+    game: { id: a.game.id, slug: a.game.slug, title: a.game.titleKo ?? a.game.titleEn, coverUrl: a.game.coverUrl },
+    options: rows.filter((r) => r.gameId === a.gameId).map((r) => ({ platform: r.platform, currentPrice: r.currentPrice, currency: r.currency })),
     status: alertStatus(
       { minDiscountPct: a.minDiscountPct, targetPrice: a.targetPrice },
       rows.filter((r) => r.gameId === a.gameId),

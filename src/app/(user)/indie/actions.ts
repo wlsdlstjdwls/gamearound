@@ -49,20 +49,27 @@ function fail(e: unknown): { ok: false; error: string } {
   return { ok: false, error: actionError(e, M.badRequest) };
 }
 
-/** 폼 값을 검증 전 꼴로 모은다. 링크는 칸마다 종류, 주소 짝이고 주소가 빈 칸은 버린다 */
+/**
+ * 폼 값을 검증 전 꼴로 모은다. 링크는 칸마다 종류, 주소 짝이고 주소가 빈 칸은 버린다.
+ * 스토어 링크는 고른 플랫폼의 칸만 읽는다 — 플랫폼을 골랐다 끈 칸에 남은 주소가 따라 들어가지 않게.
+ */
 function readForm(formData: FormData) {
   const text = (name: string) => String(formData.get(name) ?? "");
+  const platforms = formData.getAll("platforms").map(String);
   const links = Array.from({ length: INDIE_LINK_MAX }, (_, i) => ({
     kind: text(`linkKind-${i}`),
     url: text(`linkUrl-${i}`).trim(),
   })).filter((l) => l.url);
+  const storeLinks = platforms.map((platform) => ({ platform, url: text(`storeLink-${platform}`).trim() })).filter((l) => l.url);
   return indiePostSchema.safeParse({
     title: text("title"),
     tagline: text("tagline"),
     developerName: text("developerName"),
     body: text("body"),
     stage: text("stage"),
-    platforms: formData.getAll("platforms").map(String),
+    platforms,
+    genres: formData.getAll("genres").map(String),
+    storeLinks,
     releaseNote: text("releaseNote"),
     youtube: text("youtube"),
     links,

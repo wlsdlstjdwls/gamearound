@@ -1,6 +1,6 @@
 // 인디 홍보 축의 사용자 문구 한 곳 — AGENTS §2. 문체는 "-해요"(AGENTS §6).
 import type { IndieStage } from "@/server/db/schema";
-import type { IndieLinkKind, IndiePlatform } from "./constants";
+import { storeLinkPlatform, type IndieGenre, type IndieLinkKind, type IndiePlatform } from "./constants";
 
 export const INDIE_STAGE_LABEL: Record<IndieStage, string> = {
   in_development: "개발 중",
@@ -18,6 +18,23 @@ export const INDIE_PLATFORM_LABEL: Record<IndiePlatform, string> = {
   web: "웹",
 };
 
+export const INDIE_GENRE_LABEL: Record<IndieGenre, string> = {
+  action: "액션",
+  rpg: "RPG",
+  adventure: "어드벤처",
+  puzzle: "퍼즐",
+  simulation: "시뮬레이션",
+  platformer: "플랫포머",
+  card: "카드",
+  racing: "레이싱",
+  other: "기타",
+};
+
+/** 저장된 장르 키를 이름으로. 목록에서 빠진 옛 키는 버린다 */
+export function genreLabels(genres: readonly string[]): string[] {
+  return genres.flatMap((g) => (g in INDIE_GENRE_LABEL ? [INDIE_GENRE_LABEL[g as IndieGenre]] : []));
+}
+
 export const INDIE_LINK_LABEL: Record<IndieLinkKind, string> = {
   store: "스토어",
   demo: "데모 받기",
@@ -26,14 +43,37 @@ export const INDIE_LINK_LABEL: Record<IndieLinkKind, string> = {
   funding: "펀딩",
 };
 
+/** 링크 종류의 이름. 플랫폼별 스토어 링크("store:pc")는 "PC 스토어" 로 읽는다(lib/indie/constants 의 storeLinkKind) */
+export function linkLabel(kind: string): string {
+  const platform = storeLinkPlatform(kind);
+  if (platform) return `${INDIE_PLATFORM_LABEL[platform]} 스토어`;
+  return INDIE_LINK_LABEL[kind as IndieLinkKind] ?? kind;
+}
+
 /** 공개 화면(목록, 상세, 홈 줄, 게임 상세 마디) */
 export const INDIE_MESSAGES = {
   /** 2026-10-07 "인디" 에서 늘렸다 — 낱말 하나로는 장르 필터처럼 읽혀 화면 이름(title)과 같은 말로 맞췄다 */
   navLabel: "인디 게임",
   title: "인디 게임",
+  /** /indie 화면 머리(기획서 S-18). 메뉴의 "내가 만든 게임" 과 같은 말이다 */
+  listTitle: "내가 만든 게임",
   lead: "인디 개발자가 직접 등록한 개성 있는 게임을 둘러보세요.",
   hofBannerTitle: "명예의 전당에 올라보세요",
-  hofBannerLead: "조회수와 댓글 같은 반응을 모아 매달 '이번 달 주목작' 을 뽑아요.",
+  hofBannerLead: "조회수와 찜 같은 반응을 모아 매달 '이번 달 주목작' 을 뽑아 명예의 전당에 소개해요.",
+  hofBannerCta: "명예의 전당 보기",
+  register: "내 게임 등록",
+  searchLabel: "내가 만든 게임 검색",
+  searchPlaceholder: "게임 이름, 소개 검색",
+  search: "검색",
+  searchReset: "검색 초기화",
+  searchResult: (q: string, n: number) => `"${q}" 검색 결과 ${n.toLocaleString("ko-KR")}개`,
+  emptySearch: "검색 결과가 없어요",
+  emptySearchLead: "다른 검색어로 다시 찾아보세요.",
+  likesLabel: "찜",
+  genres: "장르",
+  buyTitle: "플랫폼별 구매하러 가기",
+  buyCta: "구매하러 가기",
+  storeOf: (platform: string) => `${platform} 스토어`,
   countSuffix: "개",
   cta: "내 게임 소개하기",
   mine: "내가 쓴 글",
@@ -45,7 +85,7 @@ export const INDIE_MESSAGES = {
   homeTitle: "인디 개발자가 소개해요",
   homeNote: "개발자가 직접 올린 게임",
   seeAll: "전체 보기",
-  back: "인디 게임 목록으로",
+  back: "내가 만든 게임 목록으로",
   by: "만든 사람",
   platforms: "플랫폼",
   release: "출시",
@@ -63,6 +103,8 @@ export const INDIE_MESSAGES = {
   rail: { prev: "이전 게임", next: "다음 게임" },
   edit: "고치기",
   hiddenNotice: "이 글은 지금 숨겨져 있어서 나만 볼 수 있어요.",
+  noCoverShort: "대표 그림을 올려야 목록에 보여요",
+  hiddenShort: "숨겨져 있어 나만 볼 수 있어요",
   noCoverNotice: "대표 그림이 없어서 목록과 홈에는 아직 안 보여요. 고치기 화면에서 그림을 올려 주세요.",
   notFound: "글을 찾을 수 없어요",
   /** 목록 머리 판 */
@@ -81,8 +123,13 @@ export const INDIE_MESSAGES = {
 
 /** 쓰기, 고치기 폼과 검증 */
 export const INDIE_FORM_MESSAGES = {
-  newTitle: "내 게임 소개하기",
-  newLead: "글은 올리는 즉시 공개돼요. 다른 사람의 게임이나 광고, 게임과 상관없는 글은 신고로 내려가요.",
+  newTitle: "내 게임 등록",
+  newLead: "내가 만든 게임을 직접 올려 보세요.",
+  approvalNotice: "등록한 게임은 운영진이 확인하고 승인한 뒤에 최종 등록돼요. 승인 전에는 승인 대기로 보이고, 승인되면 내가 만든 게임에 정식으로 올라가요.",
+  mineAside: "내가 올린 게임",
+  mineAsideEmpty: "올린 게임이 없어요",
+  mineAsideEmptyLead: "등록하면 이곳에서 내가 올린 게임을 볼 수 있어요.",
+  mineAsideFlow: "등록 요청, 운영진 승인, 최종 등록 순서로 진행돼요. 올린 게임은 고치기 화면에서 언제든 지울 수 있어요.",
   editTitle: "소개 글 고치기",
   mineTitle: "내가 쓴 소개 글",
   mineEmpty: "아직 쓴 글이 없어요",
@@ -98,8 +145,13 @@ export const INDIE_FORM_MESSAGES = {
   bodyHint: "어떤 게임인지, 무엇이 재미있는지, 지금 어디까지 만들었는지 적어 주세요. 줄바꿈은 그대로 보여요.",
   youtubeLabel: "유튜브 영상 주소",
   youtubeHint: "트레일러나 플레이 영상 하나를 상세 화면에 띄워요.",
-  linksLabel: "바로 가기 링크",
-  linksHint: "스토어, 데모, 공식 사이트, 디스코드 같은 주소를 최대 다섯 개까지 적어요.",
+  linksLabel: "그 밖의 링크",
+  linksHint: "데모, 공식 사이트, 디스코드 같은 주소를 최대 다섯 개까지 적어요.",
+  genresLabel: "장르",
+  genresHint: (max: number) => `${max}개까지 고를 수 있어요.`,
+  storeLinksLabel: "플랫폼별 스토어 링크",
+  storeLinksHint: "출시 플랫폼을 고르면 플랫폼마다 스토어 링크 칸이 생겨요. 아직 스토어 페이지가 없으면 비워 둬도 돼요.",
+  storeLinkLabel: (platform: string) => `${platform} 스토어 링크`,
   linkKindLabel: (n: number) => `링크 ${n} 종류`,
   linkUrlLabel: (n: number) => `링크 ${n} 주소`,
   linkAdd: "링크 하나 더 적기",
@@ -143,6 +195,8 @@ export const INDIE_FORM_MESSAGES = {
   bodyTooLong: (max: number) => `소개는 ${max}자까지 적을 수 있어요.`,
   releaseNoteTooLong: (max: number) => `출시 시기는 ${max}자까지 적을 수 있어요.`,
   platformsRequired: "플랫폼을 하나 이상 골라 주세요.",
+  genresRequired: "장르를 하나 이상 골라 주세요.",
+  genresTooMany: (max: number) => `장르는 ${max}개까지 고를 수 있어요.`,
   youtubeInvalid: "유튜브 영상 주소를 확인해 주세요.",
   linkInvalid: "링크는 https 로 시작하는 주소만 받아요.",
   tooManyLinks: (max: number) => `링크는 ${max}개까지 적을 수 있어요.`,
@@ -204,6 +258,12 @@ export const INDIE_REVIEW_MESSAGES = {
   resubmit: "고쳐서 다시 신청",
   flow: "신청, 운영진 승인, 최종 등록 순서로 진행돼요.",
   title: "등록현황",
-  total: "내가 올린 게임",
+  lead: "내 게임 등록으로 신청한 게임의 승인 상태를 확인해요. 운영진 승인이 끝나야 내가 만든 게임 목록에 올라가요.",
+  total: "전체 신청",
   appliedAt: "신청일",
+  applied: "신청",
+  pendingShort: "운영진이 확인하고 있어요",
+  liveShort: "내가 만든 게임에 보이고 있어요",
+  emptyLead: "내 게임 등록으로 첫 게임을 올려 보세요.",
+  footnote: "승인 대기 중인 게임은 내가 만든 게임, 명예의 전당, 슈퍼루키 어디에도 보이지 않아요.",
 } as const;

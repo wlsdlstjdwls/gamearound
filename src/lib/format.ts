@@ -49,8 +49,8 @@ function trimZero(v: string): string {
   return String(Number(v));
 }
 
-/** 요일 이름. 날짜 표기(formatDate)와 출시예정 목록(formatReleaseDay)이 같이 쓴다 */
-const WEEKDAY_LABEL = ["일", "월", "화", "수", "목", "금", "토"];
+/** 요일 이름. 날짜 표기(formatDate)와 출시예정 목록(formatReleaseDay), 출시 예정 줄(components/upcoming-row)이 같이 쓴다 */
+export const WEEKDAY_LABEL = ["일", "월", "화", "수", "목", "금", "토"];
 
 /** 유효한 Date 로 바꾼다. 못 바꾸면 null — 화면에는 "-" 가 나간다 */
 function toDate(d: Date | string | null | undefined): Date | null {
@@ -95,6 +95,12 @@ export function formatDate(d: Date | string | null | undefined): string {
 export function kstDateKey(date: Date): string {
   const { year, month, day } = kstParts(date);
   return `${year}-${month}-${day}`;
+}
+
+/** 점으로 이은 날짜 "2026.10.26"(KST). 카드처럼 폭이 좁은 자리의 등록일 — 요일까지 적으면 한 줄을 넘긴다 */
+export function formatDotDate(d: Date | string | null | undefined): string {
+  const date = toDate(d);
+  return date ? kstDateKey(date).replaceAll("-", ".") : "-";
 }
 
 /** 목록에 붙는 짧은 시각. 24시간제로 적는다 — 오전/오후 표기가 런타임마다 갈렸다(KST_PARTS 주석) */

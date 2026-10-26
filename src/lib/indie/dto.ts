@@ -15,6 +15,12 @@ export type IndieCardDto = {
   developerName: string;
   stage: IndieStage;
   platforms: IndiePlatform[];
+  /** 장르 키(INDIE_GENRES). 이름은 화면이 genreLabels 로 바꾼다 */
+  genres: string[];
+  /** 카드 아래 줄의 "찜 N", "등록 날짜"(기획서 S-18 카드: 장르, 플랫폼, 찜 수, 등록일) */
+  likeCount: number;
+  viewCount: number;
+  registeredAt: string;
   cover: IndieImageDto;
 };
 
@@ -31,6 +37,7 @@ export type IndieDetailDto = {
   developerName: string;
   stage: IndieStage;
   platforms: IndiePlatform[];
+  genres: string[];
   releaseNote: string | null;
   links: IndieLink[];
   youtubeId: string | null;
@@ -50,11 +57,16 @@ export type IndieMineRowDto = {
   slug: string;
   title: string;
   stage: IndieStage;
+  platforms: IndiePlatform[];
+  genres: string[];
   status: IndiePostStatus;
   statusReason: string | null;
   review: IndieReview;
   reviewReason: string | null;
   hasCover: boolean;
+  /** 라운지 홈 "내 게임 최근 소식" 이 반응으로 적는다(기획서 S-16 "찜 수") */
+  likeCount: number;
+  viewCount: number;
   createdAt: string;
   updatedAt: string;
 };
@@ -79,6 +91,8 @@ export type IndieAdminRowDto = {
   status: IndiePostStatus;
   statusReason: string | null;
   review: IndieReview;
+  /** 반려 사유. 관리자 "전체" 칸에서 반려된 글이 왜 반려됐는지 다시 보려고 싣는다 */
+  reviewReason: string | null;
   reportCount: number;
   reportReasons: string[];
   game: IndieGameLinkDto | null;

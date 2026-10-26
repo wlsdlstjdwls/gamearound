@@ -13,6 +13,7 @@ import { deleteBlobs } from "@/server/services/blob-files";
 import { slugify } from "@/lib/slug";
 import { PHOTO_CONTENT_TYPES } from "@/lib/shops/constants";
 import {
+  storeLinkKind,
   INDIE_IMAGE_MAX,
   INDIE_POSTS_PER_USER_MAX,
   INDIE_REPORT_HIDE_THRESHOLD,
@@ -20,6 +21,11 @@ import {
 } from "@/lib/indie/constants";
 import { INDIE_FORM_MESSAGES as M, INDIE_REPORT_MESSAGES as R } from "@/lib/indie/messages";
 import type { IndieImageRegisterInput, IndiePostInput } from "@/lib/indie/schemas";
+
+/** 저장할 링크 묶음 — 플랫폼별 스토어 링크를 앞에(종류 "store:<플랫폼>"), 그 밖의 링크를 뒤에 싣는다(lib/indie/constants 주석) */
+function linksOf(input: IndiePostInput) {
+  return [...input.storeLinks.map((l) => ({ kind: storeLinkKind(l.platform), url: l.url })), ...input.links];
+}
 
 /** 글을 고치는 사람. 관리자는 남의 글도 고치고, 그 행위는 감사 컬럼에 admin 으로 남는다 */
 export type IndieActor = { userId: string; isAdmin: boolean };
@@ -59,8 +65,9 @@ export async function createIndiePost(userId: string, input: IndiePostInput): Pr
       developerName: input.developerName,
       stage: input.stage,
       platforms: input.platforms,
+      genres: input.genres,
       releaseNote: input.releaseNote,
-      links: input.links,
+      links: linksOf(input),
       youtubeId: input.youtube,
       ...createdBy("user", userId),
     })
@@ -86,8 +93,9 @@ export async function updateIndiePost(postId: string, actor: IndieActor, input: 
       developerName: input.developerName,
       stage: input.stage,
       platforms: input.platforms,
+      genres: input.genres,
       releaseNote: input.releaseNote,
-      links: input.links,
+      links: linksOf(input),
       youtubeId: input.youtube,
       // 반려된 글을 고쳐 내면 재신청이다 — 다시 승인 대기로 돌아가고 옛 사유는 지운다(기획서 7.1, 2026-10-26 사용자 결정)
       ...(post.review === "rejected" ? { review: "pending" as const, reviewReason: null } : {}),

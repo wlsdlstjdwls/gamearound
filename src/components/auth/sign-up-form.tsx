@@ -40,6 +40,9 @@ export function SignUpForm({ next }: { next: string }) {
   const busy = pending || navigating;
   const pw = fieldProps("password");
   const terms = fieldProps("terms");
+  const privacy = fieldProps("privacy");
+  const [agree, setAgree] = useState({ terms: false, privacy: false, alertEmail: false });
+  const allAgreed = agree.terms && agree.privacy && agree.alertEmail;
 
   // <form> 에 action 을 걸지 않는다 — 걸면 React 19 가 제출 때마다 form.reset() 을 불러
   // 실패한 폼의 칸이 전부 비워진다. 액션은 useAuthForm 의 onSubmit 이 직접 태운다(근거는 그 주석에)
@@ -107,27 +110,55 @@ export function SignUpForm({ next }: { next: string }) {
         <PasswordField ref={confirmRef} label="비밀번호 확인" placeholder="한 번 더 입력" autoComplete="new-password" disabled={busy} {...fieldProps("passwordConfirm")} />
       </div>
 
-      <div className="reveal" style={stagger(5)}>
-        <Checkbox name="terms" disabled={busy} onChange={terms.onChange} onBlur={terms.onBlur} error={terms.error}>
-          {/* 두 문서는 링크다 — 동의하기 전에 읽을 길이 있어야 한다.
-              새 창으로 여는 이유: 같은 창에서 나가면 여기까지 채운 칸이 전부 날아간다.
-              한 줄로 묶는다(2026-09-30 사용자 요청) — 서비스 이름을 앞에서 빼서 넓은 화면에는 한 줄에 들어간다.
-              좁은 화면(sm 미만)은 글자 폭이 칸보다 넓어 묶으면 가로로 넘치므로 그때만 줄을 바꾼다 */}
-          <span className="sm:whitespace-nowrap">
-          <span className="text-ink">(필수)</span>{" "}
+      {/* 동의 넷(기획서 v2.0 S-27, 목업 regv): 전체 동의, 이용약관(필수), 개인정보(필수), 가격 알림 이메일(선택).
+          두 문서는 링크다 — 동의하기 전에 읽을 길이 있어야 한다. 새 창으로 여는 이유: 같은 창에서 나가면 여기까지 채운 칸이 전부 날아간다.
+          세 칸은 상태로 쥔다 — "전체 동의" 가 셋을 한 번에 켜고 끄고, 셋이 다 켜지면 전체 동의도 켜져 보여야 한다 */}
+      <fieldset className="reveal flex flex-col gap-0.5 rounded-[var(--radius-md)] bg-surface-2 px-3.5 py-2.5" style={stagger(5)}>
+        <legend className="sr-only">{M.consentAll}</legend>
+        <Checkbox checked={allAgreed} disabled={busy} onChange={(e) => setAgree({ terms: e.currentTarget.checked, privacy: e.currentTarget.checked, alertEmail: e.currentTarget.checked })}>
+          <span className="font-bold text-ink">{M.consentAll}</span>
+        </Checkbox>
+        <div className="my-1 border-t border-line" />
+        <Checkbox
+          name="terms"
+          checked={agree.terms}
+          disabled={busy}
+          onChange={(e) => {
+            setAgree((a) => ({ ...a, terms: e.currentTarget.checked }));
+            terms.onChange(e);
+          }}
+          onBlur={terms.onBlur}
+          error={terms.error}
+        >
+          <span className="text-ink">{M.consentRequired}</span>{" "}
           <Link href={ROUTES.terms} target="_blank" rel="noreferrer" className="font-semibold text-acc-hover underline underline-offset-4">
             {M.termsDocLabel}
             <span className="sr-only"> (새 창에서 열림)</span>
           </Link>
-          과{" "}
+          {M.termsConsentTail}
+        </Checkbox>
+        <Checkbox
+          name="privacy"
+          checked={agree.privacy}
+          disabled={busy}
+          onChange={(e) => {
+            setAgree((a) => ({ ...a, privacy: e.currentTarget.checked }));
+            privacy.onChange(e);
+          }}
+          onBlur={privacy.onBlur}
+          error={privacy.error}
+        >
+          <span className="text-ink">{M.consentRequired}</span>{" "}
           <Link href={ROUTES.privacy} target="_blank" rel="noreferrer" className="font-semibold text-acc-hover underline underline-offset-4">
-            {M.privacyDocLabel}
+            {M.privacyConsentLabel}
             <span className="sr-only"> (새 창에서 열림)</span>
           </Link>
           {M.termsConsentTail}
-          </span>
         </Checkbox>
-      </div>
+        <Checkbox name="alertEmail" checked={agree.alertEmail} disabled={busy} onChange={(e) => setAgree((a) => ({ ...a, alertEmail: e.currentTarget.checked }))}>
+          <span className="text-ink">{M.consentOptional}</span> {M.alertEmailConsent}
+        </Checkbox>
+      </fieldset>
 
       <div className="reveal pt-1" style={stagger(6)}>
         <Button type="submit" size="lg" fullWidth loading={busy} loadingLabel={M.pending}>

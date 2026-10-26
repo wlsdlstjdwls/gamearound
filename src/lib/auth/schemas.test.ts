@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import { fieldErrorsOf, normalizeEmail, resetPasswordSchema, signInSchema, signUpSchema } from "./schemas";
 import { AUTH_MESSAGES as M } from "./messages";
 
-const valid = { displayName: "손전등맨", email: "  Foo@Example.COM ", password: "tetris4life", passwordConfirm: "tetris4life", terms: true };
+const valid = { displayName: "손전등맨", email: "  Foo@Example.COM ", password: "tetris4life", passwordConfirm: "tetris4life", terms: true, privacy: true, alertEmail: false };
 
 describe("signUpSchema", () => {
   it("정상 입력 → 이메일 소문자 정규화", () => {
@@ -25,6 +25,13 @@ describe("signUpSchema", () => {
     expect(r.success).toBe(false);
     if (!r.success) expect(fieldErrorsOf(r.error).password).toBe(M.passwordCommon);
   });
+  it("개인정보 미동의 → privacy 에러, 선택 동의는 없어도 된다", () => {
+    const r = signUpSchema.safeParse({ ...valid, privacy: false });
+    expect(r.success).toBe(false);
+    if (!r.success) expect(fieldErrorsOf(r.error).privacy).toBe(M.privacyRequired);
+    expect(signUpSchema.safeParse({ ...valid, alertEmail: true }).success).toBe(true);
+  });
+
   it("약관 미동의 → terms 에러", () => {
     const r = signUpSchema.safeParse({ ...valid, terms: false });
     expect(r.success).toBe(false);

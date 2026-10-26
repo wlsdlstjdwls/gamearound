@@ -67,7 +67,9 @@ export default async function AlertsPage({ searchParams }: { searchParams: Promi
             {M.pushSettings}
           </Link>
         }
-      />
+      >
+        <p className="text-[14px] text-mut">{M.lead}</p>
+      </PageHead>
 
       {pushCount === 0 && (
         <div role="status" className="flex flex-wrap items-center justify-between gap-3 rounded-[var(--radius-md)] bg-warn-soft px-4 py-3">
