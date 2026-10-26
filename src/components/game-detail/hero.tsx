@@ -145,6 +145,8 @@ export function DetailHero({
             <PriceAlertButton
               gameId={game.id}
               gameSlug={game.slug}
+              gameTitle={title}
+              kind={unreleased ? "release" : "price"}
               options={alertOptions}
               variant="secondary"
               label={

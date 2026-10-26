@@ -1,9 +1,12 @@
 // 가격 알림 화면 문구(2026-10-07 고도화 때 화면, 폼에 흩어져 있던 말을 모았다). "-해요" 체.
 import { formatPrice } from "@/lib/currency";
 
+/** "어떤 때 알려 주나" 한 문장. 목록 머리와 팝업(M-02) 머리가 같은 말을 해야 해서 한 자리에 둔다 */
+const PRICE_ALERT_LEAD = "고른 플랫폼에서 다음 할인이 시작되면 알려 드려요";
+
 export const ALERT_MESSAGES = {
   title: "가격 알림",
-  lead: "고른 플랫폼에서 다음 할인이 시작되면 알려 드려요. 수정을 누르면 플랫폼과 받는 방법을 다시 고를 수 있어요.",
+  lead: `${PRICE_ALERT_LEAD}. 수정을 누르면 플랫폼과 받는 방법을 다시 고를 수 있어요.`,
   pushSettings: "푸시 설정",
   /** 머리 숫자 셋의 이름 */
   statActive: "켜 둔 알림",
@@ -14,7 +17,8 @@ export const ALERT_MESSAGES = {
   pushOffAction: "푸시 켜기",
   listTitle: "내 알림",
   emptyTitle: "아직 만든 알림이 없어요",
-  emptyDescription: "게임 상세의 '가격 알림 받기' 에서 할인율이나 목표가를 정하면, 그 값이 되는 순간 알려 드려요",
+  /** 팝업(M-02)이 플랫폼과 받는 방법만 고르는 모양이 된 뒤의 말(2026-10-26). 할인율, 목표가는 이 화면 폼의 일이다 */
+  emptyDescription: "게임 상세의 '가격 알림 받기' 에서 플랫폼과 받는 방법을 고르면 여기에 모여요",
   emptyAction: "게임 둘러보기",
   notFound: (slug: string) => `'${slug}' 게임을 찾지 못했어요`,
   allPlatforms: "전체 플랫폼",
@@ -34,6 +38,10 @@ export const ALERT_MESSAGES = {
   previewEmailLink: "게임 보러 가기",
   remove: "알림 지우기",
   removeConfirm: "이 알림을 지울까요?",
+  /** 목록은 게임 한 줄에 플랫폼 알림을 묶는다 — 지우기는 그 묶음 전부다 */
+  removeGroupConfirm: "이 게임에 걸린 알림을 모두 지울까요?",
+  /** 목록 줄에서 플랫폼 칩 묶음의 이름(스크린 리더) */
+  platformsLabel: "알림 받을 플랫폼",
   toggle: "알림 켜기, 끄기",
   priceUnknown: "아직 값을 모르는 게임이에요",
   metLabel: "조건 충족",
@@ -70,14 +78,21 @@ export function gapText(gap: { kind: "discount"; pct: number } | { kind: "price"
 /** 상세 화면 가격 알림 팝업(components/price-alert-button, 기획서 v2.0 M-02) */
 export const PRICE_ALERT_MESSAGES = {
   cta: "가격 알림 받기",
-  title: "가격 알림 설정",
+  /** 출시 예정 게임의 "출시 알림 받기" 로 열면 release 다(목업 alm 의 g.up) */
+  title: { price: "가격 알림 설정", release: "출시 알림 설정" },
+  lead: { price: PRICE_ALERT_LEAD, release: "고른 플랫폼에서 출시되면 알려 드려요" },
   platformsLegend: "알림 받을 플랫폼",
   channelLegend: "알림 받는 방법",
   channel: { web: "웹 알림", email: "이메일" },
   emailNote: "가입한 이메일로 보내요. 메일 발송이 준비되기 전에는 웹 알림으로 대신 보내요.",
   noPrice: "가격 확인 중",
   save: "저장",
-  saved: "가격 알림을 저장했어요",
+  saved: { price: "가격 알림을 저장했어요", release: "출시 알림을 저장했어요" },
+  cancel: "취소",
+  /** 이미 알림이 걸린 게임에만 선다. 누르면 팝업을 닫고 바로 지운다 — 실패하면 팝업을 다시 연다 */
+  remove: "알림 삭제",
+  removed: "알림을 지웠어요",
+  removeFailed: "알림을 지우지 못했어요. 잠시 뒤 다시 해 주세요",
   failed: "저장하지 못했어요. 잠시 뒤 다시 해 주세요",
   advanced: "목표가, 할인율로 자세히 정하기",
 } as const;

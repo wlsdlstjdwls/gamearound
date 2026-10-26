@@ -117,7 +117,8 @@ export default async function AlertsPage({ searchParams }: { searchParams: Promi
         <EmptyState title={M.emptyTitle} description={M.emptyDescription} action={{ href: ROUTES.game, label: M.emptyAction }} />
       ) : (
         <section className="flex flex-col gap-3.5">
-          <SectionHead title={M.listTitle} note={`${views.length.toLocaleString("ko-KR")}개`} />
+          {/* 개수는 게임 수다 — 목록이 플랫폼 행을 게임 한 줄로 묶어 보인다(components/alerts/alert-list) */}
+          <SectionHead title={M.listTitle} note={`${new Set(views.map((v) => v.game.id)).size.toLocaleString("ko-KR")}개`} />
           <AlertList views={views} />
         </section>
       )}

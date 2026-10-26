@@ -184,23 +184,29 @@ export async function deleteAlert(id: string): Promise<void> {
   if (deleted.length === 0) throw new Error("알림을 찾을 수 없거나 권한이 없습니다");
 }
 
-/** 상세 화면 알림 팝업(M-02)이 채울 값 — 이 게임에 걸린 내 알림의 플랫폼과 받는 방법 */
-export type GameAlertSetting = { platforms: Platform[]; channel: AlertChannel; active: boolean };
+/**
+ * 상세 화면 알림 팝업(M-02)이 채울 값 — 이 게임에 걸린 내 알림의 플랫폼과 받는 방법.
+ * ids 는 팝업의 "알림 삭제" 가 지울 행 전부다(꺼 둔 행 포함). 지우기는 행 단위 액션(deleteAlertAction)을 그대로 쓴다 —
+ * 게임 단위 삭제를 따로 만들면 소유자 검사가 두 벌이 된다.
+ */
+export type GameAlertSetting = { ids: string[]; platforms: Platform[]; channel: AlertChannel; active: boolean };
 export type AlertChannel = (typeof priceAlerts.$inferSelect)["channel"];
 
 /**
  * 이 게임에 걸린 내 알림을 팝업 모양으로 접는다. 플랫폼 없는 행(옛 "모든 플랫폼")은 지금 파는 플랫폼 전부로 편다 —
  * 팝업은 플랫폼을 하나하나 고르는 모양이라 "전부" 를 따로 그릴 칸이 없다.
+ * 칸은 켜 둔 행으로만 채운다. 다 꺼 둔 게임이면 칸은 비지만 행은 있으니 "알림 삭제" 는 선다.
  */
 export async function getMyGameAlert(gameId: string, allPlatforms: Platform[]): Promise<GameAlertSetting | null> {
   const u = await requireUser();
   const rows = await getDb().query.priceAlerts.findMany({
-    where: and(eq(priceAlerts.userId, u.id), eq(priceAlerts.gameId, gameId), eq(priceAlerts.isActive, true)),
+    where: and(eq(priceAlerts.userId, u.id), eq(priceAlerts.gameId, gameId)),
   });
   if (rows.length === 0) return null;
+  const on = rows.filter((r) => r.isActive);
   const set = new Set<Platform>();
-  for (const r of rows) for (const p of r.platform === null ? allPlatforms : [r.platform]) set.add(p);
-  return { platforms: allPlatforms.filter((p) => set.has(p)), channel: rows[0].channel, active: true };
+  for (const r of on) for (const p of r.platform === null ? allPlatforms : [r.platform]) set.add(p);
+  return { ids: rows.map((r) => r.id), platforms: allPlatforms.filter((p) => set.has(p)), channel: (on[0] ?? rows[0]).channel, active: on.length > 0 };
 }
 
 /**

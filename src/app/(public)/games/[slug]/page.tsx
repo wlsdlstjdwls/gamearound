@@ -144,6 +144,8 @@ export default async function GameDetailPage({ params }: Props) {
                     <PriceAlertButton
                       gameId={game.id}
                       gameSlug={game.slug}
+                      gameTitle={title}
+                      kind="release"
                       options={alertOptions.filter((o) => o.platform === p.platform)}
                       slot={p.platform}
                       variant="soft"
@@ -169,7 +171,7 @@ export default async function GameDetailPage({ params }: Props) {
             <DiscountForecast
               forecast={forecast}
               currency={DISPLAY_CURRENCY}
-              action={canAlert ? <PriceAlertButton gameId={game.id} gameSlug={game.slug} options={alertOptions} slot="forecast" label={D.forecastAlert} /> : undefined}
+              action={canAlert ? <PriceAlertButton gameId={game.id} gameSlug={game.slug} gameTitle={title} options={alertOptions} slot="forecast" label={D.forecastAlert} /> : undefined}
             />
           )}
         </div>
