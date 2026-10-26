@@ -2,6 +2,7 @@
 // 값이 어디서 왔는지 말하는 자리라 지우지 않는다. 출처가 하나도 없으면 아무것도 그리지 않는다.
 import { sectionCardClass, SECTION_SIZE } from "@/components/ui/page";
 import { DETAIL_MESSAGES as D } from "@/lib/games/detail-messages";
+import { sourceLabel } from "@/lib/source-label";
 import type { GameDetail } from "@/server/services/games";
 
 export function SourceRefs({ refs }: { refs: GameDetail["sourceRefs"] }) {
@@ -21,14 +22,14 @@ export function SourceRefs({ refs }: { refs: GameDetail["sourceRefs"] }) {
                 rel="noopener noreferrer"
                 className="press inline-flex items-center gap-1 rounded-full bg-surface-2 px-[11px] py-[5px] text-ink-2 transition-colors hover:bg-surface-3"
               >
-                {r.source}
+                {sourceLabel(r.source)}
                 <span className="sr-only"> (새 창에서 열림)</span>
               </a>
             </li>
           ) : (
             // 아직 못 붙인 출처는 점선으로 둔다 — 면을 주면 "이미 있다" 로 읽힌다
             <li key={r.source} className="rounded-full border border-dashed border-line-strong px-[11px] py-[5px] text-dim-2">
-              {r.source}
+              {sourceLabel(r.source)}
             </li>
           ),
         )}

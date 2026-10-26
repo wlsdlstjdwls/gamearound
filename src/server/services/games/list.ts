@@ -2,7 +2,7 @@
 import { cache } from "react";
 import type { PgSelect } from "drizzle-orm/pg-core";
 import { unstable_cache } from "next/cache";
-import { and, asc, eq, inArray, sql } from "drizzle-orm";
+import { and, asc, eq, exists, gt, inArray, sql } from "drizzle-orm";
 import { DISPLAY_CURRENCY } from "@/lib/currency";
 import { getDb } from "@/server/db/client";
 import { gameGenres, gamePlatforms, games, genres, HOME_REGION, type Platform } from "@/server/db/schema";
@@ -314,8 +314,26 @@ export async function listGames(filter: GameListFilter): Promise<GameListResult>
   }));
 }
 
-async function getGameFacetsRaw(): Promise<GameFacets> {
+/**
+ * 필터 선택지를 세는 범위. "sale" 은 할인 게임 목록(S-04) — 기획서 v2.0 p8 "해당 목록에 존재하는 장르만",
+ * "해당 목록에서 게임 수가 많은 상위 4개". 전체 카탈로그로 세면 할인 목록에 할인 중인 게임이 하나도 없는 장르가 서고,
+ * 그 장르를 고르면 빈 화면이 나왔다(2026-10-26).
+ * 할인 중의 뜻은 목록 조회(onSale)와 같다 — 한국 행, 보이는 행 중 할인율이 0 보다 큰 행이 있는 게임.
+ */
+export type FacetScope = "all" | "sale";
+
+async function getGameFacetsRaw(scope: FacetScope): Promise<GameFacets> {
   const db = getDb();
+  const sale = scope === "sale";
+  // 할인 범위일 때 게임을 거르는 조건. 상관 서브쿼리 하나라 왕복은 늘지 않는다(세 질의를 같이 띄운다)
+  const onSaleGame = sale
+    ? exists(
+        db
+          .select({ one: sql`1` })
+          .from(gamePlatforms)
+          .where(and(eq(gamePlatforms.gameId, games.id), eq(gamePlatforms.region, HOME_REGION), gt(gamePlatforms.discountPct, 0), visiblePlatformsOnly())),
+      )
+    : undefined;
   const [platformRows, genreRows, [{ total }]] = await Promise.all([
     db
       .select({ platform: gamePlatforms.platform, count: sql<number>`count(distinct ${gamePlatforms.gameId})::int` })
@@ -323,16 +341,17 @@ async function getGameFacetsRaw(): Promise<GameFacets> {
       .innerJoin(games, eq(games.id, gamePlatforms.gameId))
       // 필터 선택지도 기준 지역만 센다 — 일본 스토어에만 있는 게임이 "스위치 1,234개" 를 부풀리면
       // 그 필터를 눌렀을 때 목록(위 집계도 기준 지역만 본다)과 수가 안 맞는다
-      .where(and(mainGamesOnly(), eq(gamePlatforms.region, HOME_REGION), visiblePlatformsOnly()))
+      // 할인 범위면 그 플랫폼에서 할인 중인 행만 센다 — 목록이 플랫폼과 할인을 같이 걸 때 "그 플랫폼에서 할인 중" 으로 거르는 것과 맞춘다
+      .where(and(mainGamesOnly(), eq(gamePlatforms.region, HOME_REGION), visiblePlatformsOnly(), sale ? gt(gamePlatforms.discountPct, 0) : undefined))
       .groupBy(gamePlatforms.platform),
     db
       .select({ name: genres.name, count: sql<number>`count(*)::int` })
       .from(gameGenres)
       .innerJoin(genres, eq(genres.id, gameGenres.genreId))
       .innerJoin(games, eq(games.id, gameGenres.gameId))
-      .where(mainGamesOnly())
+      .where(and(mainGamesOnly(), onSaleGame))
       .groupBy(genres.name),
-    db.select({ total: sql<number>`count(*)::int` }).from(games).where(mainGamesOnly()),
+    db.select({ total: sql<number>`count(*)::int` }).from(games).where(and(mainGamesOnly(), onSaleGame)),
   ]);
   return {
     platforms: platformRows.sort((a, b) => b.count - a.count),
@@ -347,5 +366,6 @@ async function getGameFacetsRaw(): Promise<GameFacets> {
  * 감싸지 않으면 같은 값을 얻자고 왕복을 두 번 한다.
  */
 export const getGameFacets = cache(
-  unstable_cache(getGameFacetsRaw, [DTO_CACHE_VERSION, "game-facets"], { tags: ["home"], revalidate: LIST_REVALIDATE_SECONDS }),
+  // 범위는 unstable_cache 인자로 넘겨 열쇠에 섞인다 — 전체와 할인 범위가 한 칸을 나눠 쓰지 않는다
+  unstable_cache((scope: FacetScope = "all") => getGameFacetsRaw(scope), [DTO_CACHE_VERSION, "game-facets"], { tags: ["home"], revalidate: LIST_REVALIDATE_SECONDS }),
 );

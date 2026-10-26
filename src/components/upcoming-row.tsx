@@ -10,18 +10,17 @@ import Link from "next/link";
 import { CoverImage } from "@/components/game-card";
 import { WishHeart } from "@/components/wish-heart";
 import { Clamp } from "@/components/ui/tooltip";
-import { PLATFORM_LABEL, WEEKDAY_LABEL } from "@/lib/format";
+import { WEEKDAY_LABEL } from "@/lib/format";
 import { UPCOMING_MESSAGES as M } from "@/lib/games/messages";
-import { brandKeyOf, PLATFORM_BRANDS, type PlatformBrand } from "@/lib/platform";
+import { DEVICE_LABEL, devicesOf } from "@/lib/platform";
 import type { GameSummary } from "@/server/services/games";
 
 /** 줄 하나. 날짜가 null 이면 출시일 미정 상자의 줄이다(날짜 칸에 "미정") */
 type RowEntry = { game: GameSummary; releaseDate: string | null };
 
-/** 줄에 적을 기기 이름. 같은 기기의 세대(PS5, PS4)는 한 이름으로 묶는다 */
+/** 줄에 적을 기기 이름(기획서 v2.0 카드 공통 "플랫폼"). 카드와 같은 갈래(PC, PlayStation, Xbox, Switch)로 적는다 — 스토어 이름은 카드에서 뺐다 */
 function platformNames(entry: RowEntry): string {
-  const keys = [...new Set(entry.game.platforms.map(brandKeyOf))];
-  return keys.map((k) => (k in PLATFORM_BRANDS ? PLATFORM_BRANDS[k as PlatformBrand].label : (PLATFORM_LABEL[k] ?? k))).join(", ");
+  return devicesOf(entry.game.platforms).map((d) => DEVICE_LABEL[d]).join(", ");
 }
 
 export function UpcomingRow({ entry }: { entry: RowEntry }) {

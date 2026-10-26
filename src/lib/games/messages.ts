@@ -273,6 +273,13 @@ export const GAMES_FILTER_MESSAGES = {
   sortLabel: "정렬",
   reset: "필터 초기화",
   topGenres: "요즘 많이 찾는 장르",
+  /**
+   * 결과 줄 왼쪽 안내(목업 목록 머리, 기획서 v2.0 p8 "전역 검색과 별개로 현재 목록에만 적용").
+   * 머리띠 검색창과 이 막대의 검색창이 둘 다 서 있어, 어느 쪽이 무엇을 거르는지 말해 두지 않으면 헷갈린다
+   */
+  listScopeNote: "검색과 필터는 이 목록에만 적용돼요.",
+  /** 결과 줄 오른쪽 건수(목업 "N개 결과") */
+  resultCount: (n: number) => `${n.toLocaleString("ko-KR")}개 결과`,
 } as const;
 
 /** 자식 화면에서 본편으로 돌아가는 줄. 부모를 아는 자식에게만 보인다 */

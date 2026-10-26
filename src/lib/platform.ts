@@ -156,3 +156,38 @@ export function expandPlatformValues(values: string[]): Platform[] {
   }
   return PLATFORM_ORDER.filter((p) => out.has(p));
 }
+
+/**
+ * 카드에 적는 기기 갈래(기획서 v2.0 카드 공통 "플랫폼 아이콘", 목업 카드 표기 PC, PlayStation, Xbox, Switch).
+ *
+ * 왜 스토어 이름이 아닌가(2026-10-26): 카드가 "Steam, PS5, +1", "Nintendo" 를 적고 있었다. 카드에서 던지는 질문은
+ * "내 기기로 할 수 있나" 라서 스토어(Steam 과 Epic 은 둘 다 PC)와 세대(PS5, PS4)까지 가를 까닭이 없다.
+ * 스토어를 가르는 일은 상세의 가격 비교 표가 한다.
+ *
+ * PLATFORM_BRANDS 와 따로 두는 이유: 저 표는 상세 가격표의 세대 묶음이라 PC 갈래가 없고 닌텐도를 "Nintendo" 로 부른다.
+ * Record<Platform, ...> 라 enum 에 플랫폼이 늘면 여기서 타입 오류가 난다 — 빠뜨린 플랫폼이 카드에서 사라지지 않게.
+ */
+export const DEVICES = ["pc", "playstation", "xbox", "switch"] as const;
+export type Device = (typeof DEVICES)[number];
+
+export const DEVICE_LABEL: Record<Device, string> = { pc: "PC", playstation: "PlayStation", xbox: "Xbox", switch: "Switch" };
+
+const DEVICE_OF: Record<Platform, Device> = {
+  steam: "pc",
+  epic: "pc",
+  ps5: "playstation",
+  ps4: "playstation",
+  xbox: "xbox",
+  switch: "switch",
+  switch2: "switch",
+};
+
+export function deviceOf(platform: Platform): Device {
+  return DEVICE_OF[platform];
+}
+
+/** 플랫폼 목록 → 기기 갈래 목록(겹친 것은 하나로, DEVICES 순서로) */
+export function devicesOf(platforms: readonly Platform[]): Device[] {
+  const has = new Set(platforms.map(deviceOf));
+  return DEVICES.filter((d) => has.has(d));
+}

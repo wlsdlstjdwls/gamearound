@@ -10,6 +10,7 @@
 import { cn } from "@/lib/cn";
 import { MoreToggle } from "@/components/ui/more-toggle";
 import { PLATFORM_LABEL } from "@/lib/format";
+import { DEVICE_LABEL, deviceOf, devicesOf } from "@/lib/platform";
 import type { Platform } from "@/server/db/schema";
 
 // 기본값을 두는 이유: 이 배지 하나가 없어서 목록 화면 전체가 죽은 적이 있다(2026-09-15).
@@ -28,13 +29,20 @@ import type { Platform } from "@/server/db/schema";
  * 값보다 먼저 눈을 끌었다. 자리(맨 앞)와 색만으로 "여기가 제일 싸다" 를 말하고, 글자는 화면 낭독기에만 준다.
  * 맨 앞이면 "+N" 으로 접히는 쪽에 들어가지도 않는다.
  */
+/**
+ * group: 무엇을 한 배지로 세우나. "store" 는 스토어마다(상세 머리띠), "device" 는 기기 갈래마다(카드, 2026-10-26).
+ * 카드는 "내 기기로 할 수 있나" 를 묻는 자리라 Steam 과 Epic 을 PC 하나로, PS5 와 PS4 를 PlayStation 하나로 접는다(lib/platform 의 DEVICES).
+ * 강조(highlight)와 최저(lowest)도 같은 갈래로 접어서 본다 — "PS5 만" 으로 거르면 PlayStation 배지가 선다.
+ */
 export function PlatformBadges({
   platforms = [],
   highlight = [],
   lowest = null,
   limit,
   narrowLimit = limit,
+  group = "store",
 }: {
+  group?: "store" | "device";
   platforms?: Platform[];
   highlight?: Platform[];
   lowest?: Platform | null;
@@ -52,9 +60,13 @@ export function PlatformBadges({
   narrowLimit?: number;
 }) {
   if (platforms.length === 0) return <span className="text-[12px] text-dim">플랫폼 정보 없음</span>;
-  const picked = new Set(highlight);
-  const hasLowest = lowest !== null && platforms.includes(lowest);
-  const ordered = hasLowest ? [lowest, ...platforms.filter((p) => p !== lowest)] : platforms;
+  const byDevice = group === "device";
+  const keyOf = (p: Platform): string => (byDevice ? deviceOf(p) : p);
+  const labelOf = (k: string): string => (byDevice ? DEVICE_LABEL[k as keyof typeof DEVICE_LABEL] : (PLATFORM_LABEL[k] ?? k));
+  const keys: string[] = byDevice ? devicesOf(platforms) : platforms;
+  const picked = new Set(highlight.map(keyOf));
+  const lowestKey = lowest !== null && platforms.includes(lowest) ? keyOf(lowest) : null;
+  const ordered = lowestKey !== null ? [lowestKey, ...keys.filter((k) => k !== lowestKey)] : keys;
   const cutOf = (n: number | undefined) => (n !== undefined && ordered.length > n ? n : ordered.length);
   const wide = cutOf(limit);
   const narrow = cutOf(narrowLimit);
@@ -63,7 +75,7 @@ export function PlatformBadges({
   // i 번째 배지가 어느 폭에서 펴지는가 — 둘 다면 늘, 한쪽만이면 그 폭에서만
   const visibility = (i: number) => (i < wide && i < narrow ? "" : i < narrow ? "sm:hidden" : "hidden sm:inline-block");
 
-  const badge = (p: Platform, i = 0, inPanel = false) => (
+  const badge = (p: string, i = 0, inPanel = false) => (
     <span
       key={p}
       role="listitem"
@@ -73,11 +85,11 @@ export function PlatformBadges({
         "whitespace-nowrap rounded-full px-2 py-1 text-[12px] font-semibold leading-none",
         !inPanel && visibility(i),
         picked.has(p) ? "bg-acc-soft text-acc" : "bg-surface-2 text-mut",
-        p === lowest && "bg-acc-soft font-bold text-acc",
+        p === lowestKey && "bg-acc-soft font-bold text-acc",
       )}
     >
-      {PLATFORM_LABEL[p] ?? p}
-      {p === lowest && <span className="sr-only"> 최저가</span>}
+      {labelOf(p)}
+      {p === lowestKey && <span className="sr-only"> 최저가</span>}
     </span>
   );
 

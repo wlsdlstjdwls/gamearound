@@ -235,9 +235,11 @@ export function GameCard({
           {/* 기기 줄 — 넓은 화면 둘, 좁은 화면 셋까지 펴고 나머지는 "+N". 최저가 스토어가 맨 앞에 연한 보라로 선다.
               남은 기간은 넓은 화면에서 이 줄 오른쪽 끝에 선다 — 값 줄 끝에 두면 값, 정가 뒤에 못 붙고
               혼자 다음 줄로 떨어졌다.
-              플랫폼을 쉼표로 이은 글자에서 배지로 바꾼 이유(2026-09-21): 모양으로 훑는 편이 빠르다 */}
+              플랫폼을 쉼표로 이은 글자에서 배지로 바꾼 이유(2026-09-21): 모양으로 훑는 편이 빠르다.
+              배지는 스토어가 아니라 기기 갈래(PC, PlayStation, Xbox, Switch)다(2026-10-26, 기획서 카드 공통, 목업) */}
           <div className="flex items-end justify-between gap-2">
             <PlatformBadges
+              group="device"
               platforms={game.platforms}
               highlight={highlight?.platforms}
               lowest={best?.currentPrice != null ? best.platform : null}

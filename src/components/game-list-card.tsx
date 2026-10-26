@@ -20,8 +20,7 @@ import { formatPrice } from "@/lib/currency";
 import { formatDate } from "@/lib/format";
 import { PREORDER_LABEL } from "@/lib/games/messages";
 import { isPreorder } from "@/lib/games/preorder";
-import { brandKeyOf, PLATFORM_BRANDS, type PlatformBrand } from "@/lib/platform";
-import { PLATFORM_LABEL } from "@/lib/format";
+import { DEVICE_LABEL, devicesOf } from "@/lib/platform";
 import { cn } from "@/lib/cn";
 import type { GameSummary } from "@/server/services/games";
 
@@ -32,10 +31,13 @@ export const LIST_THUMB_CLASS = "relative size-[72px] shrink-0 overflow-hidden r
 /** 칸막이 — 이름 묶음, 장르, 값 사이 */
 const DIVIDER = "border-t border-line";
 
-/** 기기 이름 줄(목업 "PC, PlayStation, Xbox, Switch"). 같은 기기의 세대는 한 이름으로 묶는다(upcoming-row 와 같은 규칙) */
+/**
+ * 기기 이름 줄(목업 "PC, PlayStation, Xbox, Switch"). 스토어(Steam, Epic)와 세대(PS5, PS4)는 기기 하나로 접는다(lib/platform 의 DEVICES).
+ * 홈 카드(game-card)의 기기 배지와 같은 갈래다 — 두 카드가 같은 게임을 다른 이름으로 부르지 않게.
+ * 캐시에 담긴 옛 모양 DTO 에는 platforms 가 없을 수 있어 빈 배열로 받는다(game-card 주석)
+ */
 function deviceNames(game: GameSummary): string {
-  const keys = [...new Set(game.platforms.map(brandKeyOf))];
-  return keys.map((k) => (k in PLATFORM_BRANDS ? PLATFORM_BRANDS[k as PlatformBrand].label : (PLATFORM_LABEL[k] ?? k))).join(", ");
+  return devicesOf(game.platforms ?? []).map((d) => DEVICE_LABEL[d]).join(", ");
 }
 
 export function GameListCard({ game, variant = "discount", highlight }: { game: GameSummary; variant?: "discount" | "release"; highlight?: CardHighlight }) {

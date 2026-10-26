@@ -99,6 +99,13 @@ const DEFAULT_RANGE_KEY = "1y";
 const DEFAULT_RANGE = RANGES.find((r) => r.key === DEFAULT_RANGE_KEY) ?? RANGES[0];
 /** Y축 위쪽 여유 — 정가 기준선 라벨이 잘리지 않게 */
 const Y_HEADROOM = 1.12;
+/**
+ * 최저점 라벨을 선에서 띄우는 거리(px). 글자 크기(11.5) 반에 선 굵기와 여백을 더한 값이다.
+ * 라벨을 점 높이에 그대로 두면 계열 선이나 정가 기준선이 글자 가운데를 지나 "최저" 가 "최지" 처럼 읽혔다(2026-10-26, 콜 오브 듀티)
+ */
+const LOW_LABEL_GAP = 14;
+/** 최저점이 Y축 아래쪽 이 비율 안에 있으면 라벨을 위로 올린다 — 아래로 내리면 X축 눈금 글자와 겹친다 */
+const LOW_LABEL_FLIP_RATIO = 0.2;
 /** X축 오른쪽 여유(구간 폭 대비) — 할인 종료선 라벨 자리 */
 const X_HEADROOM = 0.18;
 function PriceTooltip({ active, payload, label, currency }: TooltipContentProps & { currency: Currency }) {
@@ -250,7 +257,14 @@ export function PriceChart({ series, head, rangeKeys }: { series: PriceSeries[];
               {/* 역대 최저점 */}
               {single?.low && (
                 <ReferenceDot x={single.low.t} y={single.low.price} r={4} fill={token["--ink"]} stroke={token["--surface"]}>
-                  <Label value={`최저 ${formatPrice(single.low.price, currency)}`} position="insideBottomLeft" fill={token["--ok"]} fontSize={11.5} />
+                  {/* 점 오른쪽에 붙이고 선 아래(바닥 가까우면 위)로 비킨다 — 최저점은 대개 계열 선 위에 있어 같은 높이면 글자를 긋는다 */}
+                  <Label
+                    value={`최저 ${formatPrice(single.low.price, currency)}`}
+                    position="right"
+                    dy={single.low.price < yMax * Y_HEADROOM * LOW_LABEL_FLIP_RATIO ? -LOW_LABEL_GAP : LOW_LABEL_GAP}
+                    fill={token["--ok"]}
+                    fontSize={11.5}
+                  />
                 </ReferenceDot>
               )}
 

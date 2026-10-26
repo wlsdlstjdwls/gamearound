@@ -26,7 +26,8 @@ import { PendingBar } from "@/components/ui/nav-pending";
 import { Pagination } from "@/components/pagination";
 import { NavPendingScope, PendingRegion } from "@/components/ui/nav-pending";
 import { Page, PageHead } from "@/components/ui/page";
-import { defaultSortFor, SORT_LABEL, gamesHref, parsePlatformValues, type GamesQuery } from "@/lib/games-query";
+import { gamesHref, parsePlatformValues, type GamesQuery } from "@/lib/games-query";
+import { GAMES_FILTER_MESSAGES } from "@/lib/games/messages";
 import { PLATFORM_LABEL } from "@/lib/format";
 import { isPlatformFamily, PLATFORM_FAMILY_LABEL, PLATFORM_ORDER } from "@/lib/platform";
 import { stagger } from "@/lib/motion";
@@ -34,7 +35,7 @@ import { ROUTES } from "@/lib/routes";
 import { readGamesQuery } from "@/lib/games/read-query";
 import { hasExplicitListFilter, isPresetApplied } from "@/lib/onboarding/query";
 import { getMyListPreset } from "@/server/services/profiles";
-import { GAMES_PAGE_SIZE, getGameFacets, listGames, type GameFacets, type GameListFilter } from "@/server/services/games";
+import { GAMES_PAGE_SIZE, getGameFacets, listGames, type FacetScope, type GameFacets, type GameListFilter } from "@/server/services/games";
 import { getRunningSteamSale, type RunningSaleDto } from "@/server/services/sales";
 import { GamesGridSkeleton } from "./skeletons";
 
@@ -100,8 +101,10 @@ function isFiltered(f: GameListFilter): boolean {
  * 줄일 수 있는 것은 "기다리는 동안 보여 줄 것" 뿐이다. 껍데기는 즉시 내보내고 값이 필요한 자리만 감싼다.
  */
 async function FilterBar({ filter, personal }: { filter: GamesQuery; personal: PersonalFilter | null }) {
-  // 세일 칩은 덤이다 — 판정이 실패해도 막대는 서야 해서 실패를 "세일 없음" 으로 접는다
-  const [facets, sale] = await Promise.all([nullIfDbUnavailable(getGameFacets()), getRunningSteamSale().catch((): RunningSaleDto | null => null)]);
+  // 세일 칩은 덤이다 — 판정이 실패해도 막대는 서야 해서 실패를 "세일 없음" 으로 접는다.
+  // 장르 드롭다운과 "요즘 많이 찾는 장르" 는 이 목록 기준으로 센다(기획서 v2.0 p8) — 할인 게임 목록이면 할인 중인 게임만
+  const scope: FacetScope = filter.onSale || filter.minDiscount !== undefined ? "sale" : "all";
+  const [facets, sale] = await Promise.all([nullIfDbUnavailable(getGameFacets(scope)), getRunningSteamSale().catch((): RunningSaleDto | null => null)]);
   const genres = (facets ?? OUTAGE_FACETS).genres.map((g) => g.name);
   return <GameFilterBar filter={filter} genres={genres} topGenres={genres.slice(0, TOP_GENRE_COUNT)} sale={sale} personal={personal} />;
 }
@@ -134,10 +137,12 @@ async function Results({ filter }: { filter: GameListFilter }) {
 
   return (
     <>
-      {/* 결과 수는 눈에도 보인다(기획서 v2.0 S-02 "결과 수 표시"). 전에는 화면 낭독기에만 들렸다 */}
-      <h2 className="text-[13px] font-medium tabular-nums text-dim">
-        {SORT_LABEL[filter.sort ?? defaultSortFor(filter)]} 게임 {result.total.toLocaleString("ko-KR")}개
-      </h2>
+      {/* 결과 줄(목업 목록 머리): 왼쪽은 이 막대가 무엇을 거르는지, 오른쪽 끝은 건수(기획서 v2.0 S-02 "결과 수 표시").
+          건수가 제목(h2)인 이유는 이 줄 아래 격자의 이름이 곧 "몇 개가 나왔나" 라서다. 정렬 이름은 막대의 정렬 상자가 이미 말한다 */}
+      <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1">
+        <p className="text-[12.5px] text-dim">{GAMES_FILTER_MESSAGES.listScopeNote}</p>
+        <h2 className="ml-auto text-[15px] font-extrabold tabular-nums text-ink sm:text-[17px]">{GAMES_FILTER_MESSAGES.resultCount(result.total)}</h2>
+      </div>
       {/* 쪽 번호는 누른 순간 켜지고 목록은 흐려진 채 기다린다(ui/nav-pending). 쪽을 바꾸면 맨 위로 간다(Pagination 의 scroll) */}
       <NavPendingScope>
         <PendingRegion className="flex flex-col gap-8">

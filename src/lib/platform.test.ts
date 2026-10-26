@@ -4,6 +4,7 @@ import {
   ALL_PLATFORM_ORDER,
   brandKeyOf,
   brandOf,
+  devicesOf,
   expandPlatformValues,
   familyOf,
   FAMILY_PLATFORMS,
@@ -98,5 +99,13 @@ describe("세대 묶음", () => {
   it("묶음은 필터 값을 건드리지 않는다", () => {
     expect(platformsOf("ps4")).toEqual(["ps4"]);
     expect(isPlatformValue("playstation")).toBe(false);
+  });
+});
+
+describe("카드의 기기 갈래", () => {
+  it("스토어와 세대를 기기 하나로 접고 PC, PlayStation, Xbox, Switch 순서로 세운다", () => {
+    expect(devicesOf(["switch2", "epic", "ps4", "steam", "ps5"])).toEqual(["pc", "playstation", "switch"]);
+    expect(devicesOf(["xbox", "switch"])).toEqual(["xbox", "switch"]);
+    expect(devicesOf([])).toEqual([]);
   });
 });

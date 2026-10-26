@@ -59,10 +59,10 @@ export function activeFilters(filter: GamesQuery): ActiveFilter[] {
     });
   }
   if (filter.genre) list.push({ key: "genre", label: filter.genre, href: href({ genre: undefined }) });
+  // "할인 중" 은 칩으로 세우지 않는다(2026-10-26). 주소의 onSale 은 이 화면이 할인 게임 목록(S-04)이라는 정체라
+  // 거르는 조건이 아니다 — 칩으로 세우면 그걸 지운 순간 할인 조건이 풀려 전체 게임(S-02)이 됐다. 제목이 이미 "할인 게임" 이라고 말한다
   if (filter.minDiscount !== undefined) {
     list.push({ key: "minDiscount", label: `${filter.minDiscount}% 이상 할인`, href: href({ minDiscount: undefined }) });
-  } else if (filter.onSale) {
-    list.push({ key: "onSale", label: "할인 중", href: href({ onSale: false }) });
   }
   // 세일 칩은 할인 칩 바로 뒤 — 같은 축(할인)의 더 좁은 조건이다.
   // 조회(services/games/list)가 실제로 거를 때만 세운다: 모르는 키나 **이미 끝난 세일**(옛 배너 링크)은
@@ -118,7 +118,8 @@ function FilterChip({ f }: { f: ActiveFilter }) {
 /** 전부 푸는 링크. 하나씩 푸는 일과 한 번에 푸는 일이 같은 묶음 안에 있어야 한다 */
 function ClearAll({ filter, className }: { filter: GamesQuery; className?: string }) {
   const click = useFilterClick();
-  const to = gamesHref({ sort: filter.sort });
+  // 화면의 정체(할인 게임이면 할인 중)는 남긴다 — 막대의 초기화(bar 의 resetHref)와 같은 규칙. 풀면 다른 화면이 되면 안 된다
+  const to = gamesHref({ sort: filter.sort, onSale: filter.onSale });
   return (
     <Link
       {...KEEP_SCROLL}

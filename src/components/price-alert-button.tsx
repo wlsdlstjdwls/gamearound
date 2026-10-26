@@ -5,7 +5,7 @@
 //   - 저장하면 토스트, 가격 알림 목록(/alerts)에 반영된다. 비로그인이면 로그인 팝업 뒤 이 팝업이 이어서 열린다.
 // 목표가, 할인율 같은 세밀한 조건은 알림 화면의 폼이 맡는다 — 팝업은 "내려가면 알려 줘" 한 가지다.
 import Link from "next/link";
-import { useState, useTransition } from "react";
+import { useRef, useState, useTransition } from "react";
 import { useLoginGate, useResume } from "@/components/auth/login-gate";
 import { Button, buttonClass, type ButtonSize, type ButtonVariant } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -55,22 +55,29 @@ export function PriceAlertButton({
   const [saving, startSave] = useTransition();
   const action = slot ? `alert:${gameId}:${slot}` : `alert:${gameId}`;
   const all = options.map((o) => o.platform);
+  /** 팝업을 연 뒤 사람이 칸을 건드렸는가 — 그 뒤에 도착한 기존 알림 값이 고른 것을 덮지 않게 한다 */
+  const touched = useRef(false);
 
-  // 열 때 이미 걸린 알림을 읽어 칸을 채운다. 없으면 전부 고른 채로 연다 — 대개 "어디서든 싸지면" 이다
+  // 새 알림이면 아무것도 고르지 않은 채로 연다(목업 M-02). 전에는 전부 고른 채로 열었는데, 그러면 저장만 눌러도
+  // 사람이 고르지 않은 플랫폼까지 알림이 걸린다. 이미 걸린 알림이 있으면 그 값으로 채운다
   const openPopup = async () => {
+    touched.current = false;
     setError(null);
-    setPicked(all);
+    setPicked([]);
     setChannel("web");
     setOpen(true);
     const current = await getGameAlertAction(gameId, all);
-    if (current) {
+    if (current && !touched.current) {
       setPicked(current.platforms);
       setChannel(current.channel);
     }
   };
   useResume(action, () => void openPopup());
 
-  const toggle = (p: Platform) => setPicked((cur) => (cur.includes(p) ? cur.filter((x) => x !== p) : [...cur, p]));
+  const toggle = (p: Platform) => {
+    touched.current = true;
+    setPicked((cur) => (cur.includes(p) ? cur.filter((x) => x !== p) : [...cur, p]));
+  };
   const save = () =>
     startSave(async () => {
       const r = await saveGameAlertAction({ gameId, platforms: picked, channel });
@@ -105,7 +112,10 @@ export function PriceAlertButton({
             <div className="grid grid-cols-2 gap-2">
               {(["web", "email"] as const).map((c) => (
                 <label key={c} className={cn("flex min-h-[var(--touch-target)] cursor-pointer items-center justify-center rounded-xl text-[14px] font-semibold shadow-hair transition-colors", channel === c ? "bg-acc-soft text-acc" : "bg-surface-2 text-ink-2")}>
-                  <input type="radio" name="alert-channel" value={c} checked={channel === c} onChange={() => setChannel(c)} className="sr-only" />
+                  <input type="radio" name="alert-channel" value={c} checked={channel === c} onChange={() => {
+                      touched.current = true;
+                      setChannel(c);
+                    }} className="sr-only" />
                   {M.channel[c]}
                 </label>
               ))}

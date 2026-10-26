@@ -30,7 +30,7 @@ import { BackLink } from "@/components/ui/back-link";
 import { Page, SectionHead, sectionCardClass } from "@/components/ui/page";
 import { DB_DOWN, orDbDown } from "@/lib/db-errors";
 import { DISPLAY_CURRENCY, formatPrice } from "@/lib/currency";
-import { formatDate, kstDateKey } from "@/lib/format";
+import { kstDateKey } from "@/lib/format";
 import { getFreshness } from "@/lib/freshness";
 import { DETAIL_MESSAGES as D } from "@/lib/games/detail-messages";
 import { COMPAT_MESSAGES, GAME_MESSAGES, OS_FAMILY_LABEL } from "@/lib/games/messages";
@@ -41,7 +41,8 @@ import { SITE } from "@/lib/site";
 import { decodeSlugParam } from "@/lib/slug";
 import { gamePath, ROUTES } from "@/lib/routes";
 import { bestUserScore, cheapestPlatform, displayTitle, getGameBySlugCached, getGamePatchesCached, latestPatches } from "@/server/services/games";
-import { getRecordedLow } from "@/server/services/prices";
+import { getDiscountHistory } from "@/server/services/prices";
+import { HOME_REGION } from "@/server/db/schema";
 
 /** 검색결과, SNS 카드에 들어가는 설명 길이 상한 */
 const META_DESCRIPTION_MAX = 150;
@@ -75,10 +76,10 @@ export default async function GameDetailPage({ params }: Props) {
    * 가격 이력(그래프), 세션, 찜, 기기, 파는 곳은 여기서 기다리지 않는다 — 각자 Suspense 안에서 받는다(game-detail/slots).
    * 시간당 가격 눈금(getPricePerHourScale)은 뺐다: 그 칸은 2026-09-22 부터 내려 둔 상태라 받기만 하고 안 썼다.
    */
-  const loaded = await orDbDown(Promise.all([getGameBySlugCached(slug), getGamePatchesCached(slug), getRecordedLow(slug)]));
+  const loaded = await orDbDown(Promise.all([getGameBySlugCached(slug), getGamePatchesCached(slug), getDiscountHistory(slug)]));
   // 장애를 404 로 그리지 않는다(orDbDown 주석) — 판 하나를 세우고 다시 시도하게 둔다
   if (loaded === DB_DOWN) return <DbUnavailablePage retryHref={gamePath(slug)} />;
-  const [game, patchGroups, recordedLow] = loaded;
+  const [game, patchGroups, discountHistory] = loaded;
   if (!game) notFound();
 
   const title = displayTitle(game);
@@ -95,7 +96,12 @@ export default async function GameDetailPage({ params }: Props) {
     .filter((p, i, list) => list.findIndex((q) => q.platform === p.platform) === i)
     .map((p) => ({ platform: p.platform, currentPrice: p.currentPrice, currency: p.currency }));
   const canAlert = !isFree && alertOptions.length > 0;
-  const forecast = forecastDiscount({ platforms: alertOptions.map((o) => o.platform), recordedLow: recordedLow?.price ?? null, currentLowest: best?.currentPrice ?? null, now: new Date() });
+  // 할인 예측은 한국 계정으로 사는 기준 통화 값만 본다 — 근거(스냅샷 요약)도 같은 기준으로 접혀 온다(services/prices)
+  const forecast = forecastDiscount({
+    rows: game.platforms.filter((p) => p.region === HOME_REGION && p.currency === DISPLAY_CURRENCY),
+    history: discountHistory,
+    now: new Date(),
+  });
 
   return (
     <Page pad="detail" gap={28}>
@@ -162,14 +168,7 @@ export default async function GameDetailPage({ params }: Props) {
           {!isFree && (
             <DiscountForecast
               forecast={forecast}
-              currency={recordedLow?.currency ?? best?.currency ?? DISPLAY_CURRENCY}
-              currentLowest={best?.currentPrice ?? null}
-              // 예상 가격의 근거 — 기록 최저가. 지금보다 쌌던 적이 있을 때만 온다(services/prices 의 getRecordedLow)
-              basis={
-                recordedLow
-                  ? `${GAME_MESSAGES.recordedLowLabel} ${formatPrice(recordedLow.price, recordedLow.currency)} | ${formatDate(recordedLow.at)}`
-                  : undefined
-              }
+              currency={DISPLAY_CURRENCY}
               action={canAlert ? <PriceAlertButton gameId={game.id} gameSlug={game.slug} options={alertOptions} slot="forecast" label={D.forecastAlert} /> : undefined}
             />
           )}
