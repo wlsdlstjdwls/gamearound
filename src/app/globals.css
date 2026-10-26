@@ -158,23 +158,23 @@
   :root[data-theme="system"] {
     color-scheme: dark;
 
-    --bg: #141a25; /* 먹이 아니라 짙은 회청. 10-26 아침의 #0a1120 은 "너무 어둡다"(사용자) */
-    --surface: #1b2331;
-    --surface-2: #232c3c; /* 이 위의 --dim 4.76:1 */
-    --surface-3: #2a3446;
-    --surface-4: #171e2a;
-    --line: #2b3547;
-    --line-soft: #222b3a;
-    --line-strong: #384459;
+    --bg: #131923; /* 먹이 아니라 짙은 회청. 10-26 아침의 #0a1120 은 "너무 어둡다"(사용자) */
+    --surface: #1d2636; /* 카드는 바탕보다 확실히 한 단 위 — 경계는 아래 링이 한 번 더 긋는다 */
+    --surface-2: #2c374b; /* 칩, 배지 면. 카드와 1.27:1 로 갈린다(10-26 2차, "배지 경계가 안 보인다"). 이 위의 --dim 4.87:1 */
+    --surface-3: #334058;
+    --surface-4: #182030;
+    --line: #344158;
+    --line-soft: #29344a;
+    --line-strong: #45536d;
     --ink: #e8edf5; /* 바탕 14.8:1 */
     --ink-2: #c8d1df;
-    --mut: #a6b2c6; /* 카드 위 7.4:1 */
-    --dim: #8b97ad; /* 카드 위 5.35:1 */
+    --mut: #aeb9cc; /* 칩 면 위 6.05:1 */
+    --dim: #9aa6bc; /* 카드 위 6.2:1, 칩 면 위 4.87:1 */
     --dim-2: #69758a;
     /* 형광 라임(#b8f23e)을 걷고 채도를 뺀 연두. 바탕 10:1 로 여전히 또렷하지만 면에 칠해도 눈을 찌르지 않는다 */
     --acc: #a8d16a;
     --acc-hover: #b7da80;
-    --acc-soft: #253126; /* 이 위의 --acc 7.8:1 */
+    --acc-soft: #2a3a24; /* 이 위의 --acc 6.9:1 */
     --acc-glow: rgba(168, 209, 106, 0.16);
     --acc-on-ink: #3f6d18; /* 잉크 판이 밝은 면이 된다 — 그 위 5.2:1 */
     --danger: #ff6b78;
@@ -191,7 +191,7 @@
     --status-done: #3ddc9f;
     --price-bad: #ff8466;
     --verdict-bad: #ff6b78;
-    --on-ink: #141a25; /* 잉크, 악센트 판 위의 글자 = 바탕색 */
+    --on-ink: #131923; /* 잉크, 악센트 판 위의 글자 = 바탕색 */
     --overlay: rgba(6, 10, 18, 0.62);
     /* 가격 그래프의 스토어 브랜드 색 — 어두운 바탕에서 서로 갈리는 한 단 밝은 값 */
     --store-steam: #5b9ce8;
@@ -202,15 +202,15 @@
     --store-xbox: #3fb23f;
     --store-switch: #8d7df0;
     --store-switch2: #ed6e6d;
-    /* 다크에서는 검은 그림자가 바탕에 묻혀 링이 깊이를 맡는다 */
+    /* 다크에서는 검은 그림자가 바탕에 묻혀 링이 깊이를 맡는다. 8% 링은 안 보였다(10-26 2차) — 13~14% 로 올렸다 */
     --elev-1: 0 1px 2px rgba(0, 0, 0, 0.4);
     --elev-2: 0 2px 6px rgba(0, 0, 0, 0.35), 0 10px 22px -6px rgba(0, 0, 0, 0.5);
     --elev-3: 0 6px 14px rgba(0, 0, 0, 0.4), 0 22px 44px -10px rgba(0, 0, 0, 0.6);
-    --ring-hair: inset 0 0 0 1px rgba(200, 214, 238, 0.08);
-    --elev-card: inset 0 0 0 1px rgba(200, 214, 238, 0.07), 0 2px 6px rgba(0, 0, 0, 0.35), 0 12px 26px -8px rgba(0, 0, 0, 0.5);
-    --elev-card-hover: inset 0 0 0 1px rgba(168, 209, 106, 0.22), 0 6px 14px rgba(0, 0, 0, 0.4), 0 24px 46px -10px rgba(0, 0, 0, 0.6);
-    --elev-cover: inset 0 0 0 1px rgba(200, 214, 238, 0.08), 0 2px 6px rgba(0, 0, 0, 0.35), 0 10px 22px -6px rgba(0, 0, 0, 0.5);
-    --elev-cover-hover: inset 0 0 0 1px rgba(200, 214, 238, 0.14), 0 6px 14px rgba(0, 0, 0, 0.4), 0 22px 44px -10px rgba(0, 0, 0, 0.6);
+    --ring-hair: inset 0 0 0 1px rgba(200, 214, 238, 0.14);
+    --elev-card: inset 0 0 0 1px rgba(200, 214, 238, 0.13), 0 2px 6px rgba(0, 0, 0, 0.35), 0 12px 26px -8px rgba(0, 0, 0, 0.5);
+    --elev-card-hover: inset 0 0 0 1px rgba(168, 209, 106, 0.4), 0 6px 14px rgba(0, 0, 0, 0.4), 0 24px 46px -10px rgba(0, 0, 0, 0.6);
+    --elev-cover: inset 0 0 0 1px rgba(200, 214, 238, 0.14), 0 2px 6px rgba(0, 0, 0, 0.35), 0 10px 22px -6px rgba(0, 0, 0, 0.5);
+    --elev-cover-hover: inset 0 0 0 1px rgba(200, 214, 238, 0.22), 0 6px 14px rgba(0, 0, 0, 0.4), 0 22px 44px -10px rgba(0, 0, 0, 0.6);
   }
 }
 
@@ -218,23 +218,23 @@
 :root[data-theme="dark"] {
   color-scheme: dark;
 
-  --bg: #141a25; /* 먹이 아니라 짙은 회청. 10-26 아침의 #0a1120 은 "너무 어둡다"(사용자) */
-  --surface: #1b2331;
-  --surface-2: #232c3c; /* 이 위의 --dim 4.76:1 */
-  --surface-3: #2a3446;
-  --surface-4: #171e2a;
-  --line: #2b3547;
-  --line-soft: #222b3a;
-  --line-strong: #384459;
+  --bg: #131923; /* 먹이 아니라 짙은 회청. 10-26 아침의 #0a1120 은 "너무 어둡다"(사용자) */
+  --surface: #1d2636; /* 카드는 바탕보다 확실히 한 단 위 — 경계는 아래 링이 한 번 더 긋는다 */
+  --surface-2: #2c374b; /* 칩, 배지 면. 카드와 1.27:1 로 갈린다(10-26 2차, "배지 경계가 안 보인다"). 이 위의 --dim 4.87:1 */
+  --surface-3: #334058;
+  --surface-4: #182030;
+  --line: #344158;
+  --line-soft: #29344a;
+  --line-strong: #45536d;
   --ink: #e8edf5; /* 바탕 14.8:1 */
   --ink-2: #c8d1df;
-  --mut: #a6b2c6; /* 카드 위 7.4:1 */
-  --dim: #8b97ad; /* 카드 위 5.35:1 */
+  --mut: #aeb9cc; /* 칩 면 위 6.05:1 */
+  --dim: #9aa6bc; /* 카드 위 6.2:1, 칩 면 위 4.87:1 */
   --dim-2: #69758a;
   /* 형광 라임(#b8f23e)을 걷고 채도를 뺀 연두. 바탕 10:1 로 여전히 또렷하지만 면에 칠해도 눈을 찌르지 않는다 */
   --acc: #a8d16a;
   --acc-hover: #b7da80;
-  --acc-soft: #253126; /* 이 위의 --acc 7.8:1 */
+  --acc-soft: #2a3a24; /* 이 위의 --acc 6.9:1 */
   --acc-glow: rgba(168, 209, 106, 0.16);
   --acc-on-ink: #3f6d18; /* 잉크 판이 밝은 면이 된다 — 그 위 5.2:1 */
   --danger: #ff6b78;
@@ -251,7 +251,7 @@
   --status-done: #3ddc9f;
   --price-bad: #ff8466;
   --verdict-bad: #ff6b78;
-  --on-ink: #141a25; /* 잉크, 악센트 판 위의 글자 = 바탕색 */
+  --on-ink: #131923; /* 잉크, 악센트 판 위의 글자 = 바탕색 */
   --overlay: rgba(6, 10, 18, 0.62);
   /* 가격 그래프의 스토어 브랜드 색 — 어두운 바탕에서 서로 갈리는 한 단 밝은 값 */
   --store-steam: #5b9ce8;
@@ -262,15 +262,15 @@
   --store-xbox: #3fb23f;
   --store-switch: #8d7df0;
   --store-switch2: #ed6e6d;
-  /* 다크에서는 검은 그림자가 바탕에 묻혀 링이 깊이를 맡는다 */
+  /* 다크에서는 검은 그림자가 바탕에 묻혀 링이 깊이를 맡는다. 8% 링은 안 보였다(10-26 2차) — 13~14% 로 올렸다 */
   --elev-1: 0 1px 2px rgba(0, 0, 0, 0.4);
   --elev-2: 0 2px 6px rgba(0, 0, 0, 0.35), 0 10px 22px -6px rgba(0, 0, 0, 0.5);
   --elev-3: 0 6px 14px rgba(0, 0, 0, 0.4), 0 22px 44px -10px rgba(0, 0, 0, 0.6);
-  --ring-hair: inset 0 0 0 1px rgba(200, 214, 238, 0.08);
-  --elev-card: inset 0 0 0 1px rgba(200, 214, 238, 0.07), 0 2px 6px rgba(0, 0, 0, 0.35), 0 12px 26px -8px rgba(0, 0, 0, 0.5);
-  --elev-card-hover: inset 0 0 0 1px rgba(168, 209, 106, 0.22), 0 6px 14px rgba(0, 0, 0, 0.4), 0 24px 46px -10px rgba(0, 0, 0, 0.6);
-  --elev-cover: inset 0 0 0 1px rgba(200, 214, 238, 0.08), 0 2px 6px rgba(0, 0, 0, 0.35), 0 10px 22px -6px rgba(0, 0, 0, 0.5);
-  --elev-cover-hover: inset 0 0 0 1px rgba(200, 214, 238, 0.14), 0 6px 14px rgba(0, 0, 0, 0.4), 0 22px 44px -10px rgba(0, 0, 0, 0.6);
+  --ring-hair: inset 0 0 0 1px rgba(200, 214, 238, 0.14);
+  --elev-card: inset 0 0 0 1px rgba(200, 214, 238, 0.13), 0 2px 6px rgba(0, 0, 0, 0.35), 0 12px 26px -8px rgba(0, 0, 0, 0.5);
+  --elev-card-hover: inset 0 0 0 1px rgba(168, 209, 106, 0.4), 0 6px 14px rgba(0, 0, 0, 0.4), 0 24px 46px -10px rgba(0, 0, 0, 0.6);
+  --elev-cover: inset 0 0 0 1px rgba(200, 214, 238, 0.14), 0 2px 6px rgba(0, 0, 0, 0.35), 0 10px 22px -6px rgba(0, 0, 0, 0.5);
+  --elev-cover-hover: inset 0 0 0 1px rgba(200, 214, 238, 0.22), 0 6px 14px rgba(0, 0, 0, 0.4), 0 22px 44px -10px rgba(0, 0, 0, 0.6);
 }
 
 /* Tailwind v4 테마 연결 — bg-surface, text-mut, duration-base, ease-out-emph, animate-rise 같은 유틸이 생긴다 */
