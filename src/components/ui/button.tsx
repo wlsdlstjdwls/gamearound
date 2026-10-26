@@ -18,7 +18,8 @@ export type ButtonSize = "sm" | "md" | "lg" | "row";
  * 색은 여전히 브랜드 하나만 쓴다(accent).
  */
 const VARIANT: Record<ButtonVariant, string> = {
-  primary: "bg-ink text-on-ink font-semibold shadow-1 hover:bg-ink-2 hover:shadow-2",
+  // 2026-10-26 개편: 주 버튼도 브랜드 필이다. 다크에서 잉크 필은 흰 판이 되어 화면에서 가장 센 면이 브랜드가 아니게 됐다
+  primary: "bg-acc text-on-ink font-semibold shadow-1 hover:bg-acc-hover hover:shadow-2",
   /** 브랜드 필 — 그 줄에서 실제로 누를 자리가 하나일 때(표의 최저가 행, 머리바의 알림) */
   accent: "bg-acc text-on-ink font-semibold shadow-1 hover:bg-acc-hover hover:shadow-2",
   /**

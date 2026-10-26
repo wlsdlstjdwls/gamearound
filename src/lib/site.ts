@@ -25,8 +25,8 @@ export const SITE = {
   /** PWA, 브라우저 UI 색. globals.css 의 --bg / --ink 와 같은 값이어야 한다 */
   themeColor: "#1c1c1a",
   backgroundColor: "#f5f3fa",
-  /** 다크에서의 바탕. globals.css 다크 블록의 --bg 와 같은 값 */
-  backgroundColorDark: "#0f1115",
+  /** 다크(2026-10-26 부터 기본)의 바탕. globals.css :root 의 --bg 와 같은 값 */
+  backgroundColorDark: "#0a1120",
   /** 브랜드 악센트. globals.css 의 --acc 와 같은 값 — 로고 몸통, 아이콘 판이 이 색이다 */
   accentColor: "#5b34c7",
 } as const;

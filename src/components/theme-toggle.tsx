@@ -32,7 +32,7 @@ function readTheme(): Theme {
     const saved = localStorage.getItem(THEME_STORAGE_KEY);
     return isTheme(saved) ? saved : DEFAULT_THEME;
   } catch {
-    // 사생활 보호 모드처럼 접근 자체가 막힌 곳 — 시스템 설정을 따르는 기본값이 맞다
+    // 사생활 보호 모드처럼 접근 자체가 막힌 곳 — 기본값(다크)이 그대로 선다
     return DEFAULT_THEME;
   }
 }
@@ -44,9 +44,8 @@ function serverTheme(): Theme {
 
 function applyTheme(theme: Theme) {
   const root = document.documentElement;
-  // system 은 "아무 말도 하지 않음" 이다 — 속성을 지워야 CSS 의 prefers-color-scheme 블록이 다시 산다
-  if (theme === "system") delete root.dataset.theme;
-  else root.dataset.theme = theme;
+  // system 도 값을 찍는다 — 기본이 다크라, 속성을 지우면 "기기 따라가기" 가 아니라 다크가 된다(lib/theme)
+  root.dataset.theme = theme;
   try {
     localStorage.setItem(THEME_STORAGE_KEY, theme);
   } catch {
