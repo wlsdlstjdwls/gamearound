@@ -102,7 +102,8 @@ export function WishHeart({ slug, title, className }: { slug: string; title: str
       onClick={() => gate(action, () => toggle(!wished))}
       className={cn(
         "press tap flex size-9 items-center justify-center rounded-full bg-surface/90 shadow-1 backdrop-blur-sm transition-colors",
-        shown ? "text-acc" : "text-dim hover:text-ink",
+        // 찜하는 순간 한 번 톡 튄다 — 클래스가 붙는 순간에만 돌아서 풀 때는 조용하다
+        shown ? "animate-pop text-acc" : "text-dim hover:text-ink",
         className,
       )}
     >

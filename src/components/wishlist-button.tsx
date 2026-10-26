@@ -58,7 +58,7 @@ export function WishlistButton({ gameId, className }: { gameId: string; classNam
       onClick={() => gate(action, () => toggle(!wished))}
       className={buttonClass({ variant: "secondary", size: "lg", className: cn(shown && "border-acc text-acc", className) })}
     >
-      <HeartIcon size={17} className={shown ? "fill-current" : undefined} />
+      <HeartIcon size={17} className={shown ? "animate-pop fill-current" : undefined} />
       {shown ? M.on : M.off}
     </button>
   );

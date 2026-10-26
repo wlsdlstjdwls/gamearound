@@ -5,6 +5,7 @@
 //
 // 검색칸은 머리띠 검색과 같은 /search 로 가는 평범한 GET 폼이다. 자동완성은 머리띠 칸이 맡는다 —
 // 같은 자동완성을 둘 띄우면 화면에 같은 목록이 두 번 펼쳐질 수 있다. 폼이라 JS 없이도 된다.
+// 움직임은 손전등 빛 하나다(2026-10-26 모션 회차): 바탕을 천천히 훑는 빛과, 강조 글자를 한 번 스치는 빛.
 // 목업의 글로우와 사선 빛줄기는 쓰지 않는다(기획서 2.5 "과한 네온, 글로우는 쓰지 않는다"). 바탕에 브랜드색을 옅게만 깐다.
 import { SearchIcon } from "@/components/ui/icons";
 import { HOME_MESSAGES as M } from "@/lib/home/messages";
@@ -25,8 +26,10 @@ export function HomeHero() {
             "radial-gradient(45% 70% at 86% 10%, color-mix(in oklab, var(--acc) 14%, transparent), transparent 70%), radial-gradient(40% 60% at 8% 80%, color-mix(in oklab, var(--acc) 9%, transparent), transparent 70%)",
         }}
       />
+      {/* 손전등 빛 웅덩이가 바탕을 천천히 오간다(globals.css .hero-beam) */}
+      <span aria-hidden className="hero-beam" />
       <h1 id="home-hero-heading" className="text-[30px] font-extrabold leading-[1.18] tracking-[-0.035em] text-ink sm:text-[44px]">
-        {M.heroLead} <span className="text-acc">{M.heroAccent}</span>
+        {M.heroLead} <span className="glint-text">{M.heroAccent}</span>
       </h1>
       <p className="mx-auto mt-3 max-w-[520px] text-[15px] leading-[1.6] text-mut sm:text-[17px]">{M.heroBody}</p>
 

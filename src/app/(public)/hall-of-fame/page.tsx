@@ -51,7 +51,7 @@ function metaOf(item: RankedIndie): string {
   return [M.byDev(c.developerName), genreLabels(c.genres).join(", "), M.views(c.viewCount), M.likes(c.likeCount)].filter(Boolean).join(" | ");
 }
 
-const platformsOf = (item: RankedIndie) => item.card.platforms.map((p) => INDIE_PLATFORM_LABEL[p]).join(" / ");
+const platformsOf = (item: RankedIndie) => item.card.platforms.map((p) => INDIE_PLATFORM_LABEL[p]).join(", ");
 
 const PLATFORM_PILL = "rounded-lg bg-surface-2 px-2.5 py-1 text-[12px] font-semibold text-ink-2";
 
@@ -82,7 +82,7 @@ function Ranking({ items, label, finalized, isNow }: { items: RankedIndie[]; lab
     <div className="flex flex-col gap-6">
       <div className="grid gap-4 lg:grid-cols-[minmax(0,1.9fr)_minmax(0,1fr)_minmax(0,1fr)]">
         {/* 1위 — 큰 판(목업 hhero). 대표 그림을 흐리지 않고 깔고, 왼쪽에서 오른쪽으로 옅어지는 막을 씌워 글을 읽힌다 */}
-        <Link href={indiePath(top.card.slug)} className="lift press group relative isolate flex min-h-[280px] flex-col justify-between gap-4 overflow-hidden rounded-[var(--radius-panel)] bg-ink p-5 text-on-ink sm:p-6">
+        <Link href={indiePath(top.card.slug)} className="lift press glint-sweep group relative isolate flex min-h-[280px] flex-col justify-between gap-4 overflow-hidden rounded-[var(--radius-panel)] bg-ink p-5 text-on-ink sm:p-6">
           <span aria-hidden className="absolute inset-0 -z-10 opacity-50">
             <FadeImage src={top.card.cover.url} alt="" fill sizes="(max-width: 1024px) 100vw, 50vw" className="object-cover" />
           </span>

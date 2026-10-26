@@ -57,7 +57,7 @@ export function DetailTabs({ label, tabs }: { label: string; tabs: DetailTab[] }
         })}
       </div>
       {tabs.map((t) => (
-        <div key={t.key} role="tabpanel" id={`${base}-panel-${t.key}`} aria-labelledby={`${base}-tab-${t.key}`} hidden={t.key !== active} tabIndex={0}>
+        <div key={t.key} role="tabpanel" id={`${base}-panel-${t.key}`} aria-labelledby={`${base}-tab-${t.key}`} hidden={t.key !== active} tabIndex={0} className="animate-rise">
           {t.panel}
         </div>
       ))}

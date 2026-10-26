@@ -47,7 +47,7 @@ export function SubNav() {
                   "relative flex h-[var(--touch-target)] items-center whitespace-nowrap px-3 text-[14px] font-semibold transition-colors duration-fast",
                   // 밑줄은 글자 폭만큼(좌우 여백 안쪽) — 칸 전체 폭으로 그으면 이웃 칸과 붙어 한 줄로 읽힌다
                   "after:absolute after:inset-x-3 after:bottom-0 after:h-0.5 after:rounded-full after:transition-colors after:duration-fast",
-                  current ? "text-acc after:bg-acc" : "text-mut after:bg-transparent hover:text-ink",
+                  current ? "underline-grow text-acc after:bg-acc" : "text-mut after:bg-transparent hover:text-ink",
                 )}
               >
                 {s.label}
