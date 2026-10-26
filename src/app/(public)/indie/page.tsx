@@ -19,6 +19,7 @@ import { INDIE_STAGES } from "@/lib/indie/constants";
 import { INDIE_MESSAGES as M, INDIE_STAGE_LABEL } from "@/lib/indie/messages";
 import { stagger } from "@/lib/motion";
 import { ROUTES } from "@/lib/routes";
+import Link from "next/link";
 import type { IndieStage } from "@/server/db/schema";
 import { listIndiePosts } from "@/server/services/indie";
 import { NavChip, NavPendingScope, PendingRegion } from "@/components/ui/nav-pending";
@@ -62,6 +63,12 @@ export default async function IndiePage({ searchParams }: Props) {
       <NavPendingScope>
       {/* 새로 올라온 게임은 첫 쪽, 거르지 않은 화면에서만 크게 세운다 — 거른 화면에서 다른 단계 게임이 머리에 서면 어긋난다 */}
       <IndieListHero featured={!stage && result.page === 1 ? (result.items[0] ?? null) : null} />
+
+      {/* 명예의 전당 안내(기획서 v2.0 S-18 "명예의 전당에 올라보세요") — 승인된 게임만 서는 화면이라 다음 목표를 함께 말한다 */}
+      <Link href={ROUTES.hallOfFame} className="press flex flex-col gap-1 rounded-[var(--radius-md)] bg-acc-soft px-5 py-4 transition-colors hover:bg-surface-2 sm:flex-row sm:items-center sm:justify-between">
+        <span className="text-[14.5px] font-bold text-acc">{M.hofBannerTitle}</span>
+        <span className="text-[13px] text-mut">{M.hofBannerLead}</span>
+      </Link>
 
       <nav aria-label={M.stageFilterLabel} className="flex flex-wrap gap-1.5">
         <NavChip group="stage" current="page" href={indieHref(undefined)} active={!stage}>

@@ -17,7 +17,7 @@ import { NavChip, NavPendingScope, PendingRegion } from "@/components/ui/nav-pen
 
 export const metadata: Metadata = { title: A.title };
 
-const TAB_LABEL: Record<IndieAdminTab, string> = { reported: A.tabReported, links: A.tabLinks, hidden: A.tabHidden, all: A.tabAll };
+const TAB_LABEL: Record<IndieAdminTab, string> = { review: A.tabReview, reported: A.tabReported, links: A.tabLinks, hidden: A.tabHidden, all: A.tabAll };
 
 type Props = { searchParams: Promise<Record<string, string | string[] | undefined>> };
 

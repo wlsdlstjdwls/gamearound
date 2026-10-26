@@ -16,7 +16,8 @@ import type { IndieCardDto, IndieDetailDto, IndieGameSectionDto, IndieImageDto, 
 /** 그 글의 그림이 한 장이라도 있다 — 공개 목록의 문턱. 첫 장이 곧 커버라 "있다" 만 보면 된다 */
 const hasCover = sql<boolean>`exists (select 1 from ${indiePostImages} where ${indiePostImages.postId} = ${indiePosts.id})`;
 
-const isPublic = and(eq(indiePosts.status, "published"), hasCover);
+// 승인된 글만 공개 화면에 선다(2026-10-26, 기획서 v2.0 7.1). 승인 대기, 반려 글은 등록현황에서만 보인다
+const isPublic = and(eq(indiePosts.status, "published"), eq(indiePosts.review, "approved"), hasCover);
 
 /** 글 id 들의 그림을 순서대로. 왕복 하나로 모은다 — 카드마다 묻지 않는다 */
 async function imagesFor(postIds: string[]): Promise<Map<string, IndieImageDto[]>> {
@@ -130,6 +131,8 @@ export async function getIndiePostBySlug(slug: string): Promise<IndieDetailDto |
         : null,
     status: p.status,
     statusReason: p.statusReason,
+    review: p.review,
+    reviewReason: p.reviewReason,
     createdAt: p.createdAt.toISOString(),
   };
 }
@@ -170,11 +173,14 @@ export async function listMyIndiePosts(userId: string): Promise<IndieMineRowDto[
       stage: indiePosts.stage,
       status: indiePosts.status,
       statusReason: indiePosts.statusReason,
+      review: indiePosts.review,
+      reviewReason: indiePosts.reviewReason,
+      createdAt: indiePosts.createdAt,
       updatedAt: indiePosts.updatedAt,
       hasCover: sql<boolean>`${hasCover}`,
     })
     .from(indiePosts)
     .where(eq(indiePosts.authorUserId, userId))
     .orderBy(desc(indiePosts.createdAt));
-  return rows.map((r) => ({ ...r, hasCover: Boolean(r.hasCover), updatedAt: r.updatedAt.toISOString() }));
+  return rows.map((r) => ({ ...r, hasCover: Boolean(r.hasCover), createdAt: r.createdAt.toISOString(), updatedAt: r.updatedAt.toISOString() }));
 }

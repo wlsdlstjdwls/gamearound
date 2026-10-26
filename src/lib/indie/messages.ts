@@ -31,7 +31,9 @@ export const INDIE_MESSAGES = {
   /** 2026-10-07 "인디" 에서 늘렸다 — 낱말 하나로는 장르 필터처럼 읽혀 화면 이름(title)과 같은 말로 맞췄다 */
   navLabel: "인디 게임",
   title: "인디 게임",
-  lead: "개발자가 직접 소개하는 게임이에요. 만들고 있는 게임도, 막 나온 게임도 올릴 수 있어요.",
+  lead: "인디 개발자가 직접 등록한 개성 있는 게임을 둘러보세요.",
+  hofBannerTitle: "명예의 전당에 올라보세요",
+  hofBannerLead: "조회수와 댓글 같은 반응을 모아 매달 '이번 달 주목작' 을 뽑아요.",
   countSuffix: "개",
   cta: "내 게임 소개하기",
   mine: "내가 쓴 글",
@@ -113,7 +115,7 @@ export const INDIE_FORM_MESSAGES = {
   submitNew: "올리기",
   submitEdit: "고친 내용 저장",
   saving: "저장하는 중",
-  created: "올렸어요. 이제 대표 그림과 스크린샷을 올려 주세요.",
+  created: "등록을 신청했어요. 대표 그림과 스크린샷을 올리면 운영진이 확인하고 승인해요.",
   saved: "저장했어요.",
   delete: "글 지우기",
   deleteConfirm: "정말 지울까요? 올린 그림도 함께 지워져요.",
@@ -169,7 +171,8 @@ export const INDIE_REPORT_MESSAGES = {
 /** 관리자 화면(/admin/indie) */
 export const INDIE_ADMIN_MESSAGES = {
   title: "인디 홍보 글",
-  lead: "신고가 들어온 글과 게임 연결 확인을 기다리는 글이에요. 숨기면 목록, 홈, 게임 상세에서 모두 빠져요.",
+  lead: "등록 신청, 신고가 들어온 글, 게임 연결 확인을 기다리는 글이에요. 승인해야 공개 화면에 서고, 숨기면 모두 빠져요.",
+  tabReview: "승인 대기",
   tabReported: "신고",
   tabLinks: "게임 연결",
   tabHidden: "숨김",
@@ -185,4 +188,22 @@ export const INDIE_ADMIN_MESSAGES = {
   author: "올린 사람",
   linkedGame: "이은 게임",
   done: "처리했어요.",
+  approve: "승인",
+  reject: "반려",
+  rejectReason: "반려 사유",
+  rejectReasonPlaceholder: "반려 사유는 신청한 사람에게 보여요",
+} as const;
+
+/** 등록 승인 상태(기획서 v2.0 4.4: 승인 대기 주황, 등록 완료 라임). 반려는 빨강 */
+export const INDIE_REVIEW_LABEL = { pending: "승인 대기", approved: "등록 완료", rejected: "반려" } as const;
+export const INDIE_REVIEW_TONE = { pending: "warn", approved: "acc", rejected: "danger" } as const;
+export const INDIE_REVIEW_MESSAGES = {
+  pendingNotice: "운영진이 확인하고 있어요. 승인되면 내가 만든 게임, 명예의 전당, 슈퍼루키에 올라가요.",
+  rejectedNotice: "등록이 반려됐어요. 사유를 보고 고쳐서 다시 신청해 주세요.",
+  reason: "반려 사유",
+  resubmit: "고쳐서 다시 신청",
+  flow: "신청, 운영진 승인, 최종 등록 순서로 진행돼요.",
+  title: "등록현황",
+  total: "내가 올린 게임",
+  appliedAt: "신청일",
 } as const;

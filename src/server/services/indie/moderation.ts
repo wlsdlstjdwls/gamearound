@@ -1,4 +1,4 @@
-// 인디 홍보 글 관리 — 신고 검토, 숨김과 되살리기, 게임 연결 확인. 관리자 화면(/admin/indie)이 부른다.
+// 인디 홍보 글 관리 — 등록 승인과 반려, 신고 검토, 숨김과 되살리기, 게임 연결 확인. 관리자 화면(/admin/indie)이 부른다.
 import "server-only";
 import { and, desc, eq, gt, inArray, isNotNull, isNull, sql } from "drizzle-orm";
 import { getDb } from "@/server/db/client";
@@ -7,9 +7,15 @@ import { games, indiePostReports, indiePosts, users } from "@/server/db/schema";
 import { displayTitle } from "@/server/services/games";
 import type { IndieAdminRowDto } from "@/lib/indie/dto";
 import type { IndieModerationInput } from "@/lib/indie/schemas";
+import { NOTIFICATION_MESSAGES as N } from "@/lib/notifications/messages";
+import { ROUTES } from "@/lib/routes";
+import { pushNotification } from "@/server/services/notifications";
 
-/** 관리자 화면의 칸. 신고 칸이 첫 칸이다 — 승인 없이 서는 글이라 막는 일이 가장 급하다 */
-export const INDIE_ADMIN_TABS = ["reported", "links", "hidden", "all"] as const;
+/**
+ * 관리자 화면의 칸. 승인 대기가 첫 칸이다(2026-10-26 승인제) — 신청한 사람이 기다리고 있는 줄이다.
+ * 신고 칸이 그다음이다: 승인된 뒤에도 문제가 생길 수 있다.
+ */
+export const INDIE_ADMIN_TABS = ["review", "reported", "links", "hidden", "all"] as const;
 export type IndieAdminTab = (typeof INDIE_ADMIN_TABS)[number];
 
 /** 한 화면에 세우는 줄 수. 처리하면 줄이 빠지는 큐라 쪽 넘기기 대신 앞에서부터 처리한다 */
@@ -17,6 +23,8 @@ const ADMIN_LIMIT = 100;
 
 function tabWhere(tab: IndieAdminTab) {
   switch (tab) {
+    case "review":
+      return eq(indiePosts.review, "pending");
     case "reported":
       return and(eq(indiePosts.status, "published"), gt(indiePosts.reportCount, 0));
     case "links":
@@ -39,6 +47,7 @@ export async function listIndieForAdmin(tab: IndieAdminTab): Promise<IndieAdminR
       authorEmail: users.email,
       status: indiePosts.status,
       statusReason: indiePosts.statusReason,
+      review: indiePosts.review,
       reportCount: indiePosts.reportCount,
       gameId: indiePosts.gameId,
       gameLinkVerifiedAt: indiePosts.gameLinkVerifiedAt,
@@ -74,6 +83,7 @@ export async function listIndieForAdmin(tab: IndieAdminTab): Promise<IndieAdminR
     authorEmail: r.authorEmail,
     status: r.status,
     statusReason: r.statusReason,
+    review: r.review,
     reportCount: r.reportCount,
     reportReasons: reasons.get(r.id) ?? [],
     game:
@@ -89,7 +99,7 @@ export async function countIndieAdminQueue(): Promise<number> {
   const [{ n }] = await getDb()
     .select({ n: sql<number>`count(*)::int` })
     .from(indiePosts)
-    .where(sql`(${tabWhere("reported")}) or (${tabWhere("links")})`);
+    .where(sql`(${tabWhere("review")}) or (${tabWhere("reported")}) or (${tabWhere("links")})`);
   return n;
 }
 
@@ -99,6 +109,7 @@ export async function countIndieAdminQueue(): Promise<number> {
  */
 export async function moderateIndiePost(input: IndieModerationInput, adminId: string): Promise<{ slug: string; gameId: string | null }> {
   const audit = updatedBy("admin", adminId);
+  if (input.decision === "approve" || input.decision === "reject") return reviewIndiePost(input, adminId);
   const set =
     input.decision === "hide"
       ? { status: "hidden" as const, statusReason: input.reason || null, ...audit }
@@ -114,4 +125,20 @@ export async function moderateIndiePost(input: IndieModerationInput, adminId: st
     .returning({ slug: indiePosts.slug, gameId: indiePosts.gameId });
   if (!row) throw new Error("not found");
   return row;
+}
+
+/**
+ * 등록 판정(기획서 v2.0 7.1). 승인하면 공개 화면에 서고, 반려는 사유를 남겨 등록현황에 띄운다.
+ * 어느 쪽이든 글쓴이 알림함에 한 줄 남긴다 — 신청한 사람이 화면을 계속 들여다보지 않아도 결과를 안다.
+ */
+async function reviewIndiePost(input: IndieModerationInput, adminId: string): Promise<{ slug: string; gameId: string | null }> {
+  const approve = input.decision === "approve";
+  const [row] = await getDb()
+    .update(indiePosts)
+    .set({ review: approve ? "approved" : "rejected", reviewReason: approve ? null : input.reason || null, reviewedAt: sql`now()`, ...updatedBy("admin", adminId) })
+    .where(eq(indiePosts.id, input.postId))
+    .returning({ slug: indiePosts.slug, gameId: indiePosts.gameId, title: indiePosts.title, author: indiePosts.authorUserId });
+  if (!row) throw new Error("not found");
+  await pushNotification(row.author, "approval", approve ? N.approved(row.title) : N.rejected(row.title), ROUTES.indieMine).catch(() => {});
+  return { slug: row.slug, gameId: row.gameId };
 }

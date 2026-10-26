@@ -19,7 +19,7 @@ import { FadeImage } from "@/components/ui/fade-image";
 import { Page, SectionHead, sectionCardClass } from "@/components/ui/page";
 import { cn } from "@/lib/cn";
 import { formatDate } from "@/lib/format";
-import { INDIE_LINK_LABEL, INDIE_MESSAGES as M, INDIE_PLATFORM_LABEL, INDIE_STAGE_LABEL } from "@/lib/indie/messages";
+import { INDIE_LINK_LABEL, INDIE_MESSAGES as M, INDIE_PLATFORM_LABEL, INDIE_STAGE_LABEL, INDIE_REVIEW_MESSAGES as RV } from "@/lib/indie/messages";
 import type { IndieLinkKind } from "@/lib/indie/constants";
 import { gamePath, indieEditPath, indiePath, ROUTES } from "@/lib/routes";
 import { decodeSlugParam } from "@/lib/slug";
@@ -51,7 +51,8 @@ export default async function IndieDetailPage({ params }: Props) {
   const [post, viewer] = loaded;
   if (!post) notFound();
   const canEdit = viewer !== null && (viewer.id === post.authorUserId || viewer.role === "admin");
-  if (post.status !== "published" && !canEdit) notFound();
+  // 승인 전(대기, 반려) 글도 숨긴 글처럼 글쓴이와 관리자만 본다(기획서 v2.0 7.1)
+  if ((post.status !== "published" || post.review !== "approved") && !canEdit) notFound();
 
   const [cover, ...shots] = post.images;
   const info: Array<{ label: string; value: string | null }> = [
@@ -70,6 +71,12 @@ export default async function IndieDetailPage({ params }: Props) {
         <div role="status" className="rounded-xl bg-warn-soft px-4 py-3 text-[13px] text-warn">
           {M.hiddenNotice}
           {post.statusReason && ` ${post.statusReason}`}
+        </div>
+      )}
+      {canEdit && post.review !== "approved" && (
+        <div role="status" className={post.review === "rejected" ? "rounded-xl bg-danger-soft px-4 py-3 text-[13px] text-danger" : "rounded-xl bg-warn-soft px-4 py-3 text-[13px] text-warn"}>
+          {post.review === "rejected" ? RV.rejectedNotice : RV.pendingNotice}
+          {post.reviewReason && ` ${RV.reason}: ${post.reviewReason}`}
         </div>
       )}
       {canEdit && !cover && (

@@ -21,7 +21,16 @@ export const indieStageEnum = pgEnum("indie_stage", ["in_development", "demo", "
  */
 export const indiePostStatusEnum = pgEnum("indie_post_status", ["published", "hidden"]);
 
+/**
+ * 등록 승인(2026-10-26, 기획서 v2.0 5.3, 7.1). 신청하면 pending 이고, 운영진이 승인해야 공개 화면(내가 만든 게임,
+ * 명예의 전당, 슈퍼루키)에 선다. 반려는 사유를 남기고, 글쓴이가 고쳐서 다시 내면 pending 으로 돌아간다(재신청).
+ * status(공개, 숨김)와 따로 둔 이유: 숨김은 "이미 섰던 글을 내린다" 이고 승인은 "아직 세우지 않았다" 다 — 한 칸에 섞으면
+ * 되살리기가 승인까지 건너뛴다. 이 칸이 생기기 전의 글은 승인된 것으로 옮겼다(0063, 이미 공개돼 있던 글이다).
+ */
+export const indieReviewEnum = pgEnum("indie_review", ["pending", "approved", "rejected"]);
+
 export type IndieStage = (typeof indieStageEnum.enumValues)[number];
+export type IndieReview = (typeof indieReviewEnum.enumValues)[number];
 export type IndiePostStatus = (typeof indiePostStatusEnum.enumValues)[number];
 
 /** 바깥 링크 한 줄. 종류는 lib/indie/constants 의 INDIE_LINK_KINDS */
@@ -54,6 +63,11 @@ export const indiePosts = pgTable("indie_posts", {
   statusReason: text("status_reason"),
   /** 마지막 검토 뒤 쌓인 신고 수. 문턱을 넘으면 스스로 숨는다. 관리자가 되살리면 0 으로 돌린다 */
   reportCount: integer("report_count").default(0).notNull(),
+  review: indieReviewEnum("review").default("pending").notNull(),
+  /** 반려 사유. 등록현황에 그대로 뜬다 */
+  reviewReason: text("review_reason"),
+  /** 마지막 판정 시각. 슈퍼루키의 "등록 30일" 은 승인 시각부터 센다 */
+  reviewedAt: timestamp("reviewed_at", { withTimezone: true }),
   ...auditColumns(),
 }, (t) => [
   // 공개 목록은 published 를 최신순으로 본다

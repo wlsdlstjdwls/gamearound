@@ -92,11 +92,14 @@ export const indieReportSchema = z.object({
   reason: z.string().trim().min(1).max(INDIE_REPORT_REASON_MAX),
 });
 
-export const indieModerationSchema = z.object({
-  postId: z.uuid(),
-  decision: z.enum(["hide", "restore", "verify_link", "reject_link"]),
-  reason: z.string().trim().max(INDIE_HIDE_REASON_MAX).optional(),
-});
+export const indieModerationSchema = z
+  .object({
+    postId: z.uuid(),
+    decision: z.enum(["approve", "reject", "hide", "restore", "verify_link", "reject_link"]),
+    reason: z.string().trim().max(INDIE_HIDE_REASON_MAX).optional(),
+  })
+  // 반려는 사유가 있어야 한다 — 등록현황에 "왜" 가 없으면 무엇을 고쳐 다시 낼지 모른다(2026-10-26 사용자 결정)
+  .refine((v) => v.decision !== "reject" || Boolean(v.reason), { path: ["reason"], message: "반려 사유를 적어 주세요" });
 
 export type IndieModerationInput = z.infer<typeof indieModerationSchema>;
 

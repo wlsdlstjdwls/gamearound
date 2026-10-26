@@ -38,7 +38,7 @@ function makeSlug(title: string): string {
 /** 이 사람의 글이면 그 행을, 아니면 null. 관리자는 누구 글이든 받는다 */
 async function ownedPost(postId: string, actor: IndieActor) {
   const where = actor.isAdmin ? eq(indiePosts.id, postId) : and(eq(indiePosts.id, postId), eq(indiePosts.authorUserId, actor.userId));
-  const rows = await getDb().select({ id: indiePosts.id, slug: indiePosts.slug, gameId: indiePosts.gameId }).from(indiePosts).where(where).limit(1);
+  const rows = await getDb().select({ id: indiePosts.id, slug: indiePosts.slug, gameId: indiePosts.gameId, review: indiePosts.review }).from(indiePosts).where(where).limit(1);
   return rows[0] ?? null;
 }
 
@@ -89,6 +89,8 @@ export async function updateIndiePost(postId: string, actor: IndieActor, input: 
       releaseNote: input.releaseNote,
       links: input.links,
       youtubeId: input.youtube,
+      // 반려된 글을 고쳐 내면 재신청이다 — 다시 승인 대기로 돌아가고 옛 사유는 지운다(기획서 7.1, 2026-10-26 사용자 결정)
+      ...(post.review === "rejected" ? { review: "pending" as const, reviewReason: null } : {}),
       ...updatedBy(actorSource(actor), actor.userId),
     })
     .where(eq(indiePosts.id, post.id));

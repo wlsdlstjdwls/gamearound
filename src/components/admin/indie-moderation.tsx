@@ -25,22 +25,25 @@ export function IndieModeration({ row }: { row: IndieAdminRowDto }) {
   return (
     <ActionForm action={formAction} state={state} pending={pending} className="flex flex-col gap-2">
       <input type="hidden" name="postId" value={row.id} />
-      {row.status === "published" && (
+      {(row.status === "published" || row.review === "pending") && (
         <>
           <label htmlFor={`hide-${row.id}`} className="sr-only">
-            {A.hideReason}
+            {row.review === "pending" ? A.rejectReason : A.hideReason}
           </label>
           <input
             id={`hide-${row.id}`}
             name="reason"
             maxLength={INDIE_HIDE_REASON_MAX}
-            placeholder={A.hideReasonPlaceholder}
+            placeholder={row.review === "pending" ? A.rejectReasonPlaceholder : A.hideReasonPlaceholder}
             className="h-9 w-full rounded-lg border border-line-strong bg-bg px-3 text-[16px] text-ink outline-none focus:border-ink sm:text-[13px]"
           />
         </>
       )}
       <div className="flex flex-wrap gap-1.5">
-        {row.status === "published" ? <Decide decision="hide" label={A.hide} variant="danger" /> : <Decide decision="restore" label={A.restore} variant="secondary" />}
+        {/* 승인 대기 글은 승인, 반려가 먼저다. 반려는 위 칸의 사유가 있어야 서버가 받는다 */}
+        {row.review === "pending" && <Decide decision="approve" label={A.approve} variant="soft" />}
+        {row.review === "pending" && <Decide decision="reject" label={A.reject} variant="danger" />}
+        {row.review !== "pending" && (row.status === "published" ? <Decide decision="hide" label={A.hide} variant="danger" /> : <Decide decision="restore" label={A.restore} variant="secondary" />)}
         {linkPending && <Decide decision="verify_link" label={A.verifyLink} variant="soft" />}
         {row.game && <Decide decision="reject_link" label={A.rejectLink} variant="secondary" />}
       </div>

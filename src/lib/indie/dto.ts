@@ -2,7 +2,7 @@
 //
 // 왜 서비스 파일이 아니라 여기인가: 폼과 그림 칸은 클라이언트 컴포넌트다. 서비스는 `server-only` 라
 // 타입만 가져가려 해도 그 경로를 가리키게 된다(lib/shops/game-option 과 같은 이유).
-import type { IndieLink, IndiePostStatus, IndieStage } from "@/server/db/schema";
+import type { IndieLink, IndiePostStatus, IndieReview, IndieStage } from "@/server/db/schema";
 import type { IndiePlatform } from "./constants";
 
 export type IndieImageDto = { id: string; url: string; width: number; height: number };
@@ -38,6 +38,8 @@ export type IndieDetailDto = {
   game: IndieGameLinkDto | null;
   status: IndiePostStatus;
   statusReason: string | null;
+  review: IndieReview;
+  reviewReason: string | null;
   createdAt: string;
 };
 
@@ -49,7 +51,10 @@ export type IndieMineRowDto = {
   stage: IndieStage;
   status: IndiePostStatus;
   statusReason: string | null;
+  review: IndieReview;
+  reviewReason: string | null;
   hasCover: boolean;
+  createdAt: string;
   updatedAt: string;
 };
 
@@ -72,6 +77,7 @@ export type IndieAdminRowDto = {
   authorEmail: string;
   status: IndiePostStatus;
   statusReason: string | null;
+  review: IndieReview;
   reportCount: number;
   reportReasons: string[];
   game: IndieGameLinkDto | null;
