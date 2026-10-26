@@ -1,7 +1,7 @@
 // 게임 상세 — 결론 → 근거 순 (§5.1). 데이터는 tag 캐시(getGameBySlugCached), 로그인 의존 데이터(찜 여부)는 캐시 밖에서 조회
 import { DbUnavailablePage } from "@/components/db-unavailable";
 import { DB_DOWN, orDbDown } from "@/lib/db-errors";
-import { formatPrice } from "@/lib/currency";
+import { DISPLAY_CURRENCY, formatPrice } from "@/lib/currency";
 import type { Metadata } from "next";
 import { Suspense } from "react";
 import Link from "next/link";
@@ -31,6 +31,8 @@ import { Flag } from "@/components/ui/flag";
 import { cn } from "@/lib/cn";
 import { PriceAlertButton, type AlertPlatformOption } from "@/components/price-alert-button";
 import { WishlistButton } from "@/components/wishlist-button";
+import { DiscountForecast } from "@/components/discount-forecast";
+import { forecastDiscount } from "@/lib/sales/forecast";
 import { Page, SectionHead, sectionCardClass } from "@/components/ui/page";
 import { PendingNote } from "@/components/ui/pending-note";
 import { ClockIcon } from "@/components/ui/icons";
@@ -329,6 +331,10 @@ export default async function GameDetailPage({ params }: Props) {
     .filter((p) => p.region === "KR")
     .filter((p, i, list) => list.findIndex((q) => q.platform === p.platform) === i)
     .map((p) => ({ platform: p.platform, currentPrice: p.currentPrice, currency: p.currency }));
+  // 할인 예측(lib/sales/forecast). 무료 게임은 내려갈 자리가 없어 세우지 않는다
+  const forecast = isFree
+    ? null
+    : forecastDiscount({ platforms: alertOptions.map((o) => o.platform), recordedLow: recordedLow?.price ?? null, currentLowest: best?.currentPrice ?? null, now: new Date() });
   // 플레이 방식 칩이 하나라도 서는지 — 장르와 사이의 구분선을 그릴지 정한다
   const hasPlayModes =
     game.supportsSolo ||
@@ -486,6 +492,8 @@ export default async function GameDetailPage({ params }: Props) {
             )}
             <WishlistButton gameId={game.id} className={isFree ? "flex-1" : undefined} />
           </div>
+
+          {forecast && <DiscountForecast forecast={forecast} currency={recordedLow?.currency ?? DISPLAY_CURRENCY} />}
 
           <ScoreGrid game={game} />
 
