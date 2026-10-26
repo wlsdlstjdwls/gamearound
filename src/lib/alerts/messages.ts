@@ -53,3 +53,18 @@ export function conditionText(minDiscountPct: number | null, targetPrice: number
 export function gapText(gap: { kind: "discount"; pct: number } | { kind: "price"; amount: number }): string {
   return gap.kind === "discount" ? `할인율 ${gap.pct}%p 남았어요` : `${formatPrice(gap.amount)} 더 내려야 해요`;
 }
+
+/** 상세 화면 가격 알림 팝업(components/price-alert-button, 기획서 v2.0 M-02) */
+export const PRICE_ALERT_MESSAGES = {
+  cta: "가격 알림 받기",
+  title: "가격 알림 설정",
+  platformsLegend: "알림 받을 플랫폼",
+  channelLegend: "알림 받는 방법",
+  channel: { web: "웹 알림", email: "이메일" },
+  emailNote: "가입한 이메일로 보내요. 메일 발송이 준비되기 전에는 웹 알림으로 대신 보내요.",
+  noPrice: "가격 확인 중",
+  save: "저장",
+  saved: "가격 알림을 저장했어요",
+  failed: "저장하지 못했어요. 잠시 뒤 다시 해 주세요",
+  advanced: "목표가, 할인율로 자세히 정하기",
+} as const;

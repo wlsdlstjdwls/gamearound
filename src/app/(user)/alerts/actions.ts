@@ -4,8 +4,8 @@ import { actionError } from "@/lib/db-errors";
 import { ACTION_MESSAGES } from "@/lib/messages";
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
-import { platformEnum } from "@/server/db/schema";
-import { createAlert, deleteAlert, toggleAlert, updateAlert } from "@/server/services/alerts";
+import { alertChannelEnum, platformEnum } from "@/server/db/schema";
+import { createAlert, deleteAlert, getMyGameAlert, saveGameAlert, toggleAlert, updateAlert, type GameAlertSetting } from "@/server/services/alerts";
 import { requireUser } from "@/server/services/users";
 
 export type ActionState = { ok: true; message?: string } | { ok: false; error: string } | null;
@@ -112,6 +112,37 @@ export async function updateAlertAction(_prev: ActionState, formData: FormData):
     });
     revalidatePath("/alerts");
     return { ok: true, message: "알림 조건을 바꿨어요" };
+  } catch (e) {
+    return fail(e);
+  }
+}
+
+/** 상세 화면 알림 팝업(M-02)용 — 폼이 아니라 값으로 받는다. 팝업은 칸 넷짜리라 FormData 를 꾸릴 까닭이 없다 */
+const gameAlertSchema = z.object({
+  gameId: z.uuid({ message: "잘못된 게임이에요" }),
+  platforms: z.array(platformSchema).min(1, "알림 받을 플랫폼을 하나 이상 골라 주세요").max(platformEnum.enumValues.length),
+  channel: z.enum(alertChannelEnum.enumValues),
+});
+
+export async function getGameAlertAction(gameId: string, allPlatforms: string[]): Promise<GameAlertSetting | null> {
+  const id = idSchema.safeParse(gameId);
+  const all = z.array(platformSchema).safeParse(allPlatforms);
+  if (!id.success || !all.success) return null;
+  try {
+    return await getMyGameAlert(id.data, all.data);
+  } catch {
+    // 로그인이 풀렸거나 DB 가 잠깐 안 열림 — 팝업은 빈 칸으로 열리면 된다
+    return null;
+  }
+}
+
+export async function saveGameAlertAction(input: { gameId: string; platforms: string[]; channel: string }): Promise<ActionState> {
+  const parsed = gameAlertSchema.safeParse(input);
+  if (!parsed.success) return { ok: false, error: parsed.error.issues[0]?.message ?? ACTION_MESSAGES.failed };
+  try {
+    await saveGameAlert(parsed.data.gameId, parsed.data.platforms, parsed.data.channel);
+    revalidatePath("/alerts");
+    return { ok: true };
   } catch (e) {
     return fail(e);
   }

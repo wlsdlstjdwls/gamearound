@@ -21,7 +21,7 @@ import { ROUTES, signInPath } from "@/lib/routes";
 import { useSession } from "@/components/auth/session-provider";
 import { useSignOut } from "@/components/auth/use-sign-out";
 import { buttonClass } from "@/components/ui/button";
-import { BellIcon, LogOutIcon, MenuIcon, ShieldIcon, SlidersIcon, SpinnerIcon } from "@/components/ui/icons";
+import { BellIcon, HeartIcon, LogOutIcon, MenuIcon, ShieldIcon, SlidersIcon, SpinnerIcon } from "@/components/ui/icons";
 import { Sheet } from "@/components/ui/sheet";
 import { Clamp } from "@/components/ui/tooltip";
 import { NAV_SECTIONS, resolveNav } from "@/lib/nav";
@@ -29,8 +29,9 @@ import { Tag } from "@/components/ui/tag";
 
 type MenuLink = { href: string; label: string; icon?: React.ReactNode; authOnly?: boolean; adminOnly?: boolean };
 
-/** 메뉴 넷 아래에 서는 내 자리. 위시리스트는 숨겼다(2026-09-21) — 넓은 화면 메뉴(site-header)와 같이 되돌린다 */
+/** 메뉴 넷 아래에 서는 내 자리. 찜은 2026-09-21 에 숨겼다가 기획서 v2.0 이 되살렸다 */
 const LINKS: MenuLink[] = [
+  { href: ROUTES.wishlist, label: "내 찜 목록", icon: <HeartIcon size={17} />, authOnly: true },
   { href: ROUTES.alerts, label: "가격 알림", icon: <BellIcon size={17} /> },
   { href: ROUTES.settings, label: "설정", icon: <SlidersIcon size={17} />, authOnly: true },
   { href: ROUTES.admin, label: "관리자", icon: <ShieldIcon size={17} />, authOnly: true, adminOnly: true },

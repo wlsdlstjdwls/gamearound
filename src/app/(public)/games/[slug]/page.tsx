@@ -29,7 +29,8 @@ import { BackLink } from "@/components/ui/back-link";
 import { InfoTip } from "@/components/ui/tooltip";
 import { Flag } from "@/components/ui/flag";
 import { cn } from "@/lib/cn";
-import { buttonClass } from "@/components/ui/button";
+import { PriceAlertButton, type AlertPlatformOption } from "@/components/price-alert-button";
+import { WishlistButton } from "@/components/wishlist-button";
 import { Page, SectionHead, sectionCardClass } from "@/components/ui/page";
 import { PendingNote } from "@/components/ui/pending-note";
 import { ClockIcon } from "@/components/ui/icons";
@@ -323,6 +324,11 @@ export default async function GameDetailPage({ params }: Props) {
   const best = cheapestPlatform(game.platforms);
   /** 최저가가 0원 — 할인 알림을 걸 자리가 없다. 값이 없는 것(null)과 가른다 */
   const isFree = best?.currentPrice === 0;
+  // 가격 알림 팝업의 칸 — 한국 행만, 플랫폼마다 하나(다른 나라 값은 상세에서만 참고로 보여 준다)
+  const alertOptions: AlertPlatformOption[] = game.platforms
+    .filter((p) => p.region === "KR")
+    .filter((p, i, list) => list.findIndex((q) => q.platform === p.platform) === i)
+    .map((p) => ({ platform: p.platform, currentPrice: p.currentPrice, currency: p.currency }));
   // 플레이 방식 칩이 하나라도 서는지 — 장르와 사이의 구분선을 그릴지 정한다
   const hasPlayModes =
     game.supportsSolo ||
@@ -467,25 +473,19 @@ export default async function GameDetailPage({ params }: Props) {
         >
           <PriceHeadline game={game} recordedLow={recordedLow} />
 
-          {/* 찜 버튼은 숨겼다(2026-09-21, 사용자 결정) — WishlistSlot 과 그 폴백은 그대로 둔다.
-              되살릴 때는 이 자리에 Suspense 한 겹을 되돌리면 된다(site-header 주석에 같이 적었다)
+          {/* 찜과 가격 알림(2026-10-26, 기획서 v2.0 S-05). 둘 다 비로그인이면 로그인 팝업 뒤 이어서 실행된다(auth/login-gate).
+              2026-09-21 에 숨겼던 찜을 기획서가 되살렸다.
 
-              무료 게임에는 이 버튼을 세우지 않는다(2026-09-21). 0원에는 내려갈 자리가 없어서
+              무료 게임에는 알림 버튼을 이 버튼을 세우지 않는다(2026-09-21). 0원에는 내려갈 자리가 없어서
               알림을 걸어 두면 영원히 울리지 않는 조건이 계정에 남는다. 값이 아예 없는 게임
               (best === null)은 아직 안 긁었다는 뜻이라 버튼을 그대로 둔다 — 값이 붙는 순간
               쓸모가 생기는 조건이다. */}
-          {!isFree && (
-            <div className="flex flex-wrap gap-2">
-              <Link
-                href={`${ROUTES.alerts}?game=${encodeURIComponent(game.slug)}`}
-                // 잉크가 아니라 브랜드 보라다(2026-09-22, 사용자 지정) — 이 화면에서 누를 자리의 으뜸이고,
-                // 최저가 스토어 버튼, 칩과 같은 색이어야 "누르는 것" 이 한 색으로 읽힌다
-                className={buttonClass({ variant: "accent", size: "lg", className: "min-w-[140px] flex-1" })}
-              >
-                할인 알림 받기
-              </Link>
-            </div>
-          )}
+          <div className="flex flex-wrap gap-2">
+            {!isFree && alertOptions.length > 0 && (
+              <PriceAlertButton gameId={game.id} gameSlug={game.slug} options={alertOptions} className="min-w-[140px] flex-1" />
+            )}
+            <WishlistButton gameId={game.id} className={isFree ? "flex-1" : undefined} />
+          </div>
 
           <ScoreGrid game={game} />
 

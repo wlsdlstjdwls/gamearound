@@ -1,7 +1,8 @@
 // 메일 한 통 보내기 — Resend HTTP API.
 // adapters/http 의 createHttpClient 를 쓰지 않는 이유: 그쪽은 수집 소스(Source)에 매인 클라이언트라
 // 실패를 AdapterError 로 바꾸고 sync_logs 에 남기는 흐름에 맞춰져 있다. 메일은 수집이 아니다.
-import "server-only";
+// "server-only" 를 걸지 않는다(2026-10-26): 가격 알림 이메일을 수집 실행(sync/dispatch-alerts, Actions 의 tsx)이 보낸다.
+// 그 패키지는 react-server 조건 밖에서 import 만 해도 던져서 수집이 통째로 죽는다. 키는 환경 변수라 번들에 실리지 않는다.
 import { MAIL_FROM_ENV, MAIL_TIMEOUT_MS, RESEND_API_KEY_ENV, RESEND_SEND_URL } from "@/server/mail/constants";
 
 export type MailMessage = { to: string; subject: string; text: string; html: string };

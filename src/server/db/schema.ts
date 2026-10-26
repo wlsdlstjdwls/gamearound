@@ -22,6 +22,7 @@ import {
   osFamilyEnum,
   partKindEnum,
   platformEnum,
+  alertChannelEnum,
   playTimeStyleEnum,
   regionEnum,
   requirementTierEnum,
@@ -738,6 +739,11 @@ export const priceAlerts = pgTable("price_alerts", {
    * 원화가 아닌 행(일본 스위치 등)에는 견주지 않는다 — 환산하지 않는다는 통화 규칙 그대로다
    */
   targetPrice: integer("target_price"),
+  /**
+   * 받는 방법(2026-10-26, 기획서 v2.0 M-02). 이메일을 골랐는데 메일 수단이 안 켜져 있으면(RESEND 키 없음)
+   * 발송 쪽이 웹 알림으로 대신 보낸다 — 고른 방법이 막혀 아무것도 안 오는 것보다 낫다(sync/dispatch-alerts)
+   */
+  channel: alertChannelEnum("channel").default("web").notNull(),
   isActive: boolean("is_active").default(true).notNull(),
   ...auditColumns(),
 }, (t) => [index("pa_game_active_idx").on(t.gameId, t.isActive)]);

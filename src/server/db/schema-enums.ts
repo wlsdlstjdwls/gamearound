@@ -11,6 +11,9 @@ import { pgEnum } from "drizzle-orm/pg-core";
 
 export const platformEnum = pgEnum("platform", ["steam", "ps5", "ps4", "xbox", "switch", "switch2", "epic"]);
 
+/** 가격 알림을 받는 방법(기획서 v2.0 M-02, 2026-10-26). 웹 알림은 웹푸시다 */
+export const alertChannelEnum = pgEnum("alert_channel", ["web", "email"]);
+
 // wikidata 와 wikidata_game 을 가른 이유: 같은 백과사전이지만 조회 대상이 다르다.
 // wikidata 는 회사 항목을, wikidata_game 은 게임 항목을 찾는다. 한 소스로 합치면
 // game_source_refs 한 행에 회사 Q번호와 게임 Q번호가 섞이고, 디스패치도 갈 곳을 못 정한다.

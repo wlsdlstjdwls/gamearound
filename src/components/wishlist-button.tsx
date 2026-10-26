@@ -1,49 +1,66 @@
 "use client";
-// 계약: 상세 페이지(P3)가 사용. props { gameId, wished, signedIn }. 내부에서 Server Action toggleWishlistAction 호출.
-import Link from "next/link";
-import { usePathname } from "next/navigation";
-import { useOptimistic, useState, useTransition } from "react";
-import { signInPath } from "@/lib/routes";
+// 찜 버튼(기획서 v2.0 S-05, 6.1 "찜"). 토글이고, 비로그인이면 로그인 팝업 뒤 이어서 찜한다(auth/login-gate).
+// 2026-09-21 에 숨겼던 버튼을 기획서 v2.0(2026-10-26)이 되살렸다 — 내 찜 목록(S-25)과 짝이다.
+//
+// 찜 여부는 마운트 뒤 묻는다(isWishedAction). 상세 화면은 게임 단위로 캐시돼 사람마다 다른 값을 서버가 그려 줄 수 없다.
+// 누른 순간 바뀐다(AGENTS §6). 실패하면 전환이 끝나며 저절로 되돌아가고 토스트가 이유를 말한다.
+import { useEffect, useOptimistic, useState, useTransition } from "react";
+import { useLoginGate, useResume } from "@/components/auth/login-gate";
+import { useSession } from "@/components/auth/session-provider";
 import { buttonClass } from "@/components/ui/button";
-import { removeFromWishlistAction, toggleWishlistAction } from "@/app/(user)/wishlist/actions";
+import { HeartIcon } from "@/components/ui/icons";
+import { useToast } from "@/components/ui/toast";
+import { isWishedAction, removeFromWishlistAction, toggleWishlistAction } from "@/app/(user)/wishlist/actions";
+import { WISHLIST_MESSAGES as M } from "@/lib/wishlist/messages";
+import { cn } from "@/lib/cn";
 
-export function WishlistButton({ gameId, wished: initial, signedIn }: { gameId: string; wished: boolean; signedIn: boolean }) {
-  const [wished, setWished] = useState(initial);
-  const [error, setError] = useState<string | null>(null);
-  const [pending, start] = useTransition();
-  // 하트는 누른 순간 바뀐다(AGENTS §6). 응답이 오면 서버가 말한 값으로 맞추고, 실패하면 전환이 끝나며 저절로 되돌아간다
-  const [shownWished, setShownWished] = useOptimistic(wished);
-  const pathname = usePathname();
+export function WishlistButton({ gameId, className }: { gameId: string; className?: string }) {
+  const { user } = useSession();
+  const [wished, setWished] = useState(false);
+  const [known, setKnown] = useState(false);
+  const [, start] = useTransition();
+  const [shown, setShown] = useOptimistic(wished);
+  const gate = useLoginGate();
+  const toast = useToast();
+  const action = `wish:${gameId}`;
 
-  if (!signedIn) {
-    return (
-      <Link href={signInPath(pathname)} className={buttonClass({ variant: "secondary" })}>
-        ♡ 위시리스트
-      </Link>
-    );
-  }
+  useEffect(() => {
+    if (!user) return;
+    let alive = true;
+    isWishedAction(gameId).then((w) => {
+      if (!alive) return;
+      setWished(w);
+      setKnown(true);
+    });
+    return () => {
+      alive = false;
+    };
+  }, [gameId, user]);
+
+  const toggle = (next: boolean) =>
+    start(async () => {
+      setShown(next);
+      const r = await toggleWishlistAction(gameId);
+      if (!r.ok) return toast(r.error);
+      setWished(r.wished);
+      toast(r.wished ? M.added : M.removed);
+    });
+
+  // 로그인 뒤 이어하기 — 이미 찜한 게임이면 아무것도 안 한다(토글이라 한 번 더 누르면 풀린다)
+  useResume(action, () => {
+    if (!wished) toggle(true);
+  }, known);
 
   return (
-    <span className="inline-flex items-center gap-2">
-      <button
-        type="button"
-        disabled={pending}
-        aria-pressed={shownWished}
-        onClick={() =>
-          start(async () => {
-            setShownWished(!wished);
-            setError(null);
-            const r = await toggleWishlistAction(gameId);
-            if (r.ok) setWished(r.wished);
-            else setError(r.error);
-          })
-        }
-        className={buttonClass({ variant: "secondary", className: shownWished ? "border-ink font-semibold" : undefined })}
-      >
-        {shownWished ? "♥ 위시리스트" : "♡ 위시리스트"}
-      </button>
-      {error && <span className="text-[11.5px] text-danger">{error}</span>}
-    </span>
+    <button
+      type="button"
+      aria-pressed={shown}
+      onClick={() => gate(action, () => toggle(!wished))}
+      className={buttonClass({ variant: "secondary", size: "lg", className: cn(shown && "border-acc text-acc", className) })}
+    >
+      <HeartIcon size={17} className={shown ? "fill-current" : undefined} />
+      {shown ? M.on : M.off}
+    </button>
   );
 }
 
@@ -57,7 +74,7 @@ export function WishlistRemoveButton({ gameId }: { gameId: string }) {
       <button
         type="button"
         disabled={pending}
-        aria-label="위시리스트에서 제거"
+        aria-label={M.removeLabel}
         onClick={() =>
           start(async () => {
             setError(null);

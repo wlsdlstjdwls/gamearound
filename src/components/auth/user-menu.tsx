@@ -16,7 +16,8 @@ import { Tag } from "@/components/ui/tag";
 type MenuLink = { href: string; label: string; adminOnly?: boolean };
 
 const MENU_LINKS: MenuLink[] = [
-  // 위시리스트는 숨겼다(2026-09-21) — site-header 주석 참고
+  // 기획서 v2.0(3.1) 순서: 내 활동, 내 찜 목록, 가격 알림, 로그아웃. 찜은 2026-09-21 에 숨겼다가 기획서가 되살렸다
+  { href: ROUTES.wishlist, label: "내 찜 목록" },
   { href: ROUTES.alerts, label: "가격 알림" },
   { href: ROUTES.settings, label: "설정" },
   { href: ROUTES.admin, label: "관리자", adminOnly: true },

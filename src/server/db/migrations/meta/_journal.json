@@ -421,6 +421,13 @@
       "when": 1791764488685,
       "tag": "0059_last_gressill",
       "breakpoints": true
+    },
+    {
+      "idx": 60,
+      "version": "7",
+      "when": 1792978765473,
+      "tag": "0060_foamy_silver_sable",
+      "breakpoints": true
     }
   ]
 }

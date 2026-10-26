@@ -64,3 +64,9 @@ export const AUTH_MESSAGES = {
 } as const;
 
 export type AuthMessageKey = keyof typeof AUTH_MESSAGES;
+
+/** 로그인 팝업(components/auth/login-gate, 기획서 v2.0 M-01) */
+export const LOGIN_GATE_MESSAGES = {
+  title: "로그인이 필요해요",
+  lead: "로그인하면 누르던 동작을 바로 이어서 해 드려요.",
+} as const;

@@ -1,15 +1,23 @@
-// 할인 알림 발송 — 설계서 §7. run-source 가 감지한 가격 변동 목록을 받아 조건에 맞는 price_alerts 에 웹푸시.
+// 할인 알림 발송 — 설계서 §7. run-source 가 감지한 가격 변동 목록을 받아 조건에 맞는 price_alerts 에 웹푸시 또는 이메일.
+// 받는 방법(channel)이 이메일인데 메일 수단이 안 켜져 있으면 웹푸시로 대신 보낸다(schema 의 channel 주석).
 // 조건: is_active AND game_id 일치 AND (platform 일치 또는 null) AND 직전 스냅샷 대비 가격 하락
 //   AND (discountPct >= minDiscountPct 또는 원화 값 <= targetPrice). 목표가는 2026-10-07 에 붙었다(lib/alerts/condition).
 // SQL 로 후보를 좁힌 뒤 같은 판정 함수(meetsCondition)로 한 번 더 거른다 — 화면의 "지금 조건에 맞아요" 와 발송이 갈리지 않게.
 import { and, eq, or, isNull, isNotNull } from "drizzle-orm";
 import { getDb } from "@/server/db/client";
-import { alertDeliveries, gamePlatforms, games, priceAlerts, pushSubscriptions } from "@/server/db/schema";
+import { alertDeliveries, gamePlatforms, games, priceAlerts, pushSubscriptions, users } from "@/server/db/schema";
+import { mailConfigured, sendMail } from "@/server/mail/send";
+import { SITE } from "@/lib/site";
 import { markOnce } from "@/server/redis";
 import { sendPush } from "@/server/push/webpush";
 import { PLATFORM_LABEL } from "@/lib/format";
 import { formatPrice } from "@/lib/currency";
 import { meetsCondition } from "@/lib/alerts/condition";
+
+/** 메일 본문에 게임 제목(스토어가 준 문자열)을 넣으므로 태그로 읽히지 않게 막는다 */
+function escapeHtml(v: string): string {
+  return v.replace(/[&<>"']/g, (c) => `&#${c.charCodeAt(0)};`);
+}
 
 /** run-source → dispatch 로 넘기는 변동 1건 */
 export interface PriceChange {
@@ -99,6 +107,22 @@ export async function dispatchPriceAlerts(changes: PriceChange[]): Promise<Dispa
       if (!fresh) {
         summary.deduped++;
         continue;
+      }
+
+      if (alert.channel === "email" && mailConfigured()) {
+        const [u] = await db.select({ email: users.email }).from(users).where(eq(users.id, alert.userId));
+        if (u) {
+          try {
+            const link = `${process.env.NEXT_PUBLIC_APP_URL ?? ""}${payload.url}`;
+            await sendMail({ to: u.email, subject: `[${SITE.name}] ${payload.title}`, text: `${payload.body}\n${link}`, html: `<p>${escapeHtml(payload.body)}</p><p><a href="${escapeHtml(link)}">${escapeHtml(link)}</a></p>` });
+            summary.sent++;
+            await db.insert(alertDeliveries).values({ alertId: alert.id, snapshotId: change.snapshotId }).onConflictDoNothing();
+          } catch (e) {
+            summary.failed++;
+            console.warn(`[alerts] 메일 실패 (alert=${alert.id}): ${e instanceof Error ? e.message : e}`);
+          }
+          continue;
+        }
       }
 
       const subs = await db.select().from(pushSubscriptions).where(eq(pushSubscriptions.userId, alert.userId));

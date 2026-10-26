@@ -9,6 +9,8 @@ import "./globals.css";
 import { SITE } from "@/lib/site";
 import { THEME_INIT_SCRIPT } from "@/lib/theme";
 import { SessionProvider } from "@/components/auth/session-provider";
+import { LoginGateProvider } from "@/components/auth/login-gate";
+import { ToastProvider } from "@/components/ui/toast";
 import { SiteHeader } from "@/components/site-header";
 import { SiteFooter } from "@/components/site-footer";
 
@@ -47,6 +49,9 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         {/* 본문보다 먼저 실행돼야 흰 섬광이 없다 — 근거는 lib/theme 의 THEME_INIT_SCRIPT 주석 */}
         <script dangerouslySetInnerHTML={{ __html: THEME_INIT_SCRIPT }} />
         <SessionProvider>
+          {/* 토스트와 로그인 팝업(M-01)은 화면 어디서든 부르므로 세션 바로 안쪽에 한 번 선다 */}
+          <ToastProvider>
+          <LoginGateProvider>
           <SiteHeader />
           {/*
             flex flex-col 을 더한 이유(2026-09-22): flex-1 은 flex-grow 만 주고 CSS height 는 auto 로 남긴다.
@@ -58,6 +63,8 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           */}
           <main className="flex flex-1 flex-col">{children}</main>
           <SiteFooter />
+          </LoginGateProvider>
+          </ToastProvider>
         </SessionProvider>
       </body>
     </html>

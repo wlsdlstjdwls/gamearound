@@ -17,7 +17,7 @@ import { ROUTES } from "@/lib/routes";
 import { listWishlist, type WishlistItem } from "@/server/services/wishlist";
 import { NavChip, NavPendingScope, PendingRegion } from "@/components/ui/nav-pending";
 
-export const metadata: Metadata = { title: "위시리스트" };
+export const metadata: Metadata = { title: "내 찜 목록" };
 
 const SORTS = [
   { key: "sale", label: "할인 중 먼저" },
@@ -52,7 +52,7 @@ export default async function WishlistPage({ searchParams }: Props) {
       <NavPendingScope>
       <header className="flex flex-wrap items-end justify-between gap-x-6 gap-y-4">
         <div>
-          <PageHead title="위시리스트" />
+          <PageHead title="내 찜 목록" />
           <p className="mt-1.5 text-[13.5px] text-mut">
             {items.length}개 중 <span className="font-bold text-acc">{onSaleCount}개가 지금 할인 중</span>이에요.
           </p>
@@ -69,8 +69,8 @@ export default async function WishlistPage({ searchParams }: Props) {
       <PendingRegion>
       {items.length === 0 ? (
         <EmptyState
-          title="아직 찜한 게임이 없습니다"
-          description="게임 상세에서 위시리스트에 담으면 할인 시작 시 이 자리에서 먼저 보여 드립니다."
+          title="아직 찜한 게임이 없어요"
+          description="게임 상세에서 찜하면 할인 소식을 이 자리에서 먼저 보여 드려요."
           action={{ href: ROUTES.game, label: "할인 목록 보기" }}
         />
       ) : (

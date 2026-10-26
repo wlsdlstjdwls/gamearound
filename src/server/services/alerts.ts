@@ -177,6 +177,51 @@ export async function deleteAlert(id: string): Promise<void> {
   if (deleted.length === 0) throw new Error("알림을 찾을 수 없거나 권한이 없습니다");
 }
 
+/** 상세 화면 알림 팝업(M-02)이 채울 값 — 이 게임에 걸린 내 알림의 플랫폼과 받는 방법 */
+export type GameAlertSetting = { platforms: Platform[]; channel: AlertChannel; active: boolean };
+export type AlertChannel = (typeof priceAlerts.$inferSelect)["channel"];
+
+/**
+ * 이 게임에 걸린 내 알림을 팝업 모양으로 접는다. 플랫폼 없는 행(옛 "모든 플랫폼")은 지금 파는 플랫폼 전부로 편다 —
+ * 팝업은 플랫폼을 하나하나 고르는 모양이라 "전부" 를 따로 그릴 칸이 없다.
+ */
+export async function getMyGameAlert(gameId: string, allPlatforms: Platform[]): Promise<GameAlertSetting | null> {
+  const u = await requireUser();
+  const rows = await getDb().query.priceAlerts.findMany({
+    where: and(eq(priceAlerts.userId, u.id), eq(priceAlerts.gameId, gameId), eq(priceAlerts.isActive, true)),
+  });
+  if (rows.length === 0) return null;
+  const set = new Set<Platform>();
+  for (const r of rows) for (const p of r.platform === null ? allPlatforms : [r.platform]) set.add(p);
+  return { platforms: allPlatforms.filter((p) => set.has(p)), channel: rows[0].channel, active: true };
+}
+
+/**
+ * 팝업 저장 = 이 게임의 내 알림을 고른 플랫폼 수만큼으로 맞춘다(기획서 v2.0 6.3).
+ * 조건은 "가격이 내려가면" 이라 할인 발생(minDiscountPct 1)으로 건다. 목표가, 할인율 같은 세밀한 조건은
+ * 알림 화면(/alerts)의 폼이 맡는다 — 이미 그 조건이 걸린 플랫폼은 조건을 건드리지 않고 받는 방법만 바꾼다.
+ * 고르지 않은 플랫폼의 행과 옛 "모든 플랫폼" 행은 지운다. 한 왕복으로 끝내려고 트랜잭션 없이 순서만 지킨다 —
+ * 중간에 실패해도 남는 것은 "알림이 하나 더 있다" 라 사람이 보고 끌 수 있다.
+ */
+export async function saveGameAlert(gameId: string, platforms: Platform[], channel: AlertChannel): Promise<void> {
+  const u = await requireUser();
+  const db = getDb();
+  const game = await db.query.games.findFirst({ where: eq(games.id, gameId), columns: { id: true } });
+  if (!game) throw new Error("존재하지 않는 게임입니다");
+  const rows = await db.query.priceAlerts.findMany({ where: and(eq(priceAlerts.userId, u.id), eq(priceAlerts.gameId, gameId)) });
+  const keep = new Set(platforms);
+  const stale = rows.filter((r) => r.platform === null || !keep.has(r.platform)).map((r) => r.id);
+  if (stale.length > 0) await db.delete(priceAlerts).where(and(eq(priceAlerts.userId, u.id), inArray(priceAlerts.id, stale)));
+  for (const platform of platforms) {
+    const existing = rows.find((r) => r.platform === platform);
+    if (existing) {
+      await db.update(priceAlerts).set({ channel, isActive: true }).where(and(eq(priceAlerts.id, existing.id), eq(priceAlerts.userId, u.id)));
+    } else {
+      await db.insert(priceAlerts).values({ userId: u.id, gameId, platform, minDiscountPct: 1, targetPrice: null, channel, isActive: true });
+    }
+  }
+}
+
 /** 활성/비활성 토글. 결과 상태 반환 */
 export async function toggleAlert(id: string): Promise<{ isActive: boolean }> {
   const u = await requireUser();
