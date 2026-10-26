@@ -12,15 +12,18 @@ import {
   HOF_TOP,
   HOF_VIEWS_PER_POINT,
   kstYm,
+  prevYm,
   ROOKIE_LIKE_WEIGHT,
   ROOKIE_LIMIT,
   ROOKIE_VIEWS_PER_POINT,
   ROOKIE_WINDOW_DAYS,
+  scoreChangePct,
 } from "@/lib/indie/fame";
 import type { IndieCardDto } from "@/lib/indie/dto";
 import { cardColumns, isPublic, toCards } from "./read";
 
-export type RankedIndie = { card: IndieCardDto; score: number; likes: number };
+/** change: 지난달 대비 점수 변화(%). null 이면 지난달 점수가 없다(새로 진입). 역대 선정작 줄처럼 견줄 일이 없는 자리는 undefined */
+export type RankedIndie = { card: IndieCardDto; score: number; likes: number; change?: number | null };
 export type RookieIndie = { card: IndieCardDto; daysSince: number; likes: number };
 
 /** 한국 달의 시작, 끝(끝은 다음 달 1일 0시) */
@@ -109,6 +112,29 @@ async function liveRanking(ym: string): Promise<Array<{ id: string; score: numbe
   return rows;
 }
 
+/**
+ * 그 달 점수를 글마다 센다 — liveRanking 과 같은 식(찜 가중 + 조회 환산)이되 상위 자르기와 최소 찜 문턱은 없다.
+ * 순위표의 "지난달 대비" 를 세는 데 쓴다: 지난달에 10위 밖이었던 글도 지난달 점수는 있다.
+ */
+async function monthScores(ym: string, ids: string[]): Promise<Map<string, number>> {
+  if (ids.length === 0) return new Map();
+  const db = getDb();
+  const { start, end } = ymRange(ym);
+  const [likeRows, viewRows] = await Promise.all([
+    db
+      .select({ id: indiePostLikes.postId, n: sql<number>`count(*)::int` })
+      .from(indiePostLikes)
+      .where(and(inArray(indiePostLikes.postId, ids), gte(indiePostLikes.createdAt, start), lt(indiePostLikes.createdAt, end)))
+      .groupBy(indiePostLikes.postId),
+    db.select({ id: indieViewMonths.postId, views: indieViewMonths.views }).from(indieViewMonths).where(and(inArray(indieViewMonths.postId, ids), eq(indieViewMonths.ym, ym))),
+  ]);
+  const out = new Map<string, number>();
+  for (const r of likeRows) out.set(r.id, r.n * HOF_LIKE_WEIGHT);
+  // 정수 나눗셈 — liveRanking 의 views / HOF_VIEWS_PER_POINT::int 와 같게 내림한다
+  for (const r of viewRows) out.set(r.id, (out.get(r.id) ?? 0) + Math.floor(r.views / HOF_VIEWS_PER_POINT));
+  return out;
+}
+
 async function cardsById(ids: string[]): Promise<Map<string, IndieCardDto>> {
   if (ids.length === 0) return new Map();
   // 확정한 달의 순위표도 지금 공개인 글만 세운다 — 운영진이 숨긴 글이 지난달 명예의 전당에 남아 있으면
@@ -118,10 +144,12 @@ async function cardsById(ids: string[]): Promise<Map<string, IndieCardDto>> {
   return new Map(cardRows.flatMap((r) => (cards.has(r.slug) ? [[r.id, cards.get(r.slug)!] as const] : [])));
 }
 
-function attach(rows: Array<{ id: string; score: number; likes: number }>, cards: Map<string, IndieCardDto>): RankedIndie[] {
+/** prev 를 주면 지난달 대비 변화(change)도 붙인다 */
+function attach(rows: Array<{ id: string; score: number; likes: number }>, cards: Map<string, IndieCardDto>, prev?: Map<string, number>): RankedIndie[] {
   return rows.flatMap((r) => {
     const card = cards.get(r.id);
-    return card ? [{ card, score: r.score, likes: r.likes }] : [];
+    if (!card) return [];
+    return [prev ? { card, score: r.score, likes: r.likes, change: scoreChangePct(r.score, prev.get(r.id)) } : { card, score: r.score, likes: r.likes }];
   });
 }
 
@@ -129,7 +157,11 @@ function attach(rows: Array<{ id: string; score: number; likes: number }>, cards
 export async function getMonthRanking(ym: string): Promise<{ items: RankedIndie[]; finalized: boolean }> {
   const saved = await getDb().select({ id: hallOfFameMonths.postId, score: hallOfFameMonths.score }).from(hallOfFameMonths).where(eq(hallOfFameMonths.ym, ym)).orderBy(hallOfFameMonths.rank);
   const rows = saved.length > 0 ? saved.map((s) => ({ ...s, likes: 0 })) : await liveRanking(ym);
-  return { items: attach(rows, await cardsById(rows.map((r) => r.id))), finalized: saved.length > 0 };
+  const ids = rows.map((r) => r.id);
+  // 카드와 지난달 점수는 서로 기다릴 일이 없어 나란히 묻는다(Neon 왕복은 줄 세운 수가 속도를 정한다)
+  const [cards, prev] = await Promise.all([cardsById(ids), monthScores(prevYm(ym), ids)]);
+  const items = attach(rows, cards, prev);
+  return { items, finalized: saved.length > 0 };
 }
 
 /** 역대 선정작 — 확정된 달마다 1위 한 줄, 최신 달부터 */

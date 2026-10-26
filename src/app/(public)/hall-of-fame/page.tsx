@@ -55,6 +55,16 @@ const platformsOf = (item: RankedIndie) => item.card.platforms.map((p) => INDIE_
 
 const PLATFORM_PILL = "rounded-lg bg-surface-2 px-2.5 py-1 text-[12px] font-semibold text-ink-2";
 
+/**
+ * 지난달 대비 한 마디(목업 hrow 순위 아래 "27%"). 오르면 초록(--ok, 이 화면에서 "좋아졌다" 한 가지만 말한다), 내리면 흐린 글자.
+ * 지난달 점수가 없으면 "새로 진입". 견줄 일이 없는 자리(역대 선정작)는 change 가 없어 아무것도 안 세운다
+ */
+function ChangeNote({ change, className }: { change: number | null | undefined; className?: string }) {
+  if (change === undefined) return null;
+  const text = change === null ? M.newEntry : M.change(change);
+  return <span className={cn("text-[11.5px] font-semibold tabular-nums", change === null ? "text-acc" : change > 0 ? "text-ok" : "text-dim", className)}>{text}</span>;
+}
+
 /** 4위 아래 줄과 역대 선정작 줄이 같은 모양을 쓴다(목업 .hpr): 왼쪽 순위 칸, 작은 커버, 이름과 보조 줄, 오른쪽 끝 알약 */
 function RankRow({ to, rank, sub, item, right }: { to: string; rank: string; sub?: string; item: RankedIndie | null; right: React.ReactNode }) {
   return (
@@ -63,6 +73,7 @@ function RankRow({ to, rank, sub, item, right }: { to: string; rank: string; sub
         <span className="flex flex-col">
           <span className="text-[15px] font-extrabold text-ink">{rank}</span>
           {sub && <span className="text-[11.5px] font-semibold text-acc">{sub}</span>}
+          <ChangeNote change={item?.change} />
         </span>
         {item ? <Cover item={item} sizes="112px" className="hidden sm:block" /> : <span className="hidden sm:block" />}
         <span className="flex min-w-0 flex-col gap-0.5">
@@ -101,6 +112,7 @@ function Ranking({ items, label, finalized, isNow }: { items: RankedIndie[]; lab
             <span className="font-bold">{M.score(top.score)}</span>
             <span>{M.views(top.card.viewCount)}</span>
             <span>{M.likes(top.card.likeCount)}</span>
+            {top.change !== undefined && <span className="font-semibold">{top.change === null ? M.newEntry : M.changeFromLast(top.change)}</span>}
           </span>
         </Link>
         {rest.slice(0, 2).map((r, i) => (
@@ -117,6 +129,7 @@ function Ranking({ items, label, finalized, isNow }: { items: RankedIndie[]; lab
               <span>{M.score(r.score)}</span>
               <span>{M.views(r.card.viewCount)}</span>
               <span>{M.likes(r.card.likeCount)}</span>
+              <ChangeNote change={r.change} className="text-[12.5px]" />
             </span>
             <span className="text-[13px] font-semibold text-acc">{M.seePage}</span>
           </Link>

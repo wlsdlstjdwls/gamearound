@@ -32,6 +32,15 @@ export function prevYm(ym: string): string {
   return m === 1 ? `${y - 1}-12` : `${y}-${String(m - 1).padStart(2, "0")}`;
 }
 
+/**
+ * 지난달 대비 점수 변화(%). 지난달 점수가 없으면(0 이나 기록 없음) null — "새로 진입" 이다.
+ * 반올림한 정수다. 점수는 찜과 조회를 섞은 수라 소수점까지 적어도 더 알려 주는 게 없다.
+ */
+export function scoreChangePct(now: number, prev: number | null | undefined): number | null {
+  if (!prev || prev <= 0) return null;
+  return Math.round(((now - prev) / prev) * 100);
+}
+
 export function ymLabel(ym: string): string {
   const [y, m] = ym.split("-");
   return `${y}년 ${Number(m)}월`;
@@ -61,6 +70,10 @@ export const FAME_MESSAGES = {
   views: (n: number) => `조회 ${n.toLocaleString("ko-KR")}`,
   byDev: (name: string) => `개발자 ${name}`,
   rank: (n: number) => `${n}위`,
+  /** 지난달 대비 점수 변화(목업 hrow 의 순위 아래 한 줄). 화살표 글자 대신 부호로 방향을 말한다(AGENTS 4장) */
+  change: (pct: number) => (pct > 0 ? `+${pct}%` : `${pct}%`),
+  changeFromLast: (pct: number) => `지난달 대비 ${pct > 0 ? `+${pct}` : pct}%`,
+  newEntry: "새로 진입",
   thisMonth: (label: string) => `${label}(이번 달)`,
   firstThisMonth: "이번 달 1위",
   firstOf: (label: string) => `${label} 1위`,

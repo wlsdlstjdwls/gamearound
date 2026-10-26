@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { isYm, kstYm, prevYm, ymLabel } from "@/lib/indie/fame";
+import { isYm, kstYm, prevYm, scoreChangePct, ymLabel } from "@/lib/indie/fame";
 
 describe("fame 달 도우미", () => {
   it("한국 달 경계로 센다", () => {
@@ -12,5 +12,14 @@ describe("fame 달 도우미", () => {
     expect(ymLabel("2026-03")).toBe("2026년 3월");
     expect(isYm("2026-13")).toBe(false);
     expect(isYm("2026-09")).toBe(true);
+  });
+});
+
+describe("scoreChangePct", () => {
+  it("오른 만큼 정수 %", () => expect(scoreChangePct(127, 100)).toBe(27));
+  it("내리면 음수", () => expect(scoreChangePct(90, 100)).toBe(-10));
+  it("지난달 점수가 없으면 null(새로 진입)", () => {
+    expect(scoreChangePct(50, 0)).toBeNull();
+    expect(scoreChangePct(50, undefined)).toBeNull();
   });
 });
