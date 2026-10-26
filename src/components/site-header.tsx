@@ -6,65 +6,56 @@ import { AuthNav } from "@/components/auth/auth-nav";
 import { BrandLockup } from "@/components/ui/logo";
 import { SearchBox, SearchBoxFallback } from "@/components/search-box";
 import { SiteMenu } from "@/components/site-menu";
+import { SiteNav, SiteNavFallback } from "@/components/site-nav";
 import { SiteNavLink } from "@/components/site-nav-link";
-import { INDIE_MESSAGES } from "@/lib/indie/messages";
+import { SubNav } from "@/components/sub-nav";
 import { BellIcon } from "@/components/ui/icons";
 
 /**
- * 머리띠 — 좁은 화면은 한 줄(심볼 + 검색칸 + 햄버거), 넓은 화면은 한 줄
- * (락업 + 글자 메뉴 | 검색칸 + 개인 자리). 리디자인에서 가르는 기준이 바뀌었다:
- * 왼쪽은 "무엇을 보러 가나"(목록, 출시 예정), 오른쪽은 "내 것"(검색, 알림, 계정)이다.
+ * 머리띠 + 하위 메뉴 띠(2026-10-26 개편, 기획서 v2.0 3.1, 4.3).
+ * 머리띠 한 줄: 락업 + 상단 메뉴 넷 | 검색칸 + 개인 자리(알림, 계정). 왼쪽은 "무엇을 보러 가나", 오른쪽은 "내 것" 이다.
+ * 그 아래 하위 메뉴 띠는 머리띠 밖에 둔다 — 이유는 sub-nav 머리 주석(머리띠 높이 토큰).
  *
- * 줄바꿈을 아예 없앤 이유(2026-09-15): flex-wrap 으로 흘려보내면 390px 에서 셋이 각자 줄을 차지해
- * 붙어 있는 머리띠가 161px 까지 자랐다. 화면의 5분의 1이 어느 화면에서나 늘 빠지는 값이다.
- * 좁은 화면에서 자리를 만드는 방법은 둘이다 — 워드마크를 접고(심볼만), 메뉴를 시트로 접는다(site-menu).
- * 검색칸을 남은 자리에 두는 이유: 이 서비스에서 가장 자주 하는 일이고, 접으면 한 번 더 눌러야 한다.
+ * 상단 메뉴가 lg(1024px)부터 펴지는 이유: 메뉴 넷의 글자가 옛 셋보다 길어 640~1023 에서는 검색칸이 눌려 사라진다.
+ * 그 폭에서는 햄버거 시트가 메뉴 넷을 맡고, 하위 메뉴 띠는 어느 폭에서나 선다(기획서 4.1 태블릿 "메뉴가 두 줄로").
+ * 줄바꿈은 여전히 하지 않는다(2026-09-15) — flex-wrap 으로 흘리면 390px 에서 머리띠가 161px 까지 자랐다.
  */
 export function SiteHeader() {
   return (
-    // 테두리도 흰 판도 없다(2026-09-21 리디자인) — 머리띠는 본문과 같은 바탕에 얹힌 채 따라온다.
-    // 선을 지운 자리는 아래 본문의 첫 헤어라인이 대신 받는다. 판이 남아 있으면 스크롤할 때
-    // 본문이 흰 띠 밑으로 들어가는 것이 보여, 화면이 두 겹으로 읽힌다.
-    // 바탕이 흰색이 된 뒤(2026-09-29 커머스 정보형) 아래 헤어라인 한 줄을 되돌렸다 — 흰 머리띠가 흰 본문 위를
-    // 지나갈 때 경계가 없으면 스크롤한 글자가 머리띠 밑으로 사라지는 게 아니라 잘려 보인다
-    // 2026-10-07(사용자 선택) 흰 판으로 다시 올렸다. 바탕과 같은 색이면 머리띠가 어디서 끝나는지 선 하나에만 기댔다.
-    // "두 겹으로 읽힌다" 는 걱정은 맨 위에서는 그림자가 없고 스크롤한 뒤에만 뜨게(.header-lift) 해서 푼다 —
-    // 그때는 본문이 밑으로 들어가는 게 보이는 편이 오히려 맞는 말이다
-    <header className="header-lift sticky top-0 z-40 border-b border-line bg-surface">
-      <div className="mx-auto flex w-full max-w-[var(--page-w)] items-center gap-2 px-5 py-2.5 sm:gap-7 sm:px-6 sm:py-3.5">
-        {/* 좁은 화면에서는 심볼만 남는다. 글자가 접혀도 링크의 이름은 남아야 하므로 aria-label 로 못 박는다 */}
-        {/* tap: 좁은 화면에서는 심볼만 남아 26x32 였다 — 머리띠에서 가장 자주 눌리는 자리인데 손가락보다 작았다 */}
-        <Link href={ROUTES.home} aria-label={SITE.name} className="press tap inline-flex shrink-0 items-center text-ink">
-          <BrandLockup wordmarkClassName="hidden sm:inline" />
-        </Link>
+    <>
+      {/* 유리 면(--header-glass): 반투명 바탕 + 뒤 흐림. 스크롤한 본문이 머리띠 밑으로 비쳐 "떠 있다" 를 말하고,
+          그림자는 스크롤한 뒤에만 뜬다(.header-lift) — 맨 위에서는 본문과 한 장으로 읽힌다 */}
+      <header className="header-lift sticky top-0 z-40 border-b border-line-soft bg-[var(--header-glass)] backdrop-blur-[var(--header-blur)]">
+        <div className="mx-auto flex w-full max-w-[var(--page-w)] items-center gap-2 px-5 py-2.5 sm:gap-5 sm:px-6 sm:py-3.5 lg:gap-7">
+          {/* 좁은 화면에서는 심볼만 남는다. 글자가 접혀도 링크의 이름은 남아야 하므로 aria-label 로 못 박는다 */}
+          <Link href={ROUTES.home} aria-label={SITE.name} className="press tap inline-flex shrink-0 items-center text-ink">
+            <BrandLockup wordmarkClassName="hidden sm:inline" />
+          </Link>
 
-        {/* 글자 메뉴는 로고 바로 옆에 붙는다 — 둘이 한 덩어리로 "이 서비스와 그 안의 갈래" 를 말하고,
-            검색칸과 개인 자리(알림, 계정)는 반대쪽 끝으로 민다 */}
-        <nav aria-label="주요 메뉴" className="hidden shrink-0 items-center gap-1 text-[15px] font-semibold sm:flex">
-          <SiteNavLink href={ROUTES.game}>게임 목록</SiteNavLink>
-          <SiteNavLink href={ROUTES.upcoming}>출시 예정</SiteNavLink>
-          <SiteNavLink href={ROUTES.indie}>{INDIE_MESSAGES.navLabel}</SiteNavLink>
-          {/* "다음 세일" 은 메뉴에서 숨겼다(2026-09-21, 사용자 결정). 화면(/sales)과 자료는 그대로라
-              주소로는 열린다 — 되살릴 때는 이 줄과 site-menu 의 LINKS 한 줄을 같이 되돌린다 */}
-        </nav>
+          {/* useSearchParams 를 쓰는 칸은 Suspense 안에 둔다 — 없으면 정적으로 뽑히는 화면이 프리렌더 단계에서 실패한다 */}
+          <Suspense fallback={<SiteNavFallback />}>
+            <SiteNav />
+          </Suspense>
 
-        {/* useSearchParams 를 쓰는 검색창은 Suspense 경계 안에 둔다 —
-            없으면 정적으로 뽑히는 화면(/_not-found 등)이 프리렌더 단계에서 실패한다 */}
-        <Suspense fallback={<SearchBoxFallback />}>
-          <SearchBox />
-        </Suspense>
+          <Suspense fallback={<SearchBoxFallback />}>
+            <SearchBox />
+          </Suspense>
 
-        <div className="hidden shrink-0 items-center gap-1.5 sm:flex">
-          {/* 위시리스트는 메뉴에서 숨겼다(2026-09-21, 사용자 결정). 화면(/wishlist)과 자료는 그대로라
-              주소로는 열린다 — 되살릴 때는 이 줄과 site-menu, auth/user-menu, 게임 상세의 찜 버튼을 같이 되돌린다 */}
-          <SiteNavLink href={ROUTES.alerts} icon={<BellIcon size={19} />} iconOnly>
-            알림
-          </SiteNavLink>
-          <AuthNav />
+          <div className="hidden shrink-0 items-center gap-1.5 sm:flex">
+            {/* 위시리스트는 메뉴에서 숨겼다(2026-09-21, 사용자 결정). 화면(/wishlist)과 자료는 그대로라
+                주소로는 열린다 — 되살릴 때는 이 줄과 site-menu, auth/user-menu, 게임 상세의 찜 버튼을 같이 되돌린다 */}
+            <SiteNavLink href={ROUTES.alerts} icon={<BellIcon size={19} />} iconOnly>
+              알림
+            </SiteNavLink>
+            <AuthNav />
+          </div>
+
+          <SiteMenu />
         </div>
-
-        <SiteMenu />
-      </div>
-    </header>
+      </header>
+      <Suspense fallback={null}>
+        <SubNav />
+      </Suspense>
+    </>
   );
 }

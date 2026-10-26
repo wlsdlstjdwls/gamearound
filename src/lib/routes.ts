@@ -57,6 +57,19 @@ export const ROUTES = {
   indie: "/indie",
   indieNew: "/indie/new",
   indieMine: "/indie/mine",
+  /**
+   * 기획서 v2.0 의 새 갈래(2026-10-26). 화면이 생기기 전까지는 "준비 중" 화면이 선다(components/coming-soon).
+   * 명예의 전당, 슈퍼루키를 /indie 아래에 두지 않은 이유: /indie/<slug> 가 인디 글 주소라 글 주소와 부딪힌다
+   */
+  hallOfFame: "/hall-of-fame",
+  rookies: "/rookies",
+  board: "/board",
+  boardReviews: "/board/reviews",
+  boardGuides: "/board/guides",
+  boardPromos: "/board/promos",
+  lounge: "/lounge",
+  loungeDevlogs: "/lounge/devlogs",
+  loungeQna: "/lounge/qna",
   /** 인디 홍보 글 신고, 게임 연결 확인 */
   adminIndie: "/admin/indie",
   /** 예약 특전 글 검토 — 게임을 못 이었거나 특전을 못 뽑은 글이 여기 남는다 */

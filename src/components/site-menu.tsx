@@ -5,7 +5,9 @@
 // 셋을 각자 줄로 흘려보내면 붙어 있는 머리띠가 161px 까지 자라 화면의 5분의 1을 늘 먹었고,
 // 그렇다고 위시리스트, 알림을 숨기면 그 두 화면으로 가는 길이 사라졌다. 접는 쪽이 둘 다 해결한다.
 //
-// 넓은 화면은 이 버튼을 쓰지 않는다 — 거기서는 메뉴가 헤더에 그대로 펴져 있다(site-header).
+// 넓은 화면(lg 부터)은 이 버튼을 쓰지 않는다 — 거기서는 메뉴가 헤더에 그대로 펴져 있다(site-header).
+// 메뉴 넷과 하위 칸은 lib/nav 의 표를 그대로 읽는다(2026-10-26 개편). 하위 칸까지 펴는 이유: 시트를 연 사람은
+// "어디로 갈지" 를 이미 정한 사람이라, 메뉴만 보여 주고 한 번 더 고르게 하면 화면을 두 번 거친다.
 // 시트 본체, 끌어내려 닫기, 화면이 바뀌면 같이 닫기는 ui/sheet 가 맡는다.
 //
 // 계정 칸을 여기 같이 두는 이유: 좁은 화면에서는 아바타 드롭다운(auth/user-menu)이 서지 않는다.
@@ -19,21 +21,16 @@ import { ROUTES, signInPath } from "@/lib/routes";
 import { useSession } from "@/components/auth/session-provider";
 import { useSignOut } from "@/components/auth/use-sign-out";
 import { buttonClass } from "@/components/ui/button";
-import { BellIcon, CalendarIcon, GamepadIcon, LogOutIcon, MenuIcon, ShieldIcon, SlidersIcon, SpinnerIcon } from "@/components/ui/icons";
+import { BellIcon, LogOutIcon, MenuIcon, ShieldIcon, SlidersIcon, SpinnerIcon } from "@/components/ui/icons";
 import { Sheet } from "@/components/ui/sheet";
 import { Clamp } from "@/components/ui/tooltip";
-import { INDIE_MESSAGES } from "@/lib/indie/messages";
+import { NAV_SECTIONS, resolveNav } from "@/lib/nav";
 import { Tag } from "@/components/ui/tag";
 
 type MenuLink = { href: string; label: string; icon?: React.ReactNode; authOnly?: boolean; adminOnly?: boolean };
 
-/** 시트에 서는 차례. 헤더에 펴 두는 넓은 화면 메뉴(site-header)와 같은 순서를 지킨다 */
+/** 메뉴 넷 아래에 서는 내 자리. 위시리스트는 숨겼다(2026-09-21) — 넓은 화면 메뉴(site-header)와 같이 되돌린다 */
 const LINKS: MenuLink[] = [
-  { href: ROUTES.game, label: "게임 목록", icon: <GamepadIcon size={17} /> },
-  { href: ROUTES.upcoming, label: "출시 예정", icon: <CalendarIcon size={17} /> },
-  { href: ROUTES.indie, label: INDIE_MESSAGES.title, icon: <GamepadIcon size={17} /> },
-  // "다음 세일" 은 숨겼다(2026-09-21) — 넓은 화면 메뉴(site-header)와 같이 되돌린다
-  // 위시리스트는 숨겼다(2026-09-21) — 넓은 화면 메뉴(site-header)와 같이 되돌린다
   { href: ROUTES.alerts, label: "가격 알림", icon: <BellIcon size={17} /> },
   { href: ROUTES.settings, label: "설정", icon: <SlidersIcon size={17} />, authOnly: true },
   { href: ROUTES.admin, label: "관리자", icon: <ShieldIcon size={17} />, authOnly: true, adminOnly: true },
@@ -47,7 +44,7 @@ function Row({ href, label, icon, current }: MenuLink & { current: boolean }) {
       aria-current={current ? "page" : undefined}
       className={cn(
         "flex min-h-[var(--touch-target)] items-center gap-2.5 rounded-lg px-3 text-[14px] transition-colors",
-        // 머리띠와 같은 규칙 — 지금 보고 있는 줄은 브랜드 보라다(site-nav-link 주석).
+        // 머리띠와 같은 규칙 — 지금 보고 있는 줄은 브랜드 색이다(site-nav 주석).
         // 시트에서는 줄이 세로로 서서 글자색만으로는 약해 연한 브랜드 면을 같이 깐다
         current ? "bg-acc-soft font-semibold text-acc" : "text-mut hover:bg-surface-2 hover:text-ink",
       )}
@@ -66,7 +63,10 @@ export function SiteMenu() {
   const { user, status } = useSession();
   const { signOut, pending: signingOut } = useSignOut();
 
-  const isCurrent = (href: string) => (href === ROUTES.home ? pathname === href : pathname === href || pathname.startsWith(`${href}/`));
+  const isCurrent = (href: string) => pathname === href || pathname.startsWith(`${href}/`);
+  // 주소 조건(할인 게임의 sale=1)까지는 보지 않는다 — useSearchParams 를 쓰면 머리띠 전체가 Suspense 경계를 요구한다.
+  // 시트 안의 켜짐은 "대략 여기" 면 충분하고, 정확한 칸은 하위 메뉴 띠가 말한다
+  const { sub } = resolveNav(pathname, new URLSearchParams());
   const links = LINKS.filter((l) => (!l.authOnly || Boolean(user)) && (!l.adminOnly || user?.role === "admin"));
   const name = user?.displayName ?? user?.email ?? "";
 
@@ -75,7 +75,7 @@ export function SiteMenu() {
       title="메뉴"
       side="right"
       unstyledTrigger
-      triggerClassName="flex size-[var(--touch-target)] shrink-0 items-center justify-center rounded-lg text-ink outline-none transition-colors hover:bg-surface-2 focus-visible:ring-2 focus-visible:ring-ink sm:hidden"
+      triggerClassName="flex size-[var(--touch-target)] shrink-0 items-center justify-center rounded-lg text-ink outline-none transition-colors hover:bg-surface-2 focus-visible:ring-2 focus-visible:ring-ink lg:hidden"
       label={
         <>
           <MenuIcon size={21} />
@@ -83,10 +83,20 @@ export function SiteMenu() {
         </>
       }
     >
-      <nav aria-label="전체 메뉴" className="flex flex-col gap-0.5 pt-2">
-        {links.map((l) => (
-          <Row key={l.href} {...l} current={isCurrent(l.href)} />
+      <nav aria-label="전체 메뉴" className="flex flex-col gap-4 pt-2">
+        {NAV_SECTIONS.map((section) => (
+          <div key={section.key} className="flex flex-col gap-0.5">
+            <p className="px-3 pb-1 text-[12px] font-semibold text-dim">{section.label}</p>
+            {section.subs.map((s) => (
+              <Row key={s.href} href={s.href} label={s.label} current={s.href === sub?.href} />
+            ))}
+          </div>
         ))}
+        <div className="flex flex-col gap-0.5 border-t border-line pt-3">
+          {links.map((l) => (
+            <Row key={l.href} {...l} current={isCurrent(l.href)} />
+          ))}
+        </div>
       </nav>
 
       {/* 세션을 아직 모르는 동안은 아무것도 약속하지 않는다 — "로그인" 을 띄웠다가 지우면 깜빡인다 */}

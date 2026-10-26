@@ -1,0 +1,116 @@
+// 서비스 메뉴 단일 원천 — 상단 메뉴 넷과 메뉴마다의 하위 메뉴 띠(기획서 v2.0 3.1).
+// 머리띠(넓은 화면), 하위 메뉴 띠, 좁은 화면의 메뉴 시트가 모두 이 표를 읽는다. 세 곳이 따로 들고 있으면
+// 이름, 순서가 반드시 한 군데 어긋난다(옛 site-header 와 site-menu 가 그랬다).
+//
+// "use client" 파일이 아니다 — 서버 컴포넌트도 이 상수를 읽는다(AGENTS.md 6장, 2026-10-12 푸터 사고).
+//
+// 이름, 순서는 기획서 표를 그대로 따르되 가운뎃점만 쉼표로 바꿨다("질문, 피드백").
+// 아직 화면이 없는 칸(게시판, 라운지, 명예의 전당, 슈퍼루키)도 메뉴에는 선다 — 누르면 "준비 중" 화면이다.
+import { gamesHref } from "@/lib/games-query";
+import { ROUTES } from "@/lib/routes";
+
+export type NavSub = {
+  label: string;
+  href: string;
+  /**
+   * 경로가 같은 칸끼리 가르는 주소 조건. "할인 게임" 은 /games 에 sale=1 이 선 화면이라,
+   * 경로만 보면 "전체 게임" 과 구별이 안 된다. 정렬은 조건에 넣지 않는다 — 할인 게임에서 정렬을 바꿔도 할인 게임이다
+   */
+  query?: Record<string, string>;
+};
+
+export type NavSection = {
+  key: "explore" | "indie" | "board" | "lounge";
+  label: string;
+  /** 메뉴를 누르면 열리는 화면 = 첫 하위 칸(기획서 3.1) */
+  href: string;
+  subs: NavSub[];
+  /**
+   * 하위 칸 밖이지만 이 메뉴 소속인 경로(상세, 검색 등). "상세 화면에서도 소속 메뉴를 유지" 한다(기획서 4.3)
+   */
+  also?: string[];
+};
+
+export const NAV_SECTIONS: readonly NavSection[] = [
+  {
+    key: "explore",
+    label: "게임 탐색",
+    href: ROUTES.game,
+    subs: [
+      { label: "전체 게임", href: ROUTES.game },
+      { label: "출시 예정", href: ROUTES.upcoming },
+      { label: "할인 게임", href: gamesHref({}, { onSale: true, sort: "discount" }), query: { sale: "1" } },
+    ],
+    also: [ROUTES.search, ROUTES.sales, ROUTES.news, "/companies"],
+  },
+  {
+    key: "indie",
+    label: "인디 게임",
+    href: ROUTES.hallOfFame,
+    subs: [
+      { label: "명예의 전당", href: ROUTES.hallOfFame },
+      { label: "슈퍼루키", href: ROUTES.rookies },
+    ],
+  },
+  {
+    key: "board",
+    label: "게임 게시판",
+    href: ROUTES.board,
+    subs: [
+      { label: "게시판 홈", href: ROUTES.board },
+      { label: "리뷰", href: ROUTES.boardReviews },
+      { label: "공략", href: ROUTES.boardGuides },
+      { label: "홍보", href: ROUTES.boardPromos },
+    ],
+  },
+  {
+    key: "lounge",
+    label: "개발자 라운지",
+    href: ROUTES.lounge,
+    // 내가 만든 게임, 등록현황은 지금의 인디 글 화면(/indie, /indie/mine)이 맡는다 — 승인제로 바뀌기 전까지의 자리다
+    subs: [
+      { label: "라운지 홈", href: ROUTES.lounge },
+      { label: "내가 만든 게임", href: ROUTES.indie },
+      { label: "개발일지", href: ROUTES.loungeDevlogs },
+      { label: "질문, 피드백", href: ROUTES.loungeQna },
+      { label: "등록현황", href: ROUTES.indieMine },
+    ],
+  },
+];
+
+function pathOf(href: string): string {
+  const q = href.indexOf("?");
+  return q === -1 ? href : href.slice(0, q);
+}
+
+function under(pathname: string, path: string): boolean {
+  return pathname === path || pathname.startsWith(`${path}/`);
+}
+
+type Query = { get(name: string): string | null };
+
+/**
+ * 지금 주소가 어느 메뉴의 어느 칸인지. 칸이 여럿 맞으면 경로가 긴 쪽, 같으면 주소 조건까지 맞는 쪽이 이긴다
+ * (/indie/mine 은 "내가 만든 게임"(/indie)과 "등록현황"(/indie/mine) 둘 다에 걸린다).
+ * 소속 메뉴는 있지만 칸이 없는 화면(게임 상세)은 sub 가 null 이다 — 띠는 서되 아무 칸도 켜지 않는다.
+ */
+export function resolveNav(pathname: string, query: Query): { section: NavSection | null; sub: NavSub | null } {
+  let best: { section: NavSection; sub: NavSub; score: number } | null = null;
+  for (const section of NAV_SECTIONS) {
+    for (const sub of section.subs) {
+      const path = pathOf(sub.href);
+      if (!under(pathname, path)) continue;
+      const conds = Object.entries(sub.query ?? {});
+      if (conds.some(([k, v]) => query.get(k) !== v)) continue;
+      const score = path.length * 10 + conds.length;
+      if (!best || score > best.score) best = { section, sub, score };
+    }
+  }
+  if (best) {
+    // 상세(/games/<slug>)는 "전체 게임" 경로 아래지만 그 칸이 켜지면 목록에 있는 것처럼 읽힌다 — 정확히 그 경로일 때만 칸을 켠다
+    const detail = pathOf(best.sub.href) === ROUTES.game && pathname !== ROUTES.game;
+    return { section: best.section, sub: detail ? null : best.sub };
+  }
+  const section = NAV_SECTIONS.find((s) => s.also?.some((p) => under(pathname, p))) ?? null;
+  return { section, sub: null };
+}
