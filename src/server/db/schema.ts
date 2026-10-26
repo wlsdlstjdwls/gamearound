@@ -587,6 +587,11 @@ export const news = pgTable("news", {
   url: text("url").notNull().unique(),
   sourceName: text("source_name").notNull(),
   thumbnailUrl: text("thumbnail_url"),
+  /**
+   * 한 줄 요약(2026-10-26, 기획서 v2.0 S-05 와 목업의 뉴스 줄). 피드가 준 소개글을 잘라 둔 것이고 본문이 아니다(lib/news/summary 주석).
+   * 칸이 생기기 전에 모은 뉴스와 소개글을 안 주는 피드는 null 이다
+   */
+  summary: text("summary"),
   publishedAt: timestamp("published_at", { withTimezone: true }).notNull(),
   ...auditColumns(),
 }, (t) => [index("news_game_pub_idx").on(t.gameId, t.publishedAt)]);

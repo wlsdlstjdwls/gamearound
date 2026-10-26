@@ -109,7 +109,10 @@
 /**
  * v30(2026-10-07): 카드 대표 가격이 값 없는 행에 묶이던 것을 고쳤다(mappers 의 shouldReplaceBest). 옛 캐시엔 값 없는 카드가 남는다
  */
-export const DTO_CACHE_VERSION = "v30";
+/**
+ * v31(2026-10-26): 뉴스 DTO 에 한 줄 요약(summary)이 붙었다. 옛 캐시의 뉴스에는 그 칸이 없다
+ */
+export const DTO_CACHE_VERSION = "v31";
 
 /** 목록, 검색, 홈처럼 태그 무효화로 갱신되는 화면의 기본 재검증 주기(초) */
 export const LIST_REVALIDATE_SECONDS = 3600;

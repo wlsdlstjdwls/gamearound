@@ -148,6 +148,7 @@ export async function getGameBySlug(slug: string): Promise<GameDetail | null> {
       url: n.url,
       sourceName: n.sourceName,
       thumbnailUrl: n.thumbnailUrl,
+      summary: n.summary,
       publishedAt: n.publishedAt.toISOString(),
     })),
     // 공개 화면 "정보 출처"는 확정된 매핑(auto/manual)만. pending(검수 대기), none(미매칭 기록)은 노출하지 않는다

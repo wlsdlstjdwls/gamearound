@@ -47,6 +47,7 @@ async function listNewsRaw(page: number): Promise<NewsListResult> {
       url: n.url,
       sourceName: n.sourceName,
       thumbnailUrl: n.thumbnailUrl,
+      summary: n.summary,
       publishedAt: n.publishedAt.toISOString(),
       game: slug && titleEn ? { slug, title: titleKo ?? titleEn } : null,
     })),

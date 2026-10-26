@@ -62,6 +62,8 @@ export type NewsDto = {
   url: string;
   sourceName: string;
   thumbnailUrl: string | null;
+  /** 피드 소개글 한 줄(schema 의 news.summary). 없으면 줄을 세우지 않는다 */
+  summary: string | null;
   publishedAt: string;
   /** 홈 뉴스 목록에서 연결 게임 표시용 */
   game?: { slug: string; title: string } | null;

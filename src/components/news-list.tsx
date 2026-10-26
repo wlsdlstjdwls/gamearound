@@ -69,6 +69,12 @@ export function NewsList({ items, showGame = false }: { items: NewsDto[]; showGa
                 </Clamp>
                 <span className="sr-only"> (새 창에서 열림)</span>
               </a>
+              {/* 요약 한 줄(목업). 잘리면 Clamp 말풍선이 전문을 보여 준다 — 덮개 위로 올리는 이유는 제목 Clamp 와 같다 */}
+              {n.summary && (
+                <Clamp lines={1} className="relative z-10 mt-0.5 text-[12.5px] leading-[1.5] text-mut">
+                  {n.summary}
+                </Clamp>
+              )}
               <p className="mt-1 flex flex-wrap items-center gap-x-1.5 text-[11.5px] text-dim">
                 <span>{n.sourceName}</span>
                 <span aria-hidden>|</span>

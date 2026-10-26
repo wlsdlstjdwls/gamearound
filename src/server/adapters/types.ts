@@ -196,6 +196,8 @@ export interface NewsItem {
   url: string;
   sourceName: string;
   thumbnailUrl?: string;
+  /** 피드 소개글에서 뽑은 한 줄(lib/news/summary). 본문(content:encoded)은 읽지 않는다 */
+  summary?: string;
   publishedAt: string; // ISO datetime
 }
 

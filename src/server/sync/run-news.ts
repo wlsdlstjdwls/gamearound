@@ -1,5 +1,7 @@
 // 뉴스 실행 — RSS 피드를 모아 제목으로 게임에 연결한다.
+import { and, isNotNull, isNull, sql } from "drizzle-orm";
 import { games, news } from "@/server/db/schema";
+import { updatedBy } from "@/server/db/audit";
 import { getNewsAdapter } from "@/server/adapters";
 import { RSS_FEEDS } from "@/server/adapters/news-rss";
 import type { NewsItem } from "@/server/adapters/types";
@@ -56,11 +58,21 @@ export async function runNews(ctx: Ctx): Promise<void> {
         url: it.url,
         sourceName: it.sourceName,
         thumbnailUrl: it.thumbnailUrl ?? null,
+        summary: it.summary ?? null,
         publishedAt: new Date(it.publishedAt),
       };
     });
     try {
-      await db.insert(news).values(values).onConflictDoNothing({ target: news.url });
+      // 이미 있는 기사는 요약만 채운다 — 요약 칸이 생기기 전에 모은 기사가 피드에 남아 있는 동안 메워지고(2026-10-26),
+      // 이미 요약이 있거나 이번에도 없으면 건드리지 않는다(§7 값이 실제로 달라질 때만 UPDATE)
+      await db
+        .insert(news)
+        .values(values)
+        .onConflictDoUpdate({
+          target: news.url,
+          set: { summary: sql`excluded.summary`, ...updatedBy("cron:news") },
+          setWhere: and(isNull(news.summary), isNotNull(sql`excluded.summary`)),
+        });
       ctx.processed += values.length;
     } catch (e) {
       recordError(ctx, `rss:${feed.name}:db`, e);

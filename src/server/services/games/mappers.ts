@@ -329,11 +329,12 @@ export function toPublicGameDto(g: GameDetail): PublicGameDto {
     subscriptions: g.subscriptions,
     upgrades: g.upgrades,
     requirements: g.requirements,
-    news: g.news.map(({ title, url, sourceName, thumbnailUrl, publishedAt }) => ({
+    news: g.news.map(({ title, url, sourceName, thumbnailUrl, summary, publishedAt }) => ({
       title,
       url,
       sourceName,
       thumbnailUrl,
+      summary,
       publishedAt,
     })),
   };

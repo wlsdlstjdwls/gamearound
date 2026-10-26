@@ -1,10 +1,11 @@
 // 뉴스 RSS 어댑터 — 설계서 §4.1. RSS 2.0 / Atom 을 fast-xml-parser 로 파싱.
-// §10 저작권: 제목 + 링크 + 공식 썸네일만 추출, 본문은 저장하지 않는다.
+// §10 저작권: 제목 + 링크 + 공식 썸네일 + 소개글 한 줄만 추출, 본문(content:encoded)은 저장하지 않는다.
 import { XMLParser } from "fast-xml-parser";
 import { load } from "cheerio";
 import { AdapterError, type NewsAdapter, type NewsItem, type SearchCandidate } from "./types";
 import { createHttpClient } from "./http";
 import { decodeHtmlEntities } from "@/lib/html-entities";
+import { newsSummaryOf } from "@/lib/news/summary";
 
 /**
  * 피드 목록(§11-4 확정, 2026-09-11 응답 확인). externalId = name.
@@ -137,7 +138,8 @@ function parseRssItems(channel: Node, sourceName: string, now: Date): NewsItem[]
     if (!title || !url || !/^https?:\/\//.test(url)) continue;
     const publishedAt = toIso(text(raw.pubDate) ?? text(raw["dc:date"]), now);
     const thumbnailUrl = pickThumbnail(raw);
-    out.push({ title, url, sourceName, publishedAt, ...(thumbnailUrl ? { thumbnailUrl } : {}) });
+    const summary = newsSummaryOf(text(raw.description), title);
+    out.push({ title, url, sourceName, publishedAt, ...(thumbnailUrl ? { thumbnailUrl } : {}), ...(summary ? { summary } : {}) });
   }
   return out;
 }
@@ -158,7 +160,9 @@ function parseAtomEntries(feed: Node, sourceName: string, now: Date): NewsItem[]
     if (!title || !url || !/^https?:\/\//.test(url)) continue;
     const publishedAt = toIso(text(raw.published) ?? text(raw.updated), now);
     const thumbnailUrl = pickThumbnail(raw);
-    out.push({ title, url, sourceName, publishedAt, ...(thumbnailUrl ? { thumbnailUrl } : {}) });
+    // Atom 은 summary 가 소개글이다. content 는 본문이라 읽지 않는다
+    const summary = newsSummaryOf(text(raw.summary), title);
+    out.push({ title, url, sourceName, publishedAt, ...(thumbnailUrl ? { thumbnailUrl } : {}), ...(summary ? { summary } : {}) });
   }
   return out;
 }
