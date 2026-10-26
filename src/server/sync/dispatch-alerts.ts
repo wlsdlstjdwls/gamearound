@@ -11,9 +11,9 @@ import { mailConfigured, sendMail } from "@/server/mail/send";
 import { SITE } from "@/lib/site";
 import { markOnce } from "@/server/redis";
 import { sendPush } from "@/server/push/webpush";
-import { PLATFORM_LABEL } from "@/lib/format";
 import { formatPrice } from "@/lib/currency";
 import { meetsCondition } from "@/lib/alerts/condition";
+import { alertPayload } from "@/lib/alerts/payload";
 
 /** 메일 본문에 게임 제목(스토어가 준 문자열)을 넣으므로 태그로 읽히지 않게 막는다 */
 function escapeHtml(v: string): string {
@@ -95,9 +95,9 @@ export async function dispatchPriceAlerts(changes: PriceChange[]): Promise<Dispa
     if (alerts.length === 0) continue;
 
     const title = gp.titleKo ?? gp.titleEn;
+    // 제목과 본문은 가격 알림 화면의 미리보기와 같은 함수로 짓는다(lib/alerts/payload)
     const payload = {
-      title: discountPct > 0 ? `${title} 할인 중` : `${title} 가격이 내려갔어요`,
-      body: `${PLATFORM_LABEL[gp.platform] ?? gp.platform} ${formatPrice(change.newPrice, gp.currency)}${discountPct > 0 ? ` (${discountPct}% 할인)` : ""}`,
+      ...alertPayload({ gameTitle: title, platform: gp.platform, price: change.newPrice, currency: gp.currency, discountPct }),
       url: `/games/${gp.slug}`,
       tag: `price:${gp.id}`,
     };

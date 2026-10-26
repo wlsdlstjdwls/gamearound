@@ -32,6 +32,8 @@ export type AlertView = {
   options: Array<{ platform: Platform; currentPrice: number | null; currency: (typeof gamePlatforms.$inferSelect)["currency"] }>;
   status: AlertStatus;
   lastSentAt: Date | null;
+  /** 받는 방법 — 미리보기가 웹 알림과 이메일 중 무엇을 보여 줄지 가른다(기획서 v2.0 S-26) */
+  channel: AlertChannel;
 };
 
 /** 목록 머리의 숫자 셋. "최근" 은 발송 중복 방지 창(7일)과 같은 거리다 — 그 안이 "요즘 받은 알림" 이다 */
@@ -114,6 +116,7 @@ export async function listAlertViews(): Promise<AlertsOverview> {
       a.platform,
     ),
     lastSentAt: lastBy.get(a.id) ?? null,
+    channel: a.channel,
   }));
   return {
     views,
