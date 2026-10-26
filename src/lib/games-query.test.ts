@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
   DEFAULT_GAME_SORT,
+  defaultSortFor,
   gamesHref,
   isGameSort,
   joinPlatformValues,
@@ -198,5 +199,19 @@ describe("가격 상한", () => {
     expect(maxPriceLabel(5_000)).toBe("5천원 이하");
     expect(maxPriceLabel(10_000)).toBe("1만원 이하");
     expect(maxPriceLabel(30_000)).toBe("3만원 이하");
+  });
+});
+
+describe("defaultSortFor", () => {
+  it("할인 게임(할인 중, 최소 할인율)은 할인율순, 나머지는 인기순", () => {
+    expect(defaultSortFor({})).toBe("popular");
+    expect(defaultSortFor({ onSale: true })).toBe("discount");
+    expect(defaultSortFor({ minDiscount: 50 })).toBe("discount");
+  });
+
+  it("주소는 그 화면의 기본 정렬을 뺀다", () => {
+    expect(gamesHref({ onSale: true, sort: "discount" })).toBe(`${ROUTES.game}?sale=1`);
+    expect(gamesHref({ onSale: true, sort: "popular" })).toBe(`${ROUTES.game}?sale=1&sort=popular`);
+    expect(gamesHref({ sort: "popular" })).toBe(ROUTES.game);
   });
 });

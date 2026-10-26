@@ -1,4 +1,4 @@
-// 전체 게임 목록 — 플랫폼, 장르, 조건 필터 + 정렬 + 스크롤 페이징.
+// 전체 게임 목록 — 플랫폼, 장르, 조건 필터 + 정렬 + 쪽 번호.
 // 홈은 "오늘의 할인 12 + 최근 출시 12" 고정이라 카탈로그가 커져도 드러나지 않는다. 이 화면이 전수 열람 경로다.
 // 필터 상태는 전부 쿼리스트링 → 서버 컴포넌트만으로 동작하고 주소를 그대로 공유할 수 있다.
 //
@@ -6,7 +6,9 @@
 // 커버가 목록에서 게임을 알아보는 가장 빠른 단서라 리스트는 같은 값을 더 느리게 읽는 길이었고,
 // 그 선택 하나를 주소, 쿠키, 프록시 되돌리기까지 끌고 다니는 값이 컸다.
 //
-// 첫 페이지는 서버가 그리고, 그 아래는 스크롤이 이어 붙인다(components/games-infinite).
+// 쪽 번호로 넘긴다(2026-10-26, 기획서 v2.0 4.3: 24개 단위, 번호, 이전, 다음). 스크롤 이어 붙이기를 걷은 이유:
+// 쪽이 주소(?page=)에 실려야 뒤로 가기, 공유한 링크가 같은 자리로 돌아온다. 이어 붙인 장은 주소에 없어서
+// 상세에 들어갔다 돌아오면 첫 장부터 다시 내려가야 했다.
 import type { Metadata } from "next";
 import { Suspense } from "react";
 import { GameCard, highlightFromFilter } from "@/components/game-card";
@@ -16,9 +18,11 @@ import { nullIfDbUnavailable } from "@/lib/db-errors";
 import { GameFilters, type PersonalFilter } from "@/components/game-filters";
 import { FilterStateProvider, PendingResults } from "@/components/game-filters/optimistic";
 import { PendingBar } from "@/components/ui/nav-pending";
-import { GamesInfinite } from "@/components/games-infinite";
+import { Pagination } from "@/components/pagination";
+import { NavPendingScope, PendingRegion } from "@/components/ui/nav-pending";
+import { GAMES_GRID_CLASS } from "@/lib/games/grid";
 import { Page, PageHead } from "@/components/ui/page";
-import { DEFAULT_GAME_SORT, SORT_LABEL, gamesHref, parsePlatformValues, type GamesQuery } from "@/lib/games-query";
+import { defaultSortFor, SORT_LABEL, gamesHref, parsePlatformValues, type GamesQuery } from "@/lib/games-query";
 import { PLATFORM_LABEL } from "@/lib/format";
 import { isPlatformFamily, PLATFORM_FAMILY_LABEL, PLATFORM_ORDER } from "@/lib/platform";
 import { stagger } from "@/lib/motion";
@@ -29,7 +33,6 @@ import { getMyListPreset } from "@/server/services/profiles";
 import { GAMES_PAGE_SIZE, getGameFacets, listGames, type GameFacets, type GameListFilter } from "@/server/services/games";
 import { getRunningSteamSale, type RunningSaleDto } from "@/server/services/sales";
 import { FiltersSkeleton, GamesGridSkeleton } from "./skeletons";
-import { loadMoreGames } from "./actions";
 
 // Next 가 정적으로 읽는 값이라 리터럴이어야 한다 — 근거, 수치는 lib/cache 의 LIST_REVALIDATE_SECONDS 와 같게 유지
 export const revalidate = 3600;
@@ -100,6 +103,11 @@ async function Results({ filter }: { filter: GameListFilter }) {
   if (!result) return <DbUnavailable retryHref={gamesHref(filter)} />;
   const highlight = highlightFromFilter(filter);
 
+  // 쪽 번호를 손으로 고쳐 끝을 넘긴 주소 — 조건에는 게임이 있으니 "없다" 가 아니라 첫 쪽으로 돌려보낸다
+  if (result.items.length === 0 && result.total > 0) {
+    return <EmptyState title="이 쪽에는 게임이 없어요" description="쪽 번호가 끝을 넘었어요." action={{ href: gamesHref(filter, { page: 1 }), label: "첫 쪽으로" }} />;
+  }
+
   if (result.items.length === 0) {
     const filtered = isFiltered(filter);
     return (
@@ -114,16 +122,21 @@ async function Results({ filter }: { filter: GameListFilter }) {
   return (
     <>
       <h2 className="sr-only">
-        {SORT_LABEL[filter.sort ?? DEFAULT_GAME_SORT]} 게임 {result.total}개
+        {SORT_LABEL[filter.sort ?? defaultSortFor(filter)]} 게임 {result.total}개
       </h2>
-      {/* 첫 페이지는 여기서 서버가 그린다. 두 번째 장부터는 같은 ul 안에 클라이언트가 이어 붙인다 */}
-      <GamesInfinite load={loadMoreGames.bind(null, filter)} initialHasMore={result.page < result.totalPages}>
-        {result.items.map((g, i) => (
-          <li key={g.slug} className="enter-item" style={stagger(i)}>
-            <GameCard game={g} variant={filter.sort === "release" ? "release" : "discount"} highlight={highlight} />
-          </li>
-        ))}
-      </GamesInfinite>
+      {/* 쪽 번호는 누른 순간 켜지고 목록은 흐려진 채 기다린다(ui/nav-pending). 쪽을 바꾸면 맨 위로 간다(Pagination 의 scroll) */}
+      <NavPendingScope>
+        <PendingRegion className="flex flex-col gap-8">
+          <ul className={GAMES_GRID_CLASS}>
+            {result.items.map((g, i) => (
+              <li key={g.slug} className="enter-item" style={stagger(i)}>
+                <GameCard game={g} variant={filter.sort === "release" ? "release" : "discount"} highlight={highlight} />
+              </li>
+            ))}
+          </ul>
+        </PendingRegion>
+        <Pagination page={result.page} totalPages={result.totalPages} hrefFor={(n) => gamesHref(filter, { page: n })} />
+      </NavPendingScope>
     </>
   );
 }

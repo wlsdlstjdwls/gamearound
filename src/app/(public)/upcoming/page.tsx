@@ -8,7 +8,7 @@
 //
 // **한 화면에 한 달**이다(2026-10-07, 사용자 지적: "한 화면에 모든 달의 게임을 뿌리는게 문제 아닌가?").
 // 모든 달을 세우던 때는 달마다 24장으로 잘라야 해서 10월 233개 중 209개를 볼 길이 없었다. 지금은 달 탭이
-// 같은 화면에서 그 달만 다시 세우고(?month=), 그 달은 "더 보기" 로 끝까지 읽힌다. 질의도 고른 달 하나만 보낸다 —
+// 같은 화면에서 그 달만 다시 세우고(?month=), 그 달은 쪽 번호(?page=, 2026-10-26)로 끝까지 읽힌다. 질의도 고른 달 하나만 보낸다 —
 // 모든 달을 한 번에 그리면 달마다 질의와 카드가 쌓여 첫 화면이 무거워진다.
 //
 // **줄에서 카드로 바꿨다**(2026-09-21). 이 화면이 답하는 질문은 "무엇을 기다리나" 인데, 아직 못 사는
@@ -19,11 +19,12 @@ import type { Metadata } from "next";
 import { Suspense } from "react";
 import { DbUnavailable } from "@/components/db-unavailable";
 import { GameCard } from "@/components/game-card";
-import { GamesInfinite } from "@/components/games-infinite";
+import { Pagination } from "@/components/pagination";
+import { NavPendingScope, PendingRegion } from "@/components/ui/nav-pending";
 import { UpcomingMonthNav } from "@/components/upcoming-month-nav";
 import { Page, PageHead, SectionHead } from "@/components/ui/page";
 import { formatMonthLabel, formatReleaseDay } from "@/lib/format";
-import { firstParam } from "@/lib/games-query";
+import { firstParam, MAX_PARAM_LEN } from "@/lib/games-query";
 import { UPCOMING_MESSAGES as M, upcomingAddonParentText, upcomingCountText } from "@/lib/games/messages";
 import { HOME_GRID_CLASS } from "@/lib/games/grid";
 import { pickUpcomingMonth, UPCOMING_MONTH_PARAM } from "@/lib/games/upcoming";
@@ -32,7 +33,6 @@ import { nullIfDbUnavailable } from "@/lib/db-errors";
 import { ROUTES } from "@/lib/routes";
 import { getUpcomingAddons, getUpcomingMonthPage, getUpcomingMonthPicks, getUpcomingMonths, UPCOMING_ADDON_LIMIT, UPCOMING_PAGE_SIZE } from "@/server/services/games";
 import { GamesGridSkeleton } from "@/app/(public)/games/skeletons";
-import { loadMoreUpcoming } from "./actions";
 
 // Next 가 정적으로 읽는 값이라 리터럴이어야 한다 — lib/cache 의 LIST_REVALIDATE_SECONDS 와 같게 유지
 export const revalidate = 3600;
@@ -44,26 +44,47 @@ export const metadata: Metadata = {
 
 type Props = { searchParams: Promise<Record<string, string | string[] | undefined>> };
 
+/** 주소의 page 는 사람이 손으로 고치는 값이라 무엇이 와도 1 이상 정수로 떨어뜨린다 */
+function readPage(raw: string | undefined): number {
+  const n = Number(raw?.slice(0, MAX_PARAM_LEN));
+  return Number.isFinite(n) && n > 1 ? Math.floor(n) : 1;
+}
+
+function upcomingHref(monthKey: string, page: number): string {
+  const params = new URLSearchParams({ [UPCOMING_MONTH_PARAM]: monthKey });
+  if (page > 1) params.set("page", String(page));
+  return `${ROUTES.upcoming}?${params.toString()}`;
+}
+
 /**
- * 고른 달 = 기대작 한 줄 + 날짜순 전체(2026-10-07). 서버가 첫 장을 그리고, 그 아래는 이어 붙이기가 맡는다(games-infinite).
+ * 고른 달 = 기대작 한 줄 + 날짜순 전체(2026-10-07). 날짜순은 쪽 번호로 넘긴다(목록 화면과 같은 이유, games/page 머리 주석).
+ * 기대작 줄은 첫 쪽에만 선다 — 둘째 쪽부터는 날짜순을 이어 읽는 중이라 같은 줄이 다시 서면 처음으로 돌아간 것처럼 보인다.
  * 기대작은 날짜순에서 빠진다(services/games/upcoming 의 picksCte) — 한 화면에 같은 카드가 두 번 서지 않는다.
  * 두 질의를 나란히 보낸다 — 줄 세우면 Neon 왕복이 둘이 되고, 화면 속도는 질의 수가 아니라 줄 세운 왕복 수가 정한다.
  * 기대작이 없는 달은 소제목도 세우지 않는다 — "날짜순 전체" 한 마디만 서면 무엇과 갈라 둔 것인지가 없다.
  */
-async function MonthGames({ monthKey }: { monthKey: string }) {
-  const loaded = await nullIfDbUnavailable(Promise.all([getUpcomingMonthPicks(monthKey), getUpcomingMonthPage(monthKey, 1)]));
+async function MonthGames({ monthKey, monthTotal, page }: { monthKey: string; monthTotal: number; page: number }) {
+  const loaded = await nullIfDbUnavailable(Promise.all([getUpcomingMonthPicks(monthKey), getUpcomingMonthPage(monthKey, page)]));
   if (!loaded) return <DbUnavailable retryHref={ROUTES.upcoming} />;
-  const [picks, { items, hasMore }] = loaded;
+  const [allPicks, { items }] = loaded;
+  const picks = page === 1 ? allPicks : [];
+  // 날짜순에서 기대작은 빠진다(picksCte) — 쪽 수는 그 달 전체에서 기대작을 뺀 수로 센다
+  const totalPages = Math.max(Math.ceil((monthTotal - allPicks.length) / UPCOMING_PAGE_SIZE), 1);
   const list = (
-    <GamesInfinite load={loadMoreUpcoming.bind(null, monthKey)} initialHasMore={hasMore} gridClass={HOME_GRID_CLASS}>
-      {items.map((entry, i) => (
-        <li key={entry.game.slug} className="enter-item" style={stagger(picks.length + i)}>
-          <GameCard game={entry.game} variant="release" releaseText={formatReleaseDay(entry.releaseDate)} />
-        </li>
-      ))}
-    </GamesInfinite>
+    <NavPendingScope>
+      <PendingRegion>
+        <ul className={HOME_GRID_CLASS}>
+          {items.map((entry, i) => (
+            <li key={entry.game.slug} className="enter-item" style={stagger(picks.length + i)}>
+              <GameCard game={entry.game} variant="release" releaseText={formatReleaseDay(entry.releaseDate)} />
+            </li>
+          ))}
+        </ul>
+      </PendingRegion>
+      <Pagination page={page} totalPages={totalPages} hrefFor={(n) => upcomingHref(monthKey, n)} />
+    </NavPendingScope>
   );
-  if (picks.length === 0) return list;
+  if (picks.length === 0) return <div className="flex flex-col gap-8">{list}</div>;
 
   return (
     <div className="flex flex-col gap-8">
@@ -80,7 +101,7 @@ async function MonthGames({ monthKey }: { monthKey: string }) {
       {items.length > 0 && (
         <section aria-labelledby="upcoming-rest-heading" className="flex flex-col gap-3.5">
           <SectionHead id="upcoming-rest-heading" as="h3" size="sub" title={M.restTitle} />
-          {list}
+          <div className="flex flex-col gap-8">{list}</div>
         </section>
       )}
     </div>
@@ -118,7 +139,9 @@ async function UpcomingAddons() {
 export default async function UpcomingPage({ searchParams }: Props) {
   // 주소부터 읽는다 — 그래야 Next 가 이 화면을 요청 때 그리는 화면으로 알고 빌드 때 미리 그리지 않는다.
   // 질의를 먼저 보내면 빌드가 DB 를 친다. 캐시 없는 빌드 머신에서 DB 가 안 열리면 배포가 통째로 실패한다(2026-10-13 실측)
-  const requested = firstParam((await searchParams)[UPCOMING_MONTH_PARAM]);
+  const sp = await searchParams;
+  const requested = firstParam(sp[UPCOMING_MONTH_PARAM]);
+  const page = readPage(firstParam(sp.page));
   const months = await nullIfDbUnavailable(getUpcomingMonths());
   if (!months) {
     return (
@@ -148,8 +171,8 @@ export default async function UpcomingPage({ searchParams }: Props) {
         <section aria-labelledby="upcoming-month-heading" className="flex flex-col gap-4">
           <SectionHead id="upcoming-month-heading" title={formatMonthLabel(active.key)} note={upcomingCountText(active.total)} />
           {/* 달이 바뀌면 경계를 새로 세운다 — 키가 같으면 React 가 갱신으로 보고 옛 달을 새 달이 올 때까지 둔다(games/page 와 같은 이유) */}
-          <Suspense key={active.key} fallback={<GamesGridSkeleton cards={Math.min(active.total, UPCOMING_PAGE_SIZE)} gridClass={HOME_GRID_CLASS} />}>
-            <MonthGames monthKey={active.key} />
+          <Suspense key={`${active.key}:${page}`} fallback={<GamesGridSkeleton cards={Math.min(active.total, UPCOMING_PAGE_SIZE)} gridClass={HOME_GRID_CLASS} />}>
+            <MonthGames monthKey={active.key} monthTotal={active.total} page={page} />
           </Suspense>
         </section>
       )}

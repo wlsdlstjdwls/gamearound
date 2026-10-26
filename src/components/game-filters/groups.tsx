@@ -24,7 +24,7 @@
 import { PLATFORM_FAMILIES, PLATFORM_FAMILY_LABEL, FAMILY_PLATFORMS, familyOf, PLATFORM_ORDER, PLATFORM_VALUE_ORDER, type PlatformFamily } from "@/lib/platform";
 import { ChipNavLink } from "@/components/ui/chip-nav";
 import { Select, type SelectOption } from "@/components/ui/select";
-import { DEFAULT_GAME_SORT, GAME_SORTS, SORT_LABEL, gamesHref, joinPlatformValues, parsePlatformValues, type GamesQuery } from "@/lib/games-query";
+import { defaultSortFor, GAME_SORTS, SORT_LABEL, gamesHref, joinPlatformValues, parsePlatformValues, type GamesQuery } from "@/lib/games-query";
 import { GAMES_FILTER_MESSAGES } from "@/lib/games/messages";
 import type { GameFacets } from "@/server/services/games";
 import type { RunningSaleDto } from "@/server/services/sales";
@@ -135,7 +135,7 @@ export function Groups({
         <span aria-hidden className={FILTER_LABEL}>
           정렬
         </span>
-        <Select label="정렬" hideLabel value={filter.sort ?? DEFAULT_GAME_SORT} options={sortOptions} scroll={false} onNavigate={go} size="lg" />
+        <Select label="정렬" hideLabel value={filter.sort ?? defaultSortFor(filter)} options={sortOptions} scroll={false} onNavigate={go} size="lg" />
       </div>
 
       <Group label="플랫폼" sheet={sheet}>

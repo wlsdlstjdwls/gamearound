@@ -17,6 +17,15 @@ export type GameSort = (typeof GAME_SORTS)[number];
  */
 export const DEFAULT_GAME_SORT: GameSort = "popular";
 
+/**
+ * 화면별 기본 정렬(기획서 v2.0 5.1). 할인 게임(할인 중, 최소 할인율이 걸린 목록)은 할인율순, 나머지는 인기순이다.
+ * 같은 /games 경로라 정렬 기본값이 주소 조건을 따라 바뀐다 — 읽는 쪽(서비스, 필터)과 쓰는 쪽(gamesHref)이 모두 이 함수를 본다.
+ * 출시 예정은 다른 화면(/upcoming)이라 여기 없다 — 그 화면은 늘 출시일순이다.
+ */
+export function defaultSortFor(q: { onSale?: boolean; minDiscount?: number }): GameSort {
+  return q.onSale || q.minDiscount ? "discount" : DEFAULT_GAME_SORT;
+}
+
 export const SORT_LABEL: Record<GameSort, string> = {
   popular: "인기순",
   discount: "할인율순",
@@ -172,7 +181,7 @@ export function parseGamesQuery(sp: Record<string, string | string[] | undefined
 
 /**
  * 현재 필터에서 일부만 바꾼 /games URL.
- * 기본값(정렬=discount, page=1, 빈 필터)은 빼서 같은 화면이 항상 같은 주소가 되게 한다 — 캐시 키가 쪼개지지 않는다.
+ * 기본값(그 화면의 기본 정렬, page=1, 빈 필터)은 빼서 같은 화면이 항상 같은 주소가 되게 한다 — 캐시 키가 쪼개지지 않는다.
  */
 export function gamesHref(current: GamesQuery, patch: Partial<GamesQuery> = {}): string {
   const next = { ...current, ...patch };
@@ -191,7 +200,7 @@ export function gamesHref(current: GamesQuery, patch: Partial<GamesQuery> = {}):
   if (next.korean) params.set("ko", "1");
   if (next.rig) params.set("rig", next.rig);
   if (next.all) params.set("all", "1");
-  if (next.sort && next.sort !== DEFAULT_GAME_SORT) params.set("sort", next.sort);
+  if (next.sort && next.sort !== defaultSortFor(next)) params.set("sort", next.sort);
   if (next.page && next.page > 1) params.set("page", String(next.page));
   const qs = params.toString();
   return qs ? `${ROUTES.game}?${qs}` : ROUTES.game;

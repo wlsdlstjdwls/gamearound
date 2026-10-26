@@ -271,7 +271,6 @@ export const PARENT_LINK_LABEL = "본편";
 /** 목록 화면(스크롤 페이징) 문구 */
 export const GAMES_LIST_MESSAGES = {
   loadingMore: "더 불러오는 중이에요",
-  loadMore: "더 보기",
   loadFailed: "더 불러오지 못했어요.",
   retry: "다시 시도",
   /** 끝을 말해 주지 않으면 사람이 바닥에서 계속 기다린다 */

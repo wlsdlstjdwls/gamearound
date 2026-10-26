@@ -9,7 +9,7 @@ import { SkeletonPage } from "@/components/ui/skeleton";
 import { GAMES_GRID_CLASS } from "@/lib/games/grid";
 import { FiltersSkeleton } from "@/app/(public)/games/skeletons";
 
-const SKELETON_CARDS = 12; // 1, 2, 3열 모두 줄이 꽉 차는 수 — 실물 한 장(GAMES_PAGE_SIZE 36)의 첫 화면만 채우면 된다
+const SKELETON_CARDS = 12; // 1, 2, 3열 모두 줄이 꽉 차는 수 — 실물 한 장(GAMES_PAGE_SIZE 24)의 첫 화면만 채우면 된다
 
 export default function GamesLoading() {
   return (

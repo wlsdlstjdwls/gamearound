@@ -8,7 +8,7 @@ import { getDb } from "@/server/db/client";
 import { gameGenres, gamePlatforms, games, genres, HOME_REGION, type Platform } from "@/server/db/schema";
 import { visiblePlatformsOnly } from "@/server/db/visibility";
 import { normalizeForSearch } from "@/lib/slug";
-import { DEFAULT_GAME_SORT, parsePlatformValues, type GamesQuery } from "@/lib/games-query";
+import { defaultSortFor, parsePlatformValues, type GamesQuery } from "@/lib/games-query";
 import { expandPlatformValues } from "@/lib/platform";
 import { HLTB_RANK_OFFSET, HLTB_RANK_STEPS, POPULARITY_RANK_MAX_AGE_DAYS, REVIEW_RANK_STEPS } from "@/lib/games/popularity";
 import type { GameSummary } from "./dto";
@@ -19,7 +19,8 @@ import { parseRig } from "@/lib/hardware/rig";
 import { titleMatch, titleMatches } from "./title-search";
 import { DTO_CACHE_VERSION, LIST_REVALIDATE_SECONDS } from "@/lib/cache";
 
-export const GAMES_PAGE_SIZE = 36;
+/** 기획서 v2.0 4.3: 게임 목록은 24개 단위 쪽 번호. 1, 2, 3, 4열 모두 줄이 꽉 찬다 */
+export const GAMES_PAGE_SIZE = 24;
 
 /**
  * 정렬 키, 쿼리스트링 변환은 lib/games-query (순수 유틸)에 있다 — 여기서는 조회만 한다.
@@ -141,7 +142,7 @@ function hltbRankExpr() {
 async function listGamesRaw(filter: GameListFilter): Promise<GameListResult> {
   const db = getDb();
   const page = Math.max(filter.page ?? 1, 1);
-  const sort = filter.sort ?? DEFAULT_GAME_SORT;
+  const sort = filter.sort ?? defaultSortFor(filter);
   const picked = expandPlatformValues(parsePlatformValues(filter.platform));
   const agg = platformAgg(picked);
 
@@ -269,7 +270,7 @@ function listKey(f: GameListFilter): string[] {
     f.korean ? "ko" : "",
     // 기기는 티어로 실려서 같은 급의 컴퓨터를 쓰는 사람들이 한 캐시를 나눠 쓴다(lib/hardware/rig)
     f.rig ?? "",
-    f.sort ?? DEFAULT_GAME_SORT,
+    f.sort ?? defaultSortFor(f),
     String(f.page ?? 1),
   ];
 }
