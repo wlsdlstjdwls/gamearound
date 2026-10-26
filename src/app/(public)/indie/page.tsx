@@ -5,6 +5,7 @@
 // 예전의 어두운 머리 판(IndieListHero)은 내렸다 — 목업은 이 화면을 게시판 형제로 그린다. 판 컴포넌트는 지우지 않고 둔다.
 // 개발 단계 칩은 목업에 없지만 남겼다(검색 줄 아래 한 줄) — 데모가 있는 게임만 보고 싶은 사람이 쓰던 기능이다.
 // 검색은 GET 폼이라 자바스크립트 없이도 간다 — 주소(?q=)가 곧 상태다(게시판 검색과 같은 규칙).
+import { HOME_GRID_CLASS } from "@/lib/games/grid";
 import { DbUnavailable } from "@/components/db-unavailable";
 import { DB_DOWN, orDbDown } from "@/lib/db-errors";
 import type { Metadata } from "next";
@@ -125,7 +126,7 @@ export default async function IndiePage({ searchParams }: Props) {
               <EmptyState title={stage ? M.emptyStage : M.empty} description={M.emptyDescription} action={{ href: ROUTES.indieNew, label: M.register }} />
             )
           ) : (
-            <ul className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+            <ul className={HOME_GRID_CLASS}>
               {result.items.map((post, i) => (
                 <li key={post.slug} className="enter-item" style={stagger(i)}>
                   <IndieCard post={post} />

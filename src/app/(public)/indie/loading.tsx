@@ -1,12 +1,13 @@
-// 인디 목록 뼈대 — 제목과 설명, 명예의 전당 안내 띠, 단계 칩 다섯, 인디 카드 격자(1, 2, 3열).
+// 인디 목록 뼈대 — 제목과 설명, 명예의 전당 안내 띠, 단계 칩 다섯, 인디 카드 격자(1, 2, 3, 4열, 목업처럼 넓은 화면 한 줄 넷).
 // 게임 카드 뼈대를 쓰지 않는 이유: 인디 카드는 제목 한 줄 + 한 줄 소개 두 줄 + 단계 배지 줄이라
 // 게임 카드(제목 두 줄 + 배지 + 값)와 줄 구성이 다르다. 커버와 껍데기는 같은 상수를 쓴다.
+import { HOME_GRID_CLASS } from "@/lib/games/grid";
 import { CARD_SHELL, COVER_CLASS } from "@/components/game-card";
 import { Bone, ChipsSkeleton, SkeletonPage } from "@/components/ui/skeleton";
 import { cn } from "@/lib/cn";
 import { INDIE_STAGES } from "@/lib/indie/constants";
 
-const SKELETON_CARDS = 6; // 3열 두 줄 — 첫 화면만 채우면 된다
+const SKELETON_CARDS = 8; // 4열 두 줄 — 첫 화면만 채우면 된다
 
 export default function IndieLoading() {
   return (
@@ -17,7 +18,7 @@ export default function IndieLoading() {
       </div>
       <Bone className="h-[112px] rounded-[var(--radius-md)] sm:h-[76px]" />
       <ChipsSkeleton count={INDIE_STAGES.length + 1} />
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+      <div className={HOME_GRID_CLASS}>
         {Array.from({ length: SKELETON_CARDS }).map((_, i) => (
           <div key={i} className={CARD_SHELL} aria-hidden>
             <div className={cn(COVER_CLASS, "skeleton")} />
