@@ -3,6 +3,7 @@
 // 바깥 누름(mousedown + touchstart), Esc 로 닫힌다. 읽음 표시는 후속이다(기획서 M-03) — 지금은 목록만 보여 준다.
 // 목록은 열 때마다 묻는다: 헤더는 모든 화면에 서서, 마운트마다 물으면 화면 이동마다 DB 왕복이 하나씩 붙는다.
 import Link from "next/link";
+import { usePathname } from "next/navigation";
 import { useEffect, useId, useRef, useState } from "react";
 import { useSession } from "@/components/auth/session-provider";
 import { BellIcon } from "@/components/ui/icons";
@@ -15,6 +16,8 @@ type Item = { id: string; kind: string; body: string; link: string | null; creat
 
 export function NotificationBell() {
   const { user } = useSession();
+  // 로그인 뒤 보던 화면으로 돌아오게 한다 — 홈으로 보내면 종을 누른 자리를 다시 찾아가야 한다
+  const pathname = usePathname();
   const [open, setOpen] = useState(false);
   const [items, setItems] = useState<Item[] | null>(null);
   const wrap = useRef<HTMLDivElement>(null);
@@ -67,12 +70,12 @@ export function NotificationBell() {
         <BellIcon size={19} />
       </button>
       {open && (
-        <div id={panelId} role="dialog" aria-label={M.title} className="animate-rise absolute right-0 top-[calc(100%+8px)] z-50 w-[min(360px,calc(100vw-32px))] overflow-hidden rounded-[var(--radius-md)] bg-surface shadow-3 ring-1 ring-line">
+        <div id={panelId} role="dialog" aria-label={M.title} className="animate-rise fixed inset-x-4 top-[var(--header-h)] z-50 sm:absolute sm:inset-x-auto sm:right-0 sm:top-[calc(100%+8px)] sm:w-[min(360px,calc(100vw-32px))] overflow-hidden rounded-[var(--radius-md)] bg-surface shadow-3 ring-1 ring-line">
           <p className="border-b border-line-soft px-4 py-3 text-[14px] font-bold text-ink">{M.title}</p>
           {!user ? (
             <div className="flex flex-col gap-3 px-4 py-4">
               <p className="text-[13px] leading-[1.6] text-mut">{M.signInLead}</p>
-              <Link href={signInPath(ROUTES.home)} className="w-fit text-[13.5px] font-semibold text-acc hover:underline">
+              <Link href={signInPath(pathname || ROUTES.home)} className="w-fit text-[13.5px] font-semibold text-acc hover:underline">
                 {M.signIn}
               </Link>
             </div>

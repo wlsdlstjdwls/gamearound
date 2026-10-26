@@ -45,9 +45,16 @@ export function SiteHeader() {
           <div className="hidden shrink-0 items-center gap-1.5 sm:flex">
             {/* 테마 단추는 로그인과 상관없이 선다 — 설정 화면은 로그인한 사람에게만 열린다(theme-switch 주석) */}
             <ThemeSwitch />
-            {/* 종은 알림함 팝오버다(기획서 v2.0 M-03). 가격 알림 관리로 가는 길은 팝오버 맨 아래에 있다 */}
+          </div>
+
+          {/* 종은 알림함 팝오버다(기획서 v2.0 M-03). 가격 알림 관리로 가는 길은 팝오버 맨 아래에 있다.
+              좁은 화면에서도 남긴다(2026-10-26) — 테마, 계정 단추와 함께 숨겼더니 휴대폰에서는 알림함에 갈 길이 없었다.
+              목업 390 도 종을 머리띠에 둔다 */}
+          <div className="flex shrink-0 items-center gap-1.5">
             <NotificationBell />
-            <AuthNav />
+            <div className="hidden sm:contents">
+              <AuthNav />
+            </div>
           </div>
 
           <SiteMenu />
