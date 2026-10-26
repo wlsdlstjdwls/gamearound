@@ -13,27 +13,36 @@ import { Clamp } from "@/components/ui/tooltip";
 import { PLATFORM_LABEL, WEEKDAY_LABEL } from "@/lib/format";
 import { UPCOMING_MESSAGES as M } from "@/lib/games/messages";
 import { brandKeyOf, PLATFORM_BRANDS, type PlatformBrand } from "@/lib/platform";
-import type { UpcomingEntry } from "@/server/services/games";
+import type { GameSummary } from "@/server/services/games";
+
+/** 줄 하나. 날짜가 null 이면 출시일 미정 상자의 줄이다(날짜 칸에 "미정") */
+type RowEntry = { game: GameSummary; releaseDate: string | null };
 
 /** 줄에 적을 기기 이름. 같은 기기의 세대(PS5, PS4)는 한 이름으로 묶는다 */
-function platformNames(entry: UpcomingEntry): string {
+function platformNames(entry: RowEntry): string {
   const keys = [...new Set(entry.game.platforms.map(brandKeyOf))];
   return keys.map((k) => (k in PLATFORM_BRANDS ? PLATFORM_BRANDS[k as PlatformBrand].label : (PLATFORM_LABEL[k] ?? k))).join(", ");
 }
 
-export function UpcomingRow({ entry }: { entry: UpcomingEntry }) {
+export function UpcomingRow({ entry }: { entry: RowEntry }) {
   const title = entry.game.titleKo ?? entry.game.titleEn;
-  const [y, m, d] = entry.releaseDate.split("-").map(Number);
+  const [y, m, d] = (entry.releaseDate ?? "").split("-").map(Number);
   const weekday = y && m && d ? WEEKDAY_LABEL[new Date(Date.UTC(y, m - 1, d)).getUTCDay()] : "";
   const genres = entry.game.genres ?? [];
 
   return (
     <div className="group relative flex items-center gap-3 rounded-[var(--radius-md)] bg-surface p-3 shadow-hair transition-shadow hover:shadow-2 sm:gap-4 sm:p-3.5">
       <div className="flex w-12 shrink-0 flex-col items-center sm:w-14">
-        <span className="text-[24px] font-extrabold leading-none tabular-nums tracking-[-0.04em] text-ink sm:text-[28px]">{d}</span>
-        <span className="mt-1 text-[11.5px] text-dim">
-          {m}월 | {weekday}
-        </span>
+        {entry.releaseDate ? (
+          <>
+            <span className="text-[24px] font-extrabold leading-none tabular-nums tracking-[-0.04em] text-ink sm:text-[28px]">{d}</span>
+            <span className="mt-1 text-[11.5px] text-dim">
+              {m}월 | {weekday}
+            </span>
+          </>
+        ) : (
+          <span className="text-[15px] font-bold text-dim">{M.tbaDay}</span>
+        )}
       </div>
       <span className="relative aspect-[460/215] w-[96px] shrink-0 overflow-hidden rounded-[var(--radius-inset)] bg-surface-3 shadow-hair sm:w-[132px]">
         <CoverImage src={entry.game.coverUrl} alt="" sizes="132px" />

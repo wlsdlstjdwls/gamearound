@@ -93,6 +93,9 @@ export function parseAppDetails(rawKo: unknown, appid: string, rawEn?: unknown):
   const titleKoRaw = ko.name.trim();
   const titleKo = titleKoRaw && titleKoRaw !== titleEn ? titleKoRaw : null;
   const releaseDate = parseSteamDate(en?.release_date?.date) ?? parseSteamDate(ko.release_date?.date);
+  // 출시 예정인데 날짜 글자가 "Coming soon", "2027" 처럼 날짜로 안 읽히면 미정이다
+  const comingSoon = en?.release_date?.coming_soon ?? ko.release_date?.coming_soon;
+  const releaseTba = comingSoon === undefined ? undefined : comingSoon && releaseDate === null;
 
   const parentRaw = ko.fullgame?.appid ?? en?.fullgame?.appid;
   const parentExternalId = parentRaw === undefined || parentRaw === null ? null : String(parentRaw);
@@ -111,6 +114,7 @@ export function parseAppDetails(rawKo: unknown, appid: string, rawEn?: unknown):
     discountPct,
     currentVersion: null,
     releaseDate,
+    releaseTba,
     contentType: isDlc ? "dlc" : "game",
     parentExternalId,
     dlcExternalIds,

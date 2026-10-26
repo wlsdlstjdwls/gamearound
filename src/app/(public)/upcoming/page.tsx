@@ -27,6 +27,7 @@ import { Pagination } from "@/components/pagination";
 import { NavPendingScope, PendingRegion } from "@/components/ui/nav-pending";
 import { UpcomingMonthNav } from "@/components/upcoming-month-nav";
 import { UpcomingRow } from "@/components/upcoming-row";
+import { UpcomingTba } from "@/components/upcoming-tba";
 import { NavChip } from "@/components/ui/nav-pending";
 import { Page, SectionHead } from "@/components/ui/page";
 import { formatMonthLabel, formatReleaseDay } from "@/lib/format";
@@ -238,6 +239,11 @@ export default async function UpcomingPage({ searchParams }: Props) {
                   </Suspense>
                 </section>
               )}
+
+              {/* 출시일 미정 상자는 월별 보기에만 선다(목업). 달 목록이 비어도 선다 — 날짜 있는 게임이 없을 때 미정 게임이 유일한 답일 수 있다 */}
+              <Suspense key={`tba:${filterKey}`} fallback={null}>
+                <UpcomingTba filter={filter} />
+              </Suspense>
             </>
           )}
         </PendingRegion>

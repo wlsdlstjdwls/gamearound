@@ -285,6 +285,15 @@ describe("출시일 소독", () => {
     expect(withSaneReleaseDate(snapshot({ platform: "ps5", releaseDate: "2026-12-31" }), now).releaseDate).toBe("2026-12-31");
   });
 
+  // 기획서 v2.0 4.4 "출시 예정(미정)" — 자리표시를 버린 행은 미정이고, 쓸 수 있는 날짜가 남은 행은 미정이 아니다
+  it("미래 자리표시를 버리면 미정으로, 날짜가 남으면 미정이 아닌 것으로 본다", () => {
+    const now = new Date("2026-10-12T00:00:00Z");
+    expect(withSaneReleaseDate(snapshot({ releaseDate: "2027-12-31" }), now).releaseTba).toBe(true);
+    expect(withSaneReleaseDate(snapshot({ releaseDate: "9998-12-31" }), now).releaseTba).toBe(true);
+    expect(withSaneReleaseDate(snapshot({ releaseDate: "2026-11-05", releaseTba: true }), now).releaseTba).toBe(false);
+    expect(withSaneReleaseDate(snapshot({ releaseDate: "1969-12-31" }), now).releaseTba).toBeUndefined();
+  });
+
   it("값이 없으면 스냅샷을 그대로 돌려준다", () => {
     const s = snapshot();
     expect(withSaneReleaseDate(s)).toBe(s);

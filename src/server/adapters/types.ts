@@ -33,6 +33,11 @@ export interface StoreSnapshot {
   currentVersion?: string | null;
   releaseDate?: string | null;   // ISO date (YYYY-MM-DD)
   /**
+   * "출시 예정인데 날짜가 미정" 이면 true, 출시했거나 날짜가 있으면 false(schema 의 release_tba 주석).
+   * 주는 소스만 채운다 — steam 의 coming_soon. 안 주는 소스는 undefined 라 기존 값을 덮지 않는다
+   */
+  releaseTba?: boolean | null;
+  /**
    * 이 스토어가 "추가 콘텐츠 있음"이라고 알려준 값. xbox Properties.HasAddOns 가 준다.
    * DLC 목록을 못 가져오는 플랫폼에서도 유무만은 표시하기 위한 별도 신호다.
    */

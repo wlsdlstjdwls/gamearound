@@ -411,8 +411,17 @@ export const UPCOMING_MESSAGES = {
   leadAll: "출시 예정 게임을 가까운 날짜부터 한눈에 모아 보세요.",
   /** 줄 오른쪽 상태 꼬리표 */
   rowTag: "출시 예정",
+  /** 출시일 미정 상자(기획서 v2.0 4.4, 목업 월별 보기 아래). 날짜 칸에는 tbaDay 가 선다 */
+  tbaTitle: "출시일 미정",
+  tbaNote: "일정이 공개되면 월별 일정에 자동으로 표시돼요.",
+  tbaDay: "미정",
   basis: "스토어마다 출시일이 다르면 가장 이른 날짜로 세웠어요. PlayStation 은 출시일을 공개하지 않아 다른 스토어에도 없는 게임은 담기지 않아요.",
 } as const;
+
+/** 미정 상자 제목 옆 건수. 넘치는 몫은 건수로만 알린다(services/games/upcoming 의 UPCOMING_TBA_LIMIT) */
+export function upcomingTbaCountText(total: number): string {
+  return `미정 게임 ${total.toLocaleString("ko-KR")}개`;
+}
 
 /** 추가 콘텐츠 카드의 부제 — 무엇에 붙는 콘텐츠인지. DLC 제목만으로는 본편을 모르는 게 흔하다("DayZ Badlands" 는 알아도 "Kinship" 은 모른다) */
 export function upcomingAddonParentText(parentTitle: string): string {

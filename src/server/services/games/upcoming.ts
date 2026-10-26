@@ -55,6 +55,15 @@ export type UpcomingEntry = {
   releaseDate: string;
 };
 
+/** 출시일 미정 게임 묶음(기획서 v2.0 4.4, 목업 월별 보기 아래 "출시일 미정" 상자). total 은 items 보다 클 수 있다 */
+export type UpcomingTba = { items: GameSummary[]; total: number };
+
+/**
+ * 미정 상자에 펴는 줄 수. 한 달 한 장과 같은 수다 — 상자는 접혀 있다가 펴는 곁가지라 쪽 번호까지는 두지 않고,
+ * 넘치는 몫은 건수로만 알린다
+ */
+export const UPCOMING_TBA_LIMIT = 24;
+
 /** 달 탭 한 칸. key 는 "2026-10" — 라벨은 화면이 붙인다 */
 export type UpcomingMonthTab = { key: string; total: number };
 
@@ -228,6 +237,32 @@ async function getUpcomingGenresRaw(): Promise<string[]> {
   return res.rows.map((r) => r.name);
 }
 
+/**
+ * 출시일 미정 게임. **날짜가 비었다고 미정이 아니다** — PlayStation 은 이미 나온 게임에도 날짜를 안 준다(schema 의 release_tba 주석).
+ * 그래서 스토어가 미정이라고 말한 행(release_tba)이 하나라도 있고, 어느 스토어에도 날짜가 없는 게임만 센다.
+ * 한 스토어라도 날짜를 주면 그 게임은 달 탭에 선다 — 두 곳에 같은 게임이 서지 않는다.
+ * 목록 안 조건은 달 탭과 같은 조각(filterConds)으로 건다. 순서는 스토어 인기 순번, 그다음 이름이다 — 미정 게임은 날짜로 세울 수 없다.
+ */
+async function getUpcomingTbaRaw(filter: UpcomingFilter = {}): Promise<UpcomingTba> {
+  const visible = visiblePlatformsOnly();
+  const picked = filter.platform ? expandPlatformValues(parsePlatformValues(filter.platform)) : [];
+  const res = await getDb().execute<{ game_id: string; total: number }>(sql`
+    select ${gamePlatforms.gameId} as game_id, count(*) over ()::int as total
+    from ${gamePlatforms}
+    inner join ${games} on ${games.id} = ${gamePlatforms.gameId}
+    where ${mainGamesOnly()}
+      and ${eq(gamePlatforms.region, HOME_REGION)}
+      ${visible ? sql`and ${visible}` : sql``}
+      ${filterConds(filter, picked)}
+    group by ${gamePlatforms.gameId}, ${games.titleEn}
+    having bool_or(${gamePlatforms.releaseTba}) and count(${gamePlatforms.releaseDate}) = 0
+    order by min(${gamePlatforms.popularityRank}) asc nulls last, ${games.titleEn} asc
+    limit ${UPCOMING_TBA_LIMIT}::int
+  `);
+  const entries = await toUpcomingEntries(res.rows.map((r) => ({ game_id: r.game_id, release_date: "" })));
+  return { items: entries.map((e) => e.game), total: Number(res.rows[0]?.total ?? 0) };
+}
+
 /** 고른 (게임, 날짜) 순서 그대로 카드 DTO 를 채운다 */
 export async function toUpcomingEntries(dates: { game_id: string; release_date: string }[]): Promise<UpcomingEntry[]> {
   if (dates.length === 0) return [];
@@ -280,6 +315,12 @@ export const getUpcomingGenres = unstable_cache(getUpcomingGenresRaw, [DTO_CACHE
 
 /** 홈 출시 예정 줄. 달 탭과 같은 태그, 같은 수명 */
 export const getUpcomingSoon = unstable_cache(getUpcomingSoonRaw, [DTO_CACHE_VERSION, "upcoming-soon"], {
+  tags: ["home"],
+  revalidate: LIST_REVALIDATE_SECONDS,
+});
+
+/** 출시일 미정 상자. 달 탭과 같은 태그, 같은 수명 */
+export const getUpcomingTba = unstable_cache(getUpcomingTbaRaw, [DTO_CACHE_VERSION, "upcoming-tba"], {
   tags: ["home"],
   revalidate: LIST_REVALIDATE_SECONDS,
 });

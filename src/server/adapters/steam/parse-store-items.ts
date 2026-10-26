@@ -137,6 +137,8 @@ export function parseStoreItems(rawKo: unknown, rawEn?: unknown): Map<string, St
       discountName: steamDiscountLabel(discount?.discount_description),
       currentVersion: null,
       releaseDate: unixToIsoDate(item.release?.steam_release_date),
+      // appdetails 경로와 같은 규칙 — 출시 예정인데 날짜가 없으면 미정
+      releaseTba: item.release?.is_coming_soon === undefined ? undefined : item.release.is_coming_soon && !item.release.steam_release_date,
       // 두 신호를 모두 본다 — appdetails 경로와 같은 규칙이다(type 이 게임인데 본편만 가리키는 확장팩이 있다).
       // 체험판은 부모를 가리켜도 DLC 가 아니라 체험판이라 먼저 가른다. 사운드트랙은 그 반대다 —
       // 부모가 있으면 그 게임의 추가 콘텐츠로 서는 편이 맞고, 부모가 없을 때만 독립 상품이다

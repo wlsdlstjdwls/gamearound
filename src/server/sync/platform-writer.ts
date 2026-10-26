@@ -14,7 +14,7 @@ import { RELEASE_DATE_MAX_YEARS_AHEAD, RELEASE_DATE_MIN_YEAR, RELEASE_DATE_PRECI
 // 덱 등급, OS 네이티브 지원(steam 만 준다)도 같은 규칙이다: 밸브가 아직 안 본 게임은 null 로 와 기존 등급을 지키고,
 // 다른 스토어는 필드 자체가 없어 건드리지 않는다.
 // 한국어 지원(koText, koVoice)도 같다 — 음성을 구분해 주지 않는 스토어는 undefined 라 다른 경로(사양 응답)가 채운 값을 지킨다
-const PLATFORM_FIELDS = ["storeExternalId", "storeUrl", "releaseDate", "currentVersion", "listPrice", "currentPrice", "discountPct", "hasAddOns", "currency", "titleCode", "deckCompat", "nativeWindows", "nativeMac", "nativeLinux", "koText", "koVoice"] as const;
+const PLATFORM_FIELDS = ["storeExternalId", "storeUrl", "releaseDate", "releaseTba", "currentVersion", "listPrice", "currentPrice", "discountPct", "hasAddOns", "currency", "titleCode", "deckCompat", "nativeWindows", "nativeMac", "nativeLinux", "koText", "koVoice"] as const;
 const PRICE_FIELDS = new Set<string>(["listPrice", "currentPrice", "discountPct"]);
 
 /** ISO 문자열 → Date. 빈 값/파싱 실패는 null */
@@ -108,6 +108,9 @@ export type PlatformRow = typeof gamePlatforms.$inferSelect;
  * 출시예정 목록의 정렬과 집계가 그 한 줄에 끌려간다. 값을 고쳐 쓰지 않고 **버리는** 이유:
  * 무엇으로 고칠지 우리가 알 수 없고, 버리면 PLATFORM_FIELDS 의 널 무시 규칙을 타 기존 값이 살아남는다.
  * 미래의 12-31 도 같은 이유로 버린다 — "그해 중" 의 자리표시다(constants 의 RELEASE_DATE_YEAR_PLACEHOLDER_MD).
+ *
+ * 미정 표시(releaseTba)도 여기서 맞춘다. 미래 자리표시를 버렸다면 그 스토어는 "나오긴 하는데 날짜는 모른다" 고 말한 것이라 미정이고,
+ * 쓸 수 있는 날짜가 남았다면 미정이 아니다. 소스가 따로 준 값보다 이 판정이 앞선다 — 날짜가 있는데 미정이라는 행은 말이 안 된다.
  */
 export function withSaneReleaseDate(snapshot: StoreSnapshot, now: Date = new Date()): StoreSnapshot {
   const raw = snapshot.releaseDate;
@@ -119,7 +122,10 @@ export function withSaneReleaseDate(snapshot: StoreSnapshot, now: Date = new Dat
     !RELEASE_DATE_PRECISE_PLATFORMS.has(snapshot.platform) &&
     raw.slice(5, 10) === RELEASE_DATE_YEAR_PLACEHOLDER_MD &&
     raw.slice(0, 10) > now.toISOString().slice(0, 10);
-  return inRange && !yearPlaceholder ? snapshot : { ...snapshot, releaseDate: null };
+  if (inRange && !yearPlaceholder) return { ...snapshot, releaseTba: false };
+  // 먼 미래(xbox 9998년)와 미래 12-31 은 미정이다. 너무 옛날 값은 미정이 아니라 그냥 못 믿을 값이라 말하지 않는다
+  const futurePlaceholder = !Number.isNaN(year) && year >= RELEASE_DATE_MIN_YEAR;
+  return { ...snapshot, releaseDate: null, releaseTba: futurePlaceholder ? true : snapshot.releaseTba };
 }
 
 /** 이 플랫폼 행에 무엇을 쓸지. 실행은 호출부가 한다 */
@@ -157,6 +163,7 @@ export function planPlatform(ctx: Ctx, existing: PlatformRow | undefined, gameId
         storeExternalId: snapshot.storeExternalId,
         storeUrl: snapshot.storeUrl,
         releaseDate: snapshot.releaseDate ?? null,
+        releaseTba: snapshot.releaseTba ?? null,
         currentVersion: snapshot.currentVersion ?? null,
         listPrice: misread ? null : snapshot.listPrice,
         currentPrice: misread ? null : snapshot.currentPrice,

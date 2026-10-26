@@ -207,6 +207,12 @@ export const gamePlatforms = pgTable("game_platforms", {
   storeExternalId: text("store_external_id"),
   storeUrl: text("store_url"),
   releaseDate: date("release_date"),
+  /**
+   * 스토어가 "아직 안 나왔고 날짜는 미정" 이라고 말한 행(기획서 v2.0 4.4 "출시 예정(미정)", 2026-10-26).
+   * release_date 가 빈 것만으로는 미정을 알 수 없다 — PlayStation 은 이미 나온 게임에도 날짜를 안 준다(2026-10-26 실측:
+   * 날짜가 전부 빈 게임 141개 대부분이 출시작). null 은 "그 스토어가 말하지 않음" 이다
+   */
+  releaseTba: boolean("release_tba"),
   currentVersion: text("current_version"),
   /**
    * 가격은 통화의 최소 단위 정수다 — KRW 는 원(소수 없음), USD 는 센트(6.99달러 = 699).
