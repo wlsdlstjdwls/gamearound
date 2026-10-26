@@ -15,13 +15,13 @@
 // **낱말은 ADMIN_NAV 한곳에서만 정한다.** 메뉴에서 본 말과 들어간 화면의 제목이 다르면
 // 같은 곳인지 의심하게 된다.
 //
-// 고른 칸은 **브랜드 보라 면**이다. 앞서 쓰던 --surface-3 은 메뉴가 얹힌 --surface-2 와 한 단
+// 고른 칸은 **브랜드 파랑 면**이다. 앞서 쓰던 --surface-3 은 메뉴가 얹힌 --surface-2 와 한 단
 // 차이라 훑어서는 어느 칸이 켜져 있는지 보이지 않았다. 칩과 같은 짝(bg-acc + text-on-ink)이다.
 //
 // **좁은 화면은 왜 바닥 띠인가**(2026-09-22, "상단 메뉴가 보기 불편하다" → "모바일앱처럼 하단에"):
 // 앞 판은 칸 일곱을 머리 위에서 가로로 미는 한 줄에 늘어놓았다. 화면에 들어오는 건 둘 반이고
 // 미끄러진다는 표시가 없어서 나머지가 있다는 사실 자체가 안 보였다. 세 번째 칸은 늘 글자가 잘린 채
-// 서 있었고, 지금 보는 화면이 오른쪽 끝이면 그 표시(보라 면)조차 화면 밖이었다.
+// 서 있었고, 지금 보는 화면이 오른쪽 끝이면 그 표시(파랑 면)조차 화면 밖이었다.
 // 바닥은 손가락이 이미 가 있는 자리라 칸이 다섯이면 미는 일 없이 전부 닿는다.
 //
 // **다섯 칸에 일곱을 어떻게 넣나**: 넣지 않는다. 자주 가는 넷을 세우고 마지막 칸은 더보기다.
@@ -41,7 +41,7 @@ import { MenuIcon } from "@/components/ui/icons";
 import { ADMIN_NAV } from "@/lib/admin/messages";
 import { COMING_SOON } from "@/lib/messages/coming-soon";
 import { ROUTES } from "@/lib/routes";
-import { BoxIcon, BuildingIcon, CheckListIcon, LinkIcon, LogIcon, PulseIcon, StoreIcon } from "@/components/admin/nav-icons";
+import { BoxIcon, BuildingIcon, ChatIcon, CheckListIcon, LinkIcon, LogIcon, PulseIcon, StoreIcon } from "@/components/admin/nav-icons";
 import { ComingSoon } from "@/components/ui/coming-soon";
 import { CalendarIcon, GamepadIcon } from "@/components/ui/icons";
 
@@ -60,7 +60,7 @@ export interface AdminNavCounts {
 type Pick = { n: number; capped?: boolean };
 
 /**
- * 배지 한 개. `tone` 은 뜻이다 — "남음" 은 쌓인 일(채운 보라), "진행" 은 이미 손댄 일(브랜드 보라).
+ * 배지 한 개. `tone` 은 뜻이다 — "남음" 은 쌓인 일(채운 파랑), "진행" 은 이미 손댄 일(브랜드 파랑).
  * 할 일 칸만 둘을 단다(할 일 칸 건수, 하는 중 칸 건수). 한 숫자로 합치면 "시작도 안 한 일" 과
  * "하다 만 일" 이 섞여 어느 쪽이 밀렸는지 못 읽는다.
  */
@@ -108,11 +108,20 @@ const GROUPS: Array<{ key: string; title?: string; items: Item[] }> = [
     ],
   },
   {
+    // 사람이 올린 것을 보는 자리(2026-10-26, 기획서 v2.0 2.2 운영진: 등록 승인, 노출 관리, 부적절한 글 숨김).
+    // 게시글은 배지가 없다 — 신고 장치가 없어 쌓이는 큐가 아니라 훑어보는 목록이다(admin/posts 머리 주석)
+    key: "community",
+    title: ADMIN_NAV.groupCommunity,
+    items: [
+      { href: ROUTES.adminIndie, label: ADMIN_NAV.indie, Icon: GamepadIcon, pick: (c) => ({ n: c.indie }) },
+      { href: ROUTES.adminPosts, label: ADMIN_NAV.posts, Icon: ChatIcon },
+    ],
+  },
+  {
     key: "etc",
     title: ADMIN_NAV.groupEtc,
     items: [
       { href: ROUTES.shopsAdmin, label: ADMIN_NAV.shops, Icon: StoreIcon, pick: (c) => ({ n: c.shops }) },
-      { href: ROUTES.adminIndie, label: ADMIN_NAV.indie, Icon: GamepadIcon, pick: (c) => ({ n: c.indie }) },
       {
         href: ROUTES.adminTasks,
         label: ADMIN_NAV.tasks,
@@ -155,11 +164,11 @@ function Badge({
     <span
       className={cn(
         "rounded-full px-1.5 py-px text-[11.5px] font-semibold tabular-nums",
-        // 고른 칸은 이미 보라 면이다 — 그 위에 주황 배지를 얹으면 색이 둘 다 소리친다.
+        // 고른 칸은 이미 파랑 면이다 — 그 위에 주황 배지를 얹으면 색이 둘 다 소리친다.
         // 같은 면 안에서 한 겹 밝은 자리로만 말한다
-        // 남음은 브랜드 보라를 채워 칠한다(2026-10-02, 사용자: "배지 색이 너무 구리다"). 호박(warn)은 "데이터 지연"
+        // 남음은 브랜드 파랑를 채워 칠한다(2026-10-02, 사용자: "배지 색이 너무 구리다"). 호박(warn)은 "데이터 지연"
         // 경고색이라 메뉴가 탁한 갈색 얼룩으로 보였고, 무채 회색으로 바꾸자 "흐리다" 했다 — 건수는 눈에 걸려야 한다.
-        // 진행은 옅은 보라로 둬 같은 칸의 두 배지가 채움과 옅음으로 갈린다
+        // 진행은 옅은 파랑로 둬 같은 칸의 두 배지가 채움과 옅음으로 갈린다
         active ? "bg-on-ink/20 text-on-ink" : tone === "doing" ? "bg-acc-soft text-acc" : "bg-acc text-on-ink",
         className,
       )}
@@ -230,7 +239,9 @@ function ItemBody({
  * 바닥 띠에 세울 칸. **GROUPS 에서 골라 온다** — 여기서 이름과 그림을 다시 적으면
  * 기둥과 띠가 다른 말을 하기 시작한다(주소만 적고 나머지는 원본에서 끌어온다).
  */
-const TAB_HREFS: readonly string[] = [ROUTES.admin, ROUTES.adminMatches, ROUTES.adminCompanies, ROUTES.adminTasks];
+// 2026-10-26: 회사 이름 자리에 인디 홍보를 세웠다. 등록 승인은 신청한 사람이 기다리는 줄이라 손에서 바로 닿아야 하고,
+// 회사 이름은 수집이 매일 다시 묻는 자리라 더보기에서 가도 늦지 않다(배지는 더보기 시트에도 선다)
+const TAB_HREFS: readonly string[] = [ROUTES.admin, ROUTES.adminMatches, ROUTES.adminIndie, ROUTES.adminTasks];
 const TABS = TAB_HREFS.map((href) => {
   const item = ITEMS.find((i) => i.href === href);
   if (!item) throw new Error(`바닥 띠에 세울 칸이 GROUPS 에 없다: ${href}`);

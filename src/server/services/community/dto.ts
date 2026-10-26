@@ -39,3 +39,19 @@ export type BoardHomeDto = {
   waiting: PostRowDto[];
   latestPromos: PostRowDto[];
 };
+
+/** 관리자 글 목록 한 줄(/admin/posts). 운영진은 글쓴이를 가려진 이름이 아니라 계정으로 가려야 해서 이메일을 함께 싣는다 */
+export type AdminPostRowDto = PostRowDto & { authorEmail: string; status: "published" | "hidden" };
+
+/** 관리자 댓글 목록 한 줄. 어느 글에 달렸는지와 그 글이 숨겨졌는지를 같이 본다 */
+export type AdminCommentRowDto = {
+  id: string;
+  body: string;
+  status: "published" | "hidden";
+  authorName: string;
+  authorEmail: string;
+  createdAt: Date;
+  postTitle: string;
+  postHref: string;
+  postStatus: "published" | "hidden";
+};

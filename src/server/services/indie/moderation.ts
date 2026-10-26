@@ -47,6 +47,7 @@ export async function listIndieForAdmin(tab: IndieAdminTab): Promise<IndieAdminR
       authorEmail: users.email,
       status: indiePosts.status,
       statusReason: indiePosts.statusReason,
+      reviewReason: indiePosts.reviewReason,
       review: indiePosts.review,
       reportCount: indiePosts.reportCount,
       gameId: indiePosts.gameId,
@@ -83,6 +84,7 @@ export async function listIndieForAdmin(tab: IndieAdminTab): Promise<IndieAdminR
     authorEmail: r.authorEmail,
     status: r.status,
     statusReason: r.statusReason,
+    reviewReason: r.reviewReason,
     review: r.review,
     reportCount: r.reportCount,
     reportReasons: reasons.get(r.id) ?? [],
@@ -101,6 +103,18 @@ export async function countIndieAdminQueue(): Promise<number> {
     .from(indiePosts)
     .where(sql`(${tabWhere("review")}) or (${tabWhere("reported")}) or (${tabWhere("links")})`);
   return n;
+}
+
+/** 관리자 첫 화면의 "지금 손볼 일" — 칸마다 따로 센다. 한 질의의 filter 셋이라 왕복은 하나다 */
+export async function countIndieQueues(): Promise<{ review: number; reported: number; links: number }> {
+  const [row] = await getDb()
+    .select({
+      review: sql<number>`count(*) filter (where ${tabWhere("review")})::int`,
+      reported: sql<number>`count(*) filter (where ${tabWhere("reported")})::int`,
+      links: sql<number>`count(*) filter (where ${tabWhere("links")})::int`,
+    })
+    .from(indiePosts);
+  return { review: row?.review ?? 0, reported: row?.reported ?? 0, links: row?.links ?? 0 };
 }
 
 /**

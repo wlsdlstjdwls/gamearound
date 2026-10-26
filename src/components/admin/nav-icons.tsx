@@ -101,3 +101,14 @@ export function CheckListIcon(p: IconProps) {
     </svg>
   );
 }
+
+/** 게시글 — 말풍선 안의 글 두 줄 */
+export function ChatIcon(p: IconProps) {
+  return (
+    <svg {...base(p)}>
+      <path d="M21 12a8 8 0 0 1-11.6 7.1L4 20l1-4.4A8 8 0 1 1 21 12Z" />
+      <path d="M9 10h6" />
+      <path d="M9 14h4" />
+    </svg>
+  );
+}

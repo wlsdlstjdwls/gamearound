@@ -1,9 +1,10 @@
-// 수집 현황 뼈대 — 머리(제목, 설명 문단, 오른쪽 다시 돌리기 버튼), 24시간 합계 판 한 줄, 소스 카드 격자.
+// 수집 현황 뼈대 — 머리(제목, 설명 문단, 오른쪽 다시 돌리기 버튼), 지금 손볼 일 판, 24시간 합계 판 한 줄, 소스 카드 격자.
 // 소스 카드는 실물(SourceCard)처럼 흰 판에 이름 두 줄과 상태 배지, 그 아래 지표 줄 넷, 가져온 게임 단추, 로그 링크다.
 // 에러 맛보기는 실패한 소스에만 붙어 그리지 않는다.
 // 격자 틀(최소 250px auto-fit)이 실물과 같아야 카드 수가 같은 줄 수로 접힌다.
 import { Bone, PageHeadSkeleton, SkeletonBody } from "@/components/ui/skeleton";
 import { panelClass, raisedClass } from "@/components/ui/page";
+import { TodoSummarySkeleton } from "@/components/admin/todo-summary";
 
 const SOURCE_CARDS = 9; // 붙어 있는 소스 수 언저리 — 실물 카드 수보다 적으면 본문이 올 때 줄이 늘어난다
 const TOTALS = 4; // 신규 게임, 가격 기록, 실행, 실패
@@ -19,6 +20,9 @@ export default function AdminOverviewLoading() {
         </div>
         <Bone className="h-10 w-32 rounded-[9px]" />
       </div>
+
+      {/* 지금 손볼 일 판 — 실물(page 의 Suspense)이 같은 뼈대를 쓴다 */}
+      <TodoSummarySkeleton />
 
       <div className={panelClass("flex flex-wrap items-center gap-x-8 gap-y-3 px-5 py-4")}>
         <Bone className="h-3 w-16" />

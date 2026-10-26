@@ -9,7 +9,8 @@ import { IndieModeration } from "@/components/admin/indie-moderation";
 import { PageHead, ROWS } from "@/components/ui/page";
 import { formatDate } from "@/lib/format";
 import { firstParam } from "@/lib/games-query";
-import { INDIE_ADMIN_MESSAGES as A, INDIE_MESSAGES } from "@/lib/indie/messages";
+import { INDIE_ADMIN_MESSAGES as A, INDIE_MESSAGES, INDIE_REVIEW_LABEL, INDIE_REVIEW_MESSAGES, INDIE_REVIEW_TONE } from "@/lib/indie/messages";
+import { Tag } from "@/components/ui/tag";
 import { gamePath, indiePath, ROUTES } from "@/lib/routes";
 import { requireRoleOrForbid } from "@/server/auth/guards";
 import { INDIE_ADMIN_TABS, listIndieForAdmin, type IndieAdminTab } from "@/server/services/indie";
@@ -55,12 +56,21 @@ export default async function AdminIndiePage({ searchParams }: Props) {
           {rows.map((r) => (
             <li key={r.id} className="grid gap-3 py-4 md:grid-cols-[minmax(0,1fr)_320px] md:gap-6">
               <div className="flex min-w-0 flex-col gap-1">
-                <Link href={indiePath(r.slug)} className="text-[15px] font-semibold text-ink hover:text-acc hover:underline">
-                  {r.title}
-                </Link>
-                <span className="text-[12.5px] text-dim">
+                <div className="flex flex-wrap items-center gap-2">
+                  {/* 승인 상태를 줄마다 단다 — "전체" 칸에서는 이 표시 없이는 어느 글이 아직 공개 전인지 모른다 */}
+                  <Tag tone={INDIE_REVIEW_TONE[r.review]}>{INDIE_REVIEW_LABEL[r.review]}</Tag>
+                  <Link href={indiePath(r.slug)} className="min-w-0 break-words text-[15px] font-semibold text-ink hover:text-acc hover:underline">
+                    {r.title}
+                  </Link>
+                </div>
+                <span className="break-words text-[12.5px] text-dim">
                   {[r.developerName, `${A.author} ${r.authorEmail}`, formatDate(r.createdAt)].join(" | ")}
                 </span>
+                {r.review === "rejected" && (
+                  <span className="text-[12.5px] text-danger">
+                    {INDIE_REVIEW_MESSAGES.reason}: {r.reviewReason ?? "-"}
+                  </span>
+                )}
                 {r.status !== "published" && (
                   <span className="text-[12.5px] text-warn">
                     {INDIE_MESSAGES.hiddenNotice} {r.statusReason}

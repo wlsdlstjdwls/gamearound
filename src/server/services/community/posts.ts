@@ -63,7 +63,7 @@ export async function listPosts(p: ListPostsParams): Promise<PostPage> {
   return { items: rows.map(toRow), total, page, totalPages: Math.max(1, Math.ceil(total / POSTS_PAGE_SIZE)) };
 }
 
-/** 글 상세 + 조회수 1 올리기. 숨긴 글은 글쓴이에게만 보인다 */
+/** 글 상세 + 조회수 1 올리기. 숨긴 글은 글쓴이와 운영진에게만 보인다 */
 export async function getPostDetail(id: string): Promise<PostDetailDto | null> {
   const db = getDb();
   const viewer = await getCurrentUser().catch(() => null);
@@ -76,7 +76,8 @@ export async function getPostDetail(id: string): Promise<PostDetailDto | null> {
     .where(eq(posts.id, id));
   if (!row) return null;
   const isMine = viewer?.id === row.authorUserId;
-  if (row.status !== "published" && !isMine) return null;
+  // 숨긴 글은 글쓴이와 운영진만 연다 — 관리자 게시글 화면에서 숨긴 글을 눌러 내용을 보고 되살릴지 정해야 한다
+  if (row.status !== "published" && !isMine && viewer?.role !== "admin") return null;
 
   const sameCategory = and(eq(posts.category, row.category), eq(posts.status, "published"));
   const [prevRows, nextRows, liked, saved] = await Promise.all([

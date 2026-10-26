@@ -4,9 +4,12 @@
 // 값들을 한 묶음(Promise.all)으로 센다. 줄 세우면 왕복이 그대로 쌓이고, 이 값들은
 // 본문이 아니라 메뉴에 붙으므로 본문보다 느려지면 안 된다(§Neon 왕복 비용).
 //
+// 레이아웃(메뉴 배지)과 첫 화면(지금 손볼 일)이 같은 요청 안에서 같은 수를 쓴다 — React cache 로 한 번만 센다.
+//
 // 회사 검수만 정확한 수가 아니라 상한(limit)까지 센 대략의 값이다 — 그 큐는 게임을 훑어 이름으로 묶는
 // 계산이라 정확히 세려면 카탈로그를 통째로 받아야 한다. 배지는 (개발사, 배급사) 표기 조합 수로 대신 센다.
 import "server-only";
+import { cache } from "react";
 import { and, count, eq, inArray, isNotNull, isNull } from "drizzle-orm";
 import { getDb } from "@/server/db/client";
 import { adminTasks, gameSourceRefs } from "@/server/db/schema";
@@ -14,7 +17,8 @@ import { products } from "@/server/db/schema-products";
 import { shops } from "@/server/db/schema-shops";
 import { PENDING_COMPANIES_LIMIT } from "@/server/services/admin-companies";
 import { countPendingCompanyGroups } from "@/server/sync/run-companies";
-import { countIndieAdminQueue } from "@/server/services/indie";
+import { countIndieAdminQueue, countIndieQueues } from "@/server/services/indie";
+import { countCommunityToday } from "@/server/services/community";
 import { countPreorderReview } from "@/server/services/preorder-bonuses";
 import { requireAdmin } from "@/server/services/users";
 
@@ -42,7 +46,7 @@ export interface AdminWorkCounts {
   preorder: number;
 }
 
-export async function getAdminWorkCounts(): Promise<AdminWorkCounts> {
+export const getAdminWorkCounts = cache(async (): Promise<AdminWorkCounts> => {
   await requireAdmin();
   const db = getDb();
 
@@ -75,5 +79,31 @@ export async function getAdminWorkCounts(): Promise<AdminWorkCounts> {
     tasksDoing: tasksOf("doing"),
     indie,
     preorder,
+  };
+});
+
+/** 관리자 첫 화면(/admin) 맨 위 "지금 손볼 일". 기획서 v2.0 이 운영진 일로 꼽은 것(등록 승인, 숨김)을 앞에 둔다 */
+export interface AdminTodoSummary {
+  indieReview: number;
+  indieReported: number;
+  indieLinks: number;
+  matches: number;
+  shops: number;
+  /** 오늘(한국 날짜) 새로 올라온 게시판, 라운지 글과 댓글. 쌓인 일이 아니라 훑어볼 양이다 */
+  postsToday: number;
+  commentsToday: number;
+}
+
+export async function getAdminTodoSummary(): Promise<AdminTodoSummary> {
+  await requireAdmin();
+  const [work, indie, community] = await Promise.all([getAdminWorkCounts(), countIndieQueues(), countCommunityToday()]);
+  return {
+    indieReview: indie.review,
+    indieReported: indie.reported,
+    indieLinks: indie.links,
+    matches: work.matches,
+    shops: work.shops,
+    postsToday: community.posts,
+    commentsToday: community.comments,
   };
 }

@@ -18,7 +18,8 @@ export async function moderateIndiePostAction(_prev: IndieModerationState, formD
       decision: formData.get("decision"),
       reason: String(formData.get("reason") ?? ""),
     });
-    if (!parsed.success) return { ok: false, error: M.badRequest };
+    // 스키마가 말하는 까닭(반려 사유 없음 등)을 그대로 돌려준다 — "잘못된 요청" 만으로는 무엇을 채울지 모른다
+    if (!parsed.success) return { ok: false, error: parsed.error.issues[0]?.message ?? M.badRequest };
     const { slug } = await moderateIndiePost(parsed.data, admin.id);
     revalidatePath(ROUTES.adminIndie);
     revalidatePath(ROUTES.home);

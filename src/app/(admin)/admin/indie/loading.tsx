@@ -3,7 +3,7 @@ import { SkeletonBody } from "@/components/ui/skeleton";
 import { AdminChipsSkeleton, AdminHeadSkeleton, ModerationRowsSkeleton } from "@/components/admin/skeletons";
 
 const ROWS = 6;
-const TABS = 4; // server/services/indie/moderation 의 INDIE_ADMIN_TABS 수. 그 모듈은 DB 를 끌고 와서 뼈대가 가져오지 않는다
+const TABS = 5; // server/services/indie/moderation 의 INDIE_ADMIN_TABS 수. 그 모듈은 DB 를 끌고 와서 뼈대가 가져오지 않는다
 
 export default function AdminIndieLoading() {
   return (

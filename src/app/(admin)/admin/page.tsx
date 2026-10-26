@@ -13,11 +13,17 @@
 //   3. "도는 중" 과 "끊김" 을 가른다. 앞 화면은 끝나지 않은 실행을 전부 "도는 중이거나 끊김" 한 말로
 //      적었다 — 그래서 며칠째 안 끝난 실행이 정상처럼 보였다(wikidata_game 실측).
 //
+// 2026-10-26 손질 — 기획서 v2.0 의 운영진 일(등록 승인, 부적절한 글 숨김)이 첫 화면에 안 보였다. 머리 밑에 "지금 손볼 일"
+// 한 판을 세운다(components/admin/todo-summary). 따로 기다리게 해서 수집 현황 카드가 그 수를 기다리지 않는다.
+//
 // 2026-10-08 손질 — "가시성이 안 좋다". 카드 열다섯이 같은 무게로 서서 손볼 곳(일부 실패, 끊김)이
 // 작은 배지 하나로만 갈렸다. 손볼 카드를 **앞으로 당기고** 왼쪽에 띠를 긋는다. 순서는 바꾸되 무엇을
 // 보여 주는지는 그대로다 — 정상 카드 사이의 순서(서비스의 SOURCES 순서)는 유지한다.
 import type { Metadata } from "next";
 import Link from "next/link";
+import { Suspense } from "react";
+import { TodoSummary, TodoSummarySkeleton } from "@/components/admin/todo-summary";
+import { getAdminTodoSummary } from "@/server/services/admin-workload";
 import { buttonClass } from "@/components/ui/button";
 import { formatAgo, formatDateTime } from "@/lib/format";
 import { SYNC_MESSAGES, SYNC_STATUS_LABEL, sourceLabel } from "@/lib/admin/messages";
@@ -183,6 +189,8 @@ function SourceCard({ item, tone, run, now }: { item: SyncOverviewItem; tone: To
 
 export default async function AdminSyncOverviewPage() {
   await requireRoleOrForbid("admin");
+  // 할 일 요약은 먼저 던져 두고 기다리지 않는다 — 수집 현황 질의와 나란히 돌고, 자리는 Suspense 가 따로 채운다
+  const todo = getAdminTodoSummary().catch(() => null);
   // 둘을 나란히 던진다 — 줄 세우면 왕복이 그대로 쌓인다(Neon 왕복 비용)
   const [overview, activity] = await Promise.all([getSyncOverview(), getSyncActivity()]);
   const repo = process.env.NEXT_PUBLIC_GITHUB_REPO;
@@ -213,6 +221,10 @@ export default async function AdminSyncOverviewPage() {
           <span className="max-w-[320px] text-[11.5px] text-dim">{SYNC_MESSAGES.rerunHint}</span>
         )}
       </header>
+
+      <Suspense fallback={<TodoSummarySkeleton />}>
+        <TodoSummary summary={todo} />
+      </Suspense>
 
       <Totals newGames={activity.newGames} snapshots={activity.priceSnapshots} runs={activity.runs} failedToday={failedToday} />
 

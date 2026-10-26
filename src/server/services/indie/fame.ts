@@ -111,7 +111,9 @@ async function liveRanking(ym: string): Promise<Array<{ id: string; score: numbe
 
 async function cardsById(ids: string[]): Promise<Map<string, IndieCardDto>> {
   if (ids.length === 0) return new Map();
-  const cardRows = await getDb().select(cardColumns).from(indiePosts).where(inArray(indiePosts.id, ids));
+  // 확정한 달의 순위표도 지금 공개인 글만 세운다 — 운영진이 숨긴 글이 지난달 명예의 전당에 남아 있으면
+  // 숨김이 노출을 못 막는다(기획서 v2.0 2.2 "노출 관리"). 빠진 자리는 attach 가 건너뛰어 순위가 한 칸씩 당겨진다
+  const cardRows = await getDb().select(cardColumns).from(indiePosts).where(and(inArray(indiePosts.id, ids), isPublic));
   const cards = new Map((await toCards(cardRows)).map((c) => [c.slug, c]));
   return new Map(cardRows.flatMap((r) => (cards.has(r.slug) ? [[r.id, cards.get(r.slug)!] as const] : [])));
 }

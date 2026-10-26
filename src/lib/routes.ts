@@ -81,6 +81,8 @@ export const ROUTES = {
   adminIndie: "/admin/indie",
   /** 예약 특전 글 검토 — 게임을 못 이었거나 특전을 못 뽑은 글이 여기 남는다 */
   adminPreorder: "/admin/preorder",
+  /** 게시판, 라운지 글과 댓글 숨김(기획서 v2.0 9.2 "게시글 관리") */
+  adminPosts: "/admin/posts",
   forbidden: "/403",
   terms: "/terms",
   privacy: "/privacy",

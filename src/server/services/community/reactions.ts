@@ -51,7 +51,8 @@ export async function listComments(postId: string): Promise<CommentDto[]> {
     .select({ id: postComments.id, body: postComments.body, authorName: authorNameSql, createdAt: postComments.createdAt, authorUserId: postComments.authorUserId })
     .from(postComments)
     .innerJoin(users, eq(users.id, postComments.authorUserId))
-    .where(eq(postComments.postId, postId))
+    // 운영진이 숨긴 댓글은 누구에게도 안 보인다(services/community/admin)
+    .where(and(eq(postComments.postId, postId), eq(postComments.status, "published")))
     .orderBy(asc(postComments.createdAt));
   return rows.map(({ authorUserId, ...r }) => ({ ...r, isMine: viewer?.id === authorUserId }));
 }
@@ -62,7 +63,7 @@ export async function addComment(postId: string, body: string): Promise<{ commen
   const db = getDb();
   const [post] = await db.select({ author: posts.authorUserId, title: posts.title, category: posts.category }).from(posts).where(and(eq(posts.id, postId), eq(posts.status, "published")));
   if (!post) throw new Error("글을 찾을 수 없어요");
-  const [row] = await db.insert(postComments).values({ postId, authorUserId: u.id, body, ...createdBy("user", u.id) }).returning();
+  const [row] = await db.insert(postComments).values({ postId, authorUserId: u.id, body, ...createdBy("user", u.id) }).returning({ id: postComments.id, body: postComments.body, createdAt: postComments.createdAt });
   await db.update(posts).set({ commentCount: sql`${posts.commentCount} + 1` }).where(eq(posts.id, postId));
   const name = u.displayName ?? `${u.email.split("@")[0].slice(0, 2)}***`;
   return { comment: { id: row.id, body: row.body, authorName: name, createdAt: row.createdAt, isMine: true }, postAuthorId: post.author, postTitle: post.title, category: post.category };
@@ -93,6 +94,7 @@ export async function countRecentCommentsOnMyPosts(userId: string, categories: r
         eq(posts.authorUserId, userId),
         inArray(posts.category, [...categories]),
         ne(postComments.authorUserId, userId),
+        eq(postComments.status, "published"),
         gte(postComments.createdAt, sql`now() - make_interval(days => ${MY_REACTION_WINDOW_DAYS}::int)`),
       ),
     );
