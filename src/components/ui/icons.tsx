@@ -387,3 +387,22 @@ export function UserIcon(p: IconProps) {
     </svg>
   );
 }
+
+/** 해 — 머리띠 테마 단추(다크일 때 "라이트로" 를 말한다) */
+export function SunIcon(p: IconProps) {
+  return (
+    <svg {...base(p)}>
+      <circle cx="12" cy="12" r="4" />
+      <path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4" />
+    </svg>
+  );
+}
+
+/** 달 — 머리띠 테마 단추(라이트일 때 "다크로" 를 말한다) */
+export function MoonIcon(p: IconProps) {
+  return (
+    <svg {...base(p)}>
+      <path d="M20.5 14.5A8.5 8.5 0 1 1 9.5 3.5a7 7 0 0 0 11 11Z" />
+    </svg>
+  );
+}

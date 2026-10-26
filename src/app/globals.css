@@ -1,78 +1,71 @@
 @import "tailwindcss";
 
 /* ── gamearound 디자인 토큰 ─────────────────────────────────────────
-   다크 네이비 + 라임(2026-10-26 개편, 기획서 v2.0). 라이트는 사용자가 고를 때만 선다(아래 블록).
+   라이트가 기본이고 다크는 고를 때만 선다(2026-10-26 2차). 같은 날 아침 기획서 v2.0(2.5)대로 다크 네이비 + 형광 라임을
+   기본으로 올렸다가 "형광색이 눈부시고 너무 어둡다"(사용자)로 뒤집었다. 다크는 바탕을 한 단 올리고 라임의 채도를 뺐다.
    깊이는 그림자(--elev-*)와 헤어라인 링(--ring-hair)이 낸다 — 1px 테두리는 쓰지 않는다.
    컴포넌트는 Tailwind 유틸을 쓰되, 순수 CSS(키프레임, 포커스 링, 터치 튜닝)가 필요한 곳은 이 변수를 참조한다.
    모션 곡선, 시간은 여기 값만 쓴다 — 컴포넌트에 임의 숫자 금지. */
 :root {
+  /* 아무 속성도 없는 html 이 곧 라이트다. 테마 스크립트가 막힌 브라우저(사생활 보호 모드)도 라이트로 선다 */
+  --bg: #f4f6f9; /* 페이지 바탕 — 순백이 아니라 한 단 내린 회청. 흰 카드가 바탕과 갈린다 */
+  --surface: #ffffff; /* 카드, 헤더, 패널 */
+  --surface-2: #eaeef4; /* 칩, hover 면 — 이 위의 --dim 4.66:1 */
+  --surface-3: #dfe5ee; /* 이미지 자리표시, 아바타 */
+  --surface-4: #f8fafc; /* 카드 안 인셋 */
+  --line: #dfe4ec;
+  --line-soft: #e9edf3;
+  --line-strong: #cbd3df;
+  --ink: #18202b;
+  --ink-2: #333d4b;
+  --mut: #4e5968; /* 흰 판 위 7.1:1 */
+  --dim: #5f6b7a;
+  --dim-2: #8b95a1; /* 취소선 가격 — 지운 값이라 4.5 를 요구하지 않는다 */
   /*
-   * 2026-10-26 개편(기획서 v2.0): 다크 네이비 바탕 + 라임 악센트가 기본이다. 라이트는 사용자가 고를 때만(아래 블록).
-   * 목업 값(#0a1220 바탕, #0f1a2e 카드, #b8f23e 라임)에서 출발했고 그대로 옮기지 않은 것은 셋이다.
-   *  - 면 사다리를 넷으로 벌렸다(바탕, 카드, 칩, 떠 있는 면). 목업은 바탕과 카드 둘뿐이라 칩, hover 가 카드에 묻혔다.
-   *  - 보조 글자를 카드 위 5.8:1 까지 밝혔다. 목업의 #8fa1c0 은 칩 면 위에서 본문 기준(4.5)의 끝이었다.
-   *  - 성공(--ok)을 라임이 아닌 민트로 갈랐다. 라임은 브랜드와 "현재 위치" 의 색이라, 판정까지 맡으면 링크와 결과가 같은 말을 한다.
-   * 과한 네온, 글로우는 쓰지 않는다(기획서 2.5) — 라임은 면이 아니라 글자, 선, 주 버튼에만 칠한다.
+   * 브랜드 악센트 — 차분한 초록. 쓰는 자리: 링크, 현재 위치(메뉴 밑줄), 주 버튼, 할인율.
+   * 흰 판 5.25:1, 바탕 4.85:1, 이 위의 흰 글자 5.25:1 — 글자로도 면으로도 쓸 수 있는 밝기다.
    */
-  --bg: #0a1120; /* 페이지 바탕 — 순검정이 아니라 푸른 먹. 커버 그림이 차갑게 가라앉지 않는다 */
-  --surface: #111b2e; /* 카드, 헤더, 패널 */
-  --surface-2: #18243a; /* 칩, hover 면 — 이 위의 --dim 5.27:1 */
-  --surface-3: #1e2b44; /* 이미지 자리표시, 아바타 */
-  --surface-4: #0d1627; /* 카드 안 인셋 — 바탕보다 한 단 밝고 카드보다 어둡다 */
-  --line: #213049;
-  --line-soft: #19253b;
-  --line-strong: #2d3d5b;
-  --ink: #eaf0fa; /* 바탕 대비 16.5:1 */
-  --ink-2: #c9d4e6;
-  --mut: #a3b3cf; /* 카드 위 8.1:1 */
-  --dim: #8797b6; /* 카드 위 5.9:1, 칩 면 위 5.3:1 */
-  --dim-2: #637596; /* 취소선 가격 — 지운 값이라 4.5 를 요구하지 않는다(바탕 4.05:1) */
-  /*
-   * 브랜드 악센트 — 라임. 쓰는 자리: 로고, 링크, 현재 위치(메뉴 밑줄), 주 버튼, 할인율.
-   * 라임 위 글자는 반드시 --on-ink(바탕색)다 — 흰 글자는 1.2:1 로 사라진다.
-   */
-  --acc: #b8f23e; /* 바탕 14.2:1, 카드 13.0:1 */
-  --acc-hover: #c9f76a;
-  --acc-soft: #1a2a24; /* 고른 칩 면 — 카드 쪽으로 물린 라임. 이 위의 --acc 11.3:1 */
-  --acc-glow: rgba(184, 242, 62, 0.2);
-  --acc-on-ink: #4a7a0c; /* "잉크" 판(밝은 글자색 면) 위의 악센트 */
+  --acc: #3d7a1f;
+  --acc-hover: #336818;
+  --acc-soft: #edf4e4; /* 고른 칩 면. 이 위의 --acc 4.66:1 */
+  --acc-glow: rgba(61, 122, 31, 0.16);
+  --acc-on-ink: #b5dc7a; /* "잉크" 판(어두운 면, 세일 띠 등) 위의 악센트. 잉크 위 10.5:1, 형광이 아니라 한 단 가라앉힌 연두 */
+  --danger: #cc2929;
+  --danger-soft: #fff0f0;
+  --ok: #0f766e;
+  --ok-soft: #e3f3f0;
+  --warn: #8a6a2e;
+  --warn-soft: #f6efe2;
+  /* 안내 파랑(기획서 v2.0 4.4): 홍보 유형 "내가 만든 게임", 답변 기다리는 질문 알약. 뜻은 "알림, 정보" 다 */
+  --info: #1d5fbf;
+  --info-soft: #e6effb;
+  --status-backlog: #b0b8c1;
+  --status-todo: #f5a524;
+  --status-doing: #3d7a1f;
+  --status-done: #20b26b;
+  --price-bad: #c4452c;
+  --verdict-bad: #e03131;
+  --on-ink: #ffffff; /* 잉크, 악센트 판 위의 글자 */
+  --overlay: rgba(24, 32, 43, 0.42);
+  /* 가격 그래프의 스토어 브랜드 색 */
+  --store-steam: #2a78d6;
+  --store-epic: #eb6834;
+  --store-gog: #1baf7a;
+  --store-ps5: #eda100;
+  --store-ps4: #e87ba4;
+  --store-xbox: #008300;
+  --store-switch: #4a3aa7;
+  --store-switch2: #e34948;
   --beam: #ffb21e; /* 로고 손전등 빛. 그림 전용. lib/brand.ts 의 BRAND_COLOR.beam 과 같은 값 */
   /* 브랜드 밝기 사다리(막대 그래프 등 면 전용). --acc 와 --surface 를 섞으므로 테마별로 따로 적지 않는다 */
   --acc-2: color-mix(in oklab, var(--acc) 58%, var(--surface));
   --acc-3: color-mix(in oklab, var(--acc) 30%, var(--surface));
-  --danger: #ff6b78; /* 카드 위 6.3:1. 목업 #ff5d6c 보다 한 단 밝다 — 옅은 면 위에서도 읽혀야 해서 */
-  --danger-soft: #331722;
   --danger-line: color-mix(in oklab, var(--danger) 30%, transparent);
-  --ok: #3ddc9f; /* 민트 — 위 머리 주석 참조. 카드 위 9.8:1 */
-  --ok-soft: #0f2b26;
   --ok-line: color-mix(in oklab, var(--ok) 28%, transparent);
-  --warn: #f2b84b;
-  --warn-soft: #33270f;
-  /* 안내 파랑(2026-10-26, 기획서 v2.0 4.4): 홍보 유형 "내가 만든 게임", 답변 기다리는 질문 알약. 뜻은 "알림, 정보" 다 */
-  --info: #6cb4ff;
-  --info-soft: #132741;
-  --status-backlog: #5c6b85;
-  --status-todo: #f2b84b;
-  --status-doing: #b8f23e;
-  --status-done: #3ddc9f;
-  --price-bad: #ff8466;
-  --verdict-bad: #ff6b78;
-  --on-ink: #0a1120; /* 잉크, 라임 판 위의 글자 = 바탕색 */
-  --overlay: rgba(3, 7, 15, 0.66);
   --overlay-blur: 4px;
   /* 머리띠 유리 면 — 바탕을 반투명으로 깔고 뒤를 흐린다. 스크롤한 커버가 머리띠 밑으로 비쳐 "떠 있다" 를 말한다 */
   --header-glass: color-mix(in oklab, var(--bg) 82%, transparent);
   --header-blur: 14px;
-
-  /* 가격 그래프의 스토어 브랜드 색 — 어두운 바탕에서 서로 갈리는 한 단 밝은 값 */
-  --store-steam: #5b9ce8;
-  --store-epic: #f5895a;
-  --store-gog: #35c894;
-  --store-ps5: #f2b93a;
-  --store-ps4: #f094b6;
-  --store-xbox: #3fb23f;
-  --store-switch: #8d7df0;
-  --store-switch2: #ed6e6d;
 
   /* 모션 — 확정값. 등장은 JS 타이머가 아니라 CSS 애니메이션으로(백그라운드 탭에서 opacity:0에 멈추지 않는다) */
   --duration-fast: 150ms;
@@ -93,30 +86,27 @@
      한두 프레임에 끝나는데 그때도 막이 보이면 누를 때마다 번쩍인다 — 그 선을 넘을 때만 뜬다 */
   --chip-pending-delay: 120ms;
 
+
   /*
    * 깊이 — 2026-09-22 신설.
    * 리디자인이 1px 테두리와 흰 판을 걷어낸 뒤 화면에 "무엇이 위에 있나" 를 말하는 수단이
    * 하나도 남지 않았다. 테두리를 되돌리지 않는 이유는 그때 문제(판 안의 판 안의 목록)가
    * 그대로 돌아오기 때문이다. 그림자는 선과 달리 겹쳐도 개수가 세어지지 않는다.
-   *
-   * 다크 기본(2026-10-26)에서는 검은 그림자가 바탕에 묻혀 링(--ring-hair)이 깊이를 맡는다. 라이트 값은 아래 라이트 블록.
    * 두 겹으로 쓰는 이유: 가까운 겹이 접지면을, 먼 겹이 떠 있는 높이를 말한다.
-   * 한 겹으로 흐리게만 깔면 "떠 있다" 가 아니라 "번졌다" 로 읽힌다.
+   * 한 겹으로 흐리게만 깔면 "떠 있다" 가 아니라 "번졌다" 로 읽힌다. 다크 값은 아래 다크 블록.
    */
-  --elev-1: 0 1px 2px rgba(0, 0, 0, 0.5);
-  --elev-2: 0 2px 6px rgba(0, 0, 0, 0.45), 0 10px 22px -6px rgba(0, 0, 0, 0.6);
-  --elev-3: 0 6px 14px rgba(0, 0, 0, 0.5), 0 22px 44px -10px rgba(0, 0, 0, 0.7);
+  --elev-1: 0 1px 2px rgba(24, 32, 43, 0.05), 0 1px 3px rgba(24, 32, 43, 0.04);
+  --elev-2: 0 2px 4px rgba(24, 32, 43, 0.05), 0 8px 18px -6px rgba(24, 32, 43, 0.12);
+  --elev-3: 0 4px 10px rgba(24, 32, 43, 0.07), 0 18px 36px -10px rgba(24, 32, 43, 0.2);
   /* 헤어라인 링 — 테두리가 아니라 그림자다. 자리를 차지하지 않으므로 커버 그림 위에 덧그어도
-     1px 이 안쪽에서 잘려 이미지가 밀리지 않는다. 밝은 커버(흰 배경 아트)가 판 위에서
-     경계 없이 번지던 것을 이 한 줄이 잡는다 */
-  --ring-hair: inset 0 0 0 1px rgba(196, 214, 245, 0.08);
-  /* 목록 카드 한 벌. 커버보다 링을 옅게 잡는다 — 카드는 흰 판이라 가장자리가 이미 배경과 갈린다.
-     그림자는 반대로 커버보다 멀리 깐다(한 덩어리가 통째로 뜨는 것이라 접지면이 넓다) */
-  --elev-card: inset 0 0 0 1px rgba(196, 214, 245, 0.07), 0 2px 6px rgba(0, 0, 0, 0.45), 0 12px 26px -8px rgba(0, 0, 0, 0.6);
-  --elev-card-hover: inset 0 0 0 1px rgba(184, 242, 62, 0.22), 0 6px 14px rgba(0, 0, 0, 0.5), 0 24px 46px -10px rgba(0, 0, 0, 0.72);
+     1px 이 안쪽에서 잘려 이미지가 밀리지 않는다. 밝은 커버(흰 배경 아트)가 판 위에서 경계 없이 번지던 것을 이 한 줄이 잡는다 */
+  --ring-hair: inset 0 0 0 1px rgba(24, 32, 43, 0.08);
+  /* 목록 카드 한 벌. 커버보다 링을 옅게, 그림자는 멀리 깐다(한 덩어리가 통째로 뜨는 것이라 접지면이 넓다) */
+  --elev-card: inset 0 0 0 1px rgba(24, 32, 43, 0.06), 0 1px 2px rgba(24, 32, 43, 0.05), 0 10px 24px -8px rgba(24, 32, 43, 0.14);
+  --elev-card-hover: inset 0 0 0 1px rgba(61, 122, 31, 0.22), 0 4px 8px rgba(24, 32, 43, 0.06), 0 20px 40px -10px rgba(24, 32, 43, 0.22);
   /* 커버 한 벌 = 링 + 그림자. box-shadow 는 유틸 둘로 겹칠 수 없어 한 토큰으로 묶는다 */
-  --elev-cover: inset 0 0 0 1px rgba(196, 214, 245, 0.08), 0 2px 6px rgba(0, 0, 0, 0.45), 0 10px 22px -6px rgba(0, 0, 0, 0.6);
-  --elev-cover-hover: inset 0 0 0 1px rgba(196, 214, 245, 0.14), 0 6px 14px rgba(0, 0, 0, 0.5), 0 22px 44px -10px rgba(0, 0, 0, 0.7);
+  --elev-cover: inset 0 0 0 1px rgba(24, 32, 43, 0.08), 0 2px 4px rgba(24, 32, 43, 0.05), 0 8px 18px -6px rgba(24, 32, 43, 0.12);
+  --elev-cover-hover: inset 0 0 0 1px rgba(24, 32, 43, 0.1), 0 6px 12px rgba(24, 32, 43, 0.07), 0 20px 38px -10px rgba(24, 32, 43, 0.22);
 
   /* 라운드 — 리디자인 확정값 */
   --radius-xs: 6px; /* 배지, 태그 */
@@ -154,131 +144,133 @@
     "Noto Sans KR", "Malgun Gothic", sans-serif;
 
   /* 브라우저가 그리는 것(스크롤바, 기본 폼 컨트롤, 자동완성 배경)도 같은 편에 서게 한다 */
-  color-scheme: dark;
+  color-scheme: light;
 }
 
 /* ──────────────────────────────────────────────────────────────────
-   라이트
+   다크
    ------------------------------------------------------------------
-   값 이름은 다크와 **한 글자도 다르지 않다**. 화면 코드는 bg-surface, text-mut 만 알고 그것이 무슨 색인지 모른다.
-   2026-10-26 에 기본이 다크로 뒤집혔다 — 브랜드가 다크 네이비 + 라임이라서다(기획서 2.5).
-   그래서 시스템 설정만으로는 라이트가 되지 않는다. 설정에서 "라이트" 를 고르거나 "시스템" 을 고른 사람의 기기가 밝을 때만 선다
-   (data-theme="system" 은 lib/theme 의 첫 페인트 스크립트가 찍는다).
-   라임은 흰 바탕에서 1.3:1 이라 글자로 못 쓴다 — 라이트의 악센트는 같은 색상의 짙은 올리브(#4a7a0c, 흰 판 5.15:1)다.
+   값 이름은 라이트와 **한 글자도 다르지 않다**. 화면 코드는 bg-surface, text-mut 만 알고 그것이 무슨 색인지 모른다.
+   설정이나 머리띠 단추로 "다크" 를 고르거나, "시스템" 을 고른 사람의 기기가 어두울 때만 선다
+   (data-theme 은 lib/theme 의 첫 페인트 스크립트가 찍는다).
    ────────────────────────────────────────────────────────────────── */
-@media (prefers-color-scheme: light) {
+@media (prefers-color-scheme: dark) {
   :root[data-theme="system"] {
-    color-scheme: light;
+    color-scheme: dark;
 
-    --bg: #f3f5f9;
-    --surface: #ffffff;
-    --surface-2: #e7ebf2;
-    --surface-3: #dde3ec;
-    --surface-4: #f8f9fc;
-    --line: #dfe4ec;
-    --line-soft: #e9edf3;
-    --line-strong: #cbd3df;
-    --ink: #191f28;
-    --ink-2: #333d4b;
-    --mut: #4e5968;
-    --dim: #5f6b7a;
-    --dim-2: #8b95a1;
-    --acc: #4a7a0c;
-    --acc-hover: #3d6609;
-    --acc-soft: #eef5df;
-    --acc-glow: rgba(74, 122, 12, 0.18);
-    --acc-on-ink: #b8f23e;
-    --danger: #cc2929;
-    --danger-soft: #fff0f0;
-    --ok: #0f766e;
-    --ok-soft: #e3f3f0;
-    --warn: #8a6a2e;
-    --warn-soft: #f6efe2;
-    --info: #1d5fbf;
-    --info-soft: #e6effb;
-    --status-backlog: #b0b8c1;
-    --status-todo: #f5a524;
-    --status-doing: #4a7a0c;
-    --status-done: #20b26b;
-    --price-bad: #c4452c;
-    --verdict-bad: #e03131;
-    --on-ink: #f9fafb;
-    --overlay: rgba(25, 31, 40, 0.42);
-    --overlay-blur: 4px;
-    --store-steam: #2a78d6;
-    --store-epic: #eb6834;
-    --store-gog: #1baf7a;
-    --store-ps5: #eda100;
-    --store-ps4: #e87ba4;
-    --store-xbox: #008300;
-    --store-switch: #4a3aa7;
-    --store-switch2: #e34948;
-    --elev-1: 0 1px 2px rgba(25, 31, 40, 0.05), 0 1px 3px rgba(25, 31, 40, 0.04);
-    --elev-2: 0 2px 4px rgba(25, 31, 40, 0.05), 0 8px 18px -6px rgba(25, 31, 40, 0.12);
-    --elev-3: 0 4px 10px rgba(25, 31, 40, 0.07), 0 18px 36px -10px rgba(25, 31, 40, 0.2);
-    --ring-hair: inset 0 0 0 1px rgba(25, 31, 40, 0.08);
-    --elev-card: inset 0 0 0 1px rgba(25, 31, 40, 0.06), 0 1px 2px rgba(25, 31, 40, 0.05), 0 10px 24px -8px rgba(25, 31, 40, 0.14);
-    --elev-card-hover: inset 0 0 0 1px rgba(25, 31, 40, 0.08), 0 4px 8px rgba(25, 31, 40, 0.06), 0 20px 40px -10px rgba(25, 31, 40, 0.22);
-    --elev-cover: inset 0 0 0 1px rgba(25, 31, 40, 0.08), 0 2px 4px rgba(25, 31, 40, 0.05), 0 8px 18px -6px rgba(25, 31, 40, 0.12);
-    --elev-cover-hover: inset 0 0 0 1px rgba(25, 31, 40, 0.1), 0 6px 12px rgba(25, 31, 40, 0.07), 0 20px 38px -10px rgba(25, 31, 40, 0.22);
+    --bg: #141a25; /* 먹이 아니라 짙은 회청. 10-26 아침의 #0a1120 은 "너무 어둡다"(사용자) */
+    --surface: #1b2331;
+    --surface-2: #232c3c; /* 이 위의 --dim 4.76:1 */
+    --surface-3: #2a3446;
+    --surface-4: #171e2a;
+    --line: #2b3547;
+    --line-soft: #222b3a;
+    --line-strong: #384459;
+    --ink: #e8edf5; /* 바탕 14.8:1 */
+    --ink-2: #c8d1df;
+    --mut: #a6b2c6; /* 카드 위 7.4:1 */
+    --dim: #8b97ad; /* 카드 위 5.35:1 */
+    --dim-2: #69758a;
+    /* 형광 라임(#b8f23e)을 걷고 채도를 뺀 연두. 바탕 10:1 로 여전히 또렷하지만 면에 칠해도 눈을 찌르지 않는다 */
+    --acc: #a8d16a;
+    --acc-hover: #b7da80;
+    --acc-soft: #253126; /* 이 위의 --acc 7.8:1 */
+    --acc-glow: rgba(168, 209, 106, 0.16);
+    --acc-on-ink: #3f6d18; /* 잉크 판이 밝은 면이 된다 — 그 위 5.2:1 */
+    --danger: #ff6b78;
+    --danger-soft: #3a1d27;
+    --ok: #3ddc9f;
+    --ok-soft: #13302b;
+    --warn: #f2b84b;
+    --warn-soft: #382c14;
+    --info: #6cb4ff;
+    --info-soft: #172c45;
+    --status-backlog: #5c6b85;
+    --status-todo: #f2b84b;
+    --status-doing: #a8d16a;
+    --status-done: #3ddc9f;
+    --price-bad: #ff8466;
+    --verdict-bad: #ff6b78;
+    --on-ink: #141a25; /* 잉크, 악센트 판 위의 글자 = 바탕색 */
+    --overlay: rgba(6, 10, 18, 0.62);
+    /* 가격 그래프의 스토어 브랜드 색 — 어두운 바탕에서 서로 갈리는 한 단 밝은 값 */
+    --store-steam: #5b9ce8;
+    --store-epic: #f5895a;
+    --store-gog: #35c894;
+    --store-ps5: #f2b93a;
+    --store-ps4: #f094b6;
+    --store-xbox: #3fb23f;
+    --store-switch: #8d7df0;
+    --store-switch2: #ed6e6d;
+    /* 다크에서는 검은 그림자가 바탕에 묻혀 링이 깊이를 맡는다 */
+    --elev-1: 0 1px 2px rgba(0, 0, 0, 0.4);
+    --elev-2: 0 2px 6px rgba(0, 0, 0, 0.35), 0 10px 22px -6px rgba(0, 0, 0, 0.5);
+    --elev-3: 0 6px 14px rgba(0, 0, 0, 0.4), 0 22px 44px -10px rgba(0, 0, 0, 0.6);
+    --ring-hair: inset 0 0 0 1px rgba(200, 214, 238, 0.08);
+    --elev-card: inset 0 0 0 1px rgba(200, 214, 238, 0.07), 0 2px 6px rgba(0, 0, 0, 0.35), 0 12px 26px -8px rgba(0, 0, 0, 0.5);
+    --elev-card-hover: inset 0 0 0 1px rgba(168, 209, 106, 0.22), 0 6px 14px rgba(0, 0, 0, 0.4), 0 24px 46px -10px rgba(0, 0, 0, 0.6);
+    --elev-cover: inset 0 0 0 1px rgba(200, 214, 238, 0.08), 0 2px 6px rgba(0, 0, 0, 0.35), 0 10px 22px -6px rgba(0, 0, 0, 0.5);
+    --elev-cover-hover: inset 0 0 0 1px rgba(200, 214, 238, 0.14), 0 6px 14px rgba(0, 0, 0, 0.4), 0 22px 44px -10px rgba(0, 0, 0, 0.6);
   }
 }
 
-/* 사용자가 직접 고른 라이트. 위 블록과 같은 값을 다시 적는 이유: CSS 에는 선언 묶음을 재사용하는 방법이 없다. 값을 고칠 때는 두 곳을 같이 고친다. */
-:root[data-theme="light"] {
-  color-scheme: light;
+/* 사용자가 직접 고른 다크. 위 블록과 같은 값을 다시 적는 이유: CSS 에는 선언 묶음을 재사용하는 방법이 없다. 값을 고칠 때는 두 곳을 같이 고친다. */
+:root[data-theme="dark"] {
+  color-scheme: dark;
 
-  --bg: #f3f5f9;
-  --surface: #ffffff;
-  --surface-2: #e7ebf2;
-  --surface-3: #dde3ec;
-  --surface-4: #f8f9fc;
-  --line: #dfe4ec;
-  --line-soft: #e9edf3;
-  --line-strong: #cbd3df;
-  --ink: #191f28;
-  --ink-2: #333d4b;
-  --mut: #4e5968;
-  --dim: #5f6b7a;
-  --dim-2: #8b95a1;
-  --acc: #4a7a0c;
-  --acc-hover: #3d6609;
-  --acc-soft: #eef5df;
-  --acc-glow: rgba(74, 122, 12, 0.18);
-  --acc-on-ink: #b8f23e;
-  --danger: #cc2929;
-  --danger-soft: #fff0f0;
-  --ok: #0f766e;
-  --ok-soft: #e3f3f0;
-  --warn: #8a6a2e;
-  --warn-soft: #f6efe2;
-  --info: #1d5fbf;
-  --info-soft: #e6effb;
-  --status-backlog: #b0b8c1;
-  --status-todo: #f5a524;
-  --status-doing: #4a7a0c;
-  --status-done: #20b26b;
-  --price-bad: #c4452c;
-  --verdict-bad: #e03131;
-  --on-ink: #f9fafb;
-  --overlay: rgba(25, 31, 40, 0.42);
-  --overlay-blur: 4px;
-  --store-steam: #2a78d6;
-  --store-epic: #eb6834;
-  --store-gog: #1baf7a;
-  --store-ps5: #eda100;
-  --store-ps4: #e87ba4;
-  --store-xbox: #008300;
-  --store-switch: #4a3aa7;
-  --store-switch2: #e34948;
-  --elev-1: 0 1px 2px rgba(25, 31, 40, 0.05), 0 1px 3px rgba(25, 31, 40, 0.04);
-  --elev-2: 0 2px 4px rgba(25, 31, 40, 0.05), 0 8px 18px -6px rgba(25, 31, 40, 0.12);
-  --elev-3: 0 4px 10px rgba(25, 31, 40, 0.07), 0 18px 36px -10px rgba(25, 31, 40, 0.2);
-  --ring-hair: inset 0 0 0 1px rgba(25, 31, 40, 0.08);
-  --elev-card: inset 0 0 0 1px rgba(25, 31, 40, 0.06), 0 1px 2px rgba(25, 31, 40, 0.05), 0 10px 24px -8px rgba(25, 31, 40, 0.14);
-  --elev-card-hover: inset 0 0 0 1px rgba(25, 31, 40, 0.08), 0 4px 8px rgba(25, 31, 40, 0.06), 0 20px 40px -10px rgba(25, 31, 40, 0.22);
-  --elev-cover: inset 0 0 0 1px rgba(25, 31, 40, 0.08), 0 2px 4px rgba(25, 31, 40, 0.05), 0 8px 18px -6px rgba(25, 31, 40, 0.12);
-  --elev-cover-hover: inset 0 0 0 1px rgba(25, 31, 40, 0.1), 0 6px 12px rgba(25, 31, 40, 0.07), 0 20px 38px -10px rgba(25, 31, 40, 0.22);
+  --bg: #141a25; /* 먹이 아니라 짙은 회청. 10-26 아침의 #0a1120 은 "너무 어둡다"(사용자) */
+  --surface: #1b2331;
+  --surface-2: #232c3c; /* 이 위의 --dim 4.76:1 */
+  --surface-3: #2a3446;
+  --surface-4: #171e2a;
+  --line: #2b3547;
+  --line-soft: #222b3a;
+  --line-strong: #384459;
+  --ink: #e8edf5; /* 바탕 14.8:1 */
+  --ink-2: #c8d1df;
+  --mut: #a6b2c6; /* 카드 위 7.4:1 */
+  --dim: #8b97ad; /* 카드 위 5.35:1 */
+  --dim-2: #69758a;
+  /* 형광 라임(#b8f23e)을 걷고 채도를 뺀 연두. 바탕 10:1 로 여전히 또렷하지만 면에 칠해도 눈을 찌르지 않는다 */
+  --acc: #a8d16a;
+  --acc-hover: #b7da80;
+  --acc-soft: #253126; /* 이 위의 --acc 7.8:1 */
+  --acc-glow: rgba(168, 209, 106, 0.16);
+  --acc-on-ink: #3f6d18; /* 잉크 판이 밝은 면이 된다 — 그 위 5.2:1 */
+  --danger: #ff6b78;
+  --danger-soft: #3a1d27;
+  --ok: #3ddc9f;
+  --ok-soft: #13302b;
+  --warn: #f2b84b;
+  --warn-soft: #382c14;
+  --info: #6cb4ff;
+  --info-soft: #172c45;
+  --status-backlog: #5c6b85;
+  --status-todo: #f2b84b;
+  --status-doing: #a8d16a;
+  --status-done: #3ddc9f;
+  --price-bad: #ff8466;
+  --verdict-bad: #ff6b78;
+  --on-ink: #141a25; /* 잉크, 악센트 판 위의 글자 = 바탕색 */
+  --overlay: rgba(6, 10, 18, 0.62);
+  /* 가격 그래프의 스토어 브랜드 색 — 어두운 바탕에서 서로 갈리는 한 단 밝은 값 */
+  --store-steam: #5b9ce8;
+  --store-epic: #f5895a;
+  --store-gog: #35c894;
+  --store-ps5: #f2b93a;
+  --store-ps4: #f094b6;
+  --store-xbox: #3fb23f;
+  --store-switch: #8d7df0;
+  --store-switch2: #ed6e6d;
+  /* 다크에서는 검은 그림자가 바탕에 묻혀 링이 깊이를 맡는다 */
+  --elev-1: 0 1px 2px rgba(0, 0, 0, 0.4);
+  --elev-2: 0 2px 6px rgba(0, 0, 0, 0.35), 0 10px 22px -6px rgba(0, 0, 0, 0.5);
+  --elev-3: 0 6px 14px rgba(0, 0, 0, 0.4), 0 22px 44px -10px rgba(0, 0, 0, 0.6);
+  --ring-hair: inset 0 0 0 1px rgba(200, 214, 238, 0.08);
+  --elev-card: inset 0 0 0 1px rgba(200, 214, 238, 0.07), 0 2px 6px rgba(0, 0, 0, 0.35), 0 12px 26px -8px rgba(0, 0, 0, 0.5);
+  --elev-card-hover: inset 0 0 0 1px rgba(168, 209, 106, 0.22), 0 6px 14px rgba(0, 0, 0, 0.4), 0 24px 46px -10px rgba(0, 0, 0, 0.6);
+  --elev-cover: inset 0 0 0 1px rgba(200, 214, 238, 0.08), 0 2px 6px rgba(0, 0, 0, 0.35), 0 10px 22px -6px rgba(0, 0, 0, 0.5);
+  --elev-cover-hover: inset 0 0 0 1px rgba(200, 214, 238, 0.14), 0 6px 14px rgba(0, 0, 0, 0.4), 0 22px 44px -10px rgba(0, 0, 0, 0.6);
 }
 
 /* Tailwind v4 테마 연결 — bg-surface, text-mut, duration-base, ease-out-emph, animate-rise 같은 유틸이 생긴다 */

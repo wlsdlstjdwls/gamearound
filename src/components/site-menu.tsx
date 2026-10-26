@@ -23,6 +23,7 @@ import { useSignOut } from "@/components/auth/use-sign-out";
 import { buttonClass } from "@/components/ui/button";
 import { BellIcon, HeartIcon, LogOutIcon, MenuIcon, ShieldIcon, SlidersIcon, SpinnerIcon } from "@/components/ui/icons";
 import { Sheet } from "@/components/ui/sheet";
+import { ThemeSwitch } from "@/components/theme-switch";
 import { Clamp } from "@/components/ui/tooltip";
 import { NAV_SECTIONS, resolveNav } from "@/lib/nav";
 import { Tag } from "@/components/ui/tag";
@@ -98,6 +99,8 @@ export function SiteMenu() {
           {links.map((l) => (
             <Row key={l.href} {...l} current={isCurrent(l.href)} />
           ))}
+          {/* 좁은 화면은 머리띠에 단추 자리가 없다(sm 미만은 개인 자리가 통째로 접힌다) — 시트가 맡는다 */}
+          <ThemeSwitch withLabel />
         </div>
       </nav>
 

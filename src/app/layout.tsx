@@ -30,8 +30,8 @@ export const metadata: Metadata = {
 
 export const viewport: Viewport = {
   // 브라우저 UI(안드로이드 주소창, iOS 상태바)도 바탕색을 따른다. 값은 globals.css 의 --bg 와 같아야 한다.
-  // 기기 설정으로 갈라 주지 않는 이유(2026-10-26): 기본이 다크라, 밝은 기기에서도 화면은 다크다 — 갈라 주면 흰 띠가 남는다
-  themeColor: SITE.backgroundColorDark,
+  // 기기 설정으로 갈라 주지 않는 이유: 기본이 라이트라 어두운 기기에서도 처음 화면은 라이트다 — 갈라 주면 검은 띠가 남는다
+  themeColor: SITE.backgroundColor,
   width: "device-width",
   initialScale: 1,
   viewportFit: "cover",

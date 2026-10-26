@@ -5,16 +5,19 @@
 // 대신 첫 페인트 전에 도는 인라인 스크립트가 html 에 data-theme 을 찍는다.
 //
 // 값 셋의 뜻:
-//  - system: data-theme="system" 을 찍는다. 기기가 밝을 때만 globals.css 의 라이트 블록이 선다.
+//  - system: data-theme="system" 을 찍는다. 기기가 어두울 때만 globals.css 의 다크 블록이 선다.
 //  - light | dark: data-theme 을 찍는다.
-// 아무것도 안 찍힌 상태가 곧 다크다(2026-10-26, 브랜드가 다크 네이비 + 라임). 시스템 설정만으로는 라이트가 되지 않는다 —
-// 처음 온 사람이 기기 설정 따라 흰 화면을 보면 그건 이 서비스의 얼굴이 아니다.
+// 아무것도 안 찍힌 상태가 곧 라이트다. 2026-10-26 아침에 다크를 기본으로 올렸다가 같은 날 "너무 어둡다"(사용자)로 되돌렸다.
+// 기기 설정만으로 다크가 되지 않게 둔 이유: 처음 온 사람은 늘 같은 얼굴(라이트)을 본다. 다크는 머리띠 단추로 한 번에 간다.
 export const THEMES = ["system", "light", "dark"] as const;
 export type Theme = (typeof THEMES)[number];
 
-export const DEFAULT_THEME: Theme = "dark";
+export const DEFAULT_THEME: Theme = "light";
 
 export const THEME_STORAGE_KEY = "gamearound.theme";
+
+/** 이 탭 안에서 값이 바뀐 것을 알리는 신호. storage 이벤트는 **다른** 탭에만 가므로 자기 탭은 이걸 듣는다 */
+export const THEME_CHANGE_EVENT = "gamearound:theme";
 
 export const THEME_LABEL: Record<Theme, string> = {
   system: "시스템",
@@ -24,7 +27,10 @@ export const THEME_LABEL: Record<Theme, string> = {
 
 export const THEME_MESSAGES = {
   heading: "테마",
-  note: "기본은 다크예요. 시스템으로 두면 기기 설정을 따라가요.",
+  note: "기본은 라이트예요. 시스템으로 두면 기기 설정을 따라가요.",
+  /** 머리띠 단추의 이름 — 누르면 무엇이 되는지를 말한다 */
+  toDark: "다크 모드로 바꾸기",
+  toLight: "라이트 모드로 바꾸기",
 } as const;
 
 export function isTheme(v: string | null | undefined): v is Theme {
@@ -33,7 +39,7 @@ export function isTheme(v: string | null | undefined): v is Theme {
 
 /**
  * 첫 페인트 전에 도는 스크립트. 본문보다 먼저 실행돼야 하므로 인라인이다 —
- * 번들에서 불러오면 그 사이 한 프레임이 라이트로 칠해졌다가 다크로 바뀐다(흰 섬광).
+ * 번들에서 불러오면 다크를 고른 사람에게 한 프레임 라이트가 칠해졌다가 바뀐다(흰 섬광).
  *
  * try 로 감싸는 이유: 사생활 보호 모드나 사이트 데이터 차단에서는 localStorage 접근 자체가 던진다.
  * 그때는 아무것도 하지 않는다 — 기본값(다크)이 그대로 선다.

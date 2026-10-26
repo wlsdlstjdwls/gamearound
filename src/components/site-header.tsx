@@ -9,6 +9,7 @@ import { SiteMenu } from "@/components/site-menu";
 import { SiteNav, SiteNavFallback } from "@/components/site-nav";
 import { NotificationBell } from "@/components/notification-bell";
 import { SubNav } from "@/components/sub-nav";
+import { ThemeSwitch } from "@/components/theme-switch";
 
 /**
  * 머리띠 + 하위 메뉴 띠(2026-10-26 개편, 기획서 v2.0 3.1, 4.3).
@@ -41,6 +42,8 @@ export function SiteHeader() {
           </Suspense>
 
           <div className="hidden shrink-0 items-center gap-1.5 sm:flex">
+            {/* 테마 단추는 로그인과 상관없이 선다 — 설정 화면은 로그인한 사람에게만 열린다(theme-switch 주석) */}
+            <ThemeSwitch />
             {/* 종은 알림함 팝오버다(기획서 v2.0 M-03). 가격 알림 관리로 가는 길은 팝오버 맨 아래에 있다 */}
             <NotificationBell />
             <AuthNav />

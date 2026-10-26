@@ -9,14 +9,12 @@
 // useState + useEffect 를 쓰지 않는 이유: 그 조합은 첫 렌더 뒤 한 번 더 그리게 만들고
 // (effect 안의 setState), 테마를 바꿀 때마다 같은 일이 반복된다. 외부 저장소로 보면 구독 한 번으로 끝난다.
 import { useSyncExternalStore } from "react";
+import { THEME_CHANGE_EVENT } from "@/lib/theme";
 
 const listeners = new Set<() => void>();
 /** 테마가 바뀔 때마다 오른다. 캐시가 낡았는지 판정하는 유일한 기준 */
 let version = 0;
 let cache: { version: number; key: string; value: Record<string, string> } | null = null;
-
-/** 설정 화면이 테마를 바꿀 때 보내는 신호(components/theme-toggle) */
-const THEME_CHANGE_EVENT = "gamearound:theme";
 
 function invalidate() {
   version += 1;
