@@ -107,9 +107,10 @@ export function resolveNav(pathname: string, query: Query): { section: NavSectio
     }
   }
   if (best) {
-    // 상세(/games/<slug>)는 "전체 게임" 경로 아래지만 그 칸이 켜지면 목록에 있는 것처럼 읽힌다 — 정확히 그 경로일 때만 칸을 켠다
-    const detail = pathOf(best.sub.href) === ROUTES.game && pathname !== ROUTES.game;
-    return { section: best.section, sub: detail ? null : best.sub };
+    // 첫 칸(전체 게임 /games, 게시판 홈 /board, 라운지 홈 /lounge)은 메뉴의 뿌리라 그 아래 상세(/games/<slug>, /board/p/<id>)까지 걸린다.
+    // 그때 첫 칸이 켜지면 목록이나 홈에 있는 것처럼 읽혀서, 첫 칸은 정확히 그 경로일 때만 켠다
+    const rootDetail = best.sub === best.section.subs[0] && pathname !== pathOf(best.sub.href);
+    return { section: best.section, sub: rootDetail ? null : best.sub };
   }
   const section = NAV_SECTIONS.find((s) => s.also?.some((p) => under(pathname, p))) ?? null;
   return { section, sub: null };

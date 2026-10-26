@@ -67,9 +67,13 @@ export const ROUTES = {
   boardReviews: "/board/reviews",
   boardGuides: "/board/guides",
   boardPromos: "/board/promos",
+  /** 게시판 글 전체(기획서 S-10A, 사이드 메뉴 "전체 글") */
+  boardAll: "/board/all",
   lounge: "/lounge",
   loungeDevlogs: "/lounge/devlogs",
   loungeQna: "/lounge/qna",
+  /** 라운지 글 전체(기획서 S-17) */
+  loungeAll: "/lounge/all",
   /** 인디 홍보 글 신고, 게임 연결 확인 */
   adminIndie: "/admin/indie",
   /** 예약 특전 글 검토 — 게임을 못 이었거나 특전을 못 뽑은 글이 여기 남는다 */

@@ -41,6 +41,10 @@ export * from "./schema-shops";
 export * from "./schema-products";
 // 인디 홍보 글도 사람이 쓰는 세계라 갈라 뒀다(schema-indie.ts). 크롤러가 건드리지 않는다.
 export * from "./schema-indie";
+// 게시판(게임 게시판, 개발자 라운지)도 사람이 쓰는 세계라 갈라 뒀다(schema-community.ts, 2026-10-26).
+export * from "./schema-community";
+// 알림함(헤더 종 아이콘, 2026-10-26).
+export * from "./schema-notifications";
 // 예약 특전(schema-preorder.ts). 스토어가 아니라 퍼블리셔 공지에서 뽑은 사실이라 가격 축과 섞지 않는다.
 export * from "./schema-preorder";
 

@@ -9,11 +9,25 @@
 // sale-badge 의 할인 이름 딱지는 굵기가 bold 라 여기로 오지 않았다.
 import { cn } from "@/lib/cn";
 
-type TagOptions = { tight?: boolean; small?: boolean; className?: string };
+/**
+ * 색 갈래(2026-10-26). 게시판 말머리가 카테고리마다 색이 달라야 해서(기획서 v2.0 7장) 브랜드 하나에서 넓혔다.
+ * 클래스 문자열을 통째로 둔다 — Tailwind 는 소스에 적힌 글자만 찾으므로 조립한 이름(`bg-${tone}-soft`)은 생성되지 않는다.
+ */
+export type TagTone = "acc" | "ok" | "warn" | "info" | "danger";
+const TONE: Record<TagTone, string> = {
+  acc: "bg-acc-soft text-acc",
+  ok: "bg-ok-soft text-ok",
+  warn: "bg-warn-soft text-warn",
+  info: "bg-info-soft text-info",
+  danger: "bg-danger-soft text-danger",
+};
 
-export function tagClass({ tight = true, small = false, className }: TagOptions = {}): string {
+type TagOptions = { tight?: boolean; small?: boolean; tone?: TagTone; className?: string };
+
+export function tagClass({ tight = true, small = false, tone = "acc", className }: TagOptions = {}): string {
   return cn(
-    "inline-flex shrink-0 items-center rounded-[5px] bg-acc-soft px-1.5 py-0.5 font-semibold text-acc",
+    "inline-flex shrink-0 items-center rounded-[5px] px-1.5 py-0.5 font-semibold",
+    TONE[tone],
     small ? "text-[11px]" : "text-[11.5px]",
     tight && "leading-none",
     className,

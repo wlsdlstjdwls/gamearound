@@ -48,6 +48,9 @@
   --ok-line: color-mix(in oklab, var(--ok) 28%, transparent);
   --warn: #f2b84b;
   --warn-soft: #33270f;
+  /* 안내 파랑(2026-10-26, 기획서 v2.0 4.4): 홍보 유형 "내가 만든 게임", 답변 기다리는 질문 알약. 뜻은 "알림, 정보" 다 */
+  --info: #6cb4ff;
+  --info-soft: #132741;
   --status-backlog: #5c6b85;
   --status-todo: #f2b84b;
   --status-doing: #b8f23e;
@@ -191,6 +194,8 @@
     --ok-soft: #e3f3f0;
     --warn: #8a6a2e;
     --warn-soft: #f6efe2;
+    --info: #1d5fbf;
+    --info-soft: #e6effb;
     --status-backlog: #b0b8c1;
     --status-todo: #f5a524;
     --status-doing: #4a7a0c;
@@ -247,6 +252,8 @@
   --ok-soft: #e3f3f0;
   --warn: #8a6a2e;
   --warn-soft: #f6efe2;
+  --info: #1d5fbf;
+  --info-soft: #e6effb;
   --status-backlog: #b0b8c1;
   --status-todo: #f5a524;
   --status-doing: #4a7a0c;
@@ -302,6 +309,8 @@
   --color-ok-soft: var(--ok-soft);
   --color-warn: var(--warn);
   --color-warn-soft: var(--warn-soft);
+  --color-info: var(--info);
+  --color-info-soft: var(--info-soft);
   --color-status-backlog: var(--status-backlog);
   --color-status-todo: var(--status-todo);
   --color-status-doing: var(--status-doing);

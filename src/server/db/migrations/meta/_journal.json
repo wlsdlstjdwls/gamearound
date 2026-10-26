@@ -428,6 +428,20 @@
       "when": 1792978765473,
       "tag": "0060_foamy_silver_sable",
       "breakpoints": true
+    },
+    {
+      "idx": 61,
+      "version": "7",
+      "when": 1792979517035,
+      "tag": "0061_far_silhouette",
+      "breakpoints": true
+    },
+    {
+      "idx": 62,
+      "version": "7",
+      "when": 1792979930841,
+      "tag": "0062_thin_tinkerer",
+      "breakpoints": true
     }
   ]
 }

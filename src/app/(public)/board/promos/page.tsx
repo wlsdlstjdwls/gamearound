@@ -1,9 +1,15 @@
-// 개편 1단계의 자리표시(components/coming-soon). 화면이 생기면 이 파일을 갈아엎는다.
-import { ComingSoon, comingSoonMetadata } from "@/components/coming-soon";
+// 홍보 목록(기획서 v2.0 5.2 게시판 목록 공통). 틀은 components/community/post-board 가 맡는다.
+import type { Metadata } from "next";
+import { PostBoard } from "@/components/community/post-board";
+import { BOARD_CATEGORIES } from "@/lib/community/constants";
+import { parseBoardQuery } from "@/lib/community/query";
 import { ROUTES } from "@/lib/routes";
 
-export const metadata = comingSoonMetadata(ROUTES.boardPromos);
+export const metadata: Metadata = { title: "홍보" };
 
-export default function Page() {
-  return <ComingSoon href={ROUTES.boardPromos} />;
+type Props = { searchParams: Promise<Record<string, string | string[] | undefined>> };
+
+export default async function Page({ searchParams }: Props) {
+  const query = parseBoardQuery(await searchParams);
+  return <PostBoard title="홍보" categories={["promo"]} family={BOARD_CATEGORIES} allPath={ROUTES.boardAll} base={ROUTES.boardPromos} query={query} />;
 }

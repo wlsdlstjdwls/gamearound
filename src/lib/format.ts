@@ -106,6 +106,20 @@ export function formatDateTime(d: Date | string | null | undefined): string {
 }
 
 /**
+ * 게시판 목록의 짧은 날짜(2026-10-26). 오늘 글은 "14:05", 올해 글은 "10.26", 그 전은 "25.10.26".
+ * 목록 한 줄에 제목을 길게 두려면 날짜 칸이 다섯 글자 안에 들어야 한다(기획서 5.2 "한 줄에 제목 하나로 압축").
+ */
+export function formatPostDate(d: Date | string, now: Date = new Date()): string {
+  const date = toDate(d);
+  if (!date) return "-";
+  const p = kstParts(date);
+  const n = kstParts(now);
+  if (p.year === n.year && p.month === n.month && p.day === n.day) return `${p.hour}:${p.minute}`;
+  if (p.year === n.year) return `${p.month}.${p.day}`;
+  return `${p.year.slice(-2)}.${p.month}.${p.day}`;
+}
+
+/**
  * 연월일을 글자로 적는 시각 — "2026년 10월 1일 14:34". 관리자 할 일 기록이 쓴다(2026-10-01 사용자가 정한 꼴).
  * "26. 10. 1." 의 점 셋은 무엇이 연이고 일인지 읽는 사람이 맞춰야 했다. 시각은 남긴다 — 같은 날 기록이 여러 줄 쌓인다.
  */

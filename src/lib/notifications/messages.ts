@@ -1,0 +1,10 @@
+// 알림함 문구(헤더 종 팝오버, 기획서 v2.0 M-03). 만들 때 다 적어 두는 한 줄이라 원본 제목을 품는다.
+export const NOTIFICATION_MESSAGES = {
+  title: "알림",
+  empty: "아직 받은 알림이 없어요",
+  signInLead: "로그인하면 가격 하락, 내 글의 새 댓글을 여기서 모아 봐요.",
+  comment: (postTitle: string) => `'${postTitle}' 글에 새 댓글이 달렸어요`,
+  priceDrop: (gameTitle: string, priceText: string) => `${gameTitle} 가격이 ${priceText}(으)로 내려갔어요`,
+  approved: (gameTitle: string) => `'${gameTitle}' 등록이 승인됐어요`,
+  rejected: (gameTitle: string) => `'${gameTitle}' 등록이 반려됐어요. 사유를 확인해 주세요`,
+} as const;

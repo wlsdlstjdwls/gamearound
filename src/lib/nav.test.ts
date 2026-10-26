@@ -23,6 +23,8 @@ describe("resolveNav", () => {
   it("하위 칸 밖 소속 경로와 메뉴 밖 화면", () => {
     expect(resolveNav("/search", q("q=a")).section?.key).toBe("explore");
     expect(resolveNav("/board/reviews", q()).sub?.label).toBe("리뷰");
+    expect(resolveNav("/board/p/abc", q()).sub).toBeNull();
+    expect(resolveNav("/board/p/abc", q()).section?.key).toBe("board");
     expect(resolveNav("/", q()).section).toBeNull();
     expect(resolveNav("/settings", q()).section).toBeNull();
   });
