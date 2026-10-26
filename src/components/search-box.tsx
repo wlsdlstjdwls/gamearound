@@ -8,15 +8,20 @@
 // 왜 클라이언트 컴포넌트인가: 입력 상태가 필요하다. 결과는 그대로 서버(/search)가 그린다 —
 // 검색 결과 화면이 이미 같은 질의를 서버에서 처리하고 있어서 API 라우트를 따로 두면 같은 일을 두 벌 만들게 된다.
 //
+// 자동완성(2026-10-26, 기획서 v2.0 4.3): 두 글자부터 게임, 장르, 개발사 후보를 아래에 편다(components/search-suggest).
+// 화면을 바꾸지 않고 목록만 펴는 것이라 위에 적은 "타이핑을 따라 화면이 바뀌던" 문제와는 다르다. 엔터는 여전히 결과 화면이다 —
+// 후보를 위아래 키로 고른 상태에서만 엔터가 그 후보로 간다(콤보박스 문법).
+//
 // 화면에 검색창은 이것 하나뿐이다. 결과 화면이 자기 검색창을 또 그리면 같은 자리에 입력칸이 둘로 보이고,
 // 둘 중 어느 쪽이 현재 질의인지 알 수 없다(2026-09-14 제보).
-import { useRef, useState, useTransition } from "react";
+import { useEffect, useId, useRef, useState, useTransition } from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { SearchIcon, SpinnerIcon, XIcon } from "@/components/ui/icons";
 import { MAX_PARAM_LEN } from "@/lib/games-query";
 import { ROUTES } from "@/lib/routes";
+import { SuggestPanel, useSuggest, type SuggestOption } from "@/components/search-suggest";
 
-const SEARCH_PLACEHOLDER = "게임 제목 검색";
+const SEARCH_PLACEHOLDER = "게임, 장르, 개발사 검색";
 
 /** 주소에 실리는 형태. 비교와 전송이 같은 규칙을 써야 "바뀌었나" 판정이 흔들리지 않는다 */
 function trimQuery(raw: string): string {
@@ -51,7 +56,7 @@ const INPUT_CLASS =
  * ml-auto: 넓은 화면에서는 왼쪽(로고, 메뉴)과 오른쪽(개인 자리) 사이의 남는 폭을 이 칸이 먹고
  * 340px 에서 멈춘다 — 더 늘리면 검색칸이 머리띠의 주인공이 되어 로고와 무게가 뒤집힌다.
  */
-const FORM_CLASS = "ml-auto min-w-0 max-w-[340px] flex-1";
+const FORM_CLASS = "relative ml-auto min-w-0 max-w-[340px] flex-1";
 /** 오른쪽 끝 자리 — 스피너와 지우기 버튼이 번갈아 선다. 폭을 고정해야 글자가 밀리지 않는다 */
 const TRAIL_CLASS = "flex size-7 shrink-0 items-center justify-center";
 
@@ -83,6 +88,34 @@ export function SearchBox() {
   // 조합 중인 엔터는 "글자 확정"이지 "검색"이 아니다(onKeyDown 주석)
   const composing = useRef(false);
   const inputRef = useRef<HTMLInputElement>(null);
+  const formRef = useRef<HTMLFormElement>(null);
+  const listId = useId();
+  // 목록은 칸에 포커스가 있고 사람이 막 친 글자가 있을 때만 편다. 고르거나 Esc, 바깥을 누르면 닫는다
+  const [open, setOpen] = useState(false);
+  const [active, setActive] = useState(-1);
+  const { options, empty } = useSuggest(value);
+  const shown = open && options !== null;
+
+  // 바깥 누름으로 닫기 — 터치 기기는 mousedown 이 늦게 와서 touchstart 도 함께 듣는다(auth/user-menu 와 같은 규칙)
+  useEffect(() => {
+    if (!open) return;
+    const onDown = (e: Event) => {
+      if (formRef.current && !formRef.current.contains(e.target as Node)) setOpen(false);
+    };
+    document.addEventListener("mousedown", onDown);
+    document.addEventListener("touchstart", onDown, { passive: true });
+    return () => {
+      document.removeEventListener("mousedown", onDown);
+      document.removeEventListener("touchstart", onDown);
+    };
+  }, [open]);
+
+  const pick = (o: SuggestOption) => {
+    setOpen(false);
+    setActive(-1);
+    if (o.group === "all") return submit();
+    startTransition(() => router.push(o.href));
+  };
 
   // 뒤로 가기, 다른 화면에서 온 경우처럼 주소가 **밖에서** 바뀌면 입력칸을 주소에 맞춘다.
   // effect 가 아니라 렌더 중 보정인 이유: effect 로 하면 한 번 그린 뒤 다시 그려 입력칸이 깜빡인다.
@@ -103,10 +136,13 @@ export function SearchBox() {
 
   return (
     <form
+      ref={formRef}
       role="search"
       className={FORM_CLASS}
       onSubmit={(e) => {
         e.preventDefault(); // 기본 GET 제출은 전체 새로고침이다. 이동은 라우터가 한다
+        if (shown && options && active >= 0) return pick(options[active]);
+        setOpen(false);
         submit();
       }}
     >
@@ -123,13 +159,32 @@ export function SearchBox() {
           autoComplete="off"
           enterKeyHint="search"
           placeholder={SEARCH_PLACEHOLDER}
-          onChange={(e) => setValue(e.target.value)}
+          role="combobox"
+          aria-expanded={shown}
+          aria-controls={listId}
+          aria-autocomplete="list"
+          aria-activedescendant={shown && active >= 0 ? `${listId}-${active}` : undefined}
+          onFocus={() => setOpen(true)}
+          onChange={(e) => {
+            setValue(e.target.value);
+            setOpen(true);
+            setActive(-1);
+          }}
           onCompositionStart={() => { composing.current = true; }}
           onCompositionEnd={() => { composing.current = false; }}
           onKeyDown={(e) => {
             // 한글, 일본어 입력기에서 조합을 끝내는 엔터와 검색하는 엔터는 같은 키다.
             // 막지 않으면 "게임"의 "임"을 확정하는 순간 "게ㅇ"으로 검색이 나간다
             if (e.key === "Enter" && (e.nativeEvent.isComposing || composing.current)) e.preventDefault();
+            if (e.key === "Escape") return setOpen(false);
+            if (!shown || !options || (e.key !== "ArrowDown" && e.key !== "ArrowUp")) return;
+            e.preventDefault(); // 칸 안 커서가 줄 끝으로 튀지 않게
+            const step = e.key === "ArrowDown" ? 1 : -1;
+            // -1 은 "입력칸 자체" 다. 끝에서 한 번 더 누르면 칸으로 돌아와 엔터가 다시 결과 화면 검색이 된다
+            setActive((i) => {
+              const next = i + step;
+              return next < -1 ? options.length - 1 : next >= options.length ? -1 : next;
+            });
           }}
           className={INPUT_CLASS}
         />
@@ -160,6 +215,9 @@ export function SearchBox() {
           )}
         </span>
       </div>
+      {shown && options && (
+        <SuggestPanel id={listId} options={options} empty={empty} active={active} onPick={pick} onHover={setActive} />
+      )}
     </form>
   );
 }

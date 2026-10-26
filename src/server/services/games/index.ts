@@ -14,6 +14,7 @@ export type { UpcomingEntry, UpcomingMonthTab, UpcomingPage } from "./upcoming";
 export { getUpcomingAddons, UPCOMING_ADDON_LIMIT } from "./upcoming-addons";
 export type { UpcomingAddonEntry } from "./upcoming-addons";
 export { searchGames } from "./search";
+export { suggest, type SuggestResult } from "./suggest";
 export { GAMES_PAGE_SIZE, getGameFacets, listGames } from "./list";
 export type { GameFacets, GameListFilter, GameListResult } from "./list";
 export { getGameBySlug, getGameBySlugCached } from "./detail";
