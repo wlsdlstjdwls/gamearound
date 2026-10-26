@@ -12,7 +12,8 @@
 // 상세에 들어갔다 돌아오면 첫 장부터 다시 내려가야 했다.
 import type { Metadata } from "next";
 import { Suspense } from "react";
-import { GameCard, highlightFromFilter } from "@/components/game-card";
+import { highlightFromFilter } from "@/components/game-card";
+import { GameListCard } from "@/components/game-list-card";
 import { EmptyState } from "@/components/empty-state";
 import { DbUnavailable } from "@/components/db-unavailable";
 import { nullIfDbUnavailable } from "@/lib/db-errors";
@@ -143,7 +144,7 @@ async function Results({ filter }: { filter: GameListFilter }) {
           <ul className={HOME_GRID_CLASS}>
             {result.items.map((g, i) => (
               <li key={g.slug} className="enter-item" style={stagger(i)}>
-                <GameCard game={g} variant={filter.sort === "release" ? "release" : "discount"} highlight={highlight} />
+                <GameListCard game={g} variant={filter.sort === "release" ? "release" : "discount"} highlight={highlight} />
               </li>
             ))}
           </ul>
@@ -193,7 +194,7 @@ export default async function GamesPage({ searchParams }: Props) {
 
         <PendingResults className="flex min-w-0 flex-col gap-6">
           {/* 뼈대가 떠 있는 동안에도 로딩 띠를 세운다. 전환은 새 화면이 커밋되는 순간 끝나서 그 뒤로는 PendingResults 의 띠가 꺼진다 */}
-          <Suspense key={boundaryKey} fallback={<><PendingBar on /><GamesGridSkeleton cards={GAMES_PAGE_SIZE} gridClass={HOME_GRID_CLASS} /></>}>
+          <Suspense key={boundaryKey} fallback={<><PendingBar on /><GamesGridSkeleton cards={GAMES_PAGE_SIZE} gridClass={HOME_GRID_CLASS} list /></>}>
             <Results filter={filter} />
           </Suspense>
         </PendingResults>

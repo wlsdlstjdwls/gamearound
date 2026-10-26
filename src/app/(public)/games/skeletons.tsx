@@ -4,7 +4,7 @@
 // 높이는 실제 화면을 재서 맞춘 값이다 — 어긋나면 본문이 들어올 때 통째로 밀려 그게 깜빡임이 된다.
 import { raisedClass } from "@/components/ui/page";
 import { GAMES_GRID_CLASS } from "@/lib/games/grid";
-import { GameCardSkeleton } from "@/components/game-card-skeleton";
+import { GameCardSkeleton, GameListCardSkeleton } from "@/components/game-card-skeleton";
 import { Bone } from "@/components/ui/skeleton";
 import { ActiveFilters } from "@/components/game-filters/active";
 import type { GamesQuery } from "@/lib/games-query";
@@ -71,12 +71,10 @@ export function FiltersSkeleton({ filter }: { filter: GamesQuery }) {
  * 배지, 제목, 값 두 줄을 잰 값이다(2026-09-29 제목과 값이 줄을 나눴다).
  */
 /** gridClass: 출시예정처럼 넓은 화면에서 네 칸인 격자도 같은 뼈대를 쓴다 */
-export function GamesGridSkeleton({ cards, gridClass = GAMES_GRID_CLASS }: { cards: number; gridClass?: string }) {
+export function GamesGridSkeleton({ cards, gridClass = GAMES_GRID_CLASS, list = false }: { cards: number; gridClass?: string; list?: boolean }) {
   return (
     <div className={`${gridClass} skeleton-delay`} aria-busy="true" aria-label="목록을 불러오는 중">
-      {Array.from({ length: cards }).map((_, i) => (
-        <GameCardSkeleton key={i} />
-      ))}
+      {Array.from({ length: cards }).map((_, i) => (list ? <GameListCardSkeleton key={i} /> : <GameCardSkeleton key={i} />))}
     </div>
   );
 }

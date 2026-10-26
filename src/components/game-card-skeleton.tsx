@@ -4,6 +4,7 @@
 // 배지(20), 값(28)을 잰 값이다(2026-09-15 실측: 뼈대 185px 대 실물 273px 으로 어긋나 본문이 올 때 화면이 밀렸다).
 // 카드 안쪽을 화면마다 다시 그리면 그 실측이 화면 수만큼 어긋난다 — 그래서 한 곳에 둔다.
 import { CARD_SHELL, COVER_CLASS } from "@/components/game-card";
+import { LIST_CARD_SHELL, LIST_THUMB_CLASS } from "@/components/game-list-card";
 import { Bone } from "@/components/ui/skeleton";
 import { cn } from "@/lib/cn";
 
@@ -20,13 +21,32 @@ export function GameCardSkeleton() {
   );
 }
 
-/** 카드 격자. gridClass 는 실물 화면이 쓰는 격자 상수(lib/games/grid)를 그대로 넘긴다 */
-export function GameGridSkeleton({ cards, gridClass, className }: { cards: number; gridClass: string; className?: string }) {
+/** 목록의 가로형 카드(game-list-card) 뼈대 — 그림과 이름 묶음, 장르 칸(40), 값 칸을 같은 높이로 세운다 */
+export function GameListCardSkeleton() {
+  return (
+    <div className={LIST_CARD_SHELL} aria-hidden>
+      <div className="flex gap-3 pb-3">
+        <div className={cn(LIST_THUMB_CLASS, "skeleton")} />
+        <div className="flex flex-1 flex-col gap-1.5 pt-0.5">
+          <Bone className="h-[20px] w-4/5" />
+          <Bone className="h-4 w-3/5" />
+        </div>
+      </div>
+      <div className="min-h-[40px] border-t border-line py-2.5">
+        <Bone className="h-4 w-1/2" />
+      </div>
+      <div className="border-t border-line pt-3">
+        <Bone className="h-7 w-2/5" />
+      </div>
+    </div>
+  );
+}
+
+/** 카드 격자. gridClass 는 실물 화면이 쓰는 격자 상수(lib/games/grid)를 그대로 넘긴다. list 면 목록의 가로형 카드 뼈대 */
+export function GameGridSkeleton({ cards, gridClass, className, list = false }: { cards: number; gridClass: string; className?: string; list?: boolean }) {
   return (
     <div className={cn(gridClass, className)}>
-      {Array.from({ length: cards }).map((_, i) => (
-        <GameCardSkeleton key={i} />
-      ))}
+      {Array.from({ length: cards }).map((_, i) => (list ? <GameListCardSkeleton key={i} /> : <GameCardSkeleton key={i} />))}
     </div>
   );
 }

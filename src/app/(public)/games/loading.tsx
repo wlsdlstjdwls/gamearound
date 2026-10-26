@@ -13,7 +13,7 @@ export default function GamesLoading() {
     <SkeletonPage gap={18}>
       <div aria-hidden className="h-9 w-40 rounded-lg bg-surface-2" />
       <div aria-hidden className="h-[118px] rounded-[var(--radius-panel)] bg-surface/60 shadow-hair" />
-      <GameGridSkeleton cards={SKELETON_CARDS} gridClass={HOME_GRID_CLASS} />
+      <GameGridSkeleton cards={SKELETON_CARDS} gridClass={HOME_GRID_CLASS} list />
     </SkeletonPage>
   );
 }
