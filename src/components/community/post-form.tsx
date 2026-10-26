@@ -2,6 +2,9 @@
 // 글쓰기(기획서 v2.0 S-14, 6.4). 전체 페이지 방식이고, 카테고리를 바꾸면 아래 칸만 바뀌고 제목, 본문은 그대로 남는다.
 //   리뷰: 관련 게임, 스포 여부 필수 | 공략: 관련 게임 필수 | 홍보: 홍보 유형 필수, 관련 게임, 링크 선택 | 개발일지, 질문: 추가 칸 없음.
 // 검증은 서버와 같은 zod 스키마(lib/community/schemas)로 먼저 보고, 오류는 칸 아래 빨간 글로 붙인다(aria-describedby).
+// 칸 순서는 목업 wpage 를 따른다(2026-10-26): 카테고리 → 스포 여부(리뷰) → 홍보 유형, 링크(홍보) → 관련 게임 → 제목 → 본문.
+//   글의 성격을 정하는 칸이 먼저 서야 아래 칸이 왜 생기고 사라지는지 읽힌다. 본문을 다 쓴 뒤 스포 여부를 묻으면 등록에서야 오류를 만난다.
+//   꼭 채울 칸은 이름 옆에 "필수" 를 붙인다(components/ui/required-mark). 카테고리는 늘 하나가 골라져 있어 붙이지 않는다.
 // 등록 뒤 그 카테고리 목록으로 간다. "취소" 는 들어온 화면으로 돌아간다(목업 wpage 의 취소 = 뒤로).
 //
 // 고른 카테고리를 주소(?category=)에도 싣는다 — 하위 메뉴 띠와 경로 줄이 주소로 소속을 읽어서(lib/nav 의 aliasQueries),
@@ -12,6 +15,7 @@ import { useEffect, useState, useTransition } from "react";
 import { createPostAction } from "@/app/(public)/board/actions";
 import { GamePicker, type PickedGame } from "@/components/community/game-picker";
 import { Button } from "@/components/ui/button";
+import { RequiredMark } from "@/components/ui/required-mark";
 import { TextField } from "@/components/ui/text-field";
 import { useToast } from "@/components/ui/toast";
 import { cn } from "@/lib/cn";
@@ -24,13 +28,16 @@ import type { PostCategory } from "@/server/db/schema";
 type Errors = Partial<Record<"category" | "title" | "body" | "spoiler" | "promoType" | "link" | "gameSlug" | "form", string>>;
 
 /** 고르는 칸 한 줄(라디오를 칩 모양으로). 칸 이름과 오류를 fieldset 이 묶는다. hint 는 고르기 전에 읽을 안내 한 줄 */
-function ChoiceRow({ name, legend, value, options, onChange, error, hint }: { name: string; legend: string; value: string; options: { value: string; label: string }[]; onChange: (v: string) => void; error?: string; hint?: string }) {
+function ChoiceRow({ name, legend, value, options, onChange, error, hint, required = false }: { name: string; legend: string; value: string; options: { value: string; label: string }[]; onChange: (v: string) => void; error?: string; hint?: string; required?: boolean }) {
   const errId = `${name}-error`;
   const hintId = `${name}-hint`;
   const describedBy = [hint ? hintId : null, error ? errId : null].filter(Boolean).join(" ") || undefined;
   return (
     <fieldset aria-describedby={describedBy} className="flex flex-col gap-2">
-      <legend className="mb-2 text-[13px] font-semibold text-ink">{legend}</legend>
+      <legend className="mb-2 text-[13px] font-semibold text-ink">
+        {legend}
+        {required && <RequiredMark>{M.requiredMark}</RequiredMark>}
+      </legend>
       <div className="flex flex-wrap gap-2">
         {options.map((o) => (
           <label key={o.value} className={cn("press tap flex h-10 cursor-pointer items-center rounded-xl px-4 text-[14px] font-semibold shadow-hair transition-colors", value === o.value ? "bg-acc-soft text-acc" : "bg-surface-2 text-ink-2 hover:text-ink")}>
@@ -107,11 +114,33 @@ export function PostForm({ categories, initial }: { categories: readonly PostCat
       className="flex flex-col gap-6 rounded-[var(--radius-panel)] bg-surface p-5 shadow-hair sm:p-7"
     >
       <ChoiceRow name="category" legend={M.category} value={category} options={categories.map((c) => ({ value: c, label: CATEGORY_LABEL[c] }))} onChange={(v) => setCategory(v as PostCategory)} error={errors.category} />
+      {category === "review" && (
+        <ChoiceRow
+          name="spoiler"
+          legend={M.spoilerLabel}
+          value={spoiler}
+          options={[
+            { value: "no", label: M.spoilerOff },
+            { value: "yes", label: M.spoilerOn },
+          ]}
+          onChange={setSpoiler}
+          error={errors.spoiler}
+          hint={M.spoilerHint}
+          required
+        />
+      )}
+      {category === "promo" && (
+        <>
+          <ChoiceRow name="promoType" legend={M.promoTypeLabel} value={promoType} options={PROMO_TYPES.map((t) => ({ value: t, label: PROMO_TYPE_LABEL[t] }))} onChange={setPromoType} error={errors.promoType} required />
+          <TextField label={M.linkLabel} type="url" inputMode="url" placeholder="https://" value={link} onChange={(e) => setLink(e.target.value)} error={errors.link} />
+        </>
+      )}
       {takesGame(category) && <GamePicker required={requiresGame(category)} value={game} onChange={setGame} error={errors.gameSlug} />}
-      <TextField label={M.titleLabel} value={title} maxLength={POST_TITLE_MAX} onChange={(e) => setTitle(e.target.value)} error={errors.title} />
+      <TextField label={M.titleLabel} labelMark={<RequiredMark>{M.requiredMark}</RequiredMark>} value={title} maxLength={POST_TITLE_MAX} onChange={(e) => setTitle(e.target.value)} error={errors.title} />
       <div className="flex flex-col gap-2">
         <label htmlFor="post-body" className="text-[13px] font-semibold text-ink">
           {M.bodyLabel}
+          <RequiredMark>{M.requiredMark}</RequiredMark>
         </label>
         <textarea
           id="post-body"
@@ -129,26 +158,6 @@ export function PostForm({ categories, initial }: { categories: readonly PostCat
           </p>
         )}
       </div>
-      {category === "review" && (
-        <ChoiceRow
-          name="spoiler"
-          legend={M.spoilerLabel}
-          value={spoiler}
-          options={[
-            { value: "no", label: M.spoilerOff },
-            { value: "yes", label: M.spoilerOn },
-          ]}
-          onChange={setSpoiler}
-          error={errors.spoiler}
-          hint={M.spoilerHint}
-        />
-      )}
-      {category === "promo" && (
-        <>
-          <ChoiceRow name="promoType" legend={M.promoTypeLabel} value={promoType} options={PROMO_TYPES.map((t) => ({ value: t, label: PROMO_TYPE_LABEL[t] }))} onChange={setPromoType} error={errors.promoType} />
-          <TextField label={M.linkLabel} type="url" inputMode="url" placeholder="https://" value={link} onChange={(e) => setLink(e.target.value)} error={errors.link} />
-        </>
-      )}
       {errors.form && (
         <p role="alert" className="text-[13px] text-danger">
           {errors.form}

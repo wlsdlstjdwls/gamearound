@@ -14,6 +14,8 @@ export type TextFieldProps = Omit<ComponentProps<"input">, "size"> & {
   trailing?: ReactNode;
   /** 칸 왼쪽 고정 글자(주소 앞부분 등). 값이 아니라 보여 주기만 한다 — 입력값에 섞이지 않는다 */
   leading?: ReactNode;
+  /** 이름표 바로 뒤에 붙는 표시(필수 칸의 RequiredMark, components/ui/required-mark). 이름표 안에 서서 칸 이름과 함께 읽힌다 */
+  labelMark?: ReactNode;
   /** 이름표 줄 오른쪽 끝 짧은 글(규칙, 글자 수). 칸 아래 힌트 줄을 따로 쓰지 않아 세로가 준다 */
   aside?: ReactNode;
   /** 44px 칸(터치 타깃 하한). 칸이 많은 폼에서 세로를 줄인다. 글자는 16px 그대로(iOS 확대 방지) */
@@ -23,7 +25,7 @@ export type TextFieldProps = Omit<ComponentProps<"input">, "size"> & {
   wrapperClassName?: string;
 };
 
-export function TextField({ label, hideLabel, hint, error, leading, aside, compact = false, trailing, popup, wrapperClassName, className, id: idProp, ...input }: TextFieldProps) {
+export function TextField({ label, labelMark, hideLabel, hint, error, leading, aside, compact = false, trailing, popup, wrapperClassName, className, id: idProp, ...input }: TextFieldProps) {
   const autoId = useId();
   const id = idProp ?? autoId;
   const hintId = `${id}-hint`;
@@ -35,6 +37,7 @@ export function TextField({ label, hideLabel, hint, error, leading, aside, compa
       <div className={cn("mb-1.5 flex items-baseline justify-between gap-2", hideLabel && "sr-only")}>
         <label htmlFor={id} className="block text-[12.5px] font-medium text-mut transition-colors group-focus-within/field:text-ink">
           {label}
+          {labelMark}
         </label>
         {aside && (
           <span id={`${id}-aside`} className="text-[11.5px]">

@@ -11,6 +11,7 @@
 import { useMemo, useState } from "react";
 import { useSuggestResult } from "@/components/search-suggest";
 import { XIcon } from "@/components/ui/icons";
+import { RequiredMark } from "@/components/ui/required-mark";
 import { useSuggest } from "@/components/ui/suggest";
 import { TextField } from "@/components/ui/text-field";
 import { COMMUNITY_MESSAGES as M } from "@/lib/community/messages";
@@ -37,6 +38,7 @@ export function GamePicker({ required, value, onChange, error }: { required: boo
     <TextField
       {...inputProps}
       label={required ? M.gameLabel : M.gameLabelOptional}
+      labelMark={required ? <RequiredMark>{M.requiredMark}</RequiredMark> : undefined}
       placeholder={M.gamePlaceholder}
       hint={M.gameHint}
       error={error}

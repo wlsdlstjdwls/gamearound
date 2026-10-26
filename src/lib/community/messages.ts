@@ -66,6 +66,8 @@ export const COMMUNITY_MESSAGES = {
   /** 저장 단추가 켜진 상태의 글자(목업 "저장됨") — 켜졌다는 것을 색만이 아니라 말로도 알린다 */
   savedLabel: "저장됨",
   unsaved: "저장을 풀었어요",
+  /** 작성자 옆 배지(목업 brow, postv 의 "개발자"). 승인된 인디 게임을 공개 중인 글쓴이에게만 선다(services/community/columns) */
+  developerBadge: "개발자",
   backToList: "목록으로",
   prev: "이전 글",
   next: "다음 글",
@@ -93,6 +95,8 @@ export const COMMUNITY_MESSAGES = {
   cancel: "취소",
   submit: "등록",
   posted: "글을 올렸어요",
+  /** 꼭 채워야 하는 칸 이름 옆 표시(목업 wpage 의 .req) */
+  requiredMark: "필수",
   // 검증
   categoryRequired: "카테고리를 골라 주세요",
   titleRequired: "제목을 입력해 주세요",
