@@ -9,14 +9,18 @@ const HEADLINE = "게임 가격, 플레이타임, 평점, 뉴스를 한 곳에�
 const TAGLINE = "플랫폼별 할인 알림";
 
 export const SITE = {
-  /** 브랜드 표기 — UI, PWA, 문서에 그대로 노출된다 */
-  name: "GAMEAROUND",
+  /**
+   * 브랜드 표기 — UI, PWA, 문서에 그대로 노출된다.
+   * 2026-10-26 "GAMEAROUND" 에서 "손전등" 으로(기획서 v2.0, 사용자 결정). 레포, 크롤러 UA, 메일 발신 이름은 영문 그대로 둔다 —
+   * HTTP 헤더(UA)는 한글을 못 싣고, 레포 주소는 바꾸면 이미 퍼진 링크가 죽는다.
+   */
+  name: "손전등",
   headline: HEADLINE,
   tagline: TAGLINE,
   /** 검색결과, SNS 카드용 한 줄 설명. 두 문장을 합쳐 쓴다 */
   description: `${HEADLINE}. ${TAGLINE}.`,
   /** 페이지 타이틀 템플릿 (Next metadata.title.template) */
-  titleTemplate: "%s | GAMEAROUND",
+  titleTemplate: "%s | 손전등",
   locale: "ko",
   /** 저작권 표기의 시작 연도. 푸터가 매년 바뀌지 않도록 연도는 렌더 시점에 붙인다 */
   foundedYear: 2026,
