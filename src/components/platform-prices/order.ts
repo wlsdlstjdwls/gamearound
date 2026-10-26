@@ -2,7 +2,7 @@
 // 카드 모양(tile.tsx)과 떼어 둔 이유: 상세 히어로의 "지원 플랫폼" 줄도 같은 이름과 같은 묶음 규칙을 써야
 // 이름을 눌러 내려간 카드가 그 이름 그대로 서 있다.
 import { formatDate, PLATFORM_LABEL, platformLabel, REGION_SUFFIX } from "@/lib/format";
-import { brandKeyOf, brandOf, familyOf, PLATFORM_BRANDS, PLATFORM_FAMILIES, PLATFORM_ORDER, type PlatformFamily } from "@/lib/platform";
+import { brandKeyOf, brandOf, familyOf, PLATFORM_BRANDS, PLATFORM_FAMILIES, PLATFORM_FAMILY_LABEL, PLATFORM_ORDER, type PlatformFamily } from "@/lib/platform";
 import type { Freshness } from "@/lib/freshness";
 import type { Platform, Region } from "@/server/db/schema";
 import type { PlatformDto } from "@/server/services/games";
@@ -72,11 +72,23 @@ export type AbsentBrand = { key: string; label: string; family: PlatformFamily |
 
 /**
  * 안 파는 묶음. 묶음 안에서 **한 세대라도 팔면** 세우지 않는다 — 그 사실은 파는 카드의 "지원 기종" 이 이미 말한다.
+ *
+ * PC 는 스토어가 여럿(Steam, Epic)이라 한 갈래로 본다(2026-10-26, 목업 v2.0 은 PC, PlayStation, XBOX, SWITCH 네 칸).
+ * PC 스토어 하나라도 팔면 나머지 PC 스토어의 빈 칸은 세우지 않고, 아무 데도 안 팔면 "PC" 한 칸만 세운다.
+ * 스토어마다 빈 칸을 세우던 때는 카드가 다섯 장이라 넓은 화면 네 칸 격자에서 마지막 한 장이 둘째 줄에 혼자 떨어졌다.
  */
 function absentBrands(sold: Set<Platform>): AbsentBrand[] {
   const seen = new Set<string>();
   const out: AbsentBrand[] = [];
+  const pcSold = PLATFORM_ORDER.some((q) => familyOf(q) === "pc" && sold.has(q));
   for (const p of PLATFORM_ORDER) {
+    const family = familyOf(p);
+    if (family === "pc") {
+      if (pcSold || seen.has("pc")) continue;
+      seen.add("pc");
+      out.push({ key: "pc", label: PLATFORM_FAMILY_LABEL.pc, family, platform: p });
+      continue;
+    }
     const key = brandKeyOf(p);
     if (seen.has(key)) continue;
     seen.add(key);
