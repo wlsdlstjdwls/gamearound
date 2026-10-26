@@ -63,6 +63,8 @@ function forget() {
 /**
  * variant "release": 출시 예정 줄 끝의 "출시 알림" 단추(목업 월별 보기). 하는 일은 찜과 같다 —
  * 찜한 게임이 출시되면 알림함으로 알려 준다(sync/release-alerts 머리 주석: 찜과 출시 알림을 두 칸에 따로 담지 않는 이유).
+ * 폭은 부르는 쪽이 정한다(className). 좁은 화면의 줄은 이 단추를 줄 아래 넓게 깐다(components/upcoming-row) —
+ * 그래서 기본에 shrink-0 을 두지 않는다. cn 은 충돌을 풀지 않아 부르는 쪽의 flex-1 과 싸우면 이기는 쪽이 CSS 순서에 달린다.
  */
 export function WishHeart({ slug, title, className, variant = "heart" }: { slug: string; title: string; className?: string; variant?: "heart" | "release" }) {
   const { user } = useSession();
@@ -106,16 +108,15 @@ export function WishHeart({ slug, title, className, variant = "heart" }: { slug:
         aria-label={`${title} ${shown ? M.releaseOn : M.releaseOff}`}
         onClick={() => gate(action, () => toggle(!wished))}
         className={cn(
-          "press tap inline-flex size-9 shrink-0 items-center justify-center gap-1.5 rounded-full text-[13px] font-semibold transition-colors sm:w-auto sm:px-3.5",
+          "press tap inline-flex min-h-[var(--touch-target)] items-center justify-center gap-1.5 rounded-full px-4 text-[13px] font-semibold transition-colors sm:min-h-9 sm:px-3.5",
           shown ? "bg-acc-soft text-acc" : "bg-acc text-on-ink hover:bg-acc-hover",
           className,
         )}
       >
         <BellIcon size={15} />
-        {/* 좁은 화면은 종만 — 줄에 날짜, 그림, 제목이 이미 서 있어 글자까지 서면 제목이 한 글자씩 잘린다 */}
-        <span aria-hidden className="hidden sm:inline">
-          {shown ? M.releaseOn : M.releaseOff}
-        </span>
+        {/* 글자는 어디서나 선다(2026-10-26). 예전에는 좁은 화면에서 종만 남겼는데, 무엇을 하는 단추인지 말이 없어 목업(문구가 있는 넓은 단추)과 달랐다.
+            제목이 잘리던 문제는 단추를 줄 아래로 내려 푼다(components/upcoming-row) */}
+        <span aria-hidden>{shown ? M.releaseOn : M.releaseOff}</span>
       </button>
     );
   }
