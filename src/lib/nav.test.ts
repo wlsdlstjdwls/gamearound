@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { resolveNav } from "@/lib/nav";
+import { resolveNav, trailKind } from "@/lib/nav";
 
 const q = (s = "") => new URLSearchParams(s);
 
@@ -28,4 +28,12 @@ describe("resolveNav", () => {
     expect(resolveNav("/", q()).section).toBeNull();
     expect(resolveNav("/settings", q()).section).toBeNull();
   });
+});
+
+describe("trailKind", () => {
+  it("하위 칸 그 자체에 선다", () => expect(trailKind("/hall-of-fame", resolveNav("/hall-of-fame", q()).sub)).toBe("sub"));
+  it("칸 아래 상세(인디 글)는 세우지 않는다 — 제 되돌아가기 링크가 있다", () => expect(trailKind("/indie/some-game", resolveNav("/indie/some-game", q()).sub)).toBeNull());
+  it("내 게임 등록은 끝 낱말을 붙여 선다", () => expect(trailKind("/indie/new", resolveNav("/indie/new", q()).sub)).toBe("leaf"));
+  it("계정 화면은 되돌아가기만", () => expect(trailKind("/alerts", resolveNav("/alerts", q()).sub)).toBe("back"));
+  it("홈은 아무것도 없다", () => expect(trailKind("/", resolveNav("/", q()).sub)).toBeNull());
 });

@@ -9,6 +9,7 @@ import { SiteMenu } from "@/components/site-menu";
 import { SiteNav, SiteNavFallback } from "@/components/site-nav";
 import { NotificationBell } from "@/components/notification-bell";
 import { SubNav } from "@/components/sub-nav";
+import { PageTrail } from "@/components/page-trail";
 import { ThemeSwitch } from "@/components/theme-switch";
 
 /**
@@ -54,6 +55,8 @@ export function SiteHeader() {
       </header>
       <Suspense fallback={null}>
         <SubNav />
+        {/* 하위 화면 맨 위 "이전 화면" 과 경로(목업 crumb). 띠와 같은 표를 읽는다(page-trail 머리 주석) */}
+        <PageTrail />
       </Suspense>
     </>
   );

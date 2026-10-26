@@ -78,6 +78,41 @@ export const NAV_SECTIONS: readonly NavSection[] = [
   },
 ];
 
+/** 화면 위 "이전 화면" 줄(components/page-trail)의 문구 */
+export const NAV_TRAIL_MESSAGES = {
+  back: "이전 화면",
+  crumbLabel: "현재 위치",
+} as const;
+
+/**
+ * 메뉴 소속이 없어도 "이전 화면" 을 세우는 화면(목업의 내 활동, 가격 알림, 찜 목록, 설정). 계정 메뉴에서 들어오는 자리라
+ * 하위 메뉴 띠가 없어 돌아갈 길이 머리띠뿐이다.
+ */
+export const TRAIL_BACK_ONLY_PATHS: readonly string[] = [ROUTES.me, ROUTES.alerts, ROUTES.wishlist, ROUTES.settings];
+
+/**
+ * 경로 표시를 세우지 않는 메뉴. 게임 탐색의 세 칸은 목업도 "이전 화면" 만 둔다 — 하위 메뉴 띠가 바로 위에서 같은 말을 한다.
+ * 다른 메뉴는 목업대로 "메뉴 이름 > 칸 이름" 을 세운다.
+ */
+export const TRAIL_NO_CRUMB_SECTIONS: ReadonlySet<NavSection["key"]> = new Set(["explore"]);
+
+/**
+ * 하위 칸 아래지만 경로 줄을 세우는 화면과 그 끝 낱말(목업 indreg "개발자 라운지 > 내가 만든 게임 > 내 게임 등록", 글쓰기).
+ * 다른 하위 화면(상세, 고치기)은 제 되돌아가기 링크를 갖고 있어 경로 줄을 세우지 않는다 — 두 줄이 같은 말을 한다.
+ */
+export const TRAIL_LEAF_LABEL: Readonly<Record<string, string>> = {
+  [ROUTES.indieNew]: "내 게임 등록",
+  [`${ROUTES.board}/write`]: "글쓰기",
+  [`${ROUTES.lounge}/write`]: "글쓰기",
+};
+
+/** 경로 줄을 세울 화면인가 — 하위 칸 그 자체, 끝 낱말이 정해진 화면, 계정 화면(되돌아가기만) */
+export function trailKind(pathname: string, sub: NavSub | null): "sub" | "leaf" | "back" | null {
+  if (TRAIL_LEAF_LABEL[pathname]) return "leaf";
+  if (sub && pathname === pathOf(sub.href)) return "sub";
+  return TRAIL_BACK_ONLY_PATHS.includes(pathname) ? "back" : null;
+}
+
 function pathOf(href: string): string {
   const q = href.indexOf("?");
   return q === -1 ? href : href.slice(0, q);
