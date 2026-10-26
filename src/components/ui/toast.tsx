@@ -4,6 +4,7 @@
 //
 // 한 번에 하나만 보인다 — 연달아 누르면 앞 문구를 갈아 끼운다. 쌓아 올리면 같은 말이 겹쳐 세 줄이 된다.
 // 낭독기에는 role="status"(aria-live polite)가 같은 말을 한다.
+// 바닥 거리는 --toast-bottom 토큰이다 — 좁은 화면의 바닥 탭바가 서면 globals.css 가 그 위로 올린다(탭바가 토스트를 가리지 않게).
 import { createContext, useCallback, useContext, useEffect, useRef, useState, type ReactNode } from "react";
 
 /** 떠 있는 시간. 한국어 한 줄(15자 안팎)을 두 번 읽을 수 있는 길이 — 더 길면 다음 동작을 가린다 */
@@ -29,7 +30,7 @@ export function ToastProvider({ children }: { children: ReactNode }) {
   return (
     <ToastContext.Provider value={show}>
       {children}
-      <div role="status" aria-live="polite" className="pointer-events-none fixed inset-x-0 bottom-[max(24px,env(safe-area-inset-bottom))] z-[60] flex justify-center px-4">
+      <div role="status" aria-live="polite" className="pointer-events-none fixed inset-x-0 bottom-[var(--toast-bottom)] z-[60] flex justify-center px-4">
         {toast && (
           // key 로 문구마다 새로 세워 등장 애니메이션이 다시 돈다
           <p key={toast.id} className="animate-rise rounded-full bg-acc px-5 py-2.5 text-[14px] font-semibold text-on-ink shadow-3">

@@ -1,64 +1,84 @@
 "use client";
-// 좁은 화면 헤더의 햄버거 메뉴 — 눌러서 바닥에서 올라오는 시트로 전체 메뉴를 편다.
+// 좁은 화면(650px 이하) 머리띠의 계정 시트 — 사용자 아이콘을 누르면 오른쪽에서 시트가 열린다(목업 390 의 사용자 아이콘 메뉴).
 //
-// 왜 접었나(2026-09-15): 로고, 검색칸, 메뉴 넷을 한 줄에 세울 자리가 390px 에는 없다.
-// 셋을 각자 줄로 흘려보내면 붙어 있는 머리띠가 161px 까지 자라 화면의 5분의 1을 늘 먹었고,
-// 그렇다고 위시리스트, 알림을 숨기면 그 두 화면으로 가는 길이 사라졌다. 접는 쪽이 둘 다 해결한다.
+// 2026-10-26 개편 2차: 메뉴 넷과 하위 칸은 시트에서 뺐다. 그 자리는 바닥 탭바(site-tabbar)와 하위 메뉴 띠(sub-nav)가 맡는다.
+// 전에는 시트 하나가 메뉴 넷, 하위 칸 열넷, 계정 칸을 다 들고 있어 계정 항목이 열다섯 줄 아래 묻혔다 —
+// "내 찜 목록" 하나 보러 시트를 열고 끝까지 내려야 했다. 이제 시트는 "내 것"(계정, 내 화면, 테마)만 들고 맨 위가 계정이다.
 //
-// 넓은 화면(lg 부터)은 이 버튼을 쓰지 않는다 — 거기서는 메뉴가 헤더에 그대로 펴져 있다(site-header).
-// 메뉴 넷과 하위 칸은 lib/nav 의 표를 그대로 읽는다(2026-10-26 개편). 하위 칸까지 펴는 이유: 시트를 연 사람은
-// "어디로 갈지" 를 이미 정한 사람이라, 메뉴만 보여 주고 한 번 더 고르게 하면 화면을 두 번 거친다.
-// 시트 본체, 끌어내려 닫기, 화면이 바뀌면 같이 닫기는 ui/sheet 가 맡는다.
-//
-// 계정 칸을 여기 같이 두는 이유: 좁은 화면에서는 아바타 드롭다운(auth/user-menu)이 서지 않는다.
-// 메뉴가 두 군데로 갈리면 "설정이 어디 있더라" 가 생긴다 — 좁은 화면의 답은 늘 이 시트 하나다.
+// 넓은 화면(651px 부터)은 이 시트를 쓰지 않는다 — 머리띠에 사용자 메뉴 드롭다운(auth-nav)과 테마 단추가 그대로 선다.
+// 계정 칸이 두 군데로 갈리지 않게 폭마다 하나만 선다(시트는 tab:hidden, 드롭다운은 tab 부터).
+// 항목 표는 lib/account-menu 하나를 드롭다운과 같이 읽는다. 시트 본체, 끌어내려 닫기, 화면이 바뀌면 같이 닫기는 ui/sheet 가 맡는다.
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { ACCOUNT_PRIMARY_COUNT, accountLinksFor, guestLinks, type AccountLink } from "@/lib/account-menu";
 import { ROLE_LABEL } from "@/lib/auth/constants";
 import { AUTH_MESSAGES as M } from "@/lib/auth/messages";
 import { cn } from "@/lib/cn";
-import { ROUTES, signInPath } from "@/lib/routes";
 import { useSession } from "@/components/auth/session-provider";
 import { useSignOut } from "@/components/auth/use-sign-out";
 import { buttonClass } from "@/components/ui/button";
-import { BellIcon, HeartIcon, LogOutIcon, MenuIcon, ShieldIcon, SlidersIcon, SpinnerIcon } from "@/components/ui/icons";
+import { BellIcon, HeartIcon, LogOutIcon, ShieldIcon, SlidersIcon, SpinnerIcon, UserIcon } from "@/components/ui/icons";
 import { Sheet } from "@/components/ui/sheet";
 import { ThemeSwitch } from "@/components/theme-switch";
 import { Clamp } from "@/components/ui/tooltip";
-import { NAV_SECTIONS, resolveNav } from "@/lib/nav";
 import { Tag } from "@/components/ui/tag";
 
-type MenuLink = { href: string; label: string; icon?: React.ReactNode; authOnly?: boolean; adminOnly?: boolean };
+const ICON_SIZE = 17;
+const LINK_ICON: Record<string, React.ReactNode> = {
+  me: <UserIcon size={ICON_SIZE} />,
+  wishlist: <HeartIcon size={ICON_SIZE} />,
+  alerts: <BellIcon size={ICON_SIZE} />,
+  settings: <SlidersIcon size={ICON_SIZE} />,
+  admin: <ShieldIcon size={ICON_SIZE} />,
+};
 
-/** 메뉴 넷 아래에 서는 내 자리. 찜은 2026-09-21 에 숨겼다가 기획서 v2.0 이 되살렸다 */
-const LINKS: MenuLink[] = [
-  { href: ROUTES.me, label: "내 활동", icon: <SlidersIcon size={17} />, authOnly: true },
-  { href: ROUTES.wishlist, label: "내 찜 목록", icon: <HeartIcon size={17} />, authOnly: true },
-  { href: ROUTES.alerts, label: "가격 알림", icon: <BellIcon size={17} /> },
-  { href: ROUTES.settings, label: "설정", icon: <SlidersIcon size={17} />, authOnly: true },
-  { href: ROUTES.admin, label: "관리자", icon: <ShieldIcon size={17} />, authOnly: true, adminOnly: true },
-];
+const SHEET_TITLE = "사용자 메뉴";
 
 /** 한 줄. 터치 타깃은 줄 높이가 곧바로 맡는다 — 시트 안에서는 자리를 아낄 이유가 없다 */
-function Row({ href, label, icon, current }: MenuLink & { current: boolean }) {
+function Row({ link, current }: { link: AccountLink; current: boolean }) {
   return (
     <Link
-      href={href}
+      href={link.href}
       aria-current={current ? "page" : undefined}
       className={cn(
         "flex min-h-[var(--touch-target)] items-center gap-2.5 rounded-lg px-3 text-[14px] transition-colors",
-        // 머리띠와 같은 규칙 — 지금 보고 있는 줄은 브랜드 색이다(site-nav 주석).
-        // 시트에서는 줄이 세로로 서서 글자색만으로는 약해 연한 브랜드 면을 같이 깐다
+        // 지금 보고 있는 줄은 브랜드 색이다. 시트에서는 줄이 세로로 서서 글자색만으로는 약해 연한 브랜드 면을 같이 깐다
         current ? "bg-acc-soft font-semibold text-acc" : "text-mut hover:bg-surface-2 hover:text-ink",
       )}
     >
       {/* 폭을 고정한다 — 그림이 빠지는 줄이 생겨도 글자 시작점이 계단처럼 어긋나지 않는다 */}
       <span aria-hidden className="flex w-[17px] shrink-0 justify-center">
-        {icon}
+        {LINK_ICON[link.key]}
       </span>
-      {label}
+      {link.label}
     </Link>
   );
+}
+
+/** 로그인 전 메뉴(기획서 3.1 "로그인, 계정 등록, 가격 알림"). 앞 둘은 이 시트의 주된 할 일이라 큰 단추로 세운다 */
+function GuestBlock({ pathname }: { pathname: string }) {
+  const [signIn, signUp, alerts] = guestLinks(pathname);
+  return (
+    <>
+      <div className="flex flex-col gap-2">
+        <Link href={signIn.href} className={buttonClass({ size: "lg", fullWidth: true })}>
+          {signIn.label}
+        </Link>
+        <Link href={signUp.href} className={buttonClass({ variant: "secondary", size: "lg", fullWidth: true })}>
+          {signUp.label}
+        </Link>
+      </div>
+      <div className="flex flex-col gap-0.5 border-t border-line pt-3">
+        {/* 가격 알림은 로그인 화면을 거쳐 열린다(lib/account-menu) — 그래서 지금 위치 표시는 하지 않는다 */}
+        <Row link={alerts} current={false} />
+        <ThemeSwitch withLabel />
+      </div>
+    </>
+  );
+}
+
+function initialOf(name: string): string {
+  return name.trim().slice(0, 1).toUpperCase();
 }
 
 export function SiteMenu() {
@@ -67,46 +87,38 @@ export function SiteMenu() {
   const { signOut, pending: signingOut } = useSignOut();
 
   const isCurrent = (href: string) => pathname === href || pathname.startsWith(`${href}/`);
-  // 주소 조건(할인 게임의 sale=1)까지는 보지 않는다 — useSearchParams 를 쓰면 머리띠 전체가 Suspense 경계를 요구한다.
-  // 시트 안의 켜짐은 "대략 여기" 면 충분하고, 정확한 칸은 하위 메뉴 띠가 말한다
-  const { sub } = resolveNav(pathname, new URLSearchParams());
-  const links = LINKS.filter((l) => (!l.authOnly || Boolean(user)) && (!l.adminOnly || user?.role === "admin"));
+  const links = accountLinksFor(user?.role);
   const name = user?.displayName ?? user?.email ?? "";
 
   return (
     <Sheet
-      title="메뉴"
+      title={SHEET_TITLE}
       side="right"
       unstyledTrigger
-      triggerClassName="flex size-[var(--touch-target)] shrink-0 items-center justify-center rounded-lg text-ink outline-none transition-colors hover:bg-surface-2 focus-visible:ring-2 focus-visible:ring-ink lg:hidden"
+      triggerClassName={cn(
+        "flex size-[var(--touch-target)] shrink-0 items-center justify-center rounded-full outline-none transition-colors focus-visible:ring-2 focus-visible:ring-ink tab:hidden",
+        "border border-line-strong bg-surface text-ink-2 hover:border-ink hover:text-ink",
+      )}
       label={
         <>
-          <MenuIcon size={21} />
-          <span className="sr-only">메뉴 열기</span>
+          {/* 로그인했으면 내 사진(없으면 이름 첫 글자), 아니면 사람 그림 — 머리띠 드롭다운 단추와 같은 말이다 */}
+          {user?.avatarUrl ? (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img src={user.avatarUrl} alt="" className="size-full rounded-full object-cover" />
+          ) : user ? (
+            <span aria-hidden className="text-[13px] font-bold">
+              {initialOf(name)}
+            </span>
+          ) : (
+            <UserIcon size={18} />
+          )}
+          <span className="sr-only">{SHEET_TITLE} 열기</span>
         </>
       }
     >
-      <nav aria-label="전체 메뉴" className="flex flex-col gap-4 pt-2">
-        {NAV_SECTIONS.map((section) => (
-          <div key={section.key} className="flex flex-col gap-0.5">
-            <p className="px-3 pb-1 text-[12px] font-semibold text-dim">{section.label}</p>
-            {section.subs.map((s) => (
-              <Row key={s.href} href={s.href} label={s.label} current={s.href === sub?.href} />
-            ))}
-          </div>
-        ))}
-        <div className="flex flex-col gap-0.5 border-t border-line pt-3">
-          {links.map((l) => (
-            <Row key={l.href} {...l} current={isCurrent(l.href)} />
-          ))}
-          {/* 좁은 화면은 머리띠에 단추 자리가 없다(sm 미만은 개인 자리가 통째로 접힌다) — 시트가 맡는다 */}
-          <ThemeSwitch withLabel />
-        </div>
-      </nav>
-
       {/* 세션을 아직 모르는 동안은 아무것도 약속하지 않는다 — "로그인" 을 띄웠다가 지우면 깜빡인다 */}
       {status !== "loading" && (
-        <div className="mt-3 flex flex-col gap-2 border-t border-line pt-3">
+        <nav aria-label={SHEET_TITLE} className="flex flex-col gap-3 pt-2">
           {user ? (
             <>
               <div className="px-3">
@@ -122,27 +134,35 @@ export function SiteMenu() {
                   </Tag>
                 )}
               </div>
-              <button
-                type="button"
-                onClick={signOut}
-                disabled={signingOut}
-                className="flex min-h-[var(--touch-target)] items-center gap-2 rounded-lg px-3 text-left text-[14px] text-mut transition-colors hover:bg-danger-soft hover:text-danger disabled:opacity-60"
-              >
-                {signingOut ? <SpinnerIcon size={17} /> : <LogOutIcon size={17} />}
-                {M.signOutCta}
-              </button>
+              {/* 기획서 3.1 순서(내 활동, 내 찜 목록, 가격 알림, 로그아웃) 다음에 우리 화면(설정, 관리자) — 드롭다운과 같다 */}
+              <div className="flex flex-col gap-0.5 border-t border-line pt-3">
+                {links.slice(0, ACCOUNT_PRIMARY_COUNT).map((l) => (
+                  <Row key={l.key} link={l} current={isCurrent(l.href)} />
+                ))}
+                <button
+                  type="button"
+                  onClick={signOut}
+                  disabled={signingOut}
+                  className="flex min-h-[var(--touch-target)] items-center gap-2.5 rounded-lg px-3 text-left text-[14px] text-mut transition-colors hover:bg-danger-soft hover:text-danger disabled:opacity-60"
+                >
+                  <span aria-hidden className="flex w-[17px] shrink-0 justify-center">
+                    {signingOut ? <SpinnerIcon size={ICON_SIZE} /> : <LogOutIcon size={ICON_SIZE} />}
+                  </span>
+                  {M.signOutCta}
+                </button>
+              </div>
+              <div className="flex flex-col gap-0.5 border-t border-line pt-3">
+                {links.slice(ACCOUNT_PRIMARY_COUNT).map((l) => (
+                  <Row key={l.key} link={l} current={isCurrent(l.href)} />
+                ))}
+                {/* 좁은 화면은 머리띠에 테마 단추 자리가 없다 — 시트가 맡는다 */}
+                <ThemeSwitch withLabel />
+              </div>
             </>
           ) : (
-            <>
-              <Link href={signInPath(pathname)} className={buttonClass({ size: "lg", fullWidth: true })}>
-                {M.signInCta}
-              </Link>
-              <Link href={ROUTES.signUp} className={buttonClass({ variant: "secondary", size: "lg", fullWidth: true })}>
-                {M.signUpCta}
-              </Link>
-            </>
+            <GuestBlock pathname={pathname} />
           )}
-        </div>
+        </nav>
       )}
     </Sheet>
   );

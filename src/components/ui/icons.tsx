@@ -406,3 +406,41 @@ export function MoonIcon(p: IconProps) {
     </svg>
   );
 }
+
+/* 좁은 화면 바닥 탭바(components/site-tabbar)의 다섯 칸 — 모양은 목업 #nav 의 그림을 그대로 옮겼다 */
+
+/** 집 — 홈 */
+export function HomeIcon(p: IconProps) {
+  return (
+    <svg {...base(p)}>
+      <path d="M3 11l9-8 9 8M5 10v10h5v-6h4v6h5V10" />
+    </svg>
+  );
+}
+
+/** 새싹 — 인디 게임 */
+export function SproutIcon(p: IconProps) {
+  return (
+    <svg {...base(p)}>
+      <path d="M12 21v-9M12 12c0-4 3-6 7-6 0 4-3 6-7 6zM12 14c0-3-2-5-6-5 0 3 2 5 6 5z" />
+    </svg>
+  );
+}
+
+/** 접힌 문서 — 게임 게시판 */
+export function FileTextIcon(p: IconProps) {
+  return (
+    <svg {...base(p)}>
+      <path d="M7 3h8l4 4v14H7zM15 3v4h4M10 12h6M10 16h6" />
+    </svg>
+  );
+}
+
+/** 말풍선 — 개발자 라운지 */
+export function ChatIcon(p: IconProps) {
+  return (
+    <svg {...base(p)}>
+      <path d="M4 5h16v11H9l-5 4zM8 10h8" />
+    </svg>
+  );
+}

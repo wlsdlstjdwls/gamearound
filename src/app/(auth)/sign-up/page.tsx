@@ -4,7 +4,7 @@ import { safeNextPath } from "@/lib/routes";
 import { AuthCard } from "@/components/auth/auth-card";
 import { SignUpForm } from "@/components/auth/sign-up-form";
 
-export const metadata: Metadata = { title: "회원가입" };
+export const metadata: Metadata = { title: M.signUpCta };
 
 export default async function SignUpPage({ searchParams }: { searchParams: Promise<{ next?: string | string[] }> }) {
   const sp = await searchParams;

@@ -9,7 +9,8 @@ export function avatarPrefix(userId: string): string {
 
 export const ME_MESSAGES = {
   title: "내 활동",
-  avatarChange: "사진 바꾸기",
+  // 목업(actPage)의 단추 이름 그대로 — 기획서 3.1 "프로필 사진 변경" 과도 같은 낱말이다
+  avatarChange: "사진 변경",
   avatarReset: "기본 이미지로",
   avatarTooBig: "3MB 이하 이미지만 올릴 수 있어요",
   avatarFailed: "사진을 바꾸지 못했어요. 잠시 뒤 다시 해 주세요",

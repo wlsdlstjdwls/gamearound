@@ -56,7 +56,7 @@ export default async function SettingsPage() {
           <Row label="권한" value={ROLE_LABEL[user.role] ?? user.role} />
           <Row label="가입일" value={formatDate(user.createdAt)} />
         </dl>
-        <p className="text-[11.5px] text-dim">닉네임, 비밀번호 변경은 곧 추가됩니다.</p>
+        <p className="text-[11.5px] text-dim">닉네임, 비밀번호 변경은 곧 추가할 예정이에요.</p>
       </section>
 
       {canPersonalize(user.role) && <PersonalizationSection profile={profile} names={{ genres, subscriptions }} />}

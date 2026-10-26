@@ -11,6 +11,7 @@ import { ImageFallback } from "@/components/ui/image-fallback";
 import { Page, PageHead } from "@/components/ui/page";
 import { Clamp } from "@/components/ui/tooltip";
 import { PLATFORM_LABEL } from "@/lib/format";
+import { gamesHref } from "@/lib/games-query";
 import { collectedAtText, getFreshness } from "@/lib/freshness";
 import { stagger } from "@/lib/motion";
 import { ROUTES } from "@/lib/routes";
@@ -71,7 +72,8 @@ export default async function WishlistPage({ searchParams }: Props) {
         <EmptyState
           title="아직 찜한 게임이 없어요"
           description="게임 상세에서 찜하면 할인 소식을 이 자리에서 먼저 보여 드려요."
-          action={{ href: ROUTES.game, label: "할인 목록 보기" }}
+          // 단추 이름대로 할인 중인 게임만 걸러 연다(게임 탐색 > 할인 게임 칸과 같은 sale=1). 전체 목록으로 가면 이름과 딴 화면이다
+          action={{ href: gamesHref({}, { onSale: true }), label: "할인 목록 보기" }}
         />
       ) : (
         // min(): 화면이 330px 보다 좁아도 칸이 줄어야 한다. 안 씌우면 360px 기기에서 카드가 화면 밖으로 나간다

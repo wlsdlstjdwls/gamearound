@@ -144,6 +144,12 @@
      재서 적은 값이 아니라 **못 박은 값**이다 — 띠에 이 높이를 그대로 물려 두 값이 어긋날 수 없게 했다 */
   --month-nav-h: 60px;
 
+  /* 좁은 화면 바닥 탭바(components/site-tabbar)의 높이 — 칸 52 + 위아래 6(목업 #nav). 홈 인디케이터 높이는 바깥에 더한다.
+     못 박은 값이다: 탭바가 이 높이를 그대로 물고, 문서 바닥 여백과 토스트 자리가 같은 값을 읽는다 */
+  --tabbar-h: 64px;
+  /* 토스트(ui/toast)의 바닥 거리. 탭바가 서는 화면에서는 아래 규칙이 탭바 위로 올린다 */
+  --toast-bottom: max(24px, env(safe-area-inset-bottom));
+
   --font-sans: "Pretendard Variable", Pretendard, -apple-system, BlinkMacSystemFont, "Apple SD Gothic Neo", "Segoe UI", Roboto,
     "Noto Sans KR", "Malgun Gothic", sans-serif;
 
@@ -278,6 +284,12 @@
 }
 
 /* Tailwind v4 테마 연결 — bg-surface, text-mut, duration-base, ease-out-emph, animate-rise 같은 유틸이 생긴다 */
+/* 기획서 v2.0 4.1 의 폭 경계. 모바일은 650 까지, 태블릿은 651 부터라 Tailwind 기본 sm(640)과 10px 어긋난다.
+   이름 붙은 경계로 둔다 — 컴포넌트마다 min-[651px] 을 적으면 값이 흩어진다. tab: 은 651 이상, max-tab: 은 650 이하다 */
+@theme {
+  --breakpoint-tab: 40.6875rem; /* 651px */
+}
+
 @theme inline {
   --color-bg: var(--bg);
   --color-surface: var(--surface);
@@ -660,6 +672,19 @@ body.dragging-card {
 @media (max-width: 767px) {
   body:has([data-admin-tabbar]) {
     padding-bottom: calc(56px + env(safe-area-inset-bottom));
+  }
+}
+
+/*
+ * 서비스 바닥 탭바(components/site-tabbar)의 자리 — 위 관리자 띠와 같은 이유로 body 에서 비운다.
+ * 탭바가 실제로 서는 폭(650 까지)에서만, 온보딩처럼 탭바를 감추는 화면은 빼고 붙인다.
+ * 홈 인디케이터 높이는 더하지 않는다 — 푸터가 이미 .safe-bottom 으로 그만큼 비운다. 두 번 더하면 바닥에 빈 띠가 남는다.
+ * 토스트도 같은 자리에서 탭바 위로 올린다(--toast-bottom). 탭바와 12px 떨어뜨린다 — 붙으면 탭바의 한 칸처럼 읽힌다.
+ */
+@media (max-width: 650px) {
+  body:has([data-site-tabbar]):not(:has([data-onboarding])) {
+    padding-bottom: var(--tabbar-h);
+    --toast-bottom: calc(var(--tabbar-h) + env(safe-area-inset-bottom) + 12px);
   }
 }
 
@@ -1177,6 +1202,13 @@ li:has([data-more-open]) {
     --header-h: 68px;
   }
 }
+/* 태블릿(651~1023)은 상단 메뉴가 머리띠 둘째 줄로 내려간다(site-header 주석). 그 줄 36(칸 높이) + 줄 사이 4 를 더하고
+   첫 줄 아래 여백이 14 에서 6 으로 줄어든 만큼 뺀다. 재어서 맞춘 값이다(2026-10-26, 800px 에서 머리띠 102 = 이 값 + 아래 선 1, 넓은 화면 68 과 같은 셈법) */
+@media (min-width: 651px) and (max-width: 1023px) {
+  :root {
+    --header-h: 101px;
+  }
+}
 .headbar {
   opacity: 0;
   transform: translateY(-8px);
@@ -1234,7 +1266,8 @@ li:has([data-more-open]) {
  * 설계는 docs/기획_첫로그인_온보딩_개인화_2026-09-22.md.
  */
 body:has([data-onboarding]) > header,
-body:has([data-onboarding]) > footer {
+body:has([data-onboarding]) > footer,
+body:has([data-onboarding]) > [data-site-tabbar] {
   display: none;
 }
 

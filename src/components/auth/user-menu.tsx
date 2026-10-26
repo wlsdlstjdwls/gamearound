@@ -1,28 +1,18 @@
 "use client";
-// 헤더 사용자 메뉴 — 아바타 버튼 + 드롭다운. 바깥 클릭(mousedown+touchstart)/Esc/Tab으로 닫힘, ↑↓ 이동, 닫히면 버튼으로 포커스 복귀.
-// 로그아웃: 서버 액션으로 세션 폐기 → 클라이언트 세션 즉시 null → 홈으로 soft navigation.
+// 헤더 사용자 메뉴(로그인 후) — 아바타 버튼 + 드롭다운. 열고 닫기, 키보드 이동은 use-dropdown-menu 가 맡는다.
+// 항목 표는 lib/account-menu 하나다(기획서 v2.0 3.1 순서: 내 활동, 내 찜 목록, 가격 알림, 로그아웃, 그 뒤에 설정, 관리자).
+// 로그아웃: 서버 액션으로 세션 폐기, 클라이언트 세션 즉시 null, 홈으로 soft navigation.
 import Link from "next/link";
-import { useCallback, useEffect, useId, useRef, useState, type KeyboardEvent } from "react";
 import { ROLE_LABEL } from "@/lib/auth/constants";
 import { AUTH_MESSAGES as M } from "@/lib/auth/messages";
+import { ACCOUNT_PRIMARY_COUNT, accountLinksFor } from "@/lib/account-menu";
 import { cn } from "@/lib/cn";
 import { Clamp } from "@/components/ui/tooltip";
-import { ROUTES } from "@/lib/routes";
 import type { PublicUser } from "@/server/services/users";
+import { MENU_ITEM_CLASS, MENU_PANEL_CLASS, useDropdownMenu } from "@/components/auth/use-dropdown-menu";
 import { useSignOut } from "@/components/auth/use-sign-out";
 import { ChevronDownIcon, LogOutIcon, SpinnerIcon } from "@/components/ui/icons";
 import { Tag } from "@/components/ui/tag";
-
-type MenuLink = { href: string; label: string; adminOnly?: boolean };
-
-const MENU_LINKS: MenuLink[] = [
-  // 기획서 v2.0(3.1) 순서: 내 활동, 내 찜 목록, 가격 알림, 로그아웃. 찜은 2026-09-21 에 숨겼다가 기획서가 되살렸다
-  { href: ROUTES.me, label: "내 활동" },
-  { href: ROUTES.wishlist, label: "내 찜 목록" },
-  { href: ROUTES.alerts, label: "가격 알림" },
-  { href: ROUTES.settings, label: "설정" },
-  { href: ROUTES.admin, label: "관리자", adminOnly: true },
-];
 
 function initialOf(user: PublicUser): string {
   const src = user.displayName?.trim() || user.email;
@@ -30,71 +20,24 @@ function initialOf(user: PublicUser): string {
 }
 
 export function UserMenu({ user }: { user: PublicUser }) {
-  const id = useId();
-  const [open, setOpen] = useState(false);
-  const { signOut, pending: signingOut } = useSignOut(() => setOpen(false));
-  const wrapRef = useRef<HTMLDivElement>(null);
-  const btnRef = useRef<HTMLButtonElement>(null);
-  const menuRef = useRef<HTMLDivElement>(null);
+  const { open, close, wrapRef, buttonProps, menuProps } = useDropdownMenu();
+  const { signOut, pending: signingOut } = useSignOut(() => close(false));
 
-  const links = MENU_LINKS.filter((l) => !l.adminOnly || user.role === "admin");
-
-  const close = useCallback((focusBack = true) => {
-    setOpen(false);
-    if (focusBack) btnRef.current?.focus();
-  }, []);
-
-  // 바깥 클릭 — 터치 기기는 mousedown이 늦게 오므로 touchstart도 함께
-  useEffect(() => {
-    if (!open) return;
-    const onDown = (e: MouseEvent | TouchEvent) => {
-      if (!wrapRef.current?.contains(e.target as Node)) setOpen(false);
-    };
-    document.addEventListener("mousedown", onDown);
-    document.addEventListener("touchstart", onDown, { passive: true });
-    return () => {
-      document.removeEventListener("mousedown", onDown);
-      document.removeEventListener("touchstart", onDown);
-    };
-  }, [open]);
-
-  // 열리면 첫 항목으로 포커스
-  useEffect(() => {
-    if (open) menuRef.current?.querySelector<HTMLElement>('[role="menuitem"]')?.focus();
-  }, [open]);
-
-  const items = () => Array.from(menuRef.current?.querySelectorAll<HTMLElement>('[role="menuitem"]') ?? []);
-
-  const onMenuKey = (e: KeyboardEvent) => {
-    const list = items();
-    const idx = list.indexOf(document.activeElement as HTMLElement);
-    if (e.key === "Escape") { e.preventDefault(); close(); return; }
-    if (e.key === "Tab") { setOpen(false); return; }
-    if (e.key === "ArrowDown") { e.preventDefault(); list[(idx + 1) % list.length]?.focus(); return; }
-    if (e.key === "ArrowUp") { e.preventDefault(); list[(idx - 1 + list.length) % list.length]?.focus(); return; }
-    if (e.key === "Home") { e.preventDefault(); list[0]?.focus(); return; }
-    if (e.key === "End") { e.preventDefault(); list[list.length - 1]?.focus(); }
-  };
-
-  const onButtonKey = (e: KeyboardEvent) => {
-    if (!open && (e.key === "ArrowDown" || e.key === "Enter" || e.key === " ")) {
-      e.preventDefault();
-      setOpen(true);
-    }
-  };
-
+  const links = accountLinksFor(user.role);
+  const primary = links.slice(0, ACCOUNT_PRIMARY_COUNT);
+  const extra = links.slice(ACCOUNT_PRIMARY_COUNT);
   const name = user.displayName ?? user.email;
+
+  const linkItem = (l: (typeof links)[number]) => (
+    <Link key={l.key} href={l.href} role="menuitem" onClick={() => close(false)} className={MENU_ITEM_CLASS}>
+      {l.label}
+    </Link>
+  );
 
   return (
     <div ref={wrapRef} className="relative">
       <button
-        ref={btnRef}
-        type="button"
-        onClick={() => setOpen((v) => !v)}
-        onKeyDown={onButtonKey}
-        aria-haspopup="menu"
-        aria-expanded={open}
-        aria-controls={open ? id : undefined}
+        {...buttonProps}
         aria-label={`${name} 메뉴`}
         className={cn(
           "press flex h-9 items-center gap-2 rounded-full border pl-1 pr-2.5 outline-none transition-colors",
@@ -116,14 +59,7 @@ export function UserMenu({ user }: { user: PublicUser }) {
       </button>
 
       {open && (
-        <div
-          ref={menuRef}
-          id={id}
-          role="menu"
-          aria-label="내 계정"
-          onKeyDown={onMenuKey}
-          className="absolute right-0 top-[calc(100%+8px)] z-50 w-60 origin-top-right animate-scale-in overflow-hidden rounded-[var(--radius-md)] border border-line-strong bg-surface"
-        >
+        <div {...menuProps} aria-label="내 계정" className={MENU_PANEL_CLASS}>
           <div className="border-b border-line px-4 py-3">
             <p className="text-sm font-semibold text-ink">
               <Clamp>{name}</Clamp>
@@ -134,19 +70,7 @@ export function UserMenu({ user }: { user: PublicUser }) {
             {user.role !== "user" && <Tag tight={false} small className="mt-1">{ROLE_LABEL[user.role]}</Tag>}
           </div>
           <div className="py-1.5">
-            {links.map((l) => (
-              <Link
-                key={l.href}
-                href={l.href}
-                role="menuitem"
-                onClick={() => close(false)}
-                className="flex min-h-[var(--touch-target)] items-center px-4 text-[13px] text-mut outline-none transition-colors hover:bg-surface-2 hover:text-ink focus-visible:bg-surface-2 focus-visible:text-ink"
-              >
-                {l.label}
-              </Link>
-            ))}
-          </div>
-          <div className="border-t border-line py-1.5">
+            {primary.map(linkItem)}
             <button
               type="button"
               role="menuitem"
@@ -158,6 +82,8 @@ export function UserMenu({ user }: { user: PublicUser }) {
               {M.signOutCta}
             </button>
           </div>
+          {/* 기획서 표 밖의 우리 화면(설정, 관리자)은 선 아래로 뗀다 — 기획서 넷이 한 덩어리로 읽혀야 한다 */}
+          {extra.length > 0 && <div className="border-t border-line py-1.5">{extra.map(linkItem)}</div>}
         </div>
       )}
     </div>

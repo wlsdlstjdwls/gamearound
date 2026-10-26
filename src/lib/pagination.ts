@@ -25,3 +25,12 @@ export function pageWindow(page: number, totalPages: number): Array<number | nul
   }
   return out;
 }
+
+/**
+ * 주소의 page 값을 쪽 번호로. 사람이 손으로 고치는 값이라 무엇이 와도 1 이상 정수로 떨어뜨린다.
+ * 배열(?page=2&page=3)이면 첫 값을 쓴다. 너무 큰 값은 서비스가 빈 쪽을 돌려줄 뿐이라 위로는 자르지 않는다.
+ */
+export function readPageParam(raw: string | string[] | undefined): number {
+  const n = Number(Array.isArray(raw) ? raw[0] : raw);
+  return Number.isFinite(n) && n >= 1 ? Math.floor(n) : 1;
+}

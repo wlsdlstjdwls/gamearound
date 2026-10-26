@@ -7,6 +7,7 @@ import { BrandLockup } from "@/components/ui/logo";
 import { SearchBox, SearchBoxFallback } from "@/components/search-box";
 import { SiteMenu } from "@/components/site-menu";
 import { SiteNav, SiteNavFallback } from "@/components/site-nav";
+import { SiteTabbar } from "@/components/site-tabbar";
 import { NotificationBell } from "@/components/notification-bell";
 import { SubNav } from "@/components/sub-nav";
 import { PageTrail } from "@/components/page-trail";
@@ -17,9 +18,15 @@ import { ThemeSwitch } from "@/components/theme-switch";
  * 머리띠 한 줄: 락업 + 상단 메뉴 넷 | 검색칸 + 개인 자리(알림, 계정). 왼쪽은 "무엇을 보러 가나", 오른쪽은 "내 것" 이다.
  * 그 아래 하위 메뉴 띠는 머리띠 밖에 둔다 — 이유는 sub-nav 머리 주석(머리띠 높이 토큰).
  *
- * 상단 메뉴가 lg(1024px)부터 펴지는 이유: 메뉴 넷의 글자가 옛 셋보다 길어 640~1023 에서는 검색칸이 눌려 사라진다.
- * 그 폭에서는 햄버거 시트가 메뉴 넷을 맡고, 하위 메뉴 띠는 어느 폭에서나 선다(기획서 4.1 태블릿 "메뉴가 두 줄로").
- * 줄바꿈은 여전히 하지 않는다(2026-09-15) — flex-wrap 으로 흘리면 390px 에서 머리띠가 161px 까지 자랐다.
+ * 폭마다 메뉴 넷의 자리(기획서 v2.0 4.1, 목업의 1023, 650 미디어쿼리):
+ *  - 1024 부터: 로고 옆 한 줄.
+ *  - 651~1023(태블릿): 머리띠 둘째 줄. 메뉴 넷의 글자가 옛 셋보다 길어 한 줄에 세우면 검색칸이 눌려 사라지던 폭이다 —
+ *    그래서 한때는 햄버거 시트로 접었는데, 기획서는 "메뉴가 두 줄로 내려감" 이다. 줄을 **통째로 따로** 주면 검색칸은 첫 줄 폭을 다 쓴다.
+ *  - 650 까지(모바일): 바닥 탭바(site-tabbar). 머리띠는 한 줄 그대로다.
+ * 2026-09-15 에 줄바꿈을 막은 이유(flex-wrap 으로 흘리니 390px 에서 머리띠가 161px 까지 자랐다)는 모바일 폭의 이야기라
+ * 그 폭에서는 여전히 접지 않는다. 태블릿에서 둘째 줄이 서는 만큼 머리띠 높이 토큰(--header-h)도 globals.css 에서 같이 올린다.
+ *
+ * 계정 자리도 폭마다 하나만 선다: 651 부터는 사용자 메뉴 드롭다운(auth-nav)과 테마 단추, 그 밑은 계정 시트(site-menu).
  */
 export function SiteHeader() {
   return (
@@ -27,7 +34,7 @@ export function SiteHeader() {
       {/* 유리 면(--header-glass): 반투명 바탕 + 뒤 흐림. 스크롤한 본문이 머리띠 밑으로 비쳐 "떠 있다" 를 말하고,
           그림자는 스크롤한 뒤에만 뜬다(.header-lift) — 맨 위에서는 본문과 한 장으로 읽힌다 */}
       <header className="header-lift sticky top-0 z-40 border-b border-line-soft bg-[var(--header-glass)] backdrop-blur-[var(--header-blur)]">
-        <div className="mx-auto flex w-full max-w-[var(--page-w)] items-center gap-2 px-5 py-2.5 sm:gap-5 sm:px-6 sm:py-3.5 lg:gap-7">
+        <div className="mx-auto flex w-full max-w-[var(--page-w)] flex-wrap items-center gap-x-2 gap-y-1 px-5 py-2.5 sm:gap-x-5 sm:px-6 sm:py-3.5 tab:max-lg:pb-1.5 lg:flex-nowrap lg:gap-x-7">
           {/* 좁은 화면에서는 심볼만 남는다. 글자가 접혀도 링크의 이름은 남아야 하므로 aria-label 로 못 박는다 */}
           <Link href={ROUTES.home} aria-label={SITE.name} className="press tap inline-flex shrink-0 items-center text-ink">
             <BrandLockup wordmarkClassName="hidden sm:inline" />
@@ -42,7 +49,7 @@ export function SiteHeader() {
             <SearchBox />
           </Suspense>
 
-          <div className="hidden shrink-0 items-center gap-1.5 sm:flex">
+          <div className="hidden shrink-0 items-center gap-1.5 tab:flex">
             {/* 테마 단추는 로그인과 상관없이 선다 — 설정 화면은 로그인한 사람에게만 열린다(theme-switch 주석) */}
             <ThemeSwitch />
           </div>
@@ -52,7 +59,7 @@ export function SiteHeader() {
               목업 390 도 종을 머리띠에 둔다 */}
           <div className="flex shrink-0 items-center gap-1.5">
             <NotificationBell />
-            <div className="hidden sm:contents">
+            <div className="hidden tab:contents">
               <AuthNav />
             </div>
           </div>
@@ -60,6 +67,7 @@ export function SiteHeader() {
           <SiteMenu />
         </div>
       </header>
+      <SiteTabbar />
       <Suspense fallback={null}>
         <SubNav />
         {/* 하위 화면 맨 위 "이전 화면" 과 경로(목업 crumb). 띠와 같은 표를 읽는다(page-trail 머리 주석) */}

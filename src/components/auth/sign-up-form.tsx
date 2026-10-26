@@ -1,6 +1,6 @@
 "use client";
 import Link from "next/link";
-import { useActionState, useRef, useState } from "react";
+import { useActionState, useCallback, useEffect, useId, useRef, useState } from "react";
 import { checkDisplayNameTakenAction, checkEmailTakenAction, signUpAction } from "@/app/(auth)/actions";
 import { DISPLAY_NAME_MAX } from "@/lib/auth/constants";
 import { AUTH_MESSAGES as M } from "@/lib/auth/messages";
@@ -44,10 +44,25 @@ export function SignUpForm({ next }: { next: string }) {
   const [agree, setAgree] = useState({ terms: false, privacy: false, alertEmail: false });
   const allAgreed = agree.terms && agree.privacy && agree.alertEmail;
 
+  /*
+   * 필수 항목을 다 채우기 전에는 단추를 끈다(기획서 v2.0 S-27 "필수 항목 미충족 시 가입 버튼 비활성").
+   * 판정은 서버 액션과 **같은 zod 스키마**로 한다 — 기준이 둘이면 "켜졌는데 서버가 거절" 이나 "다 맞는데 꺼짐" 이 생긴다.
+   * 칸마다 입력 이벤트(onInput 은 폼까지 올라온다)와 동의 상태가 바뀔 때 폼 전체를 다시 읽는다.
+   * "전체 동의" 는 상태로 체크를 바꿔 입력 이벤트가 나지 않으므로 agree 를 지켜보는 효과가 같은 일을 한다.
+   * 이메일 중복처럼 서버에 물어야 아는 것은 여기서 막지 않는다 — 그 답은 칸 아래 문구와 제출 응답이 말한다.
+   */
+  const [complete, setComplete] = useState(false);
+  const recheck = useCallback(() => {
+    const form = formRef.current;
+    if (form) setComplete(signUpSchema.safeParse(signUpInputFromForm(new FormData(form))).success);
+  }, [formRef]);
+  useEffect(recheck, [agree, recheck]);
+  const incompleteId = useId();
+
   // <form> 에 action 을 걸지 않는다 — 걸면 React 19 가 제출 때마다 form.reset() 을 불러
   // 실패한 폼의 칸이 전부 비워진다. 액션은 useAuthForm 의 onSubmit 이 직접 태운다(근거는 그 주석에)
   return (
-    <form ref={formRef} onSubmit={onSubmit} noValidate className="space-y-4">
+    <form ref={formRef} onSubmit={onSubmit} onInput={recheck} noValidate className="space-y-4">
       <input type="hidden" name="next" value={next} />
 
       {formError && (
@@ -161,9 +176,14 @@ export function SignUpForm({ next }: { next: string }) {
       </fieldset>
 
       <div className="reveal pt-1" style={stagger(6)}>
-        <Button type="submit" size="lg" fullWidth loading={busy} loadingLabel={M.pending}>
+        <Button type="submit" size="lg" fullWidth loading={busy} loadingLabel={M.pending} disabled={!complete && !busy} aria-describedby={complete ? undefined : incompleteId}>
           {M.signUpCta}
         </Button>
+        {!complete && !busy && (
+          <p id={incompleteId} className="mt-2 text-center text-[12.5px] text-dim">
+            {M.signUpIncomplete}
+          </p>
+        )}
       </div>
 
       <p className="reveal text-center text-sm text-mut" style={stagger(7)}>
