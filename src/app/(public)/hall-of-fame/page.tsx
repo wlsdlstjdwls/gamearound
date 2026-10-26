@@ -20,7 +20,8 @@ import { nullIfDbUnavailable } from "@/lib/db-errors";
 import { FAME_MESSAGES as M, isYm, kstYm, prevYm, ymLabel } from "@/lib/indie/fame";
 import { genreLabels, INDIE_PLATFORM_LABEL } from "@/lib/indie/messages";
 import { stagger } from "@/lib/motion";
-import { indiePath, ROUTES } from "@/lib/routes";
+import { indieDetailHref, INDIE_FROM } from "@/lib/indie/query";
+import { ROUTES } from "@/lib/routes";
 import { getMonthRanking, listHallHistory, type RankedIndie } from "@/server/services/indie";
 
 export const revalidate = 300;
@@ -100,7 +101,7 @@ function Ranking({ items, label, finalized, isNow }: { items: RankedIndie[]; lab
     <div className="flex flex-col gap-6">
       <div className="grid gap-4 lg:grid-cols-[minmax(0,1.9fr)_minmax(0,1fr)_minmax(0,1fr)]">
         {/* 1위 — 큰 판(목업 hhero). 대표 그림을 흐리지 않고 깔고, 왼쪽에서 오른쪽으로 옅어지는 막을 씌워 글을 읽힌다 */}
-        <Link href={indiePath(top.card.slug)} className="lift press glint-sweep group relative isolate flex min-h-[280px] flex-col justify-between gap-4 overflow-hidden rounded-[var(--radius-panel)] bg-ink p-5 text-on-ink sm:p-6">
+        <Link href={indieDetailHref(top.card.slug, INDIE_FROM.hallOfFame)} className="lift press glint-sweep group relative isolate flex min-h-[280px] flex-col justify-between gap-4 overflow-hidden rounded-[var(--radius-panel)] bg-ink p-5 text-on-ink sm:p-6">
           <span aria-hidden className="absolute inset-0 -z-10 opacity-50">
             <FadeImage src={top.card.cover.url} alt="" fill sizes="(max-width: 1024px) 100vw, 50vw" className="object-cover" />
           </span>
@@ -123,7 +124,7 @@ function Ranking({ items, label, finalized, isNow }: { items: RankedIndie[]; lab
           </span>
         </Link>
         {rest.slice(0, 2).map((r, i) => (
-          <Link key={r.card.slug} href={indiePath(r.card.slug)} className="lift press group enter-item flex flex-col gap-3 rounded-[var(--radius-panel)] bg-surface p-3.5 shadow-hair" style={stagger(i)}>
+          <Link key={r.card.slug} href={indieDetailHref(r.card.slug, INDIE_FROM.hallOfFame)} className="lift press group enter-item flex flex-col gap-3 rounded-[var(--radius-panel)] bg-surface p-3.5 shadow-hair" style={stagger(i)}>
             <span className="relative block">
               <Cover item={r} sizes="(max-width: 1024px) 100vw, 25vw" />
               <span className="absolute left-2 top-2 flex size-7 items-center justify-center rounded-lg bg-ink text-[13px] font-extrabold text-on-ink">{i + 2}</span>
@@ -149,7 +150,7 @@ function Ranking({ items, label, finalized, isNow }: { items: RankedIndie[]; lab
           </h2>
           <ol className="flex flex-col gap-2.5">
             {rest.slice(2).map((r, i) => (
-              <RankRow key={r.card.slug} to={indiePath(r.card.slug)} rank={M.rank(i + 4)} sub={M.score(r.score)} item={r} right={<span className={PLATFORM_PILL}>{platformsOf(r)}</span>} />
+              <RankRow key={r.card.slug} to={indieDetailHref(r.card.slug, INDIE_FROM.hallOfFame)} rank={M.rank(i + 4)} sub={M.score(r.score)} item={r} right={<span className={PLATFORM_PILL}>{platformsOf(r)}</span>} />
             ))}
           </ol>
         </section>
@@ -176,7 +177,7 @@ function Top10({ ym, items }: { ym: string; items: RankedIndie[] }) {
       ) : (
         <ol className="flex flex-col gap-2.5">
           {items.map((r, i) => (
-            <RankRow key={r.card.slug} to={indiePath(r.card.slug)} rank={M.rank(i + 1)} sub={M.score(r.score)} item={r} right={<span className={PLATFORM_PILL}>{platformsOf(r)}</span>} />
+            <RankRow key={r.card.slug} to={indieDetailHref(r.card.slug, INDIE_FROM.hallOfFame)} rank={M.rank(i + 1)} sub={M.score(r.score)} item={r} right={<span className={PLATFORM_PILL}>{platformsOf(r)}</span>} />
           ))}
         </ol>
       )}

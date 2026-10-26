@@ -16,7 +16,8 @@ import { formatDotDate } from "@/lib/format";
 import { firstParam } from "@/lib/games-query";
 import { INDIE_POSTS_PER_USER_MAX } from "@/lib/indie/constants";
 import { genreLabels, INDIE_FORM_MESSAGES as M, INDIE_MESSAGES, INDIE_PLATFORM_LABEL, INDIE_REVIEW_LABEL, INDIE_REVIEW_MESSAGES as RV } from "@/lib/indie/messages";
-import { indieEditPath, indiePath, ROUTES } from "@/lib/routes";
+import { indieDetailHref, INDIE_FROM } from "@/lib/indie/query";
+import { indieEditPath, ROUTES } from "@/lib/routes";
 import { requireUserOrRedirect } from "@/server/auth/guards";
 import { listMyIndiePosts } from "@/server/services/indie";
 
@@ -67,7 +68,7 @@ export default async function IndieMinePage({ searchParams }: Props) {
               <li key={p.id} className="flex items-center justify-between gap-3 px-4 py-3.5 sm:px-5">
                 <div className="flex min-w-0 flex-col gap-1">
                   {/* 등록 완료 줄은 공개 상세로, 그 밖은 고치기로 간다(기획서 S-22 "등록 완료 행은 S-19 로") */}
-                  <Link href={p.review === "approved" ? indiePath(p.slug) : indieEditPath(p.id)} className="min-w-0 truncate text-[15px] font-bold text-ink hover:text-acc">
+                  <Link href={p.review === "approved" ? indieDetailHref(p.slug, INDIE_FROM.mine) : indieEditPath(p.id)} className="min-w-0 truncate text-[15px] font-bold text-ink hover:text-acc">
                     {p.title}
                   </Link>
                   <span className="truncate text-[12.5px] text-dim">{meta}</span>

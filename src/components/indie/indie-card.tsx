@@ -11,7 +11,7 @@ import { Clamp } from "@/components/ui/tooltip";
 import { IndieStageBadge } from "@/components/indie/stage-badge";
 import { cn } from "@/lib/cn";
 import { formatDotDate } from "@/lib/format";
-import { indiePath } from "@/lib/routes";
+import { indieDetailHref, type IndieFrom } from "@/lib/indie/query";
 import { genreLabels, INDIE_MESSAGES as M, INDIE_PLATFORM_LABEL } from "@/lib/indie/messages";
 import type { IndieCardDto } from "@/lib/indie/dto";
 
@@ -30,7 +30,8 @@ export function IndieTagPills({ platforms, genres }: { platforms: readonly Indie
   );
 }
 
-export function IndieCard({ post, badge }: { post: IndieCardDto; badge?: React.ReactNode }) {
+/** from: 상세의 경로 줄, 메뉴 강조를 정하는 출처(lib/indie/query). 슈퍼루키가 싣는다 — 목록, 홈 줄은 기본이다 */
+export function IndieCard({ post, badge, from }: { post: IndieCardDto; badge?: React.ReactNode; from?: IndieFrom }) {
   return (
     <div className={cn(CARD_SHELL, "cover-zoom group relative")}>
       <span className={COVER_CLASS}>
@@ -43,7 +44,7 @@ export function IndieCard({ post, badge }: { post: IndieCardDto; badge?: React.R
           {badge}
           {/* 누를 면은 제목 링크의 ::after 다 — 게임 카드와 같은 구조(game-card 주석) */}
           <Link
-            href={indiePath(post.slug)}
+            href={indieDetailHref(post.slug, from)}
             className="min-w-0 flex-1 outline-none after:absolute after:inset-0 after:rounded-[var(--radius-panel)] focus-visible:after:ring-2 focus-visible:after:ring-ink focus-visible:after:ring-offset-2 focus-visible:after:ring-offset-bg"
           >
             <Clamp lines={1} className="text-[16px] font-semibold leading-[1.35] tracking-[-0.015em] text-ink transition-colors duration-fast group-hover:text-acc sm:text-[15px]">

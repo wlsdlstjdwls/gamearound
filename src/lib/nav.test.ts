@@ -39,7 +39,8 @@ describe("resolveNav", () => {
 
 describe("trailKind", () => {
   it("하위 칸 그 자체에 선다", () => expect(trailKind("/hall-of-fame", resolveNav("/hall-of-fame", q()).sub)).toBe("sub"));
-  it("칸 아래 상세(인디 글)는 세우지 않는다 — 제 되돌아가기 링크가 있다", () => expect(trailKind("/indie/some-game", resolveNav("/indie/some-game", q()).sub)).toBeNull());
+  it("인디 상세는 되돌아가기만 — 경로 줄은 화면이 게임 이름으로 직접 세운다", () => expect(trailKind("/indie/some-game", resolveNav("/indie/some-game", q()).sub)).toBe("back"));
+  it("인디 고치기(/indie/mine/<id>)는 세우지 않는다", () => expect(trailKind("/indie/mine/abc", resolveNav("/indie/mine/abc", q()).sub)).toBeNull());
   it("내 게임 등록은 끝 낱말을 붙여 선다", () => expect(trailKind("/indie/new", resolveNav("/indie/new", q()).sub)).toBe("leaf"));
   it("계정 화면은 되돌아가기만", () => expect(trailKind("/alerts", resolveNav("/alerts", q()).sub)).toBe("back"));
   it("홈은 아무것도 없다", () => expect(trailKind("/", resolveNav("/", q()).sub)).toBeNull());
@@ -68,5 +69,22 @@ describe("게임 게시판 상세, 글쓰기의 소속", () => {
   it("전체 글은 게시판 홈을 켠다", () => {
     expect(resolveNav("/board/all", q()).sub?.label).toBe("게시판 홈");
     expect(trailKind("/board/all", resolveNav("/board/all", q()).sub)).toBe("sub");
+  });
+});
+
+describe("인디 상세의 출처(?from=)", () => {
+  it("명예의 전당, 슈퍼루키에서 오면 인디 게임 메뉴의 그 칸을 켠다", () => {
+    const hof = resolveNav("/indie/some-game", q("from=hof"));
+    expect([hof.section?.key, hof.sub?.label]).toEqual(["indie", "명예의 전당"]);
+    const rookies = resolveNav("/indie/some-game", q("from=rookies"));
+    expect([rookies.section?.key, rookies.sub?.label]).toEqual(["indie", "슈퍼루키"]);
+  });
+  it("등록현황에서 오면 등록현황, 출처가 없거나 모르는 값이면 내가 만든 게임", () => {
+    expect(resolveNav("/indie/some-game", q("from=mine")).sub?.label).toBe("등록현황");
+    expect(resolveNav("/indie/some-game", q("from=zzz")).sub?.label).toBe("내가 만든 게임");
+  });
+  it("출처는 상세 한 칸에만 먹는다 — 목록, 고치기 화면은 그대로", () => {
+    expect(resolveNav("/indie", q("from=hof")).sub?.label).toBe("내가 만든 게임");
+    expect(resolveNav("/indie/mine/abc", q("from=hof")).sub?.label).toBe("등록현황");
   });
 });

@@ -10,6 +10,7 @@ import { Tag } from "@/components/ui/tag";
 import { nullIfDbUnavailable } from "@/lib/db-errors";
 import { FAME_MESSAGES as M } from "@/lib/indie/fame";
 import { stagger } from "@/lib/motion";
+import { INDIE_FROM } from "@/lib/indie/query";
 import { ROUTES } from "@/lib/routes";
 import { listRookies } from "@/server/services/indie";
 
@@ -34,7 +35,7 @@ export default async function RookiesPage() {
           {rookies.map((r, i) => (
             <li key={r.card.slug} className="enter-item" style={stagger(i)}>
               {/* "N일 전 등록" 은 제목 앞 딱지로(목업 indRec) — 카드 밖 아랫줄에 두면 옆 카드의 것과 헷갈린다 */}
-              <IndieCard post={r.card} badge={<Tag>{M.daysAgo(r.daysSince)}</Tag>} />
+              <IndieCard post={r.card} from={INDIE_FROM.rookies} badge={<Tag>{M.daysAgo(r.daysSince)}</Tag>} />
             </li>
           ))}
         </ul>

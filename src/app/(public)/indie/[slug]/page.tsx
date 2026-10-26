@@ -2,8 +2,11 @@
 //
 // 숨긴 글은 글쓴이와 관리자만 본다 — 다른 사람에게는 없는 글이다(notFound). 숨긴 사유는 글쓴이 화면에 그대로 뜬다.
 //
-// 맨 위는 경로 줄 "개발자 라운지 > 내가 만든 게임 > 게임 이름"(목업 crumb3). 끝 낱말이 데이터라 머리띠 아래 공통 줄(page-trail)이
-// 못 그려서 이 화면이 직접 세운다. 머리 판은 components/indie/detail-hero.
+// 맨 위는 경로 줄(목업 crumb3). 끝 낱말이 데이터라 머리띠 아래 공통 줄(page-trail)이 못 그려서 이 화면이 직접 세우고,
+// "이전 화면" 만 공통 줄이 세운다(lib/nav 의 TRAIL_BACK_ONLY_UNDER). 앞 두 낱말은 들어온 곳(?from=, lib/indie/query)을 따른다 —
+// 명예의 전당, 슈퍼루키에서 오면 "인디 게임 > 그 칸", 등록현황에서 오면 "개발자 라운지 > 등록현황", 그 밖은 "개발자 라운지 > 내가 만든 게임".
+// 낱말과 위쪽 메뉴 강조를 같은 표(lib/nav 의 resolveNav)로 정한다 — 둘이 따로 정하면 메뉴는 인디 게임인데 경로는 라운지인 날이 온다.
+// 머리 판은 components/indie/detail-hero.
 // 아래는 두 기둥: 읽을 것(영상, 구매, 소개, 스크린샷, 관련 소식)과 확인할 것(게임 정보 카드)을 가른다.
 // 스토어 링크는 구매 마디 한 곳에만 선다(detail-hero 머리 주석). 본인 게임이면 오른쪽 카드에서 고치기, 지우기를 바로 한다.
 import { DbUnavailablePage } from "@/components/db-unavailable";
@@ -24,20 +27,24 @@ import { Page, SectionHead, sectionCardClass } from "@/components/ui/page";
 import { formatDate } from "@/lib/format";
 import { genreLabels, INDIE_MESSAGES as M, INDIE_PLATFORM_LABEL, INDIE_STAGE_LABEL, INDIE_REVIEW_MESSAGES as RV } from "@/lib/indie/messages";
 import { storeLinkPlatform } from "@/lib/indie/constants";
-import { NAV_SECTIONS } from "@/lib/nav";
+import { resolveNav } from "@/lib/nav";
+import { INDIE_FROM_PARAM, parseIndieFrom } from "@/lib/indie/query";
+import { firstParam } from "@/lib/games-query";
 import { indieEditPath, indiePath, ROUTES } from "@/lib/routes";
 import { decodeSlugParam } from "@/lib/slug";
 import { getIndiePostBySlug } from "@/server/services/indie";
 import { getCurrentUser } from "@/server/services/users";
 
-type Props = { params: Promise<{ slug: string }> };
+type Props = { params: Promise<{ slug: string }>; searchParams: Promise<Record<string, string | string[] | undefined>> };
 
 /** 경로 줄의 앞 두 낱말 — 메뉴 표(lib/nav)의 이름을 그대로 쓴다. 하위 메뉴 띠와 낱말이 어긋나지 않게 */
-const LOUNGE = NAV_SECTIONS.find((s) => s.key === "lounge");
-const TRAIL_HEAD = [
-  { label: LOUNGE?.label ?? "", href: ROUTES.lounge },
-  { label: LOUNGE?.subs.find((s) => s.href === ROUTES.indie)?.label ?? M.listTitle, href: ROUTES.indie },
-];
+function trailHead(slug: string, from: string | null): Array<{ label: string; href: string }> {
+  const { section, sub } = resolveNav(indiePath(slug), new URLSearchParams(from ? { [INDIE_FROM_PARAM]: from } : {}));
+  return [
+    { label: section?.label ?? "", href: section?.href ?? ROUTES.lounge },
+    { label: sub?.label ?? M.listTitle, href: sub?.href ?? ROUTES.indie },
+  ];
+}
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const post = await orDbDown(getIndiePostBySlug(decodeSlugParam((await params).slug)));
@@ -51,8 +58,9 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   };
 }
 
-export default async function IndieDetailPage({ params }: Props) {
+export default async function IndieDetailPage({ params, searchParams }: Props) {
   const slug = decodeSlugParam((await params).slug);
+  const from = parseIndieFrom(firstParam((await searchParams)[INDIE_FROM_PARAM]));
   const loaded = await orDbDown(Promise.all([getIndiePostBySlug(slug), getCurrentUser().catch(() => null)]));
   // 장애를 404 로 그리지 않는다(lib/db-errors 의 orDbDown 주석)
   if (loaded === DB_DOWN) return <DbUnavailablePage retryHref={indiePath(slug)} />;
@@ -84,7 +92,7 @@ export default async function IndieDetailPage({ params }: Props) {
 
   return (
     <Page pad="detail" gap={24}>
-      <Crumbs items={[...TRAIL_HEAD, { label: post.title }]} />
+      <Crumbs items={[...trailHead(post.slug, from), { label: post.title }]} />
 
       {canEdit && post.status !== "published" && (
         <div role="status" className="rounded-xl bg-warn-soft px-4 py-3 text-[13px] text-warn">

@@ -7,6 +7,7 @@
 // 이름, 순서는 기획서 표를 그대로 따르되 가운뎃점만 쉼표로 바꿨다("질문, 피드백").
 // 아직 화면이 없는 칸(게시판, 라운지, 명예의 전당, 슈퍼루키)도 메뉴에는 선다 — 누르면 "준비 중" 화면이다.
 import { gamesHref } from "@/lib/games-query";
+import { INDIE_FROM, INDIE_FROM_PARAM } from "@/lib/indie/query";
 import { ROUTES } from "@/lib/routes";
 
 /** 게임 게시판 글쓰기 화면(app/(user)/board/write). 경로 표시와 칸 켜기가 같은 값을 본다 */
@@ -30,6 +31,11 @@ export type NavSub = {
    * 목업(wpage 의 crumb3)이 "게임 게시판 > 리뷰 > 글쓰기" 로 고른 게시판을 켠다. 글쓰기 화면이 카테고리를 바꾸면 주소 조건도 따라 바꾼다
    */
   aliasQueries?: readonly { path: string; query: Record<string, string> }[];
+  /**
+   * parent 바로 아래 한 칸(<parent>/<id>)이 주소 조건까지 맞으면 이 칸을 켠다. 인디 상세(/indie/<slug>)는 주소가 하나인데
+   * 목업(mgDetail 의 S.mgf, secOf, subOf)은 들어온 곳(명예의 전당, 슈퍼루키, 등록현황)의 칸을 켠다 — 출처는 ?from= 이다(lib/indie/query)
+   */
+  childQueries?: readonly { parent: string; query: Record<string, string> }[];
 };
 
 export type NavSection = {
@@ -61,8 +67,8 @@ export const NAV_SECTIONS: readonly NavSection[] = [
     label: "인디 게임",
     href: ROUTES.hallOfFame,
     subs: [
-      { label: "명예의 전당", href: ROUTES.hallOfFame },
-      { label: "슈퍼루키", href: ROUTES.rookies },
+      { label: "명예의 전당", href: ROUTES.hallOfFame, childQueries: [{ parent: ROUTES.indie, query: { [INDIE_FROM_PARAM]: INDIE_FROM.hallOfFame } }] },
+      { label: "슈퍼루키", href: ROUTES.rookies, childQueries: [{ parent: ROUTES.indie, query: { [INDIE_FROM_PARAM]: INDIE_FROM.rookies } }] },
     ],
   },
   {
@@ -88,7 +94,7 @@ export const NAV_SECTIONS: readonly NavSection[] = [
       { label: "내가 만든 게임", href: ROUTES.indie },
       { label: "개발일지", href: ROUTES.loungeDevlogs },
       { label: "질문, 피드백", href: ROUTES.loungeQna },
-      { label: "등록현황", href: ROUTES.indieMine },
+      { label: "등록현황", href: ROUTES.indieMine, childQueries: [{ parent: ROUTES.indie, query: { [INDIE_FROM_PARAM]: INDIE_FROM.mine } }] },
     ],
   },
 ];
@@ -104,6 +110,12 @@ export const NAV_TRAIL_MESSAGES = {
  * 하위 메뉴 띠가 없어 돌아갈 길이 머리띠뿐이다.
  */
 export const TRAIL_BACK_ONLY_PATHS: readonly string[] = [ROUTES.me, ROUTES.alerts, ROUTES.wishlist, ROUTES.settings];
+
+/**
+ * 바로 아래 한 칸(<부모>/<id>)에 "이전 화면" 만 세우는 화면. 인디 상세는 끝 낱말(게임 이름)이 데이터라 경로 줄은 화면이 직접 그리고
+ * (app/(public)/indie/[slug]), 되돌아가기만 여기서 선다 — 목업은 상세에도 "이전 화면" 을 둔다
+ */
+export const TRAIL_BACK_ONLY_UNDER: readonly string[] = [ROUTES.indie];
 
 /**
  * 경로 표시를 세우지 않는 메뉴. 게임 탐색의 세 칸은 목업도 "이전 화면" 만 둔다 — 하위 메뉴 띠가 바로 위에서 같은 말을 한다.
@@ -144,11 +156,18 @@ export function trailLeaf(pathname: string): string | null {
   return null;
 }
 
-/** 경로 줄을 세울 화면인가 — 하위 칸 그 자체, 끝 낱말이 정해진 화면, 계정 화면(되돌아가기만) */
+/** 경로 줄을 세울 화면인가 — 하위 칸 그 자체, 끝 낱말이 정해진 화면, 계정 화면과 인디 상세(되돌아가기만) */
 export function trailKind(pathname: string, sub: NavSub | null): "sub" | "leaf" | "back" | null {
   if (trailLeaf(pathname)) return "leaf";
   if (sub && (pathname === pathOf(sub.href) || sub.aliases?.includes(pathname))) return "sub";
-  return TRAIL_BACK_ONLY_PATHS.includes(pathname) ? "back" : null;
+  if (TRAIL_BACK_ONLY_PATHS.includes(pathname)) return "back";
+  return TRAIL_BACK_ONLY_UNDER.some((parent) => childOf(pathname, parent)) ? "back" : null;
+}
+
+/** parent 바로 아래 한 칸인가(/indie/abc 는 맞고 /indie, /indie/mine/abc 는 아니다) */
+function childOf(pathname: string, parent: string): boolean {
+  const rest = pathname.startsWith(`${parent}/`) ? pathname.slice(parent.length + 1) : "";
+  return rest !== "" && !rest.includes("/");
 }
 
 function pathOf(href: string): string {
@@ -171,7 +190,13 @@ export function resolveNav(pathname: string, query: Query): { section: NavSectio
   // 별칭은 정확히 그 경로일 때만 맞고, 맞으면 다른 규칙보다 앞선다(첫 칸 상세 규칙에 걸려 칸이 꺼지지 않게)
   // 주소 조건 별칭(글쓰기의 category)도 같은 자리에서 본다 — 글쓰기는 게시판 홈(/board) 아래라 첫 칸 규칙에 걸려 꺼진다
   for (const section of NAV_SECTIONS) {
-    const sub = section.subs.find((s) => s.aliases?.includes(pathname) || s.aliasQueries?.some((a) => a.path === pathname && Object.entries(a.query).every(([k, v]) => query.get(k) === v)));
+    const matches = (q: Record<string, string>) => Object.entries(q).every(([k, v]) => query.get(k) === v);
+    const sub = section.subs.find(
+      (s) =>
+        s.aliases?.includes(pathname) ||
+        s.aliasQueries?.some((a) => a.path === pathname && matches(a.query)) ||
+        s.childQueries?.some((c) => childOf(pathname, c.parent) && matches(c.query)),
+    );
     if (sub) return { section, sub };
   }
   let best: { section: NavSection; sub: NavSub; score: number } | null = null;
