@@ -29,6 +29,7 @@ import type { PriceSeries } from "@/server/services/prices";
 import { useNow } from "@/components/use-now";
 import { ChipButton } from "@/components/ui/chip";
 import { useCssTokens } from "@/components/use-css-tokens";
+import { prepare } from "@/components/price-chart/prepare";
 
 /**
  * 플랫폼 → 색 토큰 이름(엔티티 기준, 순서, 개수와 무관 — 필터로 선이 줄어도 남은 선의 색은 그대로다).
@@ -100,73 +101,6 @@ const DEFAULT_RANGE = RANGES.find((r) => r.key === DEFAULT_RANGE_KEY) ?? RANGES[
 const Y_HEADROOM = 1.12;
 /** X축 오른쪽 여유(구간 폭 대비) — 할인 종료선 라벨 자리 */
 const X_HEADROOM = 0.18;
-const MS_PER_DAY = 24 * 60 * 60 * 1000;
-
-type MergedPoint = { t: number } & Partial<Record<Platform, number>>;
-
-type Prepared = {
-  data: MergedPoint[];
-  platforms: Platform[];
-  /** 플랫폼이 하나일 때만 채워지는 보조 표시값 */
-  single: { platform: Platform; listPrice: number | null; low: { t: number; price: number } | null; saleFrom: number | null; saleTo: number | null } | null;
-};
-
-/** 한 플랫폼의 시계열을 [구간 시작, ..., 지금] 으로 정규화 */
-function clampSeries(s: PriceSeries, from: number | null, now: number): Array<{ t: number; price: number }> {
-  const sorted = s.points
-    .map((p) => ({ t: new Date(p.t).getTime(), price: p.price }))
-    .filter((p) => Number.isFinite(p.t))
-    .sort((a, b) => a.t - b.t);
-  if (sorted.length === 0) return [];
-
-  const out: Array<{ t: number; price: number }> = [];
-  if (from !== null) {
-    const prior = [...sorted].reverse().find((p) => p.t < from);
-    if (prior) out.push({ t: from, price: prior.price }); // 구간 시작 앵커
-    out.push(...sorted.filter((p) => p.t >= from));
-  } else {
-    out.push(...sorted);
-  }
-  if (out.length === 0) return [];
-
-  // 마지막 기록 → 지금까지 수평 유지 (현재가가 있으면 그 값으로)
-  const last = out[out.length - 1];
-  const currentPrice = s.currentPrice ?? last.price;
-  if (now > last.t) out.push({ t: now, price: currentPrice });
-  return out;
-}
-
-function prepare(series: PriceSeries[], rangeDays: number | null, now: number): Prepared {
-  const from = rangeDays === null ? null : now - rangeDays * MS_PER_DAY;
-  const byT = new Map<number, MergedPoint>();
-  const platforms: Platform[] = [];
-
-  for (const s of series) {
-    const points = clampSeries(s, from, now);
-    if (points.length === 0) continue;
-    platforms.push(s.platform);
-    for (const p of points) {
-      const row = byT.get(p.t) ?? { t: p.t };
-      row[s.platform] = p.price;
-      byT.set(p.t, row);
-    }
-  }
-
-  const data = [...byT.values()].sort((a, b) => a.t - b.t);
-
-  if (series.length === 1 && platforms.length === 1) {
-    const s = series[0];
-    const inRange = clampSeries(s, from, now);
-    const low = inRange.reduce<{ t: number; price: number } | null>((acc, p) => (acc === null || p.price < acc.price ? p : acc), null);
-    const onSale = (s.discountPct ?? 0) > 0;
-    const saleTo = onSale && s.discountEndsAt ? new Date(s.discountEndsAt).getTime() : null;
-    // 시작을 아는 소스(xbox)는 그 시각부터, 모르는 소스(steam)는 "지금부터 종료까지"만 음영 처리
-    const saleFrom = onSale ? (s.discountStartsAt ? new Date(s.discountStartsAt).getTime() : now) : null;
-    return { data, platforms, single: { platform: s.platform, listPrice: s.listPrice, low, saleFrom, saleTo } };
-  }
-  return { data, platforms, single: null };
-}
-
 function PriceTooltip({ active, payload, label, currency }: TooltipContentProps & { currency: Currency }) {
   if (!active || !payload || payload.length === 0) return null;
   return (
@@ -188,7 +122,12 @@ function PriceTooltip({ active, payload, label, currency }: TooltipContentProps 
 /** 플랫폼 칩의 "전체". 플랫폼 값과 겹치지 않는 문자열이어야 한다 */
 const ALL_PLATFORMS = "all";
 
-export function PriceChart({ series }: { series: PriceSeries[] }) {
+/**
+ * head, rangeKeys 는 상세 본문에 들어간 그래프(2026-10-26, 목업 "가격 변동 추이")가 쓴다 — 제목과 기간 칩을 한 줄에 세우고
+ * 기간은 기획서의 넷(1개월~1년)만 둔다. 전용 화면(/prices)은 둘 다 주지 않아 예전 모양 그대로다.
+ */
+export function PriceChart({ series, head, rangeKeys }: { series: PriceSeries[]; head?: React.ReactNode; rangeKeys?: readonly string[] }) {
+  const ranges = rangeKeys ? RANGES.filter((r) => rangeKeys.includes(r.key)) : RANGES;
   // 그래프가 쓰는 색은 전부 여기서 한 번 읽는다 — 테마가 바뀌면 이 값이 통째로 새것이 된다
   const token = useCssTokens(CHART_TOKENS);
   const [rangeKey, setRangeKey] = useState(DEFAULT_RANGE_KEY);
@@ -222,10 +161,8 @@ export function PriceChart({ series }: { series: PriceSeries[] }) {
   const xMaxBase = Math.max(data[data.length - 1]?.t ?? now, single?.saleTo ?? 0);
   const xMax = Math.round(xMaxBase + Math.max(xMaxBase - xMin, 0) * X_HEADROOM);
 
-  return (
-    <div className="space-y-3">
-      {/* 플랫폼이 둘 이상일 때만 고르는 자리를 만든다 — 하나뿐이면 "전체" 와 그 하나가 같은 말이다 */}
-      {drawn.length > 1 && (
+  /* 플랫폼이 둘 이상일 때만 고르는 자리를 만든다 — 하나뿐이면 "전체" 와 그 하나가 같은 말이다 */
+  const platformChips = drawn.length > 1 && (
         <div role="group" aria-label="플랫폼 선택" className="flex flex-wrap gap-1">
           <ChipButton active={picked === ALL_PLATFORMS} onClick={() => setPick(ALL_PLATFORMS)}>
             전체
@@ -242,20 +179,29 @@ export function PriceChart({ series }: { series: PriceSeries[] }) {
             </ChipButton>
           ))}
         </div>
-      )}
-
-      <div role="group" aria-label="기간 선택" className="flex flex-wrap gap-1">
-        {RANGES.map((r) => (
-          <ChipButton key={r.key} active={r.key === rangeKey} onClick={() => setRangeKey(r.key)}>
-            {r.label}
-          </ChipButton>
-        ))}
+      );
+  const rangeRow = (
+    <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-2">
+        {head}
+        <div role="group" aria-label="기간 선택" className="flex flex-wrap gap-1">
+          {ranges.map((r) => (
+            <ChipButton key={r.key} active={r.key === rangeKey} onClick={() => setRangeKey(r.key)}>
+              {r.label}
+            </ChipButton>
+          ))}
+        </div>
       </div>
+  );
+  // 상세 본문(head)에서는 제목과 기간이 맨 윗줄이다 — 목업은 그 줄 아래로 그래프가 바로 이어진다
 
+  return (
+    <div className="space-y-3">
+      {head ? rangeRow : platformChips}
+      {head ? platformChips : rangeRow}
       {data.length === 0 ? (
         <p className="py-10 text-center text-[13px] text-dim">이 기간에는 기록이 없습니다. 더 긴 기간을 선택해 보세요.</p>
       ) : (
-        <div className="h-72 w-full sm:h-96" role="img" aria-label="플랫폼별 가격 변동 그래프">
+        <div className={head ? "h-60 w-full sm:h-72" : "h-72 w-full sm:h-96"} role="img" aria-label="플랫폼별 가격 변동 그래프">
           <ResponsiveContainer width="100%" height="100%">
             <LineChart data={data} margin={{ top: 8, right: 12, bottom: 4, left: 8 }}>
               <CartesianGrid stroke={token["--line-soft"]} vertical={false} />
@@ -289,7 +235,8 @@ export function PriceChart({ series }: { series: PriceSeries[] }) {
               {/* 할인 종료 시점 — 라인은 "지금"에서 끝내고(미래 가격은 알 수 없다) 종료 시점만 표시 */}
               {single?.saleTo && single.saleTo > now && (
                 <ReferenceLine x={single.saleTo} stroke={token["--danger"]} strokeDasharray="3 3">
-                  <Label value={`할인 종료 ${formatDate(new Date(single.saleTo))}`} position="insideTopLeft" fill={token["--danger"]} fontSize={11.5} />
+                  {/* 라벨은 선 왼쪽에 붙인다(2026-10-26) — 상세 본문에 들어가 그래프 폭이 줄자 오른쪽에 붙은 날짜가 판 밖으로 잘렸다 */}
+                  <Label value={`할인 종료 ${formatDate(new Date(single.saleTo))}`} position="insideTopRight" fill={token["--danger"]} fontSize={11.5} />
                 </ReferenceLine>
               )}
 

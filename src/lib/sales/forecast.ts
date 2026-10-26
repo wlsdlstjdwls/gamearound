@@ -30,3 +30,17 @@ export function forecastDiscount(input: { platforms: string[]; recordedLow: numb
   if (!sale && expectedPrice === null) return null;
   return { sale, expectedPrice: expectedPrice !== null && input.currentLowest !== null ? Math.min(expectedPrice, input.currentLowest) : expectedPrice };
 }
+
+/**
+ * 예상 가격의 폭(기획서 v2.0 S-05 "예상 가격(±10% 범위)").
+ * 역대 최저가 하나를 점으로 말하면 "꼭 그 값이 된다" 로 읽힌다 — 같은 게임도 세일마다 할인율이 조금씩 달라서다.
+ * 위쪽은 지금 값에서 자른다: 기다린 끝의 값이 지금보다 비싸다는 예측은 기다릴 이유를 지운다.
+ */
+export const FORECAST_RANGE_PCT = 10;
+
+export function forecastPriceRange(expected: number, currentLowest: number | null, pct: number = FORECAST_RANGE_PCT): { low: number; high: number } {
+  const low = Math.round(expected * (1 - pct / 100));
+  const raw = Math.round(expected * (1 + pct / 100));
+  const high = currentLowest !== null ? Math.max(expected, Math.min(raw, currentLowest)) : raw;
+  return { low, high };
+}

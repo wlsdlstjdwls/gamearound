@@ -7,7 +7,7 @@
 import Link from "next/link";
 import { useState, useTransition } from "react";
 import { useLoginGate, useResume } from "@/components/auth/login-gate";
-import { Button, buttonClass } from "@/components/ui/button";
+import { Button, buttonClass, type ButtonSize, type ButtonVariant } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Sheet } from "@/components/ui/sheet";
 import { useToast } from "@/components/ui/toast";
@@ -22,7 +22,30 @@ import type { Currency, Platform } from "@/server/db/schema";
 export type AlertPlatformOption = { platform: Platform; currentPrice: number | null; currency: Currency };
 type Channel = "web" | "email";
 
-export function PriceAlertButton({ gameId, gameSlug, options, className }: { gameId: string; gameSlug: string; options: AlertPlatformOption[]; className?: string }) {
+/**
+ * label, variant, size 는 같은 팝업을 다른 자리에서 열 때 쓴다(2026-10-26 상세 개편) — 할인 예측의 "알림 설정하기",
+ * 출시 예정 카드의 "출시 알림 받기" 가 모두 이 팝업(M-02)이다. 팝업을 따로 만들면 저장 규칙이 둘로 갈린다.
+ */
+export function PriceAlertButton({
+  gameId,
+  gameSlug,
+  options,
+  className,
+  label = M.cta,
+  variant = "accent",
+  size = "lg",
+  slot,
+}: {
+  gameId: string;
+  gameSlug: string;
+  options: AlertPlatformOption[];
+  className?: string;
+  label?: React.ReactNode;
+  variant?: ButtonVariant;
+  size?: ButtonSize;
+  /** 한 화면에 이 버튼이 여럿일 때 로그인 뒤 "누른 그 버튼" 의 팝업만 이어 열리게 가르는 꼬리표 */
+  slot?: string;
+}) {
   const gate = useLoginGate();
   const toast = useToast();
   const [open, setOpen] = useState(false);
@@ -30,7 +53,7 @@ export function PriceAlertButton({ gameId, gameSlug, options, className }: { gam
   const [channel, setChannel] = useState<Channel>("web");
   const [error, setError] = useState<string | null>(null);
   const [saving, startSave] = useTransition();
-  const action = `alert:${gameId}`;
+  const action = slot ? `alert:${gameId}:${slot}` : `alert:${gameId}`;
   const all = options.map((o) => o.platform);
 
   // 열 때 이미 걸린 알림을 읽어 칸을 채운다. 없으면 전부 고른 채로 연다 — 대개 "어디서든 싸지면" 이다
@@ -58,8 +81,8 @@ export function PriceAlertButton({ gameId, gameSlug, options, className }: { gam
 
   return (
     <>
-      <button type="button" onClick={() => gate(action, () => void openPopup())} className={buttonClass({ variant: "accent", size: "lg", className })}>
-        {M.cta}
+      <button type="button" onClick={() => gate(action, () => void openPopup())} className={buttonClass({ variant, size, className })}>
+        {label}
       </button>
       <Sheet open={open} onOpenChange={setOpen} title={M.title}>
         <div className="flex flex-col gap-5 sm:w-[400px]">

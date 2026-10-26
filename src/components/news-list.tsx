@@ -27,7 +27,7 @@ import { cn } from "@/lib/cn";
 
 export function NewsList({ items, showGame = false }: { items: NewsDto[]; showGame?: boolean }) {
   if (items.length === 0) {
-    return <p className="py-3 text-[13px] text-dim">관련 뉴스가 아직 없습니다.</p>;
+    return <p className="py-3 text-[13px] text-dim">관련 뉴스가 아직 없어요.</p>;
   }
   return (
     // 판이 없어진 화면에서 목록의 머리를 긋는 건 .rows 첫 줄의 진한 헤어라인이다(ui/page 의 ROWS)
