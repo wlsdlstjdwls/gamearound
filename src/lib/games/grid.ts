@@ -6,6 +6,8 @@
 // 실제로 뼈대의 class 자리에 함수 소스가 박혀 격자가 풀렸고, 한 페이지치 카드가 세로로 쌓이면서
 // 문서 높이가 몇 배로 튀었다 — 필터를 누를 때마다 화면이 통째로 흔들린 원인이 이것이다.
 // 상수는 클라이언트 경계가 없는 곳에 둔다.
+import { RAIL_ITEM_CLASS, RAIL_TRACK_CLASS } from "@/lib/rail";
+
 // 세로 간격이 가로보다 넓다(36 대 24): 할인 스탬프가 커버 아래로 14px 나와 있어
 // 같은 간격이면 아랫줄 카드의 커버를 건드린다.
 // min() 을 씌우는 이유: auto-fill 의 minmax 는 화면이 그 값보다 좁아도 칸을 줄이지 않는다 —
@@ -31,5 +33,13 @@ export const GAMES_GRID_CLASS = GRID_BASE;
 /** 기둥 없이 폭을 다 쓰는 격자(홈, 검색, 출시예정, 회사) — 넓은 화면 4열 */
 export const HOME_GRID_CLASS = `${GRID_BASE} lg:grid-cols-4`;
 
-/** 홈 첫 두 줄(카드 넷). 넷이 한 줄에 서야 해서 3열 단계를 건너뛴다 — 3열이면 넷째가 혼자 아랫줄로 떨어진다 */
-export const HOME_FOUR_GRID_CLASS = "grid grid-cols-1 gap-4 sm:grid-cols-2 sm:gap-x-4 md:gap-y-6 lg:grid-cols-4 lg:gap-x-5";
+/**
+ * 홈 첫 두 줄(카드 넷). 넷이 한 줄에 서야 해서 3열 단계를 건너뛴다 — 3열이면 넷째가 혼자 아랫줄로 떨어진다.
+ * 좁은 화면(sm 미만)은 격자가 아니라 옆으로 넘기는 줄이다(2026-10-26, 목업 390 의 오늘의 할인, 출시 예정).
+ * 한 줄에 한 장씩 넷을 세로로 쌓으면 첫 두 마디만으로 화면 네댓 개를 내려가야 해서 그 아래 인기 게임, 장르가 안 보였다.
+ * 줄 모양은 홈의 다른 넘기는 줄과 같은 값(lib/rail)이고, sm 부터는 예전 격자 그대로다. 칸에는 HOME_FOUR_ITEM_CLASS 를 붙인다.
+ */
+export const HOME_FOUR_GRID_CLASS = `${RAIL_TRACK_CLASS} sm:mx-0 sm:grid sm:grid-cols-2 sm:gap-x-4 sm:overflow-visible sm:px-0 sm:py-0 sm:scroll-px-0 md:gap-y-6 lg:grid-cols-4 lg:gap-x-5`;
+
+/** HOME_FOUR_GRID_CLASS 의 칸. 좁은 화면에서는 넘기는 줄의 칸 폭, sm 부터는 격자 칸이 폭을 정한다 */
+export const HOME_FOUR_ITEM_CLASS = `${RAIL_ITEM_CLASS} sm:w-auto`;

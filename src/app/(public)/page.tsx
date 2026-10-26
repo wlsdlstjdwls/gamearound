@@ -14,7 +14,8 @@ import { Rail } from "@/components/ui/rail";
 import { HomeRanking } from "@/components/home/ranking";
 import { HomeHero } from "@/components/home/hero";
 import { ChipLink } from "@/components/ui/chip";
-import { HOME_FOUR_GRID_CLASS } from "@/lib/games/grid";
+import { cn } from "@/lib/cn";
+import { HOME_FOUR_GRID_CLASS, HOME_FOUR_ITEM_CLASS } from "@/lib/games/grid";
 import { HOME_GENRE_LIMIT, HOME_TOP_LIMIT } from "@/lib/home/rows";
 import { gamesHref } from "@/lib/games-query";
 import { formatReleaseDay } from "@/lib/format";
@@ -143,7 +144,7 @@ export default async function HomePage() {
         )}
       </section>
 
-      {/* 2 — 출시 예정 넷, 출시일이 가까운 순. 더보기는 출시 예정(S-03) */}
+      {/* 2 — 출시 예정 넷, 출시일이 가까운 순. 더보기는 출시 예정(S-03). 좁은 화면은 할인 줄과 같은 넘기는 줄(lib/games/grid) */}
       <section aria-labelledby="upcoming-heading" className="flex flex-col gap-4">
         <SectionHead id="upcoming-heading" title={M.upcomingTitle} action={upcoming.length > 0 && <SeeAll href={ROUTES.upcoming} label={M.more} />} />
         {upcoming.length === 0 ? (
@@ -151,7 +152,7 @@ export default async function HomePage() {
         ) : (
           <ul className={HOME_FOUR_GRID_CLASS}>
             {upcoming.map((e, i) => (
-              <li key={e.game.slug} className="enter-item" style={stagger(i + 1)}>
+              <li key={e.game.slug} className={cn("enter-item", HOME_FOUR_ITEM_CLASS)} style={stagger(i + 1)}>
                 <GameCard game={e.game} variant="release" releaseText={formatReleaseDay(e.releaseDate)} />
               </li>
             ))}

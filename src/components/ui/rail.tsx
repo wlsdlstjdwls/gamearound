@@ -10,6 +10,7 @@
 // 칸은 scroll-snap 으로 한 장씩 멈춘다. 다음 칸 끝이 늘 조금 비쳐 "더 있다" 를 말한다(좁은 화면 80%).
 import { useEffect, useRef, useState } from "react";
 import { cn } from "@/lib/cn";
+import { RAIL_ITEM_CLASS, RAIL_TRACK_CLASS } from "@/lib/rail";
 import { ChevronLeftIcon } from "@/components/ui/icons";
 
 /** 단추 한 번에 넘기는 양 — 보이는 폭의 이만큼. 한 화면을 통째로 넘기면 어디까지 봤는지 놓친다 */
@@ -44,10 +45,10 @@ export function Rail({ items, labels }: { items: Array<{ key: string; node: Reac
       <ul
         ref={ref}
         onScroll={measure}
-        className="-mx-4 flex snap-x snap-mandatory scroll-px-4 gap-4 overflow-x-auto overscroll-x-contain px-4 pb-2 pt-1 [scrollbar-width:none] sm:mx-0 sm:scroll-px-0 sm:px-0"
+        className={cn(RAIL_TRACK_CLASS, "sm:mx-0 sm:scroll-px-0 sm:px-0")}
       >
         {items.map((it) => (
-          <li key={it.key} className="w-[80%] shrink-0 snap-start sm:w-[calc((100%-2rem)/3)] lg:w-[calc((100%-3rem)/4)]">
+          <li key={it.key} className={cn(RAIL_ITEM_CLASS, "sm:w-[calc((100%-2rem)/3)] lg:w-[calc((100%-3rem)/4)]")}>
             {it.node}
           </li>
         ))}

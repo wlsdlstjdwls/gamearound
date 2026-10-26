@@ -10,7 +10,8 @@ import { GameCard } from "@/components/game-card";
 import { useSession } from "@/components/auth/session-provider";
 import { stagger } from "@/lib/motion";
 import { ROUTES } from "@/lib/routes";
-import { HOME_FOUR_GRID_CLASS } from "@/lib/games/grid";
+import { cn } from "@/lib/cn";
+import { HOME_FOUR_GRID_CLASS, HOME_FOUR_ITEM_CLASS } from "@/lib/games/grid";
 import { pickTopDeals } from "@/lib/home/deals";
 import { HOME_DEAL_POOL, HOME_TOP_LIMIT } from "@/lib/home/rows";
 import type { GameSummary } from "@/server/services/games";
@@ -39,7 +40,7 @@ export function HomeDeals({ initial }: { initial: GameSummary[] }) {
   return (
     <ul className={HOME_FOUR_GRID_CLASS}>
       {items.map((g, i) => (
-        <li key={g.slug} className="enter-item" style={stagger(i + 1)}>
+        <li key={g.slug} className={cn("enter-item", HOME_FOUR_ITEM_CLASS)} style={stagger(i + 1)}>
           <GameCard game={g} variant="discount" />
         </li>
       ))}
