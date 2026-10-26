@@ -26,7 +26,8 @@ import {
 import { searchShopGames } from "@/server/services/shop-games";
 import { getCurrentUser, requireUser } from "@/server/services/users";
 
-export type IndieFormState = { ok: true; message: string; redirectTo?: string } | { ok: false; error: string } | null;
+/** postId: 새 글이면 저장된 글의 id — 폼이 고른 그림을 이 id 로 이어서 올린다(components/indie/upload-images) */
+export type IndieFormState = { ok: true; message: string; redirectTo?: string; postId?: string; editPath?: string } | { ok: false; error: string } | null;
 export type IndieResult = { ok: true } | { ok: false; error: string };
 
 async function actor(): Promise<IndieActor> {
@@ -86,8 +87,9 @@ export async function createIndiePostAction(_prev: IndieFormState, formData: For
     if (!(await checkRateLimit(`indie:create:${user.id}`, INDIE_CREATE_RATE))) return { ok: false, error: M.rateLimited };
     const post = await createIndiePost(user.id, parsed.data);
     refresh(post.slug);
-    // 그림은 글 id 가 있어야 올릴 수 있다(경로에 박힌다) — 고치기 화면으로 넘겨 이어서 올리게 한다
-    return { ok: true, message: M.created, redirectTo: `${indieEditPath(post.id)}?created=1` };
+    // 제출하면 등록현황(S-22)으로 간다(기획서 v2.0 6.5 "제출하면 S-22로 자동 이동"). 폼에서 고른 그림은 폼이 이 id 로
+    // 이어서 올린 뒤 넘어간다(그림은 글 id 가 경로에 박혀야 올릴 수 있다). 올리다 실패하면 폼이 고치기 화면(editPath)으로 보내 다시 올리게 한다
+    return { ok: true, message: M.created, redirectTo: ROUTES.indieMine, postId: post.id, editPath: `${indieEditPath(post.id)}?created=1` };
   } catch (e) {
     return fail(e);
   }

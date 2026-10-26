@@ -167,7 +167,9 @@ export const INDIE_FORM_MESSAGES = {
   submitNew: "올리기",
   submitEdit: "고친 내용 저장",
   saving: "저장하는 중",
-  created: "등록을 신청했어요. 대표 그림과 스크린샷을 올리면 운영진이 확인하고 승인해요.",
+  created: "등록을 신청했어요. 운영진이 확인하고 승인해요.",
+  /** 새 글 폼에서 고른 그림을 저장 뒤 이어서 올리는 동안 */
+  imagesSending: (done: number, total: number) => `그림 올리는 중 ${done}/${total}`,
   saved: "저장했어요.",
   delete: "글 지우기",
   deleteConfirm: "정말 지울까요? 올린 그림도 함께 지워져요.",
@@ -176,6 +178,8 @@ export const INDIE_FORM_MESSAGES = {
   imagesTitle: "그림",
   imagesLead: "첫 번째 그림이 대표 그림이에요. 가로로 긴 그림(16:9)이 카드에 가장 잘 맞아요.",
   imageAdd: "그림 올리기",
+  /** 새 글 폼의 고르기 칸 — 저장할 때 같이 올라간다 */
+  imagePick: "그림 고르기",
   imageUploading: (done: number, total: number) => `올리는 중 ${done}/${total}`,
   imageRemove: "그림 지우기",
   imageMakeCover: "대표로",

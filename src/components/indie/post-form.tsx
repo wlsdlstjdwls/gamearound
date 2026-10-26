@@ -1,8 +1,9 @@
 "use client";
 // 인디 홍보 글 쓰기, 고치기 폼 — Server Action 은 app/(user)/indie/actions.ts.
 //
-// 그림 칸이 이 폼에 없는 이유: 그림은 Blob 경로에 글 id 를 박아야 올릴 수 있다(lib/indie/schemas 주석).
-// 새 글은 아직 id 가 없으니 글부터 저장하고, 고치기 화면으로 넘어가 그림을 올린다.
+// 새 글은 그림을 이 폼에서 고른다(기획서 v2.0 S-23 "대표 이미지", 목업 indreg). 다만 그림은 Blob 경로에 글 id 를 박아야
+// 올릴 수 있어서(lib/indie/schemas 주석) 글부터 저장하고, 받은 id 로 고른 그림을 이어 올린 뒤 등록현황(S-22)으로 간다.
+// 올리다 실패하면 고치기 화면으로 보내 그 그림 칸에서 다시 올리게 한다. 고치기는 그림 칸(image-manager)이 따로 선다.
 import { useRouter } from "next/navigation";
 import { useActionState, useEffect, useState } from "react";
 import { createIndiePostAction, updateIndiePostAction, type IndieFormState } from "@/app/(user)/indie/actions";
@@ -13,6 +14,8 @@ import { FormMessage } from "@/components/ui/form-message";
 import { FormSelect } from "@/components/ui/select";
 import { TEXTAREA_CLASS, TextField } from "@/components/ui/text-field";
 import { GameLinkPicker } from "@/components/indie/game-link-picker";
+import { IndieImagePicker } from "@/components/indie/image-picker";
+import { uploadIndieImages } from "@/components/indie/upload-images";
 import {
   INDIE_BODY_MAX,
   INDIE_DEVELOPER_MAX,
@@ -36,10 +39,10 @@ const LINK_OPTIONS = INDIE_LINK_KINDS.map((k) => ({ value: k, label: INDIE_LINK_
 const LABEL = "text-[12.5px] font-medium text-mut";
 const HINT = "text-[12.5px] leading-[1.6] text-dim";
 
-function SubmitButton({ label }: { label: string }) {
+function SubmitButton({ label, sending }: { label: string; sending: string | null }) {
   const pending = useActionFormPending();
   return (
-    <Button type="submit" loading={pending} loadingLabel={M.saving}>
+    <Button type="submit" loading={pending || sending !== null} loadingLabel={sending ?? M.saving}>
       {label}
     </Button>
   );
@@ -62,8 +65,26 @@ export function IndiePostForm({ post }: { post?: IndieDetailDto }) {
   // 링크 칸은 적은 만큼 + 빈칸 하나. 다섯 칸을 늘 세우면 빈칸이 폼 길이를 두 배로 만든다
   const [linkRows, setLinkRows] = useState(Math.min(Math.max(otherLinks.length, 1), INDIE_LINK_MAX));
 
+  const [files, setFiles] = useState<File[]>([]);
+  const [sending, setSending] = useState<string | null>(null);
+
   useEffect(() => {
-    if (state?.ok && state.redirectTo) router.push(state.redirectTo);
+    if (!state?.ok || !state.redirectTo) return;
+    const { redirectTo, postId, editPath } = state;
+    if (!postId || files.length === 0) {
+      router.push(redirectTo);
+      return;
+    }
+    let live = true;
+    void uploadIndieImages(postId, files, (done, total) => live && setSending(M.imagesSending(done + 1, total))).then((failed) => {
+      if (!live) return;
+      router.push(failed && editPath ? editPath : redirectTo);
+    });
+    return () => {
+      live = false;
+    };
+    // 저장 결과가 올 때 한 번만 돈다 — 고른 그림(files)이 바뀌었다고 다시 올리지 않는다
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [state, router]);
 
   function toggleGenre(g: string) {
@@ -188,6 +209,9 @@ export function IndiePostForm({ post }: { post?: IndieDetailDto }) {
         </p>
       </div>
 
+      {/* 목업 순서대로 소개 바로 아래 — 이름, 장르, 플랫폼, 소개, 대표 이미지 */}
+      {!post && <IndieImagePicker files={files} onChange={setFiles} disabled={sending !== null} />}
+
       <TextField
         name="youtube"
         label={M.youtubeLabel}
@@ -239,7 +263,7 @@ export function IndiePostForm({ post }: { post?: IndieDetailDto }) {
       <GameLinkPicker initial={post?.game ?? null} />
 
       <div>
-        <SubmitButton label={post ? M.submitEdit : M.submitNew} />
+        <SubmitButton label={post ? M.submitEdit : M.submitNew} sending={sending} />
       </div>
     </ActionForm>
   );

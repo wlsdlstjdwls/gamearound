@@ -1,22 +1,17 @@
 "use client";
 // 홍보 글 그림 칸 — 대표 그림(첫 장)과 스크린샷. 고치기 화면에 붙는다.
 //
-// 올리는 길은 매장 사진과 같다(components/shops/listing-photos 주석): 브라우저가 줄이고(resizePhoto) →
-// 토큰을 받아 Blob 으로 곧장 올리고 → 액션으로 적는다. 여러 장은 한 장씩 차례로 — 한꺼번에 보내면 장수 상한
-// 셈이 전부 "아직 비었다" 로 읽힌다.
-import { upload } from "@vercel/blob/client";
+// 올리는 길은 ./upload-images 한 벌이다(새 글 폼과 같이 쓴다).
 import { useRouter } from "next/navigation";
 import { useRef, useState, useTransition } from "react";
-import { makeIndieCoverAction, registerIndieImageAction, removeIndieImageAction } from "@/app/(user)/indie/actions";
+import { makeIndieCoverAction, removeIndieImageAction } from "@/app/(user)/indie/actions";
+import { uploadIndieImages } from "@/components/indie/upload-images";
 import { buttonClass } from "@/components/ui/button";
 import { FadeImage } from "@/components/ui/fade-image";
 import { XIcon } from "@/components/ui/icons";
-import { INDIE_IMAGE_UPLOAD_PATH } from "@/lib/routes";
 import { INDIE_IMAGE_MAX } from "@/lib/indie/constants";
 import { INDIE_FORM_MESSAGES as M } from "@/lib/indie/messages";
-import { indieImagePrefix } from "@/lib/indie/schemas";
 import type { IndieImageDto } from "@/lib/indie/dto";
-import { resizePhoto } from "@/lib/shops/photo-resize";
 
 /** 작은 그림 한 칸의 폭(px). 카드 커버와 같은 가로 비율로 보여야 "대표로" 골랐을 때 어떻게 잘릴지 보인다 */
 const THUMB_W = 160;
@@ -36,25 +31,8 @@ export function IndieImageManager({ postId, title, images }: { postId: string; t
     const picked = Array.from(files).slice(0, Math.max(room, 0));
     if (files.length > room) setError(M.imageFull(INDIE_IMAGE_MAX));
 
-    for (let i = 0; i < picked.length; i++) {
-      setProgress({ done: i, total: picked.length });
-      try {
-        const photo = await resizePhoto(picked[i]).catch(() => {
-          throw new Error(M.imageUnreadable);
-        });
-        const blob = await upload(`${indieImagePrefix(postId)}image.${photo.ext}`, photo.blob, {
-          access: "public",
-          handleUploadUrl: INDIE_IMAGE_UPLOAD_PATH,
-          clientPayload: JSON.stringify({ postId }),
-          contentType: photo.blob.type,
-        });
-        const r = await registerIndieImageAction({ postId, url: blob.url, pathname: blob.pathname, width: photo.width, height: photo.height });
-        if (!r.ok) throw new Error(r.error);
-      } catch (e) {
-        setError(e instanceof Error && e.message ? e.message : M.imageFailed);
-        break;
-      }
-    }
+    const failed = await uploadIndieImages(postId, picked, (done, total) => setProgress({ done, total }));
+    if (failed) setError(failed);
     setProgress(null);
     if (inputRef.current) inputRef.current.value = "";
     router.refresh();
