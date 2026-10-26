@@ -18,7 +18,7 @@ type IconSpec = {
   inset?: number;
 };
 
-/** 파비콘. 전부 보라 판(tile) — 투명 바탕은 탭 색에 묻힌다 */
+/** 파비콘. 전부 강조색 판(tile) — 투명 바탕은 탭 색에 묻힌다. 강조색(SITE.accentColor)을 바꾸면 pnpm icons 를 다시 돌린다(10-26 파랑 전환 때 이 파일들만 보라로 남아 뒤로가기 때 탭 아이콘이 보라로 깜빡였다) */
 const FAVICON_SPECS: readonly IconSpec[] = [{ size: 16 }, { size: 32 }];
 
 /** PWA, 푸시 알림용. maskable 은 OS 가 모양을 깎으므로 판을 꽉 채우고 심볼을 안전영역 안에 넣는다 */

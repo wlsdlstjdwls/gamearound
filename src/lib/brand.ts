@@ -83,8 +83,8 @@ export const BRAND_COLOR = {
 export const MASKABLE_SAFE_RATIO = 0.8;
 
 /**
- * plain: 투명 바탕에 보라 몸통(헤더, OG).
- * tile: 보라 판에 흰 몸통(파비콘, 앱 아이콘). 작은 칸에서 투명 바탕은 브라우저 탭 색에 묻혀서 판을 깐다.
+ * plain: 투명 바탕에 강조색 몸통(헤더, OG).
+ * tile: 강조색 판에 흰 몸통(파비콘, 앱 아이콘). 작은 칸에서 투명 바탕은 브라우저 탭 색에 묻혀서 판을 깐다.
  */
 export type BrandSymbolVariant = "plain" | "tile";
 
