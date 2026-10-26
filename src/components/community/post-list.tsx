@@ -1,9 +1,11 @@
 // 게시판 목록 줄(기획서 v2.0 5.2 "목록 행"). 한 줄에 제목 하나로 압축해 많은 글을 보여 준다 —
-// 말머리, 제목, 댓글 수가 왼쪽, 작성자, 날짜, 조회, 좋아요가 오른쪽. 좁은 화면에서는 오른쪽 값이 제목 아래 한 줄로 내려간다.
+// 말머리, 관련 게임, 제목, 댓글 수가 왼쪽, 작성자, 날짜, 조회, 좋아요가 오른쪽. 좁은 화면에서는 오른쪽 값이 제목 아래 한 줄로 내려간다.
+// 말머리는 카테고리 하나짜리 게시판(공략, 개발일지)에서도 세운다 — 기획서 7장 "말머리: 카테고리별 색이 다름" 은 목록 행의 약속이고,
+// 리뷰만 스포 딱지가, 홍보만 유형 딱지가 서는 탓에 공략 줄만 맨 제목으로 시작하면 다른 게시판과 줄 모양이 달라진다.
 import Link from "next/link";
 import { EmptyState } from "@/components/empty-state";
 import { cn } from "@/lib/cn";
-import { PostTags } from "@/components/community/badges";
+import { GameChip, PostTags } from "@/components/community/badges";
 import { COMMUNITY_MESSAGES as M } from "@/lib/community/messages";
 import { formatPostDate } from "@/lib/format";
 import { stagger } from "@/lib/motion";
@@ -23,6 +25,7 @@ export function PostList({ posts, rank = false, rankFrom = 1, showCategory = tru
             <span className="flex min-w-0 flex-1 items-center gap-2">
               {rank && <span className="w-6 shrink-0 text-center text-[13px] font-bold tabular-nums text-acc">{rankFrom + i}</span>}
               <PostTags post={p} showCategory={showCategory} />
+              {p.game && <GameChip title={p.game.title} />}
               <span className="truncate text-[14.5px] font-semibold text-ink group-hover:text-acc">{p.title}</span>
               {p.commentCount > 0 && <span className="shrink-0 text-[12.5px] font-bold text-acc">[{p.commentCount}]</span>}
             </span>

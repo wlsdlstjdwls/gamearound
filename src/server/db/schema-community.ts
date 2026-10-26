@@ -8,7 +8,7 @@
 import { pgTable, pgEnum, uuid, text, integer, boolean, index, primaryKey } from "drizzle-orm/pg-core";
 import { relations } from "drizzle-orm";
 import { auditColumns } from "./audit";
-import { users } from "./schema";
+import { games, users } from "./schema";
 
 /** 카테고리. 앞 셋은 게임 게시판, 뒤 둘은 개발자 라운지 */
 export const postCategoryEnum = pgEnum("post_category", ["review", "guide", "promo", "devlog", "qna"]);
@@ -33,13 +33,19 @@ export const posts = pgTable(
     promoType: promoTypeEnum("promo_type"),
     /** 홍보에서만 받는 선택 링크 */
     link: text("link"),
+    /**
+     * 관련 게임(목업 S-14 "관련 게임", 2026-10-26 사용자 승인). 리뷰, 공략은 글쓰기에서 필수, 홍보는 선택이다 —
+     * 그 규칙은 입력 검증(lib/community/schemas)이 맡고 칸은 비워 둘 수 있게 둔다. 이 칸이 생기기 전에 올라온 글과
+     * 라운지 글은 게임이 없고, 게임 행이 중복 정리로 지워져도 글은 남아야 해서 set null 이다.
+     */
+    gameId: uuid("game_id").references(() => games.id, { onDelete: "set null" }),
     viewCount: integer("view_count").default(0).notNull(),
     likeCount: integer("like_count").default(0).notNull(),
     commentCount: integer("comment_count").default(0).notNull(),
     status: postStatusEnum("status").default("published").notNull(),
     ...auditColumns(),
   },
-  (t) => [index("posts_category_created_idx").on(t.category, t.createdAt), index("posts_author_idx").on(t.authorUserId)],
+  (t) => [index("posts_category_created_idx").on(t.category, t.createdAt), index("posts_author_idx").on(t.authorUserId), index("posts_game_idx").on(t.gameId)],
 );
 
 export const postComments = pgTable(

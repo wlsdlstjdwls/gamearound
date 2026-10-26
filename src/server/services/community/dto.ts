@@ -14,7 +14,12 @@ export type PostRowDto = {
   likeCount: number;
   viewCount: number;
   href: string;
+  /** 관련 게임(리뷰, 공략은 글쓰기에서 필수). 칸이 생기기 전 글, 라운지 글, 게임 행이 지워진 글은 null */
+  game: PostGameDto | null;
 };
+
+/** 글에 붙은 게임 — 이름과 게임 상세 주소만 싣는다(id, slug 같은 저장 모양은 화면에 흘리지 않는다) */
+export type PostGameDto = { title: string; href: string };
 
 export type PostPage = { items: PostRowDto[]; total: number; page: number; totalPages: number };
 

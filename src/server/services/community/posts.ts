@@ -3,11 +3,11 @@
 import { and, asc, desc, eq, gt, ilike, inArray, lt, or, sql, type SQL } from "drizzle-orm";
 import { getDb } from "@/server/db/client";
 import { createdBy } from "@/server/db/audit";
-import { posts, users, type PostCategory, type PromoType } from "@/server/db/schema";
+import { games, posts, users, type PostCategory, type PromoType } from "@/server/db/schema";
 import { getCurrentUser, requireUser } from "@/server/services/users";
-import { POSTS_PAGE_SIZE, postPath, type PopularPeriod, type SearchScope } from "@/lib/community/constants";
+import { POSTS_PAGE_SIZE, postPath, takesGame, type PopularPeriod, type SearchScope } from "@/lib/community/constants";
 import type { PostInput } from "@/lib/community/schemas";
-import type { PostDetailDto, PostPage, PostRowDto } from "./dto";
+import type { PostDetailDto, PostPage } from "./dto";
 import { authorNameSql, popularScoreSql, rowColumns, toRow } from "./columns";
 import { isLiked, isSaved } from "./reactions";
 
@@ -90,10 +90,34 @@ export async function getPostDetail(id: string): Promise<PostDetailDto | null> {
   return { ...toRow(row), body: row.body, link: row.link, isMine, liked, saved, prev: neighbor(prevRows[0]), next: neighbor(nextRows[0]) };
 }
 
-/** 등록. 카테고리에 맞지 않는 칸은 버린다(리뷰 아닌 글의 스포, 홍보 아닌 글의 유형, 링크) */
+/** 고른 게임이 카탈로그에 없을 때(지워졌거나 slug 를 손으로 고친 요청). 액션이 관련 게임 칸 아래 오류로 바꾼다 */
+export class PostGameNotFoundError extends Error {
+  constructor() {
+    super("post game not found");
+    this.name = "PostGameNotFoundError";
+  }
+}
+
+/** 예전 상세 주소(/board/p/<id>)를 새 주소로 보낼 때 쓴다. 조회수를 올리지 않는다 — 넘겨받은 화면이 올린다 */
+export async function getPostCategory(id: string): Promise<PostCategory | null> {
+  const [row] = await getDb().select({ category: posts.category }).from(posts).where(eq(posts.id, id));
+  return row?.category ?? null;
+}
+
+/**
+ * 등록. 카테고리에 맞지 않는 칸은 버린다(리뷰 아닌 글의 스포, 홍보 아닌 글의 유형, 링크, 라운지 글의 게임).
+ * 관련 게임은 slug 로 받아 id 로 바꾼다 — 화면은 id 를 모른다(자동완성 응답이 slug 만 준다).
+ */
 export async function createPost(input: PostInput): Promise<{ id: string; category: PostCategory }> {
   const u = await requireUser();
-  const [row] = await getDb()
+  const db = getDb();
+  let gameId: string | null = null;
+  if (takesGame(input.category) && input.gameSlug !== "") {
+    const [g] = await db.select({ id: games.id }).from(games).where(eq(games.slug, input.gameSlug));
+    if (!g) throw new PostGameNotFoundError();
+    gameId = g.id;
+  }
+  const [row] = await db
     .insert(posts)
     .values({
       category: input.category,
@@ -103,15 +127,31 @@ export async function createPost(input: PostInput): Promise<{ id: string; catego
       spoiler: input.category === "review" && input.spoiler === "yes",
       promoType: input.category === "promo" && input.promoType !== "" ? input.promoType : null,
       link: input.category === "promo" && input.link !== "" ? input.link : null,
+      gameId,
       ...createdBy("user", u.id),
     })
     .returning({ id: posts.id, category: posts.category });
   return row;
 }
 
-/** 내가 쓴 글(내 활동 S-24) */
-export async function listMyPosts(): Promise<PostRowDto[]> {
+/** 내가 쓴 글(내 활동 S-24). 게시판과 같은 한 쪽 20줄로 끊는다(기획서 4.3) — 글이 쌓이면 한 화면에 수백 줄이 섰다 */
+export async function listMyPosts(page = 1): Promise<PostPage> {
   const u = await requireUser();
-  const rows = await getDb().select(rowColumns).from(posts).innerJoin(users, eq(users.id, posts.authorUserId)).where(eq(posts.authorUserId, u.id)).orderBy(desc(posts.createdAt));
-  return rows.map(toRow);
+  const db = getDb();
+  const at = Math.max(1, page);
+  const where = eq(posts.authorUserId, u.id);
+  // 건수와 목록은 서로를 기다릴 이유가 없다 — 나란히 보낸다(listPosts 와 같은 이유)
+  const [countRows, rows] = await Promise.all([
+    db.select({ n: sql<number>`count(*)::int` }).from(posts).where(where),
+    db
+      .select(rowColumns)
+      .from(posts)
+      .innerJoin(users, eq(users.id, posts.authorUserId))
+      .where(where)
+      .orderBy(desc(posts.createdAt), desc(posts.id))
+      .limit(POSTS_PAGE_SIZE)
+      .offset((at - 1) * POSTS_PAGE_SIZE),
+  ]);
+  const total = countRows[0]?.n ?? 0;
+  return { items: rows.map(toRow), total, page: at, totalPages: Math.max(1, Math.ceil(total / POSTS_PAGE_SIZE)) };
 }

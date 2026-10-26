@@ -33,7 +33,17 @@ type Props = {
   allPath: string;
   base: string;
   query: BoardQuery;
+  /**
+   * 보조 메뉴에 덧붙이는 칸(라운지의 "내가 만든 게임", "등록현황", 목업 bside). lead 는 "전체 글" 바로 아래, tail 은 카테고리 뒤에 선다.
+   * 수가 사람마다 달라(등록현황은 내 것) 약속으로 받는다 — 메뉴 칸의 Suspense 안에서 풀려 목록을 기다리게 하지 않는다
+   */
+  sideExtra?: Promise<{ lead: SideLink[]; tail: SideLink[] }>;
+  /** 보조 메뉴 판 맨 아래(라운지의 "게시판 이용 안내") */
+  sideFoot?: React.ReactNode;
 };
+
+/** 보조 메뉴 한 칸. count 가 null 이면 수를 적지 않는다(비로그인의 등록현황) */
+export type SideLink = { href: string; label: string; count: number | null };
 
 /**
  * 목록 질의 한 번. 머리 줄 글 수와 목록이 같은 결과를 나눠 쓴다(요청 하나 안에서만 산다).
@@ -43,29 +53,31 @@ const loadPage = cache((categories: readonly PostCategory[], query: BoardQuery) 
   nullIfDbUnavailable(listPosts({ categories, q: query.q, scope: query.scope, tab: query.tab, period: query.period, page: query.page, promoType: query.type })),
 );
 
-async function SideMenu({ family, allPath, current }: { family: readonly PostCategory[]; allPath: string; current: string }) {
-  const home = await nullIfDbUnavailable(getBoardHome(family, [], false));
+async function SideMenu({ family, allPath, current, extra }: { family: readonly PostCategory[]; allPath: string; current: string; extra?: Props["sideExtra"] }) {
+  const [home, more] = await Promise.all([nullIfDbUnavailable(getBoardHome(family, [], false)), extra ?? { lead: [], tail: [] }]);
   const counts = home?.counts ?? {};
   const total = family.reduce((n, c) => n + (counts[c] ?? 0), 0);
-  const item = (href: string, label: string, n: number) => (
+  const item = (href: string, label: string, n: number | null) => (
     <li key={href}>
       <Link
         href={href}
         aria-current={href === current ? "page" : undefined}
         className={cn(
-          "flex min-h-10 shrink-0 items-center justify-between gap-3 rounded-lg px-3 text-[13.5px] transition-colors",
+          "flex min-h-10 shrink-0 items-center justify-between gap-3 whitespace-nowrap rounded-lg px-3 text-[13.5px] transition-colors",
           href === current ? "bg-acc-soft font-bold text-acc shadow-[inset_3px_0_0_var(--acc)]" : "text-ink-2 hover:bg-surface-2 hover:text-ink",
         )}
       >
         <span>{label}</span>
-        <span className="tabular-nums text-[12px] text-dim">{n.toLocaleString("ko-KR")}</span>
+        {n !== null && <span className="tabular-nums text-[12px] text-dim">{n.toLocaleString("ko-KR")}</span>}
       </Link>
     </li>
   );
   return (
     <ul className="flex gap-1 overflow-x-auto [scrollbar-width:none] lg:flex-col">
       {item(allPath, M.allPosts, total)}
+      {more.lead.map((l) => item(l.href, l.label, l.count))}
       {family.map((c) => item(CATEGORY_LIST_PATH[c], CATEGORY_LABEL[c], counts[c] ?? 0))}
+      {more.tail.map((l) => item(l.href, l.label, l.count))}
     </ul>
   );
 }
@@ -92,14 +104,14 @@ async function Results({ categories, base, query }: { categories: readonly PostC
   return (
     <>
       <PendingRegion>
-        <PostList bare posts={page.items} rank={query.tab === "popular"} rankFrom={(page.page - 1) * POSTS_PAGE_SIZE + 1} showCategory={categories.length > 1} empty={empty} />
+        <PostList bare posts={page.items} rank={query.tab === "popular"} rankFrom={(page.page - 1) * POSTS_PAGE_SIZE + 1} empty={empty} />
       </PendingRegion>
       <Pagination page={page.page} totalPages={page.totalPages} hrefFor={(n) => boardHref(base, query, { page: n })} />
     </>
   );
 }
 
-export function PostBoard({ title, categories, family, allPath, base, query }: Props) {
+export function PostBoard({ title, categories, family, allPath, base, query, sideExtra, sideFoot }: Props) {
   const single = categories.length === 1 ? categories[0] : undefined;
   const copy = BOARD_PAGE_COPY[single ?? (isLoungeCategory(family[0]) ? "loungeAll" : "boardAll")];
   const head = single ? `${CATEGORY_LABEL[single]} ${M.boardHeadSuffix}` : M.allPostsHead;
@@ -108,12 +120,13 @@ export function PostBoard({ title, categories, family, allPath, base, query }: P
       <PageHead title={title} action={<WriteLink href={writePath(single)}>{copy.write}</WriteLink>}>
         <p className="text-[14px] text-mut">{copy.lead}</p>
       </PageHead>
-      <div className="grid items-start gap-4 lg:grid-cols-[176px_minmax(0,1fr)] lg:gap-5">
-        <nav aria-label={M.boardSideLabel} className="rounded-[var(--radius-md)] bg-surface p-2 shadow-hair lg:sticky lg:top-[calc(var(--header-h)+16px)]">
+      <div className="grid grid-cols-1 items-start gap-4 lg:grid-cols-[176px_minmax(0,1fr)] lg:gap-5">
+        <nav aria-label={M.boardSideLabel} className="min-w-0 rounded-[var(--radius-md)] bg-surface p-2 shadow-hair lg:sticky lg:top-[calc(var(--header-h)+16px)]">
           <p className="hidden px-3 pb-1.5 pt-2 text-[11.5px] font-bold tracking-[0.06em] text-dim lg:block">{M.boardSideLabel}</p>
           <Suspense fallback={<Bone className="h-10 w-full" />}>
-            <SideMenu family={family} allPath={allPath} current={base} />
+            <SideMenu family={family} allPath={allPath} current={base} extra={sideExtra} />
           </Suspense>
+          {sideFoot}
         </nav>
         <NavPendingScope>
           <section aria-label={head} className="flex min-w-0 flex-col gap-4 rounded-[var(--radius-md)] bg-surface p-4 shadow-hair sm:p-5">

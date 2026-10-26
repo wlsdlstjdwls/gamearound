@@ -7,7 +7,7 @@ import { actionError } from "@/lib/db-errors";
 import { CATEGORY_LIST_PATH, postPath } from "@/lib/community/constants";
 import { COMMUNITY_MESSAGES as M } from "@/lib/community/messages";
 import { commentInputSchema, postInputSchema } from "@/lib/community/schemas";
-import { addComment, createPost, toggleLike, toggleSave, type CommentDto } from "@/server/services/community";
+import { addComment, createPost, PostGameNotFoundError, toggleLike, toggleSave, type CommentDto } from "@/server/services/community";
 import { notifyComment } from "@/server/services/notifications";
 
 export type PostActionState = { ok: true; redirectTo: string } | { ok: false; error?: string; fieldErrors?: Record<string, string> } | null;
@@ -30,6 +30,8 @@ export async function createPostAction(input: Record<string, string>): Promise<P
     // 등록 뒤 그 카테고리의 목록으로 간다(기획서 6.4 "등록 후 이동")
     return { ok: true, redirectTo: CATEGORY_LIST_PATH[row.category] };
   } catch (e) {
+    // 고른 게임이 그새 사라졌으면 폼 맨 아래가 아니라 관련 게임 칸 아래에 말한다 — 고칠 자리가 거기다
+    if (e instanceof PostGameNotFoundError) return { ok: false, fieldErrors: { gameSlug: M.gameNotFound } };
     return { ok: false, error: actionError(e, M.failed) };
   }
 }

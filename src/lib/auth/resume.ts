@@ -38,3 +38,45 @@ export function takeAction(action: string, now = Date.now()): boolean {
     return false;
   }
 }
+
+// 쓰던 글 보관 — 댓글처럼 "누르던 동작" 에 사용자가 친 글이 딸린 경우(기획서 6.2 "누르던 동작을 그대로 이어서 실행").
+// 동작 메모만으로는 다시 열린 화면에서 보낼 내용이 없다(페이지가 통째로 다시 열려 입력칸이 비었다). 그래서 같은 탭 저장소에
+// 동작 이름을 열쇠로 글을 따로 적어 두고, 이어하기가 돌 때 꺼내 칸에 되돌린 뒤 보낸다.
+// 동작 메모와 칸을 나눈 이유: 메모는 하나뿐이라(마지막 누른 것) 덮이지만, 글은 동작마다 따로 남아야 다른 글의 댓글 칸이 남의 글을 집지 않는다.
+// 수명은 동작 메모와 같다 — 로그인을 포기하고 한참 뒤 돌아온 화면에 옛 글이 튀어나오면 안 된다.
+
+const DRAFT_KEY = "gamearound.resume.draft";
+
+type Draft = { action: string; text: string; at: number };
+
+export function rememberDraft(action: string, text: string): void {
+  try {
+    sessionStorage.setItem(`${DRAFT_KEY}:${action}`, JSON.stringify({ action, text, at: Date.now() } satisfies Draft));
+  } catch {
+    // 저장이 막힌 브라우저 — 로그인 뒤 칸이 빈 채로 돌아올 뿐 로그인은 그대로 된다
+  }
+}
+
+/** 이 동작에 적어 둔 글을 꺼내고 지운다. 없거나 오래됐으면 null */
+export function takeDraft(action: string, now = Date.now()): string | null {
+  try {
+    const key = `${DRAFT_KEY}:${action}`;
+    const raw = sessionStorage.getItem(key);
+    if (!raw) return null;
+    sessionStorage.removeItem(key);
+    const draft = JSON.parse(raw) as Draft;
+    if (draft.action !== action || now - draft.at > RESUME_TTL_MS) return null;
+    return draft.text;
+  } catch {
+    return null;
+  }
+}
+
+/** 보낼 필요가 없어진 글을 지운다(로그인한 채 바로 보냈을 때) */
+export function forgetDraft(action: string): void {
+  try {
+    sessionStorage.removeItem(`${DRAFT_KEY}:${action}`);
+  } catch {
+    // 저장소가 막혔으면 지울 것도 없다
+  }
+}

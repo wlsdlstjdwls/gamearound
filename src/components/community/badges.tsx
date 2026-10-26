@@ -20,3 +20,12 @@ export function PostTags({ post, showCategory = true, awaiting = true }: { post:
     </>
   );
 }
+
+/**
+ * 관련 게임 이름 딱지(목업 brow 의 줄 앞 게임 이름). 말머리와 섞이지 않게 색 없는 회색 면이다 — 색은 카테고리의 말이다.
+ * 목록 줄은 줄 전체가 글 링크라 이 딱지는 링크가 아니다(링크 안 링크). 게임으로 가는 길은 글 상세의 "관련 게임" 이다.
+ * 긴 이름이 제목 자리를 먹지 않게 폭을 묶고 자른다 — 잘린 이름은 줄을 눌러 상세에서 다 본다.
+ */
+export function GameChip({ title }: { title: string }) {
+  return <span className="inline-block min-w-0 max-w-[9rem] shrink truncate rounded-[5px] bg-surface-2 px-1.5 py-[3px] align-middle text-[11.5px] font-semibold leading-none text-ink-2 sm:max-w-[12rem]">{title}</span>;
+}

@@ -9,6 +9,9 @@
 import { gamesHref } from "@/lib/games-query";
 import { ROUTES } from "@/lib/routes";
 
+/** 게임 게시판 글쓰기 화면(app/(user)/board/write). 경로 표시와 칸 켜기가 같은 값을 본다 */
+const BOARD_WRITE_PATH = `${ROUTES.board}/write`;
+
 export type NavSub = {
   label: string;
   href: string;
@@ -17,6 +20,16 @@ export type NavSub = {
    * 경로만 보면 "전체 게임" 과 구별이 안 된다. 정렬은 조건에 넣지 않는다 — 할인 게임에서 정렬을 바꿔도 할인 게임이다
    */
   query?: Record<string, string>;
+  /**
+   * 경로가 달라도 이 칸을 켜는 화면(정확히 그 경로일 때만). 라운지 전체 글(/lounge/all)은 메뉴에 칸이 없지만
+   * 목업(subOf lga, lgPage)이 "라운지 홈" 을 켜고 경로를 "개발자 라운지 > 라운지 홈" 으로 세운다 — 홈의 "전체 글 보기" 로 들어오는 화면이라서다
+   */
+  aliases?: readonly string[];
+  /**
+   * 경로와 주소 조건이 함께 맞으면 이 칸을 켜는 화면. 글쓰기(/board/write?category=review)는 게시판마다 주소가 따로 없지만
+   * 목업(wpage 의 crumb3)이 "게임 게시판 > 리뷰 > 글쓰기" 로 고른 게시판을 켠다. 글쓰기 화면이 카테고리를 바꾸면 주소 조건도 따라 바꾼다
+   */
+  aliasQueries?: readonly { path: string; query: Record<string, string> }[];
 };
 
 export type NavSection = {
@@ -57,10 +70,12 @@ export const NAV_SECTIONS: readonly NavSection[] = [
     label: "게임 게시판",
     href: ROUTES.board,
     subs: [
-      { label: "게시판 홈", href: ROUTES.board },
-      { label: "리뷰", href: ROUTES.boardReviews },
-      { label: "공략", href: ROUTES.boardGuides },
-      { label: "홍보", href: ROUTES.boardPromos },
+      // 전체 글(/board/all)은 칸이 없지만 목업(rbPage rha)이 "게시판 홈" 을 켠다 — 라운지 전체 글과 같은 자리다
+      { label: "게시판 홈", href: ROUTES.board, aliases: [ROUTES.boardAll] },
+      // 글쓰기의 category 값은 posts.category 갈래 이름이다(lib/community/constants 의 writePath)
+      { label: "리뷰", href: ROUTES.boardReviews, aliasQueries: [{ path: BOARD_WRITE_PATH, query: { category: "review" } }] },
+      { label: "공략", href: ROUTES.boardGuides, aliasQueries: [{ path: BOARD_WRITE_PATH, query: { category: "guide" } }] },
+      { label: "홍보", href: ROUTES.boardPromos, aliasQueries: [{ path: BOARD_WRITE_PATH, query: { category: "promo" } }] },
     ],
   },
   {
@@ -69,7 +84,7 @@ export const NAV_SECTIONS: readonly NavSection[] = [
     href: ROUTES.lounge,
     // 내가 만든 게임, 등록현황은 지금의 인디 글 화면(/indie, /indie/mine)이 맡는다 — 승인제로 바뀌기 전까지의 자리다
     subs: [
-      { label: "라운지 홈", href: ROUTES.lounge },
+      { label: "라운지 홈", href: ROUTES.lounge, aliases: [ROUTES.loungeAll] },
       { label: "내가 만든 게임", href: ROUTES.indie },
       { label: "개발일지", href: ROUTES.loungeDevlogs },
       { label: "질문, 피드백", href: ROUTES.loungeQna },
@@ -102,14 +117,37 @@ export const TRAIL_NO_CRUMB_SECTIONS: ReadonlySet<NavSection["key"]> = new Set([
  */
 export const TRAIL_LEAF_LABEL: Readonly<Record<string, string>> = {
   [ROUTES.indieNew]: "내 게임 등록",
-  [`${ROUTES.board}/write`]: "글쓰기",
+  [BOARD_WRITE_PATH]: "글쓰기",
   [`${ROUTES.lounge}/write`]: "글쓰기",
 };
 
+/**
+ * 목록 아래 상세 화면 중 경로 줄을 세우는 것 — <목록>/<segment>/<id> 꼴. 게임 게시판 글 상세(목업 postv 의
+ * "게임 게시판 > 리뷰 > 게시글")가 여기 선다. 상세 주소가 제 게시판 아래라(lib/community/constants 의 postPath)
+ * 띠와 경로가 같은 칸을 켠다. 라운지 글(/lounge/p/<id>)은 주소에 게시판이 없어 아직 넣지 않았다.
+ */
+export const TRAIL_LEAF_UNDER: readonly { parents: readonly string[]; segment: string; label: string }[] = [
+  { parents: [ROUTES.boardReviews, ROUTES.boardGuides, ROUTES.boardPromos], segment: "p", label: "게시글" },
+];
+
+/** 경로 줄 끝 낱말. 정해진 화면이 아니면 null */
+export function trailLeaf(pathname: string): string | null {
+  const exact = TRAIL_LEAF_LABEL[pathname];
+  if (exact) return exact;
+  for (const rule of TRAIL_LEAF_UNDER) {
+    for (const parent of rule.parents) {
+      const rest = pathname.startsWith(`${parent}/${rule.segment}/`) ? pathname.slice(parent.length + rule.segment.length + 2) : "";
+      // 바로 아래 한 칸(<id>)만 — 더 깊은 경로(고치기 등)는 제 화면이 따로 정한다
+      if (rest !== "" && !rest.includes("/")) return rule.label;
+    }
+  }
+  return null;
+}
+
 /** 경로 줄을 세울 화면인가 — 하위 칸 그 자체, 끝 낱말이 정해진 화면, 계정 화면(되돌아가기만) */
 export function trailKind(pathname: string, sub: NavSub | null): "sub" | "leaf" | "back" | null {
-  if (TRAIL_LEAF_LABEL[pathname]) return "leaf";
-  if (sub && pathname === pathOf(sub.href)) return "sub";
+  if (trailLeaf(pathname)) return "leaf";
+  if (sub && (pathname === pathOf(sub.href) || sub.aliases?.includes(pathname))) return "sub";
   return TRAIL_BACK_ONLY_PATHS.includes(pathname) ? "back" : null;
 }
 
@@ -130,6 +168,12 @@ type Query = { get(name: string): string | null };
  * 소속 메뉴는 있지만 칸이 없는 화면(게임 상세)은 sub 가 null 이다 — 띠는 서되 아무 칸도 켜지 않는다.
  */
 export function resolveNav(pathname: string, query: Query): { section: NavSection | null; sub: NavSub | null } {
+  // 별칭은 정확히 그 경로일 때만 맞고, 맞으면 다른 규칙보다 앞선다(첫 칸 상세 규칙에 걸려 칸이 꺼지지 않게)
+  // 주소 조건 별칭(글쓰기의 category)도 같은 자리에서 본다 — 글쓰기는 게시판 홈(/board) 아래라 첫 칸 규칙에 걸려 꺼진다
+  for (const section of NAV_SECTIONS) {
+    const sub = section.subs.find((s) => s.aliases?.includes(pathname) || s.aliasQueries?.some((a) => a.path === pathname && Object.entries(a.query).every(([k, v]) => query.get(k) === v)));
+    if (sub) return { section, sub };
+  }
   let best: { section: NavSection; sub: NavSub; score: number } | null = null;
   for (const section of NAV_SECTIONS) {
     for (const sub of section.subs) {

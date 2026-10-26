@@ -53,12 +53,16 @@ function EmptyRow({ title, lead }: { title: string; lead: string }) {
   );
 }
 
-/** 딱지 줄 — 줄 성격 딱지, 카테고리, 지난 시간 */
+/**
+ * 딱지 줄 — 줄 성격 딱지, 관련 게임, 카테고리, 지난 시간(목업 hotRow, waitRow 의 "게임 이름 + 카테고리").
+ * 게임 이름이 길면 그것만 잘린다 — 카테고리와 시간은 짧고 늘 읽혀야 한다.
+ */
 function MetaLine({ flag, post, now }: { flag: React.ReactNode; post: PostRowDto; now: number }) {
   return (
     <span className="flex min-w-0 items-center gap-2 text-[12px] text-dim">
       {flag}
-      <span className="truncate">{CATEGORY_LABEL[post.category]}</span>
+      {post.game && <span className="min-w-0 truncate font-semibold text-ink-2">{post.game.title}</span>}
+      <span className={post.game ? "shrink-0" : "truncate"}>{CATEGORY_LABEL[post.category]}</span>
       <span className="shrink-0">{formatAgo(post.createdAt, now)}</span>
     </span>
   );

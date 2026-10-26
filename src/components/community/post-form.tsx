@@ -1,27 +1,35 @@
 "use client";
 // 글쓰기(기획서 v2.0 S-14, 6.4). 전체 페이지 방식이고, 카테고리를 바꾸면 아래 칸만 바뀌고 제목, 본문은 그대로 남는다.
-//   리뷰: 스포 여부 필수 | 홍보: 홍보 유형 필수, 링크 선택 | 공략, 개발일지, 질문: 추가 칸 없음.
+//   리뷰: 관련 게임, 스포 여부 필수 | 공략: 관련 게임 필수 | 홍보: 홍보 유형 필수, 관련 게임, 링크 선택 | 개발일지, 질문: 추가 칸 없음.
 // 검증은 서버와 같은 zod 스키마(lib/community/schemas)로 먼저 보고, 오류는 칸 아래 빨간 글로 붙인다(aria-describedby).
-// 등록 뒤 그 카테고리 목록으로 간다.
+// 등록 뒤 그 카테고리 목록으로 간다. "취소" 는 들어온 화면으로 돌아간다(목업 wpage 의 취소 = 뒤로).
+//
+// 고른 카테고리를 주소(?category=)에도 싣는다 — 하위 메뉴 띠와 경로 줄이 주소로 소속을 읽어서(lib/nav 의 aliasQueries),
+// 칩만 바꾸고 주소를 두면 "공략" 을 쓰는데 띠는 "리뷰" 를 켠다. 화면을 다시 받지 않게 history.replaceState 로 바꾼다
+// (Next 가 useSearchParams 와 맞춰 준다, node_modules/next/dist/docs 의 linking-and-navigating). 뒤로가기 기록은 늘리지 않는다.
 import { useRouter } from "next/navigation";
-import { useState, useTransition } from "react";
+import { useEffect, useState, useTransition } from "react";
 import { createPostAction } from "@/app/(public)/board/actions";
+import { GamePicker, type PickedGame } from "@/components/community/game-picker";
 import { Button } from "@/components/ui/button";
 import { TextField } from "@/components/ui/text-field";
 import { useToast } from "@/components/ui/toast";
 import { cn } from "@/lib/cn";
-import { CATEGORY_LABEL, POST_BODY_MAX, POST_TITLE_MAX, PROMO_TYPES, PROMO_TYPE_LABEL } from "@/lib/community/constants";
+import { CATEGORY_LABEL, CATEGORY_LIST_PATH, POST_BODY_MAX, POST_TITLE_MAX, PROMO_TYPES, PROMO_TYPE_LABEL, requiresGame, takesGame, writePath } from "@/lib/community/constants";
 import { COMMUNITY_MESSAGES as M } from "@/lib/community/messages";
 import { postInputSchema } from "@/lib/community/schemas";
+import { canGoBack } from "@/lib/nav-history";
 import type { PostCategory } from "@/server/db/schema";
 
-type Errors = Partial<Record<"category" | "title" | "body" | "spoiler" | "promoType" | "link" | "form", string>>;
+type Errors = Partial<Record<"category" | "title" | "body" | "spoiler" | "promoType" | "link" | "gameSlug" | "form", string>>;
 
-/** 고르는 칸 한 줄(라디오를 칩 모양으로). 칸 이름과 오류를 fieldset 이 묶는다 */
-function ChoiceRow({ name, legend, value, options, onChange, error }: { name: string; legend: string; value: string; options: { value: string; label: string }[]; onChange: (v: string) => void; error?: string }) {
+/** 고르는 칸 한 줄(라디오를 칩 모양으로). 칸 이름과 오류를 fieldset 이 묶는다. hint 는 고르기 전에 읽을 안내 한 줄 */
+function ChoiceRow({ name, legend, value, options, onChange, error, hint }: { name: string; legend: string; value: string; options: { value: string; label: string }[]; onChange: (v: string) => void; error?: string; hint?: string }) {
   const errId = `${name}-error`;
+  const hintId = `${name}-hint`;
+  const describedBy = [hint ? hintId : null, error ? errId : null].filter(Boolean).join(" ") || undefined;
   return (
-    <fieldset aria-describedby={error ? errId : undefined} className="flex flex-col gap-2">
+    <fieldset aria-describedby={describedBy} className="flex flex-col gap-2">
       <legend className="mb-2 text-[13px] font-semibold text-ink">{legend}</legend>
       <div className="flex flex-wrap gap-2">
         {options.map((o) => (
@@ -31,6 +39,11 @@ function ChoiceRow({ name, legend, value, options, onChange, error }: { name: st
           </label>
         ))}
       </div>
+      {hint && (
+        <p id={hintId} className="text-[12.5px] text-dim">
+          {hint}
+        </p>
+      )}
       {error && (
         <p id={errId} role="alert" className="text-[12.5px] text-danger">
           {error}
@@ -49,11 +62,23 @@ export function PostForm({ categories, initial }: { categories: readonly PostCat
   const [spoiler, setSpoiler] = useState("");
   const [promoType, setPromoType] = useState("");
   const [link, setLink] = useState("");
+  const [game, setGame] = useState<PickedGame | null>(null);
   const [errors, setErrors] = useState<Errors>({});
   const [pending, start] = useTransition();
 
+  useEffect(() => {
+    const target = writePath(category);
+    if (`${window.location.pathname}${window.location.search}` !== target) window.history.replaceState(null, "", target);
+  }, [category]);
+
+  const cancel = () => {
+    if (canGoBack()) router.back();
+    else router.push(CATEGORY_LIST_PATH[category]);
+  };
+
   const submit = () => {
-    const input = { category, title, body, spoiler, promoType, link };
+    // 관련 게임 칸이 없는 카테고리(라운지)로 바꿨으면 골라 둔 게임은 싣지 않는다 — 서버도 버리지만 검증 오류가 엉뚱한 칸에 서지 않게
+    const input = { category, title, body, spoiler, promoType, link, gameSlug: takesGame(category) ? (game?.slug ?? "") : "" };
     const local = postInputSchema.safeParse(input);
     if (!local.success) {
       const next: Errors = {};
@@ -82,6 +107,7 @@ export function PostForm({ categories, initial }: { categories: readonly PostCat
       className="flex flex-col gap-6 rounded-[var(--radius-panel)] bg-surface p-5 shadow-hair sm:p-7"
     >
       <ChoiceRow name="category" legend={M.category} value={category} options={categories.map((c) => ({ value: c, label: CATEGORY_LABEL[c] }))} onChange={(v) => setCategory(v as PostCategory)} error={errors.category} />
+      {takesGame(category) && <GamePicker required={requiresGame(category)} value={game} onChange={setGame} error={errors.gameSlug} />}
       <TextField label={M.titleLabel} value={title} maxLength={POST_TITLE_MAX} onChange={(e) => setTitle(e.target.value)} error={errors.title} />
       <div className="flex flex-col gap-2">
         <label htmlFor="post-body" className="text-[13px] font-semibold text-ink">
@@ -114,6 +140,7 @@ export function PostForm({ categories, initial }: { categories: readonly PostCat
           ]}
           onChange={setSpoiler}
           error={errors.spoiler}
+          hint={M.spoilerHint}
         />
       )}
       {category === "promo" && (
@@ -127,7 +154,10 @@ export function PostForm({ categories, initial }: { categories: readonly PostCat
           {errors.form}
         </p>
       )}
-      <div className="flex justify-end">
+      <div className="flex justify-end gap-2">
+        <Button type="button" variant="secondary" size="lg" onClick={cancel} disabled={pending}>
+          {M.cancel}
+        </Button>
         <Button type="submit" size="lg" loading={pending} className="min-w-[140px]">
           {M.submit}
         </Button>

@@ -1,10 +1,13 @@
 "use client";
 // 글 상세의 손이 닿는 자리(기획서 v2.0 S-15, 6.1): 좋아요(토글), 저장(내 활동의 저장한 글), 댓글, 스포 가림.
 // 좋아요, 저장, 댓글은 로그인이 필요하다 — 비로그인이면 로그인 팝업 뒤 이어서 실행된다(auth/login-gate).
+// 댓글은 쓰던 글까지 이어 간다: 로그인은 페이지를 통째로 다시 여니까 보내기 전에 글을 탭 저장소에 맡기고(lib/auth/resume 의 rememberDraft),
+// 다시 열린 화면이 꺼내 칸에 되돌린 뒤 그대로 등록한다(기획서 6.2 "누르던 동작을 그대로 이어서 실행").
 // 누른 순간 바뀐다(AGENTS §6). 실패하면 되돌리고 토스트로 이유를 말한다.
 import { useOptimistic, useRef, useState, useTransition } from "react";
 import { addCommentAction, toggleLikeAction, toggleSaveAction } from "@/app/(public)/board/actions";
 import { useLoginGate, useResume } from "@/components/auth/login-gate";
+import { forgetDraft, rememberDraft, takeDraft } from "@/lib/auth/resume";
 import { Button } from "@/components/ui/button";
 import { HeartIcon } from "@/components/ui/icons";
 import { useToast } from "@/components/ui/toast";
@@ -50,7 +53,7 @@ export function PostReactions({ postId, liked: initLiked, likeCount: initCount, 
         {M.like} <span className="tabular-nums">{shownLike.n.toLocaleString("ko-KR")}</span>
       </button>
       <button type="button" aria-pressed={shownSaved} onClick={() => gate(`save:${postId}`, doSave)} className={pill(shownSaved)}>
-        {M.save}
+        {shownSaved ? M.savedLabel : M.save}
       </button>
     </div>
   );
@@ -86,10 +89,15 @@ export function Comments({ postId, initial }: { postId: string; initial: Comment
   const [pending, start] = useTransition();
   const ref = useRef<HTMLTextAreaElement>(null);
 
-  const submit = () =>
+  const action = `comment:${postId}`;
+
+  const submit = (text: string) =>
     start(async () => {
+      // 여기까지 왔으면 로그인한 채 보내는 중이다 — 맡겨 둔 글은 쓸 일이 없다
+      forgetDraft(action);
       setError(null);
-      const r = await addCommentAction({ postId, body });
+      // 망이 끊겨 액션 자체가 던지면 화면 전체 오류로 번지지 않게 칸 아래 오류로 접는다 — 쓴 글은 칸에 그대로 남는다
+      const r = await addCommentAction({ postId, body: text }).catch(() => ({ ok: false as const, error: M.failed }));
       if (!r.ok) {
         setError(r.error);
         return;
@@ -97,8 +105,15 @@ export function Comments({ postId, initial }: { postId: string; initial: Comment
       setList((cur) => [...cur, r.comment]);
       setBody("");
     });
-  // 로그인 뒤 돌아오면 입력칸에 포커스만 준다 — 쓰던 글은 페이지가 다시 열리며 사라졌으므로 바로 보낼 것이 없다
-  useResume(`comment:${postId}`, () => ref.current?.focus());
+  // 로그인 뒤 돌아오면 맡겨 둔 글을 칸에 되돌리고 바로 등록한다. 글이 없으면(저장소가 막힌 브라우저) 칸에 포커스만 준다
+  useResume(action, () => {
+    const draft = takeDraft(action);
+    ref.current?.scrollIntoView({ block: "center" });
+    if (draft && draft.trim()) {
+      setBody(draft);
+      submit(draft);
+    } else ref.current?.focus();
+  });
 
   return (
     <section aria-labelledby="comments-heading" className="flex flex-col gap-4">
@@ -125,7 +140,9 @@ export function Comments({ postId, initial }: { postId: string; initial: Comment
         onSubmit={(e) => {
           e.preventDefault();
           if (!body.trim()) return setError(M.commentRequired);
-          gate(`comment:${postId}`, submit);
+          // 로그인 팝업으로 가면 페이지가 다시 열린다 — 그 전에 글을 맡긴다(로그인한 채면 submit 이 바로 지운다)
+          rememberDraft(action, body);
+          gate(action, () => submit(body));
         }}
       >
         <label htmlFor="comment-body" className="sr-only">

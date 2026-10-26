@@ -26,8 +26,12 @@ export function flattenSuggest(r: SuggestResult, q: string): SuggestOption[] {
   return opts;
 }
 
-/** 입력값을 받아 후보를 돌려준다. 두 글자 미만이면 묻지 않고 null(목록을 닫는다) */
-export function useSuggest(query: string): { options: SuggestOption[] | null; empty: boolean } {
+/**
+ * 받기만 하는 갈래 — 입력값을 받아 자동완성 응답을 그대로 돌려준다. 두 글자 미만이면 묻지 않고 null.
+ * 헤더 검색창(아래 useSuggest)과 글쓰기의 관련 게임 칸(community/game-picker)이 같이 쓴다 — 늦게 온 응답 끊기, 기다리기 규칙이 한 벌이어야
+ * 두 칸이 같은 글자에 같은 박자로 답한다.
+ */
+export function useSuggestResult(query: string): SuggestResult | null {
   const q = query.trim();
   const enabled = normalizeForSearch(q).length >= SUGGEST_MIN_CHARS;
   const [state, setState] = useState<{ q: string; result: SuggestResult } | null>(null);
@@ -49,13 +53,19 @@ export function useSuggest(query: string): { options: SuggestOption[] | null; em
     };
   }, [q, enabled]);
 
+  // 지금 글자에 대한 답이 올 때까지는 직전 답을 그대로 둔다 — 타자마다 목록이 비었다 찼다 하면 깜빡인다
+  return enabled && state ? state.result : null;
+}
+
+/** 입력값을 받아 후보를 돌려준다. 두 글자 미만이면 묻지 않고 null(목록을 닫는다) */
+export function useSuggest(query: string): { options: SuggestOption[] | null; empty: boolean } {
+  const q = query.trim();
+  const r = useSuggestResult(query);
   return useMemo(() => {
-    // 지금 글자에 대한 답이 올 때까지는 직전 답을 그대로 둔다 — 타자마다 목록이 비었다 찼다 하면 깜빡인다
-    if (!enabled || !state) return { options: null, empty: false };
-    const r = state.result;
+    if (!r) return { options: null, empty: false };
     const empty = r.games.length + r.genres.length + r.companies.length === 0;
     return { options: flattenSuggest(r, q), empty };
-  }, [enabled, state, q]);
+  }, [r, q]);
 }
 
 export function SuggestPanel({

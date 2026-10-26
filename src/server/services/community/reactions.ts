@@ -7,7 +7,8 @@ import { getDb } from "@/server/db/client";
 import { createdBy } from "@/server/db/audit";
 import { postComments, postLikes, posts, postSaves, users, type PostCategory } from "@/server/db/schema";
 import { getCurrentUser, requireUser } from "@/server/services/users";
-import type { CommentDto, PostRowDto } from "./dto";
+import { POSTS_PAGE_SIZE } from "@/lib/community/constants";
+import type { CommentDto, PostPage } from "./dto";
 import { authorNameSql, rowColumns, toRow } from "./columns";
 
 export async function isLiked(postId: string, userId: string): Promise<boolean> {
@@ -69,17 +70,27 @@ export async function addComment(postId: string, body: string): Promise<{ commen
   return { comment: { id: row.id, body: row.body, authorName: name, createdAt: row.createdAt, isMine: true }, postAuthorId: post.author, postTitle: post.title, category: post.category };
 }
 
-/** 저장한 글(내 활동 S-24). 저장한 순서의 최신부터 */
-export async function listMySavedPosts(): Promise<PostRowDto[]> {
+/** 저장한 글(내 활동 S-24). 저장한 순서의 최신부터, 게시판과 같은 한 쪽 20줄(기획서 4.3) */
+export async function listMySavedPosts(page = 1): Promise<PostPage> {
   const u = await requireUser();
-  const rows = await getDb()
-    .select(rowColumns)
-    .from(postSaves)
-    .innerJoin(posts, eq(posts.id, postSaves.postId))
-    .innerJoin(users, eq(users.id, posts.authorUserId))
-    .where(and(eq(postSaves.userId, u.id), eq(posts.status, "published")))
-    .orderBy(desc(postSaves.createdAt));
-  return rows.map(toRow);
+  const db = getDb();
+  const at = Math.max(1, page);
+  const where = and(eq(postSaves.userId, u.id), eq(posts.status, "published"));
+  // 건수와 목록은 나란히 보낸다(Neon 왕복 1회). 숨긴 글은 건수에서도 빠져야 쪽 수가 실제 줄 수와 맞는다
+  const [countRows, rows] = await Promise.all([
+    db.select({ n: sql<number>`count(*)::int` }).from(postSaves).innerJoin(posts, eq(posts.id, postSaves.postId)).where(where),
+    db
+      .select(rowColumns)
+      .from(postSaves)
+      .innerJoin(posts, eq(posts.id, postSaves.postId))
+      .innerJoin(users, eq(users.id, posts.authorUserId))
+      .where(where)
+      .orderBy(desc(postSaves.createdAt), desc(posts.id))
+      .limit(POSTS_PAGE_SIZE)
+      .offset((at - 1) * POSTS_PAGE_SIZE),
+  ]);
+  const total = countRows[0]?.n ?? 0;
+  return { items: rows.map(toRow), total, page: at, totalPages: Math.max(1, Math.ceil(total / POSTS_PAGE_SIZE)) };
 }
 
 /** 라운지 홈 현황의 "내 글 반응" — 최근 며칠 동안 내 글에 남이 단 댓글 수(기획서 v2.0 S-16) */

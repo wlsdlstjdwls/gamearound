@@ -46,9 +46,36 @@ export function isLoungeCategory(c: PostCategory): boolean {
   return (LOUNGE_CATEGORIES as readonly string[]).includes(c);
 }
 
-/** 글 상세 주소. 라운지 글은 라운지 메뉴 안에 서야 해서 경로를 가른다(lib/nav 의 소속 판정이 경로만 본다) */
+/**
+ * 글 상세 주소. 메뉴 소속(lib/nav 의 resolveNav)은 경로만 보고 정해진다 — 그래서 게시판 글은 제 게시판 목록 아래에 세운다
+ * (/board/reviews/p/<id>). 예전 주소 /board/p/<id> 는 카테고리가 없어 하위 메뉴 띠가 아무 칸도 못 켰다(기획서 4.3
+ * "상세 화면에서도 소속 메뉴를 유지"). 카테고리를 주소 조건(?c=)으로 싣는 길도 있었지만, 그러면 같은 글이 주소 둘을 갖고
+ * 조건 없는 링크에서 칸이 다시 꺼진다. 글의 카테고리는 바뀌지 않으니 경로에 넣어도 링크가 낡지 않는다.
+ * 예전 주소는 지우지 않고 새 주소로 보낸다(app/(public)/board/p/[id]) — 알림함, 바깥에 퍼진 링크가 그 주소를 들고 있다.
+ * 라운지 글은 아직 /lounge/p/<id> 그대로다(라운지 화면 몫).
+ */
 export function postPath(id: string, category: PostCategory): string {
-  return `${isLoungeCategory(category) ? ROUTES.lounge : ROUTES.board}/p/${encodeURIComponent(id)}`;
+  const tail = `/p/${encodeURIComponent(id)}`;
+  return isLoungeCategory(category) ? `${ROUTES.lounge}${tail}` : `${CATEGORY_LIST_PATH[category]}${tail}`;
+}
+
+/** 글 id 꼴(uuid). 주소로 들어온 값이 질의까지 가기 전에 거른다 — 엉뚱한 값은 DB 가 uuid 변환 오류를 낸다 */
+const POST_ID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+export function isPostId(id: string): boolean {
+  return POST_ID_RE.test(id);
+}
+
+/** 관련 게임 칸이 서는 카테고리(목업 S-14 는 리뷰, 공략만 두지만 홍보도 게임을 알리는 글이라 선택으로 받는다) */
+export const GAME_LINK_CATEGORIES = ["review", "guide", "promo"] as const satisfies readonly PostCategory[];
+/** 관련 게임이 꼭 있어야 하는 카테고리(목업 "관련 게임 필수") — 게임 없는 리뷰, 공략은 무엇에 대한 글인지 목록에서 안 읽힌다 */
+export const GAME_REQUIRED_CATEGORIES = ["review", "guide"] as const satisfies readonly PostCategory[];
+
+export function takesGame(c: PostCategory): boolean {
+  return (GAME_LINK_CATEGORIES as readonly string[]).includes(c);
+}
+
+export function requiresGame(c: PostCategory): boolean {
+  return (GAME_REQUIRED_CATEGORIES as readonly string[]).includes(c);
 }
 
 export function writePath(category?: PostCategory): string {
