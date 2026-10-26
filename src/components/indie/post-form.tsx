@@ -38,10 +38,11 @@ const LINK_OPTIONS = INDIE_LINK_KINDS.map((k) => ({ value: k, label: INDIE_LINK_
 const LABEL = "text-[12.5px] font-medium text-mut";
 const HINT = "text-[12.5px] leading-[1.6] text-dim";
 
+/** 폭을 꽉 채운다(목업 indreg 의 .pri2) — 긴 폼 끝에서 손가락이 어디를 눌러도 닿게 */
 function SubmitButton({ label, sending }: { label: string; sending: string | null }) {
   const pending = useActionFormPending();
   return (
-    <Button type="submit" loading={pending || sending !== null} loadingLabel={sending ?? M.saving}>
+    <Button type="submit" size="lg" fullWidth loading={pending || sending !== null} loadingLabel={sending ?? M.saving}>
       {label}
     </Button>
   );
@@ -259,9 +260,7 @@ export function IndiePostForm({ post }: { post?: IndieDetailDto }) {
 
       <GameLinkPicker initial={post?.game ?? null} />
 
-      <div>
-        <SubmitButton label={post ? M.submitEdit : M.submitNew} sending={sending} />
-      </div>
+      <SubmitButton label={post ? M.submitEdit : M.submitNew} sending={sending} />
     </ActionForm>
   );
 }

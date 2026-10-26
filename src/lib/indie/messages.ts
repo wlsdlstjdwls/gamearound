@@ -1,6 +1,7 @@
 // 인디 홍보 축의 사용자 문구 한 곳 — AGENTS §2. 문체는 "-해요"(AGENTS §6).
 import type { IndieStage } from "@/server/db/schema";
 import { storeLinkPlatform, type IndieGenre, type IndieLinkKind, type IndiePlatform } from "./constants";
+import type { IndieSearchScope } from "./query";
 
 export const INDIE_STAGE_LABEL: Record<IndieStage, string> = {
   in_development: "개발 중",
@@ -8,6 +9,9 @@ export const INDIE_STAGE_LABEL: Record<IndieStage, string> = {
   early_access: "앞서 해보기",
   released: "출시",
 };
+
+/** 목록 검색 범위(목업 bsbar). 작성자 자리를 개발사로 부르는 이유는 lib/indie/query 의 INDIE_SEARCH_SCOPES 주석 */
+export const INDIE_SEARCH_SCOPE_LABEL: Record<IndieSearchScope, string> = { all: "전체", title: "제목", body: "내용", developer: "개발사" };
 
 export const INDIE_PLATFORM_LABEL: Record<IndiePlatform, string> = {
   pc: "PC",
@@ -63,10 +67,12 @@ export const INDIE_MESSAGES = {
   hofBannerCta: "명예의 전당 보기",
   register: "내 게임 등록",
   searchLabel: "내가 만든 게임 검색",
+  searchScopeLabel: "검색 범위",
   searchPlaceholder: "게임 이름, 소개 검색",
   search: "검색",
   searchReset: "검색 초기화",
-  searchResult: (q: string, n: number) => `"${q}" 검색 결과 ${n.toLocaleString("ko-KR")}개`,
+  /** scope: 전체가 아닐 때만 범위 이름을 앞에 붙인다(게시판 검색 줄과 같은 모양) */
+  searchResult: (q: string, n: number, scope?: string) => `${scope ? `${scope}: ` : ""}"${q}" 검색 결과 ${n.toLocaleString("ko-KR")}개`,
   emptySearch: "검색 결과가 없어요",
   emptySearchLead: "다른 검색어로 다시 찾아보세요.",
   likesLabel: "찜",
@@ -131,11 +137,11 @@ export const INDIE_MESSAGES = {
 export const INDIE_FORM_MESSAGES = {
   newTitle: "내 게임 등록",
   newLead: "내가 만든 게임을 직접 올려 보세요.",
-  approvalNotice: "등록한 게임은 운영진이 확인하고 승인한 뒤에 최종 등록돼요. 승인 전에는 승인 대기로 보이고, 승인되면 내가 만든 게임에 정식으로 올라가요.",
+  approvalNotice: "등록한 게임은 운영진의 승인 후 최종 등록돼요. 승인 전에는 승인 대기로 표시되고, 승인되면 내가 만든 게임 게시판에 정식으로 올라가요.",
   mineAside: "내가 올린 게임",
   mineAsideEmpty: "올린 게임이 없어요",
   mineAsideEmptyLead: "등록하면 이곳에서 내가 올린 게임을 볼 수 있어요.",
-  mineAsideFlow: "등록 요청, 운영진 승인, 최종 등록 순서로 진행돼요. 올린 게임은 고치기 화면에서 언제든 지울 수 있어요.",
+  mineAsideFlow: "등록 요청, 운영진 승인, 최종 등록 순서로 진행돼요. 올린 게임은 언제든 삭제할 수 있어요.",
   editTitle: "소개 글 고치기",
   mineTitle: "내가 쓴 소개 글",
   mineEmpty: "아직 쓴 글이 없어요",
@@ -170,7 +176,7 @@ export const INDIE_FORM_MESSAGES = {
   gameClear: "잇지 않기",
   gamePending: "관리자 확인을 기다리고 있어요",
   gameVerified: "확인됨",
-  submitNew: "올리기",
+  submitNew: "게임 등록",
   submitEdit: "고친 내용 저장",
   saving: "저장하는 중",
   created: "등록을 신청했어요. 운영진이 확인하고 승인해요.",
@@ -181,6 +187,9 @@ export const INDIE_FORM_MESSAGES = {
   deleteConfirm: "정말 지울까요? 올린 그림도 함께 지워져요.",
   deleteYes: "지우기",
   deleteNo: "그만두기",
+  /** 등록 화면 "내가 올린 게임" 줄의 짧은 단추(목업 indreg 의 .rm) */
+  deleteShort: "삭제",
+  deleted: "게임을 삭제했어요.",
   imagesTitle: "그림",
   imagesLead: "첫 번째 그림이 대표 그림이에요. 가로로 긴 그림(16:9)이 카드에 가장 잘 맞아요.",
   imageAdd: "그림 올리기",

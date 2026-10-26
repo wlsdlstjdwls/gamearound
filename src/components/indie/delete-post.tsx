@@ -3,6 +3,8 @@
 // 확인은 브라우저 confirm 대신 같은 자리에서 한 번 더 묻는다 — confirm 창은 모바일에서 문구가 잘리고
 // 화면 문체("-해요")를 따르지 않는다.
 // 지우기가 실패하면 확인 줄을 접고 처음 단추로 되돌린 뒤 사유를 보인다 — 확인 줄에 머물면 "지우는 중" 처럼 읽힌다.
+// onConfirm 을 주면 확인만 여기서 받고 지우기는 부르는 쪽이 한다 — 등록 화면 "내가 올린 게임" 줄은 누른 즉시 줄을 빼고
+// 실패하면 되돌려야 해서(AGENTS 6장), 줄과 함께 사라지는 이 단추가 결과를 기다릴 수 없다(components/indie/mine-aside-list).
 import { useRouter } from "next/navigation";
 import { useState, useTransition } from "react";
 import { deleteIndiePostAction } from "@/app/(user)/indie/actions";
@@ -10,7 +12,7 @@ import { Button } from "@/components/ui/button";
 import { ROUTES } from "@/lib/routes";
 import { INDIE_FORM_MESSAGES as M } from "@/lib/indie/messages";
 
-export function DeleteIndiePost({ postId }: { postId: string }) {
+export function DeleteIndiePost({ postId, label = M.delete, onConfirm }: { postId: string; label?: string; onConfirm?: () => void }) {
   const router = useRouter();
   const [asking, setAsking] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -33,7 +35,7 @@ export function DeleteIndiePost({ postId }: { postId: string }) {
             setAsking(true);
           }}
         >
-          {M.delete}
+          {label}
         </Button>
         {errorLine}
       </div>
@@ -46,7 +48,12 @@ export function DeleteIndiePost({ postId }: { postId: string }) {
         variant="danger"
         size="sm"
         loading={pending}
-        onClick={() =>
+        onClick={() => {
+          if (onConfirm) {
+            setAsking(false);
+            onConfirm();
+            return;
+          }
           start(async () => {
             const r = await deleteIndiePostAction(postId);
             if (!r.ok) {
@@ -55,8 +62,8 @@ export function DeleteIndiePost({ postId }: { postId: string }) {
               return;
             }
             router.push(ROUTES.indieMine);
-          })
-        }
+          });
+        }}
       >
         {M.deleteYes}
       </Button>

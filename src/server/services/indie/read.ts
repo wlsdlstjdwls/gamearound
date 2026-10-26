@@ -13,6 +13,7 @@ import { games, indiePostImages, indiePosts, type IndieStage } from "@/server/db
 import { displayTitle } from "@/server/services/games";
 import { INDIE_HOME_LIMIT, INDIE_HOME_MIN, INDIE_PAGE_SIZE, type IndiePlatform } from "@/lib/indie/constants";
 import type { IndieCardDto, IndieDetailDto, IndieGameSectionDto, IndieImageDto, IndieMineRowDto } from "@/lib/indie/dto";
+import type { IndieSearchScope } from "@/lib/indie/query";
 
 /** 그 글의 그림이 한 장이라도 있다 — 공개 목록의 문턱. 첫 장이 곧 커버라 "있다" 만 보면 된다 */
 const hasCover = sql<boolean>`exists (select 1 from ${indiePostImages} where ${indiePostImages.postId} = ${indiePosts.id})`;
@@ -84,14 +85,22 @@ export async function toCards(rows: CardRow[]): Promise<IndieCardDto[]> {
 
 export type IndieListResult = { items: IndieCardDto[]; total: number; page: number; totalPages: number };
 
+/** 검색 범위마다 보는 칸(목업 bsbar). 내용은 한 줄 소개와 본문, 전체는 넷 모두의 OR 다 */
+const SEARCH_COLUMNS = {
+  title: [indiePosts.title],
+  body: [indiePosts.tagline, indiePosts.body],
+  developer: [indiePosts.developerName],
+  all: [indiePosts.title, indiePosts.tagline, indiePosts.body, indiePosts.developerName],
+} as const satisfies Record<IndieSearchScope, readonly unknown[]>;
+
 /**
- * 공개 목록. q 는 이름, 한 줄 소개, 만든 사람의 부분 일치다(목업 "게임 이름, 소개 검색").
+ * 공개 목록. q 는 고른 범위(scope) 칸들의 부분 일치다(목업 "게임 이름, 소개 검색" 과 범위 드롭다운).
  */
-export async function listIndiePosts(stage: IndieStage | undefined, page: number, q = ""): Promise<IndieListResult> {
+export async function listIndiePosts(stage: IndieStage | undefined, page: number, q = "", scope: IndieSearchScope = "all"): Promise<IndieListResult> {
   const db = getDb();
   const term = q.trim();
   const like = containsPattern(term);
-  const search = term ? or(ilike(indiePosts.title, like), ilike(indiePosts.tagline, like), ilike(indiePosts.developerName, like)) : undefined;
+  const search = term ? or(...SEARCH_COLUMNS[scope].map((c) => ilike(c, like))) : undefined;
   const where = and(isPublic, stage ? eq(indiePosts.stage, stage) : undefined, search);
   const [rows, [{ n }]] = await Promise.all([
     db

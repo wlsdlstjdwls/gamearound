@@ -4,7 +4,8 @@
 // 배치는 목업 그대로: 제목과 "내 게임 등록" 단추, 설명 한 줄, 명예의 전당 안내 띠, 검색 줄, 카드 격자, 쪽 번호.
 // 예전의 어두운 머리 판(IndieListHero)은 내렸다 — 목업은 이 화면을 게시판 형제로 그린다. 판 컴포넌트는 지우지 않고 둔다.
 // 개발 단계 칩은 목업에 없지만 남겼다(검색 줄 아래 한 줄) — 데모가 있는 게임만 보고 싶은 사람이 쓰던 기능이다.
-// 검색은 GET 폼이라 자바스크립트 없이도 간다 — 주소(?q=)가 곧 상태다(게시판 검색과 같은 규칙).
+// 검색은 GET 폼이라 자바스크립트 없이도 간다 — 주소(?q=, ?scope=)가 곧 상태다(게시판 검색과 같은 규칙).
+// 검색 범위 드롭다운은 목업 bsbar 처럼 검색창 앞에 선다(전체, 제목, 내용, 개발사 — lib/indie/query).
 import { HOME_GRID_CLASS } from "@/lib/games/grid";
 import { DbUnavailable } from "@/components/db-unavailable";
 import { DB_DOWN, orDbDown } from "@/lib/db-errors";
@@ -20,7 +21,8 @@ import { NavChip, NavPendingScope, PendingRegion } from "@/components/ui/nav-pen
 import { Page, PageHead } from "@/components/ui/page";
 import { firstParam } from "@/lib/games-query";
 import { INDIE_STAGES } from "@/lib/indie/constants";
-import { INDIE_MESSAGES as M, INDIE_STAGE_LABEL } from "@/lib/indie/messages";
+import { INDIE_MESSAGES as M, INDIE_SEARCH_SCOPE_LABEL, INDIE_STAGE_LABEL } from "@/lib/indie/messages";
+import { INDIE_SEARCH_SCOPE_PARAM, INDIE_SEARCH_SCOPES, parseIndieSearchScope, type IndieSearchScope } from "@/lib/indie/query";
 import { stagger } from "@/lib/motion";
 import { ROUTES } from "@/lib/routes";
 import type { IndieStage } from "@/server/db/schema";
@@ -38,11 +40,12 @@ function parseStage(raw: string | undefined): IndieStage | undefined {
   return (INDIE_STAGES as readonly string[]).includes(raw ?? "") ? (raw as IndieStage) : undefined;
 }
 
-/** 기본값은 빼서 같은 화면이 같은 주소가 되게 한다 */
-function indieHref(stage: IndieStage | undefined, q: string, page = 1): string {
+/** 기본값은 빼서 같은 화면이 같은 주소가 되게 한다. 범위는 검색어가 있을 때만 싣는다 — 검색어 없는 범위는 뜻이 없다 */
+function indieHref(stage: IndieStage | undefined, q: string, scope: IndieSearchScope, page = 1): string {
   const params = new URLSearchParams();
   if (stage) params.set("stage", stage);
   if (q) params.set("q", q);
+  if (q && scope !== "all") params.set(INDIE_SEARCH_SCOPE_PARAM, scope);
   if (page > 1) params.set("page", String(page));
   const qs = params.toString();
   return qs ? `${ROUTES.indie}?${qs}` : ROUTES.indie;
@@ -52,8 +55,9 @@ export default async function IndiePage({ searchParams }: Props) {
   const sp = await searchParams;
   const stage = parseStage(firstParam(sp.stage));
   const q = (firstParam(sp.q) ?? "").trim().slice(0, QUERY_MAX);
+  const scope = parseIndieSearchScope(firstParam(sp[INDIE_SEARCH_SCOPE_PARAM]));
   const pageNum = Math.max(Number(firstParam(sp.page)) || 1, 1);
-  const loaded = await orDbDown(listIndiePosts(stage, pageNum, q));
+  const loaded = await orDbDown(listIndiePosts(stage, pageNum, q, scope));
 
   const head = (
     <PageHead title={M.listTitle} action={<WriteLink href={ROUTES.indieNew}>{M.register}</WriteLink>}>
@@ -89,17 +93,29 @@ export default async function IndiePage({ searchParams }: Props) {
       <NavPendingScope>
         <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
           <nav aria-label={M.stageFilterLabel} className="flex flex-wrap gap-1.5">
-            <NavChip group="stage" current="page" href={indieHref(undefined, q)} active={!stage}>
+            <NavChip group="stage" current="page" href={indieHref(undefined, q, scope)} active={!stage}>
               {M.allStages}
             </NavChip>
             {INDIE_STAGES.map((s) => (
-              <NavChip key={s} group="stage" current="page" href={indieHref(s, q)} active={stage === s}>
+              <NavChip key={s} group="stage" current="page" href={indieHref(s, q, scope)} active={stage === s}>
                 {INDIE_STAGE_LABEL[s]}
               </NavChip>
             ))}
           </nav>
           <form role="search" action={ROUTES.indie} className="flex min-w-0 items-center gap-1.5">
             {stage && <input type="hidden" name="stage" value={stage} />}
+            <select
+              name={INDIE_SEARCH_SCOPE_PARAM}
+              defaultValue={scope}
+              aria-label={M.searchScopeLabel}
+              className="tap h-10 shrink-0 rounded-xl border border-line-strong bg-surface px-3 text-[16px] text-ink sm:text-[14px]"
+            >
+              {INDIE_SEARCH_SCOPES.map((s) => (
+                <option key={s} value={s}>
+                  {INDIE_SEARCH_SCOPE_LABEL[s]}
+                </option>
+              ))}
+            </select>
             <span className="tap flex h-10 min-w-0 flex-1 items-center gap-2 rounded-xl border border-line-strong bg-surface pl-3 pr-1 focus-within:border-acc md:w-[260px] md:flex-none">
               <SearchIcon size={15} className="shrink-0 text-dim" />
               <input type="search" name="q" defaultValue={q} placeholder={M.searchPlaceholder} aria-label={M.searchLabel} className="min-w-0 flex-1 bg-transparent text-[16px] text-ink outline-none placeholder:text-dim" />
@@ -111,8 +127,8 @@ export default async function IndiePage({ searchParams }: Props) {
         </div>
         {q && (
           <p className="flex items-center gap-2 text-[13px] text-mut">
-            <span>{M.searchResult(q, result.total)}</span>
-            <NavChip group="search" compact href={indieHref(stage, "")}>
+            <span>{M.searchResult(q, result.total, scope === "all" ? undefined : INDIE_SEARCH_SCOPE_LABEL[scope])}</span>
+            <NavChip group="search" compact href={indieHref(stage, "", "all")}>
               {M.searchReset}
             </NavChip>
           </p>
@@ -136,7 +152,7 @@ export default async function IndiePage({ searchParams }: Props) {
           )}
         </PendingRegion>
 
-        {result.totalPages > 1 && <Pagination page={result.page} totalPages={result.totalPages} hrefFor={(p) => indieHref(stage, q, p)} />}
+        {result.totalPages > 1 && <Pagination page={result.page} totalPages={result.totalPages} hrefFor={(p) => indieHref(stage, q, scope, p)} />}
       </NavPendingScope>
     </Page>
   );
