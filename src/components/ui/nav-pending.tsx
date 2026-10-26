@@ -75,6 +75,15 @@ export function NavChip({ href, group, active = false, size, className, compact,
 }
 
 /**
+ * 링크가 아닌 자리(드롭다운, 입력칸)가 같은 틀 안에서 주소로 갈 때. 결과 자리(PendingRegion)가 같이 흐려진다.
+ * 틀 밖이면 undefined — 부르는 쪽이 평범한 이동으로 내려간다.
+ */
+export function useNavPendingGo(): ((href: string) => void) | undefined {
+  const scope = useContext(ScopeContext);
+  return scope ? (href) => scope.go("", href, false) : undefined;
+}
+
+/**
  * 다시 조회 중 띠 — 머리띠 바로 아래 고정(globals.css 의 .pending-bar). 장식이라 낭독기에서 숨긴다 —
  * 기다린다는 사실은 결과 자리의 aria-busy 가 말한다.
  * 결과 자리(흐려지는 div) 밖에 둔다: 안에 두면 띠까지 반투명이 된다.

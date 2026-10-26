@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { byYear, pickUpcomingAddons, pickUpcomingMonth, upcomingMonthHref } from "./upcoming";
+import { byYear, hasUpcomingFilter, pickUpcomingAddons, pickUpcomingMonth, readUpcomingFilter, upcomingAllHref, upcomingHref, upcomingMonthHref } from "./upcoming";
 
 describe("byYear", () => {
   it("연도가 바뀌는 자리에서만 묶음을 새로 연다", () => {
@@ -63,5 +63,22 @@ describe("pickUpcomingAddons", () => {
       3,
     );
     expect(picked.map((p) => p.title)).toEqual(["B", "C", "A"]);
+  });
+});
+
+describe("readUpcomingFilter", () => {
+  it("기본 정렬(출시일순)은 조건으로 치지 않는다", () => expect(readUpcomingFilter({ sort: "date" })).toEqual({ q: undefined, genre: undefined, platform: undefined, sort: undefined }));
+  it("모르는 정렬은 버린다", () => expect(readUpcomingFilter({ sort: "price" }).sort).toBeUndefined());
+  it("빈칸 검색어는 없는 것", () => expect(readUpcomingFilter({ q: "  " }).q).toBeUndefined());
+  it("인기순과 장르를 읽는다", () => expect(readUpcomingFilter({ sort: "popular", genre: "인디" })).toMatchObject({ sort: "popular", genre: "인디" }));
+});
+
+describe("upcomingHref", () => {
+  it("기본값만이면 꼬리가 없다", () => expect(upcomingHref({}, {})).toBe("/upcoming"));
+  it("달을 옮겨도 조건이 따라간다", () => expect(upcomingMonthHref("2026-11", "2026-10", { genre: "RPG" })).toBe("/upcoming?month=2026-11&genre=RPG"));
+  it("전체 보기 둘째 쪽", () => expect(upcomingAllHref(2, { sort: "popular" })).toBe("/upcoming?view=all&sort=popular&page=2"));
+  it("조건이 있으면 기대작 줄을 걷는다", () => {
+    expect(hasUpcomingFilter({})).toBe(false);
+    expect(hasUpcomingFilter({ platform: "pc" })).toBe(true);
   });
 });

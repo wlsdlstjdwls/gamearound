@@ -15,16 +15,73 @@ export const UPCOMING_MONTH_PARAM = "month";
 export const UPCOMING_VIEW_PARAM = "view";
 export const UPCOMING_VIEW_ALL = "all";
 
+/**
+ * 출시 예정 정렬(기획서 v2.0 S-03 "정렬 옵션": 출시일순, 인기순). 앞이 기본값이다.
+ * 목록(/games)의 GameSort 를 쓰지 않는 이유: 거기 "release" 는 최신 출시순(내림)이고 여기는 가까운 날짜부터(오름)다 —
+ * 같은 값 이름에 반대 방향을 실으면 주소를 옮겨 붙일 때 뜻이 뒤집힌다.
+ */
+export const UPCOMING_SORTS = ["date", "popular"] as const;
+export type UpcomingSort = (typeof UPCOMING_SORTS)[number];
+export const UPCOMING_SORT_LABEL: Record<UpcomingSort, string> = { date: "출시일순", popular: "인기순" };
+
+/**
+ * 출시 예정 목록 안 조건(기획서 v2.0 S-03 공통 동작: 목록 안 검색, 장르, 플랫폼, 정렬).
+ * 주소 이름은 목록(/games)과 같게 둔다(q, genre, platform, sort) — 두 화면을 오가도 같은 말이 같은 이름이다.
+ */
+export type UpcomingFilter = { q?: string; genre?: string; platform?: string; sort?: UpcomingSort };
+
+/** 주소 값 한 칸의 최대 길이 — games-query 의 MAX_PARAM_LEN 과 같은 이유(질의에 그대로 들어간다) */
+const UPCOMING_PARAM_MAX = 100;
+
+/** 주소 값 하나를 다듬는다. 사람이 손으로 고치는 값이라 길이를 자르고 빈칸은 없는 것으로 본다 */
+function clean(v: string | string[] | undefined): string | undefined {
+  const one = (Array.isArray(v) ? v[0] : v)?.slice(0, UPCOMING_PARAM_MAX).trim();
+  return one ? one : undefined;
+}
+
+export function readUpcomingFilter(sp: Record<string, string | string[] | undefined>): UpcomingFilter {
+  const sort = clean(sp.sort);
+  return {
+    q: clean(sp.q),
+    genre: clean(sp.genre),
+    platform: clean(sp.platform),
+    sort: sort && (UPCOMING_SORTS as readonly string[]).includes(sort) && sort !== UPCOMING_SORTS[0] ? (sort as UpcomingSort) : undefined,
+  };
+}
+
+/** 고르는 사람이 무엇이든 걸었나. 걸렸으면 "이달의 기대작" 줄을 세우지 않는다(services/games/upcoming 의 picks 주석) */
+export function hasUpcomingFilter(f: UpcomingFilter): boolean {
+  return Boolean(f.q || f.genre || f.platform || f.sort);
+}
+
+/** 화면 안의 자리 — 보기 방식, 달, 쪽 */
+export type UpcomingPlace = { all?: boolean; month?: string; page?: number };
+
+/**
+ * 출시 예정 주소 하나. 조건은 달, 쪽, 보기를 옮겨도 따라간다 — 장르를 걸고 달을 바꿨는데 장르가 풀리면 다시 골라야 한다.
+ * 기본값(월별, 첫 달, 첫 쪽, 출시일순)은 꼬리에 싣지 않는다 — 같은 화면이 늘 같은 주소여야 캐시가 쪼개지지 않는다.
+ */
+export function upcomingHref(place: UpcomingPlace = {}, filter: UpcomingFilter = {}): string {
+  const params = new URLSearchParams();
+  if (place.all) params.set(UPCOMING_VIEW_PARAM, UPCOMING_VIEW_ALL);
+  else if (place.month) params.set(UPCOMING_MONTH_PARAM, place.month);
+  if (filter.q) params.set("q", filter.q);
+  if (filter.genre) params.set("genre", filter.genre);
+  if (filter.platform) params.set("platform", filter.platform);
+  if (filter.sort && filter.sort !== UPCOMING_SORTS[0]) params.set("sort", filter.sort);
+  if (place.page && place.page > 1) params.set("page", String(place.page));
+  const tail = params.toString();
+  return tail ? `${ROUTES.upcoming}?${tail}` : ROUTES.upcoming;
+}
+
 /** 전체 보기 주소. 첫 장은 꼬리를 붙이지 않는다 */
-export function upcomingAllHref(page = 1): string {
-  const params = new URLSearchParams({ [UPCOMING_VIEW_PARAM]: UPCOMING_VIEW_ALL });
-  if (page > 1) params.set("page", String(page));
-  return `${ROUTES.upcoming}?${params.toString()}`;
+export function upcomingAllHref(page = 1, filter: UpcomingFilter = {}): string {
+  return upcomingHref({ all: true, page }, filter);
 }
 
 /** 그 달을 세운 출시예정 주소. 첫 달(기본)은 꼬리 없이 둔다 — 같은 화면이 늘 같은 주소여야 캐시가 쪼개지지 않는다 */
-export function upcomingMonthHref(key: string, firstKey: string | undefined): string {
-  return key === firstKey ? ROUTES.upcoming : `${ROUTES.upcoming}?${UPCOMING_MONTH_PARAM}=${key}`;
+export function upcomingMonthHref(key: string, firstKey: string | undefined, filter: UpcomingFilter = {}): string {
+  return upcomingHref({ month: key === firstKey ? undefined : key }, filter);
 }
 
 /** 주소가 고른 달. 없거나 목록에 없는 달이면 첫 달(가장 가까운 달)이다 */

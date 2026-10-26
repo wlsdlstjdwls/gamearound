@@ -33,11 +33,12 @@ import { formatMonthLabel, formatReleaseDay } from "@/lib/format";
 import { firstParam, MAX_PARAM_LEN } from "@/lib/games-query";
 import { UPCOMING_MESSAGES as M, upcomingAddonParentText, upcomingCountText } from "@/lib/games/messages";
 import { HOME_GRID_CLASS } from "@/lib/games/grid";
-import { pickUpcomingMonth, upcomingAllHref, UPCOMING_MONTH_PARAM, UPCOMING_VIEW_ALL, UPCOMING_VIEW_PARAM } from "@/lib/games/upcoming";
+import { hasUpcomingFilter, pickUpcomingMonth, readUpcomingFilter, upcomingAllHref, upcomingHref, UPCOMING_MONTH_PARAM, UPCOMING_VIEW_ALL, UPCOMING_VIEW_PARAM, type UpcomingFilter } from "@/lib/games/upcoming";
+import { UpcomingFilterBar } from "@/components/upcoming-filter-bar";
 import { stagger } from "@/lib/motion";
 import { nullIfDbUnavailable } from "@/lib/db-errors";
 import { ROUTES } from "@/lib/routes";
-import { getUpcomingAllPage, getUpcomingAddons, getUpcomingMonthPage, getUpcomingMonthPicks, getUpcomingMonths, UPCOMING_ADDON_LIMIT, UPCOMING_PAGE_SIZE } from "@/server/services/games";
+import { getUpcomingAllPage, getUpcomingAddons, getUpcomingGenres, getUpcomingMonthPage, getUpcomingMonthPicks, getUpcomingMonths, UPCOMING_ADDON_LIMIT, UPCOMING_PAGE_SIZE } from "@/server/services/games";
 import { GamesGridSkeleton } from "@/app/(public)/games/skeletons";
 
 // Next 가 정적으로 읽는 값이라 리터럴이어야 한다 — lib/cache 의 LIST_REVALIDATE_SECONDS 와 같게 유지
@@ -56,11 +57,8 @@ function readPage(raw: string | undefined): number {
   return Number.isFinite(n) && n > 1 ? Math.floor(n) : 1;
 }
 
-function upcomingHref(monthKey: string, page: number): string {
-  const params = new URLSearchParams({ [UPCOMING_MONTH_PARAM]: monthKey });
-  if (page > 1) params.set("page", String(page));
-  return `${ROUTES.upcoming}?${params.toString()}`;
-}
+/** 요즘 많이 찾는 장르 칩 수(기획서 v2.0 S-02: 게임 수 상위 4개 장르) */
+const TOP_GENRE_COUNT = 4;
 
 /**
  * 고른 달 = 기대작 한 줄 + 날짜순 전체(2026-10-07). 날짜순은 쪽 번호로 넘긴다(목록 화면과 같은 이유, games/page 머리 주석).
@@ -69,27 +67,26 @@ function upcomingHref(monthKey: string, page: number): string {
  * 두 질의를 나란히 보낸다 — 줄 세우면 Neon 왕복이 둘이 되고, 화면 속도는 질의 수가 아니라 줄 세운 왕복 수가 정한다.
  * 기대작이 없는 달은 소제목도 세우지 않는다 — "날짜순 전체" 한 마디만 서면 무엇과 갈라 둔 것인지가 없다.
  */
-async function MonthGames({ monthKey, monthTotal, page }: { monthKey: string; monthTotal: number; page: number }) {
-  const loaded = await nullIfDbUnavailable(Promise.all([getUpcomingMonthPicks(monthKey), getUpcomingMonthPage(monthKey, page)]));
+async function MonthGames({ monthKey, monthTotal, page, filter }: { monthKey: string; monthTotal: number; page: number; filter: UpcomingFilter }) {
+  const loaded = await nullIfDbUnavailable(Promise.all([getUpcomingMonthPicks(monthKey, filter), getUpcomingMonthPage(monthKey, page, filter)]));
   if (!loaded) return <DbUnavailable retryHref={ROUTES.upcoming} />;
   const [allPicks, { items }] = loaded;
   const picks = page === 1 ? allPicks : [];
   // 날짜순에서 기대작은 빠진다(picksCte) — 쪽 수는 그 달 전체에서 기대작을 뺀 수로 센다
   const totalPages = Math.max(Math.ceil((monthTotal - allPicks.length) / UPCOMING_PAGE_SIZE), 1);
   const list = (
-    <NavPendingScope>
-      <PendingRegion>
-        <ul className="flex flex-col gap-2.5">
-          {items.map((entry, i) => (
-            <li key={entry.game.slug} className="enter-item" style={stagger(picks.length + i)}>
-              <UpcomingRow entry={entry} />
-            </li>
-          ))}
-        </ul>
-      </PendingRegion>
-      <Pagination page={page} totalPages={totalPages} hrefFor={(n) => upcomingHref(monthKey, n)} />
-    </NavPendingScope>
+    <>
+      <ul className="flex flex-col gap-2.5">
+        {items.map((entry, i) => (
+          <li key={entry.game.slug} className="enter-item" style={stagger(picks.length + i)}>
+            <UpcomingRow entry={entry} />
+          </li>
+        ))}
+      </ul>
+      <Pagination page={page} totalPages={totalPages} hrefFor={(n) => upcomingHref({ month: monthKey, page: n }, filter)} />
+    </>
   );
+  if (items.length === 0 && picks.length === 0) return <p className="rounded-xl bg-surface-2 px-4 py-3.5 text-[13px] text-dim">{M.emptyFiltered}</p>;
   if (picks.length === 0) return <div className="flex flex-col gap-8">{list}</div>;
 
   return (
@@ -115,44 +112,41 @@ async function MonthGames({ monthKey, monthTotal, page }: { monthKey: string; mo
 }
 
 /** 전체 보기 — 달을 가리지 않고 날짜순 카드. 건수는 달 탭의 합이다 */
-async function AllGames({ total, page }: { total: number; page: number }) {
-  const items = await nullIfDbUnavailable(getUpcomingAllPage(page));
-  if (!items) return <DbUnavailable retryHref={upcomingAllHref()} />;
+async function AllGames({ total, page, filter }: { total: number; page: number; filter: UpcomingFilter }) {
+  const items = await nullIfDbUnavailable(getUpcomingAllPage(page, filter));
+  if (!items) return <DbUnavailable retryHref={upcomingAllHref(1, filter)} />;
+  if (items.length === 0) return <p className="rounded-xl bg-surface-2 px-4 py-3.5 text-[13px] text-dim">{M.emptyFiltered}</p>;
   const totalPages = Math.max(Math.ceil(total / UPCOMING_PAGE_SIZE), 1);
   return (
-    <NavPendingScope>
-      <PendingRegion className="flex flex-col gap-8">
-        <ul className={HOME_GRID_CLASS}>
-          {items.map((entry, i) => (
-            <li key={entry.game.slug} className="enter-item" style={stagger(i)}>
-              <GameCard game={entry.game} variant="release" releaseText={formatReleaseDay(entry.releaseDate)} />
-            </li>
-          ))}
-        </ul>
-      </PendingRegion>
-      <Pagination page={page} totalPages={totalPages} hrefFor={(n) => upcomingAllHref(n)} />
-    </NavPendingScope>
+    <div className="flex flex-col gap-8">
+      <ul className={HOME_GRID_CLASS}>
+        {items.map((entry, i) => (
+          <li key={entry.game.slug} className="enter-item" style={stagger(i)}>
+            <GameCard game={entry.game} variant="release" releaseText={formatReleaseDay(entry.releaseDate)} />
+          </li>
+        ))}
+      </ul>
+      <Pagination page={page} totalPages={totalPages} hrefFor={(n) => upcomingAllHref(n, filter)} />
+    </div>
   );
 }
 
 /** 머리: 제목, 한 줄 설명, 보기 전환(목업의 오른쪽 탭 둘). 하나만 켜지는 칩이라 NavChip 이다(AGENTS 6장) */
-function UpcomingHead({ all }: { all: boolean }) {
+function UpcomingHead({ all, filter = {} }: { all: boolean; filter?: UpcomingFilter }) {
   return (
     <div className="flex flex-wrap items-end justify-between gap-4">
       <div className="flex flex-col gap-1.5">
         <h1 className="text-[26px] font-extrabold tracking-[-0.03em] text-ink sm:text-[30px]">{M.title}</h1>
         <p className="text-[14px] text-mut">{all ? M.leadAll : M.leadMonth}</p>
       </div>
-      <NavPendingScope>
-        <div role="group" aria-label={M.viewLabel} className="flex gap-1.5">
-          <NavChip group="upcoming-view" href={upcomingAllHref()} active={all} outline>
-            {M.viewAll}
-          </NavChip>
-          <NavChip group="upcoming-view" href={ROUTES.upcoming} active={!all} outline>
-            {M.viewMonth}
-          </NavChip>
-        </div>
-      </NavPendingScope>
+      <div role="group" aria-label={M.viewLabel} className="flex gap-1.5">
+        <NavChip group="upcoming-view" href={upcomingAllHref(1, filter)} active={all} outline>
+          {M.viewAll}
+        </NavChip>
+        <NavChip group="upcoming-view" href={upcomingHref({}, filter)} active={!all} outline>
+          {M.viewMonth}
+        </NavChip>
+      </div>
     </div>
   );
 }
@@ -192,8 +186,9 @@ export default async function UpcomingPage({ searchParams }: Props) {
   const requested = firstParam(sp[UPCOMING_MONTH_PARAM]);
   const all = firstParam(sp[UPCOMING_VIEW_PARAM]) === UPCOMING_VIEW_ALL;
   const page = readPage(firstParam(sp.page));
-  const months = await nullIfDbUnavailable(getUpcomingMonths());
-  if (!months) {
+  const filter = readUpcomingFilter(sp);
+  const loaded = await nullIfDbUnavailable(Promise.all([getUpcomingMonths(filter), getUpcomingGenres()]));
+  if (!loaded) {
     return (
       <Page gap={30}>
         <UpcomingHead all={all} />
@@ -201,49 +196,63 @@ export default async function UpcomingPage({ searchParams }: Props) {
       </Page>
     );
   }
+  const [months, genres] = loaded;
   const activeKey = pickUpcomingMonth(
     months.map((m) => m.key),
     requested,
   );
   const active = months.find((m) => m.key === activeKey);
+  const total = months.reduce((n, m) => n + m.total, 0);
+  // 조건이 바뀌면 경계를 새로 세운다 — 같은 열쇠면 React 가 옛 결과를 새 결과가 올 때까지 둔다(games/page 와 같은 이유)
+  const filterKey = JSON.stringify(filter);
 
+  // 한 화면을 틀 하나로 감싼다 — 막대, 보기 전환, 쪽 번호 어느 것을 눌러도 같은 결과 자리(PendingRegion)가 흐려진다
   return (
-    <Page gap={30}>
-      <UpcomingHead all={all} />
+    <NavPendingScope>
+      <Page gap={30}>
+        <UpcomingHead all={all} filter={filter} />
 
-      {all ? (
-        <section aria-label={M.viewAll} className="flex flex-col gap-4">
-          <SectionHead title={M.viewAll} note={upcomingCountText(months.reduce((n, m) => n + m.total, 0))} />
-          <Suspense key={`all:${page}`} fallback={<GamesGridSkeleton cards={UPCOMING_PAGE_SIZE} gridClass={HOME_GRID_CLASS} />}>
-            <AllGames total={months.reduce((n, m) => n + m.total, 0)} page={page} />
-          </Suspense>
-        </section>
-      ) : (
-        <>
-          {/* 달 탭 띠(components/upcoming-month-nav). 달이 하나뿐이면 세우지 않는다 — 고를 데가 없는 띠는 제목을 한 번 더 쓰는 일이다 */}
-          {active && months.length > 1 && <UpcomingMonthNav months={months} activeKey={active.key} />}
+        <UpcomingFilterBar filter={filter} place={{ all, month: all ? undefined : requested }} genres={genres} topGenres={genres.slice(0, TOP_GENRE_COUNT)} />
 
-          {!active ? (
-            <p className="rounded-xl bg-surface-2 px-4 py-3.5 text-[13px] text-dim">{M.empty}</p>
-          ) : (
-            <section aria-labelledby="upcoming-month-heading" className="flex flex-col gap-4">
-              <SectionHead id="upcoming-month-heading" title={formatMonthLabel(active.key)} note={upcomingCountText(active.total)} />
-              {/* 달이 바뀌면 경계를 새로 세운다 — 키가 같으면 React 가 갱신으로 보고 옛 달을 새 달이 올 때까지 둔다(games/page 와 같은 이유) */}
-              <Suspense key={`${active.key}:${page}`} fallback={<GamesGridSkeleton cards={Math.min(active.total, UPCOMING_PAGE_SIZE)} gridClass={HOME_GRID_CLASS} />}>
-                <MonthGames monthKey={active.key} monthTotal={active.total} page={page} />
+        <PendingRegion className="flex flex-col gap-[30px]">
+          {all ? (
+            <section aria-label={M.viewAll} className="flex flex-col gap-4">
+              <SectionHead title={M.viewAll} note={upcomingCountText(total)} />
+              <Suspense key={`all:${page}:${filterKey}`} fallback={<GamesGridSkeleton cards={UPCOMING_PAGE_SIZE} gridClass={HOME_GRID_CLASS} />}>
+                <AllGames total={total} page={page} filter={filter} />
               </Suspense>
             </section>
+          ) : (
+            <>
+              {/* 달 탭 띠(components/upcoming-month-nav). 달이 하나뿐이면 세우지 않는다 — 고를 데가 없는 띠는 제목을 한 번 더 쓰는 일이다 */}
+              {active && months.length > 1 && <UpcomingMonthNav months={months} activeKey={active.key} filter={filter} />}
+
+              {!active ? (
+                <p className="rounded-xl bg-surface-2 px-4 py-3.5 text-[13px] text-dim">{hasUpcomingFilter(filter) ? M.emptyFiltered : M.empty}</p>
+              ) : (
+                <section aria-labelledby="upcoming-month-heading" className="flex flex-col gap-4">
+                  <SectionHead id="upcoming-month-heading" title={formatMonthLabel(active.key)} note={upcomingCountText(active.total)} />
+                  {/* 달이 바뀌면 경계를 새로 세운다 — 키가 같으면 React 가 갱신으로 보고 옛 달을 새 달이 올 때까지 둔다(games/page 와 같은 이유) */}
+                  <Suspense key={`${active.key}:${page}:${filterKey}`} fallback={<GamesGridSkeleton cards={Math.min(active.total, UPCOMING_PAGE_SIZE)} gridClass={HOME_GRID_CLASS} />}>
+                    <MonthGames monthKey={active.key} monthTotal={active.total} page={page} filter={filter} />
+                  </Suspense>
+                </section>
+              )}
+            </>
           )}
-        </>
-      )}
+        </PendingRegion>
 
-      <Suspense fallback={<GamesGridSkeleton cards={UPCOMING_ADDON_LIMIT} gridClass={HOME_GRID_CLASS} />}>
-        <UpcomingAddons />
-      </Suspense>
+        {/* 추가 콘텐츠 줄은 조건과 상관없는 곁가지라 조건을 걸면 걷는다 — 거른 목록 아래에 안 거른 줄이 서면 필터가 안 먹은 것처럼 읽힌다 */}
+        {!hasUpcomingFilter(filter) && (
+          <Suspense fallback={<GamesGridSkeleton cards={UPCOMING_ADDON_LIMIT} gridClass={HOME_GRID_CLASS} />}>
+            <UpcomingAddons />
+          </Suspense>
+        )}
 
-      {/* 각주는 면을 깔지 않는다 — 이 화면에서 면을 가진 것은 빈 상태 안내 하나뿐이고,
-          각주까지 판을 쓰면 읽는 순서가 "각주가 먼저" 로 뒤집힌다 */}
-      <p className="max-w-[760px] text-[12px] leading-[1.8] text-dim">{M.basis}</p>
-    </Page>
+        {/* 각주는 면을 깔지 않는다 — 이 화면에서 면을 가진 것은 빈 상태 안내 하나뿐이고,
+            각주까지 판을 쓰면 읽는 순서가 "각주가 먼저" 로 뒤집힌다 */}
+        <p className="max-w-[760px] text-[12px] leading-[1.8] text-dim">{M.basis}</p>
+      </Page>
+    </NavPendingScope>
   );
 }

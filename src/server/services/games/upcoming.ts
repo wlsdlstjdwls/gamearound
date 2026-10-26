@@ -10,13 +10,17 @@
 import { unstable_cache } from "next/cache";
 import { and, eq, inArray, sql } from "drizzle-orm";
 import { getDb } from "@/server/db/client";
-import { gamePlatforms, games, HOME_REGION } from "@/server/db/schema";
+import { gameGenres, gamePlatforms, games, genres, HOME_REGION } from "@/server/db/schema";
 import { visiblePlatformsOnly } from "@/server/db/visibility";
 import { DTO_CACHE_VERSION, LIST_REVALIDATE_SECONDS } from "@/lib/cache";
 import { POPULARITY_RANK_MAX_AGE_DAYS } from "@/lib/games/popularity";
+import { hasUpcomingFilter, type UpcomingFilter } from "@/lib/games/upcoming";
+import { parsePlatformValues } from "@/lib/games-query";
+import { expandPlatformValues } from "@/lib/platform";
 import type { GameSummary } from "./dto";
 import { fillGenres, groupSummaries } from "./mappers";
-import { mainGamesOnly } from "./filters";
+import { hasVisiblePlatform, mainGamesOnly } from "./filters";
+import { titleMatch, titleMatches } from "./title-search";
 
 /**
  * 한 번에 그리는 카드 수. 넓은 화면 격자 네 줄이다 — 그 아래는 "더 보기"(이어 붙이기)로 같은 달을 계속 읽는다.
@@ -67,8 +71,9 @@ export const UPCOMING_MONTH_KEY = /^\d{4}-\d{2}$/;
  * 조건 조각(mainGamesOnly, visiblePlatformsOnly)은 그대로 끼워 넣어 다른 화면과 같은 기준을 쓴다 —
  * 여기서 손으로 다시 적으면 숨김 규칙이 갈린다.
  */
-function earliestCte() {
+function earliestCte(filter: UpcomingFilter = {}) {
   const visible = visiblePlatformsOnly();
+  const picked = filter.platform ? expandPlatformValues(parsePlatformValues(filter.platform)) : [];
   return sql`
     with earliest as (
       select ${gamePlatforms.gameId} as game_id, min(${gamePlatforms.releaseDate}) as release_date,
@@ -81,6 +86,7 @@ function earliestCte() {
       where ${mainGamesOnly()}
         and ${eq(gamePlatforms.region, HOME_REGION)}
         ${visible ? sql`and ${visible}` : sql``}
+        ${filterConds(filter, picked)}
       group by ${gamePlatforms.gameId}
       -- 미래 날짜를 where 에서 먼저 거르면 안 된다. 이미 나온 게임도 미래 날짜 행이 하나만 있으면
       -- 그 행이 "가장 이른 날" 이 돼 출시예정에 선다(2026-10-12 붉은사막: 스팀, Xbox, Epic 은 3월 출시인데
@@ -92,11 +98,35 @@ function earliestCte() {
     )`;
 }
 
-async function getUpcomingMonthsRaw(): Promise<UpcomingMonthTab[]> {
+/**
+ * 목록 안 조건(기획서 v2.0 S-03). 게임 단위 조건이라 출시일 묶음(min) 앞에서 건다 —
+ * 플랫폼을 행 조건으로 걸면 "그 플랫폼의 날짜" 로 묶여 같은 게임이 달 탭마다 다른 날로 선다.
+ * 그래서 플랫폼은 "그 플랫폼 행이 있는 게임" 으로 걸고, 날짜는 여전히 게임이 아는 가장 이른 날이다.
+ * 장르, 제목 조건은 목록(services/games/list)과 같은 조각을 쓴다 — 두 화면의 검색 결과가 어긋나지 않게.
+ */
+function filterConds(filter: UpcomingFilter, picked: ReturnType<typeof expandPlatformValues>) {
+  const conds = [];
+  if (picked.length > 0) conds.push(hasVisiblePlatform(picked));
+  if (filter.genre) {
+    conds.push(sql`exists (select 1 from ${gameGenres} inner join ${genres} on ${genres.id} = ${gameGenres.genreId}
+      where ${gameGenres.gameId} = ${games.id} and ${genres.name} = ${filter.genre})`);
+  }
+  if (filter.q) conds.push(titleMatches(titleMatch(filter.q)));
+  return conds.length > 0 ? sql`and ${sql.join(conds, sql` and `)}` : sql``;
+}
+
+/** 정렬 조각. 인기순은 스토어 순번(earliest.rank)이 앞서고 순번 없는 게임은 날짜순으로 뒤에 선다 */
+function orderBy(filter: UpcomingFilter) {
+  return filter.sort === "popular"
+    ? sql`order by rank asc nulls last, release_date asc, game_id asc`
+    : sql`order by release_date asc, rank asc nulls last, game_id asc`;
+}
+
+async function getUpcomingMonthsRaw(filter: UpcomingFilter = {}): Promise<UpcomingMonthTab[]> {
   // date 컬럼이라 "YYYY-MM-DD" 로 온다. 앞 7글자가 곧 달 열쇠다 —
   // Date 로 바꿔 달을 꺼내면 UTC 로 해석돼 매월 1일이 전달로 밀린다
   const res = await getDb().execute<{ key: string; total: number }>(sql`
-    ${earliestCte()}
+    ${earliestCte(filter)}
     select substr(release_date::text, 1, 7) as key, count(*)::int as total
     from earliest group by 1 order by 1
   `);
@@ -117,8 +147,12 @@ function picksCte(key: string) {
     )`;
 }
 
-async function getUpcomingMonthPicksRaw(key: string): Promise<UpcomingEntry[]> {
-  if (!UPCOMING_MONTH_KEY.test(key)) return [];
+/**
+ * 조건을 걸면 기대작 줄은 세우지 않는다 — 고른 사람은 "그 조건의 목록" 을 보러 왔고,
+ * 조건 안에서 다시 넷을 따로 떼면 정렬을 인기순으로 바꿨을 때 1~4위가 목록에서 사라진 것처럼 보인다.
+ */
+async function getUpcomingMonthPicksRaw(key: string, filter: UpcomingFilter = {}): Promise<UpcomingEntry[]> {
+  if (!UPCOMING_MONTH_KEY.test(key) || hasUpcomingFilter(filter)) return [];
   const res = await getDb().execute<{ game_id: string; release_date: string }>(sql`
     ${earliestCte()}${picksCte(key)}
     select e.game_id, e.release_date::text as release_date
@@ -128,17 +162,17 @@ async function getUpcomingMonthPicksRaw(key: string): Promise<UpcomingEntry[]> {
   return toUpcomingEntries(res.rows);
 }
 
-async function getUpcomingMonthPageRaw(key: string, page: number): Promise<UpcomingPage> {
+async function getUpcomingMonthPageRaw(key: string, page: number, filter: UpcomingFilter = {}): Promise<UpcomingPage> {
   if (!UPCOMING_MONTH_KEY.test(key)) return { items: [], hasMore: false };
   const offset = (Math.max(1, page) - 1) * UPCOMING_PAGE_SIZE;
   // 한 장보다 하나 더 받아 "다음 장이 있나" 를 센다 — count 질의를 따로 보내면 왕복이 하나 는다
   const ranked = await getDb().execute<{ game_id: string; release_date: string }>(sql`
-    ${earliestCte()}${picksCte(key)}
+    ${earliestCte(filter)}${picksCte(key)}
     select game_id, release_date::text as release_date
     from earliest
     where substr(release_date::text, 1, 7) = ${key}
-      and game_id not in (select game_id from picks)
-    order by release_date asc, game_id asc
+      ${hasUpcomingFilter(filter) ? sql`` : sql`and game_id not in (select game_id from picks)`}
+    ${orderBy(filter)}
     limit ${UPCOMING_PAGE_SIZE + 1}::int offset ${offset}::int
   `);
   const hasMore = ranked.rows.length > UPCOMING_PAGE_SIZE;
@@ -164,16 +198,34 @@ async function getUpcomingSoonRaw(limit: number): Promise<UpcomingEntry[]> {
  * 출시 예정 "전체 보기"(기획서 v2.0 S-03, 목업의 전체/월별 전환) 한 장. 달을 가리지 않고 날짜순으로 이어 읽는다.
  * 건수는 달 탭의 합으로 세므로(getUpcomingMonths) count 질의를 따로 보내지 않는다.
  */
-async function getUpcomingAllPageRaw(page: number): Promise<UpcomingEntry[]> {
+async function getUpcomingAllPageRaw(page: number, filter: UpcomingFilter = {}): Promise<UpcomingEntry[]> {
   const offset = (Math.max(1, page) - 1) * UPCOMING_PAGE_SIZE;
   const res = await getDb().execute<{ game_id: string; release_date: string }>(sql`
-    ${earliestCte()}
+    ${earliestCte(filter)}
     select game_id, release_date::text as release_date
     from earliest
-    order by release_date asc, rank asc nulls last, game_id asc
+    ${orderBy(filter)}
     limit ${UPCOMING_PAGE_SIZE}::int offset ${offset}::int
   `);
   return toUpcomingEntries(res.rows);
+}
+
+/**
+ * 출시 예정 게임에 실제로 붙은 장르, 게임 많은 순(기획서 v2.0 S-03: 해당 목록에 존재하는 장르만).
+ * 드롭다운 선택지와 "요즘 많이 찾는 장르" 칩(앞 넷)이 같이 쓴다. 조건과 상관없이 늘 같은 목록이다 —
+ * 장르를 고른 뒤 선택지가 줄어들면 다른 장르로 옮겨 탈 길이 없어진다.
+ */
+async function getUpcomingGenresRaw(): Promise<string[]> {
+  const res = await getDb().execute<{ name: string }>(sql`
+    ${earliestCte()}
+    select ${genres.name} as name
+    from earliest e
+    inner join ${gameGenres} on ${gameGenres.gameId} = e.game_id
+    inner join ${genres} on ${genres.id} = ${gameGenres.genreId}
+    group by ${genres.name}
+    order by count(*) desc, ${genres.name} asc
+  `);
+  return res.rows.map((r) => r.name);
 }
 
 /** 고른 (게임, 날짜) 순서 그대로 카드 DTO 를 채운다 */
@@ -216,6 +268,12 @@ export const getUpcomingMonthPicks = unstable_cache(getUpcomingMonthPicksRaw, [D
 
 /** 한 달의 한 장(기대작 몫은 빼고). 달과 장 번호가 캐시 열쇠에 들어간다(unstable_cache 는 인자를 열쇠에 더한다) */
 export const getUpcomingMonthPage = unstable_cache(getUpcomingMonthPageRaw, [DTO_CACHE_VERSION, "upcoming-month-page"], {
+  tags: ["home"],
+  revalidate: LIST_REVALIDATE_SECONDS,
+});
+
+/** 출시 예정 장르 선택지. 달 탭과 같은 태그, 같은 수명 */
+export const getUpcomingGenres = unstable_cache(getUpcomingGenresRaw, [DTO_CACHE_VERSION, "upcoming-genres"], {
   tags: ["home"],
   revalidate: LIST_REVALIDATE_SECONDS,
 });

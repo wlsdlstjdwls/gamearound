@@ -15,9 +15,9 @@
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { cn } from "@/lib/cn";
-import { byYear, upcomingMonthHref } from "@/lib/games/upcoming";
+import { byYear, upcomingMonthHref, type UpcomingFilter } from "@/lib/games/upcoming";
 
-export function UpcomingMonthNav({ months, activeKey }: { months: { key: string; total: number }[]; activeKey: string }) {
+export function UpcomingMonthNav({ months, activeKey, filter }: { months: { key: string; total: number }[]; activeKey: string; filter: UpcomingFilter }) {
   const [picked, setPicked] = useState(activeKey);
   const [prevActive, setPrevActive] = useState(activeKey);
   const navRef = useRef<HTMLElement>(null);
@@ -55,7 +55,7 @@ export function UpcomingMonthNav({ months, activeKey }: { months: { key: string;
             return (
               <Link
                 key={m.key}
-                href={upcomingMonthHref(m.key, firstKey)}
+                href={upcomingMonthHref(m.key, firstKey, filter)}
                 aria-current={on ? "page" : undefined}
                 onClick={() => setPicked(m.key)}
                 className={cn(
