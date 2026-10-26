@@ -1,9 +1,10 @@
 // /indie/new — 내 게임 등록(기획서 v2.0 S-23, 목업 indreg). (user) 무리라 레이아웃이 로그인을 이미 본다.
-// 배치: 제목과 설명, 승인 안내 띠, 왼쪽 폼, 오른쪽 "내가 올린 게임" 칸(상태 알약과 진행 순서).
+// 배치: 제목과 설명, 승인 안내 띠, 왼쪽 폼, 오른쪽 "내가 올린 게임" 칸(줄마다 이름, 플랫폼과 장르 알약, 신청일, 상태 알약 — 목업 indreg .mgr).
 // 글 수 상한에 닿은 사람에게는 폼 대신 내 글 목록을 보여 준다 — 다 적고 나서 "더 못 올려요" 를 듣게 하지 않는다.
 import type { Metadata } from "next";
 import Link from "next/link";
 import { redirect } from "next/navigation";
+import { IndieTagPills } from "@/components/indie/indie-card";
 import { IndiePostForm } from "@/components/indie/post-form";
 import { Page, PageHead } from "@/components/ui/page";
 import { Tag } from "@/components/ui/tag";
@@ -46,10 +47,11 @@ export default async function IndieNewPage() {
             <ul className="divide-y divide-line-soft">
               {mine.map((p) => (
                 <li key={p.id} className="flex items-center justify-between gap-2 py-2.5">
-                  <span className="flex min-w-0 flex-col">
+                  <span className="flex min-w-0 flex-col gap-1">
                     <Link href={p.review === "approved" ? indiePath(p.slug) : indieEditPath(p.id)} className="truncate text-[14px] font-semibold text-ink hover:text-acc">
                       {p.title}
                     </Link>
+                    <IndieTagPills platforms={p.platforms} genres={p.genres} />
                     <span className="text-[12px] text-dim">
                       {formatDate(p.createdAt)} {RV.applied}
                     </span>

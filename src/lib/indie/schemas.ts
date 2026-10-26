@@ -8,7 +8,6 @@ import {
   INDIE_BODY_MAX,
   INDIE_BODY_MIN,
   INDIE_DEVELOPER_MAX,
-  INDIE_GENRE_MAX,
   INDIE_GENRES,
   INDIE_HIDE_REASON_MAX,
   INDIE_LINK_KINDS,
@@ -76,7 +75,7 @@ export const indiePostSchema = z.object({
   genres: z
     .array(z.enum(INDIE_GENRES))
     .transform((xs) => [...new Set(xs)])
-    .pipe(z.array(z.enum(INDIE_GENRES)).min(1, M.genresRequired).max(INDIE_GENRE_MAX, M.genresTooMany(INDIE_GENRE_MAX))),
+    .pipe(z.array(z.enum(INDIE_GENRES)).min(1, M.genresRequired)),
   /** 고른 플랫폼의 스토어 링크. 빈칸은 폼이 이미 뺐다 — 스토어 페이지가 아직 없는 개발 중 게임이 있어서다 */
   storeLinks: z.array(storeLinkSchema).max(INDIE_PLATFORMS.length),
   releaseNote: z

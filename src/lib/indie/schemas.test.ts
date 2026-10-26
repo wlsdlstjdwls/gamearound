@@ -77,10 +77,10 @@ describe("indiePostSchema", () => {
     expect(indiePostSchema.safeParse({ ...base, storeLinks: [{ platform: "pc", url: "http://store.example.com" }] }).success).toBe(false);
   });
 
-  it("장르는 하나 이상, 셋까지 받고 중복을 접는다", () => {
+  it("장르는 하나 이상 받고(상한 없음, 기획서 S-23 복수 선택) 중복을 접는다", () => {
     expect(indiePostSchema.parse(base).genres).toEqual(["simulation"]);
     expect(indiePostSchema.safeParse({ ...base, genres: [] }).success).toBe(false);
-    expect(indiePostSchema.safeParse({ ...base, genres: ["action", "rpg", "puzzle", "card"] }).success).toBe(false);
+    expect(indiePostSchema.parse({ ...base, genres: ["action", "rpg", "puzzle", "card"] }).genres).toHaveLength(4);
     expect(indiePostSchema.safeParse({ ...base, genres: ["shooter"] }).success).toBe(false);
   });
 });

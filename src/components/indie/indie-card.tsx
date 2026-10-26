@@ -55,10 +55,14 @@ export function IndieCard({ post, badge }: { post: IndieCardDto; badge?: React.R
         <Clamp lines={2} className="text-[13px] leading-[1.5] text-mut">
           {post.tagline}
         </Clamp>
-        <div className="mt-auto flex flex-wrap items-center gap-x-2 gap-y-1 pt-1 text-[12px] text-dim">
+        {/* 한 줄로 고정한다 — 줄바꿈을 허락하면 만든 사람 이름 길이에 따라 찜 수만 다음 줄로 떨어져 같은 줄 카드끼리 바닥 높이가 달라진다.
+            넘치는 것은 가운데 이름 칸이 잘리며 받는다 */}
+        <div className="mt-auto flex items-center gap-2 pt-1 text-[12px] text-dim">
           <IndieStageBadge stage={post.stage} />
-          <span className="min-w-0 truncate">{[post.developerName, formatDotDate(post.registeredAt)].join(" | ")}</span>
-          <span className="ml-auto flex shrink-0 items-center gap-0.5 tabular-nums">
+          <Clamp lines={1} className="min-w-0 flex-1">
+            {[post.developerName, formatDotDate(post.registeredAt)].join(" | ")}
+          </Clamp>
+          <span className="flex shrink-0 items-center gap-0.5 tabular-nums">
             <HeartIcon size={12} />
             <span className="sr-only">{M.likesLabel}</span>
             {post.likeCount.toLocaleString("ko-KR")}

@@ -11,6 +11,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { HeadLink, RisingBlock, SideEmpty, SidePanel, SideRow, StatStrip, WaitingBlock } from "@/components/community/news-blocks";
 import { WriteLink } from "@/components/community/write-link";
+import { BoardGuide } from "@/components/lounge/board-guide";
 import { DbUnavailable } from "@/components/db-unavailable";
 import { buttonClass } from "@/components/ui/button";
 import { Page, PageHead } from "@/components/ui/page";
@@ -106,6 +107,8 @@ export default async function LoungeHomePage() {
                         ))}
                       </ol>
                     ),
+                    // 기획서 S-16 "하단에 이용 가이드", 목업 lgHome "라운지 이용 가이드" — 보조 메뉴의 이용 안내와 같은 시트를 연다
+                    link: <BoardGuide label={L.guideOpen} variant="link" />,
                   }}
                 >
                   {!user ? (

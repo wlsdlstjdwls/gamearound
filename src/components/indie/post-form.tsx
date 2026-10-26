@@ -19,7 +19,6 @@ import { uploadIndieImages } from "@/components/indie/upload-images";
 import {
   INDIE_BODY_MAX,
   INDIE_DEVELOPER_MAX,
-  INDIE_GENRE_MAX,
   INDIE_GENRES,
   INDIE_LINK_KINDS,
   INDIE_LINK_MAX,
@@ -171,16 +170,14 @@ export function IndiePostForm({ post }: { post?: IndieDetailDto }) {
 
       <fieldset className="flex flex-col gap-1.5">
         <legend className={`mb-1.5 ${LABEL}`}>
-          {M.genresLabel} <span className="text-dim">{M.genresHint(INDIE_GENRE_MAX)}</span>
+          {M.genresLabel} <span className="text-dim">{M.genresHint}</span>
         </legend>
         <div className="flex flex-wrap gap-1.5">
           {INDIE_GENRES.map((g) => {
             const on = genres.has(g);
-            // 셋을 다 고르면 나머지는 막는다 — 넷째를 눌렀다가 저장할 때 오류를 듣게 하지 않는다
-            const full = !on && genres.size >= INDIE_GENRE_MAX;
             return (
-              <label key={g} className={chipClass({ active: on, outline: true, className: `cursor-pointer has-[:focus-visible]:ring-2 has-[:focus-visible]:ring-ink ${full ? "opacity-50" : ""}` })}>
-                <input type="checkbox" name="genres" value={g} checked={on} disabled={full} onChange={() => toggleGenre(g)} className="sr-only" />
+              <label key={g} className={chipClass({ active: on, outline: true, className: "cursor-pointer has-[:focus-visible]:ring-2 has-[:focus-visible]:ring-ink" })}>
+                <input type="checkbox" name="genres" value={g} checked={on} onChange={() => toggleGenre(g)} className="sr-only" />
                 {INDIE_GENRE_LABEL[g]}
               </label>
             );

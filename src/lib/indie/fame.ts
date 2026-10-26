@@ -57,7 +57,10 @@ export const FAME_MESSAGES = {
   emptyLead: "찜이 5개 이상 모인 게임부터 순위에 올라요.",
   historyEmpty: "아직 확정된 달이 없어요",
   historyLead: "달이 끝나면 그 달 1위가 여기에 쌓여요.",
-  top10: (label: string) => `${label} TOP 10`,
+  /** 역대 선정작에서 달을 눌렀을 때의 머리(목업 hofPage "X월 주목작 순위 TOP 10") */
+  top10: (label: string) => `${label} 주목작 순위 TOP 10`,
+  backToHistory: "역대 선정작으로",
+  top10Footnote: "그 달에 들어온 찜과 조회를 기준으로 한 순위예요.",
   score: (n: number) => `${n.toLocaleString("ko-KR")}점`,
   rookieTitle: "슈퍼루키",
   rookieLead: "등록된 지 한 달이 안 된 인디 신작 중 반응이 좋은 게임이에요.",

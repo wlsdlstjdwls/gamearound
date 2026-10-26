@@ -16,8 +16,8 @@ export type IndiePlatform = (typeof INDIE_PLATFORMS)[number];
  */
 export const INDIE_GENRES = ["action", "rpg", "adventure", "puzzle", "simulation", "platformer", "card", "racing", "other"] as const;
 export type IndieGenre = (typeof INDIE_GENRES)[number];
-/** 한 게임이 고를 수 있는 장르 수. 카드 한 줄에 셋까지 들어간다 — 다 고르면 장르가 아무것도 말하지 않는다 */
-export const INDIE_GENRE_MAX = 3;
+// 고를 수 있는 장르 수에 상한을 두지 않는다(2026-10-26). 예전에는 셋까지였지만 기획서 S-23 은 "필수, 복수 선택" 만 말하고,
+// 카드의 장르 알약은 줄을 넘기면 다음 줄로 접혀(indie-card 의 IndieTagPills) 셋을 넘어도 화면이 깨지지 않는다.
 
 /**
  * 플랫폼별 스토어 링크(기획서 S-23 "선택한 플랫폼마다 스토어 링크 입력란이 생김", S-19 "플랫폼별 구매하러 가기").
