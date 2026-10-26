@@ -9,6 +9,8 @@ export type PostRowDto = {
   spoiler: boolean;
   promoType: PromoType | null;
   authorName: string;
+  /** 작성자가 승인된 인디 게임을 공개 중인 개발자인지(목업 brow, postv 의 "개발자" 배지). 근거는 services/community/columns */
+  authorIsDeveloper: boolean;
   createdAt: Date;
   commentCount: number;
   likeCount: number;

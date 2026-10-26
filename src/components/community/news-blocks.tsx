@@ -8,7 +8,7 @@
 // 시간은 "3시간 전" 으로 적는다 — 이 화면의 용건이 "지금 반응이 몰린 글" 이라 시각보다 지난 시간이 먼저 읽혀야 한다.
 // 기준 시각(now)은 화면이 한 번 정해 내려 준다 — 줄마다 시계를 읽으면 한 화면 안에서 값이 어긋난다.
 import Link from "next/link";
-import { PostTags } from "@/components/community/badges";
+import { AuthorName, PostTags } from "@/components/community/badges";
 import { HeartIcon } from "@/components/ui/icons";
 import { Tag } from "@/components/ui/tag";
 import { cn } from "@/lib/cn";
@@ -100,7 +100,9 @@ export function RisingBlock({ posts, allHref, now }: { posts: PostRowDto[]; allH
                   <span className="flex min-w-0 flex-col gap-1">
                     <MetaLine flag={<Tag tone="warn">{M.risingFlag}</Tag>} post={p} now={now} />
                     <TitleLine post={p} />
-                    <span className="truncate text-[12.5px] text-dim">{p.authorName}</span>
+                    <span className="flex min-w-0 text-[12.5px] text-dim">
+                      <AuthorName post={p} />
+                    </span>
                   </span>
                   {/* 좁은 화면에서는 반응 수가 제목 아래 한 줄로 내려간다(목업 650px 이하) */}
                   <span className="col-start-2 flex gap-3 text-[12.5px] tabular-nums text-mut sm:col-start-3 sm:flex-col sm:items-end sm:gap-0.5">
@@ -144,8 +146,11 @@ export function WaitingBlock({ title, note, posts, cta, zero, now }: { title: st
                   <Link href={p.href} className="group flex min-w-0 flex-col gap-1 after:absolute after:inset-0">
                     <MetaLine flag={<Tag tone="info">{zero}</Tag>} post={p} now={now} />
                     <TitleLine post={p} awaiting={false} />
-                    <span className="truncate text-[12.5px] text-dim">
-                      {p.authorName} | {M.views} {p.viewCount.toLocaleString("ko-KR")}
+                    <span className="flex min-w-0 items-center gap-1 text-[12.5px] text-dim">
+                      <AuthorName post={p} />
+                      <span className="shrink-0">
+                        | {M.views} {p.viewCount.toLocaleString("ko-KR")}
+                      </span>
                     </span>
                   </Link>
                   <Link

@@ -2,7 +2,7 @@
 // 소식 블록 규칙은 라운지 홈과 같다(services/community/home, 기획서 6.6). 모양은 목업 rbHome 을 따른다(components/community/news-blocks).
 import type { Metadata } from "next";
 import Link from "next/link";
-import { PostTags } from "@/components/community/badges";
+import { AuthorName, PostTags } from "@/components/community/badges";
 import { HeadLink, RisingBlock, SideEmpty, SidePanel, SideRow, StatStrip, WaitingBlock } from "@/components/community/news-blocks";
 import { WriteLink } from "@/components/community/write-link";
 import { DbUnavailable } from "@/components/db-unavailable";
@@ -64,8 +64,9 @@ export default async function BoardHomePage() {
                     lines={[
                       <>
                         <PostTags post={p} showCategory={false} />
-                        <span className="truncate">
-                          {p.authorName} | {formatAgo(p.createdAt, now)}
+                        <span className="flex min-w-0 items-center gap-1">
+                          <AuthorName post={p} />
+                          <span className="shrink-0">| {formatAgo(p.createdAt, now)}</span>
                         </span>
                       </>,
                     ]}

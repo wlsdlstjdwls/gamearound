@@ -11,6 +11,7 @@ import { cache, Suspense } from "react";
 import { BoardControls } from "@/components/community/board-controls";
 import { PostList } from "@/components/community/post-list";
 import { WriteLink } from "@/components/community/write-link";
+import { BoardGuide } from "@/components/lounge/board-guide";
 import { DbUnavailable } from "@/components/db-unavailable";
 import { Pagination } from "@/components/pagination";
 import { NavPendingScope, PendingRegion } from "@/components/ui/nav-pending";
@@ -20,6 +21,7 @@ import { cn } from "@/lib/cn";
 import { CATEGORY_LABEL, CATEGORY_LIST_PATH, isLoungeCategory, POPULAR_PERIOD_LABEL, POSTS_PAGE_SIZE, writePath } from "@/lib/community/constants";
 import { BOARD_PAGE_COPY, COMMUNITY_MESSAGES as M } from "@/lib/community/messages";
 import { boardHref, type BoardQuery } from "@/lib/community/query";
+import { BOARD_GUIDE_MESSAGES as G } from "@/lib/lounge/messages";
 import { nullIfDbUnavailable } from "@/lib/db-errors";
 import type { PostCategory } from "@/server/db/schema";
 import { getBoardHome, listPosts } from "@/server/services/community";
@@ -38,7 +40,10 @@ type Props = {
    * 수가 사람마다 달라(등록현황은 내 것) 약속으로 받는다 — 메뉴 칸의 Suspense 안에서 풀려 목록을 기다리게 하지 않는다
    */
   sideExtra?: Promise<{ lead: SideLink[]; tail: SideLink[] }>;
-  /** 보조 메뉴 판 맨 아래(라운지의 "게시판 이용 안내") */
+  /**
+   * 보조 메뉴 판 맨 아래. 없으면 게임 게시판의 "게시판 이용 안내"(이용 규칙만)가 선다 — 목업 bside 는 두 게시판 모두 이 줄로 끝난다.
+   * 라운지는 등록 흐름까지 붙인 같은 시트를 넘긴다(components/lounge/lounge-board)
+   */
   sideFoot?: React.ReactNode;
 };
 
@@ -126,7 +131,7 @@ export function PostBoard({ title, categories, family, allPath, base, query, sid
           <Suspense fallback={<Bone className="h-10 w-full" />}>
             <SideMenu family={family} allPath={allPath} current={base} extra={sideExtra} />
           </Suspense>
-          {sideFoot}
+          {sideFoot ?? <BoardGuide label={G.open} variant="menu" lounge={false} />}
         </nav>
         <NavPendingScope>
           <section aria-label={head} className="flex min-w-0 flex-col gap-4 rounded-[var(--radius-md)] bg-surface p-4 shadow-hair sm:p-5">

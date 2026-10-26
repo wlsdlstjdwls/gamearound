@@ -6,7 +6,7 @@
 // 되돌아가기 링크를 다시 세우지 않는다(두 줄이 같은 말을 한다). 라운지 글은 아직 공용 줄이 서지 않아 제 링크를 둔다.
 import Link from "next/link";
 import { notFound, permanentRedirect } from "next/navigation";
-import { PostTags } from "@/components/community/badges";
+import { AuthorName, PostTags } from "@/components/community/badges";
 import { Comments, PostReactions, SpoilerGate } from "@/components/community/post-interactions";
 import { DbUnavailablePage } from "@/components/db-unavailable";
 import { BackLink } from "@/components/ui/back-link";
@@ -43,7 +43,7 @@ export async function PostDetail({ id, lounge, category }: { id: string; lounge:
           </p>
           <h1 className="text-[22px] font-extrabold leading-[1.35] tracking-[-0.02em] text-ink sm:text-[26px]">{post.title}</h1>
           <p className="flex flex-wrap items-center gap-x-3 gap-y-1 text-[13px] text-dim">
-            <span className="font-semibold text-ink-2">{post.authorName}</span>
+            <AuthorName post={post} className="font-semibold text-ink-2" />
             <span>{formatDateTime(post.createdAt)}</span>
             <span>
               {M.views} {post.viewCount.toLocaleString("ko-KR")}

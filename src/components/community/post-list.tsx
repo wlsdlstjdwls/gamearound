@@ -5,7 +5,7 @@
 import Link from "next/link";
 import { EmptyState } from "@/components/empty-state";
 import { cn } from "@/lib/cn";
-import { GameChip, PostTags } from "@/components/community/badges";
+import { AuthorName, GameChip, PostTags } from "@/components/community/badges";
 import { COMMUNITY_MESSAGES as M } from "@/lib/community/messages";
 import { formatPostDate } from "@/lib/format";
 import { stagger } from "@/lib/motion";
@@ -30,7 +30,7 @@ export function PostList({ posts, rank = false, rankFrom = 1, showCategory = tru
               {p.commentCount > 0 && <span className="shrink-0 text-[12.5px] font-bold text-acc">[{p.commentCount}]</span>}
             </span>
             <span className="flex shrink-0 items-center gap-3 text-[12.5px] tabular-nums text-dim">
-              <span className="max-w-[120px] truncate">{p.authorName}</span>
+              <AuthorName post={p} className="max-w-[120px] truncate" />
               <span>{formatPostDate(p.createdAt)}</span>
               <span>
                 {M.views} {p.viewCount.toLocaleString("ko-KR")}
