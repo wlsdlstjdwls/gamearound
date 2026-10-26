@@ -5,11 +5,11 @@ import { unavailableOr } from "@/lib/db-errors";
 import { MAINTENANCE_MESSAGES } from "@/lib/messages";
 import { RATE_LIMIT } from "@/lib/auth/constants";
 import { AUTH_MESSAGES as M } from "@/lib/auth/messages";
-import { emailSchema, fieldErrorsOf, signInInputFromForm, signInSchema, signUpInputFromForm, signUpSchema } from "@/lib/auth/schemas";
+import { displayNameSchema, emailSchema, fieldErrorsOf, signInInputFromForm, signInSchema, signUpInputFromForm, signUpSchema } from "@/lib/auth/schemas";
 import { afterSignUpPath, safeNextPath } from "@/lib/routes";
 import { checkRateLimit, getRequestMeta, hashKeyPart } from "@/server/auth/rate-limit";
 import { createSession, invalidateCurrentSession } from "@/server/auth/session";
-import { createUser, EmailTakenError, isEmailRegistered, verifyCredentials } from "@/server/services/users";
+import { createUser, DisplayNameTakenError, EmailTakenError, isDisplayNameTaken, isEmailRegistered, verifyCredentials } from "@/server/services/users";
 
 export type AuthActionState =
   | { ok: true; redirectTo: string }
@@ -48,6 +48,7 @@ export async function signUpAction(_prev: AuthActionState, formData: FormData): 
     return { ok: true, redirectTo: afterSignUp(formData) };
   } catch (e) {
     if (e instanceof EmailTakenError) return { ok: false, fieldErrors: { email: M.emailTaken } };
+    if (e instanceof DisplayNameTakenError) return { ok: false, fieldErrors: { displayName: M.displayNameTaken } };
     console.error("[auth] 회원가입 실패:", e instanceof Error ? e.message : e);
     return { ok: false, error: unavailableOr(e, M.serverError, MAINTENANCE_MESSAGES.auth) };
   }
@@ -70,6 +71,20 @@ export async function checkEmailTakenAction(rawEmail: unknown): Promise<{ taken:
     return { taken: await isEmailRegistered(parsed.data) };
   } catch (e) {
     console.error("[auth] 이메일 중복 확인 실패:", e instanceof Error ? e.message : e);
+    return null;
+  }
+}
+
+/** 가입 폼 닉네임 칸의 중복 확인(칸을 떠날 때). 이메일 확인과 같은 규칙 — 답을 못 하면 null 로 제출에 맡긴다 */
+export async function checkDisplayNameTakenAction(raw: unknown): Promise<{ taken: boolean } | null> {
+  const parsed = displayNameSchema.safeParse(raw);
+  if (!parsed.success) return null;
+  const meta = await getRequestMeta();
+  if (!(await checkRateLimit(`namecheck:ip:${hashKeyPart(meta.ip)}`, RATE_LIMIT.emailCheckPerIp))) return null;
+  try {
+    return { taken: await isDisplayNameTaken(parsed.data) };
+  } catch (e) {
+    console.error("[auth] 닉네임 중복 확인 실패:", e instanceof Error ? e.message : e);
     return null;
   }
 }

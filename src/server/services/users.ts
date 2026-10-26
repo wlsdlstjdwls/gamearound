@@ -1,7 +1,7 @@
 // users 서비스 — 자체 이메일/비밀번호 인증 (§6 개정). Server Action/Route Handler/Server Component에서 현재 사용자를 얻을 때 사용.
 import "server-only";
 import { cache } from "react";
-import { eq } from "drizzle-orm";
+import { eq, sql } from "drizzle-orm";
 import { getDb } from "@/server/db/client";
 import { users, type Role } from "@/server/db/schema";
 import { ADMIN_EMAILS_ENV } from "@/lib/auth/constants";
@@ -48,10 +48,35 @@ export class EmailTakenError extends Error {
   }
 }
 
-/** 회원가입. 이메일 중복이면 EmailTakenError (unique 제약도 동시에 걸러 경합 상황 방어) */
+/**
+ * 닉네임 중복(2026-10-26 사용자 결정: 막는다). 게시판이 생겨 남의 이름을 흉내 내는 일을 막으려는 것이다.
+ * 대소문자와 띄어쓰기를 무시하고 견준다("Seed Tester" 와 "seedtester" 는 같은 이름). 공백 정리는 JS 에서 해서 넘긴다 —
+ * 생 SQL 정규식의 역슬래시는 Neon 드라이버를 지나며 먹힌다(\s 가 s 가 된다).
+ * DB unique 제약은 걸지 않았다: 옛 DB 를 덮어쓸 때 이미 겹친 이름이 있으면 복원이 통째로 실패한다. 가입 경로가 막는다.
+ */
+export function nicknameKey(name: string): string {
+  return name.trim().toLowerCase().split(" ").join("");
+}
+
+export async function isDisplayNameTaken(name: string): Promise<boolean> {
+  const key = nicknameKey(name);
+  if (!key) return false;
+  const row = await getDb().query.users.findFirst({ columns: { id: true }, where: eq(sql`lower(replace(trim(${users.displayName}), ' ', ''))`, key) });
+  return Boolean(row);
+}
+
+export class DisplayNameTakenError extends Error {
+  constructor() {
+    super(AUTH_MESSAGES.displayNameTaken);
+    this.name = "DisplayNameTakenError";
+  }
+}
+
+/** 회원가입. 이메일 중복이면 EmailTakenError, 닉네임 중복이면 DisplayNameTakenError (unique 제약도 동시에 걸러 경합 상황 방어) */
 export async function createUser(input: { email: string; password: string; displayName: string }): Promise<UserRow> {
   const email = normalizeEmail(input.email);
   if (await findUserByEmail(email)) throw new EmailTakenError();
+  if (await isDisplayNameTaken(input.displayName)) throw new DisplayNameTakenError();
   const passwordHash = await hashPassword(input.password);
   try {
     const [row] = await getDb()

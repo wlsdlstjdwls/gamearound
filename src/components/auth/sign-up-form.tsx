@@ -1,7 +1,7 @@
 "use client";
 import Link from "next/link";
 import { useActionState, useRef, useState } from "react";
-import { checkEmailTakenAction, signUpAction } from "@/app/(auth)/actions";
+import { checkDisplayNameTakenAction, checkEmailTakenAction, signUpAction } from "@/app/(auth)/actions";
 import { DISPLAY_NAME_MAX } from "@/lib/auth/constants";
 import { AUTH_MESSAGES as M } from "@/lib/auth/messages";
 import { signUpInputFromForm, signUpSchema } from "@/lib/auth/schemas";
@@ -20,6 +20,7 @@ import { TextField } from "@/components/ui/text-field";
  */
 const REMOTE_CHECKS = {
   email: async (value: string) => ((await checkEmailTakenAction(value))?.taken ? M.emailTaken : null),
+  displayName: async (value: string) => ((await checkDisplayNameTakenAction(value))?.taken ? M.displayNameTaken : null),
 };
 
 export function SignUpForm({ next }: { next: string }) {

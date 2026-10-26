@@ -41,6 +41,7 @@ export const AUTH_MESSAGES = {
   privacyDocLabel: "개인정보처리방침",
   termsConsentTail: "에 동의해요.",
   pending: "확인 중…",
+  displayNameTaken: "이미 쓰고 있는 닉네임이에요",
   noAccount: "아직 계정이 없나요?",
   hasAccount: "이미 계정이 있나요?",
   passwordHint: `${PASSWORD_MIN}자 이상, 영문과 숫자 포함`,
