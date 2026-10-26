@@ -136,11 +136,11 @@ export function highlightFromFilter(filter: { platform?: string; genre?: string 
  * 판 없는 카드는 이웃 카드의 글자와 섞였다. 판은 회색 바탕 위 흰 면 한 겹이다.
  * 좁은 화면은 한 줄에 한 장이다(lib/games/grid).
  */
-/** 카드에서 펴 두는 플랫폼 배지 수 — 넘으면 "+N"(2026-09-30 사용자 지정: 셋에서 "2개만 보여주고 더보기" 로 줄였다.
- *  넓은 화면 네 줄 격자의 270px 칸에서 셋은 이름이 긴 스토어(Epic Games)가 끼면 두 줄로 접혔다) */
-const BADGE_LIMIT = 2;
-/** 좁은 화면(한 줄에 한 장)에서 펴 두는 수 — 카드가 넓어 셋이 한 줄에 선다(2026-09-30 사용자 지정) */
-const BADGE_LIMIT_NARROW = 3;
+/*
+ * 플랫폼 배지는 다 편다(2026-10-26 사용자 지정: "목업처럼 다 보이게"). 09-30 에 둘로 접었던 이유는
+ * 스토어 이름(Epic Games)이 길어 270px 칸에서 두 줄로 접혀서였는데, 배지가 기기 갈래(PC, PlayStation, Xbox, Switch)
+ * 넷뿐이 되면서 그 사정이 줄었다. 넘치면 배지 줄이 접히고 남은 기간은 그 옆에 남는다.
+ */
 
 export const CARD_SHELL = "card-panel flex h-full flex-col gap-2 p-2 pb-3 sm:p-2.5 sm:pb-3.5";
 
@@ -243,8 +243,6 @@ export function GameCard({
               platforms={game.platforms}
               highlight={highlight?.platforms}
               lowest={best?.currentPrice != null ? best.platform : null}
-              limit={BADGE_LIMIT}
-              narrowLimit={BADGE_LIMIT_NARROW}
             />
             {variant !== "release" && hasDiscount && (
               <span className="shrink-0 pb-0.5">
