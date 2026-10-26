@@ -49,6 +49,11 @@ export const postComments = pgTable(
     postId: uuid("post_id").references(() => posts.id, { onDelete: "cascade" }).notNull(),
     authorUserId: uuid("author_user_id").references(() => users.id, { onDelete: "cascade" }).notNull(),
     body: text("body").notNull(),
+    /**
+     * 운영진 숨김(기획서 v2.0 2.2 "부적절한 글 숨김"). 글과 같은 갈래를 쓴다 — 지우지 않고 숨기는 이유는 되살릴 길을 남기려는 것이다.
+     * 숨긴 댓글은 commentCount 에서도 뺀다(services/community/admin) — 인기 점수가 숨긴 댓글로 오르지 않게
+     */
+    status: postStatusEnum("status").default("published").notNull(),
     ...auditColumns(),
   },
   (t) => [index("post_comments_post_idx").on(t.postId, t.createdAt)],

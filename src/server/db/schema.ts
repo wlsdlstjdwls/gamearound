@@ -47,6 +47,8 @@ export * from "./schema-community";
 export * from "./schema-notifications";
 // 예약 특전(schema-preorder.ts). 스토어가 아니라 퍼블리셔 공지에서 뽑은 사실이라 가격 축과 섞지 않는다.
 export * from "./schema-preorder";
+// 가입 동의 기록(schema-consents.ts, 2026-10-26). users 행을 넓히지 않으려고 갈라 뒀다(그 파일 머리 주석).
+export * from "./schema-consents";
 
 
 /** 화면과 수집의 기준 지역. 이 값이 아닌 행은 "참고 가격" 으로만 보여 준다 */

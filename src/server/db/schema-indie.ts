@@ -52,6 +52,8 @@ export const indiePosts = pgTable("indie_posts", {
   stage: indieStageEnum("stage").default("in_development").notNull(),
   /** 플랫폼 키 목록(lib/indie/constants 의 INDIE_PLATFORMS). platformEnum 은 스토어 축이라 모바일, 웹이 없다 */
   platforms: text("platforms").array().default([]).notNull(),
+  /** 장르 키 목록(lib/indie/constants 의 INDIE_GENRES, 기획서 S-23 "장르 필수, 복수 선택"). 카드와 상세에 선다 */
+  genres: text("genres").array().default([]).notNull(),
   /** "2027년 상반기" 처럼 사람이 적는 말. 날짜로 받으면 미정인 게임이 거짓 날짜를 적는다 */
   releaseNote: text("release_note"),
   /** 개발자, 팀 이름. 가입 닉네임과 다를 수 있다 */

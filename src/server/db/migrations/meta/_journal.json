@@ -456,6 +456,20 @@
       "when": 1792981357698,
       "tag": "0064_wide_black_bolt",
       "breakpoints": true
+    },
+    {
+      "idx": 65,
+      "version": "7",
+      "when": 1792989576052,
+      "tag": "0065_numerous_silhouette",
+      "breakpoints": true
+    },
+    {
+      "idx": 66,
+      "version": "7",
+      "when": 1792990188698,
+      "tag": "0066_hard_shaman",
+      "breakpoints": true
     }
   ]
 }

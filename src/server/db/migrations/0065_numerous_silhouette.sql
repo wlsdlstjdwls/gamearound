@@ -1,0 +1,1 @@
+ALTER TABLE "post_comments" ADD COLUMN "status" "post_status" DEFAULT 'published' NOT NULL;
