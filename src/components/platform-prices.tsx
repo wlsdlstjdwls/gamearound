@@ -194,8 +194,10 @@ function AbsentTile({ label }: { label: string }) {
   );
 }
 
-/** 링크가 아직 없는 타일의 버튼에 붙는 말. 버튼은 그대로 서고 눌리지만 않는다(PriceTile 주석) */
-const STORE_LINK_MISSING = "스토어 링크를 아직 못 찾았어요";
+/** 스토어로 나가는 버튼의 말(기획서 v2.0 S-05 "구매하기") */
+const STORE_CTA = "구매하기";
+/** 링크가 아직 없는 타일의 버튼 자리에 서는 말. 버튼 모양은 그대로 두고 눌리지만 않는다(기획서 v2.0 S-07) */
+const STORE_LINK_MISSING = "스토어 링크 준비 중";
 
 /**
  * 스토어 한 곳 = 타일 한 장(2026-09-30, 사용자: "플랫폼 정보 좀 가시성 높게").
@@ -286,7 +288,7 @@ function PriceTile({
             // 최저가 타일만 브랜드 필이다 — 이 화면에서 실제로 누를 자리는 대개 그 하나다(ui/button 주석)
             className={buttonClass({ variant: isBest ? "accent" : "soft", size: "row", className: "ml-auto shrink-0 flex-1" })}
           >
-            스토어
+            {STORE_CTA}
             <span className="sr-only"> {platformLabel(p)} (새 창에서 열림)</span>
           </a>
         ) : (
@@ -294,8 +296,7 @@ function PriceTile({
             aria-disabled="true"
             className={buttonClass({ variant: "soft", size: "row", className: "pointer-events-none ml-auto shrink-0 flex-1 opacity-45" })}
           >
-            스토어
-            <span className="sr-only"> {STORE_LINK_MISSING}</span>
+            {STORE_LINK_MISSING}
           </span>
         )}
       </div>

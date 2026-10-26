@@ -50,8 +50,8 @@ export const INDIE_REPORT_HIDE_THRESHOLD = 3;
  */
 export const INDIE_IMAGE_MAX = 6;
 
-/** 공개 목록 한 쪽 */
-export const INDIE_PAGE_SIZE = 24;
+/** 공개 목록 한 쪽(기획서 v2.0 4.3: 내가 만든 게임 12개) */
+export const INDIE_PAGE_SIZE = 12;
 
 /** 홈 줄에 세우는 수. 이보다 적으면 줄을 안 세운다(INDIE_HOME_MIN) */
 export const INDIE_HOME_LIMIT = 12;

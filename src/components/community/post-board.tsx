@@ -12,7 +12,7 @@ import { NavPendingScope, PendingRegion } from "@/components/ui/nav-pending";
 import { Page, PageHead } from "@/components/ui/page";
 import { Bone } from "@/components/ui/skeleton";
 import { cn } from "@/lib/cn";
-import { CATEGORY_LABEL, CATEGORY_LIST_PATH, writePath } from "@/lib/community/constants";
+import { CATEGORY_LABEL, CATEGORY_LIST_PATH, POSTS_PAGE_SIZE, writePath } from "@/lib/community/constants";
 import { COMMUNITY_MESSAGES as M } from "@/lib/community/messages";
 import { boardHref, type BoardQuery } from "@/lib/community/query";
 import { nullIfDbUnavailable } from "@/lib/db-errors";
@@ -67,7 +67,7 @@ async function Results({ categories, base, query }: { categories: readonly PostC
   return (
     <>
       <PendingRegion>
-        <PostList posts={page.items} rank={query.tab === "popular"} showCategory={categories.length > 1} empty={empty} />
+        <PostList posts={page.items} rank={query.tab === "popular"} rankFrom={(page.page - 1) * POSTS_PAGE_SIZE + 1} showCategory={categories.length > 1} empty={empty} />
       </PendingRegion>
       <Pagination page={page.page} totalPages={page.totalPages} hrefFor={(n) => boardHref(base, query, { page: n })} />
     </>

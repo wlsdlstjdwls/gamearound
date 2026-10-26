@@ -86,14 +86,16 @@ const PLATFORM_DASH: Record<Platform, string | undefined> = {
 /** 선 굵기는 전부 같다 — 굵기로 순위를 말하지 않는다(색과 선 모양이 이미 정체를 말한다) */
 const LINE_WIDTH = 2;
 
-/** 기간 선택 — days=null 은 전체 */
+/** 기간 선택 — days=null 은 전체. 짧은 쪽부터 선다(기획서 v2.0 S-05: 1개월, 3개월, 6개월, 1년) */
 const RANGES: Array<{ key: string; label: string; days: number | null }> = [
-  { key: "1y", label: "1년", days: 365 },
-  { key: "6m", label: "6개월", days: 180 },
+  { key: "1m", label: "1개월", days: 30 },
   { key: "3m", label: "3개월", days: 90 },
+  { key: "6m", label: "6개월", days: 180 },
+  { key: "1y", label: "1년", days: 365 },
   { key: "all", label: "전체", days: null },
 ];
 const DEFAULT_RANGE_KEY = "1y";
+const DEFAULT_RANGE = RANGES.find((r) => r.key === DEFAULT_RANGE_KEY) ?? RANGES[0];
 /** Y축 위쪽 여유 — 정가 기준선 라벨이 잘리지 않게 */
 const Y_HEADROOM = 1.12;
 /** X축 오른쪽 여유(구간 폭 대비) — 할인 종료선 라벨 자리 */
@@ -206,7 +208,7 @@ export function PriceChart({ series }: { series: PriceSeries[] }) {
     [drawn],
   );
   const now = clientNow ?? fallbackNow;
-  const range = RANGES.find((r) => r.key === rangeKey) ?? RANGES[0];
+  const range = RANGES.find((r) => r.key === rangeKey) ?? DEFAULT_RANGE;
   const { data, platforms, single } = useMemo(() => prepare(shown, range.days, now), [shown, range.days, now]);
 
   // 정가 기준선과 진행 중 할인 구간이 축 밖으로 잘리지 않도록 도메인을 넓힌다

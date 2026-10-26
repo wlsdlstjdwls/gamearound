@@ -8,7 +8,8 @@ import { formatPostDate } from "@/lib/format";
 import { stagger } from "@/lib/motion";
 import type { PostRowDto } from "@/server/services/community";
 
-export function PostList({ posts, rank = false, showCategory = true, empty }: { posts: PostRowDto[]; rank?: boolean; showCategory?: boolean; empty?: { title: string; description?: string; action?: { href: string; label: string } } }) {
+/** rankFrom: 순위 번호의 시작값. 쪽을 넘겨도 순위가 1부터 다시 세지 않게 목록이 앞 쪽의 글 수를 넘긴다 */
+export function PostList({ posts, rank = false, rankFrom = 1, showCategory = true, empty }: { posts: PostRowDto[]; rank?: boolean; rankFrom?: number; showCategory?: boolean; empty?: { title: string; description?: string; action?: { href: string; label: string } } }) {
   if (posts.length === 0) return <EmptyState title={empty?.title ?? M.emptyTitle} description={empty?.description ?? M.emptyLead} action={empty?.action} />;
   return (
     <ul className="divide-y divide-line-soft overflow-hidden rounded-[var(--radius-md)] bg-surface shadow-hair">
@@ -16,7 +17,7 @@ export function PostList({ posts, rank = false, showCategory = true, empty }: { 
         <li key={p.id} className="enter-item" style={stagger(i)}>
           <Link href={p.href} className="group flex min-h-[var(--touch-target)] flex-col gap-1 px-4 py-3 transition-colors hover:bg-surface-2 sm:flex-row sm:items-center sm:gap-4">
             <span className="flex min-w-0 flex-1 items-center gap-2">
-              {rank && <span className="w-6 shrink-0 text-center text-[13px] font-bold tabular-nums text-acc">{i + 1}</span>}
+              {rank && <span className="w-6 shrink-0 text-center text-[13px] font-bold tabular-nums text-acc">{rankFrom + i}</span>}
               <PostTags post={p} showCategory={showCategory} />
               <span className="truncate text-[14.5px] font-semibold text-ink group-hover:text-acc">{p.title}</span>
               {p.commentCount > 0 && <span className="shrink-0 text-[12.5px] font-bold text-acc">[{p.commentCount}]</span>}

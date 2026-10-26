@@ -211,7 +211,9 @@ function PriceHeadline({ game, recordedLow }: { game: GameDetail; recordedLow: R
 function ScoreGrid({ game }: { game: GameDetail }) {
   const lines = scoreLines(game.platforms);
   if (lines.length === 0) {
-    return <p className="border-t border-line pt-5 text-[12.5px] leading-[1.6] text-dim">{GAME_MESSAGES.summaryPending}</p>;
+    // 출시 전이면 "아직 못 모았다" 가 아니라 "출시하면 생긴다" 가 맞는 말이다
+    const unreleased = game.releaseDate !== null && game.releaseDate.slice(0, 10) > kstDateKey(new Date());
+    return <p className="border-t border-line pt-5 text-[12.5px] leading-[1.6] text-dim">{unreleased ? GAME_MESSAGES.scoresAfterRelease : GAME_MESSAGES.summaryPending}</p>;
   }
   return (
     /* 한 줄에 다 세운다(2026-09-22, 사용자 지적: "해당 영역은 너무 많은 자리를 차지해").

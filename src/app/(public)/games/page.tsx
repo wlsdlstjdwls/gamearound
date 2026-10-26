@@ -112,8 +112,8 @@ async function Results({ filter }: { filter: GameListFilter }) {
     const filtered = isFiltered(filter);
     return (
       <EmptyState
-        title="조건에 맞는 게임이 없습니다"
-        description={filtered ? "필터를 줄이면 더 많은 게임이 보입니다." : "조건에 맞는 게임이 아직 없어요."}
+        title="조건에 맞는 게임이 없어요"
+        description={filtered ? "필터를 줄이면 더 많은 게임이 보여요." : "조건에 맞는 게임이 아직 없어요."}
         action={filtered ? { href: filter.all ? gamesHref({ all: true }) : ROUTES.game, label: "필터 초기화" } : { href: ROUTES.home, label: "홈으로" }}
       />
     );
@@ -121,8 +121,9 @@ async function Results({ filter }: { filter: GameListFilter }) {
 
   return (
     <>
-      <h2 className="sr-only">
-        {SORT_LABEL[filter.sort ?? defaultSortFor(filter)]} 게임 {result.total}개
+      {/* 결과 수는 눈에도 보인다(기획서 v2.0 S-02 "결과 수 표시"). 전에는 화면 낭독기에만 들렸다 */}
+      <h2 className="text-[13px] font-medium tabular-nums text-dim">
+        {SORT_LABEL[filter.sort ?? defaultSortFor(filter)]} 게임 {result.total.toLocaleString("ko-KR")}개
       </h2>
       {/* 쪽 번호는 누른 순간 켜지고 목록은 흐려진 채 기다린다(ui/nav-pending). 쪽을 바꾸면 맨 위로 간다(Pagination 의 scroll) */}
       <NavPendingScope>
