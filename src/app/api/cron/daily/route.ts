@@ -7,6 +7,8 @@ import { purgeExpiredSessions } from "@/server/auth/session";
 import { matchUnlinkedProducts } from "@/server/sync/product-match";
 import { PRODUCT_MATCH_BATCH } from "@/server/sync/constants";
 import { bearerToken, secretMatches } from "@/lib/secret";
+import { kstYm, prevYm } from "@/lib/indie/fame";
+import { finalizeHallOfFame } from "@/server/services/indie";
 
 export const maxDuration = 60;
 export const dynamic = "force-dynamic";
@@ -30,6 +32,9 @@ export async function GET(req: NextRequest) {
     ["sessionsPurged", () => purgeExpiredSessions()],
     // 이은 건수만 센다. 후보만 남긴 것과 못 찾은 것은 화면(관리자)이 상품 행에서 직접 읽는다
     ["productsLinked", async () => (await matchUnlinkedProducts(PRODUCT_MATCH_BATCH)).linked],
+    // 지난달 명예의 전당을 닫는다(기획서 v2.0 7장 "월말 확정"). 이미 닫힌 달은 0 을 돌려주고 끝나서 매일 돌려도 된다 —
+    // 월초 하루만 돌게 하면 그날 크론이 실패한 달은 영영 안 닫힌다
+    ["hallOfFameFinalized", () => finalizeHallOfFame(prevYm(kstYm(new Date())))],
   ];
   for (const [name, run] of jobs) {
     try {

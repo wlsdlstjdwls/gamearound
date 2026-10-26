@@ -12,7 +12,7 @@ import { readSessionToken, validateSessionToken } from "@/server/auth/session";
 
 export type UserRow = typeof users.$inferSelect;
 /** 클라이언트로 내려보내도 되는 최소 정보 (passwordHash 등 제외) */
-export type PublicUser = Pick<UserRow, "id" | "email" | "displayName" | "role">;
+export type PublicUser = Pick<UserRow, "id" | "email" | "displayName" | "role" | "avatarUrl">;
 
 const ROLES: Role[] = ["user", "game_company", "seller", "admin"];
 export function toRole(v: unknown): Role {
@@ -20,7 +20,7 @@ export function toRole(v: unknown): Role {
 }
 
 export function toPublicUser(u: UserRow): PublicUser {
-  return { id: u.id, email: u.email, displayName: u.displayName, role: u.role };
+  return { id: u.id, email: u.email, displayName: u.displayName, role: u.role, avatarUrl: u.avatarUrl };
 }
 
 /** ADMIN_EMAILS 환경변수에 포함된 이메일이면 admin. MVP 부트스트랩용(외부 인증 대시보드 없이 승격) */
@@ -95,6 +95,11 @@ export const getCurrentUser = cache(async (): Promise<UserRow | null> => {
 });
 
 /** 로그인 필수. 아니면 throw (Server Action 내부 재검증 §6) */
+/** 프로필 사진 바꾸기(null = 기본 그림). 예전 파일은 지우지 않는다 — 아직 다른 화면 캐시가 그 주소를 들고 있을 수 있다 */
+export async function setAvatar(userId: string, url: string | null): Promise<void> {
+  await getDb().update(users).set({ avatarUrl: url, updatedSource: "user", updatedBy: userId, updatedAt: new Date() }).where(eq(users.id, userId));
+}
+
 export async function requireUser(): Promise<UserRow> {
   const u = await getCurrentUser();
   if (!u) throw new Error(AUTH_MESSAGES.loginRequired);

@@ -1,9 +1,43 @@
-// 개편 1단계의 자리표시(components/coming-soon). 화면이 생기면 이 파일을 갈아엎는다.
-import { ComingSoon, comingSoonMetadata } from "@/components/coming-soon";
+// 슈퍼루키(기획서 v2.0 S-09): 승인된 지 30일 미만인 인디 게임 중 주목도 상위 12개. 더보기, 쪽 번호 없이 이 화면에서만 선다.
+// 점수는 lib/indie/fame 머리 주석. 카드마다 "N일 전 등록" 을 붙인다.
+import type { Metadata } from "next";
+import { IndieCard } from "@/components/indie/indie-card";
+import { DbUnavailable } from "@/components/db-unavailable";
+import { EmptyState } from "@/components/empty-state";
+import { Page, PageHead } from "@/components/ui/page";
+import { nullIfDbUnavailable } from "@/lib/db-errors";
+import { FAME_MESSAGES as M } from "@/lib/indie/fame";
+import { stagger } from "@/lib/motion";
 import { ROUTES } from "@/lib/routes";
+import { listRookies } from "@/server/services/indie";
 
-export const metadata = comingSoonMetadata(ROUTES.rookies);
+// 찜, 조회가 쌓이며 순위가 움직이는 화면이라 짧게 캐시한다
+export const revalidate = 300;
 
-export default function Page() {
-  return <ComingSoon href={ROUTES.rookies} />;
+export const metadata: Metadata = { title: M.rookieTitle, description: M.rookieLead };
+
+export default async function RookiesPage() {
+  const rookies = await nullIfDbUnavailable(listRookies());
+  return (
+    <Page gap={22}>
+      <PageHead title={M.rookieTitle} note={M.rookieLead} />
+      {!rookies ? (
+        <DbUnavailable retryHref={ROUTES.rookies} />
+      ) : rookies.length === 0 ? (
+        <EmptyState title={M.rookieEmpty} description={M.rookieEmptyLead} action={{ href: ROUTES.indieNew, label: M.rookieCta }} />
+      ) : (
+        <ul className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+          {rookies.map((r, i) => (
+            <li key={r.card.slug} className="enter-item flex flex-col gap-2" style={stagger(i)}>
+              <IndieCard post={r.card} />
+              <p className="flex justify-between px-1 text-[12.5px] text-dim">
+                <span className="font-semibold text-acc">{M.daysAgo(r.daysSince)}</span>
+                <span>{M.likes(r.likes)}</span>
+              </p>
+            </li>
+          ))}
+        </ul>
+      )}
+    </Page>
+  );
 }

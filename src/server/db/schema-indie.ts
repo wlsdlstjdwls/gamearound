@@ -68,6 +68,9 @@ export const indiePosts = pgTable("indie_posts", {
   reviewReason: text("review_reason"),
   /** 마지막 판정 시각. 슈퍼루키의 "등록 30일" 은 승인 시각부터 센다 */
   reviewedAt: timestamp("reviewed_at", { withTimezone: true }),
+  /** 상세 조회 수와 찜 수(2026-10-26). 명예의 전당, 슈퍼루키 점수의 재료다 — 쌓아 둔 값이라 줄 세울 때 집계가 안 돈다 */
+  viewCount: integer("view_count").default(0).notNull(),
+  likeCount: integer("like_count").default(0).notNull(),
   ...auditColumns(),
 }, (t) => [
   // 공개 목록은 published 를 최신순으로 본다
@@ -115,3 +118,30 @@ export const indiePostImagesRelations = relations(indiePostImages, ({ one }) => 
 export const indiePostReportsRelations = relations(indiePostReports, ({ one }) => ({
   post: one(indiePosts, { fields: [indiePostReports.postId], references: [indiePosts.id] }),
 }));
+
+/** 인디 게임 찜(2026-10-26). 게임 찜(wishlists)은 카탈로그 games 를 가리켜서 따로 둔다. 찜한 시각이 월별 점수의 재료다 */
+export const indiePostLikes = pgTable("indie_post_likes", {
+  postId: uuid("post_id").references(() => indiePosts.id, { onDelete: "cascade" }).notNull(),
+  userId: uuid("user_id").references(() => users.id, { onDelete: "cascade" }).notNull(),
+  ...auditColumns(),
+}, (t) => [primaryKey({ columns: [t.postId, t.userId] }), index("indie_post_likes_created_idx").on(t.createdAt)]);
+
+/**
+ * 달마다 쌓는 조회 수(명예의 전당은 "그 달의 반응" 으로 줄 세운다). 조회 한 번마다 행을 남기면 표가 끝없이 자라서
+ * 글, 달 한 칸에 수만 올린다. ym 은 한국 달("2026-10")
+ */
+export const indieViewMonths = pgTable("indie_view_months", {
+  postId: uuid("post_id").references(() => indiePosts.id, { onDelete: "cascade" }).notNull(),
+  ym: text("ym").notNull(),
+  views: integer("views").default(0).notNull(),
+  ...auditColumns(),
+}, (t) => [primaryKey({ columns: [t.postId, t.ym] })]);
+
+/** 달이 끝나면 확정한 명예의 전당 TOP 10(기획서 v2.0 8장 HallOfFameMonth). 이번 달은 저장하지 않고 실시간으로 센다 */
+export const hallOfFameMonths = pgTable("hall_of_fame_months", {
+  ym: text("ym").notNull(),
+  rank: integer("rank").notNull(),
+  postId: uuid("post_id").references(() => indiePosts.id, { onDelete: "cascade" }).notNull(),
+  score: integer("score").notNull(),
+  ...auditColumns(),
+}, (t) => [primaryKey({ columns: [t.ym, t.rank] })]);

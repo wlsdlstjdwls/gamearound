@@ -5,7 +5,8 @@
 // SQL 로 후보를 좁힌 뒤 같은 판정 함수(meetsCondition)로 한 번 더 거른다 — 화면의 "지금 조건에 맞아요" 와 발송이 갈리지 않게.
 import { and, eq, or, isNull, isNotNull } from "drizzle-orm";
 import { getDb } from "@/server/db/client";
-import { alertDeliveries, gamePlatforms, games, priceAlerts, pushSubscriptions, users } from "@/server/db/schema";
+import { alertDeliveries, gamePlatforms, games, notifications, priceAlerts, pushSubscriptions, users } from "@/server/db/schema";
+import { NOTIFICATION_MESSAGES } from "@/lib/notifications/messages";
 import { mailConfigured, sendMail } from "@/server/mail/send";
 import { SITE } from "@/lib/site";
 import { markOnce } from "@/server/redis";
@@ -108,6 +109,13 @@ export async function dispatchPriceAlerts(changes: PriceChange[]): Promise<Dispa
         summary.deduped++;
         continue;
       }
+
+      // 알림함(헤더 종)에도 한 줄 남긴다 — 푸시를 못 받은 기기에서도 사이트 안에서 다시 읽힌다.
+      // services/notifications 를 부르지 않고 바로 넣는 이유: 그 파일은 세션(쿠키)을 읽어서 수집 실행(tsx)에서 import 할 수 없다
+      await db
+        .insert(notifications)
+        .values({ userId: alert.userId, kind: "price_drop", body: NOTIFICATION_MESSAGES.priceDrop(title, formatPrice(change.newPrice, gp.currency)), link: payload.url, createdSource: "cron:alerts", updatedSource: "cron:alerts" })
+        .catch((e) => console.warn(`[alerts] 알림함 기록 실패 (alert=${alert.id}): ${e instanceof Error ? e.message : e}`));
 
       if (alert.channel === "email" && mailConfigured()) {
         const [u] = await db.select({ email: users.email }).from(users).where(eq(users.id, alert.userId));

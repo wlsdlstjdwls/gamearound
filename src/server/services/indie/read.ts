@@ -17,7 +17,7 @@ import type { IndieCardDto, IndieDetailDto, IndieGameSectionDto, IndieImageDto, 
 const hasCover = sql<boolean>`exists (select 1 from ${indiePostImages} where ${indiePostImages.postId} = ${indiePosts.id})`;
 
 // 승인된 글만 공개 화면에 선다(2026-10-26, 기획서 v2.0 7.1). 승인 대기, 반려 글은 등록현황에서만 보인다
-const isPublic = and(eq(indiePosts.status, "published"), eq(indiePosts.review, "approved"), hasCover);
+export const isPublic = and(eq(indiePosts.status, "published"), eq(indiePosts.review, "approved"), hasCover);
 
 /** 글 id 들의 그림을 순서대로. 왕복 하나로 모은다 — 카드마다 묻지 않는다 */
 async function imagesFor(postIds: string[]): Promise<Map<string, IndieImageDto[]>> {
@@ -42,7 +42,7 @@ async function imagesFor(postIds: string[]): Promise<Map<string, IndieImageDto[]
   return map;
 }
 
-const cardColumns = {
+export const cardColumns = {
   id: indiePosts.id,
   slug: indiePosts.slug,
   title: indiePosts.title,
@@ -52,9 +52,9 @@ const cardColumns = {
   platforms: indiePosts.platforms,
 };
 
-type CardRow = { id: string; slug: string; title: string; tagline: string; developerName: string; stage: IndieStage; platforms: string[] };
+export type CardRow = { id: string; slug: string; title: string; tagline: string; developerName: string; stage: IndieStage; platforms: string[] };
 
-async function toCards(rows: CardRow[]): Promise<IndieCardDto[]> {
+export async function toCards(rows: CardRow[]): Promise<IndieCardDto[]> {
   const images = await imagesFor(rows.map((r) => r.id));
   return rows.flatMap(({ id, platforms, ...r }) => {
     const cover = images.get(id)?.[0];
@@ -133,6 +133,7 @@ export async function getIndiePostBySlug(slug: string): Promise<IndieDetailDto |
     statusReason: p.statusReason,
     review: p.review,
     reviewReason: p.reviewReason,
+    likeCount: p.likeCount,
     createdAt: p.createdAt.toISOString(),
   };
 }

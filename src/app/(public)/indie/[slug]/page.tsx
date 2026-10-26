@@ -11,6 +11,8 @@ import { DB_DOWN, orDbDown } from "@/lib/db-errors";
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import { IndieLikeButton } from "@/components/indie/like-button";
+import { recordIndieView } from "@/server/services/indie";
 import { CoverImage } from "@/components/game-card";
 import { IndieReportButton } from "@/components/indie/report-button";
 import { BackLink } from "@/components/ui/back-link";
@@ -53,6 +55,8 @@ export default async function IndieDetailPage({ params }: Props) {
   const canEdit = viewer !== null && (viewer.id === post.authorUserId || viewer.role === "admin");
   // 승인 전(대기, 반려) 글도 숨긴 글처럼 글쓴이와 관리자만 본다(기획서 v2.0 7.1)
   if ((post.status !== "published" || post.review !== "approved") && !canEdit) notFound();
+  // 공개 글 조회 한 번(명예의 전당, 슈퍼루키의 재료). 글쓴이 본인 조회는 서비스가 거른다. 실패해도 화면은 선다
+  if (post.review === "approved" && post.status === "published") await recordIndieView(post.id, post.authorUserId).catch(() => {});
 
   const [cover, ...shots] = post.images;
   const info: Array<{ label: string; value: string | null }> = [
@@ -233,6 +237,8 @@ export default async function IndieDetailPage({ params }: Props) {
               <span className="sr-only">{M.newWindow}</span>
             </a>
           )}
+
+          {post.review === "approved" && <IndieLikeButton postId={post.id} likeCount={post.likeCount} />}
 
           <div className="flex items-center justify-end gap-3 border-t border-line pt-3 text-[12.5px]">
             {canEdit && (

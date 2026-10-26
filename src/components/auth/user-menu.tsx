@@ -17,6 +17,7 @@ type MenuLink = { href: string; label: string; adminOnly?: boolean };
 
 const MENU_LINKS: MenuLink[] = [
   // 기획서 v2.0(3.1) 순서: 내 활동, 내 찜 목록, 가격 알림, 로그아웃. 찜은 2026-09-21 에 숨겼다가 기획서가 되살렸다
+  { href: ROUTES.me, label: "내 활동" },
   { href: ROUTES.wishlist, label: "내 찜 목록" },
   { href: ROUTES.alerts, label: "가격 알림" },
   { href: ROUTES.settings, label: "설정" },
@@ -103,8 +104,10 @@ export function UserMenu({ user }: { user: PublicUser }) {
           open ? "border-ink" : "border-line-strong hover:border-ink",
         )}
       >
-        <span aria-hidden className="flex h-[30px] w-[30px] items-center justify-center rounded-full bg-surface-3 text-[12px] font-bold text-ink-2">
-          {initialOf(user)}
+        <span aria-hidden className="flex h-[30px] w-[30px] items-center justify-center overflow-hidden rounded-full bg-surface-3 text-[12px] font-bold text-ink-2">
+          {/* 프로필 사진(내 활동에서 바꾼다). 없으면 이름 첫 글자 */}
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          {user.avatarUrl ? <img src={user.avatarUrl} alt="" className="size-full object-cover" /> : initialOf(user)}
         </span>
         <span className="hidden max-w-[7rem] text-[13px] font-medium text-ink sm:block">
           <Clamp>{name}</Clamp>

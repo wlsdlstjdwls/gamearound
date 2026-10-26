@@ -2,3 +2,4 @@
 export * from "./read";
 export * from "./write";
 export * from "./moderation";
+export * from "./fame";

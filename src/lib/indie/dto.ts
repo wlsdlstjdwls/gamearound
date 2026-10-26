@@ -40,6 +40,7 @@ export type IndieDetailDto = {
   statusReason: string | null;
   review: IndieReview;
   reviewReason: string | null;
+  likeCount: number;
   createdAt: string;
 };
 

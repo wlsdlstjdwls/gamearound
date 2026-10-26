@@ -639,6 +639,8 @@ export const users = pgTable("users", {
   role: roleEnum("role").default("user").notNull(),
   displayName: text("display_name"),
   emailVerifiedAt: timestamp("email_verified_at", { withTimezone: true }),
+  /** 프로필 사진(2026-10-26, 기획서 v2.0 S-24). Vercel Blob 주소. null 이면 기본 그림(닉네임 첫 글자) */
+  avatarUrl: text("avatar_url"),
   ...auditColumns(),
 });
 

@@ -15,6 +15,9 @@ export const ROUTES = {
   forgotPassword: "/forgot-password",
   resetPassword: "/reset-password",
   wishlist: "/wishlist",
+  /** 내 활동(기획서 v2.0 S-24): 프로필 사진, 내가 쓴 글, 저장한 글 */
+  me: "/me",
+  apiAvatarUpload: "/api/me/avatar/upload",
   alerts: "/alerts",
   settings: "/settings",
   /**

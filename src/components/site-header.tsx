@@ -7,9 +7,8 @@ import { BrandLockup } from "@/components/ui/logo";
 import { SearchBox, SearchBoxFallback } from "@/components/search-box";
 import { SiteMenu } from "@/components/site-menu";
 import { SiteNav, SiteNavFallback } from "@/components/site-nav";
-import { SiteNavLink } from "@/components/site-nav-link";
+import { NotificationBell } from "@/components/notification-bell";
 import { SubNav } from "@/components/sub-nav";
-import { BellIcon } from "@/components/ui/icons";
 
 /**
  * 머리띠 + 하위 메뉴 띠(2026-10-26 개편, 기획서 v2.0 3.1, 4.3).
@@ -42,11 +41,8 @@ export function SiteHeader() {
           </Suspense>
 
           <div className="hidden shrink-0 items-center gap-1.5 sm:flex">
-            {/* 위시리스트는 메뉴에서 숨겼다(2026-09-21, 사용자 결정). 화면(/wishlist)과 자료는 그대로라
-                주소로는 열린다 — 되살릴 때는 이 줄과 site-menu, auth/user-menu, 게임 상세의 찜 버튼을 같이 되돌린다 */}
-            <SiteNavLink href={ROUTES.alerts} icon={<BellIcon size={19} />} iconOnly>
-              알림
-            </SiteNavLink>
+            {/* 종은 알림함 팝오버다(기획서 v2.0 M-03). 가격 알림 관리로 가는 길은 팝오버 맨 아래에 있다 */}
+            <NotificationBell />
             <AuthNav />
           </div>
 

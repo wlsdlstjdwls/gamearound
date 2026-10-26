@@ -449,6 +449,13 @@
       "when": 1792980742136,
       "tag": "0063_nostalgic_king_cobra",
       "breakpoints": true
+    },
+    {
+      "idx": 64,
+      "version": "7",
+      "when": 1792981357698,
+      "tag": "0064_wide_black_bolt",
+      "breakpoints": true
     }
   ]
 }

@@ -31,6 +31,7 @@ type MenuLink = { href: string; label: string; icon?: React.ReactNode; authOnly?
 
 /** 메뉴 넷 아래에 서는 내 자리. 찜은 2026-09-21 에 숨겼다가 기획서 v2.0 이 되살렸다 */
 const LINKS: MenuLink[] = [
+  { href: ROUTES.me, label: "내 활동", icon: <SlidersIcon size={17} />, authOnly: true },
   { href: ROUTES.wishlist, label: "내 찜 목록", icon: <HeartIcon size={17} />, authOnly: true },
   { href: ROUTES.alerts, label: "가격 알림", icon: <BellIcon size={17} /> },
   { href: ROUTES.settings, label: "설정", icon: <SlidersIcon size={17} />, authOnly: true },
