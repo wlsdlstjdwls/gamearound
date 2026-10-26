@@ -11,6 +11,17 @@ import { ROUTES } from "@/lib/routes";
 /** 달을 고르는 주소 값의 이름 */
 export const UPCOMING_MONTH_PARAM = "month";
 
+/** 보기 방식 주소 값(기획서 v2.0 S-03 전체/월별 전환). 월별이 기본이라 주소에 없으면 월별이다 */
+export const UPCOMING_VIEW_PARAM = "view";
+export const UPCOMING_VIEW_ALL = "all";
+
+/** 전체 보기 주소. 첫 장은 꼬리를 붙이지 않는다 */
+export function upcomingAllHref(page = 1): string {
+  const params = new URLSearchParams({ [UPCOMING_VIEW_PARAM]: UPCOMING_VIEW_ALL });
+  if (page > 1) params.set("page", String(page));
+  return `${ROUTES.upcoming}?${params.toString()}`;
+}
+
 /** 그 달을 세운 출시예정 주소. 첫 달(기본)은 꼬리 없이 둔다 — 같은 화면이 늘 같은 주소여야 캐시가 쪼개지지 않는다 */
 export function upcomingMonthHref(key: string, firstKey: string | undefined): string {
   return key === firstKey ? ROUTES.upcoming : `${ROUTES.upcoming}?${UPCOMING_MONTH_PARAM}=${key}`;

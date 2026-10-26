@@ -23,6 +23,7 @@ import { ImageFallback } from "@/components/ui/image-fallback";
 import { Clamp } from "@/components/ui/tooltip";
 import { PointerParallax } from "@/components/ui/pointer-parallax";
 import { cn } from "@/lib/cn";
+import { WishHeart } from "@/components/wish-heart";
 
 // next.config.ts images.remotePatterns 에 등록된 호스트만 최적화. 그 외는 unoptimized 로 원본 사용(런타임 오류 방지)
 const OPTIMIZABLE_HOSTS = ["cdn.akamai.steamstatic.com", "shared.akamai.steamstatic.com", "cdn.cloudflare.steamstatic.com"];
@@ -192,6 +193,8 @@ export function GameCard({
             <CoverImage src={game.coverUrl} alt={`${title} 커버`} sizes="(max-width: 640px) 100vw, (max-width: 768px) 50vw, 25vw" />
           </span>
         </span>
+        {/* 찜 하트(기획서 v2.0 카드 공통, 목업 카드 오른쪽 위). 제목 링크의 ::after 가 카드를 덮으므로 z-10 으로 그 위에 뜬다 */}
+        <WishHeart slug={game.slug} title={title} className="absolute right-3 top-3 z-10" />
 
         <div className="flex min-w-0 flex-1 flex-col gap-1.5 px-1">
           {/* 제목은 줄 하나를 혼자 쓴다(2026-09-29, 사용자: "가시성이 너무 떨어져") — 두 줄까지 펴고 그 뒤를 자른다.
@@ -214,14 +217,15 @@ export function GameCard({
 
           {/* 장르 부제는 장르로 거를 때만 선다 — 늘 서 있으면 회색 한 줄이 카드마다 잘린 채 붙어 값보다 먼저 읽혔다.
               거를 때는 "왜 이 게임이 여기 있나" 를 말해 주는 값이라 남긴다(고른 장르만 보라) */}
-          {highlight?.genre && genres.length > 0 && (
+          {/* 장르는 늘 선다(2026-10-26, 기획서 v2.0 카드 공통: 썸네일, 이름, 장르, 플랫폼, 값, 찜). 장르로 거를 때는 고른 장르만 브랜드색 */}
+          {genres.length > 0 && (
             <span className="text-[12.5px] text-dim">
               <Clamp text={genres.join(", ")}>
                 {genres.map((g, i) => (
                   // 쉼표는 색을 입힌 조각 **밖에** 둔다 — 안에 넣으면 고른 장르 앞의 구분자까지 보라가 된다
                   <Fragment key={g}>
                     {i > 0 ? ", " : null}
-                    <span className={g === highlight.genre ? "font-semibold text-acc" : undefined}>{g}</span>
+                    <span className={g === highlight?.genre ? "font-semibold text-acc" : undefined}>{g}</span>
                   </Fragment>
                 ))}
               </Clamp>

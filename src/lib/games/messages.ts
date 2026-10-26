@@ -263,6 +263,16 @@ export const GAMES_FILTER_MESSAGES = {
   sheetTitle: "필터",
   /** 시트 바닥. "닫기" 가 아니라 "결과 보기" 인 이유: 닫는 것이 목적이 아니라 고른 결과를 보는 것이 목적이다 */
   sheetDone: "결과 보기",
+  /** 목록 위 가로 막대(game-filters/bar, 기획서 v2.0 S-02) */
+  listSearchLabel: "이 목록에서 게임 이름 검색",
+  listSearchPlaceholder: "이 목록에서 게임 이름 검색",
+  genreLabel: "장르",
+  allGenres: "전체 장르",
+  platformLabel: "플랫폼",
+  allPlatforms: "전체 플랫폼",
+  sortLabel: "정렬",
+  reset: "필터 초기화",
+  topGenres: "요즘 많이 찾는 장르",
 } as const;
 
 /** 자식 화면에서 본편으로 돌아가는 줄. 부모를 아는 자식에게만 보인다 */
@@ -391,6 +401,14 @@ export const UPCOMING_MESSAGES = {
   /** 달 탭과 따로 서는 DLC 줄(2026-10-12, 사용자: "기다리는 DLC도 좋다") */
   addonsTitle: "기다리는 추가 콘텐츠",
   addonsNote: "인기 게임의 확장팩과 추가 이야기를 날짜순으로 모았어요",
+  /** 보기 전환(기획서 v2.0 S-03, 목업). 기본은 월별 */
+  viewAll: "전체 보기",
+  viewMonth: "월별 보기",
+  viewLabel: "보기 방식",
+  leadMonth: "기대하는 게임의 출시일을 월별로 모아 보세요.",
+  leadAll: "출시 예정 게임을 가까운 날짜부터 한눈에 모아 보세요.",
+  /** 줄 오른쪽 상태 꼬리표 */
+  rowTag: "출시 예정",
   basis: "스토어마다 출시일이 다르면 가장 이른 날짜로 세웠어요. PlayStation 은 출시일을 공개하지 않아 다른 스토어에도 없는 게임은 담기지 않아요.",
 } as const;
 

@@ -30,3 +30,6 @@ export const GAMES_GRID_CLASS = GRID_BASE;
 // 세로 간격이 가로보다 넓은 이유: 카드가 hover 에서 4px 떠오르므로 줄 사이에 그 움직임이 앉을 자리가 필요하다
 /** 기둥 없이 폭을 다 쓰는 격자(홈, 검색, 출시예정, 회사) — 넓은 화면 4열 */
 export const HOME_GRID_CLASS = `${GRID_BASE} lg:grid-cols-4`;
+
+/** 홈 첫 두 줄(카드 넷). 넷이 한 줄에 서야 해서 3열 단계를 건너뛴다 — 3열이면 넷째가 혼자 아랫줄로 떨어진다 */
+export const HOME_FOUR_GRID_CLASS = "grid grid-cols-1 gap-4 sm:grid-cols-2 sm:gap-x-4 md:gap-y-6 lg:grid-cols-4 lg:gap-x-5";

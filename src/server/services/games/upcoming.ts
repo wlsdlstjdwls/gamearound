@@ -145,6 +145,37 @@ async function getUpcomingMonthPageRaw(key: string, page: number): Promise<Upcom
   return { items: await toUpcomingEntries(ranked.rows.slice(0, UPCOMING_PAGE_SIZE)), hasMore };
 }
 
+/**
+ * 출시가 가장 가까운 게임 몇 개(홈 "출시 예정" 줄, 기획서 v2.0 S-01: 출시일이 가까운 순 4개).
+ * 달 탭과 같은 earliest 기준을 쓴다 — 홈 카드와 출시 예정 화면의 날짜가 서로 다른 말을 하지 않게.
+ */
+async function getUpcomingSoonRaw(limit: number): Promise<UpcomingEntry[]> {
+  const res = await getDb().execute<{ game_id: string; release_date: string }>(sql`
+    ${earliestCte()}
+    select game_id, release_date::text as release_date
+    from earliest
+    order by release_date asc, rank asc nulls last, game_id asc
+    limit ${limit}::int
+  `);
+  return toUpcomingEntries(res.rows);
+}
+
+/**
+ * 출시 예정 "전체 보기"(기획서 v2.0 S-03, 목업의 전체/월별 전환) 한 장. 달을 가리지 않고 날짜순으로 이어 읽는다.
+ * 건수는 달 탭의 합으로 세므로(getUpcomingMonths) count 질의를 따로 보내지 않는다.
+ */
+async function getUpcomingAllPageRaw(page: number): Promise<UpcomingEntry[]> {
+  const offset = (Math.max(1, page) - 1) * UPCOMING_PAGE_SIZE;
+  const res = await getDb().execute<{ game_id: string; release_date: string }>(sql`
+    ${earliestCte()}
+    select game_id, release_date::text as release_date
+    from earliest
+    order by release_date asc, rank asc nulls last, game_id asc
+    limit ${UPCOMING_PAGE_SIZE}::int offset ${offset}::int
+  `);
+  return toUpcomingEntries(res.rows);
+}
+
 /** 고른 (게임, 날짜) 순서 그대로 카드 DTO 를 채운다 */
 export async function toUpcomingEntries(dates: { game_id: string; release_date: string }[]): Promise<UpcomingEntry[]> {
   if (dates.length === 0) return [];
@@ -185,6 +216,18 @@ export const getUpcomingMonthPicks = unstable_cache(getUpcomingMonthPicksRaw, [D
 
 /** 한 달의 한 장(기대작 몫은 빼고). 달과 장 번호가 캐시 열쇠에 들어간다(unstable_cache 는 인자를 열쇠에 더한다) */
 export const getUpcomingMonthPage = unstable_cache(getUpcomingMonthPageRaw, [DTO_CACHE_VERSION, "upcoming-month-page"], {
+  tags: ["home"],
+  revalidate: LIST_REVALIDATE_SECONDS,
+});
+
+/** 홈 출시 예정 줄. 달 탭과 같은 태그, 같은 수명 */
+export const getUpcomingSoon = unstable_cache(getUpcomingSoonRaw, [DTO_CACHE_VERSION, "upcoming-soon"], {
+  tags: ["home"],
+  revalidate: LIST_REVALIDATE_SECONDS,
+});
+
+/** 전체 보기 한 장. 장 번호가 캐시 열쇠에 들어간다 */
+export const getUpcomingAllPage = unstable_cache(getUpcomingAllPageRaw, [DTO_CACHE_VERSION, "upcoming-all-page"], {
   tags: ["home"],
   revalidate: LIST_REVALIDATE_SECONDS,
 });

@@ -10,7 +10,8 @@ import { GameCard } from "@/components/game-card";
 import { useSession } from "@/components/auth/session-provider";
 import { stagger } from "@/lib/motion";
 import { ROUTES } from "@/lib/routes";
-import { HOME_GRID_CLASS } from "@/lib/games/grid";
+import { HOME_FOUR_GRID_CLASS } from "@/lib/games/grid";
+import { HOME_TOP_LIMIT } from "@/lib/home/rows";
 import type { GameSummary } from "@/server/services/games";
 
 export function HomeDeals({ initial }: { initial: GameSummary[] }) {
@@ -30,10 +31,11 @@ export function HomeDeals({ initial }: { initial: GameSummary[] }) {
 
   // 로그아웃하면 남의 취향이 남지 않게 공통 줄로 돌아간다 — 렌더에서 가른다(effect 로 비우면 한 번 더 그린다).
   // 받은 줄이 비면(할인이 하나도 없는 순간) 공통 줄을 둔다
-  const items = userId && personal?.length ? personal : initial;
+  // 홈 첫 줄은 넷이다(기획서 v2.0 S-01). 취향 줄도 같은 수로 자른다 — 칸 수가 같아야 갈아 끼울 때 화면이 안 밀린다
+  const items = (userId && personal?.length ? personal : initial).slice(0, HOME_TOP_LIMIT);
 
   return (
-    <ul className={HOME_GRID_CLASS}>
+    <ul className={HOME_FOUR_GRID_CLASS}>
       {items.map((g, i) => (
         <li key={g.slug} className="enter-item" style={stagger(i + 1)}>
           <GameCard game={g} variant="discount" />

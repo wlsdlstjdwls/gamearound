@@ -3,6 +3,20 @@
 // 머리 약속 한 줄("같은 게임, 제일 싼 곳을 찾아 드려요")과 숫자 셋, 가격 알림 입구를 같은 날 걷었다(사용자: "이건 빼라").
 // 홈은 다시 세일 배너, 할인 격자로 시작한다.
 export const HOME_MESSAGES = {
+  /** 히어로(기획서 v2.0 S-01, 목업 v66). 둘째 조각만 브랜드색이다 */
+  heroLead: "이 게임, 지금 어디서",
+  heroAccent: "얼마에?",
+  heroBody: "플랫폼별 가격과 할인 기록, 최신 뉴스를 한 화면에서 확인해요.",
+  heroSearchLabel: "게임 검색",
+  heroSearchPlaceholder: "게임 이름, 장르, 개발사로 찾아보세요",
+  heroSearchCta: "검색",
+  /** 기획서 v2.0 S-01 줄 이름 */
+  todayDealsTitle: "오늘의 할인",
+  upcomingTitle: "출시 예정",
+  upcomingEmpty: "출시일이 잡힌 게임이 아직 없어요.",
+  popularGamesTitle: "인기 게임",
+  genresTitle: "장르 바로가기",
+  more: "더보기",
   discountsTitle: "지금 할인 중",
   storeDealsTitle: "스토어만 바꿔도 더 싸요",
   storeDealsNote: "같은 기기에서 고를 수 있는 스토어끼리 견줬어요",

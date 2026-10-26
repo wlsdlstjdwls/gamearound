@@ -14,3 +14,9 @@ export const HOME_RANK_LIMIT = 10;
  * 실측(2026-10-02): 한국 할인 행 중 이 값 이하가 절반 가까이라 진열 조건을 걸어도 줄이 빈 적이 없다
  */
 export const HOME_BUDGET_PRICE = 10000;
+
+/** 홈 첫 두 줄(오늘의 할인, 출시 예정)의 카드 수 — 기획서 v2.0 S-01 과 목업이 넷이다. 넓은 화면 한 줄 */
+export const HOME_TOP_LIMIT = 4;
+
+/** 장르 바로가기 칩 수. 두 줄 안에 서는 수다 — 나머지는 목록의 장르 드롭다운이 받는다 */
+export const HOME_GENRE_LIMIT = 10;
