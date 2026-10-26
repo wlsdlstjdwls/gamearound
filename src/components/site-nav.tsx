@@ -2,7 +2,7 @@
 // 넓은 화면 머리띠의 상단 메뉴 넷(기획서 v2.0 3.1). 지금 주소가 어느 메뉴 소속인지 표시하려고만 클라이언트다.
 //
 // 표는 lib/nav 하나다 — 하위 메뉴 띠(sub-nav)와 좁은 화면 시트(site-menu)도 같은 표를 읽는다.
-// 켜진 메뉴는 라임 글자만 쓴다. 밑줄은 하위 메뉴 띠의 문법이라 여기서까지 그으면 한 화면에 밑줄이 두 줄 선다.
+// 켜진 메뉴는 브랜드색 글자만 쓴다. 밑줄은 하위 메뉴 띠의 문법이라 여기서까지 그으면 한 화면에 밑줄이 두 줄 선다.
 import Link from "next/link";
 import { usePathname, useSearchParams } from "next/navigation";
 import { cn } from "@/lib/cn";

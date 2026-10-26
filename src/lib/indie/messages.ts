@@ -194,7 +194,7 @@ export const INDIE_ADMIN_MESSAGES = {
   rejectReasonPlaceholder: "반려 사유는 신청한 사람에게 보여요",
 } as const;
 
-/** 등록 승인 상태(기획서 v2.0 4.4: 승인 대기 주황, 등록 완료 라임). 반려는 빨강 */
+/** 등록 승인 상태(기획서 v2.0 4.4: 승인 대기 주황, 등록 완료 라임, 화면에서는 브랜드색). 반려는 빨강 */
 export const INDIE_REVIEW_LABEL = { pending: "승인 대기", approved: "등록 완료", rejected: "반려" } as const;
 export const INDIE_REVIEW_TONE = { pending: "warn", approved: "acc", rejected: "danger" } as const;
 export const INDIE_REVIEW_MESSAGES = {

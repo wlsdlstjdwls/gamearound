@@ -18,7 +18,7 @@ export const CATEGORY_LABEL: Record<PostCategory, string> = {
 
 /**
  * 말머리 색(기획서 7장 "카테고리마다 서로 다른 색"). 토큰 이름만 둔다 — 화면이 bg-{tone}-soft text-{tone} 로 칠한다.
- * 리뷰는 라임(브랜드), 공략은 민트, 홍보는 호박, 라운지 둘은 파랑이다.
+ * 리뷰는 브랜드색, 공략은 민트, 홍보는 호박, 라운지 둘은 파랑이다.
  */
 export const CATEGORY_TONE: Record<PostCategory, "acc" | "ok" | "warn" | "info"> = {
   review: "acc",

@@ -33,7 +33,7 @@ export const SITE = {
   /** 다크(고를 때만)의 바탕. globals.css 다크 블록의 --bg 와 같은 값 */
   backgroundColorDark: "#131923",
   /** 브랜드 악센트. globals.css 의 --acc 와 같은 값 — 로고 몸통, 아이콘 판이 이 색이다 */
-  accentColor: "#5b34c7",
+  accentColor: "#2563eb",
 } as const;
 
 /** 크롤러 User-Agent (설계서 §10: 신원, 연락처 명시) */
