@@ -12,9 +12,12 @@
 // - 작은 별 여섯이 엇갈려 반짝인다(.sparkle). 글자 둘레 바깥에만 둔다 — 글 위에서 깜빡이면 읽기를 방해한다
 // - "얼마에?" 를 스치는 빛이 한 번이 아니라 몇 초마다 다시 지나간다(.glint-loop)
 // - 넓은 화면에서 가격 딱지 셋(-70%, 최저가, 출시 알림)이 판 가장자리에 둥실 떠 있다 — 이 서비스가 무엇을 보여 주는지 그림으로 말한다
+//   단추처럼 생겨 누르는 사람이 있어서(2026-10-27 검수) 각자 그 목록으로 가는 링크다. hover 에 떠오르고 누르면 내려앉는다
 // - 검색 단추 위로 빛이 몇 초에 한 번 비스듬히 스친다(.glint-sweep)
 // 전부 CSS 이고, 움직임 줄이기 설정은 전역 킬스위치가 끈다.
+import Link from "next/link";
 import { BellIcon, SearchIcon } from "@/components/ui/icons";
+import { gamesHref } from "@/lib/games-query";
 import { cn } from "@/lib/cn";
 import { HOME_MESSAGES as M } from "@/lib/home/messages";
 import { ROUTES } from "@/lib/routes";
@@ -33,7 +36,9 @@ const SPARKLES: readonly { top: string; left: string; size: number; delay: numbe
 ];
 
 /** 판 가장자리에 떠 있는 가격 딱지 셋(넓은 화면만). 어긋남이 있어야 셋이 따로 떠다닌다 */
-const FLOAT_CHIP = "soon-float absolute hidden items-center gap-1.5 rounded-full bg-surface px-3 py-1.5 text-[12.5px] font-bold shadow-2 lg:inline-flex";
+const FLOAT_CHIP = "soon-float absolute z-10 hover:[animation-play-state:paused] focus-visible:[animation-play-state:paused] hidden items-center gap-1.5 rounded-full bg-surface px-3 py-1.5 text-[12.5px] font-bold shadow-2 lg:inline-flex";
+/** 딱지 바깥은 hover, 초점에서 떠다니기를 멈춘다 — 움직이는 과녁은 누르기 어렵다. 안쪽 몸통. 떠다니는 움직임(transform)은 바깥 칸이 갖고 있어 hover 부양은 안쪽에 준다 — 한 칸에 두면 서로 덮어쓴다 */
+const CHIP_BODY = "press inline-flex items-center gap-1.5 transition-transform duration-base ease-standard hover:-translate-y-0.5 hover:scale-105";
 
 function Sparkle({ size, className, style }: { size: number; className?: string; style?: React.CSSProperties }) {
   return (
@@ -63,16 +68,18 @@ export function HomeHero() {
       {SPARKLES.map((s) => (
         <Sparkle key={`${s.top}-${s.left}`} size={s.size} style={{ top: s.top, left: s.left, animationDelay: `${s.delay}ms` }} />
       ))}
-      <span aria-hidden className={cn(FLOAT_CHIP, "left-[6%] top-[38%] text-on-ink")} style={{ background: "var(--acc)" }}>
-        {M.heroChipDiscount}
-      </span>
-      <span aria-hidden className={cn(FLOAT_CHIP, "right-[5%] top-[44%] text-acc")} style={{ animationDelay: "1200ms" }}>
-        {M.heroChipLowest}
-      </span>
-      <span aria-hidden className={cn(FLOAT_CHIP, "bottom-[14%] left-[14%] text-ink-2")} style={{ animationDelay: "600ms" }}>
-        <BellIcon size={13} className="text-acc" />
-        {M.heroChipAlert}
-      </span>
+      <Link href={gamesHref({}, { minDiscount: 70 })} aria-label={M.heroChipDiscountLabel} className={cn(FLOAT_CHIP, "left-[6%] top-[38%] text-on-ink")} style={{ background: "var(--acc)" }}>
+        <span className={CHIP_BODY}>{M.heroChipDiscount}</span>
+      </Link>
+      <Link href={gamesHref({}, { onSale: true, sort: "price" })} aria-label={M.heroChipLowestLabel} className={cn(FLOAT_CHIP, "right-[5%] top-[44%] text-acc")} style={{ animationDelay: "1200ms" }}>
+        <span className={CHIP_BODY}>{M.heroChipLowest}</span>
+      </Link>
+      <Link href={ROUTES.upcoming} aria-label={M.heroChipAlertLabel} className={cn(FLOAT_CHIP, "bottom-[14%] left-[14%] text-ink-2")} style={{ animationDelay: "600ms" }}>
+        <span className={CHIP_BODY}>
+          <BellIcon size={13} className="text-acc" />
+          {M.heroChipAlert}
+        </span>
+      </Link>
       <h1 id="home-hero-heading" className="text-[30px] font-extrabold leading-[1.18] tracking-[-0.035em] text-ink sm:text-[44px]">
         {M.heroLead} <span className="glint-text glint-loop">{M.heroAccent}</span>
       </h1>
