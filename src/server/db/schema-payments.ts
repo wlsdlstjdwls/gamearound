@@ -1,0 +1,39 @@
+// 결제 스키마(2026-10-27, docs/기획_인디홍보_상위노출멤버십_2026-10-27.md 5장 3단계, 6장 payments) — 부스트 단건 결제부터.
+//
+// 결제는 토스페이먼츠 결제위젯(2026-10-27 사용자 결정)이다. 흐름: 주문 줄을 pending 으로 먼저 만든다 → 결제창 → 성공 주소로 돌아오면
+// 서버가 금액을 이 줄과 견준 뒤 승인 API 를 부른다 → paid 로 바꾸고 부스트를 건다(boostId). 금액을 이 줄에서 읽는 이유:
+// 결제창에 넘긴 금액은 브라우저를 거쳐 오므로 바꿔치기할 수 있다. 서버가 정한 값과 다르면 승인하지 않는다.
+//
+// 지우지 않는다 — 결제 기록은 환불, 분쟁, 세무의 근거다. 실패한 주문도 사유와 함께 남긴다.
+import { pgTable, pgEnum, uuid, text, integer, timestamp, index } from "drizzle-orm/pg-core";
+import { auditColumns } from "./audit";
+import { users } from "./schema";
+import { promoTargetKindEnum, promotionBoosts } from "./schema-promotions";
+
+/** pending: 결제창에 들어감, paid: 승인 끝, failed: 결제창 실패나 승인 거절, canceled: 환불(후속) */
+export const paymentStatusEnum = pgEnum("payment_status", ["pending", "paid", "failed", "canceled"]);
+export type PaymentStatus = (typeof paymentStatusEnum.enumValues)[number];
+
+export const payments = pgTable("payments", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  /** 토스에 넘기는 주문 번호. 우리가 만들고 결제창, 승인, 조회가 이 값으로 이어진다 */
+  orderId: text("order_id").notNull().unique(),
+  userId: uuid("user_id").references(() => users.id, { onDelete: "restrict" }).notNull(),
+  /** 상품 열쇠(lib/payments/products 의 PRODUCTS). 값이 바뀌어도 이 줄의 amount 가 그때 낸 값이다 */
+  product: text("product").notNull(),
+  /** 원 단위 정수(lib/currency 규칙: 최소 단위 정수) */
+  amount: integer("amount").notNull(),
+  status: paymentStatusEnum("status").default("pending").notNull(),
+  targetKind: promoTargetKindEnum("target_kind").notNull(),
+  targetId: uuid("target_id").notNull(),
+  /** 승인 뒤 건 부스트. 승인은 됐는데 이 칸이 비면 부스트 걸기가 실패한 것 — 관리자 화면에 드러난다 */
+  boostId: uuid("boost_id").references(() => promotionBoosts.id, { onDelete: "set null" }),
+  /** 토스 결제 키. 조회, 취소가 이 값으로 간다 */
+  paymentKey: text("payment_key"),
+  method: text("method"),
+  receiptUrl: text("receipt_url"),
+  approvedAt: timestamp("approved_at", { withTimezone: true }),
+  failCode: text("fail_code"),
+  failMessage: text("fail_message"),
+  ...auditColumns(),
+}, (t) => [index("payments_user_created_idx").on(t.userId, t.createdAt), index("payments_status_idx").on(t.status, t.createdAt)]);
