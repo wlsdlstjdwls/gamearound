@@ -2,14 +2,17 @@
 // 광고 구매 판의 "이것만 / 같이 사기"(2026-10-27 사용자 확정: 인디 게임 부스트, 홍보 글 고정 각 6,900원, 같이 사면 9,900원).
 // 고르면 값과 결제 위젯 금액이 그 자리에서 바뀐다. 같이 사기는 짝이 될 내 공개 글(인디 게임 화면이면 홍보 글, 홍보 고정 화면이면 인디 게임)을 고른다.
 // 짝이 없으면 같이 사기 칸을 잠그고 까닭을 적는다 — 칸을 아예 숨기면 묶음 할인이 있는 줄도 모른다.
+// 묶음은 할인으로 보이게 한다(2026-10-27 사용자): 낱개 둘의 합을 긋고 묶음 값과 "N원 할인" 딱지를 나란히 둔다.
 // 묶음 주문의 주 대상은 늘 인디 게임이다(lib/payments/products) — 홍보 고정 화면에서는 이 화면의 글이 둘째가 된다.
 import { useState } from "react";
 import { BoostCheckout } from "@/components/payments/boost-checkout";
 import { ChoiceCard } from "@/components/ui/choice-card";
 import { FormSelect } from "@/components/ui/select";
 import { formatPrice } from "@/lib/currency";
+import { cn } from "@/lib/cn";
 import { BUNDLE_MESSAGES as B, PAYMENT_MESSAGES as M } from "@/lib/payments/messages";
-import { BUNDLE_SAVING, PRODUCTS, type ProductKey } from "@/lib/payments/products";
+import { BUNDLE_LIST_PRICE, BUNDLE_SAVING, PRODUCTS, type ProductKey } from "@/lib/payments/products";
+import { Tag } from "@/components/ui/tag";
 
 type Props = {
   /** 이 화면의 낱개 상품 */
@@ -20,6 +23,16 @@ type Props = {
   /** 결제 위젯을 그릴 수 있나(키가 있나). 아니면 값만 보이고 준비 중 안내는 바깥이 단다 */
   checkout: { clientKey: string; customerKey: string } | null;
 };
+
+/** 그은 정가(낱개 둘의 합) */
+function ListPrice({ className }: { className?: string }) {
+  return (
+    <s className={cn("font-medium tabular-nums text-dim", className)}>
+      <span className="sr-only">{B.listPrice} </span>
+      {formatPrice(BUNDLE_LIST_PRICE)}
+    </s>
+  );
+}
 
 export function PlanPicker({ product, targetId, pairs, checkout }: Props) {
   const [plan, setPlan] = useState<"single" | "bundle">("single");
@@ -43,13 +56,15 @@ export function PlanPicker({ product, targetId, pairs, checkout }: Props) {
             checked={plan === "bundle"}
             onChange={() => setPlan("bundle")}
             disabled={pairs.length === 0}
-            label={`${B.bundle} ${formatPrice(PRODUCTS.bundle_7d.amount)}`}
-            note={
-              <>
-                {isIndie ? B.bundleNoteIndie : B.bundleNotePin}
-                <span className="ml-1 font-bold text-acc">{B.saving(formatPrice(BUNDLE_SAVING))}</span>
-              </>
+            label={
+              <span className="flex flex-wrap items-baseline gap-x-1.5">
+                {B.bundle}
+                <ListPrice />
+                {formatPrice(PRODUCTS.bundle_7d.amount)}
+                <Tag tone="hot">{B.discount(formatPrice(BUNDLE_SAVING))}</Tag>
+              </span>
             }
+            note={isIndie ? B.bundleNoteIndie : B.bundleNotePin}
           />
         </div>
         {pairs.length === 0 && <p className="text-[12.5px] text-dim">{isIndie ? B.noPromo : B.noIndie}</p>}
@@ -61,8 +76,16 @@ export function PlanPicker({ product, targetId, pairs, checkout }: Props) {
 
       <div className="flex items-baseline justify-between border-t border-line pt-4">
         <span className="text-[14px] text-mut">{M.price}</span>
-        <span key={amount} className="animate-pop text-[22px] font-black tabular-nums text-ink">
-          {formatPrice(amount)}
+        <span className="flex items-baseline gap-2">
+          {bundle && (
+            <>
+              <Tag tone="hot">{B.discount(formatPrice(BUNDLE_SAVING))}</Tag>
+              <ListPrice className="text-[14px]" />
+            </>
+          )}
+          <span key={amount} className="animate-pop text-[22px] font-black tabular-nums text-ink">
+            {formatPrice(amount)}
+          </span>
         </span>
       </div>
 

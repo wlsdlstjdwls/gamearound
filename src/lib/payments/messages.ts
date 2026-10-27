@@ -38,7 +38,9 @@ export const BUNDLE_MESSAGES = {
   bundle: "같이 사기",
   bundleNoteIndie: "내 홍보 글도 홍보 목록 위에 7일 고정해요",
   bundleNotePin: "내 인디 게임도 인디 목록 맨 위에 7일 올려요",
-  saving: (amount: string) => `${amount} 아껴요`,
+  discount: (amount: string) => `${amount} 할인`,
+  /** 그은 정가를 화면 읽기 프로그램이 읽을 때 붙는 말 */
+  listPrice: "정가",
   pickPromo: "같이 고정할 홍보 글",
   pickIndie: "같이 올릴 인디 게임",
   noPromo: "공개 중인 내 홍보 글이 없어요. 게시판 홍보에 글을 쓰면 같이 살 수 있어요",

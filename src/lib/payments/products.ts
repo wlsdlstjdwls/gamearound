@@ -21,8 +21,10 @@ export function isProductKey(v: string): v is ProductKey {
   return Object.hasOwn(PRODUCTS, v);
 }
 
-/** 묶음으로 사면 아끼는 금액 — 낱개 둘의 합과 묶음 값의 차이. 구매 화면이 "N원 아껴요" 로 말한다 */
-export const BUNDLE_SAVING = PRODUCTS.boost_indie_7d.amount + PRODUCTS.pin_promo_7d.amount - PRODUCTS.bundle_7d.amount;
+/** 묶음의 정가 — 낱개 둘을 따로 샀을 때의 합. 구매 화면이 이 값을 긋고 묶음 값을 옆에 둔다 */
+export const BUNDLE_LIST_PRICE = PRODUCTS.boost_indie_7d.amount + PRODUCTS.pin_promo_7d.amount;
+/** 묶음 할인 금액. 구매 화면이 "N원 할인" 으로 말한다(2026-10-27 사용자: 혜택이 할인으로 보이게) */
+export const BUNDLE_SAVING = BUNDLE_LIST_PRICE - PRODUCTS.bundle_7d.amount;
 
 /** 이용권으로 걸 수 있는 상품인가(자리 하나짜리) */
 export function isSingleProduct(key: ProductKey): boolean {
