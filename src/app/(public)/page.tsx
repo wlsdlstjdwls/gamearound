@@ -1,30 +1,28 @@
-// 홈(기획서 v2.0 S-01, 목업 v66) — 히어로, 오늘의 할인 4, 출시 예정 4, 인기 게임과 장르 바로가기 (풀 라우트 캐시 1h + 태그 home)
+// 홈(기획서 v2.0 S-01, 목업 v66) — 히어로, 오늘의 할인 4, 출시 예정 4, 그 아래 스토어 차이와 인디 줄 (풀 라우트 캐시 1h + 태그 home)
 //
 // 2026-10-26 목업 순서로 다시 세웠다(사용자: "메인화면도 목업이랑 다르다", "모든 화면 최대한 동일하게").
-// 10-02 재구성의 줄들(스토어 차이, 인디, 곧 마감과 뉴스)은 목업 네 마디 아래에 남긴다 — 이 서비스가 모은 값이라서다.
+// 10-02 재구성의 줄들(스토어 차이, 인디)은 목업 마디 아래에 남긴다 — 이 서비스가 모은 값이라서다.
+// 2026-10-27 사용자 지시로 인기 게임 순위와 장르 바로가기, 곧 할인 마감, 뉴스 줄을 홈에서 걷었다("없애주라").
+// 인기 순위와 장르는 기획서 S-01 의 "인기 게임·장르" 항목이지만 사용자가 뺐다 — 다시 세우지 않는다.
+// 부품(home/ranking, home/ending-soon, news-list)과 HomeData 의 popular, endingSoon, latestNews 는 남겨 두었다 — 되살리면 마디만 다시 얹는다.
 // 만 원 이하 줄과 최근 출시 줄은 내렸다: 앞의 할인 줄과 출시 예정 줄이 같은 질문에 답한다.
 import Link from "next/link";
 import { GameCard } from "@/components/game-card";
-import { NewsList } from "@/components/news-list";
 import { HomeDeals } from "@/components/home-deals";
 import { EmptyState } from "@/components/empty-state";
 import { DbUnavailable } from "@/components/db-unavailable";
 import { Page, SectionHead } from "@/components/ui/page";
 import { Rail } from "@/components/ui/rail";
-import { HomeRanking } from "@/components/home/ranking";
 import { HomeHero } from "@/components/home/hero";
-import { ChipLink } from "@/components/ui/chip";
 import { cn } from "@/lib/cn";
 import { HOME_FOUR_GRID_CLASS, HOME_FOUR_ITEM_CLASS } from "@/lib/games/grid";
-import { HOME_GENRE_LIMIT, HOME_TOP_LIMIT } from "@/lib/home/rows";
-import { gamesHref } from "@/lib/games-query";
+import { HOME_TOP_LIMIT } from "@/lib/home/rows";
 import { formatReleaseDay } from "@/lib/format";
-import { EndingSoonList } from "@/components/home/ending-soon";
 import { HOME_MESSAGES as M } from "@/lib/home/messages";
 import { homeDbFailure, type HomeDbFailure } from "@/lib/home/db-failure";
 import { stagger } from "@/lib/motion";
 import { ROUTES } from "@/lib/routes";
-import { getGameFacets, getHomeData, getUpcomingSoon, listGames, type UpcomingEntry } from "@/server/services/games";
+import { getHomeData, getUpcomingSoon, listGames, type UpcomingEntry } from "@/server/services/games";
 import type { GameSummary } from "@/server/services/games/dto";
 import { getRunningSteamSale, type RunningSaleDto } from "@/server/services/sales";
 import { HomeSaleBanner, SALE_BANNER_PREVIEW } from "@/components/home-sale-banner";
@@ -96,22 +94,10 @@ async function loadUpcoming(): Promise<UpcomingEntry[]> {
   }
 }
 
-/** 장르 바로가기 — 게임이 많이 붙은 장르부터. 실패하면 칩이 안 선다 */
-async function loadGenres(): Promise<string[]> {
-  try {
-    const facets = await getGameFacets();
-    return facets.genres.slice(0, HOME_GENRE_LIMIT).map((g) => g.name);
-  } catch (e) {
-    console.error("[home] 장르 조회 실패:", e instanceof Error ? e.message : String(e));
-    return [];
-  }
-}
-
 export default async function HomePage() {
   // 두 조회는 서로 기다릴 이유가 없다 — 줄 세우면 Neon 왕복이 둘이 된다
-  const [{ data, dbFailure }, runningSale, indie, upcoming, genres] = await Promise.all([loadHomeData(), loadRunningSale(), loadIndie(), loadUpcoming(), loadGenres()]);
-  // 곧 끝나는 할인은 서버가 따로 골라 준다 — 위 줄과 겹치지 않아야 해서다(services/games/home 주석)
-  const { discounts, endingSoon, latestNews, storeDeals, popular } = data;
+  const [{ data, dbFailure }, runningSale, indie, upcoming] = await Promise.all([loadHomeData(), loadRunningSale(), loadIndie(), loadUpcoming()]);
+  const { discounts, storeDeals } = data;
 
   // DB 가 안 열린 날에는 줄을 하나도 세우지 않는다. 빈 줄은 "할인 마감이 없어요", "뉴스가 없어요" 처럼 사실이 아닌 말을 한다
   if (dbFailure) {
@@ -160,36 +146,10 @@ export default async function HomePage() {
         )}
       </section>
 
-      {/* 3 — 인기 게임과 장르 바로가기(기획서 v2.0 S-01 "인기 게임, 장르"). 순위는 번호 목록, 장르는 칩 */}
-      {(popular.length > 0 || genres.length > 0) && (
-        <section className="grid items-start gap-x-12 gap-y-10 lg:grid-cols-[minmax(0,1.6fr)_minmax(0,1fr)]">
-          {popular.length > 0 && (
-            <div className="flex min-w-0 flex-col gap-3">
-              <SectionHead id="popular-heading" title={M.popularGamesTitle} note={M.popularNote} action={<SeeAll href={ROUTES.game} label={M.more} />} />
-              <HomeRanking games={popular} />
-            </div>
-          )}
-          {genres.length > 0 && (
-            <nav aria-labelledby="genres-heading" className="flex min-w-0 flex-col gap-3">
-              <SectionHead id="genres-heading" title={M.genresTitle} />
-              <ul className="flex flex-wrap gap-2">
-                {genres.map((g) => (
-                  <li key={g}>
-                    <ChipLink href={gamesHref({ genre: g })} outline>
-                      {g}
-                    </ChipLink>
-                  </li>
-                ))}
-              </ul>
-            </nav>
-          )}
-        </section>
-      )}
-
-      {/* 4 — 스토어만 바꿔도 더 싼 게임. 카드마다 초록 판정 줄이 "어디서 얼마" 를 말한다(lib/games/saving) */}
+      {/* 3 — 스토어만 바꿔도 더 싼 게임. 카드마다 초록 판정 줄이 "어디서 얼마" 를 말한다(lib/games/saving) */}
       <RailSection id="store-deals" title={M.storeDealsTitle} note={M.storeDealsNote} games={storeDeals} />
 
-      {/* 5 — 인디 개발자가 직접 올린 게임. 몇 장 안 되면 줄째 안 선다(lib/indie/constants 의 INDIE_HOME_MIN) */}
+      {/* 4 — 인디 개발자가 직접 올린 게임. 몇 장 안 되면 줄째 안 선다(lib/indie/constants 의 INDIE_HOME_MIN) */}
       {indie.length > 0 && (
         <section aria-labelledby="indie-heading" className="flex flex-col gap-3">
           <SectionHead id="indie-heading" title={INDIE_MESSAGES.homeTitle} note={INDIE_MESSAGES.homeNote} action={<SeeAll href={ROUTES.indie} />} />
@@ -197,23 +157,6 @@ export default async function HomePage() {
         </section>
       )}
 
-      {/* 6 — 곧 끝나는 할인 / 최신 뉴스.
-          min() 을 씌우는 이유: auto-fit 의 minmax 는 화면이 그 값보다 좁아도 칸을 줄이지 않는다.
-          320px 기기에서 360px 칸 + 좌우 여백이 화면을 넘어 홈 전체가 가로로 밀렸다. items-start: 두 기둥이 서로의 키를 따라가지 않게 한다 */}
-      <section className="grid grid-cols-[repeat(auto-fit,minmax(min(360px,100%),1fr))] items-start gap-x-12 gap-y-10">
-        <div className="enter-item flex flex-col gap-3.5" style={stagger(0)}>
-          <SectionHead title={M.endingSoonTitle} />
-          {endingSoon.length === 0 ? (
-            <p className="border-t border-line-strong py-5 text-[13px] text-dim">{M.endingSoonEmpty}</p>
-          ) : (
-            <EndingSoonList games={endingSoon} />
-          )}
-        </div>
-        <div className="enter-item flex flex-col gap-3.5" style={stagger(1)}>
-          <SectionHead title={M.newsTitle} action={<SeeAll href={ROUTES.news} />} />
-          <NewsList items={latestNews} showGame />
-        </div>
-      </section>
     </Page>
   );
 }
