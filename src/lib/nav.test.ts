@@ -20,6 +20,13 @@ describe("resolveNav", () => {
     expect(resolveNav("/indie/some-game", q()).sub?.label).toBe("내가 만든 게임");
   });
 
+  it("광고 걸기, 플레이테스트 관리는 통계 화면에서 들어와 내 게임 통계를 켠다", () => {
+    expect(resolveNav("/indie/mine/abc/boost", q()).sub?.label).toBe("내 게임 통계");
+    expect(resolveNav("/indie/mine/abc/playtest", q()).sub?.label).toBe("내 게임 통계");
+    // 고치기(/indie/mine/<id>)는 그대로 등록현황
+    expect(resolveNav("/indie/mine/abc", q()).sub?.label).toBe("등록현황");
+  });
+
   it("라운지 전체 글은 라운지 홈을 켠다(목업 subOf lga)", () => {
     expect(resolveNav("/lounge/all", q("page=2")).sub?.label).toBe("라운지 홈");
     expect(trailKind("/lounge/all", resolveNav("/lounge/all", q()).sub)).toBe("sub");

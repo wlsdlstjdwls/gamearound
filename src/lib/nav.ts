@@ -8,7 +8,7 @@
 // 아직 화면이 없는 칸(게시판, 라운지, 명예의 전당, 슈퍼루키)도 메뉴에는 선다 — 누르면 "준비 중" 화면이다.
 import { gamesHref } from "@/lib/games-query";
 import { INDIE_FROM, INDIE_FROM_PARAM } from "@/lib/indie/query";
-import { ROUTES } from "@/lib/routes";
+import { INDIE_MINE_LEAF, ROUTES } from "@/lib/routes";
 
 /** 게임 게시판 글쓰기 화면(app/(user)/board/write). 경로 표시와 칸 켜기가 같은 값을 본다 */
 const BOARD_WRITE_PATH = `${ROUTES.board}/write`;
@@ -36,6 +36,11 @@ export type NavSub = {
    * 목업(mgDetail 의 S.mgf, secOf, subOf)은 들어온 곳(명예의 전당, 슈퍼루키, 등록현황)의 칸을 켠다 — 출처는 ?from= 이다(lib/indie/query)
    */
   childQueries?: readonly { parent: string; query: Record<string, string> }[];
+  /**
+   * <parent>/<id>/<leaf> 꼴 화면을 이 칸에 붙인다. 광고 걸기(/indie/mine/<id>/boost)는 내 게임 통계 화면의 단추로만 들어오는데,
+   * 이 규칙이 없으면 /indie/mine 아래라 가장 긴 경로 규칙에 따라 "등록현황" 이 켜진다
+   */
+  childLeaves?: readonly { parent: string; leaf: string }[];
 };
 
 export type NavSection = {
@@ -97,7 +102,16 @@ export const NAV_SECTIONS: readonly NavSection[] = [
       { label: "질문, 피드백", href: ROUTES.loungeQna },
       { label: "등록현황", href: ROUTES.indieMine, childQueries: [{ parent: ROUTES.indie, query: { [INDIE_FROM_PARAM]: INDIE_FROM.mine } }] },
       // 광고 성과, 결제 내역, 멤버십은 통계 머리에서 들어가는 화면이다 — 별칭이 없으면 /indie/mine 아래라 "등록현황" 이 켜진다
-      { label: "내 게임 통계", href: ROUTES.indieStats, aliases: [ROUTES.indieAds, ROUTES.indiePayments, ROUTES.membership] },
+      // 광고 걸기, 플레이테스트 관리도 통계 화면의 게임 줄 단추로 들어온다
+      {
+        label: "내 게임 통계",
+        href: ROUTES.indieStats,
+        aliases: [ROUTES.indieAds, ROUTES.indiePayments, ROUTES.membership],
+        childLeaves: [
+          { parent: ROUTES.indieMine, leaf: INDIE_MINE_LEAF.boost },
+          { parent: ROUTES.indieMine, leaf: INDIE_MINE_LEAF.playtest },
+        ],
+      },
     ],
   },
 ];
@@ -192,6 +206,12 @@ function childOf(pathname: string, parent: string): boolean {
   return rest !== "" && !rest.includes("/");
 }
 
+/** <parent>/<id>/<leaf> 인가(/indie/mine/abc/boost 는 맞고 /indie/mine/boost, /indie/mine/a/b/boost 는 아니다) */
+function leafOf(pathname: string, parent: string, leaf: string): boolean {
+  const tail = `/${leaf}`;
+  return pathname.endsWith(tail) && childOf(pathname.slice(0, -tail.length), parent);
+}
+
 function pathOf(href: string): string {
   const q = href.indexOf("?");
   return q === -1 ? href : href.slice(0, q);
@@ -217,7 +237,8 @@ export function resolveNav(pathname: string, query: Query): { section: NavSectio
       (s) =>
         s.aliases?.includes(pathname) ||
         s.aliasQueries?.some((a) => a.path === pathname && matches(a.query)) ||
-        s.childQueries?.some((c) => childOf(pathname, c.parent) && matches(c.query)),
+        s.childQueries?.some((c) => childOf(pathname, c.parent) && matches(c.query)) ||
+        s.childLeaves?.some((c) => leafOf(pathname, c.parent, c.leaf)),
     );
     if (sub) return { section, sub };
   }

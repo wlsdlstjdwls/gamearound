@@ -217,14 +217,17 @@ export function indieStatsDetailPath(id: string): string {
   return `${ROUTES.indieStats}/${encodeURIComponent(id)}`;
 }
 
+/** /indie/mine/<id> 아래 끝 칸 이름. 메뉴 소속(lib/nav 의 childLeaves)이 같은 이름을 본다 */
+export const INDIE_MINE_LEAF = { playtest: "playtest", boost: "boost" } as const;
+
 /** 내 인디 게임 플레이테스트 모집 관리 */
 export function indiePlaytestPath(id: string): string {
-  return `${ROUTES.indieMine}/${encodeURIComponent(id)}/playtest`;
+  return `${ROUTES.indieMine}/${encodeURIComponent(id)}/${INDIE_MINE_LEAF.playtest}`;
 }
 
 /** 내 인디 게임에 광고 걸기(결제) */
 export function indieBoostPath(id: string): string {
-  return `${ROUTES.indieMine}/${encodeURIComponent(id)}/boost`;
+  return `${ROUTES.indieMine}/${encodeURIComponent(id)}/${INDIE_MINE_LEAF.boost}`;
 }
 
 /** 내 홍보 글을 게시판 홍보 목록 위에 고정(결제). 게시판 글 주소(/board/promos/p/<id>)는 공개 화면이라 그 아래에 두지 않는다 */
