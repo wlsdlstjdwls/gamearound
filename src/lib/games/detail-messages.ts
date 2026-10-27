@@ -46,6 +46,9 @@ export const DETAIL_MESSAGES = {
   forecastConfirmed: "공지된 일정이에요.",
   forecastEstimated: "예년 일정으로 추정했어요.",
   forecastAlert: "알림 설정하기",
+  /** 히어로의 게시판 링크(game-detail/posts-link) */
+  postsLink: (n: number) => `이 게임 리뷰와 공략 ${n.toLocaleString("ko-KR")}개 보기`,
+  postsFirst: "이 게임 첫 리뷰 쓰기",
   /** 좁은 화면 바닥 구매 띠(game-detail/buy-bar) */
   buyBarBest: (name: string) => `최저가 | ${name}`,
   buyBarCta: "구매하기",

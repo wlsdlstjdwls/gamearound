@@ -33,6 +33,8 @@ export type ListPostsParams = {
   period?: PopularPeriod;
   page?: number;
   promoType?: PromoType | null;
+  /** 이 게임(slug)에 이어진 글만(posts.game_id). 게임 상세의 "이 게임 글" 링크가 건다 */
+  gameSlug?: string | null;
 };
 
 export async function listPosts(p: ListPostsParams): Promise<PostPage> {
@@ -40,6 +42,7 @@ export async function listPosts(p: ListPostsParams): Promise<PostPage> {
   const page = Math.max(1, p.page ?? 1);
   const conds: (SQL | undefined)[] = [eq(posts.status, "published"), inArray(posts.category, [...p.categories]), searchCond(p.q ?? "", p.scope ?? "all")];
   if (p.promoType) conds.push(eq(posts.promoType, p.promoType));
+  if (p.gameSlug) conds.push(sql`${posts.gameId} = (select ${games.id} from ${games} where ${games.slug} = ${p.gameSlug})`);
   const popular = p.tab === "popular";
   // 인기글은 반응이 하나라도 있는 글만 줄 세운다 — 0점 글까지 세우면 "인기" 가 그냥 최신순이 된다
   if (popular) conds.push(sql`${popularScoreSql} > 0`);

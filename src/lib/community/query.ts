@@ -4,10 +4,13 @@ import { POPULAR_PERIODS, PROMO_TYPES, SEARCH_SCOPES, type PopularPeriod, type S
 import type { PromoType } from "@/server/db/schema";
 
 export type BoardTab = "all" | "popular";
-export type BoardQuery = { q: string; scope: SearchScope; tab: BoardTab; period: PopularPeriod; page: number; type: PromoType | null };
+/** game 은 게임 slug — 게임 상세의 "이 게임 글" 링크가 그 게임에 이어진 글만 보게 건다(2026-10-27). 없으면 null */
+export type BoardQuery = { q: string; scope: SearchScope; tab: BoardTab; period: PopularPeriod; page: number; type: PromoType | null; game: string | null };
 
 /** 검색어 상한 — 주소창 손질로 들어오는 긴 문자열이 질의까지 가지 않게 */
 const QUERY_MAX = 100;
+/** 게임 slug 상한 — 주소 손질로 들어오는 긴 값을 질의까지 보내지 않는다. 실제 slug 는 이보다 훨씬 짧다 */
+const GAME_SLUG_MAX = 200;
 /** 인기글 탭의 기본 기간 = 최근 7일(기획서 5.2 의 첫 칸) */
 const DEFAULT_PERIOD: PopularPeriod = 7;
 
@@ -19,6 +22,7 @@ export function parseBoardQuery(sp: Search): BoardQuery {
   const period = Number(first(sp.period));
   const page = Number(first(sp.page));
   const type = first(sp.type);
+  const game = (first(sp.game) ?? "").trim();
   return {
     q: (first(sp.q) ?? "").trim().slice(0, QUERY_MAX),
     scope: (SEARCH_SCOPES as readonly string[]).includes(scope ?? "") ? (scope as SearchScope) : "all",
@@ -26,6 +30,7 @@ export function parseBoardQuery(sp: Search): BoardQuery {
     period: (POPULAR_PERIODS as readonly number[]).includes(period) && first(sp.period) !== undefined ? (period as PopularPeriod) : DEFAULT_PERIOD,
     page: Number.isFinite(page) && page > 1 ? Math.floor(page) : 1,
     type: (PROMO_TYPES as readonly string[]).includes(type ?? "") ? (type as PromoType) : null,
+    game: game && game.length <= GAME_SLUG_MAX ? game : null,
   };
 }
 
@@ -33,6 +38,7 @@ export function parseBoardQuery(sp: Search): BoardQuery {
 export function boardHref(base: string, current: BoardQuery, patch: Partial<BoardQuery> = {}): string {
   const next = { ...current, page: 1, ...patch };
   const p = new URLSearchParams();
+  if (next.game) p.set("game", next.game);
   if (next.type) p.set("type", next.type);
   if (next.tab === "popular") {
     p.set("tab", "popular");

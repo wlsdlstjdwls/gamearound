@@ -55,7 +55,9 @@ export type SideLink = { href: string; label: string; count: number | null };
  * cache 는 인자를 === 로 맞춘다 — 두 자리 모두 PostBoard 가 받은 같은 배열, 같은 query 객체를 넘기므로 한 번만 돈다.
  */
 const loadPage = cache((categories: readonly PostCategory[], query: BoardQuery) =>
-  nullIfDbUnavailable(listPosts({ categories, q: query.q, scope: query.scope, tab: query.tab, period: query.period, page: query.page, promoType: query.type })),
+  nullIfDbUnavailable(
+    listPosts({ categories, q: query.q, scope: query.scope, tab: query.tab, period: query.period, page: query.page, promoType: query.type, gameSlug: query.game }),
+  ),
 );
 
 async function SideMenu({ family, allPath, current, extra }: { family: readonly PostCategory[]; allPath: string; current: string; extra?: Props["sideExtra"] }) {
@@ -87,13 +89,27 @@ async function SideMenu({ family, allPath, current, extra }: { family: readonly 
   );
 }
 
-/** 판 머리 줄 왼쪽 — "리뷰 게시판 | 27개 글". 검색 중이면 그 결과 수를 말한다 */
-async function BoardCount({ categories, query, head }: { categories: readonly PostCategory[]; query: BoardQuery; head: string }) {
+/** 게임 거름 딱지의 말. 이 화면 한 곳에서만 쓴다(게임 상세의 "이 게임 글" 링크가 건 거름) */
+const GAME_FILTER_LABEL = (title: string) => `${title} 글만`;
+const GAME_FILTER_CLEAR = "거름 풀기";
+
+/** 판 머리 줄 왼쪽 — "리뷰 게시판 | 27개 글". 검색 중이면 그 결과 수를 말한다. 게임으로 걸렀으면 그 게임 딱지와 푸는 링크 */
+async function BoardCount({ categories, query, head, base }: { categories: readonly PostCategory[]; query: BoardQuery; head: string; base: string }) {
   const page = await loadPage(categories, query);
+  // 게임 이름은 글 줄이 이미 들고 온다(PostRowDto.game) — 이름 하나 때문에 왕복을 더하지 않는다
+  const gameTitle = query.game ? (page?.items.find((i) => i.game)?.game?.title ?? query.game) : null;
   return (
-    <p className="flex min-w-0 items-baseline gap-2">
+    <p className="flex min-w-0 flex-wrap items-baseline gap-x-2 gap-y-1">
       <span className="text-[15px] font-extrabold tracking-[-0.02em] text-ink">{head}</span>
       {page && <span className="text-[13px] text-dim">{query.q ? M.searchResult(query.q, page.total) : M.postCount(page.total)}</span>}
+      {gameTitle && (
+        <span className="inline-flex items-center gap-2 rounded-full bg-acc-soft px-3 py-1 text-[12.5px] font-bold text-acc">
+          {GAME_FILTER_LABEL(gameTitle)}
+          <Link href={boardHref(base, query, { game: null })} className="press font-semibold text-mut underline-offset-2 hover:text-acc hover:underline">
+            {GAME_FILTER_CLEAR}
+          </Link>
+        </span>
+      )}
     </p>
   );
 }
@@ -144,7 +160,7 @@ export function PostBoard({ title, categories, family, allPath, base, query, sid
               popularLead={query.tab === "popular" ? M.popularLead(POPULAR_PERIOD_LABEL[query.period]) : null}
               head={
                 <Suspense key={JSON.stringify(query)} fallback={<span className="text-[15px] font-extrabold text-ink">{head}</span>}>
-                  <BoardCount categories={categories} query={query} head={head} />
+                  <BoardCount categories={categories} query={query} head={head} base={base} />
                 </Suspense>
               }
             />

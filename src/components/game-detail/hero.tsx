@@ -7,6 +7,7 @@
 // 좁은 화면은 한 기둥으로 문서 순서(커버, 정보, 평점, 버튼, 플레이타임) 그대로 쌓는다 — 목업 390px 와 같은 순서다.
 // md 는 커버와 정보가 나란히, 오른쪽 기둥은 그 아래 한 줄을 다 쓴다.
 import Link from "next/link";
+import { Suspense } from "react";
 import { CoverImage } from "@/components/game-card";
 import { SourceRefs } from "@/components/game-detail/sources";
 import { companyPath } from "@/lib/routes";
@@ -19,6 +20,7 @@ import { PriceAlertButton, type AlertPlatformOption } from "@/components/price-a
 import { WishlistButton } from "@/components/wishlist-button";
 import { soldBrands } from "@/components/platform-prices";
 import { PlatformJump } from "@/components/game-detail/platform-jump";
+import { GamePostsLink } from "@/components/game-detail/posts-link";
 import { CriticScores, PlaytimeTiles } from "@/components/game-detail/scores";
 import { Flag } from "@/components/ui/flag";
 import { Tag } from "@/components/ui/tag";
@@ -194,6 +196,10 @@ export function DetailHero({
           )}
           <WishlistButton gameId={game.id} className="w-full" />
         </div>
+        {/* 게시판의 이 게임 글로 가는 길(game-detail/posts-link). 수는 캐시 밖이라 따로 기다린다 — 안 오면 줄 없이 간다 */}
+        <Suspense fallback={null}>
+          <GamePostsLink gameId={game.id} slug={game.slug} />
+        </Suspense>
         <PlaytimeTiles playtime={game.playtime} className="flex-1" />
       </div>
     </section>
