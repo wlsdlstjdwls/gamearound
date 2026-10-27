@@ -98,7 +98,7 @@ export function RisingBlock({ posts, allHref, now }: { posts: PostRowDto[]; allH
                     {i + 1}
                   </span>
                   <span className="flex min-w-0 flex-col gap-1">
-                    <MetaLine flag={<Tag tone="warn">{M.risingFlag}</Tag>} post={p} now={now} />
+                    <MetaLine flag={<Tag tone="hot">{M.risingFlag}</Tag>} post={p} now={now} />
                     <TitleLine post={p} />
                     <span className="flex min-w-0 text-[12.5px] text-dim">
                       <AuthorName post={p} />

@@ -18,20 +18,20 @@ export const CATEGORY_LABEL: Record<PostCategory, string> = {
 
 /**
  * 말머리 색(기획서 7장 "카테고리마다 서로 다른 색"). 토큰 이름만 둔다 — 화면이 bg-{tone}-soft text-{tone} 로 칠한다.
- * 리뷰는 브랜드색, 공략은 민트, 홍보는 호박, 라운지 둘은 파랑이다.
+ * 리뷰는 브랜드색, 공략은 민트, 홍보는 보라, 라운지 둘은 청록이다(10-27 호박을 걷었다 — 사용자: "누런색은 되도록 쓰지 마").
  */
-export const CATEGORY_TONE: Record<PostCategory, "acc" | "ok" | "warn" | "info"> = {
+export const CATEGORY_TONE: Record<PostCategory, "acc" | "ok" | "plum" | "info"> = {
   review: "acc",
   guide: "ok",
-  promo: "warn",
+  promo: "plum",
   devlog: "info",
   qna: "info",
 };
 
 export const PROMO_TYPES = ["my_game", "project"] as const satisfies readonly PromoType[];
 export const PROMO_TYPE_LABEL: Record<PromoType, string> = { my_game: "내가 만든 게임", project: "진행 중인 프로젝트" };
-/** 기획서 4.4: 내가 만든 게임 파랑, 진행 중인 프로젝트 주황 */
-export const PROMO_TYPE_TONE: Record<PromoType, "info" | "warn"> = { my_game: "info", project: "warn" };
+/** 기획서 4.4: 내가 만든 게임 파랑, 진행 중인 프로젝트 주황 — 주황은 이 서비스에서 "주의" 색이라 보라로 옮겼다(10-27) */
+export const PROMO_TYPE_TONE: Record<PromoType, "info" | "plum"> = { my_game: "info", project: "plum" };
 
 /** 목록 화면 주소(카테고리 하나짜리). 등록 뒤 돌아갈 곳이기도 하다(기획서 6.4) */
 export const CATEGORY_LIST_PATH: Record<PostCategory, string> = {

@@ -34,8 +34,12 @@
   --danger-soft: #fff0f0;
   --ok: #0f766e;
   --ok-soft: #e3f3f0;
-  --warn: #8a6a2e;
-  --warn-soft: #f6efe2;
+  /* 주의 — 주황. 10-27 에 황토(#8a6a2e)에서 바꿨다(사용자: "누런색은 되도록 쓰지 마") */
+  --warn: #c2410c;
+  --warn-soft: #fff1e8;
+  /* 보라 — 홍보 말머리, "진행 중인 프로젝트" 처럼 경고가 아닌 갈래 색. 주황(warn)에 얹혀 있어 "주의" 로 읽혔다(10-27) */
+  --plum: #7c3aed;
+  --plum-soft: #f3eeff;
   /* 안내 파랑(기획서 v2.0 4.4): 홍보 유형 "내가 만든 게임", 답변 기다리는 질문 알약. 뜻은 "알림, 정보" 다 */
   --info: #0e7490; /* 청록 — 브랜드가 파랑이 되며 같은 색이 두 뜻을 말하지 않게 갈랐다(흰 판 5.4:1) */
   --info-soft: #e3f4f7;
@@ -193,8 +197,10 @@
     --danger-soft: #3a1d27;
     --ok: #3ddc9f;
     --ok-soft: #13302b;
-    --warn: #f2b84b;
-    --warn-soft: #382c14;
+    --warn: #ff9a5c;
+    --warn-soft: #3a2418;
+    --plum: #c4a8ff;
+    --plum-soft: #2d2447;
     --info: #5cc8e0;
     --info-soft: #15323a;
     --status-backlog: #5c6b85;
@@ -253,8 +259,10 @@
   --danger-soft: #3a1d27;
   --ok: #3ddc9f;
   --ok-soft: #13302b;
-  --warn: #f2b84b;
-  --warn-soft: #382c14;
+  --warn: #ff9a5c;
+  --warn-soft: #3a2418;
+  --plum: #c4a8ff;
+  --plum-soft: #2d2447;
   --info: #5cc8e0;
   --info-soft: #15323a;
   --status-backlog: #5c6b85;
@@ -319,6 +327,8 @@
   --color-ok-soft: var(--ok-soft);
   --color-warn: var(--warn);
   --color-warn-soft: var(--warn-soft);
+  --color-plum: var(--plum);
+  --color-plum-soft: var(--plum-soft);
   --color-info: var(--info);
   --color-info-soft: var(--info-soft);
   --color-status-backlog: var(--status-backlog);
