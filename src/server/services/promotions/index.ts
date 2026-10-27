@@ -2,3 +2,4 @@
 export * from "./slots";
 export * from "./track";
 export * from "./performance";
+export * from "./indie-spots";

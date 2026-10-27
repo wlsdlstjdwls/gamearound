@@ -16,6 +16,8 @@ export type PromoActionResult = { ok: true } | { ok: false; error: string };
 function refresh() {
   revalidatePath(ROUTES.adminPromotions);
   revalidatePath(ROUTES.indie);
+  // 인디 부스트는 홈 인디 줄 첫 칸에도 선다(services/promotions/indie-spots). 홈은 ISR 이라 밀지 않으면 한 시간 늦는다
+  revalidatePath(ROUTES.home);
   revalidatePath(ROUTES.boardPromos);
 }
 

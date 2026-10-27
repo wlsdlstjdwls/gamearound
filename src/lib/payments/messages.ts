@@ -6,7 +6,7 @@ import type { ProductKey } from "./products";
 export const PRODUCT_COPY: Record<ProductKey, { title: string; lead: string; points: readonly string[] }> = {
   boost_indie_7d: {
     title: "광고 걸기",
-    lead: "인디 게임 목록 맨 위 \"주목할 게임\" 칸에 내 게임을 올려요. 카드에는 \"광고\" 표시가 붙어요.",
+    lead: "인디 게임 목록 맨 위 \"주목할 게임\" 칸, 홈 인디 줄 첫 칸, 같은 장르 게임 상세의 추천 칸에 내 게임을 올려요. 카드에는 \"광고\" 표시가 붙어요.",
     points: [
       "결제하면 바로 노출이 시작되고 7일 동안 이어져요",
       "이미 광고 중이면 지금 기간이 끝난 뒤로 이어 붙여요",

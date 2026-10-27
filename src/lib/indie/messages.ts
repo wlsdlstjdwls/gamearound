@@ -104,6 +104,8 @@ export const INDIE_MESSAGES = {
   /** 게임 상세에 붙는 마디 */
   gameSectionTitle: "개발자가 직접 소개해요",
   gameSectionMore: "소개 글 전체 보기",
+  /** 게임 상세의 인디 추천 한 칸(광고 자리 겸) */
+  suggestTitle: "이런 인디 게임은 어때요",
   coverAlt: (title: string) => `${title} 대표 그림`,
   shotAlt: (title: string, n: number) => `${title} 스크린샷 ${n}`,
   rail: { prev: "이전 게임", next: "다음 게임" },

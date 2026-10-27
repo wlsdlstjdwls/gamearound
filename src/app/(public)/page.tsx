@@ -28,6 +28,9 @@ import { IndieCard } from "@/components/indie/indie-card";
 import { INDIE_MESSAGES } from "@/lib/indie/messages";
 import type { IndieCardDto } from "@/lib/indie/dto";
 import { listIndieForHome } from "@/server/services/indie";
+import { homeIndieAd, withoutSlug, type IndieSpot } from "@/server/services/promotions";
+import { AdLabel } from "@/components/ui/ad-label";
+import { AdTrack } from "@/components/promo/ad-track";
 
 // Next 가 정적으로 읽는 값이라 리터럴이어야 한다 — 근거, 수치는 lib/cache 의 LIST_REVALIDATE_SECONDS 와 같게 유지
 export const revalidate = 3600;
@@ -67,6 +70,19 @@ async function loadIndie(): Promise<IndieCardDto[]> {
   }
 }
 
+/**
+ * 인디 줄 첫 칸 광고(services/promotions/indie-spots). 실패하면 광고 없이 선다. ISR 한 시간과 광고 차례 구간(lib/promo/boost)이 같아
+ * 다시 그릴 때마다 다음 차례가 앞에 선다
+ */
+async function loadIndieAd(): Promise<IndieSpot | null> {
+  try {
+    return await homeIndieAd();
+  } catch (e) {
+    console.error("[home] 인디 광고 칸 조회 실패:", e instanceof Error ? e.message : String(e));
+    return null;
+  }
+}
+
 /** 출시 예정 줄도 덤이다 — 실패하면 줄이 안 설 뿐이다 */
 async function loadUpcoming(): Promise<UpcomingEntry[]> {
   try {
@@ -79,7 +95,7 @@ async function loadUpcoming(): Promise<UpcomingEntry[]> {
 
 export default async function HomePage() {
   // 두 조회는 서로 기다릴 이유가 없다 — 줄 세우면 Neon 왕복이 둘이 된다
-  const [{ data, dbFailure }, indie, upcoming] = await Promise.all([loadHomeData(), loadIndie(), loadUpcoming()]);
+  const [{ data, dbFailure }, indie, upcoming, indieAd] = await Promise.all([loadHomeData(), loadIndie(), loadUpcoming(), loadIndieAd()]);
   const { discounts } = data;
 
   // DB 가 안 열린 날에는 줄을 하나도 세우지 않는다. 빈 줄은 "할인 마감이 없어요", "뉴스가 없어요" 처럼 사실이 아닌 말을 한다
@@ -127,11 +143,28 @@ export default async function HomePage() {
         )}
       </section>
 
-      {/* 3 — 인디 개발자가 직접 올린 게임. 몇 장 안 되면 줄째 안 선다(lib/indie/constants 의 INDIE_HOME_MIN) */}
+      {/* 3 — 인디 개발자가 직접 올린 게임. 몇 장 안 되면 줄째 안 선다(lib/indie/constants 의 INDIE_HOME_MIN). 첫 칸은 광고 자리(기획서 4.2) */}
       {indie.length > 0 && (
         <section aria-labelledby="indie-heading" className="flex flex-col gap-3">
           <SectionHead id="indie-heading" title={INDIE_MESSAGES.homeTitle} note={INDIE_MESSAGES.homeNote} action={<SeeAll href={ROUTES.indie} />} />
-          <Rail labels={INDIE_MESSAGES.rail} items={indie.map((p) => ({ key: p.slug, node: <IndieCard post={p} /> }))} />
+          <Rail
+            labels={INDIE_MESSAGES.rail}
+            items={[
+              ...(indieAd?.boostId
+                ? [
+                    {
+                      key: indieAd.item.slug,
+                      node: (
+                        <AdTrack boostId={indieAd.boostId} className="h-full">
+                          <IndieCard post={indieAd.item} badge={<AdLabel />} />
+                        </AdTrack>
+                      ),
+                    },
+                  ]
+                : []),
+              ...withoutSlug(indie, indieAd?.item.slug).map((p) => ({ key: p.slug, node: <IndieCard post={p} /> })),
+            ]}
+          />
         </section>
       )}
 

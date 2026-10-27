@@ -15,7 +15,7 @@ import { brandNameOf, orderCards } from "@/components/platform-prices/order";
 import { brandKeyOf } from "@/lib/platform";
 import { GameHeadbar } from "@/components/game-headbar";
 import { GameViewBeacon } from "@/components/game-view-beacon";
-import { IndieGameSection } from "@/components/indie/game-section";
+import { IndieGameSection, IndieSuggestSection } from "@/components/indie/game-section";
 import { NewsList } from "@/components/news-list";
 import { BEST_MIN_PRICED, PlatformPrices, PlatformSaleNote, type PlatformPriceItem } from "@/components/platform-prices";
 import { PreorderBonusesSection } from "@/components/preorder-bonuses-section";
@@ -229,6 +229,10 @@ export default async function GameDetailPage({ params }: Props) {
       </Suspense>
       <Suspense fallback={null}>
         <IndieGameSection gameId={game.id} />
+      </Suspense>
+      {/* 인디 추천 한 칸 — 인디 부스트가 서는 광고 자리이고, 광고가 없으면 같은 장르 인디 게임(services/promotions/indie-spots) */}
+      <Suspense fallback={null}>
+        <IndieSuggestSection gameId={game.id} genres={game.genres} />
       </Suspense>
       {/* 좁은 화면 바닥 구매 띠(game-detail/buy-bar). 값이 하나라도 붙은 게임만 — 출시 전 게임은 띠가 말할 값이 없다 */}
       {best && best.currentPrice !== null && (
