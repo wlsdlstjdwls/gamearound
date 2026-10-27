@@ -1,5 +1,5 @@
 // 유료 노출 자리 문구(2026-10-27). 공개 화면의 "광고" 표시와 관리자 화면 /admin/promotions.
-import type { PromoSlot } from "@/server/db/schema";
+import type { PromoSlot, PromoSource } from "@/server/db/schema";
 import type { BoostState } from "./boost";
 
 export const PROMO_MESSAGES = {
@@ -35,6 +35,13 @@ export const PROMO_MESSAGES = {
 export const PROMO_SLOT_LABEL: Record<PromoSlot, string> = {
   indie_top: "인디 목록 맨 위",
   promo_pin: "홍보 게시판 위 고정",
+};
+
+/** 누가 걸었나 — 관리자 목록 줄에 선다. 결제로 건 줄을 관리자가 회수하면 환불을 따로 해야 해서 눈에 띄어야 한다 */
+export const PROMO_SOURCE_LABEL: Record<PromoSource, string> = {
+  admin: "관리자",
+  purchase: "결제",
+  membership: "멤버십",
 };
 
 export const BOOST_STATE_LABEL: Record<BoostState, string> = {

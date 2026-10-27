@@ -7,7 +7,7 @@ import "server-only";
 import { and, asc, desc, eq, gt, inArray, isNull, lte, or, sql } from "drizzle-orm";
 import { getDb } from "@/server/db/client";
 import { createdBy, updatedBy } from "@/server/db/audit";
-import { indiePosts, posts, promotionBoosts, users, type PromoSlot, type PromoTargetKind } from "@/server/db/schema";
+import { indiePosts, posts, promotionBoosts, users, type PromoSlot, type PromoSource, type PromoTargetKind } from "@/server/db/schema";
 import { boostEnd, boostState, rotateForWindow, SLOT_CAPACITY, SLOT_TARGET, type BoostState } from "@/lib/promo/boost";
 import { PROMO_MESSAGES as M } from "@/lib/promo/messages";
 import { postPath } from "@/lib/community/constants";
@@ -69,6 +69,7 @@ export type BoostRowDto = {
   id: string;
   slot: PromoSlot;
   state: BoostState;
+  source: PromoSource;
   targetTitle: string;
   targetHref: string | null;
   /** 대상이 지금 공개인가. 아니면 걸려 있어도 안 보인다 — 관리자가 알아야 한다 */
@@ -91,6 +92,7 @@ export async function listBoostsForAdmin(): Promise<BoostRowDto[]> {
       endsAt: promotionBoosts.endsAt,
       revokedAt: promotionBoosts.revokedAt,
       note: promotionBoosts.note,
+      source: promotionBoosts.source,
       indieTitle: indiePosts.title,
       indieSlug: indiePosts.slug,
       indieLive: sql<boolean>`(${indiePosts.status} = 'published' and ${indiePosts.review} = 'approved')`,
@@ -117,6 +119,7 @@ export async function listBoostsForAdmin(): Promise<BoostRowDto[]> {
     id: r.id,
     slot: r.slot,
     state: boostState(r, now),
+    source: r.source,
     targetTitle: r.indieTitle ?? r.postTitle ?? M.targetGone,
     targetHref: r.indieSlug ? indiePath(r.indieSlug) : r.postId ? postPath(r.postId, "promo") : null,
     targetLive: Boolean(r.indieTitle ? r.indieLive : r.postTitle ? r.postLive : false),
@@ -166,4 +169,24 @@ export async function revokeBoost(id: string, adminId: string): Promise<void> {
     .update(promotionBoosts)
     .set({ revokedAt: sql`now()`, ...updatedBy("admin", adminId) })
     .where(and(eq(promotionBoosts.id, id), isNull(promotionBoosts.revokedAt)));
+}
+
+/**
+ * 결제로 거는 부스트(services/payments 가 승인 뒤에 부른다). 같은 대상이 같은 자리에 이미 걸려 있으면 그 끝에 이어 붙인다 —
+ * 겹쳐 걸면 산 기간이 겹친 만큼 사라진다. 대상 공개 여부는 다시 보지 않는다: 돈은 이미 빠졌고, 숨김이면 노출 질의가 거른다.
+ */
+export async function insertPurchasedBoost(input: { slot: PromoSlot; targetId: string; days: number; note: string }, userId: string): Promise<string> {
+  const db = getDb();
+  const [latest] = await db
+    .select({ end: sql<Date | null>`max(${promotionBoosts.endsAt})` })
+    .from(promotionBoosts)
+    .where(and(eq(promotionBoosts.slot, input.slot), eq(promotionBoosts.targetId, input.targetId), isNull(promotionBoosts.revokedAt), gt(promotionBoosts.endsAt, sql`now()`)));
+  const now = new Date();
+  const latestEnd = latest?.end ? new Date(latest.end) : null;
+  const startsAt = latestEnd && latestEnd > now ? latestEnd : now;
+  const [row] = await db
+    .insert(promotionBoosts)
+    .values({ targetKind: SLOT_TARGET[input.slot], targetId: input.targetId, slot: input.slot, startsAt, endsAt: boostEnd(startsAt, input.days), source: "purchase", note: input.note, ...createdBy("user", userId) })
+    .returning({ id: promotionBoosts.id });
+  return row.id;
 }

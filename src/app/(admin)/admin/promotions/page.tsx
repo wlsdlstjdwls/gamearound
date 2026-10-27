@@ -8,7 +8,10 @@ import { PageHead, ROWS, sectionCardClass } from "@/components/ui/page";
 import { Tag, type TagTone } from "@/components/ui/tag";
 import { formatDateTime } from "@/lib/format";
 import { PROMO_SLOTS, SLOT_CAPACITY, type BoostState } from "@/lib/promo/boost";
-import { BOOST_STATE_LABEL, PROMO_MESSAGES as M, PROMO_SLOT_LABEL } from "@/lib/promo/messages";
+import { BOOST_STATE_LABEL, PROMO_MESSAGES as M, PROMO_SLOT_LABEL, PROMO_SOURCE_LABEL } from "@/lib/promo/messages";
+import { formatPrice } from "@/lib/currency";
+import { PAYMENT_MESSAGES as PM } from "@/lib/payments/messages";
+import { listPaymentsForAdmin } from "@/server/services/payments";
 import { requireRoleOrForbid } from "@/server/auth/guards";
 import { listBoostCandidates, listBoostsForAdmin } from "@/server/services/promotions";
 
@@ -18,7 +21,7 @@ const STATE_TONE: Record<BoostState, TagTone> = { active: "ok", queued: "info", 
 
 export default async function AdminPromotionsPage() {
   await requireRoleOrForbid("admin");
-  const [rows, candidates] = await Promise.all([listBoostsForAdmin(), listBoostCandidates()]);
+  const [rows, candidates, paid] = await Promise.all([listBoostsForAdmin(), listBoostCandidates(), listPaymentsForAdmin()]);
 
   return (
     <div className="flex flex-col gap-5">
@@ -54,6 +57,7 @@ export default async function AdminPromotionsPage() {
                     <div className="flex min-w-0 flex-col gap-1">
                       <div className="flex flex-wrap items-center gap-2">
                         <Tag tone={STATE_TONE[r.state]}>{BOOST_STATE_LABEL[r.state]}</Tag>
+                        <Tag tone={r.source === "purchase" ? "plum" : "acc"}>{PROMO_SOURCE_LABEL[r.source]}</Tag>
                         {r.targetHref ? (
                           <Link href={r.targetHref} className="min-w-0 break-words text-[14.5px] font-semibold text-ink hover:text-acc hover:underline">
                             {r.targetTitle}
@@ -74,6 +78,29 @@ export default async function AdminPromotionsPage() {
           </section>
         );
       })}
+
+      {/* 승인된 결제(services/payments). 부스트가 안 걸린 결제는 빨갛게 — 돈은 빠졌는데 노출이 없는 상태라 손으로 걸어야 한다 */}
+      <section aria-labelledby="promo-payments" className="flex flex-col gap-2">
+        <h2 id="promo-payments" className="text-[15px] font-bold text-ink">
+          {PM.adminTitle}
+        </h2>
+        {paid.length === 0 ? (
+          <p className="rounded-xl bg-surface-2 px-5 py-6 text-[13px] text-mut">{PM.adminEmpty}</p>
+        ) : (
+          <ul className={ROWS}>
+            {paid.map((p) => (
+              <li key={p.orderId} className="flex flex-wrap items-center justify-between gap-3 py-3">
+                <div className="flex min-w-0 flex-col gap-1">
+                  <span className="min-w-0 break-words text-[14.5px] font-semibold text-ink">{p.targetTitle ?? M.targetGone}</span>
+                  <span className="break-words text-[12.5px] text-dim tabular-nums">{[p.productName, p.buyer, formatDateTime(p.createdAt), p.orderId].join(" | ")}</span>
+                  {p.boostMissing && <span className="text-[12.5px] text-danger">{PM.adminBoostMissing}</span>}
+                </div>
+                <span className="shrink-0 text-[15px] font-bold tabular-nums text-ink">{formatPrice(p.amount)}</span>
+              </li>
+            ))}
+          </ul>
+        )}
+      </section>
     </div>
   );
 }

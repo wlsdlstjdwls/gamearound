@@ -62,6 +62,8 @@ export const ROUTES = {
   indieMine: "/indie/mine",
   /** 내 게임 통계(2026-10-27). /indie/mine/[id] 는 uuid 라 낱말 "stats" 와 부딪히지 않는다 */
   indieStats: "/indie/mine/stats",
+  /** 내 광고 결제 내역(2026-10-27). /indie/mine/[id] 는 uuid 라 낱말과 부딪히지 않는다 */
+  indiePayments: "/indie/mine/payments",
   /**
    * 기획서 v2.0 의 새 갈래(2026-10-26). 화면이 생기기 전까지는 "준비 중" 화면이 선다(components/coming-soon).
    * 명예의 전당, 슈퍼루키를 /indie 아래에 두지 않은 이유: /indie/<slug> 가 인디 글 주소라 글 주소와 부딪힌다
@@ -192,6 +194,15 @@ export const INDIE_IMAGE_UPLOAD_PATH = "/api/indie/images/upload";
  */
 export function indieOutPath(postId: string, linkIndex: number): string {
   return `/api/indie/out/${encodeURIComponent(postId)}?i=${linkIndex}`;
+}
+
+/** 토스 결제창이 돌아오는 주소(성공, 실패). 서버가 승인하거나 실패를 적고 결제 내역으로 넘긴다 */
+export const TOSS_SUCCESS_PATH = "/api/payments/toss/success";
+export const TOSS_FAIL_PATH = "/api/payments/toss/fail";
+
+/** 내 인디 게임에 광고 걸기(결제) */
+export function indieBoostPath(id: string): string {
+  return `${ROUTES.indieMine}/${encodeURIComponent(id)}/boost`;
 }
 
 /** 인디 홍보 글 공개 화면 */

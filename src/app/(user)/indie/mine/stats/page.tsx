@@ -12,7 +12,9 @@ import { INDIE_MESSAGES } from "@/lib/indie/messages";
 import { stagger } from "@/lib/motion";
 import { INDIE_PROMO_MESSAGES as M } from "@/lib/indie/promo-messages";
 import { indieDetailHref, INDIE_FROM } from "@/lib/indie/query";
-import { indieEditPath, ROUTES } from "@/lib/routes";
+import { indieBoostPath, indieEditPath, ROUTES } from "@/lib/routes";
+import { buttonClass } from "@/components/ui/button";
+import { PAYMENT_MESSAGES as PM } from "@/lib/payments/messages";
 import { requireUserOrRedirect } from "@/server/auth/guards";
 import { getMyIndieStats } from "@/server/services/indie";
 
@@ -26,7 +28,14 @@ export default async function IndieStatsPage() {
 
   return (
     <Page gap={20}>
-      <PageHead title={M.statsTitle}>
+      <PageHead
+        title={M.statsTitle}
+        action={
+          <Link href={ROUTES.indiePayments} className="tap inline-flex items-center text-[13.5px] font-semibold text-acc hover:underline">
+            {PM.toHistory}
+          </Link>
+        }
+      >
         <p className="text-[14px] text-mut">{M.statsLead}</p>
       </PageHead>
 
@@ -56,9 +65,17 @@ export default async function IndieStatsPage() {
                 <li key={r.id} className={sectionCardClass("enter-item flex flex-col gap-3")} style={stagger(i)}>
                   <div className="flex items-center justify-between gap-3">
                     <h2 className="min-w-0 truncate text-[16px] font-bold text-ink">{r.title}</h2>
-                    <Link href={r.live ? indieDetailHref(r.slug, INDIE_FROM.mine) : indieEditPath(r.id)} className="tap inline-flex shrink-0 items-center text-[13px] font-semibold text-acc hover:underline">
-                      {M.statsDetail}
-                    </Link>
+                    <div className="flex shrink-0 items-center gap-2">
+                      {/* 광고 걸기(결제)는 공개 중인 게임에만 — 공개 전이면 걸어도 아무도 못 본다 */}
+                      {r.live && (
+                        <Link href={indieBoostPath(r.id)} className={buttonClass({ variant: "accent", size: "sm" })}>
+                          {PM.boostTitle}
+                        </Link>
+                      )}
+                      <Link href={r.live ? indieDetailHref(r.slug, INDIE_FROM.mine) : indieEditPath(r.id)} className="tap inline-flex items-center text-[13px] font-semibold text-acc hover:underline">
+                        {M.statsDetail}
+                      </Link>
+                    </div>
                   </div>
                   {!r.live && <p className="rounded-xl bg-surface-2 px-4 py-3 text-[13px] text-mut">{M.statsNotLive}</p>}
                   <dl className="grid grid-cols-2 gap-x-4 gap-y-3 border-t border-line pt-3 sm:grid-cols-5">
