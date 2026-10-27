@@ -55,7 +55,7 @@
   --store-steam: #2a78d6;
   --store-epic: #eb6834;
   --store-gog: #1baf7a;
-  --store-ps5: #eda100;
+  --store-ps5: #0891b2; /* 청록. 10-27 호박(#eda100)에서 — 누런 선은 쓰지 않는다(사용자). 스팀 파랑, PS4 분홍, Xbox 초록과 갈린다 */
   --store-ps4: #e87ba4;
   --store-xbox: #008300;
   --store-switch: #4a3aa7;
@@ -215,7 +215,7 @@
     --store-steam: #5b9ce8;
     --store-epic: #f5895a;
     --store-gog: #35c894;
-    --store-ps5: #f2b93a;
+    --store-ps5: #38bdf8;
     --store-ps4: #f094b6;
     --store-xbox: #3fb23f;
     --store-switch: #8d7df0;
@@ -277,7 +277,7 @@
   --store-steam: #5b9ce8;
   --store-epic: #f5895a;
   --store-gog: #35c894;
-  --store-ps5: #f2b93a;
+  --store-ps5: #38bdf8;
   --store-ps4: #f094b6;
   --store-xbox: #3fb23f;
   --store-switch: #8d7df0;
