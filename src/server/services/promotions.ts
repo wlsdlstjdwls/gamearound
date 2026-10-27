@@ -7,7 +7,7 @@ import "server-only";
 import { and, asc, desc, eq, gt, inArray, isNull, lte, or, sql } from "drizzle-orm";
 import { getDb } from "@/server/db/client";
 import { createdBy, updatedBy } from "@/server/db/audit";
-import { indiePosts, posts, promotionBoosts, users, type PromoSlot } from "@/server/db/schema";
+import { indiePosts, posts, promotionBoosts, users, type PromoSlot, type PromoTargetKind } from "@/server/db/schema";
 import { boostEnd, boostState, rotateForWindow, SLOT_CAPACITY, SLOT_TARGET, type BoostState } from "@/lib/promo/boost";
 import { PROMO_MESSAGES as M } from "@/lib/promo/messages";
 import { postPath } from "@/lib/community/constants";
@@ -28,6 +28,16 @@ function activeTargets(slot: PromoSlot) {
     .select({ id: promotionBoosts.targetId })
     .from(promotionBoosts)
     .where(and(eq(promotionBoosts.slot, slot), isNull(promotionBoosts.revokedAt), lte(promotionBoosts.startsAt, sql`now()`), gt(promotionBoosts.endsAt, sql`now()`)));
+}
+
+/** 이 대상이 지금 어느 자리에든 걸려 있나. 신고 자동 숨김이 비켜 간다(services/indie/write 의 reportIndiePost) */
+export async function isBoostedNow(kind: PromoTargetKind, targetId: string): Promise<boolean> {
+  const r = await getDb()
+    .select({ x: sql`1` })
+    .from(promotionBoosts)
+    .where(and(eq(promotionBoosts.targetKind, kind), eq(promotionBoosts.targetId, targetId), isNull(promotionBoosts.revokedAt), lte(promotionBoosts.startsAt, sql`now()`), gt(promotionBoosts.endsAt, sql`now()`)))
+    .limit(1);
+  return r.length > 0;
 }
 
 /** 공개 홍보 글 — 게시판 목록과 같은 문턱(공개 상태)에 홍보 카테고리 */

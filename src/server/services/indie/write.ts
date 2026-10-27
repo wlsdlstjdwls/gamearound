@@ -11,6 +11,7 @@ import { createdBy, updatedBy } from "@/server/db/audit";
 import { indiePostImages, indiePostReports, indiePosts } from "@/server/db/schema";
 import { deleteBlobs } from "@/server/services/blob-files";
 import { notifyIndieRelease } from "./promo";
+import { isBoostedNow } from "@/server/services/promotions";
 import { slugify } from "@/lib/slug";
 import { PHOTO_CONTENT_TYPES } from "@/lib/shops/constants";
 import {
@@ -201,6 +202,8 @@ export type ReportResult = { ok: true; hidden: boolean } | { ok: false; error: s
 /**
  * 신고. 한 사람이 한 번만(PK). 서로 다른 사람의 신고가 문턱을 넘으면 관리자를 기다리지 않고 숨긴다.
  * 이미 숨은 글은 숫자만 센다 — 되살릴 때 관리자가 무엇이 쌓였는지 본다.
+ * 지금 유료 자리에 걸린 글은 스스로 숨지 않는다(2026-10-27 사용자 결정). 산 사람의 기간이 경쟁자 몇 명의 신고로 멈추면 안 된다.
+ * 신고 수는 그대로 쌓여 관리자 신고 칸에 뜨고, 숨길지는 관리자가 정한다.
  */
 export async function reportIndiePost(postId: string, userId: string, reason: string): Promise<ReportResult> {
   const db = getDb();
@@ -220,7 +223,7 @@ export async function reportIndiePost(postId: string, userId: string, reason: st
     .set({ reportCount: sql`${indiePosts.reportCount} + 1` })
     .where(eq(indiePosts.id, postId))
     .returning({ reportCount: indiePosts.reportCount, status: indiePosts.status });
-  if (post.status === "published" && post.reportCount >= INDIE_REPORT_HIDE_THRESHOLD) {
+  if (post.status === "published" && post.reportCount >= INDIE_REPORT_HIDE_THRESHOLD && !(await isBoostedNow("indie_post", postId))) {
     await db
       .update(indiePosts)
       .set({ status: "hidden", statusReason: R.autoHidden, ...updatedBy("system") })
