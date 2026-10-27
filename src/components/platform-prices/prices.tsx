@@ -12,14 +12,11 @@ import { kstDateKey } from "@/lib/format";
 import type { Platform } from "@/server/db/schema";
 import type { DlcDto } from "@/server/services/games";
 import { PlatformAddons } from "@/components/platform-addons";
-import { brandAnchorId, brandNameOf, byPrice, isUpcomingRow, orderCards, releaseText, rowKey, type PlatformPriceItem } from "@/components/platform-prices/order";
+import { BEST_MIN_PRICED, brandAnchorId, brandNameOf, byPrice, isUpcomingRow, orderCards, releaseText, rowKey, type PlatformPriceItem } from "@/components/platform-prices/order";
 import { AbsentTile, PriceTile, UpcomingTile } from "@/components/platform-prices/tile";
 
 /** 좁은 화면 1장, sm 2장, lg 4장 — 목업 .pg. 스토어가 넷을 넘으면 다음 줄로 이어진다 */
 const GRID = "grid gap-3 sm:grid-cols-2 lg:grid-cols-4 lg:gap-4";
-
-/** "최저가" 딱지를 세울 최소 비교 대상 수 — 값이 붙은 카드가 이만큼은 있어야 "가장 싸다" 가 뜻을 갖는다 */
-const BEST_MIN_PRICED = 2;
 
 export function PlatformPrices({
   platforms,

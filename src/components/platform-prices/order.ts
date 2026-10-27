@@ -10,6 +10,12 @@ import type { PlatformDto } from "@/server/services/games";
 export type PlatformPriceItem = PlatformDto & { freshness: Freshness };
 
 /**
+ * "최저가" 라 말할 최소 비교 대상 수 — 같은 통화로 값이 붙은 카드가 이만큼은 있어야 "가장 싸다" 가 뜻을 갖는다(2026-10-27 사용자).
+ * 가격 카드 딱지와 모바일 구매 띠가 같은 값을 본다.
+ */
+export const BEST_MIN_PRICED = 2;
+
+/**
  * 같은 기기라도 나라가 다르면 다른 행이다 — 기기 이름만 키로 쓰면 한국 스위치와 일본 스위치가
  * 같은 키가 돼 행 하나가 사라진다.
  */

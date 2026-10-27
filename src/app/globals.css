@@ -153,6 +153,8 @@
   /* 좁은 화면 바닥 탭바(components/site-tabbar)의 높이 — 칸 52 + 위아래 6(목업 #nav). 홈 인디케이터 높이는 바깥에 더한다.
      못 박은 값이다: 탭바가 이 높이를 그대로 물고, 문서 바닥 여백과 토스트 자리가 같은 값을 읽는다 */
   --tabbar-h: 64px;
+  /* 상세의 바닥 구매 띠(game-detail/buy-bar) 높이. 탭바 바로 위에 서고, 띠가 문서 바닥을 같은 값만큼 비운다 */
+  --buybar-h: 60px;
   /* 토스트(ui/toast)의 바닥 거리. 탭바가 서는 화면에서는 아래 규칙이 탭바 위로 올린다 */
   --toast-bottom: max(24px, env(safe-area-inset-bottom));
 
@@ -1228,6 +1230,19 @@ li:has([data-more-open]) {
   transition: opacity var(--duration-base) var(--ease-standard), transform var(--duration-slow) var(--ease-out-emph);
 }
 .headbar[data-on="true"] {
+  opacity: 1;
+  transform: none;
+  pointer-events: auto;
+}
+
+/* 상세 바닥 구매 띠(game-detail/buy-bar). 머리바와 같은 문법을 아래로 뒤집었다 — 가격 마디가 화면에 들어오면 아래로 가라앉는다 */
+.buybar {
+  opacity: 0;
+  transform: translateY(100%);
+  pointer-events: none;
+  transition: opacity var(--duration-base) var(--ease-standard), transform var(--duration-slow) var(--ease-out-emph);
+}
+.buybar[data-on="true"] {
   opacity: 1;
   transform: none;
   pointer-events: auto;
