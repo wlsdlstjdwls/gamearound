@@ -12,7 +12,7 @@ export type Crumb = { label: string; href?: string };
 export function Crumbs({ items }: { items: readonly Crumb[] }) {
   return (
     <nav aria-label={M.crumbLabel}>
-      <ol className="flex flex-wrap items-center gap-1 text-[12.5px] text-dim">
+      <ol className="flex items-center gap-1 whitespace-nowrap text-[12.5px] text-dim">
         {items.map((c, i) => {
           const last = i === items.length - 1;
           return (

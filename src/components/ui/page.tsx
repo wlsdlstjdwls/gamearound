@@ -31,7 +31,8 @@ const WIDTH: Record<PageWidth, string> = {
 const PAD: Record<PagePad, string> = {
   home: "pt-8 pb-[90px]",
   detail: "pt-6 pb-10",
-  sub: "pt-[22px] pb-20",
+  // 2026-10-27 위 22 에서 16, 아래 80 에서 64 로 줄였다(사용자: "화면에 전체적으로 빈 공간이 많다")
+  sub: "pt-4 pb-16",
   /*
    * 관리자 셸. 좁은 화면에서만 아래 여백을 줄인다(2026-09-22, "컨텐츠와 푸터 사이 공백이 너무 크다").
    * 거기서는 이 여백 밑에 바닥 띠 자리 56px 이 한 겹 더 깔려서(globals.css 의 body:has) 80 + 56 = 136px 이
@@ -154,7 +155,8 @@ export type PageTitleSize = "page" | "hero";
 /* 리디자인 스펙: 표지형 32px, 제목 자체가 내용인 화면 40px. 둘 다 -0.045em 으로 바짝 조인다 —
    800 무게의 한글 제목은 자간을 조이지 않으면 큰 크기에서 글자가 흩어져 보인다 */
 const TITLE_SIZE: Record<PageTitleSize, string> = {
-  page: "text-[26px] leading-[1.15] tracking-[-0.045em] sm:text-[32px]",
+  // 32 에서 28 로(2026-10-27) — 제목이 화면 첫 줄을 너무 크게 먹어 본문 시작이 밀렸다
+  page: "text-[24px] leading-[1.15] tracking-[-0.04em] sm:text-[28px]",
   hero: "text-[30px] leading-[1.1] tracking-[-0.045em] sm:text-[40px] sm:leading-[1.08]",
 };
 

@@ -30,8 +30,9 @@ export function PageTrail() {
   const crumbs = section && kind !== "back" && !TRAIL_NO_CRUMB_SECTIONS.has(section.key) ? [sub?.label, leaf].filter((x): x is string => Boolean(x)) : [];
 
   return (
-    // 아래 -mb 는 Page 의 위 여백(pad sub, 22px)과 겹쳐 경로와 제목 사이를 목업처럼 좁힌다
-    <div className="mx-auto -mb-2 flex w-full max-w-[var(--page-w)] flex-col gap-1.5 px-5 pt-4 sm:px-7">
+    // 한 줄에 둔다(2026-10-27, 사용자: "이전 화면 버튼이나 경로 표시가 너무 많은 영역을 차지한다"). 목업은 두 줄이었다.
+    // 되돌아가기와 경로 사이는 세로 헤어라인 하나로 가른다. 아래 -mb 는 Page 의 위 여백과 겹쳐 제목을 끌어올린다
+    <div className="mx-auto -mb-3 flex w-full max-w-[var(--page-w)] min-w-0 items-center gap-2.5 px-5 pt-3 sm:px-7">
       <Link
         href={fallback}
         onClick={(e) => {
@@ -39,13 +40,20 @@ export function PageTrail() {
           e.preventDefault();
           router.back();
         }}
-        className="tap -ml-1 inline-flex w-fit items-center gap-0.5 rounded-md px-1 text-[13px] text-mut hover:text-ink"
+        className="press tap -ml-1.5 inline-flex shrink-0 items-center gap-0.5 rounded-full py-1 pl-1 pr-2.5 text-[12.5px] font-medium text-mut transition-colors hover:bg-surface-2 hover:text-ink"
       >
-        <ChevronLeftIcon size={15} />
+        <ChevronLeftIcon size={14} />
         {M.back}
       </Link>
       {/* 가운데 낱말(칸)은 그 칸으로 가는 링크다 — 끝 낱말만 지금 화면 */}
-      {section && crumbs.length > 0 && <Crumbs items={[{ label: section.label, href: section.href }, ...crumbs.map((label) => ({ label, href: sub?.href }))]} />}
+      {section && crumbs.length > 0 && (
+        <>
+          <span aria-hidden className="h-3 w-px shrink-0 bg-line-strong" />
+          <div className="min-w-0 overflow-hidden">
+            <Crumbs items={[{ label: section.label, href: section.href }, ...crumbs.map((label) => ({ label, href: sub?.href }))]} />
+          </div>
+        </>
+      )}
     </div>
   );
 }
