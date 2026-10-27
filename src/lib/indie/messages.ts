@@ -274,7 +274,9 @@ export const INDIE_REVIEW_MESSAGES = {
   rejectedNotice: "등록이 반려됐어요. 사유를 보고 고쳐서 다시 신청해 주세요.",
   reason: "반려 사유",
   resubmit: "고쳐서 다시 신청",
-  flow: "먼저 신청하고, 운영진이 확인해 승인하면 최종 등록돼요. 승인 전에는 승인 대기로 보여요.",
+  /** 반려 사유를 바닥 시트로 여는 단추(components/indie/rejection-sheet) */
+  viewReason: "사유 보기",
+  reasonMissing: "운영진이 사유를 남기지 않았어요. 문의해 주시면 알려 드릴게요.",
   title: "등록현황",
   lead: "내 게임 등록으로 신청한 게임의 승인 상태를 확인해요. 운영진 승인이 끝나야 내가 만든 게임 목록에 올라가요.",
   total: "전체 신청",
@@ -283,5 +285,4 @@ export const INDIE_REVIEW_MESSAGES = {
   pendingShort: "운영진이 확인하고 있어요",
   liveShort: "내가 만든 게임에 보이고 있어요",
   emptyLead: "내 게임 등록으로 첫 게임을 올려 보세요.",
-  footnote: "승인 대기 중인 게임은 내가 만든 게임, 명예의 전당, 슈퍼루키 어디에도 보이지 않아요.",
 } as const;

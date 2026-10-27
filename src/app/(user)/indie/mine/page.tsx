@@ -1,5 +1,7 @@
 // /indie/mine — 등록현황(기획서 v2.0 S-22, 목업 mstPage). 내가 올린 게임의 승인 상태를 한 화면에서 본다.
-// 머리(제목, "내 게임 등록", 설명), 상단 집계 네 칸(전체 신청, 승인 대기, 등록 완료, 반려), 진행 순서 안내, 줄 목록, 아래 각주.
+// 머리(제목, "내 게임 등록", 설명), 상단 집계 네 칸(전체 신청, 승인 대기, 등록 완료, 반려), 줄 목록.
+// 진행 순서 안내와 아래 각주는 2026-10-27 걷었다(사용자: 두 문구 지우고 하단 공백 줄이기) — 머리 설명이 같은 말을 이미 한다.
+// 반려 줄(2026-10-27 사용자): 사유는 한 줄 맛보기 + "사유 보기"(바닥 시트에 전문, indie/rejection-sheet), "고쳐서 다시 신청" 은 채운 단추.
 // 반려 칸을 더한 이유: 기획서와 목업은 세 칸이지만 반려(협의 항목)를 실제로 두고 있어서, 세 칸이면 "전체" 가 나머지 둘의 합과 맞지 않는다.
 // 줄은 왼쪽에 이름과 "플랫폼, 장르 | 신청일", 오른쪽에 상태 알약과 한 줄 설명(운영진 확인 중, 노출 중, 반려 사유).
 // 반려된 글은 "고쳐서 다시 신청" 으로 고치기 화면에 간다 — 저장하면 다시 승인 대기다(services/indie/write).
@@ -8,6 +10,8 @@ import Link from "next/link";
 import { StatTile } from "@/components/community/news-blocks";
 import { WriteLink } from "@/components/community/write-link";
 import { EmptyState } from "@/components/empty-state";
+import { RejectionSheet } from "@/components/indie/rejection-sheet";
+import { buttonClass } from "@/components/ui/button";
 import { FormMessage } from "@/components/ui/form-message";
 import { Page, PageHead } from "@/components/ui/page";
 import { Clamp } from "@/components/ui/tooltip";
@@ -52,10 +56,6 @@ export default async function IndieMinePage({ searchParams }: Props) {
         <StatTile label={INDIE_REVIEW_LABEL.approved} value={approved} />
         <StatTile label={INDIE_REVIEW_LABEL.rejected} value={rejected} />
       </div>
-      {/* 기획서 S-22 승인 흐름 "신청, 운영진 승인, 최종 등록" 안내. 화살표 글자 대신 순서를 문장으로 말한다(AGENTS 4장) */}
-      <p role="note" className="rounded-[var(--radius-md)] bg-surface-2 px-4 py-3 text-[13.5px] leading-[1.6] text-mut shadow-hair">
-        {RV.flow}
-      </p>
 
       {posts.length === 0 ? (
         <EmptyState title={M.mineEmpty} description={RV.emptyLead} action={{ href: ROUTES.indieNew, label: INDIE_MESSAGES.register }} />
@@ -73,16 +73,19 @@ export default async function IndieMinePage({ searchParams }: Props) {
                   </Link>
                   <span className="truncate text-[12.5px] text-dim">{meta}</span>
                 </div>
-                <div className="flex shrink-0 flex-col items-end gap-1 text-right">
+                <div className="flex shrink-0 flex-col items-end gap-1.5 text-right">
                   <span className={cn("rounded-full px-3 py-[3px] text-[12.5px] font-bold", PILL[p.review])}>{INDIE_REVIEW_LABEL[p.review]}</span>
-                  {/* 반려 사유는 길 수 있다 — 잘리면 눌러서 전문을 보게 Clamp 로 자른다(AGENTS 3장) */}
+                  {/* 반려 사유는 길 수 있다 — 줄에서는 한 줄 맛보기만, 전문은 "사유 보기" 시트에서 */}
                   <Clamp lines={1} className={cn("max-w-[180px] text-[12px] sm:max-w-[280px]", p.review === "rejected" ? "text-danger" : "text-dim")}>
                     {note}
                   </Clamp>
                   {p.review === "rejected" && (
-                    <Link href={indieEditPath(p.id)} className="text-[12.5px] font-semibold text-acc hover:underline">
-                      {RV.resubmit}
-                    </Link>
+                    <div className="flex items-center gap-2">
+                      <RejectionSheet title={p.title} reason={p.reviewReason} editHref={indieEditPath(p.id)} />
+                      <Link href={indieEditPath(p.id)} className={buttonClass({ variant: "accent", size: "sm" })}>
+                        {RV.resubmit}
+                      </Link>
+                    </div>
                   )}
                 </div>
               </li>
@@ -90,7 +93,6 @@ export default async function IndieMinePage({ searchParams }: Props) {
           })}
         </ul>
       )}
-      <p className="text-[12px] text-dim">{RV.footnote}</p>
     </Page>
   );
 }
