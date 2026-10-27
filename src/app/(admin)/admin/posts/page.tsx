@@ -21,7 +21,8 @@ import { formatDateTime } from "@/lib/format";
 import { firstParam } from "@/lib/games-query";
 import { ROUTES } from "@/lib/routes";
 import { requireRoleOrForbid } from "@/server/auth/guards";
-import { listCommentsForAdmin, listPostsForAdmin, POST_ADMIN_LIMIT, POST_ADMIN_TABS, type AdminCommentRowDto, type AdminPostRowDto, type PostAdminTab } from "@/server/services/community";
+import { listAllCommentsForAdmin } from "@/server/services/indie";
+import { listPostsForAdmin, POST_ADMIN_LIMIT, POST_ADMIN_TABS, type AdminCommentRowDto, type AdminPostRowDto, type PostAdminTab } from "@/server/services/community";
 
 export const metadata: Metadata = { title: M.title };
 
@@ -78,7 +79,7 @@ function CommentRows({ rows }: { rows: AdminCommentRowDto[] }) {
       <DataHead cols={COMMENT_ADMIN_COLS} labels={[M.colComment, M.colOnPost, M.colAuthor, M.colWhen, M.colAction]} />
       <DataList>
         {rows.map((r) => (
-          <DataRow key={`${r.id}-${r.status}`} cols={COMMENT_ADMIN_COLS} align="start">
+          <DataRow key={`${r.kind}-${r.id}-${r.status}`} cols={COMMENT_ADMIN_COLS} align="start">
             <DataCell label={M.colComment}>
               <Clamp lines={3} className="whitespace-pre-line break-words text-ink">
                 {r.body}
@@ -104,7 +105,7 @@ function CommentRows({ rows }: { rows: AdminCommentRowDto[] }) {
               {formatDateTime(r.createdAt)}
             </DataCell>
             <DataCell>
-              <ContentModeration kind="comment" id={r.id} status={r.status} />
+              <ContentModeration kind={r.kind} id={r.id} status={r.status} />
             </DataCell>
           </DataRow>
         ))}
@@ -120,7 +121,7 @@ export default async function AdminPostsPage({ searchParams }: Props) {
   const tab: PostAdminTab = (POST_ADMIN_TABS as readonly string[]).includes(raw ?? "") ? (raw as PostAdminTab) : POST_ADMIN_TABS[0];
   const q = (firstParam(sp.q) ?? "").trim();
   const isComments = tab === "comments" || tab === "hiddenComments";
-  const comments = isComments ? await listCommentsForAdmin(tab === "hiddenComments", q) : null;
+  const comments = isComments ? await listAllCommentsForAdmin(tab === "hiddenComments", q) : null;
   const postRows = isComments ? null : await listPostsForAdmin(tab === "hidden" ? "hidden" : "posts", q);
   const shown = (comments ?? postRows ?? []).length;
 

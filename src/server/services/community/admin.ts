@@ -23,7 +23,7 @@ export const POST_ADMIN_LIMIT = 100;
 /** 한국 날짜의 오늘 0시(community/home 과 같은 식) — 관리자 요약의 "오늘" 도 한국 사람의 오늘이다 */
 const todayStartSql = sql`(date_trunc('day', now() at time zone 'Asia/Seoul') at time zone 'Asia/Seoul')`;
 
-function escapeLike(s: string): string {
+export function escapeLike(s: string): string {
   return s.replace(/[\\%_]/g, (m) => `\\${m}`);
 }
 
@@ -64,7 +64,7 @@ export async function listCommentsForAdmin(hidden: boolean, q = ""): Promise<Adm
     .where(and(...conds))
     .orderBy(desc(postComments.createdAt), desc(postComments.id))
     .limit(POST_ADMIN_LIMIT);
-  return rows.map(({ postId, postCategory, ...r }) => ({ ...r, postHref: postPath(postId, postCategory) }));
+  return rows.map(({ postId, postCategory, ...r }) => ({ ...r, kind: "comment" as const, postHref: postPath(postId, postCategory) }));
 }
 
 /** 글 숨김, 되살림. 돌려주는 경로는 액션이 캐시를 밀 자리다 */

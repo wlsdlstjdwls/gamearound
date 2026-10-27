@@ -52,6 +52,8 @@ export type AdminPostRowDto = PostRowDto & { authorEmail: string; status: "publi
 
 /** 관리자 댓글 목록 한 줄. 어느 글에 달렸는지와 그 글이 숨겨졌는지를 같이 본다 */
 export type AdminCommentRowDto = {
+  /** 어느 표의 댓글인가 — 게시판 글(comment)과 인디 글(indieComment, 2026-10-27). 숨김 액션이 이 값으로 표를 고른다 */
+  kind: "comment" | "indieComment";
   id: string;
   body: string;
   status: "published" | "hidden";

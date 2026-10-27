@@ -11,10 +11,11 @@ import { moderateContentAction } from "@/app/(admin)/admin/posts/actions";
 import { Button } from "@/components/ui/button";
 import { Tag } from "@/components/ui/tag";
 import { POST_ADMIN_MESSAGES as M } from "@/lib/admin/messages";
+import type { ContentModerationInput } from "@/lib/admin/moderation-schema";
 
 type Status = "published" | "hidden";
 
-export function ContentModeration({ kind, id, status }: { kind: "post" | "comment"; id: string; status: Status }) {
+export function ContentModeration({ kind, id, status }: { kind: ContentModerationInput["kind"]; id: string; status: Status }) {
   const [current, setCurrent] = useState<Status>(status);
   const [error, setError] = useState<string | null>(null);
   const [, start] = useTransition();

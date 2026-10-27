@@ -3,7 +3,8 @@
 import { z } from "zod";
 
 export const contentModerationSchema = z.object({
-  kind: z.enum(["post", "comment"]),
+  // indieComment: 인디 글 댓글(2026-10-27). 게시판 댓글과 같은 화면, 같은 단추로 숨긴다
+  kind: z.enum(["post", "comment", "indieComment"]),
   id: z.uuid(),
   decision: z.enum(["hide", "restore"]),
 });
