@@ -1430,3 +1430,83 @@ body:has([data-onboarding]) > [data-site-tabbar] {
 .sub-nav-notch:not([data-notch-ready]) > ul {
   transition: none;
 }
+
+/* ── 2026-10-27 게시판, 라운지, 인디 모션(사용자: "모션은 다른 화면들도 좀 추가해줘") ──
+ * 홈과 명예의 전당의 빛 말을 그대로 잇는다: 바탕을 오가는 빛 웅덩이, 판을 스치는 빛, 눌렀을 때 튀는 팝.
+ * 줄 목록 화면이라 늘 도는 것은 순위 칸과 머리 판뿐이고, 나머지는 hover, 누름에만 답한다 — 글을 읽는 화면에서 줄마다 움직이면 시끄럽다. */
+
+/* 밝은 판(현황 띠) 위의 빛 웅덩이. 손전등 노랑은 연파랑 위에서 탁해져 브랜드 파랑을 옅게 쓴다 */
+.hero-beam.beam-soft {
+  background: radial-gradient(closest-side, color-mix(in oklab, var(--acc) 16%, transparent), transparent 70%);
+}
+
+/* 글 줄 왼쪽에 빛 막대가 선다(게시판 홈 줄, 게시판 목록 줄, 오른쪽 패널 줄). 배경 한 겹만으로는 "어느 줄" 인지 약했다.
+   가운데서 위아래로 자라 "비춘다" 를 말한다. 키보드 포커스에도 같은 막대 — hover 없는 기기도 지금 줄을 안다 */
+.row-beam {
+  position: relative;
+}
+.row-beam::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 10px;
+  bottom: 10px;
+  width: 3px;
+  border-radius: 0 3px 3px 0;
+  background: var(--acc);
+  transform: scaleY(0);
+  transition: transform var(--duration-base) var(--ease-out-emph);
+  pointer-events: none;
+}
+.row-beam:focus-visible::before,
+.row-beam:has(:focus-visible)::before {
+  transform: scaleY(1);
+}
+@media (hover: hover) and (pointer: fine) {
+  .row-beam:hover::before {
+    transform: scaleY(1);
+  }
+}
+
+/* 급상승 1~3위 칸을 빛이 차례로 스친다(news-blocks RisingBlock). 순위마다 어긋남(--glint-delay)이 있어 위에서 아래로 흐른다 */
+.rank-glint {
+  position: relative;
+  overflow: hidden;
+}
+.rank-glint::after {
+  content: "";
+  position: absolute;
+  inset: 0 auto 0 0;
+  width: 60%;
+  pointer-events: none;
+  background: linear-gradient(90deg, transparent, color-mix(in oklab, var(--on-ink) 45%, transparent), transparent);
+  animation: glint-sweep calc(var(--duration-glint) * 6) var(--ease-standard) var(--glint-delay, 900ms) infinite;
+}
+
+/* 커버에 손을 올리면 빛이 한 번 비스듬히 지나간다(인디 카드, 글 상세의 관련 게임 카드).
+   전환은 hover 상태에만 건다 — 손을 떼면 띠가 소리 없이 제자리(왼쪽 밖)로 돌아가고, 되감기는 빛이 보이지 않는다 */
+.cover-glint::after {
+  content: "";
+  position: absolute;
+  inset: 0 auto 0 0;
+  width: 45%;
+  pointer-events: none;
+  background: linear-gradient(90deg, transparent, color-mix(in oklab, var(--on-ink) 30%, transparent), transparent);
+  transform: translateX(-120%) skewX(-18deg);
+}
+@media (hover: hover) and (pointer: fine) {
+  .cover-zoom:hover .cover-glint::after {
+    transform: translateX(300%) skewX(-18deg);
+    transition: transform var(--duration-glint) var(--ease-standard);
+  }
+}
+
+/* 좋아요, 찜 수가 바뀌면 숫자가 아래에서 올라와 앉는다. 값이 바뀔 때 key 로 다시 붙여 한 번만 돈다 */
+@keyframes count-tick {
+  from { opacity: 0; transform: translateY(45%); }
+  to { opacity: 1; transform: none; }
+}
+.count-tick {
+  display: inline-block;
+  animation: count-tick var(--duration-base) var(--ease-out-emph);
+}

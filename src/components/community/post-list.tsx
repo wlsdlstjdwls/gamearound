@@ -21,7 +21,7 @@ export function PostList({ posts, rank = false, rankFrom = 1, showCategory = tru
     <ul className={cn("divide-y divide-line-soft", bare ? "-mx-1" : "overflow-hidden rounded-[var(--radius-md)] bg-surface shadow-hair")}>
       {posts.map((p, i) => (
         <li key={p.id} className="enter-item" style={stagger(i)}>
-          <Link href={p.href} className={cn("group flex min-h-[var(--touch-target)] flex-col gap-1 py-3 transition-colors hover:bg-surface-2 sm:flex-row sm:items-center sm:gap-4", bare ? "rounded-lg px-1" : "px-4")}>
+          <Link href={p.href} className={cn("row-beam group flex min-h-[var(--touch-target)] flex-col gap-1 py-3 transition-colors hover:bg-surface-2 sm:flex-row sm:items-center sm:gap-4", bare ? "rounded-lg px-1" : "px-4")}>
             <span className="flex min-w-0 flex-1 items-center gap-2">
               {rank && <span className="w-6 shrink-0 text-center text-[13px] font-bold tabular-nums text-acc">{rankFrom + i}</span>}
               <PostTags post={p} showCategory={showCategory} />

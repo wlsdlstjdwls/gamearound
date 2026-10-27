@@ -49,8 +49,12 @@ export function PostReactions({ postId, liked: initLiked, likeCount: initCount, 
   return (
     <div className="flex items-center justify-center gap-2">
       <button type="button" aria-pressed={shownLike.on} onClick={() => gate(`like:${postId}`, doLike)} className={pill(shownLike.on)}>
-        <HeartIcon size={17} className={shownLike.on ? "fill-current" : undefined} />
-        {M.like} <span className="tabular-nums">{shownLike.n.toLocaleString("ko-KR")}</span>
+        {/* 켜는 순간 하트가 튀고(찜 하트와 같은 pop), 수는 아래에서 올라와 앉는다 — 값이 바뀔 때마다 key 로 다시 붙인다 */}
+        <HeartIcon size={17} className={shownLike.on ? "animate-pop fill-current" : undefined} />
+        {M.like}{" "}
+        <span key={shownLike.n} className="count-tick tabular-nums">
+          {shownLike.n.toLocaleString("ko-KR")}
+        </span>
       </button>
       <button type="button" aria-pressed={shownSaved} onClick={() => gate(`save:${postId}`, doSave)} className={pill(shownSaved)}>
         {shownSaved ? M.savedLabel : M.save}

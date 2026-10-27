@@ -80,8 +80,10 @@ export default async function IndiePage({ searchParams }: Props) {
     <Page gap={20}>
       {head}
 
-      {/* 명예의 전당 안내(기획서 v2.0 S-18 "명예의 전당에 올라보세요") — 승인된 게임만 서는 화면이라 다음 목표를 함께 말한다 */}
-      <aside className="flex flex-col items-start gap-3 rounded-[var(--radius-md)] bg-acc-soft px-5 py-4 shadow-[inset_0_0_0_1px_var(--acc-3)] sm:flex-row sm:items-center sm:justify-between">
+      {/* 명예의 전당 안내(기획서 v2.0 S-18 "명예의 전당에 올라보세요") — 승인된 게임만 서는 화면이라 다음 목표를 함께 말한다.
+          게시판 현황 띠와 같은 빛 웅덩이가 판 위를 천천히 오간다(.hero-beam.beam-soft) */}
+      <aside className="relative isolate flex flex-col items-start gap-3 overflow-hidden rounded-[var(--radius-md)] bg-acc-soft px-5 py-4 shadow-[inset_0_0_0_1px_var(--acc-3)] sm:flex-row sm:items-center sm:justify-between">
+        <span aria-hidden className="hero-beam beam-soft" />
         <div className="flex flex-col gap-1">
           <p className="text-[15px] font-bold text-ink">{M.hofBannerTitle}</p>
           <p className="text-[13.5px] text-mut">{M.hofBannerLead}</p>

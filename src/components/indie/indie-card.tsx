@@ -34,7 +34,8 @@ export function IndieTagPills({ platforms, genres }: { platforms: readonly Indie
 export function IndieCard({ post, badge, from }: { post: IndieCardDto; badge?: React.ReactNode; from?: IndieFrom }) {
   return (
     <div className={cn(CARD_SHELL, "cover-zoom group relative")}>
-      <span className={COVER_CLASS}>
+      {/* 손을 올리면 그림이 살짝 자라고 빛이 한 번 스친다(.cover-glint) */}
+      <span className={cn(COVER_CLASS, "cover-glint")}>
         <span className="cover-zoom-img absolute inset-0 block">
           <CoverImage src={post.cover.url} alt={M.coverAlt(post.title)} sizes="(max-width: 640px) 100vw, (max-width: 768px) 50vw, 25vw" />
         </span>

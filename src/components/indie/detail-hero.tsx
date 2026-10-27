@@ -28,6 +28,8 @@ export function IndieDetailHero({ post, links }: { post: IndieDetailDto; links: 
           <CoverImage src={cover.url} alt="" sizes="40vw" />
         </div>
       )}
+      {/* 대표 그림 위로 파란 손전등 빛이 천천히 오간다(명예의 전당 머리 판과 같은 빛) */}
+      <span aria-hidden className="hero-beam beam-cool" />
       <div
         aria-hidden
         className="pointer-events-none absolute inset-0 -z-10"

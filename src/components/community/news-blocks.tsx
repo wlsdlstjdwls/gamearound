@@ -89,11 +89,13 @@ export function RisingBlock({ posts, allHref, now }: { posts: PostRowDto[]; allH
           <ol className="divide-y divide-line-soft">
             {posts.map((p, i) => (
               <li key={p.id} className="enter-item" style={stagger(i)}>
-                <Link href={p.href} className="group grid grid-cols-[30px_minmax(0,1fr)] items-center gap-x-3.5 gap-y-1.5 px-4 py-3.5 transition-colors hover:bg-surface-2 sm:grid-cols-[30px_minmax(0,1fr)_auto] sm:px-5">
-                  {/* 1~3위만 채운 칸 — 순위가 곧 "얼마나 뜨거운가" 라 위 셋을 눈이 먼저 잡게 한다 */}
+                <Link href={p.href} className="row-beam group grid grid-cols-[30px_minmax(0,1fr)] items-center gap-x-3.5 gap-y-1.5 px-4 py-3.5 transition-colors hover:bg-surface-2 sm:grid-cols-[30px_minmax(0,1fr)_auto] sm:px-5">
+                  {/* 1~3위만 채운 칸 — 순위가 곧 "얼마나 뜨거운가" 라 위 셋을 눈이 먼저 잡게 한다.
+                      그 셋만 빛이 위에서 아래로 차례로 스친다(.rank-glint) */}
                   <span
                     aria-label={M.rankLabel(i + 1)}
-                    className={cn("flex size-[30px] items-center justify-center rounded-lg text-[14px] font-extrabold tabular-nums", i < 3 ? "bg-acc text-on-ink" : "bg-surface-2 text-dim")}
+                    className={cn("flex size-[30px] items-center justify-center rounded-lg text-[14px] font-extrabold tabular-nums", i < 3 ? "rank-glint bg-acc text-on-ink" : "bg-surface-2 text-dim")}
+                    style={i < 3 ? rankGlint(i) : undefined}
                   >
                     {i + 1}
                   </span>
@@ -128,6 +130,13 @@ export function RisingBlock({ posts, allHref, now }: { posts: PostRowDto[]; allH
   );
 }
 
+/** 순위 칸 빛의 어긋남 — 1위부터 한 칸씩 늦게 출발해 위에서 아래로 흐른다. 첫 출발은 줄 등장이 끝난 뒤다 */
+const RANK_GLINT_START_MS = 900;
+const RANK_GLINT_STEP_MS = 260;
+function rankGlint(i: number): React.CSSProperties {
+  return { "--glint-delay": `${RANK_GLINT_START_MS + i * RANK_GLINT_STEP_MS}ms` } as React.CSSProperties;
+}
+
 /** zero: 딱지 문구("댓글 0" / "답변 0"). 라운지는 질문만 모으므로 "답변" 이라 부른다 */
 export function WaitingBlock({ title, note, posts, cta, zero, now }: { title: string; note: string; posts: PostRowDto[]; cta: string; zero: string; now: number }) {
   return (
@@ -142,7 +151,7 @@ export function WaitingBlock({ title, note, posts, cta, zero, now }: { title: st
               <li key={p.id} className="enter-item" style={stagger(i)}>
                 {/* 줄 전체가 글로 가고, 알약은 댓글 칸으로 바로 내린다. 알약을 줄 안의 두 번째 링크로 두면
                     링크 안의 링크가 된다 — 그래서 알약은 줄 링크 밖, 같은 칸 오른쪽에 겹쳐 세운다 */}
-                <div className="relative grid grid-cols-[minmax(0,1fr)] items-center gap-x-4 gap-y-2 px-4 py-3.5 transition-colors hover:bg-surface-2 sm:grid-cols-[minmax(0,1fr)_auto] sm:px-5">
+                <div className="row-beam grid grid-cols-[minmax(0,1fr)] items-center gap-x-4 gap-y-2 px-4 py-3.5 transition-colors hover:bg-surface-2 sm:grid-cols-[minmax(0,1fr)_auto] sm:px-5">
                   <Link href={p.href} className="group flex min-w-0 flex-col gap-1 after:absolute after:inset-0">
                     <MetaLine flag={<Tag tone="info">{zero}</Tag>} post={p} now={now} />
                     <TitleLine post={p} awaiting={false} />
@@ -232,7 +241,7 @@ export function SidePanel({ id, title, action, guide, children }: { id: string; 
 /** 패널 안 한 줄 — 글자 칸(이름 첫 글자), 제목과 보조 줄, 오른쪽 알약 링크 */
 export function SideRow({ mark, title, lines, href, cta, muted = false }: { mark: string; title: string; lines: React.ReactNode[]; href: string; cta: string; muted?: boolean }) {
   return (
-    <div className="relative grid grid-cols-[48px_minmax(0,1fr)_auto] items-center gap-3 rounded-[var(--radius-inset)] bg-surface-4 p-3 transition-colors hover:bg-surface-2 sm:grid-cols-[52px_minmax(0,1fr)_auto]">
+    <div className="row-beam grid grid-cols-[48px_minmax(0,1fr)_auto] items-center gap-3 overflow-hidden rounded-[var(--radius-inset)] bg-surface-4 p-3 transition-colors hover:bg-surface-2 sm:grid-cols-[52px_minmax(0,1fr)_auto]">
       <span aria-hidden className="flex size-12 items-center justify-center rounded-[10px] bg-acc-soft text-[19px] font-extrabold text-acc sm:size-[52px]">
         {mark}
       </span>

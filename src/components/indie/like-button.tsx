@@ -46,9 +46,12 @@ export function IndieLikeButton({ postId, likeCount }: { postId: string; likeCou
 
   return (
     <button type="button" aria-pressed={shown.on} onClick={() => gate(action, toggle)} className={buttonClass({ variant: "secondary", size: "lg", className: cn(shown.on && "border-acc text-acc") })}>
-      <HeartIcon size={17} className={shown.on ? "fill-current" : undefined} />
+      {/* 켜는 순간 하트가 튀고 수가 올라와 앉는다(게시글 좋아요와 같은 움직임) */}
+      <HeartIcon size={17} className={shown.on ? "animate-pop fill-current" : undefined} />
       {shown.on ? M.wished : M.wish}
-      <span className="tabular-nums text-dim">{shown.n.toLocaleString("ko-KR")}</span>
+      <span key={shown.n} className="count-tick tabular-nums text-dim">
+        {shown.n.toLocaleString("ko-KR")}
+      </span>
     </button>
   );
 }
