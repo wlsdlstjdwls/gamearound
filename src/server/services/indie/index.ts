@@ -4,3 +4,6 @@ export * from "./write";
 export * from "./moderation";
 export * from "./fame";
 export * from "./lounge";
+export * from "./promo";
+export * from "./comments";
+export * from "./stats";

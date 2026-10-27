@@ -9,6 +9,7 @@ import { COMMUNITY_MESSAGES as M } from "@/lib/community/messages";
 import { commentInputSchema, postInputSchema } from "@/lib/community/schemas";
 import { addComment, createPost, PostGameNotFoundError, toggleLike, toggleSave, type CommentDto } from "@/server/services/community";
 import { notifyComment } from "@/server/services/notifications";
+import { notifyFollowersOfDevlog } from "@/server/services/indie";
 
 export type PostActionState = { ok: true; redirectTo: string } | { ok: false; error?: string; fieldErrors?: Record<string, string> } | null;
 
@@ -26,6 +27,8 @@ export async function createPostAction(input: Record<string, string>): Promise<P
   }
   try {
     const row = await createPost(parsed.data);
+    // 개발일지는 개발자 소식을 받는 사람의 알림함으로 간다(2026-10-27). 알림은 덤이다 — 실패해도 글은 섰다
+    if (row.category === "devlog") await notifyFollowersOfDevlog({ authorUserId: row.authorUserId, postId: row.id, title: row.title, category: row.category }).catch(() => {});
     revalidatePath(CATEGORY_LIST_PATH[row.category]);
     // 등록 뒤 그 카테고리의 목록으로 간다(기획서 6.4 "등록 후 이동")
     return { ok: true, redirectTo: CATEGORY_LIST_PATH[row.category] };

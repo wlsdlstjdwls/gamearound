@@ -85,7 +85,10 @@ export function SpoilerGate({ isMine, children }: { isMine: boolean; children: R
   );
 }
 
-export function Comments({ postId, initial }: { postId: string; initial: CommentDto[] }) {
+/** 댓글을 받는 액션. 게시판 글이 기본이고, 인디 글은 자기 액션을 넘긴다(받는 표만 다르고 입력, 결과 모양은 같다) */
+type AddCommentAction = typeof addCommentAction;
+
+export function Comments({ postId, initial, addAction = addCommentAction }: { postId: string; initial: CommentDto[]; addAction?: AddCommentAction }) {
   const gate = useLoginGate();
   const [list, setList] = useState(initial);
   const [body, setBody] = useState("");
@@ -101,7 +104,7 @@ export function Comments({ postId, initial }: { postId: string; initial: Comment
       forgetDraft(action);
       setError(null);
       // 망이 끊겨 액션 자체가 던지면 화면 전체 오류로 번지지 않게 칸 아래 오류로 접는다 — 쓴 글은 칸에 그대로 남는다
-      const r = await addCommentAction({ postId, body: text }).catch(() => ({ ok: false as const, error: M.failed }));
+      const r = await addAction({ postId, body: text }).catch(() => ({ ok: false as const, error: M.failed }));
       if (!r.ok) {
         setError(r.error);
         return;

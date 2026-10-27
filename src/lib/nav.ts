@@ -95,6 +95,7 @@ export const NAV_SECTIONS: readonly NavSection[] = [
       { label: "개발일지", href: ROUTES.loungeDevlogs },
       { label: "질문, 피드백", href: ROUTES.loungeQna },
       { label: "등록현황", href: ROUTES.indieMine, childQueries: [{ parent: ROUTES.indie, query: { [INDIE_FROM_PARAM]: INDIE_FROM.mine } }] },
+      { label: "내 게임 통계", href: ROUTES.indieStats },
     ],
   },
 ];

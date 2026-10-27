@@ -1,18 +1,20 @@
 // 명예의 전당(S-08), 슈퍼루키(S-09), 인디 게임 찜과 조회 기록. 점수 식과 근거는 lib/indie/fame 머리 주석.
 // 대상은 모두 "승인된 공개 글" 이다(isPublic) — 승인 대기 게임은 어느 순위에도 서지 않는다(기획서 7장).
 import "server-only";
-import { and, desc, eq, gte, inArray, lt, sql } from "drizzle-orm";
+import { and, desc, eq, gte, inArray, lt, sql, type SQL } from "drizzle-orm";
 import { getDb } from "@/server/db/client";
 import { createdBy } from "@/server/db/audit";
-import { hallOfFameMonths, indiePostLikes, indiePosts, indieViewMonths } from "@/server/db/schema";
+import { hallOfFameMonths, indiePostComments, indiePostLikes, indiePosts, indieViewMonths } from "@/server/db/schema";
 import { getCurrentUser, requireUser } from "@/server/services/users";
 import {
+  HOF_COMMENT_WEIGHT,
   HOF_LIKE_WEIGHT,
   HOF_MIN_LIKES,
   HOF_TOP,
   HOF_VIEWS_PER_POINT,
   kstYm,
   prevYm,
+  ROOKIE_COMMENT_WEIGHT,
   ROOKIE_LIKE_WEIGHT,
   ROOKIE_LIMIT,
   ROOKIE_VIEWS_PER_POINT,
@@ -21,10 +23,25 @@ import {
 } from "@/lib/indie/fame";
 import type { IndieCardDto } from "@/lib/indie/dto";
 import { cardColumns, isPublic, toCards } from "./read";
+import { bumpIndieViewDay } from "./promo";
 
 /** change: 지난달 대비 점수 변화(%). null 이면 지난달 점수가 없다(새로 진입). 역대 선정작 줄처럼 견줄 일이 없는 자리는 undefined */
 export type RankedIndie = { card: IndieCardDto; score: number; likes: number; change?: number | null };
 export type RookieIndie = { card: IndieCardDto; daysSince: number; likes: number };
+
+/** 댓글 점수의 재료 — 글쓴이가 아닌 서로 다른 사람 수(lib/indie/fame 머리 주석). 숨긴 댓글은 안 센다 */
+const commenterCount = sql<number>`count(distinct ${indiePostComments.authorUserId})::int`;
+const notAuthorComment = and(sql`${indiePostComments.authorUserId} <> ${indiePosts.authorUserId}`, eq(indiePostComments.status, "published"));
+
+/** 그 기간 글마다의 댓글 사람 수. 범위를 안 주면 전체 기간, ids 를 주면 그 글만 */
+function commentersQuery(range?: { start: SQL; end: SQL }, ids?: string[]) {
+  return getDb()
+    .select({ postId: indiePostComments.postId, n: commenterCount.as("commenter_n") })
+    .from(indiePostComments)
+    .innerJoin(indiePosts, eq(indiePosts.id, indiePostComments.postId))
+    .where(and(notAuthorComment, range && gte(indiePostComments.createdAt, range.start), range && lt(indiePostComments.createdAt, range.end), ids && inArray(indiePostComments.postId, ids)))
+    .groupBy(indiePostComments.postId);
+}
 
 /** 한국 달의 시작, 끝(끝은 다음 달 1일 0시) */
 function ymRange(ym: string) {
@@ -41,6 +58,8 @@ export async function recordIndieView(postId: string, authorUserId: string): Pro
   const ym = kstYm(new Date());
   await Promise.all([
     db.update(indiePosts).set({ viewCount: sql`${indiePosts.viewCount} + 1` }).where(eq(indiePosts.id, postId)),
+    // 하루 조회(내 게임 통계의 "지난 30일") — 달 집계로는 30일을 못 센다(schema-indie-promo)
+    bumpIndieViewDay(postId),
     db
       .insert(indieViewMonths)
       .values({ postId, ym, views: 1, ...createdBy("system") })
@@ -75,10 +94,12 @@ export async function toggleIndieLike(postId: string): Promise<{ liked: boolean;
 /** 슈퍼루키 — 승인 뒤 30일 미만, 주목도 상위 12 */
 export async function listRookies(): Promise<RookieIndie[]> {
   const ageDays = sql`(extract(epoch from (now() - ${indiePosts.reviewedAt})) / 86400.0)`;
-  const score = sql`((${indiePosts.likeCount} * ${ROOKIE_LIKE_WEIGHT}::int + ${indiePosts.viewCount} / ${ROOKIE_VIEWS_PER_POINT}::numeric) * (1 - ${ageDays} / ${ROOKIE_WINDOW_DAYS}::numeric))`;
+  const commenters = commentersQuery().as("commenters");
+  const score = sql`((${indiePosts.likeCount} * ${ROOKIE_LIKE_WEIGHT}::int + coalesce(${commenters.n}, 0) * ${ROOKIE_COMMENT_WEIGHT}::int + ${indiePosts.viewCount} / ${ROOKIE_VIEWS_PER_POINT}::numeric) * (1 - ${ageDays} / ${ROOKIE_WINDOW_DAYS}::numeric))`;
   const rows = await getDb()
     .select({ ...cardColumns, likes: indiePosts.likeCount, days: sql<number>`floor(${ageDays})::int` })
     .from(indiePosts)
+    .leftJoin(commenters, eq(commenters.postId, indiePosts.id))
     .where(and(isPublic, gte(indiePosts.reviewedAt, sql`now() - make_interval(days => ${ROOKIE_WINDOW_DAYS}::int)`)))
     .orderBy(desc(score), desc(indiePosts.reviewedAt))
     .limit(ROOKIE_LIMIT);
@@ -100,11 +121,13 @@ async function liveRanking(ym: string): Promise<Array<{ id: string; score: numbe
     .where(and(gte(indiePostLikes.createdAt, start), lt(indiePostLikes.createdAt, end)))
     .groupBy(indiePostLikes.postId)
     .as("month_likes");
-  const score = sql<number>`(${likes.n} * ${HOF_LIKE_WEIGHT}::int + coalesce(${indieViewMonths.views}, 0) / ${HOF_VIEWS_PER_POINT}::int)::int`;
+  const commenters = commentersQuery({ start, end }).as("month_commenters");
+  const score = sql<number>`(${likes.n} * ${HOF_LIKE_WEIGHT}::int + coalesce(${commenters.n}, 0) * ${HOF_COMMENT_WEIGHT}::int + coalesce(${indieViewMonths.views}, 0) / ${HOF_VIEWS_PER_POINT}::int)::int`;
   const rows = await db
     .select({ id: indiePosts.id, likes: likes.n, score })
     .from(indiePosts)
     .innerJoin(likes, eq(likes.postId, indiePosts.id))
+    .leftJoin(commenters, eq(commenters.postId, indiePosts.id))
     .leftJoin(indieViewMonths, and(eq(indieViewMonths.postId, indiePosts.id), eq(indieViewMonths.ym, ym)))
     .where(and(isPublic, gte(likes.n, HOF_MIN_LIKES)))
     .orderBy(desc(score), desc(likes.n))
@@ -113,23 +136,25 @@ async function liveRanking(ym: string): Promise<Array<{ id: string; score: numbe
 }
 
 /**
- * 그 달 점수를 글마다 센다 — liveRanking 과 같은 식(찜 가중 + 조회 환산)이되 상위 자르기와 최소 찜 문턱은 없다.
+ * 그 달 점수를 글마다 센다 — liveRanking 과 같은 식(찜 가중 + 댓글 가중 + 조회 환산)이되 상위 자르기와 최소 찜 문턱은 없다.
  * 순위표의 "지난달 대비" 를 세는 데 쓴다: 지난달에 10위 밖이었던 글도 지난달 점수는 있다.
  */
 async function monthScores(ym: string, ids: string[]): Promise<Map<string, number>> {
   if (ids.length === 0) return new Map();
   const db = getDb();
   const { start, end } = ymRange(ym);
-  const [likeRows, viewRows] = await Promise.all([
+  const [likeRows, viewRows, commentRows] = await Promise.all([
     db
       .select({ id: indiePostLikes.postId, n: sql<number>`count(*)::int` })
       .from(indiePostLikes)
       .where(and(inArray(indiePostLikes.postId, ids), gte(indiePostLikes.createdAt, start), lt(indiePostLikes.createdAt, end)))
       .groupBy(indiePostLikes.postId),
     db.select({ id: indieViewMonths.postId, views: indieViewMonths.views }).from(indieViewMonths).where(and(inArray(indieViewMonths.postId, ids), eq(indieViewMonths.ym, ym))),
+    commentersQuery({ start, end }, ids),
   ]);
   const out = new Map<string, number>();
   for (const r of likeRows) out.set(r.id, r.n * HOF_LIKE_WEIGHT);
+  for (const r of commentRows) out.set(r.postId, (out.get(r.postId) ?? 0) + r.n * HOF_COMMENT_WEIGHT);
   // 정수 나눗셈 — liveRanking 의 views / HOF_VIEWS_PER_POINT::int 와 같게 내림한다
   for (const r of viewRows) out.set(r.id, (out.get(r.id) ?? 0) + Math.floor(r.views / HOF_VIEWS_PER_POINT));
   return out;

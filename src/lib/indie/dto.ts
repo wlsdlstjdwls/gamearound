@@ -98,3 +98,16 @@ export type IndieAdminRowDto = {
   game: IndieGameLinkDto | null;
   createdAt: string;
 };
+
+/** 내 게임 통계 한 줄(2026-10-27). 기간 수는 지난 INDIE_STATS_WINDOW_DAYS 일, 전체 수는 쌓아 둔 값이다 */
+export type IndieStatsTotals = { views: number; plays: number; outbound: number; likes: number; comments: number };
+export type IndieStatsRowDto = {
+  id: string;
+  slug: string;
+  title: string;
+  /** 공개(승인, 공개) 중인가. 아니면 반응이 모일 수 없어 화면이 안내를 단다 */
+  live: boolean;
+  window: IndieStatsTotals;
+  allTime: { views: number; likes: number; comments: number };
+};
+export type IndieStatsDto = { followers: number; window: IndieStatsTotals; rows: IndieStatsRowDto[] };

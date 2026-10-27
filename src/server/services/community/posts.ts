@@ -111,7 +111,7 @@ export async function getPostCategory(id: string): Promise<PostCategory | null> 
  * 등록. 카테고리에 맞지 않는 칸은 버린다(리뷰 아닌 글의 스포, 홍보 아닌 글의 유형, 링크, 라운지 글의 게임).
  * 관련 게임은 slug 로 받아 id 로 바꾼다 — 화면은 id 를 모른다(자동완성 응답이 slug 만 준다).
  */
-export async function createPost(input: PostInput): Promise<{ id: string; category: PostCategory }> {
+export async function createPost(input: PostInput): Promise<{ id: string; category: PostCategory; authorUserId: string; title: string }> {
   const u = await requireUser();
   const db = getDb();
   let gameId: string | null = null;
@@ -134,7 +134,7 @@ export async function createPost(input: PostInput): Promise<{ id: string; catego
       ...createdBy("user", u.id),
     })
     .returning({ id: posts.id, category: posts.category });
-  return row;
+  return { ...row, authorUserId: u.id, title: input.title };
 }
 
 /** 내가 쓴 글(내 활동 S-24). 게시판과 같은 한 쪽 20줄로 끊는다(기획서 4.3) — 글이 쌓이면 한 화면에 수백 줄이 섰다 */

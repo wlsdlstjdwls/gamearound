@@ -1,16 +1,19 @@
 // 명예의 전당, 슈퍼루키 상수와 순수 도우미(기획서 v2.0 5.1 S-08, S-09, 7장). 점수 식은 2026-10-26 사용자가 확정한 제안이다.
-//   슈퍼루키: (찜 x 3 + 조회 / 50) x (1 - 경과일 / 30), 승인 뒤 30일 미만, 상위 12
-//   명예의 전당: 그 달의 찜 증가 x 3 + 그 달 조회 / 20, 그 달 찜 5개 이상만, TOP 10. 월말에 확정하고 이번 달은 실시간 잠정 순위
-// 제안에 있던 댓글 항목은 아직 뺐다 — 인디 글에는 댓글이 없다(게시판 홍보 글과 이어지면 더한다).
+//   슈퍼루키: (찜 x 3 + 댓글 x 2 + 조회 / 50) x (1 - 경과일 / 30), 승인 뒤 30일 미만, 상위 12
+//   명예의 전당: 그 달의 찜 증가 x 3 + 그 달 댓글 x 2 + 그 달 조회 / 20, 그 달 찜 5개 이상만, TOP 10. 월말에 확정하고 이번 달은 실시간 잠정 순위
+// 댓글 항목은 2026-10-27 인디 글 댓글이 생기며 되살렸다. 댓글은 "글쓴이가 아닌 서로 다른 사람 수" 로 센다 — 줄 수로 세면
+// 개발자가 답글을 달수록, 한 사람이 댓글을 여러 번 달수록 점수가 오른다. 찜(한 사람 한 번, 3점)보다 가볍게 둔 이유: 댓글은 찜보다 쉽게 쌓인다.
 
 export const ROOKIE_WINDOW_DAYS = 30;
 export const ROOKIE_LIMIT = 12;
 export const ROOKIE_LIKE_WEIGHT = 3;
 export const ROOKIE_VIEWS_PER_POINT = 50;
+export const ROOKIE_COMMENT_WEIGHT = 2;
 
 export const HOF_TOP = 10;
 export const HOF_LIKE_WEIGHT = 3;
 export const HOF_VIEWS_PER_POINT = 20;
+export const HOF_COMMENT_WEIGHT = 2;
 /** 그 달 찜이 이만큼은 있어야 순위에 선다 — 혼자 새로고침해 조회만 올린 글이 1위에 서지 않게 */
 export const HOF_MIN_LIKES = 5;
 

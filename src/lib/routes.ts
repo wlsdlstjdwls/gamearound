@@ -60,6 +60,8 @@ export const ROUTES = {
   indie: "/indie",
   indieNew: "/indie/new",
   indieMine: "/indie/mine",
+  /** 내 게임 통계(2026-10-27). /indie/mine/[id] 는 uuid 라 낱말 "stats" 와 부딪히지 않는다 */
+  indieStats: "/indie/mine/stats",
   /**
    * 기획서 v2.0 의 새 갈래(2026-10-26). 화면이 생기기 전까지는 "준비 중" 화면이 선다(components/coming-soon).
    * 명예의 전당, 슈퍼루키를 /indie 아래에 두지 않은 이유: /indie/<slug> 가 인디 글 주소라 글 주소와 부딪힌다
@@ -181,6 +183,14 @@ export const SHOP_PHOTO_UPLOAD_PATH = "/api/shops/photos/upload";
 
 /** 인디 홍보 글 그림 업로드 토큰 발급. 매장 사진과 같은 방식이다(글쓴이만 받는다) */
 export const INDIE_IMAGE_UPLOAD_PATH = "/api/indie/images/upload";
+
+/**
+ * 인디 글 바깥 링크로 나가는 경유 주소(플레이하기 클릭 집계). 주소가 아니라 링크 순번을 싣는다 —
+ * 받은 주소로 넘기면 우리 도메인이 아무 데로나 보내 주는 열린 리다이렉트가 된다. 목적지는 서버가 글에서 다시 읽는다
+ */
+export function indieOutPath(postId: string, linkIndex: number): string {
+  return `/api/indie/out/${encodeURIComponent(postId)}?i=${linkIndex}`;
+}
 
 /** 인디 홍보 글 공개 화면 */
 export function indiePath(slug: string): string {

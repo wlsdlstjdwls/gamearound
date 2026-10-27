@@ -10,6 +10,7 @@ import { getDb } from "@/server/db/client";
 import { createdBy, updatedBy } from "@/server/db/audit";
 import { indiePostImages, indiePostReports, indiePosts } from "@/server/db/schema";
 import { deleteBlobs } from "@/server/services/blob-files";
+import { notifyIndieRelease } from "./promo";
 import { slugify } from "@/lib/slug";
 import { PHOTO_CONTENT_TYPES } from "@/lib/shops/constants";
 import {
@@ -44,7 +45,7 @@ function makeSlug(title: string): string {
 /** 이 사람의 글이면 그 행을, 아니면 null. 관리자는 누구 글이든 받는다 */
 async function ownedPost(postId: string, actor: IndieActor) {
   const where = actor.isAdmin ? eq(indiePosts.id, postId) : and(eq(indiePosts.id, postId), eq(indiePosts.authorUserId, actor.userId));
-  const rows = await getDb().select({ id: indiePosts.id, slug: indiePosts.slug, gameId: indiePosts.gameId, review: indiePosts.review }).from(indiePosts).where(where).limit(1);
+  const rows = await getDb().select({ id: indiePosts.id, slug: indiePosts.slug, gameId: indiePosts.gameId, review: indiePosts.review, stage: indiePosts.stage }).from(indiePosts).where(where).limit(1);
   return rows[0] ?? null;
 }
 
@@ -102,6 +103,8 @@ export async function updateIndiePost(postId: string, actor: IndieActor, input: 
       ...updatedBy(actorSource(actor), actor.userId),
     })
     .where(eq(indiePosts.id, post.id));
+  // 출시로 넘어간 순간 소식 받는 사람, 찜한 사람에게 알린다(services/indie/promo). 알림은 덤이라 실패해도 저장은 섰다
+  if (post.stage !== "released" && input.stage === "released") await notifyIndieRelease(post.id).catch(() => {});
   return { slug: post.slug };
 }
 
