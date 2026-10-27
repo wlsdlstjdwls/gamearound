@@ -63,7 +63,8 @@ export function toIsoDate(raw: string | null): string | null {
 /** 라벨 서비스는 값이 없으면 Q번호를 그대로 돌려준다. 그건 사람이 읽을 이름이 아니라서 버린다 */
 function humanLabel(raw: string | null): string | null {
   if (!raw) return null;
-  return /^Q\d+$/.test(raw) ? null : raw;
+  // Q번호, 값 대신 오는 내부 식별자 URL(.well-known/genid)은 이름이 아니다
+  return /^Q\d+$/.test(raw) || /^https?:\/\//.test(raw) ? null : raw;
 }
 
 /**

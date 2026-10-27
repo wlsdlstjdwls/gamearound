@@ -1,6 +1,6 @@
 // 회사명 정규화 테스트 — 실측으로 확인한 스토어별 표기 흔들림을 그대로 케이스로 넣는다.
 import { describe, expect, it } from "vitest";
-import { cleanCompanyName, normalizeCompanyName, splitCompanyNames } from "./company-name";
+import { cleanCompanyName, normalizeCompanyName, splitCompanyNames, usableCountryName } from "./company-name";
 
 describe("normalizeCompanyName", () => {
   it("스토어별 표기가 같은 키로 모인다", () => {
@@ -90,5 +90,13 @@ describe("splitCompanyNames", () => {
 
   it("빈 값은 빈 배열", () => {
     expect(splitCompanyNames("  ")).toEqual([]);
+  });
+});
+
+describe("usableCountryName", () => {
+  it("위키데이터 내부 식별자 주소는 나라 이름이 아니다", () => {
+    expect(usableCountryName("http://www.wikidata.org/.well-known/genid/20ede72c")).toBeNull();
+    expect(usableCountryName("폴란드")).toBe("폴란드");
+    expect(usableCountryName(null)).toBeNull();
   });
 });

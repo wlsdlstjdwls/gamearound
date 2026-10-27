@@ -159,3 +159,12 @@ function isLegalSuffixOnly(part: string): boolean {
     .trim();
   return t.length > 0 && LEGAL_SUFFIX_SET.has(t);
 }
+
+/**
+ * 화면에 실을 수 있는 나라 이름인가. 위키데이터가 값 대신 내부 식별자 URL(.well-known/genid)을 주는 행이 있다
+ * (폴란드 회사 1건 실측, 2026-10-27 회사 목록에서 그 주소가 줄을 489px 로 늘려 모바일 화면이 옆으로 밀렸다).
+ * 수집(adapters/wikidata/parse)도 거르지만 이미 쌓인 행이 있어 읽는 자리도 한 번 더 거른다.
+ */
+export function usableCountryName(name: string | null | undefined): string | null {
+  return name && !/^https?:\/\//.test(name) ? name : null;
+}

@@ -6,6 +6,7 @@ import { getDb } from "@/server/db/client";
 import { companies, gameCompanies, gamePlatforms, games } from "@/server/db/schema";
 import { visiblePlatformsOnly } from "@/server/db/visibility";
 import { DTO_CACHE_VERSION, LIST_REVALIDATE_SECONDS } from "@/lib/cache";
+import { usableCountryName } from "@/lib/company-name";
 import type { CompanyDetail, CompanySummary, GameSummary } from "./games/dto";
 import { attachBestPrice } from "./games/mappers";
 import { companyDisplayName } from "./games/detail";
@@ -41,7 +42,7 @@ async function getCompanyBySlugRaw(slug: string): Promise<CompanyDetail | null> 
     nameEn: company.nameEn,
     nameKo: company.nameKo,
     countryCode: company.countryCode,
-    countryNameKo: company.countryNameKo,
+    countryNameKo: usableCountryName(company.countryNameKo),
     // 위키데이터의 설립일은 정밀도가 들쭉날쭉해서(연도만 아는 회사는 01-01 로 채워진다) 연도만 쓴다
     foundedYear: company.foundedAt ? Number(company.foundedAt.slice(0, 4)) : null,
     hqNameKo: company.hqNameKo,
@@ -142,7 +143,7 @@ async function listCompaniesRaw(country: string | undefined, page: number): Prom
     items: rows.map((r) => ({
       slug: r.slug,
       name: companyDisplayName(r),
-      countryNameKo: r.countryNameKo,
+      countryNameKo: usableCountryName(r.countryNameKo),
       gameCount: r.gameCount,
     })),
     total,
@@ -171,7 +172,7 @@ async function getCountryFacetsRaw(): Promise<Array<{ code: string; name: string
     .having(gt(sql`count(*)`, 0))
     .orderBy(sql`count(*) desc`);
   return rows
-    .filter((r): r is { code: string; name: string; count: number } => Boolean(r.code && r.name))
+    .filter((r): r is { code: string; name: string; count: number } => Boolean(r.code && usableCountryName(r.name)))
     .map((r) => ({ code: r.code, name: r.name, count: r.count }));
 }
 

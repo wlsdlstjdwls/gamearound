@@ -9,6 +9,7 @@ import { splitGenreTags } from "@/lib/genres";
 import { PLATFORM_LABEL } from "@/lib/format";
 import { countText } from "@/lib/user-score";
 import { storeSaving } from "@/lib/games/saving";
+import { usableCountryName } from "@/lib/company-name";
 import type { GameCompanyDto, GameDetail, GameSummary, PlatformDto, PublicGameDto, RequirementDto, RequirementGroupDto, UserScoreDto } from "./dto";
 
 export const iso = (d: Date | string | null | undefined): string | null => {
@@ -352,15 +353,14 @@ export function toPublicGameDto(g: GameDetail): PublicGameDto {
  * **개발사를 먼저 본다.** 배급사는 지역 배급사인 경우가 흔해서(일본 게임의 북미 배급사)
  * 그 나라를 적으면 물음에 틀린 답을 한다. 개발사에 나라가 없을 때만 배급사로 내려간다.
  *
- * 나라 이름이 `http` 로 시작하면 버린다 — 위키데이터가 값 대신 내부 식별자 URL 을 주는 행이 있고
+ * 나라 이름이 주소면 버린다(lib/company-name 의 usableCountryName) — 위키데이터가 값 대신 내부 식별자 URL 을 주는 행이 있고
  * (genid, 폴란드 회사 1건 실측), 그게 그대로 화면에 실리면 주소 문자열이 나라 이름 자리에 선다.
  */
 export function originCountry(companies: GameCompanyDto[]): { countryCode: string; countryNameKo: string } | null {
-  const usable = companies.flatMap((c) =>
-    c.countryCode && c.countryNameKo && !c.countryNameKo.startsWith("http")
-      ? [{ role: c.role, countryCode: c.countryCode, countryNameKo: c.countryNameKo }]
-      : [],
-  );
+  const usable = companies.flatMap((c) => {
+    const countryNameKo = usableCountryName(c.countryNameKo);
+    return c.countryCode && countryNameKo ? [{ role: c.role, countryCode: c.countryCode, countryNameKo }] : [];
+  });
   const pick = usable.find((c) => c.role === "developer") ?? usable[0];
   return pick ? { countryCode: pick.countryCode, countryNameKo: pick.countryNameKo } : null;
 }

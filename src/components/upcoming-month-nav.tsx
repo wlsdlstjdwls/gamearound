@@ -50,11 +50,12 @@ export function UpcomingMonthNav({ months, activeKey, filter }: { months: { key:
     }
   }, [picked]);
 
+  // 좁은 화면(360)에서 해 고르기 + 달 넷이 15px 넘쳐 띠가 조금씩 밀렸다(2026-10-27 실측) — 간격과 칸 너비를 sm 아래에서만 줄였다
   return (
     <nav
       ref={navRef}
       aria-label="달 고르기"
-      className="sticky top-[var(--header-h)] z-20 -mx-5 flex h-[var(--month-nav-h)] items-center gap-3 overflow-x-auto border-b border-line bg-bg/95 px-5 backdrop-blur [scrollbar-width:none] sm:-mx-7 sm:px-7"
+      className="sticky top-[var(--header-h)] z-20 -mx-5 flex h-[var(--month-nav-h)] items-center gap-2 overflow-x-auto sm:gap-3 border-b border-line bg-bg/95 px-5 backdrop-blur [scrollbar-width:none] sm:-mx-7 sm:px-7"
     >
       {years.length > 1 ? (
         <div role="group" aria-label="해 고르기" className="flex shrink-0 items-center gap-0.5 rounded-full bg-surface-2 p-0.5">
@@ -96,7 +97,7 @@ export function UpcomingMonthNav({ months, activeKey, filter }: { months: { key:
               aria-current={on ? "page" : undefined}
               onClick={() => setPicked(m.key)}
               className={cn(
-                "press tap flex min-w-[56px] shrink-0 flex-col items-center justify-center rounded-xl px-3 py-1 leading-tight transition-colors duration-base",
+                "press tap flex min-w-[52px] shrink-0 flex-col items-center justify-center rounded-xl px-2.5 py-1 leading-tight sm:min-w-[56px] sm:px-3 transition-colors duration-base",
                 // 두 상태 모두 테두리 1px 을 둘러야 켜고 끌 때 높이가 안 어긋난다
                 on ? "border border-acc bg-acc text-on-ink hover:bg-acc-hover" : "border border-line bg-surface text-ink hover:bg-surface-2",
               )}

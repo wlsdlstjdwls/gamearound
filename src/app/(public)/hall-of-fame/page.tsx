@@ -5,6 +5,7 @@
 //     이번 달 주목작 탭의 큰 판으로 보내지 않는 이유 — 탭이 바뀌어 "역대 선정작을 보던 중" 이라는 자리가 사라진다.
 // 탭, 달은 주소(?tab=, ?ym=)에 실린다. 점수 식은 lib/indie/fame.
 // 월 선택 칩은 줄바꿈하지 않는다(shrink-0, nowrap) — 390 폭에서 "2026년 10월(이번 달)" 이 네 줄로 접혔다. 넘치는 달은 가로로 민다.
+// 띠에 위아래 8px 여백(py-2, -my-2)을 두는 이유: 터치 기기의 칩 덧면(.tap-inset ::after)이 위아래로 8px 넘쳐, 가로 스크롤 상자 안에서 세로로도 8px 스크롤됐다(2026-10-27 실측).
 // 목업의 월 선택은 드롭다운이지만 칩으로 둔다 — 칩은 누른 순간 켜진다(ui/nav-pending). 드롭다운은 고른 뒤 서버를 기다린다.
 // 보조 줄의 조회, 찜은 그 달 값이 아니라 누적이다 — 달 값은 순위 점수에 이미 들어가 있고, 점수를 같이 적는다.
 import type { Metadata } from "next";
@@ -229,7 +230,7 @@ export default async function HallOfFamePage({ searchParams }: Props) {
             </NavChip>
           </div>
           {tab === "month" && (
-            <div role="group" aria-label={M.monthPick} className="-mx-5 flex gap-1.5 overflow-x-auto px-5 [scrollbar-width:none] sm:-mx-7 sm:px-7 md:mx-0 md:px-0">
+            <div role="group" aria-label={M.monthPick} className="-mx-5 -my-2 flex gap-1.5 overflow-x-auto px-5 py-2 [scrollbar-width:none] sm:-mx-7 sm:px-7 md:mx-0 md:px-0">
               {months.map((m) => (
                 <NavChip key={m} group="ym" compact href={href("month", m === now ? undefined : m)} active={m === ym} className={NOWRAP_CHIP}>
                   {m === now ? M.thisMonth(ymLabel(m)) : ymLabel(m)}

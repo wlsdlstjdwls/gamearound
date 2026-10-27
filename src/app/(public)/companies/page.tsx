@@ -86,7 +86,8 @@ export default async function CompaniesPage({ searchParams }: Props) {
                 <Clamp lines={1} className="min-w-0 text-[14.5px] font-bold tracking-[-0.02em] text-ink">
                   {c.name}
                 </Clamp>
-                <span className="shrink-0 text-[12px] text-dim">
+                {/* 오른쪽 칸도 끝을 자른다 — 수집값이 이상하게 길면(위키데이터 주소, 2026-10-27) 줄이 화면 밖으로 밀렸다 */}
+                <span className="max-w-[50%] shrink-0 truncate text-[12px] text-dim">
                   {c.countryNameKo ? `${c.countryNameKo} | ` : ""}
                   {c.gameCount}개
                 </span>
