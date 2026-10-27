@@ -11,7 +11,11 @@ import { EmptyState } from "@/components/empty-state";
 import { PriceChart } from "@/components/price-chart";
 import { SaleBadge } from "@/components/sale-badge";
 import { BackLink } from "@/components/ui/back-link";
-import { Page, PageHead, SectionHead } from "@/components/ui/page";
+import { Page, SectionHead } from "@/components/ui/page";
+import { DiscountBadge } from "@/components/ui/discount";
+import { CoverImage } from "@/components/game-card";
+import { Clamp } from "@/components/ui/tooltip";
+import { stagger } from "@/lib/motion";
 import { formatDate, PLATFORM_LABEL } from "@/lib/format";
 import { bestDiscountOf, isAtBestDiscount } from "@/lib/price-stats";
 import { displayTitle, getGameBySlugCached } from "@/server/services/games";
@@ -37,7 +41,29 @@ function lowestOf(s: PriceSeries): number {
 /** 통화가 섞였을 때의 규칙은 lib/currency 가 갖는다 — 화면마다 다르게 고르면 "최저가"가 서로 달라진다 */
 const bestDeal = (series: PriceSeries[]): PriceSeries | null => cheapestOf(series);
 
-const COLS = "grid grid-cols-[repeat(auto-fit,minmax(110px,1fr))] gap-x-3 px-4 py-[13px]";
+/** 이 화면의 문구(규약 2장). 2026-10-27 화면을 판 셋(요약, 그래프, 플랫폼별)으로 다시 세우며 한곳에 모았다 */
+const PRICE_PAGE = {
+  kicker: "가격 변동 | 최근 1년",
+  summaryLabel: "가격 요약",
+  chartLabel: "가격 그래프",
+  nowCheapest: (platform: string) => `지금 가장 싼 곳 | ${platform}`,
+  notOnSale: "지금은 할인 중이 아니에요",
+  topDiscount: "기록 기준 최대 할인",
+  nowIsBest: "지금이 그때예요",
+  noDiscountRecord: "할인 기록이 아직 없어요",
+  lowest: "기록 기준 최저가",
+  sameAsNow: "지금 값과 같아요",
+  shadeNote: "음영은 할인이 진행된 구간이에요",
+  perPlatform: "플랫폼별 요약",
+  perPlatformNote: "기록된 값 기준",
+  records: (n: number) => `기록 ${n}건`,
+  colTopDiscount: "최대 할인",
+  colLowest: "최저",
+  colHighest: "최고",
+  emptyTitle: "아직 가격 기록이 없어요",
+  emptyBody: "가격은 값이 바뀔 때만 기록해요. 기록이 쌓이면 그래프가 그려져요.",
+  emptyAction: "상세로 돌아가기",
+} as const;
 
 export default async function PricesPage({ params }: Props) {
   const slug = decodeSlugParam((await params).slug);
@@ -48,113 +74,123 @@ export default async function PricesPage({ params }: Props) {
   if (!game) notFound();
   const title = displayTitle(game);
   const best = bestDeal(series);
+  const top = best ? bestDiscountOf(best.points) : null;
 
   return (
-    <Page gap={30}>
+    <Page gap={22}>
       <BackLink href={`/games/${game.slug}`}>{title} 상세로</BackLink>
 
-      <PageHead title="가격 변동 | 최근 1년" />
+      {/* 머리: 커버 한 장 + 게임 이름과 "가격 변동". 어느 게임의 그래프인지가 첫 줄에 서야 한다(2026-10-27 개선 — 예전 제목은 "가격 변동 | 최근 1년" 뿐이었다) */}
+      <header className="enter-item flex items-center gap-4" style={stagger(0)}>
+        {game.coverUrl && (
+          <span className="relative aspect-[460/215] w-[120px] shrink-0 overflow-hidden rounded-[var(--radius-inset)] bg-surface-3 shadow-hair sm:w-[150px]">
+            <CoverImage src={game.coverUrl} alt="" sizes="150px" />
+          </span>
+        )}
+        <div className="min-w-0">
+          <p className="text-[13px] font-semibold text-acc">{PRICE_PAGE.kicker}</p>
+          <h1 className="text-[24px] font-extrabold leading-tight tracking-[-0.04em] text-ink sm:text-[28px]">
+            <Clamp>{title}</Clamp>
+          </h1>
+        </div>
+      </header>
 
       {series.length === 0 ? (
-        <EmptyState
-          title="아직 가격 이력이 없습니다"
-          description="가격은 값이 바뀔 때만 기록해요. 기록이 쌓이면 그래프가 표시돼요."
-          action={{ href: `/games/${game.slug}`, label: "상세로 돌아가기" }}
-        />
+        <EmptyState title={PRICE_PAGE.emptyTitle} description={PRICE_PAGE.emptyBody} action={{ href: `/games/${game.slug}`, label: PRICE_PAGE.emptyAction }} />
       ) : (
         <>
           {best && (
-            <div className="flex flex-wrap items-end justify-between gap-x-6 gap-y-4 border-y border-line py-5">
-              <div className="flex flex-col gap-1.5">
-                <span className="text-[13px] font-semibold text-mut">{PLATFORM_LABEL[best.platform] ?? best.platform}</span>
-                <div className="flex flex-wrap items-baseline gap-x-2.5 gap-y-1">
-                  <span className="text-[30px] font-extrabold tracking-[-0.045em] text-ink sm:text-[36px]">{formatPrice(best.currentPrice, best.currency)}</span>
-                  {best.discountPct && best.discountPct > 0 ? (
-                    <>
-                      <span className="text-[13px] text-dim-2 line-through">{formatPrice(best.listPrice, best.currency)}</span>
-                      <span className="text-[14px] font-bold text-acc"><DiscountText pct={best.discountPct} /></span>
-                      <SaleBadge discountName={best.discountName} discountStartsAt={best.discountStartsAt} discountEndsAt={best.discountEndsAt} />
-                    </>
-                  ) : (
-                    <span className="text-[12px] text-dim">할인 중이 아님</span>
-                  )}
+            // 숫자 셋을 판 하나에: 지금 가장 싼 곳(큰 값), 기록 최대 할인, 기록 최저가. "살 때인가" 를 한눈에 읽는다
+            <section aria-label={PRICE_PAGE.summaryLabel} className="enter-item grid gap-3 sm:grid-cols-[minmax(0,1.4fr)_minmax(0,1fr)_minmax(0,1fr)]" style={stagger(1)}>
+              <div className="flex flex-col gap-2 rounded-[var(--radius-panel)] bg-surface p-5 shadow-[var(--elev-card)]">
+                <span className="text-[12.5px] font-semibold text-mut">{PRICE_PAGE.nowCheapest(PLATFORM_LABEL[best.platform] ?? best.platform)}</span>
+                <div className="flex flex-wrap items-center gap-x-2.5 gap-y-1.5">
+                  <span className="text-[30px] font-extrabold leading-none tracking-[-0.045em] text-ink sm:text-[34px]">{formatPrice(best.currentPrice, best.currency)}</span>
+                  <DiscountBadge pct={best.discountPct} />
+                  {best.discountPct && best.discountPct > 0 ? <span className="text-[13px] text-dim-2 line-through">{formatPrice(best.listPrice, best.currency)}</span> : null}
                 </div>
+                {best.discountPct && best.discountPct > 0 ? (
+                  <SaleBadge discountName={best.discountName} discountStartsAt={best.discountStartsAt} discountEndsAt={best.discountEndsAt} />
+                ) : (
+                  <span className="text-[12.5px] text-dim">{PRICE_PAGE.notOnSale}</span>
+                )}
               </div>
-              <div className="flex flex-wrap justify-end gap-x-7 gap-y-3 text-right">
-                {/* 할인율을 먼저 둔다 — 정가가 바뀌어도 흔들리지 않아 "살 때인가" 를 그대로 말해 준다 */}
-                <div>
-                  <p className="text-[11.5px] text-dim">기록 기준 최대 할인</p>
-                  {(() => {
-                    const top = bestDiscountOf(best.points);
-                    if (!top) return <p className="text-[15px] font-bold text-dim">할인 기록 없음</p>;
-                    return (
-                      <p className="text-[15px] font-bold text-ink">
-                        <DiscountText pct={top.discountPct} />
-                        <span className="ml-1 text-[12px] font-normal text-mut">{formatPrice(top.price, best.currency)}</span>
-                        {isAtBestDiscount(best.discountPct, top) ? (
-                          <span className="ml-1 text-[12px] font-normal text-ok">지금이 그때예요</span>
-                        ) : (
-                          <span className="ml-1 text-[12px] font-normal text-dim">{formatDate(top.t)}</span>
-                        )}
-                      </p>
-                    );
-                  })()}
-                </div>
-                <div>
-                  <p className="text-[11.5px] text-dim">기록 기준 최저가</p>
-                  <p className="text-[15px] font-bold text-ink">
-                    {formatPrice(lowestOf(best), best.currency)}
-                    {best.currentPrice === lowestOf(best) && <span className="ml-1 text-[12px] font-normal text-ok">현재가와 동일</span>}
-                  </p>
-                </div>
-              </div>
-            </div>
+              <StatCard label={PRICE_PAGE.topDiscount}>
+                {top ? (
+                  <>
+                    <span className="text-[24px] font-extrabold tracking-[-0.035em] text-acc">
+                      <DiscountText pct={top.discountPct} />
+                    </span>
+                    <span className="text-[12.5px] text-mut">
+                      {formatPrice(top.price, best.currency)} | {isAtBestDiscount(best.discountPct, top) ? <b className="font-semibold text-ok">{PRICE_PAGE.nowIsBest}</b> : formatDate(top.t)}
+                    </span>
+                  </>
+                ) : (
+                  <span className="text-[15px] font-bold text-dim">{PRICE_PAGE.noDiscountRecord}</span>
+                )}
+              </StatCard>
+              <StatCard label={PRICE_PAGE.lowest}>
+                <span className="text-[24px] font-extrabold tracking-[-0.035em] text-ink">{formatPrice(lowestOf(best), best.currency)}</span>
+                {best.currentPrice === lowestOf(best) && <span className="text-[12.5px] font-semibold text-ok">{PRICE_PAGE.sameAsNow}</span>}
+              </StatCard>
+            </section>
           )}
 
-          <div>
+          <section aria-label={PRICE_PAGE.chartLabel} className="enter-item rounded-[var(--radius-panel)] bg-surface p-4 shadow-[var(--elev-card)] sm:p-6" style={stagger(2)}>
             <PriceChart series={series} />
-            <p className="mt-2 text-right text-[11.5px] text-dim">음영 = 할인 진행 구간</p>
-          </div>
+            <p className="mt-2 text-right text-[11.5px] text-dim">{PRICE_PAGE.shadeNote}</p>
+          </section>
 
-          {/* 표 뷰(접근성 보조): 플랫폼별 현재가, 할인, 최저/최고 */}
+          {/* 플랫폼마다 판 한 장(2026-10-27, 일곱 칸 표에서). 표는 좁은 화면에서 칸이 접혀 숫자가 어느 칸인지 안 읽혔다 */}
           <section aria-labelledby="summary-heading" className="flex flex-col gap-3">
-            <SectionHead id="summary-heading" title="플랫폼별 요약" note="기록된 스냅샷 기준" />
-            <div>
-              <div className={`${COLS} border-b border-line-strong text-[11.5px] text-dim`}>
-                <span>플랫폼</span>
-                <span>현재가</span>
-                <span>할인</span>
-                <span>최대 할인(기록)</span>
-                <span>최저(기록)</span>
-                <span>최고(기록)</span>
-                <span>기록 수</span>
-              </div>
-              <ul className="divide-y divide-line-soft">
-                {series.map((s) => {
-                  const prices = s.points.map((p) => p.price);
-                  const onSale = Boolean(s.discountPct && s.discountPct > 0);
-                  const top = bestDiscountOf(s.points);
-                  return (
-                    <li key={s.platform} className={`${COLS} text-[13px] text-ink`}>
-                      <span className="font-semibold">{PLATFORM_LABEL[s.platform] ?? s.platform}</span>
-                      <span>{formatPrice(s.currentPrice, s.currency)}</span>
-                      <span className={onSale ? "text-ok" : "text-dim"}>{onSale ? <DiscountText pct={s.discountPct} /> : "-"}</span>
-                      <span className={top ? "text-mut" : "text-dim"}>
-                        {top ? <DiscountText pct={top.discountPct} /> : "-"}
+            <SectionHead id="summary-heading" title={PRICE_PAGE.perPlatform} note={PRICE_PAGE.perPlatformNote} />
+            <ul className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+              {series.map((s, i) => {
+                const prices = s.points.map((p) => p.price);
+                const record = bestDiscountOf(s.points);
+                return (
+                  <li key={s.platform} className="enter-item lift flex flex-col gap-3 rounded-[var(--radius-md)] bg-surface p-4 shadow-[var(--elev-card)]" style={stagger(3 + i)}>
+                    <div className="flex items-center justify-between gap-2">
+                      <span className="text-[15px] font-bold text-ink">{PLATFORM_LABEL[s.platform] ?? s.platform}</span>
+                      <span className="text-[11.5px] text-dim">
+                        {PRICE_PAGE.records(s.points.length)} | {formatDate(s.points[s.points.length - 1].t)}
                       </span>
-                      <span>{formatPrice(Math.min(...prices), s.currency)}</span>
-                      <span className="text-mut">{formatPrice(Math.max(...prices), s.currency)}</span>
-                      <span className="text-dim">
-                        {s.points.length}건 <span className="text-[11.5px]">({formatDate(s.points[s.points.length - 1].t)})</span>
-                      </span>
-                    </li>
-                  );
-                })}
-              </ul>
-            </div>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <span className="text-[22px] font-extrabold tracking-[-0.035em] text-ink">{formatPrice(s.currentPrice, s.currency)}</span>
+                      <DiscountBadge pct={s.discountPct} size="sm" />
+                    </div>
+                    <dl className="grid grid-cols-3 gap-2 border-t border-line-soft pt-3 text-[12px]">
+                      <div className="flex flex-col gap-0.5">
+                        <dt className="text-dim">{PRICE_PAGE.colTopDiscount}</dt>
+                        <dd className="font-semibold text-ink">{record ? <DiscountText pct={record.discountPct} /> : "-"}</dd>
+                      </div>
+                      <div className="flex flex-col gap-0.5">
+                        <dt className="text-dim">{PRICE_PAGE.colLowest}</dt>
+                        <dd className="font-semibold text-ink">{formatPrice(Math.min(...prices), s.currency)}</dd>
+                      </div>
+                      <div className="flex flex-col gap-0.5">
+                        <dt className="text-dim">{PRICE_PAGE.colHighest}</dt>
+                        <dd className="font-semibold text-mut">{formatPrice(Math.max(...prices), s.currency)}</dd>
+                      </div>
+                    </dl>
+                  </li>
+                );
+              })}
+            </ul>
           </section>
         </>
       )}
     </Page>
+  );
+}
+
+/** 요약 판의 작은 칸(기록 최대 할인, 기록 최저가) */
+function StatCard({ label, children }: { label: string; children: React.ReactNode }) {
+  return (
+    <div className="flex flex-col gap-1.5 rounded-[var(--radius-panel)] bg-surface p-5 shadow-[var(--elev-card)]">
+      <span className="text-[12.5px] font-semibold text-mut">{label}</span>
+      {children}
+    </div>
   );
 }
