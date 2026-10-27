@@ -182,21 +182,27 @@ export function WaitingBlock({ title, note, posts, cta, zero, now }: { title: st
 export type StatItem = { label: string; value: string; href?: string };
 
 /**
- * 현황 스트립(목업 .lhs) — 칸 여럿을 세로 선으로 가른 띠 하나. 누르는 칸은 값 뒤에 꺾쇠 대신 밑줄 hover 로 말한다.
+ * 현황 스트립(목업 .lhs) — 칸 여럿을 세로 선으로 가른 띠 하나. 누르는 칸은 값을 브랜드색으로 칠하고 칸 전체가 누를 면이다
+ * (값 글자만 누를 수 있어 "숫자를 눌러 그 게시판으로" 가 안 읽혔다, 10-27 검수). 띠 위로 손전등 빛 웅덩이가 천천히 오간다.
  * 칸마다 따로 뜬 카드(예전 StatTile 넷)는 "숫자 넷이 각자 다른 이야기" 로 읽혔다 — 띠 하나는 "내 현황 한 줄" 이다.
  */
 export function StatStrip({ items, link, label }: { items: StatItem[]; link?: { href: string; label: string }; label: string }) {
   return (
-    <section aria-label={label} className="flex flex-wrap items-center gap-y-3 rounded-[var(--radius-md)] bg-acc-soft px-4 py-4 shadow-hair sm:px-6">
+    <section aria-label={label} className="relative isolate flex flex-wrap items-center gap-y-3 overflow-hidden rounded-[var(--radius-md)] bg-acc-soft px-4 py-4 shadow-hair sm:px-6">
+      <span aria-hidden className="hero-beam beam-soft" />
       <dl className="flex w-full min-w-0 flex-wrap gap-y-3 sm:w-auto sm:flex-1">
         {items.map((it, i) => {
-          const value = <span className="text-[16px] font-extrabold tracking-[-0.02em] text-ink">{it.value}</span>;
+          const value = <span className={cn("text-[16px] font-extrabold tracking-[-0.02em]", it.href ? "text-acc" : "text-ink")}>{it.value}</span>;
           return (
-            <div key={it.label} className={cn("flex min-w-0 flex-1 flex-col gap-1 px-3 sm:flex-none sm:px-6", i === 0 ? "pl-0 sm:pl-0" : "border-l border-line")}>
+            <div
+              key={it.label}
+              style={stagger(i)}
+              className={cn("enter-item group/stat relative flex min-w-0 flex-1 flex-col gap-1 px-3 sm:flex-none sm:px-6", i === 0 ? "pl-0 sm:pl-0" : "border-l border-line")}
+            >
               <dt className="break-keep text-[12px] text-mut">{it.label}</dt>
               <dd>
                 {it.href ? (
-                  <Link href={it.href} className="press rounded-sm hover:underline hover:decoration-acc hover:underline-offset-4">
+                  <Link href={it.href} className="press rounded-sm after:absolute after:inset-0 group-hover/stat:underline group-hover/stat:decoration-acc group-hover/stat:underline-offset-4">
                     {value}
                   </Link>
                 ) : (
