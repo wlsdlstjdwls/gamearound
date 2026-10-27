@@ -15,7 +15,6 @@
 //   판이 지저분해 보이고 단추인지 장식인지 헷갈렸다. 할인, 출시 예정은 바로 아래 줄들이 이미 보여 준다
 // - 검색 단추 위로 빛이 몇 초에 한 번 비스듬히 스친다(.glint-sweep)
 // 전부 CSS 이고, 움직임 줄이기 설정은 전역 킬스위치가 끈다.
-import Link from "next/link";
 import { SearchIcon } from "@/components/ui/icons";
 import { cn } from "@/lib/cn";
 import { HOME_MESSAGES as M } from "@/lib/home/messages";
