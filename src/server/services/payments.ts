@@ -7,7 +7,7 @@
 // 끊기면 "돈은 냈는데 부스트가 없는" 주문이 남는다 — boostId 가 빈 paid 주문은 관리자 결제 목록에 그대로 드러나 손으로 건다.
 import "server-only";
 import { randomBytes } from "node:crypto";
-import { and, desc, eq, gt, isNull, sql } from "drizzle-orm";
+import { and, desc, eq, gt, isNull, ne, sql } from "drizzle-orm";
 import { getDb } from "@/server/db/client";
 import { createdBy, updatedBy } from "@/server/db/audit";
 import { indiePosts, payments, promotionBoosts, users, type PaymentStatus } from "@/server/db/schema";
@@ -135,13 +135,17 @@ function productName(key: string): string {
   return PRODUCTS[key as ProductKey]?.name ?? key;
 }
 
-/** 내 결제 내역, 최신부터 */
+/**
+ * 내 결제 내역, 최신부터. 대기(pending) 주문은 빼고 보인다 — 결제창을 열었다 닫을 때마다 한 줄씩 생겨
+ * "결제 중" 이 영영 쌓인다(2026-10-27 실측: 시험 한 번에 넷). 승인으로 이어진 주문은 paid 로 바뀌어 보이고,
+ * 창 안에서 실패한 주문은 failed 로 사유와 함께 보인다
+ */
 export async function listMyPayments(userId: string): Promise<PaymentRowDto[]> {
   const rows = await getDb()
     .select({ p: payments, title: indiePosts.title })
     .from(payments)
     .leftJoin(indiePosts, eq(indiePosts.id, payments.targetId))
-    .where(eq(payments.userId, userId))
+    .where(and(eq(payments.userId, userId), ne(payments.status, "pending")))
     .orderBy(desc(payments.createdAt))
     .limit(PAYMENT_LIST_LIMIT);
   return rows.map(({ p, title }) => ({
