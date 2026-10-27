@@ -6,6 +6,7 @@ import type { Db } from "@/server/db/client";
 import { AdapterError, type StoreSnapshot } from "@/server/adapters/types";
 import { normalizeGenre } from "@/lib/genres";
 import { hasHangul, slugify, slugWithSuffix } from "@/lib/slug";
+import { cleanStoreTitle, usableDescription } from "@/lib/store-text";
 import { isLocked, type Ctx } from "./context";
 import { META_OVERWRITE_SOURCES } from "./constants";
 
@@ -30,6 +31,14 @@ async function linkGenres(db: Db, gameId: string, names: string[]): Promise<void
   await db.insert(gameGenres).values(rows.map((g) => ({ gameId, genreId: g.id }))).onConflictDoNothing();
 }
 
+/**
+ * 제목의 상품 표기(상표 기호, 기기 꼬리, 언어 괄호)와 못 읽는 소개글을 걷는다(lib/store-text).
+ * 생성과 갱신이 같은 값을 봐야 해서 두 입구 모두 이걸 먼저 거친다 — 한쪽만 거르면 수집마다 둘이 번갈아 UPDATE 한다.
+ */
+export function tidyMeta(meta: NonNullable<StoreSnapshot["meta"]>): NonNullable<StoreSnapshot["meta"]> {
+  return { ...meta, titleEn: cleanStoreTitle(meta.titleEn), titleKo: cleanStoreTitle(meta.titleKo), description: usableDescription(meta.description) };
+}
+
 /** DLC 로 만들 때만 채운다. 본편이면 기본값(game, 부모 없음) */
 export interface CreateGameOptions {
   contentType?: ContentType;
@@ -42,7 +51,7 @@ export async function createGameFromSnapshot(
   snapshot: StoreSnapshot,
   options: CreateGameOptions = {},
 ): Promise<{ id: string; slug: string }> {
-  const meta = snapshot.meta;
+  const meta = snapshot.meta && tidyMeta(snapshot.meta);
   if (!meta?.titleEn) throw new AdapterError(`appid ${snapshot.storeExternalId}: meta.titleEn 없음 — 게임 생성 불가`, ctx.source, false);
   const { db } = ctx;
   const slug = await uniqueSlug(db, meta.titleEn, snapshot.storeExternalId);
@@ -118,7 +127,8 @@ export async function planSlugRename(db: Db, cur: GameRow, nextTitleEn: string, 
  * 기존 행과 새 meta 를 비교해 UPDATE 할 필드만 고른다. DB 를 건드리지 않는다 —
  * 배치 경로(store-apply)가 게임마다 왕복하지 않고 계획만 모을 수 있어야 한다.
  */
-export function planGameMeta(ctx: Ctx, cur: GameRow, meta: NonNullable<StoreSnapshot["meta"]>): Partial<typeof games.$inferInsert> {
+export function planGameMeta(ctx: Ctx, cur: GameRow, rawMeta: NonNullable<StoreSnapshot["meta"]>): Partial<typeof games.$inferInsert> {
+  const meta = tidyMeta(rawMeta);
   const gameId = cur.id;
   const set: Partial<typeof games.$inferInsert> = {};
   const consider = <K extends keyof typeof games.$inferInsert>(
