@@ -85,6 +85,8 @@ export const ROUTES = {
   adminPreorder: "/admin/preorder",
   /** 게시판, 라운지 글과 댓글 숨김(기획서 v2.0 9.2 "게시글 관리") */
   adminPosts: "/admin/posts",
+  /** 유료 노출 자리 걸기, 회수(2026-10-27) */
+  adminPromotions: "/admin/promotions",
   forbidden: "/403",
   terms: "/terms",
   privacy: "/privacy",

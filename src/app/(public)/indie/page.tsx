@@ -6,6 +6,8 @@
 // 개발 단계 칩은 목업에 없지만 남겼다(검색 줄 아래 한 줄) — 데모가 있는 게임만 보고 싶은 사람이 쓰던 기능이다.
 // 검색은 GET 폼이라 자바스크립트 없이도 간다 — 주소(?q=, ?scope=)가 곧 상태다(게시판 검색과 같은 규칙).
 // 검색 범위 드롭다운은 목업 bsbar 처럼 검색창 앞에 선다(전체, 제목, 내용, 개발사 — lib/indie/query).
+// 머리 바로 아래 "주목할 게임" 은 유료 자리다(2026-10-27, services/promotions). 카드마다 "광고" 를 달고, 거름 없는 첫 쪽에서만 선다 —
+// 단계를 골랐거나 검색 중인 사람에게 조건과 상관없는 카드를 끼워 넣지 않는다. 명예의 전당, 슈퍼루키는 돈과 상관없이 그대로다.
 import { HOME_GRID_CLASS } from "@/lib/games/grid";
 import { DbUnavailable } from "@/components/db-unavailable";
 import { DB_DOWN, orDbDown } from "@/lib/db-errors";
@@ -19,7 +21,7 @@ import { buttonClass } from "@/components/ui/button";
 import { SearchIcon } from "@/components/ui/icons";
 import { FormSelect } from "@/components/ui/select";
 import { NavChip, NavPendingScope, PendingRegion } from "@/components/ui/nav-pending";
-import { Page, PageHead } from "@/components/ui/page";
+import { Page, PageHead, SectionHead } from "@/components/ui/page";
 import { firstParam } from "@/lib/games-query";
 import { INDIE_STAGES } from "@/lib/indie/constants";
 import { INDIE_MESSAGES as M, INDIE_SEARCH_SCOPE_LABEL, INDIE_STAGE_LABEL } from "@/lib/indie/messages";
@@ -28,6 +30,9 @@ import { stagger } from "@/lib/motion";
 import { ROUTES } from "@/lib/routes";
 import type { IndieStage } from "@/server/db/schema";
 import { listIndiePosts } from "@/server/services/indie";
+import { listFeaturedIndie } from "@/server/services/promotions";
+import { AdLabel } from "@/components/ui/ad-label";
+import { PROMO_MESSAGES as PM } from "@/lib/promo/messages";
 
 export const metadata: Metadata = { title: M.listTitle, description: M.lead };
 
@@ -58,7 +63,9 @@ export default async function IndiePage({ searchParams }: Props) {
   const q = (firstParam(sp.q) ?? "").trim().slice(0, QUERY_MAX);
   const scope = parseIndieSearchScope(firstParam(sp[INDIE_SEARCH_SCOPE_PARAM]));
   const pageNum = Math.max(Number(firstParam(sp.page)) || 1, 1);
-  const loaded = await orDbDown(listIndiePosts(stage, pageNum, q, scope));
+  const plain = !stage && !q && pageNum === 1;
+  // 유료 자리를 못 읽어도 목록은 선다 — 빈 줄로 접는다
+  const [loaded, featured] = await Promise.all([orDbDown(listIndiePosts(stage, pageNum, q, scope)), plain ? listFeaturedIndie().catch(() => []) : []]);
 
   const head = (
     <PageHead title={M.listTitle} action={<WriteLink href={ROUTES.indieNew}>{M.register}</WriteLink>}>
@@ -79,6 +86,19 @@ export default async function IndiePage({ searchParams }: Props) {
   return (
     <Page gap={20}>
       {head}
+
+      {featured.length > 0 && (
+        <section aria-labelledby="indie-featured" className="flex flex-col gap-3">
+          <SectionHead id="indie-featured" title={PM.featuredTitle} />
+          <ul className={HOME_GRID_CLASS}>
+            {featured.map((post, i) => (
+              <li key={post.slug} className="enter-item" style={stagger(i)}>
+                <IndieCard post={post} badge={<AdLabel />} />
+              </li>
+            ))}
+          </ul>
+        </section>
+      )}
 
       {/* 명예의 전당 안내(기획서 v2.0 S-18 "명예의 전당에 올라보세요") — 승인된 게임만 서는 화면이라 다음 목표를 함께 말한다.
           게시판 현황 띠와 같은 빛 웅덩이가 판 위를 천천히 오간다(.hero-beam.beam-soft) */}

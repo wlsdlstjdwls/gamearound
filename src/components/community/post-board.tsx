@@ -24,6 +24,7 @@ import { boardHref, type BoardQuery } from "@/lib/community/query";
 import { BOARD_GUIDE_MESSAGES as G } from "@/lib/lounge/messages";
 import { nullIfDbUnavailable } from "@/lib/db-errors";
 import type { PostCategory } from "@/server/db/schema";
+import type { PostRowDto } from "@/server/services/community";
 import { getBoardHome, listPosts } from "@/server/services/community";
 
 type Props = {
@@ -45,6 +46,11 @@ type Props = {
    * 라운지는 등록 흐름까지 붙인 같은 시트를 넘긴다(components/lounge/lounge-board)
    */
   sideFoot?: React.ReactNode;
+  /**
+   * 목록 위 유료 고정 줄(2026-10-27, 홍보 게시판, services/promotions). 아무 조건 없이 첫 쪽을 볼 때만 선다 —
+   * 검색, 인기글, 유형 거름 결과 위에 고정 글이 서면 고른 조건과 상관없는 글이 맨 위에 끼어든다
+   */
+  pinned?: Promise<PostRowDto[]>;
 };
 
 /** 보조 메뉴 한 칸. count 가 null 이면 수를 적지 않는다(비로그인의 등록현황) */
@@ -114,8 +120,13 @@ async function BoardCount({ categories, query, head, base }: { categories: reado
   );
 }
 
-async function Results({ categories, base, query }: { categories: readonly PostCategory[]; base: string; query: BoardQuery }) {
-  const page = await loadPage(categories, query);
+/** 고정 줄을 세울 화면인가 — 거름 없는 첫 쪽(Props.pinned 주석) */
+function isPlainFirstPage(q: BoardQuery): boolean {
+  return !q.q && !q.game && !q.type && q.tab === "all" && q.page === 1;
+}
+
+async function Results({ categories, base, query, pinned }: { categories: readonly PostCategory[]; base: string; query: BoardQuery; pinned?: Promise<PostRowDto[]> }) {
+  const [page, pins] = await Promise.all([loadPage(categories, query), pinned && isPlainFirstPage(query) ? pinned.catch(() => []) : []]);
   if (!page) return <DbUnavailable retryHref={base} />;
   const empty = query.q
     ? { title: M.emptySearch, description: M.emptySearchLead }
@@ -125,6 +136,11 @@ async function Results({ categories, base, query }: { categories: readonly PostC
   return (
     <>
       <PendingRegion>
+        {pins.length > 0 && (
+          <div className="mb-1 border-b border-line pb-1">
+            <PostList bare ad posts={pins} />
+          </div>
+        )}
         <PostList bare posts={page.items} rank={query.tab === "popular"} rankFrom={(page.page - 1) * POSTS_PAGE_SIZE + 1} empty={empty} />
       </PendingRegion>
       <Pagination page={page.page} totalPages={page.totalPages} hrefFor={(n) => boardHref(base, query, { page: n })} />
@@ -132,7 +148,7 @@ async function Results({ categories, base, query }: { categories: readonly PostC
   );
 }
 
-export function PostBoard({ title, categories, family, allPath, base, query, sideExtra, sideFoot }: Props) {
+export function PostBoard({ title, categories, family, allPath, base, query, sideExtra, sideFoot, pinned }: Props) {
   const single = categories.length === 1 ? categories[0] : undefined;
   const copy = BOARD_PAGE_COPY[single ?? (isLoungeCategory(family[0]) ? "loungeAll" : "boardAll")];
   const head = single ? `${CATEGORY_LABEL[single]} ${M.boardHeadSuffix}` : M.allPostsHead;
@@ -165,7 +181,7 @@ export function PostBoard({ title, categories, family, allPath, base, query, sid
               }
             />
             <Suspense key={JSON.stringify(query)} fallback={<Bone className="h-[480px] w-full" />}>
-              <Results categories={categories} base={base} query={query} />
+              <Results categories={categories} base={base} query={query} pinned={pinned} />
             </Suspense>
           </section>
         </NavPendingScope>

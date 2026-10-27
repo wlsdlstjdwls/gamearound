@@ -43,7 +43,7 @@ import { COMING_SOON } from "@/lib/messages/coming-soon";
 import { ROUTES } from "@/lib/routes";
 import { BoxIcon, BuildingIcon, ChatIcon, CheckListIcon, LinkIcon, LogIcon, PulseIcon, StoreIcon } from "@/components/admin/nav-icons";
 import { ComingSoon } from "@/components/ui/coming-soon";
-import { CalendarIcon, GamepadIcon } from "@/components/ui/icons";
+import { CalendarIcon, GamepadIcon, TagIcon } from "@/components/ui/icons";
 
 export interface AdminNavCounts {
   matches: number;
@@ -115,6 +115,7 @@ const GROUPS: Array<{ key: string; title?: string; items: Item[] }> = [
     items: [
       { href: ROUTES.adminIndie, label: ADMIN_NAV.indie, Icon: GamepadIcon, pick: (c) => ({ n: c.indie }) },
       { href: ROUTES.adminPosts, label: ADMIN_NAV.posts, Icon: ChatIcon },
+      { href: ROUTES.adminPromotions, label: ADMIN_NAV.promotions, Icon: TagIcon },
     ],
   },
   {
