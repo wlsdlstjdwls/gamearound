@@ -6,6 +6,9 @@
 //   기기 수가 아니라 계정의 구독 수로 판단한다(서버에서 알 수 있는 건 그것뿐) — 0이면 확실히 안 온다.
 // - 목록이 지금 가격과 조건까지의 거리를 말한다(components/alerts/alert-list).
 // - 이미 알림이 있는 게임으로 들어오면 폼이 그 값으로 채워진 "조건 바꾸기" 로 열린다.
+//
+// 2026-10-27(사용자: "푸시 켜기, 푸시 설정 겹치는 거 아님? 합쳐 봐"): 푸시로 가는 길은 하나만 선다.
+// 이 기기에 푸시가 꺼져 있으면 띠(종이 흔들린다)의 "푸시 켜기", 켜져 있으면 머리의 작은 "푸시 설정" 이다. 둘이 같이 서던 때는 같은 화면으로 가는 단추가 둘이었다.
 import type { Metadata } from "next";
 import Link from "next/link";
 import { AlertForm, type AlertInitial } from "@/components/alert-form";
@@ -63,21 +66,26 @@ export default async function AlertsPage({ searchParams }: { searchParams: Promi
       <PageHead
         title={M.title}
         action={
-          <Link href={ROUTES.settings} className={buttonClass({ variant: "secondary", className: "rounded-full" })}>
-            {M.pushSettings}
-          </Link>
+          pushCount > 0 ? (
+            <Link href={ROUTES.settings} className={buttonClass({ variant: "ghost", size: "sm", className: "rounded-full" })}>
+              <BellIcon size={15} />
+              {M.pushSettings}
+            </Link>
+          ) : undefined
         }
       >
         <p className="text-[14px] text-mut">{M.lead}</p>
       </PageHead>
 
       {pushCount === 0 && (
-        <div role="status" className="flex flex-wrap items-center justify-between gap-3 rounded-[var(--radius-md)] bg-warn-soft px-4 py-3">
-          <p className="flex items-center gap-2 text-[13px] font-semibold text-warn">
-            <BellIcon size={16} />
+        <div role="status" className="animate-rise flex flex-wrap items-center justify-between gap-3 rounded-[var(--radius-md)] bg-acc-soft px-4 py-3">
+          <p className="flex items-center gap-2.5 text-[13.5px] font-semibold text-ink-2">
+            <span aria-hidden className="bell-ring grid size-8 shrink-0 place-items-center rounded-full bg-surface text-acc shadow-1">
+              <BellIcon size={16} />
+            </span>
             {M.pushOff}
           </p>
-          <Link href={ROUTES.settings} className={buttonClass({ size: "sm", variant: "secondary" })}>
+          <Link href={ROUTES.settings} className={buttonClass({ size: "sm", variant: "accent" })}>
             {M.pushOffAction}
           </Link>
         </div>

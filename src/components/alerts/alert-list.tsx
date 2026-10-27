@@ -19,7 +19,7 @@ import { FadeImage } from "@/components/ui/fade-image";
 import { ImageFallback } from "@/components/ui/image-fallback";
 import { Clamp } from "@/components/ui/tooltip";
 import { Tag } from "@/components/ui/tag";
-import { DiscountText } from "@/components/ui/discount";
+import { DiscountBadge } from "@/components/ui/discount";
 import { formatPrice } from "@/lib/currency";
 import { formatDate, PLATFORM_LABEL } from "@/lib/format";
 import { ALERT_MESSAGES as M, PRICE_ALERT_MESSAGES, conditionText, gapText } from "@/lib/alerts/messages";
@@ -43,11 +43,7 @@ function StatusLine({ v }: { v: AlertView }) {
     <p className="flex flex-wrap items-center gap-x-2 gap-y-1 text-[12.5px]">
       {met && <span className="rounded-full bg-ok-soft px-2 py-[3px] text-[11.5px] font-bold leading-none text-ok shadow-[inset_0_0_0_1px_var(--ok-line)]">{M.metLabel}</span>}
       <span className="text-mut">{PLATFORM_LABEL[best.platform] ?? best.platform}</span>
-      {best.discountPct ? (
-        <span className="font-bold text-acc">
-          <DiscountText pct={best.discountPct} />
-        </span>
-      ) : null}
+      <DiscountBadge pct={best.discountPct} size="sm" />
       <span className="text-[14px] font-extrabold tracking-[-0.02em] text-ink">{formatPrice(best.currentPrice, best.currency)}</span>
       {!met && gap && <span className="text-dim">| {gapText(gap)}</span>}
     </p>
@@ -77,7 +73,8 @@ export function AlertList({ views }: { views: AlertView[] }) {
           <li
             key={g.gameId}
             className={cn(
-              "enter-item flex flex-wrap items-center gap-x-4 gap-y-3 rounded-[var(--radius-md)] bg-surface p-3.5 shadow-[var(--elev-card)] sm:flex-nowrap",
+              // 한 줄을 낮게(2026-10-27, 사용자: "알림 한 영역이 너무 많이 공간을 차지한다") — 제목 옆에 플랫폼, 그 아래 한 줄에 지금 값과 조건
+              "enter-item lift flex flex-wrap items-center gap-x-4 gap-y-2.5 rounded-[var(--radius-md)] bg-surface px-3.5 py-3 shadow-[var(--elev-card)] transition-shadow duration-base hover:shadow-[var(--elev-card-hover)] sm:flex-nowrap",
               !g.isActive && "opacity-60",
             )}
             style={stagger(i)}
@@ -85,24 +82,27 @@ export function AlertList({ views }: { views: AlertView[] }) {
             <Link href={gamePath(v.game.slug)} tabIndex={-1} aria-hidden className="shrink-0">
               <Cover src={v.game.coverUrl} />
             </Link>
-            <div className="flex min-w-0 flex-1 flex-col gap-1">
-              <Link href={gamePath(v.game.slug)} className="text-[15px] font-bold tracking-[-0.02em] text-ink hover:text-acc">
-                <Clamp>{v.game.title}</Clamp>
-              </Link>
-              {/* 플랫폼 칩. 묶음 안에서 꺼 둔 플랫폼만 흐리게 — 묶음이 켜져 있어도 그 플랫폼은 안 온다 */}
-              <ul aria-label={M.platformsLabel} className="flex flex-wrap gap-1">
-                {g.items.map((a) => (
-                  <li key={a.id}>
-                    <Tag className={cn(!a.isActive && "opacity-60")}>{a.platform ? PLATFORM_LABEL[a.platform] ?? a.platform : M.allPlatforms}</Tag>
-                  </li>
-                ))}
-              </ul>
-              <p className="text-[12px] text-dim">{summary(g)}</p>
+            <div className="flex min-w-0 flex-1 flex-col gap-1.5">
+              <div className="flex min-w-0 flex-wrap items-center gap-x-2 gap-y-1">
+                <Link href={gamePath(v.game.slug)} className="min-w-0 text-[15px] font-bold tracking-[-0.02em] text-ink hover:text-acc">
+                  <Clamp>{v.game.title}</Clamp>
+                </Link>
+                {/* 플랫폼 칩. 묶음 안에서 꺼 둔 플랫폼만 흐리게 — 묶음이 켜져 있어도 그 플랫폼은 안 온다 */}
+                <ul aria-label={M.platformsLabel} className="flex flex-wrap gap-1">
+                  {g.items.map((a) => (
+                    <li key={a.id}>
+                      <Tag className={cn(!a.isActive && "opacity-60")}>{a.platform ? PLATFORM_LABEL[a.platform] ?? a.platform : M.allPlatforms}</Tag>
+                    </li>
+                  ))}
+                </ul>
+              </div>
               <StatusLine v={v} />
+              <p className="text-[12px] text-dim">
+                {summary(g)} | {sentAt ? M.lastSent(formatDate(sentAt)) : M.neverSent}
+              </p>
             </div>
             {/* 오른쪽 끝: 마지막 알림, 미리보기, 수정, 켜기/끄기, 지우기. 좁은 화면에서는 아랫줄로 내려가 한 줄을 다 쓴다 */}
-            <div className="flex w-full items-center justify-between gap-3 sm:w-auto sm:flex-col sm:items-end sm:gap-1.5">
-              <span className="text-[11.5px] text-dim">{sentAt ? M.lastSent(formatDate(sentAt)) : M.neverSent}</span>
+            <div className="flex w-full items-center justify-end gap-3 sm:w-auto">
               <div className="flex items-center gap-1">
                 <AlertPreview v={v} />
                 {/* "수정" 은 상세에서 열던 그 팝업(M-02)을 다시 연다(기획서 S-26). 팝업은 게임 단위라 묶음과 맞는다.

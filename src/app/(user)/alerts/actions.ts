@@ -37,25 +37,40 @@ function fail(e: unknown): ActionState {
   return { ok: false, error: actionError(e, ACTION_MESSAGES.failed) };
 }
 
+/**
+ * 폼이 보낸 플랫폼들. 여럿을 고를 수 있다(2026-10-27, 사용자: "플랫폼 다중 선택도 되게").
+ * 아무것도 안 왔거나 "all" 이 섞이면 전체 하나다 — 전체와 개별을 같이 저장하면 같은 할인에 알림이 두 번 온다.
+ */
+function readPlatforms(formData: FormData): string[] {
+  const picked = formData.getAll("platform").map(String).filter(Boolean);
+  return picked.length === 0 || picked.includes("all") ? ["all"] : [...new Set(picked)];
+}
+
 /** useActionState용: (prevState, formData) */
 export async function createAlertAction(_prev: ActionState, formData: FormData): Promise<ActionState> {
   try {
     await requireUser();
-    const parsed = createSchema.safeParse({
-      mode: formData.get("mode") ?? "discount",
-      gameId: formData.get("gameId"),
-      platform: formData.get("platform") ?? "all",
-      minDiscountPct: formData.get("minDiscountPct") ?? 1,
-      targetPrice: String(formData.get("targetPrice") ?? "").replace(/[^0-9]/g, ""),
-    });
-    if (!parsed.success) return { ok: false, error: parsed.error.issues[0]?.message ?? "입력값을 다시 확인해 주세요" };
-    const d = parsed.data;
-    await createAlert({
-      gameId: d.gameId,
-      platform: d.platform === "all" ? null : d.platform,
-      minDiscountPct: d.mode === "discount" ? d.minDiscountPct : null,
-      targetPrice: d.mode === "price" ? d.targetPrice : null,
-    });
+    // 플랫폼마다 한 행이다(createAlert 가 같은 게임, 플랫폼 행을 덮는다). 검증을 다 마친 뒤에 저장한다 — 둘째가 틀렸는데 첫째만 저장되면 안 된다
+    const rows = [];
+    for (const platform of readPlatforms(formData)) {
+      const parsed = createSchema.safeParse({
+        mode: formData.get("mode") ?? "discount",
+        gameId: formData.get("gameId"),
+        platform,
+        minDiscountPct: formData.get("minDiscountPct") ?? 1,
+        targetPrice: String(formData.get("targetPrice") ?? "").replace(/[^0-9]/g, ""),
+      });
+      if (!parsed.success) return { ok: false, error: parsed.error.issues[0]?.message ?? "입력값을 다시 확인해 주세요" };
+      rows.push(parsed.data);
+    }
+    for (const d of rows) {
+      await createAlert({
+        gameId: d.gameId,
+        platform: d.platform === "all" ? null : d.platform,
+        minDiscountPct: d.mode === "discount" ? d.minDiscountPct : null,
+        targetPrice: d.mode === "price" ? d.targetPrice : null,
+      });
+    }
     revalidatePath("/alerts");
     return { ok: true, message: "알림을 저장했어요" };
   } catch (e) {

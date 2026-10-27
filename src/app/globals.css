@@ -1355,6 +1355,19 @@ body:has([data-onboarding]) > [data-site-tabbar] {
   animation: target-flash var(--duration-flash) var(--ease-standard);
 }
 
+/* 종이 몇 초에 한 번 흔들린다(가격 알림의 "푸시가 꺼져 있어요" 띠). 늘 흔들면 시끄럽다 — 한 번 흔들고 오래 쉰다 */
+@keyframes bell-ring {
+  0%, 14%, 100% { transform: rotate(0); }
+  2% { transform: rotate(14deg); }
+  5% { transform: rotate(-12deg); }
+  8% { transform: rotate(8deg); }
+  11% { transform: rotate(-4deg); }
+}
+.bell-ring > svg {
+  transform-origin: 50% 10%;
+  animation: bell-ring calc(var(--duration-glint) * 4) var(--ease-standard) 600ms infinite;
+}
+
 /* 하위 메뉴 띠의 꼭지(components/sub-nav, 목업 .snb::before). 머리띠 밑선에서 지금 상단 메뉴 밑으로 작은 세모가 내려온다 —
    띠의 칸들이 어느 메뉴 소속인지 가리킨다. 자리(--notch-x)는 sub-nav 가 상단 메뉴 칸을 재서 넣는다.
    목업은 띠 바탕과 같은 색 마름모로 선을 끊지만 여기 머리띠 밑선은 아주 옅어서 그 꼴로는 안 보인다 — 켜진 메뉴 글자색으로 채운다.
