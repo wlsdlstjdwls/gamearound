@@ -8,6 +8,7 @@
 // - 이미 알림이 있는 게임으로 들어오면 폼이 그 값으로 채워진 "조건 바꾸기" 로 열린다.
 //
 // 2026-10-27(사용자: "푸시 켜기, 푸시 설정 겹치는 거 아님? 합쳐 봐"): 푸시로 가는 길은 하나만 선다.
+// 맨 아래 발송 규칙 각주(하루 두 번 확인, 내려간 순간에 보낸다)는 2026-10-27 걷었다(사용자: "지워도 될 듯"). 같은 규칙은 이용약관 알림 조항이 말한다.
 // 이 기기에 푸시가 꺼져 있으면 띠(종이 흔들린다)의 "푸시 켜기", 켜져 있으면 머리의 작은 "푸시 설정" 이다. 둘이 같이 서던 때는 같은 화면으로 가는 단추가 둘이었다.
 import type { Metadata } from "next";
 import Link from "next/link";
@@ -17,7 +18,6 @@ import { EmptyState } from "@/components/empty-state";
 import { Page, PageHead, SectionHead } from "@/components/ui/page";
 import { buttonClass } from "@/components/ui/button";
 import { BellIcon } from "@/components/ui/icons";
-import { ALERT_RULE_TEXT, COLLECT_SCHEDULE_TEXT } from "@/lib/freshness";
 import { ROUTES } from "@/lib/routes";
 import { ALERT_MESSAGES as M } from "@/lib/alerts/messages";
 import { conditionMode } from "@/lib/alerts/condition";
@@ -131,9 +131,6 @@ export default async function AlertsPage({ searchParams }: { searchParams: Promi
         </section>
       )}
 
-      <p className="max-w-[700px] text-[12px] leading-[1.85] text-dim">
-        {COLLECT_SCHEDULE_TEXT} {ALERT_RULE_TEXT}
-      </p>
     </Page>
   );
 }
