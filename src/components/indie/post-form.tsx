@@ -33,6 +33,7 @@ import {
 } from "@/lib/indie/constants";
 import { INDIE_FORM_MESSAGES as M, INDIE_GENRE_LABEL, INDIE_LINK_LABEL, INDIE_PLATFORM_LABEL, INDIE_STAGE_LABEL } from "@/lib/indie/messages";
 import type { IndieDetailDto } from "@/lib/indie/dto";
+import { FormStep } from "@/components/indie/form-step";
 
 const LINK_OPTIONS = INDIE_LINK_KINDS.map((k) => ({ value: k, label: INDIE_LINK_LABEL[k] }));
 const LABEL = "text-[12.5px] font-medium text-mut";
@@ -107,7 +108,7 @@ export function IndiePostForm({ post }: { post?: IndieDetailDto }) {
 
   return (
     // 고치기는 성공해도 값을 남긴다 — 저장한 값이 곧 화면에 있어야 할 값이다
-    <ActionForm action={formAction} state={state} pending={submitting} resetOnSuccess={false} className="flex flex-col gap-5">
+    <ActionForm action={formAction} state={state} pending={submitting} resetOnSuccess={false} className="flex flex-col gap-6">
       {state && !state.ok && (
         <FormMessage tone="error" replayKey={state.error}>
           {state.error}
@@ -119,9 +120,13 @@ export function IndiePostForm({ post }: { post?: IndieDetailDto }) {
         </FormMessage>
       )}
 
-      <TextField name="title" label={M.titleLabel} defaultValue={post?.title} maxLength={INDIE_TITLE_MAX} required />
+      {/* 넷으로 묶는다(indie/form-step 머리 주석). 짧은 칸 둘은 넓은 화면에서 한 줄에 나란히 — 세로 길이가 반으로 준다 */}
+      <FormStep n={1} title={M.stepBasic} hint={M.stepBasicHint}>
+      <div className="grid gap-5 sm:grid-cols-2">
+        <TextField name="title" label={M.titleLabel} defaultValue={post?.title} maxLength={INDIE_TITLE_MAX} required />
+        <TextField name="developerName" label={M.developerLabel} defaultValue={post?.developerName} maxLength={INDIE_DEVELOPER_MAX} required autoComplete="organization" />
+      </div>
       <TextField name="tagline" label={M.taglineLabel} hint={M.taglineHint} defaultValue={post?.tagline} maxLength={INDIE_TAGLINE_MAX} required />
-      <TextField name="developerName" label={M.developerLabel} defaultValue={post?.developerName} maxLength={INDIE_DEVELOPER_MAX} required autoComplete="organization" />
 
       <fieldset className="flex flex-col gap-1.5">
         <legend className={`mb-1.5 ${LABEL}`}>{M.stageLabel}</legend>
@@ -135,6 +140,10 @@ export function IndiePostForm({ post }: { post?: IndieDetailDto }) {
         </div>
       </fieldset>
 
+      <TextField name="releaseNote" label={M.releaseNoteLabel} hint={M.releaseNoteHint} defaultValue={post?.releaseNote ?? ""} maxLength={INDIE_RELEASE_NOTE_MAX} />
+      </FormStep>
+
+      <FormStep n={2} title={M.stepKind} hint={M.stepKindHint}>
       <fieldset className="flex flex-col gap-1.5">
         <legend className={`mb-1.5 ${LABEL}`}>{M.platformsLabel}</legend>
         <div className="flex flex-wrap gap-1.5">
@@ -186,8 +195,9 @@ export function IndiePostForm({ post }: { post?: IndieDetailDto }) {
         </div>
       </fieldset>
 
-      <TextField name="releaseNote" label={M.releaseNoteLabel} hint={M.releaseNoteHint} defaultValue={post?.releaseNote ?? ""} maxLength={INDIE_RELEASE_NOTE_MAX} />
+      </FormStep>
 
+      <FormStep n={3} title={M.stepIntro} hint={M.stepIntroHint}>
       <div className="flex flex-col gap-1.5">
         <label htmlFor="indie-body" className={LABEL}>
           {M.bodyLabel}
@@ -197,7 +207,7 @@ export function IndiePostForm({ post }: { post?: IndieDetailDto }) {
           name="body"
           defaultValue={post?.body ?? ""}
           maxLength={INDIE_BODY_MAX}
-          rows={10}
+          rows={8}
           required
           aria-describedby="indie-body-hint"
           className={TEXTAREA_CLASS}
@@ -221,6 +231,9 @@ export function IndiePostForm({ post }: { post?: IndieDetailDto }) {
         placeholder="https://youtu.be/..."
       />
 
+      </FormStep>
+
+      <FormStep n={4} title={M.stepLinks} hint={M.stepLinksHint}>
       <fieldset className="flex flex-col gap-2">
         <legend className={`mb-1 ${LABEL}`}>{M.linksLabel}</legend>
         <p className={HINT}>{M.linksHint}</p>
@@ -259,8 +272,12 @@ export function IndiePostForm({ post }: { post?: IndieDetailDto }) {
       </fieldset>
 
       <GameLinkPicker initial={post?.game ?? null} />
+      </FormStep>
 
-      <SubmitButton label={post ? M.submitEdit : M.submitNew} sending={sending} />
+      {/* 저장 단추는 판 바닥에 붙어 따라 내려온다 — 긴 폼 끝까지 내려가야 단추가 보이면 "어디서 끝나나" 를 찾아 헤맨다 */}
+      <div className="sticky bottom-3 z-10 rounded-[var(--radius-md)] bg-[var(--header-glass)] p-2 shadow-2 backdrop-blur-[var(--header-blur)]">
+        <SubmitButton label={post ? M.submitEdit : M.submitNew} sending={sending} />
+      </div>
     </ActionForm>
   );
 }

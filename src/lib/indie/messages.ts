@@ -135,6 +135,15 @@ export const INDIE_MESSAGES = {
 
 /** 쓰기, 고치기 폼과 검증 */
 export const INDIE_FORM_MESSAGES = {
+  /** 폼 단계 넷(components/indie/form-step) */
+  stepBasic: "기본 정보",
+  stepBasicHint: "이름과 만든 사람, 한 줄 소개, 지금 개발 단계예요",
+  stepKind: "플랫폼과 장르",
+  stepKindHint: "고른 플랫폼마다 스토어 링크 칸이 생겨요",
+  stepIntro: "소개와 그림",
+  stepIntroHint: "첫 번째 그림이 카드에 서는 대표 그림이에요",
+  stepLinks: "링크",
+  stepLinksHint: "데모, 공식 사이트처럼 더 볼 곳이 있으면 적어 주세요. 비워 둬도 돼요",
   newTitle: "내 게임 등록",
   newLead: "내가 만든 게임을 직접 올려 보세요.",
   approvalNotice: "등록한 게임은 운영진의 승인 후 최종 등록돼요. 승인 전에는 승인 대기로 표시되고, 승인되면 내가 만든 게임 게시판에 정식으로 올라가요.",
