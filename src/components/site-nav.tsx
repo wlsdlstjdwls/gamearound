@@ -13,6 +13,8 @@ function Item({ section, current }: { section: NavSection; current: boolean }) {
     <Link
       href={section.href}
       aria-current={current ? "true" : undefined}
+      // 하위 메뉴 띠(sub-nav)가 이 칸의 자리를 재서 꼭지를 그 밑에 세운다
+      data-nav-key={section.key}
       className={cn(
         "press rounded-lg px-3 py-[7px] transition-colors duration-fast",
         current ? "text-acc" : "text-ink-2 hover:bg-surface-2 hover:text-ink",

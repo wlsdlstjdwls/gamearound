@@ -1344,3 +1344,25 @@ body:has([data-onboarding]) > [data-site-tabbar] {
   outline-offset: 3px;
   animation: target-flash var(--duration-flash) var(--ease-standard);
 }
+
+/* 하위 메뉴 띠의 꼭지(components/sub-nav, 목업 .snb::before). 머리띠 밑선에서 지금 상단 메뉴 밑으로 작은 세모가 내려온다 —
+   띠의 칸들이 어느 메뉴 소속인지 가리킨다. 자리(--notch-x)는 sub-nav 가 상단 메뉴 칸을 재서 넣는다.
+   목업은 띠 바탕과 같은 색 마름모로 선을 끊지만 여기 머리띠 밑선은 아주 옅어서 그 꼴로는 안 보인다 — 켜진 메뉴 글자색으로 채운다.
+   머리띠보다 위로 올리지 않는다: 띠는 본문과 함께 스크롤되어 머리띠 밑으로 들어가야 한다 */
+.sub-nav-notch[data-notch]::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 12px;
+  height: 6px;
+  background: var(--acc);
+  clip-path: polygon(0 0, 100% 0, 50% 100%);
+  transform: translateX(calc(var(--notch-x) - 50%));
+  transition: transform var(--duration-slow) var(--ease-out-emph);
+  pointer-events: none;
+}
+.sub-nav-notch:not([data-notch-ready])::before,
+.sub-nav-notch:not([data-notch-ready]) > ul {
+  transition: none;
+}
