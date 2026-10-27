@@ -3,7 +3,7 @@
 export const PUSH_MESSAGES = {
   status: {
     checking: "상태를 확인하고 있어요",
-    unsupported: "이 브라우저는 웹푸시를 지원하지 않아요.",
+    unsupported: "이 브라우저는 푸시 알림을 지원하지 않아요.",
     denied: "브라우저에서 알림이 차단돼 있어요. 사이트 설정에서 허용한 뒤 다시 눌러 주세요.",
     subscribed: "이 기기에서 할인 알림을 받고 있어요.",
     unsubscribed: "조건을 만족한 게임만 한 번 보내 드려요.",

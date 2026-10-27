@@ -19,7 +19,7 @@ export function PushToggle({ initialCount }: { initialCount: number }) {
 
   return (
     <section className="flex flex-col gap-3.5">
-      <SectionHead title="웹푸시 알림" size="sub" />
+      <SectionHead title="푸시 알림" size="sub" />
       <div className="flex flex-wrap items-center justify-between gap-3.5 border-t border-line-strong py-4">
         <div className="min-w-0">
           <p className="text-[14.5px] font-bold text-ink">이 브라우저에서 할인 알림 받기</p>
@@ -29,7 +29,7 @@ export function PushToggle({ initialCount }: { initialCount: number }) {
         </div>
         <Switch
           on={shown}
-          label="웹푸시 알림"
+          label="푸시 알림"
           disabled={unavailable && !on}
           onToggle={() => {
             if (busy) return; // 진행 중에 다시 누르면 구독과 해지가 겹친다
