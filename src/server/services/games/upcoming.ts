@@ -16,6 +16,7 @@ import { DTO_CACHE_VERSION, LIST_REVALIDATE_SECONDS } from "@/lib/cache";
 import { POPULARITY_RANK_MAX_AGE_DAYS } from "@/lib/games/popularity";
 import { hasUpcomingFilter, type UpcomingFilter } from "@/lib/games/upcoming";
 import { parsePlatformValues } from "@/lib/games-query";
+import { isGenreTag } from "@/lib/genres";
 import { expandPlatformValues } from "@/lib/platform";
 import type { GameSummary } from "./dto";
 import { fillGenres, groupSummaries } from "./mappers";
@@ -234,7 +235,8 @@ async function getUpcomingGenresRaw(): Promise<string[]> {
     group by ${genres.name}
     order by count(*) desc, ${genres.name} asc
   `);
-  return res.rows.map((r) => r.name);
+  // 판매 형태(무료 플레이, 앞서 해보기)는 장르 선택지가 아니다(lib/genres)
+  return res.rows.map((r) => r.name).filter((n) => !isGenreTag(n));
 }
 
 /**

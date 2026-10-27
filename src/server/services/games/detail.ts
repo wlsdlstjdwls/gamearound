@@ -7,6 +7,7 @@ import { keepVisiblePlatforms } from "@/server/db/visibility";
 import type { GameDetail, SubscriptionDto } from "./dto";
 import { byRegionThenPlatform, iso, toPlatformDto, toRequirementGroups } from "./mappers";
 import { DTO_CACHE_VERSION } from "@/lib/cache";
+import { splitGenreTags } from "@/lib/genres";
 import { byAddonKind } from "@/lib/games/addon-kind";
 import { cheapestOf } from "@/lib/currency";
 
@@ -111,6 +112,8 @@ export async function getGameBySlug(slug: string): Promise<GameDetail | null> {
   // 이미 읽어 온 행에서 고른다 — 게임 단위 출시일 하나 때문에 왕복을 늘리지 않는다.
   // "YYYY-MM-DD" 라 문자열 비교가 곧 날짜 비교다
   const releaseDates = platforms.map((p) => p.releaseDate).filter((d): d is string => Boolean(d));
+  // 판매 형태(무료 플레이, 앞서 해보기)는 장르가 아니라 꼬리표다(lib/genres)
+  const genreSplit = splitGenreTags(row.genres.map((gg) => gg.genre.name).sort());
 
   return {
     id: row.id,
@@ -132,7 +135,8 @@ export async function getGameBySlug(slug: string): Promise<GameDetail | null> {
     isRetro: row.isRetro ?? false,
     releaseDate: releaseDates.length > 0 ? releaseDates.reduce((a, b) => (a < b ? a : b)) : null,
     updatedAt: row.updatedAt.toISOString(),
-    genres: row.genres.map((gg) => gg.genre.name).sort(),
+    genres: genreSplit.genres,
+    tags: genreSplit.tags,
     platforms,
     playtime: row.playtime
       ? {

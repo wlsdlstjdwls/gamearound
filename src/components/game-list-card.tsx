@@ -45,6 +45,7 @@ export function GameListCard({ game, variant = "discount", highlight }: { game: 
   const best = game.best;
   const hasDiscount = Boolean(best?.discountPct && best.discountPct > 0);
   const genres = game.genres ?? [];
+  const tags = game.tags ?? [];
   const preorder = best ? isPreorder(best) : false;
   const devices = deviceNames(game);
 
@@ -77,6 +78,12 @@ export function GameListCard({ game, variant = "discount", highlight }: { game: 
 
       {/* 남은 할인 기간은 장르 줄 오른쪽 끝이다 — 값 줄에 두면 할인율, 값, 정가 뒤에 못 붙고 혼자 다음 줄로 떨어져 카드마다 키가 갈렸다 */}
       <div className={cn(DIVIDER, "flex min-h-[40px] items-center gap-2 py-2.5 text-[12.5px] text-mut")}>
+        {/* 판매 형태 꼬리표(무료 플레이, 앞서 해보기)는 장르 글자 앞에 선다(game-card 와 같다) */}
+        {tags.map((t) => (
+          <Tag key={t} small tone="info">
+            {t}
+          </Tag>
+        ))}
         <span className="min-w-0 flex-1">
           {genres.length > 0 && (
             <Clamp text={genres.join(", ")}>

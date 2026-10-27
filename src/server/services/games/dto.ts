@@ -252,7 +252,10 @@ export type GameDetail = {
    */
   releaseDate: string | null;
   updatedAt: string;
+  /** 장르. 판매 형태(무료 플레이, 앞서 해보기)는 빠져 tags 로 간다(lib/genres 의 GENRE_TAG_NAMES) */
   genres: string[];
+  /** 판매 형태 꼬리표 — 장르 칸에 섞여 오지만 장르가 아니다 */
+  tags: string[];
   platforms: PlatformDto[];
   playtime: PlaytimeDto | null;
   news: NewsDto[];
@@ -301,8 +304,11 @@ export type GameSummary = {
    * 카드에 띄울 장르(가나다순, CARD_GENRE_MAX 개까지). 목록에서 나오는 두 번째 질문이
    * "무슨 장르냐" 라서 카드를 열지 않고 답이 나야 한다 — 플랫폼 배지와 같은 이유다.
    * 상세의 genres 와 달리 잘린 목록이다. 전부 보려면 상세로 간다.
+   * 판매 형태(무료 플레이, 앞서 해보기)는 여기 없다 — tags 로 간다.
    */
   genres: string[];
+  /** 판매 형태 꼬리표(lib/genres 의 GENRE_TAG_NAMES). 선택인 이유는 saving 과 같다 — 채우는 건 applyGenres 다 */
+  tags?: string[];
   /**
    * 같은 기기에서 스토어만 바꿔 아끼는 값(lib/games/saving). 없으면 null — 카드는 판정 줄을 안 세운다.
    * 선택 속성인 이유: 채우는 건 fillPlatforms 다. 그걸 안 거치는 요약은 판정이 없다

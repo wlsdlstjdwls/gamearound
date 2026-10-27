@@ -5,6 +5,7 @@ import { gameGenres, gamePlatforms, gameRequirements, games, genres, HOME_REGION
 import { visiblePlatformsOnly } from "@/server/db/visibility";
 import { cheapestOf, DISPLAY_CURRENCY } from "@/lib/currency";
 import { PLATFORM_ORDER } from "@/lib/platform";
+import { splitGenreTags } from "@/lib/genres";
 import { PLATFORM_LABEL } from "@/lib/format";
 import { countText } from "@/lib/user-score";
 import { storeSaving } from "@/lib/games/saving";
@@ -263,7 +264,10 @@ async function fetchGenresBySlug(slugs: string[]): Promise<Map<string, string[]>
 function applyGenres(items: GameSummary[], bySlug: Map<string, string[]>): GameSummary[] {
   for (const item of items) {
     // 가나다순으로 자른다 — 순서가 조회마다 흔들리면 같은 게임의 칩이 화면마다 달라진다
-    item.genres = [...new Set(bySlug.get(item.slug) ?? [])].sort((a, b) => a.localeCompare(b, "ko")).slice(0, CARD_GENRE_MAX);
+    // 판매 형태는 장르 칸을 먹지 않게 먼저 가른다 — 같이 자르면 "무료 플레이" 가 진짜 장르 하나를 밀어냈다
+    const { genres, tags } = splitGenreTags([...new Set(bySlug.get(item.slug) ?? [])].sort((a, b) => a.localeCompare(b, "ko")));
+    item.genres = genres.slice(0, CARD_GENRE_MAX);
+    item.tags = tags;
   }
   return items;
 }
@@ -321,6 +325,7 @@ export function toPublicGameDto(g: GameDetail): PublicGameDto {
     releaseDate: g.releaseDate,
     updatedAt: g.updatedAt,
     genres: g.genres,
+    tags: g.tags,
     platforms: g.platforms,
     playtime: g.playtime,
     sourceRefs: g.sourceRefs,

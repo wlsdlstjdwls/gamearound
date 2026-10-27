@@ -168,6 +168,7 @@ export function GameCard({
   // 캐시에 담긴 옛 모양 DTO 에는 이 배열이 없을 수 있다 — 카드 한 장이 화면 전체를 죽이지 않게 받아 준다
   // (판 올리는 자리는 lib/cache 의 DTO_CACHE_VERSION. 여기 기본값은 그 사이를 버티는 몫이다)
   const genres = game.genres ?? [];
+  const tags = game.tags ?? [];
   const releaseLabel = releaseText ?? (best?.releaseDate ? `${formatDate(best.releaseDate)} 출시` : "");
   // 대표 가격 행 하나만 본다 — 배지는 옆에 선 **그 값**이 예약 값이라는 말이다(다른 스토어는 이미 팔 수도 있다)
   const preorder = best ? isPreorder(best) : false;
@@ -213,17 +214,27 @@ export function GameCard({
           {/* 장르 부제는 장르로 거를 때만 선다 — 늘 서 있으면 회색 한 줄이 카드마다 잘린 채 붙어 값보다 먼저 읽혔다.
               거를 때는 "왜 이 게임이 여기 있나" 를 말해 주는 값이라 남긴다(고른 장르만 보라) */}
           {/* 장르는 늘 선다(2026-10-26, 기획서 v2.0 카드 공통: 썸네일, 이름, 장르, 플랫폼, 값, 찜). 장르로 거를 때는 고른 장르만 브랜드색 */}
-          {genres.length > 0 && (
-            <span className="text-[12.5px] text-dim">
-              <Clamp text={genres.join(", ")}>
-                {genres.map((g, i) => (
-                  // 쉼표는 색을 입힌 조각 **밖에** 둔다 — 안에 넣으면 고른 장르 앞의 구분자까지 보라가 된다
-                  <Fragment key={g}>
-                    {i > 0 ? ", " : null}
-                    <span className={g === highlight?.genre ? "font-semibold text-acc" : undefined}>{g}</span>
-                  </Fragment>
-                ))}
-              </Clamp>
+          {/* 판매 형태(무료 플레이, 앞서 해보기)는 장르 글자 앞 작은 꼬리표다(2026-10-27, lib/genres) — 장르와 같은 줄에 두어 카드 키를 늘리지 않는다 */}
+          {(genres.length > 0 || tags.length > 0) && (
+            <span className="flex min-w-0 items-center gap-1.5 text-[12.5px] text-dim">
+              {tags.map((t) => (
+                <Tag key={t} small tone="info">
+                  {t}
+                </Tag>
+              ))}
+              {genres.length > 0 && (
+                <span className="min-w-0 flex-1">
+                  <Clamp text={genres.join(", ")}>
+                    {genres.map((g, i) => (
+                      // 쉼표는 색을 입힌 조각 **밖에** 둔다 — 안에 넣으면 고른 장르 앞의 구분자까지 보라가 된다
+                      <Fragment key={g}>
+                        {i > 0 ? ", " : null}
+                        <span className={g === highlight?.genre ? "font-semibold text-acc" : undefined}>{g}</span>
+                      </Fragment>
+                    ))}
+                  </Clamp>
+                </span>
+              )}
             </span>
           )}
 

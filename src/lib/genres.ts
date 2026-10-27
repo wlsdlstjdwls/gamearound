@@ -35,3 +35,24 @@ export function normalizeGenre(name: string): string {
   const t = name.trim();
   return GENRE_ALIASES[t] ?? t;
 }
+
+/**
+ * 장르 칸에 섞여 들어오는 판매 형태 — 장르가 아니라 꼬리표로 따로 보인다(2026-10-27, 사용자: "그래 구분하자").
+ * 스팀 태그 113(무료 플레이), 493(앞서 해보기)를 발견 슬라이스로 쓰느라 수집이 장르 행으로 저장한다
+ * (adapters/steam/constants 의 STEAM_GENRE_TAG_IDS). 수집은 그대로 두고 화면 계약에서 가른다 —
+ * 저장을 바꾸면 이미 쌓인 행을 옮기는 일이 따로 생기고, "앞서 해보기만 보기" 같은 거르기 길도 그 행에 기대고 있다.
+ * 장르 칩, 카드 장르 줄에서는 빠지고 카드 꼬리표로 선다.
+ */
+export const GENRE_TAG_NAMES: readonly string[] = ["무료 플레이", "앞서 해보기"];
+
+export function isGenreTag(name: string): boolean {
+  return GENRE_TAG_NAMES.includes(name);
+}
+
+/** 이름 목록을 장르와 꼬리표로 가른다. 순서는 받은 그대로 둔다(정렬은 부르는 쪽 몫) */
+export function splitGenreTags(names: readonly string[]): { genres: string[]; tags: string[] } {
+  const genres: string[] = [];
+  const tags: string[] = [];
+  for (const n of names) (isGenreTag(n) ? tags : genres).push(n);
+  return { genres, tags };
+}

@@ -8,6 +8,7 @@ import { getDb } from "@/server/db/client";
 import { gameGenres, gamePlatforms, games, genres, HOME_REGION, type Platform } from "@/server/db/schema";
 import { visiblePlatformsOnly } from "@/server/db/visibility";
 import { normalizeForSearch } from "@/lib/slug";
+import { isGenreTag } from "@/lib/genres";
 import { defaultSortFor, parsePlatformValues, type GamesQuery } from "@/lib/games-query";
 import { expandPlatformValues } from "@/lib/platform";
 import { HLTB_RANK_OFFSET, HLTB_RANK_STEPS, POPULARITY_RANK_MAX_AGE_DAYS, REVIEW_RANK_STEPS } from "@/lib/games/popularity";
@@ -355,7 +356,8 @@ async function getGameFacetsRaw(scope: FacetScope): Promise<GameFacets> {
   ]);
   return {
     platforms: platformRows.sort((a, b) => b.count - a.count),
-    genres: genreRows.sort((a, b) => b.count - a.count || a.name.localeCompare(b.name, "ko")),
+    // 판매 형태(무료 플레이, 앞서 해보기)는 장르 칩에 세우지 않는다(lib/genres)
+    genres: genreRows.filter((g) => !isGenreTag(g.name)).sort((a, b) => b.count - a.count || a.name.localeCompare(b.name, "ko")),
     total,
   };
 }
