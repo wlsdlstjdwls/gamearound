@@ -111,3 +111,13 @@ export type IndieStatsRowDto = {
   allTime: { views: number; likes: number; comments: number };
 };
 export type IndieStatsDto = { followers: number; window: IndieStatsTotals; rows: IndieStatsRowDto[] };
+
+/** 게임 하나의 통계 자세히(메이커 멤버십, 2026-10-27). days 는 오래된 날부터 기간 전부 — 아무 일 없던 날도 0 으로 선다 */
+export type IndieStatsDetailDto = {
+  id: string;
+  slug: string;
+  title: string;
+  days: Array<{ day: string; views: number; plays: number }>;
+  /** 유입 경로 갈래(lib/indie/traffic)별 조회. 많은 것부터, 0 인 갈래는 없다 */
+  sources: Array<{ source: string; views: number }>;
+};

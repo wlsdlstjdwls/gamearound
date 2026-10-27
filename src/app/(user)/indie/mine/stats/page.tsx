@@ -13,7 +13,8 @@ import { stagger } from "@/lib/motion";
 import { INDIE_PROMO_MESSAGES as M } from "@/lib/indie/promo-messages";
 import { indieDetailHref, INDIE_FROM } from "@/lib/indie/query";
 import { MEMBERSHIP_MESSAGES } from "@/lib/membership/messages";
-import { indieBoostPath, indieEditPath, ROUTES } from "@/lib/routes";
+import { indieBoostPath, indieEditPath, indieStatsDetailPath, ROUTES } from "@/lib/routes";
+import { INDIE_STATS_DETAIL_MESSAGES } from "@/lib/indie/stats-messages";
 import { buttonClass } from "@/components/ui/button";
 import { PAYMENT_MESSAGES as PM } from "@/lib/payments/messages";
 import { PROMO_PERFORMANCE_MESSAGES } from "@/lib/promo/messages";
@@ -75,13 +76,16 @@ export default async function IndieStatsPage() {
                 <li key={r.id} className={sectionCardClass("enter-item flex flex-col gap-3")} style={stagger(i)}>
                   <div className="flex items-center justify-between gap-3">
                     <h2 className="min-w-0 truncate text-[16px] font-bold text-ink">{r.title}</h2>
-                    <div className="flex shrink-0 items-center gap-2">
+                    <div className="flex shrink-0 items-center gap-3">
                       {/* 광고 걸기(결제)는 공개 중인 게임에만 — 공개 전이면 걸어도 아무도 못 본다 */}
                       {r.live && (
                         <Link href={indieBoostPath(r.id)} className={buttonClass({ variant: "accent", size: "sm" })}>
                           {PM.adBuy}
                         </Link>
                       )}
+                      <Link href={indieStatsDetailPath(r.id)} className="tap inline-flex items-center text-[13px] font-semibold text-acc hover:underline">
+                        {INDIE_STATS_DETAIL_MESSAGES.open}
+                      </Link>
                       <Link href={r.live ? indieDetailHref(r.slug, INDIE_FROM.mine) : indieEditPath(r.id)} className="tap inline-flex items-center text-[13px] font-semibold text-acc hover:underline">
                         {M.statsDetail}
                       </Link>

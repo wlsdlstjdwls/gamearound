@@ -23,7 +23,8 @@ import {
 } from "@/lib/indie/fame";
 import type { IndieCardDto } from "@/lib/indie/dto";
 import { cardColumns, isPublic, toCards } from "./read";
-import { bumpIndieViewDay } from "./promo";
+import { bumpIndieViewDay, bumpIndieViewSource } from "./promo";
+import type { TrafficSource } from "@/lib/indie/traffic";
 
 /** change: 지난달 대비 점수 변화(%). null 이면 지난달 점수가 없다(새로 진입). 역대 선정작 줄처럼 견줄 일이 없는 자리는 undefined */
 export type RankedIndie = { card: IndieCardDto; score: number; likes: number; change?: number | null };
@@ -50,8 +51,8 @@ function ymRange(ym: string) {
   return { start, end };
 }
 
-/** 상세 조회 한 번. 글쓴이 본인 조회는 세지 않는다(혼자 새로고침해 순위를 올리지 못하게) */
-export async function recordIndieView(postId: string, authorUserId: string): Promise<void> {
+/** 상세 조회 한 번. 글쓴이 본인 조회는 세지 않는다(혼자 새로고침해 순위를 올리지 못하게). source 는 유입 경로 갈래(lib/indie/traffic) */
+export async function recordIndieView(postId: string, authorUserId: string, source: TrafficSource): Promise<void> {
   const viewer = await getCurrentUser().catch(() => null);
   if (viewer?.id === authorUserId) return;
   const db = getDb();
@@ -60,6 +61,8 @@ export async function recordIndieView(postId: string, authorUserId: string): Pro
     db.update(indiePosts).set({ viewCount: sql`${indiePosts.viewCount} + 1` }).where(eq(indiePosts.id, postId)),
     // 하루 조회(내 게임 통계의 "지난 30일") — 달 집계로는 30일을 못 센다(schema-indie-promo)
     bumpIndieViewDay(postId),
+    // 유입 경로(메이커 멤버십 통계 자세히). 모두에게서 센다(schema-indie-promo)
+    bumpIndieViewSource(postId, source),
     db
       .insert(indieViewMonths)
       .values({ postId, ym, views: 1, ...createdBy("system") })

@@ -8,7 +8,8 @@ import "server-only";
 import { and, eq, sql } from "drizzle-orm";
 import { getDb } from "@/server/db/client";
 import { createdBy } from "@/server/db/audit";
-import { developerFollows, indieLinkClicks, indiePostLikes, indiePosts, indieViewDays, notifications, users } from "@/server/db/schema";
+import { developerFollows, indieLinkClicks, indiePostLikes, indiePosts, indieViewDays, indieViewSources, notifications, users } from "@/server/db/schema";
+import type { TrafficSource } from "@/lib/indie/traffic";
 import { getCurrentUser, requireUser } from "@/server/services/users";
 import { postPath, type POST_CATEGORIES } from "@/lib/community/constants";
 import { INDIE_NOTIFY_MESSAGES as N } from "@/lib/indie/promo-messages";
@@ -45,6 +46,14 @@ export async function bumpIndieViewDay(postId: string): Promise<void> {
     .insert(indieViewDays)
     .values({ postId, day: kstToday, views: 1, ...createdBy("system") })
     .onConflictDoUpdate({ target: [indieViewDays.postId, indieViewDays.day], set: { views: sql`${indieViewDays.views} + 1`, updatedAt: sql`now()` } });
+}
+
+/** 유입 경로 하루 칸 올리기(schema-indie-promo 의 indieViewSources). 거르기는 bumpIndieViewDay 와 같다 */
+export async function bumpIndieViewSource(postId: string, source: TrafficSource): Promise<void> {
+  await getDb()
+    .insert(indieViewSources)
+    .values({ postId, day: kstToday, source, views: 1, ...createdBy("system") })
+    .onConflictDoUpdate({ target: [indieViewSources.postId, indieViewSources.day, indieViewSources.source], set: { views: sql`${indieViewSources.views} + 1`, updatedAt: sql`now()` } });
 }
 
 export async function isFollowingDeveloper(developerUserId: string): Promise<boolean> {

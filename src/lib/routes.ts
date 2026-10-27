@@ -210,6 +210,11 @@ export const TOSS_FAIL_PATH = "/api/payments/toss/fail";
 export const TOSS_BILLING_SUCCESS_PATH = "/api/payments/toss/billing/success";
 export const TOSS_BILLING_FAIL_PATH = "/api/payments/toss/billing/fail";
 
+/** 내 게임 하나의 통계 자세히(메이커 멤버십) */
+export function indieStatsDetailPath(id: string): string {
+  return `${ROUTES.indieStats}/${encodeURIComponent(id)}`;
+}
+
 /** 내 인디 게임에 광고 걸기(결제) */
 export function indieBoostPath(id: string): string {
   return `${ROUTES.indieMine}/${encodeURIComponent(id)}/boost`;

@@ -57,7 +57,10 @@ export function nextPeriodStart(m: { status: RenewalStatus; currentPeriodEnd: Da
   return now;
 }
 
-/** 이용권을 쓸 수 있나 — 돈을 낸 기간 안이고, 해지 예약 중이어도 기간 끝까지는 쓴다 */
+/** 혜택을 받는 상태. 해지 예약 중이어도 기간 끝까지는 쓴다. 목록 질의(services/membership 의 makerActiveSql)도 이 목록을 본다 */
+export const BENEFIT_STATUSES = ["active", "canceling"] as const satisfies readonly RenewalStatus[];
+
+/** 이용권을 쓸 수 있나 — 돈을 낸 기간 안이고 혜택 상태 */
 export function canUseBenefits(m: { status: RenewalStatus; currentPeriodEnd: Date }, now: Date): boolean {
-  return (m.status === "active" || m.status === "canceling") && m.currentPeriodEnd > now;
+  return (BENEFIT_STATUSES as readonly RenewalStatus[]).includes(m.status) && m.currentPeriodEnd > now;
 }

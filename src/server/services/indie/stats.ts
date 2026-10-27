@@ -4,11 +4,11 @@
 // 글 id 를 먼저 받아 넘기면 왕복이 하나 더 준다.
 // 찜과 댓글은 하루 표가 없어 행의 생성 시각으로 센다. 댓글은 남이 단 것만 센다 — 글쓴이 답글은 반응이 아니다.
 import "server-only";
-import { and, desc, eq, gte, ne, sql } from "drizzle-orm";
+import { and, desc, eq, gte, inArray, ne, sql } from "drizzle-orm";
 import { getDb } from "@/server/db/client";
-import { developerFollows, indieLinkClicks, indiePostComments, indiePostLikes, indiePosts, indieViewDays } from "@/server/db/schema";
-import { INDIE_STATS_WINDOW_DAYS, isPlayKind } from "@/lib/indie/promo";
-import type { IndieStatsDto, IndieStatsRowDto, IndieStatsTotals } from "@/lib/indie/dto";
+import { developerFollows, indieLinkClicks, indiePostComments, indiePostLikes, indiePosts, indieViewDays, indieViewSources } from "@/server/db/schema";
+import { INDIE_STATS_WINDOW_DAYS, isPlayKind, PLAY_LINK_KINDS } from "@/lib/indie/promo";
+import type { IndieStatsDetailDto, IndieStatsDto, IndieStatsRowDto, IndieStatsTotals } from "@/lib/indie/dto";
 
 /** 하루 표의 기간 시작(KST 날짜). 오늘 포함 30일 */
 const windowStartDay = sql`((now() at time zone 'Asia/Seoul')::date - ${INDIE_STATS_WINDOW_DAYS - 1}::int)`;
@@ -84,4 +84,34 @@ export async function getMyIndieStats(userId: string): Promise<IndieStatsDto> {
     };
   });
   return { followers: followerRows[0]?.n ?? 0, window: sum, rows };
+}
+
+/**
+ * 게임 하나의 30일 날짜별 조회, 플레이하기 클릭과 유입 경로(메이커 멤버십 "통계 자세히"). 내 글이 아니면 null — 남의 글 통계를 여는 주소는 없다.
+ * 날짜 줄은 DB 의 generate_series 로 빈 날까지 채워 받는다: 화면이 날짜를 만들면 서버와 브라우저의 "오늘" 이 어긋나는 날이 있다.
+ * 멤버십 확인은 부르는 쪽(화면)이 한다 — 이 함수는 "누구에게 보여 줄지" 를 모른다.
+ */
+export async function getMyIndieStatsDetail(userId: string, postId: string): Promise<IndieStatsDetailDto | null> {
+  const db = getDb();
+  const [post] = await db
+    .select({ id: indiePosts.id, slug: indiePosts.slug, title: indiePosts.title })
+    .from(indiePosts)
+    .where(and(eq(indiePosts.id, postId), eq(indiePosts.authorUserId, userId)))
+    .limit(1);
+  if (!post) return null;
+  const [days, sources] = await Promise.all([
+    db.execute<{ day: string; views: number; plays: number }>(sql`
+      select d::date::text as day,
+        coalesce((select ${indieViewDays.views} from ${indieViewDays} where ${indieViewDays.postId} = ${postId} and ${indieViewDays.day} = d::date), 0)::int as views,
+        coalesce((select sum(${indieLinkClicks.clicks}) from ${indieLinkClicks} where ${indieLinkClicks.postId} = ${postId} and ${indieLinkClicks.day} = d::date and ${inArray(indieLinkClicks.linkKind, [...PLAY_LINK_KINDS])}), 0)::int as plays
+      from generate_series(${windowStartDay}, (now() at time zone 'Asia/Seoul')::date, interval '1 day') as d
+      order by d`),
+    db
+      .select({ source: indieViewSources.source, views: sql<number>`sum(${indieViewSources.views})::int` })
+      .from(indieViewSources)
+      .where(and(eq(indieViewSources.postId, postId), gte(indieViewSources.day, windowStartDay)))
+      .groupBy(indieViewSources.source)
+      .orderBy(desc(sql`sum(${indieViewSources.views})`)),
+  ]);
+  return { ...post, days: days.rows.map((r) => ({ day: r.day, views: Number(r.views), plays: Number(r.plays) })), sources };
 }

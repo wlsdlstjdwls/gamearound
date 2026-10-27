@@ -36,7 +36,9 @@ import { formatDate } from "@/lib/format";
 import { genreLabels, INDIE_MESSAGES as M, INDIE_PLATFORM_LABEL, INDIE_STAGE_LABEL, INDIE_REVIEW_MESSAGES as RV } from "@/lib/indie/messages";
 import { storeLinkPlatform } from "@/lib/indie/constants";
 import { resolveNav } from "@/lib/nav";
-import { INDIE_FROM_PARAM, parseIndieFrom } from "@/lib/indie/query";
+import { INDIE_FROM_PARAM, parseIndieFrom, type IndieFrom } from "@/lib/indie/query";
+import { classifyTraffic } from "@/lib/indie/traffic";
+import { headers } from "next/headers";
 import { firstParam } from "@/lib/games-query";
 import { indieEditPath, indieOutPath, indiePath, ROUTES } from "@/lib/routes";
 import { decodeSlugParam } from "@/lib/slug";
@@ -52,6 +54,12 @@ function trailHead(slug: string, from: string | null): Array<{ label: string; hr
     { label: section?.label ?? "", href: section?.href ?? ROUTES.lounge },
     { label: sub?.label ?? M.listTitle, href: sub?.href ?? ROUTES.indie },
   ];
+}
+
+/** 이 조회의 유입 경로(lib/indie/traffic). 우리 사이트 호스트는 요청의 Host 로 안다 — 미리 보기 배포와 운영 주소가 다르다 */
+async function viewSource(from: IndieFrom | null) {
+  const h = await headers();
+  return classifyTraffic({ from, referer: h.get("referer"), ownHost: h.get("x-forwarded-host") ?? h.get("host") });
 }
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
@@ -81,7 +89,7 @@ export default async function IndieDetailPage({ params, searchParams }: Props) {
   const live = post.review === "approved" && post.status === "published";
   // 공개 글 조회 한 번(명예의 전당, 슈퍼루키의 재료)과 댓글은 서로 기다릴 일이 없어 나란히 묻는다. 글쓴이 본인 조회는 서비스가 거른다.
   // 조회 기록이 실패해도 화면은 선다. 댓글을 못 읽으면 빈 목록으로 두고 쓰기는 연다
-  const [, comments] = live ? await Promise.all([recordIndieView(post.id, post.authorUserId).catch(() => {}), listIndieComments(post.id).catch(() => [])]) : [null, []];
+  const [, comments] = live ? await Promise.all([recordIndieView(post.id, post.authorUserId, await viewSource(from)).catch(() => {}), listIndieComments(post.id).catch(() => [])]) : [null, []];
   /** 링크 순번의 주소 — 공개 글이면 클릭을 세는 경유 주소(머리 주석) */
   const hrefOf = (i: number) => (live ? indieOutPath(post.id, i) : post.links[i].url);
   const playPick = primaryPlayLink(post.links, post.platforms);
