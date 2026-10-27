@@ -1,7 +1,8 @@
-// 홈(기획서 v2.0 S-01, 목업 v66) — 히어로, 오늘의 할인 4, 출시 예정 4, 그 아래 스토어 차이와 인디 줄 (풀 라우트 캐시 1h + 태그 home)
+// 홈(기획서 v2.0 S-01, 목업 v66) — 히어로, 오늘의 할인 4, 출시 예정 4, 그 아래 인디 줄 (풀 라우트 캐시 1h + 태그 home)
 //
 // 2026-10-26 목업 순서로 다시 세웠다(사용자: "메인화면도 목업이랑 다르다", "모든 화면 최대한 동일하게").
-// 10-02 재구성의 줄들(스토어 차이, 인디)은 목업 마디 아래에 남긴다 — 이 서비스가 모은 값이라서다.
+// 10-02 재구성의 인디 줄은 목업 마디 아래에 남긴다 — 기획서가 말하는 "인디 개발자 노출" 의 첫 입구라서다.
+// 스토어 차이 줄과 스팀 세일 배너도 10-27 에 걷었다(사용자). HomeData.storeDeals, getRunningSteamSale, home-sale-banner 는 남아 있다.
 // 2026-10-27 사용자 지시로 인기 게임 순위와 장르 바로가기, 곧 할인 마감, 뉴스 줄을 홈에서 걷었다("없애주라").
 // 인기 순위와 장르는 기획서 S-01 의 "인기 게임·장르" 항목이지만 사용자가 뺐다 — 다시 세우지 않는다.
 // 부품(home/ranking, home/ending-soon, news-list)과 HomeData 의 popular, endingSoon, latestNews 는 남겨 두었다 — 되살리면 마디만 다시 얹는다.
@@ -22,10 +23,7 @@ import { HOME_MESSAGES as M } from "@/lib/home/messages";
 import { homeDbFailure, type HomeDbFailure } from "@/lib/home/db-failure";
 import { stagger } from "@/lib/motion";
 import { ROUTES } from "@/lib/routes";
-import { getHomeData, getUpcomingSoon, listGames, type UpcomingEntry } from "@/server/services/games";
-import type { GameSummary } from "@/server/services/games/dto";
-import { getRunningSteamSale, type RunningSaleDto } from "@/server/services/sales";
-import { HomeSaleBanner, SALE_BANNER_PREVIEW } from "@/components/home-sale-banner";
+import { getHomeData, getUpcomingSoon, type UpcomingEntry } from "@/server/services/games";
 import { IndieCard } from "@/components/indie/indie-card";
 import { INDIE_MESSAGES } from "@/lib/indie/messages";
 import type { IndieCardDto } from "@/lib/indie/dto";
@@ -59,21 +57,6 @@ async function loadHomeData(): Promise<{ data: HomeData; dbFailure: HomeDbFailur
   }
 }
 
-/** 배너는 덤이다 — 이 조회가 실패해도 홈은 그대로 서야 해서 실패를 "배너 없음" 으로 접는다 */
-async function loadRunningSale(): Promise<{ sale: RunningSaleDto; preview: GameSummary[] } | null> {
-  try {
-    const sale = await getRunningSteamSale();
-    if (!sale) return null;
-    // 배너의 커버는 배너가 여는 목록의 첫 줄과 같다(인기순). 세일이 없는 날에는 이 왕복이 아예 없다.
-    // 넷의 두 배를 넘기는 이유: 커버 없는 게임을 배너가 거르고 나서도 네 칸이 차야 한다
-    const list = await listGames({ event: sale.key });
-    return { sale, preview: list.items.slice(0, SALE_BANNER_PREVIEW * 2) };
-  } catch (e) {
-    console.error("[home] 세일 판정 실패:", e instanceof Error ? e.message : String(e));
-    return null;
-  }
-}
-
 /** 인디 줄도 덤이다 — 실패하면 줄이 안 설 뿐 홈은 선다. 이 페이지 ISR 에 얹혀 있어 쓰기 경로가 revalidatePath 로 민다 */
 async function loadIndie(): Promise<IndieCardDto[]> {
   try {
@@ -96,8 +79,8 @@ async function loadUpcoming(): Promise<UpcomingEntry[]> {
 
 export default async function HomePage() {
   // 두 조회는 서로 기다릴 이유가 없다 — 줄 세우면 Neon 왕복이 둘이 된다
-  const [{ data, dbFailure }, runningSale, indie, upcoming] = await Promise.all([loadHomeData(), loadRunningSale(), loadIndie(), loadUpcoming()]);
-  const { discounts, storeDeals } = data;
+  const [{ data, dbFailure }, indie, upcoming] = await Promise.all([loadHomeData(), loadIndie(), loadUpcoming()]);
+  const { discounts } = data;
 
   // DB 가 안 열린 날에는 줄을 하나도 세우지 않는다. 빈 줄은 "할인 마감이 없어요", "뉴스가 없어요" 처럼 사실이 아닌 말을 한다
   if (dbFailure) {
@@ -111,8 +94,6 @@ export default async function HomePage() {
   return (
     <Page pad="home" gap={48}>
       <HomeHero />
-
-      {runningSale && <HomeSaleBanner sale={runningSale.sale} preview={runningSale.preview} />}
 
       {/* 1 — 오늘의 할인 넷. 더보기는 할인 게임(S-04). 개인화한 사람에게는 마운트 뒤 취향 줄로 갈아 끼워진다(components/home-deals) */}
       <section aria-labelledby="discounts-heading" className="flex flex-col gap-4">
@@ -146,10 +127,7 @@ export default async function HomePage() {
         )}
       </section>
 
-      {/* 3 — 스토어만 바꿔도 더 싼 게임. 카드마다 초록 판정 줄이 "어디서 얼마" 를 말한다(lib/games/saving) */}
-      <RailSection id="store-deals" title={M.storeDealsTitle} note={M.storeDealsNote} games={storeDeals} />
-
-      {/* 4 — 인디 개발자가 직접 올린 게임. 몇 장 안 되면 줄째 안 선다(lib/indie/constants 의 INDIE_HOME_MIN) */}
+      {/* 3 — 인디 개발자가 직접 올린 게임. 몇 장 안 되면 줄째 안 선다(lib/indie/constants 의 INDIE_HOME_MIN) */}
       {indie.length > 0 && (
         <section aria-labelledby="indie-heading" className="flex flex-col gap-3">
           <SectionHead id="indie-heading" title={INDIE_MESSAGES.homeTitle} note={INDIE_MESSAGES.homeNote} action={<SeeAll href={ROUTES.indie} />} />
@@ -167,35 +145,5 @@ function SeeAll({ href, label = M.seeAll }: { href: string; label?: string }) {
     <Link href={href} className="tap inline-flex items-center text-[12.5px] font-medium text-mut hover:text-acc hover:underline">
       {label}
     </Link>
-  );
-}
-
-/** 옆으로 넘기는 줄 한 마디. 비면 마디째 안 세운다 — 제목만 선 빈 줄은 고장으로 읽힌다 */
-function RailSection({
-  id,
-  title,
-  note,
-  games,
-  variant,
-  href,
-  linkLabel,
-}: {
-  id: string;
-  title: string;
-  note?: string;
-  games: GameSummary[];
-  variant?: "discount" | "release";
-  href?: string;
-  linkLabel?: string;
-}) {
-  if (games.length === 0) return null;
-  return (
-    <section aria-labelledby={`${id}-heading`} className="flex flex-col gap-3">
-      <SectionHead id={`${id}-heading`} title={title} note={note} action={href && <SeeAll href={href} label={linkLabel} />} />
-      <Rail
-        labels={{ prev: M.railPrev, next: M.railNext }}
-        items={games.map((g) => ({ key: g.slug, node: <GameCard game={g} variant={variant} /> }))}
-      />
-    </section>
   );
 }
