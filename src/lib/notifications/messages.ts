@@ -8,6 +8,8 @@ export const NOTIFICATION_MESSAGES = {
   alertSettings: "가격 알림 관리",
   comment: (postTitle: string) => `'${postTitle}' 글에 새 댓글이 달렸어요`,
   priceDrop: (gameTitle: string, priceText: string) => `${gameTitle} 가격이 ${priceText}(으)로 내려갔어요`,
+  /** 알림을 건 순간 이미 조건에 맞았다(services/alert-inbox) — 내려간 게 아니라 "벌써 맞다" 를 말한다 */
+  priceMet: (gameTitle: string, priceText: string) => `${gameTitle} 지금 ${priceText}, 알림 조건에 맞아요`,
   approved: (gameTitle: string) => `'${gameTitle}' 등록이 승인됐어요`,
   rejected: (gameTitle: string) => `'${gameTitle}' 등록이 반려됐어요. 사유를 확인해 주세요`,
   /** 출시 알림(찜한 출시 예정 게임이 나왔다, sync/release-alerts) */

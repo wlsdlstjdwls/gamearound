@@ -5,6 +5,7 @@ import { ACTION_MESSAGES } from "@/lib/messages";
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { alertChannelEnum, platformEnum } from "@/server/db/schema";
+import { notifyAlertsMetNow } from "@/server/services/alert-inbox";
 import { createAlert, deleteAlert, getMyGameAlert, saveGameAlert, toggleAlert, updateAlert, type GameAlertSetting } from "@/server/services/alerts";
 import { requireUser } from "@/server/services/users";
 
@@ -46,6 +47,14 @@ function readPlatforms(formData: FormData): string[] {
   return picked.length === 0 || picked.includes("all") ? ["all"] : [...new Set(picked)];
 }
 
+/**
+ * 저장 뒤 이미 조건에 맞으면 알림함에 한 줄(services/alert-inbox). 실패해도 저장은 성공이다 —
+ * 알림함은 덤이고, 다음 하락 때 발송이 다시 적는다.
+ */
+async function inboxIfMet(gameId: string): Promise<void> {
+  await notifyAlertsMetNow(gameId).catch((e) => console.warn(`[alerts] 알림함 즉시 기록 실패 (game=${gameId}): ${e instanceof Error ? e.message : e}`));
+}
+
 /** useActionState용: (prevState, formData) */
 export async function createAlertAction(_prev: ActionState, formData: FormData): Promise<ActionState> {
   try {
@@ -71,6 +80,7 @@ export async function createAlertAction(_prev: ActionState, formData: FormData):
         targetPrice: d.mode === "price" ? d.targetPrice : null,
       });
     }
+    if (rows[0]) await inboxIfMet(rows[0].gameId);
     revalidatePath("/alerts");
     return { ok: true, message: "알림을 저장했어요" };
   } catch (e) {
@@ -121,10 +131,11 @@ export async function updateAlertAction(_prev: ActionState, formData: FormData):
     });
     if (!parsed.success) return { ok: false, error: parsed.error.issues[0]?.message ?? "입력값이 올바르지 않습니다" };
     const { id, platform, minDiscountPct } = parsed.data;
-    await updateAlert(id, {
+    const row = await updateAlert(id, {
       ...(platform !== undefined ? { platform: platform === "all" ? null : platform } : {}),
       ...(minDiscountPct !== undefined ? { minDiscountPct } : {}),
     });
+    await inboxIfMet(row.gameId);
     revalidatePath("/alerts");
     return { ok: true, message: "알림 조건을 바꿨어요" };
   } catch (e) {
@@ -156,6 +167,7 @@ export async function saveGameAlertAction(input: { gameId: string; platforms: st
   if (!parsed.success) return { ok: false, error: parsed.error.issues[0]?.message ?? ACTION_MESSAGES.failed };
   try {
     await saveGameAlert(parsed.data.gameId, parsed.data.platforms, parsed.data.channel);
+    await inboxIfMet(parsed.data.gameId);
     revalidatePath("/alerts");
     return { ok: true };
   } catch (e) {
