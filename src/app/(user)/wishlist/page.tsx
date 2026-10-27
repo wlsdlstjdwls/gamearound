@@ -19,11 +19,13 @@ import { collectedAtText, getFreshness } from "@/lib/freshness";
 import { stagger } from "@/lib/motion";
 import { ROUTES } from "@/lib/routes";
 import { listWishlist, type WishlistItem } from "@/server/services/wishlist";
+import { listAlerts } from "@/server/services/alerts";
 import { NavChip, NavPendingScope, PendingRegion } from "@/components/ui/nav-pending";
 import { BellIcon } from "@/components/ui/icons";
 import { RememberPref } from "@/components/remember-pref";
 import { PREF_COOKIES, readPref } from "@/lib/prefs";
 import { cookies } from "next/headers";
+import { cn } from "@/lib/cn";
 
 export const metadata: Metadata = { title: "내 찜 목록" };
 
@@ -32,6 +34,15 @@ const SORTS = [
   { key: "added", label: "추가순" },
 ] as const;
 type SortKey = (typeof SORTS)[number]["key"];
+
+// 알림 단추는 걸린 알림을 안다(2026-10-27, 사용자). 이미 건 게임에 "만들기" 를 내밀면 안 걸린 줄 알고 또 만든다.
+// 누르면 어느 쪽이든 같은 ?game= 폼으로 간다 — 그 폼이 있는 알림을 고치기로 연다.
+const ALERT_STATE = {
+  none: "할인 알림 만들기",
+  on: "알림 받는 중",
+  paused: "알림 멈춤",
+} as const;
+type AlertState = keyof typeof ALERT_STATE;
 const SORT_KEYS: readonly SortKey[] = SORTS.map((s) => s.key);
 
 type Props = { searchParams: Promise<{ sort?: string | string[] }> };
@@ -52,7 +63,13 @@ function isOnSale(item: WishlistItem): boolean {
 export default async function WishlistPage({ searchParams }: Props) {
   const explicit = readSortParam((await searchParams).sort);
   const sort: SortKey = explicit ?? readPref((await cookies()).get(PREF_COOKIES.wishlistSort)?.value, SORT_KEYS) ?? "sale";
-  const items = await listWishlist();
+  const [items, alerts] = await Promise.all([listWishlist(), listAlerts()]);
+  // 한 게임에 플랫폼별 알림이 여럿일 수 있다 — 하나라도 켜져 있으면 받는 중
+  const alertState = new Map<string, AlertState>();
+  for (const a of alerts) {
+    if (a.isActive) alertState.set(a.gameId, "on");
+    else if (!alertState.has(a.gameId)) alertState.set(a.gameId, "paused");
+  }
   const onSaleCount = items.filter(isOnSale).length;
   // listWishlist 는 추가순(최근 먼저)으로 온다 — "할인 중 먼저"만 화면에서 다시 정렬한다
   const sorted = sort === "added" ? items : [...items].sort((a, b) => maxDiscount(b) - maxDiscount(a));
@@ -94,6 +111,7 @@ export default async function WishlistPage({ searchParams }: Props) {
             const pricedCount = game.platforms.filter((p) => p.currentPrice !== null).length;
             const title = game.titleKo ?? game.titleEn;
             const stalest = game.platforms.find((p) => getFreshness(p.lastSyncedAt, p.syncStatus) !== "fresh");
+            const alert = alertState.get(game.id) ?? "none";
 
             return (
               // 카드(2026-10-27). 게임 목록 카드처럼 흰 판 위 커버가 먼저 서고, 값 줄과 알림 단추가 아래에 앉는다
@@ -141,13 +159,20 @@ export default async function WishlistPage({ searchParams }: Props) {
                   )}
 
                   {stalest && <p className="text-[12px] text-warn">{collectedAtText(stalest.lastSyncedAt)} | 스토어에서 확인 권장</p>}
-                  {/* 누르고 싶은 단추로(2026-10-27, 사용자). 카드 바닥 전체 폭, 파랑 면 위 종 — 누르면 채운 파랑으로 바뀐다 */}
+                  {/* 누르고 싶은 단추로(2026-10-27, 사용자). 카드 바닥 전체 폭, 파랑 면 위 종 — 누르면 채운 파랑으로 바뀐다.
+                      받는 중이면 처음부터 채운 파랑, 멈춤이면 회색 테두리라 세 상태가 한눈에 갈린다 */}
                   <Link
                     href={`${ROUTES.alerts}?game=${encodeURIComponent(game.slug)}`}
-                    className="press group/alert mt-auto inline-flex h-11 w-full items-center justify-center gap-1.5 rounded-[var(--radius-sm)] bg-acc-soft text-[14px] font-bold text-acc transition-colors duration-base hover:bg-acc hover:text-on-ink"
+                    data-alert={alert}
+                    className={cn(
+                      "press group/alert mt-auto inline-flex h-11 w-full items-center justify-center gap-1.5 rounded-[var(--radius-sm)] text-[14px] font-bold transition-colors duration-base",
+                      alert === "on" && "bg-acc text-on-ink hover:opacity-90",
+                      alert === "paused" && "border border-line bg-surface text-mut hover:border-acc hover:text-acc",
+                      alert === "none" && "bg-acc-soft text-acc hover:bg-acc hover:text-on-ink",
+                    )}
                   >
                     <BellIcon size={16} className="transition-transform duration-base group-hover/alert:-rotate-12" />
-                    할인 알림 만들기
+                    {ALERT_STATE[alert]}
                   </Link>
                 </div>
               </li>
