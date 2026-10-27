@@ -10,7 +10,7 @@ import { auditColumns } from "./audit";
 import { users } from "./schema";
 import { promoTargetKindEnum, promotionBoosts } from "./schema-promotions";
 
-/** pending: 결제창에 들어감, paid: 승인 끝, failed: 결제창 실패나 승인 거절, canceled: 환불(후속) */
+/** pending: 결제창에 들어감, paid: 승인 끝, failed: 결제창 실패나 승인 거절, canceled: 환불함(전액이든 일부든 — 얼마인지는 refundedAmount) */
 export const paymentStatusEnum = pgEnum("payment_status", ["pending", "paid", "failed", "canceled"]);
 export type PaymentStatus = (typeof paymentStatusEnum.enumValues)[number];
 
@@ -35,5 +35,15 @@ export const payments = pgTable("payments", {
   approvedAt: timestamp("approved_at", { withTimezone: true }),
   failCode: text("fail_code"),
   failMessage: text("fail_message"),
+  /**
+   * 환불(2026-10-27, 기획서 8장 "환불(전액, 일할)"). 관리자가 토스 결제 취소 API 로 돌려준 금액. 0 이면 환불 없음.
+   * 일할 환불이면 amount 보다 작다 — 그래도 status 는 canceled 다: 한 결제에 환불은 한 번만 하고, 하면 노출도 그 자리에서 거둔다
+   */
+  refundedAmount: integer("refunded_amount").default(0).notNull(),
+  refundedAt: timestamp("refunded_at", { withTimezone: true }),
+  refundReason: text("refund_reason"),
+  /** 사용자가 결제 내역에서 누른 환불 요청. 돈은 관리자가 확인하고 돌려준다(요청만으로 빠지지 않는다) */
+  refundRequestedAt: timestamp("refund_requested_at", { withTimezone: true }),
+  refundRequestNote: text("refund_request_note"),
   ...auditColumns(),
 }, (t) => [index("payments_user_created_idx").on(t.userId, t.createdAt), index("payments_status_idx").on(t.status, t.createdAt)]);
