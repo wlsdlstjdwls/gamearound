@@ -53,6 +53,22 @@ export const PAYMENT_MESSAGES = {
   adminTitle: "최근 결제",
   adminEmpty: "아직 승인된 결제가 없어요",
   adminBoostMissing: "부스트가 걸리지 않았어요. 위에서 직접 걸어 주세요",
+
+  refundRequest: "환불 요청",
+  refundRequestPlaceholder: "환불 사유를 적어 주세요(선택)",
+  refundRequestSend: "요청 보내기",
+  refundRequested: "환불 요청함. 확인 뒤 돌려드려요",
+  refundNotAllowed: "환불할 수 없는 결제예요",
+  refundNothingLeft: "남은 기간이 없어 돌려줄 금액이 없어요",
+  refundDefaultReason: "고객 요청",
+  refunded: (amount: string) => `환불 ${amount}`,
+  refundedNotice: (product: string, amount: string) => `${product} 결제 중 ${amount}을 환불했어요`,
+  adminRefund: "환불",
+  adminRefundFull: "전액 환불",
+  adminRefundProrated: (amount: string) => `남은 기간 환불 ${amount}`,
+  adminRefundReason: "환불 사유",
+  adminRefundDone: (amount: string) => `${amount}을 환불했어요`,
+  adminRefundRequested: "환불 요청",
 } as const;
 
 export const PAYMENT_STATUS_LABEL: Record<PaymentStatus, string> = {

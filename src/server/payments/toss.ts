@@ -58,3 +58,19 @@ export async function confirmTossPayment(input: { paymentKey: string; orderId: s
     totalAmount: Number(body.totalAmount),
   };
 }
+
+/**
+ * 결제 취소(환불). amount 를 주면 그만큼만(일할 환불), 없으면 남은 전액. 승인과 달리 멱등 키를 붙인다 —
+ * 시간 초과 뒤 관리자가 다시 눌러도 토스가 같은 요청으로 보고 두 번 돌려주지 않는다(토스 문서: Idempotency-Key, 15일 보관).
+ */
+export async function cancelTossPayment(input: { paymentKey: string; reason: string; amount?: number; idempotencyKey: string }): Promise<{ status: string }> {
+  const res = await fetch(`${TOSS_API_BASE}/payments/${encodeURIComponent(input.paymentKey)}/cancel`, {
+    method: "POST",
+    headers: { Authorization: authHeader(), "Content-Type": "application/json", "Idempotency-Key": input.idempotencyKey },
+    body: JSON.stringify(input.amount === undefined ? { cancelReason: input.reason } : { cancelReason: input.reason, cancelAmount: input.amount }),
+    signal: AbortSignal.timeout(TOSS_TIMEOUT_MS),
+  });
+  const body = (await res.json().catch(() => null)) as Record<string, unknown> | null;
+  if (!res.ok || !body) throw new TossError(String(body?.code ?? `HTTP_${res.status}`), String(body?.message ?? "환불에 실패했어요"));
+  return { status: String(body.status) };
+}

@@ -1,5 +1,5 @@
 "use server";
-// 유료 노출 걸기, 회수 Server Action. 관리자 role 을 다시 본다(§6). 걸리면 노출 자리(인디 목록, 홍보 게시판)를 민다.
+// 유료 노출 걸기, 회수, 결제 환불 Server Action. 관리자 role 을 다시 본다(§6). 걸리면 노출 자리(인디 목록, 홍보 게시판)를 민다.
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { actionError } from "@/lib/db-errors";
@@ -7,6 +7,8 @@ import { PROMO_MESSAGES as M } from "@/lib/promo/messages";
 import { grantBoostSchema, type GrantBoostInput } from "@/lib/promo/schemas";
 import { ROUTES } from "@/lib/routes";
 import { grantBoost, revokeBoost } from "@/server/services/promotions";
+import { refundPayment, type RefundMode } from "@/server/services/payments";
+import { PAYMENT_MESSAGES as PM } from "@/lib/payments/messages";
 import { requireAdmin } from "@/server/services/users";
 
 export type PromoActionResult = { ok: true } | { ok: false; error: string };
@@ -39,5 +41,20 @@ export async function revokeBoostAction(id: string): Promise<PromoActionResult> 
     return { ok: true };
   } catch (e) {
     return { ok: false, error: actionError(e, M.failed) };
+  }
+}
+
+/** 환불 사유 상한. 토스 cancelReason 은 200자까지다 */
+const REFUND_REASON_MAX = 200;
+
+export async function refundPaymentAction(orderId: string, mode: RefundMode, reason: string): Promise<({ ok: true; amount: number }) | { ok: false; error: string }> {
+  try {
+    const admin = await requireAdmin();
+    if (mode !== "full" && mode !== "prorated") return { ok: false, error: PM.refundNotAllowed };
+    const amount = await refundPayment(String(orderId).slice(0, 64), mode, String(reason ?? "").trim().slice(0, REFUND_REASON_MAX), admin.id);
+    refresh();
+    return { ok: true, amount };
+  } catch (e) {
+    return { ok: false, error: actionError(e, PM.failed) };
   }
 }

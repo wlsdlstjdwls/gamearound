@@ -1,6 +1,7 @@
 // /indie/mine/payments — 내 광고 결제 내역(2026-10-27, 기획서 8장 "결제 내역과 영수증").
 // 결제창에서 돌아오면 이 화면으로 온다(?paid=1 또는 ?failed=문구, api/payments/toss). 맨 위에 그 결과를 한 줄로 말한다.
 // 영수증은 토스가 주는 주소로 연다 — 우리가 영수증을 따로 만들지 않는다.
+// 승인된 결제에는 "환불 요청" 을 둔다(요청만, 돈은 관리자가 돌려준다). 환불된 결제는 돌려준 금액을 적는다.
 import type { Metadata } from "next";
 import Link from "next/link";
 import { EmptyState } from "@/components/empty-state";
@@ -16,6 +17,7 @@ import { ROUTES } from "@/lib/routes";
 import type { PaymentStatus } from "@/server/db/schema";
 import { requireUserOrRedirect } from "@/server/auth/guards";
 import { listMyPayments } from "@/server/services/payments";
+import { RefundRequest } from "@/components/payments/refund-request";
 
 export const metadata: Metadata = { title: M.historyTitle, robots: { index: false } };
 
@@ -50,6 +52,7 @@ export default async function IndiePaymentsPage({ searchParams }: Props) {
                 </div>
                 <span className="text-[12.5px] text-dim tabular-nums">{[r.productName, formatDateTime(r.createdAt)].join(" | ")}</span>
                 {r.status === "failed" && r.failMessage && <span className="text-[12.5px] text-danger">{r.failMessage}</span>}
+                {r.refundedAmount > 0 && <span className="text-[12.5px] text-mut tabular-nums">{M.refunded(formatPrice(r.refundedAmount))}</span>}
               </div>
               <div className="flex shrink-0 items-center gap-3">
                 <span className="text-[15px] font-bold tabular-nums text-ink">{formatPrice(r.amount)}</span>
@@ -60,6 +63,7 @@ export default async function IndiePaymentsPage({ searchParams }: Props) {
                   </a>
                 )}
               </div>
+              {r.status === "paid" && <RefundRequest orderId={r.orderId} requested={r.refundRequested} />}
             </li>
           ))}
         </ul>
