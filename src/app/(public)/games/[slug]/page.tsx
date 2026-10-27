@@ -27,7 +27,6 @@ import { UpgradeNotes } from "@/components/upgrade-note";
 import { DetailHero } from "@/components/game-detail/hero";
 import { NewsMore } from "@/components/game-detail/news-more";
 import { CompatSlot, PriceChartFallback, PriceChartSlot, SellersSlot, VerdictNoteSlot } from "@/components/game-detail/slots";
-import { SourceRefs } from "@/components/game-detail/sources";
 import { DetailTabs } from "@/components/game-detail/tabs";
 import { BackLink } from "@/components/ui/back-link";
 import { Page, SectionHead, sectionCardClass } from "@/components/ui/page";
@@ -276,7 +275,6 @@ export default async function GameDetailPage({ params }: Props) {
       <Suspense fallback={null}>
         <IndieGameSection gameId={game.id} />
       </Suspense>
-      <SourceRefs refs={game.sourceRefs} />
     </Page>
   );
 }

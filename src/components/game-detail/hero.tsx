@@ -8,7 +8,9 @@
 // md 는 커버와 정보가 나란히, 오른쪽 기둥은 그 아래 한 줄을 다 쓴다.
 import Link from "next/link";
 import { CoverImage } from "@/components/game-card";
-import { CompanyChips } from "@/components/company-chips";
+import { SourceRefs } from "@/components/game-detail/sources";
+import { companyPath } from "@/lib/routes";
+import { COMPANY_ROLE_LABEL } from "@/lib/games/messages";
 import { ContentKindHead } from "@/components/content-kind-head";
 import { KoreanSupportBadges } from "@/components/korean-support-badges";
 import { MultiplayerBadges } from "@/components/multiplayer-badges";
@@ -31,6 +33,9 @@ import { originCountry, type GameDetail } from "@/server/services/games";
 /** 장르 태그 — 누르면 그 장르로 거른 목록(목업 .gtags 의 data-a="cat"). 칩이 아니라 꼬리표라 작은 알약이다 */
 const GENRE_TAG =
   "press inline-flex min-h-[32px] items-center rounded-full bg-surface px-3.5 text-[13px] font-semibold text-ink ring-1 ring-line-strong ring-inset transition-colors duration-base hover:text-acc hover:ring-acc";
+
+/** 원제, 출시일, 나라, 개발, 배급 한 줄의 낱말. 앞머리 막대는 줄 머리에서 잘린다(쓰는 자리 주석) */
+const META_ITEM = "relative inline-flex items-center gap-x-1.5 pl-3 pr-1.5 before:absolute before:left-[3px] before:text-dim-2 before:content-['|']";
 
 export function DetailHero({
   game,
@@ -59,10 +64,12 @@ export function DetailHero({
     <section className="grid gap-x-8 gap-y-5 md:grid-cols-2 lg:grid-cols-[minmax(0,420fr)_minmax(0,420fr)_minmax(0,368fr)] lg:gap-x-10">
       {/* 커버 — 흰 판 위에 한 장(목업 .artc). 가로 아트를 먼저 쓴다: 이 칸은 가로가 긴 상자라 세로 아트를 넣으면
           위아래가 반 넘게 잘린다. 가로 아트가 없는 게임만 세로 아트를 가운데 띠로 보여 준다 */}
-      <div className="enter-item flex rounded-[var(--radius-panel)] bg-surface p-2.5 shadow-[var(--elev-card)] sm:p-3" style={stagger(0)}>
-        <div className="cover-elev relative aspect-[16/9] w-full overflow-hidden rounded-[var(--radius-cover-lg)] bg-surface-3 md:aspect-auto md:min-h-[250px]">
+      <div className="enter-item flex flex-col gap-2.5 self-start rounded-[var(--radius-panel)] bg-surface p-2.5 shadow-[var(--elev-card)] sm:p-3" style={stagger(0)}>
+        <div className="cover-elev relative aspect-[16/9] w-full overflow-hidden rounded-[var(--radius-cover-lg)] bg-surface-3">
           <CoverImage src={game.coverUrl ?? game.portraitUrl} alt={`${title} 커버`} sizes="(max-width: 767px) 100vw, (max-width: 1023px) 50vw, 420px" priority />
         </div>
+        {/* 정보 출처는 커버 밑 한 줄(game-detail/sources 머리 주석) */}
+        <SourceRefs refs={game.sourceRefs} />
       </div>
 
       <div className="enter-item flex min-w-0 flex-col gap-3" style={stagger(1)}>
@@ -83,22 +90,41 @@ export function DetailHero({
         <ContentKindHead contentType={game.contentType} parent={game.parent} />
         <h1 className="text-[28px] font-extrabold leading-[1.15] tracking-[-0.035em] text-ink sm:text-[34px] lg:text-[38px]">{title}</h1>
         {/* 원제, 출시일, 나라 — 기획서 히어로의 "한글명, 영문명, 출시일". 나라는 국기 한 장과 이름(2026-09-22) */}
-        {(meta.length > 0 || origin) && (
-          <p className="flex flex-wrap items-center gap-x-1.5 gap-y-1 text-[13px] text-mut">
-            {meta.map((text, i) => (
-              <span key={text} className="inline-flex items-center gap-x-1.5">
-                {i > 0 && <span className="text-dim-2">|</span>}
+        {(meta.length > 0 || origin || game.companies.length > 0 || game.developer || game.publisher) && (
+          // 낱말 사이 세로 막대는 각 낱말의 앞머리(::before)다. 줄이 갈리면 둘째 줄 첫 낱말 앞에 막대가 홀로 남는데,
+          // 줄을 왼쪽으로 조금 밀고(-ml) 바깥 상자가 넘친 자리를 자르면(overflow-hidden) 줄 머리의 막대만 잘려 나간다
+          <div className="overflow-hidden">
+          <p className="-ml-3 flex flex-wrap items-center gap-y-1 text-[13px] text-mut">
+            {meta.map((text) => (
+              <span key={text} className={META_ITEM}>
                 {text}
               </span>
             ))}
             {origin && (
-              <span className="inline-flex items-center gap-x-1.5">
-                {meta.length > 0 && <span className="text-dim-2">|</span>}
+              <span className={META_ITEM}>
                 <Flag code={origin.countryCode} />
                 {origin.countryNameKo}
               </span>
             )}
+            {/* 개발, 배급은 딱지가 아니라 나라 옆 글자 링크다(2026-10-27, 사용자: "배지 형태 말고 그냥 국가 옆에 글자 버튼으로") */}
+            {game.companies.map((c) => (
+              <span key={`${c.slug}:${c.role}`} className={META_ITEM}>
+                <Link href={companyPath(c.slug)} className="text-ink-2 underline-offset-2 transition-colors hover:text-acc hover:underline">
+                  <span className="text-dim">{COMPANY_ROLE_LABEL[c.role]}</span> {c.name}
+                </Link>
+              </span>
+            ))}
+            {game.companies.length === 0 &&
+              [game.developer, game.publisher]
+                .filter((v): v is string => Boolean(v))
+                .filter((v, i, all) => all.indexOf(v) === i)
+                .map((name) => (
+                  <span key={name} className={META_ITEM}>
+                    {name}
+                  </span>
+                ))}
           </p>
+          </div>
         )}
         {game.genres.length > 0 && (
           <ul className="flex flex-wrap gap-1.5" aria-label="장르">
@@ -111,8 +137,6 @@ export function DetailHero({
             ))}
           </ul>
         )}
-        {/* 개발사, 배급사 — 기획서 히어로 항목. 장르는 위 태그가 말하므로 넘기지 않는다 */}
-        <CompanyChips companies={game.companies} developer={game.developer} publisher={game.publisher} />
         {game.description && (
           <p className="max-w-[620px] text-[14px] leading-[1.6] text-mut">
             <Clamp lines={3}>{game.description}</Clamp>
