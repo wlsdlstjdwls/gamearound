@@ -22,6 +22,8 @@ export type IndieCardDto = {
   viewCount: number;
   registeredAt: string;
   cover: IndieImageDto;
+  /** 개발자가 메이커 멤버십 회원인지(메이커 꼬리표) */
+  authorIsMaker: boolean;
 };
 
 /** 카탈로그 게임과의 연결. 확인 전이면 공개 화면은 이 값을 안 받는다 */
@@ -49,6 +51,8 @@ export type IndieDetailDto = {
   reviewReason: string | null;
   likeCount: number;
   createdAt: string;
+  /** 개발자가 메이커 멤버십 회원인지(메이커 꼬리표) */
+  authorIsMaker: boolean;
 };
 
 /** 내 글 목록 한 줄 */

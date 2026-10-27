@@ -6,6 +6,7 @@
 // 공개 화면은 "published 이고 커버가 있는 글" 만 본다. 커버 없는 카드는 회색 칸이라 목록이 고장 나 보인다
 // (홈 노출 체크리스트: 커버 필수). 상세는 커버가 없어도 열린다 — 글쓴이가 링크를 먼저 퍼뜨릴 수 있다.
 import "server-only";
+import { makerActiveSql } from "@/server/services/membership/read";
 import { and, asc, count, desc, eq, ilike, inArray, isNotNull, or, sql } from "drizzle-orm";
 import { getDb } from "@/server/db/client";
 import { containsPattern } from "@/lib/like-pattern";
@@ -57,6 +58,8 @@ export const cardColumns = {
   viewCount: indiePosts.viewCount,
   // 공개 카드의 "등록일" 은 승인된 날이다 — 승인 전에는 어디에도 안 섰으니 신청한 날을 적으면 "오래된 게임" 으로 읽힌다
   registeredAt: sql<Date>`coalesce(${indiePosts.reviewedAt}, ${indiePosts.createdAt})`,
+  // 메이커 꼬리표(services/membership 의 makerActiveSql). 줄마다 exists 한 번이라 왕복이 늘지 않는다
+  authorIsMaker: makerActiveSql(indiePosts.authorUserId),
 };
 
 export type CardRow = {
@@ -71,6 +74,7 @@ export type CardRow = {
   likeCount: number;
   viewCount: number;
   registeredAt: Date | string;
+  authorIsMaker: boolean;
 };
 
 export async function toCards(rows: CardRow[]): Promise<IndieCardDto[]> {
@@ -131,6 +135,7 @@ export async function getIndiePostBySlug(slug: string): Promise<IndieDetailDto |
       gameSlug: games.slug,
       gameTitleKo: games.titleKo,
       gameTitleEn: games.titleEn,
+      authorIsMaker: makerActiveSql(indiePosts.authorUserId),
     })
     .from(indiePosts)
     .leftJoin(games, eq(games.id, indiePosts.gameId))
@@ -170,6 +175,7 @@ export async function getIndiePostBySlug(slug: string): Promise<IndieDetailDto |
     reviewReason: p.reviewReason,
     likeCount: p.likeCount,
     createdAt: p.createdAt.toISOString(),
+    authorIsMaker: row.authorIsMaker,
   };
 }
 

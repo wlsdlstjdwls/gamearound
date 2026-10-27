@@ -3,6 +3,7 @@
 import { sql } from "drizzle-orm";
 import { games, indiePosts, posts, users, type PostCategory, type PromoType } from "@/server/db/schema";
 import { isPublic as indieIsPublic } from "@/server/services/indie/read";
+import { makerActiveSql } from "@/server/services/membership/read";
 import { POPULAR_COMMENT_WEIGHT, postPath } from "@/lib/community/constants";
 import { gamePath } from "@/lib/routes";
 import type { PostRowDto } from "./dto";
@@ -30,6 +31,9 @@ const gameSlugSql = sql<string | null>`(select ${games.slug} from ${games} where
  */
 const authorIsDeveloperSql = sql<boolean>`exists(select 1 from ${indiePosts} where ${indiePosts.authorUserId} = ${posts.authorUserId} and ${indieIsPublic})`;
 
+/** 메이커 꼬리표의 근거 — 글쓴이가 지금 멤버십 혜택을 받는가(services/membership 의 makerActiveSql). 개발자 배지와 같은 줄마다 exists 다 */
+const authorIsMakerSql = makerActiveSql(posts.authorUserId);
+
 export const rowColumns = {
   id: posts.id,
   category: posts.category,
@@ -38,6 +42,7 @@ export const rowColumns = {
   promoType: posts.promoType,
   authorName: authorNameSql,
   authorIsDeveloper: authorIsDeveloperSql,
+  authorIsMaker: authorIsMakerSql,
   createdAt: posts.createdAt,
   commentCount: posts.commentCount,
   likeCount: posts.likeCount,
@@ -54,6 +59,7 @@ type Row = {
   promoType: PromoType | null;
   authorName: string;
   authorIsDeveloper: boolean;
+  authorIsMaker: boolean;
   createdAt: Date;
   commentCount: number;
   likeCount: number;

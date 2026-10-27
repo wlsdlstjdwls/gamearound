@@ -1,4 +1,5 @@
 // 게시판 말머리, 스포, 홍보 유형, 답변 대기 딱지(기획서 v2.0 4.4, 7장). 서버, 클라이언트 어디서든 쓴다.
+import { MakerBadge } from "@/components/membership/maker-badge";
 import { CheckIcon } from "@/components/ui/icons";
 import { Tag } from "@/components/ui/tag";
 import { AWAITING_ANSWER_MAX_COMMENTS, CATEGORY_LABEL, CATEGORY_TONE, PROMO_TYPE_LABEL, PROMO_TYPE_TONE } from "@/lib/community/constants";
@@ -36,7 +37,7 @@ export function GameChip({ title }: { title: string }) {
  * 이름은 잘려도 배지는 남는다(shrink-0) — 긴 닉네임 때문에 "확인된 개발자" 라는 말이 사라지면 안 된다.
  * 체크 표시는 글자(✔)가 아니라 아이콘이다 — 글꼴마다 이모지로 바뀌어 색이 제멋대로 칠해진다.
  */
-export function AuthorName({ post, className }: { post: Pick<PostRowDto, "authorName" | "authorIsDeveloper">; className?: string }) {
+export function AuthorName({ post, className }: { post: Pick<PostRowDto, "authorName" | "authorIsDeveloper" | "authorIsMaker">; className?: string }) {
   return (
     <span className="inline-flex min-w-0 items-center gap-1.5">
       <span className={className ?? "truncate"}>{post.authorName}</span>
@@ -46,6 +47,7 @@ export function AuthorName({ post, className }: { post: Pick<PostRowDto, "author
           {M.developerBadge}
         </Tag>
       )}
+      {post.authorIsMaker && <MakerBadge />}
     </span>
   );
 }

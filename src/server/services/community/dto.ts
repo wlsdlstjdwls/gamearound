@@ -11,6 +11,8 @@ export type PostRowDto = {
   authorName: string;
   /** 작성자가 승인된 인디 게임을 공개 중인 개발자인지(목업 brow, postv 의 "개발자" 배지). 근거는 services/community/columns */
   authorIsDeveloper: boolean;
+  /** 글쓴이가 메이커 멤버십 회원인지(메이커 꼬리표). 근거는 services/community/columns */
+  authorIsMaker: boolean;
   createdAt: Date;
   commentCount: number;
   likeCount: number;

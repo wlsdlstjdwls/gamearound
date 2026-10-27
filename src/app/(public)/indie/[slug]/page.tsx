@@ -22,6 +22,7 @@ import { Suspense } from "react";
 import { Comments } from "@/components/community/post-interactions";
 import { DeleteIndiePost } from "@/components/indie/delete-post";
 import { IndieDetailHero } from "@/components/indie/detail-hero";
+import { MakerBadge } from "@/components/membership/maker-badge";
 import { IndieFollowButton } from "@/components/indie/follow-button";
 import { IndieLikeButton } from "@/components/indie/like-button";
 import { IndieRelatedNews } from "@/components/indie/related-news";
@@ -232,7 +233,10 @@ export default async function IndieDetailPage({ params, searchParams }: Props) {
               <h2 id="indie-info" className="text-[15px] font-bold text-ink">
                 {M.infoTitle}
               </h2>
-              <span className="truncate text-[12.5px] text-dim">{post.developerName}</span>
+              <span className="flex min-w-0 items-center gap-1.5">
+                <span className="truncate text-[12.5px] text-dim">{post.developerName}</span>
+                {post.authorIsMaker && <MakerBadge />}
+              </span>
             </div>
           </div>
 
