@@ -8,6 +8,7 @@
 import { DETAIL_MESSAGES as D } from "@/lib/games/detail-messages";
 import { toPositiveNumber } from "@/lib/price-per-hour";
 import { cn } from "@/lib/cn";
+import { EmptyLine } from "@/components/game-detail/empty-line";
 import { ClockIcon } from "@/components/ui/icons";
 import { SECTION_SIZE } from "@/components/ui/page";
 import { InfoTip } from "@/components/ui/tooltip";
@@ -58,31 +59,33 @@ function hoursText(h: number): string {
 
 export function PlaytimeTiles({ playtime, className }: { playtime: PlaytimeDto | null; className?: string }) {
   const values = PLAYTIME_KEYS.map((k) => ({ key: k, hours: toPositiveNumber(playtime?.[k]) }));
-  // 값이 하나도 없으면 부르는 쪽의 늘리기(flex-1)를 받지 않는다 — 안내 한 줄짜리 판이 옆 칸 높이만큼 비어 늘어났다
-  const empty = values.every((v) => v.hours === null);
-  const any = values.some((v) => v.hours !== null);
+  // 값이 하나도 없으면 판 대신 한 줄(game-detail/empty-line, 2026-10-27 사용자 검수: 빈 판이 많다).
+  // 부르는 쪽의 늘리기(flex-1)도 받지 않는다 — 안내 한 줄이 옆 칸 높이만큼 비어 늘어났다(2026-10-26)
+  if (values.every((v) => v.hours === null)) {
+    return (
+      <EmptyLine id="playtime-heading" icon={<ClockIcon size={17} />} title={D.playtimeTitle}>
+        {D.playtimeEmpty}
+      </EmptyLine>
+    );
+  }
   return (
-    <section aria-labelledby="playtime-heading" className={cn("flex flex-col gap-3 rounded-[var(--radius-panel)] bg-surface p-4 shadow-[var(--elev-card)] sm:p-5", !empty && className)}>
+    <section aria-labelledby="playtime-heading" className={cn("flex flex-col gap-3 rounded-[var(--radius-panel)] bg-surface p-4 shadow-[var(--elev-card)] sm:p-5", className)}>
       <h2 id="playtime-heading" className="flex items-center gap-1.5 text-[16px] font-extrabold text-ink">
         <ClockIcon size={17} className="text-acc" />
         {D.playtimeTitle}
       </h2>
-      {any ? (
-        // 칸 사이 세로선은 목업 그대로 둔다 — 칸 수가 늘 셋이라 2026-09-21 의 "칸 수에 따라 선이 달라진다" 문제가 없다
-        <dl className="grid flex-1 grid-cols-3 content-center border-t border-line pt-3">
-          {values.map((v, i) => (
-            <div key={v.key} className={cn("flex min-w-0 flex-col gap-1.5 px-2.5", i === 0 ? "pl-0" : "border-l border-line")}>
-              <dt className="min-h-[2.8em] text-[12px] leading-[1.4] text-mut">{D.playtimeItems[v.key]}</dt>
-              <dd className="text-[24px] font-extrabold leading-none tracking-[-0.03em] text-ink sm:text-[28px]">
-                {v.hours === null ? <span className="text-dim-2">-</span> : hoursText(v.hours)}
-                {v.hours !== null && <small className="ml-0.5 text-[13px] font-bold tracking-normal">{D.playtimeUnit}</small>}
-              </dd>
-            </div>
-          ))}
-        </dl>
-      ) : (
-        <p className="border-t border-line pt-3 text-[13px] text-dim">{D.playtimeEmpty}</p>
-      )}
+      {/* 칸 사이 세로선은 목업 그대로 둔다 — 칸 수가 늘 셋이라 2026-09-21 의 "칸 수에 따라 선이 달라진다" 문제가 없다 */}
+      <dl className="grid flex-1 grid-cols-3 content-center border-t border-line pt-3">
+        {values.map((v, i) => (
+          <div key={v.key} className={cn("flex min-w-0 flex-col gap-1.5 px-2.5", i === 0 ? "pl-0" : "border-l border-line")}>
+            <dt className="min-h-[2.8em] text-[12px] leading-[1.4] text-mut">{D.playtimeItems[v.key]}</dt>
+            <dd className="text-[24px] font-extrabold leading-none tracking-[-0.03em] text-ink sm:text-[28px]">
+              {v.hours === null ? <span className="text-dim-2">-</span> : hoursText(v.hours)}
+              {v.hours !== null && <small className="ml-0.5 text-[13px] font-bold tracking-normal">{D.playtimeUnit}</small>}
+            </dd>
+          </div>
+        ))}
+      </dl>
     </section>
   );
 }

@@ -2,6 +2,7 @@
 // page.tsx 에서 옮겨 왔다(2026-10-26, 300줄 규약). 각 조각이 왜 따로인지는 조각마다 적었다.
 import Link from "next/link";
 import { CompatSection } from "@/components/compat-section";
+import { EmptyLine } from "@/components/game-detail/empty-line";
 import { VerdictNote } from "@/components/devices/verdict-note";
 import { PriceChart } from "@/components/price-chart";
 import { SellersSection } from "@/components/shops/sellers-section";
@@ -87,16 +88,25 @@ function ChartHead({ slug }: { slug: string }) {
  */
 export async function PriceChartSlot({ slug }: { slug: string }) {
   const series = await getPriceHistory(slug, { days: CHART_DAYS });
+  // 기록이 없으면 빈 그래프 판 대신 한 줄(game-detail/empty-line, 2026-10-27 사용자 검수). 전용 화면 링크는 줄 끝에 남긴다
+  if (series.length === 0) {
+    return (
+      <EmptyLine
+        id="chart-heading"
+        title={D.chartHeading}
+        action={
+          <Link href={gamePricesPath(slug)} className="text-[12.5px] text-acc hover:underline">
+            {D.chartMore}
+          </Link>
+        }
+      >
+        {D.chartEmpty}
+      </EmptyLine>
+    );
+  }
   return (
     <section aria-labelledby="chart-heading" className={sectionCardClass("min-w-0")}>
-      {series.length === 0 ? (
-        <div className="flex flex-col gap-3">
-          <ChartHead slug={slug} />
-          <p className="py-10 text-center text-[13px] text-dim">{D.chartEmpty}</p>
-        </div>
-      ) : (
-        <PriceChart series={series} head={<ChartHead slug={slug} />} rangeKeys={CHART_RANGE_KEYS} />
-      )}
+      <PriceChart series={series} head={<ChartHead slug={slug} />} rangeKeys={CHART_RANGE_KEYS} />
     </section>
   );
 }

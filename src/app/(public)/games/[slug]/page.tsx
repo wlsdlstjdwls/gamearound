@@ -17,17 +17,15 @@ import { GameHeadbar } from "@/components/game-headbar";
 import { GameViewBeacon } from "@/components/game-view-beacon";
 import { IndieGameSection } from "@/components/indie/game-section";
 import { NewsList } from "@/components/news-list";
-import { PatchList, PatchSpeed } from "@/components/patch-list";
 import { PlatformPrices, PlatformSaleNote, type PlatformPriceItem } from "@/components/platform-prices";
 import { PreorderBonusesSection } from "@/components/preorder-bonuses-section";
 import { PriceAlertButton, type AlertPlatformOption } from "@/components/price-alert-button";
-import { RequirementsBody } from "@/components/requirements-table";
-import { RunCheck } from "@/components/run-check";
 import { UpgradeNotes } from "@/components/upgrade-note";
 import { DetailHero } from "@/components/game-detail/hero";
 import { NewsMore } from "@/components/game-detail/news-more";
-import { CompatSlot, PriceChartFallback, PriceChartSlot, SellersSlot, VerdictNoteSlot } from "@/components/game-detail/slots";
-import { DetailTabs } from "@/components/game-detail/tabs";
+import { EmptyLine } from "@/components/game-detail/empty-line";
+import { PriceChartFallback, PriceChartSlot, SellersSlot } from "@/components/game-detail/slots";
+import { DetailUpdates } from "@/components/game-detail/updates";
 import { BackLink } from "@/components/ui/back-link";
 import { Page, SectionHead, sectionCardClass } from "@/components/ui/page";
 import { DB_DOWN, orDbDown } from "@/lib/db-errors";
@@ -35,25 +33,18 @@ import { DISPLAY_CURRENCY, formatPrice } from "@/lib/currency";
 import { kstDateKey } from "@/lib/format";
 import { getFreshness } from "@/lib/freshness";
 import { DETAIL_MESSAGES as D } from "@/lib/games/detail-messages";
-import { COMPAT_MESSAGES, GAME_MESSAGES, OS_FAMILY_LABEL } from "@/lib/games/messages";
-import { requirementSummary } from "@/lib/games/requirement-summary";
+import { GAME_MESSAGES } from "@/lib/games/messages";
 import { stagger } from "@/lib/motion";
 import { forecastDiscount } from "@/lib/sales/forecast";
 import { SITE } from "@/lib/site";
 import { decodeSlugParam } from "@/lib/slug";
 import { gamePath, ROUTES } from "@/lib/routes";
-import { bestUserScore, cheapestPlatform, displayTitle, getGameBySlugCached, getGamePatchesCached, latestPatches } from "@/server/services/games";
+import { bestUserScore, cheapestPlatform, displayTitle, getGameBySlugCached, getGamePatchesCached } from "@/server/services/games";
 import { getDiscountHistory } from "@/server/services/prices";
 import { HOME_REGION, type Platform } from "@/server/db/schema";
 
 /** 검색결과, SNS 카드에 들어가는 설명 길이 상한 */
 const META_DESCRIPTION_MAX = 150;
-
-/**
- * "업데이트 노트" 탭에 담을 패치 기록 수. 시트에 있던 목록(2026-09-15)을 탭으로 펼쳤다(목업).
- * 50 은 상한일 뿐이다 — 스토어가 최근 기록만 돌려줘서 실제로는 게임당 훨씬 적다.
- */
-const TAB_PATCH_LIMIT = 50;
 
 type Props = { params: Promise<{ slug: string }> };
 
@@ -203,62 +194,21 @@ export default async function GameDetailPage({ params }: Props) {
       )}
       </PlatformPickProvider>
 
-      <div className={sectionCardClass("min-w-0")}>
-        <NewsMore count={game.news.length}>
-          <NewsList items={game.news} />
-        </NewsMore>
-      </div>
+      {/* 뉴스가 없으면 큰 판 대신 한 줄(game-detail/empty-line) */}
+      {game.news.length > 0 ? (
+        <div className={sectionCardClass("min-w-0")}>
+          <NewsMore count={game.news.length}>
+            <NewsList items={game.news} />
+          </NewsMore>
+        </div>
+      ) : (
+        <EmptyLine id="news-heading" title={D.newsHeading}>
+          {D.newsEmpty}
+        </EmptyLine>
+      )}
 
-      {/* 업데이트 노트 | 성능 정보(목업 .tabs). 패치 기록 시트와 구동 사양 마디를 탭 안으로 옮겼다 */}
-      <DetailTabs
-        label={D.tabsLabel}
-        tabs={[
-          {
-            key: "patches",
-            label: D.tabPatches,
-            panel: (
-              <div className={sectionCardClass("flex min-w-0 flex-col gap-5")}>
-                {patchGroups.length > 0 ? (
-                  <>
-                    <PatchSpeed groups={patchGroups} />
-                    <PatchList items={latestPatches(patchGroups, TAB_PATCH_LIMIT)} showPlatform={patchGroups.length > 1} />
-                  </>
-                ) : (
-                  <p className="text-[13px] text-dim">{GAME_MESSAGES.patchNone}</p>
-                )}
-              </div>
-            ),
-          },
-          {
-            key: "perf",
-            label: D.tabPerf,
-            panel: (
-              <div className={sectionCardClass("min-w-0")}>
-                {game.requirements.length > 0 ? (
-                  <RunCheck
-                    verdictTitle={COMPAT_MESSAGES.heading}
-                    verdictNote={
-                      <Suspense fallback={null}>
-                        <VerdictNoteSlot groups={game.requirements} />
-                      </Suspense>
-                    }
-                    requirementTitle={GAME_MESSAGES.requirementHeading}
-                    requirementNote={requirementSummary(game.requirements) ?? game.requirements.map((g) => OS_FAMILY_LABEL[g.osFamily]).join(", ")}
-                    verdict={
-                      <Suspense fallback={null}>
-                        <CompatSlot groups={game.requirements} platforms={game.platforms} />
-                      </Suspense>
-                    }
-                    requirements={<RequirementsBody groups={game.requirements} />}
-                  />
-                ) : (
-                  <p className="text-[13px] text-dim">{upcoming ? D.perfUpcoming : D.perfNone}</p>
-                )}
-              </div>
-            ),
-          },
-        ]}
-      />
+      {/* 업데이트 노트 | 성능 정보(목업 .tabs). 둘 다 없으면 한 줄로 접힌다(game-detail/updates) */}
+      <DetailUpdates game={game} patchGroups={patchGroups} upcoming={upcoming} />
 
       {/* 더 알아보기 — 목업에 없지만 이 서비스가 쌓은 값. 에디션은 "어느 판을 살까" 라 맨 앞이다 */}
       {game.editions.length > 0 && (

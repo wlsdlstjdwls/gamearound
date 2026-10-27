@@ -9,6 +9,7 @@ import { formatDate } from "@/lib/format";
 import { DETAIL_MESSAGES as D } from "@/lib/games/detail-messages";
 import { GAME_MESSAGES } from "@/lib/games/messages";
 import { FORECAST_RANGE_PCT, type Forecast } from "@/lib/sales/forecast";
+import { EmptyLine } from "@/components/game-detail/empty-line";
 import { CalendarIcon } from "@/components/ui/icons";
 import type { Currency } from "@/server/db/schema";
 
@@ -28,7 +29,7 @@ export function DiscountForecast({
   action,
   basisLabel,
 }: {
-  /** null 이면 날짜도 기록도 없다 — 판은 세우고 "기록이 쌓이면" 을 말한다(목업은 늘 판이 선다) */
+  /** null 이면 날짜도 기록도 없다 — 강조 판 대신 한 줄로 접고 "기록이 쌓이면" 을 말한다(아래 empty) */
   forecast: Forecast | null;
   currency: Currency;
   action?: React.ReactNode;
@@ -39,6 +40,20 @@ export function DiscountForecast({
   const next = forecast?.next ?? null;
   const expected = forecast?.expected ?? null;
   const nextNote = next ? (next.basis === "cycle" ? D.forecastCycle(next.cycleDays ?? 0) : next.basis === "confirmed" ? D.forecastConfirmed : D.forecastEstimated) : null;
+  // 말할 것이 하나도 없으면 파란 강조 판을 세우지 않는다(2026-10-27 사용자 검수: 기록이 없는데 강조 판이 크게 남았다).
+  // 알림 단추는 남긴다 — 예측이 없어도 "싸지면 알려 달라" 는 할 수 있다. 참고용 안내 문단도 예측이 없으니 뺀다
+  if (!running && !next && !expected) {
+    return (
+      <EmptyLine
+        id="forecast-heading"
+        icon={<CalendarIcon size={17} />}
+        title={basisLabel ? `${D.forecastTitle} | ${D.forecastBasisPlatform(basisLabel)}` : D.forecastTitle}
+        action={action}
+      >
+        {D.forecastNoRecord}
+      </EmptyLine>
+    );
+  }
   return (
     <div className="flex flex-col gap-2.5">
       <section

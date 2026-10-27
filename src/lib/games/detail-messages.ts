@@ -52,6 +52,10 @@ export const DETAIL_MESSAGES = {
   newsHeading: "최신 관련 뉴스",
   newsMore: "더보기",
   newsLess: "접기",
+  newsEmpty: "관련 뉴스가 아직 없어요.",
+  /** 패치 기록도 사양도 없을 때 한 줄로 접은 마디(game-detail/updates) */
+  updatesEmpty: "업데이트 노트와 성능 정보가 아직 없어요.",
+  updatesEmptyUpcoming: "출시 뒤 업데이트 노트와 성능 정보가 채워져요.",
   tabPatches: "업데이트 노트",
   tabPerf: "성능 정보",
   tabsLabel: "업데이트와 성능",
