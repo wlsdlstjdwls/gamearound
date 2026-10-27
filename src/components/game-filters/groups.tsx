@@ -159,8 +159,7 @@ export function Groups({
       )}
 
       {/* 거르는 조건 — 처음엔 하나뿐이었지만 무리로 세웠다(2026-09-22, 사용자 요청). 한국어 지원은 2026-10-07 에 더했다.
-          "무료 제외" 를 가격 칸(maxPrice)에 못 얹는 이유는 lib/games-query 의 hideFree 주석에 있다:
-          그 칸은 상한만 있어서 "0원을 빼라" 를 적을 자리가 없다.
+          "무료 제외" 칩은 2026-10-27 에 걷었다(사용자) — 인기순이 무료 게임을 뒤로 보내 할 일이 없다. nofree=1 주소는 계속 읽는다.
           칩 하나가 켜고 끄는 값이라 드롭다운을 쓰지 않는다 — 고를 값이 둘(켬, 끔)뿐이다 */}
       <Group label="조건" sheet={sheet}>
         {/* 세일 칩은 **세일이 열려 있을 때만** 선다(2026-10-02). 홈 배너와 같은 판정이라 둘이 늘 같이 서고 같이 내려간다.
@@ -173,14 +172,8 @@ export function Groups({
             </ChipNavLink>
           </HideAfter>
         )}
-        <ChipNavLink {...nav(href({ hideFree: !filter.hideFree }))} {...chip} active={Boolean(filter.hideFree)} toggle>
-          {/* toggle: 앞에 체크 네모가 서고(켬/끔이 옆 칩 없이도 읽힌다), 누른 순간 켜짐이 바뀐다(ui/chip-nav) */}
-          {GAMES_FILTER_MESSAGES.hideFree}
-          {/* 화면에 보이는 것은 네모뿐이라, 읽어 주는 기기에는 상태를 말로 준다 */}
-          <span className="sr-only">
-            {filter.hideFree ? GAMES_FILTER_MESSAGES.toggleOn : GAMES_FILTER_MESSAGES.toggleOff}
-          </span>
-        </ChipNavLink>
+        {/* toggle: 앞에 체크 네모가 서고(켬/끔이 옆 칩 없이도 읽힌다), 누른 순간 켜짐이 바뀐다(ui/chip-nav).
+            화면에 보이는 것은 네모뿐이라, 읽어 주는 기기에는 상태를 말로 준다 */}
         <ChipNavLink {...nav(href({ korean: !filter.korean }))} {...chip} active={Boolean(filter.korean)} toggle>
           {GAMES_FILTER_MESSAGES.korean}
           <span className="sr-only">{filter.korean ? GAMES_FILTER_MESSAGES.toggleOn : GAMES_FILTER_MESSAGES.toggleOff}</span>

@@ -149,10 +149,8 @@ export function GameFilterBar({
             </ChipNavLink>
           </HideAfter>
         )}
-        <ChipNavLink {...nav(href({ hideFree: !filter.hideFree }))} outline active={Boolean(filter.hideFree)} toggle>
-          {M.hideFree}
-          <span className="sr-only">{filter.hideFree ? M.toggleOn : M.toggleOff}</span>
-        </ChipNavLink>
+        {/* "무료 제외" 칩은 걷었다(2026-10-27, 사용자). 인기순이 무료 게임을 이미 뒤로 보내서 할 일이 없다.
+            nofree=1 주소는 계속 읽고, 걸려 있으면 걸린 조건 줄(active.tsx)에서 풀 수 있다 */}
         <ChipNavLink {...nav(href({ korean: !filter.korean }))} outline active={Boolean(filter.korean)} toggle>
           {M.korean}
           <span className="sr-only">{filter.korean ? M.toggleOn : M.toggleOff}</span>
