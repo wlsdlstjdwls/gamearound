@@ -15,7 +15,7 @@ import { isPreorder } from "@/lib/games/preorder";
 import { countText, scoreToStars } from "@/lib/user-score";
 import { cn } from "@/lib/cn";
 import { buttonClass } from "@/components/ui/button";
-import { DiscountText } from "@/components/ui/discount";
+import { DiscountBadge } from "@/components/ui/discount";
 import { PendingNote } from "@/components/ui/pending-note";
 import { ClockIcon, StoreIcon } from "@/components/ui/icons";
 import { Tag } from "@/components/ui/tag";
@@ -117,11 +117,8 @@ export function PriceTile({
             ) : (
               <span className="text-[22px] font-extrabold tracking-[-0.035em] text-acc sm:text-[24px]">{formatPrice(p.currentPrice, p.currency)}</span>
             )}
-            {hasDiscount && (
-              <span className="rounded-full bg-acc-soft px-2 py-[2px] text-[12px] font-bold text-acc">
-                <DiscountText pct={p.discountPct} />
-              </span>
-            )}
+            {/* 목록 카드와 같은 채운 배지(ui/discount). 연파랑 알약은 최저가 카드의 연파랑 면에 묻혔다(2026-10-27 사용자) */}
+            {hasDiscount && <DiscountBadge pct={p.discountPct} size="sm" />}
           </dd>
         </div>
       </dl>

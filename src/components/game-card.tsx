@@ -12,7 +12,7 @@ import { isPreorder } from "@/lib/games/preorder";
 import type { StoreSaving } from "@/lib/games/saving";
 import { parsePlatformValues } from "@/lib/games-query";
 import { expandPlatformValues } from "@/lib/platform";
-import { DiscountText } from "@/components/ui/discount";
+import { DiscountBadge } from "@/components/ui/discount";
 import { Tag } from "@/components/ui/tag";
 import { PlatformBadges } from "@/components/platform-badges";
 import type { Platform } from "@/server/db/schema";
@@ -89,18 +89,13 @@ export function SavingLine({ saving, className }: { saving: StoreSaving | null |
   );
 }
 
+// 면을 걷고 글자만 남겼다(2026-09-29, 커머스 정보형) — 판이 없는 카드에서 꽉 찬 보라 면은 커버 다음으로
+// 센 덩어리라 값보다 먼저 읽혔다.
+// 2026-10-07(사용자 선택) 채운 면으로 되돌렸다. 카드가 이제 흰 판 위라 덩어리가 판 안에 갇히고, 연보라 바탕으로
+// 옮긴 뒤 보라 글자만으로는 숫자 둘(할인율, 값)이 같은 무게로 붙어 읽혔다. 값보다 작게 두어 "값이 주인" 은 지킨다.
+// 모양은 ui/discount 의 DiscountBadge 하나다(2026-10-27, 상세와 머리바, 찜 카드가 같이 쓴다)
 export function DiscountStamp({ pct }: { pct: number | null }) {
-  if (!pct || pct <= 0) return null;
-  return (
-    // 면을 걷고 글자만 남겼다(2026-09-29, 커머스 정보형) — 판이 없는 카드에서 꽉 찬 보라 면은 커버 다음으로
-    // 센 덩어리라 값보다 먼저 읽혔다.
-    // 2026-10-07(사용자 선택) 채운 면으로 되돌렸다. 카드가 이제 흰 판 위라 덩어리가 판 안에 갇히고, 연보라 바탕으로
-    // 옮긴 뒤 보라 글자만으로는 숫자 둘(할인율, 값)이 같은 무게로 붙어 읽혔다. 값보다 작게 두어 "값이 주인" 은 지킨다.
-    // self-center: 값과 baseline 으로 맞추면 면이 위로 떠 보인다(글자 크기가 다르다)
-    <span className="inline-flex shrink-0 items-center self-center rounded-[var(--radius-xs)] bg-acc px-1.5 py-0.5 text-[15px] font-extrabold leading-none tracking-[-0.02em] text-on-ink sm:text-[14px]">
-      <DiscountText pct={pct} />
-    </span>
-  );
+  return <DiscountBadge pct={pct} />;
 }
 
 /**

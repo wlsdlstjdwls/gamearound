@@ -32,9 +32,31 @@
  * OG 이미지(satori)는 이 컴포넌트를 쓰지 못한다 — 거기는 lib/format 의 formatDiscount 문자열 그대로다.
  */
 import { formatDiscount } from "@/lib/format";
+import { cn } from "@/lib/cn";
 
 /** 붙임표를 숫자 광학 중심에 맞춰 올리는 폭. 근거는 파일 상단 표 */
 const SIGN_LIFT = "-0.085em";
+
+/**
+ * 할인율 배지 — 채운 파랑 면에 흰 글자(게임 목록 카드의 모양, 2026-10-07 사용자 선택).
+ * 2026-10-27 상세 가격 카드, 스크롤 머리바, 찜 카드가 저마다 다른 모양(연파랑 알약, 파랑 글자만)이라 이것 하나로 모았다
+ * (사용자: "뱃지 배경색도 게임 목록 카드의 뱃지 형태로", "최저가 카드가 연파랑으로 칠해져 있어 배지가 티가 안 난다").
+ * md 는 카드의 값 옆, sm 은 줄 안(머리바, 찜 카드의 플랫폼 줄)이다.
+ */
+const BADGE_SIZE = {
+  md: "px-1.5 py-0.5 text-[15px] sm:text-[14px]",
+  sm: "px-1.5 py-[3px] text-[12px]",
+} as const;
+
+export function DiscountBadge({ pct, size = "md", className }: { pct: number | null | undefined; size?: keyof typeof BADGE_SIZE; className?: string }) {
+  if (!pct || pct <= 0) return null;
+  return (
+    // self-center: 값과 baseline 으로 맞추면 면이 위로 떠 보인다(글자 크기가 다르다)
+    <span className={cn("inline-flex shrink-0 items-center self-center rounded-[var(--radius-xs)] bg-acc font-extrabold leading-none tracking-[-0.02em] text-on-ink", BADGE_SIZE[size], className)}>
+      <DiscountText pct={pct} />
+    </span>
+  );
+}
 
 export function DiscountText({ pct }: { pct: number | null | undefined }) {
   const text = formatDiscount(pct);

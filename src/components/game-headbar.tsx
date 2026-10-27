@@ -20,6 +20,7 @@ import { BrandSymbol } from "@/components/ui/logo";
 import { PlatformBadges } from "@/components/platform-badges";
 import { Clamp } from "@/components/ui/tooltip";
 import { buttonClass } from "@/components/ui/button";
+import { DiscountBadge } from "@/components/ui/discount";
 import { ROUTES } from "@/lib/routes";
 import { SITE } from "@/lib/site";
 import type { Platform } from "@/server/db/schema";
@@ -118,7 +119,8 @@ export function GameHeadbar({
                       {/* 정가를 앞에 둔다 — 취소선이 먼저 읽혀야 그 다음 숫자가 "깎인 값" 으로 읽힌다 */}
                       {listPrice && <span className="text-[11.5px] text-dim-2 line-through">{listPrice}</span>}
                       <span className="text-[14px] font-extrabold tracking-[-0.03em] text-ink">{price}</span>
-                      {discountPct ? <span className="text-[11.5px] font-bold text-acc">-{discountPct}%</span> : null}
+                      {/* 목록 카드와 같은 채운 배지(2026-10-27 사용자: "머리바의 할인 배지도 제대로") */}
+                      <DiscountBadge pct={discountPct} size="sm" />
                     </span>
                   )}
                   {/* 배지는 좁은 화면에서 접는다 — 거기서는 제목과 값이 먼저다 */}
