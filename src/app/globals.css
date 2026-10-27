@@ -1302,6 +1302,27 @@ body:has([data-onboarding]) > [data-site-tabbar] {
   animation: beam-sweep var(--duration-ambient) var(--ease-standard) infinite alternate;
 }
 
+/* 홈 히어로의 작은 별(components/home/hero). 커졌다 작아지며 반짝이고 오래 쉰다 — 늘 깜빡이면 시끄럽다 */
+@keyframes sparkle {
+  0%, 100% { opacity: 0; transform: scale(0.4) rotate(0deg); }
+  12% { opacity: 1; transform: scale(1) rotate(45deg); }
+  24% { opacity: 0; transform: scale(0.4) rotate(90deg); }
+}
+.sparkle {
+  opacity: 0;
+  pointer-events: none;
+  animation: sparkle calc(var(--duration-glint) * 3) var(--ease-standard) infinite;
+}
+
+/* 글자를 스치는 빛을 몇 초마다 다시(홈 히어로 "얼마에?"). 앞 한 토막에서만 지나가고 나머지는 쉰다 */
+@keyframes glint-text-loop {
+  0% { background-position: 0% 0; }
+  22%, 100% { background-position: 100% 0; }
+}
+.glint-text.glint-loop {
+  animation: glint-text-loop calc(var(--duration-glint) * 5) var(--ease-standard) 600ms infinite both;
+}
+
 /* 어두운 판 위의 빛은 파랑으로(명예의 전당 머리 판). 손전등 노랑을 먹색 위에 깔면 누렇게 탁해진다(2026-10-27, 사용자: "누런색은 되도록 쓰지 마") */
 .hero-beam.beam-cool {
   background: radial-gradient(closest-side, color-mix(in oklab, var(--acc-on-ink) 30%, transparent), transparent 70%);

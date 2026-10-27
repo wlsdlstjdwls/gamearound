@@ -10,6 +10,10 @@ export const HOME_MESSAGES = {
   heroSearchLabel: "게임 검색",
   heroSearchPlaceholder: "게임 이름, 장르, 개발사로 찾아보세요",
   heroSearchCta: "검색",
+  /** 히어로 가장자리에 떠 있는 장식 딱지(components/home/hero). 이 서비스가 보여 주는 것을 그림으로 말한다 */
+  heroChipDiscount: "-70%",
+  heroChipLowest: "최저가",
+  heroChipAlert: "출시 알림",
   /** 기획서 v2.0 S-01 줄 이름 */
   todayDealsTitle: "오늘의 할인",
   upcomingTitle: "출시 예정",

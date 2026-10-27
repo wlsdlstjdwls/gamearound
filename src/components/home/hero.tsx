@@ -7,9 +7,41 @@
 // 같은 자동완성을 둘 띄우면 화면에 같은 목록이 두 번 펼쳐질 수 있다. 폼이라 JS 없이도 된다.
 // 움직임은 손전등 빛 하나다(2026-10-26 모션 회차): 바탕을 천천히 훑는 빛과, 강조 글자를 한 번 스치는 빛.
 // 목업의 글로우와 사선 빛줄기는 쓰지 않는다(기획서 2.5 "과한 네온, 글로우는 쓰지 않는다"). 바탕에 브랜드색을 옅게만 깐다.
-import { SearchIcon } from "@/components/ui/icons";
+//
+// 2026-10-27 반짝임을 더했다(사용자: "지금 밋밋하니까 모션 그래픽이나 반짝이는 효과"):
+// - 작은 별 여섯이 엇갈려 반짝인다(.sparkle). 글자 둘레 바깥에만 둔다 — 글 위에서 깜빡이면 읽기를 방해한다
+// - "얼마에?" 를 스치는 빛이 한 번이 아니라 몇 초마다 다시 지나간다(.glint-loop)
+// - 넓은 화면에서 가격 딱지 셋(-70%, 최저가, 출시 알림)이 판 가장자리에 둥실 떠 있다 — 이 서비스가 무엇을 보여 주는지 그림으로 말한다
+// - 검색 단추 위로 빛이 몇 초에 한 번 비스듬히 스친다(.glint-sweep)
+// 전부 CSS 이고, 움직임 줄이기 설정은 전역 킬스위치가 끈다.
+import { BellIcon, SearchIcon } from "@/components/ui/icons";
+import { cn } from "@/lib/cn";
 import { HOME_MESSAGES as M } from "@/lib/home/messages";
 import { ROUTES } from "@/lib/routes";
+
+/**
+ * 반짝이는 별 자리(판 기준 %)와 크기(px), 시작 어긋남(ms). 글자 덩어리(가운데 60%)를 비켜 가장자리에 흩는다.
+ * 어긋남이 없으면 여섯이 한꺼번에 깜빡여 "깜빡이는 판" 이 된다
+ */
+const SPARKLES: readonly { top: string; left: string; size: number; delay: number }[] = [
+  { top: "14%", left: "9%", size: 14, delay: 0 },
+  { top: "68%", left: "6%", size: 10, delay: 1300 },
+  { top: "22%", left: "88%", size: 16, delay: 700 },
+  { top: "74%", left: "92%", size: 11, delay: 2100 },
+  { top: "8%", left: "62%", size: 9, delay: 1700 },
+  { top: "86%", left: "36%", size: 10, delay: 400 },
+];
+
+/** 판 가장자리에 떠 있는 가격 딱지 셋(넓은 화면만). 어긋남이 있어야 셋이 따로 떠다닌다 */
+const FLOAT_CHIP = "soon-float absolute hidden items-center gap-1.5 rounded-full bg-surface px-3 py-1.5 text-[12.5px] font-bold shadow-2 lg:inline-flex";
+
+function Sparkle({ size, className, style }: { size: number; className?: string; style?: React.CSSProperties }) {
+  return (
+    <svg aria-hidden viewBox="0 0 24 24" width={size} height={size} className={cn("sparkle absolute text-acc", className)} style={style}>
+      <path d="M12 0c.6 6.2 5.8 11.4 12 12-6.2.6-11.4 5.8-12 12-.6-6.2-5.8-11.4-12-12C6.2 11.4 11.4 6.2 12 0Z" fill="currentColor" />
+    </svg>
+  );
+}
 
 export function HomeHero() {
   return (
@@ -28,8 +60,21 @@ export function HomeHero() {
       />
       {/* 손전등 빛 웅덩이가 바탕을 천천히 오간다(globals.css .hero-beam) */}
       <span aria-hidden className="hero-beam" />
+      {SPARKLES.map((s) => (
+        <Sparkle key={`${s.top}-${s.left}`} size={s.size} style={{ top: s.top, left: s.left, animationDelay: `${s.delay}ms` }} />
+      ))}
+      <span aria-hidden className={cn(FLOAT_CHIP, "left-[6%] top-[38%] text-on-ink")} style={{ background: "var(--acc)" }}>
+        {M.heroChipDiscount}
+      </span>
+      <span aria-hidden className={cn(FLOAT_CHIP, "right-[5%] top-[44%] text-acc")} style={{ animationDelay: "1200ms" }}>
+        {M.heroChipLowest}
+      </span>
+      <span aria-hidden className={cn(FLOAT_CHIP, "bottom-[14%] left-[14%] text-ink-2")} style={{ animationDelay: "600ms" }}>
+        <BellIcon size={13} className="text-acc" />
+        {M.heroChipAlert}
+      </span>
       <h1 id="home-hero-heading" className="text-[30px] font-extrabold leading-[1.18] tracking-[-0.035em] text-ink sm:text-[44px]">
-        {M.heroLead} <span className="glint-text">{M.heroAccent}</span>
+        {M.heroLead} <span className="glint-text glint-loop">{M.heroAccent}</span>
       </h1>
       <p className="mx-auto mt-3 max-w-[520px] text-[15px] leading-[1.6] text-mut sm:text-[17px]">{M.heroBody}</p>
 
@@ -47,7 +92,7 @@ export function HomeHero() {
           placeholder={M.heroSearchPlaceholder}
           className="h-11 min-w-0 flex-1 bg-transparent text-[16px] text-ink outline-none placeholder:text-dim"
         />
-        <button type="submit" className="press h-11 shrink-0 rounded-xl bg-acc px-5 text-[14.5px] font-semibold text-on-ink hover:bg-acc-hover">
+        <button type="submit" className="press glint-sweep relative h-11 shrink-0 overflow-hidden rounded-xl bg-acc px-5 text-[14.5px] font-semibold text-on-ink hover:bg-acc-hover">
           {M.heroSearchCta}
         </button>
       </form>
