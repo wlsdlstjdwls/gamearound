@@ -73,6 +73,8 @@ export const indiePosts = pgTable("indie_posts", {
   /** 상세 조회 수와 찜 수(2026-10-26). 명예의 전당, 슈퍼루키 점수의 재료다 — 쌓아 둔 값이라 줄 세울 때 집계가 안 돈다 */
   viewCount: integer("view_count").default(0).notNull(),
   likeCount: integer("like_count").default(0).notNull(),
+  /** 공개 댓글 수(2026-10-27). 숨긴 댓글은 뺀다 — 카드, 통계가 행을 세지 않게 쌓아 둔다 */
+  commentCount: integer("comment_count").default(0).notNull(),
   ...auditColumns(),
 }, (t) => [
   // 공개 목록은 published 를 최신순으로 본다

@@ -43,6 +43,8 @@ export * from "./schema-products";
 export * from "./schema-indie";
 // 게시판(게임 게시판, 개발자 라운지)도 사람이 쓰는 세계라 갈라 뒀다(schema-community.ts, 2026-10-26).
 export * from "./schema-community";
+// 인디 홍보 기본기(클릭, 하루 조회, 인디 댓글, 개발자 소식 받기, 2026-10-27). 인디 글과 게시판 둘 다를 가리켜 둘 뒤에 둔다.
+export * from "./schema-indie-promo";
 // 알림함(헤더 종 아이콘, 2026-10-26).
 export * from "./schema-notifications";
 // 예약 특전(schema-preorder.ts). 스토어가 아니라 퍼블리셔 공지에서 뽑은 사실이라 가격 축과 섞지 않는다.

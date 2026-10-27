@@ -505,6 +505,13 @@
       "when": 1793069123835,
       "tag": "0071_silly_lady_bullseye",
       "breakpoints": true
+    },
+    {
+      "idx": 72,
+      "version": "7",
+      "when": 1793076691946,
+      "tag": "0072_indie_promo_basics",
+      "breakpoints": true
     }
   ]
 }
