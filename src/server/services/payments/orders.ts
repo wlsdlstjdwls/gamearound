@@ -1,5 +1,5 @@
 // 노출 자리 단건 결제(2026-10-27, 기획서 5장 3단계, 토스페이먼츠 결제위젯). 주문 만들기 → (결제창) → 승인과 부스트 걸기.
-// 상품마다 자리와 대상 표가 다르다(lib/payments/products): 인디 게임 부스트는 indie_posts, 홍보 글 고정은 posts 의 홍보 글.
+// 상품마다 자리와 대상 표가 다르다(lib/payments/products): 인디 게임 부스트는 indie_posts, 홍보 글 고정은 posts 의 홍보 글, 묶음은 둘 다.
 //
 // 금액은 언제나 서버가 정한다(lib/payments/products). 성공 주소로 돌아온 amount 는 주문 줄과 견주기만 하고, 다르면 승인하지 않는다.
 // 승인은 한 번만 간다: 이미 paid 인 주문이 다시 오면(새로고침, 뒤로 가기) 토스를 다시 부르지 않고 그 결과를 돌려준다.
@@ -8,15 +8,18 @@
 // 끊기면 "돈은 냈는데 부스트가 없는" 주문이 남는다 — boostId 가 빈 paid 주문은 관리자 결제 목록에 그대로 드러나 손으로 건다.
 import "server-only";
 import { randomBytes } from "node:crypto";
-import { and, eq, gt, isNull, sql } from "drizzle-orm";
+import { and, desc, eq, gt, isNull, sql } from "drizzle-orm";
 import { getDb } from "@/server/db/client";
 import { createdBy, updatedBy } from "@/server/db/audit";
 import { indiePosts, payments, posts, promotionBoosts, type PromoTargetKind } from "@/server/db/schema";
 import { confirmTossPayment, TossError } from "@/server/payments/toss";
 import { insertPurchasedBoost, isPublicPromo } from "@/server/services/promotions";
 import { isPublic } from "@/server/services/indie/read";
-import { isProductKey, makeOrderId, PRODUCTS, type ProductKey } from "@/lib/payments/products";
+import { isProductKey, makeOrderId, PRODUCTS, type Product, type ProductKey } from "@/lib/payments/products";
 import { PAYMENT_MESSAGES as M } from "@/lib/payments/messages";
+
+/** 묶음 짝 후보 수. 한 사람의 공개 글은 많지 않고, 오래된 홍보 글에 돈을 거는 일은 드물다 */
+const PAIR_CANDIDATES = 20;
 
 /** 주문 번호 무작위 부분 바이트 수. 16바이트(hex 32자)면 겹칠 일이 없다 */
 const ORDER_RANDOM_BYTES = 16;
@@ -33,17 +36,27 @@ export async function ownedLiveTarget(kind: PromoTargetKind, userId: string, tar
   return rows.length > 0;
 }
 
-/** 결제창에 넘길 주문 */
-export async function createBoostOrder(userId: string, product: ProductKey, targetId: string): Promise<BoostOrder> {
-  const p = PRODUCTS[product];
-  if (!(await ownedLiveTarget(p.target, userId, targetId))) throw new Error(M.notBuyable);
+/** 결제창에 넘길 주문. 묶음이면 둘째 대상(홍보 글)도 내 공개 글이어야 한다 */
+export async function createBoostOrder(userId: string, product: ProductKey, targetId: string, extraTargetId: string | null = null): Promise<BoostOrder> {
+  const p: Product = PRODUCTS[product];
+  if (Boolean(p.extra) !== Boolean(extraTargetId)) throw new Error(M.notBuyable);
+  const [main, extra] = await Promise.all([ownedLiveTarget(p.target, userId, targetId), p.extra && extraTargetId ? ownedLiveTarget(p.extra.target, userId, extraTargetId) : true]);
+  if (!main || !extra) throw new Error(M.notBuyable);
   const orderId = makeOrderId(product.split("_")[0], randomBytes(ORDER_RANDOM_BYTES).toString("hex"));
-  await getDb().insert(payments).values({ orderId, userId, product, amount: p.amount, targetKind: p.target, targetId, ...createdBy("user", userId) });
+  await getDb().insert(payments).values({ orderId, userId, product, amount: p.amount, targetKind: p.target, targetId, extraTargetId, ...createdBy("user", userId) });
   // customerKey 는 토스가 구매자를 가르는 값이다. 우리 사용자 id(uuid)는 토스 규칙(영숫자와 -, 2~50자)에 맞고 바깥에 드러나도 쓸 데가 없다
   return { orderId, amount: p.amount, orderName: p.name, customerKey: userId };
 }
 
 export type BoostTargetDto = { id: string; title: string; live: boolean; boostedUntil: Date | null };
+
+/** 묶음의 짝으로 고를 내 공개 글(인디 게임 구매 화면이면 홍보 글, 홍보 고정 화면이면 인디 게임). 최근 것부터 */
+export async function listMyLiveTargets(userId: string, kind: PromoTargetKind): Promise<Array<{ id: string; title: string }>> {
+  const db = getDb();
+  return kind === "indie_post"
+    ? db.select({ id: indiePosts.id, title: indiePosts.title }).from(indiePosts).where(and(eq(indiePosts.authorUserId, userId), isPublic)).orderBy(desc(indiePosts.createdAt)).limit(PAIR_CANDIDATES)
+    : db.select({ id: posts.id, title: posts.title }).from(posts).where(and(eq(posts.authorUserId, userId), isPublicPromo)).orderBy(desc(posts.createdAt)).limit(PAIR_CANDIDATES);
+}
 
 /** 광고 걸기 화면의 대상 — 내 글만. 그 자리에 지금 걸린 광고(관리자든 결제든)가 있으면 가장 늦은 끝 시각 */
 export async function getMyBoostTarget(userId: string, product: ProductKey, targetId: string): Promise<BoostTargetDto | null> {
@@ -112,9 +125,14 @@ export async function confirmBoostPayment(input: { paymentKey: string; orderId: 
     .returning({ id: payments.id });
   if (claimed.length === 0) return { ok: true, orderId: order.orderId };
 
-  const p = PRODUCTS[order.product];
+  const p: Product = PRODUCTS[order.product];
   const boostId = await insertPurchasedBoost({ slot: p.slot, targetId: order.targetId, days: p.days, note: order.orderId }, userId);
   await db.update(payments).set({ boostId, ...updatedBy("system") }).where(eq(payments.id, order.id));
+  // 묶음의 둘째. 여기서 끊기면 extraBoostId 가 빈 채 남아 관리자 목록에 "걸기 실패" 로 드러난다(history 의 boostMissing)
+  if (p.extra && order.extraTargetId) {
+    const extraBoostId = await insertPurchasedBoost({ slot: p.extra.slot, targetId: order.extraTargetId, days: p.days, note: order.orderId }, userId);
+    await db.update(payments).set({ extraBoostId, ...updatedBy("system") }).where(eq(payments.id, order.id));
+  }
   return { ok: true, orderId: order.orderId };
 }
 

@@ -21,9 +21,10 @@ import { isUserCancel, loadTossSdk, type Rendered, type Widgets } from "@/compon
 const METHODS_ID = "toss-payment-methods";
 const AGREEMENT_ID = "toss-agreement";
 
-type Props = { product: ProductKey; targetId: string; clientKey: string; customerKey: string; amount: number };
+/** extraTargetId: 묶음 상품의 둘째 대상(lib/payments/products). 낱개면 null */
+type Props = { product: ProductKey; targetId: string; extraTargetId?: string | null; clientKey: string; customerKey: string; amount: number };
 
-export function BoostCheckout({ product, targetId, clientKey, customerKey, amount }: Props) {
+export function BoostCheckout({ product, targetId, extraTargetId = null, clientKey, customerKey, amount }: Props) {
   const widgets = useRef<Widgets | null>(null);
   /** 그리기를 한 줄로 세운다 — 앞 효과가 그리기를 끝내고 치운 뒤에 다음 효과가 그린다 */
   const queue = useRef<Promise<void>>(Promise.resolve());
@@ -66,7 +67,7 @@ export function BoostCheckout({ product, targetId, clientKey, customerKey, amoun
       const w = widgets.current;
       if (!w) return;
       setError(null);
-      const order = await createBoostOrderAction(product, targetId).catch(() => ({ ok: false as const, error: M.failed }));
+      const order = await createBoostOrderAction(product, targetId, extraTargetId).catch(() => ({ ok: false as const, error: M.failed }));
       if (!order.ok) return setError(order.error);
       try {
         await w.requestPayment({

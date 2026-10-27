@@ -50,7 +50,8 @@ function toDto({ p, indieTitle, postTitle, boost }: Row, now: Date, buyer?: stri
     receiptUrl: p.receiptUrl,
     failMessage: p.failMessage,
     createdAt: p.createdAt,
-    boostMissing: p.status === "paid" && !p.boostId,
+    // 묶음은 둘째까지 걸려야 끝이다
+    boostMissing: p.status === "paid" && (!p.boostId || (Boolean(p.extraTargetId) && !p.extraBoostId)),
     refundedAmount: p.refundedAmount,
     refundRequested: Boolean(p.refundRequestedAt),
     refundRequestNote: p.refundRequestNote,

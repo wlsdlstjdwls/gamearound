@@ -7,7 +7,7 @@
 // 토스가 거절하면 DB 는 그대로다. 토스는 됐는데 그 뒤가 끊기면 같은 단추를 다시 누르면 된다 — 취소 요청에 멱등 키를 붙여
 // 토스가 두 번 돌려주지 않고, 결제 줄 갱신은 paid 일 때만 간다.
 import "server-only";
-import { and, eq, isNull } from "drizzle-orm";
+import { and, eq, inArray, isNull } from "drizzle-orm";
 import { getDb } from "@/server/db/client";
 import { updatedBy } from "@/server/db/audit";
 import { payments, promotionBoosts } from "@/server/db/schema";
@@ -66,11 +66,13 @@ export async function refundPayment(orderId: string, mode: RefundMode, reason: s
     .where(and(eq(payments.id, p.id), eq(payments.status, "paid")))
     .returning({ id: payments.id });
   if (claimed.length === 0) return amount;
-  if (p.boostId) {
+  // 묶음이면 둘 다 거둔다. 일할 셈은 주 부스트 기간으로 한다 — 둘은 같은 순간에 같은 길이로 걸린다(이어 붙인 경우만 시작이 다르다)
+  const boostIds = [p.boostId, p.extraBoostId].filter((x): x is string => Boolean(x));
+  if (boostIds.length > 0) {
     await db
       .update(promotionBoosts)
       .set({ revokedAt: now, ...updatedBy("admin", adminId) })
-      .where(and(eq(promotionBoosts.id, p.boostId), isNull(promotionBoosts.revokedAt)));
+      .where(and(inArray(promotionBoosts.id, boostIds), isNull(promotionBoosts.revokedAt)));
   }
   if (p.membershipId) await endMembership(p.membershipId, now, { source: "admin", userId: adminId });
   const name = PRODUCTS[p.product as ProductKey]?.name ?? MEMBERSHIP_PLANS[p.product as MembershipPlanKey]?.name ?? p.product;

@@ -24,7 +24,26 @@ export const PRODUCT_COPY: Record<ProductKey, { title: string; lead: string; poi
       "숨김 처리된 글은 고정 기간 중에도 보이지 않아요",
     ],
   },
+  bundle_7d: {
+    title: "광고 묶음",
+    lead: "인디 게임 목록 맨 위와 게시판 홍보 목록 위에 7일 동안 함께 올려요.",
+    points: [],
+  },
 };
+
+/** 구매 화면의 "이것만 / 같이" 고르기(2026-10-27 사용자 확정: 낱개 6,900원, 같이 9,900원) */
+export const BUNDLE_MESSAGES = {
+  legend: "무엇을 살까요",
+  single: "이것만",
+  bundle: "같이 사기",
+  bundleNoteIndie: "내 홍보 글도 홍보 목록 위에 7일 고정해요",
+  bundleNotePin: "내 인디 게임도 인디 목록 맨 위에 7일 올려요",
+  saving: (amount: string) => `${amount} 아껴요`,
+  pickPromo: "같이 고정할 홍보 글",
+  pickIndie: "같이 올릴 인디 게임",
+  noPromo: "공개 중인 내 홍보 글이 없어요. 게시판 홍보에 글을 쓰면 같이 살 수 있어요",
+  noIndie: "공개 중인 내 인디 게임이 없어요. 게임을 등록해 승인받으면 같이 살 수 있어요",
+} as const;
 
 export const PAYMENT_MESSAGES = {
   adBuy: "광고 걸기",

@@ -4,17 +4,19 @@
 import { z } from "zod";
 import { actionError } from "@/lib/db-errors";
 import { PAYMENT_MESSAGES as M } from "@/lib/payments/messages";
-import { isProductKey } from "@/lib/payments/products";
+import { isProductKey, isSingleProduct } from "@/lib/payments/products";
 import { createBoostOrder, requestRefund, type BoostOrder } from "@/server/services/payments";
 import { cancelMembership, resumeMembership, spendBoostCredit } from "@/server/services/membership";
 import { requireUser } from "@/server/services/users";
 import { MEMBERSHIP_MESSAGES as MM } from "@/lib/membership/messages";
 
-export async function createBoostOrderAction(product: string, targetId: string): Promise<({ ok: true } & BoostOrder) | { ok: false; error: string }> {
+/** extraTargetId: 묶음 상품의 둘째 대상(홍보 글). 낱개면 null */
+export async function createBoostOrderAction(product: string, targetId: string, extraTargetId: string | null = null): Promise<({ ok: true } & BoostOrder) | { ok: false; error: string }> {
   try {
     const user = await requireUser();
     if (!isProductKey(product) || !z.uuid().safeParse(targetId).success) return { ok: false, error: M.notBuyable };
-    return { ok: true, ...(await createBoostOrder(user.id, product, targetId)) };
+    if (extraTargetId !== null && !z.uuid().safeParse(extraTargetId).success) return { ok: false, error: M.notBuyable };
+    return { ok: true, ...(await createBoostOrder(user.id, product, targetId, extraTargetId)) };
   } catch (e) {
     return { ok: false, error: actionError(e, M.failed) };
   }
@@ -54,6 +56,7 @@ export async function resumeMembershipAction(): Promise<Plain> {
 
 /** 멤버십 이용권 한 장으로 광고 걸기 */
 export async function spendBoostCreditAction(product: string, targetId: string): Promise<Plain> {
-  if (!isProductKey(product) || !z.uuid().safeParse(targetId).success) return { ok: false, error: M.notBuyable };
+  // 이용권 한 장은 자리 하나 — 묶음은 이용권으로 못 건다
+  if (!isProductKey(product) || !isSingleProduct(product) || !z.uuid().safeParse(targetId).success) return { ok: false, error: M.notBuyable };
   return run((userId) => spendBoostCredit(userId, product, targetId), MM.failed);
 }

@@ -1,22 +1,32 @@
-// 파는 상품과 값(2026-10-27 사용자 확정: 부스트 7일 9,900원, 기획서 4.3). 화면, 서버, 검증이 같은 값을 본다.
+// 파는 상품과 값. 화면, 서버, 검증이 같은 값을 본다.
+// 값(2026-10-27 사용자 확정): 인디 게임 부스트, 홍보 글 고정 각 7일 6,900원, 둘을 같이 사면 9,900원(기획서 4.3 "부스트 1회 9,900원" 의 묶음).
 // 값은 서버가 이 표에서 읽어 주문 줄에 적는다 — 결제창에서 돌아온 금액은 이 값과 견주기만 한다(schema-payments 머리 주석).
 //
-// 기획서 4.3 의 부스트는 "인디 목록 + 홍보 고정 7일" 한 묶음이지만, 대상이 다르다(인디 게임 글, 게시판 홍보 글).
-// 한 결제로 두 표의 글을 함께 고르게 하면 화면이 무거워져 자리마다 따로 판다. 홍보 고정 값은 아직 사용자가 정하지 않아
-// 부스트와 같은 값을 자리표시로 둔다(2026-10-27).
+// 묶음은 대상이 두 표에 걸친다(인디 게임 글, 게시판 홍보 글). 주 대상(slot, target)이 인디 게임이고 둘째(extra)가 홍보 글이다 —
+// 결제 줄의 targetId, extraTargetId 에 그대로 담긴다. 멤버십 이용권은 한 장에 자리 하나라 낱개 상품에만 쓴다.
 import type { PromoSlot, PromoTargetKind } from "@/server/db/schema";
 
-export type Product = { name: string; amount: number; slot: PromoSlot; target: PromoTargetKind; days: number };
+export type ProductPart = { slot: PromoSlot; target: PromoTargetKind };
+export type Product = ProductPart & { name: string; amount: number; days: number; extra?: ProductPart };
 
 export const PRODUCTS = {
-  boost_indie_7d: { name: "인디 게임 부스트 7일", amount: 9_900, slot: "indie_top", target: "indie_post", days: 7 },
-  pin_promo_7d: { name: "홍보 글 고정 7일", amount: 9_900, slot: "promo_pin", target: "board_post", days: 7 },
+  boost_indie_7d: { name: "인디 게임 부스트 7일", amount: 6_900, slot: "indie_top", target: "indie_post", days: 7 },
+  pin_promo_7d: { name: "홍보 글 고정 7일", amount: 6_900, slot: "promo_pin", target: "board_post", days: 7 },
+  bundle_7d: { name: "인디 게임 부스트 + 홍보 글 고정 7일", amount: 9_900, slot: "indie_top", target: "indie_post", days: 7, extra: { slot: "promo_pin", target: "board_post" } },
 } as const satisfies Record<string, Product>;
 
 export type ProductKey = keyof typeof PRODUCTS;
 
 export function isProductKey(v: string): v is ProductKey {
   return Object.hasOwn(PRODUCTS, v);
+}
+
+/** 묶음으로 사면 아끼는 금액 — 낱개 둘의 합과 묶음 값의 차이. 구매 화면이 "N원 아껴요" 로 말한다 */
+export const BUNDLE_SAVING = PRODUCTS.boost_indie_7d.amount + PRODUCTS.pin_promo_7d.amount - PRODUCTS.bundle_7d.amount;
+
+/** 이용권으로 걸 수 있는 상품인가(자리 하나짜리) */
+export function isSingleProduct(key: ProductKey): boolean {
+  return !("extra" in PRODUCTS[key]);
 }
 
 /**

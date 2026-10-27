@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { isProductKey, makeOrderId, PRODUCTS } from "@/lib/payments/products";
+import { BUNDLE_SAVING, isProductKey, isSingleProduct, makeOrderId, PRODUCTS } from "@/lib/payments/products";
 
 describe("makeOrderId", () => {
   it("토스 규칙(영숫자, -, _)만 남기고 64자로 자른다", () => {
@@ -15,9 +15,17 @@ describe("makeOrderId", () => {
 });
 
 describe("PRODUCTS", () => {
-  it("부스트 7일은 9,900원(2026-10-27 사용자 확정)", () => {
-    expect(PRODUCTS.boost_indie_7d.amount).toBe(9900);
-    expect(PRODUCTS.boost_indie_7d.days).toBe(7);
+  it("낱개 7일은 6,900원, 둘을 같이 사면 9,900원(2026-10-27 사용자 확정)", () => {
+    expect(PRODUCTS.boost_indie_7d.amount).toBe(6900);
+    expect(PRODUCTS.pin_promo_7d.amount).toBe(6900);
+    expect(PRODUCTS.bundle_7d.amount).toBe(9900);
+    expect(BUNDLE_SAVING).toBe(3900);
+  });
+  it("묶음은 인디 게임이 주 대상, 홍보 글이 둘째", () => {
+    expect(PRODUCTS.bundle_7d.target).toBe("indie_post");
+    expect(PRODUCTS.bundle_7d.extra.target).toBe("board_post");
+    expect(isSingleProduct("bundle_7d")).toBe(false);
+    expect(isSingleProduct("pin_promo_7d")).toBe(true);
   });
 });
 

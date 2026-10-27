@@ -2,21 +2,21 @@
 // 무엇을 사는지(자리, 기간, 광고 표시, 돌아가며 보임)를 먼저 말하고, 값, 결제 수단과 약관 동의(위젯), 결제 단추를 둔다.
 // 공개 전 글은 살 수 없다고 말하고 단추를 세우지 않는다.
 // 메이커 멤버십 이용권이 남아 있으면 결제보다 위에 "이용권으로 걸기" 를 둔다 — 이미 낸 돈으로 먼저 쓰게.
+// 값과 "이것만 / 같이 사기" 고르기, 결제 위젯은 components/payments/plan-picker 가 맡는다(고르면 그 자리에서 값이 바뀌어야 해서 클라이언트다).
 // 테스트 키(test_)로 돌면 "실제로 돈이 나가지 않아요" 를 단다 — 운영 키로 바꾸기 전까지 누구도 진짜 결제로 착각하지 않게.
-import { BoostCheckout } from "@/components/payments/boost-checkout";
+import { PlanPicker } from "@/components/payments/plan-picker";
 import { UseCreditButton } from "@/components/membership/use-credit-button";
 import { MEMBERSHIP_MESSAGES as MM } from "@/lib/membership/messages";
 import { FormMessage } from "@/components/ui/form-message";
 import { sectionCardClass } from "@/components/ui/page";
-import { formatPrice } from "@/lib/currency";
 import { formatDateTime } from "@/lib/format";
 import { PAYMENT_MESSAGES as M, PRODUCT_COPY } from "@/lib/payments/messages";
 import { PRODUCTS, type ProductKey } from "@/lib/payments/products";
 import type { BoostTargetDto } from "@/server/services/payments";
 import { tossClientKey, tossConfigured } from "@/server/payments/toss";
 
-/** credits: 지금 쓸 수 있는 멤버십 이용권(없으면 0) */
-export function BoostPurchase({ product, target, customerKey, credits = 0 }: { product: ProductKey; target: BoostTargetDto; customerKey: string; credits?: number }) {
+/** credits: 지금 쓸 수 있는 멤버십 이용권(없으면 0). pairs: 같이 사기의 짝 후보(services/payments 의 listMyLiveTargets) */
+export function BoostPurchase({ product, target, customerKey, credits = 0, pairs }: { product: Extract<ProductKey, "boost_indie_7d" | "pin_promo_7d">; target: BoostTargetDto; customerKey: string; credits?: number; pairs: Array<{ id: string; title: string }> }) {
   const p = PRODUCTS[product];
   const clientKey = tossClientKey();
   const ready = Boolean(clientKey) && tossConfigured();
@@ -36,10 +36,6 @@ export function BoostPurchase({ product, target, customerKey, credits = 0 }: { p
         ))}
       </ul>
       {target.boostedUntil && <FormMessage tone="info">{M.currentBoost(formatDateTime(target.boostedUntil))}</FormMessage>}
-      <div className="flex items-baseline justify-between border-t border-line pt-4">
-        <span className="text-[14px] text-mut">{M.price}</span>
-        <span className="text-[22px] font-black tabular-nums text-ink">{formatPrice(p.amount)}</span>
-      </div>
       {target.live && credits > 0 && (
         <>
           <UseCreditButton product={product} targetId={target.id} credits={credits} />
@@ -48,12 +44,10 @@ export function BoostPurchase({ product, target, customerKey, credits = 0 }: { p
       )}
       {!target.live ? (
         <FormMessage tone="error">{M.notLive}</FormMessage>
-      ) : !ready ? (
-        <FormMessage tone="info">{M.notConfigured}</FormMessage>
       ) : (
         <>
-          {clientKey.startsWith("test_") && <p className="rounded-xl bg-surface-2 px-4 py-3 text-[13px] text-mut">{M.testMode}</p>}
-          <BoostCheckout product={product} targetId={target.id} clientKey={clientKey} customerKey={customerKey} amount={p.amount} />
+          <PlanPicker product={product} targetId={target.id} pairs={pairs} checkout={ready ? { clientKey, customerKey } : null} />
+          {!ready && <FormMessage tone="info">{M.notConfigured}</FormMessage>}
         </>
       )}
     </section>
