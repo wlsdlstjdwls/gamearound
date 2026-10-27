@@ -31,6 +31,20 @@ export const indieViewDays = pgTable("indie_view_days", {
 }, (t) => [primaryKey({ columns: [t.postId, t.day] })]);
 
 /**
+ * 상세 조회의 유입 경로 하루 집계(2026-10-27, 기획서 4.3 메이커 멤버십 "내 게임 통계 자세히(유입 경로, 일별 그래프)").
+ * source 는 lib/indie/traffic 의 갈래 이름이다(홈, 인디 목록, 검색엔진, 유튜브 등). 들어온 주소를 그대로 적지 않는 이유:
+ * 바깥 주소에는 남의 검색어, 개인 링크가 묻어 오고, 갈래가 끝없이 늘어 화면에 세울 수 없다.
+ * 모두에게서 세고 보여 주기만 멤버십으로 가른다 — 가입한 날부터 세면 첫 달 그래프가 빈다.
+ */
+export const indieViewSources = pgTable("indie_view_sources", {
+  postId: uuid("post_id").references(() => indiePosts.id, { onDelete: "cascade" }).notNull(),
+  day: date("day").notNull(),
+  source: text("source").notNull(),
+  views: integer("views").default(0).notNull(),
+  ...auditColumns(),
+}, (t) => [primaryKey({ columns: [t.postId, t.day, t.source] })]);
+
+/**
  * 인디 글 댓글. 게시판 댓글(post_comments)을 안 쓰는 이유: 그쪽 postId 는 posts 를 가리키는 외래키다 — 인디 글을 posts 에
  * 섞으면 게시판 목록, 검색, 인기 산식이 전부 인디 글을 걸러야 한다(schema-indie 머리 주석의 games 와 같은 이유).
  * 숨김 갈래는 게시판과 같은 값을 쓴다 — 운영진 화면이 두 댓글을 같은 말로 다룬다.
