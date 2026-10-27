@@ -71,33 +71,37 @@ export function BoardControls({
           </button>
         </form>
       </div>
-      {promoTabs && (
-        <div role="group" aria-label={M.promoTypeLabel} className="flex flex-wrap gap-1.5">
-          <NavChip group="type" href={boardHref(base, query, { type: null })} active={query.type === null}>
-            {M.promoTypeAll}
+      {/* 한 줄(2026-10-27, 사용자: "필터가 2중으로 되어 있는 것들 개선"). 홍보 게시판은 유형 칩 줄과 전체글/인기글 줄이 위아래로 겹쳐 섰다 —
+          이제 왼쪽에 전체글/인기글(과 인기글 기간), 세로 선 너머 오른쪽에 홍보 유형이 같은 줄에 선다. 좁으면 줄이 갈린다 */}
+      <div className="flex flex-wrap items-center gap-x-3 gap-y-2 border-b border-line-soft pb-3">
+        <div className="flex flex-wrap items-center gap-1.5">
+          <NavChip group="tab" href={boardHref(base, query, { tab: "all" })} active={query.tab === "all"}>
+            {M.tabAll}
           </NavChip>
-          {PROMO_TYPES.map((t) => (
-            <NavChip key={t} group="type" href={boardHref(base, query, { type: t })} active={query.type === t}>
-              {PROMO_TYPE_LABEL[t]}
-            </NavChip>
-          ))}
+          <NavChip group="tab" href={boardHref(base, query, { tab: "popular" })} active={query.tab === "popular"}>
+            {M.tabPopular}
+          </NavChip>
+          {query.tab === "popular" && (
+            <span className="ml-1 flex flex-wrap gap-1.5">
+              {POPULAR_PERIODS.map((p) => (
+                <NavChip key={p} group="period" compact href={boardHref(base, query, { period: p })} active={query.period === p}>
+                  {POPULAR_PERIOD_LABEL[p]}
+                </NavChip>
+              ))}
+            </span>
+          )}
         </div>
-      )}
-      <div className="flex flex-wrap items-center gap-1.5 border-b border-line-soft pb-3">
-        <NavChip group="tab" href={boardHref(base, query, { tab: "all" })} active={query.tab === "all"}>
-          {M.tabAll}
-        </NavChip>
-        <NavChip group="tab" href={boardHref(base, query, { tab: "popular" })} active={query.tab === "popular"}>
-          {M.tabPopular}
-        </NavChip>
-        {query.tab === "popular" && (
-          <span className="ml-2 flex flex-wrap gap-1.5 border-l border-line pl-3">
-            {POPULAR_PERIODS.map((p) => (
-              <NavChip key={p} group="period" compact href={boardHref(base, query, { period: p })} active={query.period === p}>
-                {POPULAR_PERIOD_LABEL[p]}
+        {promoTabs && (
+          <div role="group" aria-label={M.promoTypeLabel} className="flex flex-wrap items-center gap-1.5 sm:ml-auto">
+            <NavChip group="type" compact href={boardHref(base, query, { type: null })} active={query.type === null}>
+              {M.promoTypeAll}
+            </NavChip>
+            {PROMO_TYPES.map((t) => (
+              <NavChip key={t} group="type" compact href={boardHref(base, query, { type: t })} active={query.type === t}>
+                {PROMO_TYPE_LABEL[t]}
               </NavChip>
             ))}
-          </span>
+          </div>
         )}
       </div>
       {popularLead && <p className="-mt-1 text-[12.5px] text-dim">{popularLead}</p>}
