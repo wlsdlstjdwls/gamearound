@@ -6,7 +6,7 @@
 // 가입 전에도 끝까지 시험할 수 있다(2026-10-27 실측: 결제창 샘플 키는 샌드박스에서 401). 승인 API 는 둘이 같다.
 // 약관 동의는 위젯이 그리는 칸이 맡는다 — 우리 체크박스를 따로 두면 같은 동의를 두 번 받는다.
 //
-// SDK 는 npm 꾸러미 대신 토스가 내주는 스크립트를 이 화면에서만 붙인다: 다른 화면은 쓰지 않아 전체 번들에 넣을 까닭이 없다.
+// SDK 는 components/payments/toss-sdk 가 화면에 한 번만 붙인다.
 // 돌아올 주소는 지금 열린 주소의 origin 으로 만든다 — 로컬, 미리 보기, 운영이 저마다 맞다.
 import { useEffect, useRef, useState, useTransition } from "react";
 import { createBoostOrderAction } from "@/app/(user)/payments/actions";
@@ -15,39 +15,11 @@ import { FormMessage } from "@/components/ui/form-message";
 import { PAYMENT_MESSAGES as M } from "@/lib/payments/messages";
 import type { ProductKey } from "@/lib/payments/products";
 import { TOSS_FAIL_PATH, TOSS_SUCCESS_PATH } from "@/lib/routes";
+import { isUserCancel, loadTossSdk, type Rendered, type Widgets } from "@/components/payments/toss-sdk";
 
-/** 토스 SDK v2 스크립트(공식 문서의 표준 주소). 결제위젯도 이 하나에 들어 있다 */
-const TOSS_SDK_SRC = "https://js.tosspayments.com/v2/standard";
 /** 위젯이 그려질 자리의 id. 한 화면에 결제 칸이 하나뿐이라 고정 값이다 */
 const METHODS_ID = "toss-payment-methods";
 const AGREEMENT_ID = "toss-agreement";
-
-type Widgets = {
-  setAmount(a: { currency: "KRW"; value: number }): Promise<void>;
-  renderPaymentMethods(o: { selector: string; variantKey: string }): Promise<Rendered>;
-  renderAgreement(o: { selector: string; variantKey: string }): Promise<Rendered>;
-  requestPayment(o: Record<string, unknown>): Promise<void>;
-};
-/** 그려진 위젯 칸. 같은 자리에 다시 그리기 전에 치워야 한다 */
-type Rendered = { destroy(): Promise<void> | void };
-type TossPaymentsFn = (clientKey: string) => { widgets(o: { customerKey: string }): Widgets };
-
-let sdkPromise: Promise<TossPaymentsFn> | null = null;
-function loadSdk(): Promise<TossPaymentsFn> {
-  const w = window as unknown as { TossPayments?: TossPaymentsFn };
-  if (w.TossPayments) return Promise.resolve(w.TossPayments);
-  sdkPromise ??= new Promise((resolve, reject) => {
-    const s = document.createElement("script");
-    s.src = TOSS_SDK_SRC;
-    s.onload = () => (w.TossPayments ? resolve(w.TossPayments) : reject(new Error("sdk")));
-    s.onerror = () => {
-      sdkPromise = null;
-      reject(new Error("sdk"));
-    };
-    document.head.appendChild(s);
-  });
-  return sdkPromise;
-}
 
 type Props = { product: ProductKey; targetId: string; clientKey: string; customerKey: string; amount: number };
 
@@ -66,7 +38,7 @@ export function BoostCheckout({ product, targetId, clientKey, customerKey, amoun
     const run = async () => {
       if (!alive) return;
       try {
-        const TossPayments = await loadSdk();
+        const TossPayments = await loadTossSdk();
         const w = TossPayments(clientKey).widgets({ customerKey });
         // 금액을 먼저 정해야 위젯이 그 금액에 맞는 결제 수단을 그린다(토스 문서 순서)
         await w.setAmount({ currency: "KRW", value: amount });
@@ -106,9 +78,8 @@ export function BoostCheckout({ product, targetId, clientKey, customerKey, amoun
       } catch (e) {
         // 결제창을 닫으면 SDK 가 USER_CANCEL 로 던진다 — 사람이 스스로 닫은 것이라 말을 붙이지 않는다.
         // 주문 줄은 대기로 남고 다시 누르면 새 주문이 생긴다. 그 밖(약관 미동의 등)은 토스 문구를 그대로 보여 준다
-        const err = e as { code?: string; message?: string } | null;
-        if (err?.code === "USER_CANCEL") return;
-        setError(err?.message ?? M.sdkFailed);
+        if (isUserCancel(e)) return;
+        setError((e as { message?: string } | null)?.message ?? M.sdkFailed);
       }
     });
 

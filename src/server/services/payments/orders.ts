@@ -23,8 +23,8 @@ const ORDER_RANDOM_BYTES = 16;
 
 export type BoostOrder = { orderId: string; amount: number; orderName: string; customerKey: string };
 
-/** 내 글이면서 지금 공개인가(살 수 있나). 남의 글이나 공개 전 글에는 살 수 없다 */
-async function ownedLiveTarget(kind: PromoTargetKind, userId: string, targetId: string): Promise<boolean> {
+/** 내 글이면서 지금 공개인가(살 수 있나). 남의 글이나 공개 전 글에는 살 수 없다. 멤버십 이용권도 같은 문턱을 쓴다 */
+export async function ownedLiveTarget(kind: PromoTargetKind, userId: string, targetId: string): Promise<boolean> {
   const db = getDb();
   const rows =
     kind === "indie_post"

@@ -5,7 +5,8 @@ import { and, desc, eq, inArray, ne } from "drizzle-orm";
 import { getDb } from "@/server/db/client";
 import { indiePosts, payments, posts, promotionBoosts, users, type PaymentStatus } from "@/server/db/schema";
 import { PRODUCTS, type ProductKey } from "@/lib/payments/products";
-import { proratedRefund } from "@/lib/payments/refund";
+import { paymentRefundBasis, proratedRefund } from "@/lib/payments/refund";
+import { MEMBERSHIP_PLANS, type MembershipPlanKey } from "@/lib/membership/plan";
 
 /** 내 결제 내역, 관리자 결제 목록 한 화면 */
 const PAYMENT_LIST_LIMIT = 50;
@@ -32,7 +33,7 @@ export type PaymentRowDto = {
 };
 
 function productName(key: string): string {
-  return PRODUCTS[key as ProductKey]?.name ?? key;
+  return PRODUCTS[key as ProductKey]?.name ?? MEMBERSHIP_PLANS[key as MembershipPlanKey]?.name ?? key;
 }
 
 const rowSelect = { p: payments, indieTitle: indiePosts.title, postTitle: posts.title, boost: promotionBoosts };
@@ -44,7 +45,8 @@ function toDto({ p, indieTitle, postTitle, boost }: Row, now: Date, buyer?: stri
     productName: productName(p.product),
     amount: p.amount,
     status: p.status,
-    targetTitle: indieTitle ?? postTitle,
+    // 멤버십 청구는 대상 글이 없다 — 요금제 이름을 대상 자리에 둔다
+    targetTitle: p.membershipId ? productName(p.product) : (indieTitle ?? postTitle),
     receiptUrl: p.receiptUrl,
     failMessage: p.failMessage,
     createdAt: p.createdAt,
@@ -52,7 +54,7 @@ function toDto({ p, indieTitle, postTitle, boost }: Row, now: Date, buyer?: stri
     refundedAmount: p.refundedAmount,
     refundRequested: Boolean(p.refundRequestedAt),
     refundRequestNote: p.refundRequestNote,
-    proratedAmount: p.status === "paid" ? proratedRefund(p.amount, boost, now) : 0,
+    proratedAmount: p.status === "paid" ? proratedRefund(p.amount, paymentRefundBasis(p, boost), now) : 0,
     buyer,
   };
 }

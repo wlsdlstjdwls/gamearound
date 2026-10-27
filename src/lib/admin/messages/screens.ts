@@ -33,6 +33,8 @@ export const ADMIN_NAV = {
   posts: "게시글",
   /** 유료 노출 자리(인디 목록 맨 위, 홍보 고정). lib/promo/messages 의 adminTitle 과 같은 말 */
   promotions: "유료 노출",
+  /** 메이커 멤버십 가입자. lib/membership/messages 의 adminTitle 과 같은 말 */
+  memberships: "멤버십",
   /** 앞 이름은 "작업 판" 이었다 — "판" 이 무엇인지 눌러 보기 전에는 알 수 없다는 말을 들었다 */
   tasks: "할 일",
   /** 배지가 뜻하는 바. 숫자만 있으면 남은 일인지 처리한 일인지 모른다 */

@@ -172,10 +172,10 @@ export async function revokeBoost(id: string, adminId: string): Promise<void> {
 }
 
 /**
- * 결제로 거는 부스트(services/payments 가 승인 뒤에 부른다). 같은 대상이 같은 자리에 이미 걸려 있으면 그 끝에 이어 붙인다 —
+ * 결제로 거는 부스트(services/payments 가 승인 뒤에, services/membership 이 이용권을 쓸 때 부른다). 같은 대상이 같은 자리에 이미 걸려 있으면 그 끝에 이어 붙인다 —
  * 겹쳐 걸면 산 기간이 겹친 만큼 사라진다. 대상 공개 여부는 다시 보지 않는다: 돈은 이미 빠졌고, 숨김이면 노출 질의가 거른다.
  */
-export async function insertPurchasedBoost(input: { slot: PromoSlot; targetId: string; days: number; note: string }, userId: string): Promise<string> {
+export async function insertPurchasedBoost(input: { slot: PromoSlot; targetId: string; days: number; note: string; source?: Extract<PromoSource, "purchase" | "membership"> }, userId: string): Promise<string> {
   const db = getDb();
   const [latest] = await db
     .select({ end: sql<Date | null>`max(${promotionBoosts.endsAt})` })
@@ -186,7 +186,7 @@ export async function insertPurchasedBoost(input: { slot: PromoSlot; targetId: s
   const startsAt = latestEnd && latestEnd > now ? latestEnd : now;
   const [row] = await db
     .insert(promotionBoosts)
-    .values({ targetKind: SLOT_TARGET[input.slot], targetId: input.targetId, slot: input.slot, startsAt, endsAt: boostEnd(startsAt, input.days), source: "purchase", note: input.note, ...createdBy("user", userId) })
+    .values({ targetKind: SLOT_TARGET[input.slot], targetId: input.targetId, slot: input.slot, startsAt, endsAt: boostEnd(startsAt, input.days), source: input.source ?? "purchase", note: input.note, ...createdBy("user", userId) })
     .returning({ id: promotionBoosts.id });
   return row.id;
 }

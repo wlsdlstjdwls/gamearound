@@ -7,10 +7,16 @@ import "server-only";
 
 export const TOSS_API_BASE = "https://api.tosspayments.com/v1";
 export const TOSS_SECRET_KEY_ENV = "TOSS_SECRET_KEY";
+/**
+ * 정기결제(빌링) 비밀 키. 결제위젯 키와 따로 둔다 — 빌링은 "API 개별 연동" 키로만 열린다(2026-10-27 실측: 문서 공개 위젯 키로
+ * 빌링키 발급을 부르면 NOT_FOUND_MERCHANT). 그 키로 청구한 결제는 취소도 그 키로 해야 한다(상점이 다르다)
+ */
+export const TOSS_BILLING_SECRET_KEY_ENV = "TOSS_BILLING_SECRET_KEY";
+export type TossSecretEnv = typeof TOSS_SECRET_KEY_ENV | typeof TOSS_BILLING_SECRET_KEY_ENV;
 /** 브라우저에 내려가는 결제위젯 클라이언트 키(공개해도 되는 키). 비밀 키는 서버만 읽는다 */
 const TOSS_CLIENT_KEY_ENV = "NEXT_PUBLIC_TOSS_CLIENT_KEY";
 /** 승인 응답 기다림. 토스 승인은 카드사까지 다녀와 몇 초 걸릴 수 있다 — 넉넉히 두되 함수 시간 한도보다 한참 짧게 */
-const TOSS_TIMEOUT_MS = 30_000;
+export const TOSS_TIMEOUT_MS = 30_000;
 
 export class TossError extends Error {
   constructor(
@@ -32,9 +38,10 @@ export function tossConfigured(): boolean {
 }
 
 /** 비밀 키 뒤에 콜론을 붙여 base64 로 — 토스의 Basic 인증 꼴(사용자 이름만 있고 비밀번호가 없다) */
-function authHeader(): string {
-  const key = process.env[TOSS_SECRET_KEY_ENV]?.trim();
-  if (!key) throw new TossError("NOT_CONFIGURED", `${TOSS_SECRET_KEY_ENV} 없음`);
+export function authHeader(env: TossSecretEnv = TOSS_SECRET_KEY_ENV): string {
+  const key = process.env[env]?.trim();
+  // 문구는 사람에게 보인다(결제 내역, 알림함) — 환경변수 이름은 코드(NOT_CONFIGURED)로만 남긴다
+  if (!key) throw new TossError("NOT_CONFIGURED", "결제를 준비하고 있어요. 조금 뒤에 다시 시도해 주세요");
   return `Basic ${Buffer.from(`${key}:`).toString("base64")}`;
 }
 
@@ -63,10 +70,10 @@ export async function confirmTossPayment(input: { paymentKey: string; orderId: s
  * 결제 취소(환불). amount 를 주면 그만큼만(일할 환불), 없으면 남은 전액. 승인과 달리 멱등 키를 붙인다 —
  * 시간 초과 뒤 관리자가 다시 눌러도 토스가 같은 요청으로 보고 두 번 돌려주지 않는다(토스 문서: Idempotency-Key, 15일 보관).
  */
-export async function cancelTossPayment(input: { paymentKey: string; reason: string; amount?: number; idempotencyKey: string }): Promise<{ status: string }> {
+export async function cancelTossPayment(input: { paymentKey: string; reason: string; amount?: number; idempotencyKey: string; secretEnv?: TossSecretEnv }): Promise<{ status: string }> {
   const res = await fetch(`${TOSS_API_BASE}/payments/${encodeURIComponent(input.paymentKey)}/cancel`, {
     method: "POST",
-    headers: { Authorization: authHeader(), "Content-Type": "application/json", "Idempotency-Key": input.idempotencyKey },
+    headers: { Authorization: authHeader(input.secretEnv), "Content-Type": "application/json", "Idempotency-Key": input.idempotencyKey },
     body: JSON.stringify(input.amount === undefined ? { cancelReason: input.reason } : { cancelReason: input.reason, cancelAmount: input.amount }),
     signal: AbortSignal.timeout(TOSS_TIMEOUT_MS),
   });

@@ -2,6 +2,8 @@
 //
 // 사용자는 요청만 한다 — 돈은 관리자가 사유를 보고 돌려준다. 요청 버튼이 곧 환불이면 7일을 다 쓰고 전액을 돌려받는 길이 열린다.
 // 관리자는 전액 또는 남은 기간 몫(lib/payments/refund)을 고른다. 순서: 토스 취소 → 결제 줄 canceled → 부스트 회수 → 알림함.
+// 멤버십 청구를 환불하면 그 멤버십을 바로 끝낸다(이용권 0, 빌링키 지움) — 돈을 돌려받고 혜택이 남는 길을 닫는다.
+// 멤버십 청구는 빌링 키(API 개별 연동)로 승인됐으니 취소도 그 키로 한다(server/payments/toss 의 TOSS_BILLING_SECRET_KEY_ENV).
 // 토스가 거절하면 DB 는 그대로다. 토스는 됐는데 그 뒤가 끊기면 같은 단추를 다시 누르면 된다 — 취소 요청에 멱등 키를 붙여
 // 토스가 두 번 돌려주지 않고, 결제 줄 갱신은 paid 일 때만 간다.
 import "server-only";
@@ -9,9 +11,11 @@ import { and, eq, isNull } from "drizzle-orm";
 import { getDb } from "@/server/db/client";
 import { updatedBy } from "@/server/db/audit";
 import { payments, promotionBoosts } from "@/server/db/schema";
-import { cancelTossPayment } from "@/server/payments/toss";
+import { cancelTossPayment, TOSS_BILLING_SECRET_KEY_ENV, TOSS_SECRET_KEY_ENV } from "@/server/payments/toss";
+import { endMembership } from "@/server/services/membership/charge";
 import { pushNotification } from "@/server/services/notifications";
-import { proratedRefund } from "@/lib/payments/refund";
+import { paymentRefundBasis, proratedRefund } from "@/lib/payments/refund";
+import { MEMBERSHIP_PLANS, type MembershipPlanKey } from "@/lib/membership/plan";
 import { PAYMENT_MESSAGES as M } from "@/lib/payments/messages";
 import { PRODUCTS, type ProductKey } from "@/lib/payments/products";
 import { formatPrice } from "@/lib/currency";
@@ -44,7 +48,7 @@ export async function refundPayment(orderId: string, mode: RefundMode, reason: s
   if (!row || row.p.status !== "paid" || !row.p.paymentKey) throw new Error(M.refundNotAllowed);
   const { p, boost } = row;
   const now = new Date();
-  const amount = mode === "full" ? p.amount : proratedRefund(p.amount, boost, now);
+  const amount = mode === "full" ? p.amount : proratedRefund(p.amount, paymentRefundBasis(p, boost), now);
   if (amount <= 0) throw new Error(M.refundNothingLeft);
 
   await cancelTossPayment({
@@ -53,6 +57,7 @@ export async function refundPayment(orderId: string, mode: RefundMode, reason: s
     amount: amount < p.amount ? amount : undefined,
     // 금액까지 열쇠에 넣는다 — 일할로 시도했다 실패한 뒤 전액으로 바꾸면 다른 요청이어야 한다(같은 열쇠에 다른 본문은 토스가 거절한다)
     idempotencyKey: `refund-${p.orderId}-${amount}`,
+    secretEnv: p.membershipId ? TOSS_BILLING_SECRET_KEY_ENV : TOSS_SECRET_KEY_ENV,
   });
 
   const claimed = await db
@@ -67,7 +72,8 @@ export async function refundPayment(orderId: string, mode: RefundMode, reason: s
       .set({ revokedAt: now, ...updatedBy("admin", adminId) })
       .where(and(eq(promotionBoosts.id, p.boostId), isNull(promotionBoosts.revokedAt)));
   }
-  const name = PRODUCTS[p.product as ProductKey]?.name ?? p.product;
+  if (p.membershipId) await endMembership(p.membershipId, now, { source: "admin", userId: adminId });
+  const name = PRODUCTS[p.product as ProductKey]?.name ?? MEMBERSHIP_PLANS[p.product as MembershipPlanKey]?.name ?? p.product;
   await pushNotification(p.userId, "payment", M.refundedNotice(name, formatPrice(amount)), ROUTES.indiePayments).catch(() => {});
   return amount;
 }
