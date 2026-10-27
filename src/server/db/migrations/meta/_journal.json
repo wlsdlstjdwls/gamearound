@@ -512,6 +512,13 @@
       "when": 1793076691946,
       "tag": "0072_indie_promo_basics",
       "breakpoints": true
+    },
+    {
+      "idx": 73,
+      "version": "7",
+      "when": 1793078521995,
+      "tag": "0073_promotion_boosts",
+      "breakpoints": true
     }
   ]
 }
