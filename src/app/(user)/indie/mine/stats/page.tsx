@@ -69,7 +69,7 @@ export default async function IndieStatsPage() {
                       {/* 광고 걸기(결제)는 공개 중인 게임에만 — 공개 전이면 걸어도 아무도 못 본다 */}
                       {r.live && (
                         <Link href={indieBoostPath(r.id)} className={buttonClass({ variant: "accent", size: "sm" })}>
-                          {PM.boostTitle}
+                          {PM.adBuy}
                         </Link>
                       )}
                       <Link href={r.live ? indieDetailHref(r.slug, INDIE_FROM.mine) : indieEditPath(r.id)} className="tap inline-flex items-center text-[13px] font-semibold text-acc hover:underline">

@@ -3,7 +3,7 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { PAYMENT_MESSAGES as M } from "@/lib/payments/messages";
 import { ROUTES } from "@/lib/routes";
-import { failIndieBoostPayment } from "@/server/services/payments";
+import { failBoostPayment } from "@/server/services/payments";
 import { getCurrentUser } from "@/server/services/users";
 
 export const dynamic = "force-dynamic";
@@ -17,7 +17,7 @@ export async function GET(req: NextRequest) {
   const message = (sp.get("message") ?? M.failed).slice(0, MESSAGE_MAX);
   const orderId = sp.get("orderId");
   const user = await getCurrentUser().catch(() => null);
-  if (user && orderId) await failIndieBoostPayment(orderId, code, message, user.id).catch(() => {});
+  if (user && orderId) await failBoostPayment(orderId, code, message, user.id).catch(() => {});
   const url = new URL(ROUTES.indiePayments, req.nextUrl.origin);
   url.searchParams.set("failed", message);
   return NextResponse.redirect(url, 303);

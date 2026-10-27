@@ -7,6 +7,8 @@ import "server-only";
 
 export const TOSS_API_BASE = "https://api.tosspayments.com/v1";
 export const TOSS_SECRET_KEY_ENV = "TOSS_SECRET_KEY";
+/** 브라우저에 내려가는 결제위젯 클라이언트 키(공개해도 되는 키). 비밀 키는 서버만 읽는다 */
+const TOSS_CLIENT_KEY_ENV = "NEXT_PUBLIC_TOSS_CLIENT_KEY";
 /** 승인 응답 기다림. 토스 승인은 카드사까지 다녀와 몇 초 걸릴 수 있다 — 넉넉히 두되 함수 시간 한도보다 한참 짧게 */
 const TOSS_TIMEOUT_MS = 30_000;
 
@@ -20,6 +22,10 @@ export class TossError extends Error {
 }
 
 export type TossConfirmed = { paymentKey: string; status: string; method: string | null; approvedAt: string | null; receiptUrl: string | null; totalAmount: number };
+
+export function tossClientKey(): string {
+  return process.env[TOSS_CLIENT_KEY_ENV]?.trim() ?? "";
+}
 
 export function tossConfigured(): boolean {
   return Boolean(process.env[TOSS_SECRET_KEY_ENV]?.trim());

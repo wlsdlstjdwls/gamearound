@@ -41,7 +41,7 @@ export async function isBoostedNow(kind: PromoTargetKind, targetId: string): Pro
 }
 
 /** 공개 홍보 글 — 게시판 목록과 같은 문턱(공개 상태)에 홍보 카테고리 */
-const isPublicPromo = and(eq(posts.status, "published"), eq(posts.category, "promo"));
+export const isPublicPromo = and(eq(posts.status, "published"), eq(posts.category, "promo"));
 
 /** 인디 목록 맨 위 "주목할 게임" 카드. 걸린 글이 없으면 빈 목록 */
 export async function listFeaturedIndie(): Promise<IndieCardDto[]> {

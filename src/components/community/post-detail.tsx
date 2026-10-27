@@ -16,7 +16,8 @@ import { CATEGORY_LIST_PATH, isPostId, postPath } from "@/lib/community/constant
 import { COMMUNITY_MESSAGES as M } from "@/lib/community/messages";
 import { DB_DOWN, orDbDown } from "@/lib/db-errors";
 import { formatDateTime } from "@/lib/format";
-import { ROUTES } from "@/lib/routes";
+import { PAYMENT_MESSAGES } from "@/lib/payments/messages";
+import { boardPinPath, ROUTES } from "@/lib/routes";
 import type { PostCategory } from "@/server/db/schema";
 import { getPostDetail, getPostGameCard, listComments } from "@/server/services/community";
 
@@ -49,6 +50,12 @@ export async function PostDetail({ id, lounge, category }: { id: string; lounge:
             <span>
               {M.views} {post.viewCount.toLocaleString("ko-KR")}
             </span>
+            {/* 내 홍보 글에만 — 홍보 목록 위 고정을 사는 입구(2026-10-27). 남에게는 보이지 않는다 */}
+            {post.isMine && post.category === "promo" && (
+              <Link href={boardPinPath(post.id)} className="tap ml-auto inline-flex items-center font-semibold text-acc hover:underline">
+                {PAYMENT_MESSAGES.adBuy}
+              </Link>
+            )}
           </p>
         </header>
         {/* 관련 게임 — 이 글이 무엇에 대한 글인지, 그 게임이 지금 얼마인지(components/community/post-game-card) */}

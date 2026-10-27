@@ -205,6 +205,11 @@ export function indieBoostPath(id: string): string {
   return `${ROUTES.indieMine}/${encodeURIComponent(id)}/boost`;
 }
 
+/** 내 홍보 글을 게시판 홍보 목록 위에 고정(결제). 게시판 글 주소(/board/promos/p/<id>)는 공개 화면이라 그 아래에 두지 않는다 */
+export function boardPinPath(id: string): string {
+  return `${ROUTES.board}/mine/${encodeURIComponent(id)}/pin`;
+}
+
 /** 인디 홍보 글 공개 화면 */
 export function indiePath(slug: string): string {
   return `${ROUTES.indie}/${encodeURIComponent(slug)}`;

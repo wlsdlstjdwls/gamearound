@@ -1,21 +1,39 @@
 // 결제 문구(부스트 구매 화면, 결제 결과, 내 결제 내역, 관리자 결제 목록). 2026-10-27.
 import type { PaymentStatus } from "@/server/db/schema";
+import type { ProductKey } from "./products";
+
+/** 상품마다 구매 화면이 말하는 것(무엇을, 어디에, 얼마 동안) */
+export const PRODUCT_COPY: Record<ProductKey, { title: string; lead: string; points: readonly string[] }> = {
+  boost_indie_7d: {
+    title: "광고 걸기",
+    lead: "인디 게임 목록 맨 위 \"주목할 게임\" 칸에 내 게임을 올려요. 카드에는 \"광고\" 표시가 붙어요.",
+    points: [
+      "결제하면 바로 노출이 시작되고 7일 동안 이어져요",
+      "이미 광고 중이면 지금 기간이 끝난 뒤로 이어 붙여요",
+      "걸린 게임이 3개보다 많으면 한 시간마다 돌아가며 보여요",
+      "명예의 전당, 슈퍼루키 순위와는 상관없어요",
+    ],
+  },
+  pin_promo_7d: {
+    title: "홍보 글 고정",
+    lead: "게시판 홍보 목록 맨 위에 내 글을 고정해요. 줄에는 \"광고\" 표시가 붙어요.",
+    points: [
+      "결제하면 바로 고정되고 7일 동안 이어져요",
+      "이미 고정 중이면 지금 기간이 끝난 뒤로 이어 붙여요",
+      "고정된 글이 2개보다 많으면 한 시간마다 돌아가며 보여요",
+      "숨김 처리된 글은 고정 기간 중에도 보이지 않아요",
+    ],
+  },
+};
 
 export const PAYMENT_MESSAGES = {
-  boostTitle: "광고 걸기",
-  boostLead: "인디 게임 목록 맨 위 \"주목할 게임\" 칸에 내 게임을 올려요. 카드에는 \"광고\" 표시가 붙어요.",
-  boostPoints: [
-    "결제하면 바로 노출이 시작되고 7일 동안 이어져요",
-    "이미 광고 중이면 지금 기간이 끝난 뒤로 이어 붙여요",
-    "걸린 게임이 3개보다 많으면 한 시간마다 돌아가며 보여요",
-    "명예의 전당, 슈퍼루키 순위와는 상관없어요",
-  ],
+  adBuy: "광고 걸기",
   price: "결제 금액",
   pay: "결제하기",
   testMode: "테스트 결제예요. 실제로 돈이 나가지 않아요",
   notConfigured: "결제를 준비하고 있어요. 조금 뒤에 다시 와 주세요",
-  notBuyable: "공개 중인 내 게임에만 광고를 걸 수 있어요",
-  notLive: "승인되어 공개 중인 게임만 광고를 걸 수 있어요",
+  notBuyable: "공개 중인 내 글에만 광고를 걸 수 있어요",
+  notLive: "공개 중인 글에만 광고를 걸 수 있어요",
   currentBoost: (until: string) => `지금 광고 중이에요. ${until}까지 노출돼요`,
   orderNotFound: "주문을 찾을 수 없어요",
   amountMismatch: "결제 금액이 주문과 달라 결제를 멈췄어요",

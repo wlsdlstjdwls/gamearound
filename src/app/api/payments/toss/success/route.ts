@@ -6,7 +6,7 @@ import { NextResponse, type NextRequest } from "next/server";
 import { z } from "zod";
 import { PAYMENT_MESSAGES as M } from "@/lib/payments/messages";
 import { ROUTES } from "@/lib/routes";
-import { confirmIndieBoostPayment } from "@/server/services/payments";
+import { confirmBoostPayment } from "@/server/services/payments";
 import { getCurrentUser } from "@/server/services/users";
 
 export const dynamic = "force-dynamic";
@@ -24,6 +24,6 @@ export async function GET(req: NextRequest) {
   if (!parsed.success) return toHistory(req, { failed: M.orderNotFound });
   const user = await getCurrentUser().catch(() => null);
   if (!user) return toHistory(req, { failed: M.orderNotFound });
-  const result = await confirmIndieBoostPayment(parsed.data, user.id).catch(() => ({ ok: false as const, message: M.failed }));
+  const result = await confirmBoostPayment(parsed.data, user.id).catch(() => ({ ok: false as const, message: M.failed }));
   return result.ok ? toHistory(req, { paid: "1" }) : toHistory(req, { failed: result.message });
 }

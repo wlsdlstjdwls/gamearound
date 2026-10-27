@@ -9,10 +9,11 @@
 // SDK 는 npm 꾸러미 대신 토스가 내주는 스크립트를 이 화면에서만 붙인다: 다른 화면은 쓰지 않아 전체 번들에 넣을 까닭이 없다.
 // 돌아올 주소는 지금 열린 주소의 origin 으로 만든다 — 로컬, 미리 보기, 운영이 저마다 맞다.
 import { useEffect, useRef, useState, useTransition } from "react";
-import { createIndieBoostOrderAction } from "@/app/(user)/indie/mine/[id]/boost/actions";
+import { createBoostOrderAction } from "@/app/(user)/payments/actions";
 import { Button } from "@/components/ui/button";
 import { FormMessage } from "@/components/ui/form-message";
 import { PAYMENT_MESSAGES as M } from "@/lib/payments/messages";
+import type { ProductKey } from "@/lib/payments/products";
 import { TOSS_FAIL_PATH, TOSS_SUCCESS_PATH } from "@/lib/routes";
 
 /** 토스 SDK v2 스크립트(공식 문서의 표준 주소). 결제위젯도 이 하나에 들어 있다 */
@@ -48,7 +49,9 @@ function loadSdk(): Promise<TossPaymentsFn> {
   return sdkPromise;
 }
 
-export function BoostCheckout({ postId, clientKey, customerKey, amount }: { postId: string; clientKey: string; customerKey: string; amount: number }) {
+type Props = { product: ProductKey; targetId: string; clientKey: string; customerKey: string; amount: number };
+
+export function BoostCheckout({ product, targetId, clientKey, customerKey, amount }: Props) {
   const widgets = useRef<Widgets | null>(null);
   /** 그리기를 한 줄로 세운다 — 앞 효과가 그리기를 끝내고 치운 뒤에 다음 효과가 그린다 */
   const queue = useRef<Promise<void>>(Promise.resolve());
@@ -91,7 +94,7 @@ export function BoostCheckout({ postId, clientKey, customerKey, amount }: { post
       const w = widgets.current;
       if (!w) return;
       setError(null);
-      const order = await createIndieBoostOrderAction(postId).catch(() => ({ ok: false as const, error: M.failed }));
+      const order = await createBoostOrderAction(product, targetId).catch(() => ({ ok: false as const, error: M.failed }));
       if (!order.ok) return setError(order.error);
       try {
         await w.requestPayment({
