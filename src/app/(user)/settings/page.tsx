@@ -9,12 +9,17 @@
 // 개인화 마디(온보딩 5회차): 온보딩 intro 가 "받은 값은 설정에서 언제든 보고 지울 수 있어요" 라고
 // 약속했다. 그 약속을 지키는 자리다. 칸마다 고치는 링크와 그 이유는 components/settings/personalization-section 에 있다.
 // 온보딩을 안 보는 계정(관리자 등)에게는 마디를 그리지 않는다 — 누르면 온보딩 레이아웃이 홈으로 돌려보낸다.
+//
+// 2026-10-27 다시 판으로(사용자: "설정 화면도 보기 쉽게 UI 개선"). 헤어라인 표 넷이 한 기둥에 이어져 어디서 마디가 갈리는지 안 보였다.
+// 넓은 화면은 두 기둥이다 — 왼쪽에 나(프로필 판, 따라 내려온다), 오른쪽에 바꿀 수 있는 것(개인화, 알림, 화면)이 판 한 장씩 차례로 떠오른다.
 import type { Metadata } from "next";
 import { PushToggle } from "@/components/push-toggle";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { SignOutButton } from "@/components/auth/sign-out-button";
 import { PersonalizationSection } from "@/components/settings/personalization-section";
-import { Page, PageHead, ROWS, SectionHead } from "@/components/ui/page";
+import { Page, PageHead } from "@/components/ui/page";
+import { Tag } from "@/components/ui/tag";
+import { stagger } from "@/lib/motion";
 import { ROLE_LABEL } from "@/lib/auth/constants";
 import { formatDate } from "@/lib/format";
 import { requireUserOrRedirect } from "@/server/auth/guards";
@@ -23,12 +28,15 @@ import { canPersonalize, getMyProfile, listGenreChoices, listSubscriptionChoices
 
 export const metadata: Metadata = { title: "설정" };
 
-/** 값 한 줄 — 왼쪽은 이름, 오른쪽은 값. 표가 아니라 줄이라 라벨 폭을 고정하지 않는다 */
+/** 오른쪽 기둥의 판 한 장. 안의 마디(개인화, 푸시, 테마)가 제 제목을 갖고 있어 판은 면과 여백만 준다 */
+const CARD = "enter-item rounded-[var(--radius-panel)] bg-surface p-5 shadow-[var(--elev-card)] sm:p-6";
+
+/** 프로필 판의 값 한 줄 */
 function Row({ label, value }: { label: string; value: string }) {
   return (
-    <div className="flex justify-between gap-4 py-[13px]">
-      <dt className="shrink-0 text-[13px] text-dim">{label}</dt>
-      <dd className="break-all text-right text-[13.5px] font-semibold text-ink">{value}</dd>
+    <div className="flex justify-between gap-4 py-2.5">
+      <dt className="shrink-0 text-[12.5px] text-dim">{label}</dt>
+      <dd className="break-all text-right text-[13px] font-semibold text-ink">{value}</dd>
     </div>
   );
 }
@@ -45,25 +53,48 @@ export default async function SettingsPage() {
   ]);
 
   return (
-    <Page width="tight" gap={34}>
+    <Page gap={20}>
       <PageHead title="설정" />
 
-      <section className="flex flex-col gap-3.5">
-        <SectionHead title="계정" size="sub" action={<SignOutButton />} />
-        <dl className={ROWS}>
-          <Row label="닉네임" value={user.displayName ?? "(미설정)"} />
-          <Row label="이메일" value={user.email} />
-          <Row label="권한" value={ROLE_LABEL[user.role] ?? user.role} />
-          <Row label="가입일" value={formatDate(user.createdAt)} />
-        </dl>
-        <p className="text-[11.5px] text-dim">닉네임, 비밀번호 변경은 곧 추가할 예정이에요.</p>
-      </section>
+      <div className="grid items-start gap-5 lg:grid-cols-[300px_minmax(0,1fr)]">
+        {/* 나 — 프로필 판. 넓은 화면에서는 오른쪽을 읽는 동안 따라 내려온다 */}
+        <section aria-label="계정" className="enter-item flex flex-col gap-4 rounded-[var(--radius-panel)] bg-surface p-5 shadow-[var(--elev-card)] lg:sticky lg:top-[calc(var(--header-h)+16px)]" style={stagger(0)}>
+          <div className="flex items-center gap-3.5">
+            <span aria-hidden className="grid size-14 shrink-0 place-items-center rounded-full bg-acc-soft text-[22px] font-extrabold text-acc">
+              {(user.displayName ?? user.email).slice(0, 1)}
+            </span>
+            <div className="min-w-0">
+              <p className="truncate text-[18px] font-extrabold tracking-[-0.03em] text-ink">{user.displayName ?? "(미설정)"}</p>
+              <p className="truncate text-[12.5px] text-mut">{user.email}</p>
+            </div>
+          </div>
+          <dl className="flex flex-col divide-y divide-line-soft border-y border-line-soft">
+            <div className="flex items-center justify-between gap-4 py-2.5">
+              <dt className="text-[12.5px] text-dim">권한</dt>
+              <dd>
+                <Tag>{ROLE_LABEL[user.role] ?? user.role}</Tag>
+              </dd>
+            </div>
+            <Row label="가입일" value={formatDate(user.createdAt)} />
+          </dl>
+          <p className="text-[11.5px] text-dim">닉네임, 비밀번호 변경은 곧 추가할 예정이에요.</p>
+          <SignOutButton />
+        </section>
 
-      {canPersonalize(user.role) && <PersonalizationSection profile={profile} names={{ genres, subscriptions }} />}
-
-      <PushToggle initialCount={pushCount} />
-
-      <ThemeToggle />
+        <div className="flex min-w-0 flex-col gap-4">
+          {canPersonalize(user.role) && (
+            <div className={CARD} style={stagger(1)}>
+              <PersonalizationSection profile={profile} names={{ genres, subscriptions }} />
+            </div>
+          )}
+          <div className={CARD} style={stagger(2)}>
+            <PushToggle initialCount={pushCount} />
+          </div>
+          <div className={CARD} style={stagger(3)}>
+            <ThemeToggle />
+          </div>
+        </div>
+      </div>
     </Page>
   );
 }
