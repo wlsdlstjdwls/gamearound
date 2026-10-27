@@ -30,7 +30,8 @@ export function EmptyLine({
         {icon && <span className="text-acc">{icon}</span>}
         {title}
       </h2>
-      <p className="min-w-0 flex-1 text-[13px] text-dim">{children}</p>
+      {/* 좁은 기둥(할인 예측, 플레이타임)에서는 글이 제목 옆에 끼어 한 글자 폭으로 접히지 않고 다음 줄로 내려가게 최소 폭을 준다 */}
+      <p className="min-w-[14rem] flex-1 text-[13px] text-dim">{children}</p>
       {action && <div className="shrink-0">{action}</div>}
     </section>
   );
