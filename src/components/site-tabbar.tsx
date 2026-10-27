@@ -15,7 +15,7 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useOptimistic, useTransition, type ReactNode } from "react";
 import { isPlainClick } from "@/components/ui/chip-nav";
-import { ChatIcon, FileTextIcon, GamepadIcon, HomeIcon, SproutIcon } from "@/components/ui/icons";
+import { ChatIcon, FileTextIcon, GamepadIcon, HomeIcon, SproutIcon, UserIcon } from "@/components/ui/icons";
 import { cn } from "@/lib/cn";
 import { NAV_SECTIONS, resolveNav, type NavSection } from "@/lib/nav";
 import { ROUTES } from "@/lib/routes";
@@ -29,6 +29,8 @@ const SECTION_ICON: Record<NavSection["key"], ReactNode> = {
   indie: <SproutIcon size={ICON_SIZE} />,
   board: <FileTextIcon size={ICON_SIZE} />,
   lounge: <ChatIcon size={ICON_SIZE} />,
+  // 내 정보(lib/nav 의 ACCOUNT_SECTION)는 탭바에 칸이 없다 — 표가 키를 다 요구해서 그림만 채워 둔다
+  account: <UserIcon size={ICON_SIZE} />,
 };
 
 const TABS: readonly { key: string; label: string; href: string; icon: ReactNode }[] = [

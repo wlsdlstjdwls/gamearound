@@ -39,7 +39,7 @@ export type NavSub = {
 };
 
 export type NavSection = {
-  key: "explore" | "indie" | "board" | "lounge";
+  key: "explore" | "indie" | "board" | "lounge" | "account";
   label: string;
   /** 메뉴를 누르면 열리는 화면 = 첫 하위 칸(기획서 3.1) */
   href: string;
@@ -98,6 +98,24 @@ export const NAV_SECTIONS: readonly NavSection[] = [
     ],
   },
 ];
+
+/**
+ * 내 정보 화면 묶음 — 상단 메뉴 넷에는 없고 사용자 메뉴(드롭다운)로 들어오는 화면들.
+ * 하위 메뉴 띠만 세운다(2026-10-27, 사용자: "어떤 화면에 들어가면 상세 메뉴가 안 보인다"). 내 활동, 찜, 알림, 설정이
+ * 서로 오갈 길 없이 혼자 떠 있었다. 상단 메뉴에는 올리지 않는다 — NAV_SECTIONS 에 넣으면 머리띠와 바닥 탭바에 칸이 생긴다.
+ * 순서는 사용자 메뉴(auth/user-menu)와 같다.
+ */
+export const ACCOUNT_SECTION: NavSection = {
+  key: "account",
+  label: "내 정보",
+  href: ROUTES.me,
+  subs: [
+    { label: "내 활동", href: ROUTES.me },
+    { label: "찜 목록", href: ROUTES.wishlist },
+    { label: "가격 알림", href: ROUTES.alerts },
+    { label: "설정", href: ROUTES.settings },
+  ],
+};
 
 /** 화면 위 "이전 화면" 줄(components/page-trail)의 문구 */
 export const NAV_TRAIL_MESSAGES = {
@@ -159,8 +177,9 @@ export function trailLeaf(pathname: string): string | null {
 /** 경로 줄을 세울 화면인가 — 하위 칸 그 자체, 끝 낱말이 정해진 화면, 계정 화면과 인디 상세(되돌아가기만) */
 export function trailKind(pathname: string, sub: NavSub | null): "sub" | "leaf" | "back" | null {
   if (trailLeaf(pathname)) return "leaf";
-  if (sub && (pathname === pathOf(sub.href) || sub.aliases?.includes(pathname))) return "sub";
+  // 계정 화면은 칸(내 정보 띠)이 있어도 되돌아가기만 — 띠가 이미 "내 정보 > 찜 목록" 을 말한다
   if (TRAIL_BACK_ONLY_PATHS.includes(pathname)) return "back";
+  if (sub && (pathname === pathOf(sub.href) || sub.aliases?.includes(pathname))) return "sub";
   return TRAIL_BACK_ONLY_UNDER.some((parent) => childOf(pathname, parent)) ? "back" : null;
 }
 
@@ -217,5 +236,8 @@ export function resolveNav(pathname: string, query: Query): { section: NavSectio
     return { section: best.section, sub: rootDetail ? null : best.sub };
   }
   const section = NAV_SECTIONS.find((s) => s.also?.some((p) => under(pathname, p))) ?? null;
-  return { section, sub: null };
+  if (section) return { section, sub: null };
+  // 내 정보 묶음은 메뉴 넷 다음에 본다 — 칸 경로가 메뉴 넷과 겹치지 않아 순서가 결과를 바꾸지는 않는다
+  const mine = ACCOUNT_SECTION.subs.filter((s) => under(pathname, pathOf(s.href))).sort((a, b) => b.href.length - a.href.length)[0];
+  return mine ? { section: ACCOUNT_SECTION, sub: mine } : { section: null, sub: null };
 }

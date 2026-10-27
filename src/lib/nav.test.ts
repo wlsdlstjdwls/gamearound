@@ -33,7 +33,9 @@ describe("resolveNav", () => {
     expect(resolveNav("/board/p/abc", q()).sub).toBeNull();
     expect(resolveNav("/board/p/abc", q()).section?.key).toBe("board");
     expect(resolveNav("/", q()).section).toBeNull();
-    expect(resolveNav("/settings", q()).section).toBeNull();
+    // 계정 화면은 메뉴 넷 밖의 내 정보 띠(ACCOUNT_SECTION)에 선다
+    expect(resolveNav("/settings", q()).section?.key).toBe("account");
+    expect(resolveNav("/settings/devices", q()).sub?.label).toBe("설정");
   });
 });
 
