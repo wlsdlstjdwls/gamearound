@@ -6,7 +6,7 @@
 // 대상은 두 표(indie_posts, posts)에 걸쳐 외래키를 못 건다. 대상이 지워지면 줄은 남고 노출 질의가 대상 표와 join 하며 저절로 빠진다.
 // 숨김, 반려된 대상도 같은 join 의 공개 조건에서 빠진다(기획서 4.1 "돈을 냈어도 반려, 숨김 상태면 노출하지 않는다").
 // 회수는 지우지 않고 revokedAt 을 찍는다 — 결제가 붙으면 환불 근거가 이 줄이다.
-import { pgTable, pgEnum, uuid, text, timestamp, index } from "drizzle-orm/pg-core";
+import { pgTable, pgEnum, uuid, text, timestamp, index, date, integer, primaryKey } from "drizzle-orm/pg-core";
 import { auditColumns } from "./audit";
 
 /** 노출 대상의 표. 자리마다 정해진 하나만 받는다(lib/promo/boost 의 SLOT_TARGET) */
@@ -37,3 +37,17 @@ export const promotionBoosts = pgTable("promotion_boosts", {
   index("promotion_boosts_slot_ends_idx").on(t.slot, t.endsAt),
   index("promotion_boosts_target_idx").on(t.targetKind, t.targetId),
 ]);
+
+/**
+ * 광고 성과 하루 집계(2026-10-27, 기획서 4.4 "부스트 기간마다 노출 수, 카드 클릭"). 산 사람이 두 번째 결제를 할지 정하는 숫자다.
+ * views 는 카드가 화면에 절반 넘게 보인 횟수, clicks 는 그 카드를 누른 횟수. 둘 다 브라우저가 보낸다(components/promo/ad-track) —
+ * 서버 렌더에서 세면 목록을 거를 때마다 다시 그려지는 횟수까지 노출로 잡힌다. 같은 사람의 같은 날 같은 광고는 한 번만 센다(브라우저가 거른다).
+ * day 는 한국 날짜다(schema-indie-promo 의 하루 표와 같은 규칙).
+ */
+export const promotionImpressions = pgTable("promotion_impressions", {
+  boostId: uuid("boost_id").references(() => promotionBoosts.id, { onDelete: "cascade" }).notNull(),
+  day: date("day").notNull(),
+  views: integer("views").default(0).notNull(),
+  clicks: integer("clicks").default(0).notNull(),
+  ...auditColumns(),
+}, (t) => [primaryKey({ columns: [t.boostId, t.day] })]);

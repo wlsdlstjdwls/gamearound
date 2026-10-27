@@ -540,6 +540,13 @@
       "when": 1793082521783,
       "tag": "0076_memberships",
       "breakpoints": true
+    },
+    {
+      "idx": 77,
+      "version": "7",
+      "when": 1793084755215,
+      "tag": "0077_promotion_impressions",
+      "breakpoints": true
     }
   ]
 }
