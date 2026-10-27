@@ -158,26 +158,24 @@ export function PriceTile({
   );
 }
 
-/**
- * 파는 곳이 아닌 스토어 = 흐린 카드 한 장(목업 .pc.no). 목업은 "미지원" 이라 단정하지만 우리가 아는 건
- * "지금 못 찾았다" 까지라(GAME_MESSAGES.storeChecking 주석) 말은 그대로 두고 모양만 목업을 따른다.
- */
+/** 이 게임 행이 없는 플랫폼 = 흐린 카드 한 장(목업 .pc.no "미지원"). 말은 GAME_MESSAGES.storeAbsent 주석 */
 export function AbsentTile({ id, label }: { id?: string; label: string }) {
   return (
     <li id={id} className={cn(TILE, "border border-dashed border-line-strong opacity-70")}>
       <CardHead name={label} />
       <div className="mt-auto">
-        <PendingNote icon={<StoreIcon size={15} />}>{GAME_MESSAGES.storeChecking}</PendingNote>
+        <PendingNote icon={<StoreIcon size={15} />}>{GAME_MESSAGES.storeAbsent}</PendingNote>
       </div>
     </li>
   );
 }
 
 /**
- * 출시 전 게임의 카드(목업 g.up) — 값 대신 출시일과 출시 알림. 알림 버튼은 서버가 그려 넘긴다
+ * 출시 전 플랫폼의 카드(목업 g.up) — 값 대신 출시일과 출시 알림. 게임 전체가 출시 전일 때뿐 아니라, 다른 기기로는 이미 나왔고
+ * 이 기기로는 아직인 행(값 없음 + 그 행 출시일이 미래)에도 선다(2026-10-27). 알림 버튼은 서버가 그려 넘긴다
  * (가격 알림 팝업 M-02 를 그 플랫폼만 고른 채로 연다 — 출시 뒤 첫 값이 붙으면 그 알림이 울린다).
  */
-export function UpcomingTile({ p, id, release, action }: { p: PlatformPriceItem; id?: string; release: string | null; action: React.ReactNode }) {
+export function UpcomingTile({ p, id, release, action }: { p: PlatformPriceItem; id?: string; release: string | null; action?: React.ReactNode }) {
   const generation = generationOf(p.platform);
   return (
     <li id={id} className={cn(TILE, "bg-surface shadow-hair")}>
@@ -187,7 +185,7 @@ export function UpcomingTile({ p, id, release, action }: { p: PlatformPriceItem;
         <Row label={D.releaseRow}>{release ?? D.releaseUnknown}</Row>
         {generation && <Row label={D.hardwareRow}>{generation}</Row>}
       </dl>
-      <div className="mt-auto flex pt-1">{action}</div>
+      {action && <div className="mt-auto flex pt-1">{action}</div>}
     </li>
   );
 }

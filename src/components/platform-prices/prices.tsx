@@ -8,10 +8,11 @@
 //
 // 카드 모양은 tile.tsx, 순서와 이름 규칙은 order.ts 가 갖는다. 행사 이름 곁말은 sale-note.tsx.
 // 상태가 없어 서버 컴포넌트다(SaleBadge, 알림 버튼만 클라이언트).
+import { kstDateKey } from "@/lib/format";
 import type { Platform } from "@/server/db/schema";
 import type { DlcDto } from "@/server/services/games";
 import { PlatformAddons } from "@/components/platform-addons";
-import { brandAnchorId, brandNameOf, byPrice, orderCards, releaseText, rowKey, type PlatformPriceItem } from "@/components/platform-prices/order";
+import { brandAnchorId, brandNameOf, byPrice, isUpcomingRow, orderCards, releaseText, rowKey, type PlatformPriceItem } from "@/components/platform-prices/order";
 import { AbsentTile, PriceTile, UpcomingTile } from "@/components/platform-prices/tile";
 
 /** 좁은 화면 1장, sm 2장, lg 4장 — 목업 .pg. 스토어가 넷을 넘으면 다음 줄로 이어진다 */
@@ -25,7 +26,8 @@ export function PlatformPrices({
   quotedUserScorePlatform = null,
   dlcs = [],
   releaseFallback = null,
-  upcomingAction,
+  upcomingAll = false,
+  releaseAction,
 }: {
   platforms: PlatformPriceItem[];
   /** 상세 히어로 평점 칸이 이미 인용한 유저 점수의 스토어 */
@@ -34,11 +36,13 @@ export function PlatformPrices({
   dlcs?: DlcDto[];
   /** 스토어가 출시일을 안 준 카드(PlayStation)에 대신 적을 게임 단위 출시일 */
   releaseFallback?: string | null;
+  /** 게임 전체가 출시 전이고 값이 하나도 없다 — 모든 행을 출시 카드로 세운다(목업 g.up) */
+  upcomingAll?: boolean;
   /**
-   * 출시 전 게임이면 값 카드 대신 출시 카드를 세운다(목업 g.up). 카드마다 붙일 알림 버튼을 만드는 함수다 —
-   * 버튼은 로그인, 팝업을 쥔 클라이언트 조각이라 이 파일이 직접 import 하지 않고 화면이 넘긴다.
+   * 출시 카드마다 붙일 알림 버튼을 만드는 함수. 버튼은 로그인, 팝업을 쥔 클라이언트 조각이라 이 파일이 직접 import 하지 않고 화면이 넘긴다.
+   * 게임 전체가 출시 전이 아니어도 "이 기기로는 아직" 인 행(isUpcomingRow)은 출시 카드가 된다.
    */
-  upcomingAction?: (p: PlatformPriceItem) => React.ReactNode;
+  releaseAction?: (p: PlatformPriceItem) => React.ReactNode;
 }) {
   const cards = orderCards(platforms);
   if (cards.length === 0) {
@@ -54,6 +58,7 @@ export function PlatformPrices({
   // 히어로 이름이 눌러 내려올 id 는 묶음의 첫 카드만 받는다 — 같은 id 가 둘이면 링크가 엉뚱한 장을 잡는다
   const anchored = new Set<string>();
   const anchorOnce = (id: string) => (anchored.has(id) ? undefined : (anchored.add(id), id));
+  const today = kstDateKey(new Date());
 
   return (
     <ul className={GRID}>
@@ -64,7 +69,9 @@ export function PlatformPrices({
         const p = c.row;
         const id = anchorOnce(brandAnchorId(p.platform));
         const release = releaseText(p, releaseFallback);
-        if (upcomingAction) return <UpcomingTile key={rowKey(p)} p={p} id={id} release={release} action={upcomingAction(p)} />;
+        if (upcomingAll || isUpcomingRow(p, releaseFallback, today)) {
+          return <UpcomingTile key={rowKey(p)} p={p} id={id} release={release} action={releaseAction?.(p)} />;
+        }
         // 이 플랫폼에 실제로 있는 추가 콘텐츠만 넘긴다. 하나도 없으면 버튼을 안 세운다 —
         // 열어 봤자 빈 시트인 버튼은 누른 사람을 두 번 움직이게 한다
         const mine = dlcs.filter((d) => d.platforms.some((dp) => dp.platform === p.platform));

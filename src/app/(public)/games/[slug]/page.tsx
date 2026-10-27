@@ -161,24 +161,23 @@ export default async function GameDetailPage({ params }: Props) {
           quotedUserScorePlatform={bestUserScore(game.platforms)?.platform ?? null}
           dlcs={game.dlcs}
           releaseFallback={game.releaseDate}
-          upcomingAction={
-            upcoming
-              ? (p) =>
-                  alertOptions.some((o) => o.platform === p.platform) ? (
-                    <PriceAlertButton
-                      gameId={game.id}
-                      gameSlug={game.slug}
-                      gameTitle={title}
-                      kind="release"
-                      options={alertOptions.filter((o) => o.platform === p.platform)}
-                      slot={p.platform}
-                      variant="soft"
-                      size="row"
-                      label={D.releaseAlert}
-                      className="w-full"
-                    />
-                  ) : null
-              : undefined
+          upcomingAll={upcoming}
+          // 출시 카드(게임 전체가 출시 전이거나, 이 기기로는 아직인 행)마다 그 플랫폼만 고른 출시 알림
+          releaseAction={(p) =>
+            alertOptions.some((o) => o.platform === p.platform) ? (
+              <PriceAlertButton
+                gameId={game.id}
+                gameSlug={game.slug}
+                gameTitle={title}
+                kind="release"
+                options={alertOptions.filter((o) => o.platform === p.platform)}
+                slot={p.platform}
+                variant="soft"
+                size="row"
+                label={D.releaseAlert}
+                className="w-full"
+              />
+            ) : null
           }
         />
         <UpgradeNotes upgrades={game.upgrades} />

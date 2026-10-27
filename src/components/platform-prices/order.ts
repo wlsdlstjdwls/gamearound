@@ -135,3 +135,14 @@ export function releaseText(p: PlatformDto, fallback: string | null): string | n
   const day = p.releaseDate ?? fallback;
   return day ? formatDate(day) : null;
 }
+
+/**
+ * "이 기기로는 아직 안 나왔다" — 값이 없고 그 행의 출시일(없으면 게임 출시일)이 오늘(KST 날짜 열쇠) 뒤다.
+ * 값이 붙었으면 예약 판매라 값 카드가 맞다(예약 딱지가 말한다). 출시일을 모르는 행은 "금액 확인 중" 값 카드로 남긴다 —
+ * 날짜 없이 출시 예정이라 적으면 이미 파는 게임을 아직 안 나온 것으로 말하게 된다.
+ */
+export function isUpcomingRow(p: PlatformDto, fallback: string | null, today: string): boolean {
+  if (p.currentPrice !== null) return false;
+  const day = (p.releaseDate ?? fallback)?.slice(0, 10);
+  return Boolean(day && day > today);
+}
