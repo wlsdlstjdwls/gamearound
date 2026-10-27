@@ -4,7 +4,6 @@
 // 서버 컴포넌트로 둔다 — 상태도 이벤트도 없다.
 import Link from "next/link";
 import { ROUTES } from "@/lib/routes";
-import { BUSINESS_MESSAGES, SHOP_DIRECTORY_MESSAGES } from "@/lib/shops/messages";
 import { SITE } from "@/lib/site";
 
 /*
@@ -28,14 +27,8 @@ export function SiteFooter() {
     // 가운데 정렬을 푼 이유: 본문이 1200px 기둥을 쓰는데 푸터만 가운데로 모이면 문서의 왼쪽 선이 끊긴다
     <footer className="safe-bottom mx-auto flex w-full max-w-[var(--page-w)] flex-wrap items-center justify-between gap-x-6 gap-y-3 border-t border-line px-5 py-6 sm:px-6">
       <nav className="flex flex-wrap items-center gap-x-[18px] gap-y-2" aria-label="약관">
-        {/* 매장 두 줄은 머리글에 올리지 않는다 — 손님보다 매장주가 찾는 길이라 푸터 한 줄이면 충분하다.
-            2026-10-12 사용자 결정으로 준비 중 시트를 걷고 화면으로 보낸다 */}
-        <Link href={ROUTES.shops} className={LINK_CLASS}>
-          {SHOP_DIRECTORY_MESSAGES.title}
-        </Link>
-        <Link href={ROUTES.business} className={LINK_CLASS}>
-          {BUSINESS_MESSAGES.navLabel}
-        </Link>
+        {/* 매장 찾기, 매장 입점 두 줄은 2026-10-27 사용자 지시로 숨겼다("일단 숨겨줘"). 화면(/shops, /business)은 그대로 열린다.
+            되살리면 ROUTES.shops(SHOP_DIRECTORY_MESSAGES.title), ROUTES.business(BUSINESS_MESSAGES.navLabel) 두 Link 를 이 자리에 다시 얹는다 */}
         <Link href={ROUTES.terms} className={LINK_CLASS}>
           이용약관
         </Link>
