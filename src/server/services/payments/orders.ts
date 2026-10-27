@@ -15,7 +15,7 @@ import { indiePosts, payments, posts, promotionBoosts, type PromoTargetKind } fr
 import { confirmTossPayment, TossError } from "@/server/payments/toss";
 import { insertPurchasedBoost, isPublicPromo } from "@/server/services/promotions";
 import { isPublic } from "@/server/services/indie/read";
-import { makeOrderId, PRODUCTS, type ProductKey } from "@/lib/payments/products";
+import { isProductKey, makeOrderId, PRODUCTS, type ProductKey } from "@/lib/payments/products";
 import { PAYMENT_MESSAGES as M } from "@/lib/payments/messages";
 
 /** 주문 번호 무작위 부분 바이트 수. 16바이트(hex 32자)면 겹칠 일이 없다 */
@@ -78,7 +78,8 @@ export type ConfirmResult = { ok: true; orderId: string } | { ok: false; message
 export async function confirmBoostPayment(input: { paymentKey: string; orderId: string; amount: number }, userId: string): Promise<ConfirmResult> {
   const db = getDb();
   const [order] = await db.select().from(payments).where(and(eq(payments.orderId, input.orderId), eq(payments.userId, userId))).limit(1);
-  if (!order) return { ok: false, message: M.orderNotFound };
+  // 대상이 없는 줄은 멤버십 청구다 — 결제위젯 성공 주소로 올 일이 없다
+  if (!order || !order.targetId || !isProductKey(order.product)) return { ok: false, message: M.orderNotFound };
   if (order.status === "paid") return { ok: true, orderId: order.orderId };
   if (order.status !== "pending") return { ok: false, message: order.failMessage ?? M.failed };
   if (order.amount !== input.amount) {
@@ -111,7 +112,7 @@ export async function confirmBoostPayment(input: { paymentKey: string; orderId: 
     .returning({ id: payments.id });
   if (claimed.length === 0) return { ok: true, orderId: order.orderId };
 
-  const p = PRODUCTS[order.product as ProductKey];
+  const p = PRODUCTS[order.product];
   const boostId = await insertPurchasedBoost({ slot: p.slot, targetId: order.targetId, days: p.days, note: order.orderId }, userId);
   await db.update(payments).set({ boostId, ...updatedBy("system") }).where(eq(payments.id, order.id));
   return { ok: true, orderId: order.orderId };

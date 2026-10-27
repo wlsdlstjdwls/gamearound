@@ -47,6 +47,8 @@ export * from "./schema-community";
 export * from "./schema-indie-promo";
 // 유료 노출 자리(2026-10-27). 대상이 인디 글, 게시판 글 두 표에 걸쳐 따로 둔다.
 export * from "./schema-promotions";
+// 메이커 멤버십(2026-10-27, 월 정기결제). 결제 줄이 가리켜 결제 앞에 둔다.
+export * from "./schema-memberships";
 // 결제(2026-10-27, 토스페이먼츠). 부스트 줄을 가리켜 유료 노출 뒤에 둔다.
 export * from "./schema-payments";
 // 알림함(헤더 종 아이콘, 2026-10-26).

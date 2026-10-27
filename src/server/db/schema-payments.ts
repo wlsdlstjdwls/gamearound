@@ -9,6 +9,7 @@ import { pgTable, pgEnum, uuid, text, integer, timestamp, index } from "drizzle-
 import { auditColumns } from "./audit";
 import { users } from "./schema";
 import { promoTargetKindEnum, promotionBoosts } from "./schema-promotions";
+import { memberships } from "./schema-memberships";
 
 /** pending: 결제창에 들어감, paid: 승인 끝, failed: 결제창 실패나 승인 거절, canceled: 환불함(전액이든 일부든 — 얼마인지는 refundedAmount) */
 export const paymentStatusEnum = pgEnum("payment_status", ["pending", "paid", "failed", "canceled"]);
@@ -24,8 +25,11 @@ export const payments = pgTable("payments", {
   /** 원 단위 정수(lib/currency 규칙: 최소 단위 정수) */
   amount: integer("amount").notNull(),
   status: paymentStatusEnum("status").default("pending").notNull(),
-  targetKind: promoTargetKindEnum("target_kind").notNull(),
-  targetId: uuid("target_id").notNull(),
+  /** 노출 자리 결제의 대상. 멤버십 청구는 대상이 없어 비운다(membershipId 를 채운다) */
+  targetKind: promoTargetKindEnum("target_kind"),
+  targetId: uuid("target_id"),
+  /** 멤버십 청구(첫 달, 갱신)면 그 멤버십 */
+  membershipId: uuid("membership_id").references(() => memberships.id, { onDelete: "set null" }),
   /** 승인 뒤 건 부스트. 승인은 됐는데 이 칸이 비면 부스트 걸기가 실패한 것 — 관리자 화면에 드러난다 */
   boostId: uuid("boost_id").references(() => promotionBoosts.id, { onDelete: "set null" }),
   /** 토스 결제 키. 조회, 취소가 이 값으로 간다 */
