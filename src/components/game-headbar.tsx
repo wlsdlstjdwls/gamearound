@@ -19,7 +19,6 @@ import Link from "next/link";
 import { BrandSymbol } from "@/components/ui/logo";
 import { PlatformBadges } from "@/components/platform-badges";
 import { Clamp } from "@/components/ui/tooltip";
-import { buttonClass } from "@/components/ui/button";
 import { DiscountBadge } from "@/components/ui/discount";
 import { ROUTES } from "@/lib/routes";
 import { SITE } from "@/lib/site";
@@ -49,7 +48,7 @@ export function GameHeadbar({
   listPrice,
   discountPct,
   platforms,
-  alertHref,
+  alertAction,
 }: {
   title: string;
   /** 이미 서식을 입힌 최저가. 통화 규칙은 lib/currency 가 갖는다 — 이 바는 글자만 받는다 */
@@ -59,8 +58,12 @@ export function GameHeadbar({
   discountPct: number | null;
   /** 지원 플랫폼 배지. 목록 카드와 같은 컴포넌트를 쓴다 — 같은 사실을 두 모양으로 그리지 않는다 */
   platforms: Platform[];
-  /** 할인 알림 주소. 무료 게임은 null 이다(히어로의 버튼과 같은 규칙 — 내려갈 자리가 없다) */
-  alertHref: string | null;
+  /**
+   * 할인 알림 단추. 무료 게임은 없다(히어로의 버튼과 같은 규칙 — 내려갈 자리가 없다).
+   * 주소 링크(/alerts?game=)였다가 2026-10-27 가격 알림 팝업 단추(price-alert-button)로 바꿨다(사용자: "누르면 로그인 안 되어 있으면
+   * 로그인 팝업이 떠서 로그인 처리되도록"). 그 단추가 로그인 문(M-01)과 로그인 뒤 이어 열기를 이미 갖고 있다. 화면이 만들어 넘긴다
+   */
+  alertAction: React.ReactNode;
 }) {
   const sentinel = useRef<HTMLDivElement>(null);
   const [on, setOn] = useState(false);
@@ -130,14 +133,11 @@ export function GameHeadbar({
                 </span>
               </span>
 
-              {alertHref && (
-                <Link
-                  href={alertHref}
-                  tabIndex={on ? 0 : -1}
-                  className={buttonClass({ variant: "accent", size: "sm", className: "shrink-0" })}
-                >
-                  할인 알림 받기
-                </Link>
+              {/* 띠가 숨은 동안에는 단추도 손이 닿지 않게(inert) — 안 보이는 단추에 탭 초점이 들어가면 안 된다 */}
+              {alertAction && (
+                <span inert={!on} className="shrink-0">
+                  {alertAction}
+                </span>
               )}
             </div>
           </div>,

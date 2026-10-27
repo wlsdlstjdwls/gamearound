@@ -1349,7 +1349,7 @@ body:has([data-onboarding]) > [data-site-tabbar] {
   0%, 60% { outline-color: var(--acc); }
   100% { outline-color: transparent; }
 }
-.target-flash {
+[data-flash] {
   outline: 2px solid transparent;
   outline-offset: 3px;
   animation: target-flash var(--duration-flash) var(--ease-standard);

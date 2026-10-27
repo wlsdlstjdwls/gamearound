@@ -30,6 +30,7 @@ import { useNow } from "@/components/use-now";
 import { ChipButton } from "@/components/ui/chip";
 import { useCssTokens } from "@/components/use-css-tokens";
 import { prepare } from "@/components/price-chart/prepare";
+import { ALL_PLATFORMS, usePlatformFilter } from "@/components/price-chart/use-platform-filter";
 
 /**
  * 플랫폼 → 색 토큰 이름(엔티티 기준, 순서, 개수와 무관 — 필터로 선이 줄어도 남은 선의 색은 그대로다).
@@ -126,9 +127,6 @@ function PriceTooltip({ active, payload, label, currency }: TooltipContentProps 
   );
 }
 
-/** 플랫폼 칩의 "전체". 플랫폼 값과 겹치지 않는 문자열이어야 한다 */
-const ALL_PLATFORMS = "all";
-
 /**
  * head, rangeKeys 는 상세 본문에 들어간 그래프(2026-10-26, 목업 "가격 변동 추이")가 쓴다 — 제목과 기간 칩을 한 줄에 세우고
  * 기간은 기획서의 넷(1개월~1년)만 둔다. 전용 화면(/prices)은 둘 다 주지 않아 예전 모양 그대로다.
@@ -138,15 +136,10 @@ export function PriceChart({ series, head, rangeKeys }: { series: PriceSeries[];
   // 그래프가 쓰는 색은 전부 여기서 한 번 읽는다 — 테마가 바뀌면 이 값이 통째로 새것이 된다
   const token = useCssTokens(CHART_TOKENS);
   const [rangeKey, setRangeKey] = useState(DEFAULT_RANGE_KEY);
-  const [pick, setPick] = useState<Platform | typeof ALL_PLATFORMS>(ALL_PLATFORMS);
   // 한 축에 두 통화를 그리면 선이 뜻 없이 겹친다(₩44,990 옆의 $6.99). 기준 통화만 그리고 나머지는 밑에 적는다
   const { kept: drawn, dropped, currency } = useMemo(() => sameCurrency(series), [series]);
-  // 고른 플랫폼이 사라졌으면(게임이 바뀌거나 계열이 줄면) 조용히 전체로 돌아간다
-  const picked = pick !== ALL_PLATFORMS && drawn.some((s) => s.platform === pick) ? pick : ALL_PLATFORMS;
-  const shown = useMemo(
-    () => (picked === ALL_PLATFORMS ? drawn : drawn.filter((s) => s.platform === picked)),
-    [drawn, picked],
-  );
+  // 어느 선을 그릴지 — 상세에서는 플랫폼 카드와 같은 값을 쓴다(./use-platform-filter)
+  const { shown, isOn, choose } = usePlatformFilter(drawn);
   const clientNow = useNow();
   // 마운트 전에는 마지막 기록 시각을 "지금"으로 써서 서버/클라이언트 렌더를 일치시킨다
   const fallbackNow = useMemo(
@@ -171,11 +164,11 @@ export function PriceChart({ series, head, rangeKeys }: { series: PriceSeries[];
   /* 플랫폼이 둘 이상일 때만 고르는 자리를 만든다 — 하나뿐이면 "전체" 와 그 하나가 같은 말이다 */
   const platformChips = drawn.length > 1 && (
         <div role="group" aria-label="플랫폼 선택" className="flex flex-wrap gap-1">
-          <ChipButton active={picked === ALL_PLATFORMS} onClick={() => setPick(ALL_PLATFORMS)}>
+          <ChipButton active={isOn(ALL_PLATFORMS)} onClick={() => choose(ALL_PLATFORMS)}>
             전체
           </ChipButton>
           {drawn.map((s) => (
-            <ChipButton key={s.platform} active={picked === s.platform} onClick={() => setPick(s.platform)}>
+            <ChipButton key={s.platform} active={isOn(s.platform)} onClick={() => choose(s.platform)}>
               {/* 칩의 점이 그래프의 선 색과 같아야 "이 칩이 저 선" 이 말없이 이어진다 */}
               <span
                 aria-hidden

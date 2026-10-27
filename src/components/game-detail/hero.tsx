@@ -72,7 +72,7 @@ export function DetailHero({
             {brands.map((b, i) => (
               <span key={b.key} className="inline-flex items-center gap-x-2">
                 {i > 0 && <span aria-hidden className="font-normal text-dim-2">|</span>}
-                <PlatformJump anchor={b.anchor} className="transition-colors hover:text-acc">
+                <PlatformJump anchor={b.anchor} brand={b.key} className="transition-colors hover:text-acc">
                   {b.label}
                 </PlatformJump>
               </span>

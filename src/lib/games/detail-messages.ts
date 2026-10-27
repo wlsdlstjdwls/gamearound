@@ -31,6 +31,8 @@ export const DETAIL_MESSAGES = {
   chartMore: "자세히 보기",
   chartEmpty: "가격이 바뀌면 기록이 쌓이고, 그때부터 그래프가 그려져요.",
   forecastTitle: "할인 예측",
+  /** 고른 플랫폼 카드의 이름(game-detail/platform-pick). 예측이 그 플랫폼 값만 본다는 말 */
+  forecastBasisPlatform: (name: string) => `${name} 기준`,
   /** 진행 중 할인을 먼저 말한다(2026-10-26). 행사명은 스토어가 줄 때만, 남은 날은 끝나는 날을 알 때만 */
   forecastRunning: (name: string | null, pct: number) => `지금 ${name ?? "할인"} 중이에요(-${pct}%).`,
   forecastRunningLeft: (n: number) => ({ before: " 끝나기까지 ", days: `${n}일`, after: " 남았어요." }),
@@ -44,6 +46,8 @@ export const DETAIL_MESSAGES = {
   forecastConfirmed: "공지된 일정이에요.",
   forecastEstimated: "예년 일정으로 추정했어요.",
   forecastAlert: "알림 설정하기",
+  /** 스크롤 머리바의 단추(game-headbar) */
+  headbarAlert: "할인 알림 받기",
   forecastDisclaimer: "할인 예측은 지난 가격 기록과 스토어 세일 일정을 바탕으로 한 참고용 정보예요. 실제 할인 시기와 가격은 다를 수 있어요.",
   newsHeading: "최신 관련 뉴스",
   newsMore: "더보기",

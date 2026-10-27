@@ -26,11 +26,14 @@ export function DiscountForecast({
   forecast,
   currency,
   action,
+  basisLabel,
 }: {
   /** null 이면 날짜도 기록도 없다 — 판은 세우고 "기록이 쌓이면" 을 말한다(목업은 늘 판이 선다) */
   forecast: Forecast | null;
   currency: Currency;
   action?: React.ReactNode;
+  /** 고른 플랫폼 이름(game-detail/forecast-by-platform). 주면 제목 옆에 "PlayStation 기준" 이 선다 */
+  basisLabel?: string;
 }) {
   const running = forecast?.running ?? null;
   const next = forecast?.next ?? null;
@@ -46,8 +49,9 @@ export function DiscountForecast({
           <CalendarIcon size={22} />
         </span>
         <div className="flex min-w-0 flex-1 flex-col gap-1">
-          <h2 id="forecast-heading" className="text-[17px] font-extrabold text-ink">
+          <h2 id="forecast-heading" className="flex flex-wrap items-baseline gap-x-2 text-[17px] font-extrabold text-ink">
             {D.forecastTitle}
+            {basisLabel && <span className="text-[12.5px] font-bold text-acc">{D.forecastBasisPlatform(basisLabel)}</span>}
           </h2>
           {running && (
             <p className="text-[14px] font-bold text-acc">

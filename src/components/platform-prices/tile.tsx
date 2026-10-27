@@ -21,6 +21,8 @@ import { ClockIcon, StoreIcon } from "@/components/ui/icons";
 import { Tag } from "@/components/ui/tag";
 import { SubscriptionChips } from "@/components/subscription-badges";
 import { brandNameOf, generationOf, type PlatformPriceItem } from "@/components/platform-prices/order";
+import { PickableTile } from "@/components/game-detail/platform-pick";
+import { brandKeyOf } from "@/lib/platform";
 
 /** 스토어로 나가는 버튼의 말(기획서 v2.0 S-05 "구매하기") */
 const STORE_CTA = "구매하기";
@@ -28,7 +30,7 @@ const STORE_CTA = "구매하기";
 const STORE_LINK_MISSING = "스토어 링크 준비 중";
 
 /** 카드 껍데기. 최저가 카드만 브랜드 테두리와 연한 면(목업 .pc.fc) — 목록 카드의 "최저" 와 같은 색 문법이다 */
-const TILE = "flex min-w-0 scroll-mt-24 flex-col gap-2.5 rounded-[var(--radius-md)] p-4 sm:p-5";
+const TILE = "relative flex min-w-0 scroll-mt-24 flex-col gap-2.5 rounded-[var(--radius-md)] p-4 sm:p-5";
 
 /** 이름표 - 값 한 줄(목업 .row). 값은 줄바꿈하지 않는다 — 날짜가 접히면 같은 줄의 높이가 카드마다 달라진다 */
 function Row({ label, children }: { label: string; children: React.ReactNode }) {
@@ -80,7 +82,9 @@ export function PriceTile({
   const generation = generationOf(p.platform);
   const userScore = skipUserScore ? null : userScoreText(p);
   return (
-    <li id={id} className={cn(TILE, showBest ? "bg-acc-soft ring-2 ring-acc ring-inset" : "bg-surface shadow-hair")}>
+    // 고를 수 있는 카드(game-detail/platform-pick). 최저가는 이제 면을 칠하지 않고 딱지로만 말한다(2026-10-27) —
+    // 연파랑 면이 할인 배지를 묻었고(사용자), 파랑 고리는 "지금 고른 카드" 가 쓴다. 처음 고른 카드가 최저가 카드다
+    <PickableTile brand={brandKeyOf(p.platform)} label={brandNameOf(p)} id={id} className={cn(TILE, "bg-surface shadow-hair")}>
       <CardHead name={brandNameOf(p)}>
         {/* 스토어마다 따로 본다 — PS 는 예약 중이어도 스팀은 이미 팔 수 있다(lib/games/preorder) */}
         {isPreorder(p) && <Tag>{PREORDER_LABEL}</Tag>}
@@ -150,7 +154,7 @@ export function PriceTile({
           </span>
         )}
       </div>
-    </li>
+    </PickableTile>
   );
 }
 

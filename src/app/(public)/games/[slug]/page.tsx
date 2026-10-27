@@ -9,7 +9,10 @@ import { Suspense } from "react";
 import { notFound } from "next/navigation";
 import { DbUnavailablePage } from "@/components/db-unavailable";
 import { DlcSection } from "@/components/dlc-list";
-import { DiscountForecast } from "@/components/discount-forecast";
+import { ForecastByPlatform } from "@/components/game-detail/forecast-by-platform";
+import { PlatformPickProvider } from "@/components/game-detail/platform-pick";
+import { brandNameOf } from "@/components/platform-prices/order";
+import { brandKeyOf } from "@/lib/platform";
 import { GameHeadbar } from "@/components/game-headbar";
 import { GameViewBeacon } from "@/components/game-view-beacon";
 import { IndieGameSection } from "@/components/indie/game-section";
@@ -42,7 +45,7 @@ import { decodeSlugParam } from "@/lib/slug";
 import { gamePath, ROUTES } from "@/lib/routes";
 import { bestUserScore, cheapestPlatform, displayTitle, getGameBySlugCached, getGamePatchesCached, latestPatches } from "@/server/services/games";
 import { getDiscountHistory } from "@/server/services/prices";
-import { HOME_REGION } from "@/server/db/schema";
+import { HOME_REGION, type Platform } from "@/server/db/schema";
 
 /** 검색결과, SNS 카드에 들어가는 설명 길이 상한 */
 const META_DESCRIPTION_MAX = 150;
@@ -97,11 +100,25 @@ export default async function GameDetailPage({ params }: Props) {
     .map((p) => ({ platform: p.platform, currentPrice: p.currentPrice, currency: p.currency }));
   const canAlert = !isFree && alertOptions.length > 0;
   // 할인 예측은 한국 계정으로 사는 기준 통화 값만 본다 — 근거(스냅샷 요약)도 같은 기준으로 접혀 온다(services/prices)
-  const forecast = forecastDiscount({
-    rows: game.platforms.filter((p) => p.region === HOME_REGION && p.currency === DISPLAY_CURRENCY),
-    history: discountHistory,
-    now: new Date(),
-  });
+  const forecastRows = game.platforms.filter((p) => p.region === HOME_REGION && p.currency === DISPLAY_CURRENCY);
+  const now = new Date();
+  const forecast = forecastDiscount({ rows: forecastRows, history: discountHistory, now });
+  // 플랫폼 카드를 고르면 예측도 그 묶음 값으로 바뀐다(game-detail/platform-pick, 2026-10-27 사용자). 묶음마다 미리 셈해 넘긴다
+  const brandKeys = [...new Set(forecastRows.map((p) => brandKeyOf(p.platform)))];
+  const forecastByBrand = Object.fromEntries(
+    // 할인 기록도 그 묶음 것만 — 안 거르면 Steam 예측의 "기록 최저가" 에 Xbox 의 할인가가 섰다(2026-10-27 실측)
+    brandKeys.map((k) => [
+      k,
+      forecastDiscount({
+        rows: forecastRows.filter((p) => brandKeyOf(p.platform) === k),
+        history: discountHistory.filter((h) => brandKeyOf(h.platform as Platform) === k),
+        now,
+      }),
+    ]),
+  );
+  const brandLabels = Object.fromEntries(game.platforms.map((p) => [brandKeyOf(p.platform), brandNameOf(p)]));
+  // 처음 고른 카드 = 최저가 카드(목업도 최저가 카드가 켜진 채로 연다)
+  const initialBrand = best ? brandKeyOf(best.platform) : null;
 
   return (
     <Page pad="detail" gap={28}>
@@ -109,6 +126,8 @@ export default async function GameDetailPage({ params }: Props) {
       {/* 조회 기록 — 수집이 사람들이 보는 게임을 먼저 갱신하게 한다(server/game-views). 화면에는 아무것도 안 그린다 */}
       <GameViewBeacon slug={game.slug} />
 
+      {/* 히어로의 플랫폼 이름, 가격 비교, 그래프, 할인 예측이 "지금 고른 플랫폼" 하나를 나눠 쓴다(game-detail/platform-pick) */}
+      <PlatformPickProvider initial={initialBrand}>
       <DetailHero game={game} title={title} unreleased={unreleased} alertOptions={alertOptions} isFree={isFree} />
 
       {/* 히어로가 머리띠에 가리는 순간부터 제목과 최저가를 머리띠 자리에 띄운다(2026-09-22). 센티넬이 여기 서야
@@ -120,7 +139,11 @@ export default async function GameDetailPage({ params }: Props) {
         discountPct={best?.discountPct ?? null}
         // 나라별로 여러 행인 플랫폼(스위치 한국, 일본)이 배지로 두 번 서지 않게 접는다
         platforms={[...new Set(game.platforms.map((p) => p.platform))]}
-        alertHref={isFree ? null : `${ROUTES.alerts}?game=${encodeURIComponent(game.slug)}`}
+        alertAction={
+          canAlert ? (
+            <PriceAlertButton gameId={game.id} gameSlug={game.slug} gameTitle={title} options={alertOptions} slot="headbar" size="sm" label={D.headbarAlert} />
+          ) : null
+        }
       />
 
       {/* 플랫폼별 가격 비교(목업 .pg). 판 없이 카드만 바탕 위에 선다 — 카드 한 장 한 장이 이미 흰 판이다.
@@ -168,14 +191,17 @@ export default async function GameDetailPage({ params }: Props) {
             <PriceChartSlot slug={game.slug} />
           </Suspense>
           {!isFree && (
-            <DiscountForecast
-              forecast={forecast}
+            <ForecastByPlatform
+              all={forecast}
+              byBrand={forecastByBrand}
+              labels={brandLabels}
               currency={DISPLAY_CURRENCY}
               action={canAlert ? <PriceAlertButton gameId={game.id} gameSlug={game.slug} gameTitle={title} options={alertOptions} slot="forecast" label={D.forecastAlert} /> : undefined}
             />
           )}
         </div>
       )}
+      </PlatformPickProvider>
 
       <div className={sectionCardClass("min-w-0")}>
         <NewsMore count={game.news.length}>
