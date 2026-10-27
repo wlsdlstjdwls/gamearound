@@ -28,6 +28,13 @@ export const payments = pgTable("payments", {
   /** 노출 자리 결제의 대상. 멤버십 청구는 대상이 없어 비운다(membershipId 를 채운다) */
   targetKind: promoTargetKindEnum("target_kind"),
   targetId: uuid("target_id"),
+  /**
+   * 묶음 상품(2026-10-27 사용자 확정: 인디 게임 부스트 + 홍보 글 고정 9,900원)의 둘째 대상. 종류는 상품 표가 안다(lib/payments/products 의 extra).
+   * 칸을 둘로 둔 이유: 묶음은 늘 "인디 게임 하나 + 홍보 글 하나" 라 줄 표를 따로 둘 만큼 갈래가 없다
+   */
+  extraTargetId: uuid("extra_target_id"),
+  /** 묶음의 둘째 부스트. 승인됐는데 extraTargetId 만 있고 이 칸이 비면 둘째 걸기가 실패한 것 */
+  extraBoostId: uuid("extra_boost_id").references(() => promotionBoosts.id, { onDelete: "set null" }),
   /** 멤버십 청구(첫 달, 갱신)면 그 멤버십 */
   membershipId: uuid("membership_id").references(() => memberships.id, { onDelete: "set null" }),
   /** 승인 뒤 건 부스트. 승인은 됐는데 이 칸이 비면 부스트 걸기가 실패한 것 — 관리자 화면에 드러난다 */
