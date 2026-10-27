@@ -17,6 +17,9 @@ import { AbsentTile, PriceTile, UpcomingTile } from "@/components/platform-price
 /** 좁은 화면 1장, sm 2장, lg 4장 — 목업 .pg. 스토어가 넷을 넘으면 다음 줄로 이어진다 */
 const GRID = "grid gap-3 sm:grid-cols-2 lg:grid-cols-4 lg:gap-4";
 
+/** "최저가" 딱지를 세울 최소 비교 대상 수 — 값이 붙은 카드가 이만큼은 있어야 "가장 싸다" 가 뜻을 갖는다 */
+const BEST_MIN_PRICED = 2;
+
 export function PlatformPrices({
   platforms,
   quotedUserScorePlatform = null,
@@ -44,7 +47,10 @@ export function PlatformPrices({
 
   // 최저가는 **값 순서**로 정한다. 묶음 정렬이 카드 자리를 바꾸므로 "맨 앞 카드" 로 잡으면 엉뚱한 카드에 붙는다
   const cheapest = [...platforms].sort(byPrice)[0] ?? null;
-  const bestKey = cheapest?.currentPrice != null ? rowKey(cheapest) : null;
+  // 값이 붙은 카드가 둘 이상일 때만 "최저가" 다(2026-10-27 사용자). 하나뿐이면 견줄 대상이 없어 그 말이 거짓이 된다 —
+  // 통화가 다른 카드는 견주지 않으므로(byPrice) 같은 통화끼리만 센다
+  const priced = cheapest?.currentPrice != null ? platforms.filter((p) => p.currentPrice !== null && p.currency === cheapest.currency).length : 0;
+  const bestKey = cheapest && priced >= BEST_MIN_PRICED ? rowKey(cheapest) : null;
   // 히어로 이름이 눌러 내려올 id 는 묶음의 첫 카드만 받는다 — 같은 id 가 둘이면 링크가 엉뚱한 장을 잡는다
   const anchored = new Set<string>();
   const anchorOnce = (id: string) => (anchored.has(id) ? undefined : (anchored.add(id), id));
