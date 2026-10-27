@@ -48,6 +48,8 @@ export function ymLabel(ym: string): string {
 
 export const FAME_MESSAGES = {
   hofTitle: "명예의 전당",
+  /** 머리 판의 작은 이름표(2026-10-27) */
+  hofEyebrow: "매달 뽑는 인디 게임",
   hofLead: "개발자가 손전등에 등록한 인디 게임 중 반응이 좋은 작품을 매달 소개해요.",
   tabMonth: "이번 달 주목작",
   tabHistory: "역대 선정작",

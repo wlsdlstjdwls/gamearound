@@ -378,6 +378,17 @@ export function HandheldIcon(p: IconProps) {
   );
 }
 
+/** 트로피 — 명예의 전당 머리 판(2026-10-27) */
+export function TrophyIcon(p: IconProps) {
+  return (
+    <svg {...base(p)}>
+      <path d="M8 4h8v5a4 4 0 0 1-8 0V4Z" />
+      <path d="M8 6H5a2 2 0 0 0 0 4h3M16 6h3a2 2 0 0 1 0 4h-3" />
+      <path d="M12 13v4M8.5 20h7M10 17h4l.5 3h-5l.5-3Z" />
+    </svg>
+  );
+}
+
 /** 사람 — 할 일 카드의 작성자, 담당자 칸(2026-10-12 시안). 칠한 모양이다: 13px 남짓으로 작게 서서 선만으로는 흐렸다 */
 export function UserIcon(p: IconProps) {
   return (

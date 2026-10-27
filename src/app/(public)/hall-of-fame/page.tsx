@@ -14,7 +14,9 @@ import { EmptyState } from "@/components/empty-state";
 import { FadeImage } from "@/components/ui/fade-image";
 import { ChevronLeftIcon } from "@/components/ui/icons";
 import { NavChip, NavPendingScope, PendingRegion } from "@/components/ui/nav-pending";
-import { Page, PageHead } from "@/components/ui/page";
+import { Page } from "@/components/ui/page";
+import { InkHero, InkHeroHead } from "@/components/ui/ink-hero";
+import { TrophyIcon } from "@/components/ui/icons";
 import { cn } from "@/lib/cn";
 import { nullIfDbUnavailable } from "@/lib/db-errors";
 import { FAME_MESSAGES as M, isYm, kstYm, prevYm, ymLabel } from "@/lib/indie/fame";
@@ -127,7 +129,8 @@ function Ranking({ items, label, finalized, isNow }: { items: RankedIndie[]; lab
           <Link key={r.card.slug} href={indieDetailHref(r.card.slug, INDIE_FROM.hallOfFame)} className="lift press group enter-item flex flex-col gap-3 rounded-[var(--radius-panel)] bg-surface p-3.5 shadow-hair" style={stagger(i)}>
             <span className="relative block">
               <Cover item={r} sizes="(max-width: 1024px) 100vw, 25vw" />
-              <span className="absolute left-2 top-2 flex size-7 items-center justify-center rounded-lg bg-ink text-[13px] font-extrabold text-on-ink">{i + 2}</span>
+              {/* 순위 딱지 — 2, 3위도 "올랐다" 가 읽히게 브랜드색 원으로 키웠다(2026-10-27). 누런 금은색은 쓰지 않는다(사용자) */}
+              <span className="absolute left-2.5 top-2.5 flex size-9 items-center justify-center rounded-full bg-acc text-[15px] font-extrabold text-on-ink shadow-[0_4px_12px_-3px_var(--acc)] ring-2 ring-surface">{i + 2}</span>
             </span>
             <span className="flex min-w-0 flex-col gap-1">
               <span className="truncate text-[16px] font-bold text-ink group-hover:text-acc">{r.card.title}</span>
@@ -206,9 +209,15 @@ export default async function HallOfFamePage({ searchParams }: Props) {
 
   return (
     <Page gap={20}>
-      <PageHead title={M.hofTitle}>
-        <p className="text-[14px] text-mut">{M.hofLead}</p>
-      </PageHead>
+      {/* 어두운 머리 판(2026-10-27, 사용자: "명예의 전당은 좀 더 강조가 필요"). 맨 제목 한 줄로는 다른 목록 화면과 같은 격이었다.
+          판 위로 손전등 빛 웅덩이가 천천히 오가고(.hero-beam, 홈 히어로와 같은 빛), 오른쪽에 트로피가 떠 있다 */}
+      <InkHero label={M.hofTitle} className="flex items-center justify-between gap-6">
+        <span aria-hidden className="hero-beam beam-cool" />
+        <InkHeroHead eyebrow={M.hofEyebrow} title={M.hofTitle} lead={M.hofLead} />
+        <span aria-hidden className="soon-float hidden size-20 shrink-0 place-items-center rounded-full bg-on-ink/10 text-acc-on-ink ring-1 ring-on-ink/20 sm:grid">
+          <TrophyIcon size={40} strokeWidth={1.6} />
+        </span>
+      </InkHero>
       <NavPendingScope>
         <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
           <div role="group" aria-label={M.hofTitle} className="flex gap-1.5">
