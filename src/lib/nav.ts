@@ -69,6 +69,7 @@ export const NAV_SECTIONS: readonly NavSection[] = [
     subs: [
       { label: "명예의 전당", href: ROUTES.hallOfFame, childQueries: [{ parent: ROUTES.indie, query: { [INDIE_FROM_PARAM]: INDIE_FROM.hallOfFame } }] },
       { label: "슈퍼루키", href: ROUTES.rookies, childQueries: [{ parent: ROUTES.indie, query: { [INDIE_FROM_PARAM]: INDIE_FROM.rookies } }] },
+      { label: "플레이테스트", href: ROUTES.playtests },
     ],
   },
   {
@@ -95,7 +96,8 @@ export const NAV_SECTIONS: readonly NavSection[] = [
       { label: "개발일지", href: ROUTES.loungeDevlogs },
       { label: "질문, 피드백", href: ROUTES.loungeQna },
       { label: "등록현황", href: ROUTES.indieMine, childQueries: [{ parent: ROUTES.indie, query: { [INDIE_FROM_PARAM]: INDIE_FROM.mine } }] },
-      { label: "내 게임 통계", href: ROUTES.indieStats },
+      // 광고 성과, 결제 내역, 멤버십은 통계 머리에서 들어가는 화면이다 — 별칭이 없으면 /indie/mine 아래라 "등록현황" 이 켜진다
+      { label: "내 게임 통계", href: ROUTES.indieStats, aliases: [ROUTES.indieAds, ROUTES.indiePayments, ROUTES.membership] },
     ],
   },
 ];
