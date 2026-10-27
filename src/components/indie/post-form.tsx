@@ -13,6 +13,7 @@ import { chipClass } from "@/components/ui/chip";
 import { FormMessage } from "@/components/ui/form-message";
 import { FormSelect } from "@/components/ui/select";
 import { TEXTAREA_CLASS, TextField } from "@/components/ui/text-field";
+import { FIELD_HINT_CLASS, FIELD_LABEL_CLASS } from "@/components/ui/field-classes";
 import { GameLinkPicker } from "@/components/indie/game-link-picker";
 import { IndieImagePicker } from "@/components/indie/image-picker";
 import { uploadIndieImages } from "@/components/indie/upload-images";
@@ -36,8 +37,8 @@ import type { IndieDetailDto } from "@/lib/indie/dto";
 import { FormStep } from "@/components/indie/form-step";
 
 const LINK_OPTIONS = INDIE_LINK_KINDS.map((k) => ({ value: k, label: INDIE_LINK_LABEL[k] }));
-const LABEL = "text-[12.5px] font-medium text-mut";
-const HINT = "text-[12.5px] leading-[1.6] text-dim";
+const LABEL = FIELD_LABEL_CLASS;
+const HINT = FIELD_HINT_CLASS;
 
 /** 폭을 꽉 채운다(목업 indreg 의 .pri2) — 긴 폼 끝에서 손가락이 어디를 눌러도 닿게 */
 function SubmitButton({ label, sending }: { label: string; sending: string | null }) {

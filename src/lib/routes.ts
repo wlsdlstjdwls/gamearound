@@ -68,6 +68,8 @@ export const ROUTES = {
   membership: "/indie/mine/membership",
   /** 내 광고 성과(2026-10-27, 기획서 4.4). /indie/mine/[id] 는 uuid 라 낱말과 부딪히지 않는다 */
   indieAds: "/indie/mine/ads",
+  /** 플레이테스트 모아 보기(2026-10-27). /indie 아래에 두지 않는다 — /indie/<slug> 가 인디 글 주소라 부딪힌다 */
+  playtests: "/playtests",
   /**
    * 기획서 v2.0 의 새 갈래(2026-10-26). 화면이 생기기 전까지는 "준비 중" 화면이 선다(components/coming-soon).
    * 명예의 전당, 슈퍼루키를 /indie 아래에 두지 않은 이유: /indie/<slug> 가 인디 글 주소라 글 주소와 부딪힌다
@@ -213,6 +215,11 @@ export const TOSS_BILLING_FAIL_PATH = "/api/payments/toss/billing/fail";
 /** 내 게임 하나의 통계 자세히(메이커 멤버십) */
 export function indieStatsDetailPath(id: string): string {
   return `${ROUTES.indieStats}/${encodeURIComponent(id)}`;
+}
+
+/** 내 인디 게임 플레이테스트 모집 관리 */
+export function indiePlaytestPath(id: string): string {
+  return `${ROUTES.indieMine}/${encodeURIComponent(id)}/playtest`;
 }
 
 /** 내 인디 게임에 광고 걸기(결제) */

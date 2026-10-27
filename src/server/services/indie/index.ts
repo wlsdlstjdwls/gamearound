@@ -7,3 +7,4 @@ export * from "./lounge";
 export * from "./promo";
 export * from "./comments";
 export * from "./stats";
+export * from "./playtests";

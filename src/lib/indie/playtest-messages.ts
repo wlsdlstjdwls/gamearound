@@ -1,0 +1,62 @@
+// 플레이테스트 모집 문구(2026-10-27) — 모아 보기, 인디 상세 신청 판, 개발자 관리 화면.
+import type { PlaytestPhase } from "./playtest";
+
+export const PLAYTEST_MESSAGES = {
+  listTitle: "플레이테스트",
+  listLead: "개발 중인 인디 게임을 먼저 해 보고 의견을 보내 주세요. 신청하면 개발자가 직접 연락해요.",
+  listEmpty: "지금 모집 중인 플레이테스트가 없어요",
+  listEmptyLead: "인디 게임을 둘러보며 기다려 주세요",
+  toIndie: "인디 게임 보기",
+
+  section: "플레이테스트 모집",
+  closesAt: (when: string) => `${when} 마감`,
+  applicants: (n: number, slots: number) => `신청 ${n.toLocaleString("ko-KR")}명 / ${slots.toLocaleString("ko-KR")}명`,
+  messageLabel: "개발자에게 한마디",
+  messageHint: "연락받을 곳(디스코드, 메일 등)과 쓰는 기기를 적어 주세요. 개발자만 볼 수 있어요",
+  apply: "신청하기",
+  applied: "신청했어요",
+  appliedNote: "개발자가 적어 주신 곳으로 연락할 거예요",
+  withdraw: "신청 취소",
+  withdrawn: "신청을 취소했어요",
+  signIn: "로그인하고 신청하기",
+  failed: "처리하지 못했어요",
+  ownerNote: "내 게임의 모집이에요. 신청자는 관리 화면에서 볼 수 있어요",
+  manage: "모집 관리",
+
+  manageTitle: (game: string) => `${game} 플레이테스트`,
+  manageLead: "모집을 열면 게임 상세와 플레이테스트 모아 보기에 서요. 열린 모집은 한 번에 하나예요.",
+  createTitle: "새 모집 열기",
+  title: "모집 이름",
+  titlePlaceholder: "예: 알파 테스트 1차",
+  body: "안내",
+  bodyPlaceholder: "무엇을 해 보는지, 빌드는 어떻게 받는지, 보상이 있는지 적어 주세요",
+  slots: "모집 인원",
+  days: "모집 기간",
+  daysOption: (n: number) => `${n}일`,
+  create: "모집 열기",
+  created: "모집을 열었어요",
+  close: "모집 마감",
+  closeConfirm: "지금 마감할까요? 더 이상 신청을 받지 않아요",
+  closed: "모집을 마감했어요",
+  notLive: "게임이 공개된 뒤에 모집을 열 수 있어요",
+  applicantsTitle: "신청자",
+  applicantsEmpty: "아직 신청자가 없어요",
+  history: "지난 모집",
+  back: "내 게임 통계로",
+
+  titleRequired: "모집 이름을 적어 주세요",
+  bodyRequired: "안내를 적어 주세요",
+  slotsRange: "인원을 다시 확인해 주세요",
+  messageRequired: "연락받을 곳을 적어 주세요",
+  alreadyOpen: "이미 열린 모집이 있어요. 마감한 뒤에 새로 열어 주세요",
+  notOpen: "모집이 끝났어요",
+  full: "모집 인원이 다 찼어요",
+  ownGame: "내 게임에는 신청할 수 없어요",
+  notFound: "모집을 찾지 못했어요",
+} as const;
+
+export const PLAYTEST_PHASE_LABEL: Record<PlaytestPhase, string> = {
+  open: "모집 중",
+  full: "인원 마감",
+  closed: "모집 끝",
+};

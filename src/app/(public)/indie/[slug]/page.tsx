@@ -26,7 +26,9 @@ import { MakerBadge } from "@/components/membership/maker-badge";
 import { IndieFollowButton } from "@/components/indie/follow-button";
 import { IndieLikeButton } from "@/components/indie/like-button";
 import { IndieRelatedNews } from "@/components/indie/related-news";
-import { listIndieComments, recordIndieView } from "@/server/services/indie";
+import { getOpenPlaytest, listIndieComments, recordIndieView } from "@/server/services/indie";
+import { PlaytestApply } from "@/components/indie/playtest-apply";
+import { PLAYTEST_MESSAGES } from "@/lib/indie/playtest-messages";
 import { addIndieCommentAction } from "@/app/(public)/indie/actions";
 import { primaryPlayLink } from "@/lib/indie/promo";
 import { IndieReportButton } from "@/components/indie/report-button";
@@ -41,7 +43,7 @@ import { INDIE_FROM_PARAM, parseIndieFrom, type IndieFrom } from "@/lib/indie/qu
 import { classifyTraffic } from "@/lib/indie/traffic";
 import { headers } from "next/headers";
 import { firstParam } from "@/lib/games-query";
-import { indieEditPath, indieOutPath, indiePath, ROUTES } from "@/lib/routes";
+import { indieEditPath, indieOutPath, indiePath, indiePlaytestPath, ROUTES } from "@/lib/routes";
 import { decodeSlugParam } from "@/lib/slug";
 import { getIndiePostBySlug } from "@/server/services/indie";
 import { getCurrentUser } from "@/server/services/users";
@@ -90,7 +92,14 @@ export default async function IndieDetailPage({ params, searchParams }: Props) {
   const live = post.review === "approved" && post.status === "published";
   // 공개 글 조회 한 번(명예의 전당, 슈퍼루키의 재료)과 댓글은 서로 기다릴 일이 없어 나란히 묻는다. 글쓴이 본인 조회는 서비스가 거른다.
   // 조회 기록이 실패해도 화면은 선다. 댓글을 못 읽으면 빈 목록으로 두고 쓰기는 연다
-  const [, comments] = live ? await Promise.all([recordIndieView(post.id, post.authorUserId, await viewSource(from)).catch(() => {}), listIndieComments(post.id).catch(() => [])]) : [null, []];
+  const [, comments, playtest] = live
+    ? await Promise.all([
+        recordIndieView(post.id, post.authorUserId, await viewSource(from)).catch(() => {}),
+        listIndieComments(post.id).catch(() => []),
+        // 열린 플레이테스트 모집(기획서 3장 5번). 못 읽으면 판을 접는다
+        getOpenPlaytest(post.id, viewer?.id ?? null).catch(() => null),
+      ])
+    : [null, [], null];
   /** 링크 순번의 주소 — 공개 글이면 클릭을 세는 경유 주소(머리 주석) */
   const hrefOf = (i: number) => (live ? indieOutPath(post.id, i) : post.links[i].url);
   const playPick = primaryPlayLink(post.links, post.platforms);
@@ -140,6 +149,14 @@ export default async function IndieDetailPage({ params, searchParams }: Props) {
 
       <div className="grid items-start gap-6 lg:grid-cols-[minmax(0,1fr)_320px]">
         <div className="flex min-w-0 flex-col gap-6">
+          {/* 개발 중인 게임이 가장 원하는 것은 테스터다(기획서 2장 5번) — 영상보다 앞에 둔다 */}
+          {playtest && (
+            <section aria-labelledby="indie-playtest" className={sectionCardClass("flex flex-col gap-3 shadow-[inset_0_0_0_1px_var(--acc-3)]")}>
+              <SectionHead id="indie-playtest" title={PLAYTEST_MESSAGES.section} />
+              <PlaytestApply postId={post.id} isOwner={isOwner} playtest={playtest} />
+            </section>
+          )}
+
           {post.youtubeId && (
             <section aria-labelledby="indie-trailer" className={sectionCardClass("flex flex-col gap-3")}>
               <SectionHead id="indie-trailer" title={M.trailer} />
@@ -254,6 +271,11 @@ export default async function IndieDetailPage({ params, searchParams }: Props) {
           {live && !isOwner && <IndieFollowButton developerUserId={post.authorUserId} />}
 
           <div className="flex flex-wrap items-center justify-end gap-3 border-t border-line pt-3 text-[12.5px]">
+            {isOwner && live && (
+              <Link href={indiePlaytestPath(post.id)} className="tap inline-flex items-center text-acc hover:underline">
+                {PLAYTEST_MESSAGES.listTitle}
+              </Link>
+            )}
             {canEdit && (
               <Link href={indieEditPath(post.id)} className="tap inline-flex items-center text-acc hover:underline">
                 {M.edit}

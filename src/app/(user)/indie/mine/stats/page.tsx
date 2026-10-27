@@ -13,7 +13,8 @@ import { stagger } from "@/lib/motion";
 import { INDIE_PROMO_MESSAGES as M } from "@/lib/indie/promo-messages";
 import { indieDetailHref, INDIE_FROM } from "@/lib/indie/query";
 import { MEMBERSHIP_MESSAGES } from "@/lib/membership/messages";
-import { indieBoostPath, indieEditPath, indieStatsDetailPath, ROUTES } from "@/lib/routes";
+import { indieBoostPath, indieEditPath, indiePlaytestPath, indieStatsDetailPath, ROUTES } from "@/lib/routes";
+import { PLAYTEST_MESSAGES } from "@/lib/indie/playtest-messages";
 import { INDIE_STATS_DETAIL_MESSAGES } from "@/lib/indie/stats-messages";
 import { buttonClass } from "@/components/ui/button";
 import { PAYMENT_MESSAGES as PM } from "@/lib/payments/messages";
@@ -81,6 +82,11 @@ export default async function IndieStatsPage() {
                       {r.live && (
                         <Link href={indieBoostPath(r.id)} className={buttonClass({ variant: "accent", size: "sm" })}>
                           {PM.adBuy}
+                        </Link>
+                      )}
+                      {r.live && (
+                        <Link href={indiePlaytestPath(r.id)} className="tap inline-flex items-center text-[13px] font-semibold text-acc hover:underline">
+                          {PLAYTEST_MESSAGES.listTitle}
                         </Link>
                       )}
                       <Link href={indieStatsDetailPath(r.id)} className="tap inline-flex items-center text-[13px] font-semibold text-acc hover:underline">
