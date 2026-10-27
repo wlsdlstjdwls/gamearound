@@ -64,9 +64,10 @@ export const INDIE_CREATE_RATE = { limit: 3, windowSec: 86_400 } as const;
 
 /**
  * 이만큼의 서로 다른 사람이 신고하면 관리자를 기다리지 않고 내려간다.
- * 하나면 경쟁작 한 사람이 남의 글을 내릴 수 있고, 다섯이면 가입자가 적은 지금은 영영 안 닿는다.
+ * 하나면 경쟁작 한 사람이 남의 글을 내릴 수 있다. 셋으로 시작했다가 2026-10-27 사용자 지정으로 다섯으로 올렸다 —
+ * 가입자가 적은 동안에는 잘 안 닿지만, 몇 사람이 짜고 남의 게임을 내리는 쪽이 더 큰 일이다.
  */
-export const INDIE_REPORT_HIDE_THRESHOLD = 3;
+export const INDIE_REPORT_HIDE_THRESHOLD = 5;
 
 /**
  * 글 하나에 붙는 그림 수. 첫 장이 커버이고 나머지가 스크린샷이다.
