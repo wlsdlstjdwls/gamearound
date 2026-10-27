@@ -23,7 +23,8 @@ function platformNames(entry: RowEntry): string {
   return devicesOf(entry.game.platforms).map((d) => DEVICE_LABEL[d]).join(", ");
 }
 
-export function UpcomingRow({ entry }: { entry: RowEntry }) {
+/** subtitle: 본편 이름처럼 장르보다 먼저 읽혀야 하는 한 마디(출시 예정의 추가 콘텐츠 상자). 장르 줄 앞에 붙는다 */
+export function UpcomingRow({ entry, subtitle }: { entry: RowEntry; subtitle?: string }) {
   const title = entry.game.titleKo ?? entry.game.titleEn;
   const [y, m, d] = (entry.releaseDate ?? "").split("-").map(Number);
   const weekday = y && m && d ? WEEKDAY_LABEL[new Date(Date.UTC(y, m - 1, d)).getUTCDay()] : "";
@@ -59,7 +60,7 @@ export function UpcomingRow({ entry }: { entry: RowEntry }) {
             </Clamp>
           </Link>
           <span className="text-[12.5px] text-dim">
-            <Clamp>{[genres.join(", "), platformNames(entry)].filter(Boolean).join(" | ")}</Clamp>
+            <Clamp>{[subtitle, genres.join(", "), platformNames(entry)].filter(Boolean).join(" | ")}</Clamp>
           </span>
         </div>
       </div>

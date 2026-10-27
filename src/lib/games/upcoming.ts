@@ -14,6 +14,22 @@ export const UPCOMING_MONTH_PARAM = "month";
 /** 보기 방식 주소 값(기획서 v2.0 S-03 전체/월별 전환). 월별이 기본이라 주소에 없으면 월별이다 */
 export const UPCOMING_VIEW_PARAM = "view";
 export const UPCOMING_VIEW_ALL = "all";
+/**
+ * 월별을 **명시**하는 값(2026-10-27). 고른 보기를 쿠키로 기억하면서 생겼다(lib/prefs) — 전체 보기를 기억한 사람이
+ * "월별 보기" 를 누르면 주소가 비는데, 빈 주소는 쿠키(전체)를 따라 다시 전체가 열렸다. 그 단추만 이 값을 싣는다
+ */
+export const UPCOMING_VIEW_MONTH = "month";
+export const UPCOMING_VIEWS = [UPCOMING_VIEW_MONTH, UPCOMING_VIEW_ALL] as const;
+export type UpcomingView = (typeof UPCOMING_VIEWS)[number];
+
+/**
+ * 이 화면을 어느 보기로 여나. 주소의 view 가 이기고, 달(?month=)을 골랐으면 월별이고, 둘 다 없으면 기억한 보기, 그것도 없으면 월별
+ */
+export function resolveUpcomingView(viewParam: string | undefined, monthParam: string | undefined, remembered: UpcomingView | undefined): UpcomingView {
+  if (viewParam === UPCOMING_VIEW_ALL || viewParam === UPCOMING_VIEW_MONTH) return viewParam;
+  if (monthParam) return UPCOMING_VIEW_MONTH;
+  return remembered ?? UPCOMING_VIEW_MONTH;
+}
 
 /**
  * 출시 예정 정렬(기획서 v2.0 S-03 "정렬 옵션": 출시일순, 인기순). 앞이 기본값이다.
@@ -55,7 +71,13 @@ export function hasUpcomingFilter(f: UpcomingFilter): boolean {
 }
 
 /** 화면 안의 자리 — 보기 방식, 달, 쪽 */
-export type UpcomingPlace = { all?: boolean; month?: string; page?: number };
+export type UpcomingPlace = {
+  all?: boolean;
+  month?: string;
+  page?: number;
+  /** 월별을 주소에 명시한다(UPCOMING_VIEW_MONTH 주석) */
+  monthView?: boolean;
+};
 
 /**
  * 출시 예정 주소 하나. 조건은 달, 쪽, 보기를 옮겨도 따라간다 — 장르를 걸고 달을 바꿨는데 장르가 풀리면 다시 골라야 한다.
@@ -65,6 +87,7 @@ export function upcomingHref(place: UpcomingPlace = {}, filter: UpcomingFilter =
   const params = new URLSearchParams();
   if (place.all) params.set(UPCOMING_VIEW_PARAM, UPCOMING_VIEW_ALL);
   else if (place.month) params.set(UPCOMING_MONTH_PARAM, place.month);
+  else if (place.monthView) params.set(UPCOMING_VIEW_PARAM, UPCOMING_VIEW_MONTH);
   if (filter.q) params.set("q", filter.q);
   if (filter.genre) params.set("genre", filter.genre);
   if (filter.platform) params.set("platform", filter.platform);

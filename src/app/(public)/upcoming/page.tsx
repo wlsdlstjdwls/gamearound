@@ -34,12 +34,29 @@ import { formatMonthLabel, formatReleaseDay } from "@/lib/format";
 import { firstParam, MAX_PARAM_LEN } from "@/lib/games-query";
 import { UPCOMING_MESSAGES as M, upcomingAddonParentText, upcomingCountText } from "@/lib/games/messages";
 import { HOME_GRID_CLASS } from "@/lib/games/grid";
-import { hasUpcomingFilter, pickUpcomingMonth, readUpcomingFilter, upcomingAllHref, upcomingHref, UPCOMING_MONTH_PARAM, UPCOMING_VIEW_ALL, UPCOMING_VIEW_PARAM, type UpcomingFilter } from "@/lib/games/upcoming";
+import {
+  hasUpcomingFilter,
+  pickUpcomingMonth,
+  readUpcomingFilter,
+  resolveUpcomingView,
+  upcomingAllHref,
+  upcomingHref,
+  UPCOMING_MONTH_PARAM,
+  UPCOMING_VIEW_ALL,
+  UPCOMING_VIEW_MONTH,
+  UPCOMING_VIEW_PARAM,
+  UPCOMING_VIEWS,
+  type UpcomingFilter,
+} from "@/lib/games/upcoming";
+import { cookies } from "next/headers";
+import { Collapsible } from "@/components/ui/collapsible";
+import { RememberPref } from "@/components/remember-pref";
+import { PREF_COOKIES, readPref } from "@/lib/prefs";
 import { UpcomingFilterBar } from "@/components/upcoming-filter-bar";
 import { stagger } from "@/lib/motion";
 import { nullIfDbUnavailable } from "@/lib/db-errors";
 import { ROUTES } from "@/lib/routes";
-import { getUpcomingAllPage, getUpcomingAddons, getUpcomingGenres, getUpcomingMonthPage, getUpcomingMonthPicks, getUpcomingMonths, UPCOMING_ADDON_LIMIT, UPCOMING_PAGE_SIZE } from "@/server/services/games";
+import { getUpcomingAllPage, getUpcomingAddons, getUpcomingGenres, getUpcomingMonthPage, getUpcomingMonthPicks, getUpcomingMonths, UPCOMING_PAGE_SIZE } from "@/server/services/games";
 import { GamesGridSkeleton } from "@/app/(public)/games/skeletons";
 
 // Next 가 정적으로 읽는 값이라 리터럴이어야 한다 — lib/cache 의 LIST_REVALIDATE_SECONDS 와 같게 유지
@@ -57,9 +74,6 @@ function readPage(raw: string | undefined): number {
   const n = Number(raw?.slice(0, MAX_PARAM_LEN));
   return Number.isFinite(n) && n > 1 ? Math.floor(n) : 1;
 }
-
-/** 요즘 많이 찾는 장르 칩 수(기획서 v2.0 S-02: 게임 수 상위 4개 장르) */
-const TOP_GENRE_COUNT = 4;
 
 /**
  * 고른 달 = 기대작 한 줄 + 날짜순 전체(2026-10-07). 날짜순은 쪽 번호로 넘긴다(목록 화면과 같은 이유, games/page 머리 주석).
@@ -144,7 +158,7 @@ function UpcomingHead({ all, filter = {} }: { all: boolean; filter?: UpcomingFil
         <NavChip group="upcoming-view" href={upcomingAllHref(1, filter)} active={all} outline>
           {M.viewAll}
         </NavChip>
-        <NavChip group="upcoming-view" href={upcomingHref({}, filter)} active={!all} outline>
+        <NavChip group="upcoming-view" href={upcomingHref({ monthView: true }, filter)} active={!all} outline>
           {M.viewMonth}
         </NavChip>
       </div>
@@ -161,22 +175,20 @@ async function UpcomingAddons() {
   // DLC 줄은 곁가지라 DB 가 안 열린 날엔 줄째 안 세운다 — 안내는 달 목록 자리 하나로 충분하다
   const addons = await nullIfDbUnavailable(getUpcomingAddons());
   if (!addons || addons.length === 0) return null;
+  // 2026-10-27 카드 격자에서 접는 줄 목록으로(사용자: "위처럼 목록 형태가 깔끔하고, 출시일 미정처럼 접었다 펼 수 있게, 기본은 접힘").
+  // 출시일 미정 상자(upcoming-tba)와 같은 상자, 같은 줄(UpcomingRow)이다. 줄의 둘째 줄에 본편 이름을 먼저 적는다
   return (
-    <section aria-labelledby="upcoming-addons-heading" className="flex flex-col gap-4">
-      <SectionHead id="upcoming-addons-heading" title={M.addonsTitle} note={M.addonsNote} />
-      <ul className={HOME_GRID_CLASS}>
-        {addons.map((entry, i) => (
-          <li key={entry.game.slug} className="enter-item" style={stagger(i)}>
-            <GameCard
-              game={entry.game}
-              variant="release"
-              releaseText={formatReleaseDay(entry.releaseDate)}
-              subtitle={entry.parentTitle ? upcomingAddonParentText(entry.parentTitle) : undefined}
-            />
-          </li>
-        ))}
-      </ul>
-    </section>
+    <div className="rounded-[var(--radius-md)] bg-surface-2 px-4 py-3 sm:px-5">
+      <Collapsible id="upcoming-addons-heading" size="sub" title={M.addonsTitle} note={`${upcomingCountText(addons.length)} | ${M.addonsNote}`}>
+        <ul className="flex flex-col gap-2.5" aria-labelledby="upcoming-addons-heading">
+          {addons.map((entry) => (
+            <li key={entry.game.slug}>
+              <UpcomingRow entry={entry} subtitle={entry.parentTitle ? upcomingAddonParentText(entry.parentTitle) : undefined} />
+            </li>
+          ))}
+        </ul>
+      </Collapsible>
+    </div>
   );
 }
 
@@ -185,13 +197,20 @@ export default async function UpcomingPage({ searchParams }: Props) {
   // 질의를 먼저 보내면 빌드가 DB 를 친다. 캐시 없는 빌드 머신에서 DB 가 안 열리면 배포가 통째로 실패한다(2026-10-13 실측)
   const sp = await searchParams;
   const requested = firstParam(sp[UPCOMING_MONTH_PARAM]);
-  const all = firstParam(sp[UPCOMING_VIEW_PARAM]) === UPCOMING_VIEW_ALL;
+  const viewParam = firstParam(sp[UPCOMING_VIEW_PARAM]);
+  // 주소가 보기를 말하지 않으면 지난번에 고른 보기로 연다(lib/prefs). 쿠키를 읽으니 이 화면은 요청마다 그린다 — 주소를 읽는 순간 이미 그랬다
+  const remembered = readPref((await cookies()).get(PREF_COOKIES.upcomingView)?.value, UPCOMING_VIEWS);
+  const all = resolveUpcomingView(viewParam, requested, remembered) === UPCOMING_VIEW_ALL;
+  // 주소가 보기를 명시했을 때만 기억한다 — 빈 주소로 온 것은 고른 것이 아니다
+  const explicitView = viewParam === UPCOMING_VIEW_ALL || viewParam === UPCOMING_VIEW_MONTH ? viewParam : undefined;
+  const remember = <RememberPref name={PREF_COOKIES.upcomingView} value={explicitView} />;
   const page = readPage(firstParam(sp.page));
   const filter = readUpcomingFilter(sp);
   const loaded = await nullIfDbUnavailable(Promise.all([getUpcomingMonths(filter), getUpcomingGenres()]));
   if (!loaded) {
     return (
       <Page gap={30}>
+        {remember}
         <UpcomingHead all={all} />
         <DbUnavailable retryHref={ROUTES.upcoming} />
       </Page>
@@ -211,9 +230,11 @@ export default async function UpcomingPage({ searchParams }: Props) {
   return (
     <NavPendingScope>
       <Page gap={30}>
+        {remember}
         <UpcomingHead all={all} filter={filter} />
 
-        <UpcomingFilterBar filter={filter} place={{ all, month: all ? undefined : requested }} genres={genres} topGenres={genres.slice(0, TOP_GENRE_COUNT)} />
+        {/* 요즘 많이 찾는 장르 칩은 걷었다(2026-10-27 사용자) — 장르 드롭다운과 같은 일을 두 번 했다. 되살리면 topGenres 에 genres 앞 넷을 넘긴다 */}
+        <UpcomingFilterBar filter={filter} place={{ all, month: all ? undefined : requested }} genres={genres} topGenres={[]} />
 
         <PendingRegion className="flex flex-col gap-[30px]">
           {all ? (
@@ -250,7 +271,7 @@ export default async function UpcomingPage({ searchParams }: Props) {
 
         {/* 추가 콘텐츠 줄은 조건과 상관없는 곁가지라 조건을 걸면 걷는다 — 거른 목록 아래에 안 거른 줄이 서면 필터가 안 먹은 것처럼 읽힌다 */}
         {!hasUpcomingFilter(filter) && (
-          <Suspense fallback={<GamesGridSkeleton cards={UPCOMING_ADDON_LIMIT} gridClass={HOME_GRID_CLASS} />}>
+          <Suspense fallback={null}>
             <UpcomingAddons />
           </Suspense>
         )}
