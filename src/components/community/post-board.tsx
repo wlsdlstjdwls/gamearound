@@ -25,6 +25,7 @@ import { BOARD_GUIDE_MESSAGES as G } from "@/lib/lounge/messages";
 import { nullIfDbUnavailable } from "@/lib/db-errors";
 import type { PostCategory } from "@/server/db/schema";
 import type { PostRowDto } from "@/server/services/community";
+import type { Featured } from "@/server/services/promotions";
 import { getBoardHome, listPosts } from "@/server/services/community";
 
 type Props = {
@@ -50,7 +51,7 @@ type Props = {
    * 목록 위 유료 고정 줄(2026-10-27, 홍보 게시판, services/promotions). 아무 조건 없이 첫 쪽을 볼 때만 선다 —
    * 검색, 인기글, 유형 거름 결과 위에 고정 글이 서면 고른 조건과 상관없는 글이 맨 위에 끼어든다
    */
-  pinned?: Promise<PostRowDto[]>;
+  pinned?: Promise<Array<Featured<PostRowDto>>>;
 };
 
 /** 보조 메뉴 한 칸. count 가 null 이면 수를 적지 않는다(비로그인의 등록현황) */
@@ -125,7 +126,7 @@ function isPlainFirstPage(q: BoardQuery): boolean {
   return !q.q && !q.game && !q.type && q.tab === "all" && q.page === 1;
 }
 
-async function Results({ categories, base, query, pinned }: { categories: readonly PostCategory[]; base: string; query: BoardQuery; pinned?: Promise<PostRowDto[]> }) {
+async function Results({ categories, base, query, pinned }: { categories: readonly PostCategory[]; base: string; query: BoardQuery; pinned?: Promise<Array<Featured<PostRowDto>>> }) {
   const [page, pins] = await Promise.all([loadPage(categories, query), pinned && isPlainFirstPage(query) ? pinned.catch(() => []) : []]);
   if (!page) return <DbUnavailable retryHref={base} />;
   const empty = query.q
@@ -138,7 +139,7 @@ async function Results({ categories, base, query, pinned }: { categories: readon
       <PendingRegion>
         {pins.length > 0 && (
           <div className="mb-1 border-b border-line pb-1">
-            <PostList bare ad posts={pins} />
+            <PostList bare posts={pins.map((p) => p.item)} adBoostIds={pins.map((p) => p.boostId)} />
           </div>
         )}
         <PostList bare posts={page.items} rank={query.tab === "popular"} rankFrom={(page.page - 1) * POSTS_PAGE_SIZE + 1} empty={empty} />

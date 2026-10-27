@@ -7,10 +7,11 @@ import "server-only";
 import { and, asc, desc, eq, gt, inArray, isNull, lte, or, sql } from "drizzle-orm";
 import { getDb } from "@/server/db/client";
 import { createdBy, updatedBy } from "@/server/db/audit";
-import { indiePosts, posts, promotionBoosts, users, type PromoSlot, type PromoSource, type PromoTargetKind } from "@/server/db/schema";
+import { indiePosts, posts, promotionBoosts, promotionImpressions, users, type PromoSlot, type PromoSource, type PromoTargetKind } from "@/server/db/schema";
 import { boostEnd, boostState, rotateForWindow, SLOT_CAPACITY, SLOT_TARGET, type BoostState } from "@/lib/promo/boost";
 import { PROMO_MESSAGES as M } from "@/lib/promo/messages";
 import { postPath } from "@/lib/community/constants";
+import { impressionSum } from "./columns";
 import { indiePath } from "@/lib/routes";
 import type { IndieCardDto } from "@/lib/indie/dto";
 import { cardColumns, isPublic, toCards } from "@/server/services/indie/read";
@@ -43,26 +44,57 @@ export async function isBoostedNow(kind: PromoTargetKind, targetId: string): Pro
 /** 공개 홍보 글 — 게시판 목록과 같은 문턱(공개 상태)에 홍보 카테고리 */
 export const isPublicPromo = and(eq(posts.status, "published"), eq(posts.category, "promo"));
 
-/** 인디 목록 맨 위 "주목할 게임" 카드. 걸린 글이 없으면 빈 목록 */
-export async function listFeaturedIndie(): Promise<IndieCardDto[]> {
+/**
+ * 지금 그 자리에 걸린 대상마다 성과를 적을 걸기 줄 하나. 같은 대상에 줄이 둘 이상이면(이어 붙인 결제, 관리자 덤) 먼저 시작한 줄이다 —
+ * 끝 시각이 이른 쪽이 지금 흐르는 기간이다. 노출 질의와 나란히 보내 왕복을 늘리지 않는다
+ */
+async function activeBoostIds(slot: PromoSlot): Promise<Map<string, string>> {
   const rows = await getDb()
-    .select(cardColumns)
-    .from(indiePosts)
-    .where(and(isPublic, inArray(indiePosts.id, activeTargets("indie_top"))))
-    .orderBy(asc(indiePosts.id));
+    .select({ id: promotionBoosts.id, targetId: promotionBoosts.targetId })
+    .from(promotionBoosts)
+    .where(and(eq(promotionBoosts.slot, slot), isNull(promotionBoosts.revokedAt), lte(promotionBoosts.startsAt, sql`now()`), gt(promotionBoosts.endsAt, sql`now()`)))
+    .orderBy(desc(promotionBoosts.startsAt));
+  // 늦게 시작한 줄부터 넣어 먼저 시작한 줄이 덮어쓴다
+  return new Map(rows.map((r) => [r.targetId, r.id]));
+}
+
+/** 유료 자리에 선 것 하나와 그 성과를 적을 걸기 줄(components/promo/ad-track 이 받는다) */
+export type Featured<T> = { boostId: string; item: T };
+
+/** 인디 목록 맨 위 "주목할 게임" 카드. 걸린 글이 없으면 빈 목록 */
+export async function listFeaturedIndie(): Promise<Array<Featured<IndieCardDto>>> {
+  const [rows, boosts] = await Promise.all([
+    getDb()
+      .select(cardColumns)
+      .from(indiePosts)
+      .where(and(isPublic, inArray(indiePosts.id, activeTargets("indie_top"))))
+      .orderBy(asc(indiePosts.id)),
+    activeBoostIds("indie_top"),
+  ]);
   const picked = rotateForWindow(rows, SLOT_CAPACITY.indie_top, new Date());
-  return toCards(picked);
+  const cards = await toCards(picked);
+  const boostOf = new Map(picked.map((r) => [r.slug, boosts.get(r.id)]));
+  return cards.flatMap((item) => {
+    const boostId = boostOf.get(item.slug);
+    return boostId ? [{ boostId, item }] : [];
+  });
 }
 
 /** 게시판 홍보 목록 위 고정 글 */
-export async function listPinnedPromoPosts(): Promise<PostRowDto[]> {
-  const rows = await getDb()
-    .select(rowColumns)
-    .from(posts)
-    .innerJoin(users, eq(users.id, posts.authorUserId))
-    .where(and(isPublicPromo, inArray(posts.id, activeTargets("promo_pin"))))
-    .orderBy(asc(posts.id));
-  return rotateForWindow(rows, SLOT_CAPACITY.promo_pin, new Date()).map(toRow);
+export async function listPinnedPromoPosts(): Promise<Array<Featured<PostRowDto>>> {
+  const [rows, boosts] = await Promise.all([
+    getDb()
+      .select(rowColumns)
+      .from(posts)
+      .innerJoin(users, eq(users.id, posts.authorUserId))
+      .where(and(isPublicPromo, inArray(posts.id, activeTargets("promo_pin"))))
+      .orderBy(asc(posts.id)),
+    activeBoostIds("promo_pin"),
+  ]);
+  return rotateForWindow(rows, SLOT_CAPACITY.promo_pin, new Date()).flatMap((r) => {
+    const boostId = boosts.get(r.id);
+    return boostId ? [{ boostId, item: toRow(r) }] : [];
+  });
 }
 
 export type BoostRowDto = {
@@ -77,6 +109,9 @@ export type BoostRowDto = {
   startsAt: Date;
   endsAt: Date;
   note: string | null;
+  /** 성과(services/promotions/track 이 쌓는다). 관리자가 시범으로 건 광고의 효과를 여기서 본다 */
+  views: number;
+  clicks: number;
 };
 
 /** 관리자 목록. 지금 걸린 것과 대기가 먼저, 끝나거나 회수한 것은 최근 몇 줄만 */
@@ -99,6 +134,8 @@ export async function listBoostsForAdmin(): Promise<BoostRowDto[]> {
       postId: posts.id,
       postTitle: posts.title,
       postLive: sql<boolean>`(${posts.status} = 'published')`,
+      views: impressionSum(promotionImpressions.views),
+      clicks: impressionSum(promotionImpressions.clicks),
     })
     .from(promotionBoosts)
     .leftJoin(indiePosts, and(eq(promotionBoosts.targetKind, "indie_post"), eq(indiePosts.id, promotionBoosts.targetId)))
@@ -126,6 +163,8 @@ export async function listBoostsForAdmin(): Promise<BoostRowDto[]> {
     startsAt: r.startsAt,
     endsAt: r.endsAt,
     note: r.note,
+    views: r.views,
+    clicks: r.clicks,
   }));
 }
 

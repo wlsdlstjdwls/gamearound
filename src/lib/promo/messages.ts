@@ -30,6 +30,25 @@ export const PROMO_MESSAGES = {
   targetGone: "지워진 글",
   targetNotPublic: "공개 중인 글에만 걸 수 있어요",
   failed: "처리하지 못했어요",
+  adminViews: (views: string, clicks: string) => `노출 ${views} | 클릭 ${clicks}`,
+} as const;
+
+/** 광고 성과 화면(/indie/mine/ads, 기획서 4.4) */
+export const PROMO_PERFORMANCE_MESSAGES = {
+  title: "광고 성과",
+  lead: "내 글에 건 광고가 얼마나 보이고 눌렸는지예요. 인디 게임 광고는 광고 전 같은 기간과 나란히 보여 드려요.",
+  empty: "아직 건 광고가 없어요",
+  emptyLead: "내 게임 통계에서 공개 중인 게임에 광고를 걸 수 있어요",
+  toStats: "내 게임 통계로",
+  views: "노출",
+  clicks: "카드 클릭",
+  ctr: "클릭률",
+  plays: "플레이하기 클릭",
+  likes: "새 찜",
+  before: (n: string) => `광고 전 ${n}`,
+  queued: "시작하면 숫자가 쌓여요",
+  howCounted: "노출은 카드가 화면에 절반 넘게 보인 횟수예요. 같은 사람은 하루 한 번만 세고, 내가 본 것은 세지 않아요.",
+  link: "광고 성과",
 } as const;
 
 export const PROMO_SLOT_LABEL: Record<PromoSlot, string> = {

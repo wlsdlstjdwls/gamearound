@@ -13,6 +13,9 @@ export const SLOT_CAPACITY: Record<PromoSlot, number> = { indie_top: 3, promo_pi
 /** 자리마다 받는 대상 */
 export const SLOT_TARGET: Record<PromoSlot, PromoTargetKind> = { indie_top: "indie_post", promo_pin: "board_post" };
 
+/** 한 번에 받는 광고 id 수. 한 화면에 서는 유료 칸보다 많을 일이 없다 — 그보다 많으면 손으로 쏜 요청이다 */
+export const AD_TRACK_MAX_IDS = Math.max(...Object.values(SLOT_CAPACITY));
+
 /** 관리자가 고르는 기간(일). 7일이 부스트 1회 상품 안(기획서 4.3)이고, 시범은 더 길게 걸 수 있게 둘을 더했다 */
 export const BOOST_DAY_OPTIONS = [7, 14, 30] as const;
 

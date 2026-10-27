@@ -16,6 +16,7 @@ import { MEMBERSHIP_MESSAGES } from "@/lib/membership/messages";
 import { indieBoostPath, indieEditPath, ROUTES } from "@/lib/routes";
 import { buttonClass } from "@/components/ui/button";
 import { PAYMENT_MESSAGES as PM } from "@/lib/payments/messages";
+import { PROMO_PERFORMANCE_MESSAGES } from "@/lib/promo/messages";
 import { requireUserOrRedirect } from "@/server/auth/guards";
 import { getMyIndieStats } from "@/server/services/indie";
 
@@ -32,9 +33,12 @@ export default async function IndieStatsPage() {
       <PageHead
         title={M.statsTitle}
         action={
-          <div className="flex items-center gap-4">
+          <div className="flex flex-wrap items-center gap-x-4 gap-y-1">
             <Link href={ROUTES.membership} className="tap inline-flex items-center text-[13.5px] font-semibold text-acc hover:underline">
               {MEMBERSHIP_MESSAGES.title}
+            </Link>
+            <Link href={ROUTES.indieAds} className="tap inline-flex items-center text-[13.5px] font-semibold text-acc hover:underline">
+              {PROMO_PERFORMANCE_MESSAGES.link}
             </Link>
             <Link href={ROUTES.indiePayments} className="tap inline-flex items-center text-[13.5px] font-semibold text-acc hover:underline">
               {PM.toHistory}

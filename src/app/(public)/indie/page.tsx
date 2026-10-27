@@ -32,6 +32,7 @@ import type { IndieStage } from "@/server/db/schema";
 import { listIndiePosts } from "@/server/services/indie";
 import { listFeaturedIndie } from "@/server/services/promotions";
 import { AdLabel } from "@/components/ui/ad-label";
+import { AdTrack } from "@/components/promo/ad-track";
 import { PROMO_MESSAGES as PM } from "@/lib/promo/messages";
 
 export const metadata: Metadata = { title: M.listTitle, description: M.lead };
@@ -91,9 +92,11 @@ export default async function IndiePage({ searchParams }: Props) {
         <section aria-labelledby="indie-featured" className="flex flex-col gap-3">
           <SectionHead id="indie-featured" title={PM.featuredTitle} />
           <ul className={HOME_GRID_CLASS}>
-            {featured.map((post, i) => (
+            {featured.map(({ boostId, item: post }, i) => (
               <li key={post.slug} className="enter-item" style={stagger(i)}>
-                <IndieCard post={post} badge={<AdLabel />} />
+                <AdTrack boostId={boostId} className="h-full">
+                  <IndieCard post={post} badge={<AdLabel />} />
+                </AdTrack>
               </li>
             ))}
           </ul>

@@ -4,7 +4,7 @@
 // "플레이하기" 는 링크 종류로 고른다. 지금 바로 해 볼 수 있는 것(체험판, 웹 빌드)이 사러 가는 것(스토어)보다 앞이다 —
 // 처음 보는 인디 게임에 돈부터 내는 사람은 드물고, 개발자가 가장 원하는 숫자는 "해 본 사람" 이다.
 import type { IndieLink } from "@/server/db/schema";
-import { storeLinkPlatform, type IndiePlatform } from "./constants";
+import { INDIE_PLATFORMS, storeLinkKind, storeLinkPlatform, type IndiePlatform } from "./constants";
 
 /** 내 게임 통계가 보는 기간. 기획서 3장 "지난 30일" — 한 달 반응을 보고 다음 글을 쓴다 */
 export const INDIE_STATS_WINDOW_DAYS = 30;
@@ -12,9 +12,13 @@ export const INDIE_STATS_WINDOW_DAYS = 30;
 /** 스토어 링크 가운데 플레이하기에 먼저 고르는 순서. 웹은 받지 않고 바로 하니 맨 앞, 그다음 인디가 가장 많이 나오는 PC */
 const STORE_PRIORITY: readonly IndiePlatform[] = ["web", "pc", "switch", "playstation", "xbox", "mobile"];
 
-/** 플레이하기로 셈하는 링크인가. 공식 사이트, 커뮤니티, 펀딩은 "나가기" 이지 "해 보기" 가 아니라 통계에서 따로 센다 */
+/** 플레이하기로 셈하는 링크 종류 전부. 공식 사이트, 커뮤니티, 펀딩은 "나가기" 이지 "해 보기" 가 아니라 통계에서 따로 센다.
+ *  목록으로 두는 이유: 광고 성과 질의(services/promotions/performance)가 SQL 안에서 같은 문턱으로 거른다 */
+export const PLAY_LINK_KINDS: readonly string[] = ["demo", "store", ...INDIE_PLATFORMS.map(storeLinkKind)];
+
+/** 플레이하기로 셈하는 링크인가 */
 export function isPlayKind(kind: string): boolean {
-  return kind === "demo" || kind === "store" || storeLinkPlatform(kind) !== null;
+  return PLAY_LINK_KINDS.includes(kind);
 }
 
 /** 링크 우선순위(작을수록 앞). 플레이하기가 아닌 링크는 null */

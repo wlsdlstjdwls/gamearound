@@ -66,6 +66,8 @@ export const ROUTES = {
   indiePayments: "/indie/mine/payments",
   /** 메이커 멤버십(2026-10-27). /indie/mine/[id] 는 uuid 라 낱말과 부딪히지 않는다 */
   membership: "/indie/mine/membership",
+  /** 내 광고 성과(2026-10-27, 기획서 4.4). /indie/mine/[id] 는 uuid 라 낱말과 부딪히지 않는다 */
+  indieAds: "/indie/mine/ads",
   /**
    * 기획서 v2.0 의 새 갈래(2026-10-26). 화면이 생기기 전까지는 "준비 중" 화면이 선다(components/coming-soon).
    * 명예의 전당, 슈퍼루키를 /indie 아래에 두지 않은 이유: /indie/<slug> 가 인디 글 주소라 글 주소와 부딪힌다
@@ -104,6 +106,8 @@ export const ROUTES = {
   apiNewsThumbnail: "/api/news/thumbnail",
   /** 게임 상세 조회 기록. 수집이 사람들이 보는 게임을 먼저 갱신하는 데 쓴다(server/game-views) */
   apiGameView: "/api/games/view",
+  /** 광고 카드가 보였다, 눌렸다는 신호(2026-10-27, components/promo/ad-track 이 sendBeacon 으로 보낸다) */
+  apiAdTrack: "/api/promo/track",
 } as const;
 
 /** 온보딩 단계 주소. 단계 키는 lib/onboarding/steps 의 ONBOARDING_STEPS 다 */

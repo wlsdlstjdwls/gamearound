@@ -5,6 +5,7 @@
 import Link from "next/link";
 import { EmptyState } from "@/components/empty-state";
 import { AdLabel } from "@/components/ui/ad-label";
+import { AdTrack } from "@/components/promo/ad-track";
 import { cn } from "@/lib/cn";
 import { AuthorName, GameChip, PostTags } from "@/components/community/badges";
 import { COMMUNITY_MESSAGES as M } from "@/lib/community/messages";
@@ -15,18 +16,20 @@ import type { PostRowDto } from "@/server/services/community";
 /**
  * rankFrom: 순위 번호의 시작값. 쪽을 넘겨도 순위가 1부터 다시 세지 않게 목록이 앞 쪽의 글 수를 넘긴다.
  * bare: 이미 흰 판 안에 서는 목록(게시판 목록, 내 활동) — 판을 한 겹 더 두르지 않고 줄 사이 선만 긋는다.
- * ad: 유료 고정 줄(2026-10-27, 홍보 게시판 위). 줄마다 "광고" 표시를 단다(components/ui/ad-label).
+ * adBoostIds: 유료 고정 줄(2026-10-27, 홍보 게시판 위)이면 줄마다 걸기 줄 id(posts 와 같은 순서). 줄마다 "광고" 표시를 달고
+ *   보임, 누름을 센다(components/promo/ad-track).
  */
-export function PostList({ posts, rank = false, rankFrom = 1, showCategory = true, empty, bare = false, ad = false }: { posts: PostRowDto[]; rank?: boolean; rankFrom?: number; showCategory?: boolean; empty?: { title: string; description?: string; action?: { href: string; label: string } }; bare?: boolean; ad?: boolean }) {
+export function PostList({ posts, rank = false, rankFrom = 1, showCategory = true, empty, bare = false, adBoostIds }: { posts: PostRowDto[]; rank?: boolean; rankFrom?: number; showCategory?: boolean; empty?: { title: string; description?: string; action?: { href: string; label: string } }; bare?: boolean; adBoostIds?: readonly string[] }) {
   if (posts.length === 0) return <EmptyState title={empty?.title ?? M.emptyTitle} description={empty?.description ?? M.emptyLead} action={empty?.action} />;
   return (
     <ul className={cn("divide-y divide-line-soft", bare ? "-mx-1" : "overflow-hidden rounded-[var(--radius-md)] bg-surface shadow-hair")}>
-      {posts.map((p, i) => (
-        <li key={p.id} className="enter-item" style={stagger(i)}>
+      {posts.map((p, i) => {
+        const boostId = adBoostIds?.[i];
+        const row = (
           <Link href={p.href} className={cn("row-beam group flex min-h-[var(--touch-target)] flex-col gap-1 py-3 transition-colors hover:bg-surface-2 sm:flex-row sm:items-center sm:gap-4", bare ? "rounded-lg px-1" : "px-4")}>
             <span className="flex min-w-0 flex-1 items-center gap-2">
               {rank && <span className="w-6 shrink-0 text-center text-[13px] font-bold tabular-nums text-acc">{rankFrom + i}</span>}
-              {ad && <AdLabel />}
+              {adBoostIds && <AdLabel />}
               <PostTags post={p} showCategory={showCategory} />
               {p.game && <GameChip title={p.game.title} />}
               <span className="truncate text-[14.5px] font-semibold text-ink group-hover:text-acc">{p.title}</span>
@@ -43,8 +46,13 @@ export function PostList({ posts, rank = false, rankFrom = 1, showCategory = tru
               </span>
             </span>
           </Link>
-        </li>
-      ))}
+        );
+        return (
+          <li key={p.id} className="enter-item" style={stagger(i)}>
+            {boostId ? <AdTrack boostId={boostId}>{row}</AdTrack> : row}
+          </li>
+        );
+      })}
     </ul>
   );
 }

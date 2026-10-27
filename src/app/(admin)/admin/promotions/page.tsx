@@ -6,10 +6,11 @@ import Link from "next/link";
 import { PromoGrantForm, PromoRevokeButton } from "@/components/admin/promo-controls";
 import { RefundControls } from "@/components/admin/refund-controls";
 import { PageHead, ROWS, sectionCardClass } from "@/components/ui/page";
-import { Tag, type TagTone } from "@/components/ui/tag";
+import { Tag } from "@/components/ui/tag";
+import { BoostStateTag } from "@/components/promo/boost-state-tag";
 import { formatDateTime } from "@/lib/format";
-import { PROMO_SLOTS, SLOT_CAPACITY, type BoostState } from "@/lib/promo/boost";
-import { BOOST_STATE_LABEL, PROMO_MESSAGES as M, PROMO_SLOT_LABEL, PROMO_SOURCE_LABEL } from "@/lib/promo/messages";
+import { PROMO_SLOTS, SLOT_CAPACITY } from "@/lib/promo/boost";
+import { PROMO_MESSAGES as M, PROMO_SLOT_LABEL, PROMO_SOURCE_LABEL } from "@/lib/promo/messages";
 import { formatPrice } from "@/lib/currency";
 import { PAYMENT_MESSAGES as PM, PAYMENT_STATUS_LABEL } from "@/lib/payments/messages";
 import { listPaymentsForAdmin } from "@/server/services/payments";
@@ -17,8 +18,6 @@ import { requireRoleOrForbid } from "@/server/auth/guards";
 import { listBoostCandidates, listBoostsForAdmin } from "@/server/services/promotions";
 
 export const metadata: Metadata = { title: M.adminTitle };
-
-const STATE_TONE: Record<BoostState, TagTone> = { active: "ok", queued: "info", ended: "acc", revoked: "warn" };
 
 export default async function AdminPromotionsPage() {
   await requireRoleOrForbid("admin");
@@ -57,7 +56,7 @@ export default async function AdminPromotionsPage() {
                   <li key={r.id} className="flex flex-wrap items-center justify-between gap-3 py-3">
                     <div className="flex min-w-0 flex-col gap-1">
                       <div className="flex flex-wrap items-center gap-2">
-                        <Tag tone={STATE_TONE[r.state]}>{BOOST_STATE_LABEL[r.state]}</Tag>
+                        <BoostStateTag state={r.state} />
                         <Tag tone={r.source === "purchase" ? "plum" : "acc"}>{PROMO_SOURCE_LABEL[r.source]}</Tag>
                         {r.targetHref ? (
                           <Link href={r.targetHref} className="min-w-0 break-words text-[14.5px] font-semibold text-ink hover:text-acc hover:underline">
@@ -67,7 +66,9 @@ export default async function AdminPromotionsPage() {
                           <span className="text-[14.5px] font-semibold text-dim">{r.targetTitle}</span>
                         )}
                       </div>
-                      <span className="text-[12.5px] text-dim tabular-nums">{M.period(formatDateTime(r.startsAt), formatDateTime(r.endsAt))}</span>
+                      <span className="text-[12.5px] text-dim tabular-nums">
+                        {[M.period(formatDateTime(r.startsAt), formatDateTime(r.endsAt)), ...(r.state === "queued" ? [] : [M.adminViews(r.views.toLocaleString("ko-KR"), r.clicks.toLocaleString("ko-KR"))])].join(" | ")}
+                      </span>
                       {r.note && <span className="break-words text-[12.5px] text-mut">{r.note}</span>}
                       {r.state === "active" && !r.targetLive && <span className="text-[12.5px] text-warn">{M.notLive}</span>}
                     </div>
