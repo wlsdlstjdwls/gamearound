@@ -498,6 +498,13 @@
       "when": 1793003269615,
       "tag": "0070_dry_mephistopheles",
       "breakpoints": true
+    },
+    {
+      "idx": 71,
+      "version": "7",
+      "when": 1793069123835,
+      "tag": "0071_silly_lady_bullseye",
+      "breakpoints": true
     }
   ]
 }

@@ -1,0 +1,1 @@
+ALTER TABLE "game_platforms" ADD COLUMN "ign_score" integer;

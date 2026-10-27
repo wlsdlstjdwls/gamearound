@@ -231,6 +231,12 @@ export const gamePlatforms = pgTable("game_platforms", {
   metacriticScore: integer("metacritic_score"),
   opencriticScore: integer("opencritic_score"),
   /**
+   * IGN 평론 점수(2026-10-27, 사용자: "IGN 점수 긁어와 줘"). IGN 은 공개 API 가 없어 오픈크리틱의 리뷰 목록에서 IGN(매체 id 56)의 것을 뽑는다
+   * (adapters/opencritic 의 parseOpenCriticIgn). 오픈크리틱이 0~100 으로 맞춘 값(npScore)을 그대로 넣는다 — IGN 의 9.5/10 은 95.
+   * 화면은 10 으로 나눠 IGN 척도(소수 한 자리)로 되돌린다
+   */
+  ignScore: integer("ign_score"),
+  /**
    * 그 스토어에서 실제로 산 사람들이 매긴 점수 — 평론가 점수(위 둘)와 다른 축이다.
    *
    * 0~100 정수 하나로 저장하고 뜻은 user_score_kind 가 말한다. 별점은 20을 곱해 넣는다

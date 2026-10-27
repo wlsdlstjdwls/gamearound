@@ -1,8 +1,7 @@
 // 상세 히어로의 숫자 두 묶음 — 평점 카드(목업 .critw)와 플레이타임 3칸(목업 .pt).
 //
-// 평점: 목업은 Metacritic, OpenCritic, IGN 셋이다. **IGN 은 뺐다** — 받아 오는 수집처가 없다(memory: 유저 점수 수집처,
-// 오픈크리틱 키). 빈 칸을 "-" 로 세우면 고장으로 읽히므로(2026-09-15 ScoreGrid 결정) 아는 점수만 세운다.
-// 그 자리에는 우리가 가진 유저 점수가 선다. 매체 로고는 그리지 않는다 — 남의 상표를 흉내 낸 도형은 쓰지 않고, 이름이 곧 라벨이다.
+// 평점: 목업은 Metacritic, OpenCritic, IGN 셋이다. IGN 은 2026-10-27 부터 오픈크리틱 리뷰 목록에서 뽑아 온다(adapters/opencritic).
+// 빈 칸을 "-" 로 세우면 고장으로 읽히므로(2026-09-15 ScoreGrid 결정) 아는 점수만 세운다. 유저 점수는 그 뒤에 선다. 매체 로고는 그리지 않는다 — 남의 상표를 흉내 낸 도형은 쓰지 않고, 이름이 곧 라벨이다.
 //
 // 플레이타임: 목업은 막대 대신 큰 숫자 셋이다. 막대 카드(playtime-card)는 지우지 않고 남겨 두었다 —
 // 시간당 가격(SHOW_PRICE_PER_HOUR)을 되살릴 때 그 카드가 다시 쓰인다.
@@ -15,7 +14,7 @@ import { InfoTip } from "@/components/ui/tooltip";
 import { scoreLines, type GameDetail, type PlaytimeDto } from "@/server/services/games";
 
 /** 목업 순서. scoreLines 는 오픈크리틱을 먼저 주지만 화면은 목업의 읽는 순서를 따른다 */
-const SCORE_ORDER = ["metacritic", "opencritic", "user"] as const;
+const SCORE_ORDER = ["metacritic", "opencritic", "ign", "user"] as const;
 
 export function CriticScores({ game, unreleased }: { game: GameDetail; unreleased: boolean }) {
   const lines = scoreLines(game.platforms).sort(

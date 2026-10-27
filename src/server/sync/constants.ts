@@ -29,7 +29,8 @@ export const BATCH_SIZE: Record<Source, number> = {
   hltb: 300,
   // opencritic 무료 등급은 하루 200요청이다(2026-09-16 헤더 실측). 매칭이 쓸 25를 빼면 175가 남고,
   // 격일 실행이라 한 회차가 곧 하루치다. 여유를 두고 150 으로 잡는다 — 넘기면 429 로 회차가 통째로 죽는다.
-  opencritic: 150,
+  // 2026-10-27 150 에서 85 로: 게임 하나가 두 번 묻는다(총점 /game + IGN 을 뽑는 /review/game). 85 x 2 + 매칭 25 = 195 < 200
+  opencritic: 85,
   metacritic: 150,
   rss: RSS_FEEDS.length,
   // 손으로 돌릴 때(pnpm crawl --source=wikidata)의 기본 몫. 정기 실행은 크론이 CRON_META_PLAN 몫으로 돈다.

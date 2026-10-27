@@ -118,7 +118,7 @@ export interface MetaSnapshot {
    * (schema 의 games.hltbLoggedCount).
    */
   loggedCount?: number | null;
-  scores?: { metacritic?: number | null; opencritic?: number | null };
+  scores?: { metacritic?: number | null; opencritic?: number | null; ign?: number | null };
   genres?: string[];
   multiplayer?: { localMax?: number; onlineMax?: number; coop?: boolean; pvp?: boolean };
 }

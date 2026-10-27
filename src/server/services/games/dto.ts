@@ -30,6 +30,8 @@ export type PlatformDto = {
   discountName: string | null;
   metacriticScore: number | null;
   opencriticScore: number | null;
+  /** IGN 점수 0~100(schema 의 ign_score). 화면은 10 으로 나눠 IGN 척도로 적는다 */
+  ignScore: number | null;
   /** 이 스토어 이용자들의 점수. 주지 않는 스토어(PlayStation, 닌텐도, Epic)는 null */
   userScore: UserScoreDto | null;
   lastSyncedAt: string | null;

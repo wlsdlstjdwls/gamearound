@@ -37,6 +37,16 @@ const gameSchema = z.object({
 
 const searchSchema = z.array(z.object({ id: z.number(), name: z.string(), dist: z.number().optional() }));
 
+/** 오픈크리틱의 IGN 매체 id(2026-10-27 실측: /review/game/12090 의 Outlet {"name":"IGN","id":56}) */
+export const OPENCRITIC_IGN_OUTLET_ID = 56;
+
+const reviewsSchema = z.array(
+  z.object({
+    Outlet: z.object({ id: z.number(), name: z.string() }).nullable().optional(),
+    npScore: z.number().nullable().optional(),
+  }),
+);
+
 // ---- 순수 파서 ----
 
 /** /game/<id> 응답 → MetaSnapshot. topCriticScore 가 -1/null 이면 점수 없음 */
@@ -50,6 +60,18 @@ export function parseOpenCriticGame(raw: unknown): MetaSnapshot {
     scores: { opencritic },
     ...(genres.length ? { genres } : {}),
   };
+}
+
+/**
+ * /review/game/<id>?sort=popularity 응답 → IGN 점수(0~100). 없으면 null.
+ * 인기순 첫 쪽(20건)만 본다 — 쪽을 넘기면 한도(하루 200)를 게임마다 더 먹는다. IGN 은 큰 매체라 리뷰가 있으면 대개 첫 쪽에 선다.
+ * 형식이 바뀌어도 평론가 총점(같은 회차의 /game/<id>)까지 잃지 않게 던지지 않고 null 을 돌려준다
+ */
+export function parseOpenCriticIgn(raw: unknown): number | null {
+  const parsed = reviewsSchema.safeParse(raw);
+  if (!parsed.success) return null;
+  const ign = parsed.data.find((r) => r.Outlet?.id === OPENCRITIC_IGN_OUTLET_ID && typeof r.npScore === "number" && r.npScore >= 0);
+  return ign?.npScore != null ? Math.round(ign.npScore) : null;
 }
 
 /** /game/search 응답 → 후보 */
@@ -94,6 +116,10 @@ export const opencriticAdapter: MetaAdapter = {
   },
 
   async fetch(id: string): Promise<MetaSnapshot> {
-    return parseOpenCriticGame(await http.json(`${OPENCRITIC_API_URL}/game/${encodeURIComponent(id)}`));
+    const snapshot = parseOpenCriticGame(await http.json(`${OPENCRITIC_API_URL}/game/${encodeURIComponent(id)}`));
+    // 평론가 총점이 없는 게임은 리뷰도 없다 — 한도를 아끼려고 리뷰 목록을 묻지 않는다
+    if (snapshot.scores?.opencritic == null) return snapshot;
+    const ign = parseOpenCriticIgn(await http.json(`${OPENCRITIC_API_URL}/review/game/${encodeURIComponent(id)}?sort=popularity`));
+    return { ...snapshot, scores: { ...snapshot.scores, ign } };
   },
 };

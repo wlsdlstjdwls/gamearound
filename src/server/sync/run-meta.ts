@@ -103,7 +103,7 @@ export async function applyLoggedCount(ctx: Ctx, target: MetaTarget, snapshot: M
   noteTouched(ctx.touched, target.slug, ["hltbLoggedCount"]);
 }
 
-async function applyScore(ctx: Ctx, target: MetaTarget, field: "opencriticScore" | "metacriticScore", score: number | null | undefined): Promise<void> {
+async function applyScore(ctx: Ctx, target: MetaTarget, field: "opencriticScore" | "metacriticScore" | "ignScore", score: number | null | undefined): Promise<void> {
   if (score === null || score === undefined) return; // 점수 없음 → 기존 값 유지
   const { db } = ctx;
   const rows = await db
@@ -150,7 +150,11 @@ export async function runMeta(ctx: Ctx, source: MetaSource, opts: RunOptions): P
         await applyPlaytime(ctx, target, snapshot);
         await applyLoggedCount(ctx, target, snapshot);
       }
-      else if (source === "opencritic") await applyScore(ctx, target, "opencriticScore", snapshot.scores?.opencritic);
+      else if (source === "opencritic") {
+        await applyScore(ctx, target, "opencriticScore", snapshot.scores?.opencritic);
+        // IGN 점수는 같은 회차가 오픈크리틱 리뷰 목록에서 함께 가져온다(adapters/opencritic)
+        await applyScore(ctx, target, "ignScore", snapshot.scores?.ign);
+      }
       else if (source === "wikidata_game") await applyAliasesFor(ctx, source, target, snapshot);
       else await applyScore(ctx, target, "metacriticScore", snapshot.scores?.metacritic);
       ctx.processed++;

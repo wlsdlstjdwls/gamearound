@@ -3,10 +3,25 @@ import { describe, expect, it } from "vitest";
 import { readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import { AdapterError } from "./types";
-import { OPENCRITIC_API_URL, parseOpenCriticGame, parseOpenCriticSearch } from "./opencritic";
+import { OPENCRITIC_API_URL, OPENCRITIC_IGN_OUTLET_ID, parseOpenCriticGame, parseOpenCriticIgn, parseOpenCriticSearch } from "./opencritic";
 
 const fixture = (name: string): unknown =>
   JSON.parse(readFileSync(fileURLToPath(new URL(`./__fixtures__/${name}`, import.meta.url)), "utf8"));
+
+describe("parseOpenCriticIgn", () => {
+  // 2026-10-27 /review/game/12090 실측 응답에서 필요한 칸만 남긴 모양
+  const review = (outletId: number, name: string, npScore: number | null) => ({ Outlet: { id: outletId, name }, npScore, ScoreFormat: { base: 10 } });
+  it("IGN(매체 56)의 npScore 를 0~100 그대로 돌려준다", () => {
+    expect(parseOpenCriticIgn([review(1, "GameSpot", 90), review(OPENCRITIC_IGN_OUTLET_ID, "IGN", 95)])).toBe(95);
+  });
+  it("IGN 리뷰가 없거나 점수가 비면 null", () => {
+    expect(parseOpenCriticIgn([review(1, "GameSpot", 90)])).toBeNull();
+    expect(parseOpenCriticIgn([review(OPENCRITIC_IGN_OUTLET_ID, "IGN", null)])).toBeNull();
+  });
+  it("형식이 바뀌어도 던지지 않는다 — 같은 회차의 평론가 총점까지 잃지 않게", () => {
+    expect(parseOpenCriticIgn({ message: "oops" })).toBeNull();
+  });
+});
 
 describe("parseOpenCriticGame", () => {
   it("topCriticScore 를 반올림해 scores.opencritic 에 넣는다", () => {

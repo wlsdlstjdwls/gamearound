@@ -73,6 +73,7 @@ export function toPlatformDto(p: PlatformRow): PlatformDto {
     discountName: p.discountName,
     metacriticScore: p.metacriticScore,
     opencriticScore: p.opencriticScore,
+    ignScore: p.ignScore,
     // 세 컬럼이 다 차 있을 때만 점수다 — 하나라도 비면 뜻을 만들 수 없다
     userScore:
       p.userScore !== null && p.userScoreKind !== null
@@ -399,6 +400,8 @@ export type ScoreLine = { key: string; label: string; value: number; suffix: str
  * 축은 숫자를 읽는 순간에만 필요한 단서라서, 줄을 따로 내줄 값이 아니라 숫자에 붙는 꼬리다.
  */
 const SCORE_SCALE_SUFFIX = "/100";
+/** IGN 은 제 척도(10점)로 적는다 — 목업도 "9 /10" 이다 */
+const IGN_SCALE_SUFFIX = "/10";
 
 export function scoreLines(platforms: PlatformDto[]): ScoreLine[] {
   const lines: ScoreLine[] = [];
@@ -406,6 +409,9 @@ export function scoreLines(platforms: PlatformDto[]): ScoreLine[] {
   const mc = platforms.map((p) => p.metacriticScore).find((v): v is number => typeof v === "number");
   if (oc !== undefined) lines.push({ key: "opencritic", label: "오픈크리틱", value: Math.round(oc), suffix: SCORE_SCALE_SUFFIX, note: null });
   if (mc !== undefined) lines.push({ key: "metacritic", label: "메타크리틱", value: Math.round(mc), suffix: SCORE_SCALE_SUFFIX, note: null });
+  // IGN 은 10점 척도에 소수 한 자리다(95 -> 9.5). != null: 캐시에 담긴 옛 DTO 에는 이 칸이 없다
+  const ign = platforms.map((p) => p.ignScore).find((v): v is number => v != null);
+  if (ign !== undefined) lines.push({ key: "ign", label: "IGN", value: Math.round(ign) / 10, suffix: IGN_SCALE_SUFFIX, note: null });
 
   const user = bestUserScore(platforms);
   if (user) {
