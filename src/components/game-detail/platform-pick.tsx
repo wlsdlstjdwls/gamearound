@@ -4,7 +4,7 @@
 //
 // 값은 묶음 열쇠(brandKeyOf — steam, playstation, xbox, nintendo)다. 카드가 묶음 단위(PS5, PS4 는 PlayStation 카드 둘이지만
 // 이름은 하나)라서, 기기 하나(ps5)를 고르면 같은 이름의 다른 카드가 고른 것인지 아닌지 애매해진다. null 은 "전체" 다.
-// 처음 값은 최저가 카드의 묶음이다(서버가 정해 넘긴다) — 목업도 최저가 카드가 켜진 채로 연다.
+// 처음 값은 줄 맨 앞에 선 파는 플랫폼 카드의 묶음이다(서버가 정해 넘긴다, 2026-10-27 사용자 지정). 그 뒤는 사람이 고를 때마다 바뀐다.
 //
 // 바깥(가격 자세히 화면)처럼 Provider 가 없는 자리에서는 usePlatformPick 이 null 을 돌려주고 쓰는 쪽이 제 상태를 쓴다.
 import { createContext, useContext, useState } from "react";
