@@ -8,24 +8,25 @@ import Link from "next/link";
 import { notFound, permanentRedirect } from "next/navigation";
 import { AuthorName, PostTags } from "@/components/community/badges";
 import { Comments, PostReactions, SpoilerGate } from "@/components/community/post-interactions";
+import { PostGameCard } from "@/components/community/post-game-card";
 import { DbUnavailablePage } from "@/components/db-unavailable";
 import { BackLink } from "@/components/ui/back-link";
 import { Page } from "@/components/ui/page";
-import { GamepadIcon } from "@/components/ui/icons";
 import { CATEGORY_LIST_PATH, isPostId, postPath } from "@/lib/community/constants";
 import { COMMUNITY_MESSAGES as M } from "@/lib/community/messages";
 import { DB_DOWN, orDbDown } from "@/lib/db-errors";
 import { formatDateTime } from "@/lib/format";
 import { ROUTES } from "@/lib/routes";
 import type { PostCategory } from "@/server/db/schema";
-import { getPostDetail, listComments } from "@/server/services/community";
+import { getPostDetail, getPostGameCard, listComments } from "@/server/services/community";
 
 /** category: 게시판 글 주소가 품은 게시판(/board/reviews/p/<id> 면 review). 라운지 글은 주소에 카테고리가 없어 비운다 */
 export async function PostDetail({ id, lounge, category }: { id: string; lounge: boolean; category?: PostCategory }) {
   if (!isPostId(id)) notFound();
-  const loaded = await orDbDown(Promise.all([getPostDetail(id), listComments(id)]));
+  // 관련 게임 카드는 글과 같이 묻는다 — 글을 받은 뒤 물으면 왕복 하나가 줄 선다(게임이 없는 글은 null 이 돌아온다)
+  const loaded = await orDbDown(Promise.all([getPostDetail(id), listComments(id), getPostGameCard(id)]));
   if (loaded === DB_DOWN) return <DbUnavailablePage retryHref={category ? postPath(id, category) : `${lounge ? ROUTES.lounge : ROUTES.board}/p/${id}`} />;
-  const [post, comments] = loaded;
+  const [post, comments, game] = loaded;
   // 라운지 글을 게시판 주소로(또는 반대로) 열면 없는 글로 본다 — 메뉴 소속이 주소로 정해지기 때문이다
   if (!post || (post.category === "devlog" || post.category === "qna") !== lounge) notFound();
   // 다른 게시판 주소로 연 글(/board/guides/p/<리뷰 id>)은 제 주소로 보낸다 — 띠와 경로가 엉뚱한 게시판을 켜지 않게
@@ -50,20 +51,9 @@ export async function PostDetail({ id, lounge, category }: { id: string; lounge:
             </span>
           </p>
         </header>
+        {/* 관련 게임 — 이 글이 무엇에 대한 글인지, 그 게임이 지금 얼마인지(components/community/post-game-card) */}
+        {game && <PostGameCard game={game} />}
         {post.spoiler ? <SpoilerGate isMine={post.isMine}>{body}</SpoilerGate> : body}
-        {post.game && (
-          // 관련 게임(목업 postv 의 "관련 게임" 칩) — 이 글이 무엇에 대한 글인지, 그 게임의 가격, 정보로 가는 길이다
-          <p className="flex flex-wrap items-center gap-2 text-[13px] text-dim">
-            <span>{M.relatedGame}</span>
-            <Link
-              href={post.game.href}
-              className="press tap inline-flex min-h-9 max-w-full items-center gap-1.5 rounded-full bg-surface-2 px-3.5 text-[13.5px] font-semibold text-ink-2 shadow-hair transition-colors hover:bg-acc-soft hover:text-acc"
-            >
-              <GamepadIcon size={15} aria-hidden className="shrink-0" />
-              <span className="truncate">{post.game.title}</span>
-            </Link>
-          </p>
-        )}
         {post.link && (
           <a href={post.link} target="_blank" rel="noopener noreferrer nofollow" className="w-fit break-all text-[14px] font-semibold text-acc hover:underline">
             {post.link}

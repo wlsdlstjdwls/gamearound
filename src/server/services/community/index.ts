@@ -3,4 +3,5 @@ export type { AdminCommentRowDto, AdminPostRowDto, BoardHomeDto, CommentDto, Pos
 export { createPost, getPostCategory, getPostDetail, listMyPosts, listPosts, PostGameNotFoundError, type ListPostsParams } from "./posts";
 export { addComment, countRecentCommentsOnMyPosts, listComments, listMySavedPosts, MY_REACTION_WINDOW_DAYS, toggleLike, toggleSave } from "./reactions";
 export { getBoardHome } from "./home";
+export { getPostGameCard } from "./game";
 export { countCommunityToday, listCommentsForAdmin, listPostsForAdmin, moderateComment, moderatePost, POST_ADMIN_LIMIT, POST_ADMIN_TABS, type ModerationDecision, type PostAdminTab } from "./admin";
