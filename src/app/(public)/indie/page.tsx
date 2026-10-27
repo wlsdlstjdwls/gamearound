@@ -17,6 +17,7 @@ import { Pagination } from "@/components/pagination";
 import { WriteLink } from "@/components/community/write-link";
 import { buttonClass } from "@/components/ui/button";
 import { SearchIcon } from "@/components/ui/icons";
+import { FormSelect } from "@/components/ui/select";
 import { NavChip, NavPendingScope, PendingRegion } from "@/components/ui/nav-pending";
 import { Page, PageHead } from "@/components/ui/page";
 import { firstParam } from "@/lib/games-query";
@@ -104,18 +105,16 @@ export default async function IndiePage({ searchParams }: Props) {
           </nav>
           <form role="search" action={ROUTES.indie} className="flex min-w-0 items-center gap-1.5">
             {stage && <input type="hidden" name="stage" value={stage} />}
-            <select
+            {/* 공통 드롭다운(ui/select). 감춘 input 이 같은 이름으로 GET 폼에 실린다 */}
+            <FormSelect
               name={INDIE_SEARCH_SCOPE_PARAM}
+              label={M.searchScopeLabel}
+              hideLabel
+              size="md"
+              className="w-[104px] shrink-0"
               defaultValue={scope}
-              aria-label={M.searchScopeLabel}
-              className="tap h-10 shrink-0 rounded-xl border border-line-strong bg-surface px-3 text-[16px] text-ink sm:text-[14px]"
-            >
-              {INDIE_SEARCH_SCOPES.map((s) => (
-                <option key={s} value={s}>
-                  {INDIE_SEARCH_SCOPE_LABEL[s]}
-                </option>
-              ))}
-            </select>
+              options={INDIE_SEARCH_SCOPES.map((s) => ({ value: s, label: INDIE_SEARCH_SCOPE_LABEL[s] }))}
+            />
             <span className="tap flex h-10 min-w-0 flex-1 items-center gap-2 rounded-xl border border-line-strong bg-surface pl-3 pr-1 focus-within:border-acc md:w-[260px] md:flex-none">
               <SearchIcon size={15} className="shrink-0 text-dim" />
               <input type="search" name="q" defaultValue={q} placeholder={M.searchPlaceholder} aria-label={M.searchLabel} className="min-w-0 flex-1 bg-transparent text-[16px] text-ink outline-none placeholder:text-dim" />

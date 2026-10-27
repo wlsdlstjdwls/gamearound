@@ -7,6 +7,7 @@ import { useRouter } from "next/navigation";
 import { useState, useTransition } from "react";
 import { NavChip } from "@/components/ui/nav-pending";
 import { SearchIcon } from "@/components/ui/icons";
+import { FormSelect } from "@/components/ui/select";
 import { POPULAR_PERIODS, POPULAR_PERIOD_LABEL, PROMO_TYPES, PROMO_TYPE_LABEL, SEARCH_SCOPES, SEARCH_SCOPE_LABEL, type SearchScope } from "@/lib/community/constants";
 import { COMMUNITY_MESSAGES as M } from "@/lib/community/messages";
 import { boardHref, type BoardQuery } from "@/lib/community/query";
@@ -43,21 +44,17 @@ export function BoardControls({
             start(() => router.push(boardHref(base, query, { q: q.trim(), scope })));
           }}
         >
-          <label className="sr-only" htmlFor="board-scope">
-            {M.search}
-          </label>
-          <select
-            id="board-scope"
+          {/* 범위 고르기도 공통 드롭다운(ui/select) — 네이티브 select 는 펼친 목록을 운영체제가 그려 투박했다(10-27 사용자) */}
+          <FormSelect
+            name="scope"
+            label={M.search}
+            hideLabel
+            size="md"
+            className="w-[92px] shrink-0"
             value={scope}
-            onChange={(e) => setScope(e.target.value as SearchScope)}
-            className="tap h-10 shrink-0 rounded-xl border border-line-strong bg-bg px-3 text-[16px] text-ink sm:text-[14px]"
-          >
-            {SEARCH_SCOPES.map((s) => (
-              <option key={s} value={s}>
-                {SEARCH_SCOPE_LABEL[s]}
-              </option>
-            ))}
-          </select>
+            onChange={(v) => setScope(v as SearchScope)}
+            options={SEARCH_SCOPES.map((s) => ({ value: s, label: SEARCH_SCOPE_LABEL[s] }))}
+          />
           <span className="tap flex h-10 min-w-0 flex-1 items-center gap-2 rounded-xl border border-line-strong bg-bg pl-3 pr-1 focus-within:border-acc md:w-[240px] md:flex-none">
             <SearchIcon size={15} className="shrink-0 text-dim" />
             <input
