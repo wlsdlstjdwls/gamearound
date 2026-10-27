@@ -16,6 +16,7 @@ import { PcSupportBadges } from "@/components/pc-support-badges";
 import { PriceAlertButton, type AlertPlatformOption } from "@/components/price-alert-button";
 import { WishlistButton } from "@/components/wishlist-button";
 import { soldBrands } from "@/components/platform-prices";
+import { PlatformJump } from "@/components/game-detail/platform-jump";
 import { CriticScores, PlaytimeTiles } from "@/components/game-detail/scores";
 import { Flag } from "@/components/ui/flag";
 import { Clamp } from "@/components/ui/tooltip";
@@ -65,15 +66,15 @@ export function DetailHero({
       </div>
 
       <div className="enter-item flex min-w-0 flex-col gap-3" style={stagger(1)}>
-        {/* 지원 플랫폼 이름 줄(목업 .plats). 누르면 그 플랫폼 카드로 내려간다 — 목업은 카드를 고르는 동작이다 */}
+        {/* 지원 플랫폼 이름 줄(목업 .plats). 누르면 그 플랫폼 카드로 미끄러져 내려가 카드가 잠깐 빛난다(platform-jump) */}
         {brands.length > 0 && (
           <p className="flex flex-wrap items-center gap-x-2 gap-y-1 text-[12.5px] font-bold tracking-[0.06em] text-ink-2">
             {brands.map((b, i) => (
               <span key={b.key} className="inline-flex items-center gap-x-2">
                 {i > 0 && <span aria-hidden className="font-normal text-dim-2">|</span>}
-                <a href={`#${b.anchor}`} className="transition-colors hover:text-acc">
+                <PlatformJump anchor={b.anchor} className="transition-colors hover:text-acc">
                   {b.label}
-                </a>
+                </PlatformJump>
               </span>
             ))}
           </p>

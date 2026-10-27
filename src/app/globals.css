@@ -89,6 +89,8 @@
   --duration-ambient: 9s;
   /* 빛이 한 번 스치는 시간(히어로 강조 글자, 명예의 전당 1위 판). 길면 "로딩 중" 처럼 읽힌다 */
   --duration-glint: 1.1s;
+  /* 내려온 카드가 "여기다" 하고 빛나는 시간(상세 플랫폼 이름 링크). 목업 .pc.fl 값 — 부드러운 스크롤(약 0.5초)이 끝난 뒤에도 빛이 남아 있어야 한다 */
+  --duration-flash: 1.2s;
 
 
   /*
@@ -1330,3 +1332,15 @@ body:has([data-onboarding]) > [data-site-tabbar] {
   animation: underline-grow var(--duration-slow) var(--ease-out-emph) both;
 }
 
+/* 상세 히어로의 플랫폼 이름을 눌러 내려온 가격 카드(components/game-detail/platform-jump, 목업 .pc.fl).
+   앞 60% 는 켜 둔 채로 버티다가 꺼진다 — 스크롤이 도착하기 전에 빛이 다 빠지면 어느 장인지 못 본다.
+   outline 은 카드의 둥근 모서리를 따르고 그림자(--elev)와 겹치지 않는다 */
+@keyframes target-flash {
+  0%, 60% { outline-color: var(--acc); }
+  100% { outline-color: transparent; }
+}
+.target-flash {
+  outline: 2px solid transparent;
+  outline-offset: 3px;
+  animation: target-flash var(--duration-flash) var(--ease-standard);
+}
