@@ -1,9 +1,12 @@
 // /wishlist — 찜한 게임 목록 (§5.1 dynamic, 캐시 안 함)
-// 리디자인: 기본 정렬은 "할인 중 먼저" — 찜 목록의 용건은 "지금 사도 되는가"다.
+// 리디자인: 기본 정렬은 할인순 — 찜 목록의 용건은 "지금 사도 되는가"다.
+//
+// 2026-10-27(사용자): 줄에서 카드로("게임 목록이 카드 형태가 아니네"), 할인 알림 단추를 누르고 싶게, 정렬 이름 "할인 중 먼저" 를 "할인순" 으로,
+// 고른 정렬은 다음 접속에도 남는다(lib/prefs). 정렬 단추는 둘 다 주소에 값을 명시한다 — 빈 주소는 기억한 정렬로 연다.
 import { cheapestOf, formatPrice } from "@/lib/currency";
 import type { Metadata } from "next";
 import Link from "next/link";
-import { DiscountText } from "@/components/ui/discount";
+import { DiscountBadge } from "@/components/ui/discount";
 import { EmptyState } from "@/components/empty-state";
 import { WishlistRemoveButton } from "@/components/wishlist-button";
 import { FadeImage } from "@/components/ui/fade-image";
@@ -17,20 +20,25 @@ import { stagger } from "@/lib/motion";
 import { ROUTES } from "@/lib/routes";
 import { listWishlist, type WishlistItem } from "@/server/services/wishlist";
 import { NavChip, NavPendingScope, PendingRegion } from "@/components/ui/nav-pending";
+import { BellIcon } from "@/components/ui/icons";
+import { RememberPref } from "@/components/remember-pref";
+import { PREF_COOKIES, readPref } from "@/lib/prefs";
+import { cookies } from "next/headers";
 
 export const metadata: Metadata = { title: "내 찜 목록" };
 
 const SORTS = [
-  { key: "sale", label: "할인 중 먼저" },
+  { key: "sale", label: "할인순" },
   { key: "added", label: "추가순" },
 ] as const;
 type SortKey = (typeof SORTS)[number]["key"];
+const SORT_KEYS: readonly SortKey[] = SORTS.map((s) => s.key);
 
 type Props = { searchParams: Promise<{ sort?: string | string[] }> };
 
-function readSort(v: string | string[] | undefined): SortKey {
-  const s = Array.isArray(v) ? v[0] : v;
-  return s === "added" ? "added" : "sale";
+/** 주소에 명시된 정렬. 없거나 모르는 값이면 undefined — 그때는 기억한 정렬을 쓴다 */
+function readSortParam(v: string | string[] | undefined): SortKey | undefined {
+  return readPref(Array.isArray(v) ? v[0] : v, SORT_KEYS);
 }
 
 function maxDiscount(item: WishlistItem): number {
@@ -42,7 +50,8 @@ function isOnSale(item: WishlistItem): boolean {
 }
 
 export default async function WishlistPage({ searchParams }: Props) {
-  const sort = readSort((await searchParams).sort);
+  const explicit = readSortParam((await searchParams).sort);
+  const sort: SortKey = explicit ?? readPref((await cookies()).get(PREF_COOKIES.wishlistSort)?.value, SORT_KEYS) ?? "sale";
   const items = await listWishlist();
   const onSaleCount = items.filter(isOnSale).length;
   // listWishlist 는 추가순(최근 먼저)으로 온다 — "할인 중 먼저"만 화면에서 다시 정렬한다
@@ -50,6 +59,7 @@ export default async function WishlistPage({ searchParams }: Props) {
 
   return (
     <Page gap={26}>
+      <RememberPref name={PREF_COOKIES.wishlistSort} value={explicit} />
       <NavPendingScope>
       <header className="flex flex-wrap items-end justify-between gap-x-6 gap-y-4">
         <div>
@@ -60,7 +70,7 @@ export default async function WishlistPage({ searchParams }: Props) {
         </div>
         <div role="group" aria-label="정렬" className="flex shrink-0 gap-1.5">
           {SORTS.map((s) => (
-            <NavChip key={s.key} group="sort" href={s.key === "sale" ? ROUTES.wishlist : `${ROUTES.wishlist}?sort=${s.key}`} active={s.key === sort}>
+            <NavChip key={s.key} group="sort" href={`${ROUTES.wishlist}?sort=${s.key}`} active={s.key === sort}>
               {s.label}
             </NavChip>
           ))}
@@ -76,8 +86,8 @@ export default async function WishlistPage({ searchParams }: Props) {
           action={{ href: gamesHref({}, { onSale: true }), label: "할인 목록 보기" }}
         />
       ) : (
-        // min(): 화면이 330px 보다 좁아도 칸이 줄어야 한다. 안 씌우면 360px 기기에서 카드가 화면 밖으로 나간다
-        <ul className="grid grid-cols-[repeat(auto-fill,minmax(min(320px,100%),1fr))] gap-x-6 gap-y-7">
+        // min(): 화면이 칸보다 좁아도 칸이 줄어야 한다. 안 씌우면 360px 기기에서 카드가 화면 밖으로 나간다
+        <ul className="grid grid-cols-[repeat(auto-fill,minmax(min(270px,100%),1fr))] gap-4 sm:gap-5">
           {sorted.map(({ game }, i) => {
             // "최저" 표시는 같은 통화끼리만 뜻이 있다 — 기준을 lib/currency 한 곳에서만 정한다
             const cheapest = cheapestOf(game.platforms);
@@ -86,26 +96,25 @@ export default async function WishlistPage({ searchParams }: Props) {
             const stalest = game.platforms.find((p) => getFreshness(p.lastSyncedAt, p.syncStatus) !== "fresh");
 
             return (
-              // 판을 걷고 줄 사이는 헤어라인이 가른다 — 위시리스트는 "값을 훑는" 화면이라
-              // 카드 테두리가 스무 겹 서면 정작 값이 안 읽힌다
-              <li key={game.id} className="enter-item flex gap-3.5 border-t border-line-soft py-4 first:border-line-strong" style={stagger(i)}>
-                <Link href={`/games/${game.slug}`} className="shrink-0">
+              // 카드(2026-10-27). 게임 목록 카드처럼 흰 판 위 커버가 먼저 서고, 값 줄과 알림 단추가 아래에 앉는다
+              <li key={game.id} className="enter-item lift group flex flex-col overflow-hidden rounded-[var(--radius-panel)] bg-surface shadow-[var(--elev-card)] transition-shadow duration-base hover:shadow-[var(--elev-card-hover)]" style={stagger(i)}>
+                <Link href={`/games/${game.slug}`} className="cover-zoom block overflow-hidden" tabIndex={-1} aria-hidden>
                   {game.coverUrl ? (
                     <FadeImage
                       src={game.coverUrl}
-                      alt={title}
-                      width={104}
-                      height={60}
+                      alt=""
+                      width={460}
+                      height={215}
                       unoptimized
-                      className="h-[60px] w-[104px] rounded-[var(--radius-inset)] object-cover"
-                      fallback={<ImageFallback label="" className="h-[60px] w-[104px] rounded-[var(--radius-inset)]" />}
+                      className="cover-zoom-img aspect-[460/215] w-full object-cover"
+                      fallback={<ImageFallback label="" className="aspect-[460/215] w-full" />}
                     />
                   ) : (
-                    <ImageFallback label="" className="h-[60px] w-[104px] rounded-[var(--radius-inset)]" />
+                    <ImageFallback label="" className="aspect-[460/215] w-full" />
                   )}
                 </Link>
 
-                <div className="flex min-w-0 flex-1 flex-col gap-2">
+                <div className="flex min-w-0 flex-1 flex-col gap-2.5 p-4">
                   <div className="flex items-start justify-between gap-2">
                     <Link href={`/games/${game.slug}`} className="min-w-0 text-[15px] font-extrabold tracking-[-0.025em] text-ink hover:text-acc">
                       <Clamp>{title}</Clamp>
@@ -123,9 +132,7 @@ export default async function WishlistPage({ searchParams }: Props) {
                           <li key={p.id} className="flex items-baseline gap-2">
                             <span className="w-[52px] shrink-0 text-dim">{PLATFORM_LABEL[p.platform] ?? p.platform}</span>
                             <span className={isLowest ? "font-bold text-ink" : "text-ink"}>{formatPrice(p.currentPrice, p.currency)}</span>
-                            {p.discountPct ? (
-                              <span className="font-bold text-acc"><DiscountText pct={p.discountPct} /></span>
-                            ) : null}
+                            <DiscountBadge pct={p.discountPct} size="sm" />
                             {isLowest && pricedCount > 1 && <span className="text-[11.5px] font-semibold text-mut">최저가</span>}
                           </li>
                         );
@@ -133,15 +140,15 @@ export default async function WishlistPage({ searchParams }: Props) {
                     </ul>
                   )}
 
-                  <p className="mt-auto text-[12px]">
-                    {stalest ? (
-                      <span className="text-warn">{collectedAtText(stalest.lastSyncedAt)} | 스토어에서 확인 권장</span>
-                    ) : (
-                      <Link href={`${ROUTES.alerts}?game=${encodeURIComponent(game.slug)}`} className="text-acc hover:underline">
-                        할인 알림 만들기
-                      </Link>
-                    )}
-                  </p>
+                  {stalest && <p className="text-[12px] text-warn">{collectedAtText(stalest.lastSyncedAt)} | 스토어에서 확인 권장</p>}
+                  {/* 누르고 싶은 단추로(2026-10-27, 사용자). 카드 바닥 전체 폭, 파랑 면 위 종 — 누르면 채운 파랑으로 바뀐다 */}
+                  <Link
+                    href={`${ROUTES.alerts}?game=${encodeURIComponent(game.slug)}`}
+                    className="press group/alert mt-auto inline-flex h-11 w-full items-center justify-center gap-1.5 rounded-[var(--radius-sm)] bg-acc-soft text-[14px] font-bold text-acc transition-colors duration-base hover:bg-acc hover:text-on-ink"
+                  >
+                    <BellIcon size={16} className="transition-transform duration-base group-hover/alert:-rotate-12" />
+                    할인 알림 만들기
+                  </Link>
                 </div>
               </li>
             );
