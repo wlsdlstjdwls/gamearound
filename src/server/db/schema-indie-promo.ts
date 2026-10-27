@@ -4,7 +4,7 @@
 //
 // 하루 단위 표의 day 는 한국 날짜다(쓰는 쪽이 `now() at time zone 'Asia/Seoul'` 로 잘라 넣는다). 클릭, 조회마다 행을 남기면
 // 표가 끝없이 자라고 "지난 30일" 집계가 행 수만큼 돈다 — 글, 날 한 칸에 수만 올린다(indie_view_months 와 같은 판단).
-import { pgTable, uuid, text, integer, date, index, primaryKey } from "drizzle-orm/pg-core";
+import { pgTable, uuid, text, integer, date, index, primaryKey, timestamp } from "drizzle-orm/pg-core";
 import { auditColumns } from "./audit";
 import { users } from "./schema";
 import { postStatusEnum } from "./schema-community";
@@ -71,3 +71,32 @@ export const developerFollows = pgTable("developer_follows", {
   followerUserId: uuid("follower_user_id").references(() => users.id, { onDelete: "cascade" }).notNull(),
   ...auditColumns(),
 }, (t) => [primaryKey({ columns: [t.developerUserId, t.followerUserId] }), index("developer_follows_follower_idx").on(t.followerUserId)]);
+
+/**
+ * 플레이테스트 모집(2026-10-27, 기획서 2장 5번 "개발 중인 게임이 가장 원하는 것은 테스터다", 3장 5번). 인디 글 하나에 모집 여럿이 쌓이지만
+ * 열린 모집은 한 번에 하나다(services/indie/playtests 가 지킨다) — 같은 게임의 모집 둘이 나란히 서면 어느 쪽에 신청할지 모른다.
+ * 끝은 둘 중 이른 것: 마감 시각(closesAt)이 지나거나 개발자가 일찍 닫았거나(closedAt). 지우지 않는다 — 신청자 목록은 모집이 끝난 뒤에 더 쓰인다.
+ */
+export const indiePlaytests = pgTable("indie_playtests", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  postId: uuid("post_id").references(() => indiePosts.id, { onDelete: "cascade" }).notNull(),
+  title: text("title").notNull(),
+  /** 무엇을 해 보는지, 어떻게 받는지, 보상 등. 마크다운 없이 줄바꿈만(인디 글 본문과 같은 규칙) */
+  body: text("body").notNull(),
+  /** 모집 인원. 다 차면 신청을 받지 않는다 */
+  slots: integer("slots").notNull(),
+  closesAt: timestamp("closes_at", { withTimezone: true }).notNull(),
+  closedAt: timestamp("closed_at", { withTimezone: true }),
+  ...auditColumns(),
+}, (t) => [index("indie_playtests_post_idx").on(t.postId, t.createdAt), index("indie_playtests_closes_idx").on(t.closesAt)]);
+
+/**
+ * 플레이테스트 신청. message 는 신청자가 개발자에게 남기는 말(연락처, 기기)이고 개발자만 본다. 이메일은 넘기지 않는다 —
+ * 연락 길은 신청자가 고른다(디스코드, 메일 등). 신청을 거두면 줄을 지운다.
+ */
+export const indiePlaytestApplications = pgTable("indie_playtest_applications", {
+  playtestId: uuid("playtest_id").references(() => indiePlaytests.id, { onDelete: "cascade" }).notNull(),
+  userId: uuid("user_id").references(() => users.id, { onDelete: "cascade" }).notNull(),
+  message: text("message").notNull(),
+  ...auditColumns(),
+}, (t) => [primaryKey({ columns: [t.playtestId, t.userId] }), index("indie_playtest_applications_user_idx").on(t.userId)]);
