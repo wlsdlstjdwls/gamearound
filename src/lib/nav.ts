@@ -48,7 +48,7 @@ export type NavSub = {
   mine?: boolean;
   /**
    * 띠에 세우지 않는 칸. 경로 줄("게임 게시판 > 리뷰")과 칸 켜기 규칙에는 그대로 쓴다.
-   * 게시판의 리뷰, 공략, 홍보는 게시판 홈 현황 띠와 목록 화면 옆 메뉴가 같은 길을 낸다 — 띠에도 서면 같은 길이 셋이었다(2026-10-28 사용자)
+   * 게시판의 리뷰, 공략, 홍보와 라운지의 개발일지, 질문/피드백은 홈의 현황 칸과 목록 화면 옆 메뉴가 같은 길을 낸다 — 띠에도 서면 같은 길이 셋이었다(2026-10-28 사용자)
    */
   hideInBand?: boolean;
 };
@@ -109,8 +109,9 @@ export const NAV_SECTIONS: readonly NavSection[] = [
     href: ROUTES.lounge,
     subs: [
       { label: "라운지 홈", href: ROUTES.lounge, aliases: [ROUTES.loungeAll] },
-      { label: "개발일지", href: ROUTES.loungeDevlogs },
-      { label: "질문/피드백", href: ROUTES.loungeQna },
+      // 개발일지, 질문/피드백은 라운지 홈의 글 현황 칸과 목록 옆 메뉴가 길을 낸다 — 게시판의 리뷰, 공략, 홍보와 같은 이유로 띠에서 뺀다(2026-10-28 사용자)
+      { label: "개발일지", href: ROUTES.loungeDevlogs, hideInBand: true },
+      { label: "질문/피드백", href: ROUTES.loungeQna, hideInBand: true },
       // 등록현황(/indie/mine)과 내 게임 통계(/indie/mine/stats)는 한 칸이다(2026-10-28 메뉴 정리). 둘 다 내 게임을 돌보는 화면이라
       // 띠에 따로 서면 같은 일이 두 칸이었다. 두 화면 사이는 머리의 탭(components/indie/mine-tabs)으로 오간다.
       // 통계, 플레이테스트 관리, 광고 걸기, 요금, 결제는 모두 /indie/mine 아래라 가장 긴 경로 규칙으로 이 칸이 켜진다

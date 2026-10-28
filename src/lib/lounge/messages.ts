@@ -6,6 +6,8 @@ export const LOUNGE_MESSAGES = {
   manage: "내 게임 관리",
   write: "글 작성",
   statusLabel: "내 개발 현황",
+  /** 글 갈래 현황 띠(오늘 올라온 글, 개발일지, 질문/피드백). 하위 띠에서 뺀 두 칸으로 가는 길이다(2026-10-28) */
+  postsStatusLabel: "라운지 글 현황",
   // 현황 띠의 칸(components/community/news-blocks 의 StatStrip). 이름은 칸 위, 수와 단위는 칸 아래에 따로 선다
   statApproved: "등록한 게임",
   statPendingLabel: "검토 중",
