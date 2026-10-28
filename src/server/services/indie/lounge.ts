@@ -10,15 +10,8 @@ import { indiePosts, posts, users } from "@/server/db/schema";
 import { LOUNGE_CATEGORIES } from "@/lib/community/constants";
 import { rowColumns, toRow } from "@/server/services/community/columns";
 import type { PostRowDto } from "@/server/services/community/dto";
-import { isPublic } from "./read";
 
-/** 공개된 인디 게임 수 — 보조 메뉴 "내가 만든 게임" 칸. 목록 화면(/indie)과 같은 문턱(isPublic)을 쓴다 */
-export async function countPublicIndie(): Promise<number> {
-  const [{ n }] = await getDb().select({ n: count() }).from(indiePosts).where(isPublic);
-  return n;
-}
-
-/** 내가 신청한 인디 게임 수(승인 대기, 반려 포함) — 보조 메뉴 "등록현황" 칸. 등록현황 화면의 "전체 신청" 과 같은 수다 */
+/** 내가 신청한 인디 게임 수(승인 대기, 반려 포함) — 보조 메뉴 "내 게임 관리" 칸. 등록현황 화면의 "전체 신청" 과 같은 수다 */
 export async function countMyIndie(userId: string): Promise<number> {
   const [{ n }] = await getDb().select({ n: count() }).from(indiePosts).where(eq(indiePosts.authorUserId, userId));
   return n;

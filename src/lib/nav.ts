@@ -8,7 +8,7 @@
 // 아직 화면이 없는 칸(게시판, 라운지, 명예의 전당, 슈퍼루키)도 메뉴에는 선다 — 누르면 "준비 중" 화면이다.
 import { gamesHref } from "@/lib/games-query";
 import { INDIE_FROM, INDIE_FROM_PARAM } from "@/lib/indie/query";
-import { INDIE_MINE_LEAF, ROUTES } from "@/lib/routes";
+import { ROUTES } from "@/lib/routes";
 
 /** 게임 게시판 글쓰기 화면(app/(user)/board/write). 경로 표시와 칸 켜기가 같은 값을 본다 */
 const BOARD_WRITE_PATH = `${ROUTES.board}/write`;
@@ -42,8 +42,8 @@ export type NavSub = {
    */
   childLeaves?: readonly { parent: string; leaf: string }[];
   /**
-   * 로그인한 사람 자신의 화면(등록현황, 내 게임 통계). 띠에서 공개 칸 뒤에 가는 선을 두고 따로 묶는다 —
-   * 라운지 띠 여섯 칸이 한 줄로 서 있으면 남의 글을 읽는 자리와 내 것을 관리하는 자리가 구별되지 않았다(2026-10-28 메뉴 정리)
+   * 로그인한 사람 자신의 화면(내 게임 관리). 띠에서 공개 칸 뒤에 가는 선을 두고 따로 묶는다 —
+   * 남의 글을 읽는 자리와 내 것을 관리하는 자리가 한 줄에서 구별되게 한다(2026-10-28 메뉴 정리)
    */
   mine?: boolean;
 };
@@ -79,6 +79,9 @@ export const NAV_SECTIONS: readonly NavSection[] = [
     subs: [
       { label: "명예의 전당", href: ROUTES.hallOfFame, childQueries: [{ parent: ROUTES.indie, query: { [INDIE_FROM_PARAM]: INDIE_FROM.hallOfFame } }] },
       { label: "슈퍼루키", href: ROUTES.rookies, childQueries: [{ parent: ROUTES.indie, query: { [INDIE_FROM_PARAM]: INDIE_FROM.rookies } }] },
+      // 공개된 인디 게임 전체(/indie). 라운지에 "내가 만든 게임" 으로 서 있었지만 남의 게임도 들어 있는 목록이라
+      // 인디 게임 메뉴와 겹쳤다 — 한 칸으로 합쳐 여기 둔다(2026-10-28 메뉴 정리, 사용자: "중복되는 것들 통폐합")
+      { label: "전체 인디 게임", href: ROUTES.indie },
       { label: "플레이테스트", href: ROUTES.playtests },
     ],
   },
@@ -99,22 +102,14 @@ export const NAV_SECTIONS: readonly NavSection[] = [
     key: "lounge",
     label: "개발자 라운지",
     href: ROUTES.lounge,
-    // 내가 만든 게임, 등록현황은 지금의 인디 글 화면(/indie, /indie/mine)이 맡는다 — 승인제로 바뀌기 전까지의 자리다
     subs: [
       { label: "라운지 홈", href: ROUTES.lounge, aliases: [ROUTES.loungeAll] },
-      { label: "내가 만든 게임", href: ROUTES.indie },
       { label: "개발일지", href: ROUTES.loungeDevlogs },
       { label: "질문/피드백", href: ROUTES.loungeQna },
-      { label: "등록현황", href: ROUTES.indieMine, mine: true, childQueries: [{ parent: ROUTES.indie, query: { [INDIE_FROM_PARAM]: INDIE_FROM.mine } }] },
-      // 플레이테스트 관리는 통계 화면의 게임 줄 단추로 들어온다
-      {
-        label: "내 게임 통계",
-        href: ROUTES.indieStats,
-        mine: true,
-        childLeaves: [{ parent: ROUTES.indieMine, leaf: INDIE_MINE_LEAF.playtest }],
-      },
-      // 광고, 멤버십(/indie/mine/plans)과 결제, 광고 성과, 광고 걸기는 메뉴 칸이 없다(10-28 사용자: "메뉴로 따로 두기보다 다른 화면에서 자연스럽게").
-      // 등록현황, 내 게임 통계, 내 게임 상세의 판(payments/plan-nudge)과 단추로 들어온다. 모두 /indie/mine 아래라 "등록현황" 이 켜진다
+      // 등록현황(/indie/mine)과 내 게임 통계(/indie/mine/stats)는 한 칸이다(2026-10-28 메뉴 정리). 둘 다 내 게임을 돌보는 화면이라
+      // 띠에 따로 서면 같은 일이 두 칸이었다. 두 화면 사이는 머리의 탭(components/indie/mine-tabs)으로 오간다.
+      // 통계, 플레이테스트 관리, 광고 걸기, 요금, 결제는 모두 /indie/mine 아래라 가장 긴 경로 규칙으로 이 칸이 켜진다
+      { label: "내 게임 관리", href: ROUTES.indieMine, mine: true, childQueries: [{ parent: ROUTES.indie, query: { [INDIE_FROM_PARAM]: INDIE_FROM.mine } }] },
     ],
   },
 ];
@@ -229,7 +224,7 @@ type Query = { get(name: string): string | null };
 
 /**
  * 지금 주소가 어느 메뉴의 어느 칸인지. 칸이 여럿 맞으면 경로가 긴 쪽, 같으면 주소 조건까지 맞는 쪽이 이긴다
- * (/indie/mine 은 "내가 만든 게임"(/indie)과 "등록현황"(/indie/mine) 둘 다에 걸린다).
+ * (/indie/mine 은 "전체 인디 게임"(/indie)과 "내 게임 관리"(/indie/mine) 둘 다에 걸린다).
  * 소속 메뉴는 있지만 칸이 없는 화면(게임 상세)은 sub 가 null 이다 — 띠는 서되 아무 칸도 켜지 않는다.
  */
 export function resolveNav(pathname: string, query: Query): { section: NavSection | null; sub: NavSub | null } {

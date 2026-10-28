@@ -20,6 +20,7 @@ import { bestRank, type RankKey } from "@/lib/indie/stats-rank";
 import type { IndieStatsRowDto } from "@/lib/indie/dto";
 import { cn } from "@/lib/cn";
 import { EmptyState } from "@/components/empty-state";
+import { MineTabs } from "@/components/indie/mine-tabs";
 import { Page, PageHead, sectionCardClass } from "@/components/ui/page";
 import { INDIE_MESSAGES } from "@/lib/indie/messages";
 import { stagger } from "@/lib/motion";
@@ -60,6 +61,7 @@ export default async function IndieStatsPage() {
 
   return (
     <Page gap={20}>
+      <MineTabs current={ROUTES.indieStats} />
       <PageHead title={M.statsTitle}>
         <p className="text-[14px] text-mut">{M.statsLead}</p>
       </PageHead>

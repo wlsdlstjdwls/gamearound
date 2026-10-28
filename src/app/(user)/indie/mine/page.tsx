@@ -13,6 +13,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { WriteLink } from "@/components/community/write-link";
 import { EmptyState } from "@/components/empty-state";
+import { MineTabs } from "@/components/indie/mine-tabs";
 import { RejectionSheet } from "@/components/indie/rejection-sheet";
 import { buttonClass } from "@/components/ui/button";
 import { FormMessage } from "@/components/ui/form-message";
@@ -91,6 +92,7 @@ export default async function IndieMinePage({ searchParams }: Props) {
 
   return (
     <Page gap={20}>
+      <MineTabs current={ROUTES.indieMine} />
       <PageHead title={RV.title} action={!full && <WriteLink href={ROUTES.indieNew}>{INDIE_MESSAGES.register}</WriteLink>}>
         <p className="text-[14px] text-mut">{RV.lead}</p>
       </PageHead>

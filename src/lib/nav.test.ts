@@ -15,19 +15,18 @@ describe("resolveNav", () => {
     expect(r.sub).toBeNull();
   });
 
-  it("긴 경로가 이긴다: /indie/mine 은 등록현황", () => {
-    expect(resolveNav("/indie/mine", q()).sub?.label).toBe("등록현황");
-    expect(resolveNav("/indie/some-game", q()).sub?.label).toBe("내가 만든 게임");
+  it("긴 경로가 이긴다: /indie/mine 은 내 게임 관리", () => {
+    expect(resolveNav("/indie/mine", q()).sub?.label).toBe("내 게임 관리");
+    expect(resolveNav("/indie/some-game", q()).sub?.label).toBe("전체 인디 게임");
   });
 
-  it("플레이테스트 관리는 내 게임 통계, 광고 걸기와 결제 화면은 메뉴 칸 없이 등록현황을 켠다", () => {
-    expect(resolveNav("/indie/mine/abc/playtest", q()).sub?.label).toBe("내 게임 통계");
-    for (const path of ["/indie/mine/abc/boost", "/indie/mine/plans", "/indie/mine/membership", "/indie/mine/ads", "/indie/mine/payments"]) {
-      expect(resolveNav(path, q()).sub?.label).toBe("등록현황");
+  it("통계, 플레이테스트 관리, 광고 걸기와 결제 화면은 모두 내 게임 관리를 켠다", () => {
+    for (const path of ["/indie/mine/stats", "/indie/mine/abc/playtest", "/indie/mine/abc/boost", "/indie/mine/plans", "/indie/mine/membership", "/indie/mine/ads", "/indie/mine/payments"]) {
+      expect(resolveNav(path, q()).sub?.label).toBe("내 게임 관리");
     }
     expect(trailKind("/indie/mine/plans", resolveNav("/indie/mine/plans", q()).sub)).toBe("back");
-    // 고치기(/indie/mine/<id>)는 그대로 등록현황
-    expect(resolveNav("/indie/mine/abc", q()).sub?.label).toBe("등록현황");
+    // 고치기(/indie/mine/<id>)도 내 게임 관리
+    expect(resolveNav("/indie/mine/abc", q()).sub?.label).toBe("내 게임 관리");
   });
 
   it("라운지 전체 글은 라운지 홈을 켠다(목업 subOf lga)", () => {
@@ -91,12 +90,12 @@ describe("인디 상세의 출처(?from=)", () => {
     const rookies = resolveNav("/indie/some-game", q("from=rookies"));
     expect([rookies.section?.key, rookies.sub?.label]).toEqual(["indie", "슈퍼루키"]);
   });
-  it("등록현황에서 오면 등록현황, 출처가 없거나 모르는 값이면 내가 만든 게임", () => {
-    expect(resolveNav("/indie/some-game", q("from=mine")).sub?.label).toBe("등록현황");
-    expect(resolveNav("/indie/some-game", q("from=zzz")).sub?.label).toBe("내가 만든 게임");
+  it("등록현황에서 오면 내 게임 관리, 출처가 없거나 모르는 값이면 전체 인디 게임", () => {
+    expect(resolveNav("/indie/some-game", q("from=mine")).sub?.label).toBe("내 게임 관리");
+    expect(resolveNav("/indie/some-game", q("from=zzz")).sub?.label).toBe("전체 인디 게임");
   });
   it("출처는 상세 한 칸에만 먹는다 — 목록, 고치기 화면은 그대로", () => {
-    expect(resolveNav("/indie", q("from=hof")).sub?.label).toBe("내가 만든 게임");
-    expect(resolveNav("/indie/mine/abc", q("from=hof")).sub?.label).toBe("등록현황");
+    expect(resolveNav("/indie", q("from=hof")).sub?.label).toBe("전체 인디 게임");
+    expect(resolveNav("/indie/mine/abc", q("from=hof")).sub?.label).toBe("내 게임 관리");
   });
 });
