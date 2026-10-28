@@ -105,7 +105,7 @@ export default async function IndieMinePage({ searchParams }: Props) {
       </div>
 
       {/* 공개 중인 게임이 있을 때만 광고 안내 판 — 걸 게임이 없는 사람에게 값부터 내밀지 않는다(10-28, 메뉴 대신 화면 안 입구) */}
-      {posts.some((p) => p.review === "approved" && p.status === "published") && <PlanNudge userId={user.id} />}
+      {posts.some((p) => p.review === "approved" && p.status === "published") && <PlanNudge />}
       {posts.length === 0 ? (
         <EmptyState title={M.mineEmpty} description={RV.emptyLead} action={{ href: ROUTES.indieNew, label: INDIE_MESSAGES.register }} />
       ) : (

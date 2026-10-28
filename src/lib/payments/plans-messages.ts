@@ -31,7 +31,8 @@ export const PLANS_MESSAGES = {
 
   // 다른 화면에서 이 화면으로 이끄는 한 줄 판(components/payments/plan-nudge). 10-28 사용자: "메뉴로 따로 두기보다 다른 화면에서 자연스럽게"
   nudgeTitle: "내 게임을 더 많은 사람에게 보여 줄까요",
-  nudgeLead: (name: string, price: string) => `${name} ${price}부터, 결제하면 바로 인디 목록 맨 위에 떠요`,
+  /** 값은 말하지 않는다 — 들르는 자리에서 값부터 들이밀면 장사 판으로 읽힌다(10-28 사용자: "문구도 금액도 별로"). 값은 요금 화면에서 견준다 */
+  nudgeLead: "게임을 찾으러 온 사람이 가장 먼저 지나가는 자리에 7일 동안 올려 둘 수 있어요",
   nudgeCta: "알리는 방법 보기",
   nudgeBoost: "더 알리기",
 

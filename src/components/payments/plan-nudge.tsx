@@ -3,21 +3,15 @@
 // 처음엔 연한 파랑 띠였는데 "눈에 너무 안 띈다" 해서 어두운 판(ui/ink-hero)으로 올렸다가, 같은 날 "톤앤매너에 안 맞는다" 는 말을 들었다 —
 // 사이트는 밝은 면 + 파랑이고 먹색 면은 이 판 하나뿐이라 떠 보였다. 지금은 홈 히어로와 같은 밝은 판(흰 면, 옅은 파랑 빛 번짐, 그림자)이다.
 // 눈길은 색 대신 움직임으로 끈다: 손전등 심볼이 켜졌다 꺼지고, 켜질 때 판을 가로지르는 파랑 빛 줄기가 함께 선다(globals.css .torch).
-// 값은 가장 싼 단(스파크)부터 말한다 — 들어오는 문턱을 낮춘다.
+// 값은 적지 않는다. 처음엔 가장 싼 단 값("스파크 6,900원부터")을 적었는데 10-28 사용자가 "문구도 금액도 별로" 라 했다 — 어디에 보이는지만 말한다.
 // 낱말은 "광고" 대신 "알리기, 노출" 이다(같은 날 사용자: "광고란 표현보다 부드럽게"). 보는 사람 쪽 "광고" 표시는 법이 요구해서 그대로다.
 import Link from "next/link";
 import { buttonClass } from "@/components/ui/button";
 import { BrandSymbol } from "@/components/ui/logo";
-import { formatPrice } from "@/lib/currency";
 import { PLANS_MESSAGES as M } from "@/lib/payments/plans-messages";
-import { getPriceBook } from "@/server/services/pricing";
-import { getPricingSettings } from "@/server/services/settings";
 import { ROUTES } from "@/lib/routes";
 
-/** 이름과 시작 값은 요금 설정에서 — 처음 결제하는 사람이면 첫 결제 프로모션 값이 걸린 값이다(services/pricing) */
-export async function PlanNudge({ userId }: { userId: string }) {
-  const [settings, book] = await Promise.all([getPricingSettings(), getPriceBook(userId)]);
-  const from = Math.min(book.boost.amount, book.pin.amount);
+export function PlanNudge() {
   return (
     <section
       aria-label={M.nudgeTitle}
@@ -43,7 +37,7 @@ export async function PlanNudge({ userId }: { userId: string }) {
           </span>
           <div className="flex min-w-0 flex-col gap-1">
             <p className="text-[17px] font-extrabold tracking-[-0.03em] text-ink sm:text-[19px]">{M.nudgeTitle}</p>
-            <p className="text-[13.5px] text-mut">{M.nudgeLead(settings.copy.single.name, formatPrice(from))}</p>
+            <p className="text-[13.5px] text-mut">{M.nudgeLead}</p>
           </div>
         </div>
         {/* 단추는 하나다. 멤버십 단추를 옆에 두었더니 "왜 있는지 모르겠다"(2026-10-28 사용자) — 무엇을 주는지 말하지 않는 이름뿐이었다.
