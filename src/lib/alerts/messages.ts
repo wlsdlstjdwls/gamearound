@@ -40,11 +40,18 @@ export const ALERT_MESSAGES = {
   removeConfirm: "이 알림을 지울까요?",
   /** 목록은 게임 한 줄에 플랫폼 알림을 묶는다 — 지우기는 그 묶음 전부다 */
   removeGroupConfirm: "이 게임에 걸린 알림을 모두 지울까요?",
+  /** 지우기 확인 팝업(ui/confirm-dialog). 브라우저 confirm 을 걷었다(2026-10-28 사용자) */
+  removeConfirmLead: "지운 알림은 되돌릴 수 없어요. 다시 받으려면 새로 만들어야 해요.",
+  removeConfirmAction: "지우기",
+  removeConfirmCancel: "취소",
   /** 목록 줄에서 플랫폼 칩 묶음의 이름(스크린 리더) */
   platformsLabel: "알림 받을 플랫폼",
   toggle: "알림 켜기, 끄기",
   priceUnknown: "아직 값을 모르는 게임이에요",
   metLabel: "조건 충족",
+  /** 목록 줄의 진척 막대 옆 글자(lib/alerts/condition 의 alertProgress) */
+  progress: (pct: number) => `조건까지 ${pct}%`,
+  progressLabel: "조건에 다가간 정도",
   lastSent: (date: string) => `마지막 알림 ${date}`,
   neverSent: "아직 보낸 알림 없음",
   /** 폼 */

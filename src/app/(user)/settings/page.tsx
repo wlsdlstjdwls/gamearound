@@ -77,7 +77,6 @@ export default async function SettingsPage() {
             </div>
             <Row label="가입일" value={formatDate(user.createdAt)} />
           </dl>
-          <p className="text-[11.5px] text-dim">닉네임, 비밀번호 변경은 곧 추가할 예정이에요.</p>
           <SignOutButton />
         </section>
 

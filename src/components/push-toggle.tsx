@@ -1,5 +1,6 @@
 "use client";
-// 웹푸시 구독 토글 (§7). 권한, 구독 순서는 use-push-subscription 이 맡고 여기는 스위치 모양만 그린다
+// 푸시 구독 토글 (§7). 권한, 구독 순서는 use-push-subscription 이 맡고 여기는 스위치 모양만 그린다.
+// 문구는 "기기" 로 말한다 — 앱에서도 같은 판을 쓸 것이다(lib/push/messages 머리 주석)
 import { SectionHead } from "@/components/ui/page";
 import { useState } from "react";
 import { Switch } from "@/components/ui/switch";
@@ -22,7 +23,7 @@ export function PushToggle({ initialCount }: { initialCount: number }) {
       <SectionHead title="푸시 알림" size="sub" />
       <div className="flex flex-wrap items-center justify-between gap-3.5 border-t border-line-strong py-4">
         <div className="min-w-0">
-          <p className="text-[14.5px] font-bold text-ink">이 브라우저에서 할인 알림 받기</p>
+          <p className="text-[14.5px] font-bold text-ink">{M.toggleTitle}</p>
           <p className="mt-0.5 text-[12.5px] text-mut">
             {M.status[status]}
           </p>
@@ -41,8 +42,8 @@ export function PushToggle({ initialCount }: { initialCount: number }) {
 
       {/* 인셋 안내문 — 리디자인이 판을 남겨 둔 두 자리 중 하나다(ui/page 의 Panel 주석) */}
       <div className="rounded-xl bg-surface-2 px-4 py-3.5">
-        <p className="text-[12.5px] font-semibold text-ink">연결된 기기 {initialCount}대</p>
-        <p className="mt-1 text-[12.5px] text-mut">다른 브라우저, 기기에서도 각각 켜야 합니다.</p>
+        <p className="text-[12.5px] font-semibold text-ink">{M.devices(initialCount)}</p>
+        <p className="mt-1 text-[12.5px] text-mut">{M.devicesHint}</p>
       </div>
 
       {error && <p className="text-[12.5px] text-danger">{error}</p>}

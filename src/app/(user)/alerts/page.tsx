@@ -17,11 +17,12 @@ import { AlertList } from "@/components/alerts/alert-list";
 import { EmptyState } from "@/components/empty-state";
 import { Page, PageHead, SectionHead } from "@/components/ui/page";
 import { buttonClass } from "@/components/ui/button";
-import { BellIcon } from "@/components/ui/icons";
+import { BellIcon, ChatIcon, CheckCircleIcon } from "@/components/ui/icons";
 import { ROUTES } from "@/lib/routes";
 import { ALERT_MESSAGES as M } from "@/lib/alerts/messages";
 import { conditionMode } from "@/lib/alerts/condition";
 import { cn } from "@/lib/cn";
+import { stagger } from "@/lib/motion";
 import { findGameBySlug, findMyAlertForGame, listAlertViews } from "@/server/services/alerts";
 import { getMyProfile, isPersonalized } from "@/server/services/profiles";
 import { countMyPushSubscriptions } from "@/server/services/push";
@@ -29,12 +30,21 @@ import { alertDefaults } from "@/lib/onboarding/personal";
 
 export const metadata: Metadata = { title: M.title };
 
-/** 머리 숫자 한 칸. 지금 조건에 맞는 칸만 초록 — 그 숫자가 이 화면에서 유일하게 "행동할 이유" 다 */
-function Stat({ label, value, tone }: { label: string; value: number; tone?: "ok" }) {
+/**
+ * 머리 숫자 한 칸. 지금 조건에 맞는 칸만 초록 — 그 숫자가 이 화면에서 유일하게 "행동할 이유" 다.
+ * 칸마다 그림을 붙이고 차례로 떠오른다(2026-10-28 사용자 "밋밋하다"). 좁은 화면은 그림을 숫자 위로 올려 세 칸이 한 줄에 선다.
+ */
+function Stat({ label, value, tone, icon, index }: { label: string; value: number; tone?: "ok"; icon: React.ReactNode; index: number }) {
+  const lit = tone === "ok" && value > 0;
   return (
-    <div className={cn("flex flex-col gap-1 rounded-[var(--radius-md)] px-4 py-3.5", tone === "ok" && value > 0 ? "bg-ok-soft" : "bg-surface shadow-[var(--elev-1)]")}>
-      <span className="text-[12px] text-dim">{label}</span>
-      <span className={cn("text-[24px] font-extrabold leading-none tracking-[-0.03em]", tone === "ok" && value > 0 ? "text-ok" : "text-ink")}>{value.toLocaleString("ko-KR")}</span>
+    <div className={cn("enter-item flex flex-col gap-2 rounded-[var(--radius-md)] px-3.5 py-3.5 sm:flex-row sm:items-center sm:gap-3.5 sm:px-4", lit ? "bg-ok-soft" : "bg-surface shadow-[var(--elev-1)]")} style={stagger(index)}>
+      <span aria-hidden className={cn("grid size-9 shrink-0 place-items-center rounded-full sm:size-11", lit ? "bg-surface text-ok" : "bg-acc-soft text-acc")}>
+        {icon}
+      </span>
+      <span className="flex min-w-0 flex-col gap-1">
+        <span className="text-[12px] text-dim">{label}</span>
+        <span className={cn("text-[22px] font-extrabold leading-none tracking-[-0.03em] sm:text-[24px]", lit ? "text-ok" : "text-ink")}>{value.toLocaleString("ko-KR")}</span>
+      </span>
     </div>
   );
 }
@@ -93,9 +103,9 @@ export default async function AlertsPage({ searchParams }: { searchParams: Promi
 
       {views.length > 0 && (
         <div className="grid grid-cols-3 gap-2.5">
-          <Stat label={M.statActive} value={overview.active} />
-          <Stat label={M.statMet} value={overview.metNow} tone="ok" />
-          <Stat label={M.statSent} value={overview.sentRecent} />
+          <Stat label={M.statActive} value={overview.active} icon={<BellIcon size={18} />} index={0} />
+          <Stat label={M.statMet} value={overview.metNow} tone="ok" icon={<CheckCircleIcon size={18} />} index={1} />
+          <Stat label={M.statSent} value={overview.sentRecent} icon={<ChatIcon size={18} />} index={2} />
         </div>
       )}
 
@@ -122,7 +132,16 @@ export default async function AlertsPage({ searchParams }: { searchParams: Promi
       )}
 
       {views.length === 0 ? (
-        <EmptyState title={M.emptyTitle} description={M.emptyDescription} action={{ href: ROUTES.game, label: M.emptyAction }} />
+        <EmptyState
+          title={M.emptyTitle}
+          description={M.emptyDescription}
+          icon={
+            <span className="bell-ring">
+              <BellIcon size={20} />
+            </span>
+          }
+          action={{ href: ROUTES.game, label: M.emptyAction }}
+        />
       ) : (
         <section className="flex flex-col gap-3.5">
           {/* 개수는 게임 수다 — 목록이 플랫폼 행을 게임 한 줄로 묶어 보인다(components/alerts/alert-list) */}

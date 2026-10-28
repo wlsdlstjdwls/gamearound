@@ -5,7 +5,7 @@ import { ROUTES } from "@/lib/routes";
 describe("accountLinksFor", () => {
   it("기획서 순서 셋이 앞에 서고 관리자 항목은 관리자에게만", () => {
     const user = accountLinksFor("user").map((l) => l.label);
-    expect(user.slice(0, ACCOUNT_PRIMARY_COUNT)).toEqual(["내 활동", "내 찜 목록", "가격 알림"]);
+    expect(user.slice(0, ACCOUNT_PRIMARY_COUNT)).toEqual(["내 활동", "찜 목록", "가격 알림"]);
     expect(user).not.toContain("관리자");
     expect(accountLinksFor("admin").map((l) => l.label)).toContain("관리자");
   });

@@ -13,7 +13,7 @@ import { cn } from "@/lib/cn";
  * 색 갈래(2026-10-26). 게시판 말머리가 카테고리마다 색이 달라야 해서(기획서 v2.0 7장) 브랜드 하나에서 넓혔다.
  * 클래스 문자열을 통째로 둔다 — Tailwind 는 소스에 적힌 글자만 찾으므로 조립한 이름(`bg-${tone}-soft`)은 생성되지 않는다.
  */
-export type TagTone = "acc" | "ok" | "warn" | "info" | "danger" | "plum" | "hot";
+export type TagTone = "acc" | "ok" | "warn" | "info" | "danger" | "plum" | "hot" | "neutral" | "outline";
 const TONE: Record<TagTone, string> = {
   acc: "bg-acc-soft text-acc",
   ok: "bg-ok-soft text-ok",
@@ -23,6 +23,10 @@ const TONE: Record<TagTone, string> = {
   plum: "bg-plum-soft text-plum",
   // 채운 빨강 — "급상승" 처럼 줄에서 먼저 눈에 걸려야 하는 딱지(10-27, 사용자: "급상승 인기글인데 눈에 잘 안 들어온다")
   hot: "bg-danger text-on-ink",
+  // 색 없는 회색 면 — 말머리 옆 곁딱지(스포 없음, 홍보 유형). 줄 하나에 색이 셋, 넷 서면 알록달록해 읽히지 않았다(2026-10-28 사용자)
+  neutral: "bg-surface-2 text-ink-2",
+  // 면 없이 얇은 테두리 — 광고 표시, 메이커처럼 수수하게 덧붙는 말(10-27 원칙 "색 채운 배지를 늘리지 말 것")
+  outline: "text-mut ring-1 ring-inset ring-line",
 };
 
 type TagOptions = { tight?: boolean; small?: boolean; tone?: TagTone; className?: string };

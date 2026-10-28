@@ -4,17 +4,18 @@
 // "use client" 파일이 아니다 — 서버 컴포넌트가 읽어도 값이 그대로 와야 한다(AGENTS.md 6장, 2026-10-12 푸터 사고).
 import { AUTH_MESSAGES } from "@/lib/auth/messages";
 import { ROUTES, signInPath } from "@/lib/routes";
+import { WISHLIST_MESSAGES } from "@/lib/wishlist/messages";
 
 export type AccountLink = { key: string; href: string; label: string; adminOnly?: boolean };
 
 /**
- * 로그인한 사람의 메뉴. 앞 셋은 기획서 순서 그대로(내 활동, 내 찜 목록, 가격 알림) 그다음이 로그아웃이다.
+ * 로그인한 사람의 메뉴. 앞 셋은 기획서 순서 그대로(내 활동, 찜 목록, 가격 알림) 그다음이 로그아웃이다.
  * 설정, 관리자는 기획서 표에 없는 우리 화면이라 그 뒤에 붙인다 — 기획서가 정한 순서를 끼어들어 깨지 않는다.
  * 로그아웃은 링크가 아니라 단추라 표 밖에 두고, 그리는 쪽이 셋째 항목 뒤에 세운다(ACCOUNT_PRIMARY_COUNT).
  */
 export const ACCOUNT_LINKS: readonly AccountLink[] = [
   { key: "me", href: ROUTES.me, label: "내 활동" },
-  { key: "wishlist", href: ROUTES.wishlist, label: "내 찜 목록" },
+  { key: "wishlist", href: ROUTES.wishlist, label: WISHLIST_MESSAGES.title },
   { key: "alerts", href: ROUTES.alerts, label: "가격 알림" },
   { key: "settings", href: ROUTES.settings, label: "설정" },
   { key: "admin", href: ROUTES.admin, label: "관리자", adminOnly: true },

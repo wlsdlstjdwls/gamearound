@@ -26,8 +26,9 @@ import { RememberPref } from "@/components/remember-pref";
 import { PREF_COOKIES, readPref } from "@/lib/prefs";
 import { cookies } from "next/headers";
 import { cn } from "@/lib/cn";
+import { WISHLIST_MESSAGES } from "@/lib/wishlist/messages";
 
-export const metadata: Metadata = { title: "내 찜 목록" };
+export const metadata: Metadata = { title: WISHLIST_MESSAGES.title };
 
 const SORTS = [
   { key: "sale", label: "할인순" },
@@ -80,7 +81,7 @@ export default async function WishlistPage({ searchParams }: Props) {
       <NavPendingScope>
       <header className="flex flex-wrap items-end justify-between gap-x-6 gap-y-4">
         <div>
-          <PageHead title="내 찜 목록" />
+          <PageHead title={WISHLIST_MESSAGES.title} />
           <p className="mt-1.5 text-[13.5px] text-mut">
             {items.length}개 중 <span className="font-bold text-acc">{onSaleCount}개가 지금 할인 중</span>이에요.
           </p>
@@ -104,7 +105,8 @@ export default async function WishlistPage({ searchParams }: Props) {
         />
       ) : (
         // min(): 화면이 칸보다 좁아도 칸이 줄어야 한다. 안 씌우면 360px 기기에서 카드가 화면 밖으로 나간다
-        <ul className="grid grid-cols-[repeat(auto-fill,minmax(min(270px,100%),1fr))] gap-4 sm:gap-5">
+        // 좁은 화면은 한 줄 가로 카드(커버 왼쪽)다(2026-10-28 사용자 "불필요한 스크롤"). 세로 카드면 다섯 개에 2,000px 을 내려야 했다
+        <ul className="grid grid-cols-1 gap-3 sm:grid-cols-[repeat(auto-fill,minmax(min(270px,100%),1fr))] sm:gap-5">
           {sorted.map(({ game }, i) => {
             // "최저" 표시는 같은 통화끼리만 뜻이 있다 — 기준을 lib/currency 한 곳에서만 정한다
             const cheapest = cheapestOf(game.platforms);
@@ -115,8 +117,8 @@ export default async function WishlistPage({ searchParams }: Props) {
 
             return (
               // 카드(2026-10-27). 게임 목록 카드처럼 흰 판 위 커버가 먼저 서고, 값 줄과 알림 단추가 아래에 앉는다
-              <li key={game.id} className="enter-item lift group flex flex-col overflow-hidden rounded-[var(--radius-panel)] bg-surface shadow-[var(--elev-card)] transition-shadow duration-base hover:shadow-[var(--elev-card-hover)]" style={stagger(i)}>
-                <Link href={`/games/${game.slug}`} className="cover-zoom block overflow-hidden" tabIndex={-1} aria-hidden>
+              <li key={game.id} className="enter-item lift group flex overflow-hidden sm:flex-col rounded-[var(--radius-panel)] bg-surface shadow-[var(--elev-card)] transition-shadow duration-base hover:shadow-[var(--elev-card-hover)]" style={stagger(i)}>
+                <Link href={`/games/${game.slug}`} className="cover-zoom relative block min-h-[96px] w-[108px] shrink-0 overflow-hidden sm:w-auto" tabIndex={-1} aria-hidden>
                   {game.coverUrl ? (
                     <FadeImage
                       src={game.coverUrl}
@@ -124,15 +126,15 @@ export default async function WishlistPage({ searchParams }: Props) {
                       width={460}
                       height={215}
                       unoptimized
-                      className="cover-zoom-img aspect-[460/215] w-full object-cover"
-                      fallback={<ImageFallback label="" className="aspect-[460/215] w-full" />}
+                      className="cover-zoom-img absolute inset-0 h-full w-full object-cover sm:static sm:aspect-[460/215] sm:h-auto"
+                      fallback={<ImageFallback label="" className="absolute inset-0 h-full w-full sm:static sm:aspect-[460/215] sm:h-auto" />}
                     />
                   ) : (
-                    <ImageFallback label="" className="aspect-[460/215] w-full" />
+                    <ImageFallback label="" className="absolute inset-0 h-full w-full sm:static sm:aspect-[460/215] sm:h-auto" />
                   )}
                 </Link>
 
-                <div className="flex min-w-0 flex-1 flex-col gap-2.5 p-4">
+                <div className="flex min-w-0 flex-1 flex-col gap-2 p-3 sm:gap-2.5 sm:p-4">
                   <div className="flex items-start justify-between gap-2">
                     <Link href={`/games/${game.slug}`} className="min-w-0 text-[15px] font-extrabold tracking-[-0.025em] text-ink hover:text-acc">
                       <Clamp>{title}</Clamp>

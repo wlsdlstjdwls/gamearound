@@ -44,7 +44,7 @@ export default async function MePage({ searchParams }: Props) {
   return (
     <Page gap={22}>
       <PageHead title={M.title} />
-      <section className="max-w-[var(--page-w-tight)] rounded-[var(--radius-panel)] bg-surface p-5 shadow-hair sm:p-7">
+      <section className="max-w-[var(--page-w-tight)] rounded-[var(--radius-panel)] bg-surface p-4 shadow-hair sm:p-7">
         <AvatarEditor userId={user.id} name={name} initialUrl={user.avatarUrl} />
       </section>
       <NavPendingScope>
@@ -56,8 +56,9 @@ export default async function MePage({ searchParams }: Props) {
             {M.tabSaved}
           </NavChip>
         </div>
-        {/* 목록은 흰 판 한 장 안에(목업 actPage 의 .bcd) — 게시판 목록과 같은 줄 모양이다 */}
-        <PendingRegion className="mt-3 flex flex-col gap-3 rounded-[var(--radius-md)] bg-surface p-3 shadow-hair sm:p-4">
+        {/* 목록은 흰 판 한 장 안에(목업 actPage 의 .bcd) — 게시판 목록과 같은 줄 모양이다.
+            빈 목록은 판을 세우지 않는다 — 흰 판 안에 회색 빈 상자가 또 앉아 두 겹이 됐고, 그만큼 화면이 길어져 쓸데없이 스크롤됐다(2026-10-28) */}
+        <PendingRegion className={result.items.length > 0 ? "mt-3 flex flex-col gap-3 rounded-[var(--radius-md)] bg-surface p-3 shadow-hair sm:p-4" : "mt-3 flex flex-col gap-3"}>
           <PostList
             bare
             posts={result.items}

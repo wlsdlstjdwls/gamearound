@@ -54,3 +54,19 @@ export function alertStatus(c: AlertCondition, rows: AlertPriceRow[], platform: 
   const topPct = Math.max(...scoped.map((r) => r.discountPct ?? 0));
   return { best, met: false, gap: { kind: "discount", pct: Math.max(0, (c.minDiscountPct ?? 1) - topPct) } };
 }
+
+/**
+ * 조건까지 얼마나 왔나(0~1). 가격 알림 목록 줄의 막대가 읽는다(2026-10-28 사용자 "밋밋하다" — 숫자 글만으로는 거리가 안 보였다).
+ * 할인율 조건은 지금 할인율 / 바라는 할인율, 목표가 조건은 목표가 / 지금 값이다. 값을 모르면 null — 막대를 세우지 않는다.
+ */
+export function alertProgress(c: AlertCondition, status: AlertStatus): number | null {
+  if (status.met) return 1;
+  if (!status.gap || !status.best || status.best.currentPrice === null) return null;
+  const clamp = (n: number) => Math.min(1, Math.max(0, n));
+  if (status.gap.kind === "price") {
+    const now = status.best.currentPrice;
+    return now > 0 ? clamp((now - status.gap.amount) / now) : null;
+  }
+  const need = c.minDiscountPct ?? 1;
+  return clamp((need - status.gap.pct) / need);
+}

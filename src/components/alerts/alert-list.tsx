@@ -24,16 +24,43 @@ import { formatPrice } from "@/lib/currency";
 import { formatDate, PLATFORM_LABEL } from "@/lib/format";
 import { ALERT_MESSAGES as M, PRICE_ALERT_MESSAGES, conditionText, gapText } from "@/lib/alerts/messages";
 import { distinct, groupAlertsByGame, type AlertGroup } from "@/lib/alerts/group";
+import { alertProgress } from "@/lib/alerts/condition";
 import { stagger } from "@/lib/motion";
 import { cn } from "@/lib/cn";
 import { gamePath, ROUTES } from "@/lib/routes";
 import type { AlertView } from "@/server/services/alerts";
 
 function Cover({ src }: { src: string | null }) {
-  const box = "h-[54px] w-[96px] shrink-0 rounded-[var(--radius-inset)]";
+  // 커버를 키웠다(2026-10-28 사용자 "밋밋하다") — 96x54 에서는 무슨 게임인지 그림으로 안 읽혔다
+  const box = "h-[60px] w-[112px] shrink-0 rounded-[var(--radius-inset)] sm:h-[72px] sm:w-[136px]";
   const fallback = <ImageFallback label="" className={box} />;
   if (!src) return fallback;
-  return <FadeImage src={src} alt="" width={96} height={54} unoptimized className={cn(box, "object-cover shadow-hair")} fallback={fallback} />;
+  return <FadeImage src={src} alt="" width={136} height={72} unoptimized className={cn(box, "object-cover shadow-hair")} fallback={fallback} />;
+}
+
+/**
+ * 조건까지 얼마나 왔나를 막대로(2026-10-28). "할인율 20%p 남았어요" 같은 글만으로는 거리가 눈에 안 들어왔다.
+ * 충족이면 초록으로 가득 찬다 — 이 화면에서 초록은 "충족" 하나만 말한다(파일 머리 주석).
+ */
+function ProgressBar({ v, index }: { v: AlertView; index: number }) {
+  const p = alertProgress({ minDiscountPct: v.minDiscountPct, targetPrice: v.targetPrice }, v.status);
+  if (p === null) return null;
+  const pct = Math.round(p * 100);
+  return (
+    <div className="flex items-center gap-2.5">
+      <span
+        role="meter"
+        aria-label={M.progressLabel}
+        aria-valuemin={0}
+        aria-valuemax={100}
+        aria-valuenow={pct}
+        className="relative h-1.5 w-full max-w-[240px] overflow-hidden rounded-full bg-surface-2"
+      >
+        <span className={cn("bar-grow absolute inset-y-0 left-0 rounded-full", v.status.met ? "bg-ok" : "bg-acc")} style={{ ["--bar-w" as string]: `${pct}%`, ...stagger(index) }} />
+      </span>
+      {!v.status.met && <span className="shrink-0 text-[11.5px] font-semibold text-mut">{M.progress(pct)}</span>}
+    </div>
+  );
 }
 
 function StatusLine({ v }: { v: AlertView }) {
@@ -97,6 +124,7 @@ export function AlertList({ views }: { views: AlertView[] }) {
                 </ul>
               </div>
               <StatusLine v={v} />
+              <ProgressBar v={v} index={i} />
               <p className="text-[12px] text-dim">
                 {summary(g)} | {sentAt ? M.lastSent(formatDate(sentAt)) : M.neverSent}
               </p>

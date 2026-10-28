@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { alertStatus, conditionMode, meetsCondition, type AlertPriceRow } from "./condition";
+import { alertProgress, alertStatus, conditionMode, meetsCondition, type AlertPriceRow } from "./condition";
 
 const row = (o: Partial<AlertPriceRow>): AlertPriceRow => ({ platform: "steam", currentPrice: 30000, currency: "KRW", discountPct: 0, ...o });
 
@@ -43,5 +43,25 @@ describe("alertStatus", () => {
   });
   it("원화 값이 없으면 best 가 없다", () => {
     expect(alertStatus({ minDiscountPct: 1, targetPrice: null }, [row({ currency: "JPY" })], null).best).toBeNull();
+  });
+});
+
+describe("alertProgress", () => {
+  const row = (currentPrice: number | null, discountPct: number | null): AlertPriceRow => ({ platform: "steam", currentPrice, currency: "KRW", discountPct });
+  it("조건에 맞으면 끝까지 찬다", () => {
+    const c = { minDiscountPct: 30, targetPrice: null };
+    expect(alertProgress(c, alertStatus(c, [row(7000, 50)], null))).toBe(1);
+  });
+  it("할인율 조건은 지금 할인율 / 바라는 할인율", () => {
+    const c = { minDiscountPct: 50, targetPrice: null };
+    expect(alertProgress(c, alertStatus(c, [row(8000, 20)], null))).toBeCloseTo(0.4);
+  });
+  it("목표가 조건은 목표가 / 지금 값", () => {
+    const c = { minDiscountPct: null, targetPrice: 15000 };
+    expect(alertProgress(c, alertStatus(c, [row(20000, 0)], null))).toBeCloseTo(0.75);
+  });
+  it("값을 모르면 막대를 세우지 않는다", () => {
+    const c = { minDiscountPct: 30, targetPrice: null };
+    expect(alertProgress(c, alertStatus(c, [row(null, null)], null))).toBeNull();
   });
 });

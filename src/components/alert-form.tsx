@@ -3,17 +3,16 @@
 // 리디자인: 플랫폼은 select 대신 칩 버튼, 최소 할인율은 숫자 입력 대신 슬라이더.
 // 2026-10-07 고도화: 기준을 둘 중 하나로 고른다(할인율 | 목표가, lib/alerts/condition). 이미 만든 알림이 있으면
 // 그 값으로 폼을 채워 "조건 바꾸기" 가 된다 — 저장은 같은 게임, 플랫폼 행을 덮는다(services/alerts 의 createAlert).
-import { useActionState, useOptimistic, useState, useTransition } from "react";
+import { useActionState, useState } from "react";
 import { ActionForm, useActionFormPending } from "@/components/ui/action-form";
-import { createAlertAction, deleteAlertAction, toggleAlertAction, type ActionState } from "@/app/(user)/alerts/actions";
+import { createAlertAction, type ActionState } from "@/app/(user)/alerts/actions";
 import { FadeImage } from "@/components/ui/fade-image";
 import { ImageFallback } from "@/components/ui/image-fallback";
 import { PLATFORM_LABEL } from "@/lib/format";
 import { PLATFORM_ORDER } from "@/lib/platform";
 import { Button } from "@/components/ui/button";
 import { Clamp } from "@/components/ui/tooltip";
-import { Switch } from "@/components/ui/switch";
-import { CheckIcon, XIcon } from "@/components/ui/icons";
+import { CheckIcon } from "@/components/ui/icons";
 import { cn } from "@/lib/cn";
 import type { AlertDefaults } from "@/lib/onboarding/personal";
 import { PERSONAL_MESSAGES } from "@/lib/onboarding/messages";
@@ -219,44 +218,5 @@ export function AlertForm({ game, defaults, initial }: { game: FormGame; default
         )}
       </div>
     </ActionForm>
-  );
-}
-
-/** 목록 행의 활성 토글, 삭제 버튼 */
-export function AlertItemControls({ id, isActive }: { id: string; isActive: boolean }) {
-  const [pending, start] = useTransition();
-  // 성공 시엔 revalidate로 화면이 갱신되므로 에러만 표시
-  const [state, setState] = useState<ActionState>(null);
-  // 스위치는 누른 순간 넘어간다(AGENTS §6 "누른 순간 화면이 먼저 바뀐다"). 전환이 끝나면 서버 값(isActive)으로 돌아가므로
-  // 실패하면 저절로 되돌아가고 에러 문구만 남는다. 예전엔 disabled 로 흐리기만 해서 눌렸는지 안 보였다
-  const [shownActive, setShownActive] = useOptimistic(isActive);
-
-  return (
-    <div className="flex items-center gap-2.5">
-      {state && !state.ok && <span className="text-[11.5px] text-danger">{state.error}</span>}
-      <Switch
-        on={shownActive}
-        label={AM.toggle}
-        onToggle={() =>
-          start(async () => {
-            setShownActive(!shownActive);
-            setState(await toggleAlertAction(id));
-          })
-        }
-      />
-      <button
-        type="button"
-        disabled={pending}
-        aria-label={AM.remove}
-        onClick={() => {
-          if (!confirm(AM.removeConfirm)) return;
-          start(async () => setState(await deleteAlertAction(id)));
-        }}
-        // 그림은 작아도 누르는 넓이는 44px(규약 §6). 지우기는 되돌릴 수 없어 hover 에서 빨강으로 미리 말한다
-        className="press tap flex size-9 items-center justify-center rounded-full text-dim transition-colors hover:bg-danger-soft hover:text-danger disabled:opacity-60"
-      >
-        <XIcon size={16} />
-      </button>
-    </div>
   );
 }

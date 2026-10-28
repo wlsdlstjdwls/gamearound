@@ -9,6 +9,7 @@ import { SiteMenu } from "@/components/site-menu";
 import { SiteNav, SiteNavFallback } from "@/components/site-nav";
 import { SiteTabbar } from "@/components/site-tabbar";
 import { NotificationBell } from "@/components/notification-bell";
+import { HeaderWishLink } from "@/components/header-wish-link";
 import { SubNav } from "@/components/sub-nav";
 import { PageTrail } from "@/components/page-trail";
 import { ThemeSwitch } from "@/components/theme-switch";
@@ -58,6 +59,8 @@ export function SiteHeader() {
               좁은 화면에서도 남긴다(2026-10-26) — 테마, 계정 단추와 함께 숨겼더니 휴대폰에서는 알림함에 갈 길이 없었다.
               목업 390 도 종을 머리띠에 둔다 */}
           <div className="flex shrink-0 items-center gap-1.5">
+            {/* 찜 목록 하트(2026-10-28 사용자 지시). 종과 짝으로 선다 */}
+            <HeaderWishLink />
             <NotificationBell />
             <div className="hidden tab:contents">
               <AuthNav />
