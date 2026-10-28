@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { isUpcomingRow, orderCards, type PlatformPriceItem } from "./order";
+import { initialPickBrand, isUpcomingRow, orderCards, type PlatformPriceItem } from "./order";
 
 /** 카드 순서만 보는 시험이라 순서에 쓰는 칸만 채운다 */
 const row = (platform: string, currentPrice: number | null = 10_000) => ({ platform, region: "KR", currentPrice, currency: "KRW" }) as unknown as PlatformPriceItem;
@@ -14,6 +14,19 @@ describe("orderCards", () => {
   });
   it("파는 PC 스토어는 다 선다", () => {
     expect(shape(orderCards([row("epic", 9_000), row("steam", 10_000), row("xbox")]))).toEqual(["epic", "steam", "xbox", "-playstation", "-nintendo"]);
+  });
+});
+
+describe("initialPickBrand", () => {
+  it("값 없는 맨 앞 카드는 건너뛰고 값 붙은 카드를 고른다", () => {
+    expect(initialPickBrand([row("steam", null), row("ps5", 88_900), row("xbox", null)])).toBe("playstation");
+  });
+  it("값 붙은 카드끼리는 줄 맨 앞(PC 갈래)", () => {
+    expect(initialPickBrand([row("ps5", 9_000), row("steam", 10_000)])).toBe("steam");
+  });
+  it("값이 하나도 없으면 맨 앞 카드, 카드가 없으면 null", () => {
+    expect(initialPickBrand([row("xbox", null), row("steam", null)])).toBe("steam");
+    expect(initialPickBrand([])).toBeNull();
   });
 });
 

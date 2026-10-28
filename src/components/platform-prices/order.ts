@@ -122,6 +122,17 @@ export function orderCards(platforms: PlatformPriceItem[]): PriceCard[] {
   ]);
 }
 
+/**
+ * 상세에 들어왔을 때 처음 골라 둘 묶음 — 줄 맨 앞의 **값이 붙은** 카드(2026-10-28 사용자).
+ * 맨 앞 카드를 그대로 고르면 PC 갈래가 늘 앞이라 값 없는 Steam(콜 오브 듀티 런처)이 골라져
+ * 할인 예측이 "기록이 쌓이면" 만 말하고, 값이 있는 PS 예측은 눌러야 보였다. 값 붙은 카드가 하나도 없으면 맨 앞 카드
+ */
+export function initialPickBrand(platforms: PlatformPriceItem[]): string | null {
+  const rows = orderCards(platforms).flatMap((c) => (c.kind === "row" ? [c.row] : []));
+  const pick = rows.find((r) => r.currentPrice !== null) ?? rows[0];
+  return pick ? brandKeyOf(pick.platform) : null;
+}
+
 /** 히어로 "지원 플랫폼" 줄 — 파는 묶음만, PLATFORM_ORDER 순, 이름은 카드 머리와 같은 말(지역 접미어는 뺀다) */
 export function soldBrands(platforms: PlatformDto[]): { key: string; label: string; anchor: string }[] {
   const sold = new Set(platforms.map((p) => p.platform));
