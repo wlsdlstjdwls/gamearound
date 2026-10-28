@@ -41,7 +41,7 @@ export default async function AdminTasksPage({ searchParams }: { searchParams: P
       <header className="flex flex-col gap-3">
         {/* 쓰는 법 안내 한 단락을 걷었다(2026-09-30, 사용자: "문구는 없애라"). 판을 매일 쓰는 사람에게
             그 단락은 판을 한 줄 아래로 미는 일만 했다 — 칸마다 선 "한 줄 추가" 가 이미 쓰는 법을 말한다 */}
-        <PageHead title={TASK_MESSAGES.title} note={TASK_MESSAGES.count(total)} />
+        <PageHead size="admin" title={TASK_MESSAGES.title} note={TASK_MESSAGES.count(total)} />
         {/* 판을 다루는 버튼 둘은 한 줄에 선다 — 더하기는 왼쪽, 지우는 쪽은 손이 덜 가는 오른쪽 끝 */}
         <div className="flex flex-wrap items-center justify-between gap-2">
           <TaskAddForm sources={sourceEnum.enumValues} assignees={assignees} />

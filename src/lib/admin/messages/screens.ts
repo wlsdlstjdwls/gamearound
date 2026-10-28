@@ -68,7 +68,16 @@ export const SYNC_STATUS_LABEL = {
 
 export const SYNC_MESSAGES = {
   title: "수집 현황",
-  lead: "스토어마다 마지막 수집이 무엇을 만졌는지 봐요. 여기서는 읽기만 해요. 다시 돌리는 건 GitHub Actions 에서 해요.",
+  lead: "스토어마다 마지막 수집이 무엇을 만졌는지 봐요. 다시 돌리는 건 GitHub Actions 에서 해요.",
+  /* 스토어 표(2026-10-28, 카드 열다섯 장을 표 한 장으로). 손볼 줄이 위로 오고, 정상 줄은 한 줄씩만 선다 */
+  sourcesTitle: "스토어별 수집",
+  colSource: "스토어",
+  colStatus: "상태",
+  colRun: "가져온 게임",
+  /** 표 머리용 짧은 말. 카드 시절의 "처리한 건 | 실패한 건" 은 칸 머리에서 두 줄로 접혔다 */
+  colProcessed: "처리 | 실패",
+  colLogs: "로그",
+  logsShort: "로그 보기",
   rerun: "Actions 에서 다시 돌리기",
   rerunHint: "NEXT_PUBLIC_GITHUB_REPO 를 넣으면 다시 돌리기 링크가 떠요.",
   disabled: "쉬는 중",
@@ -89,6 +98,8 @@ export const SYNC_MESSAGES = {
    * 제목이 먼저인 이유는 그대로다: 숫자가 아니라 이름이라야 "엉뚱한 걸 긁고 있나" 가 갈린다
    */
   runItemsOpen: (n: number) => `가져온 게임 ${n.toLocaleString("ko-KR")}건`,
+  /** 수집 현황 표의 칸 안 글자. 칸 머리가 "가져온 게임" 이라 숫자만 둔다 */
+  runItemsShort: (n: number) => `${n.toLocaleString("ko-KR")}건`,
   runItemsTitle: (source: string) => `${source}에서 가져온 게임`,
   runItemsLead: (ago: string, processed: number, shown: number) =>
     processed > shown

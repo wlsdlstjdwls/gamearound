@@ -3,6 +3,7 @@
 // 글은 승인 없이 바로 서므로(schema-indie 머리 주석) 이 화면은 "사후에 막는 자리" 다. 첫 칸이 신고인 이유가 그것이다.
 // 게임 연결 칸은 반대로 "사전에 여는 자리" 다 — 확인해야 게임 상세에 붙는다. 확인은 올린 사람이 그 게임의
 // 개발자임을 바깥(스토어 개발사 페이지, 공식 사이트의 연락처)에서 대조한 뒤에 누른다.
+import { AdminLead } from "@/components/admin/admin-lead";
 import type { Metadata } from "next";
 import Link from "next/link";
 import { IndieModeration } from "@/components/admin/indie-moderation";
@@ -36,8 +37,8 @@ export default async function AdminIndiePage({ searchParams }: Props) {
     <NavPendingScope>
     <div className="flex flex-col gap-5">
       <div>
-        <PageHead title={A.title} />
-        <p className="mt-1 max-w-[620px] text-[13px] text-mut">{A.lead}</p>
+        <PageHead size="admin" title={A.title} />
+        <AdminLead>{A.lead}</AdminLead>
       </div>
 
       <nav aria-label={A.title} className="flex flex-wrap gap-1.5">
@@ -50,7 +51,7 @@ export default async function AdminIndiePage({ searchParams }: Props) {
 
       <PendingRegion>
       {rows.length === 0 ? (
-        <p className="rounded-xl bg-surface-2 px-5 py-6 text-[13px] text-mut">{A.empty}</p>
+        <p className="rounded-xl bg-surface-2 px-4 py-3.5 text-[13px] text-mut">{A.empty}</p>
       ) : (
         <ul className={ROWS}>
           {rows.map((r) => (

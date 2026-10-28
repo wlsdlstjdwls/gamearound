@@ -20,22 +20,33 @@ export function toInt(raw: string): number {
 
 export function Panel({ title, lead, children }: { title: string; lead: string; children: React.ReactNode }) {
   return (
-    <section className={sectionCardClass("flex flex-col gap-4")}>
-      <div className="flex flex-col gap-1">
+    <section className={sectionCardClass("flex flex-col gap-3")}>
+      <div className="flex flex-col gap-0.5">
         <h2 className="text-[15px] font-bold text-ink">{title}</h2>
-        <p className="text-[13px] leading-[1.6] text-mut">{lead}</p>
+        <p className="text-[12.5px] leading-[1.6] text-dim">{lead}</p>
       </div>
       {children}
     </section>
   );
 }
 
+// 값 칸 이름표는 감추고 단위를 칸 안에 둔다(2026-10-28, 컴팩트 회차). 줄마다 "값(원)" 이 서서 한 줄이 93px 이었다 —
+// 줄 이름이 곧 무엇의 값인지 말하고, 낭독기에는 "OO 값(원)" 으로 읽힌다
 function PriceRow({ label, amount, active, onAmount, onActive, extra }: { label: string; amount: number; active: boolean; onAmount: (n: number) => void; onActive: () => void; extra?: React.ReactNode }) {
   return (
-    <div className="grid gap-3 border-t border-line-soft pt-3 first:border-t-0 first:pt-0 sm:grid-cols-[minmax(0,1fr)_160px_auto] sm:items-end">
+    <div className="grid gap-2 border-t border-line-soft pt-2.5 first:border-t-0 first:pt-0 sm:grid-cols-[minmax(0,1fr)_160px_auto] sm:items-center sm:gap-4">
       <p className="text-[14px] font-semibold text-ink">{label}</p>
-      <TextField label={M.amount} inputMode="numeric" value={amount ? amount.toLocaleString("ko-KR") : ""} onChange={(e) => onAmount(toInt(e.target.value))} compact />
-      <div className="flex items-center gap-2 pb-2">
+      <TextField
+        label={`${label} ${M.amount}`}
+        hideLabel
+        inputMode="numeric"
+        value={amount ? amount.toLocaleString("ko-KR") : ""}
+        onChange={(e) => onAmount(toInt(e.target.value))}
+        trailing={<span className="pr-2 text-[13px] text-dim">{M.won}</span>}
+        className="text-right tabular-nums"
+        compact
+      />
+      <div className="flex items-center gap-2">
         <span className="text-[12.5px] text-mut">{M.onSale}</span>
         <Switch on={active} label={`${label} ${M.onSale}`} onToggle={onActive} />
       </div>
@@ -57,7 +68,7 @@ export function PricesSection({ value, patch }: SectionProps) {
   );
   return (
     <Panel title={M.pricesTitle} lead={M.pricesLead}>
-      <div className="flex flex-col gap-3">
+      <div className="flex flex-col gap-2.5">
         {product("boost_indie_7d")}
         {product("pin_promo_7d")}
         {product("bundle_7d")}

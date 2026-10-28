@@ -6,6 +6,7 @@
 //
 // 화면 이름을 "회사" 에서 "회사 이름" 으로 바꿨다 — 회사를 만드는 자리가 아니라
 // 수집이 주워 온 **이름 문자열**을 어느 회사로 볼지 정하는 자리다. 앞 이름은 그 구분을 지웠다.
+import { AdminLead } from "@/components/admin/admin-lead";
 import type { Metadata } from "next";
 import Link from "next/link";
 import { ROUTES } from "@/lib/routes";
@@ -30,19 +31,19 @@ export default async function AdminCompaniesPage() {
     <div className="flex flex-col gap-8">
       <section className="flex flex-col gap-3">
         <div>
-          <PageHead title={COMPANY_MESSAGES.title} />
-          <p className="mt-1 max-w-[620px] text-[13px] text-mut">{COMPANY_MESSAGES.lead}</p>
+          <PageHead size="admin" title={COMPANY_MESSAGES.title} />
+          <AdminLead>{COMPANY_MESSAGES.lead}</AdminLead>
         </div>
 
         <header className="flex flex-wrap items-end justify-between gap-2">
-          <h2 className="text-[17px] font-bold tracking-[-0.02em] text-ink">
+          <h2 className="text-[15px] font-bold tracking-[-0.02em] text-ink">
             {COMPANY_MESSAGES.pendingTitle} <span className="text-[13px] font-normal text-dim">{pending.length}건</span>
           </h2>
           <p className="text-[11.5px] text-dim">{COMPANY_MESSAGES.limitHint(PENDING_COMPANIES_LIMIT)}</p>
         </header>
 
         {pending.length === 0 ? (
-          <p className="rounded-xl bg-surface-2 px-5 py-6 text-[13px] text-mut">
+          <p className="rounded-xl bg-surface-2 px-4 py-3.5 text-[13px] text-mut">
             {COMPANY_MESSAGES.empty}
           </p>
         ) : (
@@ -71,11 +72,11 @@ export default async function AdminCompaniesPage() {
       </section>
 
       <section className="flex flex-col gap-3">
-        <h2 className="text-[17px] font-bold tracking-[-0.02em] text-ink">
+        <h2 className="text-[15px] font-bold tracking-[-0.02em] text-ink">
           {COMPANY_MESSAGES.knownTitle} <span className="text-[13px] font-normal text-dim">{COMPANY_MESSAGES.knownCount(known.total)}</span>
         </h2>
         {known.items.length === 0 ? (
-          <p className="rounded-xl bg-surface-2 px-5 py-6 text-[13px] text-mut">{COMPANY_MESSAGES.knownEmpty}</p>
+          <p className="rounded-xl bg-surface-2 px-4 py-3.5 text-[13px] text-mut">{COMPANY_MESSAGES.knownEmpty}</p>
         ) : (
           <ul className={ROWS}>
             {known.items.map((c) => (

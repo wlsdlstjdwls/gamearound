@@ -1,6 +1,7 @@
 // /admin/promotions — 유료 노출 자리(2026-10-27, docs/기획_인디홍보_상위노출멤버십_2026-10-27.md 5장 2단계).
 // 결제가 붙기 전에는 관리자가 직접 걸어 효과를 잰다. 위는 새로 걸기, 아래는 자리마다 지금 걸린 것, 대기, 최근에 끝난 것.
 // 자리마다 "지금 몇 개 노출 중, 한 번에 몇 칸" 을 적는다 — 칸보다 많이 걸면 시간 구간마다 돌아가며 보인다(lib/promo/boost).
+import { AdminLead } from "@/components/admin/admin-lead";
 import type { Metadata } from "next";
 import Link from "next/link";
 import { PromoGrantForm, PromoRevokeButton } from "@/components/admin/promo-controls";
@@ -26,8 +27,8 @@ export default async function AdminPromotionsPage() {
   return (
     <div className="flex flex-col gap-5">
       <div>
-        <PageHead title={M.adminTitle} />
-        <p className="mt-1 max-w-[620px] text-[13px] text-mut">{M.adminLead}</p>
+        <PageHead size="admin" title={M.adminTitle} />
+        <AdminLead>{M.adminLead}</AdminLead>
       </div>
 
       <section aria-labelledby="promo-grant" className={sectionCardClass("flex flex-col gap-4")}>
@@ -49,7 +50,7 @@ export default async function AdminPromotionsPage() {
               <span className="text-[12.5px] text-dim">{M.capacity(live, SLOT_CAPACITY[slot])}</span>
             </div>
             {mine.length === 0 ? (
-              <p className="rounded-xl bg-surface-2 px-5 py-6 text-[13px] text-mut">{M.empty}</p>
+              <p className="rounded-xl bg-surface-2 px-4 py-3.5 text-[13px] text-mut">{M.empty}</p>
             ) : (
               <ul className={ROWS}>
                 {mine.map((r) => (
@@ -88,7 +89,7 @@ export default async function AdminPromotionsPage() {
           {PM.adminTitle}
         </h2>
         {paid.length === 0 ? (
-          <p className="rounded-xl bg-surface-2 px-5 py-6 text-[13px] text-mut">{PM.adminEmpty}</p>
+          <p className="rounded-xl bg-surface-2 px-4 py-3.5 text-[13px] text-mut">{PM.adminEmpty}</p>
         ) : (
           <ul className={ROWS}>
             {paid.map((p) => (

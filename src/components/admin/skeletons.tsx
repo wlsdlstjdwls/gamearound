@@ -4,18 +4,17 @@
 // 매칭, 상품, 회사, 실행 로그, 게임 수정, 특전, 인디에 되풀이된다. 화면마다 손으로 그리면
 // 줄 높이와 칸 틀이 실물과 따로 놀게 된다 — 그래서 실물 부품(data-rows)의 껍데기 클래스를 그대로 따라 쓴다.
 // 칸 틀 문자열은 lib/admin/table-cols 에서 화면과 같은 값을 받는다.
-import { Bone, PageHeadSkeleton } from "@/components/ui/skeleton";
+import { Bone } from "@/components/ui/skeleton";
 import { cn } from "@/lib/cn";
 import { ROWS } from "@/components/ui/page";
 
 /**
- * 관리자 화면 머리 — PageHead 아래 13px 설명 문단(lead)이 거의 모든 화면에 붙는다.
- * leadLines: 설명이 넓은 화면에서 몇 줄로 접히는지. 매칭, 상품처럼 안내가 긴 화면은 두 줄이다(2026-10-08 캡처 비교)
+ * 관리자 화면 머리 — 21px 제목(PageHead size="admin") 아래 설명 한 줄(AdminLead).
+ * 설명은 2026-10-28 부터 늘 한 줄로 잘린다. leadLines 는 부르는 쪽 호환으로만 받는다
  */
 export function AdminHeadSkeleton({
   width = "w-40",
   lead = true,
-  leadLines = 1,
   action,
 }: {
   width?: string;
@@ -24,12 +23,12 @@ export function AdminHeadSkeleton({
   action?: string;
 }) {
   return (
-    <div className="flex flex-col gap-1.5">
-      <PageHeadSkeleton width={width} action={action} />
-      {lead &&
-        Array.from({ length: leadLines }).map((_, i) => (
-          <Bone key={i} className={cn("h-4 max-w-full", i === leadLines - 1 ? "w-[460px]" : "w-[600px]")} />
-        ))}
+    <div className="flex items-start justify-between gap-4">
+      <div className="flex min-w-0 flex-col gap-1.5">
+        <Bone className={cn("h-[25px]", width)} />
+        {lead && <Bone className="h-3.5 w-[460px] max-w-full" />}
+      </div>
+      {action && <Bone className={cn("h-9 rounded-[9px]", action)} />}
     </div>
   );
 }
@@ -76,7 +75,7 @@ export function DataTableSkeleton({
 }) {
   return (
     <div aria-hidden>
-      <div className={cn("hidden border-b border-line md:grid", cols)}>
+      <div className={cn("hidden rounded-lg bg-surface-2 md:grid", cols)}>
         {cells.map((_, i) => (
           <Bone key={i} className="h-3 w-12" />
         ))}

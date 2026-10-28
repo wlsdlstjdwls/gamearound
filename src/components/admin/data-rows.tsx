@@ -20,7 +20,7 @@ import { cn } from "@/lib/cn";
 /** 표의 머리. 카드로 눕는 좁은 화면에서는 사라진다 — 값마다 제 이름표를 달고 서기 때문이다 */
 export function DataHead({ cols, labels }: { cols: string; labels: string[] }) {
   return (
-    <div className={cn("hidden border-b border-line text-[11.5px] text-dim md:grid", cols)}>
+    <div className={cn("hidden rounded-lg bg-surface-2 text-[11.5px] font-medium text-dim md:grid", cols)}>
       {labels.map((label) => (
         <span key={label}>{label}</span>
       ))}
@@ -45,7 +45,7 @@ export function DataRow({
   return (
     <li
       className={cn(
-        "flex flex-col gap-2 py-3.5 text-[13px] text-ink md:grid md:gap-y-0",
+        "flex flex-col gap-2 py-3 text-[13px] text-ink transition-colors duration-fast md:grid md:gap-y-0 md:hover:bg-surface-2/60",
         align === "center" ? "md:items-center" : "md:items-start",
         cols,
       )}

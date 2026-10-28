@@ -311,13 +311,15 @@ export function AdminNav({
   /** 링크와 버튼이 같은 모양이어야 한다. 아직 열지 않은 칸만 버튼이고 나머지는 전부 링크다 */
   const itemClass = (active: boolean) =>
     cn(
-      "press flex min-h-[var(--touch-target)] items-center gap-2.5 rounded-lg px-3 text-[14px] transition-colors",
+      // 마우스 화면에서는 36px 칸이다(2026-10-28, "투박하다, 컴팩트하게"). 칸 열여섯이 44px 씩 서서 기둥이 첫 화면을 넘겼고
+      // 아래 묶음(수익, 운영)은 굴려야 보였다. 손가락 화면(시트)은 44px 그대로다
+      "press flex min-h-[var(--touch-target)] items-center gap-2.5 rounded-lg px-2.5 text-[13.5px] transition-colors [@media(pointer:fine)]:min-h-9",
       active ? "bg-acc font-semibold text-on-ink" : "font-medium text-mut hover:bg-surface-2 hover:text-ink",
     );
 
   const render = (item: Item) => {
     const active = isActive(pathname, item.href);
-    const body = <ItemBody item={item} active={active} counts={counts} iconSize={18} badgeClassName="ml-auto" />;
+    const body = <ItemBody item={item} active={active} counts={counts} iconSize={16} badgeClassName="ml-auto" />;
     return item.soon ? (
       <button key={item.href} type="button" onClick={() => setSoon(item)} className={cn(itemClass(active), "w-full text-left")}>
         {body}
@@ -331,10 +333,10 @@ export function AdminNav({
 
   /** 칸 전부. 기둥과 더보기 시트가 **같은 것**을 쓴다 — 둘을 따로 그리면 칸이 늘 때 한쪽을 빠뜨린다 */
   const menu = (
-    <div className="flex flex-col gap-4">
+    <div className="flex flex-col gap-3">
       {GROUPS.map((g) => (
-        <div key={g.key} className="flex flex-col gap-0.5">
-          {g.title && <p className="px-3 pb-1 text-[11px] font-bold tracking-[0.1em] text-dim-2">{g.title}</p>}
+        <div key={g.key} className="flex flex-col gap-px">
+          {g.title && <p className="px-2.5 pb-1 text-[11px] font-bold tracking-[0.1em] text-dim-2">{g.title}</p>}
           {g.items.map(render)}
         </div>
       ))}
@@ -342,7 +344,7 @@ export function AdminNav({
   );
 
   const backLink = (
-    <Link href={ROUTES.home} className="press tap flex items-center rounded-lg px-3 text-[12.5px] text-dim transition-colors hover:text-ink">
+    <Link href={ROUTES.home} className="press tap flex items-center rounded-lg px-2.5 text-[12.5px] text-dim transition-colors hover:text-ink">
       {ADMIN_NAV.backToSite}
     </Link>
   );
@@ -354,13 +356,24 @@ export function AdminNav({
   return (
     <>
       {/* 넓은 화면 — 왼쪽 기둥. 본문이 길어도 메뉴는 따라온다 */}
-      <aside className={cn("sticky top-[84px] hidden w-[212px] shrink-0 flex-col gap-5 md:flex", className)}>
-        <div className="px-3">
-          <p className="text-[15px] font-bold tracking-[-0.02em] text-ink">{ADMIN_NAV.consoleTitle}</p>
-          <p className="mt-0.5 truncate text-[11.5px] text-dim">{user}</p>
+      {/* 기둥이 화면보다 길면 기둥 안에서 굴린다 — sticky 라 본문을 굴려도 아래 묶음에 영영 못 닿았다 */}
+      <aside
+        className={cn(
+          "sticky top-[84px] hidden max-h-[calc(100svh-100px)] w-[200px] shrink-0 flex-col gap-4 overflow-y-auto overscroll-contain [scrollbar-color:var(--line)_transparent] [scrollbar-width:thin] md:flex",
+          className,
+        )}
+      >
+        <div className="flex items-center gap-2.5 px-2.5">
+          <span aria-hidden className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-acc text-[13px] font-bold text-on-ink">
+            {user.slice(0, 1)}
+          </span>
+          <div className="min-w-0">
+            <p className="text-[13.5px] font-bold leading-tight text-ink">{ADMIN_NAV.consoleTitle}</p>
+            <p className="truncate text-[11.5px] leading-tight text-dim">{user}</p>
+          </div>
         </div>
 
-        <nav aria-label={ADMIN_NAV.menuTitle} className="flex flex-col gap-4">
+        <nav aria-label={ADMIN_NAV.menuTitle} className="flex flex-col gap-3">
           {menu}
         </nav>
 

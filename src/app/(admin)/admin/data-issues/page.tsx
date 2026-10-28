@@ -2,6 +2,7 @@
 //
 // 자동 고침 기록을 같은 화면에 두는 이유: 기계가 틀리게 고쳤을 때 알아챌 자리가 여기뿐이다.
 // 틀린 고침은 게임 관리 화면(/admin/games)에서 되돌린다 — 그 칸은 잠겨 있어 되돌린 값도 수집이 덮지 않는다.
+import { AdminLead } from "@/components/admin/admin-lead";
 import type { Metadata } from "next";
 import Link from "next/link";
 import { DataIssueList } from "@/components/admin/data-issue-list";
@@ -22,8 +23,8 @@ export default async function AdminDataIssuesPage() {
     <div className="flex flex-col gap-8">
       <div className="flex flex-col gap-5">
         <div>
-          <PageHead title={M.title} />
-          <p className="mt-1 max-w-[620px] text-[13px] text-mut">{M.lead}</p>
+          <PageHead size="admin" title={M.title} />
+          <AdminLead>{M.lead}</AdminLead>
         </div>
         <DataIssueList rows={open} />
       </div>

@@ -24,8 +24,8 @@ export default async function AdminMembershipsPage() {
   return (
     <div className="flex flex-col gap-5">
       <div>
-        <PageHead title={M.adminTitle} />
-        <p className="mt-1 max-w-[620px] text-[13px] text-mut">
+        <PageHead size="admin" title={M.adminTitle} />
+        <p className="mt-1 max-w-[760px] text-[12.5px] leading-[1.6] text-dim">
           {M.adminLead}{" "}
           <Link href={ROUTES.adminPromotions} className="font-semibold text-acc hover:underline">
             {M.adminPaymentsLink}
@@ -33,7 +33,7 @@ export default async function AdminMembershipsPage() {
         </p>
       </div>
       {rows.length === 0 ? (
-        <p className="rounded-xl bg-surface-2 px-5 py-6 text-[13px] text-mut">{M.adminEmpty}</p>
+        <p className="rounded-xl bg-surface-2 px-4 py-3.5 text-[13px] text-mut">{M.adminEmpty}</p>
       ) : (
         <ul className={ROWS}>
           {rows.map((m) => (

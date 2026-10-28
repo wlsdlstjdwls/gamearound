@@ -1,6 +1,7 @@
 // /admin/preorder — 예약 특전 글. 수집이 게임을 못 이었거나 특전을 못 뽑은 글이 "검토 대기" 로 먼저 선다.
 //
 // 공개 글도 같이 보여 준다 — 잘못 이어진 글(엉뚱한 게임에 붙은 특전)을 숨길 자리가 여기뿐이다.
+import { AdminLead } from "@/components/admin/admin-lead";
 import type { Metadata } from "next";
 import Link from "next/link";
 import { PreorderModeration } from "@/components/admin/preorder-moderation";
@@ -22,12 +23,12 @@ export default async function AdminPreorderPage() {
   return (
     <div className="flex flex-col gap-5">
       <div>
-        <PageHead title={A.title} />
-        <p className="mt-1 max-w-[620px] text-[13px] text-mut">{A.lead}</p>
+        <PageHead size="admin" title={A.title} />
+        <AdminLead>{A.lead}</AdminLead>
       </div>
 
       {rows.length === 0 ? (
-        <p className="rounded-xl bg-surface-2 px-5 py-6 text-[13px] text-mut">{A.empty}</p>
+        <p className="rounded-xl bg-surface-2 px-4 py-3.5 text-[13px] text-mut">{A.empty}</p>
       ) : (
         <ul className={ROWS}>
           {rows.map((r) => (

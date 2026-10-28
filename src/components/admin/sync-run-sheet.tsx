@@ -48,7 +48,20 @@ function ItemRow({ item, traced }: { item: RunItem; traced: boolean }) {
 /** 아직 안 받음, 받음, 못 받음. 못 받았으면 다음에 열 때 다시 묻는다 */
 type Load = { state: "idle" } | { state: "done"; items: RunItem[] } | { state: "failed" };
 
-export function SyncRunSheet({ source, sourceName, run, now }: { source: string; sourceName: string; run: RunSummary; now: number }) {
+export function SyncRunSheet({
+  source,
+  sourceName,
+  run,
+  now,
+  inline = false,
+}: {
+  source: string;
+  sourceName: string;
+  run: RunSummary;
+  now: number;
+  /** 표 칸 안에 서는 자리(수집 현황 표). 단추 대신 "N건" 글자 링크로 선다 — 줄마다 단추가 서면 표가 단추 더미가 된다 */
+  inline?: boolean;
+}) {
   const [open, setOpen] = useState(false);
   const [load, setLoad] = useState<Load>({ state: "idle" });
   const [pending, startTransition] = useTransition();
@@ -75,8 +88,12 @@ export function SyncRunSheet({ source, sourceName, run, now }: { source: string;
 
   return (
     <>
-      <button type="button" className={buttonClass({ variant: "secondary", size: "sm", className: "w-fit" })} onClick={openSheet}>
-        {SYNC_MESSAGES.runItemsOpen(run.total)}
+      <button
+        type="button"
+        className={inline ? "tap inline-flex w-fit items-center font-medium text-acc tabular-nums hover:underline" : buttonClass({ variant: "secondary", size: "sm", className: "w-fit" })}
+        onClick={openSheet}
+      >
+        {inline ? SYNC_MESSAGES.runItemsShort(run.total) : SYNC_MESSAGES.runItemsOpen(run.total)}
       </button>
       <Sheet title={SYNC_MESSAGES.runItemsTitle(sourceName)} size="wide" open={open} onOpenChange={setOpen}>
         <p className="pt-2 text-[12.5px] leading-[1.6] text-mut">

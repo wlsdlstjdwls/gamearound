@@ -2,6 +2,7 @@
 //
 // 매핑 배치가 "중간"(유사도 0.7~0.9)으로 판정한 상품만 선다. 높으면 배치가 이미 이었고
 // 낮으면 후보를 남기지 않는다. 사람이 하는 일은 두 이름을 맞대 보고 잇거나 무르는 것 하나다.
+import { AdminLead } from "@/components/admin/admin-lead";
 import type { Metadata } from "next";
 import Link from "next/link";
 import { ProductMatchButtons } from "@/components/admin/product-match-buttons";
@@ -26,17 +27,18 @@ export default async function AdminProductMatchesPage() {
   return (
     <>
       <section className="flex flex-col gap-2">
-        <PageHead title={PRODUCT_MATCH_MESSAGES.title} />
-        <p className="max-w-[620px] text-[13px] text-mut">{PRODUCT_MATCH_MESSAGES.lead(PRODUCT_MATCH_RECHECK_DAYS)}</p>
+        <PageHead size="admin" title={PRODUCT_MATCH_MESSAGES.title} />
+        <AdminLead>{PRODUCT_MATCH_MESSAGES.lead(PRODUCT_MATCH_RECHECK_DAYS)}</AdminLead>
       </section>
 
       <section className="flex flex-col gap-3">
         <SectionHead
+          size="sub"
           title={PRODUCT_MATCH_MESSAGES.queueTitle}
           note={`${PRODUCT_MATCH_MESSAGES.similarity(PENDING_MATCH_THRESHOLD, AUTO_MATCH_THRESHOLD)} | ${PRODUCT_MATCH_MESSAGES.count(queue.length)}`}
         />
         {queue.length === 0 ? (
-          <p className="rounded-xl bg-surface-2 px-5 py-6 text-[13px] text-mut">
+          <p className="rounded-xl bg-surface-2 px-4 py-3.5 text-[13px] text-mut">
             {PRODUCT_MATCH_MESSAGES.empty}
           </p>
         ) : (

@@ -16,9 +16,15 @@
 // 2026-10-26 손질 — 기획서 v2.0 의 운영진 일(등록 승인, 부적절한 글 숨김)이 첫 화면에 안 보였다. 머리 밑에 "지금 손볼 일"
 // 한 판을 세운다(components/admin/todo-summary). 따로 기다리게 해서 수집 현황 카드가 그 수를 기다리지 않는다.
 //
+// 2026-10-28 손질 — "투박하다, 컴팩트하게, 서비스 기획 관점으로". 운영자가 이 화면을 여는 까닭은 두 가지다 —
+// "내가 손볼 일이 있나" 와 "수집이 아픈 곳이 있나". 앞 판은 카드 열다섯 장이 화면 세 개 높이로 서서 둘째 질문의 답(실패 줄)이
+// 접힌 선 아래에 있었다. 카드를 표 한 장으로 접고(줄 하나가 스토어 하나), 24시간 요약은 표 머리 오른쪽에 붙였다.
+// 손볼 줄을 앞으로 당기는 규칙과 띠는 그대로다. 에러 맛보기와 쉬는 까닭은 그 줄 밑에 한 줄로 눕는다.
+//
 // 2026-10-08 손질 — "가시성이 안 좋다". 카드 열다섯이 같은 무게로 서서 손볼 곳(일부 실패, 끊김)이
 // 작은 배지 하나로만 갈렸다. 손볼 카드를 **앞으로 당기고** 왼쪽에 띠를 긋는다. 순서는 바꾸되 무엇을
 // 보여 주는지는 그대로다 — 정상 카드 사이의 순서(서비스의 SOURCES 순서)는 유지한다.
+import { AdminLead } from "@/components/admin/admin-lead";
 import type { Metadata } from "next";
 import Link from "next/link";
 import { Suspense } from "react";
@@ -32,13 +38,15 @@ import { getSyncOverview, type SyncLogRow, type SyncOverviewItem } from "@/serve
 import { getSyncActivity, RUNNING_GRACE_MINUTES, type RunSummary } from "@/server/services/admin-activity";
 import { getDisabledReason, isSource } from "@/server/adapters";
 import { requireRoleOrForbid } from "@/server/auth/guards";
-import { PageHead, Panel, raisedClass } from "@/components/ui/page";
+import { PageHead } from "@/components/ui/page";
+import { DataCell, DataHead, DataList, DataRow } from "@/components/admin/data-rows";
+import { SYNC_SOURCE_COLS } from "@/lib/admin/table-cols";
 import { SyncRunSheet } from "@/components/admin/sync-run-sheet";
 import { Clamp } from "@/components/ui/tooltip";
 import { cn } from "@/lib/cn";
 import { SYNC_BADGE_SHAPE, SYNC_STATUS_BADGE, SYNC_STATUS_STRIPE } from "@/components/admin/sync-tone";
 
-/** 카드에 노출할 에러 샘플 길이. 전문은 실행 로그 화면에서 본다 */
+/** 줄 밑에 노출할 에러 샘플 길이. 전문은 실행 로그 화면에서 본다 */
 const ERROR_SAMPLE_PREVIEW_LEN = 300;
 
 export const metadata: Metadata = { title: SYNC_MESSAGES.title };
@@ -72,16 +80,7 @@ function disabledReasonOf(item: SyncOverviewItem): string | undefined {
   return isSource(item.source) ? getDisabledReason(item.source) : undefined;
 }
 
-function Metric({ label, value, alert = false }: { label: string; value: string; alert?: boolean }) {
-  return (
-    <div className="flex justify-between gap-3 text-[12px] text-mut">
-      <dt className="shrink-0">{label}</dt>
-      <dd className={`min-w-0 text-right ${alert ? "font-semibold text-danger" : "text-ink"}`}>{value}</dd>
-    </div>
-  );
-}
-
-/** 최근 24시간 한 줄. 소스별 배지가 전부 초록이어도 이 줄이 0이면 값이 안 들어오고 있다는 뜻이다 */
+/** 최근 24시간 숫자 넷. 소스별 배지가 전부 초록이어도 이 줄이 0이면 값이 안 들어오고 있다는 뜻이다 */
 function Totals({
   newGames,
   snapshots,
@@ -100,90 +99,104 @@ function Totals({
     { label: SYNC_MESSAGES.totalFailed, value: failedToday, alert: failedToday > 0 },
   ];
   return (
-    <Panel className="flex flex-wrap items-center gap-x-8 gap-y-3 px-5 py-4">
-      <span className="text-[11.5px] font-bold tracking-[0.08em] text-dim-2">{SYNC_MESSAGES.last24h}</span>
+    <dl className="flex flex-wrap items-baseline gap-x-4 gap-y-1 text-[12px]">
+      <span className="font-semibold text-dim-2">{SYNC_MESSAGES.last24h}</span>
       {items.map((it) => (
-        <div key={it.label} className="flex items-baseline gap-2">
-          <span className="text-[12px] text-mut">{it.label}</span>
-          <span className={`text-[19px] font-bold tabular-nums ${it.alert ? "text-danger" : "text-ink"}`}>
-            {it.value.toLocaleString("ko-KR")}
-          </span>
+        <div key={it.label} className="flex items-baseline gap-1.5">
+          <dt className="text-mut">{it.label}</dt>
+          <dd className={cn("text-[14px] font-bold tabular-nums", it.alert ? "text-danger" : "text-ink")}>{it.value.toLocaleString("ko-KR")}</dd>
         </div>
       ))}
-    </Panel>
+    </dl>
   );
 }
 
-function SourceCard({ item, tone, run, now }: { item: SyncOverviewItem; tone: Tone; run: RunSummary | undefined; now: number }) {
+const COLS = [
+  SYNC_MESSAGES.colSource,
+  SYNC_MESSAGES.colStatus,
+  SYNC_MESSAGES.finishedAt,
+  SYNC_MESSAGES.colProcessed,
+  SYNC_MESSAGES.failedToday,
+  SYNC_MESSAGES.discovery,
+  SYNC_MESSAGES.colRun,
+  SYNC_MESSAGES.colLogs,
+];
+
+function SourceRow({ item, tone, run, now }: { item: SyncOverviewItem; tone: Tone; run: RunSummary | undefined; now: number }) {
   const l = item.latest;
   const disabledReason = disabledReasonOf(item);
   const d = l?.discovery;
+  const note = l?.errorSample ? l.errorSample.slice(0, ERROR_SAMPLE_PREVIEW_LEN) : disabledReason;
 
   return (
-    // 소스 하나가 흰 판 한 장이다. 예전엔 판 대신 위쪽 헤어라인 한 줄로 칸을 갈랐는데, 격자에서 칸이
-    // 가로로 이어지면 선이 한 줄로 붙어 어느 값이 어느 스토어 것인지 안 갈렸다(2026-09-30 사용자: "구분이 잘 안되네").
-    // 관리자 셸이 회색 바탕 위 흰 판이라(할 일 카드와 같은 면) 판 한 겹이면 상자 속 상자가 되지 않는다
-    // 띠는 손볼 카드에만 긋는다 — 할 일 카드의 띠와 같은 모양이다(task-card)
-    <div className={raisedClass(cn("relative flex flex-col gap-2.5 overflow-hidden p-4", disabledReason && "opacity-60"))}>
-      {tone.stripe && <span aria-hidden className={cn("absolute inset-y-0 left-0 w-[3px]", tone.stripe)} />}
-      <div className="flex items-center justify-between gap-2">
-        {/* 스토어 이름은 한글로 띄우고, 로그를 맞대 볼 때 쓰는 원값은 그 밑에 작게 남긴다 */}
-        <h3 className="min-w-0 text-[13.5px] font-bold text-ink">
-          <Clamp>{sourceLabel(item.source)}</Clamp>
-          <span className="mt-0.5 block font-mono text-[11px] font-normal text-dim">{item.source}</span>
-        </h3>
+    <DataRow cols={cn(SYNC_SOURCE_COLS, "relative", disabledReason && "opacity-60")}>
+      {/* 띠는 손볼 줄에만 긋는다 — 띠가 있는 줄만 봐도 손볼 곳이 다 보이게 */}
+      {tone.stripe && <span aria-hidden className={cn("absolute inset-y-1.5 left-0 w-[3px] rounded-full", tone.stripe)} />}
+      <DataCell>
+        {/* 스토어 이름은 한글로 띄우고, 로그를 맞대 볼 때 쓰는 원값은 곁에 작게 남긴다 */}
+        <p className="flex min-w-0 items-baseline gap-1.5">
+          <span className="min-w-0 font-semibold text-ink">
+            <Clamp>{sourceLabel(item.source)}</Clamp>
+          </span>
+          <span className="shrink-0 font-mono text-[11px] text-dim">{item.source}</span>
+        </p>
+      </DataCell>
+      <DataCell label={SYNC_MESSAGES.colStatus}>
         <span className={cn(SYNC_BADGE_SHAPE, tone.style)}>
           {/* 도는 중인 칸만 점이 숨 쉰다. 멈춘 화면에서 움직이는 것은 "지금 일어나는 일" 뿐이어야 한다 */}
           {tone.live && <span aria-hidden className="size-1.5 animate-pulse rounded-full bg-acc" />}
           {tone.label}
         </span>
-      </div>
-
-      {l ? (
-        <dl className="flex flex-col gap-1">
-          {/* 신선도가 먼저다 — "최근인가" 를 사람이 시각에서 빼서 세던 자리다(formatAgo 주석).
-              정확한 시각은 로그와 맞대 볼 때 필요하므로 같이 남긴다 */}
-          <Metric
-            label={SYNC_MESSAGES.finishedAt}
-            value={`${formatAgo(l.finishedAt ?? l.startedAt, now)} | ${formatDateTime(l.finishedAt ?? l.startedAt)}`}
-          />
-          <Metric label={SYNC_MESSAGES.processedFailed} value={`${l.processed ?? 0} | ${l.failed ?? 0}`} />
-          <Metric label={SYNC_MESSAGES.failedToday} value={`${item.failedToday}회`} alert={item.failedToday > 0} />
-          {d && (
-            <Metric label={SYNC_MESSAGES.discovery} value={SYNC_MESSAGES.discoverySummary(d.pages, d.scanned, d.fresh, d.startPage)} />
-          )}
-        </dl>
-      ) : (
-        <p className="text-[12px] text-dim">{SYNC_MESSAGES.neverRan}</p>
+      </DataCell>
+      {/* 신선도가 먼저다 — "최근인가" 를 사람이 시각에서 빼서 세던 자리다(formatAgo 주석). 정확한 시각은 로그와 맞대 볼 때 쓴다 */}
+      <DataCell label={SYNC_MESSAGES.finishedAt} className="tabular-nums">
+        {l ? (
+          <>
+            <span className="text-ink">{formatAgo(l.finishedAt ?? l.startedAt, now)}</span>
+            <span className="ml-1.5 text-[11.5px] text-dim">{formatDateTime(l.finishedAt ?? l.startedAt)}</span>
+          </>
+        ) : (
+          <span className="text-dim">{SYNC_MESSAGES.neverRan}</span>
+        )}
+      </DataCell>
+      <DataCell label={SYNC_MESSAGES.colProcessed} className="tabular-nums">
+        {l ? (
+          <>
+            {(l.processed ?? 0).toLocaleString("ko-KR")}
+            <span className="text-dim"> | </span>
+            <span className={(l.failed ?? 0) > 0 ? "font-semibold text-danger" : "text-mut"}>{l.failed ?? 0}</span>
+          </>
+        ) : (
+          "-"
+        )}
+      </DataCell>
+      <DataCell label={SYNC_MESSAGES.failedToday} className={cn("tabular-nums", item.failedToday > 0 ? "font-semibold text-danger" : "text-mut")}>
+        {`${item.failedToday}회`}
+      </DataCell>
+      <DataCell label={SYNC_MESSAGES.discovery} className="text-[12px] text-mut">
+        {d ? <Clamp>{SYNC_MESSAGES.discoverySummary(d.pages, d.scanned, d.fresh, d.startPage)}</Clamp> : <span className="text-dim-2">-</span>}
+      </DataCell>
+      <DataCell label={SYNC_MESSAGES.colRun}>
+        {run && run.total > 0 ? (
+          <SyncRunSheet source={item.source} sourceName={sourceLabel(item.source)} run={run} now={now} inline />
+        ) : (
+          <span className="text-dim-2">-</span>
+        )}
+      </DataCell>
+      <DataCell>
+        <Link href={`${ROUTES.adminSyncLogs}?source=${item.source}`} className="tap inline-flex items-center text-[12.5px] font-medium text-acc hover:underline">
+          {SYNC_MESSAGES.logsShort}
+        </Link>
+      </DataCell>
+      {/* 에러 맛보기, 쉬는 까닭은 줄 밑에 한 줄로 눕는다. 접어 두지 않는다 — 왜 안 도는지 모르면 고장으로 읽는다. 전문은 말풍선 */}
+      {note && (
+        <DataCell className="md:col-span-full md:pt-1">
+          <Clamp lines={1} className={cn("break-words text-[12px]", l?.errorSample ? "text-danger" : "text-dim")}>
+            {note}
+          </Clamp>
+        </DataCell>
       )}
-
-      {run && run.total > 0 && <SyncRunSheet source={item.source} sourceName={sourceLabel(item.source)} run={run} now={now} />}
-
-      {l?.errorSample && (
-        <div>
-          <p className="mb-1 text-[11.5px] text-dim">{SYNC_MESSAGES.errorSample}</p>
-          {/* 고정폭 글꼴을 걷었다 — 한글이 섞인 에러 문구가 낱자 사이로 벌어져 안 읽혔다(실행 로그와 같은 결정) */}
-          <div className="rounded-[7px] bg-surface-4 px-2.5 py-2 text-[12px] leading-[1.55] text-mut">
-            <Clamp lines={3} className="break-words">
-              {l.errorSample.slice(0, ERROR_SAMPLE_PREVIEW_LEN)}
-            </Clamp>
-          </div>
-        </div>
-      )}
-
-      {/* 쉬는 까닭은 접어 두지 않는다 — 왜 안 도는지 모르면 고장으로 읽는다 */}
-      {/* 다만 사유 전문은 몇 줄씩 길다 — 세 줄로 자르고 전문은 말풍선으로 본다 */}
-      {disabledReason && (
-        <Clamp lines={3} className="text-[12px] leading-[1.55] text-dim">
-          {disabledReason}
-        </Clamp>
-      )}
-
-      {/* tap: 카드 바닥의 이 한 줄이 소스마다 유일한 링크다 — 12px 글자 한 줄은 손가락 목표가 못 된다 */}
-      <Link href={`${ROUTES.adminSyncLogs}?source=${item.source}`} className="tap inline-flex w-fit items-center text-[12px] text-acc hover:underline">
-        {SYNC_MESSAGES.sourceLogs}
-      </Link>
-    </div>
+    </DataRow>
   );
 }
 
@@ -196,24 +209,19 @@ export default async function AdminSyncOverviewPage() {
   const repo = process.env.NEXT_PUBLIC_GITHUB_REPO;
   const failedToday = overview.items.reduce((n, it) => n + it.failedToday, 0);
   // sort 는 안정 정렬이라 같은 칸끼리는 서비스가 준 순서 그대로다
-  const cards = overview.items
+  const rows = overview.items
     .map((item) => ({ item, tone: statusOf(item.latest, disabledReasonOf(item), activity.asOf) }))
     .sort((a, b) => a.tone.rank - b.tone.rank);
 
   return (
-    <section className="flex flex-col gap-6">
-      <header className="flex flex-wrap items-end justify-between gap-x-6 gap-y-4">
-        <div>
-          <PageHead title={SYNC_MESSAGES.title} />
-          <p className="mt-1.5 max-w-[620px] text-[13.5px] leading-[1.7] text-mut">{SYNC_MESSAGES.lead}</p>
+    <section className="flex flex-col gap-4">
+      <header className="flex flex-wrap items-start justify-between gap-x-6 gap-y-2">
+        <div className="min-w-0">
+          <PageHead size="admin" title={SYNC_MESSAGES.title} />
+          <AdminLead>{SYNC_MESSAGES.lead}</AdminLead>
         </div>
         {repo ? (
-          <a
-            href={`https://github.com/${repo}/actions`}
-            target="_blank"
-            rel="noreferrer"
-            className={buttonClass({ variant: "secondary" })}
-          >
+          <a href={`https://github.com/${repo}/actions`} target="_blank" rel="noreferrer" className={buttonClass({ variant: "secondary", size: "sm" })}>
             {SYNC_MESSAGES.rerun}
             <span className="sr-only"> (새 창에서 열림)</span>
           </a>
@@ -226,15 +234,24 @@ export default async function AdminSyncOverviewPage() {
         <TodoSummary summary={todo} />
       </Suspense>
 
-      <Totals newGames={activity.newGames} snapshots={activity.priceSnapshots} runs={activity.runs} failedToday={failedToday} />
+      <section aria-labelledby="sync-sources" className="flex flex-col gap-2">
+        <div className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1">
+          <h2 id="sync-sources" className="text-[14px] font-bold text-ink">
+            {SYNC_MESSAGES.sourcesTitle}
+          </h2>
+          <Totals newGames={activity.newGames} snapshots={activity.priceSnapshots} runs={activity.runs} failedToday={failedToday} />
+        </div>
+        <div>
+          <DataHead cols={SYNC_SOURCE_COLS} labels={COLS} />
+          <DataList>
+            {rows.map(({ item, tone }) => (
+              <SourceRow key={item.source} item={item} tone={tone} run={activity.lastRuns.get(item.source)} now={activity.asOf} />
+            ))}
+          </DataList>
+        </div>
+      </section>
 
-      <div className="grid grid-cols-[repeat(auto-fit,minmax(min(250px,100%),1fr))] gap-3">
-        {cards.map(({ item, tone }) => (
-          <SourceCard key={item.source} item={item} tone={tone} run={activity.lastRuns.get(item.source)} now={activity.asOf} />
-        ))}
-      </div>
-
-      <Link href={ROUTES.adminSyncLogs} className="tap inline-flex w-fit items-center text-[13px] text-acc hover:underline">
+      <Link href={ROUTES.adminSyncLogs} className="tap inline-flex w-fit items-center text-[13px] font-medium text-acc hover:underline">
         {SYNC_MESSAGES.allLogs}
       </Link>
     </section>

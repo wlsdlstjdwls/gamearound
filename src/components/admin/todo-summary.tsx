@@ -10,7 +10,6 @@ import { cn } from "@/lib/cn";
 import { ADMIN_TODO_MESSAGES as M } from "@/lib/admin/messages";
 import { ROUTES } from "@/lib/routes";
 import type { AdminTodoSummary } from "@/server/services/admin-workload";
-import { Panel } from "@/components/ui/page";
 import { Bone } from "@/components/ui/skeleton";
 
 type Tile = { label: string; n: number; href: string; queue: boolean };
@@ -18,18 +17,18 @@ type Tile = { label: string; n: number; href: string; queue: boolean };
 function TodoTile({ tile }: { tile: Tile }) {
   const hot = tile.queue && tile.n > 0;
   return (
+    // 이름과 숫자를 한 줄에 둔다(2026-10-28, 컴팩트 회차) — 두 줄 칸 일곱이 첫 화면 위쪽을 한 뼘 먹었다
     <Link
       href={tile.href}
       className={cn(
-        "press flex min-h-[var(--touch-target)] flex-col justify-center gap-0.5 rounded-xl border px-3.5 py-2.5 transition-colors duration-fast",
-        // 판(Panel)이 회청 면이라 칸은 흰 면 위에 선다. hover 는 면이 아니라 테두리로 말한다 — 면을 바꾸면 판과 같은 색이 된다
-        hot ? "border-acc bg-acc-soft" : "border-line bg-surface hover:border-line-strong",
+        "press tap flex min-h-10 items-center justify-between gap-2 rounded-lg border px-3 transition-colors duration-fast",
+        // 쌓인 일만 파랑 면이다. 나머지는 흰 칸 — 파랑을 남발하면 정작 손볼 칸이 안 띈다
+        hot ? "border-acc/40 bg-acc-soft hover:border-acc" : "border-line bg-surface hover:border-line-strong",
       )}
     >
-      <span className={cn("text-[12px]", hot ? "font-semibold text-acc" : "text-mut")}>{tile.label}</span>
-      <span className={cn("text-[20px] font-bold tabular-nums leading-tight", hot ? "text-acc" : tile.queue ? "text-dim" : "text-ink")}>
+      <span className={cn("truncate text-[12px]", hot ? "font-semibold text-acc" : "text-mut")}>{tile.label}</span>
+      <span className={cn("shrink-0 text-[15px] font-bold tabular-nums", hot ? "text-acc" : tile.queue ? "text-dim-2" : "text-ink")}>
         {tile.n.toLocaleString("ko-KR")}
-        <span className="ml-0.5 text-[12px] font-medium">{M.unit}</span>
       </span>
     </Link>
   );
@@ -52,21 +51,23 @@ export async function TodoSummary({ summary }: { summary: Promise<AdminTodoSumma
   ];
   const clear = queue.every((t) => t.n === 0);
   return (
-    <Panel className="flex flex-col gap-3 px-4 py-4 sm:px-5">
+    <section aria-labelledby="admin-todo" className="flex flex-col gap-2">
       <div className="flex flex-wrap items-baseline justify-between gap-2">
-        <h2 className="text-[14px] font-bold text-ink">{M.title}</h2>
+        <h2 id="admin-todo" className="text-[14px] font-bold text-ink">
+          {M.title}
+        </h2>
         {clear && <span className="text-[12px] text-ok">{M.allClear}</span>}
       </div>
-      <div className="grid grid-cols-2 gap-2 sm:grid-cols-[repeat(auto-fit,minmax(132px,1fr))]">
+      <div className="grid grid-cols-2 gap-1.5 sm:grid-cols-[repeat(auto-fit,minmax(128px,1fr))]">
         {[...queue, ...today].map((t) => (
           <TodoTile key={t.label} tile={t} />
         ))}
       </div>
-    </Panel>
+    </section>
   );
 }
 
 /** 요약을 기다리는 동안의 자리. 높이를 실물과 맞춰 아래 카드가 밀려 내려가지 않게 한다 */
 export function TodoSummarySkeleton() {
-  return <Bone className="h-[132px] rounded-[var(--radius-panel)] sm:h-[118px]" />;
+  return <Bone className="h-[214px] rounded-[var(--radius-panel)] sm:h-[68px]" />;
 }

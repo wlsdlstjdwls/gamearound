@@ -7,10 +7,10 @@
 export const COMPANY_PENDING_COLS = "md:grid-cols-[minmax(0,1fr)_120px_200px] md:gap-x-3 md:px-3 md:py-2";
 
 /** 매칭 대기. 우리 제목과 스토어 제목을 같은 너비로 나란히 둔다 — 검수자가 두 이름을 눈으로 맞대는 것이 이 화면의 일이다 */
-export const MATCH_QUEUE_COLS = "md:grid-cols-[minmax(0,2fr)_minmax(0,2fr)_120px_minmax(0,1.4fr)_72px_132px] md:gap-x-3 md:px-4 md:py-[13px]";
+export const MATCH_QUEUE_COLS = "md:grid-cols-[minmax(0,2fr)_minmax(0,2fr)_120px_minmax(0,1.4fr)_56px_164px] md:gap-x-3 md:px-3 md:py-2";
 
 /** 상품 매핑. 상품 이름과 후보 게임 제목을 같은 너비로 나란히 둔다 — 두 이름을 눈으로 맞대는 것이 이 화면의 일이다 */
-export const PRODUCT_QUEUE_COLS = "md:grid-cols-[minmax(0,2fr)_minmax(0,2fr)_64px_minmax(0,1fr)_120px_128px] md:gap-x-3 md:px-4 md:py-[13px]";
+export const PRODUCT_QUEUE_COLS = "md:grid-cols-[minmax(0,2fr)_minmax(0,2fr)_64px_minmax(0,1fr)_120px_164px] md:gap-x-3 md:px-3 md:py-2";
 
 /** 게임 수정 화면의 스토어 연결, 고친 기록 — 좁은 화면에서는 한 줄이 카드 한 장이다 */
 export const GAME_REF_COLS = "md:grid-cols-[110px_minmax(0,1fr)_minmax(0,1.4fr)_110px_78px_150px] md:gap-x-3 md:px-3 md:py-2";
@@ -27,3 +27,6 @@ export const SYNC_LOG_COLS = "md:grid-cols-[52px_128px_84px_120px_84px_56px_48px
 export const POST_ADMIN_COLS = "md:grid-cols-[minmax(0,1fr)_76px_minmax(0,180px)_96px_172px_150px] md:gap-x-3 md:px-3 md:py-2.5";
 /** 댓글 관리. 댓글 내용과 달린 글을 나란히 둔다 — 그 댓글이 어느 글의 맥락에서 문제인지 같이 봐야 판정이 선다 */
 export const COMMENT_ADMIN_COLS = "md:grid-cols-[minmax(0,1.6fr)_minmax(0,1fr)_minmax(0,160px)_96px_150px] md:gap-x-3 md:px-3 md:py-2.5";
+
+/** 수집 현황 스토어 표. 스토어 이름과 상태가 왼쪽에 붙어 있어야 "어디가 아픈가" 가 한 번에 읽힌다. 에러 맛보기는 줄 밑에 통째로 눕는다(col-span-full) */
+export const SYNC_SOURCE_COLS = "md:grid-cols-[minmax(0,1.3fr)_88px_minmax(0,1.3fr)_92px_72px_minmax(0,1.6fr)_84px_64px] md:gap-x-3 md:px-3 md:py-2";

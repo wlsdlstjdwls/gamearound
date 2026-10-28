@@ -36,7 +36,7 @@ export function DataIssueList({ rows }: { rows: DataIssueRow[] }) {
   };
 
   const visible = rows.filter((r) => !hidden.has(r.id));
-  if (visible.length === 0) return <p className="rounded-xl bg-surface-2 px-5 py-6 text-[13px] text-mut">{M.empty}</p>;
+  if (visible.length === 0) return <p className="rounded-xl bg-surface-2 px-4 py-3.5 text-[13px] text-mut">{M.empty}</p>;
 
   return (
     <ul className={ROWS}>

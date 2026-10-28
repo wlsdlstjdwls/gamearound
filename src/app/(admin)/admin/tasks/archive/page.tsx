@@ -24,7 +24,7 @@ export default async function AdminTasksArchivePage() {
   return (
     <>
       <header className="flex flex-wrap items-end justify-between gap-3">
-        <PageHead title={TASK_MESSAGES.archiveTitle} note={TASK_MESSAGES.archiveNote(tasks.length, ARCHIVE_VISIBLE_LIMIT)} />
+        <PageHead size="admin" title={TASK_MESSAGES.archiveTitle} note={TASK_MESSAGES.archiveNote(tasks.length, ARCHIVE_VISIBLE_LIMIT)} />
         <Link href={ROUTES.adminTasks} className={buttonClass({ variant: "secondary", size: "sm" })}>
           {TASK_MESSAGES.archiveBack}
         </Link>

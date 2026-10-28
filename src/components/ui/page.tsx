@@ -38,7 +38,8 @@ const PAD: Record<PagePad, string> = {
    * 거기서는 이 여백 밑에 바닥 띠 자리 56px 이 한 겹 더 깔려서(globals.css 의 body:has) 80 + 56 = 136px 이
    * 내용과 푸터 사이에 남았다. 넓은 화면은 띠가 없으니 서브 화면과 같은 값을 그대로 쓴다.
    */
-  admin: "pt-[22px] pb-6 md:pb-20",
+  // 2026-10-28 위 22 에서 16, 넓은 화면 아래 80 에서 48 로(관리자 화면 컴팩트 회차)
+  admin: "pt-4 pb-6 md:pb-12",
 };
 
 export type PageProps = React.ComponentProps<"div"> & {
@@ -150,7 +151,7 @@ export const SHEET_ROW = "rounded-lg bg-surface-2 px-3 transition-colors duratio
  * 목록, 설정처럼 제목이 표지 노릇만 하는 화면은 page, 제목 자체가 내용인 화면(상세, 회사)은 hero.
  * note 는 제목 옆 회색 보조 문구, action 은 오른쪽 끝 링크 자리다(SectionHead 와 같은 배치 규칙).
  */
-export type PageTitleSize = "page" | "hero";
+export type PageTitleSize = "page" | "hero" | "admin";
 
 /* 리디자인 스펙: 표지형 32px, 제목 자체가 내용인 화면 40px. 둘 다 -0.045em 으로 바짝 조인다 —
    800 무게의 한글 제목은 자간을 조이지 않으면 큰 크기에서 글자가 흩어져 보인다 */
@@ -158,6 +159,9 @@ const TITLE_SIZE: Record<PageTitleSize, string> = {
   // 32 에서 28 로(2026-10-27) — 제목이 화면 첫 줄을 너무 크게 먹어 본문 시작이 밀렸다
   page: "text-[24px] leading-[1.15] tracking-[-0.04em] sm:text-[28px]",
   hero: "text-[30px] leading-[1.1] tracking-[-0.045em] sm:text-[40px] sm:leading-[1.08]",
+  // 관리자 화면(2026-10-28, "투박하다, 컴팩트하게"). 매일 여는 작업 화면이라 제목은 표지가 아니라 자리 이름표다 —
+  // 28px 제목과 설명 문단이 첫 화면 위쪽을 먹어 표가 접힌 선 아래에서 시작했다
+  admin: "text-[21px] leading-[1.2] tracking-[-0.035em]",
 };
 
 export function PageHead({

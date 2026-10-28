@@ -4,6 +4,7 @@
 // 큐가 아니라 목록이다 — 글은 승인 없이 바로 서고 신고 장치가 아직 없다(기획서 6.1 "신고는 협의").
 // 그래서 메뉴 배지를 달지 않고, 오래된 글은 쪽 넘기기 대신 찾기로 간다(줄 수 상한은 services/community/admin).
 // 숨긴 칸을 따로 둔 이유: 되살리기는 숨긴 것을 찾아야 할 수 있다. 전체 칸에 섞으면 백 줄 안에서 묻힌다.
+import { AdminLead } from "@/components/admin/admin-lead";
 import type { Metadata } from "next";
 import Link from "next/link";
 import { ContentModeration } from "@/components/admin/content-moderation";
@@ -35,7 +36,7 @@ function tabHref(tab: PostAdminTab): string {
 }
 
 function PostRows({ rows }: { rows: AdminPostRowDto[] }) {
-  if (rows.length === 0) return <p className="rounded-xl bg-surface-2 px-5 py-6 text-[13px] text-mut">{M.empty}</p>;
+  if (rows.length === 0) return <p className="rounded-xl bg-surface-2 px-4 py-3.5 text-[13px] text-mut">{M.empty}</p>;
   return (
     <div>
       <DataHead cols={POST_ADMIN_COLS} labels={[M.colPost, M.colCategory, M.colAuthor, M.colWhen, M.colReaction, M.colAction]} />
@@ -73,7 +74,7 @@ function PostRows({ rows }: { rows: AdminPostRowDto[] }) {
 }
 
 function CommentRows({ rows }: { rows: AdminCommentRowDto[] }) {
-  if (rows.length === 0) return <p className="rounded-xl bg-surface-2 px-5 py-6 text-[13px] text-mut">{M.emptyComments}</p>;
+  if (rows.length === 0) return <p className="rounded-xl bg-surface-2 px-4 py-3.5 text-[13px] text-mut">{M.emptyComments}</p>;
   return (
     <div>
       <DataHead cols={COMMENT_ADMIN_COLS} labels={[M.colComment, M.colOnPost, M.colAuthor, M.colWhen, M.colAction]} />
@@ -129,8 +130,8 @@ export default async function AdminPostsPage({ searchParams }: Props) {
     <NavPendingScope>
       <div className="flex flex-col gap-5">
         <div>
-          <PageHead title={M.title} />
-          <p className="mt-1 max-w-[620px] text-[13px] leading-[1.7] text-mut">{M.lead}</p>
+          <PageHead size="admin" title={M.title} />
+          <AdminLead>{M.lead}</AdminLead>
         </div>
 
         <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">

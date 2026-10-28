@@ -5,6 +5,7 @@
 //
 // `/admin` 안에 섞여 있던 자리를 뗐다 — 수집 현황은 읽고 지나가는 화면이라 보는 주기가 다르고,
 // 메뉴가 "남은 일" 배지를 붙이려면 이 큐에 제 주소가 있어야 한다.
+import { AdminLead } from "@/components/admin/admin-lead";
 import type { Metadata } from "next";
 import Link from "next/link";
 import { MatchReviewButtons } from "@/components/admin/match-review-buttons";
@@ -26,19 +27,20 @@ export default async function AdminMatchesPage() {
   return (
     <>
       <section className="flex flex-col gap-2">
-        <PageHead title={MATCH_MESSAGES.title} />
-        <p className="max-w-[620px] text-[13px] text-mut">{MATCH_MESSAGES.lead}</p>
+        <PageHead size="admin" title={MATCH_MESSAGES.title} />
+        <AdminLead>{MATCH_MESSAGES.lead}</AdminLead>
       </section>
 
       <section className="flex flex-col gap-3">
         <SectionHead
+          size="sub"
           // 남은 수와 지금 화면에 실은 수는 다르다 — 상한에 걸렸을 때 그 사실을 감추면
           // 관리자는 다 처리했다고 믿고 화면을 닫는다
           title={MATCH_MESSAGES.note(pending.length, total)}
           note={MATCH_MESSAGES.similarity(PENDING_MATCH_THRESHOLD, AUTO_MATCH_THRESHOLD)}
         />
         {pending.length === 0 ? (
-          <p className="rounded-xl bg-surface-2 px-5 py-6 text-[13px] text-mut">
+          <p className="rounded-xl bg-surface-2 px-4 py-3.5 text-[13px] text-mut">
             {MATCH_MESSAGES.empty}
           </p>
         ) : (

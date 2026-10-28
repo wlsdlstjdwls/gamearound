@@ -1,4 +1,5 @@
 // /admin/games/[id] — 데이터 정정(§4.4), 소스 매핑(§4.2), 정정 이력
+import { AdminLead } from "@/components/admin/admin-lead";
 import { formatPrice } from "@/lib/currency";
 import type { Metadata } from "next";
 import Link from "next/link";
@@ -90,27 +91,27 @@ export default async function AdminGamePage({ params }: { params: Promise<{ id: 
         <p className="text-[12.5px] text-dim">
           <Link href={ROUTES.admin} className="hover:text-ink">{M.breadcrumb}</Link> / {M.here}
         </p>
-        <PageHead title={game.titleKo ?? game.titleEn} />
+        <PageHead size="admin" title={game.titleKo ?? game.titleEn} />
         <p className="text-[13px] text-mut">
           {game.titleEn} | <code className="text-xs">{game.slug}</code> |{" "}
           <Link href={`/games/${game.slug}`} className="text-acc hover:underline">{M.openPublic}</Link>
         </p>
         {/* 이 화면에서 고친 값이 다음 수집에 날아가지 않는다는 사실이 이 화면의 전제다 */}
-        <p className="mt-1 max-w-[620px] text-[13px] text-mut">{M.lead}</p>
+        <AdminLead>{M.lead}</AdminLead>
       </header>
 
       <section className="flex flex-col gap-3">
-        <h2 className="text-[17px] font-bold tracking-[-0.02em] text-ink">{M.basics}</h2>
+        <h2 className="text-[15px] font-bold tracking-[-0.02em] text-ink">{M.basics}</h2>
         <CorrectionForm table="games" rowId={game.id} gameId={game.id} fields={gameFields(game)} title={M.basicsFormTitle} />
       </section>
 
       <section className="flex flex-col gap-3">
-        <h2 className="text-[17px] font-bold tracking-[-0.02em] text-ink">{M.aliases}</h2>
+        <h2 className="text-[15px] font-bold tracking-[-0.02em] text-ink">{M.aliases}</h2>
         <AliasForm gameId={game.id} items={aliasRows.map((a) => ({ id: a.id, alias: a.alias }))} />
       </section>
 
       <section className="flex flex-col gap-3">
-        <h2 className="text-[17px] font-bold tracking-[-0.02em] text-ink">{M.upgrades}</h2>
+        <h2 className="text-[15px] font-bold tracking-[-0.02em] text-ink">{M.upgrades}</h2>
         <UpgradeForm
           gameId={game.id}
           platforms={platformEnum.enumValues}
@@ -128,7 +129,7 @@ export default async function AdminGamePage({ params }: { params: Promise<{ id: 
       </section>
 
       <section className="flex flex-col gap-3">
-        <h2 className="text-[17px] font-bold tracking-[-0.02em] text-ink">{M.platforms}</h2>
+        <h2 className="text-[15px] font-bold tracking-[-0.02em] text-ink">{M.platforms}</h2>
         {game.platforms.length === 0 ? (
           <p className="text-[13px] text-mut">{M.platformsEmpty}</p>
         ) : (
@@ -146,7 +147,7 @@ export default async function AdminGamePage({ params }: { params: Promise<{ id: 
       </section>
 
       <section className="flex flex-col gap-3">
-        <h2 className="text-[17px] font-bold tracking-[-0.02em] text-ink">{M.refs}</h2>
+        <h2 className="text-[15px] font-bold tracking-[-0.02em] text-ink">{M.refs}</h2>
         {game.sourceRefs.length === 0 ? (
           <p className="text-[13px] text-mut">{M.refsEmpty}</p>
         ) : (
@@ -197,7 +198,7 @@ export default async function AdminGamePage({ params }: { params: Promise<{ id: 
       </section>
 
       <section className="flex flex-col gap-3">
-        <h2 className="text-[17px] font-bold tracking-[-0.02em] text-ink">{M.history} <span className="text-[13px] font-normal text-dim">{M.historyCount(game.corrections.length)}</span></h2>
+        <h2 className="text-[15px] font-bold tracking-[-0.02em] text-ink">{M.history} <span className="text-[13px] font-normal text-dim">{M.historyCount(game.corrections.length)}</span></h2>
         {game.corrections.length === 0 ? (
           <p className="text-[13px] text-mut">{M.historyEmpty}</p>
         ) : (

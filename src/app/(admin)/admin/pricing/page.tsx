@@ -1,6 +1,7 @@
 // /admin/pricing — 요금, 프로모션(2026-10-28). 사용자: "첫 달 할인, 첫 결제 할인 같은 프로모션을 관리자가 설정하게,
 // 구독 멤버십도 문구부터 모든 설정을 관리자가". 값, 판매 여부, 이용권 수, 요금 카드와 멤버십 화면 문구, 프로모션을 한 화면에서 고친다.
 // 저장 값은 site_settings 의 pricing 키 하나(lib/pricing/settings). 폼은 components/admin/pricing-form.
+import { AdminLead } from "@/components/admin/admin-lead";
 import type { Metadata } from "next";
 import Link from "next/link";
 import { PricingForm } from "@/components/admin/pricing-form";
@@ -20,6 +21,7 @@ export default async function AdminPricingPage() {
   return (
     <div className="flex flex-col gap-5">
       <PageHead
+        size="admin"
         title={ADMIN_NAV.pricing}
         action={
           <Link href={ROUTES.makerPlans} className={buttonClass({ variant: "secondary", size: "sm" })}>
@@ -27,7 +29,7 @@ export default async function AdminPricingPage() {
           </Link>
         }
       >
-        <p className="text-[13.5px] text-mut">{M.lead}</p>
+        <AdminLead>{M.lead}</AdminLead>
       </PageHead>
       <PricingForm initial={settings} />
     </div>

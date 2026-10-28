@@ -3,6 +3,7 @@
 // 수집 현황이 스토어마다 "마지막 한 번" 만 보여 주는 값의 전문이 여기 있다.
 // 원값(ok, steam)을 그대로 띄우던 자리를 한글 이름표로 바꿨다 — partial 이 성공인지 실패인지
 // 영문으로는 판단이 안 선다. 다만 소스는 로그와 워크플로 이름을 맞대야 해서 원값을 함께 남긴다.
+import { AdminLead } from "@/components/admin/admin-lead";
 import type { Metadata } from "next";
 import { cn } from "@/lib/cn";
 import { formatDateTime, formatDuration } from "@/lib/format";
@@ -73,8 +74,8 @@ export default async function SyncLogsPage({ searchParams }: { searchParams: Pro
     <section className="flex flex-col gap-4">
       <header className="flex flex-wrap items-end justify-between gap-2">
         <div>
-          <PageHead title={LOG_MESSAGES.title} note={LOG_MESSAGES.recent(logs.length)} />
-          <p className="mt-1 max-w-[560px] text-[13px] text-mut">{LOG_MESSAGES.lead}</p>
+          <PageHead size="admin" title={LOG_MESSAGES.title} note={LOG_MESSAGES.recent(logs.length)} />
+          <AdminLead>{LOG_MESSAGES.lead}</AdminLead>
         </div>
         <div className="flex flex-wrap gap-1 text-xs">
           <NavChip group="source" href={ROUTES.adminSyncLogs} active={!source} size="sm">
@@ -90,7 +91,7 @@ export default async function SyncLogsPage({ searchParams }: { searchParams: Pro
 
       <PendingRegion>
       {logs.length === 0 ? (
-        <p className="rounded-xl bg-surface-2 px-5 py-6 text-[13px] text-mut">{LOG_MESSAGES.empty}</p>
+        <p className="rounded-xl bg-surface-2 px-4 py-3.5 text-[13px] text-mut">{LOG_MESSAGES.empty}</p>
       ) : (
         <div>
           <DataHead
