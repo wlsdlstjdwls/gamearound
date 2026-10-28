@@ -14,6 +14,7 @@ import { PlanCta, type PlanCtaGroup } from "@/components/payments/plan-cta";
 import { buttonClass } from "@/components/ui/button";
 import { CheckIcon, PlusIcon } from "@/components/ui/icons";
 import { sectionCardClass } from "@/components/ui/page";
+import { Clamp } from "@/components/ui/tooltip";
 import { Tag } from "@/components/ui/tag";
 import { formatPrice } from "@/lib/currency";
 import { DEFAULT_PLAN, MEMBERSHIP_PLANS, MONTH_DAYS_APPROX } from "@/lib/membership/plan";
@@ -22,47 +23,48 @@ import { PLANS_MESSAGES as M } from "@/lib/payments/plans-messages";
 import { BUNDLE_DISCOUNT_RATE, BUNDLE_LIST_PRICE, BUNDLE_SAVING, perDay, PRODUCTS } from "@/lib/payments/products";
 import { ROUTES } from "@/lib/routes";
 
-/** "이름: 설명" 을 이름만 굵게. 쌍점이 없으면 통째로 */
-function Labeled({ text }: { text: string }) {
+/**
+ * "이름: 설명" 한 줄. 이름은 굵게, 설명은 옅게. 줄은 꺾지 않는다(10-28 사용자: "줄바꿈 되지 않고 한 줄씩") —
+ * 문구를 카드 폭(좁은 화면 약 300px)에 들게 짧게 쓰고, 그래도 넘치면 잘라 툴팁으로 전문을 보인다(ui/tooltip 의 Clamp)
+ */
+function Line({ text, strong }: { text: string; strong?: boolean }) {
   const at = text.indexOf(": ");
-  if (at < 0) return <>{text}</>;
+  const name = at < 0 ? text : text.slice(0, at);
+  const rest = at < 0 ? "" : text.slice(at + 2);
   return (
-    <>
-      <b className="font-bold">{text.slice(0, at)}</b> {text.slice(at + 2)}
-    </>
+    <Clamp lines={1} text={at < 0 ? text : `${name} ${rest}`} className="min-w-0 flex-1">
+      <b className={strong ? "font-bold text-ink" : "font-semibold text-ink-2"}>{name}</b>
+      {rest && <span className="text-mut"> {rest}</span>}
+    </Clamp>
   );
 }
 
 /** 이 단에 든 것(회색 체크) */
 function Included({ lines }: { lines: readonly string[] }) {
   return (
-    <ul className="flex flex-col gap-2 text-[13.5px] leading-[1.55] text-ink-2">
+    <ul className="flex flex-col gap-2.5 text-[13.5px]">
       {lines.map((line) => (
-        <li key={line} className="flex gap-2">
-          <CheckIcon size={15} className="mt-[3px] shrink-0 text-mut" />
-          <span>
-            <Labeled text={line} />
-          </span>
+        <li key={line} className="flex items-center gap-2">
+          <CheckIcon size={15} className="shrink-0 text-mut" />
+          <Line text={line} />
         </li>
       ))}
     </ul>
   );
 }
 
-/** 아랫단에 더해지는 것(보라 "+"). base: "낱개에 더해" 같은 머리 */
+/** 아랫단에 더해지는 것(보라 "+"). base: "스파크에 더해" 같은 머리 */
 function Adds({ base, lines }: { base: string; lines: readonly string[] }) {
   return (
-    <div className="flex flex-col gap-2">
+    <div className="flex flex-col gap-2.5">
       <p className="text-[12.5px] font-semibold text-mut">{base}</p>
-      <ul className="flex flex-col gap-2 text-[13.5px] leading-[1.55] text-ink">
+      <ul className="flex flex-col gap-2.5 text-[13.5px]">
         {lines.map((line) => (
-          <li key={line} className="flex gap-2">
-            <span aria-hidden className="mt-[2px] flex size-[18px] shrink-0 items-center justify-center rounded-full bg-acc text-on-ink">
+          <li key={line} className="flex items-center gap-2">
+            <span aria-hidden className="flex size-[18px] shrink-0 items-center justify-center rounded-full bg-acc text-on-ink">
               <PlusIcon size={12} />
             </span>
-            <span className="font-semibold">
-              <Labeled text={line} />
-            </span>
+            <Line text={line} strong />
           </li>
         ))}
       </ul>

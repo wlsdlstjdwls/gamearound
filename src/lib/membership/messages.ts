@@ -3,10 +3,10 @@ import type { MembershipStatus } from "@/server/db/schema";
 
 export const MEMBERSHIP_MESSAGES = {
   title: "메이커 멤버십",
-  lead: "인디 개발자를 위한 월 구독이에요. 매달 광고 이용권이 채워져요.",
+  lead: "인디 개발자를 위한 월 구독이에요. 매달 노출 이용권이 채워져요.",
   perMonth: "매달",
   benefits: [
-    "매달 광고 이용권 2장. 한 장이면 인디 목록 맨 위 또는 홍보 글 고정을 7일 걸 수 있어요",
+    "매달 노출 이용권 2장. 한 장이면 인디 목록 맨 위 또는 홍보 글 고정을 7일 걸 수 있어요",
     "내 게임 통계 자세히: 날짜별 그래프와 어디서 들어왔는지",
     "게시판 글과 내 인디 게임에 이름 옆 메이커 꼬리표",
     "플레이테스트 모집을 모아 보기 맨 위에 고정",
@@ -40,7 +40,7 @@ export const MEMBERSHIP_MESSAGES = {
   notOwnCustomer: "카드 등록 정보가 맞지 않아요",
 
   spendCredit: (n: number) => `이용권으로 걸기(남은 ${n}장)`,
-  creditUsed: "이용권으로 광고를 걸었어요",
+  creditUsed: "이용권으로 노출을 시작했어요",
   noCredit: "쓸 수 있는 이용권이 없어요",
   orPay: "또는 바로 결제",
 

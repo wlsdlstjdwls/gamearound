@@ -6,27 +6,27 @@
 // 줄마다 "이름: 무엇이 어디에" 로 적는다. 자리 설명은 아래 "광고는 어디에 보이나요" 판(SPOTS)이 그림과 함께 맡는다.
 
 export const PLANS_MESSAGES = {
-  title: "광고, 멤버십",
+  title: "내 게임 알리기",
   lead: "내 게임을 더 많은 사람에게 보여 주는 방법이에요. 결제하면 바로 시작돼요.",
-  toAds: "광고 성과",
+  toAds: "노출 성과",
   toHistory: "결제 내역",
 
   // 카드 순서는 싼 것부터(10-28 셋째 요청). 윗단은 아랫단의 모든 것에 무엇이 더해지는지를 "+" 줄로 말한다.
   // 이름(10-28 넷째 요청 "이쁘게, 통일성 있게"): 손전등 빛의 세기로 잇는다 — 스파크(한 번 반짝) → 스포트라이트(두 자리를 비춤) → 메이커(만드는 사람의 구독).
   // 메이커는 멤버 꼬리표 이름(membership/maker-badge)과 같아야 해서 빛 낱말로 바꾸지 않았다. 이름 위 작은 줄(eyebrow)이 기간과 크기를 같은 꼴로 말한다
   singleName: "스파크",
-  singleEyebrow: "7일 | 광고 자리 하나",
+  singleEyebrow: "7일 | 노출 자리 하나",
   singleSummary: "필요할 때 한 번 반짝",
-  singleIncludes: ["인디 게임 부스트나 홍보 글 고정 중 하나", "결제하면 바로 시작, 7일 뒤 끝나요"],
-  singleCta: "스파크 걸기",
+  singleIncludes: ["자리 하나: 부스트나 홍보 글 고정", "7일: 결제하면 바로 시작"],
+  singleCta: "스파크 켜기",
 
   bundleName: "스포트라이트",
-  bundleEyebrow: "7일 | 광고 자리 둘",
+  bundleEyebrow: "7일 | 노출 자리 둘",
   bundleTag: "추천",
   bundleSummary: "게임과 홍보 글을 함께 비춰요",
   bundleBase: "스파크에 더해",
-  bundleAdds: (saving: string) => ["인디 게임 부스트와 홍보 글 고정을 둘 다", `따로 사는 것보다 ${saving} 할인`],
-  bundleCta: "스포트라이트 걸기",
+  bundleAdds: (saving: string) => ["자리 둘: 부스트와 홍보 글 고정", `할인: 따로 사는 것보다 ${saving}`],
+  bundleCta: "스포트라이트 켜기",
 
   membershipName: "메이커",
   membershipEyebrow: "매달 | 구독",
@@ -34,15 +34,15 @@ export const PLANS_MESSAGES = {
   membershipSummary: "스포트라이트를 매달, 멤버 전용 혜택까지",
   membershipBase: "스포트라이트에 더해",
   /** 이용권 줄. 한 장이 자리 하나 7일이라 두 장이면 스포트라이트와 같은 광고다 */
-  membershipCreditsAdd: (n: number) => `매달 광고 이용권 ${n}장이 채워져요(스포트라이트를 매달)`,
+  membershipCreditsAdd: (n: number) => `노출 이용권: 매달 ${n}장, 스포트라이트를 매달`,
   memberPerks: [
-    "통계 자세히: 게임별 30일 그래프와 어디서 들어왔는지",
-    "메이커 꼬리표: 게시판 글과 인디 게임 이름 옆에 보라색 표시",
-    "플레이테스트 고정: 모집 글을 플레이테스트 모아 보기 맨 위에",
+    "통계 자세히: 30일 그래프와 유입 경로",
+    "메이커 꼬리표: 내 이름 옆 보라 표시",
+    "플레이테스트 고정: 모아 보기 맨 위",
   ],
   perMonth: "매달",
   perDayApprox: (price: string) => `하루 약 ${price}`,
-  credits: (n: number, value: string) => `광고 이용권 ${n}장(따로 사면 ${value})`,
+  credits: (n: number, value: string) => `노출 이용권 ${n}장(따로 사면 ${value})`,
   membershipNow: "시작하는 순간 이용권이 바로 채워져요",
   membershipStart: "메이커 시작하기",
   membershipActive: "이용 중",
@@ -57,24 +57,25 @@ export const PLANS_MESSAGES = {
   boostName: "인디 게임 부스트",
   pinName: "홍보 글 고정",
 
-  spotsEyebrow: "광고 자리",
+  spotsEyebrow: "보이는 자리",
   spotsTitle: "걸면 여기서 먼저 보여요",
   spotsLead: "게임을 찾는 사람이 가장 먼저 지나가는 네 자리예요. 결제하면 바로 걸리고 7일 뒤 끝나요. 자동으로 다시 결제되지 않아요.",
-  spotsRules: ["광고 자리에는 \"광고\" 표시가 붙어요", "광고가 자리보다 많으면 한 시간마다 돌아가며 보여요", "명예의 전당, 슈퍼루키 순위와는 상관없어요"],
+  spotsRules: ["이 자리에는 법에 따라 \"광고\" 표시가 붙어요", "신청이 자리보다 많으면 한 시간마다 돌아가며 보여요", "명예의 전당, 슈퍼루키 순위와는 상관없어요"],
   spotAd: "광고",
 
   // 다른 화면에서 이 화면으로 이끄는 한 줄 판(components/payments/plan-nudge). 10-28 사용자: "메뉴로 따로 두기보다 다른 화면에서 자연스럽게"
   nudgeTitle: "내 게임을 더 많은 사람에게 보여 줄까요",
-  nudgeLead: (price: string) => `스파크 ${price}부터. 결제하면 바로 인디 목록 맨 위에 떠요`,
-  nudgeCta: "광고 알아보기",
-  nudgeBoost: "광고 걸기",
+  nudgeLead: (price: string) => `스파크 ${price}부터, 결제하면 바로 인디 목록 맨 위에 떠요`,
+  nudgeCta: "알리는 방법 보기",
+  nudgeBoost: "더 알리기",
+  nudgeMember: "메이커 멤버십",
 
   /** 걸 글이 여럿일 때 카드 단추가 여는 시트 */
   pickTitle: "어디에 걸까요",
   indieGroup: "내 인디 게임",
   promoGroup: "내 홍보 글",
   /** 걸 글이 하나도 없을 때 카드 단추 대신 */
-  noTarget: "광고를 걸 공개 글이 아직 없어요",
+  noTarget: "알릴 공개 글이 아직 없어요",
   noIndieAction: "게임 등록하기",
   bundleNeedsPromo: "묶음은 홍보 글도 있어야 해요. 결제 화면에서 낱개로 걸 수 있어요",
 } as const;

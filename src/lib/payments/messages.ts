@@ -5,11 +5,11 @@ import type { ProductKey } from "./products";
 /** 상품마다 구매 화면이 말하는 것(무엇을, 어디에, 얼마 동안) */
 export const PRODUCT_COPY: Record<ProductKey, { title: string; lead: string; points: readonly string[] }> = {
   boost_indie_7d: {
-    title: "광고 걸기",
+    title: "내 게임 더 알리기",
     lead: "인디 게임 목록 맨 위 \"주목할 게임\" 칸, 홈 인디 줄 첫 칸, 같은 장르 게임 상세의 추천 칸에 내 게임을 올려요. 카드에는 \"광고\" 표시가 붙어요.",
     points: [
       "결제하면 바로 노출이 시작되고 7일 동안 이어져요",
-      "이미 광고 중이면 지금 기간이 끝난 뒤로 이어 붙여요",
+      "이미 노출 중이면 지금 기간이 끝난 뒤로 이어 붙여요",
       "걸린 게임이 3개보다 많으면 한 시간마다 돌아가며 보여요",
       "명예의 전당, 슈퍼루키 순위와는 상관없어요",
     ],
@@ -25,7 +25,7 @@ export const PRODUCT_COPY: Record<ProductKey, { title: string; lead: string; poi
     ],
   },
   bundle_7d: {
-    title: "광고 묶음",
+    title: "스포트라이트",
     lead: "인디 게임 목록 맨 위와 게시판 홍보 목록 위에 7일 동안 함께 올려요.",
     points: [],
   },
@@ -47,26 +47,26 @@ export const BUNDLE_MESSAGES = {
 } as const;
 
 export const PAYMENT_MESSAGES = {
-  adBuy: "광고 걸기",
+  adBuy: "더 알리기",
   price: "결제 금액",
   pay: "결제하기",
   testMode: "테스트 결제예요. 실제로 돈이 나가지 않아요",
   notConfigured: "결제를 준비하고 있어요. 조금 뒤에 다시 와 주세요",
-  notBuyable: "공개 중인 내 글에만 광고를 걸 수 있어요",
-  notLive: "공개 중인 글에만 광고를 걸 수 있어요",
-  currentBoost: (until: string) => `지금 광고 중이에요. ${until}까지 노출돼요`,
+  notBuyable: "공개 중인 내 글만 알릴 수 있어요",
+  notLive: "공개 중인 글만 알릴 수 있어요",
+  currentBoost: (until: string) => `지금 노출 중이에요. ${until}까지 보여요`,
   orderNotFound: "주문을 찾을 수 없어요",
   amountMismatch: "결제 금액이 주문과 달라 결제를 멈췄어요",
   failed: "결제하지 못했어요",
   sdkFailed: "결제창을 열지 못했어요. 잠시 뒤 다시 시도해 주세요",
 
   historyTitle: "결제 내역",
-  historyLead: "광고 결제 기록이에요. 영수증은 결제마다 따로 볼 수 있어요.",
+  historyLead: "알리기 결제 기록이에요. 영수증은 결제마다 따로 볼 수 있어요.",
   historyEmpty: "아직 결제한 적이 없어요",
-  paidBanner: "결제가 끝났어요. 광고가 걸렸어요",
+  paidBanner: "결제가 끝났어요. 바로 노출이 시작됐어요",
   failedBanner: (msg: string) => `결제하지 못했어요. ${msg}`,
   receipt: "영수증",
-  boostMissing: "광고 걸기 확인 중",
+  boostMissing: "노출 시작 확인 중",
   toHistory: "결제 내역",
   toStats: "내 게임 통계로",
 
