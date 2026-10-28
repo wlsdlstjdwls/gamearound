@@ -173,6 +173,15 @@ export function safeNextPath(raw: string | null | undefined): string {
   return raw;
 }
 
+/** 명예의 전당 갈래와 달. 명예의 전당 화면의 칩과 인디 상세의 지난 순위 딱지가 같은 주소를 쓴다 */
+export function hallOfFamePath(tab: "month" | "history", ym?: string): string {
+  const p = new URLSearchParams();
+  if (tab === "history") p.set("tab", "history");
+  if (ym) p.set("ym", ym);
+  const qs = p.toString();
+  return qs ? `${ROUTES.hallOfFame}?${qs}` : ROUTES.hallOfFame;
+}
+
 export function gamePath(slug: string): string {
   return `${ROUTES.game}/${encodeURIComponent(slug)}`;
 }

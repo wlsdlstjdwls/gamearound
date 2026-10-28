@@ -1,7 +1,7 @@
 // 명예의 전당(S-08), 슈퍼루키(S-09), 인디 게임 찜과 조회 기록. 점수 식과 근거는 lib/indie/fame 머리 주석.
 // 대상은 모두 "승인된 공개 글" 이다(isPublic) — 승인 대기 게임은 어느 순위에도 서지 않는다(기획서 7장).
 import "server-only";
-import { and, desc, eq, gte, inArray, lt, sql, type SQL } from "drizzle-orm";
+import { and, desc, eq, gte, inArray, lt, lte, sql, type SQL } from "drizzle-orm";
 import { getDb } from "@/server/db/client";
 import { createdBy } from "@/server/db/audit";
 import { hallOfFameMonths, indiePostComments, indiePostLikes, indiePosts, indieViewMonths } from "@/server/db/schema";
@@ -10,6 +10,7 @@ import {
   HOF_COMMENT_WEIGHT,
   HOF_LIKE_WEIGHT,
   HOF_MIN_LIKES,
+  HOF_PODIUM,
   HOF_TOP,
   HOF_VIEWS_PER_POINT,
   kstYm,
@@ -243,6 +244,15 @@ export async function finalizeHallOfFame(ym: string): Promise<number> {
   if (ranking.length === 0) return 0;
   await db.insert(hallOfFameMonths).values(ranking.map((r, i) => ({ ym, rank: i + 1, postId: r.id, score: r.score, ...createdBy("cron:daily") }))).onConflictDoNothing();
   return ranking.length;
+}
+
+/** 글 하나가 지난 달들(확정된 달)에 오른 1~HOF_PODIUM 위, 최신 달부터. 인디 상세의 지난 순위 딱지 */
+export async function listIndieFameHistory(postId: string): Promise<Array<{ ym: string; rank: number }>> {
+  return getDb()
+    .select({ ym: hallOfFameMonths.ym, rank: hallOfFameMonths.rank })
+    .from(hallOfFameMonths)
+    .where(and(eq(hallOfFameMonths.postId, postId), lte(hallOfFameMonths.rank, HOF_PODIUM)))
+    .orderBy(desc(hallOfFameMonths.ym));
 }
 
 /** 글 하나의 이번 달 실시간 순위. TOP 밖이면 null. 인디 상세 머리 판이 1~3위를 꾸밀 때 쓴다(2026-10-28) */

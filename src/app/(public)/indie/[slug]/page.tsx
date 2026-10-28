@@ -26,7 +26,7 @@ import { MakerBadge } from "@/components/membership/maker-badge";
 import { IndieFollowButton } from "@/components/indie/follow-button";
 import { IndieLikeButton } from "@/components/indie/like-button";
 import { IndieRelatedNews } from "@/components/indie/related-news";
-import { getIndieMonthRank, getOpenPlaytest, listIndieComments, recordIndieView } from "@/server/services/indie";
+import { getIndieMonthRank, getOpenPlaytest, listIndieFameHistory, listIndieComments, recordIndieView } from "@/server/services/indie";
 import { PlaytestApply } from "@/components/indie/playtest-apply";
 import { PLAYTEST_MESSAGES } from "@/lib/indie/playtest-messages";
 import { addIndieCommentAction } from "@/app/(public)/indie/actions";
@@ -93,7 +93,7 @@ export default async function IndieDetailPage({ params, searchParams }: Props) {
   const live = post.review === "approved" && post.status === "published";
   // 공개 글 조회 한 번(명예의 전당, 슈퍼루키의 재료)과 댓글은 서로 기다릴 일이 없어 나란히 묻는다. 글쓴이 본인 조회는 서비스가 거른다.
   // 조회 기록이 실패해도 화면은 선다. 댓글을 못 읽으면 빈 목록으로 두고 쓰기는 연다
-  const [, comments, playtest, fameRank] = live
+  const [, comments, playtest, fameRank, fameHistory] = live
     ? await Promise.all([
         recordIndieView(post.id, post.authorUserId, await viewSource(from)).catch(() => {}),
         listIndieComments(post.id).catch(() => []),
@@ -101,8 +101,10 @@ export default async function IndieDetailPage({ params, searchParams }: Props) {
         getOpenPlaytest(post.id, viewer?.id ?? null).catch(() => null),
         // 이번 달 명예의 전당 순위 — 1~3위면 머리 판을 꾸민다(components/indie/detail-hero). 못 읽으면 꾸미지 않는다
         getIndieMonthRank(post.id).catch(() => null),
+        // 지난 달들에 오른 1~3위(확정 순위). 못 읽으면 딱지를 안 단다
+        listIndieFameHistory(post.id).catch(() => []),
       ])
-    : [null, [], null, null];
+    : [null, [], null, null, []];
   /** 링크 순번의 주소 — 공개 글이면 클릭을 세는 경유 주소(머리 주석) */
   const hrefOf = (i: number) => (live ? indieOutPath(post.id, i) : post.links[i].url);
   const playPick = primaryPlayLink(post.links, post.platforms);
@@ -148,7 +150,7 @@ export default async function IndieDetailPage({ params, searchParams }: Props) {
         </div>
       )}
 
-      <IndieDetailHero post={post} links={otherLinks} play={play} fameRank={fameRank} />
+      <IndieDetailHero post={post} links={otherLinks} play={play} fameRank={fameRank} fameHistory={fameHistory} />
 
       <div className="grid items-start gap-6 lg:grid-cols-[minmax(0,1fr)_320px]">
         <div className="flex min-w-0 flex-col gap-6">

@@ -13,6 +13,8 @@
 // 순위 색은 ui/rank-tone(급상승 순위 칸과 같은 셋)이고, 세 자리에 함께 선다: 판 테두리 빛, 대표 그림 모서리의 큰 순위 칸,
 // 제목 위 딱지(명예의 전당으로 가는 링크). 1위만 판 위로 빛이 지나간다 — 셋이 모두 반짝이면 1위가 따로 서지 않는다.
 // 순위는 실시간 잠정이라 딱지에 "이번 달" 을 붙인다.
+// 지난 달 확정 1~3위는 제목 아래 작은 딱지 줄로 남긴다(같은 날 사용자 "과거 1, 2, 3위는 뱃지로") — 판 꾸밈은 이번 달 몫이고,
+// 지난 기록은 자랑거리로만 선다. 딱지 하나가 그 달 순위 화면으로 간다.
 import Link from "next/link";
 import { CoverImage } from "@/components/game-card";
 import { TrophyIcon } from "@/components/ui/icons";
@@ -21,8 +23,8 @@ import { cn } from "@/lib/cn";
 import type { IndieDetailDto } from "@/lib/indie/dto";
 import { INDIE_MESSAGES as M, INDIE_PLATFORM_LABEL, INDIE_STAGE_LABEL, linkLabel } from "@/lib/indie/messages";
 import { INDIE_PROMO_MESSAGES as PM } from "@/lib/indie/promo-messages";
-import { FAME_MESSAGES as FM } from "@/lib/indie/fame";
-import { gamePath, ROUTES } from "@/lib/routes";
+import { FAME_MESSAGES as FM, ymLabel } from "@/lib/indie/fame";
+import { gamePath, hallOfFamePath, ROUTES } from "@/lib/routes";
 
 /** 어두운 판 위의 알약. 반투명 흰 테두리라 대표 그림 색이 무엇이든 읽힌다 */
 const PILL = "inline-flex items-center rounded-full px-3 py-1 text-[12px] font-semibold ring-1 ring-[color-mix(in_oklab,var(--on-ink)_28%,transparent)]";
@@ -54,7 +56,19 @@ const FAME_TONE = [
 /** 테두리 두께(px) */
 const FAME_RING_PX = 2;
 
-export function IndieDetailHero({ post, links, play, fameRank }: { post: IndieDetailDto; links: IndieHeroLink[]; play: IndieHeroLink | null; fameRank: number | null }) {
+export function IndieDetailHero({
+  post,
+  links,
+  play,
+  fameRank,
+  fameHistory,
+}: {
+  post: IndieDetailDto;
+  links: IndieHeroLink[];
+  play: IndieHeroLink | null;
+  fameRank: number | null;
+  fameHistory: Array<{ ym: string; rank: number }>;
+}) {
   const cover = post.images[0];
   const podium = fameRank !== null && fameRank <= RANK_TONE_TOP ? fameRank : null;
   return (
@@ -119,6 +133,24 @@ export function IndieDetailHero({ post, links, play, fameRank }: { post: IndieDe
             <h1 className="text-[28px] leading-[1.15] font-extrabold tracking-[-0.04em] sm:text-[36px]">{post.title}</h1>
             <p className="text-[15px] leading-[1.6] opacity-80">{post.tagline}</p>
           </div>
+
+          {fameHistory.length > 0 && (
+            <ul aria-label={FM.pastBadges} className="flex flex-wrap gap-1.5">
+              {fameHistory.map((h) => (
+                <li key={h.ym}>
+                  <Link
+                    href={hallOfFamePath("history", h.ym)}
+                    className="press tap inline-flex items-center gap-1.5 rounded-full py-1 pl-1 pr-3 text-[12.5px] font-bold ring-1 ring-[color-mix(in_oklab,var(--on-ink)_28%,transparent)] hover:bg-[color-mix(in_oklab,var(--on-ink)_12%,transparent)]"
+                  >
+                    <span aria-hidden className={cn("grid size-6 place-items-center rounded-full text-on-ink", RANK_TONE[h.rank - 1])}>
+                      <TrophyIcon size={12} strokeWidth={2.4} />
+                    </span>
+                    {FM.pastBadge(ymLabel(h.ym), h.rank)}
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          )}
 
           <ul aria-label={M.platforms} className="flex flex-wrap gap-1.5">
             {post.platforms.map((p) => (
