@@ -95,6 +95,9 @@
   --duration-glint: 1.1s;
   /* 손전등이 켜졌다 꺼지는 한 바퀴(알리기 판, payments/plan-nudge). 켜진 채 오래 머물고 잠깐 꺼진다 — 꺼진 몫이 길면 고장으로 읽힌다 */
   --duration-torch: 7s;
+  /* 기다림 그림(ui/game-loader): 손전등이 막대 한 끝에서 다른 끝까지 달리는 한 바퀴, 한 번 깡총 뛰는 박자 */
+  --duration-loader-run: 1.9s;
+  --duration-loader-hop: 0.32s;
   /* 댓글함에서 건너온 댓글 줄의 빛이 사그라드는 시간 — 눈이 줄을 찾아 읽기 시작할 만큼 머문다(.comment-target) */
   --duration-arrive: 2.6s;
   /* 내려온 카드가 "여기다" 하고 빛나는 시간(상세 플랫폼 이름 링크). 목업 .pc.fl 값 — 부드러운 스크롤(약 0.5초)이 끝난 뒤에도 빛이 남아 있어야 한다 */
@@ -536,6 +539,52 @@
 }
 .soon-float {
   animation: soon-float 3.4s var(--ease-standard) infinite;
+}
+
+/* 기다림 그림(components/ui/game-loader). 손전등은 막대 위에 서서 달리고(left), 달리는 동안 깡총 뛴다(translate).
+   채움 막대와 손전등이 같은 keyframes 를 타서 손전등이 늘 채움의 끝에 있다 — 빛이 길을 밝히며 지나간 자리가 차오르는 그림이다.
+   한 바퀴 끝에서 채움이 걷히며(opacity) 처음으로 돌아간다. 쉬는 모양(애니메이션 밖)은 반쯤 찬 막대와 그 끝의 손전등이다 */
+.game-loader-track {
+  position: relative;
+  height: 6px;
+  margin-top: 26px;
+  border-radius: 999px;
+  background: var(--surface-2);
+}
+.game-loader-fill {
+  position: absolute;
+  inset-block: 0;
+  left: 0;
+  width: 50%;
+  border-radius: inherit;
+  background: linear-gradient(90deg, var(--acc-3), var(--acc));
+  animation: loader-fill var(--duration-loader-run) var(--ease-standard) infinite;
+}
+.game-loader-runner {
+  position: absolute;
+  bottom: 100%;
+  left: 50%;
+  translate: -60% -1px;
+  animation: loader-run var(--duration-loader-run) var(--ease-standard) infinite;
+}
+.game-loader-hop {
+  display: block;
+  animation: loader-hop var(--duration-loader-hop) var(--ease-standard) infinite alternate;
+}
+@keyframes loader-fill {
+  0% { width: 0; opacity: 1; }
+  82% { width: 100%; opacity: 1; }
+  100% { width: 100%; opacity: 0; }
+}
+@keyframes loader-run {
+  0% { left: 0; opacity: 0; }
+  8% { opacity: 1; }
+  82% { left: 100%; opacity: 1; }
+  100% { left: 100%; opacity: 0; }
+}
+@keyframes loader-hop {
+  from { translate: 0 0; rotate: 0deg; }
+  to { translate: 0 -5px; rotate: -6deg; }
 }
 
 /* 댓글함(/lounge/comments)에서 건너온 댓글 줄 — 옅은 파랑이 깔렸다가 사그라든다(community/post-interactions 의 useArrivedComment).

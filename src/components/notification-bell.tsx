@@ -11,6 +11,7 @@ import { cn } from "@/lib/cn";
 import { formatPostDate } from "@/lib/format";
 import { NOTIFICATION_MESSAGES as M } from "@/lib/notifications/messages";
 import { ROUTES, signInPath } from "@/lib/routes";
+import { GameLoader } from "@/components/ui/game-loader";
 
 type Item = { id: string; kind: string; body: string; link: string | null; createdAt: string };
 
@@ -80,7 +81,9 @@ export function NotificationBell() {
               </Link>
             </div>
           ) : items === null ? (
-            <p className="px-4 py-5 text-[13px] text-dim">{M.loading}</p>
+            <div className="px-4 py-5">
+              <GameLoader label={M.loading} />
+            </div>
           ) : items.length === 0 ? (
             <p className="px-4 py-5 text-[13px] text-dim">{M.empty}</p>
           ) : (

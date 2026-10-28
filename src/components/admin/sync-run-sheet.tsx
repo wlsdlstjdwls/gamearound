@@ -20,6 +20,7 @@ import { cn } from "@/lib/cn";
 import { formatAgo } from "@/lib/format";
 import { gamePath } from "@/lib/routes";
 import type { RunItem, RunSummary } from "@/server/services/admin-activity";
+import { GameLoader } from "@/components/ui/game-loader";
 
 const TAG = "rounded-[6px] px-1.5 py-0.5 text-[11px] font-semibold";
 
@@ -96,9 +97,15 @@ export function SyncRunSheet({ source, sourceName, run, now }: { source: string;
             ))}
           </ul>
         ) : (
-          <p role="status" className="mt-4 rounded-xl bg-surface-2 px-4 py-5 text-[13px] text-mut">
-            {load.state === "failed" && !pending ? SYNC_MESSAGES.runItemsLoadFailed : SYNC_MESSAGES.runItemsLoading}
-          </p>
+          load.state === "failed" && !pending ? (
+            <p role="status" className="mt-4 rounded-xl bg-surface-2 px-4 py-5 text-[13px] text-mut">
+              {SYNC_MESSAGES.runItemsLoadFailed}
+            </p>
+          ) : (
+            <div className="mt-4 rounded-xl bg-surface-2/60 px-4 py-5">
+              <GameLoader label={SYNC_MESSAGES.runItemsLoading} />
+            </div>
+          )
         )}
       </Sheet>
     </>
