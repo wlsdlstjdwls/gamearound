@@ -20,6 +20,7 @@ import { countPendingCompanyGroups } from "@/server/sync/run-companies";
 import { countIndieAdminQueue, countIndieQueues } from "@/server/services/indie";
 import { countCommunityToday } from "@/server/services/community";
 import { countPreorderReview } from "@/server/services/preorder-bonuses";
+import { countOpenDataIssues } from "@/server/services/admin-data-issues";
 import { requireAdmin } from "@/server/services/users";
 
 export interface AdminWorkCounts {
@@ -44,13 +45,15 @@ export interface AdminWorkCounts {
   indie: number;
   /** 검토 대기 예약 특전 글(게임을 못 이었거나 특전을 못 뽑았다) */
   preorder: number;
+  /** 데이터 점검기가 사람에게 물은 것(sync/quality) */
+  dataIssues: number;
 }
 
 export const getAdminWorkCounts = cache(async (): Promise<AdminWorkCounts> => {
   await requireAdmin();
   const db = getDb();
 
-  const [[matches], [pendingProducts], [pendingShops], companies, taskRows, indie, preorder] = await Promise.all([
+  const [[matches], [pendingProducts], [pendingShops], companies, taskRows, indie, preorder, dataIssues] = await Promise.all([
     db.select({ n: count() }).from(gameSourceRefs).where(eq(gameSourceRefs.matchedBy, "pending")),
     db
       .select({ n: count() })
@@ -66,6 +69,7 @@ export const getAdminWorkCounts = cache(async (): Promise<AdminWorkCounts> => {
       .groupBy(adminTasks.status),
     countIndieAdminQueue(),
     countPreorderReview(),
+    countOpenDataIssues(),
   ]);
   const tasksOf = (s: "todo" | "doing") => taskRows.find((r) => r.status === s)?.n ?? 0;
 
@@ -79,6 +83,7 @@ export const getAdminWorkCounts = cache(async (): Promise<AdminWorkCounts> => {
     tasksDoing: tasksOf("doing"),
     indie,
     preorder,
+    dataIssues,
   };
 });
 

@@ -102,6 +102,17 @@ export function CheckListIcon(p: IconProps) {
   );
 }
 
+/** 데이터 점검 — 돋보기. 기계가 카탈로그를 훑어 찾은 것을 본다 */
+export function SearchCheckIcon(p: IconProps) {
+  return (
+    <svg {...base(p)}>
+      <circle cx="11" cy="11" r="7" />
+      <path d="m20 20-3.5-3.5" />
+      <path d="m8 11 2 2 4-4" />
+    </svg>
+  );
+}
+
 /** 게시글 — 말풍선 안의 글 두 줄 */
 export function ChatIcon(p: IconProps) {
   return (

@@ -41,7 +41,7 @@ import { MenuIcon } from "@/components/ui/icons";
 import { ADMIN_NAV } from "@/lib/admin/messages";
 import { COMING_SOON } from "@/lib/messages/coming-soon";
 import { ROUTES } from "@/lib/routes";
-import { BoxIcon, BuildingIcon, ChatIcon, CheckListIcon, LinkIcon, LogIcon, PulseIcon, StoreIcon } from "@/components/admin/nav-icons";
+import { BoxIcon, BuildingIcon, ChatIcon, CheckListIcon, LinkIcon, LogIcon, PulseIcon, SearchCheckIcon, StoreIcon } from "@/components/admin/nav-icons";
 import { ComingSoon } from "@/components/ui/coming-soon";
 import { CalendarIcon, GamepadIcon, TagIcon, TicketIcon } from "@/components/ui/icons";
 
@@ -55,6 +55,7 @@ export interface AdminNavCounts {
   tasksDoing: number;
   indie: number;
   preorder: number;
+  dataIssues: number;
 }
 
 type Pick = { n: number; capped?: boolean };
@@ -97,6 +98,7 @@ const GROUPS: Array<{ key: string; title?: string; items: Item[] }> = [
     title: ADMIN_NAV.groupReview,
     items: [
       { href: ROUTES.adminMatches, label: ADMIN_NAV.matches, Icon: LinkIcon, pick: (c) => ({ n: c.matches }) },
+      { href: ROUTES.adminDataIssues, label: ADMIN_NAV.dataIssues, Icon: SearchCheckIcon, pick: (c) => ({ n: c.dataIssues }) },
       {
         href: ROUTES.adminCompanies,
         label: ADMIN_NAV.companies,

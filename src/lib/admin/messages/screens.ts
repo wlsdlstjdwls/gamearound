@@ -22,6 +22,8 @@ export const ADMIN_NAV = {
   overview: "수집 현황",
   logs: "실행 로그",
   matches: "매칭 대기",
+  /** 데이터 점검기(sync/quality)가 사람에게 묻는 것. QUALITY_MESSAGES.title 과 같은 말 */
+  dataIssues: "데이터 점검",
   companies: "회사 이름",
   products: "상품 매핑",
   shops: "입점 신청",
