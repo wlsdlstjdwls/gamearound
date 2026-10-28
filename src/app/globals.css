@@ -93,6 +93,8 @@
   --duration-ambient: 9s;
   /* 빛이 한 번 스치는 시간(히어로 강조 글자, 명예의 전당 1위 판). 길면 "로딩 중" 처럼 읽힌다 */
   --duration-glint: 1.1s;
+  /* 손전등이 켜졌다 꺼지는 한 바퀴(알리기 판, payments/plan-nudge). 켜진 채 오래 머물고 잠깐 꺼진다 — 꺼진 몫이 길면 고장으로 읽힌다 */
+  --duration-torch: 7s;
   /* 내려온 카드가 "여기다" 하고 빛나는 시간(상세 플랫폼 이름 링크). 목업 .pc.fl 값 — 부드러운 스크롤(약 0.5초)이 끝난 뒤에도 빛이 남아 있어야 한다 */
   --duration-flash: 1.2s;
   /* 명예의 전당 인트로(indie/fame-intro): 1위 판이 화면 전체로 펼쳐지는 시간과 판 자리로 접혀 드는 시간.
@@ -532,6 +534,37 @@
 }
 .soon-float {
   animation: soon-float 3.4s var(--ease-standard) infinite;
+}
+
+/* 알리기 판의 손전등(components/payments/plan-nudge, 2026-10-28 사용자: "손전등 빛 켜지고 꺼지는 애니메이션").
+   꺼진 채 잠깐 → 딸깍 두 번 튀며 켜짐 → 오래 켜져 있음 → 툭 꺼짐. 심볼의 빛 칸과 판을 가로지르는 빛 줄기가 같은 박자를 탄다.
+   쉬는 모양(애니메이션 밖)은 켜진 쪽이다 — 움직임 줄이기 설정의 전역 킬스위치가 애니메이션을 지우면 켜진 손전등으로 선다.
+   빛 줄기는 노랑이 아니라 브랜드 파랑이다(2026-10-27, "누런색은 되도록 쓰지 마") */
+@keyframes torch-power {
+  0%, 6% { opacity: 0.12; }
+  8% { opacity: 1; }
+  10% { opacity: 0.25; }
+  13%, 78% { opacity: 1; }
+  80%, 100% { opacity: 0.12; }
+}
+@keyframes torch-power-fill {
+  0%, 6% { fill-opacity: 0.15; }
+  8% { fill-opacity: 1; }
+  10% { fill-opacity: 0.3; }
+  13%, 78% { fill-opacity: 1; }
+  80%, 100% { fill-opacity: 0.15; }
+}
+.torch .brand-beam {
+  animation: torch-power-fill var(--duration-torch) steps(1, end) infinite;
+}
+.torch-cone {
+  position: absolute;
+  z-index: -1;
+  pointer-events: none;
+  /* 심볼 머리 끝에서 오른쪽으로 벌어지는 원뿔. 끝으로 갈수록 옅어진다 */
+  clip-path: polygon(0 44%, 100% 0, 100% 100%, 0 56%);
+  background: linear-gradient(90deg, color-mix(in oklab, var(--acc) 20%, transparent), color-mix(in oklab, var(--acc) 5%, transparent) 70%, transparent);
+  animation: torch-power var(--duration-torch) steps(1, end) infinite;
 }
 
 /* 장애 그림 — 로고 손전등의 빛이 깜빡인다(components/ui/status-panel, 2026-10-13).
