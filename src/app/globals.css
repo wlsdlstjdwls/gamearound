@@ -1068,6 +1068,47 @@ li:has([data-more-open]) {
   animation: sheet-up var(--duration-slow) var(--ease-out-emph) both;
   will-change: transform;
 }
+/* 등록현황 진행 단계의 "지금 여기" 점(indie/review-steps). 점 둘레로 같은 색 고리가 퍼지며 옅어진다 — soon-ripple 과 같은 결.
+   주기는 --duration-ambient 의 절반쯤으로 느리게 둔다: 빠르면 "로딩 중" 으로 읽힌다(기다리는 건 운영진이다) */
+.step-live::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background: var(--acc);
+  animation: soon-ripple calc(var(--duration-ambient) / 3) var(--ease-standard) infinite both;
+  z-index: -1;
+}
+.step-live {
+  isolation: isolate;
+}
+/* 내 게임 통계 추이 선(indie/stats-trend). 고른 숫자가 바뀔 때마다 선이 왼쪽에서 그려지고 면이 뒤따라 옅게 깔린다.
+   pathLength=1 이라 대시 길이 1 이 선 전체다 */
+.trend-draw {
+  stroke-dasharray: 1;
+  animation: trend-draw var(--duration-flash) var(--ease-out-emph) both;
+}
+.trend-fade {
+  animation: fade-in var(--duration-slow) var(--ease-standard) var(--duration-base) both;
+}
+@keyframes trend-draw {
+  from { stroke-dashoffset: 1; }
+  to { stroke-dashoffset: 0; }
+}
+/* 확인 팝업(ui/confirm-dialog). 시트와 같은 막 색, 판은 가운데서 살짝 커지며 뜬다 */
+.confirm-dialog {
+  border: 0;
+  max-width: none;
+}
+.confirm-dialog[open] {
+  animation: scale-in var(--duration-base) var(--ease-out-emph) both;
+}
+.confirm-dialog::backdrop {
+  background: var(--overlay);
+  backdrop-filter: blur(var(--overlay-blur));
+  -webkit-backdrop-filter: blur(var(--overlay-blur));
+  animation: fade-in var(--duration-base) var(--ease-standard) both;
+}
 /* 손가락을 따라가는 동안에는 등장 애니메이션이 자리를 되돌려 놓으면 안 된다 */
 .sheet__panel[data-dragging="true"] {
   animation: none;
@@ -1326,7 +1367,8 @@ body:has([data-onboarding]) > [data-site-tabbar] {
 .sparkle {
   opacity: 0;
   pointer-events: none;
-  animation: sparkle calc(var(--duration-glint) * 3) var(--ease-standard) infinite;
+  /* 한 바퀴 5.5초(반짝이는 몫 1.3초). 3.3초일 때 "너무 빠르게 반짝인다"(2026-10-28 사용자) */
+  animation: sparkle calc(var(--duration-glint) * 5) var(--ease-standard) infinite;
 }
 
 /* 글자를 스치는 빛을 몇 초마다 다시(홈 히어로 "얼마에?"). 앞 한 토막에서만 지나가고 나머지는 쉰다 */
@@ -1510,3 +1552,54 @@ body:has([data-onboarding]) > [data-site-tabbar] {
   display: inline-block;
   animation: count-tick var(--duration-base) var(--ease-out-emph);
 }
+
+/*
+ * 글 본문(게시판, 라운지) — 에디터가 낸 HTML 의 모양. 글 상세(components/community/post-detail)와 글쓰기 에디터(rich-editor)가
+ * 같은 클래스를 써서 쓰는 화면과 읽는 화면이 똑같이 보인다. 허용 태그는 lib/community/sanitize 의 목록과 1:1 이다.
+ */
+.post-body {
+  font-size: 15.5px;
+  line-height: 1.85;
+  color: var(--ink);
+  overflow-wrap: anywhere;
+}
+.post-body > * + * { margin-top: 0.85em; }
+.post-body h2 { font-size: 20px; font-weight: 800; letter-spacing: -0.02em; line-height: 1.4; margin-top: 1.4em; }
+.post-body h3 { font-size: 17px; font-weight: 700; letter-spacing: -0.01em; line-height: 1.45; margin-top: 1.2em; }
+.post-body > h2:first-child, .post-body > h3:first-child { margin-top: 0; }
+.post-body strong { font-weight: 700; }
+.post-body a { color: var(--acc); text-decoration: underline; text-underline-offset: 3px; }
+.post-body ul, .post-body ol { padding-left: 1.4em; }
+.post-body ul { list-style: disc; }
+.post-body ol { list-style: decimal; }
+.post-body li + li { margin-top: 0.25em; }
+.post-body li > p { margin: 0; }
+.post-body blockquote { border-left: 3px solid var(--acc-3); padding: 2px 0 2px 14px; color: var(--mut); }
+.post-body code { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 0.88em; background: var(--surface-2); border-radius: 5px; padding: 1px 5px; }
+.post-body pre { background: var(--surface-2); border-radius: var(--radius-inset); padding: 12px 14px; overflow-x: auto; font-size: 13.5px; line-height: 1.6; }
+.post-body pre code { background: none; padding: 0; font-size: inherit; }
+.post-body hr { border: 0; border-top: 1px solid var(--line); }
+.post-body img { display: block; max-width: 100%; height: auto; border-radius: var(--radius-inset); box-shadow: var(--ring-hair); }
+/* 첨부 묶음(components/community/post-media 의 attachmentsHtml) — 파일 카드 줄 */
+.post-body div[data-attachments] { display: grid; gap: 8px; margin-top: 1.4em; padding-top: 1.1em; border-top: 1px solid var(--line-soft); }
+@media (min-width: 640px) { .post-body div[data-attachments] { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+.post-body a[data-file] {
+  display: flex; align-items: center; gap: 10px; min-height: var(--touch-target); padding: 8px 12px;
+  border-radius: var(--radius-inset); background: var(--surface-4); box-shadow: var(--ring-hair);
+  color: var(--ink); font-size: 13.5px; font-weight: 600; text-decoration: none; line-height: 1.4;
+  transition: background-color var(--duration-base) var(--ease-standard);
+}
+.post-body a[data-file]::before {
+  content: ""; flex: none; width: 18px; height: 18px; background: var(--acc);
+  -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M20 11.5l-7.6 7.6a5 5 0 0 1-7.1-7.1l8.1-8.1a3.3 3.3 0 0 1 4.7 4.7l-8.1 8.1a1.7 1.7 0 0 1-2.4-2.4l7.4-7.4'/%3E%3C/svg%3E") center / contain no-repeat;
+  mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M20 11.5l-7.6 7.6a5 5 0 0 1-7.1-7.1l8.1-8.1a3.3 3.3 0 0 1 4.7 4.7l-8.1 8.1a1.7 1.7 0 0 1-2.4-2.4l7.4-7.4'/%3E%3C/svg%3E") center / contain no-repeat;
+}
+.post-body a[data-file]::after { content: attr(data-size); margin-left: auto; flex: none; color: var(--dim); font-size: 11.5px; font-weight: 500; }
+.post-body a[data-file]:hover { background: var(--surface-2); }
+
+/* 에디터 칸 — 본문 모양은 위 .post-body 를 그대로 쓰고, 입력 칸으로서의 여백과 빈 칸 안내 글자만 더한다 */
+.rich-editor-area { min-height: 320px; padding: 16px 18px 24px; outline: none; font-size: 16px; }
+.rich-editor-area p.is-editor-empty:first-child::before {
+  content: attr(data-placeholder); float: left; height: 0; pointer-events: none; color: var(--dim);
+}
+.rich-editor-area img.ProseMirror-selectednode { box-shadow: 0 0 0 2px var(--acc); }

@@ -224,6 +224,10 @@ export async function listMyIndiePosts(userId: string): Promise<IndieMineRowDto[
       createdAt: indiePosts.createdAt,
       updatedAt: indiePosts.updatedAt,
       hasCover: sql<boolean>`${hasCover}`,
+      tagline: indiePosts.tagline,
+      // 대표 그림 한 장만 — 줄마다 그림 전부를 따로 묻지 않게 같은 질의 안에서 고른다(imagesFor 와 같은 순서).
+      // 바깥 글 id 를 이름까지 적는다: 고른 칸 안의 ${indiePosts.id} 는 표 이름 없이 "id" 로 나가 안쪽 그림 표의 id 로 읽혔다(2026-10-28 실측, 전부 null)
+      coverUrl: sql<string | null>`(select i.url from indie_post_images i where i.post_id = "indie_posts"."id" order by i.sort, i.created_at limit 1)`,
     })
     .from(indiePosts)
     .where(eq(indiePosts.authorUserId, userId))

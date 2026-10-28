@@ -13,7 +13,9 @@ import {
   HOF_TOP,
   HOF_VIEWS_PER_POINT,
   kstYm,
+  pickMyStanding,
   prevYm,
+  type MyFameStanding,
   ROOKIE_COMMENT_WEIGHT,
   ROOKIE_LIKE_WEIGHT,
   ROOKIE_LIMIT,
@@ -190,6 +192,36 @@ export async function getMonthRanking(ym: string): Promise<{ items: RankedIndie[
   const [cards, prev] = await Promise.all([cardsById(ids), monthScores(prevYm(ym), ids)]);
   const items = attach(rows, cards, prev);
   return { items, finalized: saved.length > 0 };
+}
+
+/**
+ * 이번 달 "내 게임 자리"(lib/indie/fame 의 pickMyStanding). 명예의 전당 화면이 마운트 뒤 api/me/fame 으로 부른다 —
+ * 화면 본문은 ISR(revalidate 300)이라 쿠키를 읽을 수 없다. 내 공개 게임이 없으면 null.
+ * 왕복은 둘이다: 내 글 id 와 이번 달 순위를 나란히, 그다음 내 글들의 이번 달 점수와 찜을 나란히.
+ */
+export async function getMyFameStanding(userId: string): Promise<MyFameStanding | null> {
+  const db = getDb();
+  const ym = kstYm(new Date());
+  const [mine, ranking] = await Promise.all([
+    db.select({ id: indiePosts.id, title: indiePosts.title, slug: indiePosts.slug }).from(indiePosts).where(and(eq(indiePosts.authorUserId, userId), isPublic)),
+    liveRanking(ym),
+  ]);
+  if (mine.length === 0) return null;
+  const ids = mine.map((m) => m.id);
+  const { start, end } = ymRange(ym);
+  const [scores, likeRows] = await Promise.all([
+    monthScores(ym, ids),
+    db
+      .select({ id: indiePostLikes.postId, n: sql<number>`count(*)::int` })
+      .from(indiePostLikes)
+      .where(and(inArray(indiePostLikes.postId, ids), gte(indiePostLikes.createdAt, start), lt(indiePostLikes.createdAt, end)))
+      .groupBy(indiePostLikes.postId),
+  ]);
+  const likes = new Map(likeRows.map((r) => [r.id, r.n]));
+  return pickMyStanding(
+    ranking,
+    mine.map((m) => ({ ...m, score: scores.get(m.id) ?? 0, likes: likes.get(m.id) ?? 0 })),
+  );
 }
 
 /** 역대 선정작 — 확정된 달마다 1위 한 줄, 최신 달부터 */

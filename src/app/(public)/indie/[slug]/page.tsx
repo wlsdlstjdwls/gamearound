@@ -282,7 +282,7 @@ export default async function IndieDetailPage({ params, searchParams }: Props) {
               </Link>
             )}
             {/* 지우기는 본인만(기획서 S-19 "본인 게임이면 수정, 삭제"). 관리자는 지우지 않고 숨긴다(/admin/indie) */}
-            {isOwner && <DeleteIndiePost postId={post.id} />}
+            {isOwner && <DeleteIndiePost postId={post.id} title={post.title} />}
             {!isOwner && <IndieReportButton postId={post.id} signedIn={viewer !== null} returnTo={indiePath(post.slug)} />}
           </div>
         </aside>

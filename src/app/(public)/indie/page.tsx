@@ -18,7 +18,7 @@ import { IndieCard } from "@/components/indie/indie-card";
 import { Pagination } from "@/components/pagination";
 import { WriteLink } from "@/components/community/write-link";
 import { buttonClass } from "@/components/ui/button";
-import { SearchIcon } from "@/components/ui/icons";
+import { SearchIcon, TrophyIcon } from "@/components/ui/icons";
 import { FormSelect } from "@/components/ui/select";
 import { NavChip, NavPendingScope, PendingRegion } from "@/components/ui/nav-pending";
 import { Page, PageHead, SectionHead } from "@/components/ui/page";
@@ -104,14 +104,18 @@ export default async function IndiePage({ searchParams }: Props) {
       )}
 
       {/* 명예의 전당 안내(기획서 v2.0 S-18 "명예의 전당에 올라보세요") — 승인된 게임만 서는 화면이라 다음 목표를 함께 말한다.
-          게시판 현황 띠와 같은 빛 웅덩이가 판 위를 천천히 오간다(.hero-beam.beam-soft) */}
-      <aside className="relative isolate flex flex-col items-start gap-3 overflow-hidden rounded-[var(--radius-md)] bg-acc-soft px-5 py-4 shadow-[inset_0_0_0_1px_var(--acc-3)] sm:flex-row sm:items-center sm:justify-between">
-        <span aria-hidden className="hero-beam beam-soft" />
-        <div className="flex flex-col gap-1">
-          <p className="text-[15px] font-bold text-ink">{M.hofBannerTitle}</p>
-          <p className="text-[13.5px] text-mut">{M.hofBannerLead}</p>
+          2026-10-28(사용자: "좀 더 눈에 띄게"): 옅은 파랑 띠가 검색 줄과 같은 격으로 묻혀, 어두운 판 + 트로피 + 채운 단추로 바꿨다.
+          명예의 전당 머리 판에 쓰던 빛 웅덩이(.hero-beam.beam-cool)가 판 위를 천천히 오간다 */}
+      <aside className="relative isolate flex flex-col items-start gap-4 overflow-hidden rounded-[var(--radius-panel)] bg-ink px-5 py-5 text-on-ink sm:flex-row sm:items-center sm:gap-5 sm:px-6">
+        <span aria-hidden className="hero-beam beam-cool" />
+        <span aria-hidden className="soon-float grid size-14 shrink-0 place-items-center rounded-full bg-on-ink/10 text-acc-on-ink ring-1 ring-on-ink/20">
+          <TrophyIcon size={28} strokeWidth={1.8} />
+        </span>
+        <div className="flex min-w-0 flex-1 flex-col gap-1">
+          <p className="text-[18px] font-extrabold tracking-[-0.02em]">{M.hofBannerTitle}</p>
+          <p className="text-[13.5px] opacity-80">{M.hofBannerLead}</p>
         </div>
-        <Link href={ROUTES.hallOfFame} className={buttonClass({ variant: "secondary", size: "sm", className: "shrink-0" })}>
+        <Link href={ROUTES.hallOfFame} className={buttonClass({ variant: "accent", className: "shrink-0" })}>
           {M.hofBannerCta}
         </Link>
       </aside>

@@ -3,12 +3,13 @@
 // 질의는 글 목록과 네 가지 집계를 나란히 보낸다(Neon 왕복은 줄 세운 수가 속도를 정한다). 집계는 모두 "내 글" 에 join 해서 거른다 —
 // 글 id 를 먼저 받아 넘기면 왕복이 하나 더 준다.
 // 찜과 댓글은 하루 표가 없어 행의 생성 시각으로 센다. 댓글은 남이 단 것만 센다 — 글쓴이 답글은 반응이 아니다.
+// 날짜 줄(days, 2026-10-28 그래프)은 DB 의 generate_series 로 빈 날까지 채워 받는다 — 화면이 날짜를 만들면 서버와 브라우저의 "오늘" 이 어긋난다.
 import "server-only";
 import { and, desc, eq, gte, inArray, ne, sql } from "drizzle-orm";
 import { getDb } from "@/server/db/client";
 import { developerFollows, indieLinkClicks, indiePostComments, indiePostLikes, indiePosts, indieViewDays, indieViewSources } from "@/server/db/schema";
 import { INDIE_STATS_WINDOW_DAYS, isPlayKind, PLAY_LINK_KINDS } from "@/lib/indie/promo";
-import type { IndieStatsDetailDto, IndieStatsDto, IndieStatsRowDto, IndieStatsTotals } from "@/lib/indie/dto";
+import type { IndieStatsDay, IndieStatsDetailDto, IndieStatsDto, IndieStatsRowDto, IndieStatsTotals } from "@/lib/indie/dto";
 
 /** 하루 표의 기간 시작(KST 날짜). 오늘 포함 30일 */
 const windowStartDay = sql`((now() at time zone 'Asia/Seoul')::date - ${INDIE_STATS_WINDOW_DAYS - 1}::int)`;
@@ -20,7 +21,7 @@ const zero = (): IndieStatsTotals => ({ views: 0, plays: 0, outbound: 0, likes: 
 export async function getMyIndieStats(userId: string): Promise<IndieStatsDto> {
   const db = getDb();
   const mine = eq(indiePosts.authorUserId, userId);
-  const [posts, viewRows, clickRows, likeRows, commentRows, followerRows] = await Promise.all([
+  const [posts, viewRows, clickRows, likeRows, commentRows, followerRows, dayRows] = await Promise.all([
     db
       .select({
         id: indiePosts.id,
@@ -36,7 +37,7 @@ export async function getMyIndieStats(userId: string): Promise<IndieStatsDto> {
       .where(mine)
       .orderBy(desc(indiePosts.createdAt)),
     db
-      .select({ postId: indieViewDays.postId, views: indieViewDays.views })
+      .select({ postId: indieViewDays.postId, day: sql<string>`${indieViewDays.day}::text`, views: indieViewDays.views })
       .from(indieViewDays)
       .innerJoin(indiePosts, eq(indiePosts.id, indieViewDays.postId))
       .where(and(mine, gte(indieViewDays.day, windowStartDay))),
@@ -58,14 +59,31 @@ export async function getMyIndieStats(userId: string): Promise<IndieStatsDto> {
       .where(and(mine, ne(indiePostComments.authorUserId, userId), eq(indiePostComments.status, "published"), gte(indiePostComments.createdAt, windowStartTs)))
       .groupBy(indiePostComments.postId),
     db.select({ n: sql<number>`count(*)::int` }).from(developerFollows).where(eq(developerFollows.developerUserId, userId)),
+    // 내 게임 모두의 날짜별 합. 찜과 댓글은 한국 날짜로 잘라 센다(하루 표와 같은 경계)
+    db.execute<{ day: string; views: number; plays: number; likes: number; comments: number }>(sql`
+      select d::date::text as day,
+        coalesce((select sum(v.views) from ${indieViewDays} v join ${indiePosts} p on p.id = v.post_id where p.author_user_id = ${userId} and v.day = d::date), 0)::int as views,
+        coalesce((select sum(c.clicks) from ${indieLinkClicks} c join ${indiePosts} p on p.id = c.post_id where p.author_user_id = ${userId} and c.day = d::date and ${inArray(sql`c.link_kind`, [...PLAY_LINK_KINDS])}), 0)::int as plays,
+        (select count(*) from ${indiePostLikes} l join ${indiePosts} p on p.id = l.post_id where p.author_user_id = ${userId} and (l.created_at at time zone 'Asia/Seoul')::date = d::date)::int as likes,
+        (select count(*) from ${indiePostComments} m join ${indiePosts} p on p.id = m.post_id where p.author_user_id = ${userId} and m.author_user_id <> ${userId} and m.status = 'published' and (m.created_at at time zone 'Asia/Seoul')::date = d::date)::int as comments
+      from generate_series(${windowStartDay}, (now() at time zone 'Asia/Seoul')::date, interval '1 day') as d
+      order by d`),
   ]);
+  const days: IndieStatsDay[] = dayRows.rows.map((r) => ({ day: r.day, views: Number(r.views), plays: Number(r.plays), likes: Number(r.likes), comments: Number(r.comments) }));
+  const dayIndex = new Map(days.map((d, i) => [d.day, i]));
 
   const likes = new Map(likeRows.map((r) => [r.postId, r.n]));
   const comments = new Map(commentRows.map((r) => [r.postId, r.n]));
   const sum = zero();
   const rows: IndieStatsRowDto[] = posts.map((p) => {
     const w = zero();
-    for (const v of viewRows) if (v.postId === p.id) w.views += v.views;
+    const viewsByDay = days.map(() => 0);
+    for (const v of viewRows) {
+      if (v.postId !== p.id) continue;
+      w.views += v.views;
+      const i = dayIndex.get(v.day);
+      if (i !== undefined) viewsByDay[i] += v.views;
+    }
     for (const c of clickRows) {
       if (c.postId !== p.id) continue;
       if (isPlayKind(c.kind)) w.plays += c.clicks;
@@ -81,9 +99,10 @@ export async function getMyIndieStats(userId: string): Promise<IndieStatsDto> {
       live: p.status === "published" && p.review === "approved",
       window: w,
       allTime: { views: p.viewCount, likes: p.likeCount, comments: p.commentCount },
+      viewsByDay,
     };
   });
-  return { followers: followerRows[0]?.n ?? 0, window: sum, rows };
+  return { followers: followerRows[0]?.n ?? 0, window: sum, rows, days };
 }
 
 /**

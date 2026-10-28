@@ -3,6 +3,18 @@ import type { IndieStage } from "@/server/db/schema";
 import { storeLinkPlatform, type IndieGenre, type IndieLinkKind, type IndiePlatform } from "./constants";
 import type { IndieSearchScope } from "./query";
 
+/**
+ * 개발 단계를 고를 때 한 줄 설명(2026-10-28, 사용자: "데모 공개랑 앞서 해보기 차이는?"). 코드가 두 단계를 다르게 다루는 곳은 없다 —
+ * 거르기와 배지 글자만 다르다. 그래서 고르는 사람이 헷갈리지 않게 업계에서 쓰는 뜻을 적는다: 데모는 일부를 무료로 맛보는 판,
+ * 앞서 해보기는 완성 전 본편을 먼저 사서 하는 판(스팀 Early Access).
+ */
+export const INDIE_STAGE_HINT: Record<IndieStage, string> = {
+  in_development: "아직 해 볼 수 있는 판이 없어요",
+  demo: "일부를 무료로 먼저 해 볼 수 있어요",
+  early_access: "완성 전 본편을 먼저 살 수 있어요",
+  released: "정식으로 나왔어요",
+};
+
 export const INDIE_STAGE_LABEL: Record<IndieStage, string> = {
   in_development: "개발 중",
   demo: "데모 공개",
@@ -63,7 +75,7 @@ export const INDIE_MESSAGES = {
   listTitle: "내가 만든 게임",
   lead: "인디 개발자가 직접 등록한 개성 있는 게임을 둘러보세요.",
   hofBannerTitle: "명예의 전당에 올라보세요",
-  hofBannerLead: "조회수와 찜 같은 반응을 모아 매달 '이번 달 주목작' 을 뽑아 명예의 전당에 소개해요.",
+  hofBannerLead: "찜, 조회, 댓글이 많이 모인 게임을 매달 뽑아 소개해요. 순위 밖이어도 내 게임 자리를 바로 볼 수 있어요.",
   hofBannerCta: "명예의 전당 보기",
   register: "내 게임 등록",
   searchLabel: "내가 만든 게임 검색",
@@ -88,8 +100,7 @@ export const INDIE_MESSAGES = {
   empty: "아직 올라온 게임이 없어요",
   emptyStage: "이 단계의 게임이 아직 없어요",
   emptyDescription: "직접 만든 게임이 있다면 첫 번째로 소개해 보세요.",
-  homeTitle: "인디 개발자가 소개해요",
-  homeNote: "개발자가 직접 올린 게임",
+  homeTitle: "인디 게임",
   seeAll: "전체 보기",
   back: "내가 만든 게임 목록으로",
   by: "만든 사람",
@@ -195,7 +206,8 @@ export const INDIE_FORM_MESSAGES = {
   imagesSending: (done: number, total: number) => `그림 올리는 중 ${done}/${total}`,
   saved: "저장했어요.",
   delete: "글 지우기",
-  deleteConfirm: "정말 지울까요? 올린 그림도 함께 지워져요.",
+  deleteConfirm: "지우면 되돌릴 수 없어요. 올린 그림과 찜, 댓글도 함께 지워져요.",
+  deleteTitle: (title: string) => `${title}을(를) 삭제할까요?`,
   deleteYes: "지우기",
   deleteNo: "그만두기",
   /** 등록 화면 "내가 올린 게임" 줄의 짧은 단추(목업 indreg 의 .rm) */
@@ -296,4 +308,15 @@ export const INDIE_REVIEW_MESSAGES = {
   pendingShort: "운영진이 확인하고 있어요",
   liveShort: "내가 만든 게임에 보이고 있어요",
   emptyLead: "내 게임 등록으로 첫 게임을 올려 보세요.",
+  /** 줄마다 세우는 진행 단계 셋(components/indie/review-steps) */
+  stepApplied: "등록 신청",
+  stepReview: "운영진 확인",
+  stepDone: "등록 완료",
+  stepRejected: "반려",
+  stepsLabel: "등록 진행 단계",
+  stepLiveSr: "(진행 중)",
+  stepDoneSr: "(끝남)",
+  noTagline: "한 줄 소개가 아직 없어요",
+  viewGame: "게임 보기",
+  edit: "고치기",
 } as const;

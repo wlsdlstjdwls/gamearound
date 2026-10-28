@@ -68,6 +68,9 @@ export type IndieMineRowDto = {
   review: IndieReview;
   reviewReason: string | null;
   hasCover: boolean;
+  /** 첫 그림(대표). 등록현황, 등록 화면 줄이 작은 커버로 세운다(2026-10-28) */
+  coverUrl: string | null;
+  tagline: string;
   /** 라운지 홈 "내 게임 최근 소식" 이 반응으로 적는다(기획서 S-16 "찜 수") */
   likeCount: number;
   viewCount: number;
@@ -113,8 +116,12 @@ export type IndieStatsRowDto = {
   live: boolean;
   window: IndieStatsTotals;
   allTime: { views: number; likes: number; comments: number };
+  /** 기간 날짜별 조회(오래된 날부터, 빈 날 0). 줄마다 작은 추이 선으로 그린다(2026-10-28) */
+  viewsByDay: number[];
 };
-export type IndieStatsDto = { followers: number; window: IndieStatsTotals; rows: IndieStatsRowDto[] };
+/** 기간 날짜별 합(내 게임 모두). 통계 화면 맨 위 추이 그래프의 재료(2026-10-28) */
+export type IndieStatsDay = { day: string; views: number; plays: number; likes: number; comments: number };
+export type IndieStatsDto = { followers: number; window: IndieStatsTotals; rows: IndieStatsRowDto[]; days: IndieStatsDay[] };
 
 /** 게임 하나의 통계 자세히(메이커 멤버십, 2026-10-27). days 는 오래된 날부터 기간 전부 — 아무 일 없던 날도 0 으로 선다 */
 export type IndieStatsDetailDto = {

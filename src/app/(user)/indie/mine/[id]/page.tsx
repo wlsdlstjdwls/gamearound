@@ -57,7 +57,7 @@ export default async function IndieEditPage({ params, searchParams }: Props) {
       </section>
 
       <section className="border-t border-line pt-6">
-        <DeleteIndiePost postId={post.id} />
+        <DeleteIndiePost postId={post.id} title={post.title} />
       </section>
     </Page>
   );

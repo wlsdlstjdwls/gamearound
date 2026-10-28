@@ -105,6 +105,8 @@ export const ROUTES = {
   apiAuthMe: "/api/auth/me",
   /** 홈 할인 줄의 개인화판. 홈 캐시를 깨지 않으려고 마운트 뒤 따로 받아 갈아 끼운다(api/me/picks 주석) */
   apiMePicks: "/api/me/picks",
+  /** 명예의 전당 "내 게임 자리". 화면 캐시를 깨지 않으려고 마운트 뒤 따로 받는다(api/me/fame 주석) */
+  apiMeFame: "/api/me/fame",
   apiPushSubscribe: "/api/push/subscribe",
   /** 뉴스 썸네일 프록시 — 매체 CDN 이 핫링크를 막아 서버가 대신 받는다(lib/news/thumbnail) */
   apiNewsThumbnail: "/api/news/thumbnail",
@@ -198,6 +200,8 @@ export const SHOP_PHOTO_UPLOAD_PATH = "/api/shops/photos/upload";
 
 /** 인디 홍보 글 그림 업로드 토큰 발급. 매장 사진과 같은 방식이다(글쓴이만 받는다) */
 export const INDIE_IMAGE_UPLOAD_PATH = "/api/indie/images/upload";
+/** 게시판, 라운지 글 본문 그림과 첨부파일의 Blob 업로드 토큰 경로(lib/community/media) */
+export const POST_MEDIA_UPLOAD_PATH = "/api/community/media/upload";
 
 /**
  * 인디 글 바깥 링크로 나가는 경유 주소(플레이하기 클릭 집계). 주소가 아니라 링크 순번을 싣는다 —

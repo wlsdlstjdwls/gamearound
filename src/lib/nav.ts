@@ -4,7 +4,7 @@
 //
 // "use client" 파일이 아니다 — 서버 컴포넌트도 이 상수를 읽는다(AGENTS.md 6장, 2026-10-12 푸터 사고).
 //
-// 이름, 순서는 기획서 표를 그대로 따르되 가운뎃점만 쉼표로 바꿨다("질문, 피드백").
+// 이름, 순서는 기획서 표를 그대로 따르되 가운뎃점만 쉼표로 바꿨다. "질문/피드백" 은 사용자 지정(2026-10-28).
 // 아직 화면이 없는 칸(게시판, 라운지, 명예의 전당, 슈퍼루키)도 메뉴에는 선다 — 누르면 "준비 중" 화면이다.
 import { gamesHref } from "@/lib/games-query";
 import { INDIE_FROM, INDIE_FROM_PARAM } from "@/lib/indie/query";
@@ -99,7 +99,7 @@ export const NAV_SECTIONS: readonly NavSection[] = [
       { label: "라운지 홈", href: ROUTES.lounge, aliases: [ROUTES.loungeAll] },
       { label: "내가 만든 게임", href: ROUTES.indie },
       { label: "개발일지", href: ROUTES.loungeDevlogs },
-      { label: "질문, 피드백", href: ROUTES.loungeQna },
+      { label: "질문/피드백", href: ROUTES.loungeQna },
       { label: "등록현황", href: ROUTES.indieMine, childQueries: [{ parent: ROUTES.indie, query: { [INDIE_FROM_PARAM]: INDIE_FROM.mine } }] },
       // 광고 성과, 결제 내역, 멤버십은 통계 머리에서 들어가는 화면이다 — 별칭이 없으면 /indie/mine 아래라 "등록현황" 이 켜진다
       // 광고 걸기, 플레이테스트 관리도 통계 화면의 게임 줄 단추로 들어온다

@@ -4,11 +4,11 @@ import { LoungeBoard } from "@/components/lounge/lounge-board";
 import { parseBoardQuery } from "@/lib/community/query";
 import { ROUTES } from "@/lib/routes";
 
-export const metadata: Metadata = { title: "질문, 피드백" };
+export const metadata: Metadata = { title: "질문/피드백" };
 
 type Props = { searchParams: Promise<Record<string, string | string[] | undefined>> };
 
 export default async function Page({ searchParams }: Props) {
   const query = parseBoardQuery(await searchParams);
-  return <LoungeBoard title="질문, 피드백" categories={["qna"]} base={ROUTES.loungeQna} query={query} />;
+  return <LoungeBoard title="질문/피드백" categories={["qna"]} base={ROUTES.loungeQna} query={query} />;
 }

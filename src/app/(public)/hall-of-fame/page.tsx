@@ -4,9 +4,11 @@
 //     순위표는 역대 선정작 탭 안에 선다(목업 hpm): "X월 주목작 순위 TOP 10" 머리, "역대 선정작으로" 되돌아가기, 1~10위 줄.
 //     이번 달 주목작 탭의 큰 판으로 보내지 않는 이유 — 탭이 바뀌어 "역대 선정작을 보던 중" 이라는 자리가 사라진다.
 // 탭, 달은 주소(?tab=, ?ym=)에 실린다. 점수 식은 lib/indie/fame.
-// 월 선택 칩은 줄바꿈하지 않는다(shrink-0, nowrap) — 390 폭에서 "2026년 10월(이번 달)" 이 네 줄로 접혔다. 넘치는 달은 가로로 민다.
-// 띠에 위아래 8px 여백(py-2, -my-2)을 두는 이유: 터치 기기의 칩 덧면(.tap-inset ::after)이 위아래로 8px 넘쳐, 가로 스크롤 상자 안에서 세로로도 8px 스크롤됐다(2026-10-27 실측).
-// 목업의 월 선택은 드롭다운이지만 칩으로 둔다 — 칩은 누른 순간 켜진다(ui/nav-pending). 드롭다운은 고른 뒤 서버를 기다린다.
+// 달 고르기는 이전, 다음 화살표 사이에 달 이름 하나(indie/month-stepper, 2026-10-28 사용자: "날짜가 버튼 형태라 UI 개선").
+// 칩 여섯 개가 한 줄을 먹고 390 폭에서 가로로 밀리던 것을 걷었다. 화살표는 NavChip 이라 누른 순간 켜진다.
+// 어두운 머리 판(InkHero)은 2026-10-28 걷었다(사용자: "영역을 너무 잡아먹는다") — 강조는 1~3위 판이 맡는다.
+// 4~10위 줄에는 한 계단 위까지 점수와 "가장 많이 오른 게임" 을 적고, 개발자 본인에게는 "내 게임은 지금" 카드를 띄운다
+// (사용자: "3위 안에 못 들어도 힘나도록"). 카드는 개인 값이라 마운트 뒤 받는다(indie/my-fame-standing).
 // 보조 줄의 조회, 찜은 그 달 값이 아니라 누적이다 — 달 값은 순위 점수에 이미 들어가 있고, 점수를 같이 적는다.
 import type { Metadata } from "next";
 import Link from "next/link";
@@ -15,9 +17,10 @@ import { EmptyState } from "@/components/empty-state";
 import { FadeImage } from "@/components/ui/fade-image";
 import { ChevronLeftIcon } from "@/components/ui/icons";
 import { NavChip, NavPendingScope, PendingRegion } from "@/components/ui/nav-pending";
-import { Page } from "@/components/ui/page";
-import { InkHero, InkHeroHead } from "@/components/ui/ink-hero";
+import { Page, PageHead } from "@/components/ui/page";
 import { TrophyIcon } from "@/components/ui/icons";
+import { MonthStepper } from "@/components/indie/month-stepper";
+import { MyFameStandingCard } from "@/components/indie/my-fame-standing";
 import { cn } from "@/lib/cn";
 import { nullIfDbUnavailable } from "@/lib/db-errors";
 import { FAME_MESSAGES as M, isYm, kstYm, prevYm, ymLabel } from "@/lib/indie/fame";
@@ -31,8 +34,8 @@ export const revalidate = 300;
 
 export const metadata: Metadata = { title: M.hofTitle, description: M.hofLead };
 
-/** 월 선택에 세우는 달 수 — 이번 달 포함 반년 */
-const MONTH_CHOICES = 6;
+/** 달 고르기로 거슬러 갈 수 있는 달 수 — 이번 달 포함 한 해. 화살표로 넘기니 칩 시절(반년)처럼 줄 폭에 묶이지 않는다 */
+const MONTH_CHOICES = 12;
 
 type Props = { searchParams: Promise<Record<string, string | string[] | undefined>> };
 const first = (v: string | string[] | undefined) => (Array.isArray(v) ? v[0] : v);
@@ -77,7 +80,7 @@ function ChangeNote({ change, className }: { change: number | null | undefined; 
 }
 
 /** 4위 아래 줄과 역대 선정작 줄이 같은 모양을 쓴다(목업 .hpr): 왼쪽 순위 칸, 작은 커버, 이름과 보조 줄, 오른쪽 끝 알약 */
-function RankRow({ to, rank, sub, item, right }: { to: string; rank: string; sub?: string; item: RankedIndie | null; right: React.ReactNode }) {
+function RankRow({ to, rank, sub, item, right, note }: { to: string; rank: string; sub?: string; item: RankedIndie | null; right: React.ReactNode; note?: React.ReactNode }) {
   return (
     <li>
       <Link href={to} className="press grid grid-cols-[72px_minmax(0,1fr)] items-center gap-x-3 gap-y-1.5 rounded-[var(--radius-md)] bg-surface p-3 shadow-hair transition-colors hover:bg-surface-2 sm:grid-cols-[96px_112px_minmax(0,1fr)_auto] sm:gap-x-4">
@@ -90,6 +93,7 @@ function RankRow({ to, rank, sub, item, right }: { to: string; rank: string; sub
         <span className="flex min-w-0 flex-col gap-0.5">
           <span className="truncate text-[15px] font-bold text-ink">{item?.card.title ?? "-"}</span>
           {item && <span className="truncate text-[12.5px] text-dim">{metaOf(item)}</span>}
+          {note}
         </span>
         <span className="col-start-2 justify-self-start sm:col-start-auto sm:justify-self-end">{right}</span>
       </Link>
@@ -100,21 +104,31 @@ function RankRow({ to, rank, sub, item, right }: { to: string; rank: string; sub
 function Ranking({ items, label, finalized, isNow }: { items: RankedIndie[]; label: string; finalized: boolean; isNow: boolean }) {
   if (items.length === 0) return <EmptyState title={M.empty} description={M.emptyLead} />;
   const [top, ...rest] = items;
+  // 4~10위 중 지난달보다 가장 많이 오른 게임 하나. 순위는 낮아도 뜨는 중임을 말해 준다. 오른 게임이 없으면 아무도 안 단다
+  const riserSlug = rest
+    .slice(2)
+    .filter((r) => (r.change ?? 0) > 0)
+    .reduce<RankedIndie | null>((a, b) => (!a || (b.change ?? 0) > (a.change ?? 0) ? b : a), null)?.card.slug;
   return (
     <div className="flex flex-col gap-6">
       <div className="grid gap-4 lg:grid-cols-[minmax(0,1.9fr)_minmax(0,1fr)_minmax(0,1fr)]">
         {/* 1위 — 큰 판(목업 hhero). 대표 그림을 흐리지 않고 깔고, 왼쪽에서 오른쪽으로 옅어지는 막을 씌워 글을 읽힌다 */}
-        <Link href={indieDetailHref(top.card.slug, INDIE_FROM.hallOfFame)} className="lift press glint-sweep group relative isolate flex min-h-[280px] flex-col justify-between gap-4 overflow-hidden rounded-[var(--radius-panel)] bg-ink p-5 text-on-ink sm:p-6">
+        <Link href={indieDetailHref(top.card.slug, INDIE_FROM.hallOfFame)} className="lift press glint-sweep group relative isolate flex min-h-[300px] flex-col justify-between gap-4 overflow-hidden rounded-[var(--radius-panel)] bg-ink p-5 text-on-ink shadow-[0_0_0_2px_var(--acc),0_18px_40px_-18px_var(--acc)] sm:min-h-[340px] sm:p-7">
           <span aria-hidden className="absolute inset-0 -z-10 opacity-50">
             <FadeImage src={top.card.cover.url} alt="" fill sizes="(max-width: 1024px) 100vw, 50vw" className="object-cover" />
           </span>
           <span aria-hidden className="absolute inset-0 -z-10" style={{ background: "linear-gradient(90deg, color-mix(in oklab, var(--ink) 92%, transparent), color-mix(in oklab, var(--ink) 40%, transparent))" }} />
+          {/* 큰 "1" 글자 그림 — 1위 판이 2, 3위와 같은 격으로 읽히지 않게(2026-10-28 사용자: "1위가 좀 돋보여야") */}
+          <span aria-hidden className="pointer-events-none absolute -bottom-10 right-3 -z-10 text-[180px] font-black leading-none tracking-[-0.06em] opacity-15 sm:text-[220px]">1</span>
           <span className="flex flex-wrap items-center gap-2">
-            <span className="rounded-full px-3 py-1 text-[12px] font-bold ring-1 ring-[color-mix(in_oklab,var(--on-ink)_45%,transparent)]">{isNow ? M.firstThisMonth : M.firstOf(label)}</span>
+            <span className="inline-flex items-center gap-1.5 rounded-full bg-acc px-3 py-1 text-[12.5px] font-bold text-on-ink">
+              <TrophyIcon size={14} strokeWidth={2.2} />
+              {isNow ? M.firstThisMonth : M.firstOf(label)}
+            </span>
             <span className="text-[12px] opacity-75">{finalized ? M.pickedBy : M.provisionalNote}</span>
           </span>
           <span className="flex flex-col gap-2">
-            <span className="text-[24px] font-extrabold leading-tight tracking-[-0.03em] sm:text-[28px]">{top.card.title}</span>
+            <span className="text-[26px] font-extrabold leading-tight tracking-[-0.03em] sm:text-[34px]">{top.card.title}</span>
             <span className="text-[12.5px] opacity-80">{[M.byDev(top.card.developerName), genreLabels(top.card.genres).join(", "), platformsOf(top)].filter(Boolean).join(" | ")}</span>
             <span className="line-clamp-2 max-w-[460px] text-[14px] leading-[1.6] opacity-90">{top.card.tagline}</span>
           </span>
@@ -127,18 +141,19 @@ function Ranking({ items, label, finalized, isNow }: { items: RankedIndie[]; lab
           </span>
         </Link>
         {rest.slice(0, 2).map((r, i) => (
-          <Link key={r.card.slug} href={indieDetailHref(r.card.slug, INDIE_FROM.hallOfFame)} className="lift press group enter-item flex flex-col gap-3 rounded-[var(--radius-panel)] bg-surface p-3.5 shadow-hair" style={stagger(i)}>
+          // 2, 3위는 위쪽 브랜드색 띠(단상)와 큰 점수로 4위 아래 줄과 갈린다. 2위 띠가 3위보다 굵고 진하다
+          <Link key={r.card.slug} href={indieDetailHref(r.card.slug, INDIE_FROM.hallOfFame)} className={cn("lift press group enter-item flex flex-col gap-3 rounded-[var(--radius-panel)] bg-surface p-3.5", i === 0 ? "[box-shadow:inset_0_4px_0_var(--acc),var(--ring-hair)]" : "[box-shadow:inset_0_3px_0_var(--acc-3),var(--ring-hair)]")} style={stagger(i)}>
             <span className="relative block">
               <Cover item={r} sizes="(max-width: 1024px) 100vw, 25vw" />
               {/* 순위 딱지 — 2, 3위도 "올랐다" 가 읽히게 브랜드색 원으로 키웠다(2026-10-27). 누런 금은색은 쓰지 않는다(사용자) */}
-              <span className="absolute left-2.5 top-2.5 flex size-9 items-center justify-center rounded-full bg-acc text-[15px] font-extrabold text-on-ink shadow-[0_4px_12px_-3px_var(--acc)] ring-2 ring-surface">{i + 2}</span>
+              <span className="absolute left-2.5 top-2.5 flex h-9 items-center justify-center rounded-full bg-acc px-3 text-[16px] font-black text-on-ink shadow-[0_4px_12px_-3px_var(--acc)] ring-2 ring-surface">{M.rank(i + 2)}</span>
             </span>
             <span className="flex min-w-0 flex-col gap-1">
               <span className="truncate text-[16px] font-bold text-ink group-hover:text-acc">{r.card.title}</span>
               <span className="truncate text-[12.5px] text-dim">{[M.byDev(r.card.developerName), genreLabels(r.card.genres).join(", ")].filter(Boolean).join(" | ")}</span>
             </span>
-            <span className="mt-auto flex flex-wrap gap-x-3 border-t border-line-soft pt-2.5 text-[12.5px] text-mut">
-              <span>{M.score(r.score)}</span>
+            <span className="mt-auto flex flex-wrap items-baseline gap-x-3 border-t border-line-soft pt-2.5 text-[12.5px] text-mut">
+              <span className="text-[20px] font-black tabular-nums text-ink">{M.score(r.score)}</span>
               <span>{M.views(r.card.viewCount)}</span>
               <span>{M.likes(r.card.likeCount)}</span>
               <ChangeNote change={r.change} className="text-[12.5px]" />
@@ -153,9 +168,26 @@ function Ranking({ items, label, finalized, isNow }: { items: RankedIndie[]; lab
             {M.restHead}
           </h2>
           <ol className="flex flex-col gap-2.5">
-            {rest.slice(2).map((r, i) => (
-              <RankRow key={r.card.slug} to={indieDetailHref(r.card.slug, INDIE_FROM.hallOfFame)} rank={M.rank(i + 4)} sub={M.score(r.score)} item={r} right={<span className={PLATFORM_PILL}>{platformsOf(r)}</span>} />
-            ))}
+            {rest.slice(2).map((r, i) => {
+              const above = items[i + 2];
+              const gap = Math.max(above.score - r.score + 1, 1);
+              return (
+                <RankRow
+                  key={r.card.slug}
+                  to={indieDetailHref(r.card.slug, INDIE_FROM.hallOfFame)}
+                  rank={M.rank(i + 4)}
+                  sub={M.score(r.score)}
+                  item={r}
+                  right={<span className={PLATFORM_PILL}>{platformsOf(r)}</span>}
+                  note={
+                    <span className="flex flex-wrap gap-x-3 text-[12px] font-semibold">
+                      {!finalized && <span className="text-acc">{M.gapToAbove(i + 3, gap)}</span>}
+                      {r.card.slug === riserSlug && <span className="text-ok">{M.topRiser}</span>}
+                    </span>
+                  }
+                />
+              );
+            })}
           </ol>
         </section>
       )}
@@ -210,15 +242,9 @@ export default async function HallOfFamePage({ searchParams }: Props) {
 
   return (
     <Page gap={20}>
-      {/* 어두운 머리 판(2026-10-27, 사용자: "명예의 전당은 좀 더 강조가 필요"). 맨 제목 한 줄로는 다른 목록 화면과 같은 격이었다.
-          판 위로 손전등 빛 웅덩이가 천천히 오가고(.hero-beam, 홈 히어로와 같은 빛), 오른쪽에 트로피가 떠 있다 */}
-      <InkHero label={M.hofTitle} className="flex items-center justify-between gap-6">
-        <span aria-hidden className="hero-beam beam-cool" />
-        <InkHeroHead eyebrow={M.hofEyebrow} title={M.hofTitle} lead={M.hofLead} />
-        <span aria-hidden className="soon-float hidden size-20 shrink-0 place-items-center rounded-full bg-on-ink/10 text-acc-on-ink ring-1 ring-on-ink/20 sm:grid">
-          <TrophyIcon size={40} strokeWidth={1.6} />
-        </span>
-      </InkHero>
+      <PageHead title={M.hofTitle}>
+        <p className="text-[14px] text-mut">{M.hofHeadLead}</p>
+      </PageHead>
       <NavPendingScope>
         <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
           <div role="group" aria-label={M.hofTitle} className="flex gap-1.5">
@@ -230,15 +256,19 @@ export default async function HallOfFamePage({ searchParams }: Props) {
             </NavChip>
           </div>
           {tab === "month" && (
-            <div role="group" aria-label={M.monthPick} className="-mx-5 -my-2 flex gap-1.5 overflow-x-auto px-5 py-2 [scrollbar-width:none] sm:-mx-7 sm:px-7 md:mx-0 md:px-0">
-              {months.map((m) => (
-                <NavChip key={m} group="ym" compact href={href("month", m === now ? undefined : m)} active={m === ym} className={NOWRAP_CHIP}>
-                  {m === now ? M.thisMonth(ymLabel(m)) : ymLabel(m)}
-                </NavChip>
-              ))}
-            </div>
+            <MonthStepper
+              months={months.map((m) => ({ ym: m, label: ymLabel(m), href: href("month", m === now ? undefined : m) }))}
+              current={ym}
+              nowYm={now}
+              labels={{ group: M.monthPick, prev: M.monthPrev, next: M.monthNext, thisMonth: M.backToNow, nowTag: M.nowTag }}
+            />
           )}
         </div>
+        {tab === "month" && ym === now && (
+          <div className="mt-4">
+            <MyFameStandingCard />
+          </div>
+        )}
         <PendingRegion className="mt-5">
           {!data ? (
             <DbUnavailable retryHref={ROUTES.hallOfFame} />

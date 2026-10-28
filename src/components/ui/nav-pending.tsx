@@ -75,6 +75,15 @@ export function NavChip({ href, group, active = false, size, className, compact,
 }
 
 /**
+ * 그 무리에서 방금 누른 주소(서버 답을 기다리는 동안만). 칩 밖의 표시(예: 이전, 다음 화살표 사이의 달 이름)가
+ * 고른 값을 먼저 그릴 때 쓴다(AGENTS 6장). 틀 밖이거나 누른 것이 없으면 undefined
+ */
+export function useNavPicked(group: string): string | undefined {
+  const scope = useContext(ScopeContext);
+  return scope?.picked?.group === group ? scope.picked.href : undefined;
+}
+
+/**
  * 링크가 아닌 자리(드롭다운, 입력칸)가 같은 틀 안에서 주소로 갈 때. 결과 자리(PendingRegion)가 같이 흐려진다.
  * 틀 밖이면 undefined — 부르는 쪽이 평범한 이동으로 내려간다.
  */

@@ -13,25 +13,26 @@ export const CATEGORY_LABEL: Record<PostCategory, string> = {
   guide: "공략",
   promo: "홍보",
   devlog: "개발일지",
-  qna: "질문, 피드백",
+  qna: "질문/피드백",
 };
 
 /**
- * 말머리 색(기획서 7장 "카테고리마다 서로 다른 색"). 토큰 이름만 둔다 — 화면이 bg-{tone}-soft text-{tone} 로 칠한다.
- * 리뷰는 브랜드색, 공략은 민트, 홍보는 보라, 라운지 둘은 청록이다(10-27 호박을 걷었다 — 사용자: "누런색은 되도록 쓰지 마").
+ * 말머리 색. 기획서 7장은 "카테고리마다 서로 다른 색" 이었지만 2026-10-28 사용자가 뒤집었다
+ * ("겹치는 것도 많고 너무 알록달록 하니까 오히려 구려"). 말머리는 브랜드색 한 갈래로 두고, 갈래는 글자가 말한다.
+ * 표를 남겨 둔 이유: 다시 카테고리별 색으로 돌아갈 때 이 자리 하나만 고치면 된다.
  */
-export const CATEGORY_TONE: Record<PostCategory, "acc" | "ok" | "plum" | "info"> = {
+export const CATEGORY_TONE: Record<PostCategory, "acc"> = {
   review: "acc",
-  guide: "ok",
-  promo: "plum",
-  devlog: "info",
-  qna: "info",
+  guide: "acc",
+  promo: "acc",
+  devlog: "acc",
+  qna: "acc",
 };
 
 export const PROMO_TYPES = ["my_game", "project"] as const satisfies readonly PromoType[];
 export const PROMO_TYPE_LABEL: Record<PromoType, string> = { my_game: "내가 만든 게임", project: "진행 중인 프로젝트" };
-/** 기획서 4.4: 내가 만든 게임 파랑, 진행 중인 프로젝트 주황 — 주황은 이 서비스에서 "주의" 색이라 보라로 옮겼다(10-27) */
-export const PROMO_TYPE_TONE: Record<PromoType, "info" | "plum"> = { my_game: "info", project: "plum" };
+/** 홍보 유형은 말머리 옆 곁딱지라 색 없는 회색이다(2026-10-28, 위 CATEGORY_TONE 과 같은 이유). 기획서 4.4 의 파랑, 주황은 걷었다 */
+export const PROMO_TYPE_TONE: Record<PromoType, "neutral"> = { my_game: "neutral", project: "neutral" };
 
 /** 목록 화면 주소(카테고리 하나짜리). 등록 뒤 돌아갈 곳이기도 하다(기획서 6.4) */
 export const CATEGORY_LIST_PATH: Record<PostCategory, string> = {
@@ -110,4 +111,9 @@ export const AWAITING_ANSWER_MAX_COMMENTS = 1;
 /** 입력 상한. 제목은 목록 한 줄에 서는 길이, 본문은 긴 공략 한 편이 들어가는 길이 */
 export const POST_TITLE_MAX = 100;
 export const POST_BODY_MAX = 20_000;
+/**
+ * 본문 HTML 자체의 상한. 위 상한은 태그를 걷은 글자 수다 — HTML 은 태그, 그림 주소가 붙어 글자보다 몇 배 길어진다.
+ * 그림 20장(주소 하나 120자 안팎)과 꾸밈이 붙어도 들어가고, 붙여 넣기로 거대한 HTML 을 밀어 넣는 것은 막는 선이다.
+ */
+export const POST_HTML_MAX = 120_000;
 export const COMMENT_BODY_MAX = 2_000;

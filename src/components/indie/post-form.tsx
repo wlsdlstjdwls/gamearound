@@ -32,7 +32,8 @@ import {
   storeLinkPlatform,
   type IndiePlatform,
 } from "@/lib/indie/constants";
-import { INDIE_FORM_MESSAGES as M, INDIE_GENRE_LABEL, INDIE_LINK_LABEL, INDIE_PLATFORM_LABEL, INDIE_STAGE_LABEL } from "@/lib/indie/messages";
+import { INDIE_FORM_MESSAGES as M, INDIE_GENRE_LABEL, INDIE_LINK_LABEL, INDIE_PLATFORM_LABEL, INDIE_STAGE_HINT, INDIE_STAGE_LABEL } from "@/lib/indie/messages";
+import { cn } from "@/lib/cn";
 import type { IndieDetailDto } from "@/lib/indie/dto";
 import { FormStep } from "@/components/indie/form-step";
 
@@ -109,7 +110,7 @@ export function IndiePostForm({ post }: { post?: IndieDetailDto }) {
 
   return (
     // 고치기는 성공해도 값을 남긴다 — 저장한 값이 곧 화면에 있어야 할 값이다
-    <ActionForm action={formAction} state={state} pending={submitting} resetOnSuccess={false} className="flex flex-col gap-6">
+    <ActionForm action={formAction} state={state} pending={submitting} resetOnSuccess={false} className="flex flex-col gap-5">
       {state && !state.ok && (
         <FormMessage tone="error" replayKey={state.error}>
           {state.error}
@@ -131,17 +132,28 @@ export function IndiePostForm({ post }: { post?: IndieDetailDto }) {
 
       <fieldset className="flex flex-col gap-1.5">
         <legend className={`mb-1.5 ${LABEL}`}>{M.stageLabel}</legend>
-        <div className="flex flex-wrap gap-1.5">
-          {INDIE_STAGES.map((s) => (
-            <label key={s} className={chipClass({ active: stage === s, outline: true, className: "cursor-pointer has-[:focus-visible]:ring-2 has-[:focus-visible]:ring-ink" })}>
-              <input type="radio" name="stage" value={s} checked={stage === s} onChange={() => setStage(s)} className="sr-only" />
-              {INDIE_STAGE_LABEL[s]}
-            </label>
-          ))}
+        {/* 단계마다 한 줄 뜻을 붙인 고르기 칸(2026-10-28, 사용자: "데모 공개랑 앞서 해보기 차이는?"). 칩 글자만으로는 둘이 갈리지 않았다 */}
+        <div className="grid grid-cols-2 gap-2 lg:grid-cols-4">
+          {INDIE_STAGES.map((s) => {
+            const on = stage === s;
+            return (
+              <label
+                key={s}
+                className={cn(
+                  "press tap flex cursor-pointer flex-col gap-0.5 rounded-[var(--radius-sm)] px-3 py-2.5 transition-colors has-[:focus-visible]:ring-2 has-[:focus-visible]:ring-ink",
+                  on ? "bg-acc-soft shadow-[inset_0_0_0_1.5px_var(--acc)]" : "bg-surface shadow-[inset_0_0_0_1px_var(--line-strong)] hover:bg-surface-2",
+                )}
+              >
+                <input type="radio" name="stage" value={s} checked={on} onChange={() => setStage(s)} className="sr-only" />
+                <span className={cn("text-[14px] font-bold", on ? "text-acc" : "text-ink")}>{INDIE_STAGE_LABEL[s]}</span>
+                <span className="text-[12px] leading-[1.45] text-dim">{INDIE_STAGE_HINT[s]}</span>
+              </label>
+            );
+          })}
         </div>
       </fieldset>
 
-      <TextField name="releaseNote" label={M.releaseNoteLabel} hint={M.releaseNoteHint} defaultValue={post?.releaseNote ?? ""} maxLength={INDIE_RELEASE_NOTE_MAX} />
+      <TextField name="releaseNote" label={M.releaseNoteLabel} hint={M.releaseNoteHint} defaultValue={post?.releaseNote ?? ""} maxLength={INDIE_RELEASE_NOTE_MAX} wrapperClassName="sm:max-w-[50%]" />
       </FormStep>
 
       <FormStep n={2} title={M.stepKind} hint={M.stepKindHint}>
@@ -208,7 +220,7 @@ export function IndiePostForm({ post }: { post?: IndieDetailDto }) {
           name="body"
           defaultValue={post?.body ?? ""}
           maxLength={INDIE_BODY_MAX}
-          rows={8}
+          rows={6}
           required
           aria-describedby="indie-body-hint"
           className={TEXTAREA_CLASS}

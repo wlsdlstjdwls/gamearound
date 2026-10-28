@@ -2,10 +2,15 @@
 // 지난 30일 조회, 플레이하기 클릭, 다른 링크 클릭, 새 찜, 댓글을 게임마다 세우고, 맨 위에 모두 더한 칸과 "소식 받는 사람" 을 둔다.
 // 내 글만 본다 — 서비스가 글쓴이 조건으로 거른다(getMyIndieStats). 남의 글 통계를 보는 주소는 없다.
 //
-// 날짜별 그래프는 아직 두지 않았다: 조회, 클릭 하루 표가 2026-10-27 에 생겨 쌓인 날이 없다. 숫자가 쌓이면 유료 성과 화면(기획서 4.4)과 함께 붙인다.
+// 2026-10-28(사용자: "그래프로 보이고 가시성을 높이고, 버튼 구분이 안 된다"): 맨 위 숫자 칸을 고르면 그 숫자의 30일 추이 선이 바뀌는
+// 판(indie/stats-trend)으로 바꿨고, 게임 줄마다 조회 작은 추이 선을 단다. 단추는 무게를 셋으로 가른다 —
+// 돈이 드는 광고 걸기만 채운 단추, 게임에 대한 일(플레이테스트, 자세히)은 테두리 단추, 다른 화면 길(게임 보기)은 글자 링크.
+// 머리의 멤버십, 광고 성과, 결제 내역도 글자 링크 셋이 붙어 한 덩어리로 읽혀 테두리 단추로 바꿨다.
+// 로그인한 사람만 본다((user) 레이아웃과 requireUserOrRedirect).
 import type { Metadata } from "next";
 import Link from "next/link";
-import { StatTile } from "@/components/community/news-blocks";
+import { StatsTrend, Sparkline } from "@/components/indie/stats-trend";
+import { cn } from "@/lib/cn";
 import { EmptyState } from "@/components/empty-state";
 import { Page, PageHead, sectionCardClass } from "@/components/ui/page";
 import { INDIE_MESSAGES } from "@/lib/indie/messages";
@@ -35,14 +40,14 @@ export default async function IndieStatsPage() {
       <PageHead
         title={M.statsTitle}
         action={
-          <div className="flex flex-wrap items-center gap-x-4 gap-y-1">
-            <Link href={ROUTES.membership} className="tap inline-flex items-center text-[13.5px] font-semibold text-acc hover:underline">
+          <div className="flex flex-wrap items-center gap-1.5">
+            <Link href={ROUTES.membership} className={buttonClass({ variant: "secondary", size: "sm" })}>
               {MEMBERSHIP_MESSAGES.title}
             </Link>
-            <Link href={ROUTES.indieAds} className="tap inline-flex items-center text-[13.5px] font-semibold text-acc hover:underline">
+            <Link href={ROUTES.indieAds} className={buttonClass({ variant: "secondary", size: "sm" })}>
               {PROMO_PERFORMANCE_MESSAGES.link}
             </Link>
-            <Link href={ROUTES.indiePayments} className="tap inline-flex items-center text-[13.5px] font-semibold text-acc hover:underline">
+            <Link href={ROUTES.indiePayments} className={buttonClass({ variant: "secondary", size: "sm" })}>
               {PM.toHistory}
             </Link>
           </div>
@@ -55,14 +60,22 @@ export default async function IndieStatsPage() {
         <EmptyState title={M.statsEmpty} description={M.statsEmptyLead} action={{ href: ROUTES.indieNew, label: INDIE_MESSAGES.register }} />
       ) : (
         <>
-          <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-5 sm:gap-3.5">
-            <StatTile label={M.statsViews} value={stats.window.views} />
-            <StatTile label={M.statsPlays} value={stats.window.plays} />
-            <StatTile label={M.statsLikes} value={stats.window.likes} />
-            <StatTile label={M.statsComments} value={stats.window.comments} />
-            <StatTile label={M.statsFollowers} value={stats.followers} />
-          </div>
-          <p className="-mt-2 text-[12.5px] text-dim">{M.statsSince}</p>
+          <StatsTrend
+            title={M.statsTrend}
+            days={stats.days}
+            metrics={[
+              { key: "views", label: M.statsViews, total: stats.window.views },
+              { key: "plays", label: M.statsPlays, total: stats.window.plays },
+              { key: "likes", label: M.statsLikes, total: stats.window.likes },
+              { key: "comments", label: M.statsComments, total: stats.window.comments },
+            ]}
+          />
+          <p className="-mt-2 flex flex-wrap gap-x-4 text-[12.5px] text-dim">
+            <span>
+              {M.statsFollowers} <b className="font-bold tabular-nums text-ink">{fmt(stats.followers)}</b>
+            </span>
+            <span>{M.statsSince}</span>
+          </p>
 
           <ul className="flex flex-col gap-3">
             {stats.rows.map((r, i) => {
@@ -75,30 +88,19 @@ export default async function IndieStatsPage() {
               ];
               return (
                 <li key={r.id} className={sectionCardClass("enter-item flex flex-col gap-3")} style={stagger(i)}>
-                  <div className="flex items-center justify-between gap-3">
-                    <h2 className="min-w-0 truncate text-[16px] font-bold text-ink">{r.title}</h2>
-                    <div className="flex shrink-0 items-center gap-3">
-                      {/* 광고 걸기(결제)는 공개 중인 게임에만 — 공개 전이면 걸어도 아무도 못 본다 */}
-                      {r.live && (
-                        <Link href={indieBoostPath(r.id)} className={buttonClass({ variant: "accent", size: "sm" })}>
-                          {PM.adBuy}
-                        </Link>
-                      )}
-                      {r.live && (
-                        <Link href={indiePlaytestPath(r.id)} className="tap inline-flex items-center text-[13px] font-semibold text-acc hover:underline">
-                          {PLAYTEST_MESSAGES.listTitle}
-                        </Link>
-                      )}
-                      <Link href={indieStatsDetailPath(r.id)} className="tap inline-flex items-center text-[13px] font-semibold text-acc hover:underline">
-                        {INDIE_STATS_DETAIL_MESSAGES.open}
-                      </Link>
-                      <Link href={r.live ? indieDetailHref(r.slug, INDIE_FROM.mine) : indieEditPath(r.id)} className="tap inline-flex items-center text-[13px] font-semibold text-acc hover:underline">
-                        {M.statsDetail}
-                      </Link>
+                  <div className="grid gap-3 sm:grid-cols-[minmax(0,1fr)_200px] sm:items-center">
+                    <div className="flex min-w-0 flex-col gap-1">
+                      <h2 className="min-w-0 truncate text-[17px] font-extrabold tracking-[-0.02em] text-ink">{r.title}</h2>
+                      <span className={cn("text-[12.5px] font-semibold", r.live ? "text-ok" : "text-dim")}>{r.live ? M.statsLive : M.statsNotLive}</span>
                     </div>
+                    {r.live && (
+                      <div className="flex flex-col gap-0.5">
+                        <Sparkline values={r.viewsByDay} label={M.statsSpark(r.title)} />
+                        <span className="text-right text-[11px] text-dim">{M.statsSparkNote}</span>
+                      </div>
+                    )}
                   </div>
-                  {!r.live && <p className="rounded-xl bg-surface-2 px-4 py-3 text-[13px] text-mut">{M.statsNotLive}</p>}
-                  <dl className="grid grid-cols-2 gap-x-4 gap-y-3 border-t border-line pt-3 sm:grid-cols-5">
+                  <dl className="grid grid-cols-2 gap-x-4 gap-y-3 border-t border-line-soft pt-3 sm:grid-cols-5">
                     {cells.map((c) => (
                       <div key={c.label} className="flex flex-col gap-0.5">
                         <dt className="text-[12.5px] text-dim">{c.label}</dt>
@@ -107,6 +109,25 @@ export default async function IndieStatsPage() {
                       </div>
                     ))}
                   </dl>
+                  {/* 할 일 단추 줄 — 무게 셋(머리 주석). 광고 걸기, 플레이테스트는 공개 중인 게임에만: 공개 전이면 걸어도 아무도 못 본다 */}
+                  <div className="flex flex-wrap items-center gap-2 border-t border-line-soft pt-3">
+                    {r.live && (
+                      <Link href={indieBoostPath(r.id)} className={buttonClass({ variant: "accent", size: "sm" })}>
+                        {PM.adBuy}
+                      </Link>
+                    )}
+                    {r.live && (
+                      <Link href={indiePlaytestPath(r.id)} className={buttonClass({ variant: "secondary", size: "sm" })}>
+                        {PLAYTEST_MESSAGES.listTitle}
+                      </Link>
+                    )}
+                    <Link href={indieStatsDetailPath(r.id)} className={buttonClass({ variant: "secondary", size: "sm" })}>
+                      {INDIE_STATS_DETAIL_MESSAGES.open}
+                    </Link>
+                    <Link href={r.live ? indieDetailHref(r.slug, INDIE_FROM.mine) : indieEditPath(r.id)} className="tap ml-auto inline-flex items-center text-[13px] font-semibold text-acc hover:underline">
+                      {M.statsDetail}
+                    </Link>
+                  </div>
                 </li>
               );
             })}

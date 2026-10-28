@@ -3,11 +3,11 @@
 // 진행 순서 안내와 아래 각주는 2026-10-27 걷었다(사용자: 두 문구 지우고 하단 공백 줄이기) — 머리 설명이 같은 말을 이미 한다.
 // 반려 줄(2026-10-27 사용자): 사유는 한 줄 맛보기 + "사유 보기"(바닥 시트에 전문, indie/rejection-sheet), "고쳐서 다시 신청" 은 채운 단추.
 // 반려 칸을 더한 이유: 기획서와 목업은 세 칸이지만 반려(협의 항목)를 실제로 두고 있어서, 세 칸이면 "전체" 가 나머지 둘의 합과 맞지 않는다.
-// 줄은 왼쪽에 이름과 "플랫폼, 장르 | 신청일", 오른쪽에 상태 알약과 한 줄 설명(운영진 확인 중, 노출 중, 반려 사유).
+// 줄(2026-10-28 사용자: "밋밋하다, 이미지도 설명도 없다"): 왼쪽 대표 그림, 가운데 이름과 한 줄 소개와 "플랫폼, 장르 | 신청일",
+// 오른쪽 진행 단계 셋(indie/review-steps)과 한 줄 설명, 할 일 단추. 줄은 차례로 떠오른다(stagger). 상태 알약은 단계 그림이 대신한다.
 // 반려된 글은 "고쳐서 다시 신청" 으로 고치기 화면에 간다 — 저장하면 다시 승인 대기다(services/indie/write).
 import type { Metadata } from "next";
 import Link from "next/link";
-import { StatTile } from "@/components/community/news-blocks";
 import { WriteLink } from "@/components/community/write-link";
 import { EmptyState } from "@/components/empty-state";
 import { RejectionSheet } from "@/components/indie/rejection-sheet";
@@ -15,6 +15,10 @@ import { buttonClass } from "@/components/ui/button";
 import { FormMessage } from "@/components/ui/form-message";
 import { Page, PageHead } from "@/components/ui/page";
 import { Clamp } from "@/components/ui/tooltip";
+import { FadeImage } from "@/components/ui/fade-image";
+import { GamepadIcon } from "@/components/ui/icons";
+import { ReviewSteps } from "@/components/indie/review-steps";
+import { stagger } from "@/lib/motion";
 import { cn } from "@/lib/cn";
 import { formatDotDate } from "@/lib/format";
 import { firstParam } from "@/lib/games-query";
@@ -29,12 +33,20 @@ export const metadata: Metadata = { title: RV.title, robots: { index: false } };
 
 type Props = { searchParams: Promise<Record<string, string | string[] | undefined>> };
 
-/** 상태 알약 — 테두리 알약(목업 .stt). 승인 대기 주황, 등록 완료 브랜드색, 반려 빨강 */
-const PILL: Record<keyof typeof INDIE_REVIEW_LABEL, string> = {
-  pending: "bg-warn-soft text-warn shadow-[inset_0_0_0_1px_var(--warn)]",
-  approved: "bg-acc-soft text-acc shadow-[inset_0_0_0_1px_var(--acc)]",
-  rejected: "bg-danger-soft text-danger shadow-[inset_0_0_0_1px_var(--danger)]",
-};
+/** 위 집계 칸 — 칸마다 그 상태의 색 점 하나(진행 단계 점과 같은 색)로 어느 줄을 세는지 잇는다. 숫자는 들어올 때 한 번 떠오른다 */
+const TILE_DOT: Record<"total" | keyof typeof INDIE_REVIEW_LABEL, string> = { total: "bg-ink", pending: "bg-acc", approved: "bg-ok", rejected: "bg-danger" };
+
+function Tile({ label, value, tone, i }: { label: string; value: number; tone: keyof typeof TILE_DOT; i: number }) {
+  return (
+    <div className="enter-item flex flex-col gap-1 rounded-[var(--radius-md)] bg-surface px-4 py-3.5 shadow-hair" style={stagger(i)}>
+      <span className="flex items-center gap-1.5 text-[12.5px] text-dim">
+        <span aria-hidden className={cn("size-2 rounded-full", TILE_DOT[tone])} />
+        {label}
+      </span>
+      <span className="text-[22px] font-black tabular-nums text-ink sm:text-[26px]">{value.toLocaleString("ko-KR")}</span>
+    </div>
+  );
+}
 
 export default async function IndieMinePage({ searchParams }: Props) {
   const user = await requireUserOrRedirect();
@@ -51,39 +63,52 @@ export default async function IndieMinePage({ searchParams }: Props) {
       </PageHead>
       {firstParam(sp.full) && full && <FormMessage tone="info">{M.tooManyPosts(INDIE_POSTS_PER_USER_MAX)}</FormMessage>}
       <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-4 sm:gap-3.5">
-        <StatTile label={RV.total} value={posts.length} />
-        <StatTile label={INDIE_REVIEW_LABEL.pending} value={pending} />
-        <StatTile label={INDIE_REVIEW_LABEL.approved} value={approved} />
-        <StatTile label={INDIE_REVIEW_LABEL.rejected} value={rejected} />
+        <Tile label={RV.total} value={posts.length} tone="total" i={0} />
+        <Tile label={INDIE_REVIEW_LABEL.pending} value={pending} tone="pending" i={1} />
+        <Tile label={INDIE_REVIEW_LABEL.approved} value={approved} tone="approved" i={2} />
+        <Tile label={INDIE_REVIEW_LABEL.rejected} value={rejected} tone="rejected" i={3} />
       </div>
 
       {posts.length === 0 ? (
         <EmptyState title={M.mineEmpty} description={RV.emptyLead} action={{ href: ROUTES.indieNew, label: INDIE_MESSAGES.register }} />
       ) : (
-        <ul className="divide-y divide-line-soft overflow-hidden rounded-[var(--radius-md)] bg-surface shadow-hair">
-          {posts.map((p) => {
+        <ul className="flex flex-col gap-3">
+          {posts.map((p, i) => {
             const meta = [[...p.platforms.map((x) => INDIE_PLATFORM_LABEL[x]), ...genreLabels(p.genres)].join(", "), `${formatDotDate(p.createdAt)} ${RV.applied}`].filter(Boolean).join(" | ");
             const note = p.review === "pending" ? RV.pendingShort : p.review === "approved" ? (p.status === "published" ? (p.hasCover ? RV.liveShort : INDIE_MESSAGES.noCoverShort) : INDIE_MESSAGES.hiddenShort) : `${RV.reason}: ${p.reviewReason ?? "-"}`;
+            // 등록 완료 줄은 공개 상세로, 그 밖은 고치기로 간다(기획서 S-22 "등록 완료 행은 S-19 로")
+            const to = p.review === "approved" ? indieDetailHref(p.slug, INDIE_FROM.mine) : indieEditPath(p.id);
             return (
-              <li key={p.id} className="flex items-center justify-between gap-3 px-4 py-3.5 sm:px-5">
+              <li key={p.id} className="enter-item lift grid grid-cols-[96px_minmax(0,1fr)] gap-x-3.5 gap-y-3 rounded-[var(--radius-panel)] bg-surface p-3.5 shadow-hair sm:grid-cols-[176px_minmax(0,1fr)_auto] sm:gap-x-5 sm:p-4" style={stagger(i)}>
+                <Link href={to} tabIndex={-1} aria-hidden className="relative block aspect-[16/9] self-start overflow-hidden rounded-[var(--radius-cover)] bg-surface-3">
+                  {p.coverUrl ? <FadeImage src={p.coverUrl} alt="" fill sizes="(max-width: 640px) 96px, 176px" className="object-cover" /> : <span className="grid size-full place-items-center text-dim"><GamepadIcon size={22} /></span>}
+                </Link>
                 <div className="flex min-w-0 flex-col gap-1">
-                  {/* 등록 완료 줄은 공개 상세로, 그 밖은 고치기로 간다(기획서 S-22 "등록 완료 행은 S-19 로") */}
-                  <Link href={p.review === "approved" ? indieDetailHref(p.slug, INDIE_FROM.mine) : indieEditPath(p.id)} className="min-w-0 truncate text-[15px] font-bold text-ink hover:text-acc">
+                  <Link href={to} className="min-w-0 truncate text-[16px] font-bold text-ink hover:text-acc sm:text-[17px]">
                     {p.title}
                   </Link>
-                  <span className="truncate text-[12.5px] text-dim">{meta}</span>
+                  <Clamp lines={2} className={cn("text-[13.5px] leading-[1.55]", p.tagline ? "text-mut" : "text-dim")}>
+                    {p.tagline || RV.noTagline}
+                  </Clamp>
+                  <span className="truncate text-[12px] text-dim">{meta}</span>
                 </div>
-                <div className="flex shrink-0 flex-col items-end gap-1.5 text-right">
-                  <span className={cn("rounded-full px-3 py-[3px] text-[12.5px] font-bold", PILL[p.review])}>{INDIE_REVIEW_LABEL[p.review]}</span>
-                  {/* 반려 사유는 길 수 있다 — 줄에서는 한 줄 맛보기만, 전문은 "사유 보기" 시트에서 */}
-                  <Clamp lines={1} className={cn("max-w-[180px] text-[12px] sm:max-w-[280px]", p.review === "rejected" ? "text-danger" : "text-dim")}>
+                {/* 오른쪽 기둥: 진행 단계, 한 줄 설명, 할 일 단추. 좁은 화면에서는 커버와 글 아래 한 줄로 내려온다 */}
+                <div className="col-span-2 flex flex-col gap-2.5 border-t border-line-soft pt-3 sm:col-span-1 sm:w-[260px] sm:border-l sm:border-t-0 sm:pl-5 sm:pt-0">
+                  <ReviewSteps review={p.review} />
+                  <Clamp lines={1} className={cn("text-[12.5px]", p.review === "rejected" ? "text-danger" : "text-dim")}>
                     {note}
                   </Clamp>
-                  {p.review === "rejected" && (
+                  {p.review === "rejected" ? (
                     <div className="flex items-center gap-2">
                       <RejectionSheet title={p.title} reason={p.reviewReason} editHref={indieEditPath(p.id)} />
                       <Link href={indieEditPath(p.id)} className={buttonClass({ variant: "accent", size: "sm" })}>
                         {RV.resubmit}
+                      </Link>
+                    </div>
+                  ) : (
+                    <div className="flex items-center gap-2">
+                      <Link href={to} className={buttonClass({ variant: p.review === "approved" ? "soft" : "secondary", size: "sm" })}>
+                        {p.review === "approved" ? RV.viewGame : RV.edit}
                       </Link>
                     </div>
                   )}

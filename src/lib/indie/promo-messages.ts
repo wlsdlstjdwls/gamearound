@@ -35,6 +35,11 @@ export const INDIE_PROMO_MESSAGES = {
   statsNotLive: "공개 전이라 아직 반응이 모이지 않아요",
   statsSince: "조회와 클릭은 2026년 10월 27일부터 세요",
   statsDetail: "게임 보기",
+  /** 통계 추이 판(2026-10-28) */
+  statsTrend: "지난 30일 추이",
+  statsLive: "공개 중",
+  statsSpark: (title: string) => `${title} 지난 30일 조회 추이`,
+  statsSparkNote: "30일 조회",
 } as const;
 
 /** 알림함 한 줄. 만들 때 다 적어 둔다 — 원본 글이 지워져도 알림함은 읽혀야 한다(schema-notifications 머리 주석) */
