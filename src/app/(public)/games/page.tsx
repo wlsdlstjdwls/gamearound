@@ -35,7 +35,7 @@ import { ROUTES } from "@/lib/routes";
 import { readGamesQuery } from "@/lib/games/read-query";
 import { hasExplicitListFilter, isPresetApplied } from "@/lib/onboarding/query";
 import { getMyListPreset } from "@/server/services/profiles";
-import { GAMES_PAGE_SIZE, getGameFacets, listGames, type FacetScope, type GameFacets, type GameListFilter } from "@/server/services/games";
+import { GAMES_PAGE_SIZE, getGameFacets, getPopularGenres, listGames, type FacetScope, type GameFacets, type GameListFilter } from "@/server/services/games";
 import { getRunningSteamSale, type RunningSaleDto } from "@/server/services/sales";
 import { GamesGridSkeleton } from "./skeletons";
 
@@ -102,11 +102,13 @@ function isFiltered(f: GameListFilter): boolean {
  */
 async function FilterBar({ filter, personal }: { filter: GamesQuery; personal: PersonalFilter | null }) {
   // 세일 칩은 덤이다 — 판정이 실패해도 막대는 서야 해서 실패를 "세일 없음" 으로 접는다.
-  // 장르 드롭다운과 "요즘 많이 찾는 장르" 는 이 목록 기준으로 센다(기획서 v2.0 p8) — 할인 게임 목록이면 할인 중인 게임만
+  // 장르 드롭다운과 "요즘 많이 찾는 장르" 의 후보는 이 목록 기준으로 센다(기획서 v2.0 p8) — 할인 게임 목록이면 할인 중인 게임만
   const scope: FacetScope = filter.onSale || filter.minDiscount !== undefined ? "sale" : "all";
   const [facets, sale] = await Promise.all([nullIfDbUnavailable(getGameFacets(scope)), getRunningSteamSale().catch((): RunningSaleDto | null => null)]);
   const genres = (facets ?? OUTAGE_FACETS).genres.map((g) => g.name);
-  return <GameFilterBar filter={filter} genres={genres} topGenres={genres.slice(0, TOP_GENRE_COUNT)} sale={sale} personal={personal} />;
+  // "요즘 많이 찾는 장르" 는 최근 7일 조회 수 순서다(2026-10-28 사용자 결정). 조회가 모자라면 게임 수 순서로 채운다
+  const topGenres = await getPopularGenres(genres, TOP_GENRE_COUNT);
+  return <GameFilterBar filter={filter} genres={genres} topGenres={topGenres} sale={sale} personal={personal} />;
 }
 
 /** 막대를 기다리는 동안의 자리. 높이를 맞춰 두어 막대가 와도 목록이 밀리지 않는다 */
@@ -194,7 +196,7 @@ export default async function GamesPage({ searchParams }: Props) {
         <Suspense fallback={<FilterBarSkeleton />}>
           <FilterBar filter={query} personal={personal} />
         </Suspense>
-        <ActiveFilters filter={query} variant="strip" />
+        <ActiveFilters filter={query} variant="strip" shownElsewhere />
 
         <PendingResults className="flex min-w-0 flex-col gap-6">
           {/* 뼈대가 떠 있는 동안에도 로딩 띠를 세운다. 전환은 새 화면이 커밋되는 순간 끝나서 그 뒤로는 PendingResults 의 띠가 꺼진다 */}
