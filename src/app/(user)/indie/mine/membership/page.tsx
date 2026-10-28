@@ -13,10 +13,12 @@ import { formatPrice } from "@/lib/currency";
 import { formatDate } from "@/lib/format";
 import { firstParam } from "@/lib/games-query";
 import { MEMBERSHIP_MESSAGES as M, MEMBERSHIP_STATUS_LABEL } from "@/lib/membership/messages";
-import { creditsListValue, DEFAULT_PLAN, MEMBERSHIP_PLANS, MONTH_DAYS_APPROX } from "@/lib/membership/plan";
 import { PAYMENT_MESSAGES as PM } from "@/lib/payments/messages";
-import { PLANS_MESSAGES as PL } from "@/lib/payments/plans-messages";
-import { perDay } from "@/lib/payments/products";
+import { MembershipPrice } from "@/components/payments/plan-cards";
+import { creditsListValue } from "@/lib/pricing/quote";
+import { fillCopy } from "@/lib/pricing/settings";
+import { getPriceBook } from "@/server/services/pricing";
+import { getPricingSettings } from "@/server/services/settings";
 import { ROUTES } from "@/lib/routes";
 import type { MembershipStatus } from "@/server/db/schema";
 import { requireUserOrRedirect } from "@/server/auth/guards";
@@ -31,10 +33,12 @@ type Props = { searchParams: Promise<Record<string, string | string[] | undefine
 
 export default async function MembershipPage({ searchParams }: Props) {
   const user = await requireUserOrRedirect();
-  const [m, sp] = await Promise.all([getMyMembership(user.id), searchParams]);
+  const [m, sp, settings, book] = await Promise.all([getMyMembership(user.id), searchParams, getPricingSettings(), getPriceBook(user.id)]);
   const started = firstParam(sp.started);
   const failed = firstParam(sp.failed);
-  const plan = MEMBERSHIP_PLANS[DEFAULT_PLAN];
+  const copy = settings.membership;
+  const words = settings.copy.membership;
+  const fill = (t: string) => fillCopy(t, { credits: String(copy.boostCredits) });
   const live = m && m.status !== "ended";
   const clientKey = tossBillingClientKey();
 
@@ -50,7 +54,7 @@ export default async function MembershipPage({ searchParams }: Props) {
       >
         <p className="text-[14px] text-mut">{M.lead}</p>
       </PageHead>
-      {started && <FormMessage tone="success">{M.startedBanner}</FormMessage>}
+      {started && <FormMessage tone="success">{M.startedBanner(copy.boostCredits)}</FormMessage>}
       {failed && <FormMessage tone="error">{M.failedBanner(failed)}</FormMessage>}
 
       {live ? (
@@ -78,29 +82,29 @@ export default async function MembershipPage({ searchParams }: Props) {
       ) : (
         <section className={sectionCardClass("flex flex-col gap-4")}>
           {m?.status === "ended" && <FormMessage tone="info">{M.ended}</FormMessage>}
-          <div className="flex items-start justify-between gap-3">
-            <h2 className="text-[18px] font-bold text-ink">{plan.name}</h2>
-            <span className="flex flex-col items-end gap-0.5">
-              <span className="text-[22px] font-black tabular-nums text-ink">
-                <span className="mr-1 text-[13px] font-semibold text-mut">{M.perMonth}</span>
-                {formatPrice(plan.amount)}
-              </span>
-              <span className="text-[12.5px] text-mut">{PL.perDayApprox(formatPrice(perDay(plan.amount, MONTH_DAYS_APPROX)))}</span>
-            </span>
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+            <div className="flex flex-col gap-1">
+              <h2 className="text-[18px] font-bold text-ink">{words.name}</h2>
+              <p className="text-[13.5px] text-ink-2">{fill(words.summary)}</p>
+            </div>
+            {/* 첫 달 할인이 걸리면 다음 달부터의 값을 바로 아래 적는다(components/payments/plan-cards 의 MembershipPrice) */}
+            <MembershipPrice quote={book.membership} />
           </div>
-          {/* 지금 받는 것과 그 값어치를 값 바로 아래 — 이용권 환산은 멤버십 값보다 낮아 정가처럼 긋지 않는다(components/payments/plan-cards) */}
+          {/* 지금 받는 것과 그 값어치를 값 바로 아래 — 이용권 환산은 멤버십 값보다 낮아 정가처럼 긋지 않는다 */}
           <p className="rounded-xl bg-acc-soft px-3 py-2 text-[13px] font-semibold text-acc">
-            {PL.membershipNow} | {PL.credits(plan.boostCredits, formatPrice(creditsListValue(plan)))}
+            {words.now} | {M.creditsWorth(copy.boostCredits, formatPrice(creditsListValue(settings)))}
           </p>
           <ul className="flex flex-col gap-1.5 text-[13.5px] leading-[1.6] text-ink-2">
-            {M.benefits.map((line) => (
+            {words.benefits.map((line) => (
               <li key={line} className="flex gap-2">
                 <span aria-hidden className="mt-[9px] size-1 shrink-0 rounded-full bg-acc" />
-                {line}
+                {fill(line)}
               </li>
             ))}
           </ul>
-          {!tossBillingConfigured() ? (
+          {!copy.active ? (
+            <FormMessage tone="info">{M.notOnSale}</FormMessage>
+          ) : !tossBillingConfigured() ? (
             <FormMessage tone="info">{M.notConfigured}</FormMessage>
           ) : (
             <>

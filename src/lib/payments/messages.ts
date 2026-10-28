@@ -34,8 +34,7 @@ export const PRODUCT_COPY: Record<ProductKey, { title: string; lead: string; poi
 /** 구매 화면의 "이것만 / 같이" 고르기(2026-10-27 사용자 확정: 낱개 6,900원, 같이 9,900원) */
 export const BUNDLE_MESSAGES = {
   legend: "무엇을 살까요",
-  single: "스파크",
-  bundle: "스포트라이트",
+  bundleHint: (name: string, saving: string) => `둘 다 걸 거면 ${name}가 ${saving} 싸요`,
   bundleNoteIndie: "내 홍보 글도 홍보 목록 위에 7일 고정해요",
   bundleNotePin: "내 인디 게임도 인디 목록 맨 위에 7일 올려요",
   /** 그은 정가를 화면 읽기 프로그램이 읽을 때 붙는 말 */
@@ -54,6 +53,7 @@ export const PAYMENT_MESSAGES = {
   notConfigured: "결제를 준비하고 있어요. 조금 뒤에 다시 와 주세요",
   notBuyable: "공개 중인 내 글만 알릴 수 있어요",
   notLive: "공개 중인 글만 알릴 수 있어요",
+  notOnSale: "지금은 판매하지 않는 상품이에요",
   currentBoost: (until: string) => `지금 노출 중이에요. ${until}까지 보여요`,
   orderNotFound: "주문을 찾을 수 없어요",
   amountMismatch: "결제 금액이 주문과 달라 결제를 멈췄어요",

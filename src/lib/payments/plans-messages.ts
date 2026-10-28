@@ -1,9 +1,7 @@
-// 광고, 멤버십 요금 안내 화면(/indie/mine/plans) 문구. 2026-10-28.
-// 값은 문구에 박지 않는다 — 상품 표(lib/payments/products, lib/membership/plan)에서 읽어 함수 인자로 받는다.
+// 내 게임 알리기 요금 안내 화면(/indie/mine/plans) 고정 문구. 2026-10-28.
+// 카드 이름, 한 줄 정의, 혜택 줄, 단추 글, 멤버십 혜택은 관리자가 바꾸는 요금 설정(lib/pricing/settings 의 copy)으로 옮겼다
+// (같은 날 사용자: "구독 멤버십도 문구부터 모든 설정을 관리자가"). 여기 남은 것은 값을 꾸미는 말과 화면 뼈대 글이다.
 // 쓰지 않는 말: "가장 많이 골라요"(판매량 근거 없음), "오늘만", "곧 마감"(마감이 없다). 표시광고법상 근거 없는 인기, 희소성 표시가 된다.
-//
-// 같은 날 둘째 요청(사용자: "요금제가 정확히 뭘 하는 건지 보기 어렵다"): 카드마다 한 줄 정의(summary)를 값 위에 두고,
-// 줄마다 "이름: 무엇이 어디에" 로 적는다. 자리 설명은 아래 "광고는 어디에 보이나요" 판(SPOTS)이 그림과 함께 맡는다.
 
 export const PLANS_MESSAGES = {
   title: "내 게임 알리기",
@@ -11,51 +9,19 @@ export const PLANS_MESSAGES = {
   toAds: "노출 성과",
   toHistory: "결제 내역",
 
-  // 카드 순서는 싼 것부터(10-28 셋째 요청). 윗단은 아랫단의 모든 것에 무엇이 더해지는지를 "+" 줄로 말한다.
-  // 이름(10-28 넷째 요청 "이쁘게, 통일성 있게"): 손전등 빛의 세기로 잇는다 — 스파크(한 번 반짝) → 스포트라이트(두 자리를 비춤) → 메이커(만드는 사람의 구독).
-  // 메이커는 멤버 꼬리표 이름(membership/maker-badge)과 같아야 해서 빛 낱말로 바꾸지 않았다. 이름 위 작은 줄(eyebrow)이 기간과 크기를 같은 꼴로 말한다
-  singleName: "스파크",
-  singleEyebrow: "7일 | 노출 자리 하나",
-  singleSummary: "필요할 때 한 번 반짝",
-  singleIncludes: ["자리 하나: 부스트나 홍보 글 고정", "7일: 결제하면 바로 시작"],
-  singleCta: "스파크 켜기",
-
-  bundleName: "스포트라이트",
-  bundleEyebrow: "7일 | 노출 자리 둘",
-  bundleTag: "추천",
-  bundleSummary: "게임과 홍보 글을 함께 비춰요",
-  bundleBase: "스파크에 더해",
-  bundleAdds: (saving: string) => ["자리 둘: 부스트와 홍보 글 고정", `할인: 따로 사는 것보다 ${saving}`],
-  bundleCta: "스포트라이트 켜기",
-
-  membershipName: "메이커",
-  membershipEyebrow: "매달 | 구독",
-  membershipTag: "모든 혜택",
-  membershipSummary: "스포트라이트를 매달, 멤버 전용 혜택까지",
-  membershipBase: "스포트라이트에 더해",
-  /** 이용권 줄. 한 장이 자리 하나 7일이라 두 장이면 스포트라이트와 같은 광고다 */
-  membershipCreditsAdd: (n: number) => `노출 이용권: 매달 ${n}장, 스포트라이트를 매달`,
-  memberPerks: [
-    "통계 자세히: 30일 그래프와 유입 경로",
-    "메이커 꼬리표: 내 이름 옆 보라 표시",
-    "플레이테스트 고정: 모아 보기 맨 위",
-  ],
-  perMonth: "매달",
-  perDayApprox: (price: string) => `하루 약 ${price}`,
-  credits: (n: number, value: string) => `노출 이용권 ${n}장(따로 사면 ${value})`,
-  membershipNow: "시작하는 순간 이용권이 바로 채워져요",
-  membershipStart: "메이커 시작하기",
   membershipActive: "이용 중",
   membershipCredits: (n: number) => `남은 이용권 ${n}장`,
   membershipManage: "내 멤버십 보기",
 
+  perMonth: "매달",
+  firstMonth: "첫 달",
+  from: "부터",
+  perDayApprox: (price: string) => `하루 약 ${price}`,
+  /** 첫 달 할인일 때 큰 값 아래 — 다음 달부터 낼 값을 숨기지 않는다 */
+  thenMonthly: (price: string) => `다음 달부터 매달 ${price}`,
   rate: (n: number) => `${n}% 할인`,
   saving: (amount: string) => `${amount} 아껴요`,
-  adNow: "결제하면 바로 노출이 시작돼요",
-  singleHint: (amount: string) => `둘 다 걸 거면 스포트라이트가 ${amount} 싸요`,
-
-  boostName: "인디 게임 부스트",
-  pinName: "홍보 글 고정",
+  notOnSale: "지금은 판매하지 않아요",
 
   spotsEyebrow: "보이는 자리",
   spotsTitle: "걸면 여기서 먼저 보여요",
@@ -65,10 +31,10 @@ export const PLANS_MESSAGES = {
 
   // 다른 화면에서 이 화면으로 이끄는 한 줄 판(components/payments/plan-nudge). 10-28 사용자: "메뉴로 따로 두기보다 다른 화면에서 자연스럽게"
   nudgeTitle: "내 게임을 더 많은 사람에게 보여 줄까요",
-  nudgeLead: (price: string) => `스파크 ${price}부터, 결제하면 바로 인디 목록 맨 위에 떠요`,
+  nudgeLead: (name: string, price: string) => `${name} ${price}부터, 결제하면 바로 인디 목록 맨 위에 떠요`,
   nudgeCta: "알리는 방법 보기",
   nudgeBoost: "더 알리기",
-  nudgeMember: "메이커 멤버십",
+  nudgeMember: (name: string) => `${name} 멤버십`,
 
   /** 걸 글이 여럿일 때 카드 단추가 여는 시트 */
   pickTitle: "어디에 걸까요",

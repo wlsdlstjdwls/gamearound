@@ -14,11 +14,24 @@ import { PAYMENT_MESSAGES as M, PRODUCT_COPY } from "@/lib/payments/messages";
 import { PRODUCTS, type PlanChoice, type ProductKey } from "@/lib/payments/products";
 import type { BoostTargetDto } from "@/server/services/payments";
 import { tossClientKey, tossConfigured } from "@/server/payments/toss";
+import { getPriceBook } from "@/server/services/pricing";
+import { getPricingSettings } from "@/server/services/settings";
 
 /** credits: 지금 쓸 수 있는 멤버십 이용권(없으면 0). pairs: 같이 사기의 짝 후보(services/payments 의 listMyLiveTargets). initialPlan: 요금 안내에서 고르고 온 쪽 */
-export function BoostPurchase({ product, target, customerKey, credits = 0, pairs, initialPlan = null }: { product: Extract<ProductKey, "boost_indie_7d" | "pin_promo_7d">; target: BoostTargetDto; customerKey: string; credits?: number; pairs: Array<{ id: string; title: string }>; initialPlan?: PlanChoice | null }) {
+export async function BoostPurchase({ product, target, customerKey, credits = 0, pairs, initialPlan = null }: { product: Extract<ProductKey, "boost_indie_7d" | "pin_promo_7d">; target: BoostTargetDto; customerKey: string; credits?: number; pairs: Array<{ id: string; title: string }>; initialPlan?: PlanChoice | null }) {
   const p = PRODUCTS[product];
   const clientKey = tossClientKey();
+  // 값은 요금 설정과 프로모션으로 이 사람에게 매긴 값(services/pricing) — 주문 만들기가 같은 함수로 값을 정한다
+  const [settings, book] = await Promise.all([getPricingSettings(), getPriceBook(customerKey)]);
+  const prices = {
+    single: product === "boost_indie_7d" ? book.boost : book.pin,
+    bundle: book.bundle,
+    bundleList: book.bundleList,
+    bundleOnSale: settings.products.bundle_7d.active,
+    singleName: settings.copy.single.name,
+    bundleName: settings.copy.bundle.name,
+  };
+  const onSale = settings.products[product].active;
   const ready = Boolean(clientKey) && tossConfigured();
 
   return (
@@ -44,9 +57,11 @@ export function BoostPurchase({ product, target, customerKey, credits = 0, pairs
       )}
       {!target.live ? (
         <FormMessage tone="error">{M.notLive}</FormMessage>
+      ) : !onSale ? (
+        <FormMessage tone="info">{M.notOnSale}</FormMessage>
       ) : (
         <>
-          <PlanPicker product={product} targetId={target.id} pairs={pairs} initialPlan={initialPlan} checkout={ready ? { clientKey, customerKey } : null} />
+          <PlanPicker product={product} targetId={target.id} pairs={pairs} initialPlan={initialPlan} prices={prices} checkout={ready ? { clientKey, customerKey } : null} />
           {!ready && <FormMessage tone="info">{M.notConfigured}</FormMessage>}
         </>
       )}

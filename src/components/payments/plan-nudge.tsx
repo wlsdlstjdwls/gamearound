@@ -8,10 +8,14 @@ import { INK_CTA, INK_CTA_GHOST, InkHero } from "@/components/ui/ink-hero";
 import { BrandSymbol } from "@/components/ui/logo";
 import { formatPrice } from "@/lib/currency";
 import { PLANS_MESSAGES as M } from "@/lib/payments/plans-messages";
-import { PRODUCTS } from "@/lib/payments/products";
+import { getPriceBook } from "@/server/services/pricing";
+import { getPricingSettings } from "@/server/services/settings";
 import { ROUTES } from "@/lib/routes";
 
-export function PlanNudge() {
+/** 이름과 시작 값은 요금 설정에서 — 처음 결제하는 사람이면 첫 결제 프로모션 값이 걸린 값이다(services/pricing) */
+export async function PlanNudge({ userId }: { userId: string }) {
+  const [settings, book] = await Promise.all([getPricingSettings(), getPriceBook(userId)]);
+  const from = Math.min(book.boost.amount, book.pin.amount);
   return (
     <InkHero label={M.nudgeTitle} className="px-5! py-5! sm:px-6! sm:py-5!">
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
@@ -21,7 +25,7 @@ export function PlanNudge() {
           </span>
           <div className="flex min-w-0 flex-col gap-1">
             <p className="text-[17px] font-extrabold tracking-[-0.03em] sm:text-[19px]">{M.nudgeTitle}</p>
-            <p className="text-[13.5px] opacity-80">{M.nudgeLead(formatPrice(PRODUCTS.boost_indie_7d.amount))}</p>
+            <p className="text-[13.5px] opacity-80">{M.nudgeLead(settings.copy.single.name, formatPrice(from))}</p>
           </div>
         </div>
         <div className="flex shrink-0 items-center gap-1">
@@ -29,7 +33,7 @@ export function PlanNudge() {
             {M.nudgeCta}
           </Link>
           <Link href={ROUTES.membership} className={INK_CTA_GHOST}>
-            {M.nudgeMember}
+            {M.nudgeMember(settings.copy.membership.name)}
           </Link>
         </div>
       </div>

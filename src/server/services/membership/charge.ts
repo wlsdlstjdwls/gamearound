@@ -15,6 +15,8 @@ import { memberships, payments } from "@/server/db/schema";
 import { chargeBilling } from "@/server/payments/toss-billing";
 import { TossError } from "@/server/payments/toss";
 import { pushNotification } from "@/server/services/notifications";
+import { quoteFor } from "@/server/services/pricing";
+import { getPricingSettings } from "@/server/services/settings";
 import { addMonth, afterFailedCharge, MEMBERSHIP_PLANS, nextPeriodStart, renewalAction, type MembershipPlanKey } from "@/lib/membership/plan";
 import { MEMBERSHIP_MESSAGES as M } from "@/lib/membership/messages";
 import { makeOrderId } from "@/lib/payments/products";
@@ -38,13 +40,15 @@ export async function chargeMembership(m: MembershipRow, now: Date, first: boole
   const db = getDb();
   const plan = MEMBERSHIP_PLANS[m.plan as MembershipPlanKey];
   if (!plan || !m.billingKey) return { ok: false, message: M.failed };
+  // 값과 이용권 수는 요금 설정에서(관리자가 바꾼다). 첫 달이면 프로모션(첫 달 할인 등)이 걸릴 수 있고, 갱신은 언제나 정가다(lib/pricing/quote)
+  const [{ amount }, pricing] = await Promise.all([quoteFor(m.userId, "membership", first), getPricingSettings()]);
   const audit = actor.source === "user" ? createdBy("user", actor.userId) : createdBy("cron:membership");
   const orderId = makeOrderId("member", randomBytes(ORDER_RANDOM_BYTES).toString("hex"));
-  await db.insert(payments).values({ orderId, userId: m.userId, product: m.plan, amount: plan.amount, membershipId: m.id, ...audit });
+  await db.insert(payments).values({ orderId, userId: m.userId, product: m.plan, amount, membershipId: m.id, ...audit });
 
   let charged;
   try {
-    charged = await chargeBilling({ billingKey: m.billingKey, customerKey: m.customerKey, amount: plan.amount, orderId, orderName: plan.name });
+    charged = await chargeBilling({ billingKey: m.billingKey, customerKey: m.customerKey, amount, orderId, orderName: plan.name });
   } catch (e) {
     const code = e instanceof TossError ? e.code : "CHARGE_ERROR";
     const message = e instanceof TossError ? e.message : M.failed;
@@ -64,7 +68,7 @@ export async function chargeMembership(m: MembershipRow, now: Date, first: boole
       status: "active",
       currentPeriodStart: start,
       currentPeriodEnd: end,
-      boostCredits: plan.boostCredits,
+      boostCredits: pricing.membership.boostCredits,
       nextChargeAt: end,
       failedAttempts: 0,
       lastFailMessage: null,
@@ -94,7 +98,7 @@ async function renewOne(m: MembershipRow, now: Date): Promise<void> {
   if (action !== "charge") return;
   const r = await chargeMembership(m, now, false, { source: "system" });
   if (r.ok) {
-    await pushNotification(m.userId, "payment", M.noticeRenewed(formatDate(addMonth(nextPeriodStart(m, now)))), ROUTES.membership);
+    await pushNotification(m.userId, "payment", M.noticeRenewed(formatDate(addMonth(nextPeriodStart(m, now))), (await getPricingSettings()).membership.boostCredits), ROUTES.membership);
     return;
   }
   const next = afterFailedCharge(m.failedAttempts, now);

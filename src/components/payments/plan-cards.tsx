@@ -5,8 +5,9 @@
 // 같은 줄을 카드마다 되풀이하면 무엇이 달라지는지가 묻힌다(사용자: "한 단계 높을수록 바뀌는 점을 강조해야지, 티가 안 난다").
 // 가운데 묶음만 테두리로 띄워 주로 팔 상품을 가리킨다. 맨 윗단 "모든 혜택" 은 채운 보라 딱지 — 한 화면에 하나뿐인 강조다.
 //
-// 그은 정가는 근거가 있는 값만 쓴다: 묶음은 낱개 둘의 합(BUNDLE_LIST_PRICE). 멤버십 이용권 환산(13,800원)은 멤버십 값보다 낮아
-// 정가로 긋지 않는다 — 긋는 순간 없는 정가가 된다(표시광고법).
+// 값, 이름, 문구는 관리자가 바꾸는 요금 설정(lib/pricing/settings)에서 온다 — 이 파일은 모양만 정한다. 값은 사는 사람 처지(첫 결제인가)와
+// 프로모션까지 매긴 값 묶음(lib/pricing/quote 의 PriceBook)을 받는다. 판매를 멈춘 단(active=false)은 카드를 세우지 않는다.
+// 그은 값은 근거가 있는 값만 쓴다(components/payments/price-tag): 정가, 묶음이면 낱개 정가 합.
 // 지금 받는 것(바로 노출, 이용권 즉시 채움)을 값 바로 아래 둔다 — 나중 이득보다 지금 이득을 크게 느낀다(현재 편향).
 // 구매 단추는 components/payments/plan-cta — 카드에서 바로 결제 화면으로 간다.
 import Link from "next/link";
@@ -16,11 +17,13 @@ import { CheckIcon, PlusIcon } from "@/components/ui/icons";
 import { sectionCardClass } from "@/components/ui/page";
 import { Clamp } from "@/components/ui/tooltip";
 import { Tag } from "@/components/ui/tag";
+import { PriceTag } from "@/components/payments/price-tag";
+import { cn } from "@/lib/cn";
 import { formatPrice } from "@/lib/currency";
-import { DEFAULT_PLAN, MEMBERSHIP_PLANS, MONTH_DAYS_APPROX } from "@/lib/membership/plan";
-import { BUNDLE_MESSAGES as B } from "@/lib/payments/messages";
+import { MONTH_DAYS_APPROX } from "@/lib/membership/plan";
 import { PLANS_MESSAGES as M } from "@/lib/payments/plans-messages";
-import { BUNDLE_DISCOUNT_RATE, BUNDLE_LIST_PRICE, BUNDLE_SAVING, perDay, PRODUCTS } from "@/lib/payments/products";
+import { perDay, type PriceBook, type Quote } from "@/lib/pricing/quote";
+import { fillCopy, type PricingSettings } from "@/lib/pricing/settings";
 import { ROUTES } from "@/lib/routes";
 
 /**
@@ -57,7 +60,7 @@ function Included({ lines }: { lines: readonly string[] }) {
 function Adds({ base, lines }: { base: string; lines: readonly string[] }) {
   return (
     <div className="flex flex-col gap-2.5">
-      <p className="text-[12.5px] font-semibold text-mut">{base}</p>
+      {base && <p className="text-[12.5px] font-semibold text-mut">{base}</p>}
       <ul className="flex flex-col gap-2.5 text-[13.5px]">
         {lines.map((line) => (
           <li key={line} className="flex items-center gap-2">
@@ -91,11 +94,16 @@ function Now({ children }: { children: React.ReactNode }) {
   return <p className="rounded-xl bg-acc-soft px-3 py-2 text-[13px] font-semibold text-acc">{children}</p>;
 }
 
-const BIG = "text-[28px] font-black leading-none tabular-nums text-ink";
-/** 값 칸 높이를 세 카드가 맞춘다 — 묶음만 그은 정가와 아끼는 금액 두 줄이 더 있어, 맞추지 않으면 아래 줄이 카드마다 어긋난다 */
-const PRICE_BOX = "flex flex-col gap-1 lg:min-h-[92px]";
+/** 값 칸 높이를 카드끼리 맞춘다 — 그은 값, 아끼는 금액 줄이 있는 카드와 없는 카드의 아래 줄이 어긋나지 않게 */
+const PRICE_BOX = "lg:min-h-[92px]";
 
 type Props = {
+  copy: PricingSettings["copy"];
+  book: PriceBook;
+  /** 판매 중인 단 */
+  active: { single: boolean; bundle: boolean; membership: boolean };
+  /** 멤버십 이용권 수(문구의 {credits}) */
+  credits: number;
   /** 이용 중이면 남은 이용권. 없으면 null */
   membership: { credits: number } | null;
   /** 카드 단추가 고를 글. 낱개는 둘 다, 묶음은 인디 게임만(묶음 주문의 주 대상이 인디 게임이다) */
@@ -105,56 +113,80 @@ type Props = {
   bundleNeedsPromo: boolean;
 };
 
-export function PlanCards({ membership, single, bundle, bundleNeedsPromo }: Props) {
-  const plan = MEMBERSHIP_PLANS[DEFAULT_PLAN];
+const GRID_COLS = { 1: "", 2: "lg:grid-cols-2", 3: "lg:grid-cols-3" } as const;
+
+export function PlanCards({ copy, book, active, credits, membership, single, bundle, bundleNeedsPromo }: Props) {
   const empty = { href: ROUTES.indieNew, action: M.noIndieAction };
+  // 낱개는 부스트, 고정 둘 중 하나라 값이 다르면 싼 쪽에 "부터" 를 붙인다
+  const singleQuote = book.pin.amount < book.boost.amount ? book.pin : book.boost;
+  const singleFrom = book.pin.amount !== book.boost.amount;
+  const saving = Math.max(0, book.bundleList - book.bundle.amount);
+  const vars = { saving: formatPrice(saving), credits: String(credits), price: formatPrice(singleQuote.amount) };
+  const fill = (t: string) => fillCopy(t, vars);
+  const fillAll = (ls: readonly string[]) => ls.map(fill);
+  const count = [active.single, active.bundle, active.membership].filter(Boolean).length as 1 | 2 | 3;
+  const tag = (t: string, tone: "acc" | "plumSolid") => (t ? <Tag tone={tone}>{t}</Tag> : undefined);
 
   return (
-    <div className="grid items-stretch gap-3 lg:grid-cols-3">
-      <section className={sectionCardClass("flex flex-col gap-4")}>
-        <Head eyebrow={M.singleEyebrow} name={M.singleName} summary={M.singleSummary} />
-        <div className={PRICE_BOX}>
-          <span className={BIG}>{formatPrice(PRODUCTS.boost_indie_7d.amount)}</span>
-        </div>
-        <Now>{M.adNow}</Now>
-        <Included lines={M.singleIncludes} />
-        <p className="text-[13px] font-semibold text-danger">{M.singleHint(formatPrice(BUNDLE_SAVING))}</p>
-        <PlanCta label={M.singleCta} variant="secondary" groups={single} empty={empty} />
-      </section>
+    <div className={cn("grid items-stretch gap-3", GRID_COLS[Math.max(1, count) as 1 | 2 | 3])}>
+      {active.single && (
+        <section className={sectionCardClass("flex flex-col gap-4")}>
+          <Head eyebrow={copy.single.eyebrow} name={copy.single.name} summary={fill(copy.single.summary)} tag={tag(copy.single.tag, "acc")} />
+          <div className={PRICE_BOX}>
+            <PriceTag quote={singleQuote}>{singleFrom && <span className="text-[13px] text-mut">{M.from}</span>}</PriceTag>
+          </div>
+          {copy.single.now && <Now>{copy.single.now}</Now>}
+          <Included lines={fillAll(copy.single.lines)} />
+          {copy.single.hint && active.bundle && <p className="text-[13px] font-semibold text-danger">{fill(copy.single.hint)}</p>}
+          <PlanCta label={copy.single.cta} variant="secondary" groups={single} empty={empty} />
+        </section>
+      )}
 
-      <section className={sectionCardClass("flex flex-col gap-4 ring-2 ring-acc")}>
-        <Head eyebrow={M.bundleEyebrow} name={M.bundleName} summary={M.bundleSummary} tag={<Tag tone="acc">{M.bundleTag}</Tag>} />
-        <div className={PRICE_BOX}>
-          <span className="flex flex-wrap items-center gap-2">
-            <s className="text-[15px] font-medium tabular-nums text-dim">
-              <span className="sr-only">{B.listPrice} </span>
-              {formatPrice(BUNDLE_LIST_PRICE)}
-            </s>
-            <Tag tone="hot">{M.rate(BUNDLE_DISCOUNT_RATE)}</Tag>
-          </span>
-          <span className={BIG}>{formatPrice(PRODUCTS.bundle_7d.amount)}</span>
-          <span className="text-[13px] font-semibold text-danger">{M.saving(formatPrice(BUNDLE_SAVING))}</span>
-        </div>
-        <Now>{M.adNow}</Now>
-        <Adds base={M.bundleBase} lines={M.bundleAdds(formatPrice(BUNDLE_SAVING))} />
-        <PlanCta label={M.bundleCta} variant="accent" groups={bundle} empty={empty} note={bundleNeedsPromo ? M.bundleNeedsPromo : undefined} />
-      </section>
+      {active.bundle && (
+        <section className={sectionCardClass("flex flex-col gap-4 ring-2 ring-acc")}>
+          <Head eyebrow={copy.bundle.eyebrow} name={copy.bundle.name} summary={fill(copy.bundle.summary)} tag={tag(copy.bundle.tag, "acc")} />
+          <div className={PRICE_BOX}>
+            <PriceTag quote={book.bundle} list={book.bundleList}>
+              {saving > 0 && <span className="text-[13px] font-semibold text-danger">{M.saving(formatPrice(saving))}</span>}
+            </PriceTag>
+          </div>
+          {copy.bundle.now && <Now>{copy.bundle.now}</Now>}
+          <Adds base={copy.bundle.base} lines={fillAll(copy.bundle.lines)} />
+          <PlanCta label={copy.bundle.cta} variant="accent" groups={bundle} empty={empty} note={bundleNeedsPromo ? M.bundleNeedsPromo : undefined} />
+        </section>
+      )}
 
-      <section className={sectionCardClass("flex flex-col gap-4")}>
-        <Head eyebrow={M.membershipEyebrow} name={M.membershipName} summary={M.membershipSummary} tag={membership ? <Tag tone="ok">{M.membershipActive}</Tag> : <Tag tone="plumSolid">{M.membershipTag}</Tag>} />
-        <div className={PRICE_BOX}>
-          <span className={BIG}>
-            <span className="mr-1 text-[13px] font-semibold text-mut">{M.perMonth}</span>
-            {formatPrice(plan.amount)}
-          </span>
-          <span className="text-[13px] text-mut">{M.perDayApprox(formatPrice(perDay(plan.amount, MONTH_DAYS_APPROX)))}</span>
-        </div>
-        <Now>{membership ? M.membershipCredits(membership.credits) : M.membershipNow}</Now>
-        <Adds base={M.membershipBase} lines={[M.membershipCreditsAdd(plan.boostCredits), ...M.memberPerks]} />
-        <Link href={ROUTES.membership} className={buttonClass({ variant: membership ? "secondary" : "primary", fullWidth: true, className: "mt-auto" })}>
-          {membership ? M.membershipManage : M.membershipStart}
-        </Link>
-      </section>
+      {active.membership && (
+        <section className={sectionCardClass("flex flex-col gap-4")}>
+          <Head
+            eyebrow={copy.membership.eyebrow}
+            name={copy.membership.name}
+            summary={fill(copy.membership.summary)}
+            tag={membership ? <Tag tone="ok">{M.membershipActive}</Tag> : tag(copy.membership.tag, "plumSolid")}
+          />
+          <div className={PRICE_BOX}>
+            <MembershipPrice quote={book.membership} />
+          </div>
+          {copy.membership.now && <Now>{membership ? M.membershipCredits(membership.credits) : copy.membership.now}</Now>}
+          <Adds base={copy.membership.base} lines={fillAll(copy.membership.lines)} />
+          <Link href={ROUTES.membership} className={buttonClass({ variant: membership ? "secondary" : "primary", fullWidth: true, className: "mt-auto" })}>
+            {membership ? M.membershipManage : copy.membership.cta}
+          </Link>
+        </section>
+      )}
     </div>
+  );
+}
+
+/**
+ * 멤버십 값. 첫 달 할인이 걸리면 "첫 달" 값을 크게, 다음 달부터의 값을 바로 아래 숨김없이 적는다 —
+ * 첫 달만 보이고 이후 값을 감추면 구독 함정이 된다. 할인이 없으면 "매달" 값과 하루 값
+ */
+export function MembershipPrice({ quote }: { quote: Quote }) {
+  const intro = quote.amount < quote.regular;
+  return (
+    <PriceTag quote={quote} prefix={intro ? M.firstMonth : M.perMonth}>
+      <span className="text-[13px] text-mut">{intro ? M.thenMonthly(formatPrice(quote.regular)) : M.perDayApprox(formatPrice(perDay(quote.regular, MONTH_DAYS_APPROX)))}</span>
+    </PriceTag>
   );
 }

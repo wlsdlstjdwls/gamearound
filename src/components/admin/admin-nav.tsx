@@ -119,6 +119,7 @@ const GROUPS: Array<{ key: string; title?: string; items: Item[] }> = [
       { href: ROUTES.adminPosts, label: ADMIN_NAV.posts, Icon: ChatIcon },
       { href: ROUTES.adminPromotions, label: ADMIN_NAV.promotions, Icon: TagIcon },
       { href: ROUTES.adminMemberships, label: ADMIN_NAV.memberships, Icon: TicketIcon },
+      { href: ROUTES.adminPricing, label: ADMIN_NAV.pricing, Icon: SlidersIcon },
     ],
   },
   {

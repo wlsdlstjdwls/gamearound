@@ -8,9 +8,10 @@ import { getDb } from "@/server/db/client";
 import { siteSettings } from "@/server/db/schema";
 import { createdBy, updatedBy } from "@/server/db/audit";
 import { FAME_INTRO_DEFAULTS, parseFameIntroSettings, type FameIntroSettings } from "@/lib/indie/fame-intro";
+import { PRICING_DEFAULTS, parsePricingSettings, type PricingSettings } from "@/lib/pricing/settings";
 
 /** 설정 이름. DB 키와 같다 */
-export const SETTING_KEYS = { fameIntro: "fame_intro" } as const;
+export const SETTING_KEYS = { fameIntro: "fame_intro", pricing: "pricing" } as const;
 
 /** 설정 캐시 태그. 저장 액션이 민다 */
 export const SETTINGS_TAG = "site-settings";
@@ -40,5 +41,26 @@ export async function setFameIntroSettings(adminUserId: string, value: FameIntro
   await getDb()
     .insert(siteSettings)
     .values({ key: SETTING_KEYS.fameIntro, value, ...createdBy("admin", adminUserId) })
+    .onConflictDoUpdate({ target: siteSettings.key, set: { value, ...updatedBy("admin", adminUserId) } });
+}
+
+/**
+ * 요금 설정(값, 문구, 프로모션). 읽지 못하면 기본값 — 결제 화면이 이 표 때문에 깨지면 안 된다.
+ * 주문 만들기도 이 캐시를 읽는다. 저장이 태그를 밀므로 관리자가 값을 바꾼 바로 다음 주문부터 새 값이다
+ */
+export async function getPricingSettings(): Promise<PricingSettings> {
+  try {
+    return parsePricingSettings(await readSettingCached(SETTING_KEYS.pricing));
+  } catch (e) {
+    console.warn(`[settings] pricing 읽기 실패, 기본값: ${String(e)}`);
+    return PRICING_DEFAULTS;
+  }
+}
+
+/** 관리자 저장. 검증은 액션이 같은 스키마(lib/pricing/settings)로 끝낸 뒤 넘긴다 */
+export async function setPricingSettings(adminUserId: string, value: PricingSettings): Promise<void> {
+  await getDb()
+    .insert(siteSettings)
+    .values({ key: SETTING_KEYS.pricing, value, ...createdBy("admin", adminUserId) })
     .onConflictDoUpdate({ target: siteSettings.key, set: { value, ...updatedBy("admin", adminUserId) } });
 }

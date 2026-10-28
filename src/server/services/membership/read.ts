@@ -5,6 +5,7 @@ import type { AnyPgColumn } from "drizzle-orm/pg-core";
 import { getDb } from "@/server/db/client";
 import { memberships, users, type MembershipStatus } from "@/server/db/schema";
 import { BENEFIT_STATUSES, canUseBenefits, MEMBERSHIP_PLANS, type MembershipPlanKey } from "@/lib/membership/plan";
+import { getPricingSettings } from "@/server/services/settings";
 
 /** 관리자 목록 한 화면 */
 const ADMIN_LIST_LIMIT = 100;
@@ -24,12 +25,13 @@ export type MembershipDto = {
   email?: string;
 };
 
-function toDto(m: typeof memberships.$inferSelect, now: Date, email?: string): MembershipDto {
+/** renewal: 다음 청구 값(요금 설정의 멤버십 정가). 관리자가 값을 바꾸면 다음 갱신부터 그 값이다 */
+function toDto(m: typeof memberships.$inferSelect, now: Date, renewal: number, email?: string): MembershipDto {
   const plan = MEMBERSHIP_PLANS[m.plan as MembershipPlanKey];
   return {
     status: m.status,
     planName: plan?.name ?? m.plan,
-    amount: plan?.amount ?? 0,
+    amount: renewal,
     cardLabel: m.cardLabel,
     periodStart: m.currentPeriodStart,
     periodEnd: m.currentPeriodEnd,
@@ -42,12 +44,13 @@ function toDto(m: typeof memberships.$inferSelect, now: Date, email?: string): M
 }
 
 export async function getMyMembership(userId: string): Promise<MembershipDto | null> {
-  const [m] = await getDb().select().from(memberships).where(eq(memberships.userId, userId)).limit(1);
-  return m ? toDto(m, new Date()) : null;
+  const [[m], pricing] = await Promise.all([getDb().select().from(memberships).where(eq(memberships.userId, userId)).limit(1), getPricingSettings()]);
+  return m ? toDto(m, new Date(), pricing.membership.amount) : null;
 }
 
 /** 관리자 목록. 최근에 바뀐 것부터 */
 export async function listMembershipsForAdmin(): Promise<MembershipDto[]> {
+  const pricing = await getPricingSettings();
   const rows = await getDb()
     .select({ m: memberships, email: users.email })
     .from(memberships)
@@ -55,7 +58,7 @@ export async function listMembershipsForAdmin(): Promise<MembershipDto[]> {
     .orderBy(desc(memberships.updatedAt))
     .limit(ADMIN_LIST_LIMIT);
   const now = new Date();
-  return rows.map(({ m, email }) => toDto(m, now, email));
+  return rows.map(({ m, email }) => toDto(m, now, pricing.membership.amount, email));
 }
 
 /**

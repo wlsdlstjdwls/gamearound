@@ -1,7 +1,7 @@
 // 노출 자리 단건 결제(2026-10-27, 기획서 5장 3단계, 토스페이먼츠 결제위젯). 주문 만들기 → (결제창) → 승인과 부스트 걸기.
 // 상품마다 자리와 대상 표가 다르다(lib/payments/products): 인디 게임 부스트는 indie_posts, 홍보 글 고정은 posts 의 홍보 글, 묶음은 둘 다.
 //
-// 금액은 언제나 서버가 정한다(lib/payments/products). 성공 주소로 돌아온 amount 는 주문 줄과 견주기만 하고, 다르면 승인하지 않는다.
+// 금액은 언제나 서버가 정한다(요금 설정과 프로모션, services/pricing). 성공 주소로 돌아온 amount 는 주문 줄과 견주기만 하고, 다르면 승인하지 않는다.
 // 승인은 한 번만 간다: 이미 paid 인 주문이 다시 오면(새로고침, 뒤로 가기) 토스를 다시 부르지 않고 그 결과를 돌려준다.
 //
 // 순서는 토스 승인 → 주문 paid → 부스트 걸기 → 주문에 부스트 잇기다. 이 드라이버는 묶음 트랜잭션이 없어 마지막 두 걸음 사이에서
@@ -15,6 +15,8 @@ import { indiePosts, payments, posts, promotionBoosts, type PromoTargetKind } fr
 import { confirmTossPayment, TossError } from "@/server/payments/toss";
 import { insertPurchasedBoost, isPublicPromo } from "@/server/services/promotions";
 import { isPublic } from "@/server/services/indie/read";
+import { quoteFor } from "@/server/services/pricing";
+import { getPricingSettings } from "@/server/services/settings";
 import { isProductKey, makeOrderId, PRODUCTS, type Product, type ProductKey } from "@/lib/payments/products";
 import { PAYMENT_MESSAGES as M } from "@/lib/payments/messages";
 
@@ -40,12 +42,15 @@ export async function ownedLiveTarget(kind: PromoTargetKind, userId: string, tar
 export async function createBoostOrder(userId: string, product: ProductKey, targetId: string, extraTargetId: string | null = null): Promise<BoostOrder> {
   const p: Product = PRODUCTS[product];
   if (Boolean(p.extra) !== Boolean(extraTargetId)) throw new Error(M.notBuyable);
+  // 값은 요금 설정과 프로모션으로 서버가 정한다(services/pricing). 관리자가 판매를 멈춘 상품은 주문을 받지 않는다
+  const [settings, priced] = await Promise.all([getPricingSettings(), quoteFor(userId, product)]);
+  if (!settings.products[product].active) throw new Error(M.notOnSale);
   const [main, extra] = await Promise.all([ownedLiveTarget(p.target, userId, targetId), p.extra && extraTargetId ? ownedLiveTarget(p.extra.target, userId, extraTargetId) : true]);
   if (!main || !extra) throw new Error(M.notBuyable);
   const orderId = makeOrderId(product.split("_")[0], randomBytes(ORDER_RANDOM_BYTES).toString("hex"));
-  await getDb().insert(payments).values({ orderId, userId, product, amount: p.amount, targetKind: p.target, targetId, extraTargetId, ...createdBy("user", userId) });
+  await getDb().insert(payments).values({ orderId, userId, product, amount: priced.amount, targetKind: p.target, targetId, extraTargetId, ...createdBy("user", userId) });
   // customerKey 는 토스가 구매자를 가르는 값이다. 우리 사용자 id(uuid)는 토스 규칙(영숫자와 -, 2~50자)에 맞고 바깥에 드러나도 쓸 데가 없다
-  return { orderId, amount: p.amount, orderName: p.name, customerKey: userId };
+  return { orderId, amount: priced.amount, orderName: p.name, customerKey: userId };
 }
 
 export type BoostTargetDto = { id: string; title: string; live: boolean; boostedUntil: Date | null };

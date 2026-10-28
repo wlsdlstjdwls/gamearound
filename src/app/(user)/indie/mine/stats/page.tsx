@@ -63,7 +63,7 @@ export default async function IndieStatsPage() {
       <PageHead title={M.statsTitle}>
         <p className="text-[14px] text-mut">{M.statsLead}</p>
       </PageHead>
-      {liveRows.length > 0 && <PlanNudge />}
+      {liveRows.length > 0 && <PlanNudge userId={user.id} />}
 
       {stats.rows.length === 0 ? (
         <EmptyState title={M.statsEmpty} description={M.statsEmptyLead} action={{ href: ROUTES.indieNew, label: INDIE_MESSAGES.register }} />

@@ -14,6 +14,7 @@ import { TossError } from "@/server/payments/toss";
 import { insertPurchasedBoost } from "@/server/services/promotions";
 import { ownedLiveTarget } from "@/server/services/payments";
 import { chargeMembership } from "@/server/services/membership/charge";
+import { getPricingSettings } from "@/server/services/settings";
 import { DEFAULT_PLAN } from "@/lib/membership/plan";
 import { MEMBERSHIP_MESSAGES as M } from "@/lib/membership/messages";
 import { PAYMENT_MESSAGES as PM } from "@/lib/payments/messages";
@@ -27,6 +28,8 @@ export async function startMembership(userId: string, authKey: string, customerK
   const db = getDb();
   const [existing] = await db.select({ status: memberships.status }).from(memberships).where(eq(memberships.userId, userId)).limit(1);
   if (existing && existing.status !== "ended") return { ok: false, message: M.alreadyActive };
+  // 관리자가 판매를 멈췄으면 새 가입을 받지 않는다(요금 설정 membership.active). 이용 중인 사람의 갱신은 그대로 간다
+  if (!(await getPricingSettings()).membership.active) return { ok: false, message: M.notOnSale };
 
   let issued;
   try {

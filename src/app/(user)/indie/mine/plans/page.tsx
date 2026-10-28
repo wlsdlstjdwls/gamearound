@@ -16,6 +16,8 @@ import { PLANS_MESSAGES as M } from "@/lib/payments/plans-messages";
 import { boardPinPath, indieBoostPath, ROUTES } from "@/lib/routes";
 import { requireUserOrRedirect } from "@/server/auth/guards";
 import { getMyMembership } from "@/server/services/membership";
+import { getPriceBook } from "@/server/services/pricing";
+import { getPricingSettings } from "@/server/services/settings";
 import { listMyLiveTargets } from "@/server/services/payments";
 
 export const metadata: Metadata = { title: M.title, robots: { index: false } };
@@ -29,7 +31,9 @@ function group(title: string, items: Target[], href: (id: string) => string): Pl
 export default async function MakerPlansPage() {
   const user = await requireUserOrRedirect();
   // 글 목록을 못 읽으면 빈 칸으로 — 요금 안내는 그대로 선다
-  const [membership, indie, promos] = await Promise.all([
+  const [settings, book, membership, indie, promos] = await Promise.all([
+    getPricingSettings(),
+    getPriceBook(user.id),
     getMyMembership(user.id).catch(() => null),
     listMyLiveTargets(user.id, "indie_post").catch(() => []),
     listMyLiveTargets(user.id, "board_post").catch(() => []),
@@ -55,6 +59,10 @@ export default async function MakerPlansPage() {
       </PageHead>
 
       <PlanCards
+        copy={settings.copy}
+        book={book}
+        active={{ single: settings.products.boost_indie_7d.active || settings.products.pin_promo_7d.active, bundle: settings.products.bundle_7d.active, membership: settings.membership.active || live !== null }}
+        credits={settings.membership.boostCredits}
         membership={live}
         single={[group(M.indieGroup, indie, (id) => indieBoostPath(id, "single")), group(M.promoGroup, promos, (id) => boardPinPath(id, "single"))]}
         bundle={[group(M.indieGroup, indie, (id) => indieBoostPath(id, "bundle"))]}
