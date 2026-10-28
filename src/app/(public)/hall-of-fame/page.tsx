@@ -20,7 +20,7 @@ import { ChevronLeftIcon } from "@/components/ui/icons";
 import { NavChip, NavPendingScope, PendingRegion } from "@/components/ui/nav-pending";
 import { Page, PageHead } from "@/components/ui/page";
 import { TrophyIcon } from "@/components/ui/icons";
-import { FameIntro } from "@/components/indie/fame-intro";
+import { FameIntro, FameIntroVisit } from "@/components/indie/fame-intro";
 import { MonthStepper } from "@/components/indie/month-stepper";
 import { MyFameStandingCard } from "@/components/indie/my-fame-standing";
 import { cn } from "@/lib/cn";
@@ -272,9 +272,6 @@ export default async function HallOfFamePage({ searchParams }: Props) {
             />
           )}
         </div>
-        {/* 감싸는 div 와 mt 를 걷었다 — NavPendingScope 는 자리를 만들지 않아 Page 의 gap 이 이미 사이를 띄운다.
-            카드가 없는(비로그인) 화면에서 빈 div 하나가 gap 과 mt 를 더해 1위 판 위에 56px 빈 띠를 만들었다 */}
-        {tab === "month" && ym === now && <MyFameStandingCard />}
         <PendingRegion>
           {!data ? (
             <DbUnavailable retryHref={ROUTES.hallOfFame} />
@@ -293,7 +290,11 @@ export default async function HallOfFamePage({ searchParams }: Props) {
             </ol>
           )}
         </PendingRegion>
+        {/* "내 게임은 지금" 은 순위 **아래**에 둔다(2026-10-28 사용자 "뒤늦게 깜빡이듯 나온다"). 화면 본문은 캐시(ISR)라 쿠키를 못 읽어
+            이 카드만 그린 뒤에 따로 받는다 — 위에 두면 도착하는 순간 1위 판을 통째로 밀어 내렸다. 아래면 이미 본 것을 밀지 않는다 */}
+        {tab === "month" && ym === now && <MyFameStandingCard />}
       </NavPendingScope>
+      <FameIntroVisit />
       <p className="text-[12px] text-dim">{tab === "month" ? M.monthFootnote : pickedYm ? M.top10Footnote : M.historyFootnote}</p>
     </Page>
   );

@@ -7,15 +7,15 @@
 //   그림은 화면 전체에 object-cover 로 깔아 두고 보이는 창만 판 자리로 좁힌 뒤, 마지막에 덮개를 흐려 진짜 판으로 넘긴다.
 // - 서버 HTML 에는 덮개가 없다(첫 상태 idle). JS 가 붙은 뒤 시작하니 JS 없는 환경, 검색 로봇은 평소 화면만 본다.
 //   덮개는 빠르게 나타나게(fade-in) 해서 "화면이 떴다가 갑자기 가려지는" 느낌을 줄인다.
-// - 세션당 한 번(sessionStorage). 달을 넘기거나 다시 들어올 때마다 막으면 순위를 보러 온 사람을 매번 붙든다.
+// - 명예의 전당에 **들어올 때마다** 튼다(2026-10-28 사용자 "1위 왜 전체화면 안 되냐" — 처음엔 세션당 한 번이라 두 번째부터 안 떴다).
+//   같은 화면 안에서 달을 넘길 때는 다시 틀지 않는다: 표시는 모듈 변수에 두고, 화면을 떠날 때(FameIntroVisit 이 내려갈 때) 지운다.
+//   달을 넘겨도 경로가 같아 페이지는 내려가지 않으니 표시가 남는다.
 // - 누르기, 휠, 터치, 키 입력이면 바로 끝낸다. 줄이기 설정(prefers-reduced-motion)이면 아예 안 튼다.
 // - 시간은 globals.css 토큰(--duration-fame-hold, --duration-fame-shrink)에서 읽는다. WAAPI 는 ms 숫자가 필요해서다.
 import { useEffect, useRef, useState } from "react";
 import { FadeImage } from "@/components/ui/fade-image";
 import { TrophyIcon } from "@/components/ui/icons";
 
-/** 세션에 한 번만 튼다는 표시 */
-const SEEN_KEY = "fame-intro-seen";
 /** 토큰을 못 읽었을 때 쓰는 값(ms). globals.css 의 값과 같다 */
 const FALLBACK_HOLD_MS = 800;
 const FALLBACK_SHRINK_MS = 700;
@@ -29,20 +29,18 @@ function tokenMs(name: string, fallback: number): number {
   return raw.endsWith("ms") ? n : n * 1000;
 }
 
-function alreadySeen(): boolean {
-  try {
-    return sessionStorage.getItem(SEEN_KEY) === "1";
-  } catch {
-    return true; // 저장소를 못 쓰면 매번 틀 수도 있으니 아예 틀지 않는다
-  }
-}
+/** 이번 방문에서 이미 틀었나. 화면을 떠나면 FameIntroVisit 이 지운다 */
+let playedThisVisit = false;
 
-function markSeen() {
-  try {
-    sessionStorage.setItem(SEEN_KEY, "1");
-  } catch {
-    // 저장 실패는 다음에 한 번 더 트는 정도의 일이다
-  }
+/** 명예의 전당 화면에 한 번 둔다. 화면을 떠날 때 표시를 지워 다음에 들어오면 다시 튼다 */
+export function FameIntroVisit() {
+  useEffect(
+    () => () => {
+      playedThisVisit = false;
+    },
+    [],
+  );
+  return null;
 }
 
 export function FameIntro({ src, title, badge, targetId }: { src: string; title: string; badge: string; targetId: string }) {
@@ -51,12 +49,12 @@ export function FameIntro({ src, title, badge, targetId }: { src: string; title:
   const text = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    if (alreadySeen()) return;
+    if (playedThisVisit) return;
     if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
     // 다음 프레임에 켠다 — 첫 그림(서버 HTML)이 한 번 칠해진 뒤 덮개가 흐려 들어온다.
-    // 표시는 켤 때 남긴다. 효과 안에서 바로 남기면 개발 모드의 두 번 실행(StrictMode)이 첫 실행을 걷은 뒤 "이미 봤다" 로 읽어 영영 안 튼다
+    // 표시는 켤 때 남긴다. 효과 안에서 바로 남기면 개발 모드의 두 번 실행(StrictMode)이 첫 실행을 걷은 뒤 "이미 틀었다" 로 읽어 안 튼다
     const raf = requestAnimationFrame(() => {
-      markSeen();
+      playedThisVisit = true;
       setPhase("play");
     });
     return () => cancelAnimationFrame(raf);
@@ -75,7 +73,7 @@ export function FameIntro({ src, title, badge, targetId }: { src: string; title:
     const handoff = tokenMs("--duration-base", FALLBACK_HANDOFF_MS);
     const ease = getComputedStyle(document.documentElement).getPropertyValue("--ease-out-emph").trim() || "ease-out";
 
-    // 판 자리는 줄어들기 시작할 때 잰다. 머무는 동안 위 "내 게임은 지금" 카드가 늦게 들어와 판을 밀 수 있다
+    // 판 자리는 줄어들기 시작할 때 잰다. 머무는 동안 그림이나 글꼴이 늦게 와 판이 움직일 수 있다
     const targetClip = () => {
       const r = target.getBoundingClientRect();
       const vw = window.innerWidth;

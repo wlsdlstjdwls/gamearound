@@ -30,7 +30,7 @@ export function MyFameStandingCard() {
   const sub =
     s.rank && s.gapUp ? M.myGapUp(s.rank - 1, s.gapUp) : s.rank ? null : s.needLikes > 0 ? M.myNeedLikes(s.monthLikes, s.needLikes) : s.gapUp ? M.myGapTop(s.gapUp) : M.myOpen;
   return (
-    <section aria-label={M.myHead} className="enter-item relative isolate flex flex-col gap-3 overflow-hidden rounded-[var(--radius-panel)] bg-acc-soft p-4 shadow-[inset_0_0_0_1px_var(--acc-3)] sm:flex-row sm:items-center sm:gap-5 sm:p-5">
+    <section aria-label={M.myHead} className="animate-rise relative isolate flex flex-col gap-3 overflow-hidden rounded-[var(--radius-panel)] bg-acc-soft p-4 shadow-[inset_0_0_0_1px_var(--acc-3)] sm:flex-row sm:items-center sm:gap-5 sm:p-5">
       <span aria-hidden className="hero-beam beam-soft" />
       <span aria-hidden className="grid size-12 shrink-0 place-items-center rounded-full bg-surface text-acc shadow-hair">
         {s.rank ? <span className="text-[18px] font-black tabular-nums">{s.rank}</span> : <TrophyIcon size={22} />}
