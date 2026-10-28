@@ -119,6 +119,9 @@ export const FAME_MESSAGES = {
   newEntry: "새로 진입",
   thisMonth: (label: string) => `${label}(이번 달)`,
   firstThisMonth: "이번 달 1위",
+  /** 인디 상세 머리 판 딱지(2026-10-28). 실시간 잠정 순위라 "이번 달" 을 붙인다 — 확정된 달 순위처럼 읽히지 않게 */
+  detailBadge: (n: number) => `이번 달 명예의 전당 ${n}위`,
+  detailBadgeLink: "명예의 전당 보기",
   firstOf: (label: string) => `${label} 1위`,
   pickedBy: "플레이어 반응으로 선정",
   provisionalNote: "실시간 잠정 순위",

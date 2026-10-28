@@ -245,6 +245,11 @@ export async function finalizeHallOfFame(ym: string): Promise<number> {
   return ranking.length;
 }
 
+/** 글 하나의 이번 달 실시간 순위. TOP 밖이면 null. 인디 상세 머리 판이 1~3위를 꾸밀 때 쓴다(2026-10-28) */
+export async function getIndieMonthRank(postId: string): Promise<number | null> {
+  return (await getMyMonthRanks([postId])).get(postId) ?? null;
+}
+
 /**
  * 내 글들의 이번 달 실시간 순위(1부터). TOP 밖이면 Map 에 없다. 등록현황 줄이 "명예의 전당 N위" 로 자랑할 때 쓴다
  * (2026-10-28 사용자 "순위나 조회 수, 찜 수 등을 예쁘게 — 뿌듯할 듯"). 왕복은 순위 질의 하나다.
