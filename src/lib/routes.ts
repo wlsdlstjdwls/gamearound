@@ -1,4 +1,6 @@
 // 라우트 경로 단일 원천. 컴포넌트, 액션, proxy에서 문자열 리터럴 대신 이 객체를 쓴다.
+import { PLAN_PARAM, type PlanChoice } from "@/lib/payments/products";
+
 export const ROUTES = {
   home: "/",
   search: "/search",
@@ -235,14 +237,18 @@ export function indiePlaytestPath(id: string): string {
   return `${ROUTES.indieMine}/${encodeURIComponent(id)}/${INDIE_MINE_LEAF.playtest}`;
 }
 
-/** 내 인디 게임에 광고 걸기(결제) */
-export function indieBoostPath(id: string): string {
-  return `${ROUTES.indieMine}/${encodeURIComponent(id)}/${INDIE_MINE_LEAF.boost}`;
+/** 내 인디 게임에 광고 걸기(결제). plan 을 주면 구매 화면이 그 묶음을 골라 둔 채 열린다(lib/payments/products 의 PLAN_PARAM) */
+export function indieBoostPath(id: string, plan?: PlanChoice): string {
+  return withPlan(`${ROUTES.indieMine}/${encodeURIComponent(id)}/${INDIE_MINE_LEAF.boost}`, plan);
+}
+
+function withPlan(path: string, plan?: PlanChoice): string {
+  return plan ? `${path}?${PLAN_PARAM}=${plan}` : path;
 }
 
 /** 내 홍보 글을 게시판 홍보 목록 위에 고정(결제). 게시판 글 주소(/board/promos/p/<id>)는 공개 화면이라 그 아래에 두지 않는다 */
-export function boardPinPath(id: string): string {
-  return `${ROUTES.board}/mine/${encodeURIComponent(id)}/pin`;
+export function boardPinPath(id: string, plan?: PlanChoice): string {
+  return withPlan(`${ROUTES.board}/mine/${encodeURIComponent(id)}/pin`, plan);
 }
 
 /** 인디 홍보 글 공개 화면 */

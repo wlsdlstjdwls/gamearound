@@ -42,6 +42,16 @@ export function perDay(amount: number, days: number): number {
   return days > 0 ? Math.floor(amount / days) : amount;
 }
 
+/**
+ * 구매 화면의 "이것만 / 같이 사기" 처음 값. 요금 안내 카드(/indie/mine/plans)가 고른 쪽을 주소로 넘겨
+ * 구매 화면에서 다시 고르지 않게 한다(2026-10-28 사용자: 카드 고르고, 글 고르고, 또 고르는 길이 불편하다)
+ */
+export const PLAN_PARAM = "plan";
+export type PlanChoice = "single" | "bundle";
+export function readPlanChoice(v: string | undefined): PlanChoice | null {
+  return v === "single" || v === "bundle" ? v : null;
+}
+
 /** 이용권으로 걸 수 있는 상품인가(자리 하나짜리) */
 export function isSingleProduct(key: ProductKey): boolean {
   return !("extra" in PRODUCTS[key]);

@@ -11,12 +11,12 @@ import { FormMessage } from "@/components/ui/form-message";
 import { sectionCardClass } from "@/components/ui/page";
 import { formatDateTime } from "@/lib/format";
 import { PAYMENT_MESSAGES as M, PRODUCT_COPY } from "@/lib/payments/messages";
-import { PRODUCTS, type ProductKey } from "@/lib/payments/products";
+import { PRODUCTS, type PlanChoice, type ProductKey } from "@/lib/payments/products";
 import type { BoostTargetDto } from "@/server/services/payments";
 import { tossClientKey, tossConfigured } from "@/server/payments/toss";
 
-/** credits: 지금 쓸 수 있는 멤버십 이용권(없으면 0). pairs: 같이 사기의 짝 후보(services/payments 의 listMyLiveTargets) */
-export function BoostPurchase({ product, target, customerKey, credits = 0, pairs }: { product: Extract<ProductKey, "boost_indie_7d" | "pin_promo_7d">; target: BoostTargetDto; customerKey: string; credits?: number; pairs: Array<{ id: string; title: string }> }) {
+/** credits: 지금 쓸 수 있는 멤버십 이용권(없으면 0). pairs: 같이 사기의 짝 후보(services/payments 의 listMyLiveTargets). initialPlan: 요금 안내에서 고르고 온 쪽 */
+export function BoostPurchase({ product, target, customerKey, credits = 0, pairs, initialPlan = null }: { product: Extract<ProductKey, "boost_indie_7d" | "pin_promo_7d">; target: BoostTargetDto; customerKey: string; credits?: number; pairs: Array<{ id: string; title: string }>; initialPlan?: PlanChoice | null }) {
   const p = PRODUCTS[product];
   const clientKey = tossClientKey();
   const ready = Boolean(clientKey) && tossConfigured();
@@ -46,7 +46,7 @@ export function BoostPurchase({ product, target, customerKey, credits = 0, pairs
         <FormMessage tone="error">{M.notLive}</FormMessage>
       ) : (
         <>
-          <PlanPicker product={product} targetId={target.id} pairs={pairs} checkout={ready ? { clientKey, customerKey } : null} />
+          <PlanPicker product={product} targetId={target.id} pairs={pairs} initialPlan={initialPlan} checkout={ready ? { clientKey, customerKey } : null} />
           {!ready && <FormMessage tone="info">{M.notConfigured}</FormMessage>}
         </>
       )}

@@ -5,7 +5,9 @@ import { notFound } from "next/navigation";
 import { BoostPurchase } from "@/components/payments/boost-purchase";
 import { Page, PageHead } from "@/components/ui/page";
 import { isPostId } from "@/lib/community/constants";
+import { firstParam } from "@/lib/games-query";
 import { PRODUCT_COPY } from "@/lib/payments/messages";
+import { PLAN_PARAM, readPlanChoice } from "@/lib/payments/products";
 import { requireUserOrRedirect } from "@/server/auth/guards";
 import { getMyBoostTarget, listMyLiveTargets } from "@/server/services/payments";
 import { getMyMembership } from "@/server/services/membership";
@@ -15,11 +17,11 @@ const COPY = PRODUCT_COPY[PRODUCT];
 
 export const metadata: Metadata = { title: COPY.title, robots: { index: false } };
 
-type Props = { params: Promise<{ id: string }> };
+type Props = { params: Promise<{ id: string }>; searchParams: Promise<Record<string, string | string[] | undefined>> };
 
-export default async function BoardPinPage({ params }: Props) {
+export default async function BoardPinPage({ params, searchParams }: Props) {
   const user = await requireUserOrRedirect();
-  const { id } = await params;
+  const [{ id }, sp] = await Promise.all([params, searchParams]);
   if (!isPostId(id)) notFound();
   // 같이 사기의 짝 후보를 못 읽으면 낱개만 판다
   const [target, membership, pairs] = await Promise.all([
@@ -33,7 +35,7 @@ export default async function BoardPinPage({ params }: Props) {
       <PageHead title={COPY.title}>
         <p className="text-[14px] text-mut">{COPY.lead}</p>
       </PageHead>
-      <BoostPurchase product={PRODUCT} target={target} customerKey={user.id} credits={membership?.usableCredits ?? 0} pairs={pairs} />
+      <BoostPurchase product={PRODUCT} target={target} customerKey={user.id} credits={membership?.usableCredits ?? 0} pairs={pairs} initialPlan={readPlanChoice(firstParam(sp[PLAN_PARAM]))} />
     </Page>
   );
 }

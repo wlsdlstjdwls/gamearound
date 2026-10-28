@@ -14,7 +14,7 @@ import { formatPrice } from "@/lib/currency";
 import { cn } from "@/lib/cn";
 import { BUNDLE_MESSAGES as B, PAYMENT_MESSAGES as M } from "@/lib/payments/messages";
 import { PLANS_MESSAGES as PL } from "@/lib/payments/plans-messages";
-import { BUNDLE_DISCOUNT_RATE, BUNDLE_LIST_PRICE, BUNDLE_SAVING, PRODUCTS, type ProductKey } from "@/lib/payments/products";
+import { BUNDLE_DISCOUNT_RATE, BUNDLE_LIST_PRICE, BUNDLE_SAVING, PRODUCTS, type PlanChoice, type ProductKey } from "@/lib/payments/products";
 import { Tag } from "@/components/ui/tag";
 
 type Props = {
@@ -25,6 +25,8 @@ type Props = {
   pairs: Array<{ id: string; title: string }>;
   /** 결제 위젯을 그릴 수 있나(키가 있나). 아니면 값만 보이고 준비 중 안내는 바깥이 단다 */
   checkout: { clientKey: string; customerKey: string } | null;
+  /** 요금 안내 카드에서 고르고 온 쪽. 없으면 짝이 있을 때 같이 사기 */
+  initialPlan?: PlanChoice | null;
 };
 
 /** 그은 정가(낱개 둘의 합) */
@@ -37,8 +39,8 @@ function ListPrice({ className }: { className?: string }) {
   );
 }
 
-export function PlanPicker({ product, targetId, pairs, checkout }: Props) {
-  const [plan, setPlan] = useState<"single" | "bundle">(pairs.length > 0 ? "bundle" : "single");
+export function PlanPicker({ product, targetId, pairs, checkout, initialPlan = null }: Props) {
+  const [plan, setPlan] = useState<PlanChoice>(pairs.length === 0 ? "single" : (initialPlan ?? "bundle"));
   const [pairId, setPairId] = useState(pairs[0]?.id ?? "");
   const isIndie = product === "boost_indie_7d";
   const bundle = plan === "bundle" && pairId !== "";
