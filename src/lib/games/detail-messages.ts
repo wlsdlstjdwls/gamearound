@@ -4,6 +4,8 @@
 export const DETAIL_MESSAGES = {
   /** 평점 칸 이름표. 목업은 영문 "CRITIC SCORES" 인데 유저 점수까지 같은 줄에 서서 "평점" 으로 묶었다 */
   scoresLabel: "평점",
+  /** 출시일 띠의 남은 날(game-detail/hero 의 ReleaseBanner) */
+  releaseDday: (days: number) => `D-${days}`,
   /** 출시 전 게임의 평점 자리(기획서 v2.0 S-05: 평점은 출시작만) */
   scoresAfterRelease: "출시 후 평점이 표시돼요",
   scoresPending: "평점을 아직 모으는 중이에요.",
@@ -30,6 +32,7 @@ export const DETAIL_MESSAGES = {
   chartHeading: "가격 변동 추이",
   chartMore: "자세히 보기",
   chartEmpty: "가격이 바뀌면 기록이 쌓이고, 그때부터 그래프가 그려져요.",
+  chartShort: (since: string) => `가격 기록은 ${since}부터 모으고 있어요. 날이 지날수록 그래프가 채워져요.`,
   forecastTitle: "할인 예측",
   /** 고른 플랫폼 카드의 이름(game-detail/platform-pick). 예측이 그 플랫폼 값만 본다는 말 */
   forecastBasisPlatform: (name: string) => `${name} 기준`,

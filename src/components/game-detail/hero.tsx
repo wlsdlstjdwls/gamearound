@@ -4,8 +4,12 @@
 // 목업은 "지금 얼마인가" 를 바로 아래 가격 카드 격자에 맡기고 히어로는 "무슨 게임인가" 와 행동 버튼만 갖는다.
 // 최저가 큰 글자를 걷은 대신, 스크롤하면 머리띠(GameHeadbar)가 제목과 최저가를 계속 들고 있다.
 //
-// 좁은 화면은 한 기둥으로 문서 순서(커버, 정보, 평점, 버튼, 플레이타임) 그대로 쌓는다 — 목업 390px 와 같은 순서다.
+// 좁은 화면은 한 기둥으로 문서 순서(커버, 지원 배지, 정보, 버튼, 평점, 플레이타임) 그대로 쌓는다.
 // md 는 커버와 정보가 나란히, 오른쪽 기둥은 그 아래 한 줄을 다 쓴다.
+//
+// 2026-10-28 사용자 "이미지 오른쪽 콘텐츠들의 높이 차이가 난다": 가운데 기둥에 정보, 배지, 평점이 다 몰려
+// 커버 기둥과 오른쪽 기둥 밑이 크게 비었다. 플레이 방식, 한국어 같은 지원 배지는 커버 밑으로, 평점은 오른쪽 기둥으로 옮겨
+// 세 기둥 길이를 맞췄다. 출시 전 게임은 출시일을 원제 줄에 묻지 않고 제목 밑에 띠로 세운다(같은 날 "강조 필요").
 import Link from "next/link";
 import { Suspense } from "react";
 import { CoverImage } from "@/components/game-card";
@@ -25,12 +29,13 @@ import { CriticScores, PlaytimeTiles } from "@/components/game-detail/scores";
 import { Flag } from "@/components/ui/flag";
 import { Tag } from "@/components/ui/tag";
 import { Clamp } from "@/components/ui/tooltip";
-import { BellIcon } from "@/components/ui/icons";
+import { BellIcon, CalendarIcon } from "@/components/ui/icons";
 import { DETAIL_MESSAGES as D } from "@/lib/games/detail-messages";
-import { formatDate } from "@/lib/format";
+import { formatDate, kstDateKey } from "@/lib/format";
 import { gamesHref } from "@/lib/games-query";
 import { releaseLineText } from "@/lib/games/messages";
 import { stagger } from "@/lib/motion";
+import { cn } from "@/lib/cn";
 import { originCountry, type GameDetail } from "@/server/services/games";
 
 /** 장르 태그 — 누르면 그 장르로 거른 목록(목업 .gtags 의 data-a="cat"). 칩이 아니라 꼬리표라 작은 알약이다 */
@@ -39,6 +44,13 @@ const GENRE_TAG =
 
 /** 원제, 출시일, 나라, 개발, 배급 한 줄의 낱말. 앞머리 막대는 줄 머리에서 잘린다(쓰는 자리 주석) */
 const META_ITEM = "relative inline-flex items-center gap-x-1.5 pl-3 pr-1.5 before:absolute before:left-[3px] before:text-dim-2 before:content-['|']";
+
+const MS_PER_DAY = 24 * 60 * 60 * 1000;
+
+/** 출시일까지 남은 날(한국 날짜 기준). 날짜 열쇠끼리 빼서 시각 때문에 하루가 흔들리지 않는다 */
+function daysUntil(dateKey: string): number {
+  return Math.round((Date.parse(dateKey) - Date.parse(kstDateKey(new Date()))) / MS_PER_DAY);
+}
 
 export function DetailHero({
   game,
@@ -59,7 +71,8 @@ export function DetailHero({
   const brands = soldBrands(game.platforms);
   const hasPlayModes = game.supportsSolo || game.supportsCoop || game.supportsPvp || Boolean(game.localMaxPlayers) || Boolean(game.onlineMaxPlayers);
   const showAlert = !isFree && alertOptions.length > 0;
-  const meta = [game.titleKo ? game.titleEn : null, game.releaseDate ? releaseLineText(formatDate(game.releaseDate), unreleased) : null].filter(
+  // 출시 전이면 출시일은 제목 밑 띠(ReleaseBanner)가 말한다 — 같은 날짜를 두 번 쓰지 않는다
+  const meta = [game.titleKo ? game.titleEn : null, game.releaseDate && !unreleased ? releaseLineText(formatDate(game.releaseDate), false) : null].filter(
     (v): v is string => Boolean(v),
   );
 
@@ -73,6 +86,9 @@ export function DetailHero({
         </div>
         {/* 정보 출처는 커버 밑 한 줄(game-detail/sources 머리 주석) */}
         <SourceRefs refs={game.sourceRefs} />
+        {/* 플레이 방식, 스팀덱, 네이티브 OS, 한국어 — 목업에는 없지만 이 서비스가 모은 "내 조건에 맞나" 값이라 남긴다.
+            커버 판 안 맨 밑에 둔다(머리 주석의 높이 맞추기) */}
+        {(hasPlayModes || game.platforms.length > 0) && <SupportBadges game={game} className="hidden border-t border-line px-0.5 pt-2.5 md:flex" />}
       </div>
 
       <div className="enter-item flex min-w-0 flex-col gap-3" style={stagger(1)}>
@@ -92,6 +108,7 @@ export function DetailHero({
         {/* 자식(DLC, 에디션)일 때만 선다 */}
         <ContentKindHead contentType={game.contentType} parent={game.parent} />
         <h1 className="text-[28px] font-extrabold leading-[1.15] tracking-[-0.035em] text-ink sm:text-[34px] lg:text-[38px]">{title}</h1>
+        {unreleased && game.releaseDate && <ReleaseBanner date={game.releaseDate} />}
         {/* 원제, 출시일, 나라 — 기획서 히어로의 "한글명, 영문명, 출시일". 나라는 국기 한 장과 이름(2026-09-22) */}
         {(meta.length > 0 || origin || game.companies.length > 0 || game.developer || game.publisher) && (
           // 낱말 사이 세로 막대는 각 낱말의 앞머리(::before)다. 줄이 갈리면 둘째 줄 첫 낱말 앞에 막대가 홀로 남는데,
@@ -153,24 +170,8 @@ export function DetailHero({
             <Clamp lines={3}>{game.description}</Clamp>
           </p>
         )}
-        {/* 플레이 방식, 스팀덱, 네이티브 OS, 한국어 — 목업에는 없지만 이 서비스가 모은 "내 조건에 맞나" 값이라 남긴다.
-            설명 바로 아래, 평점 위에 한 줄로 둔다(예전 결론 기둥에서 옮겼다) */}
-        {(hasPlayModes || game.platforms.length > 0) && (
-          <div className="flex flex-wrap items-center gap-1.5">
-            <MultiplayerBadges
-              localMaxPlayers={game.localMaxPlayers}
-              onlineMaxPlayers={game.onlineMaxPlayers}
-              supportsSolo={game.supportsSolo}
-              supportsCoop={game.supportsCoop}
-              supportsPvp={game.supportsPvp}
-            />
-            <PcSupportBadges platforms={game.platforms} />
-            <KoreanSupportBadges platforms={game.platforms} />
-          </div>
-        )}
-        <div className="mt-auto pt-2">
-          <CriticScores game={game} unreleased={unreleased} />
-        </div>
+        {/* 좁은 화면은 한 기둥이라 높이 맞추기가 필요 없다 — 배지가 커버 밑에 있으면 제목이 한 화면 아래로 밀려 설명 뒤에 둔다 */}
+        {(hasPlayModes || game.platforms.length > 0) && <SupportBadges game={game} className="flex md:hidden" />}
       </div>
 
       <div className="enter-item flex min-w-0 flex-col gap-3 md:col-span-2 lg:col-span-1" style={stagger(2)}>
@@ -200,8 +201,38 @@ export function DetailHero({
         <Suspense fallback={null}>
           <GamePostsLink gameId={game.id} slug={game.slug} />
         </Suspense>
+        <CriticScores game={game} unreleased={unreleased} />
         <PlaytimeTiles playtime={game.playtime} className="flex-1" />
       </div>
     </section>
+  );
+}
+
+/** 출시 전 게임의 출시일 띠 — 날짜와 남은 날. 원제 줄의 작은 회색 글자로는 "곧 나온다" 가 안 읽혔다(2026-10-28 사용자) */
+function ReleaseBanner({ date }: { date: string }) {
+  const days = daysUntil(date.slice(0, 10));
+  return (
+    <p className="inline-flex w-fit flex-wrap items-center gap-x-2.5 gap-y-1 rounded-[var(--radius-md)] bg-acc-soft px-3.5 py-2 text-[14.5px] font-bold text-acc">
+      <CalendarIcon size={17} />
+      <span>{releaseLineText(formatDate(date), true)}</span>
+      {days > 0 && <span className="rounded-full bg-surface px-2 py-0.5 text-[12.5px] font-extrabold tabular-nums text-acc shadow-hair">{D.releaseDday(days)}</span>}
+    </p>
+  );
+}
+
+/** 플레이 방식, 스팀덱, 네이티브 OS, 한국어 배지 줄. 넓은 화면은 커버 판 밑, 좁은 화면은 설명 뒤에 선다(머리 주석) */
+function SupportBadges({ game, className }: { game: GameDetail; className?: string }) {
+  return (
+    <div className={cn("flex-wrap items-center gap-1.5", className)}>
+      <MultiplayerBadges
+        localMaxPlayers={game.localMaxPlayers}
+        onlineMaxPlayers={game.onlineMaxPlayers}
+        supportsSolo={game.supportsSolo}
+        supportsCoop={game.supportsCoop}
+        supportsPvp={game.supportsPvp}
+      />
+      <PcSupportBadges platforms={game.platforms} />
+      <KoreanSupportBadges platforms={game.platforms} />
+    </div>
   );
 }

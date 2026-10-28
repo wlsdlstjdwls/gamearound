@@ -209,7 +209,7 @@ export default async function UpcomingPage({ searchParams }: Props) {
   const loaded = await nullIfDbUnavailable(Promise.all([getUpcomingMonths(filter), getUpcomingGenres()]));
   if (!loaded) {
     return (
-      <Page gap={30}>
+      <Page gap={20}>
         {remember}
         <UpcomingHead all={all} />
         <DbUnavailable retryHref={ROUTES.upcoming} />
@@ -229,14 +229,15 @@ export default async function UpcomingPage({ searchParams }: Props) {
   // 한 화면을 틀 하나로 감싼다 — 막대, 보기 전환, 쪽 번호 어느 것을 눌러도 같은 결과 자리(PendingRegion)가 흐려진다
   return (
     <NavPendingScope>
-      <Page gap={30}>
+      {/* 틈 20: 머리, 막대, 달 띠, 달 제목이 30 씩 떨어져 "컨텐츠끼리 공백이 너무 많다"(2026-10-28 사용자). 달 띠는 제 높이(60)가 이미 여백이다 */}
+      <Page gap={20}>
         {remember}
         <UpcomingHead all={all} filter={filter} />
 
         {/* 요즘 많이 찾는 장르 칩은 걷었다(2026-10-27 사용자) — 장르 드롭다운과 같은 일을 두 번 했다. 되살리면 topGenres 에 genres 앞 넷을 넘긴다 */}
         <UpcomingFilterBar filter={filter} place={{ all, month: all ? undefined : requested }} genres={genres} topGenres={[]} />
 
-        <PendingRegion className="flex flex-col gap-[30px]">
+        <PendingRegion className="flex flex-col gap-5">
           {all ? (
             <section aria-label={M.viewAll} className="flex flex-col gap-4">
               <SectionHead title={M.viewAll} note={upcomingCountText(total)} />
@@ -276,9 +277,7 @@ export default async function UpcomingPage({ searchParams }: Props) {
           </Suspense>
         )}
 
-        {/* 각주는 면을 깔지 않는다 — 이 화면에서 면을 가진 것은 빈 상태 안내 하나뿐이고,
-            각주까지 판을 쓰면 읽는 순서가 "각주가 먼저" 로 뒤집힌다 */}
-        <p className="max-w-[760px] text-[12px] leading-[1.8] text-dim">{M.basis}</p>
+        {/* 출시일 기준 각주는 걷었다(2026-10-28 사용자) — 기준은 upcoming 서비스 주석에 남는다 */}
       </Page>
     </NavPendingScope>
   );

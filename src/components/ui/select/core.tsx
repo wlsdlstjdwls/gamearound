@@ -104,11 +104,15 @@ export function SelectCore({
       setInline(true);
       return () => setInline(false);
     }
-    const measure = () => {
+    const measure = (e?: Event) => {
+      // 목록 자신의 스크롤은 칸 자리를 안 바꾼다. 이걸 거르지 않으면 목록을 굴릴 때마다 자리를 새 객체로 다시 세웠고,
+      // 그 바람에 아래 "훑는 자리 끌어오기" 가 매번 돌아 끌던 스크롤바를 제자리로 되돌렸다(2026-10-28 사용자 "끌면 버벅인다")
+      if (e && listRef.current?.contains(e.target as Node)) return;
       const r = button.getBoundingClientRect();
       const below = window.innerHeight - r.bottom;
       const up = below < Math.min(LIST_MAX_H, options.length * OPTION_ROW_H) && r.top > below;
-      setPlace(up ? { left: r.left, width: r.width, bottom: window.innerHeight - r.top + LIST_GAP } : { left: r.left, width: r.width, top: r.bottom + LIST_GAP });
+      const next: Place = up ? { left: r.left, width: r.width, bottom: window.innerHeight - r.top + LIST_GAP } : { left: r.left, width: r.width, top: r.bottom + LIST_GAP };
+      setPlace((prev) => (prev && prev.left === next.left && prev.width === next.width && prev.top === next.top && prev.bottom === next.bottom ? prev : next));
     };
     measure();
     window.addEventListener("scroll", measure, { capture: true, passive: true });
@@ -137,11 +141,20 @@ export function SelectCore({
     };
   }, [open]);
 
-  // 열리면 훑는 자리를 보이는 곳으로 끌어온다. 장르처럼 스무 개가 넘으면 현재 값이 아래에 숨어 있다
+  // 열리면 훑는 자리를 보이는 곳으로 끌어온다. 장르처럼 스무 개가 넘으면 현재 값이 아래에 숨어 있다.
+  // 열린 뒤에는 키보드로 옮길 때만 끌어온다 — 마우스가 지나가며 바꾼 훑는 자리까지 끌어오면 손으로 굴리는 스크롤과 싸운다
+  const keyMoved = useRef(false);
+  const placed = place !== null || inline;
   useEffect(() => {
-    if (!open) return;
+    if (!open || !placed) return;
     listRef.current?.querySelector<HTMLElement>('[data-active="true"]')?.scrollIntoView({ block: "nearest" });
-  }, [open, activeIdx, place]);
+    // 연 순간 한 번만. 훑는 자리는 이 효과의 조건이 아니다(아래 효과가 키보드 몫을 맡는다)
+  }, [open, placed]);
+  useEffect(() => {
+    if (!open || !keyMoved.current) return;
+    keyMoved.current = false;
+    listRef.current?.querySelector<HTMLElement>('[data-active="true"]')?.scrollIntoView({ block: "nearest" });
+  }, [open, activeIdx]);
 
   const choose = (i: number) => {
     const opt = options[i];
@@ -181,15 +194,18 @@ export function SelectCore({
     const move = e.key === "ArrowDown" ? 1 : e.key === "ArrowUp" ? -1 : 0;
     if (move !== 0) {
       e.preventDefault();
+      keyMoved.current = true;
       setActiveIdx((i) => Math.min(options.length - 1, Math.max(0, i + move)));
       return;
     }
     if (e.key === "Home") {
       e.preventDefault();
+      keyMoved.current = true;
       setActiveIdx(0);
     }
     if (e.key === "End") {
       e.preventDefault();
+      keyMoved.current = true;
       setActiveIdx(options.length - 1);
     }
   };

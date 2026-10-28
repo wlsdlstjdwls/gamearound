@@ -17,13 +17,14 @@ export const FILTER_LABEL = "text-[13.5px] font-bold tracking-[-0.02em] text-ink
 
 /**
  * 목록 막대의 플랫폼 넷(기획서 v2.0 S-02: PC, PlayStation, XBOX SERIES X|S, NINTENDO SWITCH).
+ * Xbox 는 세대 이름 없이 "Xbox" 로만 쓴다(2026-10-28 사용자) — 값 xbox 가 이미 세대를 묶고, 다른 칸(PlayStation)도 세대를 안 쓴다.
  * 값은 기존 주소 값 그대로다 — PC 는 갈래(pc), 나머지는 같은 기기의 세대 묶음(lib/platform 의 PLATFORM_BRANDS)이다.
  * 갈래 "콘솔" 은 넷에 없다. 주소로 들어오면 막대가 그 값을 한 칸 더 세워 보여 준다(bar 주석).
  */
 export const LIST_PLATFORM_CHOICES = [
   { label: "PC", values: ["pc"] },
   { label: "PlayStation", values: ["ps5", "ps4"] },
-  { label: "Xbox Series X|S", values: ["xbox"] },
+  { label: "Xbox", values: ["xbox"] },
   { label: "Nintendo Switch", values: ["switch", "switch2"] },
 ] as const;
 

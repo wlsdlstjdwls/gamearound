@@ -45,7 +45,9 @@ export function Rail({ items, labels }: { items: Array<{ key: string; node: Reac
       <ul
         ref={ref}
         onScroll={measure}
-        className={cn(RAIL_TRACK_CLASS, "sm:mx-0 sm:scroll-px-0 sm:px-0")}
+        // 넓은 화면에서도 카드 그림자 몫(3)만큼 바깥으로 넓혀 그 안을 비운다. 0 으로 붙이면 overflow 가 그림자를 직선으로 잘라
+        // 줄 전체가 바탕과 다른 판 위에 얹힌 것처럼 보였다(2026-10-28 사용자 "배경이랑 분리되는 느낌")
+        className={cn(RAIL_TRACK_CLASS, "sm:-mx-3 sm:-my-3 sm:scroll-px-3 sm:px-3 sm:py-3")}
       >
         {items.map((it) => (
           <li key={it.key} className={cn(RAIL_ITEM_CLASS, "sm:w-[calc((100%-2rem)/3)] lg:w-[calc((100%-3rem)/4)]")}>

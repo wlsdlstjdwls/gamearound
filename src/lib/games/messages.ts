@@ -277,7 +277,6 @@ export const GAMES_FILTER_MESSAGES = {
    * 결과 줄 왼쪽 안내(목업 목록 머리, 기획서 v2.0 p8 "전역 검색과 별개로 현재 목록에만 적용").
    * 머리띠 검색창과 이 막대의 검색창이 둘 다 서 있어, 어느 쪽이 무엇을 거르는지 말해 두지 않으면 헷갈린다
    */
-  listScopeNote: "검색과 필터는 이 목록에만 적용돼요.",
   /** 결과 줄 오른쪽 건수(목업 "N개 결과") */
   resultCount: (n: number) => `${n.toLocaleString("ko-KR")}개 결과`,
 } as const;
@@ -312,6 +311,8 @@ export const GAME_MESSAGES = {
    *  2026-10-27 되돌렸다(사용자: "출시하지 않는 플랫폼은 동일하게 서비스 안 한다고"). "확인 중" 은 끝나지 않는 기다림으로 읽혀
    *  콜 오브 듀티 상세의 빈 Nintendo 카드가 고장처럼 보였다. 출시 예정인 플랫폼은 행이 있어 이 타일이 아니라 출시 예정 카드가 선다 */
   storeAbsent: "서비스하지 않아요",
+  /** 빈 타일의 둘째 줄 — 비어 있는 이유가 아니라 앞으로를 말한다(2026-10-28 사용자: 빈 카드에 문구라도) */
+  storeAbsentNote: "이 플랫폼으로 나오면 가격을 바로 보여 드려요.",
   /** 스토어는 찾았는데 값을 아직 못 받은 자리. 전에는 "-" 한 글자라 0원인지 고장인지 몰랐다 */
   pricePending: "금액은 확인 중이에요",
   patchHeading: "패치 기록",
@@ -423,7 +424,6 @@ export const UPCOMING_MESSAGES = {
   tbaTitle: "출시일 미정",
   tbaNote: "일정이 공개되면 월별 일정에 자동으로 표시돼요.",
   tbaDay: "미정",
-  basis: "스토어마다 출시일이 다르면 가장 이른 날짜로 세웠어요. PlayStation 은 출시일을 공개하지 않아 다른 스토어에도 없는 게임은 담기지 않아요.",
 } as const;
 
 /** 미정 상자 제목 옆 건수. 넘치는 몫은 건수로만 알린다(services/games/upcoming 의 UPCOMING_TBA_LIMIT) */

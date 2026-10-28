@@ -9,6 +9,7 @@ import { SellersSection } from "@/components/shops/sellers-section";
 import { SectionHead, sectionCardClass } from "@/components/ui/page";
 import { Bone } from "@/components/ui/skeleton";
 import { DETAIL_MESSAGES as D } from "@/lib/games/detail-messages";
+import { formatDate } from "@/lib/format";
 import { gamePricesPath } from "@/lib/routes";
 import { SELLING_MESSAGES } from "@/lib/shops/listing-messages";
 import type { GameDetail } from "@/server/services/games";
@@ -20,6 +21,16 @@ import { getCurrentUser } from "@/server/services/users";
 /** 본문 그래프가 그리는 기간(기획서 v2.0 S-05: 1개월~1년). 1년보다 긴 값은 전용 화면(/prices)이 맡는다 */
 const CHART_DAYS = 365;
 const CHART_RANGE_KEYS = ["1m", "3m", "6m", "1y"] as const;
+/**
+ * 기록이 이 날수보다 짧으면 그래프 밑에 "언제부터 모으는지" 한 줄을 단다. 가격 기록은 2026-10-26 새 DB 에서 다시 쌓기 시작해
+ * 대부분 게임의 선이 점 몇 개뿐이라 그래프가 고장처럼 비어 보였다(2026-10-28 사용자). 한 달이면 1개월 칩이 다 차서 줄이 필요 없다
+ */
+const SHORT_HISTORY_DAYS = 30;
+const MS_PER_DAY = 24 * 60 * 60 * 1000;
+
+function isShortHistory(firstAt: string): boolean {
+  return Date.now() - Date.parse(firstAt) < SHORT_HISTORY_DAYS * MS_PER_DAY;
+}
 
 /**
  * 로그인했으면 등록한 기기, 아니면 빈 목록. 두 자리(판정 칸, 제목 옆 한 줄)가 같은 답을 써야 해서
@@ -104,9 +115,14 @@ export async function PriceChartSlot({ slug }: { slug: string }) {
       </EmptyLine>
     );
   }
+  // 가장 이른 기록 시각. 점은 계열마다 시간순이라 첫 점만 견준다
+  const firstAt = series.map((s) => s.points[0]?.t).filter((t): t is string => Boolean(t)).sort()[0] ?? null;
   return (
     <section aria-labelledby="chart-heading" className={sectionCardClass("min-w-0")}>
       <PriceChart series={series} head={<ChartHead slug={slug} />} rangeKeys={CHART_RANGE_KEYS} />
+      {firstAt && isShortHistory(firstAt) && (
+        <p className="mt-3 rounded-[var(--radius-md)] bg-surface-2 px-3.5 py-2.5 text-[12.5px] leading-[1.6] text-mut">{D.chartShort(formatDate(firstAt))}</p>
+      )}
     </section>
   );
 }

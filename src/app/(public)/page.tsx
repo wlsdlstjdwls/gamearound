@@ -146,7 +146,7 @@ export default async function HomePage() {
       {/* 3 — 인디 개발자가 직접 올린 게임. 몇 장 안 되면 줄째 안 선다(lib/indie/constants 의 INDIE_HOME_MIN). 첫 칸은 광고 자리(기획서 4.2) */}
       {indie.length > 0 && (
         <section aria-labelledby="indie-heading" className="flex flex-col gap-3">
-          <SectionHead id="indie-heading" title={INDIE_MESSAGES.homeTitle} note={INDIE_MESSAGES.homeNote} action={<SeeAll href={ROUTES.indie} />} />
+          <SectionHead id="indie-heading" title={INDIE_MESSAGES.homeTitle} action={<SeeAll href={ROUTES.indie} />} />
           <Rail
             labels={INDIE_MESSAGES.rail}
             items={[

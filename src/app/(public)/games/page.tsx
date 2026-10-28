@@ -140,7 +140,6 @@ async function Results({ filter }: { filter: GameListFilter }) {
       {/* 결과 줄(목업 목록 머리): 왼쪽은 이 막대가 무엇을 거르는지, 오른쪽 끝은 건수(기획서 v2.0 S-02 "결과 수 표시").
           건수가 제목(h2)인 이유는 이 줄 아래 격자의 이름이 곧 "몇 개가 나왔나" 라서다. 정렬 이름은 막대의 정렬 상자가 이미 말한다 */}
       <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1">
-        <p className="text-[12.5px] text-dim">{GAMES_FILTER_MESSAGES.listScopeNote}</p>
         <h2 className="ml-auto text-[15px] font-extrabold tabular-nums text-ink sm:text-[17px]">{GAMES_FILTER_MESSAGES.resultCount(result.total)}</h2>
       </div>
       {/* 쪽 번호는 누른 순간 켜지고 목록은 흐려진 채 기다린다(ui/nav-pending). 쪽을 바꾸면 맨 위로 간다(Pagination 의 scroll) */}

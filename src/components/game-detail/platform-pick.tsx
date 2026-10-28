@@ -41,8 +41,10 @@ export function PickableTile({ brand, label, id, className, children }: { brand:
       className={cn(
         className,
         pick && "cursor-pointer transition-[box-shadow,transform] duration-base",
-        // 고른 카드는 파랑 고리 + 살짝 떠오름. 최저가 표시(딱지)와 겹쳐도 둘은 다른 말이다 — 고리는 "지금 보는 것", 딱지는 "가장 싼 것"
-        on && "shadow-[0_0_0_2px_var(--acc),var(--elev-card-hover)] -translate-y-0.5",
+        // 고른 카드는 파랑 고리 + 살짝 떠오름. 최저가 표시(딱지)와 겹쳐도 둘은 다른 말이다 — 고리는 "지금 보는 것", 딱지는 "가장 싼 것".
+        // 끝의 ! 는 카드 바탕 그림자(shadow-hair)를 이기기 위해서다. cn 은 클래스를 합치지 않아 둘 중 CSS 뒤에 나온 쪽이 이겼고,
+        // 고리가 통째로 안 보였다(2026-10-28 사용자 "플랫폼 선택돼도 테두리가 안 보인다")
+        on && "-translate-y-0.5 shadow-[0_0_0_2px_var(--acc),var(--elev-card-hover)]!",
       )}
     >
       {pick && (
