@@ -78,10 +78,18 @@ export function SubNav() {
         ref={listRef}
         className="relative mx-auto flex w-full max-w-[var(--page-w)] gap-1 overflow-x-auto px-2 transition-[translate] duration-slow ease-out-emph [scrollbar-width:none] sm:px-4"
       >
-        {section.subs.map((s) => {
+        {section.subs.map((s, i) => {
           const current = s.href === on;
+          // 내 것 묶음의 첫 칸 앞에 가는 세로선 하나 — 칸 이름 없이 "여기부터는 내 화면" 을 가른다(lib/nav 의 mine)
+          const split = s.mine && !section.subs[i - 1]?.mine;
           return (
-            <li key={s.href} className="shrink-0">
+            <li
+              key={s.href}
+              className={cn(
+                "shrink-0",
+                split && "relative ml-2 pl-2 before:absolute before:left-0 before:top-1/2 before:h-4 before:w-px before:-translate-y-1/2 before:bg-line",
+              )}
+            >
               <Link
                 href={s.href}
                 aria-current={current ? "page" : undefined}

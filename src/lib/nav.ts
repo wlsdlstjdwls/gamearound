@@ -41,6 +41,11 @@ export type NavSub = {
    * 이 규칙이 없으면 /indie/mine 아래라 가장 긴 경로 규칙에 따라 "등록현황" 이 켜진다
    */
   childLeaves?: readonly { parent: string; leaf: string }[];
+  /**
+   * 로그인한 사람 자신의 화면(등록현황, 내 게임 통계). 띠에서 공개 칸 뒤에 가는 선을 두고 따로 묶는다 —
+   * 라운지 띠 여섯 칸이 한 줄로 서 있으면 남의 글을 읽는 자리와 내 것을 관리하는 자리가 구별되지 않았다(2026-10-28 메뉴 정리)
+   */
+  mine?: boolean;
 };
 
 export type NavSection = {
@@ -100,11 +105,12 @@ export const NAV_SECTIONS: readonly NavSection[] = [
       { label: "내가 만든 게임", href: ROUTES.indie },
       { label: "개발일지", href: ROUTES.loungeDevlogs },
       { label: "질문/피드백", href: ROUTES.loungeQna },
-      { label: "등록현황", href: ROUTES.indieMine, childQueries: [{ parent: ROUTES.indie, query: { [INDIE_FROM_PARAM]: INDIE_FROM.mine } }] },
+      { label: "등록현황", href: ROUTES.indieMine, mine: true, childQueries: [{ parent: ROUTES.indie, query: { [INDIE_FROM_PARAM]: INDIE_FROM.mine } }] },
       // 플레이테스트 관리는 통계 화면의 게임 줄 단추로 들어온다
       {
         label: "내 게임 통계",
         href: ROUTES.indieStats,
+        mine: true,
         childLeaves: [{ parent: ROUTES.indieMine, leaf: INDIE_MINE_LEAF.playtest }],
       },
       // 광고, 멤버십(/indie/mine/plans)과 결제, 광고 성과, 광고 걸기는 메뉴 칸이 없다(10-28 사용자: "메뉴로 따로 두기보다 다른 화면에서 자연스럽게").
