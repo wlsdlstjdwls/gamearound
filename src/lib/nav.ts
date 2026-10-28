@@ -107,14 +107,8 @@ export const NAV_SECTIONS: readonly NavSection[] = [
         href: ROUTES.indieStats,
         childLeaves: [{ parent: ROUTES.indieMine, leaf: INDIE_MINE_LEAF.playtest }],
       },
-      // 돈을 내는 화면은 통계와 따로 선다(2026-10-28 사용자: "결제하는 게 통계 화면에 있는 게 맞나"). 멤버십, 광고 성과, 결제 내역,
-      // 광고 걸기가 이 칸 아래다 — 별칭이 없으면 /indie/mine 아래라 "등록현황" 이 켜진다
-      {
-        label: "광고, 멤버십",
-        href: ROUTES.makerPlans,
-        aliases: [ROUTES.indieAds, ROUTES.indiePayments, ROUTES.membership],
-        childLeaves: [{ parent: ROUTES.indieMine, leaf: INDIE_MINE_LEAF.boost }],
-      },
+      // 광고, 멤버십(/indie/mine/plans)과 결제, 광고 성과, 광고 걸기는 메뉴 칸이 없다(10-28 사용자: "메뉴로 따로 두기보다 다른 화면에서 자연스럽게").
+      // 등록현황, 내 게임 통계, 내 게임 상세의 판(payments/plan-nudge)과 단추로 들어온다. 모두 /indie/mine 아래라 "등록현황" 이 켜진다
     ],
   },
 ];
@@ -146,8 +140,9 @@ export const NAV_TRAIL_MESSAGES = {
 /**
  * 메뉴 소속이 없어도 "이전 화면" 을 세우는 화면(목업의 내 활동, 가격 알림, 찜 목록, 설정). 계정 메뉴에서 들어오는 자리라
  * 하위 메뉴 띠가 없어 돌아갈 길이 머리띠뿐이다.
+ * 광고, 멤버십 화면 넷도 같다(10-28) — 메뉴 칸 없이 등록현황, 통계, 내 게임 상세에서 들어오므로 되돌아가기가 곧 길이다.
  */
-export const TRAIL_BACK_ONLY_PATHS: readonly string[] = [ROUTES.me, ROUTES.alerts, ROUTES.wishlist, ROUTES.settings];
+export const TRAIL_BACK_ONLY_PATHS: readonly string[] = [ROUTES.me, ROUTES.alerts, ROUTES.wishlist, ROUTES.settings, ROUTES.makerPlans, ROUTES.membership, ROUTES.indieAds, ROUTES.indiePayments];
 
 /**
  * 바로 아래 한 칸(<부모>/<id>)에 "이전 화면" 만 세우는 화면. 인디 상세는 끝 낱말(게임 이름)이 데이터라 경로 줄은 화면이 직접 그리고

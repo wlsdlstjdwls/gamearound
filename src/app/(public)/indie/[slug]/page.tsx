@@ -43,7 +43,8 @@ import { INDIE_FROM_PARAM, parseIndieFrom, type IndieFrom } from "@/lib/indie/qu
 import { classifyTraffic } from "@/lib/indie/traffic";
 import { headers } from "next/headers";
 import { firstParam } from "@/lib/games-query";
-import { indieEditPath, indieOutPath, indiePath, indiePlaytestPath, ROUTES } from "@/lib/routes";
+import { indieBoostPath, indieEditPath, indieOutPath, indiePath, indiePlaytestPath, ROUTES } from "@/lib/routes";
+import { PLANS_MESSAGES } from "@/lib/payments/plans-messages";
 import { decodeSlugParam } from "@/lib/slug";
 import { getIndiePostBySlug } from "@/server/services/indie";
 import { getCurrentUser } from "@/server/services/users";
@@ -271,6 +272,12 @@ export default async function IndieDetailPage({ params, searchParams }: Props) {
           {live && !isOwner && <IndieFollowButton developerUserId={post.authorUserId} />}
 
           <div className="flex flex-wrap items-center justify-end gap-3 border-t border-line pt-3 text-[12.5px]">
+            {/* 내 게임에 광고 걸기 — 광고, 멤버십 메뉴 칸 대신 내가 보는 내 게임 화면에 둔다(10-28) */}
+            {isOwner && live && (
+              <Link href={indieBoostPath(post.id)} className="tap inline-flex items-center font-bold text-acc hover:underline">
+                {PLANS_MESSAGES.nudgeBoost}
+              </Link>
+            )}
             {isOwner && live && (
               <Link href={indiePlaytestPath(post.id)} className="tap inline-flex items-center text-acc hover:underline">
                 {PLAYTEST_MESSAGES.listTitle}

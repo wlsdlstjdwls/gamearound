@@ -5,7 +5,10 @@
 // 반려 칸을 더한 이유: 기획서와 목업은 세 칸이지만 반려(협의 항목)를 실제로 두고 있어서, 세 칸이면 "전체" 가 나머지 둘의 합과 맞지 않는다.
 // 줄(2026-10-28 사용자: "밋밋하다, 이미지도 설명도 없다"): 왼쪽 대표 그림, 가운데 이름과 한 줄 소개와 "플랫폼, 장르 | 신청일",
 // 오른쪽 진행 단계 셋(indie/review-steps)과 한 줄 설명, 할 일 단추. 줄은 차례로 떠오른다(stagger). 상태 알약은 단계 그림이 대신한다.
+// 공개 중인 게임 줄에는 "광고 걸기", 목록 위에는 광고 안내 판(payments/plan-nudge)을 둔다 — 광고, 멤버십 메뉴 칸 대신(10-28).
 // 반려된 글은 "고쳐서 다시 신청" 으로 고치기 화면에 간다 — 저장하면 다시 승인 대기다(services/indie/write).
+import { PlanNudge } from "@/components/payments/plan-nudge";
+import { PLANS_MESSAGES } from "@/lib/payments/plans-messages";
 import type { Metadata } from "next";
 import Link from "next/link";
 import { WriteLink } from "@/components/community/write-link";
@@ -25,7 +28,7 @@ import { firstParam } from "@/lib/games-query";
 import { INDIE_POSTS_PER_USER_MAX } from "@/lib/indie/constants";
 import { genreLabels, INDIE_FORM_MESSAGES as M, INDIE_MESSAGES, INDIE_PLATFORM_LABEL, INDIE_REVIEW_LABEL, INDIE_REVIEW_MESSAGES as RV } from "@/lib/indie/messages";
 import { indieDetailHref, INDIE_FROM } from "@/lib/indie/query";
-import { indieEditPath, ROUTES } from "@/lib/routes";
+import { indieBoostPath, indieEditPath, ROUTES } from "@/lib/routes";
 import { requireUserOrRedirect } from "@/server/auth/guards";
 import { getMyMonthRanks, listMyIndiePosts } from "@/server/services/indie";
 
@@ -99,6 +102,8 @@ export default async function IndieMinePage({ searchParams }: Props) {
         <Tile label={INDIE_REVIEW_LABEL.rejected} value={rejected} tone="rejected" i={3} />
       </div>
 
+      {/* 공개 중인 게임이 있을 때만 광고 안내 판 — 걸 게임이 없는 사람에게 값부터 내밀지 않는다(10-28, 메뉴 대신 화면 안 입구) */}
+      {posts.some((p) => p.review === "approved" && p.status === "published") && <PlanNudge />}
       {posts.length === 0 ? (
         <EmptyState title={M.mineEmpty} description={RV.emptyLead} action={{ href: ROUTES.indieNew, label: INDIE_MESSAGES.register }} />
       ) : (
@@ -145,6 +150,12 @@ export default async function IndieMinePage({ searchParams }: Props) {
                       <Link href={to} className={buttonClass({ variant: p.review === "approved" ? "soft" : "secondary", size: "sm" })}>
                         {p.review === "approved" ? RV.viewGame : RV.edit}
                       </Link>
+                      {/* 공개 중인 게임에만 — 광고는 공개 글에만 걸린다(services/payments 의 ownedLiveTarget) */}
+                      {p.review === "approved" && p.status === "published" && (
+                        <Link href={indieBoostPath(p.id)} className={buttonClass({ variant: "accent", size: "sm" })}>
+                          {PLANS_MESSAGES.nudgeBoost}
+                        </Link>
+                      )}
                     </div>
                   )}
                 </div>

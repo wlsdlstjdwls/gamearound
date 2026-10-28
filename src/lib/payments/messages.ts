@@ -34,8 +34,8 @@ export const PRODUCT_COPY: Record<ProductKey, { title: string; lead: string; poi
 /** 구매 화면의 "이것만 / 같이" 고르기(2026-10-27 사용자 확정: 낱개 6,900원, 같이 9,900원) */
 export const BUNDLE_MESSAGES = {
   legend: "무엇을 살까요",
-  single: "이것만",
-  bundle: "같이 사기",
+  single: "스파크",
+  bundle: "스포트라이트",
   bundleNoteIndie: "내 홍보 글도 홍보 목록 위에 7일 고정해요",
   bundleNotePin: "내 인디 게임도 인디 목록 맨 위에 7일 올려요",
   /** 그은 정가를 화면 읽기 프로그램이 읽을 때 붙는 말 */

@@ -3,7 +3,7 @@
 // 순서는 싼 것부터 — 낱개 → 묶음(추천) → 멤버십. 사용자(10-28 셋째 요청): "왼쪽에서 오른쪽으로 갈수록 비싼 대신 혜택도 많게".
 // 윗단 카드는 아랫단의 모든 것을 품는다. 그래서 윗단은 "낱개에 더해", "묶음에 더해" 머리 아래에 **더해지는 것만** 보라 "+" 줄로 적는다 —
 // 같은 줄을 카드마다 되풀이하면 무엇이 달라지는지가 묻힌다(사용자: "한 단계 높을수록 바뀌는 점을 강조해야지, 티가 안 난다").
-// 가운데 묶음만 테두리로 띄워 주로 팔 상품을 가리킨다.
+// 가운데 묶음만 테두리로 띄워 주로 팔 상품을 가리킨다. 맨 윗단 "모든 혜택" 은 채운 보라 딱지 — 한 화면에 하나뿐인 강조다.
 //
 // 그은 정가는 근거가 있는 값만 쓴다: 묶음은 낱개 둘의 합(BUNDLE_LIST_PRICE). 멤버십 이용권 환산(13,800원)은 멤버십 값보다 낮아
 // 정가로 긋지 않는다 — 긋는 순간 없는 정가가 된다(표시광고법).
@@ -70,12 +70,13 @@ function Adds({ base, lines }: { base: string; lines: readonly string[] }) {
   );
 }
 
-/** 이름, 딱지, 한 줄 정의 */
-function Head({ name, tag, summary }: { name: string; tag?: React.ReactNode; summary: string }) {
+/** 작은 줄(기간 | 크기), 이름, 딱지, 한 줄 정의. 세 카드가 같은 꼴이라 이름만 바꿔 읽어도 단계가 보인다 */
+function Head({ eyebrow, name, tag, summary }: { eyebrow: string; name: string; tag?: React.ReactNode; summary: string }) {
   return (
     <div className="flex flex-col gap-1">
+      <p className="text-[12px] font-semibold text-mut">{eyebrow}</p>
       <div className="flex items-center justify-between gap-2">
-        <h2 className="text-[17px] font-bold text-ink">{name}</h2>
+        <h2 className="text-[20px] font-extrabold tracking-[-0.03em] text-ink">{name}</h2>
         {tag}
       </div>
       <p className="text-[14px] font-semibold text-ink-2">{summary}</p>
@@ -109,7 +110,7 @@ export function PlanCards({ membership, single, bundle, bundleNeedsPromo }: Prop
   return (
     <div className="grid items-stretch gap-3 lg:grid-cols-3">
       <section className={sectionCardClass("flex flex-col gap-4")}>
-        <Head name={M.singleName} summary={M.singleSummary} />
+        <Head eyebrow={M.singleEyebrow} name={M.singleName} summary={M.singleSummary} />
         <div className={PRICE_BOX}>
           <span className={BIG}>{formatPrice(PRODUCTS.boost_indie_7d.amount)}</span>
         </div>
@@ -120,7 +121,7 @@ export function PlanCards({ membership, single, bundle, bundleNeedsPromo }: Prop
       </section>
 
       <section className={sectionCardClass("flex flex-col gap-4 ring-2 ring-acc")}>
-        <Head name={M.bundleName} summary={M.bundleSummary} tag={<Tag tone="acc">{M.bundleTag}</Tag>} />
+        <Head eyebrow={M.bundleEyebrow} name={M.bundleName} summary={M.bundleSummary} tag={<Tag tone="acc">{M.bundleTag}</Tag>} />
         <div className={PRICE_BOX}>
           <span className="flex flex-wrap items-center gap-2">
             <s className="text-[15px] font-medium tabular-nums text-dim">
@@ -138,7 +139,7 @@ export function PlanCards({ membership, single, bundle, bundleNeedsPromo }: Prop
       </section>
 
       <section className={sectionCardClass("flex flex-col gap-4")}>
-        <Head name={M.membershipName} summary={M.membershipSummary} tag={membership ? <Tag tone="ok">{M.membershipActive}</Tag> : <Tag tone="outline">{M.membershipTag}</Tag>} />
+        <Head eyebrow={M.membershipEyebrow} name={M.membershipName} summary={M.membershipSummary} tag={membership ? <Tag tone="ok">{M.membershipActive}</Tag> : <Tag tone="plumSolid">{M.membershipTag}</Tag>} />
         <div className={PRICE_BOX}>
           <span className={BIG}>
             <span className="mr-1 text-[13px] font-semibold text-mut">{M.perMonth}</span>

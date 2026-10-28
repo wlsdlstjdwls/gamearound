@@ -20,12 +20,12 @@ describe("resolveNav", () => {
     expect(resolveNav("/indie/some-game", q()).sub?.label).toBe("내가 만든 게임");
   });
 
-  it("플레이테스트 관리는 내 게임 통계, 광고 걸기와 결제 화면은 광고, 멤버십을 켠다", () => {
+  it("플레이테스트 관리는 내 게임 통계, 광고 걸기와 결제 화면은 메뉴 칸 없이 등록현황을 켠다", () => {
     expect(resolveNav("/indie/mine/abc/playtest", q()).sub?.label).toBe("내 게임 통계");
-    expect(resolveNav("/indie/mine/abc/boost", q()).sub?.label).toBe("광고, 멤버십");
-    for (const path of ["/indie/mine/plans", "/indie/mine/membership", "/indie/mine/ads", "/indie/mine/payments"]) {
-      expect(resolveNav(path, q()).sub?.label).toBe("광고, 멤버십");
+    for (const path of ["/indie/mine/abc/boost", "/indie/mine/plans", "/indie/mine/membership", "/indie/mine/ads", "/indie/mine/payments"]) {
+      expect(resolveNav(path, q()).sub?.label).toBe("등록현황");
     }
+    expect(trailKind("/indie/mine/plans", resolveNav("/indie/mine/plans", q()).sub)).toBe("back");
     // 고치기(/indie/mine/<id>)는 그대로 등록현황
     expect(resolveNav("/indie/mine/abc", q()).sub?.label).toBe("등록현황");
   });
