@@ -15,6 +15,8 @@
 //   판이 지저분해 보이고 단추인지 장식인지 헷갈렸다. 할인, 출시 예정은 바로 아래 줄들이 이미 보여 준다
 // - 검색 단추 위로 빛이 몇 초에 한 번 비스듬히 스친다(.glint-sweep)
 // 전부 CSS 이고, 움직임 줄이기 설정은 전역 킬스위치가 끈다.
+//
+// 2026-10-28 위아래를 줄였다(사용자: "히어로가 너무 크다"). 첫 화면에서 할인 줄이 더 빨리 보이게 하려는 것이다 — 문장 둘과 검색칸은 그대로다.
 import { SearchIcon } from "@/components/ui/icons";
 import { cn } from "@/lib/cn";
 import { HOME_MESSAGES as M } from "@/lib/home/messages";
@@ -45,7 +47,7 @@ export function HomeHero() {
   return (
     <section
       aria-labelledby="home-hero-heading"
-      className="enter-item relative isolate overflow-hidden rounded-[var(--radius-panel)] bg-surface px-5 py-10 text-center shadow-2 sm:px-8 sm:py-14"
+      className="enter-item relative isolate overflow-hidden rounded-[var(--radius-panel)] bg-surface px-5 py-7 text-center shadow-2 sm:px-8 sm:py-9"
     >
       {/* 옅은 브랜드 빛 두 겹. 면이 아니라 바탕이라 글자 대비를 건드리지 않는다 */}
       <span
@@ -61,12 +63,12 @@ export function HomeHero() {
       {SPARKLES.map((s) => (
         <Sparkle key={`${s.top}-${s.left}`} size={s.size} style={{ top: s.top, left: s.left, animationDelay: `${s.delay}ms` }} />
       ))}
-      <h1 id="home-hero-heading" className="text-[30px] font-extrabold leading-[1.18] tracking-[-0.035em] text-ink sm:text-[44px]">
+      <h1 id="home-hero-heading" className="text-[30px] font-extrabold leading-[1.18] tracking-[-0.035em] text-ink sm:text-[40px]">
         {M.heroLead} <span className="glint-text glint-loop">{M.heroAccent}</span>
       </h1>
-      <p className="mx-auto mt-3 max-w-[520px] text-[15px] leading-[1.6] text-mut sm:text-[17px]">{M.heroBody}</p>
+      <p className="mx-auto mt-2 max-w-[520px] text-[15px] leading-[1.6] text-mut sm:text-[17px]">{M.heroBody}</p>
 
-      <form action={ROUTES.search} role="search" className="mx-auto mt-7 flex max-w-[560px] items-center gap-2 rounded-2xl bg-bg p-1.5 pl-4 shadow-hair focus-within:shadow-[0_0_0_1px_var(--acc),0_0_0_4px_var(--acc-glow)]">
+      <form action={ROUTES.search} role="search" className="mx-auto mt-5 flex max-w-[560px] items-center gap-2 rounded-2xl bg-bg p-1.5 pl-4 shadow-hair focus-within:shadow-[0_0_0_1px_var(--acc),0_0_0_4px_var(--acc-glow)]">
         <SearchIcon size={19} className="shrink-0 text-dim" />
         <label htmlFor="home-hero-q" className="sr-only">
           {M.heroSearchLabel}
