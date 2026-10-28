@@ -196,9 +196,6 @@ export function AlertForm({ game, defaults, initial }: { game: FormGame; default
             </label>
             {/* 글자 16px — iOS 확대 방지(규약 §6). 쉼표는 치는 대로 넣어 주고 저장할 때 액션이 숫자만 남긴다 */}
             <div className="flex h-11 max-w-[320px] items-center gap-2 rounded-[var(--radius-sm)] border border-line-strong bg-surface px-3.5 focus-within:border-acc focus-within:shadow-[0_0_0_3px_var(--acc-glow)]">
-              <span aria-hidden className="text-[16px] font-bold text-dim">
-                ₩
-              </span>
               <input
                 id="target-price"
                 name="targetPrice"
@@ -212,6 +209,9 @@ export function AlertForm({ game, defaults, initial }: { game: FormGame; default
                 }}
                 className="min-w-0 flex-1 bg-transparent text-[16px] font-bold text-ink outline-none placeholder:font-normal placeholder:text-dim"
               />
+              <span aria-hidden className="text-[16px] font-bold text-dim">
+                원
+              </span>
             </div>
             <p className="text-[12px] text-dim">{AM.formPriceHint}</p>
           </div>

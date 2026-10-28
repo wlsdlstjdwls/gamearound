@@ -71,7 +71,7 @@ export const ALERT_MESSAGES = {
   formPending: "저장 중이에요",
 } as const;
 
-/** 알림 한 줄의 조건 글. 할인율이면 "-40% 이상", 목표가면 "₩30,000 이하" */
+/** 알림 한 줄의 조건 글. 할인율이면 "-40% 이상", 목표가면 "30,000원 이하" */
 export function conditionText(minDiscountPct: number | null, targetPrice: number | null): string {
   if (targetPrice !== null && minDiscountPct === null) return `${formatPrice(targetPrice)} 이하`;
   return `할인 ${minDiscountPct ?? 1}% 이상`;

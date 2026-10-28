@@ -10,22 +10,31 @@ export const DISPLAY_CURRENCY: Currency = "KRW";
 /** 통화별 소수 자릿수. 최소 단위 정수를 사람이 읽는 금액으로 되돌릴 때 쓴다 */
 // 엔은 원과 같이 소수가 없다 — 최소 단위가 1엔이라 raw_value 를 그대로 담는다
 const DECIMALS: Record<Currency, number> = { KRW: 0, USD: 2, JPY: 0 };
-const SYMBOL: Record<Currency, string> = { KRW: "₩", USD: "$", JPY: "¥" };
+/**
+ * 통화 표시. 원화는 숫자 뒤에 "원"(2026-10-28 사용자: "₩3,900 은 3,900원 으로 다 바꿔야지") — 한국어 화면에서 ₩ 기호는
+ * 문장 속에서 "₩3,900 아껴요" 처럼 어색하게 읽혔다. 외화는 기호를 앞에 둔다($6.99, ¥799)
+ */
+const AFFIX: Record<Currency, { prefix: string; suffix: string }> = {
+  KRW: { prefix: "", suffix: "원" },
+  USD: { prefix: "$", suffix: "" },
+  JPY: { prefix: "¥", suffix: "" },
+};
 
-/** 12345 → "₩12,345", (699, "USD") → "$6.99". 값이 없으면 "-", 0 은 "무료" */
+/** 12345 → "12,345원", (699, "USD") → "$6.99". 값이 없으면 "-", 0 은 "무료" */
 export function formatPrice(price: number | null | undefined, currency: Currency = DISPLAY_CURRENCY): string {
   if (price === null || price === undefined) return "-";
   if (price === 0) return "무료";
   const decimals = DECIMALS[currency];
   const amount = price / 10 ** decimals;
-  return `${SYMBOL[currency]}${amount.toLocaleString("ko-KR", { minimumFractionDigits: decimals, maximumFractionDigits: decimals })}`;
+  const { prefix, suffix } = AFFIX[currency];
+  return `${prefix}${amount.toLocaleString("ko-KR", { minimumFractionDigits: decimals, maximumFractionDigits: decimals })}${suffix}`;
 }
 
 /** 가격이 붙는 것들의 공통 모양 — 플랫폼 행, DTO, 가격 계열이 모두 이 두 필드를 갖는다 */
 export type Priced = { currentPrice: number | null; currency: Currency };
 
 /**
- * 한 통화만 남긴다. 통화가 섞이면 비교도 한 축의 그래프도 뜻을 잃는다(₩44,990 과 $6.99).
+ * 한 통화만 남긴다. 통화가 섞이면 비교도 한 축의 그래프도 뜻을 잃는다(44,990원과 $6.99).
  * 기준 통화가 하나라도 있으면 그것만, 없으면 첫 항목의 통화로 맞춘다.
  */
 export function sameCurrency<T extends { currency: Currency }>(list: T[]): { kept: T[]; dropped: T[]; currency: Currency } {

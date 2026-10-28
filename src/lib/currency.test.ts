@@ -4,8 +4,8 @@ import { cheapestOf, DISPLAY_CURRENCY, formatPrice, sameCurrency } from "./curre
 
 describe("formatPrice", () => {
   it("KRW 는 소수 없이 원 기호", () => {
-    expect(formatPrice(44990)).toBe("₩44,990");
-    expect(formatPrice(44990, "KRW")).toBe("₩44,990");
+    expect(formatPrice(44990)).toBe("44,990원");
+    expect(formatPrice(44990, "KRW")).toBe("44,990원");
   });
 
   it("USD 는 센트를 소수 두 자리로 되돌린다", () => {
@@ -53,7 +53,7 @@ describe("cheapestOf", () => {
     expect(best?.id).toBe("b");
   });
 
-  it("통화가 섞이면 숫자만 보고 고르지 않는다 — $6.99 는 ₩30,000 보다 싸지만 비교하지 않는다", () => {
+  it("통화가 섞이면 숫자만 보고 고르지 않는다 — $6.99 는 30,000원보다 싸지만 비교하지 않는다", () => {
     const best = cheapestOf([
       { id: "steam", currentPrice: 30000, currency: "KRW" as const },
       { id: "usd", currentPrice: 699, currency: "USD" as const },
