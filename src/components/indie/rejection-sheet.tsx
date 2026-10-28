@@ -13,7 +13,8 @@ export function RejectionSheet({ title, reason, editHref }: { title: string; rea
       title={`${title} ${RV.reason}`}
       label={RV.viewReason}
       unstyledTrigger
-      triggerClassName="press tap inline-flex items-center rounded-full px-1 text-[12.5px] font-semibold text-danger underline-offset-2 hover:underline"
+      // 글자 링크가 아니라 단추다(2026-10-28 사용자). 반려를 말하는 자리라 빨간 테두리 단추(danger), 옆 "고쳐서 다시 신청" 과 같은 크기
+      triggerClassName={buttonClass({ variant: "danger", size: "sm" })}
     >
       <div className="flex flex-col gap-5">
         <p className="whitespace-pre-wrap rounded-[var(--radius-md)] bg-danger-soft px-4 py-3.5 text-[14.5px] leading-[1.7] text-ink">{reason ?? RV.reasonMissing}</p>

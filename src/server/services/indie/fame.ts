@@ -244,3 +244,14 @@ export async function finalizeHallOfFame(ym: string): Promise<number> {
   await db.insert(hallOfFameMonths).values(ranking.map((r, i) => ({ ym, rank: i + 1, postId: r.id, score: r.score, ...createdBy("cron:daily") }))).onConflictDoNothing();
   return ranking.length;
 }
+
+/**
+ * 내 글들의 이번 달 실시간 순위(1부터). TOP 밖이면 Map 에 없다. 등록현황 줄이 "명예의 전당 N위" 로 자랑할 때 쓴다
+ * (2026-10-28 사용자 "순위나 조회 수, 찜 수 등을 예쁘게 — 뿌듯할 듯"). 왕복은 순위 질의 하나다.
+ */
+export async function getMyMonthRanks(postIds: string[]): Promise<Map<string, number>> {
+  if (postIds.length === 0) return new Map();
+  const mine = new Set(postIds);
+  const ranking = await liveRanking(kstYm(new Date()));
+  return new Map(ranking.flatMap((r, i) => (mine.has(r.id) ? [[r.id, i + 1] as const] : [])));
+}

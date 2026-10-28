@@ -16,7 +16,7 @@ import { FormMessage } from "@/components/ui/form-message";
 import { Page, PageHead } from "@/components/ui/page";
 import { Clamp } from "@/components/ui/tooltip";
 import { FadeImage } from "@/components/ui/fade-image";
-import { GamepadIcon } from "@/components/ui/icons";
+import { EyeIcon, GamepadIcon, HeartIcon, TrophyIcon } from "@/components/ui/icons";
 import { ReviewSteps } from "@/components/indie/review-steps";
 import { stagger } from "@/lib/motion";
 import { cn } from "@/lib/cn";
@@ -27,7 +27,7 @@ import { genreLabels, INDIE_FORM_MESSAGES as M, INDIE_MESSAGES, INDIE_PLATFORM_L
 import { indieDetailHref, INDIE_FROM } from "@/lib/indie/query";
 import { indieEditPath, ROUTES } from "@/lib/routes";
 import { requireUserOrRedirect } from "@/server/auth/guards";
-import { listMyIndiePosts } from "@/server/services/indie";
+import { getMyMonthRanks, listMyIndiePosts } from "@/server/services/indie";
 
 export const metadata: Metadata = { title: RV.title, robots: { index: false } };
 
@@ -48,9 +48,39 @@ function Tile({ label, value, tone, i }: { label: string; value: number; tone: k
   );
 }
 
+/**
+ * 등록 완료 줄의 성적(2026-10-28 사용자 "명예의 전당 순위, 조회 수, 찜 수를 예쁘게 — 뿌듯할 듯").
+ * 순위는 이번 달 TOP 안일 때만 채운 파란 딱지로 세운다 — 숫자 셋이 같은 무게면 자랑할 것이 묻힌다.
+ * 조회, 찜은 누적이다(글 표의 카운터). 이번 달 수는 명예의 전당과 통계 화면이 따로 말한다.
+ */
+function Reactions({ rank, views, likes }: { rank: number | undefined; views: number; likes: number }) {
+  return (
+    <div className="flex flex-wrap items-center gap-1.5">
+      {rank !== undefined && (
+        <Link href={ROUTES.hallOfFame} className="press inline-flex h-7 items-center gap-1 rounded-full bg-acc px-2.5 text-[12px] font-bold text-white">
+          <TrophyIcon size={13} aria-hidden />
+          {RV.fameRank(rank)}
+        </Link>
+      )}
+      <span className="inline-flex h-7 items-center gap-1 rounded-full bg-surface-2 px-2.5 text-[12px] font-semibold tabular-nums text-ink-2">
+        <EyeIcon size={13} aria-hidden />
+        <span className="sr-only">{RV.views}</span>
+        {views.toLocaleString("ko-KR")}
+      </span>
+      <span className="inline-flex h-7 items-center gap-1 rounded-full bg-surface-2 px-2.5 text-[12px] font-semibold tabular-nums text-ink-2">
+        <HeartIcon size={13} aria-hidden className="text-danger" />
+        <span className="sr-only">{RV.likes}</span>
+        {likes.toLocaleString("ko-KR")}
+      </span>
+    </div>
+  );
+}
+
 export default async function IndieMinePage({ searchParams }: Props) {
   const user = await requireUserOrRedirect();
   const [posts, sp] = await Promise.all([listMyIndiePosts(user.id), searchParams]);
+  // 순위는 덤이다 — 못 세면 순위 칸만 빠지고 화면은 선다
+  const ranks = await getMyMonthRanks(posts.filter((p) => p.review === "approved").map((p) => p.id)).catch(() => new Map<string, number>());
   const full = posts.length >= INDIE_POSTS_PER_USER_MAX;
   const pending = posts.filter((p) => p.review === "pending").length;
   const approved = posts.filter((p) => p.review === "approved").length;
@@ -75,7 +105,7 @@ export default async function IndieMinePage({ searchParams }: Props) {
         <ul className="flex flex-col gap-3">
           {posts.map((p, i) => {
             const meta = [[...p.platforms.map((x) => INDIE_PLATFORM_LABEL[x]), ...genreLabels(p.genres)].join(", "), `${formatDotDate(p.createdAt)} ${RV.applied}`].filter(Boolean).join(" | ");
-            const note = p.review === "pending" ? RV.pendingShort : p.review === "approved" ? (p.status === "published" ? (p.hasCover ? RV.liveShort : INDIE_MESSAGES.noCoverShort) : INDIE_MESSAGES.hiddenShort) : `${RV.reason}: ${p.reviewReason ?? "-"}`;
+            const note = p.review === "pending" ? RV.pendingShort : p.review === "approved" ? (p.status === "published" ? (p.hasCover ? RV.liveShort : INDIE_MESSAGES.noCoverShort) : INDIE_MESSAGES.hiddenShort) : null;
             // 등록 완료 줄은 공개 상세로, 그 밖은 고치기로 간다(기획서 S-22 "등록 완료 행은 S-19 로")
             const to = p.review === "approved" ? indieDetailHref(p.slug, INDIE_FROM.mine) : indieEditPath(p.id);
             return (
@@ -95,9 +125,14 @@ export default async function IndieMinePage({ searchParams }: Props) {
                 {/* 오른쪽 기둥: 진행 단계, 한 줄 설명, 할 일 단추. 좁은 화면에서는 커버와 글 아래 한 줄로 내려온다 */}
                 <div className="col-span-2 flex flex-col gap-2.5 border-t border-line-soft pt-3 sm:col-span-1 sm:w-[260px] sm:border-l sm:border-t-0 sm:pl-5 sm:pt-0">
                   <ReviewSteps review={p.review} />
-                  <Clamp lines={1} className={cn("text-[12.5px]", p.review === "rejected" ? "text-danger" : "text-dim")}>
-                    {note}
-                  </Clamp>
+                  {p.review === "approved" && <Reactions rank={ranks.get(p.id)} views={p.viewCount} likes={p.likeCount} />}
+                  {/* 반려 줄에는 사유를 적지 않는다(2026-10-28 사용자 "사유는 사유 보기 단추로만"). 한 줄로 잘린 사유와 글자 링크가
+                      같은 빨강이라 둘이 갈리지 않았다 — 단계 그림이 이미 "반려" 를 말하고, 전문은 단추가 연다 */}
+                  {note && (
+                    <Clamp lines={1} className="text-[12.5px] text-dim">
+                      {note}
+                    </Clamp>
+                  )}
                   {p.review === "rejected" ? (
                     <div className="flex items-center gap-2">
                       <RejectionSheet title={p.title} reason={p.reviewReason} editHref={indieEditPath(p.id)} />

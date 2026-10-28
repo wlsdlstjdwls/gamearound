@@ -293,6 +293,10 @@ export const INDIE_ADMIN_MESSAGES = {
 export const INDIE_REVIEW_LABEL = { pending: "승인 대기", approved: "등록 완료", rejected: "반려" } as const;
 export const INDIE_REVIEW_TONE = { pending: "warn", approved: "acc", rejected: "danger" } as const;
 export const INDIE_REVIEW_MESSAGES = {
+  /** 등록 완료 줄의 성적 딱지(2026-10-28) */
+  fameRank: (rank: number) => `명예의 전당 ${rank}위`,
+  views: "조회",
+  likes: "찜",
   pendingNotice: "운영진이 확인하고 있어요. 승인되면 내가 만든 게임, 명예의 전당, 슈퍼루키에 올라가요.",
   rejectedNotice: "등록이 반려됐어요. 사유를 보고 고쳐서 다시 신청해 주세요.",
   reason: "반려 사유",
