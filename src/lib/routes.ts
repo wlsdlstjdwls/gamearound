@@ -93,6 +93,8 @@ export const ROUTES = {
   loungeQna: "/lounge/qna",
   /** 라운지 글 전체(기획서 S-17) */
   loungeAll: "/lounge/all",
+  /** 내 라운지 글에 달린 댓글 모아 보기(2026-10-28, 라운지 홈 현황의 "새 댓글" 칸이 연다) */
+  loungeComments: "/lounge/comments",
   /** 인디 홍보 글 신고, 게임 연결 확인 */
   adminIndie: "/admin/indie",
   /** 예약 특전 글 검토 — 게임을 못 이었거나 특전을 못 뽑은 글이 여기 남는다 */

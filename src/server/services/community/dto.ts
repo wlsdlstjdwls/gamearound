@@ -40,11 +40,29 @@ export type PostDetailDto = PostRowDto & {
 };
 
 /** parentId: 답글이면 원댓글 id(한 단계, schema-community 의 post_comments.parentId). 인디 글 댓글은 답글이 없어 비운다 */
-export type CommentDto = { id: string; body: string; authorName: string; createdAt: Date; isMine: boolean; parentId?: string | null };
+/** isNew: 글쓴이가 보는 글에서, 글쓴이가 이번에 처음 보는 남의 댓글(services/community/inbox). 다른 사람에게는 늘 비어 있다 */
+export type CommentDto = { id: string; body: string; authorName: string; createdAt: Date; isMine: boolean; parentId?: string | null; isNew?: boolean };
+
+/** 댓글함 한 줄(/lounge/comments) — 어느 글에 누가 무슨 말을 했는지, 아직 안 본 것인지 */
+export type MyPostCommentDto = {
+  id: string;
+  body: string;
+  createdAt: Date;
+  isReply: boolean;
+  authorName: string;
+  postId: string;
+  postTitle: string;
+  category: PostCategory;
+  isNew: boolean;
+};
 
 export type BoardHomeDto = {
   today: number;
   counts: Partial<Record<PostCategory, number>>;
+  /** 갈래마다 오늘(한국 날짜) 올라온 글 수 */
+  todayCounts: Partial<Record<PostCategory, number>>;
+  /** 갈래마다 가장 새 글 — 게시판 고르기 카드가 "지금 무슨 얘기가 오가나" 를 한 줄 보여 준다 */
+  latest: Partial<Record<PostCategory, { id: string; title: string }>>;
   rising: PostRowDto[];
   waiting: PostRowDto[];
   latestPromos: PostRowDto[];

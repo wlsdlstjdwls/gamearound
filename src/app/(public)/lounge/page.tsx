@@ -1,6 +1,6 @@
 // 개발자 라운지 홈(기획서 v2.0 S-16, 목업 lgHome) — 대시보드형.
-//   머리: 제목 + 내 게임 관리(등록현황) + 글 작성
-//   현황 스트립: 등록 게임 수 | 검토 중 | 내 글 반응(최근 7일 새 댓글). 비로그인은 로그인 안내 한 칸
+//   머리: 제목 + 글 작성(내 게임 관리는 띠 칸과 현황 띠 링크가 맡는다)
+//   현황 스트립: 등록 게임 수 | 검토 중 | 내 글 반응(최근 7일, 아직 안 본 새 댓글 — 누르면 댓글함). 비로그인은 로그인 안내 한 칸
 //   게시판 고르기 카드: 개발일지 | 질문/피드백 + 전체 글 보기. 하위 띠에서 두 갈래를 뺐으므로(lib/nav 의 hideInBand)
 //   게시판 홈과 같은 카드로 여기서 길을 낸다(2026-10-28, components/community/board-picker)
 //   왼쪽: 급상승 인기글(줄 오른쪽 끝 "전체 글 보기") + 답변을 기다리는 질문
@@ -25,7 +25,7 @@ import { nullIfDbUnavailable } from "@/lib/db-errors";
 import { formatDotDate } from "@/lib/format";
 import { LOUNGE_MESSAGES as L } from "@/lib/lounge/messages";
 import { indieEditPath, indiePath, ROUTES, signInPath } from "@/lib/routes";
-import { countRecentCommentsOnMyPosts, getBoardHome } from "@/server/services/community";
+import { countUnseenCommentsOnMyPosts, getBoardHome } from "@/server/services/community";
 import { listMyIndiePosts } from "@/server/services/indie";
 import type { IndieMineRowDto } from "@/lib/indie/dto";
 import { getCurrentUser } from "@/server/services/users";
@@ -59,7 +59,7 @@ export default async function LoungeHomePage() {
     Promise.all([
       getBoardHome(LOUNGE_CATEGORIES, ["qna"], false),
       user ? listMyIndiePosts(user.id) : Promise.resolve([]),
-      user ? countRecentCommentsOnMyPosts(user.id, LOUNGE_CATEGORIES) : Promise.resolve(0),
+      user ? countUnseenCommentsOnMyPosts(user.id, LOUNGE_CATEGORIES) : Promise.resolve(0),
     ]),
   );
   const now = new Date().getTime();
@@ -69,12 +69,8 @@ export default async function LoungeHomePage() {
       <PageHead
         title={L.title}
         action={
-          <div className="flex gap-2">
-            <Link href={ROUTES.indieMine} className={buttonClass({ variant: "secondary", size: "md" })}>
-              {L.manage}
-            </Link>
-            <WriteLink href={writePath("devlog")}>{L.write}</WriteLink>
-          </div>
+          // "내 게임 관리" 단추는 뺐다(2026-10-28 기획 점검) — 바로 위 띠의 "내 게임 관리" 칸, 현황 띠의 "개발 현황 보기" 와 셋이 같은 곳으로 갔다
+          <WriteLink href={writePath("devlog")}>{L.write}</WriteLink>
         }
       >
         <p className="text-[14px] text-mut">{L.lead}</p>
@@ -92,15 +88,16 @@ export default async function LoungeHomePage() {
                   items={[
                     { label: L.statApproved, value: mine.filter((p) => p.review === "approved").length, unit: L.unitGame, icon: <GamepadIcon size={19} /> },
                     { label: L.statPendingLabel, value: mine.filter((p) => p.review === "pending").length, unit: L.unitCase, icon: <ClockIcon size={19} /> },
-                    // 숫자만 세우면 확인할 길이 없다 — 내 활동의 내 글 목록(글마다 댓글 수)으로 잇는다
-                    { label: L.statReactionsLabel, value: reactions, unit: L.unitComment, icon: <ChatIcon size={19} />, href: ROUTES.me },
+                    // 숫자만 세우면 확인할 길이 없다 — 댓글함(/lounge/comments)이 그 댓글들을 늘어놓고, 누르면 글의 그 댓글로 간다.
+                    // 센 것은 아직 안 본 댓글이라(services/community/inbox) 글을 열어 확인하고 돌아오면 숫자가 준다
+                    { label: L.statReactionsLabel, value: reactions, unit: L.unitComment, icon: <ChatIcon size={19} />, href: ROUTES.loungeComments },
                   ]}
                   link={{ href: ROUTES.indieMine, label: L.statDetail }}
                 />
               ) : (
                 <StatStrip label={L.statusLabel} items={[{ label: L.guestLead, value: L.guestLabel, icon: <UserIcon size={19} /> }]} link={{ href: signInPath(ROUTES.lounge), label: L.signIn }} />
               )}
-              <BoardPicker categories={LOUNGE_CATEGORIES} counts={home.counts} today={home.today} icons={LOUNGE_STAT_ICON} allHref={ROUTES.loungeAll} />
+              <BoardPicker categories={LOUNGE_CATEGORIES} home={home} icons={LOUNGE_STAT_ICON} allHref={ROUTES.loungeAll} />
               <div className="grid items-start gap-6 lg:grid-cols-[minmax(0,1fr)_380px]">
                 <div className="flex min-w-0 flex-col gap-7">
                   <RisingBlock posts={home.rising} allHref={ROUTES.loungeAll} now={now} />

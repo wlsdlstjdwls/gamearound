@@ -37,6 +37,10 @@ export const COMMUNITY_MESSAGES = {
   pickerTitle: "게시판 둘러보기",
   pickerToday: (n: number) => `오늘 새 글 ${n.toLocaleString("ko-KR")}개`,
   pickerGo: (label: string) => `${label} 보러 가기`,
+  /** 갈래 카드의 오늘 새 글 딱지 */
+  pickerTodayBadge: (n: number) => `오늘 +${n.toLocaleString("ko-KR")}`,
+  /** 아직 글이 없는 갈래의 "최근 글" 자리 */
+  pickerNoPosts: "첫 글을 기다리고 있어요",
   rising: "급상승 인기글",
   waitingComment: "댓글을 기다리는 글",
   waitingAnswer: "답변을 기다리는 질문",
@@ -147,6 +151,8 @@ export const COMMUNITY_MESSAGES = {
   bodyCount: (n: number, max: number) => `${n.toLocaleString("ko-KR")} / ${max.toLocaleString("ko-KR")}자`,
   // 대댓글
   reply: "답글",
+  /** 글쓴이가 처음 보는 댓글 표시 */
+  newComment: "새 댓글",
   replyCancel: "답글 취소",
   replyPlaceholder: (name: string) => `${name}님에게 답글을 남겨요`,
   replySubmit: "답글 등록",

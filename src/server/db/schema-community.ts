@@ -5,7 +5,7 @@
 // 좋아요 수, 댓글 수는 행에 따로 쌓는다(likeCount, commentCount). 목록이 한 쪽 20줄마다 집계를 돌면
 // 줄 수만큼 하위 질의가 붙고, 인기글 정렬은 그 값으로 order by 해야 해서 집계 위에서는 인덱스를 못 탄다.
 // 쌓는 값은 좋아요, 댓글을 쓰고 지우는 함수가 같은 질의 안에서 고친다(services/community).
-import { pgTable, pgEnum, uuid, text, integer, boolean, index, primaryKey, type AnyPgColumn } from "drizzle-orm/pg-core";
+import { pgTable, pgEnum, uuid, text, integer, boolean, index, primaryKey, timestamp, type AnyPgColumn } from "drizzle-orm/pg-core";
 import { relations } from "drizzle-orm";
 import { auditColumns } from "./audit";
 import { games, users } from "./schema";
@@ -66,6 +66,12 @@ export const postComments = pgTable(
      * 숨긴 댓글은 commentCount 에서도 뺀다(services/community/admin) — 인기 점수가 숨긴 댓글로 오르지 않게
      */
     status: postStatusEnum("status").default("published").notNull(),
+    /**
+     * 글쓴이가 이 댓글을 본 때(2026-10-28 사용자 "확인했으면 새로움 표시는 안 보여야"). 비어 있으면 "새 댓글" 이다.
+     * 알림함(notifications.readAt)으로 대신하지 않는 이유: 알림은 글 단위 한 줄이라 어느 댓글인지 모르고, 알림이 생기기 전 댓글엔 행이 없다.
+     * 보는 사람이 글쓴이 한 명뿐이라 읽음 표를 따로 두지 않고 칸 하나로 둔다. 글쓴이 제 댓글은 질의가 빼고 센다(services/community/inbox)
+     */
+    ownerSeenAt: timestamp("owner_seen_at", { withTimezone: true }),
     ...auditColumns(),
   },
   (t) => [index("post_comments_post_idx").on(t.postId, t.createdAt)],

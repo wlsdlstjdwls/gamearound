@@ -95,6 +95,8 @@
   --duration-glint: 1.1s;
   /* 손전등이 켜졌다 꺼지는 한 바퀴(알리기 판, payments/plan-nudge). 켜진 채 오래 머물고 잠깐 꺼진다 — 꺼진 몫이 길면 고장으로 읽힌다 */
   --duration-torch: 7s;
+  /* 댓글함에서 건너온 댓글 줄의 빛이 사그라드는 시간 — 눈이 줄을 찾아 읽기 시작할 만큼 머문다(.comment-target) */
+  --duration-arrive: 2.6s;
   /* 내려온 카드가 "여기다" 하고 빛나는 시간(상세 플랫폼 이름 링크). 목업 .pc.fl 값 — 부드러운 스크롤(약 0.5초)이 끝난 뒤에도 빛이 남아 있어야 한다 */
   --duration-flash: 1.2s;
   /* 명예의 전당 인트로(indie/fame-intro): 1위 판이 화면 전체로 펼쳐지는 시간과 판 자리로 접혀 드는 시간.
@@ -534,6 +536,17 @@
 }
 .soon-float {
   animation: soon-float 3.4s var(--ease-standard) infinite;
+}
+
+/* 댓글함(/lounge/comments)에서 건너온 댓글 줄 — 옅은 파랑이 깔렸다가 사그라든다(community/post-interactions 의 useArrivedComment).
+   줄 바깥으로 살짝 넓혀(box-shadow 퍼짐) 글자가 빛의 가장자리에 붙지 않게 한다 */
+@keyframes comment-arrive {
+  0%, 35% { background-color: var(--acc-soft); box-shadow: 0 0 0 10px var(--acc-soft); }
+  100% { background-color: transparent; box-shadow: 0 0 0 10px transparent; }
+}
+.comment-target[data-arrived] {
+  border-radius: var(--radius-inset);
+  animation: comment-arrive var(--duration-arrive) var(--ease-standard) both;
 }
 
 /* 알리기 판의 손전등(components/payments/plan-nudge, 2026-10-28 사용자: "손전등 빛 켜지고 꺼지는 애니메이션").

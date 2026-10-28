@@ -12,7 +12,7 @@ import { Button } from "@/components/ui/button";
 import { HeartIcon } from "@/components/ui/icons";
 import { useToast } from "@/components/ui/toast";
 import { cn } from "@/lib/cn";
-import { COMMENT_BODY_MAX } from "@/lib/community/constants";
+import { COMMENT_BODY_MAX, commentAnchor } from "@/lib/community/constants";
 import { COMMUNITY_MESSAGES as M } from "@/lib/community/messages";
 import { formatDateTime } from "@/lib/format";
 import type { CommentDto } from "@/server/services/community";
@@ -198,12 +198,20 @@ function CommentComposer({
   );
 }
 
+/**
+ * 댓글 한 줄. 댓글함(/lounge/comments)에서 #comment-<id> 로 들어오면 그 줄까지 내려온다 — 머리띠(--header-h)에 가리지 않게
+ * 그만큼 여백을 두고(scroll-margin), 도착한 줄은 잠깐 빛을 깔아 "여기" 를 알린다(globals.css 의 .comment-target)
+ */
+const COMMENT_ITEM_CLASS = "comment-target flex scroll-mt-[calc(var(--header-h)+24px)] flex-col gap-1 py-3.5";
+
 function CommentBody({ c, reply = false }: { c: CommentDto; reply?: boolean }) {
   return (
     <>
       <p className="flex items-center gap-2 text-[12.5px] text-dim">
         <span className={cn("font-semibold", c.isMine ? "text-acc" : "text-ink-2")}>{c.authorName}</span>
         <span>{formatDateTime(c.createdAt)}</span>
+        {/* 글쓴이가 처음 보는 댓글에만, 이번 한 번(services/community/inbox 가 연 순간 "봤다" 로 적는다) */}
+        {c.isNew && <span className="rounded-full bg-acc-soft px-1.5 py-px text-[11px] font-bold text-acc">{M.newComment}</span>}
       </p>
       <p className={cn("whitespace-pre-wrap break-words leading-[1.7] text-ink", reply ? "text-[14px]" : "text-[14.5px]")}>{c.body}</p>
     </>
@@ -231,7 +239,7 @@ function Thread({ root, replies, postId, onAdded, addAction, canReply }: { root:
     return null;
   };
   return (
-    <li className="flex flex-col gap-1 py-3.5">
+    <li id={commentAnchor(root.id)} className={COMMENT_ITEM_CLASS}>
       <CommentBody c={root} />
       {canReply && (
         <button type="button" aria-expanded={open} onClick={() => setOpen((v) => !v)} className="tap -ml-1 w-fit rounded-md px-1 text-[12.5px] font-semibold text-mut hover:text-acc">
@@ -244,7 +252,7 @@ function Thread({ root, replies, postId, onAdded, addAction, canReply }: { root:
           {replies.length > 0 && (
             <ul className="flex flex-col gap-3" aria-label={M.replyTo(root.authorName)}>
               {replies.map((r) => (
-                <li key={r.id} className="flex flex-col gap-1">
+                <li key={r.id} id={commentAnchor(r.id)} className={cn(COMMENT_ITEM_CLASS, "py-0")}>
                   <CommentBody c={r} reply />
                 </li>
               ))}
@@ -269,10 +277,30 @@ function Thread({ root, replies, postId, onAdded, addAction, canReply }: { root:
   );
 }
 
+/**
+ * 댓글함에서 #comment-<id> 로 들어온 줄을 찾아 그 자리로 내리고 표시를 단다. :target 을 쓰지 않는 이유: 사이트 안 이동(router push)은
+ * 주소의 # 를 바꿔도 :target 이 갱신되지 않아, 새로 고침했을 때만 빛이 섰다. 스크롤도 여기서 한 번 더 한다 — 본문이 스트리밍으로
+ * 늦게 오면 라우터의 해시 스크롤이 댓글이 서기 전에 끝난다
+ */
+function useArrivedComment() {
+  useEffect(() => {
+    const id = decodeURIComponent(window.location.hash.slice(1));
+    if (!id.startsWith(commentAnchor(""))) return;
+    const el = document.getElementById(id);
+    if (!el) return;
+    el.scrollIntoView({ block: "start" });
+    el.setAttribute(ARRIVED_ATTR, "");
+  }, []);
+}
+
+/** 도착한 댓글 줄 표식. globals.css 의 .comment-target[data-arrived] 가 잠깐 빛을 깐다 */
+const ARRIVED_ATTR = "data-arrived";
+
 /** replies: 답글을 받는 글인가. 게시판, 라운지 글만 켠다 — 인디 글 댓글 표에는 답글 칸이 없다(schema-indie-promo) */
 export function Comments({ postId, initial, addAction = addCommentAction, replies = false }: { postId: string; initial: CommentDto[]; addAction?: AddCommentAction; replies?: boolean }) {
   const [list, setList] = useState(initial);
   const add = (c: CommentDto) => setList((cur) => [...cur, c]);
+  useArrivedComment();
 
   // 원댓글 순서대로, 답글은 제 원댓글 밑으로. 원댓글이 숨겨져 짝이 없는 답글은 버린다 — 말을 건 상대가 안 보이는 답글은 뜻이 안 선다
   const roots = list.filter((c) => !c.parentId);

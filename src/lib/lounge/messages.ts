@@ -3,14 +3,13 @@ export const LOUNGE_MESSAGES = {
   /** 화면 머리 제목. 메뉴 이름(개발자 라운지)보다 한 낱말 길다 — 목업이 "누구의 라운지인가" 를 머리에서 말한다 */
   title: "인디 개발자 라운지",
   lead: "만드는 과정을 나누고, 막힌 부분은 함께 풀어 봐요.",
-  manage: "내 게임 관리",
   write: "글 작성",
   statusLabel: "내 개발 현황",
   // 현황 띠의 칸(components/community/news-blocks 의 StatStrip). 이름은 칸 위, 수와 단위는 칸 아래에 따로 선다
   statApproved: "등록한 게임",
   statPendingLabel: "검토 중",
   // 무엇에 달린 댓글인지 이름이 말해야 한다(2026-10-28 사용자 "내가 단 댓글? 내 게임에 대한 댓글?"). 센 것은 내 라운지 글에 남이 단 7일 치다
-  statReactionsLabel: "내 글에 달린 새 댓글(7일)",
+  statReactionsLabel: "내 글 새 댓글(7일)",
   unitGame: "개",
   unitCase: "건",
   unitComment: "개",
@@ -36,6 +35,23 @@ export const LOUNGE_MESSAGES = {
   guide: ["내 게임 등록으로 신청해요.", "운영진이 확인하고 승인해요.", "승인되면 전체 인디 게임, 명예의 전당, 슈퍼루키 후보가 돼요.", "개발일지와 질문으로 다른 개발자와 이야기해요."],
   /** 홈 오른쪽 칸 아래 링크(목업 lgHome "라운지 이용 가이드"). 여는 것은 게시판 보조 메뉴의 이용 안내와 같은 시트다(목업 bgd) */
   guideOpen: "라운지 이용 가이드",
+} as const;
+
+/** 내 글에 달린 댓글함(/lounge/comments, 2026-10-28). 라운지 홈 현황의 "새 댓글" 칸이 연다 */
+export const LOUNGE_COMMENTS_MESSAGES = {
+  title: "내 글에 달린 댓글",
+  lead: (days: number) => `최근 ${days}일 동안 내 라운지 글에 남이 단 댓글이에요. 누르면 그 댓글로 바로 가요.`,
+  newCount: (n: number) => `새 댓글 ${n.toLocaleString("ko-KR")}개`,
+  allSeen: "새 댓글을 모두 확인했어요",
+  newMark: "새 댓글",
+  reply: "답글",
+  comment: "댓글",
+  onPost: "내 글",
+  emptyTitle: "아직 달린 댓글이 없어요",
+  emptyLead: "개발일지나 질문을 올리면 다른 개발자의 댓글이 여기 모여요.",
+  emptyAction: "개발일지 쓰기",
+  /** 줄을 누르면 글의 그 댓글로 간다 — 낭독기에는 어디로 가는지 말한다 */
+  goLabel: (post: string) => `${post} 글의 댓글로 가기`,
 } as const;
 
 /**

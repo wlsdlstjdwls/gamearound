@@ -41,7 +41,7 @@ export default async function BoardHomePage() {
         <DbUnavailable retryHref={ROUTES.board} />
       ) : (
         <>
-          <BoardPicker categories={BOARD_CATEGORIES} counts={home.counts} today={home.today} icons={BOARD_STAT_ICON} allHref={ROUTES.boardAll} />
+          <BoardPicker categories={BOARD_CATEGORIES} home={home} icons={BOARD_STAT_ICON} allHref={ROUTES.boardAll} />
           <div className="grid items-start gap-6 lg:grid-cols-[minmax(0,1fr)_360px]">
             <div className="flex min-w-0 flex-col gap-7">
               <RisingBlock posts={home.rising} allHref={ROUTES.boardAll} now={now} />

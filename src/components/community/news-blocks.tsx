@@ -9,6 +9,7 @@
 // 기준 시각(now)은 화면이 한 번 정해 내려 준다 — 줄마다 시계를 읽으면 한 화면 안에서 값이 어긋난다.
 import Link from "next/link";
 import { AuthorName, PostTags } from "@/components/community/badges";
+import { RankBadge } from "@/components/community/rank-badge";
 import { ChevronLeftIcon, HeartIcon } from "@/components/ui/icons";
 import { Tag } from "@/components/ui/tag";
 import { cn } from "@/lib/cn";
@@ -89,16 +90,15 @@ export function RisingBlock({ posts, allHref, now }: { posts: PostRowDto[]; allH
           <ol className="divide-y divide-line-soft">
             {posts.map((p, i) => (
               <li key={p.id} className="enter-item" style={stagger(i)}>
-                <Link href={p.href} className="row-beam group grid grid-cols-[30px_minmax(0,1fr)] items-center gap-x-3.5 gap-y-1.5 px-4 py-3.5 transition-colors hover:bg-surface-2 sm:grid-cols-[30px_minmax(0,1fr)_auto] sm:px-5">
-                  {/* 1~3위만 채운 칸 — 순위가 곧 "얼마나 뜨거운가" 라 위 셋을 눈이 먼저 잡게 한다.
-                      그 셋만 빛이 위에서 아래로 차례로 스친다(.rank-glint) */}
-                  <span
-                    aria-label={M.rankLabel(i + 1)}
-                    className={cn("flex size-[30px] items-center justify-center rounded-lg text-[14px] font-extrabold tabular-nums", i < 3 ? "rank-glint bg-acc text-on-ink" : "bg-surface-2 text-dim")}
-                    style={i < 3 ? rankGlint(i) : undefined}
-                  >
-                    {i + 1}
-                  </span>
+                <Link
+                  href={p.href}
+                  className={cn(
+                    "row-beam group grid grid-cols-[40px_minmax(0,1fr)] items-center gap-x-3.5 gap-y-1.5 px-4 py-3.5 transition-colors hover:bg-surface-2 sm:grid-cols-[40px_minmax(0,1fr)_auto] sm:px-5",
+                    // 1위 줄만 옅은 빛을 깐다 — 순위표 맨 윗줄이 한눈에 "제일 뜨거운 글" 로 읽히게
+                    i === 0 && "bg-gradient-to-r from-acc-soft via-plum-soft/40 to-transparent",
+                  )}
+                >
+                  <RankBadge rank={i + 1} />
                   <span className="flex min-w-0 flex-col gap-1">
                     {/* "급상승" 딱지는 걷었다 — 블록 제목이 이미 말하고, 줄마다 빨간 딱지가 서니 줄이 알록달록했다(10-28 사용자) */}
                     <MetaLine post={p} now={now} />
@@ -129,13 +129,6 @@ export function RisingBlock({ posts, allHref, now }: { posts: PostRowDto[]; allH
       </div>
     </section>
   );
-}
-
-/** 순위 칸 빛의 어긋남 — 1위부터 한 칸씩 늦게 출발해 위에서 아래로 흐른다. 첫 출발은 줄 등장이 끝난 뒤다 */
-const RANK_GLINT_START_MS = 900;
-const RANK_GLINT_STEP_MS = 260;
-function rankGlint(i: number): React.CSSProperties {
-  return { "--glint-delay": `${RANK_GLINT_START_MS + i * RANK_GLINT_STEP_MS}ms` } as React.CSSProperties;
 }
 
 /** zero: 딱지 문구("댓글 0" / "답변 0"). 라운지는 질문만 모으므로 "답변" 이라 부른다 */
@@ -226,7 +219,7 @@ export function StatStrip({ items, link, label }: { items: StatItem[]; link?: { 
                 </span>
               )}
               <div className="flex min-w-0 flex-1 flex-col gap-0.5">
-                <dt className={cn("truncate text-[12.5px]", it.href ? "font-semibold text-ink-2" : "text-mut")}>{it.label}</dt>
+                <dt className={cn("line-clamp-2 break-keep text-[12.5px] leading-[1.35]", it.href ? "font-semibold text-ink-2" : "text-mut")}>{it.label}</dt>
                 <dd className={cn("flex items-baseline gap-0.5", !numeric && "text-[14px] font-semibold text-ink")}>
                   {numeric ? (
                     <>

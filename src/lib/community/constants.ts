@@ -60,6 +60,16 @@ export function postPath(id: string, category: PostCategory): string {
   return isLoungeCategory(category) ? `${ROUTES.lounge}${tail}` : `${CATEGORY_LIST_PATH[category]}${tail}`;
 }
 
+/** 댓글 자리 표식. 댓글 목록(/lounge/comments)이 이 앵커로 글 상세의 그 댓글까지 내려 보낸다 */
+export function commentAnchor(commentId: string): string {
+  return `comment-${commentId}`;
+}
+
+/** 글 상세의 그 댓글 자리 주소 */
+export function commentPath(postId: string, category: PostCategory, commentId: string): string {
+  return `${postPath(postId, category)}#${commentAnchor(commentId)}`;
+}
+
 /** 글 id 꼴(uuid). 주소로 들어온 값이 질의까지 가기 전에 거른다 — 엉뚱한 값은 DB 가 uuid 변환 오류를 낸다 */
 const POST_ID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 export function isPostId(id: string): boolean {

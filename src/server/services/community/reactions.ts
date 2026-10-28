@@ -2,14 +2,15 @@
 //
 // 쌓아 둔 수(likeCount, commentCount)는 행을 넣고 지우는 질의와 같은 자리에서 고친다. 넣기가 실제로 됐을 때만
 // 올린다 — onConflictDoNothing 이 막은 두 번째 좋아요가 수만 올리면 화면 숫자가 실제 줄 수와 갈라진다.
-import { and, asc, desc, eq, gte, inArray, ne, sql } from "drizzle-orm";
+import { and, asc, desc, eq, sql } from "drizzle-orm";
 import { getDb } from "@/server/db/client";
 import { createdBy } from "@/server/db/audit";
-import { postComments, postLikes, posts, postSaves, users, type PostCategory } from "@/server/db/schema";
+import { postComments, postLikes, posts, postSaves, users } from "@/server/db/schema";
 import { getCurrentUser, requireUser } from "@/server/services/users";
 import { POSTS_PAGE_SIZE } from "@/lib/community/constants";
 import type { CommentDto, PostPage } from "./dto";
 import { authorNameSql, rowColumns, toRow } from "./columns";
+import { markCommentsSeen } from "./inbox";
 
 export async function isLiked(postId: string, userId: string): Promise<boolean> {
   const r = await getDb().select({ x: sql`1` }).from(postLikes).where(and(eq(postLikes.postId, postId), eq(postLikes.userId, userId))).limit(1);
@@ -49,13 +50,29 @@ export async function toggleSave(postId: string): Promise<{ saved: boolean }> {
 export async function listComments(postId: string): Promise<CommentDto[]> {
   const viewer = await getCurrentUser().catch(() => null);
   const rows = await getDb()
-    .select({ id: postComments.id, parentId: postComments.parentId, body: postComments.body, authorName: authorNameSql, createdAt: postComments.createdAt, authorUserId: postComments.authorUserId })
+    .select({
+      id: postComments.id,
+      parentId: postComments.parentId,
+      body: postComments.body,
+      authorName: authorNameSql,
+      createdAt: postComments.createdAt,
+      authorUserId: postComments.authorUserId,
+      postAuthorId: posts.authorUserId,
+      seen: sql<boolean>`${postComments.ownerSeenAt} is not null`,
+    })
     .from(postComments)
     .innerJoin(users, eq(users.id, postComments.authorUserId))
+    .innerJoin(posts, eq(posts.id, postComments.postId))
     // 운영진이 숨긴 댓글은 누구에게도 안 보인다(services/community/admin)
     .where(and(eq(postComments.postId, postId), eq(postComments.status, "published")))
     .orderBy(asc(postComments.createdAt));
-  return rows.map(({ authorUserId, ...r }) => ({ ...r, isMine: viewer?.id === authorUserId }));
+  const owner = viewer !== null && rows.length > 0 && rows[0].postAuthorId === viewer.id;
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars -- 글쓴이 id 는 화면에 내보내지 않는다
+  const list = rows.map(({ authorUserId, postAuthorId, seen, ...r }) => ({ ...r, isMine: viewer?.id === authorUserId, isNew: owner && !seen && viewer?.id !== authorUserId }));
+  // 글쓴이가 열었으면 이번에 보여 준 댓글을 "봤다" 로 적는다 — "새" 표시는 이번 한 번만 서고 댓글함 숫자도 그만큼 준다(services/community/inbox).
+  // 적기가 실패해도 글은 선다 — 다음에 열 때 한 번 더 "새" 로 보일 뿐이다
+  if (owner && list.some((c) => c.isNew)) await markCommentsSeen(postId, viewer.id).catch(() => {});
+  return list;
 }
 
 /**
@@ -119,23 +136,4 @@ export async function listMySavedPosts(page = 1): Promise<PostPage> {
   ]);
   const total = countRows[0]?.n ?? 0;
   return { items: rows.map(toRow), total, page: at, totalPages: Math.max(1, Math.ceil(total / POSTS_PAGE_SIZE)) };
-}
-
-/** 라운지 홈 현황의 "내 글 반응" — 최근 며칠 동안 내 글에 남이 단 댓글 수(기획서 v2.0 S-16) */
-export const MY_REACTION_WINDOW_DAYS = 7;
-export async function countRecentCommentsOnMyPosts(userId: string, categories: readonly PostCategory[]): Promise<number> {
-  const [row] = await getDb()
-    .select({ n: sql<number>`count(*)::int` })
-    .from(postComments)
-    .innerJoin(posts, eq(posts.id, postComments.postId))
-    .where(
-      and(
-        eq(posts.authorUserId, userId),
-        inArray(posts.category, [...categories]),
-        ne(postComments.authorUserId, userId),
-        eq(postComments.status, "published"),
-        gte(postComments.createdAt, sql`now() - make_interval(days => ${MY_REACTION_WINDOW_DAYS}::int)`),
-      ),
-    );
-  return row?.n ?? 0;
 }
