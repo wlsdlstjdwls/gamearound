@@ -579,19 +579,37 @@
 .torch .brand-beam {
   animation: torch-power-fill var(--duration-torch) linear infinite;
 }
+/* 빛 줄기(2026-10-28 다시 그림, 사용자: "빛이 점으로 시작해서 별로, 그라데이션도 넣고 이쁘게").
+   예전 줄기는 conic 마스크의 꼭짓점이 손전등 머리에 찍혀, 빛이 바늘 끝 한 점에서 새어 나오는 꼴이었다.
+   심볼의 빛 칸은 머리에서 이미 심볼 키만큼 넓다(lib/brand 격자의 T 칸) — 그래서 줄기도 그 높이(--torch-mouth)에서 시작해 판 끝으로 벌어지는 사다리꼴이다.
+   모서리는 칼처럼 잘리면 "밤티" 였으니(10-28 첫 판) 사다리꼴은 ::before 의 clip-path 로 깎고, 부모의 blur 가 그 모서리를 흐린다
+   (filter 는 자식까지 합친 그림에 걸리므로 잘린 모서리도 번진다). 색은 머리 쪽 브랜드 파랑에서 보라로 옅어지며 사라진다.
+   켜질 때는 머리에서 바깥으로 뻗어 나간다(torch-reach) — 한꺼번에 툭 서지 않고 빛이 닿는 거리가 늘어나는 것처럼 */
+@keyframes torch-reach {
+  0%, 6% { scale: 0.35 1; }
+  20%, 76% { scale: 1 1; }
+  84%, 100% { scale: 0.85 1; }
+}
 .torch-cone {
+  --torch-mouth: 20px;
   position: absolute;
   z-index: -1;
   pointer-events: none;
   transform-origin: 0 50%;
-  /* 빛의 몸: 머리에서 가장 밝고 멀어질수록 옅어진다 */
-  background: radial-gradient(ellipse 85% 55% at 0% 50%, color-mix(in oklab, var(--acc) 30%, transparent), color-mix(in oklab, var(--acc) 10%, transparent) 55%, transparent 85%);
-  /* 빛의 모양: 원뿔. clip-path 는 가장자리가 칼로 자른 듯 각져서(첫 판, "밤티") 가장자리가 흐려지는 conic 마스크로 깎는다.
-     0deg 가 위쪽이고 from 이 시작각이라 멈춤 각은 74deg 부터 센다 — 진한 몫이 90deg 둘레(위아래 6도), 흐려지는 몫이 그 바깥 10도다 */
-  mask-image: conic-gradient(from 74deg at 0% 50%, transparent 0deg, #000 10deg, #000 22deg, transparent 32deg);
+  filter: blur(10px);
   animation:
     torch-power var(--duration-torch) linear infinite,
+    torch-reach var(--duration-torch) var(--ease-out-emph) infinite,
     torch-sway var(--duration-ambient) var(--ease-standard) infinite alternate;
+}
+.torch-cone::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  clip-path: polygon(0 calc(50% - var(--torch-mouth)), 100% -25%, 100% 125%, 0 calc(50% + var(--torch-mouth)));
+  background:
+    radial-gradient(ellipse 22% 38% at 0% 50%, color-mix(in oklab, var(--acc) 34%, transparent), transparent 100%),
+    linear-gradient(90deg, color-mix(in oklab, var(--acc) 24%, transparent), color-mix(in oklab, var(--plum) 12%, transparent) 55%, transparent 100%);
 }
 
 /* 장애 그림 — 로고 손전등의 빛이 깜빡인다(components/ui/status-panel, 2026-10-13).

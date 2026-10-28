@@ -34,7 +34,6 @@ export const PLANS_MESSAGES = {
   nudgeLead: (name: string, price: string) => `${name} ${price}부터, 결제하면 바로 인디 목록 맨 위에 떠요`,
   nudgeCta: "알리는 방법 보기",
   nudgeBoost: "더 알리기",
-  nudgeMember: (name: string) => `${name} 멤버십`,
 
   /** 걸 글이 여럿일 때 카드 단추가 여는 시트 */
   pickTitle: "어디에 걸까요",

@@ -24,7 +24,7 @@ export function PageTrail() {
   const kind = trailKind(pathname, sub);
   if (!kind) return null;
   // 끝 낱말 화면(글 상세, 글쓰기)과 칸 아래 상세(인디 상세)의 뒤는 그 칸(목록)이다 — 메뉴 첫 칸으로 보내면 보던 목록을 잃는다
-  const fallback = (kind !== "sub" ? sub?.href : undefined) ?? section?.href ?? ROUTES.home;
+  const fallback = sub?.href ?? section?.href ?? ROUTES.home;
   const leaf = trailLeaf(pathname);
   // 경로 낱말: 메뉴 > (칸) > (끝 낱말). 마지막 낱말이 지금 화면이다
   const crumbs = section && kind !== "back" && !TRAIL_NO_CRUMB_SECTIONS.has(section.key) ? [sub?.label, leaf].filter((x): x is string => Boolean(x)) : [];

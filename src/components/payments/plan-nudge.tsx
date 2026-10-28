@@ -32,9 +32,9 @@ export async function PlanNudge({ userId }: { userId: string }) {
             "radial-gradient(50% 90% at 92% 0%, color-mix(in oklab, var(--acc) 12%, transparent), transparent 70%), radial-gradient(40% 80% at 0% 100%, color-mix(in oklab, var(--acc) 8%, transparent), transparent 70%)",
         }}
       />
-      {/* 손전등 머리(심볼 오른쪽 끝)에서 판 오른쪽 끝까지 벌어지는 빛 줄기. 심볼 자리(왼쪽 여백 24 + 심볼 48)에서 시작한다.
+      {/* 손전등 머리(심볼 오른쪽 끝)에서 판 오른쪽 끝까지 벌어지는 빛 줄기. 심볼 자리(왼쪽 여백 24 + 심볼 48)에서, 심볼 키만큼의 폭으로 시작한다(globals.css .torch-cone).
           좁은 폭은 글과 단추가 두 줄로 접혀 심볼이 판 가운데 높이에 있지 않다 — 줄기가 엉뚱한 높이를 가로질러 빼고 심볼만 깜빡인다 */}
-      <span aria-hidden className="torch-cone -inset-y-1/2 left-[72px] hidden w-[78%] sm:block" />
+      <span aria-hidden className="torch-cone inset-y-0 left-[70px] hidden w-[80%] sm:block" />
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div className="flex min-w-0 items-center gap-3.5">
           <span aria-hidden className="torch shrink-0">
@@ -46,14 +46,11 @@ export async function PlanNudge({ userId }: { userId: string }) {
             <p className="text-[13.5px] text-mut">{M.nudgeLead(settings.copy.single.name, formatPrice(from))}</p>
           </div>
         </div>
-        <div className="flex shrink-0 items-center gap-1.5">
-          <Link href={ROUTES.makerPlans} className={buttonClass({ variant: "primary", size: "md" })}>
-            {M.nudgeCta}
-          </Link>
-          <Link href={ROUTES.membership} className={buttonClass({ variant: "ghost", size: "md" })}>
-            {M.nudgeMember(settings.copy.membership.name)}
-          </Link>
-        </div>
+        {/* 단추는 하나다. 멤버십 단추를 옆에 두었더니 "왜 있는지 모르겠다"(2026-10-28 사용자) — 무엇을 주는지 말하지 않는 이름뿐이었다.
+            멤버십은 요금 화면의 셋째 카드가 다른 둘과 나란히 견주며 설명한다 */}
+        <Link href={ROUTES.makerPlans} className={buttonClass({ variant: "primary", size: "md", className: "shrink-0" })}>
+          {M.nudgeCta}
+        </Link>
       </div>
     </section>
   );

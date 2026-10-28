@@ -145,11 +145,11 @@ export const NAV_TRAIL_MESSAGES = {
 } as const;
 
 /**
- * 메뉴 소속이 없어도 "이전 화면" 을 세우는 화면(목업의 내 활동, 가격 알림, 찜 목록, 설정). 계정 메뉴에서 들어오는 자리라
- * 하위 메뉴 띠가 없어 돌아갈 길이 머리띠뿐이다.
- * 광고, 멤버십 화면 넷도 같다(10-28) — 메뉴 칸 없이 등록현황, 통계, 내 게임 상세에서 들어오므로 되돌아가기가 곧 길이다.
+ * 메뉴 칸 없이 들어오는 화면이라 "이전 화면" 을 세우는 곳. 광고, 멤버십 화면 넷은 등록현황, 통계, 내 게임 상세에서 들어오고(10-28),
+ * 댓글함은 라운지 홈 현황 칸에서 들어온다 — 띠에 제 칸이 없으니 되돌아가기가 곧 길이다.
+ * 계정 화면(내 활동, 찜, 알림, 설정)은 10-28 뺐다 — 내 정보 띠(ACCOUNT_SECTION)가 서서 칸끼리 오간다.
  */
-export const TRAIL_BACK_ONLY_PATHS: readonly string[] = [ROUTES.me, ROUTES.alerts, ROUTES.wishlist, ROUTES.settings, ROUTES.makerPlans, ROUTES.membership, ROUTES.indieAds, ROUTES.indiePayments];
+export const TRAIL_BACK_ONLY_PATHS: readonly string[] = [ROUTES.makerPlans, ROUTES.membership, ROUTES.indieAds, ROUTES.indiePayments, ROUTES.loungeComments];
 
 /**
  * 바로 아래 한 칸(<부모>/<id>)에 "이전 화면" 만 세우는 화면. 인디 상세는 끝 낱말(게임 이름)이 데이터라 경로 줄은 화면이 직접 그리고
@@ -196,12 +196,16 @@ export function trailLeaf(pathname: string): string | null {
   return null;
 }
 
-/** 경로 줄을 세울 화면인가 — 하위 칸 그 자체, 끝 낱말이 정해진 화면, 계정 화면과 인디 상세(되돌아가기만) */
-export function trailKind(pathname: string, sub: NavSub | null): "sub" | "leaf" | "back" | null {
+/**
+ * 경로 줄을 세울 화면인가 — 끝 낱말이 정해진 화면(글쓰기, 게시글, 내 게임 등록), 띠에 칸이 없는 화면과 인디 상세(되돌아가기만).
+ * 하위 칸 그 자체(명예의 전당, 내 게임 관리 등)에는 세우지 않는다(2026-10-28 사용자: "이전 화면 버튼이 필요한가, 빵가루도 필요한가").
+ * 바로 위 띠가 켠 칸이 "개발자 라운지 > 내 게임 관리" 를 이미 말하고, 띠의 다른 칸이 곧 돌아갈 길이라 한 줄이 같은 말을 두 번 했다.
+ * 칸 화면이 인디 상세 규칙(/indie/<한 칸>)에 걸리는 경우(/indie/mine)도 칸이 이긴다
+ */
+export function trailKind(pathname: string, sub: NavSub | null): "leaf" | "back" | null {
   if (trailLeaf(pathname)) return "leaf";
-  // 계정 화면은 칸(내 정보 띠)이 있어도 되돌아가기만 — 띠가 이미 "내 정보 > 찜 목록" 을 말한다
   if (TRAIL_BACK_ONLY_PATHS.includes(pathname)) return "back";
-  if (sub && (pathname === pathOf(sub.href) || sub.aliases?.includes(pathname))) return "sub";
+  if (sub && (pathname === pathOf(sub.href) || sub.aliases?.includes(pathname))) return null;
   return TRAIL_BACK_ONLY_UNDER.some((parent) => childOf(pathname, parent)) ? "back" : null;
 }
 

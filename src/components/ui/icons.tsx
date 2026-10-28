@@ -455,3 +455,12 @@ export function ChatIcon(p: IconProps) {
     </svg>
   );
 }
+
+/** 막대그래프 — 내 게임 통계 */
+export function ChartIcon(p: IconProps) {
+  return (
+    <svg {...base(p)}>
+      <path d="M4 20h16M7 16v-5M12 16V7M17 16v-8" />
+    </svg>
+  );
+}
