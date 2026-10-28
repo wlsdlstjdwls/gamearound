@@ -1,11 +1,12 @@
 // /indie/mine/plans — 광고, 멤버십(2026-10-28). 사용자: "멤버십이 화면에 안 보인다", "결제하는 게 통계 화면에 있는 게 맞나".
 // 통계 화면 머리 단추로만 들어가던 멤버십, 광고 성과, 결제 내역을 메뉴 칸 하나(lib/nav "광고, 멤버십")로 꺼내고, 그 칸의 첫 화면이 이 요금 안내다.
-// 위는 요금 카드 셋(components/payments/plan-cards, 순서와 정가 표시의 이유는 그 머리 주석), 아래는 "어디에 걸까요" —
+// 위는 요금 카드 셋(components/payments/plan-cards, 순서와 정가 표시의 이유는 그 머리 주석), 가운데 광고가 보이는 자리(plan-spots), 아래는 "어디에 걸까요" —
 // 공개 중인 내 인디 게임과 홍보 글을 세우고 각각 구매 화면(광고 걸기, 홍보 고정)으로 보낸다. 묶음 고르기는 구매 화면이 맡는다.
 // /indie/mine/[id] 는 uuid 라 낱말 "plans" 와 부딪히지 않는다.
 import type { Metadata } from "next";
 import Link from "next/link";
 import { PLAN_PICK_ID, PlanCards } from "@/components/payments/plan-cards";
+import { PlanSpots } from "@/components/payments/plan-spots";
 import { buttonClass } from "@/components/ui/button";
 import { Page, PageHead, ROW, ROWS, sectionCardClass } from "@/components/ui/page";
 import { writePath } from "@/lib/community/constants";
@@ -75,6 +76,7 @@ export default async function MakerPlansPage() {
       </PageHead>
 
       <PlanCards membership={live} />
+      <PlanSpots />
 
       <section id={PLAN_PICK_ID} className={sectionCardClass("flex scroll-mt-24 flex-col gap-4")}>
         <div className="flex flex-col gap-1">
