@@ -1,14 +1,15 @@
-// 게시판 홈(기획서 v2.0 S-10): 현황 스트립, 급상승 인기글, 댓글을 기다리는 글, 오른쪽에 새로 올라온 홍보.
+// 게시판 홈(기획서 v2.0 S-10): 게시판 고르기 카드(목업의 현황 스트립 자리, components/community/board-picker), 급상승 인기글, 댓글을 기다리는 글, 오른쪽에 새로 올라온 홍보.
 // 소식 블록 규칙은 라운지 홈과 같다(services/community/home, 기획서 6.6). 모양은 목업 rbHome 을 따른다(components/community/news-blocks).
 import type { Metadata } from "next";
 import Link from "next/link";
 import { AuthorName, PostTags } from "@/components/community/badges";
-import { HeadLink, RisingBlock, SideEmpty, SidePanel, SideRow, StatStrip, WaitingBlock } from "@/components/community/news-blocks";
+import { BoardPicker } from "@/components/community/board-picker";
+import { HeadLink, RisingBlock, SideEmpty, SidePanel, SideRow, WaitingBlock } from "@/components/community/news-blocks";
 import { WriteLink } from "@/components/community/write-link";
 import { DbUnavailable } from "@/components/db-unavailable";
-import { CalendarIcon, FileTextIcon, GamepadIcon, TagIcon } from "@/components/ui/icons";
+import { FileTextIcon, GamepadIcon, TagIcon } from "@/components/ui/icons";
 import { Page, PageHead } from "@/components/ui/page";
-import { BOARD_CATEGORIES, CATEGORY_LABEL, CATEGORY_LIST_PATH, writePath } from "@/lib/community/constants";
+import { BOARD_CATEGORIES, writePath } from "@/lib/community/constants";
 import { COMMUNITY_MESSAGES as M } from "@/lib/community/messages";
 import { nullIfDbUnavailable } from "@/lib/db-errors";
 import { formatAgo } from "@/lib/format";
@@ -20,7 +21,7 @@ export const revalidate = 60;
 
 export const metadata: Metadata = { title: M.boardTitle, description: M.boardLead };
 
-/** 현황 띠 칸 아이콘 — 리뷰는 글, 공략은 패드, 홍보는 꼬리표 */
+/** 게시판 카드 아이콘 — 리뷰는 글, 공략은 패드, 홍보는 꼬리표 */
 const BOARD_STAT_ICON: Record<(typeof BOARD_CATEGORIES)[number], React.ReactNode> = {
   review: <FileTextIcon size={19} />,
   guide: <GamepadIcon size={19} />,
@@ -40,14 +41,7 @@ export default async function BoardHomePage() {
         <DbUnavailable retryHref={ROUTES.board} />
       ) : (
         <>
-          <StatStrip
-            label={M.statusLabel}
-            items={[
-              { label: M.todayPosts, value: home.today, unit: M.countUnit, icon: <CalendarIcon size={19} /> },
-              ...BOARD_CATEGORIES.map((c) => ({ label: CATEGORY_LABEL[c], value: home.counts[c] ?? 0, unit: M.countUnit, href: CATEGORY_LIST_PATH[c], icon: BOARD_STAT_ICON[c] })),
-            ]}
-            link={{ href: ROUTES.boardAll, label: M.allPostsLink }}
-          />
+          <BoardPicker categories={BOARD_CATEGORIES} counts={home.counts} today={home.today} icons={BOARD_STAT_ICON} allHref={ROUTES.boardAll} />
           <div className="grid items-start gap-6 lg:grid-cols-[minmax(0,1fr)_360px]">
             <div className="flex min-w-0 flex-col gap-7">
               <RisingBlock posts={home.rising} allHref={ROUTES.boardAll} now={now} />

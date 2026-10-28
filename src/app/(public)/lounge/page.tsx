@@ -1,8 +1,8 @@
 // 개발자 라운지 홈(기획서 v2.0 S-16, 목업 lgHome) — 대시보드형.
 //   머리: 제목 + 내 게임 관리(등록현황) + 글 작성
 //   현황 스트립: 등록 게임 수 | 검토 중 | 내 글 반응(최근 7일 새 댓글). 비로그인은 로그인 안내 한 칸
-//   글 현황 스트립: 오늘 올라온 글 | 개발일지 | 질문/피드백 + 전체 글 보기. 하위 띠에서 두 갈래를 뺐으므로(lib/nav 의 hideInBand)
-//   게시판 홈과 같은 모양으로 여기서 길을 낸다(2026-10-28)
+//   게시판 고르기 카드: 개발일지 | 질문/피드백 + 전체 글 보기. 하위 띠에서 두 갈래를 뺐으므로(lib/nav 의 hideInBand)
+//   게시판 홈과 같은 카드로 여기서 길을 낸다(2026-10-28, components/community/board-picker)
 //   왼쪽: 급상승 인기글(줄 오른쪽 끝 "전체 글 보기") + 답변을 기다리는 질문
 //   오른쪽: 내 게임 최근 소식(최대 4개). 비로그인은 로그인 안내, 게임이 없으면 등록 유도. 아래 이용 가이드
 // 검색, 탭, 정렬은 이 화면에 두지 않는다(기획서 S-16 "삭제된 영역") — 라운지 전체 글(S-17)이 맡는다.
@@ -11,14 +11,15 @@
 // 없는 값을 0 으로 적으면 "아무도 반응 안 했다" 로 읽혀 거짓말이 된다.
 import type { Metadata } from "next";
 import Link from "next/link";
+import { BoardPicker } from "@/components/community/board-picker";
 import { HeadLink, RisingBlock, SideEmpty, SidePanel, SideRow, StatStrip, WaitingBlock } from "@/components/community/news-blocks";
 import { WriteLink } from "@/components/community/write-link";
 import { BoardGuide } from "@/components/lounge/board-guide";
 import { DbUnavailable } from "@/components/db-unavailable";
 import { buttonClass } from "@/components/ui/button";
-import { CalendarIcon, ChatIcon, ClockIcon, FileTextIcon, GamepadIcon, UserIcon } from "@/components/ui/icons";
+import { ChatIcon, ClockIcon, FileTextIcon, GamepadIcon, UserIcon } from "@/components/ui/icons";
 import { Page, PageHead } from "@/components/ui/page";
-import { CATEGORY_LABEL, CATEGORY_LIST_PATH, LOUNGE_CATEGORIES, writePath } from "@/lib/community/constants";
+import { LOUNGE_CATEGORIES, writePath } from "@/lib/community/constants";
 import { COMMUNITY_MESSAGES as M } from "@/lib/community/messages";
 import { nullIfDbUnavailable } from "@/lib/db-errors";
 import { formatDotDate } from "@/lib/format";
@@ -34,7 +35,7 @@ export const dynamic = "force-dynamic";
 
 export const metadata: Metadata = { title: M.loungeTitle, description: L.lead };
 
-/** 글 현황 띠 칸 그림 — 개발일지는 글, 질문/피드백은 말풍선 */
+/** 게시판 카드 그림 — 개발일지는 글, 질문/피드백은 말풍선 */
 const LOUNGE_STAT_ICON: Record<(typeof LOUNGE_CATEGORIES)[number], React.ReactNode> = {
   devlog: <FileTextIcon size={19} />,
   qna: <ChatIcon size={19} />,
@@ -99,14 +100,7 @@ export default async function LoungeHomePage() {
               ) : (
                 <StatStrip label={L.statusLabel} items={[{ label: L.guestLead, value: L.guestLabel, icon: <UserIcon size={19} /> }]} link={{ href: signInPath(ROUTES.lounge), label: L.signIn }} />
               )}
-              <StatStrip
-                label={L.postsStatusLabel}
-                items={[
-                  { label: M.todayPosts, value: home.today, unit: M.countUnit, icon: <CalendarIcon size={19} /> },
-                  ...LOUNGE_CATEGORIES.map((c) => ({ label: CATEGORY_LABEL[c], value: home.counts[c] ?? 0, unit: M.countUnit, href: CATEGORY_LIST_PATH[c], icon: LOUNGE_STAT_ICON[c] })),
-                ]}
-                link={{ href: ROUTES.loungeAll, label: M.allPostsLink }}
-              />
+              <BoardPicker categories={LOUNGE_CATEGORIES} counts={home.counts} today={home.today} icons={LOUNGE_STAT_ICON} allHref={ROUTES.loungeAll} />
               <div className="grid items-start gap-6 lg:grid-cols-[minmax(0,1fr)_380px]">
                 <div className="flex min-w-0 flex-col gap-7">
                   <RisingBlock posts={home.rising} allHref={ROUTES.loungeAll} now={now} />

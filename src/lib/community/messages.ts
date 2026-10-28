@@ -33,6 +33,10 @@ export const COMMUNITY_MESSAGES = {
   allPosts: "전체 글",
   allPostsLink: "전체 글 보기",
   todayPosts: "오늘 올라온 글",
+  /** 홈의 게시판 고르기 판(components/community/board-picker) */
+  pickerTitle: "게시판 둘러보기",
+  pickerToday: (n: number) => `오늘 새 글 ${n.toLocaleString("ko-KR")}개`,
+  pickerGo: (label: string) => `${label} 보러 가기`,
   rising: "급상승 인기글",
   waitingComment: "댓글을 기다리는 글",
   waitingAnswer: "답변을 기다리는 질문",
