@@ -7,6 +7,7 @@
 // 실패하면 전환이 끝나며 낙관 값이 저절로 사라지고 버튼과 에러 문구가 돌아온다. 성공하면 서버가 다시 그린 줄이 이어받는다.
 //
 // 반려 사유가 비었는지는 **서버에 묻기 전에** 같은 zod 스키마로 본다 — 왕복 뒤에야 "잘못된 요청" 을 보던 자리다.
+import { ADMIN_FIELD } from "@/components/admin/field";
 import { useActionState, useOptimistic, useRef, useState } from "react";
 import { moderateIndiePostAction, type IndieModerationState } from "@/app/(admin)/admin/indie/actions";
 import { ActionForm } from "@/components/ui/action-form";
@@ -77,7 +78,7 @@ export function IndieModeration({ row }: { row: IndieAdminRowDto }) {
                 placeholder={row.review === "pending" ? A.rejectReasonPlaceholder : A.hideReasonPlaceholder}
                 aria-invalid={clientError ? true : undefined}
                 aria-describedby={error ? errorId : undefined}
-                className="h-11 w-full rounded-lg border border-line-strong bg-bg px-3 text-[16px] text-ink outline-none transition-colors focus:border-acc focus:bg-surface sm:h-9 sm:text-[13px]"
+                className={ADMIN_FIELD}
               />
             </>
           )}

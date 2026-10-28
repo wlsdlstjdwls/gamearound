@@ -7,6 +7,7 @@ import { ActionStatus, SubmitButton } from "@/components/admin/submit-button";
 import { panelClass } from "@/components/ui/page";
 import { ADMIN_FIELD } from "@/components/admin/field";
 import { FormSelect } from "@/components/ui/select";
+import { DateField } from "@/components/ui/date-field";
 
 export type FieldOption = { name: string; label: string; kind: "text" | "int" | "bool" | "date"; current: string | number | boolean | null };
 
@@ -65,7 +66,7 @@ export function CorrectionForm({
             options={BOOL_CHOICES}
           />
         ) : field?.kind === "date" ? (
-          <input name="value" key={`${field.name}-date`} type="date" defaultValue={toInputValue(field.current)} className={ADMIN_FIELD} />
+          <DateField name="value" label={field.label} hideLabel size="sm" key={`${field.name}-date`} defaultValue={toInputValue(field.current) || null} />
         ) : field?.kind === "int" ? (
           <input name="value" key={`${field.name}-int`} type="number" step={1} defaultValue={toInputValue(field.current)} placeholder="비우면 null" className={ADMIN_FIELD} />
         ) : (

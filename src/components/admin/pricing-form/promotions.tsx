@@ -6,6 +6,7 @@
 import { Panel, toInt } from "@/components/admin/pricing-form/sections";
 import type { Patch } from "@/components/admin/pricing-form";
 import { Button } from "@/components/ui/button";
+import { DateField } from "@/components/ui/date-field";
 import { FormSelect } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
 import { TextField } from "@/components/ui/text-field";
@@ -49,7 +50,7 @@ export function PromotionsSection({ value, patch }: { value: PricingSettings; pa
               <FormSelect
                 name={`target-${p.id}`}
                 label={M.promoTarget}
-                size="md"
+                size="lg"
                 value={p.target}
                 onChange={(v) => set(i, { target: v as Promotion["target"] })}
                 options={PRICED_KEYS.map((k) => ({ value: k, label: PRICED_KEY_LABELS[k] }))}
@@ -58,7 +59,7 @@ export function PromotionsSection({ value, patch }: { value: PricingSettings; pa
             <FormSelect
               name={`kind-${p.id}`}
               label={M.promoKind}
-              size="md"
+              size="lg"
               value={p.kind}
               onChange={(v) => set(i, { kind: v as Promotion["kind"] })}
               options={(["percent", "price"] as const).map((k) => ({ value: k, label: M.kindLabels[k] }))}
@@ -68,17 +69,17 @@ export function PromotionsSection({ value, patch }: { value: PricingSettings; pa
               <FormSelect
                 name={`audience-${p.id}`}
                 label={M.promoAudience}
-                size="md"
+                size="lg"
                 value={p.audience}
                 onChange={(v) => set(i, { audience: v as Promotion["audience"] })}
                 options={(["first", "all"] as const).map((k) => ({ value: k, label: M.audienceLabels[k] }))}
               />
             </div>
             <div className="sm:col-span-2">
-              <TextField label={M.promoStarts} type="date" value={p.startsOn ?? ""} onChange={(e) => set(i, { startsOn: e.target.value || null })} compact />
+              <DateField label={M.promoStarts} value={p.startsOn} max={p.endsOn} onChange={(v) => set(i, { startsOn: v })} />
             </div>
             <div className="sm:col-span-2">
-              <TextField label={M.promoEnds} type="date" value={p.endsOn ?? ""} onChange={(e) => set(i, { endsOn: e.target.value || null })} compact />
+              <DateField label={M.promoEnds} value={p.endsOn} min={p.startsOn} onChange={(v) => set(i, { endsOn: v })} />
             </div>
           </li>
         ))}
