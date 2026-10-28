@@ -130,8 +130,9 @@ async function planParentLinks(
   const pending = items.filter((it) => {
     if (it.snapshot.contentType !== "dlc" || !it.snapshot.parentExternalId) return false;
     const cur = gameById.get(it.gameId);
-    // 이미 DLC 로 확정돼 부모까지 붙어 있으면 다시 쓰지 않는다
-    return Boolean(cur) && !(cur!.contentType === "dlc" && cur!.parentGameId);
+    // 이미 DLC 로 확정돼 부모까지 붙어 있으면 다시 쓰지 않는다. 관리자가 부모를 잠근 행도 건드리지 않는다 —
+    // 스팀은 콜 오브 듀티 신작을 런처 앱(1938090)의 DLC 로 판다. 본편으로 올려 잠가도 이 자리가 매 수집 되돌렸다(2026-10-28)
+    return Boolean(cur) && !(cur!.contentType === "dlc" && cur!.parentGameId) && !isLocked(ctx, "games", it.gameId, "parent_game_id");
   });
   if (pending.length === 0) return [];
 
