@@ -632,7 +632,7 @@
    예전 줄기는 conic 마스크의 꼭짓점이 손전등 머리에 찍혀, 빛이 바늘 끝 한 점에서 새어 나오는 꼴이었다.
    심볼의 빛 칸은 머리에서 이미 심볼 키만큼 넓다(lib/brand 격자의 T 칸) — 그래서 줄기도 그 높이(--torch-mouth)에서 시작해 판 끝으로 벌어지는 사다리꼴이다.
    모서리는 칼처럼 잘리면 "밤티" 였으니(10-28 첫 판) 사다리꼴은 ::before 의 clip-path 로 깎고, 부모의 blur 가 그 모서리를 흐린다
-   (filter 는 자식까지 합친 그림에 걸리므로 잘린 모서리도 번진다). 색은 머리 쪽 브랜드 파랑에서 보라로 옅어지며 사라진다.
+   (filter 는 자식까지 합친 그림에 걸리므로 잘린 모서리도 번진다). 색은 머리 쪽 브랜드 파랑에서 보라로 옅어지며 사라진다. 진하기는 같은 날 "불빛이 너무 진하다" 해서 절반 아래로 내렸다 — 제목 글자 뒤를 지나므로 은은해야 한다.
    켜질 때는 머리에서 바깥으로 뻗어 나간다(torch-reach) — 한꺼번에 툭 서지 않고 빛이 닿는 거리가 늘어나는 것처럼 */
 @keyframes torch-reach {
   0%, 6% { scale: 0.35 1; }
@@ -657,8 +657,8 @@
   inset: 0;
   clip-path: polygon(0 calc(50% - var(--torch-mouth)), 100% -25%, 100% 125%, 0 calc(50% + var(--torch-mouth)));
   background:
-    radial-gradient(ellipse 22% 38% at 0% 50%, color-mix(in oklab, var(--acc) 34%, transparent), transparent 100%),
-    linear-gradient(90deg, color-mix(in oklab, var(--acc) 24%, transparent), color-mix(in oklab, var(--plum) 12%, transparent) 55%, transparent 100%);
+    radial-gradient(ellipse 22% 38% at 0% 50%, color-mix(in oklab, var(--acc) 15%, transparent), transparent 100%),
+    linear-gradient(90deg, color-mix(in oklab, var(--acc) 10%, transparent), color-mix(in oklab, var(--plum) 5%, transparent) 55%, transparent 100%);
 }
 
 /* 장애 그림 — 로고 손전등의 빛이 깜빡인다(components/ui/status-panel, 2026-10-13).
