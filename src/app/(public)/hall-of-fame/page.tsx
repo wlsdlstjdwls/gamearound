@@ -31,7 +31,8 @@ import { stagger } from "@/lib/motion";
 import { indieDetailHref, INDIE_FROM } from "@/lib/indie/query";
 import { ROUTES } from "@/lib/routes";
 import { getMonthRanking, listHallHistory, listIndieImageUrls, type RankedIndie } from "@/server/services/indie";
-import { FAME_INTRO_DEFAULTS, FAME_INTRO_IMAGE_MAX, type FameIntroSettings } from "@/lib/indie/fame-intro";
+import { FAME_INTRO_IMAGE_MAX, type FameIntroSettings } from "@/lib/indie/fame-intro";
+import { getFameIntroSettings } from "@/server/services/settings";
 
 export const revalidate = 300;
 
@@ -251,8 +252,8 @@ export default async function HallOfFamePage({ searchParams }: Props) {
   // 1위 인트로가 전체 화면에서 넘길 그림. 이번 달 순위 화면에서만 튼다. 못 받으면 대표 한 장으로 돈다
   const topSlug = data?.kind === "month" ? data.r.items[0]?.card.slug : undefined;
   const introImages = topSlug ? await listIndieImageUrls(topSlug, FAME_INTRO_IMAGE_MAX).catch(() => []) : [];
-  // 시험 중이라 매번 튼다(2026-10-28 사용자 "테스트 중이니 항상 뜨게"). 관리자 설정을 붙이면 그 값을 읽는다
-  const intro = { images: introImages, settings: { ...FAME_INTRO_DEFAULTS, mode: "always" } satisfies FameIntroSettings };
+  // 언제 틀지와 머무는 시간은 관리자 화면(화면 연출)이 정한다. 못 읽으면 기본값(처음 한 번만)
+  const intro = { images: introImages, settings: await getFameIntroSettings() };
 
   return (
     <Page gap={20}>

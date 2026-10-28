@@ -98,6 +98,8 @@ export const ROUTES = {
   /** 유료 노출 자리 걸기, 회수(2026-10-27) */
   adminPromotions: "/admin/promotions",
   adminMemberships: "/admin/memberships",
+  /** 화면 연출 설정(2026-10-28, 명예의 전당 1위 인트로) */
+  adminEffects: "/admin/effects",
   forbidden: "/403",
   terms: "/terms",
   privacy: "/privacy",

@@ -1035,3 +1035,5 @@ export const alertDeliveriesRelations = relations(alertDeliveries, ({ one }) => 
 export * from "./schema-admin";
 // 데이터 점검기 결과(sync/quality). games 를 참조하므로 schema-admin 과 같은 이유로 파일 끝에서 재수출한다
 export * from "./schema-quality";
+// 사이트 설정(관리자 화면에서 바꾸는 운영 값)
+export * from "./schema-settings";
