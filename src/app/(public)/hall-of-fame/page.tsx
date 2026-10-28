@@ -30,7 +30,8 @@ import { genreLabels, INDIE_PLATFORM_LABEL } from "@/lib/indie/messages";
 import { stagger } from "@/lib/motion";
 import { indieDetailHref, INDIE_FROM } from "@/lib/indie/query";
 import { ROUTES } from "@/lib/routes";
-import { getMonthRanking, listHallHistory, type RankedIndie } from "@/server/services/indie";
+import { getMonthRanking, listHallHistory, listIndieImageUrls, type RankedIndie } from "@/server/services/indie";
+import { FAME_INTRO_DEFAULTS, FAME_INTRO_IMAGE_MAX, type FameIntroSettings } from "@/lib/indie/fame-intro";
 
 export const revalidate = 300;
 
@@ -106,7 +107,7 @@ function RankRow({ to, rank, sub, item, right, note }: { to: string; rank: strin
   );
 }
 
-function Ranking({ items, label, finalized, isNow }: { items: RankedIndie[]; label: string; finalized: boolean; isNow: boolean }) {
+function Ranking({ items, label, finalized, isNow, intro }: { items: RankedIndie[]; label: string; finalized: boolean; isNow: boolean; intro: { images: string[]; settings: FameIntroSettings } }) {
   if (items.length === 0) return <EmptyState title={M.empty} description={M.emptyLead} />;
   const [top, ...rest] = items;
   // 4~10위 중 지난달보다 가장 많이 오른 게임 하나. 순위는 낮아도 뜨는 중임을 말해 준다. 오른 게임이 없으면 아무도 안 단다
@@ -147,7 +148,7 @@ function Ranking({ items, label, finalized, isNow }: { items: RankedIndie[]; lab
             {top.change !== undefined && <span className="font-semibold">{top.change === null ? M.newEntry : M.changeFromLast(top.change)}</span>}
           </span>
         </Link>
-        <FameIntro src={top.card.cover.url} title={top.card.title} badge={isNow ? M.firstThisMonth : M.firstOf(label)} targetId={FAME_TOP_ID} />
+        <FameIntro src={top.card.cover.url} images={intro.images} settings={intro.settings} title={top.card.title} badge={isNow ? M.firstThisMonth : M.firstOf(label)} targetId={FAME_TOP_ID} />
         {rest.slice(0, 2).map((r, i) => (
           // 2, 3위는 위쪽 브랜드색 띠(단상)와 큰 점수로 4위 아래 줄과 갈린다. 2위 띠가 3위보다 굵고 진하다
           <Link key={r.card.slug} href={indieDetailHref(r.card.slug, INDIE_FROM.hallOfFame)} className={cn("lift press group enter-item flex flex-col gap-3 rounded-[var(--radius-panel)] bg-surface p-3.5", i === 0 ? "[box-shadow:inset_0_4px_0_var(--acc),var(--ring-hair)]" : "[box-shadow:inset_0_3px_0_var(--acc-3),var(--ring-hair)]")} style={stagger(i)}>
@@ -247,6 +248,11 @@ export default async function HallOfFamePage({ searchParams }: Props) {
   const load = async (): Promise<Data> =>
     pickedYm ? { kind: "top10", ym: pickedYm, r: await getMonthRanking(pickedYm) } : tab === "history" ? { kind: "history", h: await listHallHistory() } : { kind: "month", r: await getMonthRanking(ym) };
   const data = await nullIfDbUnavailable(load());
+  // 1위 인트로가 전체 화면에서 넘길 그림. 이번 달 순위 화면에서만 튼다. 못 받으면 대표 한 장으로 돈다
+  const topSlug = data?.kind === "month" ? data.r.items[0]?.card.slug : undefined;
+  const introImages = topSlug ? await listIndieImageUrls(topSlug, FAME_INTRO_IMAGE_MAX).catch(() => []) : [];
+  // 시험 중이라 매번 튼다(2026-10-28 사용자 "테스트 중이니 항상 뜨게"). 관리자 설정을 붙이면 그 값을 읽는다
+  const intro = { images: introImages, settings: { ...FAME_INTRO_DEFAULTS, mode: "always" } satisfies FameIntroSettings };
 
   return (
     <Page gap={20}>
@@ -276,7 +282,7 @@ export default async function HallOfFamePage({ searchParams }: Props) {
           {!data ? (
             <DbUnavailable retryHref={ROUTES.hallOfFame} />
           ) : data.kind === "month" ? (
-            <Ranking items={data.r.items} label={ymLabel(ym)} finalized={data.r.finalized} isNow={ym === now} />
+            <Ranking items={data.r.items} label={ymLabel(ym)} finalized={data.r.finalized} isNow={ym === now} intro={intro} />
           ) : data.kind === "top10" ? (
             <Top10 ym={data.ym} items={data.r.items} />
           ) : data.h.length === 0 ? (

@@ -1,33 +1,34 @@
 "use client";
-// 명예의 전당에 들어오면 이번 달 1위 판이 화면 전체로 펼쳐졌다가, 같은 판 자리로 접혀 들어가는 인트로
+// 명예의 전당에 들어오면 이번 달 1위 판이 화면 전체로 펼쳐지고, 그 게임 그림 몇 장을 넘겨 보인 뒤, 같은 판 자리로 접혀 들어가는 인트로
 // (2026-10-28 사용자: "1위 게임이 전체화면으로 쫙 나오고 줄어들면서 지금 화면으로 노출").
 //
 // 결정과 이유:
-// - 움직임은 판 자리에서 시작한다(같은 날 사용자 "애니메이션 없이 전체화면이 됐다가 줄어든다, 부자연스럽다").
-//   전에는 덮개가 흐려 들어오기만 해서 화면이 갑자기 가려진 것으로 읽혔다. 지금은 1위 판 모양 창이 화면 전체로 펼쳐지고,
-//   이름을 읽을 만큼 머문 뒤, 같은 판 자리로 접혀 들어가 덮개를 흐려 진짜 판으로 넘긴다.
-// - 창은 clip-path 로만 움직인다. 그림을 scale 로 줄이면 화면과 판 비율이 달라 찌그러진다.
-//   그림은 전체 시간 동안 아주 조금(1.08 배에서 1 배로) 당겨 들어와 멈춘 사진이 아니라 다가가는 느낌을 준다.
-// - 서버 HTML 에는 덮개가 없다(첫 상태 idle). JS 가 붙은 뒤 시작하니 JS 없는 환경, 검색 로봇은 평소 화면만 본다.
-// - 세션당 한 번(sessionStorage)이 원래 규칙이다(같은 날 사용자 "처음 한 번만이 맞다").
-//   지금은 시험 중이라 ALWAYS_PLAY 로 매번 튼다(같은 날 사용자 "테스트 중이니 항상 뜨게"). **오픈 전에 false 로 되돌린다.**
+// - **판 자체가 커졌다 작아진다**(덮개의 위치와 크기를 움직인다). 처음엔 화면 크기 그림을 clip-path 로 잘랐는데,
+//   화면 전체로 자른 그림과 판의 그림은 잘리는 자리가 달라 내려앉는 순간 그림이 한 번 튀었다(같은 날 사용자 "줄어들 때 어색하다").
+//   덮개가 판과 같은 상자, 같은 object-cover 로 끝나면 마지막 프레임이 판과 똑같아진다. 모서리와 테두리 빛(box-shadow)도 판 값으로 끝낸다.
+// - 접히는 끝 무렵 덮개를 흐려 진짜 판(글, 받침 그라디언트)으로 넘긴다 — 그림은 같으니 글만 떠오르는 것으로 보인다.
+// - 전체 화면에서는 대표 그림으로 시작해 다른 그림 두세 장을 넘기고 대표 그림으로 돌아온다(같은 날 사용자 "유지 시간이 너무 짧다, 사진 여러 장으로").
+//   대표 그림으로 끝나야 판으로 내려앉을 때 그림이 바뀌지 않는다. 아직 못 받은 그림은 건너뛴다.
+// - 그림은 판이 이미 받아 둔 것(currentSrc)을 대표로 빌린다. 원본 주소를 새로 받으면 펼쳐지는 동안 검은 판만 커졌다(1280 첫 방문 실측).
+// - 언제 트는지(off, 세션당 한 번, 매번)와 머무는 시간은 관리자가 정한다(lib/indie/fame-intro). 서버 HTML 에는 덮개가 없다.
 // - 누르기, 휠, 터치, 키 입력이면 바로 끝낸다. 줄이기 설정(prefers-reduced-motion)이면 아예 안 튼다.
-// - 시간과 곡선은 globals.css 토큰(--duration-fame-*, --ease-fame)에서 읽는다. WAAPI 는 ms 숫자가 필요해서다.
+// - 펼치고 접는 시간과 곡선은 globals.css 토큰(--duration-fame-expand, --duration-fame-shrink, --ease-fame). WAAPI 는 ms 숫자가 필요해서 읽어 온다.
 import { useEffect, useRef, useState } from "react";
 import { TrophyIcon } from "@/components/ui/icons";
+import { cn } from "@/lib/cn";
+import type { FameIntroSettings } from "@/lib/indie/fame-intro";
 
-/** 시험 기간 동안 매번 튼다(머리 주석). 오픈 전에 false */
-const ALWAYS_PLAY = true;
-/** 세션에 한 번만 튼다는 표시 */
+/** 세션에 한 번만 튼다는 표시(mode once) */
 const SEEN_KEY = "fame-intro-seen";
 /** 토큰을 못 읽었을 때 쓰는 값(ms). globals.css 의 값과 같다 */
 const FALLBACK_EXPAND_MS = 650;
-const FALLBACK_HOLD_MS = 800;
-const FALLBACK_SHRINK_MS = 700;
-/** 접힌 뒤 덮개를 걷는 시간. 판 자리 그림과 덮개 그림의 자르는 위치가 조금 달라 겹쳐 흐려 넘긴다 */
-const FALLBACK_HANDOFF_MS = 220;
-/** 그림이 당겨 들어오는 시작 배율. 더 크면 낮은 해상도의 인디 그림이 뭉개져 보인다 */
-const IMAGE_PUSH_SCALE = 1.08;
+const FALLBACK_SHRINK_MS = 800;
+/** 그림 한 장이 머무는 동안 당겨 들어오는 시작 배율. 더 크면 낮은 해상도의 인디 그림이 뭉개져 보인다 */
+const IMAGE_PUSH_SCALE = 1.06;
+/** 넘길 그림을 받느라 인트로 시작을 늦출 수 있는 한도. 넘기면 받은 것만 넘긴다 */
+const PRELOAD_WAIT_MS = 1200;
+/** 접히는 시간 중 마지막 이 비율 동안 덮개를 흐려 진짜 판으로 넘긴다 */
+const HANDOFF_SHARE = 0.35;
 
 function tokenMs(name: string, fallback: number): number {
   const raw = getComputedStyle(document.documentElement).getPropertyValue(name).trim();
@@ -52,36 +53,61 @@ function markSeen() {
   }
 }
 
-/** 판 자리를 창 모양(inset)으로. 판이 화면 밖(아래)에 있어도 창이 화면 안에서 끝나게 자른다 */
-function cardClip(target: HTMLElement): string {
+type Box = { top: string; left: string; width: string; height: string; borderRadius: string; boxShadow: string };
+
+function cardBox(target: HTMLElement): Box {
   const r = target.getBoundingClientRect();
-  const vw = window.innerWidth;
-  const vh = window.innerHeight;
-  const radius = getComputedStyle(target).borderTopLeftRadius || "0px";
-  const top = Math.max(0, Math.min(r.top, vh - 1));
-  const bottom = Math.max(0, vh - Math.max(Math.min(r.bottom, vh), top + 1));
-  return `inset(${top}px ${Math.max(0, vw - r.right)}px ${bottom}px ${Math.max(0, r.left)}px round ${radius})`;
+  const cs = getComputedStyle(target);
+  return { top: `${r.top}px`, left: `${r.left}px`, width: `${r.width}px`, height: `${r.height}px`, borderRadius: cs.borderTopLeftRadius || "0px", boxShadow: cs.boxShadow === "none" ? "0 0 0 0 transparent" : cs.boxShadow };
 }
 
-const FULL_CLIP = "inset(0px 0px 0px 0px round 0px)";
+function fullBox(card: Box): Box {
+  // 그림자 모양(겹 수)을 판과 맞춰 둔다 — 겹 수가 다르면 브라우저가 사이를 못 이어 그림자가 툭 바뀐다
+  return { top: "0px", left: "0px", width: `${window.innerWidth}px`, height: `${window.innerHeight}px`, borderRadius: "0px", boxShadow: card.boxShadow.replace(/rgba?\([^)]*\)|#[0-9a-f]+|var\([^)]*\)/gi, "transparent") };
+}
 
-export function FameIntro({ src, title, badge, targetId }: { src: string; title: string; badge: string; targetId: string }) {
+export function FameIntro({ src, images, title, badge, targetId, settings }: { src: string; images: string[]; title: string; badge: string; targetId: string; settings: FameIntroSettings }) {
   const [phase, setPhase] = useState<"idle" | "play" | "done">("idle");
+  const [slide, setSlide] = useState(0);
+  const [showText, setShowText] = useState(false);
   const layer = useRef<HTMLDivElement>(null);
-  const img = useRef<HTMLImageElement>(null);
-  const text = useRef<HTMLDivElement>(null);
+  const imgs = useRef<(HTMLImageElement | null)[]>([]);
+  const { mode, holdMs } = settings;
+  // 대표 그림이 첫 장. 같은 주소가 겹치면 뺀다
+  const all = [src, ...images.filter((u) => u !== src)];
 
   useEffect(() => {
-    if (!ALWAYS_PLAY && alreadySeen()) return;
+    if (mode === "off") return;
+    if (mode === "once" && alreadySeen()) return;
     if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
-    // 다음 프레임에 켠다 — 첫 그림(서버 HTML)이 한 번 칠해진 뒤 판이 펼쳐진다.
+    // 넘길 그림을 먼저 받는다(최대 PRELOAD_WAIT_MS). 펼쳐진 뒤에 받기 시작하면 넘길 차례에 아직 없어 대표 한 장으로 끝났다.
+    // 기다리는 동안 화면은 평소대로 보인다. 그다음 프레임에 켠다.
     // 표시는 켤 때 남긴다. 효과 안에서 바로 남기면 개발 모드의 두 번 실행(StrictMode)이 첫 실행을 걷은 뒤 "이미 봤다" 로 읽어 안 튼다
-    const raf = requestAnimationFrame(() => {
-      markSeen();
-      setPhase("play");
+    let cancelled = false;
+    let raf = 0;
+    const loads = images.map(
+      (u) =>
+        new Promise<void>((done) => {
+          const im = new Image();
+          im.onload = im.onerror = () => done();
+          im.src = u;
+        }),
+    );
+    const wait = new Promise<void>((done) => window.setTimeout(done, PRELOAD_WAIT_MS));
+    void Promise.race([Promise.all(loads), wait]).then(() => {
+      if (cancelled) return;
+      raf = requestAnimationFrame(() => {
+        markSeen();
+        setPhase("play");
+      });
     });
-    return () => cancelAnimationFrame(raf);
-  }, []);
+    return () => {
+      cancelled = true;
+      cancelAnimationFrame(raf);
+    };
+    // images 는 서버가 준 값이라 화면이 사는 동안 바뀌지 않는다 — 배열 정체성 때문에 다시 돌지 않게 뺀다
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [mode]);
 
   useEffect(() => {
     if (phase !== "play") return;
@@ -92,86 +118,99 @@ export function FameIntro({ src, title, badge, targetId }: { src: string; title:
       return () => cancelAnimationFrame(raf);
     }
     const expand = tokenMs("--duration-fame-expand", FALLBACK_EXPAND_MS);
-    const hold = tokenMs("--duration-fame-hold", FALLBACK_HOLD_MS);
     const shrink = tokenMs("--duration-fame-shrink", FALLBACK_SHRINK_MS);
-    const handoff = tokenMs("--duration-base", FALLBACK_HANDOFF_MS);
     const ease = getComputedStyle(document.documentElement).getPropertyValue("--ease-fame").trim() || "ease-in-out";
-    const total = expand + hold + shrink;
 
-    // 판이 이미 받아 둔 그림(최적화 주소, currentSrc)을 그대로 빌린다. 원본 주소를 새로 받으면 큰 화면에서
-    // 펼쳐지는 동안 그림이 아직 없어 검은 판만 커졌다(2026-10-28 실측, 1280 첫 방문)
     const shown = target.querySelector("img")?.currentSrc;
-    if (img.current && shown) img.current.src = shown;
+    if (imgs.current[0] && shown) imgs.current[0].src = shown;
 
+    // 넘길 차례: 대표, (받아 둔) 다른 그림들, 대표. 다른 그림이 하나도 없으면 대표 한 장으로 머문다
+    const ready = () => imgs.current.map((im, i) => (i > 0 && im?.complete && im.naturalWidth > 0 ? i : -1)).filter((i) => i > 0);
+    const timers: number[] = [];
     const anims: Animation[] = [];
-    let fadeOut: Animation | null = null;
-    // 1) 판 자리에서 화면 전체로. 창을 먼저 판 모양으로 건 뒤에 보이게 한다 — 창 없이 한 프레임 전체가 덮이면 번쩍인다
-    const from = cardClip(target);
-    el.style.clipPath = from;
-    el.style.opacity = "1";
-    anims.push(el.animate([{ clipPath: from }, { clipPath: FULL_CLIP }], { duration: expand, easing: ease, fill: "forwards" }));
-    if (img.current) {
-      anims.push(img.current.animate([{ transform: `scale(${IMAGE_PUSH_SCALE})` }, { transform: "scale(1)" }], { duration: total, easing: "linear", fill: "forwards" }));
-    }
-    // 글은 펼쳐지는 끝 무렵 떠올랐다가, 접히기 시작하면 먼저 사라진다
-    if (text.current) {
-      anims.push(
-        text.current.animate(
-          [
-            { opacity: 0, transform: "translateY(20px)", offset: 0 },
-            { opacity: 0, transform: "translateY(20px)", offset: (expand * 0.6) / total },
-            { opacity: 1, transform: "none", offset: (expand + hold * 0.3) / total },
-            { opacity: 1, transform: "none", offset: (expand + hold) / total },
-            { opacity: 0, transform: "translateY(-10px)", offset: (expand + hold + shrink * 0.35) / total },
-            { opacity: 0, transform: "translateY(-10px)", offset: 1 },
-          ],
-          { duration: total, easing: "ease-out", fill: "forwards" },
-        ),
-      );
-    }
-    // 2) 머문 뒤 3) 판 자리로 접혀 들어가고, 덮개를 흐려 진짜 판으로 넘긴다.
-    // 접힐 자리는 그때 다시 잰다 — 머무는 동안 그림이나 글꼴이 늦게 와 판이 움직일 수 있다
-    const startShrink = window.setTimeout(() => {
-      const close = el.animate([{ clipPath: FULL_CLIP }, { clipPath: cardClip(target) }], { duration: shrink, easing: ease, fill: "forwards" });
-      anims.push(close);
-      close.onfinish = () => {
-        fadeOut = el.animate([{ opacity: 1 }, { opacity: 0 }], { duration: handoff, easing: "ease-out", fill: "forwards" });
-        fadeOut.onfinish = () => setPhase("done");
-      };
-    }, expand + hold);
+    const push = (i: number, ms: number) => {
+      const im = imgs.current[i];
+      if (im) anims.push(im.animate([{ transform: `scale(${IMAGE_PUSH_SCALE})` }, { transform: "scale(1)" }], { duration: ms, easing: "ease-out", fill: "forwards" }));
+    };
+
+    const card = cardBox(target);
+    const full = fullBox(card);
+    Object.assign(el.style, card, { opacity: "1" });
+    anims.push(el.animate([card, full], { duration: expand, easing: ease, fill: "forwards" }));
+    timers.push(window.setTimeout(() => setShowText(true), expand * 0.6));
+
+    // 펼쳐지는 동안 받은 그림으로 차례를 정한다. 한 장이 머무는 시간 = 유지 시간 / 장 수
+    timers.push(
+      window.setTimeout(() => {
+        const order = [0, ...ready(), 0];
+        const steps = order.length > 2 ? order : [0];
+        const each = holdMs / steps.length;
+        steps.forEach((i, k) => {
+          timers.push(
+            window.setTimeout(() => {
+              setSlide(i);
+              push(i, each + 400);
+            }, k * each),
+          );
+        });
+      }, expand),
+    );
+
+    let close: Animation | null = null;
+    timers.push(
+      window.setTimeout(() => {
+        setShowText(false);
+        // 접힐 자리는 그때 다시 잰다 — 머무는 동안 그림이나 글꼴이 늦게 와 판이 움직일 수 있다
+        close = el.animate([{ ...full, opacity: 1 }, { ...cardBox(target), opacity: 1, offset: 1 - HANDOFF_SHARE }, { ...cardBox(target), opacity: 0 }], {
+          duration: shrink / (1 - HANDOFF_SHARE),
+          easing: ease,
+          fill: "forwards",
+        });
+        close.onfinish = () => setPhase("done");
+      }, expand + holdMs),
+    );
 
     // 사용자가 무엇이든 하면 바로 끝낸다 — 인트로가 화면을 붙들면 안 된다
-    const skip = () => {
-      window.clearTimeout(startShrink);
+    const stop = () => {
+      for (const t of timers) window.clearTimeout(t);
       for (const a of anims) a.cancel();
-      fadeOut?.cancel();
+      close?.cancel();
+    };
+    const skip = () => {
+      stop();
       setPhase("done");
     };
     const opts = { passive: true, capture: true } as const;
-    window.addEventListener("pointerdown", skip, opts);
-    window.addEventListener("wheel", skip, opts);
-    window.addEventListener("touchstart", skip, opts);
-    window.addEventListener("keydown", skip, opts);
+    const events = ["pointerdown", "wheel", "touchstart", "keydown"] as const;
+    for (const e of events) window.addEventListener(e, skip, opts);
     return () => {
-      window.removeEventListener("pointerdown", skip, opts);
-      window.removeEventListener("wheel", skip, opts);
-      window.removeEventListener("touchstart", skip, opts);
-      window.removeEventListener("keydown", skip, opts);
-      window.clearTimeout(startShrink);
-      for (const a of anims) a.cancel();
-      fadeOut?.cancel();
+      for (const e of events) window.removeEventListener(e, skip, opts);
+      stop();
     };
-  }, [phase, targetId]);
+  }, [phase, targetId, holdMs]);
 
   if (phase !== "play") return null;
   return (
-    <div ref={layer} aria-hidden className="fixed inset-0 z-[70] overflow-hidden bg-ink text-on-ink" style={{ opacity: 0 }}>
-      {/* 판의 그림과 같은 주소라 이미 받아 둔 것을 바로 쓴다. 흐려 들어오는 FadeImage 는 펼쳐지는 동안 그림을 비워 보였다 */}
-      {/* eslint-disable-next-line @next/next/no-img-element */}
-      <img ref={img} src={src} alt="" decoding="sync" className="absolute inset-0 size-full object-cover will-change-transform" />
-      {/* 글자 자리만 아래에서 어둡게 받친다 — 그림은 가리지 않는다 */}
-      <span className="absolute inset-x-0 bottom-0 h-[60%]" style={{ background: "linear-gradient(to top, color-mix(in oklab, var(--ink) 90%, transparent), color-mix(in oklab, var(--ink) 65%, transparent) 45%, transparent)" }} />
-      <div ref={text} className="absolute inset-x-0 bottom-0 flex flex-col items-center gap-3 px-6 pb-[14vh] text-center" style={{ opacity: 0 }}>
+    <div ref={layer} aria-hidden className="fixed z-[70] overflow-hidden bg-ink text-on-ink" style={{ opacity: 0 }}>
+      {all.map((u, i) => (
+        // eslint-disable-next-line @next/next/no-img-element
+        <img
+          key={u}
+          ref={(n) => {
+            imgs.current[i] = n;
+          }}
+          src={u}
+          alt=""
+          decoding="async"
+          className={cn("absolute inset-0 size-full object-cover transition-opacity duration-slow will-change-transform", slide === i ? "opacity-100" : "opacity-0")}
+        />
+      ))}
+      {/* 글자 자리만 아래에서 어둡게 받친다 — 그림은 가리지 않는다. 글과 함께 들고 난다 */}
+      <span
+        className={cn("absolute inset-x-0 bottom-0 h-[60%] transition-opacity duration-slow", showText ? "opacity-100" : "opacity-0")}
+        style={{ background: "linear-gradient(to top, color-mix(in oklab, var(--ink) 90%, transparent), color-mix(in oklab, var(--ink) 65%, transparent) 45%, transparent)" }}
+      />
+      <div className={cn("absolute inset-x-0 bottom-0 flex flex-col items-center gap-3 px-6 pb-[14vh] text-center transition-[opacity,transform] duration-slow ease-out-emph", showText ? "translate-y-0 opacity-100" : "translate-y-5 opacity-0")}>
         <span className="inline-flex items-center gap-1.5 rounded-full bg-acc px-3.5 py-1.5 text-[14px] font-bold text-on-ink">
           <TrophyIcon size={16} strokeWidth={2.2} />
           {badge}

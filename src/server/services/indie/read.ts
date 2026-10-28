@@ -234,3 +234,18 @@ export async function listMyIndiePosts(userId: string): Promise<IndieMineRowDto[
     .orderBy(desc(indiePosts.createdAt));
   return rows.map((r) => ({ ...r, platforms: r.platforms as IndiePlatform[], hasCover: Boolean(r.hasCover), createdAt: r.createdAt.toISOString(), updatedAt: r.updatedAt.toISOString() }));
 }
+
+/**
+ * 공개 인디 글 하나의 그림 주소(순서대로, 최대 limit). 명예의 전당 1위 인트로가 전체 화면에서 넘겨 보인다(components/indie/fame-intro).
+ * 공개가 아니면 빈 배열 — 숨긴 글의 그림이 인트로로 새면 안 된다.
+ */
+export async function listIndieImageUrls(slug: string, limit: number): Promise<string[]> {
+  const rows = await getDb()
+    .select({ url: indiePostImages.url })
+    .from(indiePostImages)
+    .innerJoin(indiePosts, eq(indiePosts.id, indiePostImages.postId))
+    .where(and(eq(indiePosts.slug, slug), isPublic))
+    .orderBy(asc(indiePostImages.sort), asc(indiePostImages.createdAt))
+    .limit(limit);
+  return rows.map((r) => r.url);
+}
