@@ -10,7 +10,7 @@
 //
 // 묶은 기준은 화면 이름이 아니라 **관리자가 그 자리에서 하는 일**이다.
 // 수집은 읽기만 하는 자리(무엇이 돌았나), 검수는 사람이 판정해야 줄이 줄어드는 자리,
-// 매장과 할 일은 각자 혼자 서는 자리다.
+// 커뮤니티는 사람이 올린 글, 수익은 돈이 오가는 설정, 매장은 입점 축, 운영은 서비스 자체를 꾸리는 자리다.
 //
 // **낱말은 ADMIN_NAV 한곳에서만 정한다.** 메뉴에서 본 말과 들어간 화면의 제목이 다르면
 // 같은 곳인지 의심하게 된다.
@@ -43,7 +43,7 @@ import { COMING_SOON } from "@/lib/messages/coming-soon";
 import { ROUTES } from "@/lib/routes";
 import { BoxIcon, BuildingIcon, ChatIcon, CheckListIcon, LinkIcon, LogIcon, PulseIcon, SearchCheckIcon, StoreIcon } from "@/components/admin/nav-icons";
 import { ComingSoon } from "@/components/ui/coming-soon";
-import { CalendarIcon, GamepadIcon, SlidersIcon, TagIcon, TicketIcon } from "@/components/ui/icons";
+import { CalendarIcon, GamepadIcon, MonitorIcon, SlidersIcon, TagIcon, TicketIcon } from "@/components/ui/icons";
 
 export interface AdminNavCounts {
   matches: number;
@@ -106,7 +106,6 @@ const GROUPS: Array<{ key: string; title?: string; items: Item[] }> = [
         pick: (c) => ({ n: c.companies, capped: c.companiesCapped }),
       },
       { href: ROUTES.adminPreorder, label: ADMIN_NAV.preorder, Icon: CalendarIcon, pick: (c) => ({ n: c.preorder }) },
-      { href: ROUTES.adminProducts, label: ADMIN_NAV.products, Icon: BoxIcon, pick: (c) => ({ n: c.products }) },
     ],
   },
   {
@@ -117,16 +116,30 @@ const GROUPS: Array<{ key: string; title?: string; items: Item[] }> = [
     items: [
       { href: ROUTES.adminIndie, label: ADMIN_NAV.indie, Icon: GamepadIcon, pick: (c) => ({ n: c.indie }) },
       { href: ROUTES.adminPosts, label: ADMIN_NAV.posts, Icon: ChatIcon },
+    ],
+  },
+  {
+    key: "revenue",
+    title: ADMIN_NAV.groupRevenue,
+    items: [
       { href: ROUTES.adminPromotions, label: ADMIN_NAV.promotions, Icon: TagIcon },
       { href: ROUTES.adminMemberships, label: ADMIN_NAV.memberships, Icon: TicketIcon },
       { href: ROUTES.adminPricing, label: ADMIN_NAV.pricing, Icon: SlidersIcon },
     ],
   },
   {
-    key: "etc",
-    title: ADMIN_NAV.groupEtc,
+    // 입점 신청이 들어와야 상품 매핑이 생긴다 — 한 흐름이라 신청을 앞에 둔다
+    key: "shops",
+    title: ADMIN_NAV.groupShops,
     items: [
       { href: ROUTES.shopsAdmin, label: ADMIN_NAV.shops, Icon: StoreIcon, pick: (c) => ({ n: c.shops }) },
+      { href: ROUTES.adminProducts, label: ADMIN_NAV.products, Icon: BoxIcon, pick: (c) => ({ n: c.products }) },
+    ],
+  },
+  {
+    key: "ops",
+    title: ADMIN_NAV.groupOps,
+    items: [
       {
         href: ROUTES.adminTasks,
         label: ADMIN_NAV.tasks,
@@ -134,7 +147,8 @@ const GROUPS: Array<{ key: string; title?: string; items: Item[] }> = [
         pick: (c) => ({ n: c.tasksTodo }),
         pick2: { pick: (c) => ({ n: c.tasksDoing }), tone: "doing" },
       },
-      { href: ROUTES.adminEffects, label: ADMIN_NAV.effects, Icon: SlidersIcon },
+      // 요금(Sliders)과 그림이 같으면 기둥에서 둘이 같은 자리처럼 읽힌다. 고치는 대상이 공개 화면이라 화면 그림이다
+      { href: ROUTES.adminEffects, label: ADMIN_NAV.effects, Icon: MonitorIcon },
     ],
   },
 ];
