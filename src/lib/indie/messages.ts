@@ -310,7 +310,6 @@ export const INDIE_REVIEW_MESSAGES = {
   appliedAt: "신청일",
   applied: "신청",
   pendingShort: "운영진이 확인하고 있어요",
-  liveShort: "내가 만든 게임에 보이고 있어요",
   emptyLead: "내 게임 등록으로 첫 게임을 올려 보세요.",
   /** 줄마다 세우는 진행 단계 셋(components/indie/review-steps) */
   stepApplied: "등록 신청",

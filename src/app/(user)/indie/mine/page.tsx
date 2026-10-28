@@ -110,7 +110,8 @@ export default async function IndieMinePage({ searchParams }: Props) {
         <ul className="flex flex-col gap-3">
           {posts.map((p, i) => {
             const meta = [[...p.platforms.map((x) => INDIE_PLATFORM_LABEL[x]), ...genreLabels(p.genres)].join(", "), `${formatDotDate(p.createdAt)} ${RV.applied}`].filter(Boolean).join(" | ");
-            const note = p.review === "pending" ? RV.pendingShort : p.review === "approved" ? (p.status === "published" ? (p.hasCover ? RV.liveShort : INDIE_MESSAGES.noCoverShort) : INDIE_MESSAGES.hiddenShort) : null;
+            // 잘 보이고 있는 줄에는 한 줄 설명을 달지 않는다(10-28 사용자: "내가 만든 게임에 보이고 있어요" 문구 없애 줘) — 단계 그림이 이미 "등록 완료" 를 말한다
+            const note = p.review === "pending" ? RV.pendingShort : p.review === "approved" ? (p.status === "published" ? (p.hasCover ? null : INDIE_MESSAGES.noCoverShort) : INDIE_MESSAGES.hiddenShort) : null;
             // 등록 완료 줄은 공개 상세로, 그 밖은 고치기로 간다(기획서 S-22 "등록 완료 행은 S-19 로")
             const to = p.review === "approved" ? indieDetailHref(p.slug, INDIE_FROM.mine) : indieEditPath(p.id);
             return (
