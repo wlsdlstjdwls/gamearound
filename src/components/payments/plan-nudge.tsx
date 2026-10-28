@@ -34,7 +34,7 @@ export async function PlanNudge({ userId }: { userId: string }) {
       />
       {/* 손전등 머리(심볼 오른쪽 끝)에서 판 오른쪽 끝까지 벌어지는 빛 줄기. 심볼 자리(왼쪽 여백 24 + 심볼 48)에서 시작한다.
           좁은 폭은 글과 단추가 두 줄로 접혀 심볼이 판 가운데 높이에 있지 않다 — 줄기가 엉뚱한 높이를 가로질러 빼고 심볼만 깜빡인다 */}
-      <span aria-hidden className="torch-cone inset-y-0 right-0 left-[72px] hidden sm:block" />
+      <span aria-hidden className="torch-cone -inset-y-1/2 left-[72px] hidden w-[78%] sm:block" />
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div className="flex min-w-0 items-center gap-3.5">
           <span aria-hidden className="torch shrink-0">

@@ -537,34 +537,48 @@
 }
 
 /* 알리기 판의 손전등(components/payments/plan-nudge, 2026-10-28 사용자: "손전등 빛 켜지고 꺼지는 애니메이션").
-   꺼진 채 잠깐 → 딸깍 두 번 튀며 켜짐 → 오래 켜져 있음 → 툭 꺼짐. 심볼의 빛 칸과 판을 가로지르는 빛 줄기가 같은 박자를 탄다.
+   꺼진 채 잠깐 → 딸깍 두 번 튀며 켜짐 → 오래 켜져 있음 → 스르르 꺼짐. 심볼의 빛 칸과 판을 가로지르는 빛 줄기가 같은 박자를 탄다.
    쉬는 모양(애니메이션 밖)은 켜진 쪽이다 — 움직임 줄이기 설정의 전역 킬스위치가 애니메이션을 지우면 켜진 손전등으로 선다.
    빛 줄기는 노랑이 아니라 브랜드 파랑이다(2026-10-27, "누런색은 되도록 쓰지 마") */
+/* 켜짐 박자는 선으로 잇는다(steps 아님) — 딸깍 두 번 튀는 몫은 간격이 짧아 그대로 깜빡임으로 보이고,
+   꺼질 때는 0.5초쯤 스르르 사그라든다. 툭 끊기면 고장처럼 보였다 */
 @keyframes torch-power {
-  0%, 6% { opacity: 0.12; }
-  8% { opacity: 1; }
-  10% { opacity: 0.25; }
-  13%, 78% { opacity: 1; }
-  80%, 100% { opacity: 0.12; }
+  0%, 6% { opacity: 0; }
+  7% { opacity: 0.7; }
+  8.5% { opacity: 0.08; }
+  10% { opacity: 0.85; }
+  14%, 76% { opacity: 1; }
+  84%, 100% { opacity: 0; }
 }
 @keyframes torch-power-fill {
-  0%, 6% { fill-opacity: 0.15; }
-  8% { fill-opacity: 1; }
-  10% { fill-opacity: 0.3; }
-  13%, 78% { fill-opacity: 1; }
-  80%, 100% { fill-opacity: 0.15; }
+  0%, 6% { fill-opacity: 0.18; }
+  7% { fill-opacity: 0.8; }
+  8.5% { fill-opacity: 0.2; }
+  10% { fill-opacity: 0.9; }
+  14%, 76% { fill-opacity: 1; }
+  84%, 100% { fill-opacity: 0.18; }
+}
+/* 켜져 있는 동안 빛 줄기가 손전등 머리를 축으로 아주 느리게 위아래로 흔들린다 — 손에 든 손전등처럼 */
+@keyframes torch-sway {
+  from { rotate: -3deg; }
+  to { rotate: 3deg; }
 }
 .torch .brand-beam {
-  animation: torch-power-fill var(--duration-torch) steps(1, end) infinite;
+  animation: torch-power-fill var(--duration-torch) linear infinite;
 }
 .torch-cone {
   position: absolute;
   z-index: -1;
   pointer-events: none;
-  /* 심볼 머리 끝에서 오른쪽으로 벌어지는 원뿔. 끝으로 갈수록 옅어진다 */
-  clip-path: polygon(0 44%, 100% 0, 100% 100%, 0 56%);
-  background: linear-gradient(90deg, color-mix(in oklab, var(--acc) 20%, transparent), color-mix(in oklab, var(--acc) 5%, transparent) 70%, transparent);
-  animation: torch-power var(--duration-torch) steps(1, end) infinite;
+  transform-origin: 0 50%;
+  /* 빛의 몸: 머리에서 가장 밝고 멀어질수록 옅어진다 */
+  background: radial-gradient(ellipse 85% 55% at 0% 50%, color-mix(in oklab, var(--acc) 30%, transparent), color-mix(in oklab, var(--acc) 10%, transparent) 55%, transparent 85%);
+  /* 빛의 모양: 원뿔. clip-path 는 가장자리가 칼로 자른 듯 각져서(첫 판, "밤티") 가장자리가 흐려지는 conic 마스크로 깎는다.
+     0deg 가 위쪽이고 from 이 시작각이라 멈춤 각은 74deg 부터 센다 — 진한 몫이 90deg 둘레(위아래 6도), 흐려지는 몫이 그 바깥 10도다 */
+  mask-image: conic-gradient(from 74deg at 0% 50%, transparent 0deg, #000 10deg, #000 22deg, transparent 32deg);
+  animation:
+    torch-power var(--duration-torch) linear infinite,
+    torch-sway var(--duration-ambient) var(--ease-standard) infinite alternate;
 }
 
 /* 장애 그림 — 로고 손전등의 빛이 깜빡인다(components/ui/status-panel, 2026-10-13).
