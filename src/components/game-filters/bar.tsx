@@ -132,8 +132,9 @@ export function GameFilterBar({
         </Link>
       </div>
 
-      {/* 둘째 줄: 요즘 많이 찾는 장르(다시 누르면 풀린다) | 켜고 끄는 조건 */}
-      <div className="flex flex-wrap items-center gap-x-2 gap-y-2 border-b border-line pb-4">
+      {/* 둘째 줄: 요즘 많이 찾는 장르(다시 누르면 풀린다) | 켜고 끄는 조건.
+          밑줄(헤어라인)은 걷었다(2026-10-28, 사용자 "공백도 많고 자리도 많이 차지") — 결과 수 줄과 사이에 빈 띠만 하나 더 만들었다 */}
+      <div className="flex flex-wrap items-center gap-x-2 gap-y-2">
         {topGenres.length > 0 && <span className="mr-1 text-[13px] text-dim">{M.topGenres}</span>}
         {topGenres.map((g) => (
           <ChipNavLink key={g} {...nav(href({ genre: filter.genre === g ? undefined : g }))} outline active={filter.genre === g}>

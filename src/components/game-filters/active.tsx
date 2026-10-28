@@ -136,14 +136,34 @@ function ClearAll({ filter, className }: { filter: GamesQuery; className?: strin
 export type ActiveFiltersVariant = "column" | "strip";
 
 /**
+ * 목록 막대(bar)가 이미 보여 주는 조건인가(2026-10-28 사용자 지적: "한국어 지원, 전부 풀기 공백도 많고 자리도 많이 차지").
+ * 막대의 드롭다운과 켜진 토글이 같은 값을 말하는데 아래 띠가 한 번 더 세워 한 줄을 통째로 먹었다.
+ * 띠에는 막대에 자리가 없는 조건(할인율, 가격, 구독, 기기, 회사, 여러 플랫폼)만 남긴다 — 주소로만 들어오는 값이라 여기서 못 풀면 풀 길이 없다.
+ */
+function isShownInBar(key: string, filter: GamesQuery): boolean {
+  if (key === "genre" || key === "korean" || key === "event") return true;
+  // 드롭다운은 값 하나만 보여 준다. 둘 이상 걸렸으면 하나씩 풀 칸이 필요하다
+  return key.startsWith("platform:") && parsePlatformValues(filter.platform).length <= 1;
+}
+
+/**
  * 걸린 조건. 걸린 것이 없으면 아무것도 그리지 않는다 — 빈 상태에서 "적용된 필터 없음" 이라고 적어 두면
  * 한 줄이 늘 아무 말도 하지 않는 자리가 된다.
  *
  * 두 모양을 한 함수가 낸다(머리 주석): 넓은 화면은 기둥 안에 쌓고, 좁은 화면은 "필터" 줄 옆에 눕힌다.
  */
-export function ActiveFilters({ filter: serverFilter, variant = "column" }: { filter: GamesQuery; variant?: ActiveFiltersVariant }) {
+export function ActiveFilters({
+  filter: serverFilter,
+  variant = "column",
+  shownElsewhere = false,
+}: {
+  filter: GamesQuery;
+  variant?: ActiveFiltersVariant;
+  /** 위 막대가 이미 켜진 모양으로 보여 주는 조건(장르, 플랫폼 하나, 한국어, 세일)은 다시 세우지 않는다 */
+  shownElsewhere?: boolean;
+}) {
   const filter = useFilterQuery(serverFilter);
-  const list = activeFilters(filter);
+  const list = shownElsewhere ? activeFilters(filter).filter((f) => !isShownInBar(f.key, filter)) : activeFilters(filter);
   if (list.length === 0) return null;
 
   if (variant === "strip") {
