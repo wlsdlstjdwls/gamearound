@@ -69,7 +69,9 @@ export function SubNav() {
     };
   }, [sectionKey]);
 
-  if (!section) return null;
+  // 띠에 설 칸이 하나뿐이면 띠를 세우지 않는다 — 고를 것이 없는 줄은 자리만 먹는다(게임 게시판, lib/nav 의 hideInBand)
+  const subs = section?.subs.filter((s) => !s.hideInBand) ?? [];
+  if (!section || subs.length < 2) return null;
   const on = picked ?? sub?.href ?? null;
 
   return (
@@ -78,10 +80,10 @@ export function SubNav() {
         ref={listRef}
         className="relative mx-auto flex w-full max-w-[var(--page-w)] gap-1 overflow-x-auto px-2 transition-[translate] duration-slow ease-out-emph [scrollbar-width:none] sm:px-4"
       >
-        {section.subs.map((s, i) => {
+        {subs.map((s, i) => {
           const current = s.href === on;
           // 내 것 묶음의 첫 칸 앞에 가는 세로선 하나 — 칸 이름 없이 "여기부터는 내 화면" 을 가른다(lib/nav 의 mine)
-          const split = s.mine && !section.subs[i - 1]?.mine;
+          const split = s.mine && !subs[i - 1]?.mine;
           return (
             <li
               key={s.href}

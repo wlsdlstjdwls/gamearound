@@ -207,16 +207,26 @@ export function StatStrip({ items, link, label }: { items: StatItem[]; link?: { 
                 four ? i % 2 === 1 && "border-l" : i > 0 && "border-l",
                 four && i >= 2 && "max-md:border-t",
                 four && i === 2 && "md:border-l",
-                it.href && "hover:bg-surface-4",
+                // 눌러서 들어가는 칸은 눌린다는 티를 낸다(2026-10-28, 사용자: "클릭된다고 티 좀 내줘 이쁘게").
+                // 바탕이 브랜드색으로 옅게 물들고, 그림 칸이 채운 파랑으로 바뀌고, 오른쪽 동그라미 화살표가 밀려 나간다.
+                // 화살표는 좁은 폭에도 늘 선다 — 터치 기기에는 hover 가 없어 그것 말고는 눌린다는 표시가 없다
+                it.href && "pr-12 hover:bg-acc-soft sm:pr-14",
               )}
             >
               {it.icon && (
-                <span aria-hidden className={cn("flex size-9 shrink-0 items-center justify-center rounded-xl sm:size-11", i === 0 ? "bg-acc text-on-ink" : "bg-acc-soft text-acc")}>
+                <span
+                  aria-hidden
+                  className={cn(
+                    "flex size-9 shrink-0 items-center justify-center rounded-xl transition-colors duration-fast sm:size-11",
+                    i === 0 ? "bg-acc text-on-ink" : "bg-acc-soft text-acc",
+                    it.href && "group-hover/stat:bg-acc group-hover/stat:text-on-ink",
+                  )}
+                >
                   {it.icon}
                 </span>
               )}
               <div className="flex min-w-0 flex-1 flex-col gap-0.5">
-                <dt className="truncate text-[12.5px] text-mut">{it.label}</dt>
+                <dt className={cn("truncate text-[12.5px]", it.href ? "font-semibold text-ink-2" : "text-mut")}>{it.label}</dt>
                 <dd className={cn("flex items-baseline gap-0.5", !numeric && "text-[14px] font-semibold text-ink")}>
                   {numeric ? (
                     <>
@@ -229,8 +239,17 @@ export function StatStrip({ items, link, label }: { items: StatItem[]; link?: { 
                 </dd>
               </div>
               {it.href && (
-                <Link href={it.href} aria-label={`${it.label} ${typeof it.value === "number" ? it.value.toLocaleString("ko-KR") : it.value}${it.unit ?? ""}`} className="press absolute inset-0 rounded-none">
-                  <ChevronLeftIcon size={16} aria-hidden className="absolute right-3 top-1/2 hidden -translate-y-1/2 rotate-180 text-dim transition-transform group-hover/stat:translate-x-0.5 sm:block" />
+                <Link
+                  href={it.href}
+                  aria-label={`${it.label} ${typeof it.value === "number" ? it.value.toLocaleString("ko-KR") : it.value}${it.unit ?? ""}`}
+                  className="press absolute inset-0 rounded-none focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-acc"
+                >
+                  <span
+                    aria-hidden
+                    className="absolute right-3 top-1/2 flex size-7 -translate-y-1/2 items-center justify-center rounded-full bg-surface-2 text-mut transition-[background-color,color,translate] duration-fast group-hover/stat:translate-x-0.5 group-hover/stat:bg-acc group-hover/stat:text-on-ink sm:right-4 sm:size-8"
+                  >
+                    <ChevronLeftIcon size={15} className="rotate-180" />
+                  </span>
                 </Link>
               )}
             </div>

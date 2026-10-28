@@ -46,6 +46,11 @@ export type NavSub = {
    * 남의 글을 읽는 자리와 내 것을 관리하는 자리가 한 줄에서 구별되게 한다(2026-10-28 메뉴 정리)
    */
   mine?: boolean;
+  /**
+   * 띠에 세우지 않는 칸. 경로 줄("게임 게시판 > 리뷰")과 칸 켜기 규칙에는 그대로 쓴다.
+   * 게시판의 리뷰, 공략, 홍보는 게시판 홈 현황 띠와 목록 화면 옆 메뉴가 같은 길을 낸다 — 띠에도 서면 같은 길이 셋이었다(2026-10-28 사용자)
+   */
+  hideInBand?: boolean;
 };
 
 export type NavSection = {
@@ -93,9 +98,9 @@ export const NAV_SECTIONS: readonly NavSection[] = [
       // 전체 글(/board/all)은 칸이 없지만 목업(rbPage rha)이 "게시판 홈" 을 켠다 — 라운지 전체 글과 같은 자리다
       { label: "게시판 홈", href: ROUTES.board, aliases: [ROUTES.boardAll] },
       // 글쓰기의 category 값은 posts.category 갈래 이름이다(lib/community/constants 의 writePath)
-      { label: "리뷰", href: ROUTES.boardReviews, aliasQueries: [{ path: BOARD_WRITE_PATH, query: { category: "review" } }] },
-      { label: "공략", href: ROUTES.boardGuides, aliasQueries: [{ path: BOARD_WRITE_PATH, query: { category: "guide" } }] },
-      { label: "홍보", href: ROUTES.boardPromos, aliasQueries: [{ path: BOARD_WRITE_PATH, query: { category: "promo" } }] },
+      { label: "리뷰", href: ROUTES.boardReviews, hideInBand: true, aliasQueries: [{ path: BOARD_WRITE_PATH, query: { category: "review" } }] },
+      { label: "공략", href: ROUTES.boardGuides, hideInBand: true, aliasQueries: [{ path: BOARD_WRITE_PATH, query: { category: "guide" } }] },
+      { label: "홍보", href: ROUTES.boardPromos, hideInBand: true, aliasQueries: [{ path: BOARD_WRITE_PATH, query: { category: "promo" } }] },
     ],
   },
   {
