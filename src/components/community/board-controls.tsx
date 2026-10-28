@@ -5,9 +5,9 @@
 // 배치는 목업 bpage: 첫 줄 왼쪽에 판 이름과 글 수(head, 서버가 그린다), 오른쪽에 검색. 그 아래 홍보 유형, 전체글/인기글 탭.
 import { useRouter } from "next/navigation";
 import { useState, useTransition } from "react";
-import { NavChip } from "@/components/ui/nav-pending";
+import { NavChip, useNavPendingGo } from "@/components/ui/nav-pending";
 import { SearchIcon } from "@/components/ui/icons";
-import { FormSelect } from "@/components/ui/select";
+import { FormSelect, Select } from "@/components/ui/select";
 import { POPULAR_PERIODS, POPULAR_PERIOD_LABEL, PROMO_TYPES, PROMO_TYPE_LABEL, SEARCH_SCOPES, SEARCH_SCOPE_LABEL, type SearchScope } from "@/lib/community/constants";
 import { COMMUNITY_MESSAGES as M } from "@/lib/community/messages";
 import { boardHref, type BoardQuery } from "@/lib/community/query";
@@ -31,6 +31,10 @@ export function BoardControls({
   const [, start] = useTransition();
   const [q, setQ] = useState(query.q);
   const [scope, setScope] = useState<SearchScope>(query.scope);
+  const navGo = useNavPendingGo();
+  // 기간 칸은 고른 순간 바뀐다(AGENTS 6장) — 서버 답이 오기 전까지 고른 값을 쥐고, 주소의 값이 바뀌면 그쪽을 따른다
+  const [period, setPeriod] = useState({ from: query.period, value: String(query.period) });
+  if (period.from !== query.period) setPeriod({ from: query.period, value: String(query.period) });
 
   return (
     <div className="flex flex-col gap-3">
@@ -81,14 +85,22 @@ export function BoardControls({
           <NavChip group="tab" href={boardHref(base, query, { tab: "popular" })} active={query.tab === "popular"}>
             {M.tabPopular}
           </NavChip>
+          {/* 인기글 기간은 드롭다운 하나(10-28 검수: 탭 칩 옆에 기간 칩 셋이 또 서서 칩 줄이 겹쳐 보였다) */}
           {query.tab === "popular" && (
-            <span className="ml-1 flex flex-wrap gap-1.5">
-              {POPULAR_PERIODS.map((p) => (
-                <NavChip key={p} group="period" compact href={boardHref(base, query, { period: p })} active={query.period === p}>
-                  {POPULAR_PERIOD_LABEL[p]}
-                </NavChip>
-              ))}
-            </span>
+            <Select
+              label={M.popularPeriodLabel}
+              hideLabel
+              className="ml-1 w-[118px]"
+              scroll={false}
+              value={period.value}
+              options={POPULAR_PERIODS.map((p) => ({ value: String(p), label: POPULAR_PERIOD_LABEL[p], href: boardHref(base, query, { period: p }) }))}
+              onNavigate={(href) => {
+                const picked = POPULAR_PERIODS.find((p) => boardHref(base, query, { period: p }) === href);
+                if (picked !== undefined) setPeriod({ from: query.period, value: String(picked) });
+                if (navGo) navGo(href);
+                else start(() => router.push(href, { scroll: false }));
+              }}
+            />
           )}
         </div>
         {promoTabs && (

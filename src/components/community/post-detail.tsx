@@ -1,5 +1,6 @@
 // 글 상세(기획서 v2.0 S-15): 말머리, 제목, 작성자, 작성일, 조회수, 본문, 관련 게임, 좋아요, 저장, 댓글, 이전/다음 글, 목록으로.
-// 게시판 글(/board/<게시판>/p/<id>)과 라운지 글(/lounge/p/<id>)이 같은 틀을 쓴다. 본문은 글자 그대로 보인다(HTML 로 읽지 않는다).
+// 게시판 글(/board/<게시판>/p/<id>)과 라운지 글(/lounge/p/<id>)이 같은 틀을 쓴다.
+// 본문은 에디터가 낸 HTML 이면 한 번 더 걸러(lib/community/sanitize) 그리고, 옛 글자 본문은 글자 그대로 보인다(lib/community/rich-text).
 //
 // 게시판 글은 맨 위 "이전 화면" 과 경로("게임 게시판 > 리뷰 > 게시글")를 머리띠 아래 공용 줄(components/page-trail)이 세운다 —
 // 주소에 게시판이 들어 있어 하위 메뉴 띠와 같은 표로 소속을 읽는다(lib/community/constants 의 postPath). 그래서 여기서는
@@ -13,6 +14,8 @@ import { DbUnavailablePage } from "@/components/db-unavailable";
 import { BackLink } from "@/components/ui/back-link";
 import { Page } from "@/components/ui/page";
 import { CATEGORY_LIST_PATH, isPostId, postPath } from "@/lib/community/constants";
+import { isRichBody } from "@/lib/community/rich-text";
+import { sanitizePostHtml } from "@/lib/community/sanitize";
 import { COMMUNITY_MESSAGES as M } from "@/lib/community/messages";
 import { DB_DOWN, orDbDown } from "@/lib/db-errors";
 import { formatDateTime } from "@/lib/format";
@@ -33,7 +36,11 @@ export async function PostDetail({ id, lounge, category }: { id: string; lounge:
   // 다른 게시판 주소로 연 글(/board/guides/p/<리뷰 id>)은 제 주소로 보낸다 — 띠와 경로가 엉뚱한 게시판을 켜지 않게
   if (category && post.category !== category) permanentRedirect(postPath(post.id, post.category));
   const listPath = CATEGORY_LIST_PATH[post.category];
-  const body = <div className="whitespace-pre-wrap break-words text-[15.5px] leading-[1.85] text-ink">{post.body}</div>;
+  const body = isRichBody(post.body) ? (
+    <div className="post-body break-words" dangerouslySetInnerHTML={{ __html: sanitizePostHtml(post.body) }} />
+  ) : (
+    <div className="whitespace-pre-wrap break-words text-[15.5px] leading-[1.85] text-ink">{post.body}</div>
+  );
 
   return (
     <Page width="tight" gap={22}>
@@ -71,7 +78,7 @@ export async function PostDetail({ id, lounge, category }: { id: string; lounge:
       </article>
 
       <div className="rounded-[var(--radius-panel)] bg-surface p-5 shadow-hair sm:p-8">
-        <Comments postId={post.id} initial={comments} />
+        <Comments postId={post.id} initial={comments} replies />
       </div>
 
       <nav aria-label={M.backToList} className="flex flex-col divide-y divide-line-soft overflow-hidden rounded-[var(--radius-md)] bg-surface shadow-hair">

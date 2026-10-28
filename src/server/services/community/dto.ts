@@ -39,7 +39,8 @@ export type PostDetailDto = PostRowDto & {
   next: PostNeighbor;
 };
 
-export type CommentDto = { id: string; body: string; authorName: string; createdAt: Date; isMine: boolean };
+/** parentId: 답글이면 원댓글 id(한 단계, schema-community 의 post_comments.parentId). 인디 글 댓글은 답글이 없어 비운다 */
+export type CommentDto = { id: string; body: string; authorName: string; createdAt: Date; isMine: boolean; parentId?: string | null };
 
 export type BoardHomeDto = {
   today: number;

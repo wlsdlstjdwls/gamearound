@@ -49,7 +49,7 @@ export async function toggleSave(postId: string): Promise<{ saved: boolean }> {
 export async function listComments(postId: string): Promise<CommentDto[]> {
   const viewer = await getCurrentUser().catch(() => null);
   const rows = await getDb()
-    .select({ id: postComments.id, body: postComments.body, authorName: authorNameSql, createdAt: postComments.createdAt, authorUserId: postComments.authorUserId })
+    .select({ id: postComments.id, parentId: postComments.parentId, body: postComments.body, authorName: authorNameSql, createdAt: postComments.createdAt, authorUserId: postComments.authorUserId })
     .from(postComments)
     .innerJoin(users, eq(users.id, postComments.authorUserId))
     // 운영진이 숨긴 댓글은 누구에게도 안 보인다(services/community/admin)
@@ -58,16 +58,44 @@ export async function listComments(postId: string): Promise<CommentDto[]> {
   return rows.map(({ authorUserId, ...r }) => ({ ...r, isMine: viewer?.id === authorUserId }));
 }
 
-/** 댓글은 목록 맨 아래에 붙는다(기획서 6.1). 글쓴이에게 알림을 남기는 일은 알림함(services/notifications)이 맡는다 */
-export async function addComment(postId: string, body: string): Promise<{ comment: CommentDto; postAuthorId: string; postTitle: string; category: string }> {
+/**
+ * 댓글은 목록 맨 아래에, 답글은 원댓글 묶음 맨 아래에 붙는다(기획서 6.1). 알림을 남기는 일은 알림함(services/notifications)이 맡는다.
+ * 답글의 답글은 원댓글로 끌어올린다 — 깊이는 한 단계다(schema-community 의 parentId 주석). 다른 글의 댓글, 숨긴 댓글에는 답할 수 없다.
+ * 답글도 글의 commentCount 에 센다 — 인기 점수는 "그 글에 오간 말의 양" 이다.
+ */
+export async function addComment(
+  postId: string,
+  body: string,
+  parentId: string | null = null,
+): Promise<{ comment: CommentDto; postAuthorId: string; postTitle: string; category: string; parentAuthorId: string | null }> {
   const u = await requireUser();
   const db = getDb();
-  const [post] = await db.select({ author: posts.authorUserId, title: posts.title, category: posts.category }).from(posts).where(and(eq(posts.id, postId), eq(posts.status, "published")));
+  const [[post], parentRows] = await Promise.all([
+    db.select({ author: posts.authorUserId, title: posts.title, category: posts.category }).from(posts).where(and(eq(posts.id, postId), eq(posts.status, "published"))),
+    parentId
+      ? db
+          .select({ id: postComments.id, parentId: postComments.parentId, author: postComments.authorUserId })
+          .from(postComments)
+          .where(and(eq(postComments.id, parentId), eq(postComments.postId, postId), eq(postComments.status, "published")))
+      : Promise.resolve([]),
+  ]);
   if (!post) throw new Error("글을 찾을 수 없어요");
-  const [row] = await db.insert(postComments).values({ postId, authorUserId: u.id, body, ...createdBy("user", u.id) }).returning({ id: postComments.id, body: postComments.body, createdAt: postComments.createdAt });
+  const parent = parentRows[0];
+  if (parentId && !parent) throw new Error("답글을 달 댓글을 찾을 수 없어요");
+  const rootId = parent ? (parent.parentId ?? parent.id) : null;
+  const [row] = await db
+    .insert(postComments)
+    .values({ postId, parentId: rootId, authorUserId: u.id, body, ...createdBy("user", u.id) })
+    .returning({ id: postComments.id, body: postComments.body, createdAt: postComments.createdAt });
   await db.update(posts).set({ commentCount: sql`${posts.commentCount} + 1` }).where(eq(posts.id, postId));
   const name = u.displayName ?? `${u.email.split("@")[0].slice(0, 2)}***`;
-  return { comment: { id: row.id, body: row.body, authorName: name, createdAt: row.createdAt, isMine: true }, postAuthorId: post.author, postTitle: post.title, category: post.category };
+  return {
+    comment: { id: row.id, parentId: rootId, body: row.body, authorName: name, createdAt: row.createdAt, isMine: true },
+    postAuthorId: post.author,
+    postTitle: post.title,
+    category: post.category,
+    parentAuthorId: parent?.author ?? null,
+  };
 }
 
 /** 저장한 글(내 활동 S-24). 저장한 순서의 최신부터, 게시판과 같은 한 쪽 20줄(기획서 4.3) */

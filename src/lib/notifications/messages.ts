@@ -7,6 +7,7 @@ export const NOTIFICATION_MESSAGES = {
   loading: "불러오는 중이에요",
   alertSettings: "가격 알림 관리",
   comment: (postTitle: string) => `'${postTitle}' 글에 새 댓글이 달렸어요`,
+  reply: (postTitle: string) => `'${postTitle}' 글의 내 댓글에 답글이 달렸어요`,
   priceDrop: (gameTitle: string, priceText: string) => `${gameTitle} 가격이 ${priceText}(으)로 내려갔어요`,
   /** 알림을 건 순간 이미 조건에 맞았다(services/alert-inbox) — 내려간 게 아니라 "벌써 맞다" 를 말한다 */
   priceMet: (gameTitle: string, priceText: string) => `${gameTitle} 지금 ${priceText}, 알림 조건에 맞아요`,

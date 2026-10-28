@@ -7,6 +7,8 @@ import { games, posts, users, type PostCategory, type PromoType } from "@/server
 import { getCurrentUser, requireUser } from "@/server/services/users";
 import { POSTS_PAGE_SIZE, postPath, takesGame, type PopularPeriod, type SearchScope } from "@/lib/community/constants";
 import type { PostInput } from "@/lib/community/schemas";
+import { isRichBody } from "@/lib/community/rich-text";
+import { sanitizePostHtml } from "@/lib/community/sanitize";
 import type { PostDetailDto, PostPage } from "./dto";
 import { authorNameSql, popularScoreSql, rowColumns, toRow } from "./columns";
 import { isLiked, isSaved } from "./reactions";
@@ -110,6 +112,7 @@ export async function getPostCategory(id: string): Promise<PostCategory | null> 
 /**
  * 등록. 카테고리에 맞지 않는 칸은 버린다(리뷰 아닌 글의 스포, 홍보 아닌 글의 유형, 링크, 라운지 글의 게임).
  * 관련 게임은 slug 로 받아 id 로 바꾼다 — 화면은 id 를 모른다(자동완성 응답이 slug 만 준다).
+ * 본문 HTML 은 걸러서 적는다(lib/community/sanitize). 그리기 전에도 한 번 더 거른다 — 액션을 거치지 않은 요청이 와도 DB 에 스크립트가 안 쌓인다.
  */
 export async function createPost(input: PostInput): Promise<{ id: string; category: PostCategory; authorUserId: string; title: string }> {
   const u = await requireUser();
@@ -126,7 +129,7 @@ export async function createPost(input: PostInput): Promise<{ id: string; catego
       category: input.category,
       authorUserId: u.id,
       title: input.title,
-      body: input.body,
+      body: isRichBody(input.body) ? sanitizePostHtml(input.body) : input.body,
       spoiler: input.category === "review" && input.spoiler === "yes",
       promoType: input.category === "promo" && input.promoType !== "" ? input.promoType : null,
       link: input.category === "promo" && input.link !== "" ? input.link : null,

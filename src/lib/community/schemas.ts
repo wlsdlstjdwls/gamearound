@@ -3,14 +3,27 @@
 // 관련 게임(목업 S-14)은 리뷰, 공략에서 필수, 홍보에서 선택이다. 게임은 자동완성에서 고른 slug 로 온다 —
 // 고른 slug 가 실제 게임인지는 서비스가 DB 로 다시 본다(services/community/posts).
 import { z } from "zod";
-import { COMMENT_BODY_MAX, POST_BODY_MAX, POST_CATEGORIES, POST_TITLE_MAX, PROMO_TYPES, requiresGame } from "@/lib/community/constants";
+import { COMMENT_BODY_MAX, POST_BODY_MAX, POST_CATEGORIES, POST_HTML_MAX, POST_TITLE_MAX, PROMO_TYPES, requiresGame } from "@/lib/community/constants";
 import { COMMUNITY_MESSAGES as M } from "@/lib/community/messages";
+import { hasPostImage, isRichBody, richPlainText } from "@/lib/community/rich-text";
 
 /** slug 입력 상한 — 주소창 손질로 들어오는 긴 문자열이 질의까지 가지 않게 */
 const GAME_SLUG_MAX = 200;
 
 const title = z.string().trim().min(1, M.titleRequired).max(POST_TITLE_MAX, M.titleTooLong);
-const body = z.string().trim().min(1, M.bodyRequired).max(POST_BODY_MAX, M.bodyTooLong);
+/**
+ * 본문은 에디터의 HTML 이다(lib/community/rich-text). 비었는지, 긴지는 태그를 걷은 글자로 잰다 — 빈 문단 "<p></p>" 도
+ * 글자로는 9자라 그대로 재면 빈 글이 통과한다. 그림만 올린 글은 본문이 있는 것으로 본다. 옛 글자 본문도 같은 규칙으로 통과한다.
+ */
+const body = z
+  .string()
+  .trim()
+  .max(POST_HTML_MAX, M.bodyTooLong)
+  .superRefine((v, ctx) => {
+    const text = isRichBody(v) ? richPlainText(v) : v;
+    if (!text && !hasPostImage(v)) ctx.addIssue({ code: "custom", message: M.bodyRequired });
+    else if (text.length > POST_BODY_MAX) ctx.addIssue({ code: "custom", message: M.bodyTooLong });
+  });
 
 export const postInputSchema = z
   .object({
@@ -36,4 +49,6 @@ export type PostInput = z.infer<typeof postInputSchema>;
 export const commentInputSchema = z.object({
   postId: z.uuid(),
   body: z.string().trim().min(1, M.commentRequired).max(COMMENT_BODY_MAX, M.commentTooLong),
+  /** 답글이면 원댓글 id. 비우면 글에 바로 다는 댓글 */
+  parentId: z.uuid().nullish(),
 });

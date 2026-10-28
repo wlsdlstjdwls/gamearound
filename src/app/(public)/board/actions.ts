@@ -8,7 +8,7 @@ import { CATEGORY_LIST_PATH, postPath } from "@/lib/community/constants";
 import { COMMUNITY_MESSAGES as M } from "@/lib/community/messages";
 import { commentInputSchema, postInputSchema } from "@/lib/community/schemas";
 import { addComment, createPost, PostGameNotFoundError, toggleLike, toggleSave, type CommentDto } from "@/server/services/community";
-import { notifyComment } from "@/server/services/notifications";
+import { notifyComment, notifyReply } from "@/server/services/notifications";
 import { notifyFollowersOfDevlog } from "@/server/services/indie";
 
 export type PostActionState = { ok: true; redirectTo: string } | { ok: false; error?: string; fieldErrors?: Record<string, string> } | null;
@@ -57,13 +57,20 @@ export async function toggleSaveAction(postId: string): Promise<{ ok: true; save
   }
 }
 
-export async function addCommentAction(input: { postId: string; body: string }): Promise<{ ok: true; comment: CommentDto } | { ok: false; error: string }> {
+export async function addCommentAction(input: { postId: string; body: string; parentId?: string | null }): Promise<{ ok: true; comment: CommentDto } | { ok: false; error: string }> {
   const parsed = commentInputSchema.safeParse(input);
   if (!parsed.success) return { ok: false, error: parsed.error.issues[0]?.message ?? M.failed };
   try {
-    const r = await addComment(parsed.data.postId, parsed.data.body);
-    // 알림은 덤이다 — 실패해도 댓글은 이미 섰다
-    await notifyComment({ postId: parsed.data.postId, postAuthorId: r.postAuthorId, postTitle: r.postTitle, category: r.category }).catch(() => {});
+    const r = await addComment(parsed.data.postId, parsed.data.body, parsed.data.parentId ?? null);
+    // 알림은 덤이다 — 실패해도 댓글은 이미 섰다. 답글은 원댓글 주인에게, 그 사람이 글쓴이면 글 알림 하나로 갈음한다(같은 소식 두 번 안 가게)
+    const toParent = r.parentAuthorId && r.parentAuthorId !== r.postAuthorId;
+    await (toParent
+      ? Promise.all([
+          notifyReply({ postId: parsed.data.postId, parentAuthorId: r.parentAuthorId!, postTitle: r.postTitle, category: r.category }),
+          notifyComment({ postId: parsed.data.postId, postAuthorId: r.postAuthorId, postTitle: r.postTitle, category: r.category }),
+        ])
+      : notifyComment({ postId: parsed.data.postId, postAuthorId: r.postAuthorId, postTitle: r.postTitle, category: r.category })
+    ).catch(() => {});
     revalidatePath(postPath(parsed.data.postId, r.category as Parameters<typeof postPath>[1]));
     return { ok: true, comment: r.comment };
   } catch (e) {

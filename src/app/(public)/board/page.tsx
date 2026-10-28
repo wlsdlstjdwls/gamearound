@@ -6,6 +6,7 @@ import { AuthorName, PostTags } from "@/components/community/badges";
 import { HeadLink, RisingBlock, SideEmpty, SidePanel, SideRow, StatStrip, WaitingBlock } from "@/components/community/news-blocks";
 import { WriteLink } from "@/components/community/write-link";
 import { DbUnavailable } from "@/components/db-unavailable";
+import { CalendarIcon, FileTextIcon, GamepadIcon, TagIcon } from "@/components/ui/icons";
 import { Page, PageHead } from "@/components/ui/page";
 import { BOARD_CATEGORIES, CATEGORY_LABEL, CATEGORY_LIST_PATH, writePath } from "@/lib/community/constants";
 import { COMMUNITY_MESSAGES as M } from "@/lib/community/messages";
@@ -18,6 +19,13 @@ import { getBoardHome } from "@/server/services/community";
 export const revalidate = 60;
 
 export const metadata: Metadata = { title: M.boardTitle, description: M.boardLead };
+
+/** 현황 띠 칸 아이콘 — 리뷰는 글, 공략은 패드, 홍보는 꼬리표 */
+const BOARD_STAT_ICON: Record<(typeof BOARD_CATEGORIES)[number], React.ReactNode> = {
+  review: <FileTextIcon size={19} />,
+  guide: <GamepadIcon size={19} />,
+  promo: <TagIcon size={19} />,
+};
 
 export default async function BoardHomePage() {
   const home = await nullIfDbUnavailable(getBoardHome(BOARD_CATEGORIES, ["review", "guide"], true));
@@ -35,8 +43,8 @@ export default async function BoardHomePage() {
           <StatStrip
             label={M.statusLabel}
             items={[
-              { label: M.todayPosts, value: M.countValue(home.today) },
-              ...BOARD_CATEGORIES.map((c) => ({ label: CATEGORY_LABEL[c], value: M.countValue(home.counts[c] ?? 0), href: CATEGORY_LIST_PATH[c] })),
+              { label: M.todayPosts, value: home.today, unit: M.countUnit, icon: <CalendarIcon size={19} /> },
+              ...BOARD_CATEGORIES.map((c) => ({ label: CATEGORY_LABEL[c], value: home.counts[c] ?? 0, unit: M.countUnit, href: CATEGORY_LIST_PATH[c], icon: BOARD_STAT_ICON[c] })),
             ]}
             link={{ href: ROUTES.boardAll, label: M.allPostsLink }}
           />

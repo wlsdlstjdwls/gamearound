@@ -23,6 +23,16 @@ export async function notifyComment(p: { postId: string; postAuthorId: string; p
   await pushNotification(p.postAuthorId, "comment", M.comment(p.postTitle), postPath(p.postId, p.category as (typeof POST_CATEGORIES)[number]), "user");
 }
 
+/**
+ * 내 댓글에 답글이 달렸다. 갈래는 댓글과 같이 "comment" 다 — 알림 종류 enum 을 늘리면 마이그레이션이 하나 더 붙고, 받는 사람에게는 같은 소식이다.
+ * 글쓴이가 곧 댓글 주인이면 글 알림과 겹치지 않게 이쪽은 보내지 않는다(addCommentAction 이 둘 중 하나만 부른다).
+ */
+export async function notifyReply(p: { postId: string; parentAuthorId: string; postTitle: string; category: string }): Promise<void> {
+  const me = await getCurrentUser().catch(() => null);
+  if (!me || me.id === p.parentAuthorId) return;
+  await pushNotification(p.parentAuthorId, "comment", M.reply(p.postTitle), postPath(p.postId, p.category as (typeof POST_CATEGORIES)[number]), "user");
+}
+
 /** 지금 사람의 최근 알림. 비로그인이면 빈 목록 */
 export async function listMyNotifications(): Promise<NotificationDto[]> {
   const me = await getCurrentUser().catch(() => null);

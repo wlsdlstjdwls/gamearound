@@ -5,7 +5,7 @@
 // 좋아요 수, 댓글 수는 행에 따로 쌓는다(likeCount, commentCount). 목록이 한 쪽 20줄마다 집계를 돌면
 // 줄 수만큼 하위 질의가 붙고, 인기글 정렬은 그 값으로 order by 해야 해서 집계 위에서는 인덱스를 못 탄다.
 // 쌓는 값은 좋아요, 댓글을 쓰고 지우는 함수가 같은 질의 안에서 고친다(services/community).
-import { pgTable, pgEnum, uuid, text, integer, boolean, index, primaryKey } from "drizzle-orm/pg-core";
+import { pgTable, pgEnum, uuid, text, integer, boolean, index, primaryKey, type AnyPgColumn } from "drizzle-orm/pg-core";
 import { relations } from "drizzle-orm";
 import { auditColumns } from "./audit";
 import { games, users } from "./schema";
@@ -54,6 +54,12 @@ export const postComments = pgTable(
     id: uuid("id").primaryKey().defaultRandom(),
     postId: uuid("post_id").references(() => posts.id, { onDelete: "cascade" }).notNull(),
     authorUserId: uuid("author_user_id").references(() => users.id, { onDelete: "cascade" }).notNull(),
+    /**
+     * 답글이면 그 댓글(10-28 사용자 "대댓글이 안 된다"). 한 단계만 둔다 — 답글의 답글은 같은 원댓글 밑에 붙인다
+     * (services/community/reactions 의 addComment 가 원댓글로 끌어올린다). 깊이가 끝없으면 모바일 폭에서 들여쓰기가 글을 짓누른다.
+     * 원댓글이 지워지면 답글도 같이 지운다(cascade) — 말을 건 상대가 없는 답글만 남으면 뜻이 안 선다.
+     */
+    parentId: uuid("parent_id").references((): AnyPgColumn => postComments.id, { onDelete: "cascade" }),
     body: text("body").notNull(),
     /**
      * 운영진 숨김(기획서 v2.0 2.2 "부적절한 글 숨김"). 글과 같은 갈래를 쓴다 — 지우지 않고 숨기는 이유는 되살릴 길을 남기려는 것이다.

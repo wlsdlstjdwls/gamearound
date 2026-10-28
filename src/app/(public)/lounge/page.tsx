@@ -14,6 +14,7 @@ import { WriteLink } from "@/components/community/write-link";
 import { BoardGuide } from "@/components/lounge/board-guide";
 import { DbUnavailable } from "@/components/db-unavailable";
 import { buttonClass } from "@/components/ui/button";
+import { ChatIcon, ClockIcon, GamepadIcon, UserIcon } from "@/components/ui/icons";
 import { Page, PageHead } from "@/components/ui/page";
 import { LOUNGE_CATEGORIES, writePath } from "@/lib/community/constants";
 import { COMMUNITY_MESSAGES as M } from "@/lib/community/messages";
@@ -80,14 +81,15 @@ export default async function LoungeHomePage() {
                 <StatStrip
                   label={L.statusLabel}
                   items={[
-                    { label: L.statMine, value: L.statApproved(mine.filter((p) => p.review === "approved").length) },
-                    { label: L.statPendingLabel, value: L.statPending(mine.filter((p) => p.review === "pending").length) },
-                    { label: L.statReactionsLabel, value: L.statReactions(reactions) },
+                    { label: L.statApproved, value: mine.filter((p) => p.review === "approved").length, unit: L.unitGame, icon: <GamepadIcon size={19} /> },
+                    { label: L.statPendingLabel, value: mine.filter((p) => p.review === "pending").length, unit: L.unitCase, icon: <ClockIcon size={19} /> },
+                    // 숫자만 세우면 확인할 길이 없다 — 내 활동의 내 글 목록(글마다 댓글 수)으로 잇는다
+                    { label: L.statReactionsLabel, value: reactions, unit: L.unitComment, icon: <ChatIcon size={19} />, href: ROUTES.me },
                   ]}
                   link={{ href: ROUTES.indieMine, label: L.statDetail }}
                 />
               ) : (
-                <StatStrip label={L.statusLabel} items={[{ label: L.guestLabel, value: L.guestValue }]} link={{ href: signInPath(ROUTES.lounge), label: L.signIn }} />
+                <StatStrip label={L.statusLabel} items={[{ label: L.guestLead, value: L.guestLabel, icon: <UserIcon size={19} /> }]} link={{ href: signInPath(ROUTES.lounge), label: L.signIn }} />
               )}
               <div className="grid items-start gap-6 lg:grid-cols-[minmax(0,1fr)_380px]">
                 <div className="flex min-w-0 flex-col gap-7">

@@ -9,7 +9,7 @@
 // 기준 시각(now)은 화면이 한 번 정해 내려 준다 — 줄마다 시계를 읽으면 한 화면 안에서 값이 어긋난다.
 import Link from "next/link";
 import { AuthorName, PostTags } from "@/components/community/badges";
-import { HeartIcon } from "@/components/ui/icons";
+import { ChevronLeftIcon, HeartIcon } from "@/components/ui/icons";
 import { Tag } from "@/components/ui/tag";
 import { cn } from "@/lib/cn";
 import { CATEGORY_LABEL } from "@/lib/community/constants";
@@ -57,7 +57,7 @@ function EmptyRow({ title, lead }: { title: string; lead: string }) {
  * 딱지 줄 — 줄 성격 딱지, 관련 게임, 카테고리, 지난 시간(목업 hotRow, waitRow 의 "게임 이름 + 카테고리").
  * 게임 이름이 길면 그것만 잘린다 — 카테고리와 시간은 짧고 늘 읽혀야 한다.
  */
-function MetaLine({ flag, post, now }: { flag: React.ReactNode; post: PostRowDto; now: number }) {
+function MetaLine({ flag, post, now }: { flag?: React.ReactNode; post: PostRowDto; now: number }) {
   return (
     <span className="flex min-w-0 items-center gap-2 text-[12px] text-dim">
       {flag}
@@ -100,7 +100,8 @@ export function RisingBlock({ posts, allHref, now }: { posts: PostRowDto[]; allH
                     {i + 1}
                   </span>
                   <span className="flex min-w-0 flex-col gap-1">
-                    <MetaLine flag={<Tag tone="hot">{M.risingFlag}</Tag>} post={p} now={now} />
+                    {/* "급상승" 딱지는 걷었다 — 블록 제목이 이미 말하고, 줄마다 빨간 딱지가 서니 줄이 알록달록했다(10-28 사용자) */}
+                    <MetaLine post={p} now={now} />
                     <TitleLine post={p} />
                     <span className="flex min-w-0 text-[12.5px] text-dim">
                       <AuthorName post={p} />
@@ -153,7 +154,7 @@ export function WaitingBlock({ title, note, posts, cta, zero, now }: { title: st
                     링크 안의 링크가 된다 — 그래서 알약은 줄 링크 밖, 같은 칸 오른쪽에 겹쳐 세운다 */}
                 <div className="row-beam grid grid-cols-[minmax(0,1fr)] items-center gap-x-4 gap-y-2 px-4 py-3.5 transition-colors hover:bg-surface-2 sm:grid-cols-[minmax(0,1fr)_auto] sm:px-5">
                   <Link href={p.href} className="group flex min-w-0 flex-col gap-1 after:absolute after:inset-0">
-                    <MetaLine flag={<Tag tone="info">{zero}</Tag>} post={p} now={now} />
+                    <MetaLine flag={<Tag tone="neutral">{zero}</Tag>} post={p} now={now} />
                     <TitleLine post={p} awaiting={false} />
                     <span className="flex min-w-0 items-center gap-1 text-[12.5px] text-dim">
                       <AuthorName post={p} />
@@ -178,44 +179,71 @@ export function WaitingBlock({ title, note, posts, cta, zero, now }: { title: st
   );
 }
 
-/** 현황 스트립의 한 칸 */
-export type StatItem = { label: string; value: string; href?: string };
+/** 현황 띠의 한 칸. value 가 수면 크게 세우고 단위(unit)를 옆에 작게 붙인다. 글자(로그인 안내)면 한 줄 문장으로 선다 */
+export type StatItem = { label: string; value: number | string; unit?: string; href?: string; icon?: React.ReactNode };
 
 /**
- * 현황 스트립(목업 .lhs) — 칸 여럿을 세로 선으로 가른 띠 하나. 누르는 칸은 값을 브랜드색으로 칠하고 칸 전체가 누를 면이다
- * (값 글자만 누를 수 있어 "숫자를 눌러 그 게시판으로" 가 안 읽혔다, 10-27 검수). 띠 위로 손전등 빛 웅덩이가 천천히 오간다.
- * 칸마다 따로 뜬 카드(예전 StatTile 넷)는 "숫자 넷이 각자 다른 이야기" 로 읽혔다 — 띠 하나는 "내 현황 한 줄" 이다.
+ * 현황 띠(게시판 홈 S-10, 라운지 홈 S-16) — 흰 판 하나를 칸으로 가르고, 칸마다 아이콘, 이름, 큰 수를 세운다.
+ * 10-28 검수("이 영역이 너무 안 이쁘다"): 연파랑 면에 작은 글자 줄이 흐릿한 빛과 겹쳐 숫자가 안 읽혔다. 숫자가 주인공이 되게
+ * 수를 키우고, 면은 흰 판으로 바꾸고, 빛 웅덩이는 걷었다. 첫 칸만 아이콘 바탕을 채워 "지금 가장 중요한 수" 로 세운다.
+ * 누르는 칸은 칸 전체가 누를 면이고 오른쪽에 꺾쇠가 선다. 좁은 화면은 두 칸씩 접히고 끝의 링크는 맨 아래 한 줄이 된다.
  */
 export function StatStrip({ items, link, label }: { items: StatItem[]; link?: { href: string; label: string }; label: string }) {
+  const four = items.length >= 4;
+  const cols = four ? "grid-cols-2 md:grid-cols-4" : items.length === 3 ? "grid-cols-3" : "grid-cols-1";
   return (
-    <section aria-label={label} className="relative isolate flex flex-wrap items-center gap-y-3 overflow-hidden rounded-[var(--radius-md)] bg-acc-soft px-4 py-4 shadow-hair sm:px-6">
-      <span aria-hidden className="hero-beam beam-soft" />
-      <dl className="flex w-full min-w-0 flex-wrap gap-y-3 sm:w-auto sm:flex-1">
+    <section aria-label={label} className="flex flex-col overflow-hidden rounded-[var(--radius-md)] bg-surface shadow-hair md:flex-row md:items-stretch">
+      <dl className={cn("grid min-w-0 flex-1", cols)}>
         {items.map((it, i) => {
-          const value = <span className={cn("text-[16px] font-extrabold tracking-[-0.02em]", it.href ? "text-acc" : "text-ink")}>{it.value}</span>;
+          const numeric = typeof it.value === "number";
           return (
             <div
               key={it.label}
               style={stagger(i)}
-              className={cn("enter-item group/stat relative flex min-w-0 flex-1 flex-col gap-1 px-3 sm:flex-none sm:px-6", i === 0 ? "pl-0 sm:pl-0" : "border-l border-line")}
+              className={cn(
+                "enter-item group/stat relative flex min-w-0 flex-col gap-2.5 px-4 py-4 transition-colors sm:flex-row sm:items-center sm:gap-3.5 sm:px-5",
+                // 칸 사이 선. 넷은 좁은 폭에서 두 칸씩 접혀 둘째 줄 위에도 선을 긋는다
+                "border-line-soft",
+                four ? i % 2 === 1 && "border-l" : i > 0 && "border-l",
+                four && i >= 2 && "max-md:border-t",
+                four && i === 2 && "md:border-l",
+                it.href && "hover:bg-surface-4",
+              )}
             >
-              <dt className="break-keep text-[12px] text-mut">{it.label}</dt>
-              <dd>
-                {it.href ? (
-                  <Link href={it.href} className="press rounded-sm after:absolute after:inset-0 group-hover/stat:underline group-hover/stat:decoration-acc group-hover/stat:underline-offset-4">
-                    {value}
-                  </Link>
-                ) : (
-                  value
-                )}
-              </dd>
+              {it.icon && (
+                <span aria-hidden className={cn("flex size-9 shrink-0 items-center justify-center rounded-xl sm:size-11", i === 0 ? "bg-acc text-on-ink" : "bg-acc-soft text-acc")}>
+                  {it.icon}
+                </span>
+              )}
+              <div className="flex min-w-0 flex-1 flex-col gap-0.5">
+                <dt className="truncate text-[12.5px] text-mut">{it.label}</dt>
+                <dd className={cn("flex items-baseline gap-0.5", !numeric && "text-[14px] font-semibold text-ink")}>
+                  {numeric ? (
+                    <>
+                      <span className="text-[22px] font-black leading-tight tracking-[-0.03em] tabular-nums text-ink sm:text-[24px]">{(it.value as number).toLocaleString("ko-KR")}</span>
+                      {it.unit && <span className="text-[13px] font-semibold text-mut">{it.unit}</span>}
+                    </>
+                  ) : (
+                    it.value
+                  )}
+                </dd>
+              </div>
+              {it.href && (
+                <Link href={it.href} aria-label={`${it.label} ${typeof it.value === "number" ? it.value.toLocaleString("ko-KR") : it.value}${it.unit ?? ""}`} className="press absolute inset-0 rounded-none">
+                  <ChevronLeftIcon size={16} aria-hidden className="absolute right-3 top-1/2 hidden -translate-y-1/2 rotate-180 text-dim transition-transform group-hover/stat:translate-x-0.5 sm:block" />
+                </Link>
+              )}
             </div>
           );
         })}
       </dl>
       {link && (
-        <Link href={link.href} className="w-full text-[13px] font-semibold text-acc hover:underline sm:ml-auto sm:w-auto">
+        <Link
+          href={link.href}
+          className="press flex min-h-[var(--touch-target)] shrink-0 items-center justify-center gap-1 border-t border-line-soft bg-surface-4 px-5 text-[13.5px] font-semibold text-acc transition-colors hover:bg-acc-soft md:border-l md:border-t-0"
+        >
           {link.label}
+          <ChevronLeftIcon size={15} aria-hidden className="rotate-180" />
         </Link>
       )}
     </section>
