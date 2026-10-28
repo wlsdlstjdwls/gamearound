@@ -2,13 +2,18 @@
 // 날짜별 막대(메이커 멤버십 통계 자세히, 2026-10-27). 한 그래프에 숫자 하나 — 조회와 플레이하기 클릭은 크기가 달라 두 그래프로 나눈다
 // (한 판에 축 둘을 세우면 어느 막대가 어느 축인지 읽는 사람이 맞힌다).
 //
-// 막대 위에 숫자를 다 적지 않는다. 대신 머리 줄이 읽기 자리다: 평소엔 기간 합, 막대를 가리키거나 누르면 그날 값.
+// 막대 위에 숫자를 다 적지 않는다. 머리 줄은 기간 합, 막대를 가리키거나 누르면 그 막대 위에 그날 값 말풍선이 뜬다(2026-10-28 사용자 요청).
+// 말풍선을 ui/tooltip 으로 띄우지 않는 이유: 그쪽은 잘린 글자용이라 열림 지연, 길게 누름이 붙는다 — 그래프는 스치는 대로 바로 따라가야 읽힌다.
 // 막대 칸 전체(위 빈 곳 포함)가 가리키는 자리라 낮은 막대도 잡힌다. 표 보기는 화면 읽기 프로그램용으로 같은 값을 숨은 표로 둔다.
 import { useState } from "react";
 import { cn } from "@/lib/cn";
 
 /** 막대 판 높이(px). 30칸이 좁은 화면에서도 모양을 알아볼 만한 높이 */
 const CHART_HEIGHT = 120;
+/** 말풍선이 막대 판 위로 넘치지 않게 남겨 둘 높이(px). 두 줄 말풍선 높이 */
+const TIP_ROOM = 44;
+/** 이 비율 안쪽 가장자리 막대는 말풍선을 가운데 대신 한쪽으로 붙인다 — 판 밖으로 잘리지 않게 */
+const TIP_EDGE_RATIO = 0.2;
 
 const fmt = (n: number) => n.toLocaleString("ko-KR");
 /** "2026-10-27" 를 "10월 27일" 로. 날짜 문자열을 그대로 자른다 — Date 로 바꾸면 시간대에 따라 하루 밀린다 */
@@ -24,11 +29,12 @@ export function DailyBars({ title, totalLabel, points }: { title: string; totalL
     <figure className="relative flex flex-col gap-2">
       <figcaption className="flex items-baseline justify-between gap-3">
         <span className="text-[14px] font-bold text-ink">{title}</span>
-        <span aria-live="polite" className="text-[13px] tabular-nums text-mut">
-          {shown ? `${dayLabel(shown.day)} | ${fmt(shown.value)}` : `${totalLabel} ${fmt(total)}`}
+        <span className="text-[13px] tabular-nums text-mut">
+          {`${totalLabel} ${fmt(total)}`}
         </span>
       </figcaption>
-      <div aria-hidden className="flex items-end gap-[2px] border-b border-line" style={{ height: CHART_HEIGHT }} onPointerLeave={() => setActive(null)}>
+      <div aria-hidden className="relative flex items-end gap-[2px] border-b border-line" style={{ height: CHART_HEIGHT }} onPointerLeave={() => setActive(null)}>
+        {shown && active !== null && <BarTip day={dayLabel(shown.day)} value={fmt(shown.value)} index={active} count={points.length} heightPct={(shown.value / max) * 100} />}
         {points.map((p, i) => (
           <div key={p.day} className="flex h-full flex-1 items-end" onPointerEnter={() => setActive(i)} onPointerDown={() => setActive(i)}>
             <div
@@ -54,5 +60,20 @@ export function DailyBars({ title, totalLabel, points }: { title: string; totalL
         </tbody>
       </table>
     </figure>
+  );
+}
+
+/** 가리킨 막대 위 말풍선. 가로는 막대 가운데, 세로는 막대 끝 바로 위 — 높은 막대면 판 안쪽 맨 위에서 멈춘다 */
+function BarTip({ day, value, index, count, heightPct }: { day: string; value: string; index: number; count: number; heightPct: number }) {
+  const ratio = (index + 0.5) / count;
+  const shift = ratio < TIP_EDGE_RATIO ? "0%" : ratio > 1 - TIP_EDGE_RATIO ? "-100%" : "-50%";
+  return (
+    <div
+      className="pointer-events-none absolute z-10 whitespace-nowrap rounded-[8px] border border-line bg-surface px-2.5 py-1.5 shadow-2"
+      style={{ left: `${ratio * 100}%`, bottom: `min(calc(${heightPct}% + 6px), calc(100% - ${TIP_ROOM}px))`, transform: `translateX(${shift})` }}
+    >
+      <p className="text-[11.5px] tabular-nums text-mut">{day}</p>
+      <p className="text-[14px] font-bold tabular-nums text-ink">{value}</p>
+    </div>
   );
 }
