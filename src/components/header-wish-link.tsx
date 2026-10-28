@@ -23,7 +23,7 @@ export function HeaderWishLink() {
         here ? "bg-acc-soft text-acc" : "text-ink-2 hover:bg-surface-2 hover:text-ink",
       )}
     >
-      <HeartIcon size={HEART_SIZE} />
+      <HeartIcon size={HEART_SIZE} className="-translate-y-px" />
     </Link>
   );
 }
@@ -31,4 +31,5 @@ export function HeaderWishLink() {
 // 하트 그림은 24 칸 안에서 14x13.5 만 차지하고 종(BellIcon)은 16x17 을 차지한다.
 // 같은 19 로 그리면 하트가 눈에 띄게 작아서(10-28 사용자 지적) 종 높이에 맞춰 키운다. 카드의 하트는 그대로 둔다.
 // 23 은 선까지 같이 굵어져 종보다 무거워 보였다.
+// 하트 그림은 24 칸의 아래쪽(6.5~20)에 앉아 중심이 종(3~20)보다 1.5px 낮다 — 단추 가운데 맞춤만으로는 어긋나 보여(같은 날 사용자) 1px 올린다(2px 는 실측에서 1px 넘쳤다).
 const HEART_SIZE = 22;

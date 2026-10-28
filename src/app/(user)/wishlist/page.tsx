@@ -117,8 +117,10 @@ export default async function WishlistPage({ searchParams }: Props) {
 
             return (
               // 카드(2026-10-27). 게임 목록 카드처럼 흰 판 위 커버가 먼저 서고, 값 줄과 알림 단추가 아래에 앉는다
-              <li key={game.id} className="enter-item lift group flex overflow-hidden sm:flex-col rounded-[var(--radius-panel)] bg-surface shadow-[var(--elev-card)] transition-shadow duration-base hover:shadow-[var(--elev-card-hover)]" style={stagger(i)}>
-                <Link href={`/games/${game.slug}`} className="cover-zoom relative block min-h-[96px] w-[108px] shrink-0 overflow-hidden sm:w-auto" tabIndex={-1} aria-hidden>
+              // 커버는 다른 카드(game-card 의 CARD_SHELL, COVER_CLASS)처럼 판 안쪽에 둥글게 앉힌다(2026-10-28 사용자 "찜 카드만 이미지 형태가 달라 이상하다").
+              // 판 끝까지 붙어 모서리만 잘리던 모양이 홈, 목록 카드와 달랐다
+              <li key={game.id} className="enter-item lift group flex gap-3 overflow-hidden p-2 sm:flex-col sm:gap-1 sm:p-2.5 rounded-[var(--radius-panel)] bg-surface shadow-[var(--elev-card)] transition-shadow duration-base hover:shadow-[var(--elev-card-hover)]" style={stagger(i)}>
+                <Link href={`/games/${game.slug}`} className="cover-zoom relative block min-h-[96px] w-[108px] shrink-0 overflow-hidden rounded-[var(--radius-md)] bg-surface-3 shadow-hair sm:w-auto" tabIndex={-1} aria-hidden>
                   {game.coverUrl ? (
                     <FadeImage
                       src={game.coverUrl}
@@ -134,7 +136,7 @@ export default async function WishlistPage({ searchParams }: Props) {
                   )}
                 </Link>
 
-                <div className="flex min-w-0 flex-1 flex-col gap-2 p-3 sm:gap-2.5 sm:p-4">
+                <div className="flex min-w-0 flex-1 flex-col gap-2 py-1 pr-1 sm:gap-2.5 sm:px-1.5 sm:pb-1 sm:pt-2">
                   <div className="flex items-start justify-between gap-2">
                     <Link href={`/games/${game.slug}`} className="min-w-0 text-[15px] font-extrabold tracking-[-0.025em] text-ink hover:text-acc">
                       <Clamp>{title}</Clamp>
