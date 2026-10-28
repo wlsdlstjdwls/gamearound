@@ -3,7 +3,7 @@
 // 검증 스키마도 여기 하나다 — 관리자 폼(클라이언트), 저장 액션, DB 값 읽기(services/settings)가 같은 규칙을 쓴다(AGENTS.md 2장).
 import { z } from "zod";
 
-/** off: 안 튼다 | once: 세션(탭)에 한 번 | always: 들어올 때마다 */
+/** off: 안 튼다 | once: 1위 게임마다 브라우저에 한 번 | always: 들어올 때마다 */
 export const FAME_INTRO_MODES = ["off", "once", "always"] as const;
 export type FameIntroMode = (typeof FAME_INTRO_MODES)[number];
 
@@ -46,7 +46,7 @@ export const FAME_INTRO_ADMIN_MESSAGES = {
   modeLabels: { off: "끄기", once: "처음 한 번만", always: "들어올 때마다" } satisfies Record<FameIntroMode, string>,
   modeHints: {
     off: "인트로 없이 바로 순위를 보여 줘요.",
-    once: "브라우저 탭마다 한 번만 보여 줘요. 오픈 뒤 기본값이에요.",
+    once: "1위 게임마다 한 번만 보여 줘요. 1위가 바뀌면 새 1위를 한 번 더 보여 줘요.",
     always: "명예의 전당에 들어올 때마다 보여 줘요. 시험할 때 써요.",
   } satisfies Record<FameIntroMode, string>,
   holdLabel: "화면 전체에 머무는 시간",

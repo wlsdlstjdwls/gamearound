@@ -10,7 +10,9 @@
 // - 전체 화면에서는 대표 그림으로 시작해 다른 그림 두세 장을 넘기고 대표 그림으로 돌아온다(같은 날 사용자 "유지 시간이 너무 짧다, 사진 여러 장으로").
 //   대표 그림으로 끝나야 판으로 내려앉을 때 그림이 바뀌지 않는다. 아직 못 받은 그림은 건너뛴다.
 // - 그림은 판이 이미 받아 둔 것(currentSrc)을 대표로 빌린다. 원본 주소를 새로 받으면 펼쳐지는 동안 검은 판만 커졌다(1280 첫 방문 실측).
-// - 언제 트는지(off, 세션당 한 번, 매번)와 머무는 시간은 관리자가 정한다(lib/indie/fame-intro). 서버 HTML 에는 덮개가 없다.
+// - 언제 트는지(off, 한 번, 매번)와 머무는 시간은 관리자가 정한다(lib/indie/fame-intro). 서버 HTML 에는 덮개가 없다.
+// - "한 번" 은 1위 게임마다 브라우저에 한 번이다(localStorage, seenKey). 처음엔 탭(sessionStorage)마다 한 번이라
+//   새 탭으로 올 때마다 또 떴다 — 10-28 사용자 "전체화면 애니메이션은 1회만". 1위가 바뀌면 새 1위를 한 번 보여 준다.
 // - 누르기, 휠, 터치, 키 입력이면 바로 끝낸다. 줄이기 설정(prefers-reduced-motion)이면 아예 안 튼다.
 // - 펼치고 접는 시간과 곡선은 globals.css 토큰(--duration-fame-expand, --duration-fame-shrink, --ease-fame). WAAPI 는 ms 숫자가 필요해서 읽어 온다.
 import { useEffect, useRef, useState } from "react";
@@ -18,8 +20,8 @@ import { TrophyIcon } from "@/components/ui/icons";
 import { cn } from "@/lib/cn";
 import type { FameIntroSettings } from "@/lib/indie/fame-intro";
 
-/** 세션에 한 번만 튼다는 표시(mode once) */
-const SEEN_KEY = "fame-intro-seen";
+/** 마지막으로 본 1위의 seenKey(mode once). 값 하나만 둔다 — 지난 1위 목록을 쌓을 까닭이 없다 */
+const SEEN_KEY = "fame-intro-seen-top";
 /** 토큰을 못 읽었을 때 쓰는 값(ms). globals.css 의 값과 같다 */
 const FALLBACK_EXPAND_MS = 650;
 const FALLBACK_SHRINK_MS = 800;
@@ -37,17 +39,17 @@ function tokenMs(name: string, fallback: number): number {
   return raw.endsWith("ms") ? n : n * 1000;
 }
 
-function alreadySeen(): boolean {
+function alreadySeen(seenKey: string): boolean {
   try {
-    return sessionStorage.getItem(SEEN_KEY) === "1";
+    return localStorage.getItem(SEEN_KEY) === seenKey;
   } catch {
     return true; // 저장소를 못 쓰면 매번 틀 수도 있으니 아예 틀지 않는다
   }
 }
 
-function markSeen() {
+function markSeen(seenKey: string) {
   try {
-    sessionStorage.setItem(SEEN_KEY, "1");
+    localStorage.setItem(SEEN_KEY, seenKey);
   } catch {
     // 저장 실패는 다음에 한 번 더 트는 정도의 일이다
   }
@@ -66,7 +68,8 @@ function fullBox(card: Box): Box {
   return { top: "0px", left: "0px", width: `${window.innerWidth}px`, height: `${window.innerHeight}px`, borderRadius: "0px", boxShadow: card.boxShadow.replace(/rgba?\([^)]*\)|#[0-9a-f]+|var\([^)]*\)/gi, "transparent") };
 }
 
-export function FameIntro({ src, images, title, badge, targetId, settings }: { src: string; images: string[]; title: string; badge: string; targetId: string; settings: FameIntroSettings }) {
+/** seenKey: 이 1위를 가리키는 값(게임 slug). 같은 값을 이미 봤으면 mode once 에서 안 튼다 */
+export function FameIntro({ src, images, title, badge, targetId, settings, seenKey }: { src: string; images: string[]; title: string; badge: string; targetId: string; settings: FameIntroSettings; seenKey: string }) {
   const [phase, setPhase] = useState<"idle" | "play" | "done">("idle");
   const [slide, setSlide] = useState(0);
   const [showText, setShowText] = useState(false);
@@ -78,7 +81,7 @@ export function FameIntro({ src, images, title, badge, targetId, settings }: { s
 
   useEffect(() => {
     if (mode === "off") return;
-    if (mode === "once" && alreadySeen()) return;
+    if (mode === "once" && alreadySeen(seenKey)) return;
     if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
     // 넘길 그림을 먼저 받는다(최대 PRELOAD_WAIT_MS). 펼쳐진 뒤에 받기 시작하면 넘길 차례에 아직 없어 대표 한 장으로 끝났다.
     // 기다리는 동안 화면은 평소대로 보인다. 그다음 프레임에 켠다.
@@ -97,7 +100,7 @@ export function FameIntro({ src, images, title, badge, targetId, settings }: { s
     void Promise.race([Promise.all(loads), wait]).then(() => {
       if (cancelled) return;
       raf = requestAnimationFrame(() => {
-        markSeen();
+        markSeen(seenKey);
         setPhase("play");
       });
     });

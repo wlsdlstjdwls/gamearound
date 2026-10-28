@@ -29,7 +29,7 @@ import { FAME_MESSAGES as M, isYm, kstYm, prevYm, ymLabel } from "@/lib/indie/fa
 import { genreLabels, INDIE_PLATFORM_LABEL } from "@/lib/indie/messages";
 import { stagger } from "@/lib/motion";
 import { indieDetailHref, INDIE_FROM } from "@/lib/indie/query";
-import { ROUTES } from "@/lib/routes";
+import { hallOfFamePath, ROUTES } from "@/lib/routes";
 import { getMonthRanking, listHallHistory, listIndieImageUrls, type RankedIndie } from "@/server/services/indie";
 import { FAME_INTRO_IMAGE_MAX, type FameIntroSettings } from "@/lib/indie/fame-intro";
 import { getFameIntroSettings } from "@/server/services/settings";
@@ -50,13 +50,7 @@ const first = (v: string | string[] | undefined) => (Array.isArray(v) ? v[0] : v
 /** 칩이 좁은 화면에서 접히지 않게 — 줄 전체가 가로로 밀린다 */
 const NOWRAP_CHIP = "shrink-0 whitespace-nowrap";
 
-function href(tab: "month" | "history", ym?: string): string {
-  const p = new URLSearchParams();
-  if (tab === "history") p.set("tab", "history");
-  if (ym) p.set("ym", ym);
-  const qs = p.toString();
-  return qs ? `${ROUTES.hallOfFame}?${qs}` : ROUTES.hallOfFame;
-}
+const href = hallOfFamePath;
 
 function Cover({ item, sizes, className }: { item: RankedIndie; sizes: string; className?: string }) {
   return (
@@ -149,7 +143,7 @@ function Ranking({ items, label, finalized, isNow, intro }: { items: RankedIndie
             {top.change !== undefined && <span className="font-semibold">{top.change === null ? M.newEntry : M.changeFromLast(top.change)}</span>}
           </span>
         </Link>
-        <FameIntro src={top.card.cover.url} images={intro.images} settings={intro.settings} title={top.card.title} badge={isNow ? M.firstThisMonth : M.firstOf(label)} targetId={FAME_TOP_ID} />
+        <FameIntro src={top.card.cover.url} images={intro.images} settings={intro.settings} title={top.card.title} badge={isNow ? M.firstThisMonth : M.firstOf(label)} targetId={FAME_TOP_ID} seenKey={top.card.slug} />
         {rest.slice(0, 2).map((r, i) => (
           // 2, 3위는 위쪽 브랜드색 띠(단상)와 큰 점수로 4위 아래 줄과 갈린다. 2위 띠가 3위보다 굵고 진하다
           <Link key={r.card.slug} href={indieDetailHref(r.card.slug, INDIE_FROM.hallOfFame)} className={cn("lift press group enter-item flex flex-col gap-3 rounded-[var(--radius-panel)] bg-surface p-3.5", i === 0 ? "[box-shadow:inset_0_4px_0_var(--acc),var(--ring-hair)]" : "[box-shadow:inset_0_3px_0_var(--acc-3),var(--ring-hair)]")} style={stagger(i)}>
