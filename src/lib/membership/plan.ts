@@ -6,6 +6,8 @@
 // 갱신 실패는 하루 간격으로 MAX_FAILED_ATTEMPTS 번까지 다시 청구하고, 그래도 안 되면 끝낸다. 재시도 동안 혜택은 멈춘다
 // (기간이 이미 지났다) — 돈을 못 받은 달의 이용권을 먼저 내주지 않는다.
 
+import { PRODUCTS } from "@/lib/payments/products";
+
 export type MembershipPlan = { name: string; amount: number; boostCredits: number };
 
 export const MEMBERSHIP_PLANS = {
@@ -14,6 +16,17 @@ export const MEMBERSHIP_PLANS = {
 
 export type MembershipPlanKey = keyof typeof MEMBERSHIP_PLANS;
 export const DEFAULT_PLAN: MembershipPlanKey = "maker_monthly";
+
+/**
+ * 한 달 이용권을 낱개로 샀을 때의 값. 이용권 한 장은 자리 하나에 7일이라(lib/payments/products 의 isSingleProduct) 낱개 6,900원과 같다.
+ * 요금 안내가 "광고 2번, 따로 사면 13,800원" 으로 쌓아 보인다 — 멤버십 값보다 낮으므로 정가처럼 긋지 않는다(근거 없는 정가가 된다)
+ */
+export function creditsListValue(plan: MembershipPlan): number {
+  return plan.boostCredits * PRODUCTS.boost_indie_7d.amount;
+}
+
+/** 한 달을 30일로 쪼갠 "하루 약 N원". 기간은 달력 한 달이라 "약" 을 붙인다 */
+export const MONTH_DAYS_APPROX = 30;
 
 export function isMembershipPlanKey(v: string): v is MembershipPlanKey {
   return Object.hasOwn(MEMBERSHIP_PLANS, v);

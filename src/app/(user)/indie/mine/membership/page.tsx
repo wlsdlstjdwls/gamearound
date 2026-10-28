@@ -13,8 +13,10 @@ import { formatPrice } from "@/lib/currency";
 import { formatDate } from "@/lib/format";
 import { firstParam } from "@/lib/games-query";
 import { MEMBERSHIP_MESSAGES as M, MEMBERSHIP_STATUS_LABEL } from "@/lib/membership/messages";
-import { DEFAULT_PLAN, MEMBERSHIP_PLANS } from "@/lib/membership/plan";
+import { creditsListValue, DEFAULT_PLAN, MEMBERSHIP_PLANS, MONTH_DAYS_APPROX } from "@/lib/membership/plan";
 import { PAYMENT_MESSAGES as PM } from "@/lib/payments/messages";
+import { PLANS_MESSAGES as PL } from "@/lib/payments/plans-messages";
+import { perDay } from "@/lib/payments/products";
 import { ROUTES } from "@/lib/routes";
 import type { MembershipStatus } from "@/server/db/schema";
 import { requireUserOrRedirect } from "@/server/auth/guards";
@@ -76,13 +78,20 @@ export default async function MembershipPage({ searchParams }: Props) {
       ) : (
         <section className={sectionCardClass("flex flex-col gap-4")}>
           {m?.status === "ended" && <FormMessage tone="info">{M.ended}</FormMessage>}
-          <div className="flex items-baseline justify-between">
+          <div className="flex items-start justify-between gap-3">
             <h2 className="text-[18px] font-bold text-ink">{plan.name}</h2>
-            <span className="text-[22px] font-black tabular-nums text-ink">
-              <span className="mr-1 text-[13px] font-semibold text-mut">{M.perMonth}</span>
-              {formatPrice(plan.amount)}
+            <span className="flex flex-col items-end gap-0.5">
+              <span className="text-[22px] font-black tabular-nums text-ink">
+                <span className="mr-1 text-[13px] font-semibold text-mut">{M.perMonth}</span>
+                {formatPrice(plan.amount)}
+              </span>
+              <span className="text-[12.5px] text-mut">{PL.perDayApprox(formatPrice(perDay(plan.amount, MONTH_DAYS_APPROX)))}</span>
             </span>
           </div>
+          {/* 지금 받는 것과 그 값어치를 값 바로 아래 — 이용권 환산은 멤버십 값보다 낮아 정가처럼 긋지 않는다(components/payments/plan-cards) */}
+          <p className="rounded-xl bg-acc-soft px-3 py-2 text-[13px] font-semibold text-acc">
+            {PL.membershipNow} | {PL.credits(plan.boostCredits, formatPrice(creditsListValue(plan)))}
+          </p>
           <ul className="flex flex-col gap-1.5 text-[13.5px] leading-[1.6] text-ink-2">
             {M.benefits.map((line) => (
               <li key={line} className="flex gap-2">

@@ -101,16 +101,19 @@ export const NAV_SECTIONS: readonly NavSection[] = [
       { label: "개발일지", href: ROUTES.loungeDevlogs },
       { label: "질문/피드백", href: ROUTES.loungeQna },
       { label: "등록현황", href: ROUTES.indieMine, childQueries: [{ parent: ROUTES.indie, query: { [INDIE_FROM_PARAM]: INDIE_FROM.mine } }] },
-      // 광고 성과, 결제 내역, 멤버십은 통계 머리에서 들어가는 화면이다 — 별칭이 없으면 /indie/mine 아래라 "등록현황" 이 켜진다
-      // 광고 걸기, 플레이테스트 관리도 통계 화면의 게임 줄 단추로 들어온다
+      // 플레이테스트 관리는 통계 화면의 게임 줄 단추로 들어온다
       {
         label: "내 게임 통계",
         href: ROUTES.indieStats,
+        childLeaves: [{ parent: ROUTES.indieMine, leaf: INDIE_MINE_LEAF.playtest }],
+      },
+      // 돈을 내는 화면은 통계와 따로 선다(2026-10-28 사용자: "결제하는 게 통계 화면에 있는 게 맞나"). 멤버십, 광고 성과, 결제 내역,
+      // 광고 걸기가 이 칸 아래다 — 별칭이 없으면 /indie/mine 아래라 "등록현황" 이 켜진다
+      {
+        label: "광고, 멤버십",
+        href: ROUTES.makerPlans,
         aliases: [ROUTES.indieAds, ROUTES.indiePayments, ROUTES.membership],
-        childLeaves: [
-          { parent: ROUTES.indieMine, leaf: INDIE_MINE_LEAF.boost },
-          { parent: ROUTES.indieMine, leaf: INDIE_MINE_LEAF.playtest },
-        ],
+        childLeaves: [{ parent: ROUTES.indieMine, leaf: INDIE_MINE_LEAF.boost }],
       },
     ],
   },

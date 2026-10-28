@@ -68,6 +68,8 @@ export const ROUTES = {
   indiePayments: "/indie/mine/payments",
   /** 메이커 멤버십(2026-10-27). /indie/mine/[id] 는 uuid 라 낱말과 부딪히지 않는다 */
   membership: "/indie/mine/membership",
+  /** 광고, 멤버십 요금 안내와 구매 입구(2026-10-28). 통계 화면 머리에 붙어 있던 결제 길을 메뉴 칸 하나로 꺼냈다 */
+  makerPlans: "/indie/mine/plans",
   /** 내 광고 성과(2026-10-27, 기획서 4.4). /indie/mine/[id] 는 uuid 라 낱말과 부딪히지 않는다 */
   indieAds: "/indie/mine/ads",
   /** 플레이테스트 모아 보기(2026-10-27). /indie 아래에 두지 않는다 — /indie/<slug> 가 인디 글 주소라 부딪힌다 */

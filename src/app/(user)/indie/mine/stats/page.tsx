@@ -5,7 +5,8 @@
 // 2026-10-28(사용자: "그래프로 보이고 가시성을 높이고, 버튼 구분이 안 된다"): 맨 위 숫자 칸을 고르면 그 숫자의 30일 추이 선이 바뀌는
 // 판(indie/stats-trend)으로 바꿨고, 게임 줄마다 조회 작은 추이 선을 단다. 단추는 무게를 셋으로 가른다 —
 // 돈이 드는 광고 걸기만 채운 단추, 게임에 대한 일(플레이테스트, 자세히)은 테두리 단추, 다른 화면 길(게임 보기)은 글자 링크.
-// 머리의 멤버십, 광고 성과, 결제 내역도 글자 링크 셋이 붙어 한 덩어리로 읽혀 테두리 단추로 바꿨다.
+// 머리의 멤버십, 광고 성과, 결제 내역 단추 셋은 10-28 "광고, 멤버십" 화면(/indie/mine/plans)으로 옮기고 그리로 가는 단추 하나만 둔다 —
+// 사용자: "결제하는 게 통계 화면에 있는 게 맞나". 게임 줄의 광고 걸기는 그 게임에 바로 거는 지름길이라 남긴다.
 // 같은 날 둘째 요청("그래프 더, 각 항목마다 순위도"): 항목별 순위 판(공개 인디 게임 중 내 게임 최고 순위, indie/rank-panel),
 // 게임이 둘 이상이면 게임별로 견주는 막대(indie/game-compare), 게임 줄의 숫자 칸마다 순위 딱지를 단다.
 // 유입 경로는 여기 세우지 않는다 — 메이커 멤버십 "자세히" 의 혜택이다(stats/[id]).
@@ -24,13 +25,12 @@ import { INDIE_MESSAGES } from "@/lib/indie/messages";
 import { stagger } from "@/lib/motion";
 import { INDIE_PROMO_MESSAGES as M } from "@/lib/indie/promo-messages";
 import { indieDetailHref, INDIE_FROM } from "@/lib/indie/query";
-import { MEMBERSHIP_MESSAGES } from "@/lib/membership/messages";
 import { indieBoostPath, indieEditPath, indiePlaytestPath, indieStatsDetailPath, ROUTES } from "@/lib/routes";
 import { PLAYTEST_MESSAGES } from "@/lib/indie/playtest-messages";
 import { INDIE_STATS_DETAIL_MESSAGES } from "@/lib/indie/stats-messages";
 import { buttonClass } from "@/components/ui/button";
 import { PAYMENT_MESSAGES as PM } from "@/lib/payments/messages";
-import { PROMO_PERFORMANCE_MESSAGES } from "@/lib/promo/messages";
+import { PLANS_MESSAGES } from "@/lib/payments/plans-messages";
 import { requireUserOrRedirect } from "@/server/auth/guards";
 import { getMyIndieStats } from "@/server/services/indie";
 
@@ -63,17 +63,9 @@ export default async function IndieStatsPage() {
       <PageHead
         title={M.statsTitle}
         action={
-          <div className="flex flex-wrap items-center gap-1.5">
-            <Link href={ROUTES.membership} className={buttonClass({ variant: "secondary", size: "sm" })}>
-              {MEMBERSHIP_MESSAGES.title}
-            </Link>
-            <Link href={ROUTES.indieAds} className={buttonClass({ variant: "secondary", size: "sm" })}>
-              {PROMO_PERFORMANCE_MESSAGES.link}
-            </Link>
-            <Link href={ROUTES.indiePayments} className={buttonClass({ variant: "secondary", size: "sm" })}>
-              {PM.toHistory}
-            </Link>
-          </div>
+          <Link href={ROUTES.makerPlans} className={buttonClass({ variant: "secondary", size: "sm" })}>
+            {PLANS_MESSAGES.title}
+          </Link>
         }
       >
         <p className="text-[14px] text-mut">{M.statsLead}</p>

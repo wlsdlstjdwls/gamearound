@@ -3,6 +3,8 @@
 // 고르면 값과 결제 위젯 금액이 그 자리에서 바뀐다. 같이 사기는 짝이 될 내 공개 글(인디 게임 화면이면 홍보 글, 홍보 고정 화면이면 인디 게임)을 고른다.
 // 짝이 없으면 같이 사기 칸을 잠그고 까닭을 적는다 — 칸을 아예 숨기면 묶음 할인이 있는 줄도 모른다.
 // 묶음은 할인으로 보이게 한다(2026-10-27 사용자): 낱개 둘의 합을 긋고 묶음 값과 "N원 할인" 딱지를 나란히 둔다.
+// 2026-10-28(사용자: 비싼 것 먼저, 정가 긋고 할인 강조): 같이 사기를 앞에 두고 짝이 있으면 처음부터 골라 둔다(기본값이 가장 많이 남는다).
+// 할인은 율(28%)과 금액(3,900원 아껴요)을 함께 말한다 — 율은 크기를, 금액은 손에 쥐는 몫을 읽힌다. "이것만" 을 고르면 아끼는 몫을 한 줄로 다시 보인다.
 // 묶음 주문의 주 대상은 늘 인디 게임이다(lib/payments/products) — 홍보 고정 화면에서는 이 화면의 글이 둘째가 된다.
 import { useState } from "react";
 import { BoostCheckout } from "@/components/payments/boost-checkout";
@@ -11,7 +13,8 @@ import { FormSelect } from "@/components/ui/select";
 import { formatPrice } from "@/lib/currency";
 import { cn } from "@/lib/cn";
 import { BUNDLE_MESSAGES as B, PAYMENT_MESSAGES as M } from "@/lib/payments/messages";
-import { BUNDLE_LIST_PRICE, BUNDLE_SAVING, PRODUCTS, type ProductKey } from "@/lib/payments/products";
+import { PLANS_MESSAGES as PL } from "@/lib/payments/plans-messages";
+import { BUNDLE_DISCOUNT_RATE, BUNDLE_LIST_PRICE, BUNDLE_SAVING, PRODUCTS, type ProductKey } from "@/lib/payments/products";
 import { Tag } from "@/components/ui/tag";
 
 type Props = {
@@ -35,7 +38,7 @@ function ListPrice({ className }: { className?: string }) {
 }
 
 export function PlanPicker({ product, targetId, pairs, checkout }: Props) {
-  const [plan, setPlan] = useState<"single" | "bundle">("single");
+  const [plan, setPlan] = useState<"single" | "bundle">(pairs.length > 0 ? "bundle" : "single");
   const [pairId, setPairId] = useState(pairs[0]?.id ?? "");
   const isIndie = product === "boost_indie_7d";
   const bundle = plan === "bundle" && pairId !== "";
@@ -49,7 +52,6 @@ export function PlanPicker({ product, targetId, pairs, checkout }: Props) {
       <fieldset className="flex flex-col gap-2">
         <legend className="mb-2 text-[13px] font-semibold text-mut">{B.legend}</legend>
         <div className="grid gap-2 sm:grid-cols-2">
-          <ChoiceCard name="plan" value="single" checked={plan === "single"} onChange={() => setPlan("single")} label={`${B.single} ${formatPrice(PRODUCTS[product].amount)}`} note={PRODUCTS[product].name} />
           <ChoiceCard
             name="plan"
             value="bundle"
@@ -61,25 +63,30 @@ export function PlanPicker({ product, targetId, pairs, checkout }: Props) {
                 {B.bundle}
                 <ListPrice />
                 {formatPrice(PRODUCTS.bundle_7d.amount)}
-                <Tag tone="hot">{B.discount(formatPrice(BUNDLE_SAVING))}</Tag>
+                <Tag tone="hot">{PL.rate(BUNDLE_DISCOUNT_RATE)}</Tag>
               </span>
             }
             note={isIndie ? B.bundleNoteIndie : B.bundleNotePin}
           />
+          <ChoiceCard name="plan" value="single" checked={plan === "single"} onChange={() => setPlan("single")} label={`${B.single} ${formatPrice(PRODUCTS[product].amount)}`} note={PRODUCTS[product].name} />
         </div>
         {pairs.length === 0 && <p className="text-[12.5px] text-dim">{isIndie ? B.noPromo : B.noIndie}</p>}
+        {pairs.length > 0 && plan === "single" && <p className="text-[12.5px] font-semibold text-danger">{PL.singleHint(formatPrice(BUNDLE_SAVING))}</p>}
       </fieldset>
 
       {plan === "bundle" && pairs.length > 0 && (
         <FormSelect name="pair" label={isIndie ? B.pickPromo : B.pickIndie} size="md" value={pairId} onChange={setPairId} options={pairs.map((p) => ({ value: p.id, label: p.title }))} />
       )}
 
-      <div className="flex items-baseline justify-between border-t border-line pt-4">
-        <span className="text-[14px] text-mut">{M.price}</span>
+      <div className="flex items-end justify-between border-t border-line pt-4">
+        <span className="flex flex-col gap-0.5">
+          <span className="text-[14px] text-mut">{M.price}</span>
+          {bundle && <span className="text-[12.5px] font-semibold text-danger">{PL.saving(formatPrice(BUNDLE_SAVING))}</span>}
+        </span>
         <span className="flex items-baseline gap-2">
           {bundle && (
             <>
-              <Tag tone="hot">{B.discount(formatPrice(BUNDLE_SAVING))}</Tag>
+              <Tag tone="hot">{PL.rate(BUNDLE_DISCOUNT_RATE)}</Tag>
               <ListPrice className="text-[14px]" />
             </>
           )}

@@ -25,6 +25,22 @@ export function isProductKey(v: string): v is ProductKey {
 export const BUNDLE_LIST_PRICE = PRODUCTS.boost_indie_7d.amount + PRODUCTS.pin_promo_7d.amount;
 /** 묶음 할인 금액. 구매 화면이 "N원 할인" 으로 말한다(2026-10-27 사용자: 혜택이 할인으로 보이게) */
 export const BUNDLE_SAVING = BUNDLE_LIST_PRICE - PRODUCTS.bundle_7d.amount;
+/**
+ * 묶음 할인율(%). 소수점은 버린다 — 28.26% 를 29% 로 올려 적으면 실제보다 큰 할인을 말하게 된다(표시광고법).
+ * 구매 화면, 요금 안내가 "28% 할인" 으로 크게 쓴다(2026-10-28 사용자: 정가를 긋고 할인을 강조)
+ */
+export const BUNDLE_DISCOUNT_RATE = discountRate(BUNDLE_LIST_PRICE, PRODUCTS.bundle_7d.amount);
+
+/** 정가 대비 할인율(%, 내림). 정가가 0 이하이거나 값이 정가보다 크면 0 */
+export function discountRate(listPrice: number, price: number): number {
+  if (listPrice <= 0 || price >= listPrice) return 0;
+  return Math.floor(((listPrice - price) / listPrice) * 100);
+}
+
+/** 하루 값(원, 내림). "하루 약 N원" 으로 쪼개 보이는 자리가 쓴다 — 올려 적으면 실제보다 비싸 보이고, 반올림은 근거가 흐리다 */
+export function perDay(amount: number, days: number): number {
+  return days > 0 ? Math.floor(amount / days) : amount;
+}
 
 /** 이용권으로 걸 수 있는 상품인가(자리 하나짜리) */
 export function isSingleProduct(key: ProductKey): boolean {
