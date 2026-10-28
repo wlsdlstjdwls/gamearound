@@ -118,17 +118,24 @@ export type IndieStatsRowDto = {
   allTime: { views: number; likes: number; comments: number };
   /** 기간 날짜별 조회(오래된 날부터, 빈 날 0). 줄마다 작은 추이 선으로 그린다(2026-10-28) */
   viewsByDay: number[];
+  /** 공개 인디 게임 가운데 지난 30일 순위(2026-10-28). 값이 0 이거나 공개 전이면 null */
+  ranks: IndieStatsRanks;
 };
+/** 항목별 순위(1부터). 같은 값은 같은 순위(rank) */
+export type IndieStatsRanks = { views: number | null; plays: number | null; likes: number | null; comments: number | null };
 /** 기간 날짜별 합(내 게임 모두). 통계 화면 맨 위 추이 그래프의 재료(2026-10-28) */
 export type IndieStatsDay = { day: string; views: number; plays: number; likes: number; comments: number };
-export type IndieStatsDto = { followers: number; window: IndieStatsTotals; rows: IndieStatsRowDto[]; days: IndieStatsDay[] };
+/** population: 순위의 모집단(지금 공개 중인 인디 게임 수) */
+export type IndieStatsDto = { followers: number; window: IndieStatsTotals; rows: IndieStatsRowDto[]; days: IndieStatsDay[]; population: number };
 
 /** 게임 하나의 통계 자세히(메이커 멤버십, 2026-10-27). days 는 오래된 날부터 기간 전부 — 아무 일 없던 날도 0 으로 선다 */
 export type IndieStatsDetailDto = {
   id: string;
   slug: string;
   title: string;
-  days: Array<{ day: string; views: number; plays: number }>;
+  days: Array<{ day: string; views: number; plays: number; likes: number; comments: number }>;
   /** 유입 경로 갈래(lib/indie/traffic)별 조회. 많은 것부터, 0 인 갈래는 없다 */
   sources: Array<{ source: string; views: number }>;
+  ranks: IndieStatsRanks;
+  population: number;
 };

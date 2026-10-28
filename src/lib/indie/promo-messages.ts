@@ -40,6 +40,18 @@ export const INDIE_PROMO_MESSAGES = {
   statsLive: "공개 중",
   statsSpark: (title: string) => `${title} 지난 30일 조회 추이`,
   statsSparkNote: "30일 조회",
+  /** 항목별 순위(2026-10-28). 모집단은 지금 공개 중인 인디 게임, 기간은 위와 같은 30일 */
+  statsRankTitle: "공개 인디 게임 중 내 순위",
+  statsRankLead: (population: number) => `지금 공개 중인 인디 게임 ${population.toLocaleString("ko-KR")}개와 지난 30일을 견줘요.`,
+  statsRank: (rank: number) => `${rank.toLocaleString("ko-KR")}위`,
+  statsOfPopulation: (population: number) => `${population.toLocaleString("ko-KR")}개 중`,
+  statsTopPercent: (pct: number) => `상위 ${pct}%`,
+  statsRankNone: "아직 순위 밖이에요",
+  statsBestRank: (rank: number) => `내 게임 최고 ${rank.toLocaleString("ko-KR")}위`,
+  statsBestGame: (title: string) => `${title} 기준`,
+  statsCompareTitle: "게임별로 견주기",
+  statsCompareLead: "지난 30일 동안 어떤 게임이 반응을 많이 모았는지 봐요.",
+  statsCompareEmpty: "아직 모인 반응이 없어요. 공개 뒤 소식을 올리면 여기 막대가 자라요.",
 } as const;
 
 /** 알림함 한 줄. 만들 때 다 적어 둔다 — 원본 글이 지워져도 알림함은 읽혀야 한다(schema-notifications 머리 주석) */

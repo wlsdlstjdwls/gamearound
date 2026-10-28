@@ -4,9 +4,11 @@ import type { TrafficSource } from "./traffic";
 export const INDIE_STATS_DETAIL_MESSAGES = {
   open: "자세히",
   title: (game: string) => `${game} 통계 자세히`,
-  lead: "지난 30일 동안 날마다 얼마나 보고 해 보러 갔는지, 어디서 들어왔는지예요.",
+  lead: "지난 30일 동안 날마다 얼마나 보고, 해 보러 가고, 찜하고, 말을 남겼는지, 어디서 들어왔는지예요.",
   views: "날짜별 조회",
   plays: "날짜별 플레이하기 클릭",
+  likes: "날짜별 새 찜",
+  comments: "날짜별 댓글",
   total: "30일 합",
   sources: "어디서 들어왔나요",
   sourcesEmpty: "아직 들어온 기록이 없어요",

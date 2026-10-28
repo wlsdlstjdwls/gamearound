@@ -1,11 +1,13 @@
 // /indie/mine/stats/[id] — 게임 하나의 통계 자세히(2026-10-27, 기획서 4.3 메이커 멤버십 "내 게임 통계 자세히(유입 경로, 일별 그래프)").
-// 30일 날짜별 조회, 플레이하기 클릭(두 그래프)과 유입 경로. 내 글이 아니면 404 — 남의 글이 있는지조차 알려 주지 않는다.
+// 30일 날짜별 조회, 플레이하기 클릭, 새 찜, 댓글(네 그래프, 2026-10-28 둘 더함)과 항목별 순위, 유입 경로. 내 글이 아니면 404 — 남의 글이 있는지조차 알려 주지 않는다.
 // 멤버십이 아니면 숫자 대신 잠긴 판과 멤버십 화면 길을 둔다. 숫자는 모두에게서 모으고 있어(schema-indie-promo) 가입하면 지난 30일이 바로 선다.
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { z } from "zod";
 import { DailyBars } from "@/components/indie/daily-bars";
+import { RankPanel } from "@/components/indie/rank-panel";
+import { INDIE_PROMO_MESSAGES as PM } from "@/lib/indie/promo-messages";
 import { buttonClass } from "@/components/ui/button";
 import { Page, PageHead, sectionCardClass } from "@/components/ui/page";
 import { INDIE_STATS_DETAIL_MESSAGES as M, TRAFFIC_SOURCE_LABEL } from "@/lib/indie/stats-messages";
@@ -58,9 +60,24 @@ export default async function IndieStatsDetailPage({ params }: Props) {
           <section className={sectionCardClass("enter-item grid gap-6 md:grid-cols-2")} style={stagger(0)}>
             <DailyBars title={M.views} totalLabel={M.total} points={detail.days.map((d) => ({ day: d.day, value: d.views }))} />
             <DailyBars title={M.plays} totalLabel={M.total} points={detail.days.map((d) => ({ day: d.day, value: d.plays }))} />
+            <DailyBars title={M.likes} totalLabel={M.total} points={detail.days.map((d) => ({ day: d.day, value: d.likes }))} />
+            <DailyBars title={M.comments} totalLabel={M.total} points={detail.days.map((d) => ({ day: d.day, value: d.comments }))} />
           </section>
 
-          <section aria-labelledby="stats-sources" className={sectionCardClass("enter-item flex flex-col gap-3")} style={stagger(1)}>
+          <RankPanel
+            className="enter-item"
+            title={PM.statsRankTitle}
+            lead={PM.statsRankLead(detail.population)}
+            population={detail.population}
+            items={[
+              { label: PM.statsViews, rank: detail.ranks.views },
+              { label: PM.statsPlays, rank: detail.ranks.plays },
+              { label: PM.statsLikes, rank: detail.ranks.likes },
+              { label: PM.statsComments, rank: detail.ranks.comments },
+            ]}
+          />
+
+          <section aria-labelledby="stats-sources" className={sectionCardClass("enter-item flex flex-col gap-3")} style={stagger(2)}>
             <h2 id="stats-sources" className="text-[15px] font-bold text-ink">
               {M.sources}
             </h2>

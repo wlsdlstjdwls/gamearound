@@ -21,7 +21,8 @@ const fmt = (n: number) => n.toLocaleString("ko-KR");
 /** "2026-10-27" 를 "10월 27일" 로. 문자열을 자른다 — Date 로 바꾸면 시간대에 따라 하루 밀린다 */
 const dayLabel = (d: string) => `${Number(d.slice(5, 7))}월 ${Number(d.slice(8, 10))}일`;
 
-export function StatsTrend({ days, metrics, title }: { days: IndieStatsDay[]; metrics: Array<{ key: Metric; label: string; total: number }>; title: string }) {
+/** note: 칸 숫자 밑 보조 한 줄(예: "내 게임 최고 3위", 2026-10-28). 없으면 줄을 세우지 않는다 */
+export function StatsTrend({ days, metrics, title }: { days: IndieStatsDay[]; metrics: Array<{ key: Metric; label: string; total: number; note?: string }>; title: string }) {
   const [metric, setMetric] = useState<Metric>("views");
   const [hover, setHover] = useState<number | null>(null);
   const values = days.map((d) => d[metric]);
@@ -58,6 +59,7 @@ export function StatsTrend({ days, metrics, title }: { days: IndieStatsDay[]; me
             >
               <span className={cn("text-[12.5px] font-semibold", on ? "text-acc" : "text-dim")}>{m.label}</span>
               <span className="text-[22px] font-black tabular-nums text-ink sm:text-[26px]">{fmt(m.total)}</span>
+              {m.note && <span className={cn("text-[11.5px] font-semibold", on ? "text-acc" : "text-mut")}>{m.note}</span>}
             </button>
           );
         })}
