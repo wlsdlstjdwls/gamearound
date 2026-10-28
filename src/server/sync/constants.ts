@@ -159,14 +159,17 @@ export const CRON_SOURCES = ["nintendo", "nintendo_jp", "epic", "steam", "psstor
 //
 // 발견만 맡는 네 소스(2026-09-15 추가). 하루 2회씩, 아래 창 안에 둔다:
 //   /api/cron/crawl/steam/discover    10 6,12 * * *     하루 2회 × 140건 (18시 창은 스팀 가격 18:20 과 락이 겹쳐 12시로)
-//   /api/cron/crawl/steam/prices      20 17,18 * * *    하루 2회 × 700건 — 세일 문이 열린 직후를 잡는 자리(2026-10-02 추가)
+//   /api/cron/crawl/steam/prices      35 0,6,12,17,18 * * *  하루 5회 × 700건 = 3,500건/일. 17, 18시는 세일 문이 열린 직후를 잡는 자리(2026-10-02 추가)
+//     2026-10-28 에 Actions 회차를 걷고 이쪽을 다섯 번으로 늘렸다. Actions 는 늦게 돌아(10시, 21시대) DB 를 창 밖에서 깨웠다 —
+//     sync_logs 24시간 실측으로 DB 가 깨는 시각 11곳 중 6곳이 Actions 몫이었다(neon 무료 compute 한도).
+//     분을 20 에서 35 로 옮긴 이유: 6, 12시는 steam/discover(:10, 최대 약 10분)와 같은 소스 락이 겹친다.
+//     세일 전환(17:00Z, 18:00Z) 뒤 35분이면 Actions 가 4~6시간 늦던 것에 비해 충분히 빠르다.
 //     스팀 할인은 태평양 오전 10시(서머타임 17:00Z, 아니면 18:00Z)에 바뀐다. Actions 의 crawl-prices 도
 //     그 시각(10 17)에 예약돼 있지만 **실제로는 4~6시간 늦게 돈다** — 2026-09-29~10-01 sync_logs 실측으로
 //     17:10 예약이 21:22, 21:23, 21:46 에 시작했다. 그래서 2026 가을 세일이 열리고 4시간 반 동안 아무 값도 안 바뀌었고,
 //     홈 배너(services/sales)도 그만큼 늦었다. Vercel 크론은 정시에 돈다(위 소스들의 sync_logs 가 매번 :10, :50 이다).
 //     두 시각인 이유: 겨울, 설 세일은 18:00Z 에 열린다(lib/sales/calendar 의 startHourUtc).
-//     Actions 회차는 그대로 둔다 — 이쪽은 700건이라 스팀 11,222행의 일부만 돌고, 나머지는 그쪽이 덮는다.
-//     Actions 가 정시에 와서 락이 겹치면 한쪽이 빈손으로 끝날 뿐이고, 어느 쪽이든 값은 그 시각에 들어온다.
+//     Actions crawl-prices 는 손으로 돌리는 대비책으로만 남는다(예약 없음).
 //   /api/cron/crawl/xbox/discover     40 6,18 * * *     하루 2회 × 180건 (KR 16,991건)
 //   /api/cron/crawl/xbox/prices       20 0,6,12,18 * * *  하루 4회 × 800건 = 3,200건/일 (2026-10-02 추가)
 //     Actions 에서 하루 200건이던 것을 옮겼다 — 32,526행 한 바퀴가 163일이라 세일이 열려도 몇 주 뒤에야 값이 들어왔다.
@@ -343,8 +346,8 @@ export const CRON_PLAN: Record<CronSource, Record<CronMode, CronRunPlan>> = {
   // 2026-09-15 첫 배포에서 이 차이를 빼먹고 한 소스를 400건으로 잡았다가 760초를 맞았다 — 상한 800초의 95%다.
   // 손으로 곱하지 말 것. cron-plan.test 의 estimateMs 가 DLC 단계까지 세고, 그게 이 숫자들의 출처다.
   steam: {
-    // 가격은 Actions 가 맡고, 이 몫은 세일 문이 열린 직후 크론 두 회차(20 17,18)와 손으로 돌릴 때 쓴다
-    // (신규가 없어 건당 0.4초로 싸다). 크론에 올린 이유는 CRON_SOURCES 아래 주기 표에 있다.
+    // 스팀 가격의 정규 실행처다(2026-10-28 Actions 에서 옮김). 크론 다섯 회차(35 0,6,12,17,18)와 손으로 돌릴 때 쓴다
+    // (신규가 없어 건당 0.4초로 싸다). 주기의 근거는 CRON_SOURCES 아래 주기 표에 있다.
     // 2026-09-15 에 1,000 에서 800 으로 내렸다. 이 모드가 느려진 게 아니라, 새 DLC 등록 몫
     // (DLC_FETCH_PER_RUN_BY_SOURCE.steam 40건 × 1.8초)을 이제 제대로 세기 때문이다 —
     // DLC 단계는 prices 모드에서도 똑같이 돈다(sync/run-store 4단계).
@@ -422,7 +425,12 @@ export const CRON_PLAN: Record<CronSource, Record<CronMode, CronRunPlan>> = {
  * 주 150개 이름으로는 한 주에 새로 들어오는 게임(3,541건/7일)의 회사 이름도 못 따라갔다.
  * 회사 소스에는 매칭 단계가 없다 — collect 모드만 크론에 건다(match 몫은 0).
  */
-export const CRON_META_SOURCES = ["wikidata_game", "wikidata"] as const;
+/**
+ * rss(뉴스)는 2026-10-28 에 crawl-news.yml 의 6시간 예약에서 여기로 옮겼다. 회차가 20초짜리인데 Actions 가
+ * 3~4시간 늦게 돌아(3, 11, 21시대) 그때마다 DB 를 창 밖에서 깨웠다 — 깨운 DB 는 최소 5분 켜 있다.
+ * 매칭 단계가 없어 collect 모드만 건다.
+ */
+export const CRON_META_SOURCES = ["wikidata_game", "wikidata", "rss"] as const;
 export type CronMetaSource = (typeof CRON_META_SOURCES)[number];
 
 /**
@@ -469,6 +477,9 @@ export const CRON_META_MS_PER_ITEM: Record<CronMetaSource, Record<CronMetaMode, 
   // 붙이는 쓰기 몫을 얹은 값이다. 붙는 이름이 15%(6/40)이고 한 번 붙일 때 서울 리전에서 Neon 왕복 여섯 번(1.3초)이라
   // 이름당 0.2초꼴이다. 크론의 첫 durationMs 로 다시 잰다.
   wikidata: { match: 0, collect: 2200 },
+  // 피드 하나당. 2026-10-26~28 Actions 실측은 15피드에 평균 19초(피드당 1.3초)다. 느린 피드 하나가 시간 제한까지
+  // 버티는 경우를 덮으려고 넉넉히 잡는다 — 그래도 한 회차 90초 안쪽이다
+  rss: { match: 0, collect: 5000 },
 };
 
 /**
@@ -479,6 +490,7 @@ export const CRON_META_MS_PER_ITEM: Record<CronMetaSource, Record<CronMetaMode, 
  *   /api/cron/crawl/wikidata_game/match    0 0,12 * * *          하루 2회 × 58건 = 116건/일
  *   /api/cron/crawl/wikidata_game/collect  30 0,18 * * *         하루 2회 × 71건 = 142건/일
  *   /api/cron/crawl/wikidata/collect       40 0,12 * * *         하루 2회 × 230개 이름
+ *   /api/cron/crawl/rss/collect            15 0,6,12,18 * * *    하루 4회 × 피드 전부
  * 2026-10-13 에 넷에서 둘로 줄였다 — DB 를 깨우는 창을 줄이려고(CRON_SOURCES 주석의 창). 별칭은 급한 값이 아니다.
  *
  * collect 하루 몫이 match 보다 많아야 하는 이유: 매칭한 것 중 auto 로 붙는 만큼이 조회 대기줄에
@@ -506,6 +518,11 @@ export const CRON_META_PLAN: Record<CronMetaSource, Record<CronMetaMode, CronMet
     // 230 × 2.2초 × 1.15 = 582초. 하루 2회 460개 이름 — 못 붙인 이름은 30일 쉬므로(COMPANY_MISS_RETRY_DAYS)
     // 같은 이름을 다시 묻느라 몫을 쓰지 않는다. 별칭으로 바로 잇는 게임은 이 몫과 상관없이 전부 잇는다
     collect: { limit: 230, match: 0, runsPerDay: 2 },
+  },
+  rss: {
+    match: { limit: 0, match: 0, runsPerDay: 0 },
+    // 피드 전부를 한 회차에 돈다. 하루 4회 = 예전 Actions 6시간 주기와 같은 횟수를 창 안 정시로
+    collect: { limit: BATCH_SIZE.rss, match: 0, runsPerDay: 4 },
   },
 };
 

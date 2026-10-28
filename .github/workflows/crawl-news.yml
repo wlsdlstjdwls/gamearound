@@ -3,10 +3,9 @@
 name: crawl-news
 
 on:
-  schedule:
-    # 주기 6h: 실행 1회 ~2분 × 4회/일 ≈ 월 240분.
-    # RSS 12개 소스에 한 시간 단위로 새 글이 쌓이지 않아 3h → 6h 로 완화(설계서 §4.3 의 1h 이탈, 사유는 README 가정표).
-    - cron: "0 */6 * * *"
+  # 예약은 없다(2026-10-28). 정규 실행처는 Vercel 크론 /api/cron/crawl/rss/collect(15 0,6,12,18) 이다.
+  # 옮긴 이유: Actions 예약이 3~4시간 늦게 돌아 DB 를 창 밖에서 깨웠다(sync/constants 의 CRON_META_SOURCES 주석).
+  # 이 워크플로는 크론이 막혔을 때 손으로 돌리는 대비책이다.
   workflow_dispatch:
     inputs:
       limit:
