@@ -35,6 +35,8 @@ export const ROUTES = {
    * 여기는 사람이 눌러야 줄이 줄어드는 화면이라, 섞여 있으면 메뉴가 "남은 일"을 셀 자리를 못 준다.
    */
   adminMatches: "/admin/matches",
+  /** 데이터 점검(sync/quality). 기계가 찾은 카탈로그 문제 중 사람이 볼 것. 자동으로 고친 기록도 여기서 본다 */
+  adminDataIssues: "/admin/data-issues",
   /** 회사 이름 확정 큐 */
   adminCompanies: "/admin/companies",
   /** 상품 매핑 검수 — 매핑 배치(§5.2)가 후보만 남긴 상품을 사람이 마무리하는 자리 */

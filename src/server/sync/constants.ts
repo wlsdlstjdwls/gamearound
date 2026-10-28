@@ -1023,3 +1023,14 @@ export const PREORDER_SHOW_AFTER_RELEASE_DAYS = 30;
  * 사흘을 넘기면 "출시됐어요" 가 소식이 아니라 옛말이 된다 — 그보다 늦은 것은 보내지 않는다.
  */
 export const RELEASE_ALERT_LOOKBACK_DAYS = 3;
+
+/**
+ * 데이터 점검기(sync/quality) 한 회차가 자동으로 고치는 상한. 넘는 몫은 사람에게 올린다(candidate).
+ * 규칙이 한꺼번에 수백 건을 낸다면 데이터가 고장 난 것보다 규칙이 틀렸을 공산이 크다 — 그때 수백 건을 기계가
+ * 고쳐 버리면 되돌리는 일이 사람 몫이 된다. 2026-10-28 첫 실측은 회차당 auto 9건이었다.
+ */
+export const QUALITY_AUTO_FIX_MAX = 50;
+/** 점검기가 쓴 행의 출처 표시(감사 칼럼, data_corrections.created_source) */
+export const QUALITY_SOURCE = "cron:quality" as const;
+/** 점검 알림에 붙이는 "자동으로 고친 것" 표본 수. 다 붙이면 텔레그램 한 통 상한(4,096자)에 닿는다 */
+export const QUALITY_NOTICE_SAMPLE_MAX = 5;
