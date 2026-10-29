@@ -1,5 +1,6 @@
 // 노출 자리 단건 결제(2026-10-27, 기획서 5장 3단계, 토스페이먼츠 결제위젯). 주문 만들기 → (결제창) → 승인과 부스트 걸기.
-// 상품마다 자리와 대상 표가 다르다(lib/payments/products): 인디 게임 부스트는 indie_posts, 홍보 글 고정은 posts 의 홍보 글, 묶음은 둘 다.
+// 상품은 관리자가 만드는 목록이다(lib/pricing/settings). 자리에 따라 대상 표가 다르다(lib/payments/products): 인디 목록 자리는 indie_posts,
+// 홍보 고정 자리는 posts 의 홍보 글, 묶음은 둘 다.
 //
 // 금액은 언제나 서버가 정한다(요금 설정과 프로모션, services/pricing). 성공 주소로 돌아온 amount 는 주문 줄과 견주기만 하고, 다르면 승인하지 않는다.
 // 승인은 한 번만 간다: 이미 paid 인 주문이 다시 오면(새로고침, 뒤로 가기) 토스를 다시 부르지 않고 그 결과를 돌려준다.
@@ -17,7 +18,8 @@ import { insertPurchasedBoost, isPublicPromo } from "@/server/services/promotion
 import { isPublic } from "@/server/services/indie/read";
 import { quoteFor } from "@/server/services/pricing";
 import { getPricingSettings } from "@/server/services/settings";
-import { isProductKey, makeOrderId, PRODUCTS, type Product, type ProductKey } from "@/lib/payments/products";
+import { makeOrderId, productShape, TARGET_SLOT } from "@/lib/payments/products";
+import { findProduct } from "@/lib/pricing/settings";
 import { PAYMENT_MESSAGES as M } from "@/lib/payments/messages";
 
 /** 묶음 짝 후보 수. 한 사람의 공개 글은 많지 않고, 오래된 홍보 글에 돈을 거는 일은 드물다 */
@@ -39,18 +41,21 @@ export async function ownedLiveTarget(kind: PromoTargetKind, userId: string, tar
 }
 
 /** 결제창에 넘길 주문. 묶음이면 둘째 대상(홍보 글)도 내 공개 글이어야 한다 */
-export async function createBoostOrder(userId: string, product: ProductKey, targetId: string, extraTargetId: string | null = null): Promise<BoostOrder> {
-  const p: Product = PRODUCTS[product];
+export async function createBoostOrder(userId: string, product: string, targetId: string, extraTargetId: string | null = null): Promise<BoostOrder> {
+  // 관리자가 지웠거나 판매를 멈춘 상품은 주문을 받지 않는다
+  const item = findProduct(await getPricingSettings(), product);
+  if (!item) throw new Error(M.productGone);
+  if (!item.active) throw new Error(M.notOnSale);
+  const p = productShape(item);
   if (Boolean(p.extra) !== Boolean(extraTargetId)) throw new Error(M.notBuyable);
-  // 값은 요금 설정과 프로모션으로 서버가 정한다(services/pricing). 관리자가 판매를 멈춘 상품은 주문을 받지 않는다
-  const [settings, priced] = await Promise.all([getPricingSettings(), quoteFor(userId, product)]);
-  if (!settings.products[product].active) throw new Error(M.notOnSale);
+  // 값은 요금 설정과 프로모션으로 서버가 정한다(services/pricing)
+  const priced = await quoteFor(userId, product);
   const [main, extra] = await Promise.all([ownedLiveTarget(p.target, userId, targetId), p.extra && extraTargetId ? ownedLiveTarget(p.extra.target, userId, extraTargetId) : true]);
   if (!main || !extra) throw new Error(M.notBuyable);
   const orderId = makeOrderId(product.split("_")[0], randomBytes(ORDER_RANDOM_BYTES).toString("hex"));
   await getDb().insert(payments).values({ orderId, userId, product, amount: priced.amount, targetKind: p.target, targetId, extraTargetId, ...createdBy("user", userId) });
   // customerKey 는 토스가 구매자를 가르는 값이다. 우리 사용자 id(uuid)는 토스 규칙(영숫자와 -, 2~50자)에 맞고 바깥에 드러나도 쓸 데가 없다
-  return { orderId, amount: priced.amount, orderName: p.name, customerKey: userId };
+  return { orderId, amount: priced.amount, orderName: item.name, customerKey: userId };
 }
 
 export type BoostTargetDto = { id: string; title: string; live: boolean; boostedUntil: Date | null };
@@ -64,11 +69,10 @@ export async function listMyLiveTargets(userId: string, kind: PromoTargetKind): 
 }
 
 /** 광고 걸기 화면의 대상 — 내 글만. 그 자리에 지금 걸린 광고(관리자든 결제든)가 있으면 가장 늦은 끝 시각 */
-export async function getMyBoostTarget(userId: string, product: ProductKey, targetId: string): Promise<BoostTargetDto | null> {
+export async function getMyBoostTarget(userId: string, kind: PromoTargetKind, targetId: string): Promise<BoostTargetDto | null> {
   const db = getDb();
-  const p = PRODUCTS[product];
   const postQuery =
-    p.target === "indie_post"
+    kind === "indie_post"
       ? db
           .select({ id: indiePosts.id, title: indiePosts.title, live: sql<boolean>`${isPublic}` })
           .from(indiePosts)
@@ -84,7 +88,7 @@ export async function getMyBoostTarget(userId: string, product: ProductKey, targ
     db
       .select({ end: sql<Date | null>`max(${promotionBoosts.endsAt})` })
       .from(promotionBoosts)
-      .where(and(eq(promotionBoosts.slot, p.slot), eq(promotionBoosts.targetId, targetId), isNull(promotionBoosts.revokedAt), gt(promotionBoosts.endsAt, sql`now()`))),
+      .where(and(eq(promotionBoosts.slot, TARGET_SLOT[kind]), eq(promotionBoosts.targetId, targetId), isNull(promotionBoosts.revokedAt), gt(promotionBoosts.endsAt, sql`now()`))),
   ]);
   if (!post) return null;
   return { ...post, boostedUntil: boost?.end ? new Date(boost.end) : null };
@@ -97,9 +101,15 @@ export async function confirmBoostPayment(input: { paymentKey: string; orderId: 
   const db = getDb();
   const [order] = await db.select().from(payments).where(and(eq(payments.orderId, input.orderId), eq(payments.userId, userId))).limit(1);
   // 대상이 없는 줄은 멤버십 청구다 — 결제위젯 성공 주소로 올 일이 없다
-  if (!order || !order.targetId || !isProductKey(order.product)) return { ok: false, message: M.orderNotFound };
+  if (!order || !order.targetId) return { ok: false, message: M.orderNotFound };
   if (order.status === "paid") return { ok: true, orderId: order.orderId };
   if (order.status !== "pending") return { ok: false, message: order.failMessage ?? M.failed };
+  // 걸 자리와 기간은 상품에서 읽는다. 주문 뒤 관리자가 상품을 지웠으면 토스 승인 전에 멈춘다 — 돈을 받고 걸 데가 없는 일을 만들지 않는다
+  const item = findProduct(await getPricingSettings(), order.product);
+  if (!item) {
+    await markFailed(order.orderId, "PRODUCT_GONE", M.productGone, userId);
+    return { ok: false, message: M.productGone };
+  }
   if (order.amount !== input.amount) {
     await markFailed(order.orderId, "AMOUNT_MISMATCH", M.amountMismatch, userId);
     return { ok: false, message: M.amountMismatch };
@@ -130,12 +140,12 @@ export async function confirmBoostPayment(input: { paymentKey: string; orderId: 
     .returning({ id: payments.id });
   if (claimed.length === 0) return { ok: true, orderId: order.orderId };
 
-  const p: Product = PRODUCTS[order.product];
-  const boostId = await insertPurchasedBoost({ slot: p.slot, targetId: order.targetId, days: p.days, note: order.orderId }, userId);
+  const p = productShape(item);
+  const boostId = await insertPurchasedBoost({ slot: p.slot, targetId: order.targetId, days: item.days, note: order.orderId }, userId);
   await db.update(payments).set({ boostId, ...updatedBy("system") }).where(eq(payments.id, order.id));
   // 묶음의 둘째. 여기서 끊기면 extraBoostId 가 빈 채 남아 관리자 목록에 "걸기 실패" 로 드러난다(history 의 boostMissing)
   if (p.extra && order.extraTargetId) {
-    const extraBoostId = await insertPurchasedBoost({ slot: p.extra.slot, targetId: order.extraTargetId, days: p.days, note: order.orderId }, userId);
+    const extraBoostId = await insertPurchasedBoost({ slot: p.extra.slot, targetId: order.extraTargetId, days: item.days, note: order.orderId }, userId);
     await db.update(payments).set({ extraBoostId, ...updatedBy("system") }).where(eq(payments.id, order.id));
   }
   return { ok: true, orderId: order.orderId };

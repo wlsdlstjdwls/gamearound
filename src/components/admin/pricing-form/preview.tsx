@@ -5,17 +5,17 @@
 import { PlanCards } from "@/components/payments/plan-cards";
 import { Panel } from "@/components/admin/pricing-form/sections";
 import { PRICING_ADMIN_MESSAGES as M } from "@/lib/pricing/admin-messages";
-import { priceBook } from "@/lib/pricing/quote";
+import { priceBook, sellingTiers } from "@/lib/pricing/quote";
 import type { PricingSettings, TierKey } from "@/lib/pricing/settings";
 
 /** tier 를 주면 그 카드 한 장만(문구를 고치는 카드). 없으면 판매 중인 카드 전부를 위아래로 쌓는다 */
 export function PricingPreview({ value, tier }: { value: PricingSettings; tier?: TierKey }) {
   const book = priceBook(value, { productsPaid: false, membershipPaid: false }, new Date());
-  const selling = { single: value.products.boost_indie_7d.active || value.products.pin_promo_7d.active, bundle: value.products.bundle_7d.active, membership: value.membership.active };
+  const selling = sellingTiers(value);
   // 고치는 카드는 판매를 꺼 두었어도 보인다 — 문구를 고치는 중인데 미리 보기가 비면 안 된다
   const active = tier ? { single: tier === "single", bundle: tier === "bundle", membership: tier === "membership" } : selling;
   return (
-    <Panel title={M.previewTitle} lead={M.previewLead}>
+    <Panel title={M.previewTitle}>
       {/* 관리자 판 안이라 카드 그림자, 테두리가 겹친다 — 옅은 바탕 위에 올려 실제 화면과 같은 대비로 본다 */}
       <div inert className="rounded-[var(--radius-inset)] bg-bg p-3 sm:p-4">
         <PlanCards

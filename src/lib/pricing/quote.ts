@@ -5,7 +5,7 @@
 // 프로모션이 여럿 걸리면 가장 싼 값 하나만 쓴다(겹쳐 깎지 않는다) — 겹치면 관리자가 예상 못 한 값이 나온다.
 // 멤버십 프로모션은 첫 달 청구에만 걸린다. 갱신은 언제나 설정의 정가다.
 // 날짜는 한국 날짜로 본다: startsOn 00:00 부터 endsOn 23:59:59 까지(KST).
-import { PRICING_DEFAULTS, type PricedKey, type PricingSettings, type Promotion, MIN_CHARGE } from "@/lib/pricing/settings";
+import { findProduct, isBundleProduct, MEMBERSHIP_KEY, PRICING_DEFAULTS, type CatalogProduct, type PricedKey, type PricingSettings, type Promotion, MIN_CHARGE } from "@/lib/pricing/settings";
 
 /** 할인 결과를 이 단위로 내린다(원). 6,210원 같은 값보다 6,200원이 읽힌다 */
 const ROUND_UNIT = 10;
@@ -26,8 +26,12 @@ export type Quote = {
   promoLabel: string | null;
 };
 
+/** 정가. 모르는 상품이면 던진다 — 부르는 쪽(주문 만들기)이 먼저 상품을 찾아 판매 중인지 본다 */
 function regularOf(s: PricingSettings, key: PricedKey): number {
-  return key === "membership" ? s.membership.amount : s.products[key].amount;
+  if (key === MEMBERSHIP_KEY) return s.membership.amount;
+  const p = findProduct(s, key);
+  if (!p) throw new Error(`없는 상품: ${key}`);
+  return p.amount;
 }
 
 export function promotionLive(p: Promotion, now: Date): boolean {
@@ -57,7 +61,7 @@ function applyPromotion(regular: number, p: Promotion): number {
  */
 export function quote(s: PricingSettings, key: PricedKey, buyer: Buyer, now: Date, first = true): Quote {
   const regular = regularOf(s, key);
-  if (key === "membership" && !first) return { amount: regular, regular, promoLabel: null };
+  if (key === MEMBERSHIP_KEY && !first) return { amount: regular, regular, promoLabel: null };
   let best: Quote = { amount: regular, regular, promoLabel: null };
   for (const p of s.promotions) {
     if (p.target !== key || !promotionLive(p, now)) continue;
@@ -79,14 +83,45 @@ export function perDay(amount: number, days: number): number {
   return days > 0 ? Math.floor(amount / days) : amount;
 }
 
-/** 묶음의 그을 값 — 낱개 둘을 정가로 따로 샀을 때의 합. 묶음 정가, 프로모션 값과 견줄 근거다 */
-export function bundleListPrice(s: PricingSettings): number {
-  return s.products.boost_indie_7d.amount + s.products.pin_promo_7d.amount;
+/**
+ * 자리 하나짜리 상품 중 이 자리, 이 기간의 대표(판매 중인 것 먼저, 목록 순서대로). 같은 기간이 없으면 그 자리 첫 상품.
+ * 묶음의 그을 값과 이용권 환산이 이 값을 낱개 정가로 쓴다
+ */
+function singleFor(s: PricingSettings, slot: CatalogProduct["slots"][number], days?: number): CatalogProduct | null {
+  const singles = s.products.filter((p) => !isBundleProduct(p) && p.slots[0] === slot);
+  const ordered = [...singles.filter((p) => p.active), ...singles.filter((p) => !p.active)];
+  return ordered.find((p) => days === undefined || p.days === days) ?? ordered[0] ?? null;
 }
 
-/** 멤버십 이용권을 낱개 정가로 환산한 값(이용권 한 장 = 자리 하나 7일) */
-export function creditsListValue(s: PricingSettings): number {
-  return s.membership.boostCredits * s.products.boost_indie_7d.amount;
+/** 묶음의 그을 값 — 같은 기간 낱개 둘을 정가로 따로 샀을 때의 합. 짝 낱개가 없으면 0(긋지 않는다) */
+export function bundleListPrice(s: PricingSettings, bundle: Pick<CatalogProduct, "slots" | "days"> | null = representative(s, "bundle")): number {
+  if (!bundle) return 0;
+  const parts = bundle.slots.map((slot) => singleFor(s, slot, bundle.days));
+  return parts.every(Boolean) ? parts.reduce((n, p) => n + (p?.amount ?? 0), 0) : 0;
+}
+
+/** 멤버십 이용권을 낱개 정가로 환산한 값(이용권 한 장 = 인디 목록 자리 하나 CREDIT_DAYS 일) */
+export function creditsListValue(s: PricingSettings, creditDays: number): number {
+  return s.membership.boostCredits * (singleFor(s, "indie_top", creditDays)?.amount ?? 0);
+}
+
+/** 요금 카드 갈래. 낱개는 자리 하나, 묶음은 자리 둘 */
+export type AdTier = "boost" | "pin" | "bundle";
+
+function tierOf(p: CatalogProduct): AdTier {
+  return isBundleProduct(p) ? "bundle" : p.slots[0] === "indie_top" ? "boost" : "pin";
+}
+
+/** 그 갈래의 대표 상품 — 판매 중인 첫 상품(관리자 목록 순서), 없으면 첫 상품. 요금 카드는 이 상품의 값을 보인다 */
+export function representative(s: PricingSettings, tier: AdTier): CatalogProduct | null {
+  const of = s.products.filter((p) => tierOf(p) === tier);
+  return of.find((p) => p.active) ?? of[0] ?? null;
+}
+
+/** 요금 카드 셋 중 지금 파는 것. 낱개는 둘 중 하나라도 팔면 선다 */
+export function sellingTiers(s: PricingSettings): { single: boolean; bundle: boolean; membership: boolean } {
+  const selling = (t: AdTier) => s.products.some((p) => p.active && tierOf(p) === t);
+  return { single: selling("boost") || selling("pin"), bundle: selling("bundle"), membership: s.membership.active };
 }
 
 /** 화면이 한 번에 쓰는 값 묶음. 사는 사람 처지는 상품, 멤버십 따로 */
@@ -99,13 +134,20 @@ export type PriceBook = {
   bundleList: number;
 };
 
+/** 상품이 없는 갈래의 자리 값. 그 카드는 sellingTiers 가 끄므로 보이지 않는다 */
+const NO_QUOTE: Quote = { amount: 0, regular: 0, promoLabel: null };
+
 export function priceBook(s: PricingSettings, buyer: { productsPaid: boolean; membershipPaid: boolean }, now: Date): PriceBook {
   const product = { everPaid: buyer.productsPaid };
+  const of = (t: AdTier) => {
+    const p = representative(s, t);
+    return p ? quote(s, p.id, product, now) : NO_QUOTE;
+  };
   return {
-    boost: quote(s, "boost_indie_7d", product, now),
-    pin: quote(s, "pin_promo_7d", product, now),
-    bundle: quote(s, "bundle_7d", product, now),
-    membership: quote(s, "membership", { everPaid: buyer.membershipPaid }, now),
+    boost: of("boost"),
+    pin: of("pin"),
+    bundle: of("bundle"),
+    membership: quote(s, MEMBERSHIP_KEY, { everPaid: buyer.membershipPaid }, now),
     bundleList: bundleListPrice(s),
   };
 }

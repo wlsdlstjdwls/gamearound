@@ -20,8 +20,9 @@ import { cn } from "@/lib/cn";
 import { formatPrice } from "@/lib/currency";
 import { promotionPhase, type PromotionPhase } from "@/lib/pricing/quote";
 import { TextField } from "@/components/ui/text-field";
-import { PRICED_KEY_LABELS, PRICING_ADMIN_MESSAGES as M } from "@/lib/pricing/admin-messages";
-import { PRICED_KEYS, type PricingSettings, type Promotion } from "@/lib/pricing/settings";
+import { PRICING_ADMIN_MESSAGES as M } from "@/lib/pricing/admin-messages";
+import { targetLabel } from "@/components/admin/pricing-form/sections";
+import { MEMBERSHIP_KEY, type PricingSettings, type Promotion } from "@/lib/pricing/settings";
 
 /** 새 줄의 첫 값 — 가장 흔히 쓸 "처음 결제하는 사람 10% 할인" */
 const NEW_PROMO_PERCENT = 10;
@@ -36,8 +37,8 @@ function period(p: Promotion): string {
   return p.startsOn || p.endsOn ? M.periodRange(p.startsOn ?? M.periodOpen, p.endsOn ?? M.periodOpen) : M.periodAlways;
 }
 
-function summary(p: Promotion): string {
-  return M.promoSummary(PRICED_KEY_LABELS[p.target], M.audienceLabels[p.audience], deal(p), period(p));
+function summary(s: PricingSettings, p: Promotion): string {
+  return M.promoSummary(targetLabel(s, p.target), M.audienceLabels[p.audience], deal(p), period(p));
 }
 
 /** 표의 칸 폭. 머리 줄과 몸 줄이 같은 틀을 쓴다 */
@@ -56,7 +57,7 @@ export function PromotionsSection({ value, patch, selected, onSelect: setSelecte
     setSelected(id);
     patch((d) => ({
       ...d,
-      promotions: [...d.promotions, { id, active: false, label: M.newPromoLabel, target: "boost_indie_7d", kind: "percent", value: NEW_PROMO_PERCENT, audience: "first", startsOn: null, endsOn: null }],
+      promotions: [...d.promotions, { id, active: false, label: M.newPromoLabel, target: d.products[0]?.id ?? MEMBERSHIP_KEY, kind: "percent", value: NEW_PROMO_PERCENT, audience: "first", startsOn: null, endsOn: null }],
     }));
   };
 
@@ -94,9 +95,9 @@ export function PromotionsSection({ value, patch, selected, onSelect: setSelecte
                     </button>
                     <Tag tone={PHASE_TONE[phase]}>{M.phaseLabels[phase]}</Tag>
                     {/* 좁은 화면은 칸 대신 한 문장 */}
-                    <span className="text-[12px] text-dim md:hidden">{summary(p)}</span>
+                    <span className="text-[12px] text-dim md:hidden">{summary(value, p)}</span>
                   </div>
-                  <span className="hidden text-mut md:block">{PRICED_KEY_LABELS[p.target]}</span>
+                  <span className="hidden text-mut md:block">{targetLabel(value, p.target)}</span>
                   <span className="hidden font-semibold tabular-nums text-ink md:block">{deal(p)}</span>
                   <span className="hidden text-mut md:block">{M.audienceLabels[p.audience]}</span>
                   <span className="hidden tabular-nums text-mut md:block">{period(p)}</span>
@@ -134,7 +135,7 @@ export function PromotionsSection({ value, patch, selected, onSelect: setSelecte
                 size="lg"
                 value={current.target}
                 onChange={(v) => set(index, { target: v as Promotion["target"] })}
-                options={PRICED_KEYS.map((k) => ({ value: k, label: PRICED_KEY_LABELS[k] }))}
+                options={[...value.products.map((x) => x.id), MEMBERSHIP_KEY].map((k) => ({ value: k, label: targetLabel(value, k) }))}
               />
             </div>
             <FormSelect

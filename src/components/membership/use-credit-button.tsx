@@ -7,9 +7,9 @@ import { spendBoostCreditAction } from "@/app/(user)/payments/actions";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/components/ui/toast";
 import { MEMBERSHIP_MESSAGES as M } from "@/lib/membership/messages";
-import type { ProductKey } from "@/lib/payments/products";
+import type { PromoTargetKind } from "@/server/db/schema";
 
-export function UseCreditButton({ product, targetId, credits }: { product: ProductKey; targetId: string; credits: number }) {
+export function UseCreditButton({ kind, targetId, credits }: { kind: PromoTargetKind; targetId: string; credits: number }) {
   const toast = useToast();
   const router = useRouter();
   const [left, setLeft] = useState(credits);
@@ -18,7 +18,7 @@ export function UseCreditButton({ product, targetId, credits }: { product: Produ
   const use = () => {
     setLeft((n) => n - 1);
     start(async () => {
-      const r = await spendBoostCreditAction(product, targetId).catch(() => ({ ok: false as const, error: M.failed }));
+      const r = await spendBoostCreditAction(kind, targetId).catch(() => ({ ok: false as const, error: M.failed }));
       if (!r.ok) {
         setLeft((n) => n + 1);
         toast(r.error);

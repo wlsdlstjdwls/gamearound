@@ -1,24 +1,31 @@
-// 파는 상품의 구조 — 자리, 대상, 기간, 영수증 이름. 화면, 서버, 검증이 같은 표를 본다.
-// 값은 여기 없다(2026-10-28): 관리자가 바꾸는 요금 설정(lib/pricing/settings)과 프로모션으로 서버가 매겨(services/pricing) 주문 줄에 적는다 —
-// 결제창에서 돌아온 금액은 그 줄과 견주기만 한다(schema-payments 머리 주석).
+// 광고 상품의 구조 — 상품의 자리 목록을 결제가 쓰는 모양(주 대상, 둘째 대상)으로 푼다. 화면, 서버, 검증이 같은 함수를 본다.
+// 상품 자체(이름, 자리, 기간, 값, 판매)는 관리자가 만드는 목록이다(lib/pricing/settings, 2026-10-29). 앞에는 이 파일의 고정 표 셋이 상품이었다.
+// 값은 여기 없다: 요금 설정과 프로모션으로 서버가 매겨(services/pricing) 주문 줄에 적고, 결제창에서 돌아온 금액은 그 줄과 견주기만 한다.
 //
-// 묶음은 대상이 두 표에 걸친다(인디 게임 글, 게시판 홍보 글). 주 대상(slot, target)이 인디 게임이고 둘째(extra)가 홍보 글이다 —
-// 결제 줄의 targetId, extraTargetId 에 그대로 담긴다. 멤버십 이용권은 한 장에 자리 하나라 낱개 상품에만 쓴다.
+// 묶음(자리 둘)은 대상이 두 표에 걸친다(인디 게임 글, 게시판 홍보 글). 주 대상이 인디 게임이고 둘째(extra)가 홍보 글이다 —
+// 결제 줄의 targetId, extraTargetId 에 그대로 담긴다.
 import type { PromoSlot, PromoTargetKind } from "@/server/db/schema";
+import type { CatalogProduct } from "@/lib/pricing/settings";
 
 export type ProductPart = { slot: PromoSlot; target: PromoTargetKind };
-export type Product = ProductPart & { name: string; days: number; extra?: ProductPart };
+export type ProductShape = ProductPart & { extra?: ProductPart };
 
-export const PRODUCTS = {
-  boost_indie_7d: { name: "인디 게임 부스트 7일", slot: "indie_top", target: "indie_post", days: 7 },
-  pin_promo_7d: { name: "홍보 글 고정 7일", slot: "promo_pin", target: "board_post", days: 7 },
-  bundle_7d: { name: "인디 게임 부스트 + 홍보 글 고정 7일", slot: "indie_top", target: "indie_post", days: 7, extra: { slot: "promo_pin", target: "board_post" } },
-} as const satisfies Record<string, Product>;
+export const SLOT_TARGET: Record<PromoSlot, PromoTargetKind> = { indie_top: "indie_post", promo_pin: "board_post" };
+export const TARGET_SLOT: Record<PromoTargetKind, PromoSlot> = { indie_post: "indie_top", board_post: "promo_pin" };
 
-export type ProductKey = keyof typeof PRODUCTS;
+/** 멤버십 이용권 한 장의 기간(일). 혜택 문구가 "한 장이면 7일" 로 약속한다 — 관리자가 만든 상품 기간과 따로 간다 */
+export const CREDIT_DAYS = 7;
 
-export function isProductKey(v: string): v is ProductKey {
-  return Object.hasOwn(PRODUCTS, v);
+/** 자리 목록을 주 대상, 둘째 대상으로. 인디 목록 자리가 있으면 그쪽이 주 대상이다 */
+export function productShape(p: Pick<CatalogProduct, "slots">): ProductShape {
+  const main: PromoSlot = p.slots.includes("indie_top") ? "indie_top" : p.slots[0];
+  const rest = p.slots.find((s) => s !== main);
+  return { slot: main, target: SLOT_TARGET[main], ...(rest ? { extra: { slot: rest, target: SLOT_TARGET[rest] } } : {}) };
+}
+
+/** 브라우저에서 온 상품 id 의 꼴 검사. 있는 상품인지는 서버가 설정에서 다시 찾는다 */
+export function isProductIdLike(v: unknown): v is string {
+  return typeof v === "string" && /^[A-Za-z0-9_-]{1,40}$/.test(v);
 }
 
 /**
@@ -29,11 +36,6 @@ export const PLAN_PARAM = "plan";
 export type PlanChoice = "single" | "bundle";
 export function readPlanChoice(v: string | undefined): PlanChoice | null {
   return v === "single" || v === "bundle" ? v : null;
-}
-
-/** 이용권으로 걸 수 있는 상품인가(자리 하나짜리) */
-export function isSingleProduct(key: ProductKey): boolean {
-  return !("extra" in PRODUCTS[key]);
 }
 
 /**

@@ -15,9 +15,9 @@ import { cancelTossPayment, TOSS_BILLING_SECRET_KEY_ENV, TOSS_SECRET_KEY_ENV } f
 import { endMembership } from "@/server/services/membership/charge";
 import { pushNotification } from "@/server/services/notifications";
 import { paymentRefundBasis, proratedRefund } from "@/lib/payments/refund";
-import { MEMBERSHIP_PLANS, type MembershipPlanKey } from "@/lib/membership/plan";
 import { PAYMENT_MESSAGES as M } from "@/lib/payments/messages";
-import { PRODUCTS, type ProductKey } from "@/lib/payments/products";
+import { paymentProductName } from "@/server/services/payments/history";
+import { getPricingSettings } from "@/server/services/settings";
 import { formatPrice } from "@/lib/currency";
 import { ROUTES } from "@/lib/routes";
 
@@ -75,7 +75,7 @@ export async function refundPayment(orderId: string, mode: RefundMode, reason: s
       .where(and(inArray(promotionBoosts.id, boostIds), isNull(promotionBoosts.revokedAt)));
   }
   if (p.membershipId) await endMembership(p.membershipId, now, { source: "admin", userId: adminId });
-  const name = PRODUCTS[p.product as ProductKey]?.name ?? MEMBERSHIP_PLANS[p.product as MembershipPlanKey]?.name ?? p.product;
+  const name = paymentProductName(p.product, await getPricingSettings());
   await pushNotification(p.userId, "payment", M.refundedNotice(name, formatPrice(amount)), ROUTES.indiePayments).catch(() => {});
   return amount;
 }

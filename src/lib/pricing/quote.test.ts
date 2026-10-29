@@ -76,3 +76,33 @@ describe("parsePricingSettings, fillCopy", () => {
     expect(fillCopy("{saving} 싸요 {x}", { saving: "3,900원" })).toBe("3,900원 싸요 {x}");
   });
 });
+
+describe("관리자가 만드는 상품 목록", () => {
+  const thirty = { id: "ad-30", name: "인디 30일", slots: ["indie_top" as const], days: 30, amount: 19_000, active: true };
+  const pin30 = { id: "pin-30", name: "고정 30일", slots: ["promo_pin" as const], days: 30, amount: 15_000, active: true };
+  const both30 = { id: "both-30", name: "묶음 30일", slots: ["indie_top" as const, "promo_pin" as const], days: 30, amount: 25_000, active: true };
+  const withProducts = (extra: PricingSettings["products"]): PricingSettings => ({ ...PRICING_DEFAULTS, products: [...PRICING_DEFAULTS.products, ...extra] });
+
+  it("앞 모양(열쇠 셋 객체)으로 저장된 값은 목록으로 옮겨 값과 판매를 지킨다", () => {
+    const legacy = { ...PRICING_DEFAULTS, products: { boost_indie_7d: { amount: 5_000, active: false }, pin_promo_7d: { amount: 6_900, active: true }, bundle_7d: { amount: 9_900, active: true } } };
+    const s = parsePricingSettings(legacy);
+    expect(s).not.toBe(PRICING_DEFAULTS);
+    expect(s.products.map((p) => p.id)).toEqual(["boost_indie_7d", "pin_promo_7d", "bundle_7d"]);
+    expect(s.products[0]).toMatchObject({ amount: 5_000, active: false, slots: ["indie_top"], days: 7 });
+  });
+
+  it("새 상품 값을 매기고, 묶음 그을 값은 같은 기간 낱개 합이다", () => {
+    const s = withProducts([thirty, pin30, both30]);
+    expect(quote(s, "ad-30", { everPaid: true }, now).amount).toBe(19_000);
+    expect(bundleListPrice(s, both30)).toBe(34_000);
+    // 같은 기간 짝이 없으면 그 자리 첫 낱개로 센다
+    expect(bundleListPrice(withProducts([both30]), both30)).toBe(13_800);
+  });
+
+  it("지운 상품을 겨눈 프로모션, 겹친 id, 빈 자리는 받지 않는다", () => {
+    expect(parsePricingSettings(withPromos([promo({ target: "gone" })]))).toBe(PRICING_DEFAULTS);
+    expect(parsePricingSettings(withProducts([{ ...thirty, id: "boost_indie_7d" }]))).toBe(PRICING_DEFAULTS);
+    expect(parsePricingSettings(withProducts([{ ...thirty, slots: [] }]))).toBe(PRICING_DEFAULTS);
+    expect(parsePricingSettings(withProducts([thirty])).products).toHaveLength(4);
+  });
+});

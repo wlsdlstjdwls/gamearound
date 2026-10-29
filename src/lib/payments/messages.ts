@@ -1,33 +1,31 @@
 // 결제 문구(부스트 구매 화면, 결제 결과, 내 결제 내역, 관리자 결제 목록). 2026-10-27.
 import type { PaymentStatus } from "@/server/db/schema";
-import type { ProductKey } from "./products";
+import type { PromoTargetKind } from "@/server/db/schema";
 
-/** 상품마다 구매 화면이 말하는 것(무엇을, 어디에, 얼마 동안) */
-export const PRODUCT_COPY: Record<ProductKey, { title: string; lead: string; points: readonly string[] }> = {
-  boost_indie_7d: {
+/**
+ * 구매 화면이 말하는 것(무엇을, 어디에). 글 갈래(인디 게임, 홍보 글)마다 한 벌이다 — 상품은 관리자가 만드는 목록이라(lib/pricing/settings)
+ * 기간은 고르는 상품마다 다르고, 이 문구는 기간을 못 박지 않는다
+ */
+export const PRODUCT_COPY: Record<PromoTargetKind, { title: string; lead: string; points: readonly string[] }> = {
+  indie_post: {
     title: "내 게임 더 알리기",
     lead: "인디 게임 목록 맨 위 \"주목할 게임\" 칸, 홈 인디 줄 첫 칸, 같은 장르 게임 상세의 추천 칸에 내 게임을 올려요. 카드에는 \"광고\" 표시가 붙어요.",
     points: [
-      "결제하면 바로 노출이 시작되고 7일 동안 이어져요",
+      "결제하면 바로 노출이 시작되고 고른 기간 동안 이어져요",
       "이미 노출 중이면 지금 기간이 끝난 뒤로 이어 붙여요",
       "걸린 게임이 3개보다 많으면 한 시간마다 돌아가며 보여요",
       "명예의 전당, 슈퍼루키 순위와는 상관없어요",
     ],
   },
-  pin_promo_7d: {
+  board_post: {
     title: "홍보 글 고정",
     lead: "게시판 홍보 목록 맨 위에 내 글을 고정해요. 줄에는 \"광고\" 표시가 붙어요.",
     points: [
-      "결제하면 바로 고정되고 7일 동안 이어져요",
+      "결제하면 바로 고정되고 고른 기간 동안 이어져요",
       "이미 고정 중이면 지금 기간이 끝난 뒤로 이어 붙여요",
       "고정된 글이 2개보다 많으면 한 시간마다 돌아가며 보여요",
       "숨김 처리된 글은 고정 기간 중에도 보이지 않아요",
     ],
-  },
-  bundle_7d: {
-    title: "스포트라이트",
-    lead: "인디 게임 목록 맨 위와 게시판 홍보 목록 위에 7일 동안 함께 올려요.",
-    points: [],
   },
 };
 
@@ -35,8 +33,10 @@ export const PRODUCT_COPY: Record<ProductKey, { title: string; lead: string; poi
 export const BUNDLE_MESSAGES = {
   legend: "무엇을 살까요",
   bundleHint: (name: string, saving: string) => `둘 다 걸 거면 ${name}가 ${saving} 싸요`,
-  bundleNoteIndie: "내 홍보 글도 홍보 목록 위에 7일 고정해요",
-  bundleNotePin: "내 인디 게임도 인디 목록 맨 위에 7일 올려요",
+  bundleNoteIndie: (days: number) => `내 홍보 글도 홍보 목록 위에 ${days}일 고정해요`,
+  bundleNotePin: (days: number) => `내 인디 게임도 인디 목록 맨 위에 ${days}일 올려요`,
+  /** 낱개 고르기 칸 덧말 */
+  singleNote: (days: number) => `${days}일 동안`,
   /** 그은 정가를 화면 읽기 프로그램이 읽을 때 붙는 말 */
   listPrice: "정가",
   pickPromo: "같이 고정할 홍보 글",
@@ -52,6 +52,10 @@ export const PAYMENT_MESSAGES = {
   testMode: "테스트 결제예요. 실제로 돈이 나가지 않아요",
   notConfigured: "결제를 준비하고 있어요. 조금 뒤에 다시 와 주세요",
   notBuyable: "공개 중인 내 글만 알릴 수 있어요",
+  /** 주문 뒤 관리자가 상품을 지웠다 */
+  productGone: "판매가 끝난 상품이에요. 다시 골라 주세요",
+  /** 지운 상품의 지난 결제 이름 자리 */
+  unknownProduct: "광고 상품",
   notLive: "공개 중인 글만 알릴 수 있어요",
   notOnSale: "지금은 판매하지 않는 상품이에요",
   currentBoost: (until: string) => `지금 노출 중이에요. ${until}까지 보여요`,

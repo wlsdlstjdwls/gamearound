@@ -13,7 +13,6 @@ import { createBoostOrderAction } from "@/app/(user)/payments/actions";
 import { Button } from "@/components/ui/button";
 import { FormMessage } from "@/components/ui/form-message";
 import { PAYMENT_MESSAGES as M } from "@/lib/payments/messages";
-import type { ProductKey } from "@/lib/payments/products";
 import { TOSS_FAIL_PATH, TOSS_SUCCESS_PATH } from "@/lib/routes";
 import { isUserCancel, loadTossSdk, type Rendered, type Widgets } from "@/components/payments/toss-sdk";
 
@@ -22,7 +21,7 @@ const METHODS_ID = "toss-payment-methods";
 const AGREEMENT_ID = "toss-agreement";
 
 /** extraTargetId: 묶음 상품의 둘째 대상(lib/payments/products). 낱개면 null */
-type Props = { product: ProductKey; targetId: string; extraTargetId?: string | null; clientKey: string; customerKey: string; amount: number };
+type Props = { product: string; targetId: string; extraTargetId?: string | null; clientKey: string; customerKey: string; amount: number };
 
 export function BoostCheckout({ product, targetId, extraTargetId = null, clientKey, customerKey, amount }: Props) {
   const widgets = useRef<Widgets | null>(null);

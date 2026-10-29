@@ -4,7 +4,9 @@ import "server-only";
 import { and, desc, eq, inArray, isNull, ne, or, sql } from "drizzle-orm";
 import { getDb } from "@/server/db/client";
 import { indiePosts, payments, posts, promotionBoosts, users, type PaymentStatus } from "@/server/db/schema";
-import { PRODUCTS, type ProductKey } from "@/lib/payments/products";
+import { PAYMENT_MESSAGES as M } from "@/lib/payments/messages";
+import { findProduct, type PricingSettings } from "@/lib/pricing/settings";
+import { getPricingSettings } from "@/server/services/settings";
 import { paymentRefundBasis, proratedRefund } from "@/lib/payments/refund";
 import { MEMBERSHIP_PLANS, type MembershipPlanKey } from "@/lib/membership/plan";
 
@@ -32,21 +34,22 @@ export type PaymentRowDto = {
   buyer?: string;
 };
 
-function productName(key: string): string {
-  return PRODUCTS[key as ProductKey]?.name ?? MEMBERSHIP_PLANS[key as MembershipPlanKey]?.name ?? key;
+/** 결제 줄의 상품 이름. 광고 상품은 지금 설정의 이름이다 — 관리자가 지운 상품은 이름 대신 "광고 상품" 으로 적는다 */
+export function paymentProductName(key: string, settings: PricingSettings): string {
+  return findProduct(settings, key)?.name ?? MEMBERSHIP_PLANS[key as MembershipPlanKey]?.name ?? M.unknownProduct;
 }
 
 const rowSelect = { p: payments, indieTitle: indiePosts.title, postTitle: posts.title, boost: promotionBoosts };
 type Row = { p: typeof payments.$inferSelect; indieTitle: string | null; postTitle: string | null; boost: typeof promotionBoosts.$inferSelect | null };
 
-function toDto({ p, indieTitle, postTitle, boost }: Row, now: Date, buyer?: string): PaymentRowDto {
+function toDto({ p, indieTitle, postTitle, boost }: Row, now: Date, settings: PricingSettings, buyer?: string): PaymentRowDto {
   return {
     orderId: p.orderId,
-    productName: productName(p.product),
+    productName: paymentProductName(p.product, settings),
     amount: p.amount,
     status: p.status,
     // 멤버십 청구는 대상 글이 없다 — 요금제 이름을 대상 자리에 둔다
-    targetTitle: p.membershipId ? productName(p.product) : (indieTitle ?? postTitle),
+    targetTitle: p.membershipId ? paymentProductName(p.product, settings) : (indieTitle ?? postTitle),
     receiptUrl: p.receiptUrl,
     failMessage: p.failMessage,
     createdAt: p.createdAt,
@@ -66,6 +69,7 @@ function toDto({ p, indieTitle, postTitle, boost }: Row, now: Date, buyer?: stri
  * 창 안에서 실패한 주문은 failed 로 사유와 함께 보인다
  */
 export async function listMyPayments(userId: string): Promise<PaymentRowDto[]> {
+  const settingsP = getPricingSettings();
   const rows = await getDb()
     .select(rowSelect)
     .from(payments)
@@ -76,11 +80,13 @@ export async function listMyPayments(userId: string): Promise<PaymentRowDto[]> {
     .orderBy(desc(payments.createdAt))
     .limit(PAYMENT_LIST_LIMIT);
   const now = new Date();
-  return rows.map((r) => toDto(r, now));
+  const settings = await settingsP;
+  return rows.map((r) => toDto(r, now, settings));
 }
 
 /** 관리자 결제 목록 — 승인, 환불된 결제만. 대기, 실패는 창만 열고 닫은 것이 대부분이라 쌓이면 볼 것이 묻힌다 */
 export async function listPaymentsForAdmin(): Promise<PaymentRowDto[]> {
+  const settingsP = getPricingSettings();
   const rows = await getDb()
     .select({ ...rowSelect, email: users.email })
     .from(payments)
@@ -92,7 +98,8 @@ export async function listPaymentsForAdmin(): Promise<PaymentRowDto[]> {
     .orderBy(desc(payments.createdAt))
     .limit(PAYMENT_LIST_LIMIT);
   const now = new Date();
-  return rows.map((r) => toDto(r, now, r.email));
+  const settings = await settingsP;
+  return rows.map((r) => toDto(r, now, settings, r.email));
 }
 
 /** 관리자 결제와 환불 머리 숫자. 이번 달은 한국 달이다. 목록(50줄)으로 세면 결제가 쌓인 달에 모자라 따로 한 번 센다 */

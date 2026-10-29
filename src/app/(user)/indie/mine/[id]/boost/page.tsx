@@ -11,8 +11,9 @@ import { requireUserOrRedirect } from "@/server/auth/guards";
 import { getMyBoostTarget, listMyLiveTargets } from "@/server/services/payments";
 import { getMyMembership } from "@/server/services/membership";
 
-const PRODUCT = "boost_indie_7d";
-const COPY = PRODUCT_COPY[PRODUCT];
+/** 이 화면의 글 갈래. 고를 상품은 이 글의 자리를 품은 판매 중 상품이다(components/payments/boost-purchase) */
+const KIND = "indie_post";
+const COPY = PRODUCT_COPY[KIND];
 
 export const metadata: Metadata = { title: COPY.title, robots: { index: false } };
 
@@ -23,7 +24,7 @@ export default async function IndieBoostPage({ params, searchParams }: Props) {
   const [{ id }, sp] = await Promise.all([params, searchParams]);
   // 같이 사기의 짝 후보를 못 읽으면 낱개만 판다
   const [target, membership, pairs] = await Promise.all([
-    getMyBoostTarget(user.id, PRODUCT, id).catch(() => null),
+    getMyBoostTarget(user.id, KIND, id).catch(() => null),
     getMyMembership(user.id).catch(() => null),
     listMyLiveTargets(user.id, "board_post").catch(() => []),
   ]);
@@ -33,7 +34,7 @@ export default async function IndieBoostPage({ params, searchParams }: Props) {
       <PageHead title={COPY.title}>
         <p className="text-[14px] text-mut">{COPY.lead}</p>
       </PageHead>
-      <BoostPurchase product={PRODUCT} target={target} customerKey={user.id} credits={membership?.usableCredits ?? 0} pairs={pairs} initialPlan={readPlanChoice(firstParam(sp[PLAN_PARAM]))} />
+      <BoostPurchase kind={KIND} target={target} customerKey={user.id} credits={membership?.usableCredits ?? 0} pairs={pairs} initialPlan={readPlanChoice(firstParam(sp[PLAN_PARAM]))} />
     </Page>
   );
 }

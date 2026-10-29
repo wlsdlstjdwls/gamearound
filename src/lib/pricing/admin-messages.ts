@@ -1,14 +1,13 @@
 // 관리자 "구독상품"(/admin/pricing), "프로모션"(/admin/discounts) 화면 문구(2026-10-28, 2026-10-29 화면을 둘로 나눔).
-import type { PricedKey } from "@/lib/pricing/settings";
+import type { CatalogProduct } from "@/lib/pricing/settings";
 
 export const PRICING_ADMIN_MESSAGES = {
-  lead: "개발자에게 파는 상품 셋의 값, 판매 여부, 요금 카드 문구를 정해요. 저장하면 요금 화면과 다음 주문부터 바로 바뀌어요.",
+  lead: "개발자에게 파는 광고 상품과 멤버십, 요금 카드 문구를 정해요. 저장하면 요금 화면과 다음 주문부터 바로 바뀌어요.",
   discountsLead: "기간을 정해 값을 깎아 줘요. 저장하면 요금 화면과 다음 주문부터 바로 걸려요.",
   preview: "요금 화면 열기",
   /** 요금 화면은 새 탭으로 연다(2026-10-29 사용자) — 고치던 폼을 떠나지 않고 실제 화면과 견준다 */
   newWindow: "(새 창에서 열림)",
   previewTitle: "미리 보기",
-  previewLead: "고치는 대로 바로 바뀌어요. 처음 결제하는 사람에게 보이는 모습이에요.",
   previewTier: "보고 있는 카드",
   save: "저장",
   saveShortcut: "저장 (Ctrl+S)",
@@ -22,13 +21,26 @@ export const PRICING_ADMIN_MESSAGES = {
   dirty: "저장하지 않은 바뀐 값이 있어요",
 
   pricesTitle: "판매 상품",
-  pricesLead: "값은 100원 이상, 원 단위예요. 판매를 끄면 요금 화면에서 빠지고 새 주문을 받지 않아요(이용 중인 구독 갱신은 그대로).",
+  pricesLead: "광고 상품을 더하고 지울 수 있어요. 새 상품은 판매가 꺼진 채로 생겨요. 판매를 끄면 요금 화면에서 빠지고 새 주문을 받지 않아요.",
+  addProduct: "상품 추가",
+  newProductName: "새 광고 상품",
+  newRow: "새 상품",
+  remove: "지우기",
+  removeProduct: (name: string) => `${name} 지우기`,
+  removedNote: (n: number) => `지운 상품 ${n}개는 저장하면 사라져요(걸린 프로모션도 같이)`,
+  productsEmpty: "광고 상품이 없어요. 상품 추가를 눌러 만들어요",
+  productsFull: (n: number) => `상품은 ${n}개까지 만들 수 있어요`,
+  /** 프로모션 대상이 지운 상품일 때 */
+  goneProduct: "지운 상품",
+  colSlots: "자리",
+  daysUnit: "일",
+  /** 자리 고르기. 자리 둘이면 묶음이라 인디 게임과 홍보 글을 같이 고른다 */
+  slotChoices: { indie: "인디 목록 맨 위", pin: "홍보 게시판 고정", both: "둘 다(묶음)" },
   /** 판매 상품 표의 머리 칸(2026-10-29 사용자 "공백이 많고 컴팩트하지 않다" — 묶음 판 둘을 표 한 장으로) */
   colProduct: "상품",
   colCycle: "기간",
   colPrice: "값",
   colCredits: "매달 이용권",
-  cycleAds: "7일",
   cycleMonthly: "매달",
   creditsUnit: "장",
   onSale: "판매",
@@ -104,13 +116,13 @@ export const PRICING_ADMIN_MESSAGES = {
   periodOpen: "제한 없음",
 } as const;
 
-/** 상품 이름. 관리자 화면에서는 "어느 자리에 며칠" 로 부른다 — 카드 이름(스파크 등)은 관리자가 바꾸는 값이라 기준이 못 된다 */
-export const PRICED_KEY_LABELS: Record<PricedKey, string> = {
-  boost_indie_7d: "인디 목록 맨 위",
-  pin_promo_7d: "홍보 게시판 고정",
-  bundle_7d: "묶음(맨 위 + 고정)",
-  membership: "메이커 멤버십",
-};
+/** 자리 고르기 칸의 값. 자리 목록(slots)을 셋 중 하나로 접는다 */
+export const SLOT_CHOICES = ["indie", "pin", "both"] as const;
+export type SlotChoice = (typeof SLOT_CHOICES)[number];
+
+export function slotChoiceOf(slots: CatalogProduct["slots"]): SlotChoice {
+  return slots.length > 1 ? "both" : slots[0] === "indie_top" ? "indie" : "pin";
+}
 
 /** 요금 카드 셋. 싼 것부터(components/payments/plan-cards) */
 export const TIER_LABELS = { single: "낱개 광고", bundle: "묶음 광고", membership: "메이커 멤버십" } as const;

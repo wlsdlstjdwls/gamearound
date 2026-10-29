@@ -17,6 +17,7 @@ import { boardPinPath, indieBoostPath, ROUTES } from "@/lib/routes";
 import { requireUserOrRedirect } from "@/server/auth/guards";
 import { getMyMembership } from "@/server/services/membership";
 import { getPriceBook } from "@/server/services/pricing";
+import { sellingTiers } from "@/lib/pricing/quote";
 import { getPricingSettings } from "@/server/services/settings";
 import { listMyLiveTargets } from "@/server/services/payments";
 
@@ -61,7 +62,7 @@ export default async function MakerPlansPage() {
       <PlanCards
         copy={settings.copy}
         book={book}
-        active={{ single: settings.products.boost_indie_7d.active || settings.products.pin_promo_7d.active, bundle: settings.products.bundle_7d.active, membership: settings.membership.active || live !== null }}
+        active={{ ...sellingTiers(settings), membership: settings.membership.active || live !== null }}
         credits={settings.membership.boostCredits}
         membership={live}
         single={[group(M.indieGroup, indie, (id) => indieBoostPath(id, "single")), group(M.promoGroup, promos, (id) => boardPinPath(id, "single"))]}

@@ -9,7 +9,7 @@ import { getDb } from "@/server/db/client";
 import { payments } from "@/server/db/schema";
 import { getPricingSettings } from "@/server/services/settings";
 import { priceBook, quote, type PriceBook, type Quote } from "@/lib/pricing/quote";
-import type { PricedKey } from "@/lib/pricing/settings";
+import { MEMBERSHIP_KEY, type PricedKey } from "@/lib/pricing/settings";
 
 const PAID_STATUSES = ["paid", "canceled"] as const;
 
@@ -33,6 +33,6 @@ export async function getPriceBook(userId: string | null): Promise<PriceBook> {
 /** 주문 하나의 값(서버가 주문 줄에 적는 값). first: 멤버십이면 첫 달 청구인가 */
 export async function quoteFor(userId: string, key: PricedKey, first = true): Promise<Quote> {
   const settings = await getPricingSettings();
-  const everPaid = await hasPaid(userId, key === "membership" ? "membership" : "products");
+  const everPaid = await hasPaid(userId, key === MEMBERSHIP_KEY ? "membership" : "products");
   return quote(settings, key, { everPaid }, new Date(), first);
 }

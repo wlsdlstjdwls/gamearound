@@ -16,6 +16,7 @@ import { MEMBERSHIP_MESSAGES as M, MEMBERSHIP_STATUS_LABEL } from "@/lib/members
 import { PAYMENT_MESSAGES as PM } from "@/lib/payments/messages";
 import { MembershipPrice } from "@/components/payments/plan-cards";
 import { creditsListValue } from "@/lib/pricing/quote";
+import { CREDIT_DAYS } from "@/lib/payments/products";
 import { fillCopy } from "@/lib/pricing/settings";
 import { getPriceBook } from "@/server/services/pricing";
 import { getPricingSettings } from "@/server/services/settings";
@@ -92,7 +93,7 @@ export default async function MembershipPage({ searchParams }: Props) {
           </div>
           {/* 지금 받는 것과 그 값어치를 값 바로 아래 — 이용권 환산은 멤버십 값보다 낮아 정가처럼 긋지 않는다 */}
           <p className="rounded-xl bg-acc-soft px-3 py-2 text-[13px] font-semibold text-acc">
-            {words.now} | {M.creditsWorth(copy.boostCredits, formatPrice(creditsListValue(settings)))}
+            {words.now} | {M.creditsWorth(copy.boostCredits, formatPrice(creditsListValue(settings, CREDIT_DAYS)))}
           </p>
           <ul className="flex flex-col gap-1.5 text-[13.5px] leading-[1.6] text-ink-2">
             {words.benefits.map((line) => (

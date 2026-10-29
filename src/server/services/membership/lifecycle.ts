@@ -8,7 +8,7 @@ import "server-only";
 import { and, eq, gt, inArray, sql } from "drizzle-orm";
 import { getDb } from "@/server/db/client";
 import { createdBy, updatedBy } from "@/server/db/audit";
-import { memberships } from "@/server/db/schema";
+import { memberships, type PromoTargetKind } from "@/server/db/schema";
 import { issueBillingKey } from "@/server/payments/toss-billing";
 import { TossError } from "@/server/payments/toss";
 import { insertPurchasedBoost } from "@/server/services/promotions";
@@ -18,7 +18,7 @@ import { getPricingSettings } from "@/server/services/settings";
 import { DEFAULT_PLAN } from "@/lib/membership/plan";
 import { MEMBERSHIP_MESSAGES as M } from "@/lib/membership/messages";
 import { PAYMENT_MESSAGES as PM } from "@/lib/payments/messages";
-import { PRODUCTS, type ProductKey } from "@/lib/payments/products";
+import { CREDIT_DAYS, TARGET_SLOT } from "@/lib/payments/products";
 
 export type StartResult = { ok: true } | { ok: false; message: string };
 
@@ -74,10 +74,12 @@ export async function resumeMembership(userId: string): Promise<void> {
   if (r.length === 0) throw new Error(M.failed);
 }
 
-/** 이용권 한 장으로 광고 7일. 대상 문턱(내 공개 글)은 결제와 같다 */
-export async function spendBoostCredit(userId: string, product: ProductKey, targetId: string): Promise<void> {
-  const p = PRODUCTS[product];
-  if (!(await ownedLiveTarget(p.target, userId, targetId))) throw new Error(PM.notBuyable);
+/**
+ * 이용권 한 장으로 그 글의 자리에 광고 CREDIT_DAYS 일. 대상 문턱(내 공개 글)은 결제와 같다.
+ * 상품이 아니라 글 갈래로 받는다(2026-10-29) — 상품은 관리자가 지우고 만드는 목록이라 이용권 약속(자리 하나 7일)을 거기 걸면 같이 흔들린다
+ */
+export async function spendBoostCredit(userId: string, kind: PromoTargetKind, targetId: string): Promise<void> {
+  if (!(await ownedLiveTarget(kind, userId, targetId))) throw new Error(PM.notBuyable);
   const db = getDb();
   const spent = await db
     .update(memberships)
@@ -86,7 +88,7 @@ export async function spendBoostCredit(userId: string, product: ProductKey, targ
     .returning({ id: memberships.id });
   if (spent.length === 0) throw new Error(M.noCredit);
   try {
-    await insertPurchasedBoost({ slot: p.slot, targetId, days: p.days, note: `membership:${spent[0].id}`, source: "membership" }, userId);
+    await insertPurchasedBoost({ slot: TARGET_SLOT[kind], targetId, days: CREDIT_DAYS, note: `membership:${spent[0].id}`, source: "membership" }, userId);
   } catch (e) {
     // 걸기가 실패하면 깎은 한 장을 돌려준다 — 이용권만 사라지고 노출이 없는 상태를 남기지 않는다
     await db.update(memberships).set({ boostCredits: sql`${memberships.boostCredits} + 1` }).where(eq(memberships.id, spent[0].id));
