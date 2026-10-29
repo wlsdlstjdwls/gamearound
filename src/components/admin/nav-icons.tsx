@@ -170,3 +170,18 @@ export function SparkleIcon(p: IconProps) {
     </svg>
   );
 }
+
+/**
+ * 기둥 접기 단추 — 왼쪽이 갈린 사각형(2026-10-29 사용자 "접기 단추는 smokespot 참고", desktop-sidebar 의 PanelLeftIcon).
+ * 평소에는 패널 그림만, 손을 올리면 접힐 쪽 화살표가 뜬다(arrowClassName 으로 호버 때만 보이게 한다)
+ */
+export function PanelLeftIcon({ arrow, arrowClassName, ...p }: IconProps & { arrow: "collapse" | "expand"; arrowClassName?: string }) {
+  return (
+    <svg {...base(p)}>
+      <rect x="3" y="4" width="18" height="16" rx="3" />
+      <path d="M9.5 4v16" />
+      {/* 화살표는 오른쪽 칸(9.5~21) 가운데 기준으로 대칭이다 */}
+      {arrow === "collapse" ? <path d="M16.5 9.5 14 12l2.5 2.5" className={arrowClassName} /> : <path d="M14 9.5 16.5 12 14 14.5" className={arrowClassName} />}
+    </svg>
+  );
+}

@@ -19,7 +19,8 @@ import { AuthNav } from "@/components/auth/auth-nav";
 import { HeaderWishLink } from "@/components/header-wish-link";
 import { NotificationBell } from "@/components/notification-bell";
 import { ThemeSwitch } from "@/components/theme-switch";
-import { ChevronDownIcon, ChevronLeftIcon } from "@/components/ui/icons";
+import { PanelLeftIcon } from "@/components/admin/nav-icons";
+import { ChevronDownIcon } from "@/components/ui/icons";
 import { BrandLockup, BrandSymbol } from "@/components/ui/logo";
 import { useTooltip } from "@/components/ui/tooltip";
 import { ADMIN_NAV } from "@/lib/admin/messages";
@@ -105,7 +106,7 @@ export function AdminRail({
       data-admin-rail
       data-collapsed={collapsed || undefined}
       className={cn(
-        "sticky top-0 hidden h-svh shrink-0 flex-col border-r border-line bg-surface transition-[width] duration-base md:flex",
+        "sticky top-0 z-30 hidden h-svh shrink-0 flex-col border-r border-line bg-surface transition-[width] duration-base md:flex",
         collapsed ? "w-[64px]" : "w-[220px]",
       )}
     >
@@ -114,16 +115,29 @@ export function AdminRail({
         <Link href={ROUTES.home} aria-label={`${SITE.name} ${ADMIN_NAV.backToSite}`} className="press tap inline-flex items-center gap-2 text-ink">
           {collapsed ? <BrandSymbol /> : <BrandLockup />}
         </Link>
-        <button
-          type="button"
-          onClick={toggle}
-          aria-expanded={!collapsed}
-          aria-label={collapsed ? ADMIN_NAV.railExpand : ADMIN_NAV.railCollapse}
-          title={collapsed ? ADMIN_NAV.railExpand : ADMIN_NAV.railCollapse}
-          className="press flex size-9 shrink-0 items-center justify-center rounded-lg text-dim transition-colors hover:bg-surface-2 hover:text-ink"
-        >
-          <ChevronLeftIcon size={18} className={cn("transition-transform duration-base", collapsed && "rotate-180")} />
-        </button>
+        {/* 접기 단추는 smokespot 데스크톱 사이드바와 같은 꼴이다(2026-10-29 사용자) — 평소엔 패널 그림, 손을 올리면 화살표와 아래 말풍선.
+            title 속성 말풍선은 늦게 뜨고 모양이 제각각이라 쓰지 않는다. 낭독기는 aria-label 이 읽으니 말풍선은 aria-hidden */}
+        <div className="group relative">
+          <button
+            type="button"
+            onClick={toggle}
+            aria-expanded={!collapsed}
+            aria-label={collapsed ? ADMIN_NAV.railExpand : ADMIN_NAV.railCollapse}
+            className="press flex size-8 shrink-0 items-center justify-center rounded-lg text-dim transition-colors duration-fast hover:bg-acc-soft hover:text-acc"
+          >
+            <PanelLeftIcon size={17} arrow={collapsed ? "expand" : "collapse"} arrowClassName="opacity-0 transition-opacity duration-fast group-hover:opacity-100 group-focus-within:opacity-100" />
+          </button>
+          <span
+            aria-hidden
+            // 접힌 64px 띠에서는 아래 가운데에 세우면 화면 왼쪽 밖으로 잘린다 — 단추 오른쪽에 세운다
+            className={cn(
+              "pointer-events-none absolute z-50 whitespace-nowrap rounded-md bg-ink px-2 py-1 text-[12px] font-semibold text-on-ink opacity-0 transition-opacity duration-fast group-hover:opacity-100",
+              collapsed ? "left-full top-1/2 ml-2 -translate-y-1/2" : "left-1/2 top-full mt-1.5 -translate-x-1/2",
+            )}
+          >
+            {collapsed ? ADMIN_NAV.railExpand : ADMIN_NAV.railCollapse}
+          </span>
+        </div>
       </div>
 
       {/* 기둥이 화면보다 길면 기둥 안에서 굴린다 */}
