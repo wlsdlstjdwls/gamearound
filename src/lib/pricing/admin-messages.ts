@@ -27,8 +27,6 @@ export const PRICING_ADMIN_MESSAGES = {
   rowLeaveDiscard: "저장 안 함",
   leaveConfirm: "저장하지 않은 값이 있어요. 버리고 다른 화면으로 갈까요?",
   leave: "버리고 이동",
-  reloadConfirm: "저장하지 않은 값이 있어요. 버리고 새로 고칠까요?",
-  reload: "버리고 새로 고침",
 
   // ---- 상품등록 화면 구성(2026-10-29 밤, 백오피스 상품등록 꼴: 조회조건, 왼쪽 목록, 오른쪽 상세 탭) ----
   searchLabel: "조회조건",
@@ -47,7 +45,7 @@ export const PRICING_ADMIN_MESSAGES = {
   sectionProduct: "상품 정보",
   sectionPrice: "판매가",
   sectionPromos: "걸린 프로모션",
-  fieldCode: "상품코드/명",
+  fieldCode: "코드/명",
   fieldName: "상품명",
   fieldDays: "기간",
   fieldSale: "판매여부",
@@ -131,7 +129,7 @@ export const PRICING_ADMIN_MESSAGES = {
   promoSectionPeriod: "기간",
   promoSectionBenefit: "할인",
   promoSectionTarget: "적용 상품",
-  promoFieldCode: "프로모션코드/명",
+  promoFieldCode: "코드/명",
   promoFieldName: "고객노출명",
   promoFieldUse: "사용여부",
   promoFieldPhase: "진행상태",

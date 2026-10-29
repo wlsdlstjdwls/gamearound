@@ -12,7 +12,8 @@
 // 여기서 한 번 await 하면 그 비용이 모든 화면에 붙는다(회사 검수 수는 games 전수 훑기다).
 import { Suspense } from "react";
 import { AdminNav } from "@/components/admin/admin-nav";
-import { ProgramTabs } from "@/components/admin/program-tabs";
+import { ProgramShell } from "@/components/admin/program-shell";
+import { FRAME_INIT_SCRIPT } from "@/components/admin/program-shell/frame";
 import { cookies } from "next/headers";
 import { raisedClass } from "@/components/ui/page";
 import { AdminStatusBar, AdminStatusProvider } from "@/components/admin/screen/status";
@@ -37,6 +38,8 @@ export default async function AdminLayout({ children }: { children: React.ReactN
   // 같은 날 넓은 화면에서는 사이트 머리띠도 걷었다(admin-rail 머리 주석, globals.css 의 data-admin-rail).
   return (
     <div className="flex md:items-start">
+      {/* 탭 안(iframe)에서 열렸는지 그리기 전에 찍는다 — 늦으면 기둥과 탭 줄이 한 번 비쳤다 사라진다(globals.css 의 data-admin-frame) */}
+      <script dangerouslySetInnerHTML={{ __html: FRAME_INIT_SCRIPT }} />
       <AdminNav counts={counts} initialCollapsed={collapsed} initialOpened={opened} />
       {/* main 이 아니라 div 인 이유: 루트 레이아웃이 이미 <main> 안에 children 을 넣는다.
           landmark 를 겹쳐 두면 낭독기가 "본문" 을 둘로 센다.
@@ -46,23 +49,30 @@ export default async function AdminLayout({ children }: { children: React.ReactN
 
           바닥 띠가 fixed 라 이 칸이 화면 높이를 붙들 이유는 없다 — 띠 자리는 globals.css 가
           문서 바닥에 비운다(`body:has([data-admin-tabbar])`). */}
-      <div className="page-enter min-w-0 flex-1 px-4 pb-6 pt-4 sm:px-6 md:pb-12 lg:px-7">
+      <div data-admin-content className="page-enter min-w-0 flex-1 px-4 pb-6 pt-4 sm:px-6 md:pb-12 lg:px-7">
         {/* 판 바닥에 처리 결과 한 줄(백오피스의 하단 상태줄, components/admin/screen/status). 머리 툴바와 폼들이 여기에 쓴다 */}
         <AdminStatusProvider>
-          {/* 열린 프로그램 탭 줄(백오피스 창 머리의 탭). 판 바로 위에 붙어 고른 탭이 판과 이어진다. 주소 조건을 읽어 Suspense 로 감싼다 */}
+          {/* 열린 프로그램 탭(백오피스 창 머리). 탭을 오가도 화면이 내려가지 않는다 — 방법은 components/admin/program-shell 머리 주석.
+              탭 안 문서(iframe)에서는 껍데기가 판만 그린다. 주소 조건을 읽어 Suspense 로 감싼다 */}
           <div className="mx-auto w-full max-w-[1600px] min-w-0">
-            <Suspense fallback={<div className="hidden h-9 md:block" />}>
-              <div className="px-3">
-                <ProgramTabs />
-              </div>
+            <Suspense fallback={<AdminPanel>{children}</AdminPanel>}>
+              <ProgramShell>
+                <AdminPanel>{children}</AdminPanel>
+              </ProgramShell>
             </Suspense>
-            <div className={raisedClass("flex w-full min-w-0 flex-col gap-4 p-4 sm:p-5")}>
-              {children}
-              <AdminStatusBar />
-            </div>
           </div>
         </AdminStatusProvider>
       </div>
+    </div>
+  );
+}
+
+/** 흰 판 한 장 + 바닥 상태줄. 판 바닥에 처리 결과 한 줄(백오피스의 하단 상태줄, components/admin/screen/status) */
+function AdminPanel({ children }: { children: React.ReactNode }) {
+  return (
+    <div className={raisedClass("flex w-full min-w-0 flex-col gap-4 p-4 sm:p-5")}>
+      {children}
+      <AdminStatusBar />
     </div>
   );
 }

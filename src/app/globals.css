@@ -846,6 +846,25 @@ body.dragging-card {
   }
 }
 
+/*
+ * 관리자 프로그램 탭 안 문서(components/admin/program-shell). 같은 앱 화면을 iframe 으로 띄우므로 판만 남기고 껍데기를 걷는다 —
+ * 기둥, 탭 줄, 사이트 머리띠, 푸터, 좁은 화면 바닥 띠. 판 바깥 여백도 걷어 바깥 탭 줄 바로 밑에 판이 붙게 한다.
+ * 속성은 레이아웃의 첫 스크립트가 그리기 전에 찍는다(program-shell/frame 의 FRAME_INIT_SCRIPT).
+ */
+html[data-admin-frame] body {
+  --header-h: 0px;
+}
+html[data-admin-frame] [data-admin-rail],
+html[data-admin-frame] [data-admin-tabbar],
+html[data-admin-frame] [data-admin-shell],
+html[data-admin-frame] [data-site-header],
+html[data-admin-frame] [data-site-footer] {
+  display: none !important;
+}
+html[data-admin-frame] [data-admin-content] {
+  padding: 0;
+}
+
 @media (max-width: 767px) {
   body:has([data-admin-tabbar]) {
     padding-bottom: calc(56px + env(safe-area-inset-bottom));

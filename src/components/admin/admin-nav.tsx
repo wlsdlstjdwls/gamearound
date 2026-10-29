@@ -32,6 +32,7 @@
 // 남은 일 수는 **약속(Promise)으로 받아 배지 자리에서만 기다린다.** 회사 검수 수를 뽑는 질의가
 // games 전수 훑기(실측 27ms, 왕복까지 두 번)라서, 그 값을 메뉴가 기다리면 관리자가 누르는
 // 모든 화면이 그만큼 늦게 뜬다. 메뉴는 먼저 그리고 숫자만 나중에 앉힌다.
+import { useActivePath } from "@/components/admin/program-shell/store";
 import { Suspense, useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
@@ -95,7 +96,9 @@ export function AdminNav({
   /** 기둥에서 펼쳐 둔 묶음(쿠키). 나머지는 접혀 있다 */
   initialOpened: string[];
 }) {
-  const pathname = usePathname();
+  // 탭 껍데기가 있으면 고른 탭의 칸을 켠다 — 바깥 주소는 처음 연 화면에 머문다(program-shell)
+  const current = usePathname();
+  const pathname = useActivePath() ?? current;
   /** 지금 사유를 말하고 있는 칸. 한 번에 하나만 뜬다 */
   const [soon, setSoon] = useState<Item | null>(null);
   const [menuOpen, setMenuOpen] = useState(false);

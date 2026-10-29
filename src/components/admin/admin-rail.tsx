@@ -15,6 +15,7 @@
 //    제목을 진한 글씨 한 줄 칸으로 올리고, 하위 칸은 들여써 왼쪽 안내선 안에 둔다(나무 꼴). 접힌 묶음 제목에는 안에 쌓인 일 합계를 단다.
 //    다시 들은 말("상위 하위 구분 확실히"): 하위 칸이 그림, 같은 글씨, 파랑 채움까지 가져 상위보다 무거워 보였다. 하위 칸은 그림을 빼고
 //    작은 글씨로, 지금 보는 하위 칸은 채움 대신 옅은 파랑 + 왼쪽 막대로 낮췄다. 펼친 묶음 제목은 회색 띠를 깐다. 파랑 채움은 상위 칸(대시보드)만 쓴다.
+import { useActivePath } from "@/components/admin/program-shell/store";
 import { Suspense, useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
@@ -95,7 +96,9 @@ export function AdminRail({
   initialOpened: string[];
   onSoon: (item: Item) => void;
 }) {
-  const pathname = usePathname();
+  // 탭 껍데기가 있으면 고른 탭의 칸을 켠다 — 바깥 주소는 처음 연 화면에 머문다(program-shell)
+  const current = usePathname();
+  const pathname = useActivePath() ?? current;
   const [collapsed, setCollapsed] = useState(initialCollapsed);
   const [opened, setOpened] = useState<ReadonlySet<string>>(() => new Set(initialOpened));
   const toggle = () => {

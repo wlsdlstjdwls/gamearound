@@ -17,6 +17,7 @@ import { FormMessage } from "@/components/ui/form-message";
 import { newProductId, withNewProduct } from "@/components/admin/pricing-form/sections";
 import { CatalogScreen } from "@/components/admin/pricing-form/catalog";
 import { askChoice, askConfirm } from "@/components/ui/confirm-dialog";
+import { reportDirty } from "@/components/admin/program-shell/store";
 import { newPromotionId, PromotionsScreen, withNewPromotion } from "@/components/admin/pricing-form/promotions";
 import { PRICING_ADMIN_MESSAGES as M } from "@/lib/pricing/admin-messages";
 import { MEMBERSHIP_KEY, pricingSettingsSchema, type PricingSettings } from "@/lib/pricing/settings";
@@ -65,10 +66,15 @@ export function PricingForm({ initial, part, title }: { initial: PricingSettings
   };
 
   // 저장 단축키(F9, Ctrl+S)는 화면 머리(admin/screen/head)가 맡는다 — 백오피스와 같은 자리, 같은 키.
+  useEffect(() => {
+    reportDirty(dirty);
+    return () => reportDirty(false);
+  }, [dirty]);
+
   // 바뀐 값을 둔 채 다른 화면(메뉴, 링크)으로 가려 하면 자체 확인 팝업으로 묻는다(백오피스의 미저장 확인).
   // 브라우저 beforeunload 경고는 쓰지 않는다(2026-10-30 사용자 "브라우저 alert 말고 자체 alert") — 그 창은 문구도 모양도 바꿀 수 없다.
-  // 새로 고침 키도 가로챈다. 탭 닫기와 주소창 새로 고침 단추만은 페이지가 자체 화면을 띄울 수 없게 브라우저가 막아 둬서 묻지 못한다.
-  // 새 창 열기(수정키, target)는 이 화면을 떠나지 않아 그냥 둔다.
+  // 새로 고침 키, 탭 닫기 확인은 프로그램 껍데기가 한다 — 여기서는 저장 안 한 값이 있다고 알리기만 한다(reportDirty).
+  // 탭 닫기와 주소창 새로 고침 단추만은 브라우저가 페이지의 자체 화면을 막아 묻지 못한다. 새 창 열기(수정키, target)는 이 화면을 떠나지 않아 그냥 둔다.
   useEffect(() => {
     if (!dirty) return;
     const onClick = async (e: MouseEvent) => {
@@ -80,18 +86,8 @@ export function PricingForm({ initial, part, title }: { initial: PricingSettings
       e.stopPropagation();
       if (await askConfirm(M.leaveConfirm, { title: M.rowLeaveTitle, confirmLabel: M.leave, tone: "danger" })) router.push(url.pathname + url.search + url.hash);
     };
-    // 새로 고침 키(F5, Ctrl/Cmd+R)도 자체 팝업으로 묻는다 — 키는 브라우저보다 먼저 받을 수 있다
-    const onKey = async (e: KeyboardEvent) => {
-      if (e.key !== "F5" && !((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "r")) return;
-      e.preventDefault();
-      if (await askConfirm(M.reloadConfirm, { title: M.rowLeaveTitle, confirmLabel: M.reload, tone: "danger" })) location.reload();
-    };
     document.addEventListener("click", onClick, true);
-    window.addEventListener("keydown", onKey);
-    return () => {
-      document.removeEventListener("click", onClick, true);
-      window.removeEventListener("keydown", onKey);
-    };
+    return () => document.removeEventListener("click", onClick, true);
   }, [dirty, router]);
 
   const save = () => {
