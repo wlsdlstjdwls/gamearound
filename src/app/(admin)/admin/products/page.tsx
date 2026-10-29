@@ -2,12 +2,12 @@
 //
 // 매핑 배치가 "중간"(유사도 0.7~0.9)으로 판정한 상품만 선다. 높으면 배치가 이미 이었고
 // 낮으면 후보를 남기지 않는다. 사람이 하는 일은 두 이름을 맞대 보고 잇거나 무르는 것 하나다.
-import { AdminLead } from "@/components/admin/admin-lead";
 import type { Metadata } from "next";
+import { AdminScreenHead } from "@/components/admin/screen/head";
 import Link from "next/link";
 import { ProductMatchButtons } from "@/components/admin/product-match-buttons";
 import { DataCell, DataHead, DataList, DataRow } from "@/components/admin/data-rows";
-import {  PageHead, SectionHead } from "@/components/ui/page";
+import {  SectionHead } from "@/components/ui/page";
 import { Clamp } from "@/components/ui/tooltip";
 import { formatDateTime } from "@/lib/format";
 import { gamePath } from "@/lib/routes";
@@ -26,10 +26,7 @@ export default async function AdminProductMatchesPage() {
 
   return (
     <>
-      <section className="flex flex-col gap-2">
-        <PageHead size="admin" title={ADMIN_NAV.products} />
-        <AdminLead>{PRODUCT_MATCH_MESSAGES.lead(PRODUCT_MATCH_RECHECK_DAYS)}</AdminLead>
-      </section>
+      <AdminScreenHead title={ADMIN_NAV.products} lead={PRODUCT_MATCH_MESSAGES.lead(PRODUCT_MATCH_RECHECK_DAYS)} count={queue.length} />
 
       <section className="flex flex-col gap-3">
         <SectionHead

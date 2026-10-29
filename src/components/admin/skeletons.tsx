@@ -68,7 +68,7 @@ export function DataTableSkeleton({
   mobileSummary = false,
 }: {
   cols: string;
-  /** 칸마다 막대 클래스. 배열을 주면 그 칸에 막대를 세로로 쌓는다(매칭의 "맞아요", "아니에요" 단추 둘) */
+  /** 칸마다 막대 클래스. 배열을 주면 그 칸에 막대를 세로로 쌓는다(매칭의 "승인", "반려" 단추 둘) */
   cells: Array<string | string[]>;
   rows: number;
   mobileSummary?: boolean;

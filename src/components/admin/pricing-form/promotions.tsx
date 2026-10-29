@@ -44,6 +44,18 @@ function summary(s: PricingSettings, p: Promotion): string {
 /** 표의 칸 폭. 머리 줄과 몸 줄이 같은 틀을 쓴다 */
 const PROMO_GRID = "md:grid md:grid-cols-[52px_minmax(0,1.5fr)_minmax(0,1.1fr)_96px_minmax(0,1fr)_minmax(0,1.2fr)] md:items-center md:gap-3";
 
+export function newPromotionId(): string {
+  return `promo-${Date.now().toString(36)}`;
+}
+
+/** 프로모션 한 줄을 더한 설정. 목록 머리의 더하기와 화면 툴바의 입력이 같이 쓴다. 꺼진 채로 생긴다 */
+export function withNewPromotion(d: PricingSettings, id: string): PricingSettings {
+  return {
+    ...d,
+    promotions: [...d.promotions, { id, active: false, label: M.newPromoLabel, target: d.products[0]?.id ?? MEMBERSHIP_KEY, kind: "percent", value: NEW_PROMO_PERCENT, audience: "first", startsOn: null, endsOn: null }],
+  };
+}
+
 /** 고른 줄은 바깥(pricing-form)이 쥔다 — 미리 보기가 고른 행사의 카드를 따라간다 */
 export function PromotionsSection({ value, patch, selected, onSelect: setSelected }: { value: PricingSettings; patch: Patch; selected: string | null; onSelect: (id: string | null) => void }) {
   const set = (i: number, next: Partial<Promotion>) => patch((d) => ({ ...d, promotions: d.promotions.map((p, j) => (j === i ? { ...p, ...next } : p)) }));
@@ -53,12 +65,9 @@ export function PromotionsSection({ value, patch, selected, onSelect: setSelecte
     patch((d) => ({ ...d, promotions: d.promotions.filter((_, j) => j !== i) }));
   };
   const add = () => {
-    const id = `promo-${Date.now().toString(36)}`;
+    const id = newPromotionId();
     setSelected(id);
-    patch((d) => ({
-      ...d,
-      promotions: [...d.promotions, { id, active: false, label: M.newPromoLabel, target: d.products[0]?.id ?? MEMBERSHIP_KEY, kind: "percent", value: NEW_PROMO_PERCENT, audience: "first", startsOn: null, endsOn: null }],
-    }));
+    patch((d) => withNewPromotion(d, id));
   };
 
   const now = new Date();

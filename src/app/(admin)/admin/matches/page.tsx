@@ -5,12 +5,12 @@
 //
 // `/admin` 안에 섞여 있던 자리를 뗐다 — 수집 현황은 읽고 지나가는 화면이라 보는 주기가 다르고,
 // 메뉴가 "남은 일" 배지를 붙이려면 이 큐에 제 주소가 있어야 한다.
-import { AdminLead } from "@/components/admin/admin-lead";
 import type { Metadata } from "next";
+import { AdminScreenHead } from "@/components/admin/screen/head";
 import Link from "next/link";
 import { MatchReviewButtons } from "@/components/admin/match-review-buttons";
 import { DataCell, DataHead, DataList, DataRow } from "@/components/admin/data-rows";
-import {  PageHead, SectionHead } from "@/components/ui/page";
+import {  SectionHead } from "@/components/ui/page";
 import { Clamp } from "@/components/ui/tooltip";
 import { MATCH_MESSAGES, sourceLabel, ADMIN_NAV } from "@/lib/admin/messages";
 import { countPendingMatches, listPendingMatches } from "@/server/services/admin";
@@ -26,10 +26,7 @@ export default async function AdminMatchesPage() {
 
   return (
     <>
-      <section className="flex flex-col gap-2">
-        <PageHead size="admin" title={ADMIN_NAV.matches} />
-        <AdminLead>{MATCH_MESSAGES.lead}</AdminLead>
-      </section>
+      <AdminScreenHead title={ADMIN_NAV.matches} lead={MATCH_MESSAGES.lead} count={pending.length} />
 
       <section className="flex flex-col gap-3">
         <SectionHead

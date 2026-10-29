@@ -3,12 +3,12 @@
 // 글은 승인 없이 바로 서므로(schema-indie 머리 주석) 이 화면은 "사후에 막는 자리" 다. 첫 칸이 신고인 이유가 그것이다.
 // 게임 연결 칸은 반대로 "사전에 여는 자리" 다 — 확인해야 게임 상세에 붙는다. 확인은 올린 사람이 그 게임의
 // 개발자임을 바깥(스토어 개발사 페이지, 공식 사이트의 연락처)에서 대조한 뒤에 누른다.
-import { AdminLead } from "@/components/admin/admin-lead";
 import type { Metadata } from "next";
+import { AdminScreenHead } from "@/components/admin/screen/head";
 import { ADMIN_NAV } from "@/lib/admin/messages";
 import Link from "next/link";
 import { IndieModeration } from "@/components/admin/indie-moderation";
-import { PageHead, ROWS } from "@/components/ui/page";
+import { ROWS } from "@/components/ui/page";
 import { formatDate } from "@/lib/format";
 import { firstParam } from "@/lib/games-query";
 import { INDIE_ADMIN_MESSAGES as A, INDIE_MESSAGES, INDIE_REVIEW_LABEL, INDIE_REVIEW_MESSAGES, INDIE_REVIEW_TONE } from "@/lib/indie/messages";
@@ -37,10 +37,7 @@ export default async function AdminIndiePage({ searchParams }: Props) {
   return (
     <NavPendingScope>
     <div className="flex flex-col gap-5">
-      <div>
-        <PageHead size="admin" title={ADMIN_NAV.indie} />
-        <AdminLead>{A.lead}</AdminLead>
-      </div>
+      <AdminScreenHead title={ADMIN_NAV.indie} lead={A.lead} />
 
       <nav aria-label={A.title} className="flex flex-wrap gap-1.5">
         {INDIE_ADMIN_TABS.map((t) => (

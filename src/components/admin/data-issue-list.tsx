@@ -1,6 +1,6 @@
 "use client";
 // 데이터 점검 줄 목록. 누르는 순간 줄이 빠지고(AGENTS §6 "누른 순간 화면이 먼저 바뀐다"), 실패하면 제자리로 돌아와 사유를 단다.
-// 낱말은 매칭 대기와 같다(맞아요, 아니에요) — 같은 질문("이 판정이 맞나")을 같은 말로 묻는다.
+// 낱말은 스토어매칭승인관리와 같다(적용, 반려 — 승인 화면의 백오피스 낱말) — 같은 질문("이 판정이 맞나")을 같은 말로 묻는다.
 import { useState, useTransition } from "react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";

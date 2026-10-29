@@ -24,7 +24,7 @@ export const PREORDER_MESSAGES = {
     status: { published: "공개", review: "검토 대기", hidden: "숨김" },
     gameSlug: "게임 주소(slug)",
     link: "이 게임에 잇고 공개",
-    hide: "숨기기",
+    hide: "숨김",
     publish: "공개하기",
     gameNotFound: "그 주소의 게임이 없어요",
     postNotFound: "글을 찾지 못했어요. 새로고침해 주세요",

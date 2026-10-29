@@ -202,17 +202,20 @@ export function ItemBody({
   counts,
   iconSize,
   badgeClassName,
+  icon = true,
 }: {
   item: Item;
   active: boolean;
   counts: Promise<AdminNavCounts | null>;
   iconSize: number;
   badgeClassName?: string;
+  /** 하위 칸은 그림을 빼 상위 묶음과 갈린다(admin-rail). 접힌 기둥, 바닥 띠는 그림이 곧 칸이다 */
+  icon?: boolean;
 }) {
   const { Icon } = item;
   return (
     <>
-      <Icon size={iconSize} />
+      {icon && <Icon size={iconSize} />}
       {item.label}
       {item.pick && (
         // 숫자가 늦어도 메뉴는 이미 눌리는 상태여야 한다 — 그래서 배지만 따로 기다린다

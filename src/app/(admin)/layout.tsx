@@ -13,6 +13,7 @@
 import { AdminNav } from "@/components/admin/admin-nav";
 import { cookies } from "next/headers";
 import { raisedClass } from "@/components/ui/page";
+import { AdminStatusBar, AdminStatusProvider } from "@/components/admin/screen/status";
 import { ADMIN_GROUPS_COOKIE, ADMIN_RAIL_COOKIE } from "@/lib/admin/rail";
 import { requireRoleOrForbid } from "@/server/auth/guards";
 import { getAdminWorkCounts } from "@/server/services/admin-workload";
@@ -44,7 +45,13 @@ export default async function AdminLayout({ children }: { children: React.ReactN
           바닥 띠가 fixed 라 이 칸이 화면 높이를 붙들 이유는 없다 — 띠 자리는 globals.css 가
           문서 바닥에 비운다(`body:has([data-admin-tabbar])`). */}
       <div className="page-enter min-w-0 flex-1 px-4 pb-6 pt-4 sm:px-6 md:pb-12 lg:px-7">
-        <div className={raisedClass("mx-auto flex w-full max-w-[1600px] min-w-0 flex-col gap-4 p-4 sm:p-5")}>{children}</div>
+        {/* 판 바닥에 처리 결과 한 줄(백오피스의 하단 상태줄, components/admin/screen/status). 머리 툴바와 폼들이 여기에 쓴다 */}
+        <AdminStatusProvider>
+          <div className={raisedClass("mx-auto flex w-full max-w-[1600px] min-w-0 flex-col gap-4 p-4 sm:p-5")}>
+            {children}
+            <AdminStatusBar />
+          </div>
+        </AdminStatusProvider>
       </div>
     </div>
   );

@@ -6,12 +6,12 @@
 // 숫자 칸(노출 중, 대기, 지금 걸린 광고의 노출, 클릭률) → 자리마다 지금 걸린 것과 대기(카드, components/admin/boost-card) →
 // 최근 끝난 광고(접어 둠) → 직접 걸기. 자리마다 "몇 칸 중 몇 개" 막대를 둔다 — 칸보다 많이 걸면 시간 구간마다 돌아가며 보인다(lib/promo/boost).
 import type { Metadata } from "next";
+import { AdminScreenHead } from "@/components/admin/screen/head";
 import { ADMIN_NAV } from "@/lib/admin/messages";
-import { AdminLead } from "@/components/admin/admin-lead";
 import { BoostCard } from "@/components/admin/boost-card";
 import { PromoGrantForm } from "@/components/admin/promo-controls";
 import { StatTiles } from "@/components/admin/stat-tiles";
-import { PageHead, sectionCardClass } from "@/components/ui/page";
+import { sectionCardClass } from "@/components/ui/page";
 import { cn } from "@/lib/cn";
 import { PROMO_SLOTS, SLOT_CAPACITY } from "@/lib/promo/boost";
 import { PROMO_MESSAGES as M, PROMO_SLOT_LABEL } from "@/lib/promo/messages";
@@ -46,10 +46,7 @@ export default async function AdminPromotionsPage() {
 
   return (
     <div className="flex flex-col gap-5">
-      <div>
-        <PageHead size="admin" title={ADMIN_NAV.promotions} />
-        <AdminLead>{M.adminLead}</AdminLead>
-      </div>
+      <AdminScreenHead title={ADMIN_NAV.promotions} lead={M.adminLead} count={rows.length} />
 
       <StatTiles
         tiles={[

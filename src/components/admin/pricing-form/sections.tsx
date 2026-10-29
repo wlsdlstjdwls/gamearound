@@ -55,6 +55,11 @@ function newProductId(): string {
   return `ad-${crypto.randomUUID().slice(0, 8)}`;
 }
 
+/** 상품 한 줄을 더한 설정. 표 머리의 상품 추가와 화면 툴바의 입력(F8)이 같이 쓴다 */
+export function withNewProduct(d: PricingSettings): PricingSettings {
+  return { ...d, products: [...d.products, { ...NEW_PRODUCT, slots: [...NEW_PRODUCT.slots], id: newProductId(), name: M.newProductName }] };
+}
+
 const SLOT_SETS: Record<SlotChoice, CatalogProduct["slots"]> = { indie: ["indie_top"], pin: ["promo_pin"], both: ["indie_top", "promo_pin"] };
 
 type Mark = "new" | "changed" | null;
@@ -179,7 +184,7 @@ export function PricesSection({ value, saved, patch }: PricesProps) {
   const update = (id: string, next: CatalogProduct) => patch((d) => ({ ...d, products: d.products.map((x) => (x.id === id ? next : x)) }));
   // 지우면 그 상품을 겨눈 프로모션도 같이 지운다 — 남겨 두면 걸 데 없는 할인이라 저장이 막힌다(settings 스키마). 되돌리기로 둘 다 살아난다
   const remove = (id: string) => patch((d) => ({ ...d, products: d.products.filter((x) => x.id !== id), promotions: d.promotions.filter((x) => x.target !== id) }));
-  const add = () => patch((d) => ({ ...d, products: [...d.products, { ...NEW_PRODUCT, slots: [...NEW_PRODUCT.slots], id: newProductId(), name: M.newProductName }] }));
+  const add = () => patch(withNewProduct);
   const removed = saved.products.filter((p) => !value.products.some((x) => x.id === p.id)).length;
   const full = value.products.length >= MAX_PRODUCTS;
 

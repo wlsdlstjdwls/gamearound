@@ -18,6 +18,8 @@ export const PRICING_ADMIN_MESSAGES = {
   failed: "저장하지 못했어요. 칸을 확인해 주세요",
   invalid: "비었거나 범위를 벗어난 칸이 있어요",
   reset: "되돌리기",
+  /** 툴바 조회로 서버 값을 다시 읽었을 때 상태줄 */
+  reloaded: "저장된 값을 다시 불러왔어요",
   dirty: "저장하지 않은 바뀐 값이 있어요",
 
   pricesTitle: "판매 상품",
@@ -25,9 +27,9 @@ export const PRICING_ADMIN_MESSAGES = {
   addProduct: "상품 추가",
   newProductName: "새 광고 상품",
   newRow: "새 상품",
-  remove: "지우기",
-  removeProduct: (name: string) => `${name} 지우기`,
-  removedNote: (n: number) => `지운 상품 ${n}개는 저장하면 사라져요(걸린 프로모션도 같이)`,
+  remove: "삭제",
+  removeProduct: (name: string) => `${name} 삭제`,
+  removedNote: (n: number) => `삭제한 상품 ${n}개는 저장하면 사라져요(걸린 프로모션도 같이)`,
   productsEmpty: "광고 상품이 없어요. 상품 추가를 눌러 만들어요",
   productsFull: (n: number) => `상품은 ${n}개까지 만들 수 있어요`,
   /** 프로모션 대상이 지운 상품일 때 */
@@ -93,8 +95,8 @@ export const PRICING_ADMIN_MESSAGES = {
   colPeriod: "기간",
   editTitle: "고르는 프로모션",
   editHint: "목록에서 줄을 누르면 여기서 고쳐요",
-  addPromo: "프로모션 더하기",
-  removePromo: "지우기",
+  addPromo: "프로모션 추가",
+  removePromo: "삭제",
   promoActive: "켜기",
   promoLabel: "딱지 글(보는 사람에게 보여요)",
   promoTarget: "대상",

@@ -3,9 +3,9 @@
 // 판과 주소를 가른 이유: 판은 "지금 무엇을 하나" 를 보는 화면이라 늘 가볍게 열려야 한다.
 // 걷은 일은 해마다 쌓이고 찾아올 때만 읽는다 — 판 질의에 얹으면 판이 그 무게를 매번 진다.
 import type { Metadata } from "next";
+import { AdminScreenHead } from "@/components/admin/screen/head";
 import Link from "next/link";
 import { buttonClass } from "@/components/ui/button";
-import { PageHead } from "@/components/ui/page";
 import { TaskArchiveList } from "@/components/admin/task-archive-list";
 import { TASK_MESSAGES } from "@/lib/admin/messages";
 import { ROUTES } from "@/lib/routes";
@@ -23,12 +23,16 @@ export default async function AdminTasksArchivePage() {
 
   return (
     <>
-      <header className="flex flex-wrap items-end justify-between gap-3">
-        <PageHead size="admin" title={TASK_MESSAGES.archiveTitle} note={TASK_MESSAGES.archiveNote(tasks.length, ARCHIVE_VISIBLE_LIMIT)} />
-        <Link href={ROUTES.adminTasks} className={buttonClass({ variant: "secondary", size: "sm" })}>
-          {TASK_MESSAGES.archiveBack}
-        </Link>
-      </header>
+      <AdminScreenHead
+        title={TASK_MESSAGES.archiveTitle}
+        note={TASK_MESSAGES.archiveNote(tasks.length, ARCHIVE_VISIBLE_LIMIT)}
+        count={tasks.length}
+        actions={
+          <Link href={ROUTES.adminTasks} className={buttonClass({ variant: "secondary", size: "sm" })}>
+            {TASK_MESSAGES.archiveBack}
+          </Link>
+        }
+      />
       <TaskArchiveList tasks={tasks} />
     </>
   );

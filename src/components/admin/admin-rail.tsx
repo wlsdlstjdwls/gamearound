@@ -13,6 +13,8 @@
 //  - 묶음 제목을 누르면 그 묶음이 접힌다(쿠키 admin_groups_open, 기본은 접힘). 지금 보는 칸은 묶음이 접혀 있어도 남긴다 — 내가 어디 있는지는 늘 보여야 한다.
 //  - 같은 날 밤(사용자 "상위 메뉴랑 하위 메뉴가 잘 구분이 안 된다"): 묶음 제목이 11px 회색 꼬리표라 하위 칸(13.5px, 그림)보다 약해 보였다.
 //    제목을 진한 글씨 한 줄 칸으로 올리고, 하위 칸은 들여써 왼쪽 안내선 안에 둔다(나무 꼴). 접힌 묶음 제목에는 안에 쌓인 일 합계를 단다.
+//    다시 들은 말("상위 하위 구분 확실히"): 하위 칸이 그림, 같은 글씨, 파랑 채움까지 가져 상위보다 무거워 보였다. 하위 칸은 그림을 빼고
+//    작은 글씨로, 지금 보는 하위 칸은 채움 대신 옅은 파랑 + 왼쪽 막대로 낮췄다. 펼친 묶음 제목은 회색 띠를 깐다. 파랑 채움은 상위 칸(대시보드)만 쓴다.
 import { Suspense, useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
@@ -110,9 +112,17 @@ export function AdminRail({
   };
   const itemClass = (active: boolean) =>
     cn(
-      // 마우스 화면에서는 36px 칸이다(2026-10-28 컴팩트 회차)
-      "press flex min-h-[var(--touch-target)] items-center gap-2.5 rounded-lg px-2.5 text-[13px] transition-colors [@media(pointer:fine)]:min-h-9",
-      active ? "bg-acc font-semibold text-on-ink" : "font-medium text-mut hover:bg-surface-2 hover:text-ink",
+      // 마우스 화면에서는 36px 칸이다(2026-10-28 컴팩트 회차). 상위 칸(제목 없는 묶음의 대시보드)이 쓴다
+      "press flex min-h-[var(--touch-target)] items-center gap-2.5 rounded-lg px-2.5 text-[14px] transition-colors [@media(pointer:fine)]:min-h-9",
+      active ? "bg-acc font-bold text-on-ink" : "font-bold text-ink-2 hover:bg-surface-2 hover:text-ink",
+    );
+  /** 하위 칸. 그림 없이 작은 글씨, 지금 보는 칸은 옅은 파랑과 왼쪽 막대(안내선 위에 겹친다) */
+  const subClass = (active: boolean) =>
+    cn(
+      "press relative flex min-h-[var(--touch-target)] items-center gap-2 rounded-md pl-3 pr-2 text-[13px] transition-colors [@media(pointer:fine)]:min-h-8",
+      active
+        ? "bg-acc-soft font-semibold text-acc before:absolute before:inset-y-1 before:-left-[7px] before:w-[3px] before:rounded-full before:bg-acc"
+        : "font-medium text-mut hover:bg-surface-2 hover:text-ink",
     );
 
   return (
@@ -186,7 +196,10 @@ export function AdminRail({
                   aria-expanded={!isFolded}
                   aria-controls={groupId}
                   aria-label={isFolded ? ADMIN_NAV.groupUnfold(g.title) : ADMIN_NAV.groupFold(g.title)}
-                  className="press group flex min-h-9 items-center gap-2 rounded-lg px-2.5 text-[13.5px] font-bold text-ink-2 transition-colors hover:bg-surface-2 hover:text-ink"
+                  className={cn(
+                    "press group flex min-h-9 items-center gap-2 rounded-lg px-2.5 text-[14px] font-bold text-ink transition-colors hover:bg-surface-3",
+                    !isFolded && "bg-surface-2",
+                  )}
                 >
                   <ChevronDownIcon size={15} className={cn("shrink-0 text-dim transition-transform duration-base", isFolded && "-rotate-90")} />
                   {g.title}
@@ -198,16 +211,19 @@ export function AdminRail({
                   )}
                 </button>
               )}
-              <div id={groupId} className={cn("flex flex-col gap-px", g.title && shown.length > 0 && "ml-[17px] border-l border-line pl-1.5")}>
+              <div id={groupId} className={cn("flex flex-col gap-px", g.title && shown.length > 0 && "my-1 ml-[17px] border-l-2 border-line pl-1.5")}>
                 {shown.map((item) => {
                   const active = isActive(pathname, item.href);
-                  const body = <ItemBody item={item} active={active} counts={counts} iconSize={16} badgeClassName="ml-auto" />;
+                  const sub = Boolean(g.title);
+                  const cls = sub ? subClass(active) : itemClass(active);
+                  // 하위 칸 배지는 옅은 바탕 위라 상위 칸의 반전 배지(active)를 쓰지 않는다
+                  const body = <ItemBody item={item} active={!sub && active} counts={counts} iconSize={16} badgeClassName="ml-auto" icon={!sub} />;
                   return item.soon ? (
-                    <button key={item.href} type="button" onClick={() => onSoon(item)} className={cn(itemClass(active), "w-full text-left")}>
+                    <button key={item.href} type="button" onClick={() => onSoon(item)} className={cn(cls, "w-full text-left")}>
                       {body}
                     </button>
                   ) : (
-                    <Link key={item.href} href={item.href} aria-current={active ? "page" : undefined} className={itemClass(active)}>
+                    <Link key={item.href} href={item.href} aria-current={active ? "page" : undefined} className={cls}>
                       {body}
                     </Link>
                   );

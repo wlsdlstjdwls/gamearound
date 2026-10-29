@@ -24,8 +24,8 @@
 // 2026-10-08 손질 — "가시성이 안 좋다". 카드 열다섯이 같은 무게로 서서 손볼 곳(일부 실패, 끊김)이
 // 작은 배지 하나로만 갈렸다. 손볼 카드를 **앞으로 당기고** 왼쪽에 띠를 긋는다. 순서는 바꾸되 무엇을
 // 보여 주는지는 그대로다 — 정상 카드 사이의 순서(서비스의 SOURCES 순서)는 유지한다.
-import { AdminLead } from "@/components/admin/admin-lead";
 import type { Metadata } from "next";
+import { AdminScreenHead } from "@/components/admin/screen/head";
 import Link from "next/link";
 import { buttonClass } from "@/components/ui/button";
 import { formatAgo, formatDateTime } from "@/lib/format";
@@ -36,7 +36,6 @@ import { getSyncActivity, RUNNING_GRACE_MINUTES, type RunSummary } from "@/serve
 import { syncHealthOf } from "@/lib/admin/sync-health";
 import { getDisabledReason, isSource } from "@/server/adapters";
 import { requireRoleOrForbid } from "@/server/auth/guards";
-import { PageHead } from "@/components/ui/page";
 import { DataCell, DataHead, DataList, DataRow } from "@/components/admin/data-rows";
 import { SYNC_SOURCE_COLS } from "@/lib/admin/table-cols";
 import { SyncRunSheet } from "@/components/admin/sync-run-sheet";
@@ -206,20 +205,21 @@ export default async function AdminSyncOverviewPage() {
 
   return (
     <section className="flex flex-col gap-4">
-      <header className="flex flex-wrap items-start justify-between gap-x-6 gap-y-2">
-        <div className="min-w-0">
-          <PageHead size="admin" title={ADMIN_NAV.overview} />
-          <AdminLead>{SYNC_MESSAGES.lead}</AdminLead>
-        </div>
-        {repo ? (
-          <a href={`https://github.com/${repo}/actions`} target="_blank" rel="noreferrer" className={buttonClass({ variant: "secondary", size: "sm" })}>
-            {SYNC_MESSAGES.rerun}
-            <span className="sr-only"> (새 창에서 열림)</span>
-          </a>
-        ) : (
-          <span className="max-w-[320px] text-[11.5px] text-dim">{SYNC_MESSAGES.rerunHint}</span>
-        )}
-      </header>
+      <AdminScreenHead
+        title={ADMIN_NAV.overview}
+        lead={SYNC_MESSAGES.lead}
+        count={rows.length}
+        actions={
+          repo ? (
+            <a href={`https://github.com/${repo}/actions`} target="_blank" rel="noreferrer" className={buttonClass({ variant: "secondary", size: "sm" })}>
+              {SYNC_MESSAGES.rerun}
+              <span className="sr-only"> (새 창에서 열림)</span>
+            </a>
+          ) : (
+            <span className="max-w-[320px] text-[11.5px] text-dim">{SYNC_MESSAGES.rerunHint}</span>
+          )
+        }
+      />
 
       <section aria-labelledby="sync-sources" className="flex flex-col gap-2">
         <div className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1">

@@ -65,7 +65,7 @@ export const TASK_MESSAGES = {
   notePlaceholder: "진행, 막힌 지점, 끝내며 남길 말",
   noteEmpty: "아직 기록이 없어요.",
   noteAdded: "기록했어요",
-  noteRemove: "지우기",
+  noteRemove: "삭제",
   noteRemoveConfirm: "이 기록을 지울까요?",
   noteRemoved: "기록을 지웠어요",
   /** 칸 이동 자취 앞에 붙는 말. 앞뒤 칸은 파이프로 잇는다(AGENTS §4: 화살표 금지) */
@@ -191,7 +191,7 @@ export const TASK_ATTACHMENT_MESSAGES = {
   uploading: (done: number, total: number) => `올리는 중 ${done + 1}/${total}`,
   hint: (maxMb: number) => `이미지, PDF, 글 파일(txt, log, csv, json), zip | 한 파일 ${maxMb}MB까지`,
   empty: "붙인 파일이 없어요.",
-  remove: "지우기",
+  remove: "삭제",
   removeConfirm: "이 파일을 지울까요? 저장소에서도 지워져요.",
   unpick: "빼기",
   count: (n: number) => `첨부 ${n}`,

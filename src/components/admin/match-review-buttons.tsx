@@ -1,7 +1,7 @@
 "use client";
 // 매칭 판정 버튼 (§4.2). 매칭 대기 큐와 /admin/games/[id] 의 "이어진 스토어" 에서 함께 쓴다.
 //
-// 낱말은 상품 매핑 큐와 맞춘다(맞아요, 아니에요) — 두 큐가 같은 질문을 하므로 같은 말로 묻는다.
+// 낱말은 매장상품매핑관리와 맞춘다(승인, 반려 — 백오피스 승인 화면 낱말) — 두 큐가 같은 질문을 하므로 같은 말로 묻는다.
 // 낱말을 고른 이유는 messages/actions.ts 주석에 있다.
 import { useState, useTransition } from "react";
 import { Button } from "@/components/ui/button";

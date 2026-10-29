@@ -4,8 +4,8 @@
 // 두 가지를 한 화면에 섞지 않은 이유: 쌓이는 속도가 다르다. 검수 큐는 하루에도 수십 줄이 붙지만
 // 할 일은 사람이 적는 만큼만 는다. 섞으면 적은 쪽이 파묻힌다.
 import type { Metadata } from "next";
+import { AdminScreenHead } from "@/components/admin/screen/head";
 import { cookies } from "next/headers";
-import { PageHead } from "@/components/ui/page";
 import { TaskAddForm } from "@/components/admin/task-add-form";
 import { TaskBoard } from "@/components/admin/task-board";
 import { TaskClearDone } from "@/components/admin/task-clear-done";
@@ -38,10 +38,10 @@ export default async function AdminTasksPage({ searchParams }: { searchParams: P
 
   return (
     <>
+      {/* 쓰는 법 안내 한 단락을 걷었다(2026-09-30, 사용자: "문구는 없애라"). 판을 매일 쓰는 사람에게
+          그 단락은 판을 한 줄 아래로 미는 일만 했다 — 칸마다 선 "한 줄 추가" 가 이미 쓰는 법을 말한다 */}
+      <AdminScreenHead title={ADMIN_NAV.tasks} note={TASK_MESSAGES.count(total)} count={total} />
       <header className="flex flex-col gap-3">
-        {/* 쓰는 법 안내 한 단락을 걷었다(2026-09-30, 사용자: "문구는 없애라"). 판을 매일 쓰는 사람에게
-            그 단락은 판을 한 줄 아래로 미는 일만 했다 — 칸마다 선 "한 줄 추가" 가 이미 쓰는 법을 말한다 */}
-        <PageHead size="admin" title={ADMIN_NAV.tasks} note={TASK_MESSAGES.count(total)} />
         {/* 판을 다루는 버튼 둘은 한 줄에 선다 — 더하기는 왼쪽, 지우는 쪽은 손이 덜 가는 오른쪽 끝 */}
         <div className="flex flex-wrap items-center justify-between gap-2">
           <TaskAddForm sources={sourceEnum.enumValues} assignees={assignees} />

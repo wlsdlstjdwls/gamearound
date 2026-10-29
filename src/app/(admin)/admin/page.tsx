@@ -4,9 +4,8 @@
 // 수집은 운영자 일 여섯 묶음 중 하나인데 첫 화면을 통째로 차지해, 환불 요청, 결제 실패 같은 돈 일은 메뉴 배지도 없이
 // 화면을 하나씩 열어 봐야 보였다. 수집 현황은 /admin/sync 로 옮기고, 여기에는 묶음마다 쌓인 일 건수를 세운다(components/admin/work-board).
 import type { Metadata } from "next";
-import { AdminLead } from "@/components/admin/admin-lead";
+import { AdminScreenHead } from "@/components/admin/screen/head";
 import { boardPending, WorkBoard } from "@/components/admin/work-board";
-import { PageHead } from "@/components/ui/page";
 import { ADMIN_BOARD_MESSAGES as M, ADMIN_NAV } from "@/lib/admin/messages";
 import { formatDateTime } from "@/lib/format";
 import { requireRoleOrForbid } from "@/server/auth/guards";
@@ -22,18 +21,18 @@ export default async function AdminBoardPage() {
 
   return (
     <section className="flex flex-col gap-4">
-      <header className="flex flex-wrap items-end justify-between gap-x-6 gap-y-1">
-        <div className="min-w-0">
-          <PageHead size="admin" title={ADMIN_NAV.board} />
-          <AdminLead>{M.lead}</AdminLead>
-        </div>
-        {board && (
-          <p className="text-[12px] text-dim">
-            {pending === 0 && <span className="mr-2 font-semibold text-ok">{M.allClear}</span>}
-            <span className="tabular-nums">{M.asOf(formatDateTime(new Date(board.asOf)))}</span>
-          </p>
-        )}
-      </header>
+      <AdminScreenHead
+        title={ADMIN_NAV.board}
+        lead={M.lead}
+        note={
+          board && (
+            <>
+              {pending === 0 && <span className="mr-2 font-semibold text-ok">{M.allClear}</span>}
+              <span className="tabular-nums">{M.asOf(formatDateTime(new Date(board.asOf)))}</span>
+            </>
+          )
+        }
+      />
       {board ? <WorkBoard board={board} /> : <p className="rounded-xl bg-surface-2 px-4 py-3 text-[12.5px] text-mut">{M.failed}</p>}
     </section>
   );

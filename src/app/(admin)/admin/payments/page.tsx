@@ -3,11 +3,10 @@
 // 위는 이번 달 숫자 넷(services/payments 의 getPaymentSummaryForAdmin), 아래는 최근 결제 목록과 환불 단추.
 // 부스트가 안 걸린 결제는 빨갛게 — 돈은 빠졌는데 노출이 없는 상태라 손으로 걸어야 한다. 환불하면 걸린 부스트도 그 자리에서 거둔다(services/payments/refunds).
 import type { Metadata } from "next";
-import { AdminLead } from "@/components/admin/admin-lead";
+import { AdminScreenHead } from "@/components/admin/screen/head";
 import { RefundControls } from "@/components/admin/refund-controls";
 import { StatTiles } from "@/components/admin/stat-tiles";
 import { DataCell, DataHead, DataList, DataRow } from "@/components/admin/data-rows";
-import { PageHead } from "@/components/ui/page";
 import { PAYMENT_COLS } from "@/lib/admin/table-cols";
 import { Tag } from "@/components/ui/tag";
 import { ADMIN_NAV } from "@/lib/admin/messages";
@@ -25,10 +24,7 @@ export default async function AdminPaymentsPage() {
 
   return (
     <div className="flex flex-col gap-5">
-      <div>
-        <PageHead size="admin" title={ADMIN_NAV.payments} />
-        <AdminLead>{PM.adminLead}</AdminLead>
-      </div>
+      <AdminScreenHead title={ADMIN_NAV.payments} lead={PM.adminLead} count={paid.length} />
 
       <StatTiles
         tiles={[

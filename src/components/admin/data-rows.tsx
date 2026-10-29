@@ -20,7 +20,8 @@ import { cn } from "@/lib/cn";
 /** 표의 머리. 카드로 눕는 좁은 화면에서는 사라진다 — 값마다 제 이름표를 달고 서기 때문이다 */
 export function DataHead({ cols, labels }: { cols: string; labels: string[] }) {
   return (
-    <div className={cn("hidden rounded-lg bg-surface-2 text-[11.5px] font-medium text-dim md:grid", cols)}>
+    // data-grid-* 는 화면 툴바의 엑셀이 표를 읽는 표시다(components/admin/screen/head)
+    <div data-grid-head className={cn("hidden rounded-lg bg-surface-2 text-[11.5px] font-medium text-dim md:grid", cols)}>
       {labels.map((label) => (
         <span key={label}>{label}</span>
       ))}
@@ -44,6 +45,7 @@ export function DataRow({
 }) {
   return (
     <li
+      data-grid-row
       className={cn(
         "flex flex-col gap-2 py-3 text-[13px] text-ink transition-colors duration-fast md:grid md:gap-y-0 md:hover:bg-surface-2/60",
         align === "center" ? "md:items-center" : "md:items-start",
@@ -80,7 +82,9 @@ export function DataCell({
   return (
     <div className={cn(wideOnly ? "hidden" : "flex", "min-w-0 items-baseline gap-2.5 md:block", className)}>
       {label && <span className="w-[88px] shrink-0 text-[11.5px] leading-[1.5] text-dim md:hidden">{label}</span>}
-      <div className="min-w-0 flex-1">{children}</div>
+      <div data-grid-value className="min-w-0 flex-1">
+        {children}
+      </div>
     </div>
   );
 }

@@ -3,14 +3,13 @@
 // 수집 현황이 스토어마다 "마지막 한 번" 만 보여 주는 값의 전문이 여기 있다.
 // 원값(ok, steam)을 그대로 띄우던 자리를 한글 이름표로 바꿨다 — partial 이 성공인지 실패인지
 // 영문으로는 판단이 안 선다. 다만 소스는 로그와 워크플로 이름을 맞대야 해서 원값을 함께 남긴다.
-import { AdminLead } from "@/components/admin/admin-lead";
 import type { Metadata } from "next";
+import { AdminScreenHead } from "@/components/admin/screen/head";
 import { cn } from "@/lib/cn";
 import { formatDateTime, formatDuration } from "@/lib/format";
 import { isSourceName, listSyncLogs, SOURCES } from "@/server/services/admin";
 import { LOG_MESSAGES, SYNC_STATUS_LABEL, sourceLabel, ADMIN_NAV } from "@/lib/admin/messages";
 import { requireRoleOrForbid } from "@/server/auth/guards";
-import { PageHead } from "@/components/ui/page";
 import { DataCell, DataHead, DataList, DataRow } from "@/components/admin/data-rows";
 import { ROUTES } from "@/lib/routes";
 import { Clamp } from "@/components/ui/tooltip";
@@ -72,11 +71,9 @@ export default async function SyncLogsPage({ searchParams }: { searchParams: Pro
   return (
     <NavPendingScope>
     <section className="flex flex-col gap-4">
+      <AdminScreenHead title={ADMIN_NAV.logs} lead={LOG_MESSAGES.lead} count={logs.length} />
+      {/* 조회조건 — 백오피스의 조회조건 띠 자리. 스토어를 고르면 그 스토어 실행만 */}
       <header className="flex flex-wrap items-end justify-between gap-2">
-        <div className="min-w-0">
-          <PageHead size="admin" title={ADMIN_NAV.logs} note={LOG_MESSAGES.recent(logs.length)} />
-          <AdminLead>{LOG_MESSAGES.lead}</AdminLead>
-        </div>
         <div className="flex flex-wrap gap-1 text-xs">
           <NavChip group="source" href={ROUTES.adminSyncLogs} active={!source} size="sm">
             {LOG_MESSAGES.all}

@@ -174,7 +174,7 @@ export const LOG_MESSAGES = {
 export const MATCH_MESSAGES = {
   title: "매칭 대기",
   lead:
-    "왼쪽은 우리가 아는 게임, 오른쪽은 스토어가 준 상품이에요. 이름이 충분히 닮으면 수집이 이미 이었고, 애매한 것만 여기 서요. \"맞아요\" 를 누르면 그 게임 가격에 이 스토어가 붙고, \"아니에요\" 를 누르면 이 후보는 다시 올라오지 않아요.",
+    "왼쪽은 우리가 아는 게임, 오른쪽은 스토어가 준 상품이에요. 이름이 충분히 닮으면 수집이 이미 이었고, 애매한 것만 여기 서요. \"승인\" 하면 그 게임 가격에 이 스토어가 붙고, \"반려\" 하면 이 후보는 다시 올라오지 않아요.",
   note: (shown: number, total: number) =>
     total > shown ? `${total}건 중 ${shown}건 보는 중` : `${shown}건`,
   similarity: (lo: number, hi: number) => `닮은 정도 ${lo}~${hi}`,
@@ -214,7 +214,7 @@ export const COMPANY_MESSAGES = {
 export const PRODUCT_MATCH_MESSAGES = {
   title: "상품 매핑",
   lead: (recheckDays: number) =>
-    `매장이 올린 물건을 우리 카탈로그와 맞대 본 결과예요. "맞아요" 를 누르면 그 게임 상세의 "파는 곳" 에 바로 뜨고, "아니에요" 를 누르면 그 후보는 다시 올라오지 않아요. 아니라고 한 상품은 ${recheckDays}일 뒤 다음 후보로 다시 물어봐요.`,
+    `매장이 올린 물건을 우리 카탈로그와 맞대 본 결과예요. "승인" 하면 그 게임 상세의 "파는 곳" 에 바로 뜨고, "반려" 하면 그 후보는 다시 올라오지 않아요. 반려한 상품은 ${recheckDays}일 뒤 다음 후보로 다시 물어봐요.`,
   queueTitle: "후보가 남은 상품",
   similarity: (lo: number, hi: number) => `닮은 정도 ${lo}~${hi}`,
   count: (n: number) => `${n}건`,

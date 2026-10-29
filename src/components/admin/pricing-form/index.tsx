@@ -6,14 +6,17 @@
 // 설정 전체를 로컬 상태 하나로 쥐고, 판마다 그 일부를 고친다(pricing-form/sections, promotions). 칸을 칠 때마다 저장하지 않는다 —
 // 값 하나 바꾸는 도중의 반쪽 요금표가 주문에 쓰이면 안 된다. 저장은 단추로 한 번, 서버와 같은 스키마(lib/pricing/settings)로 먼저 막는다.
 // 저장에 실패하면 고친 값은 그대로 둔다(되돌리면 친 글이 날아간다) — "되돌리기" 는 따로 누른다.
-import { useEffect, useRef, useState, useTransition } from "react";
+import { useEffect, useState, useTransition } from "react";
+import { useRouter } from "next/navigation";
+import { AdminScreenHead } from "@/components/admin/screen/head";
+import { useAdminStatus } from "@/components/admin/screen/status";
 import { PricingPreviewLink } from "@/components/admin/pricing-preview-link";
 import { savePricingAction } from "@/app/(admin)/admin/pricing/actions";
 import { Button } from "@/components/ui/button";
 import { FormMessage } from "@/components/ui/form-message";
-import { PricesSection } from "@/components/admin/pricing-form/sections";
+import { PricesSection, withNewProduct } from "@/components/admin/pricing-form/sections";
 import { CopySection } from "@/components/admin/pricing-form/copy-section";
-import { PromotionsSection } from "@/components/admin/pricing-form/promotions";
+import { newPromotionId, PromotionsSection, withNewPromotion } from "@/components/admin/pricing-form/promotions";
 import { PricingPreview } from "@/components/admin/pricing-form/preview";
 import { PRICING_ADMIN_MESSAGES as M } from "@/lib/pricing/admin-messages";
 import { findProduct, isBundleProduct, MEMBERSHIP_KEY, pricingSettingsSchema, type PricingSettings, type TierKey } from "@/lib/pricing/settings";
@@ -49,6 +52,8 @@ export function PricingForm({ initial, part, title, lead }: { initial: PricingSe
   const [value, setValue] = useState(initial);
   const [note, setNote] = useState<{ tone: "success" | "error"; text: string } | null>(null);
   const [pending, start] = useTransition();
+  const router = useRouter();
+  const { say } = useAdminStatus();
   /** 문구를 고치는 카드. 미리 보기가 같은 카드를 따라간다 */
   const [tier, setTier] = useState<TierKey>("single");
   /** 프로모션 화면에서 고른 줄. 미리 보기는 그 행사가 걸리는 카드 한 장만 보인다 — 카드 셋을 다 쌓으면 고른 행사가 어디 걸렸는지 찾아야 했다 */
@@ -68,19 +73,8 @@ export function PricingForm({ initial, part, title, lead }: { initial: PricingSe
     setValue((v) => fn(v));
   };
 
-  // 저장 단축키 Ctrl+S(맥은 Cmd+S), 백오피스의 저장 F9 와 같은 자리다. 브라우저의 "페이지 저장" 창은 막는다.
+  // 저장 단축키(F9, Ctrl+S)는 화면 머리(admin/screen/head)가 맡는다 — 백오피스와 같은 자리, 같은 키.
   // 바뀐 값을 둔 채 탭을 닫거나 새로 고치면 브라우저가 한 번 묻는다(백오피스의 미저장 확인)
-  const saveRef = useRef<() => void>(() => {});
-  useEffect(() => {
-    const onKey = (e: KeyboardEvent) => {
-      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "s") {
-        e.preventDefault();
-        saveRef.current();
-      }
-    };
-    window.addEventListener("keydown", onKey);
-    return () => window.removeEventListener("keydown", onKey);
-  }, []);
   useEffect(() => {
     if (!dirty) return;
     const onLeave = (e: BeforeUnloadEvent) => e.preventDefault();
@@ -96,45 +90,65 @@ export function PricingForm({ initial, part, title, lead }: { initial: PricingSe
         setSaved(next);
         setValue(next);
         setNote({ tone: "success", text: M.saved });
-      } else setNote({ tone: "error", text: r.error });
+        say(M.saved, "ok");
+      } else {
+        setNote({ tone: "error", text: r.error });
+        say(r.error, "error");
+      }
     });
   };
-  useEffect(() => {
-    saveRef.current = () => {
-      if (dirty && valid && !pending) save();
-    };
-  });
+  // 툴바 입력, 삭제 — 상품등록은 상품 한 줄을 더하고, 프로모션등록은 프로모션을 더하거나 고른 줄을 지운다
+  const insert = () => {
+    if (part === "catalog") patch(withNewProduct);
+    else {
+      const id = newPromotionId();
+      setPromo(id);
+      patch((d) => withNewPromotion(d, id));
+    }
+  };
+  const removePromo =
+    part === "discounts" && promo
+      ? () => {
+          const rest = value.promotions.filter((p) => p.id !== promo);
+          setPromo(rest[0]?.id ?? null);
+          patch((d) => ({ ...d, promotions: d.promotions.filter((p) => p.id !== promo) }));
+        }
+      : undefined;
+  // 조회: 바뀐 값을 버리고 서버 값을 다시 읽는다(버릴지는 머리가 먼저 묻는다)
+  const retrieve = () => {
+    setValue(saved);
+    setNote(null);
+    router.refresh();
+    say(M.reloaded);
+  };
 
   return (
     // --admin-toolbar-h: 머리 툴바 높이. 오른쪽 미리 보기가 툴바 밑에 붙어 따라오게 sticky 자리를 그만큼 내린다
     <div className="flex flex-col gap-5 [--admin-toolbar-h:72px]">
-      {/* 화면 머리를 저장 툴바로 쓴다(2026-10-29 사용자 "아래 저장, 되돌리기 영역이 고정돼 내용을 가린다", 신세계TV 백오피스 참고).
-          백오피스의 관리 화면은 제목 줄 오른쪽 끝에 저장 단추가 늘 같은 자리에 선다 — 바닥에 뜨는 줄은 마지막 칸을 덮었다.
-          머리는 위에 붙어 따라오고(sticky), 본문을 덮지 않는다. 바뀐 값이 있는지는 저장 단추 옆 한 줄이 말한다 */}
-      <div className="sticky top-[var(--header-h)] z-20 -mx-4 -mt-4 flex flex-wrap items-center justify-between gap-x-4 gap-y-2 border-b border-line-soft bg-surface/95 px-4 py-3 backdrop-blur sm:-mx-5 sm:-mt-5 sm:px-5">
-        <div className="flex min-w-0 flex-col gap-0.5">
-          <h1 className="text-[20px] font-extrabold tracking-[-0.02em] text-ink">{title}</h1>
-          <p className="text-[12.5px] text-dim">{lead}</p>
-        </div>
-        <div className="flex flex-wrap items-center gap-2">
-          <span className="text-[12.5px] font-medium" aria-live="polite">
-            {note ? (
-              <FormMessage tone={note.tone}>{note.text}</FormMessage>
-            ) : dirty && !valid ? (
-              <span className="text-danger">{M.invalid}</span>
-            ) : dirty ? (
-              <span className="text-acc">{M.dirty}</span>
-            ) : null}
-          </span>
-          <PricingPreviewLink />
-          <Button variant="secondary" size="sm" disabled={!dirty || pending} onClick={() => patch(() => saved)}>
-            {M.reset}
-          </Button>
-          <Button variant="accent" size="sm" loading={pending} loadingLabel={M.saving} disabled={!dirty || !valid} onClick={save} title={M.saveShortcut} aria-keyshortcuts="Control+S">
-            {M.save}
-          </Button>
-        </div>
-      </div>
+      {/* 화면 머리는 모든 관리 화면 공통 틀(admin/screen/head)이다 — 제목, 메뉴 위치, 조회 입력 삭제 저장 엑셀이 늘 같은 자리.
+          이 화면만의 것(바뀐 값 안내, 요금 화면 열기, 되돌리기)은 툴바 왼쪽에 둔다 */}
+      <AdminScreenHead
+        title={title}
+        lead={lead}
+        tools={{ retrieve, insert, delete: removePromo, save, saveDisabled: !dirty || !valid, saving: pending, dirty }}
+        actions={
+          <>
+            <span className="text-[12.5px] font-medium" aria-live="polite">
+              {note ? (
+                <FormMessage tone={note.tone}>{note.text}</FormMessage>
+              ) : dirty && !valid ? (
+                <span className="text-danger">{M.invalid}</span>
+              ) : dirty ? (
+                <span className="text-acc">{M.dirty}</span>
+              ) : null}
+            </span>
+            <PricingPreviewLink />
+            <Button variant="secondary" size="sm" disabled={!dirty || pending} onClick={() => patch(() => saved)}>
+              {M.reset}
+            </Button>
+          </>
+        }
+      />
 
       {/* 넓은 화면은 왼쪽 폼, 오른쪽 미리 보기(2026-10-29 사용자). 미리 보기는 sticky 라 긴 폼을 내려도 따라온다 */}
       <div className="grid items-start gap-5 xl:grid-cols-[minmax(0,1fr)_360px]">

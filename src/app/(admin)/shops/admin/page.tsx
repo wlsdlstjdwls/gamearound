@@ -7,11 +7,10 @@
 //
 // 주소는 `/admin` 밖이어도 껍데기는 관리자 화면과 같다 — 관리자 레이아웃이 라우트 그룹 `(admin)` 에 있어서다.
 // 앞서는 레이아웃이 `(admin)/admin` 에만 있어 메뉴에서 이 칸을 누르면 기둥과 흰 판이 통째로 사라졌다(2026-10-08).
-import { AdminLead } from "@/components/admin/admin-lead";
 import type { Metadata } from "next";
+import { AdminScreenHead } from "@/components/admin/screen/head";
 import { ADMIN_NAV } from "@/lib/admin/messages";
 import { ShopReviewCard } from "@/components/shops/review-card";
-import { PageHead } from "@/components/ui/page";
 import { SHOP_ADMIN_MESSAGES } from "@/lib/shops/messages";
 import { ROUTES } from "@/lib/routes";
 import { requireRoleOrForbid } from "@/server/auth/guards";
@@ -44,10 +43,7 @@ export default async function ShopsAdminPage({ searchParams }: Props) {
 
   return (
     <NavPendingScope>
-      <section className="flex flex-col gap-2">
-        <PageHead size="admin" title={ADMIN_NAV.shops} />
-        <AdminLead>{SHOP_ADMIN_MESSAGES.lead}</AdminLead>
-      </section>
+      <AdminScreenHead title={ADMIN_NAV.shops} lead={SHOP_ADMIN_MESSAGES.lead} />
 
       <section className="flex flex-col gap-3">
         <nav aria-label={SHOP_ADMIN_MESSAGES.tabsLabel} className="flex flex-wrap gap-1.5">

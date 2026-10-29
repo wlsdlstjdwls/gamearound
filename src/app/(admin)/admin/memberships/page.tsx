@@ -3,11 +3,12 @@
 // 줄마다 상태, 카드, 이번 기간, 다음 결제, 남은 이용권, 연속 실패(2026-10-29 칸 맞춘 표로, data-rows). 환불은 결제와 환불 화면(/admin/payments)에서 한다 —
 // 결제 줄 하나를 기준으로 돌려주는 일이라 그 목록에 두고, 멤버십 청구를 환불하면 멤버십도 끝난다(services/payments/refunds).
 import type { Metadata } from "next";
+import { AdminScreenHead } from "@/components/admin/screen/head";
 import { ADMIN_NAV } from "@/lib/admin/messages";
 import Link from "next/link";
 import { StatTiles } from "@/components/admin/stat-tiles";
+import { buttonClass } from "@/components/ui/button";
 import { DataCell, DataHead, DataList, DataRow } from "@/components/admin/data-rows";
-import { PageHead } from "@/components/ui/page";
 import { MEMBERSHIP_COLS } from "@/lib/admin/table-cols";
 import { Tag, type TagTone } from "@/components/ui/tag";
 import { formatAmount, formatPrice } from "@/lib/currency";
@@ -32,15 +33,16 @@ export default async function AdminMembershipsPage() {
 
   return (
     <div className="flex flex-col gap-5">
-      <div>
-        <PageHead size="admin" title={ADMIN_NAV.memberships} />
-        <p className="mt-1 max-w-[760px] text-[12.5px] leading-[1.6] text-dim">
-          {M.adminLead}{" "}
-          <Link href={ROUTES.adminPayments} className="font-semibold text-acc hover:underline">
+      <AdminScreenHead
+        title={ADMIN_NAV.memberships}
+        lead={M.adminLead}
+        count={rows.length}
+        actions={
+          <Link href={ROUTES.adminPayments} className={buttonClass({ variant: "secondary", size: "sm" })}>
             {M.adminPaymentsLink}
           </Link>
-        </p>
-      </div>
+        }
+      />
       <StatTiles
         tiles={[
           { label: M.adminStatActive, value: M.adminStatPeople(count("active")) },

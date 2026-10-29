@@ -6,15 +6,15 @@
 //
 // 화면 이름을 "회사" 에서 "회사 이름" 으로 바꿨다 — 회사를 만드는 자리가 아니라
 // 수집이 주워 온 **이름 문자열**을 어느 회사로 볼지 정하는 자리다. 앞 이름은 그 구분을 지웠다.
-import { AdminLead } from "@/components/admin/admin-lead";
 import type { Metadata } from "next";
+import { AdminScreenHead } from "@/components/admin/screen/head";
 import Link from "next/link";
 import { ROUTES } from "@/lib/routes";
 import { requireRoleOrForbid } from "@/server/auth/guards";
 import { listPendingCompanies, PENDING_COMPANIES_LIMIT } from "@/server/services/admin-companies";
 import { listCompanies } from "@/server/services/companies";
 import { CompanyResolveButton } from "@/components/admin/company-resolve-button";
-import { PageHead, ROWS } from "@/components/ui/page";
+import { ROWS } from "@/components/ui/page";
 import { DataCell, DataHead, DataList, DataRow } from "@/components/admin/data-rows";
 import { COMPANY_MESSAGES, ADMIN_NAV } from "@/lib/admin/messages";
 import { Clamp } from "@/components/ui/tooltip";
@@ -29,11 +29,8 @@ export default async function AdminCompaniesPage() {
 
   return (
     <div className="flex flex-col gap-8">
+      <AdminScreenHead title={ADMIN_NAV.companies} lead={COMPANY_MESSAGES.lead} count={pending.length} />
       <section className="flex flex-col gap-3">
-        <div>
-          <PageHead size="admin" title={ADMIN_NAV.companies} />
-          <AdminLead>{COMPANY_MESSAGES.lead}</AdminLead>
-        </div>
 
         <header className="flex flex-wrap items-end justify-between gap-2">
           <h2 className="text-[15px] font-bold tracking-[-0.02em] text-ink">

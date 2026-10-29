@@ -4,15 +4,14 @@
 // 큐가 아니라 목록이다 — 글은 승인 없이 바로 서고 신고 장치가 아직 없다(기획서 6.1 "신고는 협의").
 // 그래서 메뉴 배지를 달지 않고, 오래된 글은 쪽 넘기기 대신 찾기로 간다(줄 수 상한은 services/community/admin).
 // 숨긴 칸을 따로 둔 이유: 되살리기는 숨긴 것을 찾아야 할 수 있다. 전체 칸에 섞으면 백 줄 안에서 묻힌다.
-import { AdminLead } from "@/components/admin/admin-lead";
 import type { Metadata } from "next";
+import { AdminScreenHead } from "@/components/admin/screen/head";
 import Link from "next/link";
 import { ContentModeration } from "@/components/admin/content-moderation";
 import { DataCell, DataHead, DataList, DataRow } from "@/components/admin/data-rows";
 import { ADMIN_FIELD } from "@/components/admin/field";
 import { Button } from "@/components/ui/button";
 import { NavChip, NavPendingScope, PendingRegion } from "@/components/ui/nav-pending";
-import { PageHead } from "@/components/ui/page";
 import { Tag } from "@/components/ui/tag";
 import { Clamp } from "@/components/ui/tooltip";
 import { POST_ADMIN_MESSAGES as M, ADMIN_NAV } from "@/lib/admin/messages";
@@ -129,10 +128,7 @@ export default async function AdminPostsPage({ searchParams }: Props) {
   return (
     <NavPendingScope>
       <div className="flex flex-col gap-5">
-        <div>
-          <PageHead size="admin" title={ADMIN_NAV.posts} />
-          <AdminLead>{M.lead}</AdminLead>
-        </div>
+        <AdminScreenHead title={ADMIN_NAV.posts} lead={M.lead} />
 
         <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
           <nav aria-label={M.title} className="flex flex-wrap gap-1.5">
