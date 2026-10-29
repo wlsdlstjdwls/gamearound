@@ -4,7 +4,7 @@ import { getDb } from "@/server/db/client";
 import { updatedBy } from "@/server/db/audit";
 import { gamePlatforms, games, preorderBonuses, preorderBonusPosts } from "@/server/db/schema";
 import { requireAdmin } from "@/server/services/users";
-import { PREORDER_MESSAGES } from "@/lib/preorder/messages";
+import { PREORDER_ADMIN_MESSAGES } from "@/lib/admin/messages";
 import type { PreorderAdminRowDto, PreorderBonusDto, PreorderPostDto } from "@/lib/preorder/dto";
 import type { PreorderModerationInput } from "@/lib/preorder/schemas";
 import { PREORDER_SHOW_AFTER_RELEASE_DAYS } from "@/server/sync/constants";
@@ -103,16 +103,16 @@ export async function moderatePreorderPost(input: PreorderModerationInput, admin
     .from(preorderBonusPosts)
     .where(eq(preorderBonusPosts.id, input.postId))
     .limit(1);
-  if (!post) throw new Error(PREORDER_MESSAGES.admin.postNotFound);
+  if (!post) throw new Error(PREORDER_ADMIN_MESSAGES.postNotFound);
 
   let gameId = post.gameId;
   if (input.decision === "link") {
     const [game] = await db.select({ id: games.id }).from(games).where(eq(games.slug, input.gameSlug ?? "")).limit(1);
-    if (!game) throw new Error(PREORDER_MESSAGES.admin.gameNotFound);
+    if (!game) throw new Error(PREORDER_ADMIN_MESSAGES.gameNotFound);
     gameId = game.id;
   }
-  if (input.decision !== "hide" && post.bonusCount === 0) throw new Error(PREORDER_MESSAGES.admin.noBonusCannotPublish);
-  if (input.decision === "publish" && !gameId) throw new Error(PREORDER_MESSAGES.admin.needGame);
+  if (input.decision !== "hide" && post.bonusCount === 0) throw new Error(PREORDER_ADMIN_MESSAGES.noBonusCannotPublish);
+  if (input.decision === "publish" && !gameId) throw new Error(PREORDER_ADMIN_MESSAGES.needGame);
 
   await db
     .update(preorderBonusPosts)

@@ -16,7 +16,7 @@ import { Button } from "@/components/ui/button";
 import { FormSelect } from "@/components/ui/select/fields";
 import { Tag, type TagTone } from "@/components/ui/tag";
 import { TextField } from "@/components/ui/text-field";
-import { APPROVAL_MESSAGES as AM } from "@/lib/admin/messages";
+import { APPROVAL_MESSAGES as AM, PREORDER_ADMIN_MESSAGES } from "@/lib/admin/messages";
 import { fieldErrors } from "@/lib/admin/validation";
 import { cn } from "@/lib/cn";
 import { formatDotDate } from "@/lib/format";
@@ -27,7 +27,7 @@ import { preorderLinkSchema } from "@/lib/preorder/schemas";
 import { gamePath } from "@/lib/routes";
 import type { PreorderPostStatus } from "@/server/db/schema";
 
-const A = PREORDER_MESSAGES.admin;
+const A = PREORDER_ADMIN_MESSAGES;
 type Row = PreorderAdminRowDto;
 
 const EXTERNAL = "text-[12.5px] font-semibold text-acc hover:underline";

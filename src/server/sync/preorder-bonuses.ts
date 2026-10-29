@@ -26,7 +26,7 @@ import {
   type NewsListItem,
   type ParsedArticle,
 } from "@/server/adapters/nintendo-kr-news";
-import { PREORDER_MESSAGES } from "@/lib/preorder/messages";
+import { PREORDER_ADMIN_MESSAGES } from "@/lib/admin/messages";
 import { sleep } from "@/lib/async";
 import { errorMessage } from "@/lib/errors";
 import { ERROR_SAMPLE_MAX, PREORDER_PAGES_DEFAULT, PREORDER_PAGES_MAX } from "./constants";
@@ -93,8 +93,8 @@ async function findGameByNsuid(nsuids: readonly string[]): Promise<{ id: string;
 
 /** 상태와 사유. 특전이 없으면 게임을 이었어도 공개하지 않는다 — 빈 마디가 상세에 선다 */
 export function decideStatus(article: ParsedArticle, gameFound: boolean): { status: PreorderPostStatus; reason: string | null } {
-  if (article.bonuses.length === 0) return { status: "review", reason: PREORDER_MESSAGES.reason.noBonus };
-  if (!gameFound) return { status: "review", reason: PREORDER_MESSAGES.reason.noGame(article.nsuids) };
+  if (article.bonuses.length === 0) return { status: "review", reason: PREORDER_ADMIN_MESSAGES.reason.noBonus };
+  if (!gameFound) return { status: "review", reason: PREORDER_ADMIN_MESSAGES.reason.noGame(article.nsuids) };
   return { status: "published", reason: null };
 }
 

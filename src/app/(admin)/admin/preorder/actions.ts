@@ -3,12 +3,12 @@
 import { actionError } from "@/lib/db-errors";
 import { revalidatePath } from "next/cache";
 import { gamePath, ROUTES } from "@/lib/routes";
-import { PREORDER_MESSAGES } from "@/lib/preorder/messages";
+import { PREORDER_ADMIN_MESSAGES } from "@/lib/admin/messages";
 import { preorderLinkSchema, preorderModerationSchema } from "@/lib/preorder/schemas";
 import { moderatePreorderPost } from "@/server/services/preorder-bonuses";
 import { requireAdmin } from "@/server/services/users";
 
-const A = PREORDER_MESSAGES.admin;
+const A = PREORDER_ADMIN_MESSAGES;
 
 export type PreorderModerationState = { ok: true; message: string } | { ok: false; error: string } | null;
 

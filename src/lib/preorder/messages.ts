@@ -1,4 +1,4 @@
-// 예약 특전 화면 문구 단일 원천(규약 §2).
+// 예약 특전 화면 문구 단일 원천(규약 §2). 관리자 화면 문구는 lib/admin/messages/preorder.ts 에 둔다.
 export const PREORDER_MESSAGES = {
   title: "예약 특전",
   lead: "판매처마다 주는 특전이 달라요",
@@ -10,50 +10,4 @@ export const PREORDER_MESSAGES = {
   sourceLink: "원문 보기",
   newTab: "(새 창에서 열림)",
   imageAlt: (name: string) => `${name} 특전 이미지`,
-
-  /** review 사유. 관리자 화면에 그대로 뜬다 */
-  reason: {
-    noBonus: "특전을 하나도 못 뽑았어요. 글 틀이 바뀌었는지 원문을 확인해 주세요",
-    noGame: (nsuids: readonly string[]) => (nsuids.length ? `게임을 못 이었어요(번호 ${nsuids.join(", ")})` : "글에 게임 번호가 없어요"),
-  },
-
-  admin: {
-    empty: "받은 특전 글이 없어요",
-    status: { published: "공개", review: "검토 대기", hidden: "숨김" },
-    link: "잇고 공개",
-    hide: "숨김",
-    publish: "공개",
-    search: "조회조건",
-    searchStatus: "상태",
-    searchTitle: "특전글 제목",
-    searchAll: "전체",
-    listLabel: "예약 특전 글 목록",
-    detailTitle: "특전글 상세",
-    colStatus: "상태",
-    colTitle: "특전글 제목",
-    colGame: "게임",
-    colBonus: "특전 수",
-    colPublished: "게시일",
-    noGame: "못 이음",
-    sectionPost: "특전글",
-    sectionLink: "게임 잇기",
-    sectionBonuses: "뽑은 특전",
-    fieldTitle: "특전글 제목",
-    fieldStatus: "상태",
-    fieldReason: "검토 사유",
-    fieldPublished: "게시일",
-    fieldNsuids: "게임 번호",
-    fieldGame: "이은 게임",
-    fieldGameSlug: "게임 주소",
-    openSource: "원문 보기",
-    openGame: "게임 화면",
-    noBonus: "뽑은 특전이 없어요",
-    gameNotFound: "그 주소의 게임이 없어요",
-    postNotFound: "글을 찾지 못했어요. 새로고침해 주세요",
-    needGame: "먼저 게임을 이어 주세요",
-    badRequest: "요청을 읽지 못했어요",
-    done: "반영했어요",
-    noBonusCannotPublish: "특전이 없는 글은 공개할 수 없어요",
-    bonusCount: (n: number) => `특전 ${n}개`,
-  },
 } as const;
