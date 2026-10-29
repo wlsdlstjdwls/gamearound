@@ -6,16 +6,16 @@
 // 자동 고침 기록은 구분 "자동 고침" 으로 같은 그리드에 싣는다 — 기계가 틀리게 고쳤을 때 알아챌 자리가 여기뿐이다.
 // 그 줄은 이미 끝난 일이라 체크 칸과 처리 띠를 세우지 않는다. 틀린 고침은 게임 관리 화면에서 되돌린다.
 // 두 묶음을 서버가 한 번에 주므로(admin-data-issues) 구분은 주소로 보내지 않고 화면 안에서 가른다.
-import Link from "next/link";
 import { useState } from "react";
 import { decideDataIssueAction } from "@/app/(admin)/admin/data-issues/actions";
 import { ApprovalBar, useApproval, type ApprovalDecision } from "@/components/admin/screen/approval";
 import { DataGrid, type GridCol } from "@/components/admin/screen/data-grid";
+import { ProgramLink } from "@/components/admin/screen/program-link";
 import { Field, FormSection, MasterDetail, ReadValue, SearchBand, SearchItem } from "@/components/admin/screen/layout";
 import { FormSelect } from "@/components/ui/select/fields";
 import { Tag } from "@/components/ui/tag";
 import { TextField } from "@/components/ui/text-field";
-import { APPROVAL_MESSAGES as AM, QUALITY_MESSAGES as M, QUALITY_RULE_LABEL } from "@/lib/admin/messages";
+import { APPROVAL_MESSAGES as AM, QUALITY_MESSAGES as M, QUALITY_RULE_LABEL , GAME_ADMIN_MESSAGES } from "@/lib/admin/messages";
 import { formatDate, formatDotDate } from "@/lib/format";
 import { adminGamePath, gamePath } from "@/lib/routes";
 import type { DataIssueRow } from "@/server/services/admin-data-issues";
@@ -68,7 +68,7 @@ export function DataIssuesScreen({ open, recentAuto }: { open: DataIssueRow[]; r
     },
     { key: "rule", label: M.colRule, width: "minmax(180px,1.3fr)", value: ruleLabel },
     { key: "game", label: M.colGame, width: "minmax(120px,1fr)", value: (r) => r.game?.title ?? "", render: (r) => r.game?.title ?? <span className="text-dim-2">{M.noGame}</span> },
-    { key: "at", label: M.colCreatedAt, width: "96px", align: "center", value: (r) => r.createdAt, text: (r) => formatDotDate(r.createdAt) },
+    { key: "at", label: M.colCreatedAt, width: "104px", align: "center", value: (r) => r.createdAt, text: (r) => formatDotDate(r.createdAt) },
   ];
 
   const changeView = (v: string) => {
@@ -158,9 +158,7 @@ function Detail({ r, view }: { r: DataIssueRow; view: View }) {
                 {M.openGame}
                 <span className="sr-only"> (새 창에서 열림)</span>
               </a>
-              <Link href={adminGamePath(r.game.id)} className="text-[12.5px] font-semibold text-acc hover:underline">
-                {M.openAdminGame}
-              </Link>
+              <ProgramLink href={adminGamePath(r.game.id)}>{GAME_ADMIN_MESSAGES.title}</ProgramLink>
             </span>
           }
         >

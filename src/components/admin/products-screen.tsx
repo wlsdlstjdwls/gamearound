@@ -3,16 +3,16 @@
 // 위 조회조건(올린 매장, 상품명), 왼쪽 후보가 남은 상품 그리드(체크 칸) + 아래 일괄 처리 띠, 오른쪽 고른 줄의 상세(올린 물건, 후보 게임).
 // 앞 판은 줄마다 승인/반려 단추였다 — 닮은 정도가 높은 줄을 몰아 승인하려면 한 건씩 눌러야 했다.
 // 반려는 사유를 받지 않는다 — 서버가 남기는 것은 "물린 후보"(gameMatchRejectedId) 하나라 적어도 쓸 곳이 없다.
-import Link from "next/link";
 import { useState } from "react";
 import { approveProductMatchAction, rejectProductMatchAction } from "@/app/(admin)/admin/actions";
 import { ApprovalBar, useApproval, type ApprovalDecision } from "@/components/admin/screen/approval";
 import { DataGrid, type GridCol } from "@/components/admin/screen/data-grid";
+import { ProgramLink } from "@/components/admin/screen/program-link";
 import { Field, FormSection, MasterDetail, ReadValue, SearchBand, SearchItem } from "@/components/admin/screen/layout";
 import { FormSelect } from "@/components/ui/select/fields";
 import { Tag } from "@/components/ui/tag";
 import { TextField } from "@/components/ui/text-field";
-import { APPROVAL_MESSAGES as AM, PRODUCT_MATCH_MESSAGES as M } from "@/lib/admin/messages";
+import { APPROVAL_MESSAGES as AM, PRODUCT_MATCH_MESSAGES as M , GAME_ADMIN_MESSAGES } from "@/lib/admin/messages";
 import { formatDateTime } from "@/lib/format";
 import { adminGamePath, gamePath } from "@/lib/routes";
 
@@ -149,9 +149,7 @@ function Detail({ r }: { r: ProductMatchRow }) {
               {M.openPublic}
               <span className="sr-only"> (새 창에서 열림)</span>
             </a>
-            <Link href={adminGamePath(r.gameId)} className="text-[12.5px] font-semibold text-acc hover:underline">
-              {M.openGame}
-            </Link>
+            <ProgramLink href={adminGamePath(r.gameId)}>{GAME_ADMIN_MESSAGES.title}</ProgramLink>
           </span>
         }
       >

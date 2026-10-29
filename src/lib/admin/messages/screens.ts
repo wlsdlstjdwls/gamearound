@@ -198,7 +198,6 @@ export const MATCH_MESSAGES = {
   fieldGame: "게임",
   fieldGameEn: "영문 제목",
   fieldUrl: "스토어 주소",
-  openGame: "게임 관리 화면",
   approve: "승인",
   reject: "반려",
 } as const;
@@ -251,7 +250,6 @@ export const PRODUCT_MATCH_MESSAGES = {
   fieldBarcode: "바코드",
   fieldGame: "게임",
   fieldGameEn: "영문 제목",
-  openGame: "게임 관리 화면",
   openPublic: "공개 화면에서 보기",
   approve: "승인",
   reject: "반려",

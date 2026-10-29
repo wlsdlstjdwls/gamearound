@@ -31,7 +31,6 @@ export const QUALITY_MESSAGES = {
   sectionGame: "게임",
   fieldReason: "근거",
   noGame: "게임 없음",
-  openAdminGame: "게임 관리 화면",
   verdictCandidate: "확인 필요",
   verdictNotify: "스토어 확인",
   openGame: "게임 보기",
