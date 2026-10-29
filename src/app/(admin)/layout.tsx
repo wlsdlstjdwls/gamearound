@@ -10,7 +10,9 @@
 //
 // 메뉴의 "남은 일" 수는 **기다리지 않고** 약속째로 넘긴다. 이 레이아웃은 관리자 화면 전부의 길목이라,
 // 여기서 한 번 await 하면 그 비용이 모든 화면에 붙는다(회사 검수 수는 games 전수 훑기다).
+import { Suspense } from "react";
 import { AdminNav } from "@/components/admin/admin-nav";
+import { ProgramTabs } from "@/components/admin/program-tabs";
 import { cookies } from "next/headers";
 import { raisedClass } from "@/components/ui/page";
 import { AdminStatusBar, AdminStatusProvider } from "@/components/admin/screen/status";
@@ -47,9 +49,17 @@ export default async function AdminLayout({ children }: { children: React.ReactN
       <div className="page-enter min-w-0 flex-1 px-4 pb-6 pt-4 sm:px-6 md:pb-12 lg:px-7">
         {/* 판 바닥에 처리 결과 한 줄(백오피스의 하단 상태줄, components/admin/screen/status). 머리 툴바와 폼들이 여기에 쓴다 */}
         <AdminStatusProvider>
-          <div className={raisedClass("mx-auto flex w-full max-w-[1600px] min-w-0 flex-col gap-4 p-4 sm:p-5")}>
-            {children}
-            <AdminStatusBar />
+          {/* 열린 프로그램 탭 줄(백오피스 창 머리의 탭). 판 바로 위에 붙어 고른 탭이 판과 이어진다. 주소 조건을 읽어 Suspense 로 감싼다 */}
+          <div className="mx-auto w-full max-w-[1600px] min-w-0">
+            <Suspense fallback={<div className="hidden h-9 md:block" />}>
+              <div className="px-3">
+                <ProgramTabs />
+              </div>
+            </Suspense>
+            <div className={raisedClass("flex w-full min-w-0 flex-col gap-4 p-4 sm:p-5")}>
+              {children}
+              <AdminStatusBar />
+            </div>
           </div>
         </AdminStatusProvider>
       </div>

@@ -1,6 +1,10 @@
 // 관리자 화면 공통 틀(components/admin/screen) 문구 — 툴바 단추, 하단 상태줄.
 // 단추 낱말과 순서는 신세계TV 백오피스와 같다(조회, 입력, 삭제, 저장, 엑셀). 상태줄 문구는 이 서비스 말투(-해요)로 옮겼다.
 export const SCREEN_MESSAGES = {
+  /** 열린 프로그램 탭 줄(admin/program-tabs) */
+  tabsLabel: "열린 화면",
+  closeTab: (label: string) => `${label} 닫기`,
+  closeOthers: "다른 화면 닫기",
   toolbar: "화면 단추",
   retrieve: "조회",
   insert: "입력",
