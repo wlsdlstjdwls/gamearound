@@ -12,3 +12,8 @@ export const preorderModerationSchema = z.object({
   gameSlug: z.string().trim().max(MAX_PARAM_LEN).optional(),
 });
 export type PreorderModerationInput = z.infer<typeof preorderModerationSchema>;
+
+/** 잇기는 게임 주소가 꼭 있어야 한다. 관리자 화면의 칸 검사와 액션이 같이 쓴다 */
+export const preorderLinkSchema = preorderModerationSchema.extend({
+  gameSlug: z.string().trim().min(1).max(MAX_PARAM_LEN),
+});

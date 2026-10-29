@@ -23,4 +23,6 @@ export type PreorderAdminRowDto = {
   nsuids: string[];
   game: { slug: string; title: string } | null;
   bonusCount: number;
+  /** 뽑은 특전. 관리자 상세에서 원문과 대조한다 — 글이 월 1건 안팎이라 목록과 함께 실어도 가볍다 */
+  bonuses: PreorderBonusDto[];
 };

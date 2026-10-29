@@ -71,6 +71,7 @@ export async function listPreorderForAdmin(): Promise<PreorderAdminRowDto[]> {
     .leftJoin(games, eq(games.id, preorderBonusPosts.gameId))
     .orderBy(sql`${preorderBonusPosts.status} = 'review' desc`, desc(preorderBonusPosts.publishedAt))
     .limit(ADMIN_LIST_LIMIT);
+  const bonuses = await bonusesByPost(rows.map((r) => r.id));
   return rows.map((r) => ({
     id: r.id,
     url: r.url,
@@ -81,6 +82,7 @@ export async function listPreorderForAdmin(): Promise<PreorderAdminRowDto[]> {
     nsuids: r.nsuids,
     game: r.gameSlug ? { slug: r.gameSlug, title: r.gameTitleKo ?? r.gameTitle ?? r.gameSlug } : null,
     bonusCount: r.bonusCount,
+    bonuses: bonuses.get(r.id) ?? [],
   }));
 }
 

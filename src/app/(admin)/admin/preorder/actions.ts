@@ -4,7 +4,7 @@ import { actionError } from "@/lib/db-errors";
 import { revalidatePath } from "next/cache";
 import { gamePath, ROUTES } from "@/lib/routes";
 import { PREORDER_MESSAGES } from "@/lib/preorder/messages";
-import { preorderModerationSchema } from "@/lib/preorder/schemas";
+import { preorderLinkSchema, preorderModerationSchema } from "@/lib/preorder/schemas";
 import { moderatePreorderPost } from "@/server/services/preorder-bonuses";
 import { requireAdmin } from "@/server/services/users";
 
@@ -15,11 +15,12 @@ export type PreorderModerationState = { ok: true; message: string } | { ok: fals
 export async function moderatePreorderPostAction(_prev: PreorderModerationState, formData: FormData): Promise<PreorderModerationState> {
   try {
     const admin = await requireAdmin();
-    const parsed = preorderModerationSchema.safeParse({
+    const input = {
       postId: formData.get("postId"),
       decision: formData.get("decision"),
       gameSlug: String(formData.get("gameSlug") ?? "") || undefined,
-    });
+    };
+    const parsed = (input.decision === "link" ? preorderLinkSchema : preorderModerationSchema).safeParse(input);
     if (!parsed.success) return { ok: false, error: A.badRequest };
     const { gameSlug } = await moderatePreorderPost(parsed.data, admin.id);
     revalidatePath(ROUTES.adminPreorder);
