@@ -706,6 +706,16 @@ body {
   font-variant-numeric: tabular-nums;
 }
 
+/* 줄바꿈 모양(2026-10-29, 사용자 "글 줄바꿈도 잘해주고 이쁘게"). 낱말 단위 줄바꿈(keep-all)은 위 body 가 맡는다.
+   제목은 줄 길이를 고르게(balance) — "버리고 다시 / 조회할까요?" 처럼 윗줄만 길고 아랫줄이 한 낱말인 꼴을 막는다.
+   본문은 마지막 줄에 낱말 하나만 남지 않게(pretty). 둘 다 지원하지 않는 브라우저에서는 그냥 무시된다 */
+h1, h2, h3, h4, legend {
+  text-wrap: balance;
+}
+p, li, dd, label {
+  text-wrap: pretty;
+}
+
 /* 포커스 링 — 키보드 사용자만. 컴포넌트가 자체 ring을 그리면 outline-none으로 덮는다 */
 :focus-visible {
   outline: 2px solid var(--ink);
