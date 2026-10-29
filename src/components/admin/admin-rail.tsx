@@ -10,11 +10,13 @@
 //  - 넓은 화면에서는 사이트 머리띠를 걷는다(globals.css 의 `body:has([data-admin-rail])`). 기둥 맨 위는 로고(서비스 홈)와 접기 단추다.
 //  - 머리띠가 하던 일 넷(테마, 찜, 알림, 계정)은 기둥 바닥 한 줄로 옮긴다. 검색칸과 서비스 메뉴 넷은 옮기지 않는다 —
 //    관리자 화면에서 게임을 찾을 일은 각 화면의 검색이 맡고, 서비스로 나가는 길은 로고와 "서비스 화면으로" 가 있다.
-//  - 묶음 제목을 누르면 그 묶음이 접힌다(쿠키 admin_groups). 지금 보는 칸은 묶음이 접혀 있어도 남긴다 — 내가 어디 있는지는 늘 보여야 한다.
+//  - 묶음 제목을 누르면 그 묶음이 접힌다(쿠키 admin_groups_open, 기본은 접힘). 지금 보는 칸은 묶음이 접혀 있어도 남긴다 — 내가 어디 있는지는 늘 보여야 한다.
+//  - 같은 날 밤(사용자 "상위 메뉴랑 하위 메뉴가 잘 구분이 안 된다"): 묶음 제목이 11px 회색 꼬리표라 하위 칸(13.5px, 그림)보다 약해 보였다.
+//    제목을 진한 글씨 한 줄 칸으로 올리고, 하위 칸은 들여써 왼쪽 안내선 안에 둔다(나무 꼴). 접힌 묶음 제목에는 안에 쌓인 일 합계를 단다.
 import { Suspense, useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Badge, GROUPS, isActive, ItemBody, type AdminNavCounts, type Item } from "@/components/admin/admin-nav-items";
+import { Badge, GROUPS, isActive, ItemBody, type AdminNavCounts, type Item, type Pick } from "@/components/admin/admin-nav-items";
 import { AuthNav } from "@/components/auth/auth-nav";
 import { HeaderWishLink } from "@/components/header-wish-link";
 import { NotificationBell } from "@/components/notification-bell";
@@ -67,6 +69,18 @@ function CollapsedItem({ item, active, counts, onSoon }: { item: Item; active: b
   );
 }
 
+/** 묶음 안 칸들의 남은 일 합계. 하나라도 상한에 걸렸으면 합계도 "이상" 으로 읽는다 */
+function groupPick(items: Item[]): (c: AdminNavCounts) => Pick {
+  return (c) =>
+    items.reduce<Pick>(
+      (sum, item) => {
+        const p = item.pick?.(c);
+        return p ? { n: sum.n + p.n, capped: sum.capped || p.capped } : sum;
+      },
+      { n: 0 },
+    );
+}
+
 export function AdminRail({
   counts,
   initialCollapsed,
@@ -97,7 +111,7 @@ export function AdminRail({
   const itemClass = (active: boolean) =>
     cn(
       // 마우스 화면에서는 36px 칸이다(2026-10-28 컴팩트 회차)
-      "press flex min-h-[var(--touch-target)] items-center gap-2.5 rounded-lg px-2.5 text-[13.5px] transition-colors [@media(pointer:fine)]:min-h-9",
+      "press flex min-h-[var(--touch-target)] items-center gap-2.5 rounded-lg px-2.5 text-[13px] transition-colors [@media(pointer:fine)]:min-h-9",
       active ? "bg-acc font-semibold text-on-ink" : "font-medium text-mut hover:bg-surface-2 hover:text-ink",
     );
 
@@ -172,13 +186,19 @@ export function AdminRail({
                   aria-expanded={!isFolded}
                   aria-controls={groupId}
                   aria-label={isFolded ? ADMIN_NAV.groupUnfold(g.title) : ADMIN_NAV.groupFold(g.title)}
-                  className="press group flex h-7 items-center justify-between rounded-md px-2.5 text-[11px] font-bold tracking-[0.1em] text-dim-2 transition-colors hover:bg-surface-2 hover:text-ink"
+                  className="press group flex min-h-9 items-center gap-2 rounded-lg px-2.5 text-[13.5px] font-bold text-ink-2 transition-colors hover:bg-surface-2 hover:text-ink"
                 >
+                  <ChevronDownIcon size={15} className={cn("shrink-0 text-dim transition-transform duration-base", isFolded && "-rotate-90")} />
                   {g.title}
-                  <ChevronDownIcon size={14} className={cn("transition-transform duration-base", isFolded && "-rotate-90")} />
+                  {/* 접혀 있을 때만 — 펼치면 칸마다 제 배지가 선다 */}
+                  {isFolded && (
+                    <Suspense fallback={null}>
+                      <Badge counts={counts} pick={groupPick(g.items)} active={false} className="ml-auto" />
+                    </Suspense>
+                  )}
                 </button>
               )}
-              <div id={groupId} className="flex flex-col gap-px">
+              <div id={groupId} className={cn("flex flex-col gap-px", g.title && shown.length > 0 && "ml-[17px] border-l border-line pl-1.5")}>
                 {shown.map((item) => {
                   const active = isActive(pathname, item.href);
                   const body = <ItemBody item={item} active={active} counts={counts} iconSize={16} badgeClassName="ml-auto" />;
