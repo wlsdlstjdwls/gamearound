@@ -31,7 +31,8 @@ const COPY_GROUPS: { title: "groupHead" | "groupPrice" | "groupBenefits" | "grou
   { title: "groupAction", fields: [{ kind: "text", key: "cta" }, { kind: "text", key: "hint" }], only: { hint: ["single"] } },
 ];
 
-export function CopySection({ value, patch, tier, onTier }: { value: PricingSettings; patch: Patch; tier: TierKey; onTier: (t: TierKey) => void }) {
+/** bare: 판 껍데기와 카드 탭 없이 그 카드 칸만(상품등록 상세의 카드문구 탭이 고른 상품의 카드 하나만 보인다) */
+export function CopySection({ value, patch, tier, onTier, bare = false }: { value: PricingSettings; patch: Patch; tier: TierKey; onTier: (t: TierKey) => void; bare?: boolean }) {
 
   const setText = (t: TierKey, key: TextKey, display: string) => patch((d) => ({ ...d, copy: { ...d.copy, [t]: { ...d.copy[t], [key]: fromDisplayCopy(display) } } }));
   // 치는 동안은 빈 줄도 그대로 둔다(엔터 뒤 빈 줄이 바로 사라지면 다음 줄을 칠 수 없다). 저장할 때 걸러낸다(pricing-form 의 normalize)
@@ -110,6 +111,8 @@ export function CopySection({ value, patch, tier, onTier }: { value: PricingSett
       })}
     </div>
   );
+
+  if (bare) return tierPanel(tier);
 
   return (
     <Panel title={M.copyTitle} lead={M.copyLead}>

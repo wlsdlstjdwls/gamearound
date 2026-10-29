@@ -14,8 +14,9 @@ import { PricingPreviewLink } from "@/components/admin/pricing-preview-link";
 import { savePricingAction } from "@/app/(admin)/admin/pricing/actions";
 import { Button } from "@/components/ui/button";
 import { FormMessage } from "@/components/ui/form-message";
-import { PricesSection, withNewProduct } from "@/components/admin/pricing-form/sections";
-import { CopySection } from "@/components/admin/pricing-form/copy-section";
+import { newProductId, withNewProduct } from "@/components/admin/pricing-form/sections";
+import { CatalogScreen } from "@/components/admin/pricing-form/catalog";
+import { askConfirm } from "@/components/ui/confirm-dialog";
 import { newPromotionId, PromotionsSection, withNewPromotion } from "@/components/admin/pricing-form/promotions";
 import { PricingPreview } from "@/components/admin/pricing-form/preview";
 import { PRICING_ADMIN_MESSAGES as M } from "@/lib/pricing/admin-messages";
@@ -54,8 +55,8 @@ export function PricingForm({ initial, part, title, lead }: { initial: PricingSe
   const [pending, start] = useTransition();
   const router = useRouter();
   const { say } = useAdminStatus();
-  /** 문구를 고치는 카드. 미리 보기가 같은 카드를 따라간다 */
-  const [tier, setTier] = useState<TierKey>("single");
+  /** 상품등록에서 고른 줄(광고 상품 id 또는 membership). 처음엔 첫 상품 */
+  const [item, setItem] = useState<string | null>(initial.products[0]?.id ?? MEMBERSHIP_KEY);
   /** 프로모션 화면에서 고른 줄. 미리 보기는 그 행사가 걸리는 카드 한 장만 보인다 — 카드 셋을 다 쌓으면 고른 행사가 어디 걸렸는지 찾아야 했다 */
   const [promo, setPromo] = useState<string | null>(initial.promotions[0]?.id ?? null);
   const promoTarget = value.promotions.find((p) => p.id === promo)?.target;
@@ -99,13 +100,26 @@ export function PricingForm({ initial, part, title, lead }: { initial: PricingSe
   };
   // 툴바 입력, 삭제 — 상품등록은 상품 한 줄을 더하고, 프로모션등록은 프로모션을 더하거나 고른 줄을 지운다
   const insert = () => {
-    if (part === "catalog") patch(withNewProduct);
-    else {
+    if (part === "catalog") {
+      const id = newProductId();
+      patch((d) => withNewProduct(d, id));
+      setItem(id);
+    } else {
       const id = newPromotionId();
       setPromo(id);
       patch((d) => withNewPromotion(d, id));
     }
   };
+  // 상품등록의 삭제는 고른 광고 상품(멤버십은 지우지 않는다). 지운 상품을 겨눈 프로모션도 같이 지운다(sections 의 remove 와 같은 규칙)
+  const selectedProduct = part === "catalog" ? value.products.find((p) => p.id === item) : undefined;
+  const removeProduct = selectedProduct
+    ? async () => {
+        if (!(await askConfirm(M.deleteConfirm(selectedProduct.name), { confirmLabel: M.remove, tone: "danger" }))) return;
+        const rest = value.products.filter((p) => p.id !== selectedProduct.id);
+        setItem(rest[0]?.id ?? MEMBERSHIP_KEY);
+        patch((d) => ({ ...d, products: d.products.filter((p) => p.id !== selectedProduct.id), promotions: d.promotions.filter((p) => p.target !== selectedProduct.id) }));
+      }
+    : undefined;
   const removePromo =
     part === "discounts" && promo
       ? () => {
@@ -130,7 +144,7 @@ export function PricingForm({ initial, part, title, lead }: { initial: PricingSe
       <AdminScreenHead
         title={title}
         lead={lead}
-        tools={{ retrieve, insert, delete: removePromo, save, saveDisabled: !dirty || !valid, saving: pending, dirty }}
+        tools={{ retrieve, insert, delete: part === "catalog" ? removeProduct : removePromo, save, saveDisabled: !dirty || !valid, saving: pending, dirty }}
         actions={
           <>
             <span className="text-[12.5px] font-medium" aria-live="polite">
@@ -150,22 +164,19 @@ export function PricingForm({ initial, part, title, lead }: { initial: PricingSe
         }
       />
 
-      {/* 넓은 화면은 왼쪽 폼, 오른쪽 미리 보기(2026-10-29 사용자). 미리 보기는 sticky 라 긴 폼을 내려도 따라온다 */}
-      <div className="grid items-start gap-5 xl:grid-cols-[minmax(0,1fr)_360px]">
-        <div className="flex min-w-0 flex-col gap-5">
-          {part === "catalog" ? (
-            <>
-              <PricesSection value={value} saved={saved} patch={patch} />
-              <CopySection value={value} patch={patch} tier={tier} onTier={setTier} />
-            </>
-          ) : (
+      {/* 상품등록은 백오피스 상품등록 꼴(조회조건, 왼쪽 목록, 오른쪽 상세 탭, pricing-form/catalog). 미리 보기는 상세의 카드문구 탭에 있다 */}
+      {part === "catalog" ? (
+        <CatalogScreen value={value} saved={saved} patch={patch} selected={item} onSelect={setItem} />
+      ) : (
+        <div className="grid items-start gap-5 xl:grid-cols-[minmax(0,1fr)_360px]">
+          <div className="flex min-w-0 flex-col gap-5">
             <PromotionsSection value={value} patch={patch} selected={promo} onSelect={setPromo} />
-          )}
+          </div>
+          <div className="xl:sticky xl:top-[calc(var(--header-h)+var(--admin-toolbar-h)+16px)] xl:max-h-[calc(100svh-var(--header-h)-var(--admin-toolbar-h)-32px)]">
+            <PricingPreview value={value} tier={promoTier} />
+          </div>
         </div>
-        <div className="xl:sticky xl:top-[calc(var(--header-h)+var(--admin-toolbar-h)+16px)] xl:max-h-[calc(100svh-var(--header-h)-var(--admin-toolbar-h)-32px)]">
-          <PricingPreview value={value} tier={part === "catalog" ? tier : promoTier} />
-        </div>
-      </div>
+      )}
 
     </div>
   );
