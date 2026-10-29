@@ -111,7 +111,8 @@ export function ProgramShell({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     if (mode !== "top") return setActivePath(null);
     seen.current.set(active, Date.now());
-    const t = tabs.find((x) => x.key === active);
+    // 대시보드는 목록(tabs)에 없고 withHome 이 앞에 붙인다 — 목록에서만 찾으면 대시보드를 골라도 처음 연 화면의 칸이 켜졌다
+    const t = withHome(tabs).find((x) => x.key === active);
     setActivePath(t ? t.href.split("?")[0] : null);
   }, [mode, active, tabs]);
 
