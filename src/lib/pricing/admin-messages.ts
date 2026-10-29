@@ -34,7 +34,7 @@ export const PRICING_ADMIN_MESSAGES = {
   searchSale: "판매",
   searchName: "상품명",
   searchAll: "전체",
-  rowKindLabels: { indie: "인디 상위", pin: "홍보 고정", both: "묶음", membership: "멤버십" },
+  rowKindLabels: { indie: "인디 고정", pin: "홍보 고정", both: "묶음", membership: "멤버십" },
   saleLabels: { on: "판매", off: "중지" },
   listLabel: "상품 목록",
   listEmpty: "조건에 맞는 상품이 없어요",
@@ -74,7 +74,7 @@ export const PRICING_ADMIN_MESSAGES = {
   colSlots: "자리",
   daysUnit: "일",
   /** 자리 고르기. 자리 둘이면 묶음이라 인디 게임과 홍보 글을 같이 고른다 */
-  slotChoices: { indie: "인디 목록 상위", pin: "홍보 게시판 고정", both: "둘 다(묶음)" },
+  slotChoices: { indie: "인디 목록 고정", pin: "홍보 게시판 고정", both: "둘 다(묶음)" },
   /** 판매 상품 표의 머리 칸(2026-10-29 사용자 "공백이 많고 컴팩트하지 않다" — 묶음 판 둘을 표 한 장으로) */
   colProduct: "상품",
   colCycle: "기간",

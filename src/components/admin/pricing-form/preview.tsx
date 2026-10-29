@@ -77,6 +77,8 @@ export function PricingPreview({ value, tier }: { value: PricingSettings; tier?:
           book={book}
           active={active}
           stack
+          // 고친 카드 한 장만 그려도 묶음 권유 줄은 실제 판매 상태를 따른다(2026-10-30 사용자 "카드 아래 빨간 안내가 미리 보기에 안 보인다")
+          upsell={selling.bundle}
           credits={value.membership.boostCredits}
           membership={null}
           single={PREVIEW_TARGET}

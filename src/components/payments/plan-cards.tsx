@@ -113,11 +113,13 @@ type Props = {
   bundleNeedsPromo: boolean;
   /** 늘 한 줄에 한 장(관리자 미리 보기처럼 좁은 기둥 안에 그릴 때). 화면 폭 기준 3칸이 좁은 기둥에서도 걸려 카드가 찌그러졌다 */
   stack?: boolean;
+  /** 낱개 카드 아래 묶음 권유 줄(hint)을 세우나. 없으면 묶음 카드가 서는지(active.bundle)를 따른다 — 관리자 미리 보기는 카드 한 장만 그려도 실제 판매 상태로 보인다 */
+  upsell?: boolean;
 };
 
 const GRID_COLS = { 1: "", 2: "lg:grid-cols-2", 3: "lg:grid-cols-3" } as const;
 
-export function PlanCards({ copy, book, active, credits, membership, single, bundle, bundleNeedsPromo, stack = false }: Props) {
+export function PlanCards({ copy, book, active, credits, membership, single, bundle, bundleNeedsPromo, stack = false, upsell }: Props) {
   const empty = { href: ROUTES.indieNew, action: M.noIndieAction };
   // 낱개는 부스트, 고정 둘 중 하나라 값이 다르면 싼 쪽에 "부터" 를 붙인다
   const singleQuote = book.pin.amount < book.boost.amount ? book.pin : book.boost;
@@ -139,7 +141,7 @@ export function PlanCards({ copy, book, active, credits, membership, single, bun
           </div>
           {copy.single.now && <Now>{copy.single.now}</Now>}
           <Included lines={fillAll(copy.single.lines)} />
-          {copy.single.hint && active.bundle && <p className="text-[13px] font-semibold text-danger">{fill(copy.single.hint)}</p>}
+          {copy.single.hint && (upsell ?? active.bundle) && <p className="text-[13px] font-semibold text-danger">{fill(copy.single.hint)}</p>}
           <PlanCta label={copy.single.cta} variant="secondary" groups={single} empty={empty} />
         </section>
       )}
