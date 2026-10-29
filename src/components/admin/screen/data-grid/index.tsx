@@ -16,7 +16,7 @@ import { cn } from "@/lib/cn";
 import { GRID_MESSAGES as M } from "@/lib/admin/messages";
 import { matchesQuery, nextSort, pageOf, sortRows, sumOf, toTsv, type SortState, type SortValue } from "@/lib/admin/grid";
 import { useAdminStatus } from "@/components/admin/screen/status";
-import { registerGrid } from "@/components/admin/screen/data-grid/export";
+import { registerGrid, type GridDump } from "@/components/admin/screen/data-grid/export";
 import { alignClass, BottomBar, BODY_CELL, HeadRow, justifyClass, TopBar } from "@/components/admin/screen/data-grid/parts";
 
 export type GridCol<T> = {
@@ -78,6 +78,7 @@ export function DataGrid<T>({
   footerExtra,
   empty,
   maxHeight,
+  fileKey,
 }: {
   label: string;
   columns: GridCol<T>[];
@@ -100,6 +101,8 @@ export function DataGrid<T>({
   empty: string;
   /** 몸통 최대 높이(CSS 값). 넘치면 몸통만 굴러가고 머리는 붙어 있다 */
   maxHeight?: string;
+  /** 엑셀 파일 이름에 붙일 고른 줄의 코드와 이름(프로그램명_코드_명_날짜) */
+  fileKey?: (row: T) => { code: string; name: string };
 }) {
   const id = useId();
   const { say } = useAdminStatus();
@@ -135,9 +138,24 @@ export function DataGrid<T>({
   }, [autoSelectFirst, onSelect, selected, sorted, rowKey]);
 
   // 엑셀이 전체 줄을 받아 가게 걸어 둔다(쪽, 찾기와 상관없이 지금 정렬 순서의 모든 줄)
-  const dumpRef = useRef(() => ({ label, head: columns.map((c) => c.label), rows: sortRows(rows, sort, valueOf).map((r) => columns.map((c) => textOf(c, r))) }));
+  // 오른쪽 정렬 칸의 원값이 숫자면 숫자로 내보낸다 — 엑셀에서 천 단위 쉼표 서식이 붙고 합계, 정렬이 된다
+  const dump = (): GridDump => {
+    const picked = fileKey && selected !== null ? rows.find((r) => rowKey(r) === selected) : undefined;
+    return {
+      label,
+      head: columns.map((c) => c.label),
+      rows: sortRows(rows, sort, valueOf).map((r) =>
+        columns.map((c) => {
+          const v = c.align === "right" ? c.value?.(r) : undefined;
+          return typeof v === "number" ? v : textOf(c, r);
+        }),
+      ),
+      pick: picked && fileKey ? fileKey(picked) : null,
+    };
+  };
+  const dumpRef = useRef(dump);
   useEffect(() => {
-    dumpRef.current = () => ({ label, head: columns.map((c) => c.label), rows: sortRows(rows, sort, valueOf).map((r) => columns.map((c) => textOf(c, r))) });
+    dumpRef.current = dump;
   });
   useEffect(() => registerGrid(id, () => dumpRef.current()), [id]);
 

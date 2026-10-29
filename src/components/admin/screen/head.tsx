@@ -14,7 +14,8 @@ import { GROUPS, isActive } from "@/components/admin/admin-nav-items";
 import { useAdminStatus } from "@/components/admin/screen/status";
 import { useTooltip } from "@/components/ui/tooltip";
 import { cn } from "@/lib/cn";
-import { csvFileName, toCsv } from "@/lib/admin/csv";
+import { buildXlsx, xlsxFileName } from "@/lib/admin/xlsx";
+import { formatDateTime } from "@/lib/format";
 import { registeredGrids } from "@/components/admin/screen/data-grid/export";
 import { SCREEN_MESSAGES as M } from "@/lib/admin/messages";
 import { askConfirm } from "@/components/ui/confirm-dialog";
@@ -118,7 +119,8 @@ function usePath(): string[] {
 }
 
 export function AdminScreenHead({
-  title,
+  title,
+
   count,
   note,
   actions,
@@ -178,15 +180,17 @@ export function AdminScreenHead({
   const excel = () => {
     // 공통 그리드가 걸어 둔 전체 줄이 먼저다(쪽을 나눠도 다 나간다). 없으면 화면의 목록 표(data-rows)를 읽는다
     const grid = registeredGrids()[0];
-    const { head, rows } = grid ?? readGrid();
+    const { head, rows, pick } = grid ?? { ...readGrid(), pick: null };
     if (rows.length === 0) {
       say(M.excelEmpty, "error");
       return;
     }
-    const blob = new Blob([toCsv(head, rows)], { type: "text/csv;charset=utf-8" });
+    const now = new Date();
+    const file = buildXlsx({ title, meta: M.excelMeta(formatDateTime(now), rows.length), head, rows });
+    const blob = new Blob([file as BlobPart], { type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" });
     const a = document.createElement("a");
     a.href = URL.createObjectURL(blob);
-    a.download = csvFileName(title, new Date());
+    a.download = xlsxFileName({ program: title, code: pick?.code, name: pick?.name }, now);
     a.click();
     URL.revokeObjectURL(a.href);
     say(M.excelDone(rows.length), "ok");
