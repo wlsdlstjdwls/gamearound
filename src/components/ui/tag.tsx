@@ -13,12 +13,10 @@ import { cn } from "@/lib/cn";
  * 색 갈래(2026-10-26). 게시판 말머리가 카테고리마다 색이 달라야 해서(기획서 v2.0 7장) 브랜드 하나에서 넓혔다.
  * 클래스 문자열을 통째로 둔다 — Tailwind 는 소스에 적힌 글자만 찾으므로 조립한 이름(`bg-${tone}-soft`)은 생성되지 않는다.
  */
-export type TagTone = "acc" | "ok" | "okSolid" | "warn" | "info" | "danger" | "plum" | "plumSolid" | "hot" | "neutral" | "outline";
+export type TagTone = "acc" | "ok" | "warn" | "info" | "danger" | "plum" | "plumSolid" | "hot" | "neutral" | "outline";
 const TONE: Record<TagTone, string> = {
   acc: "bg-acc-soft text-acc",
   ok: "bg-ok-soft text-ok",
-  // 채운 초록 — 할인 행사 "진행 중" 처럼 지금 살아 있는 것. 연초록(ok)은 "처리됨", "승인" 과 같은 색이라 한 판에서 섞여 읽혔다(2026-10-30 사용자)
-  okSolid: "bg-ok text-on-ink",
   warn: "bg-warn-soft text-warn",
   info: "bg-info-soft text-info",
   danger: "bg-danger-soft text-danger",
