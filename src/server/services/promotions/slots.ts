@@ -8,7 +8,7 @@ import { and, asc, desc, eq, gt, inArray, isNull, lte, or, sql } from "drizzle-o
 import { getDb } from "@/server/db/client";
 import { createdBy, updatedBy } from "@/server/db/audit";
 import { games, indiePosts, posts, promotionBoosts, promotionImpressions, users, type PromoSlot, type PromoSource, type PromoTargetKind } from "@/server/db/schema";
-import { boostEnd, boostState, rotateForWindow, SLOT_CAPACITY, SLOT_TARGET, type BoostState } from "@/lib/promo/boost";
+import { boostEnd, boostProgress, boostState, rotateForWindow, SLOT_CAPACITY, SLOT_TARGET, type BoostState } from "@/lib/promo/boost";
 import { PROMO_MESSAGES as M } from "@/lib/promo/messages";
 import { postPath } from "@/lib/community/constants";
 import { firstImageSrc, postExcerpt } from "@/lib/community/rich-text";
@@ -122,6 +122,9 @@ export type BoostRowDto = {
   /** 성과(services/promotions/track 이 쌓는다). 관리자가 시범으로 건 광고의 효과를 여기서 본다 */
   views: number;
   clicks: number;
+  /** 기간 중 지난 몫(0~1)과 남은 날. 화면이 Date.now() 를 부르지 않게 여기서 잰다(react-hooks/purity, admin-activity 와 같은 이유) */
+  progress: number;
+  daysLeft: number;
 };
 
 /** 관리자 목록. 지금 걸린 것과 대기가 먼저, 끝나거나 회수한 것은 최근 몇 줄만 */
@@ -175,6 +178,7 @@ export async function listBoostsForAdmin(): Promise<BoostRowDto[]> {
     note: r.note,
     views: r.views,
     clicks: r.clicks,
+    ...boostProgress(r, now),
   }));
 }
 

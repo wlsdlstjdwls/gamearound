@@ -46,3 +46,12 @@ export function rotateForWindow<T>(items: readonly T[], capacity: number, now: D
 export function boostEnd(startsAt: Date, days: number): Date {
   return new Date(startsAt.getTime() + days * 86_400_000);
 }
+
+const DAY_MS = 86_400_000;
+
+/** 기간 중 지난 몫(0~1)과 남은 날(올림). 관리자 광고 카드의 기간 막대(2026-10-29). 대기면 0, 끝났으면 1, 남은 날 0 */
+export function boostProgress(b: { startsAt: Date; endsAt: Date }, now: Date): { progress: number; daysLeft: number } {
+  const total = b.endsAt.getTime() - b.startsAt.getTime();
+  const progress = total <= 0 ? 1 : Math.min(1, Math.max(0, (now.getTime() - b.startsAt.getTime()) / total));
+  return { progress, daysLeft: Math.max(0, Math.ceil((b.endsAt.getTime() - now.getTime()) / DAY_MS)) };
+}

@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { boostEnd, boostState, rotateForWindow, ROTATE_WINDOW_MS } from "@/lib/promo/boost";
+import { boostEnd, boostProgress, boostState, rotateForWindow, ROTATE_WINDOW_MS } from "@/lib/promo/boost";
 
 const at = (iso: string) => new Date(iso);
 
@@ -35,5 +35,16 @@ describe("rotateForWindow", () => {
 describe("boostEnd", () => {
   it("시작부터 일수만큼", () => {
     expect(boostEnd(at("2026-10-27T03:00:00Z"), 7).toISOString()).toBe("2026-11-03T03:00:00.000Z");
+  });
+});
+
+describe("boostProgress", () => {
+  const b = { startsAt: new Date("2026-10-01T00:00:00Z"), endsAt: new Date("2026-10-08T00:00:00Z") };
+  it("가운데면 반쯤, 남은 날은 올림", () => {
+    expect(boostProgress(b, new Date("2026-10-04T12:00:00Z"))).toEqual({ progress: 0.5, daysLeft: 4 });
+  });
+  it("시작 전 0, 끝난 뒤 1 과 0일", () => {
+    expect(boostProgress(b, new Date("2026-09-30T00:00:00Z")).progress).toBe(0);
+    expect(boostProgress(b, new Date("2026-10-09T00:00:00Z"))).toEqual({ progress: 1, daysLeft: 0 });
   });
 });
