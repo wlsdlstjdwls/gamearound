@@ -6,7 +6,7 @@
 // 설정 전체를 로컬 상태 하나로 쥐고, 판마다 그 일부를 고친다(pricing-form/sections, promotions). 칸을 칠 때마다 저장하지 않는다 —
 // 값 하나 바꾸는 도중의 반쪽 요금표가 주문에 쓰이면 안 된다. 저장은 단추로 한 번, 서버와 같은 스키마(lib/pricing/settings)로 먼저 막는다.
 // 저장에 실패하면 고친 값은 그대로 둔다(되돌리면 친 글이 날아간다) — "되돌리기" 는 따로 누른다.
-import { useEffect, useState, useTransition } from "react";
+import { useEffect, useRef, useState, useTransition } from "react";
 import { PricingPreviewLink } from "@/components/admin/pricing-preview-link";
 import { savePricingAction } from "@/app/(admin)/admin/pricing/actions";
 import { Button } from "@/components/ui/button";
@@ -16,7 +16,10 @@ import { CopySection } from "@/components/admin/pricing-form/copy-section";
 import { PromotionsSection } from "@/components/admin/pricing-form/promotions";
 import { PricingPreview } from "@/components/admin/pricing-form/preview";
 import { PRICING_ADMIN_MESSAGES as M } from "@/lib/pricing/admin-messages";
-import { pricingSettingsSchema, type PricingSettings, type TierKey } from "@/lib/pricing/settings";
+import { pricingSettingsSchema, type PricedKey, type PricingSettings, type TierKey } from "@/lib/pricing/settings";
+
+/** 행사 대상 상품이 서는 요금 카드. 낱개 광고 둘은 같은 카드(낱개)에 선다 */
+const TARGET_TIER: Record<PricedKey, TierKey> = { boost_indie_7d: "single", pin_promo_7d: "single", bundle_7d: "bundle", membership: "membership" };
 
 /** 저장 알림이 머무는 시간. 읽고 넘어갈 만큼만 */
 const SAVED_NOTE_MS = 2400;
@@ -44,6 +47,10 @@ export function PricingForm({ initial, part, title, lead }: { initial: PricingSe
   const [pending, start] = useTransition();
   /** 문구를 고치는 카드. 미리 보기가 같은 카드를 따라간다 */
   const [tier, setTier] = useState<TierKey>("single");
+  /** 프로모션 화면에서 고른 줄. 미리 보기는 그 행사가 걸리는 카드 한 장만 보인다 — 카드 셋을 다 쌓으면 고른 행사가 어디 걸렸는지 찾아야 했다 */
+  const [promo, setPromo] = useState<string | null>(initial.promotions[0]?.id ?? null);
+  const promoTarget = value.promotions.find((p) => p.id === promo)?.target;
+  const promoTier = promoTarget ? TARGET_TIER[promoTarget] : undefined;
   const dirty = JSON.stringify(value) !== JSON.stringify(saved);
   const valid = pricingSettingsSchema.safeParse(normalize(value)).success;
   // "저장했어요" 는 잠깐 말하고 사라진다 — 남아 있으면 다음에 고칠 때 옛 소식이 섞인다
@@ -57,6 +64,26 @@ export function PricingForm({ initial, part, title, lead }: { initial: PricingSe
     setValue((v) => fn(v));
   };
 
+  // 저장 단축키 Ctrl+S(맥은 Cmd+S), 백오피스의 저장 F9 와 같은 자리다. 브라우저의 "페이지 저장" 창은 막는다.
+  // 바뀐 값을 둔 채 탭을 닫거나 새로 고치면 브라우저가 한 번 묻는다(백오피스의 미저장 확인)
+  const saveRef = useRef<() => void>(() => {});
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "s") {
+        e.preventDefault();
+        saveRef.current();
+      }
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, []);
+  useEffect(() => {
+    if (!dirty) return;
+    const onLeave = (e: BeforeUnloadEvent) => e.preventDefault();
+    window.addEventListener("beforeunload", onLeave);
+    return () => window.removeEventListener("beforeunload", onLeave);
+  }, [dirty]);
+
   const save = () => {
     const next = normalize(value);
     start(async () => {
@@ -68,6 +95,11 @@ export function PricingForm({ initial, part, title, lead }: { initial: PricingSe
       } else setNote({ tone: "error", text: r.error });
     });
   };
+  useEffect(() => {
+    saveRef.current = () => {
+      if (dirty && valid && !pending) save();
+    };
+  });
 
   return (
     // --admin-toolbar-h: 머리 툴바 높이. 오른쪽 미리 보기가 툴바 밑에 붙어 따라오게 sticky 자리를 그만큼 내린다
@@ -94,7 +126,7 @@ export function PricingForm({ initial, part, title, lead }: { initial: PricingSe
           <Button variant="secondary" size="sm" disabled={!dirty || pending} onClick={() => patch(() => saved)}>
             {M.reset}
           </Button>
-          <Button variant="accent" size="sm" loading={pending} loadingLabel={M.saving} disabled={!dirty || !valid} onClick={save}>
+          <Button variant="accent" size="sm" loading={pending} loadingLabel={M.saving} disabled={!dirty || !valid} onClick={save} title={M.saveShortcut} aria-keyshortcuts="Control+S">
             {M.save}
           </Button>
         </div>
@@ -105,15 +137,15 @@ export function PricingForm({ initial, part, title, lead }: { initial: PricingSe
         <div className="flex min-w-0 flex-col gap-5">
           {part === "catalog" ? (
             <>
-              <PricesSection value={value} patch={patch} />
+              <PricesSection value={value} saved={saved} patch={patch} />
               <CopySection value={value} patch={patch} tier={tier} onTier={setTier} />
             </>
           ) : (
-            <PromotionsSection value={value} patch={patch} />
+            <PromotionsSection value={value} patch={patch} selected={promo} onSelect={setPromo} />
           )}
         </div>
         <div className="xl:sticky xl:top-[calc(var(--header-h)+var(--admin-toolbar-h)+16px)] xl:max-h-[calc(100svh-var(--header-h)-var(--admin-toolbar-h)-32px)] xl:overflow-y-auto xl:overscroll-contain">
-          <PricingPreview value={value} tier={part === "catalog" ? tier : undefined} />
+          <PricingPreview value={value} tier={part === "catalog" ? tier : promoTier} />
         </div>
       </div>
 

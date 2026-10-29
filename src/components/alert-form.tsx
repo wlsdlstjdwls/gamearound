@@ -27,6 +27,8 @@ export const PLATFORM_OPTIONS: { value: string; label: string }[] = [
 const DEFAULT_MIN_DISCOUNT = 50;
 /** PLATFORM_OPTIONS 의 "전체 플랫폼" 값. 서버 액션도 같은 글자를 본다(actions 의 readPlatforms) */
 const ALL = "all";
+/** 목표가 칸 자릿수 상한. 8자리면 9,999만 원 — 게임 값으로는 넉넉하다(앞 판의 slice(0, 8) 과 같다) */
+const TARGET_DIGITS_MAX = 8;
 
 /** 이미 만든 알림의 값. 있으면 폼이 "조건 바꾸기" 로 열린다 */
 export type AlertInitial = { platform: string; mode: AlertMode; minDiscountPct: number | null; targetPrice: number | null };
@@ -203,8 +205,13 @@ export function AlertForm({ game, defaults, initial }: { game: FormGame; default
                 autoComplete="off"
                 placeholder="30,000"
                 value={target}
+                // 치는 동안은 친 글 그대로 두고 칸을 떠날 때 쉼표를 찍는다 — 칠 때마다 갈아 끼우면 Ctrl+Z 기록이 날아가고 커서가 튄다(ui/number-field 와 같은 이유)
                 onChange={(e) => {
-                  const digits = e.target.value.replace(/[^0-9]/g, "").slice(0, 8);
+                  const raw = e.target.value;
+                  if (/^[0-9,]*$/.test(raw) && raw.replace(/,/g, "").length <= TARGET_DIGITS_MAX) setTarget(raw);
+                }}
+                onBlur={() => {
+                  const digits = target.replace(/[^0-9]/g, "");
                   setTarget(digits ? Number(digits).toLocaleString("ko-KR") : "");
                 }}
                 className="min-w-0 flex-1 bg-transparent text-[16px] font-bold text-ink outline-none placeholder:font-normal placeholder:text-dim"

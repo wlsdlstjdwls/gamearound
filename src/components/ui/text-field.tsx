@@ -22,10 +22,16 @@ export type TextFieldProps = Omit<ComponentProps<"input">, "size"> & {
   compact?: boolean;
   /** 칸 바로 밑에 뜨는 판(제안 목록, components/ui/suggest). 칸 상자를 기준으로 선다 */
   popup?: ReactNode;
+  /**
+   * 넓은 화면에서 이름표를 칸 왼쪽에 세운다(2026-10-29, 관리자 설정 폼). 칸이 열 개 넘는 폼은 이름표가 칸 위에 서면
+   * 칸 하나가 세 줄(이름, 칸, 도움말)이라 세로로 끝없이 길어졌다. 백오피스 상세 폼처럼 이름은 왼쪽, 칸과 도움말은 오른쪽이다.
+   * 이름표 폭은 --field-label-w 로 바꾼다(기본 112px). 좁은 화면은 그대로 위에 선다
+   */
+  labelSide?: boolean;
   wrapperClassName?: string;
 };
 
-export function TextField({ label, labelMark, hideLabel, hint, error, leading, aside, compact = false, trailing, popup, wrapperClassName, className, id: idProp, ...input }: TextFieldProps) {
+export function TextField({ label, labelMark, hideLabel, hint, error, leading, aside, compact = false, trailing, popup, labelSide = false, wrapperClassName, className, id: idProp, ...input }: TextFieldProps) {
   const autoId = useId();
   const id = idProp ?? autoId;
   const hintId = `${id}-hint`;
@@ -33,8 +39,8 @@ export function TextField({ label, labelMark, hideLabel, hint, error, leading, a
   const invalid = Boolean(error);
 
   return (
-    <div className={cn("group/field", wrapperClassName)}>
-      <div className={cn("mb-1.5 flex items-baseline justify-between gap-2", hideLabel && "sr-only")}>
+    <div className={cn("group/field", labelSide && "sm:grid sm:grid-cols-[var(--field-label-w,112px)_minmax(0,1fr)] sm:items-start sm:gap-x-3", wrapperClassName)}>
+      <div className={cn("mb-1.5 flex items-baseline justify-between gap-2", labelSide && "sm:row-span-2 sm:mb-0 sm:pt-3", hideLabel && "sr-only")}>
         <label htmlFor={id} className="block text-[12.5px] font-medium text-mut transition-colors group-focus-within/field:text-ink">
           {label}
           {labelMark}
@@ -83,13 +89,13 @@ export function TextField({ label, labelMark, hideLabel, hint, error, leading, a
         {popup}
       </div>
       {invalid ? (
-        <p id={errorId} role="alert" className="mt-1.5 flex items-start gap-1 text-xs text-danger animate-rise">
+        <p id={errorId} role="alert" className={cn("mt-1.5 flex items-start gap-1 text-xs text-danger animate-rise", labelSide && "sm:col-start-2")}>
           <AlertCircleIcon size={14} className="mt-px shrink-0" />
           <span>{error}</span>
         </p>
       ) : (
         hint && (
-          <p id={hintId} className="mt-1.5 text-xs text-dim">
+          <p id={hintId} className={cn("mt-1.5 text-xs text-dim", labelSide && "sm:col-start-2")}>
             {hint}
           </p>
         )

@@ -40,8 +40,10 @@ export default async function AdminPaymentsPage() {
       />
 
       <section aria-labelledby="payments-list" className="flex flex-col gap-2">
-        <h2 id="payments-list" className="text-[15px] font-bold text-ink">
+        {/* 제목 옆 건수 — 백오피스 목록 머리의 "전체 N건" */}
+        <h2 id="payments-list" className="flex items-baseline gap-1.5 text-[15px] font-bold text-ink">
           {PM.adminTitle}
+          <span className="text-[13px] font-semibold tabular-nums text-acc">{paid.length}</span>
         </h2>
         {paid.length === 0 ? (
           <p className="rounded-xl bg-surface-2 px-4 py-3.5 text-[13px] text-mut">{PM.adminEmpty}</p>

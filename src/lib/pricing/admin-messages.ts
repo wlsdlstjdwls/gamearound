@@ -11,6 +11,9 @@ export const PRICING_ADMIN_MESSAGES = {
   previewLead: "고치는 대로 바로 바뀌어요. 처음 결제하는 사람에게 보이는 모습이에요.",
   previewTier: "보고 있는 카드",
   save: "저장",
+  saveShortcut: "저장 (Ctrl+S)",
+  /** 판매 상품 표에서 저장 전 바뀐 줄의 꼬리표(백오피스의 변경 행 표시) */
+  changed: "바뀜",
   saving: "저장 중",
   saved: "저장했어요",
   failed: "저장하지 못했어요. 칸을 확인해 주세요",

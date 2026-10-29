@@ -8,8 +8,8 @@
 // 같은 날 둘째 손질(사용자 "관리자 화면이 어렵다", 신세계TV 백오피스 참고): 목록 표 + 고른 줄 상세로 바꿨다. 프로모션마다 칸 일곱이
 // 펼쳐진 카드가 쌓이면 무엇이 걸려 있는지 훑을 수 없었다. 위 표는 한 줄에 한 행사(켜기, 상태, 대상, 할인, 기간)를 보이고,
 // 고치는 칸은 고른 한 줄만 아래에 편다. 켜고 끄기는 표에서 바로 한다(가장 자주 하는 일).
-import { useState } from "react";
-import { Panel, toInt } from "@/components/admin/pricing-form/sections";
+import { Panel } from "@/components/admin/pricing-form/sections";
+import { NumberField } from "@/components/ui/number-field";
 import type { Patch } from "@/components/admin/pricing-form";
 import { Button } from "@/components/ui/button";
 import { DateField } from "@/components/ui/date-field";
@@ -43,8 +43,8 @@ function summary(p: Promotion): string {
 /** 표의 칸 폭. 머리 줄과 몸 줄이 같은 틀을 쓴다 */
 const PROMO_GRID = "md:grid md:grid-cols-[52px_minmax(0,1.5fr)_minmax(0,1.1fr)_96px_minmax(0,1fr)_minmax(0,1.2fr)] md:items-center md:gap-3";
 
-export function PromotionsSection({ value, patch }: { value: PricingSettings; patch: Patch }) {
-  const [selected, setSelected] = useState<string | null>(value.promotions[0]?.id ?? null);
+/** 고른 줄은 바깥(pricing-form)이 쥔다 — 미리 보기가 고른 행사의 카드를 따라간다 */
+export function PromotionsSection({ value, patch, selected, onSelect: setSelected }: { value: PricingSettings; patch: Patch; selected: string | null; onSelect: (id: string | null) => void }) {
   const set = (i: number, next: Partial<Promotion>) => patch((d) => ({ ...d, promotions: d.promotions.map((p, j) => (j === i ? { ...p, ...next } : p)) }));
   const remove = (i: number) => {
     const rest = value.promotions.filter((_, j) => j !== i);
@@ -65,7 +65,7 @@ export function PromotionsSection({ value, patch }: { value: PricingSettings; pa
   const current = index >= 0 ? value.promotions[index] : null;
 
   return (
-    <Panel title={M.promosTitle} lead={M.promosLead}>
+    <Panel title={M.promosTitle} count={value.promotions.length} lead={M.promosLead}>
       {value.promotions.length === 0 ? (
         <p className="rounded-xl bg-surface-2 px-4 py-3.5 text-[13px] text-mut">{M.promosEmpty}</p>
       ) : (
@@ -145,7 +145,7 @@ export function PromotionsSection({ value, patch }: { value: PricingSettings; pa
               onChange={(v) => set(index, { kind: v as Promotion["kind"] })}
               options={(["percent", "price"] as const).map((k) => ({ value: k, label: M.kindLabels[k] }))}
             />
-            <TextField label={M.promoValue} inputMode="numeric" value={current.value ? current.value.toLocaleString("ko-KR") : ""} onChange={(e) => set(index, { value: toInt(e.target.value) })} compact />
+            <NumberField label={M.promoValue} value={current.value} onValue={(n) => set(index, { value: n })} compact />
             <div className="sm:col-span-2">
               <FormSelect
                 name={`audience-${current.id}`}

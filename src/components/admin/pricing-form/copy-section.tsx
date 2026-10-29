@@ -7,6 +7,7 @@
 // 자리표시는 화면에서 [절약 금액] 꼴로 보이고 저장은 {saving} 꼴 그대로다(lib/pricing/copy-tokens). 단추를 누르면 마지막에 누른 칸의
 // 커서 자리에 들어간다. 단추가 칸의 포커스를 빼앗지 않게 mousedown 을 막는다 — 빼앗기면 커서 자리를 잃는다.
 import { useRef } from "react";
+import { cn } from "@/lib/cn";
 import type { Patch } from "@/components/admin/pricing-form";
 import { Panel } from "@/components/admin/pricing-form/sections";
 import { FIELD_LABEL_CLASS } from "@/components/ui/field-classes";
@@ -45,6 +46,11 @@ export function CopySection({ value, patch, tier, onTier }: { value: PricingSett
     if (!f || !document.contains(f.el)) return;
     const start = f.el.selectionStart ?? f.el.value.length;
     const end = f.el.selectionEnd ?? start;
+    // 브라우저의 글 넣기로 넣는다 — 칸에 친 것과 같은 입력이라 Ctrl+Z 로 되돌릴 수 있다(2026-10-29 사용자 "컨트롤+z 가 안 된다").
+    // 값을 손으로 갈아 끼우면 되돌리기 기록이 날아간다. 글 넣기를 못 하는 브라우저만 갈아 끼운다
+    f.el.focus();
+    f.el.setSelectionRange(start, end);
+    if (document.execCommand("insertText", false, token)) return;
     f.write(f.el.value.slice(0, start) + token + f.el.value.slice(end));
     const caret = start + token.length;
     requestAnimationFrame(() => {
@@ -66,6 +72,7 @@ export function CopySection({ value, patch, tier, onTier }: { value: PricingSett
           value={toDisplayCopy(value.copy[t][f.key])}
           onChange={(e) => write(e.target.value)}
           onFocus={(e) => (last.current = { el: e.currentTarget, write })}
+          labelSide
           compact
         />
       );
@@ -73,20 +80,20 @@ export function CopySection({ value, patch, tier, onTier }: { value: PricingSett
     const lines = f.key === "benefits" ? value.copy.membership.benefits : value.copy[t].lines;
     const write = (display: string) => setLines(t, f.key, display);
     return (
-      <div key={f.key} className="flex flex-col gap-1.5 sm:col-span-2">
-        <label htmlFor={id} className={FIELD_LABEL_CLASS}>
+      <div key={f.key} className="flex flex-col gap-1.5 sm:grid sm:grid-cols-[var(--field-label-w,112px)_minmax(0,1fr)] sm:gap-x-3 sm:gap-y-1.5">
+        <label htmlFor={id} className={cn(FIELD_LABEL_CLASS, "sm:pt-3")}>
           {M.fields[f.key]}
         </label>
         <textarea
           id={id}
           aria-describedby={`${id}-hint`}
-          rows={Math.max(3, lines.length + 1)}
+          rows={Math.max(2, lines.length + 1)}
           className={TEXTAREA_CLASS}
           value={toDisplayCopy(lines.join("\n"))}
           onChange={(e) => write(e.target.value)}
           onFocus={(e) => (last.current = { el: e.currentTarget, write })}
         />
-        <p id={`${id}-hint`} className="text-xs text-dim">
+        <p id={`${id}-hint`} className="text-xs text-dim sm:col-start-2">
           {M.fieldHints[f.key]}
         </p>
       </div>
@@ -94,13 +101,14 @@ export function CopySection({ value, patch, tier, onTier }: { value: PricingSett
   };
 
   const tierPanel = (t: TierKey) => (
-    <div className="flex flex-col gap-3">
+    <div className="flex max-w-[760px] flex-col gap-4 pt-1">
       {COPY_GROUPS.map((g) => {
         const fields = g.fields.filter((f) => !g.only?.[f.key] || g.only[f.key]?.includes(t));
         return (
-          <fieldset key={g.title} className="grid gap-3 rounded-[var(--radius-inset)] bg-surface-2 p-3.5 sm:grid-cols-2">
+          // 묶음은 판이 아니라 얇은 머리 줄로 가른다(2026-10-29, 백오피스 상세 폼). 회색 판 넷이 겹겹이 쌓여 칸보다 판이 먼저 보였다
+          <fieldset key={g.title} className="flex flex-col gap-2.5 border-t border-line-soft pt-3 first:border-t-0 first:pt-0">
             <legend className="sr-only">{M[g.title]}</legend>
-            <p aria-hidden className="text-[12.5px] font-bold text-mut sm:col-span-2">
+            <p aria-hidden className="text-[12px] font-bold tracking-[0.04em] text-acc">
               {M[g.title]}
             </p>
             {fields.map((f) => field(t, f))}
