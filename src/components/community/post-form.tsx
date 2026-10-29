@@ -1,6 +1,7 @@
 "use client";
 // 글쓰기(기획서 v2.0 S-14, 6.4). 전체 페이지 방식이고, 카테고리를 바꾸면 위 칸만 바뀌고 제목, 본문은 그대로 남는다.
-//   리뷰: 관련 게임, 스포 여부 필수 | 공략: 관련 게임 필수 | 홍보: 홍보 유형 필수, 관련 게임, 링크 선택 | 개발일지, 질문: 추가 칸 없음.
+//   리뷰: 관련 게임, 스포 여부 필수 | 공략: 관련 게임 필수 | 홍보: 홍보 유형 필수, 관련 게임, 링크 선택
+//   개발일지, 질문: 내 인디 게임이 있으면 "어느 게임의 글인가요" 선택(2026-10-29). 없으면 추가 칸 없음.
 // 검증은 서버와 같은 zod 스키마(lib/community/schemas)로 먼저 보고, 오류는 칸 아래 빨간 글로 붙인다(aria-describedby).
 //
 // 모양(10-28 검수 "글 작성 폼이 넘 구리다"): 판 둘로 가른다 — 위 판은 글의 성격(카테고리, 스포, 홍보 유형, 관련 게임),
@@ -19,11 +20,12 @@ import { PostAttachments } from "@/components/community/post-attachments";
 import { attachmentsHtml, type UploadedFile } from "@/components/community/post-media";
 import { Button } from "@/components/ui/button";
 import { RequiredMark } from "@/components/ui/required-mark";
+import { FormSelect } from "@/components/ui/select";
 import { Bone } from "@/components/ui/skeleton";
 import { TextField } from "@/components/ui/text-field";
 import { useToast } from "@/components/ui/toast";
 import { cn } from "@/lib/cn";
-import { CATEGORY_LABEL, CATEGORY_LIST_PATH, POST_BODY_MAX, POST_TITLE_MAX, PROMO_TYPES, PROMO_TYPE_LABEL, requiresGame, takesGame, writePath } from "@/lib/community/constants";
+import { CATEGORY_LABEL, CATEGORY_LIST_PATH, isLoungeCategory, POST_BODY_MAX, POST_TITLE_MAX, PROMO_TYPES, PROMO_TYPE_LABEL, requiresGame, takesGame, writePath } from "@/lib/community/constants";
 import { COMMUNITY_MESSAGES as M } from "@/lib/community/messages";
 import { postInputSchema } from "@/lib/community/schemas";
 import { canGoBack } from "@/lib/nav-history";
@@ -35,7 +37,10 @@ const RichEditor = dynamic(() => import("@/components/community/rich-editor").th
   loading: () => <Bone className="h-[380px] w-full rounded-xl" />,
 });
 
-type Errors = Partial<Record<"category" | "title" | "body" | "spoiler" | "promoType" | "link" | "gameSlug" | "form", string>>;
+type Errors = Partial<Record<"category" | "title" | "body" | "spoiler" | "promoType" | "link" | "gameSlug" | "indieSlug" | "form", string>>;
+
+/** 라운지 글을 묶을 수 있는 내 인디 게임 하나 */
+export type IndieChoice = { slug: string; title: string };
 
 /** 하나만 고르는 칸 — 라디오를 세그먼트 한 덩어리로. 칸 이름과 오류를 fieldset 이 묶는다. hint 는 고르기 전에 읽을 안내 한 줄 */
 function Segmented({ name, legend, value, options, onChange, error, hint, required = false }: { name: string; legend: string; value: string; options: { value: string; label: string }[]; onChange: (v: string) => void; error?: string; hint?: string; required?: boolean }) {
@@ -86,7 +91,7 @@ function Panel({ title, children }: { title: string; children: React.ReactNode }
   );
 }
 
-export function PostForm({ categories, initial }: { categories: readonly PostCategory[]; initial: PostCategory }) {
+export function PostForm({ categories, initial, indieChoices = [], initialIndie = "" }: { categories: readonly PostCategory[]; initial: PostCategory; indieChoices?: IndieChoice[]; initialIndie?: string }) {
   const router = useRouter();
   const toast = useToast();
   const [category, setCategory] = useState<PostCategory>(initial);
@@ -99,6 +104,9 @@ export function PostForm({ categories, initial }: { categories: readonly PostCat
   const [promoType, setPromoType] = useState("");
   const [link, setLink] = useState("");
   const [game, setGame] = useState<PickedGame | null>(null);
+  // 주소로 넘어온 slug 가 내 게임 목록에 없으면 비운다(남의 게임 상세에서 온 손질 주소)
+  const [indie, setIndie] = useState(indieChoices.some((c) => c.slug === initialIndie) ? initialIndie : "");
+  const takesIndie = isLoungeCategory(category) && indieChoices.length > 0;
   const [errors, setErrors] = useState<Errors>({});
   const [pending, start] = useTransition();
   const uploading = busy.editor || busy.files;
@@ -116,7 +124,7 @@ export function PostForm({ categories, initial }: { categories: readonly PostCat
   const submit = () => {
     if (uploading) return toast(M.waitUpload);
     // 관련 게임 칸이 없는 카테고리(라운지)로 바꿨으면 골라 둔 게임은 싣지 않는다 — 서버도 버리지만 검증 오류가 엉뚱한 칸에 서지 않게
-    const input = { category, title, body: html + attachmentsHtml(files), spoiler, promoType, link, gameSlug: takesGame(category) ? (game?.slug ?? "") : "" };
+    const input = { category, title, body: html + attachmentsHtml(files), spoiler, promoType, link, gameSlug: takesGame(category) ? (game?.slug ?? "") : "", indieSlug: takesIndie ? indie : "" };
     const local = postInputSchema.safeParse(input);
     if (!local.success) {
       const next: Errors = {};
@@ -134,7 +142,6 @@ export function PostForm({ categories, initial }: { categories: readonly PostCat
       setErrors(r && !r.ok ? { ...(r.fieldErrors ?? {}), form: r.error } : { form: M.failed });
     });
   };
-
 
   return (
     <form
@@ -168,6 +175,25 @@ export function PostForm({ categories, initial }: { categories: readonly PostCat
           <div className="grid gap-5 sm:grid-cols-[auto_minmax(0,1fr)] sm:gap-x-8">
             <Segmented name="promoType" legend={M.promoTypeLabel} value={promoType} options={PROMO_TYPES.map((t) => ({ value: t, label: PROMO_TYPE_LABEL[t] }))} onChange={setPromoType} error={errors.promoType} required />
             <TextField label={M.linkLabel} type="url" inputMode="url" placeholder="https://" value={link} onChange={(e) => setLink(e.target.value)} error={errors.link} />
+          </div>
+        )}
+        {takesIndie && (
+          <div className="flex flex-col gap-1.5">
+            <FormSelect
+              name="indieSlug"
+              label={M.indieLabel}
+              size="md"
+              className="w-full sm:w-[320px]"
+              value={indie}
+              onChange={setIndie}
+              options={[{ value: "", label: M.indieNone }, ...indieChoices.map((c) => ({ value: c.slug, label: c.title }))]}
+            />
+            <p className="text-[12.5px] text-dim">{M.indieHint}</p>
+            {errors.indieSlug && (
+              <p role="alert" className="text-[12.5px] text-danger">
+                {errors.indieSlug}
+              </p>
+            )}
           </div>
         )}
         {takesGame(category) && <GamePicker required={requiresGame(category)} value={game} onChange={setGame} error={errors.gameSlug} />}

@@ -36,6 +36,8 @@ export const postInputSchema = z
     link: z.string().trim().max(500).default(""),
     /** 관련 게임 slug. 고르지 않았으면 빈 문자열. 상한은 slug 컬럼이 실제로 갖는 길이보다 넉넉하게 */
     gameSlug: z.string().trim().max(GAME_SLUG_MAX).default(""),
+    /** 라운지 글이 묶일 내 인디 게임 slug(2026-10-29). 비우면 내 모든 게임에 걸친 글. 내 글인지는 서비스가 DB 로 본다 */
+    indieSlug: z.string().trim().max(GAME_SLUG_MAX).default(""),
   })
   .superRefine((v, ctx) => {
     if (v.category === "review" && v.spoiler === "") ctx.addIssue({ code: "custom", path: ["spoiler"], message: M.spoilerRequired });

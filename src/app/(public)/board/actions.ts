@@ -7,7 +7,7 @@ import { actionError } from "@/lib/db-errors";
 import { CATEGORY_LIST_PATH, postPath } from "@/lib/community/constants";
 import { COMMUNITY_MESSAGES as M } from "@/lib/community/messages";
 import { commentInputSchema, postInputSchema } from "@/lib/community/schemas";
-import { addComment, createPost, PostGameNotFoundError, toggleLike, toggleSave, type CommentDto } from "@/server/services/community";
+import { addComment, createPost, PostGameNotFoundError, PostIndieNotFoundError, toggleLike, toggleSave, type CommentDto } from "@/server/services/community";
 import { notifyComment, notifyReply } from "@/server/services/notifications";
 import { notifyFollowersOfDevlog } from "@/server/services/indie";
 
@@ -35,6 +35,7 @@ export async function createPostAction(input: Record<string, string>): Promise<P
   } catch (e) {
     // 고른 게임이 그새 사라졌으면 폼 맨 아래가 아니라 관련 게임 칸 아래에 말한다 — 고칠 자리가 거기다
     if (e instanceof PostGameNotFoundError) return { ok: false, fieldErrors: { gameSlug: M.gameNotFound } };
+    if (e instanceof PostIndieNotFoundError) return { ok: false, fieldErrors: { indieSlug: M.indieNotFound } };
     return { ok: false, error: actionError(e, M.failed) };
   }
 }

@@ -9,6 +9,7 @@ import { pgTable, pgEnum, uuid, text, integer, boolean, index, primaryKey, times
 import { relations } from "drizzle-orm";
 import { auditColumns } from "./audit";
 import { games, users } from "./schema";
+import { indiePosts } from "./schema-indie";
 
 /** 카테고리. 앞 셋은 게임 게시판, 뒤 둘은 개발자 라운지 */
 export const postCategoryEnum = pgEnum("post_category", ["review", "guide", "promo", "devlog", "qna"]);
@@ -39,13 +40,19 @@ export const posts = pgTable(
      * 라운지 글은 게임이 없고, 게임 행이 중복 정리로 지워져도 글은 남아야 해서 set null 이다.
      */
     gameId: uuid("game_id").references(() => games.id, { onDelete: "set null" }),
+    /**
+     * 라운지 글(개발일지, 질문)이 어느 인디 게임의 글인가(2026-10-29). 비우면 글쓴이의 모든 게임에 걸친 글이다 —
+     * 인디 상세 "관련 소식" 은 이 게임에 묶인 글과 아무 게임에도 안 묶인 글쓴이 글을 세우고, 다른 게임에 묶인 글은 뺀다.
+     * 게임 글이 지워져도 개발일지는 남아야 해서 set null 이다. 게임 게시판 글의 게임(gameId, 카탈로그)과는 다른 칸이다.
+     */
+    indiePostId: uuid("indie_post_id").references((): AnyPgColumn => indiePosts.id, { onDelete: "set null" }),
     viewCount: integer("view_count").default(0).notNull(),
     likeCount: integer("like_count").default(0).notNull(),
     commentCount: integer("comment_count").default(0).notNull(),
     status: postStatusEnum("status").default("published").notNull(),
     ...auditColumns(),
   },
-  (t) => [index("posts_category_created_idx").on(t.category, t.createdAt), index("posts_author_idx").on(t.authorUserId), index("posts_game_idx").on(t.gameId)],
+  (t) => [index("posts_category_created_idx").on(t.category, t.createdAt), index("posts_author_idx").on(t.authorUserId), index("posts_game_idx").on(t.gameId), index("posts_indie_post_idx").on(t.indiePostId)],
 );
 
 export const postComments = pgTable(

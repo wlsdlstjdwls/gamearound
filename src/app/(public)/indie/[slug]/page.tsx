@@ -234,7 +234,7 @@ export default async function IndieDetailPage({ params, searchParams }: Props) {
           )}
 
           <Suspense fallback={null}>
-            <IndieRelatedNews authorUserId={post.authorUserId} isOwner={isOwner} />
+            <IndieRelatedNews authorUserId={post.authorUserId} indiePostId={post.id} indieSlug={post.slug} isOwner={isOwner} />
           </Suspense>
 
           {/* 플레이한 사람의 말이 쌓이는 곳(기획서 3장 2번). 게시판 댓글 부품 그대로, 받는 액션만 인디 글 것이다 */}

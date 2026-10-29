@@ -3,9 +3,9 @@
 import { and, asc, desc, eq, gt, ilike, inArray, lt, or, sql, type SQL } from "drizzle-orm";
 import { getDb } from "@/server/db/client";
 import { createdBy } from "@/server/db/audit";
-import { games, posts, users, type PostCategory, type PromoType } from "@/server/db/schema";
+import { games, indiePosts, posts, users, type PostCategory, type PromoType } from "@/server/db/schema";
 import { getCurrentUser, requireUser } from "@/server/services/users";
-import { POSTS_PAGE_SIZE, postPath, takesGame, type PopularPeriod, type SearchScope } from "@/lib/community/constants";
+import { isLoungeCategory, POSTS_PAGE_SIZE, postPath, takesGame, type PopularPeriod, type SearchScope } from "@/lib/community/constants";
 import type { PostInput } from "@/lib/community/schemas";
 import { isRichBody } from "@/lib/community/rich-text";
 import { sanitizePostHtml } from "@/lib/community/sanitize";
@@ -103,6 +103,14 @@ export class PostGameNotFoundError extends Error {
   }
 }
 
+/** 고른 인디 게임이 없거나 내 게임이 아닐 때(남의 slug 를 손으로 넣은 요청 포함). 액션이 그 칸 아래 오류로 바꾼다 */
+export class PostIndieNotFoundError extends Error {
+  constructor() {
+    super("post indie game not found");
+    this.name = "PostIndieNotFoundError";
+  }
+}
+
 /** 예전 상세 주소(/board/p/<id>)를 새 주소로 보낼 때 쓴다. 조회수를 올리지 않는다 — 넘겨받은 화면이 올린다 */
 export async function getPostCategory(id: string): Promise<PostCategory | null> {
   const [row] = await getDb().select({ category: posts.category }).from(posts).where(eq(posts.id, id));
@@ -110,7 +118,8 @@ export async function getPostCategory(id: string): Promise<PostCategory | null> 
 }
 
 /**
- * 등록. 카테고리에 맞지 않는 칸은 버린다(리뷰 아닌 글의 스포, 홍보 아닌 글의 유형, 링크, 라운지 글의 게임).
+ * 등록. 카테고리에 맞지 않는 칸은 버린다(리뷰 아닌 글의 스포, 홍보 아닌 글의 유형, 링크, 라운지 글의 게임, 게시판 글의 인디 게임).
+ * 라운지 글의 인디 게임은 글쓴이 본인 것만 받는다. 남의 게임 상세 관련 소식에 글을 끼워 넣지 못하게.
  * 관련 게임은 slug 로 받아 id 로 바꾼다 — 화면은 id 를 모른다(자동완성 응답이 slug 만 준다).
  * 본문 HTML 은 걸러서 적는다(lib/community/sanitize). 그리기 전에도 한 번 더 거른다 — 액션을 거치지 않은 요청이 와도 DB 에 스크립트가 안 쌓인다.
  */
@@ -123,6 +132,12 @@ export async function createPost(input: PostInput): Promise<{ id: string; catego
     if (!g) throw new PostGameNotFoundError();
     gameId = g.id;
   }
+  let indiePostId: string | null = null;
+  if (isLoungeCategory(input.category) && input.indieSlug !== "") {
+    const [ip] = await db.select({ id: indiePosts.id }).from(indiePosts).where(and(eq(indiePosts.slug, input.indieSlug), eq(indiePosts.authorUserId, u.id)));
+    if (!ip) throw new PostIndieNotFoundError();
+    indiePostId = ip.id;
+  }
   const [row] = await db
     .insert(posts)
     .values({
@@ -134,6 +149,7 @@ export async function createPost(input: PostInput): Promise<{ id: string; catego
       promoType: input.category === "promo" && input.promoType !== "" ? input.promoType : null,
       link: input.category === "promo" && input.link !== "" ? input.link : null,
       gameId,
+      indiePostId,
       ...createdBy("user", u.id),
     })
     .returning({ id: posts.id, category: posts.category });

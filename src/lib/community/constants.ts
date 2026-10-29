@@ -94,6 +94,11 @@ export function writePath(category?: PostCategory): string {
   return category ? `${base}?category=${category}` : base;
 }
 
+/** 인디 게임 하나를 골라 둔 채 여는 개발일지 쓰기(라운지 글쓰기의 ?indie=) */
+export function indieWritePath(indieSlug: string): string {
+  return `${writePath("devlog")}&indie=${encodeURIComponent(indieSlug)}`;
+}
+
 /** 한 쪽 20줄(기획서 4.3 "게시판 글 20개") */
 export const POSTS_PAGE_SIZE = 20;
 /** 인기글 기간(기획서 5.2: 최근 7일, 30일, 전체 기간). 0 = 전체 */
