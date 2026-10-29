@@ -117,9 +117,18 @@ export function DataGrid<T>({
   const template = `${check ? "40px " : ""}48px ${columns.map((c) => c.width).join(" ")}`;
   const hasSum = columns.some((c) => c.sum);
 
-  // 첫 줄 자동 선택
+  // 첫 줄 자동 선택. 고른 줄이 목록에서 빠져도(승인해 큐에서 나감, 조회조건에 걸러짐) 첫 줄로 옮긴다 —
+  // 그냥 두면 상세가 "줄을 고르세요" 로 비어 처리할 때마다 다시 눌러야 했다(2026-10-30 실측)
+  // 같은 (고른 줄, 첫 줄) 짝으로는 한 번만 옮긴다 — onSelect 가 행 이동 확인을 띄우는 화면에서 취소하면 그 자리에 머물러야 하는데,
+  // 매 렌더 다시 부르면 확인 팝업이 끝없이 뜬다
+  const autoTried = useRef<string | null>(null);
   useEffect(() => {
-    if (autoSelectFirst && onSelect && selected === null && sorted[0]) onSelect(rowKey(sorted[0]));
+    if (!autoSelectFirst || !onSelect || !sorted[0]) return;
+    if (selected !== null && sorted.some((r) => rowKey(r) === selected)) return;
+    const attempt = `${selected}|${rowKey(sorted[0])}`;
+    if (autoTried.current === attempt) return;
+    autoTried.current = attempt;
+    onSelect(rowKey(sorted[0]));
   }, [autoSelectFirst, onSelect, selected, sorted, rowKey]);
 
   // 엑셀이 전체 줄을 받아 가게 걸어 둔다(쪽, 찾기와 상관없이 지금 정렬 순서의 모든 줄)
