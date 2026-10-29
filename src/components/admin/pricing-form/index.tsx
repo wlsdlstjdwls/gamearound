@@ -117,13 +117,23 @@ export function PricingForm({ initial, part, title }: { initial: PricingSettings
       patch((d) => withNewPromotion(d, id));
     }
   };
-  // 상품등록에는 삭제가 없다(2026-10-30 사용자 "상품은 삭제 못하게") — 팔던 상품을 지우면 지난 주문, 결제가 가리킬 이름이 사라진다.
-  // 그만 팔 상품은 판매여부를 끈다. 잘못 더한 새 줄은 "되돌리기" 로 걷는다.
-  const current = value.promotions.find((p) => p.id === promo);
+  // 저장된 줄은 지우지 못한다(2026-10-30 사용자 "상품, 프로모션 둘 다 기존 데이터 삭제는 막아") — 팔던 상품, 걸었던 프로모션을 지우면
+  // 지난 주문, 결제가 가리킬 이름이 사라진다. 그만 쓸 줄은 판매여부, 진행상태(중단)로 끈다. 지울 수 있는 것은 아직 저장 안 한 새 줄뿐이고,
+  // 툴바 삭제는 그 줄을 골랐을 때만 켜진다. 새 상품을 지우면 그 상품을 겨눈 새 프로모션도 같이 간다(겨눌 상품이 없으면 저장 검사에 걸린다).
+  const newProduct = part === "catalog" ? value.products.find((p) => p.id === item && !saved.products.some((x) => x.id === p.id)) : undefined;
+  const removeProduct = newProduct
+    ? async () => {
+        if (!(await askConfirm(M.deleteNewConfirm(newProduct.name || M.newProductName), { confirmLabel: M.removePromo, tone: "danger" }))) return;
+        const rest = value.products.filter((p) => p.id !== newProduct.id);
+        setItem(rest[0]?.id ?? MEMBERSHIP_KEY);
+        patch((d) => ({ ...d, products: d.products.filter((p) => p.id !== newProduct.id), promotions: d.promotions.filter((p) => p.target !== newProduct.id) }));
+      }
+    : undefined;
+  const current = value.promotions.find((p) => p.id === promo && !saved.promotions.some((x) => x.id === p.id));
   const removePromo =
     part === "discounts" && current
       ? async () => {
-          if (!(await askConfirm(M.promoDeleteConfirm(current.label), { confirmLabel: M.removePromo, tone: "danger" }))) return;
+          if (!(await askConfirm(M.deleteNewConfirm(current.label), { confirmLabel: M.removePromo, tone: "danger" }))) return;
           const rest = value.promotions.filter((p) => p.id !== promo);
           setPromo(rest[0]?.id ?? null);
           patch((d) => ({ ...d, promotions: d.promotions.filter((p) => p.id !== promo) }));
@@ -177,7 +187,7 @@ export function PricingForm({ initial, part, title }: { initial: PricingSettings
           이 화면만의 것(바뀐 값 안내, 요금 화면 열기, 되돌리기)은 툴바 왼쪽에 둔다 */}
       <AdminScreenHead
         title={title}
-        tools={{ retrieve, insert, delete: part === "catalog" ? undefined : removePromo, save, saveDisabled: !dirty || !valid, saving: pending, dirty }}
+        tools={{ retrieve, insert, delete: part === "catalog" ? removeProduct : removePromo, save, saveDisabled: !dirty || !valid, saving: pending, dirty }}
         actions={
           <>
             <span className="text-[12.5px] font-medium" aria-live="polite">
