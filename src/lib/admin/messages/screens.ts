@@ -28,6 +28,8 @@ export const ADMIN_NAV = {
   groupShops: "매장",
   /** 서비스 자체를 꾸리는 자리(할 일, 화면 연출). 앞 이름 "그 밖" 은 무엇이 있는지 말해 주지 않았다 */
   groupOps: "운영",
+  /** 첫 화면. 묶음마다 쌓인 일 건수판(components/admin/work-board) */
+  board: "업무 현황",
   overview: "수집 현황",
   logs: "실행 로그",
   matches: "매칭 대기",

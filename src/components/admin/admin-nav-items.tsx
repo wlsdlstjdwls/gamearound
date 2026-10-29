@@ -5,7 +5,7 @@ import { cn } from "@/lib/cn";
 import { ADMIN_NAV } from "@/lib/admin/messages";
 import { COMING_SOON } from "@/lib/messages/coming-soon";
 import { ROUTES } from "@/lib/routes";
-import { BoxIcon, BuildingIcon, CardIcon, ChatIcon, CheckListIcon, LinkIcon, LogIcon, MegaphoneIcon, PulseIcon, SearchCheckIcon, SparkleIcon, StoreIcon, UsersIcon } from "@/components/admin/nav-icons";
+import { BoardIcon, BoxIcon, BuildingIcon, CardIcon, ChatIcon, CheckListIcon, LinkIcon, LogIcon, MegaphoneIcon, PulseIcon, SearchCheckIcon, SparkleIcon, StoreIcon, UsersIcon } from "@/components/admin/nav-icons";
 import { CalendarIcon, GamepadIcon, TagIcon, TicketIcon } from "@/components/ui/icons";
 import { Suspense, use, type ComponentType } from "react";
 
@@ -52,6 +52,8 @@ export type Item = {
  * 순서: 수익, 운영이 맨 위다(2026-10-29 사용자 "최상단으로"). 매일 여는 자리가 돈과 할 일이 됐고, 수집, 검수는 배지가 부른다.
  */
 export const GROUPS: Array<{ key: string; title?: string; items: Item[] }> = [
+  // 첫 화면 업무 현황판(2026-10-29). 묶음 머리 위 한 칸 — 어느 묶음에 일이 쌓였는지 여기서 보고 내려간다
+  { key: "board", items: [{ href: ROUTES.admin, label: ADMIN_NAV.board, Icon: BoardIcon }] },
   {
     key: "revenue",
     title: ADMIN_NAV.groupRevenue,
@@ -83,7 +85,7 @@ export const GROUPS: Array<{ key: string; title?: string; items: Item[] }> = [
     key: "sync",
     title: ADMIN_NAV.groupSync,
     items: [
-      { href: ROUTES.admin, label: ADMIN_NAV.overview, Icon: PulseIcon },
+      { href: ROUTES.adminSync, label: ADMIN_NAV.overview, Icon: PulseIcon },
       { href: ROUTES.adminSyncLogs, label: ADMIN_NAV.logs, Icon: LogIcon },
     ],
   },
@@ -130,7 +132,8 @@ export const ITEMS = GROUPS.flatMap((g) => g.items);
  * 접두사로 보면 하위 화면이 전부 대시보드로 표시돼 표시가 의미를 잃는다.
  */
 export function isActive(pathname: string, href: string): boolean {
-  return href === ROUTES.admin ? pathname === href : pathname.startsWith(href);
+  // 마디 경계로 자른다 — 맨 startsWith 면 /admin/sync 칸이 /admin/sync-logs 에서도 켜진다
+  return href === ROUTES.admin ? pathname === href : pathname === href || pathname.startsWith(`${href}/`);
 }
 
 export function Badge({

@@ -6,3 +6,4 @@ export * from "./actions";
 export * from "./sync-fields";
 export * from "./moderation";
 export * from "./quality";
+export * from "./board";

@@ -34,21 +34,6 @@ export const POST_ADMIN_MESSAGES = {
   failed: "처리하지 못했어요. 다시 눌러 주세요.",
 } as const;
 
-/** 관리자 첫 화면 맨 위 요약. 숫자마다 그 일을 하는 화면으로 간다 */
-export const ADMIN_TODO_MESSAGES = {
-  title: "지금 손볼 일",
-  indieReview: "등록 승인 대기",
-  indieReported: "신고 들어온 인디 글",
-  indieLinks: "게임 연결 확인",
-  matches: "매칭 대기",
-  shops: "입점 신청",
-  postsToday: "오늘 새 글",
-  commentsToday: "오늘 새 댓글",
-  unit: "건",
-  allClear: "쌓인 일이 없어요.",
-  failed: "요약을 못 불러왔어요. 아래 메뉴에서 화면마다 볼 수 있어요.",
-} as const;
-
 /** 인디 판정 버튼을 누른 순간 줄에 먼저 서는 말. 서버 응답을 기다리지 않는다(AGENTS §6) */
 export const INDIE_DECISION_DONE = {
   approve: "승인했어요",

@@ -26,6 +26,17 @@ function base({ size = 18, ...rest }: IconProps) {
   };
 }
 
+/** 업무 현황 — 묶음 기둥이 나란히 선 판 */
+export function BoardIcon(p: IconProps) {
+  return (
+    <svg {...base(p)}>
+      <rect x="3" y="4" width="5" height="16" rx="1.5" />
+      <rect x="10" y="4" width="5" height="10" rx="1.5" />
+      <rect x="17" y="4" width="4" height="13" rx="1.5" />
+    </svg>
+  );
+}
+
 /** 수집 현황 — 소스마다 한 칸씩 서는 격자 */
 export function PulseIcon(p: IconProps) {
   return (
