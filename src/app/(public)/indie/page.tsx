@@ -9,6 +9,7 @@
 // 명예의 전당 안내 띠 아래 "주목할 게임" 은 유료 자리다(2026-10-27, services/promotions). 카드마다 "광고" 를 달고, 거름 없는 첫 쪽에서만 선다 —
 // 단계를 골랐거나 검색 중인 사람에게 조건과 상관없는 카드를 끼워 넣지 않는다. 명예의 전당, 슈퍼루키는 돈과 상관없이 그대로다.
 import { HOME_GRID_CLASS } from "@/lib/games/grid";
+import { cn } from "@/lib/cn";
 import { DbUnavailable } from "@/components/db-unavailable";
 import { DB_DOWN, orDbDown } from "@/lib/db-errors";
 import type { Metadata } from "next";
@@ -17,11 +18,10 @@ import { EmptyState } from "@/components/empty-state";
 import { IndieCard } from "@/components/indie/indie-card";
 import { Pagination } from "@/components/pagination";
 import { WriteLink } from "@/components/community/write-link";
-import { buttonClass } from "@/components/ui/button";
-import { SearchIcon, TrophyIcon } from "@/components/ui/icons";
+import { ChevronLeftIcon, SearchIcon, TrophyIcon } from "@/components/ui/icons";
 import { FormSelect } from "@/components/ui/select";
 import { NavChip, NavPendingScope, PendingRegion } from "@/components/ui/nav-pending";
-import { Page, PageHead, SectionHead } from "@/components/ui/page";
+import { Page, PageHead } from "@/components/ui/page";
 import { firstParam } from "@/lib/games-query";
 import { INDIE_STAGES } from "@/lib/indie/constants";
 import { INDIE_MESSAGES as M, INDIE_SEARCH_SCOPE_LABEL, INDIE_STAGE_LABEL } from "@/lib/indie/messages";
@@ -33,12 +33,16 @@ import { listIndiePosts } from "@/server/services/indie";
 import { listFeaturedIndie } from "@/server/services/promotions";
 import { AdLabel } from "@/components/ui/ad-label";
 import { AdTrack } from "@/components/promo/ad-track";
+import { SponsoredPanel } from "@/components/promo/sponsored-panel";
 import { PROMO_MESSAGES as PM } from "@/lib/promo/messages";
 
 export const metadata: Metadata = { title: M.listTitle, description: M.lead };
 
 type Search = Record<string, string | string[] | undefined>;
 type Props = { searchParams: Promise<Search> };
+
+/** 주목할 게임을 세로 카드 격자로 세우는 최소 장수. 그보다 적으면 가로 카드로 판을 채운다 */
+const FEATURED_GRID_MIN = 3;
 
 /** 검색어 상한 — 주소창 손질로 들어오는 긴 문자열이 질의까지 가지 않게(게시판과 같은 값) */
 const QUERY_MAX = 100;
@@ -89,36 +93,34 @@ export default async function IndiePage({ searchParams }: Props) {
       {head}
 
       {/* 명예의 전당 안내(기획서 v2.0 S-18 "명예의 전당에 올라보세요") — 승인된 게임만 서는 화면이라 다음 목표를 함께 말한다.
-          2026-10-29(사용자): 유료 칸 "주목할 게임" 아래에 묻혀 있어 그 위, 머리 바로 아래로 올렸다.
-          2026-10-28(사용자: "좀 더 눈에 띄게"): 옅은 파랑 띠가 검색 줄과 같은 격으로 묻혀, 어두운 판 + 트로피 + 채운 단추로 바꿨다.
-          명예의 전당 머리 판에 쓰던 빛 웅덩이(.hero-beam.beam-cool)가 판 위를 천천히 오간다 */}
-      <aside className="relative isolate flex flex-col items-start gap-4 overflow-hidden rounded-[var(--radius-panel)] bg-ink px-5 py-5 text-on-ink sm:flex-row sm:items-center sm:gap-5 sm:px-6">
-        <span aria-hidden className="hero-beam beam-cool" />
-        <span aria-hidden className="soon-float grid size-14 shrink-0 place-items-center rounded-full bg-on-ink/10 text-acc-on-ink ring-1 ring-on-ink/20">
-          <TrophyIcon size={28} strokeWidth={1.8} />
+          2026-10-28 어두운 판 + 빛 웅덩이로 키웠다가, 10-29 사용자 "너무 눈에 띈다" 로 흰 판 한 줄로 낮췄다 — 바로 아래 유료 칸과 목록이
+          이 화면의 주인공이다. 강조색은 트로피 하나에만 두고, 판 전체가 링크다(좁은 화면은 꺾쇠, 넓은 화면은 "명예의 전당 보기"). 위치는 그대로다 */}
+      <Link href={ROUTES.hallOfFame} className="press group flex items-center gap-3 rounded-[var(--radius-md)] bg-surface px-4 py-3 shadow-hair transition-shadow hover:shadow-[var(--elev-2)]">
+        <span aria-hidden className="grid size-9 shrink-0 place-items-center rounded-full bg-acc-soft text-acc">
+          <TrophyIcon size={18} strokeWidth={1.9} />
         </span>
-        <div className="flex min-w-0 flex-1 flex-col gap-1">
-          <p className="text-[18px] font-extrabold tracking-[-0.02em]">{M.hofBannerTitle}</p>
-          <p className="text-[13.5px] opacity-80">{M.hofBannerLead}</p>
-        </div>
-        <Link href={ROUTES.hallOfFame} className={buttonClass({ variant: "accent", className: "shrink-0" })}>
-          {M.hofBannerCta}
-        </Link>
-      </aside>
+        <span className="flex min-w-0 flex-1 flex-col gap-0.5">
+          <span className="text-[14px] font-bold text-ink group-hover:text-acc">{M.hofBannerTitle}</span>
+          <span className="text-[13px] text-mut">{M.hofBannerLead}</span>
+        </span>
+        <span className="hidden shrink-0 text-[13.5px] font-semibold text-acc sm:inline">{M.hofBannerCta}</span>
+        <ChevronLeftIcon aria-hidden size={16} className="shrink-0 rotate-180 text-dim sm:hidden" />
+      </Link>
 
       {featured.length > 0 && (
-        <section aria-labelledby="indie-featured" className="flex flex-col gap-3">
-          <SectionHead id="indie-featured" title={PM.featuredTitle} />
-          <ul className={HOME_GRID_CLASS}>
+        // 홍보 게시판 고정과 같은 유료 자리 판(components/promo/sponsored-panel, 2026-10-29 사용자 "느낌 나게")
+        <SponsoredPanel id="indie-featured" title={PM.featuredTitle}>
+          {/* 한두 장이면 가로 카드로 판을 채운다(IndieCard 의 wide 주석). 셋이면 세로 카드 세 칸 */}
+          <ul className={featured.length >= FEATURED_GRID_MIN ? HOME_GRID_CLASS : cn("grid grid-cols-1 gap-3", featured.length > 1 && "lg:grid-cols-2")}>
             {featured.map(({ boostId, item: post }, i) => (
-              <li key={post.slug} className="enter-item" style={stagger(i)}>
+              <li key={post.slug} className="enter-item min-w-0" style={stagger(i)}>
                 <AdTrack boostId={boostId} className="h-full">
-                  <IndieCard post={post} badge={<AdLabel />} />
+                  <IndieCard post={post} badge={<AdLabel />} wide={featured.length < FEATURED_GRID_MIN} />
                 </AdTrack>
               </li>
             ))}
           </ul>
-        </section>
+        </SponsoredPanel>
       )}
 
       <NavPendingScope>

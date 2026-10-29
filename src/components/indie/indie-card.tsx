@@ -31,17 +31,21 @@ export function IndieTagPills({ platforms, genres }: { platforms: readonly Indie
   );
 }
 
-/** from: 상세의 경로 줄, 메뉴 강조를 정하는 출처(lib/indie/query). 슈퍼루키가 싣는다 — 목록, 홈 줄은 기본이다 */
-export function IndieCard({ post, badge, from }: { post: IndieCardDto; badge?: React.ReactNode; from?: IndieFrom }) {
+/**
+ * from: 상세의 경로 줄, 메뉴 강조를 정하는 출처(lib/indie/query). 슈퍼루키가 싣는다 — 목록, 홈 줄은 기본이다.
+ * wide: 가로 카드(sm 이상에서 그림 왼쪽, 글 오른쪽). 인디 목록 "주목할 게임" 이 한두 장뿐일 때 쓴다(2026-10-29) — 세로 카드 한 장이
+ *   넓은 유료 판의 4분의 1만 채워 판이 비어 보였다. 좁은 화면에서는 세로 카드 그대로다.
+ */
+export function IndieCard({ post, badge, from, wide = false }: { post: IndieCardDto; badge?: React.ReactNode; from?: IndieFrom; wide?: boolean }) {
   return (
-    <div className={cn(CARD_SHELL, "cover-zoom group relative")}>
+    <div className={cn(CARD_SHELL, "cover-zoom group relative", wide && "sm:flex-row sm:gap-4 sm:p-3")}>
       {/* 손을 올리면 그림이 살짝 자라고 빛이 한 번 스친다(.cover-glint) */}
-      <span className={cn(COVER_CLASS, "cover-glint")}>
+      <span className={cn(COVER_CLASS, "cover-glint", wide && "sm:w-[46%] sm:max-w-[360px] sm:shrink-0")}>
         <span className="cover-zoom-img absolute inset-0 block">
           <CoverImage src={post.cover.url} alt={M.coverAlt(post.title)} sizes="(max-width: 640px) 100vw, (max-width: 768px) 50vw, 25vw" />
         </span>
       </span>
-      <div className="flex min-w-0 flex-1 flex-col gap-1.5 px-1">
+      <div className={cn("flex min-w-0 flex-1 flex-col gap-1.5 px-1", wide && "sm:py-1")}>
         <div className="flex min-w-0 items-center gap-1.5">
           {badge}
           {/* 누를 면은 제목 링크의 ::after 다 — 게임 카드와 같은 구조(game-card 주석) */}

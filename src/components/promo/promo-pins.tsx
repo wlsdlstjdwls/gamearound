@@ -8,7 +8,7 @@ import { AuthorName, PostTags } from "@/components/community/badges";
 import { AdTrack } from "@/components/promo/ad-track";
 import { AdLabel } from "@/components/ui/ad-label";
 import { Clamp } from "@/components/ui/tooltip";
-import { TagIcon } from "@/components/ui/icons";
+import { SponsoredPanel } from "@/components/promo/sponsored-panel";
 import { cn } from "@/lib/cn";
 import { COMMUNITY_MESSAGES as CM } from "@/lib/community/messages";
 import { formatPostDate } from "@/lib/format";
@@ -53,11 +53,7 @@ function PinCard({ pin }: { pin: PromoPinDto }) {
 
 export function PromoPins({ pins }: { pins: Array<Featured<PromoPinDto>> }) {
   return (
-    <section aria-labelledby="promo-pins" className="mb-3 flex flex-col gap-3 rounded-[var(--radius-panel)] bg-acc-soft p-3 sm:p-4">
-      <h2 id="promo-pins" className="flex items-center gap-1.5 px-1 text-[14px] font-extrabold tracking-[-0.02em] text-acc">
-        <TagIcon size={15} strokeWidth={2.2} />
-        {M.pinnedTitle}
-      </h2>
+    <SponsoredPanel id="promo-pins" title={M.pinnedTitle} className="mb-3">
       <ul className={cn("grid grid-cols-1 gap-2.5", pins.length > 1 && "md:grid-cols-2")}>
         {pins.map(({ boostId, item }, i) => (
           <li key={item.id} className="enter-item min-w-0" style={stagger(i)}>
@@ -67,6 +63,6 @@ export function PromoPins({ pins }: { pins: Array<Featured<PromoPinDto>> }) {
           </li>
         ))}
       </ul>
-    </section>
+    </SponsoredPanel>
   );
 }
