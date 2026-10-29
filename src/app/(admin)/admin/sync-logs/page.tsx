@@ -73,7 +73,7 @@ export default async function SyncLogsPage({ searchParams }: { searchParams: Pro
     <NavPendingScope>
     <section className="flex flex-col gap-4">
       <header className="flex flex-wrap items-end justify-between gap-2">
-        <div>
+        <div className="min-w-0">
           <PageHead size="admin" title={LOG_MESSAGES.title} note={LOG_MESSAGES.recent(logs.length)} />
           <AdminLead>{LOG_MESSAGES.lead}</AdminLead>
         </div>
