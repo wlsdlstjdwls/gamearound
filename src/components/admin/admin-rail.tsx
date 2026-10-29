@@ -70,28 +70,28 @@ function CollapsedItem({ item, active, counts, onSoon }: { item: Item; active: b
 export function AdminRail({
   counts,
   initialCollapsed,
-  initialFolded,
+  initialOpened,
   onSoon,
 }: {
   counts: Promise<AdminNavCounts | null>;
   initialCollapsed: boolean;
-  /** 접어 둔 묶음 열쇠(쿠키, 레이아웃이 읽는다) */
-  initialFolded: string[];
+  /** 펼쳐 둔 묶음 열쇠(쿠키, 레이아웃이 읽는다). 적히지 않은 묶음은 접혀 있다(lib/admin/rail 주석) */
+  initialOpened: string[];
   onSoon: (item: Item) => void;
 }) {
   const pathname = usePathname();
   const [collapsed, setCollapsed] = useState(initialCollapsed);
-  const [folded, setFolded] = useState<ReadonlySet<string>>(() => new Set(initialFolded));
+  const [opened, setOpened] = useState<ReadonlySet<string>>(() => new Set(initialOpened));
   const toggle = () => {
     const next = !collapsed;
     setCollapsed(next);
     writeCookie(ADMIN_RAIL_COOKIE, next ? "1" : "0");
   };
   const toggleGroup = (key: string) => {
-    const next = new Set(folded);
+    const next = new Set(opened);
     if (next.has(key)) next.delete(key);
     else next.add(key);
-    setFolded(next);
+    setOpened(next);
     writeCookie(ADMIN_GROUPS_COOKIE, [...next].join(","));
   };
   const itemClass = (active: boolean) =>
@@ -158,7 +158,8 @@ export function AdminRail({
               </div>
             );
           }
-          const isFolded = folded.has(g.key);
+          // 제목 없는 묶음(업무 현황 한 칸)은 접을 단추가 없으니 늘 펼친다
+          const isFolded = Boolean(g.title) && !opened.has(g.key);
           const groupId = `admin-group-${g.key}`;
           // 접힌 묶음에서도 지금 보는 칸은 남긴다(머리 주석)
           const shown = isFolded ? g.items.filter((item) => isActive(pathname, item.href)) : g.items;

@@ -26,7 +26,7 @@ export default async function AdminLayout({ children }: { children: React.ReactN
 
   const jar = await cookies();
   const collapsed = jar.get(ADMIN_RAIL_COOKIE)?.value === "1";
-  const folded = decodeURIComponent(jar.get(ADMIN_GROUPS_COOKIE)?.value ?? "").split(",").filter(Boolean);
+  const opened = decodeURIComponent(jar.get(ADMIN_GROUPS_COOKIE)?.value ?? "").split(",").filter(Boolean);
 
   // 2026-10-29(사용자 "왼쪽 메뉴를 왼쪽에 붙이고 접었다 펼 수 있게, 공간 활용"): 가운데 1440 폭 안에 기둥과 본문을 띄우던 Page 를 걷었다.
   // 기둥은 화면 왼쪽 끝에 붙고(admin-rail), 본문은 남은 폭을 다 쓴다 — 표와 판이 주인공인 화면이라 폭이 곧 칸 수다.
@@ -34,7 +34,7 @@ export default async function AdminLayout({ children }: { children: React.ReactN
   // 같은 날 넓은 화면에서는 사이트 머리띠도 걷었다(admin-rail 머리 주석, globals.css 의 data-admin-rail).
   return (
     <div className="flex md:items-start">
-      <AdminNav counts={counts} initialCollapsed={collapsed} initialFolded={folded} />
+      <AdminNav counts={counts} initialCollapsed={collapsed} initialOpened={opened} />
       {/* main 이 아니라 div 인 이유: 루트 레이아웃이 이미 <main> 안에 children 을 넣는다.
           landmark 를 겹쳐 두면 낭독기가 "본문" 을 둘로 센다.
 
