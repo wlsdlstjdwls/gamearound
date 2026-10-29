@@ -17,17 +17,9 @@ import { FormMessage } from "@/components/ui/form-message";
 import { newProductId, withNewProduct } from "@/components/admin/pricing-form/sections";
 import { CatalogScreen } from "@/components/admin/pricing-form/catalog";
 import { askConfirm } from "@/components/ui/confirm-dialog";
-import { newPromotionId, PromotionsSection, withNewPromotion } from "@/components/admin/pricing-form/promotions";
-import { PricingPreview } from "@/components/admin/pricing-form/preview";
+import { newPromotionId, PromotionsScreen, withNewPromotion } from "@/components/admin/pricing-form/promotions";
 import { PRICING_ADMIN_MESSAGES as M } from "@/lib/pricing/admin-messages";
-import { findProduct, isBundleProduct, MEMBERSHIP_KEY, pricingSettingsSchema, type PricingSettings, type TierKey } from "@/lib/pricing/settings";
-
-/** 행사 대상이 서는 요금 카드. 자리 하나짜리 광고는 낱개 카드, 자리 둘은 묶음 카드에 선다 */
-function targetTier(s: PricingSettings, key: string): TierKey | undefined {
-  if (key === MEMBERSHIP_KEY) return "membership";
-  const p = findProduct(s, key);
-  return p ? (isBundleProduct(p) ? "bundle" : "single") : undefined;
-}
+import { MEMBERSHIP_KEY, pricingSettingsSchema, type PricingSettings } from "@/lib/pricing/settings";
 
 /** 저장 알림이 머무는 시간. 읽고 넘어갈 만큼만 */
 const SAVED_NOTE_MS = 2400;
@@ -59,8 +51,6 @@ export function PricingForm({ initial, part, title, lead }: { initial: PricingSe
   const [item, setItem] = useState<string | null>(initial.products[0]?.id ?? MEMBERSHIP_KEY);
   /** 프로모션 화면에서 고른 줄. 미리 보기는 그 행사가 걸리는 카드 한 장만 보인다 — 카드 셋을 다 쌓으면 고른 행사가 어디 걸렸는지 찾아야 했다 */
   const [promo, setPromo] = useState<string | null>(initial.promotions[0]?.id ?? null);
-  const promoTarget = value.promotions.find((p) => p.id === promo)?.target;
-  const promoTier = promoTarget ? targetTier(value, promoTarget) : undefined;
   const dirty = JSON.stringify(value) !== JSON.stringify(saved);
   const valid = pricingSettingsSchema.safeParse(normalize(value)).success;
   // "저장했어요" 는 잠깐 말하고 사라진다 — 남아 있으면 다음에 고칠 때 옛 소식이 섞인다
@@ -120,9 +110,11 @@ export function PricingForm({ initial, part, title, lead }: { initial: PricingSe
         patch((d) => ({ ...d, products: d.products.filter((p) => p.id !== selectedProduct.id), promotions: d.promotions.filter((p) => p.target !== selectedProduct.id) }));
       }
     : undefined;
+  const current = value.promotions.find((p) => p.id === promo);
   const removePromo =
-    part === "discounts" && promo
-      ? () => {
+    part === "discounts" && current
+      ? async () => {
+          if (!(await askConfirm(M.promoDeleteConfirm(current.label), { confirmLabel: M.removePromo, tone: "danger" }))) return;
           const rest = value.promotions.filter((p) => p.id !== promo);
           setPromo(rest[0]?.id ?? null);
           patch((d) => ({ ...d, promotions: d.promotions.filter((p) => p.id !== promo) }));
@@ -168,14 +160,7 @@ export function PricingForm({ initial, part, title, lead }: { initial: PricingSe
       {part === "catalog" ? (
         <CatalogScreen value={value} saved={saved} patch={patch} selected={item} onSelect={setItem} />
       ) : (
-        <div className="grid items-start gap-5 xl:grid-cols-[minmax(0,1fr)_360px]">
-          <div className="flex min-w-0 flex-col gap-5">
-            <PromotionsSection value={value} patch={patch} selected={promo} onSelect={setPromo} />
-          </div>
-          <div className="xl:sticky xl:top-[calc(var(--header-h)+var(--admin-toolbar-h)+16px)] xl:max-h-[calc(100svh-var(--header-h)-var(--admin-toolbar-h)-32px)]">
-            <PricingPreview value={value} tier={promoTier} />
-          </div>
-        </div>
+        <PromotionsScreen value={value} saved={saved} patch={patch} selected={promo} onSelect={setPromo} />
       )}
 
     </div>
