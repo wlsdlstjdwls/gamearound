@@ -20,7 +20,6 @@ export const SCREEN_MESSAGES = {
   no: "No",
   required: "(필수)",
   statusLabel: "처리 결과",
-  ready: "준비됐어요",
   retrieved: (n: number) => `${n.toLocaleString("ko-KR")}건 조회됐어요`,
   refreshing: "다시 조회하는 중이에요",
   refreshed: "다시 조회했어요",
@@ -49,4 +48,24 @@ export const GRID_MESSAGES = {
   pageOf: (page: number, pages: number) => `${page} / ${pages}`,
   copied: (n: number) => `${n}줄을 복사했어요. 엑셀에 붙여 넣을 수 있어요`,
   stateLabels: { new: "신규", changed: "수정", deleted: "삭제" },
+} as const;
+
+/** 승인 화면 일괄 처리 띠(components/admin/screen/approval) 문구 — 백오피스 상품그룹핑승인관리의 "상태 + 반려사유 + 적용" 자리 */
+export const APPROVAL_MESSAGES = {
+  bandLabel: "일괄 처리",
+  target: (n: number, checked: boolean) => (checked ? `고른 ${n.toLocaleString("ko-KR")}건` : n > 0 ? "선택한 줄 1건" : "처리할 줄을 골라 주세요"),
+  decision: "처리",
+  reason: "사유",
+  reasonPlaceholder: "반려, 숨김, 정지는 사유가 꼭 있어야 해요",
+  reasonRequired: (label: string) => `${label}은 사유를 적어야 해요`,
+  apply: "적용",
+  confirm: (label: string, n: number) => `${n.toLocaleString("ko-KR")}건을 ${label}할까요?`,
+  noTarget: "처리할 줄을 먼저 골라 주세요",
+  notApplicable: (label: string) => `고른 줄 가운데 ${label}할 수 있는 줄이 없어요`,
+  working: (label: string, n: number) => `${n.toLocaleString("ko-KR")}건 ${label} 처리 중이에요`,
+  done: (label: string, ok: number, skipped: number) =>
+    `${ok.toLocaleString("ko-KR")}건 ${label}했어요${skipped > 0 ? ` | 해당 없는 ${skipped.toLocaleString("ko-KR")}건은 건너뛰었어요` : ""}`,
+  failed: (n: number, first: string) => `${n.toLocaleString("ko-KR")}건은 처리하지 못했어요: ${first}`,
+  doneTag: "처리됨",
+  pickHint: "목록에서 줄을 고르면 상세가 보여요",
 } as const;

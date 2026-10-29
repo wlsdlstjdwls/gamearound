@@ -1,4 +1,4 @@
-// /shops/admin — 입점 심사. 설계서 §11.
+// /shops/admin — 입점승인관리. 설계서 §11.
 //
 // `/admin/shops` 가 아닌 이유: 주소를 잘못 치면 `/admin` 으로 들어간다. 다만 **경로 분리는 실수 방지고
 // 진짜 방어는 여기 첫 줄의 requireRoleOrForbid 다.** 경로를 어디로 옮기든 그 줄이 없으면 뚫린다.
@@ -6,30 +6,29 @@
 // `/shops/[slug]` 와 부딪히는 문제는 RESERVED_SHOP_SLUGS 가 신청 단계에서 막는다(lib/routes).
 //
 // 주소는 `/admin` 밖이어도 껍데기는 관리자 화면과 같다 — 관리자 레이아웃이 라우트 그룹 `(admin)` 에 있어서다.
-// 앞서는 레이아웃이 `(admin)/admin` 에만 있어 메뉴에서 이 칸을 누르면 기둥과 흰 판이 통째로 사라졌다(2026-10-08).
+// 화면 구성은 백오피스 승인 화면 꼴(components/admin/shops-screen). 여기는 상태를 읽고 줄을 넘기기만 한다.
 import type { Metadata } from "next";
 import { AdminScreenHead } from "@/components/admin/screen/head";
+import { ShopsScreen } from "@/components/admin/shops-screen";
 import { ADMIN_NAV } from "@/lib/admin/messages";
-import { ShopReviewCard } from "@/components/shops/review-card";
 import { SHOP_ADMIN_MESSAGES } from "@/lib/shops/messages";
 import { ROUTES } from "@/lib/routes";
 import { requireRoleOrForbid } from "@/server/auth/guards";
 import { listShopsByStatus } from "@/server/services/shops";
 import type { ShopStatus } from "@/server/db/schema";
-import { NavChip, NavPendingScope, PendingRegion } from "@/components/ui/nav-pending";
 
 export const metadata: Metadata = { title: ADMIN_NAV.shops };
 // 심사 화면은 늘 지금 값을 봐야 한다 — 승인하고 새로 고쳤는데 옛 목록이 뜨면 두 번 누른다
 export const dynamic = "force-dynamic";
 
-const TABS: Array<{ status: ShopStatus; label: string }> = [
+const STATUSES: Array<{ status: ShopStatus; label: string }> = [
   { status: "pending", label: SHOP_ADMIN_MESSAGES.pendingTab },
   { status: "active", label: SHOP_ADMIN_MESSAGES.activeTab },
   { status: "suspended", label: SHOP_ADMIN_MESSAGES.suspendedTab },
 ];
 
 function isStatus(v: string | undefined): v is ShopStatus {
-  return TABS.some((t) => t.status === v);
+  return STATUSES.some((t) => t.status === v);
 }
 
 type Props = { searchParams: Promise<Record<string, string | string[] | undefined>> };
@@ -42,35 +41,15 @@ export default async function ShopsAdminPage({ searchParams }: Props) {
   const shops = await listShopsByStatus(status);
 
   return (
-    <NavPendingScope>
-      <AdminScreenHead title={ADMIN_NAV.shops} lead={SHOP_ADMIN_MESSAGES.lead} />
-
-      <section className="flex flex-col gap-3">
-        <nav aria-label={SHOP_ADMIN_MESSAGES.tabsLabel} className="flex flex-wrap gap-1.5">
-          {TABS.map((t) => (
-            <NavChip key={t.status} group="status" href={t.status === "pending" ? ROUTES.shopsAdmin : `${ROUTES.shopsAdmin}?status=${t.status}`} active={t.status === status}>
-              {t.label}
-            </NavChip>
-          ))}
-        </nav>
-
-        <PendingRegion>
-        {shops.length === 0 ? (
-          // 빈 칸 안내는 다른 관리자 큐와 같은 회색 면이다 — 흰 판 위에서 "비었다" 가 한 덩어리로 읽힌다
-          <p className="rounded-xl bg-surface-2 px-4 py-3.5 text-[13px] text-mut">{SHOP_ADMIN_MESSAGES.empty}</p>
-        ) : (
-          // 칸 수를 화면 폭이 아니라 카드 폭이 정한다 — 본문은 기둥 곁이라 sm: 같은 화면 기준점으로는
-          // 카드 둘이 사유 칸과 버튼을 못 담을 만큼 좁아지는 구간이 생긴다
-          <ul className="grid grid-cols-[repeat(auto-fill,minmax(min(360px,100%),1fr))] gap-3">
-            {shops.map((shop) => (
-              <li key={shop.id}>
-                <ShopReviewCard shop={shop} />
-              </li>
-            ))}
-          </ul>
-        )}
-        </PendingRegion>
-      </section>
-    </NavPendingScope>
+    <>
+      <AdminScreenHead title={ADMIN_NAV.shops} count={shops.length} />
+      {/* 상태가 바뀌면 고른 줄, 체크를 비운다 — 다른 목록의 열쇠가 남아 엉뚱한 매장을 처리하지 않게 */}
+      <ShopsScreen
+        key={status}
+        rows={shops}
+        status={status}
+        statuses={STATUSES.map((t) => ({ value: t.status, label: t.label, href: t.status === "pending" ? ROUTES.shopsAdmin : `${ROUTES.shopsAdmin}?status=${t.status}` }))}
+      />
+    </>
   );
 }

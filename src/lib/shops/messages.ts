@@ -154,4 +154,12 @@ export const SHOP_ADMIN_MESSAGES = {
   reactivated: "정지를 풀었어요.",
   ownerLabel: "대표 계정",
   appliedAtLabel: "신청",
+  search: "조회조건",
+  searchStatus: "상태",
+  searchText: "매장명/대표",
+  listLabel: "입점 신청 목록",
+  detailTitle: "신청 상세",
+  sectionShop: "매장 정보",
+  sectionReview: "심사",
+  colStatus: "상태",
 } as const;

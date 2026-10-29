@@ -10,11 +10,11 @@ import { ROWS } from "@/components/ui/page";
 
 /**
  * 관리자 화면 머리 — 21px 제목(PageHead size="admin") 아래 설명 한 줄(AdminLead).
- * 설명은 2026-10-28 부터 늘 한 줄로 잘린다. leadLines 는 부르는 쪽 호환으로만 받는다
+ * 설명은 2026-10-30 에 화면에서 걷었다(사용자 "쓸데없는 문구"). lead, leadLines 는 부르는 쪽 호환으로만 받는다
  */
 export function AdminHeadSkeleton({
   width = "w-40",
-  lead = true,
+  lead = false,
   action,
 }: {
   width?: string;
@@ -148,6 +148,31 @@ export function ModerationRowsSkeleton({ rows, metaLines = 1 }: { rows: number; 
           </div>
         </div>
       ))}
+    </div>
+  );
+}
+
+/** 조회조건 띠 + 왼쪽 그리드(아래 일괄 처리 띠) + 오른쪽 상세 판 — 승인 화면(components/admin/screen/approval)의 뼈대 */
+export function MasterDetailSkeleton({ listWidth = "560px", rows = 10 }: { listWidth?: string; rows?: number }) {
+  return (
+    <div className="flex flex-col gap-3">
+      <Bone className="h-[54px] w-full rounded-xl" />
+      <div className="grid items-start gap-4 lg:grid-cols-[var(--master-w)_minmax(0,1fr)]" style={{ "--master-w": listWidth } as React.CSSProperties}>
+        <div className="flex flex-col gap-2">
+          <div className="flex flex-col overflow-hidden rounded-xl border border-line">
+            <Bone className="h-9 w-full rounded-none" />
+            {Array.from({ length: rows }).map((_, i) => (
+              <div key={i} className="flex h-10 items-center gap-3 border-t border-line px-3">
+                <Bone className="h-3.5 w-6" />
+                <Bone className={cn("h-3.5", i % 2 ? "w-2/5" : "w-1/2")} />
+                <Bone className="ml-auto h-3.5 w-16" />
+              </div>
+            ))}
+          </div>
+          <Bone className="h-[52px] w-full rounded-xl" />
+        </div>
+        <Bone className="h-[360px] w-full rounded-xl" />
+      </div>
     </div>
   );
 }

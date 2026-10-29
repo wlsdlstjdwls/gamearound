@@ -187,6 +187,20 @@ export const MATCH_MESSAGES = {
   colAction: "같은 것인가요",
   noStoreTitle: "안 남음",
   open: "스토어에서 열기",
+  search: "조회조건",
+  searchSource: "스토어",
+  searchTitle: "게임명",
+  searchAll: "전체",
+  listLabel: "매칭 대기 목록",
+  detailTitle: "매칭 상세",
+  sectionGame: "우리 게임",
+  sectionStore: "스토어 후보",
+  fieldGame: "게임",
+  fieldGameEn: "영문 제목",
+  fieldUrl: "스토어 주소",
+  openGame: "게임 관리 화면",
+  approve: "승인",
+  reject: "반려",
 } as const;
 
 export const COMPANY_MESSAGES = {
