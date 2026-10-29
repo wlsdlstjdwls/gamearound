@@ -59,6 +59,8 @@ export default async function AdminPromotionsPage() {
         ]}
       />
 
+      {/* 자리 둘을 넓은 화면에서 나란히 세운다(2026-10-29 사용자 "수익 화면 가독성") — 자리마다 한 줄씩 쓰면 카드 한 장 옆이 통째로 비었다 */}
+      <div className="grid items-start gap-4 xl:grid-cols-2">
       {PROMO_SLOTS.map((slot) => {
         const mine = rows.filter((r) => r.slot === slot && isOpen(r));
         const liveHere = mine.filter((r) => r.state === "active" && r.targetLive).length;
@@ -76,7 +78,7 @@ export default async function AdminPromotionsPage() {
             {mine.length === 0 ? (
               <p className="rounded-xl bg-surface px-4 py-3.5 text-[13px] text-mut">{M.emptySlot}</p>
             ) : (
-              <ul className="grid gap-2.5 lg:grid-cols-2">
+              <ul className="grid gap-2.5 lg:max-xl:grid-cols-2">
                 {mine.map((r) => (
                   <BoostCard key={r.id} row={r} />
                 ))}
@@ -85,6 +87,7 @@ export default async function AdminPromotionsPage() {
           </section>
         );
       })}
+      </div>
 
       {closed.length > 0 && (
         // 끝난 광고는 매일 볼 일이 아니라 접어 둔다. 성과를 되짚을 때 편다
@@ -94,7 +97,7 @@ export default async function AdminPromotionsPage() {
             <span className="text-[12.5px] font-medium text-acc group-open:hidden">{M.closedOpen}</span>
             <span className="hidden text-[12.5px] font-medium text-acc group-open:inline">{M.closedClose}</span>
           </summary>
-          <ul className="mt-3 grid gap-2.5 lg:grid-cols-2">
+          <ul className="mt-3 grid gap-2.5 lg:grid-cols-2 2xl:grid-cols-3">
             {closed.map((r) => (
               <BoostCard key={r.id} row={r} />
             ))}

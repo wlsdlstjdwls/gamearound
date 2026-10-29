@@ -6,7 +6,9 @@ import type { Metadata } from "next";
 import { AdminLead } from "@/components/admin/admin-lead";
 import { RefundControls } from "@/components/admin/refund-controls";
 import { StatTiles } from "@/components/admin/stat-tiles";
-import { PageHead, ROWS } from "@/components/ui/page";
+import { DataCell, DataHead, DataList, DataRow } from "@/components/admin/data-rows";
+import { PageHead } from "@/components/ui/page";
+import { PAYMENT_COLS } from "@/lib/admin/table-cols";
 import { Tag } from "@/components/ui/tag";
 import { ADMIN_NAV } from "@/lib/admin/messages";
 import { formatAmount, formatPrice } from "@/lib/currency";
@@ -44,25 +46,39 @@ export default async function AdminPaymentsPage() {
         {paid.length === 0 ? (
           <p className="rounded-xl bg-surface-2 px-4 py-3.5 text-[13px] text-mut">{PM.adminEmpty}</p>
         ) : (
-          <ul className={ROWS}>
-            {paid.map((p) => (
-              <li key={p.orderId} className="flex flex-wrap items-center justify-between gap-3 py-3">
-                <div className="flex min-w-0 flex-col gap-1">
-                  <div className="flex flex-wrap items-center gap-2">
-                    {p.status === "canceled" && <Tag tone="warn">{PAYMENT_STATUS_LABEL.canceled}</Tag>}
-                    {p.status === "paid" && p.refundRequested && <Tag tone="danger">{PM.adminRefundRequested}</Tag>}
-                    <span className="min-w-0 break-words text-[14.5px] font-semibold text-ink">{p.targetTitle ?? p.productName}</span>
-                  </div>
-                  <span className="break-words text-[12.5px] text-dim tabular-nums">{[p.productName, p.buyer, formatDateTime(p.createdAt), p.orderId].join(" | ")}</span>
-                  {p.boostMissing && <span className="text-[12.5px] text-danger">{PM.adminBoostMissing}</span>}
-                  {p.refundRequestNote && <span className="break-words text-[12.5px] text-mut">{p.refundRequestNote}</span>}
-                  {p.refundedAmount > 0 && <span className="text-[12.5px] text-mut tabular-nums">{PM.refunded(formatPrice(p.refundedAmount))}</span>}
-                </div>
-                <span className="shrink-0 text-[15px] font-bold tabular-nums text-ink">{formatPrice(p.amount)}</span>
-                {p.status === "paid" && <RefundControls orderId={p.orderId} amount={p.amount} prorated={p.proratedAmount} />}
-              </li>
-            ))}
-          </ul>
+          // 칸 맞춘 표(2026-10-29, data-rows) — 금액이 한 세로줄에 서야 훑어 내려가며 견준다. 손이 필요한 결제(환불 요청, 광고 안 걸림)는 빨갛게 말한다
+          <div className="flex flex-col gap-1">
+            <DataHead cols={PAYMENT_COLS} labels={[PM.adminColItem, PM.adminColBuyer, PM.adminColPaidAt, PM.adminColAmount, PM.adminColAction]} />
+            <DataList>
+              {paid.map((p) => (
+                <DataRow key={p.orderId} cols={PAYMENT_COLS}>
+                  <DataCell label={PM.adminColItem}>
+                    <span className="flex flex-wrap items-center gap-1.5">
+                      {p.status === "canceled" && <Tag tone="warn">{PAYMENT_STATUS_LABEL.canceled}</Tag>}
+                      {p.status === "paid" && p.refundRequested && <Tag tone="danger">{PM.adminRefundRequested}</Tag>}
+                      <span className="min-w-0 break-words font-semibold">{p.targetTitle ?? p.productName}</span>
+                    </span>
+                    {p.targetTitle && <span className="block text-[12px] text-dim">{p.productName}</span>}
+                    {p.boostMissing && <span className="block text-[12px] text-danger">{PM.adminBoostMissing}</span>}
+                    {p.refundRequestNote && <span className="block break-words text-[12px] text-mut">{p.refundRequestNote}</span>}
+                  </DataCell>
+                  <DataCell label={PM.adminColBuyer} className="break-words text-mut">
+                    {p.buyer}
+                  </DataCell>
+                  <DataCell label={PM.adminColPaidAt} className="tabular-nums text-mut">
+                    {formatDateTime(p.createdAt)}
+                    {/* 주문 번호는 토스 대조용이라 작게 둔다 */}
+                    <span className="block truncate text-[11px] text-dim-2">{p.orderId}</span>
+                  </DataCell>
+                  <DataCell label={PM.adminColAmount} className="tabular-nums md:text-right">
+                    <span className="block font-bold">{formatPrice(p.amount)}</span>
+                    {p.refundedAmount > 0 && <span className="block text-[12px] text-mut">{PM.refunded(formatPrice(p.refundedAmount))}</span>}
+                  </DataCell>
+                  <DataCell label={PM.adminColAction}>{p.status === "paid" ? <RefundControls orderId={p.orderId} amount={p.amount} prorated={p.proratedAmount} /> : <span className="text-dim-2">-</span>}</DataCell>
+                </DataRow>
+              ))}
+            </DataList>
+          </div>
         )}
       </section>
     </div>

@@ -38,7 +38,7 @@ export function RefundControls({ orderId, amount, prorated }: { orderId: string;
     });
   };
   return (
-    <div className="flex w-full flex-col gap-2 sm:flex-row sm:items-end">
+    <div className="flex w-full flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-end">
       <TextField label={M.adminRefundReason} hideLabel compact placeholder={M.adminRefundReason} maxLength={REASON_MAX} value={reason} onChange={(e) => setReason(e.target.value)} wrapperClassName="flex-1" />
       <Button size="sm" variant="secondary" onClick={() => run("full", amount)}>
         {M.adminRefundFull}

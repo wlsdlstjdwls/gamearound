@@ -96,6 +96,12 @@ export const PAYMENT_MESSAGES = {
   adminRefundReason: "환불 사유",
   adminRefundDone: (amount: string) => `${amount}을 환불했어요`,
   adminRefundRequested: "환불 요청",
+  /** 결제 표 머리(2026-10-29) */
+  adminColItem: "상품",
+  adminColBuyer: "구매자",
+  adminColPaidAt: "결제 일시",
+  adminColAmount: "금액",
+  adminColAction: "처리",
 } as const;
 
 export const PAYMENT_STATUS_LABEL: Record<PaymentStatus, string> = {

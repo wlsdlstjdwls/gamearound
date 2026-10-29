@@ -5,6 +5,8 @@ export const PRICING_ADMIN_MESSAGES = {
   lead: "개발자에게 파는 상품 셋의 값, 판매 여부, 요금 카드 문구를 정해요. 저장하면 요금 화면과 다음 주문부터 바로 바뀌어요.",
   discountsLead: "기간을 정해 값을 깎아 줘요. 저장하면 요금 화면과 다음 주문부터 바로 걸려요.",
   preview: "요금 화면 열기",
+  /** 요금 화면은 새 탭으로 연다(2026-10-29 사용자) — 고치던 폼을 떠나지 않고 실제 화면과 견준다 */
+  newWindow: "(새 창에서 열림)",
   previewTitle: "미리 보기",
   previewLead: "고치는 대로 바로 바뀌어요. 처음 결제하는 사람에게 보이는 모습이에요.",
   previewTier: "보고 있는 카드",
@@ -17,15 +19,19 @@ export const PRICING_ADMIN_MESSAGES = {
   dirty: "저장하지 않은 바뀐 값이 있어요",
 
   pricesTitle: "판매 상품",
-  pricesLead: "값은 원 단위예요(100원 이상). 판매를 끄면 요금 화면에서 그 카드가 빠지고 새 주문, 새 가입을 받지 않아요. 이용 중인 메이커 멤버십 갱신은 그대로 가요.",
-  groupAds: "광고 상품(7일)",
-  groupMembership: "구독 상품(매달)",
+  pricesLead: "값은 100원 이상, 원 단위예요. 판매를 끄면 요금 화면에서 빠지고 새 주문을 받지 않아요(이용 중인 구독 갱신은 그대로).",
+  /** 판매 상품 표의 머리 칸(2026-10-29 사용자 "공백이 많고 컴팩트하지 않다" — 묶음 판 둘을 표 한 장으로) */
+  colProduct: "상품",
+  colCycle: "기간",
+  colPrice: "값",
+  colCredits: "매달 이용권",
+  cycleAds: "7일",
+  cycleMonthly: "매달",
+  creditsUnit: "장",
   onSale: "판매",
-  amount: "값(원)",
   /** 값 칸 안 오른쪽 끝 단위. 줄마다 "값(원)" 이름표를 세우던 자리를 대신한다(2026-10-28) */
   won: "원",
-  credits: "매달 노출 이용권(장)",
-  membershipNote: "값을 바꾸면 이용 중인 구독자도 다음 갱신부터 새 값이에요",
+  membershipNote: "멤버십 값, 이용권을 바꾸면 이용 중인 구독자도 다음 갱신부터 새 값이에요",
 
   copyTitle: "요금 카드 문구",
   copyLead: "카드를 골라 문구를 고쳐요. 오른쪽 미리 보기에서 어디에 들어가는지 바로 보여요.",
@@ -66,6 +72,12 @@ export const PRICING_ADMIN_MESSAGES = {
   promosTitle: "프로모션",
   promosLead: "여럿이 걸리면 가장 싼 값 하나만 써요(겹쳐 깎지 않아요). 메이커 멤버십 할인은 첫 달 결제에만 걸려요. 기간을 비우면 끝없이 이어져요.",
   promosEmpty: "프로모션이 없어요",
+  /** 프로모션 표 머리와 고치는 판(2026-10-29, 목록 표 + 고른 줄 상세) */
+  colPromo: "프로모션",
+  colDeal: "할인",
+  colPeriod: "기간",
+  editTitle: "고르는 프로모션",
+  editHint: "목록에서 줄을 누르면 여기서 고쳐요",
   addPromo: "프로모션 더하기",
   removePromo: "지우기",
   promoActive: "켜기",

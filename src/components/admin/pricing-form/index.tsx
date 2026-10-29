@@ -6,7 +6,8 @@
 // 설정 전체를 로컬 상태 하나로 쥐고, 판마다 그 일부를 고친다(pricing-form/sections, promotions). 칸을 칠 때마다 저장하지 않는다 —
 // 값 하나 바꾸는 도중의 반쪽 요금표가 주문에 쓰이면 안 된다. 저장은 단추로 한 번, 서버와 같은 스키마(lib/pricing/settings)로 먼저 막는다.
 // 저장에 실패하면 고친 값은 그대로 둔다(되돌리면 친 글이 날아간다) — "되돌리기" 는 따로 누른다.
-import { useState, useTransition } from "react";
+import { useEffect, useState, useTransition } from "react";
+import { PricingPreviewLink } from "@/components/admin/pricing-preview-link";
 import { savePricingAction } from "@/app/(admin)/admin/pricing/actions";
 import { Button } from "@/components/ui/button";
 import { FormMessage } from "@/components/ui/form-message";
@@ -16,6 +17,9 @@ import { PromotionsSection } from "@/components/admin/pricing-form/promotions";
 import { PricingPreview } from "@/components/admin/pricing-form/preview";
 import { PRICING_ADMIN_MESSAGES as M } from "@/lib/pricing/admin-messages";
 import { pricingSettingsSchema, type PricingSettings, type TierKey } from "@/lib/pricing/settings";
+
+/** 저장 알림이 머무는 시간. 읽고 넘어갈 만큼만 */
+const SAVED_NOTE_MS = 2400;
 
 export type Patch = (fn: (draft: PricingSettings) => PricingSettings) => void;
 
@@ -32,7 +36,8 @@ function normalize(s: PricingSettings): PricingSettings {
   };
 }
 
-export function PricingForm({ initial, part }: { initial: PricingSettings; part: "catalog" | "discounts" }) {
+/** title, lead: 화면 머리(저장 툴바)에 서는 제목과 설명. 페이지가 PageHead 대신 넘긴다 */
+export function PricingForm({ initial, part, title, lead }: { initial: PricingSettings; part: "catalog" | "discounts"; title: string; lead: string }) {
   const [saved, setSaved] = useState(initial);
   const [value, setValue] = useState(initial);
   const [note, setNote] = useState<{ tone: "success" | "error"; text: string } | null>(null);
@@ -41,6 +46,12 @@ export function PricingForm({ initial, part }: { initial: PricingSettings; part:
   const [tier, setTier] = useState<TierKey>("single");
   const dirty = JSON.stringify(value) !== JSON.stringify(saved);
   const valid = pricingSettingsSchema.safeParse(normalize(value)).success;
+  // "저장했어요" 는 잠깐 말하고 사라진다 — 남아 있으면 다음에 고칠 때 옛 소식이 섞인다
+  useEffect(() => {
+    if (note?.tone !== "success") return;
+    const t = window.setTimeout(() => setNote(null), SAVED_NOTE_MS);
+    return () => window.clearTimeout(t);
+  }, [note]);
   const patch: Patch = (fn) => {
     setNote(null);
     setValue((v) => fn(v));
@@ -59,7 +70,36 @@ export function PricingForm({ initial, part }: { initial: PricingSettings; part:
   };
 
   return (
-    <div className="flex flex-col gap-5 pb-24">
+    // --admin-toolbar-h: 머리 툴바 높이. 오른쪽 미리 보기가 툴바 밑에 붙어 따라오게 sticky 자리를 그만큼 내린다
+    <div className="flex flex-col gap-5 [--admin-toolbar-h:72px]">
+      {/* 화면 머리를 저장 툴바로 쓴다(2026-10-29 사용자 "아래 저장, 되돌리기 영역이 고정돼 내용을 가린다", 신세계TV 백오피스 참고).
+          백오피스의 관리 화면은 제목 줄 오른쪽 끝에 저장 단추가 늘 같은 자리에 선다 — 바닥에 뜨는 줄은 마지막 칸을 덮었다.
+          머리는 위에 붙어 따라오고(sticky), 본문을 덮지 않는다. 바뀐 값이 있는지는 저장 단추 옆 한 줄이 말한다 */}
+      <div className="sticky top-[var(--header-h)] z-20 -mx-4 -mt-4 flex flex-wrap items-center justify-between gap-x-4 gap-y-2 border-b border-line-soft bg-surface/95 px-4 py-3 backdrop-blur sm:-mx-5 sm:-mt-5 sm:px-5">
+        <div className="flex min-w-0 flex-col gap-0.5">
+          <h1 className="text-[20px] font-extrabold tracking-[-0.02em] text-ink">{title}</h1>
+          <p className="text-[12.5px] text-dim">{lead}</p>
+        </div>
+        <div className="flex flex-wrap items-center gap-2">
+          <span className="text-[12.5px] font-medium" aria-live="polite">
+            {note ? (
+              <FormMessage tone={note.tone}>{note.text}</FormMessage>
+            ) : dirty && !valid ? (
+              <span className="text-danger">{M.invalid}</span>
+            ) : dirty ? (
+              <span className="text-acc">{M.dirty}</span>
+            ) : null}
+          </span>
+          <PricingPreviewLink />
+          <Button variant="secondary" size="sm" disabled={!dirty || pending} onClick={() => patch(() => saved)}>
+            {M.reset}
+          </Button>
+          <Button variant="accent" size="sm" loading={pending} loadingLabel={M.saving} disabled={!dirty || !valid} onClick={save}>
+            {M.save}
+          </Button>
+        </div>
+      </div>
+
       {/* 넓은 화면은 왼쪽 폼, 오른쪽 미리 보기(2026-10-29 사용자). 미리 보기는 sticky 라 긴 폼을 내려도 따라온다 */}
       <div className="grid items-start gap-5 xl:grid-cols-[minmax(0,1fr)_360px]">
         <div className="flex min-w-0 flex-col gap-5">
@@ -72,25 +112,11 @@ export function PricingForm({ initial, part }: { initial: PricingSettings; part:
             <PromotionsSection value={value} patch={patch} />
           )}
         </div>
-        <div className="xl:sticky xl:top-[calc(var(--header-h)+16px)] xl:max-h-[calc(100svh-var(--header-h)-32px)] xl:overflow-y-auto xl:overscroll-contain">
+        <div className="xl:sticky xl:top-[calc(var(--header-h)+var(--admin-toolbar-h)+16px)] xl:max-h-[calc(100svh-var(--header-h)-var(--admin-toolbar-h)-32px)] xl:overflow-y-auto xl:overscroll-contain">
           <PricingPreview value={value} tier={part === "catalog" ? tier : undefined} />
         </div>
       </div>
 
-      {/* 저장 줄은 화면 아래에 붙여 둔다 — 세 판이 길어 맨 아래까지 내려야 저장이 보이면 고친 채 떠나기 쉽다 */}
-      <div className="sticky bottom-3 z-10 flex flex-wrap items-center justify-between gap-3 rounded-[var(--radius-panel)] bg-surface px-4 py-3 shadow-3">
-        <span className="text-[13px] text-mut" aria-live="polite">
-          {note ? <FormMessage tone={note.tone}>{note.text}</FormMessage> : !valid ? <span className="text-danger">{M.invalid}</span> : dirty ? M.dirty : null}
-        </span>
-        <div className="flex items-center gap-2">
-          <Button variant="secondary" size="sm" disabled={!dirty || pending} onClick={() => patch(() => saved)}>
-            {M.reset}
-          </Button>
-          <Button variant="accent" size="sm" loading={pending} loadingLabel={M.saving} disabled={!dirty || !valid} onClick={save}>
-            {M.save}
-          </Button>
-        </div>
-      </div>
     </div>
   );
 }

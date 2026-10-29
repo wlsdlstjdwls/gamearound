@@ -30,3 +30,9 @@ export const COMMENT_ADMIN_COLS = "md:grid-cols-[minmax(0,1.6fr)_minmax(0,1fr)_m
 
 /** 수집 현황 스토어 표. 스토어 이름과 상태가 왼쪽에 붙어 있어야 "어디가 아픈가" 가 한 번에 읽힌다. 에러 맛보기는 줄 밑에 통째로 눕는다(col-span-full) */
 export const SYNC_SOURCE_COLS = "md:grid-cols-[minmax(0,1.3fr)_88px_minmax(0,1.3fr)_92px_72px_minmax(0,1.6fr)_84px_64px] md:gap-x-3 md:px-3 md:py-2";
+
+/** 구독 관리 — 상태, 구독자, 카드, 이번 기간, 다음 결제, 남은 이용권, 금액 */
+export const MEMBERSHIP_COLS = "md:grid-cols-[84px_minmax(0,1.6fr)_minmax(0,1fr)_minmax(0,1.3fr)_96px_80px_92px] md:gap-x-3 md:px-3 md:py-2.5";
+
+/** 결제 관리 — 상품, 구매자, 결제 일시, 금액, 처리(환불 단추가 펴지면 그 칸이 넓어진다) */
+export const PAYMENT_COLS = "md:grid-cols-[minmax(0,1.6fr)_minmax(0,1.2fr)_132px_96px_minmax(0,1.4fr)] md:gap-x-3 md:px-3 md:py-2.5";

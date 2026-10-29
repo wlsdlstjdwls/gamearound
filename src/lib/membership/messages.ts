@@ -52,6 +52,12 @@ export const MEMBERSHIP_MESSAGES = {
   adminStatMonthlyHint: "이용 중 구독자의 다음 갱신 값 합이에요",
   adminStatPeople: (n: number) => `${n}명`,
   adminFailed: (n: number) => `연속 실패 ${n}회`,
+  /** 구독자 표 머리(2026-10-29, 줄마다 " | " 로 이어 붙인 한 줄을 칸으로 폈다) */
+  adminColStatus: "상태",
+  adminColMember: "구독자",
+  adminColCard: "카드",
+  adminColPeriod: "이번 기간",
+  adminColAmount: "금액",
 } as const;
 
 export const MEMBERSHIP_STATUS_LABEL: Record<MembershipStatus, string> = {
