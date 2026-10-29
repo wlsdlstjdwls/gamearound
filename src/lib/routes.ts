@@ -342,3 +342,8 @@ export const TASK_OPEN_PARAM = "task";
 export function adminTaskPath(id: string): string {
   return `${ROUTES.adminTasks}?${TASK_OPEN_PARAM}=${encodeURIComponent(id)}`;
 }
+
+/** 관리자 게임 고치기 화면. 승인 화면 둘(스토어매칭, 상품 매핑)이 상세에서 이 주소로 건너간다 */
+export function adminGamePath(id: string): string {
+  return `/admin/games/${encodeURIComponent(id)}`;
+}

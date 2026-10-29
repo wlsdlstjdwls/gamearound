@@ -5,7 +5,7 @@
 //
 // 네트워크를 쓰지 않는다. 대조 상대가 우리 카탈로그이고 후보는 이미 배치가 골라 뒀다.
 import "server-only";
-import { and, desc, eq, isNotNull, isNull, sql } from "drizzle-orm";
+import { and, count, desc, eq, isNotNull, isNull, sql } from "drizzle-orm";
 import { getDb } from "@/server/db/client";
 import { games, products, shops } from "@/server/db/schema";
 import { updatedBy } from "@/server/db/audit";
@@ -25,6 +25,16 @@ export interface SuggestedProductMatch {
   confidence: string | null;
   checkedAt: Date | null;
   candidate: { id: string; slug: string; titleKo: string | null; titleEn: string };
+}
+
+/** 판정을 기다리는 상품 수. 화면이 싣는 수(PENDING_PRODUCT_MATCHES_LIMIT)와 다를 수 있다 — 상한에 걸린 사실을 감추면 다 처리한 줄 안다 */
+export async function countSuggestedProductMatches(): Promise<number> {
+  await requireAdmin();
+  const [row] = await getDb()
+    .select({ n: count() })
+    .from(products)
+    .where(and(isNull(products.gameId), isNotNull(products.gameMatchSuggestedId)));
+  return Number(row?.n ?? 0);
 }
 
 /**

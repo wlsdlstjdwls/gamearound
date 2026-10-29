@@ -1,94 +1,45 @@
-// /admin/products — 상품 매핑 큐 (매장 설계서 §5.2).
+// /admin/products — 매장상품매핑관리(상품 매핑 큐, 매장 설계서 §5.2).
 //
 // 매핑 배치가 "중간"(유사도 0.7~0.9)으로 판정한 상품만 선다. 높으면 배치가 이미 이었고
 // 낮으면 후보를 남기지 않는다. 사람이 하는 일은 두 이름을 맞대 보고 잇거나 무르는 것 하나다.
+//
+// 화면 구성은 백오피스 승인 화면 꼴(components/admin/products-screen). 여기는 읽어서 줄로 바꿔 넘기기만 한다.
 import type { Metadata } from "next";
 import { AdminScreenHead } from "@/components/admin/screen/head";
-import Link from "next/link";
-import { ProductMatchButtons } from "@/components/admin/product-match-buttons";
-import { DataCell, DataHead, DataList, DataRow } from "@/components/admin/data-rows";
-import {  SectionHead } from "@/components/ui/page";
-import { Clamp } from "@/components/ui/tooltip";
-import { formatDateTime } from "@/lib/format";
-import { gamePath } from "@/lib/routes";
+import { ProductsScreen, type ProductMatchRow } from "@/components/admin/products-screen";
 import { requireRoleOrForbid } from "@/server/auth/guards";
-import { listSuggestedProductMatches } from "@/server/services/admin-products";
+import { countSuggestedProductMatches, listSuggestedProductMatches } from "@/server/services/admin-products";
 import { AUTO_MATCH_THRESHOLD, PENDING_MATCH_THRESHOLD } from "@/server/sync/match";
-import { PRODUCT_MATCH_MESSAGES, ADMIN_NAV } from "@/lib/admin/messages";
-import { PRODUCT_QUEUE_COLS } from "@/lib/admin/table-cols";
+import { PRODUCT_MATCH_MESSAGES as M, ADMIN_NAV } from "@/lib/admin/messages";
 
 export const metadata: Metadata = { title: ADMIN_NAV.products };
 
 export default async function AdminProductMatchesPage() {
   await requireRoleOrForbid("admin");
-  const queue = await listSuggestedProductMatches();
+  const [queue, total] = await Promise.all([listSuggestedProductMatches(), countSuggestedProductMatches()]);
+  const rows: ProductMatchRow[] = queue.map((p) => ({
+    productId: p.productId,
+    name: p.productName,
+    barcode: p.barcode,
+    hardwareCode: p.hardwareCode,
+    shopName: p.shopName,
+    confidence: p.confidence === null ? null : Number(p.confidence),
+    checkedAt: p.checkedAt?.toISOString() ?? null,
+    gameId: p.candidate.id,
+    gameSlug: p.candidate.slug,
+    gameTitle: p.candidate.titleKo ?? p.candidate.titleEn,
+    gameTitleEn: p.candidate.titleEn,
+  }));
 
   return (
     <>
-      <AdminScreenHead title={ADMIN_NAV.products} count={queue.length} />
-
-      <section className="flex flex-col gap-3">
-        <SectionHead
-          size="sub"
-          title={PRODUCT_MATCH_MESSAGES.queueTitle}
-          note={`${PRODUCT_MATCH_MESSAGES.similarity(PENDING_MATCH_THRESHOLD, AUTO_MATCH_THRESHOLD)} | ${PRODUCT_MATCH_MESSAGES.count(queue.length)}`}
-        />
-        {queue.length === 0 ? (
-          <p className="rounded-xl bg-surface-2 px-4 py-3.5 text-[13px] text-mut">
-            {PRODUCT_MATCH_MESSAGES.empty}
-          </p>
-        ) : (
-          <div>
-            <DataHead
-              cols={PRODUCT_QUEUE_COLS}
-              labels={[
-                PRODUCT_MATCH_MESSAGES.colProduct,
-                PRODUCT_MATCH_MESSAGES.colCandidate,
-                PRODUCT_MATCH_MESSAGES.colConfidence,
-                PRODUCT_MATCH_MESSAGES.colShop,
-                PRODUCT_MATCH_MESSAGES.colCheckedAt,
-                PRODUCT_MATCH_MESSAGES.colAction,
-              ]}
-            />
-            <DataList>
-              {queue.map((p) => (
-                <DataRow key={p.productId} cols={PRODUCT_QUEUE_COLS}>
-                  <DataCell label={PRODUCT_MATCH_MESSAGES.colProduct}>
-                    <Clamp>{p.productName}</Clamp>
-                    {/* 바코드와 기종은 판정의 근거다 — 같은 이름이라도 기종이 다르면 다른 물건이다 */}
-                    <span className="mt-0.5 block font-mono text-[11px] text-dim">
-                      {[p.hardwareCode, p.barcode].filter(Boolean).join(" | ") || PRODUCT_MATCH_MESSAGES.noBarcode}
-                    </span>
-                  </DataCell>
-                  <DataCell label={PRODUCT_MATCH_MESSAGES.colCandidate} className="text-mut">
-                    <Link href={gamePath(p.candidate.slug)} target="_blank" rel="noreferrer" className="hover:text-acc">
-                      <Clamp>{p.candidate.titleKo ?? p.candidate.titleEn}</Clamp>
-                      <span className="sr-only"> (새 창에서 열림)</span>
-                    </Link>
-                    {p.candidate.titleKo && (
-                      <span className="mt-0.5 block text-[11px] text-dim">
-                        <Clamp>{p.candidate.titleEn}</Clamp>
-                      </span>
-                    )}
-                  </DataCell>
-                  <DataCell label={PRODUCT_MATCH_MESSAGES.colConfidence} className="text-mut">
-                    {p.confidence ?? "-"}
-                  </DataCell>
-                  <DataCell label={PRODUCT_MATCH_MESSAGES.colShop} className="text-mut">
-                    {p.shopName ? <Clamp>{p.shopName}</Clamp> : <span className="text-dim-2">{PRODUCT_MATCH_MESSAGES.viaSync}</span>}
-                  </DataCell>
-                  <DataCell label={PRODUCT_MATCH_MESSAGES.colCheckedAt} className="text-[12px] text-mut">
-                    {p.checkedAt ? formatDateTime(p.checkedAt) : "-"}
-                  </DataCell>
-                  <DataCell>
-                    <ProductMatchButtons productId={p.productId} />
-                  </DataCell>
-                </DataRow>
-              ))}
-            </DataList>
-          </div>
-        )}
-      </section>
+      {/* 남은 수와 실은 수를 같이 적는다 — 상한에 걸린 사실을 감추면 관리자는 다 처리했다고 믿고 화면을 닫는다 */}
+      <AdminScreenHead
+        title={ADMIN_NAV.products}
+        count={queue.length}
+        note={`${M.note(queue.length, total)} | ${M.similarity(PENDING_MATCH_THRESHOLD, AUTO_MATCH_THRESHOLD)}`}
+      />
+      <ProductsScreen rows={rows} />
     </>
   );
 }

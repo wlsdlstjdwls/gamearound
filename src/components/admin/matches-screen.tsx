@@ -13,6 +13,7 @@ import { FormSelect } from "@/components/ui/select/fields";
 import { Tag } from "@/components/ui/tag";
 import { TextField } from "@/components/ui/text-field";
 import { APPROVAL_MESSAGES as AM, MATCH_MESSAGES as M } from "@/lib/admin/messages";
+import { adminGamePath } from "@/lib/routes";
 
 /** 서버 화면이 넘기는 줄. 열쇠는 (게임, 스토어) — 한 게임이 여러 스토어 후보를 가질 수 있다 */
 export type MatchRow = {
@@ -107,7 +108,7 @@ function Detail({ r }: { r: MatchRow }) {
       <FormSection
         title={M.sectionGame}
         action={
-          <Link href={`/admin/games/${r.gameId}`} className="text-[12.5px] font-semibold text-acc hover:underline">
+          <Link href={adminGamePath(r.gameId)} className="text-[12.5px] font-semibold text-acc hover:underline">
             {M.openGame}
           </Link>
         }

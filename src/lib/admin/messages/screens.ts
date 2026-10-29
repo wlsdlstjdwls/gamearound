@@ -227,20 +227,34 @@ export const COMPANY_MESSAGES = {
 
 export const PRODUCT_MATCH_MESSAGES = {
   title: "상품 매핑",
-  lead: (recheckDays: number) =>
-    `매장이 올린 물건을 우리 카탈로그와 맞대 본 결과예요. "승인" 하면 그 게임 상세의 "파는 곳" 에 바로 뜨고, "반려" 하면 그 후보는 다시 올라오지 않아요. 반려한 상품은 ${recheckDays}일 뒤 다음 후보로 다시 물어봐요.`,
-  queueTitle: "후보가 남은 상품",
+  note: (shown: number, total: number) =>
+    total > shown ? `${total}건 중 ${shown}건 보는 중` : `${shown}건`,
   similarity: (lo: number, hi: number) => `닮은 정도 ${lo}~${hi}`,
-  count: (n: number) => `${n}건`,
   empty: "판정할 상품이 없어요.",
   colProduct: "매장이 올린 물건",
   colCandidate: "후보 게임",
   colConfidence: "닮은 정도",
   colShop: "올린 매장",
   colCheckedAt: "마지막으로 본 때",
-  colAction: "같은 것인가요",
   noBarcode: "바코드 없음",
   viaSync: "연동으로 들어옴",
+  search: "조회조건",
+  searchShop: "올린 매장",
+  searchName: "상품명",
+  searchAll: "전체",
+  listLabel: "상품 매핑 대기 목록",
+  detailTitle: "매핑 상세",
+  sectionProduct: "매장이 올린 물건",
+  sectionGame: "후보 게임",
+  fieldName: "상품명",
+  fieldHardware: "기종",
+  fieldBarcode: "바코드",
+  fieldGame: "게임",
+  fieldGameEn: "영문 제목",
+  openGame: "게임 관리 화면",
+  openPublic: "공개 화면에서 보기",
+  approve: "승인",
+  reject: "반려",
 } as const;
 
 /**
