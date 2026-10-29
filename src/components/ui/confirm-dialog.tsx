@@ -7,6 +7,8 @@
 import { useEffect, useId, useRef, useState } from "react";
 import { CONFIRM_MESSAGES } from "@/lib/messages/confirm";
 import { Button } from "@/components/ui/button";
+import { AlertCircleIcon, InfoIcon } from "@/components/ui/icons";
+import { cn } from "@/lib/cn";
 
 export function ConfirmDialog({
   open,
@@ -15,6 +17,8 @@ export function ConfirmDialog({
   confirmLabel,
   cancelLabel,
   tone = "danger",
+  altLabel,
+  onAlt,
   onConfirm,
   onClose,
 }: {
@@ -25,6 +29,9 @@ export function ConfirmDialog({
   cancelLabel: string;
   /** 확인 단추 색. 지우기는 danger, 그 밖의 확인은 primary */
   tone?: "danger" | "primary";
+  /** 세 번째 갈래(행 이동 때 "저장 안 함"). 있으면 취소와 확인 사이에 선다 */
+  altLabel?: string;
+  onAlt?: () => void;
   onConfirm: () => void;
   onClose: () => void;
 }) {
@@ -59,19 +66,42 @@ export function ConfirmDialog({
       }}
       className="confirm-dialog m-auto w-[min(400px,calc(100vw-32px))] rounded-[var(--radius-panel)] bg-surface p-0 text-ink shadow-3"
     >
-      <div className="flex flex-col gap-2 p-5 sm:p-6">
-        <h2 id={titleId} className="text-[17px] font-extrabold tracking-[-0.02em]">
-          {title}
-        </h2>
-        {description && (
-          <div id={descId} className="text-[14px] leading-[1.6] text-mut">
-            {description}
+      {/* 아이콘, 제목, 본문 셋으로 선다(2026-10-30 사용자 "타이틀도 없고 아이콘도 없어서 투박"). 묻는 말은 제목이 아니라 본문이다 —
+          앞 판은 묻는 문장 하나를 굵은 제목으로 세워 글자만 덩그러니 보였다 */}
+      <div className="flex flex-col gap-4 p-5 sm:p-6">
+        <div className="flex items-start gap-3.5">
+          <span
+            aria-hidden
+            className={cn("grid size-10 shrink-0 place-items-center rounded-full", tone === "danger" ? "bg-danger-soft text-danger" : "bg-acc-soft text-acc")}
+          >
+            {tone === "danger" ? <AlertCircleIcon width={22} height={22} /> : <InfoIcon width={22} height={22} />}
+          </span>
+          <div className="flex min-w-0 flex-col gap-1 pt-1">
+            <h2 id={titleId} className="text-[16px] font-bold tracking-[-0.01em] text-ink">
+              {title}
+            </h2>
+            {description && (
+              <div id={descId} className="text-[14px] leading-[1.6] text-mut [text-wrap:pretty]">
+                {description}
+              </div>
+            )}
           </div>
-        )}
-        <div className="mt-3 flex justify-end gap-2">
+        </div>
+        <div className="flex flex-wrap justify-end gap-2">
           <Button ref={cancelRef} variant="secondary" onClick={onClose}>
             {cancelLabel}
           </Button>
+          {altLabel && onAlt && (
+            <Button
+              variant="secondary"
+              onClick={() => {
+                onAlt();
+                onClose();
+              }}
+            >
+              {altLabel}
+            </Button>
+          )}
           <Button
             variant={tone}
             // 확인을 먼저 알린다 — 닫기를 먼저 부르면 askConfirm 이 닫기를 "취소" 로 받아 답이 거기서 굳는다
@@ -92,14 +122,27 @@ export function ConfirmDialog({
 // `if (!confirm(문구)) return;` 자리를 `if (!(await askConfirm(문구))) return;` 로 바꾸면 된다. 화면마다 열림 상태를 따로 쥐지 않도록
 // 루트 레이아웃에 ConfirmHost 하나를 세우고, askConfirm 이 그 하나에 묻는다. 확인을 누르면 true, 취소, Esc, 바깥 누름은 false.
 
-type ConfirmRequest = { title: string; description?: string; confirmLabel?: string; tone?: "danger" | "primary"; resolve: (ok: boolean) => void };
+// 2026-10-30: 첫 인자는 본문(묻는 말)이고 제목은 opts.title, 없으면 tone 별 기본 제목. askChoice 는 세 갈래(확인, 다른 갈래, 취소)를 묻는다.
+
+export type ConfirmTone = "danger" | "primary";
+type ConfirmOptions = { title?: string; description?: string; confirmLabel?: string; tone?: ConfirmTone };
+export type ConfirmChoice = "confirm" | "alt" | "cancel";
+type ConfirmRequest = ConfirmOptions & { message: string; altLabel?: string; resolve: (c: ConfirmChoice) => void };
 let pushRequest: ((r: ConfirmRequest) => void) | null = null;
 
-export function askConfirm(title: string, opts: { description?: string; confirmLabel?: string; tone?: "danger" | "primary" } = {}): Promise<boolean> {
+/** 세 갈래 확인. 행을 옮길 때 "저장, 저장 안 함, 취소" 처럼 확인 말고 갈래가 하나 더 있을 때 쓴다 */
+export function askChoice(message: string, opts: ConfirmOptions & { altLabel: string }): Promise<ConfirmChoice> {
   // 호스트가 없으면(테스트, 레이아웃 밖) 묻지 않고 하지 않는다 — 되돌릴 수 없는 일을 확인 없이 하는 쪽보다 낫다
-  if (!pushRequest) return Promise.resolve(false);
+  if (!pushRequest) return Promise.resolve("cancel");
   const push = pushRequest;
-  return new Promise((resolve) => push({ title, ...opts, resolve }));
+  return new Promise((resolve) => push({ message, ...opts, resolve }));
+}
+
+export async function askConfirm(message: string, opts: ConfirmOptions = {}): Promise<boolean> {
+  if (!pushRequest) return false;
+  const push = pushRequest;
+  const c = await new Promise<ConfirmChoice>((resolve) => push({ message, ...opts, resolve }));
+  return c === "confirm";
 }
 
 export function ConfirmHost() {
@@ -108,27 +151,32 @@ export function ConfirmHost() {
     pushRequest = (r) =>
       setReq((cur) => {
         // 앞 질문이 떠 있는데 또 물으면 앞 질문은 취소로 닫는다 — 둘을 겹쳐 띄우지 않는다
-        cur?.resolve(false);
+        cur?.resolve("cancel");
         return r;
       });
     return () => {
       pushRequest = null;
     };
   }, []);
-  const settle = (ok: boolean) => {
-    req?.resolve(ok);
+  const settle = (c: ConfirmChoice) => {
+    req?.resolve(c);
     setReq(null);
   };
+  const tone = req?.tone ?? "primary";
+  // 본문이 따로 오면(description) 묻는 말이 둘째 줄로 붙는다
+  const body = req ? (req.description ? `${req.message} ${req.description}` : req.message) : undefined;
   return (
     <ConfirmDialog
       open={req !== null}
-      title={req?.title ?? ""}
-      description={req?.description}
+      title={req?.title ?? CONFIRM_MESSAGES.title[tone]}
+      description={body}
       confirmLabel={req?.confirmLabel ?? CONFIRM_MESSAGES.ok}
       cancelLabel={CONFIRM_MESSAGES.cancel}
-      tone={req?.tone ?? "primary"}
-      onConfirm={() => settle(true)}
-      onClose={() => settle(false)}
+      tone={tone}
+      altLabel={req?.altLabel}
+      onAlt={() => settle("alt")}
+      onConfirm={() => settle("confirm")}
+      onClose={() => settle("cancel")}
     />
   );
 }
