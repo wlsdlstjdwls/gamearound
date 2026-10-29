@@ -1,4 +1,4 @@
-// 할인 행사 뼈대 — 머리와 설정 판(admin-nav-speed).
+// 프로모션 뼈대 — 머리와 설정 판(admin-nav-speed).
 import { SkeletonBody } from "@/components/ui/skeleton";
 import { AdminHeadSkeleton, ModerationRowsSkeleton } from "@/components/admin/skeletons";
 

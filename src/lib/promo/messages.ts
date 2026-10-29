@@ -10,7 +10,7 @@ export const PROMO_MESSAGES = {
   pinnedTitle: "지금 주목받는 홍보",
   pinnedCover: (title: string) => `${title} 대표 그림`,
 
-  adminTitle: "광고 자리",
+  adminTitle: "광고",
   adminLead: "인디 목록 맨 위와 홍보 게시판 위, 돈을 받고 내주는 두 자리예요. 산 광고는 저절로 걸리고, 시범이나 보상은 여기서 직접 걸어요. 숨기거나 반려한 글은 걸려 있어도 보이지 않아요.",
   grantTitle: "새로 걸기",
   slot: "자리",

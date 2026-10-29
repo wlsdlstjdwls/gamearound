@@ -73,7 +73,7 @@ export const PAYMENT_MESSAGES = {
   adminTitle: "최근 결제",
   adminLead: "승인되거나 환불한 결제예요. 환불 요청이 온 결제는 빨간 꼬리표가 붙어요. 환불하면 걸린 광고도 그 자리에서 거둬요.",
   adminEmpty: "아직 승인된 결제가 없어요",
-  adminBoostMissing: "광고가 걸리지 않았어요. 광고 자리 화면에서 직접 걸어 주세요",
+  adminBoostMissing: "광고가 걸리지 않았어요. 광고 화면에서 직접 걸어 주세요",
   adminStatMonth: "이번 달 결제",
   adminStatMonthHint: (n: number) => `${n}건, 환불한 결제 포함`,
   adminStatRefunded: "이번 달 환불",

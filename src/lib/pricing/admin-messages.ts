@@ -1,4 +1,4 @@
-// 관리자 "상품과 가격"(/admin/pricing), "할인 행사"(/admin/discounts) 화면 문구(2026-10-28, 2026-10-29 화면을 둘로 나눔).
+// 관리자 "구독상품"(/admin/pricing), "프로모션"(/admin/discounts) 화면 문구(2026-10-28, 2026-10-29 화면을 둘로 나눔).
 import type { PricedKey } from "@/lib/pricing/settings";
 
 export const PRICING_ADMIN_MESSAGES = {
@@ -46,10 +46,10 @@ export const PRICING_ADMIN_MESSAGES = {
     benefits: "메이커 멤버십 화면 혜택 목록",
   },
 
-  promosTitle: "할인 행사",
+  promosTitle: "프로모션",
   promosLead: "여럿이 걸리면 가장 싼 값 하나만 써요(겹쳐 깎지 않아요). 메이커 멤버십 할인은 첫 달 결제에만 걸려요. 기간을 비우면 끝없이 이어져요.",
-  promosEmpty: "할인 행사가 없어요",
-  addPromo: "할인 행사 더하기",
+  promosEmpty: "프로모션이 없어요",
+  addPromo: "프로모션 더하기",
   removePromo: "지우기",
   promoActive: "켜기",
   promoLabel: "딱지 글(보는 사람에게 보여요)",
