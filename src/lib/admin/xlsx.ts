@@ -2,8 +2,10 @@
 //
 // 앞 판은 CSV 였다 — 열면 칸 너비, 머리 구분, 숫자 서식이 없어 손으로 다듬어야 했다. 지금 모양:
 //   1줄 화면 이름(굵게), 2줄 내려받은 때와 건수(회색), 4줄 머리(옅은 회색 면, 굵게, 가운데), 그 아래 줄들(가는 회색 테두리).
-//   머리 줄에 틀 고정과 필터, 칸 너비는 글자 길이로(한글은 두 칸), 숫자 칸은 천 단위 쉼표(소수는 둘째 자리).
-// 색은 관리자 화면 토큰과 같은 결의 회색 둘만 쓴다 — 줄무늬, 색 머리 같은 꾸밈은 넣지 않았다.
+//   머리 줄에 틀 고정(필터는 걸지 않는다, 2026-10-30 사용자), 칸 너비는 글자 길이로(한글은 두 칸), 숫자 칸은 천 단위 쉼표(소수는 둘째 자리).
+// 색은 관리자 화면 토큰과 같은 결의 회색 둘만 쓴다(머리 면은 한 단 진하게, 2026-10-30 사용자) — 줄무늬, 색 머리 같은 꾸밈은 넣지 않았다.
+// 시트 눈금선은 켜 둔다 — 껐더니 표 밖 칸 구분이 사라져 엑셀로 안 보였다(2026-10-30 사용자).
+// 맨 앞 No 칸은 그리드와 같게 1부터 센다(withRowNumbers).
 //
 // 라이브러리 대신 xlsx(Office Open XML)를 직접 적는다. 묶기(zip)만 fflate 를 쓴다 — 엑셀 라이브러리는 내려받기 한 번에 쓰기엔 수백 KB 다.
 // 글은 모두 inlineStr 로 넣는다: 수식으로 읽히지 않아 사용자가 올린 제목이 = 로 시작해도 실행되지 않는다(CSV 때 따로 막던 일).
@@ -77,8 +79,6 @@ function cell(ref: string, v: XlsxCell, textStyle: number): string {
 
 export function sheetXml(sheet: XlsxSheet): string {
   const cols = columnWidths(sheet.head, sheet.rows);
-  const last = colName(Math.max(0, sheet.head.length - 1));
-  const lastRow = HEAD_ROW + sheet.rows.length;
   const rows = [
     `<row r="1" ht="24" customHeight="1">${cell("A1", sheet.title, S_TITLE)}</row>`,
     `<row r="2">${cell("A2", sheet.meta, S_META)}</row>`,
@@ -91,11 +91,10 @@ export function sheetXml(sheet: XlsxSheet): string {
   return (
     `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>` +
     `<worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main">` +
-    `<sheetViews><sheetView workbookViewId="0" showGridLines="0"><pane ySplit="${HEAD_ROW}" topLeftCell="A${HEAD_ROW + 1}" activePane="bottomLeft" state="frozen"/></sheetView></sheetViews>` +
+    `<sheetViews><sheetView workbookViewId="0"><pane ySplit="${HEAD_ROW}" topLeftCell="A${HEAD_ROW + 1}" activePane="bottomLeft" state="frozen"/></sheetView></sheetViews>` +
     `<sheetFormatPr defaultRowHeight="18"/>` +
     `<cols>${cols.map((w, c) => `<col min="${c + 1}" max="${c + 1}" width="${w}" customWidth="1"/>`).join("")}</cols>` +
     `<sheetData>${rows.join("")}</sheetData>` +
-    (sheet.rows.length > 0 ? `<autoFilter ref="A${HEAD_ROW}:${last}${lastRow}"/>` : "") +
     `<pageMargins left="0.5" right="0.5" top="0.6" bottom="0.6" header="0.3" footer="0.3"/>` +
     `</worksheet>`
   );
@@ -112,9 +111,9 @@ const STYLES =
   `<font><b/><sz val="10"/><color rgb="FF2B3240"/>${FONT}</font>` +
   `</fonts>` +
   `<fills count="3"><fill><patternFill patternType="none"/></fill><fill><patternFill patternType="gray125"/></fill>` +
-  `<fill><patternFill patternType="solid"><fgColor rgb="FFF1F3F7"/><bgColor indexed="64"/></patternFill></fill></fills>` +
+  `<fill><patternFill patternType="solid"><fgColor rgb="FFDDE3EC"/><bgColor indexed="64"/></patternFill></fill></fills>` +
   `<borders count="2"><border><left/><right/><top/><bottom/><diagonal/></border>` +
-  `<border><left style="thin"><color rgb="FFD9DDE5"/></left><right style="thin"><color rgb="FFD9DDE5"/></right><top style="thin"><color rgb="FFD9DDE5"/></top><bottom style="thin"><color rgb="FFD9DDE5"/></bottom><diagonal/></border></borders>` +
+  `<border><left style="thin"><color rgb="FFC5CBD6"/></left><right style="thin"><color rgb="FFC5CBD6"/></right><top style="thin"><color rgb="FFC5CBD6"/></top><bottom style="thin"><color rgb="FFC5CBD6"/></bottom><diagonal/></border></borders>` +
   `<cellStyleXfs count="1"><xf numFmtId="0" fontId="0" fillId="0" borderId="0"/></cellStyleXfs>` +
   `<cellXfs count="7">` +
   `<xf numFmtId="0" fontId="0" fillId="0" borderId="0" xfId="0"/>` +
@@ -149,7 +148,6 @@ export function buildXlsx(sheet: XlsxSheet): Uint8Array {
     "xl/workbook.xml": strToU8(
       `<?xml version="1.0" encoding="UTF-8" standalone="yes"?><workbook xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships">` +
         `<sheets><sheet name="${esc(sheetName(sheet.title))}" sheetId="1" r:id="rId1"/></sheets>` +
-        (sheet.rows.length > 0 ? `<definedNames><definedName name="_xlnm._FilterDatabase" localSheetId="0" hidden="1">'${esc(sheetName(sheet.title)).replace(/'/g, "''")}'!$A$${HEAD_ROW}:$${colName(Math.max(0, sheet.head.length - 1))}$${HEAD_ROW + sheet.rows.length}</definedName></definedNames>` : "") +
         `</workbook>`,
     ),
     "xl/_rels/workbook.xml.rels": strToU8(
@@ -161,6 +159,11 @@ export function buildXlsx(sheet: XlsxSheet): Uint8Array {
     "xl/worksheets/sheet1.xml": strToU8(sheetXml(sheet)),
   };
   return zipSync(files);
+}
+
+/** 그리드처럼 맨 앞에 No 칸(1부터)을 붙인다 */
+export function withRowNumbers(head: string[], rows: XlsxCell[][], label: string): { head: string[]; rows: XlsxCell[][] } {
+  return { head: [label, ...head], rows: rows.map((r, i) => [i + 1, ...r]) };
 }
 
 /** 한국 날짜(20261030) */

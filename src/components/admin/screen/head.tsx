@@ -14,10 +14,11 @@ import { GROUPS, isActive } from "@/components/admin/admin-nav-items";
 import { useAdminStatus } from "@/components/admin/screen/status";
 import { useTooltip } from "@/components/ui/tooltip";
 import { cn } from "@/lib/cn";
-import { buildXlsx, xlsxFileName } from "@/lib/admin/xlsx";
+import { buildXlsx, withRowNumbers, xlsxFileName } from "@/lib/admin/xlsx";
 import { formatDateTime } from "@/lib/format";
 import { registeredGrids } from "@/components/admin/screen/data-grid/export";
-import { SCREEN_MESSAGES as M } from "@/lib/admin/messages";
+import { GRID_MESSAGES, SCREEN_MESSAGES as M } from "@/lib/admin/messages";
+import { useSession } from "@/components/auth/session-provider";
 import { askConfirm } from "@/components/ui/confirm-dialog";
 
 type IconProps = { size?: number };
@@ -137,6 +138,7 @@ export function AdminScreenHead({
 }) {
   const router = useRouter();
   const { say } = useAdminStatus();
+  const { user } = useSession();
   const path = usePath();
   const [refreshing, startRefresh] = useTransition();
   const [hasGrid, setHasGrid] = useState(false);
@@ -186,7 +188,9 @@ export function AdminScreenHead({
       return;
     }
     const now = new Date();
-    const file = buildXlsx({ title, meta: M.excelMeta(formatDateTime(now), rows.length), head, rows });
+    // 누가 내려받았는지 덧말 줄에 남긴다(2026-10-30 사용자) — 파일이 돌아다녀도 출처를 안다
+    const who = user ? (user.displayName ?? user.email) : null;
+    const file = buildXlsx({ title, meta: M.excelMeta(formatDateTime(now), rows.length, who), ...withRowNumbers(head, rows, GRID_MESSAGES.no) });
     const blob = new Blob([file as BlobPart], { type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" });
     const a = document.createElement("a");
     a.href = URL.createObjectURL(blob);

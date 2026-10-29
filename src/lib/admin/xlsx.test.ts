@@ -27,9 +27,9 @@ describe("sheetXml", () => {
     expect(xml).toContain('<c r="B5" s="5"><v>6900</v></c>');
     expect(xml).toContain('<c r="B6" s="6"><v>0.87</v></c>');
   });
-  it("머리 줄에 틀 고정과 필터", () => {
+  it("머리 줄에 틀 고정, 필터는 걸지 않는다", () => {
     expect(xml).toContain('ySplit="4"');
-    expect(xml).toContain('<autoFilter ref="A4:B6"/>');
+    expect(xml).not.toContain("autoFilter");
   });
 });
 

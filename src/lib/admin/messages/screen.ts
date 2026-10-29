@@ -38,7 +38,7 @@ export const SCREEN_MESSAGES = {
   refreshed: "다시 조회했어요",
   excelDone: (n: number) => `${n.toLocaleString("ko-KR")}줄을 엑셀로 내려받았어요`,
   excelEmpty: "내려받을 목록이 없어요",
-  excelMeta: (at: string, n: number) => `${at} 내려받음 | ${n.toLocaleString("ko-KR")}건`,
+  excelMeta: (at: string, n: number, who: string | null) => `${at} ${who ? `${who} 내려받음` : "내려받음"} | ${n.toLocaleString("ko-KR")}건`,
   /** 고친 값을 둔 채 조회를 누르면 묻는다(백오피스 "변경된 내역이 있습니다. 저장하시겠습니까?" 와 같은 자리) */
   confirmDiscard: "저장하지 않은 바뀐 값이 있어요. 버리고 다시 조회할까요?",
 } as const;
