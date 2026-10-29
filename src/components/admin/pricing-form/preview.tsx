@@ -1,16 +1,23 @@
 "use client";
 // 요금 설정 미리 보기(2026-10-29, 사용자 "설정하기 이쁘게", 같은 날 "왼쪽 폼, 오른쪽 미리 보기로"). 넓은 화면은 오른쪽 기둥에 붙어 따라온다. 저장 전 지금 고친 값으로 실제 요금 카드(components/payments/plan-cards)를 그린다.
 // 문구 칸 이름(이름 위 작은 줄, 값 아래 강조 줄 등)만으로는 카드 어디에 서는지 알 수 없었다 — 고치는 자리 옆에 결과를 둔다.
-// 값은 처음 결제하는 사람 기준이다(첫 결제 할인이 걸린 모습). 카드 단추는 고를 글이 없는 빈 상태로 그린다 — 미리 보기에서 결제로 넘어가지 않게.
+// 값은 처음 결제하는 사람 기준이다(첫 결제 할인이 걸린 모습). 카드 단추는 글이 있는 사람 꼴로 그려 단추 글(cta)이 보이게 한다 — 판이 inert 라 결제로 넘어가지 않는다.
 // 2026-10-29 밤(사용자 "미리 보기 문구도 없애서 공간 확보", "메이커 멤버십 고르면 스크롤 생기네"): 판 제목과 설명을 걷고 카드만 세운다.
 // 카드가 남은 높이보다 길면 줄여서 다 보이게 한다(FitHeight) — 안쪽 스크롤은 카드 아래쪽(단추, 혜택 끝줄)을 가려 "어떻게 보이나" 를 못 답했다.
 // 줄이는 것은 넓은 화면의 오른쪽 기둥(바깥이 max-height 를 준 자리)뿐이다. 좁은 화면은 폼 아래 제 크기로 선다.
 
 import { useLayoutEffect, useRef, useState } from "react";
 import { PlanCards } from "@/components/payments/plan-cards";
+import type { PlanCtaGroup } from "@/components/payments/plan-cta";
 import { PRICING_ADMIN_MESSAGES as M } from "@/lib/pricing/admin-messages";
 import { priceBook, sellingTiers } from "@/lib/pricing/quote";
 import type { PricingSettings, TierKey } from "@/lib/pricing/settings";
+
+/**
+ * 미리 보기 카드가 고를 글 한 벌. 비워 두면 카드가 "글이 없는 사람" 꼴(게임 등록하기 단추)로 서서
+ * 관리자가 고친 단추 글이 보이지 않았다(2026-10-30 사용자). 판은 inert 라 눌리지 않고, 주소는 쓰이지 않는다
+ */
+const PREVIEW_TARGET: PlanCtaGroup[] = [{ title: "", items: [{ id: "preview", title: "", href: "#" }] }];
 
 /** 더 줄이면 글자를 못 읽는다. 이보다 길면 그때는 바깥 기둥이 굴러간다 */
 const MIN_SCALE = 0.6;
@@ -72,8 +79,8 @@ export function PricingPreview({ value, tier }: { value: PricingSettings; tier?:
           stack
           credits={value.membership.boostCredits}
           membership={null}
-          single={[]}
-          bundle={[]}
+          single={PREVIEW_TARGET}
+          bundle={PREVIEW_TARGET}
           bundleNeedsPromo={false}
         />
       </section>

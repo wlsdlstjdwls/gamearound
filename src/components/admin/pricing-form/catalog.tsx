@@ -10,7 +10,7 @@ import type { Patch } from "@/components/admin/pricing-form";
 import { CopySection } from "@/components/admin/pricing-form/copy-section";
 import { StatusTag } from "@/components/admin/pricing-form/status-tag";
 import { PricingPreview } from "@/components/admin/pricing-form/preview";
-import { Field, FormSection, MasterDetail, ReadValue, SearchBand, SearchItem, WithAside } from "@/components/admin/screen/layout";
+import { CodeName, Field, FormSection, MasterDetail, ReadValue, SearchBand, SearchItem, WithAside } from "@/components/admin/screen/layout";
 import { DataGrid, type GridCol } from "@/components/admin/screen/data-grid";
 import { ProgramLink } from "@/components/admin/screen/program-link";
 import { ADMIN_NAV } from "@/lib/admin/messages";
@@ -97,16 +97,15 @@ function BasicTab({ value, patch, rowKey }: { value: PricingSettings; patch: Pat
     const m = value.membership;
     return (
       <FormSection title={M.sectionProduct}>
-        <Field label={M.fieldCode}>
-          <ReadValue>{MEMBERSHIP_KEY}</ReadValue>
+        <Field label={M.fieldCode} wide>
+          <CodeName code={MEMBERSHIP_KEY}>
+            <ReadValue>{TIER_LABELS.membership}</ReadValue>
+          </CodeName>
         </Field>
         <Field label={M.fieldCycle}>
           <ReadValue>{M.cycleMonthly}</ReadValue>
         </Field>
-        <Field label={M.fieldName} wide>
-          <ReadValue>{TIER_LABELS.membership}</ReadValue>
-        </Field>
-        <Field label={M.fieldCredits} htmlFor="m-credits" required hint={M.membershipNote}>
+        <Field label={M.fieldCredits} htmlFor="m-credits" required>
           <NumberField id="m-credits" label={M.fieldCredits} hideLabel value={m.boostCredits} onValue={(n) => patch((d) => ({ ...d, membership: { ...d.membership, boostCredits: n } }))} trailing={<span className="pr-2 text-[13px] text-dim">{M.creditsUnit}</span>} className="text-right tabular-nums" compact />
         </Field>
         <Field label={M.fieldSale}>
@@ -123,16 +122,15 @@ function BasicTab({ value, patch, rowKey }: { value: PricingSettings; patch: Pat
   const set = (next: Partial<CatalogProduct>) => patch((d) => ({ ...d, products: d.products.map((x) => (x.id === p.id ? { ...x, ...next } : x)) }));
   return (
     <FormSection title={M.sectionProduct}>
-      <Field label={M.fieldCode}>
-        <ReadValue>{p.id}</ReadValue>
+      <Field label={M.fieldCode} htmlFor={`name-${p.id}`} required wide>
+        <CodeName code={p.id}>
+          <TextField id={`name-${p.id}`} label={M.fieldName} hideLabel value={p.name} onChange={(e) => set({ name: e.target.value })} compact />
+        </CodeName>
       </Field>
       <Field label={M.fieldKind}>
         <ReadValue>{isBundleProduct(p) ? M.kindBundle : M.kindSingle}</ReadValue>
       </Field>
-      <Field label={M.fieldName} htmlFor={`name-${p.id}`} required wide>
-        <TextField id={`name-${p.id}`} label={M.fieldName} hideLabel value={p.name} onChange={(e) => set({ name: e.target.value })} compact />
-      </Field>
-      <Field label={M.colSlots} required wide>
+      <Field label={M.colSlots} required>
         <FormSelect
           name={`slots-${p.id}`}
           label={M.colSlots}

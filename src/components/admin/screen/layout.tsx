@@ -163,7 +163,7 @@ export function FormSection({ title, action, defaultOpen = true, children }: { t
 /** 칸 하나 — 이름표 왼쪽(오른쪽 정렬), 필수면 빨간 *. 묶음이 440px 이상이면 칸 둘이 한 줄에 선다(2026-10-30 사용자 "기간이랑 판매여부 같은 행이어도 충분", 긴 글 칸만 wide). 묶음이 좁으면(미리 보기 기둥 곁) 이름표가 칸 위로 올라가 칸이 폭을 다 쓴다. wide 는 묶음 두 열을 다 쓴다. 열 수는 묶음 폭(@container)으로 정한다 — 미리 보기 기둥이 옆에 서면 좁아진다 */
 export function Field({ label, htmlFor, required, wide, hint, children }: { label: string; htmlFor?: string; required?: boolean; wide?: boolean; hint?: React.ReactNode; children: React.ReactNode }) {
   return (
-    <div className={cn("grid items-start gap-x-2 gap-y-1 @min-[440px]:grid-cols-[68px_minmax(0,1fr)]", wide && FULL_ROW)}>
+    <div className={cn("grid items-start gap-x-2 gap-y-1 @min-[440px]:grid-cols-[88px_minmax(0,1fr)]", wide && FULL_ROW)}>
       <label htmlFor={htmlFor} className="flex items-center gap-0.5 text-[12.5px] font-semibold text-mut @min-[440px]:min-h-10 @min-[440px]:justify-end @min-[440px]:text-right">
         {required && (
           <span aria-hidden className="text-danger">
@@ -191,6 +191,21 @@ export function FieldPair({ from, to, joiner = "~" }: { from: React.ReactNode; t
         {joiner}
       </span>
       <div className="min-w-[112px] flex-1">{to}</div>
+    </div>
+  );
+}
+
+/**
+ * 코드 + 코드명 한 칸 — 관리 대상은 코드와 그 이름을 한 이름표("프로모션코드/명") 아래 나란히 둔다(2026-10-30 사용자 "코드 관리는 코드 + 코드명").
+ * 코드는 회색(고칠 수 없음), 이름은 입력. 이름 칸이 더 길어야 해서 2:3 으로 나눈다. Field 에 wide 로 넣는다
+ */
+export function CodeName({ code, children }: { code: React.ReactNode; children: React.ReactNode }) {
+  return (
+    <div className="grid grid-cols-[minmax(0,2fr)_minmax(0,3fr)] gap-1.5">
+      <ReadValue>
+        <span className="truncate">{code}</span>
+      </ReadValue>
+      <div className="min-w-0">{children}</div>
     </div>
   );
 }

@@ -49,7 +49,6 @@ export function CopySection({ value, patch, tier, onTier, bare = false }: { valu
             <TextField
               id={id}
               label={M.fields[f.key]}
-              hint={M.fieldHints[f.key]}
               value={toDisplayCopy(value.copy[t][f.key])}
               onChange={(e) => write(e.target.value)}
               trailing={trigger}
@@ -75,7 +74,6 @@ export function CopySection({ value, patch, tier, onTier, bare = false }: { valu
             <div className="relative">
               <textarea
                 id={id}
-                aria-describedby={`${id}-hint`}
                 rows={Math.max(2, lines.length + 1)}
                 className={cn(TEXTAREA_CLASS, "pr-20")}
                 value={toDisplayCopy(lines.join("\n"))}
@@ -85,9 +83,6 @@ export function CopySection({ value, patch, tier, onTier, bare = false }: { valu
               <div className="absolute right-2 top-2">{trigger}</div>
               {menu}
             </div>
-            <p id={`${id}-hint`} className="text-xs text-dim sm:col-start-2">
-              {M.fieldHints[f.key]}
-            </p>
           </div>
         )}
       </TokenMenu>

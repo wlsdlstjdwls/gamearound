@@ -15,7 +15,7 @@ import { StatusTag, statusText } from "@/components/admin/pricing-form/status-ta
 import { PricingPreview } from "@/components/admin/pricing-form/preview";
 import { targetLabel } from "@/components/admin/pricing-form/sections";
 import { DataGrid, type GridCol } from "@/components/admin/screen/data-grid";
-import { Field, FieldPair, FormSection, MasterDetail, ReadValue, SearchBand, SearchItem, WithAside } from "@/components/admin/screen/layout";
+import { CodeName, Field, FieldPair, FormSection, MasterDetail, ReadValue, SearchBand, SearchItem, WithAside } from "@/components/admin/screen/layout";
 import { DateField } from "@/components/ui/date-field";
 import { NumberField } from "@/components/ui/number-field";
 import { FormSelect } from "@/components/ui/select/fields";
@@ -116,11 +116,10 @@ function Detail({ value, p, set }: { value: PricingSettings; p: Promotion; set: 
       {/* 탭을 걷었다 — 탭 셋에 칸이 열 남짓이라 탭은 칸을 숨기기만 했다(2026-10-30 사용자). 대상은 정가를 정하는 칸이라 혜택 묶음 맨 앞에 둔다 */}
       <WithAside aside={<PricingPreview value={value} tier={tierOfTarget(value, p.target)} />}>
         <FormSection title={M.promoSectionBasic}>
-          <Field label={M.promoFieldCode}>
-            <ReadValue>{p.id}</ReadValue>
-          </Field>
-          <Field label={M.promoFieldCodeName} htmlFor={`pn-${p.id}`} required>
-            <TextField id={`pn-${p.id}`} label={M.promoFieldCodeName} hideLabel value={p.name ?? ""} onChange={(e) => set({ name: e.target.value })} compact />
+          <Field label={M.promoFieldCode} htmlFor={`pn-${p.id}`} required wide>
+            <CodeName code={p.id}>
+              <TextField id={`pn-${p.id}`} label={M.promoFieldCode} hideLabel value={p.name ?? p.label} onChange={(e) => set({ name: e.target.value })} compact />
+            </CodeName>
           </Field>
           {/* 진행상태는 진행 중, 중단 둘만 고른다(2026-10-30 사용자). 중단이면 사유를 곁에 고른다 — 사유는 여럿일 수 있다(가격변동 중단 등).
               진행 중으로 두어도 기간 밖이면 걸리지 않는다 — 그때는 딱지가 "중단 | 시작 전" 처럼 기간이 정한 사유를 보인다 */}

@@ -47,7 +47,7 @@ export const PRICING_ADMIN_MESSAGES = {
   sectionProduct: "상품 정보",
   sectionPrice: "판매가",
   sectionPromos: "걸린 프로모션",
-  fieldCode: "상품코드",
+  fieldCode: "상품코드/명",
   fieldName: "상품명",
   fieldDays: "기간",
   fieldSale: "판매여부",
@@ -90,7 +90,6 @@ export const PRICING_ADMIN_MESSAGES = {
   onSale: "판매",
   /** 값 칸 안 오른쪽 끝 단위. 줄마다 "값(원)" 이름표를 세우던 자리를 대신한다(2026-10-28) */
   won: "원",
-  membershipNote: "멤버십 값, 이용권을 바꾸면 이용 중인 구독자도 다음 갱신부터 새 값이에요",
 
   copyTitle: "요금 카드 문구",
   copyLead: "카드를 골라 문구를 고쳐요. 값이 바뀌는 자리는 칸 끝 \"값 넣기\" 를 누르거나 칸에서 [ 를 쳐서 넣어요.",
@@ -115,18 +114,6 @@ export const PRICING_ADMIN_MESSAGES = {
     cta: "단추 글",
     benefits: "내 메이커 멤버십 화면의 혜택 목록",
   },
-  fieldHints: {
-    name: "카드 맨 위 큰 글자예요",
-    eyebrow: "기간이나 종류를 짧게 적어요. 예: 7일 | 노출 자리 하나",
-    summary: "이름 바로 아래 한 줄이에요",
-    tag: "비우면 안 보여요. 예: 추천",
-    now: "결제하면 바로 받는 것을 적어요",
-    base: "앞 카드보다 더 주는 것을 소개하는 머리예요. 예: 스파크에 더해",
-    lines: "한 줄에 하나씩 써요. \"이름: 설명\" 꼴이면 이름이 굵게 보여요",
-    hint: "묶음 광고를 팔고 있을 때만 보여요",
-    cta: "카드 맨 아래 단추에 들어가요",
-    benefits: "구독 안내 화면에 나오는 목록이에요. 한 줄에 하나씩 써요",
-  },
 
   // ---- 프로모션등록 화면 구성(2026-10-29 밤, 백오피스 일반프로모션 꼴) ----
   promoSearchUse: "사용여부",
@@ -144,9 +131,8 @@ export const PRICING_ADMIN_MESSAGES = {
   promoSectionPeriod: "기간",
   promoSectionBenefit: "할인",
   promoSectionTarget: "적용 상품",
-  promoFieldCode: "프로모션코드",
+  promoFieldCode: "프로모션코드/명",
   promoFieldName: "고객노출명",
-  promoFieldCodeName: "코드명",
   promoFieldUse: "사용여부",
   promoFieldPhase: "진행상태",
   promoFieldRegular: "정가",
