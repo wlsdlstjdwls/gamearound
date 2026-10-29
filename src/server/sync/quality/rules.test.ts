@@ -3,6 +3,7 @@ import {
   findParentChains,
   findParentMoreSpecific,
   findReleaseDateGaps,
+  pickReleaseDate,
   findSharedStoreIds,
   isWordPrefix,
   titleWords,
@@ -90,7 +91,17 @@ describe("findReleaseDateGaps", () => {
   it("새 작품이고 다른 플랫폼 둘이 같은 날이면 자동으로 채운다", () => {
     const [f] = findReleaseDateGaps([row("a", "steam", "2026-09-16"), row("b", "ps5", "2026-09-17"), row("c", "xbox", null)], NOW);
     expect(f.verdict).toBe("auto");
-    expect(f.fix).toEqual({ kind: "set_release_date", platformRowId: "c", date: "2026-09-16" });
+    expect(f.fix).toEqual({ kind: "set_release_date", platformRowId: "c", date: "2026-09-17" });
+  });
+
+  it("하루씩 갈리면 가장 많이 나온 날, 같으면 늦은 날(한국 날짜)로 채운다", () => {
+    // 2026-10-29 레지던트 이블 레퀴엠: Xbox 만 UTC 로 하루 이르다
+    const [f] = findReleaseDateGaps(
+      [row("a", "steam", "2026-02-27"), row("b", "ps5", "2026-02-27"), row("c", "xbox", "2026-02-26"), row("d", "switch2", null)],
+      NOW,
+    );
+    expect(f.fix).toEqual({ kind: "set_release_date", platformRowId: "d", date: "2026-02-27" });
+    expect(pickReleaseDate(["2026-03-19", "2026-03-20"])).toBe("2026-03-20");
   });
 
   it("날짜를 낸 곳이 하나뿐이면 사람에게 묻는다", () => {

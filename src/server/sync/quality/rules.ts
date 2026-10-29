@@ -86,6 +86,22 @@ const PLATFORM_LAUNCH: Readonly<Record<string, string>> = {
 };
 const DAY_MS = 86_400_000;
 
+/**
+ * 빈 칸에 넣을 날짜 — 형제 행에 가장 많이 나온 날, 같으면 늦은 날.
+ * 맨 이른 날을 쓰면 하루 틀린다: 스토어 몇 곳(Xbox 등)은 한국 자정 출시를 UTC 로 적어 전날이 된다(2026-10-29 실측:
+ * 레지던트 이블 레퀴엠 Xbox 02-26, 나머지 셋 02-27). 우리 화면은 한국 날짜라 갈리면 늦은 쪽이 맞다
+ */
+export function pickReleaseDate(dated: readonly string[]): string {
+  const count = new Map<string, number>();
+  for (const d of dated) count.set(d, (count.get(d) ?? 0) + 1);
+  let best = dated[0];
+  for (const [d, n] of count) {
+    const bn = count.get(best) ?? 0;
+    if (n > bn || (n === bn && d > best)) best = d;
+  }
+  return best;
+}
+
 /** 낱말 경계를 지키는 비교용 제목. 구두점, 상표 기호를 공백으로 */
 export function titleWords(title: string): string {
   return title
@@ -178,6 +194,7 @@ export function findReleaseDateGaps(rows: readonly QualityPlatformRow[], now: Da
     for (const r of list) {
       if (r.releaseDate || !r.priced) continue;
       const earliest = dated[0];
+      const fill = pickReleaseDate(dated);
       const launch = PLATFORM_LAUNCH[r.platform];
       if (launch && earliest < launch) continue;
       const spreadDays = (Date.parse(dated[dated.length - 1]) - Date.parse(earliest)) / DAY_MS;
@@ -191,9 +208,9 @@ export function findReleaseDateGaps(rows: readonly QualityPlatformRow[], now: Da
         subjectKey: r.id,
         gameId,
         reason: agree
-          ? `${r.platform} 출시일이 비어 있어요. 다른 플랫폼 ${dated.length}곳이 ${earliest} 로 맞아요`
-          : `${r.platform} 출시일이 비어 있어요. 다른 플랫폼 날짜: ${dated.join(", ")}. 고치면 ${earliest} 로 채워요`,
-        fix: { kind: "set_release_date", platformRowId: r.id, date: earliest },
+          ? `${r.platform} 출시일이 비어 있어요. 다른 플랫폼 ${dated.length}곳이 ${fill} 로 맞아요`
+          : `${r.platform} 출시일이 비어 있어요. 다른 플랫폼 날짜: ${dated.join(", ")}. 고치면 ${fill} 로 채워요`,
+        fix: { kind: "set_release_date", platformRowId: r.id, date: fill },
       });
     }
   }
