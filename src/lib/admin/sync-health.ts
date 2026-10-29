@@ -22,3 +22,20 @@ export function syncHealthOf(latest: SyncHealthInput | null, disabled: boolean, 
   // 모르는 상태 값은 손볼 쪽으로 읽는다 — 정상으로 읽으면 새 상태가 생겼다는 사실이 묻힌다
   return "failed";
 }
+
+/**
+ * 수집현황 조회조건 "상태" 의 값. "attention" 은 손볼 셋을 한 번에 본다 — 현황판에서 "손볼 스토어 3" 을 보고 들어온 사람이
+ * 끊김, 실패, 일부 실패를 하나씩 고르지 않게.
+ */
+export const SYNC_HEALTH_FILTERS = ["all", "attention", "stalled", "failed", "partial", "running", "ok", "idle"] as const;
+export type SyncHealthFilter = (typeof SYNC_HEALTH_FILTERS)[number];
+
+export function isSyncHealthFilter(v: unknown): v is SyncHealthFilter {
+  return typeof v === "string" && (SYNC_HEALTH_FILTERS as readonly string[]).includes(v);
+}
+
+export function matchesHealthFilter(health: SyncHealth, filter: SyncHealthFilter): boolean {
+  if (filter === "all") return true;
+  if (filter === "attention") return SYNC_ATTENTION.includes(health);
+  return health === filter;
+}

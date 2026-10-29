@@ -1,5 +1,5 @@
 "use client";
-// 수집 현황 소스 칸의 "가져온 게임 N건" 시트 — 마지막 기록 실행이 만진 게임과 바뀐 값.
+// 수집현황 상세의 "가져온 게임 N건" 시트 — 마지막 기록 실행이 만진 게임과 바뀐 값.
 //
 // 칸 안에 펼치지 않고 시트로 띄운 이유(2026-09-30 사용자 요청): 소스가 열 칸 넘게 서는 화면이라
 // 목록을 칸마다 펼치면 한 칸이 수백 줄이 되고, 정작 한눈에 볼 상태 배지와 실패 수가 밀려난다.
@@ -7,6 +7,8 @@
 // **줄은 시트를 열 때 받는다**(2026-10-08). 앞에는 서버에서 줄을 다 그려 children 으로 넘겼다 — 열 때 기다림은
 // 없었지만, 닫힌 시트 열다섯 개 몫 1,808줄을 화면을 열 때마다 그려 응답이 19.5초 걸렸다(admin-activity 머리 주석).
 // 이제 셈(머리 두 줄)은 화면이 싣고, 줄만 처음 열 때 한 번 받아 둔다. 다시 열면 받은 것을 그대로 쓴다.
+// **시트 자체도 처음 열 때 세운다**(2026-10-29 SBO 그리드로 옮김). Sheet 는 닫혀 있어도 내용을 DOM 에 두는 부품이라,
+// 줄마다 시트를 두면 닫힌 시트가 다시 쌓인다. 이제 단추는 고른 줄 상세에 하나뿐이고, 그 시트도 누르기 전에는 없다.
 import Link from "next/link";
 import { useState, useTransition } from "react";
 import { loadSyncRunItemsAction } from "@/app/(admin)/admin/actions";
@@ -23,6 +25,16 @@ import type { RunItem, RunSummary } from "@/server/services/admin-activity";
 import { GameLoader } from "@/components/ui/game-loader";
 
 const TAG = "rounded-[6px] px-1.5 py-0.5 text-[11px] font-semibold";
+
+/** 머리의 셈 셋(새로 등록, 값 바뀜, 그대로). 상세 칸과 시트 머리가 같은 셈을 쓴다 */
+export function runCounts(run: RunSummary) {
+  const same = run.total - run.created - run.changed;
+  return [
+    { label: SYNC_MESSAGES.runItemsCreated, n: run.created },
+    { label: run.traced ? SYNC_MESSAGES.runItemsPriceChanged : SYNC_MESSAGES.runItemsChanged, n: run.changed },
+    { label: run.traced ? SYNC_MESSAGES.runItemsPriceSame : SYNC_MESSAGES.runItemsSame, n: same },
+  ];
+}
 
 function ItemRow({ item, traced }: { item: RunItem; traced: boolean }) {
   const labels = syncFieldLabels(item.fields);
@@ -53,28 +65,22 @@ export function SyncRunSheet({
   sourceName,
   run,
   now,
-  inline = false,
 }: {
   source: string;
   sourceName: string;
   run: RunSummary;
   now: number;
-  /** 표 칸 안에 서는 자리(수집 현황 표). 단추 대신 "N건" 글자 링크로 선다 — 줄마다 단추가 서면 표가 단추 더미가 된다 */
-  inline?: boolean;
 }) {
   const [open, setOpen] = useState(false);
+  const [mounted, setMounted] = useState(false);
   const [load, setLoad] = useState<Load>({ state: "idle" });
   const [pending, startTransition] = useTransition();
 
-  const same = run.total - run.created - run.changed;
-  const counts = [
-    { label: SYNC_MESSAGES.runItemsCreated, n: run.created },
-    { label: run.traced ? SYNC_MESSAGES.runItemsPriceChanged : SYNC_MESSAGES.runItemsChanged, n: run.changed },
-    { label: run.traced ? SYNC_MESSAGES.runItemsPriceSame : SYNC_MESSAGES.runItemsSame, n: same },
-  ];
+  const counts = runCounts(run);
 
   const openSheet = () => {
     setOpen(true);
+    setMounted(true);
     if (load.state === "done" || pending) return;
     startTransition(async () => {
       try {
@@ -88,43 +94,41 @@ export function SyncRunSheet({
 
   return (
     <>
-      <button
-        type="button"
-        className={inline ? "tap inline-flex w-fit items-center font-medium text-acc tabular-nums hover:underline" : buttonClass({ variant: "secondary", size: "sm", className: "w-fit" })}
-        onClick={openSheet}
-      >
-        {inline ? SYNC_MESSAGES.runItemsShort(run.total) : SYNC_MESSAGES.runItemsOpen(run.total)}
+      <button type="button" className={buttonClass({ variant: "secondary", size: "sm", className: "w-fit" })} onClick={openSheet}>
+        {SYNC_MESSAGES.runItemsOpen(run.total)}
       </button>
-      <Sheet title={SYNC_MESSAGES.runItemsTitle(sourceName)} size="wide" open={open} onOpenChange={setOpen}>
-        <p className="pt-2 text-[12.5px] leading-[1.6] text-mut">
-          {SYNC_MESSAGES.runItemsLead(formatAgo(run.startedAt, now), run.processed, run.total)}
-        </p>
-        {run.traced && <p className="mt-1.5 text-[12px] leading-[1.6] text-dim">{SYNC_MESSAGES.runItemsTraced}</p>}
-        <p className="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-[12.5px] text-mut">
-          {counts.map((c) => (
-            <span key={c.label}>
-              {c.label} <b className="font-bold tabular-nums text-ink">{c.n.toLocaleString("ko-KR")}</b>
-            </span>
-          ))}
-        </p>
-        {load.state === "done" ? (
-          <ul className={cn(SHEET_ROWS, "mt-3")}>
-            {load.items.map((item) => (
-              <ItemRow key={item.slug} item={item} traced={run.traced === true} />
+      {mounted && (
+        <Sheet title={SYNC_MESSAGES.runItemsTitle(sourceName)} size="wide" open={open} onOpenChange={setOpen}>
+          <p className="pt-2 text-[12.5px] leading-[1.6] text-mut">
+            {SYNC_MESSAGES.runItemsLead(formatAgo(run.startedAt, now), run.processed, run.total)}
+          </p>
+          {run.traced && <p className="mt-1.5 text-[12px] leading-[1.6] text-dim">{SYNC_MESSAGES.runItemsTraced}</p>}
+          <p className="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-[12.5px] text-mut">
+            {counts.map((c) => (
+              <span key={c.label}>
+                {c.label} <b className="font-bold tabular-nums text-ink">{c.n.toLocaleString("ko-KR")}</b>
+              </span>
             ))}
-          </ul>
-        ) : (
-          load.state === "failed" && !pending ? (
-            <p role="status" className="mt-4 rounded-xl bg-surface-2 px-4 py-5 text-[13px] text-mut">
-              {SYNC_MESSAGES.runItemsLoadFailed}
-            </p>
+          </p>
+          {load.state === "done" ? (
+            <ul className={cn(SHEET_ROWS, "mt-3")}>
+              {load.items.map((item) => (
+                <ItemRow key={item.slug} item={item} traced={run.traced === true} />
+              ))}
+            </ul>
           ) : (
-            <div className="mt-4 rounded-xl bg-surface-2/60 px-4 py-5">
-              <GameLoader label={SYNC_MESSAGES.runItemsLoading} />
-            </div>
-          )
-        )}
-      </Sheet>
+            load.state === "failed" && !pending ? (
+              <p role="status" className="mt-4 rounded-xl bg-surface-2 px-4 py-5 text-[13px] text-mut">
+                {SYNC_MESSAGES.runItemsLoadFailed}
+              </p>
+            ) : (
+              <div className="mt-4 rounded-xl bg-surface-2/60 px-4 py-5">
+                <GameLoader label={SYNC_MESSAGES.runItemsLoading} />
+              </div>
+            )
+          )}
+        </Sheet>
+      )}
     </>
   );
 }

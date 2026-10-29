@@ -13,9 +13,3 @@ export const GAME_HISTORY_COLS = "md:grid-cols-[150px_minmax(0,1fr)_minmax(0,1fr
 // 고정폭 글자가 낱자로 꺾여 줄 하나가 열 줄로 늘었고, 그 몇 줄이 화면을 먹어 정상 실행이 안 보였다.
 // 에러가 있는 줄만 밑에 전체 폭으로 두 줄까지 펴고, 머리 칸은 여덟이다. 숫자 칸은 글자 폭만큼만 준다.
 export const SYNC_LOG_COLS = "md:grid-cols-[52px_128px_84px_120px_84px_56px_48px_minmax(0,1fr)] md:gap-x-3 md:px-3 md:py-2.5";
-
-
-/** 수집 현황 스토어 표. 스토어 이름과 상태가 왼쪽에 붙어 있어야 "어디가 아픈가" 가 한 번에 읽힌다. 에러 맛보기는 줄 밑에 통째로 눕는다(col-span-full) */
-export const SYNC_SOURCE_COLS = "md:grid-cols-[minmax(0,1.3fr)_88px_minmax(0,1.3fr)_92px_72px_minmax(0,1.6fr)_84px_64px] md:gap-x-3 md:px-3 md:py-2";
-
-

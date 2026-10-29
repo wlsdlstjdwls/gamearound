@@ -1,25 +1,35 @@
-// 수집 실행 결과의 색 규칙 한곳(2026-10-08). 수집 현황 카드(배지, 왼쪽 띠)와 실행 로그 표(배지)가
-// 같은 색으로 말해야 "저 화면의 노랑이 이 화면의 노랑" 으로 읽힌다 — 두 곳에서 쓰여 여기로 뺐다(AGENTS §3).
+// 수집 실행 결과의 색 규칙 한곳(2026-10-08). 수집현황과 수집이력조회가
+// 같은 색으로 말해야 "저 화면의 주황이 이 화면의 주황" 으로 읽힌다 — 두 곳에서 쓰여 여기로 뺐다(AGENTS §3).
 //
-// 실행 로그는 결과를 색 글자만으로 적었는데, 표 한 줄에 같은 크기의 글자가 아홉 칸이라 "일부 실패" 가
-// 숫자 사이에 묻혔다. 면을 깔아 배지로 세운다. 정상은 면을 옅게 둔다 — 백 줄 중 아흔이 정상이라
-// 정상까지 진하면 어느 것도 눈에 안 띈다.
+// 2026-10-29 두 화면을 공통 그리드로 옮기며 배지를 ui/tag 의 옅은 면으로 바꿨다. 정상은 면을 옅게 둔다 —
+// 백 줄 중 아흔이 정상이라 정상까지 진하면 어느 것도 눈에 안 띈다. 누런색은 쓰지 않는다(10-27, 일부 실패는 주황).
+// 서버 컴포넌트도 읽을 수 있게 "use client" 를 붙이지 않는다(AGENTS §6 푸터 사고).
+import type { TagTone } from "@/components/ui/tag";
+import type { SyncHealth } from "@/lib/admin/sync-health";
 import type { SyncLogRow } from "@/server/services/admin";
 
 type SyncStatus = SyncLogRow["status"];
+
+/** 실행 결과 배지 색(수집이력조회의 결과 칸, 수집현황의 끝난 실행) */
+export const SYNC_STATUS_TONE: Record<SyncStatus, TagTone> = {
+  ok: "ok",
+  partial: "warn",
+  failed: "danger",
+};
+
+/** 스토어 상태 배지 색(수집현황). 끊김은 실패와 같은 무게다 — 둘 다 사람이 손봐야 한다 */
+export const SYNC_HEALTH_TONE: Record<SyncHealth, TagTone> = {
+  ...SYNC_STATUS_TONE,
+  stalled: "danger",
+  running: "acc",
+  idle: "outline",
+};
 
 /** 결과 배지(면 + 글자) */
 export const SYNC_STATUS_BADGE: Record<SyncStatus, string> = {
   ok: "bg-ok-soft text-ok",
   partial: "bg-warn-soft text-warn",
   failed: "bg-danger-soft text-danger",
-};
-
-/** 카드 왼쪽 띠. 정상은 긋지 않는다 — 띠가 있는 카드만 봐도 손볼 곳이 다 보이게 */
-export const SYNC_STATUS_STRIPE: Record<SyncStatus, string> = {
-  ok: "",
-  partial: "bg-warn",
-  failed: "bg-danger",
 };
 
 /** 배지 모양. 수집 현황 카드와 실행 로그 줄이 같은 크기로 선다 */
