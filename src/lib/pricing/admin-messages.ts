@@ -49,10 +49,10 @@ export const PRICING_ADMIN_MESSAGES = {
   membershipNote: "멤버십 값, 이용권을 바꾸면 이용 중인 구독자도 다음 갱신부터 새 값이에요",
 
   copyTitle: "요금 카드 문구",
-  copyLead: "카드를 골라 문구를 고쳐요. 오른쪽 미리 보기에서 어디에 들어가는지 바로 보여요.",
-  tokensTitle: "자동으로 바뀌는 값 넣기",
-  tokensLead: "고칠 칸을 누른 뒤 아래 단추를 누르면 그 자리에 들어가요. 요금 화면에서는 지금 값으로 바뀌어 보여요.",
-  tokensNoField: "먼저 문구 칸을 눌러 주세요",
+  copyLead: "카드를 골라 문구를 고쳐요. 값이 바뀌는 자리는 칸 끝 \"값 넣기\" 를 누르거나 칸에서 [ 를 쳐서 넣어요.",
+  /** 칸마다 붙는 자리표시 넣기 단추(pricing-form/token-menu). 칸에서 [ 를 쳐도 같은 목록이 뜬다 */
+  tokenButton: "값 넣기",
+  tokenButtonLabel: "자동으로 바뀌는 값 넣기",
   copyTabs: "고칠 카드",
   groupHead: "카드 머리",
   groupPrice: "값 아래",
