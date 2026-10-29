@@ -1,4 +1,4 @@
-// 요금, 프로모션 뼈대 — 머리와 설정 판. 관리자 메뉴 이동이 서버 응답을 기다리며 멈춰 보이지 않게 한다(admin-nav-speed).
+// 상품과 가격 뼈대 — 머리와 설정 판. 관리자 메뉴 이동이 서버 응답을 기다리며 멈춰 보이지 않게 한다(admin-nav-speed).
 import { SkeletonBody } from "@/components/ui/skeleton";
 import { AdminHeadSkeleton, ModerationRowsSkeleton } from "@/components/admin/skeletons";
 

@@ -1,5 +1,6 @@
-// /admin/pricing — 요금, 프로모션(2026-10-28). 사용자: "첫 달 할인, 첫 결제 할인 같은 프로모션을 관리자가 설정하게,
-// 구독 멤버십도 문구부터 모든 설정을 관리자가". 값, 판매 여부, 이용권 수, 요금 카드와 멤버십 화면 문구, 프로모션을 한 화면에서 고친다.
+// /admin/pricing — 상품과 가격(2026-10-28). 사용자: "첫 달 할인, 첫 결제 할인 같은 프로모션을 관리자가 설정하게,
+// 구독 멤버십도 문구부터 모든 설정을 관리자가". 값, 판매 여부, 이용권 수, 요금 카드와 메이커 멤버십 화면 문구를 고친다.
+// 할인 행사는 2026-10-29 /admin/discounts 로 뗐다(그 화면 머리 주석).
 // 저장 값은 site_settings 의 pricing 키 하나(lib/pricing/settings). 폼은 components/admin/pricing-form.
 import { AdminLead } from "@/components/admin/admin-lead";
 import type { Metadata } from "next";
@@ -31,7 +32,7 @@ export default async function AdminPricingPage() {
       >
         <AdminLead>{M.lead}</AdminLead>
       </PageHead>
-      <PricingForm initial={settings} />
+      <PricingForm initial={settings} part="catalog" />
     </div>
   );
 }

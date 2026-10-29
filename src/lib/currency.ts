@@ -30,6 +30,11 @@ export function formatPrice(price: number | null | undefined, currency: Currency
   return `${prefix}${amount.toLocaleString("ko-KR", { minimumFractionDigits: decimals, maximumFractionDigits: decimals })}${suffix}`;
 }
 
+/** 금액 합계(관리자 매출, 환불 합). 상품 값이 아니라 0 도 "0원" 이다 — formatPrice 의 "무료" 는 게임 값에서만 뜻이 있다(2026-10-29) */
+export function formatAmount(price: number, currency: Currency = DISPLAY_CURRENCY): string {
+  return price === 0 ? `${AFFIX[currency].prefix}0${AFFIX[currency].suffix}` : formatPrice(price, currency);
+}
+
 /** 가격이 붙는 것들의 공통 모양 — 플랫폼 행, DTO, 가격 계열이 모두 이 두 필드를 갖는다 */
 export type Priced = { currentPrice: number | null; currency: Currency };
 

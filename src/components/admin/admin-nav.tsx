@@ -43,7 +43,7 @@ import { COMING_SOON } from "@/lib/messages/coming-soon";
 import { ROUTES } from "@/lib/routes";
 import { BoxIcon, BuildingIcon, ChatIcon, CheckListIcon, LinkIcon, LogIcon, PulseIcon, SearchCheckIcon, StoreIcon } from "@/components/admin/nav-icons";
 import { ComingSoon } from "@/components/ui/coming-soon";
-import { CalendarIcon, GamepadIcon, MonitorIcon, SlidersIcon, TagIcon, TicketIcon } from "@/components/ui/icons";
+import { CalendarIcon, ChartIcon, GamepadIcon, MonitorIcon, SproutIcon, TagIcon, TicketIcon } from "@/components/ui/icons";
 
 export interface AdminNavCounts {
   matches: number;
@@ -122,9 +122,12 @@ const GROUPS: Array<{ key: string; title?: string; items: Item[] }> = [
     key: "revenue",
     title: ADMIN_NAV.groupRevenue,
     items: [
-      { href: ROUTES.adminPromotions, label: ADMIN_NAV.promotions, Icon: TagIcon },
-      { href: ROUTES.adminMemberships, label: ADMIN_NAV.memberships, Icon: TicketIcon },
-      { href: ROUTES.adminPricing, label: ADMIN_NAV.pricing, Icon: SlidersIcon },
+      // 파는 흐름 순서(lib/admin/messages 의 groupRevenue 주석)
+      { href: ROUTES.adminPricing, label: ADMIN_NAV.pricing, Icon: TagIcon },
+      { href: ROUTES.adminDiscounts, label: ADMIN_NAV.discounts, Icon: TicketIcon },
+      { href: ROUTES.adminPromotions, label: ADMIN_NAV.promotions, Icon: MonitorIcon },
+      { href: ROUTES.adminMemberships, label: ADMIN_NAV.memberships, Icon: SproutIcon },
+      { href: ROUTES.adminPayments, label: ADMIN_NAV.payments, Icon: ChartIcon },
     ],
   },
   {

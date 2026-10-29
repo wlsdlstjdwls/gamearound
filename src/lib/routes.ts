@@ -101,11 +101,15 @@ export const ROUTES = {
   adminPreorder: "/admin/preorder",
   /** 게시판, 라운지 글과 댓글 숨김(기획서 v2.0 9.2 "게시글 관리") */
   adminPosts: "/admin/posts",
-  /** 유료 노출 자리 걸기, 회수(2026-10-27) */
+  /** 광고 자리 걸기, 회수(2026-10-27) */
   adminPromotions: "/admin/promotions",
   adminMemberships: "/admin/memberships",
-  /** 요금, 문구, 프로모션 설정(2026-10-28, 사용자 "프로모션과 멤버십 설정을 관리자가") */
+  /** 상품 값, 판매, 요금 카드 문구(2026-10-28, 사용자 "프로모션과 멤버십 설정을 관리자가") */
   adminPricing: "/admin/pricing",
+  /** 할인 행사(2026-10-29, 상품과 가격 화면에서 뗐다). 저장은 같은 요금 설정 하나다 */
+  adminDiscounts: "/admin/discounts",
+  /** 결제와 환불(2026-10-29, 광고 자리 화면 아래에 붙어 있던 결제 목록을 뗐다) */
+  adminPayments: "/admin/payments",
   /** 화면 연출 설정(2026-10-28, 명예의 전당 1위 인트로) */
   adminEffects: "/admin/effects",
   forbidden: "/403",

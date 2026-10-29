@@ -37,6 +37,15 @@ export function promotionLive(p: Promotion, now: Date): boolean {
   return true;
 }
 
+/** 할인 행사가 지금 어디쯤인가 — 관리자 할인 행사 줄의 꼬리표(2026-10-29). 켜 두었어도 기간 밖이면 걸리지 않는다는 것을 말해야 한다 */
+export type PromotionPhase = "off" | "upcoming" | "live" | "ended";
+
+export function promotionPhase(p: Promotion, now: Date): PromotionPhase {
+  if (!p.active) return "off";
+  if (promotionLive(p, now)) return "live";
+  return p.startsOn && now < new Date(`${p.startsOn}T00:00:00${KST_OFFSET}`) ? "upcoming" : "ended";
+}
+
 function applyPromotion(regular: number, p: Promotion): number {
   const raw = p.kind === "percent" ? regular * (1 - p.value / 100) : p.value;
   return Math.max(MIN_CHARGE, Math.floor(raw / ROUND_UNIT) * ROUND_UNIT);

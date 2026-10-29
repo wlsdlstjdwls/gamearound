@@ -10,8 +10,8 @@ export const PROMO_MESSAGES = {
   pinnedTitle: "지금 주목받는 홍보",
   pinnedCover: (title: string) => `${title} 대표 그림`,
 
-  adminTitle: "유료 노출",
-  adminLead: "인디 목록 맨 위와 홍보 게시판 위에 거는 유료 자리예요. 결제가 붙기 전에는 여기서 직접 걸어 효과를 재요. 숨기거나 반려한 글은 걸려 있어도 보이지 않아요.",
+  adminTitle: "광고 자리",
+  adminLead: "인디 목록 맨 위와 홍보 게시판 위, 돈을 받고 내주는 두 자리예요. 산 광고는 저절로 걸리고, 시범이나 보상은 여기서 직접 걸어요. 숨기거나 반려한 글은 걸려 있어도 보이지 않아요.",
   grantTitle: "새로 걸기",
   slot: "자리",
   target: "대상",
@@ -63,7 +63,7 @@ export const PROMO_SLOT_LABEL: Record<PromoSlot, string> = {
 export const PROMO_SOURCE_LABEL: Record<PromoSource, string> = {
   admin: "관리자",
   purchase: "결제",
-  membership: "멤버십",
+  membership: "메이커 멤버십",
 };
 
 export const BOOST_STATE_LABEL: Record<BoostState, string> = {

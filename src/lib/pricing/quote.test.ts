@@ -1,10 +1,21 @@
 import { describe, expect, it } from "vitest";
-import { bundleListPrice, discountRate, perDay, priceBook, promotionLive, quote } from "@/lib/pricing/quote";
+import { bundleListPrice, discountRate, perDay, priceBook, promotionLive, promotionPhase, quote } from "@/lib/pricing/quote";
 import { PRICING_DEFAULTS, parsePricingSettings, fillCopy, type PricingSettings, type Promotion } from "@/lib/pricing/settings";
 
 const now = new Date("2026-10-28T03:00:00Z");
 const promo = (p: Partial<Promotion>): Promotion => ({ id: "p", active: true, label: "할인", target: "boost_indie_7d", kind: "percent", value: 10, audience: "all", startsOn: null, endsOn: null, ...p });
 const withPromos = (promotions: Promotion[]): PricingSettings => ({ ...PRICING_DEFAULTS, promotions });
+
+describe("promotionPhase", () => {
+  it("꺼짐, 예정, 진행 중, 끝남을 한국 날짜로 가른다", () => {
+    expect(promotionPhase(promo({ active: false }), now)).toBe("off");
+    expect(promotionPhase(promo({}), now)).toBe("live");
+    expect(promotionPhase(promo({ startsOn: "2026-10-29" }), now)).toBe("upcoming");
+    expect(promotionPhase(promo({ endsOn: "2026-10-27" }), now)).toBe("ended");
+    // 끝일 당일은 아직 진행 중(23:59:59 까지)
+    expect(promotionPhase(promo({ endsOn: "2026-10-28" }), now)).toBe("live");
+  });
+});
 
 describe("quote", () => {
   it("멤버십 첫 달 할인은 처음 가입하는 사람의 첫 청구에만", () => {

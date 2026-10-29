@@ -1,6 +1,6 @@
 // 통화 표시, 비교 규칙 — 순수 함수 테스트
 import { describe, expect, it } from "vitest";
-import { cheapestOf, DISPLAY_CURRENCY, formatPrice, sameCurrency } from "./currency";
+import { cheapestOf, DISPLAY_CURRENCY, formatAmount, formatPrice, sameCurrency } from "./currency";
 
 describe("formatPrice", () => {
   it("KRW 는 소수 없이 원 기호", () => {
@@ -71,5 +71,12 @@ describe("cheapestOf", () => {
 
   it("가격이 하나도 없으면 null", () => {
     expect(cheapestOf([{ currentPrice: null, currency: "KRW" as const }])).toBeNull();
+  });
+});
+
+describe("formatAmount", () => {
+  it("합계는 0 도 0원이다", () => {
+    expect(formatAmount(0)).toBe("0원");
+    expect(formatAmount(12_900)).toBe("12,900원");
   });
 });

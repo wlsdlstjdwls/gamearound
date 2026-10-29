@@ -20,6 +20,7 @@ export async function savePricingAction(input: unknown): Promise<PricingActionRe
     await setPricingSettings(admin.id, parsed.data);
     updateTag(SETTINGS_TAG);
     revalidatePath(ROUTES.adminPricing);
+    revalidatePath(ROUTES.adminDiscounts);
     revalidatePath(ROUTES.makerPlans);
     return { ok: true };
   } catch (e) {

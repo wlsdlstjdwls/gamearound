@@ -1,5 +1,7 @@
 "use client";
-// 요금, 프로모션 설정 폼(2026-10-28, /admin/pricing). 값과 판매, 카드 문구, 프로모션 세 판을 한 번에 저장한다.
+// 요금 설정 폼(2026-10-28). 2026-10-29 화면을 둘로 나눴다 — 상품과 가격(/admin/pricing, part "catalog": 판매 상품, 카드 문구)과
+// 할인 행사(/admin/discounts, part "discounts"). 저장 값은 그대로 설정 하나라 두 화면 다 전체를 저장한다 — 보이지 않는 판의 값은 읽은 그대로 간다.
+// 두 화면 모두 아래에 미리 보기(preview)를 둔다. 할인을 켜면 카드 값이 어떻게 바뀌는지가 곧 확인이다.
 //
 // 설정 전체를 로컬 상태 하나로 쥐고, 판마다 그 일부를 고친다(pricing-form/sections, promotions). 칸을 칠 때마다 저장하지 않는다 —
 // 값 하나 바꾸는 도중의 반쪽 요금표가 주문에 쓰이면 안 된다. 저장은 단추로 한 번, 서버와 같은 스키마(lib/pricing/settings)로 먼저 막는다.
@@ -10,6 +12,7 @@ import { Button } from "@/components/ui/button";
 import { FormMessage } from "@/components/ui/form-message";
 import { PricesSection, CopySection } from "@/components/admin/pricing-form/sections";
 import { PromotionsSection } from "@/components/admin/pricing-form/promotions";
+import { PricingPreview } from "@/components/admin/pricing-form/preview";
 import { PRICING_ADMIN_MESSAGES as M } from "@/lib/pricing/admin-messages";
 import { pricingSettingsSchema, type PricingSettings } from "@/lib/pricing/settings";
 
@@ -28,7 +31,7 @@ function normalize(s: PricingSettings): PricingSettings {
   };
 }
 
-export function PricingForm({ initial }: { initial: PricingSettings }) {
+export function PricingForm({ initial, part }: { initial: PricingSettings; part: "catalog" | "discounts" }) {
   const [saved, setSaved] = useState(initial);
   const [value, setValue] = useState(initial);
   const [note, setNote] = useState<{ tone: "success" | "error"; text: string } | null>(null);
@@ -54,9 +57,15 @@ export function PricingForm({ initial }: { initial: PricingSettings }) {
 
   return (
     <div className="flex flex-col gap-5 pb-24">
-      <PricesSection value={value} patch={patch} />
-      <CopySection value={value} patch={patch} />
-      <PromotionsSection value={value} patch={patch} />
+      {part === "catalog" ? (
+        <>
+          <PricesSection value={value} patch={patch} />
+          <CopySection value={value} patch={patch} />
+        </>
+      ) : (
+        <PromotionsSection value={value} patch={patch} />
+      )}
+      <PricingPreview value={value} />
 
       {/* 저장 줄은 화면 아래에 붙여 둔다 — 세 판이 길어 맨 아래까지 내려야 저장이 보이면 고친 채 떠나기 쉽다 */}
       <div className="sticky bottom-3 z-10 flex flex-wrap items-center justify-between gap-3 rounded-[var(--radius-panel)] bg-surface px-4 py-3 shadow-3">

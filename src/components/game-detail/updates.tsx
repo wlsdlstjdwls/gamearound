@@ -7,7 +7,7 @@ import { RequirementsBody } from "@/components/requirements-table";
 import { RunCheck } from "@/components/run-check";
 import { EmptyLine } from "@/components/game-detail/empty-line";
 import { CompatSlot, VerdictNoteSlot } from "@/components/game-detail/slots";
-import { DetailTabs } from "@/components/game-detail/tabs";
+import { DetailTabs } from "@/components/ui/tabs";
 import { sectionCardClass } from "@/components/ui/page";
 import { DETAIL_MESSAGES as D } from "@/lib/games/detail-messages";
 import { COMPAT_MESSAGES, GAME_MESSAGES, OS_FAMILY_LABEL } from "@/lib/games/messages";

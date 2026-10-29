@@ -1,7 +1,7 @@
-// 결제 내역 읽기(2026-10-27) — 내 결제 내역(/indie/mine/payments)과 관리자 결제 목록(/admin/promotions).
+// 결제 내역 읽기(2026-10-27) — 내 결제 내역(/indie/mine/payments)과 관리자 결제와 환불(/admin/payments, 2026-10-29 광고 자리 화면에서 뗐다).
 // 대상 이름은 대상 표가 둘이라(인디 게임 글, 게시판 홍보 글) 둘 다 left join 해 있는 쪽을 쓴다. 대상이 지워지면 이름이 비고 화면이 "없는 글" 로 적는다.
 import "server-only";
-import { and, desc, eq, inArray, ne } from "drizzle-orm";
+import { and, desc, eq, inArray, isNull, ne, or, sql } from "drizzle-orm";
 import { getDb } from "@/server/db/client";
 import { indiePosts, payments, posts, promotionBoosts, users, type PaymentStatus } from "@/server/db/schema";
 import { PRODUCTS, type ProductKey } from "@/lib/payments/products";
@@ -93,4 +93,26 @@ export async function listPaymentsForAdmin(): Promise<PaymentRowDto[]> {
     .limit(PAYMENT_LIST_LIMIT);
   const now = new Date();
   return rows.map((r) => toDto(r, now, r.email));
+}
+
+/** 관리자 결제와 환불 머리 숫자. 이번 달은 한국 달이다. 목록(50줄)으로 세면 결제가 쌓인 달에 모자라 따로 한 번 센다 */
+export type PaymentSummaryDto = { monthPaid: number; monthCount: number; monthRefunded: number; refundRequests: number; boostMissing: number };
+
+export async function getPaymentSummaryForAdmin(): Promise<PaymentSummaryDto> {
+  const kstMonth = (col: unknown) => sql`date_trunc('month', (${col}) at time zone 'Asia/Seoul') = date_trunc('month', now() at time zone 'Asia/Seoul')`;
+  const [row] = await getDb()
+    .select({
+      // 환불된 결제도 그달에 들어온 돈으로 센다 — 돌려준 돈은 옆 칸이 따로 센다
+      monthPaid: sql<number>`coalesce(sum(${payments.amount}) filter (where ${payments.status} in ('paid', 'canceled') and ${kstMonth(payments.approvedAt)}), 0)::int`,
+      monthCount: sql<number>`(count(*) filter (where ${payments.status} in ('paid', 'canceled') and ${kstMonth(payments.approvedAt)}))::int`,
+      monthRefunded: sql<number>`coalesce(sum(${payments.refundedAmount}) filter (where ${kstMonth(payments.refundedAt)}), 0)::int`,
+      refundRequests: sql<number>`(count(*) filter (where ${payments.status} = 'paid' and ${payments.refundRequestedAt} is not null))::int`,
+    })
+    .from(payments);
+  // 노출이 안 걸린 결제: 목록 줄의 boostMissing 과 같은 규칙(묶음이면 둘째 자리까지). 상품 결제(대상이 있는 줄)만 센다 — 멤버십 청구는 걸 자리가 없다
+  const [miss] = await getDb()
+    .select({ n: sql<number>`count(*)::int` })
+    .from(payments)
+    .where(and(eq(payments.status, "paid"), sql`${payments.targetId} is not null`, or(isNull(payments.boostId), and(sql`${payments.extraTargetId} is not null`, isNull(payments.extraBoostId)))));
+  return { ...row, boostMissing: miss?.n ?? 0 };
 }
