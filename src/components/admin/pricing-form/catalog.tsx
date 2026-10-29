@@ -4,25 +4,25 @@
 // 앞 판은 판매 상품 표 한 장에 모든 칸을 늘어놓고 카드 문구 판을 그 아래 따로 두었다 — 어느 문구가 어느 상품 것인지 이어지지 않았다.
 // 이제 상품을 고르면 그 상품의 이름, 자리, 기간, 판매, 값, 걸린 프로모션, 카드 문구가 한 자리에 모인다.
 // 멤버십은 지우거나 더하는 상품이 아니라 목록 맨 아래 고정 줄이다. 상태는 바깥(pricing-form)이 쥐고 patch 로 고친다.
-import Link from "next/link";
+import { FULL_ROW } from "@/components/admin/screen/form-grid";
 import { useState } from "react";
 import type { Patch } from "@/components/admin/pricing-form";
 import { CopySection } from "@/components/admin/pricing-form/copy-section";
-import { PHASE_TONE } from "@/components/admin/pricing-form/phase-tone";
+import { StatusTag } from "@/components/admin/pricing-form/status-tag";
 import { PricingPreview } from "@/components/admin/pricing-form/preview";
 import { Field, FormSection, MasterDetail, ReadValue, SearchBand, SearchItem, WithAside } from "@/components/admin/screen/layout";
 import { DataGrid, type GridCol } from "@/components/admin/screen/data-grid";
-import { buttonClass } from "@/components/ui/button";
+import { ProgramLink } from "@/components/admin/screen/program-link";
+import { ADMIN_NAV } from "@/lib/admin/messages";
 import { NumberField } from "@/components/ui/number-field";
 import { FormSelect } from "@/components/ui/select/fields";
 import { Switch } from "@/components/ui/switch";
-import { Tag } from "@/components/ui/tag";
 import { TextField } from "@/components/ui/text-field";
 import { cn } from "@/lib/cn";
 import { formatPrice } from "@/lib/currency";
 import { ROUTES } from "@/lib/routes";
 import { PRICING_ADMIN_MESSAGES as M, SLOT_CHOICES, slotChoiceOf, TIER_LABELS, type SlotChoice } from "@/lib/pricing/admin-messages";
-import { bundleListPrice, discountRate, perDay, promotionPhase } from "@/lib/pricing/quote";
+import { bundleListPrice, discountRate, perDay, promotionStatus } from "@/lib/pricing/quote";
 import { isBundleProduct, MEMBERSHIP_KEY, type CatalogProduct, type PricingSettings, type TierKey } from "@/lib/pricing/settings";
 
 type Kind = SlotChoice | "membership";
@@ -100,11 +100,11 @@ function BasicTab({ value, patch, rowKey }: { value: PricingSettings; patch: Pat
         <Field label={M.fieldCode}>
           <ReadValue>{MEMBERSHIP_KEY}</ReadValue>
         </Field>
-        <Field label={M.fieldName}>
-          <ReadValue>{TIER_LABELS.membership}</ReadValue>
-        </Field>
         <Field label={M.fieldCycle}>
           <ReadValue>{M.cycleMonthly}</ReadValue>
+        </Field>
+        <Field label={M.fieldName} wide>
+          <ReadValue>{TIER_LABELS.membership}</ReadValue>
         </Field>
         <Field label={M.fieldCredits} htmlFor="m-credits" required hint={M.membershipNote}>
           <NumberField id="m-credits" label={M.fieldCredits} hideLabel value={m.boostCredits} onValue={(n) => patch((d) => ({ ...d, membership: { ...d.membership, boostCredits: n } }))} trailing={<span className="pr-2 text-[13px] text-dim">{M.creditsUnit}</span>} className="text-right tabular-nums" compact />
@@ -126,10 +126,13 @@ function BasicTab({ value, patch, rowKey }: { value: PricingSettings; patch: Pat
       <Field label={M.fieldCode}>
         <ReadValue>{p.id}</ReadValue>
       </Field>
-      <Field label={M.fieldName} htmlFor={`name-${p.id}`} required>
+      <Field label={M.fieldKind}>
+        <ReadValue>{isBundleProduct(p) ? M.kindBundle : M.kindSingle}</ReadValue>
+      </Field>
+      <Field label={M.fieldName} htmlFor={`name-${p.id}`} required wide>
         <TextField id={`name-${p.id}`} label={M.fieldName} hideLabel value={p.name} onChange={(e) => set({ name: e.target.value })} compact />
       </Field>
-      <Field label={M.colSlots} required>
+      <Field label={M.colSlots} required wide>
         <FormSelect
           name={`slots-${p.id}`}
           label={M.colSlots}
@@ -139,9 +142,6 @@ function BasicTab({ value, patch, rowKey }: { value: PricingSettings; patch: Pat
           onChange={(v) => set({ slots: [...SLOT_SETS[v as SlotChoice]] })}
           options={SLOT_CHOICES.map((c) => ({ value: c, label: M.slotChoices[c] }))}
         />
-      </Field>
-      <Field label={M.fieldKind}>
-        <ReadValue>{isBundleProduct(p) ? M.kindBundle : M.kindSingle}</ReadValue>
       </Field>
       <Field label={M.fieldDays} htmlFor={`days-${p.id}`} required>
         <NumberField id={`days-${p.id}`} label={M.fieldDays} hideLabel value={p.days} onValue={(n) => set({ days: n })} trailing={<span className="pr-2 text-[13px] text-dim">{M.daysUnit}</span>} className="text-right tabular-nums" compact />
@@ -168,7 +168,7 @@ function PriceTab({ value, patch, rowKey }: { value: PricingSettings; patch: Pat
   return (
     <>
       <FormSection title={M.sectionPrice}>
-        <Field label={M.fieldPrice} htmlFor="price-amount" required hint={M.priceHint}>
+        <Field label={M.fieldPrice} htmlFor="price-amount" required>
           <NumberField id="price-amount" label={M.fieldPrice} hideLabel value={amount} onValue={setAmount} trailing={<span className="pr-2 text-[13px] text-dim">{M.won}</span>} className="text-right tabular-nums" compact />
         </Field>
         {p && (
@@ -190,20 +190,18 @@ function PriceTab({ value, patch, rowKey }: { value: PricingSettings; patch: Pat
       <FormSection
         title={M.sectionPromos}
         action={
-          <Link href={ROUTES.adminDiscounts} className={buttonClass({ variant: "secondary", size: "sm" })}>
-            {M.promosEdit}
-          </Link>
+          <ProgramLink href={ROUTES.adminDiscounts}>{ADMIN_NAV.discounts}</ProgramLink>
         }
       >
         {promos.length === 0 ? (
-          <p className="text-[13px] text-dim @2xl:col-span-2">{M.promosNone}</p>
+          <p className={cn("text-[13px] text-dim", FULL_ROW)}>{M.promosNone}</p>
         ) : (
-          <ul className="flex flex-col gap-1.5 @2xl:col-span-2">
+          <ul className={cn("flex flex-col gap-1.5", FULL_ROW)}>
             {promos.map((x) => {
-              const phase = promotionPhase(x, now);
+              const status = promotionStatus(x, now);
               return (
                 <li key={x.id} className="flex flex-wrap items-center gap-2 text-[13px]">
-                  <Tag tone={PHASE_TONE[phase]}>{M.phaseLabels[phase]}</Tag>
+                  <StatusTag status={status} />
                   <span className="font-semibold text-ink">{x.label}</span>
                   <span className="text-mut">{x.kind === "percent" ? M.dealPercent(x.value) : M.dealPrice(formatPrice(x.value))}</span>
                   <span className="text-dim">{M.audienceLabels[x.audience]}</span>
@@ -261,7 +259,7 @@ export function CatalogScreen({ value, saved, patch, selected, onSelect }: { val
                 <BasicTab value={value} patch={patch} rowKey={current.key} />
                 <PriceTab value={value} patch={patch} rowKey={current.key} />
                 <FormSection title={M.tabCopy}>
-                  <div className="flex min-w-0 flex-col gap-2 @2xl:col-span-2">
+                  <div className={cn("flex min-w-0 flex-col gap-2", FULL_ROW)}>
                     <p className="text-[12.5px] text-dim">{M.copyFor(TIER_LABELS[tier])}</p>
                     <CopySection value={value} patch={patch} tier={tier} onTier={() => {}} bare />
                   </div>

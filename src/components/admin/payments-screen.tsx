@@ -3,6 +3,8 @@
 // 위 조회조건(결제상태, 처리필요, 구매자/주문번호), 그 아래 결제 목록(공통 그리드, 금액 합계 줄), 맨 아래 고른 결제의 상세(결제정보, 환불).
 // 앞 판은 한 줄에 상품, 구매자, 일시, 금액, 환불 단추를 다 얹은 표였다 — 환불 요청 메모와 남은 기간 몫이 줄 안에 끼어 훑기 어려웠다.
 // 목록은 훑는 자리, 상세는 처리하는 자리로 가른다. 환불 단추(RefundControls)는 상세의 환불 묶음에만 선다.
+import { cn } from "@/lib/cn";
+import { FULL_ROW } from "@/components/admin/screen/form-grid";
 import { useState } from "react";
 import { RefundControls } from "@/components/admin/refund-controls";
 import { DataGrid, type GridCol } from "@/components/admin/screen/data-grid";
@@ -77,7 +79,7 @@ function Detail({ p }: { p: PaymentRowDto }) {
             )}
           </ReadValue>
         </Field>
-        {p.boostMissing && <p className="text-[12.5px] font-semibold text-danger @2xl:col-span-2">{PM.adminBoostMissing}</p>}
+        {p.boostMissing && <p className={cn("text-[12.5px] font-semibold text-danger", FULL_ROW)}>{PM.adminBoostMissing}</p>}
       </FormSection>
       <FormSection title={PM.adminSectionRefund} action={p.status === "paid" ? <RefundControls orderId={p.orderId} amount={p.amount} prorated={p.proratedAmount} /> : undefined}>
         <Field label={PM.adminFieldRequest}>
@@ -94,7 +96,7 @@ function Detail({ p }: { p: PaymentRowDto }) {
             <ReadValue align="right">{formatPrice(p.proratedAmount)}</ReadValue>
           </Field>
         ) : (
-          <p className="text-[12.5px] text-dim @2xl:col-span-2">{PM.adminNoRefundHere}</p>
+          <p className={cn("text-[12.5px] text-dim", FULL_ROW)}>{PM.adminNoRefundHere}</p>
         )}
       </FormSection>
     </div>

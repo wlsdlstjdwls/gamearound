@@ -44,6 +44,20 @@ export function promotionLive(p: Promotion, now: Date): boolean {
 /** 할인 행사가 지금 어디쯤인가 — 관리자 할인 행사 줄의 꼬리표(2026-10-29). 켜 두었어도 기간 밖이면 걸리지 않는다는 것을 말해야 한다 */
 export type PromotionPhase = "off" | "upcoming" | "live" | "ended";
 
+/**
+ * 관리 화면의 진행상태 — 진행 중, 중단 둘뿐이다(2026-10-30 사용자 "진행 중, 중단만 관리, 중단은 항목이 여러 개").
+ * 중단 사유는 사람이 고른 것(운영 중단, 가격변동 중단)과 기간이 정한 것(시작 전, 기간 종료)이 있다.
+ */
+export type PromotionStopReason = "manual" | "price_change" | "before" | "after";
+export type PromotionStatus = { state: "live" } | { state: "stopped"; reason: PromotionStopReason };
+
+export function promotionStatus(p: Promotion, now: Date): PromotionStatus {
+  const phase = promotionPhase(p, now);
+  if (phase === "live") return { state: "live" };
+  if (phase === "off") return { state: "stopped", reason: p.stopReason ?? "manual" };
+  return { state: "stopped", reason: phase === "upcoming" ? "before" : "after" };
+}
+
 export function promotionPhase(p: Promotion, now: Date): PromotionPhase {
   if (!p.active) return "off";
   if (promotionLive(p, now)) return "live";

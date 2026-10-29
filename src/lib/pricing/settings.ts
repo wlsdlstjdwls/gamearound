@@ -94,10 +94,17 @@ const tierCopySchema = z.object({
   cta: text.min(1),
 });
 
+/** 사람이 고르는 중단 사유. 늘릴 때 여기와 admin-messages 의 stopReasonLabels 만 고친다 */
+export const PROMOTION_STOP_REASONS = ["manual", "price_change"] as const;
+
 export const promotionSchema = z
   .object({
     id: z.string().min(1).max(40),
     active: z.boolean(),
+    /** 손으로 멈춘 까닭(active 가 false 일 때). 앞 판 저장값에는 없어 비워 둘 수 있다 — 비면 운영 중단으로 읽는다(2026-10-30 진행상태를 진행 중, 중단 둘로) */
+    stopReason: z.enum(PROMOTION_STOP_REASONS).nullable().optional(),
+    /** 관리자용 코드명(2026-10-30 사용자 "코드 + 코드명, 고객노출명은 따로"). 앞 판 저장값에는 없어 비면 고객노출명으로 읽는다 */
+    name: text.min(1).optional(),
     /** 값 옆 딱지 글(예: 첫 달 할인). 보는 사람에게 그대로 보인다 */
     label: text.min(1),
     /** 광고 상품 id 이거나 membership. 있는 상품인지는 설정 전체 스키마가 본다 */

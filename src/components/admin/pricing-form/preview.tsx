@@ -14,8 +14,8 @@ import type { PricingSettings, TierKey } from "@/lib/pricing/settings";
 
 /** 더 줄이면 글자를 못 읽는다. 이보다 길면 그때는 바깥 기둥이 굴러간다 */
 const MIN_SCALE = 0.6;
-/** 카드가 제 모양으로 서는 가장 좁은 폭(px). 기둥이 이보다 좁으면 이 폭으로 그리고 통째로 줄인다 — 좁은 칸에 밀어 넣으면 글이 잘렸다(2026-10-30) */
-const CARD_MIN_W = 300;
+/** 카드가 제 모양으로 서는 가장 좁은 폭(px, 판 안쪽 여백 포함). 기둥이 이보다 좁으면 이 폭으로 그리고 통째로 줄인다 — 좁은 칸에 밀어 넣으면 글이 잘렸고, 300 은 카드가 판 밖으로 삐져나갔다(2026-10-30) */
+const CARD_MIN_W = 330;
 
 /** 바깥(부모)의 max-height 안에 들도록 속을 비율로 줄인다. 부모에 max-height 가 없으면(좁은 화면) 그대로 둔다 */
 function FitHeight({ children }: { children: React.ReactNode }) {
@@ -38,6 +38,8 @@ function FitHeight({ children }: { children: React.ReactNode }) {
     measure();
     const ro = new ResizeObserver(measure);
     ro.observe(el);
+    // 기둥 폭이 바뀌어도(목록 폭, 상세 묶음이 바뀌는 렌더) 다시 잰다 — 창 크기만 보면 기둥 밖으로 카드가 삐져나갔다
+    if (outer.current) ro.observe(outer.current);
     window.addEventListener("resize", measure);
     return () => {
       ro.disconnect();

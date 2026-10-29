@@ -5,6 +5,7 @@
 //
 // 처리 낱말은 그 글에 할 수 있을 때만 걸린다(can) — 앞 판의 IndieModeration 이 단추를 보이던 조건과 같다.
 // 구분(승인 대기, 신고, 게임 연결, 숨김, 전체)은 서버가 다시 읽는 칸이라 주소로 간다(useUrlFilter).
+import { FULL_ROW } from "@/components/admin/screen/form-grid";
 import Link from "next/link";
 import { useState } from "react";
 import { moderateIndiePostAction } from "@/app/(admin)/admin/indie/actions";
@@ -177,7 +178,7 @@ function Detail({ r }: { r: Row }) {
       </FormSection>
       {r.reportCount > 0 && (
         <FormSection title={`${A.sectionReports} (${A.reports(r.reportCount)})`}>
-          <ul className="flex flex-col gap-1 text-[13px] text-ink-2 @2xl:col-span-2">
+          <ul className={cn("flex flex-col gap-1 text-[13px] text-ink-2", FULL_ROW)}>
             {r.reportReasons.map((reason, i) => (
               <li key={i} className="rounded-lg bg-surface-2 px-3 py-2">
                 {reason}

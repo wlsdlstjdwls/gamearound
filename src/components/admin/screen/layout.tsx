@@ -14,6 +14,7 @@
 // 미리 보기처럼 상세 내내 봐야 하는 것은 WithAside(탭이면 ScreenTabs 의 aside)로 상세 옆에 붙인다.
 import { useId, useRef, useState } from "react";
 import { cn } from "@/lib/cn";
+import { FULL_ROW } from "@/components/admin/screen/form-grid";
 import { ChevronDownIcon } from "@/components/ui/icons";
 import { SCREEN_MESSAGES as SM } from "@/lib/admin/messages";
 
@@ -129,7 +130,7 @@ export function ScreenTabs({ label, tabs, active, onChange, aside }: { label: st
 export function WithAside({ aside, children }: { aside: React.ReactNode; children: React.ReactNode }) {
   return (
     <div className="@container">
-      <div className="grid items-start gap-3 @min-[480px]:grid-cols-[minmax(0,1fr)_minmax(210px,40%)] @min-[900px]:grid-cols-[minmax(0,1fr)_300px]">
+      <div className="grid items-start gap-3 @min-[480px]:grid-cols-[minmax(0,1fr)_minmax(210px,34%)] @min-[900px]:grid-cols-[minmax(0,1fr)_280px]">
         <div className="flex min-w-0 flex-col gap-3">{children}</div>
         <div className="min-w-0 @min-[480px]:sticky @min-[480px]:top-[calc(var(--header-h)+var(--admin-head-h,76px)+12px)] @min-[480px]:max-h-[calc(100svh-var(--header-h)-var(--admin-head-h,76px)-24px)]">{aside}</div>
       </div>
@@ -151,7 +152,7 @@ export function FormSection({ title, action, defaultOpen = true, children }: { t
         {action}
       </div>
       {open && (
-        <div id={id} className="grid gap-x-5 gap-y-2 p-2.5 sm:p-3 @2xl:grid-cols-2 [@media(pointer:fine)]:[&_input]:h-10 [@media(pointer:fine)]:[&_input]:min-h-10 [@media(pointer:fine)]:[&_button[aria-haspopup]]:h-10">
+        <div id={id} className="grid gap-x-4 gap-y-2 p-2.5 sm:p-3 @min-[440px]:grid-cols-2 [@media(pointer:fine)]:[&_input]:h-10 [@media(pointer:fine)]:[&_input]:min-h-10 [@media(pointer:fine)]:[&_button[aria-haspopup]]:h-10">
           {children}
         </div>
       )}
@@ -159,11 +160,11 @@ export function FormSection({ title, action, defaultOpen = true, children }: { t
   );
 }
 
-/** 칸 한 줄 — 이름표 왼쪽(오른쪽 정렬), 필수면 빨간 *. 묶음이 좁으면(미리 보기 기둥 곁) 이름표가 칸 위로 올라가 칸이 폭을 다 쓴다. wide 는 묶음 두 열을 다 쓴다. 열 수는 묶음 폭(@container)으로 정한다 — 미리 보기 기둥이 옆에 서면 좁아진다 */
+/** 칸 하나 — 이름표 왼쪽(오른쪽 정렬), 필수면 빨간 *. 묶음이 440px 이상이면 칸 둘이 한 줄에 선다(2026-10-30 사용자 "기간이랑 판매여부 같은 행이어도 충분", 긴 글 칸만 wide). 묶음이 좁으면(미리 보기 기둥 곁) 이름표가 칸 위로 올라가 칸이 폭을 다 쓴다. wide 는 묶음 두 열을 다 쓴다. 열 수는 묶음 폭(@container)으로 정한다 — 미리 보기 기둥이 옆에 서면 좁아진다 */
 export function Field({ label, htmlFor, required, wide, hint, children }: { label: string; htmlFor?: string; required?: boolean; wide?: boolean; hint?: React.ReactNode; children: React.ReactNode }) {
   return (
-    <div className={cn("grid items-start gap-x-2.5 gap-y-1 @md:grid-cols-[76px_minmax(0,1fr)]", wide && "@2xl:col-span-2")}>
-      <label htmlFor={htmlFor} className="flex items-center gap-0.5 text-[12.5px] font-semibold text-mut @md:min-h-10 @md:justify-end @md:text-right">
+    <div className={cn("grid items-start gap-x-2 gap-y-1 @min-[440px]:grid-cols-[68px_minmax(0,1fr)]", wide && FULL_ROW)}>
+      <label htmlFor={htmlFor} className="flex items-center gap-0.5 text-[12.5px] font-semibold text-mut @min-[440px]:min-h-10 @min-[440px]:justify-end @min-[440px]:text-right">
         {required && (
           <span aria-hidden className="text-danger">
             *
@@ -173,7 +174,7 @@ export function Field({ label, htmlFor, required, wide, hint, children }: { labe
         {required && <span className="sr-only">{SM.required}</span>}
       </label>
       <div className="min-w-0">{children}</div>
-      {hint && <p className="text-[11.5px] text-dim @md:col-start-2">{hint}</p>}
+      {hint && <p className="text-[11.5px] text-dim @min-[440px]:col-start-2">{hint}</p>}
     </div>
   );
 }

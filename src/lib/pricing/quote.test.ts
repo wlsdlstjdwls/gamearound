@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { bundleListPrice, discountRate, perDay, priceBook, promotionLive, promotionPhase, quote } from "@/lib/pricing/quote";
+import { bundleListPrice, discountRate, perDay, priceBook, promotionLive, promotionPhase, promotionStatus, quote } from "@/lib/pricing/quote";
 import { PRICING_DEFAULTS, parsePricingSettings, fillCopy, type PricingSettings, type Promotion } from "@/lib/pricing/settings";
 
 const now = new Date("2026-10-28T03:00:00Z");
@@ -14,6 +14,17 @@ describe("promotionPhase", () => {
     expect(promotionPhase(promo({ endsOn: "2026-10-27" }), now)).toBe("ended");
     // 끝일 당일은 아직 진행 중(23:59:59 까지)
     expect(promotionPhase(promo({ endsOn: "2026-10-28" }), now)).toBe("live");
+  });
+});
+
+describe("promotionStatus", () => {
+  it("진행 중, 중단 둘로 가르고 중단은 사유를 단다", () => {
+    expect(promotionStatus(promo({}), now)).toEqual({ state: "live" });
+    expect(promotionStatus(promo({ active: false, stopReason: "price_change" }), now)).toEqual({ state: "stopped", reason: "price_change" });
+    // 앞 판 저장값은 사유가 없다 — 운영 중단으로 읽는다
+    expect(promotionStatus(promo({ active: false }), now)).toEqual({ state: "stopped", reason: "manual" });
+    expect(promotionStatus(promo({ startsOn: "2026-10-29" }), now)).toEqual({ state: "stopped", reason: "before" });
+    expect(promotionStatus(promo({ endsOn: "2026-10-27" }), now)).toEqual({ state: "stopped", reason: "after" });
   });
 });
 
