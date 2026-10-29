@@ -14,6 +14,8 @@ import type { PricingSettings, TierKey } from "@/lib/pricing/settings";
 
 /** 더 줄이면 글자를 못 읽는다. 이보다 길면 그때는 바깥 기둥이 굴러간다 */
 const MIN_SCALE = 0.6;
+/** 카드가 제 모양으로 서는 가장 좁은 폭(px). 기둥이 이보다 좁으면 이 폭으로 그리고 통째로 줄인다 — 좁은 칸에 밀어 넣으면 글이 잘렸다(2026-10-30) */
+const CARD_MIN_W = 300;
 
 /** 바깥(부모)의 max-height 안에 들도록 속을 비율로 줄인다. 부모에 max-height 가 없으면(좁은 화면) 그대로 둔다 */
 function FitHeight({ children }: { children: React.ReactNode }) {
@@ -27,7 +29,10 @@ function FitHeight({ children }: { children: React.ReactNode }) {
     const measure = () => {
       const limit = parseFloat(getComputedStyle(box).maxHeight);
       const natural = el.offsetHeight;
-      const scale = Number.isFinite(limit) && natural > limit ? Math.max(MIN_SCALE, limit / natural) : 1;
+      const byHeight = Number.isFinite(limit) && natural > limit ? limit / natural : 1;
+      const width = outer.current?.clientWidth ?? CARD_MIN_W;
+      const byWidth = width < CARD_MIN_W ? width / CARD_MIN_W : 1;
+      const scale = Math.max(MIN_SCALE, Math.min(byHeight, byWidth));
       setFit({ scale, height: natural * scale });
     };
     measure();
@@ -41,7 +46,7 @@ function FitHeight({ children }: { children: React.ReactNode }) {
   }, []);
   return (
     <div ref={outer} style={fit.scale < 1 ? { height: fit.height } : undefined}>
-      <div ref={inner} className="origin-top" style={fit.scale < 1 ? { transform: `scale(${fit.scale})` } : undefined}>
+      <div ref={inner} className="origin-top-left" style={{ minWidth: CARD_MIN_W, width: fit.scale < 1 ? `${100 / fit.scale}%` : undefined, transform: fit.scale < 1 ? `scale(${fit.scale})` : undefined }}>
         {children}
       </div>
     </div>

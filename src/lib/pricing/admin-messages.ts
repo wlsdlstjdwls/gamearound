@@ -136,7 +136,6 @@ export const PRICING_ADMIN_MESSAGES = {
   promoTabBasic: "기본정보",
   promoTabBenefit: "혜택",
   promoTabTarget: "적용대상",
-  promoTabPreview: "미리보기",
   promoSectionBasic: "프로모션 정보",
   promoSectionPeriod: "기간",
   promoSectionBenefit: "할인",

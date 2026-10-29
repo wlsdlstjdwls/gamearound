@@ -39,8 +39,8 @@ function normalize(s: PricingSettings): PricingSettings {
   };
 }
 
-/** title, lead: 화면 머리(저장 툴바)에 서는 제목과 설명. 페이지가 PageHead 대신 넘긴다 */
-export function PricingForm({ initial, part, title, lead }: { initial: PricingSettings; part: "catalog" | "discounts"; title: string; lead: string }) {
+/** title: 화면 머리(저장 툴바)에 서는 제목. 페이지가 PageHead 대신 넘긴다 */
+export function PricingForm({ initial, part, title }: { initial: PricingSettings; part: "catalog" | "discounts"; title: string }) {
   const [saved, setSaved] = useState(initial);
   const [value, setValue] = useState(initial);
   const [note, setNote] = useState<{ tone: "success" | "error"; text: string } | null>(null);
@@ -135,7 +135,6 @@ export function PricingForm({ initial, part, title, lead }: { initial: PricingSe
           이 화면만의 것(바뀐 값 안내, 요금 화면 열기, 되돌리기)은 툴바 왼쪽에 둔다 */}
       <AdminScreenHead
         title={title}
-        lead={lead}
         tools={{ retrieve, insert, delete: part === "catalog" ? removeProduct : removePromo, save, saveDisabled: !dirty || !valid, saving: pending, dirty }}
         actions={
           <>
@@ -156,7 +155,7 @@ export function PricingForm({ initial, part, title, lead }: { initial: PricingSe
         }
       />
 
-      {/* 상품등록은 백오피스 상품등록 꼴(조회조건, 왼쪽 목록, 오른쪽 상세 탭, pricing-form/catalog). 미리 보기는 상세의 카드문구 탭에 있다 */}
+      {/* 상품등록은 백오피스 상품등록 꼴(조회조건, 왼쪽 목록, 오른쪽 상세 탭, pricing-form/catalog). 미리 보기는 상세 탭 옆 기둥(ScreenTabs aside)이다 */}
       {part === "catalog" ? (
         <CatalogScreen value={value} saved={saved} patch={patch} selected={item} onSelect={setItem} />
       ) : (

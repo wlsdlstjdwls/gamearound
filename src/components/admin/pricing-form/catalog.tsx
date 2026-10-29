@@ -195,9 +195,9 @@ function PriceTab({ value, patch, rowKey }: { value: PricingSettings; patch: Pat
         }
       >
         {promos.length === 0 ? (
-          <p className="text-[13px] text-dim xl:col-span-2">{M.promosNone}</p>
+          <p className="text-[13px] text-dim @2xl:col-span-2">{M.promosNone}</p>
         ) : (
-          <ul className="flex flex-col gap-1.5 xl:col-span-2">
+          <ul className="flex flex-col gap-1.5 @2xl:col-span-2">
             {promos.map((x) => {
               const phase = promotionPhase(x, now);
               return (
@@ -260,6 +260,8 @@ export function CatalogScreen({ value, saved, patch, selected, onSelect }: { val
                 label={M.listLabel}
                 active={tab}
                 onChange={setTab}
+                // 미리 보기는 어느 탭에서나 보인다(2026-10-30, 사용자 "탭 이동해야지만 보이네") — 값 탭에서 고친 금액도 바로 카드에 뜬다
+                aside={<PricingPreview value={value} tier={tier} />}
                 tabs={[
                   { key: "basic", label: M.tabBasic, panel: <BasicTab value={value} patch={patch} rowKey={current.key} /> },
                   { key: "price", label: M.tabPrice, panel: <PriceTab value={value} patch={patch} rowKey={current.key} /> },
@@ -267,13 +269,9 @@ export function CatalogScreen({ value, saved, patch, selected, onSelect }: { val
                     key: "copy",
                     label: M.tabCopy,
                     panel: (
-                      // 고치는 칸 옆에 결과 — 문구 칸 왼쪽, 그 카드 미리 보기 오른쪽(넓은 화면)
-                      <div className="grid items-start gap-4 2xl:grid-cols-[minmax(0,1fr)_340px]">
-                        <div className="flex min-w-0 flex-col gap-2">
-                          <p className="text-[12.5px] text-dim">{M.copyFor(TIER_LABELS[tier])}</p>
-                          <CopySection value={value} patch={patch} tier={tier} onTier={() => {}} bare />
-                        </div>
-                        <PricingPreview value={value} tier={tier} />
+                      <div className="flex min-w-0 flex-col gap-2">
+                        <p className="text-[12.5px] text-dim">{M.copyFor(TIER_LABELS[tier])}</p>
+                        <CopySection value={value} patch={patch} tier={tier} onTier={() => {}} bare />
                       </div>
                     ),
                   },

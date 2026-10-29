@@ -6,14 +6,15 @@
 // 2026-10-29(사용자 "설정하기 이쁘게"): 줄 머리에 지금 단계 꼬리표(꺼짐, 시작 전, 진행 중, 끝남)와 한 문장 요약을 둔다 —
 // 켜 두었는데 기간이 지나 안 걸리는 행사를 칸을 다 읽어야 알 수 있었다.
 // 같은 날 둘째 손질: 목록 표 + 고른 줄 상세. 같은 날 밤(사용자 "메뉴랑 버튼만 가져다 두고 화면 구성은 그대로"): 신세계TV 백오피스 일반프로모션 꼴로
-// 다시 짰다 — 위 조회조건(사용여부, 진행상태, 대상, 프로모션명), 왼쪽 프로모션 목록(공통 그리드), 오른쪽 상세 탭(기본정보, 혜택, 적용대상, 미리보기).
+// 다시 짰다 — 위 조회조건(사용여부, 진행상태, 대상, 프로모션명), 왼쪽 프로모션 목록(공통 그리드), 오른쪽 상세 탭(기본정보, 혜택, 적용대상).
+// 미리 보기는 탭이 아니라 탭 옆 기둥이다(2026-10-30, 사용자 "탭 이동해야지만 보이네") — 혜택 값을 고치며 바로 본다.
 // 고객에게 보이는 이름(딱지 글)을 백오피스처럼 "고객노출명" 으로 부른다. 혜택 탭은 정가와 할인가를 계산해 보인다(lib/pricing/quote 와 같은 셈).
 import { useState } from "react";
 import type { Patch } from "@/components/admin/pricing-form";
 import { PricingPreview } from "@/components/admin/pricing-form/preview";
 import { targetLabel } from "@/components/admin/pricing-form/sections";
 import { DataGrid, type GridCol } from "@/components/admin/screen/data-grid";
-import { Field, FormSection, MasterDetail, ReadValue, ScreenTabs, SearchBand, SearchItem } from "@/components/admin/screen/layout";
+import { Field, FieldPair, FormSection, MasterDetail, ReadValue, ScreenTabs, SearchBand, SearchItem } from "@/components/admin/screen/layout";
 import { DateField } from "@/components/ui/date-field";
 import { NumberField } from "@/components/ui/number-field";
 import { FormSelect } from "@/components/ui/select/fields";
@@ -125,6 +126,7 @@ function Detail({ value, p, set }: { value: PricingSettings; p: Promotion; set: 
         label={M.promoListLabel}
         active={tab}
         onChange={setTab}
+        aside={<PricingPreview value={value} tier={tierOfTarget(value, p.target)} />}
         tabs={[
           {
             key: "basic",
@@ -138,22 +140,22 @@ function Detail({ value, p, set }: { value: PricingSettings; p: Promotion; set: 
                   <Field label={M.promoFieldName} htmlFor={`pl-${p.id}`} required hint={M.promoFieldNameHint}>
                     <TextField id={`pl-${p.id}`} label={M.promoFieldName} hideLabel value={p.label} onChange={(e) => set({ label: e.target.value })} compact />
                   </Field>
+                  {/* 사용여부와 진행상태는 한 줄 — 진행상태는 고칠 수 없는 결과라 칸 하나를 따로 쓸 까닭이 없다(2026-10-30 사용자) */}
                   <Field label={M.promoFieldUse}>
-                    <div className="flex min-h-11 items-center gap-2">
+                    <div className="flex min-h-11 flex-wrap items-center gap-2">
                       <Switch on={p.active} label={M.promoFieldUse} onToggle={() => set({ active: !p.active })} />
                       <span className="text-[13px] text-mut">{p.active ? M.useLabels.on : M.useLabels.off}</span>
+                      <span className="ml-auto flex items-center gap-1.5 text-[12px] text-dim">
+                        {M.promoFieldPhase}
+                        <Tag tone={PHASE_TONE[phase]}>{M.phaseLabels[phase]}</Tag>
+                      </span>
                     </div>
                   </Field>
-                  <Field label={M.promoFieldPhase}>
-                    <ReadValue>{M.phaseLabels[phase]}</ReadValue>
-                  </Field>
-                </FormSection>
-                <FormSection title={M.promoSectionPeriod}>
-                  <Field label={M.promoStarts} hint={M.promoPeriodHint}>
-                    <DateField label={M.promoStarts} hideLabel value={p.startsOn} max={p.endsOn} onChange={(v) => set({ startsOn: v })} />
-                  </Field>
-                  <Field label={M.promoEnds}>
-                    <DateField label={M.promoEnds} hideLabel value={p.endsOn} min={p.startsOn} onChange={(v) => set({ endsOn: v })} />
+                  <Field label={M.promoSectionPeriod} hint={M.promoPeriodHint} wide>
+                    <FieldPair
+                      from={<DateField label={M.promoStarts} hideLabel value={p.startsOn} max={p.endsOn} onChange={(v) => set({ startsOn: v })} />}
+                      to={<DateField label={M.promoEnds} hideLabel value={p.endsOn} min={p.startsOn} onChange={(v) => set({ endsOn: v })} />}
+                    />
                   </Field>
                 </FormSection>
               </>
@@ -204,7 +206,6 @@ function Detail({ value, p, set }: { value: PricingSettings; p: Promotion; set: 
               </FormSection>
             ),
           },
-          { key: "preview", label: M.promoTabPreview, panel: <PricingPreview value={value} tier={tierOfTarget(value, p.target)} /> },
         ]}
       />
     </div>
@@ -228,7 +229,6 @@ export function PromotionsScreen({ value, saved, patch, selected, onSelect }: { 
   return (
     <div className="flex flex-col gap-3">
       <Search {...f} s={value} on={(k, v) => setF((x) => ({ ...x, [k]: v }))} />
-      <p className="px-1 text-[12px] text-dim">{M.promosLead}</p>
       <MasterDetail
         list={
           <DataGrid
