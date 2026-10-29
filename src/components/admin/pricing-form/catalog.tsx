@@ -45,8 +45,8 @@ function rowsOf(s: PricingSettings): Row[] {
 }
 
 const COLUMNS: GridCol<Row>[] = [
-  { key: "kind", label: M.searchKind, width: "72px", value: (r) => M.rowKindLabels[r.kind], render: (r) => <span className="text-[12px] text-mut">{M.rowKindLabels[r.kind]}</span> },
-  { key: "name", label: M.searchName, width: "minmax(120px,1fr)", value: (r) => r.name || M.newProductName },
+  { key: "kind", label: M.searchKind, width: "64px", value: (r) => M.rowKindLabels[r.kind], render: (r) => <span className="text-[12px] text-mut">{M.rowKindLabels[r.kind]}</span> },
+  { key: "name", label: M.searchName, width: "minmax(96px,1fr)", value: (r) => r.name || M.newProductName },
   { key: "days", label: M.fieldDays, width: "52px", align: "right", value: (r) => r.days, text: (r) => (r.days === null ? M.cycleMonthly : `${r.days}${M.daysUnit}`) },
   { key: "amount", label: M.fieldPrice, width: "80px", align: "right", value: (r) => r.amount, text: (r) => formatPrice(r.amount) },
   {

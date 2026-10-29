@@ -43,10 +43,27 @@ export function SearchItem({ label, htmlFor, children }: { label: string; htmlFo
 }
 
 /** 왼쪽 목록, 오른쪽 상세. 좁은 화면은 위아래로 선다. 상세는 테두리 친 판에 담아 목록과 갈린다 — detailTitle 이 그 판의 제목 띠다 */
-export function MasterDetail({ list, detail, detailTitle, detailActions, listWidth = "460px" }: { list: React.ReactNode; detail: React.ReactNode; detailTitle?: React.ReactNode; detailActions?: React.ReactNode; listWidth?: string }) {
+export function MasterDetail({ list, detail, detailTitle, detailActions, listWidth = "400px" }: { list: React.ReactNode; detail: React.ReactNode; detailTitle?: React.ReactNode; detailActions?: React.ReactNode; listWidth?: string }) {
+  // 목록 접기(2026-10-30 사용자 "그리드 줄이고 폼 입력 영역을 더 크게, 영역별로 접고 펼 수 있게"). 접으면 목록 자리가 손잡이 줄 하나로 줄고 상세가 폭을 다 쓴다.
+  // 화면마다 따로 쥔다 — 프로그램 탭을 오가도 탭 화면이 살아 있어 그대로다(program-shell)
+  const [folded, setFolded] = useState(false);
   return (
-    <div className="grid items-start gap-4 lg:grid-cols-[var(--master-w)_minmax(0,1fr)]" style={{ "--master-w": listWidth } as React.CSSProperties}>
-      <div className="min-w-0 lg:sticky lg:top-[calc(var(--header-h)+var(--admin-head-h,76px)+12px)]">{list}</div>
+    <div
+      className={cn("grid items-start gap-4 lg:gap-2", folded ? "lg:grid-cols-[auto_minmax(0,1fr)]" : "lg:grid-cols-[var(--master-w)_auto_minmax(0,1fr)]")}
+      style={{ "--master-w": listWidth } as React.CSSProperties}
+    >
+      <div hidden={folded} className="min-w-0 lg:sticky lg:top-[calc(var(--header-h)+var(--admin-head-h,76px)+12px)]">
+        {list}
+      </div>
+      <button
+        type="button"
+        aria-expanded={!folded}
+        aria-label={folded ? SM.listUnfold : SM.listFold}
+        onClick={() => setFolded((f) => !f)}
+        className="press hidden h-24 w-5 place-items-center self-start rounded-md border border-line bg-surface-2 text-dim hover:bg-surface hover:text-ink lg:sticky lg:top-[calc(var(--header-h)+var(--admin-head-h,76px)+12px)] lg:grid"
+      >
+        <ChevronDownIcon size={14} className={folded ? "-rotate-90" : "rotate-90"} />
+      </button>
       <Pane title={detailTitle} actions={detailActions}>
         {detail}
       </Pane>
@@ -152,7 +169,7 @@ export function FormSection({ title, action, defaultOpen = true, children }: { t
         {action}
       </div>
       {open && (
-        <div id={id} className="grid gap-x-4 gap-y-2 p-2.5 sm:p-3 @min-[440px]:grid-cols-2 [@media(pointer:fine)]:[&_input]:h-10 [@media(pointer:fine)]:[&_input]:min-h-10 [@media(pointer:fine)]:[&_button[aria-haspopup]]:h-10">
+        <div id={id} className="grid gap-x-4 gap-y-2 py-2.5 pl-1.5 pr-3 @min-[440px]:grid-cols-2 [@media(pointer:fine)]:[&_input]:h-10 [@media(pointer:fine)]:[&_input]:min-h-10 [@media(pointer:fine)]:[&_button[aria-haspopup]]:h-10">
           {children}
         </div>
       )}
@@ -163,7 +180,7 @@ export function FormSection({ title, action, defaultOpen = true, children }: { t
 /** 칸 하나 — 이름표 왼쪽(오른쪽 정렬), 필수면 빨간 *. 묶음이 440px 이상이면 칸 둘이 한 줄에 선다(2026-10-30 사용자 "기간이랑 판매여부 같은 행이어도 충분", 긴 글 칸만 wide). 묶음이 좁으면(미리 보기 기둥 곁) 이름표가 칸 위로 올라가 칸이 폭을 다 쓴다. wide 는 묶음 두 열을 다 쓴다. 열 수는 묶음 폭(@container)으로 정한다 — 미리 보기 기둥이 옆에 서면 좁아진다 */
 export function Field({ label, htmlFor, required, wide, hint, children }: { label: string; htmlFor?: string; required?: boolean; wide?: boolean; hint?: React.ReactNode; children: React.ReactNode }) {
   return (
-    <div className={cn("grid items-start gap-x-2 gap-y-1 @min-[440px]:grid-cols-[88px_minmax(0,1fr)]", wide && FULL_ROW)}>
+    <div className={cn("grid items-start gap-x-2 gap-y-1 @min-[440px]:grid-cols-[72px_minmax(0,1fr)]", wide && FULL_ROW)}>
       <label htmlFor={htmlFor} className="flex items-center gap-0.5 text-[12.5px] font-semibold text-mut @min-[440px]:min-h-10 @min-[440px]:justify-end @min-[440px]:text-right">
         {required && (
           <span aria-hidden className="text-danger">

@@ -10,6 +10,7 @@
 //
 // 칸 값은 value(정렬, 찾기, 복사, 엑셀에 쓰는 원값)와 render(화면에 그리는 것)로 나눈다. render 는 칸 안 고치기(입력칸, 스위치)도 된다.
 // 엑셀은 이 그리드가 전체 줄을 걸어 둔 것을 받아 간다(export.ts) — 쪽을 나눠도 모든 줄이 나간다.
+import { Clamp } from "@/components/ui/tooltip";
 import { useEffect, useId, useMemo, useRef, useState } from "react";
 import { cn } from "@/lib/cn";
 import { GRID_MESSAGES as M } from "@/lib/admin/messages";
@@ -30,6 +31,8 @@ export type GridCol<T> = {
   text?: (row: T) => string;
   /** 화면에 그리는 것. 없으면 text */
   render?: (row: T) => React.ReactNode;
+  /** 안 잘려도 말풍선을 띄운다(칸에는 줄인 모양만 둘 때). 말풍선 글은 text */
+  tip?: boolean;
   sortable?: boolean;
   /** 칸 안에서 고치는 칸(머리 글자색이 다르다) */
   editable?: boolean;
@@ -217,7 +220,10 @@ export function DataGrid<T>({
                   </span>
                   {columns.map((c) => (
                     <span key={c.key} role="gridcell" data-grid-value data-grid-text={textOf(c, row)} className={cn(BODY_CELL, "px-2", justifyClass(c.align), c.align === "right" && "tabular-nums")}>
-                      <span className={cn("min-w-0 max-w-full truncate", alignClass(c.align))}>{c.render ? c.render(row) : textOf(c, row)}</span>
+                      {/* 잘린 칸은 올리면 전체 글이 말풍선으로 뜬다(2026-10-30 사용자 "셀 툴팁 공통화"). title 속성은 쓰지 않는다(AGENTS §3) */}
+                      <Clamp text={textOf(c, row)} always={c.tip} className={cn("min-w-0 max-w-full", alignClass(c.align))}>
+                        {c.render ? c.render(row) : textOf(c, row)}
+                      </Clamp>
                     </span>
                   ))}
                 </div>

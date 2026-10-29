@@ -208,6 +208,7 @@ export function Clamp({
   lines = 1,
   className,
   text,
+  always = false,
   children,
 }: {
   lines?: ClampLines;
@@ -217,11 +218,13 @@ export function Clamp({
    * 글자 하나만 색을 달리 주려고 span 으로 쪼갠 줄(카드의 장르)이 그 경우다.
    */
   text?: string;
+  /** 안 잘려도 말풍선을 띄운다 — 화면에는 줄인 모양(딱지)만 두고 전체 뜻은 말풍선으로 줄 때(관리자 그리드의 진행상태 칸) */
+  always?: boolean;
   children: React.ReactNode;
 }) {
   const [clipped, setClipped] = useState(false);
   const label = text ?? (typeof children === "string" ? children : "");
-  const { triggerProps, tooltip } = useTooltip<HTMLSpanElement>(label, clipped && label.length > 0);
+  const { triggerProps, tooltip } = useTooltip<HTMLSpanElement>(label, (clipped || always) && label.length > 0);
   const { ref } = triggerProps;
 
   useEffect(() => {

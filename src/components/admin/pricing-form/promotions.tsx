@@ -60,9 +60,9 @@ function tierOfTarget(s: PricingSettings, target: string): TierKey {
 
 function columns(s: PricingSettings, now: Date): GridCol<Promotion>[] {
   return [
-    { key: "status", label: M.promoFieldPhase, width: "120px", value: (p) => statusText(promotionStatus(p, now)), render: (p) => <StatusTag status={promotionStatus(p, now)} /> },
+    { key: "status", label: M.promoFieldPhase, width: "72px", align: "center", tip: true, value: (p) => statusText(promotionStatus(p, now)), render: (p) => <StatusTag status={promotionStatus(p, now)} reason={false} /> },
     { key: "name", label: M.promoSearchName, width: "minmax(96px,1fr)", value: codeName },
-    { key: "target", label: M.promoSearchTarget, width: "minmax(88px,0.8fr)", value: (p) => targetLabel(s, p.target) },
+    { key: "target", label: M.promoSearchTarget, width: "minmax(80px,0.8fr)", value: (p) => targetLabel(s, p.target) },
     { key: "deal", label: M.colDeal, width: "80px", align: "right", value: (p) => p.value, text: deal },
   ];
 }
