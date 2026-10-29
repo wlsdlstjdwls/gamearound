@@ -148,7 +148,7 @@ export function PricingForm({ initial, part, title, lead }: { initial: PricingSe
             <PromotionsSection value={value} patch={patch} selected={promo} onSelect={setPromo} />
           )}
         </div>
-        <div className="xl:sticky xl:top-[calc(var(--header-h)+var(--admin-toolbar-h)+16px)] xl:max-h-[calc(100svh-var(--header-h)-var(--admin-toolbar-h)-32px)] xl:overflow-y-auto xl:overscroll-contain">
+        <div className="xl:sticky xl:top-[calc(var(--header-h)+var(--admin-toolbar-h)+16px)] xl:max-h-[calc(100svh-var(--header-h)-var(--admin-toolbar-h)-32px)]">
           <PricingPreview value={value} tier={part === "catalog" ? tier : promoTier} />
         </div>
       </div>
