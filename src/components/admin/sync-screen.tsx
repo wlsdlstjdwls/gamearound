@@ -7,17 +7,18 @@
 // 조회조건은 주소로 간다(useUrlFilter). 서버가 거른 줄을 다시 주는 동안 고른 값은 먼저 칸에 서고, 결과 자리는 흐리다(AGENTS §6).
 // 줄은 서버가 손볼 것부터 세워 준다(page.tsx). 그리드 머리를 눌러 다른 순서로 볼 수 있다.
 // "가져온 게임" 시트는 상세의 단추 하나 뒤에 있고 누르기 전에는 세우지 않는다(sync-run-sheet 머리 주석, 닫힌 시트 19.5초 사고).
-import { useState } from "react";
+import { memo, useState } from "react";
 import { DataGrid, type GridCol } from "@/components/admin/screen/data-grid";
 import { ProgramLink } from "@/components/admin/screen/program-link";
 import { CodeName, Field, FormSection, MasterDetail, ReadValue, SearchBand, SearchItem } from "@/components/admin/screen/layout";
 import { useUrlFilter } from "@/components/admin/screen/url-filter";
-import { FULL_ROW } from "@/components/admin/screen/form-grid";
+import { SyncErrorSample } from "@/components/admin/sync-error-sample";
 import { runCounts, SyncRunSheet } from "@/components/admin/sync-run-sheet";
 import { SYNC_HEALTH_TONE } from "@/components/admin/sync-tone";
 import { FormSelect } from "@/components/ui/select/fields";
 import { Tag } from "@/components/ui/tag";
 import { ADMIN_NAV, APPROVAL_MESSAGES as AM, SYNC_MESSAGES as M, SYNC_STATUS_LABEL } from "@/lib/admin/messages";
+import { joinSyncFilter, splitSyncFilter, syncFilterHref } from "@/lib/admin/sync-filter";
 import type { SyncHealth, SyncHealthFilter } from "@/lib/admin/sync-health";
 import { cn } from "@/lib/cn";
 import { formatAgo, formatDateTime } from "@/lib/format";
@@ -74,19 +75,6 @@ function HealthTag({ r }: { r: SyncSourceRow }) {
 /** 신선도가 먼저다 — "최근인가" 를 사람이 시각에서 빼서 세던 자리다(formatAgo 주석) */
 const lastAt = (r: SyncSourceRow) => r.finishedAt ?? r.startedAt;
 
-function splitFilter(v: string): [string, string] {
-  const [source = "all", status = "all"] = v.split("|");
-  return [source, status];
-}
-
-function hrefFor(source: string, status: string): string {
-  const p = new URLSearchParams();
-  if (source !== "all") p.set("source", source);
-  if (status !== "all") p.set("status", status);
-  const q = p.toString();
-  return q ? `${ROUTES.adminSync}?${q}` : ROUTES.adminSync;
-}
-
 export function SyncScreen({
   rows,
   asOf,
@@ -101,12 +89,35 @@ export function SyncScreen({
   source: string;
   status: SyncHealthFilter;
 }) {
-  // 두 칸을 한 값으로 쥔다 — 칸마다 따로 쥐면 하나를 고르고 서버가 답하기 전에 다른 하나를 고를 때 앞 값이 주소에서 빠진다
-  const filter = useUrlFilter(`${source}|${status}`, (v) => hrefFor(...splitFilter(v)));
-  const [srcValue, stValue] = splitFilter(filter.value);
+  // 두 칸을 한 값으로 쥔다(lib/admin/sync-filter 머리 주석)
+  const filter = useUrlFilter(joinSyncFilter(source, status), (v) => syncFilterHref(ROUTES.adminSync, v));
+  const [srcValue, stValue] = splitSyncFilter(filter.value);
+  const pending = filter.pending;
+
+  return (
+    <div className="flex flex-col gap-3">
+      <SearchBand label={M.search}>
+        <SearchItem label={M.searchSource}>
+          <FormSelect name="sync-source" label={M.searchSource} hideLabel size="md" value={srcValue} onChange={(v) => filter.set(joinSyncFilter(v, stValue))} options={[{ value: "all", label: M.all }, ...sources]} />
+        </SearchItem>
+        <SearchItem label={M.searchStatus}>
+          <FormSelect name="sync-status" label={M.searchStatus} hideLabel size="md" value={stValue} onChange={(v) => filter.set(joinSyncFilter(srcValue, v))} options={STATUS_FILTERS} />
+        </SearchItem>
+      </SearchBand>
+      <div className={cn("transition-opacity duration-fast", pending && "pointer-events-none opacity-50")} aria-busy={pending || undefined}>
+        <Results rows={rows} asOf={asOf} />
+      </div>
+    </div>
+  );
+}
+
+/**
+ * 그리드와 상세. 조회조건을 고른 순간의 낙관 렌더에서 이 아래는 다시 그리지 않는다(rows, asOf 가 그대로라 memo 가 건너뛴다) —
+ * 같이 그리면 고른 값이 칸에 서기까지 dev 에서 100ms 남짓 걸렸다(2026-10-29 CDP 실측). 서버가 새 줄을 주면 그때 그린다
+ */
+const Results = memo(function Results({ rows, asOf }: { rows: SyncSourceRow[]; asOf: number }) {
   const [selected, setSelected] = useState<string | null>(null);
   const current = rows.find((r) => r.source === selected) ?? null;
-  const pending = filter.pending;
 
   const columns: GridCol<SyncSourceRow>[] = [
     { key: "status", label: M.colStatus, width: "92px", align: "center", value: healthLabel, render: (r) => <HealthTag r={r} /> },
@@ -147,42 +158,32 @@ export function SyncScreen({
   ];
 
   return (
-    <div className="flex flex-col gap-3">
-      <SearchBand label={M.search}>
-        <SearchItem label={M.searchSource}>
-          <FormSelect name="sync-source" label={M.searchSource} hideLabel size="md" value={srcValue} onChange={(v) => filter.set(`${v}|${stValue}`)} options={[{ value: "all", label: M.all }, ...sources]} />
-        </SearchItem>
-        <SearchItem label={M.searchStatus}>
-          <FormSelect name="sync-status" label={M.searchStatus} hideLabel size="md" value={stValue} onChange={(v) => filter.set(`${srcValue}|${v}`)} options={STATUS_FILTERS} />
-        </SearchItem>
-      </SearchBand>
-      <div className={cn("transition-opacity duration-fast", pending && "pointer-events-none opacity-50")} aria-busy={pending || undefined}>
-        <MasterDetail
-          listWidth="700px"
-          list={
-            <DataGrid
-              label={M.listLabel}
-              columns={columns}
-              rows={rows}
-              rowKey={(r) => r.source}
-              selected={selected}
-              onSelect={setSelected}
-              autoSelectFirst
-              // 쉬는 소스는 흐리게 — 손볼 일이 없는 줄이다
-              rowTone={(r) => (r.disabledReason ? "muted" : undefined)}
-              empty={M.empty}
-              maxHeight="calc(100svh - var(--header-h) - 270px)"
-              fileKey={(r) => ({ code: r.source, name: r.name })}
-            />
-          }
-          detailTitle={current?.name ?? M.detailTitle}
-          detailActions={current ? <ProgramLink href={`${ROUTES.adminSyncLogs}?source=${current.source}`}>{ADMIN_NAV.logs}</ProgramLink> : undefined}
-          detail={current ? <Detail key={current.source} r={current} asOf={asOf} /> : <p className="px-2 py-6 text-center text-[13px] text-dim">{AM.pickHint}</p>}
+    <MasterDetail
+      listWidth="700px"
+      list={
+        <DataGrid
+          label={M.listLabel}
+          columns={columns}
+          rows={rows}
+          rowKey={rowKey}
+          selected={selected}
+          onSelect={setSelected}
+          autoSelectFirst
+          // 쉬는 소스는 흐리게 — 손볼 일이 없는 줄이다
+          rowTone={(r) => (r.disabledReason ? "muted" : undefined)}
+          empty={M.empty}
+          maxHeight="calc(100svh - var(--header-h) - 270px)"
+          fileKey={(r) => ({ code: r.source, name: r.name })}
         />
-      </div>
-    </div>
+      }
+      detailTitle={current?.name ?? M.detailTitle}
+      detailActions={current ? <ProgramLink href={`${ROUTES.adminSyncLogs}?source=${current.source}`}>{ADMIN_NAV.logs}</ProgramLink> : undefined}
+      detail={current ? <Detail key={current.source} r={current} asOf={asOf} /> : <p className="px-2 py-6 text-center text-[13px] text-dim">{AM.pickHint}</p>}
+    />
   );
-}
+});
+
+const rowKey = (r: SyncSourceRow) => r.source;
 
 function Detail({ r, asOf }: { r: SyncSourceRow; asOf: number }) {
   const at = lastAt(r);
@@ -243,10 +244,7 @@ function Detail({ r, asOf }: { r: SyncSourceRow; asOf: number }) {
       </FormSection>
       {r.errorSample && (
         <FormSection title={M.sectionError}>
-          {/* 전문을 다 펴 둔다 — 앞 표는 칸 폭 때문에 300자에서 잘랐다. 고정폭 글꼴은 쓰지 않는다(한글이 섞이면 낱자 사이가 벌어진다) */}
-          <div className={cn(FULL_ROW, "max-h-[240px] overflow-auto rounded-xl bg-surface-2 px-3.5 py-2.5")}>
-            <p className="whitespace-pre-wrap break-words text-[12.5px] leading-[1.6] text-danger">{r.errorSample}</p>
-          </div>
+          <SyncErrorSample text={r.errorSample} />
         </FormSection>
       )}
       {r.run && r.run.total > 0 && (

@@ -8,7 +8,9 @@ import {
   gameSourceRefs,
   sourceEnum,
   syncLogs,
+  syncStatusEnum,
   type SourceName,
+  type SyncStatus,
 } from "@/server/db/schema";
 import { requireAdmin } from "@/server/services/users";
 import { DISPLAY_TIME_ZONE } from "@/lib/format";
@@ -29,6 +31,11 @@ export type CorrectionRow = typeof dataCorrections.$inferSelect;
 export const SOURCES: readonly SourceName[] = sourceEnum.enumValues;
 export function isSourceName(v: unknown): v is SourceName {
   return typeof v === "string" && (SOURCES as readonly string[]).includes(v);
+}
+
+export const SYNC_STATUSES: readonly SyncStatus[] = syncStatusEnum.enumValues;
+export function isSyncStatus(v: unknown): v is SyncStatus {
+  return typeof v === "string" && (SYNC_STATUSES as readonly string[]).includes(v);
 }
 
 // ---------- sync 대시보드 ----------
@@ -66,13 +73,14 @@ export async function getSyncOverview(): Promise<{ items: SyncOverviewItem[] }> 
   return { items };
 }
 
-export async function listSyncLogs(opts: { limit?: number; source?: SourceName } = {}): Promise<SyncLogRow[]> {
+/** 수집이력조회. 결과(status)로 거르면 "실패만 최근 100건" 처럼 정상 줄에 묻힌 실패를 더 멀리까지 본다 */
+export async function listSyncLogs(opts: { limit?: number; source?: SourceName; status?: SyncStatus } = {}): Promise<SyncLogRow[]> {
   await requireAdmin();
   const limit = Math.min(Math.max(opts.limit ?? 100, 1), 500);
   return getDb()
     .select(syncLogColumns)
     .from(syncLogs)
-    .where(opts.source ? eq(syncLogs.source, opts.source) : undefined)
+    .where(and(opts.source ? eq(syncLogs.source, opts.source) : undefined, opts.status ? eq(syncLogs.status, opts.status) : undefined))
     .orderBy(desc(syncLogs.startedAt))
     .limit(limit);
 }

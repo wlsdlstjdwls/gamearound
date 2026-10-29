@@ -77,29 +77,6 @@ export const ADMIN_NAV = {
 // 수집 소스 이름표는 공개 상세(정보 출처 칩)도 같이 써서 lib/source-label 로 옮겼다. 관리자 쪽 import 경로는 그대로 둔다
 export { SOURCE_LABEL, sourceLabel } from "@/lib/source-label";
 
-export const LOG_MESSAGES = {
-  title: "실행 로그",
-  lead: "수집이 언제 돌아 몇 건을 처리했는지 최근 기록이에요. 소스를 눌러 그 스토어만 볼 수 있어요.",
-  recent: (n: number) => `최근 ${n}건`,
-  all: "전체",
-  empty: "아직 기록이 없어요.",
-  colId: "번호",
-  colSource: "소스",
-  colStatus: "결과",
-  colStarted: "시작한 때",
-  colDuration: "걸린 시간",
-  colProcessed: "처리",
-  colFailed: "실패",
-  colDiscovery: "신규 찾기",
-  colError: "에러 맛보기",
-  /** 발견이 멈춘 까닭. "예산 소진" 이 이어지면 포화 신호다(아는 것만 나오는 구간이 예산보다 길다) */
-  stopWant: "목표 채움",
-  stopBudget: "예산 다 씀",
-  stopCatalogEnd: "카탈로그 끝",
-  discoverySummary: (pages: number, scanned: number, fresh: number) =>
-    `${pages}쪽에서 ${scanned}건 훑어 신규 ${fresh}건`,
-} as const;
-
 export const MATCH_MESSAGES = {
   title: "매칭 대기",
   lead:

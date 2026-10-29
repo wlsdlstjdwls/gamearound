@@ -1,166 +1,55 @@
-// /admin/sync-logs — 실행 로그. 최근 100건 테이블, ?source= 필터.
+// /admin/sync-logs — 수집이력조회. 최근 실행 기록, 조회조건 ?source=, ?status=.
 //
-// 수집 현황이 스토어마다 "마지막 한 번" 만 보여 주는 값의 전문이 여기 있다.
+// 수집현황이 스토어마다 "마지막 한 번" 만 보여 주는 값의 전문이 여기 있다.
 // 원값(ok, steam)을 그대로 띄우던 자리를 한글 이름표로 바꿨다 — partial 이 성공인지 실패인지
-// 영문으로는 판단이 안 선다. 다만 소스는 로그와 워크플로 이름을 맞대야 해서 원값을 함께 남긴다.
+// 영문으로는 판단이 안 선다. 다만 소스는 로그와 워크플로 이름을 맞대야 해서 원값을 상세의 코드 칸에 남긴다.
+//
+// 2026-10-29 — 화면 구성을 백오피스 조회 화면 꼴로 옮겼다(components/admin/sync-logs-screen). 여기는 조회조건을 읽어
+// 그 조건으로 서버에서 다시 읽고, 직렬화되는 줄로 펴서 넘기기만 한다.
 import type { Metadata } from "next";
 import { AdminScreenHead } from "@/components/admin/screen/head";
-import { cn } from "@/lib/cn";
-import { formatDateTime, formatDuration } from "@/lib/format";
-import { isSourceName, listSyncLogs, SOURCES } from "@/server/services/admin";
-import { LOG_MESSAGES, SYNC_STATUS_LABEL, sourceLabel, ADMIN_NAV } from "@/lib/admin/messages";
+import { SyncLogsScreen, type SyncLogGridRow } from "@/components/admin/sync-logs-screen";
+import { ADMIN_NAV, LOG_MESSAGES, sourceLabel } from "@/lib/admin/messages";
+import { firstParam } from "@/lib/games-query";
+import { isSourceName, isSyncStatus, listSyncLogs, SOURCES, type SyncLogRow } from "@/server/services/admin";
 import { requireRoleOrForbid } from "@/server/auth/guards";
-import { DataCell, DataHead, DataList, DataRow } from "@/components/admin/data-rows";
-import { ROUTES } from "@/lib/routes";
-import { Clamp } from "@/components/ui/tooltip";
-import { SYNC_BADGE_SHAPE, SYNC_STATUS_BADGE } from "@/components/admin/sync-tone";
-import { SYNC_LOG_COLS } from "@/lib/admin/table-cols";
-import { NavChip, NavPendingScope, PendingRegion } from "@/components/ui/nav-pending";
 
 export const metadata: Metadata = { title: ADMIN_NAV.logs };
 
-/**
- * 발견 중단 사유. "예산 소진" 이 이어지면 포화 신호다 — 아는 것만 나오는 구간이 페이지 예산보다 길다는 뜻이라
- * 예산을 올리거나 발견 시작점을 옮겨야 한다. 그래서 이 값만 경고색으로 띄운다.
- */
-const DISCOVERY_STOP: Record<string, { label: string; style: string }> = {
-  want: { label: LOG_MESSAGES.stopWant, style: "text-ok" },
-  budget: { label: LOG_MESSAGES.stopBudget, style: "text-warn" },
-  "catalog-end": { label: LOG_MESSAGES.stopCatalogEnd, style: "text-mut" },
-};
+/** 한 번에 싣는 실행 수. 옛 화면과 같은 값이다 — 더 옛 기록은 스토어, 결과로 좁혀 본다 */
+const LOG_LIMIT = 100;
 
-function duration(start: Date, end: Date | null): string {
-  return end ? formatDuration(end.getTime() - start.getTime()) : "-";
+type Props = { searchParams: Promise<Record<string, string | string[] | undefined>> };
+
+function toRow(l: SyncLogRow): SyncLogGridRow {
+  const d = l.discovery;
+  return {
+    id: l.id,
+    source: l.source,
+    name: sourceLabel(l.source),
+    status: l.status,
+    startedAt: l.startedAt,
+    finishedAt: l.finishedAt,
+    processed: l.processed ?? 0,
+    failed: l.failed ?? 0,
+    errorSample: l.errorSample,
+    discovery: d ? { pages: d.pages, scanned: d.scanned, fresh: d.fresh, startPage: d.startPage, stoppedBy: d.stoppedBy } : null,
+  };
 }
 
-type SyncLog = Awaited<ReturnType<typeof listSyncLogs>>[number];
-
-function StatusBadge({ status }: { status: SyncLog["status"] }) {
-  return <span className={cn(SYNC_BADGE_SHAPE, SYNC_STATUS_BADGE[status])}>{SYNC_STATUS_LABEL[status] ?? status}</span>;
-}
-
-/**
- * 좁은 화면에서 실행 하나의 머리 두 줄. 표의 일곱 칸(번호~실패)을 여기 접는다 — 칸마다 이름표를 단
- * 카드로는 실행 하나가 아홉 줄이었다(DataCell wideOnly 주석). 신규 찾기와 에러는 값이 있을 때만 밑에 선다.
- */
-function MobileRunHead({ log: l }: { log: SyncLog }) {
-  const failed = l.failed ?? 0;
-  return (
-    <div className="flex flex-col gap-1 md:hidden">
-      <div className="flex items-center justify-between gap-2">
-        <span className="min-w-0 font-semibold">{sourceLabel(l.source)}</span>
-        <StatusBadge status={l.status} />
-      </div>
-      <p className="text-[12px] text-mut tabular-nums">
-        {formatDateTime(l.startedAt)} | {duration(l.startedAt, l.finishedAt)} | {LOG_MESSAGES.colProcessed} {l.processed ?? 0} |{" "}
-        <span className={failed > 0 ? "font-semibold text-danger" : undefined}>
-          {LOG_MESSAGES.colFailed} {failed}
-        </span>
-      </p>
-    </div>
-  );
-}
-
-export default async function SyncLogsPage({ searchParams }: { searchParams: Promise<{ source?: string | string[] }> }) {
+export default async function SyncLogsPage({ searchParams }: Props) {
   await requireRoleOrForbid("admin");
   const sp = await searchParams;
-  const raw = typeof sp.source === "string" ? sp.source : undefined;
-  const source = isSourceName(raw) ? raw : undefined;
-  const logs = await listSyncLogs({ source });
+  const rawSource = firstParam(sp.source);
+  const source = isSourceName(rawSource) ? rawSource : undefined;
+  const rawStatus = firstParam(sp.status);
+  const status = isSyncStatus(rawStatus) ? rawStatus : undefined;
+  const rows = (await listSyncLogs({ source, status, limit: LOG_LIMIT })).map(toRow);
 
   return (
-    <NavPendingScope>
-    <section className="flex flex-col gap-4">
-      <AdminScreenHead title={ADMIN_NAV.logs} count={logs.length} />
-      {/* 조회조건 — 백오피스의 조회조건 띠 자리. 스토어를 고르면 그 스토어 실행만 */}
-      <header className="flex flex-wrap items-end justify-between gap-2">
-        <div className="flex flex-wrap gap-1 text-xs">
-          <NavChip group="source" href={ROUTES.adminSyncLogs} active={!source} size="sm">
-            {LOG_MESSAGES.all}
-          </NavChip>
-          {SOURCES.map((s) => (
-            <NavChip key={s} group="source" href={`${ROUTES.adminSyncLogs}?source=${s}`} active={source === s} size="sm">
-              {sourceLabel(s)}
-            </NavChip>
-          ))}
-        </div>
-      </header>
-
-      <PendingRegion>
-      {logs.length === 0 ? (
-        <p className="rounded-xl bg-surface-2 px-4 py-3.5 text-[13px] text-mut">{LOG_MESSAGES.empty}</p>
-      ) : (
-        <div>
-          <DataHead
-            cols={SYNC_LOG_COLS}
-            labels={[
-              LOG_MESSAGES.colId,
-              LOG_MESSAGES.colSource,
-              LOG_MESSAGES.colStatus,
-              LOG_MESSAGES.colStarted,
-              LOG_MESSAGES.colDuration,
-              LOG_MESSAGES.colProcessed,
-              LOG_MESSAGES.colFailed,
-              LOG_MESSAGES.colDiscovery,
-            ]}
-          />
-          <DataList>
-            {logs.map((l) => (
-              <DataRow key={l.id} cols={SYNC_LOG_COLS} align="start">
-                <MobileRunHead log={l} />
-                <DataCell label={LOG_MESSAGES.colId} wideOnly className="text-dim">
-                  {l.id}
-                </DataCell>
-                <DataCell label={LOG_MESSAGES.colSource} wideOnly className="md:whitespace-nowrap">
-                  {sourceLabel(l.source)}
-                </DataCell>
-                <DataCell label={LOG_MESSAGES.colStatus} wideOnly>
-                  <StatusBadge status={l.status} />
-                </DataCell>
-                <DataCell label={LOG_MESSAGES.colStarted} wideOnly className="tabular-nums">
-                  {formatDateTime(l.startedAt)}
-                </DataCell>
-                <DataCell label={LOG_MESSAGES.colDuration} wideOnly className="tabular-nums">
-                  {duration(l.startedAt, l.finishedAt)}
-                </DataCell>
-                <DataCell label={LOG_MESSAGES.colProcessed} wideOnly className="tabular-nums">
-                  {l.processed ?? 0}
-                </DataCell>
-                <DataCell label={LOG_MESSAGES.colFailed} wideOnly className={cn("tabular-nums", (l.failed ?? 0) > 0 ? "font-semibold text-danger" : "text-dim")}>
-                  {l.failed ?? 0}
-                </DataCell>
-                <DataCell label={LOG_MESSAGES.colDiscovery} wideOnly={!l.discovery}>
-                  {l.discovery ? (
-                    <>
-                      <span className={DISCOVERY_STOP[l.discovery.stoppedBy]?.style ?? ""}>
-                        {DISCOVERY_STOP[l.discovery.stoppedBy]?.label ?? l.discovery.stoppedBy}
-                      </span>
-                      <span className="block text-[11.5px] text-dim">
-                        {LOG_MESSAGES.discoverySummary(l.discovery.pages, l.discovery.scanned, l.discovery.fresh)}
-                      </span>
-                    </>
-                  ) : (
-                    <span className="text-dim-2">-</span>
-                  )}
-                </DataCell>
-                {/* 에러가 없는 줄은 밑줄을 아예 세우지 않는다. 고정폭 글꼴을 걷었다 — 한글이 섞인 에러 문구는
-                    고정폭에서 낱자 사이가 벌어져 안 읽혔다. 전문은 잘렸을 때만 뜨는 말풍선(Clamp)으로 본다 */}
-                {l.errorSample && (
-                  <DataCell label={LOG_MESSAGES.colError} className="md:col-span-full md:mt-2">
-                    <div className="md:rounded-[7px] md:bg-surface-2 md:px-3 md:py-2">
-                      <Clamp lines={2} className="break-words text-[12px] leading-[1.55] text-mut">
-                        {l.errorSample}
-                      </Clamp>
-                    </div>
-                  </DataCell>
-                )}
-              </DataRow>
-            ))}
-          </DataList>
-        </div>
-      )}
-      </PendingRegion>
-    </section>
-    </NavPendingScope>
+    <>
+      <AdminScreenHead title={ADMIN_NAV.logs} count={rows.length} note={rows.length >= LOG_LIMIT ? LOG_MESSAGES.limitNote(LOG_LIMIT) : undefined} />
+      <SyncLogsScreen rows={rows} sources={SOURCES.map((s) => ({ value: s, label: sourceLabel(s) }))} source={source ?? "all"} status={status ?? "all"} />
+    </>
   );
 }

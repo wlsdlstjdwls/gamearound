@@ -24,13 +24,3 @@ export const SYNC_HEALTH_TONE: Record<SyncHealth, TagTone> = {
   running: "acc",
   idle: "outline",
 };
-
-/** 결과 배지(면 + 글자) */
-export const SYNC_STATUS_BADGE: Record<SyncStatus, string> = {
-  ok: "bg-ok-soft text-ok",
-  partial: "bg-warn-soft text-warn",
-  failed: "bg-danger-soft text-danger",
-};
-
-/** 배지 모양. 수집 현황 카드와 실행 로그 줄이 같은 크기로 선다 */
-export const SYNC_BADGE_SHAPE = "inline-flex w-fit shrink-0 items-center gap-1.5 rounded-[6px] px-2 py-0.5 text-[11.5px] font-semibold";
