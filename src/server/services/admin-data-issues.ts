@@ -17,7 +17,7 @@ export interface DataIssueRow {
   reason: string;
   /** 고칠 안이 있는가. 없으면(스토어 확인) 화면은 "확인했어요" 만 세운다 */
   fixable: boolean;
-  game: { slug: string; title: string } | null;
+  game: { id: string; slug: string; title: string } | null;
   createdAt: string;
 }
 
@@ -32,6 +32,7 @@ function toRow(r: {
   verdict: string;
   reason: string;
   fix: unknown;
+  gameId: string | null;
   slug: string | null;
   titleKo: string | null;
   titleEn: string | null;
@@ -43,7 +44,7 @@ function toRow(r: {
     verdict: r.verdict,
     reason: r.reason,
     fixable: r.fix !== null,
-    game: r.slug ? { slug: r.slug, title: r.titleKo ?? r.titleEn ?? r.slug } : null,
+    game: r.slug && r.gameId ? { id: r.gameId, slug: r.slug, title: r.titleKo ?? r.titleEn ?? r.slug } : null,
     createdAt: r.createdAt.toISOString(),
   };
 }
@@ -57,6 +58,7 @@ export async function listDataIssues(): Promise<DataIssueList> {
     verdict: dataIssues.verdict,
     reason: dataIssues.reason,
     fix: dataIssues.fix,
+    gameId: games.id,
     slug: games.slug,
     titleKo: games.titleKo,
     titleEn: games.titleEn,
