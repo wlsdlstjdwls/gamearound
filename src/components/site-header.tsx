@@ -34,7 +34,7 @@ export function SiteHeader() {
     <>
       {/* 유리 면(--header-glass): 반투명 바탕 + 뒤 흐림. 스크롤한 본문이 머리띠 밑으로 비쳐 "떠 있다" 를 말하고,
           그림자는 스크롤한 뒤에만 뜬다(.header-lift) — 맨 위에서는 본문과 한 장으로 읽힌다 */}
-      <header className="header-lift sticky top-0 z-40 border-b border-line-soft bg-[var(--header-glass)] backdrop-blur-[var(--header-blur)]">
+      <header data-site-header className="header-lift sticky top-0 z-40 border-b border-line-soft bg-[var(--header-glass)] backdrop-blur-[var(--header-blur)]">
         <div className="mx-auto flex w-full max-w-[var(--page-w)] flex-wrap items-center gap-x-2 gap-y-1 px-5 py-2.5 sm:gap-x-5 sm:px-6 sm:py-3.5 tab:max-lg:pb-1.5 lg:flex-nowrap lg:gap-x-7">
           {/* 좁은 화면에서는 심볼만 남는다. 글자가 접혀도 링크의 이름은 남아야 하므로 aria-label 로 못 박는다 */}
           <Link href={ROUTES.home} aria-label={SITE.name} className="press tap inline-flex shrink-0 items-center text-ink">

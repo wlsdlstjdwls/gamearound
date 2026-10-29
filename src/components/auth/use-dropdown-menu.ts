@@ -74,7 +74,13 @@ export function useDropdownMenu() {
 }
 
 /** 메뉴 판과 항목의 모양 — 두 메뉴가 같은 판으로 읽혀야 로그인 전후가 한 메뉴로 이어진다 */
-export const MENU_PANEL_CLASS =
-  "absolute right-0 top-[calc(100%+8px)] z-50 w-60 origin-top-right animate-scale-in overflow-hidden rounded-[var(--radius-md)] border border-line-strong bg-surface";
+const MENU_PANEL_BASE = "absolute z-50 w-60 animate-scale-in overflow-hidden rounded-[var(--radius-md)] border border-line-strong bg-surface";
+export const MENU_PANEL_CLASS = `${MENU_PANEL_BASE} right-0 top-[calc(100%+8px)] origin-top-right`;
+/**
+ * 메뉴 단추가 어디 서 있나. "rail" 은 관리자 왼쪽 기둥 바닥이다(2026-10-29 머리띠를 걷고 그 기능을 기둥에 옮겼다) —
+ * 화면 왼쪽 끝, 바닥에서 열리니 판이 오른쪽 위로 펴져야 화면 안에 든다
+ */
+export type MenuPlacement = "header" | "rail";
+export const MENU_PANEL_RAIL_CLASS = `${MENU_PANEL_BASE} left-0 bottom-[calc(100%+8px)] origin-bottom-left`;
 export const MENU_ITEM_CLASS =
   "flex min-h-[var(--touch-target)] items-center px-4 text-[13px] text-mut outline-none transition-colors hover:bg-surface-2 hover:text-ink focus-visible:bg-surface-2 focus-visible:text-ink";

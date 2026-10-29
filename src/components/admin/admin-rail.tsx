@@ -1,27 +1,43 @@
 "use client";
 // 관리자 넓은 화면 왼쪽 기둥(2026-10-29, 사용자 "왼쪽 메뉴 아예 왼쪽에 붙이고 접었다 펼칠 수 있게, 공간 활용 좀 하자").
 //
-// 앞 판은 가운데 1440 폭 안에 떠 있는 흰 카드였다 — 넓은 화면에서 좌우 여백과 카드 둘레가 표 폭을 먹었다. 이제 화면 왼쪽 끝,
-// 머리띠 바로 아래에 붙은 세로 띠이고 본문은 남은 폭을 다 쓴다. 접으면 그림만 남는 좁은 띠가 된다(이름은 손을 올리면 말풍선, 낭독기는 aria-label).
+// 앞 판은 가운데 1440 폭 안에 떠 있는 흰 카드였다 — 넓은 화면에서 좌우 여백과 카드 둘레가 표 폭을 먹었다. 이제 화면 왼쪽 끝에
+// 붙은 세로 띠이고 본문은 남은 폭을 다 쓴다. 접으면 그림만 남는 좁은 띠가 된다(이름은 손을 올리면 말풍선, 낭독기는 aria-label).
 // 접힘은 쿠키에 둔다 — 서버 레이아웃이 첫 그림부터 같은 폭으로 그려야 펼쳤다 접히는 깜빡임이 없다(localStorage 는 첫 그림 뒤에야 읽힌다).
 // 좁은 화면은 이 기둥이 서지 않는다(바닥 띠와 더보기 시트, admin-nav).
+//
+// 같은 날 둘째 손질(사용자 "접는 단추를 위로, 맨 위 프로필은 필요 없다, 관리자에선 상단 헤더도 필요 없으니 왼쪽 메뉴에 녹여라"):
+//  - 넓은 화면에서는 사이트 머리띠를 걷는다(globals.css 의 `body:has([data-admin-rail])`). 기둥 맨 위는 로고(서비스 홈)와 접기 단추다.
+//  - 머리띠가 하던 일 넷(테마, 찜, 알림, 계정)은 기둥 바닥 한 줄로 옮긴다. 검색칸과 서비스 메뉴 넷은 옮기지 않는다 —
+//    관리자 화면에서 게임을 찾을 일은 각 화면의 검색이 맡고, 서비스로 나가는 길은 로고와 "서비스 화면으로" 가 있다.
+//  - 묶음 제목을 누르면 그 묶음이 접힌다(쿠키 admin_groups). 지금 보는 칸은 묶음이 접혀 있어도 남긴다 — 내가 어디 있는지는 늘 보여야 한다.
 import { Suspense, useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { Badge, GROUPS, isActive, ItemBody, type AdminNavCounts, type Item } from "@/components/admin/admin-nav-items";
-import { ChevronLeftIcon } from "@/components/ui/icons";
+import { AuthNav } from "@/components/auth/auth-nav";
+import { HeaderWishLink } from "@/components/header-wish-link";
+import { NotificationBell } from "@/components/notification-bell";
+import { ThemeSwitch } from "@/components/theme-switch";
+import { ChevronDownIcon, ChevronLeftIcon } from "@/components/ui/icons";
+import { BrandLockup, BrandSymbol } from "@/components/ui/logo";
 import { useTooltip } from "@/components/ui/tooltip";
 import { ADMIN_NAV } from "@/lib/admin/messages";
-import { ADMIN_RAIL_COOKIE, ADMIN_RAIL_COOKIE_MAX_AGE } from "@/lib/admin/rail";
+import { ADMIN_GROUPS_COOKIE, ADMIN_RAIL_COOKIE, ADMIN_RAIL_COOKIE_MAX_AGE } from "@/lib/admin/rail";
 import { cn } from "@/lib/cn";
 import { ROUTES } from "@/lib/routes";
+import { SITE } from "@/lib/site";
 
-/** 접힌 칸 하나 — 그림과 배지 점. 이름은 말풍선과 aria-label 이 맡는다 */
+function writeCookie(name: string, value: string) {
+  document.cookie = `${name}=${encodeURIComponent(value)}; path=/; max-age=${ADMIN_RAIL_COOKIE_MAX_AGE}; samesite=lax`;
+}
+
+/** 접힌 칸 하나 — 그림과 점 배지. 이름은 말풍선과 aria-label 이 맡는다 */
 function CollapsedItem({ item, active, counts, onSoon }: { item: Item; active: boolean; counts: Promise<AdminNavCounts | null>; onSoon: (item: Item) => void }) {
   const { triggerProps, tooltip } = useTooltip<HTMLAnchorElement & HTMLButtonElement>(item.label, true);
   const { Icon } = item;
   const cls = cn(
-    "press relative mx-auto flex size-10 items-center justify-center rounded-lg transition-colors",
+    "press relative mx-auto flex size-10 shrink-0 items-center justify-center rounded-lg transition-colors",
     active ? "bg-acc text-on-ink" : "text-mut hover:bg-surface-2 hover:text-ink",
   );
   const inner = (
@@ -29,7 +45,7 @@ function CollapsedItem({ item, active, counts, onSoon }: { item: Item; active: b
       <Icon size={18} />
       {item.pick && (
         <Suspense fallback={null}>
-          <Badge counts={counts} pick={item.pick} active={active} className="absolute -right-1 -top-1 px-1 text-[10px]" />
+          <Badge counts={counts} pick={item.pick} active={active} dot className="absolute right-1.5 top-1.5" />
         </Suspense>
       )}
     </>
@@ -50,13 +66,32 @@ function CollapsedItem({ item, active, counts, onSoon }: { item: Item; active: b
   );
 }
 
-export function AdminRail({ user, counts, initialCollapsed, onSoon }: { user: string; counts: Promise<AdminNavCounts | null>; initialCollapsed: boolean; onSoon: (item: Item) => void }) {
+export function AdminRail({
+  counts,
+  initialCollapsed,
+  initialFolded,
+  onSoon,
+}: {
+  counts: Promise<AdminNavCounts | null>;
+  initialCollapsed: boolean;
+  /** 접어 둔 묶음 열쇠(쿠키, 레이아웃이 읽는다) */
+  initialFolded: string[];
+  onSoon: (item: Item) => void;
+}) {
   const pathname = usePathname();
   const [collapsed, setCollapsed] = useState(initialCollapsed);
+  const [folded, setFolded] = useState<ReadonlySet<string>>(() => new Set(initialFolded));
   const toggle = () => {
     const next = !collapsed;
     setCollapsed(next);
-    document.cookie = `${ADMIN_RAIL_COOKIE}=${next ? "1" : "0"}; path=/; max-age=${ADMIN_RAIL_COOKIE_MAX_AGE}; samesite=lax`;
+    writeCookie(ADMIN_RAIL_COOKIE, next ? "1" : "0");
+  };
+  const toggleGroup = (key: string) => {
+    const next = new Set(folded);
+    if (next.has(key)) next.delete(key);
+    else next.add(key);
+    setFolded(next);
+    writeCookie(ADMIN_GROUPS_COOKIE, [...next].join(","));
   };
   const itemClass = (active: boolean) =>
     cn(
@@ -67,63 +102,96 @@ export function AdminRail({ user, counts, initialCollapsed, onSoon }: { user: st
 
   return (
     <aside
+      data-admin-rail
       data-collapsed={collapsed || undefined}
       className={cn(
-        "sticky top-[var(--header-h)] hidden h-[calc(100svh-var(--header-h))] shrink-0 flex-col border-r border-line bg-surface transition-[width] duration-base md:flex",
-        collapsed ? "w-[64px]" : "w-[216px]",
+        "sticky top-0 hidden h-svh shrink-0 flex-col border-r border-line bg-surface transition-[width] duration-base md:flex",
+        collapsed ? "w-[64px]" : "w-[220px]",
       )}
     >
-      <div className={cn("flex items-center gap-2.5 pb-2 pt-4", collapsed ? "justify-center px-2" : "px-4")}>
-        <span aria-hidden className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-acc text-[13px] font-bold text-on-ink">
-          {user.slice(0, 1)}
-        </span>
-        {!collapsed && (
-          <div className="min-w-0">
-            <p className="text-[13.5px] font-bold leading-tight text-ink">{ADMIN_NAV.consoleTitle}</p>
-            <p className="truncate text-[11.5px] leading-tight text-dim">{user}</p>
-          </div>
-        )}
-      </div>
-
-      {/* 기둥이 화면보다 길면 기둥 안에서 굴린다 */}
-      <nav aria-label={ADMIN_NAV.menuTitle} className={cn("flex min-h-0 flex-1 flex-col gap-3 overflow-y-auto overscroll-contain py-2 [scrollbar-color:var(--line)_transparent] [scrollbar-width:thin]", collapsed ? "px-1.5" : "px-2.5")}>
-        {GROUPS.map((g) => (
-          <div key={g.key} className={cn("flex flex-col", collapsed ? "gap-1 border-t border-line-soft pt-3 first:border-t-0 first:pt-0" : "gap-px")}>
-            {g.title && !collapsed && <p className="px-2.5 pb-1 text-[11px] font-bold tracking-[0.1em] text-dim-2">{g.title}</p>}
-            {g.items.map((item) => {
-              const active = isActive(pathname, item.href);
-              if (collapsed) return <CollapsedItem key={item.href} item={item} active={active} counts={counts} onSoon={onSoon} />;
-              const body = <ItemBody item={item} active={active} counts={counts} iconSize={16} badgeClassName="ml-auto" />;
-              return item.soon ? (
-                <button key={item.href} type="button" onClick={() => onSoon(item)} className={cn(itemClass(active), "w-full text-left")}>
-                  {body}
-                </button>
-              ) : (
-                <Link key={item.href} href={item.href} aria-current={active ? "page" : undefined} className={itemClass(active)}>
-                  {body}
-                </Link>
-              );
-            })}
-          </div>
-        ))}
-      </nav>
-
-      <div className={cn("flex flex-col gap-1 border-t border-line py-2", collapsed ? "items-center px-1.5" : "px-2.5")}>
-        {!collapsed && (
-          <Link href={ROUTES.home} className="press tap flex items-center rounded-lg px-2.5 text-[12.5px] text-dim transition-colors hover:text-ink">
-            {ADMIN_NAV.backToSite}
-          </Link>
-        )}
+      {/* 맨 위: 로고(서비스 홈)와 접기 단추. 접으면 둘이 위아래로 선다 */}
+      <div className={cn("flex shrink-0 gap-1 pb-2 pt-3", collapsed ? "flex-col items-center px-1.5" : "items-center justify-between pl-4 pr-2")}>
+        <Link href={ROUTES.home} aria-label={`${SITE.name} ${ADMIN_NAV.backToSite}`} className="press tap inline-flex items-center gap-2 text-ink">
+          {collapsed ? <BrandSymbol /> : <BrandLockup />}
+        </Link>
         <button
           type="button"
           onClick={toggle}
           aria-expanded={!collapsed}
           aria-label={collapsed ? ADMIN_NAV.railExpand : ADMIN_NAV.railCollapse}
-          className={cn("press tap flex items-center gap-2 rounded-lg text-[12.5px] text-dim transition-colors hover:bg-surface-2 hover:text-ink", collapsed ? "size-10 justify-center" : "px-2.5")}
+          title={collapsed ? ADMIN_NAV.railExpand : ADMIN_NAV.railCollapse}
+          className="press flex size-9 shrink-0 items-center justify-center rounded-lg text-dim transition-colors hover:bg-surface-2 hover:text-ink"
         >
-          <ChevronLeftIcon size={16} className={cn("shrink-0 transition-transform duration-base", collapsed && "rotate-180")} />
-          {!collapsed && ADMIN_NAV.railCollapse}
+          <ChevronLeftIcon size={18} className={cn("transition-transform duration-base", collapsed && "rotate-180")} />
         </button>
+      </div>
+
+      {/* 기둥이 화면보다 길면 기둥 안에서 굴린다 */}
+      <nav
+        aria-label={ADMIN_NAV.menuTitle}
+        className={cn(
+          "flex min-h-0 flex-1 flex-col overflow-y-auto overscroll-contain py-2 [scrollbar-color:var(--line)_transparent] [scrollbar-width:thin]",
+          collapsed ? "gap-2 px-1.5" : "gap-2.5 px-2.5",
+        )}
+      >
+        {GROUPS.map((g) => {
+          if (collapsed) {
+            return (
+              <div key={g.key} className="flex flex-col gap-1 border-t border-line-soft pt-2 first:border-t-0 first:pt-0">
+                {g.items.map((item) => (
+                  <CollapsedItem key={item.href} item={item} active={isActive(pathname, item.href)} counts={counts} onSoon={onSoon} />
+                ))}
+              </div>
+            );
+          }
+          const isFolded = folded.has(g.key);
+          const groupId = `admin-group-${g.key}`;
+          // 접힌 묶음에서도 지금 보는 칸은 남긴다(머리 주석)
+          const shown = isFolded ? g.items.filter((item) => isActive(pathname, item.href)) : g.items;
+          return (
+            <div key={g.key} className="flex flex-col gap-px">
+              {g.title && (
+                <button
+                  type="button"
+                  onClick={() => toggleGroup(g.key)}
+                  aria-expanded={!isFolded}
+                  aria-controls={groupId}
+                  aria-label={isFolded ? ADMIN_NAV.groupUnfold(g.title) : ADMIN_NAV.groupFold(g.title)}
+                  className="press group flex h-7 items-center justify-between rounded-md px-2.5 text-[11px] font-bold tracking-[0.1em] text-dim-2 transition-colors hover:bg-surface-2 hover:text-ink"
+                >
+                  {g.title}
+                  <ChevronDownIcon size={14} className={cn("transition-transform duration-base", isFolded && "-rotate-90")} />
+                </button>
+              )}
+              <div id={groupId} className="flex flex-col gap-px">
+                {shown.map((item) => {
+                  const active = isActive(pathname, item.href);
+                  const body = <ItemBody item={item} active={active} counts={counts} iconSize={16} badgeClassName="ml-auto" />;
+                  return item.soon ? (
+                    <button key={item.href} type="button" onClick={() => onSoon(item)} className={cn(itemClass(active), "w-full text-left")}>
+                      {body}
+                    </button>
+                  ) : (
+                    <Link key={item.href} href={item.href} aria-current={active ? "page" : undefined} className={itemClass(active)}>
+                      {body}
+                    </Link>
+                  );
+                })}
+              </div>
+            </div>
+          );
+        })}
+      </nav>
+
+      {/* 바닥: 머리띠에서 옮겨 온 내 자리(테마, 찜, 알림, 계정). 판은 오른쪽 위로 펴진다(placement "rail") */}
+      <div className={cn("flex shrink-0 border-t border-line py-2", collapsed ? "flex-col items-center gap-1 px-1.5" : "items-center justify-between gap-1 px-2.5")}>
+        <div className={cn("flex items-center gap-0.5", collapsed && "flex-col")}>
+          <ThemeSwitch className="sm:size-9" />
+          <HeaderWishLink className="sm:size-9" />
+          <NotificationBell placement="rail" />
+        </div>
+        {/* 이름은 빼고 아바타만 — 220 폭에 단추 셋과 이름 알약이 같이 서면 기둥 밖으로 넘쳤다. 이름은 펼친 판 머리에 있다 */}
+        <AuthNav placement="rail" compact />
       </div>
     </aside>
   );

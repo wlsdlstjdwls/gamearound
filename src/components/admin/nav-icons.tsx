@@ -123,3 +123,50 @@ export function ChatIcon(p: IconProps) {
     </svg>
   );
 }
+
+// 2026-10-29(사용자 "왼쪽 메뉴 아이콘이 겹치는 게 있다"): 광고 관리와 화면 연출이 둘 다 화면(Monitor) 그림이었다.
+// 수익 다섯 칸은 각자 하는 일을 그린다 — 광고는 확성기, 구독은 사람들, 결제는 카드. 화면 연출은 반짝임.
+
+/** 광고 관리 — 확성기. 돈 받고 앞에 세워 주는 자리 */
+export function MegaphoneIcon(p: IconProps) {
+  return (
+    <svg {...base(p)}>
+      <path d="M3 11v2a1 1 0 0 0 1 1h2l5 4V6L6 10H4a1 1 0 0 0-1 1Z" />
+      <path d="M15.5 8.5a5 5 0 0 1 0 7" />
+      <path d="M18.5 5.5a9 9 0 0 1 0 13" />
+    </svg>
+  );
+}
+
+/** 구독 관리 — 사람 둘. 지금 돈을 내고 있는 사람들 */
+export function UsersIcon(p: IconProps) {
+  return (
+    <svg {...base(p)}>
+      <circle cx="9" cy="8" r="3.5" />
+      <path d="M2.5 20a6.5 6.5 0 0 1 13 0" />
+      <path d="M16 4.6a3.5 3.5 0 0 1 0 6.8" />
+      <path d="M18 14.2a6.5 6.5 0 0 1 3.5 5.8" />
+    </svg>
+  );
+}
+
+/** 결제 관리 — 카드 */
+export function CardIcon(p: IconProps) {
+  return (
+    <svg {...base(p)}>
+      <rect x="2.5" y="5" width="19" height="14" rx="2" />
+      <path d="M2.5 10h19" />
+      <path d="M6.5 15h4" />
+    </svg>
+  );
+}
+
+/** 화면 연출 — 반짝임. 공개 화면의 인트로, 효과 */
+export function SparkleIcon(p: IconProps) {
+  return (
+    <svg {...base(p)}>
+      <path d="M12 3v3M12 18v3M3 12h3M18 12h3" />
+      <path d="M12 8.5 13.2 10.8 15.5 12 13.2 13.2 12 15.5 10.8 13.2 8.5 12 10.8 10.8Z" />
+    </svg>
+  );
+}

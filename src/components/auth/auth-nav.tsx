@@ -9,14 +9,14 @@ import { usePathname } from "next/navigation";
 import { guestLinks } from "@/lib/account-menu";
 import { cn } from "@/lib/cn";
 import { useSession } from "@/components/auth/session-provider";
-import { MENU_ITEM_CLASS, MENU_PANEL_CLASS, useDropdownMenu } from "@/components/auth/use-dropdown-menu";
+import { MENU_ITEM_CLASS, MENU_PANEL_CLASS, MENU_PANEL_RAIL_CLASS, type MenuPlacement, useDropdownMenu } from "@/components/auth/use-dropdown-menu";
 import { UserMenu } from "@/components/auth/user-menu";
 import { UserIcon } from "@/components/ui/icons";
 
 /** 사용자 아이콘 단추의 이름 — 낭독기가 "사용자 메뉴" 로 읽는다(목업 aria-label 과 같다) */
 const GUEST_MENU_LABEL = "사용자 메뉴";
 
-function GuestMenu() {
+function GuestMenu({ placement }: { placement: MenuPlacement }) {
   const pathname = usePathname();
   const { open, close, wrapRef, buttonProps, menuProps } = useDropdownMenu();
   return (
@@ -33,7 +33,7 @@ function GuestMenu() {
         <UserIcon size={18} />
       </button>
       {open && (
-        <div {...menuProps} aria-label={GUEST_MENU_LABEL} className={cn(MENU_PANEL_CLASS, "py-1.5")}>
+        <div {...menuProps} aria-label={GUEST_MENU_LABEL} className={cn(placement === "rail" ? MENU_PANEL_RAIL_CLASS : MENU_PANEL_CLASS, "py-1.5")}>
           {guestLinks(pathname).map((l) => (
             <Link key={l.key} href={l.href} role="menuitem" onClick={() => close(false)} className={MENU_ITEM_CLASS}>
               {l.label}
@@ -45,11 +45,11 @@ function GuestMenu() {
   );
 }
 
-export function AuthNav() {
+export function AuthNav({ placement = "header", compact = false }: { placement?: MenuPlacement; compact?: boolean }) {
   const { user, status } = useSession();
 
   if (status === "loading") {
     return <span aria-hidden className="skeleton size-10 rounded-full" />;
   }
-  return user ? <UserMenu user={user} /> : <GuestMenu />;
+  return user ? <UserMenu user={user} placement={placement} compact={compact} /> : <GuestMenu placement={placement} />;
 }

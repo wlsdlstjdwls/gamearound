@@ -9,7 +9,7 @@ import { ACCOUNT_PRIMARY_COUNT, accountLinksFor } from "@/lib/account-menu";
 import { cn } from "@/lib/cn";
 import { Clamp } from "@/components/ui/tooltip";
 import type { PublicUser } from "@/server/services/users";
-import { MENU_ITEM_CLASS, MENU_PANEL_CLASS, useDropdownMenu } from "@/components/auth/use-dropdown-menu";
+import { MENU_ITEM_CLASS, MENU_PANEL_CLASS, MENU_PANEL_RAIL_CLASS, type MenuPlacement, useDropdownMenu } from "@/components/auth/use-dropdown-menu";
 import { useSignOut } from "@/components/auth/use-sign-out";
 import { ChevronDownIcon, LogOutIcon, SpinnerIcon } from "@/components/ui/icons";
 import { Tag } from "@/components/ui/tag";
@@ -19,7 +19,8 @@ function initialOf(user: PublicUser): string {
   return src.slice(0, 1).toUpperCase();
 }
 
-export function UserMenu({ user }: { user: PublicUser }) {
+/** compact: 아바타만 선다(관리자 기둥을 접었을 때 64px 띠) */
+export function UserMenu({ user, placement = "header", compact = false }: { user: PublicUser; placement?: MenuPlacement; compact?: boolean }) {
   const { open, close, wrapRef, buttonProps, menuProps } = useDropdownMenu();
   const { signOut, pending: signingOut } = useSignOut(() => close(false));
 
@@ -40,7 +41,8 @@ export function UserMenu({ user }: { user: PublicUser }) {
         {...buttonProps}
         aria-label={`${name} 메뉴`}
         className={cn(
-          "press flex h-9 items-center gap-2 rounded-full border pl-1 pr-2.5 outline-none transition-colors",
+          "press flex h-9 items-center gap-2 rounded-full border outline-none transition-colors",
+          compact ? "w-9 justify-center" : "pl-1 pr-2.5",
           "focus-visible:ring-2 focus-visible:ring-ink focus-visible:ring-offset-2 focus-visible:ring-offset-bg",
           // 평소에도 흰 판을 깐다 — 머리띠가 회색 바탕(--bg)이라 투명이면 이름 글자가 바탕에 떠서 버튼으로 안 읽혔다(2026-09-30)
           "bg-surface",
@@ -52,14 +54,18 @@ export function UserMenu({ user }: { user: PublicUser }) {
           {/* eslint-disable-next-line @next/next/no-img-element */}
           {user.avatarUrl ? <img src={user.avatarUrl} alt="" className="size-full object-cover" /> : initialOf(user)}
         </span>
-        <span className="hidden max-w-[7rem] text-[13px] font-medium text-ink sm:block">
-          <Clamp>{name}</Clamp>
-        </span>
-        <ChevronDownIcon size={16} className={cn("text-dim transition-transform duration-base ease-out-emph", open && "rotate-180")} />
+        {!compact && (
+          <>
+            <span className="hidden max-w-[7rem] text-[13px] font-medium text-ink sm:block">
+              <Clamp>{name}</Clamp>
+            </span>
+            <ChevronDownIcon size={16} className={cn("text-dim transition-transform duration-base ease-out-emph", open && "rotate-180")} />
+          </>
+        )}
       </button>
 
       {open && (
-        <div {...menuProps} aria-label="내 계정" className={MENU_PANEL_CLASS}>
+        <div {...menuProps} aria-label="내 계정" className={placement === "rail" ? MENU_PANEL_RAIL_CLASS : MENU_PANEL_CLASS}>
           <div className="border-b border-line px-4 py-3">
             <p className="text-sm font-semibold text-ink">
               <Clamp>{name}</Clamp>

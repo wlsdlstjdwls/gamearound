@@ -85,14 +85,15 @@ function TabBody({ item, active, counts }: { item: Item; active: boolean; counts
 }
 
 export function AdminNav({
-  user,
   counts,
   initialCollapsed,
+  initialFolded,
 }: {
-  user: string;
   counts: Promise<AdminNavCounts | null>;
   /** 넓은 화면 기둥이 접힌 채로 시작하나(쿠키, 레이아웃이 읽는다) */
   initialCollapsed: boolean;
+  /** 기둥에서 접어 둔 묶음(쿠키) */
+  initialFolded: string[];
 }) {
   const pathname = usePathname();
   /** 지금 사유를 말하고 있는 칸. 한 번에 하나만 뜬다 */
@@ -147,7 +148,7 @@ export function AdminNav({
   return (
     <>
       {/* 넓은 화면 — 왼쪽 끝에 붙은 접히는 기둥(admin-rail) */}
-      <AdminRail user={user} counts={counts} initialCollapsed={initialCollapsed} onSoon={setSoon} />
+      <AdminRail counts={counts} initialCollapsed={initialCollapsed} initialFolded={initialFolded} onSoon={setSoon} />
 
       {/*
         좁은 화면 — 바닥 띠. 화면 바닥에 **못 박는다**(fixed).

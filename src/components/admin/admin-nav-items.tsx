@@ -5,8 +5,8 @@ import { cn } from "@/lib/cn";
 import { ADMIN_NAV } from "@/lib/admin/messages";
 import { COMING_SOON } from "@/lib/messages/coming-soon";
 import { ROUTES } from "@/lib/routes";
-import { BoxIcon, BuildingIcon, ChatIcon, CheckListIcon, LinkIcon, LogIcon, PulseIcon, SearchCheckIcon, StoreIcon } from "@/components/admin/nav-icons";
-import { CalendarIcon, ChartIcon, GamepadIcon, MonitorIcon, SproutIcon, TagIcon, TicketIcon } from "@/components/ui/icons";
+import { BoxIcon, BuildingIcon, CardIcon, ChatIcon, CheckListIcon, LinkIcon, LogIcon, MegaphoneIcon, PulseIcon, SearchCheckIcon, SparkleIcon, StoreIcon, UsersIcon } from "@/components/admin/nav-icons";
+import { CalendarIcon, GamepadIcon, TagIcon, TicketIcon } from "@/components/ui/icons";
 import { Suspense, use, type ComponentType } from "react";
 
 export interface AdminNavCounts {
@@ -59,9 +59,9 @@ export const GROUPS: Array<{ key: string; title?: string; items: Item[] }> = [
       // 파는 흐름 순서(lib/admin/messages 의 groupRevenue 주석)
       { href: ROUTES.adminPricing, label: ADMIN_NAV.pricing, Icon: TagIcon },
       { href: ROUTES.adminDiscounts, label: ADMIN_NAV.discounts, Icon: TicketIcon },
-      { href: ROUTES.adminPromotions, label: ADMIN_NAV.promotions, Icon: MonitorIcon },
-      { href: ROUTES.adminMemberships, label: ADMIN_NAV.memberships, Icon: SproutIcon },
-      { href: ROUTES.adminPayments, label: ADMIN_NAV.payments, Icon: ChartIcon },
+      { href: ROUTES.adminPromotions, label: ADMIN_NAV.promotions, Icon: MegaphoneIcon },
+      { href: ROUTES.adminMemberships, label: ADMIN_NAV.memberships, Icon: UsersIcon },
+      { href: ROUTES.adminPayments, label: ADMIN_NAV.payments, Icon: CardIcon },
     ],
   },
   {
@@ -75,8 +75,8 @@ export const GROUPS: Array<{ key: string; title?: string; items: Item[] }> = [
         pick: (c) => ({ n: c.tasksTodo }),
         pick2: { pick: (c) => ({ n: c.tasksDoing }), tone: "doing" },
       },
-      // 요금(Sliders)과 그림이 같으면 기둥에서 둘이 같은 자리처럼 읽힌다. 고치는 대상이 공개 화면이라 화면 그림이다
-      { href: ROUTES.adminEffects, label: ADMIN_NAV.effects, Icon: MonitorIcon },
+      // 그림이 같으면 기둥에서 두 칸이 같은 자리처럼 읽힌다(2026-10-29 광고 관리와 겹쳐 반짝임으로 바꿨다)
+      { href: ROUTES.adminEffects, label: ADMIN_NAV.effects, Icon: SparkleIcon },
     ],
   },
   {
@@ -138,18 +138,31 @@ export function Badge({
   pick,
   tone = "pending",
   active,
+  dot,
   className,
 }: {
   counts: Promise<AdminNavCounts | null>;
   pick: (c: AdminNavCounts) => Pick;
   tone?: BadgeSpec["tone"];
   active: boolean;
+  /** 접힌 기둥의 점 배지. 64px 띠에서 "60+" 숫자 알약이 그림을 덮었다(2026-10-29 사용자 "접었을 때 겹친다") — 있다는 것만 점으로 말한다 */
+  dot?: boolean;
   className?: string;
 }) {
   const c = use(counts);
   if (!c) return null;
   const { n, capped } = pick(c);
   if (n <= 0) return null;
+  if (dot) {
+    return (
+      <span className={cn("size-2 rounded-full ring-2 ring-surface", active ? "bg-on-ink" : "bg-acc", className)}>
+        <span className="sr-only">
+          {n}
+          {capped ? "+" : ""} {ADMIN_NAV.badgeSuffix}
+        </span>
+      </span>
+    );
+  }
   return (
     <span
       className={cn(

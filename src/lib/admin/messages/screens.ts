@@ -66,6 +66,9 @@ export const ADMIN_NAV = {
   /** 넓은 화면 기둥 접기 단추(components/admin/admin-rail) */
   railCollapse: "메뉴 접기",
   railExpand: "메뉴 펼치기",
+  /** 묶음 제목 단추의 낭독 이름(admin-rail). 화면에는 제목과 꺾쇠만 선다 */
+  groupFold: (title: string) => `${title} 묶음 접기`,
+  groupUnfold: (title: string) => `${title} 묶음 펼치기`,
 } as const;
 
 // 수집 소스 이름표는 공개 상세(정보 출처 칩)도 같이 써서 lib/source-label 로 옮겼다. 관리자 쪽 import 경로는 그대로 둔다

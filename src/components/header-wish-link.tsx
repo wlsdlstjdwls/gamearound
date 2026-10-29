@@ -11,7 +11,7 @@ import { cn } from "@/lib/cn";
 import { ROUTES } from "@/lib/routes";
 import { WISHLIST_MESSAGES as M } from "@/lib/wishlist/messages";
 
-export function HeaderWishLink() {
+export function HeaderWishLink({ className }: { className?: string }) {
   const here = usePathname() === ROUTES.wishlist;
   return (
     <Link
@@ -21,6 +21,7 @@ export function HeaderWishLink() {
       className={cn(
         "press hidden size-[var(--touch-target)] items-center justify-center rounded-lg transition-colors sm:flex sm:size-10",
         here ? "bg-acc-soft text-acc" : "text-ink-2 hover:bg-surface-2 hover:text-ink",
+        className,
       )}
     >
       <HeartIcon size={HEART_SIZE} className="-translate-y-px" />

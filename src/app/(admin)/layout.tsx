@@ -13,25 +13,28 @@
 import { AdminNav } from "@/components/admin/admin-nav";
 import { cookies } from "next/headers";
 import { raisedClass } from "@/components/ui/page";
-import { ADMIN_RAIL_COOKIE } from "@/lib/admin/rail";
+import { ADMIN_GROUPS_COOKIE, ADMIN_RAIL_COOKIE } from "@/lib/admin/rail";
 import { requireRoleOrForbid } from "@/server/auth/guards";
 import { getAdminWorkCounts } from "@/server/services/admin-workload";
 
 export const dynamic = "force-dynamic";
 
 export default async function AdminLayout({ children }: { children: React.ReactNode }) {
-  const user = await requireRoleOrForbid("admin");
+  await requireRoleOrForbid("admin");
   // 배지가 못 떠도 화면은 살아 있어야 한다 — 숫자는 거들 뿐이고 검수는 각 화면에서 한다
   const counts = getAdminWorkCounts().catch(() => null);
 
-  const collapsed = (await cookies()).get(ADMIN_RAIL_COOKIE)?.value === "1";
+  const jar = await cookies();
+  const collapsed = jar.get(ADMIN_RAIL_COOKIE)?.value === "1";
+  const folded = decodeURIComponent(jar.get(ADMIN_GROUPS_COOKIE)?.value ?? "").split(",").filter(Boolean);
 
   // 2026-10-29(사용자 "왼쪽 메뉴를 왼쪽에 붙이고 접었다 펼 수 있게, 공간 활용"): 가운데 1440 폭 안에 기둥과 본문을 띄우던 Page 를 걷었다.
   // 기둥은 화면 왼쪽 끝에 붙고(admin-rail), 본문은 남은 폭을 다 쓴다 — 표와 판이 주인공인 화면이라 폭이 곧 칸 수다.
   // 너무 넓은 화면에서 줄이 끝없이 늘지 않게 본문만 1600 에서 멈춘다.
+  // 같은 날 넓은 화면에서는 사이트 머리띠도 걷었다(admin-rail 머리 주석, globals.css 의 data-admin-rail).
   return (
     <div className="flex md:items-start">
-      <AdminNav user={user.displayName ?? user.email} counts={counts} initialCollapsed={collapsed} />
+      <AdminNav counts={counts} initialCollapsed={collapsed} initialFolded={folded} />
       {/* main 이 아니라 div 인 이유: 루트 레이아웃이 이미 <main> 안에 children 을 넣는다.
           landmark 를 겹쳐 두면 낭독기가 "본문" 을 둘로 센다.
 

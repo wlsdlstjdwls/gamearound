@@ -15,7 +15,8 @@ import { GameLoader } from "@/components/ui/game-loader";
 
 type Item = { id: string; kind: string; body: string; link: string | null; createdAt: string };
 
-export function NotificationBell() {
+/** placement "rail": 관리자 왼쪽 기둥 바닥(2026-10-29). 판이 단추 오른쪽 위로 펴진다 — 머리띠 판처럼 오른쪽 끝에 맞추면 화면 왼쪽 밖으로 나간다 */
+export function NotificationBell({ placement = "header" }: { placement?: "header" | "rail" }) {
   const { user } = useSession();
   // 로그인 뒤 보던 화면으로 돌아오게 한다 — 홈으로 보내면 종을 누른 자리를 다시 찾아가야 한다
   const pathname = usePathname();
@@ -71,7 +72,12 @@ export function NotificationBell() {
         <BellIcon size={19} />
       </button>
       {open && (
-        <div id={panelId} role="dialog" aria-label={M.title} className="animate-rise fixed inset-x-4 top-[var(--header-h)] z-50 sm:absolute sm:inset-x-auto sm:right-0 sm:top-[calc(100%+8px)] sm:w-[min(360px,calc(100vw-32px))] overflow-hidden rounded-[var(--radius-md)] bg-surface shadow-3 ring-1 ring-line">
+        <div id={panelId} role="dialog" aria-label={M.title} className={cn(
+            "animate-rise z-50 overflow-hidden rounded-[var(--radius-md)] bg-surface shadow-3 ring-1 ring-line",
+            placement === "rail"
+              ? "absolute bottom-0 left-[calc(100%+8px)] w-[360px]"
+              : "fixed inset-x-4 top-[var(--header-h)] sm:absolute sm:inset-x-auto sm:right-0 sm:top-[calc(100%+8px)] sm:w-[min(360px,calc(100vw-32px))]",
+          )}>
           <p className="border-b border-line-soft px-4 py-3 text-[14px] font-bold text-ink">{M.title}</p>
           {!user ? (
             <div className="flex flex-col gap-3 px-4 py-4">
