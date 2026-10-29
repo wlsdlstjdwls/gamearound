@@ -42,8 +42,8 @@ export const MEMBERSHIP_MESSAGES = {
   noticeEnded: "메이커 멤버십이 끝났어요",
 
   adminTitle: "구독 관리",
-  adminLead: "매달 자동 결제로 이용 중인 구독자예요. 결제가 실패하면 다음 날 다시 청구하고, 환불은 결제와 환불 화면에서 해요.",
-  adminPaymentsLink: "결제와 환불 보기",
+  adminLead: "매달 자동 결제로 이용 중인 구독자예요. 결제가 실패하면 다음 날 다시 청구하고, 환불은 결제 관리 화면에서 해요.",
+  adminPaymentsLink: "결제 관리 보기",
   adminEmpty: "아직 메이커 멤버십 구독자가 없어요",
   adminStatActive: "이용 중",
   adminStatCanceling: "해지 예약",
