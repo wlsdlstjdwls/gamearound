@@ -11,6 +11,7 @@
 // 고객에게 보이는 이름(딱지 글)을 백오피스처럼 "고객노출명" 으로 부른다. 혜택 탭은 정가와 할인가를 계산해 보인다(lib/pricing/quote 와 같은 셈).
 import { useState } from "react";
 import type { Patch } from "@/components/admin/pricing-form";
+import { PHASE_TONE } from "@/components/admin/pricing-form/phase-tone";
 import { PricingPreview } from "@/components/admin/pricing-form/preview";
 import { targetLabel } from "@/components/admin/pricing-form/sections";
 import { DataGrid, type GridCol } from "@/components/admin/screen/data-grid";
@@ -19,17 +20,16 @@ import { DateField } from "@/components/ui/date-field";
 import { NumberField } from "@/components/ui/number-field";
 import { FormSelect } from "@/components/ui/select/fields";
 import { Switch } from "@/components/ui/switch";
-import { Tag, type TagTone } from "@/components/ui/tag";
+import { Tag } from "@/components/ui/tag";
 import { TextField } from "@/components/ui/text-field";
 import { formatPrice } from "@/lib/currency";
-import { promotionPhase, quote, type PromotionPhase } from "@/lib/pricing/quote";
+import { promotionPhase, quote } from "@/lib/pricing/quote";
 import { PRICING_ADMIN_MESSAGES as M } from "@/lib/pricing/admin-messages";
 import { isBundleProduct, MEMBERSHIP_KEY, type PricingSettings, type Promotion, type TierKey } from "@/lib/pricing/settings";
 
 /** 새 줄의 첫 값 — 가장 흔히 쓸 "처음 결제하는 사람 10% 할인" */
 const NEW_PROMO_PERCENT = 10;
 
-const PHASE_TONE: Record<PromotionPhase, TagTone> = { off: "neutral", upcoming: "info", live: "ok", ended: "outline" };
 
 function deal(p: Promotion): string {
   return p.kind === "percent" ? M.dealPercent(p.value) : M.dealPrice(formatPrice(p.value));

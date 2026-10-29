@@ -8,6 +8,7 @@ import Link from "next/link";
 import { useState } from "react";
 import type { Patch } from "@/components/admin/pricing-form";
 import { CopySection } from "@/components/admin/pricing-form/copy-section";
+import { PHASE_TONE } from "@/components/admin/pricing-form/phase-tone";
 import { PricingPreview } from "@/components/admin/pricing-form/preview";
 import { Field, FormSection, MasterDetail, ReadValue, ScreenTabs, SearchBand, SearchItem } from "@/components/admin/screen/layout";
 import { DataGrid, type GridCol } from "@/components/admin/screen/data-grid";
@@ -202,7 +203,7 @@ function PriceTab({ value, patch, rowKey }: { value: PricingSettings; patch: Pat
               const phase = promotionPhase(x, now);
               return (
                 <li key={x.id} className="flex flex-wrap items-center gap-2 text-[13px]">
-                  <Tag tone={phase === "live" ? "ok" : phase === "upcoming" ? "acc" : "neutral"}>{M.phaseLabels[phase]}</Tag>
+                  <Tag tone={PHASE_TONE[phase]}>{M.phaseLabels[phase]}</Tag>
                   <span className="font-semibold text-ink">{x.label}</span>
                   <span className="text-mut">{x.kind === "percent" ? M.dealPercent(x.value) : M.dealPrice(formatPrice(x.value))}</span>
                   <span className="text-dim">{M.audienceLabels[x.audience]}</span>
