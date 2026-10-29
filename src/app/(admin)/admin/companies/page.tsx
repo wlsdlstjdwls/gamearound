@@ -16,11 +16,11 @@ import { listCompanies } from "@/server/services/companies";
 import { CompanyResolveButton } from "@/components/admin/company-resolve-button";
 import { PageHead, ROWS } from "@/components/ui/page";
 import { DataCell, DataHead, DataList, DataRow } from "@/components/admin/data-rows";
-import { COMPANY_MESSAGES } from "@/lib/admin/messages";
+import { COMPANY_MESSAGES, ADMIN_NAV } from "@/lib/admin/messages";
 import { Clamp } from "@/components/ui/tooltip";
 import { COMPANY_PENDING_COLS } from "@/lib/admin/table-cols";
 
-export const metadata: Metadata = { title: COMPANY_MESSAGES.title };
+export const metadata: Metadata = { title: ADMIN_NAV.companies };
 
 export default async function AdminCompaniesPage() {
   await requireRoleOrForbid("admin");
@@ -31,7 +31,7 @@ export default async function AdminCompaniesPage() {
     <div className="flex flex-col gap-8">
       <section className="flex flex-col gap-3">
         <div>
-          <PageHead size="admin" title={COMPANY_MESSAGES.title} />
+          <PageHead size="admin" title={ADMIN_NAV.companies} />
           <AdminLead>{COMPANY_MESSAGES.lead}</AdminLead>
         </div>
 

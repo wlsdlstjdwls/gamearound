@@ -3,6 +3,7 @@
 // 공개 글도 같이 보여 준다 — 잘못 이어진 글(엉뚱한 게임에 붙은 특전)을 숨길 자리가 여기뿐이다.
 import { AdminLead } from "@/components/admin/admin-lead";
 import type { Metadata } from "next";
+import { ADMIN_NAV } from "@/lib/admin/messages";
 import Link from "next/link";
 import { PreorderModeration } from "@/components/admin/preorder-moderation";
 import { PageHead, ROWS } from "@/components/ui/page";
@@ -14,7 +15,7 @@ import { listPreorderForAdmin } from "@/server/services/preorder-bonuses";
 
 const A = PREORDER_MESSAGES.admin;
 
-export const metadata: Metadata = { title: A.title };
+export const metadata: Metadata = { title: ADMIN_NAV.preorder };
 
 export default async function AdminPreorderPage() {
   await requireRoleOrForbid("admin");
@@ -23,7 +24,7 @@ export default async function AdminPreorderPage() {
   return (
     <div className="flex flex-col gap-5">
       <div>
-        <PageHead size="admin" title={A.title} />
+        <PageHead size="admin" title={ADMIN_NAV.preorder} />
         <AdminLead>{A.lead}</AdminLead>
       </div>
 

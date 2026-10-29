@@ -1,4 +1,4 @@
-// 관리자 "구독상품"(/admin/pricing), "프로모션"(/admin/discounts) 화면 문구(2026-10-28, 2026-10-29 화면을 둘로 나눔).
+// 관리자 "상품등록"(/admin/pricing), "프로모션등록"(/admin/discounts) 화면 문구(2026-10-28, 2026-10-29 화면을 둘로 나눔).
 import type { CatalogProduct } from "@/lib/pricing/settings";
 
 export const PRICING_ADMIN_MESSAGES = {

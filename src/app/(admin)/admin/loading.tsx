@@ -8,7 +8,7 @@ export default function AdminBoardLoading() {
   return (
     <SkeletonBody className="gap-4">
       <AdminHeadSkeleton width="w-28" />
-      <div className="grid grid-cols-1 items-start gap-3 sm:grid-cols-2 xl:grid-cols-3">
+      <div className="grid grid-cols-1 items-start gap-3 sm:grid-cols-2 xl:grid-cols-4">
         {WORK_BOARD_SHAPE.map((lines, i) => (
           <div key={i} className={panelClass("flex flex-col gap-2 p-3")}>
             <Bone className="h-5 w-20" />

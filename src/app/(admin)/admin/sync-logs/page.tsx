@@ -8,7 +8,7 @@ import type { Metadata } from "next";
 import { cn } from "@/lib/cn";
 import { formatDateTime, formatDuration } from "@/lib/format";
 import { isSourceName, listSyncLogs, SOURCES } from "@/server/services/admin";
-import { LOG_MESSAGES, SYNC_STATUS_LABEL, sourceLabel } from "@/lib/admin/messages";
+import { LOG_MESSAGES, SYNC_STATUS_LABEL, sourceLabel, ADMIN_NAV } from "@/lib/admin/messages";
 import { requireRoleOrForbid } from "@/server/auth/guards";
 import { PageHead } from "@/components/ui/page";
 import { DataCell, DataHead, DataList, DataRow } from "@/components/admin/data-rows";
@@ -18,7 +18,7 @@ import { SYNC_BADGE_SHAPE, SYNC_STATUS_BADGE } from "@/components/admin/sync-ton
 import { SYNC_LOG_COLS } from "@/lib/admin/table-cols";
 import { NavChip, NavPendingScope, PendingRegion } from "@/components/ui/nav-pending";
 
-export const metadata: Metadata = { title: LOG_MESSAGES.title };
+export const metadata: Metadata = { title: ADMIN_NAV.logs };
 
 /**
  * 발견 중단 사유. "예산 소진" 이 이어지면 포화 신호다 — 아는 것만 나오는 구간이 페이지 예산보다 길다는 뜻이라
@@ -74,7 +74,7 @@ export default async function SyncLogsPage({ searchParams }: { searchParams: Pro
     <section className="flex flex-col gap-4">
       <header className="flex flex-wrap items-end justify-between gap-2">
         <div className="min-w-0">
-          <PageHead size="admin" title={LOG_MESSAGES.title} note={LOG_MESSAGES.recent(logs.length)} />
+          <PageHead size="admin" title={ADMIN_NAV.logs} note={LOG_MESSAGES.recent(logs.length)} />
           <AdminLead>{LOG_MESSAGES.lead}</AdminLead>
         </div>
         <div className="flex flex-wrap gap-1 text-xs">

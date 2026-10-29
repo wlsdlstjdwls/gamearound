@@ -15,10 +15,10 @@ import { requireRoleOrForbid } from "@/server/auth/guards";
 import { listSuggestedProductMatches } from "@/server/services/admin-products";
 import { AUTO_MATCH_THRESHOLD, PENDING_MATCH_THRESHOLD } from "@/server/sync/match";
 import { PRODUCT_MATCH_RECHECK_DAYS } from "@/server/sync/constants";
-import { PRODUCT_MATCH_MESSAGES } from "@/lib/admin/messages";
+import { PRODUCT_MATCH_MESSAGES, ADMIN_NAV } from "@/lib/admin/messages";
 import { PRODUCT_QUEUE_COLS } from "@/lib/admin/table-cols";
 
-export const metadata: Metadata = { title: PRODUCT_MATCH_MESSAGES.title };
+export const metadata: Metadata = { title: ADMIN_NAV.products };
 
 export default async function AdminProductMatchesPage() {
   await requireRoleOrForbid("admin");
@@ -27,7 +27,7 @@ export default async function AdminProductMatchesPage() {
   return (
     <>
       <section className="flex flex-col gap-2">
-        <PageHead size="admin" title={PRODUCT_MATCH_MESSAGES.title} />
+        <PageHead size="admin" title={ADMIN_NAV.products} />
         <AdminLead>{PRODUCT_MATCH_MESSAGES.lead(PRODUCT_MATCH_RECHECK_DAYS)}</AdminLead>
       </section>
 

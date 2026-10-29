@@ -7,12 +7,12 @@ import type { Metadata } from "next";
 import { AdminLead } from "@/components/admin/admin-lead";
 import { boardPending, WorkBoard } from "@/components/admin/work-board";
 import { PageHead } from "@/components/ui/page";
-import { ADMIN_BOARD_MESSAGES as M } from "@/lib/admin/messages";
+import { ADMIN_BOARD_MESSAGES as M, ADMIN_NAV } from "@/lib/admin/messages";
 import { formatDateTime } from "@/lib/format";
 import { requireRoleOrForbid } from "@/server/auth/guards";
 import { getAdminBoard, type AdminBoard } from "@/server/services/admin-workload";
 
-export const metadata: Metadata = { title: M.title };
+export const metadata: Metadata = { title: ADMIN_NAV.board };
 
 export default async function AdminBoardPage() {
   await requireRoleOrForbid("admin");
@@ -24,7 +24,7 @@ export default async function AdminBoardPage() {
     <section className="flex flex-col gap-4">
       <header className="flex flex-wrap items-end justify-between gap-x-6 gap-y-1">
         <div className="min-w-0">
-          <PageHead size="admin" title={M.title} />
+          <PageHead size="admin" title={ADMIN_NAV.board} />
           <AdminLead>{M.lead}</AdminLead>
         </div>
         {board && (

@@ -12,13 +12,13 @@ import { MatchReviewButtons } from "@/components/admin/match-review-buttons";
 import { DataCell, DataHead, DataList, DataRow } from "@/components/admin/data-rows";
 import {  PageHead, SectionHead } from "@/components/ui/page";
 import { Clamp } from "@/components/ui/tooltip";
-import { MATCH_MESSAGES, sourceLabel } from "@/lib/admin/messages";
+import { MATCH_MESSAGES, sourceLabel, ADMIN_NAV } from "@/lib/admin/messages";
 import { countPendingMatches, listPendingMatches } from "@/server/services/admin";
 import { AUTO_MATCH_THRESHOLD, PENDING_MATCH_THRESHOLD } from "@/server/sync/match";
 import { requireRoleOrForbid } from "@/server/auth/guards";
 import { MATCH_QUEUE_COLS } from "@/lib/admin/table-cols";
 
-export const metadata: Metadata = { title: MATCH_MESSAGES.title };
+export const metadata: Metadata = { title: ADMIN_NAV.matches };
 
 export default async function AdminMatchesPage() {
   await requireRoleOrForbid("admin");
@@ -27,7 +27,7 @@ export default async function AdminMatchesPage() {
   return (
     <>
       <section className="flex flex-col gap-2">
-        <PageHead size="admin" title={MATCH_MESSAGES.title} />
+        <PageHead size="admin" title={ADMIN_NAV.matches} />
         <AdminLead>{MATCH_MESSAGES.lead}</AdminLead>
       </section>
 

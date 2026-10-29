@@ -5,6 +5,7 @@
 //   2. 줄은 이름 + 건수, 0 인 줄은 흐리게 — 눈이 0 이 아닌 줄에만 걸린다.
 //   3. 줄마다 기준 말풍선 — 숫자가 무엇을 세는지 모르면 0 을 못 믿고 화면을 열어 다시 센다.
 //   4. 줄 전체가 그 일을 하는 화면으로 가는 길.
+// 2026-10-29 밤 메뉴가 일곱 묶음(상품, 주문 갈림)이 되어 넓은 화면은 네 열이다 — 세 열이면 세 줄로 서서 한 화면을 넘긴다.
 // 가져오지 않은 것: 기둥 머리의 화살표 꼴(각진 장식은 이 서비스 결이 아니다), 숫자를 누르면 뜨는 목록 팝업(각 화면이 이미 그 목록이다).
 //
 // 줄의 무게는 셋이다. 쌓인 일(queue)이 0 이 아니면 파랑 점, 돈이 걸린 일(money)은 빨강 점, 훑어볼 양(info)은 점 없이 늘 같은 무게.
@@ -26,13 +27,17 @@ type Column = { key: string; title: string; lines: Line[] };
 function columnsOf(b: AdminBoard): Column[] {
   return [
     {
-      key: "revenue",
-      title: ADMIN_NAV.groupRevenue,
+      key: "products",
+      title: ADMIN_NAV.groupProducts,
+      lines: [{ label: M.promosEndingSoon, hint: M.promosEndingSoonHint(PROMO_ENDING_SOON_DAYS), href: ROUTES.adminPromotions, n: b.promosEndingSoon, weight: "queue" }],
+    },
+    {
+      key: "orders",
+      title: ADMIN_NAV.groupOrders,
       lines: [
         { label: M.refundRequests, hint: M.refundRequestsHint, href: ROUTES.adminPayments, n: b.refundRequests, weight: "money" },
         { label: M.boostMissing, hint: M.boostMissingHint, href: ROUTES.adminPayments, n: b.boostMissing, weight: "money" },
         { label: M.membershipsPastDue, hint: M.membershipsPastDueHint, href: ROUTES.adminMemberships, n: b.membershipsPastDue, weight: "money" },
-        { label: M.promosEndingSoon, hint: M.promosEndingSoonHint(PROMO_ENDING_SOON_DAYS), href: ROUTES.adminPromotions, n: b.promosEndingSoon, weight: "queue" },
         { label: M.monthPaid, hint: M.monthPaidHint, href: ROUTES.adminPayments, n: b.monthPaid, weight: "info", value: formatAmount(b.monthPaid) },
       ],
     },
@@ -135,7 +140,7 @@ function BoardLine({ line }: { line: Line }) {
 export function WorkBoard({ board }: { board: AdminBoard }) {
   const columns = columnsOf(board);
   return (
-    <div className="grid grid-cols-1 items-start gap-3 sm:grid-cols-2 xl:grid-cols-3">
+    <div className="grid grid-cols-1 items-start gap-3 sm:grid-cols-2 xl:grid-cols-4">
       {columns.map((col, i) => {
         const pending = pendingOfLines(col.lines);
         return (
@@ -164,4 +169,4 @@ export function WorkBoard({ board }: { board: AdminBoard }) {
 }
 
 /** 기둥 수, 줄 수를 실물과 맞춘 뼈대(admin/loading). 본문이 올 때 판이 밀리지 않게 */
-export const WORK_BOARD_SHAPE = [5, 2, 2, 4, 5, 2] as const;
+export const WORK_BOARD_SHAPE = [1, 4, 2, 2, 4, 5, 2] as const;

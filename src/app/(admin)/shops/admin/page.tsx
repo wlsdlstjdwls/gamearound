@@ -9,6 +9,7 @@
 // 앞서는 레이아웃이 `(admin)/admin` 에만 있어 메뉴에서 이 칸을 누르면 기둥과 흰 판이 통째로 사라졌다(2026-10-08).
 import { AdminLead } from "@/components/admin/admin-lead";
 import type { Metadata } from "next";
+import { ADMIN_NAV } from "@/lib/admin/messages";
 import { ShopReviewCard } from "@/components/shops/review-card";
 import { PageHead } from "@/components/ui/page";
 import { SHOP_ADMIN_MESSAGES } from "@/lib/shops/messages";
@@ -18,7 +19,7 @@ import { listShopsByStatus } from "@/server/services/shops";
 import type { ShopStatus } from "@/server/db/schema";
 import { NavChip, NavPendingScope, PendingRegion } from "@/components/ui/nav-pending";
 
-export const metadata: Metadata = { title: SHOP_ADMIN_MESSAGES.title };
+export const metadata: Metadata = { title: ADMIN_NAV.shops };
 // 심사 화면은 늘 지금 값을 봐야 한다 — 승인하고 새로 고쳤는데 옛 목록이 뜨면 두 번 누른다
 export const dynamic = "force-dynamic";
 
@@ -44,7 +45,7 @@ export default async function ShopsAdminPage({ searchParams }: Props) {
   return (
     <NavPendingScope>
       <section className="flex flex-col gap-2">
-        <PageHead size="admin" title={SHOP_ADMIN_MESSAGES.title} />
+        <PageHead size="admin" title={ADMIN_NAV.shops} />
         <AdminLead>{SHOP_ADMIN_MESSAGES.lead}</AdminLead>
       </section>
 

@@ -49,21 +49,29 @@ export type Item = {
 
 /**
  * 묶음 제목이 없는 묶음은 칸 하나짜리다 — 제목이 곧 칸 이름이라 두 번 적지 않는다.
- * 순서: 수익, 운영이 맨 위다(2026-10-29 사용자 "최상단으로"). 매일 여는 자리가 돈과 할 일이 됐고, 수집, 검수는 배지가 부른다.
+ * 순서: 상품, 주문, 운영이 맨 위다(2026-10-29 사용자 "최상단으로"). 매일 여는 자리가 돈과 할 일이 됐고, 수집, 데이터는 배지가 부른다.
+ * 묶음, 칸 이름은 ADMIN_NAV(백오피스식 업무 용어, 2026-10-29 밤 사용자가 고른 표)
  */
 export const GROUPS: Array<{ key: string; title?: string; items: Item[] }> = [
   // 첫 화면 업무 현황판(2026-10-29). 묶음 머리 위 한 칸 — 어느 묶음에 일이 쌓였는지 여기서 보고 내려간다
   { key: "board", items: [{ href: ROUTES.admin, label: ADMIN_NAV.board, Icon: BoardIcon }] },
   {
-    key: "revenue",
-    title: ADMIN_NAV.groupRevenue,
+    // 무엇을 얼마에 파나(상품등록), 언제 깎아 주나(프로모션등록), 산 것이 어디 서 있나(광고노출관리)
+    key: "products",
+    title: ADMIN_NAV.groupProducts,
     items: [
-      // 파는 흐름 순서(lib/admin/messages 의 groupRevenue 주석)
       { href: ROUTES.adminPricing, label: ADMIN_NAV.pricing, Icon: TagIcon },
       { href: ROUTES.adminDiscounts, label: ADMIN_NAV.discounts, Icon: TicketIcon },
       { href: ROUTES.adminPromotions, label: ADMIN_NAV.promotions, Icon: MegaphoneIcon },
-      { href: ROUTES.adminMemberships, label: ADMIN_NAV.memberships, Icon: UsersIcon },
+    ],
+  },
+  {
+    // 팔린 뒤 — 돈이 어떻게 오갔나(결제/환불관리), 누가 구독 중인가(멤버십회원관리)
+    key: "orders",
+    title: ADMIN_NAV.groupOrders,
+    items: [
       { href: ROUTES.adminPayments, label: ADMIN_NAV.payments, Icon: CardIcon },
+      { href: ROUTES.adminMemberships, label: ADMIN_NAV.memberships, Icon: UsersIcon },
     ],
   },
   {

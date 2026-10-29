@@ -5,6 +5,7 @@
 // 개발자임을 바깥(스토어 개발사 페이지, 공식 사이트의 연락처)에서 대조한 뒤에 누른다.
 import { AdminLead } from "@/components/admin/admin-lead";
 import type { Metadata } from "next";
+import { ADMIN_NAV } from "@/lib/admin/messages";
 import Link from "next/link";
 import { IndieModeration } from "@/components/admin/indie-moderation";
 import { PageHead, ROWS } from "@/components/ui/page";
@@ -17,7 +18,7 @@ import { requireRoleOrForbid } from "@/server/auth/guards";
 import { INDIE_ADMIN_TABS, listIndieForAdmin, type IndieAdminTab } from "@/server/services/indie";
 import { NavChip, NavPendingScope, PendingRegion } from "@/components/ui/nav-pending";
 
-export const metadata: Metadata = { title: A.title };
+export const metadata: Metadata = { title: ADMIN_NAV.indie };
 
 const TAB_LABEL: Record<IndieAdminTab, string> = { review: A.tabReview, reported: A.tabReported, links: A.tabLinks, hidden: A.tabHidden, all: A.tabAll };
 
@@ -37,7 +38,7 @@ export default async function AdminIndiePage({ searchParams }: Props) {
     <NavPendingScope>
     <div className="flex flex-col gap-5">
       <div>
-        <PageHead size="admin" title={A.title} />
+        <PageHead size="admin" title={ADMIN_NAV.indie} />
         <AdminLead>{A.lead}</AdminLead>
       </div>
 

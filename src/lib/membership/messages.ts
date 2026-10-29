@@ -41,9 +41,9 @@ export const MEMBERSHIP_MESSAGES = {
   noticeFailed: (msg: string) => `메이커 멤버십 결제에 실패했어요(${msg}). 내일 다시 결제해요. 카드를 확인해 주세요`,
   noticeEnded: "메이커 멤버십이 끝났어요",
 
-  adminTitle: "구독 관리",
-  adminLead: "매달 자동 결제로 이용 중인 구독자예요. 결제가 실패하면 다음 날 다시 청구하고, 환불은 결제 관리 화면에서 해요.",
-  adminPaymentsLink: "결제 관리 보기",
+  adminTitle: "멤버십회원관리",
+  adminLead: "매달 자동 결제로 이용 중인 구독자예요. 결제가 실패하면 다음 날 다시 청구하고, 환불은 결제/환불관리 화면에서 해요.",
+  adminPaymentsLink: "결제/환불관리 보기",
   adminEmpty: "아직 메이커 멤버십 구독자가 없어요",
   adminStatActive: "이용 중",
   adminStatCanceling: "해지 예약",

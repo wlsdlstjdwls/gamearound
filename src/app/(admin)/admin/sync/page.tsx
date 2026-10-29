@@ -29,7 +29,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { buttonClass } from "@/components/ui/button";
 import { formatAgo, formatDateTime } from "@/lib/format";
-import { SYNC_MESSAGES, SYNC_STATUS_LABEL, sourceLabel } from "@/lib/admin/messages";
+import { SYNC_MESSAGES, SYNC_STATUS_LABEL, sourceLabel, ADMIN_NAV } from "@/lib/admin/messages";
 import { ROUTES } from "@/lib/routes";
 import { getSyncOverview, type SyncLogRow, type SyncOverviewItem } from "@/server/services/admin";
 import { getSyncActivity, RUNNING_GRACE_MINUTES, type RunSummary } from "@/server/services/admin-activity";
@@ -47,7 +47,7 @@ import { SYNC_BADGE_SHAPE, SYNC_STATUS_BADGE, SYNC_STATUS_STRIPE } from "@/compo
 /** 줄 밑에 노출할 에러 샘플 길이. 전문은 실행 로그 화면에서 본다 */
 const ERROR_SAMPLE_PREVIEW_LEN = 300;
 
-export const metadata: Metadata = { title: SYNC_MESSAGES.title };
+export const metadata: Metadata = { title: ADMIN_NAV.overview };
 
 /**
  * 카드 머리의 상태 한 칸. 색과 말이 같은 곳에서 나와야 둘이 어긋나지 않는다.
@@ -208,7 +208,7 @@ export default async function AdminSyncOverviewPage() {
     <section className="flex flex-col gap-4">
       <header className="flex flex-wrap items-start justify-between gap-x-6 gap-y-2">
         <div className="min-w-0">
-          <PageHead size="admin" title={SYNC_MESSAGES.title} />
+          <PageHead size="admin" title={ADMIN_NAV.overview} />
           <AdminLead>{SYNC_MESSAGES.lead}</AdminLead>
         </div>
         {repo ? (

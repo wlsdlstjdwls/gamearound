@@ -6,6 +6,7 @@
 // 숫자 칸(노출 중, 대기, 지금 걸린 광고의 노출, 클릭률) → 자리마다 지금 걸린 것과 대기(카드, components/admin/boost-card) →
 // 최근 끝난 광고(접어 둠) → 직접 걸기. 자리마다 "몇 칸 중 몇 개" 막대를 둔다 — 칸보다 많이 걸면 시간 구간마다 돌아가며 보인다(lib/promo/boost).
 import type { Metadata } from "next";
+import { ADMIN_NAV } from "@/lib/admin/messages";
 import { AdminLead } from "@/components/admin/admin-lead";
 import { BoostCard } from "@/components/admin/boost-card";
 import { PromoGrantForm } from "@/components/admin/promo-controls";
@@ -17,7 +18,7 @@ import { PROMO_MESSAGES as M, PROMO_SLOT_LABEL } from "@/lib/promo/messages";
 import { requireRoleOrForbid } from "@/server/auth/guards";
 import { listBoostCandidates, listBoostsForAdmin, type BoostRowDto } from "@/server/services/promotions";
 
-export const metadata: Metadata = { title: M.adminTitle };
+export const metadata: Metadata = { title: ADMIN_NAV.promotions };
 
 /** 자리가 얼마나 찼나 — 칸 수만큼 마디를 긋고 노출 중인 수만큼 채운다. 칸보다 많으면 돌아가며 보인다는 뜻이라 막대를 다 채우고 숫자가 말한다 */
 function SlotMeter({ live, capacity, label }: { live: number; capacity: number; label: string }) {
@@ -46,7 +47,7 @@ export default async function AdminPromotionsPage() {
   return (
     <div className="flex flex-col gap-5">
       <div>
-        <PageHead size="admin" title={M.adminTitle} />
+        <PageHead size="admin" title={ADMIN_NAV.promotions} />
         <AdminLead>{M.adminLead}</AdminLead>
       </div>
 

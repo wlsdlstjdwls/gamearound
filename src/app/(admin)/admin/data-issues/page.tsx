@@ -7,13 +7,13 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { DataIssueList } from "@/components/admin/data-issue-list";
 import { PageHead, ROWS } from "@/components/ui/page";
-import { QUALITY_MESSAGES as M, QUALITY_RULE_LABEL } from "@/lib/admin/messages";
+import { QUALITY_MESSAGES as M, QUALITY_RULE_LABEL, ADMIN_NAV } from "@/lib/admin/messages";
 import { formatDate } from "@/lib/format";
 import { gamePath } from "@/lib/routes";
 import { requireRoleOrForbid } from "@/server/auth/guards";
 import { listDataIssues } from "@/server/services/admin-data-issues";
 
-export const metadata: Metadata = { title: M.title };
+export const metadata: Metadata = { title: ADMIN_NAV.dataIssues };
 
 export default async function AdminDataIssuesPage() {
   await requireRoleOrForbid("admin");
@@ -23,7 +23,7 @@ export default async function AdminDataIssuesPage() {
     <div className="flex flex-col gap-8">
       <div className="flex flex-col gap-5">
         <div>
-          <PageHead size="admin" title={M.title} />
+          <PageHead size="admin" title={ADMIN_NAV.dataIssues} />
           <AdminLead>{M.lead}</AdminLead>
         </div>
         <DataIssueList rows={open} />

@@ -15,7 +15,7 @@ import { NavChip, NavPendingScope, PendingRegion } from "@/components/ui/nav-pen
 import { PageHead } from "@/components/ui/page";
 import { Tag } from "@/components/ui/tag";
 import { Clamp } from "@/components/ui/tooltip";
-import { POST_ADMIN_MESSAGES as M } from "@/lib/admin/messages";
+import { POST_ADMIN_MESSAGES as M, ADMIN_NAV } from "@/lib/admin/messages";
 import { COMMENT_ADMIN_COLS, POST_ADMIN_COLS } from "@/lib/admin/table-cols";
 import { CATEGORY_LABEL, CATEGORY_TONE } from "@/lib/community/constants";
 import { formatDateTime } from "@/lib/format";
@@ -25,7 +25,7 @@ import { requireRoleOrForbid } from "@/server/auth/guards";
 import { listAllCommentsForAdmin } from "@/server/services/indie";
 import { listPostsForAdmin, POST_ADMIN_LIMIT, POST_ADMIN_TABS, type AdminCommentRowDto, type AdminPostRowDto, type PostAdminTab } from "@/server/services/community";
 
-export const metadata: Metadata = { title: M.title };
+export const metadata: Metadata = { title: ADMIN_NAV.posts };
 
 const TAB_LABEL: Record<PostAdminTab, string> = { posts: M.tabPosts, hidden: M.tabHidden, comments: M.tabComments, hiddenComments: M.tabHiddenComments };
 
@@ -130,7 +130,7 @@ export default async function AdminPostsPage({ searchParams }: Props) {
     <NavPendingScope>
       <div className="flex flex-col gap-5">
         <div>
-          <PageHead size="admin" title={M.title} />
+          <PageHead size="admin" title={ADMIN_NAV.posts} />
           <AdminLead>{M.lead}</AdminLead>
         </div>
 

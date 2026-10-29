@@ -3,7 +3,7 @@
 
 export const QUALITY_MESSAGES = {
   /** 메뉴 낱말(ADMIN_NAV.dataIssues)과 같은 말 */
-  title: "데이터 점검",
+  title: "데이터오류관리",
   lead: "수집이 쌓은 카탈로그에서 기계가 찾은 문제예요. 확실한 것은 이미 고쳤고, 여기 남은 것은 한 번 봐 주셔야 해요.",
   empty: "볼 것이 없어요. 점검은 매일 새벽 3시에 돌아요.",
   apply: "맞아요, 고쳐요",
@@ -22,7 +22,7 @@ export const QUALITY_MESSAGES = {
   noticeNew: "새로 확인할 것",
   noticeOpen: "남은 확인",
   noticeFailed: "고치다 실패",
-  noticeOpenLink: "데이터 점검 열기",
+  noticeOpenLink: "데이터오류관리 열기",
 } as const;
 
 /** 규칙 이름. 키는 sync/quality/rules 의 QualityRule */

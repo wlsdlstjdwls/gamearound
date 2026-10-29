@@ -3,6 +3,7 @@
 // 줄마다 상태, 카드, 이번 기간, 다음 결제, 남은 이용권, 연속 실패(2026-10-29 칸 맞춘 표로, data-rows). 환불은 결제와 환불 화면(/admin/payments)에서 한다 —
 // 결제 줄 하나를 기준으로 돌려주는 일이라 그 목록에 두고, 멤버십 청구를 환불하면 멤버십도 끝난다(services/payments/refunds).
 import type { Metadata } from "next";
+import { ADMIN_NAV } from "@/lib/admin/messages";
 import Link from "next/link";
 import { StatTiles } from "@/components/admin/stat-tiles";
 import { DataCell, DataHead, DataList, DataRow } from "@/components/admin/data-rows";
@@ -17,7 +18,7 @@ import type { MembershipStatus } from "@/server/db/schema";
 import { requireRoleOrForbid } from "@/server/auth/guards";
 import { listMembershipsForAdmin } from "@/server/services/membership";
 
-export const metadata: Metadata = { title: M.adminTitle };
+export const metadata: Metadata = { title: ADMIN_NAV.memberships };
 
 const STATUS_TONE: Record<MembershipStatus, TagTone> = { active: "ok", canceling: "warn", past_due: "danger", ended: "acc" };
 
@@ -32,7 +33,7 @@ export default async function AdminMembershipsPage() {
   return (
     <div className="flex flex-col gap-5">
       <div>
-        <PageHead size="admin" title={M.adminTitle} />
+        <PageHead size="admin" title={ADMIN_NAV.memberships} />
         <p className="mt-1 max-w-[760px] text-[12.5px] leading-[1.6] text-dim">
           {M.adminLead}{" "}
           <Link href={ROUTES.adminPayments} className="font-semibold text-acc hover:underline">
