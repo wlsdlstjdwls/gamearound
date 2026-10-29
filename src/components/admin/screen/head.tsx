@@ -16,6 +16,7 @@ import { useAdminStatus } from "@/components/admin/screen/status";
 import { useTooltip } from "@/components/ui/tooltip";
 import { cn } from "@/lib/cn";
 import { csvFileName, toCsv } from "@/lib/admin/csv";
+import { registeredGrids } from "@/components/admin/screen/data-grid/export";
 import { SCREEN_MESSAGES as M } from "@/lib/admin/messages";
 import { askConfirm } from "@/components/ui/confirm-dialog";
 
@@ -101,7 +102,8 @@ function ToolButton({ label, tip, Icon, onClick, disabled, busy }: { label: stri
 function readGrid(): { head: string[]; rows: string[][] } {
   const head = [...document.querySelectorAll<HTMLElement>("[data-grid-head] > *")].map((el) => el.textContent?.trim() ?? "");
   const rows = [...document.querySelectorAll<HTMLElement>("[data-grid-row]")].map((row) =>
-    [...row.querySelectorAll<HTMLElement>("[data-grid-value]")].map((el) => el.innerText.replace(/\s+/g, " ").trim()),
+    // 칸이 내보낼 글자를 따로 적어 두었으면(data-grid-text, 입력칸 같은 칸) 그것을 쓴다
+    [...row.querySelectorAll<HTMLElement>("[data-grid-value]")].map((el) => el.dataset.gridText ?? el.innerText.replace(/\s+/g, " ").trim()),
   );
   return { head, rows };
 }
@@ -177,7 +179,9 @@ export function AdminScreenHead({
   }, [refreshing, count, say]);
 
   const excel = () => {
-    const { head, rows } = readGrid();
+    // 공통 그리드가 걸어 둔 전체 줄이 먼저다(쪽을 나눠도 다 나간다). 없으면 화면의 목록 표(data-rows)를 읽는다
+    const grid = registeredGrids()[0];
+    const { head, rows } = grid ?? readGrid();
     if (rows.length === 0) {
       say(M.excelEmpty, "error");
       return;
