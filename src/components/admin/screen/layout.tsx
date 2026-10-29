@@ -156,11 +156,12 @@ export function WithAside({ aside, children }: { aside: React.ReactNode; childre
 }
 
 /** 접히는 묶음 — 백오피스 상세의 "− 상품분류" 꼴. 머리 오른쪽에 그 묶음만의 단추를 둔다(고객상세정보의 "배달지관리" 자리) */
-export function FormSection({ title, action, defaultOpen = true, children }: { title: string; action?: React.ReactNode; defaultOpen?: boolean; children: React.ReactNode }) {
+/** labelWidth: 이 묶음의 이름표 칸 폭. 긴 이름표("프로모션코드/명")가 꺾이지 않게 그 묶음만 넓힌다 — 모두 넓히면 왼쪽 여백이 늘었다(2026-10-30 사용자) */
+export function FormSection({ title, action, defaultOpen = true, labelWidth, children }: { title: string; action?: React.ReactNode; defaultOpen?: boolean; labelWidth?: string; children: React.ReactNode }) {
   const [open, setOpen] = useState(defaultOpen);
   const id = useId();
   return (
-    <section className="@container overflow-hidden rounded-xl border border-line">
+    <section className="@container overflow-hidden rounded-xl border border-line" style={labelWidth ? ({ "--field-label-w": labelWidth } as React.CSSProperties) : undefined}>
       <div className={cn("flex min-h-10 items-center justify-between gap-2 bg-surface-2 pl-2 pr-2", open && "border-b border-line")}>
         <button type="button" aria-expanded={open} aria-controls={id} onClick={() => setOpen((o) => !o)} className="press flex min-h-10 items-center gap-1.5 rounded-md px-1.5 text-[13.5px] font-bold text-ink">
           <ChevronDownIcon size={15} className={cn("text-dim transition-transform duration-base", !open && "-rotate-90")} />
@@ -169,7 +170,7 @@ export function FormSection({ title, action, defaultOpen = true, children }: { t
         {action}
       </div>
       {open && (
-        <div id={id} className="grid gap-x-4 gap-y-2 py-2.5 pl-1.5 pr-3 @min-[440px]:grid-cols-2 [@media(pointer:fine)]:[&_input]:h-10 [@media(pointer:fine)]:[&_input]:min-h-10 [@media(pointer:fine)]:[&_button[aria-haspopup]]:h-10">
+        <div id={id} className="grid gap-x-4 gap-y-2 py-2.5 pl-1.5 pr-3 @min-[420px]:grid-cols-2 [@media(pointer:fine)]:[&_input]:h-10 [@media(pointer:fine)]:[&_input]:min-h-10 [@media(pointer:fine)]:[&_button[aria-haspopup]]:h-10">
           {children}
         </div>
       )}
@@ -177,11 +178,11 @@ export function FormSection({ title, action, defaultOpen = true, children }: { t
   );
 }
 
-/** 칸 하나 — 이름표 왼쪽(오른쪽 정렬), 필수면 빨간 *. 묶음이 440px 이상이면 칸 둘이 한 줄에 선다(2026-10-30 사용자 "기간이랑 판매여부 같은 행이어도 충분", 긴 글 칸만 wide). 묶음이 좁으면(미리 보기 기둥 곁) 이름표가 칸 위로 올라가 칸이 폭을 다 쓴다. wide 는 묶음 두 열을 다 쓴다. 열 수는 묶음 폭(@container)으로 정한다 — 미리 보기 기둥이 옆에 서면 좁아진다 */
+/** 칸 하나 — 이름표 왼쪽(오른쪽 정렬), 필수면 빨간 *. 묶음이 420px 이상이면 칸 둘이 한 줄에 선다(2026-10-30 사용자 "기간이랑 판매여부 같은 행이어도 충분", 긴 글 칸만 wide). 묶음이 300px 보다 좁을 때만 이름표가 칸 위로 올라간다. wide 는 묶음 두 열을 다 쓴다. 열 수는 묶음 폭(@container)으로 정한다 — 미리 보기 기둥이 옆에 서면 좁아진다 */
 export function Field({ label, htmlFor, required, wide, hint, children }: { label: string; htmlFor?: string; required?: boolean; wide?: boolean; hint?: React.ReactNode; children: React.ReactNode }) {
   return (
-    <div className={cn("grid items-start gap-x-2 gap-y-1 @min-[440px]:grid-cols-[72px_minmax(0,1fr)]", wide && FULL_ROW)}>
-      <label htmlFor={htmlFor} className="flex items-center gap-0.5 text-[12.5px] font-semibold text-mut @min-[440px]:min-h-10 @min-[440px]:justify-end @min-[440px]:text-right">
+    <div className={cn("grid items-start gap-x-2 gap-y-1 @min-[300px]:grid-cols-[var(--field-label-w,72px)_minmax(0,1fr)]", wide && FULL_ROW)}>
+      <label htmlFor={htmlFor} className="flex items-center gap-0.5 text-[12.5px] font-semibold text-mut @min-[300px]:min-h-10 @min-[300px]:justify-end @min-[300px]:text-right">
         {required && (
           <span aria-hidden className="text-danger">
             *
@@ -191,7 +192,7 @@ export function Field({ label, htmlFor, required, wide, hint, children }: { labe
         {required && <span className="sr-only">{SM.required}</span>}
       </label>
       <div className="min-w-0">{children}</div>
-      {hint && <p className="text-[11.5px] text-dim @min-[440px]:col-start-2">{hint}</p>}
+      {hint && <p className="text-[11.5px] text-dim @min-[300px]:col-start-2">{hint}</p>}
     </div>
   );
 }

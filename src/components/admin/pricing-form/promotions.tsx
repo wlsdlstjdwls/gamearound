@@ -35,9 +35,11 @@ function codeName(p: Promotion): string {
   return p.name || p.label || M.newPromoLabel;
 }
 
-function deal(p: Promotion): string {
-  return p.kind === "percent" ? M.dealPercent(p.value) : M.dealPrice(formatPrice(p.value));
+/** 이 프로모션 하나만 걸렸다고 보고 낸 값. 기간, 대상, 진행상태와 상관없이 할인 크기만 본다 */
+function discountedOf(s: PricingSettings, p: Promotion, now: Date): number {
+  return quote({ ...s, promotions: [{ ...p, active: true, startsOn: null, endsOn: null, audience: "all" }] }, p.target, { everPaid: false }, now).amount;
 }
+
 
 export function newPromotionId(): string {
   return `promo-${Date.now().toString(36)}`;
@@ -63,7 +65,8 @@ function columns(s: PricingSettings, now: Date): GridCol<Promotion>[] {
     { key: "status", label: M.promoFieldPhase, width: "72px", align: "center", tip: true, value: (p) => statusText(promotionStatus(p, now)), render: (p) => <StatusTag status={promotionStatus(p, now)} reason={false} /> },
     { key: "name", label: M.promoSearchName, width: "minmax(96px,1fr)", value: codeName },
     { key: "target", label: M.promoSearchTarget, width: "minmax(80px,0.8fr)", value: (p) => targetLabel(s, p.target) },
-    { key: "deal", label: M.colDeal, width: "80px", align: "right", value: (p) => p.value, text: deal },
+    // 할인가 = 이 프로모션이 걸렸을 때 내는 값(비율 할인도 원으로). 할인 방식, 값은 상세에서 본다
+    { key: "deal", label: M.colDeal, width: "80px", align: "right", value: (p) => discountedOf(s, p, now), text: (p) => formatPrice(discountedOf(s, p, now)) },
   ];
 }
 
@@ -106,7 +109,7 @@ function Detail({ value, p, set }: { value: PricingSettings; p: Promotion; set: 
   const now = new Date();
   const status = promotionStatus(p, now);
   const regular = p.target === MEMBERSHIP_KEY ? value.membership.amount : (value.products.find((x) => x.id === p.target)?.amount ?? 0);
-  const discounted = quote({ ...value, promotions: [{ ...p, active: true, startsOn: null, endsOn: null, audience: "all" }] }, p.target, { everPaid: false }, now).amount;
+  const discounted = discountedOf(value, p, now);
   return (
     <div className="flex flex-col gap-2">
       <p className="flex items-baseline gap-2 px-1">
@@ -115,7 +118,7 @@ function Detail({ value, p, set }: { value: PricingSettings; p: Promotion; set: 
       </p>
       {/* 탭을 걷었다 — 탭 셋에 칸이 열 남짓이라 탭은 칸을 숨기기만 했다(2026-10-30 사용자). 대상은 정가를 정하는 칸이라 혜택 묶음 맨 앞에 둔다 */}
       <WithAside aside={<PricingPreview value={value} tier={tierOfTarget(value, p.target)} />}>
-        <FormSection title={M.promoSectionBasic}>
+        <FormSection title={M.promoSectionBasic} labelWidth="100px">
           <Field label={M.promoFieldCode} htmlFor={`pn-${p.id}`} required wide>
             <CodeName code={p.id}>
               <TextField id={`pn-${p.id}`} label={M.promoFieldCode} hideLabel value={p.name ?? p.label} onChange={(e) => set({ name: e.target.value })} compact />
@@ -213,6 +216,7 @@ export function PromotionsScreen({ value, saved, patch, selected, onSelect }: { 
             columns={columns(value, now)}
             rows={rows}
             rowKey={(p) => p.id}
+            fileKey={(p) => ({ code: p.id, name: codeName(p) })}
             selected={selected}
             onSelect={onSelect}
             autoSelectFirst
