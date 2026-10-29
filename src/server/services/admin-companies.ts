@@ -9,8 +9,12 @@ import { getCompanyAdapter } from "@/server/adapters";
 import { errorMessage } from "@/lib/errors";
 import { attachCompany } from "@/server/sync/company-writer";
 import { clearMisses, listCompanyTargets, listPendingCompanyNames } from "@/server/sync/run-companies";
-import { normalizeCompanyName } from "@/lib/company-name";
+import { normalizeCompanyName, usableCountryName } from "@/lib/company-name";
 import { loadLockedFields, type Ctx } from "@/server/sync/context";
+import { and, asc, eq, sql } from "drizzle-orm";
+import { companies, gameCompanies, games } from "@/server/db/schema";
+import { companyDisplayName } from "@/server/services/games/detail";
+import { mainGamesOnly } from "@/server/services/games/filters";
 
 /** 한 화면에 띄울 검수 큐 길이. 더 길면 사람이 훑지 못한다 */
 export const PENDING_COMPANIES_LIMIT = 60;
@@ -20,6 +24,65 @@ export type PendingCompany = { name: string; gameCount: number; outcome: "not_fo
 
 export async function listPendingCompanies(limit: number = PENDING_COMPANIES_LIMIT): Promise<PendingCompany[]> {
   return listPendingCompanyNames(getDb(), limit);
+}
+
+/**
+ * 회사정보관리 "등록된 회사" 한 판의 상한. 공개 회사 목록은 60곳씩 쪽을 넘기지만 관리자 화면은 한 그리드에서 찾고 거른다 —
+ * 2026-10-31 기준 360곳이라 다 실어도 가볍다. 이 수를 넘기면 회사명 조회를 서버로 옮길 때다
+ */
+export const ADMIN_COMPANIES_LIMIT = 1000;
+
+/** 관리자 화면의 등록된 회사 한 줄(공개 CompanySummary 보다 칸이 많다 — 상세 판이 이 값으로 선다) */
+export type AdminCompanyRow = {
+  slug: string;
+  name: string;
+  nameEn: string;
+  nameKo: string | null;
+  countryNameKo: string | null;
+  foundedYear: number | null;
+  hqNameKo: string | null;
+  websiteUrl: string | null;
+  wikidataId: string | null;
+  lastSyncedAt: string | null;
+  gameCount: number;
+};
+
+/** 게임 수 순(공개 목록과 같은 순서). 게임 수는 본편만 센다 — DLC 를 세면 부풀어 보인다(services/companies 와 같은 기준) */
+export async function listCompaniesForAdmin(limit: number = ADMIN_COMPANIES_LIMIT): Promise<AdminCompanyRow[]> {
+  const gameCount = sql<number>`count(distinct ${games.id})::int`;
+  const rows = await getDb()
+    .select({
+      slug: companies.slug,
+      nameEn: companies.nameEn,
+      nameKo: companies.nameKo,
+      countryNameKo: companies.countryNameKo,
+      foundedAt: companies.foundedAt,
+      hqNameKo: companies.hqNameKo,
+      websiteUrl: companies.websiteUrl,
+      wikidataId: companies.wikidataId,
+      lastSyncedAt: companies.lastSyncedAt,
+      gameCount,
+    })
+    .from(companies)
+    .leftJoin(gameCompanies, eq(gameCompanies.companyId, companies.id))
+    .leftJoin(games, and(eq(games.id, gameCompanies.gameId), mainGamesOnly()))
+    .groupBy(companies.id)
+    .orderBy(sql`count(distinct ${games.id}) desc`, asc(companies.nameEn))
+    .limit(limit);
+  return rows.map((r) => ({
+    slug: r.slug,
+    name: companyDisplayName(r),
+    nameEn: r.nameEn,
+    nameKo: r.nameKo,
+    countryNameKo: usableCountryName(r.countryNameKo),
+    // 위키데이터 설립일은 정밀도가 들쭉날쭉해 연도만 쓴다(services/companies 와 같은 이유)
+    foundedYear: r.foundedAt ? Number(r.foundedAt.slice(0, 4)) : null,
+    hqNameKo: r.hqNameKo,
+    websiteUrl: r.websiteUrl,
+    wikidataId: r.wikidataId,
+    lastSyncedAt: r.lastSyncedAt?.toISOString() ?? null,
+    gameCount: r.gameCount,
+  }));
 }
 
 /** 관리자 조회용 최소 컨텍스트 — 수집 배치가 아니므로 집계(processed 등)는 쓰고 버린다 */

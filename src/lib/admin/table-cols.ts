@@ -3,9 +3,6 @@
 // 본문이 올 때 줄이 옆으로 밀린다 — 그래서 한 곳으로 뺐다(2026-10-08).
 // 전부 md: 접두인 이유는 components/admin/data-rows.tsx 머리 주석에 있다 — 좁은 화면에서 이 줄은 표가 아니라 카드다.
 
-/** 회사 검수 대기 — 좁은 화면에서는 한 이름이 카드 한 장이다 */
-export const COMPANY_PENDING_COLS = "md:grid-cols-[minmax(0,1fr)_120px_200px] md:gap-x-3 md:px-3 md:py-2";
-
 /** 게임 수정 화면의 스토어 연결, 고친 기록 — 좁은 화면에서는 한 줄이 카드 한 장이다 */
 export const GAME_REF_COLS = "md:grid-cols-[110px_minmax(0,1fr)_minmax(0,1.4fr)_110px_78px_150px] md:gap-x-3 md:px-3 md:py-2";
 export const GAME_HISTORY_COLS = "md:grid-cols-[150px_minmax(0,1fr)_minmax(0,1fr)_minmax(0,1.2fr)_minmax(0,1.2fr)_70px] md:gap-x-3 md:px-3 md:py-2";

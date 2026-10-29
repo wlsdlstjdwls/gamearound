@@ -2,6 +2,7 @@
 // 호출부 import 경로("@/lib/admin/messages")는 그대로 둔다.
 export * from "./tasks";
 export * from "./screens";
+export * from "./companies";
 export * from "./actions";
 export * from "./sync-fields";
 export * from "./moderation";
