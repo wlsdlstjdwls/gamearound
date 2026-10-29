@@ -107,14 +107,12 @@ function Search(props: { phase: string; target: string; name: string; s: Pricing
 /** 고른 프로모션의 상세 */
 function Detail({ value, p, set }: { value: PricingSettings; p: Promotion; set: (next: Partial<Promotion>) => void }) {
   const now = new Date();
-  const status = promotionStatus(p, now);
   const regular = p.target === MEMBERSHIP_KEY ? value.membership.amount : (value.products.find((x) => x.id === p.target)?.amount ?? 0);
   const discounted = discountedOf(value, p, now);
   return (
     <div className="flex flex-col gap-2">
       <p className="flex items-baseline gap-2 px-1">
         <span className="text-[16px] font-extrabold text-ink">{codeName(p)}</span>
-        <StatusTag status={status} />
       </p>
       {/* 탭을 걷었다 — 탭 셋에 칸이 열 남짓이라 탭은 칸을 숨기기만 했다(2026-10-30 사용자). 대상은 정가를 정하는 칸이라 혜택 묶음 맨 앞에 둔다 */}
       <WithAside aside={<PricingPreview value={value} tier={tierOfTarget(value, p.target)} />}>
