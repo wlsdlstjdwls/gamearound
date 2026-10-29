@@ -25,6 +25,8 @@ import { TaskEditForm } from "@/components/admin/task-card/edit-form";
 import { TaskNotes } from "@/components/admin/task-card/notes";
 import { TaskAttachmentsPart } from "@/components/admin/task-attachments";
 import { deleteTaskAction, moveTaskAction, updateTaskAction, type TaskActionState } from "@/app/(admin)/admin/tasks/actions";
+import { askConfirm } from "@/components/ui/confirm-dialog";
+import { CONFIRM_MESSAGES } from "@/lib/messages/confirm";
 
 export function TaskDialog({
   task,
@@ -126,8 +128,8 @@ export function TaskDialog({
           <button
             type="button"
             disabled={pending}
-            onClick={() => {
-              if (!confirm(TASK_MESSAGES.removeConfirm)) return;
+            onClick={async () => {
+              if (!(await askConfirm(TASK_MESSAGES.removeConfirm, { confirmLabel: CONFIRM_MESSAGES.delete, tone: "danger" }))) return;
               onOpenChange(false);
               run(() => deleteTaskAction(task.id));
             }}

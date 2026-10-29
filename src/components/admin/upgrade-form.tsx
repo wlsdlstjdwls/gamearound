@@ -13,6 +13,8 @@ import { ADMIN_FIELD } from "@/components/admin/field";
 import { FormSelect } from "@/components/ui/select";
 import { PLATFORM_LABEL } from "@/lib/format";
 import type { Platform, UpgradeKind } from "@/server/db/schema";
+import { askConfirm } from "@/components/ui/confirm-dialog";
+import { CONFIRM_MESSAGES } from "@/lib/messages/confirm";
 
 
 const KIND_LABEL: Record<UpgradeKind, string> = {
@@ -42,8 +44,8 @@ function DeleteButton({ gameId, id }: { gameId: string; id: number }) {
         size="sm"
         variant="secondary"
         disabled={pending}
-        onClick={() => {
-          if (!confirm("이 업그레이드 정보를 지울까요?")) return;
+        onClick={async () => {
+          if (!(await askConfirm("이 업그레이드 정보를 지울까요?", { confirmLabel: CONFIRM_MESSAGES.delete, tone: "danger" }))) return;
           start(async () => setState(await deleteUpgradeAction(gameId, id)));
         }}
         className="hover:border-danger hover:text-danger"

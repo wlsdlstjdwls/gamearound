@@ -7,6 +7,7 @@ import { useState, useTransition } from "react";
 import { Button } from "@/components/ui/button";
 import { approveMatchAction, rejectMatchAction, type AdminActionState } from "@/app/(admin)/admin/actions";
 import { ADMIN_ACTION_MESSAGES as A } from "@/lib/admin/messages";
+import { askConfirm } from "@/components/ui/confirm-dialog";
 
 export function MatchReviewButtons({ gameId, source }: { gameId: string; source: string }) {
   const [pending, start] = useTransition();
@@ -26,8 +27,8 @@ export function MatchReviewButtons({ gameId, source }: { gameId: string; source:
         size="sm"
         variant="secondary"
         disabled={pending}
-        onClick={() => {
-          if (!confirm(A.unlinkConfirm)) return;
+        onClick={async () => {
+          if (!(await askConfirm(A.unlinkConfirm, { confirmLabel: A.unlink, tone: "danger" }))) return;
           start(async () => setState(await rejectMatchAction(gameId, source)));
         }}
         className="flex-1 hover:border-danger hover:text-danger md:flex-none"

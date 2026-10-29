@@ -10,6 +10,8 @@ import { Button } from "@/components/ui/button";
 import { panelClass } from "@/components/ui/page";
 import { ADMIN_FIELD } from "@/components/admin/field";
 import { ALIAS_MAX_LEN } from "@/lib/aliases";
+import { askConfirm } from "@/components/ui/confirm-dialog";
+import { CONFIRM_MESSAGES } from "@/lib/messages/confirm";
 
 
 export type AliasItem = { id: number; alias: string };
@@ -26,8 +28,8 @@ function DeleteButton({ gameId, id, alias }: { gameId: string; id: number; alias
         variant="secondary"
         disabled={pending}
         aria-label={`별칭 ${alias} 삭제`}
-        onClick={() => {
-          if (!confirm(`별칭 "${alias}" 을(를) 지울까요?`)) return;
+        onClick={async () => {
+          if (!(await askConfirm(`별칭 "${alias}" 을(를) 지울까요?`, { confirmLabel: CONFIRM_MESSAGES.delete, tone: "danger" }))) return;
           start(async () => setState(await deleteAliasAction(gameId, id)));
         }}
         className="px-2.5 text-[11.5px] hover:border-danger hover:text-danger"

@@ -25,6 +25,8 @@ import { FIELD } from "@/components/admin/task-fields";
 import { AttachmentList, AttachmentPicker } from "@/components/admin/task-attachments";
 import { uploadTaskFiles } from "@/components/admin/task-attachment-upload";
 import { addNoteAction, deleteNoteAction, type TaskActionState } from "@/app/(admin)/admin/tasks/actions";
+import { askConfirm } from "@/components/ui/confirm-dialog";
+import { CONFIRM_MESSAGES } from "@/lib/messages/confirm";
 
 /** 칸 이름 앞에 칸 색 점 — 판의 칸 머리와 같은 색이라 "어디서 어디로" 가 글자 전에 갈린다 */
 /**
@@ -111,8 +113,8 @@ export function TaskNotes({ taskId, notes, readOnly = false }: { taskId: string;
                     <button
                       type="button"
                       disabled={pending}
-                      onClick={() => {
-                        if (!confirm(TASK_MESSAGES.noteRemoveConfirm)) return;
+                      onClick={async () => {
+                        if (!(await askConfirm(TASK_MESSAGES.noteRemoveConfirm, { confirmLabel: CONFIRM_MESSAGES.delete, tone: "danger" }))) return;
                         start(async () => setRemoveState(await deleteNoteAction(n.id)));
                       }}
                       className="press ml-auto rounded-[5px] px-1.5 py-0.5 text-[12.5px] text-mut transition-colors hover:text-danger disabled:opacity-50"

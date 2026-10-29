@@ -13,6 +13,7 @@ import { useToast } from "@/components/ui/toast";
 import { PLAYTEST_BODY_MAX, PLAYTEST_DAY_OPTIONS, PLAYTEST_SLOTS_MAX, PLAYTEST_TITLE_MAX } from "@/lib/indie/playtest";
 import { PLAYTEST_MESSAGES as M } from "@/lib/indie/playtest-messages";
 import { cn } from "@/lib/cn";
+import { askConfirm } from "@/components/ui/confirm-dialog";
 
 /** 인원 칸의 처음 값 — 인디 첫 플레이테스트로 흔한 크기 */
 const DEFAULT_SLOTS = 20;
@@ -74,8 +75,8 @@ export function PlaytestCloseButton({ id }: { id: string }) {
     <Button
       size="sm"
       variant="secondary"
-      onClick={() => {
-        if (!confirm(M.closeConfirm)) return;
+      onClick={async () => {
+        if (!(await askConfirm(M.closeConfirm))) return;
         setDone(true);
         start(async () => {
           const r = await closePlaytestAction(id).catch(() => ({ ok: false as const, error: M.failed }));

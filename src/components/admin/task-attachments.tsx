@@ -18,6 +18,8 @@ import { ATTACHMENT_ACCEPT, ATTACHMENT_MAX_BYTES, formatBytes, isImageType } fro
 import type { TaskAttachment } from "@/lib/admin/tasks";
 import { checkFiles, uploadTaskFiles } from "@/components/admin/task-attachment-upload";
 import { removeAttachmentAction } from "@/app/(admin)/admin/tasks/actions";
+import { askConfirm } from "@/components/ui/confirm-dialog";
+import { CONFIRM_MESSAGES } from "@/lib/messages/confirm";
 
 /** 작은 그림 한 변(px). 지우기 단추가 모서리에 얹혀도 그림이 읽히는 크기 — 매장 사진 칸(72)보다 조금 크게 */
 const THUMB = 88;
@@ -42,8 +44,8 @@ export function AttachmentList({ items, removable = false }: { items: TaskAttach
 
   const images = items.filter((a) => isImageType(a.contentType));
   const files = items.filter((a) => !isImageType(a.contentType));
-  const remove = (a: TaskAttachment) => {
-    if (!confirm(M.removeConfirm)) return;
+  const remove = async (a: TaskAttachment) => {
+    if (!(await askConfirm(M.removeConfirm, { confirmLabel: CONFIRM_MESSAGES.delete, tone: "danger" }))) return;
     setError(null);
     start(async () => {
       const r = await removeAttachmentAction(a.id);

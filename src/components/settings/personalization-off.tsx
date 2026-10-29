@@ -4,6 +4,7 @@ import { useState, useTransition } from "react";
 import { Button } from "@/components/ui/button";
 import { ONBOARDING_MESSAGES as M } from "@/lib/onboarding/messages";
 import { revokePersonalizationAction, type RevokeState } from "@/app/(user)/settings/actions";
+import { askConfirm } from "@/components/ui/confirm-dialog";
 
 export function PersonalizationOff() {
   const [pending, start] = useTransition();
@@ -14,8 +15,8 @@ export function PersonalizationOff() {
         size="sm"
         variant="secondary"
         loading={pending}
-        onClick={() => {
-          if (!confirm(M.settings.offConfirm)) return;
+        onClick={async () => {
+          if (!(await askConfirm(M.settings.offConfirm, { tone: "danger" }))) return;
           start(async () => setState(await revokePersonalizationAction()));
         }}
         className="hover:border-danger hover:text-danger"

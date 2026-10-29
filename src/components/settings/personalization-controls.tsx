@@ -11,6 +11,7 @@ import { Switch } from "@/components/ui/switch";
 import { ONBOARDING_MESSAGES } from "@/lib/onboarding/messages";
 import { welcomeStepPath } from "@/lib/routes";
 import { resetPersonalizationAction, setPersonalizationAppliedAction } from "@/app/(user)/settings/actions";
+import { askConfirm } from "@/components/ui/confirm-dialog";
 
 const M = ONBOARDING_MESSAGES.settings;
 
@@ -62,8 +63,8 @@ export function PersonalizationReset() {
         size="sm"
         variant="secondary"
         loading={pending}
-        onClick={() => {
-          if (!confirm(M.resetConfirm)) return;
+        onClick={async () => {
+          if (!(await askConfirm(M.resetConfirm, { tone: "danger" }))) return;
           start(async () => {
             const res = await resetPersonalizationAction();
             if (res.ok) router.push(welcomeStepPath("platforms"));

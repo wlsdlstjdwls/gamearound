@@ -4,7 +4,8 @@
 // <dialog> + showModal() 로 띄운다 — 포커스 가두기, 뒤 화면 비활성화, Esc 닫기를 브라우저가 해 준다(ui/sheet 와 같은 판단).
 // 끌어내려 닫기 같은 시트 동작은 필요 없어 Sheet 를 빌리지 않았다. 열리면 "취소" 에 포커스가 간다 — 실수로 Enter 를 눌러도 안 지워진다.
 // 확인 뒤의 일(낙관적 반영, 되돌리기)은 부르는 쪽이 onConfirm 에서 한다. 이 팝업은 묻기만 하고 바로 닫힌다.
-import { useEffect, useId, useRef } from "react";
+import { useEffect, useId, useRef, useState } from "react";
+import { CONFIRM_MESSAGES } from "@/lib/messages/confirm";
 import { Button } from "@/components/ui/button";
 
 export function ConfirmDialog({
@@ -73,9 +74,10 @@ export function ConfirmDialog({
           </Button>
           <Button
             variant={tone}
+            // 확인을 먼저 알린다 — 닫기를 먼저 부르면 askConfirm 이 닫기를 "취소" 로 받아 답이 거기서 굳는다
             onClick={() => {
-              onClose();
               onConfirm();
+              onClose();
             }}
           >
             {confirmLabel}
@@ -83,5 +85,50 @@ export function ConfirmDialog({
         </div>
       </div>
     </dialog>
+  );
+}
+
+// ---- askConfirm: 브라우저 confirm 을 대신하는 한 줄 확인(2026-10-29, 사용자 "자체 alert 가 아닌 브라우저 alert 가 나온다") ----
+// `if (!confirm(문구)) return;` 자리를 `if (!(await askConfirm(문구))) return;` 로 바꾸면 된다. 화면마다 열림 상태를 따로 쥐지 않도록
+// 루트 레이아웃에 ConfirmHost 하나를 세우고, askConfirm 이 그 하나에 묻는다. 확인을 누르면 true, 취소, Esc, 바깥 누름은 false.
+
+type ConfirmRequest = { title: string; description?: string; confirmLabel?: string; tone?: "danger" | "primary"; resolve: (ok: boolean) => void };
+let pushRequest: ((r: ConfirmRequest) => void) | null = null;
+
+export function askConfirm(title: string, opts: { description?: string; confirmLabel?: string; tone?: "danger" | "primary" } = {}): Promise<boolean> {
+  // 호스트가 없으면(테스트, 레이아웃 밖) 묻지 않고 하지 않는다 — 되돌릴 수 없는 일을 확인 없이 하는 쪽보다 낫다
+  if (!pushRequest) return Promise.resolve(false);
+  const push = pushRequest;
+  return new Promise((resolve) => push({ title, ...opts, resolve }));
+}
+
+export function ConfirmHost() {
+  const [req, setReq] = useState<ConfirmRequest | null>(null);
+  useEffect(() => {
+    pushRequest = (r) =>
+      setReq((cur) => {
+        // 앞 질문이 떠 있는데 또 물으면 앞 질문은 취소로 닫는다 — 둘을 겹쳐 띄우지 않는다
+        cur?.resolve(false);
+        return r;
+      });
+    return () => {
+      pushRequest = null;
+    };
+  }, []);
+  const settle = (ok: boolean) => {
+    req?.resolve(ok);
+    setReq(null);
+  };
+  return (
+    <ConfirmDialog
+      open={req !== null}
+      title={req?.title ?? ""}
+      description={req?.description}
+      confirmLabel={req?.confirmLabel ?? CONFIRM_MESSAGES.ok}
+      cancelLabel={CONFIRM_MESSAGES.cancel}
+      tone={req?.tone ?? "primary"}
+      onConfirm={() => settle(true)}
+      onClose={() => settle(false)}
+    />
   );
 }

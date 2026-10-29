@@ -17,6 +17,7 @@ import { useTooltip } from "@/components/ui/tooltip";
 import { cn } from "@/lib/cn";
 import { csvFileName, toCsv } from "@/lib/admin/csv";
 import { SCREEN_MESSAGES as M } from "@/lib/admin/messages";
+import { askConfirm } from "@/components/ui/confirm-dialog";
 
 type IconProps = { size?: number };
 const svg = (size = 16) => ({ width: size, height: size, viewBox: "0 0 24 24", fill: "none", stroke: "currentColor", strokeWidth: 2, strokeLinecap: "round" as const, strokeLinejoin: "round" as const, "aria-hidden": true });
@@ -158,9 +159,9 @@ export function AdminScreenHead({
     return () => mo.disconnect();
   }, []);
 
-  const retrieve = () => {
+  const retrieve = async () => {
     const t = toolsRef.current;
-    if (t.dirty && !window.confirm(M.confirmDiscard)) return;
+    if (t.dirty && !(await askConfirm(M.confirmDiscard, { confirmLabel: M.retrieve, tone: "danger" }))) return;
     if (t.retrieve) {
       t.retrieve();
       return;
