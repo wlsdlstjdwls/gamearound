@@ -20,7 +20,9 @@ import { askChoice, askConfirm } from "@/components/ui/confirm-dialog";
 import { reportDirty } from "@/components/admin/program-shell/store";
 import { newPromotionId, PromotionsScreen, withNewPromotion } from "@/components/admin/pricing-form/promotions";
 import { PRICING_ADMIN_MESSAGES as M } from "@/lib/pricing/admin-messages";
-import { MEMBERSHIP_KEY, pricingSettingsSchema, type PricingSettings } from "@/lib/pricing/settings";
+import { MEMBERSHIP_KEY, type PricingSettings } from "@/lib/pricing/settings";
+import { pricingErrors } from "@/lib/pricing/admin-validation";
+import { firstError } from "@/lib/admin/validation";
 
 /** 저장 알림이 머무는 시간. 읽고 넘어갈 만큼만 */
 const SAVED_NOTE_MS = 2400;
@@ -53,7 +55,11 @@ export function PricingForm({ initial, part, title }: { initial: PricingSettings
   /** 프로모션 화면에서 고른 줄. 미리 보기는 그 행사가 걸리는 카드 한 장만 보인다 — 카드 셋을 다 쌓으면 고른 행사가 어디 걸렸는지 찾아야 했다 */
   const [promo, setPromo] = useState<string | null>(initial.promotions[0]?.id ?? null);
   const dirty = JSON.stringify(value) !== JSON.stringify(saved);
-  const valid = pricingSettingsSchema.safeParse(normalize(value)).success;
+  // 칸별 오류(lib/pricing/admin-validation). 저장 액션도 같은 검사를 한 번 더 한다
+  const errors = pricingErrors(normalize(value));
+  const first = firstError(errors);
+  const valid = first === null;
+  const invalidText = first ? M.invalidAt(Object.keys(errors).length, first.message) : M.invalid;
   // "저장했어요" 는 잠깐 말하고 사라진다 — 남아 있으면 다음에 고칠 때 옛 소식이 섞인다
   useEffect(() => {
     if (note?.tone !== "success") return;
@@ -166,7 +172,7 @@ export function PricingForm({ initial, part, title }: { initial: PricingSettings
     const c = await askChoice(M.rowLeaveConfirm, { title: M.rowLeaveTitle, confirmLabel: M.rowLeaveSave, altLabel: M.rowLeaveDiscard });
     if (c === "cancel") return;
     if (c === "alt") revertRow(from);
-    else if (!valid) return say(M.invalid, "error");
+    else if (!valid) return say(invalidText, "error");
     else save();
     setRow(to);
   };
@@ -194,7 +200,7 @@ export function PricingForm({ initial, part, title }: { initial: PricingSettings
               {note ? (
                 <FormMessage tone={note.tone}>{note.text}</FormMessage>
               ) : dirty && !valid ? (
-                <span className="text-danger">{M.invalid}</span>
+                <span className="text-danger">{invalidText}</span>
               ) : dirty ? (
                 <span className="text-acc">{M.dirty}</span>
               ) : null}
@@ -209,9 +215,9 @@ export function PricingForm({ initial, part, title }: { initial: PricingSettings
 
       {/* 상품등록은 백오피스 상품등록 꼴(조회조건, 왼쪽 목록, 오른쪽 상세 묶음, pricing-form/catalog). 미리 보기는 상세 옆 기둥(WithAside)이다 */}
       {part === "catalog" ? (
-        <CatalogScreen value={value} saved={saved} patch={patch} selected={item} onSelect={selectItem} />
+        <CatalogScreen value={value} saved={saved} errors={errors} patch={patch} selected={item} onSelect={selectItem} />
       ) : (
-        <PromotionsScreen value={value} saved={saved} patch={patch} selected={promo} onSelect={selectPromo} />
+        <PromotionsScreen value={value} saved={saved} errors={errors} patch={patch} selected={promo} onSelect={selectPromo} />
       )}
 
     </div>

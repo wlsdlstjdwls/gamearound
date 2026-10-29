@@ -32,7 +32,7 @@ const COPY_GROUPS: { title: "groupHead" | "groupPrice" | "groupBenefits" | "grou
 ];
 
 /** bare: 판 껍데기와 카드 탭 없이 그 카드 칸만(상품등록 상세의 카드문구 탭이 고른 상품의 카드 하나만 보인다) */
-export function CopySection({ value, patch, tier, onTier, bare = false }: { value: PricingSettings; patch: Patch; tier: TierKey; onTier: (t: TierKey) => void; bare?: boolean }) {
+export function CopySection({ value, patch, tier, onTier, errors = {}, bare = false }: { value: PricingSettings; patch: Patch; tier: TierKey; onTier: (t: TierKey) => void; errors?: Record<string, string>; bare?: boolean }) {
 
   const setText = (t: TierKey, key: TextKey, display: string) => patch((d) => ({ ...d, copy: { ...d.copy, [t]: { ...d.copy[t], [key]: fromDisplayCopy(display) } } }));
   // 치는 동안은 빈 줄도 그대로 둔다(엔터 뒤 빈 줄이 바로 사라지면 다음 줄을 칠 수 없다). 저장할 때 걸러낸다(pricing-form 의 normalize)
@@ -53,6 +53,7 @@ export function CopySection({ value, patch, tier, onTier, bare = false }: { valu
               onChange={(e) => write(e.target.value)}
               trailing={trigger}
               popup={menu}
+              error={errors[`copy.${t}.${f.key}`]}
               labelSide
               compact
               {...bind}
@@ -63,6 +64,8 @@ export function CopySection({ value, patch, tier, onTier, bare = false }: { valu
     }
     const lines = f.key === "benefits" ? value.copy.membership.benefits : value.copy[t].lines;
     const write = (display: string) => setLines(t, f.key, display);
+    // 줄 칸은 한 줄이라도 틀리면(길이 초과) 칸 아래에 말한다 — 경로가 "copy.single.lines.2" 처럼 줄 번호까지 붙는다
+    const lineError = Object.entries(errors).find(([k]) => k.startsWith(`copy.${f.key === "benefits" ? "membership" : t}.${f.key}`))?.[1];
     return (
       <TokenMenu key={f.key} fieldId={id} write={write}>
         {(bind, trigger, menu) => (
@@ -83,6 +86,11 @@ export function CopySection({ value, patch, tier, onTier, bare = false }: { valu
               <div className="absolute right-2 top-2">{trigger}</div>
               {menu}
             </div>
+            {lineError && (
+              <p role="alert" className="text-[12px] font-medium text-danger sm:col-start-2">
+                {lineError}
+              </p>
+            )}
           </div>
         )}
       </TokenMenu>

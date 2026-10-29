@@ -5,7 +5,9 @@
 import { revalidatePath, updateTag } from "next/cache";
 import { actionError } from "@/lib/db-errors";
 import { PRICING_ADMIN_MESSAGES as M } from "@/lib/pricing/admin-messages";
-import { pricingSettingsSchema } from "@/lib/pricing/settings";
+import { pricingErrors, pricingSaveSchema } from "@/lib/pricing/admin-validation";
+import { firstError } from "@/lib/admin/validation";
+import type { PricingSettings } from "@/lib/pricing/settings";
 import { ROUTES } from "@/lib/routes";
 import { setPricingSettings, SETTINGS_TAG } from "@/server/services/settings";
 import { requireAdmin } from "@/server/services/users";
@@ -15,8 +17,13 @@ export type PricingActionResult = { ok: true } | { ok: false; error: string };
 export async function savePricingAction(input: unknown): Promise<PricingActionResult> {
   try {
     const admin = await requireAdmin();
-    const parsed = pricingSettingsSchema.safeParse(input);
-    if (!parsed.success) return { ok: false, error: M.invalid };
+    // 폼과 같은 저장 검사(lib/pricing/admin-validation). 틀리면 첫 칸의 까닭을 돌려준다
+    const parsed = pricingSaveSchema.safeParse(input);
+    if (!parsed.success) {
+      // 모양이 아예 틀린 값(프로모션 목록 없음)은 칸별 문구를 만들 수 없어 공통 문구로
+      const shaped = Array.isArray((input as Partial<PricingSettings> | null)?.promotions);
+      return { ok: false, error: (shaped && firstError(pricingErrors(input as PricingSettings))?.message) || M.invalid };
+    }
     await setPricingSettings(admin.id, parsed.data);
     updateTag(SETTINGS_TAG);
     revalidatePath(ROUTES.adminPricing);

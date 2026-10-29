@@ -24,6 +24,7 @@ import { formatPrice } from "@/lib/currency";
 import { kstDateKey } from "@/lib/format";
 import { promotionStatus, quote } from "@/lib/pricing/quote";
 import { PRICING_ADMIN_MESSAGES as M } from "@/lib/pricing/admin-messages";
+import { hasErrorUnder, type FieldErrors } from "@/lib/admin/validation";
 import { isBundleProduct, MEMBERSHIP_KEY, PROMOTION_STOP_REASONS, type PricingSettings, type Promotion, type TierKey } from "@/lib/pricing/settings";
 
 /** 새 줄의 첫 값 — 가장 흔히 쓸 "처음 결제하는 사람 10% 할인" */
@@ -105,8 +106,10 @@ function Search(props: { phase: string; target: string; name: string; s: Pricing
 }
 
 /** 고른 프로모션의 상세 */
-function Detail({ value, p, set }: { value: PricingSettings; p: Promotion; set: (next: Partial<Promotion>) => void }) {
+function Detail({ value, p, set, errors }: { value: PricingSettings; p: Promotion; set: (next: Partial<Promotion>) => void; errors: FieldErrors }) {
   const now = new Date();
+  const at = `promotions.${value.promotions.indexOf(p)}`;
+  const err = (k: string) => errors[`${at}.${k}`];
   const regular = p.target === MEMBERSHIP_KEY ? value.membership.amount : (value.products.find((x) => x.id === p.target)?.amount ?? 0);
   const discounted = discountedOf(value, p, now);
   return (
@@ -119,7 +122,7 @@ function Detail({ value, p, set }: { value: PricingSettings; p: Promotion; set: 
         <FormSection title={M.promoSectionBasic} labelWidth="100px">
           <Field label={M.promoFieldCode} htmlFor={`pn-${p.id}`} required wide>
             <CodeName code={p.id}>
-              <TextField id={`pn-${p.id}`} label={M.promoFieldCode} hideLabel value={p.name ?? p.label} onChange={(e) => set({ name: e.target.value })} compact />
+              <TextField id={`pn-${p.id}`} label={M.promoFieldCode} hideLabel value={p.name ?? p.label} onChange={(e) => set({ name: e.target.value })} error={err("name")} compact />
             </CodeName>
           </Field>
           {/* 진행상태는 진행 중, 중단 둘만 고른다(2026-10-30 사용자). 중단이면 사유를 곁에 고른다 — 사유는 여럿일 수 있다(가격변동 중단 등).
@@ -149,9 +152,9 @@ function Detail({ value, p, set }: { value: PricingSettings; p: Promotion; set: 
             </Field>
           )}
           <Field label={M.promoFieldName} htmlFor={`pl-${p.id}`} required wide>
-            <TextField id={`pl-${p.id}`} label={M.promoFieldName} hideLabel value={p.label} onChange={(e) => set({ label: e.target.value })} compact />
+            <TextField id={`pl-${p.id}`} label={M.promoFieldName} hideLabel value={p.label} onChange={(e) => set({ label: e.target.value })} error={err("label")} compact />
           </Field>
-          <Field label={M.promoSectionPeriod} wide>
+          <Field label={M.promoSectionPeriod} wide error={err("endsOn") ?? err("startsOn")}>
             <FieldPair
               from={<DateField label={M.promoStarts} hideLabel value={p.startsOn} max={p.endsOn} onChange={(v) => set({ startsOn: v })} />}
               to={<DateField label={M.promoEnds} hideLabel value={p.endsOn} min={p.startsOn} onChange={(v) => set({ endsOn: v })} />}
@@ -159,7 +162,7 @@ function Detail({ value, p, set }: { value: PricingSettings; p: Promotion; set: 
           </Field>
         </FormSection>
         <FormSection title={M.promoSectionBenefit}>
-          <Field label={M.promoTarget} required wide>
+          <Field label={M.promoTarget} required wide error={p.target !== MEMBERSHIP_KEY && !value.products.some((x) => x.id === p.target) ? errors.promotions : undefined}>
             <FormSelect
               name={`pt-${p.id}`}
               label={M.promoTarget}
@@ -174,7 +177,7 @@ function Detail({ value, p, set }: { value: PricingSettings; p: Promotion; set: 
             <FormSelect name={`pk-${p.id}`} label={M.promoKind} hideLabel size="lg" value={p.kind} onChange={(v) => set({ kind: v as Promotion["kind"] })} options={(["price", "percent"] as const).map((k) => ({ value: k, label: M.kindLabels[k] }))} />
           </Field>
           <Field label={M.promoValue} htmlFor={`pv-${p.id}`} required>
-            <NumberField id={`pv-${p.id}`} label={M.promoValue} hideLabel value={p.value} onValue={(n) => set({ value: n })} trailing={<span className="pr-2 text-[13px] text-dim">{p.kind === "percent" ? "%" : M.won}</span>} className="text-right tabular-nums" compact />
+            <NumberField id={`pv-${p.id}`} label={M.promoValue} hideLabel value={p.value} onValue={(n) => set({ value: n })} error={err("value")} trailing={<span className="pr-2 text-[13px] text-dim">{p.kind === "percent" ? "%" : M.won}</span>} className="text-right tabular-nums" compact />
           </Field>
           <Field label={M.promoAudience} required wide>
             <FormSelect name={`pa-${p.id}`} label={M.promoAudience} hideLabel size="lg" value={p.audience} onChange={(v) => set({ audience: v as Promotion["audience"] })} options={(["first", "all"] as const).map((k) => ({ value: k, label: M.audienceLabels[k] }))} />
@@ -192,7 +195,7 @@ function Detail({ value, p, set }: { value: PricingSettings; p: Promotion; set: 
 }
 
 /** 고른 줄은 바깥(pricing-form)이 쥔다 — 툴바 삭제가 그 줄을 지운다 */
-export function PromotionsScreen({ value, saved, patch, selected, onSelect }: { value: PricingSettings; saved: PricingSettings; patch: Patch; selected: string | null; onSelect: (id: string | null) => void }) {
+export function PromotionsScreen({ value, saved, errors, patch, selected, onSelect }: { value: PricingSettings; saved: PricingSettings; errors: FieldErrors; patch: Patch; selected: string | null; onSelect: (id: string | null) => void }) {
   const [f, setF] = useState({ phase: "all", target: "all", name: "" });
   const now = new Date();
   const rows = value.promotions.filter(
@@ -218,14 +221,14 @@ export function PromotionsScreen({ value, saved, patch, selected, onSelect }: { 
             selected={selected}
             onSelect={onSelect}
             autoSelectFirst
-            rowState={(p) => (!savedById.has(p.id) ? "new" : savedById.get(p.id) !== JSON.stringify(p) ? "changed" : undefined)}
+            rowState={(p) => (hasErrorUnder(errors, `promotions.${value.promotions.indexOf(p)}`) ? "error" : !savedById.has(p.id) ? "new" : savedById.get(p.id) !== JSON.stringify(p) ? "changed" : undefined)}
             rowTone={(p) => (p.active ? undefined : "muted")}
             searchable
             empty={M.promoListEmpty}
             maxHeight="calc(100svh - var(--header-h) - 340px)"
           />
         }
-        detail={current ? <Detail key={current.id} value={value} p={current} set={set} /> : <p className="rounded-xl bg-surface-2 px-4 py-6 text-center text-[13px] text-dim">{M.promoPickHint}</p>}
+        detail={current ? <Detail key={current.id} value={value} p={current} set={set} errors={errors} /> : <p className="rounded-xl bg-surface-2 px-4 py-6 text-center text-[13px] text-dim">{M.promoPickHint}</p>}
       />
     </div>
   );

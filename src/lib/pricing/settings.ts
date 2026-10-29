@@ -32,9 +32,9 @@ const PRODUCT_ID = /^[A-Za-z0-9_-]{1,40}$/;
 /** 토스 결제 최소 금액(원). 이보다 낮은 값, 할인 결과는 받지 않는다 */
 export const MIN_CHARGE = 100;
 /** 값 상한(원). 오타로 0 이 하나 더 붙는 일을 막는 안전판 */
-const MAX_CHARGE = 10_000_000;
+export const MAX_CHARGE = 10_000_000;
 /** 비율 할인 상한(%). 100% 는 무료라 결제가 아니다 */
-const MAX_PERCENT = 90;
+export const MAX_PERCENT = 90;
 /** 문구 한 칸, 줄 수 상한. 카드가 터지지 않을 만큼 */
 const TEXT_MAX = 60;
 const LONG_TEXT_MAX = 120;

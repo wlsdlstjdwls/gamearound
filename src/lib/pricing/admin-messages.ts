@@ -17,6 +17,13 @@ export const PRICING_ADMIN_MESSAGES = {
   saved: "저장했어요",
   failed: "저장하지 못했어요. 칸을 확인해 주세요",
   invalid: "비었거나 범위를 벗어난 칸이 있어요",
+  /** 저장 검사에 걸렸을 때 머리, 상태줄 한 줄. 첫 칸의 까닭을 같이 말한다 — "틀린 칸이 있어요" 만으로는 어디를 볼지 몰랐다 */
+  invalidAt: (n: number, first: string) => (n > 1 ? `틀린 칸 ${n}곳 | ${first}` : `틀린 칸 | ${first}`),
+  /** 칸별 검사 문구(lib/pricing/admin-validation). 범위로 안 읽히는 규칙만 여기 둔다 — 범위는 lib/admin/validation 이 스키마 한계값으로 만든다 */
+  errEndBeforeStart: "종료일이 시작일보다 앞이에요",
+  errPriceNotBelow: "할인가가 정가보다 낮아야 해요",
+  errTargetGone: "대상 상품이 없어요",
+  errDuplicateName: "같은 이름의 상품이 있어요",
   reset: "되돌리기",
   /** 툴바 조회로 서버 값을 다시 읽었을 때 상태줄 */
   reloaded: "저장된 값을 다시 불러왔어요",

@@ -14,6 +14,7 @@ import { CodeName, Field, FormSection, MasterDetail, ReadValue, SearchBand, Sear
 import { DataGrid, type GridCol } from "@/components/admin/screen/data-grid";
 import { ProgramLink } from "@/components/admin/screen/program-link";
 import { ADMIN_NAV } from "@/lib/admin/messages";
+import { hasErrorUnder, type FieldErrors } from "@/lib/admin/validation";
 import { NumberField } from "@/components/ui/number-field";
 import { FormSelect } from "@/components/ui/select/fields";
 import { Switch } from "@/components/ui/switch";
@@ -92,17 +93,18 @@ function Search({ kind, sale, name, onKind, onSale, onName }: { kind: string; sa
 }
 
 /** 판매가(묶음이면 낱개 합과 할인율). 상품 정보 묶음 안에 선다(2026-10-30 사용자 "판매가는 상품 정보에, 하루 값은 지워") */
-function PriceFields({ value, patch, rowKey }: { value: PricingSettings; patch: Patch; rowKey: string }) {
+function PriceFields({ value, patch, rowKey, errors }: { value: PricingSettings; patch: Patch; rowKey: string; errors: FieldErrors }) {
   const isMembership = rowKey === MEMBERSHIP_KEY;
   const p = value.products.find((x) => x.id === rowKey);
   const amount = isMembership ? value.membership.amount : (p?.amount ?? 0);
   const setAmount = (n: number) =>
     isMembership ? patch((d) => ({ ...d, membership: { ...d.membership, amount: n } })) : patch((d) => ({ ...d, products: d.products.map((x) => (x.id === rowKey ? { ...x, amount: n } : x)) }));
   const list = p && isBundleProduct(p) ? bundleListPrice(value, p) : 0;
+  const error = isMembership ? errors["membership.amount"] : errors[`products.${value.products.findIndex((x) => x.id === rowKey)}.amount`];
   return (
     <>
       <Field label={M.fieldPrice} htmlFor="price-amount" required>
-        <NumberField id="price-amount" label={M.fieldPrice} hideLabel value={amount} onValue={setAmount} trailing={<span className="pr-2 text-[13px] text-dim">{M.won}</span>} className="text-right tabular-nums" compact />
+        <NumberField id="price-amount" label={M.fieldPrice} hideLabel value={amount} onValue={setAmount} error={error} trailing={<span className="pr-2 text-[13px] text-dim">{M.won}</span>} className="text-right tabular-nums" compact />
       </Field>
       {list > 0 && (
         <>
@@ -118,7 +120,7 @@ function PriceFields({ value, patch, rowKey }: { value: PricingSettings; patch: 
   );
 }
 
-function BasicTab({ value, patch, rowKey }: { value: PricingSettings; patch: Patch; rowKey: string }) {
+function BasicTab({ value, patch, rowKey, errors }: { value: PricingSettings; patch: Patch; rowKey: string; errors: FieldErrors }) {
   if (rowKey === MEMBERSHIP_KEY) {
     const m = value.membership;
     return (
@@ -132,9 +134,9 @@ function BasicTab({ value, patch, rowKey }: { value: PricingSettings; patch: Pat
           <ReadValue>{M.cycleMonthly}</ReadValue>
         </Field>
         <Field label={M.fieldCredits} htmlFor="m-credits" required>
-          <NumberField id="m-credits" label={M.fieldCredits} hideLabel value={m.boostCredits} onValue={(n) => patch((d) => ({ ...d, membership: { ...d.membership, boostCredits: n } }))} trailing={<span className="pr-2 text-[13px] text-dim">{M.creditsUnit}</span>} className="text-right tabular-nums" compact />
+          <NumberField id="m-credits" label={M.fieldCredits} hideLabel value={m.boostCredits} onValue={(n) => patch((d) => ({ ...d, membership: { ...d.membership, boostCredits: n } }))} error={errors["membership.boostCredits"]} trailing={<span className="pr-2 text-[13px] text-dim">{M.creditsUnit}</span>} className="text-right tabular-nums" compact />
         </Field>
-        <PriceFields value={value} patch={patch} rowKey={rowKey} />
+        <PriceFields value={value} patch={patch} rowKey={rowKey} errors={errors} />
         <Field label={M.fieldSale}>
           <div className="flex min-h-11 items-center gap-2">
             <Switch on={m.active} label={M.fieldSale} onToggle={() => patch((d) => ({ ...d, membership: { ...d.membership, active: !d.membership.active } }))} />
@@ -147,11 +149,12 @@ function BasicTab({ value, patch, rowKey }: { value: PricingSettings; patch: Pat
   const p = value.products.find((x) => x.id === rowKey);
   if (!p) return null;
   const set = (next: Partial<CatalogProduct>) => patch((d) => ({ ...d, products: d.products.map((x) => (x.id === p.id ? { ...x, ...next } : x)) }));
+  const at = `products.${value.products.indexOf(p)}`;
   return (
     <FormSection title={M.sectionProduct} labelWidth="84px">
       <Field label={M.fieldCode} htmlFor={`name-${p.id}`} required wide>
         <CodeName code={p.id}>
-          <TextField id={`name-${p.id}`} label={M.fieldName} hideLabel value={p.name} onChange={(e) => set({ name: e.target.value })} compact />
+          <TextField id={`name-${p.id}`} label={M.fieldName} hideLabel value={p.name} onChange={(e) => set({ name: e.target.value })} error={errors[`${at}.name`]} compact />
         </CodeName>
       </Field>
       <Field label={M.fieldKind}>
@@ -169,9 +172,9 @@ function BasicTab({ value, patch, rowKey }: { value: PricingSettings; patch: Pat
         />
       </Field>
       <Field label={M.fieldDays} htmlFor={`days-${p.id}`} required>
-        <NumberField id={`days-${p.id}`} label={M.fieldDays} hideLabel value={p.days} onValue={(n) => set({ days: n })} trailing={<span className="pr-2 text-[13px] text-dim">{M.daysUnit}</span>} className="text-right tabular-nums" compact />
+        <NumberField id={`days-${p.id}`} label={M.fieldDays} hideLabel value={p.days} onValue={(n) => set({ days: n })} error={errors[`${at}.days`]} trailing={<span className="pr-2 text-[13px] text-dim">{M.daysUnit}</span>} className="text-right tabular-nums" compact />
       </Field>
-      <PriceFields value={value} patch={patch} rowKey={rowKey} />
+      <PriceFields value={value} patch={patch} rowKey={rowKey} errors={errors} />
       <Field label={M.fieldSale}>
         <div className="flex min-h-11 items-center gap-2">
           <Switch on={p.active} label={M.fieldSale} onToggle={() => set({ active: !p.active })} />
@@ -217,7 +220,7 @@ function PromosSection({ value, rowKey }: { value: PricingSettings; rowKey: stri
 }
 
 /** saved: 마지막 저장 값. 목록 줄의 신규, 수정 표시(백오피스 cwareAction)에 쓴다 */
-export function CatalogScreen({ value, saved, patch, selected, onSelect }: { value: PricingSettings; saved: PricingSettings; patch: Patch; selected: string | null; onSelect: (key: string) => void }) {
+export function CatalogScreen({ value, saved, errors, patch, selected, onSelect }: { value: PricingSettings; saved: PricingSettings; errors: FieldErrors; patch: Patch; selected: string | null; onSelect: (key: string) => void }) {
   const [kind, setKind] = useState("all");
   const [sale, setSale] = useState("all");
   const [name, setName] = useState("");
@@ -243,7 +246,11 @@ export function CatalogScreen({ value, saved, patch, selected, onSelect }: { val
             selected={selected}
             onSelect={onSelect}
             autoSelectFirst
-            rowState={(r) => (r.key === MEMBERSHIP_KEY ? (changedKeys.has(r.key) ? "changed" : undefined) : !savedKeys.has(r.key) ? "new" : changedKeys.has(r.key) ? "changed" : undefined)}
+            rowState={(r) => {
+              const at = r.key === MEMBERSHIP_KEY ? "membership" : `products.${value.products.findIndex((p) => p.id === r.key)}`;
+              if (hasErrorUnder(errors, at)) return "error";
+              return r.key === MEMBERSHIP_KEY ? (changedKeys.has(r.key) ? "changed" : undefined) : !savedKeys.has(r.key) ? "new" : changedKeys.has(r.key) ? "changed" : undefined;
+            }}
             rowTone={(r) => (r.active ? undefined : "muted")}
             empty={M.listEmpty}
             maxHeight="calc(100svh - var(--header-h) - 300px)"
@@ -258,11 +265,11 @@ export function CatalogScreen({ value, saved, patch, selected, onSelect }: { val
               </p>
               {/* 탭을 걷고 묶음을 쌓는다 — 탭 셋에 칸이 몇 개뿐이라 탭은 칸을 숨기고 누를 일만 늘렸다(2026-10-30 사용자). 미리 보기는 옆 기둥 그대로 */}
               <WithAside aside={<PricingPreview value={value} tier={tier} />}>
-                <BasicTab value={value} patch={patch} rowKey={current.key} />
+                <BasicTab value={value} patch={patch} rowKey={current.key} errors={errors} />
                 <PromosSection value={value} rowKey={current.key} />
                 <FormSection title={M.tabCopy}>
                   <div className={cn("flex min-w-0 flex-col gap-2", FULL_ROW)}>
-                    <CopySection value={value} patch={patch} tier={tier} onTier={() => {}} bare />
+                    <CopySection value={value} patch={patch} tier={tier} onTier={() => {}} errors={errors} bare />
                   </div>
                 </FormSection>
               </WithAside>
