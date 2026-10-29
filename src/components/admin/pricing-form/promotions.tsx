@@ -15,7 +15,7 @@ import { PHASE_TONE } from "@/components/admin/pricing-form/phase-tone";
 import { PricingPreview } from "@/components/admin/pricing-form/preview";
 import { targetLabel } from "@/components/admin/pricing-form/sections";
 import { DataGrid, type GridCol } from "@/components/admin/screen/data-grid";
-import { Field, FieldPair, FormSection, MasterDetail, ReadValue, ScreenTabs, SearchBand, SearchItem } from "@/components/admin/screen/layout";
+import { Field, FieldPair, FormSection, MasterDetail, ReadValue, SearchBand, SearchItem, WithAside } from "@/components/admin/screen/layout";
 import { DateField } from "@/components/ui/date-field";
 import { NumberField } from "@/components/ui/number-field";
 import { FormSelect } from "@/components/ui/select/fields";
@@ -109,9 +109,8 @@ function Search(props: { use: string; phase: string; target: string; name: strin
   );
 }
 
-/** 고른 프로모션의 상세 탭 */
+/** 고른 프로모션의 상세 */
 function Detail({ value, p, set }: { value: PricingSettings; p: Promotion; set: (next: Partial<Promotion>) => void }) {
-  const [tab, setTab] = useState("basic");
   const now = new Date();
   const phase = promotionPhase(p, now);
   const regular = p.target === MEMBERSHIP_KEY ? value.membership.amount : (value.products.find((x) => x.id === p.target)?.amount ?? 0);
@@ -122,92 +121,65 @@ function Detail({ value, p, set }: { value: PricingSettings; p: Promotion; set: 
         <span className="text-[16px] font-extrabold text-ink">{p.label || M.newPromoLabel}</span>
         <Tag tone={PHASE_TONE[phase]}>{M.phaseLabels[phase]}</Tag>
       </p>
-      <ScreenTabs
-        label={M.promoListLabel}
-        active={tab}
-        onChange={setTab}
-        aside={<PricingPreview value={value} tier={tierOfTarget(value, p.target)} />}
-        tabs={[
-          {
-            key: "basic",
-            label: M.promoTabBasic,
-            panel: (
-              <>
-                <FormSection title={M.promoSectionBasic}>
-                  <Field label={M.promoFieldCode}>
-                    <ReadValue>{p.id}</ReadValue>
-                  </Field>
-                  <Field label={M.promoFieldName} htmlFor={`pl-${p.id}`} required hint={M.promoFieldNameHint}>
-                    <TextField id={`pl-${p.id}`} label={M.promoFieldName} hideLabel value={p.label} onChange={(e) => set({ label: e.target.value })} compact />
-                  </Field>
-                  {/* 사용여부와 진행상태는 한 줄 — 진행상태는 고칠 수 없는 결과라 칸 하나를 따로 쓸 까닭이 없다(2026-10-30 사용자) */}
-                  <Field label={M.promoFieldUse}>
-                    <div className="flex min-h-11 flex-wrap items-center gap-2">
-                      <Switch on={p.active} label={M.promoFieldUse} onToggle={() => set({ active: !p.active })} />
-                      <span className="text-[13px] text-mut">{p.active ? M.useLabels.on : M.useLabels.off}</span>
-                      <span className="ml-auto flex items-center gap-1.5 text-[12px] text-dim">
-                        {M.promoFieldPhase}
-                        <Tag tone={PHASE_TONE[phase]}>{M.phaseLabels[phase]}</Tag>
-                      </span>
-                    </div>
-                  </Field>
-                  <Field label={M.promoSectionPeriod} hint={M.promoPeriodHint} wide>
-                    <FieldPair
-                      from={<DateField label={M.promoStarts} hideLabel value={p.startsOn} max={p.endsOn} onChange={(v) => set({ startsOn: v })} />}
-                      to={<DateField label={M.promoEnds} hideLabel value={p.endsOn} min={p.startsOn} onChange={(v) => set({ endsOn: v })} />}
-                    />
-                  </Field>
-                </FormSection>
-              </>
-            ),
-          },
-          {
-            key: "benefit",
-            label: M.promoTabBenefit,
-            panel: (
-              <FormSection title={M.promoSectionBenefit}>
-                <Field label={M.promoKind} required>
-                  <FormSelect name={`pk-${p.id}`} label={M.promoKind} hideLabel size="lg" value={p.kind} onChange={(v) => set({ kind: v as Promotion["kind"] })} options={(["percent", "price"] as const).map((k) => ({ value: k, label: M.kindLabels[k] }))} />
-                </Field>
-                <Field label={M.promoValue} htmlFor={`pv-${p.id}`} required>
-                  <NumberField id={`pv-${p.id}`} label={M.promoValue} hideLabel value={p.value} onValue={(n) => set({ value: n })} trailing={<span className="pr-2 text-[13px] text-dim">{p.kind === "percent" ? "%" : M.won}</span>} className="text-right tabular-nums" compact />
-                </Field>
-                <Field label={M.promoAudience} required>
-                  <FormSelect name={`pa-${p.id}`} label={M.promoAudience} hideLabel size="lg" value={p.audience} onChange={(v) => set({ audience: v as Promotion["audience"] })} options={(["first", "all"] as const).map((k) => ({ value: k, label: M.audienceLabels[k] }))} />
-                </Field>
-                <Field label={M.promoFieldDeal}>
-                  <ReadValue>{deal(p)}</ReadValue>
-                </Field>
-                <Field label={M.promoFieldRegular}>
-                  <ReadValue align="right">{formatPrice(regular)}</ReadValue>
-                </Field>
-                <Field label={M.promoFieldPrice}>
-                  <ReadValue align="right">{formatPrice(discounted)}</ReadValue>
-                </Field>
-              </FormSection>
-            ),
-          },
-          {
-            key: "target",
-            label: M.promoTabTarget,
-            panel: (
-              <FormSection title={M.promoSectionTarget}>
-                <Field label={M.promoTarget} required wide>
-                  <FormSelect
-                    name={`pt-${p.id}`}
-                    label={M.promoTarget}
-                    hideLabel
-                    size="lg"
-                    value={p.target}
-                    onChange={(v) => set({ target: v })}
-                    options={[...value.products.map((x) => x.id), MEMBERSHIP_KEY].map((k) => ({ value: k, label: targetLabel(value, k) }))}
-                  />
-                </Field>
-              </FormSection>
-            ),
-          },
-        ]}
-      />
+      {/* 탭을 걷었다 — 탭 셋에 칸이 열 남짓이라 탭은 칸을 숨기기만 했다(2026-10-30 사용자). 대상은 정가를 정하는 칸이라 혜택 묶음 맨 앞에 둔다 */}
+      <WithAside aside={<PricingPreview value={value} tier={tierOfTarget(value, p.target)} />}>
+        <FormSection title={M.promoSectionBasic}>
+          <Field label={M.promoFieldCode}>
+            <ReadValue>{p.id}</ReadValue>
+          </Field>
+          <Field label={M.promoFieldName} htmlFor={`pl-${p.id}`} required hint={M.promoFieldNameHint}>
+            <TextField id={`pl-${p.id}`} label={M.promoFieldName} hideLabel value={p.label} onChange={(e) => set({ label: e.target.value })} compact />
+          </Field>
+          {/* 사용여부와 진행상태는 한 줄 — 진행상태는 고칠 수 없는 결과라 칸 하나를 따로 쓸 까닭이 없다(2026-10-30 사용자) */}
+          <Field label={M.promoFieldUse}>
+            <div className="flex min-h-11 flex-wrap items-center gap-2">
+              <Switch on={p.active} label={M.promoFieldUse} onToggle={() => set({ active: !p.active })} />
+              <span className="text-[13px] text-mut">{p.active ? M.useLabels.on : M.useLabels.off}</span>
+              <span className="ml-auto flex items-center gap-1.5 text-[12px] text-dim">
+                {M.promoFieldPhase}
+                <Tag tone={PHASE_TONE[phase]}>{M.phaseLabels[phase]}</Tag>
+              </span>
+            </div>
+          </Field>
+          <Field label={M.promoSectionPeriod} hint={M.promoPeriodHint} wide>
+            <FieldPair
+              from={<DateField label={M.promoStarts} hideLabel value={p.startsOn} max={p.endsOn} onChange={(v) => set({ startsOn: v })} />}
+              to={<DateField label={M.promoEnds} hideLabel value={p.endsOn} min={p.startsOn} onChange={(v) => set({ endsOn: v })} />}
+            />
+          </Field>
+        </FormSection>
+        <FormSection title={M.promoSectionBenefit}>
+          <Field label={M.promoTarget} required wide>
+            <FormSelect
+              name={`pt-${p.id}`}
+              label={M.promoTarget}
+              hideLabel
+              size="lg"
+              value={p.target}
+              onChange={(v) => set({ target: v })}
+              options={[...value.products.map((x) => x.id), MEMBERSHIP_KEY].map((k) => ({ value: k, label: targetLabel(value, k) }))}
+            />
+          </Field>
+          <Field label={M.promoKind} required>
+            <FormSelect name={`pk-${p.id}`} label={M.promoKind} hideLabel size="lg" value={p.kind} onChange={(v) => set({ kind: v as Promotion["kind"] })} options={(["percent", "price"] as const).map((k) => ({ value: k, label: M.kindLabels[k] }))} />
+          </Field>
+          <Field label={M.promoValue} htmlFor={`pv-${p.id}`} required>
+            <NumberField id={`pv-${p.id}`} label={M.promoValue} hideLabel value={p.value} onValue={(n) => set({ value: n })} trailing={<span className="pr-2 text-[13px] text-dim">{p.kind === "percent" ? "%" : M.won}</span>} className="text-right tabular-nums" compact />
+          </Field>
+          <Field label={M.promoAudience} required>
+            <FormSelect name={`pa-${p.id}`} label={M.promoAudience} hideLabel size="lg" value={p.audience} onChange={(v) => set({ audience: v as Promotion["audience"] })} options={(["first", "all"] as const).map((k) => ({ value: k, label: M.audienceLabels[k] }))} />
+          </Field>
+          <Field label={M.promoFieldDeal}>
+            <ReadValue>{deal(p)}</ReadValue>
+          </Field>
+          <Field label={M.promoFieldRegular}>
+            <ReadValue align="right">{formatPrice(regular)}</ReadValue>
+          </Field>
+          <Field label={M.promoFieldPrice}>
+            <ReadValue align="right">{formatPrice(discounted)}</ReadValue>
+          </Field>
+        </FormSection>
+      </WithAside>
     </div>
   );
 }

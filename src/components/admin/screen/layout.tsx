@@ -4,12 +4,14 @@
 // 백오피스 관리 화면은 어디나 같은 순서로 선다(상품등록, 일반프로모션, 첫구매사은프로모션, 고객상세정보 실측):
 //   1. 조회조건 띠(SearchBand) — 회색 띠 안에 "이름표 | 칸" 이 여러 열. 이름표는 칸 왼쪽에 오른쪽 정렬.
 //   2. 왼쪽 목록(공통 그리드 screen/data-grid) + 오른쪽 상세(MasterDetail) — 목록 줄을 고르면 오른쪽이 그 줄의 상세로 바뀐다.
-//   3. 상세는 탭(ScreenTabs)으로 나누고, 탭 안은 접히는 묶음(FormSection, "− 상품분류" 꼴) 안에 칸(Field)이 여러 열.
+//   3. 상세는 접히는 묶음(FormSection, "− 상품분류" 꼴)을 위에서 아래로 쌓고, 묶음 안에 칸(Field)이 여러 열.
+//      탭(ScreenTabs)은 칸이 많아 한 판에 다 못 실을 때만 쓴다 — 백오피스 상품등록이 탭 14개인 것은 칸이 수백 개라서다.
+//      칸 몇 개짜리 탭은 칸을 숨기고 누를 일만 늘렸다(2026-10-30 사용자 "굳이 탭으로 나눠야 되는 거야", 상품등록, 프로모션등록 탭 걷음).
 //      필수 칸은 이름표 앞 빨간 *, 고칠 수 없는 칸은 회색 칸(ReadValue).
 // 색과 간격은 이 서비스 토큰을 쓴다 — 백오피스의 어두운 표 머리, 주황 단추는 가져오지 않았다(이 서비스 결이 아니다).
 // 2026-10-30(사용자 "그리드랑 폼이 같이 있으면 영역 분리가 모호, 구분선 부족, 탭도"): 조회 띠, 목록, 상세를 저마다 테두리 친 판으로 세우고
 // 상세 판은 제목 띠를 단다. 탭은 안 고른 탭도 테두리를 둬 탭으로 읽히게 하고, 고른 탭은 위에 파랑 줄.
-// 미리 보기처럼 어느 탭에서나 봐야 하는 것은 ScreenTabs 의 aside 로 탭 옆에 붙인다(탭 하나로 숨기면 탭을 오가야 보였다).
+// 미리 보기처럼 상세 내내 봐야 하는 것은 WithAside(탭이면 ScreenTabs 의 aside)로 상세 옆에 붙인다.
 import { useId, useRef, useState } from "react";
 import { cn } from "@/lib/cn";
 import { ChevronDownIcon } from "@/components/ui/icons";
@@ -116,13 +118,19 @@ export function ScreenTabs({ label, tabs, active, onChange, aside }: { label: st
       </div>
     </div>
   );
-  if (!aside) return tabsBox;
-  // 상세 판이 웬만큼만 넓어도 탭 오른쪽 기둥이다(아래로 내리면 있는지조차 몰랐다, 2026-10-30 사용자). 아주 좁을 때만 탭 아래. 기둥은 붙어 따라와 긴 탭을 내려도 보인다.
-  // 화면 폭이 아니라 상세 판 폭으로 가른다(@container) — 목록이 옆에 서 있어 화면 폭으로는 판 폭을 알 수 없다
+  return aside ? <WithAside aside={aside}>{tabsBox}</WithAside> : tabsBox;
+}
+
+/**
+ * 상세 옆 따라오는 기둥(미리 보기). 탭이 있든 없든 같은 자리에 선다.
+ * 상세 판이 웬만큼만 넓어도 오른쪽 기둥이다(아래로 내리면 있는지조차 몰랐다, 2026-10-30 사용자). 아주 좁을 때만 아래. 기둥은 붙어 따라와 긴 상세를 내려도 보인다.
+ * 화면 폭이 아니라 상세 판 폭으로 가른다(@container) — 목록이 옆에 서 있어 화면 폭으로는 판 폭을 알 수 없다
+ */
+export function WithAside({ aside, children }: { aside: React.ReactNode; children: React.ReactNode }) {
   return (
     <div className="@container">
       <div className="grid items-start gap-3 @min-[480px]:grid-cols-[minmax(0,1fr)_minmax(210px,40%)] @min-[900px]:grid-cols-[minmax(0,1fr)_300px]">
-        {tabsBox}
+        <div className="flex min-w-0 flex-col gap-3">{children}</div>
         <div className="min-w-0 @min-[480px]:sticky @min-[480px]:top-[calc(var(--header-h)+var(--admin-head-h,76px)+12px)] @min-[480px]:max-h-[calc(100svh-var(--header-h)-var(--admin-head-h,76px)-24px)]">{aside}</div>
       </div>
     </div>

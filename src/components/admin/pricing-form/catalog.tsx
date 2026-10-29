@@ -10,7 +10,7 @@ import type { Patch } from "@/components/admin/pricing-form";
 import { CopySection } from "@/components/admin/pricing-form/copy-section";
 import { PHASE_TONE } from "@/components/admin/pricing-form/phase-tone";
 import { PricingPreview } from "@/components/admin/pricing-form/preview";
-import { Field, FormSection, MasterDetail, ReadValue, ScreenTabs, SearchBand, SearchItem } from "@/components/admin/screen/layout";
+import { Field, FormSection, MasterDetail, ReadValue, SearchBand, SearchItem, WithAside } from "@/components/admin/screen/layout";
 import { DataGrid, type GridCol } from "@/components/admin/screen/data-grid";
 import { buttonClass } from "@/components/ui/button";
 import { NumberField } from "@/components/ui/number-field";
@@ -222,7 +222,6 @@ export function CatalogScreen({ value, saved, patch, selected, onSelect }: { val
   const [kind, setKind] = useState("all");
   const [sale, setSale] = useState("all");
   const [name, setName] = useState("");
-  const [tab, setTab] = useState("basic");
   const all = rowsOf(value);
   const savedRows = new Map(rowsOf(saved).map((r) => [r.key, JSON.stringify(r)]));
   const savedKeys = new Set(savedRows.keys());
@@ -257,27 +256,17 @@ export function CatalogScreen({ value, saved, patch, selected, onSelect }: { val
                 <span className={cn("text-[16px] font-extrabold text-ink", !current.active && "text-dim")}>{current.name || M.newProductName}</span>
                 <span className="text-[12px] text-dim">{M.rowKindLabels[current.kind]}</span>
               </p>
-              <ScreenTabs
-                label={M.listLabel}
-                active={tab}
-                onChange={setTab}
-                // 미리 보기는 어느 탭에서나 보인다(2026-10-30, 사용자 "탭 이동해야지만 보이네") — 값 탭에서 고친 금액도 바로 카드에 뜬다
-                aside={<PricingPreview value={value} tier={tier} />}
-                tabs={[
-                  { key: "basic", label: M.tabBasic, panel: <BasicTab value={value} patch={patch} rowKey={current.key} /> },
-                  { key: "price", label: M.tabPrice, panel: <PriceTab value={value} patch={patch} rowKey={current.key} /> },
-                  {
-                    key: "copy",
-                    label: M.tabCopy,
-                    panel: (
-                      <div className="flex min-w-0 flex-col gap-2">
-                        <p className="text-[12.5px] text-dim">{M.copyFor(TIER_LABELS[tier])}</p>
-                        <CopySection value={value} patch={patch} tier={tier} onTier={() => {}} bare />
-                      </div>
-                    ),
-                  },
-                ]}
-              />
+              {/* 탭을 걷고 묶음을 쌓는다 — 탭 셋에 칸이 몇 개뿐이라 탭은 칸을 숨기고 누를 일만 늘렸다(2026-10-30 사용자). 미리 보기는 옆 기둥 그대로 */}
+              <WithAside aside={<PricingPreview value={value} tier={tier} />}>
+                <BasicTab value={value} patch={patch} rowKey={current.key} />
+                <PriceTab value={value} patch={patch} rowKey={current.key} />
+                <FormSection title={M.tabCopy}>
+                  <div className="flex min-w-0 flex-col gap-2 @2xl:col-span-2">
+                    <p className="text-[12.5px] text-dim">{M.copyFor(TIER_LABELS[tier])}</p>
+                    <CopySection value={value} patch={patch} tier={tier} onTier={() => {}} bare />
+                  </div>
+                </FormSection>
+              </WithAside>
             </div>
           ) : (
             <p className="rounded-xl bg-surface-2 px-4 py-6 text-center text-[13px] text-dim">{M.pickHint}</p>
