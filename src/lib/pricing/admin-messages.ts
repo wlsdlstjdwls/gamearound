@@ -24,6 +24,12 @@ export const PRICING_ADMIN_MESSAGES = {
   errPriceNotBelow: "할인가가 정가보다 낮아야 해요",
   errTargetGone: "대상 상품이 없어요",
   errDuplicateName: "같은 이름의 상품이 있어요",
+  errBundleParts: "자리마다 구성 상품을 하나씩 골라 주세요",
+  /** 묶음 상세의 구성 상품 칸 */
+  fieldParts: "구성 상품",
+  partSlot: { indie_top: "인디 목록 고정 상품", promo_pin: "홍보 게시판 고정 상품" },
+  partNone: "고르기",
+  partOption: (name: string, days: number, price: string) => `${name} | ${days}일 | ${price}`,
   reset: "되돌리기",
   /** 툴바 조회로 서버 값을 다시 읽었을 때 상태줄 */
   reloaded: "저장된 값을 다시 불러왔어요",

@@ -101,17 +101,31 @@ export function perDay(amount: number, days: number): number {
  * 자리 하나짜리 상품 중 이 자리, 이 기간의 대표(판매 중인 것 먼저, 목록 순서대로). 같은 기간이 없으면 그 자리 첫 상품.
  * 묶음의 그을 값과 이용권 환산이 이 값을 낱개 정가로 쓴다
  */
-function singleFor(s: PricingSettings, slot: CatalogProduct["slots"][number], days?: number): CatalogProduct | null {
+export function singleFor(s: PricingSettings, slot: CatalogProduct["slots"][number], days?: number): CatalogProduct | null {
   const singles = s.products.filter((p) => !isBundleProduct(p) && p.slots[0] === slot);
   const ordered = [...singles.filter((p) => p.active), ...singles.filter((p) => !p.active)];
   return ordered.find((p) => days === undefined || p.days === days) ?? ordered[0] ?? null;
 }
 
 /** 묶음의 그을 값 — 같은 기간 낱개 둘을 정가로 따로 샀을 때의 합. 짝 낱개가 없으면 0(긋지 않는다) */
-export function bundleListPrice(s: PricingSettings, bundle: Pick<CatalogProduct, "slots" | "days"> | null = representative(s, "bundle")): number {
+export function bundleListPrice(s: PricingSettings, bundle: Pick<CatalogProduct, "slots" | "days" | "parts"> | null = representative(s, "bundle")): number {
   if (!bundle) return 0;
-  const parts = bundle.slots.map((slot) => singleFor(s, slot, bundle.days));
+  // 관리자가 고른 구성 상품이 먼저다. 고르지 않았거나(앞 판 저장값) 자리 수와 안 맞으면 같은 기간 낱개로
+  const picked = bundlePartsOf(s, bundle);
+  const parts = picked ?? bundle.slots.map((slot) => singleFor(s, slot, bundle.days));
   return parts.every(Boolean) ? parts.reduce((n, p) => n + (p?.amount ?? 0), 0) : 0;
+}
+
+/** 묶음이 고른 구성 상품(자리 순서). 하나라도 없거나 자리 수와 다르면 null */
+export function bundlePartsOf(s: PricingSettings, bundle: Pick<CatalogProduct, "slots" | "parts">): CatalogProduct[] | null {
+  if (!bundle.parts || bundle.parts.length !== bundle.slots.length) return null;
+  const found = bundle.slots.map((slot) => s.products.find((p) => bundle.parts?.includes(p.id) && !isBundleProduct(p) && p.slots[0] === slot) ?? null);
+  return found.every(Boolean) ? (found as CatalogProduct[]) : null;
+}
+
+/** 묶음으로 바꿀 때 채울 구성 상품 — 자리마다 같은 기간 낱개(없으면 그 자리 첫 낱개) */
+export function defaultBundleParts(s: PricingSettings, slots: CatalogProduct["slots"], days: number): string[] {
+  return slots.map((slot) => singleFor(s, slot, days)?.id).filter((id): id is string => Boolean(id));
 }
 
 /** 멤버십 이용권을 낱개 정가로 환산한 값(이용권 한 장 = 인디 목록 자리 하나 CREDIT_DAYS 일) */

@@ -30,3 +30,10 @@ describe("pricingErrors", () => {
     });
   });
 });
+
+describe("묶음 구성 상품", () => {
+  it("구성 상품을 고르지 않은 묶음은 저장 검사에 걸린다", () => {
+    const [a, b, bundle] = PRICING_DEFAULTS.products;
+    expect(pricingErrors({ ...PRICING_DEFAULTS, products: [a, b, { ...bundle, parts: [a.id] }] })).toEqual({ "products.2.parts": M.errBundleParts });
+  });
+});

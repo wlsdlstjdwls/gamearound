@@ -59,6 +59,11 @@ export const catalogProductSchema = z.object({
   days: z.number().int().min(1).max(MAX_PRODUCT_DAYS),
   amount: won,
   active: z.boolean(),
+  /**
+   * 묶음의 구성 상품 — 자리마다 낱개 상품 하나(2026-10-31, 사용자 "묶음이면 어떤 상품을 고를지 선택 가능해야"). 묶음의 그을 값(낱개 합)이 이 상품들의 값이다.
+   * 앞 판 저장값에는 없어 읽기에서는 비워 둘 수 있다 — 비면 같은 기간 낱개를 대신 쓴다(quote 의 bundleListPrice). 저장 검사는 묶음에 자리마다 하나를 요구한다(admin-validation)
+   */
+  parts: z.array(z.string().regex(PRODUCT_ID)).max(AD_SLOTS.length).optional(),
 });
 export type CatalogProduct = z.infer<typeof catalogProductSchema>;
 
@@ -155,7 +160,7 @@ export const PRICING_DEFAULTS: PricingSettings = {
   products: [
     { ...LEGACY_PRODUCTS[0], slots: ["indie_top"], amount: 6_900, active: true },
     { ...LEGACY_PRODUCTS[1], slots: ["promo_pin"], amount: 6_900, active: true },
-    { ...LEGACY_PRODUCTS[2], slots: ["indie_top", "promo_pin"], amount: 9_900, active: true },
+    { ...LEGACY_PRODUCTS[2], slots: ["indie_top", "promo_pin"], amount: 9_900, active: true, parts: [LEGACY_PRODUCTS[0].id, LEGACY_PRODUCTS[1].id] },
   ],
   membership: { amount: 19_900, active: true, boostCredits: 2 },
   copy: {

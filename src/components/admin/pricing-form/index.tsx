@@ -20,7 +20,8 @@ import { askChoice, askConfirm } from "@/components/ui/confirm-dialog";
 import { reportDirty } from "@/components/admin/program-shell/store";
 import { newPromotionId, PromotionsScreen, withNewPromotion } from "@/components/admin/pricing-form/promotions";
 import { PRICING_ADMIN_MESSAGES as M } from "@/lib/pricing/admin-messages";
-import { MEMBERSHIP_KEY, type PricingSettings } from "@/lib/pricing/settings";
+import { isBundleProduct, MEMBERSHIP_KEY, type PricingSettings } from "@/lib/pricing/settings";
+import { defaultBundleParts } from "@/lib/pricing/quote";
 import { pricingErrors } from "@/lib/pricing/admin-validation";
 import { firstError } from "@/lib/admin/validation";
 
@@ -42,8 +43,19 @@ function normalize(s: PricingSettings): PricingSettings {
   };
 }
 
+/** 지운 상품을 구성으로 쓰던 묶음에서 뺀다 — 그 묶음은 저장 검사(구성 상품 고르기)에 걸려 다시 고르게 된다 */
+function dropPart(products: PricingSettings["products"], id: string): PricingSettings["products"] {
+  return products.map((p) => (p.parts?.includes(id) ? { ...p, parts: p.parts.filter((x) => x !== id) } : p));
+}
+
 /** title: 화면 머리(저장 툴바)에 서는 제목. 페이지가 PageHead 대신 넘긴다 */
-export function PricingForm({ initial, part, title }: { initial: PricingSettings; part: "catalog" | "discounts"; title: string }) {
+/** 구성 상품을 고르지 않은 묶음(앞 판 저장값)은 같은 기간 낱개로 채워 연다 — 비워 두면 열자마자 저장 검사에 걸린다. 저장하면 이 값이 남는다 */
+function withBundleParts(s: PricingSettings): PricingSettings {
+  return { ...s, products: s.products.map((p) => (isBundleProduct(p) && !p.parts?.length ? { ...p, parts: defaultBundleParts(s, p.slots, p.days) } : p)) };
+}
+
+export function PricingForm({ initial: raw, part, title }: { initial: PricingSettings; part: "catalog" | "discounts"; title: string }) {
+  const [initial] = useState(() => withBundleParts(raw));
   const [saved, setSaved] = useState(initial);
   const [value, setValue] = useState(initial);
   const [note, setNote] = useState<{ tone: "success" | "error"; text: string } | null>(null);
@@ -132,7 +144,7 @@ export function PricingForm({ initial, part, title }: { initial: PricingSettings
         if (!(await askConfirm(M.deleteNewConfirm(newProduct.name || M.newProductName), { confirmLabel: M.removePromo, tone: "danger" }))) return;
         const rest = value.products.filter((p) => p.id !== newProduct.id);
         setItem(rest[0]?.id ?? MEMBERSHIP_KEY);
-        patch((d) => ({ ...d, products: d.products.filter((p) => p.id !== newProduct.id), promotions: d.promotions.filter((p) => p.target !== newProduct.id) }));
+        patch((d) => ({ ...d, products: dropPart(d.products.filter((p) => p.id !== newProduct.id), newProduct.id), promotions: d.promotions.filter((p) => p.target !== newProduct.id) }));
       }
     : undefined;
   const current = value.promotions.find((p) => p.id === promo && !saved.promotions.some((x) => x.id === p.id));
@@ -165,7 +177,7 @@ export function PricingForm({ initial, part, title }: { initial: PricingSettings
       // 새로 더한 줄을 버리면 그 줄을 겨눈 프로모션도 함께 간다(겨눌 상품이 없는 프로모션은 저장 검사에 걸린다)
       return old
         ? { ...d, products: d.products.map((p) => (p.id === key ? old : p)) }
-        : { ...d, products: d.products.filter((p) => p.id !== key), promotions: d.promotions.filter((p) => p.target !== key) };
+        : { ...d, products: dropPart(d.products.filter((p) => p.id !== key), key), promotions: d.promotions.filter((p) => p.target !== key) };
     });
   const moveTo = (setRow: (k: string | null) => void, from: string | null) => async (to: string | null) => {
     if (to === from || from === null || rowOf(value, from) === rowOf(saved, from)) return setRow(to);

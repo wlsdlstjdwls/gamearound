@@ -10,7 +10,7 @@ import type { Patch } from "@/components/admin/pricing-form";
 import { CopySection } from "@/components/admin/pricing-form/copy-section";
 import { StatusTag } from "@/components/admin/pricing-form/status-tag";
 import { PricingPreview } from "@/components/admin/pricing-form/preview";
-import { CodeName, Field, FormSection, MasterDetail, ReadValue, SearchBand, SearchItem, WithAside } from "@/components/admin/screen/layout";
+import { CodeName, Field, FieldPair, FormSection, MasterDetail, ReadValue, SearchBand, SearchItem, WithAside } from "@/components/admin/screen/layout";
 import { DataGrid, type GridCol } from "@/components/admin/screen/data-grid";
 import { ProgramLink } from "@/components/admin/screen/program-link";
 import { ADMIN_NAV } from "@/lib/admin/messages";
@@ -23,7 +23,7 @@ import { cn } from "@/lib/cn";
 import { formatPrice } from "@/lib/currency";
 import { ROUTES } from "@/lib/routes";
 import { PRICING_ADMIN_MESSAGES as M, SLOT_CHOICES, slotChoiceOf, TIER_LABELS, type SlotChoice } from "@/lib/pricing/admin-messages";
-import { bundleListPrice, discountRate, promotionStatus } from "@/lib/pricing/quote";
+import { bundleListPrice, defaultBundleParts, discountRate, promotionStatus } from "@/lib/pricing/quote";
 import { isBundleProduct, MEMBERSHIP_KEY, type CatalogProduct, type PricingSettings, type TierKey } from "@/lib/pricing/settings";
 
 type Kind = SlotChoice | "membership";
@@ -167,10 +167,15 @@ function BasicTab({ value, patch, rowKey, errors }: { value: PricingSettings; pa
           hideLabel
           size="lg"
           value={slotChoiceOf(p.slots)}
-          onChange={(v) => set({ slots: [...SLOT_SETS[v as SlotChoice]] })}
+          onChange={(v) => {
+            const slots = [...SLOT_SETS[v as SlotChoice]];
+            // 묶음으로 바꾸면 구성 상품을 같은 기간 낱개로 채워 둔다. 낱개로 돌리면 구성은 뜻이 없어 걷는다
+            set({ slots, parts: slots.length > 1 ? defaultBundleParts(value, slots, p.days) : undefined });
+          }}
           options={SLOT_CHOICES.map((c) => ({ value: c, label: M.slotChoices[c] }))}
         />
       </Field>
+      {isBundleProduct(p) && <PartsField value={value} product={p} set={set} error={errors[`${at}.parts`]} />}
       <Field label={M.fieldDays} htmlFor={`days-${p.id}`} required>
         <NumberField id={`days-${p.id}`} label={M.fieldDays} hideLabel value={p.days} onValue={(n) => set({ days: n })} error={errors[`${at}.days`]} trailing={<span className="pr-2 text-[13px] text-dim">{M.daysUnit}</span>} className="text-right tabular-nums" compact />
       </Field>
@@ -182,6 +187,34 @@ function BasicTab({ value, patch, rowKey, errors }: { value: PricingSettings; pa
         </div>
       </Field>
     </FormSection>
+  );
+}
+
+/**
+ * 묶음의 구성 상품 — 자리마다 낱개 상품 하나를 고른다(2026-10-31 사용자 "묶음이면 어떤 상품을 고를지 선택 가능해야").
+ * 고른 상품의 값 합이 낱개 합(그을 값)이 된다. 고를 수 있는 것은 그 자리 하나짜리 상품뿐이다 — 판매 중지 상품도 고를 수 있게 둔다(기간 한정으로 잠시 끈 낱개)
+ */
+function PartsField({ value, product, set, error }: { value: PricingSettings; product: CatalogProduct; set: (next: Partial<CatalogProduct>) => void; error?: string }) {
+  const pick = (slot: CatalogProduct["slots"][number]) => {
+    const singles = value.products.filter((x) => !isBundleProduct(x) && x.slots[0] === slot);
+    const current = singles.find((x) => product.parts?.includes(x.id))?.id ?? "";
+    return (
+      <FormSelect
+        name={`part-${product.id}-${slot}`}
+        label={M.partSlot[slot]}
+        hideLabel
+        size="lg"
+        value={current}
+        onChange={(id) => set({ parts: product.slots.map((s) => (s === slot ? id : (value.products.find((x) => product.parts?.includes(x.id) && x.slots[0] === s && !isBundleProduct(x))?.id ?? ""))).filter(Boolean) })}
+        // 아직 안 골랐으면(구성 상품을 지운 뒤) 빈 칸을 첫 줄로 둔다 — 고르기 칸이 아무 상품이나 골라 둔 것처럼 보이지 않게
+        options={[...(current ? [] : [{ value: "", label: M.partNone }]), ...singles.map((x) => ({ value: x.id, label: M.partOption(x.name, x.days, formatPrice(x.amount)) }))]}
+      />
+    );
+  };
+  return (
+    <Field label={M.fieldParts} required wide error={error}>
+      <FieldPair joiner="+" from={pick("indie_top")} to={pick("promo_pin")} />
+    </Field>
   );
 }
 

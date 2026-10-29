@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { bundleListPrice, discountRate, perDay, priceBook, promotionLive, promotionPhase, promotionStatus, quote } from "@/lib/pricing/quote";
+import { bundleListPrice, bundlePartsOf, discountRate, perDay, priceBook, promotionLive, promotionPhase, promotionStatus, quote } from "@/lib/pricing/quote";
 import { PRICING_DEFAULTS, parsePricingSettings, fillCopy, type PricingSettings, type Promotion } from "@/lib/pricing/settings";
 
 const now = new Date("2026-10-28T03:00:00Z");
@@ -115,5 +115,19 @@ describe("관리자가 만드는 상품 목록", () => {
     expect(parsePricingSettings(withProducts([{ ...thirty, id: "boost_indie_7d" }]))).toBe(PRICING_DEFAULTS);
     expect(parsePricingSettings(withProducts([{ ...thirty, slots: [] }]))).toBe(PRICING_DEFAULTS);
     expect(parsePricingSettings(withProducts([thirty])).products).toHaveLength(4);
+  });
+});
+
+describe("묶음 구성 상품 값", () => {
+  it("고른 구성 상품의 값 합이 낱개 합이다", () => {
+    const [a, b, bundle] = PRICING_DEFAULTS.products;
+    const pricier = { ...a, id: "boost_indie_14d", days: 14, amount: 12_000 };
+    const s = { ...PRICING_DEFAULTS, products: [a, b, pricier, { ...bundle, parts: [pricier.id, b.id] }] };
+    expect(bundleListPrice(s, s.products[3])).toBe(18_900);
+    expect(bundlePartsOf(s, s.products[3])?.map((p) => p.id)).toEqual([pricier.id, b.id]);
+  });
+  it("구성 상품이 없으면 같은 기간 낱개로 센다", () => {
+    const [a, b, bundle] = PRICING_DEFAULTS.products;
+    expect(bundleListPrice({ ...PRICING_DEFAULTS, products: [a, b, { ...bundle, parts: undefined }] }, { ...bundle, parts: undefined })).toBe(13_800);
   });
 });
