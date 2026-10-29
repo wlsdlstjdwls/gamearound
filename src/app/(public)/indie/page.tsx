@@ -1,12 +1,12 @@
 // /indie — 내가 만든 게임(기획서 v2.0 S-18, 목업 mgPage). 운영진이 승인한 인디 게임만 최신순으로 세운다.
 //
 // 캐시를 걸지 않는다(services/indie/read 주석). 올린 사람이 곧장 자기 글을 보러 오고, 숨긴 글은 바로 빠져야 한다.
-// 배치는 목업 그대로: 제목과 "내 게임 등록" 단추, 설명 한 줄, 명예의 전당 안내 띠, 검색 줄, 카드 격자, 쪽 번호.
+// 배치: 제목과 "내 게임 등록" 단추, 설명 한 줄, 명예의 전당 안내 띠, 주목할 게임(유료), 검색 줄, 카드 격자, 쪽 번호.
 // 예전의 어두운 머리 판(IndieListHero)은 내렸다 — 목업은 이 화면을 게시판 형제로 그린다. 판 컴포넌트는 지우지 않고 둔다.
 // 개발 단계 칩은 목업에 없지만 남겼다(검색 줄 아래 한 줄) — 데모가 있는 게임만 보고 싶은 사람이 쓰던 기능이다.
 // 검색은 GET 폼이라 자바스크립트 없이도 간다 — 주소(?q=, ?scope=)가 곧 상태다(게시판 검색과 같은 규칙).
 // 검색 범위 드롭다운은 목업 bsbar 처럼 검색창 앞에 선다(전체, 제목, 내용, 개발사 — lib/indie/query).
-// 머리 바로 아래 "주목할 게임" 은 유료 자리다(2026-10-27, services/promotions). 카드마다 "광고" 를 달고, 거름 없는 첫 쪽에서만 선다 —
+// 명예의 전당 안내 띠 아래 "주목할 게임" 은 유료 자리다(2026-10-27, services/promotions). 카드마다 "광고" 를 달고, 거름 없는 첫 쪽에서만 선다 —
 // 단계를 골랐거나 검색 중인 사람에게 조건과 상관없는 카드를 끼워 넣지 않는다. 명예의 전당, 슈퍼루키는 돈과 상관없이 그대로다.
 import { HOME_GRID_CLASS } from "@/lib/games/grid";
 import { DbUnavailable } from "@/components/db-unavailable";
@@ -88,22 +88,8 @@ export default async function IndiePage({ searchParams }: Props) {
     <Page gap={20}>
       {head}
 
-      {featured.length > 0 && (
-        <section aria-labelledby="indie-featured" className="flex flex-col gap-3">
-          <SectionHead id="indie-featured" title={PM.featuredTitle} />
-          <ul className={HOME_GRID_CLASS}>
-            {featured.map(({ boostId, item: post }, i) => (
-              <li key={post.slug} className="enter-item" style={stagger(i)}>
-                <AdTrack boostId={boostId} className="h-full">
-                  <IndieCard post={post} badge={<AdLabel />} />
-                </AdTrack>
-              </li>
-            ))}
-          </ul>
-        </section>
-      )}
-
       {/* 명예의 전당 안내(기획서 v2.0 S-18 "명예의 전당에 올라보세요") — 승인된 게임만 서는 화면이라 다음 목표를 함께 말한다.
+          2026-10-29(사용자): 유료 칸 "주목할 게임" 아래에 묻혀 있어 그 위, 머리 바로 아래로 올렸다.
           2026-10-28(사용자: "좀 더 눈에 띄게"): 옅은 파랑 띠가 검색 줄과 같은 격으로 묻혀, 어두운 판 + 트로피 + 채운 단추로 바꿨다.
           명예의 전당 머리 판에 쓰던 빛 웅덩이(.hero-beam.beam-cool)가 판 위를 천천히 오간다 */}
       <aside className="relative isolate flex flex-col items-start gap-4 overflow-hidden rounded-[var(--radius-panel)] bg-ink px-5 py-5 text-on-ink sm:flex-row sm:items-center sm:gap-5 sm:px-6">
@@ -119,6 +105,21 @@ export default async function IndiePage({ searchParams }: Props) {
           {M.hofBannerCta}
         </Link>
       </aside>
+
+      {featured.length > 0 && (
+        <section aria-labelledby="indie-featured" className="flex flex-col gap-3">
+          <SectionHead id="indie-featured" title={PM.featuredTitle} />
+          <ul className={HOME_GRID_CLASS}>
+            {featured.map(({ boostId, item: post }, i) => (
+              <li key={post.slug} className="enter-item" style={stagger(i)}>
+                <AdTrack boostId={boostId} className="h-full">
+                  <IndieCard post={post} badge={<AdLabel />} />
+                </AdTrack>
+              </li>
+            ))}
+          </ul>
+        </section>
+      )}
 
       <NavPendingScope>
         <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
