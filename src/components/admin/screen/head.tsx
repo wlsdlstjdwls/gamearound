@@ -218,7 +218,8 @@ export function AdminScreenHead({
       <div className="flex min-w-0 flex-col gap-0.5 py-1">
         <div className="flex min-w-0 flex-wrap items-baseline gap-x-2">
           <h1 className="text-[20px] font-extrabold tracking-[-0.02em] text-ink">{title}</h1>
-          {path.length > 0 && (
+          {/* 묶음 없는 칸(대시보드)은 경로가 곧 제목이라 두 번 적지 않는다 */}
+          {path.length > 1 && (
             <nav aria-label={M.pathLabel} className="text-[12px] font-medium text-dim">
               {path.join(" > ")}
             </nav>
