@@ -23,6 +23,18 @@ export function richPlainText(html: string): string {
     .trim();
 }
 
+/** 본문 첫 그림 주소. 홍보 고정 카드의 썸네일로 쓴다(2026-10-29). https 만 받는다(저장 전 거르기를 거친 HTML 이지만 한 번 더) */
+export function firstImageSrc(html: string): string | null {
+  const m = /<img\b[^>]*\bsrc=["'](https:\/\/[^"']+)["']/i.exec(html);
+  return m ? m[1] : null;
+}
+
+/** 목록 카드에 세우는 본문 앞부분. 줄바꿈을 한 칸으로 접고 max 자에서 자른다 */
+export function postExcerpt(body: string, max: number): string {
+  const text = (isRichBody(body) ? richPlainText(body) : body).replace(/\s+/g, " ").trim();
+  return text.length > max ? `${text.slice(0, max).trimEnd()}...` : text;
+}
+
 /** 본문에 그림이 있나 — 글자 없이 그림만 올린 글도 본문이 있는 것으로 본다 */
 export function hasPostImage(html: string): boolean {
   return /<img\s/i.test(html);

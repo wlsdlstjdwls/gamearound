@@ -7,10 +7,11 @@ import "server-only";
 import { and, asc, desc, eq, gt, inArray, isNull, lte, or, sql } from "drizzle-orm";
 import { getDb } from "@/server/db/client";
 import { createdBy, updatedBy } from "@/server/db/audit";
-import { indiePosts, posts, promotionBoosts, promotionImpressions, users, type PromoSlot, type PromoSource, type PromoTargetKind } from "@/server/db/schema";
+import { games, indiePosts, posts, promotionBoosts, promotionImpressions, users, type PromoSlot, type PromoSource, type PromoTargetKind } from "@/server/db/schema";
 import { boostEnd, boostState, rotateForWindow, SLOT_CAPACITY, SLOT_TARGET, type BoostState } from "@/lib/promo/boost";
 import { PROMO_MESSAGES as M } from "@/lib/promo/messages";
 import { postPath } from "@/lib/community/constants";
+import { firstImageSrc, postExcerpt } from "@/lib/community/rich-text";
 import { impressionSum } from "./columns";
 import { indiePath } from "@/lib/routes";
 import type { IndieCardDto } from "@/lib/indie/dto";
@@ -80,11 +81,20 @@ export async function listFeaturedIndie(): Promise<Array<Featured<IndieCardDto>>
   });
 }
 
+/** 홍보 고정 카드 본문 앞부분 길이. 카드 두 줄을 채울 만큼 */
+const PIN_EXCERPT_MAX = 90;
+
+/**
+ * 홍보 고정 카드 한 장(2026-10-29 사용자: 맨 줄이라 "너무 밋밋하고 눈에 안 띈다"). 줄 정보에 썸네일과 본문 앞부분을 더한다.
+ * 썸네일은 본문 첫 그림, 없으면 관련 게임 커버다. 둘 다 없으면 화면이 글머리 그림으로 채운다.
+ */
+export type PromoPinDto = PostRowDto & { cover: string | null; excerpt: string };
+
 /** 게시판 홍보 목록 위 고정 글 */
-export async function listPinnedPromoPosts(): Promise<Array<Featured<PostRowDto>>> {
+export async function listPinnedPromoPosts(): Promise<Array<Featured<PromoPinDto>>> {
   const [rows, boosts] = await Promise.all([
     getDb()
-      .select(rowColumns)
+      .select({ ...rowColumns, body: posts.body, gameCover: sql<string | null>`(select ${games.coverUrl} from ${games} where ${games.id} = ${posts.gameId})` })
       .from(posts)
       .innerJoin(users, eq(users.id, posts.authorUserId))
       .where(and(isPublicPromo, inArray(posts.id, activeTargets("promo_pin"))))
@@ -93,7 +103,7 @@ export async function listPinnedPromoPosts(): Promise<Array<Featured<PostRowDto>
   ]);
   return rotateForWindow(rows, SLOT_CAPACITY.promo_pin, new Date()).flatMap((r) => {
     const boostId = boosts.get(r.id);
-    return boostId ? [{ boostId, item: toRow(r) }] : [];
+    return boostId ? [{ boostId, item: { ...toRow(r), cover: firstImageSrc(r.body) ?? r.gameCover, excerpt: postExcerpt(r.body, PIN_EXCERPT_MAX) } }] : [];
   });
 }
 

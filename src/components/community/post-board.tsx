@@ -10,6 +10,7 @@ import Link from "next/link";
 import { cache, Suspense } from "react";
 import { BoardControls } from "@/components/community/board-controls";
 import { PostList } from "@/components/community/post-list";
+import { PromoPins } from "@/components/promo/promo-pins";
 import { WriteLink } from "@/components/community/write-link";
 import { BoardGuide } from "@/components/lounge/board-guide";
 import { DbUnavailable } from "@/components/db-unavailable";
@@ -24,8 +25,7 @@ import { boardHref, type BoardQuery } from "@/lib/community/query";
 import { BOARD_GUIDE_MESSAGES as G } from "@/lib/lounge/messages";
 import { nullIfDbUnavailable } from "@/lib/db-errors";
 import type { PostCategory } from "@/server/db/schema";
-import type { PostRowDto } from "@/server/services/community";
-import type { Featured } from "@/server/services/promotions";
+import type { Featured, PromoPinDto } from "@/server/services/promotions";
 import { getBoardHome, listPosts } from "@/server/services/community";
 
 type Props = {
@@ -46,7 +46,7 @@ type Props = {
    * 목록 위 유료 고정 줄(2026-10-27, 홍보 게시판, services/promotions). 아무 조건 없이 첫 쪽을 볼 때만 선다 —
    * 검색, 인기글, 유형 거름 결과 위에 고정 글이 서면 고른 조건과 상관없는 글이 맨 위에 끼어든다
    */
-  pinned?: Promise<Array<Featured<PostRowDto>>>;
+  pinned?: Promise<Array<Featured<PromoPinDto>>>;
 };
 
 /**
@@ -116,7 +116,7 @@ function isPlainFirstPage(q: BoardQuery): boolean {
   return !q.q && !q.game && !q.type && q.tab === "all" && q.page === 1;
 }
 
-async function Results({ categories, base, query, pinned }: { categories: readonly PostCategory[]; base: string; query: BoardQuery; pinned?: Promise<Array<Featured<PostRowDto>>> }) {
+async function Results({ categories, base, query, pinned }: { categories: readonly PostCategory[]; base: string; query: BoardQuery; pinned?: Promise<Array<Featured<PromoPinDto>>> }) {
   const [page, pins] = await Promise.all([loadPage(categories, query), pinned && isPlainFirstPage(query) ? pinned.catch(() => []) : []]);
   if (!page) return <DbUnavailable retryHref={base} />;
   const empty = query.q
@@ -127,11 +127,7 @@ async function Results({ categories, base, query, pinned }: { categories: readon
   return (
     <>
       <PendingRegion>
-        {pins.length > 0 && (
-          <div className="mb-1 border-b border-line pb-1">
-            <PostList bare posts={pins.map((p) => p.item)} adBoostIds={pins.map((p) => p.boostId)} />
-          </div>
-        )}
+        {pins.length > 0 && <PromoPins pins={pins} />}
         <PostList bare posts={page.items} rank={query.tab === "popular"} rankFrom={(page.page - 1) * POSTS_PAGE_SIZE + 1} empty={empty} />
       </PendingRegion>
       <Pagination page={page.page} totalPages={page.totalPages} hrefFor={(n) => boardHref(base, query, { page: n })} />

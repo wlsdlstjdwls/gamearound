@@ -6,6 +6,9 @@ export const PROMO_MESSAGES = {
   /** 유료 자리 카드, 줄에 붙는 표시(기획서 4.1, 표시광고법: 돈을 받은 노출은 알아볼 수 있게) */
   ad: "광고",
   featuredTitle: "주목할 게임",
+  /** 홍보 게시판 위 고정 카드 묶음의 머리(2026-10-29) */
+  pinnedTitle: "지금 주목받는 홍보",
+  pinnedCover: (title: string) => `${title} 대표 그림`,
 
   adminTitle: "유료 노출",
   adminLead: "인디 목록 맨 위와 홍보 게시판 위에 거는 유료 자리예요. 결제가 붙기 전에는 여기서 직접 걸어 효과를 재요. 숨기거나 반려한 글은 걸려 있어도 보이지 않아요.",

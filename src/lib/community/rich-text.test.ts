@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { hasPostImage, isRichBody, richPlainText } from "@/lib/community/rich-text";
+import { firstImageSrc, hasPostImage, isRichBody, postExcerpt, richPlainText } from "@/lib/community/rich-text";
 import { sanitizePostHtml } from "@/lib/community/sanitize";
 
 const BLOB = "https://abc.public.blob.vercel-storage.com/posts/shot-x1.webp";
@@ -52,5 +52,16 @@ describe("hasPostImage", () => {
   it("그림이 있는지 본다", () => {
     expect(hasPostImage(`<p><img src="${BLOB}"></p>`)).toBe(true);
     expect(hasPostImage("<p>글</p>")).toBe(false);
+  });
+
+  it("첫 그림 주소를 고르고 https 가 아니면 버린다", () => {
+    expect(firstImageSrc(`<p>앞</p><img alt="a" src="${BLOB}"><img src="https://x.test/2.png">`)).toBe(BLOB);
+    expect(firstImageSrc(`<img src="http://x.test/1.png">`)).toBeNull();
+    expect(firstImageSrc("<p>글만</p>")).toBeNull();
+  });
+
+  it("본문 앞부분을 한 줄로 접고 자른다", () => {
+    expect(postExcerpt("<p>첫 줄</p><p>둘째   줄</p>", 100)).toBe("첫 줄 둘째 줄");
+    expect(postExcerpt("옛 글자 본문입니다", 4)).toBe("옛 글자...");
   });
 });
