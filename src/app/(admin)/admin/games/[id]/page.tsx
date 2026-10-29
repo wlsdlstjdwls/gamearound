@@ -1,5 +1,4 @@
 // /admin/games/[id] — 데이터 정정(§4.4), 소스 매핑(§4.2), 정정 이력
-import { AdminLead } from "@/components/admin/admin-lead";
 import { formatPrice } from "@/lib/currency";
 import type { Metadata } from "next";
 import Link from "next/link";
@@ -96,8 +95,6 @@ export default async function AdminGamePage({ params }: { params: Promise<{ id: 
           {game.titleEn} | <code className="text-xs">{game.slug}</code> |{" "}
           <Link href={`/games/${game.slug}`} className="text-acc hover:underline">{M.openPublic}</Link>
         </p>
-        {/* 이 화면에서 고친 값이 다음 수집에 날아가지 않는다는 사실이 이 화면의 전제다 */}
-        <AdminLead>{M.lead}</AdminLead>
       </header>
 
       <section className="flex flex-col gap-3">

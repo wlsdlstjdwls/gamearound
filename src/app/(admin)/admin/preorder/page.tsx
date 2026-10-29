@@ -23,7 +23,7 @@ export default async function AdminPreorderPage() {
 
   return (
     <div className="flex flex-col gap-5">
-      <AdminScreenHead title={ADMIN_NAV.preorder} lead={A.lead} count={rows.length} />
+      <AdminScreenHead title={ADMIN_NAV.preorder} count={rows.length} />
 
       {rows.length === 0 ? (
         <p className="rounded-xl bg-surface-2 px-4 py-3.5 text-[13px] text-mut">{A.empty}</p>

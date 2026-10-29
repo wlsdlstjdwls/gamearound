@@ -10,7 +10,6 @@
 // 입력, 삭제, 저장은 그 일을 하는 화면(폼)이 함수를 넘길 때만 켜진다.
 import { useEffect, useRef, useState, useTransition } from "react";
 import { usePathname, useRouter } from "next/navigation";
-import { AdminLead } from "@/components/admin/admin-lead";
 import { GROUPS, isActive } from "@/components/admin/admin-nav-items";
 import { useAdminStatus } from "@/components/admin/screen/status";
 import { useTooltip } from "@/components/ui/tooltip";
@@ -119,15 +118,13 @@ function usePath(): string[] {
 }
 
 export function AdminScreenHead({
-  title,
-  lead,
+  title,
   count,
   note,
   actions,
   tools = {},
 }: {
   title: string;
-  lead?: React.ReactNode;
   /** 조회된 건수. 상태줄에 "N건 조회됐어요" 로 남는다 */
   count?: number;
   /** 제목 옆 작은 글(건수 등) */
@@ -231,7 +228,6 @@ export function AdminScreenHead({
           )}
           {note && <span className="text-[12.5px] text-dim">{note}</span>}
         </div>
-        {lead && <AdminLead>{lead}</AdminLead>}
       </div>
       <div className="flex flex-wrap items-center gap-2">
         {actions}

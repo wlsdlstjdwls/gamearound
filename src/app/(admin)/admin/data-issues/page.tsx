@@ -21,7 +21,7 @@ export default async function AdminDataIssuesPage() {
 
   return (
     <div className="flex flex-col gap-8">
-      <AdminScreenHead title={ADMIN_NAV.dataIssues} lead={M.lead} count={open.length} />
+      <AdminScreenHead title={ADMIN_NAV.dataIssues} count={open.length} />
       <DataIssueList rows={open} />
 
       <section className="flex flex-col gap-3">

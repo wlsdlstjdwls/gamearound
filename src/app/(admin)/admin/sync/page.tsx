@@ -207,7 +207,6 @@ export default async function AdminSyncOverviewPage() {
     <section className="flex flex-col gap-4">
       <AdminScreenHead
         title={ADMIN_NAV.overview}
-        lead={SYNC_MESSAGES.lead}
         count={rows.length}
         actions={
           repo ? (

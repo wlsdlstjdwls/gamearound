@@ -31,7 +31,6 @@ export default async function AdminMembershipsPage() {
     <div className="flex flex-col gap-5">
       <AdminScreenHead
         title={ADMIN_NAV.memberships}
-        lead={M.adminLead}
         count={rows.length}
         actions={
           <Link href={ROUTES.adminPayments} className={buttonClass({ variant: "secondary", size: "sm" })}>

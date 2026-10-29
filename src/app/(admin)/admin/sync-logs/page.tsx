@@ -71,7 +71,7 @@ export default async function SyncLogsPage({ searchParams }: { searchParams: Pro
   return (
     <NavPendingScope>
     <section className="flex flex-col gap-4">
-      <AdminScreenHead title={ADMIN_NAV.logs} lead={LOG_MESSAGES.lead} count={logs.length} />
+      <AdminScreenHead title={ADMIN_NAV.logs} count={logs.length} />
       {/* 조회조건 — 백오피스의 조회조건 띠 자리. 스토어를 고르면 그 스토어 실행만 */}
       <header className="flex flex-wrap items-end justify-between gap-2">
         <div className="flex flex-wrap gap-1 text-xs">

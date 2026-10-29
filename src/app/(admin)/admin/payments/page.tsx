@@ -20,7 +20,7 @@ export default async function AdminPaymentsPage() {
 
   return (
     <div className="flex flex-col gap-5">
-      <AdminScreenHead title={ADMIN_NAV.payments} lead={PM.adminLead} count={paid.length} />
+      <AdminScreenHead title={ADMIN_NAV.payments} count={paid.length} />
 
       <StatTiles
         tiles={[

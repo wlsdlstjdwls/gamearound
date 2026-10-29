@@ -27,16 +27,24 @@ export function useAdminStatus() {
 
 const TONE: Record<Tone, string> = { info: "text-mut", ok: "text-ok", error: "text-danger" };
 
-/** 판 바닥에 붙어 따라오는 줄(sticky). 높이가 작아 본문을 거의 가리지 않는다 */
+/**
+ * 판 바닥에 붙어 따라오는 줄(sticky). 높이가 작아 본문을 거의 가리지 않는다.
+ * 할 말이 생기기 전에는 보이지 않는다(2026-10-30, 사용자 "준비됐어요 같은 문구는 굳이?"). 낭독기 알림 자리는 그대로 둬야
+ * 첫 "조회됐어요" 도 읽히므로 줄을 지우지 않고 sr-only 로 접는다.
+ */
 export function AdminStatusBar() {
   const { status } = useAdminStatus();
   return (
     <div
       role="status"
       aria-label={M.statusLabel}
-      className="sticky bottom-0 z-10 -mx-4 -mb-4 flex min-h-8 items-center justify-between gap-3 rounded-b-[var(--radius-panel)] border-t border-line-soft bg-surface/95 px-4 text-[12px] backdrop-blur sm:-mx-5 sm:-mb-5 sm:px-5"
+      className={cn(
+        !status && "sr-only",
+        status &&
+          "sticky bottom-0 z-10 -mx-4 -mb-4 flex min-h-8 items-center justify-between gap-3 rounded-b-[var(--radius-panel)] border-t border-line-soft bg-surface/95 px-4 text-[12px] backdrop-blur sm:-mx-5 sm:-mb-5 sm:px-5",
+      )}
     >
-      <span className={cn("min-w-0 truncate", status ? TONE[status.tone] : "text-dim")}>{status?.text ?? M.ready}</span>
+      <span className={cn("min-w-0 truncate", status && TONE[status.tone])}>{status?.text}</span>
       {status && (
         <time className="shrink-0 tabular-nums text-dim-2" dateTime={new Date(status.at).toISOString()}>
           {new Date(status.at).toLocaleTimeString("ko-KR", { hour: "2-digit", minute: "2-digit", second: "2-digit" })}

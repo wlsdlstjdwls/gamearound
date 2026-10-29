@@ -128,7 +128,7 @@ export default async function AdminPostsPage({ searchParams }: Props) {
   return (
     <NavPendingScope>
       <div className="flex flex-col gap-5">
-        <AdminScreenHead title={ADMIN_NAV.posts} lead={M.lead} />
+        <AdminScreenHead title={ADMIN_NAV.posts} />
 
         <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
           <nav aria-label={M.title} className="flex flex-wrap gap-1.5">

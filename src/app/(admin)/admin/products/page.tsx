@@ -14,7 +14,6 @@ import { gamePath } from "@/lib/routes";
 import { requireRoleOrForbid } from "@/server/auth/guards";
 import { listSuggestedProductMatches } from "@/server/services/admin-products";
 import { AUTO_MATCH_THRESHOLD, PENDING_MATCH_THRESHOLD } from "@/server/sync/match";
-import { PRODUCT_MATCH_RECHECK_DAYS } from "@/server/sync/constants";
 import { PRODUCT_MATCH_MESSAGES, ADMIN_NAV } from "@/lib/admin/messages";
 import { PRODUCT_QUEUE_COLS } from "@/lib/admin/table-cols";
 
@@ -26,7 +25,7 @@ export default async function AdminProductMatchesPage() {
 
   return (
     <>
-      <AdminScreenHead title={ADMIN_NAV.products} lead={PRODUCT_MATCH_MESSAGES.lead(PRODUCT_MATCH_RECHECK_DAYS)} count={queue.length} />
+      <AdminScreenHead title={ADMIN_NAV.products} count={queue.length} />
 
       <section className="flex flex-col gap-3">
         <SectionHead

@@ -46,7 +46,7 @@ export default async function AdminPromotionsPage() {
 
   return (
     <div className="flex flex-col gap-5">
-      <AdminScreenHead title={ADMIN_NAV.promotions} lead={M.adminLead} count={rows.length} />
+      <AdminScreenHead title={ADMIN_NAV.promotions} count={rows.length} />
 
       <StatTiles
         tiles={[

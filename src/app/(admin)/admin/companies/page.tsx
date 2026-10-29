@@ -29,7 +29,7 @@ export default async function AdminCompaniesPage() {
 
   return (
     <div className="flex flex-col gap-8">
-      <AdminScreenHead title={ADMIN_NAV.companies} lead={COMPANY_MESSAGES.lead} count={pending.length} />
+      <AdminScreenHead title={ADMIN_NAV.companies} count={pending.length} />
       <section className="flex flex-col gap-3">
 
         <header className="flex flex-wrap items-end justify-between gap-2">
