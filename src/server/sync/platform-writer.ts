@@ -44,7 +44,8 @@ const NO_DISCOUNT: DiscountMeta = { discountStartsAt: null, discountEndsAt: null
  *
  * **맞바꾼 것**: 정가가 있는 물건을 진짜 0원으로 푸는 배포(에픽 무료 배포)도 같이 버려진다.
  * 우리 데이터에서 그런 배포가 잡힌 적은 아직 없다(값 0 스냅샷 1,012건 중 정가가 있는 것은 위 26건뿐,
- * 에픽 146건은 전부 정가도 0 인 부분 무료 게임이었다). 살려야 할 날이 오면
+ * 에픽 146건은 정가도 0 이었다 — 다만 그중 출시일 없는 것은 무료가 아니라 값이 안 붙은 상품이라 어댑터가 따로 비운다(adapters/epic toEpicSnapshot,
+ * 2026-10-29). 살려야 할 날이 오면
  * "연속 두 회차가 0 이면 받아들인다" 로 바꾼다 — 그러려면 직전 회차의 0 을 기억할 자리가 필요하다.
  */
 export function priceMisread(snapshot: StoreSnapshot, existingListPrice: number | null | undefined): boolean {

@@ -121,7 +121,13 @@ function appliedRule(offer: EpicOffer): { name: string | null; startsAt: string 
 /** 오퍼 → StoreSnapshot. KRW 가 아니면 가격을 비워 둔다(지역 미판매) */
 export function toEpicSnapshot(offer: EpicOffer, titleEn?: string | null): StoreSnapshot {
   const total = offer.price?.totalPrice;
-  const krw = total && (total.currencyCode ?? "KRW") === "KRW";
+  const releaseDate = epicReleaseDate(offer.releaseDate) ?? epicReleaseDate(offer.effectiveDate);
+  // 정가도 판매가도 0 인데 출시일이 없으면 무료가 아니라 값이 아직 안 붙은 상품이다 — Epic 은 미출시, 미정 상품에도 0/0 을 준다.
+  // 2026-10-29 실측: 0원 Epic 행 115건 중 출시일 있는 14건은 실제 무료작(다른 스토어도 무료), 출시일 없는 101건에는
+  // KINGDOM HEARTS IV(미출시), Replaced(스팀 29,250원)가 섞여 "무료" 로 떴다. 출시일 없는 진짜 무료작도 값이 비게 되지만
+  // 화면이 "값 없음" 으로 보이는 쪽이 유료작을 0원으로 보이는 쪽보다 덜 틀린다
+  const unpriced = total !== undefined && total.originalPrice === 0 && total.discountPrice === 0 && releaseDate === null;
+  const krw = total && !unpriced && (total.currencyCode ?? "KRW") === "KRW";
   // 통화 최소 단위로 오는 값이라 자릿수만큼 나눈다. KRW 는 decimals=0 이지만 계약을 믿지 않고 계산한다
   const scale = 10 ** (total?.currencyInfo?.decimals ?? 0);
   const listPrice = krw && total ? Math.round(total.originalPrice / scale) : null;
@@ -148,7 +154,7 @@ export function toEpicSnapshot(offer: EpicOffer, titleEn?: string | null): Store
     // 둘이 같은 게임이 많아 오래 티가 안 났는데, 예약을 먼저 연 게임은 effectiveDate 가 예약 시작일이다 —
     // Rayman Legends Retold 는 effectiveDate 6월 2일, releaseDate 12월 3일이었고 출시 예정 게임 36건이 이렇게 과거로 앉았다.
     // effectiveDate 는 releaseDate 가 없을 때만 쓴다(EXODUS 는 반대로 effectiveDate 가 2099 미정이고 releaseDate 가 있었다)
-    releaseDate: epicReleaseDate(offer.releaseDate) ?? epicReleaseDate(offer.effectiveDate),
+    releaseDate,
     contentType: EPIC_DLC_OFFER_TYPES.has(offer.offerType ?? "") ? "dlc" : "game",
     // Epic 독점작은 Steam 에 없어 이 스냅샷으로 게임 마스터를 새로 만든다 → meta 가 있어야 한다.
     //

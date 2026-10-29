@@ -154,6 +154,15 @@ describe("toEpicSnapshot", () => {
     expect(snap.currentPrice).toBe(20);
   });
 
+  it("0/0 인데 출시일이 없으면 무료가 아니라 값 없음 (2026-10-29 KINGDOM HEARTS IV)", () => {
+    const zero = { totalPrice: { discountPrice: 0, originalPrice: 0, currencyCode: "KRW", currencyInfo: { decimals: 0 } }, lineOffers: [] };
+    const tba = toEpicSnapshot(offer({ price: zero, effectiveDate: "2099-01-01T00:00:00.000Z", releaseDate: null }));
+    expect(tba.currentPrice).toBeNull();
+    expect(tba.listPrice).toBeNull();
+    const free = toEpicSnapshot(offer({ price: zero }));
+    expect(free.currentPrice).toBe(0);
+  });
+
   it("DLC 오퍼는 contentType 이 dlc", () => {
     expect(toEpicSnapshot(offer({ offerType: "ADD_ON" })).contentType).toBe("dlc");
   });
