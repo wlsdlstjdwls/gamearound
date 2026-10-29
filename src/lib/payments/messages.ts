@@ -106,6 +106,28 @@ export const PAYMENT_MESSAGES = {
   adminColPaidAt: "결제 일시",
   adminColAmount: "금액",
   adminColAction: "처리",
+  // ---- 결제/환불관리 화면 구성(2026-10-29 밤, 백오피스 주문이력 꼴: 조회조건, 위 목록, 아래 고른 결제 상세) ----
+  adminSearch: "조회조건",
+  adminSearchStatus: "결제상태",
+  adminSearchTodo: "처리필요",
+  adminSearchText: "구매자/주문번호",
+  adminSearchAll: "전체",
+  adminTodoLabels: { request: "환불 요청", missing: "광고 미적용" },
+  adminListLabel: "결제 목록",
+  adminColStatus: "상태",
+  adminColTarget: "대상",
+  adminColRefunded: "환불액",
+  adminColOrder: "주문번호",
+  adminPickHint: "목록에서 결제를 고르면 아래에 상세가 떠요",
+  adminSectionPay: "결제정보",
+  adminSectionRefund: "환불",
+  adminFieldRequest: "환불요청",
+  adminFieldRequestNote: "요청 메모",
+  adminFieldProrated: "남은 기간 몫",
+  adminFieldReceipt: "영수증",
+  adminRequestYes: "요청 있음",
+  adminRequestNo: "요청 없음",
+  adminNoRefundHere: "승인된 결제만 환불할 수 있어요",
 } as const;
 
 export const PAYMENT_STATUS_LABEL: Record<PaymentStatus, string> = {

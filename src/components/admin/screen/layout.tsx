@@ -23,8 +23,8 @@ export function SearchBand({ label, children }: { label: string; children: React
 
 export function SearchItem({ label, htmlFor, children }: { label: string; htmlFor?: string; children: React.ReactNode }) {
   return (
-    <div className="grid grid-cols-[72px_minmax(0,1fr)] items-center gap-2">
-      <label htmlFor={htmlFor} className="text-right text-[12.5px] font-semibold text-mut">
+    <div className="grid grid-cols-[minmax(64px,auto)_minmax(0,1fr)] items-center gap-2">
+      <label htmlFor={htmlFor} className="whitespace-nowrap text-right text-[12.5px] font-semibold text-mut">
         {label}
       </label>
       <div className="min-w-0">{children}</div>
