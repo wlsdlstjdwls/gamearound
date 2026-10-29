@@ -30,7 +30,7 @@ const EXTERNAL = "text-[12.5px] font-semibold text-acc hover:underline";
 // 판정 배지는 옅게 — 경고가 아니라 "아직 못 붙였다" 는 상태다(누런색 금지, 10-27)
 const OUTCOME_TONE: Record<Outcome, TagTone> = { not_found: "neutral", ambiguous: "info", none: "outline" };
 
-const DECISIONS: ApprovalDecision<PendingCompany>[] = [{ value: "resolve", label: M.resolve }];
+const DECISIONS: ApprovalDecision<PendingCompany>[] = [{ value: "resolve", label: M.resolve, skipConfirm: true }];
 
 const outcomeOf = (r: PendingCompany): Outcome => r.outcome ?? "none";
 

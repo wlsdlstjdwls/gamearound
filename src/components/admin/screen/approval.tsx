@@ -20,6 +20,8 @@ export type ApprovalDecision<T> = {
   /** 사유가 꼭 있어야 하는 처리(반려, 숨김, 정지) */
   needsReason?: boolean;
   danger?: boolean;
+  /** 되돌릴 걱정 없는 처리(다시 조회 등)는 묻지 않고 바로 돌린다 */
+  skipConfirm?: boolean;
   /** 이 줄에 할 수 있는 처리인가. 없으면 모든 줄 */
   can?: (row: T) => boolean;
 };
@@ -40,7 +42,7 @@ export function useApproval<T>({ rows, rowKey, run }: { rows: T[]; rowKey: (row:
       say(M.notApplicable(decision.label), "error");
       return;
     }
-    if (!(await askConfirm(M.confirm(decision.label, fit.length), { confirmLabel: decision.label, tone: decision.danger ? "danger" : "primary" }))) return;
+    if (!decision.skipConfirm && !(await askConfirm(M.confirm(decision.label, fit.length), { confirmLabel: decision.label, tone: decision.danger ? "danger" : "primary" }))) return;
     const keys = fit.map(rowKey);
     setDone((m) => new Map([...m, ...keys.map((k) => [k, decision.label] as const)]));
     say(M.working(decision.label, fit.length));
