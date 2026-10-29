@@ -11,8 +11,14 @@ import { cn } from "@/lib/cn";
 
 export type DetailTab = { key: string; label: string; panel: React.ReactNode };
 
-export function DetailTabs({ label, tabs }: { label: string; tabs: DetailTab[] }) {
-  const [active, setActive] = useState(tabs[0]?.key ?? "");
+/** active, onChange 를 주면 바깥이 고른 탭을 쥔다(관리자 요금 문구: 고른 카드를 미리 보기도 따라간다) */
+export function DetailTabs({ label, tabs, active: controlled, onChange }: { label: string; tabs: DetailTab[]; active?: string; onChange?: (key: string) => void }) {
+  const [own, setOwn] = useState(tabs[0]?.key ?? "");
+  const active = controlled ?? own;
+  const setActive = (key: string) => {
+    setOwn(key);
+    onChange?.(key);
+  };
   const refs = useRef<(HTMLButtonElement | null)[]>([]);
   const base = useId();
 

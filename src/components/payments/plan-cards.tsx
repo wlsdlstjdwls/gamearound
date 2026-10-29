@@ -111,11 +111,13 @@ type Props = {
   bundle: PlanCtaGroup[];
   /** 홍보 글이 없어 묶음을 살 수 없나 */
   bundleNeedsPromo: boolean;
+  /** 늘 한 줄에 한 장(관리자 미리 보기처럼 좁은 기둥 안에 그릴 때). 화면 폭 기준 3칸이 좁은 기둥에서도 걸려 카드가 찌그러졌다 */
+  stack?: boolean;
 };
 
 const GRID_COLS = { 1: "", 2: "lg:grid-cols-2", 3: "lg:grid-cols-3" } as const;
 
-export function PlanCards({ copy, book, active, credits, membership, single, bundle, bundleNeedsPromo }: Props) {
+export function PlanCards({ copy, book, active, credits, membership, single, bundle, bundleNeedsPromo, stack = false }: Props) {
   const empty = { href: ROUTES.indieNew, action: M.noIndieAction };
   // 낱개는 부스트, 고정 둘 중 하나라 값이 다르면 싼 쪽에 "부터" 를 붙인다
   const singleQuote = book.pin.amount < book.boost.amount ? book.pin : book.boost;
@@ -128,7 +130,7 @@ export function PlanCards({ copy, book, active, credits, membership, single, bun
   const tag = (t: string, tone: "acc" | "plumSolid") => (t ? <Tag tone={tone}>{t}</Tag> : undefined);
 
   return (
-    <div className={cn("grid items-stretch gap-3", GRID_COLS[Math.max(1, count) as 1 | 2 | 3])}>
+    <div className={cn("grid items-stretch gap-3", !stack && GRID_COLS[Math.max(1, count) as 1 | 2 | 3])}>
       {active.single && (
         <section className={sectionCardClass("flex flex-col gap-4")}>
           <Head eyebrow={copy.single.eyebrow} name={copy.single.name} summary={fill(copy.single.summary)} tag={tag(copy.single.tag, "acc")} />

@@ -10,11 +10,12 @@ import { useState, useTransition } from "react";
 import { savePricingAction } from "@/app/(admin)/admin/pricing/actions";
 import { Button } from "@/components/ui/button";
 import { FormMessage } from "@/components/ui/form-message";
-import { PricesSection, CopySection } from "@/components/admin/pricing-form/sections";
+import { PricesSection } from "@/components/admin/pricing-form/sections";
+import { CopySection } from "@/components/admin/pricing-form/copy-section";
 import { PromotionsSection } from "@/components/admin/pricing-form/promotions";
 import { PricingPreview } from "@/components/admin/pricing-form/preview";
 import { PRICING_ADMIN_MESSAGES as M } from "@/lib/pricing/admin-messages";
-import { pricingSettingsSchema, type PricingSettings } from "@/lib/pricing/settings";
+import { pricingSettingsSchema, type PricingSettings, type TierKey } from "@/lib/pricing/settings";
 
 export type Patch = (fn: (draft: PricingSettings) => PricingSettings) => void;
 
@@ -36,6 +37,8 @@ export function PricingForm({ initial, part }: { initial: PricingSettings; part:
   const [value, setValue] = useState(initial);
   const [note, setNote] = useState<{ tone: "success" | "error"; text: string } | null>(null);
   const [pending, start] = useTransition();
+  /** 문구를 고치는 카드. 미리 보기가 같은 카드를 따라간다 */
+  const [tier, setTier] = useState<TierKey>("single");
   const dirty = JSON.stringify(value) !== JSON.stringify(saved);
   const valid = pricingSettingsSchema.safeParse(normalize(value)).success;
   const patch: Patch = (fn) => {
@@ -57,15 +60,22 @@ export function PricingForm({ initial, part }: { initial: PricingSettings; part:
 
   return (
     <div className="flex flex-col gap-5 pb-24">
-      {part === "catalog" ? (
-        <>
-          <PricesSection value={value} patch={patch} />
-          <CopySection value={value} patch={patch} />
-        </>
-      ) : (
-        <PromotionsSection value={value} patch={patch} />
-      )}
-      <PricingPreview value={value} />
+      {/* 넓은 화면은 왼쪽 폼, 오른쪽 미리 보기(2026-10-29 사용자). 미리 보기는 sticky 라 긴 폼을 내려도 따라온다 */}
+      <div className="grid items-start gap-5 xl:grid-cols-[minmax(0,1fr)_360px]">
+        <div className="flex min-w-0 flex-col gap-5">
+          {part === "catalog" ? (
+            <>
+              <PricesSection value={value} patch={patch} />
+              <CopySection value={value} patch={patch} tier={tier} onTier={setTier} />
+            </>
+          ) : (
+            <PromotionsSection value={value} patch={patch} />
+          )}
+        </div>
+        <div className="xl:sticky xl:top-[calc(var(--header-h)+16px)] xl:max-h-[calc(100svh-var(--header-h)-32px)] xl:overflow-y-auto xl:overscroll-contain">
+          <PricingPreview value={value} tier={part === "catalog" ? tier : undefined} />
+        </div>
+      </div>
 
       {/* 저장 줄은 화면 아래에 붙여 둔다 — 세 판이 길어 맨 아래까지 내려야 저장이 보이면 고친 채 떠나기 쉽다 */}
       <div className="sticky bottom-3 z-10 flex flex-wrap items-center justify-between gap-3 rounded-[var(--radius-panel)] bg-surface px-4 py-3 shadow-3">
