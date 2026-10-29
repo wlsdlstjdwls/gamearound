@@ -121,7 +121,7 @@ export const PRICING_DEFAULTS: PricingSettings = {
       cta: "스포트라이트 켜기",
     },
     membership: {
-      name: "메이커",
+      name: "메이커 멤버십",
       eyebrow: "매달 | 구독",
       summary: "스포트라이트를 매달, 멤버 전용 혜택까지",
       tag: "모든 혜택",

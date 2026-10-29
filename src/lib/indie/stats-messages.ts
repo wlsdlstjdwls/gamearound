@@ -17,7 +17,7 @@ export const INDIE_STATS_DETAIL_MESSAGES = {
   back: "내 게임 통계로",
   lockedTitle: "메이커 멤버십에서 볼 수 있어요",
   lockedLead: "날짜별 그래프와 유입 경로는 메이커 멤버십 혜택이에요. 숫자는 지금도 모으고 있어서 가입하면 바로 볼 수 있어요.",
-  lockedCta: "멤버십 보기",
+  lockedCta: "메이커 멤버십 보기",
 } as const;
 
 export const TRAFFIC_SOURCE_LABEL: Record<TrafficSource, string> = {

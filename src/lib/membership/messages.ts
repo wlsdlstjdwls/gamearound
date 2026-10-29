@@ -23,11 +23,11 @@ export const MEMBERSHIP_MESSAGES = {
   resume: "해지 취소",
   resumed: "다시 이어 가요",
   pastDue: (msg: string, retry: string) => `지난 결제에 실패했어요(${msg}). ${retry}에 다시 결제해요`,
-  ended: "멤버십이 끝났어요. 다시 시작하려면 카드를 등록해 주세요",
+  ended: "메이커 멤버십이 끝났어요. 다시 시작하려면 카드를 등록해 주세요",
 
-  startedBanner: (n: number) => `멤버십을 시작했어요. 이용권 ${n}장이 채워졌어요`,
+  startedBanner: (n: number) => `메이커 멤버십을 시작했어요. 이용권 ${n}장이 채워졌어요`,
   failedBanner: (msg: string) => `시작하지 못했어요. ${msg}`,
-  alreadyActive: "이미 멤버십을 이용 중이에요",
+  alreadyActive: "이미 메이커 멤버십을 이용 중이에요",
   failed: "처리하지 못했어요",
   notOwnCustomer: "카드 등록 정보가 맞지 않아요",
 
@@ -37,14 +37,20 @@ export const MEMBERSHIP_MESSAGES = {
   orPay: "또는 바로 결제",
 
   noticeRenewed: (next: string, n: number) => `메이커 멤버십이 갱신됐어요. 이용권 ${n}장이 채워졌고 다음 결제는 ${next}이에요`,
-  notOnSale: "지금은 멤버십 가입을 받지 않아요",
+  notOnSale: "지금은 메이커 멤버십 가입을 받지 않아요",
   noticeFailed: (msg: string) => `메이커 멤버십 결제에 실패했어요(${msg}). 내일 다시 결제해요. 카드를 확인해 주세요`,
   noticeEnded: "메이커 멤버십이 끝났어요",
 
-  adminTitle: "멤버십",
-  adminLead: "메이커 멤버십 가입자예요. 결제와 환불은 유료 노출 화면의 결제 목록에서 해요.",
-  adminPaymentsLink: "결제 목록 보기",
-  adminEmpty: "아직 멤버십 가입자가 없어요",
+  adminTitle: "메이커 멤버십",
+  adminLead: "매달 자동 결제로 이용 중인 구독자예요. 결제가 실패하면 다음 날 다시 청구하고, 환불은 결제와 환불 화면에서 해요.",
+  adminPaymentsLink: "결제와 환불 보기",
+  adminEmpty: "아직 메이커 멤버십 구독자가 없어요",
+  adminStatActive: "이용 중",
+  adminStatCanceling: "해지 예약",
+  adminStatPastDue: "결제 실패",
+  adminStatMonthly: "다음 달 청구 예상",
+  adminStatMonthlyHint: "이용 중 구독자의 다음 갱신 값 합이에요",
+  adminStatPeople: (n: number) => `${n}명`,
   adminFailed: (n: number) => `연속 실패 ${n}회`,
 } as const;
 

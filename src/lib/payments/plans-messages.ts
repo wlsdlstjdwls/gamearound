@@ -11,7 +11,7 @@ export const PLANS_MESSAGES = {
 
   membershipActive: "이용 중",
   membershipCredits: (n: number) => `남은 이용권 ${n}장`,
-  membershipManage: "내 멤버십 보기",
+  membershipManage: "내 메이커 멤버십 보기",
 
   perMonth: "매달",
   firstMonth: "첫 달",
