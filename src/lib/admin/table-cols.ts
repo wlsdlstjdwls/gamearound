@@ -14,10 +14,6 @@ export const GAME_HISTORY_COLS = "md:grid-cols-[150px_minmax(0,1fr)_minmax(0,1fr
 // 에러가 있는 줄만 밑에 전체 폭으로 두 줄까지 펴고, 머리 칸은 여덟이다. 숫자 칸은 글자 폭만큼만 준다.
 export const SYNC_LOG_COLS = "md:grid-cols-[52px_128px_84px_120px_84px_56px_48px_minmax(0,1fr)] md:gap-x-3 md:px-3 md:py-2.5";
 
-/** 게시글 관리. 제목이 이 화면의 주인공이라 남는 폭을 다 준다. 처리 칸은 버튼 하나와 결과 딱지가 한 줄에 서는 폭이다 */
-export const POST_ADMIN_COLS = "md:grid-cols-[minmax(0,1fr)_76px_minmax(0,180px)_96px_172px_150px] md:gap-x-3 md:px-3 md:py-2.5";
-/** 댓글 관리. 댓글 내용과 달린 글을 나란히 둔다 — 그 댓글이 어느 글의 맥락에서 문제인지 같이 봐야 판정이 선다 */
-export const COMMENT_ADMIN_COLS = "md:grid-cols-[minmax(0,1.6fr)_minmax(0,1fr)_minmax(0,160px)_96px_150px] md:gap-x-3 md:px-3 md:py-2.5";
 
 /** 수집 현황 스토어 표. 스토어 이름과 상태가 왼쪽에 붙어 있어야 "어디가 아픈가" 가 한 번에 읽힌다. 에러 맛보기는 줄 밑에 통째로 눕는다(col-span-full) */
 export const SYNC_SOURCE_COLS = "md:grid-cols-[minmax(0,1.3fr)_88px_minmax(0,1.3fr)_92px_72px_minmax(0,1.6fr)_84px_64px] md:gap-x-3 md:px-3 md:py-2";
