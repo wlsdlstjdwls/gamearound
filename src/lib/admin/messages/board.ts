@@ -4,7 +4,6 @@
 // 기준을 모르면 0 을 믿지 못하고 결국 화면을 열어 다시 센다.
 export const ADMIN_BOARD_MESSAGES = {
   title: "대시보드",
-  lead: "묶음마다 쌓인 일을 세어요. 숫자를 누르면 그 일을 하는 화면으로 가요.",
   asOf: (time: string) => `${time} 기준`,
   allClear: "쌓인 일이 없어요.",
   failed: "현황을 못 불러왔어요. 왼쪽 메뉴에서 화면마다 볼 수 있어요.",

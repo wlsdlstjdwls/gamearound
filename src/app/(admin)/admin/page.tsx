@@ -23,7 +23,6 @@ export default async function AdminBoardPage() {
     <section className="flex flex-col gap-4">
       <AdminScreenHead
         title={ADMIN_NAV.board}
-        lead={M.lead}
         note={
           board && (
             <>

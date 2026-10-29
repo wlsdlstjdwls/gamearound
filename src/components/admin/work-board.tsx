@@ -139,8 +139,9 @@ function BoardLine({ line }: { line: Line }) {
 
 export function WorkBoard({ board }: { board: AdminBoard }) {
   const columns = columnsOf(board);
+  // 같은 줄의 기둥은 높이를 맞춘다(2026-10-29 사용자 "높이가 다 달라 보기 불편") — 판 바닥이 들쭉날쭉하면 줄을 따라 읽지 못한다
   return (
-    <div className="grid grid-cols-1 items-start gap-3 sm:grid-cols-2 xl:grid-cols-4">
+    <div className="grid grid-cols-1 items-stretch gap-3 sm:grid-cols-2 xl:grid-cols-4">
       {columns.map((col, i) => {
         const pending = pendingOfLines(col.lines);
         return (
