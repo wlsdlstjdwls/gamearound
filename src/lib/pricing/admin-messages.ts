@@ -21,6 +21,12 @@ export const PRICING_ADMIN_MESSAGES = {
   /** 툴바 조회로 서버 값을 다시 읽었을 때 상태줄 */
   reloaded: "저장된 값을 다시 불러왔어요",
   dirty: "저장하지 않은 바뀐 값이 있어요",
+  rowLeaveTitle: "바뀐 내용이 있어요",
+  rowLeaveConfirm: "고른 줄에 저장하지 않은 값이 있어요. 저장하고 옮길까요?",
+  rowLeaveSave: "저장",
+  rowLeaveDiscard: "저장 안 함",
+  leaveConfirm: "저장하지 않은 값이 있어요. 버리고 다른 화면으로 갈까요?",
+  leave: "버리고 이동",
 
   // ---- 상품등록 화면 구성(2026-10-29 밤, 백오피스 상품등록 꼴: 조회조건, 왼쪽 목록, 오른쪽 상세 탭) ----
   searchLabel: "조회조건",
@@ -58,14 +64,12 @@ export const PRICING_ADMIN_MESSAGES = {
   promosNone: "이 상품에 걸린 프로모션이 없어요",
   promosEdit: "프로모션등록에서 고치기",
   pickHint: "왼쪽 목록에서 상품을 고르면 여기서 고쳐요",
-  deleteConfirm: (name: string) => `"${name}" 상품을 삭제할까요? 걸린 프로모션도 같이 지워져요. 저장해야 반영돼요.`,
   copyFor: (tier: string) => `${tier} 카드 문구 — 같은 갈래 상품이 함께 써요`,
   pricesTitle: "판매 상품",
   pricesLead: "광고 상품을 더하고 지울 수 있어요. 새 상품은 판매가 꺼진 채로 생겨요. 판매를 끄면 요금 화면에서 빠지고 새 주문을 받지 않아요.",
   addProduct: "상품 추가",
   newProductName: "새 광고 상품",
   newRow: "새 상품",
-  remove: "삭제",
   removeProduct: (name: string) => `${name} 삭제`,
   removedNote: (n: number) => `삭제한 상품 ${n}개는 저장하면 사라져요(걸린 프로모션도 같이)`,
   productsEmpty: "광고 상품이 없어요. 상품 추가를 눌러 만들어요",

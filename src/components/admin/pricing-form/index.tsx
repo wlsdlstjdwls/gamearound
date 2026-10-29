@@ -16,7 +16,7 @@ import { Button } from "@/components/ui/button";
 import { FormMessage } from "@/components/ui/form-message";
 import { newProductId, withNewProduct } from "@/components/admin/pricing-form/sections";
 import { CatalogScreen } from "@/components/admin/pricing-form/catalog";
-import { askConfirm } from "@/components/ui/confirm-dialog";
+import { askChoice, askConfirm } from "@/components/ui/confirm-dialog";
 import { newPromotionId, PromotionsScreen, withNewPromotion } from "@/components/admin/pricing-form/promotions";
 import { PRICING_ADMIN_MESSAGES as M } from "@/lib/pricing/admin-messages";
 import { MEMBERSHIP_KEY, pricingSettingsSchema, type PricingSettings } from "@/lib/pricing/settings";
@@ -65,13 +65,23 @@ export function PricingForm({ initial, part, title }: { initial: PricingSettings
   };
 
   // 저장 단축키(F9, Ctrl+S)는 화면 머리(admin/screen/head)가 맡는다 — 백오피스와 같은 자리, 같은 키.
-  // 바뀐 값을 둔 채 탭을 닫거나 새로 고치면 브라우저가 한 번 묻는다(백오피스의 미저장 확인)
+  // 바뀐 값을 둔 채 다른 화면(메뉴, 링크)으로 가려 하면 자체 확인 팝업으로 묻는다(백오피스의 미저장 확인).
+  // 브라우저 beforeunload 경고는 쓰지 않는다(2026-10-30 사용자 "브라우저 alert 말고 자체 alert") — 그 창은 문구도 모양도 바꿀 수 없다.
+  // 그 대가로 탭 닫기, 새로 고침은 묻지 않고 닫힌다. 새 창 열기(수정키, target)는 이 화면을 떠나지 않아 그냥 둔다.
   useEffect(() => {
     if (!dirty) return;
-    const onLeave = (e: BeforeUnloadEvent) => e.preventDefault();
-    window.addEventListener("beforeunload", onLeave);
-    return () => window.removeEventListener("beforeunload", onLeave);
-  }, [dirty]);
+    const onClick = async (e: MouseEvent) => {
+      const a = (e.target as Element | null)?.closest?.("a[href]") as HTMLAnchorElement | null;
+      if (!a || a.target || e.defaultPrevented || e.button !== 0 || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return;
+      const url = new URL(a.href, location.href);
+      if (url.origin !== location.origin || url.pathname === location.pathname) return;
+      e.preventDefault();
+      e.stopPropagation();
+      if (await askConfirm(M.leaveConfirm, { title: M.rowLeaveTitle, confirmLabel: M.leave, tone: "danger" })) router.push(url.pathname + url.search + url.hash);
+    };
+    document.addEventListener("click", onClick, true);
+    return () => document.removeEventListener("click", onClick, true);
+  }, [dirty, router]);
 
   const save = () => {
     const next = normalize(value);
@@ -88,7 +98,7 @@ export function PricingForm({ initial, part, title }: { initial: PricingSettings
       }
     });
   };
-  // 툴바 입력, 삭제 — 상품등록은 상품 한 줄을 더하고, 프로모션등록은 프로모션을 더하거나 고른 줄을 지운다
+  // 툴바 입력, 삭제 — 상품등록은 상품 한 줄을 더하고(삭제 없음), 프로모션등록은 프로모션을 더하거나 고른 줄을 지운다
   const insert = () => {
     if (part === "catalog") {
       const id = newProductId();
@@ -100,16 +110,8 @@ export function PricingForm({ initial, part, title }: { initial: PricingSettings
       patch((d) => withNewPromotion(d, id));
     }
   };
-  // 상품등록의 삭제는 고른 광고 상품(멤버십은 지우지 않는다). 지운 상품을 겨눈 프로모션도 같이 지운다(sections 의 remove 와 같은 규칙)
-  const selectedProduct = part === "catalog" ? value.products.find((p) => p.id === item) : undefined;
-  const removeProduct = selectedProduct
-    ? async () => {
-        if (!(await askConfirm(M.deleteConfirm(selectedProduct.name), { confirmLabel: M.remove, tone: "danger" }))) return;
-        const rest = value.products.filter((p) => p.id !== selectedProduct.id);
-        setItem(rest[0]?.id ?? MEMBERSHIP_KEY);
-        patch((d) => ({ ...d, products: d.products.filter((p) => p.id !== selectedProduct.id), promotions: d.promotions.filter((p) => p.target !== selectedProduct.id) }));
-      }
-    : undefined;
+  // 상품등록에는 삭제가 없다(2026-10-30 사용자 "상품은 삭제 못하게") — 팔던 상품을 지우면 지난 주문, 결제가 가리킬 이름이 사라진다.
+  // 그만 팔 상품은 판매여부를 끈다. 잘못 더한 새 줄은 "되돌리기" 로 걷는다.
   const current = value.promotions.find((p) => p.id === promo);
   const removePromo =
     part === "discounts" && current
@@ -120,6 +122,39 @@ export function PricingForm({ initial, part, title }: { initial: PricingSettings
           patch((d) => ({ ...d, promotions: d.promotions.filter((p) => p.id !== promo) }));
         }
       : undefined;
+  // 행 이동 확인(백오피스 "변경된 내역이 있습니다. 저장하시겠습니까?", 2026-10-30 사용자 "행 이동 때마다 변경 여부 체크가 없다").
+  // 고른 줄에 저장 안 한 값이 있으면 옮기기 전에 묻는다: 저장(전체 저장 뒤 이동), 저장 안 함(그 줄만 저장된 값으로 되돌리고 이동), 취소(머문다).
+  // 묻는 기준은 그 줄 하나다 — 다른 줄에 남은 변경은 그 줄로 갈 때 이미 물었고 목록의 "수정" 표시가 알려 준다.
+  const rowOf = (s: PricingSettings, key: string | null) =>
+    part === "catalog"
+      ? key === MEMBERSHIP_KEY
+        ? JSON.stringify(s.membership)
+        : JSON.stringify(s.products.find((p) => p.id === key) ?? null)
+      : JSON.stringify(s.promotions.find((p) => p.id === key) ?? null);
+  const revertRow = (key: string) =>
+    patch((d) => {
+      if (part === "discounts") {
+        const old = saved.promotions.find((p) => p.id === key);
+        return { ...d, promotions: old ? d.promotions.map((p) => (p.id === key ? old : p)) : d.promotions.filter((p) => p.id !== key) };
+      }
+      if (key === MEMBERSHIP_KEY) return { ...d, membership: saved.membership };
+      const old = saved.products.find((p) => p.id === key);
+      // 새로 더한 줄을 버리면 그 줄을 겨눈 프로모션도 함께 간다(겨눌 상품이 없는 프로모션은 저장 검사에 걸린다)
+      return old
+        ? { ...d, products: d.products.map((p) => (p.id === key ? old : p)) }
+        : { ...d, products: d.products.filter((p) => p.id !== key), promotions: d.promotions.filter((p) => p.target !== key) };
+    });
+  const moveTo = (setRow: (k: string | null) => void, from: string | null) => async (to: string | null) => {
+    if (to === from || from === null || rowOf(value, from) === rowOf(saved, from)) return setRow(to);
+    const c = await askChoice(M.rowLeaveConfirm, { title: M.rowLeaveTitle, confirmLabel: M.rowLeaveSave, altLabel: M.rowLeaveDiscard });
+    if (c === "cancel") return;
+    if (c === "alt") revertRow(from);
+    else if (!valid) return say(M.invalid, "error");
+    else save();
+    setRow(to);
+  };
+  const selectItem = moveTo(setItem, item);
+  const selectPromo = moveTo(setPromo, promo);
   // 조회: 바뀐 값을 버리고 서버 값을 다시 읽는다(버릴지는 머리가 먼저 묻는다)
   const retrieve = () => {
     setValue(saved);
@@ -135,7 +170,7 @@ export function PricingForm({ initial, part, title }: { initial: PricingSettings
           이 화면만의 것(바뀐 값 안내, 요금 화면 열기, 되돌리기)은 툴바 왼쪽에 둔다 */}
       <AdminScreenHead
         title={title}
-        tools={{ retrieve, insert, delete: part === "catalog" ? removeProduct : removePromo, save, saveDisabled: !dirty || !valid, saving: pending, dirty }}
+        tools={{ retrieve, insert, delete: part === "catalog" ? undefined : removePromo, save, saveDisabled: !dirty || !valid, saving: pending, dirty }}
         actions={
           <>
             <span className="text-[12.5px] font-medium" aria-live="polite">
@@ -155,11 +190,11 @@ export function PricingForm({ initial, part, title }: { initial: PricingSettings
         }
       />
 
-      {/* 상품등록은 백오피스 상품등록 꼴(조회조건, 왼쪽 목록, 오른쪽 상세 탭, pricing-form/catalog). 미리 보기는 상세 탭 옆 기둥(ScreenTabs aside)이다 */}
+      {/* 상품등록은 백오피스 상품등록 꼴(조회조건, 왼쪽 목록, 오른쪽 상세 묶음, pricing-form/catalog). 미리 보기는 상세 옆 기둥(WithAside)이다 */}
       {part === "catalog" ? (
-        <CatalogScreen value={value} saved={saved} patch={patch} selected={item} onSelect={setItem} />
+        <CatalogScreen value={value} saved={saved} patch={patch} selected={item} onSelect={selectItem} />
       ) : (
-        <PromotionsScreen value={value} saved={saved} patch={patch} selected={promo} onSelect={setPromo} />
+        <PromotionsScreen value={value} saved={saved} patch={patch} selected={promo} onSelect={selectPromo} />
       )}
 
     </div>
