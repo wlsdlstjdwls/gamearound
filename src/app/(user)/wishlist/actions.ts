@@ -4,11 +4,11 @@ import { actionError } from "@/lib/db-errors";
 import { ACTION_MESSAGES } from "@/lib/messages";
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
+import { cardSlugSchema } from "@/lib/wishlist/schemas";
 import { isInWishlist, removeFromWishlist, toggleWishlist, toggleWishlistBySlug, wishedSlugs, WISHED_SLUGS_MAX } from "@/server/services/wishlist";
 
 const gameIdSchema = z.uuid();
-/** 카드 하트가 보내는 slug. 주소 조각이라 길이만 막는다 */
-const slugSchema = z.string().min(1).max(200);
+const slugSchema = cardSlugSchema;
 const slugsSchema = z.array(slugSchema).max(WISHED_SLUGS_MAX);
 
 /** 상세 페이지 찜 버튼(P3)이 호출. 반환형 유지 */

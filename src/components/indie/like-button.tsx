@@ -8,10 +8,11 @@ import { useSession } from "@/components/auth/session-provider";
 import { buttonClass } from "@/components/ui/button";
 import { HeartIcon } from "@/components/ui/icons";
 import { useToast } from "@/components/ui/toast";
+import { markWished } from "@/components/wish-heart";
 import { cn } from "@/lib/cn";
 import { FAME_MESSAGES as M } from "@/lib/indie/fame";
 
-export function IndieLikeButton({ postId, likeCount }: { postId: string; likeCount: number }) {
+export function IndieLikeButton({ postId, slug, likeCount }: { postId: string; slug: string; likeCount: number }) {
   const { user } = useSession();
   const gate = useLoginGate();
   const toast = useToast();
@@ -40,6 +41,7 @@ export function IndieLikeButton({ postId, likeCount }: { postId: string; likeCou
       const r = await toggleIndieLikeAction(postId);
       if (!r.ok) return toast(r.error);
       setState({ on: r.liked, n: r.likeCount });
+      markWished("indie", slug, r.liked);
       toast(r.liked ? M.wishAdded : M.wishRemoved);
     });
   useResume(action, () => !state.on && toggle(), known);

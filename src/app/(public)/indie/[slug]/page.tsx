@@ -256,7 +256,7 @@ export default async function IndieDetailPage({ params, searchParams }: Props) {
             ))}
           </dl>
 
-          {post.review === "approved" && <IndieLikeButton postId={post.id} likeCount={post.likeCount} />}
+          {post.review === "approved" && <IndieLikeButton postId={post.id} slug={post.slug} likeCount={post.likeCount} />}
           {/* 자기 소식은 받을 수 없다(services/indie/promo). 공개 글에서만 — 승인 전 글은 보는 사람이 글쓴이, 관리자뿐이다 */}
           {live && !isOwner && <IndieFollowButton developerUserId={post.authorUserId} />}
 

@@ -3,6 +3,7 @@
 //
 // 2026-10-27(사용자): 줄에서 카드로("게임 목록이 카드 형태가 아니네"), 할인 알림 단추를 누르고 싶게, 정렬 이름 "할인 중 먼저" 를 "할인순" 으로,
 // 고른 정렬은 다음 접속에도 남는다(lib/prefs). 정렬 단추는 둘 다 주소에 값을 명시한다 — 빈 주소는 기억한 정렬로 연다.
+// 2026-10-29: 인디 게임 찜도 아래 칸에 선다(components/wishlist/indie-wishes). 정렬은 가격이 있는 게임 칸에만 건다.
 import { cheapestOf, formatPrice } from "@/lib/currency";
 import type { Metadata } from "next";
 import Link from "next/link";
@@ -11,7 +12,7 @@ import { EmptyState } from "@/components/empty-state";
 import { WishlistRemoveButton } from "@/components/wishlist-button";
 import { FadeImage } from "@/components/ui/fade-image";
 import { ImageFallback } from "@/components/ui/image-fallback";
-import { Page, PageHead } from "@/components/ui/page";
+import { Page, PageHead, SectionHead } from "@/components/ui/page";
 import { Clamp } from "@/components/ui/tooltip";
 import { PLATFORM_LABEL } from "@/lib/format";
 import { gamesHref } from "@/lib/games-query";
@@ -20,6 +21,8 @@ import { stagger } from "@/lib/motion";
 import { ROUTES } from "@/lib/routes";
 import { listWishlist, type WishlistItem } from "@/server/services/wishlist";
 import { listAlerts } from "@/server/services/alerts";
+import { listMyIndieWishes } from "@/server/services/indie";
+import { IndieWishes } from "@/components/wishlist/indie-wishes";
 import { NavChip, NavPendingScope, PendingRegion } from "@/components/ui/nav-pending";
 import { BellIcon } from "@/components/ui/icons";
 import { RememberPref } from "@/components/remember-pref";
@@ -64,7 +67,8 @@ function isOnSale(item: WishlistItem): boolean {
 export default async function WishlistPage({ searchParams }: Props) {
   const explicit = readSortParam((await searchParams).sort);
   const sort: SortKey = explicit ?? readPref((await cookies()).get(PREF_COOKIES.wishlistSort)?.value, SORT_KEYS) ?? "sale";
-  const [items, alerts] = await Promise.all([listWishlist(), listAlerts()]);
+  // 세 질의는 서로 기다릴 일이 없어 나란히 묻는다(Neon 왕복은 줄 세운 수가 속도를 정한다)
+  const [items, alerts, indie] = await Promise.all([listWishlist(), listAlerts(), listMyIndieWishes()]);
   // 한 게임에 플랫폼별 알림이 여럿일 수 있다 — 하나라도 켜져 있으면 받는 중
   const alertState = new Map<string, AlertState>();
   for (const a of alerts) {
@@ -95,7 +99,8 @@ export default async function WishlistPage({ searchParams }: Props) {
         </div>
       </header>
 
-      <PendingRegion>
+      <PendingRegion className="flex flex-col gap-4">
+      <SectionHead title={WISHLIST_MESSAGES.gamesSection} note={items.length > 0 ? `${items.length}개` : undefined} size="sub" />
       {items.length === 0 ? (
         <EmptyState
           title="아직 찜한 게임이 없어요"
@@ -186,6 +191,7 @@ export default async function WishlistPage({ searchParams }: Props) {
       )}
       </PendingRegion>
       </NavPendingScope>
+      <IndieWishes items={indie} />
     </Page>
   );
 }

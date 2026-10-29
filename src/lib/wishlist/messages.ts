@@ -12,4 +12,12 @@ export const WISHLIST_MESSAGES = {
   releaseOn: "알림 받는 중",
   releaseAdded: "출시되면 알림함으로 알려 드려요. 찜 목록에도 담았어요",
   releaseRemoved: "출시 알림을 껐어요",
+  /** 카드 하트가 slug 로 찾던 게임이 사이에 내려간 때 */
+  notFound: "게임을 찾지 못했어요",
+  /** 찜 목록의 칸 이름(2026-10-29). 인디 게임 찜은 표가 따로라 칸을 나눠 보여 준다(server/services/indie/wishes) */
+  gamesSection: "게임",
+  indieSection: "인디 게임",
+  indieEmptyTitle: "아직 찜한 인디 게임이 없어요",
+  indieEmptyDescription: "인디 게임 카드나 상세에서 하트를 누르면 여기에 모여요.",
+  indieEmptyAction: "인디 게임 둘러보기",
 } as const;

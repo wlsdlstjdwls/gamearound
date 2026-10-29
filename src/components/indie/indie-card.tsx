@@ -10,6 +10,7 @@ import { CARD_SHELL, COVER_CLASS, CoverImage } from "@/components/game-card";
 import { HeartIcon } from "@/components/ui/icons";
 import { Clamp } from "@/components/ui/tooltip";
 import { IndieStageBadge } from "@/components/indie/stage-badge";
+import { WishHeart } from "@/components/wish-heart";
 import { cn } from "@/lib/cn";
 import { formatDotDate } from "@/lib/format";
 import { indieDetailHref, type IndieFrom } from "@/lib/indie/query";
@@ -44,6 +45,9 @@ export function IndieCard({ post, badge, from, wide = false }: { post: IndieCard
         <span className="cover-zoom-img absolute inset-0 block">
           <CoverImage src={post.cover.url} alt={M.coverAlt(post.title)} sizes="(max-width: 640px) 100vw, (max-width: 768px) 50vw, 25vw" />
         </span>
+        {/* 찜 하트(2026-10-29, 상세에만 있던 찜을 카드에도). 게임 카드와 같은 자리, 같은 부품이다 — 제목 링크의 ::after 가 카드를 덮어 z-10 으로 그 위에 뜬다.
+            카드가 아니라 커버 상자 안에 두는 이유: 가로 카드(wide)에서 카드 오른쪽 위는 제목 줄이라 하트가 글자를 가린다 */}
+        <WishHeart kind="indie" slug={post.slug} title={post.title} className="absolute right-2 top-2 z-10" />
       </span>
       <div className={cn("flex min-w-0 flex-1 flex-col gap-1.5 px-1", wide && "sm:py-1")}>
         <div className="flex min-w-0 items-center gap-1.5">

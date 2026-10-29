@@ -3,6 +3,7 @@ export * from "./read";
 export * from "./write";
 export * from "./moderation";
 export * from "./fame";
+export * from "./wishes";
 export * from "./lounge";
 export * from "./promo";
 export * from "./comments";

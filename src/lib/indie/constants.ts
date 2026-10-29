@@ -78,6 +78,12 @@ export const INDIE_IMAGE_MAX = 6;
 /** 공개 목록 한 쪽(기획서 v2.0 4.3: 내가 만든 게임 12개) */
 export const INDIE_PAGE_SIZE = 12;
 
+/**
+ * 카드 하트가 한 번에 묻는 인디 slug 수 상한(server/services/indie/wishes). 한 화면의 인디 카드(목록 12장 + 주목할 게임 + 홈 줄 12장)를
+ * 넉넉히 넘는다 — 아무 배열이나 받지 않으려는 문턱이다(스토어 게임 하트의 WISHED_SLUGS_MAX 와 같은 값, 같은 이유)
+ */
+export const INDIE_WISHED_SLUGS_MAX = 120;
+
 /** 홈 줄에 세우는 수. 이보다 적으면 줄을 안 세운다(INDIE_HOME_MIN) */
 export const INDIE_HOME_LIMIT = 12;
 /**

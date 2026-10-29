@@ -7,16 +7,23 @@ import { commentInputSchema } from "@/lib/community/schemas";
 import { COMMUNITY_MESSAGES as CM } from "@/lib/community/messages";
 import { FAME_MESSAGES as M } from "@/lib/indie/fame";
 import { INDIE_PROMO_MESSAGES as PM } from "@/lib/indie/promo-messages";
-import { indiePath } from "@/lib/routes";
-import { addIndieComment, isFollowingDeveloper, isIndieLiked, toggleDeveloperFollow, toggleIndieLike } from "@/server/services/indie";
+import { indiePath, ROUTES } from "@/lib/routes";
+import { ACTION_MESSAGES } from "@/lib/messages";
+import { WISHLIST_MESSAGES as WM } from "@/lib/wishlist/messages";
+import { cardSlugSchema } from "@/lib/wishlist/schemas";
+import { INDIE_WISHED_SLUGS_MAX } from "@/lib/indie/constants";
+import { addIndieComment, isFollowingDeveloper, isIndieLiked, likedIndieSlugs, toggleDeveloperFollow, toggleIndieLike, toggleIndieLikeBySlug } from "@/server/services/indie";
 import type { CommentDto } from "@/server/services/community";
 
 const id = z.uuid();
+const slugsSchema = z.array(cardSlugSchema).max(INDIE_WISHED_SLUGS_MAX);
 
 export async function toggleIndieLikeAction(postId: string): Promise<{ ok: true; liked: boolean; likeCount: number } | { ok: false; error: string }> {
   if (!id.safeParse(postId).success) return { ok: false, error: M.empty };
   try {
-    return { ok: true, ...(await toggleIndieLike(postId)) };
+    const r = await toggleIndieLike(postId);
+    revalidatePath(ROUTES.wishlist);
+    return { ok: true, ...r };
   } catch (e) {
     return { ok: false, error: actionError(e, "처리하지 못했어요") };
   }
@@ -52,4 +59,24 @@ export async function toggleDeveloperFollowAction(developerUserId: string): Prom
 export async function isFollowingDeveloperAction(developerUserId: string): Promise<boolean> {
   if (!id.safeParse(developerUserId).success) return false;
   return isFollowingDeveloper(developerUserId).catch(() => false);
+}
+
+/** 카드 하트들의 찜 여부를 한 번에(components/wish-heart 의 indie 갈래). 비로그인, 실패는 빈 배열 — 하트가 빈 채로 선다 */
+export async function likedIndieSlugsAction(slugs: string[]): Promise<string[]> {
+  const parsed = slugsSchema.safeParse(slugs);
+  if (!parsed.success) return [];
+  return likedIndieSlugs(parsed.data).catch(() => []);
+}
+
+/** 목록 카드 하트의 토글(2026-10-29). 찜 목록에 인디 칸이 서므로 그 화면도 다시 그린다 */
+export async function toggleIndieLikeBySlugAction(slug: string): Promise<{ ok: true; liked: boolean; likeCount: number } | { ok: false; error: string }> {
+  const parsed = cardSlugSchema.safeParse(slug);
+  if (!parsed.success) return { ok: false, error: WM.notFound };
+  try {
+    const r = await toggleIndieLikeBySlug(parsed.data);
+    revalidatePath(ROUTES.wishlist);
+    return { ok: true, ...r };
+  } catch (e) {
+    return { ok: false, error: actionError(e, ACTION_MESSAGES.failed) };
+  }
 }
