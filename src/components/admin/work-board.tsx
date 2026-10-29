@@ -111,7 +111,7 @@ function BoardLine({ line }: { line: Line }) {
       <Link
         href={line.href}
         className={cn(
-          "press tap flex min-h-10 min-w-0 flex-1 items-center gap-2 rounded-lg bg-surface px-3 shadow-hair transition-shadow duration-fast hover:shadow-[var(--elev-card)]",
+          "press tap flex min-h-10 min-w-0 flex-1 [@media(pointer:fine)]:min-h-9 items-center gap-2 rounded-lg bg-surface px-3 shadow-hair transition-shadow duration-fast hover:shadow-[var(--elev-card)]",
           quiet && "bg-transparent shadow-none hover:bg-surface",
         )}
       >
@@ -150,7 +150,8 @@ export function WorkBoard({ board }: { board: AdminBoard }) {
                 </span>
               )}
             </h2>
-            <ul className="flex flex-col gap-1">
+            {/* 마우스 화면은 줄을 36px, 줄 사이를 2px 로 — 두 줄로 선 기둥이 한 화면(695px)을 23px 넘겨 굴러갔다(2026-10-29 사용자 "불필요한 스크롤") */}
+            <ul className="flex flex-col gap-1 [@media(pointer:fine)]:gap-0.5">
               {col.lines.map((line) => (
                 <BoardLine key={line.label} line={line} />
               ))}

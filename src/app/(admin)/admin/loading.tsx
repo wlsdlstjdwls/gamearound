@@ -13,7 +13,7 @@ export default function AdminBoardLoading() {
           <div key={i} className={panelClass("flex flex-col gap-2 p-3")}>
             <Bone className="h-5 w-20" />
             {Array.from({ length: lines }, (_, j) => (
-              <Bone key={j} className="h-10 rounded-lg" />
+              <Bone key={j} className="h-10 rounded-lg [@media(pointer:fine)]:h-9" />
             ))}
           </div>
         ))}
