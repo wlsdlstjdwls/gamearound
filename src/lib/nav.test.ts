@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { resolveNav, trailKind, trailLeaf } from "@/lib/nav";
+import { resolveNav, trailKind } from "@/lib/nav";
 
 const q = (s = "") => new URLSearchParams(s);
 
@@ -54,29 +54,24 @@ describe("trailKind", () => {
   it("댓글함은 되돌아가기만", () => expect(trailKind("/lounge/comments", resolveNav("/lounge/comments", q()).sub)).toBe("back"));
   it("인디 상세는 되돌아가기만 — 경로 줄은 화면이 게임 이름으로 직접 세운다", () => expect(trailKind("/indie/some-game", resolveNav("/indie/some-game", q()).sub)).toBe("back"));
   it("인디 고치기(/indie/mine/<id>)는 세우지 않는다", () => expect(trailKind("/indie/mine/abc", resolveNav("/indie/mine/abc", q()).sub)).toBeNull());
-  it("내 게임 등록은 끝 낱말을 붙여 선다", () => expect(trailKind("/indie/new", resolveNav("/indie/new", q()).sub)).toBe("leaf"));
+  it("내 게임 등록, 글쓰기에는 서지 않는다(10-29 경로 줄 걷음)", () => {
+    expect(trailKind("/indie/new", resolveNav("/indie/new", q()).sub)).toBeNull();
+    expect(trailKind("/lounge/write", resolveNav("/lounge/write", q()).sub)).toBeNull();
+  });
   it("계정 화면은 내 정보 띠가 서서 세우지 않는다", () => expect(trailKind("/alerts", resolveNav("/alerts", q()).sub)).toBeNull());
   it("홈은 아무것도 없다", () => expect(trailKind("/", resolveNav("/", q()).sub)).toBeNull());
 });
 
 describe("게임 게시판 상세, 글쓰기의 소속", () => {
-  it("글 상세는 제 게시판 칸을 켜고 경로 끝 낱말은 게시글", () => {
+  it("글 상세는 제 게시판 칸을 켜고 되돌아가기 줄은 없다", () => {
     const r = resolveNav("/board/guides/p/abc", q());
     expect(r.sub?.label).toBe("공략");
-    expect(trailLeaf("/board/guides/p/abc")).toBe("게시글");
-    expect(trailKind("/board/guides/p/abc", r.sub)).toBe("leaf");
-  });
-
-  it("상세보다 깊은 경로와 목록 자체는 게시글이 아니다", () => {
-    expect(trailLeaf("/board/guides/p/abc/edit")).toBeNull();
-    expect(trailLeaf("/board/guides/p/")).toBeNull();
-    expect(trailLeaf("/board/guides")).toBeNull();
+    expect(trailKind("/board/guides/p/abc", r.sub)).toBeNull();
   });
 
   it("글쓰기는 고른 카테고리의 칸을 켠다", () => {
     expect(resolveNav("/board/write", q("category=promo")).sub?.label).toBe("홍보");
     expect(resolveNav("/board/write", q()).sub).toBeNull();
-    expect(trailLeaf("/board/write")).toBe("글쓰기");
   });
 
   it("전체 글은 게시판 홈을 켠다", () => {

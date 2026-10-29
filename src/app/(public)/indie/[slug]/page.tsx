@@ -2,10 +2,8 @@
 //
 // 숨긴 글은 글쓴이와 관리자만 본다 — 다른 사람에게는 없는 글이다(notFound). 숨긴 사유는 글쓴이 화면에 그대로 뜬다.
 //
-// 맨 위는 경로 줄(목업 crumb3). 끝 낱말이 데이터라 머리띠 아래 공통 줄(page-trail)이 못 그려서 이 화면이 직접 세우고,
-// "이전 화면" 만 공통 줄이 세운다(lib/nav 의 TRAIL_BACK_ONLY_UNDER). 앞 두 낱말은 들어온 곳(?from=, lib/indie/query)을 따른다 —
-// 명예의 전당, 슈퍼루키에서 오면 "인디 게임 > 그 칸", 등록현황에서 오면 "개발자 라운지 > 등록현황", 그 밖은 "개발자 라운지 > 내가 만든 게임".
-// 낱말과 위쪽 메뉴 강조를 같은 표(lib/nav 의 resolveNav)로 정한다 — 둘이 따로 정하면 메뉴는 인디 게임인데 경로는 라운지인 날이 온다.
+// 맨 위는 공통 줄(page-trail)의 "이전 화면" 하나다. 목업 crumb3 의 경로 줄("인디 게임 > 명예의 전당 > 게임 이름")은 2026-10-29 걷었다
+// (사용자 "이전 화면 / 개발자 라운지 / 글쓰기, 이 형태 안 빠진 화면들이 있네", lib/nav 의 trailKind 주석).
 // 머리 판은 components/indie/detail-hero.
 // 아래는 두 기둥: 읽을 것(영상, 구매, 소개, 스크린샷, 관련 소식)과 확인할 것(게임 정보 카드)을 가른다.
 // 스토어 링크는 구매 마디 한 곳에만 선다(detail-hero 머리 주석). 본인 게임이면 오른쪽 카드에서 고치기, 지우기를 바로 한다.
@@ -32,33 +30,22 @@ import { PLAYTEST_MESSAGES } from "@/lib/indie/playtest-messages";
 import { addIndieCommentAction } from "@/app/(public)/indie/actions";
 import { primaryPlayLink } from "@/lib/indie/promo";
 import { IndieReportButton } from "@/components/indie/report-button";
-import { Crumbs } from "@/components/ui/crumbs";
 import { FadeImage } from "@/components/ui/fade-image";
 import { Page, SectionHead, sectionCardClass } from "@/components/ui/page";
 import { formatDate } from "@/lib/format";
 import { genreLabels, INDIE_MESSAGES as M, INDIE_PLATFORM_LABEL, INDIE_STAGE_LABEL, INDIE_REVIEW_MESSAGES as RV } from "@/lib/indie/messages";
 import { storeLinkPlatform } from "@/lib/indie/constants";
-import { resolveNav } from "@/lib/nav";
 import { INDIE_FROM_PARAM, parseIndieFrom, type IndieFrom } from "@/lib/indie/query";
 import { classifyTraffic } from "@/lib/indie/traffic";
 import { headers } from "next/headers";
 import { firstParam } from "@/lib/games-query";
-import { indieBoostPath, indieEditPath, indieOutPath, indiePath, indiePlaytestPath, ROUTES } from "@/lib/routes";
+import { indieBoostPath, indieEditPath, indieOutPath, indiePath, indiePlaytestPath } from "@/lib/routes";
 import { PLANS_MESSAGES } from "@/lib/payments/plans-messages";
 import { decodeSlugParam } from "@/lib/slug";
 import { getIndiePostBySlug } from "@/server/services/indie";
 import { getCurrentUser } from "@/server/services/users";
 
 type Props = { params: Promise<{ slug: string }>; searchParams: Promise<Record<string, string | string[] | undefined>> };
-
-/** 경로 줄의 앞 두 낱말 — 메뉴 표(lib/nav)의 이름을 그대로 쓴다. 하위 메뉴 띠와 낱말이 어긋나지 않게 */
-function trailHead(slug: string, from: string | null): Array<{ label: string; href: string }> {
-  const { section, sub } = resolveNav(indiePath(slug), new URLSearchParams(from ? { [INDIE_FROM_PARAM]: from } : {}));
-  return [
-    { label: section?.label ?? "", href: section?.href ?? ROUTES.lounge },
-    { label: sub?.label ?? M.listTitle, href: sub?.href ?? ROUTES.indie },
-  ];
-}
 
 /** 이 조회의 유입 경로(lib/indie/traffic). 우리 사이트 호스트는 요청의 Host 로 안다 — 미리 보기 배포와 운영 주소가 다르다 */
 async function viewSource(from: IndieFrom | null) {
@@ -130,8 +117,6 @@ export default async function IndieDetailPage({ params, searchParams }: Props) {
 
   return (
     <Page pad="detail" gap={24}>
-      <Crumbs items={[...trailHead(post.slug, from), { label: post.title }]} />
-
       {canEdit && post.status !== "published" && (
         <div role="status" className="rounded-xl bg-warn-soft px-4 py-3 text-[13px] text-warn">
           {M.hiddenNotice}

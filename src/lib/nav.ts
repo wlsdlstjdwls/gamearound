@@ -158,53 +158,17 @@ export const TRAIL_BACK_ONLY_PATHS: readonly string[] = [ROUTES.makerPlans, ROUT
 export const TRAIL_BACK_ONLY_UNDER: readonly string[] = [ROUTES.indie];
 
 /**
- * 경로 표시를 세우지 않는 메뉴. 게임 탐색의 세 칸은 목업도 "이전 화면" 만 둔다 — 하위 메뉴 띠가 바로 위에서 같은 말을 한다.
- * 다른 메뉴는 목업대로 "메뉴 이름 > 칸 이름" 을 세운다.
- */
-export const TRAIL_NO_CRUMB_SECTIONS: ReadonlySet<NavSection["key"]> = new Set(["explore"]);
-
-/**
- * 하위 칸 아래지만 경로 줄을 세우는 화면과 그 끝 낱말(목업 indreg "개발자 라운지 > 내가 만든 게임 > 내 게임 등록", 글쓰기).
- * 다른 하위 화면(상세, 고치기)은 제 되돌아가기 링크를 갖고 있어 경로 줄을 세우지 않는다 — 두 줄이 같은 말을 한다.
- */
-export const TRAIL_LEAF_LABEL: Readonly<Record<string, string>> = {
-  [ROUTES.indieNew]: "내 게임 등록",
-  [BOARD_WRITE_PATH]: "글쓰기",
-  [`${ROUTES.lounge}/write`]: "글쓰기",
-};
-
-/**
- * 목록 아래 상세 화면 중 경로 줄을 세우는 것 — <목록>/<segment>/<id> 꼴. 게임 게시판 글 상세(목업 postv 의
- * "게임 게시판 > 리뷰 > 게시글")가 여기 선다. 상세 주소가 제 게시판 아래라(lib/community/constants 의 postPath)
- * 띠와 경로가 같은 칸을 켠다. 라운지 글(/lounge/p/<id>)은 주소에 게시판이 없어 아직 넣지 않았다.
- */
-export const TRAIL_LEAF_UNDER: readonly { parents: readonly string[]; segment: string; label: string }[] = [
-  { parents: [ROUTES.boardReviews, ROUTES.boardGuides, ROUTES.boardPromos], segment: "p", label: "게시글" },
-];
-
-/** 경로 줄 끝 낱말. 정해진 화면이 아니면 null */
-export function trailLeaf(pathname: string): string | null {
-  const exact = TRAIL_LEAF_LABEL[pathname];
-  if (exact) return exact;
-  for (const rule of TRAIL_LEAF_UNDER) {
-    for (const parent of rule.parents) {
-      const rest = pathname.startsWith(`${parent}/${rule.segment}/`) ? pathname.slice(parent.length + rule.segment.length + 2) : "";
-      // 바로 아래 한 칸(<id>)만 — 더 깊은 경로(고치기 등)는 제 화면이 따로 정한다
-      if (rest !== "" && !rest.includes("/")) return rule.label;
-    }
-  }
-  return null;
-}
-
-/**
- * 경로 줄을 세울 화면인가 — 끝 낱말이 정해진 화면(글쓰기, 게시글, 내 게임 등록), 띠에 칸이 없는 화면과 인디 상세(되돌아가기만).
+ * "이전 화면" 을 세울 화면인가 — 띠에 칸이 없는 화면과 인디 상세. 경로 표시(메뉴 > 칸 > 끝 낱말)는 이제 어디에도 세우지 않는다.
+ * 2026-10-29(사용자 "이전 화면 / 개발자 라운지 / 글쓰기, 이 형태 안 빠진 화면들이 있네"): 글쓰기, 내 게임 등록, 게임 게시판 글 상세에
+ * 남아 있던 끝 낱말 줄을 걷었다. 글쓰기, 등록은 취소 단추가, 글 상세는 아래 "목록으로" 가 돌아갈 길이다.
  * 하위 칸 그 자체(명예의 전당, 내 게임 관리 등)에는 세우지 않는다(2026-10-28 사용자: "이전 화면 버튼이 필요한가, 빵가루도 필요한가").
  * 바로 위 띠가 켠 칸이 "개발자 라운지 > 내 게임 관리" 를 이미 말하고, 띠의 다른 칸이 곧 돌아갈 길이라 한 줄이 같은 말을 두 번 했다.
  * 칸 화면이 인디 상세 규칙(/indie/<한 칸>)에 걸리는 경우(/indie/mine)도 칸이 이긴다
  */
-export function trailKind(pathname: string, sub: NavSub | null): "leaf" | "back" | null {
-  if (trailLeaf(pathname)) return "leaf";
+export function trailKind(pathname: string, sub: NavSub | null): "back" | null {
   if (TRAIL_BACK_ONLY_PATHS.includes(pathname)) return "back";
+  // 내 게임 등록은 인디 상세 규칙(/indie/<한 칸>)에 걸리지만 상세가 아니다 — 취소 단추가 돌아갈 길이다
+  if (pathname === ROUTES.indieNew) return null;
   if (sub && (pathname === pathOf(sub.href) || sub.aliases?.includes(pathname))) return null;
   return TRAIL_BACK_ONLY_UNDER.some((parent) => childOf(pathname, parent)) ? "back" : null;
 }
