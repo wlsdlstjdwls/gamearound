@@ -61,7 +61,7 @@ export const GRID_MESSAGES = {
   last: "끝 쪽",
   pageOf: (page: number, pages: number) => `${page} / ${pages}`,
   copied: (n: number) => `${n}줄을 복사했어요. 엑셀에 붙여 넣을 수 있어요`,
-  stateLabels: { new: "신규", changed: "수정", deleted: "삭제" },
+  stateLabels: { new: "신규", changed: "수정", deleted: "삭제", error: "오류" },
 } as const;
 
 /** 승인 화면 일괄 처리 띠(components/admin/screen/approval) 문구 — 백오피스 상품그룹핑승인관리의 "상태 + 반려사유 + 적용" 자리 */

@@ -179,7 +179,8 @@ export function FormSection({ title, action, defaultOpen = true, labelWidth, chi
 }
 
 /** 칸 하나 — 이름표 왼쪽(오른쪽 정렬), 필수면 빨간 *. 묶음이 420px 이상이면 칸 둘이 한 줄에 선다(2026-10-30 사용자 "기간이랑 판매여부 같은 행이어도 충분", 긴 글 칸만 wide). 묶음이 300px 보다 좁을 때만 이름표가 칸 위로 올라간다. wide 는 묶음 두 열을 다 쓴다. 열 수는 묶음 폭(@container)으로 정한다 — 미리 보기 기둥이 옆에 서면 좁아진다 */
-export function Field({ label, htmlFor, required, wide, hint, children }: { label: string; htmlFor?: string; required?: boolean; wide?: boolean; hint?: React.ReactNode; children: React.ReactNode }) {
+/** error: 저장 검사 문구. 칸 컴포넌트가 스스로 오류를 그리지 못할 때(날짜 짝, 고르기 칸)만 넘긴다 — TextField, NumberField 는 error 를 직접 받는다 */
+export function Field({ label, htmlFor, required, wide, hint, error, children }: { label: string; htmlFor?: string; required?: boolean; wide?: boolean; hint?: React.ReactNode; error?: string; children: React.ReactNode }) {
   return (
     <div className={cn("grid items-start gap-x-2 gap-y-1 @min-[300px]:grid-cols-[var(--field-label-w,72px)_minmax(0,1fr)]", wide && FULL_ROW)}>
       <label htmlFor={htmlFor} className="flex items-center gap-0.5 text-[12.5px] font-semibold text-mut @min-[300px]:min-h-10 @min-[300px]:justify-end @min-[300px]:text-right">
@@ -192,7 +193,12 @@ export function Field({ label, htmlFor, required, wide, hint, children }: { labe
         {required && <span className="sr-only">{SM.required}</span>}
       </label>
       <div className="min-w-0">{children}</div>
-      {hint && <p className="text-[11.5px] text-dim @min-[300px]:col-start-2">{hint}</p>}
+      {error && (
+        <p role="alert" className="text-[12px] font-medium text-danger @min-[300px]:col-start-2">
+          {error}
+        </p>
+      )}
+      {hint && !error && <p className="text-[11.5px] text-dim @min-[300px]:col-start-2">{hint}</p>}
     </div>
   );
 }

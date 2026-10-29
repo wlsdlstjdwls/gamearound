@@ -41,9 +41,10 @@ export type GridCol<T> = {
   sum?: boolean | ((rows: T[]) => React.ReactNode);
 };
 
-export type RowState = "new" | "changed" | "deleted";
+/** error: 저장 검사에 걸린 칸이 있는 줄(2026-10-31). 신규, 수정보다 앞선다 — 틀린 줄을 목록에서 바로 찾게 */
+export type RowState = "new" | "changed" | "deleted" | "error";
 
-const STATE_BAR: Record<RowState, string> = { new: "before:bg-ok", changed: "before:bg-acc", deleted: "before:bg-danger" };
+const STATE_BAR: Record<RowState, string> = { new: "before:bg-ok", changed: "before:bg-acc", deleted: "before:bg-danger", error: "before:bg-danger" };
 
 /** 칸 폭의 최소 합(px). 이보다 좁을 때만 그리드가 옆으로 굴러간다 — 늘어나는 칸(1fr)이 글자 길이만큼 넓어져 늘 굴러가던 것을 막는다 */
 function minWidthOf(widths: string[]): number {
@@ -234,7 +235,7 @@ export function DataGrid<T>({
                     </span>
                   )}
                   <span role="gridcell" className={cn(BODY_CELL, "justify-center text-[12px] tabular-nums text-dim")}>
-                    {st ? <span className="text-[11px] font-bold text-acc">{M.stateLabels[st]}</span> : offset + i + 1}
+                    {st ? <span className={cn("text-[11px] font-bold", st === "error" ? "text-danger" : "text-acc")}>{M.stateLabels[st]}</span> : offset + i + 1}
                   </span>
                   {columns.map((c) => (
                     <span key={c.key} role="gridcell" data-grid-value data-grid-text={textOf(c, row)} className={cn(BODY_CELL, "px-2", justifyClass(c.align), c.align === "right" && "tabular-nums")}>
