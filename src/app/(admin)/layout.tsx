@@ -13,7 +13,6 @@
 import { Suspense } from "react";
 import { AdminNav } from "@/components/admin/admin-nav";
 import { ProgramShell } from "@/components/admin/program-shell";
-import { FRAME_INIT_SCRIPT } from "@/components/admin/program-shell/frame";
 import { cookies } from "next/headers";
 import { raisedClass } from "@/components/ui/page";
 import { AdminStatusBar, AdminStatusProvider } from "@/components/admin/screen/status";
@@ -38,8 +37,6 @@ export default async function AdminLayout({ children }: { children: React.ReactN
   // 같은 날 넓은 화면에서는 사이트 머리띠도 걷었다(admin-rail 머리 주석, globals.css 의 data-admin-rail).
   return (
     <div className="flex md:items-start">
-      {/* 탭 안(iframe)에서 열렸는지 그리기 전에 찍는다 — 늦으면 기둥과 탭 줄이 한 번 비쳤다 사라진다(globals.css 의 data-admin-frame) */}
-      <script dangerouslySetInnerHTML={{ __html: FRAME_INIT_SCRIPT }} />
       <AdminNav counts={counts} initialCollapsed={collapsed} initialOpened={opened} />
       {/* main 이 아니라 div 인 이유: 루트 레이아웃이 이미 <main> 안에 children 을 넣는다.
           landmark 를 겹쳐 두면 낭독기가 "본문" 을 둘로 센다.

@@ -9,6 +9,7 @@ import "pretendard/dist/web/variable/pretendardvariable-dynamic-subset.css";
 import "./globals.css";
 import { SITE } from "@/lib/site";
 import { THEME_INIT_SCRIPT } from "@/lib/theme";
+import { FRAME_INIT_SCRIPT } from "@/components/admin/program-shell/frame";
 import { SessionProvider } from "@/components/auth/session-provider";
 import { LoginGateProvider } from "@/components/auth/login-gate";
 import { ToastProvider } from "@/components/ui/toast";
@@ -49,6 +50,9 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       <body className="flex min-h-full flex-col bg-bg text-ink">
         {/* 본문보다 먼저 실행돼야 흰 섬광이 없다 — 근거는 lib/theme 의 THEME_INIT_SCRIPT 주석 */}
         <script dangerouslySetInnerHTML={{ __html: THEME_INIT_SCRIPT }} />
+        {/* 관리자 프로그램 탭(iframe) 안인지도 그리기 전에 찍는다. 관리자 레이아웃에 두면 다른 화면에서 /admin 으로 건너갈 때
+            React 가 클라이언트에서 script 를 그리며 "Encountered a script tag" 오류를 냈다(2026-10-31). 루트 레이아웃은 클라이언트 이동 때 다시 그려지지 않는다 */}
+        <script dangerouslySetInnerHTML={{ __html: FRAME_INIT_SCRIPT }} />
         <SessionProvider>
           {/* 토스트와 로그인 팝업(M-01)은 화면 어디서든 부르므로 세션 바로 안쪽에 한 번 선다 */}
           <ToastProvider>
