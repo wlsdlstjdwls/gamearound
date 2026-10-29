@@ -1,5 +1,6 @@
 "use client";
 // 공통 그리드의 머리 줄, 위 띠(찾기, 그리드 단추), 아래 띠(건수, 쪽 넘김). 본체는 index.tsx.
+// 머리는 칸 성격과 상관없이 가운데 정렬하고 몸통보다 한 단 진한 면에 둔다 — 백오피스 표처럼 머리와 몸통이 한눈에 갈린다.
 import { cn } from "@/lib/cn";
 import { ChevronDownIcon, ChevronLeftIcon } from "@/components/ui/icons";
 import { GRID_MESSAGES as M } from "@/lib/admin/messages";
@@ -20,9 +21,9 @@ export function HeadRow<T>({
   check?: { all: boolean; some: boolean; toggle: () => void };
 }) {
   return (
-    <div role="row" data-grid-head className="sticky top-0 z-[1] grid items-center border-b border-line bg-surface-2 text-[11.5px] font-semibold text-mut" style={{ gridTemplateColumns: template }}>
+    <div role="row" data-grid-head className="sticky top-0 z-[1] grid items-stretch border-b border-line-strong bg-surface-3 text-[11.5px] font-bold text-ink-2" style={{ gridTemplateColumns: template }}>
       {check && (
-        <span role="columnheader" className="flex justify-center">
+        <span role="columnheader" className={cn(CELL, "justify-center border-line-strong")}>
           <input
             type="checkbox"
             aria-label={M.checkAll}
@@ -35,7 +36,7 @@ export function HeadRow<T>({
           />
         </span>
       )}
-      <span role="columnheader" className="border-r border-line-soft px-2 py-2 text-center">
+      <span role="columnheader" className={cn(CELL, "justify-center border-line-strong px-2 py-2")}>
         {M.no}
       </span>
       {columns.map((c) => {
@@ -58,20 +59,29 @@ export function HeadRow<T>({
             role="columnheader"
             aria-sort={dir === "asc" ? "ascending" : dir === "desc" ? "descending" : undefined}
             // 고칠 수 있는 칸은 머리 글자색을 달리한다(백오피스 netjs-edit 머리)
-            className={cn("min-w-0 border-r border-line-soft last:border-r-0", c.editable && "text-acc")}
+            className={cn(CELL, "border-line-strong", c.editable && "text-acc")}
           >
             {sortable ? (
-              <button type="button" onClick={() => onSort(c.key)} className={cn("w-full truncate px-2 py-2 hover:text-ink", alignClass(c.align))}>
+              <button type="button" onClick={() => onSort(c.key)} className="w-full self-stretch truncate px-2 py-2 text-center hover:text-acc">
                 {label}
               </button>
             ) : (
-              <span className={cn("block truncate px-2 py-2", alignClass(c.align))}>{label}</span>
+              <span className="block w-full truncate px-2 py-2 text-center">{label}</span>
             )}
           </span>
         );
       })}
     </div>
   );
+}
+
+/** 칸 하나 — 줄 높이를 다 채워 세로선이 위아래로 이어진다. 마지막 칸은 판 테두리가 선을 맡는다 */
+export const CELL = "flex min-w-0 items-center border-r last:border-r-0";
+/** 몸통 칸 — 세로선은 머리보다 한 단 옅게 */
+export const BODY_CELL = `${CELL} border-line`;
+
+export function justifyClass(align: GridCol<unknown>["align"]) {
+  return align === "right" ? "justify-end" : align === "center" ? "justify-center" : "justify-start";
 }
 
 export function alignClass(align: GridCol<unknown>["align"]) {
@@ -81,7 +91,7 @@ export function alignClass(align: GridCol<unknown>["align"]) {
 export function TopBar({ label, query, onQuery, tools }: { label: string; query: string | null; onQuery: (q: string) => void; tools?: React.ReactNode }) {
   if (query === null && !tools) return null;
   return (
-    <div className="flex flex-wrap items-center justify-between gap-2 border-b border-line-soft px-2 py-1.5">
+    <div className="flex flex-wrap items-center justify-between gap-2 border-b border-line bg-surface-4 px-2 py-1.5">
       <div className="flex flex-wrap items-center gap-1.5">{tools}</div>
       {query !== null && (
         <input

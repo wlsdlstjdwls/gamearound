@@ -5,6 +5,7 @@
 //   순번(No) 칸, 칸 선과 줄무늬, 줄 고르기(누르기, 위아래 방향키)와 첫 줄 자동 선택, 머리 눌러 정렬(오름, 내림, 없음),
 //   체크 칸으로 여러 줄 고르기, 그리드 안 찾기(live search), 합계 줄(CwareSummary), 쪽 넘김(PagingToolbar), Ctrl+C 복사(CwareClipboard),
 //   줄 상태 표시(cwareAction 의 신규/수정/삭제), 고칠 수 있는 칸의 머리 글자색, 필수 칸 머리의 *.
+//   칸마다 세로선, 머리 글자는 가운데(2026-10-30, 사용자 "컬럼 열 구분이 잘 안 되고 헤더는 가운데 정렬"). 몸통 칸의 정렬은 칸 성격(align)을 따른다.
 // 옮기지 않은 것: 칸 폭 끌어 바꾸기, 칸 숨기기와 사람별 저장(userConfig) — 관리자가 셋뿐이라 저장할 사람별 설정이 없다.
 //
 // 칸 값은 value(정렬, 찾기, 복사, 엑셀에 쓰는 원값)와 render(화면에 그리는 것)로 나눈다. render 는 칸 안 고치기(입력칸, 스위치)도 된다.
@@ -15,7 +16,7 @@ import { GRID_MESSAGES as M } from "@/lib/admin/messages";
 import { matchesQuery, nextSort, pageOf, sortRows, sumOf, toTsv, type SortState, type SortValue } from "@/lib/admin/grid";
 import { useAdminStatus } from "@/components/admin/screen/status";
 import { registerGrid } from "@/components/admin/screen/data-grid/export";
-import { alignClass, BottomBar, HeadRow, TopBar } from "@/components/admin/screen/data-grid/parts";
+import { alignClass, BottomBar, BODY_CELL, HeadRow, justifyClass, TopBar } from "@/components/admin/screen/data-grid/parts";
 
 export type GridCol<T> = {
   key: string;
@@ -186,7 +187,7 @@ export function DataGrid<T>({
                     } else if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "c") copy();
                   }}
                   className={cn(
-                    "relative grid min-h-11 items-center border-b border-line-soft text-[13px] outline-none transition-colors duration-fast last:border-b-0 focus-visible:shadow-[inset_0_0_0_2px_var(--acc)] [@media(pointer:fine)]:min-h-10",
+                    "relative grid min-h-11 items-stretch border-b border-line-soft text-[13px] outline-none transition-colors duration-fast last:border-b-0 focus-visible:shadow-[inset_0_0_0_2px_var(--acc)] [@media(pointer:fine)]:min-h-10",
                     i % 2 === 1 && "bg-surface-2/40",
                     onSelect && "cursor-pointer",
                     on ? "bg-acc-soft font-semibold text-ink" : onSelect && "hover:bg-surface-2",
@@ -198,16 +199,16 @@ export function DataGrid<T>({
                   style={{ gridTemplateColumns: template }}
                 >
                   {check && (
-                    <span role="gridcell" className="flex justify-center" onClick={(e) => e.stopPropagation()}>
+                    <span role="gridcell" className={cn(BODY_CELL, "justify-center")} onClick={(e) => e.stopPropagation()}>
                       <input type="checkbox" aria-label={M.checkRow(offset + i + 1)} checked={checked.has(key)} onChange={() => toggleOne(key)} className="size-4 accent-[var(--acc)]" />
                     </span>
                   )}
-                  <span role="gridcell" className="text-center text-[12px] tabular-nums text-dim">
+                  <span role="gridcell" className={cn(BODY_CELL, "justify-center text-[12px] tabular-nums text-dim")}>
                     {st ? <span className="text-[11px] font-bold text-acc">{M.stateLabels[st]}</span> : offset + i + 1}
                   </span>
                   {columns.map((c) => (
-                    <span key={c.key} role="gridcell" data-grid-value data-grid-text={textOf(c, row)} className={cn("min-w-0 truncate px-2", alignClass(c.align), c.align === "right" && "tabular-nums")}>
-                      {c.render ? c.render(row) : textOf(c, row)}
+                    <span key={c.key} role="gridcell" data-grid-value data-grid-text={textOf(c, row)} className={cn(BODY_CELL, "px-2", justifyClass(c.align), c.align === "right" && "tabular-nums")}>
+                      <span className={cn("min-w-0 max-w-full truncate", alignClass(c.align))}>{c.render ? c.render(row) : textOf(c, row)}</span>
                     </span>
                   ))}
                 </div>
@@ -215,14 +216,14 @@ export function DataGrid<T>({
             })
           )}
           {hasSum && paged.rows.length > 0 && (
-            <div role="row" className="grid min-h-10 items-center border-t border-line bg-surface-2 text-[13px] font-bold text-ink" style={{ gridTemplateColumns: template }}>
-              {check && <span />}
-              <span role="gridcell" className="text-center text-[12px] text-mut">
+            <div role="row" className="grid min-h-10 items-stretch border-t border-line-strong bg-surface-2 text-[13px] font-bold text-ink" style={{ gridTemplateColumns: template }}>
+              {check && <span className={BODY_CELL} />}
+              <span role="gridcell" className={cn(BODY_CELL, "justify-center text-[12px] text-mut")}>
                 {M.sum}
               </span>
               {columns.map((c) => (
-                <span key={c.key} role="gridcell" className={cn("min-w-0 truncate px-2", alignClass(c.align), "tabular-nums")}>
-                  {typeof c.sum === "function" ? c.sum(filtered) : c.sum ? sumOf(filtered, (r) => c.value?.(r)).toLocaleString("ko-KR") : ""}
+                <span key={c.key} role="gridcell" className={cn(BODY_CELL, "px-2 tabular-nums", justifyClass(c.align))}>
+                  <span className="min-w-0 max-w-full truncate">{typeof c.sum === "function" ? c.sum(filtered) : c.sum ? sumOf(filtered, (r) => c.value?.(r)).toLocaleString("ko-KR") : ""}</span>
                 </span>
               ))}
             </div>

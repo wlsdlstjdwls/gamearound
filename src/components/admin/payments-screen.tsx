@@ -77,7 +77,7 @@ function Detail({ p }: { p: PaymentRowDto }) {
             )}
           </ReadValue>
         </Field>
-        {p.boostMissing && <p className="text-[12.5px] font-semibold text-danger xl:col-span-2">{PM.adminBoostMissing}</p>}
+        {p.boostMissing && <p className="text-[12.5px] font-semibold text-danger @2xl:col-span-2">{PM.adminBoostMissing}</p>}
       </FormSection>
       <FormSection title={PM.adminSectionRefund} action={p.status === "paid" ? <RefundControls orderId={p.orderId} amount={p.amount} prorated={p.proratedAmount} /> : undefined}>
         <Field label={PM.adminFieldRequest}>
@@ -94,7 +94,7 @@ function Detail({ p }: { p: PaymentRowDto }) {
             <ReadValue align="right">{formatPrice(p.proratedAmount)}</ReadValue>
           </Field>
         ) : (
-          <p className="text-[12.5px] text-dim xl:col-span-2">{PM.adminNoRefundHere}</p>
+          <p className="text-[12.5px] text-dim @2xl:col-span-2">{PM.adminNoRefundHere}</p>
         )}
       </FormSection>
     </div>
