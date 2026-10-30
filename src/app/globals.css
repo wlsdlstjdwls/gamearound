@@ -995,7 +995,18 @@ html[data-admin-frame] [data-admin-content] {
 @media (max-width: 767px) {
   body:has([data-admin-tabbar]) {
     padding-bottom: calc(56px + env(safe-area-inset-bottom));
+    /* 탭 띠 위에 붙는 것들(휴대폰 툴바 띠, 처리 띠)이 서는 높이 */
+    --admin-tabbar-offset: calc(56px + env(safe-area-inset-bottom));
   }
+}
+
+/*
+ * 휴대폰 관리자 툴바 띠(components/admin/screen/mobile-tools)의 자리. 띠는 탭 띠 바로 위에 fixed 로 서므로 그만큼 문서 바닥을 더 비운다.
+ * 승인 화면의 처리 띠는 이 높이 위에 붙는다(--admin-actionbar-h, screen/approval). 띠 높이 = 단추 40 + 위아래 8 + 윗선 1
+ */
+body:has([data-admin-actionbar]) {
+  --admin-actionbar-h: 57px;
+  padding-bottom: calc(var(--admin-tabbar-offset, 0px) + var(--admin-actionbar-h));
 }
 
 /*

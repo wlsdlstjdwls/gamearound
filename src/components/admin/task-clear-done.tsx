@@ -16,10 +16,13 @@ import { ClockIcon } from "@/components/ui/icons";
 import { TASK_MESSAGES } from "@/lib/admin/messages";
 import { ROUTES } from "@/lib/routes";
 import { archiveDoneAction, type TaskActionState } from "@/app/(admin)/admin/tasks/actions";
+import { useMobilePolicy } from "@/components/admin/mobile-policy";
 
 export function TaskClearDone({ doneCount }: { doneCount: number }) {
   const [pending, start] = useTransition();
   const [state, setState] = useState<TaskActionState>(null);
+  // 휴대폰에서는 일괄 보관을 세우지 않는다 — 손끝 한 번에 판이 통째로 비는 일이라 PC 에서(lib/admin/mobile)
+  const canArchive = useMobilePolicy().can("taskArchive");
 
   return (
     <div className="flex flex-wrap items-center justify-end gap-2">
@@ -33,7 +36,7 @@ export function TaskClearDone({ doneCount }: { doneCount: number }) {
         <ClockIcon size={15} />
         {TASK_MESSAGES.archiveLink}
       </Link>
-      {doneCount > 0 && (
+      {canArchive && doneCount > 0 && (
         <Button size="sm" variant="secondary" disabled={pending} onClick={() => start(async () => setState(await archiveDoneAction()))}>
           {TASK_MESSAGES.clearDone}
         </Button>

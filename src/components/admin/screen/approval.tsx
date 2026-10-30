@@ -13,6 +13,8 @@ import { FormSelect } from "@/components/ui/select/fields";
 import { askConfirm } from "@/components/ui/confirm-dialog";
 import { useAdminStatus } from "@/components/admin/screen/status";
 import { APPROVAL_MESSAGES as M } from "@/lib/admin/messages";
+import { useMobilePolicy } from "@/components/admin/mobile-policy";
+import { cn } from "@/lib/cn";
 
 export type ApprovalDecision<T> = {
   value: string;
@@ -96,6 +98,9 @@ export function ApprovalBar<T>({
   const [reason, setReason] = useState("");
   const decision = shown.find((d) => d.value === value) ?? shown[0];
   const needsReason = decisions.some((d) => d.needsReason);
+  // 휴대폰 보기만 화면(입점승인관리 등)은 처리 띠를 세우지 않는다(lib/admin/mobile). 광고노출관리의 회수 띠는 표가 예외로 연다
+  const { mobile, can } = useMobilePolicy();
+  const allowed = can("approval");
 
   const submit = () => {
     if (!decision || targets.length === 0) return say(M.noTarget, "error");
@@ -104,8 +109,17 @@ export function ApprovalBar<T>({
     setReason("");
   };
 
+  if (!allowed) return null;
+
   return (
-    <section aria-label={M.bandLabel} className="flex flex-wrap items-center gap-2 rounded-xl border border-line bg-surface-2 px-3 py-2 [@media(pointer:fine)]:[&_button[aria-haspopup]]:h-9">
+    <section
+      aria-label={M.bandLabel}
+      className={cn(
+        "flex flex-wrap items-center gap-2 rounded-xl border border-line bg-surface-2 px-3 py-2 [@media(pointer:fine)]:[&_button[aria-haspopup]]:h-9",
+        // 휴대폰은 카드 목록이 길어 띠가 목록 끝에 묻힌다 — 탭 띠(와 툴바 띠) 위에 붙여 둔다(globals.css 의 --admin-tabbar-offset)
+        mobile && "sticky bottom-[calc(var(--admin-tabbar-offset,0px)+var(--admin-actionbar-h,0px)+8px)] z-10 shadow-[var(--elev-card)]",
+      )}
+    >
       <span className="min-w-[96px] text-[12.5px] font-semibold text-ink-2 tabular-nums">{M.target(targets.length, checkedCount > 0)}</span>
       <div className="w-[132px]">
         <FormSelect name="approval-decision" label={M.decision} hideLabel size="md" value={decision?.value ?? ""} onChange={setValue} options={shown.map((d) => ({ value: d.value, label: d.label }))} disabled={shown.length === 0} />

@@ -11,11 +11,15 @@ import { buttonClass } from "@/components/ui/button";
 import { ADMIN_NAV, GUIDE_MESSAGES as M } from "@/lib/admin/messages";
 import { formatDateTime } from "@/lib/format";
 import { ROUTES } from "@/lib/routes";
+import { useMobilePolicy } from "@/components/admin/mobile-policy";
 
 export function GuideScreen({ uploadedAt }: { uploadedAt: string | null }) {
   const { say } = useAdminStatus();
   const frameRef = useRef<HTMLIFrameElement>(null);
-  const fit = useFitHeight(frameRef, uploadedAt !== null);
+  // 휴대폰은 판 바닥에 맞추지 않고 화면 높이의 대부분을 준다. 바닥 탭 띠와 상태줄을 빼고 나면 맞춘 높이가 문서 첫 문단도 못 담았다(2026-10-30 실측 390x844).
+  // 문서 안에서 굴리고, 바깥 화면은 조금만 굴린다
+  const { mobile } = useMobilePolicy();
+  const fit = useFitHeight(frameRef, uploadedAt !== null && !mobile);
   // 조회를 누를 때마다 바꿔 iframe 을 새로 받게 한다
   const [version, setVersion] = useState(0);
 
@@ -46,7 +50,7 @@ export function GuideScreen({ uploadedAt }: { uploadedAt: string | null }) {
           src={ROUTES.apiAdminGuide}
           title={M.frameTitle}
           className="block w-full rounded-xl border border-line bg-surface"
-          style={fit ? { height: fit.px } : undefined}
+          style={mobile ? { height: "calc(100svh - var(--header-h) - 140px)" } : fit ? { height: fit.px } : undefined}
         />
       ) : (
         <EmptyNote title={M.empty}>{M.emptyHint}</EmptyNote>

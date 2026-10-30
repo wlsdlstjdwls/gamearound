@@ -20,47 +20,9 @@ import { registeredGrids } from "@/components/admin/screen/data-grid/export";
 import { GRID_MESSAGES, SCREEN_MESSAGES as M } from "@/lib/admin/messages";
 import { useSession } from "@/components/auth/session-provider";
 import { askConfirm } from "@/components/ui/confirm-dialog";
-
-type IconProps = { size?: number };
-const svg = (size = 16) => ({ width: size, height: size, viewBox: "0 0 24 24", fill: "none", stroke: "currentColor", strokeWidth: 2, strokeLinecap: "round" as const, strokeLinejoin: "round" as const, "aria-hidden": true });
-function RefreshIcon({ size }: IconProps) {
-  return (
-    <svg {...svg(size)}>
-      <path d="M20 11a8 8 0 1 0-2.3 5.7M20 4v7h-7" />
-    </svg>
-  );
-}
-function PlusCircleIcon({ size }: IconProps) {
-  return (
-    <svg {...svg(size)}>
-      <circle cx="12" cy="12" r="9" />
-      <path d="M12 8v8M8 12h8" />
-    </svg>
-  );
-}
-function MinusCircleIcon({ size }: IconProps) {
-  return (
-    <svg {...svg(size)}>
-      <circle cx="12" cy="12" r="9" />
-      <path d="M8 12h8" />
-    </svg>
-  );
-}
-function SaveIcon({ size }: IconProps) {
-  return (
-    <svg {...svg(size)}>
-      <circle cx="12" cy="12" r="9" />
-      <path d="m8.5 12.5 2.5 2.5 4.5-5" />
-    </svg>
-  );
-}
-function DownloadIcon({ size }: IconProps) {
-  return (
-    <svg {...svg(size)}>
-      <path d="M12 4v11m0 0-4-4m4 4 4-4M5 20h14" />
-    </svg>
-  );
-}
+import { useMobilePolicy } from "@/components/admin/mobile-policy";
+import { MobileActionBar, publishMobileTools } from "@/components/admin/screen/mobile-tools";
+import { DownloadIcon, MinusCircleIcon, PlusCircleIcon, RefreshIcon, SaveIcon, type IconProps } from "@/components/admin/screen/tool-icons";
 
 /** 처리 결과를 건수 안내가 덮지 않는 동안. 처리 뒤 다시 읽기는 Neon 왕복 때문에 몇 초 걸린다(neon-roundtrip-cost) — 그보다 넉넉히 */
 const KEEP_RESULT_MS = 15_000;
@@ -128,7 +90,7 @@ export function AdminScreenHead({
   count,
   note,
   actions,
-  tools = {},
+  tools: givenTools = {},
 }: {
   title: string;
   /** 조회된 건수. 상태줄에 "N건 조회됐어요" 로 남는다 */
@@ -141,6 +103,12 @@ export function AdminScreenHead({
 }) {
   const router = useRouter();
   const { say, status } = useAdminStatus();
+  // 휴대폰 허용 표(lib/admin/mobile). 보기만 화면은 입력, 삭제, 저장을 넘겨받지 않은 것으로 친다 — 단축키도 같은 값을 읽어 같이 꺼진다.
+  // 그 단추들은 흐리게 두지 않고 걷는다. 흐린 단추를 자리에 두는 까닭은 손이 자리를 기억하게 하려는 것인데(머리 주석),
+  // 휴대폰에서는 아예 쓰지 않는 단추라 좁은 머리 줄만 차지한다
+  const { mobile, can } = useMobilePolicy();
+  const editable = can("edit");
+  const tools: ScreenTools = editable ? givenTools : { retrieve: givenTools.retrieve };
   const { user } = useSession();
   const path = usePath();
   const [refreshing, startRefresh] = useTransition();
@@ -149,7 +117,10 @@ export function AdminScreenHead({
 
   useEffect(() => {
     toolsRef.current = tools;
+    // 휴대폰은 입력, 삭제, 저장을 바닥 띠와 상세 시트 머리에 세운다(screen/mobile-tools)
+    if (mobile) publishMobileTools(tools);
   });
+  useEffect(() => (mobile ? () => publishMobileTools(null) : undefined), [mobile]);
 
   // 서버가 준 건수를 상태줄에 남긴다. 다시 조회해서 건수가 바뀌어도 다시 쓴다.
   // 단 방금 남긴 처리 결과(걸었어요, 승인했어요, 실패 사유)는 덮지 않는다 — 처리 뒤 서버가 다시 준 목록의 건수가 바뀌며
@@ -234,6 +205,34 @@ export function AdminScreenHead({
     return () => window.removeEventListener("keydown", onKey);
   }, []);
 
+  if (mobile) {
+    // 휴대폰 머리: 제목 + 조회 아이콘 한 줄. 메뉴 위치(상품관리 > 상품등록)는 뺀다 — 좁은 줄에서 제목을 두 줄로 꺾었고,
+    // 휴대폰은 바닥 띠가 지금 자리를 말한다. 화면만의 단추(actions)는 제목 아래 줄에 선다
+    return (
+      <>
+        <header className="sticky top-[var(--header-h)] z-20 -mx-4 -mt-4 flex flex-col gap-2 rounded-t-[var(--radius-panel)] border-b border-line-soft bg-surface/95 px-4 py-2.5 backdrop-blur">
+          <div className="flex items-center gap-2">
+            <div className="min-w-0 flex-1">
+              <h1 className="break-keep text-[18px] font-extrabold leading-tight tracking-[-0.02em] text-ink">{title}</h1>
+              {note && <p className="mt-0.5 text-[12.5px] text-dim">{note}</p>}
+            </div>
+            <button
+              type="button"
+              onClick={retrieve}
+              aria-label={M.retrieve}
+              aria-busy={refreshing || undefined}
+              className={cn("press flex size-11 shrink-0 items-center justify-center rounded-full bg-surface-2 text-ink-2 transition-colors", refreshing && "text-acc")}
+            >
+              <RefreshIcon size={19} />
+            </button>
+          </div>
+          {actions && <div className="flex flex-wrap items-center gap-2">{actions}</div>}
+        </header>
+        <MobileActionBar />
+      </>
+    );
+  }
+
   return (
     // 판(layout 의 흰 판) 위쪽에 붙는다 — 판의 안쪽 여백만큼 바깥으로 당겨 판 너비를 다 쓴다
     <header className="sticky top-[var(--header-h)] z-20 -mx-4 -mt-4 flex flex-wrap items-center justify-between gap-x-4 gap-y-2 rounded-t-[var(--radius-panel)] border-b border-line-soft bg-surface/95 px-4 py-2 backdrop-blur sm:-mx-5 sm:-mt-5 sm:px-5">
@@ -253,10 +252,14 @@ export function AdminScreenHead({
         {actions}
         <div role="toolbar" aria-label={M.toolbar} className="flex items-center rounded-xl bg-surface-2 p-0.5">
           <ToolButton label={M.retrieve} tip={M.retrieveKey} Icon={RefreshIcon} onClick={retrieve} disabled={false} busy={refreshing} />
-          <ToolButton label={M.insert} tip={M.insertKey} Icon={PlusCircleIcon} onClick={tools.insert} disabled={!tools.insert} />
-          <ToolButton label={M.delete} tip={M.deleteKey} Icon={MinusCircleIcon} onClick={tools.delete} disabled={!tools.delete} />
-          <ToolButton label={M.save} tip={M.saveKey} Icon={SaveIcon} onClick={tools.save} disabled={!tools.save || Boolean(tools.saveDisabled)} busy={tools.saving} />
-          <ToolButton label={M.excel} tip={M.excelKey} Icon={DownloadIcon} onClick={excel} disabled={!hasGrid} />
+          {editable && (
+            <>
+              <ToolButton label={M.insert} tip={M.insertKey} Icon={PlusCircleIcon} onClick={tools.insert} disabled={!tools.insert} />
+              <ToolButton label={M.delete} tip={M.deleteKey} Icon={MinusCircleIcon} onClick={tools.delete} disabled={!tools.delete} />
+              <ToolButton label={M.save} tip={M.saveKey} Icon={SaveIcon} onClick={tools.save} disabled={!tools.save || Boolean(tools.saveDisabled)} busy={tools.saving} />
+            </>
+          )}
+          {can("excel") && <ToolButton label={M.excel} tip={M.excelKey} Icon={DownloadIcon} onClick={excel} disabled={!hasGrid} />}
         </div>
       </div>
     </header>

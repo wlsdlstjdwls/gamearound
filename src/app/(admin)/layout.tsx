@@ -19,6 +19,8 @@ import { AdminStatusBar, AdminStatusProvider } from "@/components/admin/screen/s
 import { ADMIN_GROUPS_COOKIE, ADMIN_RAIL_COOKIE } from "@/lib/admin/rail";
 import { requireRoleOrForbid } from "@/server/auth/guards";
 import { getAdminWorkCounts } from "@/server/services/admin-workload";
+import { AdminDeviceProvider, MobileGate } from "@/components/admin/mobile-policy";
+import { isMobileDevice } from "@/server/device";
 
 export const dynamic = "force-dynamic";
 
@@ -30,40 +32,44 @@ export default async function AdminLayout({ children }: { children: React.ReactN
   const jar = await cookies();
   const collapsed = jar.get(ADMIN_RAIL_COOKIE)?.value === "1";
   const opened = decodeURIComponent(jar.get(ADMIN_GROUPS_COOKIE)?.value ?? "").split(",").filter(Boolean);
+  // 휴대폰이면 허용 표(lib/admin/mobile)대로 메뉴, 진입, 단추를 줄인다. 폭이 아니라 기기로 가르는 이유는 server/device
+  const mobile = await isMobileDevice();
 
   // 2026-10-29(사용자 "왼쪽 메뉴를 왼쪽에 붙이고 접었다 펼 수 있게, 공간 활용"): 가운데 1440 폭 안에 기둥과 본문을 띄우던 Page 를 걷었다.
   // 기둥은 화면 왼쪽 끝에 붙고(admin-rail), 본문은 남은 폭을 다 쓴다 — 표와 판이 주인공인 화면이라 폭이 곧 칸 수다.
   // 너무 넓은 화면에서 줄이 끝없이 늘지 않게 본문만 1600 에서 멈춘다.
   // 같은 날 넓은 화면에서는 사이트 머리띠도 걷었다(admin-rail 머리 주석, globals.css 의 data-admin-rail).
   return (
-    <div className="flex md:items-start">
-      <AdminNav counts={counts} initialCollapsed={collapsed} initialOpened={opened} />
-      {/* main 이 아니라 div 인 이유: 루트 레이아웃이 이미 <main> 안에 children 을 넣는다.
-          landmark 를 겹쳐 두면 낭독기가 "본문" 을 둘로 센다.
+    <AdminDeviceProvider mobile={mobile}>
+      <div className="flex md:items-start">
+        <AdminNav counts={counts} initialCollapsed={collapsed} initialOpened={opened} />
+        {/* main 이 아니라 div 인 이유: 루트 레이아웃이 이미 <main> 안에 children 을 넣는다.
+            landmark 를 겹쳐 두면 낭독기가 "본문" 을 둘로 센다.
 
-          본문을 흰 판 한 장에 올린다(2026-09-30, 사용자: "배경색이랑 컨텐츠들이 색상이 비슷해서 구분이 안 간다").
-          관리자 화면의 면(Panel, 빈 칸 안내, 할 일 칸)은 전부 --surface-2 라 바탕과 녹는다 — 여기 한 곳에서 흰 판을 깐다.
+            본문을 흰 판 한 장에 올린다(2026-09-30, 사용자: "배경색이랑 컨텐츠들이 색상이 비슷해서 구분이 안 간다").
+            관리자 화면의 면(Panel, 빈 칸 안내, 할 일 칸)은 전부 --surface-2 라 바탕과 녹는다 — 여기 한 곳에서 흰 판을 깐다.
 
-          바닥 띠가 fixed 라 이 칸이 화면 높이를 붙들 이유는 없다 — 띠 자리는 globals.css 가
-          문서 바닥에 비운다(`body:has([data-admin-tabbar])`).
+            바닥 띠가 fixed 라 이 칸이 화면 높이를 붙들 이유는 없다 — 띠 자리는 globals.css 가
+            문서 바닥에 비운다(`body:has([data-admin-tabbar])`).
 
-          넓은 화면의 아래 여백은 위와 같은 16px 이다(2026-10-30). 48px 이던 때는 판이 화면 안에 다 들어와도 그 여백만큼 문서가 굴렀다 —
-          탭(iframe)으로 연 화면은 늘 20px, 짧은 화면도 수십 px(사용자 "아래에 더 없는데도 스크롤"). program-shell 의 FRAME_HEIGHT 가 이 값을 뺀다. */}
-      <div data-admin-content className="page-enter min-w-0 flex-1 px-4 pb-6 pt-4 sm:px-6 md:pb-4 lg:px-7">
-        {/* 판 바닥에 처리 결과 한 줄(백오피스의 하단 상태줄, components/admin/screen/status). 머리 툴바와 폼들이 여기에 쓴다 */}
-        <AdminStatusProvider>
-          {/* 열린 프로그램 탭(백오피스 창 머리). 탭을 오가도 화면이 내려가지 않는다 — 방법은 components/admin/program-shell 머리 주석.
-              탭 안 문서(iframe)에서는 껍데기가 판만 그린다. 주소 조건을 읽어 Suspense 로 감싼다 */}
-          <div className="mx-auto w-full max-w-[1600px] min-w-0">
-            <Suspense fallback={<AdminPanel>{children}</AdminPanel>}>
-              <ProgramShell>
-                <AdminPanel>{children}</AdminPanel>
-              </ProgramShell>
-            </Suspense>
-          </div>
-        </AdminStatusProvider>
+            넓은 화면의 아래 여백은 위와 같은 16px 이다(2026-10-30). 48px 이던 때는 판이 화면 안에 다 들어와도 그 여백만큼 문서가 굴렀다 —
+            탭(iframe)으로 연 화면은 늘 20px, 짧은 화면도 수십 px(사용자 "아래에 더 없는데도 스크롤"). program-shell 의 FRAME_HEIGHT 가 이 값을 뺀다. */}
+        <div data-admin-content className="page-enter min-w-0 flex-1 px-4 pb-6 pt-4 sm:px-6 md:pb-4 lg:px-7">
+          {/* 판 바닥에 처리 결과 한 줄(백오피스의 하단 상태줄, components/admin/screen/status). 머리 툴바와 폼들이 여기에 쓴다 */}
+          <AdminStatusProvider>
+            {/* 열린 프로그램 탭(백오피스 창 머리). 탭을 오가도 화면이 내려가지 않는다 — 방법은 components/admin/program-shell 머리 주석.
+                탭 안 문서(iframe)에서는 껍데기가 판만 그린다. 주소 조건을 읽어 Suspense 로 감싼다 */}
+            <div className="mx-auto w-full max-w-[1600px] min-w-0">
+              <Suspense fallback={<AdminPanel>{children}</AdminPanel>}>
+                <ProgramShell>
+                  <AdminPanel>{children}</AdminPanel>
+                </ProgramShell>
+              </Suspense>
+            </div>
+          </AdminStatusProvider>
+        </div>
       </div>
-    </div>
+    </AdminDeviceProvider>
   );
 }
 
@@ -71,7 +77,8 @@ export default async function AdminLayout({ children }: { children: React.ReactN
 function AdminPanel({ children }: { children: React.ReactNode }) {
   return (
     <div className={raisedClass("flex w-full min-w-0 flex-col gap-4 p-4 sm:p-5")}>
-      {children}
+      {/* 휴대폰에서 닫은 화면은 본문 대신 PC 안내(components/admin/mobile-policy) */}
+      <MobileGate>{children}</MobileGate>
       <AdminStatusBar />
     </div>
   );

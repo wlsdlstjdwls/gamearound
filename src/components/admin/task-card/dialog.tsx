@@ -28,6 +28,7 @@ import { TaskAttachmentsPart } from "@/components/admin/task-attachments";
 import { deleteTaskAction, moveTaskAction, updateTaskAction, type TaskActionState } from "@/app/(admin)/admin/tasks/actions";
 import { askConfirm } from "@/components/ui/confirm-dialog";
 import { CONFIRM_MESSAGES } from "@/lib/messages/confirm";
+import { useMobilePolicy } from "@/components/admin/mobile-policy";
 
 export function TaskDialog({
   task,
@@ -43,6 +44,8 @@ export function TaskDialog({
   const { name } = useCodes();
   const [pending, start] = useTransition();
   const [state, setState] = useState<TaskActionState>(null);
+  // 카드 지우기는 되돌릴 수 없어 휴대폰에서는 단추를 세우지 않는다(lib/admin/mobile)
+  const canDelete = useMobilePolicy().can("taskDelete");
 
   const run = (fn: () => Promise<TaskActionState>) => start(async () => setState(await fn()));
   // 고치기 폼의 상태는 팝업이 쥔다 — 저장 버튼이 머리에 서서(2026-10-12, 사용자 요청) 폼 밖이 됐다
@@ -127,18 +130,20 @@ export function TaskDialog({
             {TASK_MESSAGES.author} {task.author?.name ?? TASK_MESSAGES.authorUnknown} | {TASK_MESSAGES.updatedAt}{" "}
             {formatLongDateTime(task.updatedAt)}
           </span>
-          <button
-            type="button"
-            disabled={pending}
-            onClick={async () => {
-              if (!(await askConfirm(TASK_MESSAGES.removeConfirm, { confirmLabel: CONFIRM_MESSAGES.delete, tone: "danger" }))) return;
-              onOpenChange(false);
-              run(() => deleteTaskAction(task.id));
-            }}
-            className="press rounded-xl px-3 py-2 text-[13.5px] text-mut transition-colors hover:bg-danger-soft hover:text-danger disabled:opacity-60"
-          >
-            {TASK_MESSAGES.dangerZone}
-          </button>
+          {canDelete && (
+            <button
+              type="button"
+              disabled={pending}
+              onClick={async () => {
+                if (!(await askConfirm(TASK_MESSAGES.removeConfirm, { confirmLabel: CONFIRM_MESSAGES.delete, tone: "danger" }))) return;
+                onOpenChange(false);
+                run(() => deleteTaskAction(task.id));
+              }}
+              className="press rounded-xl px-3 py-2 text-[13.5px] text-mut transition-colors hover:bg-danger-soft hover:text-danger disabled:opacity-60"
+            >
+              {TASK_MESSAGES.dangerZone}
+            </button>
+          )}
         </div>
       </div>
     </Sheet>

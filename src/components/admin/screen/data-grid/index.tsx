@@ -17,11 +17,14 @@ import { Clamp } from "@/components/ui/tooltip";
 import { useContext, useEffect, useId, useMemo, useRef, useState } from "react";
 import { cn } from "@/lib/cn";
 import { GRID_MESSAGES as M } from "@/lib/admin/messages";
-import { GRID_PAGE_ALL, GRID_PAGE_SIZES, matchesQuery, nextSort, pageOf, pageOfIndex, pageSizeOf, sortRows, sumOf, toTsv, type GridPaging, type SortState, type SortValue } from "@/lib/admin/grid";
+import { GRID_PAGE_ALL, GRID_PAGE_SIZES, matchesQuery, nextSort, pageOf, pageOfIndex, pageSizeOf, sortRows, toTsv, type GridPaging, type SortState, type SortValue } from "@/lib/admin/grid";
 import { useAdminStatus } from "@/components/admin/screen/status";
 import { registerGrid, type GridDump } from "@/components/admin/screen/data-grid/export";
 import { FitFillContext, useFitHeight } from "@/components/admin/screen/data-grid/fit";
-import { alignClass, BottomBar, BODY_CELL, HeadRow, justifyClass, TopBar } from "@/components/admin/screen/data-grid/parts";
+import { alignClass, BottomBar, BODY_CELL, HeadRow, justifyClass, SumRow, TopBar } from "@/components/admin/screen/data-grid/parts";
+import { cellExport, minWidthOf, pickOf, STATE_BAR, textOf } from "@/components/admin/screen/data-grid/cells";
+import { GridCards } from "@/components/admin/screen/data-grid/cards";
+import { useMobilePolicy } from "@/components/admin/mobile-policy";
 
 export type GridCol<T> = {
   key: string;
@@ -43,27 +46,12 @@ export type GridCol<T> = {
   required?: boolean;
   /** 합계 줄에 이 칸의 합을 둔다. 함수면 그 결과를 그대로 */
   sum?: boolean | ((rows: T[]) => React.ReactNode);
+  /** 휴대폰 카드(data-grid/cards)에서의 자리. title 은 카드 제목, hide 는 카드에서 뺀다. 없으면 숫자 아닌 첫 칸이 제목이다 */
+  mobile?: "title" | "hide";
 };
 
 /** error: 저장 검사에 걸린 칸이 있는 줄(2026-10-31). 신규, 수정보다 앞선다 — 틀린 줄을 목록에서 바로 찾게 */
 export type RowState = "new" | "changed" | "deleted" | "error";
-
-const STATE_BAR: Record<RowState, string> = { new: "before:bg-plum", changed: "before:bg-acc", deleted: "before:bg-danger", error: "before:bg-danger" };
-
-/** 칸 폭의 최소 합(px). 이보다 좁을 때만 그리드가 옆으로 굴러간다 — 늘어나는 칸(1fr)이 글자 길이만큼 넓어져 늘 굴러가던 것을 막는다 */
-function minWidthOf(widths: string[]): number {
-  return widths.reduce((n, w) => {
-    const px = /^(\d+)px$/.exec(w)?.[1] ?? /^minmax\((\d+)px/.exec(w)?.[1];
-    return n + (px ? Number(px) : 80);
-  }, 0);
-}
-
-function textOf<T>(c: GridCol<T>, row: T): string {
-  if (c.text) return c.text(row);
-  const v = c.value?.(row);
-  if (v === null || v === undefined) return "";
-  return v instanceof Date ? v.toISOString() : String(v);
-}
 
 export function DataGrid<T>({
   label,
@@ -115,6 +103,8 @@ export function DataGrid<T>({
 }) {
   const id = useId();
   const { say } = useAdminStatus();
+  // 휴대폰은 표 대신 카드 목록이다(data-grid/cards). 정렬, 찾기, 쪽, 체크 상태는 여기서 쥔 그대로 넘긴다
+  const { mobile } = useMobilePolicy();
   const [sort, setSort] = useState<SortState>(null);
   const [query, setQuery] = useState("");
   const [page, setPage] = useState(1);
@@ -163,21 +153,13 @@ export function DataGrid<T>({
   }, [autoSelectFirst, onSelect, selected, sorted, rowKey]);
 
   // 엑셀이 전체 줄을 받아 가게 걸어 둔다(쪽, 찾기와 상관없이 지금 정렬 순서의 모든 줄)
-  // 오른쪽 정렬 칸의 원값이 숫자면 숫자로 내보낸다 — 엑셀에서 천 단위 쉼표 서식이 붙고 합계, 정렬이 된다
-  const dump = (): GridDump => {
-    const picked = fileKey && selected !== null ? rows.find((r) => rowKey(r) === selected) : undefined;
-    return {
-      label,
-      head: columns.map((c) => c.label),
-      rows: sortRows(rows, sort, valueOf).map((r) =>
-        columns.map((c) => {
-          const v = c.align === "right" ? c.value?.(r) : undefined;
-          return typeof v === "number" ? v : textOf(c, r);
-        }),
-      ),
-      pick: picked && fileKey ? fileKey(picked) : null,
-    };
-  };
+  // 숫자 칸을 숫자로 내보내는 규칙은 data-grid/cells 의 cellExport
+  const dump = (): GridDump => ({
+    label,
+    head: columns.map((c) => c.label),
+    rows: sortRows(rows, sort, valueOf).map((r) => columns.map((c) => cellExport(c, r))),
+    pick: fileKey && selected !== null ? pickOf(rows.find((r) => rowKey(r) === selected), fileKey) : null,
+  });
   const dumpRef = useRef(dump);
   useEffect(() => {
     dumpRef.current = dump;
@@ -211,95 +193,103 @@ export function DataGrid<T>({
   };
 
   return (
-    <div className="flex min-w-0 flex-col overflow-hidden rounded-xl border border-line bg-surface">
+    <div className={cn("flex min-w-0 flex-col", mobile ? "gap-2" : "overflow-hidden rounded-xl border border-line bg-surface")}>
       <TopBar label={label} query={searchable ? query : null} onQuery={(q) => (setQuery(q), setPage(1))} tools={tools} />
       {/* 세로 스크롤은 가두지 않는다 — 몸통이 끝에 닿으면 휠이 화면으로 넘어가야 한다. 가둬 두니 제 스크롤이 없는 그리드 위에서도
           화면을 내릴 수 없었다(2026-10-30 사용자, 매출현황). 가로만 가둔다(옆으로 굴리다 브라우저 뒤로 가기가 걸리지 않게) */}
-      <div ref={bodyRef} role="grid" aria-label={label} aria-rowcount={sorted.length} className="overflow-auto overscroll-x-contain" style={bodyStyle || (bodyMax ? { maxHeight: bodyMax } : undefined)}>
-        <div style={{ minWidth: minWidthOf([...(check ? ["40px"] : []), "48px", ...columns.map((c) => c.width)]) }}>
-          <HeadRow columns={columns} template={template} sort={sort} onSort={(k) => setSort((s) => nextSort(s, k))} check={check ? { all: allOn, some: someOn, toggle: toggleAll } : undefined} />
-          {paged.rows.length === 0 ? (
-            <p className="px-3 py-8 text-center text-[12.5px] text-dim">{empty}</p>
-          ) : (
-            paged.rows.map((row, i) => {
-              const key = rowKey(row);
-              const on = key === selected;
-              const st = rowState?.(row);
-              return (
-                <div
-                  key={key}
-                  ref={(el) => {
-                    rowRefs.current[i] = el;
-                  }}
-                  role="row"
-                  data-grid-row
-                  aria-selected={onSelect ? on : undefined}
-                  tabIndex={onSelect ? (on || (selected === null && i === 0) ? 0 : -1) : undefined}
-                  onClick={() => onSelect?.(key)}
-                  onKeyDown={(e) => {
-                    if (e.target !== e.currentTarget) return;
-                    if (e.key === "ArrowDown" || e.key === "ArrowUp") {
-                      e.preventDefault();
-                      select(i + (e.key === "ArrowDown" ? 1 : -1));
-                    } else if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "c") copy();
-                  }}
-                  className={cn(
-                    "relative grid min-h-11 items-stretch border-b border-line-soft text-[13px] outline-none transition-colors duration-fast last:border-b-0 focus-visible:shadow-[inset_0_0_0_2px_var(--acc)] [@media(pointer:fine)]:min-h-10",
-                    i % 2 === 1 && !on && "bg-surface-2/40",
-                    onSelect && "cursor-pointer",
-                    on ? "bg-acc-row font-semibold text-ink shadow-[inset_0_0_0_1px_var(--acc)]" : onSelect && "hover:bg-surface-2",
-                    rowTone?.(row) === "muted" && !on && "text-dim",
-                    st === "deleted" && "line-through",
-                    st && cn("before:absolute before:inset-y-1 before:left-0 before:w-[3px] before:rounded-full", STATE_BAR[st]),
-                    !st && on && "before:absolute before:inset-y-0 before:left-0 before:w-1 before:bg-acc",
-                  )}
-                  style={{ gridTemplateColumns: template }}
-                >
-                  {check && (
-                    <span role="gridcell" className={cn(BODY_CELL, "justify-center")} onClick={(e) => e.stopPropagation()}>
-                      <input type="checkbox" aria-label={M.checkRow(offset + i + 1)} checked={checked.has(key)} onChange={() => toggleOne(key)} className="size-4 accent-[var(--acc)]" />
+      {mobile ? (
+        <GridCards
+          columns={columns}
+          rows={paged.rows}
+          rowKey={rowKey}
+          offset={offset}
+          selected={selected}
+          onSelect={onSelect}
+          checked={check ? checked : undefined}
+          onToggle={check ? toggleOne : undefined}
+          rowState={rowState}
+          rowTone={rowTone}
+          sumRows={hasSum ? filtered : null}
+          empty={empty}
+        />
+      ) : (
+        <div ref={bodyRef} role="grid" aria-label={label} aria-rowcount={sorted.length} className="overflow-auto overscroll-x-contain" style={bodyStyle || (bodyMax ? { maxHeight: bodyMax } : undefined)}>
+          <div style={{ minWidth: minWidthOf([...(check ? ["40px"] : []), "48px", ...columns.map((c) => c.width)]) }}>
+            <HeadRow columns={columns} template={template} sort={sort} onSort={(k) => setSort((s) => nextSort(s, k))} check={check ? { all: allOn, some: someOn, toggle: toggleAll } : undefined} />
+            {paged.rows.length === 0 ? (
+              <p className="px-3 py-8 text-center text-[12.5px] text-dim">{empty}</p>
+            ) : (
+              paged.rows.map((row, i) => {
+                const key = rowKey(row);
+                const on = key === selected;
+                const st = rowState?.(row);
+                return (
+                  <div
+                    key={key}
+                    ref={(el) => {
+                      rowRefs.current[i] = el;
+                    }}
+                    role="row"
+                    data-grid-row
+                    aria-selected={onSelect ? on : undefined}
+                    tabIndex={onSelect ? (on || (selected === null && i === 0) ? 0 : -1) : undefined}
+                    onClick={() => onSelect?.(key)}
+                    onKeyDown={(e) => {
+                      if (e.target !== e.currentTarget) return;
+                      if (e.key === "ArrowDown" || e.key === "ArrowUp") {
+                        e.preventDefault();
+                        select(i + (e.key === "ArrowDown" ? 1 : -1));
+                      } else if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "c") copy();
+                    }}
+                    className={cn(
+                      "relative grid min-h-11 items-stretch border-b border-line-soft text-[13px] outline-none transition-colors duration-fast last:border-b-0 focus-visible:shadow-[inset_0_0_0_2px_var(--acc)] [@media(pointer:fine)]:min-h-10",
+                      i % 2 === 1 && !on && "bg-surface-2/40",
+                      onSelect && "cursor-pointer",
+                      on ? "bg-acc-row font-semibold text-ink shadow-[inset_0_0_0_1px_var(--acc)]" : onSelect && "hover:bg-surface-2",
+                      rowTone?.(row) === "muted" && !on && "text-dim",
+                      st === "deleted" && "line-through",
+                      st && cn("before:absolute before:inset-y-1 before:left-0 before:w-[3px] before:rounded-full", STATE_BAR[st]),
+                      !st && on && "before:absolute before:inset-y-0 before:left-0 before:w-1 before:bg-acc",
+                    )}
+                    style={{ gridTemplateColumns: template }}
+                  >
+                    {check && (
+                      <span role="gridcell" className={cn(BODY_CELL, "justify-center")} onClick={(e) => e.stopPropagation()}>
+                        <input type="checkbox" aria-label={M.checkRow(offset + i + 1)} checked={checked.has(key)} onChange={() => toggleOne(key)} className="size-4 accent-[var(--acc)]" />
+                      </span>
+                    )}
+                    <span role="gridcell" className={cn(BODY_CELL, "justify-center text-[12px] tabular-nums", on ? "font-bold text-acc" : "text-dim")}>
+                      {st ? <span className={cn("text-[11px] font-bold", st === "error" ? "text-danger" : "text-acc")}>{M.stateLabels[st]}</span> : offset + i + 1}
                     </span>
-                  )}
-                  <span role="gridcell" className={cn(BODY_CELL, "justify-center text-[12px] tabular-nums", on ? "font-bold text-acc" : "text-dim")}>
-                    {st ? <span className={cn("text-[11px] font-bold", st === "error" ? "text-danger" : "text-acc")}>{M.stateLabels[st]}</span> : offset + i + 1}
-                  </span>
-                  {columns.map((c) => (
-                    <span key={c.key} role="gridcell" data-grid-value data-grid-text={textOf(c, row)} className={cn(BODY_CELL, "px-2", justifyClass(c.align), c.align === "right" && "tabular-nums")}>
-                      {/* 잘린 칸은 올리면 전체 글이 말풍선으로 뜬다(2026-10-30 사용자 "셀 툴팁 공통화"). title 속성은 쓰지 않는다(AGENTS §3) */}
-                      <Clamp text={textOf(c, row)} always={c.tip} className={cn("min-w-0 max-w-full", alignClass(c.align))}>
-                        {c.render ? c.render(row) : textOf(c, row)}
-                      </Clamp>
-                    </span>
-                  ))}
-                </div>
-              );
-            })
-          )}
-          {hasSum && paged.rows.length > 0 && (
-            <div role="row" className="grid min-h-10 items-stretch border-t border-line-strong bg-surface-2 text-[13px] font-bold text-ink" style={{ gridTemplateColumns: template }}>
-              {check && <span className={BODY_CELL} />}
-              <span role="gridcell" className={cn(BODY_CELL, "justify-center text-[12px] text-mut")}>
-                {M.sum}
-              </span>
-              {columns.map((c) => (
-                <span key={c.key} role="gridcell" className={cn(BODY_CELL, "px-2 tabular-nums", justifyClass(c.align))}>
-                  <span className="min-w-0 max-w-full truncate">{typeof c.sum === "function" ? c.sum(filtered) : c.sum ? sumOf(filtered, (r) => c.value?.(r)).toLocaleString("ko-KR") : ""}</span>
-                </span>
-              ))}
-            </div>
-          )}
+                    {columns.map((c) => (
+                      <span key={c.key} role="gridcell" data-grid-value data-grid-text={textOf(c, row)} className={cn(BODY_CELL, "px-2", justifyClass(c.align), c.align === "right" && "tabular-nums")}>
+                        {/* 잘린 칸은 올리면 전체 글이 말풍선으로 뜬다(2026-10-30 사용자 "셀 툴팁 공통화"). title 속성은 쓰지 않는다(AGENTS §3) */}
+                        <Clamp text={textOf(c, row)} always={c.tip} className={cn("min-w-0 max-w-full", alignClass(c.align))}>
+                          {c.render ? c.render(row) : textOf(c, row)}
+                        </Clamp>
+                      </span>
+                    ))}
+                  </div>
+                );
+              })
+            )}
+            {hasSum && paged.rows.length > 0 && <SumRow columns={columns} rows={filtered} template={template} check={Boolean(check)} />}
+          </div>
         </div>
+      )}
+      {/* 휴대폰은 카드 사이에 그리드 테두리가 없어 아래 띠만 따로 테두리를 두른다 */}
+      <div className={mobile ? "overflow-hidden rounded-xl border border-line" : undefined}>
+        <BottomBar
+          total={rows.length}
+          shown={filtered.length}
+          checked={check ? checked.size : 0}
+          page={paged.page}
+          pages={paged.pages}
+          onPage={setPage}
+          size={size !== null ? { value: size, options: GRID_PAGE_SIZES, onChange: setSize } : null}
+          extra={footerExtra}
+        />
       </div>
-      <BottomBar
-        total={rows.length}
-        shown={filtered.length}
-        checked={check ? checked.size : 0}
-        page={paged.page}
-        pages={paged.pages}
-        onPage={setPage}
-        size={size !== null ? { value: size, options: GRID_PAGE_SIZES, onChange: setSize } : null}
-        extra={footerExtra}
-      />
     </div>
   );
 }

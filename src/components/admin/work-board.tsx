@@ -11,7 +11,8 @@
 // 줄의 무게는 셋이다. 쌓인 일(queue)이 0 이 아니면 파랑 점, 돈이 걸린 일(money)은 빨강 점, 훑어볼 양(info)은 점 없이 늘 같은 무게.
 import Link from "next/link";
 import { cn } from "@/lib/cn";
-import { ADMIN_BOARD_MESSAGES as M, ADMIN_NAV } from "@/lib/admin/messages";
+import { ADMIN_BOARD_MESSAGES as M, ADMIN_MOBILE_MESSAGES, ADMIN_NAV } from "@/lib/admin/messages";
+import { mobilePolicyOf } from "@/lib/admin/mobile";
 import { ROUTES } from "@/lib/routes";
 import { formatAmount } from "@/lib/currency";
 import { InfoTip } from "@/components/ui/tooltip";
@@ -137,8 +138,54 @@ function BoardLine({ line }: { line: Line }) {
   );
 }
 
-export function WorkBoard({ board }: { board: AdminBoard }) {
+/**
+ * 휴대폰 판(2026-10-30). 기둥 일곱을 세로로 쌓으면 0 인 줄까지 한참 굴러야 해서, 쌓인 일이 있는 줄만 "처리할 일" 에 모으고
+ * 늘 같은 무게인 줄(이번 달 결제, 오늘 글 수)은 "현황" 에 둔다. 돈이 걸린 줄이 맨 앞이다.
+ * 휴대폰에서 닫은 화면(lib/admin/mobile 의 off)으로 가는 줄은 뺀다 — 눌러서 PC 안내를 보게 할 줄은 세우지 않는다.
+ */
+function MobileBoard({ columns }: { columns: Column[] }) {
+  const lines = columns.flatMap((c) => c.lines).filter((l) => mobilePolicyOf(l.href.split("?")[0]).access !== "off");
+  const todo = lines.filter((l) => l.weight !== "info" && l.n > 0).sort((a, b) => Number(b.weight === "money") - Number(a.weight === "money"));
+  const summary = lines.filter((l) => l.weight === "info");
+  const part = (key: string, title: string, body: React.ReactNode) => (
+    <section aria-labelledby={`board-${key}`} className={panelClass("flex flex-col gap-2 p-3")}>
+      <h2 id={`board-${key}`} className="px-1 text-[13.5px] font-bold text-ink">
+        {title}
+      </h2>
+      {body}
+    </section>
+  );
+  return (
+    <div className="flex flex-col gap-3">
+      {part(
+        "todo",
+        ADMIN_MOBILE_MESSAGES.boardTodo,
+        todo.length > 0 ? (
+          <ul className="flex flex-col gap-1">
+            {todo.map((line) => (
+              <BoardLine key={line.label} line={line} />
+            ))}
+          </ul>
+        ) : (
+          <p className="px-1 text-[12.5px] text-dim">{M.allClear}</p>
+        ),
+      )}
+      {part(
+        "summary",
+        ADMIN_MOBILE_MESSAGES.boardSummary,
+        <ul className="flex flex-col gap-1">
+          {summary.map((line) => (
+            <BoardLine key={line.label} line={line} />
+          ))}
+        </ul>,
+      )}
+    </div>
+  );
+}
+
+export function WorkBoard({ board, mobile = false }: { board: AdminBoard; /** 휴대폰이면 두 묶음 판(MobileBoard) */ mobile?: boolean }) {
   const columns = columnsOf(board);
+  if (mobile) return <MobileBoard columns={columns} />;
   // 같은 줄의 기둥은 높이를 맞춘다(2026-10-29 사용자 "높이가 다 달라 보기 불편") — 판 바닥이 들쭉날쭉하면 줄을 따라 읽지 못한다
   return (
     <div className="grid grid-cols-1 items-stretch gap-3 sm:grid-cols-2 xl:grid-cols-4">

@@ -14,13 +14,14 @@ import { requireRoleOrForbid } from "@/server/auth/guards";
 import { getAdminBoard, type AdminBoard } from "@/server/services/admin-workload";
 import { getDashboardTrend } from "@/server/services/stats";
 import { presetPeriod } from "@/lib/stats/period";
+import { isMobileDevice } from "@/server/device";
 
 export const metadata: Metadata = { title: ADMIN_NAV.board };
 
 export default async function AdminBoardPage() {
   await requireRoleOrForbid("admin");
   // 한 칸의 질의가 넘어져도 화면은 선다 — 첫 화면이 500 이면 메뉴로도 못 간다
-  const board: AdminBoard | null = await getAdminBoard().catch(() => null);
+  const [board, mobile]: [AdminBoard | null, boolean] = await Promise.all([getAdminBoard().catch(() => null), isMobileDevice()]);
   const pending = board ? boardPending(board) : 0;
 
   return (
@@ -36,7 +37,7 @@ export default async function AdminBoardPage() {
           )
         }
       />
-      {board ? <WorkBoard board={board} /> : <p className="rounded-xl bg-surface-2 px-4 py-3 text-[12.5px] text-mut">{M.failed}</p>}
+      {board ? <WorkBoard board={board} mobile={mobile} /> : <p className="rounded-xl bg-surface-2 px-4 py-3 text-[12.5px] text-mut">{M.failed}</p>}
       {/* 추이 그래프는 판 다음이다(components/admin/dashboard-trends). 판을 기다리게 하지 않게 따로 읽고, 못 읽으면 줄을 비운다 */}
       <Suspense fallback={null}>
         <Trends />

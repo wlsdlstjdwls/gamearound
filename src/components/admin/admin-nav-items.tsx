@@ -8,6 +8,7 @@ import { ROUTES } from "@/lib/routes";
 import { BarChartIcon, BoardIcon, BoxIcon, BuildingIcon, CardIcon, ChatIcon, CheckListIcon, LinkIcon, LogIcon, MegaphoneIcon, PulseIcon, SearchCheckIcon, SparkleIcon, StoreIcon, UsersIcon, CodeIcon, TemplateIcon, SendIcon, TrendIcon, BookIcon } from "@/components/admin/nav-icons";
 import { CalendarIcon, GamepadIcon, TagIcon, TicketIcon } from "@/components/ui/icons";
 import { Suspense, use, type ComponentType } from "react";
+import { mobilePolicyOf } from "@/lib/admin/mobile";
 
 export interface AdminNavCounts {
   matches: number;
@@ -45,6 +46,8 @@ export type Item = {
    * 지금은 이 표시를 단 칸이 없다(2026-10-08 상품 매핑, 입점 신청을 열었다). 다시 닫을 자리라 틀은 남긴다.
    */
   soon?: { lead: string; body: string };
+  /** 휴대폰 바닥 띠에 적을 줄인 이름(ADMIN_NAV.tabShort). 없으면 label */
+  short?: string;
 };
 
 /**
@@ -54,7 +57,7 @@ export type Item = {
  */
 export const GROUPS: Array<{ key: string; title?: string; items: Item[] }> = [
   // 첫 화면 업무 현황판(2026-10-29). 묶음 머리 위 한 칸 — 어느 묶음에 일이 쌓였는지 여기서 보고 내려간다
-  { key: "board", items: [{ href: ROUTES.admin, label: ADMIN_NAV.board, Icon: BoardIcon }] },
+  { key: "board", items: [{ href: ROUTES.admin, label: ADMIN_NAV.board, short: ADMIN_NAV.tabShort.board, Icon: BoardIcon }] },
   {
     // 무엇을 얼마에 파나(상품등록), 언제 깎아 주나(프로모션등록), 산 것이 어디 서 있나(광고노출관리)
     key: "products",
@@ -81,6 +84,7 @@ export const GROUPS: Array<{ key: string; title?: string; items: Item[] }> = [
       {
         href: ROUTES.adminTasks,
         label: ADMIN_NAV.tasks,
+        short: ADMIN_NAV.tabShort.tasks,
         Icon: CheckListIcon,
         pick: (c) => ({ n: c.tasksTodo }),
         pick2: { pick: (c) => ({ n: c.tasksDoing }), tone: "doing" },
@@ -101,7 +105,7 @@ export const GROUPS: Array<{ key: string; title?: string; items: Item[] }> = [
     key: "review",
     title: ADMIN_NAV.groupReview,
     items: [
-      { href: ROUTES.adminMatches, label: ADMIN_NAV.matches, Icon: LinkIcon, pick: (c) => ({ n: c.matches }) },
+      { href: ROUTES.adminMatches, label: ADMIN_NAV.matches, short: ADMIN_NAV.tabShort.matches, Icon: LinkIcon, pick: (c) => ({ n: c.matches }) },
       { href: ROUTES.adminDataIssues, label: ADMIN_NAV.dataIssues, Icon: SearchCheckIcon, pick: (c) => ({ n: c.dataIssues }) },
       {
         href: ROUTES.adminCompanies,
@@ -118,7 +122,7 @@ export const GROUPS: Array<{ key: string; title?: string; items: Item[] }> = [
     key: "community",
     title: ADMIN_NAV.groupCommunity,
     items: [
-      { href: ROUTES.adminIndie, label: ADMIN_NAV.indie, Icon: GamepadIcon, pick: (c) => ({ n: c.indie }) },
+      { href: ROUTES.adminIndie, label: ADMIN_NAV.indie, short: ADMIN_NAV.tabShort.indie, Icon: GamepadIcon, pick: (c) => ({ n: c.indie }) },
       { href: ROUTES.adminPosts, label: ADMIN_NAV.posts, Icon: ChatIcon },
     ],
   },
@@ -153,6 +157,15 @@ export const GROUPS: Array<{ key: string; title?: string; items: Item[] }> = [
 ];
 
 export const ITEMS = GROUPS.flatMap((g) => g.items);
+
+/**
+ * 메뉴에 세울 묶음. 휴대폰이면 닫은 화면(lib/admin/mobile 의 off)을 빼고, 다 빠진 묶음은 제목째 걷는다 —
+ * 눌러서 "PC에서 열어 주세요" 를 보게 하느니 처음부터 안 보이는 편이 낫다. 주소로 들어오면 그 자리에서 안내한다(mobile-policy).
+ */
+export function groupsFor(mobile: boolean): typeof GROUPS {
+  if (!mobile) return GROUPS;
+  return GROUPS.map((g) => ({ ...g, items: g.items.filter((i) => mobilePolicyOf(i.href).access !== "off") })).filter((g) => g.items.length > 0);
+}
 
 /**
  * 지금 화면인지. 대시보드(`/admin`)만 정확히 일치로 본다 —

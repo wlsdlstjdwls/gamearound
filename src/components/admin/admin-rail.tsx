@@ -19,7 +19,8 @@ import { useActivePath } from "@/components/admin/program-shell/store";
 import { Suspense, useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Badge, GROUPS, isActive, ItemBody, type AdminNavCounts, type Item, type Pick } from "@/components/admin/admin-nav-items";
+import { useMobilePolicy } from "@/components/admin/mobile-policy";
+import { Badge, groupsFor, isActive, ItemBody, type AdminNavCounts, type Item, type Pick } from "@/components/admin/admin-nav-items";
 import { AuthNav } from "@/components/auth/auth-nav";
 import { HeaderWishLink } from "@/components/header-wish-link";
 import { NotificationBell } from "@/components/notification-bell";
@@ -99,6 +100,7 @@ export function AdminRail({
   // 탭 껍데기가 있으면 고른 탭의 칸을 켠다 — 바깥 주소는 처음 연 화면에 머문다(program-shell)
   const current = usePathname();
   const pathname = useActivePath() ?? current;
+  const { mobile } = useMobilePolicy();
   const [collapsed, setCollapsed] = useState(initialCollapsed);
   const [opened, setOpened] = useState<ReadonlySet<string>>(() => new Set(initialOpened));
   const toggle = () => {
@@ -175,7 +177,7 @@ export function AdminRail({
           collapsed ? "gap-2 px-1.5" : "gap-2.5 px-2.5",
         )}
       >
-        {GROUPS.map((g) => {
+        {groupsFor(mobile).map((g) => {
           if (collapsed) {
             return (
               <div key={g.key} className="flex flex-col gap-1 border-t border-line-soft pt-2 first:border-t-0 first:pt-0">

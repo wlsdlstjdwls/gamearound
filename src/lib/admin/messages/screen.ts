@@ -13,6 +13,8 @@ export const SCREEN_MESSAGES = {
   tabMenuCloseAll: "모두 닫기",
   listFold: "목록 접기",
   listUnfold: "목록 펼치기",
+  /** 휴대폰 상세 시트의 제목 자리(화면이 제목 글을 넘기지 않을 때) */
+  detail: "상세",
   detailFold: "상세 접기",
   detailUnfold: "상세 펼치기",
   /** 목록, 상세 사이 구분선(screen/split-handle). 끌거나 좌우 방향키로 목록 폭을 바꾼다 */

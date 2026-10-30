@@ -21,6 +21,8 @@ import { SCREEN_MESSAGES as SM } from "@/lib/admin/messages";
 import { SplitHandle, useListSplit } from "@/components/admin/screen/split-handle";
 import { FitFillContext } from "@/components/admin/screen/data-grid/fit";
 import { SpotProvider, useSpotFocus } from "@/components/admin/screen/preview-spot";
+import { useMobilePolicy } from "@/components/admin/mobile-policy";
+import { MobileMasterDetail, MobileSearchBand } from "@/components/admin/screen/mobile-layout";
 
 /**
  * 조회조건 띠. 칸은 SearchItem 으로 넣는다. 넓은 화면에서 이름표, 칸 짝이 제 폭만큼 왼쪽부터 붙어 서고 남는 폭은 비워 둔다.
@@ -29,6 +31,8 @@ import { SpotProvider, useSpotFocus } from "@/components/admin/screen/preview-sp
  * 터치 기기는 44px 그대로 둔다(AGENTS §6 터치 타깃)
  */
 export function SearchBand({ label, children }: { label: string; children: React.ReactNode }) {
+  const { mobile } = useMobilePolicy();
+  if (mobile) return <MobileSearchBand label={label}>{children}</MobileSearchBand>;
   return (
     <section aria-label={label} className="flex flex-wrap items-center gap-x-6 gap-y-1.5 rounded-xl border border-line bg-surface-2 px-3 py-2 sm:grid-cols-2 xl:grid-cols-4 [@media(pointer:fine)]:[&_button[aria-haspopup]]:h-9 [@media(pointer:fine)]:[&_input]:h-9 [@media(pointer:fine)]:[&_input]:min-h-9">
       {children}
@@ -58,6 +62,9 @@ export function MasterDetail({ list, detail, detailTitle, detailActions, listWid
   const split = useListSplit();
   const listRef = useRef<HTMLDivElement>(null);
   const { hidden } = split;
+  const { mobile } = useMobilePolicy();
+  // 휴대폰은 목록만 세우고 상세는 카드를 누를 때 바닥 시트로 올린다(screen/mobile-layout)
+  if (mobile) return <MobileMasterDetail list={list} detail={detail} detailTitle={detailTitle} detailActions={detailActions} />;
   const cols = hidden === "list" ? "lg:grid-cols-[1.5rem_minmax(0,1fr)]" : hidden === "detail" ? "lg:grid-cols-[minmax(0,1fr)_1.5rem]" : "lg:grid-cols-[var(--master-w)_1.5rem_minmax(0,1fr)]";
   return (
     <div className={cn("grid items-start gap-4 lg:gap-0", cols)} style={{ "--master-w": split.width === null ? listWidth : `${split.width}px` } as React.CSSProperties}>

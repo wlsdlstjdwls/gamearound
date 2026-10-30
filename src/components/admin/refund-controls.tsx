@@ -8,6 +8,7 @@ import { TextField } from "@/components/ui/text-field";
 import { useToast } from "@/components/ui/toast";
 import { formatPrice } from "@/lib/currency";
 import { PAYMENT_MESSAGES as M } from "@/lib/payments/messages";
+import { useMobilePolicy } from "@/components/admin/mobile-policy";
 
 /** 토스 cancelReason 상한(서버 REFUND_REASON_MAX 와 같다) */
 const REASON_MAX = 200;
@@ -18,7 +19,10 @@ export function RefundControls({ orderId, amount, prorated }: { orderId: string;
   const [done, setDone] = useState<string | null>(null);
   const [reason, setReason] = useState("");
   const [, start] = useTransition();
+  // 휴대폰에서는 환불 단추를 세우지 않는다 — 돈이 나가고 되돌릴 수 없다(lib/admin/mobile)
+  const allowed = useMobilePolicy().can("refund");
 
+  if (!allowed) return null;
   if (done) return <span className="text-[12.5px] text-dim">{done}</span>;
   if (!open)
     return (

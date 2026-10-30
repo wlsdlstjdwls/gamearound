@@ -6,7 +6,7 @@ import { ChevronDownIcon, ChevronLeftIcon } from "@/components/ui/icons";
 import { GRID_MESSAGES as M } from "@/lib/admin/messages";
 import { useId } from "react";
 import { FormSelect } from "@/components/ui/select/fields";
-import { GRID_PAGE_ALL, type SortState } from "@/lib/admin/grid";
+import { GRID_PAGE_ALL, sumOf, type SortState } from "@/lib/admin/grid";
 import type { GridCol } from "@/components/admin/screen/data-grid";
 
 export function HeadRow<T>({
@@ -181,5 +181,22 @@ function PageNav({ page, pages, onPage }: { page: number; pages: number; onPage:
         <ChevronLeftIcon size={14} className="-ml-2.5 rotate-180" />
       </button>
     </nav>
+  );
+}
+
+/** 합계 줄(백오피스 CwareSummary). 칸이 sum 을 주면 그 결과, true 면 원값 합 */
+export function SumRow<T>({ columns, rows, template, check }: { columns: GridCol<T>[]; rows: T[]; template: string; check: boolean }) {
+  return (
+    <div role="row" className="grid min-h-10 items-stretch border-t border-line-strong bg-surface-2 text-[13px] font-bold text-ink" style={{ gridTemplateColumns: template }}>
+      {check && <span className={BODY_CELL} />}
+      <span role="gridcell" className={cn(BODY_CELL, "justify-center text-[12px] text-mut")}>
+        {M.sum}
+      </span>
+      {columns.map((c) => (
+        <span key={c.key} role="gridcell" className={cn(BODY_CELL, "px-2 tabular-nums", justifyClass(c.align))}>
+          <span className="min-w-0 max-w-full truncate">{typeof c.sum === "function" ? c.sum(rows) : c.sum ? sumOf(rows, (r) => c.value?.(r)).toLocaleString("ko-KR") : ""}</span>
+        </span>
+      ))}
+    </div>
   );
 }

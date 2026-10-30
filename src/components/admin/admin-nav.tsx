@@ -44,7 +44,8 @@ import { ROUTES } from "@/lib/routes";
 import { ComingSoon } from "@/components/ui/coming-soon";
 
 import { AdminRail } from "@/components/admin/admin-rail";
-import { Badge, ITEMS, ItemBody, isActive, GROUPS, type AdminNavCounts, type Item } from "@/components/admin/admin-nav-items";
+import { Badge, ITEMS, ItemBody, isActive, groupsFor, type AdminNavCounts, type Item } from "@/components/admin/admin-nav-items";
+import { useMobilePolicy } from "@/components/admin/mobile-policy";
 export type { AdminNavCounts } from "@/components/admin/admin-nav-items";
 
 /**
@@ -80,7 +81,7 @@ function TabBody({ item, active, counts }: { item: Item; active: boolean; counts
           </Suspense>
         )}
       </span>
-      <span className={cn("text-[10.5px] leading-none", active ? "font-bold text-acc" : "text-dim")}>{item.label}</span>
+      <span className={cn("whitespace-nowrap text-[11px] leading-none", active ? "font-bold text-acc" : "text-dim")}>{item.short ?? item.label}</span>
     </>
   );
 }
@@ -102,6 +103,7 @@ export function AdminNav({
   /** 지금 사유를 말하고 있는 칸. 한 번에 하나만 뜬다 */
   const [soon, setSoon] = useState<Item | null>(null);
   const [menuOpen, setMenuOpen] = useState(false);
+  const groups = groupsFor(useMobilePolicy().mobile);
 
   /** 링크와 버튼이 같은 모양이어야 한다. 아직 열지 않은 칸만 버튼이고 나머지는 전부 링크다 */
   const itemClass = (active: boolean) =>
@@ -129,7 +131,7 @@ export function AdminNav({
   /** 칸 전부. 기둥과 더보기 시트가 **같은 것**을 쓴다 — 둘을 따로 그리면 칸이 늘 때 한쪽을 빠뜨린다 */
   const menu = (
     <div className="flex flex-col gap-3">
-      {GROUPS.map((g) => (
+      {groups.map((g) => (
         <div key={g.key} className="flex flex-col gap-px">
           {g.title && <p className="px-2.5 pb-1 text-[11px] font-bold tracking-[0.1em] text-dim-2">{g.title}</p>}
           {g.items.map(render)}
@@ -185,7 +187,7 @@ export function AdminNav({
           >
             <MenuIcon size={19} />
           </span>
-          <span className={cn("text-[10.5px] leading-none", !onTab ? "font-bold text-acc" : "text-dim")}>{ADMIN_NAV.more}</span>
+          <span className={cn("whitespace-nowrap text-[11px] leading-none", !onTab ? "font-bold text-acc" : "text-dim")}>{ADMIN_NAV.more}</span>
         </button>
       </nav>
 
