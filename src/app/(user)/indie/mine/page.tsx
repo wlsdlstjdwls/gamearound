@@ -13,6 +13,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { WriteLink } from "@/components/community/write-link";
 import { EmptyState } from "@/components/empty-state";
+import { FameChallenge } from "@/components/indie/fame-challenge";
 import { MineTabs } from "@/components/indie/mine-tabs";
 import { RejectionSheet } from "@/components/indie/rejection-sheet";
 import { buttonClass } from "@/components/ui/button";
@@ -31,7 +32,7 @@ import { genreLabels, INDIE_FORM_MESSAGES as M, INDIE_MESSAGES, INDIE_PLATFORM_L
 import { indieDetailHref, INDIE_FROM } from "@/lib/indie/query";
 import { indieBoostPath, indieEditPath, ROUTES } from "@/lib/routes";
 import { requireUserOrRedirect } from "@/server/auth/guards";
-import { getMyMonthRanks, listMyIndiePosts } from "@/server/services/indie";
+import { getMyFameStanding, getMyMonthRanks, listMyIndiePosts } from "@/server/services/indie";
 
 export const metadata: Metadata = { title: RV.title, robots: { index: false } };
 
@@ -82,7 +83,8 @@ function Reactions({ rank, views, likes }: { rank: number | undefined; views: nu
 
 export default async function IndieMinePage({ searchParams }: Props) {
   const user = await requireUserOrRedirect();
-  const [posts, sp] = await Promise.all([listMyIndiePosts(user.id), searchParams]);
+  // 명예의 전당 도전 판은 덤이다 — 못 세면 판만 빠지고 화면은 선다. 목록과 기다릴 일이 없어 나란히 묻는다
+  const [posts, sp, standing] = await Promise.all([listMyIndiePosts(user.id), searchParams, getMyFameStanding().catch(() => null)]);
   // 순위는 덤이다 — 못 세면 순위 칸만 빠지고 화면은 선다
   const ranks = await getMyMonthRanks(posts.filter((p) => p.review === "approved").map((p) => p.id)).catch(() => new Map<string, number>());
   const full = posts.length >= INDIE_POSTS_PER_USER_MAX;
@@ -103,6 +105,10 @@ export default async function IndieMinePage({ searchParams }: Props) {
         <Tile label={INDIE_REVIEW_LABEL.approved} value={approved} tone="approved" i={2} />
         <Tile label={INDIE_REVIEW_LABEL.rejected} value={rejected} tone="rejected" i={3} />
       </div>
+
+      {/* 명예의 전당 도전(2026-10-30) — 명예의 전당 화면에 떠 있던 "내 게임은 지금" 의 오르는 법을 작업실로 옮겼다(indie/fame-challenge).
+          공개 게임이 없으면 standing 이 null 이라 안 선다 */}
+      {standing && <FameChallenge standing={standing} />}
 
       {/* 공개 중인 게임이 있을 때만 광고 안내 판 — 걸 게임이 없는 사람에게 값부터 내밀지 않는다(10-28, 메뉴 대신 화면 안 입구) */}
       {posts.some((p) => p.review === "approved" && p.status === "published") && <PlanNudge />}

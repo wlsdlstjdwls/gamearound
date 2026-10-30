@@ -7,8 +7,9 @@
 // 달 고르기는 이전, 다음 화살표 사이에 달 이름 하나(indie/month-stepper, 2026-10-28 사용자: "날짜가 버튼 형태라 UI 개선").
 // 칩 여섯 개가 한 줄을 먹고 390 폭에서 가로로 밀리던 것을 걷었다. 화살표는 NavChip 이라 누른 순간 켜진다.
 // 어두운 머리 판(InkHero)은 2026-10-28 걷었다(사용자: "영역을 너무 잡아먹는다") — 강조는 1~3위 판이 맡는다.
-// 4~10위 줄에는 한 계단 위까지 점수와 "가장 많이 오른 게임" 을 적고, 개발자 본인에게는 "내 게임은 지금" 카드를 띄운다
-// (사용자: "3위 안에 못 들어도 힘나도록"). 카드는 개인 값이라 마운트 뒤 받는다(indie/my-fame-standing).
+// 4~10위 줄에는 한 계단 위까지 점수와 "가장 많이 오른 게임" 을 적는다(사용자: "3위 안에 못 들어도 힘나도록").
+// 개발자 본인의 자리는 순위표 안에서 짚는다 — 카드, 줄마다 게임 표시(FAME_CARD_ATTR)를 두면 indie/my-fame-marks 가 내 게임 카드를 보라로 물들이고,
+// 10위 밖이면 표 아래 한 줄을 붙인다. 떠 있던 "내 게임은 지금" 카드는 2026-10-30 걷었다(그 이유와 옮긴 자리는 my-fame-marks 머리 주석).
 // 들어오면 1위 그림이 화면을 덮었다 1위 판 자리로 줄어든다(indie/fame-intro, 세션당 한 번).
 // 보조 줄의 조회, 찜은 그 달 값이 아니라 누적이다 — 달 값은 순위 점수에 이미 들어가 있고, 점수를 같이 적는다.
 import type { Metadata } from "next";
@@ -19,13 +20,13 @@ import { FadeImage } from "@/components/ui/fade-image";
 import { ChevronLeftIcon } from "@/components/ui/icons";
 import { NavChip, NavPendingScope, PendingRegion } from "@/components/ui/nav-pending";
 import { Page, PageHead } from "@/components/ui/page";
-import { TrophyIcon } from "@/components/ui/icons";
+import { SproutIcon, TrophyIcon } from "@/components/ui/icons";
 import { FameIntro } from "@/components/indie/fame-intro";
 import { MonthStepper } from "@/components/indie/month-stepper";
-import { MyFameStandingCard } from "@/components/indie/my-fame-standing";
+import { MyFameMarks } from "@/components/indie/my-fame-marks";
 import { cn } from "@/lib/cn";
 import { nullIfDbUnavailable } from "@/lib/db-errors";
-import { FAME_MESSAGES as M, isYm, kstYm, prevYm, ymLabel } from "@/lib/indie/fame";
+import { FAME_MESSAGES as M, FAME_CARD_ATTR, isYm, kstYm, prevYm, ymLabel } from "@/lib/indie/fame";
 import { genreLabels, INDIE_PLATFORM_LABEL } from "@/lib/indie/messages";
 import { stagger } from "@/lib/motion";
 import { indieDetailHref, INDIE_FROM } from "@/lib/indie/query";
@@ -81,10 +82,21 @@ function ChangeNote({ change, className }: { change: number | null | undefined; 
 }
 
 /** 4위 아래 줄과 역대 선정작 줄이 같은 모양을 쓴다(목업 .hpr): 왼쪽 순위 칸, 작은 커버, 이름과 보조 줄, 오른쪽 끝 알약 */
-function RankRow({ to, rank, sub, item, right, note }: { to: string; rank: string; sub?: string; item: RankedIndie | null; right: React.ReactNode; note?: React.ReactNode }) {
+/** 내 게임일 때만 펴지는 글줄(새싹 + 문구). 딱지가 아니라 글자다 — 면을 얹으면 순위 딱지, 글과 겹쳤다(2026-10-30 사용자) */
+/** onDark: 1위 큰 판(어두운 그림 위)에서는 보라 글자가 묻혀 흰 글자로 쓴다 — 보라는 판 둘레 빛이 맡는다 */
+function MineLine({ label, className, onDark = false }: { label: string; className?: string; onDark?: boolean }) {
+  return (
+    <span className={cn("fame-own items-center gap-1.5 font-bold", onDark ? "text-on-ink" : "text-plum", className)}>
+      <SproutIcon size={14} />
+      {label}
+    </span>
+  );
+}
+
+function RankRow({ to, rank, sub, item, right, note, slot }: { to: string; rank: string; sub?: string; item: RankedIndie | null; right: React.ReactNode; note?: React.ReactNode; slot?: string }) {
   return (
     <li>
-      <Link href={to} className="press grid grid-cols-[72px_minmax(0,1fr)] items-center gap-x-3 gap-y-1.5 rounded-[var(--radius-md)] bg-surface p-3 shadow-hair transition-colors hover:bg-surface-2 sm:grid-cols-[96px_112px_minmax(0,1fr)_auto] sm:gap-x-4">
+      <Link href={to} {...(slot ? { [FAME_CARD_ATTR]: slot } : {})} className="fame-row press relative grid grid-cols-[72px_minmax(0,1fr)] items-center gap-x-3 gap-y-1.5 rounded-[var(--radius-md)] bg-surface p-3 shadow-hair transition-colors hover:bg-surface-2 sm:grid-cols-[96px_112px_minmax(0,1fr)_auto] sm:gap-x-4">
         <span className="flex flex-col">
           <span className="text-[15px] font-extrabold text-ink">{rank}</span>
           {sub && <span className="text-[11.5px] font-semibold text-acc">{sub}</span>}
@@ -92,7 +104,11 @@ function RankRow({ to, rank, sub, item, right, note }: { to: string; rank: strin
         </span>
         {item ? <Cover item={item} sizes="112px" className="hidden sm:block" /> : <span className="hidden sm:block" />}
         <span className="flex min-w-0 flex-col gap-0.5">
-          <span className="truncate text-[15px] font-bold text-ink">{item?.card.title ?? "-"}</span>
+          {/* 제목 옆 "내 게임" 글자는 내 게임일 때만 펴진다(globals.css 의 .fame-own) — 한 줄 안이라 줄 높이가 안 바뀐다 */}
+          <span className="flex min-w-0 items-center gap-2">
+            <span className="truncate text-[15px] font-bold text-ink">{item?.card.title ?? "-"}</span>
+            {slot && <MineLine label={M.myBadge} className="shrink-0 text-[12.5px]" />}
+          </span>
           {item && <span className="truncate text-[12.5px] text-dim">{metaOf(item)}</span>}
           {note}
         </span>
@@ -116,7 +132,7 @@ function Ranking({ items, label, finalized, isNow, intro }: { items: RankedIndie
         {/* 1위 — 큰 판(목업 hhero). 대표 그림을 선명하게 깔고(2026-10-28 사용자: "흑백 같은 거에 가려서 잘 안 보인다"),
             글이 앉는 아래쪽만 어둡게 받친다. 전에는 그림을 50% 로 흐리고 왼쪽에서 오른쪽으로 짙은 막과 큰 "1" 글자까지 얹어 그림이 거의 안 보였다.
             id 는 들어올 때 인트로(indie/fame-intro)가 줄어들어 안착할 자리다 */}
-        <Link id={FAME_TOP_ID} href={indieDetailHref(top.card.slug, INDIE_FROM.hallOfFame)} className="lift press glint-sweep group relative isolate flex min-h-[300px] flex-col justify-between gap-4 overflow-hidden rounded-[var(--radius-panel)] bg-ink p-5 text-on-ink shadow-[0_0_0_2px_var(--acc),0_18px_40px_-18px_var(--acc)] sm:min-h-[340px] sm:p-7">
+        <Link id={FAME_TOP_ID} href={indieDetailHref(top.card.slug, INDIE_FROM.hallOfFame)} {...(isNow ? { [FAME_CARD_ATTR]: top.card.slug } : {})} className="lift press glint-sweep group relative isolate flex min-h-[300px] flex-col justify-between gap-4 overflow-hidden rounded-[var(--radius-panel)] bg-ink p-5 text-on-ink shadow-[0_0_0_2px_var(--acc),0_18px_40px_-18px_var(--acc)] sm:min-h-[340px] sm:p-7">
           <span aria-hidden className="absolute inset-0 -z-10">
             <FadeImage src={top.card.cover.url} alt="" fill sizes="(max-width: 1024px) 100vw, 50vw" className="object-cover" />
           </span>
@@ -141,12 +157,13 @@ function Ranking({ items, label, finalized, isNow, intro }: { items: RankedIndie
             <span>{M.views(top.card.viewCount)}</span>
             <span>{M.likes(top.card.likeCount)}</span>
             {top.change !== undefined && <span className="font-semibold">{top.change === null ? M.newEntry : M.changeFromLast(top.change)}</span>}
+            {isNow && <MineLine label={M.myOwnCard} onDark className="ml-auto text-[13px]" />}
           </span>
         </Link>
         <FameIntro src={top.card.cover.url} images={intro.images} settings={intro.settings} title={top.card.title} badge={isNow ? M.firstThisMonth : M.firstOf(label)} targetId={FAME_TOP_ID} seenKey={top.card.slug} />
         {rest.slice(0, 2).map((r, i) => (
           // 2, 3위는 위쪽 브랜드색 띠(단상)와 큰 점수로 4위 아래 줄과 갈린다. 2위 띠가 3위보다 굵고 진하다
-          <Link key={r.card.slug} href={indieDetailHref(r.card.slug, INDIE_FROM.hallOfFame)} className={cn("lift press group enter-item flex flex-col gap-3 rounded-[var(--radius-panel)] bg-surface p-3.5", i === 0 ? "[box-shadow:inset_0_4px_0_var(--acc),var(--ring-hair)]" : "[box-shadow:inset_0_3px_0_var(--acc-3),var(--ring-hair)]")} style={stagger(i)}>
+          <Link key={r.card.slug} href={indieDetailHref(r.card.slug, INDIE_FROM.hallOfFame)} {...(isNow ? { [FAME_CARD_ATTR]: r.card.slug } : {})} className={cn("lift press group enter-item relative flex flex-col gap-3 rounded-[var(--radius-panel)] bg-surface p-3.5", i === 0 ? "[box-shadow:inset_0_4px_0_var(--acc),var(--ring-hair)]" : "[box-shadow:inset_0_3px_0_var(--acc-3),var(--ring-hair)]")} style={stagger(i)}>
             <span className="relative block">
               <Cover item={r} sizes="(max-width: 1024px) 100vw, 25vw" />
               {/* 순위 딱지 — 2, 3위도 "올랐다" 가 읽히게 브랜드색 원으로 키웠다(2026-10-27). 누런 금은색은 쓰지 않는다(사용자) */}
@@ -162,7 +179,9 @@ function Ranking({ items, label, finalized, isNow, intro }: { items: RankedIndie
               <span>{M.likes(r.card.likeCount)}</span>
               <ChangeNote change={r.change} className="text-[12.5px]" />
             </span>
-            <span className="text-[13px] font-semibold text-acc">{M.seePage}</span>
+            {/* 내 게임이면 이 줄이 "내가 올린 게임이에요" 로 바뀐다(globals.css 의 .fame-see, .fame-own) — 같은 높이라 카드가 안 밀린다 */}
+            <span className="fame-see text-[13px] font-semibold text-acc">{M.seePage}</span>
+            {isNow && <MineLine label={M.myOwnCard} className="text-[13px]" />}
           </Link>
         ))}
       </div>
@@ -182,6 +201,7 @@ function Ranking({ items, label, finalized, isNow, intro }: { items: RankedIndie
                   rank={M.rank(i + 4)}
                   sub={M.score(r.score)}
                   item={r}
+                  slot={isNow ? r.card.slug : undefined}
                   right={<span className={PLATFORM_PILL}>{platformsOf(r)}</span>}
                   note={
                     <span className="flex flex-wrap gap-x-3 text-[12px] font-semibold">
@@ -291,9 +311,9 @@ export default async function HallOfFamePage({ searchParams }: Props) {
             </ol>
           )}
         </PendingRegion>
-        {/* "내 게임은 지금" 은 순위 **아래**에 둔다(2026-10-28 사용자 "뒤늦게 깜빡이듯 나온다"). 화면 본문은 캐시(ISR)라 쿠키를 못 읽어
-            이 카드만 그린 뒤에 따로 받는다 — 위에 두면 도착하는 순간 1위 판을 통째로 밀어 내렸다. 아래면 이미 본 것을 밀지 않는다 */}
-        {tab === "month" && ym === now && <MyFameStandingCard />}
+        {/* 내 게임 표시 — 순위 안이면 위 카드, 줄의 빈 자리에 딱지를 꽂고(겹쳐 앉아 안 밀린다), 밖이면 여기 한 줄로 선다.
+            화면 본문은 캐시(ISR)라 쿠키를 못 읽어 마운트 뒤에 받는다. 지난달은 확정 순위라 세우지 않는다 */}
+        {tab === "month" && ym === now && <MyFameMarks />}
       </NavPendingScope>
       <p className="text-[12px] text-dim">{tab === "month" ? M.monthFootnote : pickedYm ? M.top10Footnote : M.historyFootnote}</p>
     </Page>

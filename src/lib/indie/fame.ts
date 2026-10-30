@@ -81,6 +81,34 @@ export function pickMyStanding(
   };
 }
 
+/**
+ * 다음 목표까지 채운 비율(0~1)과 목표 이름. 목표가 없으면(1위, 10위 자리가 빔) null — 막대를 안 그린다.
+ * 찜 문턱 전이면 점수보다 찜 수가 먼저다 — 문턱을 넘어야 점수가 순위표에 선다
+ */
+export function fameProgress(s: MyFameStanding): { ratio: number; target: string } | null {
+  const clamp = (n: number) => Math.min(Math.max(n, 0), 1);
+  if (s.rank && s.gapUp) return { ratio: clamp(s.score / (s.score + s.gapUp)), target: FAME_MESSAGES.myTargetRank(s.rank - 1) };
+  if (s.rank) return null;
+  if (s.needLikes > 0) return { ratio: clamp(s.monthLikes / HOF_MIN_LIKES), target: FAME_MESSAGES.myTargetTop };
+  if (s.gapUp) return { ratio: clamp(s.score / (s.score + s.gapUp)), target: FAME_MESSAGES.myTargetTop };
+  return null;
+}
+
+/** "1위까지 4점 남았어요" 같은 한 줄. 1위면 null(제목 줄이 이미 "자리를 지켜 보세요" 라고 말한다) */
+export function fameNextLine(s: MyFameStanding): string | null {
+  if (s.rank) return s.gapUp ? FAME_MESSAGES.myGapUp(s.rank - 1, s.gapUp) : null;
+  if (s.needLikes > 0) return FAME_MESSAGES.myNeedLikes(s.monthLikes, s.needLikes);
+  return s.gapUp ? FAME_MESSAGES.myGapTop(s.gapUp) : FAME_MESSAGES.myOpen;
+}
+
+/**
+ * 명예의 전당 카드, 줄이 어느 게임인지 적는 속성 이름(값은 게임 slug). indie/my-fame-marks 가 내 게임 카드를 이걸로 찾는다.
+ * 클라이언트 파일에 두지 않는 이유: 서버 컴포넌트가 "use client" 파일의 문자열을 가져오면 값이 아니라 참조가 온다(AGENTS 6장)
+ */
+export const FAME_CARD_ATTR = "data-fame-card";
+/** 내 게임 카드, 줄에 붙이는 표시 — globals.css 가 이 속성으로 카드를 보라로 물들이고 숨겨 둔 "내 게임" 글줄을 편다 */
+export const FAME_MINE_ATTR = "data-fame-mine";
+
 export function ymLabel(ym: string): string {
   const [y, m] = ym.split("-");
   return `${y}년 ${Number(m)}월`;
@@ -145,8 +173,19 @@ export const FAME_MESSAGES = {
   /** 4~10위 줄의 한 계단 위까지 점수 — 순위 밖 게임에 "조금만 더" 를 보여 준다 */
   gapToAbove: (rank: number, gap: number) => `${rank}위까지 ${gap.toLocaleString("ko-KR")}점`,
   topRiser: "이번 달 가장 많이 올랐어요",
-  /** 내 게임 자리 카드(components/indie/my-fame-standing) */
-  myHead: "내 게임은 지금",
+  /**
+   * 내 게임 자리. 2026-10-30(사용자 "뜨는 것도 별로, 서비스 기획 관점에서 최선이냐")에 둘로 나눴다 —
+   * 명예의 전당(플레이어의 진열장)에는 순위표 안 표시만(components/indie/my-fame-marks),
+   * 오르는 법과 개발일지 단추는 개발자 작업실인 내 게임 관리의 도전 판(components/indie/fame-challenge)에 둔다
+   */
+  myHead: "명예의 전당 도전",
+  /** 순위표 카드, 줄 위에 붙는 딱지 */
+  myBadge: "내 게임",
+  /** 2, 3위 카드의 "게임 페이지 보기" 자리에 대신 서는 줄(내 게임일 때만, globals.css 의 .fame-own) */
+  myOwnCard: "내가 올린 게임이에요",
+  /** 10위 밖일 때 순위표 아래 붙는 줄 */
+  myOutRank: "순위 밖",
+  myChallenge: "도전 현황 보기",
   myRankFirst: (title: string) => `${title}, 지금 1위예요. 자리를 지켜 보세요`,
   myRanked: (title: string, rank: number) => `${title}, 지금 ${rank}위예요`,
   myGapUp: (rank: number, gap: number) => `${rank}위까지 ${gap.toLocaleString("ko-KR")}점 남았어요`,
@@ -155,6 +194,14 @@ export const FAME_MESSAGES = {
   myGapTop: (gap: number) => `10위까지 ${gap.toLocaleString("ko-KR")}점 남았어요`,
   myOpen: "아직 10위 자리가 비어 있어요. 지금 오르기 좋아요",
   myHow: `찜 1개는 ${HOF_LIKE_WEIGHT}점, 댓글 남긴 사람 1명은 ${HOF_COMMENT_WEIGHT}점, 조회 ${HOF_VIEWS_PER_POINT}번은 1점이에요`,
+  /** 점수 쌓는 법을 한 줄 문장 대신 칩 셋으로(2026-10-30 사용자 "너무 심심하다"). myHow 는 칩 묶음의 읽어 주는 이름이다 */
+  myPointLike: `찜 1개 +${HOF_LIKE_WEIGHT}점`,
+  myPointComment: `댓글 쓴 사람 1명 +${HOF_COMMENT_WEIGHT}점`,
+  myPointView: `조회 ${HOF_VIEWS_PER_POINT}번 +1점`,
+  /** 다음 자리까지 채운 정도 막대의 읽어 주는 이름 */
+  myProgress: (target: string) => `${target}까지 채운 정도`,
+  myTargetRank: (rank: number) => `${rank}위`,
+  myTargetTop: "TOP 10",
   myWriteLog: "개발일지로 소식 알리기",
   historyFootnote: "달을 누르면 그 달의 TOP 10 순위표를 볼 수 있어요.",
   wish: "찜하기",

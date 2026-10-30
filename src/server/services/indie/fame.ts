@@ -1,5 +1,6 @@
 // 명예의 전당(S-08), 슈퍼루키(S-09), 인디 게임 찜과 조회 기록. 점수 식과 근거는 lib/indie/fame 머리 주석.
 // 대상은 모두 "승인된 공개 글" 이다(isPublic) — 승인 대기 게임은 어느 순위에도 서지 않는다(기획서 7장).
+import { ownedByCurrentSession } from "@/server/auth/session";
 import "server-only";
 import { and, desc, eq, gte, inArray, lt, lte, sql, type SQL } from "drizzle-orm";
 import { getDb } from "@/server/db/client";
@@ -199,12 +200,16 @@ export async function getMonthRanking(ym: string): Promise<{ items: RankedIndie[
  * 이번 달 "내 게임 자리"(lib/indie/fame 의 pickMyStanding). 명예의 전당 화면이 마운트 뒤 api/me/fame 으로 부른다 —
  * 화면 본문은 ISR(revalidate 300)이라 쿠키를 읽을 수 없다. 내 공개 게임이 없으면 null.
  * 왕복은 둘이다: 내 글 id 와 이번 달 순위를 나란히, 그다음 내 글들의 이번 달 점수와 찜을 나란히.
+ * 내 글은 세션 서브질의로 거른다 — 부르는 쪽이 세션을 먼저 묻지 않아도 된다(2026-10-30 "늦게 나온다": 그 한 왕복이 맨 앞에 줄을 섰다).
+ * 비로그인이면 null
  */
-export async function getMyFameStanding(userId: string): Promise<MyFameStanding | null> {
+export async function getMyFameStanding(): Promise<MyFameStanding | null> {
+  const owner = await ownedByCurrentSession(indiePosts.authorUserId);
+  if (!owner) return null;
   const db = getDb();
   const ym = kstYm(new Date());
   const [mine, ranking] = await Promise.all([
-    db.select({ id: indiePosts.id, title: indiePosts.title, slug: indiePosts.slug }).from(indiePosts).where(and(eq(indiePosts.authorUserId, userId), isPublic)),
+    db.select({ id: indiePosts.id, title: indiePosts.title, slug: indiePosts.slug }).from(indiePosts).where(and(owner, isPublic)),
     liveRanking(ym),
   ]);
   if (mine.length === 0) return null;
