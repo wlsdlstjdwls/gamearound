@@ -5,6 +5,12 @@ export const WISHLIST_MESSAGES = {
   off: "찜하기",
   on: "찜했어요",
   added: "찜 목록에 담았어요",
+  /** 찜 할인 알림을 켜 둔 사람의 담기 토스트(sync/dispatch-wish-alerts). 찜이 알림까지 건다는 것을 담는 순간 말한다 */
+  addedWithAlert: "찜했어요. 할인이 붙으면 알려 드려요",
+  /** 찜 목록 머리의 알림 안내 한 줄과 그 끝 링크(가격 알림 화면의 스위치로 간다) */
+  saleAlertsOn: "할인이 붙으면 알려 드려요.",
+  saleAlertsOff: "찜 할인 알림은 꺼져 있어요.",
+  saleAlertsLink: "알림 설정",
   removed: "찜을 풀었어요",
   removeLabel: "찜 목록에서 빼기",
   /** 카드 ✕ 를 누르면 묻는 말(2026-10-30 사용자 "삭제 누르면 확인"). 실수로 눌러도 바로 지워지지 않게 */

@@ -70,7 +70,8 @@ export function WishHeart({ slug, title, className, variant = "heart", kind = "g
       const r = await send(slug);
       if (!r.ok) return toast(r.error);
       store.set(slug, r.wished);
-      toast(variant === "release" ? (r.wished ? M.releaseAdded : M.releaseRemoved) : r.wished ? M.added : M.removed);
+      // 인디 하트의 액션은 saleAlerts 를 안 준다 — 인디 찜에는 할인 알림이 없다
+      toast(variant === "release" ? (r.wished ? M.releaseAdded : M.releaseRemoved) : r.wished ? ("saleAlerts" in r && r.saleAlerts ? M.addedWithAlert : M.added) : M.removed);
     });
 
   // 로그인 뒤 이어하기 — 이미 찜한 게임이면 그대로 둔다(토글이라 한 번 더 누르면 풀린다)

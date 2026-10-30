@@ -43,7 +43,7 @@ export function WishlistButton({ gameId, className }: { gameId: string; classNam
       const r = await toggleWishlistAction(gameId);
       if (!r.ok) return toast(r.error);
       setWished(r.wished);
-      toast(r.wished ? M.added : M.removed);
+      toast(r.wished ? (r.saleAlerts ? M.addedWithAlert : M.added) : M.removed);
     });
 
   // 로그인 뒤 이어하기 — 이미 찜한 게임이면 아무것도 안 한다(토글이라 한 번 더 누르면 풀린다)

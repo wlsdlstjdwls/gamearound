@@ -21,6 +21,7 @@ import { collectedAtText, getFreshness } from "@/lib/freshness";
 import { stagger } from "@/lib/motion";
 import { ROUTES } from "@/lib/routes";
 import { listWishlist, type WishlistItem } from "@/server/services/wishlist";
+import { getCurrentUser } from "@/server/services/users";
 import { listAlerts } from "@/server/services/alerts";
 import { listMyIndieWishes } from "@/server/services/indie";
 import { IndieWishes } from "@/components/wishlist/indie-wishes";
@@ -70,7 +71,10 @@ export default async function WishlistPage({ searchParams }: Props) {
   const explicit = readSortParam((await searchParams).sort);
   const sort: SortKey = explicit ?? readPref((await cookies()).get(PREF_COOKIES.wishlistSort)?.value, SORT_KEYS) ?? "sale";
   // 세 질의는 서로 기다릴 일이 없어 나란히 묻는다(Neon 왕복은 줄 세운 수가 속도를 정한다)
-  const [items, alerts, indie] = await Promise.all([listWishlist(), listAlerts(), listMyIndieWishes()]);
+  // 사용자는 레이아웃이 이미 읽었다(요청 안에서 한 번만 묻는다) — 줄에 끼워도 왕복이 늘지 않는다
+  const [items, alerts, indie, me] = await Promise.all([listWishlist(), listAlerts(), listMyIndieWishes(), getCurrentUser()]);
+  // 찜 할인 알림이 켜져 있나(sync/dispatch-wish-alerts). 머리 한 줄이 "할인하면 알려 드려요" 를 말할지 정한다
+  const saleAlerts = me?.wishSaleAlertsOffAt === null;
   // 한 게임에 플랫폼별 알림이 여럿일 수 있다 — 하나라도 켜져 있으면 받는 중
   const alertState = new Map<string, AlertState>();
   for (const a of alerts) {
@@ -89,7 +93,11 @@ export default async function WishlistPage({ searchParams }: Props) {
         <div>
           <PageHead title={WISHLIST_MESSAGES.title} />
           <p className="mt-1.5 text-[13.5px] text-mut">
-            {items.length}개 중 <span className="font-bold text-acc">{onSaleCount}개가 지금 할인 중</span>이에요.
+            {items.length}개 중 <span className="font-bold text-acc">{onSaleCount}개가 지금 할인 중</span>이에요.{" "}
+            {saleAlerts ? WISHLIST_MESSAGES.saleAlertsOn : WISHLIST_MESSAGES.saleAlertsOff}{" "}
+            <Link href={ROUTES.alerts} className="font-semibold text-ink-2 underline-offset-2 hover:text-acc hover:underline">
+              {WISHLIST_MESSAGES.saleAlertsLink}
+            </Link>
           </p>
         </div>
         <div role="group" aria-label="정렬" className="flex shrink-0 gap-1.5">

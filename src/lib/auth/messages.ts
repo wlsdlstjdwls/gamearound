@@ -78,6 +78,9 @@ export type AuthMessageKey = keyof typeof AUTH_MESSAGES;
 
 /** 로그인 팝업(components/auth/login-gate, 기획서 v2.0 M-01) */
 export const LOGIN_GATE_MESSAGES = {
-  title: "로그인이 필요해요",
-  lead: "로그인하면 누르던 동작을 바로 이어서 해 드려요.",
+  /**
+   * 팝업 제목이 곧 가입할 이유다(2026-10-30 사용자 승인). "로그인이 필요해요" 는 벽만 말하고 얻는 것을 말하지 않았다.
+   * 본문 줄을 더 세우지 않고 제목에 담는다 — 안내 한 줄(lead)은 같은 날 걷었다(줄이 늘면 폼이 밀린다)
+   */
+  title: "로그인하면 할인 소식을 알려 드려요",
 } as const;

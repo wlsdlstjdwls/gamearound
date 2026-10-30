@@ -29,7 +29,6 @@ function GateDialog({ open, onOpenChange }: { open: boolean; onOpenChange: (o: b
   return (
     <Sheet open={open} onOpenChange={onOpenChange} title={M.title}>
       <div className="flex flex-col gap-5 pb-2 sm:w-[380px]">
-        <p className="text-[14px] leading-[1.7] text-mut">{M.lead}</p>
         {/* 열 때만 그린다 — 닫혀 있는 동안 폼이 DOM 에 있으면 autoFocus 가 화면 뒤 칸으로 포커스를 끌어간다 */}
         {/* 계정 등록 링크는 폼이 이미 갖고 있다(아직 계정이 없나요?) — 여기서 한 줄 더 세우면 같은 말이 두 번 선다 */}
         {open && <SignInForm next={here} />}
