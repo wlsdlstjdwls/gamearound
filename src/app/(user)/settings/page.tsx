@@ -14,6 +14,7 @@
 // 넓은 화면은 두 기둥이다 — 왼쪽에 나(프로필 판, 따라 내려온다), 오른쪽에 바꿀 수 있는 것(개인화, 알림, 화면)이 판 한 장씩 차례로 떠오른다.
 import type { Metadata } from "next";
 import { PushToggle } from "@/components/push-toggle";
+import { WishSaleToggle } from "@/components/alerts/wish-sale-toggle";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { SignOutButton } from "@/components/auth/sign-out-button";
 import { PersonalizationSection } from "@/components/settings/personalization-section";
@@ -88,6 +89,8 @@ export default async function SettingsPage() {
           )}
           <div className={CARD} style={stagger(2)}>
             <PushToggle initialCount={pushCount} />
+            {/* 무엇을 받을지(찜 할인)는 어디로 받을지(푸시) 바로 밑이다 — 같은 판에 두어야 "켰는데 왜 안 오지" 를 한자리에서 푼다 */}
+            <WishSaleToggle initialOn={user.wishSaleAlertsOffAt === null} className="mt-4" />
           </div>
           <div className={CARD} style={stagger(3)}>
             <ThemeToggle />

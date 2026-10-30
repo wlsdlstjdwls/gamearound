@@ -14,6 +14,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { AlertForm, type AlertInitial } from "@/components/alert-form";
 import { AlertList } from "@/components/alerts/alert-list";
+import { WishSaleToggle } from "@/components/alerts/wish-sale-toggle";
 import { EmptyState } from "@/components/empty-state";
 import { Page, PageHead, SectionHead } from "@/components/ui/page";
 import { buttonClass } from "@/components/ui/button";
@@ -26,6 +27,7 @@ import { stagger } from "@/lib/motion";
 import { findGameBySlug, listAlertViews } from "@/server/services/alerts";
 import { getMyProfile, isPersonalized } from "@/server/services/profiles";
 import { countMyPushSubscriptions } from "@/server/services/push";
+import { requireUserOrRedirect } from "@/server/auth/guards";
 import { alertDefaults } from "@/lib/onboarding/personal";
 
 export const metadata: Metadata = { title: M.title };
@@ -53,11 +55,13 @@ function Stat({ label, value, tone, icon, index }: { label: string; value: numbe
 export default async function AlertsPage({ searchParams }: { searchParams: Promise<{ game?: string | string[] }> }) {
   const sp = await searchParams;
   const slug = typeof sp.game === "string" ? sp.game.trim() : "";
-  const [game, overview, profile, pushCount] = await Promise.all([
+  // 사용자는 레이아웃이 이미 읽었다(getCurrentUser 는 요청 안에서 한 번만 묻는다) — 줄에 끼워도 왕복이 늘지 않는다
+  const [game, overview, profile, pushCount, me] = await Promise.all([
     slug ? findGameBySlug(slug) : Promise.resolve(null),
     listAlertViews(),
     getMyProfile(),
     countMyPushSubscriptions(),
+    requireUserOrRedirect(),
   ]);
   // 이 게임에 이미 만든 알림은 방금 받은 내 알림 목록에서 고른다 — 따로 물으면 게임을 찾은 뒤 한 왕복이 더 줄을 선다(2026-10-30 쿼리 점검).
   // 목록 순서(켜진 것 먼저, 최근 먼저)가 findMyAlertForGame 과 같아 첫 줄이 같은 답이다
@@ -103,6 +107,9 @@ export default async function AlertsPage({ searchParams }: { searchParams: Promi
           </Link>
         </div>
       )}
+
+      {/* 찜만 해 둔 게임도 할인하면 온다(sync/dispatch-wish-alerts). 목록의 알림은 그보다 자세한 조건을 건 것이다 */}
+      <WishSaleToggle initialOn={me.wishSaleAlertsOffAt === null} surface="card" className="enter-item" />
 
       {views.length > 0 && (
         <div className="grid grid-cols-3 gap-2.5">

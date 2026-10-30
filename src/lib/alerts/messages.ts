@@ -106,3 +106,11 @@ export const PRICE_ALERT_MESSAGES = {
   failed: "저장하지 못했어요. 잠시 뒤 다시 해 주세요",
   advanced: "목표가, 할인율로 자세히 정하기",
 } as const;
+
+/** 찜 할인 알림 스위치(2026-10-30). 설정과 가격 알림 화면이 같은 손잡이를 세운다(components/alerts/wish-sale-toggle) */
+export const WISH_ALERT_MESSAGES = {
+  title: "찜한 게임 할인 알림",
+  on: "찜한 게임에 할인이 붙거나 기록상 최저가가 되면 알려 드려요",
+  off: "찜한 게임은 알리지 않아요. 가격 알림을 건 게임만 받아요",
+  failed: "바꾸지 못했어요. 잠시 뒤 다시 해 주세요",
+} as const;

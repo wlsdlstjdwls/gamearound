@@ -6,12 +6,12 @@
 // SQL 로 후보를 좁힌 뒤 같은 판정 함수(meetsCondition)로 한 번 더 거른다 — 화면의 "지금 조건에 맞아요" 와 발송이 갈리지 않게.
 import { and, eq, or, isNull, isNotNull } from "drizzle-orm";
 import { getDb } from "@/server/db/client";
-import { alertDeliveries, gamePlatforms, games, notifications, priceAlerts, pushSubscriptions, users } from "@/server/db/schema";
+import { alertDeliveries, gamePlatforms, games, notifications, priceAlerts, users } from "@/server/db/schema";
 import { NOTIFICATION_MESSAGES } from "@/lib/notifications/messages";
 import { mailConfigured, sendMail } from "@/server/mail/send";
 import { SITE } from "@/lib/site";
 import { markOnce } from "@/server/redis";
-import { sendPush } from "@/server/push/webpush";
+import { pushToUser } from "./push-to-user";
 import { formatPrice } from "@/lib/currency";
 import { meetsCondition } from "@/lib/alerts/condition";
 import { alertPayload } from "@/lib/alerts/payload";
@@ -146,24 +146,11 @@ export async function dispatchPriceAlerts(changes: PriceChange[]): Promise<Dispa
         }
       }
 
-      const subs = await db.select().from(pushSubscriptions).where(eq(pushSubscriptions.userId, alert.userId));
-      let attempted = false;
-      for (const sub of subs) {
-        attempted = true;
-        const res = await sendPush(sub, payload);
-        if (res.ok) {
-          summary.sent++;
-        } else {
-          summary.failed++;
-          if (res.gone) {
-            await db.delete(pushSubscriptions).where(eq(pushSubscriptions.id, sub.id));
-            summary.removedSubscriptions++;
-          } else {
-            console.warn(`[alerts] push 실패 (alert=${alert.id}, status=${res.statusCode}): ${res.error}`);
-          }
-        }
-      }
-      if (attempted) {
+      const pushed = await pushToUser(alert.userId, payload, `alerts:${alert.id}`);
+      summary.sent += pushed.sent;
+      summary.failed += pushed.failed;
+      summary.removedSubscriptions += pushed.removed;
+      if (pushed.attempted) {
         await db.insert(alertDeliveries).values({ alertId: alert.id, snapshotId: change.snapshotId }).onConflictDoNothing();
       }
     }

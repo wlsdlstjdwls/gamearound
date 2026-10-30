@@ -610,6 +610,13 @@
       "when": 1793326668605,
       "tag": "0086_query_audit_indexes",
       "breakpoints": true
+    },
+    {
+      "idx": 87,
+      "version": "7",
+      "when": 1793338173469,
+      "tag": "0087_wish_sale_alerts",
+      "breakpoints": true
     }
   ]
 }

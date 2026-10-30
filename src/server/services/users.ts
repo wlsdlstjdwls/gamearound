@@ -10,6 +10,7 @@ import { AUTH_MESSAGES } from "@/lib/auth/messages";
 import { normalizeEmail } from "@/lib/auth/schemas";
 import { getDummyHash, hashPassword, verifyPassword } from "@/server/auth/password";
 import { readSessionToken, validateSessionToken } from "@/server/auth/session";
+import { dropCachedSessionsOfUser } from "@/server/auth/session-cache";
 
 export type UserRow = typeof users.$inferSelect;
 /** 클라이언트로 내려보내도 되는 최소 정보 (passwordHash 등 제외) */
@@ -139,6 +140,16 @@ export const getCurrentUser = cache(async (): Promise<UserRow | null> => {
 /** 프로필 사진 바꾸기(null = 기본 그림). 예전 파일은 지우지 않는다 — 아직 다른 화면 캐시가 그 주소를 들고 있을 수 있다 */
 export async function setAvatar(userId: string, url: string | null): Promise<void> {
   await getDb().update(users).set({ avatarUrl: url, updatedSource: "user", updatedBy: userId, updatedAt: new Date() }).where(eq(users.id, userId));
+}
+
+/** 찜 할인 알림 켜고 끄기(sync/dispatch-wish-alerts 가 읽는다). 끈 시각을 남긴다 — 스키마 wishSaleAlertsOffAt 주석 */
+export async function setWishSaleAlerts(userId: string, on: boolean): Promise<void> {
+  await getDb()
+    .update(users)
+    .set({ wishSaleAlertsOffAt: on ? null : sql`now()`, updatedSource: "user", updatedBy: userId, updatedAt: sql`now()` })
+    .where(eq(users.id, userId));
+  // 화면은 세션 사본(Redis)의 사용자 행을 읽는다. 안 지우면 다시 열었을 때 바꾸기 전 값이 선다(2026-10-30 실측). 사본만 지우고 로그인은 남는다
+  await dropCachedSessionsOfUser(userId);
 }
 
 export async function requireUser(): Promise<UserRow> {

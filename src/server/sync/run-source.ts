@@ -12,6 +12,7 @@ import { errorMessage } from "@/lib/errors";
 import { LOCK_TTL_SEC } from "./constants";
 import { createContext, recordError, type Ctx, type RunOptions, type RunResult } from "./context";
 import { dispatchPriceAlerts, type DispatchSummary } from "./dispatch-alerts";
+import { dispatchWishSaleAlerts } from "./dispatch-wish-alerts";
 import { revalidateGameTags } from "./revalidate";
 import { runMeta } from "./run-meta";
 import { runNews } from "./run-news";
@@ -57,6 +58,13 @@ export async function runSource(source: Source, opts: RunOptions = {}): Promise<
         console.log(`[sync:${source}] 알림: ${JSON.stringify(alerts)}`);
       } catch (e) {
         recordError(ctx, "alerts", e);
+      }
+      // 찜 할인 알림은 목표가 알림 뒤에 돈다 — 가격 알림을 건 사람은 이쪽이 건너뛰므로 순서가 바뀌어도 두 통이 가지 않는다
+      try {
+        const wish = await dispatchWishSaleAlerts(ctx.priceChanges);
+        console.log(`[sync:${source}] 찜 할인 알림: ${JSON.stringify(wish)}`);
+      } catch (e) {
+        recordError(ctx, "wish-alerts", e);
       }
     }
 

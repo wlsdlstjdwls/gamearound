@@ -7,7 +7,9 @@ import { z } from "zod";
 import { alertChannelEnum, platformEnum } from "@/server/db/schema";
 import { notifyAlertsMetNow } from "@/server/services/alert-inbox";
 import { createAlert, deleteAlert, getMyGameAlert, saveGameAlert, toggleAlert, updateAlert, type GameAlertSetting } from "@/server/services/alerts";
-import { requireUser } from "@/server/services/users";
+import { requireUser, setWishSaleAlerts } from "@/server/services/users";
+import { WISH_ALERT_MESSAGES } from "@/lib/alerts/messages";
+import { ROUTES } from "@/lib/routes";
 
 export type ActionState = { ok: true; message?: string } | { ok: false; error: string } | null;
 
@@ -176,4 +178,17 @@ export async function saveGameAlertAction(input: { gameId: string; platforms: st
   } catch (e) {
     return fail(e);
   }
+}
+
+/** 찜 할인 알림 켜고 끄기(2026-10-30). 화면은 누른 즉시 바뀌고 실패하면 되돌린다(components/alerts/wish-sale-toggle) */
+export async function setWishSaleAlertsAction(on: boolean): Promise<ActionState> {
+  try {
+    const me = await requireUser();
+    await setWishSaleAlerts(me.id, on === true);
+  } catch (e) {
+    return { ok: false, error: actionError(e, WISH_ALERT_MESSAGES.failed) };
+  }
+  revalidatePath(ROUTES.alerts);
+  revalidatePath(ROUTES.settings);
+  return { ok: true };
 }

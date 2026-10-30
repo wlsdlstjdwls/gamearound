@@ -1025,6 +1025,12 @@ export const PREORDER_SHOW_AFTER_RELEASE_DAYS = 30;
 export const RELEASE_ALERT_LOOKBACK_DAYS = 3;
 
 /**
+ * 찜 할인 알림(dispatch-wish-alerts)의 "할인 시작" 중복 창. 스팀 정기 세일이 1~2주라 한 세일에 한 통이 되게 7일로 둔다 —
+ * 세일 중 값이 몇 번 흔들려도, 여러 스토어가 하루에 같이 내려도 한 통이다. 목표가 알림의 중복 창(dispatch-alerts)과 같다
+ */
+export const WISH_SALE_DEDUPE_TTL_SEC = 7 * 24 * 60 * 60;
+
+/**
  * 데이터 점검기(sync/quality) 한 회차가 자동으로 고치는 상한. 넘는 몫은 사람에게 올린다(candidate).
  * 규칙이 한꺼번에 수백 건을 낸다면 데이터가 고장 난 것보다 규칙이 틀렸을 공산이 크다 — 그때 수백 건을 기계가
  * 고쳐 버리면 되돌리는 일이 사람 몫이 된다. 2026-10-28 첫 실측은 회차당 auto 9건이었다.

@@ -668,6 +668,12 @@ export const users = pgTable("users", {
   emailVerifiedAt: timestamp("email_verified_at", { withTimezone: true }),
   /** 프로필 사진(2026-10-26, 기획서 v2.0 S-24). Vercel Blob 주소. null 이면 기본 그림(닉네임 첫 글자) */
   avatarUrl: text("avatar_url"),
+  /**
+   * 찜한 게임 할인 알림을 끈 시각(2026-10-30). null 이면 켜져 있다 — 찜이 곧 "할인하면 알려 줘" 라서 기본이 켜짐이다(sync/dispatch-wish-alerts).
+   * 불리언이 아니라 시각인 이유는 userProfiles.personalizationPausedAt 과 같다: 언제 껐는지가 남아야 "왜 안 왔지" 를 되짚는다.
+   * user_profiles 에 두지 않는 이유: 그 행은 온보딩이 upsert 해야 생기고, 관리자처럼 온보딩을 안 보는 계정에는 없다
+   */
+  wishSaleAlertsOffAt: timestamp("wish_sale_alerts_off_at", { withTimezone: true }),
   ...auditColumns(),
 });
 

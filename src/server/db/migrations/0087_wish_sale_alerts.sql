@@ -1,0 +1,1 @@
+ALTER TABLE "users" ADD COLUMN "wish_sale_alerts_off_at" timestamp with time zone;

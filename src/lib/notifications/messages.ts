@@ -13,6 +13,10 @@ export const NOTIFICATION_MESSAGES = {
   priceMet: (gameTitle: string, priceText: string) => `${gameTitle} 지금 ${priceText}, 알림 조건에 맞아요`,
   approved: (gameTitle: string) => `'${gameTitle}' 등록이 승인됐어요`,
   rejected: (gameTitle: string) => `'${gameTitle}' 등록이 반려됐어요. 사유를 확인해 주세요`,
+  /** 찜한 게임에 할인이 붙었다(sync/dispatch-wish-alerts). 조건을 건 적이 없는 사람에게 가는 글이라 "찜한" 으로 이유를 먼저 말한다 */
+  wishSale: (gameTitle: string, priceText: string, pct: number) => `찜한 '${gameTitle}' ${pct}% 할인, 지금 ${priceText}이에요`,
+  /** 찜한 게임이 우리가 본 값 중 가장 싸졌다. "역대" 라 하지 않는 이유는 lib/games/messages 의 기록상 최저가 주석과 같다 */
+  wishRecordLow: (gameTitle: string, priceText: string) => `찜한 '${gameTitle}' 기록상 최저가예요, 지금 ${priceText}`,
   /** 출시 알림(찜한 출시 예정 게임이 나왔다, sync/release-alerts) */
   released: (gameTitle: string) => `찜한 '${gameTitle}' 출시 소식이 왔어요`,
 } as const;
