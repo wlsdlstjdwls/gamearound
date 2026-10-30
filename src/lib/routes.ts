@@ -33,6 +33,11 @@ export const ROUTES = {
   settingsDevices: "/settings/devices",
   /** 관리자 첫 화면 — 업무 현황판. 묶음마다 쌓인 일 건수를 세우고, 숫자가 곧 그 일을 하는 화면으로 가는 길이다 */
   admin: "/admin",
+  /**
+   * 관리자 로그인(2026-10-30 회원 로그인에서 뗐다). 관리자 계정은 회원 `/sign-in` 으로도 들어올 수 있다 — 화면만 둘이고 세션은 하나다.
+   * `/admin` 아래지만 `(admin)` 그룹 밖에 산다(그룹 레이아웃의 역할 검사가 로그인 화면 자체를 막지 않게)
+   */
+  adminSignIn: "/admin/sign-in",
   /** 스토어별 수집 현황. 앞에는 관리자 첫 화면이었다(2026-10-29 업무 현황판에 자리를 내줬다) */
   adminSync: "/admin/sync",
   /** 수집 실행 기록. 수집 현황이 요약만 보여 주는 값의 전문이 여기 있다 */
@@ -187,7 +192,7 @@ const UNSAFE_NEXT = /^\/\/|[@\\]|[\s\x00-\x1f]/;
  */
 export function safeNextPath(raw: string | null | undefined): string {
   if (!raw || !raw.startsWith("/") || UNSAFE_NEXT.test(raw)) return ROUTES.home;
-  if ([ROUTES.signIn, ROUTES.signUp, ROUTES.forgotPassword, ROUTES.resetPassword].some((p) => raw.startsWith(p))) return ROUTES.home;
+  if ([ROUTES.signIn, ROUTES.signUp, ROUTES.forgotPassword, ROUTES.resetPassword, ROUTES.adminSignIn].some((p) => raw.startsWith(p))) return ROUTES.home;
   return raw;
 }
 

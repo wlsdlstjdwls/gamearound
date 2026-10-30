@@ -1,7 +1,7 @@
 "use client";
 import Link from "next/link";
 import { useActionState, useRef } from "react";
-import { signInAction } from "@/app/(auth)/actions";
+import { adminSignInAction, signInAction } from "@/app/(auth)/actions";
 import { AUTH_MESSAGES as M } from "@/lib/auth/messages";
 import { signInInputFromForm, signInSchema } from "@/lib/auth/schemas";
 import { stagger } from "@/lib/motion";
@@ -12,8 +12,12 @@ import { FormMessage } from "@/components/ui/form-message";
 import { PasswordField } from "@/components/ui/password-field";
 import { TextField } from "@/components/ui/text-field";
 
-export function SignInForm({ next }: { next: string }) {
-  const [state, formAction, pending] = useActionState(signInAction, null);
+/**
+ * 회원 로그인과 관리자 로그인(`admin`)이 같은 폼을 쓴다 — 칸, 검증, 제출 흐름이 같고 다른 것은 액션과 곁 링크뿐이다.
+ * 관리자 쪽은 가입, 비밀번호 찾기 링크를 걷는다. 관리자 계정은 가입으로 생기지 않고, 재설정은 회원 로그인 화면에서 한다
+ */
+export function SignInForm({ next, admin = false }: { next: string; admin?: boolean }) {
+  const [state, formAction, pending] = useActionState(admin ? adminSignInAction : signInAction, null);
   const { formRef, formError, errorSerial, fieldProps, onSubmit, navigating } = useAuthForm({
     schema: signInSchema,
     toInput: signInInputFromForm,
@@ -55,11 +59,13 @@ export function SignInForm({ next }: { next: string }) {
       <div className="reveal" style={stagger(2)}>
         <PasswordField ref={passwordRef} label="비밀번호" placeholder="비밀번호" autoComplete="current-password" disabled={busy} {...fieldProps("password")} />
         {/* 칸 바로 밑, 오른쪽 — 비밀번호를 못 떠올린 사람의 눈이 머무는 자리다. 줄 높이를 44px 로 맞춰 터치 타깃을 지킨다 */}
-        <div className="flex justify-end">
-          <Link href={ROUTES.forgotPassword} className="inline-flex h-11 items-center text-[13px] text-mut underline-offset-4 hover:text-ink hover:underline">
-            {M.forgotLink}
-          </Link>
-        </div>
+        {!admin && (
+          <div className="flex justify-end">
+            <Link href={ROUTES.forgotPassword} className="inline-flex h-11 items-center text-[13px] text-mut underline-offset-4 hover:text-ink hover:underline">
+              {M.forgotLink}
+            </Link>
+          </div>
+        )}
       </div>
 
       <div className="reveal pt-1" style={stagger(3)}>
@@ -68,12 +74,14 @@ export function SignInForm({ next }: { next: string }) {
         </Button>
       </div>
 
-      <p className="reveal text-center text-sm text-mut" style={stagger(4)}>
-        {M.noAccount}{" "}
-        <Link href={next === ROUTES.home ? ROUTES.signUp : `${ROUTES.signUp}?next=${encodeURIComponent(next)}`} className="font-semibold text-acc-hover underline-offset-4 hover:underline">
-          {M.signUpCta}
-        </Link>
-      </p>
+      {!admin && (
+        <p className="reveal text-center text-sm text-mut" style={stagger(4)}>
+          {M.noAccount}{" "}
+          <Link href={next === ROUTES.home ? ROUTES.signUp : `${ROUTES.signUp}?next=${encodeURIComponent(next)}`} className="font-semibold text-acc-hover underline-offset-4 hover:underline">
+            {M.signUpCta}
+          </Link>
+        </p>
+      )}
     </form>
   );
 }

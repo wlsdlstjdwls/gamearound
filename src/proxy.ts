@@ -3,7 +3,8 @@
 // 주의: 쿠키가 있어도 만료/폐기된 세션일 수 있으므로 "쿠키 있으면 로그인 페이지 차단" 같은 판단은 하지 않는다 — 그건 (auth)/layout.tsx 가 실제 검증 후 처리.
 import { NextResponse, type NextRequest } from "next/server";
 import { ADMIN_ROUTE_PREFIXES, SESSION_COOKIE_NAME, USER_ROUTE_PREFIXES, VENDOR_ROUTE_PREFIXES } from "@/lib/auth/constants";
-import { signInPath } from "@/lib/routes";
+import { signInPathFor } from "@/lib/auth/sign-in-path";
+import { ROUTES } from "@/lib/routes";
 
 /** 레이아웃이 "돌아갈 경로"를 알 수 있도록 요청 헤더로 넘긴다 (headers().get(PATHNAME_HEADER)) */
 export const PATHNAME_HEADER = "x-pathname";
@@ -16,9 +17,11 @@ export default function proxy(req: NextRequest) {
   const { pathname, search } = req.nextUrl;
   const hasSession = Boolean(req.cookies.get(SESSION_COOKIE_NAME)?.value);
 
-  const needsAuth = matches(pathname, USER_ROUTE_PREFIXES) || matches(pathname, ADMIN_ROUTE_PREFIXES) || matches(pathname, VENDOR_ROUTE_PREFIXES);
+  // 관리자 로그인 화면은 /admin 아래지만 들어가는 데 로그인이 필요 없다(빼지 않으면 자기 자신으로 돌려보낸다)
+  const isAdminSignIn = pathname === ROUTES.adminSignIn;
+  const needsAuth = !isAdminSignIn && (matches(pathname, USER_ROUTE_PREFIXES) || matches(pathname, ADMIN_ROUTE_PREFIXES) || matches(pathname, VENDOR_ROUTE_PREFIXES));
   if (needsAuth && !hasSession) {
-    return NextResponse.redirect(new URL(signInPath(pathname + search), req.url));
+    return NextResponse.redirect(new URL(signInPathFor(pathname + search), req.url));
   }
 
   const headers = new Headers(req.headers);

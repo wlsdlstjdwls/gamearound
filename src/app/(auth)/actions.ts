@@ -6,7 +6,9 @@ import { MAINTENANCE_MESSAGES } from "@/lib/messages";
 import { RATE_LIMIT } from "@/lib/auth/constants";
 import { AUTH_MESSAGES as M } from "@/lib/auth/messages";
 import { displayNameSchema, emailSchema, fieldErrorsOf, signInInputFromForm, signInSchema, signUpInputFromForm, signUpSchema } from "@/lib/auth/schemas";
+import { adminNextPath } from "@/lib/auth/sign-in-path";
 import { afterSignUpPath, safeNextPath } from "@/lib/routes";
+import type { Role } from "@/server/db/schema";
 import { checkRateLimit, getRequestMeta, hashKeyPart } from "@/server/auth/rate-limit";
 import { createSession, invalidateCurrentSession } from "@/server/auth/session";
 import { createUser, DisplayNameTakenError, EmailTakenError, isDisplayNameTaken, isEmailRegistered, recordSignUpConsents, verifyCredentials } from "@/server/services/users";
@@ -91,7 +93,13 @@ export async function checkDisplayNameTakenAction(raw: unknown): Promise<{ taken
   }
 }
 
-export async function signInAction(_prev: AuthActionState, formData: FormData): Promise<AuthActionState> {
+/**
+ * 회원 로그인과 관리자 로그인이 함께 쓰는 몸통. 둘이 다른 것은 "누구를 들일지" 와 "어디로 보낼지" 뿐이다.
+ *
+ * 시도 제한 키는 두 화면이 나눠 쓴다 — 키를 가르면 화면을 번갈아 두드려 한도를 두 배로 받는다.
+ * 들이지 않을 계정은 비밀번호가 맞아도 세션을 만들기 **전에** 돌려보내고, 틀렸을 때와 같은 문구를 쓴다(그 이메일이 회원인지 드러내지 않는다).
+ */
+async function signInWith(formData: FormData, opts: { admit: (role: Role) => boolean; redirectTo: string }): Promise<AuthActionState> {
   const parsed = signInSchema.safeParse(signInInputFromForm(formData));
   if (!parsed.success) return { ok: false, fieldErrors: fieldErrorsOf(parsed.error) };
 
@@ -104,13 +112,24 @@ export async function signInAction(_prev: AuthActionState, formData: FormData): 
 
   try {
     const user = await verifyCredentials(parsed.data.email, parsed.data.password);
-    if (!user) return { ok: false, error: M.invalidCredentials };
+    if (!user || !opts.admit(user.role)) return { ok: false, error: M.invalidCredentials };
     await createSession(user.id, meta);
-    return { ok: true, redirectTo: nextFrom(formData) };
+    return { ok: true, redirectTo: opts.redirectTo };
   } catch (e) {
     console.error("[auth] 로그인 실패:", e instanceof Error ? e.message : e);
     return { ok: false, error: unavailableOr(e, M.serverError, MAINTENANCE_MESSAGES.auth) };
   }
+}
+
+/** 회원 로그인. 관리자도 여기로 들어올 수 있다(2026-10-30 사용자 "관리자는 회원 로그인도 되긴 해야 함") */
+export async function signInAction(_prev: AuthActionState, formData: FormData): Promise<AuthActionState> {
+  return signInWith(formData, { admit: () => true, redirectTo: nextFrom(formData) });
+}
+
+/** 관리자 로그인. 관리자 아닌 계정은 세션 없이 돌려보내고, 로그인 뒤에는 관리자 영역으로만 보낸다 */
+export async function adminSignInAction(_prev: AuthActionState, formData: FormData): Promise<AuthActionState> {
+  const next = formData.get("next");
+  return signInWith(formData, { admit: (role) => role === "admin", redirectTo: adminNextPath(typeof next === "string" ? next : null) });
 }
 
 /** 로그아웃 — 세션 행 삭제 + 쿠키 제거. 실패해도 쿠키는 지운다 */

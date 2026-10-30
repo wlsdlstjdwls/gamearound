@@ -750,6 +750,16 @@ body:has([data-auth-screen]) [data-site-footer] {
   display: none;
 }
 
+/* 관리자 로그인(app/(admin-auth)/admin/sign-in)은 머리띠도 걷는다 — 관리자 콘솔 앞문이라 서비스 검색, 찜, 알림이 설 자리가 아니다.
+   폭으로 가르지 않는 이유: 콘솔은 좁은 화면에서 머리띠가 메뉴 대신이지만, 이 화면에는 갈 메뉴가 없다 */
+body:has([data-admin-sign-in]) {
+  --header-h: 0px;
+}
+body:has([data-admin-sign-in]) [data-site-header],
+body:has([data-admin-sign-in]) [data-site-footer] {
+  display: none;
+}
+
 /* 타이핑 제목(components/ui/typing-title). 글자 한 칸(.type-slot)에 조합 장면(ㅎ, 하, 할)을 겹쳐 두고
    장면은 기본이 숨김이고, 중간 장면은 제 차례(--type-on 부터 --type-step 동안)에만 보이는 애니메이션 하나를 건다 — 끝나면 저절로 숨김으로 돌아간다.
    켜기, 끄기 두 애니메이션을 겹쳐 걸었더니 뒤쪽 글자에서 끄기가 먹지 않아 장면이 겹쳐 남았다(2026-10-30 실측). 마지막 장면(완성 글자)은 살짝 올라앉아 머문다.

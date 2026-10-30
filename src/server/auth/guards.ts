@@ -3,7 +3,8 @@ import "server-only";
 import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 import type { Role } from "@/server/db/schema";
-import { ROUTES, signInPath } from "@/lib/routes";
+import { signInPathFor } from "@/lib/auth/sign-in-path";
+import { ROUTES } from "@/lib/routes";
 import { PATHNAME_HEADER } from "@/proxy";
 import { getCurrentUser, type UserRow } from "@/server/services/users";
 import { findShopStaffRole, type ShopStaffRole } from "@/server/services/shops";
@@ -12,10 +13,10 @@ async function currentPath(): Promise<string | null> {
   return (await headers()).get(PATHNAME_HEADER);
 }
 
-/** 비로그인(또는 만료 쿠키)이면 로그인 페이지로 redirect. 반환 시점엔 항상 사용자 존재 */
+/** 비로그인(또는 만료 쿠키)이면 로그인 페이지로 redirect. 관리자 영역이면 관리자 로그인으로 간다. 반환 시점엔 항상 사용자 존재 */
 export async function requireUserOrRedirect(): Promise<UserRow> {
   const user = await getCurrentUser().catch(() => null);
-  if (!user) redirect(signInPath(await currentPath()));
+  if (!user) redirect(signInPathFor(await currentPath()));
   return user;
 }
 

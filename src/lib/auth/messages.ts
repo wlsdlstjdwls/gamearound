@@ -26,6 +26,11 @@ export const AUTH_MESSAGES = {
   serverError: "잠시 문제가 생겼어요. 다시 시도해 주세요",
   loginRequired: "로그인이 필요합니다",
   forbidden: "권한이 없습니다",
+  // 관리자 로그인(2026-10-30 회원 로그인에서 뗐다). 관리자 아닌 계정은 따로 말하지 않고 invalidCredentials 로 거절한다 — 그 이메일이 회원인지 드러내지 않는다
+  adminSignInTitle: "관리자 로그인",
+  adminSignInSubtitle: "관리자 계정으로 로그인해 주세요",
+  adminSignInBadge: "관리자",
+  adminSignInToService: "서비스 홈으로",
   signedOut: "로그아웃했어요",
   // UI 라벨
   signInTitle: "다시 만나서 반가워요",
