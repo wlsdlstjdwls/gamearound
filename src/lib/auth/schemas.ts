@@ -89,8 +89,17 @@ export const signUpSchema = z
     /** 가격 알림 이메일 받기(선택). 동의 기록으로 남는다(server/db/schema-consents) */
     alertEmail: z.boolean(),
   })
-  .refine((v) => !passwordHasEmailId(v.password, v.email), { message: M.passwordHasEmail, path: ["password"] })
-  .refine((v) => v.password === v.passwordConfirm, { message: M.passwordConfirmMismatch, path: ["passwordConfirm"] });
+  .refine((v) => !passwordHasEmailId(v.password, v.email), { message: M.passwordHasEmail, path: ["password"], when: cleanAt("email", "password") })
+  .refine((v) => v.password === v.passwordConfirm, { message: M.passwordConfirmMismatch, path: ["passwordConfirm"], when: cleanAt("password", "passwordConfirm") });
+
+/*
+ * 객체 refine 은 zod 4 기본값으로 **객체 어딘가에 오류가 하나라도 있으면 돌지 않는다**(2026-10-30 실측, 4.6.2).
+ * 가입은 약관 체크가 마지막이라 칸을 다 채워도 약관 전에는 "비밀번호가 서로 달라요" 가 안 섰다 —
+ * 한 칸씩 넘기는 모바일 가입에서 확인 칸을 그냥 통과시켰다. 비교하는 칸들만 깨끗하면 돌게 한다
+ */
+function cleanAt(...fields: string[]) {
+  return (payload: { issues: readonly { path?: readonly PropertyKey[] }[] }) => payload.issues.every((issue) => !fields.includes(String(issue.path?.[0])));
+}
 
 export const forgotPasswordSchema = z.object({ email: emailSchema });
 

@@ -175,10 +175,30 @@ export function useAuthForm<S extends z.ZodType>({ schema, toInput, serverState,
   }
   const formError = serverState && !serverState.ok ? serverState.error ?? null : null;
 
+  /*
+   * 한 칸씩 넘기는 가입(모바일)이 "다음" 뒤에 부르는 서버 확인(remoteChecks). 통과면 true, 걸리면 오류를 세우고 false.
+   * 답을 기다린 뒤 넘기지 않는다 — 기다리는 사이 사용자 제스처가 끝나 iOS 가 다음 칸에 키보드를 안 올린다.
+   * 부르는 쪽이 먼저 넘기고, false 가 오면 그 칸으로 되돌아간다. 서버가 답을 못 하면 통과로 본다(제출 때 서버가 다시 가른다)
+   */
+  const checkRemote = useCallback(
+    async (name: string): Promise<boolean> => {
+      const check = remoteChecks?.[name];
+      const field = formRef.current?.elements.namedItem(name);
+      if (!check || !(field instanceof HTMLInputElement)) return true;
+      const value = field.value;
+      const message = await check(value).catch(() => null);
+      // 답이 오는 사이 값을 고쳤으면 옛 값에 대한 답이다 — onBlur 와 같은 규칙
+      if (!message || field.value !== value) return true;
+      setClientErrors((prev) => ({ ...prev, [name]: message }));
+      return false;
+    },
+    [remoteChecks],
+  );
+
   /** 각 <input>에 펼쳐 넣는 공통 핸들러 */
   const fieldProps = (name: string) => ({ name, onBlur, onChange, error: errors[name] ?? null });
 
-  return { formRef, errors, formError, errorSerial, fieldProps, onSubmit, navigating };
+  return { formRef, errors, formError, errorSerial, fieldProps, onSubmit, navigating, validateField, checkRemote };
 }
 
 /** Enter → 다음 필드 포커스 (IME 조합 중 제외). 마지막 필드는 기본 제출. 이벤트 핸들러 안에서 호출한다(렌더 중 ref 접근 금지) */
