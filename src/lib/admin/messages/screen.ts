@@ -7,6 +7,8 @@ export const SCREEN_MESSAGES = {
   closeOthers: "다른 화면 닫기",
   listFold: "목록 접기",
   listUnfold: "목록 펼치기",
+  /** 손잡이 이름 뒤에 붙는 설명(screen/split-handle). 눌러 접고, 끌거나 좌우 방향키로 폭을 바꾼다 */
+  listResizeHint: "끌거나 좌우 방향키로 목록 폭을 바꿀 수 있어요",
   tabDirty: "(저장 안 한 값 있음)",
   dirtyTitle: "바뀐 내용이 있어요",
   closeDirtyConfirm: (label: string) => `${label}에 저장하지 않은 값이 있어요. 버리고 닫을까요?`,

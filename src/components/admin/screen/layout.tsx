@@ -17,6 +17,7 @@ import { cn } from "@/lib/cn";
 import { FULL_ROW } from "@/components/admin/screen/form-grid";
 import { ChevronDownIcon } from "@/components/ui/icons";
 import { SCREEN_MESSAGES as SM } from "@/lib/admin/messages";
+import { SplitHandle, useListSplit } from "@/components/admin/screen/split-handle";
 
 /**
  * 조회조건 띠. 칸은 SearchItem 으로 넣는다. 넓은 화면에서 이름표, 칸 짝이 네 벌까지 한 줄에 선다.
@@ -46,24 +47,23 @@ export function SearchItem({ label, htmlFor, children }: { label: string; htmlFo
 export function MasterDetail({ list, detail, detailTitle, detailActions, listWidth = "400px" }: { list: React.ReactNode; detail: React.ReactNode; detailTitle?: React.ReactNode; detailActions?: React.ReactNode; listWidth?: string }) {
   // 목록 접기(2026-10-30 사용자 "그리드 줄이고 폼 입력 영역을 더 크게, 영역별로 접고 펼 수 있게"). 접으면 목록 자리가 손잡이 줄 하나로 줄고 상세가 폭을 다 쓴다.
   // 화면마다 따로 쥔다 — 프로그램 탭을 오가도 탭 화면이 살아 있어 그대로다(program-shell)
-  const [folded, setFolded] = useState(false);
+  // 같은 날 사용자 "드래그로 자유롭게 조정" — 손잡이를 끌면 목록 폭이 바뀌고 화면(주소)마다 기억한다(split-handle)
+  const split = useListSplit();
+  const listRef = useRef<HTMLDivElement>(null);
+  const { folded } = split;
   return (
     <div
       className={cn("grid items-start gap-4 lg:gap-2", folded ? "lg:grid-cols-[auto_minmax(0,1fr)]" : "lg:grid-cols-[var(--master-w)_auto_minmax(0,1fr)]")}
-      style={{ "--master-w": listWidth } as React.CSSProperties}
+      style={{ "--master-w": split.width === null ? listWidth : `${split.width}px` } as React.CSSProperties}
     >
-      <div hidden={folded} className="min-w-0 lg:sticky lg:top-[calc(var(--header-h)+var(--admin-head-h,76px)+12px)]">
+      <div ref={listRef} hidden={folded} className="min-w-0 lg:sticky lg:top-[calc(var(--header-h)+var(--admin-head-h,76px)+12px)]">
         {list}
       </div>
-      <button
-        type="button"
-        aria-expanded={!folded}
-        aria-label={folded ? SM.listUnfold : SM.listFold}
-        onClick={() => setFolded((f) => !f)}
-        className="press hidden h-24 w-5 place-items-center self-start rounded-md border border-line bg-surface-2 text-dim hover:bg-surface hover:text-ink lg:sticky lg:top-[calc(var(--header-h)+var(--admin-head-h,76px)+12px)] lg:grid"
-      >
-        <ChevronDownIcon size={14} className={folded ? "-rotate-90" : "rotate-90"} />
-      </button>
+      <SplitHandle
+        split={split}
+        listRef={listRef}
+        className="hidden h-24 w-5 place-items-center self-start rounded-md border border-line bg-surface-2 text-dim hover:bg-surface hover:text-ink data-[dragging]:border-acc data-[dragging]:text-acc lg:sticky lg:top-[calc(var(--header-h)+var(--admin-head-h,76px)+12px)] lg:grid"
+      />
       <Pane title={detailTitle} actions={detailActions}>
         {detail}
       </Pane>
