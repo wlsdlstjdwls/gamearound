@@ -177,7 +177,12 @@ export const PRICING_ADMIN_MESSAGES = {
   promoStarts: "시작일",
   promoEnds: "종료일",
   kindLabels: { percent: "비율", price: "금액" },
-  audienceLabels: { all: "전체 결제", first: "첫 결제" },
+  /**
+   * 적용 대상자는 "누구에게" 다(promotion.audience) — 처음 결제하는 회원만인가, 모든 회원인가. 어느 결제에 거는지가 아니다:
+   * 멤버십 할인은 둘 다 첫 달 결제에만 걸리고 갱신은 정가다(services/membership/charge, quote 의 first).
+   * 10-30 용어 정리 때 "모두" 를 "전체 결제" 로 바꿨더니 매달 할인처럼 읽혔다(사용자 "전체 결제로 바꿔도 다음 달부터 정가"). 사람을 가리키는 말로 둔다
+   */
+  audienceLabels: { all: "전체 회원", first: "첫 결제 회원" },
   newPromoLabel: "첫 결제 할인",
   statusLabels: { live: "진행 중", stopped: "중단" },
   stopReasonLabels: { manual: "운영 중단", price_change: "가격변동 중단", before: "시작 전", after: "기간 종료" },
