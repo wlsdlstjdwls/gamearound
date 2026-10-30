@@ -14,6 +14,7 @@ import { NEWS_MESSAGES as M, newsCountText } from "@/lib/news/messages";
 import { ROUTES } from "@/lib/routes";
 import { listNews } from "@/server/services/games";
 import { NavPendingScope, PendingRegion } from "@/components/ui/nav-pending";
+import { EmptyState } from "@/components/empty-state";
 
 // Next 가 정적으로 읽는 값이라 리터럴이어야 한다 — 근거, 수치는 lib/cache 의 LIST_REVALIDATE_SECONDS 와 같게 유지
 export const revalidate = 3600;
@@ -54,7 +55,7 @@ export default async function NewsPage({ searchParams }: Props) {
       <PageHead title={M.title} note={total > 0 ? newsCountText(total) : undefined} />
 
       {items.length === 0 ? (
-        <p className="rounded-xl bg-surface-2 px-4 py-3.5 text-[13px] text-dim">{M.empty}</p>
+        <EmptyState title={M.empty} />
       ) : (
         <>
           <PendingRegion>

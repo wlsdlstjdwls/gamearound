@@ -18,8 +18,19 @@ export const ERROR_MESSAGES = {
 } as const;
 
 export const NOT_FOUND_MESSAGES = {
+  code: "404",
   title: "페이지를 찾을 수 없어요",
   body: "주소가 잘못됐거나 목록에 없는 게임이에요. 제목으로 다시 검색해 보세요.",
+  search: "게임 검색하기",
+  games: "게임 목록",
+  home: "홈으로",
+} as const;
+
+/** 인터넷 끊김 띠(components/offline-notice). 받아 둔 화면은 계속 볼 수 있다는 것을 같이 말한다 — 안 말하면 창을 닫는다 */
+export const OFFLINE_MESSAGES = {
+  offline: "인터넷 연결이 끊겼어요",
+  offlineHint: "보던 화면은 그대로 볼 수 있어요. 다시 연결되면 이어서 돼요",
+  back: "다시 연결됐어요",
 } as const;
 
 /** 스켈레톤(loading.tsx)이 낭독기에 알리는 말. 화면마다 따로 두지 않는다 — 기다리는 일은 어디서나 같다 */

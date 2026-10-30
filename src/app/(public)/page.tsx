@@ -10,7 +10,7 @@
 import Link from "next/link";
 import { GameCard } from "@/components/game-card";
 import { HomeDeals } from "@/components/home-deals";
-import { EmptyState } from "@/components/empty-state";
+import { EmptyNote, EmptyState } from "@/components/empty-state";
 import { DbUnavailable } from "@/components/db-unavailable";
 import { Page, SectionHead } from "@/components/ui/page";
 import { Rail } from "@/components/ui/rail";
@@ -131,7 +131,7 @@ export default async function HomePage() {
       <section aria-labelledby="upcoming-heading" className="flex flex-col gap-4">
         <SectionHead id="upcoming-heading" title={M.upcomingTitle} action={upcoming.length > 0 && <SeeAll href={ROUTES.upcoming} label={M.more} />} />
         {upcoming.length === 0 ? (
-          <p className="text-[13.5px] text-dim">{M.upcomingEmpty}</p>
+          <EmptyNote>{M.upcomingEmpty}</EmptyNote>
         ) : (
           <ul className={HOME_FOUR_GRID_CLASS}>
             {upcoming.map((e, i) => (

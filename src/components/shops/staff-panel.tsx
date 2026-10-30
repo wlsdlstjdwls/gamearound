@@ -23,6 +23,7 @@ import { formatDate } from "@/lib/format";
 import { VENDOR_MESSAGES } from "@/lib/shops/listing-messages";
 import { STAFF_MESSAGES as M } from "@/lib/shops/staff-messages";
 import type { StaffInviteDto, StaffMemberDto, ShopStaffRole } from "@/server/services/shops";
+import { EmptyNote } from "@/components/empty-state";
 
 const ROLE_LABEL: Record<ShopStaffRole, string> = {
   owner: VENDOR_MESSAGES.roleOwner,
@@ -177,7 +178,7 @@ export function StaffMembers({
 
 export function StaffInvites({ shopSlug, invites, canManage }: { shopSlug: string; invites: StaffInviteDto[]; canManage: boolean }) {
   const revoke = revokeInviteAction.bind(null, shopSlug);
-  if (invites.length === 0) return <p className="text-[13px] text-dim">{M.invitesEmpty}</p>;
+  if (invites.length === 0) return <EmptyNote>{M.invitesEmpty}</EmptyNote>;
   return (
     <ul className="flex flex-col gap-2.5">
       {invites.map((i) => (

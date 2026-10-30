@@ -16,6 +16,7 @@ import { cn } from "@/lib/cn";
 import { COMMENT_BODY_MAX, commentAnchor } from "@/lib/community/constants";
 import { COMMUNITY_MESSAGES as M } from "@/lib/community/messages";
 import type { CommentDto } from "@/server/services/community";
+import { EmptyNote } from "@/components/empty-state";
 
 export function PostReactions({ postId, liked: initLiked, likeCount: initCount, saved: initSaved }: { postId: string; liked: boolean; likeCount: number; saved: boolean }) {
   const gate = useLoginGate();
@@ -322,7 +323,7 @@ export function Comments({ postId, initial, addAction = addCommentAction, mine =
         {M.comments} <span className="text-acc">{shown}</span>
       </h2>
       {roots.length === 0 ? (
-        <p className="rounded-xl bg-surface-2 px-4 py-4 text-[13.5px] text-dim">{M.commentEmpty}</p>
+        <EmptyNote>{M.commentEmpty}</EmptyNote>
       ) : (
         <ul className="flex flex-col divide-y divide-line-soft">
           {roots.map((c) => (

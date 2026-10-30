@@ -19,6 +19,12 @@ export function stagger(i: number, stepMs: number = STAGGER_STEP_MS): CSSPropert
  */
 export const RIPPLE_DELAYS_MS = [0, 1400] as const;
 
+/**
+ * 빈 화면 그림(ui/empty-scene)의 반짝이 점 셋이 켜지는 늦춤. 빛이 한 번 훑는 시간(--duration-search, 3.2초)을 셋으로 나눠
+ * 빛이 지나가는 차례대로 하나씩 켜진다 — 셋이 같이 켜지면 깜빡이는 장식으로 읽힌다
+ */
+export const SPARK_DELAYS_MS = [0, 1050, 2100] as const;
+
 /** 등장이 끝난 셸에 붙는 표식. 이 값이 붙으면 같은 자리를 다시 그려도 등장하지 않는다(globals.css) */
 export const ENTERED_ATTR = "data-entered";
 

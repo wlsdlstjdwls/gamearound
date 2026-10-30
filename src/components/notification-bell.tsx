@@ -12,6 +12,7 @@ import { formatPostDate } from "@/lib/format";
 import { NOTIFICATION_MESSAGES as M } from "@/lib/notifications/messages";
 import { ROUTES, signInPath } from "@/lib/routes";
 import { GameLoader } from "@/components/ui/game-loader";
+import { EmptyNote } from "@/components/empty-state";
 
 type Item = { id: string; kind: string; body: string; link: string | null; createdAt: string };
 
@@ -104,7 +105,7 @@ export function NotificationBell({ placement = "header" }: { placement?: "header
               <GameLoader label={M.loading} />
             </div>
           ) : items.length === 0 ? (
-            <p className="px-4 py-5 text-[13px] text-dim">{M.empty}</p>
+            <EmptyNote className="m-3">{M.empty}</EmptyNote>
           ) : (
             <ul className="max-h-[min(60vh,420px)] divide-y divide-line-soft overflow-y-auto">
               {items.map((n) => {

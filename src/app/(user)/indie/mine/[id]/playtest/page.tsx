@@ -13,6 +13,7 @@ import { PLAYTEST_MESSAGES as M, PLAYTEST_PHASE_LABEL } from "@/lib/indie/playte
 import { indiePath, ROUTES } from "@/lib/routes";
 import { requireUserOrRedirect } from "@/server/auth/guards";
 import { getPlaytestManage, type PlaytestApplicantDto } from "@/server/services/indie";
+import { EmptyNote } from "@/components/empty-state";
 
 export const metadata: Metadata = { title: M.listTitle, robots: { index: false } };
 
@@ -21,7 +22,7 @@ type Props = { params: Promise<{ id: string }> };
 const idSchema = z.uuid();
 
 function Applicants({ list }: { list: PlaytestApplicantDto[] }) {
-  if (list.length === 0) return <p className="rounded-xl bg-surface-2 px-4 py-3 text-[13px] text-mut">{M.applicantsEmpty}</p>;
+  if (list.length === 0) return <EmptyNote>{M.applicantsEmpty}</EmptyNote>;
   return (
     <ul className={ROWS}>
       {list.map((a, i) => (

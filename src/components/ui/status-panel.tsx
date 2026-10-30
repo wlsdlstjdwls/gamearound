@@ -7,6 +7,7 @@
 // 그림은 로고 손전등이다. 빛이 깜빡인다 — "꺼졌다" 가 아니라 "다시 켜지는 중" 을 말한다(globals.css 의 .beam-flicker).
 // 이 파일에 "use client" 를 붙이지 않는다 — 서버 화면(목록, 상세)과 클라이언트 오류 경계가 같이 쓴다.
 import { BrandSymbol } from "@/components/ui/logo";
+import { EmptyScene } from "@/components/ui/empty-scene";
 import { raisedClass } from "@/components/ui/page";
 import { cn } from "@/lib/cn";
 
@@ -21,6 +22,12 @@ const SYMBOL_SIZE = 64;
 
 export type StatusPanelSize = "section" | "page";
 
+/**
+ * 그림의 몸짓. flicker: 빛이 깜빡인다 — 장애, 오류("꺼졌다 다시 켜지는 중"). search: 빛이 훑는다 — 없는 주소(404)처럼
+ * 고장이 아니라 "비춰 봤는데 없다" 인 자리(ui/empty-scene). 404 에 깜빡이는 손전등을 세우면 사이트가 고장 난 것으로 읽힌다
+ */
+export type StatusPanelGraphic = "flicker" | "search";
+
 export function StatusPanel({
   title,
   body,
@@ -28,6 +35,8 @@ export function StatusPanel({
   footnote,
   size = "section",
   role = "status",
+  graphic = "flicker",
+  code,
 }: {
   title: string;
   body: string;
@@ -38,6 +47,9 @@ export function StatusPanel({
   /** section: 결과 자리 안(필터, 제목은 그대로 둔다). page: 화면 전체가 이것뿐일 때 — 위아래로 숨을 둔다 */
   size?: StatusPanelSize;
   role?: "status" | "alert";
+  graphic?: StatusPanelGraphic;
+  /** 그림 아래 큰 숫자(404). 주소를 잘못 친 사람이 "어떤 종류의 실패인가" 를 한눈에 알게 한다 */
+  code?: string;
 }) {
   return (
     <section
@@ -47,9 +59,14 @@ export function StatusPanel({
         size === "page" ? cn(PAGE_WIDTH_CLASS, "my-6 gap-3 py-12 sm:my-10 sm:py-16") : "gap-2.5 py-10 sm:py-12",
       )}
     >
-      <span aria-hidden className="beam-flicker mb-2 flex size-24 items-center justify-center rounded-full bg-surface-2">
-        <BrandSymbol size={SYMBOL_SIZE} />
-      </span>
+      {graphic === "search" ? (
+        <EmptyScene className="mb-2" />
+      ) : (
+        <span aria-hidden className="beam-flicker mb-2 flex size-24 items-center justify-center rounded-full bg-surface-2">
+          <BrandSymbol size={SYMBOL_SIZE} />
+        </span>
+      )}
+      {code && <p aria-hidden className="text-[44px] font-black leading-none tracking-[-0.06em] text-acc-3 sm:text-[56px]">{code}</p>}
       <h2 className={cn("font-extrabold tracking-[-0.02em] text-ink", size === "page" ? "text-[20px]" : "text-[17px]")}>{title}</h2>
       <p className="max-w-[360px] text-[13.5px] leading-[1.7] text-mut">{body}</p>
       {actions && <div className="mt-3 flex flex-wrap justify-center gap-2">{actions}</div>}

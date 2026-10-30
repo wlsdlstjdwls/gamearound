@@ -19,6 +19,7 @@ import { formatDate } from "@/lib/format";
 import type { IndieMineRowDto } from "@/lib/indie/dto";
 import { INDIE_FORM_MESSAGES as M, INDIE_REVIEW_LABEL, INDIE_REVIEW_MESSAGES as RV, INDIE_REVIEW_TONE } from "@/lib/indie/messages";
 import { indieEditPath, indiePath } from "@/lib/routes";
+import { EmptyNote } from "@/components/empty-state";
 
 type Row = Pick<IndieMineRowDto, "id" | "slug" | "title" | "platforms" | "genres" | "review" | "createdAt" | "coverUrl">;
 
@@ -54,10 +55,7 @@ export function IndieMineAsideList({ rows }: { rows: readonly Row[] }) {
         {notice?.text}
       </p>
       {visible.length === 0 ? (
-        <div className="flex flex-col gap-1 rounded-[var(--radius-inset)] bg-surface-2 px-3.5 py-4">
-          <p className="text-[14px] font-bold text-ink">{M.mineAsideEmpty}</p>
-          <p className="text-[12.5px] text-dim">{M.mineAsideEmptyLead}</p>
-        </div>
+        <EmptyNote title={M.mineAsideEmpty}>{M.mineAsideEmptyLead}</EmptyNote>
       ) : (
         <ul className="flex flex-col gap-2.5">
           {visible.map((p, i) => {

@@ -17,6 +17,7 @@ import { ROUTES } from "@/lib/routes";
 import { requireUserOrRedirect } from "@/server/auth/guards";
 import { getMyIndieStatsDetail } from "@/server/services/indie";
 import { hasMakerBenefits } from "@/server/services/membership";
+import { EmptyNote } from "@/components/empty-state";
 
 export const metadata: Metadata = { robots: { index: false } };
 
@@ -82,7 +83,7 @@ export default async function IndieStatsDetailPage({ params }: Props) {
               {M.sources}
             </h2>
             {detail.sources.length === 0 ? (
-              <p className="rounded-xl bg-surface-2 px-4 py-3 text-[13px] text-mut">{M.sourcesEmpty}</p>
+              <EmptyNote>{M.sourcesEmpty}</EmptyNote>
             ) : (
               <ul className="flex flex-col gap-2.5">
                 {detail.sources.map((s) => {

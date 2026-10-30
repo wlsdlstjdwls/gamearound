@@ -9,6 +9,7 @@ import { nullIfDbUnavailable } from "@/lib/db-errors";
 import { INDIE_MESSAGES as M } from "@/lib/indie/messages";
 import { buttonClass } from "@/components/ui/button";
 import { listAuthorLoungePosts } from "@/server/services/indie";
+import { EmptyNote } from "@/components/empty-state";
 
 /** 마디에 세우는 글 수 — 소개를 다 읽은 사람이 훑어볼 만큼. 더 보려면 글 상세에서 이어 간다 */
 const RELATED_LIMIT = 5;
@@ -23,13 +24,16 @@ export async function IndieRelatedNews({ authorUserId, indiePostId, indieSlug, i
       <SectionHead id="indie-related" title={M.relatedTitle} />
       <p className="-mt-1 text-[13px] text-dim">{M.relatedLead}</p>
       {posts.length === 0 ? (
-        <div className="flex flex-col items-start gap-2 rounded-[var(--radius-inset)] bg-surface-2 px-4 py-4">
-          <p className="text-[14px] font-bold text-ink">{M.relatedEmpty}</p>
-          <p className="text-[12.5px] text-dim">{M.relatedEmptyOwner}</p>
-          <Link href={indieWritePath(indieSlug)} className={buttonClass({ size: "sm" })}>
-            {M.relatedWrite}
-          </Link>
-        </div>
+        <EmptyNote
+          title={M.relatedEmpty}
+          action={
+            <Link href={indieWritePath(indieSlug)} className={buttonClass({ size: "sm" })}>
+              {M.relatedWrite}
+            </Link>
+          }
+        >
+          {M.relatedEmptyOwner}
+        </EmptyNote>
       ) : (
         <PostList bare posts={posts} />
       )}

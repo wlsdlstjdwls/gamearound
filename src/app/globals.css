@@ -97,6 +97,8 @@
   --duration-glint: 1.1s;
   /* 손전등이 켜졌다 꺼지는 한 바퀴(알리기 판, payments/plan-nudge). 켜진 채 오래 머물고 잠깐 꺼진다 — 꺼진 몫이 길면 고장으로 읽힌다 */
   --duration-torch: 7s;
+  /* 빈 화면 그림(ui/empty-scene): 손전등 빛이 한쪽 끝에서 다른 끝까지 훑는 한 번. 찾는 몸짓으로 읽히되 스피너처럼 바쁘지 않게 */
+  --duration-search: 3.2s;
   /* 기다림 그림(ui/game-loader): 손전등이 막대 한 끝에서 다른 끝까지 달리는 한 바퀴, 한 번 깡총 뛰는 박자 */
   --duration-loader-run: 1.9s;
   --duration-loader-hop: 0.32s;
@@ -689,6 +691,56 @@
 .beam-flicker .brand-beam {
   animation: beam-flicker 3.6s steps(1, end) infinite;
 }
+/* 빈 화면 그림(components/ui/empty-scene, 2026-10-30 사용자: "데이터 없는 화면도 모션 그래픽으로 이쁘게").
+   장애 그림(.beam-flicker)은 "꺼졌다 켜지는 중", 준비 중(.soon-*)은 "만드는 중" 이고, 이쪽은 "비춰 봤는데 아직 없다" 다.
+   그래서 빛이 꺼지지 않고 좌우로 훑는다. 빛줄기 끝의 작은 점들은 빛이 지나갈 때 반짝인다 — 무언가 찾는 중이라는 말이다.
+   빛줄기 모양은 알리기 판(.torch-cone)과 같은 사다리꼴 + blur 이고, 길이와 각만 작은 그림에 맞췄다.
+   움직임을 줄인 사람은 전역 킬스위치가 첫 프레임에 세운다 — 첫 프레임이 빛이 위를 비춘 모양이라 그대로 그림이 된다. */
+@keyframes search-sweep {
+  from { rotate: -16deg; }
+  to { rotate: 14deg; }
+}
+@keyframes search-twinkle {
+  0%, 100% { opacity: 0.15; scale: 0.6; }
+  45% { opacity: 1; scale: 1; }
+}
+@keyframes search-bob {
+  from { translate: 0 -1px; rotate: -4deg; }
+  to { translate: 0 1px; rotate: 3deg; }
+}
+.empty-cone {
+  --cone-mouth: 7px;
+  position: absolute;
+  pointer-events: none;
+  transform-origin: 0 50%;
+  filter: blur(3px);
+  animation: search-sweep var(--duration-search) var(--ease-standard) infinite alternate;
+}
+/* 작은 그림(판 안 한 줄)의 빛 입구. 손전등이 반 크기라 입구도 반이다 */
+.empty-cone-mini {
+  --cone-mouth: 3px;
+  filter: blur(2px);
+}
+.empty-cone::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  clip-path: polygon(0 calc(50% - var(--cone-mouth)), 100% 0, 100% 100%, 0 calc(50% + var(--cone-mouth)));
+  /* 노랑이 아니라 브랜드 파랑에서 보라로 옅어진다 — .torch-cone 과 같은 이유(2026-10-27 "누런색은 되도록 쓰지 마") */
+  background: linear-gradient(90deg, color-mix(in oklab, var(--acc) 34%, transparent), color-mix(in oklab, var(--plum) 12%, transparent) 60%, transparent);
+}
+.empty-torch {
+  transform-origin: 85% 50%;
+  animation: search-bob var(--duration-search) var(--ease-standard) infinite alternate;
+}
+.empty-spark {
+  position: absolute;
+  border-radius: 9999px;
+  background: var(--acc);
+  animation: search-twinkle var(--duration-search) var(--ease-standard) infinite both;
+  animation-delay: var(--stagger, 0ms);
+}
+
 /* 모션을 줄인 사람에게는 꺼진 손전등으로 멈춘다. 전역 킬스위치는 첫 프레임에 세우는데, 첫 프레임이 꺼진 쪽이라 그대로 맞다 */
 .soon-gear {
   animation: spin-slow 6s linear infinite;

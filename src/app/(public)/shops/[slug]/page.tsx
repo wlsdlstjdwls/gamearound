@@ -18,6 +18,7 @@ import { SHOP_DIRECTORY_MESSAGES as M } from "@/lib/shops/messages";
 import { findPublicShopBySlug, type ShopPublic } from "@/server/services/shops";
 import { listPublicShopListings } from "@/server/services/listings";
 import { ListingList } from "@/components/shops/listing-list";
+import { EmptyNote } from "@/components/empty-state";
 
 type Props = { params: Promise<{ slug: string }> };
 
@@ -82,7 +83,7 @@ export default async function ShopPage({ params }: Props) {
       <section className={sectionCardClass("flex flex-col gap-3")}>
         <SectionHead title={M.listingsTitle} note={listings.length > 0 ? `${listings.length}건` : undefined} />
         {listings.length === 0 ? (
-          <p className="rounded-xl bg-surface-2 px-4 py-6 text-center text-[13px] text-dim">{M.listingsEmpty}</p>
+          <EmptyNote>{M.listingsEmpty}</EmptyNote>
         ) : (
           <ListingList listings={listings} />
         )}

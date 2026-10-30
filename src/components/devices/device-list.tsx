@@ -11,6 +11,7 @@ import { Panel } from "@/components/ui/page";
 import { DEVICE_MESSAGES, OS_FAMILY_LABEL } from "@/lib/games/messages";
 import { formatSizeMb } from "@/lib/format";
 import type { DeviceDto } from "@/server/services/devices";
+import { EmptyNote } from "@/components/empty-state";
 
 export type DeviceWithNames = DeviceDto & { cpuName: string | null; gpuName: string | null };
 
@@ -35,7 +36,7 @@ export function DeviceList({
 
   return (
     <div className="flex flex-col gap-4">
-      {devices.length === 0 && !adding && <p className="text-[13px] text-dim">{DEVICE_MESSAGES.empty}</p>}
+      {devices.length === 0 && !adding && <EmptyNote>{DEVICE_MESSAGES.empty}</EmptyNote>}
 
       <ul className="flex flex-col gap-3">
         {devices.map((d) => (

@@ -58,6 +58,7 @@ import { nullIfDbUnavailable } from "@/lib/db-errors";
 import { ROUTES } from "@/lib/routes";
 import { getUpcomingAllPage, getUpcomingAddons, getUpcomingGenres, getUpcomingMonthPage, getUpcomingMonthPicks, getUpcomingMonths, UPCOMING_PAGE_SIZE } from "@/server/services/games";
 import { GamesGridSkeleton } from "@/app/(public)/games/skeletons";
+import { EmptyState } from "@/components/empty-state";
 
 // Next 가 정적으로 읽는 값이라 리터럴이어야 한다 — lib/cache 의 LIST_REVALIDATE_SECONDS 와 같게 유지
 export const revalidate = 3600;
@@ -101,7 +102,7 @@ async function MonthGames({ monthKey, monthTotal, page, filter }: { monthKey: st
       <Pagination page={page} totalPages={totalPages} hrefFor={(n) => upcomingHref({ month: monthKey, page: n }, filter)} />
     </>
   );
-  if (items.length === 0 && picks.length === 0) return <p className="rounded-xl bg-surface-2 px-4 py-3.5 text-[13px] text-dim">{M.emptyFiltered}</p>;
+  if (items.length === 0 && picks.length === 0) return <EmptyState title={M.emptyFiltered} />;
   if (picks.length === 0) return <div className="flex flex-col gap-8">{list}</div>;
 
   return (
@@ -130,7 +131,7 @@ async function MonthGames({ monthKey, monthTotal, page, filter }: { monthKey: st
 async function AllGames({ total, page, filter }: { total: number; page: number; filter: UpcomingFilter }) {
   const items = await nullIfDbUnavailable(getUpcomingAllPage(page, filter));
   if (!items) return <DbUnavailable retryHref={upcomingAllHref(1, filter)} />;
-  if (items.length === 0) return <p className="rounded-xl bg-surface-2 px-4 py-3.5 text-[13px] text-dim">{M.emptyFiltered}</p>;
+  if (items.length === 0) return <EmptyState title={M.emptyFiltered} />;
   const totalPages = Math.max(Math.ceil(total / UPCOMING_PAGE_SIZE), 1);
   return (
     <div className="flex flex-col gap-8">
