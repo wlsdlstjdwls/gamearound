@@ -9,7 +9,8 @@ import { pricingErrors, pricingSaveSchema } from "@/lib/pricing/admin-validation
 import { firstError } from "@/lib/admin/validation";
 import type { PricingSettings } from "@/lib/pricing/settings";
 import { ROUTES } from "@/lib/routes";
-import { setPricingSettings, SETTINGS_TAG } from "@/server/services/settings";
+import { getPricingSettings, setPricingSettings, SETTINGS_TAG } from "@/server/services/settings";
+import { lockedPromotionEdits } from "@/lib/pricing/promo-terms";
 import { requireAdmin } from "@/server/services/users";
 
 export type PricingActionResult = { ok: true } | { ok: false; error: string };
@@ -24,6 +25,9 @@ export async function savePricingAction(input: unknown): Promise<PricingActionRe
       const shaped = Array.isArray((input as Partial<PricingSettings> | null)?.promotions);
       return { ok: false, error: (shaped && firstError(pricingErrors(input as PricingSettings))?.message) || M.invalid };
     }
+    // 시작한 프로모션은 조건을 못 바꾸고 지울 수 없다 — 진행상태(중지)만 바꾼다(lib/pricing/promo-terms). 화면도 잠그지만 요청은 따로 막는다
+    const locked = lockedPromotionEdits(await getPricingSettings(), parsed.data, new Date());
+    if (locked.length > 0) return { ok: false, error: M.errPromoLocked };
     await setPricingSettings(admin.id, parsed.data);
     updateTag(SETTINGS_TAG);
     revalidatePath(ROUTES.adminPricing);

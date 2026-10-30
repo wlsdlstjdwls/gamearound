@@ -182,7 +182,17 @@ export const PRICING_ADMIN_MESSAGES = {
    * 멤버십 할인은 둘 다 첫 달 결제에만 걸리고 갱신은 정가다(services/membership/charge, quote 의 first).
    * 10-30 용어 정리 때 "모두" 를 "전체 결제" 로 바꿨더니 매달 할인처럼 읽혔다(사용자 "전체 결제로 바꿔도 다음 달부터 정가"). 사람을 가리키는 말로 둔다
    */
-  audienceLabels: { all: "전체 회원", first: "첫 결제 회원" },
+  audienceLabels: { first: "첫 결제 회원", returning: "재가입 회원", all: "전체 회원" },
+  /** 적용 개월(멤버십). 0 은 매달 계속. 고르기 칸에 서는 순서가 이 값들의 순서다 */
+  promoMonths: "적용 개월",
+  monthsChoices: [1, 2, 3, 6, 12, 0] as const,
+  monthsLabel: (n: number) => (n === 0 ? "매달 계속" : n === 1 ? "첫 달만" : `${n}개월`),
+  /** 중지 범위(멤버십). 이미 이 프로모션으로 가입한 회원을 어떻게 할지 */
+  promoStopScope: "중지 범위",
+  stopScopeLabels: { new: "신규 가입만 중지", all: "기존 회원도 중지" },
+  /** 시작한 프로모션은 조건 칸이 잠긴다(lib/pricing/promo-terms). 상세 제목 옆 딱지와 저장 거절 문구 */
+  promoLockedTag: "진행 중 | 중지만 가능",
+  errPromoLocked: "시작한 프로모션은 조건을 바꾸거나 지울 수 없어요. 진행상태만 바꿀 수 있어요",
   newPromoLabel: "첫 결제 할인",
   statusLabels: { live: "진행 중", stopped: "중단" },
   stopReasonLabels: { manual: "운영 중단", price_change: "가격변동 중단", before: "시작 전", after: "기간 종료" },

@@ -58,6 +58,10 @@ export const MEMBERSHIP_MESSAGES = {
   adminFieldFailures: "연속 실패",
   adminFieldFailMessage: "마지막 실패 사유",
   adminNoFailure: "없음",
+  /** 가입 때 받은 프로모션(멤버십 줄의 promo_*). months 0 = 매달 계속 */
+  adminFieldPromo: "적용 프로모션",
+  adminPromo: (label: string, paid: number, months: number) => (months === 0 ? `${label} | 매달 계속 | ${paid}회 적용` : `${label} | ${paid}/${months}개월 적용`),
+  adminNoPromo: "없음",
   adminEmpty: "아직 메이커 멤버십 구독자가 없어요",
   adminStatActive: "이용 중",
   adminStatCanceling: "해지 예약",

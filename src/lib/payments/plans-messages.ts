@@ -19,6 +19,11 @@ export const PLANS_MESSAGES = {
   perDayApprox: (price: string) => `하루 약 ${price}`,
   /** 첫 달 할인일 때 큰 값 아래 — 다음 달부터 낼 값을 숨기지 않는다 */
   thenMonthly: (price: string) => `다음 달부터 매달 ${price}`,
+  /** 여러 달 할인(프로모션 적용 개월, lib/pricing/promo-terms). 값 앞 작은 말과 값 아래 줄 */
+  forMonths: (n: number) => `${n}개월간`,
+  thenAfterMonths: (n: number, price: string) => `${n + 1}개월째부터 매달 ${price}`,
+  /** 매달 계속 할인 — 끝이 없어 값 아래 줄은 정가를 말한다 */
+  keepMonthly: (price: string) => `해지할 때까지 이 값, 정가 ${price}`,
   rate: (n: number) => `${n}% 할인`,
   saving: (amount: string) => `${amount} 아껴요`,
   notOnSale: "지금은 판매하지 않아요",

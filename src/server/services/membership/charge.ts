@@ -6,6 +6,8 @@
 // 갱신은 매일 도는 크론(api/cron/daily, 한국 03시)이 한다. 그래서 기간이 끝나고 최대 하루 가까이 active 로 남을 수 있는데,
 // 혜택은 기간 끝 시각으로 판단하므로(lib/membership/plan 의 canUseBenefits) 그사이 이용권을 더 쓰지는 못한다.
 // 갱신이 성공하면 새 기간은 지난 기간 끝에서 바로 잇는다 — 크론이 늦어도 결제일이 밀리지 않는다.
+// 프로모션(2026-10-30): 첫 청구에 걸린 프로모션을 멤버십 줄에 받아 두고(promo_*), 갱신은 그 받은 값으로 매긴다(lib/pricing/promo-terms).
+// 관리자가 프로모션을 바꾸거나 신규만 중지해도 가입 때 약속(할인가, 개월)이 지켜진다. 받은 혜택은 청구가 성공했을 때만 고친다.
 import "server-only";
 import { randomBytes } from "node:crypto";
 import { and, eq, inArray, lte, or } from "drizzle-orm";
@@ -16,6 +18,7 @@ import { chargeBilling } from "@/server/payments/toss-billing";
 import { TossError } from "@/server/payments/toss";
 import { pushNotification } from "@/server/services/notifications";
 import { quoteFor } from "@/server/services/pricing";
+import { grantFromRow, renewalCharge, type MembershipGrant } from "@/lib/pricing/promo-terms";
 import { getPricingSettings } from "@/server/services/settings";
 import { addMonth, afterFailedCharge, MEMBERSHIP_PLANS, nextPeriodStart, renewalAction, type MembershipPlanKey } from "@/lib/membership/plan";
 import { MEMBERSHIP_MESSAGES as M } from "@/lib/membership/messages";
@@ -40,8 +43,9 @@ export async function chargeMembership(m: MembershipRow, now: Date, first: boole
   const db = getDb();
   const plan = MEMBERSHIP_PLANS[m.plan as MembershipPlanKey];
   if (!plan || !m.billingKey) return { ok: false, message: M.failed };
-  // 값과 이용권 수는 요금 설정에서(관리자가 바꾼다). 첫 달이면 프로모션(첫 달 할인 등)이 걸릴 수 있고, 갱신은 언제나 정가다(lib/pricing/quote)
-  const [{ amount }, pricing] = await Promise.all([quoteFor(m.userId, "membership", first), getPricingSettings()]);
+  // 값과 이용권 수는 요금 설정에서(관리자가 바꾼다). 첫 청구는 지금 걸린 프로모션으로, 갱신은 가입 때 받아 둔 혜택으로 매긴다
+  const pricing = await getPricingSettings();
+  const { amount, grant } = first ? await firstCharge(m.userId) : renewalCharge(grantFromRow(m), pricing);
   const audit = actor.source === "user" ? createdBy("user", actor.userId) : createdBy("cron:membership");
   const orderId = makeOrderId("member", randomBytes(ORDER_RANDOM_BYTES).toString("hex"));
   await db.insert(payments).values({ orderId, userId: m.userId, product: m.plan, amount, membershipId: m.id, ...audit });
@@ -74,10 +78,22 @@ export async function chargeMembership(m: MembershipRow, now: Date, first: boole
       lastFailMessage: null,
       canceledAt: null,
       endedAt: null,
+      promoId: grant?.promoId ?? null,
+      promoLabel: grant?.label ?? null,
+      promoAmount: grant?.amount ?? null,
+      promoMonths: grant?.months ?? null,
+      promoPaid: grant?.paid ?? null,
       ...updatedBy("system"),
     })
     .where(eq(memberships.id, m.id));
   return { ok: true };
+}
+
+/** 첫 청구 값. 걸린 프로모션이 있으면 첫 결제 한 번을 낸 것으로 센 혜택을 같이 돌려준다 */
+async function firstCharge(userId: string): Promise<{ amount: number; grant: MembershipGrant | null }> {
+  const q = await quoteFor(userId, "membership", true);
+  if (!q.promoId || !q.promoLabel || q.promoMonths === null) return { amount: q.amount, grant: null };
+  return { amount: q.amount, grant: { promoId: q.promoId, label: q.promoLabel, amount: q.amount, months: q.promoMonths, paid: 1 } };
 }
 
 /** 끝내기. 빌링키를 지운다 — 다시 시작하면 카드를 새로 등록한다(schema-memberships 머리 주석) */

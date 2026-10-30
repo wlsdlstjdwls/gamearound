@@ -64,8 +64,9 @@ function FitHeight({ children }: { children: React.ReactNode }) {
 }
 
 /** tier 를 주면 그 카드 한 장만(문구를 고치는 카드). 없으면 판매 중인 카드 전부를 위아래로 쌓는다 */
-export function PricingPreview({ value, tier }: { value: PricingSettings; tier?: TierKey }) {
-  const book = priceBook(value, { productsPaid: false, membershipPaid: false }, new Date());
+/** returning: 결제한 적 있는 사람으로 그린다 — 재가입 회원 대상 프로모션을 고칠 때(프로모션등록) */
+export function PricingPreview({ value, tier, returning = false }: { value: PricingSettings; tier?: TierKey; returning?: boolean }) {
+  const book = priceBook(value, { productsPaid: returning, membershipPaid: returning }, new Date());
   const selling = sellingTiers(value);
   // 고치는 카드는 판매를 꺼 두었어도 보인다 — 문구를 고치는 중인데 미리 보기가 비면 안 된다
   const active = tier ? { single: tier === "single", bundle: tier === "bundle", membership: tier === "membership" } : selling;

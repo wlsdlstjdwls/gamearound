@@ -22,13 +22,14 @@ import { FormSelect } from "@/components/ui/select/fields";
 import { TextField } from "@/components/ui/text-field";
 import { formatPrice } from "@/lib/currency";
 import { kstDateKey } from "@/lib/format";
-import { promotionStatus, quote } from "@/lib/pricing/quote";
+import { promoMonthsOf, promotionStatus, quote } from "@/lib/pricing/quote";
+import { promotionLocked } from "@/lib/pricing/promo-terms";
 import { PRICING_ADMIN_MESSAGES as M } from "@/lib/pricing/admin-messages";
 import { PLAN_SPOTS, spots } from "@/lib/pricing/preview-spots";
 import { BADGE_TONES, DEFAULT_TONES } from "@/lib/pricing/copy-tones";
 import { ColorPicker } from "@/components/admin/pricing-form/color-picker";
 import { hasErrorUnder, type FieldErrors } from "@/lib/admin/validation";
-import { isBundleProduct, MEMBERSHIP_KEY, PROMOTION_STOP_REASONS, type PricingSettings, type Promotion, type TierKey } from "@/lib/pricing/settings";
+import { isBundleProduct, MEMBERSHIP_KEY, PROMOTION_AUDIENCES, PROMOTION_STOP_REASONS, PROMOTION_STOP_SCOPES, type PricingSettings, type Promotion, type TierKey } from "@/lib/pricing/settings";
 
 /** 새 줄의 첫 값 — 가장 흔히 쓸 "처음 결제하는 사람 10% 할인" */
 const NEW_PROMO_PERCENT = 10;
@@ -109,8 +110,16 @@ function Search(props: { phase: string; target: string; name: string; s: Pricing
 }
 
 /** 고른 프로모션의 상세 */
-function Detail({ value, p, set, errors }: { value: PricingSettings; p: Promotion; set: (next: Partial<Promotion>) => void; errors: FieldErrors }) {
+/**
+ * locked: 저장된 프로모션이 시작했다 — 조건 칸은 잠그고 진행상태(중지)만 바꾼다(lib/pricing/promo-terms, 2026-10-30 사용자 "진행 중인 프로모션은 중지만").
+ * 저장 액션도 같은 규칙으로 막는다. 관리자용 코드명과 배지 색은 손님과의 약속이 아니라 열어 둔다
+ */
+function Detail({ value, p, set, errors, locked }: { value: PricingSettings; p: Promotion; set: (next: Partial<Promotion>) => void; errors: FieldErrors; locked: boolean }) {
   const now = new Date();
+  const membership = p.target === MEMBERSHIP_KEY;
+  // 미리 보기는 고른 프로모션 하나만 건 모습이다 — 다른 프로모션이 더 싸면 그것이 보여 지금 고치는 줄의 결과를 볼 수 없었다.
+  // 진행상태, 기간과 상관없이 건다(중지한 줄도 어떻게 보였는지 본다). 재가입 회원 대상이면 결제한 적 있는 사람으로 그린다
+  const previewValue: PricingSettings = { ...value, promotions: [{ ...p, active: true, startsOn: null, endsOn: null }] };
   const at = `promotions.${value.promotions.indexOf(p)}`;
   const err = (k: string) => errors[`${at}.${k}`];
   const regular = p.target === MEMBERSHIP_KEY ? value.membership.amount : (value.products.find((x) => x.id === p.target)?.amount ?? 0);
@@ -119,12 +128,13 @@ function Detail({ value, p, set, errors }: { value: PricingSettings; p: Promotio
     <div className="flex flex-col gap-2">
       <p className="flex items-baseline gap-2 px-1">
         <span className="text-[16px] font-extrabold text-ink">{codeName(p)}</span>
+        {locked && <span className="text-[12px] font-semibold text-mut">{M.promoLockedTag}</span>}
       </p>
       {/* 미리 보기 강조(spot): 진행상태, 중단 사유, 기간은 할인이 걸렸다는 표시 줄(그은 정가, 할인율, 배지 — 한 줄이라 한 상자로 합쳐진다),
           고객노출명은 배지, 할인 방식과 할인값은 판매가, 적용 대상자는 멤버십의 "다음 달부터" 줄, 적용 상품은 카드 전체.
           할인율 배지는 판매가에 딸려 바뀌는 값이라 할인값 칸에서 따로 두르지 않는다 — 두 상자가 위아래로 붙어 겹쳐 보였다(2026-10-30 사용자) */}
       {/* 탭을 걷었다 — 탭 셋에 칸이 열 남짓이라 탭은 칸을 숨기기만 했다(2026-10-30 사용자). 대상은 정가를 정하는 칸이라 혜택 묶음 맨 앞에 둔다 */}
-      <WithAside aside={<PricingPreview value={value} tier={tierOfTarget(value, p.target)} />}>
+      <WithAside aside={<PricingPreview value={previewValue} tier={tierOfTarget(value, p.target)} returning={p.audience === "returning"} />}>
         <FormSection title={M.promoSectionBasic} labelWidth="100px">
           <Field label={M.promoFieldCode} htmlFor={`pn-${p.id}`} required wide>
             <CodeName code={p.id}>
@@ -157,14 +167,32 @@ function Detail({ value, p, set, errors }: { value: PricingSettings; p: Promotio
               />
             </Field>
           )}
+          {/* 중지 범위 — 이미 이 프로모션으로 가입한 회원을 어떻게 할지(lib/pricing/promo-terms 의 renewalCharge). 광고 상품은 한 번 사고 끝이라 묻지 않는다 */}
+          {!p.active && membership && (
+            <Field label={M.promoStopScope} required>
+              <FormSelect
+                name={`pss-${p.id}`}
+                label={M.promoStopScope}
+                hideLabel
+                size="lg"
+                value={p.stopScope ?? "new"}
+                onChange={(v) => set({ stopScope: v as (typeof PROMOTION_STOP_SCOPES)[number] })}
+                options={PROMOTION_STOP_SCOPES.map((k) => ({ value: k, label: M.stopScopeLabels[k] }))}
+              />
+            </Field>
+          )}
           <Field label={M.promoFieldName} htmlFor={`pl-${p.id}`} required wide spot={PLAN_SPOTS.promo}>
-            <TextField id={`pl-${p.id}`} label={M.promoFieldName} hideLabel value={p.label} onChange={(e) => set({ label: e.target.value })} error={err("label")} compact trailing={<ColorPicker label={M.promoTone} kind="badge" tones={BADGE_TONES} value={p.tone} fallback={DEFAULT_TONES.promo} onChange={(tone) => set({ tone })} />} />
+            <TextField id={`pl-${p.id}`} label={M.promoFieldName} hideLabel disabled={locked} value={p.label} onChange={(e) => set({ label: e.target.value })} error={err("label")} compact trailing={<ColorPicker label={M.promoTone} kind="badge" tones={BADGE_TONES} value={p.tone} fallback={DEFAULT_TONES.promo} onChange={(tone) => set({ tone })} />} />
           </Field>
           <Field label={M.promoSectionPeriod} wide error={err("endsOn") ?? err("startsOn")} spot={spots(PLAN_SPOTS.list, PLAN_SPOTS.rate, PLAN_SPOTS.promo)}>
-            <FieldPair
-              from={<DateField label={M.promoStarts} hideLabel value={p.startsOn} max={p.endsOn} onChange={(v) => set({ startsOn: v })} />}
-              to={<DateField label={M.promoEnds} hideLabel value={p.endsOn} min={p.startsOn} onChange={(v) => set({ endsOn: v })} />}
-            />
+            {locked ? (
+              <ReadValue>{p.startsOn || p.endsOn ? M.periodRange(p.startsOn ?? "", p.endsOn ?? "") : M.periodAlways}</ReadValue>
+            ) : (
+              <FieldPair
+                from={<DateField label={M.promoStarts} hideLabel value={p.startsOn} max={p.endsOn} onChange={(v) => set({ startsOn: v })} />}
+                to={<DateField label={M.promoEnds} hideLabel value={p.endsOn} min={p.startsOn} onChange={(v) => set({ endsOn: v })} />}
+              />
+            )}
           </Field>
         </FormSection>
         <FormSection title={M.promoSectionBenefit}>
@@ -175,19 +203,35 @@ function Detail({ value, p, set, errors }: { value: PricingSettings; p: Promotio
               hideLabel
               size="lg"
               value={p.target}
+              disabled={locked}
               onChange={(v) => set({ target: v })}
               options={[...value.products.map((x) => x.id), MEMBERSHIP_KEY].map((k) => ({ value: k, label: targetLabel(value, k) }))}
             />
           </Field>
           <Field label={M.promoKind} required spot={PLAN_SPOTS.amount}>
-            <FormSelect name={`pk-${p.id}`} label={M.promoKind} hideLabel size="lg" value={p.kind} onChange={(v) => set({ kind: v as Promotion["kind"] })} options={(["price", "percent"] as const).map((k) => ({ value: k, label: M.kindLabels[k] }))} />
+            <FormSelect name={`pk-${p.id}`} label={M.promoKind} hideLabel size="lg" value={p.kind} disabled={locked} onChange={(v) => set({ kind: v as Promotion["kind"] })} options={(["price", "percent"] as const).map((k) => ({ value: k, label: M.kindLabels[k] }))} />
           </Field>
           <Field label={M.promoValue} htmlFor={`pv-${p.id}`} required spot={PLAN_SPOTS.amount}>
-            <NumberField id={`pv-${p.id}`} label={M.promoValue} hideLabel value={p.value} onValue={(n) => set({ value: n })} error={err("value")} trailing={<span className="pr-2 text-[13px] text-dim">{p.kind === "percent" ? "%" : M.won}</span>} className="text-right tabular-nums" compact />
+            <NumberField id={`pv-${p.id}`} label={M.promoValue} hideLabel disabled={locked} value={p.value} onValue={(n) => set({ value: n })} error={err("value")} trailing={<span className="pr-2 text-[13px] text-dim">{p.kind === "percent" ? "%" : M.won}</span>} className="text-right tabular-nums" compact />
           </Field>
           <Field label={M.promoAudience} required wide spot={PLAN_SPOTS.terms}>
-            <FormSelect name={`pa-${p.id}`} label={M.promoAudience} hideLabel size="lg" value={p.audience} onChange={(v) => set({ audience: v as Promotion["audience"] })} options={(["first", "all"] as const).map((k) => ({ value: k, label: M.audienceLabels[k] }))} />
+            <FormSelect name={`pa-${p.id}`} label={M.promoAudience} hideLabel size="lg" value={p.audience} disabled={locked} onChange={(v) => set({ audience: v as Promotion["audience"] })} options={PROMOTION_AUDIENCES.map((k) => ({ value: k, label: M.audienceLabels[k] }))} />
           </Field>
+          {/* 적용 개월 — 멤버십 할인을 몇 번의 월 결제에 거나(1 = 첫 달만, 0 = 매달 계속). 광고 상품은 한 번 사고 끝이라 묻지 않는다 */}
+          {membership && (
+            <Field label={M.promoMonths} required spot={PLAN_SPOTS.terms}>
+              <FormSelect
+                name={`pm-${p.id}`}
+                label={M.promoMonths}
+                hideLabel
+                size="lg"
+                value={String(promoMonthsOf(p))}
+                disabled={locked}
+                onChange={(v) => set({ months: Number(v) })}
+                options={M.monthsChoices.map((n) => ({ value: String(n), label: M.monthsLabel(n) }))}
+              />
+            </Field>
+          )}
           <Field label={M.promoFieldRegular}>
             <ReadValue align="right">{formatPrice(regular)}</ReadValue>
           </Field>
@@ -234,7 +278,7 @@ export function PromotionsScreen({ value, saved, errors, patch, selected, onSele
             fit
           />
         }
-        detail={current ? <Detail key={current.id} value={value} p={current} set={set} errors={errors} /> : <p className="rounded-xl bg-surface-2 px-4 py-6 text-center text-[13px] text-dim">{M.promoPickHint}</p>}
+        detail={current ? <Detail key={current.id} value={value} p={current} set={set} errors={errors} locked={promotionLocked(saved.promotions.find((x) => x.id === current.id), now)} /> : <p className="rounded-xl bg-surface-2 px-4 py-6 text-center text-[13px] text-dim">{M.promoPickHint}</p>}
       />
     </div>
   );

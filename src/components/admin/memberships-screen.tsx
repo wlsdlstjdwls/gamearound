@@ -61,6 +61,10 @@ function Detail({ m }: { m: MembershipDto }) {
         <Field label={M.adminColAmount}>
           <ReadValue align="right">{formatPrice(m.amount)}</ReadValue>
         </Field>
+        {/* 가입 때 받은 프로모션 — 다음 청구 값이 정가가 아닌 까닭과 언제까지인지(lib/pricing/promo-terms) */}
+        <Field label={M.adminFieldPromo} wide>
+          <ReadValue>{m.promo ? M.adminPromo(m.promo.label, m.promo.paid, m.promo.months) : M.adminNoPromo}</ReadValue>
+        </Field>
         <Field label={M.adminFieldFailures}>
           <ReadValue>{m.failedAttempts > 0 ? M.adminFailed(m.failedAttempts) : M.adminNoFailure}</ReadValue>
         </Field>

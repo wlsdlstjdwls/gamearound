@@ -33,6 +33,16 @@ export const memberships = pgTable("memberships", {
   /** 잇달아 실패한 갱신 청구 수. 성공하면 0 */
   failedAttempts: integer("failed_attempts").default(0).notNull(),
   lastFailMessage: text("last_fail_message"),
+  /**
+   * 가입 때 받은 프로모션(2026-10-30, lib/pricing/promo-terms). 첫 청구에 걸린 프로모션의 id, 노출명, 할인가, 개월(0 = 매달 계속)을 받아 두고
+   * 이 할인으로 낸 월 결제 수(promoPaid)를 센다. 갱신 청구는 요금 설정이 아니라 이 값으로 매긴다 — 관리자가 프로모션을 바꾸거나 신규만 중지해도
+   * 가입 때 약속이 지켜진다. 다 쓰거나 "기존 회원도 중지" 로 거두면 비운다. 받은 혜택이 없으면 모두 null
+   */
+  promoId: text("promo_id"),
+  promoLabel: text("promo_label"),
+  promoAmount: integer("promo_amount"),
+  promoMonths: integer("promo_months"),
+  promoPaid: integer("promo_paid"),
   canceledAt: timestamp("canceled_at", { withTimezone: true }),
   endedAt: timestamp("ended_at", { withTimezone: true }),
   ...auditColumns(),

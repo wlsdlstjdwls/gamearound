@@ -30,7 +30,7 @@ describe("promotionStatus", () => {
 
 describe("quote", () => {
   it("멤버십 첫 달 할인은 처음 가입하는 사람의 첫 청구에만", () => {
-    expect(quote(PRICING_DEFAULTS, "membership", { everPaid: false }, now)).toEqual({ amount: 9_900, regular: 19_900, promoLabel: "첫 달 할인", promoTone: null });
+    expect(quote(PRICING_DEFAULTS, "membership", { everPaid: false }, now)).toEqual({ amount: 9_900, regular: 19_900, promoLabel: "첫 달 할인", promoTone: null, promoId: "maker-first-month", promoMonths: 1 });
     expect(quote(PRICING_DEFAULTS, "membership", { everPaid: true }, now).amount).toBe(19_900);
     // 갱신(first=false)은 언제나 정가
     expect(quote(PRICING_DEFAULTS, "membership", { everPaid: false }, now, false).amount).toBe(19_900);
@@ -40,7 +40,7 @@ describe("quote", () => {
   });
   it("여럿 걸리면 가장 싼 하나만(겹쳐 깎지 않는다)", () => {
     const s = withPromos([promo({ id: "a", value: 10 }), promo({ id: "b", value: 30, label: "큰 할인" })]);
-    expect(quote(s, "boost_indie_7d", { everPaid: true }, now)).toEqual({ amount: 4_830, regular: 6_900, promoLabel: "큰 할인", promoTone: null });
+    expect(quote(s, "boost_indie_7d", { everPaid: true }, now)).toEqual({ amount: 4_830, regular: 6_900, promoLabel: "큰 할인", promoTone: null, promoId: "b", promoMonths: 1 });
   });
   it("정가보다 비싼 프로모션 값은 버린다", () => {
     expect(quote(withPromos([promo({ kind: "price", value: 8_000 })]), "boost_indie_7d", { everPaid: true }, now).amount).toBe(6_900);

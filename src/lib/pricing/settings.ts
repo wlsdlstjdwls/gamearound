@@ -107,6 +107,21 @@ const tierCopySchema = z.object({
 /** 사람이 고르는 중단 사유. 늘릴 때 여기와 admin-messages 의 stopReasonLabels 만 고친다 */
 export const PROMOTION_STOP_REASONS = ["manual", "price_change"] as const;
 
+/**
+ * 적용 대상자(누구에게). first: 그 갈래(멤버십, 광고 상품)를 한 번도 결제한 적 없는 사람, returning: 결제한 적 있는 사람(해지 뒤 재가입,
+ * 재구매 — 2026-10-30 사용자 "재가입은 다른 혜택"), all: 누구나
+ */
+export const PROMOTION_AUDIENCES = ["first", "returning", "all"] as const;
+
+/**
+ * 중지 범위(멤버십). new: 새 가입에만 안 걸린다 — 이미 이 프로모션으로 가입한 회원은 남은 개월을 다 받는다(가입 때 약속, 2026-10-30 사용자).
+ * all: 이미 받은 회원도 다음 청구부터 정가. 비면 new
+ */
+export const PROMOTION_STOP_SCOPES = ["new", "all"] as const;
+
+/** 적용 개월 상한. 0 은 "매달 계속"(해지할 때까지) */
+export const PROMOTION_MONTHS_MAX = 36;
+
 export const promotionSchema = z
   .object({
     id: z.string().min(1).max(40),
@@ -124,8 +139,15 @@ export const promotionSchema = z
     /** percent: value% 할인, price: 값을 value 원으로 */
     kind: z.enum(["percent", "price"]),
     value: z.number().int().min(1).max(MAX_CHARGE),
-    /** first: 처음 결제하는 사람만(멤버십은 멤버십을, 상품은 상품을 한 번도 결제한 적 없는 사람). all: 누구나 */
-    audience: z.enum(["all", "first"]),
+    /** 누구에게(PROMOTION_AUDIENCES) */
+    audience: z.enum(PROMOTION_AUDIENCES),
+    /**
+     * 멤버십 할인을 몇 번의 월 결제에 거는가. 1 = 첫 달만, 3 = 첫 결제부터 3개월, 0 = 매달 계속. 비면 1(앞 판 저장값은 모두 첫 달 할인이었다).
+     * 광고 상품은 한 번 사고 끝이라 쓰지 않는다. 가입한 회원은 가입 때 값을 멤버십 줄에 받아 둔다(schema-memberships 의 promo_*)
+     */
+    months: z.number().int().min(0).max(PROMOTION_MONTHS_MAX).optional(),
+    /** 중지할 때 기존 회원까지 멈추나(PROMOTION_STOP_SCOPES). active 가 false 일 때만 뜻이 있다 */
+    stopScope: z.enum(PROMOTION_STOP_SCOPES).optional(),
     /** 한국 날짜. 비우면 끝없이 */
     startsOn: dateOnly.nullable(),
     endsOn: dateOnly.nullable(),

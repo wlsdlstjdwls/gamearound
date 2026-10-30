@@ -218,11 +218,22 @@ export function PlanCards({ copy, book, active, credits, membership, single, bun
  */
 export function MembershipPrice({ quote }: { quote: Quote }) {
   const intro = quote.amount < quote.regular;
+  // 할인이 몇 달 걸리는지(프로모션 적용 개월, 2026-10-30)에 따라 값 앞 말과 아래 줄이 바뀐다 — 언제부터 정가인지 숨기지 않는다
+  const months = quote.promoMonths ?? 1;
+  const regular = formatPrice(quote.regular);
+  const prefix = !intro ? M.perMonth : months === 0 ? M.perMonth : months === 1 ? M.firstMonth : M.forMonths(months);
+  const after = !intro
+    ? M.perDayApprox(formatPrice(perDay(quote.regular, MONTH_DAYS_APPROX)))
+    : months === 0
+      ? M.keepMonthly(regular)
+      : months === 1
+        ? M.thenMonthly(regular)
+        : M.thenAfterMonths(months, regular);
   return (
-    <PriceTag quote={quote} prefix={intro ? M.firstMonth : M.perMonth}>
+    <PriceTag quote={quote} prefix={prefix}>
       {/* 적용 조건 자리(관리자 미리 보기의 "적용 대상자" 칸). 첫 달 할인일 때만 "다음 달부터" 가 서서 첫 결제냐 아니냐가 보이는 곳이 여기뿐이다.
           낱개, 묶음 카드의 아래 줄("부터", 아끼는 금액)은 적용 대상자와 상관없어 자리를 달지 않는다(2026-10-30 사용자 "아닌 것도 표기") */}
-      <span data-preview-spot={PLAN_SPOTS.terms} className="w-fit text-[13px] text-mut">{intro ? M.thenMonthly(formatPrice(quote.regular)) : M.perDayApprox(formatPrice(perDay(quote.regular, MONTH_DAYS_APPROX)))}</span>
+      <span data-preview-spot={PLAN_SPOTS.terms} className="w-fit text-[13px] text-mut">{after}</span>
     </PriceTag>
   );
 }
