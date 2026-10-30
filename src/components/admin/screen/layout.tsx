@@ -141,11 +141,13 @@ export function ScreenTabs({ label, tabs, active, onChange, aside }: { label: st
  * 상세 옆 따라오는 기둥(미리 보기). 탭이 있든 없든 같은 자리에 선다.
  * 상세 판이 웬만큼만 넓어도 오른쪽 기둥이다(아래로 내리면 있는지조차 몰랐다, 2026-10-30 사용자). 아주 좁을 때만 아래. 기둥은 붙어 따라와 긴 상세를 내려도 보인다.
  * 화면 폭이 아니라 상세 판 폭으로 가른다(@container) — 목록이 옆에 서 있어 화면 폭으로는 판 폭을 알 수 없다
+ * 기둥 폭은 판 폭을 따라 늘기만 하고 330px(미리 보기 카드 제 폭, pricing-form/preview 의 CARD_MIN_W)에서 멈춘다.
+ * 900px 부터 280px 로 고정하던 단을 걷었다 — 34% 로 306px 까지 컸다가 280px 로 줄어 구분선을 끌 때 미리 보기가 커졌다 작아졌다(2026-10-30 사용자)
  */
 export function WithAside({ aside, children }: { aside: React.ReactNode; children: React.ReactNode }) {
   return (
     <div className="@container">
-      <div className="grid items-start gap-3 @min-[480px]:grid-cols-[minmax(0,1fr)_minmax(210px,34%)] @min-[900px]:grid-cols-[minmax(0,1fr)_280px]">
+      <div className="grid items-start gap-3 @min-[480px]:grid-cols-[minmax(0,1fr)_clamp(210px,34%,330px)]">
         <div className="flex min-w-0 flex-col gap-3">{children}</div>
         <div className="min-w-0 @min-[480px]:sticky @min-[480px]:top-[calc(var(--header-h)+var(--admin-head-h,76px)+12px)] @min-[480px]:max-h-[calc(100svh-var(--header-h)-var(--admin-head-h,76px)-24px)]">{aside}</div>
       </div>
