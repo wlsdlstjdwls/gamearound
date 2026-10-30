@@ -15,6 +15,7 @@
     "crawl:local": "tsx scripts/crawl-local.ts",
     "probe": "tsx scripts/probe.ts",
     "icons": "tsx scripts/generate-icons.ts",
+    "guide:upload": "tsx scripts/guide-upload.ts",
     "seed": "tsx scripts/seed.ts",
     "test": "vitest run",
     "e2e:auth": "node scripts/e2e-auth.mjs",

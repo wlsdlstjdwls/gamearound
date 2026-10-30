@@ -18,3 +18,4 @@ export * from "./game";
 export * from "./codes";
 export * from "./notify";
 export * from "./stats";
+export * from "./guide";

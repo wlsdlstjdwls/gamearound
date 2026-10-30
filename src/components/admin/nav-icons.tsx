@@ -26,6 +26,16 @@ function base({ size = 18, ...rest }: IconProps) {
   };
 }
 
+/** 서비스 안내서 — 펼친 책 */
+export function BookIcon(p: IconProps) {
+  return (
+    <svg {...base(p)}>
+      <path d="M12 6.5C10.2 5.2 7.6 4.6 4 4.8v13.4c3.6-.2 6.2.4 8 1.7 1.8-1.3 4.4-1.9 8-1.7V4.8c-3.6-.2-6.2.4-8 1.7Z" />
+      <path d="M12 6.5v13.4" />
+    </svg>
+  );
+}
+
 /** 업무 현황 — 묶음 기둥이 나란히 선 판 */
 export function BoardIcon(p: IconProps) {
   return (

@@ -126,6 +126,9 @@ export const ROUTES = {
   adminCodes: "/admin/codes",
   adminNotifyTemplates: "/admin/notify-templates",
   adminNotifySends: "/admin/notify-sends",
+  /** 서비스 변경 안내서 보기(2026-10-30). 본문은 apiAdminGuide 가 관리자에게만 내보낸다(lib/admin/guide) */
+  adminGuide: "/admin/guide",
+  apiAdminGuide: "/api/admin/guide",
   /** 통계관리(2026-10-30): 매출현황, 이용현황 */
   adminStatsSales: "/admin/stats/sales",
   adminStatsUsage: "/admin/stats/usage",
