@@ -12,7 +12,7 @@
 // 2026-10-30(사용자 "그리드랑 폼이 같이 있으면 영역 분리가 모호, 구분선 부족, 탭도"): 조회 띠, 목록, 상세를 저마다 테두리 친 판으로 세우고
 // 상세 판은 제목 띠를 단다. 탭은 안 고른 탭도 테두리를 둬 탭으로 읽히게 하고, 고른 탭은 위에 파랑 줄.
 // 미리 보기처럼 상세 내내 봐야 하는 것은 WithAside(탭이면 ScreenTabs 의 aside)로 상세 옆에 붙인다.
-import { useId, useRef, useState } from "react";
+import { useId, useLayoutEffect, useRef, useState } from "react";
 import { cn } from "@/lib/cn";
 import { FULL_ROW } from "@/components/admin/screen/form-grid";
 import { ChevronDownIcon } from "@/components/ui/icons";
@@ -164,12 +164,34 @@ export function WithAside({ aside, children }: { aside: React.ReactNode; childre
 }
 
 /** 접히는 묶음 — 백오피스 상세의 "− 상품분류" 꼴. 머리 오른쪽에 그 묶음만의 단추를 둔다(고객상세정보의 "배달지관리" 자리) */
-/** labelWidth: 이 묶음의 이름표 칸 폭. 긴 이름표("프로모션코드/명")가 꺾이지 않게 그 묶음만 넓힌다 — 모두 넓히면 왼쪽 여백이 늘었다(2026-10-30 사용자) */
+/** 이름표 칸 상한(px). 이보다 긴 이름표는 칸을 넘친다 — 이름을 줄일 일이다 */
+const LABEL_MAX = 160;
+/** 잰 글자 폭에 더하는 여유(px) — 반올림, 글꼴 로드 뒤 미세한 폭 차이로 끝 글자가 잘리지 않게 */
+const LABEL_PAD = 2;
+
+/**
+ * 이름표 칸 폭은 이 묶음에서 가장 긴 이름표에 맞춰 저절로 정한다(2026-10-30 사용자 "필드명 왼쪽 공백이 너무 크다").
+ * 앞에는 화면마다 72, 84, 96, 120px 을 손으로 적었는데, 이름표 낱말을 바꿀 때마다 남는 공백이 커지거나 이름이 꺾였다.
+ * labelWidth 는 재기 전(첫 그림)의 폭이다 — 재고 나면 실제 길이로 바뀐다. 너무 긴 이름표 하나가 칸을 밀어내지 않게 LABEL_MAX 로 막는다
+ */
 export function FormSection({ title, action, defaultOpen = true, labelWidth, children }: { title: string; action?: React.ReactNode; defaultOpen?: boolean; labelWidth?: string; children: React.ReactNode }) {
   const [open, setOpen] = useState(defaultOpen);
   const id = useId();
+  const box = useRef<HTMLDivElement>(null);
+  const [fit, setFit] = useState<number | null>(null);
+  // 펼칠 때와 칸이 바뀔 때 잰다(이름표 몇 개라 싸다). 같은 값이면 상태를 안 바꿔 다시 그리지 않는다.
+  // 이름표 글자 상자(data-field-label, 글자만큼만 서는 inline-flex)의 폭을 잰다 — label 은 칸 폭만큼 늘어나 있어 그걸로는 줄일 수 없다
+  useLayoutEffect(() => {
+    const el = box.current;
+    if (!el) return;
+    let max = 0;
+    for (const label of el.querySelectorAll<HTMLElement>("[data-field-label]")) max = Math.max(max, label.getBoundingClientRect().width);
+    const next = max > 0 ? Math.min(LABEL_MAX, Math.ceil(max) + LABEL_PAD) : null;
+    setFit((cur) => (cur === next ? cur : next));
+  }, [open, children]);
+  const width = fit !== null ? `${fit}px` : labelWidth;
   return (
-    <section className="@container overflow-hidden rounded-xl border border-line" style={labelWidth ? ({ "--field-label-w": labelWidth } as React.CSSProperties) : undefined}>
+    <section className="@container overflow-hidden rounded-xl border border-line" style={width ? ({ "--field-label-w": width } as React.CSSProperties) : undefined}>
       <div className={cn("flex min-h-10 items-center justify-between gap-2 bg-surface-2 pl-2 pr-2", open && "border-b border-line")}>
         <button type="button" aria-expanded={open} aria-controls={id} onClick={() => setOpen((o) => !o)} className="press flex min-h-10 items-center gap-1.5 rounded-md px-1.5 text-[13.5px] font-bold text-ink">
           <ChevronDownIcon size={15} className={cn("text-dim transition-transform duration-base", !open && "-rotate-90")} />
@@ -178,7 +200,7 @@ export function FormSection({ title, action, defaultOpen = true, labelWidth, chi
         {action}
       </div>
       {open && (
-        <div id={id} className="grid gap-x-4 gap-y-2 py-2.5 pl-1.5 pr-3 @min-[420px]:grid-cols-2 [@media(pointer:fine)]:[&_input]:h-10 [@media(pointer:fine)]:[&_input]:min-h-10 [@media(pointer:fine)]:[&_button[aria-haspopup]]:h-10">
+        <div ref={box} id={id} className="grid gap-x-4 gap-y-2 py-2.5 pl-1.5 pr-3 @min-[420px]:grid-cols-2 [@media(pointer:fine)]:[&_input]:h-10 [@media(pointer:fine)]:[&_input]:min-h-10 [@media(pointer:fine)]:[&_button[aria-haspopup]]:h-10">
           {children}
         </div>
       )}
@@ -192,13 +214,18 @@ export function FormSection({ title, action, defaultOpen = true, labelWidth, chi
 export function Field({ label, htmlFor, required, wide, hint, error, spot, children }: { label: string; htmlFor?: string; required?: boolean; wide?: boolean; hint?: React.ReactNode; error?: string; spot?: string; children: React.ReactNode }) {
   return (
     <div data-preview-spot={spot} className={cn("grid items-start gap-x-2 gap-y-1 @min-[300px]:grid-cols-[var(--field-label-w,72px)_minmax(0,1fr)]", wide && FULL_ROW)}>
-      <label htmlFor={htmlFor} className="flex items-center gap-0.5 text-[12.5px] font-semibold text-mut @min-[300px]:min-h-10 @min-[300px]:justify-end @min-[300px]:text-right">
-        {required && (
-          <span aria-hidden className="text-danger">
-            *
-          </span>
-        )}
-        {label}
+      {/* 두 열일 때는 이름표를 꺾지 않는다 — 꺾이면 잰 길이가 줄어 폭이 따라 준다 */}
+      <label htmlFor={htmlFor} className="flex items-center text-[12.5px] font-semibold text-mut @min-[300px]:min-h-10 @min-[300px]:justify-end @min-[300px]:whitespace-nowrap @min-[300px]:text-right">
+        {/* data-field-label: 묶음(FormSection)이 이름표 칸 폭을 이 글자(* 포함) 길이로 맞춘다. 낭독기용 "(필수)" 는 밖에 둬 재지 않는다 —
+            sr-only 상자가 잰 폭을 부풀려 칸이 오히려 넓어졌다(2026-10-30 실측) */}
+        <span data-field-label className="inline-flex items-center gap-0.5">
+          {required && (
+            <span aria-hidden className="text-danger">
+              *
+            </span>
+          )}
+          {label}
+        </span>
         {required && <span className="sr-only">{SM.required}</span>}
       </label>
       <div className="min-w-0">{children}</div>
