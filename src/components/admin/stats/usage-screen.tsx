@@ -10,6 +10,7 @@ import { TrendChart } from "@/components/admin/stats/trend-chart";
 import { panelClass } from "@/components/ui/page";
 import { ADMIN_NAV, STATS_MESSAGES as M } from "@/lib/admin/messages";
 import { changeRate } from "@/lib/stats/change";
+import { dayWithWeekday } from "@/lib/stats/period";
 import { ROUTES } from "@/lib/routes";
 import type { UsageDay, UsageStats } from "@/server/services/stats";
 
@@ -17,6 +18,8 @@ type SourceRow = UsageStats["sources"][number] & { share: number };
 type GameRow = UsageStats["topGames"][number];
 
 const count = (n: number) => n.toLocaleString("ko-KR");
+/** 일별 표 몸통 높이. 30일을 다 펼치면 화면이 세 배로 길어진다 — 열 줄 남짓만 보이고 나머지는 표 안에서 굴린다 */
+const DAY_TABLE_MAX = "440px";
 const PERCENT = 100;
 
 function ShareBar({ share }: { share: number }) {
@@ -46,12 +49,12 @@ export function UsageScreen({ stats }: { stats: UsageStats }) {
   const t = stats.totals;
   const visitCell = (n: number) => (stats.visitsOk ? count(n) : "-");
   const dayColumns: GridCol<UsageDay>[] = [
-    { key: "day", label: M.colDay, width: "minmax(96px,1fr)", align: "center", value: (d) => d.day },
-    { key: "sessions", label: M.colSessions, width: "72px", align: "right", value: (d) => d.sessions, text: (d) => visitCell(d.sessions), sum: true },
-    { key: "visitors", label: M.colVisitors, width: "72px", align: "right", value: (d) => d.visitors, text: (d) => visitCell(d.visitors) },
-    { key: "pv", label: M.colPv, width: "80px", align: "right", value: (d) => d.pv, text: (d) => visitCell(d.pv), sum: true },
-    { key: "signups", label: M.colSignups, width: "64px", align: "right", value: (d) => d.signups, sum: true },
-    { key: "wishes", label: M.colWishes, width: "64px", align: "right", value: (d) => d.wishes, sum: true },
+    { key: "day", label: M.colDay, width: "128px", align: "center", value: (d) => d.day, text: (d) => dayWithWeekday(d.day) },
+    { key: "sessions", label: M.colSessions, width: "minmax(72px,1fr)", align: "right", value: (d) => d.sessions, text: (d) => visitCell(d.sessions), sum: true },
+    { key: "visitors", label: M.colVisitors, width: "minmax(72px,1fr)", align: "right", value: (d) => d.visitors, text: (d) => visitCell(d.visitors) },
+    { key: "pv", label: M.colPv, width: "minmax(80px,1fr)", align: "right", value: (d) => d.pv, text: (d) => visitCell(d.pv), sum: true },
+    { key: "signups", label: M.colSignups, width: "minmax(64px,1fr)", align: "right", value: (d) => d.signups, sum: true },
+    { key: "wishes", label: M.colWishes, width: "minmax(64px,1fr)", align: "right", value: (d) => d.wishes, sum: true },
   ];
   const sourceTotal = stats.sources.reduce((n, s) => n + s.sessions, 0);
   const sources: SourceRow[] = sourceTotal === 0 ? [] : stats.sources.map((s) => ({ ...s, share: Math.round((s.sessions / sourceTotal) * PERCENT) }));
@@ -71,15 +74,15 @@ export function UsageScreen({ stats }: { stats: UsageStats }) {
           ]}
         />
         <section className={panelClass("grid gap-4 p-3 lg:grid-cols-3")}>
-          <TrendChart title={M.usageVisitsChart} data={series((d) => d.sessions)} format={(n) => M.times(n)} height={160} />
-          <TrendChart title={M.usageSignupsChart} data={series((d) => d.signups)} format={(n) => M.people(n)} height={160} />
-          <TrendChart title={M.usageWishesChart} data={series((d) => d.wishes)} format={(n) => M.count(n)} height={160} />
+          <TrendChart empty={M.chartEmpty} title={M.usageVisitsChart} data={series((d) => d.sessions)} format={(n) => M.times(n)} height={160} />
+          <TrendChart empty={M.chartEmpty} title={M.usageSignupsChart} data={series((d) => d.signups)} format={(n) => M.people(n)} height={160} />
+          <TrendChart empty={M.chartEmpty} title={M.usageWishesChart} data={series((d) => d.wishes)} format={(n) => M.count(n)} height={160} />
         </section>
-        <div className="grid gap-3 xl:grid-cols-2">
+        <div className="grid items-start gap-3 xl:grid-cols-2">
           <DataGrid label={M.usageSources} columns={SOURCE_COLUMNS} rows={sources} rowKey={(r) => r.source} empty={M.usageSourcesEmpty} />
           <DataGrid label={M.usageTopGames(stats.topWindowDays)} columns={GAME_COLUMNS} rows={stats.topGames} rowKey={(g) => g.slug} empty={M.usageTopEmpty} />
         </div>
-        <DataGrid label={M.usageDays} columns={dayColumns} rows={[...stats.days].reverse()} rowKey={(d) => d.day} paging empty={M.usageSourcesEmpty} />
+        <DataGrid label={M.usageDays} columns={dayColumns} rows={[...stats.days].reverse()} rowKey={(d) => d.day} bodyMax={DAY_TABLE_MAX} empty={M.usageSourcesEmpty} />
       </div>
     </>
   );

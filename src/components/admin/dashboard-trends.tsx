@@ -33,7 +33,7 @@ export function DashboardTrends({ trend }: { trend: DashboardTrend }) {
       </div>
       <div className="grid gap-4 md:grid-cols-3">
         {charts.map((c) => (
-          <TrendChart key={c.key} title={c.title} data={c.data} format={c.format} axisFormat={"axis" in c ? c.axis : undefined} height={CHART_HEIGHT} />
+          <TrendChart empty={M.chartEmpty} key={c.key} title={c.title} data={c.data} format={c.format} axisFormat={"axis" in c ? c.axis : undefined} height={CHART_HEIGHT} />
         ))}
       </div>
     </section>

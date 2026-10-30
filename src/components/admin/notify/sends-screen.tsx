@@ -41,6 +41,8 @@ export function NotifySendsScreen({ rows, limit, filter, templates, channels, co
   const channelName = (code: string) => channels.find((c) => c.value === code)?.label ?? code;
   const current = rows.find((r) => r.id === selected) ?? null;
 
+  const openCompose = () => setSeed((s) => ({ templateCode: null, body: "", channel: null, n: (s?.n ?? 0) + 1 }));
+
   const retrieve = () => {
     const q = new URLSearchParams({ from: f.from, to: f.to });
     if (f.status !== "all") q.set("status", f.status);
@@ -65,7 +67,7 @@ export function NotifySendsScreen({ rows, limit, filter, templates, channels, co
         title={ADMIN_NAV.notifySends}
         count={rows.length}
         note={rows.length >= limit ? M.limitNote(limit) : undefined}
-        tools={{ retrieve, insert: () => setSeed((s) => ({ templateCode: null, body: "", channel: null, n: (s?.n ?? 0) + 1 })) }}
+        tools={{ retrieve, insert: openCompose }}
       />
       <div className="flex flex-col gap-3">
         <SearchBand label={M.search}>
@@ -158,7 +160,13 @@ export function NotifySendsScreen({ rows, limit, filter, templates, channels, co
                 <TelegramPreview html={current.text} />
               </div>
             ) : (
-              <p className="rounded-xl bg-surface-2 px-4 py-6 text-center text-[13px] text-dim">{M.pickHistory}</p>
+              // 고른 이력이 없을 때 이 자리가 비면 무엇을 할 수 있는지 모른다 — 발송 길을 여기에도 둔다(툴바 입력과 같은 일)
+              <div className="flex flex-col items-center gap-3 rounded-xl bg-surface-2 px-4 py-8 text-center text-[13px] text-dim">
+                <p>{M.pickHistory}</p>
+                <Button size="sm" onClick={openCompose}>
+                  {M.composeTitle}
+                </Button>
+              </div>
             )
           }
         />

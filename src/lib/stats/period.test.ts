@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { addDays, compactNumber, daySeries, daysIn, periodRange, presetPeriod, previousPeriod, resolvePeriod } from "./period";
+import { addDays, compactNumber, dayWithWeekday, daySeries, daysIn, periodRange, presetPeriod, previousPeriod, resolvePeriod } from "./period";
 
 const NOW = new Date("2026-10-30T03:00:00Z"); // 한국 2026-10-30 12시
 
@@ -44,5 +44,12 @@ describe("presetPeriod, compactNumber", () => {
     expect(compactNumber(9900)).toBe("9,900");
     expect(compactNumber(120000)).toBe("12만");
     expect(compactNumber(125000)).toBe("12.5만");
+  });
+});
+
+describe("dayWithWeekday", () => {
+  it("한국 요일을 붙인다", () => {
+    expect(dayWithWeekday("2026-10-30")).toBe("2026-10-30 (금)");
+    expect(dayWithWeekday("2026-11-01")).toBe("2026-11-01 (일)");
   });
 });

@@ -1,7 +1,7 @@
 // 조회 기간 계산(2026-10-30). 알림발송관리, 매출현황, 이용현황이 주소(?from=&to=)로 받은 한국 날짜를 같은 규칙으로 읽는다.
 // 날짜는 "2026-10-30" 글자로 다닌다(lib/format 의 kstDateKey 와 같은 꼴). 시각으로 바꿀 때만 +09:00 을 붙인다 —
 // 서버(UTC)와 브라우저가 같은 날을 가리키게.
-import { kstDateKey } from "@/lib/format";
+import { kstDateKey, WEEKDAY_LABEL } from "@/lib/format";
 
 const KST_OFFSET = "+09:00";
 const DAY_MS = 24 * 60 * 60 * 1000;
@@ -85,4 +85,11 @@ export function compactNumber(n: number): string {
   if (Math.abs(n) < MAN) return n.toLocaleString("ko-KR");
   const v = n / MAN;
   return `${Number.isInteger(v) ? v : v.toFixed(1)}만`;
+}
+
+/** 표에 보일 날짜 "2026-10-30 (금)". 요일이 있어야 주말에 꺼지는 숫자를 읽는다 */
+export function dayWithWeekday(key: string): string {
+  // 한국 정오는 UTC 로도 같은 날(03시)이라 UTC 요일이 곧 한국 요일이다 — 서버, 브라우저 시간대와 상관없다
+  const noon = new Date(`${key}T12:00:00${KST_OFFSET}`);
+  return `${key} (${WEEKDAY_LABEL[noon.getUTCDay()]})`;
 }

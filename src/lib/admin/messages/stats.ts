@@ -14,6 +14,7 @@ export const STATS_MESSAGES = {
   people: (n: number) => `${n.toLocaleString("ko-KR")}명`,
   times: (n: number) => `${n.toLocaleString("ko-KR")}회`,
   colDay: "일자",
+  chartEmpty: "이 기간에는 기록이 없어요",
 
   // ---- 매출현황 ----
   salesPaid: "결제금액",

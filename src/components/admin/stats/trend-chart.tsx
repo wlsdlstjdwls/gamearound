@@ -33,18 +33,21 @@ function Tip({ active, payload, format }: TooltipContentProps & { format: (n: nu
   );
 }
 
-export function TrendChart({ title, data, format, axisFormat, height = 180 }: { title: string; data: TrendPoint[]; format: (n: number) => string; axisFormat?: (n: number) => string; height?: number }) {
+/** empty: 기간 내내 0 일 때 그래프 위에 띄울 말. 0 뿐인 그래프는 눈금(0~4)이 지어낸 숫자처럼 보인다 */
+export function TrendChart({ title, data, format, axisFormat, height = 180, empty }: { title: string; data: TrendPoint[]; format: (n: number) => string; axisFormat?: (n: number) => string; height?: number; empty: string }) {
   const t = useCssTokens(TOKENS);
+  const blank = data.every((p) => p.value === 0);
   return (
     <figure className="flex min-w-0 flex-col gap-1.5">
       <figcaption className="px-1 text-[12.5px] font-bold text-ink">{title}</figcaption>
       {/* 그림은 낭독기가 못 읽는다 — 같은 값은 화면의 일별 표가 준다. 그림에는 이름만 붙인다 */}
-      <div role="img" aria-label={title} style={{ height }}>
+      <div role="img" aria-label={blank ? `${title} | ${empty}` : title} className="relative" style={{ height }}>
+        {blank && <p className="absolute inset-0 z-10 flex items-center justify-center pb-5 text-[12.5px] text-dim">{empty}</p>}
         <ResponsiveContainer width="100%" height="100%">
           <BarChart data={data} margin={{ top: 6, right: 6, bottom: 0, left: 0 }} barCategoryGap="20%">
             <CartesianGrid stroke={t["--line-soft"]} vertical={false} />
             <XAxis dataKey="day" tickFormatter={short} stroke={t["--line"]} tick={{ fill: t["--dim"], fontSize: AXIS_FONT }} tickLine={false} minTickGap={TICK_GAP} />
-            <YAxis tickFormatter={axisFormat ?? ((n: number) => n.toLocaleString("ko-KR"))} stroke={t["--line"]} tick={{ fill: t["--dim"], fontSize: AXIS_FONT }} tickLine={false} axisLine={false} width={56} allowDecimals={false} />
+            <YAxis hide={blank} tickFormatter={axisFormat ?? ((n: number) => n.toLocaleString("ko-KR"))} stroke={t["--line"]} tick={{ fill: t["--dim"], fontSize: AXIS_FONT }} tickLine={false} axisLine={false} width={56} allowDecimals={false} />
             <Tooltip content={(props: TooltipContentProps) => <Tip {...props} format={format} />} cursor={{ fill: t["--surface-2"] }} />
             <Bar dataKey="value" fill={t["--acc"]} radius={BAR_RADIUS} maxBarSize={BAR_MAX} isAnimationActive={false} />
           </BarChart>

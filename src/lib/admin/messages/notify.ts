@@ -47,8 +47,8 @@ export const NOTIFY_MESSAGES = {
   newName: "새 템플릿",
   vars: "쓸 수 있는 변수",
   varsFree: "본문에 {이름} 을 쓰면 발송할 때 값을 넣는 칸이 생겨요",
-  tags: "쓸 수 있는 꾸밈",
-  tagsList: "<b>굵게</b> <i>기울임</i> <u>밑줄</u> <s>취소선</s> <code>코드</code> <blockquote>인용</blockquote> <a href=\"주소\">링크</a>",
+  tags: "본문 꾸밈",
+  formatLabels: { bold: "굵게", italic: "기울임", underline: "밑줄", strike: "취소선", quote: "인용", link: "링크" },
   /** 시스템 템플릿 묶음 머리 한 줄. 코드가 부르는 알림이라 코드는 잠기고, 미사용이면 그 사건 알림이 멈춘다 */
   systemLocked: "시스템 템플릿 | 미사용이면 알림이 멈춰요",
   codeExists: "같은 템플릿코드가 이미 있어요",

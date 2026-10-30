@@ -11,14 +11,16 @@ import { panelClass } from "@/components/ui/page";
 import { ADMIN_NAV, STATS_MESSAGES as M } from "@/lib/admin/messages";
 import { formatAmount } from "@/lib/currency";
 import { changeRate } from "@/lib/stats/change";
-import { compactNumber } from "@/lib/stats/period";
+import { compactNumber, dayWithWeekday } from "@/lib/stats/period";
 import { ROUTES } from "@/lib/routes";
 import type { SalesByProduct, SalesDay, SalesStats } from "@/server/services/stats";
 
 const won = (n: number) => formatAmount(n);
+/** 일별 표 몸통 높이. 30일을 다 펼치면 화면이 세 배로 길어진다 — 열 줄 남짓만 보이고 나머지는 표 안에서 굴린다 */
+const DAY_TABLE_MAX = "440px";
 
 const DAY_COLUMNS: GridCol<SalesDay>[] = [
-  { key: "day", label: M.colDay, width: "minmax(96px,1fr)", align: "center", value: (d) => d.day },
+  { key: "day", label: M.colDay, width: "128px", align: "center", value: (d) => d.day, text: (d) => dayWithWeekday(d.day) },
   { key: "count", label: M.colCount, width: "64px", align: "right", value: (d) => d.count, sum: true },
   { key: "paid", label: M.colPaid, width: "minmax(96px,1fr)", align: "right", value: (d) => d.paid, text: (d) => won(d.paid), sum: (rows) => won(rows.reduce((n, r) => n + r.paid, 0)) },
   { key: "refunded", label: M.colRefunded, width: "minmax(88px,1fr)", align: "right", value: (d) => d.refunded, text: (d) => won(d.refunded), sum: (rows) => won(rows.reduce((n, r) => n + r.refunded, 0)) },
@@ -49,10 +51,10 @@ export function SalesScreen({ stats }: { stats: SalesStats }) {
           ]}
         />
         <section className={panelClass("p-3")}>
-          <TrendChart title={M.salesChart} data={stats.days.map((d) => ({ day: d.day, value: d.net }))} format={won} axisFormat={compactNumber} />
+          <TrendChart empty={M.chartEmpty} title={M.salesChart} data={stats.days.map((d) => ({ day: d.day, value: d.net }))} format={won} axisFormat={compactNumber} />
         </section>
-        <div className="grid gap-3 xl:grid-cols-[minmax(0,3fr)_minmax(0,2fr)]">
-          <DataGrid label={M.salesDays} columns={DAY_COLUMNS} rows={[...stats.days].reverse()} rowKey={(d) => d.day} rowTone={(d) => (d.count === 0 && d.refunded === 0 ? "muted" : undefined)} paging empty={M.salesEmpty} />
+        <div className="grid items-start gap-3 xl:grid-cols-[minmax(0,3fr)_minmax(0,2fr)]">
+          <DataGrid label={M.salesDays} columns={DAY_COLUMNS} rows={[...stats.days].reverse()} rowKey={(d) => d.day} rowTone={(d) => (d.count === 0 && d.refunded === 0 ? "muted" : undefined)} bodyMax={DAY_TABLE_MAX} empty={M.salesEmpty} />
           <DataGrid label={M.salesProducts} columns={PRODUCT_COLUMNS} rows={stats.products} rowKey={(p) => p.product} empty={M.salesEmpty} />
         </div>
       </div>

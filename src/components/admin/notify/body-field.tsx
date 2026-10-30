@@ -23,55 +23,64 @@ export function notifyErrors(result: { success: true } | { success: false; error
   return errs;
 }
 
+/** 꾸밈 단추. 고른 글을 태그로 감싼다(고른 글이 없으면 빈 태그를 넣고 커서를 가운데에). 태그 글자를 외우지 않게 — 앞에는 안내 줄에 태그를 글자로 늘어놓았다 */
+const FORMATS = [
+  { key: "bold", open: "<b>", close: "</b>" },
+  { key: "italic", open: "<i>", close: "</i>" },
+  { key: "underline", open: "<u>", close: "</u>" },
+  { key: "strike", open: "<s>", close: "</s>" },
+  { key: "quote", open: "<blockquote>", close: "</blockquote>" },
+  { key: "link", open: '<a href="https://">', close: "</a>" },
+] as const;
+
+const CHIP = "press rounded-md px-1.5 py-0.5 text-[11.5px] font-semibold";
+
 /** vars: 누르면 커서 자리에 {이름} 을 넣는 변수 칩. null 이면 자유 변수 안내만 */
 export function BodyField({ id, value, onChange, renderedLength, error, vars }: { id: string; value: string; onChange: (v: string) => void; renderedLength: number; error?: string; vars: Array<{ name: string; hint?: string }> | null }) {
   const ref = useRef<HTMLTextAreaElement>(null);
   const over = renderedLength > TELEGRAM_TEXT_MAX;
-  const insert = (name: string) => {
+  /** 고른 자리를 before + 고른 글 + after 로 바꾸고, 커서를 고른 글 끝(없으면 before 뒤)에 둔다 */
+  const wrap = (before: string, after: string) => {
     const el = ref.current;
-    const token = `{${name}}`;
     const at = el?.selectionStart ?? value.length;
     const end = el?.selectionEnd ?? at;
-    onChange(value.slice(0, at) + token + value.slice(end));
-    // 넣은 뒤 커서를 변수 뒤로 — 이어서 치게
+    const picked = value.slice(at, end);
+    onChange(value.slice(0, at) + before + picked + after + value.slice(end));
+    const caret = at + before.length + picked.length;
     requestAnimationFrame(() => {
       el?.focus();
-      el?.setSelectionRange(at + token.length, at + token.length);
+      el?.setSelectionRange(caret, caret);
     });
   };
   return (
     <div className="flex flex-col gap-1.5">
-      <textarea ref={ref} id={id} rows={BODY_ROWS} className={cn(TEXTAREA_CLASS, "font-mono text-[13.5px] leading-[1.65]")} value={value} onChange={(e) => onChange(e.target.value)} aria-invalid={Boolean(error) || over} aria-describedby={`${id}-help`} />
+      <div role="toolbar" aria-label={M.tags} aria-controls={id} className="flex flex-wrap items-center gap-1">
+        {FORMATS.map((f) => (
+          <button key={f.key} type="button" onClick={() => wrap(f.open, f.close)} className={cn(CHIP, "bg-surface-2 text-ink-2 hover:bg-line-soft")}>
+            {M.formatLabels[f.key]}
+          </button>
+        ))}
+      </div>
+      <textarea ref={ref} id={id} rows={BODY_ROWS} className={cn(TEXTAREA_CLASS, "text-[14px] leading-[1.65]")} value={value} onChange={(e) => onChange(e.target.value)} aria-invalid={Boolean(error) || over} aria-describedby={`${id}-help`} />
       <div id={`${id}-help`} className="flex flex-col gap-1 text-[11.5px] text-dim">
-        <p className={cn("tabular-nums", over && "font-semibold text-danger")}>{over ? M.tooLong(renderedLength, TELEGRAM_TEXT_MAX) : M.length(renderedLength, TELEGRAM_TEXT_MAX)}</p>
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <span className="flex flex-wrap items-center gap-1">
+            <span className="font-semibold text-mut">{M.vars}</span>
+            {vars === null
+              ? M.varsFree
+              : vars.map((v) => (
+                  <button key={v.name} type="button" onClick={() => wrap(`{${v.name}}`, "")} className={cn(CHIP, "bg-acc-soft text-acc")} aria-label={v.hint ? `{${v.name}} ${v.hint}` : `{${v.name}}`}>
+                    {`{${v.name}}`}
+                  </button>
+                ))}
+          </span>
+          <span className={cn("shrink-0 tabular-nums", over && "font-semibold text-danger")}>{over ? M.tooLong(renderedLength, TELEGRAM_TEXT_MAX) : M.length(renderedLength, TELEGRAM_TEXT_MAX)}</span>
+        </div>
         {error && (
           <p role="alert" className="text-[12px] font-medium text-danger">
             {error}
           </p>
         )}
-        <p>
-          <span className="font-semibold text-mut">{M.vars}</span>{" "}
-          {vars === null ? (
-            M.varsFree
-          ) : (
-            <span className="inline-flex flex-wrap gap-1 align-middle">
-              {vars.map((v) => (
-                <button
-                  key={v.name}
-                  type="button"
-                  onClick={() => insert(v.name)}
-                  className="press rounded-md bg-acc-soft px-1.5 py-0.5 font-mono text-[11.5px] font-semibold text-acc"
-                  aria-label={v.hint ? `{${v.name}} ${v.hint}` : `{${v.name}}`}
-                >
-                  {`{${v.name}}`}
-                </button>
-              ))}
-            </span>
-          )}
-        </p>
-        <p>
-          <span className="font-semibold text-mut">{M.tags}</span> <code className="font-mono">{M.tagsList}</code>
-        </p>
       </div>
     </div>
   );
