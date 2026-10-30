@@ -11,7 +11,7 @@ export const CATEGORY_BADGE: Record<TaskCategory, string> = {
   task: "",
   bug: "bg-warn-soft text-warn",
   idea: "bg-acc-soft text-acc",
-  data: "bg-ok-soft text-ok",
+  data: "bg-plum-soft text-plum",
   etc: "bg-surface-3 text-mut",
 };
 
@@ -20,7 +20,7 @@ export const CATEGORY_FILL: Record<TaskCategory, string> = {
   task: "",
   bug: "bg-warn",
   idea: "bg-acc",
-  data: "bg-ok",
+  data: "bg-plum",
   etc: "bg-line-strong",
 };
 

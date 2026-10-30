@@ -3,6 +3,7 @@
 //
 // 2026-10-29 두 화면을 공통 그리드로 옮기며 배지를 ui/tag 의 옅은 면으로 바꿨다. 정상은 면을 옅게 둔다 —
 // 백 줄 중 아흔이 정상이라 정상까지 진하면 어느 것도 눈에 안 띈다. 누런색은 쓰지 않는다(10-27, 일부 실패는 주황).
+// 정상은 회색(neutral)이다 — 2026-10-30 사용자 "뱃지 초록색 쓰지 마". 관리자 배지에서 초록(ok), 청록(info)을 걷고 파랑, 보라, 회색으로 말한다.
 // 서버 컴포넌트도 읽을 수 있게 "use client" 를 붙이지 않는다(AGENTS §6 푸터 사고).
 import type { TagTone } from "@/components/ui/tag";
 import type { SyncHealth } from "@/lib/admin/sync-health";
@@ -12,7 +13,7 @@ type SyncStatus = SyncLogRow["status"];
 
 /** 실행 결과 배지 색(수집이력조회의 결과 칸, 수집현황의 끝난 실행) */
 export const SYNC_STATUS_TONE: Record<SyncStatus, TagTone> = {
-  ok: "ok",
+  ok: "neutral",
   partial: "warn",
   failed: "danger",
 };

@@ -47,7 +47,7 @@ export function TaskAddForm({ sources, assignees }: { sources: readonly string[]
       <button type="button" onClick={() => setOpen(true)} className={buttonClass({ variant: "primary" })}>
         {TASK_MESSAGES.add}
       </button>
-      {state?.ok && state.message && <span className="text-[13px] text-ok">{state.message}</span>}
+      {state?.ok && state.message && <span className="text-[13px] text-acc">{state.message}</span>}
       {state && !state.ok && !open && (
         <span role="alert" className="text-[13px] text-danger">
           {state.error}

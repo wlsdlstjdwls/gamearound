@@ -56,7 +56,7 @@ const COLUMNS: GridCol<Row>[] = [
     align: "center",
     value: (r) => r.active,
     text: (r) => (r.active ? M.saleLabels.on : M.saleLabels.off),
-    render: (r) => <span className={r.active ? "text-ok" : "text-dim"}>{r.active ? M.saleLabels.on : M.saleLabels.off}</span>,
+    render: (r) => <span className={r.active ? "text-acc" : "text-dim"}>{r.active ? M.saleLabels.on : M.saleLabels.off}</span>,
   },
 ];
 

@@ -26,7 +26,7 @@ export default async function AdminBoardPage() {
         note={
           board && (
             <>
-              {pending === 0 && <span className="mr-2 font-semibold text-ok">{M.allClear}</span>}
+              {pending === 0 && <span className="mr-2 font-semibold text-acc">{M.allClear}</span>}
               <span className="tabular-nums">{M.asOf(formatDateTime(new Date(board.asOf)))}</span>
             </>
           )

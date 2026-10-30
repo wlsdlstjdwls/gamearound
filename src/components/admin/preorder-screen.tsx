@@ -32,7 +32,7 @@ type Row = PreorderAdminRowDto;
 
 const EXTERNAL = "text-[12.5px] font-semibold text-acc hover:underline";
 // 상태 배지는 옅게 — 검토 대기만 파랑 기운, 공개, 숨김은 무채색(누런색 금지, 10-27)
-const STATUS_TONE: Record<PreorderPostStatus, TagTone> = { review: "info", published: "neutral", hidden: "outline" };
+const STATUS_TONE: Record<PreorderPostStatus, TagTone> = { review: "plum", published: "neutral", hidden: "outline" };
 const STATUSES: PreorderPostStatus[] = ["review", "published", "hidden"];
 
 const DECISIONS: ApprovalDecision<Row>[] = [
@@ -71,7 +71,7 @@ export function PreorderScreen({ rows }: { rows: Row[] }) {
       value: (r) => A.status[r.status],
       render: (r) => {
         const done = doneOf(r);
-        return done ? <Tag tone="ok">{done}</Tag> : <Tag tone={STATUS_TONE[r.status]}>{A.status[r.status]}</Tag>;
+        return done ? <Tag tone="acc">{done}</Tag> : <Tag tone={STATUS_TONE[r.status]}>{A.status[r.status]}</Tag>;
       },
     },
     { key: "title", label: A.colTitle, width: "minmax(180px,1.6fr)", value: (r) => r.title, render: (r) => <span className={cn(r.status === "hidden" && "text-dim line-through")}>{r.title}</span> },

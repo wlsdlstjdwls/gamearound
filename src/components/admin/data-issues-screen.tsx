@@ -62,8 +62,8 @@ export function DataIssuesScreen({ open, recentAuto }: { open: DataIssueRow[]; r
       value: (r) => verdictText(r, view),
       render: (r) => {
         const done = view === "open" ? doneOf(r) : undefined;
-        if (done) return <Tag tone="ok">{done}</Tag>;
-        return <Tag tone={view === "auto" ? "outline" : r.fixable ? "info" : "warn"}>{verdictText(r, view)}</Tag>;
+        if (done) return <Tag tone="acc">{done}</Tag>;
+        return <Tag tone={view === "auto" ? "outline" : r.fixable ? "plum" : "warn"}>{verdictText(r, view)}</Tag>;
       },
     },
     { key: "rule", label: M.colRule, width: "minmax(180px,1.3fr)", value: ruleLabel },

@@ -35,7 +35,7 @@ const DECISIONS: ApprovalDecision<MatchRow>[] = [
 ];
 
 function withDone(done: string | undefined, node: React.ReactNode) {
-  return done ? <Tag tone="ok">{done}</Tag> : node;
+  return done ? <Tag tone="acc">{done}</Tag> : node;
 }
 
 export function MatchesScreen({ rows }: { rows: MatchRow[] }) {

@@ -18,7 +18,7 @@ import { ADMIN_ACTION_MESSAGES as A, GAME_ADMIN_MESSAGES as M, MATCHED_BY_LABEL 
 import { sourceLabel } from "@/lib/source-label";
 import type { RefRow } from "./types";
 
-const MATCH_TONE: Record<string, TagTone> = { pending: "info", manual: "ok", auto: "neutral", none: "outline" };
+const MATCH_TONE: Record<string, TagTone> = { pending: "plum", manual: "acc", auto: "neutral", none: "outline" };
 const isPending = (r: RefRow) => r.matchedBy === "pending";
 
 const DECISIONS: ApprovalDecision<RefRow>[] = [

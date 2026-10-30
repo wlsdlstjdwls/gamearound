@@ -28,7 +28,7 @@ const WIKIDATA_ENTITY = "https://www.wikidata.org/wiki/";
 const EXTERNAL = "text-[12.5px] font-semibold text-acc hover:underline";
 
 // 판정 배지는 옅게 — 경고가 아니라 "아직 못 붙였다" 는 상태다(누런색 금지, 10-27)
-const OUTCOME_TONE: Record<Outcome, TagTone> = { not_found: "neutral", ambiguous: "info", none: "outline" };
+const OUTCOME_TONE: Record<Outcome, TagTone> = { not_found: "neutral", ambiguous: "plum", none: "outline" };
 
 const DECISIONS: ApprovalDecision<PendingCompany>[] = [{ value: "resolve", label: M.resolve, skipConfirm: true }];
 
@@ -68,7 +68,7 @@ export function CompaniesScreen({ pending, known }: { pending: PendingCompany[];
       value: (r) => M.outcomeShort[outcomeOf(r)],
       render: (r) => {
         const done = doneOf(r);
-        if (done) return <Tag tone="ok">{done}</Tag>;
+        if (done) return <Tag tone="acc">{done}</Tag>;
         const last = results.get(r.name);
         if (last && !last.ok) return <Tag tone="neutral">{M.retriedFail}</Tag>;
         return <Tag tone={OUTCOME_TONE[outcomeOf(r)]}>{M.outcomeShort[outcomeOf(r)]}</Tag>;
@@ -190,7 +190,7 @@ function PendingDetail({ r, last }: { r: PendingCompany; last?: { ok: boolean; t
       {last && (
         <Field label={M.fieldLastResult} wide>
           <ReadValue>
-            <span className={last.ok ? "text-ok" : "text-ink-2"}>{last.text}</span>
+            <span className={last.ok ? "text-acc" : "text-ink-2"}>{last.text}</span>
           </ReadValue>
         </Field>
       )}

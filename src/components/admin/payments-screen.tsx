@@ -20,7 +20,7 @@ import type { PaymentRowDto } from "@/server/services/payments";
 function statusTag(p: PaymentRowDto) {
   if (p.status === "paid" && p.refundRequested) return <Tag tone="danger">{PM.adminRefundRequested}</Tag>;
   if (p.boostMissing) return <Tag tone="danger">{PM.adminTodoLabels.missing}</Tag>;
-  return <Tag tone={p.status === "canceled" ? "warn" : "ok"}>{PAYMENT_STATUS_LABEL[p.status]}</Tag>;
+  return <Tag tone={p.status === "canceled" ? "warn" : "acc"}>{PAYMENT_STATUS_LABEL[p.status]}</Tag>;
 }
 
 const COLUMNS: GridCol<PaymentRowDto>[] = [

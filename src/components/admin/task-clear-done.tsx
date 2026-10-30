@@ -24,7 +24,7 @@ export function TaskClearDone({ doneCount }: { doneCount: number }) {
   return (
     <div className="flex flex-wrap items-center justify-end gap-2">
       {state && (
-        <p role="status" className={state.ok ? "animate-rise text-[13px] text-ok" : "text-[13px] text-danger"}>
+        <p role="status" className={state.ok ? "animate-rise text-[13px] text-acc" : "text-[13px] text-danger"}>
           {state.ok ? state.message : state.error}
         </p>
       )}

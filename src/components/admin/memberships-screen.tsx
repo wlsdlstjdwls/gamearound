@@ -15,7 +15,7 @@ import { MEMBERSHIP_MESSAGES as M, MEMBERSHIP_STATUS_LABEL } from "@/lib/members
 import type { MembershipStatus } from "@/server/db/schema";
 import type { MembershipDto } from "@/server/services/membership";
 
-const STATUS_TONE: Record<MembershipStatus, TagTone> = { active: "ok", canceling: "warn", past_due: "danger", ended: "acc" };
+const STATUS_TONE: Record<MembershipStatus, TagTone> = { active: "acc", canceling: "warn", past_due: "danger", ended: "neutral" };
 const keyOf = (m: MembershipDto) => m.email ?? `${m.planName}-${m.periodStart.toISOString()}`;
 
 const COLUMNS: GridCol<MembershipDto>[] = [

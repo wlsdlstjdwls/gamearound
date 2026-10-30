@@ -43,7 +43,7 @@ export type SyncLogGridRow = {
  * 예산을 올리거나 발견 시작점을 옮겨야 한다. 그래서 이 값만 주황으로 띄운다.
  */
 const DISCOVERY_STOP: Record<string, { label: string; tone: TagTone }> = {
-  want: { label: M.stopWant, tone: "ok" },
+  want: { label: M.stopWant, tone: "neutral" },
   budget: { label: M.stopBudget, tone: "warn" },
   "catalog-end": { label: M.stopCatalogEnd, tone: "neutral" },
 };

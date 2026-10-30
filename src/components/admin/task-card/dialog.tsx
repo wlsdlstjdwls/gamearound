@@ -86,7 +86,7 @@ export function TaskDialog({
       actions={
         <>
           {/* 저장 완료는 버튼 옆 짧은 말이다. 제목이 길면 제목 쪽이 말줄임으로 물러난다(sheet 머리) */}
-          {saveState?.ok && saveState.message && !saving && <span className="animate-rise whitespace-nowrap text-[13px] text-ok">{saveState.message}</span>}
+          {saveState?.ok && saveState.message && !saving && <span className="animate-rise whitespace-nowrap text-[13px] text-acc">{saveState.message}</span>}
           <Button type="submit" form={formId} size="sm" loading={saving}>
             {TASK_MESSAGES.save}
           </Button>

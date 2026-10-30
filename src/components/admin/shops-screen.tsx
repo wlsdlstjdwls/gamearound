@@ -62,7 +62,7 @@ export function ShopsScreen({ rows, status, statuses }: { rows: Row[]; status: s
       value: statusLabel,
       render: (r) => {
         const done = doneOf(r);
-        return <Tag tone={done ? "ok" : r.status === "pending" ? "warn" : r.status === "active" ? "acc" : "danger"}>{done ?? statusLabel(r)}</Tag>;
+        return <Tag tone={done ? "neutral" : r.status === "pending" ? "warn" : r.status === "active" ? "acc" : "danger"}>{done ?? statusLabel(r)}</Tag>;
       },
     },
     { key: "name", label: S.nameLabel, width: "minmax(140px,1.2fr)", value: (r) => r.name },

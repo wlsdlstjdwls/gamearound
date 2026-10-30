@@ -63,7 +63,7 @@ export function ProductsScreen({ rows }: { rows: ProductMatchRow[] }) {
   const shops = [...new Set(rows.map((r) => r.shopName ?? VIA_SYNC))];
 
   const columns: GridCol<ProductMatchRow>[] = [
-    { key: "conf", label: M.colConfidence, width: "72px", align: "right", value: (r) => r.confidence, text: confText, render: (r) => (doneOf(r) ? <Tag tone="ok">{doneOf(r)}</Tag> : confText(r)) },
+    { key: "conf", label: M.colConfidence, width: "72px", align: "right", value: (r) => r.confidence, text: confText, render: (r) => (doneOf(r) ? <Tag tone="acc">{doneOf(r)}</Tag> : confText(r)) },
     { key: "name", label: M.colProduct, width: "minmax(140px,1fr)", value: (r) => r.name },
     // 기종은 판정의 근거다 — 같은 이름이라도 기종이 다르면 다른 물건이라 그리드에서 바로 보이게 둔다
     { key: "hw", label: M.fieldHardware, width: "72px", align: "center", value: (r) => r.hardwareCode ?? "-" },

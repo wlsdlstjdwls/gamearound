@@ -92,7 +92,7 @@ export function PostsScreen({
     value: (r) => (r.status === "hidden" ? M.statusHidden : M.statusPublished),
     render: (r) => {
       const done = doneOf(r);
-      return done ? <Tag tone="ok">{done}</Tag> : statusTag(r.status);
+      return done ? <Tag tone="acc">{done}</Tag> : statusTag(r.status);
     },
   };
   const author: GridCol<PostAdminRow> = { key: "author", label: M.colAuthor, width: "minmax(84px,0.8fr)", value: (r) => r.authorName };

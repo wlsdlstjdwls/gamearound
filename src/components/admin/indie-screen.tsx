@@ -69,7 +69,7 @@ export function IndieScreen({ rows, tab, tabs }: { rows: Row[]; tab: string; tab
       value: (r) => INDIE_REVIEW_LABEL[r.review],
       render: (r) => {
         const done = doneOf(r);
-        return done ? <Tag tone="ok">{done}</Tag> : <Tag tone={INDIE_REVIEW_TONE[r.review]}>{INDIE_REVIEW_LABEL[r.review]}</Tag>;
+        return done ? <Tag tone="acc">{done}</Tag> : <Tag tone={INDIE_REVIEW_TONE[r.review]}>{INDIE_REVIEW_LABEL[r.review]}</Tag>;
       },
     },
     { key: "title", label: A.colTitle, width: "minmax(140px,1.4fr)", value: (r) => r.title, render: (r) => <span className={cn(r.status !== "published" && "text-dim line-through")}>{r.title}</span> },

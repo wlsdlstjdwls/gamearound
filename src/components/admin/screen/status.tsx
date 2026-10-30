@@ -25,7 +25,7 @@ export function useAdminStatus() {
   return use(StatusContext);
 }
 
-const TONE: Record<Tone, string> = { info: "text-mut", ok: "text-ok", error: "text-danger" };
+const TONE: Record<Tone, string> = { info: "text-mut", ok: "text-acc", error: "text-danger" };
 
 /**
  * 판 바닥에 붙어 따라오는 줄(sticky). 높이가 작아 본문을 거의 가리지 않는다.
