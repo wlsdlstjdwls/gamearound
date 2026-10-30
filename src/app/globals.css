@@ -743,10 +743,22 @@
   animation-delay: var(--stagger, 0ms);
 }
 
-/* 타이핑 제목(components/ui/typing-title). 글자마다 늦춤(--type-delay)만 다르다. 아래에서 살짝 올라오며 진해진다 —
-   불투명도만 바꾸면 깜빡임처럼 보여 "찍힌다" 는 느낌이 약했다. 커서는 브랜드 파랑 막대로 세 번 깜빡이고 사라진다 */
+/* 로그인, 가입 화면(components/auth/auth-card)에서는 사이트 푸터를 숨긴다(2026-10-30 사용자 "회원가입은 세로 스크롤 안 생기게").
+   푸터 높이(약 75px)만큼이 노트북 화면(1366x768, 1536x730)에서 가입 폼을 넘치게 하던 몫이다.
+   약관, 개인정보 링크는 가입 동의 줄이 이미 눌러 읽을 수 있게 들고 있다 — 화면에서 사라지는 길은 없다 */
+body:has([data-auth-screen]) [data-site-footer] {
+  display: none;
+}
+
+/* 타이핑 제목(components/ui/typing-title). 글자 한 칸(.type-slot)에 조합 장면(ㅎ, 하, 할)을 겹쳐 두고
+   장면은 기본이 숨김이고, 중간 장면은 제 차례(--type-on 부터 --type-step 동안)에만 보이는 애니메이션 하나를 건다 — 끝나면 저절로 숨김으로 돌아간다.
+   켜기, 끄기 두 애니메이션을 겹쳐 걸었더니 뒤쪽 글자에서 끄기가 먹지 않아 장면이 겹쳐 남았다(2026-10-30 실측). 마지막 장면(완성 글자)은 살짝 올라앉아 머문다.
+   커서는 다 찍힌 뒤 브랜드 파랑 막대로 세 번 깜빡이고 사라진다 */
+@keyframes type-hold {
+  from, to { opacity: 1; }
+}
 @keyframes type-in {
-  from { opacity: 0; translate: 0 0.12em; }
+  from { opacity: 0; translate: 0 0.08em; }
   to { opacity: 1; translate: 0 0; }
 }
 @keyframes type-caret {
@@ -754,10 +766,17 @@
   10%, 30%, 50%, 70% { opacity: 1; }
   20%, 40%, 60% { opacity: 0; }
 }
-.type-char {
-  display: inline-block;
+.type-slot {
+  display: inline-grid;
   white-space: pre;
-  animation: type-in var(--duration-fast) var(--ease-out-emph) var(--type-delay, 0ms) both;
+}
+.type-stage {
+  grid-area: 1 / 1;
+  opacity: 0;
+  animation: type-hold var(--type-step) linear var(--type-on, 0ms);
+}
+.type-stage[data-final] {
+  animation: type-in var(--duration-fast) var(--ease-out-emph) var(--type-on, 0ms) both;
 }
 .type-caret {
   display: inline-block;
@@ -769,9 +788,10 @@
   background: var(--acc);
   animation: type-caret var(--duration-type-caret) linear var(--type-delay, 0ms) both;
 }
-/* 움직임을 줄인 사람: 전역 킬스위치는 길이만 줄이고 늦춤(delay)은 남겨 글자가 그만큼 비어 있게 된다 — 여기서는 애니메이션을 통째로 끈다 */
+/* 움직임을 줄인 사람: 전역 킬스위치는 길이만 줄이고 늦춤(delay)은 남겨 글자가 그만큼 비어 있게 된다 — 여기서는 애니메이션을 통째로 끄고 완성 글자만 세운다 */
 @media (prefers-reduced-motion: reduce) {
-  .type-char { animation: none; }
+  .type-stage { animation: none; opacity: 0; }
+  .type-stage[data-final] { opacity: 1; }
   .type-caret { display: none; }
 }
 

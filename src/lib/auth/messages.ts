@@ -85,3 +85,10 @@ export const LOGIN_GATE_MESSAGES = {
    */
   title: "로그인하면 할인 소식을 알려 드려요",
 } as const;
+
+/** 인증 화면 왼쪽 예시 알림 카드(components/auth/auth-showcase). 실제 게임 이름과 값을 쓰지 않는다 — 그림이 진짜 소식처럼 읽히면 안 된다 */
+export const AUTH_SHOWCASE_MESSAGES = {
+  title: "찜한 게임이 할인을 시작했어요",
+  pct: "-30%",
+  body: "지금 확인해 보세요",
+} as const;

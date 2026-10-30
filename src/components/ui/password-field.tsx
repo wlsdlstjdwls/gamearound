@@ -13,8 +13,8 @@ type Props = Omit<TextFieldProps, "type" | "trailing"> & {
 };
 
 /**
- * strengthOf 를 넘기면 안내 줄(hint) 자리에 강도 막대가 함께 선다 — 안내 한 줄, 막대 한 줄을 따로 쌓았더니
- * 비밀번호 확인 칸이 그만큼 밀려 내려갔다(2026-10-30 사용자 "비밀번호 확인이 너무 아래에"). 비어 있을 때는 안내 글, 입력하면 단계 글이 선다
+ * strengthOf 를 넘기면 칸 바로 밑에 강도 막대가 전체 폭으로 붙는다(TextField 의 under). 칠 때마다 칸과 단계 글이 바뀐다.
+ * 안내 글(hint)은 비어 있을 때만 선다 — 치기 시작하면 단계 글이 무엇이 빠졌는지 말하니 같은 말이 두 줄 서지 않게 한다(2026-10-30 사용자)
  */
 export function PasswordField({ strengthOf, hint, ...field }: Props) {
   const [visible, setVisible] = useState(false);
@@ -41,7 +41,8 @@ export function PasswordField({ strengthOf, hint, ...field }: Props) {
             {visible ? <EyeOffIcon /> : <EyeIcon />}
           </button>
         }
-        hint={strengthOf !== undefined ? <PasswordStrengthMeter value={strengthOf} hint={hint} /> : hint}
+        hint={strengthOf ? undefined : hint}
+        under={strengthOf !== undefined ? <PasswordStrengthMeter value={strengthOf} /> : undefined}
         {...field}
       />
     </div>
@@ -66,15 +67,11 @@ const LABEL_COLOR: Record<number, string> = {
   4: "text-acc",
 };
 
-/** 안내 줄 안에 서므로(TextField 의 hint 는 <p>) span 만 쓴다 */
-export function PasswordStrengthMeter({ value, hint }: { value: string; hint?: React.ReactNode }) {
+export function PasswordStrengthMeter({ value }: { value: string }) {
   const { score, label } = passwordStrength(value);
   return (
-    <span className="flex items-center justify-between gap-3">
-      <span aria-live="polite" className={cn("min-w-0 font-semibold transition-colors duration-base", score === 0 ? "font-normal" : "", LABEL_COLOR[score])}>
-        {score === 0 ? hint : label}
-      </span>
-      <span className="flex w-24 shrink-0 gap-1" aria-hidden>
+    <div className="flex items-center gap-2.5">
+      <div className="flex flex-1 gap-1" aria-hidden>
         {[1, 2, 3, 4].map((i) => (
           <span
             key={i}
@@ -85,7 +82,11 @@ export function PasswordStrengthMeter({ value, hint }: { value: string; hint?: R
             )}
           />
         ))}
+      </div>
+      {/* 비어 있을 때는 글자 자리를 비워 둔다 — 안내 글이 칸 아래에서 같은 말을 하고 있다 */}
+      <span aria-live="polite" className={cn("min-w-[8.5rem] text-right text-[11.5px] font-semibold transition-colors duration-base", LABEL_COLOR[score])}>
+        {label}
       </span>
-    </span>
+    </div>
   );
 }

@@ -74,6 +74,8 @@ export function SignUpForm({ next }: { next: string }) {
         </div>
       )}
 
+      {/* 닉네임과 이메일은 넓은 화면에서 한 줄에 나란히 — 칸 하나 높이(약 80px)를 덜어 가입 화면이 첫 화면에 다 들어온다(2026-10-30 사용자 "세로 스크롤 안 생기게") */}
+      <div className="grid gap-3 sm:grid-cols-2">
       <div className="reveal" style={stagger(1)}>
         <TextField
           label="닉네임"
@@ -102,6 +104,7 @@ export function SignUpForm({ next }: { next: string }) {
         />
       </div>
 
+      </div>
       <div className="reveal" style={stagger(3)}>
         <PasswordField
           ref={passwordRef}
@@ -131,11 +134,12 @@ export function SignUpForm({ next }: { next: string }) {
           세 칸은 상태로 쥔다 — "전체 동의" 가 셋을 한 번에 켜고 끄고, 셋이 다 켜지면 전체 동의도 켜져 보여야 한다 */}
       <fieldset className="reveal flex flex-col rounded-[var(--radius-md)] bg-surface-2 px-3.5 py-2" style={stagger(5)}>
         <legend className="sr-only">{M.consentAll}</legend>
-        <Checkbox checked={allAgreed} disabled={busy} onChange={(e) => setAgree({ terms: e.currentTarget.checked, privacy: e.currentTarget.checked, alertEmail: e.currentTarget.checked })}>
+        <Checkbox dense checked={allAgreed} disabled={busy} onChange={(e) => setAgree({ terms: e.currentTarget.checked, privacy: e.currentTarget.checked, alertEmail: e.currentTarget.checked })}>
           <span className="font-bold text-ink">{M.consentAll}</span>
         </Checkbox>
         <div className="my-0.5 border-t border-line" />
         <Checkbox
+          dense
           name="terms"
           checked={agree.terms}
           disabled={busy}
@@ -154,6 +158,7 @@ export function SignUpForm({ next }: { next: string }) {
           {M.termsConsentTail}
         </Checkbox>
         <Checkbox
+          dense
           name="privacy"
           checked={agree.privacy}
           disabled={busy}
@@ -171,7 +176,7 @@ export function SignUpForm({ next }: { next: string }) {
           </Link>
           {M.termsConsentTail}
         </Checkbox>
-        <Checkbox name="alertEmail" checked={agree.alertEmail} disabled={busy} onChange={(e) => setAgree((a) => ({ ...a, alertEmail: e.currentTarget.checked }))}>
+        <Checkbox dense name="alertEmail" checked={agree.alertEmail} disabled={busy} onChange={(e) => setAgree((a) => ({ ...a, alertEmail: e.currentTarget.checked }))}>
           <span className="text-ink">{M.consentOptional}</span> {M.alertEmailConsent}
         </Checkbox>
       </fieldset>

@@ -13,6 +13,11 @@ export type TextFieldProps = Omit<ComponentProps<"input">, "size"> & {
   /** 라벨을 화면에서 숨기고 스크린리더에만 */
   hideLabel?: boolean;
   hint?: ReactNode;
+  /**
+   * 칸 바로 밑에 붙는 자리(비밀번호 강도 막대). 안내 줄(hint)과 달리 오류가 떠도 사라지지 않는다 —
+   * 오류가 안내 줄을 밀어내면 막대도 같이 사라져, 고쳐 치는 동안 나아지는지 볼 수 없었다(2026-10-30 사용자)
+   */
+  under?: ReactNode;
   error?: string | null;
   trailing?: ReactNode;
   /** 칸 왼쪽 고정 글자(주소 앞부분 등). 값이 아니라 보여 주기만 한다 — 입력값에 섞이지 않는다 */
@@ -34,7 +39,7 @@ export type TextFieldProps = Omit<ComponentProps<"input">, "size"> & {
   wrapperClassName?: string;
 };
 
-export function TextField({ label, labelMark, hideLabel, hint, error, leading, aside, compact = false, trailing, popup, labelSide = false, wrapperClassName, className, id: idProp, ...input }: TextFieldProps) {
+export function TextField({ label, labelMark, hideLabel, hint, under, error, leading, aside, compact = false, trailing, popup, labelSide = false, wrapperClassName, className, id: idProp, ...input }: TextFieldProps) {
   const autoId = useId();
   const id = idProp ?? autoId;
   const hintId = `${id}-hint`;
@@ -113,6 +118,7 @@ export function TextField({ label, labelMark, hideLabel, hint, error, leading, a
         {popup}
       </div>
       {tooltip}
+      {under && <div className={cn("mt-2", labelSide && "sm:col-start-2")}>{under}</div>}
       {invalid ? (
         <p id={errorId} role="alert" className={cn("mt-1.5 flex items-start gap-1 text-xs text-danger animate-rise", labelSide && "sm:col-start-2")}>
           <AlertCircleIcon size={14} className="mt-px shrink-0" />
