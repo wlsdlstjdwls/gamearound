@@ -45,26 +45,21 @@ export function SearchItem({ label, htmlFor, children }: { label: string; htmlFo
 
 /** 왼쪽 목록, 오른쪽 상세. 좁은 화면은 위아래로 선다. 상세는 테두리 친 판에 담아 목록과 갈린다 — detailTitle 이 그 판의 제목 띠다 */
 export function MasterDetail({ list, detail, detailTitle, detailActions, listWidth = "400px" }: { list: React.ReactNode; detail: React.ReactNode; detailTitle?: React.ReactNode; detailActions?: React.ReactNode; listWidth?: string }) {
-  // 목록 접기(2026-10-30 사용자 "그리드 줄이고 폼 입력 영역을 더 크게, 영역별로 접고 펼 수 있게"). 접으면 목록 자리가 손잡이 줄 하나로 줄고 상세가 폭을 다 쓴다.
+  // 영역 접기(2026-10-30 사용자 "그리드 줄이고 폼 입력 영역을 더 크게, 영역별로 접고 펼 수 있게"). 접으면 그 자리가 구분선 하나로 줄고 다른 쪽이 폭을 다 쓴다.
   // 화면마다 따로 쥔다 — 프로그램 탭을 오가도 탭 화면이 살아 있어 그대로다(program-shell)
-  // 같은 날 사용자 "드래그로 자유롭게 조정" — 손잡이를 끌면 목록 폭이 바뀌고 화면(주소)마다 기억한다(split-handle)
+  // 같은 날 사용자 "드래그로 자유롭게 조정" → "영역 사이 중간선을 끌게, 접기 단추는 양쪽으로 중간에" — 사이 칸이 구분선이고 끌면 목록 폭이 바뀐다.
+  // 선 가운데 단추로 목록이나 상세 한쪽을 접는다. 폭은 화면(주소)마다 기억한다(split-handle)
   const split = useListSplit();
   const listRef = useRef<HTMLDivElement>(null);
-  const { folded } = split;
+  const { hidden } = split;
+  const cols = hidden === "list" ? "lg:grid-cols-[1.5rem_minmax(0,1fr)]" : hidden === "detail" ? "lg:grid-cols-[minmax(0,1fr)_1.5rem]" : "lg:grid-cols-[var(--master-w)_1.5rem_minmax(0,1fr)]";
   return (
-    <div
-      className={cn("grid items-start gap-4 lg:gap-2", folded ? "lg:grid-cols-[auto_minmax(0,1fr)]" : "lg:grid-cols-[var(--master-w)_auto_minmax(0,1fr)]")}
-      style={{ "--master-w": split.width === null ? listWidth : `${split.width}px` } as React.CSSProperties}
-    >
-      <div ref={listRef} hidden={folded} className="min-w-0 lg:sticky lg:top-[calc(var(--header-h)+var(--admin-head-h,76px)+12px)]">
+    <div className={cn("grid items-start gap-4 lg:gap-0", cols)} style={{ "--master-w": split.width === null ? listWidth : `${split.width}px` } as React.CSSProperties}>
+      <div ref={listRef} hidden={hidden === "list"} className="min-w-0 lg:sticky lg:top-[calc(var(--header-h)+var(--admin-head-h,76px)+12px)]">
         {list}
       </div>
-      <SplitHandle
-        split={split}
-        listRef={listRef}
-        className="hidden h-24 w-5 place-items-center self-start rounded-md border border-line bg-surface-2 text-dim hover:bg-surface hover:text-ink data-[dragging]:border-acc data-[dragging]:text-acc lg:sticky lg:top-[calc(var(--header-h)+var(--admin-head-h,76px)+12px)] lg:grid"
-      />
-      <Pane title={detailTitle} actions={detailActions}>
+      <SplitHandle split={split} listRef={listRef} className="hidden lg:flex" />
+      <Pane title={detailTitle} actions={detailActions} className={hidden === "detail" ? "hidden" : undefined}>
         {detail}
       </Pane>
     </div>

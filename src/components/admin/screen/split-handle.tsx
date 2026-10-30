@@ -1,25 +1,28 @@
 "use client";
-// 목록, 상세 사이 손잡이(2026-10-30, 사용자 "접기 펴기 말고 드래그로 자유롭게 조정"). MasterDetail 이 쓴다.
+// 목록, 상세 사이 구분선(2026-10-30, 사용자 "드래그로 자유롭게 조정" → "영역 사이 중간선을 끌게, 접기 펴기 단추는 양쪽으로 중간에"). MasterDetail 이 쓴다.
 //
-// 손잡이 하나가 두 일을 한다: 누르면 접고 펴고(전과 같다), 끌면 목록 폭이 바뀐다. 손잡이를 둘로 나누지 않은 이유는
-// 사이 칸이 20px 이라 단추 둘이 서면 둘 다 누르기 어렵다. 끈 거리가 DRAG_SLOP 을 넘어야 끌기로 본다 — 손이 살짝 떨려도 누르기다.
+// 선 자체가 끄는 자리다(role=separator, 좌우 방향키로도 KEY_STEP 씩). 선 가운데에 단추 둘: 왼쪽 화살은 선을 왼쪽 끝으로(목록 접기),
+// 오른쪽 화살은 오른쪽 끝으로(상세 접기). 접힌 쪽으로 미는 단추는 숨기고, 반대 단추가 "펼치기" 가 된다 — 화살 방향이 곧 선이 가는 방향이다.
+// 단추 묶음은 선 길이의 가운데에 서되, 선이 화면보다 길면 화면 가운데 띠 안에 머문다(sticky top, bottom 을 둘 다 건다).
+//
 // 끈 폭은 화면(주소)마다 이 브라우저에 기억한다. 사람마다 모니터가 달라 서버에 둘 값이 아니다.
-// 목록을 MIN_LIST 밑으로 끌면 접는다(기억한 폭은 두고 접기만). 접힌 손잡이를 오른쪽으로 끌면 그만큼 펴진다.
-// 두 번 눌러 기본 폭으로 되돌리기는 두지 않았다 — 첫 누름에 접히며 손잡이가 옮겨 가 둘째 누름이 상세에 떨어졌다(실측).
+// 목록을 MIN_LIST 밑으로 끌면 목록을 접고, 상세가 MIN_DETAIL 밑이 되게 끌면 상세를 접는다(기억한 폭은 그대로 두고 접기만).
 import { usePathname } from "next/navigation";
 import { useEffect, useRef, useState, useSyncExternalStore } from "react";
-import { ChevronDownIcon } from "@/components/ui/icons";
+import { cn } from "@/lib/cn";
+import { ChevronLeftIcon } from "@/components/ui/icons";
 import { SCREEN_MESSAGES as SM } from "@/lib/admin/messages";
 
-/** 이 거리 안에서 손을 떼면 누르기(접기)다 */
-const DRAG_SLOP = 4;
-/** 목록 최소 폭. 이보다 좁게 끌면 접는다 — 그리드 No 칸 + 두 칸쯤 */
+/** 목록 최소 폭. 이보다 좁게 끌면 목록을 접는다 — 그리드 No 칸 + 두 칸쯤 */
 const MIN_LIST = 240;
-/** 상세에 남기는 최소 폭. 폼 이름표 + 입력 칸 한 줄 */
+/** 상세 최소 폭. 이보다 좁아지게 끌면 상세를 접는다 — 폼 이름표 + 입력 칸 한 줄 */
 const MIN_DETAIL = 360;
 /** 방향키 한 번에 움직이는 폭 */
 const KEY_STEP = 40;
 const STORAGE_PREFIX = "admin-list-w:";
+
+/** 접힌 쪽. null 이면 둘 다 보인다 */
+export type SplitHidden = "list" | "detail" | null;
 
 function load(key: string): number | null {
   try {
@@ -39,25 +42,26 @@ const subscribe = (cb: () => void) => {
   };
 };
 
-function save(key: string, w: number | null) {
+function save(key: string, w: number) {
   try {
-    if (w === null) localStorage.removeItem(STORAGE_PREFIX + key);
-    else localStorage.setItem(STORAGE_PREFIX + key, String(Math.round(w)));
+    localStorage.setItem(STORAGE_PREFIX + key, String(Math.round(w)));
   } catch {
     // 저장 못 해도 이번 화면에서는 끄는 동안의 폭(live)이 산다
   }
   listeners.forEach((cb) => cb());
 }
 
-/** 목록 폭(px, 끌어 본 적 없으면 null = 화면 기본 폭)과 접힘 */
+/** 목록 폭(px, 끌어 본 적 없으면 null = 화면 기본 폭)과 접힌 쪽 */
 export function useListSplit() {
   const key = usePathname();
   const stored = useSyncExternalStore(subscribe, () => load(key), () => null);
   /** 끄는 동안의 폭. 손을 떼면 기억한 폭(stored)으로 넘긴다 */
   const [live, setLive] = useState<number | null>(null);
-  const [folded, setFolded] = useState(false);
-  return { key, width: live ?? stored, setLive, folded, setFolded };
+  const [hidden, setHidden] = useState<SplitHidden>(null);
+  return { key, width: live ?? stored, setLive, hidden, setHidden };
 }
+
+const BUTTON = "press grid size-6 place-items-center rounded-full border border-line bg-surface text-dim shadow-sm hover:border-acc hover:text-acc";
 
 export function SplitHandle({
   split,
@@ -69,56 +73,50 @@ export function SplitHandle({
   listRef: React.RefObject<HTMLDivElement | null>;
   className?: string;
 }) {
-  const { key, setLive, folded, setFolded } = split;
-  const drag = useRef<{ x: number; start: number; max: number; moved: boolean } | null>(null);
+  const { key, width, setLive, hidden, setHidden } = split;
+  const drag = useRef<{ x: number; start: number } | null>(null);
   const [dragging, setDragging] = useState(false);
 
-  const maxOf = () => (listRef.current?.parentElement?.clientWidth ?? 0) - MIN_DETAIL;
+  /** 선 왼쪽 끝(목록 칸 시작)에서 상세 끝까지의 폭 */
+  const totalOf = () => listRef.current?.parentElement?.clientWidth ?? 0;
+  /** 지금 목록 폭. 접혀 있으면 접힌 쪽 끝 */
+  const currentOf = () => (hidden === "list" ? 0 : hidden === "detail" ? totalOf() : (listRef.current?.offsetWidth ?? 0));
+
   const apply = (w: number, persist: boolean) => {
-    if (w < MIN_LIST) {
-      setFolded(true);
-      return;
-    }
-    const next = Math.min(w, Math.max(MIN_LIST, maxOf()));
-    setFolded(false);
+    const max = totalOf() - MIN_DETAIL;
+    if (w < MIN_LIST) return setHidden("list");
+    if (w > max) return setHidden("detail");
+    setHidden(null);
     if (persist) {
-      save(key, next);
+      save(key, w);
       setLive(null);
-    } else setLive(next);
+    } else setLive(w);
   };
 
-  const onPointerDown = (e: React.PointerEvent<HTMLButtonElement>) => {
-    if (e.button !== 0) return;
+  const onPointerDown = (e: React.PointerEvent<HTMLDivElement>) => {
+    if (e.button !== 0 || e.target !== e.currentTarget) return;
     e.currentTarget.setPointerCapture(e.pointerId);
-    drag.current = { x: e.clientX, start: folded ? 0 : (listRef.current?.offsetWidth ?? 0), max: maxOf(), moved: false };
+    drag.current = { x: e.clientX, start: currentOf() };
+    setDragging(true);
   };
-  const onPointerMove = (e: React.PointerEvent<HTMLButtonElement>) => {
+  const onPointerMove = (e: React.PointerEvent<HTMLDivElement>) => {
     const d = drag.current;
-    if (!d) return;
-    const dx = e.clientX - d.x;
-    if (!d.moved && Math.abs(dx) < DRAG_SLOP) return;
-    if (!d.moved) {
-      d.moved = true;
-      setDragging(true);
-    }
-    apply(d.start + dx, false);
+    if (d) apply(d.start + e.clientX - d.x, false);
   };
-  const onPointerUp = (e: React.PointerEvent<HTMLButtonElement>) => {
+  const onPointerUp = (e: React.PointerEvent<HTMLDivElement>) => {
     const d = drag.current;
     drag.current = null;
     setDragging(false);
-    if (!d) return;
-    if (d.moved) apply(d.start + e.clientX - d.x, true);
-    else setFolded((f) => !f);
+    if (d && e.clientX !== d.x) apply(d.start + e.clientX - d.x, true);
   };
-  const onKeyDown = (e: React.KeyboardEvent<HTMLButtonElement>) => {
+  const onKeyDown = (e: React.KeyboardEvent<HTMLDivElement>) => {
     const step = { ArrowLeft: -KEY_STEP, ArrowRight: KEY_STEP }[e.key];
-    if (step === undefined) return;
+    if (step === undefined || e.target !== e.currentTarget) return;
     e.preventDefault();
-    apply((folded ? 0 : (listRef.current?.offsetWidth ?? 0)) + step, true);
+    apply(currentOf() + step, true);
   };
 
-  // 끄는 동안 글자가 긁혀 골라지지 않고, 손잡이 밖으로 나가도 커서가 유지되게 문서 전체에 건다
+  // 끄는 동안 글자가 긁혀 골라지지 않고, 선 밖으로 나가도 커서가 유지되게 문서 전체에 건다
   useEffect(() => {
     if (!dragging) return;
     const root = document.documentElement;
@@ -130,23 +128,43 @@ export function SplitHandle({
     };
   }, [dragging]);
 
+  // 선을 미는 방향 그대로: 왼쪽 단추는 상세가 접혀 있으면 펴고, 아니면 목록을 접는다. 오른쪽 단추는 그 반대
+  const toLeft = () => setHidden(hidden === "detail" ? null : "list");
+  const toRight = () => setHidden(hidden === "list" ? null : "detail");
+
   return (
-    <button
-      type="button"
-      aria-expanded={!folded}
-      aria-label={`${folded ? SM.listUnfold : SM.listFold}. ${SM.listResizeHint}`}
-      // 누르기는 pointerup 이 맡는다. 키보드 Enter, Space 의 click(detail 0)만 여기서 받는다
-      onClick={(e) => e.detail === 0 && setFolded((f) => !f)}
+    <div
+      role="separator"
+      aria-orientation="vertical"
+      aria-label={SM.listResize}
+      aria-valuenow={width ?? undefined}
+      tabIndex={0}
       onPointerDown={onPointerDown}
       onPointerMove={onPointerMove}
       onPointerUp={onPointerUp}
       onPointerCancel={() => ((drag.current = null), setDragging(false))}
       onKeyDown={onKeyDown}
       data-dragging={dragging || undefined}
-      className={className}
-      style={{ cursor: "col-resize", touchAction: "none" }}
+      className={cn(
+        "group/split relative flex cursor-col-resize touch-none flex-col items-center self-stretch outline-none",
+        // 선: 칸 가운데 1px, 손을 대거나 끄는 동안 파랑 2px
+        "before:pointer-events-none before:absolute before:inset-y-0 before:left-1/2 before:w-px before:-translate-x-1/2 before:bg-line",
+        "hover:before:w-0.5 hover:before:bg-acc focus-visible:before:w-0.5 focus-visible:before:bg-acc data-[dragging]:before:w-0.5 data-[dragging]:before:bg-acc",
+        className,
+      )}
     >
-      <ChevronDownIcon size={14} className={folded ? "-rotate-90" : "rotate-90"} />
-    </button>
+      <div className="sticky top-[calc(50svh-28px)] bottom-[calc(50svh-28px)] my-auto flex cursor-default flex-col gap-1 py-1">
+        {hidden !== "list" && (
+          <button type="button" aria-label={hidden === "detail" ? SM.detailUnfold : SM.listFold} onClick={toLeft} className={BUTTON}>
+            <ChevronLeftIcon size={13} />
+          </button>
+        )}
+        {hidden !== "detail" && (
+          <button type="button" aria-label={hidden === "list" ? SM.listUnfold : SM.detailFold} onClick={toRight} className={BUTTON}>
+            <ChevronLeftIcon size={13} className="rotate-180" />
+          </button>
+        )}
+      </div>
+    </div>
   );
 }
