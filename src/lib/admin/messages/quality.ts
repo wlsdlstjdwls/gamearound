@@ -49,4 +49,6 @@ export const QUALITY_RULE_LABEL: Record<string, string> = {
   parent_chain: "추가 콘텐츠 2단 연결",
   self_parent: "자기 참조 연결",
   shared_store_id: "스토어 상품 중복 연결",
+  /** 검색 결과의 "이 게임 추가 요청"(services/search-misses). 게임이 없어 게임 칸은 비어 선다 */
+  search_request: "검색 추가 요청",
 };

@@ -1047,3 +1047,5 @@ export * from "./schema-admin";
 export * from "./schema-quality";
 // 사이트 설정(관리자 화면에서 바꾸는 운영 값)
 export * from "./schema-settings";
+// 0건 검색어(검색 0건 기록, 추가 요청). 파일을 가른 이유는 schema-search 머리 주석에 있다
+export * from "./schema-search";

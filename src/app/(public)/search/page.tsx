@@ -10,6 +10,10 @@
 // 카드는 직접 짜지 않고 GameCard 를 그대로 쓴다 — 손으로 짠 줄 마크업이 카드가 바뀔 때마다
 // 뒤처지던 자리다(장르, 할인 스탬프, 플랫폼 배지가 여기만 없거나 달랐다).
 import type { Metadata } from "next";
+import { after } from "next/server";
+import { MissingGameRequest } from "@/components/search/missing-request";
+import { SEARCH_MESSAGES as M } from "@/lib/search/messages";
+import { recordSearchMiss } from "@/server/services/search-misses";
 import { GameCard } from "@/components/game-card";
 import { EmptyState } from "@/components/empty-state";
 import { DbUnavailable } from "@/components/db-unavailable";
@@ -55,16 +59,22 @@ function sortResults(items: GameSummary[], sort: SortKey): GameSummary[] {
 
 export async function generateMetadata({ searchParams }: Props): Promise<Metadata> {
   const q = readQuery((await searchParams).q);
-  return { title: q ? `"${q}" 검색 결과` : "검색" };
+  return { title: q ? M.resultTitle(q) : M.title };
 }
 
-function ReportBlock({ q }: { q: string }) {
+/**
+ * 찾는 게임이 없을 때의 판. 0건이면 결과 자리 전체, 결과가 있으면 맨 아래에 선다 — 목록에 내가 찾던 게 없을 수도 있다.
+ * 다시 찾는 길(목록)과 알리는 길(추가 요청, services/search-misses)을 같이 준다
+ */
+function ReportBlock({ q, empty }: { q: string; empty: boolean }) {
   return (
     <EmptyState
-      title="찾는 게임이 없나요?"
-      description="제목의 일부만 넣거나 영문 제목으로 다시 검색해 보세요."
-      action={{ href: `${ROUTES.game}?q=${encodeURIComponent(q)}`, label: "전체 목록에서 찾기" }}
-    />
+      title={empty ? M.missTitle : M.reportTitle}
+      description={empty ? M.missBody : M.reportBody}
+      action={{ href: `${ROUTES.game}?q=${encodeURIComponent(q)}`, label: M.listAction }}
+    >
+      <MissingGameRequest q={q} />
+    </EmptyState>
   );
 }
 
@@ -76,12 +86,8 @@ export default async function SearchPage({ searchParams }: Props) {
   if (!q) {
     return (
       <Page gap={20}>
-        <PageHead title="검색" />
-        <EmptyState
-          title="검색어를 입력하세요"
-          description="위 검색창에 게임 제목(한글 또는 영문)을 입력하면 결과가 바로 따라와요."
-          action={{ href: ROUTES.game, label: "전체 게임 목록 보기" }}
-        />
+        <PageHead title={M.title} />
+        <EmptyState title={M.emptyQueryTitle} description={M.emptyQueryBody} action={{ href: ROUTES.game, label: M.emptyQueryAction }} />
       </Page>
     );
   }
@@ -90,24 +96,24 @@ export default async function SearchPage({ searchParams }: Props) {
   if (!found) {
     return (
       <Page gap={20}>
-        <PageHead title={<>&ldquo;{q}&rdquo; 검색 결과</>} />
+        <PageHead title={M.resultTitle(q)} />
         <DbUnavailable retryHref={`${ROUTES.search}?q=${encodeURIComponent(q)}`} />
       </Page>
     );
   }
   const results = sortResults(found, sort);
+  // 0건은 응답을 보낸 뒤에 센다 — 검색 화면이 기록 왕복을 기다리지 않는다(services/search-misses)
+  if (results.length === 0) after(() => recordSearchMiss(q));
 
   return (
     <Page gap={22}>
       <NavPendingScope>
       <div className="flex flex-wrap items-baseline justify-between gap-x-3 gap-y-2">
         <PageHead
-          title={<>&ldquo;{q}&rdquo; 검색 결과</>}
-          note={
-            <span aria-live="polite">{results.length}건</span>
-          }
+          title={M.resultTitle(q)}
+          note={<span aria-live="polite">{M.count(results.length)}</span>}
         />
-        <div role="group" aria-label="정렬" className="flex gap-1">
+        <div role="group" aria-label={M.sortLabel} className="flex gap-1">
           {SORTS.map((s) => (
             <NavChip key={s.key} group="sort" href={`${ROUTES.search}?q=${encodeURIComponent(q)}&sort=${s.key}`} active={s.key === sort}>
               {s.label}
@@ -118,7 +124,7 @@ export default async function SearchPage({ searchParams }: Props) {
 
       <PendingRegion>
       {results.length === 0 ? (
-        <ReportBlock q={q} />
+        <ReportBlock q={q} empty />
       ) : (
         <>
           <ul className={HOME_GRID_CLASS}>
@@ -128,7 +134,7 @@ export default async function SearchPage({ searchParams }: Props) {
               </li>
             ))}
           </ul>
-          <ReportBlock q={q} />
+          <ReportBlock q={q} empty={false} />
         </>
       )}
       </PendingRegion>
