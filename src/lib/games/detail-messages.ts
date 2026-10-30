@@ -13,8 +13,8 @@ export const DETAIL_MESSAGES = {
   /** 히어로 버튼(목업 "가격 알림"). 팝업 안 저장 버튼까지 같은 팝업이라 긴 말(가격 알림 받기)은 할인 예측 판이 아니라 여기서 줄인다 */
   heroAlert: "가격 알림",
   playtimeTitle: "플레이타임",
-  /** 목업 표기. 옛 카드(playtime-card)는 "메인 + 서브" 였다 */
-  playtimeItems: { mainStoryHours: "메인 스토리", mainExtraHours: "메인 + 추가 콘텐츠", completionistHours: "완전 정복" },
+  /** 목업 표기. 옛 카드(playtime-card)는 "메인 + 서브" 였다. "메인 + 추가 콘텐츠" 는 390폭 세 칸에서 두 줄로 접혀 "메인 + 추가" 로 줄였다(2026-10-30) */
+  playtimeItems: { mainStoryHours: "메인 스토리", mainExtraHours: "메인 + 추가", completionistHours: "완전 정복" },
   playtimeUnit: "시간",
   playtimeEmpty: "플레이타임 정보를 아직 모으는 중이에요.",
   priceHeading: "플랫폼별 가격 비교",

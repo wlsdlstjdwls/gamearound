@@ -93,13 +93,20 @@ export default async function WishlistPage({ searchParams }: Props) {
         <div>
           <PageHead title={WISHLIST_MESSAGES.title} />
           <p className="mt-1.5 text-[13.5px] text-mut">
-            {items.length}개 중 <span className="font-bold text-acc">{onSaleCount}개가 지금 할인 중</span>이에요.{" "}
+            {/* 빈 목록에 "0개 중 0개가 지금 할인 중이에요" 는 말이 안 된다(2026-10-30 390폭 점검) — 담긴 게 있을 때만 센다 */}
+            {items.length > 0 && (
+              <>
+                {items.length}개 중 <span className="font-bold text-acc">{onSaleCount}개가 지금 할인 중</span>이에요.{" "}
+              </>
+            )}
             {saleAlerts ? WISHLIST_MESSAGES.saleAlertsOn : WISHLIST_MESSAGES.saleAlertsOff}{" "}
             <Link href={ROUTES.alerts} className="font-semibold text-ink-2 underline-offset-2 hover:text-acc hover:underline">
               {WISHLIST_MESSAGES.saleAlertsLink}
             </Link>
           </p>
         </div>
+        {/* 정렬은 게임 줄에만 먹는다 — 게임 찜이 비었으면 고를 것이 없다 */}
+        {items.length > 0 && (
         <div role="group" aria-label="정렬" className="flex shrink-0 gap-1.5">
           {SORTS.map((s) => (
             <NavChip key={s.key} group="sort" href={`${ROUTES.wishlist}?sort=${s.key}`} active={s.key === sort}>
@@ -107,6 +114,7 @@ export default async function WishlistPage({ searchParams }: Props) {
             </NavChip>
           ))}
         </div>
+        )}
       </header>
 
       <PendingRegion className="flex flex-col gap-4">

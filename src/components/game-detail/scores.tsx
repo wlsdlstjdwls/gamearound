@@ -78,7 +78,7 @@ export function PlaytimeTiles({ playtime, className }: { playtime: PlaytimeDto |
       <dl className="grid flex-1 grid-cols-3 content-center border-t border-line pt-3">
         {values.map((v, i) => (
           <div key={v.key} className={cn("flex min-w-0 flex-col gap-1.5 px-2.5", i === 0 ? "pl-0" : "border-l border-line")}>
-            <dt className="min-h-[2.8em] text-[12px] leading-[1.4] text-mut">{D.playtimeItems[v.key]}</dt>
+            <dt className="text-[12px] leading-[1.4] text-mut">{D.playtimeItems[v.key]}</dt>
             <dd className="text-[24px] font-extrabold leading-none tracking-[-0.03em] text-ink sm:text-[28px]">
               {v.hours === null ? <span className="text-dim-2">-</span> : hoursText(v.hours)}
               {v.hours !== null && <small className="ml-0.5 text-[13px] font-bold tracking-normal">{D.playtimeUnit}</small>}

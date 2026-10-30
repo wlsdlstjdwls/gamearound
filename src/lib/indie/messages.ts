@@ -80,7 +80,8 @@ export const INDIE_MESSAGES = {
   register: "내 게임 등록",
   searchLabel: "인디 게임 검색",
   searchScopeLabel: "검색 범위",
-  searchPlaceholder: "게임 이름, 소개 검색",
+  // 좁은 화면에서 범위 고르기와 검색 단추 사이 칸이 글자 일곱 개 폭이다 — "게임 이름, 소개 검색" 은 "검" 에서 잘렸다(2026-10-30 390폭)
+  searchPlaceholder: "이름, 소개 검색",
   search: "검색",
   searchReset: "검색 초기화",
   /** scope: 전체가 아닐 때만 범위 이름을 앞에 붙인다(게시판 검색 줄과 같은 모양) */
@@ -166,7 +167,8 @@ export const INDIE_FORM_MESSAGES = {
   mineAsideFlow: "등록 요청, 운영진 승인, 최종 등록 순서로 진행돼요. 올린 게임은 언제든 삭제할 수 있어요.",
   editTitle: "소개 글 고치기",
   mineTitle: "내가 쓴 소개 글",
-  mineEmpty: "아직 쓴 글이 없어요",
+  // 등록현황(게임 신청 목록)의 빈 판이다 — "쓴 글" 이면 게시판 화면처럼 읽혔다(2026-10-30 390폭 점검)
+  mineEmpty: "아직 등록한 게임이 없어요",
   titleLabel: "게임 이름",
   taglineLabel: "한 줄 소개",
   taglineHint: "목록 카드에 이름 아래로 서는 문장이에요.",

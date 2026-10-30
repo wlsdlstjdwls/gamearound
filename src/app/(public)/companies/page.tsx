@@ -63,7 +63,8 @@ export default async function CompaniesPage({ searchParams }: Props) {
           </NavChip>
           {countries.map((c) => (
             <NavChip key={c.code} group="country" href={companiesHref(c.code, 1)} active={country === c.code}>
-              {c.name} <span className="opacity-55">{c.count}</span>
+              {/* 칩이 flex 라 낱말 사이 공백 글자가 먹힌다("미국80") — 띄움은 여백으로 준다 */}
+              {c.name}<span className="ml-1 opacity-55">{c.count}</span>
             </NavChip>
           ))}
         </section>

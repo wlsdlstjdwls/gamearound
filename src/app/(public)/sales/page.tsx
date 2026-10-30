@@ -81,7 +81,9 @@ function SaleRow({ item, index }: { item: UpcomingSale; index: number }) {
             {formatDate(item.startsAt)} ~ {formatDate(item.endsAt)}
           </p>
         </div>
-        <div className="flex shrink-0 flex-col items-end gap-0.5">
+        {/* 좁은 화면에서는 이 기둥이 다음 줄로 떨어져 왼쪽에 붙는다 — 그때는 이름표를 숫자 앞에 한 줄로 둔다.
+            세로로 쌓은 채 오른쪽 정렬이면 "시작까지" 가 숫자 위 허공에 떠 보였다(2026-10-30 390폭 실측) */}
+        <div className="flex shrink-0 items-baseline gap-2 sm:flex-col sm:items-end sm:gap-0.5">
           <span className="text-[12px] text-dim">{M.untilStart}</span>
           <Countdown targetIso={targetOf(item).toISOString()} />
         </div>

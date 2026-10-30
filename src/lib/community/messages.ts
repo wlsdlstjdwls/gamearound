@@ -100,7 +100,8 @@ export const COMMUNITY_MESSAGES = {
   spoilerHint: "줄거리, 결말, 반전이 들어가면 '스포 있음'을 골라 주세요. 목록 제목 앞에 표시돼요.",
   gameLabel: "관련 게임",
   gameLabelOptional: "관련 게임(선택)",
-  gamePlaceholder: "게임 이름을 입력해 주세요 (예: 사이버펑크 2077)",
+  // 390폭 칸에 "…(예: 사이버펑크 20" 에서 잘렸다(2026-10-30) — 예시가 잘리면 뜻이 없다. 짧게 쓴다
+  gamePlaceholder: "게임 이름 (예: 사이버펑크 2077)",
   gameHint: "두 글자 이상 입력하면 게임 탐색에 있는 게임이 나와요. 목록에서 골라 주세요.",
   gameClear: "관련 게임 지우기",
   relatedGame: "관련 게임",

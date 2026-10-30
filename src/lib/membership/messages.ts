@@ -5,7 +5,8 @@ export const MEMBERSHIP_MESSAGES = {
   title: "메이커 멤버십",
   lead: "인디 개발자를 위한 월 구독이에요. 매달 노출 이용권이 채워져요.",
   /** 혜택 목록은 요금 설정(lib/pricing/settings 의 copy.membership.benefits)으로 옮겼다 — 관리자가 고친다 */
-  creditsWorth: (n: number, value: string) => `노출 이용권 ${n}장(따로 사면 ${value})`,
+  // 괄호 안은 줄 없는 공백(\u00a0)으로 묶는다 — 390폭에서 "(따로" 와 "사면 13,800원)" 이 두 줄로 갈라졌다(2026-10-30)
+  creditsWorth: (n: number, value: string) => `노출 이용권 ${n}장(따로\u00a0사면\u00a0${value})`,
   start: "카드 등록하고 시작하기",
   notConfigured: "정기결제를 준비하고 있어요. 조금 뒤에 다시 와 주세요",
   testMode: "테스트 결제예요. 실제로 돈이 나가지 않아요",

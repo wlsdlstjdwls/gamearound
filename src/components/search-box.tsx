@@ -14,7 +14,7 @@
 //
 // 화면에 검색창은 이것 하나뿐이다. 결과 화면이 자기 검색창을 또 그리면 같은 자리에 입력칸이 둘로 보이고,
 // 둘 중 어느 쪽이 현재 질의인지 알 수 없다(2026-09-14 제보).
-import { useEffect, useId, useRef, useState, useTransition } from "react";
+import { useEffect, useId, useRef, useState, useSyncExternalStore, useTransition } from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { SearchIcon, SpinnerIcon, XIcon } from "@/components/ui/icons";
 import { MAX_PARAM_LEN } from "@/lib/games-query";
@@ -22,6 +22,24 @@ import { ROUTES } from "@/lib/routes";
 import { SuggestPanel, useSuggest, type SuggestOption } from "@/components/search-suggest";
 
 const SEARCH_PLACEHOLDER = "게임, 장르, 개발사 검색";
+/**
+ * 탭바가 서는 폭(650 이하)의 자리글. 머리띠에 로고, 종, 계정이 같이 서서 검색칸이 360폭에서 89px, 390폭에서 119px 뿐이다 —
+ * 긴 자리글은 "게임, 장르, 개" 에서 잘렸다(2026-10-30 실측). 무엇을 찾는지는 홈 히어로 검색칸이 길게 말한다
+ */
+const SEARCH_PLACEHOLDER_NARROW = "게임 검색";
+const NARROW_QUERY = "(max-width: 650px)";
+
+function subscribeNarrow(onChange: () => void) {
+  const mq = window.matchMedia(NARROW_QUERY);
+  mq.addEventListener("change", onChange);
+  return () => mq.removeEventListener("change", onChange);
+}
+
+/** 서버와 하이드레이션 첫 그림은 긴 자리글이다(서버는 폭을 모른다). 붙은 뒤 좁으면 바꾼다 — useSyncExternalStore 가 어긋남 없이 넘긴다 */
+function useSearchPlaceholder(): string {
+  const narrow = useSyncExternalStore(subscribeNarrow, () => window.matchMedia(NARROW_QUERY).matches, () => false);
+  return narrow ? SEARCH_PLACEHOLDER_NARROW : SEARCH_PLACEHOLDER;
+}
 
 /** 주소에 실리는 형태. 비교와 전송이 같은 규칙을 써야 "바뀌었나" 판정이 흔들리지 않는다 */
 function trimQuery(raw: string): string {
@@ -78,6 +96,7 @@ export function SearchBoxFallback() {
 }
 
 export function SearchBox() {
+  const placeholder = useSearchPlaceholder();
   const router = useRouter();
   const pathname = usePathname();
   const params = useSearchParams();
@@ -159,7 +178,7 @@ export function SearchBox() {
           maxLength={MAX_PARAM_LEN}
           autoComplete="off"
           enterKeyHint="search"
-          placeholder={SEARCH_PLACEHOLDER}
+          placeholder={placeholder}
           role="combobox"
           aria-expanded={shown}
           aria-controls={listId}

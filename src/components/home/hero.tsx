@@ -66,7 +66,7 @@ export function HomeHero() {
       <h1 id="home-hero-heading" className="text-[30px] font-extrabold leading-[1.18] tracking-[-0.035em] text-ink sm:text-[40px]">
         {M.heroLead} <span className="glint-text glint-loop">{M.heroAccent}</span>
       </h1>
-      <p className="mx-auto mt-2 max-w-[520px] text-[15px] leading-[1.6] text-mut sm:text-[17px]">{M.heroBody}</p>
+      <p className="mx-auto mt-2 max-w-[520px] break-keep text-balance text-[15px] leading-[1.6] text-mut sm:text-[17px]">{M.heroBody}</p>
 
       <form action={ROUTES.search} role="search" className="mx-auto mt-5 flex max-w-[560px] items-center gap-2 rounded-2xl bg-bg p-1.5 pl-4 shadow-hair focus-within:shadow-[0_0_0_1px_var(--acc),0_0_0_4px_var(--acc-glow)]">
         <SearchIcon size={19} className="shrink-0 text-dim" />
