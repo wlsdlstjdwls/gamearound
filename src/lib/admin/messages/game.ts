@@ -64,7 +64,7 @@ export const GAME_ADMIN_MESSAGES = {
   fieldSource: "스토어",
   fieldExternalId: "스토어 안 번호",
   fieldUrl: "주소",
-  saveRef: "저장",
+  saveRef: "연결",
 
   aliasesListLabel: "검색 별칭 목록",
   aliasesEmpty: "아직 별칭이 없어요.",
@@ -91,7 +91,7 @@ export const GAME_ADMIN_MESSAGES = {
   fieldStoreUrl: "스토어 주소",
   fieldNote: "메모",
   notePlaceholder: "원본 소유 필요 등",
-  saveUpgrade: "저장",
+  saveUpgrade: "추가",
 
   historyListLabel: "고친 기록 목록",
   historyEmpty: "아직 고친 적이 없어요.",

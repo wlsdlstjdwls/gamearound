@@ -56,7 +56,8 @@ const COLUMNS: GridCol<RefRow>[] = [
 ];
 
 export function RefsTab({ gameId, refs, sources }: { gameId: string; refs: RefRow[]; sources: readonly string[] }) {
-  const [selected, setSelected] = useState<string | null>(null);
+  // 처음엔 판정 대기 줄을 고른다 — 첫 줄이 이미 이어진 스토어면 처리 띠에 고를 판정이 없다
+  const [selected, setSelected] = useState<string | null>(refs.find(isPending)?.source ?? null);
   const { checked, setChecked, doneOf, apply, busy } = useApproval({
     rows: refs,
     rowKey: (r) => r.source,
