@@ -17,7 +17,7 @@ import { Clamp } from "@/components/ui/tooltip";
 import { useContext, useEffect, useId, useMemo, useRef, useState } from "react";
 import { cn } from "@/lib/cn";
 import { GRID_MESSAGES as M } from "@/lib/admin/messages";
-import { GRID_PAGE_SIZES, matchesQuery, nextSort, pageOf, pageOfIndex, pageSizeOf, sortRows, sumOf, toTsv, type GridPaging, type SortState, type SortValue } from "@/lib/admin/grid";
+import { GRID_PAGE_ALL, GRID_PAGE_SIZES, matchesQuery, nextSort, pageOf, pageOfIndex, pageSizeOf, sortRows, sumOf, toTsv, type GridPaging, type SortState, type SortValue } from "@/lib/admin/grid";
 import { useAdminStatus } from "@/components/admin/screen/status";
 import { registerGrid, type GridDump } from "@/components/admin/screen/data-grid/export";
 import { FitFillContext, useFitHeight } from "@/components/admin/screen/data-grid/fit";
@@ -115,7 +115,9 @@ export function DataGrid<T>({
   const [sort, setSort] = useState<SortState>(null);
   const [query, setQuery] = useState("");
   const [page, setPage] = useState(1);
+  // size: 쪽을 켠 그리드의 고른 쪽 크기(GRID_PAGE_ALL 이면 전체). per: 실제로 나눌 크기 — 끈 그리드와 "전체" 는 null
   const [size, setSize] = useState(() => pageSizeOf(paging));
+  const per = size && size !== GRID_PAGE_ALL ? size : null;
   const rowRefs = useRef<(HTMLDivElement | null)[]>([]);
   const bodyRef = useRef<HTMLDivElement>(null);
   const fitted = useFitHeight(bodyRef, fit);
@@ -130,15 +132,15 @@ export function DataGrid<T>({
   const sorted = sortRows(filtered, sort, valueOf);
 
   // 고른 줄, 정렬, 찾기, 쪽 크기가 바뀌면 고른 줄이 든 쪽으로 간다(없으면 첫 쪽). 렌더 중에 맞춘다 — effect 로 하면 한 번 엉뚱한 쪽이 그려졌다 넘어간다
-  const followKey = size ? `${selected}|${sort?.key}|${sort?.dir}|${query}|${size}` : "";
+  const followKey = per ? `${selected}|${sort?.key}|${sort?.dir}|${query}|${per}` : "";
   const [followed, setFollowed] = useState(followKey);
   if (followed !== followKey) {
     setFollowed(followKey);
     const at = selected === null ? -1 : sorted.findIndex((r) => rowKey(r) === selected);
-    if (size) setPage(at >= 0 ? pageOfIndex(at, size) : 1);
+    if (per) setPage(at >= 0 ? pageOfIndex(at, per) : 1);
   }
-  const paged = size ? pageOf(sorted, page, size) : { rows: sorted, page: 1, pages: 1 };
-  const offset = size ? (paged.page - 1) * size : 0;
+  const paged = per ? pageOf(sorted, page, per) : { rows: sorted, page: 1, pages: 1 };
+  const offset = per ? (paged.page - 1) * per : 0;
   const check = checked && onChecked;
   const template = `${check ? "40px " : ""}48px ${columns.map((c) => c.width).join(" ")}`;
   const hasSum = columns.some((c) => c.sum);
@@ -290,7 +292,7 @@ export function DataGrid<T>({
         page={paged.page}
         pages={paged.pages}
         onPage={setPage}
-        size={size ? { value: size, options: GRID_PAGE_SIZES, onChange: setSize } : null}
+        size={size !== null ? { value: size, options: GRID_PAGE_SIZES, onChange: setSize } : null}
         extra={footerExtra}
       />
     </div>

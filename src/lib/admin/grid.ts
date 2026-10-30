@@ -56,6 +56,8 @@ export type GridPaging = boolean | number | undefined;
 
 /** 쪽 크기 고르기 칸의 값들. 백오피스 PagingToolbar 의 쪽 크기 고르기와 같은 자리 */
 export const GRID_PAGE_SIZES = [20, 50, 100] as const;
+/** 쪽 크기 고르기의 "전체" — 쪽을 켠 그리드도 한 판에 다 보고 훑을 때가 있다(2026-10-30 사용자 "전체조회가 필요한 경우도") */
+export const GRID_PAGE_ALL = 0;
 /** 켜기만 했을 때의 쪽 크기 — 넓은 화면 한 판(줄 40px)을 두 번쯤 굴리면 끝나는 양 */
 export const GRID_PAGE_SIZE = 50;
 

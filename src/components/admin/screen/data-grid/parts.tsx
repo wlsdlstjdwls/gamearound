@@ -4,7 +4,9 @@
 import { cn } from "@/lib/cn";
 import { ChevronDownIcon, ChevronLeftIcon } from "@/components/ui/icons";
 import { GRID_MESSAGES as M } from "@/lib/admin/messages";
-import type { SortState } from "@/lib/admin/grid";
+import { useId } from "react";
+import { FormSelect } from "@/components/ui/select/fields";
+import { GRID_PAGE_ALL, type SortState } from "@/lib/admin/grid";
 import type { GridCol } from "@/components/admin/screen/data-grid";
 
 export function HeadRow<T>({
@@ -127,6 +129,7 @@ export function BottomBar({
   size: { value: number; options: readonly number[]; onChange: (n: number) => void } | null;
   extra?: React.ReactNode;
 }) {
+  const pageSizeId = useId();
   return (
     <div className="flex flex-wrap items-center justify-between gap-2 border-t border-line bg-surface-2/60 px-3 py-1 text-[12px] text-dim">
       <span className="tabular-nums">
@@ -138,20 +141,19 @@ export function BottomBar({
       {size && (
         <div className="flex items-center gap-1">
           {/* 쪽이 하나여도 쪽 크기 칸은 둔다 — 켠 그리드인지 아닌지가 한눈에 보이고, 줄 수를 늘려 둔 채 조회해도 칸이 사라지지 않는다 */}
-          <select
-            aria-label={M.pageSize}
-            value={size.value}
-            onChange={(e) => size.onChange(Number(e.target.value))}
-            className="h-8 rounded-md bg-transparent px-1 text-[12px] text-ink-2 outline-none hover:bg-surface-2 focus-visible:shadow-[0_0_0_1px_var(--acc)]"
-          >
-            {[...new Set([...size.options, size.value])]
-              .sort((a, b) => a - b)
-              .map((n) => (
-                <option key={n} value={n}>
-                  {M.perPage(n)}
-                </option>
-              ))}
-          </select>
+          {/* 공통 드롭다운(ui/select)을 쓴다 — 브라우저 기본 select 는 펼친 목록이 이 서비스 모양이 아니었다(2026-10-30 사용자) */}
+          <FormSelect
+            name={pageSizeId}
+            label={M.pageSize}
+            hideLabel
+            value={String(size.value)}
+            onChange={(v) => size.onChange(Number(v))}
+            className="w-[104px]"
+            options={[
+              ...[...new Set([...size.options, ...(size.value === GRID_PAGE_ALL ? [] : [size.value])])].sort((a, b) => a - b).map((n) => ({ value: String(n), label: M.perPage(n) })),
+              { value: String(GRID_PAGE_ALL), label: M.perPageAll },
+            ]}
+          />
           {pages > 1 && <PageNav page={page} pages={pages} onPage={onPage} />}
         </div>
       )}
