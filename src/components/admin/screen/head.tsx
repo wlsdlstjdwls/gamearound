@@ -6,7 +6,7 @@
 //   - 제목 줄 오른쪽 끝에 조회, 입력, 삭제, 저장, 엑셀이 늘 같은 순서로 선다. 그 화면에서 못 쓰는 단추는 지우지 않고 흐리게 둔다 —
 //     자리가 화면마다 바뀌면 손이 기억하지 못한다. 단축키도 백오피스와 같다(F8 조회, F9 저장, Shift+F8 입력, Shift+F9 삭제).
 //   - 머리는 위에 붙어 따라온다(sticky). 긴 목록을 내려도 저장, 조회가 손 닿는 곳에 있다.
-// 조회는 기본이 "서버에서 다시 읽기"(router.refresh)다. 엑셀은 화면의 목록 표(data-rows 의 data-grid 표시)를 CSV 로 내려받는다(lib/admin/csv).
+// 조회는 기본이 "서버에서 다시 읽기"(router.refresh)다. 엑셀은 화면의 목록 표(그리드의 data-grid 표시)를 내려받는다.
 // 입력, 삭제, 저장은 그 일을 하는 화면(폼)이 함수를 넘길 때만 켜진다.
 import { useEffect, useRef, useState, useTransition } from "react";
 import { usePathname, useRouter } from "next/navigation";
@@ -99,7 +99,7 @@ function ToolButton({ label, tip, Icon, onClick, disabled, busy }: { label: stri
   );
 }
 
-/** 지금 화면의 목록 표를 읽는다. data-rows 가 단 data-grid 표시를 따른다 — 표가 없는 화면은 빈 값 */
+/** 지금 화면의 목록 표를 읽는다. 그리드가 단 data-grid 표시를 따른다 — 표가 없는 화면은 빈 값 */
 function readGrid(): { head: string[]; rows: string[][] } {
   const head = [...document.querySelectorAll<HTMLElement>("[data-grid-head] > *")].map((el) => el.textContent?.trim() ?? "");
   const rows = [...document.querySelectorAll<HTMLElement>("[data-grid-row]")].map((row) =>
@@ -180,7 +180,7 @@ export function AdminScreenHead({
   }, [refreshing, count, say]);
 
   const excel = () => {
-    // 공통 그리드가 걸어 둔 전체 줄이 먼저다(쪽을 나눠도 다 나간다). 없으면 화면의 목록 표(data-rows)를 읽는다
+    // 공통 그리드가 걸어 둔 전체 줄이 먼저다(쪽을 나눠도 다 나간다). 없으면 화면의 목록 표(data-grid 표시)를 읽는다
     const grid = registeredGrids()[0];
     const { head, rows, pick } = grid ?? { ...readGrid(), pick: null };
     if (rows.length === 0) {
