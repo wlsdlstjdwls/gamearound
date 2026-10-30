@@ -12,3 +12,4 @@ export * from "./board";
 export * from "./screen";
 export * from "./sync";
 export * from "./sync-logs";
+export * from "./promotions";

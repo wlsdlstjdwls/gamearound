@@ -1,4 +1,4 @@
-// 유료 노출 자리 문구(2026-10-27). 공개 화면의 "광고" 표시와 관리자 화면 /admin/promotions.
+// 유료 노출 자리 문구(2026-10-27). 공개 화면의 "광고" 표시, 산 사람의 성과 화면, 서비스 오류. 관리자 화면 문구는 lib/admin/messages/promotions.
 import type { PromoSlot, PromoSource } from "@/server/db/schema";
 import type { BoostState } from "./boost";
 
@@ -10,45 +10,11 @@ export const PROMO_MESSAGES = {
   pinnedTitle: "지금 주목받는 홍보",
   pinnedCover: (title: string) => `${title} 대표 그림`,
 
-  adminTitle: "광고노출관리",
-  adminLead: "인디 목록 맨 위와 홍보 게시판 위, 돈을 받고 내주는 두 자리예요. 산 광고는 저절로 걸리고, 시범이나 보상은 여기서 직접 걸어요. 숨기거나 반려한 글은 걸려 있어도 보이지 않아요.",
-  grantTitle: "직접 걸기",
-  grantLead: "산 광고는 저절로 걸려요. 시범 노출이나 보상처럼 돈 없이 걸 때만 여기서 걸어요.",
-  statLive: "노출 중",
-  statQueued: "시작 대기",
-  statCount: (n: number) => `${n}개`,
-  statViews: "지금 걸린 광고 노출",
-  statViewsHint: "노출 중인 광고가 시작한 뒤 모은 수예요",
-  statCtr: "클릭률",
-  statCtrHint: (clicks: string) => `카드 클릭 ${clicks}번`,
-  slotWhere: { indie_top: "인디 게임 목록 맨 위 주목할 게임 판에 서요", promo_pin: "홍보 게시판 목록 위 고정 카드로 서요" } as Record<PromoSlot, string>,
-  emptySlot: "지금 걸린 광고가 없어요",
-  daysLeft: (n: number) => (n === 0 ? "오늘 끝나요" : `${n}일 남음`),
-  startsLater: "시작 전",
-  closedTitle: (n: number) => `최근 끝난 광고 ${n}개`,
-  closedOpen: "펼치기",
-  closedClose: "접기",
-  slot: "자리",
-  target: "대상",
-  targetPlaceholder: "글을 골라 주세요",
-  noCandidates: "걸 수 있는 공개 글이 없어요",
-  days: "기간",
-  daysOption: (n: number) => `${n}일`,
-  note: "메모",
-  notePlaceholder: "시범 대상, 협의 내용 등",
-  grant: "걸기",
-  granted: "걸었어요",
-  revoke: "회수",
-  revoked: "회수했어요",
-  listTitle: "걸린 자리",
-  empty: "아직 걸린 자리가 없어요",
+  /** 관리자 화면 문구는 lib/admin/messages/promotions 에 있다. 여기는 서비스, 산 사람 화면과 같이 쓰는 말만 */
   period: (from: string, to: string) => `${from} ~ ${to}`,
-  notLive: "대상이 공개 상태가 아니라 보이지 않아요",
-  capacity: (live: number, cap: number) => `지금 ${live}개 노출 중, 한 번에 ${cap}칸`,
   targetGone: "지워진 글",
   targetNotPublic: "공개 중인 글에만 걸 수 있어요",
   failed: "처리하지 못했어요",
-  adminViews: (views: string, clicks: string) => `노출 ${views} | 클릭 ${clicks}`,
 } as const;
 
 /** 광고 성과 화면(/indie/mine/ads, 기획서 4.4) */
