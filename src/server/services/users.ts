@@ -7,6 +7,7 @@ import { userConsents, users, type ConsentKind, type Role } from "@/server/db/sc
 import { createdBy } from "@/server/db/audit";
 import { ADMIN_EMAILS_ENV } from "@/lib/auth/constants";
 import { AUTH_MESSAGES } from "@/lib/auth/messages";
+import { REVISED_AT } from "@/lib/legal";
 import { normalizeEmail } from "@/lib/auth/schemas";
 import { getDummyHash, hashPassword, verifyPassword } from "@/server/auth/password";
 import { readSessionToken, validateSessionToken } from "@/server/auth/session";
@@ -104,7 +105,8 @@ export async function recordSignUpConsents(userId: string, opts: { alertEmail: b
   const kinds: ConsentKind[] = ["terms", "privacy", ...(opts.alertEmail ? (["alert_email"] as const) : [])];
   await getDb()
     .insert(userConsents)
-    .values(kinds.map((kind) => ({ userId, kind, ...createdBy("user", userId) })))
+    // 약관, 개인정보는 동의한 문서의 개정일을 같이 남긴다. 알림 이메일은 문서가 없어 null 이다
+    .values(kinds.map((kind) => ({ userId, kind, documentVersion: kind === "alert_email" ? null : REVISED_AT, ...createdBy("user", userId) })))
     .onConflictDoNothing();
 }
 

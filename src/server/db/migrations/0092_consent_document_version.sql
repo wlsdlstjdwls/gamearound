@@ -1,0 +1,1 @@
+ALTER TABLE "user_consents" ADD COLUMN "document_version" text;
