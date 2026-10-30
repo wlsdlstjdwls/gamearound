@@ -3,20 +3,23 @@
 //
 // 선 자체가 끄는 자리다(role=separator, 좌우 방향키로도 KEY_STEP 씩). 선 가운데에 단추 둘: 왼쪽 화살은 선을 왼쪽 끝으로(목록 접기),
 // 오른쪽 화살은 오른쪽 끝으로(상세 접기). 접힌 쪽으로 미는 단추는 숨기고, 반대 단추가 "펼치기" 가 된다 — 화살 방향이 곧 선이 가는 방향이다.
-// 단추 묶음은 선 길이의 가운데에 서되, 선이 화면보다 길면 화면 가운데 띠 안에 머문다(sticky top, bottom 을 둘 다 건다).
+// 단추 묶음은 선 중 **지금 보이는 구간**의 가운데에 선다(사용자 "화면 중앙이 아니라 그 프로그램 영역 안에서"). 화면 가운데에 sticky 로 두면
+// 짧은 화면에서는 선 밖으로, 탭 줄과 머리 툴바가 있는 바깥 문서에서는 영역 위쪽으로 쏠렸다. 굴리고 크기가 바뀔 때마다 다시 잰다.
+// 단추는 얇은 알약 하나에 화살 둘을 담았다(사용자 "투박하다, 납작하게") — 그림자, 테두리 없이 선 위에 얹힌다.
 //
 // 끈 폭은 화면(주소)마다 이 브라우저에 기억한다. 사람마다 모니터가 달라 서버에 둘 값이 아니다.
-// 목록을 MIN_LIST 밑으로 끌면 목록을 접고, 상세가 MIN_DETAIL 밑이 되게 끌면 상세를 접는다(기억한 폭은 그대로 두고 접기만).
+// 끌기는 끝선까지 자유롭다. 끝선 EDGE_SNAP 안까지 가야 그쪽을 접는다(기억한 폭은 그대로 두고 접기만) —
+// 처음엔 목록 240, 상세 360 밑에서 접었더니 "끝선에 닿기도 전에 착 달라붙는다" 고 했다.
 import { usePathname } from "next/navigation";
 import { useEffect, useRef, useState, useSyncExternalStore } from "react";
 import { cn } from "@/lib/cn";
 import { ChevronLeftIcon } from "@/components/ui/icons";
 import { SCREEN_MESSAGES as SM } from "@/lib/admin/messages";
 
-/** 목록 최소 폭. 이보다 좁게 끌면 목록을 접는다 — 그리드 No 칸 + 두 칸쯤 */
-const MIN_LIST = 240;
-/** 상세 최소 폭. 이보다 좁아지게 끌면 상세를 접는다 — 폼 이름표 + 입력 칸 한 줄 */
-const MIN_DETAIL = 360;
+/** 끝선에서 이만큼 안으로 들어오면 그쪽을 접는다. 손이 끝선에 "닿았다" 고 볼 거리 */
+const EDGE_SNAP = 8;
+/** 구분선 칸 폭(MasterDetail 의 1.5rem) */
+const LINE_W = 24;
 /** 방향키 한 번에 움직이는 폭 */
 const KEY_STEP = 40;
 const STORAGE_PREFIX = "admin-list-w:";
@@ -61,7 +64,7 @@ export function useListSplit() {
   return { key, width: live ?? stored, setLive, hidden, setHidden };
 }
 
-const BUTTON = "press grid size-6 place-items-center rounded-full border border-line bg-surface text-dim shadow-sm hover:border-acc hover:text-acc";
+const BUTTON = "grid h-6 w-full place-items-center text-dim transition-colors duration-fast hover:bg-acc-soft hover:text-acc";
 
 export function SplitHandle({
   split,
@@ -74,6 +77,8 @@ export function SplitHandle({
   className?: string;
 }) {
   const { key, width, setLive, hidden, setHidden } = split;
+  const lineRef = useRef<HTMLDivElement>(null);
+  const knobRef = useRef<HTMLDivElement>(null);
   const drag = useRef<{ x: number; start: number } | null>(null);
   const [dragging, setDragging] = useState(false);
 
@@ -83,9 +88,8 @@ export function SplitHandle({
   const currentOf = () => (hidden === "list" ? 0 : hidden === "detail" ? totalOf() : (listRef.current?.offsetWidth ?? 0));
 
   const apply = (w: number, persist: boolean) => {
-    const max = totalOf() - MIN_DETAIL;
-    if (w < MIN_LIST) return setHidden("list");
-    if (w > max) return setHidden("detail");
+    if (w <= EDGE_SNAP) return setHidden("list");
+    if (w >= totalOf() - LINE_W - EDGE_SNAP) return setHidden("detail");
     setHidden(null);
     if (persist) {
       save(key, w);
@@ -128,12 +132,36 @@ export function SplitHandle({
     };
   }, [dragging]);
 
+  // 단추 묶음을 선의 보이는 구간 가운데로. 상태로 두지 않고 style 을 바로 쓴다 — 굴릴 때마다 다시 그리지 않는다
+  useEffect(() => {
+    const line = lineRef.current;
+    const knob = knobRef.current;
+    if (!line || !knob) return;
+    const place = () => {
+      const r = line.getBoundingClientRect();
+      const top = Math.max(r.top, 0);
+      const bottom = Math.min(r.bottom, window.innerHeight);
+      knob.style.top = `${(bottom > top ? (top + bottom) / 2 : (r.top + r.bottom) / 2) - r.top}px`;
+    };
+    place();
+    const ro = new ResizeObserver(place);
+    ro.observe(line);
+    window.addEventListener("scroll", place, { passive: true });
+    window.addEventListener("resize", place);
+    return () => {
+      ro.disconnect();
+      window.removeEventListener("scroll", place);
+      window.removeEventListener("resize", place);
+    };
+  }, []);
+
   // 선을 미는 방향 그대로: 왼쪽 단추는 상세가 접혀 있으면 펴고, 아니면 목록을 접는다. 오른쪽 단추는 그 반대
   const toLeft = () => setHidden(hidden === "detail" ? null : "list");
   const toRight = () => setHidden(hidden === "list" ? null : "detail");
 
   return (
     <div
+      ref={lineRef}
       role="separator"
       aria-orientation="vertical"
       aria-label={SM.listResize}
@@ -146,22 +174,25 @@ export function SplitHandle({
       onKeyDown={onKeyDown}
       data-dragging={dragging || undefined}
       className={cn(
-        "group/split relative flex cursor-col-resize touch-none flex-col items-center self-stretch outline-none",
+        "relative cursor-col-resize touch-none self-stretch outline-none",
         // 선: 칸 가운데 1px, 손을 대거나 끄는 동안 파랑 2px
         "before:pointer-events-none before:absolute before:inset-y-0 before:left-1/2 before:w-px before:-translate-x-1/2 before:bg-line",
         "hover:before:w-0.5 hover:before:bg-acc focus-visible:before:w-0.5 focus-visible:before:bg-acc data-[dragging]:before:w-0.5 data-[dragging]:before:bg-acc",
         className,
       )}
     >
-      <div className="sticky top-[calc(50svh-28px)] bottom-[calc(50svh-28px)] my-auto flex cursor-default flex-col gap-1 py-1">
+      <div
+        ref={knobRef}
+        className="absolute left-1/2 top-1/2 flex w-3.5 -translate-x-1/2 -translate-y-1/2 cursor-default flex-col overflow-hidden rounded-full bg-surface-3 divide-y divide-line"
+      >
         {hidden !== "list" && (
           <button type="button" aria-label={hidden === "detail" ? SM.detailUnfold : SM.listFold} onClick={toLeft} className={BUTTON}>
-            <ChevronLeftIcon size={13} />
+            <ChevronLeftIcon size={10} />
           </button>
         )}
         {hidden !== "detail" && (
           <button type="button" aria-label={hidden === "list" ? SM.listUnfold : SM.detailFold} onClick={toRight} className={BUTTON}>
-            <ChevronLeftIcon size={13} className="rotate-180" />
+            <ChevronLeftIcon size={10} className="rotate-180" />
           </button>
         )}
       </div>
