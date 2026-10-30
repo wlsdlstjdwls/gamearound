@@ -105,19 +105,29 @@ export async function updateListingStock(
 ): Promise<void> {
   const db = getDb();
   const rows = await db
-    .select({ id: shopListings.id, onHand: shopListings.onHand })
+    .select({ id: shopListings.id, onHand: shopListings.onHand, priceMinor: shopListings.priceMinor, status: shopListings.status })
     .from(shopListings)
     .where(and(eq(shopListings.id, input.listingId), eq(shopListings.shopId, shopId)))
     .limit(1);
   const cur = rows[0];
   if (!cur) throw new Error(LISTING_MESSAGES.notFound);
-  if (cur.onHand === input.onHand) return;
+  const stockChanged = cur.onHand !== input.onHand;
+  // 값, 공개는 보냈고 실제로 달라졌을 때만 적는다 — 재고만 보내는 옛 요청은 그 둘을 건드리지 않는다
+  const price = input.priceMinor !== undefined && input.priceMinor !== cur.priceMinor ? { priceMinor: input.priceMinor } : {};
+  const status = input.status !== undefined && input.status !== cur.status ? { status: input.status } : {};
+  if (!stockChanged && Object.keys(price).length === 0 && Object.keys(status).length === 0) return;
 
+  const update = db
+    .update(shopListings)
+    .set({ ...price, ...status, ...(stockChanged ? { onHand: input.onHand, stockUpdatedAt: new Date() } : {}), ...updatedBy(actor.source, actor.userId) })
+    .where(eq(shopListings.id, cur.id));
+  // 재고 이력은 수량이 바뀐 때만 남긴다(값만 고친 것은 재고 사건이 아니다)
+  if (!stockChanged) {
+    await update;
+    return;
+  }
   await db.batch([
-    db
-      .update(shopListings)
-      .set({ onHand: input.onHand, stockUpdatedAt: new Date(), ...updatedBy(actor.source, actor.userId) })
-      .where(eq(shopListings.id, cur.id)),
+    update,
     db.insert(shopStockEvents).values({
       listingId: cur.id,
       beforeQty: cur.onHand,

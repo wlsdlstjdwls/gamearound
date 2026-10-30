@@ -6,6 +6,7 @@
 //
 // 맨 위에 세 걸음 단계 표시를 둔다(2026-10-12 사용자: "신청 상태 화면도 뭐 없는데"). 신청서가 없을 때도 세운다 —
 // 그 자리에서 "내면 무엇을 보게 되는가" 를 보여 주는 편이 빈 문장 한 줄보다 다음 행동을 준다.
+import { WithdrawApplicationButton } from "@/components/shops/withdraw-application";
 import type { Metadata } from "next";
 import Link from "next/link";
 import { Page, PageHead, sectionCardClass } from "@/components/ui/page";
@@ -47,7 +48,7 @@ export default async function ShopJoinStatusPage() {
       ]
     : [];
 
-  // 다음 행동은 하나뿐이다 — 심사 중에는 할 일이 없어 단추 줄 자체를 세우지 않는다
+  // 다음 행동은 하나뿐이다. 심사 중에는 "신청 취소" 만 선다
   const action = !shop ? (
     <Link href={ROUTES.shopsJoin} className={buttonClass({ variant: "primary" })}>
       {M.joinTitle}
@@ -93,7 +94,13 @@ export default async function ShopJoinStatusPage() {
           </dl>
         )}
 
-        {action && <div className="flex flex-wrap gap-2">{action}</div>}
+        {/* 심사 중이거나 반려된 신청은 거둘 수 있다(2026-10-30, components/shops/withdraw-application) */}
+        {(action || shop?.status === "pending") && (
+          <div className="flex flex-wrap gap-2">
+            {action}
+            {shop?.status === "pending" && <WithdrawApplicationButton />}
+          </div>
+        )}
       </div>
     </Page>
   );

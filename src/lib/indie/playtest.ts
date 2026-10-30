@@ -25,6 +25,13 @@ export const createPlaytestSchema = z.object({
 });
 export type CreatePlaytestInput = z.infer<typeof createPlaytestSchema>;
 
+/**
+ * 열린 모집 고치기(2026-10-30). 제목, 내용, 인원만 — 마감일을 바꾸면 이미 신청한 사람이 본 약속이 달라진다.
+ * 인원을 이미 온 신청보다 적게 줄이는 것은 서비스가 막는다(신청 수는 DB 가 안다)
+ */
+export const updatePlaytestSchema = createPlaytestSchema.pick({ title: true, body: true, slots: true }).extend({ id: z.uuid() });
+export type UpdatePlaytestInput = z.infer<typeof updatePlaytestSchema>;
+
 export const applyPlaytestSchema = z.object({
   playtestId: z.uuid(),
   message: z.string().trim().min(1, M.messageRequired).max(PLAYTEST_MESSAGE_MAX),

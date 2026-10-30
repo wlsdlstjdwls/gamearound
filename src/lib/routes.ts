@@ -271,6 +271,14 @@ export function boardPinPath(id: string, plan?: PlanChoice): string {
   return withPlan(`${ROUTES.board}/mine/${encodeURIComponent(id)}/pin`, plan);
 }
 
+/**
+ * 내 게시판, 라운지 글 고치기(2026-10-30). 공개 글 주소(/board/.../p/<id>) 아래가 아니라 "내 것" 아래 둔다 — 고정 구매(boardPinPath)와 같은 자리.
+ * 라운지 글은 라운지 아래로 보낸다 — 하위 메뉴 띠가 주소로 소속을 읽어서, 게시판 아래 두면 개발일지를 고치는데 게시판 띠가 켜진다
+ */
+export function postEditPath(id: string, lounge: boolean): string {
+  return `${lounge ? ROUTES.lounge : ROUTES.board}/mine/${encodeURIComponent(id)}/edit`;
+}
+
 /** 인디 홍보 글 공개 화면 */
 export function indiePath(slug: string): string {
   return `${ROUTES.indie}/${encodeURIComponent(slug)}`;

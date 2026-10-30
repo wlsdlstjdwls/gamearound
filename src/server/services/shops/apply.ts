@@ -160,3 +160,17 @@ export async function reviewShop(input: ShopReviewInput, admin: { id: string }):
     .set({ status, statusReason: input.reason ?? null, ...stamp })
     .where(eq(shops.id, shop.id));
 }
+
+/**
+ * 입점 신청 거두기(2026-10-30 사용자 "수정/삭제 다 제공하나"). 심사 중이거나 반려된(pending) 내 신청서만 지운다 —
+ * 승인된 매장은 판매 줄, 직원이 cascade 로 같이 날아가므로 사람이 지우는 자리가 아니다(운영진이 정지한다).
+ * 조건은 where 에 넣어 한 왕복에 끝낸다
+ */
+export async function withdrawShopApplication(): Promise<void> {
+  const user = await requireUser();
+  const gone = await getDb()
+    .delete(shops)
+    .where(and(eq(shops.ownerUserId, user.id), eq(shops.status, "pending")))
+    .returning({ id: shops.id });
+  if (gone.length === 0) throw new Error(SHOP_MESSAGES.withdrawDenied);
+}

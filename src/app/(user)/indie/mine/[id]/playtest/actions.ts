@@ -3,10 +3,10 @@
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { actionError } from "@/lib/db-errors";
-import { createPlaytestSchema, type CreatePlaytestInput } from "@/lib/indie/playtest";
+import { createPlaytestSchema, updatePlaytestSchema, type CreatePlaytestInput, type UpdatePlaytestInput } from "@/lib/indie/playtest";
 import { PLAYTEST_MESSAGES as M } from "@/lib/indie/playtest-messages";
 import { indiePath, ROUTES } from "@/lib/routes";
-import { closePlaytest, createPlaytest } from "@/server/services/indie";
+import { closePlaytest, createPlaytest, updatePlaytest } from "@/server/services/indie";
 import type { PlaytestActionResult } from "@/app/(public)/playtests/actions";
 
 function refresh(slug: string) {
@@ -29,6 +29,17 @@ export async function closePlaytestAction(playtestId: string): Promise<PlaytestA
   if (!z.uuid().safeParse(playtestId).success) return { ok: false, error: M.notFound };
   try {
     refresh((await closePlaytest(playtestId)).slug);
+    return { ok: true };
+  } catch (e) {
+    return { ok: false, error: actionError(e, M.failed) };
+  }
+}
+
+export async function updatePlaytestAction(input: UpdatePlaytestInput): Promise<PlaytestActionResult> {
+  const parsed = updatePlaytestSchema.safeParse(input);
+  if (!parsed.success) return { ok: false, error: parsed.error.issues[0]?.message ?? M.failed };
+  try {
+    refresh((await updatePlaytest(parsed.data)).slug);
     return { ok: true };
   } catch (e) {
     return { ok: false, error: actionError(e, M.failed) };

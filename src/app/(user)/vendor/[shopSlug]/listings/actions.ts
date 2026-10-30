@@ -114,6 +114,9 @@ export async function updateStockAction(shopSlug: string, _prev: ListingState, f
     const parsed = listingStockSchema.safeParse({
       listingId: String(formData.get("listingId") ?? ""),
       onHand: String(formData.get("onHand") ?? ""),
+      // 값, 공개 칸이 없는 폼(옛 화면)이면 undefined 로 둬서 바꾸지 않는다
+      priceMinor: formData.has("priceMinor") ? String(formData.get("priceMinor")) : undefined,
+      status: formData.has("status") ? String(formData.get("status")) : undefined,
     });
     if (!parsed.success) return { ok: false, error: parsed.error.issues[0]?.message ?? LISTING_MESSAGES.badRequest };
 

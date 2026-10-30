@@ -6,7 +6,7 @@ import { revalidatePath } from "next/cache";
 import { ROUTES } from "@/lib/routes";
 import { SHOP_MESSAGES } from "@/lib/shops/messages";
 import { shopApplicationSchema } from "@/lib/shops/schemas";
-import { applyForShop } from "@/server/services/shops";
+import { applyForShop, withdrawShopApplication } from "@/server/services/shops";
 import { requireUser } from "@/server/services/users";
 
 export type ShopJoinState = { ok: true; message: string } | { ok: false; error: string } | null;
@@ -34,6 +34,17 @@ export async function applyForShopAction(_prev: ShopJoinState, formData: FormDat
     revalidatePath(ROUTES.shopsJoinStatus);
     revalidatePath(ROUTES.shopsJoin);
     return { ok: true, message: SHOP_MESSAGES.applied };
+  } catch (e) {
+    return { ok: false, error: actionError(e, SHOP_MESSAGES.badRequest) };
+  }
+}
+
+export async function withdrawShopApplicationAction(): Promise<{ ok: true } | { ok: false; error: string }> {
+  try {
+    await withdrawShopApplication();
+    revalidatePath(ROUTES.shopsJoinStatus);
+    revalidatePath(ROUTES.shopsJoin);
+    return { ok: true };
   } catch (e) {
     return { ok: false, error: actionError(e, SHOP_MESSAGES.badRequest) };
   }

@@ -47,10 +47,15 @@ export const listingCreateSchema = z.object({
 
 export type ListingCreateInput = z.infer<typeof listingCreateSchema>;
 
-/** 재고만 고치는 자리. 판매 목록에서 줄마다 바로 저장한다 */
+/**
+ * 판매 줄 고치기. 판매 목록에서 줄마다 바로 저장한다. 처음엔 재고만 고쳤다 — 값과 공개 상태는 지우고 다시 올려야 해서
+ * 사진, 재고 이력이 같이 날아갔다(2026-10-30 사용자 "수정/삭제 다 제공하나"). 값, 공개는 선택 칸이라 재고만 보내는 요청도 그대로 받는다
+ */
 export const listingStockSchema = z.object({
   listingId: z.uuid(LISTING_MESSAGES.badRequest),
   onHand: z.coerce.number().int().min(0, LISTING_MESSAGES.stockInvalid).max(LISTING_STOCK_MAX, LISTING_MESSAGES.stockInvalid),
+  priceMinor: z.coerce.number().int().min(0, LISTING_MESSAGES.priceInvalid).max(LISTING_PRICE_MAX, LISTING_MESSAGES.priceInvalid).optional(),
+  status: z.enum(["draft", "selling", "soldout", "hidden"]).optional(),
 });
 
 export type ListingStockInput = z.infer<typeof listingStockSchema>;

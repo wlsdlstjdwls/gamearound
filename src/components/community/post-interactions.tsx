@@ -5,7 +5,8 @@
 // 다시 열린 화면이 꺼내 칸에 되돌린 뒤 그대로 등록한다(기획서 6.2 "누르던 동작을 그대로 이어서 실행").
 // 누른 순간 바뀐다(AGENTS §6). 실패하면 되돌리고 토스트로 이유를 말한다.
 import { useEffect, useOptimistic, useRef, useState, useTransition } from "react";
-import { addCommentAction, toggleLikeAction, toggleSaveAction } from "@/app/(public)/board/actions";
+import { addCommentAction, deleteCommentAction, toggleLikeAction, toggleSaveAction, updateCommentAction } from "@/app/(public)/board/actions";
+import { COMMENT_FIELD, CommentBody, type CommentListOps, type CommentMineActions } from "@/components/community/comment-item";
 import { useLoginGate, useResume } from "@/components/auth/login-gate";
 import { forgetDraft, rememberDraft, takeDraft } from "@/lib/auth/resume";
 import { Button } from "@/components/ui/button";
@@ -14,7 +15,6 @@ import { useToast } from "@/components/ui/toast";
 import { cn } from "@/lib/cn";
 import { COMMENT_BODY_MAX, commentAnchor } from "@/lib/community/constants";
 import { COMMUNITY_MESSAGES as M } from "@/lib/community/messages";
-import { formatDateTime } from "@/lib/format";
 import type { CommentDto } from "@/server/services/community";
 
 export function PostReactions({ postId, liked: initLiked, likeCount: initCount, saved: initSaved }: { postId: string; liked: boolean; likeCount: number; saved: boolean }) {
@@ -88,7 +88,6 @@ export function SpoilerGate({ isMine, children }: { isMine: boolean; children: R
 /** 댓글을 받는 액션. 게시판 글이 기본이고, 인디 글은 자기 액션을 넘긴다(받는 표만 다르고 입력, 결과 모양은 같다) */
 type AddCommentAction = typeof addCommentAction;
 
-const COMMENT_FIELD = "resize-y rounded-xl border border-line-strong bg-bg px-4 py-3 text-[16px] leading-[1.6] text-ink outline-none focus:border-acc";
 
 /**
  * 댓글 칸 하나(글에 바로 다는 칸, 답글 칸이 같이 쓴다). 쓰던 글은 로그인을 다녀와도 이어 간다:
@@ -204,26 +203,12 @@ function CommentComposer({
  */
 const COMMENT_ITEM_CLASS = "comment-target flex scroll-mt-[calc(var(--header-h)+24px)] flex-col gap-1 py-3.5";
 
-function CommentBody({ c, reply = false }: { c: CommentDto; reply?: boolean }) {
-  return (
-    <>
-      <p className="flex items-center gap-2 text-[12.5px] text-dim">
-        <span className={cn("font-semibold", c.isMine ? "text-acc" : "text-ink-2")}>{c.authorName}</span>
-        <span>{formatDateTime(c.createdAt)}</span>
-        {/* 글쓴이가 처음 보는 댓글에만, 이번 한 번(services/community/inbox 가 연 순간 "봤다" 로 적는다) */}
-        {c.isNew && <span className="rounded-full bg-acc-soft px-1.5 py-px text-[11px] font-bold text-acc">{M.newComment}</span>}
-      </p>
-      <p className={cn("whitespace-pre-wrap break-words leading-[1.7] text-ink", reply ? "text-[14px]" : "text-[14.5px]")}>{c.body}</p>
-    </>
-  );
-}
-
 /**
  * 원댓글 하나와 그 답글들. 답글은 왼쪽 선 하나로 묶어 들여 세운다(한 단계뿐이라 선 하나면 "누구에게 한 말" 이 읽힌다).
  * 답글 칸은 "답글" 을 눌렀을 때만 연다. 로그인 뒤 이어쓰기는 닫힌 칸으로 돌아오므로, 이어하기를 이 줄이 받아 칸을 열고
  * 맡겨 둔 글을 칸에 넘긴다(CommentComposer 의 startDraft).
  */
-function Thread({ root, replies, postId, onAdded, addAction, canReply }: { root: CommentDto; replies: CommentDto[]; postId: string; onAdded: (c: CommentDto) => void; addAction: AddCommentAction; canReply: boolean }) {
+function Thread({ root, replies, postId, onAdded, addAction, canReply, mine, ops }: { root: CommentDto; replies: CommentDto[]; postId: string; onAdded: (c: CommentDto) => void; addAction: AddCommentAction; canReply: boolean; mine: CommentMineActions; ops: CommentListOps }) {
   const action = `reply:${postId}:${root.id}`;
   const [open, setOpen] = useState(false);
   const [draft, setDraft] = useState<string | null>(null);
@@ -240,7 +225,7 @@ function Thread({ root, replies, postId, onAdded, addAction, canReply }: { root:
   };
   return (
     <li id={commentAnchor(root.id)} className={COMMENT_ITEM_CLASS}>
-      <CommentBody c={root} />
+      <CommentBody c={root} mine={mine} ops={ops} />
       {canReply && (
         <button type="button" aria-expanded={open} onClick={() => setOpen((v) => !v)} className="tap -ml-1 w-fit rounded-md px-1 text-[12.5px] font-semibold text-mut hover:text-acc">
           {M.reply}
@@ -253,7 +238,7 @@ function Thread({ root, replies, postId, onAdded, addAction, canReply }: { root:
             <ul className="flex flex-col gap-3" aria-label={M.replyTo(root.authorName)}>
               {replies.map((r) => (
                 <li key={r.id} id={commentAnchor(r.id)} className={cn(COMMENT_ITEM_CLASS, "py-0")}>
-                  <CommentBody c={r} reply />
+                  <CommentBody c={r} reply mine={mine} ops={ops} />
                 </li>
               ))}
             </ul>
@@ -297,9 +282,24 @@ function useArrivedComment() {
 const ARRIVED_ATTR = "data-arrived";
 
 /** replies: 답글을 받는 글인가. 게시판, 라운지 글만 켠다 — 인디 글 댓글 표에는 답글 칸이 없다(schema-indie-promo) */
-export function Comments({ postId, initial, addAction = addCommentAction, replies = false }: { postId: string; initial: CommentDto[]; addAction?: AddCommentAction; replies?: boolean }) {
+/** 게시판 댓글의 고치기, 지우기. 인디 댓글은 부르는 쪽이 제 액션을 넘긴다(app/(public)/indie/[slug]) */
+const BOARD_MINE: CommentMineActions = { edit: updateCommentAction, remove: deleteCommentAction };
+
+export function Comments({ postId, initial, addAction = addCommentAction, mine = BOARD_MINE, replies = false }: { postId: string; initial: CommentDto[]; addAction?: AddCommentAction; mine?: CommentMineActions; replies?: boolean }) {
   const [list, setList] = useState(initial);
   const add = (c: CommentDto) => setList((cur) => [...cur, c]);
+  // 고치기, 지우기는 누른 즉시 목록을 바꾼다(components/community/comment-item). 지우면 답글도 같이 빠진다(서버 cascade 와 같게)
+  const ops: CommentListOps = {
+    edited: (id, body) => setList((cur) => cur.map((x) => (x.id === id ? { ...x, body } : x))),
+    removed: (id) => {
+      let before: CommentDto[] = [];
+      setList((cur) => {
+        before = cur;
+        return cur.filter((x) => x.id !== id && x.parentId !== id);
+      });
+      return () => setList(before);
+    },
+  };
   useArrivedComment();
 
   // 원댓글 순서대로, 답글은 제 원댓글 밑으로. 원댓글이 숨겨져 짝이 없는 답글은 버린다 — 말을 건 상대가 안 보이는 답글은 뜻이 안 선다
@@ -326,7 +326,7 @@ export function Comments({ postId, initial, addAction = addCommentAction, replie
       ) : (
         <ul className="flex flex-col divide-y divide-line-soft">
           {roots.map((c) => (
-            <Thread key={c.id} root={c} replies={byParent.get(c.id) ?? []} postId={postId} onAdded={add} addAction={addAction} canReply={replies} />
+            <Thread key={c.id} root={c} replies={byParent.get(c.id) ?? []} postId={postId} onAdded={add} addAction={addAction} canReply={replies} mine={mine} ops={ops} />
           ))}
         </ul>
       )}

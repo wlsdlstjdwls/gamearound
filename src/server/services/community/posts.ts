@@ -1,17 +1,18 @@
 // 게시판 글 읽기, 쓰기(기획서 v2.0 5.2, 6.1 "게시판 검색", "전체글/인기글 탭", 6.4 글쓰기).
 // 글쓴이 확인은 서비스가 다시 한다(requireUser) — 서버 액션의 검사는 입력 모양만 본다.
+import { ownedByCurrentSession } from "@/server/auth/session";
+import { AUTH_MESSAGES } from "@/lib/auth/messages";
 import { and, asc, desc, eq, gt, ilike, inArray, lt, or, sql, type SQL } from "drizzle-orm";
 import { getDb } from "@/server/db/client";
 import { createdBy } from "@/server/db/audit";
-import { games, indiePosts, posts, users, type PostCategory, type PromoType } from "@/server/db/schema";
+import { games, posts, users, type PostCategory, type PromoType } from "@/server/db/schema";
 import { getCurrentUser, requireUser } from "@/server/services/users";
-import { isLoungeCategory, POSTS_PAGE_SIZE, postPath, takesGame, type PopularPeriod, type SearchScope } from "@/lib/community/constants";
+import { POSTS_PAGE_SIZE, postPath, type PopularPeriod, type SearchScope } from "@/lib/community/constants";
 import type { PostInput } from "@/lib/community/schemas";
-import { isRichBody } from "@/lib/community/rich-text";
-import { sanitizePostHtml } from "@/lib/community/sanitize";
 import type { PostDetailDto, PostPage } from "./dto";
 import { authorNameSql, popularScoreSql, rowColumns, toRow } from "./columns";
 import { isLiked, isSaved } from "./reactions";
+import { postColumns, resolvePostRefs } from "./edit";
 
 function escapeLike(s: string): string {
   return s.replace(/[\\%_]/g, (m) => `\\${m}`);
@@ -71,14 +72,18 @@ export async function listPosts(p: ListPostsParams): Promise<PostPage> {
 /** 글 상세 + 조회수 1 올리기. 숨긴 글은 글쓴이와 운영진에게만 보인다 */
 export async function getPostDetail(id: string): Promise<PostDetailDto | null> {
   const db = getDb();
-  const viewer = await getCurrentUser().catch(() => null);
-  const [bumped] = await db.update(posts).set({ viewCount: sql`${posts.viewCount} + 1` }).where(eq(posts.id, id)).returning({ id: posts.id });
-  if (!bumped) return null;
-  const [row] = await db
-    .select({ ...rowColumns, body: posts.body, link: posts.link, authorUserId: posts.authorUserId, status: posts.status })
-    .from(posts)
-    .innerJoin(users, eq(users.id, posts.authorUserId))
-    .where(eq(posts.id, id));
+  // 사람, 조회수 올리기, 본문은 서로 기다릴 일이 없어 나란히 띄운다(2026-10-30 쿼리 점검: 줄 세운 3왕복이 글 상세마다 붙었다).
+  // 글이 있는지는 본문 SELECT 로 본다. 올리기는 같은 묶음으로 끝까지 기다린다 — 서버리스는 응답 뒤 남은 질의를 끊을 수 있다.
+  // 읽기가 올리기보다 먼저 닿으면 이번 조회는 화면 수에 하나 덜 보일 뿐이다
+  const [viewer, , [row]] = await Promise.all([
+    getCurrentUser().catch(() => null),
+    db.update(posts).set({ viewCount: sql`${posts.viewCount} + 1` }).where(eq(posts.id, id)),
+    db
+      .select({ ...rowColumns, body: posts.body, link: posts.link, authorUserId: posts.authorUserId, status: posts.status })
+      .from(posts)
+      .innerJoin(users, eq(users.id, posts.authorUserId))
+      .where(eq(posts.id, id)),
+  ]);
   if (!row) return null;
   const isMine = viewer?.id === row.authorUserId;
   // 숨긴 글은 글쓴이와 운영진만 연다 — 관리자 게시글 화면에서 숨긴 글을 눌러 내용을 보고 되살릴지 정해야 한다
@@ -95,22 +100,6 @@ export async function getPostDetail(id: string): Promise<PostDetailDto | null> {
   return { ...toRow(row), body: row.body, link: row.link, isMine, liked, saved, prev: neighbor(prevRows[0]), next: neighbor(nextRows[0]) };
 }
 
-/** 고른 게임이 카탈로그에 없을 때(지워졌거나 slug 를 손으로 고친 요청). 액션이 관련 게임 칸 아래 오류로 바꾼다 */
-export class PostGameNotFoundError extends Error {
-  constructor() {
-    super("post game not found");
-    this.name = "PostGameNotFoundError";
-  }
-}
-
-/** 고른 인디 게임이 없거나 내 게임이 아닐 때(남의 slug 를 손으로 넣은 요청 포함). 액션이 그 칸 아래 오류로 바꾼다 */
-export class PostIndieNotFoundError extends Error {
-  constructor() {
-    super("post indie game not found");
-    this.name = "PostIndieNotFoundError";
-  }
-}
-
 /** 예전 상세 주소(/board/p/<id>)를 새 주소로 보낼 때 쓴다. 조회수를 올리지 않는다 — 넘겨받은 화면이 올린다 */
 export async function getPostCategory(id: string): Promise<PostCategory | null> {
   const [row] = await getDb().select({ category: posts.category }).from(posts).where(eq(posts.id, id));
@@ -118,50 +107,26 @@ export async function getPostCategory(id: string): Promise<PostCategory | null> 
 }
 
 /**
- * 등록. 카테고리에 맞지 않는 칸은 버린다(리뷰 아닌 글의 스포, 홍보 아닌 글의 유형, 링크, 라운지 글의 게임, 게시판 글의 인디 게임).
- * 라운지 글의 인디 게임은 글쓴이 본인 것만 받는다. 남의 게임 상세 관련 소식에 글을 끼워 넣지 못하게.
- * 관련 게임은 slug 로 받아 id 로 바꾼다 — 화면은 id 를 모른다(자동완성 응답이 slug 만 준다).
+ * 등록. 카테고리에 맞지 않는 칸은 버리고(postColumns), 관련 게임과 인디 게임은 slug 를 id 로 바꾼다(resolvePostRefs) — 둘 다 고치기와 같이 쓴다(./edit).
  * 본문 HTML 은 걸러서 적는다(lib/community/sanitize). 그리기 전에도 한 번 더 거른다 — 액션을 거치지 않은 요청이 와도 DB 에 스크립트가 안 쌓인다.
  */
 export async function createPost(input: PostInput): Promise<{ id: string; category: PostCategory; authorUserId: string; title: string }> {
   const u = await requireUser();
-  const db = getDb();
-  let gameId: string | null = null;
-  if (takesGame(input.category) && input.gameSlug !== "") {
-    const [g] = await db.select({ id: games.id }).from(games).where(eq(games.slug, input.gameSlug));
-    if (!g) throw new PostGameNotFoundError();
-    gameId = g.id;
-  }
-  let indiePostId: string | null = null;
-  if (isLoungeCategory(input.category) && input.indieSlug !== "") {
-    const [ip] = await db.select({ id: indiePosts.id }).from(indiePosts).where(and(eq(indiePosts.slug, input.indieSlug), eq(indiePosts.authorUserId, u.id)));
-    if (!ip) throw new PostIndieNotFoundError();
-    indiePostId = ip.id;
-  }
-  const [row] = await db
+  const refs = await resolvePostRefs(input, u.id);
+  const [row] = await getDb()
     .insert(posts)
-    .values({
-      category: input.category,
-      authorUserId: u.id,
-      title: input.title,
-      body: isRichBody(input.body) ? sanitizePostHtml(input.body) : input.body,
-      spoiler: input.category === "review" && input.spoiler === "yes",
-      promoType: input.category === "promo" && input.promoType !== "" ? input.promoType : null,
-      link: input.category === "promo" && input.link !== "" ? input.link : null,
-      gameId,
-      indiePostId,
-      ...createdBy("user", u.id),
-    })
+    .values({ ...postColumns(input), ...refs, authorUserId: u.id, ...createdBy("user", u.id) })
     .returning({ id: posts.id, category: posts.category });
   return { ...row, authorUserId: u.id, title: input.title };
 }
 
 /** 내가 쓴 글(내 활동 S-24). 게시판과 같은 한 쪽 20줄로 끊는다(기획서 4.3) — 글이 쌓이면 한 화면에 수백 줄이 섰다 */
 export async function listMyPosts(page = 1): Promise<PostPage> {
-  const u = await requireUser();
+  // 소유자 조건을 세션 서브질의로 넣어 세션 왕복을 따로 세우지 않는다(2026-10-30 쿼리 점검)
+  const where = await ownedByCurrentSession(posts.authorUserId);
+  if (!where) throw new Error(AUTH_MESSAGES.loginRequired);
   const db = getDb();
   const at = Math.max(1, page);
-  const where = eq(posts.authorUserId, u.id);
   // 건수와 목록은 서로를 기다릴 이유가 없다 — 나란히 보낸다(listPosts 와 같은 이유)
   const [countRows, rows] = await Promise.all([
     db.select({ n: sql<number>`count(*)::int` }).from(posts).where(where),

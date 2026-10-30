@@ -9,12 +9,14 @@
 // "여럿 고르기" 로 읽힌다. 등록, 취소는 화면 아래에 붙는 띠에 둔다 — 긴 글을 쓰다 맨 아래까지 내려가지 않게.
 // 본문은 HTML 에디터(rich-editor)다. 첨부파일은 본문 끝에 묶음으로 붙여 보낸다(components/community/post-media).
 //
+// 고치기(2026-10-30): edit 를 주면 같은 폼이 저장된 값을 채워 열고 updatePostAction 으로 저장한다. 카테고리는 같은 갈래 안에서만 바뀐다(서비스가 막는다).
+//
 // 고른 카테고리를 주소(?category=)에도 싣는다 — 하위 메뉴 띠와 경로 줄이 주소로 소속을 읽어서(lib/nav 의 aliasQueries),
 // 칩만 바꾸고 주소를 두면 "공략" 을 쓰는데 띠는 "리뷰" 를 켠다. 화면을 다시 받지 않게 history.replaceState 로 바꾼다.
 import dynamic from "next/dynamic";
 import { useRouter } from "next/navigation";
 import { useEffect, useState, useTransition } from "react";
-import { createPostAction } from "@/app/(public)/board/actions";
+import { createPostAction, updatePostAction } from "@/app/(public)/board/actions";
 import { GamePicker, type PickedGame } from "@/components/community/game-picker";
 import { PostAttachments } from "@/components/community/post-attachments";
 import { attachmentsHtml, type UploadedFile } from "@/components/community/post-media";
@@ -26,7 +28,7 @@ import { TextField } from "@/components/ui/text-field";
 import { useToast } from "@/components/ui/toast";
 import { cn } from "@/lib/cn";
 import { CATEGORY_LABEL, CATEGORY_LIST_PATH, isLoungeCategory, POST_BODY_MAX, POST_TITLE_MAX, PROMO_TYPES, PROMO_TYPE_LABEL, requiresGame, takesGame, writePath } from "@/lib/community/constants";
-import { COMMUNITY_MESSAGES as M } from "@/lib/community/messages";
+import { COMMUNITY_MESSAGES as M, POST_EDIT_MESSAGES as EM } from "@/lib/community/messages";
 import { postInputSchema } from "@/lib/community/schemas";
 import { canGoBack } from "@/lib/nav-history";
 import type { PostCategory } from "@/server/db/schema";
@@ -41,6 +43,9 @@ type Errors = Partial<Record<"category" | "title" | "body" | "spoiler" | "promoT
 
 /** 라운지 글을 묶을 수 있는 내 인디 게임 하나 */
 export type IndieChoice = { slug: string; title: string };
+
+/** 고치기 화면이 채워 여는 값(app/(user)/board/mine/[id]/edit). 본문과 첨부는 splitPostBody 로 갈라 온다 */
+export type PostEditValues = { id: string; title: string; html: string; files: UploadedFile[]; spoiler: "" | "yes" | "no"; promoType: string; link: string; game: PickedGame | null };
 
 /** 하나만 고르는 칸 — 라디오를 세그먼트 한 덩어리로. 칸 이름과 오류를 fieldset 이 묶는다. hint 는 고르기 전에 읽을 안내 한 줄 */
 function Segmented({ name, legend, value, options, onChange, error, hint, required = false }: { name: string; legend: string; value: string; options: { value: string; label: string }[]; onChange: (v: string) => void; error?: string; hint?: string; required?: boolean }) {
@@ -91,19 +96,19 @@ function Panel({ title, children }: { title: string; children: React.ReactNode }
   );
 }
 
-export function PostForm({ categories, initial, indieChoices = [], initialIndie = "" }: { categories: readonly PostCategory[]; initial: PostCategory; indieChoices?: IndieChoice[]; initialIndie?: string }) {
+export function PostForm({ categories, initial, indieChoices = [], initialIndie = "", edit }: { categories: readonly PostCategory[]; initial: PostCategory; indieChoices?: IndieChoice[]; initialIndie?: string; edit?: PostEditValues }) {
   const router = useRouter();
   const toast = useToast();
   const [category, setCategory] = useState<PostCategory>(initial);
-  const [title, setTitle] = useState("");
-  const [html, setHtml] = useState("");
+  const [title, setTitle] = useState(edit?.title ?? "");
+  const [html, setHtml] = useState(edit?.html ?? "");
   const [textLength, setTextLength] = useState(0);
-  const [files, setFiles] = useState<UploadedFile[]>([]);
+  const [files, setFiles] = useState<UploadedFile[]>(edit?.files ?? []);
   const [busy, setBusy] = useState({ editor: false, files: false });
-  const [spoiler, setSpoiler] = useState("");
-  const [promoType, setPromoType] = useState("");
-  const [link, setLink] = useState("");
-  const [game, setGame] = useState<PickedGame | null>(null);
+  const [spoiler, setSpoiler] = useState<string>(edit?.spoiler ?? "");
+  const [promoType, setPromoType] = useState(edit?.promoType ?? "");
+  const [link, setLink] = useState(edit?.link ?? "");
+  const [game, setGame] = useState<PickedGame | null>(edit?.game ?? null);
   // 주소로 넘어온 slug 가 내 게임 목록에 없으면 비운다(남의 게임 상세에서 온 손질 주소)
   const [indie, setIndie] = useState(indieChoices.some((c) => c.slug === initialIndie) ? initialIndie : "");
   const takesIndie = isLoungeCategory(category) && indieChoices.length > 0;
@@ -112,9 +117,11 @@ export function PostForm({ categories, initial, indieChoices = [], initialIndie 
   const uploading = busy.editor || busy.files;
 
   useEffect(() => {
+    // 고치기 화면은 제 주소(글 id)를 지킨다 — 글쓰기 주소로 바꾸면 새로고침이 새 글쓰기로 연다
+    if (edit) return;
     const target = writePath(category);
     if (`${window.location.pathname}${window.location.search}` !== target) window.history.replaceState(null, "", target);
-  }, [category]);
+  }, [category, edit]);
 
   const cancel = () => {
     if (canGoBack()) router.back();
@@ -133,9 +140,9 @@ export function PostForm({ categories, initial, indieChoices = [], initialIndie 
     }
     setErrors({});
     start(async () => {
-      const r = await createPostAction(input);
+      const r = edit ? await updatePostAction(edit.id, input) : await createPostAction(input);
       if (r?.ok) {
-        toast(M.posted);
+        toast(edit ? EM.saved : M.posted);
         router.push(r.redirectTo);
         return;
       }
@@ -228,6 +235,7 @@ export function PostForm({ categories, initial, indieChoices = [], initialIndie 
             }}
             onBusyChange={(b) => setBusy((cur) => ({ ...cur, editor: b }))}
             onError={toast}
+            initialHtml={edit?.html}
           />
           {errors.body && (
             <p id="post-body-error" role="alert" className="text-[12.5px] text-danger">
@@ -250,7 +258,7 @@ export function PostForm({ categories, initial, indieChoices = [], initialIndie 
           {M.cancel}
         </Button>
         <Button type="submit" size="lg" loading={pending} disabled={uploading} className="min-w-[140px]">
-          {M.submit}
+          {edit ? EM.save : M.submit}
         </Button>
       </div>
     </form>

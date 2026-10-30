@@ -28,6 +28,8 @@ type Props = {
   onError: (message: string) => void;
   invalid?: boolean;
   describedBy?: string;
+  /** 고치기 화면이 채워 여는 본문(lib/community/post-body 의 splitPostBody). 처음 한 번만 읽는다 */
+  initialHtml?: string;
 };
 
 function countImages(editor: Editor): number {
@@ -38,7 +40,7 @@ function countImages(editor: Editor): number {
   return n;
 }
 
-export function RichEditor({ id, onChange, onBusyChange, onError, invalid, describedBy }: Props) {
+export function RichEditor({ id, onChange, onBusyChange, onError, invalid, describedBy, initialHtml }: Props) {
   const [uploading, setUploading] = useState(0);
   const [linkOpen, setLinkOpen] = useState(false);
   const [linkUrl, setLinkUrl] = useState("");
@@ -77,6 +79,7 @@ export function RichEditor({ id, onChange, onBusyChange, onError, invalid, descr
 
   const editor = useEditor({
     immediatelyRender: false,
+    content: initialHtml ?? "",
     extensions: [
       StarterKit.configure({
         heading: { levels: [2, 3] },
@@ -112,6 +115,8 @@ export function RichEditor({ id, onChange, onBusyChange, onError, invalid, descr
     },
     onCreate: ({ editor }) => {
       editorRef.current = editor;
+      // 채워 연 본문도 폼에 알린다 — 안 고치고 저장하면 폼은 빈 본문을 보낸다
+      if (initialHtml) onChange(editor.getHTML(), editor.getText().trim().length);
     },
     onUpdate: ({ editor }) => onChange(editor.getHTML(), editor.getText().trim().length),
   });

@@ -14,15 +14,19 @@ import { escapeLike, listCommentsForAdmin, POST_ADMIN_LIMIT, type ModerationDeci
 import type { AdminCommentRowDto, CommentDto } from "@/server/services/community/dto";
 import { INDIE_NOTIFY_MESSAGES as N, INDIE_PROMO_MESSAGES as M } from "@/lib/indie/promo-messages";
 import { indiePath } from "@/lib/routes";
+import { POST_EDIT_MESSAGES as E } from "@/lib/community/messages";
 
 export async function listIndieComments(postId: string): Promise<CommentDto[]> {
-  const viewer = await getCurrentUser().catch(() => null);
-  const rows = await getDb()
-    .select({ id: indiePostComments.id, body: indiePostComments.body, authorName: authorNameSql, createdAt: indiePostComments.createdAt, authorUserId: indiePostComments.authorUserId })
-    .from(indiePostComments)
-    .innerJoin(users, eq(users.id, indiePostComments.authorUserId))
-    .where(and(eq(indiePostComments.postId, postId), eq(indiePostComments.status, "published")))
-    .orderBy(asc(indiePostComments.createdAt));
+  // 사람과 댓글은 서로 기다릴 일이 없다 — 나란히 묻는다(2026-10-30 쿼리 점검)
+  const [viewer, rows] = await Promise.all([
+    getCurrentUser().catch(() => null),
+    getDb()
+      .select({ id: indiePostComments.id, body: indiePostComments.body, authorName: authorNameSql, createdAt: indiePostComments.createdAt, authorUserId: indiePostComments.authorUserId })
+      .from(indiePostComments)
+      .innerJoin(users, eq(users.id, indiePostComments.authorUserId))
+      .where(and(eq(indiePostComments.postId, postId), eq(indiePostComments.status, "published")))
+      .orderBy(asc(indiePostComments.createdAt)),
+  ]);
   return rows.map(({ authorUserId, ...r }) => ({ ...r, isMine: viewer?.id === authorUserId }));
 }
 
@@ -97,4 +101,34 @@ export async function moderateIndieComment(id: string, decision: ModerationDecis
         .returning({ slug: indiePosts.slug })
     : await db.select({ slug: indiePosts.slug }).from(indiePosts).where(eq(indiePosts.id, postId));
   return { href: post ? indiePath(post.slug) : "" };
+}
+
+/**
+ * 인디 댓글 고치기, 지우기(2026-10-30). 게시판 댓글(community/comment-edit)과 같은 규칙이다: 글쓴이 본인만, 숨긴 댓글은 못 고친다,
+ * 지우면 쌓아 둔 수에서 공개 댓글일 때만 뺀다. 인디 댓글에는 답글이 없어 같이 사라지는 줄이 없다
+ */
+export async function updateIndieComment(id: string, body: string): Promise<{ body: string; slug: string }> {
+  const u = await requireUser();
+  const [row] = await getDb()
+    .update(indiePostComments)
+    .set({ body, ...updatedBy("user", u.id) })
+    .where(and(eq(indiePostComments.id, id), eq(indiePostComments.authorUserId, u.id), eq(indiePostComments.status, "published")))
+    .returning({ body: indiePostComments.body, slug: sql<string>`(select ${indiePosts.slug} from ${indiePosts} where ${indiePosts.id} = ${indiePostComments.postId})` });
+  if (!row) throw new Error(E.commentForbidden);
+  return row;
+}
+
+export async function deleteIndieComment(id: string): Promise<{ slug: string }> {
+  const u = await requireUser();
+  const db = getDb();
+  const [row] = await db
+    .delete(indiePostComments)
+    .where(and(eq(indiePostComments.id, id), eq(indiePostComments.authorUserId, u.id)))
+    .returning({ postId: indiePostComments.postId, status: indiePostComments.status });
+  if (!row) throw new Error(E.commentForbidden);
+  const [post] =
+    row.status === "published"
+      ? await db.update(indiePosts).set({ commentCount: sql`greatest(${indiePosts.commentCount} - 1, 0)` }).where(eq(indiePosts.id, row.postId)).returning({ slug: indiePosts.slug })
+      : await db.select({ slug: indiePosts.slug }).from(indiePosts).where(eq(indiePosts.id, row.postId));
+  return { slug: post?.slug ?? "" };
 }

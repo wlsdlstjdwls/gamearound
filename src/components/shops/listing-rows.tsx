@@ -1,5 +1,5 @@
 "use client";
-// 판매 목록의 한 줄 — 재고를 그 자리에서 고치고, 잘못 올린 줄을 내린다.
+// 판매 목록의 한 줄 — 수량, 판매가, 공개를 그 자리에서 고치고(2026-10-30 값과 공개를 더했다), 잘못 올린 줄을 내린다.
 //
 // 줄마다 폼을 따로 두는 이유: 한 폼에 전부 담아 "모두 저장" 으로 만들면, 한 줄이 막혔을 때
 // 어느 줄이 문제인지 사람이 못 찾는다. 재고는 한 번에 한 줄씩 고치는 값이다.
@@ -11,12 +11,14 @@ import { ActionForm, useActionFormPending } from "@/components/ui/action-form";
 import { removeListingAction, updateStockAction, type ListingState } from "@/app/(user)/vendor/[shopSlug]/listings/actions";
 import { buttonClass } from "@/components/ui/button";
 import { FormMessage } from "@/components/ui/form-message";
+import { FormSelect } from "@/components/ui/select";
 import { panelClass } from "@/components/ui/page";
 import { Clamp } from "@/components/ui/tooltip";
+import { cn } from "@/lib/cn";
 import { formatPrice } from "@/lib/currency";
 import type { Currency } from "@/server/db/schema";
 import { LISTING_MESSAGES as M } from "@/lib/shops/listing-messages";
-import { LISTING_STOCK_MAX } from "@/lib/shops/listing-schemas";
+import { LISTING_PRICE_MAX, LISTING_STOCK_MAX } from "@/lib/shops/listing-schemas";
 import type { ListingDto, ListingPhotoDto } from "@/server/services/listings";
 import { ListingPhotos } from "@/components/shops/listing-photos";
 
@@ -32,6 +34,9 @@ const STATUS_LABEL: Record<ListingDto["status"], string> = {
   soldout: M.statusSoldout,
   hidden: M.statusHidden,
 };
+
+/** 줄 안의 숫자 칸. 16px 미만이면 iOS 가 화면을 확대한다(AGENTS §6) */
+const FIELD = "w-28 rounded-[var(--radius-sm)] border border-line-strong bg-bg px-2.5 py-2 text-[16px] text-ink focus-visible:border-ink focus-visible:outline-none";
 
 function PendingButton({ label, variant }: { label: string; variant: "secondary" | "ghost" }) {
   const pending = useActionFormPending();
@@ -83,7 +88,7 @@ function ListingRow({
       )}
 
       <div className="flex flex-wrap items-end gap-2">
-        <ActionForm action={stockAction} state={stockState} pending={stockActionPending} className="flex items-end gap-2">
+        <ActionForm action={stockAction} state={stockState} pending={stockActionPending} className="flex flex-wrap items-end gap-2">
           <input type="hidden" name="listingId" value={listing.id} />
           <div className="flex flex-col gap-1">
             <label htmlFor={`stock-${listing.id}`} className="text-[11.5px] text-dim">
@@ -95,10 +100,28 @@ function ListingRow({
               inputMode="numeric"
               defaultValue={listing.onHand}
               max={LISTING_STOCK_MAX}
-              // 16px 미만이면 iOS 가 화면을 확대한다(AGENTS §6)
-              className="w-20 rounded-[var(--radius-sm)] border border-line-strong bg-bg px-2.5 py-2 text-[16px] text-ink focus-visible:border-ink focus-visible:outline-none"
+              className={cn(FIELD, "w-20")}
             />
           </div>
+          <div className="flex flex-col gap-1">
+            <label htmlFor={`price-${listing.id}`} className="text-[11.5px] text-dim">
+              {M.priceLabel}
+            </label>
+            <input
+              id={`price-${listing.id}`}
+              name="priceMinor"
+              inputMode="numeric"
+              defaultValue={listing.priceMinor}
+              max={LISTING_PRICE_MAX}
+              className={FIELD}
+            />
+          </div>
+          <FormSelect
+            name="status"
+            label={M.statusLabel}
+            defaultValue={listing.status}
+            options={(Object.keys(STATUS_LABEL) as ListingDto["status"][]).map((v) => ({ value: v, label: STATUS_LABEL[v] }))}
+          />
           <PendingButton label={M.stockSave} variant="secondary" />
         </ActionForm>
 

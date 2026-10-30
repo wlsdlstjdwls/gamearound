@@ -11,7 +11,7 @@ import { getDb } from "@/server/db/client";
 import { createdBy, updatedBy } from "@/server/db/audit";
 import { indiePlaytestApplications, indiePlaytests, indiePosts, users } from "@/server/db/schema";
 import { boostEnd, rotateForWindow } from "@/lib/promo/boost";
-import { PLAYTEST_PIN_CAPACITY, playtestPhase, type ApplyPlaytestInput, type CreatePlaytestInput, type PlaytestPhase } from "@/lib/indie/playtest";
+import { PLAYTEST_PIN_CAPACITY, playtestPhase, type ApplyPlaytestInput, type CreatePlaytestInput, type PlaytestPhase, type UpdatePlaytestInput } from "@/lib/indie/playtest";
 import { PLAYTEST_MESSAGES as M } from "@/lib/indie/playtest-messages";
 import type { IndieCardDto } from "@/lib/indie/dto";
 import { authorNameSql } from "@/server/services/community/columns";
@@ -203,4 +203,20 @@ export async function listOpenPlaytests(): Promise<PlaytestBoardDto> {
   const pinnedIds = new Set(pinned.map((x) => x.playtest.id));
   const strip = ({ card, playtest }: (typeof all)[number]) => ({ card, playtest });
   return { pinned: pinned.map(strip), rest: all.filter((x) => !pinnedIds.has(x.playtest.id)).map(strip) };
+}
+
+/** 열린 모집 고치기. 글쓴이 확인과 "아직 안 끝났나" 를 한 질의로 보고, 인원은 지금 신청 수 밑으로 못 내린다 */
+export async function updatePlaytest(input: UpdatePlaytestInput): Promise<{ slug: string }> {
+  const u = await requireUser();
+  const db = getDb();
+  const [row] = await db
+    .select({ slug: indiePosts.slug, applicants: applicantCount })
+    .from(indiePlaytests)
+    .innerJoin(indiePosts, eq(indiePosts.id, indiePlaytests.postId))
+    .where(and(eq(indiePlaytests.id, input.id), eq(indiePosts.authorUserId, u.id), openNow))
+    .limit(1);
+  if (!row) throw new Error(M.notFound);
+  if (input.slots < row.applicants) throw new Error(M.slotsBelowApplied(row.applicants));
+  await db.update(indiePlaytests).set({ title: input.title, body: input.body, slots: input.slots, ...updatedBy("user", u.id) }).where(eq(indiePlaytests.id, input.id));
+  return { slug: row.slug };
 }

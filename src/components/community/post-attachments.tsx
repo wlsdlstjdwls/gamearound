@@ -78,7 +78,7 @@ export function PostAttachments(props: Props) {
             </span>
             <span className="flex min-w-0 flex-1 flex-col">
               <span className="truncate text-[13.5px] font-semibold text-ink">{f.name}</span>
-              <span className="text-[11.5px] tabular-nums text-dim">{formatFileSize(f.size)}</span>
+              <span className="text-[11.5px] tabular-nums text-dim">{f.sizeLabel ?? formatFileSize(f.size)}</span>
             </span>
             <button
               type="button"

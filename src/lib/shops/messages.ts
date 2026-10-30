@@ -89,6 +89,13 @@ export const SHOP_MESSAGES = {
   statusSuspended: "멈춰 있어요",
   reasonLabel: "사유",
   reapply: "신청서 고쳐서 다시 내기",
+  /** 신청 거두기(2026-10-30). 심사 중이거나 반려된 신청서만 — 승인된 매장은 운영진이 닫는다 */
+  withdraw: "신청 취소",
+  withdrawTitle: "입점 신청을 취소할까요?",
+  withdrawBody: "적어 낸 신청서가 지워져요. 나중에 처음부터 다시 낼 수 있어요.",
+  withdrawYes: "신청 취소",
+  withdrawn: "입점 신청을 취소했어요",
+  withdrawDenied: "심사 중이거나 반려된 신청만 취소할 수 있어요",
   viewMyShop: "내 매장 페이지 보기",
   noApplication: "아직 낸 신청서가 없어요",
   noApplicationNote: "신청서를 내면 이 화면에서 심사가 어디까지 왔는지 볼 수 있어요.",

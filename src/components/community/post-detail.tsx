@@ -10,17 +10,18 @@ import { notFound, permanentRedirect } from "next/navigation";
 import { AuthorName, PostTags } from "@/components/community/badges";
 import { Comments, PostReactions, SpoilerGate } from "@/components/community/post-interactions";
 import { PostGameCard } from "@/components/community/post-game-card";
+import { PostOwnerActions } from "@/components/community/post-owner-actions";
 import { DbUnavailablePage } from "@/components/db-unavailable";
 import { BackLink } from "@/components/ui/back-link";
 import { Page } from "@/components/ui/page";
-import { CATEGORY_LIST_PATH, isPostId, postPath } from "@/lib/community/constants";
+import { CATEGORY_LIST_PATH, isLoungeCategory, isPostId, postPath } from "@/lib/community/constants";
 import { isRichBody } from "@/lib/community/rich-text";
 import { sanitizePostHtml } from "@/lib/community/sanitize";
 import { COMMUNITY_MESSAGES as M } from "@/lib/community/messages";
 import { DB_DOWN, orDbDown } from "@/lib/db-errors";
 import { formatDateTime } from "@/lib/format";
 import { PAYMENT_MESSAGES } from "@/lib/payments/messages";
-import { boardPinPath, ROUTES } from "@/lib/routes";
+import { boardPinPath, postEditPath, ROUTES } from "@/lib/routes";
 import type { PostCategory } from "@/server/db/schema";
 import { getPostDetail, getPostGameCard, listComments } from "@/server/services/community";
 
@@ -43,7 +44,7 @@ export async function PostDetail({ id, lounge, category }: { id: string; lounge:
   );
 
   return (
-    <Page width="tight" gap={22}>
+    <Page width="read" gap={22}>
       {lounge && <BackLink href={listPath}>{M.backToList}</BackLink>}
       <article className="flex flex-col gap-6 rounded-[var(--radius-panel)] bg-surface p-5 shadow-hair sm:p-8">
         <header className="flex flex-col gap-3 border-b border-line-soft pb-5">
@@ -57,11 +58,16 @@ export async function PostDetail({ id, lounge, category }: { id: string; lounge:
             <span>
               {M.views} {post.viewCount.toLocaleString("ko-KR")}
             </span>
-            {/* 내 홍보 글에만 — 홍보 목록 위 고정을 사는 입구(2026-10-27). 남에게는 보이지 않는다 */}
-            {post.isMine && post.category === "promo" && (
-              <Link href={boardPinPath(post.id)} className="tap ml-auto inline-flex items-center font-semibold text-acc hover:underline">
-                {PAYMENT_MESSAGES.adBuy}
-              </Link>
+            {/* 내 글에만 — 홍보 글은 목록 위 고정을 사는 입구(2026-10-27), 모든 글은 수정, 삭제(2026-10-30). 남에게는 보이지 않는다 */}
+            {post.isMine && (
+              <span className="ml-auto flex items-center gap-3">
+                {post.category === "promo" && (
+                  <Link href={boardPinPath(post.id)} className="tap inline-flex items-center font-semibold text-acc hover:underline">
+                    {PAYMENT_MESSAGES.adBuy}
+                  </Link>
+                )}
+                <PostOwnerActions postId={post.id} title={post.title} editHref={postEditPath(post.id, isLoungeCategory(post.category))} />
+              </span>
             )}
           </p>
         </header>

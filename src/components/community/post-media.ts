@@ -10,7 +10,8 @@ import { POST_MEDIA_UPLOAD_PATH } from "@/lib/routes";
 import { resizePhoto } from "@/lib/shops/photo-resize";
 
 export type UploadedImage = { url: string; width: number; height: number };
-export type UploadedFile = { url: string; name: string; size: number };
+/** sizeLabel: 고치기 화면이 저장된 본문에서 되살린 첨부(lib/community/post-body)는 바이트 수를 모르고 글자 크기만 안다 */
+export type UploadedFile = { url: string; name: string; size: number; sizeLabel?: string };
 
 /** 실패하면 화면에 그대로 띄울 문장을 담아 던진다 */
 export async function uploadPostImage(file: File): Promise<UploadedImage> {
@@ -53,6 +54,6 @@ function escapeHtml(s: string): string {
  */
 export function attachmentsHtml(files: UploadedFile[]): string {
   if (files.length === 0) return "";
-  const items = files.map((f) => `<a href="${escapeHtml(f.url)}" data-file="" data-size="${escapeHtml(formatFileSize(f.size))}">${escapeHtml(f.name)}</a>`).join("");
+  const items = files.map((f) => `<a href="${escapeHtml(f.url)}" data-file="" data-size="${escapeHtml(f.sizeLabel ?? formatFileSize(f.size))}">${escapeHtml(f.name)}</a>`).join("");
   return `<div data-attachments="">${items}</div>`;
 }

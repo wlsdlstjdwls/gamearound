@@ -192,3 +192,28 @@ export const BOARD_PAGE_COPY: Record<PostCategory | "boardAll" | "loungeAll", { 
 export function postCountText(n: number): string {
   return `${n.toLocaleString("ko-KR")}개`;
 }
+
+/** 글, 댓글 고치기와 지우기(2026-10-30 사용자 "수정/삭제 기능 다 제공하나"). 지우기는 되돌릴 수 없어 늘 한 번 묻는다(ui/confirm-dialog) */
+export const POST_EDIT_MESSAGES = {
+  editTitle: "글 수정",
+  edit: "수정",
+  delete: "삭제",
+  save: "저장",
+  saved: "글을 고쳤어요",
+  deleted: "글을 지웠어요",
+  deleteTitle: "글을 지울까요?",
+  deleteBody: (title: string) => `${title} 을(를) 지우면 댓글과 좋아요도 함께 사라져요. 되돌릴 수 없어요.`,
+  deleteYes: "지우기",
+  forbidden: "내가 쓴 글만 고치거나 지울 수 있어요",
+  /** 게임 게시판 글을 라운지로(또는 반대로) 옮기는 고치기는 받지 않는다 — 목록, 알림, 광고 대상이 통째로 바뀐다 */
+  groupLocked: "게시판과 라운지 사이로는 옮길 수 없어요",
+  commentEdit: "수정",
+  commentDelete: "삭제",
+  commentSave: "저장",
+  commentCancel: "취소",
+  commentSaved: "댓글을 고쳤어요",
+  commentDeleted: "댓글을 지웠어요",
+  commentDeleteTitle: "댓글을 지울까요?",
+  commentDeleteBody: "답글이 달린 댓글이면 답글도 함께 사라져요. 되돌릴 수 없어요.",
+  commentForbidden: "내가 쓴 댓글만 고치거나 지울 수 있어요",
+} as const;

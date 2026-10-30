@@ -5,7 +5,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { z } from "zod";
-import { PlaytestCloseButton, PlaytestCreateForm } from "@/components/indie/playtest-manage";
+import { PlaytestCloseButton, PlaytestCreateForm, PlaytestEdit } from "@/components/indie/playtest-manage";
 import { Page, PageHead, ROWS, sectionCardClass } from "@/components/ui/page";
 import { Tag } from "@/components/ui/tag";
 import { formatDate, formatDateTime } from "@/lib/format";
@@ -73,6 +73,7 @@ export default async function IndiePlaytestManagePage({ params }: Props) {
           </div>
           <p className="text-[12.5px] tabular-nums text-dim">{[M.closesAt(formatDate(open.closesAt)), M.applicants(open.applicants, open.slots)].join(" | ")}</p>
           <p className="whitespace-pre-line text-[14px] leading-[1.7] text-ink-2">{open.body}</p>
+          <PlaytestEdit postId={data.post.id} playtest={{ id: open.id, title: open.title, body: open.body, slots: open.slots }} />
           <h2 className="mt-2 text-[14px] font-bold text-ink">{M.applicantsTitle}</h2>
           <Applicants list={open.applicantList} />
         </section>

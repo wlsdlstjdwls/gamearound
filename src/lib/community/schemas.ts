@@ -48,9 +48,14 @@ export const postInputSchema = z
 
 export type PostInput = z.infer<typeof postInputSchema>;
 
+const commentBody = z.string().trim().min(1, M.commentRequired).max(COMMENT_BODY_MAX, M.commentTooLong);
+
+/** 댓글 고치기(2026-10-30). 게시판 댓글과 인디 댓글이 같이 쓴다 */
+export const commentEditSchema = z.object({ id: z.uuid(), body: commentBody });
+
 export const commentInputSchema = z.object({
   postId: z.uuid(),
-  body: z.string().trim().min(1, M.commentRequired).max(COMMENT_BODY_MAX, M.commentTooLong),
+  body: commentBody,
   /** 답글이면 원댓글 id. 비우면 글에 바로 다는 댓글 */
   parentId: z.uuid().nullish(),
 });

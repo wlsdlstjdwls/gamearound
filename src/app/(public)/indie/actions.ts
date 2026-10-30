@@ -3,7 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { actionError } from "@/lib/db-errors";
-import { commentInputSchema } from "@/lib/community/schemas";
+import { commentEditSchema, commentInputSchema } from "@/lib/community/schemas";
 import { COMMUNITY_MESSAGES as CM } from "@/lib/community/messages";
 import { FAME_MESSAGES as M } from "@/lib/indie/fame";
 import { INDIE_PROMO_MESSAGES as PM } from "@/lib/indie/promo-messages";
@@ -12,8 +12,9 @@ import { ACTION_MESSAGES } from "@/lib/messages";
 import { WISHLIST_MESSAGES as WM } from "@/lib/wishlist/messages";
 import { cardSlugSchema } from "@/lib/wishlist/schemas";
 import { INDIE_WISHED_SLUGS_MAX } from "@/lib/indie/constants";
-import { addIndieComment, isFollowingDeveloper, isIndieLiked, likedIndieSlugs, toggleDeveloperFollow, toggleIndieLike, toggleIndieLikeBySlug } from "@/server/services/indie";
+import { addIndieComment, deleteIndieComment, isFollowingDeveloper, updateIndieComment, isIndieLiked, likedIndieSlugs, toggleDeveloperFollow, toggleIndieLike, toggleIndieLikeBySlug } from "@/server/services/indie";
 import type { CommentDto } from "@/server/services/community";
+import type { CommentDeleteResult, CommentEditResult } from "@/app/(public)/board/actions";
 
 const id = z.uuid();
 const slugsSchema = z.array(cardSlugSchema).max(INDIE_WISHED_SLUGS_MAX);
@@ -78,5 +79,29 @@ export async function toggleIndieLikeBySlugAction(slug: string): Promise<{ ok: t
     return { ok: true, ...r };
   } catch (e) {
     return { ok: false, error: actionError(e, ACTION_MESSAGES.failed) };
+  }
+}
+
+/** 인디 댓글 고치기, 지우기(2026-10-30). 결과 모양은 게시판 댓글과 같다 — 같은 댓글 부품(components/community/comment-item)이 받는다 */
+export async function updateIndieCommentAction(commentId: string, body: string): Promise<CommentEditResult> {
+  const parsed = commentEditSchema.safeParse({ id: commentId, body });
+  if (!parsed.success) return { ok: false, error: parsed.error.issues[0]?.message ?? CM.failed };
+  try {
+    const r = await updateIndieComment(parsed.data.id, parsed.data.body);
+    if (r.slug) revalidatePath(indiePath(r.slug));
+    return { ok: true, body: r.body };
+  } catch (e) {
+    return { ok: false, error: actionError(e, CM.failed) };
+  }
+}
+
+export async function deleteIndieCommentAction(commentId: string): Promise<CommentDeleteResult> {
+  if (!id.safeParse(commentId).success) return { ok: false, error: CM.failed };
+  try {
+    const r = await deleteIndieComment(commentId);
+    if (r.slug) revalidatePath(indiePath(r.slug));
+    return { ok: true };
+  } catch (e) {
+    return { ok: false, error: actionError(e, CM.failed) };
   }
 }
