@@ -100,6 +100,11 @@ route(page/action/api)  →  server/services  →  server/adapters | server/db
 - 누름 모션 `.press`, hover 부양 `.lift`(포인터 기기만). `prefers-reduced-motion` 은 전역 킬스위치가 처리한다.
 - 터치 타깃 44px, iOS 확대 방지를 위해 입력 글자 크기 16px 이상.
 - a11y: label 연결, 에러는 `aria-describedby`, 탭/메뉴는 키보드 이동, 바깥 클릭은 `mousedown` + `touchstart`.
+- **필수 칸 표시**(2026-10-30 사용자 확정 "지금 딱 좋다"): 저장 검사가 비우지 못하게 하는 칸은 이름표 **앞에 빨간 `*`** 를 단다.
+  관리자 폼은 `components/admin/screen/layout` 의 `Field` 에 `required` 만 넘기면 된다(낭독기용 "(필수)" 도 따라온다).
+  `TextField` 제 이름표(`labelSide` 등)로 세우면 표시가 빠진다 — 관리자 폼 칸은 `Field` 로 감싸고 입력 칸은 `hideLabel`.
+  무엇이 필수인지는 zod 스키마(`min(1)`, nullable 아님)를 기준으로 정한다. 조건부 필수(반려일 때만 사유)는 별표 대신 오류 문구로 말한다.
+- 칸 값이 잘려 보이면 올렸을 때 전체 값을 말풍선으로 띄운다. `TextField`, 셀렉트, `ReadValue`, `CodeName`, 그리드 셀이 이미 한다(`ui/tooltip` 의 `Clamp`) — 새 칸도 이 부품들을 쓴다.
 - 한국어 UI 문구는 "-해요"체.
 - 서버 컴포넌트가 기본. `"use client"` 는 상태, 이벤트가 실제로 필요한 컴포넌트에만 붙인다.
 - **누른 순간 화면이 먼저 바뀐다.** 토글, 칩, 탭, 정렬, 쪽 번호, 찜처럼 눌러서 상태가 바뀌는 컨트롤은 서버 응답을 기다리지 않는다 —
