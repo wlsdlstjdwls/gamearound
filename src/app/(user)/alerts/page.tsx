@@ -92,6 +92,8 @@ export default async function AlertsPage({ searchParams }: { searchParams: Promi
         }
       >
         <p className="text-[14px] text-mut">{M.lead}</p>
+        {/* 찜만 해 둔 게임도 할인하면 온다(sync/dispatch-wish-alerts). 목록의 알림은 그보다 자세한 조건을 건 것이다. 판이 아니라 설명 밑 한 줄이다 — 판이면 화면이 길어진다 */}
+        <WishSaleToggle initialOn={me.wishSaleAlertsOffAt === null} surface="inline" className="mt-2" />
       </PageHead>
 
       {pushCount === 0 && (
@@ -107,9 +109,6 @@ export default async function AlertsPage({ searchParams }: { searchParams: Promi
           </Link>
         </div>
       )}
-
-      {/* 찜만 해 둔 게임도 할인하면 온다(sync/dispatch-wish-alerts). 목록의 알림은 그보다 자세한 조건을 건 것이다 */}
-      <WishSaleToggle initialOn={me.wishSaleAlertsOffAt === null} surface="card" className="enter-item" />
 
       {views.length > 0 && (
         <div className="grid grid-cols-3 gap-2.5">
