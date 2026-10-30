@@ -15,14 +15,15 @@
 // 2026-10-08 — 손볼 줄(끊김, 실패, 일부 실패)을 **앞으로 당긴다**. 정상 줄 사이의 순서(서비스의 SOURCES 순서)는 유지한다.
 // 2026-10-29 — 화면 구성을 백오피스 조회 화면 꼴로 옮겼다(components/admin/sync-screen). 여기는 읽고, 조회조건(스토어, 상태)으로 거르고,
 // 직렬화되는 줄로 펴서 넘기기만 한다. 칸을 그리는 함수는 서버에서 못 넘겨 화면 쪽에 있다.
-// 거르기는 읽은 뒤에 한다 — 소스가 열댓 줄이라 질의를 나눌 값이 없고, 24시간 요약은 조건과 상관없이 전체를 말해야 한다.
+// 거르기는 화면이 한다(sync-screen 머리 주석) — 소스가 열댓 줄이라 질의를 나눌 값이 없고, 24시간 요약은 조건과 상관없이 전체를 말해야 한다.
+// 여기서는 주소의 조건을 첫 값으로 넘기기만 한다.
 import type { Metadata } from "next";
 import { AdminScreenHead } from "@/components/admin/screen/head";
 import { ProgramLink } from "@/components/admin/screen/program-link";
 import { SyncScreen, type SyncSourceRow } from "@/components/admin/sync-screen";
 import { buttonClass } from "@/components/ui/button";
 import { SYNC_MESSAGES, sourceLabel, ADMIN_NAV } from "@/lib/admin/messages";
-import { isSyncHealthFilter, matchesHealthFilter, syncHealthOf, type SyncHealth } from "@/lib/admin/sync-health";
+import { isSyncHealthFilter, syncHealthOf, type SyncHealth } from "@/lib/admin/sync-health";
 import { cn } from "@/lib/cn";
 import { firstParam } from "@/lib/games-query";
 import { ROUTES } from "@/lib/routes";
@@ -98,7 +99,6 @@ export default async function AdminSyncOverviewPage({ searchParams }: Props) {
   // sort 는 안정 정렬이라 같은 칸끼리는 서비스가 준 순서 그대로다
   const rows = overview.items
     .map((item) => toRow(item, activity.lastRuns.get(item.source), activity.asOf))
-    .filter((r) => (source === "all" || r.source === source) && matchesHealthFilter(r.health, status))
     .sort((a, b) => RANK[a.health] - RANK[b.health]);
 
   return (

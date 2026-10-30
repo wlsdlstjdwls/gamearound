@@ -4,14 +4,15 @@
 // 앞 판은 옛 data-rows 표 한 장에 에러 맛보기와 쉬는 까닭을 줄 밑에 눕혔다. 그리드 칸에는 "어디가 아픈가" 를 가르는 값만 두고
 // 긴 글(에러, 쉬는 까닭, 신규 찾기)은 상세로 옮겼다 — 줄 높이가 고르게 서야 손볼 줄이 한눈에 갈린다.
 //
-// 조회조건은 주소로 간다(useUrlFilter). 서버가 거른 줄을 다시 주는 동안 고른 값은 먼저 칸에 서고, 결과 자리는 흐리다(AGENTS §6).
+// 조회조건은 화면 안에서 거른다(2026-10-30 사용자 결정). 스토어가 열댓 줄이라 서버가 다시 읽어도 결과가 같은데,
+// 고를 때마다 Neon 을 두 질의씩 깨웠다. 주소는 history.replaceState 로만 고친다 — 새로 고침, 링크 공유, 현황판에서 ?status= 로
+// 들어오는 길은 그대로 살고 서버는 다시 부르지 않는다(task-board 와 같은 방식).
 // 줄은 서버가 손볼 것부터 세워 준다(page.tsx). 그리드 머리를 눌러 다른 순서로 볼 수 있다.
 // "가져온 게임" 시트는 상세의 단추 하나 뒤에 있고 누르기 전에는 세우지 않는다(sync-run-sheet 머리 주석, 닫힌 시트 19.5초 사고).
-import { memo, useState } from "react";
+import { memo, useMemo, useState } from "react";
 import { DataGrid, type GridCol } from "@/components/admin/screen/data-grid";
 import { ProgramLink } from "@/components/admin/screen/program-link";
 import { CodeName, Field, FormSection, MasterDetail, ReadValue, SearchBand, SearchItem } from "@/components/admin/screen/layout";
-import { useUrlFilter } from "@/components/admin/screen/url-filter";
 import { SyncErrorSample } from "@/components/admin/sync-error-sample";
 import { runCounts, SyncRunSheet } from "@/components/admin/sync-run-sheet";
 import { SYNC_HEALTH_TONE } from "@/components/admin/sync-tone";
@@ -19,8 +20,7 @@ import { FormSelect } from "@/components/ui/select/fields";
 import { Tag } from "@/components/ui/tag";
 import { ADMIN_NAV, APPROVAL_MESSAGES as AM, SYNC_MESSAGES as M, SYNC_STATUS_LABEL } from "@/lib/admin/messages";
 import { joinSyncFilter, splitSyncFilter, syncFilterHref } from "@/lib/admin/sync-filter";
-import type { SyncHealth, SyncHealthFilter } from "@/lib/admin/sync-health";
-import { cn } from "@/lib/cn";
+import { matchesHealthFilter, type SyncHealth, type SyncHealthFilter } from "@/lib/admin/sync-health";
 import { formatAgo, formatDateTime } from "@/lib/format";
 import { ROUTES } from "@/lib/routes";
 import type { RunSummary } from "@/server/services/admin-activity";
@@ -89,31 +89,35 @@ export function SyncScreen({
   source: string;
   status: SyncHealthFilter;
 }) {
-  // 두 칸을 한 값으로 쥔다(lib/admin/sync-filter 머리 주석)
-  const filter = useUrlFilter(joinSyncFilter(source, status), (v) => syncFilterHref(ROUTES.adminSync, v));
-  const [srcValue, stValue] = splitSyncFilter(filter.value);
-  const pending = filter.pending;
+  const [joined, setJoined] = useState(() => joinSyncFilter(source, status));
+  const [srcValue, stValue] = splitSyncFilter(joined);
+  const choose = (next: string) => {
+    setJoined(next);
+    window.history.replaceState(null, "", syncFilterHref(ROUTES.adminSync, next));
+  };
+  const shown = useMemo(
+    () => rows.filter((r) => (srcValue === "all" || r.source === srcValue) && matchesHealthFilter(r.health, stValue as SyncHealthFilter)),
+    [rows, srcValue, stValue],
+  );
 
   return (
     <div className="flex flex-col gap-3">
       <SearchBand label={M.search}>
         <SearchItem label={M.searchSource}>
-          <FormSelect name="sync-source" label={M.searchSource} hideLabel size="md" value={srcValue} onChange={(v) => filter.set(joinSyncFilter(v, stValue))} options={[{ value: "all", label: M.all }, ...sources]} />
+          <FormSelect name="sync-source" label={M.searchSource} hideLabel size="md" value={srcValue} onChange={(v) => choose(joinSyncFilter(v, stValue))} options={[{ value: "all", label: M.all }, ...sources]} />
         </SearchItem>
         <SearchItem label={M.searchStatus}>
-          <FormSelect name="sync-status" label={M.searchStatus} hideLabel size="md" value={stValue} onChange={(v) => filter.set(joinSyncFilter(srcValue, v))} options={STATUS_FILTERS} />
+          <FormSelect name="sync-status" label={M.searchStatus} hideLabel size="md" value={stValue} onChange={(v) => choose(joinSyncFilter(srcValue, v))} options={STATUS_FILTERS} />
         </SearchItem>
       </SearchBand>
-      <div className={cn("transition-opacity duration-fast", pending && "pointer-events-none opacity-50")} aria-busy={pending || undefined}>
-        <Results rows={rows} asOf={asOf} />
-      </div>
+      <Results rows={shown} asOf={asOf} />
     </div>
   );
 }
 
 /**
- * 그리드와 상세. 조회조건을 고른 순간의 낙관 렌더에서 이 아래는 다시 그리지 않는다(rows, asOf 가 그대로라 memo 가 건너뛴다) —
- * 같이 그리면 고른 값이 칸에 서기까지 dev 에서 100ms 남짓 걸렸다(2026-10-29 CDP 실측). 서버가 새 줄을 주면 그때 그린다
+ * 그리드와 상세. 거른 줄(shown)이 바뀔 때만 다시 그린다 — 조회조건 칸만 바뀌는 렌더까지 그리드를 같이 그리면
+ * 고른 값이 칸에 서기까지 dev 에서 100ms 남짓 걸렸다(2026-10-29 CDP 실측)
  */
 const Results = memo(function Results({ rows, asOf }: { rows: SyncSourceRow[]; asOf: number }) {
   const [selected, setSelected] = useState<string | null>(null);
