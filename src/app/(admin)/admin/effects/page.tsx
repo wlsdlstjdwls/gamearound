@@ -1,31 +1,16 @@
 // /admin/effects — 전시관리(앞 이름 화면 연출, 2026-10-28, 사용자 "이 효과는 관리자가 설정할 수 있게"). 지금은 명예의 전당 1위 인트로 하나다.
-// 연출이 늘면 같은 화면에 판을 하나씩 더한다(값은 site_settings 의 키 하나씩).
+// 화면 구성은 백오피스 등록 화면 꼴(components/admin/effects-screen, 2026-10-30). 여기는 저장된 값을 읽어 넘기기만 한다.
+// 전시가 늘면 site_settings 키를 하나씩 더하고 그 화면 목록에 줄을 더한다.
 import type { Metadata } from "next";
-import { FameIntroForm } from "@/components/admin/fame-intro-form";
-import { sectionCardClass } from "@/components/ui/page";
-import { AdminScreenHead } from "@/components/admin/screen/head";
+import { EffectsScreen } from "@/components/admin/effects-screen";
 import { ADMIN_NAV } from "@/lib/admin/messages";
-import { FAME_INTRO_ADMIN_MESSAGES as M } from "@/lib/indie/fame-intro";
 import { requireRoleOrForbid } from "@/server/auth/guards";
-import { getFameIntroSettings } from "@/server/services/settings";
+import { getFameIntroSettings, SETTING_KEYS } from "@/server/services/settings";
 
 export const metadata: Metadata = { title: ADMIN_NAV.effects };
 
 export default async function AdminEffectsPage() {
   await requireRoleOrForbid("admin");
   const settings = await getFameIntroSettings();
-  return (
-    <div className="flex flex-col gap-5">
-      <AdminScreenHead title={ADMIN_NAV.effects} />
-      <section aria-labelledby="fame-intro-head" className={sectionCardClass("flex max-w-[680px] flex-col gap-4")}>
-        <div className="flex flex-col gap-1">
-          <h2 id="fame-intro-head" className="text-[15px] font-bold text-ink">
-            {M.sectionTitle}
-          </h2>
-          <p className="text-[13px] leading-[1.6] text-mut">{M.lead}</p>
-        </div>
-        <FameIntroForm initial={settings} />
-      </section>
-    </div>
-  );
+  return <EffectsScreen code={SETTING_KEYS.fameIntro} initial={settings} />;
 }
