@@ -10,9 +10,11 @@
 // 관리자 화면에는 서지 않는다 — 관리자 셸이 제 바닥 띠를 세운다. 두 띠가 겹치면 아래 것이 가려진다.
 //
 // 누른 순간 켜진다(AGENTS.md 6장) — 서버를 기다리는 동안 칸이 그대로면 단추가 죽은 것처럼 보인다. sub-nav 와 같은 수법이다.
-// 켜짐은 경로만 본다(useSearchParams 를 쓰면 머리띠 전체가 Suspense 경계를 요구한다). 메뉴 단위라 주소 조건은 필요 없다.
+// 켜짐은 머리띠 메뉴(site-nav)와 같이 경로와 주소 조건을 함께 읽는다. 경로만 보면 등록현황에서 들어간 인디 상세
+// (/indie/<slug>?from=mine)에서 위는 "개발자 라운지", 아래는 "인디 게임" 이 켜져 둘이 엇갈렸다(lib/nav 의 childQueries).
+// useSearchParams 는 Suspense 경계를 요구하므로 머리띠가 SiteTabbarFallback(주소 조건 없이 경로만)을 대신 세운다.
 import Link from "next/link";
-import { usePathname, useRouter } from "next/navigation";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useOptimistic, useTransition, type ReactNode } from "react";
 import { isPlainClick } from "@/components/ui/chip-nav";
 import { ChatIcon, FileTextIcon, GamepadIcon, HomeIcon, SproutIcon, UserIcon } from "@/components/ui/icons";
@@ -42,6 +44,16 @@ const TABS: readonly { key: string; label: string; href: string; icon: ReactNode
 const TABBAR_LABEL = "바닥 메뉴";
 
 export function SiteTabbar() {
+  const query = useSearchParams();
+  return <TabbarNav query={query} />;
+}
+
+/** useSearchParams 를 기다리는 동안(정적 프리렌더) 서는 같은 줄. 경로로만 켠다 */
+export function SiteTabbarFallback() {
+  return <TabbarNav query={new URLSearchParams()} />;
+}
+
+function TabbarNav({ query }: { query: URLSearchParams }) {
   const pathname = usePathname();
   const router = useRouter();
   const [, startTransition] = useTransition();
@@ -49,7 +61,7 @@ export function SiteTabbar() {
 
   if (pathname.startsWith(ROUTES.admin)) return null;
 
-  const { section } = resolveNav(pathname, new URLSearchParams());
+  const { section } = resolveNav(pathname, query);
   const here = pathname === ROUTES.home ? HOME_KEY : (section?.key ?? null);
   const on = picked ?? here;
 

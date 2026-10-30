@@ -7,7 +7,7 @@ import { BrandLockup } from "@/components/ui/logo";
 import { SearchBox, SearchBoxFallback } from "@/components/search-box";
 import { SiteMenu } from "@/components/site-menu";
 import { SiteNav, SiteNavFallback } from "@/components/site-nav";
-import { SiteTabbar } from "@/components/site-tabbar";
+import { SiteTabbar, SiteTabbarFallback } from "@/components/site-tabbar";
 import { NotificationBell } from "@/components/notification-bell";
 import { HeaderWishLink } from "@/components/header-wish-link";
 import { SubNav } from "@/components/sub-nav";
@@ -70,7 +70,9 @@ export function SiteHeader() {
           <SiteMenu />
         </div>
       </header>
-      <SiteTabbar />
+      <Suspense fallback={<SiteTabbarFallback />}>
+        <SiteTabbar />
+      </Suspense>
       <Suspense fallback={null}>
         <SubNav />
         {/* 하위 화면 맨 위 "이전 화면" 과 경로(목업 crumb). 띠와 같은 표를 읽는다(page-trail 머리 주석) */}
