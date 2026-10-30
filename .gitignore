@@ -55,3 +55,6 @@ Thumbs.db
 /artifacts
 /scripts/_tmp-*
 .shots/
+
+# 화면 캡처용 로그인 상태(scripts/mobile-shot.py) — 세션 쿠키라 올리지 않는다
+.auth-state.json
