@@ -85,6 +85,8 @@ export function TextField({ label, labelMark, hideLabel, hint, error, leading, a
           // 입력칸이 채운 판(--surface-2) 위에 서는 자리라 흰 면이 곧 "쓸 수 있는 칸" 이고,
           // 거기에 1px 선까지 더하면 판 안의 판이 된다. 선은 포커스와 오류에서만 말한다
           "relative flex items-center rounded-xl bg-surface transition-[box-shadow] duration-base ease-standard",
+          // 잠긴 칸(disabled)은 읽기 전용 칸(관리자 ReadValue)과 같은 회색 면 — 흰 칸이면 고칠 수 있는 칸으로 읽혔다(2026-10-30 진행 중 프로모션 잠금)
+          "has-[input:disabled]:bg-surface-2 has-[input:disabled]:shadow-none",
           "shadow-[0_0_0_1px_var(--line)] focus-within:shadow-[0_0_0_1px_var(--acc),0_0_0_4px_var(--acc-glow)]",
           invalid && "animate-shake shadow-[0_0_0_1px_var(--danger)] focus-within:shadow-[0_0_0_1px_var(--danger)]",
         )}
@@ -100,7 +102,7 @@ export function TextField({ label, labelMark, hideLabel, hint, error, leading, a
             // 14px 이던 값을 올렸다(2026-09-22 실측: 로그인, 가입의 모든 칸이 14px 이었다).
             // 높이는 46px 그대로라 줄 위치는 밀리지 않는다 — 글자만 커진다.
             compact ? "h-11 min-h-11" : "h-[46px] min-h-[46px]",
-            "w-full min-w-0 flex-1 bg-transparent px-3.5 text-[16px] text-ink outline-none placeholder:text-dim",
+            "w-full min-w-0 flex-1 bg-transparent px-3.5 text-[16px] text-ink outline-none placeholder:text-dim disabled:cursor-not-allowed disabled:text-mut",
             leading ? "pl-0.5" : null,
             "autofill:shadow-[inset_0_0_0_1000px_var(--surface)] autofill:[-webkit-text-fill-color:var(--ink)]",
             className,
