@@ -1,7 +1,10 @@
 "use client";
 // 공용 텍스트 입력 — 라벨/힌트/에러 연결(aria-describedby), 포커스 링, 우측 슬롯(비밀번호 토글 등).
 // 에러는 등장 시 rise 애니메이션, 필드는 살짝 흔들림(shake). React 19: ref는 일반 prop.
-import { useId, type ComponentProps, type ReactNode } from "react";
+// 값이 칸보다 길어 잘려 보이면 칸 위에 올렸을 때 전체 값을 말풍선으로 띄운다(2026-10-30 사용자 "폼 필드들도 툴팁, 공통화").
+// 그리드 셀(Clamp)과 같은 말풍선이다. 말풍선은 칸 상자에 건다 — input 의 ref 는 부르는 쪽 몫이라 합치지 않고 상자 안에서 input 을 찾는다.
+import { useEffect, useId, useState, type ComponentProps, type ReactNode } from "react";
+import { useTooltip } from "@/components/ui/tooltip";
 import { cn } from "@/lib/cn";
 import { AlertCircleIcon } from "@/components/ui/icons";
 
@@ -37,6 +40,24 @@ export function TextField({ label, labelMark, hideLabel, hint, error, leading, a
   const hintId = `${id}-hint`;
   const errorId = `${id}-error`;
   const invalid = Boolean(error);
+  const [overflow, setOverflow] = useState<string | null>(null);
+  const { triggerProps, tooltip } = useTooltip<HTMLDivElement>(overflow ?? "", overflow !== null);
+  const box = triggerProps.ref;
+
+  // 잘림 판정. 값이 바뀌거나(제어, 비제어 모두 input 이벤트를 듣는다) 폭이 바뀌면 다시 잰다
+  useEffect(() => {
+    const el = box.current?.querySelector("input");
+    if (!el) return;
+    const check = () => setOverflow(el.value && el.scrollWidth > el.clientWidth + 1 ? el.value : null);
+    check();
+    el.addEventListener("input", check);
+    const ro = new ResizeObserver(check);
+    ro.observe(el);
+    return () => {
+      el.removeEventListener("input", check);
+      ro.disconnect();
+    };
+  }, [box, input.value]);
 
   return (
     <div className={cn("group/field", labelSide && "sm:grid sm:grid-cols-[var(--field-label-w,112px)_minmax(0,1fr)] sm:items-start sm:gap-x-3", wrapperClassName)}>
@@ -52,6 +73,7 @@ export function TextField({ label, labelMark, hideLabel, hint, error, leading, a
         )}
       </div>
       <div
+        {...triggerProps}
         className={cn(
           // key 를 붙이지 않는다(2026-09-23). 예전에는 key={invalid ? "invalid" : "valid"} 로 shake 를 다시 태웠는데,
           // key 가 바뀌면 이 div 와 **안의 <input> 이 통째로 새로 만들어진다** — 치던 값이 날아갔다.
@@ -88,6 +110,7 @@ export function TextField({ label, labelMark, hideLabel, hint, error, leading, a
         {trailing && <div className="flex shrink-0 items-center pr-1.5">{trailing}</div>}
         {popup}
       </div>
+      {tooltip}
       {invalid ? (
         <p id={errorId} role="alert" className={cn("mt-1.5 flex items-start gap-1 text-xs text-danger animate-rise", labelSide && "sm:col-start-2")}>
           <AlertCircleIcon size={14} className="mt-px shrink-0" />

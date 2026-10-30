@@ -16,6 +16,7 @@ import { useId, useRef, useState } from "react";
 import { cn } from "@/lib/cn";
 import { FULL_ROW } from "@/components/admin/screen/form-grid";
 import { ChevronDownIcon } from "@/components/ui/icons";
+import { Clamp } from "@/components/ui/tooltip";
 import { SCREEN_MESSAGES as SM } from "@/lib/admin/messages";
 import { SplitHandle, useListSplit } from "@/components/admin/screen/split-handle";
 import { FitFillContext } from "@/components/admin/screen/data-grid/fit";
@@ -234,15 +235,22 @@ export function FieldPair({ from, to, joiner = "~" }: { from: React.ReactNode; t
 export function CodeName({ code, children }: { code: React.ReactNode; children: React.ReactNode }) {
   return (
     <div className="grid grid-cols-[minmax(0,2fr)_minmax(0,3fr)] gap-1.5">
-      <ReadValue>
-        <span className="truncate">{code}</span>
-      </ReadValue>
+      <ReadValue>{code}</ReadValue>
       <div className="min-w-0">{children}</div>
     </div>
   );
 }
 
-/** 고칠 수 없는 값 — 회색 칸(백오피스의 계산, 코드 칸) */
+/**
+ * 고칠 수 없는 값 — 회색 칸(백오피스의 계산, 코드 칸).
+ * 글자 값은 한 줄로 자르고, 잘렸을 때만 올리면 전체 값을 말풍선으로 띄운다(ui/tooltip 의 Clamp, 2026-10-30 사용자 "폼 필드들도 툴팁, 공통화").
+ * 배지, 링크 같은 조각은 그대로 둔다 — 조각에서 글자를 긁어내지 않는다(Clamp 머리 주석)
+ */
 export function ReadValue({ children, align = "left" }: { children: React.ReactNode; align?: "left" | "right" }) {
-  return <div className={cn("flex min-h-11 items-center rounded-xl bg-surface-2 px-3.5 text-[14px] text-mut [@media(pointer:fine)]:min-h-10", align === "right" && "justify-end tabular-nums")}>{children}</div>;
+  const text = typeof children === "string" || typeof children === "number" ? String(children) : null;
+  return (
+    <div className={cn("flex min-h-11 min-w-0 items-center rounded-xl bg-surface-2 px-3.5 text-[14px] text-mut [@media(pointer:fine)]:min-h-10", align === "right" && "justify-end tabular-nums")}>
+      {text !== null ? <Clamp className={cn("min-w-0", align === "right" && "text-right")}>{text}</Clamp> : children}
+    </div>
+  );
 }

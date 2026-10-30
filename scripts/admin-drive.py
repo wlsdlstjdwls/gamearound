@@ -15,6 +15,8 @@
 #   pick:<단추 이름>=<보기 이름>    pickn:<단추 이름>=<보기 순번>   고르기 칸
 #   fill:<css>=<글>   입력 칸 채우기(css 에 = 가 있어도 된다, 마지막 = 로 가른다)
 #   focus:<css>       칸에 포커스만 넣는다(값은 안 바꾼다 — 미리 보기 자리 강조 확인)
+#   hover:<css>       마우스를 올린다(잘린 값 말풍선 확인)
+#   eval:<js 식>      페이지에서 식을 돌려 결과를 찍는다(화면에 안 보이는 상태 확인)
 #   clicktext:<글>    그 글자를 누른다(체크 칸 이름표 등)
 #   key:<키>          키 누르기(Control+s, F8 ...)
 #   status            6초 기다린 뒤 상태줄 글을 찍는다
@@ -70,6 +72,10 @@ async def main():
             elif s.startswith("fill:"):
                 sel, text = s[5:].rsplit("=", 1)
                 await pg.fill(sel, text); await pg.wait_for_timeout(400)
+            elif s.startswith("eval:"):
+                print("eval:", await pg.evaluate(s[5:]))
+            elif s.startswith("hover:"):
+                await pg.hover(s[6:]); await pg.wait_for_timeout(700)
             elif s.startswith("focus:"):
                 await pg.focus(s[6:]); await pg.wait_for_timeout(700)
             elif s.startswith("key:"):

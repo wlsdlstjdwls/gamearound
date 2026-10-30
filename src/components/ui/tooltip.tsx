@@ -232,9 +232,17 @@ export function Clamp({
   useEffect(() => {
     const el = ref.current;
     if (!el) return;
+    // 한 줄 자르기는 글자 실제 폭(Range)을 상자 폭과 견준다. scrollWidth 는 정수로 반올림돼 1px 미만으로 넘친 글자를
+    // "안 잘림" 으로 읽었다 — 화면엔 말줄임표가 찍혔는데 말풍선이 안 떴다(2026-10-30 관리자 셀렉트 "진행 ..." 실측 40/39)
+    const inlineOverflow = () => {
+      if (lines !== 1) return false;
+      const range = document.createRange();
+      range.selectNodeContents(el);
+      return range.getBoundingClientRect().width > el.getBoundingClientRect().width + 0.5;
+    };
     const check = () =>
       setClipped(
-        el.scrollHeight > el.clientHeight + OVERFLOW_SLACK || el.scrollWidth > el.clientWidth + OVERFLOW_SLACK,
+        el.scrollHeight > el.clientHeight + OVERFLOW_SLACK || el.scrollWidth > el.clientWidth + OVERFLOW_SLACK || inlineOverflow(),
       );
     check();
     // 폭이 바뀌면(반응형, 사이드바 접힘) 잘림 여부도 바뀐다

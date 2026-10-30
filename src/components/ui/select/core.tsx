@@ -21,6 +21,7 @@ import { useEffect, useId, useLayoutEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { cn } from "@/lib/cn";
 import { CheckIcon } from "@/components/ui/icons";
+import { Clamp } from "@/components/ui/tooltip";
 
 export interface SelectOption {
   /** 고유 키이자 현재 값 비교 기준 */
@@ -278,8 +279,9 @@ export function SelectCore({
           disabled && "cursor-not-allowed opacity-50 hover:border-line-strong hover:text-ink-2",
         )}
       >
-        <span id={`${id}-value`} className="min-w-0 flex-1 truncate font-medium">
-          {options[selectedIdx]?.label ?? ""}
+        {/* 고른 값이 칸보다 길어 잘리면 올렸을 때 전체를 말풍선으로(ui/tooltip 의 Clamp, 2026-10-30 사용자 "폼 필드들도 툴팁") */}
+        <span id={`${id}-value`} className="flex min-w-0 flex-1 font-medium">
+          <Clamp className="min-w-0">{options[selectedIdx]?.label ?? ""}</Clamp>
         </span>
         {/* 화살표 글자 대신 그림 — 문구에 ↓ 를 쓰지 않는다는 규약을 지키면서 펼침을 표시한다 */}
         <svg aria-hidden viewBox="0 0 10 6" className={cn("w-2.5 shrink-0 transition-transform duration-base", open && "rotate-180 text-acc")}>
