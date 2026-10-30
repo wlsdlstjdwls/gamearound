@@ -62,6 +62,9 @@ function DownloadIcon({ size }: IconProps) {
   );
 }
 
+/** 처리 결과를 건수 안내가 덮지 않는 동안. 처리 뒤 다시 읽기는 Neon 왕복 때문에 몇 초 걸린다(neon-roundtrip-cost) — 그보다 넉넉히 */
+const KEEP_RESULT_MS = 15_000;
+
 export type ScreenTools = {
   /** 조회를 바꿔 끼울 때(예: 폼이 저장 전 값을 버리고 다시 읽기). 없으면 서버에서 다시 읽는다 */
   retrieve?: () => void;
@@ -137,7 +140,7 @@ export function AdminScreenHead({
   tools?: ScreenTools;
 }) {
   const router = useRouter();
-  const { say } = useAdminStatus();
+  const { say, status } = useAdminStatus();
   const { user } = useSession();
   const path = usePath();
   const [refreshing, startRefresh] = useTransition();
@@ -148,9 +151,18 @@ export function AdminScreenHead({
     toolsRef.current = tools;
   });
 
-  // 서버가 준 건수를 상태줄에 남긴다. 다시 조회해서 건수가 바뀌어도 다시 쓴다
+  // 서버가 준 건수를 상태줄에 남긴다. 다시 조회해서 건수가 바뀌어도 다시 쓴다.
+  // 단 방금 남긴 처리 결과(걸었어요, 승인했어요, 실패 사유)는 덮지 않는다 — 처리 뒤 서버가 다시 준 목록의 건수가 바뀌며
+  // 그 말을 바로 지워 무엇이 되었는지 읽을 수 없었다(2026-10-30 광고 걸기 점검)
+  const statusRef = useRef(status);
   useEffect(() => {
-    if (count !== undefined) say(M.retrieved(count), "info");
+    statusRef.current = status;
+  });
+  useEffect(() => {
+    if (count === undefined) return;
+    const last = statusRef.current;
+    if (last && last.tone !== "info" && Date.now() - last.at < KEEP_RESULT_MS) return;
+    say(M.retrieved(count), "info");
   }, [count, say]);
 
   // 엑셀 단추는 목록 표가 있는 화면에서만 켠다. 표는 Suspense 뒤에 늦게 설 수 있어 바뀔 때마다 다시 본다
