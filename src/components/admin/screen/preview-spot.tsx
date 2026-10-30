@@ -41,7 +41,32 @@ export function SpotProvider({ spot, children }: { spot: string | null; children
 type Box = { top: number; left: number; width: number; height: number };
 
 /** 상자 둘레 여백(px) — 글자에 테두리가 딱 붙으면 글자를 가린다 */
-const BOX_PAD = 4;
+const BOX_PAD = 3;
+/** 같은 줄에서 이만큼(px) 안으로 붙은 상자는 하나로 합친다 — 정가, 할인율, 배지처럼 한 줄에 붙은 조각을 따로 두르면 테두리가 맞붙어 겹쳐 보였다(2026-10-30 사용자) */
+const JOIN_GAP = 12;
+
+/** 같은 줄(세로로 절반 넘게 겹침)에 가까이 붙은 상자를 합친다. 다른 줄은 합치지 않는다 — 합치면 사이에 낀 상관없는 글까지 덮는다 */
+function joinRows(boxes: Box[]): Box[] {
+  const out: Box[] = [];
+  for (const b of [...boxes].sort((x, y) => x.top - y.top || x.left - y.left)) {
+    const row = out.find((o) => {
+      const overlap = Math.min(o.top + o.height, b.top + b.height) - Math.max(o.top, b.top);
+      const gap = Math.max(b.left - (o.left + o.width), o.left - (b.left + b.width));
+      return overlap > Math.min(o.height, b.height) / 2 && gap < JOIN_GAP;
+    });
+    if (!row) {
+      out.push({ ...b });
+      continue;
+    }
+    const right = Math.max(row.left + row.width, b.left + b.width);
+    const bottom = Math.max(row.top + row.height, b.top + b.height);
+    row.left = Math.min(row.left, b.left);
+    row.top = Math.min(row.top, b.top);
+    row.width = right - row.left;
+    row.height = bottom - row.top;
+  }
+  return out;
+}
 
 function sameBoxes(a: Box[], b: Box[]) {
   return a.length === b.length && a.every((x, i) => x.top === b[i].top && x.left === b[i].left && x.width === b[i].width && x.height === b[i].height);
@@ -72,7 +97,8 @@ export function PreviewSpotlight({ children }: { children: React.ReactNode }) {
               height: Math.round(r.height / scale + BOX_PAD * 2),
             }))
         : [];
-      setBoxes((cur) => (sameBoxes(cur, next) ? cur : next));
+      const joined = joinRows(next);
+      setBoxes((cur) => (sameBoxes(cur, joined) ? cur : joined));
     };
     measure();
     const ro = new ResizeObserver(measure);

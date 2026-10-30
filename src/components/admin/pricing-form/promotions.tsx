@@ -120,6 +120,9 @@ function Detail({ value, p, set, errors }: { value: PricingSettings; p: Promotio
       <p className="flex items-baseline gap-2 px-1">
         <span className="text-[16px] font-extrabold text-ink">{codeName(p)}</span>
       </p>
+      {/* 미리 보기 강조(spot): 진행상태, 중단 사유, 기간은 할인이 걸렸다는 표시 줄(그은 정가, 할인율, 배지 — 한 줄이라 한 상자로 합쳐진다),
+          고객노출명은 배지, 할인 방식과 할인값은 판매가, 적용 대상자는 멤버십의 "다음 달부터" 줄, 적용 상품은 카드 전체.
+          할인율 배지는 판매가에 딸려 바뀌는 값이라 할인값 칸에서 따로 두르지 않는다 — 두 상자가 위아래로 붙어 겹쳐 보였다(2026-10-30 사용자) */}
       {/* 탭을 걷었다 — 탭 셋에 칸이 열 남짓이라 탭은 칸을 숨기기만 했다(2026-10-30 사용자). 대상은 정가를 정하는 칸이라 혜택 묶음 맨 앞에 둔다 */}
       <WithAside aside={<PricingPreview value={value} tier={tierOfTarget(value, p.target)} />}>
         <FormSection title={M.promoSectionBasic} labelWidth="100px">
@@ -176,13 +179,13 @@ function Detail({ value, p, set, errors }: { value: PricingSettings; p: Promotio
               options={[...value.products.map((x) => x.id), MEMBERSHIP_KEY].map((k) => ({ value: k, label: targetLabel(value, k) }))}
             />
           </Field>
-          <Field label={M.promoKind} required spot={spots(PLAN_SPOTS.rate, PLAN_SPOTS.amount)}>
+          <Field label={M.promoKind} required spot={PLAN_SPOTS.amount}>
             <FormSelect name={`pk-${p.id}`} label={M.promoKind} hideLabel size="lg" value={p.kind} onChange={(v) => set({ kind: v as Promotion["kind"] })} options={(["price", "percent"] as const).map((k) => ({ value: k, label: M.kindLabels[k] }))} />
           </Field>
-          <Field label={M.promoValue} htmlFor={`pv-${p.id}`} required spot={spots(PLAN_SPOTS.amount, PLAN_SPOTS.rate)}>
+          <Field label={M.promoValue} htmlFor={`pv-${p.id}`} required spot={PLAN_SPOTS.amount}>
             <NumberField id={`pv-${p.id}`} label={M.promoValue} hideLabel value={p.value} onValue={(n) => set({ value: n })} error={err("value")} trailing={<span className="pr-2 text-[13px] text-dim">{p.kind === "percent" ? "%" : M.won}</span>} className="text-right tabular-nums" compact />
           </Field>
-          <Field label={M.promoAudience} required wide spot={spots(PLAN_SPOTS.terms, PLAN_SPOTS.amount)}>
+          <Field label={M.promoAudience} required wide spot={PLAN_SPOTS.terms}>
             <FormSelect name={`pa-${p.id}`} label={M.promoAudience} hideLabel size="lg" value={p.audience} onChange={(v) => set({ audience: v as Promotion["audience"] })} options={(["first", "all"] as const).map((k) => ({ value: k, label: M.audienceLabels[k] }))} />
           </Field>
           <Field label={M.promoFieldRegular}>

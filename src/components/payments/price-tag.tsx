@@ -48,13 +48,13 @@ export function PriceTag({ quote, list = quote.regular, prefix, children }: Prop
       )}
       <span className={PRICE_BIG}>
         {prefix && (
-          <span data-preview-spot={PLAN_SPOTS.terms} className="mr-1 text-[13px] font-semibold text-mut">
+          <span className="mr-1 text-[13px] font-semibold text-mut">
             {prefix}
           </span>
         )}
         <span data-preview-spot={PLAN_SPOTS.amount}>{formatPrice(quote.amount)}</span>
       </span>
-      {children && <div data-preview-spot={PLAN_SPOTS.terms}>{children}</div>}
+      {children}
     </div>
   );
 }

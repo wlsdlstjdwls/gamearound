@@ -17,7 +17,7 @@ export const PLAN_SPOTS = {
   rate: "rate",
   /** 프로모션 노출명 배지 */
   promo: "promo",
-  /** 적용 조건 — 큰 값 앞 "첫 달", 아래 줄 "다음 달부터", 절약 금액 */
+  /** 적용 조건 — 멤버십 값 아래 "다음 달부터" 줄(첫 결제 할인일 때만 선다) */
   terms: "terms",
   eyebrow: "eyebrow",
   name: "name",

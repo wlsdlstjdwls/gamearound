@@ -65,7 +65,7 @@ function Adds({ base, lines }: { base: string; lines: readonly string[] }) {
   return (
     <div className="flex flex-col gap-2.5">
       {base && (
-        <p data-preview-spot={PLAN_SPOTS.base} className="text-[12.5px] font-semibold text-mut">
+        <p data-preview-spot={PLAN_SPOTS.base} className="w-fit text-[12.5px] font-semibold text-mut">
           {base}
         </p>
       )}
@@ -87,7 +87,7 @@ function Adds({ base, lines }: { base: string; lines: readonly string[] }) {
 function Head({ eyebrow, name, tag, summary }: { eyebrow: string; name: string; tag?: React.ReactNode; summary: string }) {
   return (
     <div className="flex flex-col gap-1">
-      <p data-preview-spot={PLAN_SPOTS.eyebrow} className="text-[12px] font-semibold text-mut">
+      <p data-preview-spot={PLAN_SPOTS.eyebrow} className="w-fit text-[12px] font-semibold text-mut">
         {eyebrow}
       </p>
       <div className="flex items-center justify-between gap-2">
@@ -96,7 +96,7 @@ function Head({ eyebrow, name, tag, summary }: { eyebrow: string; name: string; 
         </h2>
         {tag && <span data-preview-spot={PLAN_SPOTS.tag}>{tag}</span>}
       </div>
-      <p data-preview-spot={PLAN_SPOTS.summary} className="text-[14px] font-semibold text-ink-2">
+      <p data-preview-spot={PLAN_SPOTS.summary} className="w-fit text-[14px] font-semibold text-ink-2">
         {summary}
       </p>
     </div>
@@ -150,7 +150,8 @@ export function PlanCards({ copy, book, active, credits, membership, single, bun
   const count = [active.single, active.bundle, active.membership].filter(Boolean).length as 1 | 2 | 3;
   // 배지, 띠, 안내 색은 관리자가 고른 값(copy 의 ~Tone), 없으면 고르기 전 색(lib/pricing/copy-tones)
   const tag = (t: string, tone: ToneValue<BadgeTone>) => (t ? <ToneBadge tone={tone}>{t}</ToneBadge> : undefined);
-  const hint = textTone(copy.single.hintTone ?? DEFAULT_TONES.hint, "text-[13px] font-semibold");
+  // w-fit: 관리자 미리 보기 강조가 글자 길이만큼만 두르게 한다 — 줄 전체를 두르면 빈 자리까지 그 칸인 것처럼 보였다(2026-10-30 사용자)
+  const hint = textTone(copy.single.hintTone ?? DEFAULT_TONES.hint, "w-fit text-[13px] font-semibold");
 
   return (
     <div className={cn("grid items-stretch gap-3", !stack && GRID_COLS[Math.max(1, count) as 1 | 2 | 3])}>
@@ -219,7 +220,9 @@ export function MembershipPrice({ quote }: { quote: Quote }) {
   const intro = quote.amount < quote.regular;
   return (
     <PriceTag quote={quote} prefix={intro ? M.firstMonth : M.perMonth}>
-      <span className="text-[13px] text-mut">{intro ? M.thenMonthly(formatPrice(quote.regular)) : M.perDayApprox(formatPrice(perDay(quote.regular, MONTH_DAYS_APPROX)))}</span>
+      {/* 적용 조건 자리(관리자 미리 보기의 "적용 대상자" 칸). 첫 달 할인일 때만 "다음 달부터" 가 서서 첫 결제냐 아니냐가 보이는 곳이 여기뿐이다.
+          낱개, 묶음 카드의 아래 줄("부터", 아끼는 금액)은 적용 대상자와 상관없어 자리를 달지 않는다(2026-10-30 사용자 "아닌 것도 표기") */}
+      <span data-preview-spot={PLAN_SPOTS.terms} className="w-fit text-[13px] text-mut">{intro ? M.thenMonthly(formatPrice(quote.regular)) : M.perDayApprox(formatPrice(perDay(quote.regular, MONTH_DAYS_APPROX)))}</span>
     </PriceTag>
   );
 }
