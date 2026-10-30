@@ -134,14 +134,6 @@ export const TASK_STATUS_LABEL = {
   done: "완료",
 } as const;
 
-/** 칸 이름 뒤 "(으)로". 받침에 따라 갈린다(ㄹ 받침은 "로") — 칸이 넷뿐이라 규칙을 쓰지 않고 적어 둔다 */
-export const TASK_STATUS_TO_PARTICLE = {
-  backlog: "로",
-  todo: "로",
-  doing: "으로",
-  done: "로",
-} as const;
-
 export const TASK_PRIORITY_LABEL = {
   high: "높음",
   normal: "보통",

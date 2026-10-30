@@ -11,12 +11,14 @@ import { fieldErrors, VALIDATION_MESSAGES, type FieldErrors } from "@/lib/admin/
 export const SORT_STEP = 10;
 
 export type CodeDraft = CommonCodeInput & { key: string; isNew: boolean };
-export type GroupDraft = Omit<CommonCodeGroupInput, "codes"> & { key: string; isNew: boolean; codes: CodeDraft[] };
+/** locked: 코드값이 코드에 잠긴 등록 그룹(lib/codes/registry) — 코드 추가와 코드값 입력을 막는다 */
+export type GroupDraft = Omit<CommonCodeGroupInput, "codes"> & { key: string; isNew: boolean; locked: boolean; codes: CodeDraft[] };
 
 export function draftsOf(groups: CommonCodeGroupDto[]): GroupDraft[] {
   return groups.map((g) => ({
     key: g.groupCode,
     isNew: false,
+    locked: g.locked,
     groupCode: g.groupCode,
     name: g.name,
     description: g.description,
@@ -42,7 +44,7 @@ export function inputOf(g: GroupDraft): CommonCodeGroupInput {
 }
 
 export function newGroup(sortOrder: number): GroupDraft {
-  return { key: newRowKey("group"), isNew: true, groupCode: "", name: M.newGroupName, description: null, attr1Label: null, attr2Label: null, sortOrder, active: true, codes: [] };
+  return { key: newRowKey("group"), isNew: true, locked: false, groupCode: "", name: M.newGroupName, description: null, attr1Label: null, attr2Label: null, sortOrder, active: true, codes: [] };
 }
 
 export function newCode(g: GroupDraft): CodeDraft {

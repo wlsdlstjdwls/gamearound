@@ -6,6 +6,7 @@
 // 회수는 승인 화면과 같은 체크 칸 + 처리 띠(screen/approval) — 여러 장을 한 번에 거둘 수 있고, 누르면 그 줄이 먼저 "회수" 로 바뀐다.
 // 직접 걸기는 툴바 "입력" 으로 상세 자리에 폼을 연다. 저장(F9, Ctrl+S)이 곧 걸기다. 산 광고는 저절로 걸리니 시범, 보상 때만 쓴다.
 // 서버가 열린 광고 전부와 최근 끝난 몇 줄을 한 번에 주므로(services/promotions listBoostsForAdmin) 조회조건은 화면 안에서 거른다.
+import { useCodes } from "@/components/code-book";
 import { useEffect, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { grantBoostAction, revokeBoostAction } from "@/app/(admin)/admin/promotions/actions";
@@ -22,18 +23,17 @@ import { Tag } from "@/components/ui/tag";
 import { TextField } from "@/components/ui/text-field";
 import { ADMIN_NAV, APPROVAL_MESSAGES as AM, PROMO_ADMIN_MESSAGES as M } from "@/lib/admin/messages";
 import { formatDotDate, formatShortDateTime } from "@/lib/format";
-import { BOOST_DAY_OPTIONS, PROMO_SLOTS, SLOT_CAPACITY, type BoostState } from "@/lib/promo/boost";
-import { BOOST_STATE_LABEL, PROMO_MESSAGES as PM, PROMO_SLOT_LABEL, PROMO_SOURCE_LABEL } from "@/lib/promo/messages";
+import { BOOST_DAY_OPTIONS, PROMO_SLOTS, SLOT_CAPACITY } from "@/lib/promo/boost";
+import { PROMO_MESSAGES as PM } from "@/lib/promo/messages";
 import { BOOST_NOTE_MAX } from "@/lib/promo/schemas";
-import type { PromoSlot, PromoSource } from "@/server/db/schema";
+import type { PromoSlot } from "@/server/db/schema";
 import type { BoostCandidate, BoostRowDto } from "@/server/services/promotions";
 
 type Draft = { slot: PromoSlot; targetId: string; days: string; note: string };
 
 const ALL = "all";
 const OPEN = "open";
-const STATES = Object.keys(BOOST_STATE_LABEL) as BoostState[];
-const SOURCES = Object.keys(PROMO_SOURCE_LABEL) as PromoSource[];
+// 고르기 목록은 코드북 options(공통코드 사용여부, 정렬)로 그린다 — 키 목록을 여기 따로 두지 않는다
 
 const isOpen = (r: BoostRowDto) => r.state === "active" || r.state === "queued";
 const ctrOf = (views: number, clicks: number) => (views > 0 ? `${((clicks / views) * 100).toFixed(1)}%` : "-");
@@ -41,9 +41,9 @@ const newDraft = (): Draft => ({ slot: PROMO_SLOTS[0], targetId: "", days: Strin
 
 const DECISIONS: ApprovalDecision<BoostRowDto>[] = [{ value: "revoke", label: M.revoke, danger: true, can: isOpen }];
 
-const COLUMNS: GridCol<BoostRowDto>[] = [
-  { key: "state", label: M.colState, width: "76px", align: "center", value: (r) => BOOST_STATE_LABEL[r.state], render: (r) => <BoostStateTag state={r.state} /> },
-  { key: "slot", label: M.colSlot, width: "104px", value: (r) => PROMO_SLOT_LABEL[r.slot] },
+const columns = (name: (g: string, c: string) => string): GridCol<BoostRowDto>[] => [
+  { key: "state", label: M.colState, width: "76px", align: "center", value: (r) => name("BOOST_STATE", r.state), render: (r) => <BoostStateTag state={r.state} /> },
+  { key: "slot", label: M.colSlot, width: "104px", value: (r) => name("PROMO_SLOT", r.slot) },
   { key: "target", label: M.colTarget, width: "minmax(140px,1fr)", value: (r) => r.targetTitle },
   { key: "period", label: M.colPeriod, width: "172px", align: "center", value: (r) => r.startsAt.getTime(), text: (r) => PM.period(formatDotDate(r.startsAt), formatDotDate(r.endsAt)) },
   { key: "views", label: M.colViews, width: "72px", align: "right", value: (r) => r.views, sum: true },
@@ -51,6 +51,7 @@ const COLUMNS: GridCol<BoostRowDto>[] = [
 ];
 
 export function PromotionsScreen({ rows, candidates }: { rows: BoostRowDto[]; candidates: Record<PromoSlot, BoostCandidate[]> }) {
+  const { name, options: codeOpts } = useCodes();
   const router = useRouter();
   const { say } = useAdminStatus();
   const [slot, setSlot] = useState(ALL);
@@ -114,7 +115,7 @@ export function PromotionsScreen({ rows, candidates }: { rows: BoostRowDto[]; ca
     setSelected(key);
   };
 
-  const note = PROMO_SLOTS.map((s) => M.capacity(PROMO_SLOT_LABEL[s], rows.filter((r) => r.slot === s && r.state === "active" && r.targetLive).length, SLOT_CAPACITY[s])).join(" | ");
+  const note = PROMO_SLOTS.map((s) => M.capacity(name("PROMO_SLOT", s), rows.filter((r) => r.slot === s && r.state === "active" && r.targetLive).length, SLOT_CAPACITY[s])).join(" | ");
 
   return (
     <>
@@ -142,7 +143,7 @@ export function PromotionsScreen({ rows, candidates }: { rows: BoostRowDto[]; ca
       <div className="flex flex-col gap-3">
         <SearchBand label={M.search}>
           <SearchItem label={M.searchSlot}>
-            <FormSelect name="p-slot" label={M.searchSlot} hideLabel size="md" value={slot} onChange={setSlot} options={[{ value: ALL, label: M.all }, ...PROMO_SLOTS.map((s) => ({ value: s, label: PROMO_SLOT_LABEL[s] }))]} />
+            <FormSelect name="p-slot" label={M.searchSlot} hideLabel size="md" value={slot} onChange={setSlot} options={[{ value: ALL, label: M.all }, ...PROMO_SLOTS.map((s) => ({ value: s, label: name("PROMO_SLOT", s) }))]} />
           </SearchItem>
           <SearchItem label={M.searchState}>
             <FormSelect
@@ -152,11 +153,11 @@ export function PromotionsScreen({ rows, candidates }: { rows: BoostRowDto[]; ca
               size="md"
               value={state}
               onChange={setState}
-              options={[{ value: OPEN, label: M.stateOpen }, { value: ALL, label: M.all }, ...STATES.map((s) => ({ value: s, label: BOOST_STATE_LABEL[s] }))]}
+              options={[{ value: OPEN, label: M.stateOpen }, { value: ALL, label: M.all }, ...codeOpts("BOOST_STATE")]}
             />
           </SearchItem>
           <SearchItem label={M.searchSource}>
-            <FormSelect name="p-source" label={M.searchSource} hideLabel size="md" value={source} onChange={setSource} options={[{ value: ALL, label: M.all }, ...SOURCES.map((s) => ({ value: s, label: PROMO_SOURCE_LABEL[s] }))]} />
+            <FormSelect name="p-source" label={M.searchSource} hideLabel size="md" value={source} onChange={setSource} options={[{ value: ALL, label: M.all }, ...codeOpts("PROMO_SOURCE")]} />
           </SearchItem>
           <SearchItem label={M.searchTarget} htmlFor="p-target">
             <TextField id="p-target" label={M.searchTarget} hideLabel value={target} onChange={(e) => setTarget(e.target.value)} compact />
@@ -168,7 +169,7 @@ export function PromotionsScreen({ rows, candidates }: { rows: BoostRowDto[]; ca
             <div className="flex flex-col gap-2">
               <DataGrid
                 label={M.listLabel}
-                columns={COLUMNS}
+                columns={columns(name)}
                 rows={shown}
                 rowKey={(r) => r.id}
                 selected={draft ? null : selected}
@@ -209,6 +210,7 @@ export function PromotionsScreen({ rows, candidates }: { rows: BoostRowDto[]; ca
 }
 
 function DraftForm({ draft, candidates, error, onChange }: { draft: Draft; candidates: Record<PromoSlot, BoostCandidate[]>; error: string | null; onChange: (d: Draft) => void }) {
+  const { name } = useCodes();
   const list = candidates[draft.slot];
   return (
     <FormSection title={M.sectionBoost}>
@@ -220,7 +222,7 @@ function DraftForm({ draft, candidates, error, onChange }: { draft: Draft; candi
           size="lg"
           value={draft.slot}
           onChange={(v) => onChange({ ...draft, slot: v as PromoSlot, targetId: "" })}
-          options={PROMO_SLOTS.map((s) => ({ value: s, label: PROMO_SLOT_LABEL[s] }))}
+          options={PROMO_SLOTS.map((s) => ({ value: s, label: name("PROMO_SLOT", s) }))}
         />
       </Field>
       <Field label={M.fieldDays} required>
@@ -246,6 +248,7 @@ function DraftForm({ draft, candidates, error, onChange }: { draft: Draft; candi
 }
 
 function BoostDetail({ r, done }: { r: BoostRowDto; done?: string }) {
+  const { name } = useCodes();
   const left = !isOpen(r) ? M.closed : r.state === "queued" ? M.startsLater : M.daysLeft(r.daysLeft);
   return (
     <>
@@ -254,7 +257,7 @@ function BoostDetail({ r, done }: { r: BoostRowDto; done?: string }) {
           <ReadValue>{done ? <Tag tone="neutral">{done}</Tag> : <BoostStateTag state={r.state} />}</ReadValue>
         </Field>
         <Field label={M.fieldSource}>
-          <ReadValue>{PROMO_SOURCE_LABEL[r.source]}</ReadValue>
+          <ReadValue>{name("PROMO_SOURCE", r.source)}</ReadValue>
         </Field>
         <Field label={M.fieldTarget} wide>
           <ReadValue>
@@ -262,7 +265,7 @@ function BoostDetail({ r, done }: { r: BoostRowDto; done?: string }) {
           </ReadValue>
         </Field>
         <Field label={M.fieldSlot}>
-          <ReadValue>{PROMO_SLOT_LABEL[r.slot]}</ReadValue>
+          <ReadValue>{name("PROMO_SLOT", r.slot)}</ReadValue>
         </Field>
         <Field label={M.fieldLeft}>
           <ReadValue>{left}</ReadValue>

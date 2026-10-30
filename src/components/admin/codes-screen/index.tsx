@@ -21,6 +21,7 @@ import { CodeForm, CodeList, GroupForm, PickCode } from "./forms";
 import { draftsOf, groupErrors, inputOf, newCode, newGroup, sameGroup, SORT_STEP, type CodeDraft, type GroupDraft } from "./model";
 
 const GROUP_COLUMNS: GridCol<GroupDraft>[] = [
+  { key: "kind", label: M.colKind, width: "60px", align: "center", value: (g) => (g.locked ? M.kindLabels.system : M.kindLabels.user) },
   { key: "code", label: M.colGroup, width: "minmax(140px,1.2fr)", value: (g) => g.groupCode },
   { key: "name", label: M.colGroupName, width: "minmax(96px,1fr)", value: (g) => g.name },
   { key: "count", label: M.colCount, width: "64px", align: "right", value: (g) => g.codes.length },
@@ -159,7 +160,7 @@ export function CodesScreen({ groups }: { groups: CommonCodeGroupDto[] }) {
           </SearchItem>
         </SearchBand>
         <MasterDetail
-          listWidth="420px"
+          listWidth="480px"
           list={
             <DataGrid
               label={M.groupList}

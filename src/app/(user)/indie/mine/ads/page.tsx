@@ -9,7 +9,9 @@ import { Page, PageHead, sectionCardClass } from "@/components/ui/page";
 import { Tag } from "@/components/ui/tag";
 import { formatDateTime } from "@/lib/format";
 import { stagger } from "@/lib/motion";
-import { PROMO_MESSAGES, PROMO_PERFORMANCE_MESSAGES as M, PROMO_SLOT_LABEL, PROMO_SOURCE_LABEL } from "@/lib/promo/messages";
+import { PROMO_MESSAGES, PROMO_PERFORMANCE_MESSAGES as M } from "@/lib/promo/messages";
+import { codeName } from "@/lib/codes/book";
+import { getCodeBook } from "@/server/services/common-codes";
 import { ROUTES } from "@/lib/routes";
 import { requireUserOrRedirect } from "@/server/auth/guards";
 import { listMyBoostPerformance } from "@/server/services/promotions";
@@ -22,7 +24,7 @@ const ctr = (clicks: number, views: number) => (views > 0 ? `${((clicks / views)
 
 export default async function IndieAdsPage() {
   const user = await requireUserOrRedirect();
-  const rows = await listMyBoostPerformance(user.id);
+  const [rows, book] = await Promise.all([listMyBoostPerformance(user.id), getCodeBook()]);
   const statsLink = (
     <Link href={ROUTES.indieStats} className="tap inline-flex items-center text-[13.5px] font-semibold text-acc hover:underline">
       {M.toStats}
@@ -57,8 +59,8 @@ export default async function IndieAdsPage() {
                   <div className="flex flex-col gap-1.5">
                     <div className="flex flex-wrap items-center gap-2">
                       <BoostStateTag state={r.state} />
-                      <Tag tone="acc">{PROMO_SLOT_LABEL[r.slot]}</Tag>
-                      <span className="text-[12px] text-dim">{PROMO_SOURCE_LABEL[r.source]}</span>
+                      <Tag tone="acc">{codeName(book, "PROMO_SLOT", r.slot)}</Tag>
+                      <span className="text-[12px] text-dim">{codeName(book, "PROMO_SOURCE", r.source)}</span>
                     </div>
                     {r.targetHref ? (
                       <Link href={r.targetHref} className="min-w-0 break-words text-[16px] font-bold text-ink hover:text-acc hover:underline">

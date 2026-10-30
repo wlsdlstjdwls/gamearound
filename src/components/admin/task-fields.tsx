@@ -12,10 +12,11 @@
 //
 // 입력 글자는 16px 다 — 이보다 작으면 iOS 가 포커스에서 화면을 확대한다(AGENTS §6).
 // 넓은 화면에서만 13.5px 로 줄인다.
+import { useCodes } from "@/components/code-book";
 import { useId } from "react";
 import { cn } from "@/lib/cn";
 import { FormSelect } from "@/components/ui/select";
-import { SCREEN_MESSAGES, TASK_CATEGORY_LABEL, TASK_MESSAGES, TASK_PRIORITY_LABEL, TASK_STATUS_LABEL } from "@/lib/admin/messages";
+import { SCREEN_MESSAGES, TASK_MESSAGES } from "@/lib/admin/messages";
 import {
   BOARD_STATUSES,
   TASK_ASSIGNEE_ALL,
@@ -28,7 +29,7 @@ import {
 } from "@/lib/admin/tasks";
 
 /** 분류 고르는 칸의 항목. 값이 다섯이라 세그먼트로 늘어놓으면 한 칸 폭에 안 들어간다 — 그래서 셀렉트다 */
-const CATEGORY_CHOICES = TASK_CATEGORIES.map((c) => ({ value: c, label: TASK_CATEGORY_LABEL[c] }));
+// 분류 이름표와 고르기 목록은 공통코드 TASK_CATEGORY(사용여부, 정렬 반영). 기본 순서는 TASK_CATEGORIES 와 같다
 
 /** 입력칸 한 겹. 테두리를 안쪽 그림자로 두는 규칙은 TextField 와 같다(판 위의 판을 만들지 않는다) */
 export const FIELD = cn(
@@ -199,8 +200,9 @@ export const INLINE_LABEL = "w-[52px] shrink-0 text-[14px] font-bold text-ink sm
  * `inline` 은 고치기 팝업의 맨 윗줄(놓인 칸 옆)에 설 때다(2026-10-12, 사용자: "놓인 칸 줄었으니 옆에 분류를 두자").
  */
 export function TaskCategoryField({ category, inline }: { category?: TaskCategory; inline?: boolean }) {
+  const { options } = useCodes();
   const select = (
-    <FormSelect name="category" label={TASK_MESSAGES.categoryLabel} hideLabel size="lg" options={CATEGORY_CHOICES} defaultValue={category ?? TASK_CATEGORIES[0]} />
+    <FormSelect name="category" label={TASK_MESSAGES.categoryLabel} hideLabel size="lg" options={options("TASK_CATEGORY")} defaultValue={category ?? TASK_CATEGORIES[0]} />
   );
   if (inline) {
     return (
@@ -225,13 +227,14 @@ export function TaskCategoryField({ category, inline }: { category?: TaskCategor
 
 export function TaskPriorityField({ priority, className }: { priority?: TaskPriority; className?: string }) {
   const id = useId();
+  const { map } = useCodes();
   return (
     <Field id={`${id}-priority`} label={TASK_MESSAGES.priorityLabel} className={className}>
       <RadioSegment
         id={`${id}-priority`}
         name="priority"
         values={TASK_PRIORITIES}
-        labels={TASK_PRIORITY_LABEL}
+        labels={map("TASK_PRIORITY") as Record<TaskPriority, string>}
         defaultValue={priority ?? "normal"}
         itemClass={{ high: SEGMENT_ITEM_URGENT }}
       />
@@ -276,9 +279,10 @@ export function TaskMetaFields({ assignees }: { assignees: TaskAssignee[] }) {
 /** 놓을 칸 고르기. 추가 팝업에서만 쓴다 — 이미 있는 카드는 칸을 옮기면 자취가 남아야 해서 제 액션을 탄다 */
 export function TaskStatusField({ defaultValue = "todo" }: { defaultValue?: TaskStatus }) {
   const id = useId();
+  const { map } = useCodes();
   return (
     <Field id={id} label={TASK_MESSAGES.statusLabel}>
-      <RadioSegment id={id} name="status" values={BOARD_STATUSES} labels={TASK_STATUS_LABEL} defaultValue={defaultValue} />
+      <RadioSegment id={id} name="status" values={BOARD_STATUSES} labels={map("TASK_STATUS") as Record<TaskStatus, string>} defaultValue={defaultValue} />
     </Field>
   );
 }

@@ -9,6 +9,7 @@
 // 들어오는 길은 그대로 살고 서버는 다시 부르지 않는다(task-board 와 같은 방식).
 // 줄은 서버가 손볼 것부터 세워 준다(page.tsx). 그리드 머리를 눌러 다른 순서로 볼 수 있다.
 // "가져온 게임" 시트는 상세의 단추 하나 뒤에 있고 누르기 전에는 세우지 않는다(sync-run-sheet 머리 주석, 닫힌 시트 19.5초 사고).
+import { useCodes } from "@/components/code-book";
 import { memo, useMemo, useState } from "react";
 import { DataGrid, type GridCol } from "@/components/admin/screen/data-grid";
 import { ProgramLink } from "@/components/admin/screen/program-link";
@@ -18,7 +19,7 @@ import { runCounts, SyncRunSheet } from "@/components/admin/sync-run-sheet";
 import { SYNC_HEALTH_TONE } from "@/components/admin/sync-tone";
 import { FormSelect } from "@/components/ui/select/fields";
 import { Tag } from "@/components/ui/tag";
-import { ADMIN_NAV, APPROVAL_MESSAGES as AM, SYNC_MESSAGES as M, SYNC_STATUS_LABEL } from "@/lib/admin/messages";
+import { ADMIN_NAV, APPROVAL_MESSAGES as AM, SYNC_MESSAGES as M } from "@/lib/admin/messages";
 import { joinSyncFilter, splitSyncFilter, syncFilterHref } from "@/lib/admin/sync-filter";
 import { matchesHealthFilter, type SyncHealth, type SyncHealthFilter } from "@/lib/admin/sync-health";
 import { formatAgo, formatDateTime } from "@/lib/format";
@@ -44,30 +45,32 @@ export type SyncSourceRow = {
 
 export type SyncFilterOption = { value: string; label: string };
 
-const STATUS_FILTERS: { value: SyncHealthFilter; label: string }[] = [
+/** 결과 이름표(정상, 일부 실패, 실패)는 공통코드 SYNC_STATUS */
+const statusFilters = (name: (g: string, c: string) => string): { value: SyncHealthFilter; label: string }[] => [
   { value: "all", label: M.all },
   { value: "attention", label: M.attention },
   { value: "stalled", label: M.stalled },
-  { value: "failed", label: SYNC_STATUS_LABEL.failed },
-  { value: "partial", label: SYNC_STATUS_LABEL.partial },
+  { value: "failed", label: name("SYNC_STATUS", "failed") },
+  { value: "partial", label: name("SYNC_STATUS", "partial") },
   { value: "running", label: M.running },
-  { value: "ok", label: SYNC_STATUS_LABEL.ok },
+  { value: "ok", label: name("SYNC_STATUS", "ok") },
   { value: "idle", label: M.idleFilter },
 ];
 
-function healthLabel(r: SyncSourceRow): string {
+function healthLabel(r: SyncSourceRow, name: (g: string, c: string) => string): string {
   if (r.health === "idle") return r.disabledReason ? M.disabled : M.noRun;
   if (r.health === "running") return M.running;
   if (r.health === "stalled") return M.stalled;
-  return SYNC_STATUS_LABEL[r.health];
+  return name("SYNC_STATUS", r.health);
 }
 
 function HealthTag({ r }: { r: SyncSourceRow }) {
+  const { name } = useCodes();
   return (
     <Tag tone={SYNC_HEALTH_TONE[r.health]}>
       {/* 도는 중인 칸만 점이 숨 쉰다. 멈춘 화면에서 움직이는 것은 "지금 일어나는 일" 뿐이어야 한다 */}
       {r.health === "running" && <span aria-hidden className="mr-1 size-1.5 animate-pulse rounded-full bg-acc" />}
-      {healthLabel(r)}
+      {healthLabel(r, name)}
     </Tag>
   );
 }
@@ -89,6 +92,7 @@ export function SyncScreen({
   source: string;
   status: SyncHealthFilter;
 }) {
+  const { name } = useCodes();
   const [joined, setJoined] = useState(() => joinSyncFilter(source, status));
   const [srcValue, stValue] = splitSyncFilter(joined);
   const choose = (next: string) => {
@@ -107,7 +111,7 @@ export function SyncScreen({
           <FormSelect name="sync-source" label={M.searchSource} hideLabel size="md" value={srcValue} onChange={(v) => choose(joinSyncFilter(v, stValue))} options={[{ value: "all", label: M.all }, ...sources]} />
         </SearchItem>
         <SearchItem label={M.searchStatus}>
-          <FormSelect name="sync-status" label={M.searchStatus} hideLabel size="md" value={stValue} onChange={(v) => choose(joinSyncFilter(srcValue, v))} options={STATUS_FILTERS} />
+          <FormSelect name="sync-status" label={M.searchStatus} hideLabel size="md" value={stValue} onChange={(v) => choose(joinSyncFilter(srcValue, v))} options={statusFilters(name)} />
         </SearchItem>
       </SearchBand>
       <Results rows={shown} asOf={asOf} />
@@ -120,11 +124,12 @@ export function SyncScreen({
  * 고른 값이 칸에 서기까지 dev 에서 100ms 남짓 걸렸다(2026-10-29 CDP 실측)
  */
 const Results = memo(function Results({ rows, asOf }: { rows: SyncSourceRow[]; asOf: number }) {
+  const { name } = useCodes();
   const [selected, setSelected] = useState<string | null>(null);
   const current = rows.find((r) => r.source === selected) ?? null;
 
   const columns: GridCol<SyncSourceRow>[] = [
-    { key: "status", label: M.colStatus, width: "92px", align: "center", value: healthLabel, render: (r) => <HealthTag r={r} /> },
+    { key: "status", label: M.colStatus, width: "92px", align: "center", value: (r) => healthLabel(r, name), render: (r) => <HealthTag r={r} /> },
     {
       key: "source",
       label: M.colSource,

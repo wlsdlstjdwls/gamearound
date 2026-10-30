@@ -12,7 +12,9 @@ import { formatPrice } from "@/lib/currency";
 import { formatDateTime } from "@/lib/format";
 import { firstParam } from "@/lib/games-query";
 import { INDIE_MESSAGES } from "@/lib/indie/messages";
-import { PAYMENT_MESSAGES as M, PAYMENT_STATUS_LABEL } from "@/lib/payments/messages";
+import { PAYMENT_MESSAGES as M } from "@/lib/payments/messages";
+import { codeName } from "@/lib/codes/book";
+import { getCodeBook } from "@/server/services/common-codes";
 import { ROUTES } from "@/lib/routes";
 import type { PaymentStatus } from "@/server/db/schema";
 import { requireUserOrRedirect } from "@/server/auth/guards";
@@ -27,7 +29,7 @@ type Props = { searchParams: Promise<Record<string, string | string[] | undefine
 
 export default async function IndiePaymentsPage({ searchParams }: Props) {
   const user = await requireUserOrRedirect();
-  const [rows, sp] = await Promise.all([listMyPayments(user.id), searchParams]);
+  const [rows, sp, book] = await Promise.all([listMyPayments(user.id), searchParams, getCodeBook()]);
   const paid = firstParam(sp.paid);
   const failed = firstParam(sp.failed);
 
@@ -47,7 +49,7 @@ export default async function IndiePaymentsPage({ searchParams }: Props) {
             <li key={r.orderId} className="flex flex-wrap items-center justify-between gap-3 py-3.5">
               <div className="flex min-w-0 flex-col gap-1">
                 <div className="flex flex-wrap items-center gap-2">
-                  <Tag tone={STATUS_TONE[r.status]}>{r.boostMissing ? M.boostMissing : PAYMENT_STATUS_LABEL[r.status]}</Tag>
+                  <Tag tone={STATUS_TONE[r.status]}>{r.boostMissing ? M.boostMissing : codeName(book, "PAYMENT_STATUS", r.status)}</Tag>
                   <span className="min-w-0 break-words text-[14.5px] font-semibold text-ink">{r.targetTitle ?? INDIE_MESSAGES.notFound}</span>
                 </div>
                 <span className="text-[12.5px] text-dim tabular-nums">{[r.productName, formatDateTime(r.createdAt)].join(" | ")}</span>

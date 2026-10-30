@@ -14,12 +14,14 @@
 // 모양(2026-09-21): 팝업으로 옮기면서 세로 줄기를 세웠다. 사람이 적은 글과 자취가 섞여 서는 자리라
 // 둘을 색이나 배경으로 가르면 목록이 얼룩덜룩해진다 — 줄기 위의 점 하나로만 가른다
 // (적은 글은 브랜드 보라 점, 자취는 회색 테두리 점).
+import { useCodes } from "@/components/code-book";
 import { useActionState, useState, useTransition } from "react";
 import { ActionForm } from "@/components/ui/action-form";
 import { cn } from "@/lib/cn";
 import { formatLongDateTime } from "@/lib/format";
 import { Button } from "@/components/ui/button";
-import { TASK_ATTACHMENT_MESSAGES, TASK_MESSAGES, TASK_STATUS_LABEL, TASK_STATUS_TO_PARTICLE } from "@/lib/admin/messages";
+import { TASK_ATTACHMENT_MESSAGES, TASK_MESSAGES } from "@/lib/admin/messages";
+import { roParticle } from "@/lib/korean-particle";
 import type { TaskNote, TaskStatus } from "@/lib/admin/tasks";
 import { FIELD } from "@/components/admin/task-fields";
 import { AttachmentList, AttachmentPicker } from "@/components/admin/task-attachments";
@@ -35,11 +37,12 @@ import { CONFIRM_MESSAGES } from "@/lib/messages/confirm";
  * 읽는 사람이 알고 싶은 건 "그래서 지금 어디인가" 다.
  */
 function StatusName({ status, current = false }: { status: TaskStatus | null; current?: boolean }) {
+  const { name } = useCodes();
   if (!status) return <>-</>;
   return current ? (
-    <strong className="font-bold text-acc">{TASK_STATUS_LABEL[status]}</strong>
+    <strong className="font-bold text-acc">{name("TASK_STATUS", status)}</strong>
   ) : (
-    <span className="text-ink">{TASK_STATUS_LABEL[status]}</span>
+    <span className="text-ink">{name("TASK_STATUS", status)}</span>
   );
 }
 
@@ -48,6 +51,7 @@ function StatusName({ status, current = false }: { status: TaskStatus | null; cu
  * 둘이 같은 무게로 섞여 있으면 정작 읽어야 할 사람 글이 자취 사이에 묻힌다. 화살표 대신 파이프로 잇는다(AGENTS §4).
  */
 function MoveLine({ note }: { note: TaskNote }) {
+  const { name } = useCodes();
   // 두 줄이다(2026-10-01, 사용자: "1줄로 바뀌면서 뭐가 뭔지 모르겠다, 어디서 어떻게 바뀐 건지 모르겠다").
   // 한 줄에 표식, 칸, 시각, 이름을 다 붙이니 "할 일 | 처리 중 15:00 시험관리자" 가 어디서 끊기는지 안 읽혔다.
   // 사람 글과 같은 머리(누가, 언제)를 세우고, 무엇이 바뀌었는지는 아래 한 줄 평문으로 둔다
@@ -61,7 +65,7 @@ function MoveLine({ note }: { note: TaskNote }) {
       {/* 한 줄 평문이다: "할 일 → 처리 중으로 변경되었습니다"(사용자가 정한 꼴, messages 주석) */}
       <p className="text-[14px] leading-[1.6] text-mut">
         <StatusName status={note.from} /> {TASK_MESSAGES.noteMovedArrow} <StatusName status={note.to} current />
-        {note.to ? TASK_STATUS_TO_PARTICLE[note.to] : ""} {TASK_MESSAGES.noteMovedTail}
+        {note.to ? roParticle(name("TASK_STATUS", note.to)) : ""} {TASK_MESSAGES.noteMovedTail}
       </p>
     </div>
   );

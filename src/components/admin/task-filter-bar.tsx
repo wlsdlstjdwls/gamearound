@@ -11,9 +11,10 @@
 // 건수는 끝난 칸을 뺀 남은 일 기준이다(task-board).
 //
 // 상태는 판(task-board)이 쥔다. 이 줄은 그리기만 한다.
+import { useCodes } from "@/components/code-book";
 import { cn } from "@/lib/cn";
 import { FormSelect } from "@/components/ui/select";
-import { TASK_CATEGORY_LABEL, TASK_FILTER_MESSAGES } from "@/lib/admin/messages";
+import { TASK_FILTER_MESSAGES } from "@/lib/admin/messages";
 import { TASK_ASSIGNEE_ALL, TASK_CATEGORIES, type TaskAssignee, type TaskCategory } from "@/lib/admin/tasks";
 import {
   DEFAULT_TASK_FILTER,
@@ -54,11 +55,12 @@ export function TaskFilterBar({
   assignees: TaskAssignee[];
   onChange: (next: TaskFilter) => void;
 }) {
+  const { name } = useCodes();
   const set = (patch: Partial<TaskFilter>) => onChange({ ...filter, ...patch });
   const viewChoices = TASK_VIEWS.map((v) => ({ value: v, label: TASK_FILTER_MESSAGES.categoryOption(TASK_FILTER_MESSAGES.views[v], counts.views[v]) }));
   const categoryChoices = [
     { value: ANY, label: TASK_FILTER_MESSAGES.categoryAll },
-    ...TASK_CATEGORIES.map((c) => ({ value: c, label: TASK_FILTER_MESSAGES.categoryOption(TASK_CATEGORY_LABEL[c], counts.categories[c]) })),
+    ...TASK_CATEGORIES.map((c) => ({ value: c, label: TASK_FILTER_MESSAGES.categoryOption(name("TASK_CATEGORY", c), counts.categories[c]) })),
   ];
   const option = (value: string, label: string) => ({ value, label: TASK_FILTER_MESSAGES.categoryOption(label, counts.assignees[value] ?? 0) });
   const assigneeChoices = [

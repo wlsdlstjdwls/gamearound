@@ -13,13 +13,14 @@
 //
 // "붙인 대상" 마디를 없앴다(2026-09-22): 게임을 고르는 칸이 고치기 폼 안에 생기면서 같은 값이
 // 한 팝업에 두 번 섰다. 게임 상세로 가는 길은 고른 칩 옆으로 옮겼고, 매장과 소스도 그 아래 붙였다.
+import { useCodes } from "@/components/code-book";
 import { useActionState, useId, useState, useTransition } from "react";
 import { cn } from "@/lib/cn";
 import { INLINE_LABEL, SEGMENT, SEGMENT_ITEM, SEGMENT_ITEM_ON, TaskPart } from "@/components/admin/task-fields";
 import { formatLongDateTime } from "@/lib/format";
 import { Sheet } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
-import { TASK_ATTACHMENT_MESSAGES, TASK_MESSAGES, TASK_STATUS_LABEL } from "@/lib/admin/messages";
+import { TASK_ATTACHMENT_MESSAGES, TASK_MESSAGES } from "@/lib/admin/messages";
 import { BOARD_STATUSES, type AdminTask, type TaskAssignee } from "@/lib/admin/tasks";
 import { TaskEditForm } from "@/components/admin/task-card/edit-form";
 import { TaskNotes } from "@/components/admin/task-card/notes";
@@ -39,6 +40,7 @@ export function TaskDialog({
   open: boolean;
   onOpenChange: (v: boolean) => void;
 }) {
+  const { name } = useCodes();
   const [pending, start] = useTransition();
   const [state, setState] = useState<TaskActionState>(null);
 
@@ -67,7 +69,7 @@ export function TaskDialog({
               onClick={() => run(() => moveTaskAction(task.id, s))}
               className={cn(SEGMENT_ITEM, here ? SEGMENT_ITEM_ON : "disabled:opacity-60")}
             >
-              {TASK_STATUS_LABEL[s]}
+              {name("TASK_STATUS", s)}
             </button>
           );
         })}

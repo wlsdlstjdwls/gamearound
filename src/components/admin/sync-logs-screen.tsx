@@ -16,7 +16,8 @@ import { SyncErrorSample } from "@/components/admin/sync-error-sample";
 import { SYNC_HEALTH_TONE } from "@/components/admin/sync-tone";
 import { FormSelect } from "@/components/ui/select/fields";
 import { Tag, type TagTone } from "@/components/ui/tag";
-import { ADMIN_NAV, APPROVAL_MESSAGES as AM, LOG_MESSAGES as M, SYNC_MESSAGES, SYNC_RUN_HEALTH_LABEL } from "@/lib/admin/messages";
+import { ADMIN_NAV, APPROVAL_MESSAGES as AM, LOG_MESSAGES as M, SYNC_MESSAGES, SYNC_RUN_HEALTH_LABEL, SYNC_STATUS_LABEL } from "@/lib/admin/messages";
+import { useCodes } from "@/components/code-book";
 import { SYNC_RUN_HEALTHS, type SyncRunHealth } from "@/lib/admin/sync-health";
 import { joinSyncFilter, splitSyncFilter, syncFilterHref } from "@/lib/admin/sync-filter";
 import { cn } from "@/lib/cn";
@@ -51,19 +52,21 @@ const DISCOVERY_STOP: Record<string, { label: string; tone: TagTone }> = {
 const stopOf = (r: SyncLogGridRow) => (r.discovery ? (DISCOVERY_STOP[r.discovery.stoppedBy] ?? { label: r.discovery.stoppedBy, tone: "neutral" as const }) : null);
 const durationOf = (r: SyncLogGridRow) => (r.finishedAt ? r.finishedAt.getTime() - r.startedAt.getTime() : null);
 
-function StatusTag({ health }: { health: SyncRunHealth }) {
-  return <Tag tone={SYNC_HEALTH_TONE[health]}>{SYNC_RUN_HEALTH_LABEL[health]}</Tag>;
+/** 결과 값(정상, 일부 실패, 실패)은 공통코드 SYNC_STATUS 이름표를, 끝나지 않은 실행(도는 중, 끊김)은 코드 이름표를 쓴다 */
+function useHealthLabel() {
+  const { name } = useCodes();
+  return (h: SyncRunHealth) => (h in SYNC_STATUS_LABEL ? name("SYNC_STATUS", h) : SYNC_RUN_HEALTH_LABEL[h]);
 }
 
-const STATUS_OPTIONS = [
-  { value: "all", label: M.all },
-  ...SYNC_RUN_HEALTHS.map((s) => ({ value: s, label: SYNC_RUN_HEALTH_LABEL[s] })),
-];
+function StatusTag({ health }: { health: SyncRunHealth }) {
+  const label = useHealthLabel();
+  return <Tag tone={SYNC_HEALTH_TONE[health]}>{label(health)}</Tag>;
+}
 
 /** 칸은 화면 상태에 기대지 않아 모듈에 둔다 — 렌더마다 새 배열이면 아래 Results 의 memo 가 소용없다 */
-const COLUMNS: GridCol<SyncLogGridRow>[] = [
+const columns = (healthLabel: (h: SyncRunHealth) => string): GridCol<SyncLogGridRow>[] => [
   { key: "id", label: M.colId, width: "60px", align: "right", value: (r) => r.id },
-  { key: "status", label: M.colStatus, width: "84px", align: "center", value: (r) => SYNC_RUN_HEALTH_LABEL[r.health], render: (r) => <StatusTag health={r.health} /> },
+  { key: "status", label: M.colStatus, width: "84px", align: "center", value: (r) => healthLabel(r.health), render: (r) => <StatusTag health={r.health} /> },
   { key: "source", label: M.colSource, width: "minmax(130px,1fr)", value: (r) => r.name },
   { key: "started", label: M.colStarted, width: "128px", align: "center", value: (r) => r.startedAt, text: (r) => formatDateTime(r.startedAt) },
   { key: "duration", label: M.colDuration, width: "80px", align: "right", value: durationOf, text: (r) => (r.finishedAt ? formatDuration(durationOf(r) ?? 0) : "-") },
@@ -104,6 +107,7 @@ export function SyncLogsScreen({
   source: string;
   status: string;
 }) {
+  const healthLabel = useHealthLabel();
   // 두 칸을 한 값으로 쥔다(lib/admin/sync-filter 머리 주석)
   const filter = useUrlFilter(joinSyncFilter(source, status), (v) => syncFilterHref(ROUTES.adminSyncLogs, v));
   const [srcValue, stValue] = splitSyncFilter(filter.value);
@@ -115,7 +119,7 @@ export function SyncLogsScreen({
           <FormSelect name="logs-source" label={M.searchSource} hideLabel size="md" value={srcValue} onChange={(v) => filter.set(joinSyncFilter(v, stValue))} options={[{ value: "all", label: M.all }, ...sources]} />
         </SearchItem>
         <SearchItem label={M.searchStatus}>
-          <FormSelect name="logs-status" label={M.searchStatus} hideLabel size="md" value={stValue} onChange={(v) => filter.set(joinSyncFilter(srcValue, v))} options={STATUS_OPTIONS} />
+          <FormSelect name="logs-status" label={M.searchStatus} hideLabel size="md" value={stValue} onChange={(v) => filter.set(joinSyncFilter(srcValue, v))} options={[{ value: "all", label: M.all }, ...SYNC_RUN_HEALTHS.map((h) => ({ value: h, label: healthLabel(h) }))]} />
         </SearchItem>
       </SearchBand>
       <div className={cn("transition-opacity duration-fast", filter.pending && "pointer-events-none opacity-50")} aria-busy={filter.pending || undefined}>
@@ -130,6 +134,7 @@ export function SyncLogsScreen({
  * 실행 50줄을 같이 그리느라 고른 값이 칸에 서기까지 230ms 남짓 걸렸다(2026-10-29 CDP 실측, dev). 서버가 새 줄을 주면 그때 그린다
  */
 const Results = memo(function Results({ rows }: { rows: SyncLogGridRow[] }) {
+  const healthLabel = useHealthLabel();
   const [selected, setSelected] = useState<string | null>(null);
   const current = rows.find((r) => String(r.id) === selected) ?? null;
   return (
@@ -138,7 +143,7 @@ const Results = memo(function Results({ rows }: { rows: SyncLogGridRow[] }) {
       list={
         <DataGrid
           label={M.listLabel}
-          columns={COLUMNS}
+          columns={columns(healthLabel)}
           rows={rows}
           rowKey={rowKey}
           selected={selected}

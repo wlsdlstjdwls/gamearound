@@ -8,10 +8,11 @@
 //
 // 팝업은 이 시트 **위에** 겹쳐 열린다. 둘 다 <dialog> 라 브라우저가 위아래를 지키고, 스크롤 잠금은
 // 연 순서의 반대로 풀린다(ui/sheet 의 잠금이 직전 값을 되돌린다). 팝업을 닫으면 목록이 그대로 남아 다음 줄로 간다.
+import { useCodes } from "@/components/code-book";
 import { cn } from "@/lib/cn";
 import { formatAgo } from "@/lib/format";
 import { Sheet } from "@/components/ui/sheet";
-import { TASK_CATEGORY_LABEL, TASK_MESSAGES, TASK_PRIORITY_LABEL, TASK_STATUS_LABEL } from "@/lib/admin/messages";
+import { TASK_MESSAGES } from "@/lib/admin/messages";
 import { assigneeName, isAssignedTo, type AdminTask, type TaskStatus } from "@/lib/admin/tasks";
 import { CATEGORY_BADGE, PRIORITY_BADGE, cardStripe } from "@/components/admin/task-tone";
 import { TaskQuickAdd } from "@/components/admin/task-quick-add";
@@ -38,8 +39,9 @@ export function TaskColumnSheet({
   onOpenChange: (open: boolean) => void;
   onOpenTask: (id: string) => void;
 }) {
+  const { name } = useCodes();
   return (
-    <Sheet title={TASK_MESSAGES.columnSheetTitle(TASK_STATUS_LABEL[status], tasks.length)} open={open} onOpenChange={onOpenChange}>
+    <Sheet title={TASK_MESSAGES.columnSheetTitle(name("TASK_STATUS", status), tasks.length)} open={open} onOpenChange={onOpenChange}>
       <div className="flex flex-col gap-3">
         {tasks.length === 0 ? (
           <p className="py-6 text-center text-[13.5px] text-dim">{TASK_MESSAGES.empty}</p>
@@ -61,6 +63,7 @@ export function TaskColumnSheet({
 
 /** 목록 한 줄 — 제목, 표, 담당, 고친 때. 메모와 기록은 팝업에 있다(한 줄에 다 넣으면 목록이 다시 카드가 된다) */
 function Row({ task, now, mine, unread, onOpen }: { task: AdminTask; now: number; mine: boolean; unread: number; onOpen: (id: string) => void }) {
+  const { name } = useCodes();
   const stripe = cardStripe(task);
   return (
     <button
@@ -75,10 +78,10 @@ function Row({ task, now, mine, unread, onOpen }: { task: AdminTask; now: number
       </span>
       <span className="flex min-w-0 items-center gap-1.5 text-[12.5px] text-dim">
         {task.category !== "task" && (
-          <span className={cn("shrink-0 rounded-[6px] px-1.5 py-px font-semibold", CATEGORY_BADGE[task.category])}>{TASK_CATEGORY_LABEL[task.category]}</span>
+          <span className={cn("shrink-0 rounded-[6px] px-1.5 py-px font-semibold", CATEGORY_BADGE[task.category])}>{name("TASK_CATEGORY", task.category)}</span>
         )}
         {task.priority !== "normal" && (
-          <span className={cn("shrink-0 rounded-[6px] px-1.5 py-px font-semibold", PRIORITY_BADGE[task.priority])}>{TASK_PRIORITY_LABEL[task.priority]}</span>
+          <span className={cn("shrink-0 rounded-[6px] px-1.5 py-px font-semibold", PRIORITY_BADGE[task.priority])}>{name("TASK_PRIORITY", task.priority)}</span>
         )}
         <span className={cn("min-w-0 truncate", mine && "font-semibold text-acc")}>{assigneeName(task) ?? TASK_MESSAGES.cardNoAssignee}</span>
         <span className="ml-auto shrink-0 tabular-nums">{formatAgo(task.updatedAt, now)}</span>

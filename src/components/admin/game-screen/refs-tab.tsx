@@ -3,6 +3,7 @@
 // 앞 판은 줄마다 승인/반려 단추였다 — 스토어매칭승인관리와 같은 처리 띠(screen/approval)로 맞춘다. 판정은 판정 대기 줄에만 서고,
 // 대기 줄이 하나도 없으면 체크 칸과 띠를 걷는다.
 // 수동 연결은 같은 스토어 줄이 있으면 덮어쓴다(services/admin setManualRef). 저장하면 서버가 목록을 다시 준다.
+import { useCodes } from "@/components/code-book";
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { approveMatchAction, rejectMatchAction, setManualRefAction } from "@/app/(admin)/admin/actions";
@@ -14,7 +15,7 @@ import { Button } from "@/components/ui/button";
 import { FormSelect } from "@/components/ui/select/fields";
 import { Tag, type TagTone } from "@/components/ui/tag";
 import { TextField } from "@/components/ui/text-field";
-import { ADMIN_ACTION_MESSAGES as A, GAME_ADMIN_MESSAGES as M, MATCHED_BY_LABEL } from "@/lib/admin/messages";
+import { ADMIN_ACTION_MESSAGES as A, GAME_ADMIN_MESSAGES as M } from "@/lib/admin/messages";
 import { sourceLabel } from "@/lib/source-label";
 import type { RefRow } from "./types";
 
@@ -26,7 +27,8 @@ const DECISIONS: ApprovalDecision<RefRow>[] = [
   { value: "reject", label: M.reject, danger: true, can: isPending },
 ];
 
-const COLUMNS: GridCol<RefRow>[] = [
+/** 연결 방식 이름표는 공통코드 MATCHED_BY */
+const columns = (name: (g: string, c: string) => string): GridCol<RefRow>[] => [
   { key: "source", label: M.colSource, width: "104px", value: (r) => r.sourceLabel },
   { key: "externalId", label: M.colExternalId, width: "minmax(120px,1fr)", value: (r) => r.externalId },
   {
@@ -49,13 +51,14 @@ const COLUMNS: GridCol<RefRow>[] = [
     label: M.colMatchedBy,
     width: "100px",
     align: "center",
-    value: (r) => MATCHED_BY_LABEL[r.matchedBy] ?? r.matchedBy,
-    render: (r) => <Tag tone={MATCH_TONE[r.matchedBy] ?? "neutral"}>{MATCHED_BY_LABEL[r.matchedBy] ?? r.matchedBy}</Tag>,
+    value: (r) => name("MATCHED_BY", r.matchedBy),
+    render: (r) => <Tag tone={MATCH_TONE[r.matchedBy] ?? "neutral"}>{name("MATCHED_BY", r.matchedBy)}</Tag>,
   },
   { key: "confidence", label: M.colConfidence, width: "80px", align: "right", value: (r) => (r.confidence === null ? -1 : Number(r.confidence)), text: (r) => r.confidence ?? "-" },
 ];
 
 export function RefsTab({ gameId, refs, sources }: { gameId: string; refs: RefRow[]; sources: readonly string[] }) {
+  const { name } = useCodes();
   // 처음엔 판정 대기 줄을 고른다 — 첫 줄이 이미 이어진 스토어면 처리 띠에 고를 판정이 없다
   const [selected, setSelected] = useState<string | null>(refs.find(isPending)?.source ?? null);
   const { checked, setChecked, doneOf, apply, busy } = useApproval({
@@ -76,7 +79,7 @@ export function RefsTab({ gameId, refs, sources }: { gameId: string; refs: RefRo
       <div className="flex flex-col gap-2">
         <DataGrid
           label={M.refsListLabel}
-          columns={COLUMNS}
+          columns={columns(name)}
           rows={refs}
           rowKey={(r) => r.source}
           selected={selected}

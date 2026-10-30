@@ -6,7 +6,9 @@ import { notFound } from "next/navigation";
 import { z } from "zod";
 import { GameScreen } from "@/components/admin/game-screen";
 import type { FieldRow, GameScreenData } from "@/components/admin/game-screen/types";
-import { GAME_ADMIN_MESSAGES as M, SYNC_STATUS_LABEL } from "@/lib/admin/messages";
+import { GAME_ADMIN_MESSAGES as M } from "@/lib/admin/messages";
+import { codeName } from "@/lib/codes/book";
+import { getCodeBook } from "@/server/services/common-codes";
 import { formatPrice } from "@/lib/currency";
 import { formatDateTime, PLATFORM_LABEL } from "@/lib/format";
 import { sourceLabel } from "@/lib/source-label";
@@ -94,7 +96,7 @@ export default async function AdminGamePage({ params }: { params: Promise<{ id: 
   if (!z.uuid().safeParse(id).success) notFound();
   const game = await getGameForAdmin(id);
   if (!game) notFound();
-  const [upgradeRows, aliasRows] = await Promise.all([listUpgrades(game.id), listAliases(game.id)]);
+  const [upgradeRows, aliasRows, book] = await Promise.all([listUpgrades(game.id), listAliases(game.id), getCodeBook()]);
   const platformById = new Map(game.platforms.map((p) => [p.id, p]));
 
   const data: GameScreenData = {
@@ -106,7 +108,7 @@ export default async function AdminGamePage({ params }: { params: Promise<{ id: 
       currentPrice: formatPrice(p.currentPrice, p.currency),
       listPrice: formatPrice(p.listPrice, p.currency),
       lastSynced: formatDateTime(p.lastSyncedAt),
-      status: p.syncStatus ? (SYNC_STATUS_LABEL[p.syncStatus] ?? p.syncStatus) : "-",
+      status: p.syncStatus ? codeName(book, "SYNC_STATUS", p.syncStatus) : "-",
     })),
     refs: game.sourceRefs.map((r) => ({ source: r.source, sourceLabel: sourceLabel(r.source), externalId: r.externalId, url: r.url, matchedBy: r.matchedBy, confidence: r.confidence })),
     aliases: aliasRows.map((a) => ({ id: a.id, alias: a.alias })),

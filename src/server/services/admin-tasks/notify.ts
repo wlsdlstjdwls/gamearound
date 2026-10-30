@@ -10,7 +10,9 @@ import { eq } from "drizzle-orm";
 import { alias } from "drizzle-orm/pg-core";
 import { adminTaskPath } from "@/lib/routes";
 import { DEFAULT_NOTIFY_CHANNEL } from "@/lib/codes/groups";
-import { formatTaskNotice, taskNoticeVars, type TaskNotifyEvent } from "@/lib/admin/task-notify";
+import { formatTaskNotice, taskNoticeVars, type TaskLabels, type TaskNotifyEvent } from "@/lib/admin/task-notify";
+import { codeName } from "@/lib/codes/book";
+import { getCodeBook } from "@/server/services/common-codes";
 import { appOrigin } from "@/server/app-origin";
 import { getDb } from "@/server/db/client";
 import { adminTasks, users } from "@/server/db/schema";
@@ -48,10 +50,13 @@ async function sendTaskNotice(taskId: string, event: TaskNotifyEvent, actor: Tas
   const snapshot = { ...row, assigneeName: personName(row.assigneeName, row.assigneeEmail) };
   const actorName = personName(actor.displayName, actor.email);
   const link = origin ? `${origin}${path}` : path;
-  const { code, vars } = taskNoticeVars(event, snapshot, actorName, link);
+  // 분류, 우선순위, 상태 이름은 공통코드에서 바뀔 수 있다 — 화면과 같은 코드북 이름표로 적는다
+  const book = await getCodeBook();
+  const labels: TaskLabels = { category: (c) => codeName(book, "TASK_CATEGORY", c), priority: (p) => codeName(book, "TASK_PRIORITY", p), status: (s) => codeName(book, "TASK_STATUS", s) };
+  const { code, vars } = taskNoticeVars(event, snapshot, actorName, link, labels);
   // 글은 알림템플릿관리의 템플릿이 정한다. 템플릿이 없을 때만 코드의 글로 물러선다
   await dispatchSystemNotice(code, vars, {
-    fallback: () => formatTaskNotice(event, snapshot, actorName, link),
+    fallback: () => formatTaskNotice(event, snapshot, actorName, link, labels),
     fallbackChannel: DEFAULT_NOTIFY_CHANNEL,
     actorId: actor.id,
     source: "admin",

@@ -26,9 +26,10 @@
 // 바뀔 때마다 주소에 적는다. router 로 바꾸지 않고 history.replaceState 를 쓴다 — router 는 서버 컴포넌트를
 // 다시 그리러 가서 칩 한 번에 왕복 하나가 붙는다. 거른 판에서 끌어 옮겨도 서버는 칸 전체로 순서를 매긴다
 // (moveTask 는 놓은 자리를 카드 id 로 받는다) — 숨은 카드는 제 순서를 지킨다.
+import { useCodes } from "@/components/code-book";
 import { Fragment, useEffect, useMemo, useRef, useState, useTransition } from "react";
 import { cn } from "@/lib/cn";
-import { TASK_FILTER_MESSAGES, TASK_MESSAGES, TASK_STATUS_LABEL } from "@/lib/admin/messages";
+import { TASK_FILTER_MESSAGES, TASK_MESSAGES } from "@/lib/admin/messages";
 import { BOARD_STATUSES, TASK_STATUSES, unreadNoteCount, type AdminTask, type Board, type TaskAssignee, type TaskStatus } from "@/lib/admin/tasks";
 import {
   TASK_FILTER_COOKIE,
@@ -71,6 +72,7 @@ export function TaskBoard({
   /** 주소(`?task=`)로 바로 열 카드. 텔레그램 알림의 링크가 이걸 싣는다 */
   initialOpenId?: string | null;
 }) {
+  const { name } = useCodes();
   /**
    * 지금 열린 카드. **판이 들고 있다** — 카드가 들고 있으면 칸을 옮기는 순간 그 카드가 다른 칸에서
    * 새로 그려지면서 팝업이 닫힌다(실측 2026-09-21). 옮기기는 팝업 안에서 하는 일이라 닫히면 안 된다.
@@ -168,7 +170,7 @@ export function TaskBoard({
             )}
           >
             <span aria-hidden className={cn("h-2 w-2 rounded-full", STATUS_FILL[status])} />
-            {TASK_STATUS_LABEL[status]}
+            {name("TASK_STATUS", status)}
             <span className="text-[12px] tabular-nums text-dim">{shown[status].length}</span>
           </button>
         ))}
@@ -213,7 +215,7 @@ export function TaskBoard({
                 {/* 칸마다 색 점(2026-10-01) — 넷이 같은 회색 골이라 상태가 글자로만 갈렸다. 색은 메뉴 배지와 같은 짝이다 */}
                 <span className="flex items-center gap-1.5">
                   <span aria-hidden className={cn("h-2.5 w-2.5 rounded-full", STATUS_FILL[status])} />
-                  {TASK_STATUS_LABEL[status]}
+                  {name("TASK_STATUS", status)}
                 </span>
                 {/* 모아보기 — 글자 단추. 칸 머리의 무게를 건수보다 앞세우지 않는다 */}
                 <button

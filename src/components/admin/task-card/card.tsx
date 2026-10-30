@@ -18,11 +18,12 @@
 // **끌리는 느낌**: 커서는 평소 grab, 누르는 순간과 끄는 동안 grabbing 이다(globals.css 의 .grabbable).
 // 끄는 일은 판이 쥔 훅(use-board-drag)이 한다 — 네이티브 드래그앤드롭을 쓰면 시작하는 순간
 // 커서가 브라우저 것이 되어 우리가 정한 모양이 통째로 풀린다(2026-09-22 사용자 지적).
+import { useCodes } from "@/components/code-book";
 import { useEffect, useRef, useState } from "react";
 import { cn } from "@/lib/cn";
 import { raisedClass } from "@/components/ui/page";
 import { formatAgo } from "@/lib/format";
-import { TASK_ATTACHMENT_MESSAGES, TASK_CATEGORY_LABEL, TASK_MESSAGES, TASK_PRIORITY_LABEL } from "@/lib/admin/messages";
+import { TASK_ATTACHMENT_MESSAGES, TASK_MESSAGES } from "@/lib/admin/messages";
 import { assigneeName, isAssignedTo, staleDays, type AdminTask, type TaskStatus } from "@/lib/admin/tasks";
 import { UserIcon } from "@/components/ui/icons";
 import { CATEGORY_BADGE, PRIORITY_BADGE, cardStripe } from "@/components/admin/task-tone";
@@ -101,6 +102,7 @@ export function TaskCard({
   /** 끌어다 놓은 뒤 따라오는 click 을 삼킨다 — 없으면 놓자마자 팝업이 열린다 */
   onClickCapture?: (e: React.MouseEvent) => void;
 }) {
+  const { name } = useCodes();
   // 사람이 적은 글 중 가장 최근 것. 칸 이동 자취는 "어디까지 왔나" 를 말해 주지 않아 뺀다(기록은 오래된 것이 앞이다)
   const latestNote = task.notes.findLast((n) => n.kind === "note" && n.body);
   // 첨부 수는 본문 것과 기록 것을 합친다 — 카드에서 궁금한 건 "자료가 붙어 있나" 지 어디 붙었나가 아니다
@@ -141,12 +143,12 @@ export function TaskCard({
           )}
           {task.category !== "task" && (
             <span className={cn("shrink-0 rounded-[6px] px-1.5 py-0.5 text-[12px] font-semibold", CATEGORY_BADGE[task.category])}>
-              {TASK_CATEGORY_LABEL[task.category]}
+              {name("TASK_CATEGORY", task.category)}
             </span>
           )}
           {task.priority !== "normal" && (
             <span className={cn("shrink-0 rounded-[6px] px-1.5 py-0.5 text-[12px] font-semibold", PRIORITY_BADGE[task.priority])}>
-              {TASK_PRIORITY_LABEL[task.priority]}
+              {name("TASK_PRIORITY", task.priority)}
             </span>
           )}
         </div>

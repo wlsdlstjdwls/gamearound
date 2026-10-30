@@ -3,6 +3,7 @@
 // 어댑터가 붙어도 남는다(크롤러가 못 읽는 조건, 예외를 사람이 적는 자리).
 // 위 그리드(체크 칸 + 처리 띠의 삭제), 아래 추가 묶음. 같은 원본, 대상 짝이 있으면 덮어쓴다(services/admin-upgrades).
 // 가격 칸은 유료일 때만 연다 — 무료인데 금액이 남아 있으면 무엇이 맞는지 화면에서 알 수 없다.
+import { useCodes } from "@/components/code-book";
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { deleteUpgradeAction, upsertUpgradeAction } from "@/app/(admin)/admin/actions";
@@ -14,7 +15,7 @@ import { Button } from "@/components/ui/button";
 import { NumberField } from "@/components/ui/number-field";
 import { FormSelect } from "@/components/ui/select/fields";
 import { TextField } from "@/components/ui/text-field";
-import { ADMIN_ACTION_MESSAGES as A, GAME_ADMIN_MESSAGES as M, UPGRADE_KIND_LABEL } from "@/lib/admin/messages";
+import { ADMIN_ACTION_MESSAGES as A, GAME_ADMIN_MESSAGES as M } from "@/lib/admin/messages";
 import { formatPrice } from "@/lib/currency";
 import { PLATFORM_LABEL } from "@/lib/format";
 import type { Platform, UpgradeKind } from "@/server/db/schema";
@@ -27,15 +28,17 @@ const DEFAULT_TO: Platform = "switch2";
 const platformName = (p: Platform) => PLATFORM_LABEL[p] ?? p;
 const DECISIONS: ApprovalDecision<UpgradeRow>[] = [{ value: "delete", label: M.deleteUpgrade, danger: true }];
 
-const COLUMNS: GridCol<UpgradeRow>[] = [
+/** 종류 이름표는 공통코드 UPGRADE_KIND */
+const columns = (name: (g: string, c: string) => string): GridCol<UpgradeRow>[] => [
   { key: "from", label: M.colFrom, width: "112px", value: (r) => platformName(r.fromPlatform) },
   { key: "to", label: M.colTo, width: "112px", value: (r) => platformName(r.toPlatform) },
-  { key: "kind", label: M.colKind, width: "88px", align: "center", value: (r) => UPGRADE_KIND_LABEL[r.kind] },
+  { key: "kind", label: M.colKind, width: "88px", align: "center", value: (r) => name("UPGRADE_KIND", r.kind) },
   { key: "price", label: M.colPrice, width: "96px", align: "right", value: (r) => r.price ?? -1, text: (r) => (r.price === null ? "-" : formatPrice(r.price)) },
   { key: "note", label: M.colNote, width: "minmax(140px,1fr)", value: (r) => r.note ?? "" },
 ];
 
 export function UpgradesTab({ gameId, upgrades, platforms, kinds }: { gameId: string; upgrades: UpgradeRow[]; platforms: readonly Platform[]; kinds: readonly UpgradeKind[] }) {
+  const { name, options: codeOpts } = useCodes();
   const router = useRouter();
   const { say } = useAdminStatus();
   const [selected, setSelected] = useState<string | null>(null);
@@ -83,7 +86,7 @@ export function UpgradesTab({ gameId, upgrades, platforms, kinds }: { gameId: st
       <div className="flex flex-col gap-2">
         <DataGrid
           label={M.upgradesListLabel}
-          columns={COLUMNS}
+          columns={columns(name)}
           rows={upgrades}
           rowKey={(r) => String(r.id)}
           selected={selected}
@@ -112,7 +115,7 @@ export function UpgradesTab({ gameId, upgrades, platforms, kinds }: { gameId: st
           <FormSelect name="gu-to" label={M.fieldTo} hideLabel size="lg" value={to} onChange={(v) => setTo(v as Platform)} options={options} />
         </Field>
         <Field label={M.fieldKind} required>
-          <FormSelect name="gu-kind" label={M.fieldKind} hideLabel size="lg" value={kind} onChange={(v) => setKind(v as UpgradeKind)} options={kinds.map((k) => ({ value: k, label: UPGRADE_KIND_LABEL[k] }))} />
+          <FormSelect name="gu-kind" label={M.fieldKind} hideLabel size="lg" value={kind} onChange={(v) => setKind(v as UpgradeKind)} options={codeOpts("UPGRADE_KIND").filter((o) => (kinds as readonly string[]).includes(o.value))} />
         </Field>
         <Field label={M.fieldPrice} htmlFor="gu-price">
           <NumberField id="gu-price" label={M.fieldPrice} hideLabel value={price} onValue={setPrice} disabled={kind !== "paid"} compact />

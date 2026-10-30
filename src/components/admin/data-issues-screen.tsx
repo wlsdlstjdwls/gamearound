@@ -6,6 +6,7 @@
 // 자동 고침 기록은 구분 "자동 고침" 으로 같은 그리드에 싣는다 — 기계가 틀리게 고쳤을 때 알아챌 자리가 여기뿐이다.
 // 그 줄은 이미 끝난 일이라 체크 칸과 처리 띠를 세우지 않는다. 틀린 고침은 게임 관리 화면에서 되돌린다.
 // 두 묶음을 서버가 한 번에 주므로(admin-data-issues) 구분은 주소로 보내지 않고 화면 안에서 가른다.
+import { useCodes } from "@/components/code-book";
 import { useState } from "react";
 import { decideDataIssueAction } from "@/app/(admin)/admin/data-issues/actions";
 import { ApprovalBar, useApproval, type ApprovalDecision } from "@/components/admin/screen/approval";
@@ -15,7 +16,7 @@ import { Field, FormSection, MasterDetail, ReadValue, SearchBand, SearchItem } f
 import { FormSelect } from "@/components/ui/select/fields";
 import { Tag } from "@/components/ui/tag";
 import { TextField } from "@/components/ui/text-field";
-import { APPROVAL_MESSAGES as AM, QUALITY_MESSAGES as M, QUALITY_RULE_LABEL , GAME_ADMIN_MESSAGES } from "@/lib/admin/messages";
+import { APPROVAL_MESSAGES as AM, QUALITY_MESSAGES as M, GAME_ADMIN_MESSAGES } from "@/lib/admin/messages";
 import { formatDate, formatDotDate } from "@/lib/format";
 import { adminGamePath, gamePath } from "@/lib/routes";
 import type { DataIssueRow } from "@/server/services/admin-data-issues";
@@ -29,7 +30,6 @@ const DECISIONS: ApprovalDecision<DataIssueRow>[] = [
   { value: "seen", label: M.seen, can: (r) => !r.fixable },
 ];
 
-const ruleLabel = (r: DataIssueRow) => QUALITY_RULE_LABEL[r.rule] ?? r.rule;
 
 function verdictText(r: DataIssueRow, view: View) {
   if (view === "auto") return M.verdictAuto;
@@ -37,6 +37,9 @@ function verdictText(r: DataIssueRow, view: View) {
 }
 
 export function DataIssuesScreen({ open, recentAuto }: { open: DataIssueRow[]; recentAuto: DataIssueRow[] }) {
+  // 규칙 이름표는 공통코드 QUALITY_RULE(lib/codes/registry)
+  const { name } = useCodes();
+  const ruleLabel = (r: DataIssueRow) => name("QUALITY_RULE", r.rule);
   const [view, setView] = useState<View>("open");
   const [rule, setRule] = useState("all");
   const [game, setGame] = useState("");
@@ -96,7 +99,7 @@ export function DataIssuesScreen({ open, recentAuto }: { open: DataIssueRow[]; r
           />
         </SearchItem>
         <SearchItem label={M.searchRule}>
-          <FormSelect name="q-rule" label={M.searchRule} hideLabel size="md" value={rule} onChange={setRule} options={[{ value: "all", label: M.searchAll }, ...rules.map((k) => ({ value: k, label: QUALITY_RULE_LABEL[k] ?? k }))]} />
+          <FormSelect name="q-rule" label={M.searchRule} hideLabel size="md" value={rule} onChange={setRule} options={[{ value: "all", label: M.searchAll }, ...rules.map((k) => ({ value: k, label: name("QUALITY_RULE", k) }))]} />
         </SearchItem>
         <SearchItem label={M.searchGame} htmlFor="q-game">
           <TextField id="q-game" label={M.searchGame} hideLabel value={game} onChange={(e) => setGame(e.target.value)} compact />
@@ -131,6 +134,8 @@ export function DataIssuesScreen({ open, recentAuto }: { open: DataIssueRow[]; r
 }
 
 function Detail({ r, view }: { r: DataIssueRow; view: View }) {
+  const { name } = useCodes();
+  const ruleLabel = (x: DataIssueRow) => name("QUALITY_RULE", x.rule);
   return (
     <>
       <FormSection title={M.sectionIssue}>

@@ -39,7 +39,7 @@ function KeyName({ isNew, keyField, children }: { isNew: boolean; keyField: Reac
 
 export function GroupForm({ g, set, errors }: { g: GroupDraft; set: (next: Partial<GroupDraft>) => void; errors: FieldErrors }) {
   return (
-    <FormSection title={M.sectionGroup} action={<span className="text-[11.5px] text-dim">{M.noDelete}</span>}>
+    <FormSection title={M.sectionGroup} action={<span className="text-[11.5px] text-dim">{g.locked ? M.lockedNote : M.noDelete}</span>}>
       <Field label={M.fieldGroupCode} htmlFor={`cg-name-${g.key}`} required wide error={errors.groupCode}>
         <KeyName
           isNew={g.isNew}
@@ -51,12 +51,17 @@ export function GroupForm({ g, set, errors }: { g: GroupDraft; set: (next: Parti
       <Field label={M.fieldDescription} htmlFor={`cg-desc-${g.key}`} wide>
         <TextField id={`cg-desc-${g.key}`} label={M.fieldDescription} hideLabel value={g.description ?? ""} onChange={(e) => set({ description: nullable(e.target.value) })} error={errors.description} compact />
       </Field>
-      <Field label={M.attr1Label} htmlFor={`cg-a1-${g.key}`}>
-        <TextField id={`cg-a1-${g.key}`} label={M.attr1Label} hideLabel value={g.attr1Label ?? ""} onChange={(e) => set({ attr1Label: nullable(e.target.value) })} error={errors.attr1Label} compact />
-      </Field>
-      <Field label={M.attr2Label} htmlFor={`cg-a2-${g.key}`}>
-        <TextField id={`cg-a2-${g.key}`} label={M.attr2Label} hideLabel value={g.attr2Label ?? ""} onChange={(e) => set({ attr2Label: nullable(e.target.value) })} error={errors.attr2Label} compact />
-      </Field>
+      {/* 시스템 그룹은 덧값 칸을 쓰지 않는다 — 코드가 읽는 것은 이름, 정렬, 사용여부뿐이다 */}
+      {!g.locked && (
+        <>
+        <Field label={M.attr1Label} htmlFor={`cg-a1-${g.key}`}>
+          <TextField id={`cg-a1-${g.key}`} label={M.attr1Label} hideLabel value={g.attr1Label ?? ""} onChange={(e) => set({ attr1Label: nullable(e.target.value) })} error={errors.attr1Label} compact />
+        </Field>
+        <Field label={M.attr2Label} htmlFor={`cg-a2-${g.key}`}>
+          <TextField id={`cg-a2-${g.key}`} label={M.attr2Label} hideLabel value={g.attr2Label ?? ""} onChange={(e) => set({ attr2Label: nullable(e.target.value) })} error={errors.attr2Label} compact />
+        </Field>
+        </>
+      )}
       <Field label={M.fieldSort} htmlFor={`cg-sort-${g.key}`} required>
         <NumberField id={`cg-sort-${g.key}`} label={M.fieldSort} hideLabel value={g.sortOrder} onValue={(n) => set({ sortOrder: n })} error={errors.sortOrder} className="text-right tabular-nums" compact />
       </Field>
@@ -100,9 +105,12 @@ export function CodeList({ g, saved, selected, onSelect, onAdd, errors }: { g: G
       rowTone={(c) => (c.active ? undefined : "muted")}
       searchable
       tools={
-        <Button variant="secondary" size="sm" onClick={onAdd}>
-          {M.addCode}
-        </Button>
+        // 잠긴 그룹은 코드를 더할 수 없다 — 코드값을 DB enum 이 정한다
+        g.locked ? undefined : (
+          <Button variant="secondary" size="sm" onClick={onAdd}>
+            {M.addCode}
+          </Button>
+        )
       }
       empty={M.codeEmpty}
     />

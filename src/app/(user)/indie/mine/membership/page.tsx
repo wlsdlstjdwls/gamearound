@@ -12,7 +12,9 @@ import { Tag, type TagTone } from "@/components/ui/tag";
 import { formatPrice } from "@/lib/currency";
 import { formatDate } from "@/lib/format";
 import { firstParam } from "@/lib/games-query";
-import { MEMBERSHIP_MESSAGES as M, MEMBERSHIP_STATUS_LABEL } from "@/lib/membership/messages";
+import { MEMBERSHIP_MESSAGES as M } from "@/lib/membership/messages";
+import { codeName } from "@/lib/codes/book";
+import { getCodeBook } from "@/server/services/common-codes";
 import { PAYMENT_MESSAGES as PM } from "@/lib/payments/messages";
 import { MembershipPrice } from "@/components/payments/plan-cards";
 import { creditsListValue } from "@/lib/pricing/quote";
@@ -34,7 +36,7 @@ type Props = { searchParams: Promise<Record<string, string | string[] | undefine
 
 export default async function MembershipPage({ searchParams }: Props) {
   const user = await requireUserOrRedirect();
-  const [m, sp, settings, book] = await Promise.all([getMyMembership(user.id), searchParams, getPricingSettings(), getPriceBook(user.id)]);
+  const [m, sp, settings, book, codes] = await Promise.all([getMyMembership(user.id), searchParams, getPricingSettings(), getPriceBook(user.id), getCodeBook()]);
   const started = firstParam(sp.started);
   const failed = firstParam(sp.failed);
   const copy = settings.membership;
@@ -62,7 +64,7 @@ export default async function MembershipPage({ searchParams }: Props) {
         <section className={sectionCardClass("flex flex-col gap-4")}>
           <div className="flex items-center justify-between gap-3">
             <h2 className="text-[18px] font-bold text-ink">{m.planName}</h2>
-            <Tag tone={STATUS_TONE[m.status]}>{MEMBERSHIP_STATUS_LABEL[m.status]}</Tag>
+            <Tag tone={STATUS_TONE[m.status]}>{codeName(codes, "MEMBERSHIP_STATUS", m.status)}</Tag>
           </div>
           {m.status === "past_due" && m.nextChargeAt && <FormMessage tone="error">{M.pastDue(m.lastFailMessage ?? M.failed, formatDate(m.nextChargeAt))}</FormMessage>}
           <dl className="grid grid-cols-2 gap-x-4 gap-y-3 text-[14px]">

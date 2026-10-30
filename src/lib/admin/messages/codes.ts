@@ -7,6 +7,9 @@ export const CODES_MESSAGES = {
   activeLabels: { on: "사용", off: "미사용" },
   groupList: "코드그룹 목록",
   groupEmpty: "코드그룹이 없어요. 툴바의 입력으로 그룹을 만들어요.",
+  colKind: "구분",
+  /** 시스템: 코드값이 코드에 잠긴 그룹(lib/codes/registry), 사용자: 공통코드관리에서 만든 그룹 */
+  kindLabels: { system: "시스템", user: "사용자" },
   colGroup: "그룹코드",
   colGroupName: "그룹명",
   colCount: "코드 수",
@@ -43,4 +46,6 @@ export const CODES_MESSAGES = {
   reloaded: "저장된 값을 다시 불러왔어요.",
   /** 지우는 대신 끈다는 것을 그룹 정보 머리에서 한 번 말한다 */
   noDelete: "코드는 지우지 않고 미사용으로 바꿔요",
+  /** 시스템 그룹 머리 한 줄. 미사용은 고르기 칸에서만 빠진다(이미 그 값을 가진 줄은 이름표가 그대로 보인다) */
+  lockedNote: "시스템 코드 | 이름, 정렬, 사용여부만 바꿔요. 미사용은 고르기 목록에서 빠져요",
 } as const;

@@ -3,6 +3,7 @@
 // 위 조회조건(결제상태, 처리필요, 구매자/주문번호), 그 아래 결제 목록(공통 그리드, 금액 합계 줄), 맨 아래 고른 결제의 상세(결제정보, 환불).
 // 앞 판은 한 줄에 상품, 구매자, 일시, 금액, 환불 단추를 다 얹은 표였다 — 환불 요청 메모와 남은 기간 몫이 줄 안에 끼어 훑기 어려웠다.
 // 목록은 훑는 자리, 상세는 처리하는 자리로 가른다. 환불 단추(RefundControls)는 상세의 환불 묶음에만 선다.
+import { useCodes } from "@/components/code-book";
 import { cn } from "@/lib/cn";
 import { FULL_ROW } from "@/components/admin/screen/form-grid";
 import { useState } from "react";
@@ -14,17 +15,18 @@ import { Tag } from "@/components/ui/tag";
 import { TextField } from "@/components/ui/text-field";
 import { formatPrice } from "@/lib/currency";
 import { formatDateTime } from "@/lib/format";
-import { PAYMENT_MESSAGES as PM, PAYMENT_STATUS_LABEL } from "@/lib/payments/messages";
+import { PAYMENT_MESSAGES as PM } from "@/lib/payments/messages";
 import type { PaymentRowDto } from "@/server/services/payments";
 
-function statusTag(p: PaymentRowDto) {
+function StatusTag({ p }: { p: PaymentRowDto }) {
+  const { name } = useCodes();
   if (p.status === "paid" && p.refundRequested) return <Tag tone="danger">{PM.adminRefundRequested}</Tag>;
   if (p.boostMissing) return <Tag tone="danger">{PM.adminTodoLabels.missing}</Tag>;
-  return <Tag tone={p.status === "canceled" ? "warn" : "acc"}>{PAYMENT_STATUS_LABEL[p.status]}</Tag>;
+  return <Tag tone={p.status === "canceled" ? "warn" : "acc"}>{name("PAYMENT_STATUS", p.status)}</Tag>;
 }
 
-const COLUMNS: GridCol<PaymentRowDto>[] = [
-  { key: "status", label: PM.adminColStatus, width: "96px", value: (p) => (p.refundRequested ? PM.adminRefundRequested : PAYMENT_STATUS_LABEL[p.status]), render: statusTag },
+const columns = (name: (g: string, c: string) => string): GridCol<PaymentRowDto>[] => [
+  { key: "status", label: PM.adminColStatus, width: "96px", value: (p) => (p.refundRequested ? PM.adminRefundRequested : name("PAYMENT_STATUS", p.status)), render: (p) => <StatusTag p={p} /> },
   { key: "item", label: PM.adminColItem, width: "minmax(140px,1fr)", value: (p) => p.productName },
   { key: "target", label: PM.adminColTarget, width: "minmax(140px,1.2fr)", value: (p) => p.targetTitle ?? "" },
   { key: "buyer", label: PM.adminColBuyer, width: "minmax(140px,1fr)", value: (p) => p.buyer ?? "" },
@@ -43,6 +45,7 @@ const COLUMNS: GridCol<PaymentRowDto>[] = [
 ];
 
 function Detail({ p }: { p: PaymentRowDto }) {
+  const { name } = useCodes();
   return (
     <div className="flex flex-col gap-3">
       <FormSection title={PM.adminSectionPay}>
@@ -50,7 +53,7 @@ function Detail({ p }: { p: PaymentRowDto }) {
           <ReadValue>{p.orderId}</ReadValue>
         </Field>
         <Field label={PM.adminColStatus}>
-          <ReadValue>{PAYMENT_STATUS_LABEL[p.status]}</ReadValue>
+          <ReadValue>{name("PAYMENT_STATUS", p.status)}</ReadValue>
         </Field>
         <Field label={PM.adminColItem}>
           <ReadValue>{p.productName}</ReadValue>
@@ -104,6 +107,7 @@ function Detail({ p }: { p: PaymentRowDto }) {
 }
 
 export function PaymentsScreen({ rows }: { rows: PaymentRowDto[] }) {
+  const { name } = useCodes();
   const [status, setStatus] = useState("all");
   const [todo, setTodo] = useState("all");
   const [text, setText] = useState("");
@@ -121,7 +125,7 @@ export function PaymentsScreen({ rows }: { rows: PaymentRowDto[] }) {
     <div className="flex flex-col gap-3">
       <SearchBand label={PM.adminSearch}>
         <SearchItem label={PM.adminSearchStatus}>
-          <FormSelect name="pay-status" label={PM.adminSearchStatus} hideLabel size="md" value={status} onChange={setStatus} options={[all, { value: "paid", label: PAYMENT_STATUS_LABEL.paid }, { value: "canceled", label: PAYMENT_STATUS_LABEL.canceled }]} />
+          <FormSelect name="pay-status" label={PM.adminSearchStatus} hideLabel size="md" value={status} onChange={setStatus} options={[all, { value: "paid", label: name("PAYMENT_STATUS", "paid") }, { value: "canceled", label: name("PAYMENT_STATUS", "canceled") }]} />
         </SearchItem>
         <SearchItem label={PM.adminSearchTodo}>
           <FormSelect name="pay-todo" label={PM.adminSearchTodo} hideLabel size="md" value={todo} onChange={setTodo} options={[all, { value: "request", label: PM.adminTodoLabels.request }, { value: "missing", label: PM.adminTodoLabels.missing }]} />
@@ -132,7 +136,7 @@ export function PaymentsScreen({ rows }: { rows: PaymentRowDto[] }) {
       </SearchBand>
       <DataGrid
         label={PM.adminListLabel}
-        columns={COLUMNS}
+        columns={columns(name)}
         rows={shown}
         rowKey={(p) => p.orderId}
         selected={selected}

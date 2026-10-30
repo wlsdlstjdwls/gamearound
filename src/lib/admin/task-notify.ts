@@ -12,8 +12,21 @@ import {
   TASK_NOTIFY_MESSAGES as M,
   TASK_PRIORITY_LABEL,
   TASK_STATUS_LABEL,
-  TASK_STATUS_TO_PARTICLE,
 } from "@/lib/admin/messages/tasks";
+import { roParticle } from "@/lib/korean-particle";
+
+/**
+ * 이름표 고르개(2026-10-30). 업무 분류, 우선순위, 상태 이름은 공통코드에서 바뀔 수 있어 부르는 쪽(services/admin-tasks/notify)이 코드북을 넘긴다.
+ * 넘기지 않으면 코드 기본 이름표다(테스트, 코드북을 못 읽었을 때)
+ */
+export type TaskLabels = { category: (c: TaskCategory) => string; priority: (p: TaskPriority) => string; status: (s: TaskStatus) => string };
+export const DEFAULT_TASK_LABELS: TaskLabels = { category: (c) => TASK_CATEGORY_LABEL[c], priority: (p) => TASK_PRIORITY_LABEL[p], status: (s) => TASK_STATUS_LABEL[s] };
+
+/** "할 일에서 처리 중으로" — 조사는 바뀐 상태 이름의 받침으로 고른다 */
+function movedText(L: TaskLabels, from: TaskStatus, to: TaskStatus): string {
+  const toName = L.status(to);
+  return M.movedValue(L.status(from), toName, roParticle(toName));
+}
 
 /** 기록 알림에 싣는 본문 길이. 채널은 미리보기 자리다 — 다 읽으려면 카드를 연다 */
 export const TASK_NOTIFY_NOTE_PREVIEW = 300;
@@ -57,7 +70,7 @@ function field(label: string, value: string): string {
  * 알림 한 통. 마디는 빈 줄로 가른다:
  * 머리(사건) / 제목(굵게) / 항목들 / 카드 열기 링크.
  */
-export function formatTaskNotice(event: TaskNotifyEvent, task: TaskNotifySnapshot, actorName: string | null, link: string): string {
+export function formatTaskNotice(event: TaskNotifyEvent, task: TaskNotifySnapshot, actorName: string | null, link: string, L: TaskLabels = DEFAULT_TASK_LABELS): string {
   const actor = actorName ?? M.unknownPerson;
   let head: string;
   let body: string[];
@@ -65,8 +78,8 @@ export function formatTaskNotice(event: TaskNotifyEvent, task: TaskNotifySnapsho
     case "created":
       head = M.created;
       body = [
-        field(M.category, TASK_CATEGORY_LABEL[task.category]),
-        field(M.priority, TASK_PRIORITY_LABEL[task.priority]),
+        field(M.category, L.category(task.category)),
+        field(M.priority, L.priority(task.priority)),
         field(M.assignee, assigneeText(task)),
         field(M.createdBy, actor),
       ];
@@ -78,7 +91,7 @@ export function formatTaskNotice(event: TaskNotifyEvent, task: TaskNotifySnapsho
     case "moved":
       head = M.moved;
       body = [
-        field(M.status, M.movedValue(TASK_STATUS_LABEL[event.from], TASK_STATUS_LABEL[event.to], TASK_STATUS_TO_PARTICLE[event.to])),
+        field(M.status, movedText(L, event.from, event.to)),
         field(M.changedBy, actor),
       ];
       break;
@@ -99,20 +112,20 @@ export function formatTaskNotice(event: TaskNotifyEvent, task: TaskNotifySnapsho
  * 사건 하나의 템플릿과 변수(2026-10-30, 알림 문구를 알림템플릿관리에서 고친다). 변수 이름은 lib/notify/system-templates 의 목록과 같다.
  * 값은 이스케이프하지 않은 맨 글이다 — 템플릿 채우기(lib/notify/template)가 이스케이프한다. 위 formatTaskNotice 는 템플릿이 없을 때의 물러설 자리다
  */
-export function taskNoticeVars(event: TaskNotifyEvent, task: TaskNotifySnapshot, actorName: string | null, link: string): { code: SystemTemplateCode; vars: Record<string, string> } {
+export function taskNoticeVars(event: TaskNotifyEvent, task: TaskNotifySnapshot, actorName: string | null, link: string, L: TaskLabels = DEFAULT_TASK_LABELS): { code: SystemTemplateCode; vars: Record<string, string> } {
   const base = { 제목: task.title, 처리자: actorName ?? M.unknownPerson, 링크: link };
   switch (event.kind) {
     case "created":
       return {
         code: SYSTEM_TEMPLATES.taskCreated,
-        vars: { ...base, 분류: TASK_CATEGORY_LABEL[task.category], 우선순위: TASK_PRIORITY_LABEL[task.priority], 담당자: assigneeText(task) },
+        vars: { ...base, 분류: L.category(task.category), 우선순위: L.priority(task.priority), 담당자: assigneeText(task) },
       };
     case "assigned":
       return { code: SYSTEM_TEMPLATES.taskAssigned, vars: { ...base, 담당자: assigneeText(task) } };
     case "moved":
       return {
         code: SYSTEM_TEMPLATES.taskMoved,
-        vars: { ...base, 상태: M.movedValue(TASK_STATUS_LABEL[event.from], TASK_STATUS_LABEL[event.to], TASK_STATUS_TO_PARTICLE[event.to]) },
+        vars: { ...base, 상태: movedText(L, event.from, event.to) },
       };
     case "note":
       return { code: SYSTEM_TEMPLATES.taskNote, vars: { ...base, 기록: event.body?.trim() ? preview(event.body) : M.noteFilesOnly } };

@@ -17,6 +17,8 @@ import { SiteHeader } from "@/components/site-header";
 import { SiteFooter } from "@/components/site-footer";
 import { OfflineNotice } from "@/components/offline-notice";
 import { VisitBeacon } from "@/components/visit-beacon";
+import { CodeBookProvider } from "@/components/code-book";
+import { getCodeBook } from "@/server/services/common-codes";
 
 // OG 이미지 URL 은 절대 경로여야 한다. 배포 주소를 모르면 Next 가 상대 경로로 내보내고 SNS 에서 미리보기가 깨진다.
 const siteUrl = process.env.NEXT_PUBLIC_APP_URL;
@@ -43,7 +45,9 @@ export const viewport: Viewport = {
 
 // 루트 레이아웃은 cookies()를 읽지 않는다(홈 풀 라우트 캐시 유지). 세션 표시는 SessionProvider가 클라이언트에서 /api/auth/me 로 가져온다.
 // 폭, 패딩은 화면마다 다르므로 여기서 잡지 않는다 — 각 페이지가 <Page>로 지정한다.
-export default function RootLayout({ children }: { children: React.ReactNode }) {
+export default async function RootLayout({ children }: { children: React.ReactNode }) {
+  // 공통코드 이름표(코드북). 서버 캐시 한 번이라 화면마다 DB 를 가지 않는다(services/common-codes 의 getCodeBook)
+  const codeBook = await getCodeBook();
   return (
     // suppressHydrationWarning: 테마 스크립트가 하이드레이션 전에 html 에 data-theme 을 찍는다.
     // 서버가 보낸 HTML 에는 그 속성이 없으므로 React 가 "안 맞는다" 고 경고한다 — 여기서는 의도한 차이다.
@@ -56,6 +60,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
             React 가 클라이언트에서 script 를 그리며 "Encountered a script tag" 오류를 냈다(2026-10-31). 루트 레이아웃은 클라이언트 이동 때 다시 그려지지 않는다 */}
         <script dangerouslySetInnerHTML={{ __html: FRAME_INIT_SCRIPT }} />
         <SessionProvider>
+          <CodeBookProvider book={codeBook}>
           {/* 토스트와 로그인 팝업(M-01)은 화면 어디서든 부르므로 세션 바로 안쪽에 한 번 선다 */}
           <ToastProvider>
           <LoginGateProvider>
@@ -78,6 +83,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           <VisitBeacon />
           </LoginGateProvider>
           </ToastProvider>
+          </CodeBookProvider>
         </SessionProvider>
       </body>
     </html>

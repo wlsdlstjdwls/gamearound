@@ -8,7 +8,7 @@ export default function AdminCodesLoading() {
   return (
     <SkeletonBody>
       <AdminHeadSkeleton width="w-32" />
-      <MasterDetailSkeleton listWidth="420px" rows={ROWS} />
+      <MasterDetailSkeleton listWidth="480px" rows={ROWS} />
     </SkeletonBody>
   );
 }
