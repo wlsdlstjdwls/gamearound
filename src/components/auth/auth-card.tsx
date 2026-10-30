@@ -27,10 +27,10 @@ import { Page, Panel } from "@/components/ui/page";
 /** 카피는 탭마다 다르다 — 가입 탭에서 "로그인 후 사용할 수 있어요" 가 걸려 있으면 화면이 딴말을 한다 */
 export type AuthCardMode = "signIn" | "signUp" | "reset";
 
-const LEAD: Record<AuthCardMode, { title: readonly [string, string]; body: string }> = {
+/** body 가 없는 탭은 제목과 목록만 선다 — 로그인 탭의 "가격은 로그인 없이도..." 는 2026-10-30 사용자가 걷었다(없어도 되는 말) */
+const LEAD: Record<AuthCardMode, { title: readonly [string, string]; body?: string }> = {
   signIn: {
     title: ["할인 알림과 기기 판정은", "로그인 후 사용할 수 있어요"],
-    body: "가격은 로그인 없이도 전부 볼 수 있어요. 계정은 알림을 보낼 기기를 기억하는 데만 써요.",
   },
   signUp: {
     title: ["가격은 우리가 볼게요", "싸지면 알려드릴게요"],
@@ -87,8 +87,12 @@ export function AuthCard({
     // flex-1 + justify-center: main 이 남긴 높이를 그대로 받아 세로 가운데로 모은다(백분율을 쓰지 않는 이유는 root layout 주석).
     // 좁은 화면에서는 내용이 화면보다 길어 가운데 정렬이 의미를 잃고 그대로 위에서부터 흐른다.
     <Page pad="home" className="flex-1 justify-center">
-      <div className="grid items-center gap-x-14 gap-y-9 lg:grid-cols-[minmax(0,1fr)_400px]">
-        <div className="reveal row-start-2 flex flex-col gap-[18px] lg:col-start-1 lg:row-start-1" style={stagger(0)}>
+      {/* 왼쪽 칸을 1fr 로 두면 넓은 화면에서 남는 폭을 다 가져가 카피와 폼 사이가 수백 px 벌어졌다(2026-10-30 사용자: "사이 공백이 넘 많어").
+          카피 칸은 글 폭만큼(auto)만 잡고 두 칸 묶음을 가운데로 모은다. 두 칸 사이는 gap-x 하나가 정한다 */}
+      <div className="grid items-center gap-x-16 gap-y-9 lg:grid-cols-[auto_400px] lg:justify-center">
+        {/* 판이 두 줄을 관통해 줄 높이가 판 높이의 반씩이다. 카피는 윗줄 바닥에, 목록은 아랫줄 위에 붙여야 둘 사이가 gap-y 만큼만 빈다
+            (가운데 정렬이면 둘이 각자 반쪽의 가운데로 떠서 사이가 140px 넘게 벌어졌다) */}
+        <div className="reveal row-start-2 flex flex-col gap-[18px] lg:col-start-1 lg:row-start-1 lg:self-end" style={stagger(0)}>
           <Link href={ROUTES.home} aria-label={`${SITE.name} 홈`} className="press w-fit">
             <BrandSymbol size={34} />
           </Link>
@@ -97,7 +101,7 @@ export function AuthCard({
             <span className="block">{lead.title[0]}</span>
             <span className="block">{lead.title[1]}</span>
           </h1>
-          <p className="max-w-[420px] text-[14px] leading-[1.85] text-mut">{lead.body}</p>
+          {lead.body && <p className="max-w-[420px] text-[14px] leading-[1.85] text-mut">{lead.body}</p>}
         </div>
 
         {/* 격자에서 오른쪽 칸 전체를 세로로 관통한다 — 왼쪽이 카피 + 목록 두 줄로 갈려도 판은 한 덩어리다 */}
@@ -115,7 +119,7 @@ export function AuthCard({
         </Panel>
 
         {/* 좁은 화면에서는 셋째 줄. 넓은 화면에서만 왼쪽 칸 둘째 줄로 올라가 카피 아래에 붙는다 */}
-        <ul className="reveal row-start-3 flex flex-col gap-3 lg:col-start-1 lg:row-start-2 lg:mt-1.5" style={stagger(2)}>
+        <ul className="reveal row-start-3 flex flex-col gap-3 lg:col-start-1 lg:row-start-2 lg:self-start" style={stagger(2)}>
           {LEAD_POINTS.map((point, i) => (
             <li key={point} className="flex items-baseline gap-2.5 text-[13.5px] text-mut">
               <span aria-hidden className="text-[15px] font-extrabold text-acc">
