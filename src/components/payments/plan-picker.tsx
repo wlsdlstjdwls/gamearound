@@ -12,6 +12,7 @@ import { ChoiceCard } from "@/components/ui/choice-card";
 import { FormSelect } from "@/components/ui/select";
 import { formatPrice } from "@/lib/currency";
 import { DEFAULT_TONES } from "@/lib/pricing/copy-tones";
+import { ToneBadge } from "@/components/payments/copy-tone";
 import { cn } from "@/lib/cn";
 import { BUNDLE_MESSAGES as B, PAYMENT_MESSAGES as M } from "@/lib/payments/messages";
 import { PLANS_MESSAGES as PL } from "@/lib/payments/plans-messages";
@@ -100,7 +101,7 @@ export function PlanPicker({ kind, targetId, pairs, checkout, initialPlan = null
                     {s > 0 && <ListPrice value={s} />}
                     {formatPrice(o.quote.amount)}
                     {r > 0 && <Tag tone="hot">{PL.rate(r)}</Tag>}
-                    {o.quote.promoLabel && <Tag tone={o.quote.promoTone ?? DEFAULT_TONES.promo}>{o.quote.promoLabel}</Tag>}
+                    {o.quote.promoLabel && <ToneBadge tone={o.quote.promoTone ?? DEFAULT_TONES.promo}>{o.quote.promoLabel}</ToneBadge>}
                   </span>
                 }
                 note={o.bundle ? (isIndie ? B.bundleNoteIndie(o.days) : B.bundleNotePin(o.days)) : B.singleNote(o.days)}
@@ -122,7 +123,7 @@ export function PlanPicker({ kind, targetId, pairs, checkout, initialPlan = null
           {chosen.bundle && strike > 0 && <span className="text-[12.5px] font-semibold text-danger">{PL.saving(formatPrice(strike - chosen.quote.amount))}</span>}
         </span>
         <span className="flex items-baseline gap-2">
-          {chosen.quote.promoLabel && <Tag tone={chosen.quote.promoTone ?? DEFAULT_TONES.promo}>{chosen.quote.promoLabel}</Tag>}
+          {chosen.quote.promoLabel && <ToneBadge tone={chosen.quote.promoTone ?? DEFAULT_TONES.promo}>{chosen.quote.promoLabel}</ToneBadge>}
           {rate > 0 && <Tag tone="hot">{PL.rate(rate)}</Tag>}
           {strike > 0 && <ListPrice value={strike} className="text-[14px]" />}
           <span key={chosen.quote.amount} className="animate-pop text-[22px] font-black tabular-nums text-ink">

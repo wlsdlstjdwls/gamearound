@@ -25,8 +25,8 @@ import { MONTH_DAYS_APPROX } from "@/lib/membership/plan";
 import { PLANS_MESSAGES as M } from "@/lib/payments/plans-messages";
 import { perDay, type PriceBook, type Quote } from "@/lib/pricing/quote";
 import { PLAN_SPOTS } from "@/lib/pricing/preview-spots";
-import { DEFAULT_TONES, type BadgeTone, type BoxTone } from "@/lib/pricing/copy-tones";
-import { BOX_TONE_CLASS, TEXT_TONE_CLASS } from "@/components/payments/copy-tone";
+import { DEFAULT_TONES, type BadgeTone, type BoxTone, type ToneValue } from "@/lib/pricing/copy-tones";
+import { boxTone, textTone, ToneBadge } from "@/components/payments/copy-tone";
 import { fillCopy, type PricingSettings } from "@/lib/pricing/settings";
 import { ROUTES } from "@/lib/routes";
 
@@ -104,9 +104,10 @@ function Head({ eyebrow, name, tag, summary }: { eyebrow: string; name: string; 
 }
 
 /** 값 바로 아래 "지금 받는 것" 한 줄 */
-function Now({ tone = DEFAULT_TONES.now, children }: { tone?: BoxTone; children: React.ReactNode }) {
+function Now({ tone = DEFAULT_TONES.now, children }: { tone?: ToneValue<BoxTone>; children: React.ReactNode }) {
+  const paint = boxTone(tone, "rounded-xl px-3 py-2 text-[13px] font-semibold");
   return (
-    <p data-preview-spot={PLAN_SPOTS.now} className={cn("rounded-xl px-3 py-2 text-[13px] font-semibold", BOX_TONE_CLASS[tone])}>
+    <p data-preview-spot={PLAN_SPOTS.now} className={paint.className} style={paint.style}>
       {children}
     </p>
   );
@@ -148,7 +149,8 @@ export function PlanCards({ copy, book, active, credits, membership, single, bun
   const fillAll = (ls: readonly string[]) => ls.map(fill);
   const count = [active.single, active.bundle, active.membership].filter(Boolean).length as 1 | 2 | 3;
   // 배지, 띠, 안내 색은 관리자가 고른 값(copy 의 ~Tone), 없으면 고르기 전 색(lib/pricing/copy-tones)
-  const tag = (t: string, tone: BadgeTone) => (t ? <Tag tone={tone}>{t}</Tag> : undefined);
+  const tag = (t: string, tone: ToneValue<BadgeTone>) => (t ? <ToneBadge tone={tone}>{t}</ToneBadge> : undefined);
+  const hint = textTone(copy.single.hintTone ?? DEFAULT_TONES.hint, "text-[13px] font-semibold");
 
   return (
     <div className={cn("grid items-stretch gap-3", !stack && GRID_COLS[Math.max(1, count) as 1 | 2 | 3])}>
@@ -161,7 +163,7 @@ export function PlanCards({ copy, book, active, credits, membership, single, bun
           {copy.single.now && <Now tone={copy.single.nowTone}>{copy.single.now}</Now>}
           <Included lines={fillAll(copy.single.lines)} />
           {copy.single.hint && (upsell ?? active.bundle) && (
-            <p data-preview-spot={PLAN_SPOTS.hint} className={cn("text-[13px] font-semibold", TEXT_TONE_CLASS[copy.single.hintTone ?? DEFAULT_TONES.hint])}>
+            <p data-preview-spot={PLAN_SPOTS.hint} className={hint.className} style={hint.style}>
               {fill(copy.single.hint)}
             </p>
           )}

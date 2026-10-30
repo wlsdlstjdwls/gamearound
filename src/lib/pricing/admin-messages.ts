@@ -123,11 +123,15 @@ export const PRICING_ADMIN_MESSAGES = {
     lines: "혜택 항목",
     hint: "업셀 안내문구",
     cta: "구매 버튼명",
-    benefits: "멤버십 화면 혜택 항목",
+    benefits: "멤버십 혜택",
   },
-  /** 색 고르기(pricing-form/tone-picker, lib/pricing/copy-tones). 칩이 그 색으로 칠해져 이름은 짧게 둔다 */
-  toneFields: { tagTone: "배지 색상", nowTone: "문구 색상", hintTone: "안내 색상" },
-  promoTone: "배지 색상",
+  /** 색 고르기(pricing-form/color-picker, lib/pricing/copy-tones). 화면엔 색 동그라미만 서고 이름은 낭독기와 팝업 제목이 읽는다 */
+  colorOf: (field: string) => `${field} 색상`,
+  colorTrigger: (label: string, name: string) => `${label}: ${name}, 바꾸기`,
+  colorCustom: "직접 선택",
+  colorEyedropper: "스포이트",
+  colorReset: "기본 색으로",
+  promoTone: "고객노출명 배지 색상",
   toneLabels: { acc: "파랑", plum: "보라", plumSolid: "진한 보라", hot: "빨강 채움", danger: "빨강", neutral: "회색", mut: "회색" },
 
 

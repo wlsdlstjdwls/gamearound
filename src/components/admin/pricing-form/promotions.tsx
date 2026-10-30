@@ -26,7 +26,7 @@ import { promotionStatus, quote } from "@/lib/pricing/quote";
 import { PRICING_ADMIN_MESSAGES as M } from "@/lib/pricing/admin-messages";
 import { PLAN_SPOTS, spots } from "@/lib/pricing/preview-spots";
 import { BADGE_TONES, DEFAULT_TONES } from "@/lib/pricing/copy-tones";
-import { TonePicker } from "@/components/admin/pricing-form/tone-picker";
+import { ColorPicker } from "@/components/admin/pricing-form/color-picker";
 import { hasErrorUnder, type FieldErrors } from "@/lib/admin/validation";
 import { isBundleProduct, MEMBERSHIP_KEY, PROMOTION_STOP_REASONS, type PricingSettings, type Promotion, type TierKey } from "@/lib/pricing/settings";
 
@@ -155,11 +155,7 @@ function Detail({ value, p, set, errors }: { value: PricingSettings; p: Promotio
             </Field>
           )}
           <Field label={M.promoFieldName} htmlFor={`pl-${p.id}`} required wide spot={PLAN_SPOTS.promo}>
-            <TextField id={`pl-${p.id}`} label={M.promoFieldName} hideLabel value={p.label} onChange={(e) => set({ label: e.target.value })} error={err("label")} compact />
-          </Field>
-          {/* 노출명 배지 색 — 카드의 "첫 달 할인" 같은 배지(lib/pricing/copy-tones, 2026-10-30 사용자 "프로모션 색상도") */}
-          <Field label={M.promoTone} wide spot={PLAN_SPOTS.promo}>
-            <TonePicker label={M.promoTone} kind="badge" tones={BADGE_TONES} value={p.tone ?? DEFAULT_TONES.promo} onChange={(tone) => set({ tone })} />
+            <TextField id={`pl-${p.id}`} label={M.promoFieldName} hideLabel value={p.label} onChange={(e) => set({ label: e.target.value })} error={err("label")} compact trailing={<ColorPicker label={M.promoTone} kind="badge" tones={BADGE_TONES} value={p.tone} fallback={DEFAULT_TONES.promo} onChange={(tone) => set({ tone })} />} />
           </Field>
           <Field label={M.promoSectionPeriod} wide error={err("endsOn") ?? err("startsOn")} spot={spots(PLAN_SPOTS.list, PLAN_SPOTS.rate, PLAN_SPOTS.promo)}>
             <FieldPair
