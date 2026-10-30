@@ -1049,3 +1049,5 @@ export * from "./schema-quality";
 export * from "./schema-settings";
 // 0건 검색어(검색 0건 기록, 추가 요청). 파일을 가른 이유는 schema-search 머리 주석에 있다
 export * from "./schema-search";
+// 시스템관리(공통코드, 알림 템플릿, 발송 이력)
+export * from "./schema-system";
