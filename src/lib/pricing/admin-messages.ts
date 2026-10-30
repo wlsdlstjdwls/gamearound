@@ -130,7 +130,6 @@ export const PRICING_ADMIN_MESSAGES = {
   colorTrigger: (label: string, name: string) => `${label}: ${name}, 바꾸기`,
   colorCustom: "직접 선택",
   colorEyedropper: "스포이트",
-  colorReset: "기본 색으로",
   promoTone: "고객노출명 배지 색상",
   toneLabels: { acc: "파랑", plum: "보라", plumSolid: "진한 보라", hot: "빨강 채움", danger: "빨강", neutral: "회색", mut: "회색" },
 

@@ -46,8 +46,10 @@ export function ColorPicker<T extends string>({
   /** 저장된 값. 비면 fallback(고르기 전 색) */
   value: ToneValue<T> | undefined;
   fallback: T;
-  /** undefined 는 "기본 색으로" — 저장값에서 색을 지운다 */
-  onChange: (tone: ToneValue<T> | undefined) => void;
+  /**
+   * 고른 색. "기본 색으로" 단추는 두지 않는다(2026-10-30 사용자 "필요 없을 듯") — 기본 색도 보기 동그라미 하나라 그걸 누르면 된다
+   */
+  onChange: (tone: ToneValue<T>) => void;
 }) {
   const id = useId();
   const current = value ?? fallback;
@@ -175,11 +177,6 @@ export function ColorPicker<T extends string>({
                 </button>
               )}
             </div>
-            {value !== undefined && (
-              <button type="button" onClick={() => onChange(undefined)} className="press self-start rounded-lg px-2 py-1 text-[12px] text-mut hover:bg-surface-2 hover:text-ink">
-                {M.colorReset}
-              </button>
-            )}
           </div>,
           document.body,
         )}
