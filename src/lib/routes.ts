@@ -135,6 +135,8 @@ export const ROUTES = {
   apiNewsThumbnail: "/api/news/thumbnail",
   /** 게임 상세 조회 기록. 수집이 사람들이 보는 게임을 먼저 갱신하는 데 쓴다(server/game-views) */
   apiGameView: "/api/games/view",
+  /** 사이트 방문 한 번(components/visit-beacon). 이용현황의 방문, 유입경로가 이 기록을 센다 */
+  apiVisit: "/api/visit",
   /** 광고 카드가 보였다, 눌렸다는 신호(2026-10-27, components/promo/ad-track 이 sendBeacon 으로 보낸다) */
   apiAdTrack: "/api/promo/track",
 } as const;

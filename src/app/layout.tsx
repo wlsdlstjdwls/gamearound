@@ -16,6 +16,7 @@ import { ToastProvider } from "@/components/ui/toast";
 import { SiteHeader } from "@/components/site-header";
 import { SiteFooter } from "@/components/site-footer";
 import { OfflineNotice } from "@/components/offline-notice";
+import { VisitBeacon } from "@/components/visit-beacon";
 
 // OG 이미지 URL 은 절대 경로여야 한다. 배포 주소를 모르면 Next 가 상대 경로로 내보내고 SNS 에서 미리보기가 깨진다.
 const siteUrl = process.env.NEXT_PUBLIC_APP_URL;
@@ -73,6 +74,8 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           <ConfirmHost />
           {/* 인터넷이 끊기면 바닥에 띠 하나(components/offline-notice). 토스트와 같은 자리라 탭바 위로 같이 오른다 */}
           <OfflineNotice />
+          {/* 화면 조회 신호(이용현황의 방문, 유입경로). 아무것도 그리지 않는다 */}
+          <VisitBeacon />
           </LoginGateProvider>
           </ToastProvider>
         </SessionProvider>
