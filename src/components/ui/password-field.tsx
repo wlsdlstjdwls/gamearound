@@ -12,7 +12,11 @@ type Props = Omit<TextFieldProps, "type" | "trailing"> & {
   strengthOf?: string;
 };
 
-export function PasswordField({ strengthOf, ...field }: Props) {
+/**
+ * strengthOf 를 넘기면 안내 줄(hint) 자리에 강도 막대가 함께 선다 — 안내 한 줄, 막대 한 줄을 따로 쌓았더니
+ * 비밀번호 확인 칸이 그만큼 밀려 내려갔다(2026-10-30 사용자 "비밀번호 확인이 너무 아래에"). 비어 있을 때는 안내 글, 입력하면 단계 글이 선다
+ */
+export function PasswordField({ strengthOf, hint, ...field }: Props) {
   const [visible, setVisible] = useState(false);
   return (
     <div>
@@ -37,39 +41,51 @@ export function PasswordField({ strengthOf, ...field }: Props) {
             {visible ? <EyeOffIcon /> : <EyeIcon />}
           </button>
         }
+        hint={strengthOf !== undefined ? <PasswordStrengthMeter value={strengthOf} hint={hint} /> : hint}
         {...field}
       />
-      {strengthOf !== undefined && <PasswordStrengthMeter value={strengthOf} />}
     </div>
   );
 }
 
+/**
+ * 단계마다의 막대 색. 초록을 쓰지 않는다(2026-10-30) — 화면의 "괜찮다" 는 브랜드 파랑이 말한다.
+ * 빈 칸은 판(--surface-2) 위에서도 보이는 선 색이다 — 같은 회색이면 막대가 있는 줄도 몰랐다
+ */
 const BAR_COLOR: Record<number, string> = {
   1: "bg-danger",
   2: "bg-warn",
-  3: "bg-dim",
-  4: "bg-ok",
+  3: "bg-acc-3",
+  4: "bg-acc",
+};
+const LABEL_COLOR: Record<number, string> = {
+  0: "text-dim",
+  1: "text-danger",
+  2: "text-warn",
+  3: "text-acc",
+  4: "text-acc",
 };
 
-export function PasswordStrengthMeter({ value }: { value: string }) {
+/** 안내 줄 안에 서므로(TextField 의 hint 는 <p>) span 만 쓴다 */
+export function PasswordStrengthMeter({ value, hint }: { value: string; hint?: React.ReactNode }) {
   const { score, label } = passwordStrength(value);
   return (
-    <div className="mt-2 flex items-center gap-2" aria-live="polite">
-      <div className="flex flex-1 gap-1" aria-hidden>
+    <span className="flex items-center justify-between gap-3">
+      <span aria-live="polite" className={cn("min-w-0 font-semibold transition-colors duration-base", score === 0 ? "font-normal" : "", LABEL_COLOR[score])}>
+        {score === 0 ? hint : label}
+      </span>
+      <span className="flex w-24 shrink-0 gap-1" aria-hidden>
         {[1, 2, 3, 4].map((i) => (
           <span
             key={i}
             className={cn(
-              "h-1 flex-1 rounded-full transition-[background-color,transform] duration-base ease-out-emph",
-              i <= score ? BAR_COLOR[score] : "bg-surface-2",
-              i <= score && "scale-y-125",
+              "h-1.5 flex-1 origin-left rounded-full transition-[background-color,transform] duration-base ease-out-emph",
+              i <= score ? BAR_COLOR[score] : "bg-line-strong/50",
+              i <= score ? "scale-x-100" : "scale-x-90",
             )}
           />
         ))}
-      </div>
-      <span className={cn("min-w-[3.5rem] text-right text-xs transition-colors duration-base", score >= 3 ? "text-mut" : "text-dim")}>
-        {label || " "}
       </span>
-    </div>
+    </span>
   );
 }

@@ -9,9 +9,10 @@ export const AUTH_MESSAGES = {
   passwordRequired: "비밀번호를 입력해 주세요",
   passwordTooShort: `비밀번호는 ${PASSWORD_MIN}자 이상이어야 해요`,
   passwordTooLong: "비밀번호가 너무 길어요",
-  passwordWeak: "영문과 숫자를 함께 넣어 주세요",
+  passwordWeak: "영문, 숫자, 특수문자를 모두 넣어 주세요",
   passwordCommon: "너무 쉬운 비밀번호예요. 흔한 조합, 반복, 연속된 글자는 피해 주세요",
   passwordConfirmMismatch: "비밀번호가 서로 달라요",
+  passwordHasEmail: "비밀번호에 이메일 아이디가 들어 있어요. 다른 조합으로 바꿔 주세요",
   displayNameRequired: "닉네임을 입력해 주세요",
   displayNameLength: `닉네임은 ${DISPLAY_NAME_MIN}~${DISPLAY_NAME_MAX}자로 입력해 주세요`,
   displayNameInvalid: "닉네임에는 공백 외 특수문자를 쓸 수 없어요",
@@ -30,8 +31,6 @@ export const AUTH_MESSAGES = {
   signInTitle: "다시 만나서 반가워요",
   signInSubtitle: "찜한 게임의 할인 소식을 놓치지 마세요",
   signUpTitle: `${SITE.name} 시작하기`,
-  // "위시리스트" 가 아니라 "찜" 이다 — 화면 메뉴, 단추가 모두 찜이라 가입 화면만 다른 낱말이면 같은 기능인지 모른다(lib/wishlist/messages)
-  signUpSubtitle: "찜과 가격 알림을 무료로 쓸 수 있어요",
   signInCta: "로그인",
   // 머리띠 메뉴, 로그인 팝업(M-01)의 링크, 가입 화면의 탭, 제목, 단추가 모두 이 한 낱말을 쓴다.
   // 기획서 v2.0(3.1, S-27)은 "계정 등록" 이었지만 2026-10-30 사용자 지시로 "회원가입" 으로 바꿨다 — 사람들이 찾는 낱말이 이쪽이다
@@ -56,7 +55,7 @@ export const AUTH_MESSAGES = {
   displayNameTaken: "이미 쓰고 있는 닉네임이에요",
   noAccount: "아직 계정이 없나요?",
   hasAccount: "이미 계정이 있나요?",
-  passwordHint: `${PASSWORD_MIN}자 이상, 영문과 숫자 포함`,
+  passwordHint: `${PASSWORD_MIN}자 이상, 영문, 숫자, 특수문자를 섞어 주세요`,
   // 비밀번호 재설정 — 요청 결과는 계정이 있든 없든 같은 문장이다(열거 방지)
   forgotLink: "비밀번호를 잊었나요?",
   forgotTitle: "비밀번호 재설정",

@@ -25,6 +25,14 @@ export const RIPPLE_DELAYS_MS = [0, 1400] as const;
  */
 export const SPARK_DELAYS_MS = [0, 1050, 2100] as const;
 
+/**
+ * 타이핑 제목(ui/typing-title)의 글자 사이 간격. 한글 두 줄(20자 남짓)이 1.3초 안에 다 찍히는 빠르기 —
+ * 더 느리면 제목을 다 읽기 전에 눈이 폼으로 넘어가고, 더 빠르면 타이핑이 아니라 한꺼번에 뜬 것으로 보인다
+ */
+export const TYPE_STEP_MS = 55;
+/** 첫 글자가 찍히기 전 쉼. 화면이 자리 잡는 등장(.reveal)과 겹치지 않게 그 뒤에 시작한다 */
+export const TYPE_START_MS = 260;
+
 /** 등장이 끝난 셸에 붙는 표식. 이 값이 붙으면 같은 자리를 다시 그려도 등장하지 않는다(globals.css) */
 export const ENTERED_ATTR = "data-entered";
 

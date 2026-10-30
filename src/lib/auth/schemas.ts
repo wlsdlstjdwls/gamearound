@@ -19,13 +19,29 @@ export const emailSchema = z
 
 const HAS_LETTER = /[A-Za-z]/;
 const HAS_DIGIT = /\d/;
+/** 특수문자 — 영문, 숫자, 공백이 아닌 글자 하나 이상. 한글은 키보드 배열 탓에 비밀번호 칸에 잘 안 들어가 세지 않는다(2026-10-30 규칙 강화) */
+const HAS_SYMBOL = /[^A-Za-z0-9\sㄱ-ㆎ가-힣]/;
+
+/** 영문, 숫자, 특수문자를 다 넣었나 — 스키마와 강도 막대(password-strength)가 같은 판정을 본다 */
+export function hasRequiredClasses(v: string): boolean {
+  return HAS_LETTER.test(v) && HAS_DIGIT.test(v) && HAS_SYMBOL.test(v);
+}
+
+/** 이메일 아이디를 비밀번호에 넣었나로 볼 최소 길이. 3글자 이하 아이디("abc")는 평범한 조합에도 흔히 들어 있어 막으면 억울한 거절이 는다 */
+const EMAIL_ID_MIN_MATCH = 4;
+
+/** 이메일 @ 앞 부분이 비밀번호 안에 들어 있나(대소문자 무시). 남이 이메일만 알아도 비밀번호 절반을 아는 꼴이 된다(2026-10-30 규칙 강화) */
+export function passwordHasEmailId(password: string, email: string): boolean {
+  const id = email.split("@")[0]?.trim().toLowerCase() ?? "";
+  return id.length >= EMAIL_ID_MIN_MATCH && password.toLowerCase().includes(id);
+}
 
 export const passwordSchema = z
   .string({ message: M.passwordRequired })
   .min(1, M.passwordRequired)
   .min(PASSWORD_MIN, M.passwordTooShort)
   .max(PASSWORD_MAX, M.passwordTooLong)
-  .refine((v) => HAS_LETTER.test(v) && HAS_DIGIT.test(v), M.passwordWeak)
+  .refine(hasRequiredClasses, M.passwordWeak)
   // 기본 규칙을 통과한 뒤에만 의미가 있다 — 순서가 곧 오류 우선순위다(fieldErrorsOf 는 칸마다 첫 오류만 쓴다)
   .refine((v) => !isWeakPassword(v), M.passwordCommon);
 
@@ -73,6 +89,7 @@ export const signUpSchema = z
     /** 가격 알림 이메일 받기(선택). 동의 기록으로 남는다(server/db/schema-consents) */
     alertEmail: z.boolean(),
   })
+  .refine((v) => !passwordHasEmailId(v.password, v.email), { message: M.passwordHasEmail, path: ["password"] })
   .refine((v) => v.password === v.passwordConfirm, { message: M.passwordConfirmMismatch, path: ["passwordConfirm"] });
 
 export const forgotPasswordSchema = z.object({ email: emailSchema });

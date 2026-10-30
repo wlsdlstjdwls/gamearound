@@ -66,7 +66,9 @@ export function longestSequentialRun(pw: string): number {
 /** 흔한 조합이거나, 글자 종류가 너무 적거나, 연속이 너무 길면 참 */
 export function isWeakPassword(pw: string): boolean {
   const lower = pw.toLowerCase();
-  if (COMMON_PASSWORDS.has(lower)) return true;
+  // 특수문자를 떼고도 본다 — 규칙이 특수문자를 요구한 뒤(2026-10-30) "password1!" 처럼 흔한 조합 끝에 하나만 붙이는 꼴이 가장 흔하다
+  const bare = lower.replace(/[^a-z0-9]/g, "");
+  if (COMMON_PASSWORDS.has(lower) || COMMON_PASSWORDS.has(bare)) return true;
   if (new Set(Array.from(lower)).size < PASSWORD_MIN_DISTINCT_CHARS) return true;
   return longestSequentialRun(lower) > PASSWORD_MAX_SEQUENTIAL_RUN;
 }

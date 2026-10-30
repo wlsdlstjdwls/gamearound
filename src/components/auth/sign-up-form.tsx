@@ -62,7 +62,8 @@ export function SignUpForm({ next }: { next: string }) {
   // <form> 에 action 을 걸지 않는다 — 걸면 React 19 가 제출 때마다 form.reset() 을 불러
   // 실패한 폼의 칸이 전부 비워진다. 액션은 useAuthForm 의 onSubmit 이 직접 태운다(근거는 그 주석에)
   return (
-    <form ref={formRef} onSubmit={onSubmit} onInput={recheck} noValidate className="space-y-4">
+    // 칸 사이 12px — 16px 이던 것을 줄였다(2026-10-30 사용자 "공백이 너무 많다"). 칸 높이(46px)와 글자 16px 은 그대로다
+    <form ref={formRef} onSubmit={onSubmit} onInput={recheck} noValidate className="space-y-3">
       <input type="hidden" name="next" value={next} />
 
       {formError && (
@@ -128,12 +129,12 @@ export function SignUpForm({ next }: { next: string }) {
       {/* 동의 넷(기획서 v2.0 S-27, 목업 regv): 전체 동의, 이용약관(필수), 개인정보(필수), 가격 알림 이메일(선택).
           두 문서는 링크다 — 동의하기 전에 읽을 길이 있어야 한다. 새 창으로 여는 이유: 같은 창에서 나가면 여기까지 채운 칸이 전부 날아간다.
           세 칸은 상태로 쥔다 — "전체 동의" 가 셋을 한 번에 켜고 끄고, 셋이 다 켜지면 전체 동의도 켜져 보여야 한다 */}
-      <fieldset className="reveal flex flex-col gap-0.5 rounded-[var(--radius-md)] bg-surface-2 px-3.5 py-2.5" style={stagger(5)}>
+      <fieldset className="reveal flex flex-col rounded-[var(--radius-md)] bg-surface-2 px-3.5 py-2" style={stagger(5)}>
         <legend className="sr-only">{M.consentAll}</legend>
         <Checkbox checked={allAgreed} disabled={busy} onChange={(e) => setAgree({ terms: e.currentTarget.checked, privacy: e.currentTarget.checked, alertEmail: e.currentTarget.checked })}>
           <span className="font-bold text-ink">{M.consentAll}</span>
         </Checkbox>
-        <div className="my-1 border-t border-line" />
+        <div className="my-0.5 border-t border-line" />
         <Checkbox
           name="terms"
           checked={agree.terms}
@@ -175,12 +176,12 @@ export function SignUpForm({ next }: { next: string }) {
         </Checkbox>
       </fieldset>
 
-      <div className="reveal pt-1" style={stagger(6)}>
+      <div className="reveal" style={stagger(6)}>
         <Button type="submit" size="lg" fullWidth loading={busy} loadingLabel={M.pending} disabled={!complete && !busy} aria-describedby={complete ? undefined : incompleteId}>
           {M.signUpCta}
         </Button>
         {!complete && !busy && (
-          <p id={incompleteId} className="mt-2 text-center text-[12.5px] text-dim">
+          <p id={incompleteId} className="mt-1.5 text-center text-[12px] text-dim">
             {M.signUpIncomplete}
           </p>
         )}

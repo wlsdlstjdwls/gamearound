@@ -99,6 +99,8 @@
   --duration-torch: 7s;
   /* 빈 화면 그림(ui/empty-scene): 손전등 빛이 한쪽 끝에서 다른 끝까지 훑는 한 번. 찾는 몸짓으로 읽히되 스피너처럼 바쁘지 않게 */
   --duration-search: 3.2s;
+  /* 타이핑 제목 끝 커서가 깜빡이다 사라지는 시간(.type-caret). 세 번 깜빡일 만큼 */
+  --duration-type-caret: 2.4s;
   /* 기다림 그림(ui/game-loader): 손전등이 막대 한 끝에서 다른 끝까지 달리는 한 바퀴, 한 번 깡총 뛰는 박자 */
   --duration-loader-run: 1.9s;
   --duration-loader-hop: 0.32s;
@@ -739,6 +741,38 @@
   background: var(--acc);
   animation: search-twinkle var(--duration-search) var(--ease-standard) infinite both;
   animation-delay: var(--stagger, 0ms);
+}
+
+/* 타이핑 제목(components/ui/typing-title). 글자마다 늦춤(--type-delay)만 다르다. 아래에서 살짝 올라오며 진해진다 —
+   불투명도만 바꾸면 깜빡임처럼 보여 "찍힌다" 는 느낌이 약했다. 커서는 브랜드 파랑 막대로 세 번 깜빡이고 사라진다 */
+@keyframes type-in {
+  from { opacity: 0; translate: 0 0.12em; }
+  to { opacity: 1; translate: 0 0; }
+}
+@keyframes type-caret {
+  0%, 100% { opacity: 0; }
+  10%, 30%, 50%, 70% { opacity: 1; }
+  20%, 40%, 60% { opacity: 0; }
+}
+.type-char {
+  display: inline-block;
+  white-space: pre;
+  animation: type-in var(--duration-fast) var(--ease-out-emph) var(--type-delay, 0ms) both;
+}
+.type-caret {
+  display: inline-block;
+  width: 0.08em;
+  height: 0.95em;
+  margin-left: 0.06em;
+  vertical-align: -0.08em;
+  border-radius: 1px;
+  background: var(--acc);
+  animation: type-caret var(--duration-type-caret) linear var(--type-delay, 0ms) both;
+}
+/* 움직임을 줄인 사람: 전역 킬스위치는 길이만 줄이고 늦춤(delay)은 남겨 글자가 그만큼 비어 있게 된다 — 여기서는 애니메이션을 통째로 끈다 */
+@media (prefers-reduced-motion: reduce) {
+  .type-char { animation: none; }
+  .type-caret { display: none; }
 }
 
 /* 모션을 줄인 사람에게는 꺼진 손전등으로 멈춘다. 전역 킬스위치는 첫 프레임에 세우는데, 첫 프레임이 꺼진 쪽이라 그대로 맞다 */

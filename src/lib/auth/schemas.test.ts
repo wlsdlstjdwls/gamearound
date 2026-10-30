@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import { fieldErrorsOf, normalizeEmail, resetPasswordSchema, signInSchema, signUpSchema } from "./schemas";
 import { AUTH_MESSAGES as M } from "./messages";
 
-const valid = { displayName: "손전등맨", email: "  Foo@Example.COM ", password: "tetris4life", passwordConfirm: "tetris4life", terms: true, privacy: true, alertEmail: false };
+const valid = { displayName: "손전등맨", email: "  Foo@Example.COM ", password: "tetris4life!", passwordConfirm: "tetris4life!", terms: true, privacy: true, alertEmail: false };
 
 describe("signUpSchema", () => {
   it("정상 입력 → 이메일 소문자 정규화", () => {
@@ -16,12 +16,12 @@ describe("signUpSchema", () => {
     if (!r.success) expect(fieldErrorsOf(r.error)).toEqual({ passwordConfirm: M.passwordConfirmMismatch });
   });
   it("숫자 없는 비밀번호 → 약함", () => {
-    const r = signUpSchema.safeParse({ ...valid, password: "abcdefgh", passwordConfirm: "abcdefgh" });
+    const r = signUpSchema.safeParse({ ...valid, password: "abcdefghij!", passwordConfirm: "abcdefghij!" });
     expect(r.success).toBe(false);
     if (!r.success) expect(fieldErrorsOf(r.error).password).toBe(M.passwordWeak);
   });
   it("흔한 비밀번호 → passwordCommon (기본 규칙은 통과하는 꼴)", () => {
-    const r = signUpSchema.safeParse({ ...valid, password: "password1", passwordConfirm: "password1" });
+    const r = signUpSchema.safeParse({ ...valid, password: "password1!", passwordConfirm: "password1!" });
     expect(r.success).toBe(false);
     if (!r.success) expect(fieldErrorsOf(r.error).password).toBe(M.passwordCommon);
   });
@@ -72,18 +72,31 @@ describe("normalizeEmail", () => {
 
 describe("resetPasswordSchema", () => {
   it("가입과 같은 규칙 — 쉬운 비번은 재설정으로도 못 들어온다", () => {
-    const r = resetPasswordSchema.safeParse({ token: "t", password: "password1", passwordConfirm: "password1" });
+    const r = resetPasswordSchema.safeParse({ token: "t", password: "password1!", passwordConfirm: "password1!" });
     expect(r.success).toBe(false);
     if (!r.success) expect(fieldErrorsOf(r.error).password).toBe(M.passwordCommon);
   });
 
   it("확인 칸이 다르면 그 칸에 오류", () => {
-    const r = resetPasswordSchema.safeParse({ token: "t", password: "tetris4life", passwordConfirm: "tetris4lifx" });
+    const r = resetPasswordSchema.safeParse({ token: "t", password: "tetris4life!", passwordConfirm: "tetris4lifx!" });
     expect(r.success).toBe(false);
     if (!r.success) expect(fieldErrorsOf(r.error).passwordConfirm).toBe(M.passwordConfirmMismatch);
   });
 
   it("토큰이 비면 거절", () => {
-    expect(resetPasswordSchema.safeParse({ token: "", password: "tetris4life", passwordConfirm: "tetris4life" }).success).toBe(false);
+    expect(resetPasswordSchema.safeParse({ token: "", password: "tetris4life!", passwordConfirm: "tetris4life!" }).success).toBe(false);
+  });
+});
+
+describe("비밀번호 규칙 강화(2026-10-30)", () => {
+  it("이메일 아이디가 들어 있으면 password 칸 오류", () => {
+    const r = signUpSchema.safeParse({ ...valid, email: "gamer77@example.com", password: "Gamer77!xyz", passwordConfirm: "Gamer77!xyz" });
+    expect(r.success).toBe(false);
+    if (!r.success) expect(fieldErrorsOf(r.error).password).toBe(M.passwordHasEmail);
+  });
+  it("특수문자가 없으면 약함", () => {
+    const r = signUpSchema.safeParse({ ...valid, password: "tetris4lifeX", passwordConfirm: "tetris4lifeX" });
+    expect(r.success).toBe(false);
+    if (!r.success) expect(fieldErrorsOf(r.error).password).toBe(M.passwordWeak);
   });
 });

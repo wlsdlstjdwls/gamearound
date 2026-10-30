@@ -2,7 +2,7 @@
 // 사용: node scripts/e2e-auth.mjs [baseUrl]   (기본 http://127.0.0.1:3000)
 const base = process.argv[2] ?? "http://127.0.0.1:3000";
 const email = `e2e+${Date.now()}@example.com`;
-const password = "Test1234!";
+const password = "Gm!9vQz2-auth"; // 가입 규칙(10자, 영문, 숫자, 특수문자)을 채우는 값 — 2026-10-30 규칙 강화로 바꿨다
 const displayName = "E2E테스터";
 let failures = 0;
 

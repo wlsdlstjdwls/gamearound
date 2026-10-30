@@ -7,7 +7,7 @@
 import { cn } from "@/lib/cn";
 
 export type PageWidth = "default" | "read" | "tight" | "wide";
-export type PagePad = "home" | "detail" | "sub" | "admin";
+export type PagePad = "home" | "detail" | "sub" | "admin" | "auth";
 
 const WIDTH: Record<PageWidth, string> = {
   default: "max-w-[var(--page-w)]",
@@ -33,6 +33,8 @@ const WIDTH: Record<PageWidth, string> = {
 const PAD: Record<PagePad, string> = {
   home: "pt-8 pb-[90px]",
   detail: "pt-6 pb-10",
+  /** 로그인, 가입(auth-card). 화면 가운데에 판 하나뿐이라 위아래가 같다 — 가입 폼이 1440x900 첫 화면에 다 들어오게 줄였다(2026-10-30) */
+  auth: "py-5",
   // 2026-10-27 위 22 에서 16, 아래 80 에서 64 로 줄였다(사용자: "화면에 전체적으로 빈 공간이 많다")
   sub: "pt-4 pb-16",
   /*

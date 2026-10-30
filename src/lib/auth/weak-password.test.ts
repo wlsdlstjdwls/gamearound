@@ -1,3 +1,4 @@
+import { PASSWORD_MIN } from "./constants";
 import { describe, expect, it } from "vitest";
 import { passwordStrength } from "./password-strength";
 import { isWeakPassword, longestSequentialRun } from "./weak-password";
@@ -27,7 +28,7 @@ describe("longestSequentialRun", () => {
 
 describe("passwordStrength 와 가입 판정이 같다", () => {
   it("가입이 거절하는 비번은 미터도 1칸", () => {
-    expect(passwordStrength("password1")).toEqual({ score: 1, label: "너무 쉬워요" });
+    expect(passwordStrength("password1!")).toEqual({ score: 1, label: "너무 쉬운 조합이에요" });
   });
-  it("짧은 비번은 여전히 '너무 짧아요'", () => expect(passwordStrength("ab1").label).toBe("너무 짧아요"));
+  it("짧은 비번은 길이를 말한다", () => expect(passwordStrength("ab1").label).toBe(`${PASSWORD_MIN}자 이상 입력해 주세요`));
 });

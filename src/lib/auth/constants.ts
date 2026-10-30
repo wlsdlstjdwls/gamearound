@@ -34,7 +34,11 @@ export const SESSION_PROBE_BACKOFF_MS = 400;
 
 /** 입력 규칙 — zod 스키마와 UI 안내 문구가 같은 숫자를 본다 */
 export const EMAIL_MAX = 254;
-export const PASSWORD_MIN = 8;
+/**
+ * 가입 비밀번호 최소 길이. 8 에서 10 으로 올렸다(2026-10-30 사용자 "비밀번호는 좀 더 강력하게").
+ * 로그인은 loose 스키마라 8자로 가입한 기존 계정은 그대로 들어온다 — 새로 만들거나 바꿀 때만 이 값을 본다
+ */
+export const PASSWORD_MIN = 10;
 /** scrypt에는 bcrypt 72바이트 제한이 없지만 DoS 방지로 상한을 둔다 */
 export const PASSWORD_MAX = 128;
 export const DISPLAY_NAME_MIN = 2;

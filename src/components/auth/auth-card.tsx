@@ -23,18 +23,23 @@ import { SITE } from "@/lib/site";
 import { AUTH_MESSAGES as M } from "@/lib/auth/messages";
 import { BrandSymbol } from "@/components/ui/logo";
 import { Page, Panel } from "@/components/ui/page";
+import { TypingTitle } from "@/components/ui/typing-title";
 
 /** 카피는 탭마다 다르다 — 가입 탭에서 "로그인 후 사용할 수 있어요" 가 걸려 있으면 화면이 딴말을 한다 */
 export type AuthCardMode = "signIn" | "signUp" | "reset";
 
-/** body 가 없는 탭은 제목과 목록만 선다 — 로그인 탭의 "가격은 로그인 없이도..." 는 2026-10-30 사용자가 걷었다(없어도 되는 말) */
+/**
+ * 왼쪽 카피(2026-10-30 다시 씀, 사용자: "우리 서비스에 맞게, 자연스럽게"). 로그인은 돌아온 사람에게 찜 목록을,
+ * 가입은 처음 온 사람에게 "여러 스토어 가격을 한곳에서" 를 말한다. 기능 이름(기기 판정, 조건)을 앞세우지 않는다 — 쓰는 사람의 말로 쓴다.
+ * body 가 없는 탭은 제목과 목록만 선다(로그인 탭 본문은 같은 날 사용자가 걷었다)
+ */
 const LEAD: Record<AuthCardMode, { title: readonly [string, string]; body?: string }> = {
   signIn: {
-    title: ["할인 알림과 기기 판정은", "로그인 후 사용할 수 있어요"],
+    title: ["찜해 둔 게임이", "기다리고 있어요"],
   },
   signUp: {
-    title: ["가격은 우리가 볼게요", "싸지면 알려드릴게요"],
-    body: `${SITE.name} 계정은 무료예요. 조건을 걸어 두면 그 값이 될 때까지 대신 지켜봐요.`,
+    title: ["사고 싶은 게임,", "가장 쌀 때 알려 드릴게요"],
+    body: "스팀, 플레이스테이션, 닌텐도, Xbox, 에픽 가격을 한곳에서 비교해요. 가입은 무료예요.",
   },
   // 재설정은 로그인 탭의 연장이다 — 두 탭 다 켜지 않고, 왼쪽 카피만 지금 하는 일을 말한다
   reset: {
@@ -43,12 +48,11 @@ const LEAD: Record<AuthCardMode, { title: readonly [string, string]; body?: stri
   },
 };
 
-/** 계정이 무엇을 해 주는지 — 번호를 매기는 이유는 셋이 순서가 아니라 목록이라는 걸 눈으로 세게 하기 위해서다 */
+/** 계정으로 할 수 있는 것 셋. 찜 할인 알림(sync/dispatch-wish-alerts), 내 기기 판정(settings/devices), 스토어 가격 비교 순이다 */
 const LEAD_POINTS = [
-  // 찜만 해도 할인 알림이 온다(2026-10-30, sync/dispatch-wish-alerts). 받는 방법은 목표가 알림 쪽에서 웹 알림, 이메일 중 고르므로 방법은 적지 않는다
-  "찜하거나 조건을 걸어 둔 게임이 할인되면 알려 드려요",
-  "기기를 등록하면 게임이 돌아가는지 판정해 드려요",
-  "플랫폼별 최저가를 한 화면에서 비교해요",
+  "찜해 두면 할인이 시작될 때 바로 알려 드려요",
+  "내 기기에서 돌아가는 게임인지 미리 알 수 있어요",
+  "스토어마다 다른 가격을 한눈에 비교해요",
 ];
 
 function Tab({ href, active, children }: { href: string; active: boolean; children: ReactNode }) {
@@ -76,7 +80,8 @@ export function AuthCard({
   children,
 }: {
   mode: AuthCardMode;
-  subtitle: string;
+  /** 판 머리 탭 아래 한 줄. 가입 탭은 없다(2026-10-30 사용자가 걷음) — 폼이 길어 한 줄이라도 줄여야 첫 화면에 단추까지 들어온다 */
+  subtitle?: string;
   next: string;
   children: ReactNode;
 }) {
@@ -86,26 +91,25 @@ export function AuthCard({
   return (
     // flex-1 + justify-center: main 이 남긴 높이를 그대로 받아 세로 가운데로 모은다(백분율을 쓰지 않는 이유는 root layout 주석).
     // 좁은 화면에서는 내용이 화면보다 길어 가운데 정렬이 의미를 잃고 그대로 위에서부터 흐른다.
-    <Page pad="home" className="flex-1 justify-center">
+    // 위아래 여백은 auth(20px) — 홈 값(아래 90px)이면 가입 폼이 화면 높이를 넘어 세로 스크롤이 생겼다(2026-10-30 사용자 "세로 스크롤 최대한 생기지 않게")
+    <Page pad="auth" className="flex-1 justify-center">
       {/* 왼쪽 칸을 1fr 로 두면 넓은 화면에서 남는 폭을 다 가져가 카피와 폼 사이가 수백 px 벌어졌다(2026-10-30 사용자: "사이 공백이 넘 많어").
           카피 칸은 글 폭만큼(auto)만 잡고 두 칸 묶음을 가운데로 모은다. 두 칸 사이는 gap-x 하나가 정한다 */}
       <div className="grid items-center gap-x-16 gap-y-9 lg:grid-cols-[auto_400px] lg:justify-center">
         {/* 판이 두 줄을 관통해 줄 높이가 판 높이의 반씩이다. 카피는 윗줄 바닥에, 목록은 아랫줄 위에 붙여야 둘 사이가 gap-y 만큼만 빈다
             (가운데 정렬이면 둘이 각자 반쪽의 가운데로 떠서 사이가 140px 넘게 벌어졌다) */}
         <div className="reveal row-start-2 flex flex-col gap-[18px] lg:col-start-1 lg:row-start-1 lg:self-end" style={stagger(0)}>
-          <Link href={ROUTES.home} aria-label={`${SITE.name} 홈`} className="press w-fit">
+          {/* 손전등이 딸깍 켜졌다 오래 머무는 박자(globals.css .torch, 알리기 판과 같은 움직임) — 제목이 찍히는 동안 빛이 들어온다 */}
+          <Link href={ROUTES.home} aria-label={`${SITE.name} 홈`} className="press torch w-fit">
             <BrandSymbol size={34} />
           </Link>
-          <h1 className="text-[30px] font-extrabold leading-[1.2] tracking-[-0.045em] text-ink sm:text-[40px]">
-            {/* block span 두 개 — <br/> 로 끊으면 접근성 이름이 "판정은로그인" 으로 붙는다 */}
-            <span className="block">{lead.title[0]}</span>
-            <span className="block">{lead.title[1]}</span>
-          </h1>
+          {/* 탭을 바꾸면 화면이 새로 서서 제목이 다시 찍힌다(ui/typing-title) */}
+          <TypingTitle lines={lead.title} className="text-[30px] font-extrabold leading-[1.2] tracking-[-0.045em] text-ink sm:text-[40px]" />
           {lead.body && <p className="max-w-[420px] text-[14px] leading-[1.85] text-mut">{lead.body}</p>}
         </div>
 
         {/* 격자에서 오른쪽 칸 전체를 세로로 관통한다 — 왼쪽이 카피 + 목록 두 줄로 갈려도 판은 한 덩어리다 */}
-        <Panel className="reveal row-start-1 flex flex-col gap-[18px] p-6 sm:p-7 lg:col-start-2 lg:row-start-1 lg:row-span-2" style={stagger(1)}>
+        <Panel className="reveal row-start-1 flex flex-col gap-3 p-5 sm:p-6 lg:col-start-2 lg:row-start-1 lg:row-span-2" style={stagger(1)}>
           <div className="flex gap-1">
             <Tab href={withNext(ROUTES.signIn)} active={mode === "signIn"}>
               {M.signInCta}
@@ -114,7 +118,7 @@ export function AuthCard({
               {M.signUpCta}
             </Tab>
           </div>
-          <p className="text-[12.5px] text-dim">{subtitle}</p>
+          {subtitle && <p className="text-[12.5px] text-dim">{subtitle}</p>}
           {children}
         </Panel>
 
