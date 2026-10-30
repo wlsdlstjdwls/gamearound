@@ -66,6 +66,15 @@ export function ChevronLeftIcon(p: IconProps) {
   );
 }
 
+/** 채운 삼각 — 구분선 접기 단추. 작은 크기에서 꺾쇠(<)보다 방향이 또렷하고 덜 거칠다 */
+export function CaretLeftIcon(p: IconProps) {
+  return (
+    <svg {...base(p)} fill="currentColor" stroke="none">
+      <path d="M15.5 5.5v13a1 1 0 0 1-1.6.8l-8.2-6.5a1 1 0 0 1 0-1.6l8.2-6.5a1 1 0 0 1 1.6.8Z" />
+    </svg>
+  );
+}
+
 /** 입력칸 비우기 */
 export function XIcon(p: IconProps) {
   return (

@@ -5,7 +5,9 @@
 // 오른쪽 화살은 오른쪽 끝으로(상세 접기). 접힌 쪽으로 미는 단추는 숨기고, 반대 단추가 "펼치기" 가 된다 — 화살 방향이 곧 선이 가는 방향이다.
 // 단추 묶음은 선 중 **지금 보이는 구간**의 가운데에 선다(사용자 "화면 중앙이 아니라 그 프로그램 영역 안에서"). 화면 가운데에 sticky 로 두면
 // 짧은 화면에서는 선 밖으로, 탭 줄과 머리 툴바가 있는 바깥 문서에서는 영역 위쪽으로 쏠렸다. 굴리고 크기가 바뀔 때마다 다시 잰다.
-// 단추는 얇은 알약 하나에 화살 둘을 담았다(사용자 "투박하다, 납작하게") — 그림자, 테두리 없이 선 위에 얹힌다.
+// 단추는 얇은 알약 하나에 삼각 둘을 담았다(사용자 "투박하다, 납작하게") — 그림자, 테두리 없이 선 위에 얹힌다.
+// 보이는 알약은 16px 폭이지만 누르는 자리는 구분선 칸 폭 전체, 높이 44px 이다(사용자 "높이가 좁아 누르기 어렵다", AGENTS §6 터치 타깃).
+// 꺾쇠(< >)는 그 크기에서 글자처럼 보여 채운 삼각으로 바꿨다.
 //
 // 끈 폭은 화면(주소)마다 이 브라우저에 기억한다. 사람마다 모니터가 달라 서버에 둘 값이 아니다.
 // 끌기는 끝선까지 자유롭다. 끝선 EDGE_SNAP 안까지 가야 그쪽을 접는다(기억한 폭은 그대로 두고 접기만) —
@@ -13,7 +15,7 @@
 import { usePathname } from "next/navigation";
 import { useEffect, useRef, useState, useSyncExternalStore } from "react";
 import { cn } from "@/lib/cn";
-import { ChevronLeftIcon } from "@/components/ui/icons";
+import { CaretLeftIcon } from "@/components/ui/icons";
 import { SCREEN_MESSAGES as SM } from "@/lib/admin/messages";
 
 /** 끝선에서 이만큼 안으로 들어오면 그쪽을 접는다. 손이 끝선에 "닿았다" 고 볼 거리 */
@@ -64,7 +66,9 @@ export function useListSplit() {
   return { key, width: live ?? stored, setLive, hidden, setHidden };
 }
 
-const BUTTON = "grid h-6 w-full place-items-center text-dim transition-colors duration-fast hover:bg-acc-soft hover:text-acc";
+/** 누르는 자리(칸 폭 전체 x 44px)와 그 안의 보이는 알약 조각. 둘째 단추 조각 위에 가르는 선, 묶음 위아래 끝만 둥글게 */
+const BUTTON = "group grid h-11 w-full place-items-center [&+&>span]:border-t [&+&>span]:border-line first:[&>span]:rounded-t-full last:[&>span]:rounded-b-full";
+const PIECE = "grid h-full w-4 place-items-center bg-surface-3 text-dim transition-colors duration-fast group-hover:bg-acc-soft group-hover:text-acc";
 
 export function SplitHandle({
   split,
@@ -183,16 +187,20 @@ export function SplitHandle({
     >
       <div
         ref={knobRef}
-        className="absolute left-1/2 top-1/2 flex w-3.5 -translate-x-1/2 -translate-y-1/2 cursor-default flex-col overflow-hidden rounded-full bg-surface-3 divide-y divide-line"
+        className="absolute inset-x-0 top-1/2 flex -translate-y-1/2 cursor-default flex-col"
       >
         {hidden !== "list" && (
           <button type="button" aria-label={hidden === "detail" ? SM.detailUnfold : SM.listFold} onClick={toLeft} className={BUTTON}>
-            <ChevronLeftIcon size={10} />
+            <span className={PIECE}>
+              <CaretLeftIcon size={10} />
+            </span>
           </button>
         )}
         {hidden !== "detail" && (
           <button type="button" aria-label={hidden === "list" ? SM.listUnfold : SM.detailFold} onClick={toRight} className={BUTTON}>
-            <ChevronLeftIcon size={10} className="rotate-180" />
+            <span className={PIECE}>
+              <CaretLeftIcon size={10} className="rotate-180" />
+            </span>
           </button>
         )}
       </div>
