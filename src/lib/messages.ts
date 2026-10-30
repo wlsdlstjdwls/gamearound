@@ -57,3 +57,29 @@ export const MAINTENANCE_MESSAGES = {
 export const ACTION_MESSAGES = {
   failed: "처리하지 못했어요. 잠시 뒤에 다시 시도해 주세요.",
 } as const;
+
+/**
+ * 새 버전 안내(components/app-shell/update-notice). 배포 뒤 열려 있던 탭에만 뜬다.
+ * "업데이트" 같은 앱 낱말 대신 사용자가 할 일(새로고침)을 말한다 — 웹은 설치할 것이 없다
+ */
+export const UPDATE_MESSAGES = {
+  title: "새 버전이 나왔어요",
+  body: "새로고침하면 최신 화면으로 바뀌어요",
+  reload: "새로고침",
+  later: "나중에",
+} as const;
+
+/**
+ * 홈 화면에 추가 띠(components/app-shell/install-banner). 설치할 이유를 한 줄로 말한다 —
+ * iOS 는 홈 화면에서 연 창에서만 웹푸시를 받는다(lib/push/messages iosHint), 그게 곧 이 띠의 쓸모다
+ */
+export const INSTALL_MESSAGES = {
+  region: "손전등 앱 안내",
+  title: "홈 화면에 손전등 추가",
+  // 360폭에서 띠 글자 칸이 열네 글자 남짓이다 — 길면 말끝이 잘린다
+  body: "할인 알림을 앱처럼 받아요",
+  add: "추가",
+  close: "안내 닫기",
+  /** iOS 사파리는 설치 창을 띄울 길이 없다 — 손으로 하는 두 걸음을 띠 안에 펼친다 */
+  iosSteps: ["아래 공유 단추를 눌러요", "\"홈 화면에 추가\" 를 골라요"],
+} as const;

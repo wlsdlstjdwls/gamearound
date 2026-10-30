@@ -3,6 +3,7 @@
 // 설정의 토글(push-toggle)과 온보딩 알림 단계가 같이 쓴다 — 권한, 구독 순서를 두 벌로 두면
 // 한쪽만 고쳐지는 날이 온다(규약 §3).
 import { useEffect, useState } from "react";
+import { isIos, isStandalone } from "@/lib/pwa";
 import { ROUTES } from "@/lib/routes";
 import { PUSH_MESSAGES as M } from "@/lib/push/messages";
 
@@ -22,10 +23,7 @@ function urlBase64ToUint8Array(base64: string): Uint8Array<ArrayBuffer> {
 
 function isIosNotStandalone(): boolean {
   if (typeof navigator === "undefined") return false;
-  const ua = navigator.userAgent;
-  const isIos = /iPad|iPhone|iPod/.test(ua) || (ua.includes("Mac") && "ontouchend" in document);
-  const standalone = (navigator as Navigator & { standalone?: boolean }).standalone === true || window.matchMedia("(display-mode: standalone)").matches;
-  return isIos && !standalone;
+  return isIos() && !isStandalone();
 }
 
 async function detectInitialStatus(): Promise<{ status: PushStatus; iosHint: boolean }> {

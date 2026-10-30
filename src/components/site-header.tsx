@@ -12,6 +12,8 @@ import { NotificationBell } from "@/components/notification-bell";
 import { HeaderWishLink } from "@/components/header-wish-link";
 import { SubNav } from "@/components/sub-nav";
 import { PageTrail } from "@/components/page-trail";
+import { InstallBanner } from "@/components/app-shell/install-banner";
+import { UpdateNotice } from "@/components/app-shell/update-notice";
 
 /**
  * 머리띠 + 하위 메뉴 띠(2026-10-26 개편, 기획서 v2.0 3.1, 4.3).
@@ -31,6 +33,10 @@ import { PageTrail } from "@/components/page-trail";
 export function SiteHeader() {
   return (
     <>
+      {/* 휴대폰 웹의 "홈 화면에 추가" 띠. 머리띠 위 흐름에 서서 스크롤하면 같이 올라간다(app-shell/install-banner 머리말).
+          새 버전 안내는 바닥에 뜨는 고정 띠라 자리는 상관없다 — 루트 레이아웃이 모든 화면에 한 번 세우는 머리띠 묶음에 같이 둔다 */}
+      <InstallBanner />
+      <UpdateNotice />
       {/* 유리 면(--header-glass): 반투명 바탕 + 뒤 흐림. 스크롤한 본문이 머리띠 밑으로 비쳐 "떠 있다" 를 말하고,
           그림자는 스크롤한 뒤에만 뜬다(.header-lift) — 맨 위에서는 본문과 한 장으로 읽힌다 */}
       <header data-site-header className="header-lift sticky top-0 z-40 border-b border-line-soft bg-[var(--header-glass)] backdrop-blur-[var(--header-blur)]">

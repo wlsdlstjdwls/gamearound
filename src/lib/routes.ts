@@ -139,6 +139,8 @@ export const ROUTES = {
   /** 명예의 전당 "내 게임 자리". 화면 캐시를 깨지 않으려고 마운트 뒤 따로 받는다(api/me/fame 주석) */
   apiMeFame: "/api/me/fame",
   apiPushSubscribe: "/api/push/subscribe",
+  /** 지금 배포의 표식. 열린 탭이 옛 번들인지 견준다(app-shell/update-notice) */
+  apiVersion: "/api/version",
   /** 뉴스 썸네일 프록시 — 매체 CDN 이 핫링크를 막아 서버가 대신 받는다(lib/news/thumbnail) */
   apiNewsThumbnail: "/api/news/thumbnail",
   /** 게임 상세 조회 기록. 수집이 사람들이 보는 게임을 먼저 갱신하는 데 쓴다(server/game-views) */
