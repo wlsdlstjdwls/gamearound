@@ -10,6 +10,7 @@
 // 그은 값은 근거가 있는 값만 쓴다(components/payments/price-tag): 정가, 묶음이면 낱개 정가 합.
 // 지금 받는 것(바로 노출, 이용권 즉시 채움)을 값 바로 아래 둔다 — 나중 이득보다 지금 이득을 크게 느낀다(현재 편향).
 // 구매 단추는 components/payments/plan-cta — 카드에서 바로 결제 화면으로 간다.
+// data-preview-spot 은 관리자 미리 보기가 "지금 고치는 칸이 카드 어디인가" 를 가리킬 자리 표시다(lib/pricing/preview-spots). 공개 화면에서는 아무 일도 안 한다.
 import Link from "next/link";
 import { PlanCta, type PlanCtaGroup } from "@/components/payments/plan-cta";
 import { buttonClass } from "@/components/ui/button";
@@ -23,6 +24,7 @@ import { formatPrice } from "@/lib/currency";
 import { MONTH_DAYS_APPROX } from "@/lib/membership/plan";
 import { PLANS_MESSAGES as M } from "@/lib/payments/plans-messages";
 import { perDay, type PriceBook, type Quote } from "@/lib/pricing/quote";
+import { PLAN_SPOTS } from "@/lib/pricing/preview-spots";
 import { fillCopy, type PricingSettings } from "@/lib/pricing/settings";
 import { ROUTES } from "@/lib/routes";
 
@@ -45,7 +47,7 @@ function Line({ text, strong }: { text: string; strong?: boolean }) {
 /** 이 단에 든 것(회색 체크) */
 function Included({ lines }: { lines: readonly string[] }) {
   return (
-    <ul className="flex flex-col gap-2.5 text-[13.5px]">
+    <ul data-preview-spot={PLAN_SPOTS.lines} className="flex flex-col gap-2.5 text-[13.5px]">
       {lines.map((line) => (
         <li key={line} className="flex items-center gap-2">
           <CheckIcon size={15} className="shrink-0 text-mut" />
@@ -60,8 +62,12 @@ function Included({ lines }: { lines: readonly string[] }) {
 function Adds({ base, lines }: { base: string; lines: readonly string[] }) {
   return (
     <div className="flex flex-col gap-2.5">
-      {base && <p className="text-[12.5px] font-semibold text-mut">{base}</p>}
-      <ul className="flex flex-col gap-2.5 text-[13.5px]">
+      {base && (
+        <p data-preview-spot={PLAN_SPOTS.base} className="text-[12.5px] font-semibold text-mut">
+          {base}
+        </p>
+      )}
+      <ul data-preview-spot={PLAN_SPOTS.lines} className="flex flex-col gap-2.5 text-[13.5px]">
         {lines.map((line) => (
           <li key={line} className="flex items-center gap-2">
             <span aria-hidden className="flex size-[18px] shrink-0 items-center justify-center rounded-full bg-acc text-on-ink">
@@ -79,19 +85,29 @@ function Adds({ base, lines }: { base: string; lines: readonly string[] }) {
 function Head({ eyebrow, name, tag, summary }: { eyebrow: string; name: string; tag?: React.ReactNode; summary: string }) {
   return (
     <div className="flex flex-col gap-1">
-      <p className="text-[12px] font-semibold text-mut">{eyebrow}</p>
+      <p data-preview-spot={PLAN_SPOTS.eyebrow} className="text-[12px] font-semibold text-mut">
+        {eyebrow}
+      </p>
       <div className="flex items-center justify-between gap-2">
-        <h2 className="text-[20px] font-extrabold tracking-[-0.03em] text-ink">{name}</h2>
-        {tag}
+        <h2 data-preview-spot={PLAN_SPOTS.name} className="text-[20px] font-extrabold tracking-[-0.03em] text-ink">
+          {name}
+        </h2>
+        {tag && <span data-preview-spot={PLAN_SPOTS.tag}>{tag}</span>}
       </div>
-      <p className="text-[14px] font-semibold text-ink-2">{summary}</p>
+      <p data-preview-spot={PLAN_SPOTS.summary} className="text-[14px] font-semibold text-ink-2">
+        {summary}
+      </p>
     </div>
   );
 }
 
 /** 값 바로 아래 "지금 받는 것" 한 줄 */
 function Now({ children }: { children: React.ReactNode }) {
-  return <p className="rounded-xl bg-acc-soft px-3 py-2 text-[13px] font-semibold text-acc">{children}</p>;
+  return (
+    <p data-preview-spot={PLAN_SPOTS.now} className="rounded-xl bg-acc-soft px-3 py-2 text-[13px] font-semibold text-acc">
+      {children}
+    </p>
+  );
 }
 
 /** 값 칸 높이를 카드끼리 맞춘다 — 그은 값, 아끼는 금액 줄이 있는 카드와 없는 카드의 아래 줄이 어긋나지 않게 */
@@ -134,46 +150,54 @@ export function PlanCards({ copy, book, active, credits, membership, single, bun
   return (
     <div className={cn("grid items-stretch gap-3", !stack && GRID_COLS[Math.max(1, count) as 1 | 2 | 3])}>
       {active.single && (
-        <section className={sectionCardClass("flex flex-col gap-4")}>
+        <section data-preview-spot={PLAN_SPOTS.card} className={sectionCardClass("flex flex-col gap-4")}>
           <Head eyebrow={copy.single.eyebrow} name={copy.single.name} summary={fill(copy.single.summary)} tag={tag(copy.single.tag, "acc")} />
-          <div className={PRICE_BOX}>
+          <div data-preview-spot={PLAN_SPOTS.price} className={PRICE_BOX}>
             <PriceTag quote={singleQuote}>{singleFrom && <span className="text-[13px] text-mut">{M.from}</span>}</PriceTag>
           </div>
           {copy.single.now && <Now>{copy.single.now}</Now>}
           <Included lines={fillAll(copy.single.lines)} />
-          {copy.single.hint && (upsell ?? active.bundle) && <p className="text-[13px] font-semibold text-danger">{fill(copy.single.hint)}</p>}
-          <PlanCta label={copy.single.cta} variant="secondary" groups={single} empty={empty} />
+          {copy.single.hint && (upsell ?? active.bundle) && (
+            <p data-preview-spot={PLAN_SPOTS.hint} className="text-[13px] font-semibold text-danger">
+              {fill(copy.single.hint)}
+            </p>
+          )}
+          <div data-preview-spot={PLAN_SPOTS.cta} className="mt-auto flex flex-col">
+            <PlanCta label={copy.single.cta} variant="secondary" groups={single} empty={empty} />
+          </div>
         </section>
       )}
 
       {active.bundle && (
-        <section className={sectionCardClass("flex flex-col gap-4 ring-2 ring-acc")}>
+        <section data-preview-spot={PLAN_SPOTS.card} className={sectionCardClass("flex flex-col gap-4 ring-2 ring-acc")}>
           <Head eyebrow={copy.bundle.eyebrow} name={copy.bundle.name} summary={fill(copy.bundle.summary)} tag={tag(copy.bundle.tag, "acc")} />
-          <div className={PRICE_BOX}>
+          <div data-preview-spot={PLAN_SPOTS.price} className={PRICE_BOX}>
             <PriceTag quote={book.bundle} list={book.bundleList}>
               {saving > 0 && <span className="text-[13px] font-semibold text-danger">{M.saving(formatPrice(saving))}</span>}
             </PriceTag>
           </div>
           {copy.bundle.now && <Now>{copy.bundle.now}</Now>}
           <Adds base={copy.bundle.base} lines={fillAll(copy.bundle.lines)} />
-          <PlanCta label={copy.bundle.cta} variant="accent" groups={bundle} empty={empty} note={bundleNeedsPromo ? M.bundleNeedsPromo : undefined} />
+          <div data-preview-spot={PLAN_SPOTS.cta} className="mt-auto flex flex-col">
+            <PlanCta label={copy.bundle.cta} variant="accent" groups={bundle} empty={empty} note={bundleNeedsPromo ? M.bundleNeedsPromo : undefined} />
+          </div>
         </section>
       )}
 
       {active.membership && (
-        <section className={sectionCardClass("flex flex-col gap-4")}>
+        <section data-preview-spot={PLAN_SPOTS.card} className={sectionCardClass("flex flex-col gap-4")}>
           <Head
             eyebrow={copy.membership.eyebrow}
             name={copy.membership.name}
             summary={fill(copy.membership.summary)}
             tag={membership ? <Tag tone="ok">{M.membershipActive}</Tag> : tag(copy.membership.tag, "plumSolid")}
           />
-          <div className={PRICE_BOX}>
+          <div data-preview-spot={PLAN_SPOTS.price} className={PRICE_BOX}>
             <MembershipPrice quote={book.membership} />
           </div>
           {copy.membership.now && <Now>{membership ? M.membershipCredits(membership.credits) : copy.membership.now}</Now>}
           <Adds base={copy.membership.base} lines={fillAll(copy.membership.lines)} />
-          <Link href={ROUTES.membership} className={buttonClass({ variant: membership ? "secondary" : "primary", fullWidth: true, className: "mt-auto" })}>
+          <Link href={ROUTES.membership} data-preview-spot={PLAN_SPOTS.cta} className={buttonClass({ variant: membership ? "secondary" : "primary", fullWidth: true, className: "mt-auto" })}>
             {membership ? M.membershipManage : copy.membership.cta}
           </Link>
         </section>

@@ -7,6 +7,7 @@
 // 줄이는 것은 넓은 화면의 오른쪽 기둥(바깥이 max-height 를 준 자리)뿐이다. 좁은 화면은 폼 아래 제 크기로 선다.
 
 import { useLayoutEffect, useRef, useState } from "react";
+import { PreviewSpotlight } from "@/components/admin/screen/preview-spot";
 import { PlanCards } from "@/components/payments/plan-cards";
 import type { PlanCtaGroup } from "@/components/payments/plan-cta";
 import { PRICING_ADMIN_MESSAGES as M } from "@/lib/pricing/admin-messages";
@@ -71,21 +72,24 @@ export function PricingPreview({ value, tier }: { value: PricingSettings; tier?:
   return (
     <FitHeight>
       {/* 제목은 낭독기에만 — 화면에서는 카드가 곧 미리 보기다. 옅은 바탕 위에 올려 실제 화면과 같은 대비로 본다 */}
-      <section aria-label={M.previewTitle} inert className="rounded-[var(--radius-panel)] bg-bg p-3">
-        <PlanCards
-          copy={value.copy}
-          book={book}
-          active={active}
-          stack
-          // 고친 카드 한 장만 그려도 묶음 권유 줄은 실제 판매 상태를 따른다(2026-10-30 사용자 "카드 아래 빨간 안내가 미리 보기에 안 보인다")
-          upsell={selling.bundle}
-          credits={value.membership.boostCredits}
-          membership={null}
-          single={PREVIEW_TARGET}
-          bundle={PREVIEW_TARGET}
-          bundleNeedsPromo={false}
-        />
-      </section>
+      {/* 폼 칸에 포커스가 들어가면 그 칸이 바꾸는 카드 자리에 테두리를 겹친다(screen/preview-spot, 2026-10-30 사용자) */}
+      <PreviewSpotlight>
+        <section aria-label={M.previewTitle} inert className="rounded-[var(--radius-panel)] bg-bg p-3">
+          <PlanCards
+            copy={value.copy}
+            book={book}
+            active={active}
+            stack
+            // 고친 카드 한 장만 그려도 묶음 권유 줄은 실제 판매 상태를 따른다(2026-10-30 사용자 "카드 아래 빨간 안내가 미리 보기에 안 보인다")
+            upsell={selling.bundle}
+            credits={value.membership.boostCredits}
+            membership={null}
+            single={PREVIEW_TARGET}
+            bundle={PREVIEW_TARGET}
+            bundleNeedsPromo={false}
+          />
+        </section>
+      </PreviewSpotlight>
     </FitHeight>
   );
 }

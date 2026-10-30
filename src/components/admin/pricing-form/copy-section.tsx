@@ -108,7 +108,12 @@ export function CopySection({ value, patch, tier, onTier, errors = {}, bare = fa
             <p aria-hidden className="text-[12px] font-bold tracking-[0.04em] text-acc">
               {M[g.title]}
             </p>
-            {fields.map((f) => field(t, f))}
+            {/* 칸마다 카드 자리 이름을 단다 — 칸 이름(copy 의 키)이 곧 자리 이름이다(lib/pricing/preview-spots). 내 멤버십 화면 혜택(benefits)은 카드에 안 서서 짝이 없다 */}
+            {fields.map((f) => (
+              <div key={f.key} data-preview-spot={f.key}>
+                {field(t, f)}
+              </div>
+            ))}
           </fieldset>
         );
       })}

@@ -19,6 +19,7 @@ import { ChevronDownIcon } from "@/components/ui/icons";
 import { SCREEN_MESSAGES as SM } from "@/lib/admin/messages";
 import { SplitHandle, useListSplit } from "@/components/admin/screen/split-handle";
 import { FitFillContext } from "@/components/admin/screen/data-grid/fit";
+import { SpotProvider, useSpotFocus } from "@/components/admin/screen/preview-spot";
 
 /**
  * 조회조건 띠. 칸은 SearchItem 으로 넣는다. 넓은 화면에서 이름표, 칸 짝이 제 폭만큼 왼쪽부터 붙어 서고 남는 폭은 비워 둔다.
@@ -144,12 +145,18 @@ export function ScreenTabs({ label, tabs, active, onChange, aside }: { label: st
  * 기둥 폭은 판 폭을 따라 늘기만 하고 330px(미리 보기 카드 제 폭, pricing-form/preview 의 CARD_MIN_W)에서 멈춘다.
  * 900px 부터 280px 로 고정하던 단을 걷었다 — 34% 로 306px 까지 컸다가 280px 로 줄어 구분선을 끌 때 미리 보기가 커졌다 작아졌다(2026-10-30 사용자)
  */
+/** 폼 칸에 포커스가 들어가면 그 칸의 spot 을 미리 보기(aside 안 PreviewSpotlight)에 알린다(screen/preview-spot) */
 export function WithAside({ aside, children }: { aside: React.ReactNode; children: React.ReactNode }) {
+  const { spot, bind } = useSpotFocus();
   return (
     <div className="@container">
       <div className="grid items-start gap-3 @min-[480px]:grid-cols-[minmax(0,1fr)_clamp(210px,34%,330px)]">
-        <div className="flex min-w-0 flex-col gap-3">{children}</div>
-        <div className="min-w-0 @min-[480px]:sticky @min-[480px]:top-[calc(var(--header-h)+var(--admin-head-h,76px)+12px)] @min-[480px]:max-h-[calc(100svh-var(--header-h)-var(--admin-head-h,76px)-24px)]">{aside}</div>
+        <div className="flex min-w-0 flex-col gap-3" {...bind}>
+          {children}
+        </div>
+        <div className="min-w-0 @min-[480px]:sticky @min-[480px]:top-[calc(var(--header-h)+var(--admin-head-h,76px)+12px)] @min-[480px]:max-h-[calc(100svh-var(--header-h)-var(--admin-head-h,76px)-24px)]">
+          <SpotProvider spot={spot}>{aside}</SpotProvider>
+        </div>
       </div>
     </div>
   );
@@ -180,9 +187,10 @@ export function FormSection({ title, action, defaultOpen = true, labelWidth, chi
 
 /** 칸 하나 — 이름표 왼쪽(오른쪽 정렬), 필수면 빨간 *. 묶음이 420px 이상이면 칸 둘이 한 줄에 선다(2026-10-30 사용자 "기간이랑 판매여부 같은 행이어도 충분", 긴 글 칸만 wide). 묶음이 300px 보다 좁을 때만 이름표가 칸 위로 올라간다. wide 는 묶음 두 열을 다 쓴다. 열 수는 묶음 폭(@container)으로 정한다 — 미리 보기 기둥이 옆에 서면 좁아진다 */
 /** error: 저장 검사 문구. 칸 컴포넌트가 스스로 오류를 그리지 못할 때(날짜 짝, 고르기 칸)만 넘긴다 — TextField, NumberField 는 error 를 직접 받는다 */
-export function Field({ label, htmlFor, required, wide, hint, error, children }: { label: string; htmlFor?: string; required?: boolean; wide?: boolean; hint?: React.ReactNode; error?: string; children: React.ReactNode }) {
+/** spot: 이 칸이 바꾸는 미리 보기 자리 이름(screen/preview-spot). WithAside 안에서 포커스가 들어가면 미리 보기의 그 자리를 강조한다 */
+export function Field({ label, htmlFor, required, wide, hint, error, spot, children }: { label: string; htmlFor?: string; required?: boolean; wide?: boolean; hint?: React.ReactNode; error?: string; spot?: string; children: React.ReactNode }) {
   return (
-    <div className={cn("grid items-start gap-x-2 gap-y-1 @min-[300px]:grid-cols-[var(--field-label-w,72px)_minmax(0,1fr)]", wide && FULL_ROW)}>
+    <div data-preview-spot={spot} className={cn("grid items-start gap-x-2 gap-y-1 @min-[300px]:grid-cols-[var(--field-label-w,72px)_minmax(0,1fr)]", wide && FULL_ROW)}>
       <label htmlFor={htmlFor} className="flex items-center gap-0.5 text-[12.5px] font-semibold text-mut @min-[300px]:min-h-10 @min-[300px]:justify-end @min-[300px]:text-right">
         {required && (
           <span aria-hidden className="text-danger">

@@ -23,6 +23,7 @@ import { cn } from "@/lib/cn";
 import { formatPrice } from "@/lib/currency";
 import { ROUTES } from "@/lib/routes";
 import { PRICING_ADMIN_MESSAGES as M, SLOT_CHOICES, slotChoiceOf, TIER_LABELS, type SlotChoice } from "@/lib/pricing/admin-messages";
+import { PLAN_SPOTS } from "@/lib/pricing/preview-spots";
 import { bundleListPrice, defaultBundleParts, discountRate, promotionStatus } from "@/lib/pricing/quote";
 import { isBundleProduct, MEMBERSHIP_KEY, type CatalogProduct, type PricingSettings, type TierKey } from "@/lib/pricing/settings";
 
@@ -103,15 +104,15 @@ function PriceFields({ value, patch, rowKey, errors }: { value: PricingSettings;
   const error = isMembership ? errors["membership.amount"] : errors[`products.${value.products.findIndex((x) => x.id === rowKey)}.amount`];
   return (
     <>
-      <Field label={M.fieldPrice} htmlFor="price-amount" required>
+      <Field label={M.fieldPrice} htmlFor="price-amount" required spot={PLAN_SPOTS.price}>
         <NumberField id="price-amount" label={M.fieldPrice} hideLabel value={amount} onValue={setAmount} error={error} trailing={<span className="pr-2 text-[13px] text-dim">{M.won}</span>} className="text-right tabular-nums" compact />
       </Field>
       {list > 0 && (
         <>
-          <Field label={M.fieldBundleList}>
+          <Field label={M.fieldBundleList} spot={PLAN_SPOTS.price}>
             <ReadValue align="right">{formatPrice(list)}</ReadValue>
           </Field>
-          <Field label={M.fieldRate}>
+          <Field label={M.fieldRate} spot={PLAN_SPOTS.price}>
             <ReadValue align="right">{`${discountRate(list, amount)}%`}</ReadValue>
           </Field>
         </>
@@ -137,7 +138,7 @@ function BasicTab({ value, patch, rowKey, errors }: { value: PricingSettings; pa
           <NumberField id="m-credits" label={M.fieldCredits} hideLabel value={m.boostCredits} onValue={(n) => patch((d) => ({ ...d, membership: { ...d.membership, boostCredits: n } }))} error={errors["membership.boostCredits"]} trailing={<span className="pr-2 text-[13px] text-dim">{M.creditsUnit}</span>} className="text-right tabular-nums" compact />
         </Field>
         <PriceFields value={value} patch={patch} rowKey={rowKey} errors={errors} />
-        <Field label={M.fieldSale}>
+        <Field label={M.fieldSale} spot={PLAN_SPOTS.card}>
           <div className="flex min-h-11 items-center gap-2">
             <Switch on={m.active} label={M.fieldSale} onToggle={() => patch((d) => ({ ...d, membership: { ...d.membership, active: !d.membership.active } }))} />
             <span className="text-[13px] text-mut">{m.active ? M.saleOn : M.saleOff}</span>
@@ -180,7 +181,7 @@ function BasicTab({ value, patch, rowKey, errors }: { value: PricingSettings; pa
         <NumberField id={`days-${p.id}`} label={M.fieldDays} hideLabel value={p.days} onValue={(n) => set({ days: n })} error={errors[`${at}.days`]} trailing={<span className="pr-2 text-[13px] text-dim">{M.daysUnit}</span>} className="text-right tabular-nums" compact />
       </Field>
       <PriceFields value={value} patch={patch} rowKey={rowKey} errors={errors} />
-      <Field label={M.fieldSale}>
+      <Field label={M.fieldSale} spot={PLAN_SPOTS.card}>
         <div className="flex min-h-11 items-center gap-2">
           <Switch on={p.active} label={M.fieldSale} onToggle={() => set({ active: !p.active })} />
           <span className="text-[13px] text-mut">{p.active ? M.saleOn : M.saleOff}</span>
