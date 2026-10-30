@@ -13,23 +13,23 @@ import { CodeName, Field, FormSection, MasterDetail, ReadValue, SearchBand, Sear
 import { ProgramLink } from "@/components/admin/screen/program-link";
 import { useUrlFilter } from "@/components/admin/screen/url-filter";
 import { SyncErrorSample } from "@/components/admin/sync-error-sample";
-import { SYNC_STATUS_TONE } from "@/components/admin/sync-tone";
+import { SYNC_HEALTH_TONE } from "@/components/admin/sync-tone";
 import { FormSelect } from "@/components/ui/select/fields";
 import { Tag, type TagTone } from "@/components/ui/tag";
-import { ADMIN_NAV, APPROVAL_MESSAGES as AM, LOG_MESSAGES as M, SYNC_MESSAGES, SYNC_STATUS_LABEL } from "@/lib/admin/messages";
+import { ADMIN_NAV, APPROVAL_MESSAGES as AM, LOG_MESSAGES as M, SYNC_MESSAGES, SYNC_RUN_HEALTH_LABEL } from "@/lib/admin/messages";
+import { SYNC_RUN_HEALTHS, type SyncRunHealth } from "@/lib/admin/sync-health";
 import { joinSyncFilter, splitSyncFilter, syncFilterHref } from "@/lib/admin/sync-filter";
 import { cn } from "@/lib/cn";
 import { formatDateTime, formatDuration } from "@/lib/format";
 import { ROUTES } from "@/lib/routes";
-
-type Status = keyof typeof SYNC_STATUS_LABEL;
 
 /** 서버 화면이 넘기는 실행 한 줄 */
 export type SyncLogGridRow = {
   id: number;
   source: string;
   name: string;
-  status: Status;
+  /** 끝나지 않은 실행은 결과 값 대신 도는 중, 끊김으로 읽는다 */
+  health: SyncRunHealth;
   startedAt: Date;
   finishedAt: Date | null;
   processed: number;
@@ -51,19 +51,19 @@ const DISCOVERY_STOP: Record<string, { label: string; tone: TagTone }> = {
 const stopOf = (r: SyncLogGridRow) => (r.discovery ? (DISCOVERY_STOP[r.discovery.stoppedBy] ?? { label: r.discovery.stoppedBy, tone: "neutral" as const }) : null);
 const durationOf = (r: SyncLogGridRow) => (r.finishedAt ? r.finishedAt.getTime() - r.startedAt.getTime() : null);
 
-function StatusTag({ status }: { status: Status }) {
-  return <Tag tone={SYNC_STATUS_TONE[status]}>{SYNC_STATUS_LABEL[status] ?? status}</Tag>;
+function StatusTag({ health }: { health: SyncRunHealth }) {
+  return <Tag tone={SYNC_HEALTH_TONE[health]}>{SYNC_RUN_HEALTH_LABEL[health]}</Tag>;
 }
 
 const STATUS_OPTIONS = [
   { value: "all", label: M.all },
-  ...(Object.keys(SYNC_STATUS_LABEL) as Status[]).map((s) => ({ value: s, label: SYNC_STATUS_LABEL[s] })),
+  ...SYNC_RUN_HEALTHS.map((s) => ({ value: s, label: SYNC_RUN_HEALTH_LABEL[s] })),
 ];
 
 /** 칸은 화면 상태에 기대지 않아 모듈에 둔다 — 렌더마다 새 배열이면 아래 Results 의 memo 가 소용없다 */
 const COLUMNS: GridCol<SyncLogGridRow>[] = [
   { key: "id", label: M.colId, width: "60px", align: "right", value: (r) => r.id },
-  { key: "status", label: M.colStatus, width: "84px", align: "center", value: (r) => SYNC_STATUS_LABEL[r.status] ?? r.status, render: (r) => <StatusTag status={r.status} /> },
+  { key: "status", label: M.colStatus, width: "84px", align: "center", value: (r) => SYNC_RUN_HEALTH_LABEL[r.health], render: (r) => <StatusTag health={r.health} /> },
   { key: "source", label: M.colSource, width: "minmax(130px,1fr)", value: (r) => r.name },
   { key: "started", label: M.colStarted, width: "128px", align: "center", value: (r) => r.startedAt, text: (r) => formatDateTime(r.startedAt) },
   { key: "duration", label: M.colDuration, width: "80px", align: "right", value: durationOf, text: (r) => (r.finishedAt ? formatDuration(durationOf(r) ?? 0) : "-") },
@@ -175,7 +175,7 @@ function Detail({ r }: { r: SyncLogGridRow }) {
         </Field>
         <Field label={M.fieldStatus}>
           <ReadValue>
-            <StatusTag status={r.status} />
+            <StatusTag health={r.health} />
           </ReadValue>
         </Field>
         <Field label={M.fieldStarted}>

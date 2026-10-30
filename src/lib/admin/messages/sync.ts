@@ -8,6 +8,13 @@ export const SYNC_STATUS_LABEL = {
   failed: "실패",
 } as const;
 
+/** 실행 한 번의 상태 이름표. 끝나지 않은 실행은 결과 값과 따로 "도는 중", "끊김" 으로 읽는다(lib/admin/sync-health) */
+export const SYNC_RUN_HEALTH_LABEL = {
+  ...SYNC_STATUS_LABEL,
+  running: "도는 중",
+  stalled: "끊김",
+} as const;
+
 export const SYNC_MESSAGES = {
   rerun: "Actions 에서 다시 돌리기",
   rerunHint: "NEXT_PUBLIC_GITHUB_REPO 를 넣으면 다시 돌리기 링크가 떠요.",
@@ -27,9 +34,9 @@ export const SYNC_MESSAGES = {
   /* 상태 이름표 */
   disabled: "쉬는 중",
   noRun: "돈 적 없음",
-  running: "도는 중",
+  running: SYNC_RUN_HEALTH_LABEL.running,
   /** 끝났다는 기록 없이 오래 남은 실행. "도는 중" 과 가른다 — 며칠째 안 끝난 실행은 정상이 아니다 */
-  stalled: "끊김",
+  stalled: SYNC_RUN_HEALTH_LABEL.stalled,
 
   /* 그리드 칸 */
   colStatus: "상태",

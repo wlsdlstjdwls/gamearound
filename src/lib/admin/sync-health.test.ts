@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { isSyncHealthFilter, matchesHealthFilter, syncHealthOf, type SyncHealth } from "@/lib/admin/sync-health";
+import { isSyncHealthFilter, isSyncRunHealth, matchesHealthFilter, syncHealthOf, type SyncHealth } from "@/lib/admin/sync-health";
 
 const NOW = Date.UTC(2026, 9, 29, 12);
 const GRACE = 60;
@@ -40,5 +40,16 @@ describe("matchesHealthFilter", () => {
     expect(isSyncHealthFilter("attention")).toBe(true);
     expect(isSyncHealthFilter("weird")).toBe(false);
     expect(isSyncHealthFilter(undefined)).toBe(false);
+  });
+});
+
+describe("isSyncRunHealth", () => {
+  it("실행 기록의 상태만 받고 쉼과 묶음 값은 받지 않는다", () => {
+    expect(isSyncRunHealth("running")).toBe(true);
+    expect(isSyncRunHealth("stalled")).toBe(true);
+    expect(isSyncRunHealth("ok")).toBe(true);
+    expect(isSyncRunHealth("idle")).toBe(false);
+    expect(isSyncRunHealth("attention")).toBe(false);
+    expect(isSyncRunHealth(undefined)).toBe(false);
   });
 });

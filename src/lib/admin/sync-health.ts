@@ -34,6 +34,17 @@ export function isSyncHealthFilter(v: unknown): v is SyncHealthFilter {
   return typeof v === "string" && (SYNC_HEALTH_FILTERS as readonly string[]).includes(v);
 }
 
+/**
+ * 실행 기록 한 줄의 상태. 스토어 상태(SyncHealth)에서 "쉼" 만 뺀 것이다 — 기록이 있다는 것은 돈 적이 있다는 뜻이다.
+ * 수집이력조회가 끝나지 않은 실행을 결과 값(ok) 그대로 "정상" 으로 띄우던 자리를 가른다(2026-10-30 사용자 결정).
+ */
+export const SYNC_RUN_HEALTHS = ["ok", "partial", "failed", "running", "stalled"] as const;
+export type SyncRunHealth = (typeof SYNC_RUN_HEALTHS)[number];
+
+export function isSyncRunHealth(v: unknown): v is SyncRunHealth {
+  return typeof v === "string" && (SYNC_RUN_HEALTHS as readonly string[]).includes(v);
+}
+
 export function matchesHealthFilter(health: SyncHealth, filter: SyncHealthFilter): boolean {
   if (filter === "all") return true;
   if (filter === "attention") return SYNC_ATTENTION.includes(health);

@@ -1,5 +1,5 @@
 // 관리자 서비스 (§8 MVP: sync 대시보드, 매칭 검수 큐, 필드 정정). 모든 함수는 requireAdmin()으로 시작.
-import { and, count, desc, eq, getTableColumns, gte, inArray, or } from "drizzle-orm";
+import { and, count, desc, eq, getTableColumns, gte, inArray, isNotNull, isNull, lt, or } from "drizzle-orm";
 import { getDb } from "@/server/db/client";
 import {
   dataCorrections,
@@ -14,6 +14,8 @@ import {
 } from "@/server/db/schema";
 import { requireAdmin } from "@/server/services/users";
 import { DISPLAY_TIME_ZONE } from "@/lib/format";
+import type { SyncRunHealth } from "@/lib/admin/sync-health";
+import { RUNNING_GRACE_MINUTES } from "@/server/services/admin-activity";
 
 /**
  * 로그 한 줄에서 items(만진 게임 목록)는 뺀다. 한 줄에 수백 건이 실려 있어 로그 표 100줄이면
@@ -74,15 +76,32 @@ export async function getSyncOverview(): Promise<{ items: SyncOverviewItem[] }> 
 }
 
 /** 수집이력조회. 결과(status)로 거르면 "실패만 최근 100건" 처럼 정상 줄에 묻힌 실패를 더 멀리까지 본다 */
-export async function listSyncLogs(opts: { limit?: number; source?: SourceName; status?: SyncStatus } = {}): Promise<SyncLogRow[]> {
+/**
+ * 실행 상태(lib/admin/sync-health 의 SyncRunHealth)로 거르는 조건. 끝나지 않은 실행은 결과 값이 ok 로 남아 있어
+ * 결과 값만으로 거르면 "정상" 에 도는 중, 끊김이 섞인다 — 끝난 때가 있는지와 시작한 지 얼마인지로 가른다.
+ */
+function runHealthWhere(health: SyncRunHealth, now: number) {
+  const cutoff = new Date(now - RUNNING_GRACE_MINUTES * 60_000);
+  if (health === "running") return and(isNull(syncLogs.finishedAt), gte(syncLogs.startedAt, cutoff));
+  if (health === "stalled") return and(isNull(syncLogs.finishedAt), lt(syncLogs.startedAt, cutoff));
+  return and(isNotNull(syncLogs.finishedAt), eq(syncLogs.status, health));
+}
+
+/**
+ * 최근 실행 기록. asOf 는 거를 때 쓴 시각이다 — 화면이 줄을 도는 중, 끊김으로 가를 때 같은 시각을 써야
+ * 경계의 실행이 "도는 중" 으로 걸러져 "끊김" 으로 그려지지 않는다.
+ */
+export async function listSyncLogs(opts: { limit?: number; source?: SourceName; health?: SyncRunHealth } = {}): Promise<{ rows: SyncLogRow[]; asOf: number }> {
   await requireAdmin();
   const limit = Math.min(Math.max(opts.limit ?? 100, 1), 500);
-  return getDb()
+  const asOf = Date.now();
+  const rows = await getDb()
     .select(syncLogColumns)
     .from(syncLogs)
-    .where(and(opts.source ? eq(syncLogs.source, opts.source) : undefined, opts.status ? eq(syncLogs.status, opts.status) : undefined))
+    .where(and(opts.source ? eq(syncLogs.source, opts.source) : undefined, opts.health ? runHealthWhere(opts.health, asOf) : undefined))
     .orderBy(desc(syncLogs.startedAt))
     .limit(limit);
+  return { rows, asOf };
 }
 
 // ---------- 매칭 검수 큐 (§4.2) ----------

@@ -11,7 +11,9 @@ import { AdminScreenHead } from "@/components/admin/screen/head";
 import { SyncLogsScreen, type SyncLogGridRow } from "@/components/admin/sync-logs-screen";
 import { ADMIN_NAV, LOG_MESSAGES, sourceLabel } from "@/lib/admin/messages";
 import { firstParam } from "@/lib/games-query";
-import { isSourceName, isSyncStatus, listSyncLogs, SOURCES, type SyncLogRow } from "@/server/services/admin";
+import { isSyncRunHealth, syncHealthOf, type SyncRunHealth } from "@/lib/admin/sync-health";
+import { isSourceName, listSyncLogs, SOURCES, type SyncLogRow } from "@/server/services/admin";
+import { RUNNING_GRACE_MINUTES } from "@/server/services/admin-activity";
 import { requireRoleOrForbid } from "@/server/auth/guards";
 
 export const metadata: Metadata = { title: ADMIN_NAV.logs };
@@ -21,13 +23,14 @@ const LOG_LIMIT = 100;
 
 type Props = { searchParams: Promise<Record<string, string | string[] | undefined>> };
 
-function toRow(l: SyncLogRow): SyncLogGridRow {
+function toRow(l: SyncLogRow, now: number): SyncLogGridRow {
   const d = l.discovery;
   return {
     id: l.id,
     source: l.source,
     name: sourceLabel(l.source),
-    status: l.status,
+    // 기록이 있는 실행은 쉼(idle)이 될 수 없다 — 끄지 않은 소스로 읽는다
+    health: syncHealthOf(l, false, now, RUNNING_GRACE_MINUTES) as SyncRunHealth,
     startedAt: l.startedAt,
     finishedAt: l.finishedAt,
     processed: l.processed ?? 0,
@@ -43,8 +46,10 @@ export default async function SyncLogsPage({ searchParams }: Props) {
   const rawSource = firstParam(sp.source);
   const source = isSourceName(rawSource) ? rawSource : undefined;
   const rawStatus = firstParam(sp.status);
-  const status = isSyncStatus(rawStatus) ? rawStatus : undefined;
-  const rows = (await listSyncLogs({ source, status, limit: LOG_LIMIT })).map(toRow);
+  const status = isSyncRunHealth(rawStatus) ? rawStatus : undefined;
+  // 서버가 거를 때와 줄을 가를 때 같은 시각을 쓴다(listSyncLogs 주석)
+  const logs = await listSyncLogs({ source, health: status, limit: LOG_LIMIT });
+  const rows = logs.rows.map((l) => toRow(l, logs.asOf));
 
   return (
     <>
