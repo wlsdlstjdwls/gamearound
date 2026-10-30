@@ -4,7 +4,13 @@ export const SCREEN_MESSAGES = {
   /** 열린 프로그램 탭 줄(admin/program-tabs) */
   tabsLabel: "열린 화면",
   closeTab: (label: string) => `${label} 닫기`,
-  closeOthers: "다른 화면 닫기",
+  /** 탭 우클릭 메뉴(program-shell/tab-menu). 기준은 우클릭한 탭이다 */
+  tabMenu: "탭 메뉴",
+  tabMenuClose: "닫기",
+  tabMenuCloseOthers: "다른 화면 모두 닫기",
+  tabMenuCloseRight: "오른쪽 화면 모두 닫기",
+  tabMenuCloseLeft: "왼쪽 화면 모두 닫기",
+  tabMenuCloseAll: "모두 닫기",
   listFold: "목록 접기",
   listUnfold: "목록 펼치기",
   detailFold: "상세 접기",

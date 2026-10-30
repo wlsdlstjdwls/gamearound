@@ -175,14 +175,20 @@ export function ProgramShell({ children }: { children: React.ReactNode }) {
     [tabs, isDirty, inlineKey, active, pick],
   );
 
-  const closeOthers = useCallback(async () => {
-    const others = tabs.filter((t) => t.key !== active && t.key !== HOME_KEY);
-    if (others.some((t) => isDirty(t.key)) && !(await askConfirm(SM.closeOthersDirtyConfirm, { title: SM.dirtyTitle, confirmLabel: SM.closeDirty, tone: "danger" }))) return;
-    if (others.some((t) => t.key === inlineKey)) setInlineClosed(true);
-    setTabs((cur) => cur.filter((t) => t.key === active || t.key === HOME_KEY));
-    setMounted((m) => new Set([...m].filter((k) => k === active || k === HOME_KEY)));
-    setFrameDirty(new Map());
-  }, [tabs, active, isDirty, inlineKey]);
+  // 여러 탭 한꺼번에(우클릭 메뉴의 다른 화면, 오른쪽, 왼쪽, 모두 닫기). 지금 탭이 닫히면 fallback 으로 간다
+  const closeMany = useCallback(
+    async (keys: string[], fallback: string) => {
+      const gone = new Set(keys.filter((k) => k !== HOME_KEY));
+      if (!gone.size) return;
+      if ([...gone].some(isDirty) && !(await askConfirm(SM.closeOthersDirtyConfirm, { title: SM.dirtyTitle, confirmLabel: SM.closeDirty, tone: "danger" }))) return;
+      if (gone.has(inlineKey)) setInlineClosed(true);
+      setTabs((cur) => cur.filter((t) => !gone.has(t.key)));
+      setMounted((m) => new Set([...m].filter((k) => !gone.has(k))));
+      setFrameDirty((m) => new Map([...m].filter(([k]) => !gone.has(k))));
+      if (gone.has(active)) pick(fallback);
+    },
+    [isDirty, inlineKey, active, pick],
+  );
 
   // 바깥: 탭 안 문서의 말을 받는다(어느 탭인지는 보낸 창으로 가린다)
   useEffect(() => {
@@ -259,7 +265,7 @@ export function ProgramShell({ children }: { children: React.ReactNode }) {
         active={active}
         onPick={pick}
         onClose={close}
-        onCloseOthers={closeOthers}
+        onCloseMany={closeMany}
       />
       <div data-program-inline hidden={!inlineVisible}>
         {children}

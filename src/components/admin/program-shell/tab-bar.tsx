@@ -2,13 +2,16 @@
 // 열린 프로그램 탭 줄의 겉모양. 상태와 동작은 program-shell/index 가 쥔다.
 // 백오피스 창 머리처럼 고른 탭만 흰 면으로 판과 이어지고, 저장 안 한 값이 있는 탭은 이름 앞에 점이 선다.
 //
+// 여러 탭 닫기는 탭 우클릭 메뉴(tab-menu)에 있다. 줄 끝 "다른 화면 닫기" 단추는 걷었다(2026-10-30 사용자, SBO 와 같은 손버릇).
+//
 // 탭이 줄을 넘치면 브라우저 탭 줄처럼 민다(2026-10-30 사용자 "탭에 스크롤이 생기던데, 휠로 가로 이동"). 스크롤바는 숨긴다 —
 // 탭 밑에 막대가 서면 판과 이어져야 할 고른 탭이 떨어져 보인다. 대신 세로 휠을 가로로 돌리고, 고른 탭은 늘 보이게 끌어온다.
-import { useEffect, useRef } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { ITEMS } from "@/components/admin/admin-nav-items";
 import { XIcon } from "@/components/ui/icons";
 import { SCREEN_MESSAGES as SM } from "@/lib/admin/messages";
 import { cn } from "@/lib/cn";
+import { TabMenu, type TabMenuAction, type TabMenuState } from "./tab-menu";
 
 export type TabView = { key: string; label: string; dirty: boolean; closable: boolean };
 
@@ -17,15 +20,51 @@ export function TabBar({
   active,
   onPick,
   onClose,
-  onCloseOthers,
+  onCloseMany,
 }: {
   tabs: TabView[];
   active: string;
   onPick: (key: string) => void;
   onClose: (key: string) => void;
-  onCloseOthers: () => void;
+  /** 여러 탭을 닫는다. 지금 탭이 닫히면 fallback 탭으로 간다 */
+  onCloseMany: (keys: string[], fallback: string) => void;
 }) {
   const listRef = useRef<HTMLDivElement>(null);
+  const [menu, setMenu] = useState<TabMenuState | null>(null);
+  const closeMenu = useCallback(() => setMenu(null), []);
+
+  // 우클릭한 탭 기준으로 각 항목이 닫을 탭. 첫 탭(홈)은 닫히지 않는다
+  const targetsOf = (key: string): Record<TabMenuAction, string[]> => {
+    const i = tabs.findIndex((t) => t.key === key);
+    const closable = (list: TabView[]) => list.filter((t) => t.closable).map((t) => t.key);
+    return {
+      close: closable([tabs[i]]),
+      closeOthers: closable(tabs.filter((t) => t.key !== key)),
+      closeRight: closable(tabs.slice(i + 1)),
+      closeLeft: closable(tabs.slice(0, i)),
+      closeAll: closable(tabs),
+    };
+  };
+  const openMenu = (e: React.MouseEvent<HTMLElement>, key: string) => {
+    e.preventDefault();
+    const t = targetsOf(key);
+    // 키보드(메뉴 키, Shift+F10)로 열면 좌표가 0 이라 탭 아래에 띄운다
+    const r = e.currentTarget.getBoundingClientRect();
+    const byKey = e.clientX === 0 && e.clientY === 0;
+    setMenu({
+      key,
+      x: byKey ? r.left : e.clientX,
+      y: byKey ? r.bottom : e.clientY,
+      can: { close: t.close.length > 0, closeOthers: t.closeOthers.length > 0, closeRight: t.closeRight.length > 0, closeLeft: t.closeLeft.length > 0, closeAll: t.closeAll.length > 0 },
+    });
+  };
+  const onMenuAction = (action: TabMenuAction) => {
+    if (!menu) return;
+    const keys = targetsOf(menu.key)[action];
+    if (action === "close") return onClose(menu.key);
+    // 지금 탭이 닫히면 우클릭한 탭으로, 모두 닫기면 첫 탭(홈)으로
+    onCloseMany(keys, action === "closeAll" ? tabs[0].key : menu.key);
+  };
 
   // React 의 onWheel 은 passive 라 preventDefault 가 안 먹는다 — 직접 건다. 넘칠 때만 가로로 돌린다(안 넘치면 문서가 평소처럼 구른다)
   useEffect(() => {
@@ -75,6 +114,7 @@ export function TabBar({
           return (
             <div
               key={t.key}
+              onContextMenu={(e) => openMenu(e, t.key)}
               // 가운데 단추로 닫기 — 브라우저 탭과 같은 손버릇
               onAuxClick={(e) => {
                 if (e.button === 1 && t.closable) {
@@ -102,11 +142,7 @@ export function TabBar({
           );
         })}
       </div>
-      {tabs.filter((t) => t.closable).length > 1 && (
-        <button type="button" onClick={onCloseOthers} className="press mb-1 shrink-0 rounded-md px-2 py-1 text-[12px] font-medium text-mut hover:bg-surface-2 hover:text-ink">
-          {SM.closeOthers}
-        </button>
-      )}
+      {menu && <TabMenu menu={menu} onAction={onMenuAction} onClose={closeMenu} />}
     </div>
   );
 }
