@@ -10,7 +10,7 @@ describe("formatTaskNotice", () => {
       [
         "🆕 새 할 일",
         "<b>가격 표 깨짐</b>",
-        ["<b>분류</b>  버그", "<b>우선순위</b>  높음", "<b>담당자</b>  성진", "<b>올린 사람</b>  관리자"].join("\n"),
+        ["<b>분류</b>  버그", "<b>우선순위</b>  높음", "<b>담당자</b>  성진", "<b>작성자</b>  관리자"].join("\n"),
         `<a href="${LINK}">카드 열기</a>`,
       ].join("\n\n"),
     );
@@ -40,6 +40,6 @@ describe("formatTaskNotice", () => {
   });
 
   it("한 사람을 모르면 알 수 없음", () => {
-    expect(formatTaskNotice({ kind: "created" }, TASK, null, LINK)).toContain("<b>올린 사람</b>  알 수 없음");
+    expect(formatTaskNotice({ kind: "created" }, TASK, null, LINK)).toContain("<b>작성자</b>  알 수 없음");
   });
 });

@@ -50,7 +50,7 @@ export const MEMBERSHIP_MESSAGES = {
   adminSearchMember: "회원 이메일",
   adminSearchAll: "전체",
   adminListLabel: "회원 목록",
-  adminPickHint: "왼쪽 목록에서 회원을 고르면 여기서 봐요",
+  adminPickHint: "왼쪽 목록에서 회원을 선택해 주세요",
   adminSectionMember: "회원 정보",
   adminSectionPlan: "구독 정보",
   adminSectionBilling: "결제 정보",
@@ -70,7 +70,7 @@ export const MEMBERSHIP_MESSAGES = {
   adminColStatus: "상태",
   adminColMember: "구독자",
   adminColCard: "카드",
-  adminColPeriod: "이번 기간",
+  adminColPeriod: "이용 기간",
   adminColAmount: "금액",
 } as const;
 

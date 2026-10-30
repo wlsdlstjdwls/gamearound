@@ -67,11 +67,11 @@ const COLUMNS: GridCol<SyncLogGridRow>[] = [
   { key: "source", label: M.colSource, width: "minmax(130px,1fr)", value: (r) => r.name },
   { key: "started", label: M.colStarted, width: "128px", align: "center", value: (r) => r.startedAt, text: (r) => formatDateTime(r.startedAt) },
   { key: "duration", label: M.colDuration, width: "80px", align: "right", value: durationOf, text: (r) => (r.finishedAt ? formatDuration(durationOf(r) ?? 0) : "-") },
-  { key: "processed", label: M.colProcessed, width: "60px", align: "right", value: (r) => r.processed, text: (r) => r.processed.toLocaleString("ko-KR") },
+  { key: "processed", label: M.colProcessed, width: "72px", align: "right", value: (r) => r.processed, text: (r) => r.processed.toLocaleString("ko-KR") },
   {
     key: "failed",
     label: M.colFailed,
-    width: "52px",
+    width: "72px",
     align: "right",
     value: (r) => r.failed,
     render: (r) => <span className={r.failed > 0 ? "font-semibold text-danger" : "text-dim"}>{r.failed.toLocaleString("ko-KR")}</span>,

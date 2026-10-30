@@ -11,7 +11,7 @@ export const TASK_MESSAGES = {
   priorityLabel: "우선순위",
   /** 갈래(2026-10-01). 셀렉트 라벨이자 필터 줄의 묶음 이름이다 */
   categoryLabel: "분류",
-  statusLabel: "놓을 칸",
+  statusLabel: "상태",
   sourceLabel: "소스 (선택)",
   /** 담당자(2026-09-30). 비워 둘 수 있어서 "없음" 이 첫 칸이다 */
   assigneeLabel: "담당자",
@@ -30,23 +30,23 @@ export const TASK_MESSAGES = {
   columnCollect: "모아보기",
   columnSheetTitle: (label: string, n: number) => `${label} ${n}건`,
   /** 좁은 화면에서 칸을 옆으로 넘기는 줄의 이름 — 낭독기가 읽는다 */
-  columnTabs: "칸 고르기",
+  columnTabs: "상태 선택",
   /** 치우기는 걷기다(2026-10-02) — 지우지 않으므로 묻지 않는다. 걷은 일은 지난 일에서 다시 본다 */
-  clearDone: "끝난 일 치우기",
-  archived: (n: number) => `${n}건을 치웠어요. 지난 일에서 다시 볼 수 있어요.`,
-  archiveLink: "지난 일",
-  archiveTitle: "지난 일",
+  clearDone: "완료 건 보관",
+  archived: (n: number) => `${n}건을 보관했어요. 보관함에서 다시 볼 수 있어요.`,
+  archiveLink: "보관함",
+  archiveTitle: "보관함",
   archiveNote: (n: number, limit: number) => (n >= limit ? `최근 ${limit}건` : `${n}건`),
-  archiveEmpty: "치운 일이 아직 없어요. 판에서 끝난 일 치우기를 누르면 여기로 와요.",
-  archiveBack: "할 일 판으로",
-  archivedAt: "치운 때",
-  doneAt: "끝낸 때",
-  restore: "판으로 되돌리기",
-  restored: "판의 완료 칸으로 되돌렸어요",
-  removeConfirm: "이 할 일을 지울까요?",
+  archiveEmpty: "보관된 업무가 없어요. 보드에서 완료 건 보관을 누르면 여기로 와요.",
+  archiveBack: "업무요청 보드로",
+  archivedAt: "보관일시",
+  doneAt: "완료일시",
+  restore: "보드로 복원",
+  restored: "보드의 완료 상태로 복원했어요",
+  removeConfirm: "이 업무를 삭제할까요?",
   created: "추가했어요",
-  moved: "옮겼어요",
-  removed: "지웠어요",
+  moved: "이동했어요",
+  removed: "삭제했어요",
   invalid: "잘못된 요청이에요",
 
   // 카드 고치기 — 할 일의 제목과 메모는 "무엇을 하는 일인가" 라서 고쳐 쓰는 값이다
@@ -66,8 +66,8 @@ export const TASK_MESSAGES = {
   noteEmpty: "아직 기록이 없어요.",
   noteAdded: "기록했어요",
   noteRemove: "삭제",
-  noteRemoveConfirm: "이 기록을 지울까요?",
-  noteRemoved: "기록을 지웠어요",
+  noteRemoveConfirm: "이 기록을 삭제할까요?",
+  noteRemoved: "기록을 삭제했어요",
   /** 칸 이동 자취 앞에 붙는 말. 앞뒤 칸은 파이프로 잇는다(AGENTS §4: 화살표 금지) */
   /** 칸 이동 자취의 머리 표식(사람 글과 가르는 자리). "칸 이동" 이던 것을 사용자가 "상태 변경" 으로 정했다(2026-10-01) */
   noteMoved: "상태 변경",
@@ -86,13 +86,13 @@ export const TASK_MESSAGES = {
   addTitle: "할 일 추가",
   detailTitle: "할 일",
   basics: "내용",
-  place: "놓인 칸",
+  place: "상태",
   /** 팝업 안에서 위험한 일은 맨 아래 따로 선다 — 저장 버튼 옆에 두면 손이 미끄러진다 */
-  dangerZone: "이 할 일 지우기",
+  dangerZone: "업무 삭제",
   /** 마지막으로 고친 때 */
-  updatedAt: "마지막으로 고친 때",
+  updatedAt: "최종 수정일시",
   /** 올린 사람(2026-10-01). 계정이 지워졌으면 이름 대신 이 말이 선다 */
-  author: "올린 사람",
+  author: "작성자",
   authorUnknown: "알 수 없음",
   noteCount: (n: number) => `기록 ${n}`,
   /** 카드 위 짧은 말(2026-10-01). 팝업의 담당자 칸 "없음" 과 가른다 — 카드에서는 무엇이 없는지까지 말해야 한다 */
@@ -101,7 +101,7 @@ export const TASK_MESSAGES = {
   /** 내가 연 뒤 남이 단 기록 수(2026-10-02) */
   cardUnread: (n: number) => `새 기록 ${n}`,
   /** 처리 중인데 오래 안 고친 카드(lib/admin/tasks 의 staleDays) */
-  cardStale: (days: number) => `${days}일째 멈춤`,
+  cardStale: (days: number) => `${days}일째 정체`,
 
   /*
    * 칸 안 한 줄 추가(2026-09-22) — 생각난 일을 적는 데 네 동작(버튼, 팝업, 칸 고르기, 저장)이 들던 것을
@@ -115,15 +115,15 @@ export const TASK_MESSAGES = {
    * 붙인 대상 고르기(2026-09-22) — 앞서는 uuid 를 다른 화면에서 복사해 와야 했다.
    * 그 길은 "게임에 매인 할 일" 이라는 이 판의 이유를 쓰지 않게 만든다(붙이는 값이 비싸면 아무도 안 붙인다).
    */
-  gamePickLabel: "붙일 게임 (선택)",
+  gamePickLabel: "관련 게임 (선택)",
   gamePickPlaceholder: "제목 일부",
   gamePickHint: "못 찾아도 할 일은 만들 수 있어요.",
   gamePickOpen: "게임 열기",
-  gamePickSearch: "찾기",
-  gamePickSearching: "찾는 중",
-  gamePickEmpty: "찾은 게임이 없어요. 제목을 줄이거나 영문으로 쳐 봐요.",
-  gamePickClear: "떼기",
-  gamePickPicked: "붙인 게임",
+  gamePickSearch: "검색",
+  gamePickSearching: "검색 중",
+  gamePickEmpty: "검색된 게임이 없어요. 제목을 줄이거나 영문으로 검색해 주세요.",
+  gamePickClear: "해제",
+  gamePickPicked: "관련 게임",
 } as const;
 
 /** 칸 이름. enum 값과 화면 낱말을 잇는 유일한 자리 */
@@ -162,7 +162,7 @@ export const TASK_CATEGORY_LABEL = {
  * 같은 날 칩 열둘에서 여섯으로 줄였다(lib/admin/task-filter 주석).
  */
 export const TASK_FILTER_MESSAGES = {
-  label: "할 일 거르기",
+  label: "업무 필터",
   view: "보기",
   views: { all: "전체 보기", assigned: "내 담당", mine: "내 등록" },
   category: "분류",
@@ -177,7 +177,7 @@ export const TASK_FILTER_MESSAGES = {
   urgent: "우선순위 높음",
   /** 좁은 화면의 같은 칩 — 보기, 분류 드롭다운과 한 줄에 서야 해서 줄인다(앞의 "우선순위" 는 화면 낭독이 읽는다) */
   urgentShort: "높음만",
-  reset: "거르기 풀기",
+  reset: "필터 초기화",
   /** 칸 머리 건수. 걸러졌을 때만 전체 수를 같이 보인다 — 숨은 카드가 있다는 걸 놓치지 않게 */
   columnCount: (shown: number, total: number) => `${shown} / ${total}`,
   columnCountLabel: (shown: number, total: number) => `전체 ${total}건 중 ${shown}건 보임`,
@@ -186,14 +186,14 @@ export const TASK_FILTER_MESSAGES = {
 /** 할 일 첨부(2026-10-02). 카드 본문과 기록에 파일을 붙인다 */
 export const TASK_ATTACHMENT_MESSAGES = {
   part: "첨부",
-  add: "파일 올리기",
+  add: "파일 업로드",
   attach: "파일 첨부",
-  uploading: (done: number, total: number) => `올리는 중 ${done + 1}/${total}`,
+  uploading: (done: number, total: number) => `업로드 중 ${done + 1}/${total}`,
   hint: (maxMb: number) => `이미지, PDF, 글 파일(txt, log, csv, json), zip | 한 파일 ${maxMb}MB까지`,
-  empty: "붙인 파일이 없어요.",
+  empty: "첨부된 파일이 없어요.",
   remove: "삭제",
-  removeConfirm: "이 파일을 지울까요? 저장소에서도 지워져요.",
-  unpick: "빼기",
+  removeConfirm: "이 파일을 삭제할까요? 저장소에서도 삭제돼요.",
+  unpick: "제외",
   count: (n: number) => `첨부 ${n}`,
   openImage: (name: string) => `${name} 원본 보기`,
   newWindow: "(새 창에서 열림)",
@@ -223,7 +223,7 @@ export const TASK_NOTIFY_MESSAGES = {
   /** 상태 변경 칸의 값. 화살표 글자 대신 조사로 잇는다(AGENTS §4) */
   movedValue: (from: string, to: string, particle: string) => `${from}에서 ${to}${particle}`,
   /** 사건을 낸 사람. 새 카드는 올린 사람, 나머지는 바꾼 사람이다 */
-  createdBy: "올린 사람",
+  createdBy: "작성자",
   changedBy: "바꾼 사람",
   noteBy: "적은 사람",
   /** 글 없이 파일만 남긴 기록 */

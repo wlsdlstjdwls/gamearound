@@ -144,7 +144,7 @@ const Results = memo(function Results({ rows, asOf }: { rows: SyncSourceRow[]; a
     {
       key: "failed",
       label: M.colFailed,
-      width: "56px",
+      width: "72px",
       align: "right",
       value: (r) => r.failed,
       render: (r) => <span className={r.failed > 0 ? "font-semibold text-danger" : "text-mut"}>{r.failed.toLocaleString("ko-KR")}</span>,
