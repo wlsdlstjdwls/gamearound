@@ -11,13 +11,13 @@
 // 칸 값은 value(정렬, 찾기, 복사, 엑셀에 쓰는 원값)와 render(화면에 그리는 것)로 나눈다. render 는 칸 안 고치기(입력칸, 스위치)도 된다.
 // 엑셀은 이 그리드가 전체 줄을 걸어 둔 것을 받아 간다(export.ts) — 쪽을 나눠도 모든 줄이 나간다.
 import { Clamp } from "@/components/ui/tooltip";
-import { useEffect, useId, useMemo, useRef, useState } from "react";
+import { useContext, useEffect, useId, useMemo, useRef, useState } from "react";
 import { cn } from "@/lib/cn";
 import { GRID_MESSAGES as M } from "@/lib/admin/messages";
 import { matchesQuery, nextSort, pageOf, sortRows, sumOf, toTsv, type SortState, type SortValue } from "@/lib/admin/grid";
 import { useAdminStatus } from "@/components/admin/screen/status";
 import { registerGrid, type GridDump } from "@/components/admin/screen/data-grid/export";
-import { useFitHeight } from "@/components/admin/screen/data-grid/fit";
+import { FitFillContext, useFitHeight } from "@/components/admin/screen/data-grid/fit";
 import { alignClass, BottomBar, BODY_CELL, HeadRow, justifyClass, TopBar } from "@/components/admin/screen/data-grid/parts";
 
 export type GridCol<T> = {
@@ -113,7 +113,9 @@ export function DataGrid<T>({
   const [page, setPage] = useState(1);
   const rowRefs = useRef<(HTMLDivElement | null)[]>([]);
   const bodyRef = useRef<HTMLDivElement>(null);
-  const maxHeight = useFitHeight(bodyRef, fit);
+  const fitted = useFitHeight(bodyRef, fit);
+  const fill = useContext(FitFillContext);
+  const bodyStyle = fitted && (fill && fitted.fits ? { height: fitted.px } : { maxHeight: fitted.px });
 
   const valueOf = (row: T, key: string) => columns.find((c) => c.key === key)?.value?.(row);
   const filtered = useMemo(
@@ -192,7 +194,7 @@ export function DataGrid<T>({
   return (
     <div className="flex min-w-0 flex-col overflow-hidden rounded-xl border border-line bg-surface">
       <TopBar label={label} query={searchable ? query : null} onQuery={(q) => (setQuery(q), setPage(1))} tools={tools} />
-      <div ref={bodyRef} role="grid" aria-label={label} aria-rowcount={sorted.length} className="overflow-auto overscroll-contain" style={maxHeight ? { maxHeight } : undefined}>
+      <div ref={bodyRef} role="grid" aria-label={label} aria-rowcount={sorted.length} className="overflow-auto overscroll-contain" style={bodyStyle || undefined}>
         <div style={{ minWidth: minWidthOf([...(check ? ["40px"] : []), "48px", ...columns.map((c) => c.width)]) }}>
           <HeadRow columns={columns} template={template} sort={sort} onSort={(k) => setSort((s) => nextSort(s, k))} check={check ? { all: allOn, some: someOn, toggle: toggleAll } : undefined} />
           {paged.rows.length === 0 ? (

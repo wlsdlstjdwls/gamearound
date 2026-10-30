@@ -18,6 +18,7 @@ import { FULL_ROW } from "@/components/admin/screen/form-grid";
 import { ChevronDownIcon } from "@/components/ui/icons";
 import { SCREEN_MESSAGES as SM } from "@/lib/admin/messages";
 import { SplitHandle, useListSplit } from "@/components/admin/screen/split-handle";
+import { FitFillContext } from "@/components/admin/screen/data-grid/fit";
 
 /**
  * 조회조건 띠. 칸은 SearchItem 으로 넣는다. 넓은 화면에서 이름표, 칸 짝이 네 벌까지 한 줄에 선다.
@@ -56,7 +57,7 @@ export function MasterDetail({ list, detail, detailTitle, detailActions, listWid
   return (
     <div className={cn("grid items-start gap-4 lg:gap-0", cols)} style={{ "--master-w": split.width === null ? listWidth : `${split.width}px` } as React.CSSProperties}>
       <div ref={listRef} hidden={hidden === "list"} className="min-w-0 lg:sticky lg:top-[calc(var(--header-h)+var(--admin-head-h,76px)+12px)]">
-        {list}
+        <FitFillContext value>{list}</FitFillContext>
       </div>
       <SplitHandle split={split} listRef={listRef} className="hidden lg:flex" />
       <Pane title={detailTitle} actions={detailActions} className={hidden === "detail" ? "hidden" : undefined}>

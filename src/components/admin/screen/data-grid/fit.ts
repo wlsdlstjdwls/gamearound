@@ -8,7 +8,14 @@
 // "아래에 쌓인 것" 은 조상을 거슬러 오르며 **그리드 밑에서 시작하는 형제**만 센다. 옆에 나란히 선 상세 칸(MasterDetail)은
 // 그리드보다 길어도 세지 않는다 — 그건 상세가 길어서 문서가 구르는 것이라 그리드를 줄여도 스크롤이 사라지지 않는다.
 // 좁은 화면처럼 상세가 그리드 밑으로 내려가면 남는 높이가 바닥(FIT_MIN)에 걸린다. 그때는 문서가 구르는 게 맞고, 목록 높이는 STACKED_SHARE 로 준다.
-import { useLayoutEffect, useState, type RefObject } from "react";
+//
+// 목록, 상세 화면(MasterDetail)의 왼쪽 목록은 줄이 적어도 화면 바닥까지 채운다(FitFillContext, 2026-10-30 사용자 "행이 비어도 화면 높이만큼 꽉 차게,
+// 스크롤은 안 생기게"). 맞춘 값이 곧 문서를 넘치지 않는 높이라 그대로 height 로 준다. 바닥에 걸린 경우(쌓인 좁은 화면)는 채우지 않는다 —
+// 어차피 문서가 구르는 자리에 빈 칸만 늘린다. 홀로 선 넓은 목록은 채우지 않는다 — 줄 몇 개 밑에 빈 판이 화면만큼 남는다.
+import { createContext, useLayoutEffect, useState, type RefObject } from "react";
+
+/** 이 안의 fit 그리드는 줄이 적어도 화면 바닥까지 채운다. MasterDetail 의 목록 칸이 켠다 */
+export const FitFillContext = createContext(false);
 
 /** 이보다 작게는 줄이지 않는다. 머리 + 다섯 줄쯤 — 이보다 작으면 목록으로 못 쓴다 */
 const FIT_MIN = 240;
@@ -52,16 +59,18 @@ function spaceBelow(el: HTMLElement): number {
   return below;
 }
 
-/** on 이면 ref 상자의 최대 높이(px)를 화면 바닥에 맞춰 돌려준다. 꺼져 있으면 undefined */
-export function useFitHeight(ref: RefObject<HTMLElement | null>, on: boolean): number | undefined {
-  const [height, setHeight] = useState<number>();
+/** on 이면 ref 상자의 최대 높이(px)를 화면 바닥에 맞춰 돌려준다. fits 는 바닥(FIT_MIN)에 걸리지 않고 맞았는지. 꺼져 있으면 undefined */
+export function useFitHeight(ref: RefObject<HTMLElement | null>, on: boolean): { px: number; fits: boolean } | undefined {
+  const [height, setHeight] = useState<{ px: number; fits: boolean }>();
   useLayoutEffect(() => {
     const el = ref.current;
     if (!on || !el) return;
     const measure = () => {
       const top = el.getBoundingClientRect().top + window.scrollY;
       const fit = Math.floor(window.innerHeight - top - spaceBelow(el));
-      setHeight(fit >= FIT_MIN ? fit : Math.max(FIT_MIN, Math.floor(window.innerHeight * STACKED_SHARE)));
+      const next = fit >= FIT_MIN ? { px: fit, fits: true } : { px: Math.max(FIT_MIN, Math.floor(window.innerHeight * STACKED_SHARE)), fits: false };
+      // 같은 값이면 그대로 둔다 — 새 객체를 넣으면 다시 그리고 다시 재기를 되풀이한다
+      setHeight((cur) => (cur?.px === next.px && cur.fits === next.fits ? cur : next));
     };
     measure();
     // 위 조각(조회 띠 줄바꿈, 상태줄 글)이 커지고 작아지면 다시 잰다. 제 높이를 바꿔도 같은 값이 나와 되풀이되지 않는다
