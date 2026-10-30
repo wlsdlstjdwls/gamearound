@@ -168,7 +168,7 @@ export const PRICING_ADMIN_MESSAGES = {
   promoAudience: "적용 대상자",
   promoStarts: "시작일",
   promoEnds: "종료일",
-  kindLabels: { percent: "정률", price: "정액" },
+  kindLabels: { percent: "비율", price: "금액" },
   audienceLabels: { all: "전체 결제", first: "첫 결제" },
   newPromoLabel: "첫 결제 할인",
   statusLabels: { live: "진행 중", stopped: "중단" },
