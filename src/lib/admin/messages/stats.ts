@@ -1,0 +1,66 @@
+// 통계관리(매출현황, 이용현황)와 대시보드 추이 그래프 문구(2026-10-30).
+import type { SiteSource } from "@/lib/stats/visits";
+
+export const STATS_MESSAGES = {
+  search: "조회조건",
+  period: "조회기간",
+  preset: "빠른 선택",
+  presets: { d7: "최근 7일", d30: "최근 30일", thisMonth: "이번 달", lastMonth: "지난달" },
+  presetNone: "직접 선택",
+  failed: "통계를 읽지 못했어요. 잠시 후 다시 조회해 주세요.",
+  /** 지난 기간 대비. 같은 길이의 바로 앞 기간과 견준다(lib/stats/period 의 previousPeriod) */
+  change: (pct: number | null) => (pct === null ? "지난 기간 기록 없음" : pct === 0 ? "지난 기간과 같아요" : `지난 기간보다 ${Math.abs(pct)}% ${pct > 0 ? "늘었어요" : "줄었어요"}`),
+  count: (n: number) => `${n.toLocaleString("ko-KR")}건`,
+  people: (n: number) => `${n.toLocaleString("ko-KR")}명`,
+  times: (n: number) => `${n.toLocaleString("ko-KR")}회`,
+  colDay: "일자",
+
+  // ---- 매출현황 ----
+  salesPaid: "결제금액",
+  salesRefunded: "환불금액",
+  salesNet: "순매출",
+  salesMembers: "구독 중 회원",
+  salesMembersHint: "지금 기준(해지 예약 포함)",
+  salesChart: "일별 순매출",
+  salesDays: "일별 매출",
+  salesProducts: "상품별 매출",
+  colProduct: "상품",
+  colCount: "건수",
+  colPaid: "결제금액",
+  colRefunded: "환불금액",
+  colNet: "순매출",
+  salesEmpty: "이 기간에 결제가 없어요.",
+  salesRule: "결제는 승인일, 환불은 환불일에 세요",
+
+  // ---- 이용현황 ----
+  usageSessions: "방문",
+  usageSessionsHint: "탭을 새로 연 첫 화면 기준",
+  usagePv: "화면 조회",
+  usageSignups: "신규 가입",
+  usageWishes: "찜 추가",
+  usageVisitsChart: "일별 방문",
+  usageSignupsChart: "일별 신규 가입",
+  usageWishesChart: "일별 찜 추가",
+  usageSources: "유입경로",
+  usageSourcesEmpty: "이 기간에 기록된 방문이 없어요.",
+  usageTopGames: (days: number) => `많이 본 게임(최근 ${days}일)`,
+  usageTopEmpty: "조회 기록이 없어요.",
+  usageDays: "일별 이용",
+  usageVisitsDown: "방문 기록을 읽지 못했어요. 방문 칸은 비워 두었어요.",
+  usageVisitsSince: "방문, 유입경로는 2026년 10월 30일 배포부터 세요",
+  colSource: "유입경로",
+  colSessions: "방문",
+  colShare: "비율",
+  colPv: "화면 조회",
+  colVisitors: "방문자",
+  colSignups: "가입",
+  colWishes: "찜",
+  colGame: "게임",
+  colViews: "조회",
+  share: (pct: number) => `${pct}%`,
+  sourceLabels: { search_engine: "검색엔진", youtube: "유튜브", sns: "SNS, 커뮤니티", external: "다른 사이트", direct: "주소로 바로" } satisfies Record<SiteSource, string>,
+
+  // ---- 대시보드 추이 ----
+  trendTitle: (days: number) => `최근 ${days}일 추이`,
+  trendMore: "통계 전체 보기",
+} as const;

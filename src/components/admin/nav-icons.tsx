@@ -57,6 +57,28 @@ export function LogIcon(p: IconProps) {
   );
 }
 
+/** 매출현황 — 높이가 다른 막대 셋 */
+export function BarChartIcon(p: IconProps) {
+  return (
+    <svg {...base(p)}>
+      <path d="M4 20h16" />
+      <path d="M7 16v-5" />
+      <path d="M12 16V7" />
+      <path d="M17 16v-8" />
+    </svg>
+  );
+}
+
+/** 이용현황 — 오르내리는 선 */
+export function TrendIcon(p: IconProps) {
+  return (
+    <svg {...base(p)}>
+      <path d="M3 17l5-5 4 3 8-8" />
+      <path d="M15 7h5v5" />
+    </svg>
+  );
+}
+
 /** 공통코드관리 — 꺾쇠 괄호 */
 export function CodeIcon(p: IconProps) {
   return (

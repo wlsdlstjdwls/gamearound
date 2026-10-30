@@ -5,7 +5,7 @@ import { cn } from "@/lib/cn";
 import { ADMIN_NAV } from "@/lib/admin/messages";
 import { COMING_SOON } from "@/lib/messages/coming-soon";
 import { ROUTES } from "@/lib/routes";
-import { BoardIcon, BoxIcon, BuildingIcon, CardIcon, ChatIcon, CheckListIcon, LinkIcon, LogIcon, MegaphoneIcon, PulseIcon, SearchCheckIcon, SparkleIcon, StoreIcon, UsersIcon, CodeIcon, TemplateIcon, SendIcon } from "@/components/admin/nav-icons";
+import { BarChartIcon, BoardIcon, BoxIcon, BuildingIcon, CardIcon, ChatIcon, CheckListIcon, LinkIcon, LogIcon, MegaphoneIcon, PulseIcon, SearchCheckIcon, SparkleIcon, StoreIcon, UsersIcon, CodeIcon, TemplateIcon, SendIcon, TrendIcon } from "@/components/admin/nav-icons";
 import { CalendarIcon, GamepadIcon, TagIcon, TicketIcon } from "@/components/ui/icons";
 import { Suspense, use, type ComponentType } from "react";
 
@@ -131,7 +131,15 @@ export const GROUPS: Array<{ key: string; title?: string; items: Item[] }> = [
       { href: ROUTES.adminProducts, label: ADMIN_NAV.products, Icon: BoxIcon, pick: (c) => ({ n: c.products }) },
     ],
   },
-  // 시스템은 쌓이는 일이 없어 배지가 없다. 업무 현황판 기둥 번호가 메뉴 묶음 순서를 따르므로(work-board) 일 묶음 뒤에 둔다
+  // 통계, 시스템은 쌓이는 일이 없어 배지가 없다. 업무 현황판 기둥 번호가 메뉴 묶음 순서를 따르므로(work-board) 일 묶음 뒤에 둔다
+  {
+    key: "stats",
+    title: ADMIN_NAV.groupStats,
+    items: [
+      { href: ROUTES.adminStatsSales, label: ADMIN_NAV.statsSales, Icon: BarChartIcon },
+      { href: ROUTES.adminStatsUsage, label: ADMIN_NAV.statsUsage, Icon: TrendIcon },
+    ],
+  },
   {
     key: "system",
     title: ADMIN_NAV.groupSystem,

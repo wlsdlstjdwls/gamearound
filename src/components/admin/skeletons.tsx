@@ -100,3 +100,22 @@ export function MasterDetailSkeleton({ listWidth = "560px", rows = 10 }: { listW
     </div>
   );
 }
+
+/** 통계 화면(매출현황, 이용현황) — 조회 띠, 숫자 칸 넷, 그래프 판, 표 둘. 실물(stats/*-screen)과 같은 순서, 같은 높이 */
+export function StatsSkeleton() {
+  return (
+    <div className="flex flex-col gap-3">
+      <Bone className="h-[54px] w-full rounded-xl" />
+      <div className="grid grid-cols-2 gap-2.5 lg:grid-cols-4">
+        {[0, 1, 2, 3].map((i) => (
+          <Bone key={i} className="h-[84px] rounded-[var(--radius-md)]" />
+        ))}
+      </div>
+      <Bone className="h-[230px] w-full rounded-xl" />
+      <div className="grid gap-3 xl:grid-cols-2">
+        <Bone className="h-[260px] rounded-xl" />
+        <Bone className="h-[260px] rounded-xl" />
+      </div>
+    </div>
+  );
+}
