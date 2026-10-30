@@ -105,22 +105,25 @@ export const PRICING_ADMIN_MESSAGES = {
   tokenButton: "값 넣기",
   tokenButtonLabel: "자동으로 바뀌는 값 넣기",
   copyTabs: "고칠 카드",
-  groupHead: "카드 머리",
-  groupPrice: "값 아래",
-  groupBenefits: "혜택",
-  groupAction: "단추",
-  /** 칸 이름은 "카드 어디에 서는가" 로 부른다(2026-10-29 사용자 "필드 이름이 뭐가 뭔지 모르겠다") */
+  groupHead: "카드 헤더",
+  groupPrice: "가격 영역",
+  groupBenefits: "혜택 영역",
+  groupAction: "구매 버튼 영역",
+  /**
+   * 칸 이름은 커머스 백오피스 용어로 부른다(2026-10-30 사용자 "용어 전문적으로"). 10-29 의 "이름 위 작은 글" 꼴 풀어쓰기는
+   * 위치를 말로 설명하느라 길고 어설펐다 — 이제 칸에 포커스를 두면 미리 보기가 자리를 가리키므로(screen/preview-spot) 이름은 용어로 충분하다
+   */
   fields: {
-    name: "카드 이름",
-    eyebrow: "이름 위 작은 글",
-    summary: "한 줄 소개",
-    tag: "이름 옆 딱지",
-    now: "값 아래 파란 띠",
-    base: "혜택 목록 제목",
-    lines: "혜택 목록",
-    hint: "카드 아래 빨간 안내",
-    cta: "단추 글",
-    benefits: "내 메이커 멤버십 화면의 혜택 목록",
+    name: "상품 표시명",
+    eyebrow: "상단 보조문구",
+    summary: "요약문구",
+    tag: "강조 배지",
+    now: "즉시혜택 문구",
+    base: "혜택 머리말",
+    lines: "혜택 항목",
+    hint: "업셀 안내문구",
+    cta: "구매 버튼명",
+    benefits: "멤버십 화면 혜택 항목",
   },
 
   // ---- 프로모션등록 화면 구성(2026-10-29 밤, 백오피스 일반프로모션 꼴) ----
