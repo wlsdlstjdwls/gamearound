@@ -14,3 +14,4 @@ export * from "./sync";
 export * from "./sync-logs";
 export * from "./promotions";
 export * from "./effects";
+export * from "./game";

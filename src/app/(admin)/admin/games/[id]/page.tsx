@@ -1,33 +1,31 @@
-// /admin/games/[id] — 데이터 정정(§4.4), 소스 매핑(§4.2), 정정 이력
-import { formatPrice } from "@/lib/currency";
+// /admin/games/[id] — 게임 고치기: 데이터 정정(§4.4), 소스 매핑(§4.2), 검색 별칭, 세대 업그레이드, 정정 이력.
+// 화면 구성은 백오피스 꼴(components/admin/game-screen, 2026-10-30). 여기는 DB 행을 화면 꼴(game-screen/types)로 옮겨 넘기기만 한다 —
+// 날짜, 금액, 이름표는 여기서 글자로 만든다(화면이 시계, 통화 규칙을 다시 들지 않게).
 import type { Metadata } from "next";
-import Link from "next/link";
 import { notFound } from "next/navigation";
 import { z } from "zod";
+import { GameScreen } from "@/components/admin/game-screen";
+import type { FieldRow, GameScreenData } from "@/components/admin/game-screen/types";
+import { GAME_ADMIN_MESSAGES as M, SYNC_STATUS_LABEL } from "@/lib/admin/messages";
+import { formatPrice } from "@/lib/currency";
 import { formatDateTime, PLATFORM_LABEL } from "@/lib/format";
+import { sourceLabel } from "@/lib/source-label";
+import { gamePath } from "@/lib/routes";
+import { requireRoleOrForbid } from "@/server/auth/guards";
+import { platformEnum, upgradeKindEnum } from "@/server/db/schema";
 import { CORRECTABLE_FIELDS, getGameForAdmin, SOURCES } from "@/server/services/admin";
 import { listAliases } from "@/server/services/admin-aliases";
 import { listUpgrades } from "@/server/services/admin-upgrades";
-import { platformEnum, upgradeKindEnum } from "@/server/db/schema";
-import { requireRoleOrForbid } from "@/server/auth/guards";
-import { CorrectionForm, type FieldOption } from "@/components/admin/correction-form";
-import { ManualRefForm } from "@/components/admin/manual-ref-form";
-import { AliasForm } from "@/components/admin/alias-form";
-import { UpgradeForm } from "@/components/admin/upgrade-form";
-import { MatchReviewButtons } from "@/components/admin/match-review-buttons";
-import { PageHead } from "@/components/ui/page";
-import { DataCell, DataHead, DataList, DataRow } from "@/components/admin/data-rows";
-import { GAME_ADMIN_MESSAGES as M, MATCHED_BY_LABEL, SYNC_STATUS_LABEL, sourceLabel } from "@/lib/admin/messages";
-import { ROUTES } from "@/lib/routes";
-import { GAME_REF_COLS, GAME_HISTORY_COLS } from "@/lib/admin/table-cols";
 
 export const metadata: Metadata = { title: M.title };
 
 type GameRow = NonNullable<Awaited<ReturnType<typeof getGameForAdmin>>>;
-type PlatformRow = GameRow["platforms"][number];
+type PlatformDbRow = GameRow["platforms"][number];
+type GameField = keyof typeof CORRECTABLE_FIELDS.games;
+type PlatformField = keyof typeof CORRECTABLE_FIELDS.game_platforms;
 
 // 화이트리스트(DB 컬럼명) → 현재값 추출
-const GAME_GETTER: Record<keyof typeof CORRECTABLE_FIELDS.games, (g: GameRow) => FieldOption["current"]> = {
+const GAME_GETTER: Record<GameField, (g: GameRow) => FieldRow["current"]> = {
   title_ko: (g) => g.titleKo,
   title_en: (g) => g.titleEn,
   description: (g) => g.description,
@@ -41,7 +39,7 @@ const GAME_GETTER: Record<keyof typeof CORRECTABLE_FIELDS.games, (g: GameRow) =>
   supports_pvp: (g) => g.supportsPvp,
   is_retro: (g) => g.isRetro,
 };
-const PLATFORM_GETTER: Record<keyof typeof CORRECTABLE_FIELDS.game_platforms, (p: PlatformRow) => FieldOption["current"]> = {
+const PLATFORM_GETTER: Record<PlatformField, (p: PlatformDbRow) => FieldRow["current"]> = {
   list_price: (p) => p.listPrice,
   current_price: (p) => p.currentPrice,
   discount_pct: (p) => p.discountPct,
@@ -51,26 +49,43 @@ const PLATFORM_GETTER: Record<keyof typeof CORRECTABLE_FIELDS.game_platforms, (p
   opencritic_score: (p) => p.opencriticScore,
 };
 
-function gameFields(g: GameRow): FieldOption[] {
-  return (Object.keys(CORRECTABLE_FIELDS.games) as (keyof typeof CORRECTABLE_FIELDS.games)[]).map((name) => ({
-    name,
+const platformName = (p: PlatformDbRow) => PLATFORM_LABEL[p.platform] ?? p.platform;
+
+function fieldRows(g: GameRow): FieldRow[] {
+  const games = (Object.keys(CORRECTABLE_FIELDS.games) as GameField[]).map((name) => ({
+    key: `games:${g.id}:${name}`,
+    table: "games" as const,
+    rowId: g.id,
+    target: M.targetGame,
+    field: name,
     label: CORRECTABLE_FIELDS.games[name].label,
     kind: CORRECTABLE_FIELDS.games[name].kind,
     current: GAME_GETTER[name](g),
   }));
-}
-function platformFields(p: PlatformRow): FieldOption[] {
-  return (Object.keys(CORRECTABLE_FIELDS.game_platforms) as (keyof typeof CORRECTABLE_FIELDS.game_platforms)[]).map((name) => ({
-    name,
-    label: CORRECTABLE_FIELDS.game_platforms[name].label,
-    kind: CORRECTABLE_FIELDS.game_platforms[name].kind,
-    current: PLATFORM_GETTER[name](p),
-  }));
+  const platforms = g.platforms.flatMap((p) =>
+    (Object.keys(CORRECTABLE_FIELDS.game_platforms) as PlatformField[]).map((name) => ({
+      key: `game_platforms:${p.id}:${name}`,
+      table: "game_platforms" as const,
+      rowId: p.id,
+      target: platformName(p),
+      field: name,
+      label: CORRECTABLE_FIELDS.game_platforms[name].label,
+      kind: CORRECTABLE_FIELDS.game_platforms[name].kind,
+      current: PLATFORM_GETTER[name](p),
+    })),
+  );
+  return [...games, ...platforms];
 }
 
 function jsonText(v: unknown): string {
-  if (v === null || v === undefined) return "(없음)";
+  if (v === null || v === undefined) return M.none;
   return typeof v === "string" ? v : JSON.stringify(v);
+}
+
+/** 고친 기록의 칸 이름 — 컬럼명 대신 고칠 때 본 이름표. 화이트리스트에서 빠진 옛 칸은 컬럼명 그대로 */
+function fieldLabel(table: string, field: string): string {
+  const specs = (CORRECTABLE_FIELDS as Record<string, Record<string, { label: string }>>)[table];
+  return specs?.[field]?.label ?? field;
 }
 
 export default async function AdminGamePage({ params }: { params: Promise<{ id: string }> }) {
@@ -79,161 +94,39 @@ export default async function AdminGamePage({ params }: { params: Promise<{ id: 
   if (!z.uuid().safeParse(id).success) notFound();
   const game = await getGameForAdmin(id);
   if (!game) notFound();
-
-  const platformLabel = (p: PlatformRow) => PLATFORM_LABEL[p.platform] ?? p.platform;
-  const platformById = new Map(game.platforms.map((p) => [p.id, p]));
   const [upgradeRows, aliasRows] = await Promise.all([listUpgrades(game.id), listAliases(game.id)]);
+  const platformById = new Map(game.platforms.map((p) => [p.id, p]));
 
-  return (
-    <div className="flex flex-col gap-8">
-      <header className="flex flex-col gap-1">
-        <p className="text-[12.5px] text-dim">
-          <Link href={ROUTES.admin} className="hover:text-ink">{M.breadcrumb}</Link> / {M.here}
-        </p>
-        <PageHead size="admin" title={game.titleKo ?? game.titleEn} />
-        <p className="text-[13px] text-mut">
-          {game.titleEn} | <code className="text-xs">{game.slug}</code> |{" "}
-          <Link href={`/games/${game.slug}`} className="text-acc hover:underline">{M.openPublic}</Link>
-        </p>
-      </header>
+  const data: GameScreenData = {
+    game: { id: game.id, slug: game.slug, title: game.titleKo ?? game.titleEn, titleEn: game.titleEn, publicHref: gamePath(game.slug) },
+    fields: fieldRows(game),
+    platforms: game.platforms.map((p) => ({
+      id: p.id,
+      label: platformName(p),
+      currentPrice: formatPrice(p.currentPrice, p.currency),
+      listPrice: formatPrice(p.listPrice, p.currency),
+      lastSynced: formatDateTime(p.lastSyncedAt),
+      status: p.syncStatus ? (SYNC_STATUS_LABEL[p.syncStatus] ?? p.syncStatus) : "-",
+    })),
+    refs: game.sourceRefs.map((r) => ({ source: r.source, sourceLabel: sourceLabel(r.source), externalId: r.externalId, url: r.url, matchedBy: r.matchedBy, confidence: r.confidence })),
+    aliases: aliasRows.map((a) => ({ id: a.id, alias: a.alias })),
+    upgrades: upgradeRows.map((u) => ({ id: u.id, fromPlatform: u.fromPlatform, toPlatform: u.toPlatform, kind: u.kind, price: u.price, storeUrl: u.storeUrl, note: u.note })),
+    history: game.corrections.map((c) => {
+      const p = c.table === "game_platforms" ? platformById.get(c.rowId) : undefined;
+      return {
+        id: String(c.id),
+        when: formatDateTime(c.createdAt),
+        target: c.table === "games" ? M.targetGame : p ? platformName(p) : c.rowId.slice(0, 8),
+        field: fieldLabel(c.table, c.field),
+        before: jsonText(c.before),
+        after: jsonText(c.after),
+        locked: Boolean(c.lockField),
+      };
+    }),
+    sources: SOURCES,
+    platformOptions: platformEnum.enumValues,
+    kinds: upgradeKindEnum.enumValues,
+  };
 
-      <section className="flex flex-col gap-3">
-        <h2 className="text-[15px] font-bold tracking-[-0.02em] text-ink">{M.basics}</h2>
-        <CorrectionForm table="games" rowId={game.id} gameId={game.id} fields={gameFields(game)} title={M.basicsFormTitle} />
-      </section>
-
-      <section className="flex flex-col gap-3">
-        <h2 className="text-[15px] font-bold tracking-[-0.02em] text-ink">{M.aliases}</h2>
-        <AliasForm gameId={game.id} items={aliasRows.map((a) => ({ id: a.id, alias: a.alias }))} />
-      </section>
-
-      <section className="flex flex-col gap-3">
-        <h2 className="text-[15px] font-bold tracking-[-0.02em] text-ink">{M.upgrades}</h2>
-        <UpgradeForm
-          gameId={game.id}
-          platforms={platformEnum.enumValues}
-          kinds={upgradeKindEnum.enumValues}
-          items={upgradeRows.map((u) => ({
-            id: u.id,
-            fromPlatform: u.fromPlatform,
-            toPlatform: u.toPlatform,
-            kind: u.kind,
-            price: u.price,
-            storeUrl: u.storeUrl,
-            note: u.note,
-          }))}
-        />
-      </section>
-
-      <section className="flex flex-col gap-3">
-        <h2 className="text-[15px] font-bold tracking-[-0.02em] text-ink">{M.platforms}</h2>
-        {game.platforms.length === 0 ? (
-          <p className="text-[13px] text-mut">{M.platformsEmpty}</p>
-        ) : (
-          game.platforms.map((p) => (
-            <div key={p.id} className="flex flex-col gap-2">
-              <p className="text-[11.5px] text-dim">
-                {platformLabel(p)} | {M.currentPrice} {formatPrice(p.currentPrice, p.currency)} | {M.listPrice}{" "}
-                {formatPrice(p.listPrice, p.currency)} | {M.lastSynced} {formatDateTime(p.lastSyncedAt)} |{" "}
-                {p.syncStatus ? (SYNC_STATUS_LABEL[p.syncStatus] ?? p.syncStatus) : "-"}
-              </p>
-              <CorrectionForm table="game_platforms" rowId={p.id} gameId={game.id} fields={platformFields(p)} title={M.platformFormTitle(platformLabel(p))} />
-            </div>
-          ))
-        )}
-      </section>
-
-      <section className="flex flex-col gap-3">
-        <h2 className="text-[15px] font-bold tracking-[-0.02em] text-ink">{M.refs}</h2>
-        {game.sourceRefs.length === 0 ? (
-          <p className="text-[13px] text-mut">{M.refsEmpty}</p>
-        ) : (
-          <div>
-            <DataHead
-              cols={GAME_REF_COLS}
-              labels={[M.colSource, M.colExternalId, M.colUrl, M.colMatchedBy, M.colConfidence, M.colAction]}
-            />
-            <DataList>
-              {game.sourceRefs.map((r) => (
-                <DataRow key={r.source} cols={GAME_REF_COLS}>
-                  <DataCell label={M.colSource} className="md:whitespace-nowrap">
-                    {sourceLabel(r.source)}
-                  </DataCell>
-                  <DataCell label={M.colExternalId} className="font-mono text-xs">
-                    {r.externalId}
-                  </DataCell>
-                  <DataCell label={M.colUrl}>
-                    {r.url ? (
-                      <a href={r.url} target="_blank" rel="noreferrer" className="break-all text-[12px] text-acc hover:underline">
-                        {r.url}
-                      </a>
-                    ) : (
-                      "-"
-                    )}
-                  </DataCell>
-                  <DataCell label={M.colMatchedBy}>
-                    <span
-                      className={`inline-block rounded-[5px] px-1.5 py-0.5 text-[11.5px] font-semibold ${r.matchedBy === "pending" ? "bg-warn-soft text-warn" : r.matchedBy === "manual" ? "bg-ok-soft text-ok" : r.matchedBy === "none" ? "bg-surface-2 text-dim-2" : "bg-surface-2 text-ink-2"}`}
-                    >
-                      {MATCHED_BY_LABEL[r.matchedBy] ?? r.matchedBy}
-                    </span>
-                  </DataCell>
-                  <DataCell label={M.colConfidence}>{r.confidence ?? "-"}</DataCell>
-                  <DataCell>
-                    {r.matchedBy === "pending" ? (
-                      <MatchReviewButtons gameId={game.id} source={r.source} />
-                    ) : (
-                      <span className="text-[12px] text-dim-2">-</span>
-                    )}
-                  </DataCell>
-                </DataRow>
-              ))}
-            </DataList>
-          </div>
-        )}
-        <ManualRefForm gameId={game.id} sources={SOURCES} />
-      </section>
-
-      <section className="flex flex-col gap-3">
-        <h2 className="text-[15px] font-bold tracking-[-0.02em] text-ink">{M.history} <span className="text-[13px] font-normal text-dim">{M.historyCount(game.corrections.length)}</span></h2>
-        {game.corrections.length === 0 ? (
-          <p className="text-[13px] text-mut">{M.historyEmpty}</p>
-        ) : (
-          <div>
-            <DataHead cols={GAME_HISTORY_COLS} labels={[M.colWhen, M.colTarget, M.colField, M.colBefore, M.colAfter, M.colLocked]} />
-            <DataList>
-              {game.corrections.map((c) => {
-                const target =
-                  c.table === "games"
-                    ? "games"
-                    : `${c.table} | ${platformById.get(c.rowId) ? platformLabel(platformById.get(c.rowId) as PlatformRow) : c.rowId.slice(0, 8)}`;
-                return (
-                  <DataRow key={c.id} cols={GAME_HISTORY_COLS} align="start">
-                    <DataCell label={M.colWhen} className="md:whitespace-nowrap">
-                      {formatDateTime(c.createdAt)}
-                    </DataCell>
-                    <DataCell label={M.colTarget} className="text-xs">
-                      {target}
-                    </DataCell>
-                    <DataCell label={M.colField} className="font-mono text-xs">
-                      {c.field}
-                    </DataCell>
-                    <DataCell label={M.colBefore} className="break-all text-[11.5px] text-mut">
-                      {jsonText(c.before)}
-                    </DataCell>
-                    <DataCell label={M.colAfter} className="break-all text-xs">
-                      {jsonText(c.after)}
-                    </DataCell>
-                    <DataCell label={M.colLocked} className="text-xs">
-                      {c.lockField ? M.locked : "-"}
-                    </DataCell>
-                  </DataRow>
-                );
-              })}
-            </DataList>
-          </div>
-        )}
-      </section>
-    </div>
-  );
+  return <GameScreen data={data} />;
 }
