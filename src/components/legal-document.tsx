@@ -1,10 +1,10 @@
 // 약관 문서 화면 — /terms 와 /privacy 가 같은 모양을 쓴다(§3: 같은 것이 2곳이면 추출).
 //
 // 2026-10-27(사용자: "이용약관, 개인정보처리방침 쪽 내용도 개선"): 회색 판 하나에 13px 글이 이어져 어디가 무슨 조항인지 찾기 어려웠다.
-// 맨 위 "한눈에 보기" 상자, 조항 목차(누르면 그 조항으로), 흰 판 위 큰 글씨, "- " 줄은 점 목록으로 그린다.
+// 조항 목차(누르면 그 조항으로), 흰 판 위 큰 글씨, "- " 줄은 점 목록으로 그린다.
+// 맨 위 "한눈에 보기" 요약 상자는 2026-10-30 걷었다(사용자 "요약도 필요하냐") — 본문과 다른 말을 할 위험만 있고, 본문이 이미 조항별로 짧다.
 import { Page, PageHead } from "@/components/ui/page";
 import { EmptyState } from "@/components/empty-state";
-import { CheckIcon } from "@/components/ui/icons";
 import { LEGAL_MESSAGES, type LegalDocument } from "@/lib/legal";
 
 /** 본문을 문단과 점 목록으로 나눈다. "- " 로 시작하는 줄이 이어지면 한 목록이다 */
@@ -46,22 +46,6 @@ export function LegalDocumentView({ doc }: { doc: LegalDocument }) {
         <EmptyState title={LEGAL_MESSAGES.empty} description={LEGAL_MESSAGES.contact} />
       ) : (
         <>
-          {doc.summary && doc.summary.length > 0 && (
-            <section aria-labelledby="legal-summary" className="enter-item flex flex-col gap-3 rounded-[var(--radius-panel)] bg-acc-soft p-5 sm:p-6">
-              <h2 id="legal-summary" className="text-[15px] font-extrabold text-acc">
-                {LEGAL_MESSAGES.summaryTitle}
-              </h2>
-              <ul className="flex flex-col gap-2">
-                {doc.summary.map((line) => (
-                  <li key={line} className="flex gap-2.5 text-[14px] leading-[1.7] text-ink">
-                    <CheckIcon size={16} className="mt-[0.3em] shrink-0 text-acc" />
-                    {line}
-                  </li>
-                ))}
-              </ul>
-            </section>
-          )}
-
           {/* 목차 — 조항으로 바로 간다 */}
           <nav aria-label={LEGAL_MESSAGES.tocLabel} className="flex flex-wrap gap-1.5">
             {doc.sections.map((s, i) => (
