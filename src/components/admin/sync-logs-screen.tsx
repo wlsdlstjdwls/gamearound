@@ -146,7 +146,7 @@ const Results = memo(function Results({ rows }: { rows: SyncLogGridRow[] }) {
           autoSelectFirst
           pageSize={50}
           empty={M.empty}
-          maxHeight="calc(100svh - var(--header-h) - 300px)"
+          fit
           fileKey={fileKey}
         />
       }

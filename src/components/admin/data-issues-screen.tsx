@@ -118,7 +118,7 @@ export function DataIssuesScreen({ open, recentAuto }: { open: DataIssueRow[]; r
               {...(view === "open" ? { checked, onChecked: setChecked, rowTone: (r: DataIssueRow) => (doneOf(r) ? ("muted" as const) : undefined) } : {})}
               pageSize={50}
               empty={view === "open" ? M.empty : M.recentAutoEmpty}
-              maxHeight={`calc(100svh - var(--header-h) - ${view === "open" ? 330 : 270}px)`}
+              fit
             />
             {view === "open" && <ApprovalBar decisions={DECISIONS} targets={targets} checkedCount={checked.size} busy={busy} onApply={apply} />}
           </div>

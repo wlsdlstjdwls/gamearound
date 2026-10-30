@@ -179,7 +179,7 @@ export function PromotionsScreen({ rows, candidates }: { rows: BoostRowDto[]; ca
                 rowTone={(r) => (doneOf(r) || !isOpen(r) ? "muted" : undefined)}
                 pageSize={50}
                 empty={M.empty}
-                maxHeight="calc(100svh - var(--header-h) - 330px)"
+                fit
               />
               <ApprovalBar decisions={DECISIONS} targets={targets} checkedCount={checked.size} busy={busy} onApply={apply} />
             </div>

@@ -130,7 +130,7 @@ export function CompaniesScreen({ pending, known }: { pending: PendingCompany[];
                 rowTone={(r) => (doneOf(r) ? "muted" : undefined)}
                 pageSize={50}
                 empty={M.empty}
-                maxHeight="calc(100svh - var(--header-h) - 330px)"
+                fit
               />
               <ApprovalBar decisions={DECISIONS} targets={targets} checkedCount={checked.size} busy={busy} onApply={apply} />
             </div>
@@ -146,7 +146,7 @@ export function CompaniesScreen({ pending, known }: { pending: PendingCompany[];
               autoSelectFirst
               pageSize={50}
               empty={M.knownEmpty}
-              maxHeight="calc(100svh - var(--header-h) - 270px)"
+              fit
             />
           )
         }

@@ -27,8 +27,12 @@ type Tab = { key: string; label: string; href: string };
 const STORAGE_KEY = "admin-program-tabs";
 /** 이보다 많이 열면 가장 오래 안 본 탭부터 닫는다(저장 안 한 값이 있는 탭은 남긴다). 넓은 화면 한 줄에 들어가는 수다 */
 const MAX_TABS = 10;
-/** 탭 줄과 판 위아래 여백을 뺀 높이 — 탭 안 문서가 제 안에서 굴러가야 머리 툴바, 미리 보기 기둥의 sticky 가 산다 */
-const FRAME_HEIGHT = "calc(100dvh - 5rem)";
+/**
+ * 탭 줄과 판 위아래 여백을 뺀 높이 — 탭 안 문서가 제 안에서 굴러가야 머리 툴바, 미리 보기 기둥의 sticky 가 산다.
+ * 68px = 위 여백 16 + 탭 줄 36 + 아래 여백 16(admin layout 의 pt-4, md:pb-4). 넘치면 바깥 문서가 그만큼 더 구른다 —
+ * 80px 에 아래 여백 48 이던 때 탭으로 연 화면마다 바깥이 20px 굴렀다(2026-10-30 실측). 여백이나 탭 줄 높이를 바꾸면 같이 바꾼다
+ */
+const FRAME_HEIGHT = "calc(100dvh - 68px)";
 const WIDE = "(min-width: 768px)";
 
 const HOME_KEY = ROUTES.admin;

@@ -286,7 +286,7 @@ export function CatalogScreen({ value, saved, errors, patch, selected, onSelect 
             }}
             rowTone={(r) => (r.active ? undefined : "muted")}
             empty={M.listEmpty}
-            maxHeight="calc(100svh - var(--header-h) - 300px)"
+            fit
           />
         }
         detail={

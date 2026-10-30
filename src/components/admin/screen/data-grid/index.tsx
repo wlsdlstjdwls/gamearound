@@ -17,6 +17,7 @@ import { GRID_MESSAGES as M } from "@/lib/admin/messages";
 import { matchesQuery, nextSort, pageOf, sortRows, sumOf, toTsv, type SortState, type SortValue } from "@/lib/admin/grid";
 import { useAdminStatus } from "@/components/admin/screen/status";
 import { registerGrid, type GridDump } from "@/components/admin/screen/data-grid/export";
+import { useFitHeight } from "@/components/admin/screen/data-grid/fit";
 import { alignClass, BottomBar, BODY_CELL, HeadRow, justifyClass, TopBar } from "@/components/admin/screen/data-grid/parts";
 
 export type GridCol<T> = {
@@ -78,7 +79,7 @@ export function DataGrid<T>({
   tools,
   footerExtra,
   empty,
-  maxHeight,
+  fit = false,
   fileKey,
 }: {
   label: string;
@@ -100,8 +101,8 @@ export function DataGrid<T>({
   tools?: React.ReactNode;
   footerExtra?: React.ReactNode;
   empty: string;
-  /** 몸통 최대 높이(CSS 값). 넘치면 몸통만 굴러가고 머리는 붙어 있다 */
-  maxHeight?: string;
+  /** 몸통을 화면 바닥에 맞춘다(fit.ts). 넘치면 몸통만 굴러가고 머리는 붙어 있다 */
+  fit?: boolean;
   /** 엑셀 파일 이름에 붙일 고른 줄의 코드와 이름(프로그램명_코드_명_날짜) */
   fileKey?: (row: T) => { code: string; name: string };
 }) {
@@ -111,6 +112,8 @@ export function DataGrid<T>({
   const [query, setQuery] = useState("");
   const [page, setPage] = useState(1);
   const rowRefs = useRef<(HTMLDivElement | null)[]>([]);
+  const bodyRef = useRef<HTMLDivElement>(null);
+  const maxHeight = useFitHeight(bodyRef, fit);
 
   const valueOf = (row: T, key: string) => columns.find((c) => c.key === key)?.value?.(row);
   const filtered = useMemo(
@@ -189,7 +192,7 @@ export function DataGrid<T>({
   return (
     <div className="flex min-w-0 flex-col overflow-hidden rounded-xl border border-line bg-surface">
       <TopBar label={label} query={searchable ? query : null} onQuery={(q) => (setQuery(q), setPage(1))} tools={tools} />
-      <div role="grid" aria-label={label} aria-rowcount={sorted.length} className="overflow-auto overscroll-contain" style={maxHeight ? { maxHeight } : undefined}>
+      <div ref={bodyRef} role="grid" aria-label={label} aria-rowcount={sorted.length} className="overflow-auto overscroll-contain" style={maxHeight ? { maxHeight } : undefined}>
         <div style={{ minWidth: minWidthOf([...(check ? ["40px"] : []), "48px", ...columns.map((c) => c.width)]) }}>
           <HeadRow columns={columns} template={template} sort={sort} onSort={(k) => setSort((s) => nextSort(s, k))} check={check ? { all: allOn, some: someOn, toggle: toggleAll } : undefined} />
           {paged.rows.length === 0 ? (

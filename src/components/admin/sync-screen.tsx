@@ -176,7 +176,7 @@ const Results = memo(function Results({ rows, asOf }: { rows: SyncSourceRow[]; a
           // 쉬는 소스는 흐리게 — 손볼 일이 없는 줄이다
           rowTone={(r) => (r.disabledReason ? "muted" : undefined)}
           empty={M.empty}
-          maxHeight="calc(100svh - var(--header-h) - 270px)"
+          fit
           fileKey={(r) => ({ code: r.source, name: r.name })}
         />
       }

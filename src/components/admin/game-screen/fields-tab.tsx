@@ -106,7 +106,7 @@ export function FieldsTab({ fields, c }: { fields: FieldRow[]; c: Correction }) 
           rowState={(r) => (c.dirty && r.key === c.selected ? "changed" : undefined)}
           searchable
           empty={M.fieldsEmpty}
-          maxHeight="calc(100svh - var(--header-h) - 380px)"
+          fit
         />
       }
       detailTitle={c.current ? `${c.current.target} | ${c.current.label}` : M.sectionCorrect}

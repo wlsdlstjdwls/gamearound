@@ -225,7 +225,7 @@ export function PromotionsScreen({ value, saved, errors, patch, selected, onSele
             rowTone={(p) => (p.active ? undefined : "muted")}
             searchable
             empty={M.promoListEmpty}
-            maxHeight="calc(100svh - var(--header-h) - 340px)"
+            fit
           />
         }
         detail={current ? <Detail key={current.id} value={value} p={current} set={set} errors={errors} /> : <p className="rounded-xl bg-surface-2 px-4 py-6 text-center text-[13px] text-dim">{M.promoPickHint}</p>}
