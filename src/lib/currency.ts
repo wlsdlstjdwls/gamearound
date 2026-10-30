@@ -30,6 +30,12 @@ export function formatPrice(price: number | null | undefined, currency: Currency
   return `${prefix}${amount.toLocaleString("ko-KR", { minimumFractionDigits: decimals, maximumFractionDigits: decimals })}${suffix}`;
 }
 
+/** 최소 단위 정수를 소수 문자열로(구조화 데이터의 price 칸). (699, "USD") → "6.99", (12345, "KRW") → "12345" */
+export function priceDecimal(price: number, currency: Currency): string {
+  const decimals = DECIMALS[currency];
+  return (price / 10 ** decimals).toFixed(decimals);
+}
+
 /** 금액 합계(관리자 매출, 환불 합). 상품 값이 아니라 0 도 "0원" 이다 — formatPrice 의 "무료" 는 게임 값에서만 뜻이 있다(2026-10-29) */
 export function formatAmount(price: number, currency: Currency = DISPLAY_CURRENCY): string {
   return price === 0 ? `${AFFIX[currency].prefix}0${AFFIX[currency].suffix}` : formatPrice(price, currency);

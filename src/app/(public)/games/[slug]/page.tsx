@@ -39,6 +39,8 @@ import { GAME_MESSAGES } from "@/lib/games/messages";
 import { stagger } from "@/lib/motion";
 import { forecastDiscount } from "@/lib/sales/forecast";
 import { SITE } from "@/lib/site";
+import { buildGameJsonLd, serializeJsonLd } from "@/lib/seo/game-json-ld";
+import { siteOrigin } from "@/lib/seo/constants";
 import { decodeSlugParam } from "@/lib/slug";
 import { gamePath, ROUTES } from "@/lib/routes";
 import { bestUserScore, cheapestPlatform, displayTitle, getGameBySlugCached, getGamePatchesCached } from "@/server/services/games";
@@ -115,9 +117,22 @@ export default async function GameDetailPage({ params }: Props) {
   // 최저가 카드로 열면 고리가 줄 가운데에서 켜져 "왜 이게 골라져 있지" 로 읽혔다. 그 뒤는 사람이 고를 때마다 바뀐다.
   // 값 없는 카드는 건너뛴다(order 의 initialPickBrand)
   const initialBrand = initialPickBrand(platforms);
+  // 검색 결과의 가격 줄(구조화 데이터). 화면에 보이는 값과 같은 행(숨김, 링크 없는 행을 거른 game.platforms)만 싣는다
+  const jsonLd = buildGameJsonLd({
+    url: `${siteOrigin() ?? ""}${gamePath(game.slug)}`,
+    title,
+    description: game.description?.slice(0, META_DESCRIPTION_MAX) ?? null,
+    image: game.coverUrl,
+    releaseDate: game.releaseDate,
+    genres: game.genres,
+    developer: game.developer,
+    publisher: game.publisher,
+    platforms: game.platforms,
+  });
 
   return (
     <Page pad="detail" gap={28}>
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: serializeJsonLd(jsonLd) }} />
       <BackLink href={ROUTES.game}>게임 목록으로</BackLink>
       {/* 조회 기록 — 수집이 사람들이 보는 게임을 먼저 갱신하게 한다(server/game-views). 화면에는 아무것도 안 그린다 */}
       <GameViewBeacon slug={game.slug} />
