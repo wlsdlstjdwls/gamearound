@@ -81,5 +81,5 @@ export const INSTALL_MESSAGES = {
   add: "추가",
   close: "안내 닫기",
   /** iOS 사파리는 설치 창을 띄울 길이 없다 — 손으로 하는 두 걸음을 띠 안에 펼친다 */
-  iosSteps: ["아래 공유 단추를 눌러요", "\"홈 화면에 추가\" 를 골라요"],
+  iosSteps: ["아래 공유 단추를 눌러요", "\"홈 화면에 추가\"를 골라요"],
 } as const;

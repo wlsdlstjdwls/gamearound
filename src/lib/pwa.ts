@@ -30,4 +30,4 @@ export const UPDATE_CHECK_INTERVAL_MS = 60 * 1000;
  * 서버(/api/version)가 지금 배포의 표식을 주면 둘을 견준다 — 다르면 탭이 옛 번들을 들고 있다.
  * 로컬은 둘 다 "local" 이라 안내가 뜨지 않는다
  */
-export const CLIENT_BUILD_ID = process.env.NEXT_PUBLIC_BUILD_ID ?? "local";
+export const CLIENT_BUILD_ID = process.env.NEXT_PUBLIC_BUILD_ID || "local";
