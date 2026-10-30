@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { compareValues, matchesQuery, nextSort, pageOf, sortRows, sumOf, toTsv } from "@/lib/admin/grid";
+import { compareValues, GRID_PAGE_SIZE, matchesQuery, nextSort, pageOf, pageOfIndex, pageSizeOf, sortRows, sumOf, toTsv } from "@/lib/admin/grid";
 
 describe("compareValues", () => {
   it("숫자, 한글(숫자 섞인 글 포함), 날짜를 맞게 비교한다", () => {
@@ -51,5 +51,20 @@ describe("matchesQuery, pageOf, sumOf, toTsv", () => {
   });
   it("탭, 줄바꿈은 칸 안에서 지운다", () => {
     expect(toTsv(["a", "b"], [["1\t2", "x\ny"]])).toBe("a\tb\n1 2\tx y");
+  });
+});
+
+describe("pageSizeOf, pageOfIndex", () => {
+  it("켜면 기본 크기, 숫자면 그 크기, 끄면 null", () => {
+    expect(pageSizeOf(true)).toBe(GRID_PAGE_SIZE);
+    expect(pageSizeOf(20)).toBe(20);
+    expect(pageSizeOf(false)).toBeNull();
+    expect(pageSizeOf(undefined)).toBeNull();
+    expect(pageSizeOf(0)).toBeNull();
+  });
+  it("줄 순번이 든 쪽", () => {
+    expect(pageOfIndex(0, 50)).toBe(1);
+    expect(pageOfIndex(49, 50)).toBe(1);
+    expect(pageOfIndex(50, 50)).toBe(2);
   });
 });

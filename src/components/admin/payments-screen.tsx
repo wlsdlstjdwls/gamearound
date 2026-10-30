@@ -139,7 +139,7 @@ export function PaymentsScreen({ rows }: { rows: PaymentRowDto[] }) {
         onSelect={setSelected}
         autoSelectFirst
         rowTone={(p) => (p.status === "canceled" ? "muted" : undefined)}
-        pageSize={20}
+        paging={20}
         empty={PM.adminEmpty}
       />
       {current ? <Detail key={current.orderId} p={current} /> : <p className="rounded-xl bg-surface-2 px-4 py-6 text-center text-[13px] text-dim">{PM.adminPickHint}</p>}

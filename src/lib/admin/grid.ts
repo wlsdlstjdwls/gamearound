@@ -47,6 +47,30 @@ export function matchesQuery(texts: readonly string[], query: string): boolean {
 }
 
 /** 쪽 나누기. 쪽 번호는 1부터, 범위를 넘으면 끝 쪽으로 붙인다 */
+/**
+ * 쪽 넘김을 켜고 끄는 값. 그리드마다 숫자를 따로 적던 것(50, 20)을 한곳으로 모았다.
+ * 켠다: 쌓이기만 하는 목록(결제, 회원, 이력, 승인 큐, 게시글) — 수백 줄을 한 번에 그리면 고른 줄을 찾느라 굴린다.
+ * 끈다: 몇 줄로 끝나는 설정 목록(전시, 상품, 프로모션, 스토어별 수집, 게임 한 건의 탭) — 쪽을 나누면 한눈에 보던 것을 넘겨 봐야 한다.
+ */
+export type GridPaging = boolean | number | undefined;
+
+/** 쪽 크기 고르기 칸의 값들. 백오피스 PagingToolbar 의 쪽 크기 고르기와 같은 자리 */
+export const GRID_PAGE_SIZES = [20, 50, 100] as const;
+/** 켜기만 했을 때의 쪽 크기 — 넓은 화면 한 판(줄 40px)을 두 번쯤 굴리면 끝나는 양 */
+export const GRID_PAGE_SIZE = 50;
+
+/** paging 값을 쪽 크기로. 끄면 null(모든 줄) */
+export function pageSizeOf(paging: GridPaging): number | null {
+  if (paging === true) return GRID_PAGE_SIZE;
+  if (typeof paging === "number" && paging > 0) return paging;
+  return null;
+}
+
+/** index 번째 줄이 들어 있는 쪽(1부터) */
+export function pageOfIndex(index: number, size: number): number {
+  return Math.floor(Math.max(0, index) / size) + 1;
+}
+
 export function pageOf<T>(rows: readonly T[], page: number, size: number): { rows: T[]; page: number; pages: number } {
   const pages = Math.max(1, Math.ceil(rows.length / size));
   const p = Math.min(Math.max(1, page), pages);

@@ -108,7 +108,7 @@ export function MembershipsScreen({ rows }: { rows: MembershipDto[] }) {
             onSelect={setSelected}
             autoSelectFirst
             rowTone={(m) => (m.status === "ended" ? "muted" : undefined)}
-            pageSize={20}
+            paging={20}
             empty={M.adminEmpty}
           />
         }

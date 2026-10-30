@@ -113,7 +113,7 @@ export function PreorderScreen({ rows }: { rows: Row[] }) {
               checked={checked}
               onChecked={setChecked}
               rowTone={(r) => (doneOf(r) ? "muted" : undefined)}
-              pageSize={50}
+              paging
               empty={A.empty}
               fit
             />

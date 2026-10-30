@@ -144,7 +144,7 @@ const Results = memo(function Results({ rows }: { rows: SyncLogGridRow[] }) {
           selected={selected}
           onSelect={setSelected}
           autoSelectFirst
-          pageSize={50}
+          paging
           empty={M.empty}
           fit
           fileKey={fileKey}

@@ -177,7 +177,7 @@ export function PromotionsScreen({ rows, candidates }: { rows: BoostRowDto[]; ca
                 checked={checked}
                 onChecked={setChecked}
                 rowTone={(r) => (doneOf(r) || !isOpen(r) ? "muted" : undefined)}
-                pageSize={50}
+                paging
                 empty={M.empty}
                 fit
               />

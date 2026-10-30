@@ -97,7 +97,7 @@ export function ShopsScreen({ rows, status, statuses }: { rows: Row[]; status: s
                 checked={checked}
                 onChecked={setChecked}
                 rowTone={(r) => (doneOf(r) ? "muted" : undefined)}
-                pageSize={50}
+                paging
                 empty={A.empty}
                 fit
               />

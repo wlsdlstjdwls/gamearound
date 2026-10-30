@@ -70,6 +70,8 @@ export const GRID_MESSAGES = {
   next: "다음 쪽",
   last: "끝 쪽",
   pageOf: (page: number, pages: number) => `${page} / ${pages}`,
+  pageSize: "한 쪽에 보일 줄 수",
+  perPage: (n: number) => `${n}줄씩`,
   copied: (n: number) => `${n}줄을 복사했어요. 엑셀에 붙여 넣을 수 있어요`,
   stateLabels: { new: "신규", changed: "수정", deleted: "삭제", error: "오류" },
 } as const;

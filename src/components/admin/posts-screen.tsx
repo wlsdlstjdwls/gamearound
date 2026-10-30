@@ -151,7 +151,7 @@ export function PostsScreen({
                 checked={checked}
                 onChecked={setChecked}
                 rowTone={(r) => (doneOf(r) ? "muted" : undefined)}
-                pageSize={50}
+                paging
                 empty={mode === "posts" ? M.empty : M.emptyComments}
                 fit
               />

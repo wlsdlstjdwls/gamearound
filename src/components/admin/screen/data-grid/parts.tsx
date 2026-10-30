@@ -1,5 +1,5 @@
 "use client";
-// 공통 그리드의 머리 줄, 위 띠(찾기, 그리드 단추), 아래 띠(건수, 쪽 넘김). 본체는 index.tsx.
+// 공통 그리드의 머리 줄, 위 띠(찾기, 그리드 단추), 아래 띠(건수, 쪽 크기, 쪽 넘김). 본체는 index.tsx.
 // 머리는 칸 성격과 상관없이 가운데 정렬하고 몸통보다 한 단 진한 면에 둔다 — 백오피스 표처럼 머리와 몸통이 한눈에 갈린다.
 import { cn } from "@/lib/cn";
 import { ChevronDownIcon, ChevronLeftIcon } from "@/components/ui/icons";
@@ -107,8 +107,26 @@ export function TopBar({ label, query, onQuery, tools }: { label: string; query:
   );
 }
 
-export function BottomBar({ total, shown, checked, page, pages, onPage, extra }: { total: number; shown: number; checked: number; page: number; pages: number; onPage: (p: number) => void; extra?: React.ReactNode }) {
-  const btn = "press inline-flex size-8 items-center justify-center rounded-md text-[13px] text-mut hover:bg-surface-2 hover:text-ink disabled:opacity-40";
+export function BottomBar({
+  total,
+  shown,
+  checked,
+  page,
+  pages,
+  onPage,
+  size,
+  extra,
+}: {
+  total: number;
+  shown: number;
+  checked: number;
+  page: number;
+  pages: number;
+  onPage: (p: number) => void;
+  /** 쪽 넘김을 켠 그리드만 — 한 쪽에 둘 줄 수 고르기 */
+  size: { value: number; options: readonly number[]; onChange: (n: number) => void } | null;
+  extra?: React.ReactNode;
+}) {
   return (
     <div className="flex flex-wrap items-center justify-between gap-2 border-t border-line bg-surface-2/60 px-3 py-1 text-[12px] text-dim">
       <span className="tabular-nums">
@@ -117,25 +135,49 @@ export function BottomBar({ total, shown, checked, page, pages, onPage, extra }:
         {checked > 0 && <span className="font-semibold text-acc"> | {M.checked(checked)}</span>}
         {extra && <> | {extra}</>}
       </span>
-      {pages > 1 && (
-        <nav aria-label={M.pager} className="flex items-center gap-0.5">
-          <button type="button" className={btn} disabled={page <= 1} onClick={() => onPage(1)} aria-label={M.first}>
-            <ChevronLeftIcon size={14} />
-            <ChevronLeftIcon size={14} className="-ml-2.5" />
-          </button>
-          <button type="button" className={btn} disabled={page <= 1} onClick={() => onPage(page - 1)} aria-label={M.prev}>
-            <ChevronLeftIcon size={14} />
-          </button>
-          <span className="px-2 tabular-nums text-ink-2">{M.pageOf(page, pages)}</span>
-          <button type="button" className={btn} disabled={page >= pages} onClick={() => onPage(page + 1)} aria-label={M.next}>
-            <ChevronLeftIcon size={14} className="rotate-180" />
-          </button>
-          <button type="button" className={btn} disabled={page >= pages} onClick={() => onPage(pages)} aria-label={M.last}>
-            <ChevronLeftIcon size={14} className="rotate-180" />
-            <ChevronLeftIcon size={14} className="-ml-2.5 rotate-180" />
-          </button>
-        </nav>
+      {size && (
+        <div className="flex items-center gap-1">
+          {/* 쪽이 하나여도 쪽 크기 칸은 둔다 — 켠 그리드인지 아닌지가 한눈에 보이고, 줄 수를 늘려 둔 채 조회해도 칸이 사라지지 않는다 */}
+          <select
+            aria-label={M.pageSize}
+            value={size.value}
+            onChange={(e) => size.onChange(Number(e.target.value))}
+            className="h-8 rounded-md bg-transparent px-1 text-[12px] text-ink-2 outline-none hover:bg-surface-2 focus-visible:shadow-[0_0_0_1px_var(--acc)]"
+          >
+            {[...new Set([...size.options, size.value])]
+              .sort((a, b) => a - b)
+              .map((n) => (
+                <option key={n} value={n}>
+                  {M.perPage(n)}
+                </option>
+              ))}
+          </select>
+          {pages > 1 && <PageNav page={page} pages={pages} onPage={onPage} />}
+        </div>
       )}
     </div>
+  );
+}
+
+function PageNav({ page, pages, onPage }: { page: number; pages: number; onPage: (p: number) => void }) {
+  const btn = "press inline-flex size-8 items-center justify-center rounded-md text-[13px] text-mut hover:bg-surface-2 hover:text-ink disabled:opacity-40";
+  return (
+    <nav aria-label={M.pager} className="flex items-center gap-0.5">
+      <button type="button" className={btn} disabled={page <= 1} onClick={() => onPage(1)} aria-label={M.first}>
+        <ChevronLeftIcon size={14} />
+        <ChevronLeftIcon size={14} className="-ml-2.5" />
+      </button>
+      <button type="button" className={btn} disabled={page <= 1} onClick={() => onPage(page - 1)} aria-label={M.prev}>
+        <ChevronLeftIcon size={14} />
+      </button>
+      <span className="px-2 tabular-nums text-ink-2">{M.pageOf(page, pages)}</span>
+      <button type="button" className={btn} disabled={page >= pages} onClick={() => onPage(page + 1)} aria-label={M.next}>
+        <ChevronLeftIcon size={14} className="rotate-180" />
+      </button>
+      <button type="button" className={btn} disabled={page >= pages} onClick={() => onPage(pages)} aria-label={M.last}>
+        <ChevronLeftIcon size={14} className="rotate-180" />
+        <ChevronLeftIcon size={14} className="-ml-2.5 rotate-180" />
+      </button>
+    </nav>
   );
 }

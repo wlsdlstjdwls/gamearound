@@ -108,7 +108,7 @@ export function GameScreen({ data }: { data: GameScreenData }) {
             {
               key: "history",
               label: M.tabHistory,
-              panel: <DataGrid label={M.historyListLabel} columns={HISTORY_COLUMNS} rows={data.history} rowKey={(r) => r.id} pageSize={50} empty={M.historyEmpty} />,
+              panel: <DataGrid label={M.historyListLabel} columns={HISTORY_COLUMNS} rows={data.history} rowKey={(r) => r.id} paging empty={M.historyEmpty} />,
             },
           ]}
         />

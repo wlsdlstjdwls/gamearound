@@ -10,11 +10,14 @@
 //
 // 칸 값은 value(정렬, 찾기, 복사, 엑셀에 쓰는 원값)와 render(화면에 그리는 것)로 나눈다. render 는 칸 안 고치기(입력칸, 스위치)도 된다.
 // 엑셀은 이 그리드가 전체 줄을 걸어 둔 것을 받아 간다(export.ts) — 쪽을 나눠도 모든 줄이 나간다.
+// 쪽 넘김은 paging 하나로 켜고 끈다(켤 목록과 끌 목록의 기준은 lib/admin/grid 의 GridPaging). 쪽 크기는 아래 띠에서 바꾼다.
+// 고른 줄이 다른 쪽에 있으면(자동 선택, 정렬, 찾기 뒤) 그 쪽으로 넘어간다 — 고른 줄이 안 보이는 쪽에 머물면 상세만 바뀌어 헷갈린다.
+// 고른 줄은 진한 면(--acc-row) + 테두리 + 왼쪽 막대로 그린다 — 옅은 칩 면(--acc-soft)은 줄무늬, hover 와 구분되지 않았다(2026-10-30 사용자).
 import { Clamp } from "@/components/ui/tooltip";
 import { useContext, useEffect, useId, useMemo, useRef, useState } from "react";
 import { cn } from "@/lib/cn";
 import { GRID_MESSAGES as M } from "@/lib/admin/messages";
-import { matchesQuery, nextSort, pageOf, sortRows, sumOf, toTsv, type SortState, type SortValue } from "@/lib/admin/grid";
+import { GRID_PAGE_SIZES, matchesQuery, nextSort, pageOf, pageOfIndex, pageSizeOf, sortRows, sumOf, toTsv, type GridPaging, type SortState, type SortValue } from "@/lib/admin/grid";
 import { useAdminStatus } from "@/components/admin/screen/status";
 import { registerGrid, type GridDump } from "@/components/admin/screen/data-grid/export";
 import { FitFillContext, useFitHeight } from "@/components/admin/screen/data-grid/fit";
@@ -74,7 +77,7 @@ export function DataGrid<T>({
   onChecked,
   rowState,
   rowTone,
-  pageSize,
+  paging,
   searchable = false,
   tools,
   footerExtra,
@@ -95,7 +98,8 @@ export function DataGrid<T>({
   onChecked?: (next: Set<string>) => void;
   rowState?: (row: T) => RowState | undefined;
   rowTone?: (row: T) => "muted" | undefined;
-  pageSize?: number;
+  /** 쪽 넘김. true 면 기본 쪽 크기, 숫자면 그 크기로 켠다. 없으면 모든 줄을 한 판에(GridPaging) */
+  paging?: GridPaging;
   searchable?: boolean;
   /** 그리드 위 띠 왼쪽 단추(백오피스 탭 그리드의 입력, 삭제 자리) */
   tools?: React.ReactNode;
@@ -111,6 +115,7 @@ export function DataGrid<T>({
   const [sort, setSort] = useState<SortState>(null);
   const [query, setQuery] = useState("");
   const [page, setPage] = useState(1);
+  const [size, setSize] = useState(() => pageSizeOf(paging));
   const rowRefs = useRef<(HTMLDivElement | null)[]>([]);
   const bodyRef = useRef<HTMLDivElement>(null);
   const fitted = useFitHeight(bodyRef, fit);
@@ -123,8 +128,17 @@ export function DataGrid<T>({
     [rows, columns, query],
   );
   const sorted = sortRows(filtered, sort, valueOf);
-  const paged = pageSize ? pageOf(sorted, page, pageSize) : { rows: sorted, page: 1, pages: 1 };
-  const offset = pageSize ? (paged.page - 1) * pageSize : 0;
+
+  // 고른 줄, 정렬, 찾기, 쪽 크기가 바뀌면 고른 줄이 든 쪽으로 간다(없으면 첫 쪽). 렌더 중에 맞춘다 — effect 로 하면 한 번 엉뚱한 쪽이 그려졌다 넘어간다
+  const followKey = size ? `${selected}|${sort?.key}|${sort?.dir}|${query}|${size}` : "";
+  const [followed, setFollowed] = useState(followKey);
+  if (followed !== followKey) {
+    setFollowed(followKey);
+    const at = selected === null ? -1 : sorted.findIndex((r) => rowKey(r) === selected);
+    if (size) setPage(at >= 0 ? pageOfIndex(at, size) : 1);
+  }
+  const paged = size ? pageOf(sorted, page, size) : { rows: sorted, page: 1, pages: 1 };
+  const offset = size ? (paged.page - 1) * size : 0;
   const check = checked && onChecked;
   const template = `${check ? "40px " : ""}48px ${columns.map((c) => c.width).join(" ")}`;
   const hasSum = columns.some((c) => c.sum);
@@ -224,13 +238,13 @@ export function DataGrid<T>({
                   }}
                   className={cn(
                     "relative grid min-h-11 items-stretch border-b border-line-soft text-[13px] outline-none transition-colors duration-fast last:border-b-0 focus-visible:shadow-[inset_0_0_0_2px_var(--acc)] [@media(pointer:fine)]:min-h-10",
-                    i % 2 === 1 && "bg-surface-2/40",
+                    i % 2 === 1 && !on && "bg-surface-2/40",
                     onSelect && "cursor-pointer",
-                    on ? "bg-acc-soft font-semibold text-ink" : onSelect && "hover:bg-surface-2",
+                    on ? "bg-acc-row font-semibold text-ink shadow-[inset_0_0_0_1px_var(--acc)]" : onSelect && "hover:bg-surface-2",
                     rowTone?.(row) === "muted" && !on && "text-dim",
                     st === "deleted" && "line-through",
                     st && cn("before:absolute before:inset-y-1 before:left-0 before:w-[3px] before:rounded-full", STATE_BAR[st]),
-                    !st && on && "before:absolute before:inset-y-1 before:left-0 before:w-[3px] before:rounded-full before:bg-acc",
+                    !st && on && "before:absolute before:inset-y-0 before:left-0 before:w-1 before:bg-acc",
                   )}
                   style={{ gridTemplateColumns: template }}
                 >
@@ -239,7 +253,7 @@ export function DataGrid<T>({
                       <input type="checkbox" aria-label={M.checkRow(offset + i + 1)} checked={checked.has(key)} onChange={() => toggleOne(key)} className="size-4 accent-[var(--acc)]" />
                     </span>
                   )}
-                  <span role="gridcell" className={cn(BODY_CELL, "justify-center text-[12px] tabular-nums text-dim")}>
+                  <span role="gridcell" className={cn(BODY_CELL, "justify-center text-[12px] tabular-nums", on ? "font-bold text-acc" : "text-dim")}>
                     {st ? <span className={cn("text-[11px] font-bold", st === "error" ? "text-danger" : "text-acc")}>{M.stateLabels[st]}</span> : offset + i + 1}
                   </span>
                   {columns.map((c) => (
@@ -269,7 +283,16 @@ export function DataGrid<T>({
           )}
         </div>
       </div>
-      <BottomBar total={rows.length} shown={filtered.length} checked={check ? checked.size : 0} page={paged.page} pages={paged.pages} onPage={setPage} extra={footerExtra} />
+      <BottomBar
+        total={rows.length}
+        shown={filtered.length}
+        checked={check ? checked.size : 0}
+        page={paged.page}
+        pages={paged.pages}
+        onPage={setPage}
+        size={size ? { value: size, options: GRID_PAGE_SIZES, onChange: setSize } : null}
+        extra={footerExtra}
+      />
     </div>
   );
 }

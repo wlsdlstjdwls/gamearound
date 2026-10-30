@@ -105,7 +105,7 @@ export function IndieScreen({ rows, tab, tabs }: { rows: Row[]; tab: string; tab
                 checked={checked}
                 onChecked={setChecked}
                 rowTone={(r) => (doneOf(r) ? "muted" : undefined)}
-                pageSize={50}
+                paging
                 empty={A.empty}
                 fit
               />

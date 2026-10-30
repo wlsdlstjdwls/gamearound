@@ -64,6 +64,8 @@
   /* 브랜드 밝기 사다리(막대 그래프 등 면 전용). --acc 와 --surface 를 섞으므로 테마별로 따로 적지 않는다 */
   --acc-2: color-mix(in oklab, var(--acc) 58%, var(--surface));
   --acc-3: color-mix(in oklab, var(--acc) 30%, var(--surface));
+  /* 관리자 그리드의 고른 줄 면. --acc-soft(칩 면)는 줄무늬, hover 와 거의 같은 밝기라 고른 줄이 묻혔다(2026-10-30 사용자 "선택된 행이 눈에 잘 안 띈다") */
+  --acc-row: color-mix(in oklab, var(--acc) 16%, var(--surface));
   --danger-line: color-mix(in oklab, var(--danger) 30%, transparent);
   --ok-line: color-mix(in oklab, var(--ok) 28%, transparent);
   --overlay-blur: 4px;
@@ -338,6 +340,7 @@
   --color-beam: var(--beam);
   --color-acc-2: var(--acc-2);
   --color-acc-3: var(--acc-3);
+  --color-acc-row: var(--acc-row);
   --color-danger: var(--danger);
   --color-danger-soft: var(--danger-soft);
   --color-ok: var(--ok);

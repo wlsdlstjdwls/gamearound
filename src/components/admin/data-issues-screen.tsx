@@ -116,7 +116,7 @@ export function DataIssuesScreen({ open, recentAuto }: { open: DataIssueRow[]; r
               onSelect={setSelected}
               autoSelectFirst
               {...(view === "open" ? { checked, onChecked: setChecked, rowTone: (r: DataIssueRow) => (doneOf(r) ? ("muted" as const) : undefined) } : {})}
-              pageSize={50}
+              paging
               empty={view === "open" ? M.empty : M.recentAutoEmpty}
               fit
             />

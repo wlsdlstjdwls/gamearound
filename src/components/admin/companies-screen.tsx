@@ -128,7 +128,7 @@ export function CompaniesScreen({ pending, known }: { pending: PendingCompany[];
                 checked={checked}
                 onChecked={setChecked}
                 rowTone={(r) => (doneOf(r) ? "muted" : undefined)}
-                pageSize={50}
+                paging
                 empty={M.empty}
                 fit
               />
@@ -144,7 +144,7 @@ export function CompaniesScreen({ pending, known }: { pending: PendingCompany[];
               selected={selected}
               onSelect={setSelected}
               autoSelectFirst
-              pageSize={50}
+              paging
               empty={M.knownEmpty}
               fit
             />
