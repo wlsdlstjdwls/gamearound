@@ -28,6 +28,11 @@ export type TextFieldProps = Omit<ComponentProps<"input">, "size"> & {
   aside?: ReactNode;
   /** 44px 칸(터치 타깃 하한). 칸이 많은 폼에서 세로를 줄인다. 글자는 16px 그대로(iOS 확대 방지) */
   compact?: boolean;
+  /**
+   * 넓은 화면(lg 이상)에서만 칸 높이 36px, 글자 14px, 자리글 13px 로 줄인 칸(회원가입 폼, 2026-10-30 사용자 "필드, 글자 조금 더 줄이고").
+   * 좁은 화면은 그대로 둔다 — iOS 사파리가 16px 미만 입력 칸에서 화면을 확대하고, 손가락 칸은 44px 가 필요하다(AGENTS §6). 넓은 화면은 마우스라 둘 다 해당이 없다
+   */
+  dense?: boolean;
   /** 칸 바로 밑에 뜨는 판(제안 목록, components/ui/suggest). 칸 상자를 기준으로 선다 */
   popup?: ReactNode;
   /**
@@ -39,7 +44,7 @@ export type TextFieldProps = Omit<ComponentProps<"input">, "size"> & {
   wrapperClassName?: string;
 };
 
-export function TextField({ label, labelMark, hideLabel, hint, under, error, leading, aside, compact = false, trailing, popup, labelSide = false, wrapperClassName, className, id: idProp, ...input }: TextFieldProps) {
+export function TextField({ label, labelMark, hideLabel, hint, under, error, leading, aside, compact = false, dense = false, trailing, popup, labelSide = false, wrapperClassName, className, id: idProp, ...input }: TextFieldProps) {
   const autoId = useId();
   const id = idProp ?? autoId;
   const hintId = `${id}-hint`;
@@ -66,8 +71,8 @@ export function TextField({ label, labelMark, hideLabel, hint, under, error, lea
 
   return (
     <div className={cn("group/field", labelSide && "sm:grid sm:grid-cols-[var(--field-label-w,112px)_minmax(0,1fr)] sm:items-start sm:gap-x-3", wrapperClassName)}>
-      <div className={cn("mb-1.5 flex items-baseline justify-between gap-2", labelSide && "sm:row-span-2 sm:mb-0 sm:pt-3", hideLabel && "sr-only")}>
-        <label htmlFor={id} className="block text-[12.5px] font-medium text-mut transition-colors group-focus-within/field:text-ink">
+      <div className={cn("mb-1.5 flex items-baseline justify-between gap-2", dense && "lg:mb-1", labelSide && "sm:row-span-2 sm:mb-0 sm:pt-3", hideLabel && "sr-only")}>
+        <label htmlFor={id} className={cn("block text-[12.5px] font-medium text-mut transition-colors group-focus-within/field:text-ink", dense && "lg:text-[12px]")}>
           {label}
           {labelMark}
         </label>
@@ -107,6 +112,7 @@ export function TextField({ label, labelMark, hideLabel, hint, under, error, lea
             // 14px 이던 값을 올렸다(2026-09-22 실측: 로그인, 가입의 모든 칸이 14px 이었다).
             // 높이는 46px 그대로라 줄 위치는 밀리지 않는다 — 글자만 커진다.
             compact ? "h-11 min-h-11" : "h-[46px] min-h-[46px]",
+            dense && "lg:h-9 lg:min-h-9 lg:text-[14px] lg:placeholder:text-[13px]",
             "w-full min-w-0 flex-1 bg-transparent px-3.5 text-[16px] text-ink outline-none placeholder:text-dim disabled:cursor-not-allowed disabled:text-mut",
             leading ? "pl-0.5" : null,
             "autofill:shadow-[inset_0_0_0_1000px_var(--surface)] autofill:[-webkit-text-fill-color:var(--ink)]",

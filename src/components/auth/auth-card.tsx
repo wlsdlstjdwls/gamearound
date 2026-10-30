@@ -71,7 +71,7 @@ function Tab({ href, active, children }: { href: string; active: boolean; childr
         // 고른 탭이 흰 알약이다 — 판(--surface-2) 위에 올라선 것이 곧 "지금 여기" 다.
         // 높이 44px 는 규약 §6 의 터치 타깃이다(36px 이던 것을 올렸다 — 두 탭이 서로 붙어 있어
         // 좁은 화면에서 오탭이 곧 "폼을 다시 채우기" 로 이어지는 자리다)
-        "press inline-flex h-11 items-center rounded-full px-4 text-[14px] transition-colors duration-base",
+        "press inline-flex h-11 items-center rounded-full px-4 text-[14px] transition-colors duration-base lg:h-9 lg:text-[13.5px]",
         active ? "bg-surface font-bold text-ink shadow-hair" : "text-mut hover:text-ink",
       )}
     >
@@ -118,7 +118,7 @@ export function AuthCard({
         </div>
 
         {/* 격자에서 오른쪽 칸 전체를 세로로 관통한다 — 왼쪽이 카피 + 목록 두 줄로 갈려도 판은 한 덩어리다 */}
-        <Panel className="reveal row-start-1 flex flex-col gap-3 p-5 sm:p-6 lg:col-start-2 lg:row-start-1 lg:row-span-2" style={stagger(1)}>
+        <Panel className="reveal row-start-1 flex flex-col gap-3 p-5 sm:p-6 lg:p-5 lg:col-start-2 lg:row-start-1 lg:row-span-2" style={stagger(1)}>
           <div className="flex gap-1">
             <Tab href={withNext(ROUTES.signIn)} active={mode === "signIn"}>
               {M.signInCta}

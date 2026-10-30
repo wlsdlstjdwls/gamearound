@@ -16,7 +16,7 @@ type Props = Omit<TextFieldProps, "type" | "trailing"> & {
  * strengthOf 를 넘기면 칸 바로 밑에 강도 막대가 전체 폭으로 붙는다(TextField 의 under). 칠 때마다 칸과 단계 글이 바뀐다.
  * 안내 글(hint)은 비어 있을 때만 선다 — 치기 시작하면 단계 글이 무엇이 빠졌는지 말하니 같은 말이 두 줄 서지 않게 한다(2026-10-30 사용자)
  */
-export function PasswordField({ strengthOf, hint, ...field }: Props) {
+export function PasswordField({ strengthOf, hint, dense, ...field }: Props) {
   const [visible, setVisible] = useState(false);
   return (
     <div>
@@ -34,6 +34,8 @@ export function PasswordField({ strengthOf, hint, ...field }: Props) {
               // 44px — 규약 §6 의 터치 타깃. 36px 이던 값을 올렸다(2026-09-22 실측).
               // 칸 높이가 46px 이라 44px 까지는 칸 밖으로 넘치지 않는다.
               "press tap flex h-11 w-11 items-center justify-center rounded-[var(--radius-sm)] outline-none",
+              // 조밀한 칸(36px)에서는 눈 단추도 칸 안에 들어오게 줄인다 — 넓은 화면만이라 손가락 칸 규칙(44px)과 부딪히지 않는다
+              dense && "lg:h-8 lg:w-8",
               "focus-visible:ring-2 focus-visible:ring-ink",
               visible ? "text-ink" : "text-dim hover:text-mut",
             )}
@@ -41,6 +43,7 @@ export function PasswordField({ strengthOf, hint, ...field }: Props) {
             {visible ? <EyeOffIcon /> : <EyeIcon />}
           </button>
         }
+        dense={dense}
         hint={strengthOf ? undefined : hint}
         under={strengthOf !== undefined ? <PasswordStrengthMeter value={strengthOf} /> : undefined}
         {...field}

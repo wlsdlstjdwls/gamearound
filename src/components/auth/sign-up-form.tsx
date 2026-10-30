@@ -63,7 +63,7 @@ export function SignUpForm({ next }: { next: string }) {
   // 실패한 폼의 칸이 전부 비워진다. 액션은 useAuthForm 의 onSubmit 이 직접 태운다(근거는 그 주석에)
   return (
     // 칸 사이 12px — 16px 이던 것을 줄였다(2026-10-30 사용자 "공백이 너무 많다"). 칸 높이(46px)와 글자 16px 은 그대로다
-    <form ref={formRef} onSubmit={onSubmit} onInput={recheck} noValidate className="space-y-3">
+    <form ref={formRef} onSubmit={onSubmit} onInput={recheck} noValidate className="space-y-3 lg:space-y-2.5">
       <input type="hidden" name="next" value={next} />
 
       {formError && (
@@ -78,6 +78,7 @@ export function SignUpForm({ next }: { next: string }) {
       <div className="grid gap-3 sm:grid-cols-2">
       <div className="reveal" style={stagger(1)}>
         <TextField
+          dense
           label="닉네임"
           placeholder="게임 친구들에게 보일 이름"
           autoComplete="nickname"
@@ -91,6 +92,7 @@ export function SignUpForm({ next }: { next: string }) {
 
       <div className="reveal" style={stagger(2)}>
         <TextField
+          dense
           ref={emailRef}
           label="이메일"
           type="email"
@@ -107,6 +109,7 @@ export function SignUpForm({ next }: { next: string }) {
       </div>
       <div className="reveal" style={stagger(3)}>
         <PasswordField
+          dense
           ref={passwordRef}
           label="비밀번호"
           // 자리글에 규칙을 또 적지 않는다(2026-09-22) — 바로 아래 hint 가 같은 문장을 들고 있어
@@ -126,7 +129,7 @@ export function SignUpForm({ next }: { next: string }) {
       </div>
 
       <div className="reveal" style={stagger(4)}>
-        <PasswordField ref={confirmRef} label="비밀번호 확인" placeholder="한 번 더 입력" autoComplete="new-password" disabled={busy} {...fieldProps("passwordConfirm")} />
+        <PasswordField dense ref={confirmRef} label="비밀번호 확인" placeholder="한 번 더 입력" autoComplete="new-password" disabled={busy} {...fieldProps("passwordConfirm")} />
       </div>
 
       {/* 동의 넷(기획서 v2.0 S-27, 목업 regv): 전체 동의, 이용약관(필수), 개인정보(필수), 가격 알림 이메일(선택).
@@ -182,7 +185,7 @@ export function SignUpForm({ next }: { next: string }) {
       </fieldset>
 
       <div className="reveal" style={stagger(6)}>
-        <Button type="submit" size="lg" fullWidth loading={busy} loadingLabel={M.pending} disabled={!complete && !busy} aria-describedby={complete ? undefined : incompleteId}>
+        <Button type="submit" size="lg" className="lg:h-10" fullWidth loading={busy} loadingLabel={M.pending} disabled={!complete && !busy} aria-describedby={complete ? undefined : incompleteId}>
           {M.signUpCta}
         </Button>
         {!complete && !busy && (

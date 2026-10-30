@@ -17,7 +17,7 @@ export function Checkbox({ children, error, className, dense = false, id: idProp
   const errorId = `${id}-error`;
   return (
     <div>
-      <label htmlFor={id} className={cn("group/cb tap flex cursor-pointer items-start gap-2.5 text-sm text-mut", dense ? "py-0.5" : "py-1", className)}>
+      <label htmlFor={id} className={cn("group/cb tap flex cursor-pointer items-start gap-2.5 text-sm text-mut", dense ? "py-0.5 lg:text-[13px]" : "py-1", className)}>
         <input id={id} type="checkbox" className="peer sr-only" checked={checked} aria-invalid={Boolean(error) || undefined} aria-describedby={error ? errorId : undefined} {...input} />
         <span
           aria-hidden
