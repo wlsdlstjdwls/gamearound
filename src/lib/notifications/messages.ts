@@ -6,6 +6,14 @@ export const NOTIFICATION_MESSAGES = {
   signIn: "로그인",
   loading: "불러오는 중이에요",
   alertSettings: "가격 알림 관리",
+  /** 팝오버 맨 아래의 알림함 전체 보기(/notifications) */
+  seeAll: "전체 보기",
+  /** 알림함 전체 화면 */
+  pageTitle: "알림함",
+  pageNote: (total: number, unread: number) => (unread > 0 ? `${total.toLocaleString("ko-KR")}건, 새 알림 ${unread.toLocaleString("ko-KR")}건` : `${total.toLocaleString("ko-KR")}건`),
+  pageEmptyBody: "찜한 게임이 할인하거나 내 글에 댓글이 달리면 여기에 모여요.",
+  pageEmptyAction: "게임 둘러보기",
+  unread: "새 알림",
   comment: (postTitle: string) => `'${postTitle}' 글에 새 댓글이 달렸어요`,
   reply: (postTitle: string) => `'${postTitle}' 글의 내 댓글에 답글이 달렸어요`,
   priceDrop: (gameTitle: string, priceText: string) => `${gameTitle} 가격이 ${priceText}(으)로 내려갔어요`,

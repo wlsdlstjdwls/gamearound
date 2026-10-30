@@ -1,5 +1,5 @@
 // 알림함(기획서 v2.0 M-03). 쌓는 쪽(댓글 액션, 가격 알림 발송, 승인)과 읽는 쪽(헤더 종 팝오버)이 이 파일을 쓴다.
-import { desc } from "drizzle-orm";
+import { and, desc, eq, inArray, isNull, sql } from "drizzle-orm";
 import { getDb } from "@/server/db/client";
 import { createdBy } from "@/server/db/audit";
 import { notifications, type NotificationKind } from "@/server/db/schema";
@@ -49,4 +49,52 @@ export async function listMyNotifications(): Promise<NotificationDto[]> {
     .orderBy(desc(notifications.createdAt))
     .limit(NOTIFICATION_LIST_LIMIT);
   return rows.map((r) => ({ id: r.id, kind: r.kind, body: r.body, link: r.link, createdAt: r.createdAt, read: r.readAt !== null }));
+}
+
+/** 알림함 전체 보기(/notifications) 한 쪽의 줄 수. 하루 몇 통 오는 화면이라 넉넉히 펴고 쪽을 넘긴다 */
+export const NOTIFICATION_PAGE_SIZE = 30;
+
+export type NotificationPage = { items: NotificationDto[]; total: number; unread: number };
+
+/**
+ * 알림함 한 쪽(2026-10-30). 팝오버(listMyNotifications)는 최근 20건만 보여 주고 그보다 오래된 알림은 읽을 자리가 없었다.
+ * 줄, 총수, 안 읽은 수를 한 왕복에 받는다 — 셋을 따로 물으면 Neon 왕복이 셋 줄을 선다(neon-roundtrip-cost)
+ */
+export async function listMyNotificationsPage(page: number): Promise<NotificationPage> {
+  const owner = await ownedByCurrentSession(notifications.userId);
+  if (!owner) return { items: [], total: 0, unread: 0 };
+  const rows = await getDb()
+    .select({
+      id: notifications.id,
+      kind: notifications.kind,
+      body: notifications.body,
+      link: notifications.link,
+      createdAt: notifications.createdAt,
+      readAt: notifications.readAt,
+      total: sql<number>`count(*) over ()::int`,
+      unread: sql<number>`(count(*) filter (where ${notifications.readAt} is null) over ())::int`,
+    })
+    .from(notifications)
+    .where(owner)
+    // 같은 시각에 쌓인 줄(한 크론이 한꺼번에 쓴 알림)도 쪽을 넘길 때 순서가 흔들리지 않게 id 로 한 번 더 줄 세운다
+    .orderBy(desc(notifications.createdAt), desc(notifications.id))
+    .offset((Math.max(page, 1) - 1) * NOTIFICATION_PAGE_SIZE)
+    .limit(NOTIFICATION_PAGE_SIZE);
+  return {
+    items: rows.map((r) => ({ id: r.id, kind: r.kind, body: r.body, link: r.link, createdAt: r.createdAt, read: r.readAt !== null })),
+    total: rows[0]?.total ?? 0,
+    unread: rows[0]?.unread ?? 0,
+  };
+}
+
+/**
+ * 화면에 편 알림을 읽은 것으로 친다. 화면이 응답을 보낸 뒤(after) 부른다 — 이번 화면은 "새 알림" 표시를 그대로 보여 준다.
+ * 사람은 부르는 쪽이 넘긴다: after 안에서는 쿠키를 못 읽어 세션 서브질의(ownedByCurrentSession)를 쓸 수 없다
+ */
+export async function markNotificationsRead(userId: string, ids: string[]): Promise<void> {
+  if (ids.length === 0) return;
+  await getDb()
+    .update(notifications)
+    .set({ readAt: sql`now()`, updatedAt: sql`now()`, updatedSource: "user", updatedBy: userId })
+    .where(and(eq(notifications.userId, userId), inArray(notifications.id, ids), isNull(notifications.readAt)));
 }

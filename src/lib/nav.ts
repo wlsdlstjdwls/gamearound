@@ -134,6 +134,8 @@ export const ACCOUNT_SECTION: NavSection = {
     { label: "내 활동", href: ROUTES.me },
     { label: "찜 목록", href: ROUTES.wishlist },
     { label: "가격 알림", href: ROUTES.alerts },
+    // 받은 알림 전부(2026-10-30). 가격 알림은 "무엇을 받을지", 알림함은 "무엇을 받았나" 라 칸을 가른다
+    { label: "알림함", href: ROUTES.notifications },
     { label: "설정", href: ROUTES.settings },
   ],
 };

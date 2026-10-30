@@ -21,6 +21,8 @@ export const ROUTES = {
   me: "/me",
   apiAvatarUpload: "/api/me/avatar/upload",
   alerts: "/alerts",
+  /** 알림함 전체(2026-10-30). 머리 종 팝오버는 최근 20건만 펴서 그보다 오래된 알림이 읽을 자리가 여기다 */
+  notifications: "/notifications",
   settings: "/settings",
   /**
    * 첫 로그인 온보딩. /welcome 은 재개 지점으로 넘기기만 하고, 실제 화면은 /welcome/<단계> 다.
@@ -354,4 +356,9 @@ export function adminTaskPath(id: string): string {
 /** 관리자 게임 고치기 화면. 승인 화면 둘(스토어매칭, 상품 매핑)이 상세에서 이 주소로 건너간다 */
 export function adminGamePath(id: string): string {
   return `/admin/games/${encodeURIComponent(id)}`;
+}
+
+/** 알림함 한 쪽. 1쪽은 주소에 쪽 번호를 붙이지 않는다 — 종 팝오버의 "전체 보기" 와 내 정보 띠가 같은 주소를 연다 */
+export function notificationsPath(page = 1): string {
+  return page > 1 ? `${ROUTES.notifications}?page=${page}` : ROUTES.notifications;
 }

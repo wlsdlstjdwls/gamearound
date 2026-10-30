@@ -1,6 +1,6 @@
 "use client";
 // 헤더 종 아이콘 + 알림 팝오버(기획서 v2.0 M-03). 누르면 최근 알림(가격 하락, 내 글의 새 댓글, 등록 승인)을 편다.
-// 바깥 누름(mousedown + touchstart), Esc 로 닫힌다. 읽음 표시는 후속이다(기획서 M-03) — 지금은 목록만 보여 준다.
+// 바깥 누름(mousedown + touchstart), Esc 로 닫힌다. 읽음 처리는 알림함 전체 화면(/notifications)이 편 줄에 한다 — 팝오버는 목록만 보여 준다.
 // 목록은 열 때마다 묻는다: 헤더는 모든 화면에 서서, 마운트마다 물으면 화면 이동마다 DB 왕복이 하나씩 붙는다.
 import Link from "next/link";
 import { usePathname } from "next/navigation";
@@ -129,9 +129,15 @@ export function NotificationBell({ placement = "header" }: { placement?: "header
               })}
             </ul>
           )}
-          <Link href={ROUTES.alerts} onClick={() => setOpen(false)} className="block border-t border-line-soft px-4 py-3 text-center text-[13px] font-semibold text-acc hover:bg-surface-2">
-            {M.alertSettings}
-          </Link>
+          {/* 바닥 두 칸: 받은 것 전부(알림함)와 받을 것 고르기(가격 알림). 팝오버는 최근 20건뿐이라 그 뒤를 읽을 길이 첫째다 */}
+          <div className="grid grid-cols-2 divide-x divide-line-soft border-t border-line-soft">
+            <Link href={ROUTES.notifications} onClick={() => setOpen(false)} className="px-4 py-3 text-center text-[13px] font-semibold text-acc hover:bg-surface-2">
+              {M.seeAll}
+            </Link>
+            <Link href={ROUTES.alerts} onClick={() => setOpen(false)} className="px-4 py-3 text-center text-[13px] font-semibold text-mut hover:bg-surface-2 hover:text-ink">
+              {M.alertSettings}
+            </Link>
+          </div>
         </div>
       )}
     </div>

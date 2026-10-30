@@ -35,6 +35,7 @@ export const ROBOTS_DISALLOW: readonly string[] = [
   ROUTES.settings,
   ROUTES.wishlist,
   ROUTES.alerts,
+  ROUTES.notifications,
   ROUTES.welcome,
   ROUTES.signIn,
   ROUTES.signUp,
