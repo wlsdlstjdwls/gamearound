@@ -19,6 +19,7 @@ import { notFound } from "next/navigation";
 import { Suspense } from "react";
 import { Comments } from "@/components/community/post-interactions";
 import { DeleteIndiePost } from "@/components/indie/delete-post";
+import { IndieOwnerBar } from "@/components/indie/owner-bar";
 import { IndieDetailHero } from "@/components/indie/detail-hero";
 import { MakerBadge } from "@/components/membership/maker-badge";
 import { IndieFollowButton } from "@/components/indie/follow-button";
@@ -27,7 +28,7 @@ import { IndieRelatedNews } from "@/components/indie/related-news";
 import { getIndieMonthRank, getOpenPlaytest, listIndieFameHistory, listIndieComments, recordIndieView } from "@/server/services/indie";
 import { PlaytestApply } from "@/components/indie/playtest-apply";
 import { PLAYTEST_MESSAGES } from "@/lib/indie/playtest-messages";
-import { addIndieCommentAction } from "@/app/(public)/indie/actions";
+import { addIndieCommentAction, deleteIndieCommentAction, updateIndieCommentAction } from "@/app/(public)/indie/actions";
 import { primaryPlayLink } from "@/lib/indie/promo";
 import { IndieReportButton } from "@/components/indie/report-button";
 import { FadeImage } from "@/components/ui/fade-image";
@@ -39,8 +40,7 @@ import { INDIE_FROM_PARAM, parseIndieFrom, type IndieFrom } from "@/lib/indie/qu
 import { classifyTraffic } from "@/lib/indie/traffic";
 import { headers } from "next/headers";
 import { firstParam } from "@/lib/games-query";
-import { indieBoostPath, indieEditPath, indieOutPath, indiePath, indiePlaytestPath } from "@/lib/routes";
-import { PLANS_MESSAGES } from "@/lib/payments/plans-messages";
+import { indieEditPath, indieOutPath, indiePath } from "@/lib/routes";
 import { decodeSlugParam } from "@/lib/slug";
 import { getIndiePostBySlug } from "@/server/services/indie";
 import { getCurrentUser } from "@/server/services/users";
@@ -135,6 +135,9 @@ export default async function IndieDetailPage({ params, searchParams }: Props) {
         </div>
       )}
 
+      {/* 내 게임 띠 — 성적과 할 일(수정, 통계, 플레이테스트, 광고)을 머리 판 위에 모은다(components/indie/owner-bar). 관리자에게는 안 선다 */}
+      {isOwner && <IndieOwnerBar id={post.id} live={live} rank={fameRank} views={post.viewCount} likes={post.likeCount} comments={comments.length} />}
+
       <IndieDetailHero post={post} links={otherLinks} play={play} fameRank={fameRank} fameHistory={fameHistory} />
 
       <div className="grid items-start gap-6 lg:grid-cols-[minmax(0,1fr)_320px]">
@@ -225,7 +228,7 @@ export default async function IndieDetailPage({ params, searchParams }: Props) {
           {/* 플레이한 사람의 말이 쌓이는 곳(기획서 3장 2번). 게시판 댓글 부품 그대로, 받는 액션만 인디 글 것이다 */}
           {live && (
             <div className={sectionCardClass()}>
-              <Comments postId={post.id} initial={comments} addAction={addIndieCommentAction} />
+              <Comments postId={post.id} initial={comments} addAction={addIndieCommentAction} mine={{ edit: updateIndieCommentAction, remove: deleteIndieCommentAction }} />
             </div>
           )}
         </div>
@@ -261,18 +264,8 @@ export default async function IndieDetailPage({ params, searchParams }: Props) {
           {live && !isOwner && <IndieFollowButton developerUserId={post.authorUserId} />}
 
           <div className="flex flex-wrap items-center justify-end gap-3 border-t border-line pt-3 text-[12.5px]">
-            {/* 내 게임에 광고 걸기 — 광고, 멤버십 메뉴 칸 대신 내가 보는 내 게임 화면에 둔다(10-28) */}
-            {isOwner && live && (
-              <Link href={indieBoostPath(post.id)} className="tap inline-flex items-center font-bold text-acc hover:underline">
-                {PLANS_MESSAGES.nudgeBoost}
-              </Link>
-            )}
-            {isOwner && live && (
-              <Link href={indiePlaytestPath(post.id)} className="tap inline-flex items-center text-acc hover:underline">
-                {PLAYTEST_MESSAGES.listTitle}
-              </Link>
-            )}
-            {canEdit && (
+            {/* 글쓴이의 광고, 플레이테스트, 수정 입구는 맨 위 내 게임 띠로 옮겼다(2026-10-30). 여기엔 관리자의 고치기만 남는다 */}
+            {canEdit && !isOwner && (
               <Link href={indieEditPath(post.id)} className="tap inline-flex items-center text-acc hover:underline">
                 {M.edit}
               </Link>

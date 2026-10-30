@@ -6,6 +6,7 @@
 // 공개 화면은 "published 이고 커버가 있는 글" 만 본다. 커버 없는 카드는 회색 칸이라 목록이 고장 나 보인다
 // (홈 노출 체크리스트: 커버 필수). 상세는 커버가 없어도 열린다 — 글쓴이가 링크를 먼저 퍼뜨릴 수 있다.
 import "server-only";
+import { cache } from "react";
 import { makerActiveSql } from "@/server/services/membership/read";
 import { and, asc, count, desc, eq, ilike, inArray, isNotNull, or, sql } from "drizzle-orm";
 import { getDb } from "@/server/db/client";
@@ -127,9 +128,15 @@ export async function listIndieForHome(): Promise<IndieCardDto[]> {
   return cards.length < INDIE_HOME_MIN ? [] : cards;
 }
 
-/** 상세. 숨긴 글은 글쓴이와 관리자만 본다 — 그 판단은 화면이 viewer 로 한다 */
-export async function getIndiePostBySlug(slug: string): Promise<IndieDetailDto | null> {
-  const rows = await getDb()
+/**
+ * 상세. 숨긴 글은 글쓴이와 관리자만 본다 — 그 판단은 화면이 viewer 로 한다.
+ * cache(): 상세의 generateMetadata 와 화면이 같은 요청 안에서 둘 다 부른다 — 감싸지 않으면 질의가 두 벌 나갔다(2026-10-30 쿼리 점검).
+ * 그림은 글 id 를 기다리지 않고 slug 로 나란히 받는다(왕복 2 → 1)
+ */
+export const getIndiePostBySlug = cache(async (slug: string): Promise<IndieDetailDto | null> => {
+  const db = getDb();
+  const [rows, imageRows] = await Promise.all([
+    db
     .select({
       post: indiePosts,
       gameSlug: games.slug,
@@ -140,11 +147,18 @@ export async function getIndiePostBySlug(slug: string): Promise<IndieDetailDto |
     .from(indiePosts)
     .leftJoin(games, eq(games.id, indiePosts.gameId))
     .where(eq(indiePosts.slug, slug))
-    .limit(1);
+    .limit(1),
+    db
+      .select({ id: indiePostImages.id, url: indiePostImages.url, width: indiePostImages.width, height: indiePostImages.height })
+      .from(indiePostImages)
+      .innerJoin(indiePosts, eq(indiePosts.id, indiePostImages.postId))
+      .where(eq(indiePosts.slug, slug))
+      .orderBy(asc(indiePostImages.sort), asc(indiePostImages.createdAt)),
+  ]);
   const row = rows[0];
   if (!row) return null;
   const p = row.post;
-  const images = (await imagesFor([p.id])).get(p.id) ?? [];
+  const images: IndieImageDto[] = imageRows;
   return {
     id: p.id,
     slug: p.slug,
@@ -174,10 +188,11 @@ export async function getIndiePostBySlug(slug: string): Promise<IndieDetailDto |
     review: p.review,
     reviewReason: p.reviewReason,
     likeCount: p.likeCount,
+    viewCount: p.viewCount,
     createdAt: p.createdAt.toISOString(),
     authorIsMaker: row.authorIsMaker,
   };
-}
+});
 
 /** 고치기 화면. id 로 찾는다(라우트 indieEditPath 주석) */
 export async function getIndiePostSlugById(id: string): Promise<string | null> {

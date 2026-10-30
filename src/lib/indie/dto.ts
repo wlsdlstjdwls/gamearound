@@ -50,6 +50,8 @@ export type IndieDetailDto = {
   review: IndieReview;
   reviewReason: string | null;
   likeCount: number;
+  /** 누적 조회. 상세에서는 글쓴이의 내 게임 띠(components/indie/owner-bar)가 쓴다 */
+  viewCount: number;
   createdAt: string;
   /** 개발자가 메이커 멤버십 회원인지(메이커 꼬리표) */
   authorIsMaker: boolean;
