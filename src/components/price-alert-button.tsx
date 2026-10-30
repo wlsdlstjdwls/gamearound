@@ -7,11 +7,17 @@
 //     출시 예정 게임의 "출시 알림 받기" 로 열면(kind="release") 제목과 안내가 출시 쪽 말로 바뀌고 가격 칸을 숨긴다 —
 //     아직 팔지 않는 값을 적으면 "지금 그 값에 판다" 로 읽힌다.
 // 목표가, 할인율 같은 세밀한 조건은 알림 화면의 폼이 맡는다 — 팝업은 "내려가면 알려 줘" 한 가지다.
+//
+// stateful(상세 히어로만): 걸린 알림을 마운트 뒤 물어 단추 색으로 말한다(2026-10-30 사용자 "가격 알림도 색 구분").
+// 안 걸림은 채운 파랑(이 화면에서 가장 먼저 누를 곳, 같은 날 사용자 "눈에 안 띈다" — 옅은 파랑은 회색 찜 단추 옆에서 묻혔다),
+// 받는 중은 옅은 파랑에 채운 종(이미 켜 둔 것이라 덜 외친다), 멈춤은 회색 테두리. 옆 찜 단추는 테두리형이라 나란히 서도 갈린다. 머리띠, 플랫폼 줄의 같은 단추는 묻지 않는다(한 화면에 같은 질문이 여러 번 나간다).
 import Link from "next/link";
-import { useRef, useState, useTransition } from "react";
+import { useEffect, useRef, useState, useTransition } from "react";
 import { useLoginGate, useResume } from "@/components/auth/login-gate";
+import { useSession } from "@/components/auth/session-provider";
 import { Button, buttonClass, type ButtonSize, type ButtonVariant } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
+import { BellIcon } from "@/components/ui/icons";
 import { Sheet } from "@/components/ui/sheet";
 import { useToast } from "@/components/ui/toast";
 import { deleteAlertAction, getGameAlertAction, saveGameAlertAction } from "@/app/(user)/alerts/actions";
@@ -24,6 +30,10 @@ import type { Currency, Platform } from "@/server/db/schema";
 
 export type AlertPlatformOption = { platform: Platform; currentPrice: number | null; currency: Currency };
 type Channel = "web" | "email";
+type AlertState = "none" | "on" | "paused";
+
+/** stateful 단추의 상태별 모양. cn 은 겹친 유틸을 걸러 주지 않아 클래스를 덧대지 않고 변형째 고른다 */
+const STATE_VARIANT: Record<AlertState, ButtonVariant> = { none: "accent", on: "tint", paused: "secondary" };
 /** 팝업이 무슨 알림을 거는가. 저장 규칙은 같고 말만 다르다 */
 export type AlertKind = keyof typeof M.title;
 
@@ -42,6 +52,7 @@ export function PriceAlertButton({
   slot,
   kind = "price",
   gameTitle,
+  stateful = false,
 }: {
   gameId: string;
   gameSlug: string;
@@ -55,7 +66,10 @@ export function PriceAlertButton({
   size?: ButtonSize;
   /** 한 화면에 이 버튼이 여럿일 때 로그인 뒤 "누른 그 버튼" 의 팝업만 이어 열리게 가르는 꼬리표 */
   slot?: string;
+  /** 걸린 알림을 물어 단추 색, 이름으로 말한다(위 머리 주석). 한 화면에 하나만 켠다 */
+  stateful?: boolean;
 }) {
+  const { user } = useSession();
   const gate = useLoginGate();
   const toast = useToast();
   const [open, setOpen] = useState(false);
@@ -66,10 +80,24 @@ export function PriceAlertButton({
   /** 이 게임에 이미 걸린 알림 행. 비어 있으면 "알림 삭제" 를 세우지 않는다 */
   const [existingIds, setExistingIds] = useState<string[]>([]);
   const [, startRemove] = useTransition();
+  const [state, setState] = useState<AlertState>("none");
   const action = slot ? `alert:${gameId}:${slot}` : `alert:${gameId}`;
   const all = options.map((o) => o.platform);
   /** 팝업을 연 뒤 사람이 칸을 건드렸는가 — 그 뒤에 도착한 기존 알림 값이 고른 것을 덮지 않게 한다 */
   const touched = useRef(false);
+
+  useEffect(() => {
+    if (!stateful || !user) return;
+    let alive = true;
+    getGameAlertAction(gameId, options.map((o) => o.platform)).then((cur) => {
+      if (alive) setState(cur ? (cur.active ? "on" : "paused") : "none");
+    });
+    return () => {
+      alive = false;
+    };
+    // options 는 렌더마다 새 배열이라 기준에서 뺀다 — 게임이 바뀔 때만 다시 묻는다
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [stateful, user, gameId]);
 
   // 새 알림이면 아무것도 고르지 않은 채로 연다(목업 M-02). 전에는 전부 고른 채로 열었는데, 그러면 저장만 눌러도
   // 사람이 고르지 않은 플랫폼까지 알림이 걸린다. 이미 걸린 알림이 있으면 그 값으로 채운다
@@ -82,6 +110,7 @@ export function PriceAlertButton({
     setOpen(true);
     const current = await getGameAlertAction(gameId, all);
     setExistingIds(current?.ids ?? []);
+    setState(current ? (current.active ? "on" : "paused") : "none");
     if (current && !touched.current) {
       setPicked(current.platforms);
       setChannel(current.channel);
@@ -98,6 +127,7 @@ export function PriceAlertButton({
       const r = await saveGameAlertAction({ gameId, platforms: picked, channel });
       if (!r?.ok) return setError(r && !r.ok ? r.error : M.failed);
       setOpen(false);
+      setState("on");
       toast(M.saved[kind]);
     });
   // 누른 순간 닫고 토스트부터 띄운다(AGENTS §6). 지우기는 행마다 기존 액션을 부른다 — 하나라도 실패하면
@@ -106,6 +136,7 @@ export function PriceAlertButton({
     const ids = existingIds;
     if (ids.length === 0) return;
     setOpen(false);
+    setState("none");
     toast(M.removed);
     startRemove(async () => {
       const results = await Promise.all(ids.map((id) => deleteAlertAction(id)));
@@ -117,8 +148,20 @@ export function PriceAlertButton({
 
   return (
     <>
-      <button type="button" onClick={() => gate(action, () => void openPopup())} className={buttonClass({ variant, size, className })}>
-        {label}
+      <button
+        type="button"
+        onClick={() => gate(action, () => void openPopup())}
+        data-alert={stateful ? state : undefined}
+        className={buttonClass({ variant: stateful ? STATE_VARIANT[state] : variant, size, className: cn(stateful && "transition-colors duration-base", className) })}
+      >
+        {stateful && state !== "none" ? (
+          <>
+            <BellIcon size={17} className={state === "on" ? "fill-current" : undefined} />
+            {M.state[state]}
+          </>
+        ) : (
+          label
+        )}
       </button>
       <Sheet open={open} onOpenChange={setOpen} title={M.title[kind]}>
         <div className="flex flex-col gap-5 sm:w-[400px]">

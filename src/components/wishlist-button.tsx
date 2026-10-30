@@ -8,11 +8,11 @@ import { useEffect, useOptimistic, useState, useTransition } from "react";
 import { useLoginGate, useResume } from "@/components/auth/login-gate";
 import { useSession } from "@/components/auth/session-provider";
 import { buttonClass } from "@/components/ui/button";
+import { askConfirm } from "@/components/ui/confirm-dialog";
 import { HeartIcon } from "@/components/ui/icons";
 import { useToast } from "@/components/ui/toast";
 import { isWishedAction, removeFromWishlistAction, toggleWishlistAction } from "@/app/(user)/wishlist/actions";
 import { WISHLIST_MESSAGES as M } from "@/lib/wishlist/messages";
-import { cn } from "@/lib/cn";
 
 export function WishlistButton({ gameId, className }: { gameId: string; className?: string }) {
   const { user } = useSession();
@@ -56,7 +56,7 @@ export function WishlistButton({ gameId, className }: { gameId: string; classNam
       type="button"
       aria-pressed={shown}
       onClick={() => gate(action, () => toggle(!wished))}
-      className={buttonClass({ variant: "secondary", size: "lg", className: cn(shown && "border-acc text-acc", className) })}
+      className={buttonClass({ variant: shown ? "picked" : "secondary", size: "lg", className })}
     >
       <HeartIcon size={17} className={shown ? "animate-pop fill-current" : undefined} />
       {shown ? M.on : M.off}
@@ -64,8 +64,8 @@ export function WishlistButton({ gameId, className }: { gameId: string; classNam
   );
 }
 
-/** /wishlist 목록 카드의 삭제 버튼 — 카드 우상단 ✕ */
-export function WishlistRemoveButton({ gameId }: { gameId: string }) {
+/** /wishlist 목록 카드의 삭제 버튼 — 카드 우상단 ✕. 누르면 askConfirm 으로 한 번 묻는다(2026-10-30 사용자) */
+export function WishlistRemoveButton({ gameId, title }: { gameId: string; title: string }) {
   const [error, setError] = useState<string | null>(null);
   const [pending, start] = useTransition();
   return (
@@ -75,13 +75,19 @@ export function WishlistRemoveButton({ gameId }: { gameId: string }) {
         type="button"
         disabled={pending}
         aria-label={M.removeLabel}
-        onClick={() =>
+        onClick={async () => {
+          const ok = await askConfirm(M.removeConfirm(title), {
+            title: M.removeConfirmTitle,
+            confirmLabel: M.removeConfirmLabel,
+            tone: "danger",
+          });
+          if (!ok) return;
           start(async () => {
             setError(null);
             const r = await removeFromWishlistAction(gameId);
             if (!r.ok) setError(r.error);
-          })
-        }
+          });
+        }}
         className="press flex h-6 w-6 items-center justify-center rounded-md text-[12px] text-dim transition-colors hover:bg-surface-2 hover:text-ink disabled:opacity-60"
       >
         {pending ? "…" : "✕"}

@@ -170,7 +170,11 @@ export function expandPlatformValues(values: string[]): Platform[] {
 export const DEVICES = ["pc", "playstation", "xbox", "switch"] as const;
 export type Device = (typeof DEVICES)[number];
 
-export const DEVICE_LABEL: Record<Device, string> = { pc: "PC", playstation: "PlayStation", xbox: "Xbox", switch: "Switch" };
+/**
+ * 기기 이름은 이 표 하나가 정한다 — 목록 필터 칩(game-filters/constants), 카드, 찜 카드가 전부 여기서 읽는다.
+ * 2026-10-30(사용자): 필터는 "Nintendo Switch", 카드는 "Switch" 로 이름이 갈려 있어 기획서 v2.0 S-02 의 이름으로 통일했다
+ */
+export const DEVICE_LABEL: Record<Device, string> = { pc: "PC", playstation: "PlayStation", xbox: "Xbox", switch: "Nintendo Switch" };
 
 const DEVICE_OF: Record<Platform, Device> = {
   steam: "pc",

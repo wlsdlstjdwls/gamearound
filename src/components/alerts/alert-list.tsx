@@ -20,6 +20,7 @@ import { ImageFallback } from "@/components/ui/image-fallback";
 import { Clamp } from "@/components/ui/tooltip";
 import { Tag } from "@/components/ui/tag";
 import { DiscountBadge } from "@/components/ui/discount";
+import { CheckIcon } from "@/components/ui/icons";
 import { formatPrice } from "@/lib/currency";
 import { formatDate, PLATFORM_LABEL } from "@/lib/format";
 import { ALERT_MESSAGES as M, PRICE_ALERT_MESSAGES, conditionText, gapText } from "@/lib/alerts/messages";
@@ -56,7 +57,7 @@ function ProgressBar({ v, index }: { v: AlertView; index: number }) {
         aria-valuenow={pct}
         className="relative h-1.5 w-full max-w-[240px] overflow-hidden rounded-full bg-surface-2"
       >
-        <span className={cn("bar-grow absolute inset-y-0 left-0 rounded-full", v.status.met ? "bg-ok" : "bg-acc")} style={{ ["--bar-w" as string]: `${pct}%`, ...stagger(index) }} />
+        <span className={cn("bar-grow absolute inset-y-0 left-0 rounded-full", "bg-acc")} style={{ ["--bar-w" as string]: `${pct}%`, ...stagger(index) }} />
       </span>
       {!v.status.met && <span className="shrink-0 text-[11.5px] font-semibold text-mut">{M.progress(pct)}</span>}
     </div>
@@ -68,7 +69,16 @@ function StatusLine({ v }: { v: AlertView }) {
   if (!best || best.currentPrice === null) return <p className="text-[12.5px] text-dim">{M.priceUnknown}</p>;
   return (
     <p className="flex flex-wrap items-center gap-x-2 gap-y-1 text-[12.5px]">
-      {met && <span className="rounded-full bg-ok-soft px-2 py-[3px] text-[11.5px] font-bold leading-none text-ok shadow-[inset_0_0_0_1px_var(--ok-line)]">{M.metLabel}</span>}
+      {/* 조건 충족은 연한 파랑 알약 + 채운 체크(2026-10-30 사용자 "색도 그렇고 맘에 안 든다", 잉크 면은 "너무 어둡다").
+          연두 알약은 개편 뒤 파랑 화면에서 혼자 튀었다. 옆 할인 배지가 채운 파랑이라 이쪽은 연한 면으로 둬서 둘이 갈린다 */}
+      {met && (
+        <span className="inline-flex items-center gap-1 rounded-full bg-acc-soft py-1 pl-1 pr-2 text-[11.5px] font-bold leading-none text-acc shadow-[inset_0_0_0_1px_var(--acc-3)]">
+          <span aria-hidden className="grid size-3.5 place-items-center rounded-full bg-acc text-on-ink">
+            <CheckIcon size={9} strokeWidth={3.5} />
+          </span>
+          {M.metLabel}
+        </span>
+      )}
       <span className="text-mut">{PLATFORM_LABEL[best.platform] ?? best.platform}</span>
       <DiscountBadge pct={best.discountPct} size="sm" />
       <span className="text-[14px] font-extrabold tracking-[-0.02em] text-ink">{formatPrice(best.currentPrice, best.currency)}</span>

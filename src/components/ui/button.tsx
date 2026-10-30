@@ -6,7 +6,7 @@ import type { ComponentProps, ReactNode } from "react";
 import { cn } from "@/lib/cn";
 import { SpinnerIcon } from "@/components/ui/icons";
 
-export type ButtonVariant = "primary" | "accent" | "soft" | "secondary" | "ghost" | "danger";
+export type ButtonVariant = "primary" | "accent" | "tint" | "picked" | "soft" | "secondary" | "ghost" | "danger";
 export type ButtonSize = "sm" | "md" | "lg" | "row";
 
 /*
@@ -22,6 +22,10 @@ const VARIANT: Record<ButtonVariant, string> = {
   primary: "bg-acc text-on-ink font-semibold shadow-1 hover:bg-acc-hover hover:shadow-2",
   /** 브랜드 필 — 그 줄에서 실제로 누를 자리가 하나일 때(표의 최저가 행, 머리바의 알림) */
   accent: "bg-acc text-on-ink font-semibold shadow-1 hover:bg-acc-hover hover:shadow-2",
+  /** 옅은 브랜드 면 — 아직 켜지 않은 "켤 수 있는 것"(걸지 않은 알림). 손이 닿으면 채운 파랑이 되어 켠 모습을 미리 보여 준다 */
+  tint: "bg-acc-soft text-acc font-semibold hover:bg-acc hover:text-on-ink",
+  /** 켜 둔 토글(찜했어요) — 브랜드 테두리와 글자. secondary 에 border-acc 를 덧대면 cn 이 겹친 유틸을 못 걸러 회색 글자가 이겼다(2026-10-30) */
+  picked: "border border-acc bg-transparent text-acc font-semibold hover:bg-acc-soft",
   /**
    * 채운 보조 — 표 안에 여러 개가 서는 자리.
    * 2026-09-22 2차(사용자: "버튼에 색이나 테두리 주는 게 낫지 않나"): 면 + 링만으로는 여전히

@@ -15,6 +15,7 @@ import { ImageFallback } from "@/components/ui/image-fallback";
 import { Page, PageHead, SectionHead } from "@/components/ui/page";
 import { Clamp } from "@/components/ui/tooltip";
 import { PLATFORM_LABEL } from "@/lib/format";
+import { DEVICE_LABEL, DEVICES, deviceOf } from "@/lib/platform";
 import { gamesHref } from "@/lib/games-query";
 import { collectedAtText, getFreshness } from "@/lib/freshness";
 import { stagger } from "@/lib/motion";
@@ -23,6 +24,7 @@ import { listWishlist, type WishlistItem } from "@/server/services/wishlist";
 import { listAlerts } from "@/server/services/alerts";
 import { listMyIndieWishes } from "@/server/services/indie";
 import { IndieWishes } from "@/components/wishlist/indie-wishes";
+import { StoreMore, type StoreMoreRow } from "@/components/wishlist/store-more";
 import { NavChip, NavPendingScope, PendingRegion } from "@/components/ui/nav-pending";
 import { BellIcon } from "@/components/ui/icons";
 import { RememberPref } from "@/components/remember-pref";
@@ -115,7 +117,8 @@ export default async function WishlistPage({ searchParams }: Props) {
           {sorted.map(({ game }, i) => {
             // "최저" 표시는 같은 통화끼리만 뜻이 있다 — 기준을 lib/currency 한 곳에서만 정한다
             const cheapest = cheapestOf(game.platforms);
-            const pricedCount = game.platforms.filter((p) => p.currentPrice !== null).length;
+            // "최저가" 는 기기 줄끼리 비교할 때만 뜻이 있다 — 값 있는 기기가 하나뿐이면 붙이지 않는다
+            const pricedCount = new Set(game.platforms.filter((p) => p.currentPrice !== null).map((p) => deviceOf(p.platform))).size;
             const title = game.titleKo ?? game.titleEn;
             const stalest = game.platforms.find((p) => getFreshness(p.lastSyncedAt, p.syncStatus) !== "fresh");
             const alert = alertState.get(game.id) ?? "none";
@@ -146,28 +149,54 @@ export default async function WishlistPage({ searchParams }: Props) {
                     <Link href={`/games/${game.slug}`} className="min-w-0 text-[15px] font-extrabold tracking-[-0.025em] text-ink hover:text-acc">
                       <Clamp>{title}</Clamp>
                     </Link>
-                    <WishlistRemoveButton gameId={game.id} />
+                    <WishlistRemoveButton gameId={game.id} title={title} />
                   </div>
 
-                  {game.platforms.length === 0 ? (
-                    <p className="text-[12px] text-dim">플랫폼 가격 정보 없음</p>
-                  ) : (
-                    <ul className="flex flex-col gap-1 text-[12.5px]">
-                      {game.platforms.map((p) => {
-                        const isLowest = cheapest !== null && p.platform === cheapest.platform;
-                        return (
-                          <li key={p.id} className="flex items-baseline gap-2">
-                            <span className="w-[52px] shrink-0 text-dim">{PLATFORM_LABEL[p.platform] ?? p.platform}</span>
-                            <span className={isLowest ? "font-bold text-ink" : "text-ink"}>{formatPrice(p.currentPrice, p.currency)}</span>
-                            <DiscountBadge pct={p.discountPct} size="sm" />
-                            {isLowest && pricedCount > 1 && <span className="text-[11.5px] font-semibold text-mut">최저가</span>}
-                          </li>
-                        );
-                      })}
-                    </ul>
-                  )}
+                  {/* 플랫폼 줄은 게임과 상관없이 기기 갈래 넷(DEVICES)을 같은 순서로 세운다(2026-10-30 사용자 "카드 높이가 다르다").
+                      파는 플랫폼만 그리면 줄 수가 게임마다 달라 카드 키가 들쭉날쭉하다. 스토어 일곱 줄 대신 기기 넷으로 묶은 이유는
+                      찜 카드의 질문이 "내 기기로 얼마인가" 라서다(같은 사용자 지시). 한 기기에 스토어가 여럿이면 가장 싼 줄을 대표로 쓰고
+                      스토어 이름을 작게 붙인다 — 스토어별 값 비교는 상세 가격표가 한다 */}
+                  <ul className="flex flex-col gap-1 text-[12.5px]">
+                    {DEVICES.map((d) => {
+                      const rows = game.platforms.filter((row) => deviceOf(row.platform) === d);
+                      const p = cheapestOf(rows) ?? rows[0];
+                      const isLowest = p !== undefined && p === cheapest;
+                      // 그 기기를 파는 스토어가 둘 이상이면 "+1" 을 붙이고 스토어별 값은 말풍선에 둔다(components/wishlist/store-more).
+                      // 줄에 스토어 이름을 적던 때는 칸이 좁아 "Stea..." 로 잘렸고, Epic 에서도 파는 게임이 Steam 전용으로 읽혔다(2026-10-30 사용자)
+                      const others = p ? rows.filter((row) => row !== p) : [];
+                      // 싼 순서로 세운다. 값이 없는 스토어(가격 확인 중)는 맨 뒤로 간다
+                      const storeRows: StoreMoreRow[] = p
+                        ? [p, ...others.sort((a, b) => (a.currentPrice ?? Infinity) - (b.currentPrice ?? Infinity))].map((row) => ({
+                            store: PLATFORM_LABEL[row.platform] ?? row.platform,
+                            price: formatPrice(row.currentPrice, row.currency),
+                            lowest: row === p,
+                          }))
+                        : [];
+                      return (
+                        // 칸이 270px 까지 좁아져 "최저가" 낱말이 한 줄에 같이 못 선다 — 최저가는 낱말 대신 파랑 굵은 값으로 말한다
+                        <li key={d} className="flex min-w-0 items-baseline gap-1.5 whitespace-nowrap">
+                          <span className="w-[96px] shrink-0 whitespace-nowrap text-dim">{DEVICE_LABEL[d]}</span>
+                          {p ? (
+                            <>
+                              <span className={cn("relative shrink-0", isLowest && pricedCount > 1 ? "font-bold text-acc" : "text-ink")}>
+                                {formatPrice(p.currentPrice, p.currency)}
+                                {isLowest && pricedCount > 1 && <span className="sr-only"> 최저가</span>}
+                              </span>
+                              <DiscountBadge pct={p.discountPct} size="sm" />
+                              {storeRows.length > 1 && <StoreMore device={DEVICE_LABEL[d]} rows={storeRows} />}
+                            </>
+                          ) : (
+                            <span className="text-dim">{WISHLIST_MESSAGES.platformMissing}</span>
+                          )}
+                        </li>
+                      );
+                    })}
+                  </ul>
 
-                  {stalest && <p className="text-[12px] text-warn">{collectedAtText(stalest.lastSyncedAt)} | 스토어에서 확인 권장</p>}
+                  {/* 오래된 값 알림도 자리를 늘 잡아 둔다 — 있는 카드만 한 줄 길어지면 높이가 다시 갈린다 */}
+                  <p className={cn("text-[12px] text-warn", !stalest && "invisible")} aria-hidden={!stalest}>
+                    {stalest ? `${collectedAtText(stalest.lastSyncedAt)} | 스토어에서 확인 권장` : WISHLIST_MESSAGES.platformMissing}
+                  </p>
                   {/* 누르고 싶은 단추로(2026-10-27, 사용자). 카드 바닥 전체 폭, 파랑 면 위 종 — 누르면 채운 파랑으로 바뀐다.
                       받는 중이면 처음부터 채운 파랑, 멈춤이면 회색 테두리라 세 상태가 한눈에 갈린다 */}
                   <Link

@@ -48,8 +48,10 @@ function place(trigger: DOMRect, tip: DOMRect): Pos {
 /**
  * 트리거 요소에 붙일 핸들러와 말풍선 노드를 돌려준다.
  * enabled=false 면 아무 일도 하지 않는다 — 글자가 실제로 잘렸을 때만 켜기 위한 스위치.
+ * content 를 주면 말풍선에 글자 대신 그것을 그린다(줄 맞춘 표처럼 글자로는 정렬이 안 되는 내용, wishlist/store-more).
+ * 그때도 label 은 스크린리더용 같은 뜻의 글자로 넘긴다 — 말풍선은 aria-hidden 이다.
  */
-export function useTooltip<T extends HTMLElement>(label: string, enabled: boolean, openBy: TooltipOpenBy = "press") {
+export function useTooltip<T extends HTMLElement>(label: string, enabled: boolean, openBy: TooltipOpenBy = "press", content?: React.ReactNode) {
   const ref = useRef<T | null>(null);
   const tipRef = useRef<HTMLDivElement | null>(null);
   const timerRef = useRef<number | null>(null);
@@ -179,7 +181,7 @@ export function useTooltip<T extends HTMLElement>(label: string, enabled: boolea
             )}
             style={{ top: pos?.top ?? 0, left: pos?.left ?? 0 }}
           >
-            {label}
+            {content ?? label}
           </div>,
           document.body,
         )

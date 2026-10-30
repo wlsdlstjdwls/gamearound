@@ -85,6 +85,8 @@ export function gapText(gap: { kind: "discount"; pct: number } | { kind: "price"
 /** 상세 화면 가격 알림 팝업(components/price-alert-button, 기획서 v2.0 M-02) */
 export const PRICE_ALERT_MESSAGES = {
   cta: "가격 알림 받기",
+  /** 상세 히어로 단추가 걸린 알림을 말할 때(2026-10-30 사용자 "가격 알림도 색 구분"). 안 걸렸으면 단추가 넘겨받은 이름 그대로다 */
+  state: { on: "알림 받는 중", paused: "알림 멈춤" },
   /** 출시 예정 게임의 "출시 알림 받기" 로 열면 release 다(목업 alm 의 g.up) */
   title: { price: "가격 알림 설정", release: "출시 알림 설정" },
   lead: { price: PRICE_ALERT_LEAD, release: "고른 플랫폼에서 출시되면 알려 드려요" },

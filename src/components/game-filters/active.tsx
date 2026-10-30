@@ -29,7 +29,7 @@ import { GAMES_FILTER_MESSAGES, RIG_FILTER_MESSAGES } from "@/lib/games/messages
 import { STEAM_SALES } from "@/lib/sales/calendar";
 import { runningSaleEndsAt } from "@/lib/sales/detect";
 import { RUNNING_SALE_MESSAGES } from "@/lib/sales/messages";
-import { FILTER_LABEL, KEEP_SCROLL } from "./constants";
+import { FILTER_LABEL, KEEP_SCROLL, LIST_PLATFORM_CHOICES } from "./constants";
 import { useFilterClick, useFilterQuery } from "./optimistic";
 import { cn } from "@/lib/cn";
 import Link from "next/link";
@@ -51,7 +51,21 @@ export function activeFilters(filter: GamesQuery): ActiveFilter[] {
   const href = (patch: Partial<GamesQuery>) => gamesHref(filter, { ...patch, page: 1 });
   const list: ActiveFilter[] = [];
 
+  // 막대에서 기기 하나(Nintendo Switch = switch, switch2)를 고르면 주소엔 값이 여럿 실린다. 낱개로 칩을 세우면
+  // 고른 적 없는 "Switch", "Switch 2" 가 따로 서서 막대의 이름과 갈린다(2026-10-30 사용자 "이름 통일") — 기기 하나로 묶어 보여 준다
+  const grouped = new Set<string>();
+  for (const c of LIST_PLATFORM_CHOICES) {
+    const values: readonly string[] = c.values;
+    if (values.length < 2 || !values.every((v) => picked.includes(v))) continue;
+    values.forEach((v) => grouped.add(v));
+    list.push({
+      key: `platform:${values.join(",")}`,
+      label: c.label,
+      href: href({ platform: joinPlatformValues(picked.filter((p) => !values.includes(p)), PLATFORM_VALUE_ORDER) }),
+    });
+  }
   for (const v of picked) {
+    if (grouped.has(v)) continue;
     list.push({
       key: `platform:${v}`,
       label: platformLabel(v),

@@ -1,6 +1,7 @@
 // 필터 조각들이 같이 쓰는 값. 클라이언트 조각(groups, active)에 두지 않는 이유:
 // 서버 컴포넌트가 "use client" 파일의 문자열 상수를 가져오면 값이 아니라 클라이언트 참조가 와서
 // className 이 통째로 빠진다(2026-10-12 푸터에서 실제로 났던 사고, site-footer 주석).
+import { DEVICE_LABEL } from "@/lib/platform";
 
 /**
  * 필터를 고르는 일은 "다른 곳으로 가는" 일이 아니라 "보던 자리에서 거르는" 일이다.
@@ -20,12 +21,13 @@ export const FILTER_LABEL = "text-[13.5px] font-bold tracking-[-0.02em] text-ink
  * Xbox 는 세대 이름 없이 "Xbox" 로만 쓴다(2026-10-28 사용자) — 값 xbox 가 이미 세대를 묶고, 다른 칸(PlayStation)도 세대를 안 쓴다.
  * 값은 기존 주소 값 그대로다 — PC 는 갈래(pc), 나머지는 같은 기기의 세대 묶음(lib/platform 의 PLATFORM_BRANDS)이다.
  * 갈래 "콘솔" 은 넷에 없다. 주소로 들어오면 막대가 그 값을 한 칸 더 세워 보여 준다(bar 주석).
+ * 이름은 카드와 같은 DEVICE_LABEL 에서 읽는다(2026-10-30) — 따로 적어 두었더니 필터와 카드의 이름이 갈렸다.
  */
 export const LIST_PLATFORM_CHOICES = [
-  { label: "PC", values: ["pc"] },
-  { label: "PlayStation", values: ["ps5", "ps4"] },
-  { label: "Xbox", values: ["xbox"] },
-  { label: "Nintendo Switch", values: ["switch", "switch2"] },
+  { label: DEVICE_LABEL.pc, values: ["pc"] },
+  { label: DEVICE_LABEL.playstation, values: ["ps5", "ps4"] },
+  { label: DEVICE_LABEL.xbox, values: ["xbox"] },
+  { label: DEVICE_LABEL.switch, values: ["switch", "switch2"] },
 ] as const;
 
 /** 정렬 선택지(기획서 v2.0 S-02, S-04 의 "정렬 옵션"). 앞이 기본값이다 — defaultSortFor 와 같은 순서여야 한다 */

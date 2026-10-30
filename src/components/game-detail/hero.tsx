@@ -186,6 +186,7 @@ export function DetailHero({
               kind={unreleased ? "release" : "price"}
               options={alertOptions}
               variant="secondary"
+              stateful
               label={
                 <>
                   <BellIcon size={17} />

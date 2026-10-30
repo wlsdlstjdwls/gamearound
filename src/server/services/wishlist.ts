@@ -7,12 +7,21 @@
 //  - toggleWishlistBySlug(slug): 카드 하트 토글
 import { and, desc, eq, inArray } from "drizzle-orm";
 import { getDb } from "@/server/db/client";
+import { keepVisiblePlatforms } from "@/server/db/visibility";
 import { games, wishlists, type gamePlatforms } from "@/server/db/schema";
 import { getCurrentUser, requireUser } from "@/server/services/users";
 import { ownedByCurrentSession } from "@/server/auth/session";
 import { AUTH_MESSAGES } from "@/lib/auth/messages";
 
-export type WishlistGame = typeof games.$inferSelect & { platforms: (typeof gamePlatforms.$inferSelect)[] };
+/**
+ * 찜 카드가 쓰는 칸만(2026-10-30 쿼리 점검). 전에는 게임 행 전체(설명 본문 포함)와 플랫폼 행 전체를 읽었다.
+ * 칸을 더 쓰려면 아래 WISH_GAME_COLUMNS, WISH_PLATFORM_COLUMNS 에 같이 더한다
+ */
+const WISH_GAME_COLUMNS = { id: true, slug: true, titleKo: true, titleEn: true, coverUrl: true } as const;
+const WISH_PLATFORM_COLUMNS = { id: true, platform: true, region: true, storeUrl: true, currentPrice: true, currency: true, discountPct: true, lastSyncedAt: true, syncStatus: true } as const;
+type GameRow = typeof games.$inferSelect;
+type PlatformRow = typeof gamePlatforms.$inferSelect;
+export type WishlistGame = Pick<GameRow, keyof typeof WISH_GAME_COLUMNS> & { platforms: Pick<PlatformRow, keyof typeof WISH_PLATFORM_COLUMNS>[] };
 export type WishlistItem = { gameId: string; createdAt: Date; game: WishlistGame };
 
 export async function isInWishlist(gameId: string): Promise<boolean> {
@@ -57,9 +66,14 @@ export async function listWishlist(): Promise<WishlistItem[]> {
   const rows = await getDb().query.wishlists.findMany({
     where: owner,
     orderBy: [desc(wishlists.createdAt)],
-    with: { game: { with: { platforms: true } } },
+    with: { game: { columns: WISH_GAME_COLUMNS, with: { platforms: { columns: WISH_PLATFORM_COLUMNS } } } },
   });
-  return rows.map((r) => ({ gameId: r.gameId, createdAt: r.createdAt, game: r.game }));
+  // 숨긴 지역(일본) 행이 섞이면 카드가 플랫폼별 한 줄로 설 때 엔화 값이 한국 줄을 가로챈다 — 다른 화면과 같은 거름망을 쓴다
+  return rows.map((r) => ({
+    gameId: r.gameId,
+    createdAt: r.createdAt,
+    game: { ...r.game, platforms: keepVisiblePlatforms(r.game.platforms) },
+  }));
 }
 
 /** 한 번에 묻는 카드 수 상한. 화면 하나의 카드(목록 24장 + 홈 줄들)를 넉넉히 넘는다 — 아무 배열이나 받지 않으려는 문턱이다 */
