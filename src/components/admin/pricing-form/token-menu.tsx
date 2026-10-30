@@ -4,7 +4,7 @@
 // 앞 판은 문구 판 맨 위에 단추 상자 하나를 두고 "칸을 누른 뒤 단추를 누르면 그 자리에 들어간다" 였다. 칸과 단추가 멀어
 // 아래쪽 칸을 고치다 위로 올라가야 했고, 어느 칸에 들어갈지가 눈에 안 보였다. 이제 넣는 길이 칸 안에 둘이다:
 //   1. 칸 오른쪽 끝 "값 넣기" 단추 — 누르면 그 칸 바로 밑에 고르기 목록이 뜬다. 칸을 먼저 누르지 않았으면 칸 끝에 넣는다.
-//   2. 칸에서 `[` 를 치면 같은 목록이 뜬다 — 화면 꼴 자리표시가 [절약 금액] 이라 치는 손이 이미 그 글자로 시작한다.
+//   2. 칸에서 `{` 를 치면 같은 목록이 뜬다 — 화면 꼴 자리표시가 {절약금액} 이라 치는 손이 이미 그 글자로 시작한다(2026-10-30 치환변수 {} 통일).
 //      방향키로 고르고 엔터로 넣는다. 그대로 계속 치면 목록이 닫히고 친 `[` 는 글자로 남는다.
 // 넣기는 브라우저의 글 넣기(insertText)라 Ctrl+Z 로 되돌린다(copy-section 의 앞 결정과 같다).
 import { useEffect, useId, useRef, useState, type KeyboardEvent, type ReactNode } from "react";
@@ -69,7 +69,7 @@ export function TokenMenu({ fieldId, write, children }: { fieldId: string; write
     if (!el || !token) return;
     const caret = el.selectionStart ?? el.value.length;
     const end = el.selectionEnd ?? caret;
-    const fromBracket = bracket && caret > 0 && el.value[caret - 1] === "[";
+    const fromBracket = bracket && caret > 0 && el.value[caret - 1] === "{";
     insertAt(el, fromBracket ? caret - 1 : caret, end, displayToken(token.key), write);
   };
 
@@ -91,10 +91,10 @@ export function TokenMenu({ fieldId, write, children }: { fieldId: string; write
         setOpen(false);
         return;
       }
-      // 다른 글자를 치면 그냥 글을 쓰는 중이다 — 목록을 닫고 친 `[` 는 글자로 남긴다. Shift 같은 단독 수정 키는 넘긴다
+      // 다른 글자를 치면 그냥 글을 쓰는 중이다 — 목록을 닫고 친 `{` 는 글자로 남긴다. Shift 같은 단독 수정 키는 넘긴다
       if (e.key.length === 1 || e.key === "Backspace") setOpen(false);
     }
-    if (e.key === "[" && !e.nativeEvent.isComposing) {
+    if (e.key === "{" && !e.nativeEvent.isComposing) {
       setBracket(true);
       setActive(0);
       setOpen(true);

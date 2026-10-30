@@ -48,6 +48,13 @@ route(page/action/api)  →  server/services  →  server/adapters | server/db
 
 예외: Next 라우트 세그먼트 설정(`export const revalidate` 등)은 정적으로 읽히는 값이어야 해서 리터럴을 쓰고, 옆에 근거 주석을 단다.
 
+**치환변수 문법은 `{이름}` 하나로 통일한다**(2026-10-30 사용자 확정). 알림 템플릿(`{제목}`), 요금 카드 문구(`{절약금액}`) 등
+값이 채워지는 자리표시는 전부 중괄호다. 대괄호 `[이름]` 을 새로 쓰지 않는다. 이름에 띄어쓰기를 넣지 않는다(`lib/notify/template` 의 변수 규칙).
+화면에 한글 이름을 보이고 저장은 영문 키로 할 때도(`lib/pricing/copy-tokens`) 둘 다 중괄호 꼴이다.
+
+**코드성 이름표는 공통코드 코드북으로 읽는다**(2026-10-30). 상태, 분류처럼 DB 값에 붙는 이름표는 `lib/codes/registry` 에 그룹을 등록하고,
+클라이언트는 `useCodes()`(`components/code-book`), 서버는 `getCodeBook()` + `codeName()` 으로 읽는다. 코드의 이름표 객체(`*_LABEL`)는 기본값으로만 남긴다.
+
 ## 3. 공통화 기준
 
 - **같은 것이 2곳에 생기면 추출한다.** 1곳이면 지역 상수로 둔다.

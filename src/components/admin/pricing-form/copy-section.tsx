@@ -4,7 +4,7 @@
 // 칸 이름은 "카드 어디에 서는가" 로 부르고 칸마다 한 줄 도움말을 단다. 칸은 카드에 서는 순서(머리, 값 아래, 혜택, 단추)로 묶는다 —
 // 오른쪽 미리 보기(preview)를 위에서 아래로 읽는 순서와 같다. 고른 카드 탭은 바깥(pricing-form)이 쥐어 미리 보기가 같은 카드를 보인다.
 //
-// 자리표시는 화면에서 [절약 금액] 꼴로 보이고 저장은 {saving} 꼴 그대로다(lib/pricing/copy-tokens).
+// 자리표시는 화면에서 {절약금액} 꼴로 보이고 저장은 {saving} 꼴 그대로다(lib/pricing/copy-tokens).
 // 넣는 길은 칸마다 붙은 "값 넣기" 단추와 `[` 치기다(pricing-form/token-menu). 판 맨 위 단추 상자는 2026-10-29 밤 걷었다(사용자 "불편하다").
 import { cn } from "@/lib/cn";
 import type { Patch } from "@/components/admin/pricing-form";

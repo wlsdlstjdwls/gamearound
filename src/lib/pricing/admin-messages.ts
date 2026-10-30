@@ -100,8 +100,8 @@ export const PRICING_ADMIN_MESSAGES = {
   won: "원",
 
   copyTitle: "요금 카드 문구",
-  copyLead: "카드를 골라 문구를 고쳐요. 값이 바뀌는 자리는 칸 끝 \"변수 삽입\" 을 누르거나 칸에서 [ 를 쳐서 넣어요.",
-  /** 칸마다 붙는 자리표시 넣기 단추(pricing-form/token-menu). 칸에서 [ 를 쳐도 같은 목록이 뜬다 */
+  copyLead: "카드를 골라 문구를 고쳐요. 값이 바뀌는 자리는 칸 끝 \"변수 삽입\" 을 누르거나 칸에서 { 를 쳐서 넣어요.",
+  /** 칸마다 붙는 자리표시 넣기 단추(pricing-form/token-menu). 칸에서 { 를 쳐도 같은 목록이 뜬다 */
   tokenButton: "변수 삽입",
   tokenButtonLabel: "자동 치환 변수 삽입",
   copyTabs: "고칠 카드",
