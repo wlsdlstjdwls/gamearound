@@ -24,7 +24,7 @@ import { formatPrice } from "@/lib/currency";
 import { kstDateKey } from "@/lib/format";
 import { promotionStatus, quote } from "@/lib/pricing/quote";
 import { PRICING_ADMIN_MESSAGES as M } from "@/lib/pricing/admin-messages";
-import { PLAN_SPOTS } from "@/lib/pricing/preview-spots";
+import { PLAN_SPOTS, spots } from "@/lib/pricing/preview-spots";
 import { hasErrorUnder, type FieldErrors } from "@/lib/admin/validation";
 import { isBundleProduct, MEMBERSHIP_KEY, PROMOTION_STOP_REASONS, type PricingSettings, type Promotion, type TierKey } from "@/lib/pricing/settings";
 
@@ -128,7 +128,7 @@ function Detail({ value, p, set, errors }: { value: PricingSettings; p: Promotio
           </Field>
           {/* 진행상태는 진행 중, 중단 둘만 고른다(2026-10-30 사용자). 중단이면 사유를 곁에 고른다 — 사유는 여럿일 수 있다(가격변동 중단 등).
               진행 중으로 두어도 기간 밖이면 걸리지 않는다 — 그때는 딱지가 "중단 | 시작 전" 처럼 기간이 정한 사유를 보인다 */}
-          <Field label={M.promoFieldPhase} required spot={PLAN_SPOTS.price}>
+          <Field label={M.promoFieldPhase} required spot={spots(PLAN_SPOTS.list, PLAN_SPOTS.rate, PLAN_SPOTS.promo)}>
             <FormSelect
               name={`ps-${p.id}`}
               label={M.promoFieldPhase}
@@ -140,7 +140,7 @@ function Detail({ value, p, set, errors }: { value: PricingSettings; p: Promotio
             />
           </Field>
           {!p.active && (
-            <Field label={M.promoFieldStopReason} required spot={PLAN_SPOTS.price}>
+            <Field label={M.promoFieldStopReason} required spot={spots(PLAN_SPOTS.list, PLAN_SPOTS.rate, PLAN_SPOTS.promo)}>
               <FormSelect
                 name={`pr-${p.id}`}
                 label={M.promoFieldStopReason}
@@ -152,10 +152,10 @@ function Detail({ value, p, set, errors }: { value: PricingSettings; p: Promotio
               />
             </Field>
           )}
-          <Field label={M.promoFieldName} htmlFor={`pl-${p.id}`} required wide spot={PLAN_SPOTS.price}>
+          <Field label={M.promoFieldName} htmlFor={`pl-${p.id}`} required wide spot={PLAN_SPOTS.promo}>
             <TextField id={`pl-${p.id}`} label={M.promoFieldName} hideLabel value={p.label} onChange={(e) => set({ label: e.target.value })} error={err("label")} compact />
           </Field>
-          <Field label={M.promoSectionPeriod} wide error={err("endsOn") ?? err("startsOn")} spot={PLAN_SPOTS.price}>
+          <Field label={M.promoSectionPeriod} wide error={err("endsOn") ?? err("startsOn")} spot={spots(PLAN_SPOTS.list, PLAN_SPOTS.rate, PLAN_SPOTS.promo)}>
             <FieldPair
               from={<DateField label={M.promoStarts} hideLabel value={p.startsOn} max={p.endsOn} onChange={(v) => set({ startsOn: v })} />}
               to={<DateField label={M.promoEnds} hideLabel value={p.endsOn} min={p.startsOn} onChange={(v) => set({ endsOn: v })} />}
@@ -174,19 +174,19 @@ function Detail({ value, p, set, errors }: { value: PricingSettings; p: Promotio
               options={[...value.products.map((x) => x.id), MEMBERSHIP_KEY].map((k) => ({ value: k, label: targetLabel(value, k) }))}
             />
           </Field>
-          <Field label={M.promoKind} required spot={PLAN_SPOTS.price}>
+          <Field label={M.promoKind} required spot={spots(PLAN_SPOTS.rate, PLAN_SPOTS.amount)}>
             <FormSelect name={`pk-${p.id}`} label={M.promoKind} hideLabel size="lg" value={p.kind} onChange={(v) => set({ kind: v as Promotion["kind"] })} options={(["price", "percent"] as const).map((k) => ({ value: k, label: M.kindLabels[k] }))} />
           </Field>
-          <Field label={M.promoValue} htmlFor={`pv-${p.id}`} required spot={PLAN_SPOTS.price}>
+          <Field label={M.promoValue} htmlFor={`pv-${p.id}`} required spot={spots(PLAN_SPOTS.amount, PLAN_SPOTS.rate)}>
             <NumberField id={`pv-${p.id}`} label={M.promoValue} hideLabel value={p.value} onValue={(n) => set({ value: n })} error={err("value")} trailing={<span className="pr-2 text-[13px] text-dim">{p.kind === "percent" ? "%" : M.won}</span>} className="text-right tabular-nums" compact />
           </Field>
-          <Field label={M.promoAudience} required wide spot={PLAN_SPOTS.price}>
+          <Field label={M.promoAudience} required wide spot={spots(PLAN_SPOTS.terms, PLAN_SPOTS.amount)}>
             <FormSelect name={`pa-${p.id}`} label={M.promoAudience} hideLabel size="lg" value={p.audience} onChange={(v) => set({ audience: v as Promotion["audience"] })} options={(["first", "all"] as const).map((k) => ({ value: k, label: M.audienceLabels[k] }))} />
           </Field>
           <Field label={M.promoFieldRegular}>
             <ReadValue align="right">{formatPrice(regular)}</ReadValue>
           </Field>
-          <Field label={M.promoFieldPrice} spot={PLAN_SPOTS.price}>
+          <Field label={M.promoFieldPrice} spot={PLAN_SPOTS.amount}>
             <ReadValue align="right">{formatPrice(discounted)}</ReadValue>
           </Field>
         </FormSection>

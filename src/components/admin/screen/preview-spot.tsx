@@ -3,6 +3,7 @@
 //
 // 짝은 이름 하나로 맺는다: 폼 쪽은 Field 의 spot(또는 아무 감싼 요소의 data-preview-spot), 미리 보기 쪽은 그리는 부품이
 // 같은 이름의 data-preview-spot 을 단다(요금 카드는 components/payments/plan-cards). 이름은 lib/pricing/preview-spots 에 모았다.
+// 칸 하나가 여러 자리를 움직이면 이름을 띄어 이어 단다("amount rate") — 자리마다 상자를 따로 그린다.
 // 칸 id 로 짝을 추측하지 않는다 — id 는 상품마다 바뀌고, 한 자리를 칸 여럿이 움직인다(정가, 할인 값, 대상은 모두 "값" 자리).
 //
 // 강조는 미리 보기 위에 겹친 테두리로 그린다. 미리 보기 속 요소에 클래스를 넣지 않는 이유: 미리 보기는 실제 카드 부품을 그대로 그린다(inert).
@@ -61,7 +62,7 @@ export function PreviewSpotlight({ children }: { children: React.ReactNode }) {
       // 미리 보기가 줄여 그려져(transform: scale) 있으면 화면 좌표를 감싼 상자 좌표로 되돌린다 — 겹친 상자도 같은 비율로 줄어 그려진다
       const scale = el.offsetWidth > 0 ? base.width / el.offsetWidth : 1;
       const next = spot
-        ? [...el.querySelectorAll<HTMLElement>(`[${PREVIEW_SPOT_ATTR}~="${CSS.escape(spot)}"]`)]
+        ? [...el.querySelectorAll<HTMLElement>(spot.split(/\s+/).filter(Boolean).map((n) => `[${PREVIEW_SPOT_ATTR}~="${CSS.escape(n)}"]`).join(","))]
             .map((t) => t.getBoundingClientRect())
             .filter((r) => r.width > 0 && r.height > 0)
             .map((r) => ({

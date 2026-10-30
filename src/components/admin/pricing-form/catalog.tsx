@@ -104,15 +104,15 @@ function PriceFields({ value, patch, rowKey, errors }: { value: PricingSettings;
   const error = isMembership ? errors["membership.amount"] : errors[`products.${value.products.findIndex((x) => x.id === rowKey)}.amount`];
   return (
     <>
-      <Field label={M.fieldPrice} htmlFor="price-amount" required spot={PLAN_SPOTS.price}>
+      <Field label={M.fieldPrice} htmlFor="price-amount" required spot={PLAN_SPOTS.amount}>
         <NumberField id="price-amount" label={M.fieldPrice} hideLabel value={amount} onValue={setAmount} error={error} trailing={<span className="pr-2 text-[13px] text-dim">{M.won}</span>} className="text-right tabular-nums" compact />
       </Field>
       {list > 0 && (
         <>
-          <Field label={M.fieldBundleList} spot={PLAN_SPOTS.price}>
+          <Field label={M.fieldBundleList} spot={PLAN_SPOTS.list}>
             <ReadValue align="right">{formatPrice(list)}</ReadValue>
           </Field>
-          <Field label={M.fieldRate} spot={PLAN_SPOTS.price}>
+          <Field label={M.fieldRate} spot={PLAN_SPOTS.rate}>
             <ReadValue align="right">{`${discountRate(list, amount)}%`}</ReadValue>
           </Field>
         </>
