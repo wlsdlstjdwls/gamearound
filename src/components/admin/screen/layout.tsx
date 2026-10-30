@@ -219,7 +219,7 @@ export function Field({ label, htmlFor, required, wide, hint, error, spot, child
       <label htmlFor={htmlFor} className="flex items-center text-[12.5px] font-semibold text-mut @min-[300px]:min-h-10 @min-[300px]:justify-end @min-[300px]:whitespace-nowrap @min-[300px]:text-right">
         {/* data-field-label: 묶음(FormSection)이 이름표 칸 폭을 이 글자(* 포함) 길이로 맞춘다. 낭독기용 "(필수)" 는 밖에 둬 재지 않는다 —
             sr-only 상자가 잰 폭을 부풀려 칸이 오히려 넓어졌다(2026-10-30 실측) */}
-        <span data-field-label className="inline-flex items-center gap-0.5">
+        <span data-field-label className="inline-flex items-center gap-0.5 @min-[300px]:whitespace-nowrap">
           {required && (
             <span aria-hidden className="text-danger">
               *

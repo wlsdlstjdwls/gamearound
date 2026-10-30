@@ -83,6 +83,7 @@ export function DataGrid<T>({
   footerExtra,
   empty,
   fit = false,
+  bodyMax,
   fileKey,
 }: {
   label: string;
@@ -107,6 +108,8 @@ export function DataGrid<T>({
   empty: string;
   /** 몸통을 화면 바닥에 맞춘다(fit.ts). 넘치면 몸통만 굴러가고 머리는 붙어 있다 */
   fit?: boolean;
+  /** 몸통 최대 높이(CSS 길이). 화면 아래쪽에 선 긴 표(통계 일별 표)가 화면을 몇 배로 늘리지 않게 — 넘치면 몸통만 굴러간다. fit 이 있으면 fit 이 이긴다 */
+  bodyMax?: string;
   /** 엑셀 파일 이름에 붙일 고른 줄의 코드와 이름(프로그램명_코드_명_날짜) */
   fileKey?: (row: T) => { code: string; name: string };
 }) {
@@ -210,7 +213,9 @@ export function DataGrid<T>({
   return (
     <div className="flex min-w-0 flex-col overflow-hidden rounded-xl border border-line bg-surface">
       <TopBar label={label} query={searchable ? query : null} onQuery={(q) => (setQuery(q), setPage(1))} tools={tools} />
-      <div ref={bodyRef} role="grid" aria-label={label} aria-rowcount={sorted.length} className="overflow-auto overscroll-contain" style={bodyStyle || undefined}>
+      {/* 세로 스크롤은 가두지 않는다 — 몸통이 끝에 닿으면 휠이 화면으로 넘어가야 한다. 가둬 두니 제 스크롤이 없는 그리드 위에서도
+          화면을 내릴 수 없었다(2026-10-30 사용자, 매출현황). 가로만 가둔다(옆으로 굴리다 브라우저 뒤로 가기가 걸리지 않게) */}
+      <div ref={bodyRef} role="grid" aria-label={label} aria-rowcount={sorted.length} className="overflow-auto overscroll-x-contain" style={bodyStyle || (bodyMax ? { maxHeight: bodyMax } : undefined)}>
         <div style={{ minWidth: minWidthOf([...(check ? ["40px"] : []), "48px", ...columns.map((c) => c.width)]) }}>
           <HeadRow columns={columns} template={template} sort={sort} onSort={(k) => setSort((s) => nextSort(s, k))} check={check ? { all: allOn, some: someOn, toggle: toggleAll } : undefined} />
           {paged.rows.length === 0 ? (
