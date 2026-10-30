@@ -87,13 +87,13 @@ const DETAIL_BODY_LINES = 7;
 const DETAIL_COMMENTS = 2;
 
 /**
- * 글 상세(post-detail) — 좁은 폭, 글 판(말머리, 제목, 작성자 줄 | 본문 | 좋아요, 저장 알약), 댓글 판(제목, 댓글 줄, 입력 칸),
+ * 글 상세(post-detail) — 읽기 폭(read), 글 판(말머리, 제목, 작성자 줄 | 본문 | 좋아요, 저장 알약), 댓글 판(제목, 댓글 줄, 입력 칸),
  * 이전/다음 글과 목록으로 줄. 관련 게임 카드는 글마다 있다 없다 해서 그리지 않는다.
  * backLink: 라운지 글은 맨 위에 "목록으로" 링크가 선다(게시판 글은 공용 경로 줄이 대신한다)
  */
 export function PostDetailSkeleton({ backLink = false }: { backLink?: boolean }) {
   return (
-    <SkeletonPage width="tight" gap={22}>
+    <SkeletonPage width="read" gap={22}>
       {backLink && <Bone className="-mb-3 -mt-[14px] h-5 w-20" />}
       <div className="flex flex-col gap-6 rounded-[var(--radius-panel)] bg-surface p-5 shadow-hair sm:p-8">
         <div className="flex flex-col gap-3 border-b border-line-soft pb-5">

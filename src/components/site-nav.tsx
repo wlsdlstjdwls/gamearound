@@ -32,7 +32,7 @@ function Item({ section, current }: { section: NavSection; current: boolean }) {
  * -mx-3 은 첫 칸 글자를 로고 왼쪽 끝에 맞추려는 것이다(칸마다 px-3 안쪽 여백이 있다).
  */
 const NAV_CLASS =
-  "hidden items-center gap-0.5 text-[15px] font-semibold tab:flex max-lg:order-last max-lg:-mx-3 max-lg:basis-full max-lg:overflow-x-auto max-lg:[scrollbar-width:none] lg:shrink-0";
+  "hidden items-center gap-0.5 text-[15px] font-semibold tab:flex max-lg:order-last max-lg:-mx-3 max-lg:basis-full max-lg:overflow-x-auto max-lg:[scrollbar-width:none] lg:mr-auto lg:shrink-0";
 
 export function SiteNav() {
   const pathname = usePathname();

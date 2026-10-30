@@ -1,16 +1,18 @@
 // 페이지 셸 — 리디자인 스펙의 최대폭, 좌우 패딩을 한 곳에서 관리한다.
-// 폭: 기본 1200 / 좁은 화면 720(설정, 입점처럼 입력이 주인공인 곳) / 넓은 화면 1440(관리자 셸).
+// 폭: 기본 1200 / 읽기 960(게시판 글 상세) / 좁은 화면 720(설정, 입점처럼 입력이 주인공인 곳) / 넓은 화면 1440(관리자 셸).
 // 상단 패딩은 22~32px, 하단은 80~90px.
 //
 // 860 짜리 한 칸(narrow)을 지웠다(2026-09-21): 알림 하나만 그 폭을 쓰고 있었는데, 목록과 위시리스트를
 // 오가다 알림에 들어오면 본문이 혼자 좁아져 화면이 한 번 흔들렸다. 폭이 다르면 다른 이유가 있어야 한다.
 import { cn } from "@/lib/cn";
 
-export type PageWidth = "default" | "tight" | "wide";
+export type PageWidth = "default" | "read" | "tight" | "wide";
 export type PagePad = "home" | "detail" | "sub" | "admin";
 
 const WIDTH: Record<PageWidth, string> = {
   default: "max-w-[var(--page-w)]",
+  // 글 읽기 전용(2026-10-30 사용자 "글 상세 폭이 너무 좁다"). 근거는 globals.css 의 --page-w-read
+  read: "max-w-[var(--page-w-read)]",
   tight: "max-w-[var(--page-w-tight)]",
   // 관리자 셸 전용(2026-09-22). 서비스 화면에 쓰지 않는다 — 근거는 globals.css 의 --page-w-wide
   wide: "max-w-[var(--page-w-wide)]",

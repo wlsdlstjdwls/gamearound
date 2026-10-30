@@ -12,11 +12,10 @@ import { NotificationBell } from "@/components/notification-bell";
 import { HeaderWishLink } from "@/components/header-wish-link";
 import { SubNav } from "@/components/sub-nav";
 import { PageTrail } from "@/components/page-trail";
-import { ThemeSwitch } from "@/components/theme-switch";
 
 /**
  * 머리띠 + 하위 메뉴 띠(2026-10-26 개편, 기획서 v2.0 3.1, 4.3).
- * 머리띠 한 줄: 락업 + 상단 메뉴 넷 | 검색칸 + 개인 자리(알림, 계정). 왼쪽은 "무엇을 보러 가나", 오른쪽은 "내 것" 이다.
+ * 머리띠 한 줄: 락업 + 검색칸 + 상단 메뉴 넷 | 개인 자리(찜, 알림, 계정). 왼쪽은 "무엇을 찾나, 어디로 가나", 오른쪽은 "내 것" 이다.
  * 그 아래 하위 메뉴 띠는 머리띠 밖에 둔다 — 이유는 sub-nav 머리 주석(머리띠 높이 토큰).
  *
  * 폭마다 메뉴 넷의 자리(기획서 v2.0 4.1, 목업의 1023, 650 미디어쿼리):
@@ -27,7 +26,7 @@ import { ThemeSwitch } from "@/components/theme-switch";
  * 2026-09-15 에 줄바꿈을 막은 이유(flex-wrap 으로 흘리니 390px 에서 머리띠가 161px 까지 자랐다)는 모바일 폭의 이야기라
  * 그 폭에서는 여전히 접지 않는다. 태블릿에서 둘째 줄이 서는 만큼 머리띠 높이 토큰(--header-h)도 globals.css 에서 같이 올린다.
  *
- * 계정 자리도 폭마다 하나만 선다: 651 부터는 사용자 메뉴 드롭다운(auth-nav)과 테마 단추, 그 밑은 계정 시트(site-menu).
+ * 계정 자리도 폭마다 하나만 선다: 651 부터는 사용자 메뉴 드롭다운(auth-nav), 그 밑은 계정 시트(site-menu).
  */
 export function SiteHeader() {
   return (
@@ -41,19 +40,18 @@ export function SiteHeader() {
             <BrandLockup wordmarkClassName="hidden sm:inline" />
           </Link>
 
-          {/* useSearchParams 를 쓰는 칸은 Suspense 안에 둔다 — 없으면 정적으로 뽑히는 화면이 프리렌더 단계에서 실패한다 */}
-          <Suspense fallback={<SiteNavFallback />}>
-            <SiteNav />
-          </Suspense>
-
+          {/* 검색칸이 로고 바로 옆, 메뉴가 그 오른쪽이다(2026-10-30 사용자 "검색창을 왼쪽으로, 메뉴를 검색창 오른쪽으로").
+              태블릿에서는 메뉴가 어차피 둘째 줄로 내려가므로(site-nav 의 max-lg:order-last) 이 순서는 넓은 화면에서만 보인다.
+              useSearchParams 를 쓰는 칸은 Suspense 안에 둔다 — 없으면 정적으로 뽑히는 화면이 프리렌더 단계에서 실패한다 */}
           <Suspense fallback={<SearchBoxFallback />}>
             <SearchBox />
           </Suspense>
 
-          <div className="hidden shrink-0 items-center gap-1.5 tab:flex">
-            {/* 테마 단추는 로그인과 상관없이 선다 — 설정 화면은 로그인한 사람에게만 열린다(theme-switch 주석) */}
-            <ThemeSwitch />
-          </div>
+          <Suspense fallback={<SiteNavFallback />}>
+            <SiteNav />
+          </Suspense>
+
+          {/* 머리띠 테마 단추는 걷었다(2026-10-30 사용자). 테마는 설정 화면과 좁은 화면 계정 시트(site-menu)에서 고른다 */}
 
           {/* 종은 알림함 팝오버다(기획서 v2.0 M-03). 가격 알림 관리로 가는 길은 팝오버 맨 아래에 있다.
               좁은 화면에서도 남긴다(2026-10-26) — 테마, 계정 단추와 함께 숨겼더니 휴대폰에서는 알림함에 갈 길이 없었다.

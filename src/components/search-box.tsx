@@ -53,10 +53,11 @@ const INPUT_CLASS =
  * 헤더 안에서 이 칸이 차지하는 자리 — 로고와 메뉴 사이의 남는 폭을 전부 가져간다.
  * 최소 폭을 걸지 않는 이유: 320px 기기에서는 이 칸이 줄어들어야 로고와 햄버거가 한 줄에 남는다.
  * 최소 폭을 걸면 그 순간 셋이 각자 줄을 차지하고 머리띠가 세 배로 자란다.
- * ml-auto: 넓은 화면에서는 왼쪽(로고, 메뉴)과 오른쪽(개인 자리) 사이의 남는 폭을 이 칸이 먹고
+ * ml-auto: 1024 아래에서는 로고와 오른쪽(개인 자리) 사이의 남는 폭을 이 칸이 먹고
  * 340px 에서 멈춘다 — 더 늘리면 검색칸이 머리띠의 주인공이 되어 로고와 무게가 뒤집힌다.
+ * 1024 부터는 로고 바로 옆에 붙는다(2026-10-30 사용자, 메뉴가 이 칸 오른쪽에 선다). 남는 폭은 메뉴 뒤(site-nav 의 lg:mr-auto)가 먹는다.
  */
-const FORM_CLASS = "relative ml-auto min-w-0 max-w-[340px] flex-1";
+const FORM_CLASS = "relative ml-auto min-w-0 max-w-[340px] flex-1 lg:ml-0";
 /** 오른쪽 끝 자리 — 스피너와 지우기 버튼이 번갈아 선다. 폭을 고정해야 글자가 밀리지 않는다 */
 const TRAIL_CLASS = "flex size-7 shrink-0 items-center justify-center";
 

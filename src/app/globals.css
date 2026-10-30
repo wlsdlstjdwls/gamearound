@@ -131,6 +131,9 @@
   /* 목록 카드 한 벌. 커버보다 링을 옅게, 그림자는 멀리 깐다(한 덩어리가 통째로 뜨는 것이라 접지면이 넓다) */
   --elev-card: inset 0 0 0 1px rgba(24, 32, 43, 0.06), 0 1px 2px rgba(24, 32, 43, 0.05), 0 10px 24px -8px rgba(24, 32, 43, 0.14);
   --elev-card-hover: inset 0 0 0 1px rgba(37, 99, 235, 0.22), 0 4px 8px rgba(24, 32, 43, 0.06), 0 20px 40px -10px rgba(24, 32, 43, 0.22);
+  /* 옆으로 넘기는 줄(ui/rail) 안 카드의 hover 그림자. 줄은 overflow 상자라 위아래 24px 밖은 직선으로 잘린다 —
+     위 토큰은 아래로 50px 가까이 번져 잘린 자리가 바탕 위 구분선으로 보였다(2026-10-30 사용자). 번짐을 24px 안에 가둔다 */
+  --elev-card-hover-rail: inset 0 0 0 1px rgba(37, 99, 235, 0.22), 0 3px 6px rgba(24, 32, 43, 0.06), 0 10px 16px -6px rgba(24, 32, 43, 0.18);
   /* 커버 한 벌 = 링 + 그림자. box-shadow 는 유틸 둘로 겹칠 수 없어 한 토큰으로 묶는다 */
   --elev-cover: inset 0 0 0 1px rgba(24, 32, 43, 0.08), 0 2px 4px rgba(24, 32, 43, 0.05), 0 8px 18px -6px rgba(24, 32, 43, 0.12);
   --elev-cover-hover: inset 0 0 0 1px rgba(24, 32, 43, 0.1), 0 6px 12px rgba(24, 32, 43, 0.07), 0 20px 38px -10px rgba(24, 32, 43, 0.22);
@@ -152,6 +155,9 @@
   /* 레이아웃 최대폭 — 리디자인 스펙 1200. 카드 격자가 한 줄에 4장 서는 최소 폭이다 */
   --page-w: 1200px;
   --page-w-tight: 720px;
+  /* 게시판 글 상세(2026-10-30). 720 은 입력폼 폭이라 본문 이미지, 관련 게임 카드, 댓글이 판 안에서 650px 남짓으로 눌렸다.
+     1200 을 다 쓰면 한 줄이 너무 길어 읽기 어렵다 — 판 안쪽 글줄이 840px 안팎에 서는 값이다 */
+  --page-w-read: 960px;
   /* 관리자 셸만 쓰는 폭(2026-09-22). 서비스 화면과 다른 이유: 관리자는 표와 판이 주인공이라
      칸 수가 폭을 정한다. 1200 에서는 매칭 대기의 제목 칸이 잘리고 할 일 판의 칸 넷이 각 180px 로
      눌려 카드 글자보다 좁아졌다. 서비스 화면은 1200 그대로다 — 거기는 카드 격자가 폭을 정한다 */
@@ -246,6 +252,7 @@
     --ring-hair: inset 0 0 0 1px rgba(200, 214, 238, 0.14);
     --elev-card: inset 0 0 0 1px rgba(200, 214, 238, 0.13), 0 2px 6px rgba(0, 0, 0, 0.35), 0 12px 26px -8px rgba(0, 0, 0, 0.5);
     --elev-card-hover: inset 0 0 0 1px rgba(127, 168, 255, 0.4), 0 6px 14px rgba(0, 0, 0, 0.4), 0 24px 46px -10px rgba(0, 0, 0, 0.6);
+    --elev-card-hover-rail: inset 0 0 0 1px rgba(127, 168, 255, 0.4), 0 4px 10px rgba(0, 0, 0, 0.4), 0 10px 18px -6px rgba(0, 0, 0, 0.6);
     --elev-cover: inset 0 0 0 1px rgba(200, 214, 238, 0.14), 0 2px 6px rgba(0, 0, 0, 0.35), 0 10px 22px -6px rgba(0, 0, 0, 0.5);
     --elev-cover-hover: inset 0 0 0 1px rgba(200, 214, 238, 0.22), 0 6px 14px rgba(0, 0, 0, 0.4), 0 22px 44px -10px rgba(0, 0, 0, 0.6);
   }
@@ -308,6 +315,7 @@
   --ring-hair: inset 0 0 0 1px rgba(200, 214, 238, 0.14);
   --elev-card: inset 0 0 0 1px rgba(200, 214, 238, 0.13), 0 2px 6px rgba(0, 0, 0, 0.35), 0 12px 26px -8px rgba(0, 0, 0, 0.5);
   --elev-card-hover: inset 0 0 0 1px rgba(127, 168, 255, 0.4), 0 6px 14px rgba(0, 0, 0, 0.4), 0 24px 46px -10px rgba(0, 0, 0, 0.6);
+  --elev-card-hover-rail: inset 0 0 0 1px rgba(127, 168, 255, 0.4), 0 4px 10px rgba(0, 0, 0, 0.4), 0 10px 18px -6px rgba(0, 0, 0, 0.6);
   --elev-cover: inset 0 0 0 1px rgba(200, 214, 238, 0.14), 0 2px 6px rgba(0, 0, 0, 0.35), 0 10px 22px -6px rgba(0, 0, 0, 0.5);
   --elev-cover-hover: inset 0 0 0 1px rgba(200, 214, 238, 0.22), 0 6px 14px rgba(0, 0, 0, 0.4), 0 22px 44px -10px rgba(0, 0, 0, 0.6);
 }
@@ -1063,6 +1071,34 @@ html[data-admin-frame] [data-admin-content] {
     box-shadow: var(--elev-card-hover);
     transform: translateY(-4px);
   }
+  .rail-track .card-panel:hover {
+    box-shadow: var(--elev-card-hover-rail);
+  }
+}
+
+/* 명예의 전당의 내 게임 카드, 줄(indie/my-fame-marks 가 data-fame-mine 을 붙인다, 2026-10-30).
+   딱지, 띠를 얹지 않고 카드 자체가 바뀐다 — 얹은 것은 순위 딱지, 글과 겹쳤다(사용자 "뱃지 말고 다른 형태"). 게임 순위표에서 내 줄만 색이 다른 방식이다.
+   보라 바탕 + 위(줄은 왼쪽) 보라 선, 그리고 서버가 숨겨 둔 "내 게임" 글줄(.fame-own)을 펴고 그 자리의 원래 글줄(.fame-see)을 접는다.
+   글줄끼리 높이가 같아 늦게 바뀌어도 화면이 안 밀린다. 보라는 순위 표시(파랑)와 갈리라고 쓴다.
+   이 규칙은 층(layer) 밖이라 카드의 Tailwind 바탕, 그림자 유틸보다 이긴다 */
+.fame-own {
+  display: none;
+}
+[data-fame-mine] .fame-own {
+  display: inline-flex;
+}
+[data-fame-mine] .fame-see {
+  display: none;
+}
+[data-fame-mine] {
+  background-color: color-mix(in oklab, var(--plum) 13%, var(--surface));
+  box-shadow: inset 0 5px 0 var(--plum), 0 0 0 1px color-mix(in oklab, var(--plum) 35%, transparent), 0 14px 32px -18px var(--plum);
+}
+.fame-row[data-fame-mine] {
+  box-shadow: inset 5px 0 0 var(--plum), 0 0 0 1px color-mix(in oklab, var(--plum) 35%, transparent);
+}
+#fame-top[data-fame-mine] {
+  box-shadow: 0 0 0 3px var(--plum), 0 18px 40px -18px var(--plum);
 }
 
 /* "+N" 판(ui/more-toggle)이 열린 동안 그 카드를 이웃 위로 올린다.

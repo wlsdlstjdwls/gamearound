@@ -50,7 +50,8 @@ export function Rail({ items, labels }: { items: Array<{ key: string; node: Reac
         // 3(12px)으로는 모자랐다(같은 날 "여전히 분리된다"): --elev-2 그림자가 아래로 20px 번져 12px 자리에서 직선으로 잘렸다.
         // 세로만 6(24px)으로 늘린다 — 그림자 끝보다 넓다. 가로는 3 그대로다: 그림자는 옆으로 12px 만 번지고,
         // 가로를 24px 로 넓히면 다음 카드가 본문 오른쪽 끝 밖으로 비어져 나와 다른 줄과 끝선이 어긋났다(카드 사이 16px > 12px 라 3 에선 안 보인다)
-        className={cn(RAIL_TRACK_CLASS, "sm:-mx-3 sm:-my-6 sm:scroll-px-3 sm:px-3 sm:py-6")}
+        // rail-track: 이 줄 안 카드는 hover 그림자를 24px 안에 가둔다(globals.css 의 --elev-card-hover-rail, 2026-10-30)
+        className={cn(RAIL_TRACK_CLASS, "rail-track sm:-mx-3 sm:-my-6 sm:scroll-px-3 sm:px-3 sm:py-6")}
       >
         {items.map((it) => (
           <li key={it.key} className={cn(RAIL_ITEM_CLASS, "sm:w-[calc((100%-2rem)/3)] lg:w-[calc((100%-3rem)/4)]")}>
