@@ -23,7 +23,7 @@ import { ALERT_MESSAGES as M } from "@/lib/alerts/messages";
 import { conditionMode } from "@/lib/alerts/condition";
 import { cn } from "@/lib/cn";
 import { stagger } from "@/lib/motion";
-import { findGameBySlug, findMyAlertForGame, listAlertViews } from "@/server/services/alerts";
+import { findGameBySlug, listAlertViews } from "@/server/services/alerts";
 import { getMyProfile, isPersonalized } from "@/server/services/profiles";
 import { countMyPushSubscriptions } from "@/server/services/push";
 import { alertDefaults } from "@/lib/onboarding/personal";
@@ -31,19 +31,20 @@ import { alertDefaults } from "@/lib/onboarding/personal";
 export const metadata: Metadata = { title: M.title };
 
 /**
- * 머리 숫자 한 칸. 지금 조건에 맞는 칸만 초록 — 그 숫자가 이 화면에서 유일하게 "행동할 이유" 다.
+ * 머리 숫자 한 칸. 지금 조건에 맞는 칸만 연한 파랑 면으로 켠다 — 그 숫자가 이 화면에서 유일하게 "행동할 이유" 다.
+ * 초록이던 것을 2026-10-30 에 바꿨다(사용자 "조건 충족 뱃지 색이 맘에 안 든다", 잉크는 "너무 어둡다") — 줄의 조건 충족 알약과 같은 색이라야 둘이 같은 말로 읽힌다.
  * 칸마다 그림을 붙이고 차례로 떠오른다(2026-10-28 사용자 "밋밋하다"). 좁은 화면은 그림을 숫자 위로 올려 세 칸이 한 줄에 선다.
  */
 function Stat({ label, value, tone, icon, index }: { label: string; value: number; tone?: "ok"; icon: React.ReactNode; index: number }) {
   const lit = tone === "ok" && value > 0;
   return (
-    <div className={cn("enter-item flex flex-col gap-2 rounded-[var(--radius-md)] px-3.5 py-3.5 sm:flex-row sm:items-center sm:gap-3.5 sm:px-4", lit ? "bg-ok-soft" : "bg-surface shadow-[var(--elev-1)]")} style={stagger(index)}>
-      <span aria-hidden className={cn("grid size-9 shrink-0 place-items-center rounded-full sm:size-11", lit ? "bg-surface text-ok" : "bg-acc-soft text-acc")}>
+    <div className={cn("enter-item flex flex-col gap-2 rounded-[var(--radius-md)] px-3.5 py-3.5 sm:flex-row sm:items-center sm:gap-3.5 sm:px-4", lit ? "bg-acc-soft shadow-[inset_0_0_0_1px_var(--acc-3)]" : "bg-surface shadow-[var(--elev-1)]")} style={stagger(index)}>
+      <span aria-hidden className={cn("grid size-9 shrink-0 place-items-center rounded-full sm:size-11", lit ? "bg-acc text-on-ink" : "bg-acc-soft text-acc")}>
         {icon}
       </span>
       <span className="flex min-w-0 flex-col gap-1">
-        <span className="text-[12px] text-dim">{label}</span>
-        <span className={cn("text-[22px] font-extrabold leading-none tracking-[-0.03em] sm:text-[24px]", lit ? "text-ok" : "text-ink")}>{value.toLocaleString("ko-KR")}</span>
+        <span className={cn("text-[12px]", lit ? "font-semibold text-acc" : "text-dim")}>{label}</span>
+        <span className={cn("text-[22px] font-extrabold leading-none tracking-[-0.03em] sm:text-[24px]", lit ? "text-acc" : "text-ink")}>{value.toLocaleString("ko-KR")}</span>
       </span>
     </div>
   );
@@ -58,7 +59,9 @@ export default async function AlertsPage({ searchParams }: { searchParams: Promi
     getMyProfile(),
     countMyPushSubscriptions(),
   ]);
-  const existing = game ? await findMyAlertForGame(game.id) : null;
+  // 이 게임에 이미 만든 알림은 방금 받은 내 알림 목록에서 고른다 — 따로 물으면 게임을 찾은 뒤 한 왕복이 더 줄을 선다(2026-10-30 쿼리 점검).
+  // 목록 순서(켜진 것 먼저, 최근 먼저)가 findMyAlertForGame 과 같아 첫 줄이 같은 답이다
+  const existing = game ? (overview.views.find((v) => v.game.id === game.id) ?? null) : null;
   const initial: AlertInitial | undefined = existing
     ? {
         platform: existing.platform ?? "all",

@@ -16,7 +16,6 @@ import type { GameDetail } from "@/server/services/games";
 import { listSellersForGame } from "@/server/services/listings";
 import { getPriceHistory } from "@/server/services/prices";
 import { listMyDevices } from "@/server/services/devices";
-import { getCurrentUser } from "@/server/services/users";
 
 /** 본문 그래프가 그리는 기간(기획서 v2.0 S-05: 1개월~1년). 1년보다 긴 값은 전용 화면(/prices)이 맡는다 */
 const CHART_DAYS = 365;
@@ -35,10 +34,10 @@ function isShortHistory(firstAt: string): boolean {
 /**
  * 로그인했으면 등록한 기기, 아니면 빈 목록. 두 자리(판정 칸, 제목 옆 한 줄)가 같은 답을 써야 해서
  * 한 함수로 둔다 — 질의 자체는 요청 안에서 캐시된다(services/devices 의 listMyDevices).
+ * 세션을 먼저 묻지 않는다 — listMyDevices 가 세션 서브질의로 한 왕복에 거른다(2026-10-30 쿼리 점검)
  */
 async function myDevices() {
-  const user = await getCurrentUser();
-  return user ? await listMyDevices() : [];
+  return listMyDevices().catch(() => []);
 }
 
 /** 판정 칸. 등록된 기기는 로그인에 매달린 값이라 본문이 세션 조회(실측 220ms)를 기다릴 이유가 없다 */

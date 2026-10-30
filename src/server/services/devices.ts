@@ -3,6 +3,7 @@
 // 비회원의 기기는 여기 없다. 브라우저에 두고 판정도 브라우저에서 한다(components/compat-section) —
 // 로그인을 요구하면 이 기능을 아무도 안 쓴다는 것이 설계의 전제다.
 // 그래서 이 서비스는 "로그인한 사람이 여러 대를 관리하는" 쪽만 맡는다.
+import { ownedByCurrentSession } from "@/server/auth/session";
 import { cache } from "react";
 import { and, asc, desc, eq } from "drizzle-orm";
 import { getDb } from "@/server/db/client";
@@ -46,11 +47,13 @@ function toDto(r: typeof userDevices.$inferSelect): DeviceDto {
  * 읽는 자리가 느는 것은 흔하고, 이 감쌈은 비용이 없다. getCurrentUser 와 같은 방식이다.
  */
 export const listMyDevices = cache(async (): Promise<DeviceDto[]> => {
-  const u = await requireUser();
+  // 소유자 조건을 세션 서브질의로 넣어 한 왕복에 끝낸다(2026-10-30 쿼리 점검). 비로그인은 빈 목록 — 게임 상세 판정 칸이 묻지 않고 부를 수 있게
+  const owner = await ownedByCurrentSession(userDevices.userId);
+  if (!owner) return [];
   const rows = await getDb()
     .select()
     .from(userDevices)
-    .where(eq(userDevices.userId, u.id))
+    .where(owner)
     .orderBy(desc(userDevices.isPrimary), asc(userDevices.createdAt));
   return rows.map(toDto);
 });

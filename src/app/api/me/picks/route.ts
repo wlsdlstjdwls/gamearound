@@ -4,7 +4,6 @@
 import { NextResponse } from "next/server";
 import { errorMessage } from "@/lib/errors";
 import { getMyHomeDeals } from "@/server/services/profiles";
-import { getCurrentUser } from "@/server/services/users";
 
 export const dynamic = "force-dynamic";
 
@@ -12,8 +11,8 @@ const NO_STORE = { "cache-control": "private, no-store" };
 
 export async function GET() {
   try {
-    // 비로그인, 개인화 미동의는 오류가 아니다 — 공통 줄을 그대로 두면 되는 "없음" 이다
-    if (!(await getCurrentUser())) return NextResponse.json({ deals: null }, { headers: NO_STORE });
+    // 비로그인, 개인화 미동의는 오류가 아니다 — 공통 줄을 그대로 두면 되는 "없음" 이다(getMyHomeDeals 가 null 로 준다).
+    // 세션을 따로 먼저 묻지 않는다 — 취향 조회가 세션 서브질의로 거른다(2026-10-30 쿼리 점검, 왕복 하나 덜기)
     return NextResponse.json({ deals: await getMyHomeDeals() }, { headers: NO_STORE });
   } catch (e) {
     // 공통 줄이 이미 떠 있으니 실패해도 화면을 흔들지 않는다. 클라이언트는 503 을 "갈아 끼우지 않음" 으로 읽는다

@@ -8,6 +8,8 @@ import { getDb } from "@/server/db/client";
 import { createdBy, updatedBy } from "@/server/db/audit";
 import { gameGenres, gamePlatforms, games, genres, subscriptions, userProfiles, type DealStyle, type PlayTimeStyle, type Platform, type Role } from "@/server/db/schema";
 import { getCurrentUser, requireUser } from "@/server/services/users";
+import { ownedByCurrentSession } from "@/server/auth/session";
+import { AUTH_MESSAGES } from "@/lib/auth/messages";
 import { GENRE_CHOICE_NAMES } from "@/lib/onboarding/constants";
 import type { OnboardingStep } from "@/lib/onboarding/steps";
 import { dealFloor } from "@/lib/onboarding/personal";
@@ -62,8 +64,11 @@ function toDto(r: typeof userProfiles.$inferSelect): ProfileDto {
  * 행을 미리 만들지 않는 이유는 schema 의 userProfiles 주석에 있다.
  */
 export const getMyProfile = cache(async (): Promise<ProfileDto> => {
-  const u = await requireUser();
-  const [row] = await getDb().select().from(userProfiles).where(eq(userProfiles.userId, u.id)).limit(1);
+  // 소유자 조건을 세션 서브질의로 넣어 한 왕복에 끝낸다(2026-10-30 쿼리 점검) — 세션을 먼저 묻고 그다음 프로필을 물으면
+  // Neon 왕복이 둘 줄을 서고, 이 함수는 게임 목록, 알림, 홈 개인화 줄이 다 부른다. 근거는 server/auth/session 의 ownedByCurrentSession
+  const owner = await ownedByCurrentSession(userProfiles.userId);
+  if (!owner) throw new Error(AUTH_MESSAGES.loginRequired);
+  const [row] = await getDb().select().from(userProfiles).where(owner).limit(1);
   return row ? toDto(row) : EMPTY;
 });
 
@@ -289,8 +294,9 @@ export async function countPersonalizedGames(p: ProfileDto): Promise<number> {
  * 취향 칸이 없거나 모자라면 공통 줄로 채워 오므로(games/personal), 켠 사람의 줄은 비지 않는다.
  */
 export async function getMyHomeDeals(): Promise<GameSummary[] | null> {
-  const p = await getMyProfile();
-  if (!isPersonalized(p)) return null;
+  // 비로그인이면 getMyProfile 이 던진다 — 공통 줄을 그대로 두면 되는 "없음" 이라 null 로 받는다(부르는 쪽이 세션을 먼저 묻지 않게)
+  const p = await getMyProfile().catch(() => null);
+  if (!p || !isPersonalized(p)) return null;
   return getPersonalDeals({ platforms: p.platforms, genreIds: p.favoriteGenreIds, subscriptionKeys: p.subscriptionKeys, floor: dealFloor(p.dealStyle) });
 }
 
@@ -307,12 +313,12 @@ export type ListPreset = { query: GamesQuery; labels: string[] };
  * 두 갈래 목록을 본다. 할인 성향과 구독은 싣지 않는다: 목록을 할인 중인 게임만으로 줄이면 "목록" 이 아니다.
  */
 export async function getMyListPreset(): Promise<ListPreset | null> {
-  const u = await getCurrentUser();
-  if (!u || !canPersonalize(u.role)) return null;
-  const p = await getMyProfile();
+  // 사람, 취향, 장르 이름표는 서로 기다릴 일이 없어 나란히 묻는다(2026-10-30 쿼리 점검: 줄 세운 3왕복이 /games 껍데기를 통째로 붙잡았다).
+  // 장르 표는 작아서 안 쓰게 되더라도 미리 묻는 값이 싸다
+  const [u, p, genreChoices] = await Promise.all([getCurrentUser(), getMyProfile().catch(() => null), listGenreChoices()]);
+  if (!u || !p || !canPersonalize(u.role)) return null;
   if (!isPersonalized(p) || (!p.platforms?.length && !p.favoriteGenreIds?.length)) return null;
 
-  const genreChoices = p.favoriteGenreIds?.length ? await listGenreChoices() : [];
   const genreNames = (p.favoriteGenreIds ?? []).map((id) => genreChoices.find((g) => g.id === id)?.name).filter((n): n is string => Boolean(n));
   const query = personalQuery({ platforms: p.platforms, genreNames });
   if (!query.platform && !query.genre) return null;

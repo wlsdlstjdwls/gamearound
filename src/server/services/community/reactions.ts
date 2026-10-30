@@ -2,6 +2,8 @@
 //
 // 쌓아 둔 수(likeCount, commentCount)는 행을 넣고 지우는 질의와 같은 자리에서 고친다. 넣기가 실제로 됐을 때만
 // 올린다 — onConflictDoNothing 이 막은 두 번째 좋아요가 수만 올리면 화면 숫자가 실제 줄 수와 갈라진다.
+import { ownedByCurrentSession } from "@/server/auth/session";
+import { AUTH_MESSAGES } from "@/lib/auth/messages";
 import { and, asc, desc, eq, sql } from "drizzle-orm";
 import { getDb } from "@/server/db/client";
 import { createdBy } from "@/server/db/audit";
@@ -48,8 +50,8 @@ export async function toggleSave(postId: string): Promise<{ saved: boolean }> {
 }
 
 export async function listComments(postId: string): Promise<CommentDto[]> {
-  const viewer = await getCurrentUser().catch(() => null);
-  const rows = await getDb()
+  // 사람과 댓글은 서로 기다릴 일이 없다 — 나란히 묻는다(2026-10-30 쿼리 점검)
+  const [viewer, rows] = await Promise.all([getCurrentUser().catch(() => null), getDb()
     .select({
       id: postComments.id,
       parentId: postComments.parentId,
@@ -65,7 +67,7 @@ export async function listComments(postId: string): Promise<CommentDto[]> {
     .innerJoin(posts, eq(posts.id, postComments.postId))
     // 운영진이 숨긴 댓글은 누구에게도 안 보인다(services/community/admin)
     .where(and(eq(postComments.postId, postId), eq(postComments.status, "published")))
-    .orderBy(asc(postComments.createdAt));
+    .orderBy(asc(postComments.createdAt))]);
   const owner = viewer !== null && rows.length > 0 && rows[0].postAuthorId === viewer.id;
   // eslint-disable-next-line @typescript-eslint/no-unused-vars -- 글쓴이 id 는 화면에 내보내지 않는다
   const list = rows.map(({ authorUserId, postAuthorId, seen, ...r }) => ({ ...r, isMine: viewer?.id === authorUserId, isNew: owner && !seen && viewer?.id !== authorUserId }));
@@ -117,10 +119,12 @@ export async function addComment(
 
 /** 저장한 글(내 활동 S-24). 저장한 순서의 최신부터, 게시판과 같은 한 쪽 20줄(기획서 4.3) */
 export async function listMySavedPosts(page = 1): Promise<PostPage> {
-  const u = await requireUser();
+  // 소유자 조건을 세션 서브질의로 넣어 세션 왕복을 따로 세우지 않는다(2026-10-30 쿼리 점검)
+  const owner = await ownedByCurrentSession(postSaves.userId);
+  if (!owner) throw new Error(AUTH_MESSAGES.loginRequired);
   const db = getDb();
   const at = Math.max(1, page);
-  const where = and(eq(postSaves.userId, u.id), eq(posts.status, "published"));
+  const where = and(owner, eq(posts.status, "published"));
   // 건수와 목록은 나란히 보낸다(Neon 왕복 1회). 숨긴 글은 건수에서도 빠져야 쪽 수가 실제 줄 수와 맞는다
   const [countRows, rows] = await Promise.all([
     db.select({ n: sql<number>`count(*)::int` }).from(postSaves).innerJoin(posts, eq(posts.id, postSaves.postId)).where(where),

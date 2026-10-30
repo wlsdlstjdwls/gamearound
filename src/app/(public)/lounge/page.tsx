@@ -54,14 +54,16 @@ function MyGameRow({ p }: { p: IndieMineRowDto }) {
 }
 
 export default async function LoungeHomePage() {
-  const user = await getCurrentUser().catch(() => null);
-  const loaded = await nullIfDbUnavailable(
-    Promise.all([
-      getBoardHome(LOUNGE_CATEGORIES, ["qna"], false),
-      user ? listMyIndiePosts(user.id) : Promise.resolve([]),
-      user ? countUnseenCommentsOnMyPosts(user.id, LOUNGE_CATEGORIES) : Promise.resolve(0),
-    ]),
-  );
+  // 게시판 묶음은 사람을 기다릴 일이 없다 — 사람 → 내 글 줄과 나란히 띄운다(2026-10-30 쿼리 점검: 세션이 맨 앞에 줄을 섰다)
+  const mineFor = (user: Awaited<ReturnType<typeof getCurrentUser>>): Promise<[IndieMineRowDto[], number]> =>
+    user ? Promise.all([listMyIndiePosts(user.id), countUnseenCommentsOnMyPosts(user.id, LOUNGE_CATEGORIES)]) : Promise.resolve([[], 0]);
+  const userP = getCurrentUser().catch(() => null);
+  const [user, loaded] = await Promise.all([
+    userP,
+    nullIfDbUnavailable(
+      Promise.all([getBoardHome(LOUNGE_CATEGORIES, ["qna"], false), userP.then(mineFor)]).then(([home, [mine, reactions]]) => [home, mine, reactions] as const),
+    ),
+  ]);
   const now = new Date().getTime();
 
   return (

@@ -128,7 +128,12 @@ export const indiePostLikes = pgTable("indie_post_likes", {
   postId: uuid("post_id").references(() => indiePosts.id, { onDelete: "cascade" }).notNull(),
   userId: uuid("user_id").references(() => users.id, { onDelete: "cascade" }).notNull(),
   ...auditColumns(),
-}, (t) => [primaryKey({ columns: [t.postId, t.userId] }), index("indie_post_likes_created_idx").on(t.createdAt)]);
+}, (t) => [
+  primaryKey({ columns: [t.postId, t.userId] }),
+  index("indie_post_likes_created_idx").on(t.createdAt),
+  // 찜 화면의 인디 칸이 "내가 찜한 것을 최근 순으로" 묻는다(services/indie/wishes). 기본키 앞 칸이 post_id 라 user_id 로는 못 탔다(2026-10-30 쿼리 점검)
+  index("indie_post_likes_user_idx").on(t.userId, t.createdAt),
+]);
 
 /**
  * 달마다 쌓는 조회 수(명예의 전당은 "그 달의 반응" 으로 줄 세운다). 조회 한 번마다 행을 남기면 표가 끝없이 자라서

@@ -47,15 +47,25 @@ export function NotificationBell({ placement = "header" }: { placement?: "header
     };
   }, [open]);
 
+  // 받기는 누르기 전에 시작한다(2026-10-30 사용자 "알림 이력 조회가 느리다"). 손이 종 위에 오르거나(pointerenter) 초점이 오면
+  // 미리 묻고, 누를 때는 받아 둔 목록을 바로 편다. 다시 열면 지난 목록을 먼저 보이고 뒤에서 새로 받는다 — 빈 판으로 되돌아가지 않는다.
+  // 받는 중에 또 부르면 같은 요청을 기다린다(inflight)
+  const inflight = useRef<Promise<void> | null>(null);
+  const load = () => {
+    if (!user || inflight.current) return;
+    inflight.current = fetch("/api/me/notifications", { cache: "no-store" })
+      .then((r) => (r.ok ? (r.json() as Promise<{ items: Item[] }>) : { items: [] }))
+      .then((d) => setItems(d.items))
+      .catch(() => setItems((cur) => cur ?? []))
+      .finally(() => {
+        inflight.current = null;
+      });
+  };
+
   const toggle = () => {
     const next = !open;
     setOpen(next);
-    if (next && user) {
-      fetch("/api/me/notifications", { cache: "no-store" })
-        .then((r) => (r.ok ? (r.json() as Promise<{ items: Item[] }>) : { items: [] }))
-        .then((d) => setItems(d.items))
-        .catch(() => setItems([]));
-    }
+    if (next) load();
   };
 
   return (
@@ -67,6 +77,9 @@ export function NotificationBell({ placement = "header" }: { placement?: "header
         aria-expanded={open}
         aria-controls={panelId}
         onClick={toggle}
+        // 미리 받기는 아직 한 번도 안 받았을 때만 — 지나가며 스칠 때마다 묻지 않는다. 열 때는 늘 새로 받는다
+        onPointerEnter={() => items === null && load()}
+        onFocus={() => items === null && load()}
         className={cn("press flex size-[var(--touch-target)] items-center justify-center rounded-lg transition-colors sm:size-10", open ? "bg-acc-soft text-acc" : "text-ink-2 hover:bg-surface-2 hover:text-ink")}
       >
         <BellIcon size={19} />

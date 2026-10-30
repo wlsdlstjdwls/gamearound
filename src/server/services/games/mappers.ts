@@ -236,6 +236,17 @@ export const CARD_GENRE_MAX = 3;
  * 요약 목록에 장르를 채운다. fillPlatforms 와 같은 이유로 조회를 따로 한다 —
  * 가격 조인에 장르를 같이 걸면 게임 하나가 (플랫폼 × 장르) 배로 불어나 페이지 경계가 틀어진다.
  */
+/**
+ * 플랫폼과 장르를 나란히 채운다(2026-10-30 쿼리 점검). 장르는 slug 만 있으면 되므로 플랫폼을 기다릴 이유가 없다.
+ * 캐시 없는 개인 줄(/api/me/picks)처럼 왕복 하나가 그대로 사람 대기로 가는 자리에 쓴다. 홈 캐시 재계산은 이전처럼 차례로 둔다 —
+ * 그쪽은 질의 여럿을 한꺼번에 띄우면 Neon 메모리가 터진 적이 있다(home 머리 주석)
+ */
+export async function fillPlatformsAndGenres(items: GameSummary[]): Promise<GameSummary[]> {
+  if (items.length === 0) return items;
+  const [withPlatforms, genres] = await Promise.all([fillPlatforms(items), fetchGenresBySlug(items.map((i) => i.slug))]);
+  return applyGenres(withPlatforms, genres);
+}
+
 export async function fillGenres(items: GameSummary[]): Promise<GameSummary[]> {
   if (items.length === 0) return items;
   return applyGenres(items, await fetchGenresBySlug(items.map((i) => i.slug)));

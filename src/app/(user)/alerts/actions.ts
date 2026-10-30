@@ -72,14 +72,17 @@ export async function createAlertAction(_prev: ActionState, formData: FormData):
       if (!parsed.success) return { ok: false, error: parsed.error.issues[0]?.message ?? "입력값을 다시 확인해 주세요" };
       rows.push(parsed.data);
     }
-    for (const d of rows) {
-      await createAlert({
-        gameId: d.gameId,
-        platform: d.platform === "all" ? null : d.platform,
-        minDiscountPct: d.mode === "discount" ? d.minDiscountPct : null,
-        targetPrice: d.mode === "price" ? d.targetPrice : null,
-      });
-    }
+    // 플랫폼마다 다른 행이라 서로 기다릴 일이 없다 — 나란히 저장한다(2026-10-30 쿼리 점검: 플랫폼 수만큼 2왕복씩 줄을 섰다)
+    await Promise.all(
+      rows.map((d) =>
+        createAlert({
+          gameId: d.gameId,
+          platform: d.platform === "all" ? null : d.platform,
+          minDiscountPct: d.mode === "discount" ? d.minDiscountPct : null,
+          targetPrice: d.mode === "price" ? d.targetPrice : null,
+        }),
+      ),
+    );
     if (rows[0]) await inboxIfMet(rows[0].gameId);
     revalidatePath("/alerts");
     return { ok: true, message: "알림을 저장했어요" };

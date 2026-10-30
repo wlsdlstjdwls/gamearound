@@ -779,7 +779,11 @@ export const priceAlerts = pgTable("price_alerts", {
   channel: alertChannelEnum("channel").default("web").notNull(),
   isActive: boolean("is_active").default(true).notNull(),
   ...auditColumns(),
-}, (t) => [index("pa_game_active_idx").on(t.gameId, t.isActive)]);
+}, (t) => [
+  index("pa_game_active_idx").on(t.gameId, t.isActive),
+  // 내 알림 목록, 찜 화면의 알림 상태, 게임별 내 알림 찾기가 전부 user_id 로 거른다(2026-10-30 쿼리 점검). 없을 때는 표를 통째로 훑었다
+  index("pa_user_game_idx").on(t.userId, t.gameId),
+]);
 
 export const alertDeliveries = pgTable("alert_deliveries", {
   alertId: uuid("alert_id").references(() => priceAlerts.id, { onDelete: "cascade" }).notNull(),

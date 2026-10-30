@@ -1,0 +1,2 @@
+CREATE INDEX "pa_user_game_idx" ON "price_alerts" USING btree ("user_id","game_id");--> statement-breakpoint
+CREATE INDEX "indie_post_likes_user_idx" ON "indie_post_likes" USING btree ("user_id","created_at");

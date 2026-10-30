@@ -1,9 +1,10 @@
 // 알림함(기획서 v2.0 M-03). 쌓는 쪽(댓글 액션, 가격 알림 발송, 승인)과 읽는 쪽(헤더 종 팝오버)이 이 파일을 쓴다.
-import { desc, eq } from "drizzle-orm";
+import { desc } from "drizzle-orm";
 import { getDb } from "@/server/db/client";
 import { createdBy } from "@/server/db/audit";
 import { notifications, type NotificationKind } from "@/server/db/schema";
 import { getCurrentUser } from "@/server/services/users";
+import { ownedByCurrentSession } from "@/server/auth/session";
 import { postPath, type POST_CATEGORIES } from "@/lib/community/constants";
 import { NOTIFICATION_MESSAGES as M } from "@/lib/notifications/messages";
 
@@ -33,14 +34,18 @@ export async function notifyReply(p: { postId: string; parentAuthorId: string; p
   await pushNotification(p.parentAuthorId, "comment", M.reply(p.postTitle), postPath(p.postId, p.category as (typeof POST_CATEGORIES)[number]), "user");
 }
 
-/** 지금 사람의 최근 알림. 비로그인이면 빈 목록 */
+/**
+ * 지금 사람의 최근 알림. 비로그인이면 빈 목록.
+ * 세션을 먼저 묻고 그다음 알림을 묻으면 Neon 왕복이 둘(약 440ms) 줄을 선다(2026-10-30 사용자 "알림 이력 조회가 느리다").
+ * 소유자 조건을 세션 서브질의로 넣어 한 왕복에 끝낸다 — 찜 목록(listWishlist)과 같은 방식이다
+ */
 export async function listMyNotifications(): Promise<NotificationDto[]> {
-  const me = await getCurrentUser().catch(() => null);
-  if (!me) return [];
+  const owner = await ownedByCurrentSession(notifications.userId);
+  if (!owner) return [];
   const rows = await getDb()
     .select()
     .from(notifications)
-    .where(eq(notifications.userId, me.id))
+    .where(owner)
     .orderBy(desc(notifications.createdAt))
     .limit(NOTIFICATION_LIST_LIMIT);
   return rows.map((r) => ({ id: r.id, kind: r.kind, body: r.body, link: r.link, createdAt: r.createdAt, read: r.readAt !== null }));

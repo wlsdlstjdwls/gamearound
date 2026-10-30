@@ -68,17 +68,18 @@ export async function listAlerts(): Promise<AlertWithGame[]> {
 }
 
 /**
- * 내 알림 + 지금 상태. 알림을 먼저 받고(소유자 서브질의 한 왕복), 그 게임들의 가격 행과 발송 기록을
- * **나란히** 받는다 — 줄 세우면 왕복이 셋이 된다.
+ * 내 알림 + 지금 상태. 알림, 그 게임들의 가격 행, 발송 기록을 **한 번에 나란히** 받는다(왕복 1회).
+ * 가격 행과 발송 기록은 알림 id 를 기다리지 않고 "내 알림" 서브질의로 거른다(2026-10-30 쿼리 점검: 알림 → 나머지로 2왕복이었다).
  * 가격 행은 한국 지역, 보이는 플랫폼만 본다(목록, 상세와 같은 기준).
  */
 export async function listAlertViews(): Promise<AlertsOverview> {
-  const alerts = await listAlerts();
-  if (alerts.length === 0) return { views: [], active: 0, metNow: 0, sentRecent: 0 };
+  const owner = await ownedByCurrentSession(priceAlerts.userId);
+  if (!owner) throw new Error(AUTH_MESSAGES.loginRequired);
   const db = getDb();
-  const gameIds = [...new Set(alerts.map((a) => a.gameId))];
-  const alertIds = alerts.map((a) => a.id);
-  const [rows, sent] = await Promise.all([
+  const myGameIds = db.select({ id: priceAlerts.gameId }).from(priceAlerts).where(owner);
+  const myAlertIds = db.select({ id: priceAlerts.id }).from(priceAlerts).where(owner);
+  const [alerts, rows, sent] = await Promise.all([
+    listAlerts(),
     db
       .select({
         gameId: gamePlatforms.gameId,
@@ -88,7 +89,7 @@ export async function listAlertViews(): Promise<AlertsOverview> {
         discountPct: gamePlatforms.discountPct,
       })
       .from(gamePlatforms)
-      .where(and(inArray(gamePlatforms.gameId, gameIds), eq(gamePlatforms.region, HOME_REGION), visiblePlatformsOnly())),
+      .where(and(inArray(gamePlatforms.gameId, myGameIds), eq(gamePlatforms.region, HOME_REGION), visiblePlatformsOnly())),
     db
       .select({
         alertId: alertDeliveries.alertId,
@@ -97,9 +98,10 @@ export async function listAlertViews(): Promise<AlertsOverview> {
         recent: sql<number>`count(*) filter (where ${alertDeliveries.sentAt} >= now() - make_interval(days => ${ALERT_RECENT_DAYS}::int))::int`,
       })
       .from(alertDeliveries)
-      .where(inArray(alertDeliveries.alertId, alertIds))
+      .where(inArray(alertDeliveries.alertId, myAlertIds))
       .groupBy(alertDeliveries.alertId),
   ]);
+  if (alerts.length === 0) return { views: [], active: 0, metNow: 0, sentRecent: 0 };
   const lastBy = new Map(sent.map((r) => [r.alertId, r.last]));
 
   const views = alerts.map<AlertView>((a) => ({
@@ -219,35 +221,37 @@ export async function getMyGameAlert(gameId: string, allPlatforms: Platform[]): 
 export async function saveGameAlert(gameId: string, platforms: Platform[], channel: AlertChannel): Promise<void> {
   const u = await requireUser();
   const db = getDb();
-  const game = await db.query.games.findFirst({ where: eq(games.id, gameId), columns: { id: true } });
+  // 게임 확인과 내 기존 알림은 서로 기다릴 일이 없다. 고칠 것, 지울 것, 새로 넣을 것도 플랫폼마다 한 줄씩 보내지 않고
+  // 갈래마다 한 질의로 묶어 나란히 보낸다(2026-10-30 쿼리 점검: 플랫폼 수만큼 왕복이 줄을 섰다)
+  const [game, rows] = await Promise.all([
+    db.query.games.findFirst({ where: eq(games.id, gameId), columns: { id: true } }),
+    db.query.priceAlerts.findMany({ where: and(eq(priceAlerts.userId, u.id), eq(priceAlerts.gameId, gameId)) }),
+  ]);
   if (!game) throw new Error("존재하지 않는 게임입니다");
-  const rows = await db.query.priceAlerts.findMany({ where: and(eq(priceAlerts.userId, u.id), eq(priceAlerts.gameId, gameId)) });
   const keep = new Set(platforms);
   const stale = rows.filter((r) => r.platform === null || !keep.has(r.platform)).map((r) => r.id);
-  if (stale.length > 0) await db.delete(priceAlerts).where(and(eq(priceAlerts.userId, u.id), inArray(priceAlerts.id, stale)));
-  for (const platform of platforms) {
-    const existing = rows.find((r) => r.platform === platform);
-    if (existing) {
-      await db.update(priceAlerts).set({ channel, isActive: true }).where(and(eq(priceAlerts.id, existing.id), eq(priceAlerts.userId, u.id)));
-    } else {
-      await db.insert(priceAlerts).values({ userId: u.id, gameId, platform, minDiscountPct: 1, targetPrice: null, channel, isActive: true });
-    }
-  }
+  const existing = rows.filter((r) => r.platform !== null && keep.has(r.platform));
+  const fresh = platforms.filter((p) => !existing.some((r) => r.platform === p));
+  await Promise.all([
+    stale.length > 0 ? db.delete(priceAlerts).where(and(eq(priceAlerts.userId, u.id), inArray(priceAlerts.id, stale))) : null,
+    existing.length > 0
+      ? db.update(priceAlerts).set({ channel, isActive: true }).where(and(eq(priceAlerts.userId, u.id), inArray(priceAlerts.id, existing.map((r) => r.id))))
+      : null,
+    fresh.length > 0
+      ? db.insert(priceAlerts).values(fresh.map((platform) => ({ userId: u.id, gameId, platform, minDiscountPct: 1, targetPrice: null, channel, isActive: true })))
+      : null,
+  ]);
 }
 
 /** 활성/비활성 토글. 결과 상태 반환 */
 export async function toggleAlert(id: string): Promise<{ isActive: boolean }> {
   const u = await requireUser();
-  const db = getDb();
-  const current = await db.query.priceAlerts.findFirst({
-    where: and(eq(priceAlerts.id, id), eq(priceAlerts.userId, u.id)),
-    columns: { id: true, isActive: true },
-  });
-  if (!current) throw new Error("알림을 찾을 수 없거나 권한이 없습니다");
-  const [row] = await db
+  // 읽고 뒤집지 않고 한 질의로 뒤집는다(2026-10-30 쿼리 점검) — 왕복이 하나 줄고, 두 번 빨리 눌러도 읽은 값이 낡지 않는다
+  const [row] = await getDb()
     .update(priceAlerts)
-    .set({ isActive: !current.isActive })
+    .set({ isActive: sql`not ${priceAlerts.isActive}` })
     .where(and(eq(priceAlerts.id, id), eq(priceAlerts.userId, u.id)))
     .returning({ isActive: priceAlerts.isActive });
+  if (!row) throw new Error("알림을 찾을 수 없거나 권한이 없습니다");
   return { isActive: row.isActive };
 }

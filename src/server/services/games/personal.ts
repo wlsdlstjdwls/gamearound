@@ -12,7 +12,7 @@ import { gameGenres, gamePlatforms, games, gameSubscriptions, HOME_REGION, price
 import { visiblePlatformsOnly } from "@/server/db/visibility";
 import type { DealFloor } from "@/lib/onboarding/personal";
 import type { GameSummary } from "./dto";
-import { fillGenres, fillPlatforms, groupSummaries } from "./mappers";
+import { fillPlatformsAndGenres, groupSummaries } from "./mappers";
 import { mainGamesOnly } from "./filters";
 import { showcaseReady } from "./exposure";
 import { dealOrder, popularityRankAgg } from "./popularity-order";
@@ -68,7 +68,7 @@ async function getPickedDeals(f: PersonalDealsFilter): Promise<GameSummary[]> {
     .orderBy(...dealOrder(rankAgg))
     .limit(HOME_LIMIT * 4);
 
-  return fillGenres(await fillPlatforms(groupSummaries(rows, HOME_LIMIT)));
+  return fillPlatformsAndGenres(groupSummaries(rows, HOME_LIMIT));
 }
 
 /**

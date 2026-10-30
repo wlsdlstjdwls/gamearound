@@ -2,6 +2,7 @@
 //
 // 관리자, 매장주 화면과 모양을 나눈 이유는 ShopPublic 주석에 있다 — 공개 화면에 status 를 흘리지 않는다.
 import "server-only";
+import { cache } from "react";
 import { and, asc, eq, sql } from "drizzle-orm";
 import { getDb } from "@/server/db/client";
 import { shops } from "@/server/db/schema";
@@ -82,12 +83,13 @@ export async function listActiveShops(
  * 공개 매장 페이지가 쓰는 조회. 심사 중(pending)은 없는 것으로 본다 —
  * 신청만 하고 주소를 뿌리면 승인 전에 매장 페이지가 도는 길이 열린다.
  * 정지(suspended)는 보여 주되 화면이 쉬는 중이라고 말한다(설계서 §3 — 행을 지우지 않는다).
+ * cache(): 매장 화면의 generateMetadata 와 본문이 같은 요청에서 둘 다 부른다 — 감싸지 않으면 질의가 두 번 나갔다(2026-10-30 쿼리 점검)
  */
-export async function findPublicShopBySlug(
+export const findPublicShopBySlug = cache(async (
   slug: string,
-): Promise<{ shopId: string; shop: ShopPublic; suspended: boolean } | null> {
+): Promise<{ shopId: string; shop: ShopPublic; suspended: boolean } | null> => {
   const row = await findShopBySlug(slug);
   if (!row || row.status === "pending") return null;
   // id 는 ShopPublic 에 넣지 않고 따로 돌려준다 — 화면이 아니라 다음 질의(판매 목록)가 쓰는 값이다
   return { shopId: row.id, shop: toPublic(row), suspended: row.status === "suspended" };
-}
+});
