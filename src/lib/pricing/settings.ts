@@ -12,6 +12,7 @@
 //
 // 이 파일은 "use client" 가 아니다 — 관리자 폼(클라이언트)과 서버가 같은 스키마로 검증한다(AGENTS.md 2장).
 import { z } from "zod";
+import { BADGE_TONES, BOX_TONES, TEXT_TONES } from "@/lib/pricing/copy-tones";
 
 /** 광고 자리. 화면 코드(promotions)가 아는 자리가 이 둘뿐이라 상품은 이 안에서만 고른다. 값은 schema 의 promo_slot 과 같다 */
 export const AD_SLOTS = ["indie_top", "promo_pin"] as const;
@@ -97,6 +98,10 @@ const tierCopySchema = z.object({
   /** 카드 아래 덧말(첫 단의 "둘 다 걸 거면 ..."). 비우면 안 그린다 */
   hint: longText,
   cta: text.min(1),
+  /** 색(lib/pricing/copy-tones). 앞 판 저장값에는 없다 — 비면 DEFAULT_TONES 로 그린다 */
+  tagTone: z.enum(BADGE_TONES).optional(),
+  nowTone: z.enum(BOX_TONES).optional(),
+  hintTone: z.enum(TEXT_TONES).optional(),
 });
 
 /** 사람이 고르는 중단 사유. 늘릴 때 여기와 admin-messages 의 stopReasonLabels 만 고친다 */
@@ -112,6 +117,8 @@ export const promotionSchema = z
     name: text.min(1).optional(),
     /** 값 옆 딱지 글(예: 첫 달 할인). 보는 사람에게 그대로 보인다 */
     label: text.min(1),
+    /** 노출명 배지 색(lib/pricing/copy-tones). 비면 DEFAULT_TONES.promo */
+    tone: z.enum(BADGE_TONES).optional(),
     /** 광고 상품 id 이거나 membership. 있는 상품인지는 설정 전체 스키마가 본다 */
     target: z.string().min(1).max(40),
     /** percent: value% 할인, price: 값을 value 원으로 */

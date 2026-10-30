@@ -25,6 +25,8 @@ import { MONTH_DAYS_APPROX } from "@/lib/membership/plan";
 import { PLANS_MESSAGES as M } from "@/lib/payments/plans-messages";
 import { perDay, type PriceBook, type Quote } from "@/lib/pricing/quote";
 import { PLAN_SPOTS } from "@/lib/pricing/preview-spots";
+import { DEFAULT_TONES, type BadgeTone, type BoxTone } from "@/lib/pricing/copy-tones";
+import { BOX_TONE_CLASS, TEXT_TONE_CLASS } from "@/components/payments/copy-tone";
 import { fillCopy, type PricingSettings } from "@/lib/pricing/settings";
 import { ROUTES } from "@/lib/routes";
 
@@ -102,9 +104,9 @@ function Head({ eyebrow, name, tag, summary }: { eyebrow: string; name: string; 
 }
 
 /** 값 바로 아래 "지금 받는 것" 한 줄 */
-function Now({ children }: { children: React.ReactNode }) {
+function Now({ tone = DEFAULT_TONES.now, children }: { tone?: BoxTone; children: React.ReactNode }) {
   return (
-    <p data-preview-spot={PLAN_SPOTS.now} className="rounded-xl bg-acc-soft px-3 py-2 text-[13px] font-semibold text-acc">
+    <p data-preview-spot={PLAN_SPOTS.now} className={cn("rounded-xl px-3 py-2 text-[13px] font-semibold", BOX_TONE_CLASS[tone])}>
       {children}
     </p>
   );
@@ -145,20 +147,21 @@ export function PlanCards({ copy, book, active, credits, membership, single, bun
   const fill = (t: string) => fillCopy(t, vars);
   const fillAll = (ls: readonly string[]) => ls.map(fill);
   const count = [active.single, active.bundle, active.membership].filter(Boolean).length as 1 | 2 | 3;
-  const tag = (t: string, tone: "acc" | "plumSolid") => (t ? <Tag tone={tone}>{t}</Tag> : undefined);
+  // 배지, 띠, 안내 색은 관리자가 고른 값(copy 의 ~Tone), 없으면 고르기 전 색(lib/pricing/copy-tones)
+  const tag = (t: string, tone: BadgeTone) => (t ? <Tag tone={tone}>{t}</Tag> : undefined);
 
   return (
     <div className={cn("grid items-stretch gap-3", !stack && GRID_COLS[Math.max(1, count) as 1 | 2 | 3])}>
       {active.single && (
         <section data-preview-spot={PLAN_SPOTS.card} className={sectionCardClass("flex flex-col gap-4")}>
-          <Head eyebrow={copy.single.eyebrow} name={copy.single.name} summary={fill(copy.single.summary)} tag={tag(copy.single.tag, "acc")} />
+          <Head eyebrow={copy.single.eyebrow} name={copy.single.name} summary={fill(copy.single.summary)} tag={tag(copy.single.tag, copy.single.tagTone ?? DEFAULT_TONES.tag.single)} />
           <div data-preview-spot={PLAN_SPOTS.price} className={PRICE_BOX}>
             <PriceTag quote={singleQuote}>{singleFrom && <span className="text-[13px] text-mut">{M.from}</span>}</PriceTag>
           </div>
-          {copy.single.now && <Now>{copy.single.now}</Now>}
+          {copy.single.now && <Now tone={copy.single.nowTone}>{copy.single.now}</Now>}
           <Included lines={fillAll(copy.single.lines)} />
           {copy.single.hint && (upsell ?? active.bundle) && (
-            <p data-preview-spot={PLAN_SPOTS.hint} className="text-[13px] font-semibold text-danger">
+            <p data-preview-spot={PLAN_SPOTS.hint} className={cn("text-[13px] font-semibold", TEXT_TONE_CLASS[copy.single.hintTone ?? DEFAULT_TONES.hint])}>
               {fill(copy.single.hint)}
             </p>
           )}
@@ -170,13 +173,13 @@ export function PlanCards({ copy, book, active, credits, membership, single, bun
 
       {active.bundle && (
         <section data-preview-spot={PLAN_SPOTS.card} className={sectionCardClass("flex flex-col gap-4 ring-2 ring-acc")}>
-          <Head eyebrow={copy.bundle.eyebrow} name={copy.bundle.name} summary={fill(copy.bundle.summary)} tag={tag(copy.bundle.tag, "acc")} />
+          <Head eyebrow={copy.bundle.eyebrow} name={copy.bundle.name} summary={fill(copy.bundle.summary)} tag={tag(copy.bundle.tag, copy.bundle.tagTone ?? DEFAULT_TONES.tag.bundle)} />
           <div data-preview-spot={PLAN_SPOTS.price} className={PRICE_BOX}>
             <PriceTag quote={book.bundle} list={book.bundleList}>
               {saving > 0 && <span className="text-[13px] font-semibold text-danger">{M.saving(formatPrice(saving))}</span>}
             </PriceTag>
           </div>
-          {copy.bundle.now && <Now>{copy.bundle.now}</Now>}
+          {copy.bundle.now && <Now tone={copy.bundle.nowTone}>{copy.bundle.now}</Now>}
           <Adds base={copy.bundle.base} lines={fillAll(copy.bundle.lines)} />
           <div data-preview-spot={PLAN_SPOTS.cta} className="mt-auto flex flex-col">
             <PlanCta label={copy.bundle.cta} variant="accent" groups={bundle} empty={empty} note={bundleNeedsPromo ? M.bundleNeedsPromo : undefined} />
@@ -190,12 +193,12 @@ export function PlanCards({ copy, book, active, credits, membership, single, bun
             eyebrow={copy.membership.eyebrow}
             name={copy.membership.name}
             summary={fill(copy.membership.summary)}
-            tag={membership ? <Tag tone="ok">{M.membershipActive}</Tag> : tag(copy.membership.tag, "plumSolid")}
+            tag={membership ? <Tag tone="ok">{M.membershipActive}</Tag> : tag(copy.membership.tag, copy.membership.tagTone ?? DEFAULT_TONES.tag.membership)}
           />
           <div data-preview-spot={PLAN_SPOTS.price} className={PRICE_BOX}>
             <MembershipPrice quote={book.membership} />
           </div>
-          {copy.membership.now && <Now>{membership ? M.membershipCredits(membership.credits) : copy.membership.now}</Now>}
+          {copy.membership.now && <Now tone={copy.membership.nowTone}>{membership ? M.membershipCredits(membership.credits) : copy.membership.now}</Now>}
           <Adds base={copy.membership.base} lines={fillAll(copy.membership.lines)} />
           <Link href={ROUTES.membership} data-preview-spot={PLAN_SPOTS.cta} className={buttonClass({ variant: membership ? "secondary" : "primary", fullWidth: true, className: "mt-auto" })}>
             {membership ? M.membershipManage : copy.membership.cta}

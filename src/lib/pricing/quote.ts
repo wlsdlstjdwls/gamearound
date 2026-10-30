@@ -6,6 +6,7 @@
 // 멤버십 프로모션은 첫 달 청구에만 걸린다. 갱신은 언제나 설정의 정가다.
 // 날짜는 한국 날짜로 본다: startsOn 00:00 부터 endsOn 23:59:59 까지(KST).
 import { findProduct, isBundleProduct, MEMBERSHIP_KEY, PRICING_DEFAULTS, type CatalogProduct, type PricedKey, type PricingSettings, type Promotion, MIN_CHARGE } from "@/lib/pricing/settings";
+import type { BadgeTone } from "@/lib/pricing/copy-tones";
 
 /** 할인 결과를 이 단위로 내린다(원). 6,210원 같은 값보다 6,200원이 읽힌다 */
 const ROUND_UNIT = 10;
@@ -24,6 +25,8 @@ export type Quote = {
   regular: number;
   /** 걸린 프로모션 딱지 글. 없으면 null */
   promoLabel: string | null;
+  /** 그 딱지 색. 관리자가 고르지 않았으면 null — 화면이 DEFAULT_TONES.promo 로 그린다 */
+  promoTone: BadgeTone | null;
 };
 
 /** 정가. 모르는 상품이면 던진다 — 부르는 쪽(주문 만들기)이 먼저 상품을 찾아 판매 중인지 본다 */
@@ -75,13 +78,13 @@ function applyPromotion(regular: number, p: Promotion): number {
  */
 export function quote(s: PricingSettings, key: PricedKey, buyer: Buyer, now: Date, first = true): Quote {
   const regular = regularOf(s, key);
-  if (key === MEMBERSHIP_KEY && !first) return { amount: regular, regular, promoLabel: null };
-  let best: Quote = { amount: regular, regular, promoLabel: null };
+  if (key === MEMBERSHIP_KEY && !first) return { amount: regular, regular, promoLabel: null, promoTone: null };
+  let best: Quote = { amount: regular, regular, promoLabel: null, promoTone: null };
   for (const p of s.promotions) {
     if (p.target !== key || !promotionLive(p, now)) continue;
     if (p.audience === "first" && buyer.everPaid) continue;
     const amount = applyPromotion(regular, p);
-    if (amount < best.amount) best = { amount, regular, promoLabel: p.label };
+    if (amount < best.amount) best = { amount, regular, promoLabel: p.label, promoTone: p.tone ?? null };
   }
   return best;
 }
@@ -163,7 +166,7 @@ export type PriceBook = {
 };
 
 /** 상품이 없는 갈래의 자리 값. 그 카드는 sellingTiers 가 끄므로 보이지 않는다 */
-const NO_QUOTE: Quote = { amount: 0, regular: 0, promoLabel: null };
+const NO_QUOTE: Quote = { amount: 0, regular: 0, promoLabel: null, promoTone: null };
 
 export function priceBook(s: PricingSettings, buyer: { productsPaid: boolean; membershipPaid: boolean }, now: Date): PriceBook {
   const product = { everPaid: buyer.productsPaid };

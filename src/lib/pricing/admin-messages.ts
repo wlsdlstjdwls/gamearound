@@ -125,6 +125,11 @@ export const PRICING_ADMIN_MESSAGES = {
     cta: "구매 버튼명",
     benefits: "멤버십 화면 혜택 항목",
   },
+  /** 색 고르기(pricing-form/tone-picker, lib/pricing/copy-tones). 칩이 그 색으로 칠해져 이름은 짧게 둔다 */
+  toneFields: { tagTone: "배지 색상", nowTone: "문구 색상", hintTone: "안내 색상" },
+  promoTone: "배지 색상",
+  toneLabels: { acc: "파랑", plum: "보라", plumSolid: "진한 보라", hot: "빨강 채움", danger: "빨강", neutral: "회색", mut: "회색" },
+
 
   // ---- 프로모션등록 화면 구성(2026-10-29 밤, 백오피스 일반프로모션 꼴) ----
   promoSearchUse: "사용여부",

@@ -7,6 +7,7 @@ import { BUNDLE_MESSAGES as B } from "@/lib/payments/messages";
 import { PLANS_MESSAGES as M } from "@/lib/payments/plans-messages";
 import { discountRate, type Quote } from "@/lib/pricing/quote";
 import { PLAN_SPOTS } from "@/lib/pricing/preview-spots";
+import { DEFAULT_TONES } from "@/lib/pricing/copy-tones";
 
 export const PRICE_BIG = "text-[28px] font-black leading-none tabular-nums text-ink";
 
@@ -39,7 +40,7 @@ export function PriceTag({ quote, list = quote.regular, prefix, children }: Prop
           )}
           {quote.promoLabel && (
             <span data-preview-spot={PLAN_SPOTS.promo} className="inline-flex">
-              <Tag tone="plum">{quote.promoLabel}</Tag>
+              <Tag tone={quote.promoTone ?? DEFAULT_TONES.promo}>{quote.promoLabel}</Tag>
             </span>
           )}
         </span>

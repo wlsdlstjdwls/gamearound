@@ -10,6 +10,8 @@ import { cn } from "@/lib/cn";
 import type { Patch } from "@/components/admin/pricing-form";
 import { Panel } from "@/components/admin/pricing-form/sections";
 import { Field } from "@/components/admin/screen/layout";
+import { TonePicker } from "@/components/admin/pricing-form/tone-picker";
+import { BADGE_TONES, BOX_TONES, DEFAULT_TONES, TEXT_TONES } from "@/lib/pricing/copy-tones";
 import { DetailTabs } from "@/components/ui/tabs";
 import { TextField, TEXTAREA_CLASS } from "@/components/ui/text-field";
 import { fromDisplayCopy, toDisplayCopy } from "@/lib/pricing/copy-tokens";
@@ -18,7 +20,21 @@ import { PRICING_ADMIN_MESSAGES as M, TIER_LABELS } from "@/lib/pricing/admin-me
 import type { PricingSettings, TierKey } from "@/lib/pricing/settings";
 
 type TextKey = "name" | "eyebrow" | "summary" | "tag" | "now" | "base" | "hint" | "cta";
-type CopyField = { kind: "text"; key: TextKey } | { kind: "lines"; key: "lines" | "benefits" };
+/** 색 칸은 꾸미는 글 칸 바로 밑에 서고, 미리 보기에서는 그 글 자리를 가리킨다(spot) */
+type ToneKey = "tagTone" | "nowTone" | "hintTone";
+type CopyField = { kind: "text"; key: TextKey } | { kind: "lines"; key: "lines" | "benefits" } | { kind: "tone"; key: ToneKey; spot: TextKey };
+
+/** 색 칸마다 고를 수 있는 색과 칩 모양(lib/pricing/copy-tones) */
+const TONE_FIELDS = {
+  tagTone: { kind: "badge", tones: BADGE_TONES },
+  nowTone: { kind: "box", tones: BOX_TONES },
+  hintTone: { kind: "text", tones: TEXT_TONES },
+} as const;
+
+/** 고르기 전 색 — 저장값에 색이 없으면 카드가 그리는 색과 같아야 칩 선택이 화면과 맞는다 */
+function defaultTone(t: TierKey, key: ToneKey): string {
+  return key === "tagTone" ? DEFAULT_TONES.tag[t] : key === "nowTone" ? DEFAULT_TONES.now : DEFAULT_TONES.hint;
+}
 
 /**
  * 카드에 서는 순서. 칸이 카드에 안 서는 단은 뺀다 — 낱개 카드에는 혜택 목록 제목(base)이 없고(맨 아랫단이라 "OO에 더해" 가 없다),
@@ -27,10 +43,10 @@ type CopyField = { kind: "text"; key: TextKey } | { kind: "lines"; key: "lines" 
 // 칸 순서는 카드를 위에서 아래로 읽는 순서다(2026-10-30 사용자 "카드문구 순서대로"): 상단 보조문구, 상품 표시명과 그 옆 강조 배지, 요약문구,
 // 가격 아래 즉시혜택 문구, 혜택 머리말과 항목, 버튼 바로 위 업셀 안내문구, 구매 버튼명. 미리 보기와 나란히 놓고 위에서부터 고친다
 const COPY_GROUPS: { title: "groupHead" | "groupPrice" | "groupBenefits" | "groupAction"; fields: CopyField[]; only?: Partial<Record<string, TierKey[]>> }[] = [
-  { title: "groupHead", fields: [{ kind: "text", key: "eyebrow" }, { kind: "text", key: "name" }, { kind: "text", key: "tag" }, { kind: "text", key: "summary" }] },
-  { title: "groupPrice", fields: [{ kind: "text", key: "now" }] },
+  { title: "groupHead", fields: [{ kind: "text", key: "eyebrow" }, { kind: "text", key: "name" }, { kind: "text", key: "tag" }, { kind: "tone", key: "tagTone", spot: "tag" }, { kind: "text", key: "summary" }] },
+  { title: "groupPrice", fields: [{ kind: "text", key: "now" }, { kind: "tone", key: "nowTone", spot: "now" }] },
   { title: "groupBenefits", fields: [{ kind: "text", key: "base" }, { kind: "lines", key: "lines" }, { kind: "lines", key: "benefits" }], only: { base: ["bundle", "membership"], benefits: ["membership"] } },
-  { title: "groupAction", fields: [{ kind: "text", key: "hint" }, { kind: "text", key: "cta" }], only: { hint: ["single"] } },
+  { title: "groupAction", fields: [{ kind: "text", key: "hint" }, { kind: "tone", key: "hintTone", spot: "hint" }, { kind: "text", key: "cta" }], only: { hint: ["single"], hintTone: ["single"] } },
 ];
 
 /** 비우면 저장할 수 없는 칸(lib/pricing/settings 의 tierCopySchema 에서 min(1) 인 칸). 이름표 앞에 필수 * 를 단다 */
@@ -45,6 +61,21 @@ export function CopySection({ value, patch, tier, onTier, errors = {}, bare = fa
     patch((d) => ({ ...d, copy: { ...d.copy, [t]: { ...d.copy[t], [key]: fromDisplayCopy(display).split("\n") } } }));
 
   const field = (t: TierKey, f: CopyField) => {
+    if (f.kind === "tone") {
+      const def = TONE_FIELDS[f.key];
+      const current = value.copy[t][f.key] ?? defaultTone(t, f.key);
+      return (
+        <Field label={M.toneFields[f.key]} wide>
+          <TonePicker
+            label={M.toneFields[f.key]}
+            kind={def.kind}
+            tones={def.tones as readonly string[]}
+            value={current}
+            onChange={(tone) => patch((d) => ({ ...d, copy: { ...d.copy, [t]: { ...d.copy[t], [f.key]: tone } } }))}
+          />
+        </Field>
+      );
+    }
     const id = `copy-${t}-${f.key}`;
     if (f.kind === "text") {
       const write = (display: string) => setText(t, f.key, display);
@@ -111,7 +142,7 @@ export function CopySection({ value, patch, tier, onTier, errors = {}, bare = fa
             </p>
             {/* 칸마다 카드 자리 이름을 단다 — 칸 이름(copy 의 키)이 곧 자리 이름이다(lib/pricing/preview-spots). 내 멤버십 화면 혜택(benefits)은 카드에 안 서서 짝이 없다 */}
             {fields.map((f) => (
-              <div key={f.key} data-preview-spot={f.key}>
+              <div key={f.key} data-preview-spot={f.kind === "tone" ? f.spot : f.key}>
                 {field(t, f)}
               </div>
             ))}
