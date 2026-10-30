@@ -38,9 +38,16 @@ describe("quote", () => {
   it("비율 할인은 10원 단위로 내린다", () => {
     expect(quote(withPromos([promo({ value: 15 })]), "boost_indie_7d", { everPaid: true }, now).amount).toBe(5_860);
   });
-  it("여럿 걸리면 가장 싼 하나만(겹쳐 깎지 않는다)", () => {
+  it("여럿 걸리면 가장 최근에 등록한(목록 뒤) 하나만, 더 싸도 옛 것은 안 쓴다", () => {
     const s = withPromos([promo({ id: "a", value: 10 }), promo({ id: "b", value: 30, label: "큰 할인" })]);
     expect(quote(s, "boost_indie_7d", { everPaid: true }, now)).toEqual({ amount: 4_830, regular: 6_900, promoLabel: "큰 할인", promoTone: null, promoId: "b", promoMonths: 1 });
+    const later = withPromos([promo({ id: "big", value: 30 }), promo({ id: "new", value: 10, label: "새 할인" })]);
+    expect(quote(later, "boost_indie_7d", { everPaid: true }, now).promoId).toBe("new");
+  });
+  it("최근 것이 대상자에 안 맞거나 기간 밖이면 그다음 최근 것", () => {
+    const s = withPromos([promo({ id: "old", value: 20 }), promo({ id: "new", value: 10, audience: "first" }), promo({ id: "next", value: 5, startsOn: "2026-11-01" })]);
+    expect(quote(s, "boost_indie_7d", { everPaid: true }, now).promoId).toBe("old");
+    expect(quote(s, "boost_indie_7d", { everPaid: false }, now).promoId).toBe("new");
   });
   it("정가보다 비싼 프로모션 값은 버린다", () => {
     expect(quote(withPromos([promo({ kind: "price", value: 8_000 })]), "boost_indie_7d", { everPaid: true }, now).amount).toBe(6_900);

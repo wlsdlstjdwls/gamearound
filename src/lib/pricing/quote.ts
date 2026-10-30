@@ -2,8 +2,11 @@
 // 순수 함수다. 서버의 주문 만들기, 멤버십 첫 청구, 요금 화면 카드, 결제 화면 고르기가 모두 이 함수로 값을 낸다 —
 // 화면이 보인 값과 실제 청구가 갈리면 안 된다(서버는 이 값을 주문 줄에 적고, 결제창 금액은 그 줄과 견주기만 한다).
 //
-// 프로모션이 여럿 걸리면 가장 싼 값 하나만 쓴다(겹쳐 깎지 않는다) — 겹치면 관리자가 예상 못 한 값이 나온다.
-// 멤버십 프로모션은 첫 달 청구에만 걸린다. 갱신은 언제나 설정의 정가다.
+// 같은 상품에 프로모션이 여럿 걸리면 가장 최근에 등록한 하나만 쓴다(겹쳐 깎지 않는다, 2026-10-30 사용자 "겹치면 최신 프로모션으로").
+// 앞에는 가장 싼 하나를 골랐는데, 새 프로모션을 걸어도 옛 프로모션이 더 싸면 새 것이 안 보여 관리자가 바꾼 것이 먹히지 않았다.
+// "최근" 은 목록 순서다 — 새 프로모션은 목록 끝에 붙고(관리자 프로모션등록), 시작한 줄은 지울 수 없어 순서가 곧 등록 순서다.
+// 정가보다 비싸지는 프로모션은 건너뛴다(가격 인상을 할인처럼 보이게 하지 않는다) — 그다음 최근 것이 걸린다.
+// 멤버십 프로모션의 갱신 청구는 여기가 아니라 가입 때 받은 혜택으로 매긴다(lib/pricing/promo-terms).
 // 날짜는 한국 날짜로 본다: startsOn 00:00 부터 endsOn 23:59:59 까지(KST).
 import { findProduct, isBundleProduct, MEMBERSHIP_KEY, PRICING_DEFAULTS, type CatalogProduct, type PricedKey, type PricingSettings, type Promotion, MIN_CHARGE } from "@/lib/pricing/settings";
 import type { BadgeTone, ToneValue } from "@/lib/pricing/copy-tones";
@@ -105,7 +108,8 @@ export function quote(s: PricingSettings, key: PricedKey, buyer: Buyer, now: Dat
     if (p.target !== key || !promotionLive(p, now)) continue;
     if (!audienceMatches(p.audience, buyer.everPaid)) continue;
     const amount = applyPromotion(regular, p);
-    if (amount < best.amount) best = { amount, regular, promoLabel: p.label, promoTone: p.tone ?? null, promoId: p.id, promoMonths: promoMonthsOf(p) };
+    // 목록 뒤로 갈수록 최근이라 걸리는 것마다 덮는다. 정가보다 싸지지 않는 것은 걸리지 않은 것으로 본다
+    if (amount < regular) best = { amount, regular, promoLabel: p.label, promoTone: p.tone ?? null, promoId: p.id, promoMonths: promoMonthsOf(p) };
   }
   return best;
 }
