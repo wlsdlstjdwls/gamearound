@@ -55,7 +55,7 @@ function Row({ link, current }: { link: AccountLink; current: boolean }) {
   );
 }
 
-/** 로그인 전 메뉴(기획서 3.1 "로그인, 계정 등록, 가격 알림"). 앞 둘은 이 시트의 주된 할 일이라 큰 단추로 세운다 */
+/** 로그인 전 메뉴(기획서 3.1 "로그인, 회원가입, 가격 알림"). 앞 둘은 이 시트의 주된 할 일이라 큰 단추로 세운다 */
 function GuestBlock({ pathname }: { pathname: string }) {
   const [signIn, signUp, alerts] = guestLinks(pathname);
   return (

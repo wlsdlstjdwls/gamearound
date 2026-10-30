@@ -12,9 +12,9 @@ describe("accountLinksFor", () => {
 });
 
 describe("guestLinks", () => {
-  it("로그인, 계정 등록, 가격 알림 순서이고 가격 알림은 로그인을 거쳐 알림 화면으로 돌아온다", () => {
+  it("로그인, 회원가입, 가격 알림 순서이고 가격 알림은 로그인을 거쳐 알림 화면으로 돌아온다", () => {
     const links = guestLinks("/games");
-    expect(links.map((l) => l.label)).toEqual(["로그인", "계정 등록", "가격 알림"]);
+    expect(links.map((l) => l.label)).toEqual(["로그인", "회원가입", "가격 알림"]);
     expect(links[0].href).toBe(`${ROUTES.signIn}?next=${encodeURIComponent("/games")}`);
     expect(links[1].href).toBe(ROUTES.signUp);
     expect(links[2].href).toBe(`${ROUTES.signIn}?next=${encodeURIComponent(ROUTES.alerts)}`);
