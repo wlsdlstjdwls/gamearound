@@ -157,7 +157,7 @@ export const PRICING_ADMIN_MESSAGES = {
   promoFieldRegular: "정가",
   promoFieldPrice: "할인가",
   promosTitle: "프로모션",
-  promosLead: "여럿이 걸리면 가장 싼 값 하나만 써요(겹쳐 깎지 않아요). 메이커 멤버십 할인은 첫 달 결제에만 걸려요. 기간을 비우면 끝없이 이어져요.",
+  promosLead: "같은 상품에 여럿이 걸리면 가장 최근에 등록한 하나만 써요(겹쳐 깎지 않아요). 기간을 비우면 끝없이 이어져요.",
   promosEmpty: "프로모션이 없어요",
   /** 프로모션 표 머리와 고치는 판(2026-10-29, 목록 표 + 고른 줄 상세) */
   colPromo: "프로모션",
@@ -189,6 +189,8 @@ export const PRICING_ADMIN_MESSAGES = {
   monthsLabel: (n: number) => (n === 0 ? "매달 계속" : n === 1 ? "첫 달만" : `${n}개월`),
   /** 중지 범위(멤버십). 이미 이 프로모션으로 가입한 회원을 어떻게 할지 */
   promoStopScope: "중지 범위",
+  /** 중단 사유와 중지 범위를 한 줄에 세울 때의 이름표(멤버십 대상) */
+  promoStopReasonScope: "중단 사유/범위",
   stopScopeLabels: { new: "신규 가입만 중지", all: "기존 회원도 중지" },
   /** 시작한 프로모션은 조건 칸이 잠긴다(lib/pricing/promo-terms). 상세 제목 옆 딱지와 저장 거절 문구 */
   promoLockedTag: "진행 중 | 중지만 가능",

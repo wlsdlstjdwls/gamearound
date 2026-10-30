@@ -1,7 +1,7 @@
 "use client";
 // 요금 설정 폼의 프로모션 판(2026-10-28). 사용자: "첫 달 할인, 첫 결제 할인 같은 프로모션을 관리자가 설정하게".
-// 한 줄이 프로모션 하나 — 딱지 글, 대상, 방식(비율/값), 누구에게(누구나/처음 결제), 기간, 켜기. 겹쳐 깎지 않고 가장 싼 하나만 쓰는 규칙은
-// 판 머리 설명이 말한다(lib/pricing/quote). 지운 줄은 저장 전까지 "되돌리기" 로 살릴 수 있다(pricing-form).
+// 한 줄이 프로모션 하나 — 딱지 글, 대상, 방식(비율/값), 누구에게(누구나/처음 결제), 기간, 켜기. 겹쳐 깎지 않고 같은 상품에 걸린 것 중
+// 가장 최근에 등록한 하나만 쓴다(lib/pricing/quote, 2026-10-30 사용자 "겹치면 최신 프로모션으로"). 새 줄은 목록 끝에 붙어 순서가 곧 등록 순서다. 지운 줄은 저장 전까지 "되돌리기" 로 살릴 수 있다(pricing-form).
 // 기간은 한국 날짜다 — 끝일 23:59:59 까지 걸린다.
 // 2026-10-29(사용자 "설정하기 이쁘게"): 줄 머리에 지금 단계 꼬리표(꺼짐, 시작 전, 진행 중, 끝남)와 한 문장 요약을 둔다 —
 // 켜 두었는데 기간이 지나 안 걸리는 행사를 칸을 다 읽어야 알 수 있었다.
@@ -154,31 +154,35 @@ function Detail({ value, p, set, errors, locked }: { value: PricingSettings; p: 
               options={(["live", "stopped"] as const).map((k) => ({ value: k, label: M.statusLabels[k] }))}
             />
           </Field>
+          {/* 중단 사유와 중지 범위는 한 줄(2026-10-30 사용자 "같은 행, 필드 크게"). 두 열 칸에 따로 두면 칸이 좁아 "운영 ...", "신규 ..." 로 잘렸다 —
+              한 줄을 다 쓰는 칸 하나에 고르기 둘을 반씩 세운다. 중지 범위는 이미 이 프로모션으로 가입한 회원을 어떻게 할지다
+              (lib/pricing/promo-terms 의 renewalCharge). 광고 상품은 한 번 사고 끝이라 범위를 묻지 않는다 */}
           {!p.active && (
-            <Field label={M.promoFieldStopReason} required spot={spots(PLAN_SPOTS.list, PLAN_SPOTS.rate, PLAN_SPOTS.promo)}>
-              <FormSelect
-                name={`pr-${p.id}`}
-                label={M.promoFieldStopReason}
-                hideLabel
-                size="lg"
-                value={p.stopReason ?? "manual"}
-                onChange={(v) => set({ stopReason: v as (typeof PROMOTION_STOP_REASONS)[number] })}
-                options={PROMOTION_STOP_REASONS.map((k) => ({ value: k, label: M.stopReasonLabels[k] }))}
-              />
-            </Field>
-          )}
-          {/* 중지 범위 — 이미 이 프로모션으로 가입한 회원을 어떻게 할지(lib/pricing/promo-terms 의 renewalCharge). 광고 상품은 한 번 사고 끝이라 묻지 않는다 */}
-          {!p.active && membership && (
-            <Field label={M.promoStopScope} required>
-              <FormSelect
-                name={`pss-${p.id}`}
-                label={M.promoStopScope}
-                hideLabel
-                size="lg"
-                value={p.stopScope ?? "new"}
-                onChange={(v) => set({ stopScope: v as (typeof PROMOTION_STOP_SCOPES)[number] })}
-                options={PROMOTION_STOP_SCOPES.map((k) => ({ value: k, label: M.stopScopeLabels[k] }))}
-              />
+            <Field label={membership ? M.promoStopReasonScope : M.promoFieldStopReason} required wide spot={spots(PLAN_SPOTS.list, PLAN_SPOTS.rate, PLAN_SPOTS.promo)}>
+              <div className="flex flex-wrap gap-1.5">
+                <FormSelect
+                  name={`pr-${p.id}`}
+                  label={M.promoFieldStopReason}
+                  hideLabel
+                  size="lg"
+                  className="min-w-[140px] flex-1"
+                  value={p.stopReason ?? "manual"}
+                  onChange={(v) => set({ stopReason: v as (typeof PROMOTION_STOP_REASONS)[number] })}
+                  options={PROMOTION_STOP_REASONS.map((k) => ({ value: k, label: M.stopReasonLabels[k] }))}
+                />
+                {membership && (
+                  <FormSelect
+                    name={`pss-${p.id}`}
+                    label={M.promoStopScope}
+                    hideLabel
+                    size="lg"
+                    className="min-w-[140px] flex-1"
+                    value={p.stopScope ?? "new"}
+                    onChange={(v) => set({ stopScope: v as (typeof PROMOTION_STOP_SCOPES)[number] })}
+                    options={PROMOTION_STOP_SCOPES.map((k) => ({ value: k, label: M.stopScopeLabels[k] }))}
+                  />
+                )}
+              </div>
             </Field>
           )}
           <Field label={M.promoFieldName} htmlFor={`pl-${p.id}`} required wide spot={PLAN_SPOTS.promo}>
