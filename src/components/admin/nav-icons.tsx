@@ -57,6 +57,39 @@ export function LogIcon(p: IconProps) {
   );
 }
 
+/** 공통코드관리 — 꺾쇠 괄호 */
+export function CodeIcon(p: IconProps) {
+  return (
+    <svg {...base(p)}>
+      <path d="M8 6l-5 6 5 6" />
+      <path d="M16 6l5 6-5 6" />
+      <path d="M13.5 5l-3 14" />
+    </svg>
+  );
+}
+
+/** 알림템플릿관리 — 줄이 비어 있는 종이 */
+export function TemplateIcon(p: IconProps) {
+  return (
+    <svg {...base(p)}>
+      <rect x="5" y="3" width="14" height="18" rx="2" />
+      <path d="M9 8h6" />
+      <path d="M9 12h6" />
+      <path d="M9 16h3" />
+    </svg>
+  );
+}
+
+/** 알림발송관리 — 종이비행기 */
+export function SendIcon(p: IconProps) {
+  return (
+    <svg {...base(p)}>
+      <path d="M21 3L10 14" />
+      <path d="M21 3l-7 18-4-7-7-4 18-7z" />
+    </svg>
+  );
+}
+
 /** 매칭 대기 — 둘을 잇는 고리 */
 export function LinkIcon(p: IconProps) {
   return (

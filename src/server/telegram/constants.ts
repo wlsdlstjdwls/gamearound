@@ -16,5 +16,5 @@ export const TELEGRAM_ADMIN_CHAT_ID_ENV = "TELEGRAM_ADMIN_CHAT_ID";
 /** 발송 요청 타임아웃. 액션 응답 뒤(after)에 돌지만 함수 수명을 붙잡지 않게 짧게 둔다(메일과 같은 값) */
 export const TELEGRAM_TIMEOUT_MS = 10_000;
 
-/** 한 메시지 상한(Bot API sendMessage 의 text 는 4096자). 넘기면 400 이라 보내기 전에 자른다 */
-export const TELEGRAM_TEXT_MAX = 4096;
+/** 한 메시지 상한. 템플릿 저장 검사(lib/notify/schemas)와 같은 값이라 거기서 가져온다 — 넘기면 400 이라 보내기 전에 자른다 */
+export { TELEGRAM_TEXT_MAX } from "@/lib/notify/schemas";

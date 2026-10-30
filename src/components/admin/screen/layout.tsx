@@ -36,14 +36,15 @@ export function SearchBand({ label, children }: { label: string; children: React
   );
 }
 
-export function SearchItem({ label, htmlFor, children }: { label: string; htmlFor?: string; children: React.ReactNode }) {
+/** auto: 칸 폭을 속(기간 칸 둘처럼 제 폭을 가진 것)에 맡긴다. 고정 폭 하나에 날짜 둘을 넣으면 위아래로 꺾였다(2026-10-30) */
+export function SearchItem({ label, htmlFor, auto = false, children }: { label: string; htmlFor?: string; auto?: boolean; children: React.ReactNode }) {
   // 칸 폭은 고정이다(가장 긴 선택지 "진행(노출 중, 대기)" 가 잘리지 않는 폭). 좁은 화면은 한 줄에 하나라 띠 폭을 다 쓴다
   return (
     <div className="flex w-full items-center gap-2 sm:w-auto">
       <label htmlFor={htmlFor} className="w-16 shrink-0 whitespace-nowrap text-right text-[12.5px] font-semibold text-mut sm:w-auto">
         {label}
       </label>
-      <div className="min-w-0 flex-1 sm:w-44 sm:flex-none">{children}</div>
+      <div className={cn("min-w-0 flex-1 sm:flex-none", auto ? "sm:w-auto" : "sm:w-44")}>{children}</div>
     </div>
   );
 }

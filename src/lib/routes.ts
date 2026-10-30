@@ -117,6 +117,10 @@ export const ROUTES = {
   adminPayments: "/admin/payments",
   /** 화면 연출 설정(2026-10-28, 명예의 전당 1위 인트로) */
   adminEffects: "/admin/effects",
+  /** 시스템관리(2026-10-30): 공통코드, 알림 템플릿, 알림 발송 */
+  adminCodes: "/admin/codes",
+  adminNotifyTemplates: "/admin/notify-templates",
+  adminNotifySends: "/admin/notify-sends",
   forbidden: "/403",
   terms: "/terms",
   privacy: "/privacy",
@@ -292,6 +296,9 @@ export function indieEditPath(id: string): string {
 }
 
 /** 할 일 첨부 업로드 토큰 발급. 매장 사진과 같은 방식이다(관리자만 받는다) */
+/** 알림발송관리를 템플릿 하나로 발송 폼을 연 채 여는 주소 값(알림템플릿관리의 "이 템플릿으로 발송") */
+export const NOTIFY_COMPOSE_PARAM = "compose";
+
 export const TASK_ATTACHMENT_UPLOAD_PATH = "/api/admin/tasks/attachments/upload";
 
 /** 직원 목록과 초대 */

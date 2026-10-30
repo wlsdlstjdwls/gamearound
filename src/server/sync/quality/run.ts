@@ -9,7 +9,9 @@ import { errorMessage } from "@/lib/errors";
 import { escapeHtml } from "@/lib/html-entities";
 import { ROUTES } from "@/lib/routes";
 import { QUALITY_MESSAGES as M } from "@/lib/admin/messages";
-import { sendAdminTelegram, telegramConfigured } from "@/server/telegram/send";
+import { DEFAULT_NOTIFY_CHANNEL } from "@/lib/codes/groups";
+import { SYSTEM_TEMPLATES } from "@/lib/notify/system-templates";
+import { dispatchSystemNotice } from "@/server/notify/dispatch";
 import { ERROR_SAMPLE_MAX, QUALITY_AUTO_FIX_MAX, QUALITY_NOTICE_SAMPLE_MAX, QUALITY_SOURCE } from "../constants";
 import { revalidateGameTags } from "../revalidate";
 import { applyQualityFix, StaleFixError } from "./apply";
@@ -90,23 +92,30 @@ export async function runDataQuality(now: Date = new Date()): Promise<QualityRun
   return result;
 }
 
-/** 고친 것이나 새로 물을 것이 있을 때만 관리자 채널에 한 통. 아무 일 없는 날까지 보내면 아무도 안 읽는다 */
+/** 고친 것이나 새로 물을 것이 있을 때만 관리자 채널에 한 통. 아무 일 없는 날까지 보내면 아무도 안 읽는다.
+ * 글은 알림템플릿관리의 quality.run 템플릿이 정한다(2026-10-30). 템플릿이 없을 때만 아래 코드의 글로 물러선다 */
 async function notify(r: QualityRunResult, applied: QualityFinding[]): Promise<void> {
-  if (!telegramConfigured() || (r.autoApplied === 0 && r.newlyOpened === 0 && r.failed === 0)) return;
+  if (r.autoApplied === 0 && r.newlyOpened === 0 && r.failed === 0) return;
   const link = `${process.env.NEXT_PUBLIC_APP_URL ?? ""}${ROUTES.adminDataIssues}`;
-  const lines = [
-    `<b>${escapeHtml(M.noticeTitle)}</b>`,
-    "",
-    `${M.noticeAuto}  ${r.autoApplied}`,
-    `${M.noticeNew}  ${r.newlyOpened}`,
-    `${M.noticeOpen}  ${r.open}`,
-    ...(r.failed > 0 ? [`${M.noticeFailed}  ${r.failed}`] : []),
-    ...(applied.length > 0 ? ["", ...applied.slice(0, QUALITY_NOTICE_SAMPLE_MAX).map((f) => `<blockquote>${escapeHtml(f.reason)}</blockquote>`)] : []),
-    "",
-    `<a href="${escapeHtml(link)}">${escapeHtml(M.noticeOpenLink)}</a>`,
-  ];
+  const samples = applied.slice(0, QUALITY_NOTICE_SAMPLE_MAX).map((f) => f.reason);
+  const fallback = () =>
+    [
+      `<b>${escapeHtml(M.noticeTitle)}</b>`,
+      "",
+      `${M.noticeAuto}  ${r.autoApplied}`,
+      `${M.noticeNew}  ${r.newlyOpened}`,
+      `${M.noticeOpen}  ${r.open}`,
+      ...(r.failed > 0 ? [`${M.noticeFailed}  ${r.failed}`] : []),
+      ...(samples.length > 0 ? ["", ...samples.map((s) => `<blockquote>${escapeHtml(s)}</blockquote>`)] : []),
+      "",
+      `<a href="${escapeHtml(link)}">${escapeHtml(M.noticeOpenLink)}</a>`,
+    ].join("\n");
   try {
-    await sendAdminTelegram(lines.join("\n"));
+    await dispatchSystemNotice(
+      SYSTEM_TEMPLATES.qualityRun,
+      { 자동수정: String(r.autoApplied), 신규: String(r.newlyOpened), 미확인: String(r.open), 실패: String(r.failed), 사례: samples.join("\n") || "-", 링크: link },
+      { fallback, fallbackChannel: DEFAULT_NOTIFY_CHANNEL, source: "cron:quality" },
+    );
   } catch (e) {
     console.warn(`[quality] 알림 실패: ${errorMessage(e)}`);
   }

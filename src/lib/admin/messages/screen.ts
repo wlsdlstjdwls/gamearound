@@ -19,6 +19,10 @@ export const SCREEN_MESSAGES = {
   listResize: "목록 폭 조절",
   tabDirty: "(미저장 변경 있음)",
   dirtyTitle: "저장하지 않은 변경사항이 있어요",
+  /** 행 이동 확인(screen/row-leave). 고른 줄에 저장 안 한 값이 있을 때 다른 줄로 가기 전에 묻는다 — 백오피스 "변경된 내역이 있습니다. 저장하시겠습니까?" */
+  rowLeaveConfirm: "선택한 행에 저장하지 않은 변경사항이 있어요. 저장하고 이동할까요?",
+  rowLeaveSave: "저장",
+  rowLeaveDiscard: "저장 안 함",
   closeDirtyConfirm: (label: string) => `${label}에 저장하지 않은 변경사항이 있어요. 저장하지 않고 닫을까요?`,
   closeOthersDirtyConfirm: "저장하지 않은 변경사항이 있는 화면이 있어요. 저장하지 않고 닫을까요?",
   closeDirty: "저장 안 하고 닫기",

@@ -4,6 +4,7 @@
 // 글은 텔레그램 HTML(parse_mode HTML)이다. 제목을 굵게, 기록 본문은 인용 칸, 주소는 "카드 열기" 링크로 숨긴다 —
 // 맨 주소를 그대로 두니 한 줄이 넘쳐 글 전체가 읽기 어려웠다. 사람이 친 글은 전부 이스케이프한다.
 import { escapeHtml } from "@/lib/html-entities";
+import { SYSTEM_TEMPLATES, type SystemTemplateCode } from "@/lib/notify/system-templates";
 import type { TaskCategory, TaskPriority, TaskStatus } from "@/lib/admin/tasks";
 import {
   TASK_CATEGORY_LABEL,
@@ -92,4 +93,28 @@ export function formatTaskNotice(event: TaskNotifyEvent, task: TaskNotifySnapsho
   const title = `<b>${escapeHtml(task.title)}</b>`;
   const open = `<a href="${escapeHtml(link)}">${escapeHtml(M.openCard)}</a>`;
   return [head, title, body.join(LINE), open].join(SECTION);
+}
+
+/**
+ * 사건 하나의 템플릿과 변수(2026-10-30, 알림 문구를 알림템플릿관리에서 고친다). 변수 이름은 lib/notify/system-templates 의 목록과 같다.
+ * 값은 이스케이프하지 않은 맨 글이다 — 템플릿 채우기(lib/notify/template)가 이스케이프한다. 위 formatTaskNotice 는 템플릿이 없을 때의 물러설 자리다
+ */
+export function taskNoticeVars(event: TaskNotifyEvent, task: TaskNotifySnapshot, actorName: string | null, link: string): { code: SystemTemplateCode; vars: Record<string, string> } {
+  const base = { 제목: task.title, 처리자: actorName ?? M.unknownPerson, 링크: link };
+  switch (event.kind) {
+    case "created":
+      return {
+        code: SYSTEM_TEMPLATES.taskCreated,
+        vars: { ...base, 분류: TASK_CATEGORY_LABEL[task.category], 우선순위: TASK_PRIORITY_LABEL[task.priority], 담당자: assigneeText(task) },
+      };
+    case "assigned":
+      return { code: SYSTEM_TEMPLATES.taskAssigned, vars: { ...base, 담당자: assigneeText(task) } };
+    case "moved":
+      return {
+        code: SYSTEM_TEMPLATES.taskMoved,
+        vars: { ...base, 상태: M.movedValue(TASK_STATUS_LABEL[event.from], TASK_STATUS_LABEL[event.to], TASK_STATUS_TO_PARTICLE[event.to]) },
+      };
+    case "note":
+      return { code: SYSTEM_TEMPLATES.taskNote, vars: { ...base, 기록: event.body?.trim() ? preview(event.body) : M.noteFilesOnly } };
+  }
 }

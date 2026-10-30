@@ -5,7 +5,7 @@ import { cn } from "@/lib/cn";
 import { ADMIN_NAV } from "@/lib/admin/messages";
 import { COMING_SOON } from "@/lib/messages/coming-soon";
 import { ROUTES } from "@/lib/routes";
-import { BoardIcon, BoxIcon, BuildingIcon, CardIcon, ChatIcon, CheckListIcon, LinkIcon, LogIcon, MegaphoneIcon, PulseIcon, SearchCheckIcon, SparkleIcon, StoreIcon, UsersIcon } from "@/components/admin/nav-icons";
+import { BoardIcon, BoxIcon, BuildingIcon, CardIcon, ChatIcon, CheckListIcon, LinkIcon, LogIcon, MegaphoneIcon, PulseIcon, SearchCheckIcon, SparkleIcon, StoreIcon, UsersIcon, CodeIcon, TemplateIcon, SendIcon } from "@/components/admin/nav-icons";
 import { CalendarIcon, GamepadIcon, TagIcon, TicketIcon } from "@/components/ui/icons";
 import { Suspense, use, type ComponentType } from "react";
 
@@ -129,6 +129,16 @@ export const GROUPS: Array<{ key: string; title?: string; items: Item[] }> = [
     items: [
       { href: ROUTES.shopsAdmin, label: ADMIN_NAV.shops, Icon: StoreIcon, pick: (c) => ({ n: c.shops }) },
       { href: ROUTES.adminProducts, label: ADMIN_NAV.products, Icon: BoxIcon, pick: (c) => ({ n: c.products }) },
+    ],
+  },
+  // 시스템은 쌓이는 일이 없어 배지가 없다. 업무 현황판 기둥 번호가 메뉴 묶음 순서를 따르므로(work-board) 일 묶음 뒤에 둔다
+  {
+    key: "system",
+    title: ADMIN_NAV.groupSystem,
+    items: [
+      { href: ROUTES.adminCodes, label: ADMIN_NAV.codes, Icon: CodeIcon },
+      { href: ROUTES.adminNotifyTemplates, label: ADMIN_NAV.notifyTemplates, Icon: TemplateIcon },
+      { href: ROUTES.adminNotifySends, label: ADMIN_NAV.notifySends, Icon: SendIcon },
     ],
   },
 ];
