@@ -21,25 +21,27 @@ import { SplitHandle, useListSplit } from "@/components/admin/screen/split-handl
 import { FitFillContext } from "@/components/admin/screen/data-grid/fit";
 
 /**
- * 조회조건 띠. 칸은 SearchItem 으로 넣는다. 넓은 화면에서 이름표, 칸 짝이 네 벌까지 한 줄에 선다.
+ * 조회조건 띠. 칸은 SearchItem 으로 넣는다. 넓은 화면에서 이름표, 칸 짝이 제 폭만큼 왼쪽부터 붙어 서고 남는 폭은 비워 둔다.
+ * 띠 폭을 칸 수로 나눠 늘리지 않는다 — 칸 둘인 화면도 띠 끝까지 칸이 늘어 화면이 꽉 차 보였다(2026-10-30 사용자 "일부러 꽉 차게 조건 나열하지 마").
  * 띠 안 입력, 고르기 칸은 마우스 기기에서 한 단 낮춘다(36px) — 띠가 화면 머리만큼 두꺼워 목록을 밀어냈다(2026-10-30 사용자 "조건 영역이 너무 커").
  * 터치 기기는 44px 그대로 둔다(AGENTS §6 터치 타깃)
  */
 export function SearchBand({ label, children }: { label: string; children: React.ReactNode }) {
   return (
-    <section aria-label={label} className="grid gap-x-4 gap-y-1.5 rounded-xl border border-line bg-surface-2 px-3 py-2 sm:grid-cols-2 xl:grid-cols-4 [@media(pointer:fine)]:[&_button[aria-haspopup]]:h-9 [@media(pointer:fine)]:[&_input]:h-9 [@media(pointer:fine)]:[&_input]:min-h-9">
+    <section aria-label={label} className="flex flex-wrap items-center gap-x-6 gap-y-1.5 rounded-xl border border-line bg-surface-2 px-3 py-2 sm:grid-cols-2 xl:grid-cols-4 [@media(pointer:fine)]:[&_button[aria-haspopup]]:h-9 [@media(pointer:fine)]:[&_input]:h-9 [@media(pointer:fine)]:[&_input]:min-h-9">
       {children}
     </section>
   );
 }
 
 export function SearchItem({ label, htmlFor, children }: { label: string; htmlFor?: string; children: React.ReactNode }) {
+  // 칸 폭은 고정이다(가장 긴 선택지 "진행(노출 중, 대기)" 가 잘리지 않는 폭). 좁은 화면은 한 줄에 하나라 띠 폭을 다 쓴다
   return (
-    <div className="grid grid-cols-[minmax(64px,auto)_minmax(0,1fr)] items-center gap-2">
-      <label htmlFor={htmlFor} className="whitespace-nowrap text-right text-[12.5px] font-semibold text-mut">
+    <div className="flex w-full items-center gap-2 sm:w-auto">
+      <label htmlFor={htmlFor} className="w-16 shrink-0 whitespace-nowrap text-right text-[12.5px] font-semibold text-mut sm:w-auto">
         {label}
       </label>
-      <div className="min-w-0">{children}</div>
+      <div className="min-w-0 flex-1 sm:w-44 sm:flex-none">{children}</div>
     </div>
   );
 }
