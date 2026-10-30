@@ -53,7 +53,7 @@ const COLUMNS: GridCol<Row>[] = [
   {
     key: "sale",
     label: M.searchSale,
-    width: "48px",
+    width: "72px",
     align: "center",
     value: (r) => r.active,
     text: (r) => (r.active ? M.saleLabels.on : M.saleLabels.off),
@@ -301,7 +301,7 @@ export function CatalogScreen({ value, saved, errors, patch, selected, onSelect 
               <WithAside aside={<PricingPreview value={value} tier={tier} />}>
                 <BasicTab value={value} patch={patch} rowKey={current.key} errors={errors} />
                 <PromosSection value={value} rowKey={current.key} />
-                <FormSection title={M.tabCopy}>
+                <FormSection title={M.tabCopy} labelWidth="120px">
                   <div className={cn("flex min-w-0 flex-col gap-2", FULL_ROW)}>
                     <CopySection value={value} patch={patch} tier={tier} onTier={() => {}} errors={errors} bare />
                   </div>

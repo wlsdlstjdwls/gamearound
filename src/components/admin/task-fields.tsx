@@ -15,7 +15,7 @@
 import { useId } from "react";
 import { cn } from "@/lib/cn";
 import { FormSelect } from "@/components/ui/select";
-import { TASK_CATEGORY_LABEL, TASK_MESSAGES, TASK_PRIORITY_LABEL, TASK_STATUS_LABEL } from "@/lib/admin/messages";
+import { SCREEN_MESSAGES, TASK_CATEGORY_LABEL, TASK_MESSAGES, TASK_PRIORITY_LABEL, TASK_STATUS_LABEL } from "@/lib/admin/messages";
 import {
   BOARD_STATUSES,
   TASK_ASSIGNEE_ALL,
@@ -62,10 +62,13 @@ export function Field({
   children,
   id,
   className,
+  required,
 }: {
   label: string;
   hint?: string;
   id: string;
+  /** 비우면 저장할 수 없는 칸. 이름표 앞에 빨간 * — 관리자 폼 공통 Field(screen/layout)와 같은 표시다(2026-10-30 사용자 "필수여부 표기가 없다") */
+  required?: boolean;
   /** 격자 안 자리(칸 수, 순서)를 바깥이 정할 때 */
   className?: string;
   children: React.ReactNode;
@@ -73,7 +76,13 @@ export function Field({
   return (
     <div className={cn("min-w-0", className)}>
       <label htmlFor={id} className={FIELD_LABEL}>
+        {required && (
+          <span aria-hidden className="mr-0.5 text-danger">
+            *
+          </span>
+        )}
         {label}
+        {required && <span className="sr-only">{SCREEN_MESSAGES.required}</span>}
       </label>
       {children}
       {hint && <p className="mt-1.5 text-[12.5px] text-dim">{hint}</p>}
@@ -132,7 +141,7 @@ export function TaskBasicFields({ title, body }: { title?: string; body?: string
   const id = useId();
   return (
     <>
-      <Field id={`${id}-title`} label={TASK_MESSAGES.titleLabel}>
+      <Field id={`${id}-title`} label={TASK_MESSAGES.titleLabel} required>
         <input
           id={`${id}-title`}
           name="title"

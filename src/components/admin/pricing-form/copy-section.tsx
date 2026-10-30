@@ -9,7 +9,7 @@
 import { cn } from "@/lib/cn";
 import type { Patch } from "@/components/admin/pricing-form";
 import { Panel } from "@/components/admin/pricing-form/sections";
-import { FIELD_LABEL_CLASS } from "@/components/ui/field-classes";
+import { Field } from "@/components/admin/screen/layout";
 import { DetailTabs } from "@/components/ui/tabs";
 import { TextField, TEXTAREA_CLASS } from "@/components/ui/text-field";
 import { fromDisplayCopy, toDisplayCopy } from "@/lib/pricing/copy-tokens";
@@ -18,18 +18,23 @@ import { PRICING_ADMIN_MESSAGES as M, TIER_LABELS } from "@/lib/pricing/admin-me
 import type { PricingSettings, TierKey } from "@/lib/pricing/settings";
 
 type TextKey = "name" | "eyebrow" | "summary" | "tag" | "now" | "base" | "hint" | "cta";
-type Field = { kind: "text"; key: TextKey } | { kind: "lines"; key: "lines" | "benefits" };
+type CopyField = { kind: "text"; key: TextKey } | { kind: "lines"; key: "lines" | "benefits" };
 
 /**
  * 카드에 서는 순서. 칸이 카드에 안 서는 단은 뺀다 — 낱개 카드에는 혜택 목록 제목(base)이 없고(맨 아랫단이라 "OO에 더해" 가 없다),
  * 카드 아래 빨간 안내(hint)는 낱개 카드에만 선다(components/payments/plan-cards). 내 멤버십 화면 혜택은 멤버십에만 있다
  */
-const COPY_GROUPS: { title: "groupHead" | "groupPrice" | "groupBenefits" | "groupAction"; fields: Field[]; only?: Partial<Record<string, TierKey[]>> }[] = [
-  { title: "groupHead", fields: [{ kind: "text", key: "name" }, { kind: "text", key: "eyebrow" }, { kind: "text", key: "summary" }, { kind: "text", key: "tag" }] },
+// 칸 순서는 카드를 위에서 아래로 읽는 순서다(2026-10-30 사용자 "카드문구 순서대로"): 상단 보조문구, 상품 표시명과 그 옆 강조 배지, 요약문구,
+// 가격 아래 즉시혜택 문구, 혜택 머리말과 항목, 버튼 바로 위 업셀 안내문구, 구매 버튼명. 미리 보기와 나란히 놓고 위에서부터 고친다
+const COPY_GROUPS: { title: "groupHead" | "groupPrice" | "groupBenefits" | "groupAction"; fields: CopyField[]; only?: Partial<Record<string, TierKey[]>> }[] = [
+  { title: "groupHead", fields: [{ kind: "text", key: "eyebrow" }, { kind: "text", key: "name" }, { kind: "text", key: "tag" }, { kind: "text", key: "summary" }] },
   { title: "groupPrice", fields: [{ kind: "text", key: "now" }] },
   { title: "groupBenefits", fields: [{ kind: "text", key: "base" }, { kind: "lines", key: "lines" }, { kind: "lines", key: "benefits" }], only: { base: ["bundle", "membership"], benefits: ["membership"] } },
-  { title: "groupAction", fields: [{ kind: "text", key: "cta" }, { kind: "text", key: "hint" }], only: { hint: ["single"] } },
+  { title: "groupAction", fields: [{ kind: "text", key: "hint" }, { kind: "text", key: "cta" }], only: { hint: ["single"] } },
 ];
+
+/** 비우면 저장할 수 없는 칸(lib/pricing/settings 의 tierCopySchema 에서 min(1) 인 칸). 이름표 앞에 필수 * 를 단다 */
+const REQUIRED_COPY: ReadonlySet<string> = new Set(["name", "cta"]);
 
 /** bare: 판 껍데기와 카드 탭 없이 그 카드 칸만(상품등록 상세의 카드문구 탭이 고른 상품의 카드 하나만 보인다) */
 export function CopySection({ value, patch, tier, onTier, errors = {}, bare = false }: { value: PricingSettings; patch: Patch; tier: TierKey; onTier: (t: TierKey) => void; errors?: Record<string, string>; bare?: boolean }) {
@@ -39,25 +44,29 @@ export function CopySection({ value, patch, tier, onTier, errors = {}, bare = fa
   const setLines = (t: TierKey, key: "lines" | "benefits", display: string) =>
     patch((d) => ({ ...d, copy: { ...d.copy, [t]: { ...d.copy[t], [key]: fromDisplayCopy(display).split("\n") } } }));
 
-  const field = (t: TierKey, f: Field) => {
+  const field = (t: TierKey, f: CopyField) => {
     const id = `copy-${t}-${f.key}`;
     if (f.kind === "text") {
       const write = (display: string) => setText(t, f.key, display);
       return (
         <TokenMenu key={f.key} fieldId={id} write={write}>
           {(bind, trigger, menu) => (
-            <TextField
-              id={id}
-              label={M.fields[f.key]}
-              value={toDisplayCopy(value.copy[t][f.key])}
-              onChange={(e) => write(e.target.value)}
-              trailing={trigger}
-              popup={menu}
-              error={errors[`copy.${t}.${f.key}`]}
-              labelSide
-              compact
-              {...bind}
-            />
+            // 이름표는 관리자 폼 공통 Field(필수 *, 이름표 폭)를 쓴다 — 칸이 TextField 제 이름표를 쓰던 때는 필수 표시가 없었다(2026-10-30 사용자)
+            <Field label={M.fields[f.key]} htmlFor={id} required={REQUIRED_COPY.has(f.key)} wide>
+              <TextField
+                id={id}
+                label={M.fields[f.key]}
+                hideLabel
+                required={REQUIRED_COPY.has(f.key)}
+                value={toDisplayCopy(value.copy[t][f.key])}
+                onChange={(e) => write(e.target.value)}
+                trailing={trigger}
+                popup={menu}
+                error={errors[`copy.${t}.${f.key}`]}
+                compact
+                {...bind}
+              />
+            </Field>
           )}
         </TokenMenu>
       );
@@ -69,10 +78,7 @@ export function CopySection({ value, patch, tier, onTier, errors = {}, bare = fa
     return (
       <TokenMenu key={f.key} fieldId={id} write={write}>
         {(bind, trigger, menu) => (
-          <div className="flex flex-col gap-1.5 sm:grid sm:grid-cols-[var(--field-label-w,112px)_minmax(0,1fr)] sm:gap-x-3 sm:gap-y-1.5">
-            <label htmlFor={id} className={cn(FIELD_LABEL_CLASS, "sm:pt-3")}>
-              {M.fields[f.key]}
-            </label>
+          <Field label={M.fields[f.key]} htmlFor={id} wide error={lineError}>
             {/* 여러 줄 칸은 단추를 오른쪽 위 귀퉁이에 띄운다. 글이 단추 밑으로 들어가지 않게 오른쪽을 비운다 */}
             <div className="relative">
               <textarea
@@ -86,12 +92,7 @@ export function CopySection({ value, patch, tier, onTier, errors = {}, bare = fa
               <div className="absolute right-2 top-2">{trigger}</div>
               {menu}
             </div>
-            {lineError && (
-              <p role="alert" className="text-[12px] font-medium text-danger sm:col-start-2">
-                {lineError}
-              </p>
-            )}
-          </div>
+          </Field>
         )}
       </TokenMenu>
     );
