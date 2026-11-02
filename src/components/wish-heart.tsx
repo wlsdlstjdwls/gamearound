@@ -88,11 +88,13 @@ export function WishHeart({ slug, title, className, variant = "heart", kind = "g
         onClick={() => gate(action, () => toggle(!wished))}
         className={cn(
           "press tap inline-flex min-h-[var(--touch-target)] items-center justify-center gap-1.5 rounded-full px-4 text-[13px] font-semibold transition-colors sm:min-h-9 sm:px-3.5",
-          shown ? "bg-acc-soft text-acc" : "bg-acc text-on-ink hover:bg-acc-hover",
+          // 꺼진 단추도 옅은 파랑이다(2026-11-02) — 줄마다 채운 파랑이 서면 목록 전체가 단추로 읽힌다(nav-must-look-like-nav, 파랑 남발 금지).
+          // 켜진 단추는 회색 바탕에 채운 종이라 "이미 받는 중" 이 색이 아니라 모양으로 갈린다
+          shown ? "bg-surface-2 text-ink-2" : "bg-acc-soft text-acc hover:bg-acc hover:text-on-ink",
           className,
         )}
       >
-        <BellIcon size={15} />
+        <BellIcon size={15} className={shown ? "fill-current" : undefined} />
         {/* 글자는 어디서나 선다(2026-10-26). 예전에는 좁은 화면에서 종만 남겼는데, 무엇을 하는 단추인지 말이 없어 목업(문구가 있는 넓은 단추)과 달랐다.
             제목이 잘리던 문제는 단추를 줄 아래로 내려 푼다(components/upcoming-row) */}
         <span aria-hidden>{shown ? M.releaseOn : M.releaseOff}</span>

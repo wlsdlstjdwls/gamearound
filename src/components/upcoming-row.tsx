@@ -31,7 +31,7 @@ export function UpcomingRow({ entry, subtitle }: { entry: RowEntry; subtitle?: s
   const genres = entry.game.genres ?? [];
 
   return (
-    // 좁은 화면(sm 미만)은 두 줄 격자다(2026-10-26, 목업 390 의 월별 줄): 윗줄은 날짜 | 그림과 제목, 아랫줄은 제목 칸 밑에 "출시 예정" 과 넓은 출시 알림 단추.
+    // 좁은 화면(sm 미만)은 두 줄 격자다(2026-10-26, 목업 390 의 월별 줄): 윗줄은 날짜 | 그림과 제목, 아랫줄은 오른쪽 끝에 출시 알림 단추.
     // 한 줄에 날짜, 그림, 제목, 딱지, 단추를 다 세우면 390 에서 제목 칸이 100px 남짓이라 이름이 열 자 안팎에서 잘리고 딱지는 숨겨야 했다.
     // sm 부터는 예전 한 줄 그대로다 — 아랫줄 묶음이 contents 로 풀려 줄 끝에 선다.
     <div className="group relative grid grid-cols-[3rem_minmax(0,1fr)] items-center gap-x-3 gap-y-2.5 rounded-[var(--radius-md)] bg-surface p-3 shadow-hair transition-shadow hover:shadow-2 sm:flex sm:gap-4 sm:p-3.5">
@@ -64,9 +64,11 @@ export function UpcomingRow({ entry, subtitle }: { entry: RowEntry; subtitle?: s
           </span>
         </div>
       </div>
-      <div className="col-start-2 flex items-center gap-2 sm:contents">
-        <span className="shrink-0 rounded-full bg-acc-soft px-2.5 py-1 text-[12px] font-semibold text-acc">{M.rowTag}</span>
-        <WishHeart slug={entry.game.slug} title={title} variant="release" className="relative z-10 flex-1 sm:flex-none sm:shrink-0" />
+      {/* 좁은 화면 아랫줄은 단추 하나만 오른쪽 끝에 둔다(2026-11-02 모바일 점검). 앞서는 "출시 예정" 딱지 + 줄 폭을 다 채운 파란 단추가
+          줄마다 반복돼 목록이 단추 벽으로 읽혔다. 딱지는 출시 예정 화면 안이라 같은 말을 되풀이할 뿐이어서 좁은 화면에서는 걷는다 */}
+      <div className="col-start-2 flex items-center justify-end gap-2 sm:contents">
+        <span className="hidden shrink-0 rounded-full bg-acc-soft px-2.5 py-1 text-[12px] font-semibold text-acc sm:inline">{M.rowTag}</span>
+        <WishHeart slug={entry.game.slug} title={title} variant="release" className="relative z-10 shrink-0" />
       </div>
     </div>
   );
