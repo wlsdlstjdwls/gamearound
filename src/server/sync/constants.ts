@@ -499,9 +499,11 @@ export const CRON_META_MS_PER_ITEM: Record<CronMetaSource, Record<CronMetaMode, 
   // 아래 넷은 2026-11-02 Actions 에서 옮기며 잡은 값이다. Actions 실측(미국 러너, DB 와 같은 쪽)에
   // 서울 함수의 Neon 왕복(약 200ms × 건당 서너 번)을 얹었다. 크론의 첫 durationMs 로 다시 잰다.
   // hltb: 매칭 건당 약 3초(검색 1초 + 대기 1초 + 반영, crawl-meta.yml 주석), 수집 300건 438초(10-31 실측) = 1.46초
+  // 서울 함수 첫 실측(11-02): 수집 130건 306초 = 2.36초
   hltb: { match: 4000, collect: 2500 },
-  // metacritic: 매칭 150 + 수집 150 이 816~911초(10-29~11-01 실측) = 건당 약 3초
-  metacritic: { match: 4000, collect: 4000 },
+  // metacritic: 매칭 150 + 수집 150 이 816~911초(10-29~11-01 실측) = 건당 약 3초.
+  // 서울 함수 첫 실측(11-02): 수집 80건 500초 = 6.25초. 서울에서 Neon 왕복이 붙어 Actions 보다 두 배 느리다
+  metacritic: { match: 4000, collect: 6300 },
   // opencritic: 건당 약 2초(crawl-meta.yml 주석)
   opencritic: { match: 3000, collect: 3000 },
   // gamepass: 컬렉션 하나가 요청 1회 + 구독 행 반영. Actions 실측은 둘 다 합쳐 1초 안쪽이었다. 넉넉히 잡는다
