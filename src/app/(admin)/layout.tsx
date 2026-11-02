@@ -19,15 +19,18 @@ import { AdminStatusBar, AdminStatusProvider } from "@/components/admin/screen/s
 import { ADMIN_GROUPS_COOKIE, ADMIN_RAIL_COOKIE } from "@/lib/admin/rail";
 import { requireRoleOrForbid } from "@/server/auth/guards";
 import { getAdminWorkCounts } from "@/server/services/admin-workload";
+import { listAdminFavorites } from "@/server/services/admin-favorites";
 import { AdminDeviceProvider, MobileGate } from "@/components/admin/mobile-policy";
 import { isMobileDevice } from "@/server/device";
 
 export const dynamic = "force-dynamic";
 
 export default async function AdminLayout({ children }: { children: React.ReactNode }) {
-  await requireRoleOrForbid("admin");
+  const user = await requireRoleOrForbid("admin");
   // 배지가 못 떠도 화면은 살아 있어야 한다 — 숫자는 거들 뿐이고 검수는 각 화면에서 한다
   const counts = getAdminWorkCounts().catch(() => null);
+  // 즐겨찾기도 기다리지 않는다(배지와 같은 까닭). 못 읽으면 묶음이 안 설 뿐이다
+  const favorites = listAdminFavorites(user.id).catch(() => []);
 
   const jar = await cookies();
   const collapsed = jar.get(ADMIN_RAIL_COOKIE)?.value === "1";
@@ -42,7 +45,7 @@ export default async function AdminLayout({ children }: { children: React.ReactN
   return (
     <AdminDeviceProvider mobile={mobile}>
       <div className="flex md:items-start">
-        <AdminNav counts={counts} initialCollapsed={collapsed} initialOpened={opened} />
+        <AdminNav counts={counts} favorites={favorites} initialCollapsed={collapsed} initialOpened={opened} />
         {/* main 이 아니라 div 인 이유: 루트 레이아웃이 이미 <main> 안에 children 을 넣는다.
             landmark 를 겹쳐 두면 낭독기가 "본문" 을 둘로 센다.
 

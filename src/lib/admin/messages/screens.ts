@@ -93,6 +93,21 @@ export const ADMIN_NAV = {
   /** 묶음 제목 단추의 낭독 이름(admin-rail). 화면에는 제목과 꺾쇠만 선다 */
   groupFold: (title: string) => `${title} 묶음 접기`,
   groupUnfold: (title: string) => `${title} 묶음 펼치기`,
+  // ---- 즐겨찾기, 메뉴 검색(2026-11-02, SBO 시작 메뉴의 즐겨찾기와 프로그램 검색) ----
+  /** 기둥 맨 위 묶음. 칸이 하나도 없으면 묶음째 서지 않는다 */
+  groupFavorites: "즐겨찾기",
+  /** 화면 머리 제목 옆 별 단추의 낭독 이름과 말풍선 */
+  favoriteAdd: "즐겨찾기에 추가",
+  favoriteRemove: "즐겨찾기에서 빼기",
+  favoriteFailed: "즐겨찾기를 저장하지 못했어요. 잠시 뒤 다시 눌러 주세요.",
+  /** 기둥의 검색 단추(넓은 화면)와 검색 판 입력칸 */
+  search: "메뉴 검색",
+  searchPlaceholder: "화면 이름, 초성으로 찾기",
+  /** 단축키 표시. 툴바가 F8, F9 를 쓰니 겹치지 않는 Ctrl+K */
+  searchKey: "Ctrl K",
+  searchRecent: "최근 연 화면",
+  searchResults: "검색 결과",
+  searchEmpty: (q: string) => `"${q}" 에 맞는 화면이 없어요.`,
 } as const;
 
 // 수집 소스 이름표는 공개 상세(정보 출처 칩)도 같이 써서 lib/source-label 로 옮겼다. 관리자 쪽 import 경로는 그대로 둔다

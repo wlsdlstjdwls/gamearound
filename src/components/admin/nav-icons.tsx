@@ -261,3 +261,12 @@ export function PanelLeftIcon({ arrow, arrowClassName, ...p }: IconProps & { arr
     </svg>
   );
 }
+
+/** 즐겨찾기 — 별. 켜진 칸은 채운다(filled). 테두리만 있는 별과 채운 별이 켜짐, 꺼짐을 말한다(SBO 창 머리의 별과 같은 손버릇) */
+export function StarIcon({ filled, ...p }: IconProps & { filled?: boolean }) {
+  return (
+    <svg {...base(p)} fill={filled ? "currentColor" : "none"}>
+      <path d="m12 3.5 2.6 5.3 5.8.8-4.2 4.1 1 5.8-5.2-2.7-5.2 2.7 1-5.8-4.2-4.1 5.8-.8L12 3.5Z" />
+    </svg>
+  );
+}

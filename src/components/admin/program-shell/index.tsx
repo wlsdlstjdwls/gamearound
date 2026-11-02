@@ -204,7 +204,8 @@ export function ProgramShell({ children }: { children: React.ReactNode }) {
       if (msg.type === "admin-open") return open(msg.href);
       if (!key) return;
       if (msg.type === "admin-loc") setTabs((cur) => cur.map((t) => (t.key === key ? { ...t, loc: msg.href } : t)));
-      else setFrameDirty((m) => new Map(m).set(key, msg.dirty));
+      // 즐겨찾기, 검색 말은 기둥 쪽(nav-favorites, nav-search)이 따로 받는다
+      else if (msg.type === "admin-dirty") setFrameDirty((m) => new Map(m).set(key, msg.dirty));
     };
     window.addEventListener("message", onMessage);
     return () => window.removeEventListener("message", onMessage);

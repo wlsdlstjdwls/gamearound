@@ -191,3 +191,20 @@ export const adminTaskReads = pgTable("admin_task_reads", {
   seenAt: timestamp("seen_at", { withTimezone: true }).notNull(),
   ...auditColumns(),
 }, (t) => [primaryKey({ columns: [t.taskId, t.userId] })]);
+
+/**
+ * 관리자 메뉴 즐겨찾기(2026-11-02, 사용자 "당연히 DB 테이블로"). 백오피스(SBO)처럼 계정에 묶어 둔다 —
+ * 어느 PC, 어느 브라우저로 들어와도 같은 칸이 기둥 맨 위에 선다. 쿠키였다면 기기마다 다시 골라야 했다.
+ *
+ * 칸 하나는 메뉴 주소(href) 하나다. 메뉴 칸에 id 가 따로 없어 주소가 곧 열쇠다 — 주소가 바뀌면 그 줄은 화면에서
+ * 이름표를 못 찾아 조용히 빠진다(지우지 않는다, 다시 같은 주소가 생기면 살아난다).
+ * 순서는 추가한 차례(sortOrder). 폴더는 두지 않는다 — 메뉴 칸이 스물 남짓이라 SBO 의 즐겨찾기 폴더까지는 지나치다.
+ */
+export const adminFavorites = pgTable("admin_favorites", {
+  userId: uuid("user_id")
+    .notNull()
+    .references(() => users.id, { onDelete: "cascade" }),
+  href: text("href").notNull(),
+  sortOrder: integer("sort_order").default(0).notNull(),
+  ...auditColumns(),
+}, (t) => [primaryKey({ columns: [t.userId, t.href] })]);

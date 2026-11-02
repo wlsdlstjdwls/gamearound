@@ -46,6 +46,9 @@ import { ComingSoon } from "@/components/ui/coming-soon";
 import { AdminRail } from "@/components/admin/admin-rail";
 import { Badge, ITEMS, ItemBody, isActive, groupsFor, type AdminNavCounts, type Item } from "@/components/admin/admin-nav-items";
 import { useMobilePolicy } from "@/components/admin/mobile-policy";
+import { useFavorites, useSeedFavorites } from "@/components/admin/nav-favorites";
+import { MenuSearchDialog, MenuSearchPanel, useMenuSearchHotkey } from "@/components/admin/nav-search";
+import { StarIcon } from "@/components/admin/nav-icons";
 export type { AdminNavCounts } from "@/components/admin/admin-nav-items";
 
 /**
@@ -90,8 +93,11 @@ export function AdminNav({
   counts,
   initialCollapsed,
   initialOpened,
+  favorites,
 }: {
   counts: Promise<AdminNavCounts | null>;
+  /** 이 관리자의 즐겨찾기 주소(admin_favorites). 레이아웃이 기다리지 않고 약속째로 넘긴다(nav-favorites 머리 주석) */
+  favorites: Promise<string[]>;
   /** 넓은 화면 기둥이 접힌 채로 시작하나(쿠키, 레이아웃이 읽는다) */
   initialCollapsed: boolean;
   /** 기둥에서 펼쳐 둔 묶음(쿠키). 나머지는 접혀 있다 */
@@ -104,6 +110,11 @@ export function AdminNav({
   const [soon, setSoon] = useState<Item | null>(null);
   const [menuOpen, setMenuOpen] = useState(false);
   const groups = groupsFor(useMobilePolicy().mobile);
+  useSeedFavorites(favorites);
+  useMenuSearchHotkey();
+  const favoriteHrefs = useFavorites();
+  // 휴대폰 더보기 시트의 검색어. 비어 있지 않으면 메뉴 대신 결과가 선다
+  const [query, setQuery] = useState("");
 
   /** 링크와 버튼이 같은 모양이어야 한다. 아직 열지 않은 칸만 버튼이고 나머지는 전부 링크다 */
   const itemClass = (active: boolean) =>
@@ -129,8 +140,20 @@ export function AdminNav({
   };
 
   /** 칸 전부. 기둥과 더보기 시트가 **같은 것**을 쓴다 — 둘을 따로 그리면 칸이 늘 때 한쪽을 빠뜨린다 */
+  // 즐겨찾기 묶음은 시트 맨 위에 선다(기둥은 대시보드 아래). 휴대폰에서 닫힌 화면은 groups 에 없어 같이 빠진다
+  const allowed = groups.flatMap((g) => g.items);
+  const favoriteItems = (favoriteHrefs ?? []).map((h) => allowed.find((i) => i.href === h)).filter((i): i is Item => Boolean(i));
   const menu = (
     <div className="flex flex-col gap-3">
+      {favoriteItems.length > 0 && (
+        <div className="flex flex-col gap-px">
+          <p className="flex items-center gap-1.5 px-2.5 pb-1 text-[11px] font-bold tracking-[0.1em] text-dim-2">
+            <StarIcon size={12} filled className="text-acc" />
+            {ADMIN_NAV.groupFavorites}
+          </p>
+          {favoriteItems.map(render)}
+        </div>
+      )}
       {groups.map((g) => (
         <div key={g.key} className="flex flex-col gap-px">
           {g.title && <p className="px-2.5 pb-1 text-[11px] font-bold tracking-[0.1em] text-dim-2">{g.title}</p>}
@@ -192,12 +215,23 @@ export function AdminNav({
       </nav>
 
       {/* 고른 칸으로 가면 주소가 바뀌고, 시트는 그때 스스로 닫힌다(ui/sheet 의 경로 감시) */}
-      <Sheet title={ADMIN_NAV.menuTitle} open={menuOpen} onOpenChange={setMenuOpen}>
+      <Sheet
+        title={ADMIN_NAV.menuTitle}
+        open={menuOpen}
+        onOpenChange={(v) => {
+          setMenuOpen(v);
+          if (!v) setQuery("");
+        }}
+      >
         <nav aria-label={ADMIN_NAV.menuTitle} className="flex flex-col gap-4 pb-1 pt-2">
-          {menu}
+          <MenuSearchPanel query={query} onQuery={setQuery} />
+          {!query.trim() && menu}
           <div className="border-t border-line pt-2">{backLink}</div>
         </nav>
       </Sheet>
+
+      {/* 넓은 화면 메뉴 검색 판(nav-search). 기둥 단추와 Ctrl+K 가 연다 */}
+      <MenuSearchDialog />
 
       {/* 판은 메뉴 바깥에 하나만 둔다 — 칸마다 두면 안 열린 판이 일곱 개 떠 있게 된다 */}
       <ComingSoon

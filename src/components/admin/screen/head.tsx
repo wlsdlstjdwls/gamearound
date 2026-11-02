@@ -10,7 +10,9 @@
 // 입력, 삭제, 저장은 그 일을 하는 화면(폼)이 함수를 넘길 때만 켜진다.
 import { useEffect, useRef, useState, useTransition } from "react";
 import { usePathname, useRouter } from "next/navigation";
-import { GROUPS, isActive } from "@/components/admin/admin-nav-items";
+import { GROUPS, isActive, ITEMS } from "@/components/admin/admin-nav-items";
+import { FavoriteStar } from "@/components/admin/nav-favorites";
+import { programOf } from "@/components/admin/program-shell/programs";
 import { useAdminStatus } from "@/components/admin/screen/status";
 import { useTooltip } from "@/components/ui/tooltip";
 import { cn } from "@/lib/cn";
@@ -74,6 +76,12 @@ function readGrid(): { head: string[]; rows: string[][] } {
   return { head, rows };
 }
 
+/** 별을 달 메뉴 칸 주소. 메뉴 표에 없는 화면(게임 고치기 등)은 null — 즐겨찾기는 메뉴 칸만 담는다 */
+function useFavoriteKey(): string | null {
+  const key = programOf(usePathname()).key;
+  return ITEMS.some((i) => i.href === key) ? key : null;
+}
+
 /** 메뉴 위치(묶음 > 화면). 기둥 표에 없는 화면(게임 고치기 등)은 비운다 */
 function usePath(): string[] {
   const pathname = usePathname();
@@ -111,6 +119,7 @@ export function AdminScreenHead({
   const tools: ScreenTools = editable ? givenTools : { retrieve: givenTools.retrieve };
   const { user } = useSession();
   const path = usePath();
+  const favoriteKey = useFavoriteKey();
   const [refreshing, startRefresh] = useTransition();
   const [hasGrid, setHasGrid] = useState(false);
   const toolsRef = useRef(tools);
@@ -213,7 +222,10 @@ export function AdminScreenHead({
         <header className="sticky top-[var(--header-h)] z-20 -mx-4 -mt-4 flex flex-col gap-2 rounded-t-[var(--radius-panel)] border-b border-line-soft bg-surface/95 px-4 py-2.5 backdrop-blur">
           <div className="flex items-center gap-2">
             <div className="min-w-0 flex-1">
-              <h1 className="break-keep text-[18px] font-extrabold leading-tight tracking-[-0.02em] text-ink">{title}</h1>
+              <div className="flex items-center gap-0.5">
+                <h1 className="break-keep text-[18px] font-extrabold leading-tight tracking-[-0.02em] text-ink">{title}</h1>
+                {favoriteKey && <FavoriteStar href={favoriteKey} />}
+              </div>
               {note && <p className="mt-0.5 text-[12.5px] text-dim">{note}</p>}
             </div>
             <button
@@ -239,6 +251,8 @@ export function AdminScreenHead({
       <div className="flex min-w-0 flex-col gap-0.5 py-1">
         <div className="flex min-w-0 flex-wrap items-baseline gap-x-2">
           <h1 className="text-[20px] font-extrabold tracking-[-0.02em] text-ink">{title}</h1>
+          {/* 별(즐겨찾기)은 제목 바로 옆 — SBO 창 제목줄의 별과 같은 자리(nav-favorites) */}
+          {favoriteKey && <FavoriteStar href={favoriteKey} className="-ml-1 self-center" />}
           {/* 묶음 없는 칸(대시보드)은 경로가 곧 제목이라 두 번 적지 않는다 */}
           {path.length > 1 && (
             <nav aria-label={M.pathLabel} className="text-[12px] font-medium text-dim">

@@ -20,12 +20,14 @@ import { Suspense, useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useMobilePolicy } from "@/components/admin/mobile-policy";
-import { Badge, groupsFor, isActive, ItemBody, type AdminNavCounts, type Item, type Pick } from "@/components/admin/admin-nav-items";
+import { Badge, groupsFor, isActive, ItemBody, ITEMS, type AdminNavCounts, type Item, type Pick } from "@/components/admin/admin-nav-items";
 import { AuthNav } from "@/components/auth/auth-nav";
 import { HeaderWishLink } from "@/components/header-wish-link";
 import { NotificationBell } from "@/components/notification-bell";
 import { ThemeSwitch } from "@/components/theme-switch";
-import { PanelLeftIcon } from "@/components/admin/nav-icons";
+import { PanelLeftIcon, StarIcon } from "@/components/admin/nav-icons";
+import { useFavorites } from "@/components/admin/nav-favorites";
+import { MenuSearchButton, useTrackRecent } from "@/components/admin/nav-search";
 import { ChevronDownIcon } from "@/components/ui/icons";
 import { BrandLockup, BrandSymbol } from "@/components/ui/logo";
 import { useTooltip } from "@/components/ui/tooltip";
@@ -101,6 +103,10 @@ export function AdminRail({
   const current = usePathname();
   const pathname = useActivePath() ?? current;
   const { mobile } = useMobilePolicy();
+  useTrackRecent(pathname);
+  // 즐겨찾기 묶음은 대시보드 바로 아래에 선다(nav-favorites). 메뉴 표에 없는 주소(이름이 바뀐 옛 칸)는 조용히 빠진다
+  const favorites = useFavorites();
+  const favoriteItems = (favorites ?? []).map((h) => ITEMS.find((i) => i.href === h)).filter((i): i is Item => Boolean(i));
   const [collapsed, setCollapsed] = useState(initialCollapsed);
   const [opened, setOpened] = useState<ReadonlySet<string>>(() => new Set(initialOpened));
   const toggle = () => {
@@ -169,6 +175,11 @@ export function AdminRail({
         </div>
       </div>
 
+      {/* 메뉴 검색(nav-search). 판은 메뉴(admin-nav)에 하나만 있고 이 단추와 Ctrl+K 가 연다 */}
+      <div className={cn("shrink-0 pb-1", collapsed ? "px-1.5" : "px-2.5")}>
+        <MenuSearchButton collapsed={collapsed} />
+      </div>
+
       {/* 기둥이 화면보다 길면 기둥 안에서 굴린다 */}
       <nav
         aria-label={ADMIN_NAV.menuTitle}
@@ -177,13 +188,37 @@ export function AdminRail({
           collapsed ? "gap-2 px-1.5" : "gap-2.5 px-2.5",
         )}
       >
-        {groupsFor(mobile).map((g) => {
+        {groupsFor(mobile).flatMap((g) => {
+          const rows = g.key === "board" && favoriteItems.length > 0 ? [g, { key: "favorites", title: ADMIN_NAV.groupFavorites, items: favoriteItems }] : [g];
+          return rows;
+        }).map((g) => {
           if (collapsed) {
             return (
               <div key={g.key} className="flex flex-col gap-1 border-t border-line-soft pt-2 first:border-t-0 first:pt-0">
                 {g.items.map((item) => (
                   <CollapsedItem key={item.href} item={item} active={isActive(pathname, item.href)} counts={counts} onSoon={onSoon} />
                 ))}
+              </div>
+            );
+          }
+          // 즐겨찾기 묶음은 접지 않는다 — 고른 칸을 바로 누르려고 만든 묶음이라 접히면 뜻이 없다. 제목은 별을 단 꼬리표다
+          if (g.key === "favorites") {
+            return (
+              <div key={g.key} className="flex flex-col gap-px">
+                <p className="flex min-h-9 items-center gap-2 px-2.5 text-[14px] font-bold text-ink">
+                  <StarIcon size={15} filled className="shrink-0 text-acc" />
+                  {g.title}
+                </p>
+                <div className="my-1 ml-[17px] flex flex-col gap-px border-l-2 border-line pl-1.5">
+                  {g.items.map((item) => {
+                    const active = isActive(pathname, item.href);
+                    return (
+                      <Link key={item.href} href={item.href} aria-current={active ? "page" : undefined} className={subClass(active)}>
+                        <ItemBody item={item} active={false} counts={counts} iconSize={16} badgeClassName="ml-auto" icon={false} />
+                      </Link>
+                    );
+                  })}
+                </div>
               </div>
             );
           }
