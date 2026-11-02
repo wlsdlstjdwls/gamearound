@@ -24,18 +24,19 @@ export function GameCardSkeleton() {
 /** 목록의 가로형 카드(game-list-card) 뼈대 — 그림과 이름 묶음, 장르 칸(40), 값 칸을 같은 높이로 세운다 */
 export function GameListCardSkeleton() {
   return (
+    // 실물과 같은 격자를 쓴다 — 좁은 화면은 두 칸, sm 부터 3단(game-list-card 의 LIST_CARD_SHELL 주석)
     <div className={LIST_CARD_SHELL} aria-hidden>
-      <div className="flex gap-3 pb-3">
+      <div className="flex gap-3 max-sm:contents sm:pb-3">
         <div className={cn(LIST_THUMB_CLASS, "skeleton")} />
-        <div className="flex flex-1 flex-col gap-1.5 pt-0.5">
+        <div className="flex flex-1 flex-col gap-1.5 pt-0.5 max-sm:col-start-2">
           <Bone className="h-[20px] w-4/5" />
           <Bone className="h-4 w-3/5" />
         </div>
       </div>
-      <div className="min-h-[40px] border-t border-line py-2.5">
+      <div className="py-1 max-sm:col-start-2 sm:min-h-[40px] sm:border-t sm:border-line sm:py-2.5">
         <Bone className="h-4 w-1/2" />
       </div>
-      <div className="border-t border-line pt-3">
+      <div className="max-sm:col-start-2 sm:border-t sm:border-line sm:pt-3">
         <Bone className="h-7 w-2/5" />
       </div>
     </div>

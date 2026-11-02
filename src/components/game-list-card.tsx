@@ -24,12 +24,21 @@ import { DEVICE_LABEL, devicesOf } from "@/lib/platform";
 import { cn } from "@/lib/cn";
 import type { GameSummary } from "@/server/services/games";
 
-/** 카드 껍데기. 뼈대(game-card-skeleton 의 GameListCardSkeleton)가 같은 값을 써야 본문이 올 때 격자가 밀리지 않는다 */
-export const LIST_CARD_SHELL = "card-panel flex h-full flex-col p-3.5";
-/** 정사각 그림 한 변(목업 72px) */
-export const LIST_THUMB_CLASS = "relative size-[72px] shrink-0 overflow-hidden rounded-[var(--radius-md)] bg-surface-3 shadow-hair";
-/** 칸막이 — 이름 묶음, 장르, 값 사이 */
-const DIVIDER = "border-t border-line";
+/**
+ * 카드 껍데기. 뼈대(game-card-skeleton 의 GameListCardSkeleton)가 같은 값을 써야 본문이 올 때 격자가 밀리지 않는다.
+ *
+ * **좁은 화면(sm 미만)은 두 칸 격자다**(2026-11-02 모바일 점검). 목업의 3단(이름 | 장르 | 값, 칸막이 둘)을 한 열에 그대로 쌓으면
+ * 카드 한 장이 200px 남짓이라 390 화면에 3.5장만 들어왔다. 좁은 화면에서는 그림을 왼쪽 칸에 세우고 이름, 기기, 장르, 값을
+ * 오른쪽 칸에 칸막이 없이 잇는다(한 장 120px 안팎). 묶음 div 는 `max-sm:contents` 로 풀려 격자 칸이 된다 — 마크업은 하나다.
+ * sm 부터는 목업 3단 그대로다.
+ */
+export const LIST_CARD_SHELL = "card-panel grid h-full grid-cols-[64px_minmax(0,1fr)] content-start gap-x-3 p-3 sm:flex sm:flex-col sm:gap-x-0 sm:p-3.5";
+/** 정사각 그림 한 변(목업 72px, 좁은 화면 64px). 좁은 화면에서는 오른쪽 칸 줄 셋을 다 차지한다 */
+export const LIST_THUMB_CLASS = "relative size-16 shrink-0 overflow-hidden rounded-[var(--radius-md)] bg-surface-3 shadow-hair max-sm:row-span-3 sm:size-[72px]";
+/** 칸막이 — 이름 묶음, 장르, 값 사이. 좁은 화면에서는 걷는다 */
+const DIVIDER = "sm:border-t sm:border-line";
+/** 좁은 화면에서 오른쪽 칸에 서는 줄 */
+const RIGHT_CELL = "max-sm:col-start-2";
 
 /**
  * 기기 이름 줄(목업 "PC, PlayStation, Xbox, Switch"). 스토어(Steam, Epic)와 세대(PS5, PS4)는 기기 하나로 접는다(lib/platform 의 DEVICES).
@@ -51,13 +60,13 @@ export function GameListCard({ game, variant = "discount", highlight }: { game: 
 
   return (
     <div className={cn(LIST_CARD_SHELL, "group relative")}>
-      <div className="flex min-w-0 gap-3 pb-3 pr-9">
+      <div className="flex min-w-0 gap-3 max-sm:contents sm:pb-3 sm:pr-9">
         <span className={LIST_THUMB_CLASS}>
           <span className="absolute inset-y-0 left-1/2 block aspect-[460/215] h-full -translate-x-1/2">
             <CoverImage src={game.coverUrl} alt={`${title} 커버`} sizes="160px" />
           </span>
         </span>
-        <div className="flex min-w-0 flex-1 flex-col gap-1 pt-0.5">
+        <div className={cn(RIGHT_CELL, "flex min-w-0 flex-1 flex-col gap-0.5 pt-0.5 max-sm:pr-8 sm:gap-1")}>
           {/* 카드 전체를 덮는 것은 제목 링크의 ::after 다(game-card 와 같은 수법) — 찜 하트만 z-10 으로 그 위에 뜬다 */}
           <Link
             href={`/games/${game.slug}`}
@@ -77,7 +86,7 @@ export function GameListCard({ game, variant = "discount", highlight }: { game: 
       <WishHeart slug={game.slug} title={title} className="absolute right-3 top-3 z-10 size-8 shadow-none" />
 
       {/* 남은 할인 기간은 장르 줄 오른쪽 끝이다 — 값 줄에 두면 할인율, 값, 정가 뒤에 못 붙고 혼자 다음 줄로 떨어져 카드마다 키가 갈렸다 */}
-      <div className={cn(DIVIDER, "flex min-h-[40px] items-center gap-2 py-2.5 text-[12.5px] text-mut")}>
+      <div className={cn(DIVIDER, RIGHT_CELL, "flex items-center gap-2 py-1 text-[12.5px] text-mut sm:min-h-[40px] sm:py-2.5")}>
         {/* 판매 형태 꼬리표(무료 플레이, 앞서 해보기)는 장르 글자 앞에 선다(game-card 와 같다) */}
         {tags.map((t) => (
           <Tag key={t} small tone="info">
@@ -100,7 +109,7 @@ export function GameListCard({ game, variant = "discount", highlight }: { game: 
       </div>
 
       {/* 값 줄은 카드 바닥에 붙는다 — 같은 줄 카드끼리 값이 한 높이에 서서 가로로 견줄 수 있다. 값을 모르면 세우지 않는다(game-card 주석) */}
-      <div className={cn(DIVIDER, "mt-auto flex flex-wrap items-center gap-x-1.5 gap-y-1 pt-3")}>
+      <div className={cn(DIVIDER, RIGHT_CELL, "mt-auto flex flex-wrap items-center gap-x-1.5 gap-y-1 sm:pt-3")}>
         {best && best.currentPrice !== null && (
           <>
             {preorder && <Tag>{PREORDER_LABEL}</Tag>}
