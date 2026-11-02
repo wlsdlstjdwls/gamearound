@@ -46,4 +46,9 @@ describe("mobileCan", () => {
     expect(mobileCan(true, view, "approval")).toBe(true);
     expect(mobileCan(true, view, "edit")).toBe(false);
   });
+  it("환불 단추와 직접 발송은 휴대폰에서 열려 있다(2026-11-02 사용자 결정)", () => {
+    expect(mobileCan(true, mobilePolicyOf(ROUTES.adminPayments), "refund")).toBe(true);
+    expect(mobileCan(true, mobilePolicyOf(ROUTES.adminPayments), "edit")).toBe(false);
+    expect(mobileCan(true, mobilePolicyOf(ROUTES.adminNotifySends), "edit")).toBe(true);
+  });
 });

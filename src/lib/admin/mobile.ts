@@ -2,7 +2,7 @@
 //
 // 기준은 "휴대폰에서 하는 일" 이다. 알림을 받고 바로 끝낼 수 있는 승인, 숨김, 판정은 연다(full).
 // 숫자와 상태만 보면 되는 자리는 보기만 연다(view, 툴바 입력/삭제/저장과 처리 띠를 숨긴다).
-// 입력 칸이 많거나 되돌리기 어려운 자리(상품, 프로모션, 공통코드, 알림 템플릿, 직접 발송)는 닫고 PC 안내를 띄운다(off).
+// 입력 칸이 많거나 되돌리기 어려운 자리(상품, 프로모션, 공통코드, 알림 템플릿)는 닫고 PC 안내를 띄운다(off).
 // fitin-bo 는 메뉴마다 기능 표를 따로 두다가 표가 화면과 어긋났다 — 그래서 화면 열쇠는 메뉴 주소(ROUTES) 하나만 쓴다.
 //
 // **이 표는 권한이 아니다.** 기기는 UA 로 가르고 UA 는 바꿀 수 있다. 서버 액션은 지금처럼 역할(admin)만 검사한다 —
@@ -39,8 +39,8 @@ export const ADMIN_MOBILE: Readonly<Record<string, MobilePolicy>> = {
   [ROUTES.adminDiscounts]: { access: "off" },
   // 문제 광고를 바로 내리는 회수 띠만 연다. 직접 걸기(툴바 입력, 저장)는 PC 에서
   [ROUTES.adminPromotions]: { access: "view", allow: ["approval"] },
-  // 주문관리: 환불은 돈이 나가고 되돌릴 수 없어 보기만(2026-10-30 초안 그대로)
-  [ROUTES.adminPayments]: { access: "view" },
+  // 주문관리: 환불 요청은 알림을 받고 바로 끝낼 일이라 환불 단추만 연다(2026-11-02 사용자 "환불 실행은 열자")
+  [ROUTES.adminPayments]: { access: "view", allow: ["refund"] },
   [ROUTES.adminMemberships]: { access: "view" },
   // 카드 이동, 메모, 사진 첨부는 휴대폰이 오히려 편하다. 지우기와 일괄 보관만 PC 에서
   [ROUTES.adminTasks]: { access: "full", deny: ["taskDelete", "taskArchive"] },
@@ -61,8 +61,8 @@ export const ADMIN_MOBILE: Readonly<Record<string, MobilePolicy>> = {
   [ROUTES.adminStatsUsage]: { access: "view" },
   [ROUTES.adminCodes]: { access: "off" },
   [ROUTES.adminNotifyTemplates]: { access: "off" },
-  // 직접 발송은 받는 사람 전체에게 나가 되돌릴 수 없다(2026-10-30 초안 그대로)
-  [ROUTES.adminNotifySends]: { access: "off" },
+  // 직접 발송, 다시 보내기는 밖에서 급히 알릴 일이 있어 연다(2026-11-02 사용자 "알림 직접 발송은 열자")
+  [ROUTES.adminNotifySends]: { access: "full" },
   // 2026-10-30 사용자 "서비스안내서조회도 보이게"
   [ROUTES.adminGuide]: { access: "view" },
 };

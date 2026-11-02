@@ -97,6 +97,7 @@ export function NotifySendsScreen({ rows, limit, filter, templates, channels, co
         </SearchBand>
         <MasterDetail
           listWidth="560px"
+          detailOpenKey={seed ? seed.n : null}
           list={
             <DataGrid
               label={M.historyLabel}

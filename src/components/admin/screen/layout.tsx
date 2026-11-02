@@ -54,7 +54,25 @@ export function SearchItem({ label, htmlFor, auto = false, children }: { label: 
 }
 
 /** 왼쪽 목록, 오른쪽 상세. 좁은 화면은 위아래로 선다. 상세는 테두리 친 판에 담아 목록과 갈린다 — detailTitle 이 그 판의 제목 띠다 */
-export function MasterDetail({ list, detail, detailTitle, detailActions, listWidth = "400px" }: { list: React.ReactNode; detail: React.ReactNode; detailTitle?: React.ReactNode; detailActions?: React.ReactNode; listWidth?: string }) {
+/**
+ * detailOpenKey: 줄을 고르지 않고 상세를 채우는 일(툴바 입력의 새 글 폼 등)이 바뀔 때마다 새 값을 준다. 휴대폰은 이 값이 바뀌면 상세 시트를 올린다 —
+ * 시트는 카드를 누를 때만 열려, 휴대폰에서 입력을 눌러도 폼이 닫힌 시트 안에만 생겼다(2026-11-02 알림발송관리를 휴대폰에 열며 실측). 넓은 화면은 쓰지 않는다
+ */
+export function MasterDetail({
+  list,
+  detail,
+  detailTitle,
+  detailActions,
+  detailOpenKey,
+  listWidth = "400px",
+}: {
+  list: React.ReactNode;
+  detail: React.ReactNode;
+  detailTitle?: React.ReactNode;
+  detailActions?: React.ReactNode;
+  detailOpenKey?: string | number | null;
+  listWidth?: string;
+}) {
   // 영역 접기(2026-10-30 사용자 "그리드 줄이고 폼 입력 영역을 더 크게, 영역별로 접고 펼 수 있게"). 접으면 그 자리가 구분선 하나로 줄고 다른 쪽이 폭을 다 쓴다.
   // 화면마다 따로 쥔다 — 프로그램 탭을 오가도 탭 화면이 살아 있어 그대로다(program-shell)
   // 같은 날 사용자 "드래그로 자유롭게 조정" → "영역 사이 중간선을 끌게, 접기 단추는 양쪽으로 중간에" — 사이 칸이 구분선이고 끌면 목록 폭이 바뀐다.
@@ -64,7 +82,7 @@ export function MasterDetail({ list, detail, detailTitle, detailActions, listWid
   const { hidden } = split;
   const { mobile } = useMobilePolicy();
   // 휴대폰은 목록만 세우고 상세는 카드를 누를 때 바닥 시트로 올린다(screen/mobile-layout)
-  if (mobile) return <MobileMasterDetail list={list} detail={detail} detailTitle={detailTitle} detailActions={detailActions} />;
+  if (mobile) return <MobileMasterDetail list={list} detail={detail} detailTitle={detailTitle} detailActions={detailActions} openKey={detailOpenKey} />;
   const cols = hidden === "list" ? "lg:grid-cols-[1.5rem_minmax(0,1fr)]" : hidden === "detail" ? "lg:grid-cols-[minmax(0,1fr)_1.5rem]" : "lg:grid-cols-[var(--master-w)_1.5rem_minmax(0,1fr)]";
   return (
     <div className={cn("grid items-start gap-4 lg:gap-0", cols)} style={{ "--master-w": split.width === null ? listWidth : `${split.width}px` } as React.CSSProperties}>

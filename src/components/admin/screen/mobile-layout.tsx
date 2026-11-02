@@ -32,8 +32,28 @@ export function MobileSearchBand({ label, children }: { label: string; children:
  * 휴대폰 목록+상세. 목록만 세우고 상세는 카드를 누를 때 바닥 시트로 올린다 — 위아래로 쌓으면 상세가 긴 목록 끝에 붙어
  * 고른 카드의 상세를 보려면 목록을 끝까지 내려야 했다. 툴바 저장은 시트 머리에도 세운다 — 시트가 바닥 툴바 띠를 덮는다(screen/mobile-tools)
  */
-export function MobileMasterDetail({ list, detail, detailTitle, detailActions }: { list: React.ReactNode; detail: React.ReactNode; detailTitle?: React.ReactNode; detailActions?: React.ReactNode }) {
-  const [open, setOpen] = useState(false);
+export function MobileMasterDetail({
+  list,
+  detail,
+  detailTitle,
+  detailActions,
+  openKey,
+}: {
+  list: React.ReactNode;
+  detail: React.ReactNode;
+  detailTitle?: React.ReactNode;
+  detailActions?: React.ReactNode;
+  /** 바뀌면(null 아님) 시트를 올린다 — MasterDetail 의 detailOpenKey */
+  openKey?: string | number | null;
+}) {
+  // 처음 값으로 열린다 — 주소가 실어 온 새 글 폼(?compose=)도 바로 보여야 한다
+  const [open, setOpen] = useState(openKey != null);
+  // 렌더 중 앞 값과 견줘 연다(React 의 "앞 값과 견줘 상태 고치기") — 이펙트로 열면 닫힌 시트를 한 번 그린 뒤 다시 그린다
+  const [seenKey, setSeenKey] = useState(openKey);
+  if (openKey !== seenKey) {
+    setSeenKey(openKey);
+    if (openKey != null) setOpen(true);
+  }
   return (
     <MobileDetailContext value={() => setOpen(true)}>
       <div className="min-w-0">{list}</div>
