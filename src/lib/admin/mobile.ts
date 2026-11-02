@@ -1,8 +1,9 @@
 // 관리자 화면 휴대폰 허용 표(2026-10-30, 사용자 "일부 프로그램 + 기능 제한해서 제공"). 메뉴, 화면 진입, 단추가 전부 이 표 하나를 읽는다.
 //
-// 기준은 "휴대폰에서 하는 일" 이다. 알림을 받고 바로 끝낼 수 있는 승인, 숨김, 판정은 연다(full).
-// 숫자와 상태만 보면 되는 자리는 보기만 연다(view, 툴바 입력/삭제/저장과 처리 띠를 숨긴다).
-// 입력 칸이 많거나 되돌리기 어려운 자리(상품, 프로모션, 공통코드, 알림 템플릿)는 닫고 PC 안내를 띄운다(off).
+// 2026-11-02 사용자 "모바일 대응 다 해볼까" 로 메뉴 화면을 전부 연다(full). 처음(10-30)에는 승인, 판정만 열고
+// 숫자 화면은 보기만(view), 입력이 많은 화면은 닫았다(off) — 휴대폰 꼴(카드, 바닥 시트, 바닥 툴바)을 공통 부품이 그리게 된 뒤라
+// 닫아 둘 이유가 줄었다. 다시 좁힐 때는 이 표의 칸만 바꾸면 메뉴, 진입, 단추가 따라온다(view/off, allow/deny 는 그래서 남긴다).
+// 엑셀만 어디서나 막는다(DENY_EVERYWHERE). 표에 없는 게임 고치기는 11-02 사용자 "냅둬 일단" 으로 닫힌 채다.
 // fitin-bo 는 메뉴마다 기능 표를 따로 두다가 표가 화면과 어긋났다 — 그래서 화면 열쇠는 메뉴 주소(ROUTES) 하나만 쓴다.
 //
 // **이 표는 권한이 아니다.** 기기는 UA 로 가르고 UA 는 바꿀 수 있다. 서버 액션은 지금처럼 역할(admin)만 검사한다 —
@@ -34,37 +35,29 @@ const UNLISTED: MobilePolicy = { access: "off" };
 
 export const ADMIN_MOBILE: Readonly<Record<string, MobilePolicy>> = {
   [ROUTES.admin]: { access: "full" },
-  // 상품관리: 요금 카드 문구와 기간, 금액을 맞추는 자리라 PC 에서만
-  [ROUTES.adminPricing]: { access: "off" },
-  [ROUTES.adminDiscounts]: { access: "off" },
-  // 문제 광고를 바로 내리는 회수 띠만 연다. 직접 걸기(툴바 입력, 저장)는 PC 에서
-  [ROUTES.adminPromotions]: { access: "view", allow: ["approval"] },
-  // 주문관리: 환불 요청은 알림을 받고 바로 끝낼 일이라 환불 단추만 연다(2026-11-02 사용자 "환불 실행은 열자")
-  [ROUTES.adminPayments]: { access: "view", allow: ["refund"] },
-  [ROUTES.adminMemberships]: { access: "view" },
-  // 카드 이동, 메모, 사진 첨부는 휴대폰이 오히려 편하다. 지우기와 일괄 보관만 PC 에서
-  [ROUTES.adminTasks]: { access: "full", deny: ["taskDelete", "taskArchive"] },
-  [ROUTES.adminEffects]: { access: "off" },
-  [ROUTES.adminSync]: { access: "view" },
-  [ROUTES.adminSyncLogs]: { access: "view" },
+  [ROUTES.adminPricing]: { access: "full" },
+  [ROUTES.adminDiscounts]: { access: "full" },
+  [ROUTES.adminPromotions]: { access: "full" },
+  [ROUTES.adminPayments]: { access: "full" },
+  [ROUTES.adminMemberships]: { access: "full" },
+  [ROUTES.adminTasks]: { access: "full" },
+  [ROUTES.adminEffects]: { access: "full" },
+  [ROUTES.adminSync]: { access: "full" },
+  [ROUTES.adminSyncLogs]: { access: "full" },
   [ROUTES.adminMatches]: { access: "full" },
   [ROUTES.adminDataIssues]: { access: "full" },
-  // 정식명을 찾아 적는 자리라 입력이 많다
-  [ROUTES.adminCompanies]: { access: "off" },
+  [ROUTES.adminCompanies]: { access: "full" },
   [ROUTES.adminPreorder]: { access: "full" },
   [ROUTES.adminIndie]: { access: "full" },
   [ROUTES.adminPosts]: { access: "full" },
-  // 서류를 보고 판단하는 승인이라 보기만(2026-10-30 초안 그대로)
-  [ROUTES.shopsAdmin]: { access: "view" },
+  [ROUTES.shopsAdmin]: { access: "full" },
   [ROUTES.adminProducts]: { access: "full" },
-  [ROUTES.adminStatsSales]: { access: "view" },
-  [ROUTES.adminStatsUsage]: { access: "view" },
-  [ROUTES.adminCodes]: { access: "off" },
-  [ROUTES.adminNotifyTemplates]: { access: "off" },
-  // 직접 발송, 다시 보내기는 밖에서 급히 알릴 일이 있어 연다(2026-11-02 사용자 "알림 직접 발송은 열자")
+  [ROUTES.adminStatsSales]: { access: "full" },
+  [ROUTES.adminStatsUsage]: { access: "full" },
+  [ROUTES.adminCodes]: { access: "full" },
+  [ROUTES.adminNotifyTemplates]: { access: "full" },
   [ROUTES.adminNotifySends]: { access: "full" },
-  // 2026-10-30 사용자 "서비스안내서조회도 보이게"
-  [ROUTES.adminGuide]: { access: "view" },
+  [ROUTES.adminGuide]: { access: "full" },
 };
 
 /** 주소가 이 메뉴 화면(또는 그 아래)인가. 대시보드(/admin)만 정확히 일치로 본다 — 접두사로 보면 모든 화면이 대시보드가 된다 */

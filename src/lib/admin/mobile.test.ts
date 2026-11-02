@@ -20,7 +20,7 @@ describe("mobilePolicyOf", () => {
   });
 
   it("관리자 바깥 입점 승인 화면도 표를 읽는다", () => {
-    expect(mobilePolicyOf(ROUTES.shopsAdmin).access).toBe("view");
+    expect(mobilePolicyOf(ROUTES.shopsAdmin)).toBe(ADMIN_MOBILE[ROUTES.shopsAdmin]);
   });
 });
 
@@ -46,9 +46,12 @@ describe("mobileCan", () => {
     expect(mobileCan(true, view, "approval")).toBe(true);
     expect(mobileCan(true, view, "edit")).toBe(false);
   });
-  it("환불 단추와 직접 발송은 휴대폰에서 열려 있다(2026-11-02 사용자 결정)", () => {
-    expect(mobileCan(true, mobilePolicyOf(ROUTES.adminPayments), "refund")).toBe(true);
-    expect(mobileCan(true, mobilePolicyOf(ROUTES.adminPayments), "edit")).toBe(false);
-    expect(mobileCan(true, mobilePolicyOf(ROUTES.adminNotifySends), "edit")).toBe(true);
+  it("메뉴 화면은 전부 휴대폰에서 열려 있고 엑셀만 막힌다(2026-11-02 사용자 \"모바일 대응 다\")", () => {
+    for (const href of Object.keys(ADMIN_MOBILE)) {
+      const policy = mobilePolicyOf(href);
+      expect(policy.access, href).toBe("full");
+      expect(mobileCan(true, policy, "edit"), href).toBe(true);
+      expect(mobileCan(true, policy, "excel"), href).toBe(false);
+    }
   });
 });
