@@ -30,6 +30,7 @@ const KIND_ICON: Record<NotificationKind, React.ReactNode> = {
   release: <GamepadIcon size={17} />,
   dev_news: <BellIcon size={17} />,
   payment: <TicketIcon size={17} />,
+  notice: <BellIcon size={17} />,
 };
 
 export default async function NotificationsPage({ searchParams }: { searchParams: Promise<{ page?: string | string[] }> }) {

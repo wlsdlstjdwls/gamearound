@@ -18,6 +18,7 @@ import { Tag, type TagTone } from "@/components/ui/tag";
 import { ADMIN_NAV, NOTIFY_MESSAGES as M } from "@/lib/admin/messages";
 import { CODE_GROUPS } from "@/lib/codes/groups";
 import { formatDateTime } from "@/lib/format";
+import { MANUAL_WEB_CODE } from "@/lib/notify/system-templates";
 import { ROUTES } from "@/lib/routes";
 import type { NotifySendStatus } from "@/server/db/schema";
 import type { NotifySendDto, NotifyTemplateDto } from "@/server/services/notify-admin";
@@ -40,10 +41,10 @@ export function NotifySendsScreen({ rows, limit, filter, templates, channels, co
   // 발송 폼 씨앗. 바뀔 때마다 폼을 새로 세운다(key) — 다시 쓰기로 옮긴 글이 앞 폼의 칸 값과 섞이지 않게
   const [seed, setSeed] = useState<(ComposeSeed & { n: number }) | null>(compose ? { templateCode: compose, body: "", channel: null, n: 0 } : null);
 
-  const templateName = (code: string | null) => (code ? (templates.find((t) => t.code === code)?.name ?? code) : M.noTemplate);
+  const templateName = (code: string | null) => (code && code !== MANUAL_WEB_CODE ? (templates.find((t) => t.code === code)?.name ?? code) : M.noTemplate);
   const channelName = (code: string | null) => (code ? (channels.find((c) => c.value === code)?.label ?? code) : "-");
-  /** 받는 곳 칸: 텔레그램은 받는 곳 이름, 이메일은 받는 주소 */
-  const targetOf = (r: NotifySendDto) => (r.medium === "email" ? (r.recipient ?? "-") : channelName(r.channel));
+  /** 받는 곳 칸: 텔레그램은 받는 곳 이름, 이메일과 웹 알림은 받는 회원의 주소 */
+  const targetOf = (r: NotifySendDto) => (r.medium === "telegram" ? channelName(r.channel) : (r.recipient ?? "-"));
   const current = rows.find((r) => r.id === selected) ?? null;
 
   const openCompose = () => setSeed((s) => ({ templateCode: null, body: "", channel: null, n: (s?.n ?? 0) + 1 }));
@@ -58,13 +59,13 @@ export function NotifySendsScreen({ rows, limit, filter, templates, channels, co
   };
 
   const columns: GridCol<NotifySendDto>[] = [
-    { key: "at", label: M.colSentAt, width: "128px", align: "center", value: (r) => r.createdAt, text: (r) => formatDateTime(r.createdAt) },
-    { key: "status", label: M.colStatus, width: "64px", align: "center", value: (r) => M.statusLabels[r.status], render: (r) => <Tag small tone={STATUS_TONE[r.status]}>{M.statusLabels[r.status]}</Tag> },
-    { key: "template", label: M.searchTemplate, width: "minmax(96px,0.8fr)", value: (r) => templateName(r.templateCode) },
-    { key: "medium", label: M.colMedium, width: "64px", align: "center", value: (r) => codes.name(CODE_GROUPS.notifyMedium, r.medium) },
-    { key: "text", label: M.colPreview, width: "minmax(140px,1.2fr)", value: (r) => (r.subject ? r.subject : plain(r.text)) },
-    { key: "channel", label: M.colChannel, width: "minmax(84px,0.7fr)", align: "center", value: targetOf },
-    { key: "actor", label: M.colActor, width: "80px", align: "center", value: (r) => (r.trigger === "system" && !r.actorName ? M.systemActor : (r.actorName ?? "")) },
+    // 열 최소 폭 합이 목록 폭(listWidth)을 넘지 않게 잡았다 — 넘으면 그리드가 가로로 굴러간다(사용자 11-02). 발송자는 상세에만 둔다
+    { key: "at", label: M.colSentAt, width: "124px", align: "center", value: (r) => r.createdAt, text: (r) => formatDateTime(r.createdAt) },
+    { key: "status", label: M.colStatus, width: "52px", align: "center", value: (r) => M.statusLabels[r.status], render: (r) => <Tag small tone={STATUS_TONE[r.status]}>{M.statusLabels[r.status]}</Tag> },
+    { key: "template", label: M.searchTemplate, width: "minmax(72px,0.8fr)", value: (r) => templateName(r.templateCode) },
+    { key: "medium", label: M.colMedium, width: "76px", align: "center", value: (r) => codes.name(CODE_GROUPS.notifyMedium, r.medium) },
+    { key: "text", label: M.colPreview, width: "minmax(90px,1.2fr)", value: (r) => (r.subject ? r.subject : plain(r.text)) },
+    { key: "channel", label: M.colChannel, width: "minmax(72px,0.8fr)", align: "center", value: targetOf },
   ];
   const all = { value: "all", label: M.all };
 
@@ -156,7 +157,7 @@ export function NotifySendsScreen({ rows, limit, filter, templates, channels, co
                   <Field label={M.colMedium}>
                     <ReadValue>{codes.name(CODE_GROUPS.notifyMedium, current.medium)}</ReadValue>
                   </Field>
-                  {current.medium === "email" ? (
+                  {current.medium !== "telegram" ? (
                     <Field label={M.fieldRecipient}>
                       <ReadValue>{current.recipient ?? "-"}</ReadValue>
                     </Field>

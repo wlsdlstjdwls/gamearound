@@ -8,6 +8,7 @@ import { displayTitle } from "@/server/services/games";
 import type { IndieAdminRowDto } from "@/lib/indie/dto";
 import type { IndieModerationInput } from "@/lib/indie/schemas";
 import { NOTIFICATION_MESSAGES as N } from "@/lib/notifications/messages";
+import { SYSTEM_TEMPLATES as T } from "@/lib/notify/system-templates";
 import { ROUTES } from "@/lib/routes";
 import { pushNotification } from "@/server/services/notifications";
 
@@ -153,6 +154,6 @@ async function reviewIndiePost(input: IndieModerationInput, adminId: string): Pr
     .where(eq(indiePosts.id, input.postId))
     .returning({ slug: indiePosts.slug, gameId: indiePosts.gameId, title: indiePosts.title, author: indiePosts.authorUserId });
   if (!row) throw new Error("not found");
-  await pushNotification(row.author, "approval", approve ? N.approved(row.title) : N.rejected(row.title), ROUTES.indieMine).catch(() => {});
+  await pushNotification(row.author, "approval", { code: approve ? T.webApproved : T.webRejected, vars: { 게임: row.title }, fallback: approve ? N.approved(row.title) : N.rejected(row.title) }, ROUTES.indieMine).catch(() => {});
   return { slug: row.slug, gameId: row.gameId };
 }

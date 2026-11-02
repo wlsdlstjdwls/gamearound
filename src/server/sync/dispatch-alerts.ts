@@ -10,6 +10,7 @@ import { alertDeliveries, gamePlatforms, games, notifications, priceAlerts, user
 import { NOTIFICATION_MESSAGES } from "@/lib/notifications/messages";
 import { mailConfigured } from "@/server/mail/send";
 import { dispatchSystemMail } from "@/server/notify/mail";
+import { webNotice } from "@/server/notify/web";
 import { SYSTEM_TEMPLATES } from "@/lib/notify/system-templates";
 import { SITE } from "@/lib/site";
 import { markOnce } from "@/server/redis";
@@ -119,9 +120,14 @@ export async function dispatchPriceAlerts(changes: PriceChange[]): Promise<Dispa
       // services/notifications 를 부르지 않고 바로 넣는 이유: 그 파일은 세션(쿠키)을 읽어서 수집 실행(tsx)에서 import 할 수 없다
       // 알림함이 1차 전달 수단이다 — 푸시를 꺼 둔 사람도 여기로 받으니, 적은 순간 발송 기록(alert_deliveries)을 찍는다.
       // 안 찍으면 알림 화면이 "조건 충족 1, 보낸 알림 0" 으로 남는다. 푸시, 메일은 이 위에 덧붙는다
-      const inboxed = await db
+      // 문구는 웹 알림 템플릿(2026-11-02). 미사용이면 알림함에 쌓지 않고 메일, 푸시만 간다
+      const priceText = formatPrice(change.newPrice, gp.currency);
+      const notice = await webNotice(SYSTEM_TEMPLATES.webPriceDrop, { 게임: title, 가격: priceText }, NOTIFICATION_MESSAGES.priceDrop(title, priceText));
+      const inboxed = !notice
+        ? false
+        : await db
         .insert(notifications)
-        .values({ userId: alert.userId, kind: "price_drop", body: NOTIFICATION_MESSAGES.priceDrop(title, formatPrice(change.newPrice, gp.currency)), link: payload.url, createdSource: "cron:alerts", updatedSource: "cron:alerts" })
+        .values({ userId: alert.userId, kind: "price_drop", body: notice.body, link: payload.url, templateCode: notice.templateCode, createdSource: "cron:alerts", updatedSource: "cron:alerts" })
         .then(() => true)
         .catch((e) => {
           console.warn(`[alerts] 알림함 기록 실패 (alert=${alert.id}): ${e instanceof Error ? e.message : e}`);

@@ -5,7 +5,8 @@ import { pgTable, pgEnum, uuid, text, timestamp, index } from "drizzle-orm/pg-co
 import { auditColumns } from "./audit";
 import { users } from "./schema";
 
-export const notificationKindEnum = pgEnum("notification_kind", ["price_drop", "comment", "approval", "release", "dev_news", "payment"]);
+/** notice: 관리자가 알림발송관리에서 직접 보낸 웹 알림(2026-11-02) */
+export const notificationKindEnum = pgEnum("notification_kind", ["price_drop", "comment", "approval", "release", "dev_news", "payment", "notice"]);
 export type NotificationKind = (typeof notificationKindEnum.enumValues)[number];
 
 export const notifications = pgTable(
@@ -18,6 +19,11 @@ export const notifications = pgTable(
     body: text("body").notNull(),
     /** 누르면 갈 사이트 안 경로 */
     link: text("link"),
+    /**
+     * 문구를 지은 알림 템플릿(2026-11-02, notify_templates.code). 템플릿 없이 코드 기본 문구로 쌓였으면 비운다.
+     * 웹 알림은 notify_sends 에 따로 적지 않는다 — 이 표가 곧 발송 기록이고, 알림발송관리가 이 칸으로 템플릿별 이력을 함께 읽는다
+     */
+    templateCode: text("template_code"),
     readAt: timestamp("read_at", { withTimezone: true }),
     ...auditColumns(),
   },

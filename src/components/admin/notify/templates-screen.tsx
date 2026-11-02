@@ -28,6 +28,8 @@ import { CODE_GROUPS, DEFAULT_NOTIFY_CHANNEL } from "@/lib/codes/groups";
 import { bodyLimit, notifyTemplateSchema, type NotifyTemplateInput } from "@/lib/notify/schemas";
 import { isSystemTemplate, SYSTEM_TEMPLATE_VARS } from "@/lib/notify/system-templates";
 import { renderEmailSubject } from "@/lib/notify/email";
+import { asMedium } from "@/lib/notify/medium";
+import { renderWebNotice } from "@/lib/notify/web";
 import { renderNotice, templateVars } from "@/lib/notify/template";
 import { NOTIFY_COMPOSE_PARAM, ROUTES } from "@/lib/routes";
 import type { NotifyTemplateDto } from "@/server/services/notify-admin";
@@ -122,15 +124,16 @@ export function NotifyTemplatesScreen({ templates, channels, categories }: { tem
     (d) => d.isNew || ((f.category === "all" || d.category === f.category) && (f.medium === "all" || d.medium === f.medium) && (f.active === "all" || (f.active === "on") === d.active) && (!q || d.code.toLowerCase().includes(q) || d.name.toLowerCase().includes(q))),
   );
   const columns: GridCol<Draft>[] = [
-    { key: "kind", label: M.colKind, width: "60px", align: "center", value: (d) => (d.system ? M.kindLabels.system : M.kindLabels.manual) },
-    { key: "code", label: M.colCode, width: "minmax(110px,1fr)", value: (d) => d.code },
-    { key: "name", label: M.colName, width: "minmax(110px,1fr)", value: (d) => d.name },
-    { key: "category", label: M.colCategory, width: "76px", align: "center", value: (d) => labelOf(categories, d.category) },
-    { key: "medium", label: M.colMedium, width: "72px", align: "center", value: (d) => codes.name(CODE_GROUPS.notifyMedium, d.medium) },
-    { key: "active", label: M.colActive, width: "56px", align: "center", value: (d) => (d.active ? M.activeLabels.on : M.activeLabels.off) },
+    // 열 최소 폭 합이 목록 폭(listWidth)을 넘지 않게 — 넘으면 가로로 굴러간다(사용자 11-02)
+    { key: "kind", label: M.colKind, width: "52px", align: "center", value: (d) => (d.system ? M.kindLabels.system : M.kindLabels.manual) },
+    { key: "code", label: M.colCode, width: "minmax(84px,1fr)", value: (d) => d.code },
+    { key: "name", label: M.colName, width: "minmax(84px,1fr)", value: (d) => d.name },
+    { key: "category", label: M.colCategory, width: "72px", align: "center", value: (d) => labelOf(categories, d.category) },
+    { key: "medium", label: M.colMedium, width: "76px", align: "center", value: (d) => codes.name(CODE_GROUPS.notifyMedium, d.medium) },
+    { key: "active", label: M.colActive, width: "48px", align: "center", value: (d) => (d.active ? M.activeLabels.on : M.activeLabels.off) },
   ];
   const all = { value: "all", label: M.all };
-  const html = current ? renderNotice(current.body, previewVars(current)) : "";
+  const html = !current ? "" : current.medium === "web" ? renderWebNotice(current.body, previewVars(current)) : renderNotice(current.body, previewVars(current));
   const subjectPreview = current ? renderEmailSubject(current.subject ?? "", previewVars(current)) : "";
 
   return (
@@ -175,7 +178,7 @@ export function NotifyTemplatesScreen({ templates, channels, categories }: { tem
           </SearchItem>
         </SearchBand>
         <MasterDetail
-          listWidth="480px"
+          listWidth="520px"
           list={
             <DataGrid
               label={M.listLabel}
@@ -220,9 +223,9 @@ export function NotifyTemplatesScreen({ templates, channels, categories }: { tem
                     <FormSelect name={`nt-c-${current.key}`} label={M.fieldCategory} hideLabel size="lg" value={current.category} onChange={(v) => set({ category: v })} options={categories} />
                   </Field>
                   <Field label={M.fieldMedium} required>
-                    <FormSelect name={`nt-md-${current.key}`} label={M.fieldMedium} hideLabel size="lg" value={current.medium} onChange={(v) => set({ medium: v === "email" ? "email" : "telegram" })} options={media} disabled={current.system} />
+                    <FormSelect name={`nt-md-${current.key}`} label={M.fieldMedium} hideLabel size="lg" value={current.medium} onChange={(v) => set({ medium: asMedium(v) })} options={media} disabled={current.system} />
                   </Field>
-                  {current.medium === "telegram" ? (
+                  {current.medium === "web" ? null : current.medium === "telegram" ? (
                     <Field label={M.fieldChannel} required error={errors.channel}>
                       <FormSelect name={`nt-ch-${current.key}`} label={M.fieldChannel} hideLabel size="lg" value={current.channel ?? ""} onChange={(v) => set({ channel: v })} options={channels} />
                     </Field>
@@ -257,6 +260,7 @@ export function NotifyTemplatesScreen({ templates, channels, categories }: { tem
                       onChange={(body) => set({ body })}
                       renderedLength={html.length}
                       max={bodyLimit(current.medium)}
+                      plain={current.medium === "web"}
                       error={errors.body}
                       vars={isSystemTemplate(current.code) ? SYSTEM_TEMPLATE_VARS[current.code] : templateVars(current.body).length > 0 ? templateVars(current.body).map((name) => ({ name })) : null}
                     />

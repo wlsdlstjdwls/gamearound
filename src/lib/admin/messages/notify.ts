@@ -3,7 +3,7 @@
 import type { NotifyMedium, NotifySendStatus, NotifyTrigger } from "@/server/db/schema";
 
 /** 발송 수단 기본 이름표. 공통코드 NOTIFY_MEDIUM 의 기본값이다(lib/codes/registry) — 화면은 useCodes() 로 읽는다 */
-export const NOTIFY_MEDIUM_LABEL = { telegram: "텔레그램", email: "이메일" } as const satisfies Record<NotifyMedium, string>;
+export const NOTIFY_MEDIUM_LABEL = { telegram: "텔레그램", email: "이메일", web: "웹 알림" } as const satisfies Record<NotifyMedium, string>;
 
 export const NOTIFY_MESSAGES = {
   // ---- 발송 건너뜀 사유(server/notify) ----
@@ -32,6 +32,9 @@ export const NOTIFY_MESSAGES = {
   previewHint: "텔레그램에 보일 모양이에요",
   emailPreviewHint: "메일에 보일 모양이에요",
   emailNoSubject: "(제목 없음)",
+  webPreviewHint: "알림함에 보일 모양이에요",
+  webNoMarkup: "웹 알림에는 꾸밈 태그를 쓸 수 없어요",
+  skipNoMember: "그 이메일로 가입한 회원이 없어요",
   tooLong: (n: number, max: number) => `${n.toLocaleString("ko-KR")}자 | 최대 ${max.toLocaleString("ko-KR")}자`,
   length: (n: number, max: number) => `${n.toLocaleString("ko-KR")} / ${max.toLocaleString("ko-KR")}자`,
   tagUnclosed: (tag: string) => `<${tag}> 태그를 닫지 않았어요`,
@@ -98,6 +101,7 @@ export const NOTIFY_MESSAGES = {
   sendConfirm: (channel: string) => `${channel}(으)로 지금 보내요. 보낸 알림은 되돌릴 수 없어요.`,
   /** 메일 주소는 받침을 알 수 없어 조사를 "에게" 로 고정한다 */
   sendConfirmEmail: (to: string) => `${to} 에게 메일을 지금 보내요. 보낸 메일은 되돌릴 수 없어요.`,
+  sendConfirmWeb: (to: string) => `${to} 회원의 알림함에 지금 넣어요. 넣은 알림은 되돌릴 수 없어요.`,
   /** 비밀번호 재설정 링크처럼 이력에 남기면 안 되는 값 자리 */
   redacted: "(가림)",
   missingVars: (names: string[]) => `값이 비어 있는 변수가 있어요: ${names.join(", ")}`,

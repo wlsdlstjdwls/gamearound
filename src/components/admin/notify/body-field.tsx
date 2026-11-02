@@ -21,6 +21,7 @@ export function notifyErrors(result: { success: true } | { success: false; error
     else if (big) errs[path] = VALIDATION_MESSAGES.maxLength(Number(big[1]));
     else if (msg === "required") errs[path] = VALIDATION_MESSAGES.required;
     else if (msg === "email") errs[path] = VALIDATION_MESSAGES.format;
+    else if (msg === "web_markup") errs[path] = M.webNoMarkup;
     else if (msg === VALIDATION_MESSAGES.format && path === "code") errs[path] = M.codePattern;
   }
   return errs;
@@ -39,8 +40,8 @@ const FORMATS = [
 const CHIP = "press rounded-md px-1.5 py-0.5 text-[11.5px] font-semibold";
 
 /** vars: 누르면 커서 자리에 {이름} 을 넣는 변수 칩. null 이면 자유 변수 안내만 */
-/** max: 수단별 상한(lib/notify/schemas 의 bodyLimit). 텔레그램은 4,096자, 이메일은 넉넉하다 */
-export function BodyField({ id, value, onChange, renderedLength, error, vars, max }: { id: string; value: string; onChange: (v: string) => void; renderedLength: number; error?: string; vars: Array<{ name: string; hint?: string }> | null; max: number }) {
+/** max: 수단별 상한(lib/notify/schemas 의 bodyLimit). plain: 꾸밈 단추를 걷는다(웹 알림은 글자만 쓴다) */
+export function BodyField({ id, value, onChange, renderedLength, error, vars, max, plain = false }: { id: string; value: string; onChange: (v: string) => void; renderedLength: number; error?: string; vars: Array<{ name: string; hint?: string }> | null; max: number; plain?: boolean }) {
   const ref = useRef<HTMLTextAreaElement>(null);
   const over = renderedLength > max;
   /** 고른 자리를 before + 고른 글 + after 로 바꾸고, 커서를 고른 글 끝(없으면 before 뒤)에 둔다 */
@@ -58,13 +59,15 @@ export function BodyField({ id, value, onChange, renderedLength, error, vars, ma
   };
   return (
     <div className="flex flex-col gap-1.5">
-      <div role="toolbar" aria-label={M.tags} aria-controls={id} className="flex flex-wrap items-center gap-1">
-        {FORMATS.map((f) => (
-          <button key={f.key} type="button" onClick={() => wrap(f.open, f.close)} className={cn(CHIP, "bg-surface-2 text-ink-2 hover:bg-line-soft")}>
-            {M.formatLabels[f.key]}
-          </button>
-        ))}
-      </div>
+      {!plain && (
+        <div role="toolbar" aria-label={M.tags} aria-controls={id} className="flex flex-wrap items-center gap-1">
+          {FORMATS.map((f) => (
+            <button key={f.key} type="button" onClick={() => wrap(f.open, f.close)} className={cn(CHIP, "bg-surface-2 text-ink-2 hover:bg-line-soft")}>
+              {M.formatLabels[f.key]}
+            </button>
+          ))}
+        </div>
+      )}
       <textarea ref={ref} id={id} rows={BODY_ROWS} className={cn(TEXTAREA_CLASS, "text-[14px] leading-[1.65]")} value={value} onChange={(e) => onChange(e.target.value)} aria-invalid={Boolean(error) || over} aria-describedby={`${id}-help`} />
       <div id={`${id}-help`} className="flex flex-col gap-1 text-[11.5px] text-dim">
         <div className="flex flex-wrap items-center justify-between gap-2">

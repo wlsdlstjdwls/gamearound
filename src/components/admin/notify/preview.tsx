@@ -41,7 +41,21 @@ export function EmailPreview({ subject, html, className }: { subject: string; ht
   );
 }
 
-/** 수단에 맞는 미리 보기 하나 */
+/** 웹 알림 미리 보기 — 알림함 한 줄 모양. 글은 renderWebNotice 결과(태그 없는 글)라 글자로 그린다 */
+export function WebPreview({ text, className }: { text: string; className?: string }) {
+  return (
+    <figure className={cn("flex flex-col gap-1.5", className)}>
+      <figcaption className="px-1 text-[11.5px] font-semibold text-dim">{M.webPreviewHint}</figcaption>
+      <div className="flex items-start gap-2.5 rounded-xl bg-surface px-3.5 py-3 shadow-hair">
+        <span aria-hidden className="mt-1.5 size-2 shrink-0 rounded-full bg-acc" />
+        <p className="min-w-0 break-words text-[13.5px] leading-[1.55] text-ink">{text}</p>
+      </div>
+    </figure>
+  );
+}
+
+/** 수단에 맞는 미리 보기 하나. html 은 텔레그램, 이메일이면 renderNotice 결과, 웹 알림이면 renderWebNotice 결과(글) */
 export function NoticePreview({ medium, subject, html }: { medium: NotifyMedium; subject: string | null; html: string }) {
+  if (medium === "web") return <WebPreview text={html} />;
   return medium === "email" ? <EmailPreview subject={subject ?? ""} html={html} /> : <TelegramPreview html={html} />;
 }

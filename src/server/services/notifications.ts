@@ -1,4 +1,5 @@
 // 알림함(기획서 v2.0 M-03). 쌓는 쪽(댓글 액션, 가격 알림 발송, 승인)과 읽는 쪽(헤더 종 팝오버)이 이 파일을 쓴다.
+// 문구는 알림템플릿관리의 웹 알림 템플릿으로 짓는다(2026-11-02, server/notify/web). 코드의 문구(lib/notifications/messages)는 템플릿이 없을 때의 기본값이다.
 import { and, desc, eq, inArray, isNull, sql } from "drizzle-orm";
 import { getDb } from "@/server/db/client";
 import { createdBy } from "@/server/db/audit";
@@ -7,21 +8,29 @@ import { getCurrentUser } from "@/server/services/users";
 import { ownedByCurrentSession } from "@/server/auth/session";
 import { postPath, type POST_CATEGORIES } from "@/lib/community/constants";
 import { NOTIFICATION_MESSAGES as M } from "@/lib/notifications/messages";
+import { SYSTEM_TEMPLATES as T } from "@/lib/notify/system-templates";
+import { webNotice } from "@/server/notify/web";
 
 /** 팝오버에 서는 최근 알림 수. 더 오래된 것은 읽을 화면이 아직 없다(후속) */
 export const NOTIFICATION_LIST_LIMIT = 20;
 
 export type NotificationDto = { id: string; kind: NotificationKind; body: string; link: string | null; createdAt: Date; read: boolean };
 
-export async function pushNotification(userId: string, kind: NotificationKind, body: string, link: string | null, source: "user" | "system" = "system"): Promise<void> {
-  await getDb().insert(notifications).values({ userId, kind, body, link, ...createdBy(source) });
+/** 알림 한 줄의 문구: 템플릿 코드, 채울 값, 템플릿이 없을 때의 기본 문구 */
+export type WebNoticeSpec = { code: string; vars: Record<string, string>; fallback: string };
+
+/** 템플릿으로 문구를 지어 알림함에 한 줄. 템플릿이 미사용이면 쌓지 않는다(server/notify/web) */
+export async function pushNotification(userId: string, kind: NotificationKind, spec: WebNoticeSpec, link: string | null, source: "user" | "system" = "system"): Promise<void> {
+  const n = await webNotice(spec.code, spec.vars, spec.fallback);
+  if (!n) return;
+  await getDb().insert(notifications).values({ userId, kind, body: n.body, link, templateCode: n.templateCode, ...createdBy(source) });
 }
 
 /** 내 글에 댓글이 달렸다. 내가 내 글에 단 댓글은 알리지 않는다 */
 export async function notifyComment(p: { postId: string; postAuthorId: string; postTitle: string; category: string }): Promise<void> {
   const me = await getCurrentUser().catch(() => null);
   if (!me || me.id === p.postAuthorId) return;
-  await pushNotification(p.postAuthorId, "comment", M.comment(p.postTitle), postPath(p.postId, p.category as (typeof POST_CATEGORIES)[number]), "user");
+  await pushNotification(p.postAuthorId, "comment", { code: T.webComment, vars: { 글제목: p.postTitle }, fallback: M.comment(p.postTitle) }, postPath(p.postId, p.category as (typeof POST_CATEGORIES)[number]), "user");
 }
 
 /**
@@ -31,7 +40,7 @@ export async function notifyComment(p: { postId: string; postAuthorId: string; p
 export async function notifyReply(p: { postId: string; parentAuthorId: string; postTitle: string; category: string }): Promise<void> {
   const me = await getCurrentUser().catch(() => null);
   if (!me || me.id === p.parentAuthorId) return;
-  await pushNotification(p.parentAuthorId, "comment", M.reply(p.postTitle), postPath(p.postId, p.category as (typeof POST_CATEGORIES)[number]), "user");
+  await pushNotification(p.parentAuthorId, "comment", { code: T.webReply, vars: { 글제목: p.postTitle }, fallback: M.reply(p.postTitle) }, postPath(p.postId, p.category as (typeof POST_CATEGORIES)[number]), "user");
 }
 
 /**

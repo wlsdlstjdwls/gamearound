@@ -680,6 +680,20 @@
       "when": 1793603661112,
       "tag": "0096_notify_email_medium",
       "breakpoints": true
+    },
+    {
+      "idx": 97,
+      "version": "7",
+      "when": 1793604935798,
+      "tag": "0097_notify_web_medium",
+      "breakpoints": true
+    },
+    {
+      "idx": 98,
+      "version": "7",
+      "when": 1793605241168,
+      "tag": "0098_notify_web_templates",
+      "breakpoints": true
     }
   ]
 }

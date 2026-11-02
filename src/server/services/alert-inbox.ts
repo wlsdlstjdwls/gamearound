@@ -14,6 +14,8 @@ import { alertStatus } from "@/lib/alerts/condition";
 import { formatPrice } from "@/lib/currency";
 import { NOTIFICATION_MESSAGES as M } from "@/lib/notifications/messages";
 import { requireUser } from "@/server/services/users";
+import { webNotice } from "@/server/notify/web";
+import { SYSTEM_TEMPLATES } from "@/lib/notify/system-templates";
 
 /** 이 게임에 켜 둔 내 알림 중 지금 조건에 맞는 것마다 알림함 한 줄. 돌려주는 값은 새로 쌓은 수 */
 export async function notifyAlertsMetNow(gameId: string): Promise<number> {
@@ -63,11 +65,16 @@ export async function notifyAlertsMetNow(gameId: string): Promise<number> {
       .onConflictDoNothing()
       .returning({ alertId: alertDeliveries.alertId });
     if (fresh.length === 0) continue;
+    const priceText = formatPrice(h.row.currentPrice, h.row.currency);
+    // 문구는 웹 알림 템플릿(2026-11-02). 미사용이면 쌓지 않는다
+    const notice = await webNotice(SYSTEM_TEMPLATES.webPriceMet, { 게임: title, 가격: priceText }, M.priceMet(title, priceText));
+    if (!notice) continue;
     await db.insert(notifications).values({
       userId: u.id,
       kind: "price_drop",
-      body: M.priceMet(title, formatPrice(h.row.currentPrice, h.row.currency)),
+      body: notice.body,
       link: `/games/${game.slug}`,
+      templateCode: notice.templateCode,
       ...createdBy("user", u.id),
     });
     added++;

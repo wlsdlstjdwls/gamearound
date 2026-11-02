@@ -13,6 +13,7 @@ import { authorNameSql } from "@/server/services/community/columns";
 import { escapeLike, listCommentsForAdmin, POST_ADMIN_LIMIT, type ModerationDecision } from "@/server/services/community/admin";
 import type { AdminCommentRowDto, CommentDto } from "@/server/services/community/dto";
 import { INDIE_NOTIFY_MESSAGES as N, INDIE_PROMO_MESSAGES as M } from "@/lib/indie/promo-messages";
+import { SYSTEM_TEMPLATES as T } from "@/lib/notify/system-templates";
 import { indiePath } from "@/lib/routes";
 import { POST_EDIT_MESSAGES as E } from "@/lib/community/messages";
 
@@ -44,7 +45,7 @@ export async function addIndieComment(postId: string, body: string): Promise<{ c
     .values({ postId, authorUserId: u.id, body, ...createdBy("user", u.id) })
     .returning({ id: indiePostComments.id, body: indiePostComments.body, createdAt: indiePostComments.createdAt });
   await db.update(indiePosts).set({ commentCount: sql`${indiePosts.commentCount} + 1` }).where(eq(indiePosts.id, postId));
-  if (u.id !== post.author) await pushNotification(post.author, "comment", N.comment(post.title), indiePath(post.slug), "user").catch(() => {});
+  if (u.id !== post.author) await pushNotification(post.author, "comment", { code: T.webIndieComment, vars: { 게임: post.title }, fallback: N.comment(post.title) }, indiePath(post.slug), "user").catch(() => {});
   const name = u.displayName ?? `${u.email.split("@")[0].slice(0, 2)}***`;
   return { comment: { id: row.id, body: row.body, authorName: name, createdAt: row.createdAt, isMine: true }, slug: post.slug };
 }

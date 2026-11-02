@@ -1,8 +1,13 @@
 // 알림템플릿관리, 알림발송관리 읽기, 쓰기(2026-10-30). 발송 자체는 server/notify/dispatch 가 한다 — 여기는 화면이 쓰는 목록과 저장이다.
+// 웹 알림(2026-11-02)은 이력이 notifications 에 있다(server/notify/web 머리 주석). 발송 이력 목록은 두 표를 같이 읽어 시각순으로 잇는다.
 import "server-only";
-import { and, desc, eq, gte, lt, type SQL } from "drizzle-orm";
+import { and, desc, eq, gte, isNotNull, lt, type SQL } from "drizzle-orm";
+import { alias } from "drizzle-orm/pg-core";
 import { getDb } from "@/server/db/client";
-import { notifySends, notifyTemplates, users, type NotifyMedium, type NotifySendStatus, type NotifyTrigger } from "@/server/db/schema";
+import { notifications, notifySends, notifyTemplates, users, type NotifyMedium, type NotifySendStatus, type NotifyTrigger } from "@/server/db/schema";
+import { forgetWebTemplates } from "@/server/notify/web";
+import { MANUAL_WEB_CODE } from "@/lib/notify/system-templates";
+import { findUserByEmail } from "@/server/services/users";
 import { createdBy, updatedBy } from "@/server/db/audit";
 import type { notifyTemplateSchema } from "@/lib/notify/schemas";
 import type { z } from "zod";
@@ -50,6 +55,7 @@ export async function saveNotifyTemplate(adminUserId: string, input: z.output<ty
   };
   if (isNew) await db.insert(notifyTemplates).values({ code: input.code, ...row, system: false, ...createdBy("admin", adminUserId) });
   else await db.update(notifyTemplates).set({ ...row, ...updatedBy("admin", adminUserId) }).where(eq(notifyTemplates.code, input.code));
+  forgetWebTemplates();
   return { ok: true };
 }
 
@@ -82,6 +88,57 @@ export interface NotifySendFilter {
 export const NOTIFY_SENDS_LIMIT = 500;
 
 export async function listNotifySends(f: NotifySendFilter): Promise<NotifySendDto[]> {
+  const [sends, web] = await Promise.all([f.medium === "web" ? [] : listSendRows(f), f.medium && f.medium !== "web" ? [] : listWebRows(f)]);
+  return [...sends, ...web].sort((a, b) => b.createdAt.localeCompare(a.createdAt)).slice(0, NOTIFY_SENDS_LIMIT);
+}
+
+/**
+ * 웹 알림 이력(notifications). 알림함에 들어간 줄은 다 "성공" 이다 — 넣지 못한 줄은 표에 없다.
+ * 템플릿을 지난 줄만 읽는다(template_code 있는 줄). 이 칸이 생기기 전(11-02)에 쌓인 알림은 이력이 아니라 회원 알림함의 일이다
+ */
+async function listWebRows(f: NotifySendFilter): Promise<NotifySendDto[]> {
+  if (f.status && f.status !== "sent") return [];
+  const recipient = alias(users, "recipient");
+  const where: SQL[] = [gte(notifications.createdAt, f.from), lt(notifications.createdAt, f.to), isNotNull(notifications.templateCode)];
+  if (f.templateCode) where.push(eq(notifications.templateCode, f.templateCode));
+  const rows = await getDb()
+    .select({ n: notifications, to: recipient.email, actorName: users.displayName, actorEmail: users.email })
+    .from(notifications)
+    .innerJoin(recipient, eq(recipient.id, notifications.userId))
+    .leftJoin(users, eq(users.id, notifications.createdBy))
+    .where(and(...where))
+    .orderBy(desc(notifications.createdAt))
+    .limit(NOTIFY_SENDS_LIMIT);
+  return rows.map(({ n, to, actorName, actorEmail }) => ({
+    id: `web:${n.id}`,
+    templateCode: n.templateCode,
+    medium: "web",
+    channel: null,
+    recipient: to,
+    subject: null,
+    chatId: null,
+    trigger: n.createdSource === "admin" ? "manual" : "system",
+    text: n.body,
+    status: "sent",
+    error: null,
+    createdAt: n.createdAt.toISOString(),
+    actorName: n.createdSource === "admin" ? (actorName ?? actorEmail ?? null) : null,
+  }));
+}
+
+/** 관리자가 직접 보내는 웹 알림 한 줄. 받는 사람은 이메일로 찾는다. 없으면 null */
+export async function sendManualWebNotice(adminUserId: string, input: { email: string; body: string; templateCode: string | null }): Promise<{ id: string } | null> {
+  const db = getDb();
+  const u = await findUserByEmail(input.email);
+  if (!u) return null;
+  const [row] = await db
+    .insert(notifications)
+    .values({ userId: u.id, kind: "notice", body: input.body, link: null, templateCode: input.templateCode ?? MANUAL_WEB_CODE, ...createdBy("admin", adminUserId) })
+    .returning({ id: notifications.id });
+  return { id: row.id };
+}
+
+async function listSendRows(f: NotifySendFilter): Promise<NotifySendDto[]> {
   const where: SQL[] = [gte(notifySends.createdAt, f.from), lt(notifySends.createdAt, f.to)];
   if (f.status) where.push(eq(notifySends.status, f.status));
   if (f.templateCode) where.push(eq(notifySends.templateCode, f.templateCode));

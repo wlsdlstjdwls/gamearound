@@ -14,6 +14,7 @@ import { payments, promotionBoosts } from "@/server/db/schema";
 import { cancelTossPayment, TOSS_BILLING_SECRET_KEY_ENV, TOSS_SECRET_KEY_ENV } from "@/server/payments/toss";
 import { endMembership } from "@/server/services/membership/charge";
 import { pushNotification } from "@/server/services/notifications";
+import { SYSTEM_TEMPLATES as T } from "@/lib/notify/system-templates";
 import { paymentRefundBasis, proratedRefund } from "@/lib/payments/refund";
 import { PAYMENT_MESSAGES as M } from "@/lib/payments/messages";
 import { paymentProductName } from "@/server/services/payments/history";
@@ -76,6 +77,7 @@ export async function refundPayment(orderId: string, mode: RefundMode, reason: s
   }
   if (p.membershipId) await endMembership(p.membershipId, now, { source: "admin", userId: adminId });
   const name = paymentProductName(p.product, await getPricingSettings());
-  await pushNotification(p.userId, "payment", M.refundedNotice(name, formatPrice(amount)), ROUTES.indiePayments).catch(() => {});
+  const amountText = formatPrice(amount);
+  await pushNotification(p.userId, "payment", { code: T.webRefunded, vars: { 상품: name, 금액: amountText }, fallback: M.refundedNotice(name, amountText) }, ROUTES.indiePayments).catch(() => {});
   return amount;
 }

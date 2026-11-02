@@ -4,6 +4,7 @@ import { CODE_MAX, CODE_NAME_MAX, CODE_MEMO_MAX, CODE_PATTERN } from "@/lib/code
 import type { NotifyMedium } from "@/server/db/schema";
 import { EMAIL_BODY_MAX, EMAIL_SUBJECT_MAX } from "./email";
 import { checkTags } from "./template";
+import { hasMarkup, WEB_BODY_MAX } from "./web";
 
 /** 텔레그램 sendMessage 의 text 상한(https://core.telegram.org/bots/api#sendmessage). 변수를 채운 뒤 글자 수다 */
 export const TELEGRAM_TEXT_MAX = 4096;
@@ -20,7 +21,7 @@ const body = z
     if (bad) ctx.addIssue({ code: "custom", message: `tags:${bad.kind}:${bad.tag}` });
   });
 
-const medium = z.enum(["telegram", "email"] as const satisfies readonly NotifyMedium[]);
+const medium = z.enum(["telegram", "email", "web"] as const satisfies readonly NotifyMedium[]);
 const subject = z
   .string()
   .trim()
@@ -37,7 +38,7 @@ const channel = z
 
 /** 수단별 본문 상한(템플릿 글자 기준. 변수를 채운 길이는 발송 때 다시 본다) */
 export function bodyLimit(m: NotifyMedium): number {
-  return m === "email" ? EMAIL_BODY_MAX : TELEGRAM_TEXT_MAX;
+  return m === "email" ? EMAIL_BODY_MAX : m === "web" ? WEB_BODY_MAX : TELEGRAM_TEXT_MAX;
 }
 
 type MediumShape = { medium: NotifyMedium; channel: string | null; subject: string | null; body: string };
@@ -48,6 +49,8 @@ type MediumShape = { medium: NotifyMedium; channel: string | null; subject: stri
 function mediumRules(v: MediumShape, ctx: z.RefinementCtx) {
   if (v.medium === "telegram" && !v.channel) ctx.addIssue({ code: "custom", path: ["channel"], message: "required" });
   if (v.medium === "email" && !v.subject) ctx.addIssue({ code: "custom", path: ["subject"], message: "required" });
+  // 웹 알림은 알림함 한 줄이라 화면이 글자로 그린다 — 태그가 그대로 보인다
+  if (v.medium === "web" && typeof v.body === "string" && hasMarkup(v.body)) ctx.addIssue({ code: "custom", path: ["body"], message: "web_markup" });
   if (typeof v.body === "string" && v.body.length > bodyLimit(v.medium)) ctx.addIssue({ code: "custom", path: ["body"], message: `too_big:${bodyLimit(v.medium)}` });
 }
 const always = { when: () => true };
@@ -89,6 +92,7 @@ export const manualSendSchema = z
   })
   .superRefine((v, ctx) => {
     mediumRules(v, ctx);
-    if (v.medium === "email" && !z.email().safeParse(v.recipient ?? "").success) ctx.addIssue({ code: "custom", path: ["recipient"], message: "email" });
+    // 이메일, 웹 알림은 회원 한 사람에게 간다(웹 알림은 그 주소의 회원 알림함)
+    if (v.medium !== "telegram" && !z.email().safeParse(v.recipient ?? "").success) ctx.addIssue({ code: "custom", path: ["recipient"], message: "email" });
   }, always);
 export type ManualSendInput = z.input<typeof manualSendSchema>;

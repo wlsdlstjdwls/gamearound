@@ -17,6 +17,7 @@ import { memberships, payments } from "@/server/db/schema";
 import { chargeBilling } from "@/server/payments/toss-billing";
 import { TossError } from "@/server/payments/toss";
 import { pushNotification } from "@/server/services/notifications";
+import { SYSTEM_TEMPLATES as T } from "@/lib/notify/system-templates";
 import { quoteFor } from "@/server/services/pricing";
 import { grantFromRow, renewalCharge, type MembershipGrant } from "@/lib/pricing/promo-terms";
 import { getPricingSettings } from "@/server/services/settings";
@@ -108,27 +109,29 @@ async function renewOne(m: MembershipRow, now: Date): Promise<void> {
   const action = renewalAction(m, now);
   if (action === "end") {
     await endMembership(m.id, now, { source: "system" });
-    await pushNotification(m.userId, "payment", M.noticeEnded, ROUTES.membership);
+    await pushNotification(m.userId, "payment", { code: T.webMembershipEnded, vars: {}, fallback: M.noticeEnded }, ROUTES.membership);
     return;
   }
   if (action !== "charge") return;
   const r = await chargeMembership(m, now, false, { source: "system" });
   if (r.ok) {
-    await pushNotification(m.userId, "payment", M.noticeRenewed(formatDate(addMonth(nextPeriodStart(m, now))), (await getPricingSettings()).membership.boostCredits), ROUTES.membership);
+    const nextDate = formatDate(addMonth(nextPeriodStart(m, now)));
+    const credits = (await getPricingSettings()).membership.boostCredits;
+    await pushNotification(m.userId, "payment", { code: T.webMembershipRenewed, vars: { 이용권: String(credits), 다음결제일: nextDate }, fallback: M.noticeRenewed(nextDate, credits) }, ROUTES.membership);
     return;
   }
   const next = afterFailedCharge(m.failedAttempts, now);
   if (next.status === "ended") {
     await endMembership(m.id, now, { source: "system" });
     await getDb().update(memberships).set({ failedAttempts: next.failedAttempts, lastFailMessage: r.message }).where(eq(memberships.id, m.id));
-    await pushNotification(m.userId, "payment", M.noticeEnded, ROUTES.membership);
+    await pushNotification(m.userId, "payment", { code: T.webMembershipEnded, vars: {}, fallback: M.noticeEnded }, ROUTES.membership);
     return;
   }
   await getDb()
     .update(memberships)
     .set({ status: "past_due", failedAttempts: next.failedAttempts, nextChargeAt: next.nextChargeAt, lastFailMessage: r.message, ...updatedBy("system") })
     .where(eq(memberships.id, m.id));
-  await pushNotification(m.userId, "payment", M.noticeFailed(r.message), ROUTES.membership);
+  await pushNotification(m.userId, "payment", { code: T.webMembershipFailed, vars: { 사유: r.message }, fallback: M.noticeFailed(r.message) }, ROUTES.membership);
 }
 
 /**

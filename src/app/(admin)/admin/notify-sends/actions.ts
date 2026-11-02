@@ -4,13 +4,15 @@
 import { revalidatePath } from "next/cache";
 import { actionError } from "@/lib/db-errors";
 import { NOTIFY_MESSAGES as M } from "@/lib/admin/messages";
-import { manualSendSchema, TELEGRAM_TEXT_MAX } from "@/lib/notify/schemas";
-import { EMAIL_BODY_MAX } from "@/lib/notify/email";
+import { manualSendSchema } from "@/lib/notify/schemas";
+import { bodyLimit } from "@/lib/notify/schemas";
+import { renderWebNotice } from "@/lib/notify/web";
 import { renderNotice, templateVars } from "@/lib/notify/template";
 import { ROUTES } from "@/lib/routes";
 import { dispatchNotice } from "@/server/notify/dispatch";
 import { dispatchMailNotice } from "@/server/notify/mail";
 import type { NotifySendStatus } from "@/server/db/schema";
+import { sendManualWebNotice } from "@/server/services/notify-admin";
 import { requireAdmin } from "@/server/services/users";
 
 export type SendActionResult = { ok: true; status: NotifySendStatus; error: string | null } | { ok: false; error: string };
@@ -23,11 +25,18 @@ export async function sendNoticeAction(input: unknown): Promise<SendActionResult
     const { body, vars, medium, channel, recipient, subject, templateCode } = parsed.data;
     const missing = [...new Set([...templateVars(subject ?? ""), ...templateVars(body)])].filter((n) => !vars[n]?.trim());
     if (missing.length > 0) return { ok: false, error: M.missingVars(missing) };
-    const text = renderNotice(body, vars);
-    const max = medium === "email" ? EMAIL_BODY_MAX : TELEGRAM_TEXT_MAX;
+    const text = medium === "web" ? renderWebNotice(body, vars) : renderNotice(body, vars);
+    const max = bodyLimit(medium);
     if (text.length > max) return { ok: false, error: M.tooLong(text.length, max) };
     const base = { templateCode, trigger: "manual" as const, actorId: admin.id, source: "admin" as const };
     // 스키마가 수단별 필수 칸(받는 곳, 받는 주소, 제목)을 이미 봤다
+    if (medium === "web") {
+      // 웹 알림은 회원 알림함에 한 줄 넣는 것이라 "건너뜀" 이 없다 — 회원이 없으면 화면에 바로 말한다
+      const sent = await sendManualWebNotice(admin.id, { email: recipient ?? "", body: text, templateCode });
+      if (!sent) return { ok: false, error: M.skipNoMember };
+      revalidatePath(ROUTES.adminNotifySends);
+      return { ok: true, status: "sent", error: null };
+    }
     const r =
       medium === "email"
         ? await dispatchMailNotice({ ...base, to: recipient ?? "", subject: subject ?? "", body, vars })

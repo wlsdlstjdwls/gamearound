@@ -9,10 +9,35 @@ export const SYSTEM_TEMPLATES = {
   // 회원에게 가는 메일(2026-11-02). 발송 수단이 이메일이고 받는 사람은 사건이 정한다
   mailPasswordReset: "mail.password_reset",
   mailPriceAlert: "mail.price_alert",
+  // 회원 알림함(웹 알림, 2026-11-02). 받는 사람과 링크는 사건이 정한다
+  webComment: "web.comment",
+  webReply: "web.reply",
+  webIndieComment: "web.indie_comment",
+  webApproved: "web.approved",
+  webRejected: "web.rejected",
+  webPriceDrop: "web.price_drop",
+  webPriceMet: "web.price_met",
+  webWishSale: "web.wish_sale",
+  webWishRecordLow: "web.wish_record_low",
+  webReleased: "web.released",
+  webMembershipRenewed: "web.membership_renewed",
+  webMembershipFailed: "web.membership_failed",
+  webMembershipEnded: "web.membership_ended",
+  webRefunded: "web.refunded",
 } as const;
+/**
+ * 템플릿 없이 직접 쓴 웹 알림의 template_code(notifications). 이력 목록이 "템플릿을 지난 줄" 만 읽으므로 비우면 직접 보낸 줄이 이력에서 빠진다.
+ * 템플릿 표에 없는 코드라 화면에는 "직접 작성" 으로 보인다
+ */
+export const MANUAL_WEB_CODE = "manual";
+
 export type SystemTemplateCode = (typeof SYSTEM_TEMPLATES)[keyof typeof SYSTEM_TEMPLATES];
 
 type VarSpec = { name: string; hint: string; sample: string };
+
+const GAME: VarSpec = { name: "게임", hint: "게임 이름", sample: "하데스 II" };
+const PRICE: VarSpec = { name: "가격", hint: "지금 값(원 붙은 글)", sample: "27,000원" };
+const POST_TITLE: VarSpec = { name: "글제목", hint: "게시글 제목", sample: "하데스 2 초반 공략" };
 
 const TASK_BASE: VarSpec[] = [
   { name: "제목", hint: "업무요청 제목", sample: "스팀 가격 수집 지연 확인" },
@@ -51,6 +76,26 @@ export const SYSTEM_TEMPLATE_VARS: Record<SystemTemplateCode, VarSpec[]> = {
     { name: "제목", hint: "알림 제목(할인 중, 가격이 내려갔어요)", sample: "하데스 II 할인 중" },
     { name: "내용", hint: "기종과 값, 할인율", sample: "Steam 27,000원 (30% 할인)" },
     { name: "링크", hint: "게임 상세 주소", sample: "https://gamearound.kr/games/hades-ii" },
+  ],
+  "web.comment": [POST_TITLE],
+  "web.reply": [POST_TITLE],
+  "web.indie_comment": [GAME],
+  "web.approved": [GAME],
+  "web.rejected": [GAME],
+  "web.price_drop": [GAME, PRICE],
+  "web.price_met": [GAME, PRICE],
+  "web.wish_sale": [GAME, PRICE, { name: "할인율", hint: "할인 퍼센트(숫자만)", sample: "30" }],
+  "web.wish_record_low": [GAME, PRICE],
+  "web.released": [GAME],
+  "web.membership_renewed": [
+    { name: "이용권", hint: "채워진 이용권 장 수", sample: "2" },
+    { name: "다음결제일", hint: "다음 결제 날짜", sample: "2026. 12. 2." },
+  ],
+  "web.membership_failed": [{ name: "사유", hint: "카드사가 준 실패 사유", sample: "잔액 부족" }],
+  "web.membership_ended": [],
+  "web.refunded": [
+    { name: "상품", hint: "환불한 상품 이름", sample: "인디 부스트 7일" },
+    { name: "금액", hint: "환불 금액", sample: "6,900원" },
   ],
 };
 

@@ -46,9 +46,10 @@ export const commonCodes = pgTable(
 
 /**
  * 발송 수단(2026-11-02, 사용자 "이미 있는 것에 구분값을 두고 이메일을 추가"). 텔레그램은 관리자 채널로, 이메일은 회원 한 사람에게 간다.
+ * web(같은 날 "웹 알림도"): 알림함(헤더 종) 한 줄. 이력은 notify_sends 가 아니라 notifications 가 들고 있다(schema-notifications 주석)
  * 이름표는 공통코드 NOTIFY_MEDIUM(lib/codes/registry). 수단이 늘면 enum 과 server/notify 의 송신기를 같이 더한다
  */
-export const notifyMediumEnum = pgEnum("notify_medium", ["telegram", "email"]);
+export const notifyMediumEnum = pgEnum("notify_medium", ["telegram", "email", "web"]);
 export type NotifyMedium = (typeof notifyMediumEnum.enumValues)[number];
 
 export const notifyTemplates = pgTable("notify_templates", {

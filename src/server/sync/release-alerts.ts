@@ -13,6 +13,8 @@ import { gamePlatforms, games, HOME_REGION, notifications, wishlists } from "@/s
 import { visiblePlatformsOnly } from "@/server/db/visibility";
 import { NOTIFICATION_MESSAGES as M } from "@/lib/notifications/messages";
 import { RELEASE_ALERT_LOOKBACK_DAYS } from "./constants";
+import { webNotice } from "@/server/notify/web";
+import { SYSTEM_TEMPLATES } from "@/lib/notify/system-templates";
 
 const SOURCE = "cron:release-alerts" as const;
 
@@ -46,11 +48,15 @@ export async function dispatchReleaseAlerts(): Promise<number> {
     .where(and(eq(notifications.kind, "release"), inArray(notifications.link, links)));
   const already = new Set(sent.map((s) => `${s.userId}|${s.link}`));
 
+  // 문구는 웹 알림 템플릿(2026-11-02). 게임마다 한 번 짓는다 — 같은 게임을 찜한 사람은 같은 글을 받는다. 미사용이면 아무것도 쌓지 않는다
+  const notices = new Map<string, Awaited<ReturnType<typeof webNotice>>>();
+  for (const g of byGame.values()) notices.set(g.game_id, await webNotice(SYSTEM_TEMPLATES.webReleased, { 게임: g.title }, M.released(g.title)));
   const rows = wishers.flatMap((w) => {
     const g = byGame.get(w.gameId);
+    const notice = notices.get(w.gameId);
     const link = g ? `/games/${g.slug}` : null;
-    if (!g || !link || already.has(`${w.userId}|${link}`)) return [];
-    return [{ userId: w.userId, kind: "release" as const, body: M.released(g.title), link, ...createdBy(SOURCE) }];
+    if (!g || !link || !notice || already.has(`${w.userId}|${link}`)) return [];
+    return [{ userId: w.userId, kind: "release" as const, body: notice.body, link, templateCode: notice.templateCode, ...createdBy(SOURCE) }];
   });
   if (rows.length === 0) return 0;
   await db.insert(notifications).values(rows);

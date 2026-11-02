@@ -21,6 +21,8 @@ import { gamePath } from "@/lib/routes";
 import { markOnce } from "@/server/redis";
 import type { PriceChange } from "./dispatch-alerts";
 import { pushToUser } from "./push-to-user";
+import { webNotice } from "@/server/notify/web";
+import { SYSTEM_TEMPLATES } from "@/lib/notify/system-templates";
 import { WISH_SALE_DEDUPE_TTL_SEC } from "./constants";
 
 const SOURCE = "cron:wish-alerts" as const;
@@ -84,7 +86,11 @@ export async function dispatchWishSaleAlerts(changes: PriceChange[]): Promise<Wi
     if (recipients.length === 0) continue;
 
     const priceText = formatPrice(change.newPrice, gp.currency);
-    const body = reason === "recordLow" ? M.wishRecordLow(gp.title, priceText) : M.wishSale(gp.title, priceText, discountPct);
+    // 문구는 웹 알림 템플릿(2026-11-02). 템플릿은 1분 동안 프로세스에 들고 있어 받는 사람 수만큼 묻지 않는다(server/notify/web)
+    const notice =
+      reason === "recordLow"
+        ? await webNotice(SYSTEM_TEMPLATES.webWishRecordLow, { 게임: gp.title, 가격: priceText }, M.wishRecordLow(gp.title, priceText))
+        : await webNotice(SYSTEM_TEMPLATES.webWishSale, { 게임: gp.title, 가격: priceText, 할인율: String(discountPct) }, M.wishSale(gp.title, priceText, discountPct));
     const link = gamePath(gp.slug);
     const push = { ...alertPayload({ gameTitle: gp.title, platform: gp.platform, price: change.newPrice, currency: gp.currency, discountPct }), url: link, tag: `wish:${gp.gameId}` };
 
@@ -95,9 +101,12 @@ export async function dispatchWishSaleAlerts(changes: PriceChange[]): Promise<Wi
       }
       summary.recipients++;
       // 알림함이 1차 전달 수단이다(dispatch-alerts 와 같다) — 푸시를 꺼 둔 사람도 사이트 안에서 받는다
-      const inboxed = await db
+      // 템플릿이 미사용이면 알림함에 쌓지 않고 푸시만 간다
+      const inboxed = !notice
+        ? false
+        : await db
         .insert(notifications)
-        .values({ userId, kind: "price_drop", body, link, ...createdBy(SOURCE) })
+        .values({ userId, kind: "price_drop", body: notice.body, link, templateCode: notice.templateCode, ...createdBy(SOURCE) })
         .then(() => true)
         .catch((e) => {
           console.warn(`[wish-alerts] 알림함 기록 실패 (user=${userId}): ${e instanceof Error ? e.message : e}`);

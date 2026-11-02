@@ -17,6 +17,8 @@ import { sendNoticeAction } from "@/app/(admin)/admin/notify-sends/actions";
 import { NOTIFY_MESSAGES as M } from "@/lib/admin/messages";
 import { CODE_GROUPS, DEFAULT_NOTIFY_CHANNEL } from "@/lib/codes/groups";
 import { renderEmailSubject } from "@/lib/notify/email";
+import { asMedium } from "@/lib/notify/medium";
+import { renderWebNotice } from "@/lib/notify/web";
 import { bodyLimit, manualSendSchema } from "@/lib/notify/schemas";
 import { renderNotice, templateVars } from "@/lib/notify/template";
 import { notifyErrors } from "@/components/admin/notify/body-field";
@@ -44,10 +46,12 @@ export function ComposeForm({ templates, channels, seed, onSent }: { templates: 
   const [pending, start] = useTransition();
 
   const email = medium === "email";
+  /** 회원 한 사람에게 가는 수단(받는 주소를 받는다) */
+  const toMember = medium !== "telegram";
   const names = [...new Set([...(email ? templateVars(subject) : []), ...templateVars(body)])];
-  const html = renderNotice(body, vars);
+  const html = medium === "web" ? renderWebNotice(body, vars) : renderNotice(body, vars);
   const missing = names.filter((n) => !vars[n]?.trim());
-  const input = { templateCode: templateCode || null, medium, channel: email ? null : channel, recipient: email ? recipient : null, subject: email ? subject : null, body, vars };
+  const input = { templateCode: templateCode || null, medium, channel: toMember ? null : channel, recipient: toMember ? recipient : null, subject: email ? subject : null, body, vars };
   const errors = notifyErrors(manualSendSchema.safeParse(input));
   const max = bodyLimit(medium);
   const blocked = Object.keys(errors).length > 0 || missing.length > 0 || html.length > max;
@@ -66,7 +70,8 @@ export function ComposeForm({ templates, channels, seed, onSent }: { templates: 
   const send = async () => {
     if (missing.length > 0) return say(M.missingVars(missing), "error");
     const channelName = channels.find((c) => c.value === channel)?.label ?? channel;
-    if (!(await askConfirm(email ? M.sendConfirmEmail(recipient.trim()) : M.sendConfirm(channelName), { title: M.sendConfirmTitle, confirmLabel: M.send }))) return;
+    const ask = medium === "web" ? M.sendConfirmWeb(recipient.trim()) : email ? M.sendConfirmEmail(recipient.trim()) : M.sendConfirm(channelName);
+    if (!(await askConfirm(ask, { title: M.sendConfirmTitle, confirmLabel: M.send }))) return;
     start(async () => {
       const r = await sendNoticeAction(input).catch(() => ({ ok: false as const, error: M.failed }));
       if (!r.ok) return say(r.error, "error");
@@ -91,16 +96,18 @@ export function ComposeForm({ templates, channels, seed, onSent }: { templates: 
           <FormSelect name="ns-tpl" label={M.fieldTemplate} hideLabel size="lg" value={templateCode} onChange={pickTemplate} options={[{ value: FREE, label: M.noTemplate }, ...picks.map((t) => ({ value: t.code, label: t.name }))]} />
         </Field>
         <Field label={M.fieldMedium} required>
-          <FormSelect name="ns-md" label={M.fieldMedium} hideLabel size="lg" value={medium} onChange={(v) => setMedium(v === "email" ? "email" : "telegram")} options={codes.options(CODE_GROUPS.notifyMedium)} />
+          <FormSelect name="ns-md" label={M.fieldMedium} hideLabel size="lg" value={medium} onChange={(v) => setMedium(asMedium(v))} options={codes.options(CODE_GROUPS.notifyMedium)} />
         </Field>
-        {email ? (
+        {toMember ? (
           <>
-            <Field label={M.fieldRecipient} htmlFor="ns-to" required error={recipient ? errors.recipient : undefined}>
+            <Field label={M.fieldRecipient} htmlFor="ns-to" required wide error={recipient ? errors.recipient : undefined}>
               <TextField id="ns-to" label={M.fieldRecipient} hideLabel type="email" inputMode="email" autoComplete="off" value={recipient} onChange={(e) => setRecipient(e.target.value)} compact />
             </Field>
-            <Field label={M.fieldSubject} htmlFor="ns-subj" required wide>
-              <TextField id="ns-subj" label={M.fieldSubject} hideLabel value={subject} onChange={(e) => setSubject(e.target.value)} compact />
-            </Field>
+            {email && (
+              <Field label={M.fieldSubject} htmlFor="ns-subj" required wide>
+                <TextField id="ns-subj" label={M.fieldSubject} hideLabel value={subject} onChange={(e) => setSubject(e.target.value)} compact />
+              </Field>
+            )}
           </>
         ) : (
           <Field label={M.fieldChannel} required>
@@ -113,7 +120,7 @@ export function ComposeForm({ templates, channels, seed, onSent }: { templates: 
           </Field>
         ))}
         <Field label={M.fieldBody} htmlFor="ns-body" required wide>
-          <BodyField id="ns-body" value={body} onChange={setBody} renderedLength={html.length} max={max} vars={names.length > 0 ? names.map((name) => ({ name })) : null} />
+          <BodyField id="ns-body" value={body} onChange={setBody} renderedLength={html.length} max={max} plain={medium === "web"} vars={names.length > 0 ? names.map((name) => ({ name })) : null} />
         </Field>
       </FormSection>
     </WithAside>
