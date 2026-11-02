@@ -14,6 +14,31 @@ type Shown = { insert: boolean; delete: boolean; save: boolean; saveDisabled: bo
 let tools: ScreenTools = {};
 let shown: Shown | null = null;
 const listeners = new Set<() => void>();
+/**
+ * 입력을 누른 횟수. 휴대폰 상세는 시트라 입력이 고른 새 줄의 폼을 닫힌 시트 안에만 그렸다 — 상품등록에서 입력을 누르면
+ * 목록 맨 끝에 줄만 늘고 화면은 그대로여서 눌러도 반응이 없어 보였다(2026-11-02 휴대폰 저장 실측). 화면마다 detailOpenKey 를
+ * 넘기게 하는 대신 여기서 세고 시트(screen/mobile-layout)가 이 값이 바뀌면 올라온다 — 새 화면도 따로 할 일이 없다
+ */
+let insertTick = 0;
+const tickListeners = new Set<() => void>();
+
+function insert() {
+  tools.insert?.();
+  insertTick += 1;
+  for (const l of tickListeners) l();
+}
+
+/** 입력을 누를 때마다 바뀌는 값 */
+export function useInsertTick() {
+  return useSyncExternalStore(
+    (l) => {
+      tickListeners.add(l);
+      return () => tickListeners.delete(l);
+    },
+    () => insertTick,
+    () => 0,
+  );
+}
 
 function same(a: Shown | null, b: Shown | null) {
   return a === b || (a !== null && b !== null && a.insert === b.insert && a.delete === b.delete && a.save === b.save && a.saveDisabled === b.saveDisabled && a.saving === b.saving);
@@ -52,7 +77,7 @@ export function MobileToolButtons({ compact = false }: { compact?: boolean }) {
         </Button>
       )}
       {s.insert && (
-        <Button size={size} variant="secondary" onClick={() => tools.insert?.()}>
+        <Button size={size} variant="secondary" onClick={insert}>
           {M.insert}
         </Button>
       )}

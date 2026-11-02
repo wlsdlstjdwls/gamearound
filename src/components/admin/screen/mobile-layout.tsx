@@ -6,7 +6,7 @@ import { ChevronDownIcon } from "@/components/ui/icons";
 import { Sheet } from "@/components/ui/sheet";
 import { SCREEN_MESSAGES as SM } from "@/lib/admin/messages";
 import { MobileDetailContext } from "@/components/admin/screen/mobile-detail";
-import { MobileToolButtons } from "@/components/admin/screen/mobile-tools";
+import { MobileToolButtons, useInsertTick } from "@/components/admin/screen/mobile-tools";
 
 /**
  * 휴대폰 조회조건 — 접어서 시작한다. 칸 둘셋이 한 줄씩 서면 첫 화면의 절반이 조건이라 목록이 아래로 밀렸다.
@@ -53,6 +53,13 @@ export function MobileMasterDetail({
   if (openKey !== seenKey) {
     setSeenKey(openKey);
     if (openKey != null) setOpen(true);
+  }
+  // 바닥 띠의 입력을 누르면 새 줄의 폼이 시트에 생기므로 시트를 올린다(screen/mobile-tools 의 insertTick 주석)
+  const tick = useInsertTick();
+  const [seenTick, setSeenTick] = useState(tick);
+  if (tick !== seenTick) {
+    setSeenTick(tick);
+    setOpen(true);
   }
   return (
     <MobileDetailContext value={() => setOpen(true)}>
