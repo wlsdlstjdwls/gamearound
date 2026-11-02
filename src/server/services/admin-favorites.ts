@@ -8,6 +8,7 @@ import { and, asc, eq, sql } from "drizzle-orm";
 import { getDb } from "@/server/db/client";
 import { createdBy } from "@/server/db/audit";
 import { adminFavorites } from "@/server/db/schema";
+import { isFavoriteHref } from "@/lib/admin/favorites";
 
 /** 이 관리자의 즐겨찾기 주소, 추가한 차례대로 */
 export async function listAdminFavorites(userId: string): Promise<string[]> {
@@ -16,7 +17,7 @@ export async function listAdminFavorites(userId: string): Promise<string[]> {
     .from(adminFavorites)
     .where(eq(adminFavorites.userId, userId))
     .orderBy(asc(adminFavorites.sortOrder), asc(adminFavorites.createdAt));
-  return rows.map((r) => r.href);
+  return rows.map((r) => r.href).filter(isFavoriteHref);
 }
 
 /**

@@ -16,6 +16,7 @@ import { programOf } from "@/components/admin/program-shell/programs";
 import { useAdminStatus } from "@/components/admin/screen/status";
 import { useTooltip } from "@/components/ui/tooltip";
 import { cn } from "@/lib/cn";
+import { isFavoriteHref } from "@/lib/admin/favorites";
 import { buildXlsx, withRowNumbers, xlsxFileName } from "@/lib/admin/xlsx";
 import { formatDateTime } from "@/lib/format";
 import { registeredGrids } from "@/components/admin/screen/data-grid/export";
@@ -79,7 +80,7 @@ function readGrid(): { head: string[]; rows: string[][] } {
 /** 별을 달 메뉴 칸 주소. 메뉴 표에 없는 화면(게임 고치기 등)은 null — 즐겨찾기는 메뉴 칸만 담는다 */
 function useFavoriteKey(): string | null {
   const key = programOf(usePathname()).key;
-  return ITEMS.some((i) => i.href === key) ? key : null;
+  return isFavoriteHref(key) && ITEMS.some((i) => i.href === key) ? key : null;
 }
 
 /** 메뉴 위치(묶음 > 화면). 기둥 표에 없는 화면(게임 고치기 등)은 비운다 */

@@ -4,9 +4,9 @@
 import { z } from "zod";
 import { requireAdmin } from "@/server/services/users";
 import { setAdminFavorite } from "@/server/services/admin-favorites";
-import { ADMIN_FAVORITE_HREF } from "@/lib/admin/favorites";
+import { isFavoriteHref } from "@/lib/admin/favorites";
 
-const schema = z.object({ href: z.string().max(ADMIN_FAVORITE_HREF.maxLength).regex(ADMIN_FAVORITE_HREF.pattern), on: z.boolean() });
+const schema = z.object({ href: z.string().refine(isFavoriteHref), on: z.boolean() });
 
 export async function toggleAdminFavorite(href: string, on: boolean): Promise<{ ok: boolean }> {
   const user = await requireAdmin();
