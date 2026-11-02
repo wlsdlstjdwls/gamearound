@@ -573,10 +573,11 @@ export const CRON_META_PLAN: Record<CronMetaSource, Record<CronMetaMode, CronMet
     match: { limit: 0, match: 70, runsPerDay: 1 },
     collect: { limit: 80, match: 0, runsPerDay: 1 },
   },
-  // 무료 등급 하루 200요청(BATCH_SIZE.opencritic 주석). 매칭 25 + 수집 85 × 2(게임당 두 번 묻는다) = 195.
-  // 격일에서 매일로 바뀌었지만 한도가 하루 단위라 그대로 든다
+  // 무료 등급 하루 200요청(BATCH_SIZE.opencritic 주석). 수집 85 × 2(게임당 두 번 묻는다) = 170.
+  // 검색은 따로 **하루 25번**이다(X-RateLimit-Searches-Limit, 2026-11-02 헤더 실측, 약 23:40Z 초기화). 매칭 한 건이 검색을
+  // 최대 두 번(영문, 한국어 제목) 하므로 12건이면 24번이다. 25건으로 돌렸더니 뒤 5건이 429 를 맞았다.
   opencritic: {
-    match: { limit: 0, match: 25, runsPerDay: 1 },
+    match: { limit: 0, match: 12, runsPerDay: 1 },
     collect: { limit: BATCH_SIZE.opencritic, match: 0, runsPerDay: 1 },
   },
   // 컬렉션 두 개를 한 번에 돈다. 카탈로그가 월 2회 안팎으로 바뀌어 하루 한 번이면 넉넉하다
