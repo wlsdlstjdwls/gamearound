@@ -7,6 +7,7 @@ import { getDb } from "@/server/db/client";
 import { shops, shopStaff, users } from "@/server/db/schema";
 import { createdBy, updatedBy } from "@/server/db/audit";
 import { requireUser } from "@/server/services/users";
+import { dropCachedSessionsOfUser } from "@/server/auth/session-cache";
 import { SHOP_MESSAGES } from "@/lib/shops/messages";
 import { normalizeBizRegNo, normalizePhone, type ShopApplicationInput, type ShopReviewInput } from "@/lib/shops/schemas";
 import { type ShopRow, type ShopSummary, toSummary } from "./core";
@@ -150,6 +151,8 @@ export async function reviewShop(input: ShopReviewInput, admin: { id: string }):
         .set({ role: "seller" })
         .where(and(eq(users.id, shop.ownerUserId), eq(users.role, "user"))),
     ]);
+    // 역할은 세션 사본(Redis)의 사용자 행에서 읽힌다. 안 지우면 승인된 대표가 사본 수명 동안 판매자 화면에 못 들어간다
+    await dropCachedSessionsOfUser(shop.ownerUserId);
     return;
   }
 

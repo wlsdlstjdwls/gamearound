@@ -142,6 +142,8 @@ export const getCurrentUser = cache(async (): Promise<UserRow | null> => {
 /** 프로필 사진 바꾸기(null = 기본 그림). 예전 파일은 지우지 않는다 — 아직 다른 화면 캐시가 그 주소를 들고 있을 수 있다 */
 export async function setAvatar(userId: string, url: string | null): Promise<void> {
   await getDb().update(users).set({ avatarUrl: url, updatedSource: "user", updatedBy: userId, updatedAt: new Date() }).where(eq(users.id, userId));
+  // 머리띠, 메뉴의 사진은 세션 사본(Redis)의 사용자 행을 읽는다. 안 지우면 바꾼 사진이 사본 수명 동안 옛것으로 선다(setWishSaleAlerts 와 같은 이유)
+  await dropCachedSessionsOfUser(userId);
 }
 
 /** 찜 할인 알림 켜고 끄기(sync/dispatch-wish-alerts 가 읽는다). 끈 시각을 남긴다 — 스키마 wishSaleAlertsOffAt 주석 */
