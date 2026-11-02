@@ -113,7 +113,7 @@ async function notify(r: QualityRunResult, applied: QualityFinding[]): Promise<v
   try {
     await dispatchSystemNotice(
       SYSTEM_TEMPLATES.qualityRun,
-      { 자동수정: String(r.autoApplied), 신규: String(r.newlyOpened), 미확인: String(r.open), 실패: String(r.failed), 사례: samples.join("\n") || "-", 링크: link },
+      { 자동수정: String(r.autoApplied), 신규: String(r.newlyOpened), 미확인: String(r.open), 실패: String(r.failed), 사례: samples.join("\n") || M.noticeNoSamples, 링크: link },
       { fallback, fallbackChannel: DEFAULT_NOTIFY_CHANNEL, source: "cron:quality" },
     );
   } catch (e) {

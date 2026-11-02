@@ -25,14 +25,18 @@ export const SYSTEM_TEMPLATE_VARS: Record<SystemTemplateCode, VarSpec[]> = {
     { name: "담당자", hint: "담당자 이름", sample: "미지정" },
   ],
   "task.assigned": [...TASK_BASE, { name: "담당자", hint: "새 담당자 이름", sample: "운영자" }],
-  "task.moved": [...TASK_BASE, { name: "상태", hint: "바뀐 상태(앞 상태에서 새 상태로)", sample: "할 일에서 하는 중으로" }],
+  "task.moved": [...TASK_BASE, { name: "상태", hint: "바뀐 상태 문장(앞 상태에서 새 상태로)", sample: "할 일에서 처리 중으로" },
+    // 앞, 뒤 상태를 따로 둔 것은 취소선과 굵게로 가르려고(0094). 화살표 글자는 쓰지 않는다
+    { name: "이전상태", hint: "바뀌기 전 상태", sample: "할 일" },
+    { name: "새상태", hint: "바뀐 뒤 상태", sample: "처리 중" },
+  ],
   "task.note": [...TASK_BASE, { name: "기록", hint: "기록 본문 앞부분", sample: "로그 확인했어요. 내일 다시 볼게요." }],
   "quality.run": [
     { name: "자동수정", hint: "자동으로 고친 건수", sample: "3" },
     { name: "신규", hint: "새로 확인이 필요한 건수", sample: "2" },
     { name: "미확인", hint: "확인 대기 중인 전체 건수", sample: "14" },
     { name: "실패", hint: "고치다 실패한 건수", sample: "0" },
-    { name: "사례", hint: "자동 수정 사유 몇 줄", sample: "출시일 자리표시 12-31 을 비웠어요" },
+    { name: "사례", hint: "자동 수정 사유 몇 줄(없으면 없다는 문구)", sample: "출시일 자리표시 12-31 을 비웠어요" },
     { name: "링크", hint: "데이터오류관리 주소", sample: "https://gamearound.kr/admin/data-issues" },
   ],
 };

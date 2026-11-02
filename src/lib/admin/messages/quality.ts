@@ -40,6 +40,8 @@ export const QUALITY_MESSAGES = {
   noticeOpen: "미확인",
   noticeFailed: "수정 실패",
   noticeOpenLink: "데이터오류관리 열기",
+  /** 이번 회차에 자동으로 고친 것이 없을 때 사례 칸. "-" 하나는 빠진 값처럼 읽혔다 */
+  noticeNoSamples: "이번에는 없어요",
 } as const;
 
 /** 규칙 이름. 키는 sync/quality/rules 의 QualityRule */

@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
-import { TASK_NOTIFY_NOTE_PREVIEW, formatTaskNotice, type TaskNotifySnapshot } from "@/lib/admin/task-notify";
+import { TASK_NOTIFY_NOTE_PREVIEW, formatTaskNotice, taskNoticeVars, type TaskNotifySnapshot } from "@/lib/admin/task-notify";
+import { renderNotice } from "@/lib/notify/template";
 
 const TASK: TaskNotifySnapshot = { title: "가격 표 깨짐", category: "bug", priority: "high", assigneeName: "성진", assignedAll: false };
 const LINK = "https://example.com/admin/tasks?task=abc";
@@ -41,5 +42,18 @@ describe("formatTaskNotice", () => {
 
   it("한 사람을 모르면 알 수 없음", () => {
     expect(formatTaskNotice({ kind: "created" }, TASK, null, LINK)).toContain("<b>작성자</b>  알 수 없음");
+  });
+});
+
+describe("taskNoticeVars", () => {
+  it("상태 변경은 문장과 함께 앞, 뒤 상태를 따로 넘긴다(취소선과 굵게로 가르는 템플릿, 0094)", () => {
+    const { vars } = taskNoticeVars({ kind: "moved", from: "todo", to: "doing" }, TASK, "관리자", LINK);
+    expect(vars).toMatchObject({ 상태: "할 일에서 처리 중으로", 이전상태: "할 일", 새상태: "처리 중" });
+  });
+
+  it("새 상태 변경 템플릿을 채우면 변수 자리가 남지 않는다", () => {
+    const body = "🔄 <b>상태 변경</b>\n<b>{제목}</b>\n\n📌 <s>{이전상태}</s>  <b>{새상태}</b>\n✍️ 바꾼 사람  {처리자}";
+    const { vars } = taskNoticeVars({ kind: "moved", from: "todo", to: "doing" }, TASK, "관리자", LINK);
+    expect(renderNotice(body, vars)).toBe("🔄 <b>상태 변경</b>\n<b>가격 표 깨짐</b>\n\n📌 <s>할 일</s>  <b>처리 중</b>\n✍️ 바꾼 사람  관리자");
   });
 });

@@ -125,7 +125,7 @@ export function taskNoticeVars(event: TaskNotifyEvent, task: TaskNotifySnapshot,
     case "moved":
       return {
         code: SYSTEM_TEMPLATES.taskMoved,
-        vars: { ...base, 상태: movedText(L, event.from, event.to) },
+        vars: { ...base, 상태: movedText(L, event.from, event.to), 이전상태: L.status(event.from), 새상태: L.status(event.to) },
       };
     case "note":
       return { code: SYSTEM_TEMPLATES.taskNote, vars: { ...base, 기록: event.body?.trim() ? preview(event.body) : M.noteFilesOnly } };
