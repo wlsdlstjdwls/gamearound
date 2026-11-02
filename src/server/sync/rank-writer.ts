@@ -123,6 +123,8 @@ export async function syncPopularityRanks(ctx: Ctx, source: StoreSource, adapter
       if (ranked.length === 0) continue;
       const rows = await resolveRankRows(db, source, ranked);
       written += await writePopularityRanks(db, source, rows, ctx.now);
+      const ids = (ctx.rankedGameIds ??= new Set());
+      for (const r of rows) ids.add(r.gameId);
     }
   } catch (e) {
     console.warn(`[sync:${source}] 인기순위 수집 중단(${written}건까지 기록): ${errorMessage(e)}`);

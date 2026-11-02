@@ -3,7 +3,7 @@
 // 두 군데가 이 식을 쓴다: 목록 질의(services/games/list)가 플랫폼을 골랐을 때 그 자리에서 집계하고,
 // 수집(sync/list-stats)이 플랫폼을 고르지 않은 집계를 game_list_stats 에 미리 써 둔다.
 // 식이 두 벌이면 같은 게임이 "전체" 와 "PS5" 목록에서 다른 할인율로 정렬된다. 그래서 db 계층에 하나만 둔다.
-import { and, eq, inArray, sql } from "drizzle-orm";
+import { and, eq, inArray, sql, type SQL } from "drizzle-orm";
 import { DISPLAY_CURRENCY } from "@/lib/currency";
 import { POPULARITY_RANK_MAX_AGE_DAYS } from "@/lib/games/popularity";
 import { getDb } from "./client";
@@ -15,7 +15,7 @@ import { visiblePlatformsOnly } from "./visibility";
  * inner join 하는 것만으로 "그 플랫폼을 가진 게임"으로 좁혀진다.
  * 별칭(as)은 game_list_stats 의 열 이름과 같다 — sync 가 이 질의를 그대로 그 표에 붓는다.
  */
-export function listAggQuery(platforms: Platform[]) {
+export function listAggQuery(platforms: Platform[], onlyGames?: SQL) {
   return getDb()
     .select({
       gameId: gamePlatforms.gameId,
@@ -75,7 +75,8 @@ export function listAggQuery(platforms: Platform[]) {
     .from(gamePlatforms)
     // 목록의 최저가, 할인, 발매일은 기준 지역(한국) 행만 본다. 다른 나라 가격을 섞으면
     // 카드의 할인 배지가 한국에서 살 수 없는 할인을 가리킨다 — 상세 화면에서만 참고로 보여 준다
-    .where(and(eq(gamePlatforms.region, HOME_REGION), visiblePlatformsOnly(), platforms.length > 0 ? inArray(gamePlatforms.platform, platforms) : undefined))
+    // onlyGames 는 수집이 바뀐 게임만 다시 쓸 때 거는 게임 조건이다(sync/list-stats 의 refreshListStatsFor)
+    .where(and(eq(gamePlatforms.region, HOME_REGION), visiblePlatformsOnly(), platforms.length > 0 ? inArray(gamePlatforms.platform, platforms) : undefined, onlyGames))
     .groupBy(gamePlatforms.gameId);
 }
 

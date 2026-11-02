@@ -67,6 +67,11 @@ export interface Ctx {
    * 이 수가 0 으로 떨어지면 순위 목록 자체가 막힌 것이고, 화면의 인기순이 조용히 낡는다.
    */
   rankedCount?: number;
+  /**
+   * 인기순위 순번을 새로 쓴 게임 id. 순번은 changedSlugs 에 안 넣는다(상세 캐시를 깰 값이 아니다).
+   * 그래도 목록 정렬에는 들어가야 해서 회차 끝의 목록 집계(refreshListStatsFor)가 이 id 들도 다시 쓴다.
+   */
+  rankedGameIds?: Set<string>;
 }
 
 /**

@@ -12,8 +12,12 @@ import { finalizeHallOfFame } from "@/server/services/indie";
 import { dispatchReleaseAlerts } from "@/server/sync/release-alerts";
 import { renewDueMemberships } from "@/server/services/membership";
 import { runDataQuality } from "@/server/sync/quality";
+import { refreshListStats } from "@/server/sync/list-stats";
 
-export const maxDuration = 60;
+// 300초: 옛 DB 병합(2026-11-02)으로 게임이 7.8만 건이 됐다. 데이터 점검기 읽기가 한국에서 4.6초, 규칙 0.3초라
+// iad1 에서는 다 합쳐 10~20초로 본다. 60초도 들지만 카탈로그가 또 불면 마지막 작업들(점검기, 목록 집계)이 소리 없이 잘린다.
+// 쓴 시간만 과금되므로 상한을 넉넉히 둬도 비용은 같다. Next 가 정적으로 읽는 값이라 리터럴이다
+export const maxDuration = 300;
 export const dynamic = "force-dynamic";
 
 function authorized(req: NextRequest): boolean {
@@ -46,6 +50,9 @@ export async function GET(req: NextRequest) {
     // 데이터 점검기(sync/quality, 2026-10-28). 맨 끝에 두는 이유: 같은 회차의 상품 잇기, 정리가 끝난 카탈로그를 봐야 한다.
     // 이 크론(UTC 18시)은 스팀, Xbox 가격 회차와 같은 창이라 DB 를 따로 깨우지 않는다. 숫자는 자동으로 고친 수다
     ["dataQualityAutoFixed", async () => (await runDataQuality()).autoApplied],
+    // 목록 정렬 집계 표 전체 다시 쓰기(sync/list-stats). 수집 회차는 바뀐 게임만 고치므로, 시간이 지나 낡는 값
+    // (며칠 지난 인기 순번, 오늘이 된 출시일)은 여기서 하루 한 번 바로잡는다. 데이터 점검기가 고친 부모 연결도 함께 들어간다
+    ["listStatsRefreshed", async () => (await refreshListStats("system"), 1)],
   ];
   for (const [name, run] of jobs) {
     try {
