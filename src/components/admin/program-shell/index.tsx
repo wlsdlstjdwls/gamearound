@@ -22,7 +22,11 @@ import { askConfirm } from "@/components/ui/confirm-dialog";
 import { SCREEN_MESSAGES as SM } from "@/lib/admin/messages";
 import { ROUTES } from "@/lib/routes";
 
-type Tab = { key: string; label: string; href: string };
+/**
+ * href: iframe 이 처음 연 주소(src). loc: 탭 안에서 조회조건이 바뀌어 지금 있는 주소 — 새로 고친 뒤 이 주소로 다시 연다.
+ * 둘을 가른 이유: 탭 안 주소를 src 에 되먹이면 칩 하나, 조회 한 번마다 iframe 이 통째로 다시 떠 화면이 깜빡였다(2026-11-02 업무요청관리 실측, 사용자 "버튼 누를 때마다 깜빡").
+ */
+type Tab = { key: string; label: string; href: string; loc?: string };
 
 const STORAGE_KEY = "admin-program-tabs";
 /** 이보다 많이 열면 가장 오래 안 본 탭부터 닫는다(저장 안 한 값이 있는 탭은 남긴다). 넓은 화면 한 줄에 들어가는 수다 */
@@ -48,7 +52,7 @@ function loadTabs(): Tab[] {
 
 function saveTabs(tabs: Tab[]) {
   try {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(tabs));
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(tabs.map((t) => ({ key: t.key, label: t.label, href: t.loc ?? t.href }))));
   } catch {
     // 저장을 못 하면 이 창 안에서만 기억한다
   }
@@ -199,7 +203,7 @@ export function ProgramShell({ children }: { children: React.ReactNode }) {
       const msg = e.data;
       if (msg.type === "admin-open") return open(msg.href);
       if (!key) return;
-      if (msg.type === "admin-loc") setTabs((cur) => cur.map((t) => (t.key === key ? { ...t, href: msg.href } : t)));
+      if (msg.type === "admin-loc") setTabs((cur) => cur.map((t) => (t.key === key ? { ...t, loc: msg.href } : t)));
       else setFrameDirty((m) => new Map(m).set(key, msg.dirty));
     };
     window.addEventListener("message", onMessage);
