@@ -15,7 +15,8 @@ function toBlob(canvas: HTMLCanvasElement, type: string): Promise<Blob | null> {
   return new Promise((resolve) => canvas.toBlob(resolve, type, PHOTO_QUALITY));
 }
 
-export async function resizePhoto(file: File): Promise<ResizedPhoto> {
+/** jpegOnly: webp 를 건너뛰고 jpeg 로 굽는다 — 메일(아웃룩), 텔레그램 사진처럼 webp 를 못 받는 곳에 보낼 그림(lib/notify/media) */
+export async function resizePhoto(file: File, { jpegOnly = false }: { jpegOnly?: boolean } = {}): Promise<ResizedPhoto> {
   const bitmap = await createImageBitmap(file, { imageOrientation: "from-image" });
   const { width, height } = fitWithin(bitmap.width, bitmap.height, PHOTO_MAX_EDGE);
   const canvas = document.createElement("canvas");
@@ -26,7 +27,7 @@ export async function resizePhoto(file: File): Promise<ResizedPhoto> {
   ctx.drawImage(bitmap, 0, 0, width, height);
   bitmap.close();
 
-  const webp = await toBlob(canvas, "image/webp");
+  const webp = jpegOnly ? null : await toBlob(canvas, "image/webp");
   if (webp && webp.type === "image/webp") return { blob: webp, width, height, ext: "webp" };
   const jpeg = await toBlob(canvas, "image/jpeg");
   if (!jpeg) throw new Error("encode");

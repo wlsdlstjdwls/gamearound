@@ -3,15 +3,17 @@
 // 본문 문법은 둘이다.
 //   {변수}: 발송 때 값으로 바뀐다. 이름은 한글, 영문, 숫자, 밑줄(운영자가 읽는 화면이라 {제목} 처럼 한글이 기본이다).
 //   텔레그램 HTML 일부: <b> <i> <u> <s> <code> <pre> <blockquote> <a href="...">. 그 밖의 < > & 는 글자로 바꾼다.
+//   미디어(2026-11-02): <img src="..."> <video src="..." poster="...">. 닫는 태그가 없다. 수단마다 다르게 나간다(lib/notify/media).
 // 왜 HTML 인가는 server/telegram/send 머리 주석(이스케이프할 글자가 셋뿐). 변수 값은 늘 이스케이프한다 — 사람이 친 제목의 `<` 하나에 400 이 난다.
 // 순서: 변수를 먼저 이스케이프한 값으로 채우고, 그다음 통째로 정리한다. 그래야 링크 주소에 들어간 변수까지 같은 검사를 받는다.
 import { escapeHtml } from "@/lib/html-entities";
+import { isNotifyMediaUrl } from "./media";
 
 /** 변수 자리. 중괄호 안은 글자, 숫자, 밑줄만 — "{ }" 같은 맨 중괄호는 변수가 아니다 */
 const VAR = /\{([\p{L}\p{N}_]+)\}/gu;
 /** 텔레그램이 받는 태그 가운데 운영 알림에 쓸 만한 것. span, tg-spoiler 등은 뺐다 */
 const SIMPLE_TAGS = ["b", "i", "u", "s", "code", "pre", "blockquote"] as const;
-const TAG = /<\/?(?:b|i|u|s|code|pre|blockquote)>|<a href="[^"<>]*">|<\/a>/g;
+const TAG = /<\/?(?:b|i|u|s|code|pre|blockquote)>|<a href="[^"<>]*">|<\/a>|<img src="[^"<>]*">|<video src="[^"<>]*"(?: poster="[^"<>]*")?>/g;
 /** 이미 이스케이프된 글자(변수 값). 다시 바꾸면 &amp;lt; 로 두 번 바뀐다 */
 const ENTITY = /^&(?:amp|lt|gt|quot|#\d+);/;
 /** 링크로 둘 수 있는 주소. javascript: 같은 것을 미리 보기에 그대로 세우지 않는다 */
@@ -59,7 +61,10 @@ export function sanitizeTelegramHtml(html: string): string {
     out += escapeText(html.slice(at, idx));
     const tag = m[0];
     const href = /^<a href="([^"]*)">$/.exec(tag)?.[1];
-    out += href !== undefined && !SAFE_HREF.test(unescapeAttr(href)) ? escapeText(tag) : tag;
+    // 미디어는 우리 저장소 주소일 때만 미디어다 — 아니면 글자로 남겨 운영자가 보고 고친다(lib/notify/media 머리 주석)
+    const media = /^<(?:img|video) src="([^"]*)"(?: poster="([^"]*)")?>$/.exec(tag);
+    const badMedia = media !== null && (!isNotifyMediaUrl(unescapeAttr(media[1])) || (media[2] !== undefined && !isNotifyMediaUrl(unescapeAttr(media[2]))));
+    out += (href !== undefined && !SAFE_HREF.test(unescapeAttr(href))) || badMedia ? escapeText(tag) : tag;
     at = idx + tag.length;
   }
   return out + escapeText(html.slice(at));
@@ -80,6 +85,8 @@ export function checkTags(body: string): TagProblem | null {
   const stack: string[] = [];
   for (const m of body.matchAll(TAG)) {
     const tag = m[0];
+    // 미디어 태그는 닫지 않는다 — 짝을 세지 않는다
+    if (tag.startsWith("<img ") || tag.startsWith("<video ")) continue;
     const name = tag.startsWith("<a ") || tag === "</a>" ? "a" : tag.replace(/[</>]/g, "");
     if (!tag.startsWith("</")) {
       stack.push(name);

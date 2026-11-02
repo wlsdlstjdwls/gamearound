@@ -14,7 +14,7 @@ import { renderNotice } from "@/lib/notify/template";
 import { createdBy, type AuditSource } from "@/server/db/audit";
 import { getDb } from "@/server/db/client";
 import { commonCodeGroups, commonCodes, notifySends, notifyTemplates, type NotifySendStatus, type NotifyTrigger } from "@/server/db/schema";
-import { adminChatId, sendTelegram, telegramConfigured, telegramTokenSet } from "@/server/telegram/send";
+import { adminChatId, sendTelegramParts, telegramConfigured, telegramTokenSet } from "@/server/telegram/send";
 
 /** 실패 사유를 이력에 남기는 길이. 텔레그램 거절 본문은 앞 몇 줄이면 사유가 다 보인다 */
 const ERROR_KEEP = 300;
@@ -58,7 +58,7 @@ export async function dispatchNotice(input: NoticeInput): Promise<NoticeResult> 
     else {
       chatId = target.chatId;
       try {
-        await sendTelegram(chatId, input.text);
+        await sendTelegramParts(chatId, input.text);
         status = "sent";
       } catch (e) {
         status = "failed";

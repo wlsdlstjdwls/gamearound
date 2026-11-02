@@ -6,22 +6,39 @@
 import { cn } from "@/lib/cn";
 import { NOTIFY_MESSAGES as M } from "@/lib/admin/messages";
 import { wrapEmailHtml } from "@/lib/notify/email";
+import { splitNotice } from "@/lib/notify/media";
 import type { NotifyMedium } from "@/server/db/schema";
 
+/** 텔레그램은 이미지, 영상 자리에서 메시지가 나뉜다(lib/notify/media splitNotice) — 보낼 때와 같은 함수로 나눠 말풍선을 따로 그린다 */
 export function TelegramPreview({ html, className }: { html: string; className?: string }) {
+  const parts = splitNotice(html);
   return (
     <figure className={cn("flex flex-col gap-1.5", className)}>
-      <figcaption className="px-1 text-[11.5px] font-semibold text-dim">{M.previewHint}</figcaption>
-      <div className="rounded-xl bg-surface-2 p-3">
-        <div
-          className={cn(
-            "max-w-full whitespace-pre-wrap break-words rounded-2xl rounded-tl-md bg-surface px-3.5 py-2.5 text-[13.5px] leading-[1.6] text-ink shadow-hair",
-            "[&_a]:text-acc [&_a]:underline [&_blockquote]:my-1 [&_blockquote]:border-l-[3px] [&_blockquote]:border-acc [&_blockquote]:pl-2 [&_blockquote]:text-mut",
-            "[&_code]:rounded [&_code]:bg-surface-2 [&_code]:px-1 [&_code]:text-[12.5px] [&_pre]:rounded-lg [&_pre]:bg-surface-2 [&_pre]:p-2 [&_pre]:text-[12.5px]",
-          )}
-          // 허용 태그만 남긴 글이다(머리 주석)
-          dangerouslySetInnerHTML={{ __html: html }}
-        />
+      <figcaption className="px-1 text-[11.5px] font-semibold text-dim">
+        {M.previewHint}
+        {parts.length > 1 && <span className="font-normal"> | {M.telegramSplitNote}</span>}
+      </figcaption>
+      <div className="flex flex-col items-start gap-1.5 rounded-xl bg-surface-2 p-3">
+        {parts.map((p, i) =>
+          p.kind === "text" ? (
+            <div
+              key={i}
+              className={cn(
+                "max-w-full whitespace-pre-wrap break-words rounded-2xl rounded-tl-md bg-surface px-3.5 py-2.5 text-[13.5px] leading-[1.6] text-ink shadow-hair",
+                "[&_a]:text-acc [&_a]:underline [&_blockquote]:my-1 [&_blockquote]:border-l-[3px] [&_blockquote]:border-acc [&_blockquote]:pl-2 [&_blockquote]:text-mut",
+                "[&_code]:rounded [&_code]:bg-surface-2 [&_code]:px-1 [&_code]:text-[12.5px] [&_pre]:rounded-lg [&_pre]:bg-surface-2 [&_pre]:p-2 [&_pre]:text-[12.5px]",
+              )}
+              // 허용 태그만 남긴 글이다(머리 주석)
+              dangerouslySetInnerHTML={{ __html: p.html }}
+            />
+          ) : p.kind === "image" ? (
+            // 우리 Blob 주소만 남는다(lib/notify/template). next/image 를 쓰지 않는 이유: 운영자가 막 올린 원본 그대로를 보여야 보낼 모양이다
+            // eslint-disable-next-line @next/next/no-img-element
+            <img key={i} src={p.src} alt="" className="max-h-64 max-w-full rounded-2xl rounded-tl-md shadow-hair" />
+          ) : (
+            <video key={i} src={p.src} poster={p.poster ?? undefined} controls preload="metadata" className="max-h-64 max-w-full rounded-2xl rounded-tl-md bg-ink shadow-hair" />
+          ),
+        )}
       </div>
     </figure>
   );

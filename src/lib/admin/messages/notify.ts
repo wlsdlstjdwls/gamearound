@@ -64,6 +64,17 @@ export const NOTIFY_MESSAGES = {
   varsFree: "본문에 {이름} 을 쓰면 발송할 때 값을 넣는 칸이 생겨요",
   tags: "본문 꾸밈",
   formatLabels: { bold: "굵게", italic: "기울임", underline: "밑줄", strike: "취소선", quote: "인용", link: "링크" },
+  // ---- 본문 이미지, 영상(2026-11-02) ----
+  mediaImage: "이미지",
+  mediaVideo: "영상",
+  mediaUploading: (n: number) => `올리는 중이에요 (${n})`,
+  uploadForbidden: "올릴 수 없는 파일이에요",
+  uploadFailed: "파일을 올리지 못했어요. 잠시 후 다시 시도해 주세요",
+  imageUnreadable: "그림을 읽지 못했어요. 다른 파일을 골라 주세요",
+  videoType: "영상은 mp4 만 올릴 수 있어요",
+  tooBig: (limit: string) => `${limit}까지 올릴 수 있어요`,
+  /** 텔레그램은 이미지, 영상 자리에서 메시지를 나눠 보낸다 — 운영자가 미리 보기에서 말풍선이 갈리는 이유를 안다 */
+  telegramSplitNote: "이미지, 영상 자리에서 메시지가 나뉘어 차례로 가요",
   /** 시스템 템플릿 묶음 머리 한 줄. 코드가 부르는 알림이라 코드는 잠기고, 미사용이면 그 사건 알림이 멈춘다 */
   systemLocked: "시스템 템플릿 | 미사용이면 알림이 멈춰요",
   codeExists: "같은 템플릿코드가 이미 있어요",

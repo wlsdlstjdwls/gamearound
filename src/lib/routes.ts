@@ -251,6 +251,8 @@ export const SHOP_PHOTO_UPLOAD_PATH = "/api/shops/photos/upload";
 export const INDIE_IMAGE_UPLOAD_PATH = "/api/indie/images/upload";
 /** 게시판, 라운지 글 본문 그림과 첨부파일의 Blob 업로드 토큰 경로(lib/community/media) */
 export const POST_MEDIA_UPLOAD_PATH = "/api/community/media/upload";
+/** 알림 본문 이미지, 영상 업로드 토큰(관리자만, lib/notify/media) */
+export const NOTIFY_MEDIA_UPLOAD_PATH = "/api/admin/notify/media/upload";
 
 /**
  * 인디 글 바깥 링크로 나가는 경유 주소(플레이하기 클릭 집계). 주소가 아니라 링크 순번을 싣는다 —
