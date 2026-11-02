@@ -32,6 +32,7 @@ import { PLATFORM_LABEL } from "@/lib/format";
 import { isPlatformFamily, PLATFORM_FAMILY_LABEL, PLATFORM_ORDER } from "@/lib/platform";
 import { stagger } from "@/lib/motion";
 import { ROUTES } from "@/lib/routes";
+import { withListRobots } from "@/lib/seo/constants";
 import { readGamesQuery } from "@/lib/games/read-query";
 import { hasExplicitListFilter, isPresetApplied } from "@/lib/onboarding/query";
 import { getMyListPreset } from "@/server/services/profiles";
@@ -64,7 +65,8 @@ const OUTAGE_FACETS: GameFacets = { platforms: PLATFORM_ORDER.map((platform) => 
 const readQuery = readGamesQuery;
 
 export async function generateMetadata({ searchParams }: Props): Promise<Metadata> {
-  const f = readQuery(await searchParams);
+  const sp = await searchParams;
+  const f = readQuery(sp);
   const platforms = parsePlatformValues(f.platform).map(platformFilterLabel);
   const parts = [
     platforms.length > 0 ? platforms.join(", ") : null,
@@ -73,7 +75,9 @@ export async function generateMetadata({ searchParams }: Props): Promise<Metadat
     f.maxPrice !== undefined ? (f.maxPrice === 0 ? "무료" : `${f.maxPrice.toLocaleString("ko-KR")}원 이하`) : null,
     f.subscription ? "구독 포함" : null,
   ].filter(Boolean);
-  return { title: parts.length > 0 ? `게임 목록 | ${parts.join(" | ")}` : "게임 목록" };
+  const title = parts.length > 0 ? `게임 목록 | ${parts.join(" | ")}` : "게임 목록";
+  // 거르기, 정렬, 쪽이 붙은 주소는 색인하지 않는다(lib/seo/constants 의 ROBOTS_DISALLOW 와 같은 이유)
+  return withListRobots({ title }, sp);
 }
 
 /** 뭔가 걸러져 있는가 — 건수를 띄울지 정한다 */

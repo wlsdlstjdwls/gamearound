@@ -20,6 +20,7 @@
 // 목록(/games)과 같은 격자, 같은 카드를 쓴다. 이 화면만 다른 모양이면 같은 게임이 화면마다
 // 다르게 생겨서, 목록에서 기억한 그림을 여기서 다시 찾아야 한다.
 import type { Metadata } from "next";
+import { withListRobots } from "@/lib/seo/constants";
 import { Suspense } from "react";
 import { DbUnavailable } from "@/components/db-unavailable";
 import { GameCard } from "@/components/game-card";
@@ -63,12 +64,12 @@ import { EmptyState } from "@/components/empty-state";
 // Next 가 정적으로 읽는 값이라 리터럴이어야 한다 — lib/cache 의 LIST_REVALIDATE_SECONDS 와 같게 유지
 export const revalidate = 3600;
 
-export const metadata: Metadata = {
-  title: M.title,
-  description: M.lead,
-};
-
 type Props = { searchParams: Promise<Record<string, string | string[] | undefined>> };
+
+// 쪽, 달이 붙은 주소는 색인하지 않는다(lib/seo/constants 의 ROBOTS_DISALLOW)
+export async function generateMetadata({ searchParams }: Props): Promise<Metadata> {
+  return withListRobots({ title: M.title, description: M.lead }, await searchParams);
+}
 
 /** 주소의 page 는 사람이 손으로 고치는 값이라 무엇이 와도 1 이상 정수로 떨어뜨린다 */
 function readPage(raw: string | undefined): number {

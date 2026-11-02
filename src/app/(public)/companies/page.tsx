@@ -4,6 +4,7 @@
 import { DbUnavailable } from "@/components/db-unavailable";
 import { DB_DOWN, orDbDown } from "@/lib/db-errors";
 import type { Metadata } from "next";
+import { withListRobots } from "@/lib/seo/constants";
 import Link from "next/link";
 import { EmptyState } from "@/components/empty-state";
 import { Pagination } from "@/components/pagination";
@@ -19,10 +20,13 @@ import { NavChip, NavPendingScope, PendingRegion } from "@/components/ui/nav-pen
 // Next 가 정적으로 읽는 값이라 리터럴이어야 한다 — lib/cache 의 LIST_REVALIDATE_SECONDS 와 같게 유지
 export const revalidate = 3600;
 
-export const metadata: Metadata = { title: "게임 회사" };
-
 type Search = Record<string, string | string[] | undefined>;
 type Props = { searchParams: Promise<Search> };
+
+// 나라, 쪽이 붙은 주소는 색인하지 않는다(lib/seo/constants 의 ROBOTS_DISALLOW)
+export async function generateMetadata({ searchParams }: Props): Promise<Metadata> {
+  return withListRobots({ title: "게임 회사" }, await searchParams);
+}
 
 /** 현재 필터에서 일부만 바꾼 /companies URL. 기본값은 빼서 같은 화면이 같은 주소가 되게 한다 */
 function companiesHref(country: string | undefined, page: number): string {

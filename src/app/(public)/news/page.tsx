@@ -7,6 +7,7 @@
 import { DbUnavailable } from "@/components/db-unavailable";
 import { DB_DOWN, orDbDown } from "@/lib/db-errors";
 import type { Metadata } from "next";
+import { withListRobots } from "@/lib/seo/constants";
 import { NewsList } from "@/components/news-list";
 import { Pagination } from "@/components/pagination";
 import { Page, PageHead } from "@/components/ui/page";
@@ -19,12 +20,12 @@ import { EmptyState } from "@/components/empty-state";
 // Next 가 정적으로 읽는 값이라 리터럴이어야 한다 — 근거, 수치는 lib/cache 의 LIST_REVALIDATE_SECONDS 와 같게 유지
 export const revalidate = 3600;
 
-export const metadata: Metadata = {
-  title: M.title,
-  description: M.lead,
-};
-
 type Props = { searchParams: Promise<Record<string, string | string[] | undefined>> };
+
+// 쪽, 달이 붙은 주소는 색인하지 않는다(lib/seo/constants 의 ROBOTS_DISALLOW)
+export async function generateMetadata({ searchParams }: Props): Promise<Metadata> {
+  return withListRobots({ title: M.title, description: M.lead }, await searchParams);
+}
 
 /** 주소의 page 는 사람이 손으로 고치는 값이라 무엇이 와도 1 이상 정수로 떨어뜨린다 */
 function readPage(raw: string | string[] | undefined): number {
