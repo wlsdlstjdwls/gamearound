@@ -21,11 +21,11 @@ import { formatLongDateTime } from "@/lib/format";
 import { Sheet } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
 import { TASK_ATTACHMENT_MESSAGES, TASK_MESSAGES } from "@/lib/admin/messages";
-import { BOARD_STATUSES, type AdminTask, type TaskAssignee } from "@/lib/admin/tasks";
+import { BOARD_STATUSES, type AdminTask, type TaskAssignee, type TaskStatus } from "@/lib/admin/tasks";
 import { TaskEditForm } from "@/components/admin/task-card/edit-form";
 import { TaskNotes } from "@/components/admin/task-card/notes";
 import { TaskAttachmentsPart } from "@/components/admin/task-attachments";
-import { deleteTaskAction, moveTaskAction, updateTaskAction, type TaskActionState } from "@/app/(admin)/admin/tasks/actions";
+import { deleteTaskAction, updateTaskAction, type TaskActionState } from "@/app/(admin)/admin/tasks/actions";
 import { askConfirm } from "@/components/ui/confirm-dialog";
 import { CONFIRM_MESSAGES } from "@/lib/messages/confirm";
 import { useMobilePolicy } from "@/components/admin/mobile-policy";
@@ -33,11 +33,14 @@ import { useMobilePolicy } from "@/components/admin/mobile-policy";
 export function TaskDialog({
   task,
   assignees,
+  onMove,
   open,
   onOpenChange,
 }: {
   task: AdminTask;
   assignees: TaskAssignee[];
+  /** 칸 옮기기. 판이 쥔다 — 판이 먼저 그리고(useOptimistic) 이 팝업은 그 판의 카드를 받아 바로 바뀐다 */
+  onMove: (to: TaskStatus) => void;
   open: boolean;
   onOpenChange: (v: boolean) => void;
 }) {
@@ -69,7 +72,7 @@ export function TaskDialog({
               type="button"
               disabled={pending || here}
               aria-current={here ? "true" : undefined}
-              onClick={() => run(() => moveTaskAction(task.id, s))}
+              onClick={() => onMove(s)}
               className={cn(SEGMENT_ITEM, here ? SEGMENT_ITEM_ON : "disabled:opacity-60")}
             >
               {name("TASK_STATUS", s)}

@@ -27,10 +27,10 @@
 // 다시 그리러 가서 칩 한 번에 왕복 하나가 붙는다. 거른 판에서 끌어 옮겨도 서버는 칸 전체로 순서를 매긴다
 // (moveTask 는 놓은 자리를 카드 id 로 받는다) — 숨은 카드는 제 순서를 지킨다.
 import { useCodes } from "@/components/code-book";
-import { Fragment, useEffect, useMemo, useRef, useState, useTransition } from "react";
+import { Fragment, useEffect, useMemo, useOptimistic, useRef, useState, useTransition } from "react";
 import { cn } from "@/lib/cn";
 import { TASK_FILTER_MESSAGES, TASK_MESSAGES } from "@/lib/admin/messages";
-import { BOARD_STATUSES, TASK_STATUSES, unreadNoteCount, type AdminTask, type Board, type TaskAssignee, type TaskStatus } from "@/lib/admin/tasks";
+import { BOARD_STATUSES, TASK_STATUSES, moveInBoard, unreadNoteCount, type AdminTask, type Board, type TaskAssignee, type TaskStatus } from "@/lib/admin/tasks";
 import {
   TASK_FILTER_COOKIE,
   TASK_FILTER_COOKIE_MAX_AGE,
@@ -51,7 +51,7 @@ import { markTaskSeenAction, moveTaskAction, type TaskActionState } from "@/app/
 import { TASK_OPEN_PARAM } from "@/lib/routes";
 
 export function TaskBoard({
-  board,
+  board: serverBoard,
   assignees,
   meId,
   initialFilter,
@@ -95,6 +95,14 @@ export function TaskBoard({
   };
   const [, start] = useTransition();
   const [state, setState] = useState<TaskActionState>(null);
+  // 칸 옮기기는 누른 순간 판에 먼저 그린다(§6). 앞서는 서버 답(로컬 Neon 왕복으로 몇 초)이 올 때까지 카드가 제자리에 있다가 튀었다.
+  // 실패하면 전환이 끝나며 서버 판으로 돌아가고 위에 오류 줄이 선다
+  const [board, applyMove] = useOptimistic(serverBoard, (b: Board, m: { id: string; to: TaskStatus; before?: string | null }) => moveInBoard(b, m.id, m.to, m.before));
+  const move = (id: string, to: TaskStatus, before?: string | null) =>
+    start(async () => {
+      applyMove({ id, to, before });
+      setState(await moveTaskAction(id, to, before));
+    });
 
   const [filter, setFilter] = useState(initialFilter);
   const changeFilter = (next: TaskFilter) => {
@@ -126,7 +134,7 @@ export function TaskBoard({
     [board, meId, assignees],
   );
 
-  const drag = useBoardDrag((id, to, before) => start(async () => setState(await moveTaskAction(id, to, before))));
+  const drag = useBoardDrag(move);
 
   const openTask = openId ? BOARD_STATUSES.flatMap((s) => board[s]).find((t) => t.id === openId) : undefined;
   const unreadOf = (task: AdminTask) => unreadNoteCount(task.notes, meId, seenNow[task.id] ?? seen[task.id]);
@@ -282,7 +290,7 @@ export function TaskBoard({
       )}
 
       {/* 열린 카드는 판이 다시 그려져도 같은 카드를 가리킨다 — 지워졌으면 팝업도 사라진다 */}
-      {openTask && <TaskDialog task={openTask} assignees={assignees} open onOpenChange={(v) => !v && setOpenId(null)} />}
+      {openTask && <TaskDialog task={openTask} assignees={assignees} onMove={(to) => move(openTask.id, to)} open onOpenChange={(v) => !v && setOpenId(null)} />}
     </section>
   );
 }

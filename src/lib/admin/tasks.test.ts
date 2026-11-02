@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { NEW_NOTE_EPOCH, TASK_STALE_DAYS, staleDays, unreadNoteCount } from "@/lib/admin/tasks";
+import { NEW_NOTE_EPOCH, TASK_STALE_DAYS, moveInBoard, staleDays, unreadNoteCount, type AdminTask, type Board, type TaskStatus } from "@/lib/admin/tasks";
 
 const DAY = 24 * 60 * 60 * 1000;
 const NOW = Date.UTC(2026, 9, 1);
@@ -43,5 +43,29 @@ describe("unreadNoteCount", () => {
 
   it("기준일 전의 기록은 연 적 없어도 새 기록이 아니다", () => {
     expect(unreadNoteCount([{ kind: "note", authorId: "you", createdAt: new Date(NEW_NOTE_EPOCH - 1) }], ME, undefined)).toBe(0);
+  });
+});
+
+describe("moveInBoard", () => {
+  const card = (id: string, status: TaskStatus) => ({ id, status }) as unknown as AdminTask;
+  const board = (): Board => ({ backlog: [], todo: [card("a", "todo"), card("b", "todo")], doing: [card("c", "doing")], done: [card("d", "done")] });
+  const ids = (b: Board, s: TaskStatus) => b[s].map((t) => t.id);
+
+  it("자리를 안 주면 받는 칸 맨 위로 가고 상태가 바뀐다", () => {
+    const b = moveInBoard(board(), "b", "doing");
+    expect(ids(b, "todo")).toEqual(["a"]);
+    expect(ids(b, "doing")).toEqual(["b", "c"]);
+    expect(b.doing[0].status).toBe("doing");
+  });
+
+  it("null 은 맨 끝, id 는 그 카드 앞", () => {
+    expect(ids(moveInBoard(board(), "a", "doing", null), "doing")).toEqual(["c", "a"]);
+    expect(ids(moveInBoard(board(), "b", "todo", "a"), "todo")).toEqual(["b", "a"]);
+  });
+
+  it("끝 칸은 늘 맨 위, 끝 칸 안 자리 바꾸기는 하지 않는다", () => {
+    expect(ids(moveInBoard(board(), "a", "done", null), "done")).toEqual(["a", "d"]);
+    const b = board();
+    expect(moveInBoard(b, "d", "done", null)).toBe(b);
   });
 });

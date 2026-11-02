@@ -151,3 +151,21 @@ export function unreadNoteCount(notes: Pick<TaskNote, "kind" | "authorId" | "cre
   const since = seenAt ?? NEW_NOTE_EPOCH;
   return notes.filter((n) => n.kind === "note" && n.authorId !== meId && n.createdAt.getTime() > since).length;
 }
+
+/**
+ * 서버 답을 기다리지 않고 판에 먼저 그릴 칸 옮기기(AGENTS §6 "누른 순간 화면이 먼저 바뀐다"). 자리 규칙은 moveTask(services/admin-tasks)와 같다 —
+ * before 를 안 주거나 끝 칸으로 가면 받는 칸 맨 위, null 이면 맨 끝, id 면 그 카드 앞. 끝 칸 안 자리 바꾸기는 서버도 하지 않아 그대로 둔다.
+ * 다르게 그리면 서버 답이 온 순간 카드가 한 번 더 튄다.
+ */
+export function moveInBoard(board: Board, id: string, to: TaskStatus, before?: string | null): Board {
+  const from = TASK_STATUSES.find((s) => board[s].some((t) => t.id === id));
+  if (!from || (from === to && to === "done")) return board;
+  const task = board[from].find((t) => t.id === id)!;
+  const moved: AdminTask = from === to ? task : { ...task, status: to };
+  const next = { ...board, [from]: board[from].filter((t) => t.id !== id) } as Board;
+  const column = next[to].filter((t) => t.id !== id);
+  const at = before === undefined || to === "done" ? 0 : before === null ? column.length : column.findIndex((t) => t.id === before);
+  column.splice(at < 0 ? column.length : at, 0, moved);
+  next[to] = column;
+  return next;
+}
