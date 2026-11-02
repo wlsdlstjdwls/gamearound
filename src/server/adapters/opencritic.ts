@@ -87,12 +87,23 @@ export function parseOpenCriticSearch(raw: unknown): SearchCandidate[] {
 
 // ---- 네트워크 ----
 
+/**
+ * 환경변수 값을 헤더에 실을 수 있게 다듬는다. 앞의 BOM(U+FEFF)과 앞뒤 공백을 걷는다.
+ * 2026-11-02 PowerShell 로 `vercel env add` 에 값을 흘려 넣었더니 BOM 이 붙어 들어가,
+ * fetch 가 "Cannot convert argument to a ByteString" 로 모든 요청을 나가기도 전에 실패시켰다.
+ * 키에는 BOM 도 공백도 올 수 없으니 걷어도 잃는 것이 없다.
+ */
+export function cleanApiKey(raw: string | undefined): string | undefined {
+  const v = raw?.replace(/^\uFEFF/, "").trim();
+  return v ? v : undefined;
+}
+
 // RapidAPI 키는 요청 시점에 읽는다 — 모듈 로드 순서(dotenv)보다 늦게 들어오는 환경이 있다.
 const http = createHttpClient({
   source: "opencritic",
   label: "OpenCritic",
   headers: () => {
-    const apiKey = process.env[OPENCRITIC_RAPIDAPI_KEY_ENV];
+    const apiKey = cleanApiKey(process.env[OPENCRITIC_RAPIDAPI_KEY_ENV]);
     if (!apiKey) throw new AdapterError(`OpenCritic: ${OPENCRITIC_RAPIDAPI_KEY_ENV} 없음`, "opencritic", false);
     return { "x-rapidapi-key": apiKey, "x-rapidapi-host": OPENCRITIC_RAPIDAPI_HOST };
   },

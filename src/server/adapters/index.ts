@@ -8,7 +8,7 @@ import { xboxAdapter } from "./xbox";
 import { nintendoAdapter, nintendoJpAdapter } from "./nintendo";
 import { epicAdapter } from "./epic";
 import { hltbAdapter } from "./hltb";
-import { OPENCRITIC_RAPIDAPI_KEY_ENV, opencriticAdapter } from "./opencritic";
+import { cleanApiKey, OPENCRITIC_RAPIDAPI_KEY_ENV, opencriticAdapter } from "./opencritic";
 import { EPIC_ENABLE_ENV } from "./epic";
 import { CRAWL_PROXY_URL_ENV, crawlProxyUrl, runsInSeoulRegion } from "./http";
 import { metacriticAdapter } from "./metacritic";
@@ -76,7 +76,7 @@ export function getDisabledReason(source: Source): string | undefined {
       // 정지가 화면 전체에 그대로 보인다.
       return undefined;
     case "opencritic":
-      return process.env[OPENCRITIC_RAPIDAPI_KEY_ENV]
+      return cleanApiKey(process.env[OPENCRITIC_RAPIDAPI_KEY_ENV])
         ? undefined
         : `OpenCritic API 가 RapidAPI 키를 요구함(HTTP 400, 2026-09-11 확인). ${OPENCRITIC_RAPIDAPI_KEY_ENV} 환경변수(Actions secret) 설정 시 자동 활성`;
     default:

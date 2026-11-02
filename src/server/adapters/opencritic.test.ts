@@ -3,7 +3,7 @@ import { describe, expect, it } from "vitest";
 import { readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import { AdapterError } from "./types";
-import { OPENCRITIC_API_URL, OPENCRITIC_IGN_OUTLET_ID, parseOpenCriticGame, parseOpenCriticIgn, parseOpenCriticSearch } from "./opencritic";
+import { cleanApiKey, OPENCRITIC_API_URL, OPENCRITIC_IGN_OUTLET_ID, parseOpenCriticGame, parseOpenCriticIgn, parseOpenCriticSearch } from "./opencritic";
 
 const fixture = (name: string): unknown =>
   JSON.parse(readFileSync(fileURLToPath(new URL(`./__fixtures__/${name}`, import.meta.url)), "utf8"));
@@ -52,5 +52,19 @@ describe("RapidAPI 주소", () => {
   it("경로에 /api 접두가 없다", () => {
     expect(OPENCRITIC_API_URL).toBe("https://opencritic-api.p.rapidapi.com");
     expect(OPENCRITIC_API_URL).not.toContain("/api");
+  });
+});
+
+describe("cleanApiKey", () => {
+  it("앞의 BOM 과 앞뒤 공백을 걷는다 — BOM 이 남으면 fetch 가 헤더를 못 만든다", () => {
+    expect(cleanApiKey("\uFEFFabc123")).toBe("abc123");
+    expect(cleanApiKey("  abc123\n")).toBe("abc123");
+    expect(() => new Headers({ k: "\uFEFFabc" })).toThrow();
+    expect(() => new Headers({ k: cleanApiKey("\uFEFFabc")! })).not.toThrow();
+  });
+
+  it("비었으면 undefined 라 키 없음으로 읽힌다", () => {
+    expect(cleanApiKey(undefined)).toBeUndefined();
+    expect(cleanApiKey("\uFEFF  ")).toBeUndefined();
   });
 });
