@@ -7,11 +7,9 @@
 name: crawl-meta
 
 on:
-  schedule:
-    # 주기 2일: 평점은 변동이 느려 일간 → 격일로 완화. 플레이타임도 같은 주기로 붙어 간다.
-    # 2026-10-13 시각을 12:00 UTC 로 옮겼다 — Neon 무료 compute 한도(월 100 CU-시간)를 넘겨 DB 가 정지됐다.
-    # 크론이 하루 내내 흩어져 DB 가 잠들 틈이 없었다. DB 를 쓰는 실행은 0, 6, 12, 18시(UTC) 창에 모은다(sync/constants 의 CRON_SOURCES 주석).
-    - cron: "0 12 */2 * *"
+  # 예약은 없다(2026-11-02). 정규 실행처는 서울 Vercel 크론 /api/cron/crawl/<hltb|metacritic|opencritic>/<match|collect> 다
+  # (몫과 시각은 sync/constants 의 CRON_META_PLAN). 12:00 예약이 실제로는 14:35~17:54 에 돌아(최근 10회 실측)
+  # DB 를 창 밖에서 25~30분씩 깨웠다. 크론이 막히면 이 예약을 되살리고 CRON_META_SOURCES 에서 빼다 — 둘을 같이 두지 않는다.
   workflow_dispatch:
     inputs:
       limit:

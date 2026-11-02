@@ -14,11 +14,8 @@
 name: crawl-catalog
 
 on:
-  schedule:
-    # 주기 2일. gamepass 는 요청이 2회뿐이다(카탈로그가 월 2회 안팎으로 바뀌어 격일로 충분하다).
-    # 2026-10-13 시각을 06:30 UTC 로 옮겼다 — Neon 무료 compute 한도(월 100 CU-시간)를 넘겨 DB 가 정지됐다.
-    # 크론이 하루 내내 흩어져 DB 가 잠들 틈이 없었다. DB 를 쓰는 실행은 0, 6, 12, 18시(UTC) 창에 모은다(sync/constants 의 CRON_SOURCES 주석).
-    - cron: "30 6 */2 * *"
+  # 예약은 없다(2026-11-02). 정규 실행처는 서울 Vercel 크론 /api/cron/crawl/gamepass/collect 다(sync/constants 의 CRON_META_PLAN).
+  # 06:30 예약이 실제로는 11:02~13:48 에 돌아(최근 10회 실측) 1초짜리 일로 DB 를 창 밖에서 5분씩 깨웠다.
   workflow_dispatch:
     inputs:
       limit:

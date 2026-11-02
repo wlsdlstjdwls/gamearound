@@ -106,7 +106,7 @@ export const LOCAL_SEED_TOP: Partial<Record<Source, number>> = {
  * 그러면 이 상수는 무엇으로 남는가 — 크론이 막혔을 때의 **두 대비책**이 읽는 몫이다. 실행처는 셋인데
  * 몫은 여기 한 곳에서만 정한다:
  *   Vercel 서울 크론  정규. CRON_PLAN 의 discover 몫을 쓴다(이 상수가 아니다)
- *   Actions 주 1회    crawl-seed.yml. 해외 IP 라 크론과 출구가 다르다 — 이 상수를 읽는다
+ *   Actions 손 실행   crawl-seed.yml(2026-11-02 예약 걷음). 해외 IP 라 크론과 출구가 다르다 — 이 상수를 읽는다
  *   가정용 회선       `pnpm crawl:seed`. 급할 때 손으로 당긴다 — 이 상수를 읽는다
  *
  * limit 을 따로 두는 이유: 시드 몫은 seedQuota 가 limit × 몫으로 한 번 더 깎는다.
@@ -201,6 +201,16 @@ export const CRON_SOURCES = ["nintendo", "nintendo_jp", "epic", "steam", "psstor
 // DB 가 마지막 질의 뒤 5분을 쉬지 못해 하루 24시간 깨어 있었다. 창으로 모으면 하루 약 5~6시간만 깨어 있다.
 // 가격 회차의 시각과 횟수는 그대로다 — 할인 반영 속도는 안 바뀐다. 줄인 것은 발견(닌텐도, 에픽 넷에서 둘), 매칭(둘에서 하나),
 // 위키데이터 별칭(넷에서 둘)뿐이다. 새 크론을 더할 때도 이 창 안에 넣는다. 창 밖에 하나만 둬도 그 시간 동안 DB 가 깬다.
+//
+// **2026-11-02 창 안을 두 파로 모았다.** 위 목록의 분(:15, :20, :35 ...)은 옛 배치다 — 지금 시각은 vercel.json 이 정한다.
+// 예전에는 한 창 안에서 5분 간격으로 줄지어 시작해 창 하나가 50~65분 깨어 있었다(sync_logs 72시간 실측, 하루 약 4.5시간).
+//   1파 :00~:06  서로 다른 소스의 일을 한꺼번에 띄운다(가격 대부분, 뉴스, 메타 매칭, 스팀은 발견/매칭)
+//   2파 :15~:19  1파와 같은 소스의 두 번째 일(발견, 매칭, 메타 수집, 스팀은 가격)
+// 2파가 15분 뒤인 이유: 같은 소스끼리는 14분 넘게 띄웠다. 함수 상한이 800초(13분 20초)라 1파 실행은 늦어도 그 전에 끝난다 — Redis 락이 안 겹친다.
+// 그래서 창 하나는 약 30분이다. 1파에 열 개 넘게 동시에 돌지만 소스마다 락이 따로라 서로 기다리지 않고,
+// 수집 쓰기는 50문장 묶음이라 홈 집계를 열 개 띄웠다가 Neon 이 메모리 부족을 낸 일(neon-roundtrip-cost)과는 무게가 다르다.
+// 스팀 가격만 2파(:15)인 이유: 17, 18시가 세일 문이 열린 직후 자리라 시각이 고정이고, 크론 한 줄로 쓰려면 다른 창도 같은 분이어야 한다.
+// 시각이 정해진 것: Xbox 가격 :05(할인 대부분이 00:00Z 시작, 몇 분 늦게 반영), 스팀 가격 17:15, 18:15(세일 전환 15분 뒤).
 //
 // 크론 자리를 더 늘릴 때 발견 쪽으로 기울지 말 것 — 굶은 것은 발견이 아니라 갱신 주기였다
 // (psstore 하루 408건으로 한 바퀴 108일, xbox 587건으로 52일).
@@ -429,8 +439,14 @@ export const CRON_PLAN: Record<CronSource, Record<CronMode, CronRunPlan>> = {
  * rss(뉴스)는 2026-10-28 에 crawl-news.yml 의 6시간 예약에서 여기로 옮겼다. 회차가 20초짜리인데 Actions 가
  * 3~4시간 늦게 돌아(3, 11, 21시대) 그때마다 DB 를 창 밖에서 깨웠다 — 깨운 DB 는 최소 5분 켜 있다.
  * 매칭 단계가 없어 collect 모드만 건다.
+ *
+ * hltb, metacritic, opencritic(crawl-meta.yml)과 gamepass(crawl-catalog.yml)는 2026-11-02 에 옮겼다. rss 와 같은 이유다 —
+ * GitHub 예약 실측(최근 10회)으로 crawl-meta 는 12:00 예약이 14:35~17:54 에, crawl-catalog 는 06:30 예약이 11:02~13:48 에 시작했다.
+ * 창 밖에서 DB 를 25~30분씩 깨우고 있었다. 워크플로는 손으로 돌리는 대비책으로 남는다(예약 없음).
+ * 이 소스들이 서울 함수에서 열리는지는 옮길 때 실측하지 못했다 — 막히면 sync_logs 와 수집 현황에 실패로 뜨고,
+ * 그때는 워크플로 예약을 되살리고 여기서 뺀다(두 곳에서 같이 돌리면 Redis 락에 걸려 한쪽이 빈손이 된다).
  */
-export const CRON_META_SOURCES = ["wikidata_game", "wikidata", "rss"] as const;
+export const CRON_META_SOURCES = ["wikidata_game", "wikidata", "rss", "hltb", "metacritic", "opencritic", "gamepass"] as const;
 export type CronMetaSource = (typeof CRON_META_SOURCES)[number];
 
 /**
@@ -480,6 +496,16 @@ export const CRON_META_MS_PER_ITEM: Record<CronMetaSource, Record<CronMetaMode, 
   // 피드 하나당. 2026-10-26~28 Actions 실측은 15피드에 평균 19초(피드당 1.3초)다. 느린 피드 하나가 시간 제한까지
   // 버티는 경우를 덮으려고 넉넉히 잡는다 — 그래도 한 회차 90초 안쪽이다
   rss: { match: 0, collect: 5000 },
+  // 아래 넷은 2026-11-02 Actions 에서 옮기며 잡은 값이다. Actions 실측(미국 러너, DB 와 같은 쪽)에
+  // 서울 함수의 Neon 왕복(약 200ms × 건당 서너 번)을 얹었다. 크론의 첫 durationMs 로 다시 잰다.
+  // hltb: 매칭 건당 약 3초(검색 1초 + 대기 1초 + 반영, crawl-meta.yml 주석), 수집 300건 438초(10-31 실측) = 1.46초
+  hltb: { match: 4000, collect: 2500 },
+  // metacritic: 매칭 150 + 수집 150 이 816~911초(10-29~11-01 실측) = 건당 약 3초
+  metacritic: { match: 4000, collect: 4000 },
+  // opencritic: 건당 약 2초(crawl-meta.yml 주석)
+  opencritic: { match: 3000, collect: 3000 },
+  // gamepass: 컬렉션 하나가 요청 1회 + 구독 행 반영. Actions 실측은 둘 다 합쳐 1초 안쪽이었다. 넉넉히 잡는다
+  gamepass: { match: 0, collect: 30000 },
 };
 
 /**
@@ -487,10 +513,18 @@ export const CRON_META_MS_PER_ITEM: Record<CronMetaSource, Record<CronMetaMode, 
  * 손으로 곱하지 말 것 — cron-plan.test 가 같은 식으로 다시 세고 넘치면 막는다.
  *
  * 주기는 vercel.json 에 있다(시각은 UTC). 회차 수는 runsPerDay 에 같이 적는다:
- *   /api/cron/crawl/wikidata_game/match    0 0,12 * * *          하루 2회 × 58건 = 116건/일
- *   /api/cron/crawl/wikidata_game/collect  30 0,18 * * *         하루 2회 × 71건 = 142건/일
- *   /api/cron/crawl/wikidata/collect       40 0,12 * * *         하루 2회 × 230개 이름
- *   /api/cron/crawl/rss/collect            15 0,6,12,18 * * *    하루 4회 × 피드 전부
+ *   /api/cron/crawl/wikidata_game/match    3 0,12 * * *          하루 2회 × 58건 = 116건/일
+ *   /api/cron/crawl/wikidata_game/collect  17 0,18 * * *         하루 2회 × 71건 = 142건/일
+ *   /api/cron/crawl/wikidata/collect       3 0,12 * * *          하루 2회 × 230개 이름
+ *   /api/cron/crawl/rss/collect            2 0,6,12,18 * * *     하루 4회 × 피드 전부
+ *   /api/cron/crawl/hltb/match             4 0,12 * * *          하루 2회 × 120건
+ *   /api/cron/crawl/hltb/collect           18 0,12 * * *         하루 2회 × 130건
+ *   /api/cron/crawl/metacritic/match       5 0 * * *             하루 1회 × 70건
+ *   /api/cron/crawl/metacritic/collect     19 0 * * *            하루 1회 × 80건
+ *   /api/cron/crawl/opencritic/match       5 0 * * *             하루 1회 × 25건
+ *   /api/cron/crawl/opencritic/collect     19 0 * * *            하루 1회 × 85건
+ *   /api/cron/crawl/gamepass/collect       6 0 * * *             하루 1회 × 컬렉션 전부
+ * 같은 소스의 match(1파)와 collect(2파)는 14분 넘게 띄운다 — 함수 상한 800초보다 길게(CRON_SOURCES 주석의 두 파).
  * 2026-10-13 에 넷에서 둘로 줄였다 — DB 를 깨우는 창을 줄이려고(CRON_SOURCES 주석의 창). 별칭은 급한 값이 아니다.
  *
  * collect 하루 몫이 match 보다 많아야 하는 이유: 매칭한 것 중 auto 로 붙는 만큼이 조회 대기줄에
@@ -523,6 +557,30 @@ export const CRON_META_PLAN: Record<CronMetaSource, Record<CronMetaMode, CronMet
     match: { limit: 0, match: 0, runsPerDay: 0 },
     // 피드 전부를 한 회차에 돈다. 하루 4회 = 예전 Actions 6시간 주기와 같은 횟수를 창 안 정시로
     collect: { limit: BATCH_SIZE.rss, match: 0, runsPerDay: 4 },
+  },
+  // Actions 에서는 격일로 매칭 600, 수집 300 이었다(하루 300 대 150). 하루 collect 가 match 보다 많아야 해서
+  // (아래 테스트) 수집을 하루 260 으로 올렸다. 요청 간격 1초라 HLTB 쪽 부담은 하루 몇 분이다.
+  hltb: {
+    // 120 × 4초 × 1.15 = 552초
+    match: { limit: 0, match: 120, runsPerDay: 2 },
+    // 130 × 2.5초 × 1.15 = 374초
+    collect: { limit: 130, match: 0, runsPerDay: 2 },
+  },
+  // Actions 의 격일 150/150 을 하루 70/80 으로 나눴다(하루 처리량은 거의 같다)
+  metacritic: {
+    match: { limit: 0, match: 70, runsPerDay: 1 },
+    collect: { limit: 80, match: 0, runsPerDay: 1 },
+  },
+  // 무료 등급 하루 200요청(BATCH_SIZE.opencritic 주석). 매칭 25 + 수집 85 × 2(게임당 두 번 묻는다) = 195.
+  // 격일에서 매일로 바뀌었지만 한도가 하루 단위라 그대로 든다
+  opencritic: {
+    match: { limit: 0, match: 25, runsPerDay: 1 },
+    collect: { limit: BATCH_SIZE.opencritic, match: 0, runsPerDay: 1 },
+  },
+  // 컬렉션 두 개를 한 번에 돈다. 카탈로그가 월 2회 안팎으로 바뀌어 하루 한 번이면 넉넉하다
+  gamepass: {
+    match: { limit: 0, match: 0, runsPerDay: 0 },
+    collect: { limit: BATCH_SIZE.gamepass, match: 0, runsPerDay: 1 },
   },
 };
 
