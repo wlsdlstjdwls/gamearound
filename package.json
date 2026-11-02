@@ -30,6 +30,7 @@
     "e2e:shops": "node scripts/e2e-shops.mjs",
     "dedup:stores": "tsx scripts/merge-store-duplicates.ts",
     "dedup:measure": "tsx scripts/measure-duplicates.ts",
+    "stats:list": "tsx scripts/refresh-list-stats.ts",
     "hltb:popularity": "tsx scripts/backfill-hltb-popularity.ts",
     "hltb:table": "tsx scripts/measure-hltb-table.ts"
   },

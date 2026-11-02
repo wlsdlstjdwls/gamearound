@@ -1051,3 +1051,5 @@ export * from "./schema-settings";
 export * from "./schema-search";
 // 시스템관리(공통코드, 알림 템플릿, 발송 이력)
 export * from "./schema-system";
+// 목록 정렬용 게임별 집계(수집이 끝날 때 다시 쓴다)
+export * from "./schema-list-stats";

@@ -13,6 +13,7 @@ import { LOCK_TTL_SEC } from "./constants";
 import { createContext, recordError, type Ctx, type RunOptions, type RunResult } from "./context";
 import { dispatchPriceAlerts, type DispatchSummary } from "./dispatch-alerts";
 import { dispatchWishSaleAlerts } from "./dispatch-wish-alerts";
+import { refreshListStats } from "./list-stats";
 import { revalidateGameTags } from "./revalidate";
 import { runMeta } from "./run-meta";
 import { runNews } from "./run-news";
@@ -65,6 +66,16 @@ export async function runSource(source: Source, opts: RunOptions = {}): Promise<
         console.log(`[sync:${source}] 찜 할인 알림: ${JSON.stringify(wish)}`);
       } catch (e) {
         recordError(ctx, "wish-alerts", e);
+      }
+    }
+
+    // 6-1. 목록 정렬용 집계(game_list_stats)를 다시 쓴다. 가격, 할인, 순번, 새 게임이 목록 순서에 들어가는 길은 이것뿐이다.
+    // 값이 바뀐 게임이 없는 실행은 건너뛴다 — 다시 써도 같은 표가 나오고 compute 만 먹는다(neon-compute-quota)
+    if (isStoreSource(source) && ctx.changedSlugs.size > 0) {
+      try {
+        await refreshListStats(`crawler:${source}`);
+      } catch (e) {
+        recordError(ctx, "list-stats", e);
       }
     }
 

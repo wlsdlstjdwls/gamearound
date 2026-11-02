@@ -3,15 +3,15 @@ import { cache } from "react";
 import type { PgSelect } from "drizzle-orm/pg-core";
 import { unstable_cache } from "next/cache";
 import { and, asc, eq, exists, gt, inArray, sql } from "drizzle-orm";
-import { DISPLAY_CURRENCY } from "@/lib/currency";
 import { getDb } from "@/server/db/client";
-import { gameGenres, gamePlatforms, games, genres, HOME_REGION, type Platform } from "@/server/db/schema";
+import { gameGenres, gameListStats, gamePlatforms, games, genres, HOME_REGION, type Platform } from "@/server/db/schema";
 import { visiblePlatformsOnly } from "@/server/db/visibility";
+import { listAggQuery } from "@/server/db/list-agg";
 import { normalizeForSearch } from "@/lib/slug";
 import { isGenreTag } from "@/lib/genres";
 import { defaultSortFor, parsePlatformValues, type GamesQuery } from "@/lib/games-query";
 import { expandPlatformValues } from "@/lib/platform";
-import { HLTB_RANK_OFFSET, HLTB_RANK_STEPS, POPULARITY_RANK_MAX_AGE_DAYS, REVIEW_RANK_STEPS } from "@/lib/games/popularity";
+import { HLTB_RANK_OFFSET, HLTB_RANK_STEPS, REVIEW_RANK_STEPS } from "@/lib/games/popularity";
 import type { GameSummary } from "./dto";
 import { attachBestPrice, type GameRow } from "./mappers";
 import { allOf, byCompanySlug, hasVisiblePlatform, inAnySubscription, inSteamSale, mainGamesOnly, runsOnRig } from "./filters";
@@ -47,72 +47,28 @@ export type GameFacets = {
 };
 
 /**
- * 게임별 플랫폼 집계 서브쿼리. platform 필터가 있으면 그 플랫폼만 집계하므로
- * inner join 하는 것만으로 "그 플랫폼을 가진 게임"으로 좁혀진다.
+ * 게임별 플랫폼 집계 서브쿼리. 식은 db/list-agg 한 곳에 있다.
+ *
+ * 플랫폼을 고르지 않은 목록은 미리 써 둔 집계(game_list_stats)를 읽는다 — 카탈로그 전체를 요청마다
+ * 집계하면 건수, 목록 질의가 각각 0.4~0.8초씩 걸린다(2026-11-02 실측, 근거는 db/schema-list-stats 머리 주석).
+ * 플랫폼을 고르면 집계 범위가 달라 미리 써 둘 수 없으니 그 자리에서 센다.
  */
 function platformAgg(platforms: Platform[]) {
-  const db = getDb();
-  return db
+  if (platforms.length > 0) return listAggQuery(platforms).as("agg");
+  const s = gameListStats;
+  return getDb()
     .select({
-      gameId: gamePlatforms.gameId,
-      maxDiscount: sql<number>`max(coalesce(${gamePlatforms.discountPct}, 0))`.as("max_discount"),
-      /**
-       * 기준 통화로 살 수 있는 게임인가. 할인율순의 첫 정렬 키다.
-       *
-       * 왜 필요한가: 원화 가격이 없는 게임이 할인율만으로 첫 화면을 차지하는 것을 막는다.
-       * 환산은 하지 않으므로(lib/currency) 남은 손잡이는 순서뿐이다 — 원화로 살 수 있는 것을
-       * 먼저 세우고, 나머지는 뒤에 그대로 둔다.
-       *
-       * 이 키를 넣은 계기는 달러 전용 스토어였다(2026-09-15 실측: 4,910개 중 1,490개가 원화 없음).
-       * 2026-09-16 에 그 스토어를 숨기면서 수가 **26개**로 줄었다(일본 스위치 행). 그래도 키는 남긴다 —
-       * 26개가 첫 화면을 먹는 것도 같은 문제고, 지역이 늘면 그 수는 다시 는다.
-       */
-      hasBaseCurrency: sql<boolean>`bool_or(${gamePlatforms.currency} = ${DISPLAY_CURRENCY} and ${gamePlatforms.currentPrice} is not null)`.as("has_base_currency"),
-      // 통화가 섞인 min() 은 뜻이 없다 — 정렬 기준은 기준 통화 가격만 본다(외화 전용 게임은 가격 정렬에서 nulls last)
-      minPrice: sql<number | null>`min(${gamePlatforms.currentPrice}) filter (where ${gamePlatforms.currency} = ${DISPLAY_CURRENCY})`.as("min_price"),
-      /**
-       * "최신 출시순" 이 세는 값. **이미 나온 날짜만** 본다(2026-09-18).
-       * 미래 날짜를 그대로 세면 아직 못 사는 게임이 첫 페이지를 통째로 차지한다 —
-       * 이 목록이 답하는 질문은 "무엇이 나왔나" 고, "무엇을 기다리나" 는 /upcoming 이 맡는다.
-       */
-      maxRelease: sql<string | null>`max(${gamePlatforms.releaseDate}) filter (where ${gamePlatforms.releaseDate} <= current_date)`.as("max_release"),
-      /**
-       * "인기순" 이 세는 값 — 스토어 인기순위에서 이 게임의 가장 높은 자리(작은 수가 앞).
-       *
-       * **낡은 순번은 여기서 버린다**(POPULARITY_RANK_MAX_AGE_DAYS). 순위에서 빠진 게임은
-       * 갱신할 기회가 없어 마지막 순번으로 굳는데, 그걸 그대로 세면 "인기순" 이
-       * "한때 인기였던 순" 이 된다. 거르는 자리를 읽는 쪽에 두는 이유는 쓰는 쪽이 지울 수 없어서다 —
-       * 목록 밖으로 나간 게임은 다음 수집에 나타나지 않으므로 아무도 그 행을 찾아가지 않는다.
-       *
-       * 여러 기기에 순번이 있으면 가장 높은 자리를 쓴다. 게임 하나의 인기는 그중 앞선 쪽이다.
-       */
-      /**
-       * 평가 수(스팀, Xbox 가 기존 요청에 얹어 준다). 인기순의 **두 번째** 키다.
-       *
-       * 왜 필요한가: 순번은 상위 2,000위까지만 있고 카탈로그는 7만 건이다. 순번 없는 뒷줄이
-       * 무순서면 거기서 다시 할인율이 기준이 되고, 그러면 묵은 싸구려가 또 앞에 선다.
-       * 평가 수는 판매량 추정의 표준 대리지표다 — 순번 다음으로 좋은 근거다.
-       *
-       * PS 는 이 값을 주지 않는다(1MB HTML 을 긁어야 한다). 그래서 PS 독점작은 여전히
-       * 두 근거를 다 못 받는다 — 그건 PS 인기 목록을 붙여야 풀린다.
-       */
-      maxReviews: sql<number | null>`max(${gamePlatforms.userScoreCount})`.as("max_reviews"),
-      /**
-       * 기준 통화로 **값을 받고 파는** 행이 하나라도 있나. 평가 수를 순번 자리로 바꿀 자격이다.
-       * hasBaseCurrency 와 다른 값이다 — 저쪽은 가격이 있기만 하면 참이라 무료(0)도 참이 된다.
-       */
-      /** 한국어 지원을 밝힌 행이 하나라도 있나. 모르는 행(null)은 bool_or 가 건너뛴다 */
-      koText: sql<boolean | null>`bool_or(${gamePlatforms.koText})`.as("ko_text"),
-      hasPaidPrice: sql<boolean>`bool_or(${gamePlatforms.currency} = ${DISPLAY_CURRENCY} and ${gamePlatforms.currentPrice} > 0)`.as("has_paid_price"),
-      minRank: sql<number | null>`min(${gamePlatforms.popularityRank}) filter (
-        where ${gamePlatforms.popularityRankAt} >= now() - make_interval(days => ${POPULARITY_RANK_MAX_AGE_DAYS})
-      )`.as("min_rank"),
+      gameId: s.gameId,
+      maxDiscount: sql<number>`${s.maxDiscount}`.as("max_discount"),
+      hasBaseCurrency: sql<boolean>`${s.hasBaseCurrency}`.as("has_base_currency"),
+      minPrice: sql<number | null>`${s.minPrice}`.as("min_price"),
+      maxRelease: sql<string | null>`${s.maxRelease}`.as("max_release"),
+      maxReviews: sql<number | null>`${s.maxReviews}`.as("max_reviews"),
+      koText: sql<boolean | null>`${s.koText}`.as("ko_text"),
+      hasPaidPrice: sql<boolean>`${s.hasPaidPrice}`.as("has_paid_price"),
+      minRank: sql<number | null>`${s.minRank}`.as("min_rank"),
     })
-    .from(gamePlatforms)
-    // 목록의 최저가, 할인, 발매일은 기준 지역(한국) 행만 본다. 다른 나라 가격을 섞으면
-    // 카드의 할인 배지가 한국에서 살 수 없는 할인을 가리킨다 — 상세 화면에서만 참고로 보여 준다
-    .where(and(eq(gamePlatforms.region, HOME_REGION), visiblePlatformsOnly(), platforms.length > 0 ? inArray(gamePlatforms.platform, platforms) : undefined))
-    .groupBy(gamePlatforms.gameId)
+    .from(s)
     .as("agg");
 }
 
@@ -238,9 +194,12 @@ async function listGamesRaw(filter: GameListFilter): Promise<GameListResult> {
 
   // 건수와 목록은 서로를 기다릴 이유가 없다. DB 실행은 각 10~20ms 인데 왕복이 200ms 대라
   // (Neon us-east-1, 2026-09-15 실측) 직렬로 두면 지연의 거의 전부가 기다림이다
+  //
+  // 정렬은 id 만 들고 한다. 행 전체(설명 글 포함, 폭 800바이트대)를 들고 정렬하면 2만 행이 작업 메모리를 넘어
+  // 디스크로 쏟아진다(2026-11-02 실측 external merge 13MB). 고른 24개만 다시 읽는 왕복 하나가 그보다 싸다
   const [totalRows, pageRows] = await Promise.all([
     joinAgg(db.select({ total: sql<number>`count(*)::int` }).from(games).$dynamic()).where(where),
-    joinAgg(db.select({ game: games }).from(games).$dynamic())
+    joinAgg(db.select({ id: games.id }).from(games).$dynamic())
       .where(where)
       // 같은 정렬값이 많을 때 페이지 경계에서 중복/누락이 나지 않도록 마지막 키는 항상 고유값(slug)
       .orderBy(...orderBy, asc(games.slug))
@@ -248,10 +207,13 @@ async function listGamesRaw(filter: GameListFilter): Promise<GameListResult> {
       .offset((page - 1) * GAMES_PAGE_SIZE),
   ]);
   const total = (totalRows as Array<{ total: number }>)[0].total;
-  const rows = pageRows as Array<{ game: GameRow }>;
+  const ids = (pageRows as Array<{ id: string }>).map((r) => r.id);
+  const byId = new Map<string, GameRow>();
+  if (ids.length > 0) for (const g of await db.select().from(games).where(inArray(games.id, ids))) byId.set(g.id, g);
+  const rows = ids.flatMap((id) => byId.get(id) ?? []);
 
   return {
-    items: await attachBestPrice(rows.map((r) => r.game)),
+    items: await attachBestPrice(rows),
     total,
     page,
     pageSize: GAMES_PAGE_SIZE,

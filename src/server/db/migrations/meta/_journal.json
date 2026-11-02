@@ -666,6 +666,13 @@
       "when": 1793582592573,
       "tag": "0094_notify_template_readability",
       "breakpoints": true
+    },
+    {
+      "idx": 95,
+      "version": "7",
+      "when": 1793594608882,
+      "tag": "0095_game_list_stats",
+      "breakpoints": true
     }
   ]
 }
