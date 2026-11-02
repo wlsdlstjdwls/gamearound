@@ -965,12 +965,15 @@ body.dragging-card {
   body:has([data-admin-rail]) {
     --header-h: 0px;
   }
-  /* 푸터도 걷는다(2026-10-29 사용자 "구독관리, 결제관리 같은 화면에 불필요한 스크롤") — 기둥이 화면 높이를 다 쓰는데 그 밑에 푸터 75px 이 붙어
-     짧은 화면도 늘 굴러갔다. 약관 링크는 서비스 화면에 있다 */
-  body:has([data-admin-rail]) [data-site-footer],
   body:has([data-admin-rail]) [data-site-header] {
     display: none;
   }
+}
+/* 푸터는 폭과 상관없이 걷는다. 넓은 화면(2026-10-29 사용자 "구독관리, 결제관리 같은 화면에 불필요한 스크롤"): 기둥이 화면 높이를 다 쓰는데
+   그 밑에 푸터 75px 이 붙어 짧은 화면도 늘 굴러갔다. 좁은 화면(2026-11-02 사용자 "관리자 화면은 아래 푸터 없어도 되겠다"): 바닥 탭바 위로
+   약관 줄이 끼어 마지막 카드 밑이 지저분했다. 약관 링크는 서비스 화면에 있다. 기둥은 좁은 화면에서 display:none 이어도 :has() 가 찾는다 */
+body:has([data-admin-rail]) [data-site-footer] {
+  display: none;
 }
 
 /*
