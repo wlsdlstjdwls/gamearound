@@ -14,6 +14,7 @@
 #   rowclick:<n>      그리드 n번째 줄(0부터)    check:<n>  그 줄의 체크 칸
 #   pick:<단추 이름>=<보기 이름>    pickn:<단추 이름>=<보기 순번>   고르기 칸(pickl: 같은 이름 칸 가운데 마지막)
 #   fill:<css>=<글>   입력 칸 채우기(css 에 = 가 있어도 된다, 마지막 = 로 가른다)
+#   type:<css>=<글>   한 글자씩 치기(이메일 칸처럼 fill 이 안 먹는 칸)
 #   focus:<css>       칸에 포커스만 넣는다(값은 안 바꾼다 — 미리 보기 자리 강조 확인)
 #   hover:<css>       마우스를 올린다(잘린 값 말풍선 확인)
 #   eval:<js 식>      페이지에서 식을 돌려 결과를 찍는다(화면에 안 보이는 상태 확인)
@@ -74,6 +75,10 @@ async def main():
                 label, opt = s[5:].split("=", 1)
                 await pg.get_by_role("button", name=label).first.click(); await pg.wait_for_timeout(400)
                 await pg.get_by_role("option", name=opt, exact=True).first.click(); await pg.wait_for_timeout(600)
+            elif s.startswith("type:"):
+                # 한 글자씩 친다(사람이 치는 것과 같다). fill 은 값을 한 번에 넣어 type=email 칸에서 React 가 못 받는 때가 있다
+                sel, text = s[5:].rsplit("=", 1)
+                await pg.locator(sel).press_sequentially(text, delay=15); await pg.wait_for_timeout(400)
             elif s.startswith("fill:"):
                 sel, text = s[5:].rsplit("=", 1)
                 await pg.fill(sel, text); await pg.wait_for_timeout(400)

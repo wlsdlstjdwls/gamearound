@@ -59,12 +59,21 @@ export function TextField({ label, labelMark, hideLabel, hint, under, error, lea
     const el = box.current?.querySelector("input");
     if (!el) return;
     const check = () => setOverflow(el.value && el.scrollWidth > el.clientWidth + 1 ? el.value : null);
+    // 친 글자 이벤트에서는 한 프레임 뒤에 잰다(2026-11-02). 여기서 바로 상태를 바꾸면 React 가 이 리스너와 자기 onChange 사이(마이크로태스크)에
+    // 칸을 먼저 그리는데, 그때 value 는 아직 부모의 옛 값이라 친 글자를 지우고 되돌린다 — 글이 칸 폭을 넘는 순간부터 한 글자도 더 안 쳐졌다.
+    // 제어 칸은 value 가 바뀌면 아래 의존성으로 다시 재므로, 이 리스너는 비제어 칸을 위한 것이다
+    let frame = 0;
+    const onInput = () => {
+      cancelAnimationFrame(frame);
+      frame = requestAnimationFrame(check);
+    };
     check();
-    el.addEventListener("input", check);
+    el.addEventListener("input", onInput);
     const ro = new ResizeObserver(check);
     ro.observe(el);
     return () => {
-      el.removeEventListener("input", check);
+      cancelAnimationFrame(frame);
+      el.removeEventListener("input", onInput);
       ro.disconnect();
     };
   }, [box, input.value]);
