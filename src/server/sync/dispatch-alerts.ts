@@ -10,14 +10,14 @@ import { alertDeliveries, gamePlatforms, games, notifications, priceAlerts, user
 import { NOTIFICATION_MESSAGES } from "@/lib/notifications/messages";
 import { mailConfigured } from "@/server/mail/send";
 import { dispatchSystemMail } from "@/server/notify/mail";
-import { webNotice } from "@/server/notify/web";
+import { pushNotice, webNotice } from "@/server/notify/web";
 import { SYSTEM_TEMPLATES } from "@/lib/notify/system-templates";
 import { SITE } from "@/lib/site";
 import { markOnce } from "@/server/redis";
-import { pushToUser } from "./push-to-user";
+import { pushToUser } from "@/server/push/to-user";
 import { formatPrice } from "@/lib/currency";
 import { meetsCondition } from "@/lib/alerts/condition";
-import { alertPayload } from "@/lib/alerts/payload";
+import { alertPayload, alertPushCode, alertVars } from "@/lib/alerts/payload";
 
 /** 메일 본문에 게임 제목(스토어가 준 문자열)을 넣으므로 태그로 읽히지 않게 막는다 */
 function escapeHtml(v: string): string {
@@ -101,12 +101,10 @@ export async function dispatchPriceAlerts(changes: PriceChange[]): Promise<Dispa
     if (alerts.length === 0) continue;
 
     const title = gp.titleKo ?? gp.titleEn;
-    // 제목과 본문은 가격 알림 화면의 미리보기와 같은 함수로 짓는다(lib/alerts/payload)
-    const payload = {
-      ...alertPayload({ gameTitle: title, platform: gp.platform, price: change.newPrice, currency: gp.currency, discountPct }),
-      url: `/games/${gp.slug}`,
-      tag: `price:${gp.id}`,
-    };
+    // 제목과 본문의 기본 글(메일 템플릿 값으로도 쓴다). 웹푸시 글은 웹푸시 템플릿으로 짓는다 — 미사용이면 푸시를 보내지 않는다
+    const input = { gameTitle: title, platform: gp.platform, price: change.newPrice, currency: gp.currency, discountPct };
+    const payload = { ...alertPayload(input), url: `/games/${gp.slug}`, tag: `price:${gp.id}` };
+    const pushText = await pushNotice(alertPushCode(discountPct), alertVars(input), payload);
 
     for (const alert of alerts) {
       // 7일 중복 방지 (alert × snapshot)
@@ -165,7 +163,8 @@ export async function dispatchPriceAlerts(changes: PriceChange[]): Promise<Dispa
         }
       }
 
-      const pushed = await pushToUser(alert.userId, payload, `alerts:${alert.id}`);
+      if (!pushText) continue;
+      const pushed = await pushToUser(alert.userId, { ...payload, ...pushText }, `alerts:${alert.id}`);
       summary.sent += pushed.sent;
       summary.failed += pushed.failed;
       summary.removedSubscriptions += pushed.removed;

@@ -15,13 +15,13 @@ import { createdBy } from "@/server/db/audit";
 import { gamePlatforms, games, HOME_REGION, notifications, priceAlerts, priceSnapshots, users, wishlists } from "@/server/db/schema";
 import { DISPLAY_CURRENCY, formatPrice } from "@/lib/currency";
 import { NOTIFICATION_MESSAGES as M } from "@/lib/notifications/messages";
-import { alertPayload } from "@/lib/alerts/payload";
+import { alertPayload, alertPushCode, alertVars } from "@/lib/alerts/payload";
 import { wishSaleReason, type WishSaleReason } from "@/lib/alerts/wish-sale";
 import { gamePath } from "@/lib/routes";
 import { markOnce } from "@/server/redis";
 import type { PriceChange } from "./dispatch-alerts";
-import { pushToUser } from "./push-to-user";
-import { webNotice } from "@/server/notify/web";
+import { pushToUser } from "@/server/push/to-user";
+import { pushNotice, webNotice } from "@/server/notify/web";
 import { SYSTEM_TEMPLATES } from "@/lib/notify/system-templates";
 import { WISH_SALE_DEDUPE_TTL_SEC } from "./constants";
 
@@ -92,7 +92,10 @@ export async function dispatchWishSaleAlerts(changes: PriceChange[]): Promise<Wi
         ? await webNotice(SYSTEM_TEMPLATES.webWishRecordLow, { 게임: gp.title, 가격: priceText }, M.wishRecordLow(gp.title, priceText))
         : await webNotice(SYSTEM_TEMPLATES.webWishSale, { 게임: gp.title, 가격: priceText, 할인율: String(discountPct) }, M.wishSale(gp.title, priceText, discountPct));
     const link = gamePath(gp.slug);
-    const push = { ...alertPayload({ gameTitle: gp.title, platform: gp.platform, price: change.newPrice, currency: gp.currency, discountPct }), url: link, tag: `wish:${gp.gameId}` };
+    // 웹푸시 글은 가격 알림과 같은 웹푸시 템플릿(lib/alerts/payload 의 alertPushCode). 미사용이면 null — 알림함만 쌓는다
+    const input = { gameTitle: gp.title, platform: gp.platform, price: change.newPrice, currency: gp.currency, discountPct };
+    const pushText = await pushNotice(alertPushCode(discountPct), alertVars(input), alertPayload(input));
+    const push = pushText ? { ...pushText, url: link, tag: `wish:${gp.gameId}` } : null;
 
     for (const { userId } of recipients) {
       if (!(await markOnce(dedupeKey(reason, userId, gp.gameId, change.newPrice), WISH_SALE_DEDUPE_TTL_SEC))) {
@@ -113,6 +116,7 @@ export async function dispatchWishSaleAlerts(changes: PriceChange[]): Promise<Wi
           return false;
         });
       if (inboxed) summary.inboxed++;
+      if (!push) continue;
       const pushed = await pushToUser(userId, push, "wish-alerts");
       summary.sent += pushed.sent;
       summary.failed += pushed.failed;

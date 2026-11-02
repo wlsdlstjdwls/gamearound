@@ -4,9 +4,32 @@ import { conditionMode, type AlertCondition, type AlertPriceRow } from "@/lib/al
 import { formatPrice } from "@/lib/currency";
 import type { Currency } from "@/server/db/schema";
 import { PLATFORM_LABEL } from "@/lib/format";
+import { SYSTEM_TEMPLATES } from "@/lib/notify/system-templates";
 
 export type AlertPayloadInput = { gameTitle: string; platform: string; price: number; currency: Currency; discountPct: number };
 
+/**
+ * 웹푸시, 메일, 알림함 템플릿에 넣을 값(2026-11-02, 문구는 알림템플릿관리의 템플릿). 발송과 가격 알림 화면의 미리 보기가 같은 값을 쓴다.
+ * 제목, 내용은 아래 기본 글(alertPayload)이다 — 메일 템플릿(mail.price_alert)이 이 둘을 받는다
+ */
+export function alertVars(input: AlertPayloadInput): Record<string, string> {
+  const base = alertPayload(input);
+  return {
+    게임: input.gameTitle,
+    기종: PLATFORM_LABEL[input.platform] ?? input.platform,
+    가격: formatPrice(input.price, input.currency),
+    할인율: String(input.discountPct),
+    제목: base.title,
+    내용: base.body,
+  };
+}
+
+/** 웹푸시 템플릿 코드. 할인이 붙었으면 "할인 중", 아니면 "가격이 내려갔어요" 꼴(템플릿에는 조건문이 없어 둘로 갈랐다) */
+export function alertPushCode(discountPct: number): string {
+  return discountPct > 0 ? SYSTEM_TEMPLATES.pushPriceSale : SYSTEM_TEMPLATES.pushPriceDrop;
+}
+
+/** 템플릿이 없을 때의 기본 글. 0100 시드가 이 글 그대로다 */
 export function alertPayload({ gameTitle, platform, price, currency, discountPct }: AlertPayloadInput): { title: string; body: string } {
   return {
     title: discountPct > 0 ? `${gameTitle} 할인 중` : `${gameTitle} 가격이 내려갔어요`,

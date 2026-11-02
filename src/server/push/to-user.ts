@@ -1,4 +1,4 @@
-// 한 사람의 등록 기기 전부에 웹푸시 한 통. 목표가 알림(dispatch-alerts)과 찜 할인 알림(dispatch-wish-alerts)이 같이 쓴다.
+// 한 사람의 등록 기기 전부에 웹푸시 한 통. 목표가 알림(sync/dispatch-alerts), 찜 할인 알림(sync/dispatch-wish-alerts), 관리자 직접 발송이 같이 쓴다(2026-11-02 server/sync 에서 옮김 — 서비스도 부른다).
 // 만료된 구독(404, 410)은 여기서 지운다 — 두 발송이 따로 지우면 한쪽이 지운 행을 다른 쪽이 또 찾는다.
 import { eq } from "drizzle-orm";
 import { getDb } from "@/server/db/client";

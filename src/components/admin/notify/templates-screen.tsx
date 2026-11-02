@@ -28,7 +28,7 @@ import { CODE_GROUPS, DEFAULT_NOTIFY_CHANNEL } from "@/lib/codes/groups";
 import { bodyLimit, notifyTemplateSchema, type NotifyTemplateInput } from "@/lib/notify/schemas";
 import { isSystemTemplate, SYSTEM_TEMPLATE_VARS } from "@/lib/notify/system-templates";
 import { renderEmailSubject } from "@/lib/notify/email";
-import { asMedium } from "@/lib/notify/medium";
+import { asMedium, isPlainMedium } from "@/lib/notify/medium";
 import { renderWebNotice } from "@/lib/notify/web";
 import { renderNotice, templateVars } from "@/lib/notify/template";
 import { NOTIFY_COMPOSE_PARAM, ROUTES } from "@/lib/routes";
@@ -133,7 +133,7 @@ export function NotifyTemplatesScreen({ templates, channels, categories }: { tem
     { key: "active", label: M.colActive, width: "48px", align: "center", value: (d) => (d.active ? M.activeLabels.on : M.activeLabels.off) },
   ];
   const all = { value: "all", label: M.all };
-  const html = !current ? "" : current.medium === "web" ? renderWebNotice(current.body, previewVars(current)) : renderNotice(current.body, previewVars(current));
+  const html = !current ? "" : isPlainMedium(current.medium) ? renderWebNotice(current.body, previewVars(current)) : renderNotice(current.body, previewVars(current));
   const subjectPreview = current ? renderEmailSubject(current.subject ?? "", previewVars(current)) : "";
 
   return (
@@ -230,8 +230,8 @@ export function NotifyTemplatesScreen({ templates, channels, categories }: { tem
                       <FormSelect name={`nt-ch-${current.key}`} label={M.fieldChannel} hideLabel size="lg" value={current.channel ?? ""} onChange={(v) => set({ channel: v })} options={channels} />
                     </Field>
                   ) : (
-                    <Field label={M.fieldSubject} htmlFor={`nt-s-${current.key}`} required wide error={errors.subject}>
-                      <TextField id={`nt-s-${current.key}`} label={M.fieldSubject} hideLabel value={current.subject ?? ""} onChange={(e) => set({ subject: e.target.value })} compact />
+                    <Field label={current.medium === "push" ? M.fieldPushTitle : M.fieldSubject} htmlFor={`nt-s-${current.key}`} required wide error={errors.subject}>
+                      <TextField id={`nt-s-${current.key}`} label={current.medium === "push" ? M.fieldPushTitle : M.fieldSubject} hideLabel value={current.subject ?? ""} onChange={(e) => set({ subject: e.target.value })} compact />
                     </Field>
                   )}
                   <Field label={M.fieldActive} required>
@@ -260,7 +260,7 @@ export function NotifyTemplatesScreen({ templates, channels, categories }: { tem
                       onChange={(body) => set({ body })}
                       renderedLength={html.length}
                       max={bodyLimit(current.medium)}
-                      plain={current.medium === "web"}
+                      plain={isPlainMedium(current.medium)}
                       error={errors.body}
                       vars={isSystemTemplate(current.code) ? SYSTEM_TEMPLATE_VARS[current.code] : templateVars(current.body).length > 0 ? templateVars(current.body).map((name) => ({ name })) : null}
                     />

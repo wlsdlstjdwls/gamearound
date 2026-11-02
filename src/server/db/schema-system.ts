@@ -47,9 +47,10 @@ export const commonCodes = pgTable(
 /**
  * 발송 수단(2026-11-02, 사용자 "이미 있는 것에 구분값을 두고 이메일을 추가"). 텔레그램은 관리자 채널로, 이메일은 회원 한 사람에게 간다.
  * web(같은 날 "웹 알림도"): 알림함(헤더 종) 한 줄. 이력은 notify_sends 가 아니라 notifications 가 들고 있다(schema-notifications 주석)
+ * push(같은 날 "웹푸시 제목이랑 본문도"): 기기에 뜨는 웹푸시. 제목은 subject 칸. 사건 푸시는 이력을 남기지 않고(수집 회차마다 수백 통) 직접 보낸 것만 notify_sends 에 남긴다
  * 이름표는 공통코드 NOTIFY_MEDIUM(lib/codes/registry). 수단이 늘면 enum 과 server/notify 의 송신기를 같이 더한다
  */
-export const notifyMediumEnum = pgEnum("notify_medium", ["telegram", "email", "web"]);
+export const notifyMediumEnum = pgEnum("notify_medium", ["telegram", "email", "web", "push"]);
 export type NotifyMedium = (typeof notifyMediumEnum.enumValues)[number];
 
 export const notifyTemplates = pgTable("notify_templates", {
@@ -61,7 +62,7 @@ export const notifyTemplates = pgTable("notify_templates", {
   medium: notifyMediumEnum("medium").default("telegram").notNull(),
   /** 받는 곳(공통코드 NOTIFY_CHANNEL). 발송할 때 그 코드의 chat id 로 바꾼다. 이메일은 받는 사람이 발송 때 정해져 비운다 */
   channel: text("channel"),
-  /** 메일 제목. {변수} 를 쓴다. 텔레그램은 비운다 */
+  /** 메일 제목, 웹푸시 제목. {변수} 를 쓴다. 텔레그램, 웹 알림은 비운다 */
   subject: text("subject"),
   /** 본문. 텔레그램 HTML 일부 태그와 {변수} 를 쓴다(lib/notify/template). 이메일도 같은 문법이고 메일 HTML 로 감싼다(lib/notify/email) */
   body: text("body").notNull(),

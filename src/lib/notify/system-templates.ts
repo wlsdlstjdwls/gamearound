@@ -24,6 +24,9 @@ export const SYSTEM_TEMPLATES = {
   webMembershipFailed: "web.membership_failed",
   webMembershipEnded: "web.membership_ended",
   webRefunded: "web.refunded",
+  // 웹푸시(2026-11-02). 할인 여부로 둘이 갈린다 — 가격 알림, 찜 할인 알림이 같이 쓴다(lib/alerts/payload 의 alertPushCode)
+  pushPriceSale: "push.price_sale",
+  pushPriceDrop: "push.price_drop",
 } as const;
 /**
  * 템플릿 없이 직접 쓴 웹 알림의 template_code(notifications). 이력 목록이 "템플릿을 지난 줄" 만 읽으므로 비우면 직접 보낸 줄이 이력에서 빠진다.
@@ -37,6 +40,7 @@ type VarSpec = { name: string; hint: string; sample: string };
 
 const GAME: VarSpec = { name: "게임", hint: "게임 이름", sample: "하데스 II" };
 const PRICE: VarSpec = { name: "가격", hint: "지금 값(원 붙은 글)", sample: "27,000원" };
+const PLATFORM: VarSpec = { name: "기종", hint: "스토어, 기기 이름", sample: "Steam" };
 const POST_TITLE: VarSpec = { name: "글제목", hint: "게시글 제목", sample: "하데스 2 초반 공략" };
 
 const TASK_BASE: VarSpec[] = [
@@ -93,6 +97,8 @@ export const SYSTEM_TEMPLATE_VARS: Record<SystemTemplateCode, VarSpec[]> = {
   ],
   "web.membership_failed": [{ name: "사유", hint: "카드사가 준 실패 사유", sample: "잔액 부족" }],
   "web.membership_ended": [],
+  "push.price_sale": [GAME, PLATFORM, PRICE, { name: "할인율", hint: "할인 퍼센트(숫자만)", sample: "30" }],
+  "push.price_drop": [GAME, PLATFORM, PRICE],
   "web.refunded": [
     { name: "상품", hint: "환불한 상품 이름", sample: "인디 부스트 7일" },
     { name: "금액", hint: "환불 금액", sample: "6,900원" },

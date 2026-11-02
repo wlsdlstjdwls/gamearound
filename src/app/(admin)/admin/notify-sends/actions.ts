@@ -12,7 +12,9 @@ import { ROUTES } from "@/lib/routes";
 import { dispatchNotice } from "@/server/notify/dispatch";
 import { dispatchMailNotice } from "@/server/notify/mail";
 import type { NotifySendStatus } from "@/server/db/schema";
-import { sendManualWebNotice } from "@/server/services/notify-admin";
+import { sendManualPush, sendManualWebNotice } from "@/server/services/notify-admin";
+import { renderEmailSubject } from "@/lib/notify/email";
+import { isPlainMedium } from "@/lib/notify/medium";
 import { requireAdmin } from "@/server/services/users";
 
 export type SendActionResult = { ok: true; status: NotifySendStatus; error: string | null } | { ok: false; error: string };
@@ -25,11 +27,17 @@ export async function sendNoticeAction(input: unknown): Promise<SendActionResult
     const { body, vars, medium, channel, recipient, subject, templateCode } = parsed.data;
     const missing = [...new Set([...templateVars(subject ?? ""), ...templateVars(body)])].filter((n) => !vars[n]?.trim());
     if (missing.length > 0) return { ok: false, error: M.missingVars(missing) };
-    const text = medium === "web" ? renderWebNotice(body, vars) : renderNotice(body, vars);
+    const text = isPlainMedium(medium) ? renderWebNotice(body, vars) : renderNotice(body, vars);
     const max = bodyLimit(medium);
     if (text.length > max) return { ok: false, error: M.tooLong(text.length, max) };
     const base = { templateCode, trigger: "manual" as const, actorId: admin.id, source: "admin" as const };
     // 스키마가 수단별 필수 칸(받는 곳, 받는 주소, 제목)을 이미 봤다
+    if (medium === "push") {
+      const sent = await sendManualPush(admin.id, { email: recipient ?? "", title: renderEmailSubject(subject ?? "", vars), body: text, templateCode });
+      if (!sent) return { ok: false, error: M.skipNoMember };
+      revalidatePath(ROUTES.adminNotifySends);
+      return { ok: true, status: sent.status, error: sent.error };
+    }
     if (medium === "web") {
       // 웹 알림은 회원 알림함에 한 줄 넣는 것이라 "건너뜀" 이 없다 — 회원이 없으면 화면에 바로 말한다
       const sent = await sendManualWebNotice(admin.id, { email: recipient ?? "", body: text, templateCode });

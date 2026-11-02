@@ -8,6 +8,9 @@ import { notifications, notifySends, notifyTemplates, users, type NotifyMedium, 
 import { forgetWebTemplates } from "@/server/notify/web";
 import { MANUAL_WEB_CODE } from "@/lib/notify/system-templates";
 import { findUserByEmail } from "@/server/services/users";
+import { pushToUser } from "@/server/push/to-user";
+import { NOTIFY_MESSAGES as M } from "@/lib/admin/messages/notify";
+import { ROUTES } from "@/lib/routes";
 import { createdBy, updatedBy } from "@/server/db/audit";
 import type { notifyTemplateSchema } from "@/lib/notify/schemas";
 import type { z } from "zod";
@@ -48,7 +51,7 @@ export async function saveNotifyTemplate(adminUserId: string, input: z.output<ty
     category: input.category,
     medium,
     channel: medium === "telegram" ? input.channel : null,
-    subject: medium === "email" ? input.subject : null,
+    subject: medium === "email" || medium === "push" ? input.subject : null,
     body: input.body,
     active: input.active,
     memo: input.memo,
@@ -136,6 +139,25 @@ export async function sendManualWebNotice(adminUserId: string, input: { email: s
     .values({ userId: u.id, kind: "notice", body: input.body, link: null, templateCode: input.templateCode ?? MANUAL_WEB_CODE, ...createdBy("admin", adminUserId) })
     .returning({ id: notifications.id });
   return { id: row.id };
+}
+
+/**
+ * 관리자가 직접 보내는 웹푸시 한 통(2026-11-02). 받는 회원이 푸시를 켠 기기 전부에 간다. 직접 보낸 것만 발송 이력에 남긴다
+ * (사건 푸시는 수집 회차마다 수백 통이라 남기지 않는다, schema-system 의 medium 주석). 누르면 알림함으로 간다
+ */
+export async function sendManualPush(
+  adminUserId: string,
+  input: { email: string; title: string; body: string; templateCode: string | null },
+): Promise<{ status: NotifySendStatus; error: string | null } | null> {
+  const u = await findUserByEmail(input.email);
+  if (!u) return null;
+  const r = await pushToUser(u.id, { title: input.title, body: input.body, url: ROUTES.notifications, tag: `manual:${Date.now()}` }, "notify-push");
+  const status: NotifySendStatus = !r.attempted ? "skipped" : r.sent > 0 ? "sent" : "failed";
+  const error = status === "skipped" ? M.skipNoPushDevice : status === "failed" ? M.pushFailed(r.failed) : null;
+  await getDb()
+    .insert(notifySends)
+    .values({ templateCode: input.templateCode, medium: "push", recipient: u.email, subject: input.title, trigger: "manual", text: input.body, status, error, sentAt: status === "sent" ? new Date() : null, ...createdBy("admin", adminUserId) });
+  return { status, error };
 }
 
 async function listSendRows(f: NotifySendFilter): Promise<NotifySendDto[]> {

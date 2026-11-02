@@ -7,6 +7,8 @@ import { cn } from "@/lib/cn";
 import { NOTIFY_MESSAGES as M } from "@/lib/admin/messages";
 import { wrapEmailHtml } from "@/lib/notify/email";
 import { splitNotice } from "@/lib/notify/media";
+import { BellIcon } from "@/components/ui/icons";
+import { SITE } from "@/lib/site";
 import type { NotifyMedium } from "@/server/db/schema";
 
 /** 텔레그램은 이미지, 영상 자리에서 메시지가 나뉜다(lib/notify/media splitNotice) — 보낼 때와 같은 함수로 나눠 말풍선을 따로 그린다 */
@@ -71,8 +73,28 @@ export function WebPreview({ text, className }: { text: string; className?: stri
   );
 }
 
+/** 웹푸시 미리 보기 — 기기 알림 한 장 모양(제목 굵게, 본문 한 줄). 글은 renderWebNotice 결과 */
+export function PushPreview({ title, text, className }: { title: string; text: string; className?: string }) {
+  return (
+    <figure className={cn("flex flex-col gap-1.5", className)}>
+      <figcaption className="px-1 text-[11.5px] font-semibold text-dim">{M.pushPreviewHint}</figcaption>
+      <div className="flex items-start gap-3 rounded-xl bg-surface px-3.5 py-3 shadow-hair">
+        <span aria-hidden className="grid size-9 shrink-0 place-items-center rounded-lg bg-acc-soft text-acc">
+          <BellIcon size={18} />
+        </span>
+        <div className="flex min-w-0 flex-col gap-0.5">
+          <span className="text-[11.5px] text-dim">{SITE.name}</span>
+          <b className="break-words text-[13.5px] font-bold text-ink">{title.trim() || M.emailNoSubject}</b>
+          <span className="break-words text-[13px] text-mut">{text}</span>
+        </div>
+      </div>
+    </figure>
+  );
+}
+
 /** 수단에 맞는 미리 보기 하나. html 은 텔레그램, 이메일이면 renderNotice 결과, 웹 알림이면 renderWebNotice 결과(글) */
 export function NoticePreview({ medium, subject, html }: { medium: NotifyMedium; subject: string | null; html: string }) {
   if (medium === "web") return <WebPreview text={html} />;
+  if (medium === "push") return <PushPreview title={subject ?? ""} text={html} />;
   return medium === "email" ? <EmailPreview subject={subject ?? ""} html={html} /> : <TelegramPreview html={html} />;
 }
