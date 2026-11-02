@@ -7,7 +7,7 @@ import { CODE_GROUPS } from "@/lib/codes/groups";
 import { NOTIFY_COMPOSE_PARAM } from "@/lib/routes";
 import { periodRange, resolvePeriod } from "@/lib/stats/period";
 import { requireRoleOrForbid } from "@/server/auth/guards";
-import { notifySendStatusEnum, type NotifySendStatus } from "@/server/db/schema";
+import { notifyMediumEnum, notifySendStatusEnum, type NotifyMedium, type NotifySendStatus } from "@/server/db/schema";
 import { getActiveCodes } from "@/server/services/common-codes";
 import { listNotifySends, listNotifyTemplates, NOTIFY_SENDS_LIMIT } from "@/server/services/notify-admin";
 
@@ -26,11 +26,13 @@ export default async function AdminNotifySendsPage({ searchParams }: { searchPar
   const period = resolvePeriod({ from: one("from"), to: one("to") }, { defaultDays: DEFAULT_DAYS, maxDays: MAX_DAYS });
   const statusRaw = one("status");
   const status = (notifySendStatusEnum.enumValues as readonly string[]).includes(statusRaw ?? "") ? (statusRaw as NotifySendStatus) : null;
+  const mediumRaw = one("medium");
+  const medium = (notifyMediumEnum.enumValues as readonly string[]).includes(mediumRaw ?? "") ? (mediumRaw as NotifyMedium) : null;
   const template = one("template") || null;
   const { start, end } = periodRange(period);
 
   const [rows, templates, channels] = await Promise.all([
-    listNotifySends({ from: start, to: end, status, templateCode: template }),
+    listNotifySends({ from: start, to: end, status, templateCode: template, medium }),
     listNotifyTemplates(),
     getActiveCodes(CODE_GROUPS.notifyChannel),
   ]);
@@ -38,7 +40,7 @@ export default async function AdminNotifySendsPage({ searchParams }: { searchPar
     <NotifySendsScreen
       rows={rows}
       limit={NOTIFY_SENDS_LIMIT}
-      filter={{ ...period, status: status ?? "all", template: template ?? "all" }}
+      filter={{ ...period, status: status ?? "all", medium: medium ?? "all", template: template ?? "all" }}
       templates={templates}
       channels={channels.map((c) => ({ value: c.code, label: c.name }))}
       compose={one(NOTIFY_COMPOSE_PARAM) ?? null}

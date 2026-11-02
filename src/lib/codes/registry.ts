@@ -8,7 +8,7 @@
 //
 // 그룹을 더할 때: 여기 한 줄 + 그 이름표를 쓰는 자리를 useCodes()(클라이언트) 또는 getCodeBook()(서버)로 바꾼다.
 // 기본 이름표 객체(TASK_STATUS_LABEL 등)는 지우지 않는다 — 기본값과 타입이 그것을 읽는다.
-import { MATCHED_BY_LABEL, QUALITY_RULE_LABEL, SYNC_STATUS_LABEL, TASK_CATEGORY_LABEL, TASK_PRIORITY_LABEL, TASK_STATUS_LABEL, UPGRADE_KIND_LABEL } from "@/lib/admin/messages";
+import { MATCHED_BY_LABEL, NOTIFY_MEDIUM_LABEL, QUALITY_RULE_LABEL, SYNC_STATUS_LABEL, TASK_CATEGORY_LABEL, TASK_PRIORITY_LABEL, TASK_STATUS_LABEL, UPGRADE_KIND_LABEL } from "@/lib/admin/messages";
 import { MEMBERSHIP_STATUS_LABEL } from "@/lib/membership/messages";
 import { PAYMENT_STATUS_LABEL } from "@/lib/payments/messages";
 import { BOOST_STATE_LABEL, PROMO_SLOT_LABEL, PROMO_SOURCE_LABEL } from "@/lib/promo/messages";
@@ -29,6 +29,7 @@ export const CODE_REGISTRY = {
   UPGRADE_KIND: { name: "업그레이드 종류", description: "게임 고치기의 업그레이드 탭", defaults: UPGRADE_KIND_LABEL },
   MATCHED_BY: { name: "스토어 연결 방식", description: "게임 고치기의 스토어 연결 탭", defaults: MATCHED_BY_LABEL },
   SYNC_STATUS: { name: "수집 결과", description: "수집현황, 수집이력조회, 게임 고치기", defaults: SYNC_STATUS_LABEL },
+  NOTIFY_MEDIUM: { name: "알림 발송 수단", description: "알림템플릿관리, 알림발송관리의 발송 수단", defaults: NOTIFY_MEDIUM_LABEL },
 } as const satisfies Record<string, CodeGroupDef>;
 
 export type RegistryGroup = keyof typeof CODE_REGISTRY;

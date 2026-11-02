@@ -1,4 +1,5 @@
-// 알림 발송 한 곳(2026-10-30). 직접 발송(알림발송관리)과 사건 알림(업무요청, 데이터 점검)이 모두 여기를 지난다.
+// 텔레그램 알림 발송 한 곳(2026-10-30). 직접 발송(알림발송관리)과 사건 알림(업무요청, 데이터 점검)이 모두 여기를 지난다.
+// 이메일은 server/notify/mail 이 같은 일을 한다(2026-11-02) — 이력 표(notify_sends)는 하나고 medium 칸으로 가른다.
 // 하는 일: 받는 곳 코드를 chat id 로 바꾸고 → 텔레그램에 보내고 → 결과를 발송 이력(notify_sends)에 한 줄 남긴다.
 //
 // services 가 아니라 server/notify 에 둔 이유: 수집(sync/quality)도 부른다. 수집 계층이 services 를 부르지 않는 규칙(AGENTS §1)을 지키면서
@@ -105,22 +106,24 @@ export async function dispatchSystemNotice(
 ): Promise<NoticeResult | null> {
   if (!telegramConfigured()) return null;
   const [tpl] = await getDb()
-    .select({ body: notifyTemplates.body, channel: notifyTemplates.channel, active: notifyTemplates.active, name: notifyTemplates.name })
+    .select({ body: notifyTemplates.body, channel: notifyTemplates.channel, medium: notifyTemplates.medium, active: notifyTemplates.active, name: notifyTemplates.name })
     .from(notifyTemplates)
     .where(eq(notifyTemplates.code, templateCode))
     .limit(1);
   const base = { templateCode, trigger: "system" as const, actorId: opts.actorId, source: opts.source };
-  if (!tpl) return dispatchNotice({ ...base, channel: opts.fallbackChannel, text: opts.fallback() });
+  // 수단을 이메일로 바꾼 템플릿은 이 사건(관리자 채널 알림)에 맞지 않는다 — 없는 것과 같이 기본 글을 보낸다
+  if (!tpl || tpl.medium !== "telegram") return dispatchNotice({ ...base, channel: opts.fallbackChannel, text: opts.fallback() });
+  const channel = tpl.channel ?? opts.fallbackChannel;
   const text = renderNotice(tpl.body, vars);
   if (!tpl.active) {
     try {
       await getDb()
         .insert(notifySends)
-        .values({ ...base, channel: tpl.channel, text, status: "skipped", error: M.skipTemplateOff(tpl.name), ...createdBy(opts.source, opts.actorId) });
+        .values({ ...base, channel, text, status: "skipped", error: M.skipTemplateOff(tpl.name), ...createdBy(opts.source, opts.actorId) });
     } catch (e) {
       console.error(`[notify] 이력 기록 실패: ${errorMessage(e)}`);
     }
     return { status: "skipped", error: M.skipTemplateOff(tpl.name), id: null };
   }
-  return dispatchNotice({ ...base, channel: tpl.channel, text });
+  return dispatchNotice({ ...base, channel, text });
 }

@@ -4,6 +4,8 @@ export const CODE_GROUPS = {
   notifyChannel: "NOTIFY_CHANNEL",
   /** 알림 템플릿 분류 */
   notifyCategory: "NOTIFY_CATEGORY",
+  /** 알림 발송 수단(텔레그램, 이메일). DB enum 이라 코드값은 잠겨 있다(lib/codes/registry) */
+  notifyMedium: "NOTIFY_MEDIUM",
 } as const;
 
 /** 기본 받는 곳. chat id 를 비워 두면 환경 변수(TELEGRAM_ADMIN_CHAT_ID)로 보낸다 — 0090 시드가 만든 코드다 */

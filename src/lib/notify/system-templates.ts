@@ -6,6 +6,9 @@ export const SYSTEM_TEMPLATES = {
   taskMoved: "task.moved",
   taskNote: "task.note",
   qualityRun: "quality.run",
+  // 회원에게 가는 메일(2026-11-02). 발송 수단이 이메일이고 받는 사람은 사건이 정한다
+  mailPasswordReset: "mail.password_reset",
+  mailPriceAlert: "mail.price_alert",
 } as const;
 export type SystemTemplateCode = (typeof SYSTEM_TEMPLATES)[keyof typeof SYSTEM_TEMPLATES];
 
@@ -38,6 +41,16 @@ export const SYSTEM_TEMPLATE_VARS: Record<SystemTemplateCode, VarSpec[]> = {
     { name: "실패", hint: "고치다 실패한 건수", sample: "0" },
     { name: "사례", hint: "자동 수정 사유 몇 줄(없으면 없다는 문구)", sample: "출시일 자리표시 12-31 을 비웠어요" },
     { name: "링크", hint: "데이터오류관리 주소", sample: "https://gamearound.kr/admin/data-issues" },
+  ],
+  "mail.password_reset": [
+    { name: "링크", hint: "재설정 주소(발송 이력에는 가려서 남는다)", sample: "https://gamearound.kr/reset-password?token=sample" },
+    { name: "유효시간", hint: "링크를 쓸 수 있는 분", sample: "30" },
+  ],
+  "mail.price_alert": [
+    { name: "게임", hint: "게임 이름", sample: "하데스 II" },
+    { name: "제목", hint: "알림 제목(할인 중, 가격이 내려갔어요)", sample: "하데스 II 할인 중" },
+    { name: "내용", hint: "기종과 값, 할인율", sample: "Steam 27,000원 (30% 할인)" },
+    { name: "링크", hint: "게임 상세 주소", sample: "https://gamearound.kr/games/hades-ii" },
   ],
 };
 

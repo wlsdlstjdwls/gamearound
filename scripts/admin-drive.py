@@ -12,7 +12,7 @@
 #   confirm:<이름>    확인 팝업(alertdialog) 안 단추
 #   tab:<이름>        탭
 #   rowclick:<n>      그리드 n번째 줄(0부터)    check:<n>  그 줄의 체크 칸
-#   pick:<단추 이름>=<보기 이름>    pickn:<단추 이름>=<보기 순번>   고르기 칸
+#   pick:<단추 이름>=<보기 이름>    pickn:<단추 이름>=<보기 순번>   고르기 칸(pickl: 같은 이름 칸 가운데 마지막)
 #   fill:<css>=<글>   입력 칸 채우기(css 에 = 가 있어도 된다, 마지막 = 로 가른다)
 #   focus:<css>       칸에 포커스만 넣는다(값은 안 바꾼다 — 미리 보기 자리 강조 확인)
 #   hover:<css>       마우스를 올린다(잘린 값 말풍선 확인)
@@ -65,6 +65,11 @@ async def main():
                 label, n = s[6:].rsplit("=", 1)
                 await pg.get_by_role("button", name=label).first.click(); await pg.wait_for_timeout(400)
                 await pg.get_by_role("option").nth(int(n)).click(); await pg.wait_for_timeout(600)
+            elif s.startswith("pickl:"):
+                # 같은 이름의 고르기 칸이 조회 띠와 폼에 둘 다 있을 때 — 뒤의 것(폼)
+                label, opt = s[6:].split("=", 1)
+                await pg.get_by_role("button", name=label).last.click(); await pg.wait_for_timeout(400)
+                await pg.get_by_role("option", name=opt, exact=True).first.click(); await pg.wait_for_timeout(600)
             elif s.startswith("pick:"):
                 label, opt = s[5:].split("=", 1)
                 await pg.get_by_role("button", name=label).first.click(); await pg.wait_for_timeout(400)

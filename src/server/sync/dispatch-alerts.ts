@@ -8,7 +8,9 @@ import { and, eq, or, isNull, isNotNull } from "drizzle-orm";
 import { getDb } from "@/server/db/client";
 import { alertDeliveries, gamePlatforms, games, notifications, priceAlerts, users } from "@/server/db/schema";
 import { NOTIFICATION_MESSAGES } from "@/lib/notifications/messages";
-import { mailConfigured, sendMail } from "@/server/mail/send";
+import { mailConfigured } from "@/server/mail/send";
+import { dispatchSystemMail } from "@/server/notify/mail";
+import { SYSTEM_TEMPLATES } from "@/lib/notify/system-templates";
 import { SITE } from "@/lib/site";
 import { markOnce } from "@/server/redis";
 import { pushToUser } from "./push-to-user";
@@ -133,16 +135,27 @@ export async function dispatchPriceAlerts(changes: PriceChange[]): Promise<Dispa
       if (alert.channel === "email" && mailConfigured()) {
         const [u] = await db.select({ email: users.email }).from(users).where(eq(users.id, alert.userId));
         if (u) {
-          try {
-            const link = `${process.env.NEXT_PUBLIC_APP_URL ?? ""}${payload.url}`;
-            await sendMail({ to: u.email, subject: `[${SITE.name}] ${payload.title}`, text: `${payload.body}\n${link}`, html: `<p>${escapeHtml(payload.body)}</p><p><a href="${escapeHtml(link)}">${escapeHtml(link)}</a></p>` });
+          // 문구는 알림템플릿관리의 템플릿(2026-11-02). 없으면 코드의 기본 한 통, 미사용이면 메일을 건너뛰고 웹푸시로 넘어간다
+          const link = `${process.env.NEXT_PUBLIC_APP_URL ?? ""}${payload.url}`;
+          const r = await dispatchSystemMail(
+            SYSTEM_TEMPLATES.mailPriceAlert,
+            u.email,
+            { 게임: title, 제목: payload.title, 내용: payload.body, 링크: link },
+            {
+              fallback: () => ({ to: u.email, subject: `[${SITE.name}] ${payload.title}`, text: `${payload.body}\n${link}`, html: `<p>${escapeHtml(payload.body)}</p><p><a href="${escapeHtml(link)}">${escapeHtml(link)}</a></p>` }),
+              source: "cron:alerts",
+            },
+          );
+          if (r.status === "sent") {
             summary.sent++;
             await db.insert(alertDeliveries).values({ alertId: alert.id, snapshotId: change.snapshotId }).onConflictDoNothing();
-          } catch (e) {
-            summary.failed++;
-            console.warn(`[alerts] 메일 실패 (alert=${alert.id}): ${e instanceof Error ? e.message : e}`);
+            continue;
           }
-          continue;
+          if (r.status === "failed") {
+            summary.failed++;
+            console.warn(`[alerts] 메일 실패 (alert=${alert.id}): ${r.error}`);
+            continue;
+          }
         }
       }
 

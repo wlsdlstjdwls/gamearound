@@ -18,7 +18,9 @@ import { getDb } from "@/server/db/client";
 import { passwordResetTokens, sessions, users } from "@/server/db/schema";
 import { appOrigin } from "@/server/app-origin";
 import { passwordResetMail } from "@/server/mail/password-reset-mail";
-import { mailConfigured, sendMail } from "@/server/mail/send";
+import { mailConfigured } from "@/server/mail/send";
+import { dispatchSystemMail } from "@/server/notify/mail";
+import { SYSTEM_TEMPLATES } from "@/lib/notify/system-templates";
 import { findUserByEmail } from "@/server/services/users";
 
 function hashResetToken(token: string): string {
@@ -55,7 +57,16 @@ export async function sendPasswordResetLink(email: string, ip: string | null): P
   });
 
   const link = `${origin}${ROUTES.resetPassword}?token=${encodeURIComponent(token)}`;
-  await sendMail(passwordResetMail(user.email, link));
+  // 문구는 알림템플릿관리의 템플릿(2026-11-02). 없거나 꺼져 있으면 코드의 기본 메일로 간다(required) — 안 가면 회원이 계정을 못 되찾는다.
+  // 링크는 비밀번호를 바꿀 열쇠라 발송 이력에는 가려서 남긴다(redact)
+  const r = await dispatchSystemMail(
+    SYSTEM_TEMPLATES.mailPasswordReset,
+    user.email,
+    { 링크: link, 유효시간: String(RESET_TOKEN_TTL_MIN) },
+    { fallback: () => passwordResetMail(user.email, link), redact: ["링크"], required: true, actorId: user.id, source: "user" },
+  );
+  // 부르는 쪽(액션의 after)이 실패를 로그로 남긴다 — 앞에 sendMail 이 던지던 것과 같게
+  if (r.status === "failed") throw new Error(r.error ?? "mail failed");
 }
 
 /** 아직 쓸 수 있는 링크인가(화면이 폼을 보여 줄지 정한다). 소비하지 않는다 */

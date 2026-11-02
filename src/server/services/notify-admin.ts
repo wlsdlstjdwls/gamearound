@@ -2,15 +2,18 @@
 import "server-only";
 import { and, desc, eq, gte, lt, type SQL } from "drizzle-orm";
 import { getDb } from "@/server/db/client";
-import { notifySends, notifyTemplates, users, type NotifySendStatus, type NotifyTrigger } from "@/server/db/schema";
+import { notifySends, notifyTemplates, users, type NotifyMedium, type NotifySendStatus, type NotifyTrigger } from "@/server/db/schema";
 import { createdBy, updatedBy } from "@/server/db/audit";
-import type { NotifyTemplateInput } from "@/lib/notify/schemas";
+import type { notifyTemplateSchema } from "@/lib/notify/schemas";
+import type { z } from "zod";
 
 export interface NotifyTemplateDto {
   code: string;
   name: string;
   category: string;
-  channel: string;
+  medium: NotifyMedium;
+  channel: string | null;
+  subject: string | null;
   body: string;
   system: boolean;
   active: boolean;
@@ -20,18 +23,31 @@ export interface NotifyTemplateDto {
 
 export async function listNotifyTemplates(): Promise<NotifyTemplateDto[]> {
   const rows = await getDb().select().from(notifyTemplates).orderBy(desc(notifyTemplates.system), notifyTemplates.code);
-  return rows.map((t) => ({ code: t.code, name: t.name, category: t.category, channel: t.channel, body: t.body, system: t.system, active: t.active, memo: t.memo, updatedAt: t.updatedAt.toISOString() }));
+  return rows.map((t) => ({ code: t.code, name: t.name, category: t.category, medium: t.medium, channel: t.channel, subject: t.subject, body: t.body, system: t.system, active: t.active, memo: t.memo, updatedAt: t.updatedAt.toISOString() }));
 }
 
 export type SaveTemplateResult = { ok: true } | { ok: false; reason: "code_exists" | "not_found" };
 
-/** 템플릿 하나 저장. 시스템 여부(system)는 화면에서 못 바꾼다 — 코드가 부르는 템플릿인지는 시드와 코드가 정한다 */
-export async function saveNotifyTemplate(adminUserId: string, input: NotifyTemplateInput, isNew: boolean): Promise<SaveTemplateResult> {
+/**
+ * 템플릿 하나 저장. 시스템 여부(system)는 화면에서 못 바꾼다 — 코드가 부르는 템플릿인지는 시드와 코드가 정한다.
+ * 시스템 템플릿은 발송 수단도 못 바꾼다 — 사건이 받는 곳(관리자 채널, 회원 메일)을 정해 두었다. 수단에 안 맞는 칸(이메일의 받는 곳 등)은 비워 저장한다
+ */
+export async function saveNotifyTemplate(adminUserId: string, input: z.output<typeof notifyTemplateSchema>, isNew: boolean): Promise<SaveTemplateResult> {
   const db = getDb();
-  const [existing] = await db.select({ code: notifyTemplates.code }).from(notifyTemplates).where(eq(notifyTemplates.code, input.code)).limit(1);
+  const [existing] = await db.select({ code: notifyTemplates.code, system: notifyTemplates.system, medium: notifyTemplates.medium }).from(notifyTemplates).where(eq(notifyTemplates.code, input.code)).limit(1);
   if (isNew && existing) return { ok: false, reason: "code_exists" };
   if (!isNew && !existing) return { ok: false, reason: "not_found" };
-  const row = { name: input.name, category: input.category, channel: input.channel, body: input.body, active: input.active, memo: input.memo };
+  const medium = existing?.system ? existing.medium : input.medium;
+  const row = {
+    name: input.name,
+    category: input.category,
+    medium,
+    channel: medium === "telegram" ? input.channel : null,
+    subject: medium === "email" ? input.subject : null,
+    body: input.body,
+    active: input.active,
+    memo: input.memo,
+  };
   if (isNew) await db.insert(notifyTemplates).values({ code: input.code, ...row, system: false, ...createdBy("admin", adminUserId) });
   else await db.update(notifyTemplates).set({ ...row, ...updatedBy("admin", adminUserId) }).where(eq(notifyTemplates.code, input.code));
   return { ok: true };
@@ -40,7 +56,10 @@ export async function saveNotifyTemplate(adminUserId: string, input: NotifyTempl
 export interface NotifySendDto {
   id: string;
   templateCode: string | null;
-  channel: string;
+  medium: NotifyMedium;
+  channel: string | null;
+  recipient: string | null;
+  subject: string | null;
   chatId: string | null;
   trigger: NotifyTrigger;
   text: string;
@@ -56,6 +75,7 @@ export interface NotifySendFilter {
   to: Date;
   status: NotifySendStatus | null;
   templateCode: string | null;
+  medium: NotifyMedium | null;
 }
 
 /** 발송 이력 한 판의 상한. 기간을 좁히면 다 보인다 — 화면 머리에 "최근 N건" 으로 말한다 */
@@ -65,6 +85,7 @@ export async function listNotifySends(f: NotifySendFilter): Promise<NotifySendDt
   const where: SQL[] = [gte(notifySends.createdAt, f.from), lt(notifySends.createdAt, f.to)];
   if (f.status) where.push(eq(notifySends.status, f.status));
   if (f.templateCode) where.push(eq(notifySends.templateCode, f.templateCode));
+  if (f.medium) where.push(eq(notifySends.medium, f.medium));
   const rows = await getDb()
     .select({ s: notifySends, displayName: users.displayName, email: users.email })
     .from(notifySends)
@@ -75,7 +96,10 @@ export async function listNotifySends(f: NotifySendFilter): Promise<NotifySendDt
   return rows.map(({ s, displayName, email }) => ({
     id: s.id,
     templateCode: s.templateCode,
+    medium: s.medium,
     channel: s.channel,
+    recipient: s.recipient,
+    subject: s.subject,
     chatId: s.chatId,
     trigger: s.trigger,
     text: s.text,

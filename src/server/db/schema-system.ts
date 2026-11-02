@@ -44,15 +44,25 @@ export const commonCodes = pgTable(
   (t) => [primaryKey({ columns: [t.groupCode, t.code] })],
 );
 
+/**
+ * 발송 수단(2026-11-02, 사용자 "이미 있는 것에 구분값을 두고 이메일을 추가"). 텔레그램은 관리자 채널로, 이메일은 회원 한 사람에게 간다.
+ * 이름표는 공통코드 NOTIFY_MEDIUM(lib/codes/registry). 수단이 늘면 enum 과 server/notify 의 송신기를 같이 더한다
+ */
+export const notifyMediumEnum = pgEnum("notify_medium", ["telegram", "email"]);
+export type NotifyMedium = (typeof notifyMediumEnum.enumValues)[number];
+
 export const notifyTemplates = pgTable("notify_templates", {
   /** 템플릿코드. 시스템 템플릿은 코드가 이 값으로 부른다(lib/notify/system-templates) */
   code: text("code").primaryKey(),
   name: text("name").notNull(),
   /** 분류(공통코드 NOTIFY_CATEGORY) */
   category: text("category").notNull(),
-  /** 받는 곳(공통코드 NOTIFY_CHANNEL). 발송할 때 그 코드의 chat id 로 바꾼다 */
-  channel: text("channel").notNull(),
-  /** 본문. 텔레그램 HTML 일부 태그와 {변수} 를 쓴다(lib/notify/template) */
+  medium: notifyMediumEnum("medium").default("telegram").notNull(),
+  /** 받는 곳(공통코드 NOTIFY_CHANNEL). 발송할 때 그 코드의 chat id 로 바꾼다. 이메일은 받는 사람이 발송 때 정해져 비운다 */
+  channel: text("channel"),
+  /** 메일 제목. {변수} 를 쓴다. 텔레그램은 비운다 */
+  subject: text("subject"),
+  /** 본문. 텔레그램 HTML 일부 태그와 {변수} 를 쓴다(lib/notify/template). 이메일도 같은 문법이고 메일 HTML 로 감싼다(lib/notify/email) */
   body: text("body").notNull(),
   /** 코드가 사건마다 부르는 템플릿. 코드와 변수는 코드가 정하므로 화면에서 코드를 못 바꾸고, 끄면 그 사건 알림이 멈춘다 */
   system: boolean("system").default(false).notNull(),
@@ -61,7 +71,7 @@ export const notifyTemplates = pgTable("notify_templates", {
   ...auditColumns(),
 });
 
-/** sent: 텔레그램이 받았다, failed: 보냈는데 거절되거나 닿지 않았다, skipped: 보낼 수 없어 보내지 않았다(토큰 없음, 받는 곳 미사용 등) */
+/** sent: 텔레그램, Resend 가 받았다, failed: 보냈는데 거절되거나 닿지 않았다, skipped: 보낼 수 없어 보내지 않았다(토큰 없음, 받는 곳 미사용 등) */
 export const notifySendStatusEnum = pgEnum("notify_send_status", ["sent", "failed", "skipped"]);
 export type NotifySendStatus = (typeof notifySendStatusEnum.enumValues)[number];
 
@@ -75,11 +85,17 @@ export const notifySends = pgTable(
     id: uuid("id").primaryKey().defaultRandom(),
     /** 템플릿 없이 직접 쓴 글이면 비운다 */
     templateCode: text("template_code"),
-    channel: text("channel").notNull(),
+    medium: notifyMediumEnum("medium").default("telegram").notNull(),
+    /** 텔레그램 받는 곳 코드. 이메일은 비운다 */
+    channel: text("channel"),
+    /** 이메일 받는 주소. 텔레그램은 비운다 */
+    recipient: text("recipient"),
+    /** 메일 제목(변수를 채운 것). 텔레그램은 비운다 */
+    subject: text("subject"),
     /** 그때 실제로 보낸 chat id. 받는 곳 코드의 값이 나중에 바뀌어도 이 줄은 그때 값을 들고 있다 */
     chatId: text("chat_id"),
     trigger: notifyTriggerEnum("trigger").notNull(),
-    /** 보낸 글 그대로(변수를 채운 텔레그램 HTML) */
+    /** 보낸 글 그대로(변수를 채운 본문 HTML). 비밀번호 재설정 링크처럼 가려야 할 값은 가린 채 남긴다(server/notify/mail) */
     text: text("text").notNull(),
     status: notifySendStatusEnum("status").notNull(),
     /** 실패, 건너뜀 사유. 텔레그램이 준 본문을 앞부분만 남긴다 */

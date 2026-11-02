@@ -3,13 +3,16 @@
 // 위 조회조건(템플릿코드/명, 분류, 사용여부), 왼쪽 템플릿 그리드, 오른쪽 템플릿 정보 + 본문, 옆 기둥에 텔레그램 미리 보기.
 // 시스템 템플릿(업무요청, 데이터 점검)은 코드가 부른다 — 코드는 잠그고, 본문에 쓸 수 있는 변수를 칩으로 보이며, 미리 보기는 예시 값으로 채운다.
 // 수동 템플릿은 본문에 쓴 {이름} 이 곧 변수다(발송 화면이 그 순서로 칸을 세운다).
+// 발송 수단(2026-11-02): 텔레그램은 받는 곳(관리자 채널)을, 이메일은 메일 제목을 필수로 받는다. 받는 사람은 발송 때 정해져 템플릿에 없다.
+// 시스템 템플릿은 수단이 잠겨 있다 — 사건이 받는 곳(관리자 채널, 회원 메일)을 정해 두었다.
 // 지우지 않는다. 안 쓰는 템플릿은 미사용으로 끈다 — 발송 이력이 템플릿코드를 들고 있다.
 import { useEffect, useState, useTransition } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { saveTemplateAction } from "@/app/(admin)/admin/notify-templates/actions";
 import { BodyField, notifyErrors } from "@/components/admin/notify/body-field";
-import { TelegramPreview } from "@/components/admin/notify/preview";
+import { NoticePreview } from "@/components/admin/notify/preview";
+import { useCodes } from "@/components/code-book";
 import { reportDirty } from "@/components/admin/program-shell/store";
 import { DataGrid, type GridCol } from "@/components/admin/screen/data-grid";
 import { AdminScreenHead } from "@/components/admin/screen/head";
@@ -21,18 +24,19 @@ import { TextField } from "@/components/ui/text-field";
 import { ADMIN_NAV, NOTIFY_MESSAGES as M } from "@/lib/admin/messages";
 import { newRowKey } from "@/lib/admin/row-key";
 import { firstError } from "@/lib/admin/validation";
-import { DEFAULT_NOTIFY_CHANNEL } from "@/lib/codes/groups";
-import { notifyTemplateSchema, type NotifyTemplateInput } from "@/lib/notify/schemas";
+import { CODE_GROUPS, DEFAULT_NOTIFY_CHANNEL } from "@/lib/codes/groups";
+import { bodyLimit, notifyTemplateSchema, type NotifyTemplateInput } from "@/lib/notify/schemas";
 import { isSystemTemplate, SYSTEM_TEMPLATE_VARS } from "@/lib/notify/system-templates";
+import { renderEmailSubject } from "@/lib/notify/email";
 import { renderNotice, templateVars } from "@/lib/notify/template";
 import { NOTIFY_COMPOSE_PARAM, ROUTES } from "@/lib/routes";
 import type { NotifyTemplateDto } from "@/server/services/notify-admin";
 
 type Option = { value: string; label: string };
-type Draft = NotifyTemplateInput & { key: string; isNew: boolean; system: boolean };
+type Draft = Required<NotifyTemplateInput> & { key: string; isNew: boolean; system: boolean };
 
-const toDraft = (t: NotifyTemplateDto): Draft => ({ key: t.code, isNew: false, system: t.system, code: t.code, name: t.name, category: t.category, channel: t.channel, body: t.body, active: t.active, memo: t.memo });
-const inputOf = (d: Draft): NotifyTemplateInput => ({ code: d.code, name: d.name, category: d.category, channel: d.channel, body: d.body, active: d.active, memo: d.memo });
+const toDraft = (t: NotifyTemplateDto): Draft => ({ key: t.code, isNew: false, system: t.system, code: t.code, name: t.name, category: t.category, medium: t.medium, channel: t.channel, subject: t.subject, body: t.body, active: t.active, memo: t.memo });
+const inputOf = (d: Draft): NotifyTemplateInput => ({ code: d.code, name: d.name, category: d.category, medium: d.medium, channel: d.channel, subject: d.subject, body: d.body, active: d.active, memo: d.memo });
 const same = (a?: Draft, b?: Draft) => JSON.stringify(a && inputOf(a)) === JSON.stringify(b && inputOf(b));
 const labelOf = (opts: Option[], v: string) => opts.find((o) => o.value === v)?.label ?? v;
 
@@ -44,10 +48,12 @@ function previewVars(d: Draft): Record<string, string> {
 export function NotifyTemplatesScreen({ templates, channels, categories }: { templates: NotifyTemplateDto[]; channels: Option[]; categories: Option[] }) {
   const router = useRouter();
   const { say } = useAdminStatus();
+  const codes = useCodes();
+  const media = codes.options(CODE_GROUPS.notifyMedium);
   const [saved, setSaved] = useState(() => templates.map(toDraft));
   const [value, setValue] = useState(saved);
   const [selected, setSelected] = useState<string | null>(null);
-  const [f, setF] = useState({ text: "", category: "all", active: "all" });
+  const [f, setF] = useState({ text: "", category: "all", medium: "all", active: "all" });
   const [pending, start] = useTransition();
 
   const [source, setSource] = useState(templates);
@@ -105,25 +111,27 @@ export function NotifyTemplatesScreen({ templates, channels, categories }: { tem
 
   const insert = async () => {
     if (!(await leave())) return;
-    const d: Draft = { key: newRowKey("tpl"), isNew: true, system: false, code: "", name: M.newName, category: categories[0]?.value ?? "", channel: channels.find((c) => c.value === DEFAULT_NOTIFY_CHANNEL)?.value ?? channels[0]?.value ?? "", body: "", active: true, memo: null };
+    const d: Draft = { key: newRowKey("tpl"), isNew: true, system: false, code: "", name: M.newName, category: categories[0]?.value ?? "", medium: "telegram", subject: null, channel: channels.find((c) => c.value === DEFAULT_NOTIFY_CHANNEL)?.value ?? channels[0]?.value ?? "", body: "", active: true, memo: null };
     setValue((v) => [...v, d]);
-    setF({ text: "", category: "all", active: "all" });
+    setF({ text: "", category: "all", medium: "all", active: "all" });
     setSelected(d.key);
   };
 
   const q = f.text.trim().toLowerCase();
   const rows = value.filter(
-    (d) => d.isNew || ((f.category === "all" || d.category === f.category) && (f.active === "all" || (f.active === "on") === d.active) && (!q || d.code.toLowerCase().includes(q) || d.name.toLowerCase().includes(q))),
+    (d) => d.isNew || ((f.category === "all" || d.category === f.category) && (f.medium === "all" || d.medium === f.medium) && (f.active === "all" || (f.active === "on") === d.active) && (!q || d.code.toLowerCase().includes(q) || d.name.toLowerCase().includes(q))),
   );
   const columns: GridCol<Draft>[] = [
     { key: "kind", label: M.colKind, width: "60px", align: "center", value: (d) => (d.system ? M.kindLabels.system : M.kindLabels.manual) },
     { key: "code", label: M.colCode, width: "minmax(110px,1fr)", value: (d) => d.code },
     { key: "name", label: M.colName, width: "minmax(110px,1fr)", value: (d) => d.name },
     { key: "category", label: M.colCategory, width: "76px", align: "center", value: (d) => labelOf(categories, d.category) },
+    { key: "medium", label: M.colMedium, width: "72px", align: "center", value: (d) => codes.name(CODE_GROUPS.notifyMedium, d.medium) },
     { key: "active", label: M.colActive, width: "56px", align: "center", value: (d) => (d.active ? M.activeLabels.on : M.activeLabels.off) },
   ];
   const all = { value: "all", label: M.all };
   const html = current ? renderNotice(current.body, previewVars(current)) : "";
+  const subjectPreview = current ? renderEmailSubject(current.subject ?? "", previewVars(current)) : "";
 
   return (
     <>
@@ -151,6 +159,9 @@ export function NotifyTemplatesScreen({ templates, channels, categories }: { tem
           <SearchItem label={M.searchCategory}>
             <FormSelect name="nt-cat" label={M.searchCategory} hideLabel size="md" value={f.category} onChange={(v) => setF((x) => ({ ...x, category: v }))} options={[all, ...categories]} />
           </SearchItem>
+          <SearchItem label={M.fieldMedium}>
+            <FormSelect name="nt-med" label={M.fieldMedium} hideLabel size="md" value={f.medium} onChange={(v) => setF((x) => ({ ...x, medium: v }))} options={[all, ...media]} />
+          </SearchItem>
           <SearchItem label={M.fieldActive}>
             <FormSelect
               name="nt-act"
@@ -164,7 +175,7 @@ export function NotifyTemplatesScreen({ templates, channels, categories }: { tem
           </SearchItem>
         </SearchBand>
         <MasterDetail
-          listWidth="420px"
+          listWidth="480px"
           list={
             <DataGrid
               label={M.listLabel}
@@ -191,7 +202,7 @@ export function NotifyTemplatesScreen({ templates, channels, categories }: { tem
           }
           detail={
             current && (
-              <WithAside key={current.key} aside={<TelegramPreview html={html} />}>
+              <WithAside key={current.key} aside={<NoticePreview medium={current.medium} subject={subjectPreview} html={html} />}>
                 <FormSection title={M.sectionBasic} action={current.system ? <span className="text-[11.5px] text-dim">{M.systemLocked}</span> : undefined}>
                   <Field label={M.fieldCodeName} htmlFor={`nt-name-${current.key}`} required wide error={errors.code ?? errors.name}>
                     {current.isNew ? (
@@ -208,9 +219,18 @@ export function NotifyTemplatesScreen({ templates, channels, categories }: { tem
                   <Field label={M.fieldCategory} required>
                     <FormSelect name={`nt-c-${current.key}`} label={M.fieldCategory} hideLabel size="lg" value={current.category} onChange={(v) => set({ category: v })} options={categories} />
                   </Field>
-                  <Field label={M.fieldChannel} required>
-                    <FormSelect name={`nt-ch-${current.key}`} label={M.fieldChannel} hideLabel size="lg" value={current.channel} onChange={(v) => set({ channel: v })} options={channels} />
+                  <Field label={M.fieldMedium} required>
+                    <FormSelect name={`nt-md-${current.key}`} label={M.fieldMedium} hideLabel size="lg" value={current.medium} onChange={(v) => set({ medium: v === "email" ? "email" : "telegram" })} options={media} disabled={current.system} />
                   </Field>
+                  {current.medium === "telegram" ? (
+                    <Field label={M.fieldChannel} required error={errors.channel}>
+                      <FormSelect name={`nt-ch-${current.key}`} label={M.fieldChannel} hideLabel size="lg" value={current.channel ?? ""} onChange={(v) => set({ channel: v })} options={channels} />
+                    </Field>
+                  ) : (
+                    <Field label={M.fieldSubject} htmlFor={`nt-s-${current.key}`} required wide error={errors.subject}>
+                      <TextField id={`nt-s-${current.key}`} label={M.fieldSubject} hideLabel value={current.subject ?? ""} onChange={(e) => set({ subject: e.target.value })} compact />
+                    </Field>
+                  )}
                   <Field label={M.fieldActive} required>
                     <FormSelect
                       name={`nt-a-${current.key}`}
@@ -236,6 +256,7 @@ export function NotifyTemplatesScreen({ templates, channels, categories }: { tem
                       value={current.body}
                       onChange={(body) => set({ body })}
                       renderedLength={html.length}
+                      max={bodyLimit(current.medium)}
                       error={errors.body}
                       vars={isSystemTemplate(current.code) ? SYSTEM_TEMPLATE_VARS[current.code] : templateVars(current.body).length > 0 ? templateVars(current.body).map((name) => ({ name })) : null}
                     />

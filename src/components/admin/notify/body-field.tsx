@@ -1,12 +1,11 @@
 "use client";
 // 알림 본문 칸(2026-10-30) — 템플릿 화면과 직접 발송 화면이 같이 쓴다. 여러 줄 입력, 글자 수, 쓸 수 있는 변수와 꾸밈 안내.
-// 글자 수는 변수를 채운 뒤 길이(텔레그램 상한은 보낸 글 기준)를 센다 — 템플릿 글자만 세면 긴 제목이 들어가 넘친다.
+// 글자 수는 변수를 채운 뒤 길이(상한은 보낸 글 기준, 수단마다 다르다)를 센다 — 템플릿 글자만 세면 긴 제목이 들어가 넘친다.
 import { useRef } from "react";
 import { cn } from "@/lib/cn";
 import { TEXTAREA_CLASS } from "@/components/ui/text-field";
 import { NOTIFY_MESSAGES as M } from "@/lib/admin/messages";
 import { fieldErrors, VALIDATION_MESSAGES, type FieldErrors } from "@/lib/admin/validation";
-import { TELEGRAM_TEXT_MAX } from "@/lib/notify/schemas";
 import type { z } from "zod";
 
 /** 본문 칸이 받는 줄 수. 시스템 템플릿이 열 줄 남짓이라 그만큼은 굴리지 않고 보인다 */
@@ -17,7 +16,11 @@ export function notifyErrors(result: { success: true } | { success: false; error
   const errs = fieldErrors(result);
   for (const [path, msg] of Object.entries(errs)) {
     const tag = /^tags:(unclosed|unexpected):(\w+)$/.exec(msg);
+    const big = /^too_big:(\d+)$/.exec(msg);
     if (tag) errs[path] = tag[1] === "unclosed" ? M.tagUnclosed(tag[2]) : M.tagUnexpected(tag[2]);
+    else if (big) errs[path] = VALIDATION_MESSAGES.maxLength(Number(big[1]));
+    else if (msg === "required") errs[path] = VALIDATION_MESSAGES.required;
+    else if (msg === "email") errs[path] = VALIDATION_MESSAGES.format;
     else if (msg === VALIDATION_MESSAGES.format && path === "code") errs[path] = M.codePattern;
   }
   return errs;
@@ -36,9 +39,10 @@ const FORMATS = [
 const CHIP = "press rounded-md px-1.5 py-0.5 text-[11.5px] font-semibold";
 
 /** vars: 누르면 커서 자리에 {이름} 을 넣는 변수 칩. null 이면 자유 변수 안내만 */
-export function BodyField({ id, value, onChange, renderedLength, error, vars }: { id: string; value: string; onChange: (v: string) => void; renderedLength: number; error?: string; vars: Array<{ name: string; hint?: string }> | null }) {
+/** max: 수단별 상한(lib/notify/schemas 의 bodyLimit). 텔레그램은 4,096자, 이메일은 넉넉하다 */
+export function BodyField({ id, value, onChange, renderedLength, error, vars, max }: { id: string; value: string; onChange: (v: string) => void; renderedLength: number; error?: string; vars: Array<{ name: string; hint?: string }> | null; max: number }) {
   const ref = useRef<HTMLTextAreaElement>(null);
-  const over = renderedLength > TELEGRAM_TEXT_MAX;
+  const over = renderedLength > max;
   /** 고른 자리를 before + 고른 글 + after 로 바꾸고, 커서를 고른 글 끝(없으면 before 뒤)에 둔다 */
   const wrap = (before: string, after: string) => {
     const el = ref.current;
@@ -74,7 +78,7 @@ export function BodyField({ id, value, onChange, renderedLength, error, vars }: 
                   </button>
                 ))}
           </span>
-          <span className={cn("shrink-0 tabular-nums", over && "font-semibold text-danger")}>{over ? M.tooLong(renderedLength, TELEGRAM_TEXT_MAX) : M.length(renderedLength, TELEGRAM_TEXT_MAX)}</span>
+          <span className={cn("shrink-0 tabular-nums", over && "font-semibold text-danger")}>{over ? M.tooLong(renderedLength, max) : M.length(renderedLength, max)}</span>
         </div>
         {error && (
           <p role="alert" className="text-[12px] font-medium text-danger">
