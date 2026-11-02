@@ -33,6 +33,9 @@ env:
   UPSTASH_REDIS_REST_TOKEN: ${{ secrets.UPSTASH_REDIS_REST_TOKEN }}
   CRAWL_SECRET: ${{ secrets.CRAWL_SECRET }}
   NEXT_PUBLIC_APP_URL: ${{ secrets.NEXT_PUBLIC_APP_URL }}
+  # 가격 알림 메일(sync/dispatch-alerts → server/notify/mail). 없으면 메일 대신 웹푸시로 간다
+  RESEND_API_KEY: ${{ secrets.RESEND_API_KEY }}
+  MAIL_FROM: ${{ secrets.MAIL_FROM }}
   CRAWL_LIMIT_ARG: ${{ github.event.inputs.limit != '' && format('--limit={0}', github.event.inputs.limit) || '' }}
 
 jobs:
