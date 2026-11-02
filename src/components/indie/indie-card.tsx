@@ -36,8 +36,22 @@ export function IndieTagPills({ platforms, genres }: { platforms: readonly Indie
  * from: 상세의 경로 줄, 메뉴 강조를 정하는 출처(lib/indie/query). 슈퍼루키가 싣는다 — 목록, 홈 줄은 기본이다.
  * wide: 가로 카드(sm 이상에서 그림 왼쪽, 글 오른쪽). 인디 목록 "주목할 게임" 이 한두 장뿐일 때 쓴다(2026-10-29) — 세로 카드 한 장이
  *   넓은 유료 판의 4분의 1만 채워 판이 비어 보였다. 좁은 화면에서는 세로 카드 그대로다.
+ * footer: 카드 바닥 칸막이 아래 한 묶음(플레이테스트의 모집 이름, 마감, 신청 수). 카드 **안**에 둔다(2026-11-02 모바일 점검) —
+ *   카드 밖 아래에 두면 한 열로 쌓이는 좁은 화면에서 다음 카드의 머리말처럼 읽혔다.
  */
-export function IndieCard({ post, badge, from, wide = false }: { post: IndieCardDto; badge?: React.ReactNode; from?: IndieFrom; wide?: boolean }) {
+export function IndieCard({
+  post,
+  badge,
+  from,
+  wide = false,
+  footer,
+}: {
+  post: IndieCardDto;
+  badge?: React.ReactNode;
+  from?: IndieFrom;
+  wide?: boolean;
+  footer?: React.ReactNode;
+}) {
   return (
     <div className={cn(CARD_SHELL, "cover-zoom group relative", wide && "sm:flex-row sm:gap-4 sm:p-3")}>
       {/* 손을 올리면 그림이 살짝 자라고 빛이 한 번 스친다(.cover-glint) */}
@@ -80,6 +94,7 @@ export function IndieCard({ post, badge, from, wide = false }: { post: IndieCard
             {post.likeCount.toLocaleString("ko-KR")}
           </span>
         </div>
+        {footer && <div className="mt-1 border-t border-line pt-2">{footer}</div>}
       </div>
     </div>
   );

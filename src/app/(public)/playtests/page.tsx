@@ -26,7 +26,7 @@ function Grid({ items, ad, from = 0 }: { items: PlaytestCardDto[]; ad?: boolean;
   return (
     <ul className={HOME_GRID_CLASS}>
       {items.map(({ card, playtest }, i) => (
-        <li key={playtest.id} className="enter-item flex flex-col gap-2" style={stagger(from + i)}>
+        <li key={playtest.id} className="enter-item flex flex-col" style={stagger(from + i)}>
           <IndieCard
             post={card}
             badge={
@@ -35,11 +35,13 @@ function Grid({ items, ad, from = 0 }: { items: PlaytestCardDto[]; ad?: boolean;
                 <Tag tone={playtest.phase === "open" ? "ok" : "warn"}>{PLAYTEST_PHASE_LABEL[playtest.phase]}</Tag>
               </>
             }
+            footer={
+              <div className="flex flex-col gap-0.5">
+                <span className="text-[13.5px] font-semibold text-ink">{playtest.title}</span>
+                <span className="text-[12.5px] tabular-nums text-dim">{[M.closesAt(formatDate(playtest.closesAt)), M.applicants(playtest.applicants, playtest.slots)].join(" | ")}</span>
+              </div>
+            }
           />
-          <div className="flex flex-col gap-0.5 px-1">
-            <span className="text-[13.5px] font-semibold text-ink">{playtest.title}</span>
-            <span className="text-[12.5px] tabular-nums text-dim">{[M.closesAt(formatDate(playtest.closesAt)), M.applicants(playtest.applicants, playtest.slots)].join(" | ")}</span>
-          </div>
         </li>
       ))}
     </ul>
