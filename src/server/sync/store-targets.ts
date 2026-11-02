@@ -9,6 +9,7 @@ import { normalizeTitle } from "@/lib/slug";
 import { findGameByTitle, type GameTitleRow } from "./match";
 import { collectFreshCandidates, nextDiscoveryCursor, seedQuota } from "./discover";
 import { resolveRankRows, writePopularityRanks } from "./rank-writer";
+import { fixPlatformsFromCatalog } from "./platform-fix";
 import { missingRefExcluded } from "./missing-refs";
 import { refreshShares } from "./refresh-shares";
 import {
@@ -380,6 +381,14 @@ async function seedTargets(ctx: Ctx, source: StoreSource, seedWant: number, page
           ctx.rankedCount = (ctx.rankedCount ?? 0) + n;
         } catch (e) {
           console.warn(`[sync:${source}] 인기순위 순번 기록 실패: ${errorMessage(e)}`);
+        }
+      },
+      // 아는 상품의 기기 대조도 부산물이다 — 순번과 같은 이유로 실패를 삼킨다(platform-fix 머리 주석)
+      onKnown: async (known) => {
+        try {
+          await fixPlatformsFromCatalog(ctx, source, known);
+        } catch (e) {
+          console.warn(`[sync:${source}] 기기 대조 실패: ${errorMessage(e)}`);
         }
       },
     }),

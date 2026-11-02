@@ -197,3 +197,17 @@ describe("nextDiscoveryCursor", () => {
     expect(nextDiscoveryCursor(40, { pages: 0, stoppedBy: "want" })).toBe(40);
   });
 });
+
+describe("collectFreshCandidates onKnown", () => {
+  it("아는 후보만 페이지마다 넘긴다", async () => {
+    const got: string[][] = [];
+    const r = await collectFreshCandidates(pagesOf(["1", "2", "3", "4"], 2), {
+      want: 10,
+      pageBudget: 10,
+      unknownOf: unknownOfSet(new Set(["1", "4"])),
+      onKnown: async (k) => void got.push(k.map((c) => c.externalId)),
+    });
+    expect(got).toEqual([["1"], ["4"]]);
+    expect(r.fresh.map((c) => c.externalId)).toEqual(["2", "3"]);
+  });
+});

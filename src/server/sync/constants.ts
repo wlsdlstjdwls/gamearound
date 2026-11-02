@@ -715,6 +715,13 @@ export const SOURCE_REGION: Record<StoreSource, Region> = {
   steam: "KR", psstore: "KR", xbox: "KR", nintendo: "KR", nintendo_jp: "JP", epic: "KR",
 };
 /**
+ * 발견 목록이 항목마다 기기를 말해 주는 소스. 여기 든 소스는 발견이 아는 상품을 지날 때 행의 기기와 대조해 고친다(sync/platform-fix).
+ * 일본 eShop 검색은 hard(1_HAC=Switch, 05_BEE=Switch 2)를 항목마다 준다. 가격 API 는 기기를 모르고 행의 기기를 그대로 쓰므로,
+ * 처음 붙을 때 틀린 기기는 이 대조가 없으면 영영 남는다(2026-10-29 pragmata, valheim 일본 행이 Switch 로 붙은 Switch 2 판이었다).
+ * 한국 eShop 은 목록에 기기가 없어(상품 HTML 에만 있다) 넣지 않는다. PlayStation 은 콘셉트 하나가 PS4, PS5 를 같이 품어 목록의 기기가 행을 가리지 못한다
+ */
+export const CATALOG_PLATFORM_SOURCES: StoreSource[] = ["nintendo_jp"];
+/**
  * 인기순위를 몇 페이지까지 훑을까. **소스마다 페이지 크기가 달라** 장수로 통일하면 깊이가 제각각이다.
  *
  * 기준은 "몇 위까지 볼 것인가" 다. 화면이 인기순을 쓰는 자리는 홈 첫 줄과 목록 첫 장이라

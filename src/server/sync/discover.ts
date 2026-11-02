@@ -88,6 +88,12 @@ export interface CollectOptions {
    * 이미 읽은 페이지의 순번까지 같이 버려진다.
    */
   onRanked?: (ranked: SearchCandidate[]) => Promise<void>;
+  /**
+   * 이미 아는 후보를 페이지 단위로 넘겨받는 자리. 발견은 카탈로그 전체를 돌며 아는 것을 버리는데,
+   * 그 목록이 품고 있는 값(일본 eShop 의 기기 hard)은 가격 갱신 경로가 다시 묻지 못한다 — 여기서 대조한다(sync/platform-fix).
+   * 실패해도 발견은 멈추지 않는다(부르는 쪽이 삼킨다)
+   */
+  onKnown?: (known: SearchCandidate[]) => Promise<void>;
 }
 
 /**
@@ -96,7 +102,7 @@ export interface CollectOptions {
  */
 export async function collectFreshCandidates(
   pages: AsyncIterable<SearchCandidate[]>,
-  { want, pageBudget, unknownOf, onRanked }: CollectOptions,
+  { want, pageBudget, unknownOf, onRanked, onKnown }: CollectOptions,
 ): Promise<DiscoveryResult> {
   const fresh: SearchCandidate[] = [];
   const seen = new Set<string>();
@@ -119,6 +125,10 @@ export async function collectFreshCandidates(
     }
     if (batch.length > 0) {
       const unknown = new Set(await unknownOf(batch.map((c) => c.externalId)));
+      if (onKnown) {
+        const known = batch.filter((c) => !unknown.has(c.externalId));
+        if (known.length > 0) await onKnown(known);
+      }
       for (const c of batch) {
         if (!unknown.has(c.externalId)) continue;
         fresh.push(c);
