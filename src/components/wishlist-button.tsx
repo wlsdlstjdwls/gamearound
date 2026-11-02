@@ -13,6 +13,7 @@ import { HeartIcon } from "@/components/ui/icons";
 import { useToast } from "@/components/ui/toast";
 import { isWishedAction, removeFromWishlistAction, toggleWishlistAction } from "@/app/(user)/wishlist/actions";
 import { WISHLIST_MESSAGES as M } from "@/lib/wishlist/messages";
+import { useWishlistItem } from "@/components/wishlist/item";
 
 export function WishlistButton({ gameId, className }: { gameId: string; className?: string }) {
   const { user } = useSession();
@@ -64,16 +65,19 @@ export function WishlistButton({ gameId, className }: { gameId: string; classNam
   );
 }
 
-/** /wishlist 목록 카드의 삭제 버튼 — 카드 우상단 ✕. 누르면 askConfirm 으로 한 번 묻는다(2026-10-30 사용자) */
+/**
+ * /wishlist 목록 카드의 삭제 버튼 — 카드 우상단 ✕. 누르면 askConfirm 으로 한 번 묻는다(2026-10-30 사용자).
+ * 확인을 누른 순간 카드가 빠진다(components/wishlist/item). 실패하면 카드가 돌아오고 토스트가 이유를 말한다 —
+ * 카드 안에 오류 글을 두면 숨은 카드와 함께 안 보인다.
+ */
 export function WishlistRemoveButton({ gameId, title }: { gameId: string; title: string }) {
-  const [error, setError] = useState<string | null>(null);
-  const [pending, start] = useTransition();
+  const [, start] = useTransition();
+  const item = useWishlistItem();
+  const toast = useToast();
   return (
     <span className="inline-flex items-center gap-1.5">
-      {error && <span className="text-[11px] text-danger">{error}</span>}
       <button
         type="button"
-        disabled={pending}
         aria-label={M.removeLabel}
         onClick={async () => {
           const ok = await askConfirm(M.removeConfirm(title), {
@@ -82,15 +86,18 @@ export function WishlistRemoveButton({ gameId, title }: { gameId: string; title:
             tone: "danger",
           });
           if (!ok) return;
+          item.hide();
           start(async () => {
-            setError(null);
             const r = await removeFromWishlistAction(gameId);
-            if (!r.ok) setError(r.error);
+            if (!r.ok) {
+              item.restore();
+              toast(r.error);
+            }
           });
         }}
-        className="press flex h-6 w-6 items-center justify-center rounded-md text-[12px] text-dim transition-colors hover:bg-surface-2 hover:text-ink disabled:opacity-60"
+        className="press flex h-6 w-6 items-center justify-center rounded-md text-[12px] text-dim transition-colors hover:bg-surface-2 hover:text-ink"
       >
-        {pending ? "…" : "✕"}
+        ✕
       </button>
     </span>
   );

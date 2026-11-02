@@ -10,6 +10,7 @@ import Link from "next/link";
 import { DiscountBadge } from "@/components/ui/discount";
 import { EmptyState } from "@/components/empty-state";
 import { WishlistRemoveButton } from "@/components/wishlist-button";
+import { WishlistCard } from "@/components/wishlist/item";
 import { FadeImage } from "@/components/ui/fade-image";
 import { ImageFallback } from "@/components/ui/image-fallback";
 import { Page, PageHead, SectionHead } from "@/components/ui/page";
@@ -143,7 +144,7 @@ export default async function WishlistPage({ searchParams }: Props) {
               // 카드(2026-10-27). 게임 목록 카드처럼 흰 판 위 커버가 먼저 서고, 값 줄과 알림 단추가 아래에 앉는다
               // 커버는 다른 카드(game-card 의 CARD_SHELL, COVER_CLASS)처럼 판 안쪽에 둥글게 앉힌다(2026-10-28 사용자 "찜 카드만 이미지 형태가 달라 이상하다").
               // 판 끝까지 붙어 모서리만 잘리던 모양이 홈, 목록 카드와 달랐다
-              <li key={game.id} className="enter-item lift group flex gap-3 overflow-hidden p-2 sm:flex-col sm:gap-1 sm:p-2.5 rounded-[var(--radius-panel)] bg-surface shadow-[var(--elev-card)] transition-shadow duration-base hover:shadow-[var(--elev-card-hover)]" style={stagger(i)}>
+              <WishlistCard key={game.id} className="enter-item lift group flex gap-3 overflow-hidden p-2 sm:flex-col sm:gap-1 sm:p-2.5 rounded-[var(--radius-panel)] bg-surface shadow-[var(--elev-card)] transition-shadow duration-base hover:shadow-[var(--elev-card-hover)]" style={stagger(i)}>
                 <Link href={`/games/${game.slug}`} className="cover-zoom relative block min-h-[96px] w-[108px] shrink-0 overflow-hidden rounded-[var(--radius-md)] bg-surface-3 shadow-hair sm:w-auto" tabIndex={-1} aria-hidden>
                   {game.coverUrl ? (
                     <FadeImage
@@ -229,7 +230,7 @@ export default async function WishlistPage({ searchParams }: Props) {
                     {ALERT_STATE[alert]}
                   </Link>
                 </div>
-              </li>
+              </WishlistCard>
             );
           })}
         </ul>
