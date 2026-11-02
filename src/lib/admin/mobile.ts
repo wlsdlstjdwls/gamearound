@@ -3,7 +3,7 @@
 // 2026-11-02 사용자 "모바일 대응 다 해볼까" 로 메뉴 화면을 전부 연다(full). 처음(10-30)에는 승인, 판정만 열고
 // 숫자 화면은 보기만(view), 입력이 많은 화면은 닫았다(off) — 휴대폰 꼴(카드, 바닥 시트, 바닥 툴바)을 공통 부품이 그리게 된 뒤라
 // 닫아 둘 이유가 줄었다. 다시 좁힐 때는 이 표의 칸만 바꾸면 메뉴, 진입, 단추가 따라온다(view/off, allow/deny 는 그래서 남긴다).
-// 엑셀만 어디서나 막는다(DENY_EVERYWHERE). 표에 없는 게임 고치기는 11-02 사용자 "냅둬 일단" 으로 닫힌 채다.
+// 엑셀만 어디서나 막는다(DENY_EVERYWHERE). 게임 고치기도 같은 날 연다. 표에 없는 새 주소는 여전히 닫힌다(UNLISTED).
 // fitin-bo 는 메뉴마다 기능 표를 따로 두다가 표가 화면과 어긋났다 — 그래서 화면 열쇠는 메뉴 주소(ROUTES) 하나만 쓴다.
 //
 // **이 표는 권한이 아니다.** 기기는 UA 로 가르고 UA 는 바꿀 수 있다. 서버 액션은 지금처럼 역할(admin)만 검사한다 —
@@ -30,7 +30,7 @@ export type MobilePolicy = {
 /** 휴대폰에서는 어느 화면이든 막는 기능. 엑셀 파일은 휴대폰에서 열어 볼 일이 없고 내려받은 파일이 기기에 남는다 */
 const DENY_EVERYWHERE: readonly MobileFeature[] = ["excel"];
 
-/** 표에 없는 주소(게임 고치기 등)의 몫. 칸이 많은 편집 화면이라 닫는다 — 새 화면은 표에 올려야 휴대폰에 열린다 */
+/** 표에 없는 주소의 몫. 새 화면은 휴대폰 꼴을 확인하고 표에 올려야 휴대폰에 열린다 */
 const UNLISTED: MobilePolicy = { access: "off" };
 
 export const ADMIN_MOBILE: Readonly<Record<string, MobilePolicy>> = {
@@ -58,6 +58,8 @@ export const ADMIN_MOBILE: Readonly<Record<string, MobilePolicy>> = {
   [ROUTES.adminNotifyTemplates]: { access: "full" },
   [ROUTES.adminNotifySends]: { access: "full" },
   [ROUTES.adminGuide]: { access: "full" },
+  // 게임 고치기(메뉴 밖, 승인 화면의 "게임정보수정" 이 여는 곳). 11-02 오후 사용자 "남은것도 하자" 로 연다
+  [ROUTES.adminGames]: { access: "full" },
 };
 
 /** 주소가 이 메뉴 화면(또는 그 아래)인가. 대시보드(/admin)만 정확히 일치로 본다 — 접두사로 보면 모든 화면이 대시보드가 된다 */

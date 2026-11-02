@@ -86,7 +86,8 @@ type Correction = ReturnType<typeof useCorrection>;
 
 const COLUMNS: GridCol<FieldRow>[] = [
   { key: "target", label: M.colTarget, width: "108px", value: (r) => r.target },
-  { key: "field", label: M.colField, width: "128px", value: (r) => r.label },
+  // 휴대폰 카드 제목은 항목 이름이다. 지정하지 않으면 남는 폭을 받는 현재 값 칸이 제목이 되어 "(없음)", "예" 가 카드 머리에 섰다(2026-11-02)
+  { key: "field", label: M.colField, width: "128px", value: (r) => r.label, mobile: "title" },
   { key: "current", label: M.colCurrent, width: "minmax(160px,1fr)", value: (r) => shownValue(r) },
 ];
 

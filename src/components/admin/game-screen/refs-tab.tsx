@@ -38,7 +38,7 @@ const columns = (name: (g: string, c: string) => string): GridCol<RefRow>[] => [
     value: (r) => r.url ?? "",
     render: (r) =>
       r.url ? (
-        <a href={r.url} target="_blank" rel="noreferrer" className="truncate text-acc hover:underline" onClick={(e) => e.stopPropagation()}>
+        <a href={r.url} target="_blank" rel="noreferrer" className="relative block truncate text-acc hover:underline" onClick={(e) => e.stopPropagation()}>
           {r.url}
           <span className="sr-only"> (새 창에서 열림)</span>
         </a>

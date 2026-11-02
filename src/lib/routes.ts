@@ -51,6 +51,8 @@ export const ROUTES = {
   adminDataIssues: "/admin/data-issues",
   /** 회사 이름 확정 큐 */
   adminCompanies: "/admin/companies",
+  /** 게임 고치기 화면들의 머리 주소. 메뉴는 아니다 — 한 게임은 adminGamePath(id) 로 연다. 휴대폰 허용 표(lib/admin/mobile)가 이 머리로 고른다 */
+  adminGames: "/admin/games",
   /** 상품 매핑 검수 — 매핑 배치(§5.2)가 후보만 남긴 상품을 사람이 마무리하는 자리 */
   adminProducts: "/admin/products",
   /** 관리자 할 일 판. 자동으로 쌓이는 검수 큐와 달리 사람이 직접 적는 일이 사는 자리 */
@@ -377,7 +379,7 @@ export function adminTaskPath(id: string): string {
 
 /** 관리자 게임 고치기 화면. 승인 화면 둘(스토어매칭, 상품 매핑)이 상세에서 이 주소로 건너간다 */
 export function adminGamePath(id: string): string {
-  return `/admin/games/${encodeURIComponent(id)}`;
+  return `${ROUTES.adminGames}/${encodeURIComponent(id)}`;
 }
 
 /** 알림함 한 쪽. 1쪽은 주소에 쪽 번호를 붙이지 않는다 — 종 팝오버의 "전체 보기" 와 내 정보 띠가 같은 주소를 연다 */

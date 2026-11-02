@@ -1,12 +1,13 @@
 import { describe, expect, it } from "vitest";
 import { ADMIN_MOBILE, mobileCan, mobilePolicyOf } from "@/lib/admin/mobile";
-import { ROUTES } from "@/lib/routes";
+import { adminGamePath, ROUTES } from "@/lib/routes";
 
 describe("mobilePolicyOf", () => {
   it("대시보드는 정확히 일치할 때만 대시보드 몫이다", () => {
     expect(mobilePolicyOf(ROUTES.admin).access).toBe("full");
-    // 표에 없는 하위 주소(게임 고치기)가 대시보드 몫으로 열리면 안 된다
-    expect(mobilePolicyOf("/admin/games/abc").access).toBe("off");
+    // 표에 없는 하위 주소가 대시보드 몫으로 열리면 안 된다
+    expect(mobilePolicyOf("/admin/unknown").access).toBe("off");
+    expect(mobilePolicyOf(adminGamePath("abc"))).toBe(ADMIN_MOBILE[ROUTES.adminGames]);
   });
 
   it("하위 주소는 가장 긴 메뉴 주소를 따른다", () => {
