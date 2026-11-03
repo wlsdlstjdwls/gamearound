@@ -15,6 +15,8 @@ import { stagger } from "@/lib/motion";
 import { ROUTES, companyPath } from "@/lib/routes";
 import { firstParam } from "@/lib/games-query";
 import { getCompanyBySlug, listCompanyGames, type CompanyRoleFilter } from "@/server/services/companies";
+import { getCompanyProfile } from "@/server/services/company-profile";
+import { CompanyProfilePanel } from "@/components/company-profile";
 import { decodeSlugParam } from "@/lib/slug";
 import { NavChip, NavPendingScope, PendingRegion } from "@/components/ui/nav-pending";
 
@@ -61,10 +63,10 @@ export default async function CompanyPage({ params, searchParams }: Props) {
   const pageNum = Math.max(Number(firstParam(sp.page)) || 1, 1);
 
   // 목록도 slug 로 조회한다 — 회사 행이 오기를 기다릴 이유가 없다(왕복 한 번이 200ms 대)
-  const loaded = await orDbDown(Promise.all([getCompanyBySlug(slug), listCompanyGames(slug, role, pageNum)]));
+  const loaded = await orDbDown(Promise.all([getCompanyBySlug(slug), listCompanyGames(slug, role, pageNum), getCompanyProfile(slug)]));
   // 장애를 404 로 그리지 않는다(lib/db-errors 의 orDbDown 주석)
   if (loaded === DB_DOWN) return <DbUnavailablePage retryHref={companyPath(slug)} />;
-  const [company, result] = loaded;
+  const [company, result, profile] = loaded;
   if (!company) notFound();
 
   return (
@@ -130,6 +132,10 @@ export default async function CompanyPage({ params, searchParams }: Props) {
           <p className="max-w-[620px] border-t border-line pt-4 text-[13.5px] leading-[1.8] text-mut">{company.description}</p>
         )}
       </header>
+
+      <div className="enter-item" style={stagger(1)}>
+        <CompanyProfilePanel profile={profile} />
+      </div>
 
       <section className="flex flex-col gap-[18px]">
         <SectionHead
