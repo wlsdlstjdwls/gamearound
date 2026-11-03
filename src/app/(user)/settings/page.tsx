@@ -15,6 +15,7 @@
 import type { Metadata } from "next";
 import { PushToggle } from "@/components/push-toggle";
 import { WishSaleToggle } from "@/components/alerts/wish-sale-toggle";
+import { NewsDigestToggle } from "@/components/settings/news-digest-toggle";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { SignOutButton } from "@/components/auth/sign-out-button";
 import { PersonalizationSection } from "@/components/settings/personalization-section";
@@ -91,6 +92,8 @@ export default async function SettingsPage() {
             <PushToggle initialCount={pushCount} />
             {/* 무엇을 받을지(찜 할인)는 어디로 받을지(푸시) 바로 밑이다 — 같은 판에 두어야 "켰는데 왜 안 오지" 를 한자리에서 푼다 */}
             <WishSaleToggle initialOn={user.wishSaleAlertsOffAt === null} className="mt-4" />
+            {/* 주간 맞춤 소식도 "무엇을 받을지" 라 같은 판이다. Boolean 으로 읽는 이유: 칸이 생기기 전에 담긴 세션 사본(Redis)에는 값이 없다(undefined) */}
+            <NewsDigestToggle initialOn={Boolean(user.newsDigestOnAt)} className="mt-3" />
           </div>
           <div className={CARD} style={stagger(3)}>
             <ThemeToggle />

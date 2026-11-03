@@ -5,8 +5,8 @@ import { pgTable, pgEnum, uuid, text, timestamp, index } from "drizzle-orm/pg-co
 import { auditColumns } from "./audit";
 import { users } from "./schema";
 
-/** notice: 관리자가 알림발송관리에서 직접 보낸 웹 알림(2026-11-02) */
-export const notificationKindEnum = pgEnum("notification_kind", ["price_drop", "comment", "approval", "release", "dev_news", "payment", "notice"]);
+/** notice: 관리자가 알림발송관리에서 직접 보낸 웹 알림(2026-11-02). news: 주간 맞춤 소식(2026-11-03, sync/news-digest) */
+export const notificationKindEnum = pgEnum("notification_kind", ["price_drop", "comment", "approval", "release", "dev_news", "payment", "notice", "news"]);
 export type NotificationKind = (typeof notificationKindEnum.enumValues)[number];
 
 export const notifications = pgTable(

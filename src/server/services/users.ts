@@ -156,6 +156,16 @@ export async function setWishSaleAlerts(userId: string, on: boolean): Promise<vo
   await dropCachedSessionsOfUser(userId);
 }
 
+/** 주간 맞춤 소식 켜고 끄기(sync/news-digest 가 읽는다). 켠 시각을 남긴다 — 스키마 newsDigestOnAt 주석 */
+export async function setNewsDigest(userId: string, on: boolean): Promise<void> {
+  await getDb()
+    .update(users)
+    .set({ newsDigestOnAt: on ? sql`now()` : null, updatedSource: "user", updatedBy: userId, updatedAt: sql`now()` })
+    .where(eq(users.id, userId));
+  // 세션 사본(Redis)의 사용자 행을 지운다 — setWishSaleAlerts 와 같은 사정
+  await dropCachedSessionsOfUser(userId);
+}
+
 export async function requireUser(): Promise<UserRow> {
   const u = await getCurrentUser();
   if (!u) throw new Error(AUTH_MESSAGES.loginRequired);

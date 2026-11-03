@@ -676,6 +676,12 @@ export const users = pgTable("users", {
    * user_profiles 에 두지 않는 이유: 그 행은 온보딩이 upsert 해야 생기고, 관리자처럼 온보딩을 안 보는 계정에는 없다
    */
   wishSaleAlertsOffAt: timestamp("wish_sale_alerts_off_at", { withTimezone: true }),
+  /**
+   * 주간 맞춤 소식(뉴스 묶음)을 켠 시각(2026-11-03, sync/news-digest). null 이면 꺼져 있다 — 찜 할인 알림과 반대로 **기본이 꺼짐**이다.
+   * 찜은 "알려 줘" 라는 뜻을 이미 품지만, 뉴스 묶음 메일은 회원이 고른 적 없는 글을 매주 보내는 것이라 본인이 켜야 보낸다.
+   * 시각인 이유와 users 에 두는 이유는 위 wishSaleAlertsOffAt 과 같다
+   */
+  newsDigestOnAt: timestamp("news_digest_on_at", { withTimezone: true }),
   ...auditColumns(),
 });
 

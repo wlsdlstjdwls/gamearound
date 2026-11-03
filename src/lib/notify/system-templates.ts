@@ -9,6 +9,7 @@ export const SYSTEM_TEMPLATES = {
   // 회원에게 가는 메일(2026-11-02). 발송 수단이 이메일이고 받는 사람은 사건이 정한다
   mailPasswordReset: "mail.password_reset",
   mailPriceAlert: "mail.price_alert",
+  mailNewsDigest: "mail.news_digest",
   // 회원 알림함(웹 알림, 2026-11-02). 받는 사람과 링크는 사건이 정한다
   webComment: "web.comment",
   webReply: "web.reply",
@@ -20,6 +21,7 @@ export const SYSTEM_TEMPLATES = {
   webWishSale: "web.wish_sale",
   webWishRecordLow: "web.wish_record_low",
   webReleased: "web.released",
+  webNewsDigest: "web.news_digest",
   webMembershipRenewed: "web.membership_renewed",
   webMembershipFailed: "web.membership_failed",
   webMembershipEnded: "web.membership_ended",
@@ -41,6 +43,7 @@ type VarSpec = { name: string; hint: string; sample: string };
 const GAME: VarSpec = { name: "게임", hint: "게임 이름", sample: "하데스 II" };
 const PRICE: VarSpec = { name: "가격", hint: "지금 값(원 붙은 글)", sample: "27,000원" };
 const PLATFORM: VarSpec = { name: "기종", hint: "스토어, 기기 이름", sample: "Steam" };
+const DIGEST_COUNT: VarSpec = { name: "건수", hint: "묶음에 든 기사 수(숫자만)", sample: "6" };
 const POST_TITLE: VarSpec = { name: "글제목", hint: "게시글 제목", sample: "하데스 2 초반 공략" };
 
 const TASK_BASE: VarSpec[] = [
@@ -81,6 +84,12 @@ export const SYSTEM_TEMPLATE_VARS: Record<SystemTemplateCode, VarSpec[]> = {
     { name: "내용", hint: "기종과 값, 할인율", sample: "Steam 27,000원 (30% 할인)" },
     { name: "링크", hint: "게임 상세 주소", sample: "https://gamearound.kr/games/hades-ii" },
   ],
+  "mail.news_digest": [
+    DIGEST_COUNT,
+    { name: "목록", hint: "기사 제목, 매체를 줄마다 적은 글(링크 없음)", sample: "- 하데스 II 새 무기 공개 (IGN)\n- 붉은사막 출시일 확정 (게임메카)" },
+    { name: "링크", hint: "맞춤 소식 화면 주소", sample: "https://gamearound.kr/news/mine" },
+    { name: "설정링크", hint: "설정 화면 주소(받지 않기)", sample: "https://gamearound.kr/settings" },
+  ],
   "web.comment": [POST_TITLE],
   "web.reply": [POST_TITLE],
   "web.indie_comment": [GAME],
@@ -91,6 +100,7 @@ export const SYSTEM_TEMPLATE_VARS: Record<SystemTemplateCode, VarSpec[]> = {
   "web.wish_sale": [GAME, PRICE, { name: "할인율", hint: "할인 퍼센트(숫자만)", sample: "30" }],
   "web.wish_record_low": [GAME, PRICE],
   "web.released": [GAME],
+  "web.news_digest": [DIGEST_COUNT],
   "web.membership_renewed": [
     { name: "이용권", hint: "채워진 이용권 장 수", sample: "2" },
     { name: "다음결제일", hint: "다음 결제 날짜", sample: "2026. 12. 2." },

@@ -7,7 +7,7 @@ import Link from "next/link";
 import { after } from "next/server";
 import { EmptyState } from "@/components/empty-state";
 import { Pagination } from "@/components/pagination";
-import { BellIcon, ChatIcon, CheckCircleIcon, GamepadIcon, TagIcon, TicketIcon } from "@/components/ui/icons";
+import { BellIcon, ChatIcon, CheckCircleIcon, FileTextIcon, GamepadIcon, TagIcon, TicketIcon } from "@/components/ui/icons";
 import { NavPendingScope, PendingRegion } from "@/components/ui/nav-pending";
 import { Page, PageHead } from "@/components/ui/page";
 import { cn } from "@/lib/cn";
@@ -31,6 +31,7 @@ const KIND_ICON: Record<NotificationKind, React.ReactNode> = {
   dev_news: <BellIcon size={17} />,
   payment: <TicketIcon size={17} />,
   notice: <BellIcon size={17} />,
+  news: <FileTextIcon size={17} />,
 };
 
 export default async function NotificationsPage({ searchParams }: { searchParams: Promise<{ page?: string | string[] }> }) {

@@ -9,6 +9,9 @@ import { ROUTES } from "@/lib/routes";
 import { ONBOARDING_MESSAGES as M } from "@/lib/onboarding/messages";
 import { errorMessage } from "@/lib/errors";
 import { resetPersonalization, revokeConsent, setPersonalizationPaused } from "@/server/services/profiles";
+import { requireUser, setNewsDigest } from "@/server/services/users";
+import { NEWS_DIGEST_MESSAGES } from "@/lib/news/messages";
+import { actionError } from "@/lib/db-errors";
 
 export type RevokeState = { ok: true } | { ok: false; error: string };
 
@@ -44,6 +47,18 @@ export async function resetPersonalizationAction(): Promise<RevokeState> {
   } catch (e) {
     console.error("[settings] 개인화 초기화 실패", errorMessage(e));
     return { ok: false, error: unavailableOr(e, M.settings.resetFailed) };
+  }
+  revalidatePath(ROUTES.settings);
+  return { ok: true };
+}
+
+/** 주간 맞춤 소식 켜고 끄기(2026-11-03, sync/news-digest). 스위치가 먼저 넘어가고 실패면 되돌린다(ui/setting-switch) */
+export async function setNewsDigestAction(on: boolean): Promise<RevokeState> {
+  try {
+    const me = await requireUser();
+    await setNewsDigest(me.id, on === true);
+  } catch (e) {
+    return { ok: false, error: actionError(e, NEWS_DIGEST_MESSAGES.failed) };
   }
   revalidatePath(ROUTES.settings);
   return { ok: true };

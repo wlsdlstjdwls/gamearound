@@ -27,4 +27,8 @@ export const NOTIFICATION_MESSAGES = {
   wishRecordLow: (gameTitle: string, priceText: string) => `찜한 '${gameTitle}' 기록상 최저가예요, 지금 ${priceText}`,
   /** 출시 알림(찜한 출시 예정 게임이 나왔다, sync/release-alerts) */
   released: (gameTitle: string) => `찜한 '${gameTitle}' 출시 소식이 왔어요`,
+  /** 주간 맞춤 소식(sync/news-digest). 템플릿 web.news_digest 가 없을 때의 기본 글 */
+  newsDigest: (count: number) => `이번 주 맞춤 소식 ${count}건이 모였어요`,
+  /** 주간 맞춤 소식 기본 메일의 제목(앞에 서비스 이름이 붙는다). 템플릿 mail.news_digest 가 없을 때만 쓴다 */
+  newsDigestSubject: (count: number) => `이번 주 맞춤 소식 ${count}건`,
 } as const;

@@ -11,6 +11,8 @@ export const ROUTES = {
   upcoming: "/upcoming",
   /** 게임 뉴스 전체. 홈은 최신 8건만 내주고 나머지는 여기서 읽는다(services/games/news) */
   news: "/news",
+  /** 내 맞춤 소식(로그인). 주간 소식 메일, 알림함의 "전체 보기" 가 여기로 온다(lib/news/digest) */
+  newsMine: "/news/mine",
   signIn: "/sign-in",
   signUp: "/sign-up",
   /** 비밀번호 재설정 1단계(메일 받기). 2단계는 메일 링크가 여는 resetPassword 다 */
