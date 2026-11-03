@@ -815,8 +815,14 @@ export const MISSING_STREAK_MAX = 3;
  * 죽은 상품에는 한 달에 한 번만 요청을 쓴다.
  */
 export const MISSING_RETRY_DAYS = 30;
-/** 뉴스 제목 매칭 시 너무 짧은 게임 제목은 제외 (오매칭 방지) */
-export const NEWS_MATCH_MIN_TITLE_LEN = 4;
+/**
+ * 뉴스에 한 낱말 제목("Minecraft", "Survival")을 붙여도 되는 "알려진 게임" 의 문턱(lib/news/game-match 규칙 2).
+ * 2026-11-03 실측(30일 치 한 낱말 매칭 105종): 맞게 붙은 것은 평가 수 수만~수백만, HLTB 기록 수백~수만이었고
+ * 틀린 것(Perfect, Easter, BLACK 2,378, MOLE 3,757, CRACK 1,183)은 신호가 없거나 수천 아래였다.
+ * 평가 수 5천, HLTB 100 이면 틀린 쪽을 거의 다 걸러 내고 맞는 쪽(SAROS HLTB 424, Mixtape 평가 9,416)은 남는다.
+ */
+export const NEWS_MATCH_KNOWN_SCORE_COUNT = 5_000;
+export const NEWS_MATCH_KNOWN_HLTB = 100;
 export const REVALIDATE_TIMEOUT_MS = 15_000;
 
 /**

@@ -2,7 +2,6 @@
 import { describe, expect, it } from "vitest";
 import { normalizeTitle, slugify, trigramSimilarity } from "@/lib/slug";
 import { AUTO_MATCH_THRESHOLD, classifyMatch, findGameByTitle, guardTakenRef, NO_CANDIDATE_EXTERNAL_ID, NONE_RETRY_DAYS, noneRetryCutoff, PENDING_MATCH_THRESHOLD, pickBestCandidate, refRowFor } from "@/server/sync/match";
-import { matchNewsToGame } from "@/server/sync/run-news";
 
 describe("classifyMatch", () => {
   it("≥0.9 auto, 0.7~0.9 pending, <0.7 none", () => {
@@ -47,21 +46,6 @@ describe("pickBestCandidate", () => {
   });
   it("후보가 없으면 null", () => {
     expect(pickBestCandidate("x", null, [])).toBeNull();
-  });
-});
-
-describe("matchNewsToGame", () => {
-  const index = [
-    { id: "a", slug: "elden-ring", needles: ["elden ring"] },
-    { id: "b", slug: "elden-ring-nightreign", needles: ["elden ring nightreign"] },
-    { id: "c", slug: "go", needles: ["go"] }, // 너무 짧은 제목은 무시
-  ];
-  it("제목 포함 시 가장 긴 제목의 게임을 연결", () => {
-    expect(matchNewsToGame("Elden Ring Nightreign patch 1.02 is out", index)?.id).toBe("b");
-    expect(matchNewsToGame("ELDEN RING sale", index)?.id).toBe("a");
-  });
-  it("없으면 null, 짧은 제목은 매칭하지 않음", () => {
-    expect(matchNewsToGame("Let's go outside", index)).toBeNull();
   });
 });
 
