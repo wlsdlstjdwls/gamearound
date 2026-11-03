@@ -139,6 +139,12 @@ export async function updateCompanyByManager(slug: string, user: UserRow, input:
   if (!(await canManageCompany(current.id, user))) throw new Error(G.forbidden);
   if (!logoAllowed(input.logoUrl, current.id, current.logoUrl)) throw new Error(G.logoFailed);
 
+  // 기록의 before 는 화면용 값(설립 연도)이 아니라 DB 에 있던 값 그대로 남긴다 — 되돌릴 때 그 값을 다시 넣는다
+  const [raw] = await db
+    .select({ foundedAt: companies.foundedAt, countryNameKo: companies.countryNameKo })
+    .from(companies)
+    .where(eq(companies.id, current.id))
+    .limit(1);
   const next: Partial<typeof companies.$inferInsert> = {};
   const locks: Array<{ field: string; before: unknown; after: unknown }> = [];
   const take = <K extends keyof typeof companies.$inferInsert>(field: K, before: unknown, after: (typeof companies.$inferInsert)[K]) => {
@@ -153,19 +159,28 @@ export async function updateCompanyByManager(slug: string, user: UserRow, input:
   if (current.countryCode !== input.countryCode) {
     take("countryCode", current.countryCode, input.countryCode);
     next.countryNameKo = input.countryCode ? countryNameKo(input.countryCode) : null;
-    locks.push({ field: "countryNameKo", before: null, after: next.countryNameKo });
+    locks.push({ field: "countryNameKo", before: raw?.countryNameKo ?? null, after: next.countryNameKo });
   }
   if (current.foundedYear !== input.foundedYear) {
-    take("foundedAt", current.foundedYear, input.foundedYear ? `${input.foundedYear}-01-01` : null);
+    take("foundedAt", raw?.foundedAt ?? null, input.foundedYear ? `${input.foundedYear}-01-01` : null);
   }
   if (locks.length === 0) return 0;
 
   const source = user.role === "admin" ? "admin" : "user";
   await db.update(companies).set({ ...next, ...updatedBy(source, user.id) }).where(eq(companies.id, current.id));
-  // 같은 칸의 옛 잠금은 지우고 새로 건다 — 한 칸에 잠금 줄이 쌓이면 "언제 누가 마지막으로 정했나" 가 흐려진다
+  // 같은 칸의 옛 줄은 지우지 않고 잠금만 내린다 — 잠금은 마지막 줄 하나가 쥐고, 옛 줄은 이력으로 남아
+  // 처음 값(수집이 준 값)까지 거슬러 되돌릴 수 있다(2026-11-03, 지우던 판은 첫 값을 잃었다)
   await db
-    .delete(dataCorrections)
-    .where(and(eq(dataCorrections.table, "companies"), eq(dataCorrections.rowId, current.id), inArray(dataCorrections.field, locks.map((l) => l.field))));
+    .update(dataCorrections)
+    .set({ lockField: false, ...updatedBy(source, user.id) })
+    .where(
+      and(
+        eq(dataCorrections.table, "companies"),
+        eq(dataCorrections.rowId, current.id),
+        eq(dataCorrections.lockField, true),
+        inArray(dataCorrections.field, locks.map((l) => l.field)),
+      ),
+    );
   await db.insert(dataCorrections).values(
     locks.map((l) => ({
       adminUserId: user.id,
