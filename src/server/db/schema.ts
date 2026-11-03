@@ -600,6 +600,11 @@ export const news = pgTable("news", {
   id: uuid("id").primaryKey().defaultRandom(),
   gameId: uuid("game_id").references(() => games.id, { onDelete: "cascade" }),
   title: text("title").notNull(),
+  /**
+   * 제목 기계 번역(2026-11-03, 주간 맞춤 소식). 영문 기사가 묶음에 실릴 때만 번역해 둔다(sync/news-digest) — 피드 전체를 번역하면
+   * 무료 한도(adapters/translate)를 며칠 만에 다 쓴다. 한 번 채우면 다시 번역하지 않는다. 한글 제목이거나 아직 안 실린 기사는 null
+   */
+  titleKo: text("title_ko"),
   url: text("url").notNull().unique(),
   sourceName: text("source_name").notNull(),
   thumbnailUrl: text("thumbnail_url"),

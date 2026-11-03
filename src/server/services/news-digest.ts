@@ -18,6 +18,8 @@ const DAY_MS = 24 * 60 * 60 * 1000;
 
 /** 고르기에 쓰는 칸과 화면, 메일에 쓰는 칸을 함께 든 후보 한 건 */
 export type DigestNews = DigestCandidate & {
+  /** 제목 기계 번역(schema 의 news.titleKo). 묶음에 실릴 때 채운다 */
+  titleKo: string | null;
   url: string;
   sourceName: string;
   thumbnailUrl: string | null;
@@ -26,7 +28,7 @@ export type DigestNews = DigestCandidate & {
 };
 
 type CandidateRow = {
-  id: string; title: string; url: string; source_name: string; thumbnail_url: string | null; summary: string | null;
+  id: string; title: string; title_ko: string | null; url: string; source_name: string; thumbnail_url: string | null; summary: string | null;
   published_at: string | Date; game_id: string; slug: string; game_title: string; platforms: string[] | null; genre_ids: number[] | null;
 };
 
@@ -34,7 +36,7 @@ type CandidateRow = {
 export async function loadDigestCandidates(db: Db, since: Date): Promise<DigestNews[]> {
   const visible = visiblePlatformsOnly();
   const res = await db.execute<CandidateRow>(sql`
-    select n.id, n.title, n.url, n.source_name, n.thumbnail_url, n.summary, n.published_at, n.game_id,
+    select n.id, n.title, n.title_ko, n.url, n.source_name, n.thumbnail_url, n.summary, n.published_at, n.game_id,
       g.slug, coalesce(g.title_ko, g.title_en) as game_title,
       (select array_agg(distinct game_platforms.platform::text) from game_platforms
         where game_platforms.game_id = n.game_id ${visible ? sql`and ${visible}` : sql``}) as platforms,
@@ -47,6 +49,7 @@ export async function loadDigestCandidates(db: Db, since: Date): Promise<DigestN
   return res.rows.map((r) => ({
     newsId: r.id,
     title: r.title,
+    titleKo: r.title_ko,
     url: r.url,
     sourceName: r.source_name,
     thumbnailUrl: r.thumbnail_url,
@@ -95,5 +98,5 @@ export function digestSince(now: Date, lastDigestAt: Date | null): Date {
 }
 
 export function digestNewsDto(n: DigestNews): NewsDto {
-  return { id: n.newsId, title: n.title, url: n.url, sourceName: n.sourceName, thumbnailUrl: n.thumbnailUrl, summary: n.summary, publishedAt: n.publishedAt.toISOString(), game: n.game };
+  return { id: n.newsId, title: n.title, titleKo: n.titleKo, url: n.url, sourceName: n.sourceName, thumbnailUrl: n.thumbnailUrl, summary: n.summary, publishedAt: n.publishedAt.toISOString(), game: n.game };
 }

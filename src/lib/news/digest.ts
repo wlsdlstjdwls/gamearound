@@ -7,6 +7,7 @@
 //   3. 장르를 안 고른 사람만: 고른 플랫폼에서 나오는 게임 소식.
 // 장르를 고른 사람에게 플랫폼만 맞는 소식(3)을 넣지 않는 이유: PC 를 고른 사람에게는 거의 모든 기사가 맞아 묶음이 "최신 뉴스" 와 같아진다.
 // 게임과 이어지지 않은 기사(업계 소식)는 넣지 않는다 — 무엇에 맞는지 말할 근거가 없다.
+// 공략, 경품, 할인 모음 글도 넣지 않는다(DIGEST_NOISE). 소식이 아니라 그 게임을 하는 사람이 찾아 읽는 글이다.
 //
 // 한 게임에는 한 건만. 큰 게임은 한 주에 기사가 열 건씩 나와(콜 오브 듀티) 묶음 하나를 다 먹는다.
 // 그 한 건은 한국어 제목을 먼저 고른다 — 매체 대부분이 영문이라(2026-11-03 실측 30일 3,408건 중 한글 774건),
@@ -44,6 +45,31 @@ export function hasDigestTaste(t: DigestTaste): boolean {
 
 const HANGUL = /\p{Script=Hangul}/u;
 
+/**
+ * 묶음에서 빼는 제목 꼴(2026-11-03 지난 7일 후보 376건을 훑어 정했다). 그 주 묶음 후보의 4할이 팬텀 블레이드 제로 공략이었다.
+ *   공략: "How to beat ...", "Where to find ...", "All ... locations", "Best ... for every position", "... guide", 국내 "공략"
+ *   경품, 판촉: "Giveaway", 국내 "SNS 이벤트 진행", "경품"
+ *   할인 모음: "The Best Deals Today" — 여러 상품을 늘어놓은 글이라 그 게임 소식이 아니다
+ * 패치 노트, 판매량, 세일 소식("Harvest Sale")은 남긴다 — 지켜보는 게임에 일어난 일이다.
+ */
+const DIGEST_NOISE: readonly RegExp[] = [
+  /(^|:\s*)how to\b/i,
+  /^where to (find|get)\b/i,
+  /^all\b.*\blocations?\b/i,
+  /\bbest\b.*\bfor every\b/i,
+  /\bguide\b/i,
+  /\bgiveaway\b/i,
+  /\bbest deals\b/i,
+  /공략/,
+  /이벤트\s*(진행|실시|개최)/,
+  /경품/,
+];
+
+/** 묶음에 넣지 않을 제목인가(DIGEST_NOISE) */
+export function isDigestNoise(title: string): boolean {
+  return DIGEST_NOISE.some((re) => re.test(title));
+}
+
 /** 0 이면 넣지 않는다. 클수록 앞에 선다(파일 머리의 1, 2, 3) */
 function rank(c: DigestCandidate, t: DigestTaste): number {
   if (t.wishedGameIds.has(c.gameId)) return 3;
@@ -65,6 +91,7 @@ export function pickDigest<T extends DigestCandidate>(candidates: readonly T[], 
   if (!hasDigestTaste(taste)) return [];
   const best = new Map<string, { c: T; r: number }>();
   for (const c of candidates) {
+    if (isDigestNoise(c.title)) continue;
     const r = rank(c, taste);
     if (r === 0) continue;
     const cur = best.get(c.gameId);
@@ -88,4 +115,16 @@ export function kstWeekStart(now: Date): Date {
   const sinceMonday = (kst.getUTCDay() + 6) % 7;
   const mondayKst = Date.UTC(kst.getUTCFullYear(), kst.getUTCMonth(), kst.getUTCDate()) - sinceMonday * DAY_MS;
   return new Date(mondayKst - KST_OFFSET_MS);
+}
+
+/**
+ * 묶음을 보내도 되는 한국 시각(시작 시 이상, 끝 시 미만). 크론은 09:10 에 부르지만(cron/news-digest), 크론 시각을 잘못 고치거나
+ * 손으로 돌려도 밤에는 메일, 알림이 나가지 않게 발송 쪽에서 한 번 더 막는다(2026-11-03, 새벽 3시 발송을 잡아낸 사용자 지적).
+ */
+export const NEWS_DIGEST_SEND_HOURS_KST = { from: 8, to: 21 } as const;
+
+/** 지금이 보내도 되는 한국 시각인가 */
+export function isDigestSendHour(now: Date): boolean {
+  const hour = new Date(now.getTime() + KST_OFFSET_MS).getUTCHours();
+  return hour >= NEWS_DIGEST_SEND_HOURS_KST.from && hour < NEWS_DIGEST_SEND_HOURS_KST.to;
 }

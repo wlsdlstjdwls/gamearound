@@ -24,6 +24,7 @@ import { newsThumbnailSrc } from "@/lib/news/thumbnail";
 import { ImageFallback } from "@/components/ui/image-fallback";
 import { ROW, ROWS } from "@/components/ui/page";
 import { cn } from "@/lib/cn";
+import { NEWS_MESSAGES } from "@/lib/news/messages";
 
 export function NewsList({ items, showGame = false }: { items: NewsDto[]; showGame?: boolean }) {
   if (items.length === 0) {
@@ -65,12 +66,18 @@ export function NewsList({ items, showGame = false }: { items: NewsDto[]; showGa
                 className="block text-[13px] font-semibold leading-[1.5] text-ink transition-colors duration-base after:absolute after:inset-0 after:content-[''] hover:text-acc"
               >
                 <Clamp lines={2} className="relative z-10">
-                  {n.title}
+                  {n.titleKo ?? n.title}
                 </Clamp>
                 <span className="sr-only"> (새 창에서 열림)</span>
               </a>
+              {/* 번역 제목을 세웠으면 그 자리에 원문 제목을 둔다 — 요약도 영문이라 번역 밑에 영문 두 줄이 붙으면 읽을 것이 늘기만 한다 */}
+              {n.titleKo ? (
+                <Clamp lines={1} className="relative z-10 mt-0.5 text-[12.5px] leading-[1.5] text-mut">
+                  {n.title}
+                </Clamp>
+              ) : null}
               {/* 요약 한 줄(목업). 잘리면 Clamp 말풍선이 전문을 보여 준다 — 덮개 위로 올리는 이유는 제목 Clamp 와 같다 */}
-              {n.summary && (
+              {!n.titleKo && n.summary && (
                 <Clamp lines={1} className="relative z-10 mt-0.5 text-[12.5px] leading-[1.5] text-mut">
                   {n.summary}
                 </Clamp>
@@ -79,6 +86,12 @@ export function NewsList({ items, showGame = false }: { items: NewsDto[]; showGa
                 <span>{n.sourceName}</span>
                 <span aria-hidden>|</span>
                 <time dateTime={n.publishedAt}>{formatDateTime(n.publishedAt)}</time>
+                {n.titleKo && (
+                  <>
+                    <span aria-hidden>|</span>
+                    <span>{NEWS_MESSAGES.machineTranslated}</span>
+                  </>
+                )}
                 {showGame && n.game && (
                   <>
                     <span aria-hidden>|</span>

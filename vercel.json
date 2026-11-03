@@ -21,6 +21,10 @@
       "schedule": "20 18 * * *"
     },
     {
+      "path": "/api/cron/news-digest",
+      "schedule": "10 0 * * *"
+    },
+    {
       "path": "/api/cron/crawl/epic/prices",
       "schedule": "0 0,6,12,18 * * *"
     },

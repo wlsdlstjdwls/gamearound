@@ -61,6 +61,8 @@ export type PlatformDto = {
 export type NewsDto = {
   id: string;
   title: string;
+  /** 제목 기계 번역(주간 맞춤 소식에 실린 영문 기사만, schema 의 news.titleKo). 있으면 목록이 이걸 제목으로 세우고 원문을 밑에 둔다 */
+  titleKo?: string | null;
   url: string;
   sourceName: string;
   thumbnailUrl: string | null;
