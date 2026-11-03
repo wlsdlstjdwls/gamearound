@@ -20,13 +20,14 @@ import { createdBy, updatedBy } from "@/server/db/audit";
 import { normalizeCompanyName } from "@/lib/company-name";
 import { DISPLAY_TIME_ZONE } from "@/lib/format";
 import { recentlyViewedSlugs } from "@/server/game-views";
-import { BATCH_SIZE, COMPANY_MISS_RETRY_DAYS, COMPANY_REFRESH_DAYS, COMPANY_SEARCH_DEADLINE_MS } from "./constants";
+import { BATCH_SIZE, COMPANY_MISS_RETRY_DAYS, COMPANY_REFRESH_DAYS, COMPANY_SEARCH_DEADLINE_MS, IGDB_ENRICH_DEADLINE_MS, IGDB_ENRICH_PER_RUN } from "./constants";
 import type { Db } from "@/server/db/client";
 import { recordError, type Ctx, type RunOptions } from "./context";
 import { fetchWithRetry } from "./retry";
 import { attachCompany, companyNamesOf, findCompaniesByAliases } from "./company-writer";
 import { prioritizeCompanyTargets } from "./company-priority";
 import { createNameOnlyCompanies } from "./company-name-only";
+import { enrichCompaniesFromIgdb } from "./company-igdb";
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 /** 한 문장에 넣을 행 수. Neon HTTP 한 요청의 파라미터가 너무 많아지지 않게 끊는다 */
@@ -149,6 +150,17 @@ export async function clearMisses(db: Db, rawNames: string[]): Promise<void> {
 
 export async function runCompanies(ctx: Ctx, source: CompanySource, opts: RunOptions): Promise<void> {
   const startedAt = Date.now();
+  await lookupCompanies(ctx, source, opts, startedAt);
+  // 위키데이터에 없는 회사는 남은 시간으로 IGDB 에 묻는다(sync/company-igdb)
+  try {
+    const igdb = await enrichCompaniesFromIgdb(ctx, IGDB_ENRICH_PER_RUN, startedAt + IGDB_ENRICH_DEADLINE_MS);
+    ctx.processed += igdb.checked;
+  } catch (e) {
+    recordError(ctx, "igdb", e);
+  }
+}
+
+async function lookupCompanies(ctx: Ctx, source: CompanySource, opts: RunOptions, startedAt: number): Promise<void> {
   const adapter = getCompanyAdapter(source);
   const limit = opts.limit ?? BATCH_SIZE[source];
 

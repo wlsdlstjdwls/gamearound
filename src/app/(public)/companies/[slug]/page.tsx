@@ -75,7 +75,13 @@ export default async function CompanyPage({ params, searchParams }: Props) {
       <header className="enter-item flex flex-col gap-4" style={stagger(0)}>
         <BackLink href={ROUTES.company}>회사 목록으로</BackLink>
         <div className="flex flex-wrap items-end justify-between gap-x-6 gap-y-4">
-          <div className="min-w-0">
+          <div className="flex min-w-0 items-center gap-4">
+            {company.logoUrl && (
+              // 바깥 로고 주소를 그대로 쓴다 — 회사 하나에 한 장이라 이미지 최적화를 거칠 이득이 없다
+              // eslint-disable-next-line @next/next/no-img-element
+              <img src={company.logoUrl} alt="" className="h-14 w-14 shrink-0 rounded-[10px] border border-line bg-white object-contain p-1.5" />
+            )}
+            <div className="min-w-0">
             <PageHead size="hero" title={company.name} />
             <p className="mt-2 text-[13.5px] text-mut">
               {[
@@ -87,6 +93,7 @@ export default async function CompanyPage({ params, searchParams }: Props) {
                 .filter(Boolean)
                 .join(" | ")}
             </p>
+            </div>
           </div>
 
           <dl className="grid grid-cols-2 gap-x-7 gap-y-5 sm:grid-cols-3">

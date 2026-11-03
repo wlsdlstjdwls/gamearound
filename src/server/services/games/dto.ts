@@ -142,6 +142,8 @@ export type CompanyDetail = {
   hqNameKo: string | null;
   websiteUrl: string | null;
   description: string | null;
+  /** IGDB 로고(위키데이터에 없는 회사만 채운다, sync/company-igdb) */
+  logoUrl: string | null;
   lastSyncedAt: string | null;
   gameCount: number;
   onSaleCount: number;

@@ -48,6 +48,7 @@ async function getCompanyBySlugRaw(slug: string): Promise<CompanyDetail | null> 
     hqNameKo: company.hqNameKo,
     websiteUrl: company.websiteUrl,
     description: company.description,
+    logoUrl: company.logoUrl ?? null,
     lastSyncedAt: company.lastSyncedAt?.toISOString() ?? null,
     gameCount: counts?.gameCount ?? 0,
     onSaleCount: counts?.onSaleCount ?? 0,

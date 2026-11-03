@@ -1022,6 +1022,14 @@ export const COMPANY_MISS_RETRY_DAYS = 30;
 export const COMPANY_SEARCH_DEADLINE_MS = 480_000;
 
 /**
+ * IGDB 보강(sync/company-igdb)이 쓰는 시간 끝. 위키데이터 조회가 480초에 끊기고 쓰기가 끝난 뒤 남는 몫을 쓴다 —
+ * 함수 한도 800초(crawl 라우트 maxDuration)에서 100초를 남긴다. 실측 한 회사 약 0.8초(검색 1건 + DB 2건, 2026-11-03).
+ */
+export const IGDB_ENRICH_DEADLINE_MS = 700_000;
+/** 한 회차에 IGDB 에 물을 회사 수 상한. 시간 끝에 먼저 닿으면 거기서 멈춘다 */
+export const IGDB_ENRICH_PER_RUN = 300;
+
+/**
  * 믿을 수 있는 출시일의 범위(연도). 밖에 있으면 값을 버리고 기존 값을 지킨다.
  *
  * 왜 필요한가(2026-09-16 실측): xbox 가 OriginalReleaseDate 로 9998년 58건, 2799년 5건을 준다.

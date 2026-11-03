@@ -848,6 +848,11 @@ export const companies = pgTable("companies", {
   description: text("description"),
   wikidataId: text("wikidata_id").unique(), // Q번호. 재조회 키
   lastSyncedAt: timestamp("last_synced_at", { withTimezone: true }),
+  // IGDB 회사 번호 — 위키데이터에 없는 회사의 정보를 채운 출처(2026-11-03, sync/company-igdb). 무료 키는 비상업용이라 오픈 전 제휴 확인
+  igdbId: integer("igdb_id").unique(),
+  /** IGDB 에 물어본 시각. 못 찾았어도 찍는다 — 안 찍으면 같은 이름을 매 회차 다시 묻는다 */
+  igdbCheckedAt: timestamp("igdb_checked_at", { withTimezone: true }),
+  logoUrl: text("logo_url"),
   ...auditColumns(),
 }, (t) => [index("companies_country_idx").on(t.countryCode)]);
 
