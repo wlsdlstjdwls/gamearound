@@ -72,6 +72,7 @@ function columnsOf(b: AdminBoard): Column[] {
           weight: "queue",
           capped: b.companiesCapped,
         },
+        { label: M.companyClaims, hint: M.companyClaimsHint, href: ROUTES.adminCompanyClaims, n: b.companyClaims, weight: "queue" },
         { label: M.preorder, hint: M.preorderHint, href: ROUTES.adminPreorder, n: b.preorder, weight: "queue" },
       ],
     },

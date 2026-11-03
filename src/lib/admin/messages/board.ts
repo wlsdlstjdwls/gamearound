@@ -52,6 +52,8 @@ export const ADMIN_BOARD_MESSAGES = {
   commentsToday: "금일 신규 댓글",
   commentsTodayHint: "금일(한국 시간) 신규 댓글. 처리 대상이 아닌 참고 지표예요",
 
+  companyClaims: "회사 관리 신청 대기",
+  companyClaimsHint: "회사 관계자가 낸 회사 페이지 관리 신청",
   shops: "입점 승인 대기",
   shopsHint: "심사 대기 중인 매장 입점 신청",
   products: "상품 매핑 대기",

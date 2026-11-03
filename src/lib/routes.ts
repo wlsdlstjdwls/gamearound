@@ -20,6 +20,8 @@ export const ROUTES = {
   /** 내 활동(기획서 v2.0 S-24): 프로필 사진, 내가 쓴 글, 저장한 글 */
   me: "/me",
   apiAvatarUpload: "/api/me/avatar/upload",
+  /** 회사 로고 Blob 업로드 토큰(회사 관리 권한이 있는 사람만) */
+  apiCompanyLogoUpload: "/api/companies/logo/upload",
   alerts: "/alerts",
   /** 알림함 전체(2026-10-30). 머리 종 팝오버는 최근 20건만 펴서 그보다 오래된 알림이 읽을 자리가 여기다 */
   notifications: "/notifications",
@@ -51,6 +53,8 @@ export const ROUTES = {
   adminDataIssues: "/admin/data-issues",
   /** 회사 이름 확정 큐 */
   adminCompanies: "/admin/companies",
+  /** 회사 페이지 관리 신청 심사(2026-11-03) */
+  adminCompanyClaims: "/admin/company-claims",
   /** 게임 고치기 화면들의 머리 주소. 메뉴는 아니다 — 한 게임은 adminGamePath(id) 로 연다. 휴대폰 허용 표(lib/admin/mobile)가 이 머리로 고른다 */
   adminGames: "/admin/games",
   /** 상품 매핑 검수 — 매핑 배치(§5.2)가 후보만 남긴 상품을 사람이 마무리하는 자리 */
@@ -218,6 +222,16 @@ export function gamePath(slug: string): string {
 
 export function companyPath(slug: string): string {
   return `${ROUTES.company}/${encodeURIComponent(slug)}`;
+}
+
+/** 회사 페이지 관리 신청(로그인 필요) */
+export function companyClaimPath(slug: string): string {
+  return `${companyPath(slug)}/claim`;
+}
+
+/** 회사 정보 고치기(승인된 관계자, 관리자) */
+export function companyManagePath(slug: string): string {
+  return `${companyPath(slug)}/manage`;
 }
 
 /**

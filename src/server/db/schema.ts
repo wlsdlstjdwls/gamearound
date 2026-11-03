@@ -57,6 +57,8 @@ export * from "./schema-notifications";
 export * from "./schema-preorder";
 // 가입 동의 기록(schema-consents.ts, 2026-10-26). users 행을 넓히지 않으려고 갈라 뒀다(그 파일 머리 주석).
 export * from "./schema-consents";
+// 회사 페이지 관리 신청(schema-company-claims.ts, 2026-11-03). 사람이 쓰는 세계라 갈라 뒀다.
+export * from "./schema-company-claims";
 
 
 /** 화면과 수집의 기준 지역. 이 값이 아닌 행은 "참고 가격" 으로만 보여 준다 */

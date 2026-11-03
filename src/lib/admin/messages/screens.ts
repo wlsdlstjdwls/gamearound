@@ -37,6 +37,8 @@ export const ADMIN_NAV = {
   /** 데이터 점검기(sync/quality)가 사람에게 묻는 것 */
   dataIssues: "데이터오류관리",
   companies: "회사정보관리",
+  /** 회사 관계자가 낸 회사 페이지 관리 신청(2026-11-03) */
+  companyClaims: "회사관리신청관리",
   products: "매장상품매핑관리",
   shops: "입점승인관리",
   /** 인디 홍보 글의 등록 승인, 신고, 게임 연결 확인 */

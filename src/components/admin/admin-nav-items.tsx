@@ -14,6 +14,7 @@ export interface AdminNavCounts {
   matches: number;
   products: number;
   shops: number;
+  companyClaims: number;
   companies: number;
   companiesCapped: boolean;
   tasksTodo: number;
@@ -113,6 +114,7 @@ export const GROUPS: Array<{ key: string; title?: string; items: Item[] }> = [
         Icon: BuildingIcon,
         pick: (c) => ({ n: c.companies, capped: c.companiesCapped }),
       },
+      { href: ROUTES.adminCompanyClaims, label: ADMIN_NAV.companyClaims, Icon: BuildingIcon, pick: (c) => ({ n: c.companyClaims }) },
       { href: ROUTES.adminPreorder, label: ADMIN_NAV.preorder, Icon: CalendarIcon, pick: (c) => ({ n: c.preorder }) },
     ],
   },

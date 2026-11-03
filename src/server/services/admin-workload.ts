@@ -21,6 +21,7 @@ import { countIndieAdminQueue, countIndieQueues } from "@/server/services/indie"
 import { countCommunityToday } from "@/server/services/community";
 import { countPreorderReview } from "@/server/services/preorder-bonuses";
 import { countOpenDataIssues } from "@/server/services/admin-data-issues";
+import { countPendingCompanyClaims } from "@/server/services/company-claims";
 import { requireAdmin } from "@/server/services/users";
 import { memberships } from "@/server/db/schema-memberships";
 import { promotionBoosts } from "@/server/db/schema-promotions";
@@ -37,6 +38,8 @@ export interface AdminWorkCounts {
   products: number;
   /** 심사 대기 매장 */
   shops: number;
+  /** 확인 대기 회사 페이지 관리 신청 */
+  companyClaims: number;
   /** 확정 못 한 회사 이름. PENDING_COMPANIES_LIMIT 까지만 센다 */
   companies: number;
   /** companies 가 상한에 닿아 "이상"으로 읽어야 하는지 */
@@ -60,7 +63,7 @@ export const getAdminWorkCounts = cache(async (): Promise<AdminWorkCounts> => {
   await requireAdmin();
   const db = getDb();
 
-  const [[matches], [pendingProducts], [pendingShops], companies, taskRows, indie, preorder, dataIssues] = await Promise.all([
+  const [[matches], [pendingProducts], [pendingShops], companies, taskRows, indie, preorder, dataIssues, companyClaims] = await Promise.all([
     db.select({ n: count() }).from(gameSourceRefs).where(eq(gameSourceRefs.matchedBy, "pending")),
     db
       .select({ n: count() })
@@ -77,6 +80,7 @@ export const getAdminWorkCounts = cache(async (): Promise<AdminWorkCounts> => {
     countIndieAdminQueue(),
     countPreorderReview(),
     countOpenDataIssues(),
+    countPendingCompanyClaims(),
   ]);
   const tasksOf = (s: "todo" | "doing") => taskRows.find((r) => r.status === s)?.n ?? 0;
 
@@ -84,6 +88,7 @@ export const getAdminWorkCounts = cache(async (): Promise<AdminWorkCounts> => {
     matches: matches?.n ?? 0,
     products: pendingProducts?.n ?? 0,
     shops: pendingShops?.n ?? 0,
+    companyClaims,
     companies,
     companiesCapped: companies >= PENDING_COMPANIES_LIMIT,
     tasksTodo: tasksOf("todo"),
@@ -121,6 +126,7 @@ export interface AdminBoard {
   dataIssues: number;
   companies: number;
   companiesCapped: boolean;
+  companyClaims: number;
   preorder: number;
   indieReview: number;
   indieReported: number;
@@ -173,6 +179,7 @@ export async function getAdminBoard(): Promise<AdminBoard> {
     dataIssues: work.dataIssues,
     companies: work.companies,
     companiesCapped: work.companiesCapped,
+    companyClaims: work.companyClaims,
     preorder: work.preorder,
     indieReview: indie.review,
     indieReported: indie.reported,

@@ -17,6 +17,7 @@ export const ADMIN_MENU_KEYWORDS: Readonly<Record<string, readonly string[]>> = 
   [ROUTES.adminMatches]: ["매칭 대기", "스토어 연결", "매칭"],
   [ROUTES.adminDataIssues]: ["데이터 점검", "오류", "품질"],
   [ROUTES.adminCompanies]: ["회사 이름", "개발사", "배급사"],
+  [ROUTES.adminCompanyClaims]: ["회사 신청", "회사 관리", "관계자"],
   [ROUTES.adminPreorder]: ["특전", "예약", "닌텐도"],
   [ROUTES.adminIndie]: ["인디 홍보", "인디", "신고"],
   [ROUTES.adminPosts]: ["게시판", "댓글", "라운지", "숨김"],

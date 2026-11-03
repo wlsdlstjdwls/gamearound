@@ -715,6 +715,13 @@
       "when": 1793668616082,
       "tag": "0101_company_igdb",
       "breakpoints": true
+    },
+    {
+      "idx": 102,
+      "version": "7",
+      "when": 1793670839985,
+      "tag": "0102_company_claims",
+      "breakpoints": true
     }
   ]
 }

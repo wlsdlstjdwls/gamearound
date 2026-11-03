@@ -12,7 +12,9 @@ import { Pagination } from "@/components/pagination";
 import { BackLink } from "@/components/ui/back-link";
 import { Page, PageHead, SectionHead } from "@/components/ui/page";
 import { stagger } from "@/lib/motion";
-import { ROUTES, companyPath } from "@/lib/routes";
+import { ROUTES, companyClaimPath, companyPath } from "@/lib/routes";
+import { COMPANY_CLAIM_MESSAGES } from "@/lib/companies/messages";
+import Link from "next/link";
 import { firstParam } from "@/lib/games-query";
 import { getCompanyBySlug, listCompanyGames, type CompanyRoleFilter } from "@/server/services/companies";
 import { getCompanyProfile } from "@/server/services/company-profile";
@@ -176,6 +178,12 @@ export default async function CompanyPage({ params, searchParams }: Props) {
       {result.totalPages > 1 && (
         <Pagination page={result.page} totalPages={result.totalPages} hrefFor={(p) => href(slug, role, p)} />
       )}
+      {/* 회사 관계자가 직접 고치는 길(2026-11-03). 공개 화면은 캐시라 사람마다 다르게 그리지 않는다 — 권한은 신청 화면이 가린다 */}
+      <p className="text-center text-[12.5px]">
+        <Link href={companyClaimPath(slug)} className="text-dim underline underline-offset-2 hover:text-ink">
+          {COMPANY_CLAIM_MESSAGES.claimLink}
+        </Link>
+      </p>
       </NavPendingScope>
     </Page>
   );
