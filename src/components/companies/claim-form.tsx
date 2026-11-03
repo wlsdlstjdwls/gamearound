@@ -35,7 +35,7 @@ export function CompanyClaimForm({ slug, defaults }: { slug: string; defaults: P
     );
   }
   return (
-    <ActionForm action={formAction} state={state} pending={submitting} className={sectionCardClass("flex flex-col gap-4")}>
+    <ActionForm noValidate action={formAction} state={state} pending={submitting} className={sectionCardClass("flex flex-col gap-4")}>
       {state && !state.ok && (
         <FormMessage tone="error" replayKey={state.error}>
           {state.error}

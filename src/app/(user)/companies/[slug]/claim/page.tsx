@@ -29,7 +29,7 @@ export default async function CompanyClaimPage({ params }: Props) {
     <Page width="tight" gap={18}>
       <BackLink href={companyPath(company.slug)}>{C.backToCompany}</BackLink>
       <PageHead title={C.claimTitle} />
-      <p className="text-[13.5px] leading-[1.7] text-mut">{C.claimLead(company.name)}</p>
+      <p className="text-[13.5px] leading-[1.7] text-mut">{canManage ? C.claimLeadManager(company.name) : C.claimLead(company.name)}</p>
       {canManage ? (
         <div>
           <Link href={companyManagePath(company.slug)} className={buttonClass({ size: "lg" })}>

@@ -3,6 +3,8 @@
 export const COMPANY_CLAIM_MESSAGES = {
   claimLink: "이 회사 관계자인가요? 회사 정보 관리 신청",
   claimTitle: "회사 정보 관리 신청",
+  /** 이미 고칠 수 있는 사람(승인된 관계자, 관리자)에게 */
+  claimLeadManager: (name: string) => `${name} 정보를 직접 고칠 수 있어요`,
   claimLead: (name: string) => `${name} 관계자라면 회사 소개, 로고, 사이트를 직접 고칠 수 있어요. 확인을 거쳐 승인해 드려요`,
   contactNameLabel: "담당자 이름",
   contactTitleLabel: "직함",
