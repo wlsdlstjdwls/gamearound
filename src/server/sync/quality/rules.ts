@@ -10,14 +10,22 @@
 // 규칙을 늘릴 때: 손으로 고친 판정 하나를 여기 함수 하나로 옮기고, 그 사례를 테스트 픽스처로 남긴다.
 import type { ContentType } from "@/server/db/schema";
 
-export type QualityRule = "parent_more_specific" | "release_date_gap" | "parent_chain" | "self_parent" | "shared_store_id";
+export type QualityRule =
+  | "parent_more_specific"
+  | "release_date_gap"
+  | "parent_chain"
+  | "self_parent"
+  | "shared_store_id"
+  | "game_with_parent"
+  | "duplicate_title";
 export type Verdict = "auto" | "candidate" | "notify";
 
 /** 적용할 수 있는 고침. notify 는 고침이 없다 */
 export type QualityFix =
   | { kind: "set_parent"; gameId: string; from: string | null; to: string }
   | { kind: "promote_game"; gameId: string; from: string }
-  | { kind: "set_release_date"; platformRowId: string; date: string };
+  | { kind: "set_release_date"; platformRowId: string; date: string }
+  | { kind: "set_content_type"; gameId: string; from: ContentType; to: ContentType };
 
 export interface QualityFinding {
   rule: QualityRule;
@@ -33,6 +41,8 @@ export interface QualityFinding {
 
 export interface QualityGame {
   id: string;
+  /** 같은 제목 중복 판정에서 옛 DB 병합 꼬리(-8자리 16진)를 알아보는 데 쓴다 */
+  slug?: string;
   titleEn: string;
   contentType: ContentType;
   parentGameId: string | null;

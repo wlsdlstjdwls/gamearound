@@ -18,6 +18,7 @@ import { applyQualityFix, StaleFixError } from "./apply";
 import { deleteOpenIssues, upsertIssues } from "./issues";
 import { issueKey, loadQualityInput } from "./load";
 import { findParentChains, findParentMoreSpecific, findReleaseDateGaps, findSharedStoreIds, type QualityFinding } from "./rules";
+import { findDuplicateTitles, findGamesWithParent } from "./rules-structure";
 
 export interface QualityRunResult {
   found: number;
@@ -40,6 +41,8 @@ export async function runDataQuality(now: Date = new Date()): Promise<QualityRun
     ...findParentMoreSpecific(input.games, input.lockedParent, input.pricedGameIds),
     ...findReleaseDateGaps(input.platforms, now),
     ...findSharedStoreIds(input.shared),
+    ...findGamesWithParent(input.games, input.lockedParent),
+    ...findDuplicateTitles(input.games, input.storeIds),
   ];
 
   const result: QualityRunResult = { found: findings.length, autoApplied: 0, newlyOpened: 0, open: 0, stale: 0, vanished: 0, failed: 0, errors: [] };

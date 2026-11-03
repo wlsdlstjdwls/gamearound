@@ -26,6 +26,7 @@ import { recordError, type Ctx, type RunOptions } from "./context";
 import { fetchWithRetry } from "./retry";
 import { attachCompany, companyNamesOf, findCompaniesByAliases } from "./company-writer";
 import { prioritizeCompanyTargets } from "./company-priority";
+import { createNameOnlyCompanies } from "./company-name-only";
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 /** 한 문장에 넣을 행 수. Neon HTTP 한 요청의 파라미터가 너무 많아지지 않게 끊는다 */
@@ -173,6 +174,17 @@ export async function runCompanies(ctx: Ctx, source: CompanySource, opts: RunOpt
   }
   await linkMany(ctx, aliasLinks);
 
+  // 위키데이터에 없다고 이미 확인한 이름은 다시 묻지 않고 이름만으로 세운다(company-name-only 머리 주석)
+  const notFound = unknown.filter((t) => misses.get(normalizeCompanyName(t.rawName)) === "not_found");
+  if (notFound.length > 0) {
+    try {
+      ctx.processed += await createNameOnlyCompanies(ctx, notFound);
+      await clearMisses(ctx.db, notFound.map((t) => t.rawName));
+    } catch (e) {
+      recordError(ctx, "company:name-only", e);
+    }
+  }
+
   const waiting = unknown.filter((t) => !misses.has(normalizeCompanyName(t.rawName)));
   const fresh = prioritizeCompanyTargets(waiting, new Set(viewed)).slice(0, limit);
   const stale = await listStaleCompanies(ctx, limit - fresh.length);
@@ -186,13 +198,15 @@ export async function runCompanies(ctx: Ctx, source: CompanySource, opts: RunOpt
   for (const { name, error } of errors) recordError(ctx, `company:${name}`, error);
 
   const found: string[] = [];
+  const nameOnly: CompanyTarget[] = [];
   const missed: Array<{ rawName: string; outcome: "not_found" | "ambiguous" }> = [];
   const staleMissed: string[] = [];
   for (const target of targets) {
     const verdict: CompanyLookup | undefined = results.get(target.rawName);
     if (!verdict) continue; // 마감이나 오류로 이번에 못 물었다 — 다음 회차에 다시 뽑힌다
     if (verdict.status !== "found") {
-      if (target.links.length > 0) missed.push({ rawName: target.rawName, outcome: verdict.status });
+      if (target.links.length > 0 && verdict.status === "not_found") nameOnly.push(target);
+      else if (target.links.length > 0) missed.push({ rawName: target.rawName, outcome: verdict.status });
       // 재조회 대상(이미 아는 회사)은 검수 큐와 무관하지만 확인한 시각은 찍는다 — 안 찍으면 매 회차 맨 앞에 다시 선다
       else staleMissed.push(target.rawName);
       ctx.processed++;
@@ -209,6 +223,7 @@ export async function runCompanies(ctx: Ctx, source: CompanySource, opts: RunOpt
   }
 
   try {
+    await createNameOnlyCompanies(ctx, nameOnly);
     await recordMisses(ctx, missed);
     await clearMisses(ctx.db, found);
     if (staleMissed.length > 0) {

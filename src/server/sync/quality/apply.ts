@@ -66,6 +66,16 @@ export async function applyQualityFix(db: Db, fix: QualityFix, actor: QualityAct
       await lock(fix.gameId, "contentType", before.contentType, "game");
       return [fix.gameId];
     }
+    case "set_content_type": {
+      const moved = await db
+        .update(games)
+        .set({ contentType: fix.to, ...audit })
+        .where(and(eq(games.id, fix.gameId), eq(games.contentType, fix.from)))
+        .returning({ id: games.id });
+      if (moved.length === 0) throw new StaleFixError("갈래");
+      await lock(fix.gameId, "contentType", fix.from, fix.to);
+      return [fix.gameId];
+    }
     case "set_release_date": {
       const filled = await db
         .update(gamePlatforms)

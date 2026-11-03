@@ -139,6 +139,20 @@ export function companyNamesOf(developer: string | null, publisher: string | nul
   return out;
 }
 
+/**
+ * 이름만으로 세운 회사(company-name-only)가 위키데이터에서 찾아졌을 때, 새 회사를 만들지 않고 그 행에 Q번호를 단다.
+ * 같은 Q번호 회사가 이미 따로 있으면(다른 표기로 먼저 붙었다) 이름만 있는 행을 그쪽으로 합친다.
+ */
+async function adoptNameOnlyCompany(ctx: Ctx, info: CompanyInfo, rawName: string): Promise<void> {
+  const nameOnlyId = await findCompanyByAlias(ctx.db, rawName);
+  if (!nameOnlyId) return;
+  const nameOnly = await ctx.db.query.companies.findFirst({ where: eq(companies.id, nameOnlyId), columns: { id: true, wikidataId: true } });
+  if (!nameOnly || nameOnly.wikidataId) return;
+  const owner = await ctx.db.query.companies.findFirst({ where: eq(companies.wikidataId, info.externalId), columns: { id: true } });
+  if (owner) await mergeCompanies(ctx.db, nameOnly.id, owner.id);
+  else await ctx.db.update(companies).set({ wikidataId: info.externalId }).where(eq(companies.id, nameOnly.id));
+}
+
 /** 회사를 확정했을 때 별칭 등록과 게임 연결을 한 번에 */
 export async function attachCompany(
   ctx: Ctx,
@@ -146,6 +160,7 @@ export async function attachCompany(
   rawName: string,
   links: Array<{ gameId: string; role: CompanyRole }>,
 ): Promise<string> {
+  await adoptNameOnlyCompany(ctx, info, rawName);
   const companyId = await upsertCompany(ctx, info);
   await rememberAlias(ctx.db, companyId, rawName, ctx.source);
   for (const { gameId, role } of links) await linkGameCompany(ctx.db, gameId, companyId, role);
