@@ -103,9 +103,9 @@ async function lookupMany(names: string[], opts: CompanyLookupOptions): Promise<
 
   const details = new Map<string, CompanyInfo>();
   const failedIds = new Set<string>();
-  // 후보가 너무 많은 이름은 어차피 한 회사로 못 좁힌다 — 상세 질의에 싣지 않는다.
-  // 상세가 하나도 안 오니 판정 단계에서 저절로 ambiguous 가 된다
+  // 후보가 너무 많은 이름은 어차피 한 회사로 못 좁힌다 — 상세 질의에 싣지 않고 ambiguous 로 둔다
   const toFetch = new Map([...candidatesByQuery].filter(([, ids]) => ids.length <= VERIFY_MAX_CANDIDATES));
+  const unverified = new Set([...candidatesByQuery.keys()].filter((q) => !toFetch.has(q)));
   for (const chunk of chunkCandidates(toFetch, SPARQL_BATCH_MAX_CANDIDATES)) {
     try {
       for (const [id, info] of await fetchDetails(chunk, opts.retry)) details.set(id, info);
@@ -115,7 +115,7 @@ async function lookupMany(names: string[], opts: CompanyLookupOptions): Promise<
     }
   }
 
-  const judged = resolveCandidates(candidatesByQuery, details);
+  const judged = resolveCandidates(candidatesByQuery, details, unverified);
   const results: CompanyLookupBatch["results"] = new Map();
   for (const [name, query] of queryOf) {
     // 상세 질의가 실패한 후보를 가진 이름은 판정하지 않는다 — "못 좁힘" 으로 적으면 한동안 다시 안 묻는다

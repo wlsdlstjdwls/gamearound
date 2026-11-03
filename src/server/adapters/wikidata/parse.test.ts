@@ -204,16 +204,32 @@ describe("chunkCandidates", () => {
 });
 
 describe("resolveCandidates", () => {
-  it("검색 0건은 not_found, 후보는 있는데 회사 상세가 안 오면 ambiguous", () => {
+  it("검색 0건도, 후보를 다 확인했는데 회사가 없어도 not_found", () => {
     const out = resolveCandidates(
       new Map([
         ["Tiny Studio", []],
-        ["Rebellion", ["Q100"]], // 동명 노래가 잡혀 회사 분류에서 떨어진 경우
+        ["MASK", ["Q100", "Q101"]], // 노래, 일반 낱말 항목만 잡혀 회사 분류에서 떨어진 경우
       ]),
       new Map(),
     );
     expect(out.get("Tiny Studio")).toEqual({ status: "not_found" });
-    expect(out.get("Rebellion")).toEqual({ status: "ambiguous" });
+    expect(out.get("MASK")).toEqual({ status: "not_found" });
+  });
+
+  it("후보가 너무 많아 확인하지 않은 이름은 ambiguous — 회사가 없다고 단정하지 않는다", () => {
+    const out = resolveCandidates(new Map([["JUPITER", ["Q1", "Q2"]]]), new Map(), new Set(["JUPITER"]));
+    expect(out.get("JUPITER")).toEqual({ status: "ambiguous" });
+  });
+
+  it("같은 이름의 회사가 둘 남으면 ambiguous", () => {
+    const out = resolveCandidates(
+      new Map([["TenTen", ["Q1", "Q2"]]]),
+      new Map([
+        ["Q1", company("Q1", "TenTen")],
+        ["Q2", company("Q2", "TenTen")],
+      ]),
+    );
+    expect(out.get("TenTen")).toEqual({ status: "ambiguous" });
   });
 
   it("묶어 받은 상세에서 자기 후보만 보고 판정한다 — 남의 후보가 섞이면 멀쩡한 이름이 모호해진다", () => {

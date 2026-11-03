@@ -20,8 +20,8 @@ export const COMPANY_MESSAGES = {
   /** 그리드 칸에 서는 짧은 판정. 긴 사유는 상세에 */
   outcomeShort: { not_found: "없음", ambiguous: "후보 여럿", none: "미조회" },
   outcome: {
-    not_found: "위키데이터에 같은 이름이 없어요",
-    ambiguous: "후보가 여럿이거나 회사가 아니에요",
+    not_found: "위키데이터에 같은 이름의 회사가 없어요",
+    ambiguous: "같은 이름의 회사가 여럿이에요",
   },
   notTriedYet: "미조회",
   resolve: "다시 조회",

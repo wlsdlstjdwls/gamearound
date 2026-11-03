@@ -163,12 +163,19 @@ export function chunkCandidates(candidatesByName: ReadonlyMap<string, readonly s
 
 /**
  * 모아 받은 상세(회사 분류를 통과한 것만)를 이름별 판정으로 되돌린다. 규칙은 pickCompany 하나다.
- * 후보가 있었는데 상세가 하나도 안 온 이름은 ambiguous 다 — 검색이 노래, 동음이의 항목을 잡았고
- * 그것들이 회사 분류에서 떨어져 나간 경우다(우리 이름이 약칭일 때 흔하다).
+ *
+ * 후보를 다 확인했는데 회사가 하나도 없으면 not_found 다 — 검색이 노래, 일반 낱말 항목("MASK", "TT", "JUPITER")만
+ * 잡은 경우로, 위키데이터에 그 회사가 없다는 뜻이다. 2026-11-03 실측: ambiguous 큐 표본 123개 중 117개가 이 꼴이었고,
+ * ambiguous 로 두면 이름만 회사(sync/company-name-only)도 안 세워져 게임이 회사 없이 남았다.
+ * 분류를 못 지나는 진짜 회사(Shiro Games 처럼 P31 이 organization 뿐)도 여기로 온다 — 이름만으로 세워 두면
+ * 위키데이터가 분류를 고친 뒤 재조회에서 그 행에 Q번호가 붙는다(adoptNameOnlyCompany).
+ *
+ * 후보가 너무 많아 상세를 안 받은 이름(unverified)은 확인을 안 했으니 ambiguous 로 둔다.
  */
 export function resolveCandidates(
   candidatesByName: ReadonlyMap<string, readonly string[]>,
   details: ReadonlyMap<string, CompanyInfo>,
+  unverified: ReadonlySet<string> = new Set(),
 ): Map<string, CompanyLookup> {
   const out = new Map<string, CompanyLookup>();
   for (const [name, ids] of candidatesByName) {
@@ -176,7 +183,15 @@ export function resolveCandidates(
       out.set(name, { status: "not_found" });
       continue;
     }
+    if (unverified.has(name)) {
+      out.set(name, { status: "ambiguous" });
+      continue;
+    }
     const infos = ids.map((id) => details.get(id)).filter((c): c is CompanyInfo => c !== undefined);
+    if (infos.length === 0) {
+      out.set(name, { status: "not_found" });
+      continue;
+    }
     const picked = pickCompany(infos, name);
     if (!picked) {
       out.set(name, { status: "ambiguous" });

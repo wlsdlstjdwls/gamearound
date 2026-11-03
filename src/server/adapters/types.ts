@@ -160,9 +160,9 @@ export interface CompanyAdapter {
 /** 이름 하나의 판정. not_found 와 ambiguous 를 가르는 이유는 사람이 볼 때 할 일이 달라서다 */
 export type CompanyLookup =
   | { status: "found"; info: CompanyInfo }
-  /** 검색에 이름이 정확히 일치하는 항목이 없다 — 위키데이터에 없는 회사거나 우리 표기가 약칭이다 */
+  /** 이름이 일치하는 회사 항목이 없다(검색 0건, 또는 잡힌 항목이 전부 회사가 아님) — 위키데이터에 없는 회사거나 우리 표기가 약칭이다 */
   | { status: "not_found" }
-  /** 후보는 있었지만 회사 하나로 못 좁혔다(동명 회사, 회사가 아닌 동명 항목) */
+  /** 회사 하나로 못 좁혔다(같은 이름 회사가 여럿, 후보가 너무 많아 확인 안 함). 사람이 본다 */
   | { status: "ambiguous" };
 
 export interface CompanyLookupOptions {
