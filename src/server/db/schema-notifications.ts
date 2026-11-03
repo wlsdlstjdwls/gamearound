@@ -1,6 +1,7 @@
 // 알림함 스키마(기획서 v2.0 M-03 헤더 종 아이콘, 8장 Notification). 가격 하락, 내 글의 새 댓글 같은 소식이 쌓인다.
 // 웹푸시, 이메일과 따로 둔다 — 그 둘은 "보냈다" 로 끝나지만 알림함은 사이트 안에서 다시 읽는 기록이다.
 // 읽음 표시는 후속이라(기획서 M-03) readAt 칸만 먼저 두고 화면은 아직 쓰지 않는다.
+import { sql } from "drizzle-orm";
 import { pgTable, pgEnum, uuid, text, timestamp, index } from "drizzle-orm/pg-core";
 import { auditColumns } from "./audit";
 import { users } from "./schema";
@@ -24,8 +25,14 @@ export const notifications = pgTable(
      * 웹 알림은 notify_sends 에 따로 적지 않는다 — 이 표가 곧 발송 기록이고, 알림발송관리가 이 칸으로 템플릿별 이력을 함께 읽는다
      */
     templateCode: text("template_code"),
+    /**
+     * 밤에 미뤄 둔 기기 알림(2026-11-03, lib/notify/quiet-hours). 한국 22~08시에 생긴 가격, 찜 할인 알림은 알림함에는 바로 적고
+     * 웹푸시나 메일은 보내지 않은 채 받을 길("push" | "email")만 여기 적는다. 아침 8시 크론(sync/morning-alerts)이 사람마다 한 통으로 모아 보내고 비운다.
+     * 보낸 시각이 아니라 받을 길을 적는 이유: 가격 알림은 알림마다 받는 길(price_alerts.channel)이 달라 아침에 다시 물을 원본이 없다
+     */
+    heldChannel: text("held_channel"),
     readAt: timestamp("read_at", { withTimezone: true }),
     ...auditColumns(),
   },
-  (t) => [index("notifications_user_created_idx").on(t.userId, t.createdAt)],
+  (t) => [index("notifications_user_created_idx").on(t.userId, t.createdAt), index("notifications_held_idx").on(t.heldChannel).where(sql`${t.heldChannel} is not null`)],
 );

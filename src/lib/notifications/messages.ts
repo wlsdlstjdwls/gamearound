@@ -31,4 +31,9 @@ export const NOTIFICATION_MESSAGES = {
   newsDigest: (count: number) => `이번 주 맞춤 소식 ${count}건이 모였어요`,
   /** 주간 맞춤 소식 기본 메일의 제목(앞에 서비스 이름이 붙는다). 템플릿 mail.news_digest 가 없을 때만 쓴다 */
   newsDigestSubject: (count: number) => `이번 주 맞춤 소식 ${count}건`,
+  /** 밤사이 미룬 알림 아침 한 통(sync/morning-alerts). 템플릿 push.morning_alerts, mail.morning_alerts 가 없을 때의 기본 글 */
+  morningAlertsTitle: (count: number) => `밤사이 알림 ${count}건`,
+  morningAlertsMailSubject: (count: number) => `밤사이 가격 알림 ${count}건`,
+  /** 아침 메일 목록이 상한을 넘었을 때 마지막 줄 */
+  morningAlertsMore: (rest: number) => `외 ${rest}건은 알림함에서 확인해 주세요`,
 } as const;

@@ -116,15 +116,3 @@ export function kstWeekStart(now: Date): Date {
   const mondayKst = Date.UTC(kst.getUTCFullYear(), kst.getUTCMonth(), kst.getUTCDate()) - sinceMonday * DAY_MS;
   return new Date(mondayKst - KST_OFFSET_MS);
 }
-
-/**
- * 묶음을 보내도 되는 한국 시각(시작 시 이상, 끝 시 미만). 크론은 09:10 에 부르지만(cron/news-digest), 크론 시각을 잘못 고치거나
- * 손으로 돌려도 밤에는 메일, 알림이 나가지 않게 발송 쪽에서 한 번 더 막는다(2026-11-03, 새벽 3시 발송을 잡아낸 사용자 지적).
- */
-export const NEWS_DIGEST_SEND_HOURS_KST = { from: 8, to: 21 } as const;
-
-/** 지금이 보내도 되는 한국 시각인가 */
-export function isDigestSendHour(now: Date): boolean {
-  const hour = new Date(now.getTime() + KST_OFFSET_MS).getUTCHours();
-  return hour >= NEWS_DIGEST_SEND_HOURS_KST.from && hour < NEWS_DIGEST_SEND_HOURS_KST.to;
-}

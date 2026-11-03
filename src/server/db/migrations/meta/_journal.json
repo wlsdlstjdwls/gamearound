@@ -743,6 +743,20 @@
       "when": 1793689291541,
       "tag": "0105_news_title_ko",
       "breakpoints": true
+    },
+    {
+      "idx": 106,
+      "version": "7",
+      "when": 1793691105963,
+      "tag": "0106_notifications_held",
+      "breakpoints": true
+    },
+    {
+      "idx": 107,
+      "version": "7",
+      "when": 1793691108787,
+      "tag": "0107_morning_alert_templates",
+      "breakpoints": true
     }
   ]
 }

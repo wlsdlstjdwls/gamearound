@@ -9,6 +9,7 @@
 //
 // 중복: 한 사람, 한 게임에 할인 시작은 7일에 한 번(세일 동안 값이 몇 번 내려도, 여러 스토어가 한꺼번에 내려도 한 통).
 // 기록상 최저가는 그 값마다 한 번 — 세일 중에 더 내려 최저를 새로 찍으면 한 번 더 알 가치가 있다.
+// 밤(한국 22~08시)에는 알림함에만 적고 웹푸시는 아침 8시로 미룬다(held_channel, sync/morning-alerts). 이유는 dispatch-alerts 머리 주석과 같다.
 import { and, eq, inArray, isNull, min, ne, sql } from "drizzle-orm";
 import { getDb } from "@/server/db/client";
 import { createdBy } from "@/server/db/audit";
@@ -24,17 +25,19 @@ import { pushToUser } from "@/server/push/to-user";
 import { pushNotice, webNotice } from "@/server/notify/web";
 import { SYSTEM_TEMPLATES } from "@/lib/notify/system-templates";
 import { WISH_SALE_DEDUPE_TTL_SEC } from "./constants";
+import { isMemberSendHour } from "@/lib/notify/quiet-hours";
 
 const SOURCE = "cron:wish-alerts" as const;
 
-export type WishDispatchSummary = { candidates: number; recipients: number; deduped: number; inboxed: number; sent: number; failed: number };
+export type WishDispatchSummary = { candidates: number; recipients: number; deduped: number; inboxed: number; held: number; sent: number; failed: number };
 
 function dedupeKey(reason: WishSaleReason, userId: string, gameId: string, price: number): string {
   return reason === "sale" ? `wishsale:${userId}:${gameId}` : `wishlow:${userId}:${gameId}:${price}`;
 }
 
-export async function dispatchWishSaleAlerts(changes: PriceChange[]): Promise<WishDispatchSummary> {
-  const summary: WishDispatchSummary = { candidates: 0, recipients: 0, deduped: 0, inboxed: 0, sent: 0, failed: 0 };
+export async function dispatchWishSaleAlerts(changes: PriceChange[], now: Date = new Date()): Promise<WishDispatchSummary> {
+  const summary: WishDispatchSummary = { candidates: 0, recipients: 0, deduped: 0, inboxed: 0, held: 0, sent: 0, failed: 0 };
+  const night = !isMemberSendHour(now);
   const drops = changes.filter((c) => c.previousPrice !== null && c.newPrice < c.previousPrice);
   if (drops.length === 0) return summary;
   const db = getDb();
@@ -109,13 +112,17 @@ export async function dispatchWishSaleAlerts(changes: PriceChange[]): Promise<Wi
         ? false
         : await db
         .insert(notifications)
-        .values({ userId, kind: "price_drop", body: notice.body, link, templateCode: notice.templateCode, ...createdBy(SOURCE) })
+        .values({ userId, kind: "price_drop", body: notice.body, link, templateCode: notice.templateCode, heldChannel: night && push ? "push" : null, ...createdBy(SOURCE) })
         .then(() => true)
         .catch((e) => {
           console.warn(`[wish-alerts] 알림함 기록 실패 (user=${userId}): ${e instanceof Error ? e.message : e}`);
           return false;
         });
       if (inboxed) summary.inboxed++;
+      if (night) {
+        if (inboxed && push) summary.held++;
+        continue;
+      }
       if (!push) continue;
       const pushed = await pushToUser(userId, push, "wish-alerts");
       summary.sent += pushed.sent;

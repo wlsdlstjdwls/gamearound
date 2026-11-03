@@ -10,6 +10,9 @@ export const SYSTEM_TEMPLATES = {
   mailPasswordReset: "mail.password_reset",
   mailPriceAlert: "mail.price_alert",
   mailNewsDigest: "mail.news_digest",
+  // 밤사이 미룬 알림을 아침 8시에 모아 보내는 한 통(2026-11-03, sync/morning-alerts)
+  mailMorningAlerts: "mail.morning_alerts",
+  pushMorningAlerts: "push.morning_alerts",
   // 회원 알림함(웹 알림, 2026-11-02). 받는 사람과 링크는 사건이 정한다
   webComment: "web.comment",
   webReply: "web.reply",
@@ -43,6 +46,7 @@ type VarSpec = { name: string; hint: string; sample: string };
 const GAME: VarSpec = { name: "게임", hint: "게임 이름", sample: "하데스 II" };
 const PRICE: VarSpec = { name: "가격", hint: "지금 값(원 붙은 글)", sample: "27,000원" };
 const PLATFORM: VarSpec = { name: "기종", hint: "스토어, 기기 이름", sample: "Steam" };
+const MORNING_COUNT: VarSpec = { name: "건수", hint: "모은 알림 수(숫자만)", sample: "3" };
 const DIGEST_COUNT: VarSpec = { name: "건수", hint: "묶음에 든 기사 수(숫자만)", sample: "6" };
 const POST_TITLE: VarSpec = { name: "글제목", hint: "게시글 제목", sample: "하데스 2 초반 공략" };
 
@@ -90,6 +94,12 @@ export const SYSTEM_TEMPLATE_VARS: Record<SystemTemplateCode, VarSpec[]> = {
     { name: "링크", hint: "맞춤 소식 화면 주소", sample: "https://gamearound.kr/news/mine" },
     { name: "설정링크", hint: "설정 화면 주소(받지 않기)", sample: "https://gamearound.kr/settings" },
   ],
+  "mail.morning_alerts": [
+    MORNING_COUNT,
+    { name: "목록", hint: "밤사이 알림 글을 줄마다 적은 것", sample: "- 하데스 II 가격이 27,000원(으)로 내려갔어요\n- 찜한 '붉은사막' 20% 할인, 지금 55,840원이에요" },
+    { name: "링크", hint: "알림함 주소", sample: "https://gamearound.kr/notifications" },
+  ],
+  "push.morning_alerts": [MORNING_COUNT, { name: "첫알림", hint: "가장 먼저 쌓인 알림 한 줄", sample: "하데스 II 가격이 27,000원(으)로 내려갔어요" }],
   "web.comment": [POST_TITLE],
   "web.reply": [POST_TITLE],
   "web.indie_comment": [GAME],

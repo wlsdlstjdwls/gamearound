@@ -1,9 +1,9 @@
 // 주간 맞춤 소식 — 설정에서 켠 회원에게 한 주에 한 번, 찜한 게임과 고른 플랫폼, 장르에 맞는 기사를 묶어 보낸다(2026-11-03).
 // 고르는 규칙은 lib/news/digest, 재료 읽기는 services/news-digest. 여기는 "누구에게, 언제, 어디로" 와 제목 번역을 맡는다.
 //
-// 언제: 전용 크론(api/cron/news-digest, 한국 09:10)이 매일 부르고, **이번 주(한국 월요일 0시부터) 아직 안 받은 사람** 에게 보낸다.
+// 언제: 아침 크론(api/cron/morning, 한국 08시)이 매일 부르고, **이번 주(한국 월요일 0시부터) 아직 안 받은 사람** 에게 보낸다.
 //   요일 하루만 보내면 그날 크론이 실패한 주가 통째로 빠진다. 이 방식이면 다음 날 메워진다. 중간에 켠 사람은 다음 날 아침에 첫 묶음을 받는다.
-//   처음에는 하루 크론(cron/daily, 한국 03시)에 얹었다가 새벽 3시에 메일이 가는 것을 사용자가 잡았다 — 시각은 크론과 isDigestSendHour 두 겹으로 막는다.
+//   처음에는 하루 크론(cron/daily, 한국 03시)에 얹었다가 새벽 3시에 메일이 가는 것을 사용자가 잡았다 — 시각은 크론과 isMemberSendHour(lib/notify/quiet-hours) 두 겹으로 막는다.
 // 어디로: 알림함 한 줄 + 메일. 설정 스위치가 그 둘을 약속했다(lib/news/messages 의 NEWS_DIGEST_MESSAGES.on). 웹푸시는 보내지 않는다.
 // 빈 묶음은 보내지 않는다. 고를 근거(찜, 취향)가 없거나 맞는 기사가 없으면 건너뛰고, 다음 날 다시 본다 — 그 사이 기사가 쌓이면 그때 간다.
 //
@@ -17,7 +17,8 @@ import { dispatchSystemMail } from "@/server/notify/mail";
 import { mailConfigured } from "@/server/mail/send";
 import { translateToKorean, translationConfigured } from "@/server/adapters/translate";
 import { digestSince, loadDigestCandidates, loadDigestReaders, type DigestNews } from "@/server/services/news-digest";
-import { isDigestSendHour, kstWeekStart, NEWS_DIGEST_MAIL_ITEMS, pickDigest } from "@/lib/news/digest";
+import { kstWeekStart, NEWS_DIGEST_MAIL_ITEMS, pickDigest } from "@/lib/news/digest";
+import { isMemberSendHour } from "@/lib/notify/quiet-hours";
 import { NOTIFICATION_MESSAGES as M } from "@/lib/notifications/messages";
 import { SYSTEM_TEMPLATES } from "@/lib/notify/system-templates";
 import { escapeHtml } from "@/lib/html-entities";
@@ -82,7 +83,7 @@ async function translateTitles(db: Db, items: readonly DigestNews[]): Promise<nu
 
 export async function dispatchNewsDigest(now: Date = new Date()): Promise<NewsDigestSummary> {
   const summary: NewsDigestSummary = { readers: 0, inboxed: 0, mailed: 0, translated: 0, skippedEmpty: 0, failed: 0, skippedHour: false };
-  if (!isDigestSendHour(now)) {
+  if (!isMemberSendHour(now)) {
     summary.skippedHour = true;
     return summary;
   }

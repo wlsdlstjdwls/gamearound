@@ -1,0 +1,2 @@
+ALTER TABLE "notifications" ADD COLUMN "held_channel" text;--> statement-breakpoint
+CREATE INDEX "notifications_held_idx" ON "notifications" USING btree ("held_channel") WHERE "notifications"."held_channel" is not null;

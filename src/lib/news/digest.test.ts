@@ -1,6 +1,6 @@
 // 주간 맞춤 소식 고르기 — 무엇을 넣고 어떤 순서로 세우는지
 import { describe, expect, it } from "vitest";
-import { hasDigestTaste, isDigestNoise, isDigestSendHour, kstWeekStart, pickDigest, type DigestCandidate, type DigestTaste } from "@/lib/news/digest";
+import { hasDigestTaste, isDigestNoise, kstWeekStart, pickDigest, type DigestCandidate, type DigestTaste } from "@/lib/news/digest";
 
 const at = (iso: string) => new Date(iso);
 const c = (newsId: string, gameId: string, over: Partial<DigestCandidate> = {}): DigestCandidate => ({
@@ -96,15 +96,5 @@ describe("kstWeekStart", () => {
 
   it("월요일 0시 정각부터 새 주", () => {
     expect(kstWeekStart(at("2026-11-08T15:00:00Z")).toISOString()).toBe("2026-11-08T15:00:00.000Z");
-  });
-});
-
-describe("isDigestSendHour", () => {
-  it("한국 08시~21시 전만 보낸다", () => {
-    expect(isDigestSendHour(at("2026-11-02T18:20:00Z"))).toBe(false); // 한국 03:20
-    expect(isDigestSendHour(at("2026-11-02T22:59:00Z"))).toBe(false); // 한국 07:59
-    expect(isDigestSendHour(at("2026-11-03T00:10:00Z"))).toBe(true); // 한국 09:10
-    expect(isDigestSendHour(at("2026-11-03T11:59:00Z"))).toBe(true); // 한국 20:59
-    expect(isDigestSendHour(at("2026-11-03T12:00:00Z"))).toBe(false); // 한국 21:00
   });
 });

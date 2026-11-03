@@ -16,7 +16,7 @@ export function newsCountText(count: number): string {
 /** 주간 맞춤 소식(설정 스위치, 맞춤 소식 화면). 발송 문구는 알림 템플릿(mail.news_digest, web.news_digest)이다 */
 export const NEWS_DIGEST_MESSAGES = {
   title: "주간 맞춤 소식",
-  on: "매주 월요일 아침 9시쯤 찜한 게임과 고른 플랫폼, 장르 소식을 알림함과 메일로 묶어 보내 드려요",
+  on: "매주 월요일 아침 8시쯤 찜한 게임과 고른 플랫폼, 장르 소식을 알림함과 메일로 묶어 보내 드려요",
   off: "받지 않아요. 켜면 다음 날 아침에 이번 주 소식부터 보내 드려요",
   failed: "바꾸지 못했어요. 잠시 뒤 다시 해 주세요",
   /** 스위치 밑 링크. 켜지 않아도 화면은 볼 수 있다 */
