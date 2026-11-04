@@ -42,7 +42,7 @@ import { SITE } from "@/lib/site";
 import { buildGameJsonLd, serializeJsonLd } from "@/lib/seo/game-json-ld";
 import { siteOrigin } from "@/lib/seo/constants";
 import { decodeSlugParam } from "@/lib/slug";
-import { gamePath, ROUTES } from "@/lib/routes";
+import { GAME_NEWS_SECTION_ID, gamePath, ROUTES } from "@/lib/routes";
 import { bestUserScore, cheapestPlatform, displayTitle, getGameBySlugCached, getGamePatchesCached } from "@/server/services/games";
 import { getDiscountHistory } from "@/server/services/prices";
 import { HOME_REGION, type Platform } from "@/server/db/schema";
@@ -215,7 +215,7 @@ export default async function GameDetailPage({ params }: Props) {
 
       {/* 뉴스가 없으면 큰 판 대신 한 줄(game-detail/empty-line) */}
       {game.news.length > 0 ? (
-        <div className={sectionCardClass("min-w-0")}>
+        <div id={GAME_NEWS_SECTION_ID} className={sectionCardClass("min-w-0 scroll-mt-24")}>
           <NewsMore count={game.news.length}>
             <NewsList items={game.news} />
           </NewsMore>

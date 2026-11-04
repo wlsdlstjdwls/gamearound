@@ -222,6 +222,14 @@ export function gamePath(slug: string): string {
   return `${ROUTES.game}/${encodeURIComponent(slug)}`;
 }
 
+/** 게임 상세의 뉴스 마디 id. 주간 소식 메일 카드가 여기로 데려온다(2026-11-04, 사용자: 기사 원문이 아니라 "우리 사이트로") */
+export const GAME_NEWS_SECTION_ID = "news";
+
+/** 게임 상세, 뉴스 마디까지 내려간 주소 */
+export function gameNewsPath(slug: string): string {
+  return `${gamePath(slug)}#${GAME_NEWS_SECTION_ID}`;
+}
+
 export function companyPath(slug: string): string {
   return `${ROUTES.company}/${encodeURIComponent(slug)}`;
 }

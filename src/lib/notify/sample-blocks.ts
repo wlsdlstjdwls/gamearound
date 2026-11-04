@@ -8,12 +8,11 @@ import { SYSTEM_TEMPLATES } from "@/lib/notify/system-templates";
 const SAMPLE_AT = new Date("2026-11-03T09:00:00+09:00");
 const item = (title: string, sourceName: string, gameTitle: string, summary: string): DigestMailItem => ({
   title,
-  url: "https://gamearound.kr/news",
+  link: "https://gamearound.kr/games/sample#news",
   sourceName,
   thumbnailUrl: null,
   summary,
   gameTitle,
-  gameUrl: "https://gamearound.kr/games/sample",
   publishedAt: SAMPLE_AT,
 });
 

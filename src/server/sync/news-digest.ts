@@ -25,7 +25,7 @@ import { NOTIFICATION_MESSAGES as M } from "@/lib/notifications/messages";
 import { SYSTEM_TEMPLATES } from "@/lib/notify/system-templates";
 import { escapeHtml } from "@/lib/html-entities";
 import { errorMessage } from "@/lib/errors";
-import { gamePath, ROUTES } from "@/lib/routes";
+import { gameNewsPath, ROUTES } from "@/lib/routes";
 import { SITE } from "@/lib/site";
 
 const SOURCE = "cron:news-digest" as const;
@@ -41,12 +41,11 @@ const shownTitle = (n: DigestNews) => n.titleKo ?? n.title;
 function mailItem(n: DigestNews, base: string, summaryKo: ReadonlyMap<string, string>): DigestMailItem {
   return {
     title: shownTitle(n),
-    url: n.url,
+    link: `${base}${gameNewsPath(n.game.slug)}`,
     sourceName: n.sourceName,
     thumbnailUrl: n.thumbnailUrl,
     summary: summaryKo.get(n.newsId) ?? n.summary,
     gameTitle: n.game.title,
-    gameUrl: `${base}${gamePath(n.game.slug)}`,
     publishedAt: n.publishedAt,
   };
 }
