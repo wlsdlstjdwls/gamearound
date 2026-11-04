@@ -83,6 +83,12 @@ export const PLAN_MESSAGES = {
   progressFrom: { manual: "직접 입력", cards: (done: number, total: number) => `업무요청 ${done}/${total} 완료`, children: "하위 일정 평균", none: "-" },
   groupPeriod: "하위 일정의 처음과 끝",
 
+  open: "열기",
+  openItem: (title: string) => `${title} 열기`,
+  addChild: (title: string) => `${title} 아래에 일정 추가`,
+  addRoot: "새 일정",
+  addChildLabel: "하위 추가",
+  autosaving: "저장 중",
   moveUp: "위로",
   moveDown: "아래로",
   indent: "들여쓰기",
@@ -103,8 +109,7 @@ export const PLAN_MESSAGES = {
   periodOrder: "종료일이 시작일보다 빨라요",
   parentSelf: "자기 자신을 상위로 둘 수 없어요",
   deleteTitle: "일정 삭제",
-  deleteBody: (title: string, children: number) =>
-    children > 0 ? `${title} 과 하위 일정 ${children}건을 목록에서 뺄까요? 저장하면 지워져요` : `${title} 을 목록에서 뺄까요? 저장하면 지워져요`,
+  deleteBody: (title: string, children: number) => (children > 0 ? `${title} 과 하위 일정 ${children}건을 지울까요?` : `${title} 을 지울까요?`),
   deleteOk: "삭제",
   deletedNote: "삭제한 줄은 저장하면 지워져요",
 

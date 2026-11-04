@@ -1540,6 +1540,12 @@ li:has([data-more-open]) {
  * 애니메이션이 쥔 값은 인라인 스타일을 이긴다 — 그래서 손가락을 따라 미는 것도, 닫을 때 미끄러져 나가는 것도
  * 둘 다 죽어 있었다(판은 제자리에 선 채 대기 시간만 기다렸다 사라졌다).
  */
+/* 오른쪽 서랍 + wide: 입력이 주인공인 옆 보기(업무 일정 상세, 2026-11-04). 320px 서랍에서는 폼이 한 열로 쌓이고 날짜 칸이 "2026...." 로 잘렸다 */
+@media (min-width: 640px) {
+  .sheet[data-side="right"][data-size="wide"] .sheet__panel {
+    width: min(92vw, 560px);
+  }
+}
 .sheet[data-side="right"] .sheet__panel[data-dragging="true"] {
   animation: none;
 }

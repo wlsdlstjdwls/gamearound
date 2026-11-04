@@ -1,17 +1,17 @@
 "use client";
-// 업무관리 일정(WBS) 화면(2026-11-04, 사용자 "WBS 를 우리 프로그램에서 보고 편집까지"). 위 간트, 아래 WBS 목록 + 고른 줄 상세.
+// 업무관리 일정(WBS) 화면(2026-11-04, 사용자 "WBS 를 우리 프로그램에서 보고 편집까지").
 //
-// 저장은 화면 전체 단위다(lib/admin/plan-schemas 머리 주석) — 끌기, 들여쓰기, 칸 고치기를 여러 번 하고 F9 한 번에 보낸다.
-// 저장 전 값은 이 화면이 쥐고, 간트와 목록은 같은 값(buildPlanRows)에서 그린다. 둘이 따로 계산하면 막대와 표 날짜가 어긋난다.
+// 노션처럼 차트에서 바로 고친다(같은 날 3차, 사용자 "아래 그리드, 폼 말고 차트에서 바로 수정하거나 글 옆 작은 버튼으로 팝업"):
+// 막대 끌기, 작업명 두 번 눌러 고치기, 줄의 "+" 로 하위 추가, "열기" 로 오른쪽 서랍(dialog.tsx). 아래 그리드와 상세 폼은 걷었다.
+// 저장도 노션처럼 자동이다 — 고치고 AUTOSAVE_MS 동안 손을 멈추면 바뀐 줄과 지운 줄을 한 묶음으로 보낸다(lib/admin/plan-schemas).
+// 툴바 저장(F9, Ctrl+S)은 기다리지 않고 바로 보내는 단추로 남긴다. 검사에 걸린 줄이 있으면 보내지 않고 그 줄을 연다.
+// 저장된 값(saved)과 화면 값(value)을 따로 쥔다. 서버가 새 값을 주어도(카드 만들기 뒤 refresh) 아직 안 보낸 고침이 있으면 화면 값은 지킨다.
 // 새 줄의 열쇠는 여기서 만든 uuid 다 — 저장 전에 새 상위 아래 새 하위를 달 수 있어야 한다.
-// 업무요청 카드 만들기, 연결 해제는 저장과 따로 곧바로 나간다(카드는 칸반 쪽 값이다). 그 뒤 다시 읽어 진행률이 따라온다.
 import { useEffect, useMemo, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { createPlanTaskAction, linkTaskPlanAction, savePlanAction } from "@/app/(admin)/admin/tasks/plan-actions";
 import { reportDirty } from "@/components/admin/program-shell/store";
-import { DataGrid } from "@/components/admin/screen/data-grid";
 import { AdminScreenHead } from "@/components/admin/screen/head";
-import { MasterDetail } from "@/components/admin/screen/layout";
 import { useAdminStatus } from "@/components/admin/screen/status";
 import { useMobilePolicy } from "@/components/admin/mobile-policy";
 import { TaskViewSwitch } from "@/components/admin/task-view-switch";
@@ -19,18 +19,38 @@ import { SEGMENT, SEGMENT_ITEM, SEGMENT_ITEM_ON } from "@/components/admin/task-
 import { useCodes } from "@/components/code-book";
 import { askConfirm } from "@/components/ui/confirm-dialog";
 import { ADMIN_NAV, PLAN_MESSAGES as M } from "@/lib/admin/messages";
-import { buildPlanRows, countCards, descendantIds, groupByAssignee, nextMilestone, PERSON_ROW_PREFIX, PLAN_TRACKS, trackSummaries, type PlanRow, indent, insertAfter, moveSibling, outdent, resizeItem, shiftDay, shiftItem, type PlanCard, type PlanItem } from "@/lib/admin/plan";
+import {
+  buildPlanRows,
+  countCards,
+  descendantIds,
+  groupByAssignee,
+  indent,
+  insertAfter,
+  moveSibling,
+  nextMilestone,
+  outdent,
+  PERSON_ROW_PREFIX,
+  PLAN_TRACKS,
+  resizeItem,
+  shiftDay,
+  shiftItem,
+  trackSummaries,
+  type PlanCard,
+  type PlanItem,
+  type PlanRow,
+} from "@/lib/admin/plan";
 import { planItemSchema } from "@/lib/admin/plan-schemas";
 import type { TaskAssignee } from "@/lib/admin/tasks";
 import { fieldErrors, firstError, type FieldErrors } from "@/lib/admin/validation";
 import { cn } from "@/lib/cn";
-import { planColumns } from "./columns";
-import { PlanCards, PlanForm } from "./form";
+import { PlanDialog, type PlanMove } from "./dialog";
 import { PlanGantt, TRACK_COLOR, type PlanZoom } from "./gantt";
 import { PersonSummary, PlanSummary } from "./summary";
 
 /** 새 줄의 기본 기간(일). 한 주 안의 평일 다섯 날 */
 const NEW_SPAN_DAYS = 4;
+/** 손을 멈추고 자동 저장까지 기다리는 시간(ms). 끌기를 연달아 할 때 한 번에 묶일 만큼, 고친 뒤 기다린다고 느끼지 않을 만큼 */
+const AUTOSAVE_MS = 800;
 const ZOOMS: { key: PlanZoom; label: string }[] = [
   { key: "day", label: M.zoomDay },
   { key: "week", label: M.zoomWeek },
@@ -39,6 +59,11 @@ const ZOOMS: { key: PlanZoom; label: string }[] = [
 
 const same = (a: PlanItem | undefined, b: PlanItem | undefined) => JSON.stringify(a) === JSON.stringify(b);
 const errorsOf = (it: PlanItem): FieldErrors => fieldErrors(planItemSchema.safeParse(it), { endOn: M.periodOrder, parentId: M.parentSelf });
+const diffOf = (value: PlanItem[], saved: PlanItem[]) => {
+  const byId = new Map(saved.map((i) => [i.id, i]));
+  const ids = new Set(value.map((i) => i.id));
+  return { upsert: value.filter((i) => !same(i, byId.get(i.id))), deleted: saved.filter((i) => !ids.has(i.id)).map((i) => i.id) };
+};
 
 export function PlanScreen({ items, cards, assignees, today }: { items: PlanItem[]; cards: PlanCard[]; assignees: TaskAssignee[]; today: string }) {
   const router = useRouter();
@@ -48,9 +73,11 @@ export function PlanScreen({ items, cards, assignees, today }: { items: PlanItem
   const [saved, setSaved] = useState(items);
   const [value, setValue] = useState(items);
   const [selected, setSelected] = useState<string | null>(null);
+  /** 서랍으로 연 줄 */
+  const [openId, setOpenId] = useState<string | null>(null);
   const [collapsed, setCollapsed] = useState<Set<string>>(() => new Set());
   const [zoom, setZoom] = useState<PlanZoom>("week");
-  // 묶어 보기: 담당자별(서로 무엇을 하고 있나, 기본) | WBS(계층). 아래 목록은 늘 WBS 계층이다
+  // 묶어 보기: 담당자별(서로 무엇을 하고 있나, 기본) | WBS(계층)
   const [group, setGroup] = useState<"person" | "wbs">("person");
   // 요약 카드는 접힌 한 줄 띠가 기본이다 — 펼친 카드는 간트를 화면 밖으로 민다(사용자)
   const [summaryOpen, setSummaryOpen] = useState(false);
@@ -58,23 +85,52 @@ export function PlanScreen({ items, cards, assignees, today }: { items: PlanItem
   const [pending, start] = useTransition();
   const [cardBusy, startCard] = useTransition();
 
-  // 서버가 새 값을 주면(저장 뒤 refresh, 조회) 그 값으로 다시 선다
+  const { upsert, deleted } = diffOf(value, saved);
+  const dirty = upsert.length > 0 || deleted.length > 0;
+
+  // 서버가 새 값을 주면 저장된 값을 맞추고, 안 보낸 고침이 없을 때만 화면 값도 바꾼다
   const [source, setSource] = useState(items);
   if (source !== items) {
     setSource(items);
     setSaved(items);
-    setValue(items);
+    if (!dirty) setValue(items);
   }
-
-  const savedById = useMemo(() => new Map(saved.map((i) => [i.id, i])), [saved]);
-  const changed = value.filter((i) => !same(i, savedById.get(i.id)));
-  const deleted = saved.filter((i) => !value.some((v) => v.id === i.id)).map((i) => i.id);
-  const dirty = changed.length > 0 || deleted.length > 0;
 
   useEffect(() => {
     reportDirty(dirty);
     return () => reportDirty(false);
   }, [dirty]);
+
+  /** 바뀐 것을 보낸다. 검사에 걸린 줄이 있으면 보내지 않고(loud 면) 그 줄을 연다 */
+  const flush = (loud: boolean) => {
+    if (pending) return;
+    const bad = value.find((i) => firstError(errorsOf(i)));
+    if (bad) {
+      if (loud) {
+        setOpenId(bad.id);
+        say(`${M.invalid} ${firstError(errorsOf(bad))!.message}`, "error");
+      }
+      return;
+    }
+    const snapshot = value;
+    const diff = diffOf(snapshot, saved);
+    if (diff.upsert.length === 0 && diff.deleted.length === 0) return;
+    start(async () => {
+      const r = await savePlanAction(diff).catch(() => ({ ok: false as const, error: M.failed }));
+      if (!r.ok) return say(r.error, "error");
+      setSaved(snapshot);
+      say(M.saved, "ok");
+    });
+  };
+
+  // 자동 저장: 고침이 멈추고 AUTOSAVE_MS 뒤에 보낸다. 보내는 동안 또 고치면 저장이 끝나 saved 가 바뀔 때 다시 잰다
+  useEffect(() => {
+    if (!dirty || pending) return;
+    const t = setTimeout(() => flush(false), AUTOSAVE_MS);
+    return () => clearTimeout(t);
+    // flush 는 매 렌더 새로 만들어지지만 값(value, saved)이 같으면 하는 일이 같다
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [value, saved, pending, dirty]);
 
   const rows = useMemo(() => buildPlanRows(value, countCards(cards)), [value, cards]);
   const names = useMemo(() => new Map(assignees.map((a) => [a.id, a.name])), [assignees]);
@@ -103,47 +159,31 @@ export function PlanScreen({ items, cards, assignees, today }: { items: PlanItem
 
   const tracks = useMemo(() => trackSummaries(rows, today), [rows, today]);
   const milestone = useMemo(() => nextMilestone(rows, today), [rows, today]);
-  const current = value.find((i) => i.id === selected) ?? null;
-  const currentRow = rows.find((r) => r.id === selected);
-  const errors = current ? errorsOf(current) : {};
-  const columns = useMemo(() => planColumns({ name: codes.name, who: (id) => (id ? (names.get(id) ?? "") : ""), today }), [codes, names, today]);
+  const opened = value.find((i) => i.id === openId) ?? null;
+  const openedRow = rows.find((r) => r.id === openId);
+  const savedIds = useMemo(() => new Set(saved.map((i) => i.id)), [saved]);
 
   const patch = (id: string, next: (it: PlanItem) => PlanItem) => setValue((v) => v.map((i) => (i.id === id ? next(i) : i)));
-  const setCurrent = (next: Partial<PlanItem>) => {
-    if (!current) return;
+  const setOpened = (next: Partial<PlanItem>) => {
+    if (!opened) return;
     // 상위를 바꾸면 새 상위의 맨 끝에 선다
-    if ("parentId" in next && next.parentId !== current.parentId) {
+    if ("parentId" in next && next.parentId !== opened.parentId) {
       const last = value.filter((i) => i.parentId === next.parentId).reduce((n, i) => Math.max(n, i.sortOrder + 1), 0);
       next = { ...next, sortOrder: last };
     }
-    patch(current.id, (i) => ({ ...i, ...next }));
+    patch(opened.id, (i) => ({ ...i, ...next }));
   };
 
-  const save = () => {
-    const bad = value.find((i) => firstError(errorsOf(i)));
-    if (bad) {
-      setSelected(bad.id);
-      say(`${M.invalid} ${firstError(errorsOf(bad))!.message}`, "error");
-      return;
-    }
-    const upsert = changed;
-    start(async () => {
-      const r = await savePlanAction({ upsert, deleted }).catch(() => ({ ok: false as const, error: M.failed }));
-      if (!r.ok) return say(r.error, "error");
-      setSaved(value);
-      say(M.saved, "ok");
-      router.refresh();
-    });
-  };
-
-  const insert = () => {
-    const base = current;
+  /** 새 줄. 상위를 주면 그 아래 맨 끝, 아니면 기준 줄 바로 아래 형제(없으면 맨 끝) */
+  const add = (opts: { parentId?: string; after?: string | null }) => {
+    const parent = opts.parentId ? value.find((i) => i.id === opts.parentId) : undefined;
+    const base = value.find((i) => i.id === (opts.after ?? null));
     const fresh: PlanItem = {
       id: crypto.randomUUID(),
       parentId: null,
       sortOrder: 0,
       title: M.newTitle,
-      track: base?.track ?? "dev",
+      track: parent?.track ?? base?.track ?? "dev",
       kind: "task",
       startOn: today,
       endOn: shiftDay(today, NEW_SPAN_DAYS),
@@ -152,19 +192,39 @@ export function PlanScreen({ items, cards, assignees, today }: { items: PlanItem
       output: null,
       memo: null,
     };
-    setValue((v) => insertAfter(v, fresh, base?.id ?? null));
+    if (parent) {
+      const last = value.filter((i) => i.parentId === parent.id).reduce((n, i) => Math.max(n, i.sortOrder + 1), 0);
+      setValue((v) => [...v, { ...fresh, parentId: parent.id, sortOrder: last }]);
+      setCollapsed((s) => {
+        const n = new Set(s);
+        n.delete(parent.id);
+        return n;
+      });
+    } else setValue((v) => insertAfter(v, fresh, opts.after ?? null));
     setSelected(fresh.id);
+    setOpenId(fresh.id);
   };
 
-  const remove = async () => {
-    if (!current) return;
-    const under = descendantIds(value, current.id);
-    if (!(await askConfirm(M.deleteBody(current.title, under.size), { title: M.deleteTitle, confirmLabel: M.deleteOk, tone: "danger" }))) return;
-    const at = rows.findIndex((r) => r.id === current.id);
-    const gone = new Set([current.id, ...under]);
+  const remove = async (id: string) => {
+    const it = value.find((i) => i.id === id);
+    if (!it) return;
+    const under = descendantIds(value, id);
+    if (!(await askConfirm(M.deleteBody(it.title, under.size), { title: M.deleteTitle, confirmLabel: M.deleteOk, tone: "danger" }))) return;
+    const gone = new Set([id, ...under]);
     setValue((v) => v.filter((i) => !gone.has(i.id)));
-    setSelected(rows.slice(0, at).reverse().find((r) => !gone.has(r.id))?.id ?? null);
-    say(M.deletedNote);
+    setOpenId(null);
+    setSelected(null);
+  };
+
+  const move = (m: PlanMove) => {
+    if (!opened) return;
+    const id = opened.id;
+    if (m === "up") setValue((v) => moveSibling(v, id, -1));
+    else if (m === "down") setValue((v) => moveSibling(v, id, 1));
+    else if (m === "indent") setValue((v) => indent(v, id));
+    else if (m === "outdent") setValue((v) => outdent(v, id));
+    else if (m === "child") add({ parentId: id });
+    else void remove(id);
   };
 
   const card = (run: () => Promise<{ ok: boolean; error?: string }>, done: string) =>
@@ -175,8 +235,7 @@ export function PlanScreen({ items, cards, assignees, today }: { items: PlanItem
       router.refresh();
     });
 
-  const parents = currentRow ? rows.filter((r) => r.kind !== "milestone" && r.id !== currentRow.id && !descendantIds(value, currentRow.id).has(r.id)) : [];
-  const toolButton = "press rounded-md px-2 py-1 text-[12.5px] font-semibold text-ink-2 hover:bg-acc-soft hover:text-acc disabled:opacity-40";
+  const parents = openedRow ? rows.filter((r) => r.kind !== "milestone" && r.id !== openedRow.id && !descendantIds(value, openedRow.id).has(r.id)) : [];
 
   return (
     <>
@@ -189,9 +248,9 @@ export function PlanScreen({ items, cards, assignees, today }: { items: PlanItem
             router.refresh();
             say(M.reloaded);
           },
-          insert,
-          delete: current ? () => void remove() : undefined,
-          save,
+          insert: () => add({ after: selected }),
+          delete: selected ? () => void remove(selected) : undefined,
+          save: () => flush(true),
           saveDisabled: !dirty,
           saving: pending,
           dirty,
@@ -201,27 +260,27 @@ export function PlanScreen({ items, cards, assignees, today }: { items: PlanItem
         <div className="flex flex-wrap items-center justify-between gap-2">
           <TaskViewSwitch />
           <div className="flex flex-wrap items-center gap-2">
-          <div role="radiogroup" aria-label={M.groupBy} className={cn(SEGMENT, "w-fit")}>
-            {(["person", "wbs"] as const).map((g) => (
-              <button key={g} type="button" role="radio" aria-checked={group === g} onClick={() => setGroup(g)} className={cn(SEGMENT_ITEM, "flex-none px-3", group === g && SEGMENT_ITEM_ON)}>
-                {g === "person" ? M.groupPerson : M.groupWbs}
-              </button>
-            ))}
-          </div>
-          <div role="radiogroup" aria-label={M.zoom} className={cn(SEGMENT, "w-fit")}>
-            {ZOOMS.map((z) => (
-              <button key={z.key} type="button" role="radio" aria-checked={zoom === z.key} onClick={() => setZoom(z.key)} className={cn(SEGMENT_ITEM, "flex-none px-3", zoom === z.key && SEGMENT_ITEM_ON)}>
-                {z.label}
-              </button>
-            ))}
-          </div>
+            <div role="radiogroup" aria-label={M.groupBy} className={cn(SEGMENT, "w-fit")}>
+              {(["person", "wbs"] as const).map((g) => (
+                <button key={g} type="button" role="radio" aria-checked={group === g} onClick={() => setGroup(g)} className={cn(SEGMENT_ITEM, "flex-none px-3", group === g && SEGMENT_ITEM_ON)}>
+                  {g === "person" ? M.groupPerson : M.groupWbs}
+                </button>
+              ))}
+            </div>
+            <div role="radiogroup" aria-label={M.zoom} className={cn(SEGMENT, "w-fit")}>
+              {ZOOMS.map((z) => (
+                <button key={z.key} type="button" role="radio" aria-checked={zoom === z.key} onClick={() => setZoom(z.key)} className={cn(SEGMENT_ITEM, "flex-none px-3", zoom === z.key && SEGMENT_ITEM_ON)}>
+                  {z.label}
+                </button>
+              ))}
+            </div>
           </div>
         </div>
 
         {group === "person" ? (
-          <PersonSummary people={people} nameOf={nameOf} milestone={milestone} today={today} onPick={setSelected} fold={fold} />
+          <PersonSummary people={people} nameOf={nameOf} milestone={milestone} today={today} onPick={setOpenId} fold={fold} />
         ) : (
-          <PlanSummary tracks={tracks} milestone={milestone} today={today} onPick={setSelected} fold={fold} />
+          <PlanSummary tracks={tracks} milestone={milestone} today={today} onPick={setOpenId} fold={fold} />
         )}
 
         <div className="flex flex-wrap items-center gap-x-4 gap-y-1 px-1 text-[12.5px] text-dim" aria-label={M.legend}>
@@ -238,6 +297,9 @@ export function PlanScreen({ items, cards, assignees, today }: { items: PlanItem
           <span className="inline-flex items-center gap-1.5">
             <span className="h-3 w-px bg-danger" aria-hidden />
             {M.legendToday}
+          </span>
+          <span className="ml-auto" aria-live="polite">
+            {pending ? M.autosaving : ""}
           </span>
         </div>
 
@@ -257,66 +319,38 @@ export function PlanScreen({ items, cards, assignees, today }: { items: PlanItem
               return n;
             })
           }
+          onOpen={(id) => {
+            setSelected(id);
+            setOpenId(id);
+          }}
+          onAddChild={(id) => add({ parentId: id })}
+          onAddRoot={group === "wbs" ? () => add({ after: null }) : undefined}
+          onRename={(id, title) => patch(id, (i) => ({ ...i, title }))}
           onShift={(id, by) => patch(id, (i) => shiftItem(i, by))}
           onResize={(id, edge, by) => patch(id, (i) => resizeItem(i, edge, by))}
           editable={!mobile}
         />
-
-        <MasterDetail
-          listWidth="640px"
-          detailOpenKey={selected}
-          list={
-            <DataGrid
-              label={M.list}
-              columns={columns}
-              rows={rows}
-              rowKey={(r) => r.id}
-              fileKey={(r) => ({ code: r.no, name: r.title })}
-              selected={selected}
-              onSelect={setSelected}
-              rowState={(r) => (firstError(errorsOf(r)) ? "error" : !savedById.has(r.id) ? "new" : same(value.find((i) => i.id === r.id), savedById.get(r.id)) ? undefined : "changed")}
-              rowTone={(r) => (r.pct >= 100 ? "muted" : undefined)}
-              empty={M.empty}
-              searchable
-            />
-          }
-          detailTitle={currentRow ? `${currentRow.no} ${currentRow.title}` : M.detail}
-          detailActions={
-            current && (
-              <div className="flex items-center gap-0.5">
-                <button type="button" className={toolButton} onClick={() => setValue((v) => moveSibling(v, current.id, -1))}>
-                  {M.moveUp}
-                </button>
-                <button type="button" className={toolButton} onClick={() => setValue((v) => moveSibling(v, current.id, 1))}>
-                  {M.moveDown}
-                </button>
-                <button type="button" className={toolButton} onClick={() => setValue((v) => indent(v, current.id))}>
-                  {M.indent}
-                </button>
-                <button type="button" className={toolButton} onClick={() => setValue((v) => outdent(v, current.id))} disabled={!current.parentId}>
-                  {M.outdent}
-                </button>
-              </div>
-            )
-          }
-          detail={
-            current ? (
-              <div key={current.id} className="flex flex-col gap-3">
-                <PlanForm item={current} row={currentRow} parents={parents} assignees={assignees} errors={errors} set={setCurrent} />
-                <PlanCards
-                  cards={cards.filter((c) => c.planItemId === current.id)}
-                  saved={savedById.has(current.id)}
-                  busy={cardBusy}
-                  onCreate={() => card(() => createPlanTaskAction(current.id), M.cardCreated)}
-                  onUnlink={(taskId) => card(() => linkTaskPlanAction(taskId, null), M.cardUnlinked)}
-                />
-              </div>
-            ) : (
-              <p className="px-1 py-6 text-[13px] text-dim">{M.pick}</p>
-            )
-          }
-        />
       </div>
+
+      {opened && (
+        <PlanDialog
+          key={opened.id}
+          item={opened}
+          row={openedRow}
+          parents={parents}
+          assignees={assignees}
+          errors={errorsOf(opened)}
+          set={setOpened}
+          cards={cards.filter((c) => c.planItemId === opened.id)}
+          saved={savedIds.has(opened.id)}
+          busy={cardBusy}
+          saving={pending}
+          onCreateCard={() => card(() => createPlanTaskAction(opened.id), M.cardCreated)}
+          onUnlinkCard={(taskId) => card(() => linkTaskPlanAction(taskId, null), M.cardUnlinked)}
+          onMove={move}
+          onClose={() => setOpenId(null)}
+        />
+      )}
     </>
   );
 }
