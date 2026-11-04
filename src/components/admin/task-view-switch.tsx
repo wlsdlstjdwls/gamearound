@@ -24,7 +24,7 @@ export type TaskView = "board" | "plan";
 export const SEGMENT_SM = "flex gap-0.5 rounded-lg bg-surface-2 p-0.5";
 // SEGMENT_ITEM 에 덧붙이지 않고 따로 적는다 — cn 은 충돌을 풀지 않아 h-9 와 h-8 중 이기는 쪽이 CSS 생성 순서에 달린다(ui/tag 머리 주석)
 export const SEGMENT_SM_ITEM =
-  "press tap flex h-8 min-w-0 flex-none cursor-pointer items-center justify-center whitespace-nowrap rounded-md px-3 text-[13px] text-mut transition-colors duration-base hover:text-ink";
+  "press tap flex h-8 min-w-0 flex-none cursor-pointer items-center justify-center whitespace-nowrap rounded-md px-3 text-[13px] text-mut transition-colors duration-base hover:bg-surface hover:text-ink";
 
 const ViewContext = createContext<{ view: TaskView; go: (v: TaskView) => void } | null>(null);
 

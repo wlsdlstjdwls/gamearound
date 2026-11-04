@@ -50,10 +50,16 @@ export const SEGMENT = "flex gap-0.5 rounded-xl bg-surface-2 p-1";
 /** 세그먼트의 칸. 라디오를 감싼 label 이면 :checked 로, 버튼이면 `on` 으로 뜬다 */
 export const SEGMENT_ITEM = cn(
   "press tap flex h-9 min-w-0 flex-1 cursor-pointer items-center justify-center whitespace-nowrap rounded-lg px-2 text-[14px] text-mut transition-colors duration-base hover:text-ink",
+  // 마우스 올림은 은은하게(2026-11-04 사용자 "호버 좋은데 눈 안 아프게, 글자 잘 보이게"): 안 고른 칸은 회색 판 위에 흰 면이 살짝 뜨고 글자가 진해진다.
+  // 고른 칸(라디오가 켜진 칸)에는 흰 면을 깔지 않는다 — 깔면 파랑 면이 흰 면으로 바뀌며 번쩍인다
+  "not-has-[:checked]:hover:bg-surface",
   "has-[:checked]:bg-acc has-[:checked]:font-semibold has-[:checked]:text-on-ink has-[:checked]:shadow-1",
+  // 고른 칸은 올려도 흰 글자 그대로 — hover:text-ink 가 이겨 파랑 면 위 글자가 검게 묻혔다(2026-11-04 사용자 "선택된 탭 호버 시 글자가 꺼매져 안 보인다")
+  "has-[:checked]:hover:text-on-ink!",
   "has-[:focus-visible]:ring-2 has-[:focus-visible]:ring-acc",
 );
-export const SEGMENT_ITEM_ON = "bg-acc font-semibold text-on-ink shadow-1";
+/** 고른 칸. 올려도 흰 글자를 지킨다(! — 칸 기본의 hover:text-ink 를 이긴다) */
+export const SEGMENT_ITEM_ON = "bg-acc font-semibold text-on-ink shadow-1 hover:bg-acc-hover! hover:text-on-ink!";
 /** 우선순위 높음을 고르면 빨강으로 채운다 — 카드 띠와 같은 색이라 "이건 급한 일" 이 고를 때부터 보인다 */
 const SEGMENT_ITEM_URGENT = "has-[:checked]:bg-danger";
 

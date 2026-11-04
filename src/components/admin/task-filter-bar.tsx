@@ -86,7 +86,8 @@ export function TaskFilterBar({
               className={cn(
                 "press tap flex items-center justify-center gap-1.5 whitespace-nowrap rounded-lg px-2 py-1.5 sm:px-3 text-[13.5px] transition-colors duration-base",
                 // 고른 칸은 보라로 채운다 — 흰 면만 띄우면 회색 판 위에서 대비가 약했다(팝업 세그먼트와 같은 모양)
-                on ? "bg-acc font-semibold text-on-ink shadow-1" : "text-mut hover:text-ink",
+                // 마우스 올림은 은은하게 — 고른 칸은 한 단계 진한 파랑(흰 글자 그대로), 안 고른 칸은 흰 면 + 진한 글자
+                on ? "bg-acc font-semibold text-on-ink shadow-1 hover:bg-acc-hover" : "text-mut hover:bg-surface hover:text-ink",
               )}
             >
               {TASK_FILTER_MESSAGES.views[v]}

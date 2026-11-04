@@ -11,7 +11,8 @@
 //
 // 모양(같은 날 사용자 "화면이동 공통버튼이 너무 밋밋해, 다른 버튼과 차별점"): 저장, 추가 같은 **이 화면 안의 행동** 단추(테두리 회색)와 갈라
 // "다른 프로그램으로 건너간다" 가 한눈에 읽히게 한다 — 옅은 파랑 면 + 그 프로그램의 메뉴 아이콘 + 끝의 꺾쇠. 메뉴 기둥과 같은 아이콘이라
-// 어느 화면으로 가는지 그림으로도 맞는다. 올리면 채운 파랑으로 바뀌고 꺾쇠가 살짝 나간다.
+// 어느 화면으로 가는지 그림으로도 맞는다. 올리면 면이 한 단계만 진해지고 테두리가 또렷해지며 꺾쇠가 살짝 나간다 —
+// 처음엔 채운 파랑 + 흰 글자로 뒤집었는데 번쩍여 눈이 피곤하다는 말을 들었다(같은 날 "눈 안 아프게, 글자 잘 보이게"). 글자는 늘 파랑이다.
 import Link from "next/link";
 import { ChevronLeftIcon, SidePanelIcon } from "@/components/ui/icons";
 import { useTooltip } from "@/components/ui/tooltip";
@@ -47,7 +48,7 @@ export function ProgramLink({
         {...(tip ? triggerProps : {})}
         className={cn(
           "press tap group inline-flex h-8 shrink-0 items-center gap-1.5 whitespace-nowrap rounded-lg border border-acc/30 bg-acc-soft pl-2 pr-1.5 text-[12.5px] font-semibold text-acc",
-          "transition-colors duration-fast hover:border-acc hover:bg-acc hover:text-on-ink focus-visible:ring-2 focus-visible:ring-acc focus-visible:ring-offset-1",
+          "transition-colors duration-fast hover:border-acc hover:bg-acc-row focus-visible:ring-2 focus-visible:ring-acc focus-visible:ring-offset-1",
           className,
         )}
       >
