@@ -21,3 +21,4 @@ export * from "./stats";
 export * from "./guide";
 export * from "./mobile";
 export * from "./plan";
+export * from "./fault";
