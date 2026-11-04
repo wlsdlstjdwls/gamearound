@@ -512,3 +512,14 @@ export function TrashIcon(p: IconProps) {
     </svg>
   );
 }
+
+/** 내려받기 — 아래로 향한 화살 + 받침(첨부 파일) */
+export function DownloadIcon(p: IconProps) {
+  return (
+    <svg {...base(p)}>
+      <path d="M12 4v11" />
+      <path d="m7 10 5 5 5-5" />
+      <path d="M5 20h14" />
+    </svg>
+  );
+}

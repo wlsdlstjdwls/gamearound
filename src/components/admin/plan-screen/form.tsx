@@ -139,7 +139,7 @@ export function PlanForm({ item, row, assignees, errors, set }: { item: PlanItem
       )}
 
       <Prop label={M.fieldOutput} htmlFor={`pl-out-${k}`} error={errors.output}>
-        <input id={`pl-out-${k}`} value={item.output ?? ""} onChange={(e) => set({ output: e.target.value || null })} className={INPUT} />
+        <input id={`pl-out-${k}`} value={item.output ?? ""} placeholder={M.outputPlaceholder} onChange={(e) => set({ output: e.target.value || null })} className={cn(INPUT, "placeholder:text-dim-2")} />
       </Prop>
       <Prop label={M.fieldMemo} htmlFor={`pl-memo-${k}`} error={errors.memo}>
         <textarea

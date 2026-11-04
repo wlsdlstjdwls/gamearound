@@ -15,9 +15,9 @@
 // "+" 는 바로 아래 같은 단계의 새 줄을 만들고 곧장 이름 칸을 연다(노션의 줄 추가) — 앞서는 하위를 만들어 멀쩡한 작업이 묶음으로 바뀌었다(사용자 "플러스 동작 이상").
 // 옆 보기 아이콘은 상세 서랍을 연다. 순서는 왼쪽 손잡이(점 여섯)를 끌어 다른 줄 앞뒤에 놓는다(WBS 보기, 마우스) — 서랍의 위로/아래로/들여쓰기 단추는 와닿지 않는다 해서 걷었다.
 import { useLayoutEffect, useMemo, useRef, useState } from "react";
-import { GripIcon, PlusIcon, SidePanelIcon } from "@/components/ui/icons";
+import { GripIcon, PlusIcon, SidePanelIcon, TrashIcon } from "@/components/ui/icons";
 import { ChevronDownIcon } from "@/components/ui/icons";
-import { Clamp } from "@/components/ui/tooltip";
+import { Clamp, useTooltip } from "@/components/ui/tooltip";
 import { cn } from "@/lib/cn";
 import { PLAN_MESSAGES as M } from "@/lib/admin/messages";
 import { dayOffset, PERSON_ROW_PREFIX, resizeItem, shiftDay, shiftItem, spanDays, type PlanRow, type PlanTrack } from "@/lib/admin/plan";
@@ -35,7 +35,7 @@ const ROW_H = 36;
 const HEAD_H = 52;
 const HEAD_H_DAY = 64;
 /** 왼쪽 붙박이 칸 폭(px). 앞서 300 에 들여쓰기 16, 손잡이 칸 16 이 따로 있어 작업명이 열 자도 안 보였다(사용자 "왼쪽 공백이 많고 글자가 적다") */
-const LABEL_W = 340;
+const LABEL_W = 360;
 /** 깊이 한 단의 들여쓰기(px) */
 const INDENT = 12;
 /** 요일 이름(일요일부터). 일 눈금 머리의 날짜 아래에 적는다 */
@@ -99,6 +99,19 @@ function useScale(from: string, days: number, zoom: PlanZoom) {
   }, [from, days, zoom]);
 }
 
+/** 쉬는 날의 까닭을 말풍선으로(공휴일 이름, 주말). 일 눈금은 날짜 칸 전체가, 주, 월 눈금은 머리 바닥의 빨간 점이 띄운다 */
+function OffDayTip({ label, className, style, children }: { label: string | null; className?: string; style?: React.CSSProperties; children?: React.ReactNode }) {
+  const { triggerProps, tooltip } = useTooltip<HTMLDivElement>(label ?? "", !!label, "tap");
+  return (
+    <>
+      <div {...(label ? triggerProps : {})} aria-label={label ?? undefined} className={className} style={style}>
+        {children}
+      </div>
+      {label && tooltip}
+    </>
+  );
+}
+
 export function PlanGantt({
   rows,
   allRows,
@@ -109,6 +122,7 @@ export function PlanGantt({
   collapsed,
   onToggle,
   onOpen,
+  onDelete,
   onAddBelow,
   onReorder,
   renamingId,
@@ -131,6 +145,8 @@ export function PlanGantt({
   onToggle: (id: string) => void;
   /** 상세 팝업 열기(작업명 옆 "열기") */
   onOpen: (id: string) => void;
+  /** 줄 지우기(줄의 휴지통) */
+  onDelete: (id: string) => void;
   /** 바로 아래 같은 단계의 새 줄(줄의 "+") */
   onAddBelow: (id: string) => void;
   /** 끌어 놓기로 순서 바꾸기. 없으면 손잡이를 그리지 않는다(담당자별 보기는 시작일 순이라 순서가 없다) */
@@ -255,11 +271,12 @@ export function PlanGantt({
             {ticks.map((t) => {
               const red = t.wd === 0 || !!t.holiday;
               const blue = t.wd === 6 && !t.holiday;
+              const why = t.holiday ?? (zoom === "day" && (t.wd === 0 || t.wd === 6) ? M.weekend(WEEKDAY[t.wd]!) : null);
               return (
-                <div
+                <OffDayTip
                   key={t.at}
-                  title={t.holiday ?? undefined}
-                  className={cn("absolute bottom-0 whitespace-nowrap tabular-nums", zoom === "day" ? "flex flex-col items-center pb-1 leading-tight" : "h-1/2 pl-1.5 pt-1 text-dim", red ? "text-danger" : blue ? "text-acc" : zoom === "day" && "text-dim")}
+                  label={why}
+                  className={cn("absolute bottom-0 whitespace-nowrap tabular-nums", zoom === "day" ? "flex flex-col items-center pb-1 leading-tight" : "h-1/2 pl-1.5 pt-1 text-dim", red ? "text-danger" : blue ? "text-acc" : zoom === "day" && "text-dim", why && "cursor-help")}
                   style={{ left: t.at * px, width: zoom === "day" ? px : 7 * px }}
                 >
                   {/* 오늘 알약과 겹치는 눈금 글자는 비운다(주 눈금은 글자가 오른쪽으로 7일 폭을 쓴다) */}
@@ -269,9 +286,16 @@ export function PlanGantt({
                       {zoom === "day" && <span className="text-[10.5px]">{WEEKDAY[t.wd]}</span>}
                     </>
                   )}
-                </div>
+                </OffDayTip>
               );
             })}
+            {/* 주, 월 눈금: 공휴일 자리에 빨간 점 + 이름 말풍선(날짜 칸이 없어 까닭을 띄울 자리가 따로 필요하다) */}
+            {zoom !== "day" &&
+              holidays.map((h) => (
+                <OffDayTip key={`h-${h.at}`} label={h.name} className="absolute bottom-0.5 z-[6] flex size-3 -translate-x-1/2 cursor-help items-center justify-center" style={{ left: (h.at + 0.5) * px }}>
+                  <span className="size-1.5 rounded-full bg-danger" />
+                </OffDayTip>
+              ))}
             {todayAt >= 0 && todayAt < days && (
               <span className={cn("absolute z-10 -translate-x-1/2 whitespace-nowrap rounded-full bg-danger px-1.5 py-px text-[11px] font-bold tabular-nums text-on-ink shadow-1", zoom === "day" ? "top-[3px]" : "bottom-1")} style={{ left: (todayAt + 0.5) * px }}>
                 {md(today)}
@@ -315,7 +339,7 @@ export function PlanGantt({
 
                 {/* 왼쪽 붙박이 칸: 손잡이, 접기, 번호와 작업명, 줄 아이콘(+, 옆 보기) */}
                 <div
-                  className={cn("sticky left-0 z-10 flex shrink-0 items-center gap-1 border-r border-line pr-2 text-[13.5px]", on ? "bg-acc-row" : "bg-surface group-hover:bg-surface-2")}
+                  className={cn("sticky left-0 z-10 flex shrink-0 items-center gap-1 border-r border-line pr-1.5 text-[14px]", on ? "bg-acc-row" : "bg-surface group-hover:bg-surface-2")}
                   style={{ width: LABEL_W, paddingLeft: 14 + row.depth * INDENT }}
                 >
                   {on && <span aria-hidden className="absolute inset-y-1 left-0 w-[3px] rounded-r-full bg-acc" />}
@@ -370,7 +394,11 @@ export function PlanGantt({
                   ) : (
                     <button
                       type="button"
-                      onClick={() => onSelect(row.id)}
+                      // 하위가 있는 줄(묶음, 사람 머리)은 이름을 눌러도 접고 편다(사용자 "이름 행 눌렀을 때 접었다 펴졌다")
+                      onClick={() => {
+                        onSelect(row.id);
+                        if (row.hasChildren) onToggle(row.id);
+                      }}
                       onDoubleClick={() => !person && setRenamingId(row.id)}
                       className="flex min-w-0 flex-1 items-center gap-1.5 text-left"
                     >
@@ -392,6 +420,9 @@ export function PlanGantt({
                       </button>
                       <button type="button" onClick={() => onOpen(row.id)} aria-label={M.openItem(row.title)} title={M.openItem(row.title)} className="press flex size-6 items-center justify-center rounded-md text-dim hover:bg-acc-soft hover:text-acc">
                         <SidePanelIcon size={15} />
+                      </button>
+                      <button type="button" onClick={() => onDelete(row.id)} aria-label={M.deleteRow(row.title)} title={M.deleteRow(row.title)} className="press flex size-6 items-center justify-center rounded-md text-dim hover:bg-danger-soft hover:text-danger">
+                        <TrashIcon size={14} />
                       </button>
                     </span>
                   )}

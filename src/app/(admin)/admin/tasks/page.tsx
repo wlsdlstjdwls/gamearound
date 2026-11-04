@@ -38,8 +38,8 @@ export default async function AdminTasksPage({ searchParams }: { searchParams: P
 
 /** 일정(WBS) 보기. 줄, 이은 카드, 담당자 후보를 나란히 읽는다(neon-roundtrip-cost) */
 async function PlanView() {
-  const [{ items, cards }, assignees] = await Promise.all([getPlan(), listAssignees()]);
-  return <PlanScreen items={items} cards={cards} assignees={assignees} today={todayIsoKst()} />;
+  const [{ items, cards, files }, assignees] = await Promise.all([getPlan(), listAssignees()]);
+  return <PlanScreen items={items} cards={cards} files={files} assignees={assignees} today={todayIsoKst()} />;
 }
 
 async function BoardView({ meId, params }: { meId: string; params: Params }) {

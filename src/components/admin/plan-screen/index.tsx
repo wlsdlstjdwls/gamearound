@@ -36,6 +36,7 @@ import {
   shiftDay,
   shiftItem,
   trackSummaries,
+  type PlanAttachment,
   type PlanCard,
   type PlanItem,
   type PlanRow,
@@ -50,6 +51,8 @@ import { PersonSummary, PlanSummary } from "./summary";
 
 /** 새 줄의 기본 기간(일). 한 주 안의 평일 다섯 날 */
 const NEW_SPAN_DAYS = 4;
+/** 줄 지우기 뒤 "되돌리기" 를 세워 두는 시간(ms). 자동 저장이 지운 뒤라도 되돌리면 같은 열쇠로 다시 넣는다 */
+const UNDO_MS = 8000;
 /** 손을 멈추고 자동 저장까지 기다리는 시간(ms). 끌기를 연달아 할 때 한 번에 묶일 만큼, 고친 뒤 기다린다고 느끼지 않을 만큼 */
 const AUTOSAVE_MS = 800;
 const ZOOMS: { key: PlanZoom; label: string }[] = [
@@ -66,7 +69,7 @@ const diffOf = (value: PlanItem[], saved: PlanItem[]) => {
   return { upsert: value.filter((i) => !same(i, byId.get(i.id))), deleted: saved.filter((i) => !ids.has(i.id)).map((i) => i.id) };
 };
 
-export function PlanScreen({ items, cards, assignees, today }: { items: PlanItem[]; cards: PlanCard[]; assignees: TaskAssignee[]; today: string }) {
+export function PlanScreen({ items, cards, files, assignees, today }: { items: PlanItem[]; cards: PlanCard[]; files: PlanAttachment[]; assignees: TaskAssignee[]; today: string }) {
   const router = useRouter();
   const { say } = useAdminStatus();
   const { mobile } = useMobilePolicy();
@@ -78,6 +81,8 @@ export function PlanScreen({ items, cards, assignees, today }: { items: PlanItem
   const [openId, setOpenId] = useState<string | null>(null);
   /** 이름 칸이 열린 줄("+" 로 만든 새 줄, 작업명 두 번 누르기) */
   const [renamingId, setRenamingId] = useState<string | null>(null);
+  /** 방금 지운 줄들(되돌리기). 하위까지 함께 지운 경우 전부 담는다 */
+  const [undo, setUndo] = useState<{ title: string; items: PlanItem[] } | null>(null);
   const [collapsed, setCollapsed] = useState<Set<string>>(() => new Set());
   const [zoom, setZoom] = useState<PlanZoom>("week");
   // 묶어 보기: 담당자별(서로 무엇을 하고 있나, 기본) | WBS(계층)
@@ -212,16 +217,26 @@ export function PlanScreen({ items, cards, assignees, today }: { items: PlanItem
     setRenamingId(next.id);
   };
 
+  /** 지우기. 하위가 있거나 첨부 파일이 붙은 줄은 묻는다(파일은 저장소에서도 지워져 되돌릴 수 없다). 나머지는 바로 지우고 되돌리기를 세운다 */
   const remove = async (id: string) => {
     const it = value.find((i) => i.id === id);
     if (!it) return;
     const under = descendantIds(value, id);
-    if (!(await askConfirm(M.deleteBody(it.title, under.size), { title: M.deleteTitle, confirmLabel: M.deleteOk, tone: "danger" }))) return;
     const gone = new Set([id, ...under]);
+    const hasFiles = files.some((f) => gone.has(f.planItemId));
+    if ((under.size > 0 || hasFiles) && !(await askConfirm(M.deleteBody(it.title, under.size), { title: M.deleteTitle, confirmLabel: M.deleteOk, tone: "danger" }))) return;
     setValue((v) => v.filter((i) => !gone.has(i.id)));
-    setOpenId(null);
-    setSelected(null);
+    if (openId && gone.has(openId)) setOpenId(null);
+    if (selected && gone.has(selected)) setSelected(null);
+    setUndo(hasFiles ? null : { title: it.title, items: value.filter((i) => gone.has(i.id)) });
   };
+
+  // 되돌리기는 잠깐만 선다
+  useEffect(() => {
+    if (!undo) return;
+    const t = setTimeout(() => setUndo(null), UNDO_MS);
+    return () => clearTimeout(t);
+  }, [undo]);
 
   const card = (run: () => Promise<{ ok: boolean; error?: string }>, done: string) =>
     startCard(async () => {
@@ -293,7 +308,23 @@ export function PlanScreen({ items, cards, assignees, today }: { items: PlanItem
             <span className="h-3 w-px bg-danger" aria-hidden />
             {M.legendToday}
           </span>
-          <span className="ml-auto" aria-live="polite">
+          <span className="ml-auto flex items-center gap-2" aria-live="polite">
+            {undo && (
+              <span className="flex items-center gap-2 rounded-md bg-ink px-2.5 py-1 text-[12.5px] text-on-ink shadow-2">
+                {M.deletedRow(undo.title)}
+                <button
+                  type="button"
+                  onClick={() => {
+                    const back = undo.items;
+                    setValue((v) => [...v, ...back.filter((b) => !v.some((x) => x.id === b.id))]);
+                    setUndo(null);
+                  }}
+                  className="press font-bold text-acc-on-ink hover:underline"
+                >
+                  {M.undo}
+                </button>
+              </span>
+            )}
             {pending ? M.autosaving : ""}
           </span>
         </div>
@@ -318,6 +349,7 @@ export function PlanScreen({ items, cards, assignees, today }: { items: PlanItem
             setSelected(id);
             setOpenId(id);
           }}
+          onDelete={(id) => void remove(id)}
           onAddBelow={addBelow}
           onReorder={group === "wbs" ? (id, target, where) => setValue((v) => (where === "inside" ? placeInside(v, id, target) : placeNear(v, id, target, where))) : undefined}
           renamingId={renamingId}
@@ -339,6 +371,8 @@ export function PlanScreen({ items, cards, assignees, today }: { items: PlanItem
           errors={errorsOf(opened)}
           set={setOpened}
           cards={cards.filter((c) => c.planItemId === opened.id)}
+          files={files.filter((f) => f.planItemId === opened.id)}
+          onFilesChanged={() => router.refresh()}
           saved={savedIds.has(opened.id)}
           busy={cardBusy}
           saving={pending}
