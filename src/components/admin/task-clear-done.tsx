@@ -25,7 +25,7 @@ export function TaskClearDone({ doneCount }: { doneCount: number }) {
   const canArchive = useMobilePolicy().can("taskArchive");
 
   return (
-    <div className="flex flex-wrap items-center justify-end gap-2">
+    <div className="flex shrink-0 items-center justify-end gap-2 sm:flex-wrap">
       {state && (
         <p role="status" className={state.ok ? "animate-rise text-[13px] text-acc" : "text-[13px] text-danger"}>
           {state.ok ? state.message : state.error}

@@ -37,6 +37,10 @@ const HEAD_H = 52;
 const HEAD_H_DAY = 64;
 /** 왼쪽 붙박이 칸 폭(px). 앞서 300 에 들여쓰기 16, 손잡이 칸 16 이 따로 있어 작업명이 열 자도 안 보였다(사용자 "왼쪽 공백이 많고 글자가 적다") */
 const LABEL_W = 360;
+/** 이 폭 밑의 판에서는 작업명 칸을 줄인다. 이름 칸이 판의 절반을 넘지 않을 폭이다 */
+const NARROW_BOX = 640;
+/** 좁은 판의 작업명 칸. 번호와 이름 여덟 글자 남짓 — 나머지는 줄여 쓰고 눌러 서랍에서 본다 */
+const LABEL_W_NARROW = 150;
 /** 깊이 한 단의 들여쓰기(px) */
 const INDENT = 12;
 /** 요일 이름(일요일부터). 일 눈금 머리의 날짜 아래에 적는다 */
@@ -168,7 +172,10 @@ export function PlanGantt({
   const from = range.from;
   // 판 폭(px). 일정이 적어 날짜 범위가 짧으면 오른쪽이 빈 판으로 남았다 — 범위를 판 폭까지 늘린다
   const [boxW, setBoxW] = useState(0);
-  const days = Math.max(range.days, Math.ceil((boxW - LABEL_W) / px));
+  // 좁은 판(휴대폰)은 작업명 칸을 줄인다 — 360 이면 390 폭 화면을 이름 칸이 다 덮어 막대가 하나도 안 보였다(2026-11-04 사용자 "모바일 최적화")
+  const narrow = boxW > 0 && boxW < NARROW_BOX;
+  const labelW = narrow ? LABEL_W_NARROW : LABEL_W;
+  const days = Math.max(range.days, Math.ceil((boxW - labelW) / px));
   const { months, ticks, weekends, holidays } = useScale(from, days, zoom);
   const headH = zoom === "day" ? HEAD_H_DAY : HEAD_H;
   const [drag, setDrag] = useState<Drag | null>(null);
@@ -278,10 +285,10 @@ export function PlanGantt({
 
   return (
     <div ref={boxRef} className="relative overflow-auto rounded-xl border border-line bg-surface shadow-hair" style={fitted ? { maxHeight: fitted.px } : undefined} role="group" aria-label={M.gantt}>
-      <div className="relative" style={{ width: LABEL_W + width }}>
+      <div className="relative" style={{ width: labelW + width }}>
         {/* 머리: 달 줄 + 눈금 줄. 위로 붙는다 */}
         <div className="sticky top-0 z-20 flex border-b border-line bg-surface" style={{ height: headH }}>
-          <div className="sticky left-0 z-10 flex shrink-0 items-end gap-1.5 border-r border-line bg-surface px-4 pb-2 text-[12.5px] font-semibold text-dim" style={{ width: LABEL_W }}>
+          <div className="sticky left-0 z-10 flex shrink-0 items-end gap-1.5 border-r border-line bg-surface px-4 pb-2 text-[12.5px] font-semibold text-dim" style={{ width: labelW }}>
             {M.colNo}
             <span className="text-line-strong">|</span>
             {M.colTitle}
@@ -333,7 +340,7 @@ export function PlanGantt({
 
         <div className="relative">
           {/* 눈금 바탕 한 장(붙박이 칸 오른쪽) */}
-          <div aria-hidden className="pointer-events-none absolute inset-y-0" style={{ left: LABEL_W, width, backgroundImage: grid }} />
+          <div aria-hidden className="pointer-events-none absolute inset-y-0" style={{ left: labelW, width, backgroundImage: grid }} />
 
           {rows.map((row) => {
             const on = row.id === selected;
@@ -365,7 +372,7 @@ export function PlanGantt({
                 {/* 왼쪽 붙박이 칸: 손잡이, 접기, 번호와 작업명, 줄 아이콘(+, 옆 보기) */}
                 <div
                   className={cn("sticky left-0 z-10 flex shrink-0 items-center gap-1 border-r border-line pr-1.5 text-[14px]", on ? "bg-acc-row" : row.pct >= 100 && !row.hasChildren ? "bg-surface-2" : "bg-surface group-hover:bg-surface-2")}
-                  style={{ width: LABEL_W, paddingLeft: 14 + row.depth * INDENT }}
+                  style={{ width: labelW, paddingLeft: 14 + row.depth * INDENT }}
                 >
                   {on && <span aria-hidden className="absolute inset-y-1 left-0 w-[3px] rounded-r-full bg-acc" />}
                   {onReorder && !person && editable ? (
@@ -423,6 +430,8 @@ export function PlanGantt({
                       onClick={() => {
                         onSelect(row.id);
                         if (row.hasChildren) onToggle(row.id);
+                        // 좁은 판에는 줄 아이콘이 없다(아래) — 이름을 누르면 바로 서랍이 열린다
+                        else if (narrow && !person) onOpen(row.id);
                       }}
                       onDoubleClick={() => !person && setRenamingId(row.id)}
                       className="flex min-w-0 flex-1 items-center gap-1.5 text-left"
@@ -443,7 +452,8 @@ export function PlanGantt({
                     </button>
                   )}
                   {/* 줄 아이콘: 바로 아래 새 줄, 옆 보기로 열기. 늘 보인다 */}
-                  {!person && renamingId !== row.id && (
+                  {/* 좁은 판(휴대폰)에서는 걷는다 — 150px 이름 칸에 셋이 서면 이름이 한 글자만 남았다. 서랍은 이름을 눌러 연다 */}
+                  {!person && !narrow && renamingId !== row.id && (
                     <span className="flex shrink-0 items-center">
                       <button type="button" onClick={() => onAddBelow(row.id)} aria-label={M.addBelow(row.title)} title={M.addBelow(row.title)} className="press flex size-6 items-center justify-center rounded-md text-dim hover:bg-surface-3 hover:text-ink">
                         <PlusIcon size={15} />
@@ -554,7 +564,7 @@ export function PlanGantt({
           {/* 새 일정 줄(노션의 "+ 새로 만들기") */}
           {onAddRoot && (
             <div className="relative flex" style={{ height: ROW_H }}>
-              <div className="sticky left-0 z-10 flex shrink-0 items-center border-r border-line bg-surface pl-2.5" style={{ width: LABEL_W }}>
+              <div className="sticky left-0 z-10 flex shrink-0 items-center border-r border-line bg-surface pl-2.5" style={{ width: labelW }}>
                 <button type="button" onClick={onAddRoot} className="press flex items-center gap-1.5 rounded-md px-1.5 py-1 text-[13px] text-dim hover:bg-surface-2 hover:text-ink">
                   <PlusIcon size={14} />
                   {M.addRoot}
@@ -565,7 +575,7 @@ export function PlanGantt({
 
           {/* 오늘 선 */}
           {todayAt >= 0 && todayAt < days && (
-            <div aria-hidden className="pointer-events-none absolute inset-y-0 z-[5] w-px bg-danger/70" style={{ left: LABEL_W + (todayAt + 0.5) * px }} />
+            <div aria-hidden className="pointer-events-none absolute inset-y-0 z-[5] w-px bg-danger/70" style={{ left: labelW + (todayAt + 0.5) * px }} />
           )}
         </div>
       </div>

@@ -61,9 +61,11 @@ async function BoardView({ meId, params }: { meId: string; params: Params }) {
       <AdminScreenHead title={ADMIN_NAV.tasks} note={TASK_MESSAGES.count(total)} count={total} />
       <header className="flex flex-col gap-3">
         {/* 판을 다루는 버튼 둘은 한 줄에 선다 — 더하기는 왼쪽, 지우는 쪽은 손이 덜 가는 오른쪽 끝 */}
-        <div className="flex flex-wrap items-center justify-between gap-2">
+        {/* 휴대폰에서는 한 줄로 두고 옆으로 민다(2026-11-04 모바일 최적화) — 접으면 단추 넷이 두 줄을 먹어 첫 카드가 화면 반 아래로 내려갔다.
+            이 줄에는 펼쳐지는 칸(고르기 판)이 없어 넘침 상자에 잘릴 것이 없다 */}
+        <div className="flex items-center justify-between gap-2 max-sm:-mx-4 max-sm:overflow-x-auto max-sm:px-4 max-sm:[scrollbar-width:none] sm:flex-wrap">
           {/* 칸반 | 일정(WBS) 보기 전환(2026-11-04)은 더하기와 한 줄 — 줄을 하나 더 세우면 판이 그만큼 내려간다 */}
-          <div className="flex flex-wrap items-center gap-2">
+          <div className="flex shrink-0 items-center gap-2 sm:flex-wrap">
             <TaskViewSwitch />
             <TaskAddForm sources={sourceEnum.enumValues} assignees={assignees} />
           </div>

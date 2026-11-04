@@ -27,7 +27,7 @@
 // 다시 그리러 가서 칩 한 번에 왕복 하나가 붙는다. 거른 판에서 끌어 옮겨도 서버는 칸 전체로 순서를 매긴다
 // (moveTask 는 놓은 자리를 카드 id 로 받는다) — 숨은 카드는 제 순서를 지킨다.
 import { useCodes } from "@/components/code-book";
-import { Fragment, useEffect, useMemo, useOptimistic, useRef, useState, useTransition } from "react";
+import { Fragment, useEffect, useMemo, useOptimistic, useState, useTransition } from "react";
 import { cn } from "@/lib/cn";
 import { TASK_FILTER_MESSAGES, TASK_MESSAGES } from "@/lib/admin/messages";
 import { BOARD_STATUSES, TASK_STATUSES, moveInBoard, unreadNoteCount, type AdminTask, type Board, type TaskAssignee, type TaskStatus } from "@/lib/admin/tasks";
@@ -146,21 +146,10 @@ export function TaskBoard({
   // 모아보기 시트가 연 칸. 팝업(openId)과 따로 쥔다 — 줄을 눌러 팝업이 떠도 목록은 밑에 남는다
   const [listStatus, setListStatus] = useState<TaskStatus | null>(null);
 
-  // 좁은 화면의 넘기는 줄. 지금 보이는 칸은 스크롤 위치로 센다 — 칸 폭이 같아서 나눗셈 하나로 끝난다
-  const trackRef = useRef<HTMLDivElement>(null);
-  const [visible, setVisible] = useState(0);
-  const onTrackScroll = () => {
-    const track = trackRef.current;
-    const first = track?.firstElementChild as HTMLElement | null;
-    if (!track || !first) return;
-    setVisible(Math.min(BOARD_STATUSES.length - 1, Math.round(track.scrollLeft / (first.offsetWidth || 1))));
-  };
-  // scrollIntoView 를 쓰지 않는다 — 칸이 화면보다 길면 문서까지 세로로 끌어내린다(2026-10-02 실측). 줄만 옆으로 민다
-  const goColumn = (i: number) => {
-    const track = trackRef.current;
-    const col = track?.children[i] as HTMLElement | undefined;
-    if (track && col) track.scrollTo({ left: col.offsetLeft - track.offsetLeft - track.clientLeft, behavior: "smooth" });
-  };
+  // 좁은 화면은 칸 하나만 그린다(2026-11-04, 사용자 "업무관리 화면 모바일 최적화"). 앞서는 칸 셋을 옆으로 넘기는 줄(snap)이었는데,
+  // 줄의 키가 가장 긴 칸(완료 13장)을 따라가 빈 "할 일" 칸 밑으로 화면 몇 장 분량의 빈 판이 이어졌다.
+  // 처음 보이는 칸은 카드가 있는 첫 칸이다 — 빈 칸으로 열리면 "판이 비었다" 로 읽힌다. 넓은 화면은 칸 셋이 다 서므로 이 값을 안 쓴다
+  const [visible, setVisible] = useState(() => Math.max(0, BOARD_STATUSES.findIndex((s) => shown[s].length > 0)));
 
   return (
     <section className="flex flex-col gap-3">
@@ -175,7 +164,7 @@ export function TaskBoard({
             key={status}
             type="button"
             aria-pressed={visible === i}
-            onClick={() => goColumn(i)}
+            onClick={() => setVisible(i)}
             className={cn(
               "press tap flex items-center justify-center gap-1.5 rounded-lg px-2 py-1.5 text-[13.5px] transition-colors duration-base",
               visible === i ? "bg-surface font-semibold text-ink shadow-1" : "text-mut",
@@ -192,14 +181,9 @@ export function TaskBoard({
           좁은 화면에도 grid-cols-1 을 **적어야 한다**(2026-10-02 실측): 틀을 안 적으면 암묵 칸이 auto 라
           카드 제목(truncate 는 한 줄로 편 글자 폭을 최소 폭으로 낸다)만큼 늘어나, 390px 화면에서 칸이 438px 이
           되고 문서가 가로로 밀렸다. grid-cols-1 은 minmax(0, 1fr) 라 칸이 화면 폭을 넘지 않는다 */}
-      {/* 좁은 화면: 칸 하나가 화면 폭을 다 쓰고 옆으로 넘긴다(snap). 넓은 화면: 격자.
-          items-start 는 좁은 화면에만 — 늘이면 빈 칸이 가장 긴 칸만큼 키를 먹어 회색 골이 화면 아래까지 이어졌다 */}
-      <div
-        ref={trackRef}
-        onScroll={onTrackScroll}
-        className="-mx-1 flex items-start snap-x snap-mandatory gap-3 overflow-x-auto overscroll-x-contain px-1 pb-1 [scrollbar-width:none] sm:mx-0 sm:grid sm:grid-cols-2 sm:items-stretch sm:overflow-visible sm:px-0 sm:pb-0 lg:grid-cols-3"
-      >
-        {BOARD_STATUSES.map((status) => {
+      {/* 좁은 화면: 위 칸 이름 줄로 고른 칸 하나만 선다(visible 주석). 넓은 화면: 격자 */}
+      <div className="flex flex-col sm:grid sm:grid-cols-2 sm:items-stretch sm:gap-3 lg:grid-cols-3">
+        {BOARD_STATUSES.map((status, i) => {
           const over = drag.over === status;
           // 끌고 있으면 받을 수 있는 자리다. 원래 칸도 받는다(자리 바꾸기) — 끝 칸만은 제 칸에서 자리가 없다
           const droppable = drag.from !== null && !(drag.from === status && status === "done");
@@ -212,7 +196,8 @@ export function TaskBoard({
               className={cn(
                 // 칸은 흰 본문 판 위의 회색 골이고 카드는 그 위에 다시 뜬 흰 판이다(2026-09-30) —
                 // 앞서는 칸, 카드, 바탕이 다 회색 계열이라 셋이 한 면으로 붙어 보였다
-                "flex w-full min-w-0 shrink-0 snap-start flex-col gap-2 rounded-xl border border-dashed transition-colors duration-base sm:min-h-[140px] sm:w-auto sm:p-2",
+                "flex w-full min-w-0 flex-col gap-2 rounded-xl border border-dashed transition-colors duration-base sm:min-h-[140px] sm:w-auto sm:p-2",
+                i !== visible && "max-sm:hidden",
                 over && droppable
                   ? "border-acc bg-acc-soft"
                   : droppable
