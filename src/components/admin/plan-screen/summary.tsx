@@ -9,7 +9,7 @@ import { cn } from "@/lib/cn";
 import { Clamp } from "@/components/ui/tooltip";
 import { PLAN_MESSAGES as M } from "@/lib/admin/messages";
 import { dayOffset, type PersonPlan, type PlanRow, type TrackSummary } from "@/lib/admin/plan";
-import { TRACK_COLOR } from "./gantt";
+import { useTrackColor } from "./track-color";
 
 const CARD = "flex min-w-0 flex-col gap-2 rounded-xl border border-line bg-surface px-4 py-3";
 /** 사람 카드에 늘어놓을 "지금 하는 일" 줄 수. 셋을 넘기면 카드 높이가 사람마다 달라진다 */
@@ -17,6 +17,7 @@ const NOW_MAX = 3;
 
 /** 담당자별 카드: 이름 + 진행률 + 지금 하는 일(진행, 지연 중인 작업). "서로 무엇을 하고 있나" 가 이 카드의 일이다 */
 function PersonCard({ p, name, today, onPick }: { p: PersonPlan; name: string; today: string; onPick: (id: string) => void }) {
+  const trackColor = useTrackColor();
   const initial = name.trim().slice(0, 1) || "-";
   // 하는 일이 있으면 그것, 없으면 다음 할 일(시작 전) — 시작 전인 사람 카드가 "없어요" 만 보이면 서로의 계획을 못 본다
   const list = p.doing.length > 0 ? p.doing : p.next;
@@ -51,7 +52,7 @@ function PersonCard({ p, name, today, onPick }: { p: PersonPlan; name: string; t
             {list.slice(0, NOW_MAX).map((r) => (
               <li key={r.id}>
                 <button type="button" onClick={() => onPick(r.id)} className="press flex w-full items-center gap-2 rounded-md px-1 py-0.5 text-left text-[13px] hover:bg-surface-2">
-                  <span className="size-1.5 shrink-0 rounded-full" style={{ background: TRACK_COLOR[r.track] }} aria-hidden />
+                  <span className="size-1.5 shrink-0 rounded-full" style={{ background: trackColor(r.track) }} aria-hidden />
                   <Clamp className="min-w-0 flex-1 text-ink-2">{r.title}</Clamp>
                   {/* 하는 일은 진행률, 다음 일은 시작일 */}
                   <span className={cn("shrink-0 tabular-nums", r.end && r.end < today ? "text-danger" : "text-dim")}>{list === p.doing ? `${r.pct}%` : (r.start ?? "").slice(5).replace("-", "/")}</span>
@@ -150,16 +151,17 @@ export function PersonSummary({ people, nameOf, milestone, today, onPick, fold }
 
 export function PlanSummary({ tracks, milestone, today, onPick, fold }: { tracks: TrackSummary[]; milestone: PlanRow | null; today: string; onPick: (id: string) => void; fold: Fold }) {
   const { name } = useCodes();
+  const trackColor = useTrackColor();
   if (!fold.open)
     return (
       <Strip fold={fold} milestone={milestone} today={today} onPick={onPick}>
         {tracks.map((t) => (
           <StripItem
             key={t.track}
-            lead={<span className="size-2.5 shrink-0 rounded-full" style={{ background: TRACK_COLOR[t.track] }} aria-hidden />}
+            lead={<span className="size-2.5 shrink-0 rounded-full" style={{ background: trackColor(t.track) }} aria-hidden />}
             label={name("PLAN_TRACK", t.track)}
             pct={t.pct}
-            color={TRACK_COLOR[t.track]}
+            color={trackColor(t.track)}
             note={<span className={t.late > 0 ? "font-semibold text-danger" : undefined}>{M.sumLate(t.late)}</span>}
           />
         ))}
@@ -172,7 +174,7 @@ export function PlanSummary({ tracks, milestone, today, onPick, fold }: { tracks
       {tracks.map((t) => (
         <div key={t.track} className={CARD}>
           <div className="flex items-center gap-2 text-[13.5px] font-semibold text-ink-2">
-            <span className="size-2.5 rounded-full" style={{ background: TRACK_COLOR[t.track] }} aria-hidden />
+            <span className="size-2.5 rounded-full" style={{ background: trackColor(t.track) }} aria-hidden />
             {name("PLAN_TRACK", t.track)}
             <span className="ml-auto text-[12.5px] font-normal tabular-nums text-dim">{M.sumTotal(t.total)}</span>
           </div>
@@ -182,7 +184,7 @@ export function PlanSummary({ tracks, milestone, today, onPick, fold }: { tracks
               <span className="ml-0.5 text-[15px] font-semibold text-dim">%</span>
             </span>
             <div className="mb-1 h-2 flex-1 overflow-hidden rounded-full bg-surface-2" role="progressbar" aria-valuenow={t.pct} aria-valuemin={0} aria-valuemax={100} aria-label={name("PLAN_TRACK", t.track)}>
-              <div className="h-full rounded-full transition-[width] duration-slow ease-out-emph" style={{ width: `${t.pct}%`, background: TRACK_COLOR[t.track] }} />
+              <div className="h-full rounded-full transition-[width] duration-slow ease-out-emph" style={{ width: `${t.pct}%`, background: trackColor(t.track) }} />
             </div>
           </div>
           <div className="flex gap-3 text-[12.5px] tabular-nums text-dim">

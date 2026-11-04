@@ -4,8 +4,10 @@
 // 저장하지 않는 이유는 schema-plan 머리 주석: 줄 하나 옮길 때마다 아래 줄 전부를 고쳐 써야 하고 어긋나면 표가 거짓말을 한다.
 import { shiftDay } from "@/lib/calendar";
 
+/** 처음 깔린 파트(공통코드 PLAN_TRACK 의 시작값). 파트는 공통코드관리에서 더한다 — 이 셋은 코드북을 못 읽을 때의 기본값이다 */
 export const PLAN_TRACKS = ["dev", "plan", "sales"] as const;
-export type PlanTrack = (typeof PLAN_TRACKS)[number];
+/** 파트 코드값. 공통코드에서 늘어나므로 글자다 */
+export type PlanTrack = string;
 
 export const PLAN_KINDS = ["task", "milestone"] as const;
 export type PlanKind = (typeof PLAN_KINDS)[number];
@@ -30,12 +32,14 @@ export type PlanItem = {
   /** 손으로 적은 진행률. 비면 계산한다 */
   progress: number | null;
   assigneeId: string | null;
-  output: string | null;
   memo: string | null;
 };
 
 /** 일정 줄에 이은 업무요청 카드. 걷은(지난 일) 카드도 센다 — 끝내고 걷었다고 진행률이 내려가면 안 된다 */
 export type PlanCard = { id: string; title: string; status: "backlog" | "todo" | "doing" | "done"; planItemId: string; archived: boolean };
+
+/** 일정 줄에 붙은 파일(업무요청 첨부 TaskAttachment 와 같은 모양 + 줄 열쇠) */
+export type PlanAttachment = { id: string; planItemId: string; url: string; name: string; contentType: string; size: number };
 
 /** 업무요청 팝업의 일정 고르기 칸 한 줄(번호 + 작업명) */
 export type PlanOption = { id: string; label: string };
@@ -250,8 +254,10 @@ export function resizeItem(it: PlanItem, edge: "start" | "end", by: number): Pla
 /** 갈래 하나의 요약(업무 별 진행률). 잎 줄만 센다 — 상위 줄은 하위의 합이라 같이 세면 두 번 센다 */
 export type TrackSummary = { track: PlanTrack; pct: number; total: number; done: number; doing: number; late: number };
 
-export function trackSummaries(rows: readonly PlanRow[], today: string): TrackSummary[] {
-  return PLAN_TRACKS.map((track) => {
+/** 파트별 요약. tracks 는 보일 파트 순서(공통코드 순서). 목록에 없지만 줄이 쓰는 파트(미사용으로 끈 것)도 뒤에 붙인다 */
+export function trackSummaries(rows: readonly PlanRow[], today: string, tracks: readonly string[] = PLAN_TRACKS): TrackSummary[] {
+  const all = [...tracks, ...new Set(rows.map((r) => r.track).filter((t) => !tracks.includes(t)))];
+  return all.map((track) => {
     const leaves = rows.filter((r) => r.track === track && !r.hasChildren);
     const weight = (r: PlanRow) => (r.start && r.end ? spanDays(r.start, r.end) : 1);
     const total = leaves.reduce((n, r) => n + weight(r), 0);

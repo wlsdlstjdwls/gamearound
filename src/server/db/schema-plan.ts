@@ -11,12 +11,6 @@ import { date, index, integer, pgEnum, pgTable, text, uuid, type AnyPgColumn } f
 import { auditColumns } from "./audit";
 import { users } from "./schema";
 
-/**
- * 갈래. 개발, 기획, 영업이 나란히 가는 것이 이 화면의 목적이라 축으로 둔다.
- * 이름표는 공통코드(PLAN_TRACK)가 고친다. 늘릴 때는 ADD VALUE 한 줄과 코드북 기본값 한 줄이다
- */
-export const adminPlanTrackEnum = pgEnum("admin_plan_track", ["dev", "plan", "sales"]);
-
 /** 작업(기간이 있다)과 이정표(날 하나). 이정표는 start_on 만 쓰고 end_on 은 같은 날로 맞춘다 */
 export const adminPlanKindEnum = pgEnum("admin_plan_kind", ["task", "milestone"]);
 
@@ -30,7 +24,11 @@ export const adminPlanItems = pgTable("admin_plan_items", {
   /** 같은 상위 안의 순서. 저장할 때 화면 순서대로 다시 매긴다 */
   sortOrder: integer("sort_order").notNull().default(0),
   title: text("title").notNull(),
-  track: adminPlanTrackEnum("track").notNull().default("dev"),
+  /*
+   * 파트(개발, 기획, 영업 ...). 처음엔 enum 셋이었는데 사용자가 "파트는 3개밖에 없냐" 해서 글자 칸으로 풀었다(2026-11-04, 0110).
+   * 값은 공통코드 PLAN_TRACK 의 코드값이다 — 파트를 더하고 이름을 바꾸는 일은 공통코드관리에서 한다(코드 배포 없이)
+   */
+  track: text("track").notNull().default("dev"),
   kind: adminPlanKindEnum("kind").notNull().default("task"),
   /*
    * 기간. 하위가 있는 줄은 하위의 처음과 끝으로 그리므로 이 값을 쓰지 않는다(비워 둬도 된다).
@@ -45,8 +43,6 @@ export const adminPlanItems = pgTable("admin_plan_items", {
   progress: integer("progress"),
   /** 담당. 계정이 지워지면 비운다(set null) — 일정은 남아야 한다 */
   assigneeId: uuid("assignee_id").references(() => users.id, { onDelete: "set null" }),
-  /** 산출물. "제안서", "기능 동결 목록" 처럼 끝났다고 말할 근거 */
-  output: text("output"),
   memo: text("memo"),
   ...auditColumns(),
 }, (t) => [

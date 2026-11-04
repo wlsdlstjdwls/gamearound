@@ -17,7 +17,6 @@ import { useAdminStatus } from "@/components/admin/screen/status";
 import { useMobilePolicy } from "@/components/admin/mobile-policy";
 import { SEGMENT_SM, SEGMENT_SM_ITEM, TaskViewSwitch } from "@/components/admin/task-view-switch";
 import { SEGMENT_ITEM_ON } from "@/components/admin/task-fields";
-import { useCodes } from "@/components/code-book";
 import { askConfirm } from "@/components/ui/confirm-dialog";
 import { ADMIN_NAV, PLAN_MESSAGES as M } from "@/lib/admin/messages";
 import {
@@ -31,7 +30,6 @@ import {
   PERSON_ROW_PREFIX,
   placeInside,
   placeNear,
-  PLAN_TRACKS,
   resizeItem,
   shiftDay,
   shiftItem,
@@ -46,7 +44,8 @@ import type { TaskAssignee } from "@/lib/admin/tasks";
 import { fieldErrors, firstError, type FieldErrors } from "@/lib/admin/validation";
 import { cn } from "@/lib/cn";
 import { PlanDialog } from "./dialog";
-import { PlanGantt, TRACK_COLOR, type PlanZoom } from "./gantt";
+import { PlanGantt, type PlanZoom } from "./gantt";
+import { useTrackColor, useTrackOptions } from "./track-color";
 import { PersonSummary, PlanSummary } from "./summary";
 
 /** 새 줄의 기본 기간(일). 한 주 안의 평일 다섯 날 */
@@ -73,7 +72,6 @@ export function PlanScreen({ items, cards, files, assignees, today }: { items: P
   const router = useRouter();
   const { say } = useAdminStatus();
   const { mobile } = useMobilePolicy();
-  const codes = useCodes();
   const [saved, setSaved] = useState(items);
   const [value, setValue] = useState(items);
   const [selected, setSelected] = useState<string | null>(null);
@@ -165,7 +163,9 @@ export function PlanScreen({ items, cards, files, assignees, today }: { items: P
     if (!id.startsWith(PERSON_ROW_PREFIX)) setSelected(id);
   };
 
-  const tracks = useMemo(() => trackSummaries(rows, today), [rows, today]);
+  const trackOptions = useTrackOptions();
+  const trackColor = useTrackColor();
+  const tracks = useMemo(() => trackSummaries(rows, today, trackOptions.map((o) => o.value)), [rows, today, trackOptions]);
   const milestone = useMemo(() => nextMilestone(rows, today), [rows, today]);
   const opened = value.find((i) => i.id === openId) ?? null;
   const openedRow = rows.find((r) => r.id === openId);
@@ -194,7 +194,6 @@ export function PlanScreen({ items, cards, files, assignees, today }: { items: P
     endOn: shiftDay(startOn, NEW_SPAN_DAYS),
     progress: null,
     assigneeId: null,
-    output: null,
     memo: null,
   });
 
@@ -294,10 +293,10 @@ export function PlanScreen({ items, cards, files, assignees, today }: { items: P
         )}
 
         <div className="flex flex-wrap items-center gap-x-4 gap-y-1 px-1 text-[12.5px] text-dim" aria-label={M.legend}>
-          {PLAN_TRACKS.map((t) => (
-            <span key={t} className="inline-flex items-center gap-1.5">
-              <span className="h-2 w-4 rounded-full" style={{ background: TRACK_COLOR[t] }} aria-hidden />
-              {codes.name("PLAN_TRACK", t)}
+          {trackOptions.map((t) => (
+            <span key={t.value} className="inline-flex items-center gap-1.5">
+              <span className="h-2 w-4 rounded-full" style={{ background: trackColor(t.value) }} aria-hidden />
+              {t.label}
             </span>
           ))}
           <span className="inline-flex items-center gap-1.5">

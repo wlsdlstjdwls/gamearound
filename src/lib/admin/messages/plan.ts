@@ -61,7 +61,6 @@ export const PLAN_MESSAGES = {
   colAssignee: "담당자",
   colProgress: "진행률",
   colState: "상태",
-  colOutput: "결과물",
 
   sectionBasic: "기본 정보",
   sectionSchedule: "일정, 진행",
@@ -74,9 +73,6 @@ export const PLAN_MESSAGES = {
   fieldDate: "일자",
   fieldAssignee: "담당자",
   fieldProgress: "진행률",
-  fieldOutput: "결과물",
-  /** 결과물 칸 자리글. 무엇을 적는 칸인지 말한다(사용자 "산출물은 뭘 넣는 건데") */
-  outputPlaceholder: "끝나면 나오는 것(예: 제안서, 회의록, 기능 목록)",
   sectionFiles: "첨부 파일",
   filesNeedSave: "저장된 뒤 파일을 올릴 수 있어요",
   deleteRow: (title: string) => `${title} 삭제`,

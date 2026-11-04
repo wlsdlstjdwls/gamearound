@@ -29,7 +29,6 @@ const ITEM_COLUMNS = {
   endOn: adminPlanItems.endOn,
   progress: adminPlanItems.progress,
   assigneeId: adminPlanItems.assigneeId,
-  output: adminPlanItems.output,
   memo: adminPlanItems.memo,
 };
 
@@ -95,7 +94,6 @@ export async function savePlan(input: SavePlanInput): Promise<void> {
             endOn: ex("end_on"),
             progress: ex("progress"),
             assigneeId: ex("assignee_id"),
-            output: ex("output"),
             memo: ex("memo"),
             ...updatedBy("admin", admin.id),
           },

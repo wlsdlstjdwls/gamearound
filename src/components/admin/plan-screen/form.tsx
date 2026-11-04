@@ -11,7 +11,8 @@ import { FormSelect } from "@/components/ui/select/fields";
 import { Clamp } from "@/components/ui/tooltip";
 import { useCodes } from "@/components/code-book";
 import { PLAN_MESSAGES as M, SCREEN_MESSAGES as SM } from "@/lib/admin/messages";
-import { PLAN_KIND_LABEL, PLAN_TRACK_LABEL } from "@/lib/admin/messages/plan";
+import { PLAN_KIND_LABEL } from "@/lib/admin/messages/plan";
+import { useTrackOptions } from "./track-color";
 import { PLAN_PROGRESS_MAX, type PlanCard, type PlanItem, type PlanRow } from "@/lib/admin/plan";
 import type { TaskAssignee } from "@/lib/admin/tasks";
 import type { FieldErrors } from "@/lib/admin/validation";
@@ -54,6 +55,7 @@ function Prop({ label, required, error, htmlFor, children }: { label: string; re
 
 export function PlanForm({ item, row, assignees, errors, set }: { item: PlanItem; row: PlanRow | undefined; assignees: TaskAssignee[]; errors: FieldErrors; set: (next: Partial<PlanItem>) => void }) {
   const codes = useCodes();
+  const tracks = useTrackOptions();
   const k = item.id;
   const group = !!row?.hasChildren;
 
@@ -73,7 +75,7 @@ export function PlanForm({ item, row, assignees, errors, set }: { item: PlanItem
 
       <div className="grid gap-x-4 gap-y-2 sm:grid-cols-2">
         <Prop label={M.fieldTrack} required>
-          <FormSelect name={`pl-track-${k}`} label={M.fieldTrack} hideLabel size="sm" value={item.track} onChange={(v) => set({ track: v as PlanItem["track"] })} options={optionsOr(codes.options("PLAN_TRACK"), PLAN_TRACK_LABEL)} />
+          <FormSelect name={`pl-track-${k}`} label={M.fieldTrack} hideLabel size="sm" value={item.track} onChange={(v) => set({ track: v as PlanItem["track"] })} options={tracks} />
         </Prop>
         <Prop label={M.fieldKind} required>
           <FormSelect
@@ -138,9 +140,6 @@ export function PlanForm({ item, row, assignees, errors, set }: { item: PlanItem
         </Prop>
       )}
 
-      <Prop label={M.fieldOutput} htmlFor={`pl-out-${k}`} error={errors.output}>
-        <input id={`pl-out-${k}`} value={item.output ?? ""} placeholder={M.outputPlaceholder} onChange={(e) => set({ output: e.target.value || null })} className={cn(INPUT, "placeholder:text-dim-2")} />
-      </Prop>
       <Prop label={M.fieldMemo} htmlFor={`pl-memo-${k}`} error={errors.memo}>
         <textarea
           id={`pl-memo-${k}`}

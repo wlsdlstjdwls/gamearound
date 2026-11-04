@@ -12,7 +12,6 @@ const item = (id: string, over: Partial<PlanItem> = {}): PlanItem => ({
   endOn: null,
   progress: null,
   assigneeId: null,
-  output: null,
   memo: null,
   ...over,
 });
