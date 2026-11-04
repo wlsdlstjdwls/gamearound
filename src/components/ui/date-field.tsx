@@ -18,6 +18,11 @@ import { DATE_FIELD_MESSAGES as M } from "@/lib/messages/date-field";
 
 /** 펼친 판의 폭(px). 날 칸 40px 일곱 + 안쪽 여백 */
 const PANEL_W = 300;
+/**
+ * 작은 칸(size sm, 관리자 폼)의 판 폭(px). 날 칸 32px 일곱 + 여백(2026-11-04, 사용자 "날짜 피커 너무 크다").
+ * 마우스로 고르는 자리라 32px 이면 넉넉하다 — 터치 기기는 .tap 이 누르는 영역을 지킨다
+ */
+const PANEL_W_SM = 248;
 /** 판의 어림 높이(px). 아래 자리가 이보다 모자라면 위로 연다 */
 const PANEL_H = 360;
 /** 칸과 판 사이 틈(px) */
@@ -60,6 +65,8 @@ export function DateField({
   className?: string;
 }) {
   const id = useId();
+  const dense = size === "sm";
+  const panelW = dense ? PANEL_W_SM : PANEL_W;
   const [inner, setInner] = useState<string | null>(defaultValue || null);
   const value = controlled !== undefined ? controlled || null : inner;
   const parsed = parseIsoDate(value);
@@ -113,7 +120,7 @@ export function DateField({
     const measure = (e?: Event) => {
       if (e && panelRef.current?.contains(e.target as Node)) return;
       const r = button.getBoundingClientRect();
-      const left = Math.max(EDGE, Math.min(r.left, window.innerWidth - PANEL_W - EDGE));
+      const left = Math.max(EDGE, Math.min(r.left, window.innerWidth - panelW - EDGE));
       const below = window.innerHeight - r.bottom;
       const up = below < PANEL_H && r.top > below;
       const next: Place = up ? { left, bottom: window.innerHeight - r.top + PANEL_GAP } : { left, top: r.bottom + PANEL_GAP };
@@ -127,7 +134,7 @@ export function DateField({
       window.removeEventListener("resize", measure);
       setPlace(null);
     };
-  }, [open]);
+  }, [open, panelW]);
 
   // 바깥을 누르면 닫는다. mousedown, touchstart 로 듣는다(AGENTS 6장)
   useEffect(() => {
@@ -189,9 +196,10 @@ export function DateField({
       role="dialog"
       aria-label={label}
       onKeyDown={onPanelKey}
-      style={place ? { position: "fixed", left: place.left, top: place.top, bottom: place.bottom, width: PANEL_W } : { width: PANEL_W }}
+      style={place ? { position: "fixed", left: place.left, top: place.top, bottom: place.bottom, width: panelW } : { width: panelW }}
       className={cn(
-        "animate-scale-in z-50 rounded-[var(--radius-md)] bg-surface p-3 shadow-3 ring-1 ring-line",
+        "animate-scale-in z-50 rounded-[var(--radius-md)] bg-surface shadow-3 ring-1 ring-line",
+        dense ? "p-2" : "p-3",
         place ? (place.bottom !== undefined ? "origin-bottom" : "origin-top") : "absolute left-0 top-full mt-1.5 origin-top",
       )}
     >
@@ -253,7 +261,8 @@ export function DateField({
                   disabled={disabled}
                   onClick={() => pick(c.iso)}
                   className={cn(
-                    "press mx-auto flex size-10 items-center justify-center rounded-full text-[13.5px] tabular-nums outline-none transition-colors duration-fast",
+                    "press mx-auto flex items-center justify-center rounded-full tabular-nums outline-none transition-colors duration-fast",
+                    dense ? "size-8 text-[12.5px]" : "size-10 text-[13.5px]",
                     "focus-visible:ring-2 focus-visible:ring-acc",
                     selected
                       ? "bg-acc font-bold text-on-ink"
@@ -286,7 +295,8 @@ export function DateField({
                   setView("days");
                 }}
                 className={cn(
-                  "press tap h-11 rounded-[var(--radius-sm)] text-[13.5px] transition-colors duration-fast",
+                  "press tap rounded-[var(--radius-sm)] transition-colors duration-fast",
+                  dense ? "h-9 text-[12.5px]" : "h-11 text-[13.5px]",
                   current ? "bg-acc font-bold text-on-ink" : "text-ink hover:bg-surface-2",
                 )}
               >
