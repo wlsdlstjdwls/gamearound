@@ -12,7 +12,9 @@ import { Clamp } from "@/components/ui/tooltip";
 import { useCodes } from "@/components/code-book";
 import { PLAN_MESSAGES as M, SCREEN_MESSAGES as SM } from "@/lib/admin/messages";
 import { PLAN_KIND_LABEL } from "@/lib/admin/messages/plan";
-import { useTrackOptions } from "./track-color";
+import { PLAN_TRACK_GROUP, useTrackOptions } from "./track-color";
+import { SlidersIcon } from "@/components/ui/icons";
+import { adminCodeGroupPath } from "@/lib/routes";
 import { PLAN_PROGRESS_MAX, type PlanCard, type PlanItem, type PlanRow } from "@/lib/admin/plan";
 import type { TaskAssignee } from "@/lib/admin/tasks";
 import type { FieldErrors } from "@/lib/admin/validation";
@@ -75,7 +77,15 @@ export function PlanForm({ item, row, assignees, errors, set }: { item: PlanItem
 
       <div className="grid gap-x-4 gap-y-2 sm:grid-cols-2">
         <Prop label={M.fieldTrack} required>
-          <FormSelect name={`pl-track-${k}`} label={M.fieldTrack} hideLabel size="sm" value={item.track} onChange={(v) => set({ track: v as PlanItem["track"] })} options={tracks} />
+          <div className="flex items-center gap-1">
+            <div className="min-w-0 flex-1">
+              <FormSelect name={`pl-track-${k}`} label={M.fieldTrack} hideLabel size="sm" value={item.track} onChange={(v) => set({ track: v as PlanItem["track"] })} options={tracks} />
+            </div>
+            {/* 파트 더하기: 공통코드관리의 일정 파트 그룹을 탭으로 연다(관리 화면 링크는 프로그램 껍데기가 탭으로 받는다) */}
+            <Link href={adminCodeGroupPath(PLAN_TRACK_GROUP)} aria-label={M.addTrack} title={M.tracksHint} className="press flex size-9 shrink-0 items-center justify-center rounded-[var(--radius-sm)] border border-line-strong text-dim hover:border-acc hover:text-acc">
+              <SlidersIcon size={15} />
+            </Link>
+          </div>
         </Prop>
         <Prop label={M.fieldKind} required>
           <FormSelect

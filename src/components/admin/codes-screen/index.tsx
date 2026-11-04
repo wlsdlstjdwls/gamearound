@@ -28,12 +28,12 @@ const GROUP_COLUMNS: GridCol<GroupDraft>[] = [
   { key: "active", label: M.colActive, width: "56px", align: "center", value: (g) => (g.active ? M.activeLabels.on : M.activeLabels.off) },
 ];
 
-export function CodesScreen({ groups }: { groups: CommonCodeGroupDto[] }) {
+export function CodesScreen({ groups, initialGroup = null }: { groups: CommonCodeGroupDto[]; initialGroup?: string | null }) {
   const router = useRouter();
   const { say } = useAdminStatus();
   const [saved, setSaved] = useState(() => draftsOf(groups));
   const [value, setValue] = useState(saved);
-  const [groupKey, setGroupKey] = useState<string | null>(null);
+  const [groupKey, setGroupKey] = useState<string | null>(initialGroup);
   const [codeKey, setCodeKey] = useState<string | null>(null);
   const [f, setF] = useState({ name: "", active: "all" });
   const [pending, start] = useTransition();

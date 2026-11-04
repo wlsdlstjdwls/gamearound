@@ -1,0 +1,2 @@
+-- 일정 파트를 더 깐다(2026-11-04, 사용자 "파트는 왜 3개밖에 없어, 더 넣어줘"). 더 늘리거나 이름을 바꾸는 일은 공통코드관리 > 일정 파트에서 한다
+INSERT INTO "common_codes" ("group_code", "code", "name", "sort_order", "active", "created_source", "updated_source") VALUES ('PLAN_TRACK', 'design', '디자인', 40, true, 'system', 'system'), ('PLAN_TRACK', 'ops', '운영', 50, true, 'system', 'system'), ('PLAN_TRACK', 'marketing', '마케팅', 60, true, 'system', 'system') ON CONFLICT DO NOTHING;

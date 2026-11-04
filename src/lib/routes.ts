@@ -421,3 +421,9 @@ export function adminGamePath(id: string): string {
 export function notificationsPath(page = 1): string {
   return page > 1 ? `${ROUTES.notifications}?page=${page}` : ROUTES.notifications;
 }
+
+/** 공통코드관리에서 그룹 하나를 골라 연 주소(2026-11-04, 업무 일정의 "파트 더하기" 가 일정 파트 그룹으로 바로 간다) */
+export const CODE_GROUP_PARAM = "group";
+export function adminCodeGroupPath(groupCode: string): string {
+  return `${ROUTES.adminCodes}?${CODE_GROUP_PARAM}=${encodeURIComponent(groupCode)}`;
+}
