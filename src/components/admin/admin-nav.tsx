@@ -48,7 +48,8 @@ import { Badge, ITEMS, ItemBody, isActive, groupsFor, type AdminNavCounts, type 
 import { useMobilePolicy } from "@/components/admin/mobile-policy";
 import { useFavorites, useSeedFavorites } from "@/components/admin/nav-favorites";
 import { MenuSearchDialog, MenuSearchPanel, useMenuSearchHotkey } from "@/components/admin/nav-search";
-import { StarIcon } from "@/components/admin/nav-icons";
+import { FavoritesEmpty, MenuViewTabs, useMenuView } from "@/components/admin/nav-view";
+import type { AdminMenuView } from "@/lib/admin/rail";
 export type { AdminNavCounts } from "@/components/admin/admin-nav-items";
 
 /**
@@ -93,6 +94,7 @@ export function AdminNav({
   counts,
   initialCollapsed,
   initialOpened,
+  initialView,
   favorites,
 }: {
   counts: Promise<AdminNavCounts | null>;
@@ -102,6 +104,8 @@ export function AdminNav({
   initialCollapsed: boolean;
   /** 기둥에서 펼쳐 둔 묶음(쿠키). 나머지는 접혀 있다 */
   initialOpened: string[];
+  /** 전체 메뉴와 즐겨찾기 중 고른 쪽(쿠키). 기둥과 더보기 시트가 같은 값을 쓴다(nav-view) */
+  initialView: AdminMenuView;
 }) {
   // 탭 껍데기가 있으면 고른 탭의 칸을 켠다 — 바깥 주소는 처음 연 화면에 머문다(program-shell)
   const current = usePathname();
@@ -113,6 +117,7 @@ export function AdminNav({
   useSeedFavorites(favorites);
   useMenuSearchHotkey();
   const favoriteHrefs = useFavorites();
+  const [view, setView] = useMenuView(initialView);
   // 휴대폰 더보기 시트의 검색어. 비어 있지 않으면 메뉴 대신 결과가 선다
   const [query, setQuery] = useState("");
 
@@ -140,20 +145,17 @@ export function AdminNav({
   };
 
   /** 칸 전부. 기둥과 더보기 시트가 **같은 것**을 쓴다 — 둘을 따로 그리면 칸이 늘 때 한쪽을 빠뜨린다 */
-  // 즐겨찾기 묶음은 시트 맨 위에 선다(기둥은 대시보드 아래). 휴대폰에서 닫힌 화면은 groups 에 없어 같이 빠진다
+  // 즐겨찾기는 탭으로 갈라 한쪽만 그린다(nav-view 머리 주석). 휴대폰에서 닫힌 화면은 groups 에 없어 같이 빠진다
   const allowed = groups.flatMap((g) => g.items);
   const favoriteItems = (favoriteHrefs ?? []).map((h) => allowed.find((i) => i.href === h)).filter((i): i is Item => Boolean(i));
-  const menu = (
+  const menu =
+    view === "favorites" ? (
+      <div className="flex flex-col gap-px">
+        {favoriteItems.map(render)}
+        {favoriteHrefs !== null && favoriteItems.length === 0 && <FavoritesEmpty />}
+      </div>
+    ) : (
     <div className="flex flex-col gap-3">
-      {favoriteItems.length > 0 && (
-        <div className="flex flex-col gap-px">
-          <p className="flex items-center gap-1.5 px-2.5 pb-1 text-[11px] font-bold tracking-[0.1em] text-dim-2">
-            <StarIcon size={12} filled className="text-acc" />
-            {ADMIN_NAV.groupFavorites}
-          </p>
-          {favoriteItems.map(render)}
-        </div>
-      )}
       {groups.map((g) => (
         <div key={g.key} className="flex flex-col gap-px">
           {g.title && <p className="px-2.5 pb-1 text-[11px] font-bold tracking-[0.1em] text-dim-2">{g.title}</p>}
@@ -161,7 +163,7 @@ export function AdminNav({
         </div>
       ))}
     </div>
-  );
+    );
 
   const backLink = (
     <Link href={ROUTES.home} className="press tap flex items-center rounded-lg px-2.5 text-[12.5px] text-dim transition-colors hover:text-ink">
@@ -176,7 +178,7 @@ export function AdminNav({
   return (
     <>
       {/* 넓은 화면 — 왼쪽 끝에 붙은 접히는 기둥(admin-rail) */}
-      <AdminRail counts={counts} initialCollapsed={initialCollapsed} initialOpened={initialOpened} onSoon={setSoon} />
+      <AdminRail counts={counts} initialCollapsed={initialCollapsed} initialOpened={initialOpened} view={view} onView={setView} onSoon={setSoon} />
 
       {/*
         좁은 화면 — 바닥 띠. 화면 바닥에 **못 박는다**(fixed).
@@ -225,7 +227,12 @@ export function AdminNav({
       >
         <nav aria-label={ADMIN_NAV.menuTitle} className="flex flex-col gap-4 pb-1 pt-2">
           <MenuSearchPanel query={query} onQuery={setQuery} />
-          {!query.trim() && menu}
+          {!query.trim() && (
+            <>
+              <MenuViewTabs view={view} onChange={setView} />
+              {menu}
+            </>
+          )}
           <div className="border-t border-line pt-2">{backLink}</div>
         </nav>
       </Sheet>

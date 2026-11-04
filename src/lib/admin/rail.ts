@@ -10,3 +10,16 @@ export const ADMIN_RAIL_COOKIE_MAX_AGE = 60 * 60 * 24 * 365;
  * 접힌 묶음도 지금 보는 칸은 남는다(admin-rail) — 기본이 접힘이어도 내가 어디 있는지는 보인다.
  */
 export const ADMIN_GROUPS_COOKIE = "admin_groups_open";
+/**
+ * 기둥이 지금 보여 주는 목록(2026-11-04, 사용자 "즐겨찾기 메뉴랑 본 메뉴랑 동시에 보이니까 헷갈린다").
+ * 즐겨찾기 묶음을 대시보드 아래에 같이 세웠더니 같은 칸이 두 번 서고, 지금 보는 칸이 두 군데서 켜졌다.
+ * 이제 "전체 메뉴 | 즐겨찾기" 탭으로 하나만 보인다. 고른 쪽은 접힘과 같은 까닭으로 쿠키에 둔다(첫 그림부터 같은 목록).
+ * 값이 없거나 모르는 값이면 전체 메뉴다.
+ */
+export const ADMIN_MENU_VIEW_COOKIE = "admin_menu_view";
+export const ADMIN_MENU_VIEWS = ["all", "favorites"] as const;
+export type AdminMenuView = (typeof ADMIN_MENU_VIEWS)[number];
+
+export function readMenuView(raw: string | undefined): AdminMenuView {
+  return raw === "favorites" ? "favorites" : "all";
+}

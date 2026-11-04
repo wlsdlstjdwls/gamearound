@@ -15,6 +15,10 @@
 //    제목을 진한 글씨 한 줄 칸으로 올리고, 하위 칸은 들여써 왼쪽 안내선 안에 둔다(나무 꼴). 접힌 묶음 제목에는 안에 쌓인 일 합계를 단다.
 //    다시 들은 말("상위 하위 구분 확실히"): 하위 칸이 그림, 같은 글씨, 파랑 채움까지 가져 상위보다 무거워 보였다. 하위 칸은 그림을 빼고
 //    작은 글씨로, 지금 보는 하위 칸은 채움 대신 옅은 파랑 + 왼쪽 막대로 낮췄다. 펼친 묶음 제목은 회색 띠를 깐다. 파랑 채움은 상위 칸(대시보드)만 쓴다.
+//
+// 2026-11-04(사용자 "즐겨찾기 메뉴랑 본 메뉴랑 동시에 보이니까 헷갈린다"): 즐겨찾기를 대시보드 아래 묶음으로 같이 세웠더니 같은 칸이 두 번 서고
+// 지금 보는 칸이 두 군데서 켜졌다. 검색 아래 "전체 메뉴 | 즐겨찾기" 탭(nav-view)으로 한쪽만 그린다. 즐겨찾기 쪽은 칸이 몇 개 안 되니
+// 묶음 없이 그림 달린 상위 칸으로 바로 선다.
 import { useActivePath } from "@/components/admin/program-shell/store";
 import { Suspense, useState } from "react";
 import Link from "next/link";
@@ -25,14 +29,15 @@ import { AuthNav } from "@/components/auth/auth-nav";
 import { HeaderWishLink } from "@/components/header-wish-link";
 import { NotificationBell } from "@/components/notification-bell";
 import { ThemeSwitch } from "@/components/theme-switch";
-import { PanelLeftIcon, StarIcon } from "@/components/admin/nav-icons";
+import { PanelLeftIcon } from "@/components/admin/nav-icons";
 import { useFavorites } from "@/components/admin/nav-favorites";
 import { MenuSearchButton, useTrackRecent } from "@/components/admin/nav-search";
+import { FavoritesEmpty, MenuViewTabs } from "@/components/admin/nav-view";
 import { ChevronDownIcon } from "@/components/ui/icons";
 import { BrandLockup, BrandSymbol } from "@/components/ui/logo";
 import { useTooltip } from "@/components/ui/tooltip";
 import { ADMIN_NAV } from "@/lib/admin/messages";
-import { ADMIN_GROUPS_COOKIE, ADMIN_RAIL_COOKIE, ADMIN_RAIL_COOKIE_MAX_AGE } from "@/lib/admin/rail";
+import { ADMIN_GROUPS_COOKIE, ADMIN_RAIL_COOKIE, ADMIN_RAIL_COOKIE_MAX_AGE, type AdminMenuView } from "@/lib/admin/rail";
 import { cn } from "@/lib/cn";
 import { ROUTES } from "@/lib/routes";
 import { SITE } from "@/lib/site";
@@ -91,12 +96,17 @@ export function AdminRail({
   counts,
   initialCollapsed,
   initialOpened,
+  view,
+  onView,
   onSoon,
 }: {
   counts: Promise<AdminNavCounts | null>;
   initialCollapsed: boolean;
   /** 펼쳐 둔 묶음 열쇠(쿠키, 레이아웃이 읽는다). 적히지 않은 묶음은 접혀 있다(lib/admin/rail 주석) */
   initialOpened: string[];
+  /** 전체 메뉴와 즐겨찾기 중 지금 그릴 쪽. 더보기 시트와 같은 값을 쓰려고 admin-nav 가 쥔다 */
+  view: AdminMenuView;
+  onView: (v: AdminMenuView) => void;
   onSoon: (item: Item) => void;
 }) {
   // 탭 껍데기가 있으면 고른 탭의 칸을 켠다 — 바깥 주소는 처음 연 화면에 머문다(program-shell)
@@ -104,9 +114,13 @@ export function AdminRail({
   const pathname = useActivePath() ?? current;
   const { mobile } = useMobilePolicy();
   useTrackRecent(pathname);
-  // 즐겨찾기 묶음은 대시보드 바로 아래에 선다(nav-favorites). 메뉴 표에 없는 주소(이름이 바뀐 옛 칸)는 조용히 빠진다
+  // 메뉴 표에 없는 주소(이름이 바뀐 옛 칸)는 조용히 빠진다
   const favorites = useFavorites();
   const favoriteItems = (favorites ?? []).map((h) => ITEMS.find((i) => i.href === h)).filter((i): i is Item => Boolean(i));
+  // 즐겨찾기 쪽은 제목 없는 묶음 하나다 — 제목 없는 묶음은 상위 칸 꼴로, 접히지 않고 선다
+  const rows: Array<{ key: string; title?: string; items: Item[] }> = view === "favorites" ? (favoriteItems.length > 0 ? [{ key: "favorites", items: favoriteItems }] : []) : groupsFor(mobile);
+  // 목록을 아직 못 읽었으면(null) 빈 안내도 띄우지 않는다 — 안내가 떴다 칸으로 바뀌면 고장처럼 보인다
+  const favoritesEmpty = view === "favorites" && favorites !== null && favoriteItems.length === 0;
   const [collapsed, setCollapsed] = useState(initialCollapsed);
   const [opened, setOpened] = useState<ReadonlySet<string>>(() => new Set(initialOpened));
   const toggle = () => {
@@ -176,8 +190,9 @@ export function AdminRail({
       </div>
 
       {/* 메뉴 검색(nav-search). 판은 메뉴(admin-nav)에 하나만 있고 이 단추와 Ctrl+K 가 연다 */}
-      <div className={cn("shrink-0 pb-1", collapsed ? "px-1.5" : "px-2.5")}>
+      <div className={cn("flex shrink-0 flex-col gap-2 pb-1", collapsed ? "px-1.5" : "px-2.5")}>
         <MenuSearchButton collapsed={collapsed} />
+        <MenuViewTabs view={view} onChange={onView} collapsed={collapsed} />
       </div>
 
       {/* 기둥이 화면보다 길면 기둥 안에서 굴린다 */}
@@ -188,10 +203,8 @@ export function AdminRail({
           collapsed ? "gap-2 px-1.5" : "gap-2.5 px-2.5",
         )}
       >
-        {groupsFor(mobile).flatMap((g) => {
-          const rows = g.key === "board" && favoriteItems.length > 0 ? [g, { key: "favorites", title: ADMIN_NAV.groupFavorites, items: favoriteItems }] : [g];
-          return rows;
-        }).map((g) => {
+        {favoritesEmpty && !collapsed && <FavoritesEmpty />}
+        {rows.map((g) => {
           if (collapsed) {
             return (
               <div key={g.key} className="flex flex-col gap-1 border-t border-line-soft pt-2 first:border-t-0 first:pt-0">
@@ -201,28 +214,7 @@ export function AdminRail({
               </div>
             );
           }
-          // 즐겨찾기 묶음은 접지 않는다 — 고른 칸을 바로 누르려고 만든 묶음이라 접히면 뜻이 없다. 제목은 별을 단 꼬리표다
-          if (g.key === "favorites") {
-            return (
-              <div key={g.key} className="flex flex-col gap-px">
-                <p className="flex min-h-9 items-center gap-2 px-2.5 text-[14px] font-bold text-ink">
-                  <StarIcon size={15} filled className="shrink-0 text-acc" />
-                  {g.title}
-                </p>
-                <div className="my-1 ml-[17px] flex flex-col gap-px border-l-2 border-line pl-1.5">
-                  {g.items.map((item) => {
-                    const active = isActive(pathname, item.href);
-                    return (
-                      <Link key={item.href} href={item.href} aria-current={active ? "page" : undefined} className={subClass(active)}>
-                        <ItemBody item={item} active={false} counts={counts} iconSize={16} badgeClassName="ml-auto" icon={false} />
-                      </Link>
-                    );
-                  })}
-                </div>
-              </div>
-            );
-          }
-          // 제목 없는 묶음(업무 현황 한 칸)은 접을 단추가 없으니 늘 펼친다
+          // 제목 없는 묶음(업무 현황 한 칸, 즐겨찾기 쪽)은 접을 단추가 없으니 늘 펼친다
           const isFolded = Boolean(g.title) && !opened.has(g.key);
           const groupId = `admin-group-${g.key}`;
           // 접힌 묶음에서도 지금 보는 칸은 남긴다(머리 주석)

@@ -16,7 +16,7 @@ import { ProgramShell } from "@/components/admin/program-shell";
 import { cookies } from "next/headers";
 import { raisedClass } from "@/components/ui/page";
 import { AdminStatusBar, AdminStatusProvider } from "@/components/admin/screen/status";
-import { ADMIN_GROUPS_COOKIE, ADMIN_RAIL_COOKIE } from "@/lib/admin/rail";
+import { ADMIN_GROUPS_COOKIE, ADMIN_MENU_VIEW_COOKIE, ADMIN_RAIL_COOKIE, readMenuView } from "@/lib/admin/rail";
 import { requireRoleOrForbid } from "@/server/auth/guards";
 import { getAdminWorkCounts } from "@/server/services/admin-workload";
 import { listAdminFavorites } from "@/server/services/admin-favorites";
@@ -35,6 +35,7 @@ export default async function AdminLayout({ children }: { children: React.ReactN
   const jar = await cookies();
   const collapsed = jar.get(ADMIN_RAIL_COOKIE)?.value === "1";
   const opened = decodeURIComponent(jar.get(ADMIN_GROUPS_COOKIE)?.value ?? "").split(",").filter(Boolean);
+  const view = readMenuView(jar.get(ADMIN_MENU_VIEW_COOKIE)?.value);
   // 휴대폰이면 허용 표(lib/admin/mobile)대로 메뉴, 진입, 단추를 줄인다. 폭이 아니라 기기로 가르는 이유는 server/device
   const mobile = await isMobileDevice();
 
@@ -45,7 +46,7 @@ export default async function AdminLayout({ children }: { children: React.ReactN
   return (
     <AdminDeviceProvider mobile={mobile}>
       <div className="flex md:items-start">
-        <AdminNav counts={counts} favorites={favorites} initialCollapsed={collapsed} initialOpened={opened} />
+        <AdminNav counts={counts} favorites={favorites} initialCollapsed={collapsed} initialOpened={opened} initialView={view} />
         {/* main 이 아니라 div 인 이유: 루트 레이아웃이 이미 <main> 안에 children 을 넣는다.
             landmark 를 겹쳐 두면 낭독기가 "본문" 을 둘로 센다.
 
