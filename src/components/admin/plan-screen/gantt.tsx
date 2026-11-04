@@ -21,6 +21,7 @@ import { cn } from "@/lib/cn";
 import { PLAN_MESSAGES as M } from "@/lib/admin/messages";
 import { dayOffset, PERSON_ROW_PREFIX, resizeItem, shiftDay, shiftItem, spanDays, type PlanRow, type PlanTrack } from "@/lib/admin/plan";
 import { weekdayOf } from "@/lib/calendar";
+import { useFitHeight } from "@/components/admin/screen/data-grid/fit";
 
 /** 눈금별 하루 폭(px). 일은 날짜 숫자가 들어갈 만큼, 월은 석 달이 한 화면에 들어갈 만큼 */
 export const PLAN_ZOOM_PX = { day: 30, week: 14, month: 5 } as const;
@@ -145,6 +146,8 @@ export function PlanGantt({
   // 열 때와 눈금을 바꿀 때만 오늘 쪽으로 굴린다 — 줄을 끌다 범위가 바뀌었다고 화면이 튀면 손이 놓친다.
   // 그리기 전에(layout effect) 굴린다: 그린 뒤 굴리면 왼쪽 끝(몇 달 전)이 한 장 보였다가 튄다
   const boxRef = useRef<HTMLDivElement>(null);
+  // 높이는 화면 바닥까지 잰 값이다(관리자 그리드와 같은 fit) — 고정 vh 로 두면 위 띠가 접히고 펴질 때마다 문서가 따로 굴렀다(사용자 "불필요한 세로 스크롤")
+  const fitted = useFitHeight(boxRef, true);
   const scrolledAt = useRef<number | null>(null);
   useLayoutEffect(() => {
     const el = boxRef.current;
@@ -200,7 +203,7 @@ export function PlanGantt({
   };
 
   return (
-    <div ref={boxRef} className="relative overflow-auto rounded-xl border border-line bg-surface shadow-hair [@media(pointer:fine)]:max-h-[min(58vh,660px)]" role="group" aria-label={M.gantt}>
+    <div ref={boxRef} className="relative overflow-auto rounded-xl border border-line bg-surface shadow-hair" style={fitted ? { maxHeight: fitted.px } : undefined} role="group" aria-label={M.gantt}>
       <div className="relative" style={{ width: LABEL_W + width }}>
         {/* 머리: 달 줄 + 눈금 줄. 위로 붙는다 */}
         <div className="sticky top-0 z-20 flex border-b border-line bg-surface" style={{ height: HEAD_H }}>

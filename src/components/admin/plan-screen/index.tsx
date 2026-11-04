@@ -14,8 +14,8 @@ import { reportDirty } from "@/components/admin/program-shell/store";
 import { AdminScreenHead } from "@/components/admin/screen/head";
 import { useAdminStatus } from "@/components/admin/screen/status";
 import { useMobilePolicy } from "@/components/admin/mobile-policy";
-import { TaskViewSwitch } from "@/components/admin/task-view-switch";
-import { SEGMENT, SEGMENT_ITEM, SEGMENT_ITEM_ON } from "@/components/admin/task-fields";
+import { SEGMENT_SM, SEGMENT_SM_ITEM, TaskViewSwitch } from "@/components/admin/task-view-switch";
+import { SEGMENT_ITEM_ON } from "@/components/admin/task-fields";
 import { useCodes } from "@/components/code-book";
 import { askConfirm } from "@/components/ui/confirm-dialog";
 import { ADMIN_NAV, PLAN_MESSAGES as M } from "@/lib/admin/messages";
@@ -256,20 +256,20 @@ export function PlanScreen({ items, cards, assignees, today }: { items: PlanItem
           dirty,
         }}
       />
-      <div className="flex flex-col gap-3">
+      <div className="flex flex-col gap-2.5">
         <div className="flex flex-wrap items-center justify-between gap-2">
           <TaskViewSwitch />
           <div className="flex flex-wrap items-center gap-2">
-            <div role="radiogroup" aria-label={M.groupBy} className={cn(SEGMENT, "w-fit")}>
+            <div role="radiogroup" aria-label={M.groupBy} className={cn(SEGMENT_SM, "w-fit")}>
               {(["person", "wbs"] as const).map((g) => (
-                <button key={g} type="button" role="radio" aria-checked={group === g} onClick={() => setGroup(g)} className={cn(SEGMENT_ITEM, "flex-none px-3", group === g && SEGMENT_ITEM_ON)}>
+                <button key={g} type="button" role="radio" aria-checked={group === g} onClick={() => setGroup(g)} className={cn(SEGMENT_SM_ITEM, group === g && SEGMENT_ITEM_ON)}>
                   {g === "person" ? M.groupPerson : M.groupWbs}
                 </button>
               ))}
             </div>
-            <div role="radiogroup" aria-label={M.zoom} className={cn(SEGMENT, "w-fit")}>
+            <div role="radiogroup" aria-label={M.zoom} className={cn(SEGMENT_SM, "w-fit")}>
               {ZOOMS.map((z) => (
-                <button key={z.key} type="button" role="radio" aria-checked={zoom === z.key} onClick={() => setZoom(z.key)} className={cn(SEGMENT_ITEM, "flex-none px-3", zoom === z.key && SEGMENT_ITEM_ON)}>
+                <button key={z.key} type="button" role="radio" aria-checked={zoom === z.key} onClick={() => setZoom(z.key)} className={cn(SEGMENT_SM_ITEM, zoom === z.key && SEGMENT_ITEM_ON)}>
                   {z.label}
                 </button>
               ))}

@@ -9,13 +9,22 @@
 // 모양은 칸반 거르기 줄의 세그먼트와 같다(task-fields SEGMENT) — 같은 화면 안의 고르기라 같은 손맛이어야 한다.
 import { createContext, use, useState } from "react";
 import { reportDirty, useDirty } from "@/components/admin/program-shell/store";
-import { SEGMENT, SEGMENT_ITEM, SEGMENT_ITEM_ON } from "@/components/admin/task-fields";
+import { SEGMENT_ITEM_ON } from "@/components/admin/task-fields";
 import { askConfirm } from "@/components/ui/confirm-dialog";
 import { PLAN_MESSAGES as M, SCREEN_MESSAGES as SM } from "@/lib/admin/messages";
 import { cn } from "@/lib/cn";
 import { TASK_VIEW_PARAM, TASK_VIEW_PLAN } from "@/lib/routes";
 
 export type TaskView = "board" | "plan";
+
+/**
+ * 낮은 세그먼트(2026-11-04, 사용자 "칸반, 일정, 담당자별, WBS, 일 주 월 영역 세로 높이 좀 줄여도"). 판 여백 p-1 → p-0.5, 칸 36 → 32px.
+ * 터치 기기는 .tap 이 44px 를 지킨다. 일정 화면의 고르기 줄(묶어 보기, 눈금)도 이 모양을 쓴다
+ */
+export const SEGMENT_SM = "flex gap-0.5 rounded-lg bg-surface-2 p-0.5";
+// SEGMENT_ITEM 에 덧붙이지 않고 따로 적는다 — cn 은 충돌을 풀지 않아 h-9 와 h-8 중 이기는 쪽이 CSS 생성 순서에 달린다(ui/tag 머리 주석)
+export const SEGMENT_SM_ITEM =
+  "press tap flex h-8 min-w-0 flex-none cursor-pointer items-center justify-center whitespace-nowrap rounded-md px-3 text-[13px] text-mut transition-colors duration-base hover:text-ink";
 
 const ViewContext = createContext<{ view: TaskView; go: (v: TaskView) => void } | null>(null);
 
@@ -43,11 +52,11 @@ const VIEWS: { key: TaskView; label: string }[] = [
 export function TaskViewSwitch() {
   const ctx = use(ViewContext);
   return (
-    <div role="tablist" aria-label={M.viewLabel} className={cn(SEGMENT, "w-fit")}>
+    <div role="tablist" aria-label={M.viewLabel} className={cn(SEGMENT_SM, "w-fit")}>
       {VIEWS.map((v) => {
         const on = ctx?.view === v.key;
         return (
-          <button key={v.key} type="button" role="tab" aria-selected={on} onClick={() => ctx?.go(v.key)} className={cn(SEGMENT_ITEM, "flex-none px-3.5", on && SEGMENT_ITEM_ON)}>
+          <button key={v.key} type="button" role="tab" aria-selected={on} onClick={() => ctx?.go(v.key)} className={cn(SEGMENT_SM_ITEM, on && SEGMENT_ITEM_ON)}>
             {v.label}
           </button>
         );
