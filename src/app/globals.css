@@ -865,6 +865,17 @@ textarea:focus-visible {
 .sheet__panel:focus-visible {
   outline: none;
 }
+/* 업무관리 카드(components/admin/task-card/card). 여는 단추가 카드 안을 꽉 채우고 카드는 overflow-hidden 이라,
+   단추의 링이 위, 양옆은 잘리고 바닥 한 변만 남아 "까만 줄" 이 됐다(2026-11-04 사용자 "카드 눌렀다가 닫으면 까만 줄").
+   팝업을 Esc 로 닫으면 시트가 포커스를 카드로 돌려주며 키보드 포커스로 쳐진다. 링을 카드 둘레로 옮기고 강조색으로 옅게 그린다 —
+   방금 연 카드가 어느 것인지 말하는 표시이지 고장처럼 읽히는 선이 아니다 */
+[data-task-card] > button:focus-visible {
+  outline: none;
+}
+[data-task-card]:has(> button:focus-visible) {
+  outline: 2px solid var(--acc);
+  outline-offset: 2px;
+}
 
 /* ── 터치/모바일 튜닝 ── */
 button,
