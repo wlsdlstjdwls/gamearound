@@ -66,6 +66,7 @@ route(page/action/api)  →  server/services  →  server/adapters | server/db
   - `components/ui/tooltip.tsx` — `Clamp`(줄 수로 자르고 잘렸을 때만 툴팁), `useTooltip()`. 잘린 글자에 `title` 속성을 쓰지 않는다
   - `components/ui/text-field.tsx` | `password-field.tsx` | `checkbox.tsx` | `form-message.tsx`
   - `components/admin/screen/program-link.tsx` — `ProgramLink`. **관리 화면 사이 이동은 이 단추 하나로 한다**(2026-11-04 사용자 확정).
+    단추 글자는 늘 건너갈 프로그램 이름이다(비우면 메뉴 이름을 저절로 쓴다, 아이콘만 있는 단추 금지). 이 자리에서 왜 가는지는 `tip`(말풍선, 화면마다 다르다).
     가는 화면의 줄을 골라 열려면 `select`(이미 열린 프로그램 탭에서도 고른다). 받는 화면은 page 에서 `?select=` 를 첫 선택으로 읽고
     `useProgramSelect`(program-shell/select)를 붙인다. 손으로 `<Link href="/admin/...">` 를 만들지 않는다
   - `server/adapters/http.ts` — `createHttpClient()`. 어댑터에서 `fetch` 를 직접 호출하지 않는다.

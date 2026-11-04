@@ -13,7 +13,6 @@ import { useCodes } from "@/components/code-book";
 import { PLAN_MESSAGES as M, SCREEN_MESSAGES as SM } from "@/lib/admin/messages";
 import { PLAN_KIND_LABEL } from "@/lib/admin/messages/plan";
 import { PLAN_TRACK_GROUP, useTrackOptions } from "./track-color";
-import { SlidersIcon } from "@/components/ui/icons";
 import { ROUTES } from "@/lib/routes";
 import { ProgramLink } from "@/components/admin/screen/program-link";
 import { PLAN_PROGRESS_MAX, type PlanCard, type PlanItem, type PlanRow } from "@/lib/admin/plan";
@@ -83,7 +82,7 @@ export function PlanForm({ item, row, assignees, errors, set }: { item: PlanItem
               <FormSelect name={`pl-track-${k}`} label={M.fieldTrack} hideLabel size="sm" value={item.track} onChange={(v) => set({ track: v as PlanItem["track"] })} options={tracks} />
             </div>
             {/* 파트 더하기: 공통코드관리의 일정 파트 그룹을 탭으로 연다(관리 화면 링크는 프로그램 껍데기가 탭으로 받는다) */}
-            <ProgramLink href={ROUTES.adminCodes} select={PLAN_TRACK_GROUP} icon={<SlidersIcon size={15} />} label={M.tracksHint} />
+            <ProgramLink href={ROUTES.adminCodes} select={PLAN_TRACK_GROUP} tip={M.tracksHint} />
           </div>
         </Prop>
         <Prop label={M.fieldKind} required>

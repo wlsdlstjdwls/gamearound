@@ -6,10 +6,7 @@
 import { buttonClass } from "@/components/ui/button";
 import { EmptyScene } from "@/components/ui/empty-scene";
 import { PlusIcon } from "@/components/ui/icons";
-import { ADMIN_NAV, PLAN_MESSAGES as M } from "@/lib/admin/messages";
-import { ProgramLink } from "@/components/admin/screen/program-link";
-import { ROUTES } from "@/lib/routes";
-import { PLAN_TRACK_GROUP } from "./track-color";
+import { PLAN_MESSAGES as M } from "@/lib/admin/messages";
 
 export function PlanEmpty({ onCreate }: { onCreate: () => void }) {
   return (
@@ -17,16 +14,11 @@ export function PlanEmpty({ onCreate }: { onCreate: () => void }) {
       <EmptyScene className="mb-1" />
       <h2 className="text-[17px] font-bold text-ink">{M.emptyTitle}</h2>
       <p className="max-w-[420px] text-[13.5px] leading-relaxed text-dim">{M.emptyBody}</p>
-      <div className="mt-1 flex flex-wrap items-center justify-center gap-2">
-        <button type="button" onClick={onCreate} className={buttonClass({ variant: "primary", size: "md", className: "gap-1.5" })}>
-          <PlusIcon size={16} />
-          {M.emptyCreate}
-        </button>
-        <ProgramLink href={ROUTES.adminCodes} select={PLAN_TRACK_GROUP} className="h-10">
-          {ADMIN_NAV.codes}
-        </ProgramLink>
-      </div>
-      <p className="text-[12.5px] text-dim">{M.tracksHint}</p>
+      {/* 공통코드관리(파트 더하기) 단추는 두지 않는다 — 상단 줄에 늘 있다(사용자 "빈 판에는 없어도 될 듯") */}
+      <button type="button" onClick={onCreate} className={buttonClass({ variant: "primary", size: "md", className: "mt-1 gap-1.5" })}>
+        <PlusIcon size={16} />
+        {M.emptyCreate}
+      </button>
     </section>
   );
 }
