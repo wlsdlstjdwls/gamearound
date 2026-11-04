@@ -422,8 +422,12 @@ export function notificationsPath(page = 1): string {
   return page > 1 ? `${ROUTES.notifications}?page=${page}` : ROUTES.notifications;
 }
 
-/** 공통코드관리에서 그룹 하나를 골라 연 주소(2026-11-04, 업무 일정의 "파트 더하기" 가 일정 파트 그룹으로 바로 간다) */
-export const CODE_GROUP_PARAM = "group";
-export function adminCodeGroupPath(groupCode: string): string {
-  return `${ROUTES.adminCodes}?${CODE_GROUP_PARAM}=${encodeURIComponent(groupCode)}`;
+/**
+ * 관리 화면으로 건너가며 그 화면의 한 줄을 골라 여는 주소 값(2026-11-04, 사용자 "화면 이동 + 해당 행 선택, 공통 버튼으로").
+ * 화면 이동은 ProgramLink(screen/program-link) 의 select 로 하고, 받는 화면은 이 값으로 첫 줄을 고르고 useProgramSelect 로 이미 열린 탭에서도 고른다
+ */
+export const PROGRAM_SELECT_PARAM = "select";
+export function programPath(href: string, select?: string | null): string {
+  if (!select) return href;
+  return `${href}${href.includes("?") ? "&" : "?"}${PROGRAM_SELECT_PARAM}=${encodeURIComponent(select)}`;
 }

@@ -4,12 +4,14 @@
 // - dirty: 탭 안 화면에 저장 안 한 값이 생기거나 없어졌다 — 바깥 탭에 표시하고 닫을 때 묻는다
 // - favorites: 탭 안 화면 머리의 별을 눌렀다 — 바깥 기둥의 즐겨찾기 묶음에 그 한 칸을 넣거나 뺀다(nav-favorites)
 // - search: 탭 안에서 Ctrl+K 를 눌렀다 — 키는 그 문서에만 닿으니 바깥이 메뉴 검색 판을 연다(nav-search)
+// - select: (바깥 → 탭 안) 이미 열린 탭으로 건너오며 줄 하나를 골라 달라(ProgramLink 의 select, select.ts)
 export type FrameMessage =
   | { type: "admin-open"; href: string }
   | { type: "admin-loc"; href: string }
   | { type: "admin-dirty"; dirty: boolean }
   | { type: "admin-favorites"; href: string; on: boolean }
-  | { type: "admin-search" };
+  | { type: "admin-search" }
+  | { type: "admin-select"; key: string };
 
 /** 이 문서가 탭 안(iframe)에서 열렸나. 레이아웃의 첫 스크립트가 html 에 찍어 둔다 — 그려지기 전에 껍데기를 숨겨야 깜빡이지 않는다 */
 export const FRAME_ATTR = "data-admin-frame";
@@ -30,5 +32,5 @@ export function postToTop(msg: FrameMessage) {
 export function isFrameMessage(data: unknown): data is FrameMessage {
   if (!data || typeof data !== "object") return false;
   const t = (data as { type?: unknown }).type;
-  return t === "admin-open" || t === "admin-loc" || t === "admin-dirty" || t === "admin-favorites" || t === "admin-search";
+  return t === "admin-open" || t === "admin-loc" || t === "admin-dirty" || t === "admin-favorites" || t === "admin-search" || t === "admin-select";
 }

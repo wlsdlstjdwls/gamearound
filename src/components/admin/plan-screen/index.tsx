@@ -16,6 +16,10 @@ import { AdminScreenHead } from "@/components/admin/screen/head";
 import { useAdminStatus } from "@/components/admin/screen/status";
 import { useMobilePolicy } from "@/components/admin/mobile-policy";
 import { SEGMENT_SM, SEGMENT_SM_ITEM, TaskViewSwitch } from "@/components/admin/task-view-switch";
+import { ProgramLink } from "@/components/admin/screen/program-link";
+import { SlidersIcon } from "@/components/ui/icons";
+import { ROUTES } from "@/lib/routes";
+import { PLAN_TRACK_GROUP } from "./track-color";
 import { SEGMENT_ITEM_ON } from "@/components/admin/task-fields";
 import { askConfirm } from "@/components/ui/confirm-dialog";
 import { ADMIN_NAV, PLAN_MESSAGES as M } from "@/lib/admin/messages";
@@ -270,6 +274,8 @@ export function PlanScreen({ items, cards, files, assignees, today }: { items: P
         <div className="flex flex-wrap items-center justify-between gap-2">
           <TaskViewSwitch />
           <div className="flex flex-wrap items-center gap-2">
+            {/* 파트 더하기: 공통코드관리로 건너가 일정 파트 그룹을 고른다(공통 이동 단추, 탭이 이미 열려 있어도 고른다) */}
+            <ProgramLink href={ROUTES.adminCodes} select={PLAN_TRACK_GROUP} icon={<SlidersIcon size={15} />} label={M.tracksHint} />
             <div role="radiogroup" aria-label={M.groupBy} className={cn(SEGMENT_SM, "w-fit")}>
               {(["person", "wbs"] as const).map((g) => (
                 <button key={g} type="button" role="radio" aria-checked={group === g} onClick={() => setGroup(g)} className={cn(SEGMENT_SM_ITEM, group === g && SEGMENT_ITEM_ON)}>

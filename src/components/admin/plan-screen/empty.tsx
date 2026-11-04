@@ -8,7 +8,7 @@ import { EmptyScene } from "@/components/ui/empty-scene";
 import { PlusIcon } from "@/components/ui/icons";
 import { ADMIN_NAV, PLAN_MESSAGES as M } from "@/lib/admin/messages";
 import { ProgramLink } from "@/components/admin/screen/program-link";
-import { adminCodeGroupPath } from "@/lib/routes";
+import { ROUTES } from "@/lib/routes";
 import { PLAN_TRACK_GROUP } from "./track-color";
 
 export function PlanEmpty({ onCreate }: { onCreate: () => void }) {
@@ -22,7 +22,7 @@ export function PlanEmpty({ onCreate }: { onCreate: () => void }) {
           <PlusIcon size={16} />
           {M.emptyCreate}
         </button>
-        <ProgramLink href={adminCodeGroupPath(PLAN_TRACK_GROUP)} className="h-10">
+        <ProgramLink href={ROUTES.adminCodes} select={PLAN_TRACK_GROUP} className="h-10">
           {ADMIN_NAV.codes}
         </ProgramLink>
       </div>

@@ -7,6 +7,7 @@ import { useEffect, useMemo, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { saveCodeGroupAction } from "@/app/(admin)/admin/codes/actions";
 import { reportDirty } from "@/components/admin/program-shell/store";
+import { useProgramSelect } from "@/components/admin/program-shell/select";
 import { DataGrid, type GridCol } from "@/components/admin/screen/data-grid";
 import { AdminScreenHead } from "@/components/admin/screen/head";
 import { MasterDetail, SearchBand, SearchItem } from "@/components/admin/screen/layout";
@@ -100,6 +101,13 @@ export function CodesScreen({ groups, initialGroup = null }: { groups: CommonCod
     setGroupKey(key);
     setCodeKey(null);
   };
+
+  // 다른 화면의 ProgramLink 가 그룹을 골라 달라고 하면(이미 열린 탭) 조회조건을 비우고 그 그룹을 고른다
+  useProgramSelect((key) => {
+    if (!value.some((g) => g.key === key)) return;
+    setF({ name: "", active: "all" });
+    void selectGroup(key);
+  });
 
   const insertGroup = async () => {
     if (!(await confirmRowLeave({ dirty: dirtyOf(current), save, revert: () => current && revert(current.key) }))) return;

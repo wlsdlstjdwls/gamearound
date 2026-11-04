@@ -4,7 +4,7 @@ import type { Metadata } from "next";
 import { CodesScreen } from "@/components/admin/codes-screen";
 import { ADMIN_NAV } from "@/lib/admin/messages";
 import { requireRoleOrForbid } from "@/server/auth/guards";
-import { CODE_GROUP_PARAM } from "@/lib/routes";
+import { PROGRAM_SELECT_PARAM } from "@/lib/routes";
 import { listCodeGroups } from "@/server/services/common-codes";
 
 export const metadata: Metadata = { title: ADMIN_NAV.codes };
@@ -12,8 +12,8 @@ export const metadata: Metadata = { title: ADMIN_NAV.codes };
 export default async function AdminCodesPage({ searchParams }: { searchParams: Promise<Record<string, string | string[] | undefined>> }) {
   await requireRoleOrForbid("admin");
   const [groups, params] = await Promise.all([listCodeGroups(), searchParams]);
-  // ?group= 으로 오면 그 그룹을 골라 연다(다른 화면의 "~ 더하기" 바로가기)
-  const want = params[CODE_GROUP_PARAM];
+  // ?select= 로 오면 그 그룹을 골라 연다(ProgramLink 의 select). 이미 열린 탭은 화면이 useProgramSelect 로 받는다
+  const want = params[PROGRAM_SELECT_PARAM];
   const initialGroup = typeof want === "string" && groups.some((g) => g.groupCode === want) ? want : null;
   return <CodesScreen groups={groups} initialGroup={initialGroup} />;
 }

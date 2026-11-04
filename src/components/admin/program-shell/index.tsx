@@ -18,6 +18,8 @@ import { TabBar } from "@/components/admin/program-shell/tab-bar";
 import { inFrame, isFrameMessage, postToTop } from "@/components/admin/program-shell/frame";
 import { isAdminPath, programOf } from "@/components/admin/program-shell/programs";
 import { reportDirty, setActivePath, useDirty } from "@/components/admin/program-shell/store";
+import { emitProgramSelect } from "@/components/admin/program-shell/select";
+import { PROGRAM_SELECT_PARAM } from "@/lib/routes";
 import { askConfirm } from "@/components/ui/confirm-dialog";
 import { SCREEN_MESSAGES as SM } from "@/lib/admin/messages";
 import { ROUTES } from "@/lib/routes";
@@ -135,8 +137,15 @@ export function ProgramShell({ children }: { children: React.ReactNode }) {
     (href: string) => {
       const path = href.split("?")[0];
       const p = programOf(path);
+      // 줄 고르기(?select=)는 이미 열린 탭에도 전한다 — 다시 띄우지 않으니 주소가 화면에 닿지 않는다(select.ts)
+      const select = new URL(href, location.origin).searchParams.get(PROGRAM_SELECT_PARAM);
       // 처음 그린 화면의 프로그램이면 그 화면을 고른다(닫았으면 새 탭으로 띄운다)
-      if (p.key === inlineKey && !inlineClosed) return pick(p.key);
+      if (p.key === inlineKey && !inlineClosed) {
+        if (select) emitProgramSelect(select);
+        return pick(p.key);
+      }
+      const frame = frames.current.get(p.key);
+      if (select && frame?.contentWindow) frame.contentWindow.postMessage({ type: "admin-select", key: select }, location.origin);
       setTabs((cur) => {
         if (cur.some((t) => t.key === p.key)) return cur;
         let next = [...cur, { key: p.key, label: p.label, href }];
@@ -216,6 +225,16 @@ export function ProgramShell({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     if (mode === "frame") postToTop({ type: "admin-loc", href: hereHref });
   }, [mode, hereHref]);
+  // 탭 안: 바깥이 보낸 줄 고르기를 이 문서의 화면에 전한다
+  useEffect(() => {
+    if (mode !== "frame") return;
+    const onMessage = (e: MessageEvent) => {
+      if (e.origin !== location.origin || !isFrameMessage(e.data) || e.data.type !== "admin-select") return;
+      emitProgramSelect(e.data.key);
+    };
+    window.addEventListener("message", onMessage);
+    return () => window.removeEventListener("message", onMessage);
+  }, [mode]);
   useEffect(() => {
     if (mode === "frame") postToTop({ type: "admin-dirty", dirty: frameDirtyHere });
   }, [mode, frameDirtyHere]);
