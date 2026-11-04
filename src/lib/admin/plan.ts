@@ -327,3 +327,20 @@ export function groupByAssignee(rows: readonly PlanRow[], today: string, order: 
   const rank = (id: string | null) => (id === null ? Number.MAX_SAFE_INTEGER : order.indexOf(id) < 0 ? order.length : order.indexOf(id));
   return groups.sort((a, b) => rank(a.assigneeId) - rank(b.assigneeId));
 }
+
+/**
+ * 끌어 놓기로 순서 바꾸기: id 줄을 target 줄의 앞(before)이나 뒤(after) 형제로 옮긴다. 상위는 target 의 상위를 따른다.
+ * 자기 하위 위로 놓으면(순환) 그대로 둔다.
+ */
+export function placeNear(items: PlanItem[], id: string, targetId: string, where: "before" | "after"): PlanItem[] {
+  const it = items.find((i) => i.id === id);
+  const target = items.find((i) => i.id === targetId);
+  if (!it || !target || id === targetId || descendantIds(items, id).has(targetId)) return items;
+  const parentId = target.parentId;
+  const moved = items.map((i) => (i.id === id ? { ...i, parentId } : i));
+  const order = siblingsOf(moved, parentId).filter((x) => x !== id);
+  order.splice(order.indexOf(targetId) + (where === "after" ? 1 : 0), 0, id);
+  const fromParent = it.parentId;
+  const renumbered = renumber(moved, parentId, order);
+  return fromParent === parentId ? renumbered : renumber(renumbered, fromParent, siblingsOf(renumbered, fromParent));
+}

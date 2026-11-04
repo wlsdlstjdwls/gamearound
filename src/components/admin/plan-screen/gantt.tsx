@@ -11,10 +11,11 @@
 // 등장 애니메이션은 넣지 않는다 — 보기를 바꿀 때마다 막대가 자라나면 그게 곧 깜빡임으로 읽힌다(같은 요청 "깜빡이지 않게").
 //
 // 고치기는 차트 안에서 한다(2026-11-04 3차, 사용자 "아래 그리드, 폼 말고 차트에서 바로, 글 옆 작은 버튼으로 팝업, 노션처럼"):
-// 작업명을 두 번 누르면 그 자리에서 이름을 고치고, 줄에 올리면 "+"(하위 추가)와 "열기"(상세 팝업)가 뜬다. 맨 아래 "새 일정" 줄이 맨 위 줄을 더한다.
-// 올렸을 때만 보이는 단추는 터치 기기와 키보드 포커스에서는 늘 보인다 — 올릴 손이 없는 기기에서 길이 사라지면 안 된다.
+// 작업명을 두 번 누르면 그 자리에서 이름을 고친다. 줄 오른쪽 아이콘 둘은 늘 보인다(사용자 "열기 상시로, 한글 말고 아이콘"):
+// "+" 는 바로 아래 같은 단계의 새 줄을 만들고 곧장 이름 칸을 연다(노션의 줄 추가) — 앞서는 하위를 만들어 멀쩡한 작업이 묶음으로 바뀌었다(사용자 "플러스 동작 이상").
+// 옆 보기 아이콘은 상세 서랍을 연다. 순서는 왼쪽 손잡이(점 여섯)를 끌어 다른 줄 앞뒤에 놓는다(WBS 보기, 마우스) — 서랍의 위로/아래로/들여쓰기 단추는 와닿지 않는다 해서 걷었다.
 import { useLayoutEffect, useMemo, useRef, useState } from "react";
-import { PlusIcon } from "@/components/ui/icons";
+import { GripIcon, PlusIcon, SidePanelIcon } from "@/components/ui/icons";
 import { ChevronDownIcon } from "@/components/ui/icons";
 import { Clamp } from "@/components/ui/tooltip";
 import { cn } from "@/lib/cn";
@@ -98,7 +99,10 @@ export function PlanGantt({
   collapsed,
   onToggle,
   onOpen,
-  onAddChild,
+  onAddBelow,
+  onReorder,
+  renamingId,
+  setRenamingId,
   onAddRoot,
   onRename,
   onShift,
@@ -117,8 +121,13 @@ export function PlanGantt({
   onToggle: (id: string) => void;
   /** 상세 팝업 열기(작업명 옆 "열기") */
   onOpen: (id: string) => void;
-  /** 하위 일정 더하기(줄의 "+"). 이정표, 사람 머리 줄에는 서지 않는다 */
-  onAddChild: (id: string) => void;
+  /** 바로 아래 같은 단계의 새 줄(줄의 "+") */
+  onAddBelow: (id: string) => void;
+  /** 끌어 놓기로 순서 바꾸기. 없으면 손잡이를 그리지 않는다(담당자별 보기는 시작일 순이라 순서가 없다) */
+  onReorder?: (id: string, targetId: string, where: "before" | "after") => void;
+  /** 이름 칸이 열린 줄. 화면이 쥔다 — "+" 로 만든 새 줄은 만들자마자 이름 칸이 열려야 한다 */
+  renamingId: string | null;
+  setRenamingId: (id: string | null) => void;
   /** 맨 아래 "새 일정" 줄. 없으면 그 줄을 그리지 않는다(사람별 보기) */
   onAddRoot?: () => void;
   /** 작업명 그 자리 고치기 */
@@ -132,11 +141,22 @@ export function PlanGantt({
   const { from, days } = useMemo(() => rangeOf(allRows, today), [allRows, today]);
   const { months, ticks, weekends } = useScale(from, days, zoom);
   const [drag, setDrag] = useState<Drag | null>(null);
-  /** 이름을 고치는 줄과 친 글자 */
-  const [renaming, setRenaming] = useState<{ id: string; text: string } | null>(null);
-  const commitRename = () => {
-    if (renaming && renaming.text.trim()) onRename(renaming.id, renaming.text.trim());
-    setRenaming(null);
+  const commitRename = (id: string, text: string) => {
+    if (text.trim()) onRename(id, text.trim());
+    setRenamingId(null);
+  };
+  /** 손잡이로 끄는 줄과 놓일 자리 */
+  const [reorder, setReorder] = useState<{ id: string; overId: string | null; where: "before" | "after" } | null>(null);
+  const reorderMove = (e: React.PointerEvent) => {
+    if (!reorder) return;
+    const rowEl = document.elementFromPoint(e.clientX, e.clientY)?.closest<HTMLElement>("[data-plan-row]");
+    const overId = rowEl?.dataset.planRow ?? null;
+    const where = rowEl && e.clientY > rowEl.getBoundingClientRect().top + ROW_H / 2 ? "after" : "before";
+    if (overId !== reorder.overId || where !== reorder.where) setReorder({ ...reorder, overId, where });
+  };
+  const reorderEnd = () => {
+    if (reorder?.overId && reorder.overId !== reorder.id) onReorder?.(reorder.id, reorder.overId, reorder.where);
+    setReorder(null);
   };
   // 끈 뒤 따라오는 click 이 줄 고르기로 읽히지 않게 한 번 삼킨다
   const swallow = useRef(false);
@@ -247,16 +267,46 @@ export function PlanGantt({
             const person = row.id.startsWith(PERSON_ROW_PREFIX);
             const barW = start && end ? Math.max(px, spanDays(start, end) * px) : 0;
             return (
-              <div key={row.id} className={cn("group relative flex", row.depth === 0 && row.hasChildren && row.no !== "1" && "border-t border-line")} style={{ height: ROW_H }}>
+              <div
+                key={row.id}
+                data-plan-row={person ? undefined : row.id}
+                className={cn("group relative flex", row.depth === 0 && row.hasChildren && row.no !== "1" && "border-t border-line", reorder?.id === row.id && "opacity-50")}
+                style={{ height: ROW_H }}
+              >
+                {/* 끌어 놓을 자리 줄 */}
+                {reorder && reorder.overId === row.id && reorder.id !== row.id && (
+                  <span aria-hidden className={cn("pointer-events-none absolute inset-x-0 z-30 h-0.5 bg-acc", reorder.where === "before" ? "-top-px" : "-bottom-px")} />
+                )}
                 {/* 고른 줄 면. 붙박이 칸과 막대 자리를 한 띠로 칠한다 */}
                 <div aria-hidden className={cn("pointer-events-none absolute inset-0 transition-colors duration-fast", on ? "bg-acc-row" : "group-hover:bg-surface-2/60")} />
 
-                {/* 왼쪽 붙박이 칸. 누르면 고른다, 하위가 있으면 접기 단추 */}
+                {/* 왼쪽 붙박이 칸: 손잡이, 접기, 번호와 작업명, 줄 아이콘(+, 옆 보기) */}
                 <div
-                  className={cn("sticky left-0 z-10 flex shrink-0 items-center gap-1 border-r border-line pr-3 text-[13.5px]", on ? "bg-acc-row" : "bg-surface group-hover:bg-surface-2")}
-                  style={{ width: LABEL_W, paddingLeft: 10 + row.depth * INDENT }}
+                  className={cn("sticky left-0 z-10 flex shrink-0 items-center gap-1 border-r border-line pr-2 text-[13.5px]", on ? "bg-acc-row" : "bg-surface group-hover:bg-surface-2")}
+                  style={{ width: LABEL_W, paddingLeft: 4 + row.depth * INDENT }}
                 >
                   {on && <span aria-hidden className="absolute inset-y-1 left-0 w-[3px] rounded-r-full bg-acc" />}
+                  {onReorder && !person && editable ? (
+                    <span
+                      role="button"
+                      tabIndex={-1}
+                      aria-label={M.reorder(row.title)}
+                      onPointerDown={(e) => {
+                        if (e.pointerType !== "mouse" || e.button !== 0) return;
+                        e.currentTarget.setPointerCapture(e.pointerId);
+                        e.preventDefault();
+                        setReorder({ id: row.id, overId: null, where: "before" });
+                      }}
+                      onPointerMove={reorderMove}
+                      onPointerUp={reorderEnd}
+                      onPointerCancel={() => setReorder(null)}
+                      className="flex h-6 w-4 shrink-0 cursor-grab items-center justify-center rounded text-dim-2 opacity-0 hover:bg-surface-3 hover:text-ink group-hover:opacity-100"
+                    >
+                      <GripIcon size={13} />
+                    </span>
+                  ) : (
+                    <span className="w-4 shrink-0" aria-hidden />
+                  )}
                   {row.hasChildren ? (
                     <button
                       type="button"
@@ -272,47 +322,45 @@ export function PlanGantt({
                       <span className="size-1.5 rounded-full" style={{ background: color, opacity: row.pct >= 100 ? 0.35 : 0.8 }} />
                     </span>
                   )}
-                  {renaming?.id === row.id ? (
+                  {renamingId === row.id ? (
                     <input
                       autoFocus
                       aria-label={M.colTitle}
-                      value={renaming.text}
-                      onChange={(e) => setRenaming({ id: row.id, text: e.target.value })}
-                      onBlur={commitRename}
+                      defaultValue={row.title}
+                      onFocus={(e) => e.currentTarget.select()}
+                      onBlur={(e) => commitRename(row.id, e.currentTarget.value)}
                       onKeyDown={(e) => {
                         if (e.nativeEvent.isComposing) return;
-                        if (e.key === "Enter") commitRename();
-                        if (e.key === "Escape") setRenaming(null);
+                        if (e.key === "Enter") e.currentTarget.blur();
+                        if (e.key === "Escape") setRenamingId(null);
                       }}
                       className="h-7 min-w-0 flex-1 rounded-md border border-acc bg-surface px-2 text-[16px] text-ink outline-none sm:text-[13.5px]"
                     />
                   ) : (
-                  <button
-                    type="button"
-                    onClick={() => onSelect(row.id)}
-                    onDoubleClick={() => !person && setRenaming({ id: row.id, text: row.title })}
-                    className="flex min-w-0 flex-1 items-center gap-2 text-left"
-                  >
-                    {person ? (
-                      <span aria-hidden className="flex size-6 shrink-0 items-center justify-center rounded-full bg-acc-soft text-[12px] font-bold text-acc">
-                        {row.title.trim().slice(0, 1) || "-"}
-                      </span>
-                    ) : (
-                      <span className="shrink-0 text-[12.5px] tabular-nums text-dim">{row.no}</span>
-                    )}
-                    <Clamp className={cn("min-w-0", row.hasChildren ? "font-bold text-ink" : row.pct >= 100 ? "text-dim" : "text-ink-2")}>{row.title}</Clamp>
-                  </button>
-                  )}
-                  {/* 줄 단추: 하위 추가, 열기. 올렸을 때(포인터 기기)만 보이고 터치, 포커스에서는 늘 보인다 */}
-                  {!person && renaming?.id !== row.id && (
-                    <span className="flex shrink-0 items-center gap-0.5 [@media(pointer:fine)]:opacity-0 [@media(pointer:fine)]:group-hover:opacity-100 [@media(pointer:fine)]:focus-within:opacity-100">
-                      {row.kind !== "milestone" && (
-                        <button type="button" onClick={() => onAddChild(row.id)} aria-label={M.addChild(row.title)} className="press flex size-6 items-center justify-center rounded-md text-dim hover:bg-surface-3 hover:text-ink">
-                          <PlusIcon size={14} />
-                        </button>
+                    <button
+                      type="button"
+                      onClick={() => onSelect(row.id)}
+                      onDoubleClick={() => !person && setRenamingId(row.id)}
+                      className="flex min-w-0 flex-1 items-center gap-2 text-left"
+                    >
+                      {person ? (
+                        <span aria-hidden className="flex size-6 shrink-0 items-center justify-center rounded-full bg-acc-soft text-[12px] font-bold text-acc">
+                          {row.title.trim().slice(0, 1) || "-"}
+                        </span>
+                      ) : (
+                        <span className="shrink-0 text-[12.5px] tabular-nums text-dim">{row.no}</span>
                       )}
-                      <button type="button" onClick={() => onOpen(row.id)} aria-label={M.openItem(row.title)} className="press rounded-md border border-line bg-surface px-1.5 py-0.5 text-[11.5px] font-semibold text-ink-2 shadow-hair hover:border-acc hover:text-acc">
-                        {M.open}
+                      <Clamp className={cn("min-w-0", row.hasChildren ? "font-bold text-ink" : row.pct >= 100 ? "text-dim" : "text-ink-2")}>{row.title}</Clamp>
+                    </button>
+                  )}
+                  {/* 줄 아이콘: 바로 아래 새 줄, 옆 보기로 열기. 늘 보인다 */}
+                  {!person && renamingId !== row.id && (
+                    <span className="flex shrink-0 items-center">
+                      <button type="button" onClick={() => onAddBelow(row.id)} aria-label={M.addBelow(row.title)} title={M.addBelow(row.title)} className="press flex size-7 items-center justify-center rounded-md text-dim hover:bg-surface-3 hover:text-ink">
+                        <PlusIcon size={15} />
+                      </button>
+                      <button type="button" onClick={() => onOpen(row.id)} aria-label={M.openItem(row.title)} title={M.openItem(row.title)} className="press flex size-7 items-center justify-center rounded-md text-dim hover:bg-acc-soft hover:text-acc">
+                        <SidePanelIcon size={15} />
                       </button>
                     </span>
                   )}

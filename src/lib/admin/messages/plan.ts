@@ -85,7 +85,8 @@ export const PLAN_MESSAGES = {
 
   open: "열기",
   openItem: (title: string) => `${title} 열기`,
-  addChild: (title: string) => `${title} 아래에 일정 추가`,
+  addBelow: (title: string) => `${title} 아래에 새 일정`,
+  reorder: (title: string) => `${title} 끌어서 순서 바꾸기`,
   addRoot: "새 일정",
   addChildLabel: "하위 추가",
   autosaving: "저장 중",

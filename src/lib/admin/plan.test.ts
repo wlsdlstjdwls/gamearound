@@ -135,3 +135,15 @@ describe("담당자별", () => {
     expect(g[1]!.late).toBe(1);
   });
 });
+
+describe("끌어 놓기", () => {
+  it("대상의 앞뒤 형제로 옮기고 상위는 대상을 따른다, 자기 하위로는 못 간다", async () => {
+    const { placeNear } = await import("./plan");
+    const base = [item("a", { sortOrder: 0 }), item("b", { sortOrder: 1 }), item("c", { sortOrder: 2 }), item("c1", { parentId: "c", sortOrder: 0 })];
+    const order = (xs: PlanItem[]) => buildPlanRows(xs).map((r) => `${r.no}:${r.id}`).join(" ");
+    expect(order(placeNear(base, "a", "c", "after"))).toBe("1:b 2:c 2.1:c1 3:a");
+    expect(order(placeNear(base, "a", "c1", "before"))).toBe("1:b 2:c 2.1:a 2.2:c1");
+    expect(order(placeNear(base, "c1", "a", "before"))).toBe("1:c1 2:a 3:b 4:c");
+    expect(placeNear(base, "c", "c1", "before")).toEqual(base);
+  });
+});

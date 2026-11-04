@@ -473,3 +473,42 @@ export function ChartIcon(p: IconProps) {
     </svg>
   );
 }
+
+/** 옆 보기로 열기 — 오른쪽 칸이 붙은 창(업무 일정 줄의 상세 서랍, 2026-11-04). 노션의 "옆 보기" 와 같은 그림이라 낯설지 않다 */
+export function SidePanelIcon(p: IconProps) {
+  return (
+    <svg {...base(p)}>
+      <rect x="3" y="4" width="18" height="16" rx="2.5" />
+      <path d="M14 4v16" />
+      <path d="M16.5 9h2" />
+      <path d="M16.5 12h2" />
+    </svg>
+  );
+}
+
+/** 끌어 옮기는 손잡이 — 점 여섯(업무 일정 줄 순서 바꾸기) */
+export function GripIcon(p: IconProps) {
+  return (
+    <svg {...base({ ...p, fill: "currentColor", stroke: "none" })}>
+      <circle cx="9" cy="6" r="1.6" />
+      <circle cx="15" cy="6" r="1.6" />
+      <circle cx="9" cy="12" r="1.6" />
+      <circle cx="15" cy="12" r="1.6" />
+      <circle cx="9" cy="18" r="1.6" />
+      <circle cx="15" cy="18" r="1.6" />
+    </svg>
+  );
+}
+
+/** 지우기 — 휴지통 */
+export function TrashIcon(p: IconProps) {
+  return (
+    <svg {...base(p)}>
+      <path d="M4 7h16" />
+      <path d="M10 11v6" />
+      <path d="M14 11v6" />
+      <path d="M6 7l1 12a2 2 0 0 0 2 2h6a2 2 0 0 0 2-2l1-12" />
+      <path d="M9 7V4.5A1.5 1.5 0 0 1 10.5 3h3A1.5 1.5 0 0 1 15 4.5V7" />
+    </svg>
+  );
+}
