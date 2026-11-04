@@ -302,10 +302,20 @@ export type PersonPlan = { assigneeId: string | null; rows: PlanRow[]; pct: numb
 
 export function groupByAssignee(rows: readonly PlanRow[], today: string, order: readonly string[] = []): PersonPlan[] {
   const who = effectiveAssignees(rows);
+  return groupRows(rows, today, (r) => who.get(r.id) ?? null, order);
+}
+
+/** 파트별 묶음(2026-11-04, 사용자 "파트 데이터는 왜 안 나오냐" — 줄이 파트로 묶여 보이지 않았다). 순서는 공통코드 순서 */
+export function groupByTrack(rows: readonly PlanRow[], today: string, order: readonly string[] = []): PersonPlan[] {
+  return groupRows(rows, today, (r) => r.track, order);
+}
+
+/** 잎 줄을 열쇠로 묶어 묶음마다 진행률, 기간, 하는 일을 낸다. 열쇠 순서는 order, 없는 열쇠는 그 뒤, null 은 맨 끝 */
+function groupRows(rows: readonly PlanRow[], today: string, keyOf: (r: PlanRow) => string | null, order: readonly string[]): PersonPlan[] {
   const map = new Map<string | null, PlanRow[]>();
   for (const r of rows) {
     if (r.hasChildren) continue;
-    const k = who.get(r.id) ?? null;
+    const k = keyOf(r);
     const list = map.get(k);
     if (list) list.push(r);
     else map.set(k, [r]);
@@ -329,7 +339,7 @@ export function groupByAssignee(rows: readonly PlanRow[], today: string, order: 
       done: states.filter((s) => s === "done").length,
     };
   });
-  // 사람 순서는 담당자 목록 순서, 담당 없음은 맨 끝
+  // 순서는 order(담당자 목록, 공통코드), 열쇠 없음(담당 없음)은 맨 끝
   const rank = (id: string | null) => (id === null ? Number.MAX_SAFE_INTEGER : order.indexOf(id) < 0 ? order.length : order.indexOf(id));
   return groups.sort((a, b) => rank(a.assigneeId) - rank(b.assigneeId));
 }

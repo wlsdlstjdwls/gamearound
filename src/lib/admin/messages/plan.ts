@@ -29,6 +29,7 @@ export const PLAN_MESSAGES = {
   legend: "범례",
   groupBy: "묶어 보기",
   groupPerson: "담당자별",
+  groupTrack: "파트별",
   groupWbs: "WBS",
   personNow: "지금 하는 일",
   personNext: "다음 할 일",

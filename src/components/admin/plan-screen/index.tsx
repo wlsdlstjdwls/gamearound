@@ -28,6 +28,7 @@ import {
   descendantIds,
   effectiveAssignees,
   groupByAssignee,
+  groupByTrack,
   insertAfter,
   nextMilestone,
   PERSON_ROW_PREFIX,
@@ -88,7 +89,7 @@ export function PlanScreen({ items, cards, files, assignees, today }: { items: P
   const [collapsed, setCollapsed] = useState<Set<string>>(() => new Set());
   const [zoom, setZoom] = useState<PlanZoom>("week");
   // 묶어 보기: 담당자별(서로 무엇을 하고 있나, 기본) | WBS(계층)
-  const [group, setGroup] = useState<"person" | "wbs">("person");
+  const [group, setGroup] = useState<"person" | "track" | "wbs">("person");
   // 요약 카드는 접힌 한 줄 띠가 기본이다 — 펼친 카드는 간트를 화면 밖으로 민다(사용자)
   const [summaryOpen, setSummaryOpen] = useState(false);
   const fold = { open: summaryOpen, onToggle: () => setSummaryOpen((o) => !o) };
@@ -147,27 +148,30 @@ export function PlanScreen({ items, cards, files, assignees, today }: { items: P
   const nameOf = (id: string | null) => (id ? (names.get(id) ?? "") : M.noAssignee);
   const people = useMemo(() => groupByAssignee(rows, today, assignees.map((a) => a.id)), [rows, today, assignees]);
   // 담당자별 간트: 사람 머리 줄(그 사람 몫의 처음과 끝, 진행률) + 그 아래 작업 줄. 머리 줄은 일정 줄이 아니라 고르기, 끌기를 건너뛴다
-  const personRows = useMemo<PlanRow[]>(
-    () =>
-      people.flatMap((p) => {
-        const id = `${PERSON_ROW_PREFIX}${p.assigneeId ?? "none"}`;
-        const lead = p.rows[0]!;
-        const head: PlanRow = { ...lead, id, parentId: null, title: p.assigneeId ? (names.get(p.assigneeId) ?? "") : M.noAssignee, no: "", depth: 0, hasChildren: true, kind: "task", start: p.start, end: p.end, pct: p.pct, pctFrom: "children", progress: null };
-        return [head, ...(collapsed.has(id) ? [] : p.rows.map((r) => ({ ...r, depth: 1, parentId: id })))];
-      }),
-    [people, collapsed, names],
-  );
+  const trackOptions = useTrackOptions();
+  const trackLabel = useMemo(() => new Map(trackOptions.map((o) => [o.value, o.label])), [trackOptions]);
+  const trackGroups = useMemo(() => groupByTrack(rows, today, trackOptions.map((o) => o.value)), [rows, today, trackOptions]);
+  /** 묶음 머리 줄(사람, 파트) + 그 아래 작업 줄. 머리 줄은 일정 줄이 아니라 고르기, 끌기를 건너뛴다 */
+  const headed = (groups: typeof people, prefix: string, titleOf: (key: string | null) => string): PlanRow[] =>
+    groups.flatMap((p) => {
+      const id = `${PERSON_ROW_PREFIX}${prefix}${p.assigneeId ?? "none"}`;
+      const lead = p.rows[0]!;
+      const head: PlanRow = { ...lead, id, parentId: null, title: titleOf(p.assigneeId), no: "", depth: 0, hasChildren: true, kind: "task", start: p.start, end: p.end, pct: p.pct, pctFrom: "children", progress: null };
+      return [head, ...(collapsed.has(id) ? [] : p.rows.map((r) => ({ ...r, depth: 1, parentId: id })))];
+    });
+  const personRows = useMemo(() => headed(people, "", (k) => (k ? (names.get(k) ?? "") : M.noAssignee)), [people, collapsed, names]); // eslint-disable-line react-hooks/exhaustive-deps
+  const trackRows = useMemo(() => headed(trackGroups, "track:", (k) => (k ? (trackLabel.get(k) ?? k) : "")), [trackGroups, collapsed, trackLabel]); // eslint-disable-line react-hooks/exhaustive-deps
   const visible = useMemo(() => {
     if (group === "person") return personRows;
+    if (group === "track") return trackRows;
     const hidden = new Set<string>();
     for (const id of collapsed) for (const d of descendantIds(value, id)) hidden.add(d);
     return rows.filter((r) => !hidden.has(r.id));
-  }, [group, personRows, rows, collapsed, value]);
+  }, [group, personRows, trackRows, rows, collapsed, value]);
   const pick = (id: string) => {
     if (!id.startsWith(PERSON_ROW_PREFIX)) setSelected(id);
   };
 
-  const trackOptions = useTrackOptions();
   const trackColor = useTrackColor();
   const tracks = useMemo(() => trackSummaries(rows, today, trackOptions.map((o) => o.value)), [rows, today, trackOptions]);
   const milestone = useMemo(() => nextMilestone(rows, today), [rows, today]);
@@ -276,9 +280,9 @@ export function PlanScreen({ items, cards, files, assignees, today }: { items: P
             {/* 파트 더하기: 공통코드관리로 건너가 일정 파트 그룹을 고른다(공통 이동 단추, 탭이 이미 열려 있어도 고른다) */}
             <ProgramLink href={ROUTES.adminCodes} select={PLAN_TRACK_GROUP} tip={M.tracksHint} />
             <div role="radiogroup" aria-label={M.groupBy} className={cn(SEGMENT_SM, "w-fit")}>
-              {(["person", "wbs"] as const).map((g) => (
+              {(["person", "track", "wbs"] as const).map((g) => (
                 <button key={g} type="button" role="radio" aria-checked={group === g} onClick={() => setGroup(g)} className={cn(SEGMENT_SM_ITEM, group === g && SEGMENT_ITEM_ON)}>
-                  {g === "person" ? M.groupPerson : M.groupWbs}
+                  {g === "person" ? M.groupPerson : g === "track" ? M.groupTrack : M.groupWbs}
                 </button>
               ))}
             </div>

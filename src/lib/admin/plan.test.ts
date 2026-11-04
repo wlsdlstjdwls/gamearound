@@ -157,3 +157,15 @@ describe("하위로 넣기", () => {
     expect(placeInside(base, "b", "b1")).toEqual(base);
   });
 });
+
+describe("파트별", () => {
+  it("파트로 묶고 공통코드 순서를 따른다", async () => {
+    const { groupByTrack } = await import("./plan");
+    const rows = buildPlanRows([item("a", { track: "sales", startOn: "2026-11-02", endOn: "2026-11-03" }), item("b", { track: "dev", startOn: "2026-11-01", endOn: "2026-11-02" }), item("c", { track: "design" })]);
+    expect(groupByTrack(rows, "2026-11-05", ["dev", "plan", "sales"]).map((g) => [g.assigneeId, g.rows.map((r) => r.id)])).toEqual([
+      ["dev", ["b"]],
+      ["sales", ["a"]],
+      ["design", ["c"]],
+    ]);
+  });
+});

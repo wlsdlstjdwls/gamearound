@@ -427,7 +427,12 @@ export function PlanGantt({
                       onDoubleClick={() => !person && setRenamingId(row.id)}
                       className="flex min-w-0 flex-1 items-center gap-1.5 text-left"
                     >
-                      {person ? (
+                      {person && row.id.startsWith(`${PERSON_ROW_PREFIX}track:`) ? (
+                        // 파트 머리 줄은 파트 색 네모 — 사람 머리(첫 글자 동그라미)와 갈린다
+                        <span aria-hidden className="flex size-6 shrink-0 items-center justify-center">
+                          <span className="size-3 rounded-[3px]" style={{ background: color }} />
+                        </span>
+                      ) : person ? (
                         <span aria-hidden className="flex size-6 shrink-0 items-center justify-center rounded-full bg-acc-soft text-[12px] font-bold text-acc">
                           {row.title.trim().slice(0, 1) || "-"}
                         </span>
