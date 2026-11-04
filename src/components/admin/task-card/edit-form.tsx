@@ -11,19 +11,25 @@
 import { ActionForm } from "@/components/ui/action-form";
 import { TASK_MESSAGES } from "@/lib/admin/messages";
 import { assigneeValue, type AdminTask, type TaskAssignee } from "@/lib/admin/tasks";
-import { TaskAssigneeField, TaskBasicFields, TaskCategoryField, TaskPart, TaskPriorityField } from "@/components/admin/task-fields";
+import { FIELD_LABEL, TaskAssigneeField, TaskBasicFields, TaskCategoryField, TaskPart, TaskPriorityField } from "@/components/admin/task-fields";
+import { FormSelect } from "@/components/ui/select/fields";
+import { PLAN_MESSAGES } from "@/lib/admin/messages";
+import type { PlanOption } from "@/lib/admin/plan";
 import { TaskGamePicker } from "@/components/admin/task-game-picker";
 import type { TaskActionState } from "@/app/(admin)/admin/tasks/actions";
 
 export function TaskEditForm({
   task,
   assignees,
+  planOptions,
   place,
   formId,
   form,
 }: {
   task: AdminTask;
   assignees: TaskAssignee[];
+  /** 업무 일정 줄 고르기 목록(2026-11-04). 비면 칸을 세우지 않는다 — 일정이 없는데 빈 고르기 칸만 서면 무엇인지 모른다 */
+  planOptions: PlanOption[];
   /**
    * 놓인 칸 고르기(팝업이 그려 넘긴다). 분류와 한 줄에 서야 해서 폼 안으로 들어온다(2026-10-12).
    * 폼 안에 있어도 저장과 묶이지 않는다 — 칸 단추는 type="button" 이고 제 액션(moveTaskAction)을 탄다
@@ -70,6 +76,23 @@ export function TaskEditForm({
             />
           </div>
         </div>
+        {/* 일정(WBS) 줄 잇기. 이은 카드가 끝 칸으로 가면 그 일정 줄의 진행률이 오른다 */}
+        {planOptions.length > 0 && (
+          <div className="min-w-0">
+            <span aria-hidden className={FIELD_LABEL}>
+              {PLAN_MESSAGES.taskPlanField}
+            </span>
+            <FormSelect
+              key={`plan-${task.id}`}
+              name="planItemId"
+              label={PLAN_MESSAGES.taskPlanField}
+              hideLabel
+              size="lg"
+              defaultValue={task.planItemId ?? ""}
+              options={[{ value: "", label: PLAN_MESSAGES.taskPlanNone }, ...planOptions.map((o) => ({ value: o.id, label: o.label }))]}
+            />
+          </div>
+        )}
       </TaskPart>
 
       {/* 매장과 소스는 읽기만 한다 — 붙는 자리가 화면이 아니다(매장 할 일은 매장 쪽에서, 소스는 만들 때) */}

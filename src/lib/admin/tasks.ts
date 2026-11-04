@@ -118,6 +118,8 @@ export interface AdminTask {
   assignee: TaskAssignee | null;
   /** "모두" 담당(2026-10-12). 켜져 있으면 assignee 는 비어 있다 */
   assignedAll: boolean;
+  /** 이 카드가 속한 업무 일정 줄(2026-11-04). 일정 줄의 진행률이 이 카드들로 계산된다 */
+  planItemId: string | null;
   /** 올린 사람. 담당자와 따로 둔다 — 적은 사람과 할 사람은 다르다. 계정이 지워졌으면 비어 있다 */
   author: TaskAssignee | null;
   updatedAt: Date;

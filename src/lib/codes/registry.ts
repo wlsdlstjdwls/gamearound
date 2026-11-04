@@ -8,7 +8,7 @@
 //
 // 그룹을 더할 때: 여기 한 줄 + 그 이름표를 쓰는 자리를 useCodes()(클라이언트) 또는 getCodeBook()(서버)로 바꾼다.
 // 기본 이름표 객체(TASK_STATUS_LABEL 등)는 지우지 않는다 — 기본값과 타입이 그것을 읽는다.
-import { MATCHED_BY_LABEL, NOTIFY_MEDIUM_LABEL, QUALITY_RULE_LABEL, SYNC_STATUS_LABEL, TASK_CATEGORY_LABEL, TASK_PRIORITY_LABEL, TASK_STATUS_LABEL, UPGRADE_KIND_LABEL } from "@/lib/admin/messages";
+import { MATCHED_BY_LABEL, NOTIFY_MEDIUM_LABEL, PLAN_KIND_LABEL, PLAN_STATE_LABEL, PLAN_TRACK_LABEL, QUALITY_RULE_LABEL, SYNC_STATUS_LABEL, TASK_CATEGORY_LABEL, TASK_PRIORITY_LABEL, TASK_STATUS_LABEL, UPGRADE_KIND_LABEL } from "@/lib/admin/messages";
 import { MEMBERSHIP_STATUS_LABEL } from "@/lib/membership/messages";
 import { PAYMENT_STATUS_LABEL } from "@/lib/payments/messages";
 import { BOOST_STATE_LABEL, PROMO_SLOT_LABEL, PROMO_SOURCE_LABEL } from "@/lib/promo/messages";
@@ -17,9 +17,12 @@ export type CodeGroupDef = { name: string; description: string; defaults: Readon
 
 /** 그룹코드 → 정의. 기본값 객체의 키 순서가 기본 정렬순서다 */
 export const CODE_REGISTRY = {
-  TASK_STATUS: { name: "업무 상태", description: "업무요청관리 칸반의 칸", defaults: TASK_STATUS_LABEL },
+  TASK_STATUS: { name: "업무 상태", description: "업무관리 칸반의 칸", defaults: TASK_STATUS_LABEL },
   TASK_CATEGORY: { name: "업무 분류", description: "업무요청 카드의 갈래", defaults: TASK_CATEGORY_LABEL },
   TASK_PRIORITY: { name: "업무 우선순위", description: "업무요청 카드의 우선순위", defaults: TASK_PRIORITY_LABEL },
+  PLAN_TRACK: { name: "일정 갈래", description: "업무관리 일정(WBS)의 개발, 기획, 영업", defaults: PLAN_TRACK_LABEL },
+  PLAN_KIND: { name: "일정 구분", description: "업무관리 일정(WBS)의 작업, 이정표", defaults: PLAN_KIND_LABEL },
+  PLAN_STATE: { name: "일정 상태", description: "업무관리 일정(WBS)의 계산 상태(날짜, 진행률로 정해진다)", defaults: PLAN_STATE_LABEL },
   PAYMENT_STATUS: { name: "결제 상태", description: "결제/환불관리, 내 결제 내역", defaults: PAYMENT_STATUS_LABEL },
   MEMBERSHIP_STATUS: { name: "구독 상태", description: "멤버십회원관리, 내 멤버십", defaults: MEMBERSHIP_STATUS_LABEL },
   PROMO_SLOT: { name: "광고 자리", description: "광고노출관리, 내 광고 성과", defaults: PROMO_SLOT_LABEL },

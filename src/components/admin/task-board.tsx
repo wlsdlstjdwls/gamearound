@@ -44,6 +44,7 @@ import { STATUS_FILL } from "@/components/admin/task-tone";
 import { TaskFilterBar } from "@/components/admin/task-filter-bar";
 import { TaskCard } from "@/components/admin/task-card";
 import { TaskDialog } from "@/components/admin/task-card/dialog";
+import type { PlanOption } from "@/lib/admin/plan";
 import { TaskColumnSheet } from "@/components/admin/task-column-sheet";
 import { TaskQuickAdd } from "@/components/admin/task-quick-add";
 import { DROP_ATTR, useBoardDrag } from "@/components/admin/use-board-drag";
@@ -53,6 +54,7 @@ import { TASK_OPEN_PARAM } from "@/lib/routes";
 export function TaskBoard({
   board: serverBoard,
   assignees,
+  planOptions,
   meId,
   initialFilter,
   now,
@@ -61,6 +63,8 @@ export function TaskBoard({
 }: {
   board: Board;
   assignees: TaskAssignee[];
+  /** 카드 팝업의 일정(WBS) 고르기 목록 */
+  planOptions: PlanOption[];
   /** 지금 보는 관리자. "내가 올린", "내 담당" 을 가르는 기준이다 */
   meId: string;
   /** 주소에서 읽은 첫 조건. 페이지가 읽어 준다 — useSearchParams 를 쓰면 판 전체가 Suspense 경계를 요구한다 */
@@ -290,7 +294,7 @@ export function TaskBoard({
       )}
 
       {/* 열린 카드는 판이 다시 그려져도 같은 카드를 가리킨다 — 지워졌으면 팝업도 사라진다 */}
-      {openTask && <TaskDialog task={openTask} assignees={assignees} onMove={(to) => move(openTask.id, to)} open onOpenChange={(v) => !v && setOpenId(null)} />}
+      {openTask && <TaskDialog task={openTask} assignees={assignees} planOptions={planOptions} onMove={(to) => move(openTask.id, to)} open onOpenChange={(v) => !v && setOpenId(null)} />}
     </section>
   );
 }

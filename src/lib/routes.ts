@@ -65,6 +65,8 @@ export const ROUTES = {
   adminTasks: "/admin/tasks",
   /** 판에서 걷은 할 일(2026-10-02). 치우기가 지우기였던 때는 이력이 남지 않았다 */
   adminTasksArchive: "/admin/tasks/archive",
+  /** 업무관리의 일정(WBS) 보기. 칸반과 같은 메뉴 칸이다(프로그램 탭도 하나) */
+  adminTasksPlan: "/admin/tasks/plan",
   vendor: "/vendor",
   /** 매장(오프라인 판매처). 디지털 스토어와 낱말을 가르려고 shop 을 쓴다 — 설계서 §1 */
   shops: "/shops",

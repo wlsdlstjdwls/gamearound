@@ -1,0 +1,58 @@
+"use server";
+// 업무 일정(WBS) Server Action(2026-11-04). 관리자 role 을 다시 보고, 화면과 같은 스키마(lib/admin/plan-schemas)로 검증한다.
+import { revalidatePath } from "next/cache";
+import { z } from "zod";
+import { actionError } from "@/lib/db-errors";
+import { PLAN_MESSAGES as M } from "@/lib/admin/messages";
+import { savePlanSchema } from "@/lib/admin/plan-schemas";
+import { ROUTES } from "@/lib/routes";
+import { createTaskForPlanItem, savePlan, setTaskPlanItem } from "@/server/services/admin-plan";
+import { requireAdmin } from "@/server/services/users";
+
+export type PlanActionResult = { ok: true; id?: string } | { ok: false; error: string };
+
+/** 칸반과 일정은 서로의 값을 보여 준다(카드 수, 진행률) — 한쪽을 바꾸면 둘 다 민다 */
+function refresh() {
+  revalidatePath(ROUTES.adminTasks);
+  revalidatePath(ROUTES.adminTasksPlan);
+}
+
+export async function savePlanAction(input: unknown): Promise<PlanActionResult> {
+  try {
+    await requireAdmin();
+    const parsed = savePlanSchema.safeParse(input);
+    if (!parsed.success) return { ok: false, error: M.invalid };
+    await savePlan(parsed.data);
+    refresh();
+    return { ok: true };
+  } catch (e) {
+    return { ok: false, error: actionError(e, M.failed) };
+  }
+}
+
+export async function createPlanTaskAction(itemId: unknown): Promise<PlanActionResult> {
+  try {
+    await requireAdmin();
+    const id = z.uuid().parse(itemId);
+    const taskId = await createTaskForPlanItem(id);
+    if (!taskId) return { ok: false, error: M.failed };
+    refresh();
+    return { ok: true, id: taskId };
+  } catch (e) {
+    return { ok: false, error: actionError(e, M.failed) };
+  }
+}
+
+/** 카드의 일정 연결 바꾸기(빈 값이면 해제). 일정 화면의 "연결 해제" 와 업무요청 팝업의 일정 칸이 같이 쓴다 */
+export async function linkTaskPlanAction(taskId: unknown, planItemId: unknown): Promise<PlanActionResult> {
+  try {
+    await requireAdmin();
+    const task = z.uuid().parse(taskId);
+    const item = z.union([z.uuid(), z.literal(""), z.null()]).parse(planItemId);
+    await setTaskPlanItem(task, item || null);
+    refresh();
+    return { ok: true };
+  } catch (e) {
+    return { ok: false, error: actionError(e, M.failed) };
+  }
+}

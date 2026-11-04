@@ -22,6 +22,7 @@ import { Sheet } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
 import { TASK_ATTACHMENT_MESSAGES, TASK_MESSAGES } from "@/lib/admin/messages";
 import { BOARD_STATUSES, type AdminTask, type TaskAssignee, type TaskStatus } from "@/lib/admin/tasks";
+import type { PlanOption } from "@/lib/admin/plan";
 import { TaskEditForm } from "@/components/admin/task-card/edit-form";
 import { TaskNotes } from "@/components/admin/task-card/notes";
 import { TaskAttachmentsPart } from "@/components/admin/task-attachments";
@@ -33,12 +34,14 @@ import { useMobilePolicy } from "@/components/admin/mobile-policy";
 export function TaskDialog({
   task,
   assignees,
+  planOptions,
   onMove,
   open,
   onOpenChange,
 }: {
   task: AdminTask;
   assignees: TaskAssignee[];
+  planOptions: PlanOption[];
   /** 칸 옮기기. 판이 쥔다 — 판이 먼저 그리고(useOptimistic) 이 팝업은 그 판의 카드를 받아 바로 바뀐다 */
   onMove: (to: TaskStatus) => void;
   open: boolean;
@@ -107,6 +110,7 @@ export function TaskDialog({
         <TaskEditForm
           task={task}
           assignees={assignees}
+          planOptions={planOptions}
           place={placeRow}
           formId={formId}
           form={{ state: saveState, action: saveAction, pending: saving }}

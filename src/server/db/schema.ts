@@ -1061,6 +1061,8 @@ export const alertDeliveriesRelations = relations(alertDeliveries, ({ one }) => 
 // 위쪽에서 재수출하면 enum 이 아직 만들어지기 전에 호출돼 drizzle-kit 이 초기화 오류로 죽는다.
 // 다른 재수출들이 위에 있어도 괜찮은 건 그쪽은 테이블 참조를 화살표로 미루기 때문이다(`() => games.id`).
 export * from "./schema-admin";
+// 업무 일정(WBS). 할 일 카드가 이 표를 가리킨다(schema-plan 머리 주석)
+export * from "./schema-plan";
 // 데이터 점검기 결과(sync/quality). games 를 참조하므로 schema-admin 과 같은 이유로 파일 끝에서 재수출한다
 export * from "./schema-quality";
 // 사이트 설정(관리자 화면에서 바꾸는 운영 값)

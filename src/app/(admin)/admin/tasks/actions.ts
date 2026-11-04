@@ -67,6 +67,8 @@ function revalidate() {
   // 지난 일 화면도 같이 — 걷기, 되돌리기, 기록이 두 화면에 함께 걸린다
   revalidatePath(ROUTES.adminTasks);
   revalidatePath(ROUTES.adminTasksArchive);
+  // 일정 보기의 진행률은 카드가 놓인 칸으로 계산된다 — 카드를 옮기거나 일정을 바꾸면 그 화면도 민다
+  revalidatePath(ROUTES.adminTasksPlan);
 }
 
 export async function createTaskAction(_prev: TaskActionState, form: FormData): Promise<TaskActionState> {
@@ -145,6 +147,7 @@ export async function updateTaskAction(_prev: TaskActionState, form: FormData): 
         category: categorySchema.optional(),
         gameId: z.union([z.literal(""), z.uuid()]).optional(),
         assigneeId: assigneeSchema,
+        planItemId: z.union([z.literal(""), z.uuid()]).optional(),
       })
       .safeParse({
         id: form.get("id"),
@@ -154,6 +157,7 @@ export async function updateTaskAction(_prev: TaskActionState, form: FormData): 
         category: form.get("category") ?? undefined,
         gameId: form.get("gameId") ?? undefined,
         assigneeId: form.get("assigneeId") ?? undefined,
+        planItemId: form.get("planItemId") ?? undefined,
       });
     if (!p.success) return { ok: false, error: p.error.issues[0]?.message ?? TASK_MESSAGES.invalid };
 
@@ -166,6 +170,8 @@ export async function updateTaskAction(_prev: TaskActionState, form: FormData): 
       gameId: p.data.gameId === undefined ? undefined : p.data.gameId || null,
       // 담당자도 같은 규칙이다 — 안 보냈으면 그대로, 빈 문자열이면 뗀다. "모두" 는 따로 칸이 있다
       ...splitAssignee(p.data.assigneeId),
+      // 일정 칸도 안 보냈으면 그대로, 빈 문자열이면 뗀다
+      planItemId: p.data.planItemId === undefined ? undefined : p.data.planItemId || null,
     });
     if (assigneeChanged) queueTaskNotice(p.data.id, { kind: "assigned" }, admin);
     revalidate();

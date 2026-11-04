@@ -12,6 +12,7 @@ import { auditColumns } from "./audit";
 import { games, users } from "./schema";
 import { sourceEnum } from "./schema-enums";
 import { shops } from "./schema-shops";
+import { adminPlanItems } from "./schema-plan";
 
 /**
  * 판의 세로 칸. 넷으로 묶은 이유는 한 화면에 나란히 들어가야 하기 때문이다 —
@@ -86,6 +87,12 @@ export const adminTasks = pgTable("admin_tasks", {
    * "모두" 를 담을 자리가 없다. 켜져 있으면 assignee_id 는 비운다(둘이 함께 켜진 행은 쓰기 쪽이 만들지 않는다).
    */
   assignedAll: boolean("assigned_all").notNull().default(false),
+
+  /*
+   * 이 카드가 속한 일정 줄(2026-11-04, 업무 일정 WBS). 일정 줄의 진행률이 이 카드들의 끝난 비율로 계산된다.
+   * 일정 줄을 지워도 카드는 남는다(set null) — 할 일 자체는 여전히 해야 할 수 있다
+   */
+  planItemId: uuid("plan_item_id").references(() => adminPlanItems.id, { onDelete: "set null" }),
 
   ...auditColumns(),
 }, (t) => [
