@@ -2,7 +2,7 @@
 // 일정 줄 하나의 상세 팝업(2026-11-04, 사용자 "글 옆 작은 버튼으로 팝업 열어서 수정, 노션처럼"). 오른쪽 서랍으로 열린다 —
 // 노션의 옆 보기처럼 차트를 가리지 않고 옆에서 고친다. 고친 값은 화면이 곧바로(자동 저장) 보낸다, 저장 단추가 따로 없다.
 // 칸은 앞서 아래 상세 폼(form.tsx)과 같다. 위로, 아래로, 들여쓰기, 내어쓰기 단추는 걷었다(사용자 "와닿지 않는다") — 순서는 차트의 손잡이 끌기,
-// 계층은 "상위 일정" 칸이 맡는다. 삭제는 머리 오른쪽 휴지통 하나다.
+// 계층은 차트에서 손잡이를 끌어 다른 줄 가운데에 놓아 만든다(상위 일정 칸도 걷었다). 삭제는 머리 오른쪽 휴지통 하나다.
 import { Sheet } from "@/components/ui/sheet";
 import { TrashIcon } from "@/components/ui/icons";
 import { PLAN_MESSAGES as M } from "@/lib/admin/messages";
@@ -14,7 +14,6 @@ import { PlanCards, PlanForm } from "./form";
 export function PlanDialog({
   item,
   row,
-  parents,
   assignees,
   errors,
   set,
@@ -29,7 +28,6 @@ export function PlanDialog({
 }: {
   item: PlanItem;
   row: PlanRow | undefined;
-  parents: PlanRow[];
   assignees: TaskAssignee[];
   errors: FieldErrors;
   set: (next: Partial<PlanItem>) => void;
@@ -63,7 +61,7 @@ export function PlanDialog({
       }
     >
       <div className="flex flex-col gap-3 pb-4">
-        <PlanForm item={item} row={row} parents={parents} assignees={assignees} errors={errors} set={set} />
+        <PlanForm item={item} row={row} assignees={assignees} errors={errors} set={set} />
         <PlanCards cards={cards} saved={saved} busy={busy} onCreate={onCreateCard} onUnlink={onUnlinkCard} />
       </div>
     </Sheet>

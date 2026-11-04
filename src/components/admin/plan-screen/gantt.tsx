@@ -22,6 +22,7 @@ import { cn } from "@/lib/cn";
 import { PLAN_MESSAGES as M } from "@/lib/admin/messages";
 import { dayOffset, PERSON_ROW_PREFIX, resizeItem, shiftDay, shiftItem, spanDays, type PlanRow, type PlanTrack } from "@/lib/admin/plan";
 import { weekdayOf } from "@/lib/calendar";
+import { holidayName } from "@/lib/holidays";
 import { useFitHeight } from "@/components/admin/screen/data-grid/fit";
 
 /** 눈금별 하루 폭(px). 일은 날짜 숫자가 들어갈 만큼, 월은 석 달이 한 화면에 들어갈 만큼 */
@@ -30,12 +31,18 @@ export type PlanZoom = keyof typeof PLAN_ZOOM_PX;
 
 /** 줄 높이(px). 막대 20px 위아래로 숨 쉴 틈 */
 const ROW_H = 36;
-/** 머리 높이(px). 달 줄 + 눈금 줄 */
+/** 머리 높이(px). 달 줄 + 눈금 줄. 일 눈금은 날짜 아래 요일 한 줄이 더 붙는다 */
 const HEAD_H = 52;
-/** 왼쪽 붙박이 칸 폭(px). 번호 + 깊이 셋 들여쓰기 + 작업명 열 자쯤 */
-const LABEL_W = 300;
+const HEAD_H_DAY = 64;
+/** 왼쪽 붙박이 칸 폭(px). 앞서 300 에 들여쓰기 16, 손잡이 칸 16 이 따로 있어 작업명이 열 자도 안 보였다(사용자 "왼쪽 공백이 많고 글자가 적다") */
+const LABEL_W = 340;
 /** 깊이 한 단의 들여쓰기(px) */
-const INDENT = 16;
+const INDENT = 12;
+/** 요일 이름(일요일부터). 일 눈금 머리의 날짜 아래에 적는다 */
+const WEEKDAY = ["일", "월", "화", "수", "목", "금", "토"] as const;
+/** 끌어 놓기에서 줄 가운데로 치는 범위(줄 높이 비율). 이 안에 놓으면 그 줄의 하위로 들어간다(노션) */
+const INSIDE_FROM = 0.28;
+const INSIDE_TO = 0.72;
 /** 막대 끝 손잡이 폭(px). 이 안에서 누르면 늘이기, 밖이면 옮기기 */
 const HANDLE = 8;
 /** 처음 열 때 오늘을 왼쪽에서 며칠 띄워 세우나. 지난 일(마크 0)이 몇 달 앞이어도 첫 화면은 지금부터다 */
@@ -72,8 +79,9 @@ function rangeOf(rows: readonly PlanRow[], today: string): { from: string; days:
 function useScale(from: string, days: number, zoom: PlanZoom) {
   return useMemo(() => {
     const months: { at: number; span: number; label: string }[] = [];
-    const ticks: { at: number; label: string }[] = [];
+    const ticks: { at: number; label: string; wd: number; holiday: string | null }[] = [];
     const weekends: number[] = [];
+    const holidays: { at: number; name: string }[] = [];
     for (let i = 0; i < days; i++) {
       const iso = shiftDay(from, i);
       const [y, m, d] = iso.split("-").map(Number) as [number, number, number];
@@ -81,11 +89,13 @@ function useScale(from: string, days: number, zoom: PlanZoom) {
       if (!last || d === 1) months.push({ at: i, span: 1, label: zoom === "month" ? `${y}.${m}` : `${y}년 ${m}월` });
       else last.span += 1;
       const wd = weekdayOf(iso);
+      const holiday = holidayName(iso);
+      if (holiday) holidays.push({ at: i, name: holiday });
       if (wd === 0 || wd === 6) weekends.push(i);
-      if (zoom === "day") ticks.push({ at: i, label: String(d) });
-      else if (zoom === "week" && wd === 1) ticks.push({ at: i, label: md(iso) });
+      if (zoom === "day") ticks.push({ at: i, label: String(d), wd, holiday });
+      else if (zoom === "week" && wd === 1) ticks.push({ at: i, label: md(iso), wd, holiday: null });
     }
-    return { months, ticks, weekends };
+    return { months, ticks, weekends, holidays };
   }, [from, days, zoom]);
 }
 
@@ -124,7 +134,7 @@ export function PlanGantt({
   /** 바로 아래 같은 단계의 새 줄(줄의 "+") */
   onAddBelow: (id: string) => void;
   /** 끌어 놓기로 순서 바꾸기. 없으면 손잡이를 그리지 않는다(담당자별 보기는 시작일 순이라 순서가 없다) */
-  onReorder?: (id: string, targetId: string, where: "before" | "after") => void;
+  onReorder?: (id: string, targetId: string, where: "before" | "after" | "inside") => void;
   /** 이름 칸이 열린 줄. 화면이 쥔다 — "+" 로 만든 새 줄은 만들자마자 이름 칸이 열려야 한다 */
   renamingId: string | null;
   setRenamingId: (id: string | null) => void;
@@ -139,19 +149,21 @@ export function PlanGantt({
 }) {
   const px = PLAN_ZOOM_PX[zoom];
   const { from, days } = useMemo(() => rangeOf(allRows, today), [allRows, today]);
-  const { months, ticks, weekends } = useScale(from, days, zoom);
+  const { months, ticks, weekends, holidays } = useScale(from, days, zoom);
+  const headH = zoom === "day" ? HEAD_H_DAY : HEAD_H;
   const [drag, setDrag] = useState<Drag | null>(null);
   const commitRename = (id: string, text: string) => {
     if (text.trim()) onRename(id, text.trim());
     setRenamingId(null);
   };
   /** 손잡이로 끄는 줄과 놓일 자리 */
-  const [reorder, setReorder] = useState<{ id: string; overId: string | null; where: "before" | "after" } | null>(null);
+  const [reorder, setReorder] = useState<{ id: string; overId: string | null; where: "before" | "after" | "inside" } | null>(null);
   const reorderMove = (e: React.PointerEvent) => {
     if (!reorder) return;
     const rowEl = document.elementFromPoint(e.clientX, e.clientY)?.closest<HTMLElement>("[data-plan-row]");
     const overId = rowEl?.dataset.planRow ?? null;
-    const where = rowEl && e.clientY > rowEl.getBoundingClientRect().top + ROW_H / 2 ? "after" : "before";
+    const ratio = rowEl ? (e.clientY - rowEl.getBoundingClientRect().top) / ROW_H : 0;
+    const where = ratio < INSIDE_FROM ? "before" : ratio > INSIDE_TO || rowEl?.dataset.planKind === "milestone" ? (ratio < 0.5 ? "before" : "after") : "inside";
     if (overId !== reorder.overId || where !== reorder.where) setReorder({ ...reorder, overId, where });
   };
   const reorderEnd = () => {
@@ -179,10 +191,12 @@ export function PlanGantt({
   // 바탕: 주 눈금 세로선 + (일 눈금이면) 주말 면. 줄마다 같은 그림이라 한 장을 깔고 줄은 투명하게 둔다
   const grid = useMemo(() => {
     const lines = `repeating-linear-gradient(to right, color-mix(in oklab, var(--line) 80%, transparent) 0 1px, transparent 1px ${7 * px}px)`;
-    if (zoom !== "day") return lines;
-    const shade = weekends.map((i) => `linear-gradient(to right, transparent ${i * px}px, var(--surface-2) ${i * px}px, var(--surface-2) ${(i + 1) * px}px, transparent ${(i + 1) * px}px)`);
-    return [lines, ...shade].join(",");
-  }, [px, zoom, weekends]);
+    const band = (i: number, color: string) => `linear-gradient(to right, transparent ${i * px}px, ${color} ${i * px}px, ${color} ${(i + 1) * px}px, transparent ${(i + 1) * px}px)`;
+    // 공휴일은 모든 눈금에서 옅은 빨강, 주말은 일 눈금에서만 회색 면(주, 월 눈금은 칸이 좁아 주말 면이 줄무늬가 된다)
+    const off = holidays.map((h) => band(h.at, "color-mix(in oklab, var(--danger) 9%, transparent)"));
+    const weekend = zoom === "day" ? weekends.map((i) => band(i, "var(--surface-2)")) : [];
+    return [lines, ...off, ...weekend].join(",");
+  }, [px, zoom, weekends, holidays]);
 
   const begin = (e: React.PointerEvent<HTMLElement>, row: PlanRow) => {
     if (!editable || e.pointerType !== "mouse" || e.button !== 0 || row.hasChildren || !row.startOn) return;
@@ -226,7 +240,7 @@ export function PlanGantt({
     <div ref={boxRef} className="relative overflow-auto rounded-xl border border-line bg-surface shadow-hair" style={fitted ? { maxHeight: fitted.px } : undefined} role="group" aria-label={M.gantt}>
       <div className="relative" style={{ width: LABEL_W + width }}>
         {/* 머리: 달 줄 + 눈금 줄. 위로 붙는다 */}
-        <div className="sticky top-0 z-20 flex border-b border-line bg-surface" style={{ height: HEAD_H }}>
+        <div className="sticky top-0 z-20 flex border-b border-line bg-surface" style={{ height: headH }}>
           <div className="sticky left-0 z-10 flex shrink-0 items-end gap-1.5 border-r border-line bg-surface px-4 pb-2 text-[12.5px] font-semibold text-dim" style={{ width: LABEL_W }}>
             {M.colNo}
             <span className="text-line-strong">|</span>
@@ -234,18 +248,32 @@ export function PlanGantt({
           </div>
           <div className="relative text-[12px]" style={{ width }}>
             {months.map((m) => (
-              <div key={m.at} className="absolute top-0 h-1/2 overflow-hidden whitespace-nowrap border-l border-line px-2 pt-1.5 text-[12.5px] font-bold text-ink" style={{ left: m.at * px, width: m.span * px }}>
+              <div key={m.at} className="absolute top-0 h-[26px] overflow-hidden whitespace-nowrap border-l border-line px-2 pt-1.5 text-[12.5px] font-bold text-ink" style={{ left: m.at * px, width: m.span * px }}>
                 {m.span * px >= MONTH_LABEL_MIN ? m.label : null}
               </div>
             ))}
-            {ticks.map((t) => (
-              <div key={t.at} className={cn("absolute bottom-0 h-1/2 whitespace-nowrap pt-1 tabular-nums text-dim", zoom === "day" ? "text-center" : "pl-1.5")} style={{ left: t.at * px, width: zoom === "day" ? px : 7 * px }}>
-                {/* 오늘 알약과 겹치는 눈금 글자는 비운다(주 눈금은 글자가 오른쪽으로 7일 폭을 쓴다) */}
-                {zoom === "week" && t.at <= todayAt && todayAt - t.at < TODAY_CLEAR_DAYS ? null : t.label}
-              </div>
-            ))}
+            {ticks.map((t) => {
+              const red = t.wd === 0 || !!t.holiday;
+              const blue = t.wd === 6 && !t.holiday;
+              return (
+                <div
+                  key={t.at}
+                  title={t.holiday ?? undefined}
+                  className={cn("absolute bottom-0 whitespace-nowrap tabular-nums", zoom === "day" ? "flex flex-col items-center pb-1 leading-tight" : "h-1/2 pl-1.5 pt-1 text-dim", red ? "text-danger" : blue ? "text-acc" : zoom === "day" && "text-dim")}
+                  style={{ left: t.at * px, width: zoom === "day" ? px : 7 * px }}
+                >
+                  {/* 오늘 알약과 겹치는 눈금 글자는 비운다(주 눈금은 글자가 오른쪽으로 7일 폭을 쓴다) */}
+                  {zoom === "week" && t.at <= todayAt && todayAt - t.at < TODAY_CLEAR_DAYS ? null : (
+                    <>
+                      <span className={zoom === "day" ? "text-[12px] font-semibold" : undefined}>{t.label}</span>
+                      {zoom === "day" && <span className="text-[10.5px]">{WEEKDAY[t.wd]}</span>}
+                    </>
+                  )}
+                </div>
+              );
+            })}
             {todayAt >= 0 && todayAt < days && (
-              <span className="absolute bottom-1 z-10 -translate-x-1/2 whitespace-nowrap rounded-full bg-danger px-1.5 py-px text-[11px] font-bold tabular-nums text-on-ink shadow-1" style={{ left: (todayAt + 0.5) * px }}>
+              <span className={cn("absolute z-10 -translate-x-1/2 whitespace-nowrap rounded-full bg-danger px-1.5 py-px text-[11px] font-bold tabular-nums text-on-ink shadow-1", zoom === "day" ? "top-[3px]" : "bottom-1")} style={{ left: (todayAt + 0.5) * px }}>
                 {md(today)}
               </span>
             )}
@@ -270,12 +298,17 @@ export function PlanGantt({
               <div
                 key={row.id}
                 data-plan-row={person ? undefined : row.id}
+                data-plan-kind={row.kind}
                 className={cn("group relative flex", row.depth === 0 && row.hasChildren && row.no !== "1" && "border-t border-line", reorder?.id === row.id && "opacity-50")}
                 style={{ height: ROW_H }}
               >
                 {/* 끌어 놓을 자리 줄 */}
                 {reorder && reorder.overId === row.id && reorder.id !== row.id && (
-                  <span aria-hidden className={cn("pointer-events-none absolute inset-x-0 z-30 h-0.5 bg-acc", reorder.where === "before" ? "-top-px" : "-bottom-px")} />
+                  reorder.where === "inside" ? (
+                    <span aria-hidden className="pointer-events-none absolute inset-0.5 z-30 rounded-md ring-2 ring-acc" />
+                  ) : (
+                    <span aria-hidden className={cn("pointer-events-none absolute inset-x-0 z-30 h-0.5 bg-acc", reorder.where === "before" ? "-top-px" : "-bottom-px")} />
+                  )
                 )}
                 {/* 고른 줄 면. 붙박이 칸과 막대 자리를 한 띠로 칠한다 */}
                 <div aria-hidden className={cn("pointer-events-none absolute inset-0 transition-colors duration-fast", on ? "bg-acc-row" : "group-hover:bg-surface-2/60")} />
@@ -283,7 +316,7 @@ export function PlanGantt({
                 {/* 왼쪽 붙박이 칸: 손잡이, 접기, 번호와 작업명, 줄 아이콘(+, 옆 보기) */}
                 <div
                   className={cn("sticky left-0 z-10 flex shrink-0 items-center gap-1 border-r border-line pr-2 text-[13.5px]", on ? "bg-acc-row" : "bg-surface group-hover:bg-surface-2")}
-                  style={{ width: LABEL_W, paddingLeft: 4 + row.depth * INDENT }}
+                  style={{ width: LABEL_W, paddingLeft: 14 + row.depth * INDENT }}
                 >
                   {on && <span aria-hidden className="absolute inset-y-1 left-0 w-[3px] rounded-r-full bg-acc" />}
                   {onReorder && !person && editable ? (
@@ -300,25 +333,23 @@ export function PlanGantt({
                       onPointerMove={reorderMove}
                       onPointerUp={reorderEnd}
                       onPointerCancel={() => setReorder(null)}
-                      className="flex h-6 w-4 shrink-0 cursor-grab items-center justify-center rounded text-dim-2 opacity-0 hover:bg-surface-3 hover:text-ink group-hover:opacity-100"
+                      className="absolute left-0 top-1/2 flex h-6 w-3.5 -translate-y-1/2 cursor-grab items-center justify-center rounded text-dim-2 opacity-0 hover:bg-surface-3 hover:text-ink group-hover:opacity-100"
                     >
-                      <GripIcon size={13} />
+                      <GripIcon size={12} />
                     </span>
-                  ) : (
-                    <span className="w-4 shrink-0" aria-hidden />
-                  )}
+                  ) : null}
                   {row.hasChildren ? (
                     <button
                       type="button"
                       onClick={() => onToggle(row.id)}
                       aria-expanded={!collapsed.has(row.id)}
                       aria-label={collapsed.has(row.id) ? M.expand(row.title) : M.collapse(row.title)}
-                      className="press flex size-6 shrink-0 items-center justify-center rounded-md text-dim hover:bg-surface-3 hover:text-ink"
+                      className="press flex size-5 shrink-0 items-center justify-center rounded text-dim hover:bg-surface-3 hover:text-ink"
                     >
-                      <ChevronDownIcon size={14} className={cn("transition-transform duration-fast", collapsed.has(row.id) && "-rotate-90")} />
+                      <ChevronDownIcon size={13} className={cn("transition-transform duration-fast", collapsed.has(row.id) && "-rotate-90")} />
                     </button>
                   ) : (
-                    <span className="flex w-6 shrink-0 justify-center" aria-hidden>
+                    <span className="flex w-5 shrink-0 justify-center" aria-hidden>
                       <span className="size-1.5 rounded-full" style={{ background: color, opacity: row.pct >= 100 ? 0.35 : 0.8 }} />
                     </span>
                   )}
@@ -341,14 +372,14 @@ export function PlanGantt({
                       type="button"
                       onClick={() => onSelect(row.id)}
                       onDoubleClick={() => !person && setRenamingId(row.id)}
-                      className="flex min-w-0 flex-1 items-center gap-2 text-left"
+                      className="flex min-w-0 flex-1 items-center gap-1.5 text-left"
                     >
                       {person ? (
                         <span aria-hidden className="flex size-6 shrink-0 items-center justify-center rounded-full bg-acc-soft text-[12px] font-bold text-acc">
                           {row.title.trim().slice(0, 1) || "-"}
                         </span>
                       ) : (
-                        <span className="shrink-0 text-[12.5px] tabular-nums text-dim">{row.no}</span>
+                        <span className="shrink-0 text-[11.5px] tabular-nums text-dim">{row.no}</span>
                       )}
                       <Clamp className={cn("min-w-0", row.hasChildren ? "font-bold text-ink" : row.pct >= 100 ? "text-dim" : "text-ink-2")}>{row.title}</Clamp>
                     </button>
@@ -356,10 +387,10 @@ export function PlanGantt({
                   {/* 줄 아이콘: 바로 아래 새 줄, 옆 보기로 열기. 늘 보인다 */}
                   {!person && renamingId !== row.id && (
                     <span className="flex shrink-0 items-center">
-                      <button type="button" onClick={() => onAddBelow(row.id)} aria-label={M.addBelow(row.title)} title={M.addBelow(row.title)} className="press flex size-7 items-center justify-center rounded-md text-dim hover:bg-surface-3 hover:text-ink">
+                      <button type="button" onClick={() => onAddBelow(row.id)} aria-label={M.addBelow(row.title)} title={M.addBelow(row.title)} className="press flex size-6 items-center justify-center rounded-md text-dim hover:bg-surface-3 hover:text-ink">
                         <PlusIcon size={15} />
                       </button>
-                      <button type="button" onClick={() => onOpen(row.id)} aria-label={M.openItem(row.title)} title={M.openItem(row.title)} className="press flex size-7 items-center justify-center rounded-md text-dim hover:bg-acc-soft hover:text-acc">
+                      <button type="button" onClick={() => onOpen(row.id)} aria-label={M.openItem(row.title)} title={M.openItem(row.title)} className="press flex size-6 items-center justify-center rounded-md text-dim hover:bg-acc-soft hover:text-acc">
                         <SidePanelIcon size={15} />
                       </button>
                     </span>

@@ -3,7 +3,7 @@
 //
 // 노션처럼 차트에서 바로 고친다(같은 날 3차, 사용자 "아래 그리드, 폼 말고 차트에서 바로 수정하거나 글 옆 작은 버튼으로 팝업"):
 // 막대 끌기, 작업명 두 번 눌러 고치기, 줄의 "+" 로 바로 아래 새 줄(이름 칸이 곧장 열린다), 옆 보기 아이콘으로 오른쪽 서랍(dialog.tsx),
-// 손잡이 끌어 순서 바꾸기(WBS 보기). 아래 그리드와 상세 폼은 걷었다. 상위 일정은 서랍의 "상위 일정" 칸에서 고른다.
+// 손잡이 끌어 순서 바꾸기, 다른 줄 가운데에 놓으면 그 줄의 하위로(WBS 보기). 아래 그리드와 상세 폼, 상위 일정 칸은 걷었다.
 // 저장도 노션처럼 자동이다 — 고치고 AUTOSAVE_MS 동안 손을 멈추면 바뀐 줄과 지운 줄을 한 묶음으로 보낸다(lib/admin/plan-schemas).
 // 툴바 저장(F9, Ctrl+S)은 기다리지 않고 바로 보내는 단추로 남긴다. 검사에 걸린 줄이 있으면 보내지 않고 그 줄을 연다.
 // 저장된 값(saved)과 화면 값(value)을 따로 쥔다. 서버가 새 값을 주어도(카드 만들기 뒤 refresh) 아직 안 보낸 고침이 있으면 화면 값은 지킨다.
@@ -29,6 +29,7 @@ import {
   insertAfter,
   nextMilestone,
   PERSON_ROW_PREFIX,
+  placeInside,
   placeNear,
   PLAN_TRACKS,
   resizeItem,
@@ -230,7 +231,6 @@ export function PlanScreen({ items, cards, assignees, today }: { items: PlanItem
       router.refresh();
     });
 
-  const parents = openedRow ? rows.filter((r) => r.kind !== "milestone" && r.id !== openedRow.id && !descendantIds(value, openedRow.id).has(r.id)) : [];
 
   return (
     <>
@@ -319,7 +319,7 @@ export function PlanScreen({ items, cards, assignees, today }: { items: PlanItem
             setOpenId(id);
           }}
           onAddBelow={addBelow}
-          onReorder={group === "wbs" ? (id, target, where) => setValue((v) => placeNear(v, id, target, where)) : undefined}
+          onReorder={group === "wbs" ? (id, target, where) => setValue((v) => (where === "inside" ? placeInside(v, id, target) : placeNear(v, id, target, where))) : undefined}
           renamingId={renamingId}
           setRenamingId={setRenamingId}
           onAddRoot={group === "wbs" ? () => addRoot(null) : undefined}
@@ -335,7 +335,6 @@ export function PlanScreen({ items, cards, assignees, today }: { items: PlanItem
           key={opened.id}
           item={opened}
           row={openedRow}
-          parents={parents}
           assignees={assignees}
           errors={errorsOf(opened)}
           set={setOpened}

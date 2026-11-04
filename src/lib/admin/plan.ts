@@ -344,3 +344,13 @@ export function placeNear(items: PlanItem[], id: string, targetId: string, where
   const renumbered = renumber(moved, parentId, order);
   return fromParent === parentId ? renumbered : renumber(renumbered, fromParent, siblingsOf(renumbered, fromParent));
 }
+
+/** 끌어 놓기로 하위에 넣기: id 줄을 target 줄의 맨 끝 하위로. 이정표 안, 자기 하위 안으로는 못 간다 */
+export function placeInside(items: PlanItem[], id: string, targetId: string): PlanItem[] {
+  const it = items.find((i) => i.id === id);
+  const target = items.find((i) => i.id === targetId);
+  if (!it || !target || id === targetId || target.kind === "milestone" || descendantIds(items, id).has(targetId)) return items;
+  const last = (childrenMap(items).get(targetId) ?? []).filter((c) => c.id !== id).length;
+  const moved = items.map((i) => (i.id === id ? { ...i, parentId: targetId, sortOrder: last } : i));
+  return renumber(moved, it.parentId, siblingsOf(moved, it.parentId));
+}

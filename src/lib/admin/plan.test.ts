@@ -147,3 +147,14 @@ describe("끌어 놓기", () => {
     expect(placeNear(base, "c", "c1", "before")).toEqual(base);
   });
 });
+
+describe("하위로 넣기", () => {
+  it("대상의 맨 끝 하위로, 이정표와 자기 하위 안은 거절", async () => {
+    const { placeInside } = await import("./plan");
+    const base = [item("a", { sortOrder: 0 }), item("b", { sortOrder: 1 }), item("m", { sortOrder: 2, kind: "milestone" }), item("b1", { parentId: "b", sortOrder: 0 })];
+    const order = (xs: PlanItem[]) => buildPlanRows(xs).map((r) => `${r.no}:${r.id}`).join(" ");
+    expect(order(placeInside(base, "a", "b"))).toBe("1:b 1.1:b1 1.2:a 2:m");
+    expect(placeInside(base, "a", "m")).toEqual(base);
+    expect(placeInside(base, "b", "b1")).toEqual(base);
+  });
+});
