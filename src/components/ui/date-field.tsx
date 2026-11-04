@@ -84,6 +84,8 @@ export function DateField({
   const panelRef = useRef<HTMLDivElement | null>(null);
   const [place, setPlace] = useState<Place | null>(null);
   const [inline, setInline] = useState(false);
+  /** dialog 안에서 칸 왼쪽에 붙이면 판이 dialog 오른쪽 밖으로 나갈 때 — 그때는 칸 오른쪽 끝에 맞춘다(2026-11-04 업무 일정 서랍의 종료일 칸이 잘렸다) */
+  const [alignEnd, setAlignEnd] = useState(false);
 
   const set = (next: string | null) => {
     if (controlled === undefined) setInner(next);
@@ -113,7 +115,11 @@ export function DateField({
   useLayoutEffect(() => {
     const button = buttonRef.current;
     if (!open || !button) return;
-    if (button.closest("dialog")) {
+    const dialog = button.closest("dialog");
+    if (dialog) {
+      const r = button.getBoundingClientRect();
+      const box = (dialog.querySelector(".sheet__panel") ?? dialog).getBoundingClientRect();
+      setAlignEnd(r.left + panelW > box.right - EDGE);
       setInline(true);
       return () => setInline(false);
     }
@@ -200,7 +206,7 @@ export function DateField({
       className={cn(
         "animate-scale-in z-50 rounded-[var(--radius-md)] bg-surface shadow-3 ring-1 ring-line",
         dense ? "p-2" : "p-3",
-        place ? (place.bottom !== undefined ? "origin-bottom" : "origin-top") : "absolute left-0 top-full mt-1.5 origin-top",
+        place ? (place.bottom !== undefined ? "origin-bottom" : "origin-top") : cn("absolute top-full mt-1.5 origin-top", alignEnd ? "right-0" : "left-0"),
       )}
     >
       <div className="mb-2 flex items-center justify-between gap-1">

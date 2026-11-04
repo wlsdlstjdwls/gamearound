@@ -76,6 +76,9 @@ export function useFitHeight(ref: RefObject<HTMLElement | null>, on: boolean): {
     // 위 조각(조회 띠 줄바꿈, 상태줄 글)이 커지고 작아지면 다시 잰다. 제 높이를 바꿔도 같은 값이 나와 되풀이되지 않는다
     const ro = new ResizeObserver(measure);
     ro.observe(document.body);
+    // 문서 높이가 그대로인 채 위 조각만 줄 때도 있다(업무 일정의 요약 띠를 펼쳤다 접으면 간트가 작은 채 남았다, 2026-11-04) —
+    // 부모 칸을 같이 지켜본다. 제 높이를 바꿔 부모가 달라져도 다시 잰 값이 같아 되풀이되지 않는다
+    if (el.parentElement) ro.observe(el.parentElement);
     window.addEventListener("resize", measure);
     return () => {
       ro.disconnect();
