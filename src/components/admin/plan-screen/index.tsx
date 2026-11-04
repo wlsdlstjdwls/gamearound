@@ -47,6 +47,7 @@ import { PlanDialog } from "./dialog";
 import { PlanGantt, type PlanZoom } from "./gantt";
 import { useTrackColor, useTrackOptions } from "./track-color";
 import { PersonSummary, PlanSummary } from "./summary";
+import { PlanEmpty } from "./empty";
 
 /** 새 줄의 기본 기간(일). 한 주 안의 평일 다섯 날 */
 const NEW_SPAN_DAYS = 4;
@@ -286,79 +287,85 @@ export function PlanScreen({ items, cards, files, assignees, today }: { items: P
           </div>
         </div>
 
-        {group === "person" ? (
-          <PersonSummary people={people} nameOf={nameOf} milestone={milestone} today={today} onPick={setOpenId} fold={fold} />
+        {value.length === 0 ? (
+          <PlanEmpty onCreate={() => addRoot(null)} />
         ) : (
-          <PlanSummary tracks={tracks} milestone={milestone} today={today} onPick={setOpenId} fold={fold} />
-        )}
-
-        <div className="flex flex-wrap items-center gap-x-4 gap-y-1 px-1 text-[12.5px] text-dim" aria-label={M.legend}>
-          {trackOptions.map((t) => (
-            <span key={t.value} className="inline-flex items-center gap-1.5">
-              <span className="h-2 w-4 rounded-full" style={{ background: trackColor(t.value) }} aria-hidden />
-              {t.label}
-            </span>
-          ))}
-          <span className="inline-flex items-center gap-1.5">
-            <span className="size-2.5 rotate-45 rounded-[2px] bg-ink-2" aria-hidden />
-            {M.legendMilestone}
-          </span>
-          <span className="inline-flex items-center gap-1.5">
-            <span className="h-3 w-px bg-danger" aria-hidden />
-            {M.legendToday}
-          </span>
-          <span className="ml-auto flex items-center gap-2" aria-live="polite">
-            {undo && (
-              <span className="flex items-center gap-2 rounded-md bg-ink px-2.5 py-1 text-[12.5px] text-on-ink shadow-2">
-                {M.deletedRow(undo.title)}
-                <button
-                  type="button"
-                  onClick={() => {
-                    const back = undo.items;
-                    setValue((v) => [...v, ...back.filter((b) => !v.some((x) => x.id === b.id))]);
-                    setUndo(null);
-                  }}
-                  className="press font-bold text-acc-on-ink hover:underline"
-                >
-                  {M.undo}
-                </button>
+          <>
+          {group === "person" ? (
+            <PersonSummary people={people} nameOf={nameOf} milestone={milestone} today={today} onPick={setOpenId} fold={fold} />
+          ) : (
+            <PlanSummary tracks={tracks} milestone={milestone} today={today} onPick={setOpenId} fold={fold} />
+          )}
+  
+          <div className="flex flex-wrap items-center gap-x-4 gap-y-1 px-1 text-[12.5px] text-dim" aria-label={M.legend}>
+            {trackOptions.map((t) => (
+              <span key={t.value} className="inline-flex items-center gap-1.5">
+                <span className="h-2 w-4 rounded-full" style={{ background: trackColor(t.value) }} aria-hidden />
+                {t.label}
               </span>
-            )}
-            {pending ? M.autosaving : ""}
-          </span>
-        </div>
-
-        <PlanGantt
-          rows={visible}
-          allRows={rows}
-          today={today}
-          zoom={zoom}
-          selected={selected}
-          onSelect={pick}
-          collapsed={collapsed}
-          onToggle={(id) =>
-            setCollapsed((s) => {
-              const n = new Set(s);
-              if (n.has(id)) n.delete(id);
-              else n.add(id);
-              return n;
-            })
-          }
-          onOpen={(id) => {
-            setSelected(id);
-            setOpenId(id);
-          }}
-          onDelete={(id) => void remove(id)}
-          onAddBelow={addBelow}
-          onReorder={group === "wbs" ? (id, target, where) => setValue((v) => (where === "inside" ? placeInside(v, id, target) : placeNear(v, id, target, where))) : undefined}
-          renamingId={renamingId}
-          setRenamingId={setRenamingId}
-          onAddRoot={group === "wbs" ? () => addRoot(null) : undefined}
-          onRename={(id, title) => patch(id, (i) => ({ ...i, title }))}
-          onShift={(id, by) => patch(id, (i) => shiftItem(i, by))}
-          onResize={(id, edge, by) => patch(id, (i) => resizeItem(i, edge, by))}
-          editable={!mobile}
-        />
+            ))}
+            <span className="inline-flex items-center gap-1.5">
+              <span className="size-2.5 rotate-45 rounded-[2px] bg-ink-2" aria-hidden />
+              {M.legendMilestone}
+            </span>
+            <span className="inline-flex items-center gap-1.5">
+              <span className="h-3 w-px bg-danger" aria-hidden />
+              {M.legendToday}
+            </span>
+            <span className="ml-auto flex items-center gap-2" aria-live="polite">
+              {undo && (
+                <span className="flex items-center gap-2 rounded-md bg-ink px-2.5 py-1 text-[12.5px] text-on-ink shadow-2">
+                  {M.deletedRow(undo.title)}
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const back = undo.items;
+                      setValue((v) => [...v, ...back.filter((b) => !v.some((x) => x.id === b.id))]);
+                      setUndo(null);
+                    }}
+                    className="press font-bold text-acc-on-ink hover:underline"
+                  >
+                    {M.undo}
+                  </button>
+                </span>
+              )}
+              {pending ? M.autosaving : ""}
+            </span>
+          </div>
+  
+          <PlanGantt
+            rows={visible}
+            allRows={rows}
+            today={today}
+            zoom={zoom}
+            selected={selected}
+            onSelect={pick}
+            collapsed={collapsed}
+            onToggle={(id) =>
+              setCollapsed((s) => {
+                const n = new Set(s);
+                if (n.has(id)) n.delete(id);
+                else n.add(id);
+                return n;
+              })
+            }
+            onOpen={(id) => {
+              setSelected(id);
+              setOpenId(id);
+            }}
+            onDelete={(id) => void remove(id)}
+            onAddBelow={addBelow}
+            onReorder={group === "wbs" ? (id, target, where) => setValue((v) => (where === "inside" ? placeInside(v, id, target) : placeNear(v, id, target, where))) : undefined}
+            renamingId={renamingId}
+            setRenamingId={setRenamingId}
+            onAddRoot={group === "wbs" ? () => addRoot(null) : undefined}
+            onRename={(id, title) => patch(id, (i) => ({ ...i, title }))}
+            onShift={(id, by) => patch(id, (i) => shiftItem(i, by))}
+            onResize={(id, edge, by) => patch(id, (i) => resizeItem(i, edge, by))}
+            editable={!mobile}
+          />
+          </>
+        )}
       </div>
 
       {opened && (

@@ -164,7 +164,11 @@ export function PlanGantt({
 }) {
   const px = PLAN_ZOOM_PX[zoom];
   const trackColor = useTrackColor();
-  const { from, days } = useMemo(() => rangeOf(allRows, today), [allRows, today]);
+  const range = useMemo(() => rangeOf(allRows, today), [allRows, today]);
+  const from = range.from;
+  // 판 폭(px). 일정이 적어 날짜 범위가 짧으면 오른쪽이 빈 판으로 남았다 — 범위를 판 폭까지 늘린다
+  const [boxW, setBoxW] = useState(0);
+  const days = Math.max(range.days, Math.ceil((boxW - LABEL_W) / px));
   const { months, ticks, weekends, holidays } = useScale(from, days, zoom);
   const headH = zoom === "day" ? HEAD_H_DAY : HEAD_H;
   const [drag, setDrag] = useState<Drag | null>(null);
@@ -194,6 +198,13 @@ export function PlanGantt({
   // 열 때와 눈금을 바꿀 때만 오늘 쪽으로 굴린다 — 줄을 끌다 범위가 바뀌었다고 화면이 튀면 손이 놓친다.
   // 그리기 전에(layout effect) 굴린다: 그린 뒤 굴리면 왼쪽 끝(몇 달 전)이 한 장 보였다가 튄다
   const boxRef = useRef<HTMLDivElement>(null);
+  useLayoutEffect(() => {
+    const el = boxRef.current;
+    if (!el) return;
+    const ro = new ResizeObserver(() => setBoxW(el.clientWidth));
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, []);
   // 높이는 화면 바닥까지 잰 값이다(관리자 그리드와 같은 fit) — 고정 vh 로 두면 위 띠가 접히고 펴질 때마다 문서가 따로 굴렀다(사용자 "불필요한 세로 스크롤")
   const fitted = useFitHeight(boxRef, true);
   const scrolledAt = useRef<number | null>(null);
