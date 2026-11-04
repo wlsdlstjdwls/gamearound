@@ -20,7 +20,8 @@ import { ChevronDownIcon } from "@/components/ui/icons";
 import { Clamp, useTooltip } from "@/components/ui/tooltip";
 import { cn } from "@/lib/cn";
 import { PLAN_MESSAGES as M } from "@/lib/admin/messages";
-import { dayOffset, PERSON_ROW_PREFIX, resizeItem, shiftDay, shiftItem, spanDays, type PlanRow, type PlanTrack } from "@/lib/admin/plan";
+import { dayOffset, PERSON_ROW_PREFIX, resizeItem, shiftDay, shiftItem, spanDays, type PlanRow } from "@/lib/admin/plan";
+import { useTrackColor } from "./track-color";
 import { weekdayOf } from "@/lib/calendar";
 import { holidayName } from "@/lib/holidays";
 import { useFitHeight } from "@/components/admin/screen/data-grid/fit";
@@ -55,10 +56,8 @@ const TODAY_CLEAR_DAYS = 4;
 const PAD_BEFORE = 7;
 const PAD_AFTER = 21;
 
-/** 갈래 색. 개발 파랑(브랜드), 기획 보라, 영업 청록 — 초록은 쓰지 않는다(no-green-badges) */
-export const TRACK_COLOR: Record<PlanTrack, string> = { dev: "var(--acc)", plan: "var(--plum)", sales: "var(--info)" };
-/** 갈래 색의 옅은 면. 막대 바탕(아직 안 한 몫) */
-const soft = (track: PlanTrack, pct: number) => `color-mix(in oklab, ${TRACK_COLOR[track]} ${pct}%, var(--surface))`;
+/** 파트 색의 옅은 면. 막대 바탕(아직 안 한 몫). 색은 track-color 가 공통코드 순서로 정한다 */
+const soft = (color: string, pct: number) => `color-mix(in oklab, ${color} ${pct}%, var(--surface))`;
 
 type Drag = { id: string; mode: "move" | "start" | "end"; x: number; by: number };
 
@@ -164,6 +163,7 @@ export function PlanGantt({
   editable: boolean;
 }) {
   const px = PLAN_ZOOM_PX[zoom];
+  const trackColor = useTrackColor();
   const { from, days } = useMemo(() => rangeOf(allRows, today), [allRows, today]);
   const { months, ticks, weekends, holidays } = useScale(from, days, zoom);
   const headH = zoom === "day" ? HEAD_H_DAY : HEAD_H;
@@ -206,7 +206,10 @@ export function PlanGantt({
 
   // 바탕: 주 눈금 세로선 + (일 눈금이면) 주말 면. 줄마다 같은 그림이라 한 장을 깔고 줄은 투명하게 둔다
   const grid = useMemo(() => {
-    const lines = `repeating-linear-gradient(to right, color-mix(in oklab, var(--line) 80%, transparent) 0 1px, transparent 1px ${7 * px}px)`;
+    const weekly = `repeating-linear-gradient(to right, color-mix(in oklab, var(--line) 90%, transparent) 0 1px, transparent 1px ${7 * px}px)`;
+    // 하루 선은 옅게(일, 주 눈금). 막대의 시작과 끝이 어느 날에 서는지 눈금으로 읽힌다(사용자 "시작과 끝이 애매하다"). 월 눈금은 칸이 5px 라 뺀다
+    const daily = zoom === "month" ? null : `repeating-linear-gradient(to right, color-mix(in oklab, var(--line) 45%, transparent) 0 1px, transparent 1px ${px}px)`;
+    const lines = daily ? `${weekly},${daily}` : weekly;
     const band = (i: number, color: string) => `linear-gradient(to right, transparent ${i * px}px, ${color} ${i * px}px, ${color} ${(i + 1) * px}px, transparent ${(i + 1) * px}px)`;
     // 공휴일은 모든 눈금에서 옅은 빨강, 주말은 일 눈금에서만 회색 면(주, 월 눈금은 칸이 좁아 주말 면이 줄무늬가 된다)
     const off = holidays.map((h) => band(h.at, "color-mix(in oklab, var(--danger) 13%, transparent)"));
@@ -299,11 +302,12 @@ export function PlanGantt({
                 </OffDayTip>
               );
             })}
-            {/* 주, 월 눈금: 공휴일 자리에 빨간 점 + 이름 말풍선(날짜 칸이 없어 까닭을 띄울 자리가 따로 필요하다) */}
+            {/* 주, 월 눈금: 공휴일 자리 머리 바닥선에 빨간 띠 + 이름 말풍선. 점을 날짜 글자 줄에 두니 글자를 가렸다(사용자) —
+                띠는 글자 아래 바닥선에 붙고, 누르는 자리만 위로 조금 넓힌다 */}
             {zoom !== "day" &&
               holidays.map((h) => (
-                <OffDayTip key={`h-${h.at}`} label={h.name} className="absolute bottom-0.5 z-[6] flex size-3 -translate-x-1/2 cursor-help items-center justify-center" style={{ left: (h.at + 0.5) * px }}>
-                  <span className="size-2 rounded-full bg-danger ring-2 ring-surface" />
+                <OffDayTip key={`h-${h.at}`} label={h.name} className="absolute bottom-0 z-[6] flex h-2.5 cursor-help items-end" style={{ left: h.at * px, width: Math.max(px, 4) }}>
+                  <span className="h-[3px] w-full rounded-t-sm bg-danger" />
                 </OffDayTip>
               ))}
             {todayAt >= 0 && todayAt < days && (
@@ -323,7 +327,7 @@ export function PlanGantt({
           {rows.map((row) => {
             const on = row.id === selected;
             const { start, end } = spanOf(row);
-            const color = TRACK_COLOR[row.track];
+            const color = trackColor(row.track);
             const dragging = drag?.id === row.id;
             const left = start ? dayOffset(from, start) * px : 0;
             const person = row.id.startsWith(PERSON_ROW_PREFIX);
@@ -473,13 +477,15 @@ export function PlanGantt({
                   {/* 상위 줄: 양 끝 꺾쇠가 달린 얇은 요약 막대 */}
                   {start && end && row.hasChildren && (
                     <div aria-label={`${row.title} ${start} ~ ${end} ${row.pct}%`} onClick={openOnClick(row)} className="absolute top-1/2 h-[7px] -translate-y-1/2 cursor-pointer before:absolute before:-inset-y-2 before:inset-x-0 before:content-['']" style={{ left, width: barW }}>
-                      <div className="absolute inset-0 overflow-hidden rounded-full" style={{ background: soft(row.track, 30) }}>
+                      <div className="absolute inset-0 overflow-hidden rounded-[2px]" style={{ background: soft(color, 30) }}>
                         <div className="h-full" style={{ width: `${row.pct}%`, background: color }} />
                       </div>
                       <span aria-hidden className="absolute -bottom-[5px] left-0 h-[9px] w-[3px] rounded-b-sm" style={{ background: color }} />
                       <span aria-hidden className="absolute -bottom-[5px] right-0 h-[9px] w-[3px] rounded-b-sm" style={{ background: color }} />
-                      <span className="pointer-events-none absolute left-full top-1/2 ml-2 -translate-y-1/2 whitespace-nowrap text-[12px] font-bold tabular-nums" style={{ color }}>
-                        {row.pct}%
+                      <span className="pointer-events-none absolute left-full top-1/2 ml-2 flex -translate-y-1/2 items-center gap-1.5 whitespace-nowrap text-[12px] tabular-nums">
+                        <span className="text-dim">{`${md(start)} ~ ${md(end)}`}</span>
+                        <span className="text-line-strong">|</span>
+                        <span className="font-bold" style={{ color }}>{row.pct}%</span>
                       </span>
                     </div>
                   )}
@@ -491,23 +497,29 @@ export function PlanGantt({
                       onClick={openOnClick(row)}
                       aria-label={`${row.title} ${start} ~ ${end} ${row.pct}%`}
                       className={cn(
-                        "absolute top-1/2 h-5 -translate-y-1/2 rounded-full",
+                        "absolute top-1/2 h-[22px] -translate-y-1/2 rounded-[4px]",
                         !dragging && "transition-[left,width,box-shadow] duration-fast",
                         editable && "[@media(pointer:fine)]:cursor-grab [@media(pointer:fine)]:hover:shadow-2",
                         dragging && "z-10 cursor-grabbing shadow-2",
                         on && "ring-2 ring-offset-1 ring-offset-surface",
                       )}
-                      style={{ left, width: barW, background: soft(row.track, 22), ["--tw-ring-color" as string]: color }}
+                      style={{ left, width: barW, background: soft(color, 22), ["--tw-ring-color" as string]: color }}
                     >
-                      <div className="absolute inset-y-0 left-0 overflow-hidden rounded-full" style={{ width: `${row.pct}%`, background: color }} />
+                      {/* 막대 모서리를 둥글게 깎지 않는다(사용자 "너무 둥글다, 시작과 끝이 애매") — 알약 모양은 양 끝이 반 칸씩 날짜보다 짧아 보였다.
+                          진한 왼쪽 끝 선이 시작일을 짚는다 */}
+                      <div className="absolute inset-y-0 left-0 overflow-hidden rounded-l-[4px]" style={{ width: `${row.pct}%`, background: color }} />
+                      <span aria-hidden className="absolute inset-y-0 left-0 w-[3px] rounded-l-[4px]" style={{ background: color }} />
                       {editable && (
                         <>
-                          <span className="absolute inset-y-0 left-0 hidden rounded-l-full [@media(pointer:fine)]:block [@media(pointer:fine)]:cursor-ew-resize" style={{ width: HANDLE }} />
-                          <span className="absolute inset-y-0 right-0 hidden rounded-r-full [@media(pointer:fine)]:block [@media(pointer:fine)]:cursor-ew-resize" style={{ width: HANDLE }} />
+                          <span className="absolute inset-y-0 left-0 hidden [@media(pointer:fine)]:block [@media(pointer:fine)]:cursor-ew-resize" style={{ width: HANDLE }} />
+                          <span className="absolute inset-y-0 right-0 hidden [@media(pointer:fine)]:block [@media(pointer:fine)]:cursor-ew-resize" style={{ width: HANDLE }} />
                         </>
                       )}
-                      <span className={cn("pointer-events-none absolute left-full top-1/2 ml-2 -translate-y-1/2 whitespace-nowrap text-[12px] font-semibold tabular-nums", row.pct >= 100 ? "text-acc" : "text-ink-2")}>
-                        {row.pct >= 100 ? M.doneLabel : `${row.pct}%`}
+                      {/* 막대 오른쪽: 기간(시작 ~ 끝) | 진행률. 날짜를 글자로 적어 눈금을 세지 않아도 언제부터 언제까지인지 읽힌다 */}
+                      <span className="pointer-events-none absolute left-full top-1/2 ml-2 flex -translate-y-1/2 items-center gap-1.5 whitespace-nowrap text-[12px] tabular-nums">
+                        <span className="text-dim">{start === end ? md(start) : `${md(start)} ~ ${md(end)}`}</span>
+                        <span className="text-line-strong">|</span>
+                        <span className={cn("font-semibold", row.pct >= 100 ? "text-acc" : "text-ink-2")}>{row.pct >= 100 ? M.doneLabel : `${row.pct}%`}</span>
                       </span>
                     </div>
                   )}
