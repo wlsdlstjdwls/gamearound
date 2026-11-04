@@ -5,43 +5,52 @@
 // 휴대폰은 보기 전용이고 고치기는 아래 상세 폼에서 한다.
 // 끄는 동안의 값은 이 부품이 쥐고(미리 보기), 손을 놓을 때 한 번만 화면 상태에 올린다 — 움직일 때마다 올리면 표와 상세가 매 프레임 다시 그려진다.
 // 하위가 있는 줄의 막대는 끌 수 없다. 그 기간은 하위의 처음과 끝이라 하위를 옮겨야 바뀐다.
-import { useEffect, useMemo, useRef, useState } from "react";
+//
+// 모양(2026-11-04 2차, 사용자 "투박하다, 이쁘게"): 작업 막대는 갈래 색 옅은 알약 + 진행만큼 진한 채움, 진행률은 막대 오른쪽 바깥에,
+// 상위 줄은 양 끝에 꺾쇠가 달린 얇은 요약 막대, 이정표는 갈래 색 마름모 + 날짜 알약, 주말은 옅은 면(일 눈금), 오늘은 머리의 빨간 날짜 알약 + 가는 선.
+// 등장 애니메이션은 넣지 않는다 — 보기를 바꿀 때마다 막대가 자라나면 그게 곧 깜빡임으로 읽힌다(같은 요청 "깜빡이지 않게").
+import { useLayoutEffect, useMemo, useRef, useState } from "react";
 import { ChevronDownIcon } from "@/components/ui/icons";
 import { Clamp } from "@/components/ui/tooltip";
 import { cn } from "@/lib/cn";
 import { PLAN_MESSAGES as M } from "@/lib/admin/messages";
-import { dayOffset, resizeItem, shiftDay, shiftItem, spanDays, type PlanRow, type PlanTrack } from "@/lib/admin/plan";
+import { dayOffset, PERSON_ROW_PREFIX, resizeItem, shiftDay, shiftItem, spanDays, type PlanRow, type PlanTrack } from "@/lib/admin/plan";
 import { weekdayOf } from "@/lib/calendar";
 
 /** 눈금별 하루 폭(px). 일은 날짜 숫자가 들어갈 만큼, 월은 석 달이 한 화면에 들어갈 만큼 */
-export const PLAN_ZOOM_PX = { day: 28, week: 12, month: 4 } as const;
+export const PLAN_ZOOM_PX = { day: 30, week: 14, month: 5 } as const;
 export type PlanZoom = keyof typeof PLAN_ZOOM_PX;
 
-/** 줄 높이(px). 관리자 그리드 줄(36px)보다 낮게 — 차트는 줄 수가 많아도 한눈에 들어와야 한다 */
-const ROW_H = 30;
+/** 줄 높이(px). 막대 20px 위아래로 숨 쉴 틈 */
+const ROW_H = 36;
+/** 머리 높이(px). 달 줄 + 눈금 줄 */
+const HEAD_H = 52;
 /** 왼쪽 붙박이 칸 폭(px). 번호 + 깊이 셋 들여쓰기 + 작업명 열 자쯤 */
-const LABEL_W = 280;
+const LABEL_W = 300;
 /** 깊이 한 단의 들여쓰기(px) */
-const INDENT = 14;
+const INDENT = 16;
 /** 막대 끝 손잡이 폭(px). 이 안에서 누르면 늘이기, 밖이면 옮기기 */
-const HANDLE = 7;
+const HANDLE = 8;
 /** 처음 열 때 오늘을 왼쪽에서 며칠 띄워 세우나. 지난 일(마크 0)이 몇 달 앞이어도 첫 화면은 지금부터다 */
 const LEAD_DAYS = 7;
 /** 달 이름을 적을 최소 폭(px). 범위 첫 달이 며칠만 걸치면 이름이 반쯤 잘려 보인다 */
-const MONTH_LABEL_MIN = 44;
-/** 진행률 글자를 흰색으로 쓸 최소 채움(%). 이보다 적게 찬 막대는 글자가 옅은 면 위에 선다 */
-const PCT_ON_FILL = 30;
+const MONTH_LABEL_MIN = 48;
+/** 주 눈금 글자가 오늘 알약과 겹친다고 보는 거리(일). 글자 "11/2" 가 사흘 폭쯤 쓴다 */
+const TODAY_CLEAR_DAYS = 4;
 /** 범위 앞뒤 여유(일). 첫 막대가 차트 왼쪽 끝에 붙지 않게 */
 const PAD_BEFORE = 7;
 const PAD_AFTER = 21;
 
 /** 갈래 색. 개발 파랑(브랜드), 기획 보라, 영업 청록 — 초록은 쓰지 않는다(no-green-badges) */
 export const TRACK_COLOR: Record<PlanTrack, string> = { dev: "var(--acc)", plan: "var(--plum)", sales: "var(--info)" };
+/** 갈래 색의 옅은 면. 막대 바탕(아직 안 한 몫) */
+const soft = (track: PlanTrack, pct: number) => `color-mix(in oklab, ${TRACK_COLOR[track]} ${pct}%, var(--surface))`;
 
 type Drag = { id: string; mode: "move" | "start" | "end"; x: number; by: number };
 
 /** 월요일로 내린다 — 주 눈금이 월요일에 서게 */
 const toMonday = (iso: string) => shiftDay(iso, -((weekdayOf(iso) + 6) % 7));
+const md = (iso: string) => `${Number(iso.slice(5, 7))}/${Number(iso.slice(8, 10))}`;
 
 function rangeOf(rows: readonly PlanRow[], today: string): { from: string; days: number } {
   const dates = rows.flatMap((r) => [r.start, r.end]).filter((v): v is string => !!v);
@@ -56,7 +65,8 @@ function rangeOf(rows: readonly PlanRow[], today: string): { from: string; days:
 function useScale(from: string, days: number, zoom: PlanZoom) {
   return useMemo(() => {
     const months: { at: number; span: number; label: string }[] = [];
-    const ticks: { at: number; label: string; weekend?: boolean }[] = [];
+    const ticks: { at: number; label: string }[] = [];
+    const weekends: number[] = [];
     for (let i = 0; i < days; i++) {
       const iso = shiftDay(from, i);
       const [y, m, d] = iso.split("-").map(Number) as [number, number, number];
@@ -64,10 +74,11 @@ function useScale(from: string, days: number, zoom: PlanZoom) {
       if (!last || d === 1) months.push({ at: i, span: 1, label: zoom === "month" ? `${y}.${m}` : `${y}년 ${m}월` });
       else last.span += 1;
       const wd = weekdayOf(iso);
-      if (zoom === "day") ticks.push({ at: i, label: String(d), weekend: wd === 0 || wd === 6 });
-      else if (zoom === "week" && wd === 1) ticks.push({ at: i, label: `${m}/${d}` });
+      if (wd === 0 || wd === 6) weekends.push(i);
+      if (zoom === "day") ticks.push({ at: i, label: String(d) });
+      else if (zoom === "week" && wd === 1) ticks.push({ at: i, label: md(iso) });
     }
-    return { months, ticks };
+    return { months, ticks, weekends };
   }, [from, days, zoom]);
 }
 
@@ -101,22 +112,31 @@ export function PlanGantt({
 }) {
   const px = PLAN_ZOOM_PX[zoom];
   const { from, days } = useMemo(() => rangeOf(allRows, today), [allRows, today]);
-  const { months, ticks } = useScale(from, days, zoom);
+  const { months, ticks, weekends } = useScale(from, days, zoom);
   const [drag, setDrag] = useState<Drag | null>(null);
+  // 끈 뒤 따라오는 click 이 줄 고르기로 읽히지 않게 한 번 삼킨다
+  const swallow = useRef(false);
+  const width = days * px;
+  const todayAt = dayOffset(from, today);
+
+  // 열 때와 눈금을 바꿀 때만 오늘 쪽으로 굴린다 — 줄을 끌다 범위가 바뀌었다고 화면이 튀면 손이 놓친다.
+  // 그리기 전에(layout effect) 굴린다: 그린 뒤 굴리면 왼쪽 끝(몇 달 전)이 한 장 보였다가 튄다
   const boxRef = useRef<HTMLDivElement>(null);
-  // 열 때와 눈금을 바꿀 때만 오늘 쪽으로 굴린다 — 줄을 끌다 범위가 바뀌었다고 화면이 튀면 손이 놓친다
   const scrolledAt = useRef<number | null>(null);
-  useEffect(() => {
+  useLayoutEffect(() => {
     const el = boxRef.current;
     if (!el || scrolledAt.current === px) return;
     scrolledAt.current = px;
     el.scrollLeft = Math.max(0, (dayOffset(from, today) - LEAD_DAYS) * px);
   }, [px, from, today]);
-  // 끈 뒤 따라오는 click 이 줄 고르기로 읽히지 않게 한 번 삼킨다
-  const swallow = useRef(false);
-  const width = days * px;
-  const todayAt = dayOffset(from, today);
-  const weekLine = `repeating-linear-gradient(to right, var(--line) 0 1px, transparent 1px ${7 * px}px)`;
+
+  // 바탕: 주 눈금 세로선 + (일 눈금이면) 주말 면. 줄마다 같은 그림이라 한 장을 깔고 줄은 투명하게 둔다
+  const grid = useMemo(() => {
+    const lines = `repeating-linear-gradient(to right, color-mix(in oklab, var(--line) 80%, transparent) 0 1px, transparent 1px ${7 * px}px)`;
+    if (zoom !== "day") return lines;
+    const shade = weekends.map((i) => `linear-gradient(to right, transparent ${i * px}px, var(--surface-2) ${i * px}px, var(--surface-2) ${(i + 1) * px}px, transparent ${(i + 1) * px}px)`);
+    return [lines, ...shade].join(",");
+  }, [px, zoom, weekends]);
 
   const begin = (e: React.PointerEvent<HTMLElement>, row: PlanRow) => {
     if (!editable || e.pointerType !== "mouse" || e.button !== 0 || row.hasChildren || !row.startOn) return;
@@ -142,6 +162,12 @@ export function PlanGantt({
     }
     setDrag(null);
   };
+  const dragProps = (row: PlanRow) => ({
+    onPointerDown: (e: React.PointerEvent<HTMLElement>) => begin(e, row),
+    onPointerMove: move,
+    onPointerUp: finish,
+    onPointerCancel: () => setDrag(null),
+  });
 
   /** 끄는 중이면 미리 옮긴 기간 */
   const spanOf = (row: PlanRow): { start: string | null; end: string | null } => {
@@ -151,143 +177,174 @@ export function PlanGantt({
   };
 
   return (
-    <div ref={boxRef} className="relative overflow-auto rounded-lg border border-line bg-surface [@media(pointer:fine)]:max-h-[min(56vh,640px)]" role="group" aria-label={M.gantt}>
+    <div ref={boxRef} className="relative overflow-auto rounded-xl border border-line bg-surface shadow-hair [@media(pointer:fine)]:max-h-[min(58vh,660px)]" role="group" aria-label={M.gantt}>
       <div className="relative" style={{ width: LABEL_W + width }}>
         {/* 머리: 달 줄 + 눈금 줄. 위로 붙는다 */}
-        <div className="sticky top-0 z-20 flex border-b border-line bg-surface-2/95 text-[12px] text-dim backdrop-blur-sm">
-          <div className="sticky left-0 z-10 flex shrink-0 items-end border-r border-line bg-surface-2 px-3 pb-1 font-semibold text-ink-2" style={{ width: LABEL_W }}>
-            {M.colNo} | {M.colTitle}
+        <div className="sticky top-0 z-20 flex border-b border-line bg-surface" style={{ height: HEAD_H }}>
+          <div className="sticky left-0 z-10 flex shrink-0 items-end gap-1.5 border-r border-line bg-surface px-4 pb-2 text-[12.5px] font-semibold text-dim" style={{ width: LABEL_W }}>
+            {M.colNo}
+            <span className="text-line-strong">|</span>
+            {M.colTitle}
           </div>
-          <div className="relative h-[44px]" style={{ width }}>
+          <div className="relative text-[12px]" style={{ width }}>
             {months.map((m) => (
-              <div key={m.at} className="absolute top-0 h-[22px] overflow-hidden whitespace-nowrap border-l border-line px-1.5 pt-[3px] font-semibold text-ink-2" style={{ left: m.at * px, width: m.span * px }}>
+              <div key={m.at} className="absolute top-0 h-1/2 overflow-hidden whitespace-nowrap border-l border-line px-2 pt-1.5 text-[12.5px] font-bold text-ink" style={{ left: m.at * px, width: m.span * px }}>
                 {m.span * px >= MONTH_LABEL_MIN ? m.label : null}
               </div>
             ))}
             {ticks.map((t) => (
-              <div
-                key={t.at}
-                className={cn("absolute bottom-0 h-[22px] whitespace-nowrap pt-[3px] tabular-nums", zoom === "day" ? "text-center" : "border-l border-line pl-1", t.weekend && "text-dim-2")}
-                style={{ left: t.at * px, width: zoom === "day" ? px : 7 * px }}
-              >
-                {t.label}
+              <div key={t.at} className={cn("absolute bottom-0 h-1/2 whitespace-nowrap pt-1 tabular-nums text-dim", zoom === "day" ? "text-center" : "pl-1.5")} style={{ left: t.at * px, width: zoom === "day" ? px : 7 * px }}>
+                {/* 오늘 알약과 겹치는 눈금 글자는 비운다(주 눈금은 글자가 오른쪽으로 7일 폭을 쓴다) */}
+                {zoom === "week" && t.at <= todayAt && todayAt - t.at < TODAY_CLEAR_DAYS ? null : t.label}
               </div>
             ))}
+            {todayAt >= 0 && todayAt < days && (
+              <span className="absolute bottom-1 z-10 -translate-x-1/2 whitespace-nowrap rounded-full bg-danger px-1.5 py-px text-[11px] font-bold tabular-nums text-on-ink shadow-1" style={{ left: (todayAt + 0.5) * px }}>
+                {md(today)}
+              </span>
+            )}
           </div>
         </div>
 
-        {rows.length === 0 && <p className="sticky left-0 px-4 py-8 text-[13px] text-dim">{M.empty}</p>}
+        {rows.length === 0 && <p className="sticky left-0 px-4 py-10 text-[13px] text-dim">{M.empty}</p>}
 
-        {rows.map((row) => {
-          const on = row.id === selected;
-          const { start, end } = spanOf(row);
-          const color = TRACK_COLOR[row.track];
-          const dragging = drag?.id === row.id;
-          return (
-            <div key={row.id} className={cn("group flex border-b border-line/70", on && "bg-acc-row")} style={{ height: ROW_H }}>
-              {/* 왼쪽 붙박이 칸. 누르면 고른다, 하위가 있으면 접기 단추 */}
-              <div className={cn("sticky left-0 z-10 flex shrink-0 items-center gap-1 border-r border-line pr-2 text-[13px]", on ? "bg-acc-row" : "bg-surface group-hover:bg-surface-2")} style={{ width: LABEL_W, paddingLeft: 8 + row.depth * INDENT }}>
-                {row.hasChildren ? (
-                  <button
-                    type="button"
-                    onClick={() => onToggle(row.id)}
-                    aria-expanded={!collapsed.has(row.id)}
-                    aria-label={collapsed.has(row.id) ? M.expand(row.title) : M.collapse(row.title)}
-                    className="press -ml-1 flex size-6 shrink-0 items-center justify-center rounded text-dim hover:bg-surface-2 hover:text-ink"
-                  >
-                    <ChevronDownIcon size={14} className={cn("transition-transform duration-fast", collapsed.has(row.id) && "-rotate-90")} />
+        <div className="relative">
+          {/* 눈금 바탕 한 장(붙박이 칸 오른쪽) */}
+          <div aria-hidden className="pointer-events-none absolute inset-y-0" style={{ left: LABEL_W, width, backgroundImage: grid }} />
+
+          {rows.map((row) => {
+            const on = row.id === selected;
+            const { start, end } = spanOf(row);
+            const color = TRACK_COLOR[row.track];
+            const dragging = drag?.id === row.id;
+            const left = start ? dayOffset(from, start) * px : 0;
+            const barW = start && end ? Math.max(px, spanDays(start, end) * px) : 0;
+            return (
+              <div key={row.id} className={cn("group relative flex", row.depth === 0 && row.hasChildren && row.no !== "1" && "border-t border-line")} style={{ height: ROW_H }}>
+                {/* 고른 줄 면. 붙박이 칸과 막대 자리를 한 띠로 칠한다 */}
+                <div aria-hidden className={cn("pointer-events-none absolute inset-0 transition-colors duration-fast", on ? "bg-acc-row" : "group-hover:bg-surface-2/60")} />
+
+                {/* 왼쪽 붙박이 칸. 누르면 고른다, 하위가 있으면 접기 단추 */}
+                <div
+                  className={cn("sticky left-0 z-10 flex shrink-0 items-center gap-1 border-r border-line pr-3 text-[13.5px]", on ? "bg-acc-row" : "bg-surface group-hover:bg-surface-2")}
+                  style={{ width: LABEL_W, paddingLeft: 10 + row.depth * INDENT }}
+                >
+                  {on && <span aria-hidden className="absolute inset-y-1 left-0 w-[3px] rounded-r-full bg-acc" />}
+                  {row.hasChildren ? (
+                    <button
+                      type="button"
+                      onClick={() => onToggle(row.id)}
+                      aria-expanded={!collapsed.has(row.id)}
+                      aria-label={collapsed.has(row.id) ? M.expand(row.title) : M.collapse(row.title)}
+                      className="press flex size-6 shrink-0 items-center justify-center rounded-md text-dim hover:bg-surface-3 hover:text-ink"
+                    >
+                      <ChevronDownIcon size={14} className={cn("transition-transform duration-fast", collapsed.has(row.id) && "-rotate-90")} />
+                    </button>
+                  ) : (
+                    <span className="flex w-6 shrink-0 justify-center" aria-hidden>
+                      <span className="size-1.5 rounded-full" style={{ background: color, opacity: row.pct >= 100 ? 0.35 : 0.8 }} />
+                    </span>
+                  )}
+                  <button type="button" onClick={() => onSelect(row.id)} className="flex min-w-0 flex-1 items-center gap-2 text-left">
+                    {row.id.startsWith(PERSON_ROW_PREFIX) ? (
+                      <span aria-hidden className="flex size-6 shrink-0 items-center justify-center rounded-full bg-acc-soft text-[12px] font-bold text-acc">
+                        {row.title.trim().slice(0, 1) || "-"}
+                      </span>
+                    ) : (
+                      <span className="shrink-0 text-[12.5px] tabular-nums text-dim">{row.no}</span>
+                    )}
+                    <Clamp className={cn("min-w-0", row.hasChildren ? "font-bold text-ink" : row.pct >= 100 ? "text-dim" : "text-ink-2")}>{row.title}</Clamp>
                   </button>
-                ) : (
-                  <span className="w-5 shrink-0" />
-                )}
-                <button type="button" onClick={() => onSelect(row.id)} className="flex min-w-0 flex-1 items-center gap-1.5 text-left">
-                  <span className="shrink-0 tabular-nums text-dim">{row.no}</span>
-                  <Clamp className={cn("min-w-0", row.hasChildren && "font-semibold")}>{row.title}</Clamp>
-                </button>
-              </div>
+                </div>
 
-              {/* 막대 자리. 빈 곳을 눌러도 고른다 */}
-              <div
-                className="relative shrink-0"
-                style={{ width, backgroundImage: weekLine }}
-                onClick={() => {
-                  if (swallow.current) {
-                    swallow.current = false;
-                    return;
-                  }
-                  onSelect(row.id);
-                }}
-              >
-                {start && end && row.kind === "milestone" && !row.hasChildren && (
-                  <span
-                    role="img"
-                    aria-label={`${row.title} ${start}`}
-                    onPointerDown={(e) => begin(e, row)}
-                    onPointerMove={move}
-                    onPointerUp={finish}
-                    onPointerCancel={() => setDrag(null)}
-                    className={cn("absolute top-1/2 size-3.5 -translate-x-1/2 -translate-y-1/2 rotate-45 rounded-[2px] ring-2 ring-surface", editable && "[@media(pointer:fine)]:cursor-ew-resize")}
-                    style={{ left: (dayOffset(from, start) + 0.5) * px, background: row.pct >= 100 ? "var(--dim)" : "var(--ink)" }}
-                  />
-                )}
-                {start && end && row.kind === "milestone" && !row.hasChildren && (
-                  <span className="pointer-events-none absolute top-1/2 -translate-y-1/2 whitespace-nowrap text-[11.5px] font-semibold tabular-nums text-ink-2" style={{ left: (dayOffset(from, start) + 0.5) * px + 12 }}>
-                    {start.slice(5).replace("-", "/")}
-                  </span>
-                )}
-                {start && end && (row.kind === "task" || row.hasChildren) && (
-                  <div
-                    onPointerDown={(e) => begin(e, row)}
-                    onPointerMove={move}
-                    onPointerUp={finish}
-                    onPointerCancel={() => setDrag(null)}
-                    aria-label={`${row.title} ${start} ~ ${end} ${row.pct}%`}
-                    className={cn(
-                      "absolute overflow-hidden",
-                      row.hasChildren ? "top-[11px] h-2 rounded-sm" : "top-[6px] h-[18px] rounded-[5px]",
-                      editable && !row.hasChildren && "[@media(pointer:fine)]:cursor-grab",
-                      dragging && "cursor-grabbing shadow-2 ring-2 ring-acc/40",
-                      on && !dragging && "ring-2 ring-ink/25",
-                    )}
-                    style={{
-                      left: dayOffset(from, start) * px,
-                      width: Math.max(px, spanDays(start, end) * px),
-                      background: `color-mix(in oklab, ${color} ${row.hasChildren ? 45 : 28}%, var(--surface))`,
-                    }}
-                  >
-                    {/* 진행률만큼 진하게 채운다 */}
-                    <div className="absolute inset-y-0 left-0" style={{ width: `${row.pct}%`, background: color }} />
-                    {!row.hasChildren && (
-                      <>
-                        {/* 채운 부분이 글자 폭보다 좁으면 옅은 면 위라 흰 글자가 안 보인다 — 그때는 잉크색으로 */}
-                        <span className={cn("relative flex h-full items-center px-1.5 text-[11px] font-semibold tabular-nums", row.pct >= PCT_ON_FILL ? "text-on-ink [text-shadow:0_0_2px_rgba(0,0,0,0.35)]" : "text-ink-2")}>{row.pct}%</span>
-                        {editable && (
-                          <>
-                            <span className="absolute inset-y-0 left-0 hidden [@media(pointer:fine)]:block [@media(pointer:fine)]:cursor-ew-resize" style={{ width: HANDLE }} />
-                            <span className="absolute inset-y-0 right-0 hidden [@media(pointer:fine)]:block [@media(pointer:fine)]:cursor-ew-resize" style={{ width: HANDLE }} />
-                          </>
+                {/* 막대 자리. 빈 곳을 눌러도 고른다 */}
+                <div
+                  className="relative shrink-0"
+                  style={{ width }}
+                  onClick={() => {
+                    if (swallow.current) {
+                      swallow.current = false;
+                      return;
+                    }
+                    onSelect(row.id);
+                  }}
+                >
+                  {/* 이정표: 갈래 색 마름모 + 날짜 알약 */}
+                  {start && row.kind === "milestone" && !row.hasChildren && (
+                    <>
+                      <span
+                        role="img"
+                        aria-label={`${row.title} ${start}`}
+                        {...dragProps(row)}
+                        className={cn(
+                          "absolute top-1/2 size-[15px] -translate-x-1/2 -translate-y-1/2 rotate-45 rounded-[3px] shadow-1 ring-[2.5px] ring-surface",
+                          editable && "[@media(pointer:fine)]:cursor-ew-resize",
                         )}
-                      </>
-                    )}
-                  </div>
-                )}
-                {/* 끄는 동안 바뀐 기간을 막대 위에 띄운다 */}
-                {dragging && drag.by !== 0 && start && (
-                  <span className="pointer-events-none absolute -top-0.5 z-10 -translate-y-full whitespace-nowrap rounded bg-ink px-1.5 py-0.5 text-[11.5px] font-semibold tabular-nums text-on-ink" style={{ left: dayOffset(from, start) * px }}>
-                    {start === end ? start : `${start} ~ ${end}`}
-                  </span>
-                )}
-              </div>
-            </div>
-          );
-        })}
+                        style={{ left: (dayOffset(from, start) + 0.5) * px, background: row.pct >= 100 ? "var(--dim)" : color }}
+                      />
+                      <span className="pointer-events-none absolute top-1/2 -translate-y-1/2 whitespace-nowrap rounded-full bg-surface-2 px-2 py-0.5 text-[11.5px] font-semibold tabular-nums text-ink-2" style={{ left: (dayOffset(from, start) + 0.5) * px + 14 }}>
+                        {md(start)}
+                      </span>
+                    </>
+                  )}
 
-        {/* 오늘 선. 머리 아래부터 끝까지 */}
-        {todayAt >= 0 && todayAt < days && (
-          <div className="pointer-events-none absolute bottom-0 top-[44px] z-[5] w-0.5 bg-danger" style={{ left: LABEL_W + (todayAt + 0.5) * px - 1 }} aria-hidden>
-            <span className="absolute left-1 top-0.5 whitespace-nowrap rounded bg-danger px-1 text-[11px] font-bold text-on-ink">{M.today}</span>
-          </div>
-        )}
+                  {/* 상위 줄: 양 끝 꺾쇠가 달린 얇은 요약 막대 */}
+                  {start && end && row.hasChildren && (
+                    <div aria-label={`${row.title} ${start} ~ ${end} ${row.pct}%`} className="absolute top-1/2 h-[7px] -translate-y-1/2" style={{ left, width: barW }}>
+                      <div className="absolute inset-0 overflow-hidden rounded-full" style={{ background: soft(row.track, 30) }}>
+                        <div className="h-full" style={{ width: `${row.pct}%`, background: color }} />
+                      </div>
+                      <span aria-hidden className="absolute -bottom-[5px] left-0 h-[9px] w-[3px] rounded-b-sm" style={{ background: color }} />
+                      <span aria-hidden className="absolute -bottom-[5px] right-0 h-[9px] w-[3px] rounded-b-sm" style={{ background: color }} />
+                      <span className="pointer-events-none absolute left-full top-1/2 ml-2 -translate-y-1/2 whitespace-nowrap text-[12px] font-bold tabular-nums" style={{ color }}>
+                        {row.pct}%
+                      </span>
+                    </div>
+                  )}
+
+                  {/* 작업 막대: 옅은 알약 + 진행만큼 진한 채움, 진행률은 오른쪽 바깥 */}
+                  {start && end && row.kind === "task" && !row.hasChildren && (
+                    <div
+                      {...dragProps(row)}
+                      aria-label={`${row.title} ${start} ~ ${end} ${row.pct}%`}
+                      className={cn(
+                        "absolute top-1/2 h-5 -translate-y-1/2 rounded-full",
+                        !dragging && "transition-[left,width,box-shadow] duration-fast",
+                        editable && "[@media(pointer:fine)]:cursor-grab [@media(pointer:fine)]:hover:shadow-2",
+                        dragging && "z-10 cursor-grabbing shadow-2",
+                        on && "ring-2 ring-offset-1 ring-offset-surface",
+                      )}
+                      style={{ left, width: barW, background: soft(row.track, 22), ["--tw-ring-color" as string]: color }}
+                    >
+                      <div className="absolute inset-y-0 left-0 overflow-hidden rounded-full" style={{ width: `${row.pct}%`, background: color }} />
+                      {editable && (
+                        <>
+                          <span className="absolute inset-y-0 left-0 hidden rounded-l-full [@media(pointer:fine)]:block [@media(pointer:fine)]:cursor-ew-resize" style={{ width: HANDLE }} />
+                          <span className="absolute inset-y-0 right-0 hidden rounded-r-full [@media(pointer:fine)]:block [@media(pointer:fine)]:cursor-ew-resize" style={{ width: HANDLE }} />
+                        </>
+                      )}
+                      <span className={cn("pointer-events-none absolute left-full top-1/2 ml-2 -translate-y-1/2 whitespace-nowrap text-[12px] font-semibold tabular-nums", row.pct >= 100 ? "text-dim" : "text-ink-2")}>
+                        {row.pct}%
+                      </span>
+                    </div>
+                  )}
+
+                  {/* 끄는 동안 바뀐 기간을 막대 위에 띄운다 */}
+                  {dragging && drag.by !== 0 && start && (
+                    <span className="pointer-events-none absolute -top-1 z-20 -translate-y-full whitespace-nowrap rounded-md bg-ink px-2 py-0.5 text-[11.5px] font-semibold tabular-nums text-on-ink shadow-2" style={{ left }}>
+                      {start === end ? start : `${start} ~ ${end}`}
+                    </span>
+                  )}
+                </div>
+              </div>
+            );
+          })}
+
+          {/* 오늘 선 */}
+          {todayAt >= 0 && todayAt < days && (
+            <div aria-hidden className="pointer-events-none absolute inset-y-0 z-[5] w-px bg-danger/70" style={{ left: LABEL_W + (todayAt + 0.5) * px }} />
+          )}
+        </div>
       </div>
     </div>
   );

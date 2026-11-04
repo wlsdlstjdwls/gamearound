@@ -246,3 +246,84 @@ export function resizeItem(it: PlanItem, edge: "start" | "end", by: number): Pla
   const next = shiftDay(end, by);
   return { ...it, endOn: next < it.startOn ? it.startOn : next };
 }
+
+/** 갈래 하나의 요약(업무 별 진행률). 잎 줄만 센다 — 상위 줄은 하위의 합이라 같이 세면 두 번 센다 */
+export type TrackSummary = { track: PlanTrack; pct: number; total: number; done: number; doing: number; late: number };
+
+export function trackSummaries(rows: readonly PlanRow[], today: string): TrackSummary[] {
+  return PLAN_TRACKS.map((track) => {
+    const leaves = rows.filter((r) => r.track === track && !r.hasChildren);
+    const weight = (r: PlanRow) => (r.start && r.end ? spanDays(r.start, r.end) : 1);
+    const total = leaves.reduce((n, r) => n + weight(r), 0);
+    const states = leaves.map((r) => planState(r, today));
+    return {
+      track,
+      pct: total ? clampPct(leaves.reduce((n, r) => n + r.pct * weight(r), 0) / total) : 0,
+      total: leaves.length,
+      done: states.filter((s) => s === "done").length,
+      doing: states.filter((s) => s === "doing").length,
+      late: states.filter((s) => s === "late").length,
+    };
+  });
+}
+
+/** 오늘부터 가장 가까운 안 끝난 이정표. 없으면 null */
+export function nextMilestone(rows: readonly PlanRow[], today: string): PlanRow | null {
+  return rows.filter((r) => r.kind === "milestone" && !r.hasChildren && r.start && r.start >= today && r.pct < PLAN_PROGRESS_MAX).sort((a, b) => a.start!.localeCompare(b.start!))[0] ?? null;
+}
+
+/** 담당자별 보기의 사람 머리 줄 열쇠 접두어. 일정 줄 열쇠(uuid)와 겹치지 않는다 — 고르기, 끌기는 이 줄을 건너뛴다 */
+export const PERSON_ROW_PREFIX = "person:";
+
+/** 담당을 비운 줄은 가장 가까운 상위의 담당을 물려받는다 — 묶음(개발)에 사람을 걸면 그 아래 작업이 다 그 사람 몫이 된다 */
+export function effectiveAssignees(rows: readonly PlanRow[]): Map<string, string | null> {
+  const byId = new Map(rows.map((r) => [r.id, r]));
+  const out = new Map<string, string | null>();
+  const resolve = (r: PlanRow, guard = 0): string | null => {
+    if (out.has(r.id)) return out.get(r.id)!;
+    const parent = r.parentId ? byId.get(r.parentId) : undefined;
+    const v = r.assigneeId ?? (parent && guard < rows.length ? resolve(parent, guard + 1) : null);
+    out.set(r.id, v);
+    return v;
+  };
+  for (const r of rows) resolve(r);
+  return out;
+}
+
+/** 담당자 한 사람의 몫(담당자별 보기). 잎 줄만 담고 시작일 순이다 */
+/** doing: 진행, 지연 중인 작업. next: 아직 시작 전인 작업(시작일 순) — 하는 일이 없을 때 "다음 할 일" 로 보인다 */
+export type PersonPlan = { assigneeId: string | null; rows: PlanRow[]; pct: number; start: string | null; end: string | null; doing: PlanRow[]; next: PlanRow[]; late: number; done: number };
+
+export function groupByAssignee(rows: readonly PlanRow[], today: string, order: readonly string[] = []): PersonPlan[] {
+  const who = effectiveAssignees(rows);
+  const map = new Map<string | null, PlanRow[]>();
+  for (const r of rows) {
+    if (r.hasChildren) continue;
+    const k = who.get(r.id) ?? null;
+    const list = map.get(k);
+    if (list) list.push(r);
+    else map.set(k, [r]);
+  }
+  const weight = (r: PlanRow) => (r.start && r.end ? spanDays(r.start, r.end) : 1);
+  const groups = [...map.entries()].map(([assigneeId, list]): PersonPlan => {
+    const sorted = [...list].sort((a, b) => (a.start ?? "9999").localeCompare(b.start ?? "9999") || a.no.localeCompare(b.no, "en", { numeric: true }));
+    const total = sorted.reduce((n, r) => n + weight(r), 0);
+    const starts = sorted.map((r) => r.start).filter((v): v is string => !!v).sort();
+    const ends = sorted.map((r) => r.end).filter((v): v is string => !!v).sort();
+    const states = sorted.map((r) => planState(r, today));
+    return {
+      assigneeId,
+      rows: sorted,
+      pct: total ? clampPct(sorted.reduce((n, r) => n + r.pct * weight(r), 0) / total) : 0,
+      start: starts[0] ?? null,
+      end: ends[ends.length - 1] ?? null,
+      doing: sorted.filter((_, i) => states[i] === "doing" || states[i] === "late"),
+      next: sorted.filter((_, i) => states[i] === "todo"),
+      late: states.filter((s) => s === "late").length,
+      done: states.filter((s) => s === "done").length,
+    };
+  });
+  // 사람 순서는 담당자 목록 순서, 담당 없음은 맨 끝
+  const rank = (id: string | null) => (id === null ? Number.MAX_SAFE_INTEGER : order.indexOf(id) < 0 ? order.length : order.indexOf(id));
+  return groups.sort((a, b) => rank(a.assigneeId) - rank(b.assigneeId));
+}

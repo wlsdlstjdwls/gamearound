@@ -11,10 +11,9 @@ import { requireAdmin } from "@/server/services/users";
 
 export type PlanActionResult = { ok: true; id?: string } | { ok: false; error: string };
 
-/** 칸반과 일정은 서로의 값을 보여 준다(카드 수, 진행률) — 한쪽을 바꾸면 둘 다 민다 */
+/** 칸반과 일정은 같은 경로의 두 보기다(?mode=plan) — 경로 하나를 밀면 둘 다 새로 읽는다 */
 function refresh() {
   revalidatePath(ROUTES.adminTasks);
-  revalidatePath(ROUTES.adminTasksPlan);
 }
 
 export async function savePlanAction(input: unknown): Promise<PlanActionResult> {

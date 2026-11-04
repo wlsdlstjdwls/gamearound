@@ -65,8 +65,11 @@ export const ROUTES = {
   adminTasks: "/admin/tasks",
   /** 판에서 걷은 할 일(2026-10-02). 치우기가 지우기였던 때는 이력이 남지 않았다 */
   adminTasksArchive: "/admin/tasks/archive",
-  /** 업무관리의 일정(WBS) 보기. 칸반과 같은 메뉴 칸이다(프로그램 탭도 하나) */
-  adminTasksPlan: "/admin/tasks/plan",
+  /**
+   * 업무관리의 일정(WBS) 보기. 칸반과 **같은 경로**의 주소 값이다(2026-11-04) — 처음엔 /admin/tasks/plan 이었는데
+   * 경로가 다르면 전환할 때마다 loading.tsx 뼈대가 끼어 화면이 깜빡였다(사용자). 같은 경로 안 이동은 옛 화면을 흐린 채 두고 갈아 끼운다
+   */
+  adminTasksPlan: "/admin/tasks?mode=plan",
   vendor: "/vendor",
   /** 매장(오프라인 판매처). 디지털 스토어와 낱말을 가르려고 shop 을 쓴다 — 설계서 §1 */
   shops: "/shops",
@@ -400,6 +403,10 @@ export function afterAuthPath(pathWithSearch: string | null | undefined, onboard
 
 /** 할 일 판의 카드 하나를 바로 여는 주소. 텔레그램 알림이 이 주소를 싣는다(판이 열리며 그 카드 팝업이 뜬다) */
 export const TASK_OPEN_PARAM = "task";
+
+/** 업무관리 보기 주소 값(?mode=plan). 없으면 칸반. "view" 는 칸반 거르기(전체 보기, 내 담당)가 이미 쓴다(lib/admin/task-filter) */
+export const TASK_VIEW_PARAM = "mode";
+export const TASK_VIEW_PLAN = "plan";
 
 export function adminTaskPath(id: string): string {
   return `${ROUTES.adminTasks}?${TASK_OPEN_PARAM}=${encodeURIComponent(id)}`;

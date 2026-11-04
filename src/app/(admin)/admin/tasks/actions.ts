@@ -67,8 +67,6 @@ function revalidate() {
   // 지난 일 화면도 같이 — 걷기, 되돌리기, 기록이 두 화면에 함께 걸린다
   revalidatePath(ROUTES.adminTasks);
   revalidatePath(ROUTES.adminTasksArchive);
-  // 일정 보기의 진행률은 카드가 놓인 칸으로 계산된다 — 카드를 옮기거나 일정을 바꾸면 그 화면도 민다
-  revalidatePath(ROUTES.adminTasksPlan);
 }
 
 export async function createTaskAction(_prev: TaskActionState, form: FormData): Promise<TaskActionState> {

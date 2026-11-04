@@ -100,3 +100,38 @@ describe("끌기", () => {
     expect(spanDays("2026-11-09", "2026-11-13")).toBe(5);
   });
 });
+
+describe("요약", () => {
+  it("갈래별 진행률은 잎 줄의 기간 가중 평균, 다음 이정표는 오늘 뒤 가장 가까운 것", async () => {
+    const { trackSummaries, nextMilestone } = await import("./plan");
+    const rows = buildPlanRows([
+      item("g", { track: "plan" }),
+      item("a", { parentId: "g", track: "plan", startOn: "2026-11-01", endOn: "2026-11-10", progress: 100 }),
+      item("b", { parentId: "g", track: "plan", startOn: "2026-11-01", endOn: "2026-11-02", progress: 20 }),
+      item("m1", { kind: "milestone", startOn: "2026-11-03" }),
+      item("m2", { kind: "milestone", startOn: "2026-12-01" }),
+    ]);
+    const plan = trackSummaries(rows, "2026-11-05").find((s) => s.track === "plan")!;
+    expect(plan).toMatchObject({ pct: 87, total: 2, done: 1, late: 1 });
+    expect(nextMilestone(rows, "2026-11-05")?.id).toBe("m2");
+  });
+});
+
+describe("담당자별", () => {
+  it("담당은 상위에서 물려받고, 사람별로 잎 줄을 시작일 순으로 묶는다", async () => {
+    const { groupByAssignee } = await import("./plan");
+    const rows = buildPlanRows([
+      item("dev", { assigneeId: "kim" }),
+      item("d2", { parentId: "dev", sortOrder: 1, startOn: "2026-11-01", endOn: "2026-11-02" }),
+      item("d1", { parentId: "dev", sortOrder: 0, startOn: "2026-11-10", endOn: "2026-11-12", assigneeId: "ahn" }),
+      item("x", { startOn: "2026-11-03", endOn: "2026-11-03" }),
+    ]);
+    const g = groupByAssignee(rows, "2026-11-05", ["ahn", "kim"]);
+    expect(g.map((p) => [p.assigneeId, p.rows.map((r) => r.id)])).toEqual([
+      ["ahn", ["d1"]],
+      ["kim", ["d2"]],
+      [null, ["x"]],
+    ]);
+    expect(g[1]!.late).toBe(1);
+  });
+});

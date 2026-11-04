@@ -11,25 +11,41 @@ import { TaskBoard } from "@/components/admin/task-board";
 import { TaskClearDone } from "@/components/admin/task-clear-done";
 import { TASK_MESSAGES, ADMIN_NAV } from "@/lib/admin/messages";
 import { TASK_STATUSES } from "@/lib/admin/tasks";
-import { TASK_OPEN_PARAM } from "@/lib/routes";
+import { TASK_OPEN_PARAM, TASK_VIEW_PARAM, TASK_VIEW_PLAN } from "@/lib/routes";
 import { TASK_FILTER_COOKIE, hasTaskFilterParams, parseTaskFilter, parseTaskFilterCookie } from "@/lib/admin/task-filter";
 import { requireRoleOrForbid } from "@/server/auth/guards";
 import { sourceEnum } from "@/server/db/schema";
 import { getBoard, listAssignees } from "@/server/services/admin-tasks";
-import { listPlanOptions } from "@/server/services/admin-plan";
+import { getPlan, listPlanOptions } from "@/server/services/admin-plan";
+import { PlanScreen } from "@/components/admin/plan-screen";
+import { NavPendingScope, PendingRegion } from "@/components/ui/nav-pending";
+import { todayIsoKst } from "@/lib/calendar";
 import { TaskViewSwitch } from "@/components/admin/task-view-switch";
 
 export const metadata: Metadata = { title: ADMIN_NAV.tasks };
 // 판은 늘 지금 값을 봐야 한다 — 옮기고 돌아왔는데 옛 판이 뜨면 두 번 옮긴다
 export const dynamic = "force-dynamic";
 
-export default async function AdminTasksPage({ searchParams }: { searchParams: Promise<Record<string, string | string[] | undefined>> }) {
+type Params = Record<string, string | string[] | undefined>;
+
+export default async function AdminTasksPage({ searchParams }: { searchParams: Promise<Params> }) {
   // 레이아웃도 같은 검사를 하지만 레이아웃과 페이지는 **나란히** 렌더된다. 이 줄이 없으면 일반 계정이 들어왔을 때
   // 레이아웃의 redirect 가 이기는 사이 getBoard 의 requireAdmin 이 던져 운영 로그에 "권한이 없습니다" 가 찍혔다.
   // 서비스 쪽 검사는 그대로 둔다 — 이건 로그를 막는 줄이지 방어를 옮기는 줄이 아니다
-  const me = await requireRoleOrForbid("admin");
+  const [me, params] = await Promise.all([requireRoleOrForbid("admin"), searchParams]);
+  // 칸반 | 일정(WBS) 두 보기는 같은 경로다(ROUTES.adminTasksPlan 주석). 이동 틀이 전환을 쥐어 누른 순간 칸이 바뀌고 옛 보기는 흐린 채 기다린다
+  return <NavPendingScope>{params[TASK_VIEW_PARAM] === TASK_VIEW_PLAN ? <PlanView /> : <BoardView meId={me.id} params={params} />}</NavPendingScope>;
+}
+
+/** 일정(WBS) 보기. 줄, 이은 카드, 담당자 후보를 나란히 읽는다(neon-roundtrip-cost) */
+async function PlanView() {
+  const [{ items, cards }, assignees] = await Promise.all([getPlan(), listAssignees()]);
+  return <PlanScreen items={items} cards={cards} assignees={assignees} today={todayIsoKst()} />;
+}
+
+async function BoardView({ meId, params }: { meId: string; params: Params }) {
   // 담당자 후보는 판과 나란히 읽는다 — 줄 세우면 왕복이 하나 더 붙는다(neon-roundtrip-cost)
-  const [{ board, asOf, seen }, assignees, planOptions, params, jar] = await Promise.all([getBoard(), listAssignees(), listPlanOptions(), searchParams, cookies()]);
+  const [{ board, asOf, seen }, assignees, planOptions, jar] = await Promise.all([getBoard(), listAssignees(), listPlanOptions(), cookies()]);
   // 첫 조건: 주소에 실렸으면 주소, 아니면 지난번에 고른 것(쿠키). 메뉴의 맨 주소로 들어와도 지난 조건이 선다
   const initialFilter = hasTaskFilterParams(params) ? parseTaskFilter(params) : parseTaskFilterCookie(jar.get(TASK_FILTER_COOKIE)?.value);
   // 건수는 화면 제목 옆에 붙인다 — 판 위에 또 제목을 세우면 "할 일" 과 같은 말이 두 번 선다
@@ -48,14 +64,16 @@ export default async function AdminTasksPage({ searchParams }: { searchParams: P
         <div className="flex flex-wrap items-center justify-between gap-2">
           {/* 칸반 | 일정(WBS) 보기 전환(2026-11-04)은 더하기와 한 줄 — 줄을 하나 더 세우면 판이 그만큼 내려간다 */}
           <div className="flex flex-wrap items-center gap-2">
-            <TaskViewSwitch />
+            <TaskViewSwitch view="board" />
             <TaskAddForm sources={sourceEnum.enumValues} assignees={assignees} />
           </div>
           <TaskClearDone doneCount={board.done.length} />
         </div>
       </header>
 
-      <TaskBoard board={board} assignees={assignees} planOptions={planOptions} meId={me.id} initialFilter={initialFilter} now={asOf} seen={seen} initialOpenId={initialOpenId} />
+      <PendingRegion>
+        <TaskBoard board={board} assignees={assignees} planOptions={planOptions} meId={meId} initialFilter={initialFilter} now={asOf} seen={seen} initialOpenId={initialOpenId} />
+      </PendingRegion>
     </>
   );
 }

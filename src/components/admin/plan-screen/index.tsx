@@ -7,7 +7,7 @@
 // 업무요청 카드 만들기, 연결 해제는 저장과 따로 곧바로 나간다(카드는 칸반 쪽 값이다). 그 뒤 다시 읽어 진행률이 따라온다.
 import { useEffect, useMemo, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
-import { createPlanTaskAction, linkTaskPlanAction, savePlanAction } from "@/app/(admin)/admin/tasks/plan/actions";
+import { createPlanTaskAction, linkTaskPlanAction, savePlanAction } from "@/app/(admin)/admin/tasks/plan-actions";
 import { reportDirty } from "@/components/admin/program-shell/store";
 import { DataGrid } from "@/components/admin/screen/data-grid";
 import { AdminScreenHead } from "@/components/admin/screen/head";
@@ -19,14 +19,16 @@ import { SEGMENT, SEGMENT_ITEM, SEGMENT_ITEM_ON } from "@/components/admin/task-
 import { useCodes } from "@/components/code-book";
 import { askConfirm } from "@/components/ui/confirm-dialog";
 import { ADMIN_NAV, PLAN_MESSAGES as M } from "@/lib/admin/messages";
-import { buildPlanRows, countCards, descendantIds, indent, insertAfter, moveSibling, outdent, resizeItem, shiftDay, shiftItem, type PlanCard, type PlanItem } from "@/lib/admin/plan";
+import { buildPlanRows, countCards, descendantIds, groupByAssignee, nextMilestone, PERSON_ROW_PREFIX, PLAN_TRACKS, trackSummaries, type PlanRow, indent, insertAfter, moveSibling, outdent, resizeItem, shiftDay, shiftItem, type PlanCard, type PlanItem } from "@/lib/admin/plan";
 import { planItemSchema } from "@/lib/admin/plan-schemas";
 import type { TaskAssignee } from "@/lib/admin/tasks";
 import { fieldErrors, firstError, type FieldErrors } from "@/lib/admin/validation";
 import { cn } from "@/lib/cn";
 import { planColumns } from "./columns";
 import { PlanCards, PlanForm } from "./form";
-import { PlanGantt, type PlanZoom } from "./gantt";
+import { PlanGantt, TRACK_COLOR, type PlanZoom } from "./gantt";
+import { PersonSummary, PlanSummary } from "./summary";
+import { PendingRegion } from "@/components/ui/nav-pending";
 
 /** 새 줄의 기본 기간(일). 한 주 안의 평일 다섯 날 */
 const NEW_SPAN_DAYS = 4;
@@ -49,6 +51,8 @@ export function PlanScreen({ items, cards, assignees, today }: { items: PlanItem
   const [selected, setSelected] = useState<string | null>(null);
   const [collapsed, setCollapsed] = useState<Set<string>>(() => new Set());
   const [zoom, setZoom] = useState<PlanZoom>("week");
+  // 묶어 보기: 담당자별(서로 무엇을 하고 있나, 기본) | WBS(계층). 아래 목록은 늘 WBS 계층이다
+  const [group, setGroup] = useState<"person" | "wbs">("person");
   const [pending, start] = useTransition();
   const [cardBusy, startCard] = useTransition();
 
@@ -71,16 +75,35 @@ export function PlanScreen({ items, cards, assignees, today }: { items: PlanItem
   }, [dirty]);
 
   const rows = useMemo(() => buildPlanRows(value, countCards(cards)), [value, cards]);
+  const names = useMemo(() => new Map(assignees.map((a) => [a.id, a.name])), [assignees]);
+  const nameOf = (id: string | null) => (id ? (names.get(id) ?? "") : M.noAssignee);
+  const people = useMemo(() => groupByAssignee(rows, today, assignees.map((a) => a.id)), [rows, today, assignees]);
+  // 담당자별 간트: 사람 머리 줄(그 사람 몫의 처음과 끝, 진행률) + 그 아래 작업 줄. 머리 줄은 일정 줄이 아니라 고르기, 끌기를 건너뛴다
+  const personRows = useMemo<PlanRow[]>(
+    () =>
+      people.flatMap((p) => {
+        const id = `${PERSON_ROW_PREFIX}${p.assigneeId ?? "none"}`;
+        const lead = p.rows[0]!;
+        const head: PlanRow = { ...lead, id, parentId: null, title: p.assigneeId ? (names.get(p.assigneeId) ?? "") : M.noAssignee, no: "", depth: 0, hasChildren: true, kind: "task", start: p.start, end: p.end, pct: p.pct, pctFrom: "children", progress: null };
+        return [head, ...(collapsed.has(id) ? [] : p.rows.map((r) => ({ ...r, depth: 1, parentId: id })))];
+      }),
+    [people, collapsed, names],
+  );
   const visible = useMemo(() => {
+    if (group === "person") return personRows;
     const hidden = new Set<string>();
     for (const id of collapsed) for (const d of descendantIds(value, id)) hidden.add(d);
     return rows.filter((r) => !hidden.has(r.id));
-  }, [rows, collapsed, value]);
+  }, [group, personRows, rows, collapsed, value]);
+  const pick = (id: string) => {
+    if (!id.startsWith(PERSON_ROW_PREFIX)) setSelected(id);
+  };
 
+  const tracks = useMemo(() => trackSummaries(rows, today), [rows, today]);
+  const milestone = useMemo(() => nextMilestone(rows, today), [rows, today]);
   const current = value.find((i) => i.id === selected) ?? null;
   const currentRow = rows.find((r) => r.id === selected);
   const errors = current ? errorsOf(current) : {};
-  const names = useMemo(() => new Map(assignees.map((a) => [a.id, a.name])), [assignees]);
   const columns = useMemo(() => planColumns({ name: codes.name, who: (id) => (id ? (names.get(id) ?? "") : ""), today }), [codes, names, today]);
 
   const patch = (id: string, next: (it: PlanItem) => PlanItem) => setValue((v) => v.map((i) => (i.id === id ? next(i) : i)));
@@ -174,7 +197,15 @@ export function PlanScreen({ items, cards, assignees, today }: { items: PlanItem
       />
       <div className="flex flex-col gap-3">
         <div className="flex flex-wrap items-center justify-between gap-2">
-          <TaskViewSwitch />
+          <TaskViewSwitch view="plan" />
+          <div className="flex flex-wrap items-center gap-2">
+          <div role="radiogroup" aria-label={M.groupBy} className={cn(SEGMENT, "w-fit")}>
+            {(["person", "wbs"] as const).map((g) => (
+              <button key={g} type="button" role="radio" aria-checked={group === g} onClick={() => setGroup(g)} className={cn(SEGMENT_ITEM, "flex-none px-3", group === g && SEGMENT_ITEM_ON)}>
+                {g === "person" ? M.groupPerson : M.groupWbs}
+              </button>
+            ))}
+          </div>
           <div role="radiogroup" aria-label={M.zoom} className={cn(SEGMENT, "w-fit")}>
             {ZOOMS.map((z) => (
               <button key={z.key} type="button" role="radio" aria-checked={zoom === z.key} onClick={() => setZoom(z.key)} className={cn(SEGMENT_ITEM, "flex-none px-3", zoom === z.key && SEGMENT_ITEM_ON)}>
@@ -182,6 +213,31 @@ export function PlanScreen({ items, cards, assignees, today }: { items: PlanItem
               </button>
             ))}
           </div>
+          </div>
+        </div>
+
+        <PendingRegion className="flex flex-col gap-3">
+        {group === "person" ? (
+          <PersonSummary people={people} nameOf={nameOf} milestone={milestone} today={today} onPick={setSelected} />
+        ) : (
+          <PlanSummary tracks={tracks} milestone={milestone} today={today} onPick={setSelected} />
+        )}
+
+        <div className="flex flex-wrap items-center gap-x-4 gap-y-1 px-1 text-[12.5px] text-dim" aria-label={M.legend}>
+          {PLAN_TRACKS.map((t) => (
+            <span key={t} className="inline-flex items-center gap-1.5">
+              <span className="h-2 w-4 rounded-full" style={{ background: TRACK_COLOR[t] }} aria-hidden />
+              {codes.name("PLAN_TRACK", t)}
+            </span>
+          ))}
+          <span className="inline-flex items-center gap-1.5">
+            <span className="size-2.5 rotate-45 rounded-[2px] bg-ink-2" aria-hidden />
+            {M.legendMilestone}
+          </span>
+          <span className="inline-flex items-center gap-1.5">
+            <span className="h-3 w-px bg-danger" aria-hidden />
+            {M.legendToday}
+          </span>
         </div>
 
         <PlanGantt
@@ -190,7 +246,7 @@ export function PlanScreen({ items, cards, assignees, today }: { items: PlanItem
           today={today}
           zoom={zoom}
           selected={selected}
-          onSelect={setSelected}
+          onSelect={pick}
           collapsed={collapsed}
           onToggle={(id) =>
             setCollapsed((s) => {
@@ -259,6 +315,7 @@ export function PlanScreen({ items, cards, assignees, today }: { items: PlanItem
             )
           }
         />
+        </PendingRegion>
       </div>
     </>
   );
