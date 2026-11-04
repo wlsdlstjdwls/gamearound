@@ -27,7 +27,8 @@ import { firstError } from "@/lib/admin/validation";
 import { CODE_GROUPS, DEFAULT_NOTIFY_CHANNEL } from "@/lib/codes/groups";
 import { bodyLimit, notifyTemplateSchema, type NotifyTemplateInput } from "@/lib/notify/schemas";
 import { isSystemTemplate, SYSTEM_TEMPLATE_VARS } from "@/lib/notify/system-templates";
-import { renderEmailSubject } from "@/lib/notify/email";
+import { renderEmailSubject, withEmailBlocks } from "@/lib/notify/email";
+import { SAMPLE_EMAIL_BLOCKS } from "@/lib/notify/sample-blocks";
 import { asMedium, isPlainMedium } from "@/lib/notify/medium";
 import { renderWebNotice } from "@/lib/notify/web";
 import { renderNotice, templateVars } from "@/lib/notify/template";
@@ -42,9 +43,10 @@ const inputOf = (d: Draft): NotifyTemplateInput => ({ code: d.code, name: d.name
 const same = (a?: Draft, b?: Draft) => JSON.stringify(a && inputOf(a)) === JSON.stringify(b && inputOf(b));
 const labelOf = (opts: Option[], v: string) => opts.find((o) => o.value === v)?.label ?? v;
 
-/** 미리 보기 변수 값. 시스템 템플릿은 예시 값, 수동은 비워 {이름} 그대로 보인다 */
+/** 미리 보기 변수 값. 시스템 템플릿은 예시 값, 수동은 비워 {이름} 그대로 보인다. 덩어리 자리(SAMPLE_EMAIL_BLOCKS)는 빼 둔다 — 카드 예시로 채운다 */
 function previewVars(d: Draft): Record<string, string> {
-  return isSystemTemplate(d.code) ? Object.fromEntries(SYSTEM_TEMPLATE_VARS[d.code].map((v) => [v.name, v.sample])) : {};
+  const blocks = SAMPLE_EMAIL_BLOCKS[d.code] ?? {};
+  return isSystemTemplate(d.code) ? Object.fromEntries(SYSTEM_TEMPLATE_VARS[d.code].filter((v) => !(v.name in blocks)).map((v) => [v.name, v.sample])) : {};
 }
 
 export function NotifyTemplatesScreen({ templates, channels, categories }: { templates: NotifyTemplateDto[]; channels: Option[]; categories: Option[] }) {
@@ -133,7 +135,13 @@ export function NotifyTemplatesScreen({ templates, channels, categories }: { tem
     { key: "active", label: M.colActive, width: "48px", align: "center", value: (d) => (d.active ? M.activeLabels.on : M.activeLabels.off) },
   ];
   const all = { value: "all", label: M.all };
-  const html = !current ? "" : isPlainMedium(current.medium) ? renderWebNotice(current.body, previewVars(current)) : renderNotice(current.body, previewVars(current));
+  const html = !current
+    ? ""
+    : isPlainMedium(current.medium)
+      ? renderWebNotice(current.body, previewVars(current))
+      : current.medium === "email"
+        ? withEmailBlocks(renderNotice(current.body, previewVars(current)), SAMPLE_EMAIL_BLOCKS[current.code])
+        : renderNotice(current.body, previewVars(current));
   const subjectPreview = current ? renderEmailSubject(current.subject ?? "", previewVars(current)) : "";
 
   return (

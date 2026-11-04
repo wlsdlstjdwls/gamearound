@@ -7,15 +7,15 @@
 import type { Metadata } from "next";
 import { EmptyState } from "@/components/empty-state";
 import { NewsList } from "@/components/news-list";
-import { Page, PageHead } from "@/components/ui/page";
-import { NEWS_DIGEST_MESSAGES as M } from "@/lib/news/messages";
+import { Page, PageHead, SectionHead } from "@/components/ui/page";
+import { NEWS_DIGEST_TRENDING_MESSAGES as T, NEWS_DIGEST_MESSAGES as M } from "@/lib/news/messages";
 import { ROUTES } from "@/lib/routes";
 import { listMyDigestNews } from "@/server/services/news-mine";
 
 export const metadata: Metadata = { title: M.pageTitle, robots: { index: false } };
 
 export default async function MyNewsPage() {
-  const { items, hasTaste } = await listMyDigestNews();
+  const { items, trending, hasTaste } = await listMyDigestNews();
   return (
     <Page gap={30}>
       <PageHead title={M.pageTitle} note={hasTaste ? M.pageNote : undefined} />
@@ -24,7 +24,15 @@ export default async function MyNewsPage() {
       ) : items.length === 0 ? (
         <EmptyState title={M.emptyTitle} description={M.emptyBody} action={{ href: ROUTES.news, label: M.allNews }} />
       ) : (
-        <NewsList items={items} showGame />
+        <>
+          <NewsList items={items} showGame />
+          {trending.length > 0 && (
+            <section className="flex flex-col gap-3">
+              <SectionHead title={T.trendingTitle} note={T.trendingNote} />
+              <NewsList items={trending} showGame />
+            </section>
+          )}
+        </>
       )}
     </Page>
   );

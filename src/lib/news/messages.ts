@@ -32,3 +32,12 @@ export const NEWS_DIGEST_MESSAGES = {
   emptyBody: "새 기사가 들어오면 여기에 모여요.",
   allNews: "전체 뉴스 보기",
 } as const;
+
+/**
+ * 주간 소식의 "이번 주 많이 다룬 소식" 칸(2026-11-04). 맞춤이 적을 때만 붙는다(lib/news/digest 의 NEWS_DIGEST_MIN_ITEMS).
+ * 메일 카드(lib/news/digest-mail)와 맞춤 소식 화면이 같은 말을 한다. 메일 둘레 문구는 템플릿(mail.news_digest)이다
+ */
+export const NEWS_DIGEST_TRENDING_MESSAGES = {
+  trendingTitle: "이번 주 많이 다룬 소식",
+  trendingNote: "맞춤 소식이 적은 주라 여러 매체가 함께 다룬 소식을 더했어요",
+} as const;

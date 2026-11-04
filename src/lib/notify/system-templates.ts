@@ -90,7 +90,8 @@ export const SYSTEM_TEMPLATE_VARS: Record<SystemTemplateCode, VarSpec[]> = {
   ],
   "mail.news_digest": [
     DIGEST_COUNT,
-    { name: "목록", hint: "기사 제목, 매체를 줄마다 적은 글(링크 없음)", sample: "- 하데스 II 새 무기 공개 (IGN)\n- 붉은사막 출시일 확정 (게임메카)" },
+    // 글자 변수가 아니라 코드가 그리는 카드 자리다(lib/news/digest-mail, 2026-11-04). 미리 보기는 lib/notify/sample-blocks 의 예시 카드로 그린다
+    { name: "목록", hint: "기사 카드(썸네일, 원문 링크 제목, 요약, 매체 | 게임 | 날짜). 코드가 그려 넣어요", sample: "- 하데스 II 새 무기 공개 (IGN)" },
     { name: "링크", hint: "맞춤 소식 화면 주소", sample: "https://gamearound.kr/news/mine" },
     { name: "설정링크", hint: "설정 화면 주소(받지 않기)", sample: "https://gamearound.kr/settings" },
   ],

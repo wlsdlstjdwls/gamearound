@@ -10,7 +10,7 @@ import { eq } from "drizzle-orm";
 import { NOTIFY_MESSAGES as M } from "@/lib/admin/messages/notify";
 import { errorMessage } from "@/lib/errors";
 import { escapeHtml } from "@/lib/html-entities";
-import { renderEmail, renderEmailSubject } from "@/lib/notify/email";
+import { renderEmail, renderEmailSubject, type EmailBlocks } from "@/lib/notify/email";
 import { createdBy, type AuditSource } from "@/server/db/audit";
 import { getDb } from "@/server/db/client";
 import { notifySends, notifyTemplates, type NotifySendStatus, type NotifyTrigger } from "@/server/db/schema";
@@ -97,10 +97,12 @@ export async function dispatchMailNotice(input: {
   source: AuditSource;
   redact?: readonly string[];
   skip?: string;
+  /** 코드가 그린 덩어리(lib/notify/email 의 EmailBlock). 사건 메일만 쓴다 — 직접 발송은 운영자가 친 글뿐이다 */
+  blocks?: EmailBlocks;
 }): Promise<MailResult> {
   const redact = input.redact ?? [];
   const subject = renderEmailSubject(input.subject, input.vars);
-  const mail = renderEmail(input.body, input.vars);
+  const mail = renderEmail(input.body, input.vars, input.blocks);
   return sendAndLog({
     message: { to: input.to, subject, html: mail.html, text: mail.text },
     logBody: scrub(mail.body, input.vars, redact),
@@ -122,7 +124,7 @@ export async function dispatchSystemMail(
   templateCode: string,
   to: string,
   vars: Vars,
-  opts: { fallback: () => MailMessage; redact?: readonly string[]; required?: boolean; actorId?: string; source: AuditSource },
+  opts: { fallback: () => MailMessage; redact?: readonly string[]; required?: boolean; actorId?: string; source: AuditSource; blocks?: EmailBlocks },
 ): Promise<MailResult> {
   const redact = opts.redact ?? [];
   const base = { templateCode, trigger: "system" as const, actorId: opts.actorId, source: opts.source };
@@ -141,5 +143,5 @@ export async function dispatchSystemMail(
     const message = { ...opts.fallback(), to };
     return sendAndLog({ ...base, message, logBody: scrub(message.html, vars, redact), logSubject: scrub(message.subject, vars, redact) });
   }
-  return dispatchMailNotice({ ...base, to, subject: tpl.subject ?? "", body: tpl.body, vars, redact, skip: tpl.active ? undefined : M.skipTemplateOff(tpl.name) });
+  return dispatchMailNotice({ ...base, to, subject: tpl.subject ?? "", body: tpl.body, vars, redact, blocks: opts.blocks, skip: tpl.active ? undefined : M.skipTemplateOff(tpl.name) });
 }

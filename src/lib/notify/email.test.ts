@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { emailPlainText, renderEmail, renderEmailSubject } from "./email";
+import { emailPlainText, renderEmail, renderEmailSubject, withEmailBlocks, wrapEmailHtml } from "./email";
 
 describe("renderEmail", () => {
   it("변수를 채우고 줄바꿈을 <br> 로, 태그에 인라인 스타일을 단다", () => {
@@ -28,5 +28,24 @@ describe("emailPlainText", () => {
 describe("renderEmailSubject", () => {
   it("값을 이스케이프하지 않고 공백을 한 칸으로", () => {
     expect(renderEmailSubject("[손전등]  {제목}", { 제목: "A & B <특가>" })).toBe("[손전등] A & B <특가>");
+  });
+});
+
+describe("덩어리 자리(EmailBlock)", () => {
+  const block = { html: '<table><tr><td><a href="https://x.kr" style="color:red">카드</a></td></tr></table>', text: "- 카드 (https://x.kr)" };
+  it("{이름} 자리에 덩어리를 넣고, 덩어리 안은 인라인 스타일과 줄바꿈을 건드리지 않는다", () => {
+    const r = renderEmail("머리\n{목록}\n끝", { 목록: undefined }, { 목록: block });
+    expect(r.html).toContain('<a href="https://x.kr" style="color:red">카드</a>');
+    expect(r.html).not.toContain('<a style=');
+    expect(r.html).not.toContain("{목록}");
+    // 덩어리 앞뒤 줄바꿈 하나는 <br> 로 바꾸지 않는다
+    expect(r.html).toContain("머리<!--mail-block-->");
+    expect(r.text).toBe("머리\n- 카드 (https://x.kr)\n끝");
+  });
+  it("덩어리가 없으면 {이름} 그대로 — 빠뜨린 것을 글에서 찾는다", () => {
+    expect(renderEmail("{목록}", {}).html).toContain("{목록}");
+  });
+  it("미리 보기도 같은 모양(withEmailBlocks + wrapEmailHtml)", () => {
+    expect(wrapEmailHtml(withEmailBlocks("{목록}", { 목록: block }))).toBe(renderEmail("{목록}", {}, { 목록: block }).html);
   });
 });

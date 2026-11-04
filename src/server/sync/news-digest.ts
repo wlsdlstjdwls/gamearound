@@ -1,5 +1,5 @@
 // 주간 맞춤 소식 — 설정에서 켠 회원에게 한 주에 한 번, 찜한 게임과 고른 플랫폼, 장르에 맞는 기사를 묶어 보낸다(2026-11-03).
-// 고르는 규칙은 lib/news/digest, 재료 읽기는 services/news-digest. 여기는 "누구에게, 언제, 어디로" 와 제목 번역을 맡는다.
+// 고르는 규칙은 lib/news/digest, 재료 읽기는 services/news-digest, 메일 기사 카드는 lib/news/digest-mail. 여기는 "누구에게, 언제, 어디로" 와 번역을 맡는다.
 //
 // 언제: 아침 크론(api/cron/morning, 한국 08시)이 매일 부르고, **이번 주(한국 월요일 0시부터) 아직 안 받은 사람** 에게 보낸다.
 //   요일 하루만 보내면 그날 크론이 실패한 주가 통째로 빠진다. 이 방식이면 다음 날 메워진다. 중간에 켠 사람은 다음 날 아침에 첫 묶음을 받는다.
@@ -17,37 +17,67 @@ import { dispatchSystemMail } from "@/server/notify/mail";
 import { mailConfigured } from "@/server/mail/send";
 import { translateToKorean, translationConfigured } from "@/server/adapters/translate";
 import { digestSince, loadDigestCandidates, loadDigestReaders, type DigestNews } from "@/server/services/news-digest";
-import { kstWeekStart, NEWS_DIGEST_MAIL_ITEMS, pickDigest } from "@/lib/news/digest";
+import { digestSections, kstWeekStart, NEWS_DIGEST_MAIL_ITEMS } from "@/lib/news/digest";
+import { digestMailBlock, type DigestMailItem } from "@/lib/news/digest-mail";
+import { withEmailBlocks, wrapEmailHtml, type EmailBlock } from "@/lib/notify/email";
 import { isMemberSendHour } from "@/lib/notify/quiet-hours";
 import { NOTIFICATION_MESSAGES as M } from "@/lib/notifications/messages";
 import { SYSTEM_TEMPLATES } from "@/lib/notify/system-templates";
 import { escapeHtml } from "@/lib/html-entities";
 import { errorMessage } from "@/lib/errors";
-import { ROUTES } from "@/lib/routes";
+import { gamePath, ROUTES } from "@/lib/routes";
 import { SITE } from "@/lib/site";
 
 const SOURCE = "cron:news-digest" as const;
 const HANGUL = /\p{Script=Hangul}/u;
+/** 메일 템플릿에서 기사 카드가 들어갈 자리(0104 시드의 {목록}). 글자 변수가 아니라 덩어리로 채운다(lib/notify/email 의 EmailBlock) */
+const LIST_VAR = "목록";
 
 export type NewsDigestSummary = { readers: number; inboxed: number; mailed: number; translated: number; skippedEmpty: number; failed: number; skippedHour: boolean };
 
 const shownTitle = (n: DigestNews) => n.titleKo ?? n.title;
 
-/** 메일의 {목록}. 변수 값은 글자로 들어가 링크를 못 건다(0104 시드 주석) — 제목과 매체, 게임 이름만 적는다 */
-export function digestListText(items: readonly DigestNews[]): string {
-  return items.map((n) => `- ${shownTitle(n)} (${n.sourceName}, ${n.game.title})`).join("\n");
+/** 카드 재료로. summaryKo 는 이번 회차에 옮긴 요약(저장하지 않는다, translateSummaries) */
+function mailItem(n: DigestNews, base: string, summaryKo: ReadonlyMap<string, string>): DigestMailItem {
+  return {
+    title: shownTitle(n),
+    url: n.url,
+    sourceName: n.sourceName,
+    thumbnailUrl: n.thumbnailUrl,
+    summary: summaryKo.get(n.newsId) ?? n.summary,
+    gameTitle: n.game.title,
+    gameUrl: `${base}${gamePath(n.game.slug)}`,
+    publishedAt: n.publishedAt,
+  };
 }
 
-/** 템플릿 표를 못 읽거나 메일 템플릿이 없을 때 나가는 기본 한 통 */
-function fallbackMail(to: string, items: readonly DigestNews[], link: string, settingsLink: string) {
-  const subject = `[${SITE.name}] ${M.newsDigestSubject(items.length)}`;
-  const list = items.map((n) => `<li><a href="${escapeHtml(n.url)}">${escapeHtml(shownTitle(n))}</a> (${escapeHtml(n.sourceName)})</li>`).join("");
+/** 템플릿 표를 못 읽거나 메일 템플릿이 없을 때 나가는 기본 한 통. 카드는 템플릿 메일과 같다 */
+function fallbackMail(to: string, count: number, block: EmailBlock, link: string, settingsLink: string) {
   return {
     to,
-    subject,
-    html: `<p>${escapeHtml(M.newsDigest(items.length))}</p><ul>${list}</ul><p><a href="${escapeHtml(link)}">${escapeHtml(link)}</a></p><p><a href="${escapeHtml(settingsLink)}">${escapeHtml(settingsLink)}</a></p>`,
-    text: `${M.newsDigest(items.length)}\n\n${digestListText(items)}\n\n${link}\n${settingsLink}`,
+    subject: `[${SITE.name}] ${M.newsDigestSubject(count)}`,
+    html: wrapEmailHtml(
+      withEmailBlocks([`<b>${escapeHtml(M.newsDigest(count))}</b>`, `{${LIST_VAR}}`, `<a href="${escapeHtml(link)}">${escapeHtml(link)}</a>`, `<a href="${escapeHtml(settingsLink)}">${escapeHtml(settingsLink)}</a>`].join("\n"), { [LIST_VAR]: block }),
+    ),
+    text: [M.newsDigest(count), block.text, link, settingsLink].join("\n\n"),
   };
+}
+
+/**
+ * 실릴 기사의 영문 요약을 이번 회차 안에서만 옮긴다. 제목과 달리 저장하지 않는다 — 요약은 메일 카드에만 쓰이고,
+ * 칸을 늘리면(news.summary_ko) 마이그레이션이 하나 더 는다. 한 기사는 받는 사람이 한 번만 보므로(지난 묶음 뒤부터 고른다) 같은 요약을 주마다 다시 옮길 일이 드물다.
+ */
+async function translateSummaries(items: readonly DigestNews[]): Promise<Map<string, string>> {
+  const out = new Map<string, string>();
+  if (!translationConfigured()) return out;
+  const todo = [...new Map(items.filter((n) => n.summary && !HANGUL.test(n.summary)).map((n) => [n.newsId, n])).values()];
+  if (todo.length === 0) return out;
+  const ko = await translateToKorean(todo.map((n) => n.summary ?? ""));
+  todo.forEach((n, i) => {
+    const t = ko[i];
+    if (t) out.set(n.newsId, t);
+  });
+  return out;
 }
 
 /**
@@ -100,16 +130,19 @@ export async function dispatchNewsDigest(now: Date = new Date()): Promise<NewsDi
 
   const picks = readers.map((r) => {
     const since = sinceOf.get(r.userId) ?? earliest;
-    return { reader: r, items: pickDigest(candidates.filter((c) => c.publishedAt > since), r.taste, NEWS_DIGEST_MAIL_ITEMS) };
+    const sections = digestSections(candidates.filter((c) => c.publishedAt > since), r.taste, NEWS_DIGEST_MAIL_ITEMS);
+    return { reader: r, sections, items: [...sections.picks, ...sections.trending] };
   });
-  summary.translated = await translateTitles(db, picks.flatMap((p) => p.items));
+  const shown = picks.flatMap((p) => p.items);
+  summary.translated = await translateTitles(db, shown);
+  const summaryKo = await translateSummaries(shown);
 
   const base = process.env.NEXT_PUBLIC_APP_URL ?? "";
   const link = `${base}${ROUTES.newsMine}`;
   const settingsLink = `${base}${ROUTES.settings}`;
   const canMail = mailConfigured();
 
-  for (const { reader: r, items } of picks) {
+  for (const { reader: r, sections, items } of picks) {
     if (items.length === 0) {
       summary.skippedEmpty++;
       continue;
@@ -134,11 +167,13 @@ export async function dispatchNewsDigest(now: Date = new Date()): Promise<NewsDi
       continue;
     }
     if (!canMail) continue;
+    const toItem = (n: DigestNews) => mailItem(n, base, summaryKo);
+    const block = digestMailBlock(sections.picks.map(toItem), sections.trending.map(toItem));
     const res = await dispatchSystemMail(
       SYSTEM_TEMPLATES.mailNewsDigest,
       r.email,
-      { 건수: count, 목록: digestListText(items), 링크: link, 설정링크: settingsLink },
-      { fallback: () => fallbackMail(r.email, items, link, settingsLink), source: SOURCE },
+      { 건수: count, 링크: link, 설정링크: settingsLink },
+      { fallback: () => fallbackMail(r.email, items.length, block, link, settingsLink), source: SOURCE, blocks: { [LIST_VAR]: block } },
     );
     if (res.status === "sent") summary.mailed++;
     else if (res.status === "failed") {

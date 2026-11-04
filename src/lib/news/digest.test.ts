@@ -1,6 +1,6 @@
 // 주간 맞춤 소식 고르기 — 무엇을 넣고 어떤 순서로 세우는지
 import { describe, expect, it } from "vitest";
-import { hasDigestTaste, isDigestNoise, kstWeekStart, pickDigest, type DigestCandidate, type DigestTaste } from "@/lib/news/digest";
+import { digestSections, hasDigestTaste, isDigestNoise, kstWeekStart, NEWS_DIGEST_MIN_ITEMS, pickDigest, pickTrending, type DigestCandidate, type DigestTaste } from "@/lib/news/digest";
 
 const at = (iso: string) => new Date(iso);
 const c = (newsId: string, gameId: string, over: Partial<DigestCandidate> = {}): DigestCandidate => ({
@@ -96,5 +96,41 @@ describe("kstWeekStart", () => {
 
   it("월요일 0시 정각부터 새 주", () => {
     expect(kstWeekStart(at("2026-11-08T15:00:00Z")).toISOString()).toBe("2026-11-08T15:00:00.000Z");
+  });
+});
+
+type Src = DigestCandidate & { sourceName: string };
+const s = (newsId: string, gameId: string, sourceName: string, over: Partial<DigestCandidate> = {}): Src => ({ ...c(newsId, gameId, over), sourceName });
+
+describe("pickTrending", () => {
+  it("다룬 매체가 많은 게임 순, 매체 하나뿐인 게임은 뺀다", () => {
+    const list = [s("a1", "ga", "IGN"), s("a2", "ga", "PC Gamer"), s("a3", "ga", "게임메카"), s("b1", "gb", "IGN"), s("b2", "gb", "Eurogamer"), s("c1", "gc", "IGN"), s("c2", "gc", "IGN")];
+    expect(pickTrending(list, taste(), new Set(), 10).map((x) => x.gameId)).toEqual(["ga", "gb"]);
+  });
+  it("맞춤에 든 게임, 공략 글, 고른 플랫폼 밖 게임은 뺀다", () => {
+    const list = [
+      s("w1", "wished", "IGN"), s("w2", "wished", "Eurogamer"),
+      s("g1", "guide", "IGN", { title: "How to beat the boss" }), s("g2", "guide", "Eurogamer", { title: "Best builds guide" }),
+      s("n1", "switch", "IGN", { platforms: ["switch"] }), s("n2", "switch", "Eurogamer", { platforms: ["switch"] }),
+      s("ok1", "ok", "IGN"), s("ok2", "ok", "Eurogamer"),
+    ];
+    expect(pickTrending(list, taste({ platforms: ["steam"] }), new Set(["wished"]), 10).map((x) => x.gameId)).toEqual(["ok"]);
+  });
+});
+
+describe("digestSections", () => {
+  const trendy = [s("t1", "gt", "IGN"), s("t2", "gt", "Eurogamer")];
+  it("맞춤이 적으면 많이 다룬 소식을 덧붙인다", () => {
+    const r = digestSections([s("w", "wished", "IGN"), ...trendy], taste({ wishedGameIds: new Set(["wished"]) }), 8);
+    expect(ids(r.picks)).toEqual(["w"]);
+    expect(r.trending.map((x) => x.gameId)).toEqual(["gt"]);
+  });
+  it("맞춤이 0건이면 화제만 담아 보내지 않는다", () => {
+    expect(digestSections(trendy, taste({ wishedGameIds: new Set(["none"]) }), 8)).toEqual({ picks: [], trending: [] });
+  });
+  it("맞춤이 넉넉하면 덧붙이지 않는다", () => {
+    const wished = Array.from({ length: NEWS_DIGEST_MIN_ITEMS }, (_, i) => s(`w${i}`, `g${i}`, "IGN"));
+    const r = digestSections([...wished, ...trendy], taste({ wishedGameIds: new Set(wished.map((w) => w.gameId)) }), 8);
+    expect(r.trending).toEqual([]);
   });
 });

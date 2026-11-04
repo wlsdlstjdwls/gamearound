@@ -20,6 +20,15 @@ export const NEWS_DIGEST_MAIL_ITEMS = 8;
 export const NEWS_DIGEST_PAGE_ITEMS = 30;
 /** 거슬러 보는 날 수. 주간 묶음이라 한 주다. 지난 묶음 뒤로 처음 보내는 사람도 이보다 옛 기사는 받지 않는다 */
 export const NEWS_DIGEST_WINDOW_DAYS = 7;
+/**
+ * 맞춤 기사가 이보다 적으면 "이번 주 많이 다룬 소식" 을 덧붙인다(2026-11-04, 사용자: 메일이 "내용이 너무 없는데").
+ * 찜만 몇 개 한 사람은 한 주 맞춤이 1~2건이라 메일 한 통이 한 줄로 끝났다. 3건이면 받은편지함에서 열어 볼 만한 양이다
+ */
+export const NEWS_DIGEST_MIN_ITEMS = 3;
+/** 덧붙이는 많이 다룬 소식 수. 맞춤보다 많아지면 "맞춤" 이 묻힌다 — 맞춤 최소치와 같게 둔다 */
+export const NEWS_DIGEST_TRENDING_ITEMS = 3;
+/** "많이 다룬" 의 문턱: 그 주에 그 게임을 다룬 매체 수. 한 매체가 한 게임 기사를 여러 건 낸 것(공략 연재)은 화제가 아니다 */
+export const NEWS_TRENDING_MIN_SOURCES = 2;
 
 export interface DigestCandidate {
   newsId: string;
@@ -101,6 +110,44 @@ export function pickDigest<T extends DigestCandidate>(candidates: readonly T[], 
     .sort((a, b) => b.r - a.r || b.c.publishedAt.getTime() - a.c.publishedAt.getTime())
     .slice(0, limit)
     .map((x) => x.c);
+}
+
+/**
+ * 이번 주 많이 다룬 소식 — 여러 매체가 다룬 게임 순, 게임마다 한 건. 맞춤이 적을 때 덧붙이는 칸이다(NEWS_DIGEST_MIN_ITEMS).
+ * 조회수가 아니라 "다룬 매체 수" 로 세는 이유: 뉴스 조회는 원문으로 넘어가 우리가 못 센다. 매체 수는 이미 읽은 후보에서 바로 나와 질의가 늘지 않는다.
+ * 플랫폼을 고른 사람에게는 그 플랫폼 게임만 — PS 만 고른 사람에게 닌텐도 독점 화제는 맞지 않는다. 장르는 보지 않는다(장르가 맞으면 이미 맞춤에 들었다).
+ * exclude 는 맞춤에 이미 든 게임이다 — 같은 게임이 두 칸에 나오지 않게.
+ */
+export function pickTrending<T extends DigestCandidate & { sourceName: string }>(candidates: readonly T[], taste: DigestTaste, exclude: ReadonlySet<string>, limit: number): T[] {
+  const byGame = new Map<string, { c: T; sources: Set<string> }>();
+  for (const c of candidates) {
+    if (exclude.has(c.gameId) || isDigestNoise(c.title)) continue;
+    if (taste.platforms?.length && !c.platforms.some((p) => taste.platforms?.includes(p))) continue;
+    const cur = byGame.get(c.gameId);
+    if (!cur) byGame.set(c.gameId, { c, sources: new Set([c.sourceName]) });
+    else {
+      cur.sources.add(c.sourceName);
+      if (better(c, cur.c)) cur.c = c;
+    }
+  }
+  return [...byGame.values()]
+    .filter((x) => x.sources.size >= NEWS_TRENDING_MIN_SOURCES)
+    .sort((a, b) => b.sources.size - a.sources.size || b.c.publishedAt.getTime() - a.c.publishedAt.getTime())
+    .slice(0, limit)
+    .map((x) => x.c);
+}
+
+/** 한 묶음: 맞춤 기사와, 맞춤이 적을 때 덧붙인 많이 다룬 소식. 메일과 맞춤 소식 화면이 같은 함수로 나눈다 */
+export type DigestSections<T> = { picks: T[]; trending: T[] };
+
+/**
+ * 맞춤이 하나도 없으면 많이 다룬 소식도 붙이지 않는다(빈 묶음) — 맞춤 0건에 화제만 담아 "맞춤 소식" 이라고 보내면 이름이 거짓말이 된다.
+ * 그 주는 건너뛰고 다음 날 다시 본다(sync/news-digest 머리 주석)
+ */
+export function digestSections<T extends DigestCandidate & { sourceName: string }>(candidates: readonly T[], taste: DigestTaste, limit: number): DigestSections<T> {
+  const picks = pickDigest(candidates, taste, limit);
+  if (picks.length === 0 || picks.length >= NEWS_DIGEST_MIN_ITEMS) return { picks, trending: [] };
+  return { picks, trending: pickTrending(candidates, taste, new Set(picks.map((p) => p.gameId)), NEWS_DIGEST_TRENDING_ITEMS) };
 }
 
 const KST_OFFSET_MS = 9 * 60 * 60 * 1000;
