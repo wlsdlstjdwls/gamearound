@@ -15,7 +15,7 @@ import { TASK_OPEN_PARAM, TASK_VIEW_PARAM, TASK_VIEW_PLAN } from "@/lib/routes";
 import { TASK_FILTER_COOKIE, hasTaskFilterParams, parseTaskFilter, parseTaskFilterCookie } from "@/lib/admin/task-filter";
 import { requireRoleOrForbid } from "@/server/auth/guards";
 import { sourceEnum } from "@/server/db/schema";
-import { getBoard, listAssignees } from "@/server/services/admin-tasks";
+import { getBoard, listAssignees, readWorkVersion } from "@/server/services/admin-tasks";
 import { getPlan, listPlanOptions } from "@/server/services/admin-plan";
 import { PlanScreen } from "@/components/admin/plan-screen";
 import { todayIsoKst } from "@/lib/calendar";
@@ -31,9 +31,10 @@ export default async function AdminTasksPage({ searchParams }: { searchParams: P
   // 레이아웃도 같은 검사를 하지만 레이아웃과 페이지는 **나란히** 렌더된다. 이 줄이 없으면 일반 계정이 들어왔을 때
   // 레이아웃의 redirect 가 이기는 사이 getBoard 의 requireAdmin 이 던져 운영 로그에 "권한이 없습니다" 가 찍혔다.
   // 서비스 쪽 검사는 그대로 둔다 — 이건 로그를 막는 줄이지 방어를 옮기는 줄이 아니다
-  const [me, params] = await Promise.all([requireRoleOrForbid("admin"), searchParams]);
+  // 판 번호(admin-tasks/live)는 Redis 한 번이다 — 열린 판이 남의 고침을 알아채는 기준점이라 같이 실어 보낸다
+  const [me, params, live] = await Promise.all([requireRoleOrForbid("admin"), searchParams, readWorkVersion()]);
   // 칸반 | 일정(WBS) 두 보기를 **둘 다** 그려 보낸다(서버에서 나란히 읽힌다). 전환은 클라이언트가 고르기만 해서 누른 순간 바뀐다(task-view-switch)
-  return <TaskViews initial={params[TASK_VIEW_PARAM] === TASK_VIEW_PLAN ? "plan" : "board"} board={<BoardView meId={me.id} params={params} />} plan={<PlanView />} />;
+  return <TaskViews live={live} initial={params[TASK_VIEW_PARAM] === TASK_VIEW_PLAN ? "plan" : "board"} board={<BoardView meId={me.id} params={params} />} plan={<PlanView />} />;
 }
 
 /** 일정(WBS) 보기. 줄, 이은 카드, 담당자 후보를 나란히 읽는다(neon-roundtrip-cost) */

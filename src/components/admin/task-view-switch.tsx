@@ -11,6 +11,7 @@ import { createContext, use, useState } from "react";
 import { reportDirty, useDirty } from "@/components/admin/program-shell/store";
 import { SEGMENT_ITEM_ON } from "@/components/admin/task-fields";
 import { askConfirm } from "@/components/ui/confirm-dialog";
+import { useWorkLive } from "@/components/admin/use-work-live";
 import { PLAN_MESSAGES as M, SCREEN_MESSAGES as SM } from "@/lib/admin/messages";
 import { cn } from "@/lib/cn";
 import { TASK_VIEW_PARAM, TASK_VIEW_PLAN } from "@/lib/routes";
@@ -28,8 +29,10 @@ export const SEGMENT_SM_ITEM =
 
 const ViewContext = createContext<{ view: TaskView; go: (v: TaskView) => void } | null>(null);
 
-export function TaskViews({ initial, board, plan }: { initial: TaskView; board: React.ReactNode; plan: React.ReactNode }) {
+export function TaskViews({ initial, live, board, plan }: { initial: TaskView; live: number | null; board: React.ReactNode; plan: React.ReactNode }) {
   const [view, setView] = useState(initial);
+  // 남이 고친 판을 받아 온다(use-work-live). 두 보기를 한꺼번에 다시 읽으므로 여기 한 곳에 건다
+  useWorkLive(live);
   const dirty = useDirty();
   const go = async (next: TaskView) => {
     if (next === view) return;

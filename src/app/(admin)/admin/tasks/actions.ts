@@ -25,6 +25,7 @@ import { attachmentRegisterSchema, type AttachmentRegisterInput } from "@/lib/ad
 import { searchShopGames } from "@/server/services/shop-games";
 import type { ShopGameOptionDto } from "@/lib/shops/game-option";
 import { requireAdmin } from "@/server/services/users";
+import { bumpWorkVersion } from "@/server/services/admin-tasks";
 
 /** `id` 는 방금 만든 할 일, 기록의 id 다 — 화면이 거기에 파일을 이어 붙인다(첨부, 2026-10-02) */
 export type TaskActionState = { ok: true; message?: string; id?: string } | { ok: false; error: string } | null;
@@ -63,10 +64,12 @@ function fail(e: unknown): TaskActionState {
   return { ok: false, error: actionError(e, ADMIN_ACTION_MESSAGES.failed) };
 }
 
-function revalidate() {
+async function revalidate() {
   // 지난 일 화면도 같이 — 걷기, 되돌리기, 기록이 두 화면에 함께 걸린다
   revalidatePath(ROUTES.adminTasks);
   revalidatePath(ROUTES.adminTasksArchive);
+  // 다른 사람의 열린 판이 알아채게(admin-tasks/live). 응답 전에 올린다 — 새로 그린 이 화면이 올린 번호를 받아 가야 제 고침으로 한 번 더 읽지 않는다
+  await bumpWorkVersion();
 }
 
 export async function createTaskAction(_prev: TaskActionState, form: FormData): Promise<TaskActionState> {
@@ -96,7 +99,7 @@ export async function createTaskAction(_prev: TaskActionState, form: FormData): 
     });
     // 새 카드 알림이 담당자도 싣는다 — 만들면서 건 담당자로 "담당자 지정" 을 따로 보내지 않는다
     queueTaskNotice(id, { kind: "created" }, admin);
-    revalidate();
+    await revalidate();
     return { ok: true, message: TASK_MESSAGES.created, id };
   } catch (e) {
     return fail(e);
@@ -111,7 +114,7 @@ export async function moveTaskAction(id: string, to: string, before?: string | n
     if (!p.success) return { ok: false, error: TASK_MESSAGES.invalid };
     const moved = await moveTask(p.data.id, p.data.to, p.data.before);
     if (moved) queueTaskNotice(p.data.id, { kind: "moved", ...moved }, admin);
-    revalidate();
+    await revalidate();
     return { ok: true, message: TASK_MESSAGES.moved };
   } catch (e) {
     return fail(e);
@@ -124,7 +127,7 @@ export async function deleteTaskAction(id: string): Promise<TaskActionState> {
     const p = z.uuid().safeParse(id);
     if (!p.success) return { ok: false, error: TASK_MESSAGES.invalid };
     await deleteTask(p.data);
-    revalidate();
+    await revalidate();
     return { ok: true, message: TASK_MESSAGES.removed };
   } catch (e) {
     return fail(e);
@@ -172,7 +175,7 @@ export async function updateTaskAction(_prev: TaskActionState, form: FormData): 
       planItemId: p.data.planItemId === undefined ? undefined : p.data.planItemId || null,
     });
     if (assigneeChanged) queueTaskNotice(p.data.id, { kind: "assigned" }, admin);
-    revalidate();
+    await revalidate();
     return { ok: true, message: TASK_MESSAGES.saved };
   } catch (e) {
     return fail(e);
@@ -191,7 +194,7 @@ export async function addNoteAction(_prev: TaskActionState, form: FormData): Pro
 
     const id = await addNote(p.data.taskId, p.data.body);
     queueTaskNotice(p.data.taskId, { kind: "note", body: p.data.body }, admin);
-    revalidate();
+    await revalidate();
     return { ok: true, message: TASK_MESSAGES.noteAdded, id };
   } catch (e) {
     return fail(e);
@@ -204,7 +207,7 @@ export async function deleteNoteAction(id: string): Promise<TaskActionState> {
     const p = z.uuid().safeParse(id);
     if (!p.success) return { ok: false, error: TASK_MESSAGES.invalid };
     await deleteNote(p.data);
-    revalidate();
+    await revalidate();
     return { ok: true, message: TASK_MESSAGES.noteRemoved };
   } catch (e) {
     return fail(e);
@@ -228,7 +231,7 @@ export async function archiveDoneAction(): Promise<TaskActionState> {
   try {
     await requireAdmin();
     const n = await archiveDone();
-    revalidate();
+    await revalidate();
     return { ok: true, message: TASK_MESSAGES.archived(n) };
   } catch (e) {
     return fail(e);
@@ -242,7 +245,7 @@ export async function restoreTaskAction(id: string): Promise<TaskActionState> {
     const p = z.uuid().safeParse(id);
     if (!p.success) return { ok: false, error: TASK_MESSAGES.invalid };
     await restoreTask(p.data);
-    revalidate();
+    await revalidate();
     return { ok: true, message: TASK_MESSAGES.restored };
   } catch (e) {
     return fail(e);
@@ -256,7 +259,7 @@ export async function registerAttachmentAction(input: AttachmentRegisterInput): 
     const p = attachmentRegisterSchema.safeParse(input);
     if (!p.success) return { ok: false, error: TASK_MESSAGES.invalid };
     await registerAttachment(p.data);
-    revalidate();
+    await revalidate();
     return { ok: true };
   } catch (e) {
     return fail(e);
@@ -269,7 +272,7 @@ export async function removeAttachmentAction(id: string): Promise<TaskActionStat
     const p = z.uuid().safeParse(id);
     if (!p.success) return { ok: false, error: TASK_MESSAGES.invalid };
     await removeAttachment(p.data);
-    revalidate();
+    await revalidate();
     return { ok: true };
   } catch (e) {
     return fail(e);
