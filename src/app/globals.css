@@ -962,17 +962,22 @@ body.dragging-card {
  * 기둥은 md 아래에서 display:none 이어도 :has() 가 찾아내므로 폭으로 감싼다 — 좁은 화면은 머리띠가 그대로 선다.
  */
 @media (min-width: 768px) {
-  body:has([data-admin-rail]) {
+  body:has([data-admin-rail]),
+  html[data-admin-area] body {
     --header-h: 0px;
   }
-  body:has([data-admin-rail]) [data-site-header] {
+  /* html[data-admin-area] 는 주소로 먼저 찍는 표시다(lib/admin/area, 2026-11-04). 기둥은 레이아웃이 역할 검사를 마친 뒤에야 서서
+     그 사이 머리띠가 보였다 사라졌다. 기둥 규칙은 남긴다 — 표시 스크립트가 못 돈 때의 받침이다 */
+  body:has([data-admin-rail]) [data-site-header],
+  html[data-admin-area] [data-site-header] {
     display: none;
   }
 }
 /* 푸터는 폭과 상관없이 걷는다. 넓은 화면(2026-10-29 사용자 "구독관리, 결제관리 같은 화면에 불필요한 스크롤"): 기둥이 화면 높이를 다 쓰는데
    그 밑에 푸터 75px 이 붙어 짧은 화면도 늘 굴러갔다. 좁은 화면(2026-11-02 사용자 "관리자 화면은 아래 푸터 없어도 되겠다"): 바닥 탭바 위로
    약관 줄이 끼어 마지막 카드 밑이 지저분했다. 약관 링크는 서비스 화면에 있다. 기둥은 좁은 화면에서 display:none 이어도 :has() 가 찾는다 */
-body:has([data-admin-rail]) [data-site-footer] {
+body:has([data-admin-rail]) [data-site-footer],
+html[data-admin-area] [data-site-footer] {
   display: none;
 }
 

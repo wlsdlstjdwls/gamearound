@@ -10,6 +10,8 @@ import "./globals.css";
 import { SITE } from "@/lib/site";
 import { THEME_INIT_SCRIPT } from "@/lib/theme";
 import { FRAME_INIT_SCRIPT } from "@/components/admin/program-shell/frame";
+import { ADMIN_AREA_INIT_SCRIPT } from "@/lib/admin/area";
+import { AdminAreaMarker } from "@/components/app-shell/admin-area-marker";
 import { SessionProvider } from "@/components/auth/session-provider";
 import { LoginGateProvider } from "@/components/auth/login-gate";
 import { ToastProvider } from "@/components/ui/toast";
@@ -59,11 +61,14 @@ export default async function RootLayout({ children }: { children: React.ReactNo
         {/* 관리자 프로그램 탭(iframe) 안인지도 그리기 전에 찍는다. 관리자 레이아웃에 두면 다른 화면에서 /admin 으로 건너갈 때
             React 가 클라이언트에서 script 를 그리며 "Encountered a script tag" 오류를 냈다(2026-10-31). 루트 레이아웃은 클라이언트 이동 때 다시 그려지지 않는다 */}
         <script dangerouslySetInnerHTML={{ __html: FRAME_INIT_SCRIPT }} />
+        {/* 관리자 화면이면 머리띠를 그리기 전부터 걷는다(lib/admin/area). 기둥이 늦게 와도 머리띠가 보였다 사라지지 않는다 */}
+        <script dangerouslySetInnerHTML={{ __html: ADMIN_AREA_INIT_SCRIPT }} />
         <SessionProvider>
           <CodeBookProvider book={codeBook}>
           {/* 토스트와 로그인 팝업(M-01)은 화면 어디서든 부르므로 세션 바로 안쪽에 한 번 선다 */}
           <ToastProvider>
           <LoginGateProvider>
+          <AdminAreaMarker />
           <SiteHeader />
           {/*
             flex flex-col 을 더한 이유(2026-09-22): flex-1 은 flex-grow 만 주고 CSS height 는 auto 로 남긴다.
