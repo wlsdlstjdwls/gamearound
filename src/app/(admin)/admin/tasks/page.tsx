@@ -18,9 +18,8 @@ import { sourceEnum } from "@/server/db/schema";
 import { getBoard, listAssignees } from "@/server/services/admin-tasks";
 import { getPlan, listPlanOptions } from "@/server/services/admin-plan";
 import { PlanScreen } from "@/components/admin/plan-screen";
-import { NavPendingScope, PendingRegion } from "@/components/ui/nav-pending";
 import { todayIsoKst } from "@/lib/calendar";
-import { TaskViewSwitch } from "@/components/admin/task-view-switch";
+import { TaskViews, TaskViewSwitch } from "@/components/admin/task-view-switch";
 
 export const metadata: Metadata = { title: ADMIN_NAV.tasks };
 // 판은 늘 지금 값을 봐야 한다 — 옮기고 돌아왔는데 옛 판이 뜨면 두 번 옮긴다
@@ -33,8 +32,8 @@ export default async function AdminTasksPage({ searchParams }: { searchParams: P
   // 레이아웃의 redirect 가 이기는 사이 getBoard 의 requireAdmin 이 던져 운영 로그에 "권한이 없습니다" 가 찍혔다.
   // 서비스 쪽 검사는 그대로 둔다 — 이건 로그를 막는 줄이지 방어를 옮기는 줄이 아니다
   const [me, params] = await Promise.all([requireRoleOrForbid("admin"), searchParams]);
-  // 칸반 | 일정(WBS) 두 보기는 같은 경로다(ROUTES.adminTasksPlan 주석). 이동 틀이 전환을 쥐어 누른 순간 칸이 바뀌고 옛 보기는 흐린 채 기다린다
-  return <NavPendingScope>{params[TASK_VIEW_PARAM] === TASK_VIEW_PLAN ? <PlanView /> : <BoardView meId={me.id} params={params} />}</NavPendingScope>;
+  // 칸반 | 일정(WBS) 두 보기를 **둘 다** 그려 보낸다(서버에서 나란히 읽힌다). 전환은 클라이언트가 고르기만 해서 누른 순간 바뀐다(task-view-switch)
+  return <TaskViews initial={params[TASK_VIEW_PARAM] === TASK_VIEW_PLAN ? "plan" : "board"} board={<BoardView meId={me.id} params={params} />} plan={<PlanView />} />;
 }
 
 /** 일정(WBS) 보기. 줄, 이은 카드, 담당자 후보를 나란히 읽는다(neon-roundtrip-cost) */
@@ -64,16 +63,14 @@ async function BoardView({ meId, params }: { meId: string; params: Params }) {
         <div className="flex flex-wrap items-center justify-between gap-2">
           {/* 칸반 | 일정(WBS) 보기 전환(2026-11-04)은 더하기와 한 줄 — 줄을 하나 더 세우면 판이 그만큼 내려간다 */}
           <div className="flex flex-wrap items-center gap-2">
-            <TaskViewSwitch view="board" />
+            <TaskViewSwitch />
             <TaskAddForm sources={sourceEnum.enumValues} assignees={assignees} />
           </div>
           <TaskClearDone doneCount={board.done.length} />
         </div>
       </header>
 
-      <PendingRegion>
-        <TaskBoard board={board} assignees={assignees} planOptions={planOptions} meId={meId} initialFilter={initialFilter} now={asOf} seen={seen} initialOpenId={initialOpenId} />
-      </PendingRegion>
+      <TaskBoard board={board} assignees={assignees} planOptions={planOptions} meId={meId} initialFilter={initialFilter} now={asOf} seen={seen} initialOpenId={initialOpenId} />
     </>
   );
 }

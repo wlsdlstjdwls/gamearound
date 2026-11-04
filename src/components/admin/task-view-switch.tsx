@@ -1,47 +1,57 @@
 "use client";
-// 업무관리 보기 전환(2026-11-04): 칸반 | 일정(WBS). 둘은 같은 경로의 주소 값이다(?mode=plan, ROUTES.adminTasksPlan 주석).
-// 누른 순간 고른 칸이 먼저 바뀌고(useNavPicked), 결과 자리(PendingRegion)는 새 보기가 올 때까지 흐린 채 남는다 — 뼈대가 끼지 않아 깜빡이지 않는다.
+// 업무관리 보기 전환(2026-11-04): 칸반 | 일정(WBS).
+//
+// 누르면 서버를 거치지 않고 그 자리에서 바뀐다(사용자 "탭 누르면 화면 먼저 이동, 좀 느리다"). 페이지가 처음 열 때 두 보기의 자료를
+// 나란히 읽어(page.tsx) 둘 다 RSC 로 실어 보내고, 여기서는 어느 쪽을 세울지만 고른다. 주소는 history.replaceState 로만 맞춘다 —
+// router.push 면 서버가 같은 자료를 다시 읽느라 1초 남짓 옛 화면이 서 있었다(Neon 왕복, neon-roundtrip-cost).
+// 앞서는 경로가 달라(/admin/tasks/plan) 전환마다 loading.tsx 뼈대가 끼어 깜빡였다.
+// 보기를 내리면 그 보기의 저장 안 한 값(일정 끌기, 고치기)이 사라지므로 내리기 전에 묻는다(program-shell store 의 dirty).
 // 모양은 칸반 거르기 줄의 세그먼트와 같다(task-fields SEGMENT) — 같은 화면 안의 고르기라 같은 손맛이어야 한다.
-import Link from "next/link";
-import { useNavPendingGo, useNavPicked } from "@/components/ui/nav-pending";
-import { isPlainClick } from "@/components/ui/chip-nav";
+import { createContext, use, useState } from "react";
+import { reportDirty, useDirty } from "@/components/admin/program-shell/store";
 import { SEGMENT, SEGMENT_ITEM, SEGMENT_ITEM_ON } from "@/components/admin/task-fields";
-import { PLAN_MESSAGES as M } from "@/lib/admin/messages";
+import { askConfirm } from "@/components/ui/confirm-dialog";
+import { PLAN_MESSAGES as M, SCREEN_MESSAGES as SM } from "@/lib/admin/messages";
 import { cn } from "@/lib/cn";
-import { ROUTES } from "@/lib/routes";
+import { TASK_VIEW_PARAM, TASK_VIEW_PLAN } from "@/lib/routes";
 
 export type TaskView = "board" | "plan";
 
-const VIEWS: { key: TaskView; href: string; label: string }[] = [
-  { key: "board", href: ROUTES.adminTasks, label: M.viewBoard },
-  { key: "plan", href: ROUTES.adminTasksPlan, label: M.viewPlan },
+const ViewContext = createContext<{ view: TaskView; go: (v: TaskView) => void } | null>(null);
+
+export function TaskViews({ initial, board, plan }: { initial: TaskView; board: React.ReactNode; plan: React.ReactNode }) {
+  const [view, setView] = useState(initial);
+  const dirty = useDirty();
+  const go = async (next: TaskView) => {
+    if (next === view) return;
+    if (dirty && !(await askConfirm(M.viewLeaveConfirm, { title: SM.dirtyTitle, confirmLabel: M.viewLeave, tone: "danger" }))) return;
+    reportDirty(false);
+    setView(next);
+    const url = new URL(location.href);
+    if (next === "plan") url.searchParams.set(TASK_VIEW_PARAM, TASK_VIEW_PLAN);
+    else url.searchParams.delete(TASK_VIEW_PARAM);
+    history.replaceState(history.state, "", url);
+  };
+  return <ViewContext value={{ view, go: (v) => void go(v) }}>{view === "plan" ? plan : board}</ViewContext>;
+}
+
+const VIEWS: { key: TaskView; label: string }[] = [
+  { key: "board", label: M.viewBoard },
+  { key: "plan", label: M.viewPlan },
 ];
 
-export function TaskViewSwitch({ view }: { view: TaskView }) {
-  const go = useNavPendingGo();
-  // 이동 틀(NavPendingScope)의 무리 없는 이동("")으로 간다 — 누른 주소가 답이 올 때까지 켜짐을 쥔다
-  const picked = useNavPicked("");
+export function TaskViewSwitch() {
+  const ctx = use(ViewContext);
   return (
-    <nav aria-label={M.viewLabel} className={cn(SEGMENT, "w-fit")}>
+    <div role="tablist" aria-label={M.viewLabel} className={cn(SEGMENT, "w-fit")}>
       {VIEWS.map((v) => {
-        const on = picked ? picked === v.href : view === v.key;
+        const on = ctx?.view === v.key;
         return (
-          <Link
-            key={v.key}
-            href={v.href}
-            scroll={false}
-            aria-current={on ? "page" : undefined}
-            onClick={(e) => {
-              if (!go || !isPlainClick(e) || on) return;
-              e.preventDefault();
-              go(v.href);
-            }}
-            className={cn(SEGMENT_ITEM, "flex-none px-3.5", on && SEGMENT_ITEM_ON)}
-          >
+          <button key={v.key} type="button" role="tab" aria-selected={on} onClick={() => ctx?.go(v.key)} className={cn(SEGMENT_ITEM, "flex-none px-3.5", on && SEGMENT_ITEM_ON)}>
             {v.label}
-          </Link>
+          </button>
         );
       })}
-    </nav>
+    </div>
   );
 }

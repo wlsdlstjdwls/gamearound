@@ -14,6 +14,8 @@ export const PLAN_MESSAGES = {
   viewLabel: "보기",
   viewBoard: "칸반",
   viewPlan: "일정(WBS)",
+  viewLeaveConfirm: "일정에 저장하지 않은 변경사항이 있어요. 저장하지 않고 칸반으로 갈까요?",
+  viewLeave: "저장 안 하고 이동",
 
   gantt: "일정 차트",
   summary: "업무 별 진행률",
@@ -32,6 +34,8 @@ export const PLAN_MESSAGES = {
   personNext: "다음 할 일",
   personIdle: "남은 일이 없어요",
   personMore: (n: number) => `외 ${n}건`,
+  summaryOpen: "자세히",
+  summaryClose: "접기",
   legendMilestone: "이정표",
   legendToday: "오늘",
   list: "WBS 목록",

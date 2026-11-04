@@ -28,7 +28,6 @@ import { planColumns } from "./columns";
 import { PlanCards, PlanForm } from "./form";
 import { PlanGantt, TRACK_COLOR, type PlanZoom } from "./gantt";
 import { PersonSummary, PlanSummary } from "./summary";
-import { PendingRegion } from "@/components/ui/nav-pending";
 
 /** 새 줄의 기본 기간(일). 한 주 안의 평일 다섯 날 */
 const NEW_SPAN_DAYS = 4;
@@ -53,6 +52,9 @@ export function PlanScreen({ items, cards, assignees, today }: { items: PlanItem
   const [zoom, setZoom] = useState<PlanZoom>("week");
   // 묶어 보기: 담당자별(서로 무엇을 하고 있나, 기본) | WBS(계층). 아래 목록은 늘 WBS 계층이다
   const [group, setGroup] = useState<"person" | "wbs">("person");
+  // 요약 카드는 접힌 한 줄 띠가 기본이다 — 펼친 카드는 간트를 화면 밖으로 민다(사용자)
+  const [summaryOpen, setSummaryOpen] = useState(false);
+  const fold = { open: summaryOpen, onToggle: () => setSummaryOpen((o) => !o) };
   const [pending, start] = useTransition();
   const [cardBusy, startCard] = useTransition();
 
@@ -197,7 +199,7 @@ export function PlanScreen({ items, cards, assignees, today }: { items: PlanItem
       />
       <div className="flex flex-col gap-3">
         <div className="flex flex-wrap items-center justify-between gap-2">
-          <TaskViewSwitch view="plan" />
+          <TaskViewSwitch />
           <div className="flex flex-wrap items-center gap-2">
           <div role="radiogroup" aria-label={M.groupBy} className={cn(SEGMENT, "w-fit")}>
             {(["person", "wbs"] as const).map((g) => (
@@ -216,11 +218,10 @@ export function PlanScreen({ items, cards, assignees, today }: { items: PlanItem
           </div>
         </div>
 
-        <PendingRegion className="flex flex-col gap-3">
         {group === "person" ? (
-          <PersonSummary people={people} nameOf={nameOf} milestone={milestone} today={today} onPick={setSelected} />
+          <PersonSummary people={people} nameOf={nameOf} milestone={milestone} today={today} onPick={setSelected} fold={fold} />
         ) : (
-          <PlanSummary tracks={tracks} milestone={milestone} today={today} onPick={setSelected} />
+          <PlanSummary tracks={tracks} milestone={milestone} today={today} onPick={setSelected} fold={fold} />
         )}
 
         <div className="flex flex-wrap items-center gap-x-4 gap-y-1 px-1 text-[12.5px] text-dim" aria-label={M.legend}>
@@ -315,7 +316,6 @@ export function PlanScreen({ items, cards, assignees, today }: { items: PlanItem
             )
           }
         />
-        </PendingRegion>
       </div>
     </>
   );
