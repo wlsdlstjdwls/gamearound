@@ -265,6 +265,9 @@ export function Sheet({
 
   const beginDrag = (e: React.PointerEvent) => {
     if (!interactableRef.current || (isDesktop() && side !== "right") || closingRef.current) return;
+    // 머리의 단추(actions 의 삭제 등), 입력칸 위에서 누른 것은 끌기가 아니다 — 여기서 포인터를 잡으면 click 이 머리로 가 단추가 안 눌렸다
+    // (2026-11-04 업무 일정 서랍의 휴지통 실측). 닫기 단추는 따로 막아 두어 그동안 드러나지 않았다
+    if ((e.target as Element).closest("button, a, input, select, textarea, [role='button']")) return;
     const panel = panelRef.current;
     const overlay = overlayRef.current;
     if (!panel || !overlay) return;
