@@ -4,7 +4,7 @@
 // 화면까지 Drizzle 행을 흘리지 않는다(AGENTS §1) — 판은 붙인 대상(게임, 매장)의 이름까지 보여 줘야 하는데
 // 그건 행에 없는 값이라, DTO 를 만드는 자리가 어차피 필요하다.
 import "server-only";
-import { asc, desc, eq, inArray, isNotNull, isNull, type SQL } from "drizzle-orm";
+import { and, asc, desc, eq, inArray, isNotNull, isNull, sql, type SQL } from "drizzle-orm";
 import { alias } from "drizzle-orm/pg-core";
 import { getDb } from "@/server/db/client";
 import { adminTaskAttachments, adminTaskNotes, adminTaskReads, adminTasks, games, shops, users, type SourceName } from "@/server/db/schema";
@@ -217,12 +217,19 @@ export async function listArchived(): Promise<ArchivedTask[]> {
  * 담당자로 고를 수 있는 사람 — 관리자 계정 전부. 판은 관리자 화면이라 다른 사람에게 줄 일이 없다.
  * 이름순이다. 한둘뿐인 목록이라 캐시를 걸지 않는다(판 질의와 나란히 읽는다).
  */
+/**
+ * 담당자 후보에서 빼는 메일 도메인. example.com 은 시험용으로 예약된 도메인이라(RFC 2606) 실제 사람이 아니다 —
+ * Claude 작업 계정(claude-admin), 화면 점검 계정(e2e-admin+...)이 여기 있다(2026-11-04, 사용자 "김성진, 안민찬 말고는 안 보이게").
+ * 계정은 지우지 않는다: 화면 점검이 그 계정으로 로그인한다
+ */
+const NON_PERSON_EMAIL_DOMAIN = "@example.com";
+
 export async function listAssignees(): Promise<TaskAssignee[]> {
   await requireAdmin();
   const rows = await getDb()
     .select({ id: users.id, name: users.displayName, email: users.email })
     .from(users)
-    .where(eq(users.role, "admin"))
+    .where(and(eq(users.role, "admin"), sql`${users.email} not ilike ${"%" + NON_PERSON_EMAIL_DOMAIN}`))
     .orderBy(asc(users.displayName), asc(users.email));
   return rows.map((r) => ({ id: r.id, name: personName(r.name, r.email)! }));
 }
