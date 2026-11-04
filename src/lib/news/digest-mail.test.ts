@@ -22,7 +22,9 @@ describe("digestMailBlock", () => {
     expect(html).toContain('href="https://gamearound.kr/games/hades-ii?x=1&amp;y=2#news"');
     expect(html).toContain("하데스 II &lt;새 무기&gt;");
     expect(html).toContain('src="https://img.example/a.jpg"');
-    expect(html).toContain("IGN | 하데스 II | ");
+    // 게임은 딱지로, 매체와 날짜는 그 옆에. 그림이 있는 맨 앞 기사는 큰 카드다
+    expect(html).toContain(">하데스 II</span>&nbsp;&nbsp;IGN | ");
+    expect(html).toContain("width:100%");
     expect(text).toBe(`- 하데스 II <새 무기> (IGN, 하데스 II)\n  ${LINK}`);
   });
   it("썸네일이 없으면 그림 칸을 두지 않고, 긴 요약은 자른다", () => {

@@ -8,4 +8,6 @@ export const NOTIFY_CONTENT_MESSAGES = {
   plainImage: "이미지",
   /** 메일 첫 장면 그림의 대체 글 */
   videoPosterAlt: "영상 첫 장면",
+  /** 메일 바닥 한 줄(lib/notify/email-shell). 답장이 어디에도 닿지 않는다는 것만 말한다 */
+  emailFooterNote: "이 메일은 보내기 전용이라 답장을 받을 수 없어요.",
 } as const;

@@ -38,6 +38,8 @@ export const NEWS_DIGEST_MESSAGES = {
  * 메일 카드(lib/news/digest-mail)와 맞춤 소식 화면이 같은 말을 한다. 메일 둘레 문구는 템플릿(mail.news_digest)이다
  */
 export const NEWS_DIGEST_TRENDING_MESSAGES = {
+  /** 메일의 맞춤 기사 칸 머리(lib/news/digest-mail) */
+  picksTitle: "내 맞춤 소식",
   trendingTitle: "이번 주 많이 다룬 소식",
   trendingNote: "맞춤 소식이 적은 주라 여러 매체가 함께 다룬 소식을 더했어요",
 } as const;

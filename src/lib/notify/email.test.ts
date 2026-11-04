@@ -5,8 +5,20 @@ describe("renderEmail", () => {
   it("변수를 채우고 줄바꿈을 <br> 로, 태그에 인라인 스타일을 단다", () => {
     const r = renderEmail("<b>{제목}</b>\n<a href=\"{링크}\">열기</a>", { 제목: "A < B", 링크: "https://x.kr/a?b=1&c=2" });
     expect(r.body).toBe('<b>A &lt; B</b>\n<a href="https://x.kr/a?b=1&amp;c=2">열기</a>');
-    expect(r.html).toContain("<b>A &lt; B</b><br><a style=");
+    // 첫 줄 굵은 글은 제목으로, 혼자 한 줄인 링크는 단추로(email-shell)
+    expect(r.html).toContain(">A &lt; B</div>");
+    expect(r.html).toMatch(/<td style="border-radius:10px;background:#2563eb"><a href="https:\/\/x\.kr\/a\?b=1&amp;c=2" style="[^"]+">열기<\/a>/);
     expect(r.html.startsWith("<div style=")).toBe(true);
+  });
+  it("줄 가운데 링크와 주소 그대로인 링크는 단추로 만들지 않는다", () => {
+    const html = renderEmail('앞 <a href="https://x.kr">설정</a> 뒤\n<a href="https://x.kr">https://x.kr</a>', {}).html;
+    expect(html).not.toContain("border-radius:10px;background");
+    expect(html).toContain('<a style="color:#2563eb;text-decoration:underline" href="https://x.kr">설정</a>');
+  });
+  it("손전등 이름과 바닥 안내로 감싼다", () => {
+    const html = renderEmail("본문", {}).html;
+    expect(html).toContain("손전등</span>");
+    expect(html).toContain("답장을 받을 수 없어요");
   });
   it("pre 안 줄바꿈은 그대로 둔다", () => {
     expect(renderEmail("<pre>a\nb</pre>\nc", {}).html).toMatch(/<pre style="[^"]+">a\nb<\/pre><br>c/);

@@ -26,6 +26,7 @@ import { SYSTEM_TEMPLATES } from "@/lib/notify/system-templates";
 import { escapeHtml } from "@/lib/html-entities";
 import { errorMessage } from "@/lib/errors";
 import { gameNewsPath, ROUTES } from "@/lib/routes";
+import { newsThumbnailSrc } from "@/lib/news/thumbnail";
 import { SITE } from "@/lib/site";
 
 const SOURCE = "cron:news-digest" as const;
@@ -37,13 +38,23 @@ export type NewsDigestSummary = { readers: number; inboxed: number; mailed: numb
 
 const shownTitle = (n: DigestNews) => n.titleKo ?? n.title;
 
+/**
+ * 메일 속 썸네일은 사이트와 같은 중계(lib/news/thumbnail 의 newsThumbnailSrc)를 거친다. 매체 CDN 을 바로 걸면 막는 곳이 있다 —
+ * 2026-11-04 실측 Nintendo Life 403, 큰 카드 자리가 빈 칸으로 떴다. 중계 주소는 상대 경로라 사이트 주소를 붙인다. 막힌 매체면 그림 없이 간다
+ */
+function mailThumbnail(url: string | null, base: string): string | null {
+  const src = url ? newsThumbnailSrc(url) : null;
+  if (!src) return null;
+  return src.startsWith("/") ? (base ? `${base}${src}` : null) : src;
+}
+
 /** 카드 재료로. summaryKo 는 이번 회차에 옮긴 요약(저장하지 않는다, translateSummaries) */
 function mailItem(n: DigestNews, base: string, summaryKo: ReadonlyMap<string, string>): DigestMailItem {
   return {
     title: shownTitle(n),
     link: `${base}${gameNewsPath(n.game.slug)}`,
     sourceName: n.sourceName,
-    thumbnailUrl: n.thumbnailUrl,
+    thumbnailUrl: mailThumbnail(n.thumbnailUrl, base),
     summary: summaryKo.get(n.newsId) ?? n.summary,
     gameTitle: n.game.title,
     publishedAt: n.publishedAt,

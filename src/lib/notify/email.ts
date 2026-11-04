@@ -6,19 +6,15 @@
 // 텍스트판(text)도 같이 만든다. HTML 을 못 그리는 클라이언트, 스팸 판정이 둘 다 있는 메일을 낫게 본다.
 import { NOTIFY_CONTENT_MESSAGES as C } from "./messages";
 import { fillVars, renderNotice } from "./template";
+import { MAIL_COLOR } from "@/lib/notify/email-color";
+import { MAIL_BLOCK_CLOSE as BLOCK_CLOSE, MAIL_BLOCK_OPEN as BLOCK_OPEN, mailShell, promoteMailLines } from "@/lib/notify/email-shell";
 
 /** 메일 제목 상한. RFC 5322 권장 줄 길이(78자)에 머리말이 붙어도 받은편지함에서 잘리지 않을 만큼 */
 export const EMAIL_SUBJECT_MAX = 120;
 /** 메일 본문 상한(변수를 채운 HTML 기준). 공지 한 통이 넉넉히 들어가고, Resend 요청 한 번이 무거워지지 않을 만큼 */
 export const EMAIL_BODY_MAX = 20_000;
 
-const FONT = "-apple-system,'Segoe UI','Apple SD Gothic Neo','Malgun Gothic',sans-serif";
-/**
- * 메일 색. 메일은 CSS 변수를 못 읽어 globals.css 의 --ink, --mut, --dim, --acc, 면 색 값을 글자로 옮겼다.
- * 코드가 그리는 덩어리(기사 카드 등, lib/news/digest-mail)도 이 값을 쓴다 — 한 통 안에서 색이 어긋나지 않게
- */
-export const MAIL_COLOR = { ink: "#18202b", mut: "#55524c", dim: "#8a867e", acc: "#2563eb", soft: "#f1f0ec", line: "#e7e5df" } as const;
-const WRAP = `font-family:${FONT};max-width:520px;margin:0 auto;padding:24px;color:${MAIL_COLOR.ink};font-size:15px;line-height:1.7`;
+export { MAIL_COLOR } from "@/lib/notify/email-color";
 /** 태그 → 인라인 스타일. 링크는 파랑, 인용은 왼쪽 띠 */
 const INLINE: Record<string, string> = {
   a: `color:${MAIL_COLOR.acc};text-decoration:underline`,
@@ -88,8 +84,6 @@ export type EmailBlock = { html: string; text: string };
 export type EmailBlocks = Readonly<Record<string, EmailBlock>>;
 
 /** 덩어리 표식. 감싸기(wrapEmailHtml)가 이 안은 줄바꿈, 인라인 스타일을 건드리지 않는다 — 덩어리는 제 스타일을 들고 온다 */
-const BLOCK_OPEN = "<!--mail-block-->";
-const BLOCK_CLOSE = "<!--/mail-block-->";
 const BLOCK_PART = /(<!--mail-block-->[\s\S]*?<!--\/mail-block-->)/;
 
 /** 정리된 본문의 {이름} 자리에 덩어리 HTML 을 넣는다. 미리 보기(알림템플릿관리)도 이것으로 같은 모양을 본다 */
@@ -112,7 +106,8 @@ export function renderEmail(body: string, vars: Readonly<Record<string, string |
 /** 허용 태그만 남은 본문을 메일 HTML 로 감싼다. 미리 보기도 이것으로 그려 보낸 메일과 같은 모양을 본다 */
 export function wrapEmailHtml(clean: string): string {
   // 미디어와 덩어리는 제 줄을 차지한다(display:block). 앞뒤 줄바꿈 하나씩은 <br> 로 바꾸지 않는다 — 바꾸면 위아래가 한 줄씩 더 빈다
-  const tight = clean
+  // 제목 줄, 단추 줄도 덩어리로 바꾼 뒤(email-shell) 같은 규칙을 탄다
+  const tight = promoteMailLines(clean)
     .replace(/\r?\n?(<img [^>]*>|<video [^>]*>)\r?\n?/g, "$1")
     .replace(/\r?\n?(<!--mail-block-->)/g, "$1")
     .replace(/(<!--\/mail-block-->)\r?\n?/g, "$1");
@@ -120,5 +115,5 @@ export function wrapEmailHtml(clean: string): string {
     .split(BLOCK_PART)
     .map((part, i) => (i % 2 === 1 ? part : breakLines(inlineStyles(videosToLinks(part)))))
     .join("");
-  return `<div style="${WRAP}">${inner}</div>`;
+  return mailShell(inner);
 }

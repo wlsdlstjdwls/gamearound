@@ -34,30 +34,72 @@ export const DIGEST_MAIL_SUMMARY_MAX = 140;
 /** 썸네일 크기(px). 16:9. 메일 본문 폭 520px 에서 글 칸이 350px 남짓 남는다 */
 const THUMB_W = 112;
 const THUMB_H = 63;
+/** 맨 앞 큰 카드 그림 폭(px). 메일 흰 판 안쪽 폭(560 - 좌우 여백 48)에 맞춘다. 좁은 화면은 width:100% 가 줄인다 */
+const FEATURE_W = 510;
 
 function clip(s: string, max: number): string {
   const t = s.replace(/\s+/g, " ").trim();
   return t.length > max ? `${t.slice(0, max - 1).trimEnd()}…` : t;
 }
 
+/** 매체 | 날짜 줄 앞의 게임 딱지. 무엇에 대한 소식인지가 제목보다 먼저 읽혀야 "맞춤" 이 보인다 */
+function gameChip(n: DigestMailItem): string {
+  return `<span style="display:inline-block;padding:1px 7px;border-radius:6px;background:${MAIL_COLOR.accSoft};color:${MAIL_COLOR.acc};font-size:12px;font-weight:700;line-height:1.6">${escapeHtml(n.gameTitle)}</span>`;
+}
+
+function meta(n: DigestMailItem): string {
+  return `<div style="margin-top:6px;color:${MAIL_COLOR.dim};font-size:12px;line-height:1.6">${gameChip(n)}&nbsp;&nbsp;${[n.sourceName, formatDotDate(n.publishedAt)].map(escapeHtml).join(" | ")}</div>`;
+}
+
+function summaryOf(n: DigestMailItem, size: number): string {
+  return n.summary ? `<div style="margin-top:4px;color:${MAIL_COLOR.mut};font-size:${size}px;line-height:1.6">${escapeHtml(clip(n.summary, DIGEST_MAIL_SUMMARY_MAX))}</div>` : "";
+}
+
+/**
+ * 맨 앞 기사 한 장은 크게(2026-11-04, 사용자 "서비스 기획 관점에서 꾸며 줘"): 판 폭 그림 + 큰 제목. 묶음의 얼굴이 있어야 열자마자 읽을 거리가 보인다.
+ * 맞춤 순서(lib/news/digest)에서 그림이 있는 첫 기사를 올린다 — 글만 큰 카드는 빈 판처럼 보인다
+ */
+function featured(n: DigestMailItem): string {
+  return (
+    `<tr><td style="padding:4px 0 14px">` +
+    `<a href="${escapeHtml(n.link)}" style="display:block;color:${MAIL_COLOR.ink};text-decoration:none">` +
+    `<img src="${escapeHtml(n.thumbnailUrl ?? "")}" width="${FEATURE_W}" alt="" style="display:block;width:100%;max-width:${FEATURE_W}px;height:auto;border:0;border-radius:10px;background:${MAIL_COLOR.soft}">` +
+    `<div style="margin-top:12px;color:${MAIL_COLOR.ink};font-size:18px;font-weight:800;line-height:1.45;letter-spacing:-0.01em">${escapeHtml(n.title)}</div>` +
+    `${summaryOf(n, 14)}${meta(n)}</a></td></tr>`
+  );
+}
+
 function card(n: DigestMailItem, first: boolean): string {
   const thumb = n.thumbnailUrl
     ? `<td width="${THUMB_W}" valign="top" style="padding:0 12px 0 0;width:${THUMB_W}px"><img src="${escapeHtml(n.thumbnailUrl)}" width="${THUMB_W}" height="${THUMB_H}" alt="" style="display:block;width:${THUMB_W}px;height:${THUMB_H}px;object-fit:cover;border:0;border-radius:6px;background:${MAIL_COLOR.soft}"></td>`
     : "";
-  const summary = n.summary ? `<div style="margin-top:4px;color:${MAIL_COLOR.mut};font-size:13px;line-height:1.55">${escapeHtml(clip(n.summary, DIGEST_MAIL_SUMMARY_MAX))}</div>` : "";
-  const meta = `<div style="margin-top:6px;color:${MAIL_COLOR.dim};font-size:12px;line-height:1.5">${[n.sourceName, n.gameTitle, formatDotDate(n.publishedAt)].map(escapeHtml).join(" | ")}</div>`;
   const border = first ? "" : `border-top:1px solid ${MAIL_COLOR.line};`;
   return (
     `<tr><td style="${border}padding:12px 0">` +
     `<a href="${escapeHtml(n.link)}" style="display:block;color:${MAIL_COLOR.ink};text-decoration:none">` +
     `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="border-collapse:collapse"><tr>${thumb}` +
-    `<td valign="top"><div style="color:${MAIL_COLOR.ink};font-size:15px;font-weight:700;line-height:1.45">${escapeHtml(n.title)}</div>${summary}${meta}</td>` +
+    `<td valign="top"><div style="color:${MAIL_COLOR.ink};font-size:15px;font-weight:700;line-height:1.45">${escapeHtml(n.title)}</div>${summaryOf(n, 13)}${meta(n)}</td>` +
     `</tr></table></a></td></tr>`
   );
 }
 
-function cards(items: readonly DigestMailItem[]): string {
-  return `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="border-collapse:collapse;margin:4px 0">${items.map((n, i) => card(n, i === 0)).join("")}</table>`;
+function cards(items: readonly DigestMailItem[], feature: boolean): string {
+  // 큰 카드는 그림이 있는 첫 기사다. 맨 앞 기사에 그림이 없는 주가 흔하다(2026-11-04 실측 8건 중 첫 건) — 그렇다고 큰 카드를 접으면 얼굴 없는 메일이 된다
+  const big = feature ? (items.find((n) => n.thumbnailUrl) ?? null) : null;
+  const list = big ? items.filter((n) => n !== big) : items;
+  const rows = (big ? featured(big) : "") + list.map((n, i) => card(n, i === 0 && !big)).join("");
+  return `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="border-collapse:collapse;margin:4px 0">${rows}</table>`;
+}
+
+/** 칸 머리: 강조색 짧은 띠 + 이름 + 건수. 맞춤과 많이 다룬 소식을 같은 꼴로 갈라 "왜 왔는지" 를 칸마다 말한다 */
+function sectionHead(title: string, count: number, note?: string): string {
+  return (
+    `<div style="margin:18px 0 6px;padding:0 0 8px;border-bottom:2px solid ${MAIL_COLOR.ink}">` +
+    `<span style="font-size:15px;font-weight:800;color:${MAIL_COLOR.ink}">${escapeHtml(title)}</span>` +
+    `<span style="margin-left:6px;font-size:13px;font-weight:700;color:${MAIL_COLOR.acc}">${count}</span>` +
+    (note ? `<div style="margin-top:2px;font-size:12.5px;color:${MAIL_COLOR.dim}">${escapeHtml(note)}</div>` : "") +
+    `</div>`
+  );
 }
 
 function textItem(n: DigestMailItem): string {
@@ -66,13 +108,10 @@ function textItem(n: DigestMailItem): string {
 
 /** 맞춤 기사 + (맞춤이 적을 때) 많이 다룬 소식 칸. 많이 다룬 소식은 머리말을 달아 맞춤과 가른다 — 섞어 두면 왜 왔는지 모를 기사가 된다 */
 export function digestMailBlock(picks: readonly DigestMailItem[], trending: readonly DigestMailItem[]): EmailBlock {
-  let html = cards(picks);
+  let html = picks.length > 0 ? sectionHead(M.picksTitle, picks.length) + cards(picks, true) : "";
   let text = picks.map(textItem).join("\n");
   if (trending.length > 0) {
-    html +=
-      `<div style="margin:20px 0 0;font-size:14px;font-weight:700;color:${MAIL_COLOR.ink}">${escapeHtml(M.trendingTitle)}</div>` +
-      `<div style="margin:2px 0 0;font-size:12.5px;color:${MAIL_COLOR.dim}">${escapeHtml(M.trendingNote)}</div>` +
-      cards(trending);
+    html += sectionHead(M.trendingTitle, trending.length, M.trendingNote) + cards(trending, picks.length === 0);
     text += `\n\n[${M.trendingTitle}]\n${trending.map(textItem).join("\n")}`;
   }
   return { html, text };
