@@ -1,4 +1,5 @@
 // POST /api/admin/tasks/attachments/upload — 할 일 첨부의 Blob 업로드 토큰을 내준다(Vercel Blob 클라이언트 업로드).
+// 업무 일정 줄 첨부(2026-11-04)도 같은 길을 쓴다 — 실어 온 값이 planItemId 면 일정 줄 접두와 수 상한으로 가린다.
 //
 // 파일은 여기로 안 온다. 브라우저가 토큰을 받아 Blob 으로 곧장 올린다 — 첨부 상한(10MB)이 함수 본문 한도(4.5MB)를
 // 넘기 때문에 이 길밖에 없다. 이 경로의 일은 **토큰을 줄 사람인가**를 가리는 것 하나다: 관리자, 있는 할 일, 경로 접두, 수 상한.
@@ -15,8 +16,12 @@ import {
   ATTACHMENT_MAX_PER_TASK,
   attachmentUploadPayloadSchema,
   isOwnAttachmentPath,
+  isUnderPrefix,
+  PLAN_ATTACHMENT_MAX_PER_ITEM,
+  planAttachmentPathPrefix,
 } from "@/lib/admin/task-attachments";
 import { countAttachments, taskExists } from "@/server/services/admin-tasks";
+import { countPlanAttachments, planItemExists } from "@/server/services/admin-plan";
 import { getCurrentUser } from "@/server/services/users";
 
 export const dynamic = "force-dynamic";
@@ -28,6 +33,13 @@ async function authorize(pathname: string, clientPayload: string | null): Promis
   const user = await getCurrentUser();
   if (user?.role !== "admin") throw new Error(M.forbidden);
 
+  if ("planItemId" in parsed.data) {
+    const { planItemId } = parsed.data;
+    if (!isUnderPrefix(pathname, planAttachmentPathPrefix(planItemId))) throw new Error(M.forbidden);
+    if (!(await planItemExists(planItemId))) throw new Error(M.forbidden);
+    if ((await countPlanAttachments(planItemId)) >= PLAN_ATTACHMENT_MAX_PER_ITEM) throw new Error(M.full(PLAN_ATTACHMENT_MAX_PER_ITEM));
+    return;
+  }
   const { taskId } = parsed.data;
   if (!isOwnAttachmentPath(pathname, taskId)) throw new Error(M.forbidden);
   if (!(await taskExists(taskId))) throw new Error(M.forbidden);

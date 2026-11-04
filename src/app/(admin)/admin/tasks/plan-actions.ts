@@ -6,7 +6,8 @@ import { actionError } from "@/lib/db-errors";
 import { PLAN_MESSAGES as M } from "@/lib/admin/messages";
 import { savePlanSchema } from "@/lib/admin/plan-schemas";
 import { ROUTES } from "@/lib/routes";
-import { createTaskForPlanItem, savePlan, setTaskPlanItem } from "@/server/services/admin-plan";
+import { createTaskForPlanItem, registerPlanAttachment, removePlanAttachment, savePlan, setTaskPlanItem } from "@/server/services/admin-plan";
+import { planAttachmentRegisterSchema } from "@/lib/admin/task-attachments";
 import { requireAdmin } from "@/server/services/users";
 
 export type PlanActionResult = { ok: true; id?: string } | { ok: false; error: string };
@@ -49,6 +50,30 @@ export async function linkTaskPlanAction(taskId: unknown, planItemId: unknown): 
     const task = z.uuid().parse(taskId);
     const item = z.union([z.uuid(), z.literal(""), z.null()]).parse(planItemId);
     await setTaskPlanItem(task, item || null);
+    refresh();
+    return { ok: true };
+  } catch (e) {
+    return { ok: false, error: actionError(e, M.failed) };
+  }
+}
+
+export async function registerPlanAttachmentAction(input: unknown): Promise<PlanActionResult> {
+  try {
+    await requireAdmin();
+    const p = planAttachmentRegisterSchema.safeParse(input);
+    if (!p.success) return { ok: false, error: M.invalid };
+    await registerPlanAttachment(p.data);
+    refresh();
+    return { ok: true };
+  } catch (e) {
+    return { ok: false, error: actionError(e, M.failed) };
+  }
+}
+
+export async function removePlanAttachmentAction(id: unknown): Promise<PlanActionResult> {
+  try {
+    await requireAdmin();
+    await removePlanAttachment(z.uuid().parse(id));
     refresh();
     return { ok: true };
   } catch (e) {

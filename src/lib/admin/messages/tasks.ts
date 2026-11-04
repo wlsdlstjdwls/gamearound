@@ -178,6 +178,7 @@ export const TASK_FILTER_MESSAGES = {
 /** 할 일 첨부(2026-10-02). 카드 본문과 기록에 파일을 붙인다 */
 export const TASK_ATTACHMENT_MESSAGES = {
   part: "첨부",
+  download: (name: string) => `${name} 내려받기`,
   add: "파일 업로드",
   attach: "파일 첨부",
   uploading: (done: number, total: number) => `업로드 중 ${done + 1}/${total}`,

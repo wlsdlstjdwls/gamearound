@@ -53,3 +53,24 @@ export const adminPlanItems = pgTable("admin_plan_items", {
   // 읽기는 늘 "전부를 순서대로" 하나다. 줄이 수백을 넘을 일이 없어 이것으로 충분하다
   index("admin_plan_items_order_idx").on(t.parentId, t.sortOrder),
 ]);
+
+/**
+ * 일정 줄 첨부(2026-11-04, 사용자 "여기에 이미지나 파일도 넣고 다운받게, 용량 조심"). 업무요청 첨부(admin_task_attachments)와
+ * 같은 길이다 — 파일은 Vercel Blob, 이 표는 주소만 쥔다. 표를 업무요청 첨부와 합치지 않은 이유: 그 표의 task_id 는 NOT NULL 이고
+ * 지우는 서비스가 할 일 기준으로 파일을 모은다. 일정 줄을 지우면 행은 cascade 로 지워지지만 **파일은 못 지운다** —
+ * 일정 저장(services/admin-plan savePlan)이 지우기 전에 주소를 모아 두었다가 지운다.
+ */
+export const adminPlanAttachments = pgTable("admin_plan_attachments", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  planItemId: uuid("plan_item_id")
+    .notNull()
+    .references(() => adminPlanItems.id, { onDelete: "cascade" }),
+  url: text("url").notNull(),
+  /** 저장소 안 경로. 등록할 때 이 일정 줄 접두 아래인지 본다 */
+  pathname: text("pathname").notNull(),
+  /** 올린 사람이 붙인 파일 이름. 저장 경로는 확장자만 쓴다 */
+  name: text("name").notNull(),
+  contentType: text("content_type").notNull(),
+  byteSize: integer("byte_size").notNull(),
+  ...auditColumns(),
+}, (t) => [index("admin_plan_attachments_item_idx").on(t.planItemId, t.createdAt)]);

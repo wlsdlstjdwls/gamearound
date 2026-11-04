@@ -33,20 +33,35 @@ export async function uploadTaskFiles(
   noteId: string | null,
   onProgress?: (done: number, total: number) => void,
 ): Promise<string | null> {
+  return uploadFiles(
+    { prefix: attachmentPathPrefix(taskId), payload: { taskId }, register: (b, name) => registerAttachmentAction({ taskId, noteId, url: b.url, pathname: b.pathname, name }) },
+    files,
+    onProgress,
+  );
+}
+
+/** 올릴 곳 하나: 저장 접두, 토큰 받을 때 실을 값, 올린 뒤 적는 액션. 업무요청 카드와 업무 일정 줄(2026-11-04)이 같이 쓴다 */
+export type UploadTarget = {
+  prefix: string;
+  payload: Record<string, string>;
+  register: (blob: { url: string; pathname: string }, name: string) => Promise<{ ok: boolean; error?: string } | null>;
+};
+
+export async function uploadFiles(target: UploadTarget, files: File[], onProgress?: (done: number, total: number) => void): Promise<string | null> {
   for (let i = 0; i < files.length; i++) {
     onProgress?.(i, files.length);
     const file = files[i]!;
     const type = attachmentType(file.name);
     if (!type) return M.badType(file.name);
     try {
-      const blob = await upload(`${attachmentPathPrefix(taskId)}file.${type.ext}`, file, {
+      const blob = await upload(`${target.prefix}file.${type.ext}`, file, {
         access: "public",
         handleUploadUrl: TASK_ATTACHMENT_UPLOAD_PATH,
-        clientPayload: JSON.stringify({ taskId }),
+        clientPayload: JSON.stringify(target.payload),
         contentType: type.contentType,
       });
-      const r = await registerAttachmentAction({ taskId, noteId, url: blob.url, pathname: blob.pathname, name: file.name });
-      if (!r?.ok) return r?.error ?? M.failed;
+      const r = await target.register(blob, file.name);
+      if (!r?.ok) return (r && "error" in r && r.error) || M.failed;
     } catch (e) {
       return e instanceof Error && e.message ? e.message : M.failed;
     }

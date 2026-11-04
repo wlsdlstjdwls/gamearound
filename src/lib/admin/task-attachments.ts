@@ -66,9 +66,22 @@ export function attachmentPathPrefix(taskId: string): string {
   return `admin/tasks/${taskId}/`;
 }
 
+/**
+ * 업무 일정 줄 첨부(2026-11-04)의 저장 접두. 형식, 크기 규칙은 업무요청 첨부와 같고 수 상한만 따로다.
+ * 사용자 "용량 조심" — 일정 줄은 결과물 몇 개를 붙이는 자리라 카드(30)보다 적게 둔다
+ */
+export function planAttachmentPathPrefix(itemId: string): string {
+  return `admin/plan/${itemId}/`;
+}
+export const PLAN_ATTACHMENT_MAX_PER_ITEM = 20;
+
 /** 경로가 이 할 일 아래인가. `..` 로 접두를 빠져나가는 꼴도 막는다 */
 export function isOwnAttachmentPath(pathname: string, taskId: string): boolean {
-  const prefix = attachmentPathPrefix(taskId);
+  return isUnderPrefix(pathname, attachmentPathPrefix(taskId));
+}
+
+/** 경로가 이 접두 바로 아래 파일인가(하위 폴더, `..` 거절) */
+export function isUnderPrefix(pathname: string, prefix: string): boolean {
   if (!pathname.startsWith(prefix)) return false;
   const rest = pathname.slice(prefix.length);
   return rest.length > 0 && !rest.includes("/") && !rest.includes("..");
@@ -81,8 +94,8 @@ export function formatBytes(n: number): string {
   return `${Number((n / (1024 * 1024)).toFixed(1))} MB`;
 }
 
-/** 업로드 토큰을 받을 때 브라우저가 싣는 값 */
-export const attachmentUploadPayloadSchema = z.object({ taskId: z.uuid() });
+/** 업로드 토큰을 받을 때 브라우저가 싣는 값. 업무요청 카드 또는 업무 일정 줄 */
+export const attachmentUploadPayloadSchema = z.union([z.object({ taskId: z.uuid() }), z.object({ planItemId: z.uuid() })]);
 
 /** 올린 뒤 등록할 때 싣는 값. 크기와 형식은 서버가 저장소에 물어 적는다 — 브라우저 말을 믿지 않는다 */
 export const attachmentRegisterSchema = z.object({
@@ -94,3 +107,12 @@ export const attachmentRegisterSchema = z.object({
 });
 
 export type AttachmentRegisterInput = z.infer<typeof attachmentRegisterSchema>;
+
+/** 일정 줄 첨부를 올린 뒤 등록할 때 싣는 값 */
+export const planAttachmentRegisterSchema = z.object({
+  planItemId: z.uuid(),
+  url: z.url(),
+  pathname: z.string().min(1).max(300),
+  name: z.string().trim().min(1).max(ATTACHMENT_NAME_MAX),
+});
+export type PlanAttachmentRegisterInput = z.infer<typeof planAttachmentRegisterSchema>;

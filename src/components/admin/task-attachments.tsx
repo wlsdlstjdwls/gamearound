@@ -11,7 +11,8 @@
 import { useRef, useState, useTransition } from "react";
 import { FadeImage } from "@/components/ui/fade-image";
 import { buttonClass } from "@/components/ui/button";
-import { XIcon } from "@/components/ui/icons";
+import { DownloadIcon, XIcon } from "@/components/ui/icons";
+import { Clamp } from "@/components/ui/tooltip";
 import { cn } from "@/lib/cn";
 import { TASK_ATTACHMENT_MESSAGES as M } from "@/lib/admin/messages";
 import { ATTACHMENT_ACCEPT, ATTACHMENT_MAX_BYTES, formatBytes, isImageType } from "@/lib/admin/task-attachments";
@@ -37,7 +38,7 @@ function RemoveButton({ label, disabled, onClick }: { label: string; disabled?: 
 }
 
 /** 붙은 파일 목록. `removable` 이 아니면 읽기만 한다(지난 일 화면) */
-export function AttachmentList({ items, removable = false }: { items: TaskAttachment[]; removable?: boolean }) {
+export function AttachmentList({ items, removable = false, onRemove = removeAttachmentAction }: { items: TaskAttachment[]; removable?: boolean; onRemove?: (id: string) => Promise<{ ok: boolean; error?: string } | null> }) {
   const [pending, start] = useTransition();
   const [error, setError] = useState<string | null>(null);
   if (items.length === 0) return null;
@@ -48,8 +49,8 @@ export function AttachmentList({ items, removable = false }: { items: TaskAttach
     if (!(await askConfirm(M.removeConfirm, { confirmLabel: CONFIRM_MESSAGES.delete, tone: "danger" }))) return;
     setError(null);
     start(async () => {
-      const r = await removeAttachmentAction(a.id);
-      if (r && !r.ok) setError(r.error);
+      const r = await onRemove(a.id);
+      if (r && !r.ok) setError(r.error ?? M.failed);
     });
   };
 
@@ -77,9 +78,13 @@ export function AttachmentList({ items, removable = false }: { items: TaskAttach
           {files.map((a) => (
             <li key={a.id} className="flex items-center gap-2 rounded-lg bg-surface-2 pl-3">
               <a href={a.url} target="_blank" rel="noreferrer" className="min-w-0 flex-1 py-2.5 text-[13.5px] text-ink hover:text-acc">
-                <span className="block truncate font-semibold">{a.name}</span>
+                <Clamp className="font-semibold">{a.name}</Clamp>
                 <span className="text-[12px] tabular-nums text-mut">{formatBytes(a.size)}</span>
                 <span className="sr-only">{M.newWindow}</span>
+              </a>
+              {/* 내려받기: Blob 주소에 download=1 을 달면 저장소가 내려받기로 준다(교차 출처라 a[download] 는 안 먹는다) */}
+              <a href={`${a.url}?download=1`} aria-label={M.download(a.name)} className="press flex h-11 w-9 shrink-0 items-center justify-center text-dim hover:text-acc">
+                <DownloadIcon size={16} />
               </a>
               {removable && <RemoveButton label={`${M.remove} ${a.name}`} disabled={pending} onClick={() => remove(a)} />}
             </li>
@@ -148,6 +153,25 @@ export function AttachmentPicker({ value, onChange, compact = false }: { value: 
 
 /** 팝업의 본문 첨부 마디. 할 일이 이미 있으므로 고르는 즉시 올린다 */
 export function TaskAttachmentsPart({ taskId, items }: { taskId: string; items: TaskAttachment[] }) {
+  return <AttachmentsPart items={items} upload={(files, onProgress) => uploadTaskFiles(taskId, files, null, onProgress)} />;
+}
+
+/**
+ * 고르는 즉시 올리는 첨부 마디. 올릴 곳(upload)과 지우는 길(onRemove)만 받는다 — 업무요청 카드와 업무 일정 줄(2026-11-04)이 같이 쓴다.
+ * max 를 주면 남은 자리를 알린다(일정 줄 20개)
+ */
+export function AttachmentsPart({
+  items,
+  upload,
+  onRemove,
+  onDone,
+}: {
+  items: TaskAttachment[];
+  upload: (files: File[], onProgress: (done: number, total: number) => void) => Promise<string | null>;
+  onRemove?: (id: string) => Promise<{ ok: boolean; error?: string } | null>;
+  /** 올리기가 끝난 뒤(화면이 다시 읽을 때) */
+  onDone?: () => void;
+}) {
   const inputRef = useRef<HTMLInputElement>(null);
   const [progress, setProgress] = useState<{ done: number; total: number } | null>(null);
   const [errors, setErrors] = useState<string[]>([]);
@@ -157,14 +181,15 @@ export function TaskAttachmentsPart({ taskId, items }: { taskId: string; items: 
     setErrors(bad);
     if (inputRef.current) inputRef.current.value = "";
     if (ok.length === 0) return;
-    const failed = await uploadTaskFiles(taskId, ok, null, (done, total) => setProgress({ done, total }));
+    const failed = await upload(ok, (done, total) => setProgress({ done, total }));
     setProgress(null);
     if (failed) setErrors((prev) => [...prev, failed]);
+    onDone?.();
   }
 
   return (
     <div className="flex flex-col gap-3">
-      {items.length === 0 ? <p className="text-[13.5px] text-dim">{M.empty}</p> : <AttachmentList items={items} removable />}
+      {items.length === 0 ? <p className="text-[13.5px] text-dim">{M.empty}</p> : <AttachmentList items={items} removable onRemove={onRemove} />}
       <div className="flex flex-wrap items-center gap-2">
         <label className={buttonClass({ variant: "secondary", size: "sm", className: "tap cursor-pointer" })} aria-disabled={progress !== null}>
           {progress ? M.uploading(progress.done, progress.total) : M.add}
