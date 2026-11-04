@@ -40,6 +40,14 @@ describe("pickBestCandidate", () => {
     expect(best?.candidate.externalId).toBe("2");
     expect(best?.similarity).toBe(1);
   });
+  it("체험판 후보는 빼고 본편을 고른다(2026-11-04 매칭 큐 The Isle Tide Hotel)", () => {
+    const demoFirst = [
+      { externalId: "d", title: "The Isle Tide Hotel Demo", url: "ud" },
+      { externalId: "b", title: "The Isle Tide Hotel: Deluxe", url: "ub" },
+    ];
+    expect(pickBestCandidate("The Isle Tide Hotel", null, demoFirst)?.candidate.externalId).toBe("b");
+    expect(pickBestCandidate("The Isle Tide Hotel", null, [demoFirst[0]])).toBeNull();
+  });
   it("titleKo 로도 비교한다", () => {
     const best = pickBestCandidate("Some English", "사이버펑크 2077", [{ externalId: "9", title: "사이버펑크 2077", url: "u" }]);
     expect(best?.similarity).toBe(1);

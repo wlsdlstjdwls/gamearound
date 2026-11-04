@@ -8,6 +8,7 @@ import { updatedBy } from "@/server/db/audit";
 import { getSearchableAdapter, getDisabledReason, isSourceEnabled, type SearchableSource } from "@/server/adapters";
 import type { SearchCandidate, Source } from "@/server/adapters/types";
 import { normalizeTitle, seriesConflict, trigramSimilarity } from "@/lib/slug";
+import { productKindConflict } from "@/lib/product-kind";
 import { MATCHED_FOR_SYNC } from "./constants";
 import { fillMatchedMedia } from "./match-media";
 
@@ -67,6 +68,8 @@ export function pickBestCandidate(
   let best: BestCandidate | null = null;
   for (const c of candidates) {
     if (seriesConflict(titleEn, c.title) && (!titleKo || seriesConflict(titleKo, c.title))) continue;
+    // 체험판, 사운드트랙, VR 판 후보도 같은 이유로 뺀다(lib/product-kind 머리 주석)
+    if (productKindConflict(titleEn, c.title) && (!titleKo || productKindConflict(titleKo, c.title))) continue;
     const simEn = trigramSimilarity(titleEn, c.title);
     const simKo = titleKo ? trigramSimilarity(titleKo, c.title) : 0;
     const similarity = Math.max(simEn, simKo);
