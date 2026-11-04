@@ -82,6 +82,8 @@ export const PLAN_MESSAGES = {
   deleteRow: (title: string) => `${title} 삭제`,
   deletedRow: (title: string) => `${title} 을 지웠어요`,
   undo: "되돌리기",
+  /** 다 끝난 막대 오른쪽 낱말(100% 대신) */
+  doneLabel: "완료",
   weekend: (day: string) => `주말(${day}요일)`,
   fieldMemo: "메모",
   noParent: "없음(최상위)",

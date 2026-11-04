@@ -15,7 +15,7 @@
 // "+" 는 바로 아래 같은 단계의 새 줄을 만들고 곧장 이름 칸을 연다(노션의 줄 추가) — 앞서는 하위를 만들어 멀쩡한 작업이 묶음으로 바뀌었다(사용자 "플러스 동작 이상").
 // 옆 보기 아이콘은 상세 서랍을 연다. 순서는 왼쪽 손잡이(점 여섯)를 끌어 다른 줄 앞뒤에 놓는다(WBS 보기, 마우스) — 서랍의 위로/아래로/들여쓰기 단추는 와닿지 않는다 해서 걷었다.
 import { useLayoutEffect, useMemo, useRef, useState } from "react";
-import { GripIcon, PlusIcon, SidePanelIcon, TrashIcon } from "@/components/ui/icons";
+import { CheckCircleIcon, GripIcon, PlusIcon, SidePanelIcon, TrashIcon } from "@/components/ui/icons";
 import { ChevronDownIcon } from "@/components/ui/icons";
 import { Clamp, useTooltip } from "@/components/ui/tooltip";
 import { cn } from "@/lib/cn";
@@ -209,7 +209,7 @@ export function PlanGantt({
     const lines = `repeating-linear-gradient(to right, color-mix(in oklab, var(--line) 80%, transparent) 0 1px, transparent 1px ${7 * px}px)`;
     const band = (i: number, color: string) => `linear-gradient(to right, transparent ${i * px}px, ${color} ${i * px}px, ${color} ${(i + 1) * px}px, transparent ${(i + 1) * px}px)`;
     // 공휴일은 모든 눈금에서 옅은 빨강, 주말은 일 눈금에서만 회색 면(주, 월 눈금은 칸이 좁아 주말 면이 줄무늬가 된다)
-    const off = holidays.map((h) => band(h.at, "color-mix(in oklab, var(--danger) 9%, transparent)"));
+    const off = holidays.map((h) => band(h.at, "color-mix(in oklab, var(--danger) 13%, transparent)"));
     const weekend = zoom === "day" ? weekends.map((i) => band(i, "var(--surface-2)")) : [];
     return [lines, ...off, ...weekend].join(",");
   }, [px, zoom, weekends, holidays]);
@@ -237,6 +237,16 @@ export function PlanGantt({
       else onResize(drag.id, drag.mode, drag.by);
     }
     setDrag(null);
+  };
+  /** 막대를 누르면(끌지 않고) 상세 서랍을 연다(사용자 "퍼센트 바 눌러도 수정 시트"). 끈 뒤 따라오는 click 은 삼킨다 */
+  const openOnClick = (row: PlanRow) => (e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (swallow.current) {
+      swallow.current = false;
+      return;
+    }
+    if (!row.id.startsWith(PERSON_ROW_PREFIX)) onOpen(row.id);
+    else onToggle(row.id);
   };
   const dragProps = (row: PlanRow) => ({
     onPointerDown: (e: React.PointerEvent<HTMLElement>) => begin(e, row),
@@ -293,7 +303,7 @@ export function PlanGantt({
             {zoom !== "day" &&
               holidays.map((h) => (
                 <OffDayTip key={`h-${h.at}`} label={h.name} className="absolute bottom-0.5 z-[6] flex size-3 -translate-x-1/2 cursor-help items-center justify-center" style={{ left: (h.at + 0.5) * px }}>
-                  <span className="size-1.5 rounded-full bg-danger" />
+                  <span className="size-2 rounded-full bg-danger ring-2 ring-surface" />
                 </OffDayTip>
               ))}
             {todayAt >= 0 && todayAt < days && (
@@ -335,11 +345,11 @@ export function PlanGantt({
                   )
                 )}
                 {/* 고른 줄 면. 붙박이 칸과 막대 자리를 한 띠로 칠한다 */}
-                <div aria-hidden className={cn("pointer-events-none absolute inset-0 transition-colors duration-fast", on ? "bg-acc-row" : "group-hover:bg-surface-2/60")} />
+                <div aria-hidden className={cn("pointer-events-none absolute inset-0 transition-colors duration-fast", on ? "bg-acc-row" : row.pct >= 100 && !row.hasChildren ? "bg-surface-2/70 group-hover:bg-surface-2" : "group-hover:bg-surface-2/60")} />
 
                 {/* 왼쪽 붙박이 칸: 손잡이, 접기, 번호와 작업명, 줄 아이콘(+, 옆 보기) */}
                 <div
-                  className={cn("sticky left-0 z-10 flex shrink-0 items-center gap-1 border-r border-line pr-1.5 text-[14px]", on ? "bg-acc-row" : "bg-surface group-hover:bg-surface-2")}
+                  className={cn("sticky left-0 z-10 flex shrink-0 items-center gap-1 border-r border-line pr-1.5 text-[14px]", on ? "bg-acc-row" : row.pct >= 100 && !row.hasChildren ? "bg-surface-2" : "bg-surface group-hover:bg-surface-2")}
                   style={{ width: LABEL_W, paddingLeft: 14 + row.depth * INDENT }}
                 >
                   {on && <span aria-hidden className="absolute inset-y-1 left-0 w-[3px] rounded-r-full bg-acc" />}
@@ -374,7 +384,7 @@ export function PlanGantt({
                     </button>
                   ) : (
                     <span className="flex w-5 shrink-0 justify-center" aria-hidden>
-                      <span className="size-1.5 rounded-full" style={{ background: color, opacity: row.pct >= 100 ? 0.35 : 0.8 }} />
+                      {row.pct >= 100 ? <CheckCircleIcon size={15} className="text-acc" /> : <span className="size-1.5 rounded-full" style={{ background: color }} />}
                     </span>
                   )}
                   {renamingId === row.id ? (
@@ -409,7 +419,7 @@ export function PlanGantt({
                       ) : (
                         <span className="shrink-0 text-[11.5px] tabular-nums text-dim">{row.no}</span>
                       )}
-                      <Clamp className={cn("min-w-0", row.hasChildren ? "font-bold text-ink" : row.pct >= 100 ? "text-dim" : "text-ink-2")}>{row.title}</Clamp>
+                      <Clamp className={cn("min-w-0", row.hasChildren ? "font-bold text-ink" : row.pct >= 100 ? "text-dim line-through decoration-dim/60" : "text-ink-2")}>{row.title}</Clamp>
                     </button>
                   )}
                   {/* 줄 아이콘: 바로 아래 새 줄, 옆 보기로 열기. 늘 보인다 */}
@@ -447,8 +457,9 @@ export function PlanGantt({
                         role="img"
                         aria-label={`${row.title} ${start}`}
                         {...dragProps(row)}
+                        onClick={openOnClick(row)}
                         className={cn(
-                          "absolute top-1/2 size-[15px] -translate-x-1/2 -translate-y-1/2 rotate-45 rounded-[3px] shadow-1 ring-[2.5px] ring-surface",
+                          "absolute top-1/2 size-[15px] cursor-pointer -translate-x-1/2 -translate-y-1/2 rotate-45 rounded-[3px] shadow-1 ring-[2.5px] ring-surface",
                           editable && "[@media(pointer:fine)]:cursor-ew-resize",
                         )}
                         style={{ left: (dayOffset(from, start) + 0.5) * px, background: row.pct >= 100 ? "var(--dim)" : color }}
@@ -461,7 +472,7 @@ export function PlanGantt({
 
                   {/* 상위 줄: 양 끝 꺾쇠가 달린 얇은 요약 막대 */}
                   {start && end && row.hasChildren && (
-                    <div aria-label={`${row.title} ${start} ~ ${end} ${row.pct}%`} className="absolute top-1/2 h-[7px] -translate-y-1/2" style={{ left, width: barW }}>
+                    <div aria-label={`${row.title} ${start} ~ ${end} ${row.pct}%`} onClick={openOnClick(row)} className="absolute top-1/2 h-[7px] -translate-y-1/2 cursor-pointer before:absolute before:-inset-y-2 before:inset-x-0 before:content-['']" style={{ left, width: barW }}>
                       <div className="absolute inset-0 overflow-hidden rounded-full" style={{ background: soft(row.track, 30) }}>
                         <div className="h-full" style={{ width: `${row.pct}%`, background: color }} />
                       </div>
@@ -477,6 +488,7 @@ export function PlanGantt({
                   {start && end && row.kind === "task" && !row.hasChildren && (
                     <div
                       {...dragProps(row)}
+                      onClick={openOnClick(row)}
                       aria-label={`${row.title} ${start} ~ ${end} ${row.pct}%`}
                       className={cn(
                         "absolute top-1/2 h-5 -translate-y-1/2 rounded-full",
@@ -494,8 +506,8 @@ export function PlanGantt({
                           <span className="absolute inset-y-0 right-0 hidden rounded-r-full [@media(pointer:fine)]:block [@media(pointer:fine)]:cursor-ew-resize" style={{ width: HANDLE }} />
                         </>
                       )}
-                      <span className={cn("pointer-events-none absolute left-full top-1/2 ml-2 -translate-y-1/2 whitespace-nowrap text-[12px] font-semibold tabular-nums", row.pct >= 100 ? "text-dim" : "text-ink-2")}>
-                        {row.pct}%
+                      <span className={cn("pointer-events-none absolute left-full top-1/2 ml-2 -translate-y-1/2 whitespace-nowrap text-[12px] font-semibold tabular-nums", row.pct >= 100 ? "text-acc" : "text-ink-2")}>
+                        {row.pct >= 100 ? M.doneLabel : `${row.pct}%`}
                       </span>
                     </div>
                   )}

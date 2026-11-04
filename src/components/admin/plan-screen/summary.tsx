@@ -85,7 +85,8 @@ function StripItem({ lead, label, pct, color, note, onClick }: { lead: React.Rea
 
 function FoldButton({ fold }: { fold: Fold }) {
   return (
-    <button type="button" onClick={fold.onToggle} aria-expanded={fold.open} className="press flex shrink-0 items-center gap-1 rounded-lg px-2.5 py-1.5 text-[12.5px] font-semibold text-dim hover:bg-surface-2 hover:text-ink">
+    // 펴도 접어도 같은 자리(판 오른쪽 위)에 선다 — 펴면 바닥으로 내려가 다시 찾아야 했다(사용자 "그 자리에서 다시 접게, 버튼 고정")
+    <button type="button" onClick={fold.onToggle} aria-expanded={fold.open} className="press absolute right-2 top-1.5 z-10 flex shrink-0 items-center gap-1 rounded-lg bg-surface px-2.5 py-1.5 text-[12.5px] font-semibold text-dim hover:bg-surface-2 hover:text-ink">
       {fold.open ? M.summaryClose : M.summaryOpen}
       <ChevronDownIcon size={14} className={cn("transition-transform duration-fast", fold.open && "rotate-180")} />
     </button>
@@ -94,7 +95,8 @@ function FoldButton({ fold }: { fold: Fold }) {
 
 function Strip({ fold, children, milestone, today, onPick }: { fold: Fold; children: React.ReactNode; milestone: PlanRow | null; today: string; onPick: (id: string) => void }) {
   return (
-    <section aria-label={M.summary} className="flex items-center gap-1 rounded-xl border border-line bg-surface px-2 py-1">
+    <section aria-label={M.summary} className="relative flex items-center gap-1 rounded-xl border border-line bg-surface py-1 pl-2 pr-24">
+      <FoldButton fold={fold} />
       <div className="flex min-w-0 flex-1 flex-wrap items-center gap-x-1 gap-y-0.5">
         {children}
         {milestone?.start && (
@@ -105,7 +107,6 @@ function Strip({ fold, children, milestone, today, onPick }: { fold: Fold; child
           </button>
         )}
       </div>
-      <FoldButton fold={fold} />
     </section>
   );
 }
@@ -136,14 +137,13 @@ export function PersonSummary({ people, nameOf, milestone, today, onPick, fold }
       </Strip>
     );
   return (
-    <section aria-label={M.summary} className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+    <section aria-label={M.summary} className="relative grid gap-3 rounded-xl border border-line bg-surface-2/50 p-2 pt-10 sm:grid-cols-2 xl:grid-cols-4">
+      <FoldButton fold={fold} />
+      <span className="absolute left-3.5 top-3 text-[13px] font-bold text-ink-2">{M.summary}</span>
       {people.map((p) => (
         <PersonCard key={p.assigneeId ?? "none"} p={p} name={nameOf(p.assigneeId)} today={today} onPick={onPick} />
       ))}
       <MilestoneCard milestone={milestone} today={today} onPick={onPick} />
-      <div className="col-span-full -mt-1 flex justify-end">
-        <FoldButton fold={fold} />
-      </div>
     </section>
   );
 }
@@ -166,7 +166,9 @@ export function PlanSummary({ tracks, milestone, today, onPick, fold }: { tracks
       </Strip>
     );
   return (
-    <section aria-label={M.summary} className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+    <section aria-label={M.summary} className="relative grid gap-3 rounded-xl border border-line bg-surface-2/50 p-2 pt-10 sm:grid-cols-2 xl:grid-cols-4">
+      <FoldButton fold={fold} />
+      <span className="absolute left-3.5 top-3 text-[13px] font-bold text-ink-2">{M.summary}</span>
       {tracks.map((t) => (
         <div key={t.track} className={CARD}>
           <div className="flex items-center gap-2 text-[13.5px] font-semibold text-ink-2">
@@ -191,9 +193,6 @@ export function PlanSummary({ tracks, milestone, today, onPick, fold }: { tracks
         </div>
       ))}
       <MilestoneCard milestone={milestone} today={today} onPick={onPick} />
-      <div className="col-span-full -mt-1 flex justify-end">
-        <FoldButton fold={fold} />
-      </div>
     </section>
   );
 }
