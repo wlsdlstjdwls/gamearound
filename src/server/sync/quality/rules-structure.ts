@@ -9,10 +9,9 @@
 //
 // rules.ts 와 같은 약속: DB 를 모른다, 판정만 돌려준다, 사례는 테스트 픽스처로 남긴다.
 import type { ContentType } from "@/server/db/schema";
-import { isWordPrefix, titleWords, type QualityFinding, type QualityGame } from "./rules";
+import { compactWords, isWordPrefix, titleWords, UPGRADE_WORDS, type QualityFinding, type QualityGame } from "./rules";
 
 /** 제목으로 갈래를 정한다. 업그레이드는 본편 소유자가 사는 추가 상품이고, 여러 작품을 담은 것은 묶음이다 */
-const UPGRADE_WORDS = /\bupgrade\b|アップグレード|업그레이드/i;
 const BUNDLE_WORDS = /\b(bundle|collection|trilogy|triple|saga|pack)\b|\+|번들|합본/i;
 
 export function variantTypeOf(title: string): ContentType {
@@ -68,7 +67,8 @@ export function findDuplicateTitles(games: readonly QualityGame[], storeIds: Sto
   const byTitle = new Map<string, QualityGame[]>();
   for (const g of games) {
     if (g.contentType !== "game" || g.parentGameId) continue;
-    const w = titleWords(g.titleEn);
+    // 공백을 지운 제목으로 묶는다 — 띄어쓰기만 다른 두 줄도 같은 게임이다(2026-11-04 Watch Dogs2 대 Watch_Dogs 2)
+    const w = compactWords(titleWords(g.titleEn));
     if (w) byTitle.set(w, [...(byTitle.get(w) ?? []), g]);
   }
   const out: QualityFinding[] = [];

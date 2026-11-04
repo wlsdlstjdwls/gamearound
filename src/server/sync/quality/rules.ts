@@ -9,6 +9,7 @@
 // 이 파일은 DB 를 모른다 — 읽어 온 행을 받아 판정만 돌려준다(테스트가 픽스처로 돈다). 읽기는 load.ts, 쓰기는 apply.ts.
 // 규칙을 늘릴 때: 손으로 고친 판정 하나를 여기 함수 하나로 옮기고, 그 사례를 테스트 픽스처로 남긴다.
 import type { ContentType } from "@/server/db/schema";
+import { seriesConflict } from "@/lib/slug";
 
 export type QualityRule =
   | "parent_more_specific"
@@ -55,6 +56,8 @@ export interface QualityPlatformRow {
   releaseDate: string | null;
   /** 값이 붙어 있는가 = 지금 파는 행인가. 안 파는 행의 빈 출시일은 고칠 일이 아니다 */
   priced: boolean;
+  /** 본편이 아닌 행(에디션, 추가 콘텐츠, 묶음)의 판인가. 이식판이 따로 나오지 않아 형제 날짜를 그대로 쓴다 */
+  addon?: boolean;
 }
 
 export interface SharedStoreId {
@@ -70,20 +73,26 @@ const REHOME_TYPES: ReadonlySet<ContentType> = new Set(["dlc", "edition"]);
  * 2026-10-28 콜 오브 듀티 묶음 사례의 본편들은 모두 넷 이상이었다
  */
 const REHOME_MIN_WORDS = 2;
+/**
+ * 지금 부모가 남의 작품일 때 자동으로 옮길 본편 제목의 최소 낱말 수. 2026-11-04 관리자가 손으로 옮긴 26건의 본편
+ * (Bus Simulator 27, Need for Speed Unbound, Magical Girl Witch Trials, Call of Duty Black Ops 7)은 모두 셋 이상이었다.
+ * 두 낱말 본편("Spider Man 2")은 옛 작품과 새 작품이 같은 접두를 나눠 써서 사람에게 묻는다
+ */
+const REHOME_OTHER_MIN_WORDS = 3;
+/**
+ * 업그레이드는 본편 소유자가 사는 것이라 제목 접두가 가리키는 묶음(Cross-Gen Bundle)이 아니라 본편 밑이 맞다 —
+ * 제목만으로는 자리를 못 고른다(2026-11-04 Vanguard Cross-Gen Bundle Upgrade). rules-structure 의 갈래 판정도 쓴다
+ */
+export const UPGRADE_WORDS = /\bupgrade\b|アップグレード|업그레이드/i;
 /** 출시일을 형제 행에서 빌릴 때 서로 다른 날짜를 같은 날로 보는 폭. 스토어마다 UTC, 현지 날짜를 섞어 쓴다 */
 const RELEASE_AGREE_DAYS = 1;
 /** 자동으로 채우려면 날짜를 낸 형제 행이 이만큼 있어야 한다. 하나뿐이면 늦게 나온 이식판을 앞당길 수 있다 */
 const RELEASE_AUTO_MIN_SOURCES = 2;
 /**
- * 자동으로 채우는 것은 동시 출시로 볼 수 있는 새 작품뿐이다 — 다른 플랫폼 날짜가 오늘에서 이 날수 안(또는 앞으로)일 때.
- * 오래된 작품의 빈 칸은 대개 나중에 나온 이식판이라 형제 날짜를 빌리면 틀린다(2026-10-28 실측: 2022 년 작품의 switch2 행)
+ * 이 날수 안의 작품만 본다 — 오래된 작품의 빈 칸은 대개 나중에 나온 이식판이라 형제 날짜를 빌리면 틀린다
+ * (2026-10-28 실측: 2022 년 작품의 switch2 행). 거르지 않으면 후보가 90건이었고 대부분 몇 년 된 작품의 Epic, 스위치 행이었다.
  */
-const RELEASE_AUTO_RECENT_DAYS = 90;
-/**
- * 사람에게 올리는 것도 이 날수 안의 작품만이다. 2026-10-28 실측으로 거르지 않으면 후보가 90건이었고 대부분 몇 년 된
- * 작품의 Epic, 스위치 행이었다 — 화면이 "출시일" 로 쓸 일이 거의 없는 값이라 관리자 줄만 길어진다
- */
-const RELEASE_CANDIDATE_RECENT_DAYS = 365;
+const RELEASE_RECENT_DAYS = 365;
 /**
  * 기기가 나온 날. 형제 날짜가 이보다 이르면 그 행은 이식판이 확실해 빌릴 날짜가 없다 — 판정 자체를 내지 않는다.
  * Steam, Epic, Xbox(두 세대를 한 행으로 쓴다)는 기준이 없다
@@ -121,6 +130,11 @@ export function titleWords(title: string): string {
     .replace(/&/g, " and ")
     .replace(/[^\p{L}\p{N}]+/gu, " ")
     .trim();
+}
+
+/** titleWords 결과에서 공백까지 지운 것. 스토어마다 띄어쓰기가 갈린다("Watch Dogs2", "Watch_Dogs 2") */
+export function compactWords(words: string): string {
+  return words.replace(/ /g, "");
 }
 
 /** a 가 b 의 낱말 단위 접두인가. "modern warfare ii" 는 "modern warfare iii x" 의 접두가 아니다 */
@@ -166,13 +180,24 @@ export function findParentMoreSpecific(
     for (const b of byFirstWord.get(childWords.split(" ")[0]) ?? []) {
       if (b.g.id === parent.id || b.g.id === child.id || !isWordPrefix(b.words, childWords) || b.words === childWords) continue;
       if (b.words.length <= parentWords.length) continue;
+      // 띄어쓰기만 다른 같은 제목이면 옮길 일이 아니라 본편 중복이다 — duplicate_title 몫(2026-11-04 Watch Dogs2 대 Watch_Dogs 2)
+      if (compactWords(b.words) === compactWords(parentWords)) continue;
       if (best.length === 0 || b.words.length > best[0].words.length) best = [b];
       else if (b.words.length === best[0].words.length) best.push(b);
     }
     if (best.length === 0) continue;
     const to = best[0].g;
     const narrowing = isWordPrefix(parentWords, best[0].words);
-    const verdict: Verdict = best.length === 1 && narrowing && !pricedGameIds.has(parent.id) ? "auto" : "candidate";
+    // 지금 부모가 아예 다른 작품인가 — 제목이 부모 제목으로 시작하지 않거나(EA FC 27 밑의 Bus Simulator 27 팩),
+    // 시리즈 번호가 갈린다(Black Ops 밑의 Black Ops 7 Vault Edition). 파는 본편 밑이어도 그 본편이 남의 것이면 옮긴다
+    // 접두는 공백을 지우고 본다 — "Watch Dogs2" 와 "Watch_Dogs 2" 는 띄어쓰기만 다른 같은 작품이다(2026-11-04 실측).
+    // 번호 비교도 낱말 접두가 맞을 때만 한다 — 붙여 쓴 "Dogs2" 의 2 는 번호로 안 읽혀 1편으로 잡힌다
+    const parentIsOther =
+      !compactWords(childWords).startsWith(compactWords(parentWords)) ||
+      (isWordPrefix(parentWords, childWords) && seriesConflict(parent.titleEn, to.titleEn));
+    const rehomeFromOther =
+      parentIsOther && best[0].words.split(" ").length >= REHOME_OTHER_MIN_WORDS && !UPGRADE_WORDS.test(child.titleEn);
+    const verdict: Verdict = best.length === 1 && ((narrowing && !pricedGameIds.has(parent.id)) || rehomeFromOther) ? "auto" : "candidate";
     const reason =
       best.length > 1
         ? `"${child.titleEn}" 이 "${to.titleEn}" 로 시작하는데 같은 제목 본편이 ${best.length}개예요`
@@ -193,6 +218,10 @@ export function findParentMoreSpecific(
  * ② 파는 행인데 출시일이 빈 것을 같은 게임의 다른 플랫폼 날짜로.
  * 2026-10-28 사례: BO7 PS 행을 상품 id 로 바꾸자 상품 응답이 출시일을 안 줘 비었다. 수집은 null 로 덮지 않으므로
  * 채운 값은 스토어가 날짜를 줄 때까지만 쓰이고, 주면 그 값으로 바뀐다(잠그지 않는다).
+ *
+ * 2026-11-04 사람에게 묻는 갈래(candidate)를 걷었다. 관리자 판정 세 회차(11-02, 11-03 2,280건, 11-04)가 한 번도
+ * 갈리지 않았다 — 형제 둘 이상이 맞으면 채우고, 본편이 아닌 행이면 채우고, 본편 행인데 날짜를 낸 곳이 하나이거나
+ * 날짜가 갈리면 넘겼다(이식판 위험). 앞 둘은 auto 로, 마지막은 판정을 내지 않는다. 스토어가 날짜를 주면 저절로 찬다.
  */
 export function findReleaseDateGaps(rows: readonly QualityPlatformRow[], now: Date): QualityFinding[] {
   const byGame = new Map<string, QualityPlatformRow[]>();
@@ -209,17 +238,17 @@ export function findReleaseDateGaps(rows: readonly QualityPlatformRow[], now: Da
       if (launch && earliest < launch) continue;
       const spreadDays = (Date.parse(dated[dated.length - 1]) - Date.parse(earliest)) / DAY_MS;
       const ageDays = (now.getTime() - Date.parse(earliest)) / DAY_MS;
-      if (ageDays > RELEASE_CANDIDATE_RECENT_DAYS) continue;
-      const recent = ageDays <= RELEASE_AUTO_RECENT_DAYS;
-      const agree = dated.length >= RELEASE_AUTO_MIN_SOURCES && spreadDays <= RELEASE_AGREE_DAYS && recent;
+      if (ageDays > RELEASE_RECENT_DAYS) continue;
+      const agree = dated.length >= RELEASE_AUTO_MIN_SOURCES && spreadDays <= RELEASE_AGREE_DAYS;
+      if (!agree && !r.addon) continue;
       out.push({
         rule: "release_date_gap",
-        verdict: agree ? "auto" : "candidate",
+        verdict: "auto",
         subjectKey: r.id,
         gameId,
         reason: agree
           ? `${r.platform} 출시일이 비어 있어요. 다른 플랫폼 ${dated.length}곳이 ${fill} 로 맞아요`
-          : `${r.platform} 출시일이 비어 있어요. 다른 플랫폼 날짜: ${dated.join(", ")}. 고치면 ${fill} 로 채워요`,
+          : `${r.platform} 출시일이 비어 있어요. 본편이 아닌 행이라 다른 플랫폼 날짜 ${fill} 로 채워요`,
         fix: { kind: "set_release_date", platformRowId: r.id, date: fill },
       });
     }

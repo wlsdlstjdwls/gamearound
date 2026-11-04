@@ -72,6 +72,53 @@ describe("findParentMoreSpecific", () => {
     expect(f.verdict).toBe("candidate");
   });
 
+  // 2026-11-04 관리자가 손으로 옮긴 26건: 부모가 남의 작품이면 파는 본편 밑이어도 옮긴다
+  it("부모가 남의 작품이면 자동으로 옮긴다", () => {
+    const other = [
+      g("fc", "EA SPORTS FC 27"),
+      g("bus", "Bus Simulator 27"),
+      g("heat", "Need for Speed Heat"),
+      g("unb", "Need for Speed Unbound"),
+      g("bo", "Call of Duty: Black Ops"),
+      g("bo7", "Call of Duty: Black Ops 7"),
+      g("p1", "Bus Simulator 27 - Season Pass", "dlc", "fc"),
+      g("p2", "Need for Speed Unbound - Vol.3 Catch-Up Pack", "dlc", "heat"),
+      g("p3", "Call of Duty®: Black Ops 7 - Vault Edition", "edition", "bo"),
+    ];
+    const out = findParentMoreSpecific(other, NONE, new Set(["fc", "heat", "bo", "bus", "unb", "bo7"]));
+    expect(out.map((f) => [f.subjectKey, f.verdict, f.fix?.kind === "set_parent" ? f.fix.to : null])).toEqual([
+      ["p1", "auto", "bus"],
+      ["p2", "auto", "unb"],
+      ["p3", "auto", "bo7"],
+    ]);
+  });
+
+  it("띄어쓰기만 다른 같은 제목 본편으로는 옮기지 않는다(본편 중복 몫, Watch Dogs2 대 Watch_Dogs 2)", () => {
+    const wd = [g("a", "Watch Dogs2"), g("b", "Watch_Dogs 2"), g("p", "Watch Dogs®2 - Stealth Pack", "dlc", "a")];
+    expect(findParentMoreSpecific(wd, NONE, new Set(["a", "b"]))).toEqual([]);
+  });
+
+  it("띄어쓰기만 다른 부모는 남의 작품이 아니다", () => {
+    const wd = [g("a", "Watch Dogs2"), g("b", "Watch_Dogs 2: Deluxe"), g("p", "Watch Dogs 2: Deluxe - Pack", "dlc", "a")];
+    expect(findParentMoreSpecific(wd, NONE, new Set(["a", "b"])).map((f) => f.verdict)).toEqual(["candidate"]);
+  });
+
+  it("남의 작품 밑이어도 업그레이드와 두 낱말 본편은 사람에게 묻는다", () => {
+    const ask = [
+      g("waw", "Call of Duty: World at War"),
+      g("bundle", "Call of Duty: Vanguard - Cross-Gen Bundle"),
+      g("up", "Call of Duty®: Vanguard - Cross-Gen Bundle Upgrade", "dlc", "waw"),
+      g("pac", "Pac Man"),
+      g("old", "Spider Man"),
+      g("suit", "Spider Man - Suit Pack", "dlc", "pac"),
+    ];
+    const out = findParentMoreSpecific(ask, NONE, new Set(["waw", "pac"]));
+    expect(out.map((f) => [f.subjectKey, f.verdict])).toEqual([
+      ["up", "candidate"],
+      ["suit", "candidate"],
+    ]);
+  });
+
   it("한 낱말 본편은 후보로 보지 않는다", () => {
     const one = [g("hub", "Id"), g("doom", "Doom"), g("d", "Doom Eternal - Pack", "dlc", "hub")];
     expect(findParentMoreSpecific(one, NONE, NONE)).toEqual([]);
@@ -104,9 +151,21 @@ describe("findReleaseDateGaps", () => {
     expect(pickReleaseDate(["2026-03-19", "2026-03-20"])).toBe("2026-03-20");
   });
 
-  it("날짜를 낸 곳이 하나뿐이면 사람에게 묻는다", () => {
-    const [f] = findReleaseDateGaps([row("a", "steam", "2026-09-16"), row("c", "epic", null)], NOW);
-    expect(f.verdict).toBe("candidate");
+  // 2026-11-04 관리자 판정 세 회차가 늘 넘긴 꼴이라 판정을 내지 않는다(이식판 위험)
+  it("본편 행인데 날짜를 낸 곳이 하나뿐이거나 날짜가 갈리면 올리지 않는다", () => {
+    expect(findReleaseDateGaps([row("a", "steam", "2026-09-16"), row("c", "epic", null)], NOW)).toEqual([]);
+    expect(findReleaseDateGaps([row("a", "steam", "2025-11-29"), row("b", "ps5", "2026-10-26"), row("c", "epic", null)], NOW)).toEqual([]);
+  });
+
+  it("본편이 아닌 행은 날짜를 낸 곳이 하나여도 채운다", () => {
+    const addon = (id: string, platform: string, d: string | null): QualityPlatformRow => ({ ...row(id, platform, d), addon: true });
+    const [f] = findReleaseDateGaps([addon("a", "steam", "2026-10-30"), addon("c", "xbox", null)], NOW);
+    expect(f).toMatchObject({ verdict: "auto", fix: { platformRowId: "c", date: "2026-10-30" } });
+  });
+
+  it("형제 둘이 맞으면 석 달 넘은 작품도 한 해 안이면 채운다(2026-11-04 Pit Panic)", () => {
+    const [f] = findReleaseDateGaps([row("a", "switch", "2026-07-21"), row("b", "steam", "2026-07-21"), row("c", "switch2", null)], NOW);
+    expect(f.verdict).toBe("auto");
   });
 
   it("오래된 작품의 빈 칸은 올리지 않는다(이식판일 공산이 크다)", () => {

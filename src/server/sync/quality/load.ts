@@ -53,7 +53,15 @@ export async function loadQualityInput(db: Db): Promise<QualityInput> {
   ]);
   const storeIds = new Map<string, Record<string, string>>();
   for (const r of refRows) storeIds.set(r.gameId, { ...storeIds.get(r.gameId), [r.source]: r.externalId });
-  const platforms = platformRows.map((r) => ({ id: r.id, gameId: r.gameId, platform: r.platform, releaseDate: r.releaseDate, priced: r.price !== null }));
+  const typeOf = new Map(gameRows.map((g) => [g.id, g.contentType]));
+  const platforms = platformRows.map((r) => ({
+    id: r.id,
+    gameId: r.gameId,
+    platform: r.platform,
+    releaseDate: r.releaseDate,
+    priced: r.price !== null,
+    addon: (typeOf.get(r.gameId) ?? "game") !== "game",
+  }));
   return {
     games: gameRows,
     slugOf: new Map(gameRows.map((g) => [g.id, g.slug])),

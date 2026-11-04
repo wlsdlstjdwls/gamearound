@@ -47,6 +47,11 @@ describe("findDuplicateTitles", () => {
     expect(f.reason).toContain("squad-1b308841:squad");
   });
 
+  it("띄어쓰기만 다른 제목도 같은 본편으로 본다(2026-11-04 Watch Dogs2 대 Watch_Dogs 2)", () => {
+    const [f] = findDuplicateTitles([g("a", "Watch Dogs2"), g("b", "Watch_Dogs 2")], ids({ a: { xbox: "BSXLFN5QQZSC" }, b: { steam: "447040" } }));
+    expect(f?.verdict).toBe("notify");
+  });
+
   it("같은 스토어 번호가 갈리면 다른 상품이라 올리지 않는다", () => {
     // 일본 닌텐도가 같은 이름을 두 번호로 판다(2026-11-03 실측: 夜勤事件)
     const games = [g("a", "夜勤事件", null, "x-7067059f"), g("b", "夜勤事件", null, "x")];
