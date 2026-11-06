@@ -1,9 +1,10 @@
 // 데이터 점검기의 읽기. 규칙(rules.ts)이 판정할 재료를 한 번에 받아 온다.
-// 질의 다섯을 한 묶음(Promise.all)으로 보낸다 — 줄 세우면 Neon 왕복이 그대로 쌓인다(하루 크론의 60초 안에 든다).
-import { and, eq, inArray, sql } from "drizzle-orm";
+// 질의 일곱을 한 묶음(Promise.all)으로 보낸다 — 줄 세우면 Neon 왕복이 그대로 쌓인다(하루 크론의 60초 안에 든다).
+import { and, eq, inArray, isNotNull, sql } from "drizzle-orm";
 import type { Db } from "@/server/db/client";
 import { dataCorrections, dataIssues, gamePlatforms, games, gameSourceRefs } from "@/server/db/schema";
 import type { QualityGame, QualityPlatformRow, QualityRule, SharedStoreId } from "./rules";
+import type { QualityRef } from "./rules-identity";
 
 /** 공유를 따질 연결. pending, none 은 아직 확정이 아니라 둘이 같은 id 를 쥐어도 문제가 아니다 */
 const CONFIRMED_MATCHES = ["auto", "manual"];
@@ -19,6 +20,8 @@ export interface QualityInput {
   shared: SharedStoreId[];
   /** 게임마다 확정된 스토어 상품 번호. 같은 제목 중복이 정말 같은 상품인지 가른다 */
   storeIds: Map<string, Record<string, string>>;
+  /** 확정 연결 중 후보 제목이 남은 것. 한 행에 다른 게임 연결이 섞였는지 가른다(rules-identity) */
+  titledRefs: QualityRef[];
   /** 이미 남긴 판정. 열쇠는 `${rule}:${subjectKey}` */
   issues: Map<string, { id: string; status: "open" | "applied" | "dismissed" }>;
 }
@@ -26,7 +29,7 @@ export interface QualityInput {
 export const issueKey = (rule: QualityRule | string, subjectKey: string) => `${rule}:${subjectKey}`;
 
 export async function loadQualityInput(db: Db): Promise<QualityInput> {
-  const [gameRows, platformRows, lockRows, sharedRows, issueRows, refRows] = await Promise.all([
+  const [gameRows, platformRows, lockRows, sharedRows, issueRows, refRows, titledRows] = await Promise.all([
     db.select({ id: games.id, slug: games.slug, titleEn: games.titleEn, contentType: games.contentType, parentGameId: games.parentGameId }).from(games),
     db
       .select({ id: gamePlatforms.id, gameId: gamePlatforms.gameId, platform: gamePlatforms.platform, releaseDate: gamePlatforms.releaseDate, price: gamePlatforms.currentPrice })
@@ -50,6 +53,16 @@ export async function loadQualityInput(db: Db): Promise<QualityInput> {
       .select({ gameId: gameSourceRefs.gameId, source: sql<string>`${gameSourceRefs.source}::text`, externalId: gameSourceRefs.externalId })
       .from(gameSourceRefs)
       .where(and(inArray(gameSourceRefs.matchedBy, CONFIRMED_MATCHES), inArray(gameSourceRefs.source, [...STORE_SOURCES]))),
+    db
+      .select({
+        gameId: gameSourceRefs.gameId,
+        source: sql<string>`${gameSourceRefs.source}::text`,
+        externalId: gameSourceRefs.externalId,
+        matchedTitle: sql<string>`${gameSourceRefs.matchedTitle}`,
+        matchedBy: sql<"auto" | "manual">`${gameSourceRefs.matchedBy}::text`,
+      })
+      .from(gameSourceRefs)
+      .where(and(inArray(gameSourceRefs.matchedBy, CONFIRMED_MATCHES), isNotNull(gameSourceRefs.matchedTitle))),
   ]);
   const storeIds = new Map<string, Record<string, string>>();
   for (const r of refRows) storeIds.set(r.gameId, { ...storeIds.get(r.gameId), [r.source]: r.externalId });
@@ -70,6 +83,7 @@ export async function loadQualityInput(db: Db): Promise<QualityInput> {
     lockedParent: new Set(lockRows.map((r) => r.rowId)),
     shared: sharedRows,
     storeIds,
+    titledRefs: titledRows,
     issues: new Map(issueRows.map((r) => [issueKey(r.rule, r.subjectKey), { id: r.id, status: r.status }])),
   };
 }

@@ -18,7 +18,8 @@ export type QualityRule =
   | "self_parent"
   | "shared_store_id"
   | "game_with_parent"
-  | "duplicate_title";
+  | "duplicate_title"
+  | "mixed_identity";
 export type Verdict = "auto" | "candidate" | "notify";
 
 /** 적용할 수 있는 고침. notify 는 고침이 없다 */
@@ -26,7 +27,10 @@ export type QualityFix =
   | { kind: "set_parent"; gameId: string; from: string | null; to: string }
   | { kind: "promote_game"; gameId: string; from: string }
   | { kind: "set_release_date"; platformRowId: string; date: string }
-  | { kind: "set_content_type"; gameId: string; from: ContentType; to: ContentType };
+  | { kind: "set_content_type"; gameId: string; from: ContentType; to: ContentType }
+  | { kind: "unlink_meta_ref"; gameId: string; source: string; externalId: string }
+  /** 섞인 스토어 판을 떼어 낸다. toGameId 가 null 이면 title 로 새 행을 세운다 */
+  | { kind: "split_store_ref"; gameId: string; source: string; externalId: string; title: string; toGameId: string | null };
 
 export interface QualityFinding {
   rule: QualityRule;

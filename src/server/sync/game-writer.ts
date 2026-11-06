@@ -11,7 +11,7 @@ import { isLocked, type Ctx } from "./context";
 import { META_OVERWRITE_SOURCES } from "./constants";
 
 /** slug 충돌 처리: base → base-<externalId> → base-<externalId>-<ts> */
-async function uniqueSlug(db: Db, titleEn: string, externalId: string): Promise<string> {
+export async function uniqueSlug(db: Db, titleEn: string, externalId: string): Promise<string> {
   const base = slugify(titleEn);
   const candidates = [base, slugWithSuffix(base, externalId), slugWithSuffix(base, `${externalId}-${Date.now()}`)];
   for (const c of candidates) {

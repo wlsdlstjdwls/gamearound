@@ -53,6 +53,7 @@ export const QUALITY_RULE_LABEL: Record<string, string> = {
   shared_store_id: "스토어 상품 중복 연결",
   game_with_parent: "본편의 상위 작품 연결",
   duplicate_title: "같은 제목 본편 중복",
+  mixed_identity: "다른 게임 연결 섞임",
   /** 검색 결과의 "이 게임 추가 요청"(services/search-misses). 게임이 없어 게임 칸은 비어 선다 */
   search_request: "검색 추가 요청",
 };

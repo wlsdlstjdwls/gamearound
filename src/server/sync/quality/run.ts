@@ -19,6 +19,7 @@ import { deleteOpenIssues, upsertIssues } from "./issues";
 import { issueKey, loadQualityInput } from "./load";
 import { findParentChains, findParentMoreSpecific, findReleaseDateGaps, findSharedStoreIds, type QualityFinding } from "./rules";
 import { findDuplicateTitles, findGamesWithParent } from "./rules-structure";
+import { findMixedIdentity } from "./rules-identity";
 
 export interface QualityRunResult {
   found: number;
@@ -43,6 +44,7 @@ export async function runDataQuality(now: Date = new Date()): Promise<QualityRun
     ...findSharedStoreIds(input.shared),
     ...findGamesWithParent(input.games, input.lockedParent),
     ...findDuplicateTitles(input.games, input.storeIds),
+    ...findMixedIdentity(input.games, input.titledRefs),
   ];
 
   const result: QualityRunResult = { found: findings.length, autoApplied: 0, newlyOpened: 0, open: 0, stale: 0, vanished: 0, failed: 0, errors: [] };
