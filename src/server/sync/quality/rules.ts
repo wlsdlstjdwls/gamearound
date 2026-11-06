@@ -96,7 +96,7 @@ const RELEASE_AUTO_MIN_SOURCES = 2;
  * 이 날수 안의 작품만 본다 — 오래된 작품의 빈 칸은 대개 나중에 나온 이식판이라 형제 날짜를 빌리면 틀린다
  * (2026-10-28 실측: 2022 년 작품의 switch2 행). 거르지 않으면 후보가 90건이었고 대부분 몇 년 된 작품의 Epic, 스위치 행이었다.
  */
-const RELEASE_RECENT_DAYS = 365;
+export const RELEASE_RECENT_DAYS = 365;
 /**
  * 기기가 나온 날. 형제 날짜가 이보다 이르면 그 행은 이식판이 확실해 빌릴 날짜가 없다 — 판정 자체를 내지 않는다.
  * Steam, Epic, Xbox(두 세대를 한 행으로 쓴다)는 기준이 없다

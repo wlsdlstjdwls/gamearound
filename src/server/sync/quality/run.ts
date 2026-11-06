@@ -16,7 +16,7 @@ import { ERROR_SAMPLE_MAX, QUALITY_AUTO_FIX_MAX, QUALITY_NOTICE_SAMPLE_MAX, QUAL
 import { revalidateGameTags } from "../revalidate";
 import { applyQualityFix, StaleFixError } from "./apply";
 import { deleteOpenIssues, upsertIssues } from "./issues";
-import { issueKey, loadQualityInput } from "./load";
+import { issueKey, loadGameSlugs, loadQualityInput } from "./load";
 import { findParentChains, findParentMoreSpecific, findReleaseDateGaps, findSharedStoreIds, type QualityFinding } from "./rules";
 import { findDuplicateTitles, findGamesWithParent } from "./rules-structure";
 import { findMixedIdentity } from "./rules-identity";
@@ -36,7 +36,7 @@ export interface QualityRunResult {
 
 export async function runDataQuality(now: Date = new Date()): Promise<QualityRunResult> {
   const db = getDb();
-  const input = await loadQualityInput(db);
+  const input = await loadQualityInput(db, now);
   const findings: QualityFinding[] = [
     ...findParentChains(input.games, input.lockedParent),
     ...findParentMoreSpecific(input.games, input.lockedParent, input.pricedGameIds),
@@ -87,9 +87,8 @@ export async function runDataQuality(now: Date = new Date()): Promise<QualityRun
   result.autoApplied = applied.length;
   result.open = toOpen.length;
 
-  const slugs = [...touched].map((id) => input.slugOf.get(id)).filter((s): s is string => Boolean(s));
   try {
-    await revalidateGameTags(slugs);
+    await revalidateGameTags(await loadGameSlugs(db, [...touched]));
   } catch (e) {
     result.errors.push(`[revalidate] ${errorMessage(e)}`);
   }

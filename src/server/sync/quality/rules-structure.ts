@@ -63,18 +63,24 @@ export interface StoreIds {
   get(gameId: string): Record<string, string> | undefined;
 }
 
-export function findDuplicateTitles(games: readonly QualityGame[], storeIds: StoreIds): QualityFinding[] {
-  const byTitle = new Map<string, QualityGame[]>();
+/**
+ * 같은 제목 본편 두 줄 묶음. 판정 재료(스토어 번호, slug)는 이 묶음의 게임만 있으면 된다 —
+ * 읽기(load.ts)가 카탈로그 전체의 연결과 slug 를 받지 않고 이 게임들 것만 묻는 데 쓴다(2026-11-06 Neon 전송량)
+ */
+export function duplicateTitlePairs<G extends QualityGame>(games: readonly G[]): Array<[G, G]> {
+  const byTitle = new Map<string, G[]>();
   for (const g of games) {
     if (g.contentType !== "game" || g.parentGameId) continue;
     // 공백을 지운 제목으로 묶는다 — 띄어쓰기만 다른 두 줄도 같은 게임이다(2026-11-04 Watch Dogs2 대 Watch_Dogs 2)
     const w = compactWords(titleWords(g.titleEn));
     if (w) byTitle.set(w, [...(byTitle.get(w) ?? []), g]);
   }
+  return [...byTitle.values()].filter((list) => list.length === 2).map(([a, b]) => [a, b]);
+}
+
+export function findDuplicateTitles(games: readonly QualityGame[], storeIds: StoreIds): QualityFinding[] {
   const out: QualityFinding[] = [];
-  for (const list of byTitle.values()) {
-    if (list.length !== 2) continue;
-    const [a, b] = list;
+  for (const [a, b] of duplicateTitlePairs(games)) {
     const ia = storeIds.get(a.id) ?? {};
     const ib = storeIds.get(b.id) ?? {};
     if (Object.entries(ia).some(([s, id]) => ib[s] && ib[s] !== id)) continue;

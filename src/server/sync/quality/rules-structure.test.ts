@@ -1,6 +1,6 @@
 // 구조 규칙 판정 — 2026-11-03 옛 DB 병합 뒤 손으로 고친 사례들을 픽스처로 남긴다
 import { describe, expect, it } from "vitest";
-import { findDuplicateTitles, findGamesWithParent, variantTypeOf } from "./rules-structure";
+import { duplicateTitlePairs, findDuplicateTitles, findGamesWithParent, variantTypeOf } from "./rules-structure";
 import type { QualityGame } from "./rules";
 
 const g = (id: string, titleEn: string, parentGameId: string | null = null, slug = id): QualityGame => ({ id, slug, titleEn, contentType: "game", parentGameId });
@@ -34,6 +34,21 @@ describe("findGamesWithParent", () => {
 
   it("제목이 같으면 중복 규칙 몫이라 내지 않는다", () => {
     expect(findGamesWithParent([g("p", "Abathor"), g("c", "Abathor", "p")], new Set())).toEqual([]);
+  });
+});
+
+describe("duplicateTitlePairs", () => {
+  it("부모 없는 본편 두 줄만 묶는다(읽기가 이 게임들의 연결만 묻는다)", () => {
+    const pairs = duplicateTitlePairs([
+      g("a", "Watch Dogs2"),
+      g("b", "Watch_Dogs 2"),
+      g("c", "Hades"),
+      g("d", "Doom"),
+      g("e", "DOOM"),
+      g("f", "Doom", null, "doom-3"),
+      g("x", "Hades", "c"),
+    ]);
+    expect(pairs.map(([a, b]) => [a.id, b.id])).toEqual([["a", "b"]]);
   });
 });
 
