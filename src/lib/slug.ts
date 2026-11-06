@@ -305,7 +305,7 @@ export function seriesConflict(a: string, b: string): boolean {
  * (Portal / Portal 2 0.78 → 0.67, 풍화설월 / 무쌍 풍화설월 0.71 → 0.60).
  * 같은 게임 최저 0.87, 다른 게임 최고 0.68 로 벌어져 임계값 0.9 / 0.7 을 그대로 둔다.
  */
-function matchKey(title: string): string {
+export function matchKey(title: string): string {
   return foldForCompare(normalizeTitle(title)).replace(/\s+/g, "");
 }
 

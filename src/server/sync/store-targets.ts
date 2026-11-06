@@ -6,7 +6,7 @@ import { getStoreAdapter, type StoreSource } from "@/server/adapters";
 import type { SearchCandidate } from "@/server/adapters/types";
 import { errorMessage } from "@/lib/errors";
 import { normalizeTitle } from "@/lib/slug";
-import { findGameByTitle, type GameTitleRow } from "./match";
+import { findGameByTitle } from "./match";
 import { collectFreshCandidates, nextDiscoveryCursor, seedQuota } from "./discover";
 import { resolveRankRows, writePopularityRanks } from "./rank-writer";
 import { fixPlatformsFromCatalog } from "./platform-fix";
@@ -27,6 +27,7 @@ import {
 import { getRedis } from "@/server/redis";
 import { recentlyViewedSlugs } from "@/server/game-views";
 import { fetchWithRetry } from "./retry";
+import { loadGameTitlesFor } from "./title-candidates";
 import type { Ctx } from "./context";
 
 export interface StoreTarget {
@@ -253,18 +254,26 @@ async function knownExternalIds(db: Db, source: StoreSource, ids: string[]): Pro
 }
 
 /** 이 소스의 ref 가 매칭 탈락 기록(none)뿐인 게임 */
-async function gamesWithOnlyUnmatchedRef(db: Db, source: StoreSource): Promise<Set<string>> {
+async function gamesWithOnlyUnmatchedRef(db: Db, source: StoreSource, among: readonly string[]): Promise<Set<string>> {
+  if (among.length === 0) return new Set();
   // PK 가 (game_id, source) 라 게임당 이 소스 ref 는 한 줄이다 — none 인 줄이 곧 "탈락 기록뿐" 이다
   const rows = await db
     .select({ gameId: gameSourceRefs.gameId })
     .from(gameSourceRefs)
-    .where(and(eq(gameSourceRefs.source, source), eq(gameSourceRefs.matchedBy, "none")));
+    .where(and(eq(gameSourceRefs.source, source), eq(gameSourceRefs.matchedBy, "none"), inArray(gameSourceRefs.gameId, [...among])));
   return new Set(rows.map((r) => r.gameId));
 }
 
-/** 이 소스에 이미 ref 가 붙은 게임 id 집합. 같은 게임의 두 번째 SKU 를 가려내는 데 쓴다 */
-export async function gamesWithRef(db: Db, source: StoreSource): Promise<Set<string>> {
-  const rows = await db.select({ gameId: gameSourceRefs.gameId }).from(gameSourceRefs).where(eq(gameSourceRefs.source, source));
+/**
+ * 이 소스에 이미 ref 가 붙은 게임 id 집합. 같은 게임의 두 번째 SKU 를 가려내는 데 쓴다.
+ * 흡수 후보(among)만 묻는다 — 소스 전체를 받으면 회차마다 1MB 남짓이 Neon 전송량으로 나간다(2026-11-06)
+ */
+export async function gamesWithRef(db: Db, source: StoreSource, among: readonly string[]): Promise<Set<string>> {
+  if (among.length === 0) return new Set();
+  const rows = await db
+    .select({ gameId: gameSourceRefs.gameId })
+    .from(gameSourceRefs)
+    .where(and(eq(gameSourceRefs.source, source), inArray(gameSourceRefs.gameId, [...among])));
   return new Set(rows.map((r) => r.gameId));
 }
 
@@ -310,27 +319,6 @@ async function linkRef(
       checkedAt: now,
     })
     .onConflictDoNothing();
-}
-
-/**
- * 역방향 매칭용 제목 목록. 카탈로그 전체라 발견, 반영 두 단계가 각각 한 번씩만 읽는다.
- *
- * 수집 제외 행은 후보에서 뺀다 — 슈퍼패미컴판 "젤다의 전설" 에 스팀 SKU 가 붙으면
- * 그 행은 디지털 가격을 갖게 되고, 레트로 상세가 매장 시세 대신 엉뚱한 값을 머리에 건다.
- * 매장 발 게임은 그대로 후보로 둔다 — 스토어 ID 가 붙는 것이 §5.3 이 노리는 일이다.
- */
-export async function loadGameTitles(db: Db): Promise<GameTitleRow[]> {
-  return db
-    .select({
-      id: games.id,
-      slug: games.slug,
-      titleEn: games.titleEn,
-      titleKo: games.titleKo,
-      contentType: games.contentType,
-      parentGameId: games.parentGameId,
-    })
-    .from(games)
-    .where(eq(games.crawlExcluded, false));
 }
 
 /** 수집하지 않기로 한 SKU 기록. 다음 실행의 발견이 이걸 보고 건너뛴다 */
@@ -415,18 +403,20 @@ async function seedTargets(ctx: Ctx, source: StoreSource, seedWant: number, page
     return fresh.map((c) => candidateAsTarget(c, null));
   }
 
-  const titles = await loadGameTitles(db);
+  // 카탈로그 전체(13MB)가 아니라 발견한 제목과 닮았을 수 있는 행만 받는다(title-candidates, Neon 전송량)
+  const titles = await loadGameTitlesFor(db, fresh.map((c) => c.title));
   // 작품 코드로 먼저 맞춘다. 제목보다 앞세우는 이유: 나라가 다르면 제목이 다른 문자 체계라
   // 유사도가 0 인 경우가 있다(일본 "ア フォルド エーパート" = 우리 "A Fold Apart").
   const ownerByCode = await gamesByTitleCode(db, fresh.map((c) => c.titleCode).filter((v): v is string => !!v));
 
   // 스토어는 같은 게임을 에디션, 플랫폼별 SKU 로 여러 벌 내보낸다. 그 게임에 이 소스 ref 가 이미 있으면
   // 두 번째 SKU 는 수집하지 않는다 — 수집하면 본편 가격이 에디션 가격(보통 더 비싸다)으로 덮인다.
-  const refOwned = await gamesWithRef(db, source);
+  const among = [...new Set([...titles.map((t) => t.id), ...[...ownerByCode.values()].map((g) => g.id)])];
+  const refOwned = await gamesWithRef(db, source, among);
   // 매칭에서 떨어진 기록(none)만 가진 게임. refOwned 에 들어 있어 아래에서 "다른 SKU" 로 걸러지는데,
   // 이유가 다르다 — 매칭은 "닮지 않았다" 고 했고 발견은 "닮았다" 고 한다. 두 판정이 엇갈리면
   // 새 게임으로도, 그 게임의 ref 로도 만들지 않고 사람 몫으로 남긴다(중복도 오매칭도 안 만드는 쪽)
-  const unmatchedOnly = DISCOVERY_RETRY_UNMATCHED_SOURCES.includes(source) ? await gamesWithOnlyUnmatchedRef(db, source) : new Set<string>();
+  const unmatchedOnly = DISCOVERY_RETRY_UNMATCHED_SOURCES.includes(source) ? await gamesWithOnlyUnmatchedRef(db, source, among) : new Set<string>();
   const newTitles = new Set<string>(); // 이번 실행에서 새 게임으로 보낸 제목 — 한 실행 안의 SKU 중복도 막는다
 
   const out: StoreTarget[] = [];

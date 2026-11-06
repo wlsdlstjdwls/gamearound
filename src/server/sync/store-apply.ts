@@ -21,7 +21,8 @@ import { isLocked, recordError, type Ctx } from "./context";
 import { companyNamesOf, findCompaniesByAliases } from "./company-writer";
 import { createGameFromSnapshot, isTitleEnRecovery, planGameMeta, planSlugRename, type GameRow } from "./game-writer";
 import { planPlatform, type PlatformPlan, type PlatformRow } from "./platform-writer";
-import { gamesByTitleCode, gamesWithRef, ignoreDiscovery, loadGameTitles, type StoreTarget } from "./store-targets";
+import { gamesByTitleCode, gamesWithRef, ignoreDiscovery, type StoreTarget } from "./store-targets";
+import { loadGameTitlesFor } from "./title-candidates";
 import { findGameByTitle } from "./match";
 import { loadRootParents } from "./parent-root";
 import { syncSnapshotSubscriptions } from "./subscription-writer";
@@ -312,13 +313,15 @@ export async function applyStore(ctx: Ctx, source: StoreSource, fetched: Fetched
   // 같은 게임인데도 유사도가 안 나와 중복이 생긴다(2026-09-14 실측: Cyberpunk 2077 이 두 벌).
   // 상세 응답은 영문명을 주므로 여기서는 붙는다.
   const newTargets = fetched.filter(({ target }) => !(target.gameId && target.slug));
-  const titles = newTargets.length > 0 ? await loadGameTitles(ctx.db) : [];
-  const refOwned = newTargets.length > 0 ? await gamesWithRef(ctx.db, source) : new Set<string>();
+  const newTitles = newTargets.map(({ snapshot }) => snapshot.meta?.titleEn).filter((t): t is string => !!t);
+  const titles = newTitles.length > 0 ? await loadGameTitlesFor(ctx.db, newTitles) : [];
   // 작품 코드로도 한 번 더 본다(2026-09-30). 발견 단계도 코드로 맞추지만 그건 **목록이 코드를 줄 때만**이다 —
   // 한국 닌텐도 목록은 코드를 안 주고 상품 HTML 에만 있다. 제목은 나라마다 표기가 달라(한글, 일본어, 영문)
   // 유사도가 0 인 같은 게임이 있어서, 코드를 여기서 안 보면 일본에서 먼저 들어온 게임이 한 벌 더 생긴다.
   const codes = newTargets.map(({ snapshot }) => snapshot.titleCode).filter((c): c is string => !!c);
   const codeOwner = codes.length > 0 ? await gamesByTitleCode(ctx.db, codes) : new Map<string, { id: string; slug: string }>();
+  // 흡수 후보가 될 수 있는 게임만 묻는다. 이번 회차에 새로 만든 게임은 아래에서 직접 더한다
+  const refOwned = await gamesWithRef(ctx.db, source, [...titles.map((t) => t.id), ...[...codeOwner.values()].map((g) => g.id)]);
 
   for (const { target, snapshot } of newTargets) {
     try {
