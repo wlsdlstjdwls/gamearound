@@ -18,6 +18,8 @@ import {
   DISCOVERY_RETRY_UNMATCHED_SOURCES,
   discoveryCursorKey,
   MATCHED_FOR_SYNC,
+  PRICE_SWEEP_SHARE_MAX,
+  PRICE_SWEEP_SOURCES,
   REFRESH_POPULAR_MIN_AGE_HOURS,
   REFRESH_POPULAR_SHARE_BY_SOURCE,
   REFRESH_VIEWED_SHARE,
@@ -28,6 +30,7 @@ import { getRedis } from "@/server/redis";
 import { recentlyViewedSlugs } from "@/server/game-views";
 import { fetchWithRetry } from "./retry";
 import { loadGameTitlesFor } from "./title-candidates";
+import { sweepPriceMoves } from "./price-sweep";
 import type { Ctx } from "./context";
 
 export interface StoreTarget {
@@ -118,7 +121,12 @@ export async function listStoreTargets(ctx: Ctx, source: StoreSource, opts: Stor
     mainOnly: false,
     limit: limit - mainRows.length,
   });
-  const rows = [...detailRows, ...mainRows, ...restRows];
+  // 가격이 바뀐 행이 상세 몫 바로 뒤, 조회작, 인기작보다 앞에 선다(constants 의 PRICE_SWEEP_SOURCES 주석).
+  // 발견 회차(seedTop)에서는 돌지 않는다 — 그 회차는 신규 등록에 시간을 다 쓴다
+  const sweptRows = !seedTop && PRICE_SWEEP_SOURCES.includes(source)
+    ? (await sweepPriceMoves(ctx, source, getStoreAdapter(source))).slice(0, Math.max(Math.floor(limit * PRICE_SWEEP_SHARE_MAX) - detailRows.length, 0))
+    : [];
+  const rows = [...detailRows, ...sweptRows, ...mainRows, ...restRows];
 
   const seen = new Set<string>();
   const targets: StoreTarget[] = [];

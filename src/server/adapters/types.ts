@@ -292,6 +292,11 @@ export interface SourceAdapter<T extends StoreSnapshot | MetaSnapshot | NewsItem
    * 목록 요청 간격이 상세 요청 간격과 다른 소스(nintendo 는 목록 1초, 상세 4초)를 위해 있다.
    */
   discoverPageMs?: number;
+  /**
+   * 가격 변동 훑기(sync/price-sweep)가 fetchMany 배치 사이에 둘 간격(ms). 비우면 minIntervalMs.
+   * 가격 배치가 상세와 다른 가벼운 API 로 가는 소스(nintendo 는 상세 HTML 4초, 가격 API 는 실측으로 간격이 필요 없다)를 위해 있다.
+   */
+  sweepIntervalMs?: number;
   /** 소스별 요청 간격(ms). 크롤 대상은 보수적으로 */
   minIntervalMs: number;
 }

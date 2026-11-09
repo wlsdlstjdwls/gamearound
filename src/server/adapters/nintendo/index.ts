@@ -11,6 +11,7 @@ import { AdapterError, type SearchCandidate, type StoreAdapter, type StoreSnapsh
 import { createHttpClient, notFoundAs } from "../http";
 import {
   EC_PRICE_BATCH,
+  EC_PRICE_SWEEP_INTERVAL_MS,
   JP_DISCOVER_FQ,
   jpDlcFq,
   JP_SEARCH_PAGE_SIZE,
@@ -85,6 +86,7 @@ export const nintendoAdapter: StoreAdapter = {
   source: "nintendo",
   minIntervalMs: 4000,
   batchSize: EC_PRICE_BATCH,
+  sweepIntervalMs: EC_PRICE_SWEEP_INTERVAL_MS,
   // 가격은 API 가 배치로 주지만 제목, 이미지는 안 준다 — 신규 등록 대상만 상품 HTML 로 따로 본다
   batchPricesOnly: "detail",
 
@@ -152,6 +154,7 @@ export const nintendoJpAdapter: StoreAdapter = {
   // 검색 JSON 과 가격 API 둘 다 가벼운 JSON 이라 HTML 크롤(4초)만큼 조심할 이유가 없다
   minIntervalMs: 1000,
   batchSize: EC_PRICE_BATCH,
+  sweepIntervalMs: EC_PRICE_SWEEP_INTERVAL_MS,
   // 신규 등록의 근거는 발견 목록이다 — nsuid 로 되묻는 질의가 없어 단건 상세 경로를 만들 수 없다
   batchPricesOnly: "discovery",
 

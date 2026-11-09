@@ -25,6 +25,8 @@ import {
   PATCH_LIST_PER_RUN,
   PATCH_LIST_PER_RUN_BY_SOURCE,
   PATCH_SOURCES,
+  PRICE_SWEEP_MAX_MS,
+  PRICE_SWEEP_SOURCES,
   REQUIREMENTS_PER_RUN,
 } from "./constants";
 
@@ -85,7 +87,9 @@ function estimateMs(source: (typeof CRON_SOURCES)[number], mode: CronMode): numb
   const updatedItems = Math.max(plan.limit - plan.seedTop, 0);
   const newItemMs = CRON_DB_MS_PER_NEW_ITEM_BY_SOURCE[source] ?? CRON_DB_MS_PER_NEW_ITEM;
   const applyMs = newItems * newItemMs + updatedItems * CRON_DB_MS_PER_ITEM;
-  return (pageMs + requests * adapter.minIntervalMs + applyMs) * CRON_SAFETY_FACTOR;
+  // 가격 변동 훑기(sync/price-sweep)는 prices 회차 머리에서 시간 상한까지 돈다. 상한을 통째로 센다
+  const sweepMs = mode === "prices" && PRICE_SWEEP_SOURCES.includes(source) ? PRICE_SWEEP_MAX_MS : 0;
+  return (pageMs + requests * adapter.minIntervalMs + applyMs + sweepMs) * CRON_SAFETY_FACTOR;
 }
 
 describe("CRON_PLAN", () => {

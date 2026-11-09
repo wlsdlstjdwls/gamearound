@@ -16,6 +16,12 @@ export const NINTENDO_BASE_URL = "https://store.nintendo.co.kr";
 export const EC_PRICE_URL = "https://api.ec.nintendo.com/v1/price";
 /** 한 요청에 넣는 nsuid 수. 공식 문서가 없어 50 으로 둔다 — 51건도 200 이었지만 상한을 넘겨 쓰지 않는다 */
 export const EC_PRICE_BATCH = 50;
+/**
+ * 가격 변동 훑기(sync/price-sweep)에서 가격 API 배치 사이 간격.
+ * 2026-11-09 실측: 50건 요청 20번을 쉬지 않고 연달아 보내도 전부 200, 각 460~660ms(응답 약 14KB)였다.
+ * 막힌 흔적이 없어 상세 HTML 의 4초를 따를 이유는 없지만, 한 바퀴(한국 약 110요청)를 몰아 보내므로 조금 띄운다.
+ */
+export const EC_PRICE_SWEEP_INTERVAL_MS = 250;
 
 /** 일본 eShop 카탈로그 검색(JSON). 한국 스토어와 달리 Magento 가 아니라 Solr 검색 API 다 */
 export const JP_SEARCH_URL = "https://search.nintendo.jp/nintendo_soft/search.json";
