@@ -1,6 +1,6 @@
 // 스토어 소스 실행 — 수집 → 검증 → 반영 3단계. 검증을 통과하지 못하면 아무것도 반영하지 않는다.
 import { getStoreAdapter, type StoreSource } from "@/server/adapters";
-import { BATCH_SIZE } from "./constants";
+import { BATCH_SIZE, SOURCE_PLATFORMS, SOURCE_REGION } from "./constants";
 import { isoDay, judgePrices } from "./price-guard";
 import { recordError, type Ctx, type RunOptions } from "./context";
 import { listParentDlcs } from "./dlc-list";
@@ -11,6 +11,7 @@ import { applyStore } from "./store-apply";
 import { fetchStoreBatched, fetchStoreOneByOne } from "./store-fetch";
 import { listStoreTargets } from "./store-targets";
 import { syncPopularityRanks } from "./rank-writer";
+import { resetEndedDiscounts } from "./ended-discounts";
 
 export async function runStore(ctx: Ctx, source: StoreSource, opts: RunOptions): Promise<void> {
   const adapter = getStoreAdapter(source);
@@ -21,6 +22,16 @@ export async function runStore(ctx: Ctx, source: StoreSource, opts: RunOptions):
   if (opts.seedTop) {
     const ranked = await syncPopularityRanks(ctx, source, adapter);
     if (ranked > 0) console.log(`[sync:${source}] 인기순위 ${ranked}건 기록`);
+  }
+
+  // 끝난 할인부터 정가로 되돌린다(sync/ended-discounts 주석). 대상을 고르기 전에 하는 이유: 되돌린 행은
+  // 할인율이 0 이 되어 아래 가격 변동 훑기(sync/price-sweep)가 스토어 값과 견줄 때 "다시 할인" 을 바로 알아본다.
+  // 실패해도 가격 수집은 계속 간다 — 놓친 행은 다음 회차가 다시 고른다
+  try {
+    const reset = await resetEndedDiscounts(ctx, SOURCE_PLATFORMS[source], SOURCE_REGION[source]);
+    if (reset > 0) console.log(`[sync:${source}] 끝난 할인 ${reset}건을 정가로 되돌림`);
+  } catch (e) {
+    recordError(ctx, `${source}:ended-discounts`, e);
   }
 
   const targets = await listStoreTargets(ctx, source, {
