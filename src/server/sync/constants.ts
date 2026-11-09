@@ -144,6 +144,8 @@ export const CRON_SOURCES = ["nintendo", "nintendo_jp", "epic", "steam", "psstor
 //   /api/cron/crawl/nintendo/prices       15 0,6,12,18 * * *    하루 4회 × 300건 = 1,200건/일
 //   /api/cron/crawl/nintendo/discover     50 6,18 * * *         하루 2회 × 60건 = 120건/일 (신규는 상품 HTML 이라 4초 간격을 탄다. 2026-10-13 넷에서 둘로)
 //   /api/cron/crawl/nintendo/discover     20 0,12 * * *         2026-11-09 추가. 일본 크론 자리를 한국 신규에 넘겼다(아래)
+//   /api/cron/crawl/steam/discover        0 0,18 * * *          2026-11-09 추가. 하루 2회에서 4회(사용자 "빠른 시일 내로 모든 게임").
+//     스팀 발견은 깊이가 아니라 몫이 병목이다 — 회차마다 4~13쪽 안에 want 를 채운다. 같은 시각 steam/prices(15분)보다 먼저 끝난다(어림 597초).
 //   nintendo_jp 크론 셋(prices, discover, match)은 2026-11-09 걷었다(사용자 "일본 닌텐도는 멈추고 한국을 더").
 //     근거: 일본 행은 화면에 아예 안 나온다(lib/platform 의 HIDDEN_REGIONS = JP) — 일본에만 있는 3,814개, 한국과 겹치는 2,219개의
 //     엔화 값 모두 보이지 않았다. 발견은 목록 90쪽을 읽고도 하루 신규 0~1건이었다. 어댑터, 몫(CRON_PLAN)은 남겨 둔다 —

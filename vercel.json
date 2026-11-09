@@ -135,6 +135,10 @@
     {
       "path": "/api/cron/crawl/nintendo/discover",
       "schedule": "20 0,12 * * *"
+    },
+    {
+      "path": "/api/cron/crawl/steam/discover",
+      "schedule": "0 0,18 * * *"
     }
   ],
   "git": {
