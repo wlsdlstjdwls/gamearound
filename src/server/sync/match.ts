@@ -3,7 +3,7 @@
 // matched_by="manual" 행은 크롤러가 절대 덮어쓰지 않는다.
 import { and, eq, inArray, isNull, lt, ne, or, sql } from "drizzle-orm";
 import { getDb } from "@/server/db/client";
-import { gameSourceRefs, games } from "@/server/db/schema";
+import { gameListStats, gameSourceRefs, games } from "@/server/db/schema";
 import { updatedBy } from "@/server/db/audit";
 import { getSearchableAdapter, getDisabledReason, isSourceEnabled, type SearchableSource } from "@/server/adapters";
 import type { SearchCandidate, Source } from "@/server/adapters/types";
@@ -241,6 +241,7 @@ export async function matchUnmatchedGames(source: SearchableSource, limit: numbe
     .select({ id: games.id })
     .from(games)
     .leftJoin(gameSourceRefs, and(eq(gameSourceRefs.gameId, games.id), eq(gameSourceRefs.source, source)))
+    .leftJoin(gameListStats, eq(gameListStats.gameId, games.id))
     .where(
       and(
         // 본편만 줄을 선다. 2026-09-16 실측으로 이 큐의 76~80%가 DLC, 에디션, 번들, 체험판이었다
@@ -260,7 +261,16 @@ export async function matchUnmatchedGames(source: SearchableSource, limit: numbe
     // 매장이 만든 게임을 맨 앞에 세운다(§5.3 역방향 수집). 생성순으로만 세우면 이 행들은
     // 앞에 선 미매칭 1만여 건 뒤라 차례가 영영 안 온다 — 매장은 자기가 올린 물건에 값이
     // 언제 붙는지로 이 서비스를 판단한다. 몫이 작을수록 순서가 곧 결과다.
-    .orderBy(sql`case when ${games.origin} = 'shop' then 0 else 1 end`, games.createdAt)
+    //
+    // 그다음은 사람들이 찾는 게임부터다(2026-11-09). 전에는 생성순이라 HLTB 매칭이 하루 240건인데 하루 600건씩 들어오는
+    // 신규에 밀려, 인기작 6,582개 중 2,822개가(메타크리틱은 4,405개) 한 번도 차례를 못 받았다. 사용자 "평점, 플레이타임이 너무 느리다".
+    // 순위(작을수록 위), 평가 수 순이고 둘 다 없는 게임은 예전처럼 생성순으로 뒤에 선다. 값은 목록 집계표(game_list_stats)에서 읽는다
+    .orderBy(
+      sql`case when ${games.origin} = 'shop' then 0 else 1 end`,
+      sql`${gameListStats.minRank} asc nulls last`,
+      sql`${gameListStats.maxReviews} desc nulls last`,
+      games.createdAt,
+    )
     .limit(limit);
 
   const summary: MatchSummary = { attempted: 0, auto: 0, pending: 0, unmatched: 0, errors: 0 };
