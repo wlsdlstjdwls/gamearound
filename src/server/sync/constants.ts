@@ -143,8 +143,12 @@ export const CRON_SOURCES = ["nintendo", "nintendo_jp", "epic", "steam", "psstor
 // 주기는 vercel.json 의 crons 에 있다 — JSON 이라 주석을 못 달아 근거를 여기 적는다(시각은 UTC).
 //   /api/cron/crawl/nintendo/prices       15 0,6,12,18 * * *    하루 4회 × 300건 = 1,200건/일
 //   /api/cron/crawl/nintendo/discover     50 6,18 * * *         하루 2회 × 60건 = 120건/일 (신규는 상품 HTML 이라 4초 간격을 탄다. 2026-10-13 넷에서 둘로)
-//   /api/cron/crawl/nintendo_jp/prices    35 0,12 * * *         하루 2회 × 300건 = 600건/일
-//   /api/cron/crawl/nintendo_jp/discover  5 6,18 * * *          하루 2회 × 60건 = 120건/일 (한 바퀴가 약 300페이지)
+//   /api/cron/crawl/nintendo/discover     20 0,12 * * *         2026-11-09 추가. 일본 크론 자리를 한국 신규에 넘겼다(아래)
+//   nintendo_jp 크론 셋(prices, discover, match)은 2026-11-09 걷었다(사용자 "일본 닌텐도는 멈추고 한국을 더").
+//     근거: 일본 행은 화면에 아예 안 나온다(lib/platform 의 HIDDEN_REGIONS = JP) — 일본에만 있는 3,814개, 한국과 겹치는 2,219개의
+//     엔화 값 모두 보이지 않았다. 발견은 목록 90쪽을 읽고도 하루 신규 0~1건이었다. 어댑터, 몫(CRON_PLAN)은 남겨 둔다 —
+//     되살릴 때는 vercel.json 에 세 줄을 되돌리면 된다(이전 시각: prices 2 0,12 | discover 3 6,18 | match 16 12).
+//     20 분에 붙인 이유: 같은 시각의 한국 prices(1분 시작, 어림 587초)가 닌텐도 잠금을 쥐고 있어 겹치면 discover 가 건너뛴다
 // 일본 몫을 2026-09-16 에 반으로 줄였다(넷에서 둘로). 이유는 산수다 — JP 행이 585개인데 하루 1,200건을
 // 돌고 있었다. 같은 행을 하루에 두 번 다시 묻고 있던 것이다. 600건이면 하루 한 바퀴다.
 // 더 줄이지 않는 이유: 일본에만 있는 스위치 작품이 목록에 안 나올 뿐 데이터로는 값이 있고

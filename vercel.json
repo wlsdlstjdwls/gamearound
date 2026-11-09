@@ -37,10 +37,6 @@
       "schedule": "1 0,6,12,18 * * *"
     },
     {
-      "path": "/api/cron/crawl/nintendo_jp/prices",
-      "schedule": "2 0,12 * * *"
-    },
-    {
       "path": "/api/cron/crawl/rss/collect",
       "schedule": "2 0,6,12,18 * * *"
     },
@@ -101,10 +97,6 @@
       "schedule": "19 0 * * *"
     },
     {
-      "path": "/api/cron/crawl/nintendo_jp/discover",
-      "schedule": "3 6,18 * * *"
-    },
-    {
       "path": "/api/cron/crawl/psstore/discover",
       "schedule": "15 6,18 * * *"
     },
@@ -137,12 +129,12 @@
       "schedule": "16 12 * * *"
     },
     {
-      "path": "/api/cron/crawl/nintendo_jp/match",
-      "schedule": "16 12 * * *"
-    },
-    {
       "path": "/api/cron/crawl/steam/prices",
       "schedule": "15 0,6,12,17,18 * * *"
+    },
+    {
+      "path": "/api/cron/crawl/nintendo/discover",
+      "schedule": "20 0,12 * * *"
     }
   ],
   "git": {
