@@ -148,13 +148,21 @@ export const psstoreAdapter: StoreAdapter = {
     return parsePsstoreAddOnIds(html);
   },
 
-  /** 전체 게임 카테고리를 페이지 단위로 흘려보낸다. 아는 것을 걸러내고 멈출 시점은 호출부가 정한다 */
-  async *discoverPages(): AsyncGenerator<SearchCandidate[]> {
-    for (let page = 0; page < PSSTORE_DISCOVERY_MAX_PAGES; page++) {
-      yield await gridPage(page, `discover:${page}`);
+  /**
+   * 전체 게임 카테고리를 페이지 단위로 흘려보낸다. 아는 것을 걸러내고 멈출 시점은 호출부가 정한다.
+   * startPage 는 1부터 세는 쪽 번호다(sync 의 발견 커서와 같은 단위). 빈 쪽이 오면 카탈로그 끝이다 —
+   * 끝을 알려야 커서가 1쪽으로 돌아간다(2026-11-09 이어 읽기를 켜며 더했다).
+   */
+  async *discoverPages(startPage = 1): AsyncGenerator<SearchCandidate[]> {
+    for (let page = startPage - 1; page < PSSTORE_DISCOVERY_MAX_PAGES; page++) {
+      const found = await gridPage(page, `discover:${page}`);
+      if (found.length === 0) return;
+      yield found;
       await sleep(psstoreAdapter.minIntervalMs);
     }
   },
+  // 판매순은 하루에 조금씩 움직여 쪽 경계에서 몇 건이 밀릴 수 있다. 놓친 것은 다음 바퀴가 잡는다(한 바퀴 약 4회차)
+  resumableDiscovery: true,
 
   /**
    * 인기순위(베스트셀러)만 1위부터. 발견과 같은 목록을 읽지만 멈출 조건이 페이지 수뿐이다

@@ -532,8 +532,9 @@ export const xboxAdapter: StoreAdapter = {
    * 기존 요청에 얹어 주고, 목록 정렬이 그것을 두 번째 키로 쓴다(services/games/list 의 maxReviews).
    * 정렬할 수 있는 입구를 찾으면 그때 붙인다.
    */
-  async *discoverPages(): AsyncGenerator<SearchCandidate[]> {
-    for (let page = 1; page <= XBOX_DISCOVERY_MAX_PAGES; page++) {
+  // startPage 는 1부터 세는 쪽 번호(sync 의 발견 커서). 2026-11-09 이어 읽기를 켰다 — 전에는 회차마다 앞 60쪽만 다시 읽었다
+  async *discoverPages(startPage = 1): AsyncGenerator<SearchCandidate[]> {
+    for (let page = startPage; page <= XBOX_DISCOVERY_MAX_PAGES; page++) {
       const u = new URL(XBOX_BROWSE_URL);
       u.searchParams.set("locale", XBOX_LANGUAGE);
       u.searchParams.set("market", XBOX_MARKET);
@@ -545,4 +546,5 @@ export const xboxAdapter: StoreAdapter = {
       await sleep(xboxAdapter.minIntervalMs);
     }
   },
+  resumableDiscovery: true,
 };

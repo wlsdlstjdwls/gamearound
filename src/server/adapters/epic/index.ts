@@ -176,8 +176,9 @@ export const epicAdapter: StoreAdapter = {
    * 아는 것을 걸러내고 언제 멈출지는 호출부가 정한다(adapters/types 의 discoverPages 주석) —
    * 신작 N개만 끊어 돌려주면 그 N개가 다 등록된 순간 나머지 카탈로그가 영원히 안 들어온다.
    */
-  async *discoverPages(): AsyncGenerator<SearchCandidate[]> {
-    for (let page = 0; page < EPIC_DISCOVERY_MAX_PAGES; page++) {
+  // startPage 는 1부터 세는 쪽 번호(sync 의 발견 커서). 2026-11-09 이어 읽기를 켰다 — 전에는 회차마다 앞 60쪽만 다시 읽었다
+  async *discoverPages(startPage = 1): AsyncGenerator<SearchCandidate[]> {
+    for (let page = startPage - 1; page < EPIC_DISCOVERY_MAX_PAGES; page++) {
       const raw = await graphql(
         EPIC_SEARCH_QUERY,
         {
@@ -197,5 +198,6 @@ export const epicAdapter: StoreAdapter = {
       await sleep(epicAdapter.minIntervalMs);
     }
   },
+  resumableDiscovery: true,
 };
 

@@ -70,6 +70,45 @@ export function nextDiscoveryCursor(startPage: number, result: Pick<DiscoveryRes
   return result.stoppedBy === "want" ? startPage + result.pages - 1 : startPage + result.pages;
 }
 
+/**
+ * 머리 몇 쪽을 먼저 읽고, 그다음 지난 실행이 멈춘 쪽부터 이어 읽는다(resumableDiscovery 소스).
+ *
+ * 왜 둘을 섞나(2026-11-09): 이어 읽기만 하면 새로 나온 상품이 목록 맨 앞에 끼어도 한 바퀴를 다 돌 때까지 못 본다 —
+ * PS(판매순), Epic(출시일 내림차순)은 새것이 앞에 뜬다. 머리만 읽으면 그 반대다: 그때까지 PS, Epic, Xbox 발견은
+ * 회차마다 앞 60~90쪽만 다시 읽어 신규가 0~4건이었고 뒤쪽 카탈로그는 한 번도 읽지 않았다.
+ *
+ * 뒤쪽 시작은 머리와 겹치지 않게 headPages + 1 이상이다. 커서 계산(nextDiscoveryCursor)은 뒤쪽에서 읽은 쪽만 센다.
+ */
+export function headThenResume<T>(
+  open: (startPage: number) => AsyncIterable<T[]>,
+  headPages: number,
+  cursor: number,
+): { pages: AsyncIterable<T[]>; tailStart: number; tailRead: () => number; tailEnded: () => boolean } {
+  const tailStart = Math.max(cursor, headPages + 1);
+  let tailRead = 0;
+  let tailEnded = false;
+  async function* gen(): AsyncGenerator<T[]> {
+    if (headPages > 0) {
+      let read = 0;
+      for await (const page of open(1)) {
+        yield page;
+        if (++read >= headPages) break;
+      }
+      // 카탈로그가 머리보다 짧다 — 뒤쪽은 없다
+      if (read < headPages) {
+        tailEnded = true;
+        return;
+      }
+    }
+    for await (const page of open(tailStart)) {
+      tailRead++;
+      yield page;
+    }
+    tailEnded = true;
+  }
+  return { pages: gen(), tailStart, tailRead: () => tailRead, tailEnded: () => tailEnded };
+}
+
 export interface CollectOptions {
   /** 이번 실행에서 찾을 신규 후보 수 */
   want: number;

@@ -623,6 +623,14 @@ export const DISCOVERY_PAGE_BUDGET: Partial<Record<StoreSource, number>> = {
  */
 export const discoveryCursorKey = (source: StoreSource): string => `discover:cursor:${source}`;
 /**
+ * 이어 읽는 소스가 커서보다 먼저 읽는 머리 쪽 수(sync/discover 의 headThenResume).
+ * 새 상품이 목록 앞에 뜨는 소스만 둔다 — PS 는 판매순, Epic 은 출시일 내림차순이라 신작이 앞쪽 몇 쪽에 온다.
+ * Xbox 는 순서의 뜻을 모른다(adapters/xbox 의 정렬 주석) — 그래도 새 상품이 앞에 붙는지 끝에 붙는지 몰라 앞을 같이 본다.
+ * 닌텐도 한국은 0: 전수 목록을 커서로만 돈다(예전과 같다).
+ * 값은 쪽당 건수로 정했다: PS 24건 x 3 = 72, Epic 40건 x 3 = 120, Xbox 45건 x 3 = 135 — 하루 신작보다 넉넉하다.
+ */
+export const DISCOVERY_HEAD_PAGES: Partial<Record<StoreSource, number>> = { psstore: 3, epic: 3, xbox: 3 };
+/**
  * 커서 수명. 크론이 하루 4회 돌면 늘 새로 쓰이므로 사실상 만료되지 않는다.
  * 한 달을 두는 이유는 소스를 끄고 오래 뒀다 켰을 때다 — 그 사이 목록이 바뀌었을 테니 처음부터 읽는 게 낫다.
  */
@@ -639,7 +647,10 @@ export const DISCOVERY_CURSOR_TTL_SEC = 30 * 24 * 3600;
  * 한꺼번에 열면 애매하게 떨어졌던 후보가 새 게임으로 쏟아진다. 중복 방지(작품 코드, 제목, 이미 ref 가
  * 있는 게임의 두 번째 SKU 거르기)가 이 소스에서 버티는지 본 뒤에 넓힌다.
  */
-export const DISCOVERY_RETRY_UNMATCHED_SOURCES: StoreSource[] = ["nintendo"];
+//
+// 2026-11-09 psstore, epic, xbox 로 넓혔다(사용자 "빠른 시일 내로 모든 게임 수집"). 닌텐도에서 6주 동안 버텼고,
+// 섞인 행은 데이터 점검기(sync/quality)가 중복 후보로 잡는다. 흡수 판정(제목 역매칭)은 그대로 거친다.
+export const DISCOVERY_RETRY_UNMATCHED_SOURCES: StoreSource[] = ["nintendo", "psstore", "epic", "xbox"];
 
 /**
  * 신규 시드가 한 배치에서 가져갈 수 있는 몫의 상한. 시드는 대상 목록 맨 앞에 붙으므로

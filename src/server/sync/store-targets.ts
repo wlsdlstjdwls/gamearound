@@ -7,13 +7,14 @@ import type { SearchCandidate } from "@/server/adapters/types";
 import { errorMessage } from "@/lib/errors";
 import { normalizeTitle } from "@/lib/slug";
 import { findGameByTitle } from "./match";
-import { collectFreshCandidates, nextDiscoveryCursor, seedQuota } from "./discover";
+import { collectFreshCandidates, headThenResume, nextDiscoveryCursor, seedQuota } from "./discover";
 import { resolveRankRows, writePopularityRanks } from "./rank-writer";
 import { fixPlatformsFromCatalog } from "./platform-fix";
 import { missingRefExcluded } from "./missing-refs";
 import { refreshShares } from "./refresh-shares";
 import {
   DISCOVERY_CURSOR_TTL_SEC,
+  DISCOVERY_HEAD_PAGES,
   DISCOVERY_PAGE_BUDGET,
   DISCOVERY_RETRY_UNMATCHED_SOURCES,
   discoveryCursorKey,
@@ -357,9 +358,12 @@ async function seedTargets(ctx: Ctx, source: StoreSource, seedWant: number, page
   // 이 발견 걸음이 주운 순번만 센다. ctx.rankedCount 는 0단계(listPopularPages)가 이미 쓴 것을
   // 포함하고 있어서, 그걸 그대로 적으면 같은 수를 두 번 말한다
   let rankedHere = 0;
-  const startPage = adapter.resumableDiscovery ? await readDiscoveryCursor(source) : undefined;
-  const result = await fetchWithRetry(() =>
-    collectFreshCandidates(adapter.discoverPages!(startPage), {
+  const cursor = adapter.resumableDiscovery ? await readDiscoveryCursor(source) : undefined;
+  // 이어 읽는 소스는 머리 몇 쪽(새것이 뜨는 자리)을 먼저 본다(discover 의 headThenResume 주석). 재시도마다 새로 연다
+  let walk: ReturnType<typeof headThenResume<SearchCandidate>> | undefined;
+  const result = await fetchWithRetry(() => {
+    walk = cursor !== undefined ? headThenResume((p) => adapter.discoverPages!(p), DISCOVERY_HEAD_PAGES[source] ?? 0, cursor) : undefined;
+    return collectFreshCandidates(walk ? walk.pages : adapter.discoverPages!(), {
       want: seedWant,
       pageBudget: pageBudget ?? DISCOVERY_PAGE_BUDGET[source] ?? 0,
       unknownOf: async (ids) => {
@@ -387,10 +391,14 @@ async function seedTargets(ctx: Ctx, source: StoreSource, seedWant: number, page
           console.warn(`[sync:${source}] 기기 대조 실패: ${errorMessage(e)}`);
         }
       },
-    }),
-  );
+    });
+  });
   const { fresh } = result;
-  if (startPage !== undefined) await writeDiscoveryCursor(source, nextDiscoveryCursor(startPage, result));
+  const startPage = walk?.tailStart;
+  if (walk) {
+    const next = walk.tailEnded() ? 1 : nextDiscoveryCursor(walk.tailStart, { pages: walk.tailRead(), stoppedBy: result.stoppedBy });
+    await writeDiscoveryCursor(source, next);
+  }
   // 콘솔 줄은 워크플로 로그가 지워지면 사라진다 — 포화 판단에 쓰려면 실행 기록으로 남아야 한다
   ctx.discovery = {
     pages: result.pages,

@@ -1,6 +1,6 @@
 // 발견 수집기 테스트 — 네트워크, DB 없음. 페이지는 가짜 async iterable, 아는 것은 Set 으로 준다.
 import { describe, expect, it } from "vitest";
-import { collectFreshCandidates, seedQuota, nextDiscoveryCursor } from "./discover";
+import { collectFreshCandidates, seedQuota, nextDiscoveryCursor, headThenResume } from "./discover";
 import type { SearchCandidate } from "@/server/adapters/types";
 
 const candidate = (id: string): SearchCandidate => ({ externalId: id, title: `게임 ${id}`, url: `https://x/${id}` });
@@ -209,5 +209,51 @@ describe("collectFreshCandidates onKnown", () => {
     });
     expect(got).toEqual([["1"], ["4"]]);
     expect(r.fresh.map((c) => c.externalId)).toEqual(["2", "3"]);
+  });
+});
+
+describe("headThenResume", () => {
+  // 1부터 세는 쪽 번호 n 에 [n] 을 내는 목록. total 쪽에서 끝난다
+  const catalog = (total: number) => async function* (start: number) {
+    for (let p = start; p <= total; p++) yield [p];
+  };
+  const collect = async (it: AsyncIterable<number[]>, take = Infinity) => {
+    const out: number[] = [];
+    for await (const page of it) {
+      out.push(page[0]);
+      if (out.length >= take) break;
+    }
+    return out;
+  };
+
+  it("머리를 먼저 읽고 커서 쪽부터 잇는다", async () => {
+    const w = headThenResume(catalog(20), 2, 10);
+    expect(await collect(w.pages, 5)).toEqual([1, 2, 10, 11, 12]);
+    expect(w.tailStart).toBe(10);
+    expect(w.tailRead()).toBe(3);
+    expect(w.tailEnded()).toBe(false);
+  });
+
+  it("커서가 머리 안쪽이면 머리 바로 뒤부터 읽어 겹치지 않는다", async () => {
+    const w = headThenResume(catalog(20), 3, 1);
+    expect(await collect(w.pages, 5)).toEqual([1, 2, 3, 4, 5]);
+    expect(w.tailStart).toBe(4);
+  });
+
+  it("끝까지 읽으면 tailEnded", async () => {
+    const w = headThenResume(catalog(6), 2, 5);
+    expect(await collect(w.pages)).toEqual([1, 2, 5, 6]);
+    expect(w.tailEnded()).toBe(true);
+  });
+
+  it("머리가 0 이면 예전처럼 커서부터만", async () => {
+    const w = headThenResume(catalog(20), 0, 7);
+    expect(await collect(w.pages, 2)).toEqual([7, 8]);
+  });
+
+  it("카탈로그가 머리보다 짧으면 끝으로 친다", async () => {
+    const w = headThenResume(catalog(1), 3, 1);
+    expect(await collect(w.pages)).toEqual([1]);
+    expect(w.tailEnded()).toBe(true);
   });
 });
