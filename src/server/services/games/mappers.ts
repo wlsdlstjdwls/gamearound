@@ -76,6 +76,9 @@ export function toPlatformDto(p: PlatformRow): PlatformDto {
     metacriticScore: p.metacriticScore,
     opencriticScore: p.opencriticScore,
     ignScore: p.ignScore,
+    // 점수와 사람 수가 둘 다 있을 때만 — 사람 수 없는 점수는 표본 크기로 견줄 수 없다(scoreLines)
+    metacriticUser:
+      p.metacriticUserScore != null && p.metacriticUserCount != null ? { value: p.metacriticUserScore, count: p.metacriticUserCount } : null,
     // 세 컬럼이 다 차 있을 때만 점수다 — 하나라도 비면 뜻을 만들 수 없다
     userScore:
       p.userScore !== null && p.userScoreKind !== null
@@ -418,6 +421,8 @@ export type ScoreLine = { key: string; label: string; value: number; suffix: str
 const SCORE_SCALE_SUFFIX = "/100";
 /** IGN 은 제 척도(10점)로 적는다 — 목업도 "9 /10" 이다 */
 const IGN_SCALE_SUFFIX = "/10";
+/** 유저 점수 말풍선의 출처 이름. 스토어 유저 점수는 기기 이름(PLATFORM_LABEL)이 그 자리에 선다 */
+const METACRITIC_USER_NOTE = "메타크리틱 유저";
 
 export function scoreLines(platforms: PlatformDto[]): ScoreLine[] {
   const lines: ScoreLine[] = [];
@@ -430,7 +435,12 @@ export function scoreLines(platforms: PlatformDto[]): ScoreLine[] {
   if (ign !== undefined) lines.push({ key: "ign", label: "IGN", value: Math.round(ign) / 10, suffix: IGN_SCALE_SUFFIX, note: null });
 
   const user = bestUserScore(platforms);
-  if (user) {
+  // 메타크리틱 유저 점수는 스토어 유저 점수와 같은 칸에 선다. 표본이 더 큰 쪽 하나만 — 둘을 나란히 세우면 "유저 점수" 가 두 개가 된다.
+  // 닌텐도, PS 게임은 스토어 유저 점수가 없어 이 값이 유일한 유저 점수다(2026-11-10). != null: 캐시에 담긴 옛 DTO 에는 이 칸이 없다
+  const mcUser = platforms.map((p) => p.metacriticUser).find((v): v is NonNullable<PlatformDto["metacriticUser"]> => v != null);
+  if (mcUser && (!user || mcUser.count > user.score.count)) {
+    lines.push({ key: "user", label: "유저 점수", value: Math.round(mcUser.value), suffix: SCORE_SCALE_SUFFIX, note: `${METACRITIC_USER_NOTE} | ${countText(mcUser.count)}` });
+  } else if (user) {
     // 유저 점수만 단서가 둘이다(어느 스토어인지, 몇 명인지) — 평론가 점수는 매체 이름이 곧 라벨이라
     // 더 말할 것이 없지만, 이쪽은 "스팀 48만명" 과 "Xbox 300명" 이 같은 숫자를 전혀 다른 무게로 만든다
     const { score, platform } = user;

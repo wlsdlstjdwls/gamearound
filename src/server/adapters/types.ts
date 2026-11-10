@@ -119,6 +119,8 @@ export interface MetaSnapshot {
    */
   loggedCount?: number | null;
   scores?: { metacritic?: number | null; opencritic?: number | null; ign?: number | null };
+  /** 메타크리틱 유저 점수. value 는 0~100(10점 척도 x 10), count 는 매긴 사람 수(schema 의 game_platforms.metacriticUserScore) */
+  metacriticUser?: { value: number; count: number } | null;
   genres?: string[];
   multiplayer?: { localMax?: number; onlineMax?: number; coop?: boolean; pvp?: boolean };
 }

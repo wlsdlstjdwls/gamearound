@@ -247,6 +247,14 @@ export const gamePlatforms = pgTable("game_platforms", {
    */
   ignScore: integer("ign_score"),
   /**
+   * 메타크리틱 유저 점수(2026-11-10, 사용자: 평점이 메타크리틱 평론가 하나뿐이다). 평론가 점수를 받는 같은 응답의
+   * user-score-summary 에 있어 추가 요청이 없다(adapters/metacritic). 10점 척도에 소수 한 자리라 10을 곱해 0~100 정수로 넣는다(8.4 -> 84).
+   * 스토어 유저 점수(아래 user_score)가 없는 닌텐도, PS 게임에도 유저 점수가 생긴다. 화면은 표본이 큰 쪽 하나를 고른다(services 의 scoreLines)
+   */
+  metacriticUserScore: integer("metacritic_user_score"),
+  /** 그 점수를 매긴 사람 수 */
+  metacriticUserCount: integer("metacritic_user_count"),
+  /**
    * 그 스토어에서 실제로 산 사람들이 매긴 점수 — 평론가 점수(위 둘)와 다른 축이다.
    *
    * 0~100 정수 하나로 저장하고 뜻은 user_score_kind 가 말한다. 별점은 20을 곱해 넣는다

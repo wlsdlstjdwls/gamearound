@@ -13,6 +13,8 @@ export const METACRITIC_API_KEY = "1MOZgmNFxvmljaQR1X9KAij9Mo4xAY3u";
 /** finder 의 mcoTypeId: 13 = game-title */
 const GAME_TYPE_ID = 13;
 const SEARCH_LIMIT = 10;
+/** 유저 점수는 10점 척도에 소수 한 자리다. 10을 곱해 평론가 점수와 같은 0~100 정수로 맞춘다(되돌릴 때 손실 없음) */
+const USER_SCALE_TO_100 = 10;
 
 // ---- 응답 스키마 ----
 const scoreSummarySchema = z.object({ score: z.number().nullable().optional(), reviewCount: z.number().nullable().optional() });
@@ -44,6 +46,9 @@ const composerSchema = z.object({
                 title: z.string().optional(),
                 slug: z.string().optional(),
                 criticScoreSummary: scoreSummarySchema.nullable().optional(),
+                // user-score-summary 컴포넌트는 item 자체가 점수 요약이다(score 0~10, reviewCount)
+                score: z.number().nullable().optional(),
+                reviewCount: z.number().nullable().optional(),
                 genres: z.array(z.object({ name: z.string().nullable().optional() })).nullable().optional(),
               })
               .nullable()
@@ -71,7 +76,13 @@ export function parseMetacriticGame(raw: unknown, slug: string): MetaSnapshot {
   const score = item.criticScoreSummary?.score;
   const metacritic = typeof score === "number" && score > 0 ? Math.round(score) : null;
   const genres = (item.genres ?? []).map((g) => g.name?.trim() ?? "").filter(Boolean);
-  return { scores: { metacritic }, ...(genres.length ? { genres } : {}) };
+  // 유저 점수는 product 가 아니라 user-score-summary 컴포넌트에 있다. 같은 응답이라 요청을 더 쓰지 않는다.
+  // 매긴 사람이 없거나(tbd) 점수가 0 이면 없는 것으로 친다 — 평론가 점수와 같은 규칙
+  const user = parsed.data.components.find((c) => c.meta?.componentName === "user-score-summary")?.data?.item;
+  const userScore = user?.score;
+  const userCount = user?.reviewCount ?? 0;
+  const metacriticUser = typeof userScore === "number" && userScore > 0 && userCount > 0 ? { value: Math.round(userScore * USER_SCALE_TO_100), count: userCount } : null;
+  return { scores: { metacritic }, metacriticUser, ...(genres.length ? { genres } : {}) };
 }
 
 /** finder 응답 → 후보 (typeId 13 = 게임만). externalId = slug */

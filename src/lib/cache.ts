@@ -114,7 +114,8 @@
  */
 // v32(2026-10-27): PlatformDto 에 ignScore
 // v33(2026-10-27): 장르에서 판매 형태를 갈라 tags 로(lib/genres GENRE_TAG_NAMES). 옛 캐시 카드엔 "무료 플레이" 가 장르로 남는다
-export const DTO_CACHE_VERSION = "v33";
+// v34(2026-11-10): PlatformDto 에 metacriticUser(메타크리틱 유저 점수)
+export const DTO_CACHE_VERSION = "v34";
 
 /** 목록, 검색, 홈처럼 태그 무효화로 갱신되는 화면의 기본 재검증 주기(초) */
 export const LIST_REVALIDATE_SECONDS = 3600;

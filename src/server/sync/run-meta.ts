@@ -44,11 +44,16 @@ async function listMetaTargets(ctx: Ctx, source: MetaSource, limit: number): Pro
   // 2026-11-10 실측: games.updated_at 순일 때는 매칭을 171건 붙인 회차의 수집이 3건만 바꿨다 — 막 붙은 게임은
   // updated_at 이 최근이라 줄 맨 뒤였고, 수집 몫은 이미 점수가 있는 게임을 다시 묻는 데 썼다(붙었는데 점수 없는 게임 2,121건).
   // 점수가 끝내 없는 게임(리뷰가 모자란 게임)이 앞을 막지 않게, 물을 때마다 checked_at 을 올려 줄 뒤로 보낸다(runMeta)
-  const scoreField = source === "opencritic" ? gamePlatforms.opencriticScore : gamePlatforms.metacriticScore;
+  // 메타크리틱은 평론가 점수와 유저 점수(2026-11-10 추가)가 둘 다 있어야 "채워진" 게임이다 — 평론가 점수만 있는 게임 3천여 개가
+  // 유저 점수를 받으려면 앞줄에 다시 서야 한다
+  const filled =
+    source === "opencritic"
+      ? sql`${gamePlatforms.opencriticScore} is not null`
+      : sql`${gamePlatforms.metacriticScore} is not null and ${gamePlatforms.metacriticUserScore} is not null`;
   return base
     .where(and(eq(gameSourceRefs.source, source), inArray(gameSourceRefs.matchedBy, MATCHED_FOR_SYNC)))
     .orderBy(
-      sql`exists (select 1 from ${gamePlatforms} where ${gamePlatforms.gameId} = ${gameSourceRefs.gameId} and ${scoreField} is not null)`,
+      sql`exists (select 1 from ${gamePlatforms} where ${gamePlatforms.gameId} = ${gameSourceRefs.gameId} and ${filled})`,
       gameSourceRefs.checkedAt,
     )
     .limit(limit);
@@ -141,6 +146,30 @@ async function applyScore(ctx: Ctx, target: MetaTarget, field: "opencriticScore"
 }
 
 /**
+ * 메타크리틱 유저 점수. 점수와 사람 수를 한 쌍으로 쓴다 — 둘 중 하나만 바뀌어도 함께 바뀐 것이다.
+ * 값이 없으면(tbd) 기존 값을 둔다(§7). 평론가 점수처럼 그 게임의 기기 행 전부에 같은 값을 넣는다
+ */
+async function applyMetacriticUser(ctx: Ctx, target: MetaTarget, user: MetaSnapshot["metacriticUser"]): Promise<void> {
+  if (!user) return;
+  const { db } = ctx;
+  const rows = await db
+    .select({ id: gamePlatforms.id, score: gamePlatforms.metacriticUserScore, count: gamePlatforms.metacriticUserCount })
+    .from(gamePlatforms)
+    .where(eq(gamePlatforms.gameId, target.gameId));
+  let changed = false;
+  for (const row of rows) {
+    if (row.score === user.value && row.count === user.count) continue;
+    if (isLocked(ctx, "game_platforms", row.id, "metacriticUserScore")) continue;
+    await db.update(gamePlatforms).set({ metacriticUserScore: user.value, metacriticUserCount: user.count }).where(eq(gamePlatforms.id, row.id));
+    changed = true;
+  }
+  if (changed) {
+    ctx.changedSlugs.add(target.slug);
+    noteTouched(ctx.touched, target.slug, ["metacriticUserScore"]);
+  }
+}
+
+/**
  * 별칭 반영. 제목과 같은 값은 버린다 — 넣어도 검색 결과가 달라지지 않고 자리만 차지한다.
  * 재조회 시각을 ref 에 남기는 이유: 별칭에는 playtimes.last_synced_at 같은 자기 시각이 없다.
  */
@@ -171,7 +200,10 @@ export async function runMeta(ctx: Ctx, source: MetaSource, opts: RunOptions): P
         await applyScore(ctx, target, "ignScore", snapshot.scores?.ign);
       }
       else if (source === "wikidata_game") await applyAliasesFor(ctx, source, target, snapshot);
-      else await applyScore(ctx, target, "metacriticScore", snapshot.scores?.metacritic);
+      else {
+        await applyScore(ctx, target, "metacriticScore", snapshot.scores?.metacritic);
+        await applyMetacriticUser(ctx, target, snapshot.metacriticUser);
+      }
       if (source === "opencritic" || source === "metacritic") await markChecked(ctx, source, target);
       ctx.processed++;
       noteTouched(ctx.touched, target.slug);

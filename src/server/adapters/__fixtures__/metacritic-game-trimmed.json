@@ -130,6 +130,26 @@
           ]
         }
       }
+    },
+    {
+      "meta": {
+        "componentName": "user-score-summary",
+        "componentDisplayName": "User Score Summary",
+        "componentType": "ScoreSummary"
+      },
+      "data": {
+        "item": {
+          "id": "1400627895",
+          "max": 10,
+          "score": 8.4,
+          "reviewCount": 25134,
+          "positiveCount": 20648,
+          "neutralCount": 1610,
+          "negativeCount": 2876,
+          "sentiment": "Generally favorable",
+          "url": "/game/elden-ring/user-reviews/?platform=playstation-5"
+        }
+      }
     }
   ],
   "meta": {

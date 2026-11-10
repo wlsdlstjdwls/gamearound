@@ -32,6 +32,8 @@ export type PlatformDto = {
   opencriticScore: number | null;
   /** IGN 점수 0~100(schema 의 ign_score). 화면은 10 으로 나눠 IGN 척도로 적는다 */
   ignScore: number | null;
+  /** 메타크리틱 유저 점수. value 는 0~100(8.4 -> 84), count 는 매긴 사람 수. 스토어와 상관없는 값이라 기기 행마다 같다 */
+  metacriticUser: { value: number; count: number } | null;
   /** 이 스토어 이용자들의 점수. 주지 않는 스토어(PlayStation, 닌텐도, Epic)는 null */
   userScore: UserScoreDto | null;
   lastSyncedAt: string | null;

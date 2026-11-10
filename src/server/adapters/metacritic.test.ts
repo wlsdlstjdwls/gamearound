@@ -14,6 +14,16 @@ describe("parseMetacriticGame", () => {
     expect(snap.scores?.metacritic).toBe(96);
     expect(snap.genres).toContain("Action RPG");
   });
+  it("user-score-summary 의 8.4점, 25,134명 -> metacriticUser 84, 25134", () => {
+    const snap = parseMetacriticGame(fixture("metacritic-game-trimmed.json"), "elden-ring");
+    expect(snap.metacriticUser).toEqual({ value: 84, count: 25134 });
+  });
+  it("유저 점수가 tbd(점수 null 또는 0명)면 null", () => {
+    const product = { meta: { componentName: "product" }, data: { item: { criticScoreSummary: { score: 90 } } } };
+    const tbd = { meta: { componentName: "user-score-summary" }, data: { item: { score: null, reviewCount: 0 } } };
+    expect(parseMetacriticGame({ components: [product, tbd] }, "x").metacriticUser).toBeNull();
+    expect(parseMetacriticGame({ components: [product] }, "x").metacriticUser).toBeNull();
+  });
   it("점수 null/0(tbd) 은 null", () => {
     const raw = { components: [{ meta: { componentName: "product" }, data: { item: { criticScoreSummary: { score: null } } } }] };
     expect(parseMetacriticGame(raw, "x").scores?.metacritic).toBeNull();
