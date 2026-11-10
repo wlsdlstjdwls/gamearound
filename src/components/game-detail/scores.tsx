@@ -52,8 +52,12 @@ export function CriticScores({ game, unreleased }: { game: GameDetail; unrelease
 
 const PLAYTIME_KEYS = ["mainStoryHours", "mainExtraHours", "completionistHours"] as const;
 
+/** 이 시간부터는 소수를 떼고 천 단위 쉼표를 찍는다 — "1250.5시간" 은 칸을 넘기고, 100시간 넘는 게임에서 0.5시간은 정보가 아니다 */
+const WHOLE_HOURS_FROM = 100;
+
 /** 시간 숫자 — 소수 첫째 자리까지. HLTB 는 25.5 같은 반 시간을 준다 */
 function hoursText(h: number): string {
+  if (h >= WHOLE_HOURS_FROM) return Math.round(h).toLocaleString("ko-KR");
   return String(Math.round(h * 10) / 10);
 }
 
@@ -69,17 +73,26 @@ export function PlaytimeTiles({ playtime, className }: { playtime: PlaytimeDto |
     );
   }
   return (
-    <section aria-labelledby="playtime-heading" className={cn("flex flex-col gap-3 rounded-[var(--radius-panel)] bg-surface p-4 shadow-[var(--elev-card)] sm:p-5", className)}>
+    // 글자 크기는 화면 폭이 아니라 이 판 폭으로 정한다(@container). 판이 옆 기둥에 서면 넓은 화면에서도 세 칸이 좁아
+    // "25.1시간" 이 숫자와 단위로 두 줄에 갈렸다(2026-11-10 사용자). 숫자와 단위는 한 덩어리로 묶어 접히지 않게 한다
+    <section aria-labelledby="playtime-heading" className={cn("@container flex flex-col gap-3 rounded-[var(--radius-panel)] bg-surface p-4 shadow-[var(--elev-card)] sm:p-5", className)}>
       <h2 id="playtime-heading" className="flex items-center gap-1.5 text-[16px] font-extrabold text-ink">
         <ClockIcon size={17} className="text-acc" />
         {D.playtimeTitle}
       </h2>
-      {/* 칸 사이 세로선은 목업 그대로 둔다 — 칸 수가 늘 셋이라 2026-09-21 의 "칸 수에 따라 선이 달라진다" 문제가 없다 */}
-      <dl className="grid flex-1 grid-cols-3 content-center border-t border-line pt-3">
+      {/* 칸 사이 세로선은 목업 그대로 둔다 — 칸 수가 늘 셋이라 2026-09-21 의 "칸 수에 따라 선이 달라진다" 문제가 없다.
+          판이 20rem 보다 좁으면 세 칸이 "8,645시간" 을 못 담는다(2026-11-10 260~280px 실측) — 그때는 이름과 값을 한 줄씩 세운다 */}
+      <dl className="grid flex-1 grid-cols-1 content-center gap-2 border-t border-line pt-3 @[20rem]:grid-cols-3 @[20rem]:gap-0">
         {values.map((v, i) => (
-          <div key={v.key} className={cn("flex min-w-0 flex-col gap-1.5 px-2.5", i === 0 ? "pl-0" : "border-l border-line")}>
+          <div
+            key={v.key}
+            className={cn(
+              "flex min-w-0 items-baseline justify-between gap-2 @[20rem]:flex-col @[20rem]:items-start @[20rem]:justify-start @[20rem]:gap-1.5 @[20rem]:px-2.5",
+              i === 0 ? "@[20rem]:pl-0" : "@[20rem]:border-l @[20rem]:border-line",
+            )}
+          >
             <dt className="text-[12px] leading-[1.4] text-mut">{D.playtimeItems[v.key]}</dt>
-            <dd className="text-[24px] font-extrabold leading-none tracking-[-0.03em] text-ink sm:text-[28px]">
+            <dd className="whitespace-nowrap text-[18px] font-extrabold leading-none tracking-[-0.03em] text-ink @[20rem]:text-[22px] @[26rem]:text-[24px] @[32rem]:text-[28px]">
               {v.hours === null ? <span className="text-dim-2">-</span> : hoursText(v.hours)}
               {v.hours !== null && <small className="ml-0.5 text-[13px] font-bold tracking-normal">{D.playtimeUnit}</small>}
             </dd>
