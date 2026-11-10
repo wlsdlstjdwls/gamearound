@@ -54,6 +54,8 @@ const PLAYTIME_KEYS = ["mainStoryHours", "mainExtraHours", "completionistHours"]
 
 /** 이 시간부터는 소수를 떼고 천 단위 쉼표를 찍는다 — "1250.5시간" 은 칸을 넘기고, 100시간 넘는 게임에서 0.5시간은 정보가 아니다 */
 const WHOLE_HOURS_FROM = 100;
+/** 네 자리(천 단위 쉼표 포함) 값. 세 칸 한 칸 폭(약 90px)에 기본 크기로는 안 들어간다 */
+const LONG_HOURS_FROM = 1000;
 
 /** 시간 숫자 — 소수 첫째 자리까지. HLTB 는 25.5 같은 반 시간을 준다 */
 function hoursText(h: number): string {
@@ -63,6 +65,7 @@ function hoursText(h: number): string {
 
 export function PlaytimeTiles({ playtime, className }: { playtime: PlaytimeDto | null; className?: string }) {
   const values = PLAYTIME_KEYS.map((k) => ({ key: k, hours: toPositiveNumber(playtime?.[k]) }));
+  const longHours = values.some((v) => v.hours !== null && v.hours >= LONG_HOURS_FROM);
   // 값이 하나도 없으면 판 대신 한 줄(game-detail/empty-line, 2026-10-27 사용자 검수: 빈 판이 많다).
   // 부르는 쪽의 늘리기(flex-1)도 받지 않는다 — 안내 한 줄이 옆 칸 높이만큼 비어 늘어났다(2026-10-26)
   if (values.every((v) => v.hours === null)) {
@@ -81,20 +84,26 @@ export function PlaytimeTiles({ playtime, className }: { playtime: PlaytimeDto |
         {D.playtimeTitle}
       </h2>
       {/* 칸 사이 세로선은 목업 그대로 둔다 — 칸 수가 늘 셋이라 2026-09-21 의 "칸 수에 따라 선이 달라진다" 문제가 없다.
-          판이 20rem 보다 좁으면 세 칸이 "8,645시간" 을 못 담는다(2026-11-10 260~280px 실측) — 그때는 이름과 값을 한 줄씩 세운다 */}
-      <dl className="grid flex-1 grid-cols-1 content-center gap-2 border-t border-line pt-3 @[20rem]:grid-cols-3 @[20rem]:gap-0">
+          세 칸은 상세 옆 기둥(안쪽 약 292px)과 390폭 휴대폰(약 303px)에서도 지킨다 — 거기서 줄로 세웠더니 목록처럼 보여 사용자가 싫어했다(2026-11-10).
+          대신 칸 여백을 줄이고 글자 크기를 판 폭에 맞춘다. 천 시간 넘는 값(MMO)이 하나라도 있으면 한 단계 작게 쓴다 */}
+      <dl className="grid flex-1 grid-cols-1 content-center gap-2 border-t border-line pt-3 @[15rem]:grid-cols-3 @[15rem]:gap-0">
         {values.map((v, i) => (
           <div
             key={v.key}
             className={cn(
-              "flex min-w-0 items-baseline justify-between gap-2 @[20rem]:flex-col @[20rem]:items-start @[20rem]:justify-start @[20rem]:gap-1.5 @[20rem]:px-2.5",
-              i === 0 ? "@[20rem]:pl-0" : "@[20rem]:border-l @[20rem]:border-line",
+              "flex min-w-0 items-baseline justify-between gap-2 @[15rem]:flex-col @[15rem]:items-start @[15rem]:justify-start @[15rem]:gap-1.5 @[15rem]:px-2",
+              i === 0 ? "@[15rem]:pl-0" : "@[15rem]:border-l @[15rem]:border-line",
             )}
           >
             <dt className="text-[12px] leading-[1.4] text-mut">{D.playtimeItems[v.key]}</dt>
-            <dd className="whitespace-nowrap text-[18px] font-extrabold leading-none tracking-[-0.03em] text-ink @[20rem]:text-[22px] @[26rem]:text-[24px] @[32rem]:text-[28px]">
+            <dd
+              className={cn(
+                "whitespace-nowrap font-extrabold leading-none tracking-[-0.03em] text-ink",
+                longHours ? "text-[16px] @[26rem]:text-[20px] @[32rem]:text-[24px]" : "text-[20px] @[26rem]:text-[24px] @[32rem]:text-[28px]",
+              )}
+            >
               {v.hours === null ? <span className="text-dim-2">-</span> : hoursText(v.hours)}
-              {v.hours !== null && <small className="ml-0.5 text-[13px] font-bold tracking-normal">{D.playtimeUnit}</small>}
+              {v.hours !== null && <small className="ml-0.5 text-[12px] font-bold tracking-normal">{D.playtimeUnit}</small>}
             </dd>
           </div>
         ))}
