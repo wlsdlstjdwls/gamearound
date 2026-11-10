@@ -58,11 +58,11 @@
     },
     {
       "path": "/api/cron/crawl/hltb/match",
-      "schedule": "4 0,12 * * *"
+      "schedule": "4 0,6,12,18 * * *"
     },
     {
       "path": "/api/cron/crawl/metacritic/match",
-      "schedule": "5 0 * * *"
+      "schedule": "5 0,12 * * *"
     },
     {
       "path": "/api/cron/crawl/opencritic/match",
@@ -86,11 +86,11 @@
     },
     {
       "path": "/api/cron/crawl/hltb/collect",
-      "schedule": "18 0,12 * * *"
+      "schedule": "18 0,6,12,18 * * *"
     },
     {
       "path": "/api/cron/crawl/metacritic/collect",
-      "schedule": "19 0 * * *"
+      "schedule": "19 0,12 * * *"
     },
     {
       "path": "/api/cron/crawl/opencritic/collect",

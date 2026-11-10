@@ -527,10 +527,10 @@ export const CRON_META_MS_PER_ITEM: Record<CronMetaSource, Record<CronMetaMode, 
  *   /api/cron/crawl/wikidata_game/collect  17 0,18 * * *         하루 2회 × 71건 = 142건/일
  *   /api/cron/crawl/wikidata/collect       3 0,12 * * *          하루 2회 × 230개 이름
  *   /api/cron/crawl/rss/collect            2 0,6,12,18 * * *     하루 4회 × 피드 전부
- *   /api/cron/crawl/hltb/match             4 0,12 * * *          하루 2회 × 120건
- *   /api/cron/crawl/hltb/collect           18 0,12 * * *         하루 2회 × 130건
- *   /api/cron/crawl/metacritic/match       5 0 * * *             하루 1회 × 70건
- *   /api/cron/crawl/metacritic/collect     19 0 * * *            하루 1회 × 80건
+ *   /api/cron/crawl/hltb/match             4 0,6,12,18 * * *     하루 4회 × 120건
+ *   /api/cron/crawl/hltb/collect           18 0,6,12,18 * * *    하루 4회 × 130건
+ *   /api/cron/crawl/metacritic/match       5 0,12 * * *          하루 2회 × 70건
+ *   /api/cron/crawl/metacritic/collect     19 0,12 * * *         하루 2회 × 80건
  *   /api/cron/crawl/opencritic/match       5 0 * * *             하루 1회 × 25건
  *   /api/cron/crawl/opencritic/collect     19 0 * * *            하루 1회 × 85건
  *   /api/cron/crawl/gamepass/collect       6 0 * * *             하루 1회 × 컬렉션 전부
@@ -568,18 +568,20 @@ export const CRON_META_PLAN: Record<CronMetaSource, Record<CronMetaMode, CronMet
     // 피드 전부를 한 회차에 돈다. 하루 4회 = 예전 Actions 6시간 주기와 같은 횟수를 창 안 정시로
     collect: { limit: BATCH_SIZE.rss, match: 0, runsPerDay: 4 },
   },
+  // 2026-11-10 하루 2회에서 4회로 올렸다. 매칭 대기 22,245건(인기작 9,320)에 하루 240건이라 한 바퀴가 석 달이었다 —
+  // 사용자 "평점, 플레이타임이 너무 느리다". 늘린 회차는 이미 열려 있는 스토어 창(6, 18시 UTC)에 얹어 DB 를 새로 깨우지 않는다.
   // Actions 에서는 격일로 매칭 600, 수집 300 이었다(하루 300 대 150). 하루 collect 가 match 보다 많아야 해서
   // (아래 테스트) 수집을 하루 260 으로 올렸다. 요청 간격 1초라 HLTB 쪽 부담은 하루 몇 분이다.
   hltb: {
     // 120 × 4초 × 1.15 = 552초
-    match: { limit: 0, match: 120, runsPerDay: 2 },
+    match: { limit: 0, match: 120, runsPerDay: 4 },
     // 130 × 2.5초 × 1.15 = 374초
-    collect: { limit: 130, match: 0, runsPerDay: 2 },
+    collect: { limit: 130, match: 0, runsPerDay: 4 },
   },
-  // Actions 의 격일 150/150 을 하루 70/80 으로 나눴다(하루 처리량은 거의 같다)
+  // Actions 의 격일 150/150 을 하루 70/80 으로 나눴다. 2026-11-10 에 12시 창에도 한 번 더 돌려 하루 140/160 이다(대기 26,575건)
   metacritic: {
-    match: { limit: 0, match: 70, runsPerDay: 1 },
-    collect: { limit: 80, match: 0, runsPerDay: 1 },
+    match: { limit: 0, match: 70, runsPerDay: 2 },
+    collect: { limit: 80, match: 0, runsPerDay: 2 },
   },
   // 무료 등급 하루 200요청(BATCH_SIZE.opencritic 주석). 수집 85 × 2(게임당 두 번 묻는다) = 170.
   // 검색은 따로 **하루 25번**이다(X-RateLimit-Searches-Limit, 2026-11-02 헤더 실측, 약 23:40Z 초기화). 매칭 한 건이 검색을
