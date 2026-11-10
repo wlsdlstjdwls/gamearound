@@ -8,7 +8,7 @@
 //
 // 어느 쪽이든 쓰기는 여기서 하지 않는다. 고른 행은 store-targets 가 그 회차 대상 맨 앞에 세우고, 평소 반영 경로
 // (검증, 반영, 이력, 찜 알림, 캐시 무효화)를 그대로 탄다 — 두 번째 쓰기 길을 만들면 그중 하나가 반드시 빠진다.
-import { and, asc, eq, inArray, not } from "drizzle-orm";
+import { and, asc, eq, inArray, not, sql } from "drizzle-orm";
 import { gamePlatforms, gameSourceRefs, games, type Platform } from "@/server/db/schema";
 import type { PriceQuote, StoreAdapter, StoreSnapshot } from "@/server/adapters/types";
 import type { StoreSource } from "@/server/adapters";
@@ -90,7 +90,7 @@ export function sweepShare(opts: { limit: number; detailTop: number; moves: numb
 }
 
 /** 목록 값 + DB 행 → 가격만 든 스냅샷. 기기와 주소는 DB 행의 것이다(목록은 그 둘을 안 준다) */
-export function quoteSnapshot(row: SweepRow & { platform: Platform; storeUrl: string }, quote: PriceQuote): StoreSnapshot {
+export function quoteSnapshot(row: { platform: Platform; storeUrl: string }, quote: PriceQuote): StoreSnapshot {
   return {
     platform: row.platform,
     storeExternalId: quote.storeExternalId,
@@ -104,49 +104,94 @@ export function quoteSnapshot(row: SweepRow & { platform: Platform; storeUrl: st
   };
 }
 
+/**
+ * 훑기가 견주는 데 쓰는 최소한의 칸. 이 질의는 회차마다 소스의 모든 가격 행(스팀 2만 3천, Xbox 2만)을 읽어서
+ * slug, 주소, 게임 id 까지 실으면 한 바퀴(다섯 소스)가 약 11MB, 하루 약 47MB 다(2026-11-10 어림) — Neon 무료 전송량(월 5GB)이
+ * 이미 빠듯하다(같은 날 2.86GB). 그래서 견줄 값만 읽고, 나머지 칸은 바뀐 행만 따로 묻는다(hydrateMoves)
+ */
+type SweepBase = Pick<SweepRow, "externalId" | "platform" | "listPrice" | "currentPrice" | "discountPct"> & { hasUrl: boolean };
+
+function sweepScope(source: StoreSource) {
+  return and(
+    eq(gameSourceRefs.source, source),
+    inArray(gameSourceRefs.matchedBy, MATCHED_FOR_SYNC),
+    eq(games.crawlExcluded, false),
+    not(missingRefExcluded()),
+  );
+}
+
+function sweepJoin(source: StoreSource) {
+  return and(
+    eq(gamePlatforms.gameId, gameSourceRefs.gameId),
+    inArray(gamePlatforms.platform, SOURCE_PLATFORMS[source]),
+    eq(gamePlatforms.region, SOURCE_REGION[source]),
+  );
+}
+
 /** 이 소스가 아는 상품 중 가격 행이 있는 것. 오래된 순이라 시간 상한에 걸려도 오래 안 본 쪽을 먼저 본다 */
-async function sweepRows(ctx: Ctx, source: StoreSource): Promise<SweepRow[]> {
+async function sweepRows(ctx: Ctx, source: StoreSource): Promise<SweepBase[]> {
   return ctx.db
     .select({
-      gameId: gameSourceRefs.gameId,
       externalId: gameSourceRefs.externalId,
-      slug: games.slug,
       platform: gamePlatforms.platform,
-      storeUrl: gamePlatforms.storeUrl,
+      hasUrl: sql<boolean>`${gamePlatforms.storeUrl} is not null`,
       listPrice: gamePlatforms.listPrice,
       currentPrice: gamePlatforms.currentPrice,
       discountPct: gamePlatforms.discountPct,
     })
     .from(gameSourceRefs)
     .innerJoin(games, eq(games.id, gameSourceRefs.gameId))
-    .innerJoin(
-      gamePlatforms,
-      and(
-        eq(gamePlatforms.gameId, gameSourceRefs.gameId),
-        inArray(gamePlatforms.platform, SOURCE_PLATFORMS[source]),
-        eq(gamePlatforms.region, SOURCE_REGION[source]),
-      ),
-    )
-    .where(
-      and(
-        eq(gameSourceRefs.source, source),
-        inArray(gameSourceRefs.matchedBy, MATCHED_FOR_SYNC),
-        eq(games.crawlExcluded, false),
-        not(missingRefExcluded()),
-      ),
-    )
+    .innerJoin(gamePlatforms, sweepJoin(source))
+    .where(sweepScope(source))
     .orderBy(asc(gamePlatforms.lastSyncedAt));
 }
 
+/** 바뀐 것으로 고른 행 하나. 목록 소스는 그 자리에서 받은 값(quote)을 같이 든다 */
+type Found = { base: SweepBase; move: Exclude<PriceMove, null>; quote?: PriceQuote };
 type Move = { row: SweptRow; move: Exclude<PriceMove, null> };
 
+/**
+ * 고른 행에 게임 id, slug, 주소를 붙인다. 바뀐 행만 묻는다 — 평소 회차는 수십 건, 큰 세일 날도 수천 건이다.
+ * 같은 상품 번호를 두 게임이 나눠 쥔 드문 경우(사람이 붙인 manual)는 둘 다 돌려준다 — 원래 둘 다 갱신 대상이다
+ */
+async function hydrateMoves(ctx: Ctx, source: StoreSource, found: Found[]): Promise<Move[]> {
+  if (found.length === 0) return [];
+  const ids = [...new Set(found.map((f) => f.base.externalId))];
+  const rows = await ctx.db
+    .select({
+      gameId: gameSourceRefs.gameId,
+      externalId: gameSourceRefs.externalId,
+      slug: games.slug,
+      platform: gamePlatforms.platform,
+      storeUrl: gamePlatforms.storeUrl,
+    })
+    .from(gameSourceRefs)
+    .innerJoin(games, eq(games.id, gameSourceRefs.gameId))
+    .innerJoin(gamePlatforms, sweepJoin(source))
+    .where(and(sweepScope(source), inArray(gameSourceRefs.externalId, ids)));
+  const byKey = new Map<string, typeof rows>();
+  for (const r of rows) {
+    const key = `${r.externalId}:${r.platform}`;
+    byKey.set(key, [...(byKey.get(key) ?? []), r]);
+  }
+  const out: Move[] = [];
+  for (const f of found) {
+    for (const h of byKey.get(`${f.base.externalId}:${f.base.platform}`) ?? []) {
+      const row: SweepRow = { ...f.base, gameId: h.gameId, slug: h.slug, storeUrl: h.storeUrl };
+      const prefetched = f.quote && row.platform && row.storeUrl ? quoteSnapshot({ platform: row.platform, storeUrl: row.storeUrl }, f.quote) : undefined;
+      out.push({ row: prefetched ? { ...row, prefetched } : row, move: f.move });
+    }
+  }
+  return out;
+}
+
 /** 가격 배치로 훑는다(닌텐도, 스팀). 한 상품(nsuid)이 기기 행 둘에 붙을 수 있다 — 묻기는 한 번, 견주기는 행마다 */
-async function sweepByBatch(source: StoreSource, adapter: StoreAdapter & { fetchMany: NonNullable<StoreAdapter["fetchMany"]> }, rows: SweepRow[], startedAt: number) {
-  const byId = new Map<string, SweepRow[]>();
+async function sweepByBatch(source: StoreSource, adapter: StoreAdapter & { fetchMany: NonNullable<StoreAdapter["fetchMany"]> }, rows: SweepBase[], startedAt: number) {
+  const byId = new Map<string, SweepBase[]>();
   for (const r of rows) byId.set(r.externalId, [...(byId.get(r.externalId) ?? []), r]);
   const ids = [...byId.keys()];
   const size = adapter.batchSize ?? DEFAULT_FETCH_BATCH_SIZE;
-  const moves: Move[] = [];
+  const found: Found[] = [];
   let seen = 0;
   let failed = 0;
   for (let i = 0; i < ids.length; i += size) {
@@ -157,9 +202,9 @@ async function sweepByBatch(source: StoreSource, adapter: StoreAdapter & { fetch
       for (const id of batch) {
         const snap = snaps.get(id);
         if (!snap) continue;
-        for (const row of byId.get(id) ?? []) {
-          const move = priceMove(row, snap);
-          if (move) moves.push({ row, move });
+        for (const base of byId.get(id) ?? []) {
+          const move = priceMove(base, snap);
+          if (move) found.push({ base, move });
         }
       }
     } catch (e) {
@@ -169,7 +214,7 @@ async function sweepByBatch(source: StoreSource, adapter: StoreAdapter & { fetch
     seen += batch.length;
     await sleep(adapter.sweepIntervalMs ?? adapter.minIntervalMs);
   }
-  return { moves, seen, total: ids.length, failed };
+  return { found, seen, total: ids.length, failed };
 }
 
 /**
@@ -178,23 +223,23 @@ async function sweepByBatch(source: StoreSource, adapter: StoreAdapter & { fetch
  * 한 상품이 기기 행 둘(PS4, PS5)에 붙어 있으면 주소가 있는 행 하나만 견준다. 그 행이 상세 갱신이 쓰는 행이다
  * (주소 없는 행에 스냅샷을 만들면 주소를 비울 수 없어 반영이 그 행을 못 쓴다)
  */
-async function sweepByList(source: StoreSource, adapter: StoreAdapter & { listPrices: NonNullable<StoreAdapter["listPrices"]> }, rows: SweepRow[], startedAt: number) {
-  const primary = new Map<string, SweepRow & { platform: Platform; storeUrl: string }>();
+async function sweepByList(source: StoreSource, adapter: StoreAdapter & { listPrices: NonNullable<StoreAdapter["listPrices"]> }, rows: SweepBase[], startedAt: number) {
+  const primary = new Map<string, SweepBase>();
   for (const r of rows) {
-    if (!r.platform || !r.storeUrl || primary.has(r.externalId)) continue;
-    primary.set(r.externalId, { ...r, platform: r.platform, storeUrl: r.storeUrl });
+    if (!r.platform || !r.hasUrl || primary.has(r.externalId)) continue;
+    primary.set(r.externalId, r);
   }
-  const moves: Move[] = [];
+  const found: Found[] = [];
   let seen = 0;
   let failed = 0;
   try {
     for await (const quotes of adapter.listPrices()) {
       for (const q of quotes) {
-        const row = primary.get(q.storeExternalId);
-        if (!row) continue;
+        const base = primary.get(q.storeExternalId);
+        if (!base) continue;
         seen++;
-        const move = listMove(row, q);
-        if (move) moves.push({ row: { ...row, prefetched: quoteSnapshot(row, q) }, move });
+        const move = listMove(base, q);
+        if (move) found.push({ base, move, quote: q });
       }
       if (Date.now() - startedAt > PRICE_SWEEP_MAX_MS) break;
     }
@@ -203,7 +248,7 @@ async function sweepByList(source: StoreSource, adapter: StoreAdapter & { listPr
     failed++;
     console.warn(`[sync:${source}] 가격 훑기 목록 실패, 여기까지 본 것만 쓴다: ${errorMessage(e)}`);
   }
-  return { moves, seen, total: primary.size, failed };
+  return { found, seen, total: primary.size, failed };
 }
 
 /**
@@ -218,10 +263,11 @@ export async function sweepPriceMoves(ctx: Ctx, source: StoreSource, adapter: St
   const r = listPrices
     ? await sweepByList(source, { ...adapter, listPrices }, rows, startedAt)
     : await sweepByBatch(source, { ...adapter, fetchMany: fetchMany! }, rows, startedAt);
-  const started = r.moves.filter((m) => m.move === "sale-started").length;
+  const moves = await hydrateMoves(ctx, source, r.found);
+  const started = moves.filter((m) => m.move === "sale-started").length;
   console.log(
     `[sync:${source}] 가격 훑기 ${r.seen}/${r.total}건, ${Math.round((Date.now() - startedAt) / 1000)}초: ` +
-      `새 할인 ${started}건, 다른 변동 ${r.moves.length - started}건` + (r.failed > 0 ? `, 실패 ${r.failed}` : ""),
+      `새 할인 ${started}건, 다른 변동 ${moves.length - started}건` + (r.failed > 0 ? `, 실패 ${r.failed}` : ""),
   );
-  return orderMoves(r.moves);
+  return orderMoves(moves);
 }
