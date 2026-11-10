@@ -40,11 +40,26 @@ async function listMetaTargets(ctx: Ctx, source: MetaSource, limit: number): Pro
       .orderBy(gameSourceRefs.checkedAt)
       .limit(limit);
   }
-  // 평점 소스는 소스별 동기화 시각이 없어 games.updated_at 오래된 순
+  // 평점 소스는 점수가 아직 없는 게임이 먼저, 그다음 이 소스를 오래 안 본 순(ref 의 checked_at).
+  // 2026-11-10 실측: games.updated_at 순일 때는 매칭을 171건 붙인 회차의 수집이 3건만 바꿨다 — 막 붙은 게임은
+  // updated_at 이 최근이라 줄 맨 뒤였고, 수집 몫은 이미 점수가 있는 게임을 다시 묻는 데 썼다(붙었는데 점수 없는 게임 2,121건).
+  // 점수가 끝내 없는 게임(리뷰가 모자란 게임)이 앞을 막지 않게, 물을 때마다 checked_at 을 올려 줄 뒤로 보낸다(runMeta)
+  const scoreField = source === "opencritic" ? gamePlatforms.opencriticScore : gamePlatforms.metacriticScore;
   return base
     .where(and(eq(gameSourceRefs.source, source), inArray(gameSourceRefs.matchedBy, MATCHED_FOR_SYNC)))
-    .orderBy(games.updatedAt)
+    .orderBy(
+      sql`exists (select 1 from ${gamePlatforms} where ${gamePlatforms.gameId} = ${gameSourceRefs.gameId} and ${scoreField} is not null)`,
+      gameSourceRefs.checkedAt,
+    )
     .limit(limit);
+}
+
+/** 이 소스를 방금 봤다고 적는다 — 평점 소스 대기줄(listMetaTargets)이 이 값으로 돈다 */
+async function markChecked(ctx: Ctx, source: MetaSource, target: MetaTarget): Promise<void> {
+  await ctx.db
+    .update(gameSourceRefs)
+    .set({ checkedAt: ctx.now })
+    .where(and(eq(gameSourceRefs.gameId, target.gameId), eq(gameSourceRefs.source, source)));
 }
 
 const hoursToNumeric = (h: number) => h.toFixed(1);
@@ -157,6 +172,7 @@ export async function runMeta(ctx: Ctx, source: MetaSource, opts: RunOptions): P
       }
       else if (source === "wikidata_game") await applyAliasesFor(ctx, source, target, snapshot);
       else await applyScore(ctx, target, "metacriticScore", snapshot.scores?.metacritic);
+      if (source === "opencritic" || source === "metacritic") await markChecked(ctx, source, target);
       ctx.processed++;
       noteTouched(ctx.touched, target.slug);
     } catch (e) {
