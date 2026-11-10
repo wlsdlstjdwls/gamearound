@@ -331,7 +331,8 @@ export const CRON_PLAN: Record<CronSource, Record<CronMode, CronRunPlan>> = {
     // + 반영 300 × 0.4 = 120초 → × 1.15 = 529초. 늘어난 몫은 80 × 4초 × 하루 4회 = 약 21분이다.
     // 2026-11-09 가격 변동 훑기(PRICE_SWEEP_MAX_MS 90초)를 머리에 얹으며 상세 몫을 80 에서 70 으로 내렸다 — 그대로면 어림 633초로 예산 600초를 넘는다.
     // 대응언어 채우기가 하루 40건 늦어지는 대신 한국 가격 전체를 회차마다(하루 4번) 훑는다.
-    prices: { limit: 300, seedTop: 0, pageBudget: 0, match: 0, detailTop: 70 },
+    // 2026-11-10 훑기를 150초로 늘리며 상세 몫을 70 에서 55 로 내렸다(어림 587초). 큰 세일 회차는 상세를 아예 쉰다(PRICE_SWEEP_SURGE_LIMIT)
+    prices: { limit: 300, seedTop: 0, pageBudget: 0, match: 0, detailTop: 55 },
     // 2026-09-30 에 20건에서 60건으로 올렸다. 20건이던 때는 발견이 늘 같은 288건만 봐서(adapters/nintendo 의
     // KR_CATALOG_URL 주석) 몫이 비어도 티가 안 났는데, 목록을 이어 읽게 되면서 몫이 곧 하루 유입량이 됐다
     // (한국 본편 9,697건 중 모르는 것 약 8,000건, 20건 × 4회로는 100일이 넘는다).
@@ -759,14 +760,27 @@ export const REFRESH_POPULAR_MIN_AGE_HOURS = 20;
 export const PRICE_SWEEP_SOURCES: StoreSource[] = ["nintendo", "nintendo_jp"];
 /**
  * 훑기 한 번에 쓸 시간 상한. 넘으면 거기까지 본 것만으로 고른다(다음 회차는 오래된 행부터 다시 본다).
- * 90초 = 한국 약 110요청 x (응답 0.5초 + 간격 0.25초) 에 여유. 크론 몫 어림(cron-plan.test)이 이 값을 통째로 더한다.
+ * 150초 = 한국 약 194요청 x (응답 0.5초 + 간격 0.15초) = 126초에 여유. 크론 몫 어림(cron-plan.test)이 이 값을 통째로 더한다.
+ * 2026-11-10 에 90초에서 올렸다 — 한국 카탈로그를 다 모으자 9,689건이 되어 90초로는 5,900건만 봤다(나머지 할인은 다음 회차로 밀렸다).
  */
-export const PRICE_SWEEP_MAX_MS = 90_000;
+export const PRICE_SWEEP_MAX_MS = 150_000;
 /**
  * 훑기에서 고른 행이 한 회차에서 가져갈 최대 비율. 큰 세일이 열린 날 바뀐 행이 수천 개라도
  * 나머지 몫(조회작, 오래된 순)이 0 이 되지 않게 남겨 둔다. 남은 변동은 다음 회차가 다시 훑어 잡는다.
  */
 export const PRICE_SWEEP_SHARE_MAX = 0.7;
+/**
+ * 큰 세일 회차의 상한. 훑기가 찾은 변동이 평소 몫(위 비율)을 넘으면 그 회차는 상세 몫(한국어 채우기)을 쉬고
+ * 몫을 이 수까지 늘려 변동을 한 번에 반영한다(store-targets). 사용자(2026-11-10): "닌텐도 할인이 오늘 시작이면 대상 전부를 짧은 시간에".
+ * 평소 몫이면 1,000개짜리 세일이 140개씩 7회차, 이틀 가까이 걸렸다.
+ *
+ * 2,500 의 근거(2026-11-10 로컬 실측, 서울에서 운영 DB): 닌텐도 가격 900건 수집+반영이 96초, 건당 107ms(PRICE_SWEEP_SURGE_MS_PER_ITEM).
+ * 훑기 150초 + 2,500 x 107ms = 418초, 여유 1.15배로 480초 — 예산 600초 안이다(cron-plan.test 가 같은 식으로 지킨다).
+ * 배치 가격 경로가 있는 소스만 둔다 — 상세를 한 건씩 여는 소스에 몫을 늘리면 시간이 수십 배로 는다.
+ */
+export const PRICE_SWEEP_SURGE_LIMIT: Partial<Record<StoreSource, number>> = { nintendo: 2500 };
+/** 큰 세일 회차 어림에 쓰는 건당 시간(수집+반영). 위 상수 주석의 실측이다 */
+export const PRICE_SWEEP_SURGE_MS_PER_ITEM = 107;
 
 /**
  * `games` 마스터(제목, 설명, 이미지, 회사)를 **덮어쓸 수 있는** 소스. 나머지 소스는 빈 칸만 채운다.

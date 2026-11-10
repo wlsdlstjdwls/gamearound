@@ -47,6 +47,30 @@ export function orderMoves<T>(moves: Array<{ row: T; move: Exclude<PriceMove, nu
   return [...moves.filter((m) => m.move === "sale-started"), ...moves.filter((m) => m.move === "changed")].map((m) => m.row);
 }
 
+/** 훑기 결과로 정한 이번 회차 몫. 큰 세일이면 상세 몫을 쉬고 전체 몫을 늘린다 */
+export interface SweepShare {
+  /** 이번 회차 전체 처리 상한 */
+  limit: number;
+  /** 상세로 받을 기존 행 수(한국어 채우기). 큰 세일 회차는 0 */
+  detailTop: number;
+  /** 변동 행 중 이번 회차에 반영할 수 */
+  swept: number;
+  surge: boolean;
+}
+
+/**
+ * 변동 수를 보고 몫을 정한다. 평소에는 변동이 전체 몫의 일정 비율(shareMax)까지만 앞에 서고 나머지 몫은 상세, 조회작,
+ * 오래된 순이 쓴다. 변동이 그 자리보다 많으면 큰 세일로 보고 상세를 쉬고 몫을 surgeLimit 까지 늘려 변동을 한 번에 싣는다
+ * (constants 의 PRICE_SWEEP_SURGE_LIMIT 주석). surgeLimit 이 없는 소스는 평소대로 간다.
+ */
+export function sweepShare(opts: { limit: number; detailTop: number; moves: number; shareMax: number; surgeLimit?: number }): SweepShare {
+  const { limit, detailTop, moves, shareMax, surgeLimit } = opts;
+  const normalRoom = Math.max(Math.floor(limit * shareMax) - detailTop, 0);
+  if (moves <= normalRoom || !surgeLimit) return { limit, detailTop, swept: Math.min(moves, normalRoom), surge: false };
+  const swept = Math.min(moves, surgeLimit);
+  return { limit: Math.max(limit, swept), detailTop: 0, swept, surge: true };
+}
+
 /** 이 소스가 아는 상품 중 가격 행이 있는 것. 오래된 순이라 시간 상한에 걸려도 오래 안 본 쪽을 먼저 본다 */
 async function sweepRows(ctx: Ctx, source: StoreSource): Promise<SweepRow[]> {
   return ctx.db

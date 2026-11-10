@@ -26,6 +26,8 @@ import {
   PATCH_LIST_PER_RUN_BY_SOURCE,
   PATCH_SOURCES,
   PRICE_SWEEP_MAX_MS,
+  PRICE_SWEEP_SURGE_LIMIT,
+  PRICE_SWEEP_SURGE_MS_PER_ITEM,
   PRICE_SWEEP_SOURCES,
   REQUIREMENTS_PER_RUN,
 } from "./constants";
@@ -93,6 +95,13 @@ function estimateMs(source: (typeof CRON_SOURCES)[number], mode: CronMode): numb
 }
 
 describe("CRON_PLAN", () => {
+  // 큰 세일 회차(store-targets 의 sweepShare)는 상세를 쉬고 몫을 PRICE_SWEEP_SURGE_LIMIT 까지 늘린다. 평소 어림과 따로 센다 —
+  // 건당 시간은 그 회차 모양(가격 배치 수집 + 반영)의 실측값을 쓴다(constants 주석)
+  for (const [source, surge] of Object.entries(PRICE_SWEEP_SURGE_LIMIT)) {
+    it(`${source} 큰 세일 회차(${surge}건)가 요청 시간 예산 안에 든다`, () => {
+      expect((PRICE_SWEEP_MAX_MS + surge * PRICE_SWEEP_SURGE_MS_PER_ITEM) * CRON_SAFETY_FACTOR).toBeLessThanOrEqual(CRON_TIME_BUDGET_MS);
+    });
+  }
   for (const source of CRON_SOURCES) {
     for (const mode of CRON_MODES) {
       it(`${source} ${mode} 몫이 요청 시간 예산 안에 든다`, () => {

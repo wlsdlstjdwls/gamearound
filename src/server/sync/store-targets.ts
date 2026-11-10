@@ -21,6 +21,7 @@ import {
   MATCHED_FOR_SYNC,
   PRICE_SWEEP_SHARE_MAX,
   PRICE_SWEEP_SOURCES,
+  PRICE_SWEEP_SURGE_LIMIT,
   REFRESH_POPULAR_MIN_AGE_HOURS,
   REFRESH_POPULAR_SHARE_BY_SOURCE,
   REFRESH_VIEWED_SHARE,
@@ -31,7 +32,7 @@ import { getRedis } from "@/server/redis";
 import { recentlyViewedSlugs } from "@/server/game-views";
 import { fetchWithRetry } from "./retry";
 import { loadGameTitlesFor } from "./title-candidates";
-import { sweepPriceMoves } from "./price-sweep";
+import { sweepPriceMoves, sweepShare } from "./price-sweep";
 import type { Ctx } from "./context";
 
 export interface StoreTarget {
@@ -94,7 +95,19 @@ export interface StoreTargetOptions {
 }
 
 export async function listStoreTargets(ctx: Ctx, source: StoreSource, opts: StoreTargetOptions): Promise<StoreTarget[]> {
-  const { limit, seedTop, pageBudget } = opts;
+  const { seedTop, pageBudget } = opts;
+  // 가격 변동 훑기를 맨 먼저 돈다 — 변동이 몇 건인지 알아야 이번 회차 몫(큰 세일이면 상세를 쉬고 몫을 늘린다)을 정한다.
+  // 발견 회차(seedTop)에서는 돌지 않는다 — 그 회차는 신규 등록에 시간을 다 쓴다
+  const moves = !seedTop && PRICE_SWEEP_SOURCES.includes(source) ? await sweepPriceMoves(ctx, source, getStoreAdapter(source)) : [];
+  const share = sweepShare({
+    limit: opts.limit,
+    detailTop: opts.detailTop ?? 0,
+    moves: moves.length,
+    shareMax: PRICE_SWEEP_SHARE_MAX,
+    surgeLimit: PRICE_SWEEP_SURGE_LIMIT[source],
+  });
+  if (share.surge) console.log(`[sync:${source}] 큰 세일 회차: 변동 ${moves.length}건, 상세를 쉬고 ${share.swept}건을 이번 회차에 싣는다`);
+  const limit = share.limit;
   const { db } = ctx;
   const platforms = SOURCE_PLATFORMS[source];
   // 지역을 조건에 넣지 않으면 한 게임에 한국, 일본 행이 둘 다 붙어 같은 대상이 두 번 나오고,
@@ -105,10 +118,12 @@ export async function listStoreTargets(ctx: Ctx, source: StoreSource, opts: Stor
   // 본편이 뒤로 밀린다. 본편이 몫보다 적으면 남는 자리는 그대로 나머지가 가져간다.
   // 맨 앞자리는 최근 7일 안에 누가 상세를 연 게임이다(REFRESH_VIEWED_SHARE 주석). 그다음 인기 몫이 있는
   // 소스(Xbox)는 인기순으로, 남는 본편 몫은 오래된 순으로 채운다(REFRESH_POPULAR_SHARE_BY_SOURCE 주석)
-  const shares = refreshShares(limit, REFRESH_POPULAR_SHARE_BY_SOURCE[source], REFRESH_VIEWED_SHARE);
+  // 조회작, 인기작, 오래된 순 몫은 평소 몫(opts.limit)으로 센다 — 큰 세일 회차에 늘린 몫은 변동 행이 다 쓰므로,
+  // 늘린 수로 세면 쓰지도 않을 행을 수천 개씩 읽어 온다(Neon 전송량)
+  const shares = refreshShares(opts.limit, REFRESH_POPULAR_SHARE_BY_SOURCE[source], REFRESH_VIEWED_SHARE);
   // 상세 몫은 맨 앞에 둔다 — 뒤에 두면 limit 에 잘려 몫이 0 이 되는 회차가 생긴다. 고르는 순서가 오래된 순이라
   // 페이지에 대응언어 줄이 없어 끝내 안 차는 행도 받은 뒤엔 뒤로 밀려 머리를 막지 않는다
-  const detailRows = opts.detailTop ? await refreshRows(db, source, platforms, region, { mainOnly: true, koMissing: true, limit: opts.detailTop }) : [];
+  const detailRows = share.detailTop ? await refreshRows(db, source, platforms, region, { mainOnly: true, koMissing: true, limit: share.detailTop }) : [];
   const detailKeys = new Set(detailRows.map((r) => `${r.gameId}:${r.externalId}`));
   const viewedSlugs = shares.viewed > 0 ? await recentlyViewedSlugs(ctx.now) : [];
   const viewedRows = await refreshRows(db, source, platforms, region, { viewedSlugs, limit: viewedSlugs.length > 0 ? shares.viewed : 0 });
@@ -120,13 +135,10 @@ export async function listStoreTargets(ctx: Ctx, source: StoreSource, opts: Stor
   const mainRows = [...front, ...oldestMain.filter((r) => !picked.has(`${r.gameId}:${r.externalId}`))].slice(0, shares.main);
   const restRows = await refreshRows(db, source, platforms, region, {
     mainOnly: false,
-    limit: limit - mainRows.length,
+    limit: opts.limit - mainRows.length,
   });
-  // 가격이 바뀐 행이 상세 몫 바로 뒤, 조회작, 인기작보다 앞에 선다(constants 의 PRICE_SWEEP_SOURCES 주석).
-  // 발견 회차(seedTop)에서는 돌지 않는다 — 그 회차는 신규 등록에 시간을 다 쓴다
-  const sweptRows = !seedTop && PRICE_SWEEP_SOURCES.includes(source)
-    ? (await sweepPriceMoves(ctx, source, getStoreAdapter(source))).slice(0, Math.max(Math.floor(limit * PRICE_SWEEP_SHARE_MAX) - detailRows.length, 0))
-    : [];
+  // 가격이 바뀐 행이 상세 몫 바로 뒤, 조회작, 인기작보다 앞에 선다(constants 의 PRICE_SWEEP_SOURCES 주석)
+  const sweptRows = moves.slice(0, share.swept);
   const rows = [...detailRows, ...sweptRows, ...mainRows, ...restRows];
 
   const seen = new Set<string>();

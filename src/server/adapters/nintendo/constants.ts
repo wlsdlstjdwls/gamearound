@@ -19,9 +19,10 @@ export const EC_PRICE_BATCH = 50;
 /**
  * 가격 변동 훑기(sync/price-sweep)에서 가격 API 배치 사이 간격.
  * 2026-11-09 실측: 50건 요청 20번을 쉬지 않고 연달아 보내도 전부 200, 각 460~660ms(응답 약 14KB)였다.
- * 막힌 흔적이 없어 상세 HTML 의 4초를 따를 이유는 없지만, 한 바퀴(한국 약 110요청)를 몰아 보내므로 조금 띄운다.
+ * 막힌 흔적이 없어 상세 HTML 의 4초를 따를 이유는 없지만, 한 바퀴를 몰아 보내므로 조금 띄운다.
+ * 2026-11-10 250 에서 150 으로 내렸다 — 한국 카탈로그를 다 모으자 9,689건(약 194요청)이 되어 250 으로는 90초에 5,900건만 봤다.
  */
-export const EC_PRICE_SWEEP_INTERVAL_MS = 250;
+export const EC_PRICE_SWEEP_INTERVAL_MS = 150;
 
 /**
  * 스위치 타이틀 DB(github.com/blawar/titledb). 나라별 eShop 상품을 nsuid 별로 모은 공개 JSON 이다.
