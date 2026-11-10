@@ -23,6 +23,18 @@ export const EC_PRICE_BATCH = 50;
  */
 export const EC_PRICE_SWEEP_INTERVAL_MS = 250;
 
+/**
+ * 스위치 타이틀 DB(github.com/blawar/titledb). 나라별 eShop 상품을 nsuid 별로 모은 공개 JSON 이다.
+ * 한국 nsuid → 타이틀 ID(KR), 타이틀 ID → 영문 이름(US, 그다음 GB) 으로 이어 한국 전용 게임의 영문 이름을 얻는다
+ * (sync/nintendo-en-title 머리). 2026-11-10 실측: KR 55MB, US 91MB, GB 88MB. 한국어 이름뿐인 본편 1,642개 중
+ * 1,625개가 KR 에 있었고 1,246개가 영문 이름까지 이어졌다. 파일이 커서 크론이 아니라 대본(scripts/backfill-nintendo-en-titles)이 받는다.
+ */
+export const TITLEDB_BASE_URL = "https://raw.githubusercontent.com/blawar/titledb/master";
+/** 한국 nsuid 를 타이틀 ID 로 잇는 파일 */
+export const TITLEDB_KR_FILE = "KR.ko.json";
+/** 영문 이름을 읽는 파일. 앞쪽이 이긴다 — 미국판 이름이 HLTB, 메타크리틱 표기와 가장 잘 맞는다 */
+export const TITLEDB_EN_FILES = ["US.en.json", "GB.en.json"] as const;
+
 /** 일본 eShop 카탈로그 검색(JSON). 한국 스토어와 달리 Magento 가 아니라 Solr 검색 API 다 */
 export const JP_SEARCH_URL = "https://search.nintendo.jp/nintendo_soft/search.json";
 /** 검색 1페이지에 받을 건수. 50 이면 전체 한 바퀴가 약 300페이지다 */
