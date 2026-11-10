@@ -6,7 +6,7 @@
 // 해시는 constants.ts 에 적어 둔다 — 갱신 방법도 거기 주석에 있다.
 // 수집 단위는 상품(에디션)이 아니라 콘셉트(게임)다. 상품 단위로 모으면 같은 게임이
 // 디럭스, 번들, PS4판, PS5판으로 여러 번 등록된다.
-import { AdapterError, type SearchCandidate, type StoreAdapter, type StoreSnapshot } from "../types";
+import { AdapterError, type PriceQuote, type SearchCandidate, type StoreAdapter, type StoreSnapshot } from "../types";
 import { createHttpClient } from "../http";
 import { sleep } from "@/lib/async";
 import { errorMessage } from "@/lib/errors";
@@ -19,11 +19,13 @@ import {
   PSSTORE_HEADERS,
   PSSTORE_LANGUAGE,
   PSSTORE_PAGE_SIZE,
+  PSSTORE_PRICE_LIST_INTERVAL_MS,
+  PSSTORE_PRICE_LIST_PARALLEL,
   PSSTORE_PRODUCT_ID,
   PSSTORE_QUERY_HASHES,
   PSSTORE_SEARCH_LOOKUP_MAX,
 } from "./constants";
-import { parsePsstoreConcept, parsePsstoreDlc, parsePsstoreGrid, parsePsstoreProduct } from "./parse";
+import { parsePsstoreConcept, parsePsstoreDlc, parsePsstoreGrid, parsePsstoreGridPrices, parsePsstoreProduct } from "./parse";
 import { parsePsstoreSearch } from "./search";
 import { parsePsstoreAddOnIds } from "./add-ons";
 import { psstoreStandardProductIdFromConcept } from "./standard-product";
@@ -53,7 +55,12 @@ async function op(operationName: string, variables: unknown, hash: string, conte
  * firstRank 를 주면 후보에 순번이 실린다 — 이 카테고리의 기본 정렬이 베스트셀러라 그 자리가 곧 순위다.
  */
 async function gridPage(page: number, context: string, firstRank?: number): Promise<SearchCandidate[]> {
-  const raw = await op(
+  return parsePsstoreGrid(await gridRaw(page, context), firstRank);
+}
+
+/** 목록 한 장의 날것. 후보로 읽을지(gridPage) 가격으로 읽을지(listPrices)는 부르는 쪽이 정한다 */
+async function gridRaw(page: number, context: string): Promise<unknown> {
+  return op(
     "categoryGridRetrieve",
     {
       id: PSSTORE_ALL_GAMES_CATEGORY,
@@ -65,7 +72,12 @@ async function gridPage(page: number, context: string, firstRank?: number): Prom
     PSSTORE_QUERY_HASHES.categoryGrid,
     context,
   );
-  return parsePsstoreGrid(raw, firstRank);
+}
+
+/** 목록 응답에 콘셉트가 몇 개 실렸나. 0 이면 카탈로그 끝이다(가격을 못 읽은 칸이 많아도 끝은 아니다) */
+function gridConceptCount(raw: unknown): number {
+  const concepts = (raw as { data?: { categoryGridRetrieve?: { concepts?: unknown[] | null } } })?.data?.categoryGridRetrieve?.concepts;
+  return Array.isArray(concepts) ? concepts.length : 0;
 }
 
 export const psstoreAdapter: StoreAdapter = {
@@ -163,6 +175,24 @@ export const psstoreAdapter: StoreAdapter = {
   },
   // 판매순은 하루에 조금씩 움직여 쪽 경계에서 몇 건이 밀릴 수 있다. 놓친 것은 다음 바퀴가 잡는다(한 바퀴 약 4회차)
   resumableDiscovery: true,
+
+  /**
+   * 전체 게임 목록을 처음부터 끝까지 읽으며 콘셉트별 지금 가격을 준다(가격 변동 훑기).
+   * 상세(conceptRetrieve)는 한 게임에 한 요청이라 한국 11,500행 한 바퀴가 열흘이었다(2026-11-10 실측 중앙값 9.5일) —
+   * 목록은 한 쪽에 24개 값이 같이 와서 한 바퀴가 2분 안쪽이다. 몇 쪽씩 동시에 읽는다(PSSTORE_PRICE_LIST_PARALLEL 주석).
+   * 판매순 목록이라 읽는 사이 순서가 조금 움직여 몇 개가 빠지거나 겹칠 수 있다 — 빠진 것은 다음 회차가 본다
+   */
+  async *listPrices(): AsyncGenerator<PriceQuote[]> {
+    for (let page = 0; page < PSSTORE_DISCOVERY_MAX_PAGES; page += PSSTORE_PRICE_LIST_PARALLEL) {
+      const pages = Array.from({ length: PSSTORE_PRICE_LIST_PARALLEL }, (_, i) => page + i);
+      const raws = await Promise.all(pages.map((p) => gridRaw(p, `prices:${p}`)));
+      for (const raw of raws) {
+        if (gridConceptCount(raw) === 0) return;
+        yield parsePsstoreGridPrices(raw);
+      }
+      await sleep(PSSTORE_PRICE_LIST_INTERVAL_MS);
+    }
+  },
 
   /**
    * 인기순위(베스트셀러)만 1위부터. 발견과 같은 목록을 읽지만 멈출 조건이 페이지 수뿐이다

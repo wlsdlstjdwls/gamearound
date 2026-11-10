@@ -59,6 +59,11 @@ export interface StoreTarget {
    * 기기가 기본값 switch 로 박힌다(2026-10-07 실측: 스위치2 전용 Pokopia, Sports Resort 가 switch 로 들어왔다).
    */
   needsDetail?: boolean;
+  /**
+   * 가격 변동 훑기가 카탈로그 목록에서 이미 받아 온 값(sync/price-sweep). 있으면 수집 단계가 스토어에 다시 묻지 않고
+   * 이 스냅샷을 그대로 반영으로 넘긴다(run-store). 가격만 든 스냅샷이라 나머지 칸은 기존 값을 지킨다(§7)
+   */
+  prefetched?: import("@/server/adapters/types").StoreSnapshot;
 }
 
 type StoreSnapshotMeta = NonNullable<import("@/server/adapters/types").StoreSnapshot["meta"]>;
@@ -147,12 +152,14 @@ export async function listStoreTargets(ctx: Ctx, source: StoreSource, opts: Stor
     const key = `${r.gameId}:${r.externalId}`;
     if (seen.has(key)) continue; // psstore/nintendo 는 플랫폼 2개 조인으로 중복 가능
     seen.add(key);
+    const prefetched = (r as { prefetched?: StoreTarget["prefetched"] }).prefetched;
     targets.push({
       gameId: r.gameId,
       slug: r.slug,
       externalId: r.externalId,
       platform: r.platform ?? undefined,
       ...(detailKeys.has(key) ? { needsDetail: true } : {}),
+      ...(prefetched ? { prefetched } : {}),
     });
   }
 

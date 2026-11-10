@@ -229,5 +229,18 @@ export const steamAdapter: StoreAdapter = {
     return parseStoreItems(rawKo, rawEn);
   },
 
+  /**
+   * 가격 변동 훑기용(adapters/types 의 sweepMany). fetchMany 는 배치마다 한국어 전체 + 영문 제목 두 요청에 쉼까지 약 3초라
+   * 한국 2만 3천 행 한 바퀴가 12분이다. 훑기는 가격만 보면 되므로 한국어 기본 정보 한 요청으로 끝낸다.
+   * 이 사무실 망에서는 스팀이 막혀 실측을 못 했다 — 배포 뒤 크론 기록의 "가격 훑기 n/m건" 으로 잰다.
+   * 이 응답에 가격이 안 실려 오면 값이 null 이라 훑기가 변동 0건으로 끝날 뿐 아무것도 바꾸지 않는다(price-sweep 의 priceMove)
+   */
+  async sweepMany(appids: string[]): Promise<Map<string, StoreSnapshot>> {
+    if (appids.length === 0) return new Map();
+    return parseStoreItems(await http.json(storeItemsUrl(appids, "koreana", false)));
+  },
+  /** 훑기 배치 사이 간격. GetItems 는 공개 웹 API 라 상세 간격(1.5초)을 따를 이유가 없다 — 실측 전이라 보수적으로 */
+  sweepIntervalMs: 300,
+
   discoverPages: steamDiscoverPages,
 };

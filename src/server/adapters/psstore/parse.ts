@@ -2,7 +2,7 @@
 // 형식 검증은 zod 로 하고, 실패는 재시도해도 같은 결과라 retryable=false 로 올린다.
 import { z } from "zod";
 import { isCurrencyItemTitle } from "@/lib/games/content-kind";
-import { AdapterError, type SearchCandidate, type StoreSnapshot } from "../types";
+import { AdapterError, type PriceQuote, type SearchCandidate, type StoreSnapshot } from "../types";
 import type { Platform } from "@/server/db/schema";
 import {
   PSSTORE_CONCEPT_URL,
@@ -115,6 +115,52 @@ export function psstoreCoverUrl(media: Media[] | null | undefined): string | nul
     if (url) return url;
   }
   return null;
+}
+
+/**
+ * 목록 칸의 가격. 목록은 최소 단위 정수 없이 표시 문자열("62,800원", 할인율 "-85%")만 준다(2026-11-10 실측).
+ * 구독 조건 가격(isTiedToSubscription, PS Plus 회원가)은 우리가 보이는 "지금 살 수 있는 값" 이 아니라 버린다 —
+ * 상세 파서(pickPurchasePrice)가 UPSELL 을 버리는 것과 같은 규칙이다.
+ */
+const gridPriceSchema = z.object({
+  basePrice: z.string().nullish(),
+  discountedPrice: z.string().nullish(),
+  isFree: z.boolean().nullish(),
+  isTiedToSubscription: z.boolean().nullish(),
+});
+const gridPricesSchema = z.object({
+  data: z.object({
+    categoryGridRetrieve: z.object({
+      concepts: z.array(z.object({ id: z.string(), price: gridPriceSchema.nullish() })).nullish(),
+    }),
+  }),
+});
+
+/** "62,800원" -> 62800. 숫자가 없으면(무료 표기, 빈 값) null */
+export function psstoreWonText(text: string | null | undefined): number | null {
+  const digits = text?.replace(/[^0-9]/g, "") ?? "";
+  return digits ? Number(digits) : null;
+}
+
+/**
+ * 목록 응답 → 콘셉트별 지금 가격(가격 변동 훑기용, adapters/types 의 listPrices).
+ * 값을 못 읽는 칸은 빼고 돌려준다 — "모른다" 를 0원이나 할인 끝으로 읽으면 훑기가 멀쩡한 행을 바꾼다.
+ * 할인 종료 시각은 목록에 없다. 그 값은 상세 갱신이 채운다
+ */
+export function parsePsstoreGridPrices(raw: unknown): PriceQuote[] {
+  const parsed = gridPricesSchema.safeParse(raw);
+  if (!parsed.success) psstoreFail("목록 가격", parsed.error);
+  const out: PriceQuote[] = [];
+  for (const c of parsed.data!.data.categoryGridRetrieve.concepts ?? []) {
+    const p = c.price;
+    if (!p || p.isFree || p.isTiedToSubscription) continue;
+    const listPrice = psstoreWonText(p.basePrice);
+    const currentPrice = psstoreWonText(p.discountedPrice) ?? listPrice;
+    if (listPrice === null || currentPrice === null) continue;
+    const discountPct = listPrice > 0 && currentPrice < listPrice ? Math.round(((listPrice - currentPrice) / listPrice) * 100) : 0;
+    out.push({ storeExternalId: c.id, listPrice, currentPrice, discountPct });
+  }
+  return out;
 }
 
 /** 목록 응답 → 후보. 콘셉트(게임) 단위라 에디션 중복이 없다 */

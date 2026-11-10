@@ -23,6 +23,14 @@ export const PSSTORE_ALL_GAMES_CATEGORY = "28c9c2b2-cecc-415c-9a08-482a605cb104"
 export const PSSTORE_PAGE_SIZE = 24;
 /** 7,571 / 24 ≈ 316 페이지. 여유를 둔 상한이고 실제 종료 조건은 빈 페이지다 */
 export const PSSTORE_DISCOVERY_MAX_PAGES = 400;
+/**
+ * 가격 변동 훑기(adapters/types 의 listPrices)가 전체 게임 목록을 몇 쪽씩 동시에 읽을지.
+ * 2026-11-10 실측: 한 쪽 응답 평균 0.68초, 40쪽을 0.2초 간격으로 연달아 읽어도 오류 0. 전체 약 326쪽이라
+ * 한 쪽씩이면 4분 반이 들어 훑기 상한(PRICE_SWEEP_MAX_MS 150초)을 넘는다. 셋씩 읽었더니 142초에 8,976행 중 7,411행만 봐서(11-10 실측) 넷으로 올렸다.
+ */
+export const PSSTORE_PRICE_LIST_PARALLEL = 4;
+/** 묶음 사이 간격(ms). 위 실측의 0.2초에 여유를 얹었다 */
+export const PSSTORE_PRICE_LIST_INTERVAL_MS = 300;
 /** 검색 결과에서 콘셉트 id 를 알아내려고 상세를 더 볼 상품 수. 검색은 매칭 단계에서만 쓰여 얕게 본다 */
 export const PSSTORE_SEARCH_LOOKUP_MAX = 3;
 

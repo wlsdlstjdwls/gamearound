@@ -3,7 +3,7 @@ import { describe, expect, it } from "vitest";
 import { readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import { AdapterError } from "./types";
-import { parseXboxAddOnIds, parseXboxAutosuggest, parseXboxBrowse, parseXboxProduct, xboxImageUrl, xboxPeriodDate, xboxStoreUrl } from "./xbox";
+import { parseXboxAddOnIds, parseXboxAutosuggest, parseXboxBrowse, parseXboxBrowsePrices, parseXboxProduct, xboxBrowseDate, xboxImageUrl, xboxPeriodDate, xboxStoreUrl } from "./xbox";
 
 const fixture = (name: string): unknown =>
   JSON.parse(readFileSync(fileURLToPath(new URL(`./__fixtures__/${name}`, import.meta.url)), "utf8"));
@@ -324,5 +324,34 @@ describe("ProductKind (본편/추가 콘텐츠)", () => {
   it("DLC 의 추가 콘텐츠 유무는 null — 모른다는 뜻이라 본편 값을 덮지 않는다", () => {
     expect(parseXboxProduct(raw("Durable", true), "X1").hasAddOns).toBeNull();
     expect(parseXboxProduct(raw("Game", true), "X1").hasAddOns).toBe(true);
+  });
+});
+
+describe("parseXboxBrowsePrices", () => {
+  const sum = (productId: string, purchaseable: unknown[]) => ({ productId, specificPrices: { purchaseable } });
+  const buy = { currency: "KRW", availabilityActions: ["Details", "Purchase"] };
+  it("listPrice 는 판매가, msrp 는 정가 — 할인율과 종료 시각(2026-11-10 실측 꼴)", () => {
+    const raw = { productSummaries: [sum("9PK3G146XXVF", [{ ...buy, listPrice: 60950.0, msrp: 121900.0, endDateUtc: "11/23/2026 07:59:59" }])] };
+    expect(parseXboxBrowsePrices(raw)).toEqual([
+      { storeExternalId: "9PK3G146XXVF", listPrice: 121900, currentPrice: 60950, discountPct: 50, discountEndsAt: "2026-11-23T07:59:59.000Z" },
+    ]);
+  });
+  it("할인이 아니면 종료 시각을 싣지 않는다(판매 구간 끝을 할인 끝으로 읽지 않게)", () => {
+    const raw = { productSummaries: [sum("A", [{ ...buy, listPrice: 121900, msrp: 121900, endDateUtc: "11/23/2026 07:59:59" }])] };
+    expect(parseXboxBrowsePrices(raw)[0]).toMatchObject({ discountPct: 0, discountEndsAt: null });
+  });
+  it("원화가 아니거나 살 수 없는 가격, 가격 없는 상품은 뺀다", () => {
+    const raw = {
+      productSummaries: [
+        sum("usd", [{ currency: "USD", availabilityActions: ["Purchase"], listPrice: 10, msrp: 10 }]),
+        sum("gift", [{ currency: "KRW", availabilityActions: ["Gift"], listPrice: 10, msrp: 10 }]),
+        { productId: "none" },
+      ],
+    };
+    expect(parseXboxBrowsePrices(raw)).toEqual([]);
+  });
+  it("xboxBrowseDate: 끝없음 센티널과 못 읽는 값은 null", () => {
+    expect(xboxBrowseDate("12/30/9998 23:59:59")).toBeNull();
+    expect(xboxBrowseDate("garbage")).toBeNull();
   });
 });

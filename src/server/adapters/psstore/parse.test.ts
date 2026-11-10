@@ -1,7 +1,7 @@
 // psstore 파서 — 구독 포함 판정과 가격 선택이 서로 섞이지 않는지 잠근다.
 // 표본은 2026-09-14 실측 응답의 webcta 모양을 그대로 줄인 것이다.
 import { describe, expect, it } from "vitest";
-import { parsePsstoreConcept, parsePsstoreDlc, psstoreSubscriptionKeys } from "./parse";
+import { parsePsstoreConcept, parsePsstoreDlc, parsePsstoreGridPrices, psstoreSubscriptionKeys, psstoreWonText } from "./parse";
 import { readFileSync } from "node:fs";
 import path from "node:path";
 
@@ -156,5 +156,30 @@ describe("parsePsstoreDlc", () => {
 
   it("상품이 없으면 재시도해도 같아서 바로 실패로 올린다", () => {
     expect(() => parsePsstoreDlc({ data: { productRetrieve: null } }, id)).toThrowError(/상품 없음/);
+  });
+});
+
+describe("parsePsstoreGridPrices", () => {
+  const grid = (concepts: unknown[]) => ({ data: { categoryGridRetrieve: { concepts } } });
+  it("표시 문자열에서 정가, 할인가, 할인율을 읽는다(2026-11-10 실측 FF7 리버스 -85%)", () => {
+    const raw = grid([{ id: "10003999", price: { basePrice: "62,800원", discountedPrice: "9,420원", isFree: false, isTiedToSubscription: false } }]);
+    expect(parsePsstoreGridPrices(raw)).toEqual([{ storeExternalId: "10003999", listPrice: 62800, currentPrice: 9420, discountPct: 85 }]);
+  });
+  it("할인이 없으면 할인율 0", () => {
+    const raw = grid([{ id: "1", price: { basePrice: "112,800원", discountedPrice: "112,800원" } }]);
+    expect(parsePsstoreGridPrices(raw)[0]).toMatchObject({ listPrice: 112800, currentPrice: 112800, discountPct: 0 });
+  });
+  it("무료, 구독 조건 가격, 값 없는 칸은 뺀다", () => {
+    const raw = grid([
+      { id: "free", price: { basePrice: "무료", discountedPrice: "무료", isFree: true } },
+      { id: "plus", price: { basePrice: "30,000원", discountedPrice: "15,000원", isTiedToSubscription: true } },
+      { id: "none", price: null },
+      { id: "blank", price: { basePrice: null, discountedPrice: null } },
+    ]);
+    expect(parsePsstoreGridPrices(raw)).toEqual([]);
+  });
+  it("psstoreWonText", () => {
+    expect(psstoreWonText("1,234,500원")).toBe(1234500);
+    expect(psstoreWonText("무료")).toBeNull();
   });
 });

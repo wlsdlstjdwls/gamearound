@@ -6,6 +6,7 @@ import { slugify } from "@/lib/slug";
 import { starsToScore } from "@/lib/user-score";
 import {
   AdapterError,
+  type PriceQuote,
   type SearchCandidate,
   type StoreAdapter,
   type StoreSnapshot,
@@ -26,6 +27,14 @@ export const XBOX_BROWSE_URL = "https://emerald.xboxservices.com/xboxcomfd/brows
 export const XBOX_BROWSE_PAGE_SIZE = 50;
 /** 발견이 넘길 최대 페이지. 16,991 / 50 ≈ 340 페이지에 여유를 뒀다. 실제 종료 조건은 빈 페이지 */
 export const XBOX_DISCOVERY_MAX_PAGES = 400;
+/**
+ * 가격 변동 훑기(listPrices)가 browse 를 몇 쪽씩 동시에 읽을지. 2026-11-10 실측 한 쪽 0.69초, 전체 약 360쪽이라
+ * 한 쪽씩이면 4분이 넘어 훑기 상한(PRICE_SWEEP_MAX_MS 150초)을 넘는다. 셋씩 읽었더니 150초에 19,837행 중 9,424행만 봐서
+ * (11-10 실측) 여섯으로 올렸다
+ */
+export const XBOX_PRICE_LIST_PARALLEL = 6;
+/** 묶음 사이 간격(ms) */
+export const XBOX_PRICE_LIST_INTERVAL_MS = 300;
 export const XBOX_STORE_URL = "https://www.xbox.com/ko-KR/games/store";
 export const XBOX_MARKET = "KR";
 export const XBOX_LANGUAGE = "ko-KR";
@@ -173,6 +182,57 @@ const browseSchema = z.object({
     .array(z.object({ productId: z.string(), title: z.string().optional(), productKind: z.string().optional() }))
     .default([]),
 });
+
+/**
+ * browse 칸의 가격. displaycatalog 와 이름이 다르다 — 여기서는 listPrice 가 지금 판매가, msrp 가 정가다
+ * (displaycatalog 의 ListPrice, MSRP 와 같은 뜻, 2026-11-10 실측). endDateUtc 는 "MM/DD/YYYY hh:mm:ss" 꼴 UTC 다
+ */
+const browsePriceSchema = z.object({
+  listPrice: z.number().nullish(),
+  msrp: z.number().nullish(),
+  currency: z.string().nullish(),
+  endDateUtc: z.string().nullish(),
+  availabilityActions: z.array(z.string()).nullish(),
+});
+const browsePricesSchema = z.object({
+  productSummaries: z
+    .array(z.object({ productId: z.string(), specificPrices: z.object({ purchaseable: z.array(browsePriceSchema).nullish() }).nullish() }))
+    .default([]),
+});
+
+/** "11/23/2026 07:59:59"(UTC) -> ISO. 못 읽거나 끝없음 센티널이면 null */
+export function xboxBrowseDate(v: string | null | undefined): string | null {
+  const m = v?.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4}) (\d{1,2}):(\d{2}):(\d{2})$/);
+  if (!m) return null;
+  const [, mo, d, y, h, mi, se] = m.map(Number);
+  if (y >= XBOX_NO_END_YEAR) return null;
+  return new Date(Date.UTC(y, mo - 1, d, h, mi, se)).toISOString();
+}
+
+/**
+ * browse 응답 → 상품별 지금 가격(가격 변동 훑기용, adapters/types 의 listPrices). 상세(pickKrwPurchase)와 같은 규칙으로
+ * 원화이고 살 수 있는(Purchase) 가격만 읽는다. 못 읽는 상품은 뺀다 — "모른다" 를 할인 끝으로 읽지 않게
+ */
+export function parseXboxBrowsePrices(raw: unknown): PriceQuote[] {
+  const parsed = browsePricesSchema.safeParse(raw);
+  if (!parsed.success) throw new AdapterError(`Xbox 목록 가격 응답 형식 오류: ${parsed.error.message}`, "xbox", false);
+  const out: PriceQuote[] = [];
+  for (const p of parsed.data.productSummaries) {
+    const price = (p.specificPrices?.purchaseable ?? []).find((x) => x.currency === "KRW" && x.availabilityActions?.includes("Purchase"));
+    const current = price?.listPrice ?? price?.msrp;
+    const list = price?.msrp ?? price?.listPrice;
+    if (current == null || list == null) continue;
+    const discountPct = list > 0 && current < list ? Math.round(((list - current) / list) * 100) : 0;
+    out.push({
+      storeExternalId: p.productId,
+      listPrice: Math.round(list),
+      currentPrice: Math.round(current),
+      discountPct,
+      discountEndsAt: discountPct > 0 ? xboxBrowseDate(price?.endDateUtc) : null,
+    });
+  }
+  return out;
+}
 
 const autosuggestSchema = z.object({
   Results: z
@@ -467,6 +527,16 @@ const http = createHttpClient({
   onStatus: notFoundAs("xbox", (ctx) => `Xbox 게임 없음 (${ctx})`),
 });
 
+/** browse 한 쪽의 날것. 후보로 읽을지(발견) 가격으로 읽을지(훑기)는 부르는 쪽이 정한다 */
+async function browseRaw(page: number, context: string): Promise<unknown> {
+  const u = new URL(XBOX_BROWSE_URL);
+  u.searchParams.set("locale", XBOX_LANGUAGE);
+  u.searchParams.set("market", XBOX_MARKET);
+  u.searchParams.set("PageNumber", String(page));
+  u.searchParams.set("ResultsPerPage", String(XBOX_BROWSE_PAGE_SIZE));
+  return http.json(u.toString(), { context });
+}
+
 export const xboxAdapter: StoreAdapter = {
   source: "xbox",
   minIntervalMs: 1500,
@@ -535,16 +605,28 @@ export const xboxAdapter: StoreAdapter = {
   // startPage 는 1부터 세는 쪽 번호(sync 의 발견 커서). 2026-11-09 이어 읽기를 켰다 — 전에는 회차마다 앞 60쪽만 다시 읽었다
   async *discoverPages(startPage = 1): AsyncGenerator<SearchCandidate[]> {
     for (let page = startPage; page <= XBOX_DISCOVERY_MAX_PAGES; page++) {
-      const u = new URL(XBOX_BROWSE_URL);
-      u.searchParams.set("locale", XBOX_LANGUAGE);
-      u.searchParams.set("market", XBOX_MARKET);
-      u.searchParams.set("PageNumber", String(page));
-      u.searchParams.set("ResultsPerPage", String(XBOX_BROWSE_PAGE_SIZE));
-      const found = parseXboxBrowse(await http.json(u.toString(), { context: `discover:${page}` }));
+      const found = parseXboxBrowse(await browseRaw(page, `discover:${page}`));
       if (found.length === 0) return; // 카탈로그 끝
       yield found;
       await sleep(xboxAdapter.minIntervalMs);
     }
   },
   resumableDiscovery: true,
+
+  /**
+   * browse 를 처음부터 끝까지 읽으며 상품별 지금 가격을 준다(가격 변동 훑기). 배치 조회는 20건에 1.5초라
+   * 한국 2만 행 한 바퀴가 40분이었다 — browse 는 한 쪽에 약 47개 값이 같이 와서 2분 안쪽이다.
+   * 끝은 상품이 하나도 안 실린 쪽이다(가격을 못 읽은 칸이 많아도 끝은 아니다)
+   */
+  async *listPrices(): AsyncGenerator<PriceQuote[]> {
+    for (let page = 1; page <= XBOX_DISCOVERY_MAX_PAGES; page += XBOX_PRICE_LIST_PARALLEL) {
+      const pages = Array.from({ length: XBOX_PRICE_LIST_PARALLEL }, (_, i) => page + i);
+      const raws = await Promise.all(pages.map((p) => browseRaw(p, `prices:${p}`)));
+      for (const raw of raws) {
+        if (((raw as { productSummaries?: unknown[] })?.productSummaries ?? []).length === 0) return;
+        yield parseXboxBrowsePrices(raw);
+      }
+      await sleep(XBOX_PRICE_LIST_INTERVAL_MS);
+    }
+  },
 };

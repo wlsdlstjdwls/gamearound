@@ -371,7 +371,9 @@ export const CRON_PLAN: Record<CronSource, Record<CronMode, CronRunPlan>> = {
     // (DLC_FETCH_PER_RUN_BY_SOURCE.steam 40건 × 1.8초)을 이제 제대로 세기 때문이다 —
     // DLC 단계는 prices 모드에서도 똑같이 돈다(sync/run-store 4단계).
     // 2026-09-18 에 800 에서 700 으로 내렸다 — 패치, 사양 단계를 예산에 넣자 800 은 109%가 됐다.
-    prices: { limit: 700, seedTop: 0, pageBudget: 0, match: 0 },
+    // 2026-11-10 가격 변동 훑기(150초)를 머리에 얹으며 330 으로 내렸다. 가격이 바뀐 행은 훑기가 골라 앞에 세우므로
+    // 이 몫은 이제 "바뀐 것 찾기" 가 아니라 바뀌지 않은 행의 다른 칸(평가, 대응언어) 갱신이다
+    prices: { limit: 330, seedTop: 0, pageBudget: 0, match: 0 },
     // 592초. 2026-09-15 에 140 에서 120 으로 내렸다 — 140 은 실측 680초를 냈다(추정은 549초였다).
     // 차이는 발견이 아니라 같은 실행이 함께 등록한 새 DLC 230건이었다. 그쪽에 상한 40 을 걸고
     // (DLC_FETCH_PER_RUN_BY_SOURCE.steam) 남는 자리에 맞춰 몫을 다시 잡았다.
@@ -384,10 +386,12 @@ export const CRON_PLAN: Record<CronSource, Record<CronMode, CronRunPlan>> = {
     match: { limit: 0, seedTop: 0, pageBudget: 0, match: 150 },
   },
   psstore: {
+    // 2026-11-10 목록 훑기(150초)를 얹으며 300 에서 210 으로 내렸다(어림 587초). 가격은 이제 훑기가 목록에서 바로 받는다 —
+    // 이 몫은 할인 종료 시각, 대응언어 같은 목록에 없는 칸을 채우는 상세 갱신이다.
     // 559초. 2026-09-16 에 200 에서 300 으로 올렸다 — 가격 갱신이 Actions 에서 이 크론으로 옮겨 왔다.
     // fetchMany 가 없어 건당 요청 1회(간격 1초) + 반영 0.4초라 건당 1.4초다.
     // 상한은 325건이다(cron-plan.test 의 estimateMs 가 600초에서 역산한다) — 여유를 두고 300 에 멈춘다.
-    prices: { limit: 300, seedTop: 0, pageBudget: 0, match: 0 },
+    prices: { limit: 210, seedTop: 0, pageBudget: 0, match: 0 },
     // 578초. fetchMany 가 없어 **한 건이 요청 한 번**이고(간격 1초) 거기에 신규 반영 1.8초가
     // 더 붙어 건당 2.8초다 — 네 소스 중 건당 단가가 제일 비싸다.
     //
@@ -405,7 +409,8 @@ export const CRON_PLAN: Record<CronSource, Record<CronMode, CronRunPlan>> = {
     // 557초(cron-plan.test 추정, 900 이면 612초로 넘친다). 추정은 반영을 건당 0.4초로 보수적으로 센다 —
     // 실측은 훨씬 싸다: Actions 의 Xbox 단계가 200건에 66초, 87초였다(2026-09-29~10-01 sync_logs).
     // bigIds 배치가 20건을 요청 2회(한국어, 영문)로 묻기 때문이다. "건당 요청 1회" 는 배치가 생기기 전 이야기다.
-    prices: { limit: 800, seedTop: 0, pageBudget: 0, match: 0 },
+    // 2026-11-10 목록 훑기(150초)를 얹으며 800 에서 540 으로 내렸다(어림 588초). 가격은 훑기가 browse 에서 바로 받는다
+    prices: { limit: 540, seedTop: 0, pageBudget: 0, match: 0 },
     // 583초. KR 카탈로그 16,991건이라 한 바퀴가 길다 — 며칠에 걸쳐 채우는 것을 전제로 한 값이다.
     // 2026-09-15 에 180 에서 160 으로 내렸다. 실측 자체는 315초로 여유로웠지만 그건 페이지를 9장만
     // 읽었을 때다(예산은 60장). 카탈로그가 차면 그 50장이 75초로 돌아오고, 새 DLC 40건도 함께 센다.
@@ -754,10 +759,14 @@ export const REFRESH_POPULAR_MIN_AGE_HOURS = 20;
  * 할인이 열려도 그 행 차례가 올 때까지 며칠을 몰랐다. 반영(건당 0.4초 DB 왕복)은 비싸지만 가격만 묻는 배치는 싸다 —
  * 닌텐도 가격 API 는 50건에 0.5초라 한국 5,493행 한 바퀴가 약 1분이다. 바뀐 것만 반영 몫을 쓰게 한다.
  *
- * 들어갈 자격: fetchMany 가 가격을 싸게 주는 소스. steam(GetItems 100건)도 자격이 있지만 이 사무실 망에서 막혀
- * 실측을 못 했다 — 재고 붙인다. psstore 는 배치가 없고, xbox 는 배치 20건에 1.5초라 3만 행 한 바퀴가 40분이다.
+ * 들어갈 자격: 가격을 싸게 한 바퀴 물을 길이 있는 소스.
+ *   - 가격 배치(fetchMany, sweepMany): nintendo(50건 0.5초), steam(GetItems 100건, 훑기는 한국어 기본 정보 한 요청)
+ *   - 카탈로그 목록(listPrices, 2026-11-10 추가): psstore(전체 게임 목록 24개/쪽), xbox(browse 약 47개/쪽), epic(목록 40개/쪽).
+ *     상세가 한 건에 한 요청이라 한 바퀴가 PS 9.5일, Epic 4일이던 소스다(11-10 실측 중앙값). 사용자: "실시간에 가깝게 가져와야 돼"
+ * 스팀과 Epic 은 이 사무실 망에서 막혀 실측을 못 했다 — 배포 뒤 크론 기록의 "가격 훑기 n/m건" 으로 재고 간격, 동시 수를 맞춘다.
+ * 훑기는 시간 상한(PRICE_SWEEP_MAX_MS)이 있어 느려도 회차를 넘기지 않는다.
  */
-export const PRICE_SWEEP_SOURCES: StoreSource[] = ["nintendo", "nintendo_jp"];
+export const PRICE_SWEEP_SOURCES: StoreSource[] = ["nintendo", "nintendo_jp", "psstore", "xbox", "epic", "steam"];
 /**
  * 훑기 한 번에 쓸 시간 상한. 넘으면 거기까지 본 것만으로 고른다(다음 회차는 오래된 행부터 다시 본다).
  * 150초 = 한국 약 194요청 x (응답 0.5초 + 간격 0.15초) = 126초에 여유. 크론 몫 어림(cron-plan.test)이 이 값을 통째로 더한다.
@@ -778,7 +787,16 @@ export const PRICE_SWEEP_SHARE_MAX = 0.7;
  * 훑기 150초 + 2,500 x 107ms = 418초, 여유 1.15배로 480초 — 예산 600초 안이다(cron-plan.test 가 같은 식으로 지킨다).
  * 배치 가격 경로가 있는 소스만 둔다 — 상세를 한 건씩 여는 소스에 몫을 늘리면 시간이 수십 배로 는다.
  */
-export const PRICE_SWEEP_SURGE_LIMIT: Partial<Record<StoreSource, number>> = { nintendo: 2500 };
+export const PRICE_SWEEP_SURGE_LIMIT: Partial<Record<StoreSource, number>> = {
+  nintendo: 2500,
+  // 목록에서 값을 받아 온 소스는 다시 묻지 않아 건당 반영 시간만 든다(StoreTarget.prefetched). 같은 실측값(107ms, 수집 포함)으로 세면 넉넉하다.
+  // 수는 회차 고정비(DLC, 패치, 사양 단계)를 뺀 자리에서 정했다(cron-plan.test 의 큰 세일 어림)
+  psstore: 2800,
+  xbox: 2400,
+  epic: 2000,
+  // 고른 행을 fetchMany(100건 약 3초)로 다시 묻는다. 스팀은 회차 고정비(패치, 사양)가 커서 자리가 제일 좁다
+  steam: 1300,
+};
 /** 큰 세일 회차 어림에 쓰는 건당 시간(수집+반영). 위 상수 주석의 실측이다 */
 export const PRICE_SWEEP_SURGE_MS_PER_ITEM = 107;
 

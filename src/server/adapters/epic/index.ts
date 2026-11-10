@@ -6,7 +6,7 @@
 // Cloudflare 가 앞에 있어 브라우저 헤더(Origin, Referer, sec-fetch-*)가 없으면 403 챌린지 HTML 이 온다 —
 // 크롤러 UA 만으로는 통과하지 못해 이 어댑터만 UA 를 브라우저 값으로 덮어쓴다(§10 의 UA 명시 예외).
 // 헤더를 다 맞춰도 Node 는 막힌다(constants 의 EPIC_ENABLE_ENV 주석). 지금은 비활성 소스다.
-import { AdapterError, type SearchCandidate, type StoreAdapter, type StoreSnapshot } from "../types";
+import { AdapterError, type PriceQuote, type SearchCandidate, type StoreAdapter, type StoreSnapshot } from "../types";
 import { createHttpClient } from "../http";
 import { sleep } from "@/lib/async";
 import {
@@ -24,9 +24,11 @@ import {
   EPIC_LOCALE_EN,
   EPIC_OFFER_QUERY,
   EPIC_PAGE_SIZE,
+  EPIC_PRICE_LIST_INTERVAL_MS,
+  EPIC_PRICE_LIST_PARALLEL,
   EPIC_SEARCH_QUERY,
 } from "./constants";
-import { epicExternalId, parseEpicExternalId, parseEpicOffer, parseEpicSearch, toEpicCandidate } from "./parse";
+import { epicExternalId, parseEpicExternalId, parseEpicOffer, parseEpicSearch, toEpicCandidate, toEpicSnapshot } from "./parse";
 import { parseEpicConfigKorean, parseEpicContentKorean } from "./parse-languages";
 import { epicProductSlug, parseEpicRequirements } from "./parse-requirements";
 import type { KoreanSupport, RequirementsResult } from "../types";
@@ -82,6 +84,23 @@ async function graphql(query: string, variables: Record<string, unknown>, contex
 async function fetchConfigKorean(externalId: string): Promise<KoreanSupport | undefined> {
   const { namespace } = parseEpicExternalId(externalId);
   return parseEpicConfigKorean(await graphql(EPIC_CONFIG_QUERY, { locale: EPIC_LOCALE, sandboxId: namespace }, `config:${externalId}`));
+}
+
+/** 기본판 목록 한 쪽(출시일 내림차순). 발견과 가격 훑기가 같은 질의를 쓴다 */
+async function searchPage(page: number, context: string): Promise<unknown> {
+  return graphql(
+    EPIC_SEARCH_QUERY,
+    {
+      country: EPIC_COUNTRY,
+      locale: EPIC_LOCALE,
+      count: EPIC_PAGE_SIZE,
+      start: page * EPIC_PAGE_SIZE,
+      category: EPIC_BASE_GAME_CATEGORY,
+      sortBy: "releaseDate",
+      sortDir: "DESC",
+    },
+    context,
+  );
 }
 
 export const epicAdapter: StoreAdapter = {
@@ -179,25 +198,41 @@ export const epicAdapter: StoreAdapter = {
   // startPage 는 1부터 세는 쪽 번호(sync 의 발견 커서). 2026-11-09 이어 읽기를 켰다 — 전에는 회차마다 앞 60쪽만 다시 읽었다
   async *discoverPages(startPage = 1): AsyncGenerator<SearchCandidate[]> {
     for (let page = startPage - 1; page < EPIC_DISCOVERY_MAX_PAGES; page++) {
-      const raw = await graphql(
-        EPIC_SEARCH_QUERY,
-        {
-          country: EPIC_COUNTRY,
-          locale: EPIC_LOCALE,
-          count: EPIC_PAGE_SIZE,
-          start: page * EPIC_PAGE_SIZE,
-          category: EPIC_BASE_GAME_CATEGORY,
-          sortBy: "releaseDate",
-          sortDir: "DESC",
-        },
-        `discover:${page}`,
-      );
-      const offers = parseEpicSearch(raw);
+      const offers = parseEpicSearch(await searchPage(page, `discover:${page}`));
       if (offers.length === 0) return; // 카탈로그 끝
       yield offers.map(toEpicCandidate);
       await sleep(epicAdapter.minIntervalMs);
     }
   },
   resumableDiscovery: true,
+
+  /**
+   * 기본판 목록을 처음부터 끝까지 읽으며 오퍼별 지금 가격을 준다(가격 변동 훑기). 단건(catalogOffer)은 오퍼마다
+   * 요청 둘(한국어, 영문)이라 한국 4,300행 한 바퀴가 나흘이었다(2026-11-10 실측 중앙값 94시간) — 목록은 한 쪽에 40개다.
+   * 값은 단건과 같은 파서(toEpicSnapshot)로 읽는다. 무료 미정 상품을 값 없음으로 읽는 규칙도 그대로 따라온다
+   */
+  async *listPrices(): AsyncGenerator<PriceQuote[]> {
+    for (let page = 0; page < EPIC_DISCOVERY_MAX_PAGES; page += EPIC_PRICE_LIST_PARALLEL) {
+      const pages = Array.from({ length: EPIC_PRICE_LIST_PARALLEL }, (_, i) => page + i);
+      const raws = await Promise.all(pages.map((p) => searchPage(p, `prices:${p}`)));
+      for (const raw of raws) {
+        const offers = parseEpicSearch(raw);
+        if (offers.length === 0) return;
+        yield offers.map((o) => {
+          const s = toEpicSnapshot(o);
+          return {
+            storeExternalId: s.storeExternalId,
+            listPrice: s.listPrice,
+            currentPrice: s.currentPrice,
+            discountPct: s.discountPct,
+            discountStartsAt: s.discountStartsAt,
+            discountEndsAt: s.discountEndsAt,
+            discountName: s.discountName,
+          };
+        });
+      }
+      await sleep(EPIC_PRICE_LIST_INTERVAL_MS);
+    }
+  },
 };
 

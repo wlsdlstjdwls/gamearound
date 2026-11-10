@@ -52,8 +52,8 @@ import {
  * 뒤엣것은 배치 조회가 있는 소스에서는 거의 공짜지만 epic 처럼 fetchMany 가 없는 소스에서는 건당 1회다.
  * 이 몫을 빼놓고 세면 테스트는 통과하는데 실제 함수는 300초에 잘린다.
  */
-function estimateMs(source: (typeof CRON_SOURCES)[number], mode: CronMode): number {
-  const plan = CRON_PLAN[source][mode];
+function estimateMs(source: (typeof CRON_SOURCES)[number], mode: CronMode, override?: Partial<(typeof CRON_PLAN)[(typeof CRON_SOURCES)[number]][CronMode]>): number {
+  const plan = { ...CRON_PLAN[source][mode], ...override };
   const adapter = getStoreAdapter(source);
   // match 모드는 runSource 를 아예 부르지 않는다(route 의 limit 0 분기) — 목록 페이지도 DLC 단계도 없다.
   // 드는 것은 검색뿐이고, 한 건이 최대 두 번 나간다(영문 제목, 한국어 제목. match.ts 의 searchBestCandidate).
@@ -97,9 +97,12 @@ function estimateMs(source: (typeof CRON_SOURCES)[number], mode: CronMode): numb
 describe("CRON_PLAN", () => {
   // 큰 세일 회차(store-targets 의 sweepShare)는 상세를 쉬고 몫을 PRICE_SWEEP_SURGE_LIMIT 까지 늘린다. 평소 어림과 따로 센다 —
   // 건당 시간은 그 회차 모양(가격 배치 수집 + 반영)의 실측값을 쓴다(constants 주석)
+  // 고정비(훑기, DLC, 패치, 사양 단계)는 몫 0 인 prices 회차 어림으로 센다
   for (const [source, surge] of Object.entries(PRICE_SWEEP_SURGE_LIMIT)) {
+    if (!(CRON_SOURCES as readonly string[]).includes(source)) continue;
     it(`${source} 큰 세일 회차(${surge}건)가 요청 시간 예산 안에 든다`, () => {
-      expect((PRICE_SWEEP_MAX_MS + surge * PRICE_SWEEP_SURGE_MS_PER_ITEM) * CRON_SAFETY_FACTOR).toBeLessThanOrEqual(CRON_TIME_BUDGET_MS);
+      const fixed = estimateMs(source as (typeof CRON_SOURCES)[number], "prices", { limit: 0, detailTop: 0 });
+      expect(fixed + surge * PRICE_SWEEP_SURGE_MS_PER_ITEM * CRON_SAFETY_FACTOR).toBeLessThanOrEqual(CRON_TIME_BUDGET_MS);
     });
   }
   for (const source of CRON_SOURCES) {

@@ -7,6 +7,12 @@ export { CRAWLER_USER_AGENT } from "@/lib/site";
 // wikidata(회사)와 wikidata_game(게임)은 다른 소스다 — schema 의 sourceEnum 주석 참고
 export type Source = "steam" | "psstore" | "xbox" | "nintendo" | "nintendo_jp" | "epic" | "hltb" | "opencritic" | "metacritic" | "rss" | "wikidata" | "wikidata_game" | "gamepass";
 
+/**
+ * 목록이 준 한 상품의 지금 가격(StoreAdapter.listPrices). 스냅샷에서 가격과 할인 칸만 떼어 온 꼴이다 —
+ * 반영은 이 값에 DB 행의 기기, 주소를 얹어 가격만 든 스냅샷으로 만든다(sync/price-sweep).
+ */
+export type PriceQuote = Pick<StoreSnapshot, "storeExternalId" | "listPrice" | "currentPrice" | "discountPct" | "discountStartsAt" | "discountEndsAt" | "discountName">;
+
 export interface StoreSnapshot {
   platform: Platform;
   /** 이 가격을 파는 나라. 주지 않으면 KR 로 본다 — 기존 소스는 전부 한국 스토어다 */
@@ -299,6 +305,18 @@ export interface SourceAdapter<T extends StoreSnapshot | MetaSnapshot | NewsItem
    * 가격 배치가 상세와 다른 가벼운 API 로 가는 소스(nintendo 는 상세 HTML 4초, 가격 API 는 실측으로 간격이 필요 없다)를 위해 있다.
    */
   sweepIntervalMs?: number;
+  /**
+   * 가격 변동 훑기 전용 가벼운 배치. fetchMany 가 가격 말고도 많이 묻는 소스(스팀은 배치마다 한국어 전체 + 영문 제목 두 요청)를 위해 있다.
+   * 비우면 훑기가 fetchMany 를 쓴다. 돌려주는 스냅샷은 가격, 할인 칸만 믿는다
+   */
+  sweepMany?(externalIds: string[]): Promise<Map<string, StoreSnapshot>>;
+  /**
+   * 카탈로그 **목록**을 쪽마다 흘려보내며 각 상품의 지금 가격을 준다 — 가격 변동 훑기(sync/price-sweep)의 두 번째 입구.
+   * 단건이나 배치로 묻는 것보다 훨씬 싸다: 한 쪽에 24~50개 값이 같이 온다(PS 전체 게임 목록, Xbox browse, Epic searchStore).
+   * 이 값으로 바로 반영할 수 있어(StoreTarget.prefetched) 큰 세일이 열려도 상품마다 다시 묻지 않는다.
+   * 목록이 기본판이 아닌 에디션 가격을 주는 경우가 있어 훑기는 정가가 DB 와 같은 행만 믿는다(price-sweep 의 listMove).
+   */
+  listPrices?(): AsyncGenerator<PriceQuote[]>;
   /** 소스별 요청 간격(ms). 크롤 대상은 보수적으로 */
   minIntervalMs: number;
 }

@@ -57,6 +57,14 @@ export const EPIC_ADDON_PAGE_SIZE = 100;
  * 여유를 둔 상한이고, 실제 종료 조건은 "빈 페이지" 다.
  */
 export const EPIC_DISCOVERY_MAX_PAGES = 220;
+/**
+ * 가격 변동 훑기(listPrices)가 목록을 몇 쪽씩 동시에 읽을지. 약 175쪽이라 한 쪽씩(간격 1초)이면 3분이 넘어
+ * 훑기 상한(PRICE_SWEEP_MAX_MS 150초)을 넘는다. 이 사무실 망에서는 Epic 이 막혀 실측을 못 했다 —
+ * 배포 뒤 크론 기록의 "가격 훑기 n/m건" 으로 재고, 다 못 읽으면 이 값부터 올린다
+ */
+export const EPIC_PRICE_LIST_PARALLEL = 3;
+/** 묶음 사이 간격(ms) */
+export const EPIC_PRICE_LIST_INTERVAL_MS = 500;
 // 응답을 읽는 데만 쓰이는 값(이미지 키, 센티널, 꼬리표 정규식)은 parse.ts 안에 둔다 — 이 파일은 요청에 쓰는 값만 담는다
 
 /**

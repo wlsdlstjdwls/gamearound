@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { orderMoves, priceMove, sweepShare } from "./price-sweep";
+import { listMove, orderMoves, priceMove, quoteSnapshot, sweepShare } from "./price-sweep";
 
 describe("priceMove", () => {
   it("할인이 새로 열리면 sale-started", () => {
@@ -47,5 +47,38 @@ describe("sweepShare", () => {
   });
   it("변동이 평소 몫보다 적어도 늘린 몫은 평소 몫 밑으로 안 내려간다", () => {
     expect(sweepShare({ ...base, detailTop: 200, moves: 50, surgeLimit: 2500 }).limit).toBe(300);
+  });
+});
+
+describe("listMove", () => {
+  const row = { listPrice: 62800, currentPrice: 62800, discountPct: 0 };
+  it("정가가 같고 할인이 열리면 sale-started (FF7 리버스 -85%, 2026-11-10 실측)", () => {
+    expect(listMove(row, { listPrice: 62800, currentPrice: 9420, discountPct: 85 })).toBe("sale-started");
+  });
+  it("정가가 다르면 에디션 가격일 수 있어 손대지 않는다", () => {
+    expect(listMove({ listPrice: 89800, currentPrice: 89800, discountPct: 0 }, { listPrice: 112800, currentPrice: 112800, discountPct: 0 })).toBeNull();
+  });
+  it("DB 정가를 모르면 손대지 않는다", () => {
+    expect(listMove({ ...row, listPrice: null }, { listPrice: 62800, currentPrice: 9420, discountPct: 85 })).toBeNull();
+  });
+  it("할인이 끝나면 changed", () => {
+    expect(listMove({ listPrice: 62800, currentPrice: 9420, discountPct: 85 }, { listPrice: 62800, currentPrice: 62800, discountPct: 0 })).toBe("changed");
+  });
+});
+
+describe("quoteSnapshot", () => {
+  it("기기와 주소는 DB 행, 가격과 할인 칸은 목록 값", () => {
+    const row = { gameId: "g", externalId: "10003999", slug: "ff7", platform: "ps5" as const, storeUrl: "https://store.playstation.com/ko-kr/concept/10003999", listPrice: 62800, currentPrice: 62800, discountPct: 0 };
+    expect(quoteSnapshot(row, { storeExternalId: "10003999", listPrice: 62800, currentPrice: 9420, discountPct: 85 })).toEqual({
+      platform: "ps5",
+      storeExternalId: "10003999",
+      storeUrl: row.storeUrl,
+      listPrice: 62800,
+      currentPrice: 9420,
+      discountPct: 85,
+      discountStartsAt: null,
+      discountEndsAt: null,
+      discountName: null,
+    });
   });
 });
