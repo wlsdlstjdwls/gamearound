@@ -58,7 +58,16 @@ export function CoverImage({
   if (!src) return fallback;
   // alt 을 spread 에 섞지 않는다 — jsx-a11y 가 정적으로 못 읽어 경고를 낸다
   const props = { src, fill: true as const, sizes, unoptimized: !isOptimizable(src), className: "object-cover" };
-  return <FadeImage {...props} alt={alt} priority={priority} fallback={fallback} />;
+  // 그림이 오는 동안에도 빈 회색 면 대신 로고가 밑에 깔린다 — 그림은 그 위로 페이드인한다(2026-11-11 사용자, 출시 예정 목록의 회색 상자).
+  // 밑판은 장식이라 낭독기에서 숨긴다(이름은 그림의 alt 가 말한다)
+  return (
+    <>
+      <span aria-hidden className="absolute inset-0">
+        <ImageFallback label="" />
+      </span>
+      <FadeImage {...props} alt={alt} priority={priority} fallback={fallback} />
+    </>
+  );
 }
 
 /**
