@@ -62,6 +62,38 @@ export function FiltersSkeleton({ filter }: { filter: GamesQuery }) {
 }
 
 /**
+ * 목록 머리 뼈대 셋 — 제목, 필터 막대, 결과 수 줄. loading.tsx(다른 화면에서 들어올 때)와 페이지 안 Suspense 가 같이 쓴다.
+ * 높이는 2026-11-11 실물을 폭마다 잰 값이다(390 휴대폰, 640, 768, 1024, 1280, 1440). 전에는 막대 한 덩어리 118px 에 결과 수 줄이 없어
+ * 휴대폰에서는 막대(검색, 셀렉트 둘, 정렬 164 + 장르 칩 두 줄 96)가 올 때 목록이 150px 넘게 밀렸다(사용자 "스켈레톤이랑 실제 화면이 다르던데").
+ *   막대: 좁은 화면 164(칸이 세 줄), sm 112(두 줄), lg 64(한 줄). 칩 줄: 손가락 크기 칩이 두 줄인 좁은 화면 96, 그 위 33
+ */
+export function ListTitleSkeleton() {
+  return <div aria-hidden className="skeleton h-7 w-36 rounded-lg sm:h-8" />;
+}
+
+export function FilterBarSkeleton() {
+  return (
+    <div aria-hidden className="flex flex-col gap-3">
+      <div className="h-[164px] rounded-[var(--radius-panel)] bg-surface/60 shadow-hair sm:h-[112px] lg:h-16" />
+      <div className="flex h-24 flex-wrap content-start items-center gap-2 sm:h-[33px]">
+        {["w-28", "w-14", "w-16", "w-20"].map((w) => (
+          <Bone key={w} className={`h-11 rounded-full sm:h-[33px] ${w}`} />
+        ))}
+      </div>
+    </div>
+  );
+}
+
+/** 결과 줄(page 의 Results 머리, 오른쪽 끝 건수). 글자 15px, sm 17px 줄 높이 */
+export function ResultCountSkeleton() {
+  return (
+    <div aria-hidden className="flex h-[23px] justify-end sm:h-[26px]">
+      <Bone className="h-full w-24" />
+    </div>
+  );
+}
+
+/**
  * 카드 수를 한 페이지 전부로 받는 이유: 뼈대가 실제 목록보다 짧으면 그 순간 문서가 줄어든다.
  * 스크롤이 문서 끝을 넘으면 브라우저가 위로 당겨 붙이고, 본문이 와서 다시 길어지면 제자리로 돌아간다 —
  * 그게 "위로 튀었다 내려오는" 움직임이다.

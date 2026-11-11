@@ -38,7 +38,7 @@ import { hasExplicitListFilter, isPresetApplied } from "@/lib/onboarding/query";
 import { getMyListPreset } from "@/server/services/profiles";
 import { GAMES_PAGE_SIZE, getGameFacets, getPopularGenres, listGames, type FacetScope, type GameFacets, type GameListFilter } from "@/server/services/games";
 import { getRunningSteamSale, type RunningSaleDto } from "@/server/services/sales";
-import { GamesGridSkeleton } from "./skeletons";
+import { FilterBarSkeleton, GamesGridSkeleton, ResultCountSkeleton } from "./skeletons";
 
 // Next 가 정적으로 읽는 값이라 리터럴이어야 한다 — 근거, 수치는 lib/cache 의 LIST_REVALIDATE_SECONDS 와 같게 유지
 export const revalidate = 3600;
@@ -113,11 +113,6 @@ async function FilterBar({ filter, personal }: { filter: GamesQuery; personal: P
   // "요즘 많이 찾는 장르" 는 최근 7일 조회 수 순서다(2026-10-28 사용자 결정). 조회가 모자라면 게임 수 순서로 채운다
   const topGenres = await getPopularGenres(genres, TOP_GENRE_COUNT);
   return <GameFilterBar filter={filter} genres={genres} topGenres={topGenres} sale={sale} personal={personal} />;
-}
-
-/** 막대를 기다리는 동안의 자리. 높이를 맞춰 두어 막대가 와도 목록이 밀리지 않는다 */
-function FilterBarSkeleton() {
-  return <div aria-hidden className="h-[118px] rounded-[var(--radius-panel)] bg-surface/60 shadow-hair" />;
 }
 
 async function Results({ filter }: { filter: GameListFilter }) {
@@ -204,7 +199,7 @@ export default async function GamesPage({ searchParams }: Props) {
 
         <PendingResults className="flex min-w-0 flex-col gap-6">
           {/* 뼈대가 떠 있는 동안에도 로딩 띠를 세운다. 전환은 새 화면이 커밋되는 순간 끝나서 그 뒤로는 PendingResults 의 띠가 꺼진다 */}
-          <Suspense key={boundaryKey} fallback={<><PendingBar on /><GamesGridSkeleton cards={GAMES_PAGE_SIZE} gridClass={HOME_GRID_CLASS} list /></>}>
+          <Suspense key={boundaryKey} fallback={<><PendingBar on /><ResultCountSkeleton /><GamesGridSkeleton cards={GAMES_PAGE_SIZE} gridClass={HOME_GRID_CLASS} list /></>}>
             <Results filter={filter} />
           </Suspense>
         </PendingResults>
