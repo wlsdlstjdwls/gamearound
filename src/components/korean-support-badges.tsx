@@ -25,9 +25,10 @@ function labelsOf(rows: Props["platforms"]): string {
 
 function Chip({ label, stores, tone }: { label: string; stores: string; tone: "on" | "off" }) {
   return (
-    <span className={cn(CHIP, tone === "on" ? "bg-acc-soft text-acc" : "bg-surface-2 text-dim")}>
+    // 켜진 칩은 검정 면이다(2026-11-11 사용자 "뱃지는 좀 다르게, 그냥 검정으로") — 연파랑은 할인, 출시 알림, 링크와 같은 색이라 정보 칩이 누르는 것처럼 읽혔다
+    <span className={cn(CHIP, tone === "on" ? "bg-ink text-on-ink" : "bg-surface-2 text-dim")}>
       <span className={tone === "on" ? "font-bold" : undefined}>{label}</span>
-      <span className={tone === "on" ? "text-ink-2" : undefined}>{stores}</span>
+      <span className={tone === "on" ? "text-on-ink/75" : undefined}>{stores}</span>
     </span>
   );
 }

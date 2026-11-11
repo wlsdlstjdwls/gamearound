@@ -21,8 +21,9 @@ const CHIP = "inline-flex items-center gap-1.5 rounded-full px-[11px] py-[5px] t
 
 /** 등급별 칩 차림. 검증됨만 굵은 글자다 — 밸브가 "여기서 그냥 돌아간다" 고 단언한 유일한 등급이다 */
 const DECK_CHIP: Record<DeckCompat, string> = {
-  verified: "bg-acc-soft font-bold text-acc",
-  playable: "bg-acc-soft text-acc",
+  // 검정 면(korean-support-badges 와 같은 이유, 2026-11-11 사용자 "그냥 검정으로")
+  verified: "bg-ink font-bold text-on-ink",
+  playable: "bg-ink text-on-ink",
   unsupported: "bg-surface-2 text-dim",
 };
 
