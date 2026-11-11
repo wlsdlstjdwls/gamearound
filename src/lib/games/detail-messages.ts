@@ -39,7 +39,8 @@ export const DETAIL_MESSAGES = {
   // "기록이 쌓이면" 꼴은 쓰지 않는다(2026-11-11 사용자 "할인 기록을 쌓는단 말이 맘에 안 듦") — 지금 없는 것만 짧게 말한다
   forecastNoDate: "다음 할인 시기는 아직 알 수 없어요.",
   forecastExpected: "예상 가격",
-  forecastNoRecord: "지난 할인이 없어 예상 가격은 아직 없어요.",
+  /** 두 줄이다(2026-11-11 사용자 확정 문구, 줄바꿈까지). 화면은 줄마다 block 으로 세운다 */
+  forecastNoRecord: ["아직 예상 가격이 없어요.", "조금만 기다려 주세요."] as const,
   forecastAlert: "알림 설정하기",
   /** 예측 판의 "언제" 칸(2026-11-11 사용자 "그림이나 UI 로 가시성 높게"). 큰 D-숫자 위의 머리말 */
   forecastWhenHead: (name: string | null) => (name ? `${name}까지` : "다음 할인까지"),

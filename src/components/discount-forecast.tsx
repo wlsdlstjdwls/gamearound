@@ -89,7 +89,7 @@ function Plan({ next, expected, running, currency }: { next: Forecast["next"]; e
           </p>
         </div>
       ) : (
-        <p className="text-[13.5px] text-mut">{D.forecastNoRecord}</p>
+        <p className="text-[13.5px] text-mut">{D.forecastNoRecord.join(" ")}</p>
       )}
     </div>
   );
@@ -141,7 +141,15 @@ export function DiscountForecast({
         </p>
       )}
       {empty ? (
-        <p className="flex min-w-0 flex-1 items-center justify-center rounded-[var(--radius-panel)] bg-surface p-4 text-center text-[13.5px] text-mut">{D.forecastNoRecord}</p>
+        <p className="flex min-w-0 flex-1 items-center justify-center rounded-[var(--radius-panel)] bg-surface p-4 text-center text-[13.5px] leading-[1.6] text-mut">
+          <span>
+            {D.forecastNoRecord.map((line) => (
+              <span key={line} className="block">
+                {line}
+              </span>
+            ))}
+          </span>
+        </p>
       ) : (
         <Plan next={next} expected={expected} running={running !== null} currency={currency} />
       )}
