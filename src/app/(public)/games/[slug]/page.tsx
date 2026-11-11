@@ -17,7 +17,7 @@ import { GameHeadbar } from "@/components/game-headbar";
 import { GameViewBeacon } from "@/components/game-view-beacon";
 import { IndieGameSection, IndieSuggestSection } from "@/components/indie/game-section";
 import { NewsList } from "@/components/news-list";
-import { BEST_MIN_PRICED, PlatformPrices, PlatformSaleNote, type PlatformPriceItem } from "@/components/platform-prices";
+import { BEST_MIN_PRICED, PlatformPrices, type PlatformPriceItem } from "@/components/platform-prices";
 import { PreorderBonusesSection } from "@/components/preorder-bonuses-section";
 import { PriceAlertButton, type AlertPlatformOption } from "@/components/price-alert-button";
 import { UpgradeNotes } from "@/components/upgrade-note";
@@ -163,8 +163,8 @@ export default async function GameDetailPage({ params }: Props) {
         <SectionHead
           id="platforms-heading"
           title={upcoming ? D.upcomingHeading : D.priceHeading}
-          // 행사 이름과 남은 기간은 제목 옆 곁말 자리다(2026-09-30, 사용자 지정)
-          note={<PlatformSaleNote platforms={game.platforms} />}
+          // 제목 옆 행사 곁말(플랫폼, 할인 기간, 남은 날)은 걷었다(2026-11-11 사용자 "이 문구는 지워 줘").
+          // 2026-09-30 에 넣었던 자리다. 할인 기간은 가격 칸과 머리 띠가 이미 말한다. 부품(platform-prices/sale-note)은 남겨 둔다
         />
         <PlatformPrices
           platforms={platforms}
