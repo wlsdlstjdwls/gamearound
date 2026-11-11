@@ -58,6 +58,10 @@ export function GameListCard({ game, variant = "discount", highlight }: { game: 
   const tags = game.tags ?? [];
   const preorder = best ? isPreorder(best) : false;
   const devices = deviceNames(game);
+  // 남은 기간은 끝나는 시각을 알 때만 선다(SaleBadge inline) — 시각 없는 할인까지 세면 빈 칸이 남았다
+  const showSale = variant !== "release" && hasDiscount && Boolean(best?.discountEndsAt);
+  // 장르, 꼬리표, 남은 기간이 다 없으면 가운데 칸을 걷는다 — 칸막이 두 줄 사이 빈 띠가 고장처럼 보였다(2026-11-11 목록, GTA VI 등)
+  const hasMiddle = genres.length > 0 || tags.length > 0 || showSale;
 
   return (
     <div className={cn(LIST_CARD_SHELL, "group relative")}>
@@ -87,6 +91,7 @@ export function GameListCard({ game, variant = "discount", highlight }: { game: 
       <WishHeart slug={game.slug} title={title} className="absolute right-3 top-3 z-10 size-8 shadow-none" />
 
       {/* 남은 할인 기간은 장르 줄 오른쪽 끝이다 — 값 줄에 두면 할인율, 값, 정가 뒤에 못 붙고 혼자 다음 줄로 떨어져 카드마다 키가 갈렸다 */}
+      {hasMiddle && (
       <div className={cn(DIVIDER, RIGHT_CELL, "flex items-center gap-2 py-1 text-[12.5px] text-mut sm:min-h-[40px] sm:py-2.5")}>
         {/* 판매 형태 꼬리표(무료 플레이, 앞서 해보기)는 장르 글자 앞에 선다(game-card 와 같다) */}
         {tags.map((t) => (
@@ -106,8 +111,9 @@ export function GameListCard({ game, variant = "discount", highlight }: { game: 
             </Clamp>
           )}
         </span>
-        {variant !== "release" && hasDiscount && <SaleBadge variant="inline" discountName={null} discountEndsAt={best?.discountEndsAt} />}
+        {showSale && <SaleBadge variant="inline" discountName={null} discountEndsAt={best?.discountEndsAt} />}
       </div>
+      )}
 
       {/* 값 줄은 카드 바닥에 붙는다 — 같은 줄 카드끼리 값이 한 높이에 서서 가로로 견줄 수 있다. 값을 모르면 세우지 않는다(game-card 주석) */}
       <div className={cn(DIVIDER, RIGHT_CELL, "mt-auto flex flex-wrap items-center gap-x-1.5 gap-y-1 sm:pt-3")}>
