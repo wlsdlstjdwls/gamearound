@@ -12,10 +12,10 @@ import { kstDateKey } from "@/lib/format";
 import type { Platform } from "@/server/db/schema";
 import type { DlcDto } from "@/server/services/games";
 import { PlatformAddons } from "@/components/platform-addons";
-import { BEST_MIN_PRICED, brandAnchorId, brandNameOf, byPrice, isUpcomingRow, orderCards, pcMergeable, releaseText, rowKey, type PlatformPriceItem } from "@/components/platform-prices/order";
+import { BEST_MIN_PRICED, brandAnchorId, brandNameOf, byPrice, isUpcomingRow, mergeableGroups, mergeGroupKey, mergePickKey, orderCards, releaseText, rowKey, type PlatformPriceItem } from "@/components/platform-prices/order";
 import { AbsentTile, PriceTile, UpcomingTile } from "@/components/platform-prices/tile";
-import { PcTile } from "@/components/platform-prices/pc-tile";
-import { familyOf } from "@/lib/platform";
+import { MergedTile } from "@/components/platform-prices/merged-tile";
+import { PC_PICK_KEY, PLATFORM_FAMILY_LABEL } from "@/lib/platform";
 
 /** 좁은 화면 1장, sm 2장, lg 4장 — 목업 .pg. 스토어가 넷을 넘으면 다음 줄로 이어진다 */
 const GRID = "grid gap-3 sm:grid-cols-2 lg:grid-cols-4 lg:gap-4";
@@ -65,9 +65,11 @@ export function PlatformPrices({
     const mine = dlcs.filter((d) => d.platforms.some((dp) => dp.platform === p.platform) || d.uncheckedPlatforms.includes(p.platform));
     return mine.length > 0 || p.hasAddOns ? <PlatformAddons platform={p.platform} platformLabel={brandNameOf(p)} dlcs={mine} /> : null;
   };
-  // PC 스토어 값 카드가 둘 이상이면 PC 카드 하나로 합친다(pc-tile 머리 주석). 한쪽이 출시 전이면 합치지 않는다
-  const pcRows = cards.flatMap((c) => (c.kind === "row" && familyOf(c.row.platform) === "pc" ? [c.row] : []));
-  const mergePc = pcMergeable(pcRows, upcoming);
+  // 같은 갈래 값 카드가 둘 이상이면 한 장으로 합친다 — PC(Steam, Epic), PlayStation(PS5, PS4), Nintendo(Switch, Switch 2).
+  // 한쪽이 출시 전이면 합치지 않는다(merged-tile 머리 주석, order 의 mergeableGroups)
+  const rowsOnly = cards.flatMap((c) => (c.kind === "row" ? [c.row] : []));
+  const merged = mergeableGroups(rowsOnly, upcoming);
+  const groupRows = (key: string) => rowsOnly.filter((r) => mergeGroupKey(r) === key);
 
   return (
     <ul className={GRID}>
@@ -76,18 +78,22 @@ export function PlatformPrices({
           return <AbsentTile key={c.brand.key} id={anchorOnce(brandAnchorId(c.brand.platform))} label={c.brand.label} />;
         }
         const p = c.row;
-        if (mergePc && familyOf(p.platform) === "pc") {
-          if (p !== pcRows[0]) return null; // 첫 PC 줄 자리에 한 장만 선다
-          const [first, ...rest] = pcRows.map((r) => anchorOnce(brandAnchorId(r.platform)));
-          const withAddons = [...pcRows].sort(byPrice).find((r) => addonsFor(r) !== null);
+        const group = mergeGroupKey(p);
+        if (group && merged.has(group)) {
+          const gRows = groupRows(group);
+          if (p !== gRows[0]) return null; // 묶음 첫 줄 자리에 한 장만 선다
+          const [first, ...rest] = gRows.map((r) => anchorOnce(brandAnchorId(r.platform)));
+          const withAddons = [...gRows].sort(byPrice).find((r) => addonsFor(r) !== null);
           return (
-            <PcTile
-              key="pc"
-              rows={pcRows}
+            <MergedTile
+              key={group}
+              label={group === PC_PICK_KEY ? PLATFORM_FAMILY_LABEL.pc : brandNameOf(p)}
+              pickKey={mergePickKey(group, p)}
+              rows={gRows}
               id={first}
               secondId={rest.find(Boolean)}
-              isBest={pcRows.some((r) => rowKey(r) === bestKey)}
-              release={pcRows.map((r) => releaseText(r, releaseFallback)).find(Boolean) ?? null}
+              isBest={gRows.some((r) => rowKey(r) === bestKey)}
+              release={gRows.map((r) => releaseText(r, releaseFallback)).find(Boolean) ?? null}
               quotedUserScorePlatform={quotedUserScorePlatform}
               addons={withAddons ? addonsFor(withAddons) : null}
             />

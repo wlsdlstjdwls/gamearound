@@ -23,13 +23,13 @@ import {
   YAxis,
 } from "recharts";
 import type { TooltipContentProps } from "recharts";
-import { formatDate, PLATFORM_LABEL } from "@/lib/format";
+import { formatDate } from "@/lib/format";
 import type { Currency, Platform } from "@/server/db/schema";
 import type { PriceSeries } from "@/server/services/prices";
 import { useNow } from "@/components/use-now";
 import { ChipButton } from "@/components/ui/chip";
 import { useCssTokens } from "@/components/use-css-tokens";
-import { prepare } from "@/components/price-chart/prepare";
+import { mergeBrandSeries, prepare, seriesLabel } from "@/components/price-chart/prepare";
 import { ALL_PLATFORMS, usePlatformFilter } from "@/components/price-chart/use-platform-filter";
 
 /**
@@ -118,7 +118,7 @@ function PriceTooltip({ active, payload, label, currency }: TooltipContentProps 
         {payload.map((e) => (
           <li key={String(e.dataKey)} className="flex items-center gap-2">
             <span aria-hidden className="inline-block h-2 w-2 rounded-full" style={{ background: e.color }} />
-            <span className="text-mut">{PLATFORM_LABEL[String(e.dataKey)] ?? String(e.dataKey)}</span>
+            <span className="text-mut">{seriesLabel(String(e.dataKey) as Platform)}</span>
             <span className="ml-auto font-semibold text-ink">{formatPrice(typeof e.value === "number" ? e.value : null, currency)}</span>
           </li>
         ))}
@@ -137,7 +137,8 @@ export function PriceChart({ series, head, rangeKeys }: { series: PriceSeries[];
   const token = useCssTokens(CHART_TOKENS);
   const [rangeKey, setRangeKey] = useState(DEFAULT_RANGE_KEY);
   // 한 축에 두 통화를 그리면 선이 뜻 없이 겹친다(₩44,990 옆의 $6.99). 기준 통화만 그리고 나머지는 밑에 적는다
-  const { kept: drawn, dropped, currency } = useMemo(() => sameCurrency(series), [series]);
+  // 같은 세대 묶음(PS5, PS4)은 선 하나로 합쳐 그린다 — 가격 카드도 한 장이다(./prepare 의 mergeBrandSeries)
+  const { kept: drawn, dropped, currency } = useMemo(() => sameCurrency(mergeBrandSeries(series)), [series]);
   // 어느 선을 그릴지 — 상세에서는 플랫폼 카드와 같은 값을 쓴다(./use-platform-filter)
   const { shown, isOn, choose } = usePlatformFilter(drawn);
   const clientNow = useNow();
@@ -175,7 +176,7 @@ export function PriceChart({ series, head, rangeKeys }: { series: PriceSeries[];
                 className="mr-1.5 inline-block size-2 shrink-0 rounded-full"
                 style={{ background: token[PLATFORM_TOKEN[s.platform]] }}
               />
-              {PLATFORM_LABEL[s.platform] ?? s.platform}
+              {seriesLabel(s.platform)}
             </ChipButton>
           ))}
         </div>
@@ -226,7 +227,7 @@ export function PriceChart({ series, head, rangeKeys }: { series: PriceSeries[];
               />
               <Tooltip content={(props: TooltipContentProps) => <PriceTooltip {...props} currency={currency} />} cursor={{ stroke: token["--dim-2"], strokeDasharray: "3 3" }} />
               {platforms.length > 1 && (
-                <Legend formatter={(v: string) => <span className="text-[12px] text-mut">{PLATFORM_LABEL[v] ?? v}</span>} />
+                <Legend formatter={(v: string) => <span className="text-[12px] text-mut">{seriesLabel(v as Platform)}</span>} />
               )}
 
               {/* 진행 중 할인 구간 음영 */}
@@ -287,7 +288,7 @@ export function PriceChart({ series, head, rangeKeys }: { series: PriceSeries[];
 
       {dropped.length > 0 && (
         <p className="text-[11.5px] text-dim">
-          {dropped.map((s) => PLATFORM_LABEL[s.platform] ?? s.platform).join(", ")}는 결제 통화가 달라 이 그래프에 함께 그리지 않아요. 아래 표에서 통화 그대로 볼 수 있어요.
+          {dropped.map((s) => seriesLabel(s.platform)).join(", ")}는 결제 통화가 달라 이 그래프에 함께 그리지 않아요. 아래 표에서 통화 그대로 볼 수 있어요.
         </p>
       )}
     </div>

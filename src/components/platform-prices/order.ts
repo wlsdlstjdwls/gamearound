@@ -135,13 +135,37 @@ export function initialPickBrand(platforms: PlatformPriceItem[], pcMerged = fals
   return pcMerged && familyOf(pick.platform) === "pc" ? PC_PICK_KEY : brandKeyOf(pick.platform);
 }
 
+/** Steam, Epic 을 PC 카드 하나로 합쳐 세우나 — 상세 page 가 PC 카드용 예측을 따로 셈할지 정한다(mergeableGroups 와 같은 판단) */
+export function pcMergeable<T extends PlatformDto>(platforms: T[], upcoming: (p: T) => boolean): boolean {
+  return mergeableGroups(platforms, upcoming).has(PC_PICK_KEY);
+}
+
 /**
- * Steam, Epic 을 PC 카드 하나로 합쳐 세우나(platform-prices/pc-tile). PC 스토어 값 카드가 둘 이상이고 출시 전 카드가 없을 때만이다.
+ * 카드 한 장으로 합쳐 세울 묶음의 열쇠. PC 갈래(Steam, Epic)는 PC_PICK_KEY, 세대 묶음(PS5+PS4, Switch+Switch 2)은 묶음 열쇠에 나라를 붙인다 —
+ * 한국 스위치와 일본 스위치는 값도 통화도 달라 한 카드에 섞지 않는다. 묶이지 않는 플랫폼(Xbox)은 null.
+ * PS5, PS4 를 합친 이유(2026-11-11 사용자 "PS5, PS4를 카드 하나로 합쳐야"): 같은 이름 "PlayStation" 카드 두 장이 출시일까지 똑같이 되풀이했다
+ */
+export function mergeGroupKey(p: { platform: Platform; region: Region }): string | null {
+  if (familyOf(p.platform) === "pc") return PC_PICK_KEY;
+  return brandOf(p.platform) ? `${brandKeyOf(p.platform)}-${p.region}` : null;
+}
+
+/** 합친 카드를 고르면 쓰는 고른 값 — PC 는 PC_PICK_KEY, 세대 묶음은 묶음 열쇠(그래프, 예측이 이미 묶음 단위로 본다) */
+export function mergePickKey(groupKey: string, sample: { platform: Platform }): string {
+  return groupKey === PC_PICK_KEY ? PC_PICK_KEY : brandKeyOf(sample.platform);
+}
+
+/**
+ * 합쳐 세울 묶음 열쇠들. 같은 묶음 값 카드가 둘 이상이고 출시 전 카드가 없을 때만이다 — 출시 카드는 알림 단추가 따로 있어 제 카드로 선다.
  * 가격 격자와 처음 고른 값(상세 page)이 같은 판단을 써야 고리가 엉뚱한 카드에 켜지지 않는다
  */
-export function pcMergeable<T extends PlatformDto>(platforms: T[], upcoming: (p: T) => boolean): boolean {
-  const pc = platforms.filter((p) => familyOf(p.platform) === "pc");
-  return pc.length >= 2 && pc.every((p) => !upcoming(p));
+export function mergeableGroups<T extends PlatformDto>(platforms: T[], upcoming: (p: T) => boolean): Set<string> {
+  const groups = new Map<string, T[]>();
+  for (const p of platforms) {
+    const key = mergeGroupKey(p);
+    if (key) groups.set(key, [...(groups.get(key) ?? []), p]);
+  }
+  return new Set([...groups].filter(([, rows]) => rows.length >= 2 && rows.every((p) => !upcoming(p))).map(([key]) => key));
 }
 
 /** 히어로 "지원 플랫폼" 줄 — 파는 묶음만, PLATFORM_ORDER 순, 이름은 카드 머리와 같은 말(지역 접미어는 뺀다) */
