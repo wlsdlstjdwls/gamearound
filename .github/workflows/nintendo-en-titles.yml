@@ -1,0 +1,48 @@
+# 한국 닌텐도에서만 들어온 게임의 title_en 에 들어앉은 한글을 영문 이름으로 바꾼다(scripts/backfill-nintendo-en-titles).
+# 근거는 sync/nintendo-en-title 머리 — 영문 칸이 한글이면 플레이타임, 평점 검색이 전부 빈손이다.
+#
+# Vercel 크론이 아니라 Actions 인 이유(2026-11-11 실측): 스위치 타이틀 DB 파일 셋이 약 233MB(US 91, GB 88, KR 56)라
+# 함수 메모리에 다 올리기 버겁다. 파일은 GitHub 에서 받으니 Actions 러너가 막힐 일도 없다(닌텐도 스토어 IP 차단과 무관).
+# DB 는 영문 칸이 한글인 행(수백 건)만 읽고 바뀐 행만 쓴다 — Neon 전송량은 몇 KB 꼴.
+#
+# 주 1회인 이유: 타이틀 DB 원본(blawar/titledb)이 한 달에 한두 번 갱신된다(10-16, 09-23). 더 자주 돌아도 새로 찾는 것이
+# 거의 없다. 사이 기간은 같은 한국어 제목의 다른 스토어 영문 제목 빌리기가 메운다(스크립트 안).
+# Actions 예약은 몇 시간씩 늦게 돈다 — 몇 분짜리 주 1회라 Neon 크론 창 밖에서 깨워도 비용은 무시할 만하다.
+name: nintendo-en-titles
+
+on:
+  schedule:
+    # 월요일 08:30 KST
+    - cron: "30 23 * * 0"
+  workflow_dispatch:
+
+concurrency:
+  group: nintendo-en-titles
+  cancel-in-progress: false
+
+jobs:
+  fill:
+    runs-on: ubuntu-latest
+    # 내려받기 + 파싱 1~2분, DB 몇 초. 여유를 둔다
+    timeout-minutes: 15
+    env:
+      DATABASE_URL: ${{ secrets.DATABASE_URL }}
+      # 233MB JSON 셋을 한꺼번에 올린다. 기본 힙으로는 모자랄 수 있다
+      NODE_OPTIONS: --max-old-space-size=4096
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+        with:
+          package_json_file: package.json
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: pnpm
+          cache-dependency-path: pnpm-lock.yaml
+
+      - run: pnpm install --frozen-lockfile
+
+      - name: fill english titles
+        run: pnpm nintendo:en-titles --apply

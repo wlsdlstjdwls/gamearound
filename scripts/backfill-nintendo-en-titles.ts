@@ -2,6 +2,7 @@
 //   tsx scripts/backfill-nintendo-en-titles.ts                 (셈만)
 //   tsx scripts/backfill-nintendo-en-titles.ts --apply         (반영)
 //   --dir=<폴더>  타이틀 DB 파일을 내려받지 않고 그 폴더에서 읽는다
+// 정규 실행은 GitHub Actions 주 1회(.github/workflows/nintendo-en-titles.yml, 2026-11-11). 손으로 돌려도 같은 결과다
 //
 // 바꾼 게임은 메타 소스(HLTB, 메타크리틱, 오픈크리틱, 위키데이터)의 "후보 없음(none)" 기록을 지운다 —
 // 그 기록은 한글로 찾다 빈손이었던 결과라, 남겨 두면 14일(NONE_RETRY_DAYS) 동안 영문으로 다시 찾지 않는다.
@@ -18,6 +19,8 @@ import { getDb } from "@/server/db/client";
 import { pickEnglishTitle } from "@/server/sync/nintendo-en-title";
 import { TITLEDB_BASE_URL, TITLEDB_EN_FILES, TITLEDB_KR_FILE } from "@/server/adapters/nintendo/constants";
 
+/** 바꾸기 전 값을 남기는 표. 이름의 날짜는 첫 실행일일 뿐 — 주간 워크플로(nintendo-en-titles.yml)도 같은 표에 쌓는다.
+ *  게임마다 처음 값 하나만 남는다(on conflict do nothing). 운영 표 이름을 바꾸면 그 사이 백업이 갈라져 그대로 둔다 */
 const BACKUP = "nintendo_en_title_20261110";
 /** 영문 이름을 얻은 뒤 다시 찾게 할 메타 소스 */
 const REQUEUE_SOURCES = ["hltb", "metacritic", "opencritic", "wikidata_game"];

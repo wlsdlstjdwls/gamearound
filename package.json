@@ -27,6 +27,7 @@
     "news:rematch": "tsx scripts/rematch-news.ts",
     "floors:backfill": "tsx scripts/backfill-floors.ts",
     "portraits:backfill": "tsx scripts/backfill-portraits.ts",
+    "nintendo:en-titles": "tsx scripts/backfill-nintendo-en-titles.ts",
     "e2e:onboarding": "node scripts/e2e-onboarding.mjs",
     "e2e:shops": "node scripts/e2e-shops.mjs",
     "dedup:stores": "tsx scripts/merge-store-duplicates.ts",
