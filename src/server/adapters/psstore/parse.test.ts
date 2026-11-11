@@ -180,7 +180,7 @@ describe("parsePsstoreGridPrices", () => {
     expect(out.map((q) => q.storeExternalId)).toEqual(["free", "plus", "none", "blank"]);
     expect(out.every((q) => q.listPrice === null && q.currentPrice === null && q.discountPct === null)).toBe(true);
   });
-  it("구독 표기: PS Plus 스페셜, 프리미엄, EA Play 포함은 키로, 추가 할인과 체험판은 빈 배열(2026-11-10 실측 문구)", () => {
+  it("구독 표기: PS Plus 스페셜, EA Play 포함만 키로. 프리미엄(체험판이 섞인다), 추가 할인, 체험판은 빈 배열", () => {
     const at = (usb: string[], ut: string | null) => ({ id: ut ?? "x", price: { basePrice: "10,000원", discountedPrice: "10,000원", upsellServiceBranding: usb, upsellText: ut } });
     const out = parsePsstoreGridPrices(grid([
       at(["PS_PLUS"], "스페셜"),
@@ -191,7 +191,7 @@ describe("parsePsstoreGridPrices", () => {
       at(["PS_PLUS"], "에센셜"),
       at(["NONE"], null),
     ]));
-    expect(out.map((q) => q.subscriptionKeys)).toEqual([["psplus_special"], ["psplus_deluxe"], ["ea_play_ps"], [], [], [], []]);
+    expect(out.map((q) => q.subscriptionKeys)).toEqual([["psplus_special"], [], ["ea_play_ps"], [], [], [], []]);
   });
   it("psstoreWonText", () => {
     expect(psstoreWonText("1,234,500원")).toBe(1234500);

@@ -116,7 +116,8 @@
 // v33(2026-10-27): 장르에서 판매 형태를 갈라 tags 로(lib/genres GENRE_TAG_NAMES). 옛 캐시 카드엔 "무료 플레이" 가 장르로 남는다
 // v34(2026-11-10): PlatformDto 에 metacriticUser(메타크리틱 유저 점수)
 // v35(2026-11-11): PlatformDto, GameSummary.best 에 historicLow(역대 최저가)
-export const DTO_CACHE_VERSION = "v35";
+// v36(2026-11-11): PS 목록이 잘못 단 디럭스 포함 212건을 지웠다 — 옛 캐시 상세에 남은 "디럭스 포함" 을 비운다
+export const DTO_CACHE_VERSION = "v36";
 
 /** 목록, 검색, 홈처럼 태그 무효화로 갱신되는 화면의 기본 재검증 주기(초) */
 export const LIST_REVALIDATE_SECONDS = 3600;
