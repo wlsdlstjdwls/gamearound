@@ -2,7 +2,8 @@
 // 패치 기록도 사양도 없는 게임은 탭 둘에 "없어요" 만 든 큰 판 대신 한 줄로 접는다(game-detail/empty-line).
 // 한쪽만 있으면 탭은 그대로 둔다 — 탭이 하나로 줄면 "다른 쪽은 어디 갔지" 가 된다.
 import { Suspense } from "react";
-import { PatchList, PatchSpeed } from "@/components/patch-list";
+import { PatchSpeed } from "@/components/patch-list";
+import { PatchNotesPanel } from "@/components/game-detail/patch-notes-panel";
 import { RequirementsBody } from "@/components/requirements-table";
 import { RunCheck } from "@/components/run-check";
 import { EmptyLine } from "@/components/game-detail/empty-line";
@@ -12,10 +13,10 @@ import { sectionCardClass } from "@/components/ui/page";
 import { DETAIL_MESSAGES as D } from "@/lib/games/detail-messages";
 import { COMPAT_MESSAGES, GAME_MESSAGES, OS_FAMILY_LABEL } from "@/lib/games/messages";
 import { requirementSummary } from "@/lib/games/requirement-summary";
-import { latestPatches, type GameDetail, type getGamePatchesCached } from "@/server/services/games";
+import type { GameDetail, getGamePatchesCached } from "@/server/services/games";
 
 /**
- * "업데이트 노트" 탭에 담을 패치 기록 수. 시트에 있던 목록(2026-09-15)을 탭으로 펼쳤다(목업).
+ * "업데이트 노트" 탭에 담을 스토어 하나의 패치 기록 수(펴기 전에는 다섯만 보인다, game-detail/patch-notes-panel). 시트에 있던 목록(2026-09-15)을 탭으로 펼쳤다(목업).
  * 50 은 상한일 뿐이다 — 스토어가 최근 기록만 돌려줘서 실제로는 게임당 훨씬 적다.
  */
 const TAB_PATCH_LIMIT = 50;
@@ -42,7 +43,7 @@ export function DetailUpdates({ game, patchGroups, upcoming }: { game: GameDetai
               {patchGroups.length > 0 ? (
                 <>
                   <PatchSpeed groups={patchGroups} />
-                  <PatchList items={latestPatches(patchGroups, TAB_PATCH_LIMIT)} showPlatform={patchGroups.length > 1} />
+                  <PatchNotesPanel groups={patchGroups} limit={TAB_PATCH_LIMIT} />
                 </>
               ) : (
                 <p className="text-[13px] text-dim">{GAME_MESSAGES.patchNone}</p>

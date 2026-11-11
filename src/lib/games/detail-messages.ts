@@ -85,6 +85,10 @@ export const DETAIL_MESSAGES = {
   updatesEmpty: "업데이트 노트와 성능 정보가 아직 없어요.",
   updatesEmptyUpcoming: "출시 뒤 업데이트 노트와 성능 정보가 채워져요.",
   tabPatches: "업데이트 노트",
+  /** 업데이트 노트 접기(2026-11-11 사용자 "접었다 펼칠 수 있게"). 접힌 동안 단추가 몇 건이 더 있는지 말한다 */
+  patchesMore: (n: number) => `${n.toLocaleString("ko-KR")}건 모두 보기`,
+  patchesLess: "접기",
+  patchesPlatformLabel: "업데이트 노트 플랫폼",
   tabPerf: "성능 정보",
   tabsLabel: "업데이트와 성능",
   perfNone: "사양 정보가 아직 없어요. PC 스토어가 알려 준 사양만 보여 드려요.",
