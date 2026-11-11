@@ -8,6 +8,7 @@ import { Clamp } from "@/components/ui/tooltip";
 import { ROW, ROWS, SHEET_ROW, SHEET_ROWS } from "@/components/ui/page";
 import { cn } from "@/lib/cn";
 import { formatPrice } from "@/lib/currency";
+import { GAME_MESSAGES } from "@/lib/games/messages";
 import { platformLabel } from "@/lib/format";
 import { gamePath } from "@/lib/routes";
 import { stagger } from "@/lib/motion";
@@ -36,9 +37,14 @@ export function DlcRows({ rows, inSheet = false }: { rows: DlcRow[]; inSheet?: b
             <span className="flex shrink-0 items-baseline gap-3 text-[12.5px]">
               {/* 할인율은 브랜드색이다 — 빨강은 이 화면에서 "마감 임박" 이 이미 쓰고 있다 */}
               {best?.discountPct ? <span className="font-bold text-acc">-{best.discountPct}%</span> : null}
-              <span className="text-[15px] font-extrabold tracking-[-0.03em] text-ink">
-                {best ? formatPrice(best.currentPrice, best.currency) : "-"}
-              </span>
+              {best ? (
+                <span className="text-[15px] font-extrabold tracking-[-0.03em] text-ink">{formatPrice(best.currentPrice, best.currency)}</span>
+              ) : dlc.uncheckedPlatforms.length > 0 ? (
+                // 있다는 것만 아는 줄. 값 자리를 비워 두면 공짜나 고장으로 읽힌다 — 확인 전이라고 말한다
+                <span className="text-[12.5px] text-dim">{GAME_MESSAGES.dlcPriceUnchecked}</span>
+              ) : (
+                <span className="text-[15px] font-extrabold tracking-[-0.03em] text-ink">-</span>
+              )}
               {/* 플랫폼 이름은 자리를 이미 알아도 적는다 — 나라가 다르면 이름이 달라지고(Switch 일본),
                   그 값은 한국 계정으로 못 사는 값이다 */}
               {best && <span className="w-12 text-right text-[12px] text-dim">{platformLabel(best)}</span>}

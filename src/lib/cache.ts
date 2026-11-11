@@ -118,7 +118,8 @@
 // v35(2026-11-11): PlatformDto, GameSummary.best 에 historicLow(역대 최저가)
 // v36(2026-11-11): PS 목록이 잘못 단 디럭스 포함 212건을 지웠다 — 옛 캐시 상세에 남은 "디럭스 포함" 을 비운다
 // v37(2026-11-11): 상세의 추가 콘텐츠, 에디션 칸에서 값 있는 형제와 겹치는 값 없는 자식(psprices 병합분)을 빼고 값 없는 줄을 뒤로 — 옛 캐시엔 중복 줄이 남는다
-export const DTO_CACHE_VERSION = "v37";
+// v38(2026-11-11): DlcDto.uncheckedPlatforms(가격 확인 전 줄). v37 과 같은 날이지만 v37 꼴로 쌓인 캐시가 새 칸 없이 남아 올린다
+export const DTO_CACHE_VERSION = "v38";
 
 /** 목록, 검색, 홈처럼 태그 무효화로 갱신되는 화면의 기본 재검증 주기(초) */
 export const LIST_REVALIDATE_SECONDS = 3600;

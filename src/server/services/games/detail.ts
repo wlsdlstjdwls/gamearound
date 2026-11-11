@@ -11,6 +11,8 @@ import { splitGenreTags } from "@/lib/genres";
 import { byAddonKind } from "@/lib/games/addon-kind";
 import { cheapestOf } from "@/lib/currency";
 import { normalizeForSearch } from "@/lib/slug";
+import { HIDDEN_PLATFORMS, HIDDEN_REGIONS } from "@/lib/platform";
+import type { Platform } from "@/server/db/schema";
 
 const DETAIL_NEWS_LIMIT = 5;
 /** 상세에 한 번에 띄울 추가 콘텐츠 수. 심즈류는 수백 개라 상한이 없으면 화면이 목록으로 덮인다 */
@@ -67,14 +69,25 @@ function toChildDtos(
 ) {
   const shaped = rows.map((d) => {
     const platforms = keepVisiblePlatforms([...d.platforms]).sort(byRegionThenPlatform).map(toPlatformDto);
-    return { slug: d.slug, title: d.titleKo ?? d.titleEn, keys: [d.titleKo, d.titleEn].filter((t): t is string => !!t).map(normalizeForSearch), platforms };
+    const shown = new Set(platforms.map((p) => p.platform));
+    // 링크만 없어 숨은 행의 기기. 숨긴 기기, 숨긴 나라는 링크가 있어도 안 보이는 자리라 여기서도 뺀다
+    const unchecked = d.platforms
+      .filter((p) => p.storeUrl === null && !HIDDEN_PLATFORMS.includes(p.platform) && !HIDDEN_REGIONS.includes(p.region) && !shown.has(p.platform))
+      .map((p) => p.platform);
+    return {
+      slug: d.slug,
+      title: d.titleKo ?? d.titleEn,
+      keys: [d.titleKo, d.titleEn].filter((t): t is string => !!t).map(normalizeForSearch),
+      platforms,
+      uncheckedPlatforms: [...new Set<Platform>(unchecked)],
+    };
   });
   // 값 없는 자식(2026-09-15 psprices 병합분 12,358건, 링크 없는 행만 가짐)은 이름이라도 보여 준다(2026-11-11 사용자 결정 "그래도 노출").
   // 단 같은 제목의 값 있는 형제가 있으면 그건 중복이다(2,653건) — 같은 DLC 가 "-" 줄과 값 줄로 두 번 서지 않게 뺀다
   const pricedKeys = new Set(shaped.filter((d) => d.platforms.length > 0).flatMap((d) => d.keys));
   return shaped
     .filter((d) => d.platforms.length > 0 || !d.keys.some((k) => pricedKeys.has(k)))
-    .map((d) => ({ slug: d.slug, title: d.title, platforms: d.platforms }))
+    .map((d) => ({ slug: d.slug, title: d.title, platforms: d.platforms, uncheckedPlatforms: d.uncheckedPlatforms }))
     // 정렬 열쇠(값)를 한 번만 구해 두고 비교자에 넘긴다 — 비교자 안에서 최저가를 다시 세면
     // 300건 정렬에 cheapestOf 가 수천 번 돈다
     .map((d) => ({ row: d, price: cheapestOf(d.platforms)?.currentPrice ?? null }))

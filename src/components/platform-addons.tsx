@@ -42,8 +42,12 @@ export function PlatformAddons({
   /** 이 플랫폼에 있는 추가 콘텐츠만 걸러 넘긴다 — 행마다 카탈로그 전체를 들고 있지 않기 위해서다 */
   dlcs: DlcDto[];
 }) {
+  // 값을 확인 못 한 줄(uncheckedPlatforms)은 맨 아래로 — 살 수 있는 것이 먼저 보여야 한다. sort 는 안정 정렬이라 서버 순서가 유지된다
   const rows = useMemo(
-    () => dlcs.map((d) => ({ dlc: d, best: cheapestOf(d.platforms.filter((p) => p.platform === platform)) })),
+    () =>
+      dlcs
+        .map((d) => ({ dlc: d, best: cheapestOf(d.platforms.filter((p) => p.platform === platform)) }))
+        .sort((a, b) => Number(a.best === null) - Number(b.best === null)),
     [dlcs, platform],
   );
 

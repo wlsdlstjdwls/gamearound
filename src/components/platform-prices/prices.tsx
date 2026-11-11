@@ -62,7 +62,7 @@ export function PlatformPrices({
   // 이 플랫폼에 실제로 있는 추가 콘텐츠만 넘긴다. 하나도 없으면 버튼을 안 세운다 —
   // 열어 봤자 빈 시트인 버튼은 누른 사람을 두 번 움직이게 한다
   const addonsFor = (p: PlatformPriceItem) => {
-    const mine = dlcs.filter((d) => d.platforms.some((dp) => dp.platform === p.platform));
+    const mine = dlcs.filter((d) => d.platforms.some((dp) => dp.platform === p.platform) || d.uncheckedPlatforms.includes(p.platform));
     return mine.length > 0 || p.hasAddOns ? <PlatformAddons platform={p.platform} platformLabel={brandNameOf(p)} dlcs={mine} /> : null;
   };
   // PC 스토어 값 카드가 둘 이상이면 PC 카드 하나로 합친다(pc-tile 머리 주석). 한쪽이 출시 전이면 합치지 않는다

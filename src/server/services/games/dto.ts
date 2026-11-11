@@ -168,6 +168,11 @@ export type DlcDto = {
   slug: string;
   title: string;
   platforms: PlatformDto[];
+  /**
+   * 행은 있지만 스토어 링크가 없어 값을 못 보여 주는 기기(2026-09-15 psprices 병합분). 그 기기의 추가 콘텐츠 목록 맨 아래에
+   * "가격 확인 전" 으로 세운다 — 무엇이 있는지는 알리되, 확인 못 한 값은 보이지 않는다. 그 기기에 보이는 행이 있으면 넣지 않는다
+   */
+  uncheckedPlatforms: Platform[];
 };
 
 /** 지금 이 플랫폼을 구독으로 즐길 수 있는지 */
