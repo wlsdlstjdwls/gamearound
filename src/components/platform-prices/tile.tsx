@@ -15,7 +15,7 @@ import { isPreorder } from "@/lib/games/preorder";
 import { countText, scoreToStars } from "@/lib/user-score";
 import { cn } from "@/lib/cn";
 import { buttonClass } from "@/components/ui/button";
-import { DiscountBadge } from "@/components/ui/discount";
+import { DiscountBadge, HistoricLowBadge } from "@/components/ui/discount";
 import { PendingNote } from "@/components/ui/pending-note";
 import { ClockIcon, StoreIcon } from "@/components/ui/icons";
 import { Tag } from "@/components/ui/tag";
@@ -123,6 +123,7 @@ export function PriceTile({
             )}
             {/* 목록 카드와 같은 채운 배지(ui/discount). 연파랑 알약은 최저가 카드의 연파랑 면에 묻혔다(2026-10-27 사용자) */}
             {hasDiscount && <DiscountBadge pct={p.discountPct} size="sm" />}
+            <HistoricLowBadge show={hasDiscount && p.historicLow} size="sm" />
           </dd>
         </div>
       </dl>

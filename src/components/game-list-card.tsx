@@ -12,6 +12,7 @@
 import { Fragment } from "react";
 import Link from "next/link";
 import { CoverImage, DiscountStamp, type CardHighlight } from "@/components/game-card";
+import { HistoricLowBadge } from "@/components/ui/discount";
 import { SaleBadge } from "@/components/sale-badge";
 import { Tag } from "@/components/ui/tag";
 import { Clamp } from "@/components/ui/tooltip";
@@ -116,6 +117,7 @@ export function GameListCard({ game, variant = "discount", highlight }: { game: 
             {hasDiscount && <DiscountStamp pct={best.discountPct} />}
             <span className="text-[19px] font-extrabold tracking-[-0.03em] text-ink">{formatPrice(best.currentPrice, best.currency)}</span>
             {hasDiscount && best.listPrice !== null && <span className="text-[12px] text-dim-2 line-through">{formatPrice(best.listPrice, best.currency)}</span>}
+            <HistoricLowBadge show={hasDiscount && best.historicLow} size="sm" />
           </>
         )}
         {variant === "release" && best?.releaseDate && <span className="ml-auto text-[12px] text-dim">{formatDate(best.releaseDate)} 출시</span>}

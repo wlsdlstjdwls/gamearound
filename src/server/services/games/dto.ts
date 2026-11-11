@@ -28,6 +28,8 @@ export type PlatformDto = {
   discountStartsAt: string | null;
   discountEndsAt: string | null;
   discountName: string | null;
+  /** 지금 값이 역대 최저가인가(할인 중일 때만 참, lib/games/historic-low). 상세 가격 칸의 배지 */
+  historicLow: boolean;
   metacriticScore: number | null;
   opencriticScore: number | null;
   /** IGN 점수 0~100(schema 의 ign_score). 화면은 10 으로 나눠 IGN 척도로 적는다 */
@@ -300,6 +302,8 @@ export type GameSummary = {
     discountEndsAt: string | null;
     discountName: string | null;
     releaseDate: string | null;
+    /** 대표 값이 역대 최저가인가. 카드의 배지. 선택인 이유: 캐시에 담긴 옛 요약에는 이 칸이 없다 */
+    historicLow?: boolean;
   } | null;
   /**
    * 이 게임이 붙어 있는 플랫폼 전부(나라 구분 없이 기기 단위, PLATFORM_ORDER 순).

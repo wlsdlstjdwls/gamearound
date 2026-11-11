@@ -33,6 +33,7 @@
  */
 import { formatDiscount } from "@/lib/format";
 import { cn } from "@/lib/cn";
+import { GAME_MESSAGES } from "@/lib/games/messages";
 
 /** 붙임표를 숫자 광학 중심에 맞춰 올리는 폭. 근거는 파일 상단 표 */
 const SIGN_LIFT = "-0.085em";
@@ -57,6 +58,25 @@ export function DiscountBadge({ pct, size = "md", className }: { pct: number | n
     </span>
   );
 }
+
+/**
+ * 역대 최저가 배지. 할인율 배지(채운 파랑) 옆에 서서 같은 높이를 쓰되 연한 면으로 한 단계 낮춘다 —
+ * 두 배지가 같은 채운 면이면 어느 것이 값인지 눈이 고르지 못한다. 초록은 쓰지 않는다(관리자, 사용자 화면 공통 색 규칙)
+ */
+export function HistoricLowBadge({ show, size = "md", className }: { show: boolean | null | undefined; size?: keyof typeof BADGE_SIZE; className?: string }) {
+  if (!show) return null;
+  return (
+    <span className={cn("inline-flex shrink-0 items-center self-center whitespace-nowrap rounded-[var(--radius-xs)] bg-acc-soft font-bold leading-none tracking-[-0.02em] text-acc", HISTORIC_LOW_SIZE[size], className)}>
+      {GAME_MESSAGES.historicLowLabel}
+    </span>
+  );
+}
+
+/** 역대 최저가 배지 크기. 할인율 배지(BADGE_SIZE)보다 글자를 작게 — 숫자가 아니라 말이라 같은 크기면 더 커 보인다 */
+const HISTORIC_LOW_SIZE = {
+  md: "px-1.5 py-[3px] text-[12px]",
+  sm: "px-1.5 py-[3px] text-[11px]",
+} as const;
 
 export function DiscountText({ pct }: { pct: number | null | undefined }) {
   const text = formatDiscount(pct);

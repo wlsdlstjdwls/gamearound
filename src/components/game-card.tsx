@@ -12,7 +12,7 @@ import { isPreorder } from "@/lib/games/preorder";
 import type { StoreSaving } from "@/lib/games/saving";
 import { parsePlatformValues } from "@/lib/games-query";
 import { expandPlatformValues } from "@/lib/platform";
-import { DiscountBadge } from "@/components/ui/discount";
+import { DiscountBadge, HistoricLowBadge } from "@/components/ui/discount";
 import { Tag } from "@/components/ui/tag";
 import { PlatformBadges } from "@/components/platform-badges";
 import type { Platform } from "@/server/db/schema";
@@ -277,6 +277,7 @@ export function GameCard({
                 {hasDiscount && best.listPrice !== null && (
                   <span className="text-[13px] text-dim-2 line-through sm:text-[12.5px]">{formatPrice(best.listPrice, best.currency)}</span>
                 )}
+                <HistoricLowBadge show={hasDiscount && best.historicLow} size="sm" />
               </>
             )}
             {variant === "release" && releaseLabel && <span className="ml-auto text-[12.5px] text-dim">{releaseLabel}</span>}

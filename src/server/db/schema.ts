@@ -236,6 +236,12 @@ export const gamePlatforms = pgTable("game_platforms", {
   discountStartsAt: timestamp("discount_starts_at", { withTimezone: true }),
   discountEndsAt: timestamp("discount_ends_at", { withTimezone: true }),
   discountName: text("discount_name"),
+  /**
+   * 지금 값이 역대 최저가인가(2026-11-11, lib/games/historic-low 의 규칙). 값이 바뀐 회차에 그 행만 다시 판정해 둔다(sync/historic-low) —
+   * 카드, 목록이 가격 기록을 행마다 다시 뒤지면 화면 질의가 기록 표 크기만큼 무거워진다.
+   * 할인이 끝나 정가로 돌아간 행은 이 값이 남아 있을 수 있어 화면은 할인 중일 때만 믿는다(services 의 mappers)
+   */
+  historicLow: boolean("historic_low"),
   /** 위 가격 두 개의 통화. 비교, 집계는 같은 통화끼리만 한다(services 의 DISPLAY_CURRENCY) */
   currency: currencyEnum("currency").default("KRW").notNull(),
   metacriticScore: integer("metacritic_score"),

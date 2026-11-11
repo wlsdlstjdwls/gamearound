@@ -73,6 +73,7 @@ export function toPlatformDto(p: PlatformRow): PlatformDto {
     discountStartsAt: iso(p.discountStartsAt),
     discountEndsAt: iso(p.discountEndsAt),
     discountName: p.discountName,
+    historicLow: atHistoricLow(p),
     metacriticScore: p.metacriticScore,
     opencriticScore: p.opencriticScore,
     ignScore: p.ignScore,
@@ -151,7 +152,13 @@ function bestOf(gp: PlatformRow): NonNullable<GameSummary["best"]> {
     discountEndsAt: iso(gp.discountEndsAt),
     discountName: gp.discountName,
     releaseDate: gp.releaseDate,
+    historicLow: atHistoricLow(gp),
   };
+}
+
+/** 저장된 역대 최저가 표시를 화면 값으로. 할인이 끝나 정가로 돌아간 행에는 표시가 남아 있을 수 있어 할인 중일 때만 믿는다(schema 주석) */
+function atHistoricLow(p: Pick<PlatformRow, "historicLow" | "discountPct">): boolean {
+  return p.historicLow === true && (p.discountPct ?? 0) > 0;
 }
 
 /**

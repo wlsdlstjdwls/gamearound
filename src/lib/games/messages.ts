@@ -325,6 +325,11 @@ export const GAME_MESSAGES = {
    * 그 전 가격은 알 수 없다. "기록" 은 그 한계를 문구 안에 담는 말이다.
    */
   recordedLowLabel: "기록 최저가",
+  /**
+   * 역대 최저가 배지(카드, 상세 가격 칸). 기록이 60일 넘게 쌓인 상품에만 붙는다(lib/games/historic-low) —
+   * 그 조건이 "역대" 를 말할 근거라 "기록 기준" 같은 단서는 달지 않는다(2026-11-11 사용자 지정)
+   */
+  historicLowLabel: "역대 최저가",
   recordedLowNote: (gap: string, at: string) => `지금보다 ${gap} 쌌어요 | ${at}`,
   patchNone: "아직 모은 패치 기록이 없어요.",
   /** 사양표 아래 한 줄은 없앴다(2026-09-22, 사용자 결정) — 표 자체가 "스토어가 적은 값" 이고,

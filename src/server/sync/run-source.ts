@@ -13,6 +13,7 @@ import { LOCK_TTL_SEC } from "./constants";
 import { createContext, recordError, type Ctx, type RunOptions, type RunResult } from "./context";
 import { dispatchPriceAlerts, type DispatchSummary } from "./dispatch-alerts";
 import { dispatchWishSaleAlerts } from "./dispatch-wish-alerts";
+import { markHistoricLows } from "./historic-low";
 import { refreshListStatsFor } from "./list-stats";
 import { revalidateGameTags } from "./revalidate";
 import { runMeta } from "./run-meta";
@@ -54,6 +55,13 @@ export async function runSource(source: Source, opts: RunOptions = {}): Promise<
     // 5. 알림 (§7) — 실패해도 동기화 결과는 유지
     let alerts: DispatchSummary | undefined;
     if (ctx.priceChanges.length > 0) {
+      // 값이 바뀐 행의 역대 최저가 표시부터 — 알림과 화면이 같은 회차 값을 보게 한다
+      try {
+        const marked = await markHistoricLows(ctx, ctx.priceChanges.map((c) => c.gamePlatformId));
+        if (marked > 0) console.log(`[sync:${source}] 역대 최저가 표시 ${marked}건 바뀜`);
+      } catch (e) {
+        recordError(ctx, "historic-low", e);
+      }
       try {
         alerts = await dispatchPriceAlerts(ctx.priceChanges);
         console.log(`[sync:${source}] 알림: ${JSON.stringify(alerts)}`);

@@ -8,7 +8,8 @@
 // 받는 길은 알림함 + 웹푸시다. 메일은 목표가 알림의 받는 방법(channel)에만 있다 — 찜에는 고를 칸이 없다.
 //
 // 중복: 한 사람, 한 게임에 할인 시작은 7일에 한 번(세일 동안 값이 몇 번 내려도, 여러 스토어가 한꺼번에 내려도 한 통).
-// 기록상 최저가는 그 값마다 한 번 — 세일 중에 더 내려 최저를 새로 찍으면 한 번 더 알 가치가 있다.
+// 역대 최저가는 그 값마다 한 번 — 세일 중에 더 내려 최저를 새로 찍으면 한 번 더 알 가치가 있다.
+// "역대" 는 기록이 60일 넘게 쌓인 상품에만 말한다(lib/games/historic-low). 짧으면 할인 시작으로만 알린다.
 // 밤(한국 22~08시)에는 알림함에만 적고 웹푸시는 아침 8시로 미룬다(held_channel, sync/morning-alerts). 이유는 dispatch-alerts 머리 주석과 같다.
 import { and, eq, inArray, isNull, min, ne, sql } from "drizzle-orm";
 import { getDb } from "@/server/db/client";
@@ -18,6 +19,7 @@ import { DISPLAY_CURRENCY, formatPrice } from "@/lib/currency";
 import { NOTIFICATION_MESSAGES as M } from "@/lib/notifications/messages";
 import { alertPayload, alertPushCode, alertVars } from "@/lib/alerts/payload";
 import { wishSaleReason, type WishSaleReason } from "@/lib/alerts/wish-sale";
+import { longEnoughHistory } from "@/lib/games/historic-low";
 import { gamePath } from "@/lib/routes";
 import { markOnce } from "@/server/redis";
 import type { PriceChange } from "./dispatch-alerts";
@@ -66,11 +68,17 @@ export async function dispatchWishSaleAlerts(changes: PriceChange[], now: Date =
     if (discountPct <= 0) continue;
 
     const [low] = await db
-      .select({ v: min(priceSnapshots.price) })
+      .select({ v: min(priceSnapshots.price), first: min(priceSnapshots.capturedAt) })
       .from(priceSnapshots)
       // 0 은 값을 못 읽은 회차다(ps-zero-price-snapshots) — 최저가로 세면 어떤 값도 기록을 못 깬다
       .where(and(eq(priceSnapshots.gamePlatformId, gp.id), ne(priceSnapshots.id, change.snapshotId), sql`${priceSnapshots.price} > 0`));
-    const reason = wishSaleReason({ previousPrice: change.previousPrice, newPrice: change.newPrice, discountPct, priorLowest: low?.v ?? null });
+    const reason = wishSaleReason({
+      previousPrice: change.previousPrice,
+      newPrice: change.newPrice,
+      discountPct,
+      priorLowest: low?.v ?? null,
+      longHistory: longEnoughHistory(low?.first ?? null, now),
+    });
     if (!reason) continue;
     summary.candidates++;
 
