@@ -97,7 +97,13 @@ export function DiscountForecast({
         </div>
         {action && <div className="flex w-full sm:w-auto lg:w-full [&>*]:flex-1">{action}</div>}
       </section>
-      <p className="text-[12px] leading-[1.6] text-dim">{D.forecastDisclaimer}</p>
+      <p className="text-[12px] leading-[1.6] text-dim">
+        {D.forecastDisclaimer.map((line, i) => (
+          <span key={i} className="block">
+            {line}
+          </span>
+        ))}
+      </p>
     </div>
   );
 }
