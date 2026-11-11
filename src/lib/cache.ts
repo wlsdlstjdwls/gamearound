@@ -117,7 +117,8 @@
 // v34(2026-11-10): PlatformDto 에 metacriticUser(메타크리틱 유저 점수)
 // v35(2026-11-11): PlatformDto, GameSummary.best 에 historicLow(역대 최저가)
 // v36(2026-11-11): PS 목록이 잘못 단 디럭스 포함 212건을 지웠다 — 옛 캐시 상세에 남은 "디럭스 포함" 을 비운다
-export const DTO_CACHE_VERSION = "v36";
+// v37(2026-11-11): 상세의 추가 콘텐츠, 에디션 칸에서 값 없는 자식(psprices 병합분)을 뺐다 — 옛 캐시엔 이름표만 남는다
+export const DTO_CACHE_VERSION = "v37";
 
 /** 목록, 검색, 홈처럼 태그 무효화로 갱신되는 화면의 기본 재검증 주기(초) */
 export const LIST_REVALIDATE_SECONDS = 3600;

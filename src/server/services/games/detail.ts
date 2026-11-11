@@ -69,6 +69,10 @@ function toChildDtos(
       const platforms = keepVisiblePlatforms([...d.platforms]).sort(byRegionThenPlatform).map(toPlatformDto);
       return { slug: d.slug, title: d.titleKo ?? d.titleEn, platforms };
     })
+    // 보이는 값이 하나도 없는 자식은 세우지 않는다(2026-11-11). 2026-09-15 psprices 병합 자식 12,358건이 링크 없는 행만 가져
+    // 값 없는 이름표로 섰고, 그중 2,653건은 같은 본편 아래 같은 제목의 공식 자식이 따로 있는 중복이었다. 살 곳이 없는 줄이
+    // 30줄 몫을 먹어 값 있는 DLC 를 밀어내기도 했다. 지우지 않는다 — 매칭이 공식 ID 를 붙이면 링크가 생기고 스스로 돌아온다
+    .filter((d) => d.platforms.length > 0)
     // 정렬 열쇠(값)를 한 번만 구해 두고 비교자에 넘긴다 — 비교자 안에서 최저가를 다시 세면
     // 300건 정렬에 cheapestOf 가 수천 번 돈다
     .map((d) => ({ row: d, price: cheapestOf(d.platforms)?.currentPrice ?? null }))
