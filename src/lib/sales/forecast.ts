@@ -59,8 +59,14 @@ export type Forecast = {
   running: { name: string | null; pct: number; daysLeft: number | null } | null;
   /** 다음 할인까지. basis 가 cycle 이면 name 이 없고 cycleDays 가 붙는다 */
   next: { name: string | null; daysUntil: number; basis: "confirmed" | "estimated" | "cycle"; cycleDays: number | null } | null;
-  /** 예상 가격과 그 폭. recorded-low 는 at(본 날), best-rate 는 pct(할인율)가 붙는다 */
-  expected: { price: number; low: number; high: number; basis: "recorded-low"; at: string } | { price: number; low: number; high: number; basis: "best-rate"; pct: number } | null;
+  /**
+   * 예상 가격과 그 폭. recorded-low 는 at(본 날), best-rate 는 pct(할인율)가 붙는다.
+   * cap 은 기다리지 않고 살 수 있는 값(진행 중 할인이 있으면 그 할인이 끝난 뒤의 값) — 화면이 "지금 대 기다리면" 을 견준다
+   */
+  expected:
+    | { price: number; low: number; high: number; cap: number; basis: "recorded-low"; at: string }
+    | { price: number; low: number; high: number; cap: number; basis: "best-rate"; pct: number }
+    | null;
 };
 
 /** 스냅샷 몇 점을 한 플랫폼의 할인 기록 요약으로 접는다. 순서가 섞여 와도 된다 */
@@ -149,7 +155,7 @@ export function forecastDiscount(input: { rows: ForecastRow[]; history: Platform
   ].sort((a, b) => a.price - b.price)[0];
   let expected: Forecast["expected"] = null;
   if (seen && seen.price < cap) {
-    expected = { price: seen.price, ...forecastPriceRange(seen.price, cap), basis: "recorded-low", at: seen.at };
+    expected = { price: seen.price, ...forecastPriceRange(seen.price, cap), cap, basis: "recorded-low", at: seen.at };
   } else {
     // 같은 스토어 안에서만 할인율을 곱한다 — 다른 스토어의 할인율은 이 정가에 대해 아무것도 말하지 않는다
     const byRate = priced
@@ -159,7 +165,7 @@ export function forecastDiscount(input: { rows: ForecastRow[]; history: Platform
       })
       .filter((c): c is NonNullable<typeof c> => c !== null && c.price < cap)
       .sort((a, b) => a.price - b.price)[0];
-    if (byRate) expected = { price: byRate.price, ...forecastPriceRange(byRate.price, cap), basis: "best-rate", pct: byRate.pct };
+    if (byRate) expected = { price: byRate.price, ...forecastPriceRange(byRate.price, cap), cap, basis: "best-rate", pct: byRate.pct };
   }
 
   if (!running && !next && !expected) return null;

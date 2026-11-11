@@ -36,19 +36,29 @@ export const DETAIL_MESSAGES = {
   forecastTitle: "할인 예측",
   /** 고른 플랫폼 카드의 이름(game-detail/platform-pick). 예측이 그 플랫폼 값만 본다는 말 */
   forecastBasisPlatform: (name: string) => `${name} 기준`,
-  /** 진행 중 할인을 먼저 말한다(2026-10-26). 행사명은 스토어가 줄 때만, 남은 날은 끝나는 날을 알 때만 */
-  forecastRunning: (name: string | null, pct: number) => `지금 ${name ?? "할인"} 중이에요(-${pct}%).`,
-  forecastRunningLeft: (n: number) => ({ before: " 끝나기까지 ", days: `${n}일`, after: " 남았어요." }),
-  forecastDays: (name: string | null, n: number) => ({ before: name ? `다음 할인(${name})까지 약 ` : "다음 할인까지 약 ", days: `${n}일`, after: " 남았어요." }),
   forecastNoDate: "다음 할인 시기를 짐작할 기록이 아직 없어요.",
-  forecastCycle: (days: number) => `이 게임의 지난 할인 간격(약 ${days}일)으로 추정했어요.`,
-  forecastBasisRate: (pct: number) => `이 스토어에서 받은 가장 큰 할인율(-${pct}%)을 정가에 맞춰 셈했어요.`,
   forecastExpected: "예상 가격",
-  forecastRangeNote: (pct: number) => `(±${pct}% 범위)`,
   forecastNoRecord: "할인 기록이 쌓이면 예상 가격을 알려 드려요.",
-  forecastConfirmed: "공지된 일정이에요.",
-  forecastEstimated: "예년 일정으로 추정했어요.",
   forecastAlert: "알림 설정하기",
+  /** 예측 판의 "언제" 칸(2026-11-11 사용자 "그림이나 UI 로 가시성 높게"). 큰 D-숫자 위의 머리말 */
+  forecastWhenHead: (name: string | null) => (name ? `${name}까지` : "다음 할인까지"),
+  forecastDday: (n: number) => `D-${n}`,
+  /** 낭독기는 "D-37" 을 "디 빼기 삼십칠" 로 읽는다 — 말로 바꿔 준다 */
+  forecastDdaySr: (n: number) => `${n}일 남았어요`,
+  /** 근거 딱지. 예전 문장 꼴("공지된 일정이에요.")을 딱지 크기로 줄였다 */
+  forecastBasisTag: { confirmed: "공지된 일정", estimated: "예년 일정 추정" } as const,
+  forecastCycleTag: (days: number) => `지난 주기 약 ${days}일`,
+  /** 진행 중 할인 띠 */
+  forecastRunningNow: (name: string | null) => `지금 ${name ?? "할인"} 중`,
+  forecastRunningLeftShort: (n: number) => `${n}일 뒤 끝나요`,
+  /** 값 견주기 막대 두 줄(2026-11-11 사용자 "막대가 뭘 나타내는지 모르겠다" — 표식 하나 대신 지금 대 그때를 나란히) */
+  forecastNowLabel: "지금 가격",
+  /** 진행 중 할인이 있으면 견줄 값은 지금 값이 아니라 그 할인이 끝난 뒤의 값이다 */
+  forecastAfterRunLabel: "할인 끝나면",
+  forecastSaleLabel: (name: string | null) => (name ? `${name} 예상` : "다음 할인 예상"),
+  forecastSave: (amount: string) => ({ before: "기다리면 약 ", amount, after: " 아껴요" }),
+  forecastBasisLow: (date: string) => `${date}에 본 기록 최저가로 셈했어요.`,
+  forecastBasisRate: (pct: number) => `이 스토어의 가장 큰 할인율(-${pct}%)로 셈했어요.`,
   /** 히어로의 게시판 링크(game-detail/posts-link) */
   postsLink: (n: number) => `이 게임 리뷰와 공략 ${n.toLocaleString("ko-KR")}개 보기`,
   postsFirst: "이 게임 첫 리뷰 쓰기",
