@@ -10,7 +10,6 @@ import { toPositiveNumber } from "@/lib/price-per-hour";
 import { cn } from "@/lib/cn";
 import { EmptyLine } from "@/components/game-detail/empty-line";
 import { ClockIcon } from "@/components/ui/icons";
-import { SECTION_SIZE } from "@/components/ui/page";
 import { InfoTip } from "@/components/ui/tooltip";
 import { scoreLines, type GameDetail, type PlaytimeDto } from "@/server/services/games";
 
@@ -23,7 +22,8 @@ export function CriticScores({ game, unreleased }: { game: GameDetail; unrelease
   );
   return (
     <section aria-labelledby="scores-heading" className="flex flex-col gap-2.5">
-      <h2 id="scores-heading" className={SECTION_SIZE.label}>
+      {/* 보이는 이름표 "평점" 은 걷었다(2026-11-11 사용자 "문구 없애도 될 듯") — 칸마다 매체 이름이 서서 무엇인지 말한다. 낭독기에는 묶음 이름을 남긴다 */}
+      <h2 id="scores-heading" className="sr-only">
         {D.scoresLabel}
       </h2>
       {lines.length === 0 ? (
