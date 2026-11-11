@@ -16,7 +16,8 @@ import { sleep } from "@/lib/async";
 import { errorMessage } from "@/lib/errors";
 import { DEFAULT_FETCH_BATCH_SIZE, MATCHED_FOR_SYNC, PRICE_SWEEP_MAX_MS, SOURCE_PLATFORMS, SOURCE_REGION } from "./constants";
 import { missingRefExcluded } from "./missing-refs";
-import type { Ctx } from "./context";
+import { recordError, type Ctx } from "./context";
+import { syncListSubscriptions } from "./list-subscriptions";
 
 export type SweepRow = {
   gameId: string;
@@ -230,6 +231,8 @@ async function sweepByList(source: StoreSource, adapter: StoreAdapter & { listPr
     primary.set(r.externalId, r);
   }
   const found: Found[] = [];
+  /** 목록에서 본 우리 상품 → 구독 키(목록이 구독 표기를 싣는 소스만, sync/list-subscriptions) */
+  const subs = new Map<string, string[]>();
   let seen = 0;
   let failed = 0;
   try {
@@ -238,6 +241,7 @@ async function sweepByList(source: StoreSource, adapter: StoreAdapter & { listPr
         const base = primary.get(q.storeExternalId);
         if (!base) continue;
         seen++;
+        if (q.subscriptionKeys) subs.set(q.storeExternalId, q.subscriptionKeys);
         const move = listMove(base, q);
         if (move) found.push({ base, move, quote: q });
       }
@@ -248,7 +252,7 @@ async function sweepByList(source: StoreSource, adapter: StoreAdapter & { listPr
     failed++;
     console.warn(`[sync:${source}] 가격 훑기 목록 실패, 여기까지 본 것만 쓴다: ${errorMessage(e)}`);
   }
-  return { found, seen, total: primary.size, failed };
+  return { found, seen, total: primary.size, failed, subs };
 }
 
 /**
@@ -263,6 +267,14 @@ export async function sweepPriceMoves(ctx: Ctx, source: StoreSource, adapter: St
   const r = listPrices
     ? await sweepByList(source, { ...adapter, listPrices }, rows, startedAt)
     : await sweepByBatch(source, { ...adapter, fetchMany: fetchMany! }, rows, startedAt);
+  // 목록이 구독 표기도 실었으면 같이 맞춘다. 구독은 부가 정보라 실패해도 가격 훑기는 계속 간다
+  if ("subs" in r && r.subs instanceof Map && adapter.listSubscriptionScope) {
+    try {
+      await syncListSubscriptions(ctx, source, adapter.listSubscriptionScope, r.subs as Map<string, string[]>);
+    } catch (e) {
+      recordError(ctx, `${source}:list-subscriptions`, e);
+    }
+  }
   const moves = await hydrateMoves(ctx, source, r.found);
   const started = moves.filter((m) => m.move === "sale-started").length;
   console.log(

@@ -179,3 +179,20 @@ export const PSSTORE_INCLUSION_CTA: Record<string, string> = {
   UPSELL_EA_ACCESS_FREE: "ea_play_ps",
   UPSELL_UBISOFT_PLUS_FREE: "ubisoft_plus_ps",
 };
+
+/**
+ * 전체 게임 목록 칸의 구독 표기(`구독 브랜드:표기 문구`) → 구독 키. 상세의 버튼(위 PSSTORE_INCLUSION_CTA)과 같은 뜻을 목록에서 읽는다.
+ * 2026-11-10 실측(목록 전체 약 7,800 콘셉트): PS_PLUS "스페셜" 307, "프리미엄" 343, "에센셜" 4, EA_ACCESS "포함" 46.
+ * 같은 자리에 "10% 추가 할인", "게임 체험판" 도 온다 — 포함이 아니라 화이트리스트로만 읽는다.
+ * "프리미엄" 은 상세 문구 "디럭스"(TIER_30)의 지금 이름이다. 둘 다 받는다.
+ * "에센셜"(월간 게임)은 받아야 하는 무료 게임이라 포함 축에 넣지 않는다. Ubisoft+ 는 목록에 실리지 않는다 —
+ * 그래서 목록 경로는 아래 PSSTORE_LIST_SUBSCRIPTION_SCOPE 만 손대고 Ubisoft+ 는 상세 경로에 맡긴다
+ */
+export const PSSTORE_LIST_INCLUSION: Record<string, string> = {
+  "PS_PLUS:스페셜": "psplus_special",
+  "PS_PLUS:프리미엄": "psplus_deluxe",
+  "PS_PLUS:디럭스": "psplus_deluxe",
+  "EA_ACCESS:포함": "ea_play_ps",
+};
+/** 목록이 포함, 이탈을 말할 수 있는 구독. 이 밖의 구독은 목록 경로가 내리지 않는다(subscription-writer 의 scopeKeys) */
+export const PSSTORE_LIST_SUBSCRIPTION_SCOPE = ["psplus_special", "psplus_deluxe", "ea_play_ps"] as const;

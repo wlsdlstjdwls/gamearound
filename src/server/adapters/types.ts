@@ -11,7 +11,10 @@ export type Source = "steam" | "psstore" | "xbox" | "nintendo" | "nintendo_jp" |
  * 목록이 준 한 상품의 지금 가격(StoreAdapter.listPrices). 스냅샷에서 가격과 할인 칸만 떼어 온 꼴이다 —
  * 반영은 이 값에 DB 행의 기기, 주소를 얹어 가격만 든 스냅샷으로 만든다(sync/price-sweep).
  */
-export type PriceQuote = Pick<StoreSnapshot, "storeExternalId" | "listPrice" | "currentPrice" | "discountPct" | "discountStartsAt" | "discountEndsAt" | "discountName">;
+export type PriceQuote = Pick<StoreSnapshot, "storeExternalId" | "listPrice" | "currentPrice" | "discountPct" | "discountStartsAt" | "discountEndsAt" | "discountName"> & {
+  /** 이 상품이 든 구독 키(subscriptions.key). 목록이 구독 표기를 싣는 소스(PS)만 채운다. 빈 배열은 "어느 구독에도 안 들었다" 다 */
+  subscriptionKeys?: string[];
+};
 
 export interface StoreSnapshot {
   platform: Platform;
@@ -317,6 +320,11 @@ export interface SourceAdapter<T extends StoreSnapshot | MetaSnapshot | NewsItem
    * 목록이 기본판이 아닌 에디션 가격을 주는 경우가 있어 훑기는 정가가 DB 와 같은 행만 믿는다(price-sweep 의 listMove).
    */
   listPrices?(): AsyncGenerator<PriceQuote[]>;
+  /**
+   * listPrices 가 포함, 이탈을 말할 수 있는 구독 키. 있으면 훑기가 목록에서 본 상품의 이 구독들을 함께 맞춘다(sync/list-subscriptions).
+   * 목록에 안 실리는 구독(PS 의 Ubisoft+)은 넣지 않는다 — 넣으면 목록이 돌 때마다 그 포함이 빠진다
+   */
+  listSubscriptionScope?: readonly string[];
   /** 소스별 요청 간격(ms). 크롤 대상은 보수적으로 */
   minIntervalMs: number;
 }

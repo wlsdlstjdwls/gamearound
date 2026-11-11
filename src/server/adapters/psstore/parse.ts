@@ -9,6 +9,7 @@ import {
   PSSTORE_COVER_ROLES,
   PSSTORE_COVER_WIDTH,
   PSSTORE_INCLUSION_CTA,
+  PSSTORE_LIST_INCLUSION,
   PSSTORE_PORTRAIT_ROLE,
   PSSTORE_PRODUCT_URL,
   PSSTORE_PORTRAIT_WIDTH,
@@ -127,6 +128,9 @@ const gridPriceSchema = z.object({
   discountedPrice: z.string().nullish(),
   isFree: z.boolean().nullish(),
   isTiedToSubscription: z.boolean().nullish(),
+  /** 구독 표기. ["PS_PLUS"] + "스페셜" 이면 PS Plus 스페셜 카탈로그 포함이다(PSSTORE_LIST_INCLUSION 주석) */
+  upsellServiceBranding: z.array(z.string()).nullish(),
+  upsellText: z.string().nullish(),
 });
 const gridPricesSchema = z.object({
   data: z.object({
@@ -142,9 +146,22 @@ export function psstoreWonText(text: string | null | undefined): number | null {
   return digits ? Number(digits) : null;
 }
 
+/** 목록 칸의 구독 표기 → 구독 키. 표기가 없거나 포함이 아닌 것(추가 할인, 체험판)은 빈 배열 */
+export function psstoreListSubscriptionKeys(p: { upsellServiceBranding?: string[] | null; upsellText?: string | null } | null | undefined): string[] {
+  const text = p?.upsellText?.trim();
+  if (!text) return [];
+  const keys = new Set<string>();
+  for (const branding of p?.upsellServiceBranding ?? []) {
+    const key = PSSTORE_LIST_INCLUSION[`${branding}:${text}`];
+    if (key) keys.add(key);
+  }
+  return [...keys];
+}
+
 /**
- * 목록 응답 → 콘셉트별 지금 가격(가격 변동 훑기용, adapters/types 의 listPrices).
- * 값을 못 읽는 칸은 빼고 돌려준다 — "모른다" 를 0원이나 할인 끝으로 읽으면 훑기가 멀쩡한 행을 바꾼다.
+ * 목록 응답 → 콘셉트별 지금 가격과 구독 포함(가격 변동 훑기용, adapters/types 의 listPrices).
+ * 값을 못 읽는 칸은 가격을 null 로 둔다 — "모른다" 를 0원이나 할인 끝으로 읽으면 훑기가 멀쩡한 행을 바꾼다(훑기는 null 을 변동으로 안 친다).
+ * 그래도 칸은 돌려준다. 구독 표기는 가격과 따로 읽혀서, 이 칸이 "어느 구독에도 안 든다" 고 말하는 근거가 된다.
  * 할인 종료 시각은 목록에 없다. 그 값은 상세 갱신이 채운다
  */
 export function parsePsstoreGridPrices(raw: unknown): PriceQuote[] {
@@ -153,12 +170,16 @@ export function parsePsstoreGridPrices(raw: unknown): PriceQuote[] {
   const out: PriceQuote[] = [];
   for (const c of parsed.data!.data.categoryGridRetrieve.concepts ?? []) {
     const p = c.price;
-    if (!p || p.isFree || p.isTiedToSubscription) continue;
-    const listPrice = psstoreWonText(p.basePrice);
-    const currentPrice = psstoreWonText(p.discountedPrice) ?? listPrice;
-    if (listPrice === null || currentPrice === null) continue;
+    const subscriptionKeys = psstoreListSubscriptionKeys(p);
+    const readable = p && !p.isFree && !p.isTiedToSubscription;
+    const listPrice = readable ? psstoreWonText(p.basePrice) : null;
+    const currentPrice = readable ? (psstoreWonText(p.discountedPrice) ?? listPrice) : null;
+    if (listPrice === null || currentPrice === null) {
+      out.push({ storeExternalId: c.id, listPrice: null, currentPrice: null, discountPct: null, subscriptionKeys });
+      continue;
+    }
     const discountPct = listPrice > 0 && currentPrice < listPrice ? Math.round(((listPrice - currentPrice) / listPrice) * 100) : 0;
-    out.push({ storeExternalId: c.id, listPrice, currentPrice, discountPct });
+    out.push({ storeExternalId: c.id, listPrice, currentPrice, discountPct, subscriptionKeys });
   }
   return out;
 }

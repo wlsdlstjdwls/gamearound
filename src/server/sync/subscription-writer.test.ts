@@ -43,6 +43,13 @@ describe("planSubscriptionChanges", () => {
     expect(plan.changedSlugs).toEqual(["cyberpunk"]);
   });
 
+  it("범위(scopeKeys)를 주면 그 밖의 구독은 내리지 않는다 — PS 목록은 Ubisoft+ 를 안 싣는다", () => {
+    const ids = new Map([...IDS, ["ubisoft_plus_ps", 12]]);
+    const current = [row({ id: 3, subscriptionId: 10 }), row({ id: 4, subscriptionId: 12 })];
+    const plan = planSubscriptionChanges([{ gamePlatformId: "gp1", slug: "ac", keys: [] }], ids, current, ["psplus_special", "psplus_deluxe"]);
+    expect(plan.gone).toEqual([3]);
+  });
+
   it("이번 배치에 없는 게임의 기록은 건드리지 않는다 — 여기가 카탈로그 경로와 갈리는 지점이다", () => {
     const plan = planSubscriptionChanges(
       [{ gamePlatformId: "gp1", slug: "cyberpunk", keys: [] }],

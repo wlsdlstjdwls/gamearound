@@ -19,6 +19,7 @@ import {
   PSSTORE_HEADERS,
   PSSTORE_LANGUAGE,
   PSSTORE_PAGE_SIZE,
+  PSSTORE_LIST_SUBSCRIPTION_SCOPE,
   PSSTORE_PRICE_LIST_INTERVAL_MS,
   PSSTORE_PRICE_LIST_PARALLEL,
   PSSTORE_PRODUCT_ID,
@@ -182,6 +183,8 @@ export const psstoreAdapter: StoreAdapter = {
    * 목록은 한 쪽에 24개 값이 같이 와서 한 바퀴가 2분 안쪽이다. 몇 쪽씩 동시에 읽는다(PSSTORE_PRICE_LIST_PARALLEL 주석).
    * 판매순 목록이라 읽는 사이 순서가 조금 움직여 몇 개가 빠지거나 겹칠 수 있다 — 빠진 것은 다음 회차가 본다
    */
+  // 같은 목록이 PS Plus, EA Play 포함 표기도 싣는다(2026-11-10 실측) — 상세 갱신(한 바퀴 2주)을 기다리지 않고 회차마다 맞춘다
+  listSubscriptionScope: PSSTORE_LIST_SUBSCRIPTION_SCOPE,
   async *listPrices(): AsyncGenerator<PriceQuote[]> {
     for (let page = 0; page < PSSTORE_DISCOVERY_MAX_PAGES; page += PSSTORE_PRICE_LIST_PARALLEL) {
       const pages = Array.from({ length: PSSTORE_PRICE_LIST_PARALLEL }, (_, i) => page + i);

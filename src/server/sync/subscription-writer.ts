@@ -51,7 +51,14 @@ export function planSubscriptionChanges(
   targets: SubscriptionTarget[],
   idByKey: Map<string, number>,
   current: SubscriptionRow[],
+  /**
+   * 이 응답이 말할 수 있는 구독 키. 주면 그 밖의 구독은 이탈로 내리지 않는다.
+   * PS 전체 게임 목록(sync/list-subscriptions)은 PS Plus, EA Play 는 알려 주지만 Ubisoft+ 는 안 싣는다 —
+   * 범위 없이 쓰면 목록이 돌 때마다 Ubisoft+ 포함이 전부 빠진다. 비우면 예전처럼 응답이 그 게임의 전부다(콘셉트 상세)
+   */
+  scopeKeys?: readonly string[],
 ): SubscriptionPlan {
+  const scope = scopeKeys ? new Set(scopeKeys.map((k) => idByKey.get(k)).filter((id): id is number => id !== undefined)) : null;
   const wanted = new Map<string, Set<number>>(); // gamePlatformId → 구독 id 집합
   const slugOf = new Map<string, string>();
   const unknown = new Set<string>();
@@ -87,6 +94,7 @@ export function planSubscriptionChanges(
   for (const c of current) {
     const ids = wanted.get(c.gamePlatformId);
     if (!ids || c.removedAt !== null || ids.has(c.subscriptionId)) continue;
+    if (scope && !scope.has(c.subscriptionId)) continue;
     plan.gone.push(c.id);
     changed.add(slugOf.get(c.gamePlatformId)!);
   }
@@ -102,7 +110,7 @@ async function loadSubscriptionIds(db: Db): Promise<Map<string, number>> {
 }
 
 /** 계획을 세우고 그대로 쓴다 */
-export async function applySnapshotSubscriptions(ctx: Ctx, targets: SubscriptionTarget[]): Promise<void> {
+export async function applySnapshotSubscriptions(ctx: Ctx, targets: SubscriptionTarget[], scopeKeys?: readonly string[]): Promise<void> {
   if (targets.length === 0) return;
   const { db } = ctx;
 
@@ -117,7 +125,7 @@ export async function applySnapshotSubscriptions(ctx: Ctx, targets: Subscription
     .from(gameSubscriptions)
     .where(inArray(gameSubscriptions.gamePlatformId, targets.map((t) => t.gamePlatformId)));
 
-  const plan = planSubscriptionChanges(targets, idByKey, current);
+  const plan = planSubscriptionChanges(targets, idByKey, current, scopeKeys);
   // 시드에 없는 구독이 응답에 새로 생긴 경우다. 조용히 버리되 사유는 남긴다 — 시드 한 줄이면 켜진다
   if (plan.unknownKeys.length > 0) {
     console.warn(`[sync:${ctx.source}] 모르는 구독 키 ${plan.unknownKeys.join(", ")} — 시드(DEFAULT_SUBSCRIPTIONS)에 없어 건너뜀`);
@@ -141,9 +149,9 @@ export async function applySnapshotSubscriptions(ctx: Ctx, targets: Subscription
 }
 
 /** 반영 중 실패해도 가격 수집 결과는 유지한다 — 구독은 부가 정보다 */
-export async function syncSnapshotSubscriptions(ctx: Ctx, targets: SubscriptionTarget[]): Promise<void> {
+export async function syncSnapshotSubscriptions(ctx: Ctx, targets: SubscriptionTarget[], scopeKeys?: readonly string[]): Promise<void> {
   try {
-    await applySnapshotSubscriptions(ctx, targets);
+    await applySnapshotSubscriptions(ctx, targets, scopeKeys);
   } catch (e) {
     recordError(ctx, `${ctx.source}:subscription`, e);
   }
