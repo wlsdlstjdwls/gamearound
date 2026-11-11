@@ -12,7 +12,7 @@ import { kstDateKey } from "@/lib/format";
 import type { Platform } from "@/server/db/schema";
 import type { DlcDto } from "@/server/services/games";
 import { PlatformAddons } from "@/components/platform-addons";
-import { BEST_MIN_PRICED, brandAnchorId, brandNameOf, byPrice, isUpcomingRow, orderCards, releaseText, rowKey, type PlatformPriceItem } from "@/components/platform-prices/order";
+import { BEST_MIN_PRICED, brandAnchorId, brandNameOf, byPrice, isUpcomingRow, orderCards, pcMergeable, releaseText, rowKey, type PlatformPriceItem } from "@/components/platform-prices/order";
 import { AbsentTile, PriceTile, UpcomingTile } from "@/components/platform-prices/tile";
 import { PcTile } from "@/components/platform-prices/pc-tile";
 import { familyOf } from "@/lib/platform";
@@ -67,7 +67,7 @@ export function PlatformPrices({
   };
   // PC 스토어 값 카드가 둘 이상이면 PC 카드 하나로 합친다(pc-tile 머리 주석). 한쪽이 출시 전이면 합치지 않는다
   const pcRows = cards.flatMap((c) => (c.kind === "row" && familyOf(c.row.platform) === "pc" ? [c.row] : []));
-  const mergePc = pcRows.length >= 2 && pcRows.every((p) => !upcoming(p));
+  const mergePc = pcMergeable(pcRows, upcoming);
 
   return (
     <ul className={GRID}>

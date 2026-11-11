@@ -6,7 +6,7 @@
 // 나눠 쓸 값이 없는 전용 화면(/prices)은 제 상태로 기기 하나씩 고른다(예전 그대로).
 import { useMemo, useState } from "react";
 import { usePlatformPick } from "@/components/game-detail/platform-pick";
-import { brandKeyOf } from "@/lib/platform";
+import { brandKeyOf, pickMatches } from "@/lib/platform";
 import type { Platform } from "@/server/db/schema";
 import type { PriceSeries } from "@/server/services/prices";
 
@@ -19,14 +19,15 @@ export function usePlatformFilter(drawn: PriceSeries[]) {
   const shared = usePlatformPick();
   // 고른 플랫폼이 사라졌으면(게임이 바뀌거나 계열이 줄면) 조용히 전체로 돌아간다. 나눠 쓰는 값도 이 그래프에 없는 묶음이면 전체다
   const picked = pick !== ALL_PLATFORMS && drawn.some((s) => s.platform === pick) ? pick : ALL_PLATFORMS;
-  const sharedBrand = shared?.brand && drawn.some((s) => brandKeyOf(s.platform) === shared.brand) ? shared.brand : null;
+  const sharedBrand = shared?.brand && drawn.some((s) => pickMatches(shared.brand!, s.platform)) ? shared.brand : null;
 
   const shown = useMemo(() => {
-    if (shared) return sharedBrand === null ? drawn : drawn.filter((s) => brandKeyOf(s.platform) === sharedBrand);
+    if (shared) return sharedBrand === null ? drawn : drawn.filter((s) => pickMatches(sharedBrand, s.platform));
     return picked === ALL_PLATFORMS ? drawn : drawn.filter((s) => s.platform === picked);
   }, [drawn, picked, shared, sharedBrand]);
 
-  const isOn = (p: PlatformChoice): boolean => (shared ? (p === ALL_PLATFORMS ? sharedBrand === null : brandKeyOf(p) === sharedBrand) : picked === p);
+  // PC 카드를 고른 동안에는 Steam, Epic 칩이 함께 켜진다(PC_PICK_KEY)
+  const isOn = (p: PlatformChoice): boolean => (shared ? (p === ALL_PLATFORMS ? sharedBrand === null : sharedBrand !== null && pickMatches(sharedBrand, p)) : picked === p);
   const choose = (p: PlatformChoice) => (shared ? shared.setBrand(p === ALL_PLATFORMS ? null : brandKeyOf(p)) : setPick(p));
   return { shown, isOn, choose };
 }

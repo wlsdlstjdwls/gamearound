@@ -11,8 +11,8 @@ import { DbUnavailablePage } from "@/components/db-unavailable";
 import { DlcSection } from "@/components/dlc-list";
 import { ForecastByPlatform } from "@/components/game-detail/forecast-by-platform";
 import { PlatformPickProvider } from "@/components/game-detail/platform-pick";
-import { brandNameOf, initialPickBrand } from "@/components/platform-prices/order";
-import { brandKeyOf } from "@/lib/platform";
+import { brandNameOf, initialPickBrand, isUpcomingRow, pcMergeable } from "@/components/platform-prices/order";
+import { brandKeyOf, familyOf, PC_PICK_KEY, PLATFORM_FAMILY_LABEL } from "@/lib/platform";
 import { GameHeadbar } from "@/components/game-headbar";
 import { GameViewBeacon } from "@/components/game-view-beacon";
 import { IndieGameSection, IndieSuggestSection } from "@/components/indie/game-section";
@@ -112,11 +112,21 @@ export default async function GameDetailPage({ params }: Props) {
       }),
     ]),
   );
-  const brandLabels = Object.fromEntries(game.platforms.map((p) => [brandKeyOf(p.platform), brandNameOf(p)]));
+  // PC 카드(Steam, Epic 합친 카드)를 고르면 두 스토어 기록을 함께 본 예측이다(order 의 pcMergeable, lib/platform 의 PC_PICK_KEY)
+  const today = kstDateKey(now);
+  const pcMerged = pcMergeable(platforms, (p) => upcoming || isUpcomingRow(p, game.releaseDate, today));
+  if (pcMerged) {
+    forecastByBrand[PC_PICK_KEY] = forecastDiscount({
+      rows: forecastRows.filter((p) => familyOf(p.platform) === "pc"),
+      history: discountHistory.filter((h) => familyOf(h.platform) === "pc"),
+      now,
+    });
+  }
+  const brandLabels = { ...Object.fromEntries(game.platforms.map((p) => [brandKeyOf(p.platform), brandNameOf(p)])), [PC_PICK_KEY]: PLATFORM_FAMILY_LABEL.pc };
   // 처음 고른 카드 = 줄의 맨 앞에 선, 파는 플랫폼 카드(2026-10-27 사용자: "처음 들어왔을 때 가장 맨 앞 서비스 중인 플랫폼이 선택되고").
   // 최저가 카드로 열면 고리가 줄 가운데에서 켜져 "왜 이게 골라져 있지" 로 읽혔다. 그 뒤는 사람이 고를 때마다 바뀐다.
   // 값 없는 카드는 건너뛴다(order 의 initialPickBrand)
-  const initialBrand = initialPickBrand(platforms);
+  const initialBrand = initialPickBrand(platforms, pcMerged);
   // 검색 결과의 가격 줄(구조화 데이터). 화면에 보이는 값과 같은 행(숨김, 링크 없는 행을 거른 game.platforms)만 싣는다
   const jsonLd = buildGameJsonLd({
     url: `${siteOrigin() ?? ""}${gamePath(game.slug)}`,

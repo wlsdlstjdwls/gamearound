@@ -27,9 +27,17 @@ export function usePlatformPick(): PlatformPick | null {
  * 고를 수 있는 플랫폼 카드(li). 카드 어디를 눌러도 고른다 — 단 안의 링크, 단추(구매하기, 추가 콘텐츠)는 제 일을 한다.
  * 키보드와 낭독기는 카드 안 감춘 단추로 고른다(카드 통째를 단추로 만들면 안의 단추가 단추 속 단추가 된다).
  */
-export function PickableTile({ brand, label, id, className, children }: { brand: string; label: string; id?: string; className?: string; children: React.ReactNode }) {
+export function PickableTile({ brand, also = [], label, id, className, children }: {
+  brand: string;
+  /** 이 값들을 골라도 이 카드가 켜진다 — PC 카드는 그래프 칩에서 Steam 이나 Epic 하나만 골라도 고리를 켠다 */
+  also?: string[];
+  label: string;
+  id?: string;
+  className?: string;
+  children: React.ReactNode;
+}) {
   const pick = usePlatformPick();
-  const on = pick?.brand === brand;
+  const on = pick?.brand != null && (pick.brand === brand || also.includes(pick.brand));
   return (
     <li
       id={id}

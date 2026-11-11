@@ -2,7 +2,7 @@
 // 카드 모양(tile.tsx)과 떼어 둔 이유: 상세 히어로의 "지원 플랫폼" 줄도 같은 이름과 같은 묶음 규칙을 써야
 // 이름을 눌러 내려간 카드가 그 이름 그대로 서 있다.
 import { formatDate, PLATFORM_LABEL, platformLabel, REGION_SUFFIX } from "@/lib/format";
-import { brandKeyOf, brandOf, familyOf, PLATFORM_BRANDS, PLATFORM_FAMILIES, PLATFORM_FAMILY_LABEL, PLATFORM_ORDER, type PlatformFamily } from "@/lib/platform";
+import { brandKeyOf, brandOf, familyOf, PC_PICK_KEY, PLATFORM_BRANDS, PLATFORM_FAMILIES, PLATFORM_FAMILY_LABEL, PLATFORM_ORDER, type PlatformFamily } from "@/lib/platform";
 import type { Freshness } from "@/lib/freshness";
 import type { Platform, Region } from "@/server/db/schema";
 import type { PlatformDto } from "@/server/services/games";
@@ -127,10 +127,21 @@ export function orderCards(platforms: PlatformPriceItem[]): PriceCard[] {
  * 맨 앞 카드를 그대로 고르면 PC 갈래가 늘 앞이라 값 없는 Steam(콜 오브 듀티 런처)이 골라져
  * 할인 예측이 "기록이 쌓이면" 만 말하고, 값이 있는 PS 예측은 눌러야 보였다. 값 붙은 카드가 하나도 없으면 맨 앞 카드
  */
-export function initialPickBrand(platforms: PlatformPriceItem[]): string | null {
+export function initialPickBrand(platforms: PlatformPriceItem[], pcMerged = false): string | null {
   const rows = orderCards(platforms).flatMap((c) => (c.kind === "row" ? [c.row] : []));
   const pick = rows.find((r) => r.currentPrice !== null) ?? rows[0];
-  return pick ? brandKeyOf(pick.platform) : null;
+  if (!pick) return null;
+  // PC 카드 하나로 합쳐 서면 그 카드의 고른 값(PC_PICK_KEY)이다 — 스토어 열쇠로 열면 그래프가 한 스토어만 그렸다
+  return pcMerged && familyOf(pick.platform) === "pc" ? PC_PICK_KEY : brandKeyOf(pick.platform);
+}
+
+/**
+ * Steam, Epic 을 PC 카드 하나로 합쳐 세우나(platform-prices/pc-tile). PC 스토어 값 카드가 둘 이상이고 출시 전 카드가 없을 때만이다.
+ * 가격 격자와 처음 고른 값(상세 page)이 같은 판단을 써야 고리가 엉뚱한 카드에 켜지지 않는다
+ */
+export function pcMergeable<T extends PlatformDto>(platforms: T[], upcoming: (p: T) => boolean): boolean {
+  const pc = platforms.filter((p) => familyOf(p.platform) === "pc");
+  return pc.length >= 2 && pc.every((p) => !upcoming(p));
 }
 
 /** 히어로 "지원 플랫폼" 줄 — 파는 묶음만, PLATFORM_ORDER 순, 이름은 카드 머리와 같은 말(지역 접미어는 뺀다) */

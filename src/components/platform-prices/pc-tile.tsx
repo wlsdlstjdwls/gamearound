@@ -4,13 +4,13 @@
 // 넓은 화면 네 칸 격자에서 마지막 한 장이 둘째 줄로 떨어졌다. 비교할 것은 "어느 스토어가 싼가" 하나라 한 카드 안에 값 줄로 두면 바로 견준다.
 //
 // 합치는 때는 둘 다 값 카드일 때뿐이다(prices.tsx). 한쪽만 팔거나 한쪽이 출시 전이면 예전처럼 따로 선다 — 출시 카드는 알림 단추가 따로 있다.
-// 고르기(game-detail/platform-pick)는 더 싼 스토어로 한다. 그래프와 할인 예측은 스토어 하나의 값이라 둘을 섞지 않는다.
+// 고르기(game-detail/platform-pick)는 PC 갈래 전부다(PC_PICK_KEY) — 그래프는 두 스토어 선을 함께, 할인 예측은 두 스토어 기록을 함께 본다.
 import { formatPrice } from "@/lib/currency";
 import { platformLabel } from "@/lib/format";
 import { DETAIL_MESSAGES as D } from "@/lib/games/detail-messages";
 import { GAME_MESSAGES, PREORDER_LABEL } from "@/lib/games/messages";
 import { isPreorder } from "@/lib/games/preorder";
-import { PLATFORM_FAMILY_LABEL, brandKeyOf } from "@/lib/platform";
+import { PC_PICK_KEY, PLATFORM_FAMILY_LABEL, brandKeyOf } from "@/lib/platform";
 import { cn } from "@/lib/cn";
 import { buttonClass } from "@/components/ui/button";
 import { DiscountBadge, HistoricLowBadge } from "@/components/ui/discount";
@@ -93,7 +93,7 @@ export function PcTile({
   // 구독은 스토어마다 따로 든다(Steam 은 없고 Epic 도 드물다). 같은 구독이 둘에 다 들었으면 칩 하나
   const subscriptions = [...new Map(ordered.flatMap((p) => p.subscriptions).map((s) => [s.key, s])).values()];
   return (
-    <PickableTile brand={brandKeyOf(cheapest.platform)} label={PLATFORM_FAMILY_LABEL.pc} id={id} className={cn(TILE, "bg-surface shadow-hair")}>
+    <PickableTile brand={PC_PICK_KEY} also={rows.map((r) => brandKeyOf(r.platform))} label={PLATFORM_FAMILY_LABEL.pc} id={id} className={cn(TILE, "bg-surface shadow-hair")}>
       {secondId && <span id={secondId} className="absolute -top-24" aria-hidden />}
       <CardHead name={PLATFORM_FAMILY_LABEL.pc}>
         {showBest && <span className="ml-auto shrink-0 rounded-full bg-acc px-2 py-[3px] text-[11px] font-bold leading-none text-on-ink">최저가</span>}

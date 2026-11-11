@@ -127,6 +127,17 @@ export function familyOf(platform: string | undefined): PlatformFamily | undefin
   return platform === undefined ? undefined : FAMILY_OF.get(platform as Platform);
 }
 
+/**
+ * 상세에서 PC 카드(Steam, Epic 합친 카드, platform-prices/pc-tile)를 골랐을 때의 고른 값. 묶음 열쇠(steam, playstation)와 같은 자리에 선다.
+ * 이 값이면 그래프와 할인 예측이 PC 스토어 전부를 함께 본다(2026-11-11 사용자: "PC 를 고르면 가격 추이가 스팀만 나온다")
+ */
+export const PC_PICK_KEY = "pc";
+
+/** 고른 값이 이 플랫폼을 가리키나. 묶음 열쇠면 그 묶음, PC_PICK_KEY 면 PC 갈래 전부 */
+export function pickMatches(pick: string, platform: Platform): boolean {
+  return pick === brandKeyOf(platform) || (pick === PC_PICK_KEY && familyOf(platform) === "pc");
+}
+
 export function isPlatformFamily(v: string | undefined): v is PlatformFamily {
   return v !== undefined && (PLATFORM_FAMILIES as readonly string[]).includes(v);
 }
