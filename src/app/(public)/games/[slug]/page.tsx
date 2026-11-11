@@ -206,7 +206,8 @@ export default async function GameDetailPage({ params }: Props) {
       {/* 가격 변동 추이 + 할인 예측(목업 #chs). 넓은 화면은 그래프 1.7 : 예측 1, 좁으면 위아래.
           출시 전 게임은 그릴 값도 예측할 값도 없어 통째로 빠진다(목업 g.up). 무료 게임은 예측 판만 빠진다 */}
       {!upcoming && (
-        <div className={isFree ? "min-w-0" : "grid min-w-0 items-start gap-4 lg:grid-cols-[minmax(0,1.7fr)_minmax(0,1fr)]"}>
+        // 넓은 화면에서 두 칸이 같은 높이다(items-stretch, 2026-11-11 사용자 "할인 예측 높이를 가격 변동 추이와 맞춰"). 좁으면 위아래라 늘일 것이 없다
+        <div className={isFree ? "min-w-0" : "grid min-w-0 items-start gap-4 lg:grid-cols-[minmax(0,1.7fr)_minmax(0,1fr)] lg:items-stretch"}>
           <Suspense fallback={<PriceChartFallback />}>
             <PriceChartSlot slug={game.slug} />
           </Suspense>

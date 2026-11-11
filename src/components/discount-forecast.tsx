@@ -55,19 +55,22 @@ export function DiscountForecast({
     );
   }
   return (
-    <div className="flex flex-col gap-2.5">
-      <section
-        aria-labelledby="forecast-heading"
-        className="flex flex-col gap-4 rounded-[var(--radius-panel)] bg-acc-soft p-5 ring-2 ring-acc ring-inset sm:flex-row sm:items-center lg:flex-col lg:items-start"
-      >
-        <span aria-hidden className="grid size-12 shrink-0 place-items-center rounded-full text-acc ring-2 ring-acc ring-inset">
-          <CalendarIcon size={22} />
+    // 판은 옆 가격 그래프 높이까지 늘어난다(부르는 쪽 격자가 늘이고, h-full 로 받는다, 2026-11-11 사용자 "높이를 가격 변동 추이와 맞춰").
+    // 머리는 아이콘 오른쪽에 제목이 선다(같은 날 사용자). 참고용 알림은 판 안 맨 밑이다 — 판 밖 회색 글은 판과 따로 노는 줄로 읽혔다
+    <section
+      aria-labelledby="forecast-heading"
+      className="flex h-full flex-col gap-4 rounded-[var(--radius-panel)] bg-acc-soft p-5 ring-2 ring-acc ring-inset"
+    >
+      <div className="flex min-w-0 items-center gap-3">
+        <span aria-hidden className="grid size-11 shrink-0 place-items-center rounded-full text-acc ring-2 ring-acc ring-inset">
+          <CalendarIcon size={20} />
         </span>
-        <div className="flex min-w-0 flex-1 flex-col gap-1">
-          <h2 id="forecast-heading" className="flex flex-wrap items-baseline gap-x-2 text-[17px] font-extrabold text-ink">
-            {D.forecastTitle}
-            {basisLabel && <span className="text-[12.5px] font-bold text-acc">{D.forecastBasisPlatform(basisLabel)}</span>}
-          </h2>
+        <h2 id="forecast-heading" className="flex min-w-0 flex-wrap items-baseline gap-x-2 text-[17px] font-extrabold text-ink">
+          {D.forecastTitle}
+          {basisLabel && <span className="text-[12.5px] font-bold text-acc">{D.forecastBasisPlatform(basisLabel)}</span>}
+        </h2>
+      </div>
+      <div className="flex min-w-0 flex-col gap-1">
           {running && (
             <p className="text-[14px] font-bold text-acc">
               {D.forecastRunning(running.name, running.pct)}
@@ -94,16 +97,18 @@ export function DiscountForecast({
               {expected.basis === "recorded-low" ? `${GAME_MESSAGES.recordedLowLabel} ${formatPrice(expected.price, currency)} | ${formatDate(expected.at)}` : D.forecastBasisRate(expected.pct)}
             </p>
           )}
-        </div>
-        {action && <div className="flex w-full sm:w-auto lg:w-full [&>*]:flex-1">{action}</div>}
-      </section>
-      <p className="text-[12px] leading-[1.6] text-dim">
-        {D.forecastDisclaimer.map((line, i) => (
-          <span key={i} className="block">
-            {line}
-          </span>
-        ))}
-      </p>
-    </div>
+      </div>
+      {/* 단추와 알림은 판 바닥에 붙는다(mt-auto) — 판이 그래프 높이로 늘어나도 빈자리는 본문과 단추 사이에 남는다 */}
+      <div className="mt-auto flex flex-col gap-3">
+        {action && <div className="flex w-full [&>*]:flex-1">{action}</div>}
+        <p className="text-[12px] leading-[1.6] text-mut">
+          {D.forecastDisclaimer.map((line, i) => (
+            <span key={i} className="block">
+              {line}
+            </span>
+          ))}
+        </p>
+      </div>
+    </section>
   );
 }

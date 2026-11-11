@@ -25,7 +25,7 @@ export function ForecastByPlatform({
   const own = brand !== null && brand in byBrand;
   return (
     // 고른 묶음이 바뀌면 판이 한 번 떠오른다 — 값이 바뀌었다는 것을 눈이 놓치지 않게
-    <div key={own ? brand : "all"} className="animate-rise">
+    <div key={own ? brand : "all"} className="h-full animate-rise">
       <DiscountForecast forecast={own ? byBrand[brand] : all} currency={currency} action={action} basisLabel={own ? labels[brand] : undefined} />
     </div>
   );
