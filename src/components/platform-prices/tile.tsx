@@ -167,7 +167,8 @@ export function PriceTile({
 export function AbsentTile({ id, label }: { id?: string; label: string }) {
   return (
     // 2026-10-28 사용자 "비워져 있을 때 너무 비어 보인다": 맨 밑 한 줄만 있어 카드 대부분이 빈 칸이었다.
-    // 가운데에 아이콘과 두 줄(무엇이 없나, 생기면 어떻게 되나)을 세운다. 흐림(opacity)은 걷었다 — 글자까지 흐려 읽기 힘들었다
+    // 가운데에 아이콘과 "서비스하지 않아요" 한 줄을 세운다. 흐림(opacity)은 걷었다 — 글자까지 흐려 읽기 힘들었다.
+    // 둘째 줄 "이 플랫폼으로 나오면 가격을 바로 보여 드려요" 는 걷었다(2026-11-11 사용자 "문구 변경하거나 없애자")
     <li id={id} className={cn(TILE, "border border-dashed border-line-strong bg-surface-2/50")}>
       <CardHead name={label} />
       <div className="flex flex-1 flex-col items-center justify-center gap-2 py-3 text-center">
@@ -175,7 +176,6 @@ export function AbsentTile({ id, label }: { id?: string; label: string }) {
           <StoreIcon size={20} />
         </span>
         <p className="text-[14px] font-bold text-mut">{GAME_MESSAGES.storeAbsent}</p>
-        <p className="max-w-[200px] text-[12.5px] leading-[1.55] text-dim">{GAME_MESSAGES.storeAbsentNote}</p>
       </div>
     </li>
   );

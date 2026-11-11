@@ -36,9 +36,10 @@ export const DETAIL_MESSAGES = {
   forecastTitle: "할인 예측",
   /** 고른 플랫폼 카드의 이름(game-detail/platform-pick). 예측이 그 플랫폼 값만 본다는 말 */
   forecastBasisPlatform: (name: string) => `${name} 기준`,
-  forecastNoDate: "다음 할인 시기를 짐작할 기록이 아직 없어요.",
+  // "기록이 쌓이면" 꼴은 쓰지 않는다(2026-11-11 사용자 "할인 기록을 쌓는단 말이 맘에 안 듦") — 지금 없는 것만 짧게 말한다
+  forecastNoDate: "다음 할인 시기는 아직 알 수 없어요.",
   forecastExpected: "예상 가격",
-  forecastNoRecord: "할인 기록이 쌓이면 예상 가격을 알려 드려요.",
+  forecastNoRecord: "지난 할인이 없어 예상 가격은 아직 없어요.",
   forecastAlert: "알림 설정하기",
   /** 예측 판의 "언제" 칸(2026-11-11 사용자 "그림이나 UI 로 가시성 높게"). 큰 D-숫자 위의 머리말 */
   forecastWhenHead: (name: string | null) => (name ? `${name}까지` : "다음 할인까지"),
