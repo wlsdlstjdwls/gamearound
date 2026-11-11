@@ -13,6 +13,7 @@ import type { StoreSource } from "@/server/adapters";
 import { sleep } from "@/lib/async";
 import { DEFAULT_FETCH_BATCH_SIZE, DLC_FETCH_PER_RUN_BY_SOURCE, DLC_PER_GAME_MAX } from "./constants";
 import { recordError, type Ctx } from "./context";
+import { attachRef, loadOrphanChildren, pickAdoptions, snapshotTitles } from "./dlc-adopt";
 import { createGameFromSnapshot } from "./game-writer";
 import { upsertPlatform } from "./platform-writer";
 import { loadRootParents } from "./parent-root";
@@ -60,8 +61,8 @@ async function knownExternalIds(ctx: Ctx, source: StoreSource, ids: string[]): P
 }
 
 /**
- * 새 DLC 를 게임 레코드로 만든다.
- * 반환값은 실제로 만든 수 — 호출부가 로그에 쓴다.
+ * 새 DLC 를 게임 레코드로 만든다. 같은 본편 아래 공식 ID 없는 같은 이름 자식이 있으면 만들지 않고 거기에 잇는다(dlc-adopt).
+ * 반환값은 실제로 만들거나 이은 수 — 호출부가 로그에 쓴다.
  */
 export async function syncDlcs(
   ctx: Ctx,
@@ -96,15 +97,27 @@ export async function syncDlcs(
   const snapshots = await fetchDlcSnapshots(ctx, source, adapter, newIds);
   // 스토어가 본편이라고 한 행이 우리 쪽에선 에디션일 수 있다 — 맨 위 본편에 붙인다(parent-root)
   const rootOf = await loadRootParents(ctx, Array.from(new Set(groups.map((g) => g.parentGameId))));
-  let created = 0;
-  for (const [externalId, priced] of snapshots) {
+  const ready = [...snapshots].flatMap(([externalId, priced]) => {
     const group = parentByExternalId.get(externalId);
-    if (!group) continue;
+    if (!group) return [];
     // 발견 목록의 마스터를 얹는 일은 일반 수집과 같은 자리다 — 같은 함수를 쓴다(store-apply)
     const candidate = candidateById.get(externalId);
     const snapshot = candidate ? withDiscoveredMedia(priced, candidateAsTarget(candidate, null)) : priced;
+    return [{ externalId, group, snapshot, parentGameId: rootOf.get(group.parentGameId) ?? group.parentGameId }];
+  });
+  const adoptions = await findAdoptions(ctx, source, ready);
+  let created = 0;
+  for (const { externalId, group, snapshot, parentGameId } of ready) {
     try {
-      const parentGameId = rootOf.get(group.parentGameId) ?? group.parentGameId;
+      const orphan = adoptions.get(externalId);
+      if (orphan) {
+        await attachRef(ctx, source, orphan.id, snapshot, snapshotTitles(snapshot)[0] ?? null);
+        await upsertPlatform(ctx, orphan.id, orphan.slug, snapshot);
+        ctx.changedSlugs.add(orphan.slug);
+        ctx.changedSlugs.add(group.parentSlug);
+        created++;
+        continue;
+      }
       const child = await createGameFromSnapshot(ctx, snapshot, { contentType: "dlc", parentGameId });
       await upsertPlatform(ctx, child.id, child.slug, snapshot);
       // 본편 화면에 DLC 목록이 새로 뜨므로 본편 캐시도 무효화해야 한다
@@ -115,6 +128,26 @@ export async function syncDlcs(
     }
   }
   return created;
+}
+
+/** 잇기 판정. 실패해도 새로 만드는 예전 길로 간다 — 잇기는 중복을 줄이는 덤이라 등록을 멈추지 않는다 */
+async function findAdoptions(
+  ctx: Ctx,
+  source: StoreSource,
+  ready: Array<{ externalId: string; snapshot: StoreSnapshot; parentGameId: string }>,
+) {
+  try {
+    const orphans = await loadOrphanChildren(ctx, source, [...new Set(ready.map((r) => r.parentGameId))]);
+    const adoptions = pickAdoptions(
+      ready.map((r) => ({ externalId: r.externalId, parentId: r.parentGameId, titles: snapshotTitles(r.snapshot) })),
+      orphans,
+    );
+    if (adoptions.size > 0) console.log(`[sync:${source}] 새 DLC ${adoptions.size}건을 공식 ID 없던 기존 자식에 이음`);
+    return adoptions;
+  } catch (e) {
+    recordError(ctx, `${source}:dlc:adopt`, e);
+    return new Map<string, Awaited<ReturnType<typeof loadOrphanChildren>>[number]>();
+  }
 }
 
 /** DLC 상세 수집. 배치를 지원하는 소스는 배치로, 아니면 단건으로 */
