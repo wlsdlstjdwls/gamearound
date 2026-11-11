@@ -131,8 +131,10 @@ export function MergedTile({
         </div>
       )}
 
-      {addons && <div className="flex pt-1">{addons}</div>}
+      {/* 단추가 하나면(PS5, PS4 겸용 상품) 추가 콘텐츠와 한 줄이다 — 낱 카드(PriceTile)와 같은 자리. 스토어 단추가 둘이면(Steam, Epic) 셋이 한 줄에 못 서 추가 콘텐츠가 윗줄로 간다 */}
+      {addons && buttons.length > 1 && <div className="flex pt-1">{addons}</div>}
       <div className="flex items-center gap-2 pt-1">
+        {buttons.length === 1 && addons}
         {buttons.map((p) =>
           p.storeUrl ? (
             <a
