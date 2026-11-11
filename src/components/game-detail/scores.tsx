@@ -30,7 +30,9 @@ export function CriticScores({ game, unreleased }: { game: GameDetail; unrelease
         // 출시 전이면 "아직 못 모았다" 가 아니라 "출시하면 생긴다" 가 맞는 말이다(기획서 v2.0 S-05)
         <p className="rounded-[var(--radius-md)] bg-surface-2 px-4 py-3.5 text-[13px] text-mut">{unreleased ? D.scoresAfterRelease : D.scoresPending}</p>
       ) : (
-        <dl className={cn("grid gap-2.5", lines.length >= 3 ? "grid-cols-3" : lines.length === 2 ? "grid-cols-2" : "grid-cols-1 sm:max-w-[50%]")}>
+        // 넷이면 2 x 2 다. 셋 칸에 넷째가 홀로 아래 줄로 떨어졌다(2026-11-11 사용자 "줄바꿈 되버리네") — 옆 기둥 폭(약 324px)에 넷을 한 줄로 세우면
+        // "87/100" 이 칸을 넘는다. 둘 둘로 세우면 빈 칸 없이 닫힌다
+        <dl className={cn("grid gap-2.5", lines.length === 3 ? "grid-cols-3" : lines.length === 2 || lines.length >= 4 ? "grid-cols-2" : "grid-cols-1 sm:max-w-[50%]")}>
           {lines.map((c) => (
             <div key={c.key} className="flex min-h-[92px] min-w-0 flex-col justify-between gap-2 rounded-[var(--radius-md)] bg-surface p-3.5 shadow-hair">
               <dt className="flex min-w-0 items-center gap-0.5 text-[12px] font-bold text-mut">
