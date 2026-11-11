@@ -25,15 +25,15 @@ import { PickableTile } from "@/components/game-detail/platform-pick";
 import { brandKeyOf } from "@/lib/platform";
 
 /** 스토어로 나가는 버튼의 말(기획서 v2.0 S-05 "구매하기") */
-const STORE_CTA = "구매하기";
+export const STORE_CTA = "구매하기";
 /** 링크가 아직 없는 카드의 버튼 자리에 서는 말. 버튼 모양은 그대로 두고 눌리지만 않는다(기획서 v2.0 S-07) */
-const STORE_LINK_MISSING = "스토어 링크 준비 중";
+export const STORE_LINK_MISSING = "스토어 링크 준비 중";
 
 /** 카드 껍데기. 최저가 카드만 브랜드 테두리와 연한 면(목업 .pc.fc) — 목록 카드의 "최저" 와 같은 색 문법이다 */
-const TILE = "relative flex min-w-0 scroll-mt-24 flex-col gap-2.5 rounded-[var(--radius-md)] p-4 sm:p-5";
+export const TILE = "relative flex min-w-0 scroll-mt-24 flex-col gap-2.5 rounded-[var(--radius-md)] p-4 sm:p-5";
 
 /** 이름표 - 값 한 줄(목업 .row). 값은 줄바꿈하지 않는다 — 날짜가 접히면 같은 줄의 높이가 카드마다 달라진다 */
-function Row({ label, children }: { label: string; children: React.ReactNode }) {
+export function Row({ label, children }: { label: string; children: React.ReactNode }) {
   return (
     <div className="flex items-center justify-between gap-3 text-[13px]">
       <dt className="shrink-0 text-mut">{label}</dt>
@@ -42,7 +42,7 @@ function Row({ label, children }: { label: string; children: React.ReactNode }) 
   );
 }
 
-function CardHead({ name, children }: { name: string; children?: React.ReactNode }) {
+export function CardHead({ name, children }: { name: string; children?: React.ReactNode }) {
   return (
     <div className="flex min-w-0 items-center gap-1.5">
       <h3 className="truncate text-[16px] font-bold text-ink sm:text-[17px]">{name}</h3>
@@ -52,7 +52,7 @@ function CardHead({ name, children }: { name: string; children?: React.ReactNode
 }
 
 /** 유저 점수 줄 — 스토어마다 재는 방식이 달라(긍정 비율, 별점) 그 스토어 카드 안에서 말한다 */
-function userScoreText(p: PlatformPriceItem): string | null {
+export function userScoreText(p: PlatformPriceItem): string | null {
   if (!p.userScore) return null;
   const { value, kind, count } = p.userScore;
   const score = kind === "star_average" ? `평균 ${scoreToStars(value)}점` : `긍정 ${Math.round(value)}%`;

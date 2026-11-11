@@ -14,6 +14,8 @@ import type { DlcDto } from "@/server/services/games";
 import { PlatformAddons } from "@/components/platform-addons";
 import { BEST_MIN_PRICED, brandAnchorId, brandNameOf, byPrice, isUpcomingRow, orderCards, releaseText, rowKey, type PlatformPriceItem } from "@/components/platform-prices/order";
 import { AbsentTile, PriceTile, UpcomingTile } from "@/components/platform-prices/tile";
+import { PcTile } from "@/components/platform-prices/pc-tile";
+import { familyOf } from "@/lib/platform";
 
 /** 좁은 화면 1장, sm 2장, lg 4장 — 목업 .pg. 스토어가 넷을 넘으면 다음 줄로 이어진다 */
 const GRID = "grid gap-3 sm:grid-cols-2 lg:grid-cols-4 lg:gap-4";
@@ -56,6 +58,16 @@ export function PlatformPrices({
   const anchored = new Set<string>();
   const anchorOnce = (id: string) => (anchored.has(id) ? undefined : (anchored.add(id), id));
   const today = kstDateKey(new Date());
+  const upcoming = (p: PlatformPriceItem) => upcomingAll || isUpcomingRow(p, releaseFallback, today);
+  // 이 플랫폼에 실제로 있는 추가 콘텐츠만 넘긴다. 하나도 없으면 버튼을 안 세운다 —
+  // 열어 봤자 빈 시트인 버튼은 누른 사람을 두 번 움직이게 한다
+  const addonsFor = (p: PlatformPriceItem) => {
+    const mine = dlcs.filter((d) => d.platforms.some((dp) => dp.platform === p.platform));
+    return mine.length > 0 || p.hasAddOns ? <PlatformAddons platform={p.platform} platformLabel={brandNameOf(p)} dlcs={mine} /> : null;
+  };
+  // PC 스토어 값 카드가 둘 이상이면 PC 카드 하나로 합친다(pc-tile 머리 주석). 한쪽이 출시 전이면 합치지 않는다
+  const pcRows = cards.flatMap((c) => (c.kind === "row" && familyOf(c.row.platform) === "pc" ? [c.row] : []));
+  const mergePc = pcRows.length >= 2 && pcRows.every((p) => !upcoming(p));
 
   return (
     <ul className={GRID}>
@@ -64,14 +76,28 @@ export function PlatformPrices({
           return <AbsentTile key={c.brand.key} id={anchorOnce(brandAnchorId(c.brand.platform))} label={c.brand.label} />;
         }
         const p = c.row;
+        if (mergePc && familyOf(p.platform) === "pc") {
+          if (p !== pcRows[0]) return null; // 첫 PC 줄 자리에 한 장만 선다
+          const [first, ...rest] = pcRows.map((r) => anchorOnce(brandAnchorId(r.platform)));
+          const withAddons = [...pcRows].sort(byPrice).find((r) => addonsFor(r) !== null);
+          return (
+            <PcTile
+              key="pc"
+              rows={pcRows}
+              id={first}
+              secondId={rest.find(Boolean)}
+              isBest={pcRows.some((r) => rowKey(r) === bestKey)}
+              release={pcRows.map((r) => releaseText(r, releaseFallback)).find(Boolean) ?? null}
+              quotedUserScorePlatform={quotedUserScorePlatform}
+              addons={withAddons ? addonsFor(withAddons) : null}
+            />
+          );
+        }
         const id = anchorOnce(brandAnchorId(p.platform));
         const release = releaseText(p, releaseFallback);
-        if (upcomingAll || isUpcomingRow(p, releaseFallback, today)) {
+        if (upcoming(p)) {
           return <UpcomingTile key={rowKey(p)} p={p} id={id} release={release} action={releaseAction?.(p)} />;
         }
-        // 이 플랫폼에 실제로 있는 추가 콘텐츠만 넘긴다. 하나도 없으면 버튼을 안 세운다 —
-        // 열어 봤자 빈 시트인 버튼은 누른 사람을 두 번 움직이게 한다
-        const mine = dlcs.filter((d) => d.platforms.some((dp) => dp.platform === p.platform));
         return (
           <PriceTile
             key={rowKey(p)}
@@ -80,7 +106,7 @@ export function PlatformPrices({
             isBest={rowKey(p) === bestKey}
             release={release}
             skipUserScore={p.platform === quotedUserScorePlatform}
-            addons={mine.length > 0 || p.hasAddOns ? <PlatformAddons platform={p.platform} platformLabel={brandNameOf(p)} dlcs={mine} /> : null}
+            addons={addonsFor(p)}
           />
         );
       })}
