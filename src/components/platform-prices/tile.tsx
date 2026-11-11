@@ -93,11 +93,7 @@ export function PriceTile({
 
       <dl className="flex flex-col gap-1.5">
         <Row label={D.releaseRow}>{release ?? D.releaseUnknown}</Row>
-        {p.metacriticScore !== null && (
-          <Row label={D.metacriticRow}>
-            <span className="rounded-[var(--radius-xs)] bg-acc px-2 py-[1px] text-[12.5px] font-bold text-on-ink">{Math.round(p.metacriticScore)}</span>
-          </Row>
-        )}
+        {/* 메타크리틱 줄은 걷었다(2026-11-11 사용자: "위 평점 칸에 이미 나오는데 굳이"). 평론가 점수는 게임 하나에 하나라 카드마다 같은 숫자를 되풀이했다 */}
         {generation && <Row label={D.hardwareRow}>{generation}</Row>}
         {p.currentVersion && <Row label={D.versionRow}>{p.currentVersion}</Row>}
         {userScore && <Row label={D.userScoreRow}>{userScore}</Row>}
