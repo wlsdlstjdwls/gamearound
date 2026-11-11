@@ -71,15 +71,16 @@ export function ListTitleSkeleton() {
   return <div aria-hidden className="skeleton h-7 w-36 rounded-lg sm:h-8" />;
 }
 
-export function FilterBarSkeleton() {
+/** chips: "요즘 많이 찾는 장르" 줄까지. 출시 예정 막대는 그 줄을 걷었다(upcoming/page) */
+export function FilterBarSkeleton({ chips = true }: { chips?: boolean } = {}) {
   return (
     <div aria-hidden className="flex flex-col gap-3">
       <div className="h-[164px] rounded-[var(--radius-panel)] bg-surface/60 shadow-hair sm:h-[112px] lg:h-16" />
-      <div className="flex h-24 flex-wrap content-start items-center gap-2 sm:h-[33px]">
+      {chips && <div className="flex h-24 flex-wrap content-start items-center gap-2 sm:h-[33px]">
         {["w-28", "w-14", "w-16", "w-20"].map((w) => (
           <Bone key={w} className={`h-11 rounded-full sm:h-[33px] ${w}`} />
         ))}
-      </div>
+      </div>}
     </div>
   );
 }

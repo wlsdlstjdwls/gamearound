@@ -59,6 +59,7 @@ import { nullIfDbUnavailable } from "@/lib/db-errors";
 import { ROUTES } from "@/lib/routes";
 import { getUpcomingAllPage, getUpcomingAddons, getUpcomingGenres, getUpcomingMonthPage, getUpcomingMonthPicks, getUpcomingMonths, UPCOMING_PAGE_SIZE } from "@/server/services/games";
 import { GamesGridSkeleton } from "@/app/(public)/games/skeletons";
+import { MonthGamesSkeleton } from "@/app/(public)/upcoming/skeletons";
 import { EmptyState } from "@/components/empty-state";
 
 // Next 가 정적으로 읽는 값이라 리터럴이어야 한다 — lib/cache 의 LIST_REVALIDATE_SECONDS 와 같게 유지
@@ -258,7 +259,7 @@ export default async function UpcomingPage({ searchParams }: Props) {
                 <section aria-labelledby="upcoming-month-heading" className="flex flex-col gap-4">
                   <SectionHead id="upcoming-month-heading" title={formatMonthLabel(active.key)} note={upcomingCountText(active.total)} />
                   {/* 달이 바뀌면 경계를 새로 세운다 — 키가 같으면 React 가 갱신으로 보고 옛 달을 새 달이 올 때까지 둔다(games/page 와 같은 이유) */}
-                  <Suspense key={`${active.key}:${page}:${filterKey}`} fallback={<GamesGridSkeleton cards={Math.min(active.total, UPCOMING_PAGE_SIZE)} gridClass={HOME_GRID_CLASS} />}>
+                  <Suspense key={`${active.key}:${page}:${filterKey}`} fallback={<MonthGamesSkeleton rows={Math.min(active.total, UPCOMING_PAGE_SIZE)} picks={page === 1} />}>
                     <MonthGames monthKey={active.key} monthTotal={active.total} page={page} filter={filter} />
                   </Suspense>
                 </section>

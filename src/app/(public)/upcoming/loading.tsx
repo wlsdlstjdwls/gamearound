@@ -1,32 +1,31 @@
-// 출시예정 스켈레톤 — 달 탭 띠(60px, 칸은 56px 폭 둥근 상자) + 달 머리 + 4열 카드 격자 + 각주.
+// 출시예정 스켈레톤 — 실물(upcoming/page)의 마디 순서 그대로: 머리, 막대, 달 띠(60px), 달 제목, 기대작 카드 넷, 날짜순 줄 목록.
 //
-// 실물은 제목을 감추고 달 탭이 화면 맨 위에 선다(upcoming/page). 달 탭은 sticky 띠라 높이(--month-nav-h)를
-// 그대로 잡아야 본문이 올 때 격자가 아래로 밀리지 않는다. 띠의 좌우 넘침(-mx)도 실물과 같게 둔다.
-import { GameGridSkeleton } from "@/components/game-card-skeleton";
+// 2026-11-11 전에는 머리와 막대 없이 달 띠 + 카드 격자였다. 실물의 날짜순 목록은 한 줄에 하나인 줄이라
+// 본문이 오는 순간 격자가 줄로 바뀌고 머리, 막대만큼 아래로 밀렸다(사용자 "로딩은 한 줄에 2~3개씩인데"). 마디 뼈대는 ./skeletons.
+// 달 띠는 sticky 띠라 높이(--month-nav-h)를 그대로 잡는다. 띠의 좌우 넘침(-mx)도 실물과 같게 둔다.
 import { Bone, SectionHeadSkeleton, SkeletonPage } from "@/components/ui/skeleton";
-import { HOME_GRID_CLASS } from "@/lib/games/grid";
+import { FilterBarSkeleton } from "@/app/(public)/games/skeletons";
+import { MonthGamesSkeleton, UpcomingHeadSkeleton } from "@/app/(public)/upcoming/skeletons";
 
 const MONTH_TABS = 7; // 실물은 오늘부터 대여섯 달 + 연도 표지 — 넓은 화면 한 줄을 채우는 수
-const SKELETON_CARDS = 12; // 1~4열 모두 줄이 꽉 차는 수(실물 한 장은 UPCOMING_PAGE_SIZE 24)
+const SKELETON_ROWS = 8; // 첫 화면을 채우는 줄 수(실물 한 쪽은 UPCOMING_PAGE_SIZE 24)
 
 export default function UpcomingLoading() {
   return (
-    <SkeletonPage gap={30}>
-      <div className="-mx-5 flex h-[var(--month-nav-h)] items-center gap-1.5 overflow-hidden border-b border-line px-5 sm:-mx-7 sm:px-7">
-        <Bone className="mr-1.5 h-4 w-10 shrink-0" />
-        {Array.from({ length: MONTH_TABS }).map((_, i) => (
-          <Bone key={i} className="h-[46px] w-[56px] shrink-0 rounded-xl" />
-        ))}
-      </div>
-
-      <section className="flex flex-col gap-4">
-        <SectionHeadSkeleton width="w-32" />
-        <GameGridSkeleton cards={SKELETON_CARDS} gridClass={HOME_GRID_CLASS} />
-      </section>
-
-      <div className="flex max-w-[760px] flex-col gap-2">
-        <Bone className="h-3 w-full" />
-        <Bone className="h-3 w-2/3" />
+    <SkeletonPage gap={20}>
+      <UpcomingHeadSkeleton />
+      <FilterBarSkeleton chips={false} />
+      <div className="flex flex-col gap-5">
+        <div className="-mx-5 flex h-[var(--month-nav-h)] items-center gap-1.5 overflow-hidden border-b border-line px-5 sm:-mx-7 sm:px-7">
+          <Bone className="mr-1.5 h-8 w-24 shrink-0 rounded-full" />
+          {Array.from({ length: MONTH_TABS }).map((_, i) => (
+            <Bone key={i} className="h-[43px] w-[52px] shrink-0 rounded-xl" />
+          ))}
+        </div>
+        <section className="flex flex-col gap-4">
+          <SectionHeadSkeleton width="w-40" />
+          <MonthGamesSkeleton rows={SKELETON_ROWS} picks />
+        </section>
       </div>
     </SkeletonPage>
   );

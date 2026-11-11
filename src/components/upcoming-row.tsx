@@ -13,7 +13,13 @@ import { Clamp } from "@/components/ui/tooltip";
 import { WEEKDAY_LABEL } from "@/lib/format";
 import { UPCOMING_MESSAGES as M } from "@/lib/games/messages";
 import { DEVICE_LABEL, devicesOf } from "@/lib/platform";
+import { Bone } from "@/components/ui/skeleton";
 import type { GameSummary } from "@/server/services/games";
+
+/** 줄 껍데기 — 뼈대(UpcomingRowSkeleton)가 같은 값을 써야 본문이 올 때 줄 높이가 바뀌지 않는다 */
+const ROW_SHELL = "group relative grid grid-cols-[3rem_minmax(0,1fr)] items-center gap-x-3 gap-y-2.5 rounded-[var(--radius-md)] bg-surface p-3 shadow-hair transition-shadow hover:shadow-2 sm:flex sm:gap-4 sm:p-3.5";
+/** 그림 칸(좁은 88, 넓은 132 폭, 스토어 가로 커버 비율) */
+const ROW_COVER = "relative aspect-[460/215] w-[88px] shrink-0 overflow-hidden rounded-[var(--radius-inset)] bg-surface-3 shadow-hair sm:w-[132px]";
 
 /** 줄 하나. 날짜가 null 이면 출시일 미정 상자의 줄이다(날짜 칸에 "미정") */
 type RowEntry = { game: GameSummary; releaseDate: string | null };
@@ -34,7 +40,7 @@ export function UpcomingRow({ entry, subtitle }: { entry: RowEntry; subtitle?: s
     // 좁은 화면(sm 미만)은 두 줄 격자다(2026-10-26, 목업 390 의 월별 줄): 윗줄은 날짜 | 그림과 제목, 아랫줄은 오른쪽 끝에 출시 알림 단추.
     // 한 줄에 날짜, 그림, 제목, 딱지, 단추를 다 세우면 390 에서 제목 칸이 100px 남짓이라 이름이 열 자 안팎에서 잘리고 딱지는 숨겨야 했다.
     // sm 부터는 예전 한 줄 그대로다 — 아랫줄 묶음이 contents 로 풀려 줄 끝에 선다.
-    <div className="group relative grid grid-cols-[3rem_minmax(0,1fr)] items-center gap-x-3 gap-y-2.5 rounded-[var(--radius-md)] bg-surface p-3 shadow-hair transition-shadow hover:shadow-2 sm:flex sm:gap-4 sm:p-3.5">
+    <div className={ROW_SHELL}>
       <div className="flex shrink-0 flex-col items-center sm:w-14">
         {entry.releaseDate ? (
           <>
@@ -48,7 +54,7 @@ export function UpcomingRow({ entry, subtitle }: { entry: RowEntry; subtitle?: s
         )}
       </div>
       <div className="flex min-w-0 items-center gap-3 sm:flex-1 sm:gap-4">
-        <span className="relative aspect-[460/215] w-[88px] shrink-0 overflow-hidden rounded-[var(--radius-inset)] bg-surface-3 shadow-hair sm:w-[132px]">
+        <span className={ROW_COVER}>
           <CoverImage src={entry.game.coverUrl} alt="" sizes="132px" />
         </span>
         <div className="flex min-w-0 flex-1 flex-col gap-1">
@@ -70,6 +76,44 @@ export function UpcomingRow({ entry, subtitle }: { entry: RowEntry; subtitle?: s
       <div className="col-start-2 flex items-center justify-end gap-2 sm:contents">
         <WishHeart slug={entry.game.slug} title={title} variant="release" className="relative z-10 shrink-0" />
       </div>
+    </div>
+  );
+}
+
+/**
+ * 줄 뼈대 — 껍데기, 날짜 칸, 그림 칸, 제목 두 줄 자리, 출시 알림 단추 자리를 실물(위 UpcomingRow)과 같은 격자로 세운다.
+ * 2026-11-11 전에는 출시 예정의 월별 목록 뼈대가 카드 격자(한 줄에 2~4장)라, 줄 목록(한 줄에 하나)이 올 때 화면이 통째로 바뀌었다(사용자)
+ */
+export function UpcomingRowSkeleton() {
+  return (
+    <div className={ROW_SHELL} aria-hidden>
+      <div className="flex shrink-0 flex-col items-center gap-1 sm:w-14">
+        <Bone className="h-6 w-7 sm:h-7" />
+        <Bone className="h-3 w-10" />
+      </div>
+      <div className="flex min-w-0 items-center gap-3 sm:flex-1 sm:gap-4">
+        <span className={`${ROW_COVER} skeleton`} />
+        <div className="flex min-w-0 flex-1 flex-col gap-1.5">
+          <Bone className="h-[18px] w-3/5 sm:h-5" />
+          {/* 좁은 화면은 제목 칸이 좁아 이름이 두 줄로 접히는 줄이 많다(실물 142 | 123px) — 둘째 줄 자리를 둔다 */}
+          <Bone className="h-[18px] w-2/5 sm:hidden" />
+          <Bone className="h-3.5 w-2/5" />
+        </div>
+      </div>
+      <div className="col-start-2 flex items-center justify-end sm:contents">
+        <Bone className="h-11 w-[104px] shrink-0 rounded-full sm:h-9 sm:w-[96px]" />
+      </div>
+    </div>
+  );
+}
+
+/** 줄 뼈대 여럿 — 실물 목록(ul.flex-col.gap-2.5)과 같은 간격 */
+export function UpcomingRowsSkeleton({ rows }: { rows: number }) {
+  return (
+    <div className="flex flex-col gap-2.5" aria-busy="true">
+      {Array.from({ length: rows }).map((_, i) => (
+        <UpcomingRowSkeleton key={i} />
+      ))}
     </div>
   );
 }
