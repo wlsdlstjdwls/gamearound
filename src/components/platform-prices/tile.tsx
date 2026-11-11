@@ -123,9 +123,14 @@ export function PriceTile({
             )}
             {/* 목록 카드와 같은 채운 배지(ui/discount). 연파랑 알약은 최저가 카드의 연파랑 면에 묻혔다(2026-10-27 사용자) */}
             {hasDiscount && <DiscountBadge pct={p.discountPct} size="sm" />}
-            <HistoricLowBadge show={hasDiscount && p.historicLow} size="sm" />
           </dd>
         </div>
+        {/* 역대 최저가는 값 줄 아래 제 줄에 둔다 — 값 줄에 같이 세우면 네 칸 가격 카드 폭에서 "현재 가격" 이름표를 덮었다(2026-11-11 운영 화면) */}
+        {hasDiscount && p.historicLow && (
+          <div className="flex justify-end">
+            <HistoricLowBadge show size="sm" />
+          </div>
+        )}
       </dl>
 
       {/* 구독 칩 — 넘치면 잘려도 된다(구독 여부는 칩 자체가 말한다) */}
