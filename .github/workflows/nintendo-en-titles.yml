@@ -1,7 +1,7 @@
 # 한국 닌텐도에서만 들어온 게임의 title_en 에 들어앉은 한글을 영문 이름으로 바꾼다(scripts/backfill-nintendo-en-titles).
 # 근거는 sync/nintendo-en-title 머리 — 영문 칸이 한글이면 플레이타임, 평점 검색이 전부 빈손이다.
 #
-# Vercel 크론이 아니라 Actions 인 이유(2026-11-11 실측): 스위치 타이틀 DB 파일 셋이 약 233MB(US 91, GB 88, KR 56)라
+# Vercel 크론이 아니라 Actions 인 이유(2026-11-11 실측): 스위치 타이틀 DB 파일 넷이 약 290MB(US 91, GB 88, KR 56, HK 51)라
 # 함수 메모리에 다 올리기 버겁다. 파일은 GitHub 에서 받으니 Actions 러너가 막힐 일도 없다(닌텐도 스토어 IP 차단과 무관).
 # DB 는 영문 칸이 한글인 행(수백 건)만 읽고 바뀐 행만 쓴다 — Neon 전송량은 몇 KB 꼴.
 #
@@ -27,7 +27,7 @@ jobs:
     timeout-minutes: 15
     env:
       DATABASE_URL: ${{ secrets.DATABASE_URL }}
-      # 233MB JSON 셋을 한꺼번에 올린다. 기본 힙으로는 모자랄 수 있다
+      # 290MB JSON 넷을 한꺼번에 올린다. 기본 힙으로는 모자랄 수 있다
       NODE_OPTIONS: --max-old-space-size=4096
     steps:
       - uses: actions/checkout@v4

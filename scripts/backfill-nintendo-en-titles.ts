@@ -16,8 +16,8 @@ loadEnv({ quiet: true });
 
 import { sql } from "drizzle-orm";
 import { getDb } from "@/server/db/client";
-import { pickEnglishTitle } from "@/server/sync/nintendo-en-title";
-import { TITLEDB_BASE_URL, TITLEDB_EN_FILES, TITLEDB_KR_FILE } from "@/server/adapters/nintendo/constants";
+import { englishFromHongKongName, pickEnglishTitle } from "@/server/sync/nintendo-en-title";
+import { TITLEDB_BASE_URL, TITLEDB_EN_FILES, TITLEDB_HK_FILE, TITLEDB_KR_FILE } from "@/server/adapters/nintendo/constants";
 
 /** 바꾸기 전 값을 남기는 표. 이름의 날짜는 첫 실행일일 뿐 — 주간 워크플로(nintendo-en-titles.yml)도 같은 표에 쌓는다.
  *  게임마다 처음 값 하나만 남는다(on conflict do nothing). 운영 표 이름을 바꾸면 그 사이 백업이 갈라져 그대로 둔다 */
@@ -66,6 +66,14 @@ async function main(): Promise<number> {
     }
   }
 
+  // 홍콩판 이름의 영문 괄호. 미국, 영국에 없는 타이틀 ID 만 쓴다
+  const hkEnglishByTitleId = new Map<string, string>();
+  for (const e of Object.values(await loadTitleDb(TITLEDB_HK_FILE, dir))) {
+    const id = e.id?.toUpperCase();
+    const en = e.name ? englishFromHongKongName(e.name) : null;
+    if (id && en && !enByTitleId.has(id)) hkEnglishByTitleId.set(id, en);
+  }
+
   // 세 번째 출처(2026-11-10): 같은 한국어 제목을 가진 다른 게임(PS, 스팀 등)의 영문 제목. 아시아판 전용 타이틀 ID 는
   // 미국, 영국에 없어 타이틀 DB 로는 못 찾는데(남은 339건 중 266건), 같은 게임이 다른 스토어에서 한국어, 영문 제목을 둘 다 갖고 있는 경우가 있다.
   // 정규화한 한국어 제목이 정확히 같을 때만 빌린다(실측 24건 전부 맞았다 — "귀멸의 칼날: 도전, 최강의 대원!" -> "Demon Slayer -Kimetsu no Yaiba- Sweep the Board!")
@@ -83,13 +91,13 @@ async function main(): Promise<number> {
   const plans = rows
     .map((r) => {
       const titleId = titleIdByNsuid.get(r.nsuid);
-      const next = pickEnglishTitle(r.title_en, (titleId ? enByTitleId.get(titleId) : null) ?? borrowed.get(r.norm));
+      const next = pickEnglishTitle(r.title_en, (titleId ? (enByTitleId.get(titleId) ?? hkEnglishByTitleId.get(titleId)) : null) ?? borrowed.get(r.norm));
       return { r, next };
     })
     .filter((p): p is { r: Row; next: string } => p.next !== null);
 
   console.log(`영문 이름을 찾은 행 ${plans.length}건`);
-  for (const p of plans.slice(0, 30)) console.log(`  ${p.r.title_en}  =>  ${p.next}`);
+  for (const p of plans.slice(0, 200)) console.log(`  ${p.r.title_en}  =>  ${p.next}`);
   if (plans.length === 0 || !apply) {
     if (plans.length) console.log("\n--apply 를 주면 반영합니다.");
     return 0;

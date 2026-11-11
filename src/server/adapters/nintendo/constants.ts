@@ -35,6 +35,8 @@ export const TITLEDB_BASE_URL = "https://raw.githubusercontent.com/blawar/titled
 export const TITLEDB_KR_FILE = "KR.ko.json";
 /** 영문 이름을 읽는 파일. 앞쪽이 이긴다 — 미국판 이름이 HLTB, 메타크리틱 표기와 가장 잘 맞는다 */
 export const TITLEDB_EN_FILES = ["US.en.json", "GB.en.json"] as const;
+/** 아시아판 전용 소프트는 미국, 영국에 없고 홍콩판에만 있다. 이름은 한자지만 "時尚造夢（Fashion Dreamer）" 처럼 영문을 괄호로 단 것이 있다(2026-11-11) */
+export const TITLEDB_HK_FILE = "HK.zh.json";
 
 /** 일본 eShop 카탈로그 검색(JSON). 한국 스토어와 달리 Magento 가 아니라 Solr 검색 API 다 */
 export const JP_SEARCH_URL = "https://search.nintendo.jp/nintendo_soft/search.json";
