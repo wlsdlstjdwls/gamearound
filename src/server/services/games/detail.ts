@@ -10,6 +10,7 @@ import { DTO_CACHE_VERSION } from "@/lib/cache";
 import { splitGenreTags } from "@/lib/genres";
 import { byAddonKind } from "@/lib/games/addon-kind";
 import { cheapestOf } from "@/lib/currency";
+import { normalizeForSearch } from "@/lib/slug";
 
 const DETAIL_NEWS_LIMIT = 5;
 /** 상세에 한 번에 띄울 추가 콘텐츠 수. 심즈류는 수백 개라 상한이 없으면 화면이 목록으로 덮인다 */
@@ -64,21 +65,25 @@ function toChildDtos(
   rows: { slug: string; titleKo: string | null; titleEn: string; platforms: Parameters<typeof toPlatformDto>[0][] }[],
   { byKind = false }: { byKind?: boolean } = {},
 ) {
-  return rows
-    .map((d) => {
-      const platforms = keepVisiblePlatforms([...d.platforms]).sort(byRegionThenPlatform).map(toPlatformDto);
-      return { slug: d.slug, title: d.titleKo ?? d.titleEn, platforms };
-    })
-    // 보이는 값이 하나도 없는 자식은 세우지 않는다(2026-11-11). 2026-09-15 psprices 병합 자식 12,358건이 링크 없는 행만 가져
-    // 값 없는 이름표로 섰고, 그중 2,653건은 같은 본편 아래 같은 제목의 공식 자식이 따로 있는 중복이었다. 살 곳이 없는 줄이
-    // 30줄 몫을 먹어 값 있는 DLC 를 밀어내기도 했다. 지우지 않는다 — 매칭이 공식 ID 를 붙이면 링크가 생기고 스스로 돌아온다
-    .filter((d) => d.platforms.length > 0)
+  const shaped = rows.map((d) => {
+    const platforms = keepVisiblePlatforms([...d.platforms]).sort(byRegionThenPlatform).map(toPlatformDto);
+    return { slug: d.slug, title: d.titleKo ?? d.titleEn, keys: [d.titleKo, d.titleEn].filter((t): t is string => !!t).map(normalizeForSearch), platforms };
+  });
+  // 값 없는 자식(2026-09-15 psprices 병합분 12,358건, 링크 없는 행만 가짐)은 이름이라도 보여 준다(2026-11-11 사용자 결정 "그래도 노출").
+  // 단 같은 제목의 값 있는 형제가 있으면 그건 중복이다(2,653건) — 같은 DLC 가 "-" 줄과 값 줄로 두 번 서지 않게 뺀다
+  const pricedKeys = new Set(shaped.filter((d) => d.platforms.length > 0).flatMap((d) => d.keys));
+  return shaped
+    .filter((d) => d.platforms.length > 0 || !d.keys.some((k) => pricedKeys.has(k)))
+    .map((d) => ({ slug: d.slug, title: d.title, platforms: d.platforms }))
     // 정렬 열쇠(값)를 한 번만 구해 두고 비교자에 넘긴다 — 비교자 안에서 최저가를 다시 세면
     // 300건 정렬에 cheapestOf 가 수천 번 돈다
     .map((d) => ({ row: d, price: cheapestOf(d.platforms)?.currentPrice ?? null }))
-    .sort(byKind
-      ? (a, b) => byAddonKind({ title: a.row.title, price: a.price }, { title: b.row.title, price: b.price })
-      : (a, b) => a.row.title.localeCompare(b.row.title, "ko"))
+    // 값 있는 줄을 늘 앞에 세운다 — 값 없는 줄이 30줄 몫을 먹어 살 수 있는 DLC 를 밀어내지 않게
+    .sort((a, b) =>
+      Number(a.row.platforms.length === 0) - Number(b.row.platforms.length === 0) ||
+      (byKind
+        ? byAddonKind({ title: a.row.title, price: a.price }, { title: b.row.title, price: b.price })
+        : a.row.title.localeCompare(b.row.title, "ko")))
     .slice(0, DETAIL_DLC_LIMIT)
     .map((d) => d.row);
 }
