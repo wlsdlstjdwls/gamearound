@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { resolveNav, trailKind } from "@/lib/nav";
+import { isSubScreen, resolveNav, trailKind } from "@/lib/nav";
 
 const q = (s = "") => new URLSearchParams(s);
 
@@ -94,5 +94,19 @@ describe("인디 상세의 출처(?from=)", () => {
   it("출처는 상세 한 칸에만 먹는다 — 목록, 고치기 화면은 그대로", () => {
     expect(resolveNav("/indie", q("from=hof")).sub?.label).toBe("전체 인디 게임");
     expect(resolveNav("/indie/mine/abc", q("from=hof")).sub?.label).toBe("내 게임 관리");
+  });
+});
+
+describe("isSubScreen", () => {
+  const band = (path: string, q = "") => isSubScreen(path, resolveNav(path, new URLSearchParams(q)).sub);
+  it("하위 메뉴 칸 화면에서만 띠가 선다", () => {
+    expect(band("/games")).toBe(true);
+    expect(band("/games", "sale=1")).toBe(true);
+    expect(band("/indie")).toBe(true);
+  });
+  it("칸에 속하지 않은 상세 화면에서는 서지 않는다", () => {
+    expect(band("/games/007-first-light")).toBe(false);
+    expect(band("/indie/some-game")).toBe(false);
+    expect(band("/")).toBe(false);
   });
 });

@@ -1,6 +1,8 @@
 "use client";
 // 하위 메뉴 띠 — 지금 메뉴의 하위 화면들(기획서 v2.0 3.1, 4.3). 현재 위치는 브랜드색 글자 + 밑줄이다.
-// 소속 메뉴가 없는 화면(홈, 설정)에는 서지 않는다. 상세처럼 메뉴는 있고 칸이 없는 화면은 띠만 서고 아무 칸도 안 켜진다.
+// 띠의 칸에 속한 화면에서만 선다(2026-11-11 사용자: "서브 메뉴에 속한 화면이 아니면 서브 메뉴는 미노출").
+// 소속 메뉴가 없는 화면(홈, 설정)뿐 아니라, 게임 상세처럼 메뉴는 있어도 띠의 어느 칸도 아닌 화면에서도 서지 않는다 —
+// 전에는 띠만 서고 아무 칸도 안 켜져 "지금 어디인가" 를 말하지 못하는 줄이 자리를 먹었다. 상단 메뉴의 켜짐은 그대로다.
 //
 // 머리띠(sticky) 밖에 두는 이유: 띠가 서는 화면과 안 서는 화면이 있어 머리띠 높이가 바뀌면
 // --header-h 를 쓰는 자리(상세 스크롤 머리바, 출시예정 달 띠)가 전부 어긋난다. 띠는 본문과 함께 스크롤된다.
@@ -20,7 +22,7 @@ import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useLayoutEffect, useOptimistic, useRef, useTransition } from "react";
 import { isPlainClick } from "@/components/ui/chip-nav";
 import { cn } from "@/lib/cn";
-import { resolveNav } from "@/lib/nav";
+import { isSubScreen, resolveNav } from "@/lib/nav";
 
 export function SubNav() {
   const pathname = usePathname();
@@ -71,7 +73,7 @@ export function SubNav() {
 
   // 띠에 설 칸이 하나뿐이면 띠를 세우지 않는다 — 고를 것이 없는 줄은 자리만 먹는다(게임 게시판, lib/nav 의 hideInBand)
   const subs = section?.subs.filter((s) => !s.hideInBand) ?? [];
-  if (!section || subs.length < 2) return null;
+  if (!section || !isSubScreen(pathname, sub) || subs.length < 2) return null;
   const on = picked ?? sub?.href ?? null;
 
   return (

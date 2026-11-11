@@ -192,6 +192,14 @@ function pathOf(href: string): string {
   return q === -1 ? href : href.slice(0, q);
 }
 
+/**
+ * 지금 화면이 하위 메뉴 칸 그 자체인가(주소 경로가 칸 경로와 같다). resolveNav 는 아래 화면(/indie/게임)도 그 칸으로 묶어 상단 메뉴를 켜지만,
+ * 하위 메뉴 띠는 칸 화면에서만 선다(2026-11-11 사용자: "서브 메뉴에 속한 화면이 아니면 서브 메뉴는 미노출", components/sub-nav)
+ */
+export function isSubScreen(pathname: string, sub: NavSub | null): boolean {
+  return sub !== null && pathOf(sub.href) === pathname;
+}
+
 function under(pathname: string, path: string): boolean {
   return pathname === path || pathname.startsWith(`${path}/`);
 }
