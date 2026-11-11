@@ -5,6 +5,10 @@
 // 왜 루트(app/loading)가 아니라 여기인가(2026-10-08): 루트에 홈 모양을 두었더니 제 뼈대가 없는 화면이
 // 전부 홈 카드 격자를 빌려 썼다(사용자: "다 똑같아"). 이제 화면마다 제 loading.tsx 가 있고,
 // 루트는 인증 화면처럼 뼈대가 따로 없는 곳의 무난한 폴백만 맡는다.
+//
+// (public) 바로 밑이 아니라 (home) 묶음 안인 이유(2026-11-11): (public)/loading 이면 공개 화면 전체의 바깥 경계라,
+// 목록, 출시 예정처럼 제 뼈대가 있는 화면으로 넘어갈 때도 그 뼈대가 도착하기 전까지 홈 뼈대가 먼저 떴다(개발 서버는 미리 받기가 없어 늘,
+// 운영도 미리 받기 전에 누르면). 사용자 "페이지 이동할 때도 다르다". 이제 홈 뼈대는 "/" 에만 걸린다
 import { GameCardSkeleton } from "@/components/game-card-skeleton";
 import { Bone, SectionHeadSkeleton, SkeletonPage } from "@/components/ui/skeleton";
 import { HOME_FOUR_GRID_CLASS, HOME_FOUR_ITEM_CLASS } from "@/lib/games/grid";
