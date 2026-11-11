@@ -91,8 +91,9 @@ export function GameHeadbar({
 
   return (
     <>
-      {/* 흐름 안의 1px. -mt 로 자기 높이를 도로 먹어 레이아웃 간격을 바꾸지 않는다 */}
-      <div ref={sentinel} className="-mt-px h-px" aria-hidden="true" />
+      {/* 흐름 안의 1px. -mt 로 자기 높이를 도로 먹는다. 그래도 부모(Page)의 flex gap 한 칸은 이 줄이 따로 먹어서
+          히어로와 가격 비교 사이가 28px 두 번(56px)이 됐다(2026-11-11 사용자 "공백이 넓다"). -mb 로 그 한 칸(상세 Page gap 28)을 돌려준다 */}
+      <div ref={sentinel} className="-mb-7 -mt-px h-px" aria-hidden="true" />
       {mounted &&
         createPortal(
           <div
