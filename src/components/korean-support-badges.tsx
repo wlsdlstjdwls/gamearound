@@ -11,6 +11,7 @@
 import { KOREAN_SUPPORT_LABEL } from "@/lib/games/messages";
 import { platformLabel } from "@/lib/format";
 import { cn } from "@/lib/cn";
+import { CheckIcon } from "@/components/ui/icons";
 import { HOME_REGION } from "@/server/db/schema";
 import type { PlatformDto } from "@/server/services/games";
 
@@ -25,10 +26,13 @@ function labelsOf(rows: Props["platforms"]): string {
 
 function Chip({ label, stores, tone }: { label: string; stores: string; tone: "on" | "off" }) {
   return (
-    // 켜진 칩은 흰 바탕에 검정 테두리, 검정 글자다(2026-11-11 사용자 "검정 테두리 흰 배경 검정 글씨", 같은 날 검정 면에서 바꿈) — 연파랑은 할인, 출시 알림, 링크와 같은 색이라 정보 칩이 누르는 것처럼 읽혔다
-    <span className={cn(CHIP, tone === "on" ? "bg-surface text-ink ring-1 ring-ink ring-inset" : "bg-surface-2 text-dim")}>
+    // 켜진 칩도 이 줄의 다른 칩(솔로, 협동)과 같은 회색 면이다 — 줄 전체가 "이 게임에 대한 사실" 한 묶음이다(2026-11-11, 같은 날 연파랑, 검정 면,
+    // 검정 테두리를 거쳐 사용자가 고름). 연파랑은 누르는 것(링크, 할인)의 색이라 정보 칩이 단추처럼 읽혔고, 검정은 두 칩만 튀었다.
+    // 지원하는 칩은 앞의 체크와 진한 굵은 글자로, 미지원은 체크 없이 옅은 글자로 갈린다
+    <span className={cn(CHIP, tone === "on" ? "bg-surface-2 text-ink" : "bg-surface-2 text-dim")}>
+      {tone === "on" && <CheckIcon size={13} className="-mr-0.5 shrink-0" aria-hidden />}
       <span className={tone === "on" ? "font-bold" : undefined}>{label}</span>
-      <span className={tone === "on" ? "text-ink-2" : undefined}>{stores}</span>
+      <span className={tone === "on" ? "text-mut" : undefined}>{stores}</span>
     </span>
   );
 }

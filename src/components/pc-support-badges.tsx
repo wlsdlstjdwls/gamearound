@@ -21,9 +21,9 @@ const CHIP = "inline-flex items-center gap-1.5 rounded-full px-[11px] py-[5px] t
 
 /** 등급별 칩 차림. 검증됨만 굵은 글자다 — 밸브가 "여기서 그냥 돌아간다" 고 단언한 유일한 등급이다 */
 const DECK_CHIP: Record<DeckCompat, string> = {
-  // 흰 바탕, 검정 테두리, 검정 글자(korean-support-badges 와 같은 이유, 2026-11-11 사용자)
-  verified: "bg-surface font-bold text-ink ring-1 ring-ink ring-inset",
-  playable: "bg-surface text-ink ring-1 ring-ink ring-inset",
+  // 이 줄의 다른 칩과 같은 회색 면, 진한 글자(korean-support-badges 와 같은 이유, 2026-11-11 사용자가 고름). 스팀덱 그림이 앞에 선다
+  verified: "bg-surface-2 font-bold text-ink",
+  playable: "bg-surface-2 font-semibold text-ink",
   unsupported: "bg-surface-2 text-dim",
 };
 
