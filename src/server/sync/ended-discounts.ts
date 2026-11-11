@@ -8,11 +8,18 @@
 // 스토어가 할인을 연장했다면? 다음 갱신이 다시 할인으로 덮는다. 그 사이 몇 시간 정가로 보이는 쪽이
 // 끝난 할인을 며칠씩 보이는 쪽보다 덜 틀린다 — 종료 시각은 스토어가 준 값이고 연장은 드물다.
 //
+// 종료 시각이 없는 할인은 "스토어가 마지막으로 할인이라고 말해 준 때" 로 센다(STALE_DISCOUNT_DAYS). 그보다 오래 아무도
+// 다시 확인하지 못한 할인은 끝난 것으로 본다 — 2026-11-11 실측 3,570행이 09-15 값 그대로 할인으로 떠 있었다(PS 병합분,
+// 상세가 PS5 만 줘서 멈춘 PS4 행). 스토어가 시작 시각을 안 주는 PS 는 기간을 셀 수 없어 확인 시각이 유일한 근거다.
+//
 // AGENTS §7 "할인 메타는 null 로 덮어써야 한다" 의 연장이다. 관리자가 잠근 칸이 하나라도 있으면 그 행은 건드리지 않는다.
-import { and, eq, gt, inArray, isNotNull, lt, sql } from "drizzle-orm";
+import { and, eq, gt, inArray, isNotNull, isNull, lt, or, sql } from "drizzle-orm";
 import { gamePlatforms, games, priceSnapshots, type Platform, type Region } from "@/server/db/schema";
 import { updatedBy, createdBy } from "@/server/db/audit";
 import { isLocked, type Ctx } from "./context";
+import { STALE_DISCOUNT_DAYS } from "./constants";
+
+const DAY_MS = 86_400_000;
 
 /** 되돌릴 때 함께 바뀌는 칸. 하나라도 잠겨 있으면 그 행은 사람이 정한 값이라 손대지 않는다 */
 const RESET_FIELDS = ["currentPrice", "discountPct", "discountStartsAt", "discountEndsAt", "discountName"] as const;
@@ -39,8 +46,13 @@ export async function resetEndedDiscounts(ctx: Ctx, platforms: Platform[], regio
         inArray(gamePlatforms.platform, platforms),
         eq(gamePlatforms.region, region),
         gt(gamePlatforms.discountPct, 0),
-        isNotNull(gamePlatforms.discountEndsAt),
-        lt(gamePlatforms.discountEndsAt, ctx.now),
+        or(
+          and(isNotNull(gamePlatforms.discountEndsAt), lt(gamePlatforms.discountEndsAt, ctx.now)),
+          and(
+            isNull(gamePlatforms.discountEndsAt),
+            sql`coalesce(${gamePlatforms.lastSyncedAt}, ${gamePlatforms.updatedAt}) < ${new Date(ctx.now.getTime() - STALE_DISCOUNT_DAYS * DAY_MS).toISOString()}::timestamptz`,
+          ),
+        ),
       ),
     );
   const targets = pickResettable(rows, (rowId, field) => isLocked(ctx, "game_platforms", rowId, field));

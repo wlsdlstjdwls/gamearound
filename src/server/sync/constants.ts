@@ -8,6 +8,12 @@ import type { Platform, Region } from "@/server/db/schema";
 
 export const LOCK_TTL_SEC = 3600;
 export const RETRY_DELAYS_MS = [1000, 4000, 16000]; // 재시도 3회 지수 백오프
+/**
+ * 종료 시각 없는 할인을 끝난 것으로 볼 때까지의 날(sync/ended-discounts). 스토어가 마지막으로 할인이라고 확인해 준 뒤 이만큼 지나면 정가로 되돌린다.
+ * 30 = 스토어가 기간을 준 할인의 95% 가 이 안에 끝난다(2026-11-11 실측 p95: 닌텐도 27일, Epic 29.5일).
+ * 수집이 도는 행은 며칠 안에 다시 확인되므로 걸리지 않는다 — 걸리는 것은 수집이 더는 손대지 못하는 행뿐이다.
+ */
+export const STALE_DISCOUNT_DAYS = 30;
 /** 수집 대상이 되는 매핑 상태. pending(검수 대기), none(미매칭 기록)은 제외 */
 export const MATCHED_FOR_SYNC = ["auto", "manual"] as const;
 /** 소스별 배치 크기 (§4.4: 200~500, §9: 1회 5분 이내). 크롤 소스는 minIntervalMs × 배치가 워크플로 timeout 안에 들도록 */
