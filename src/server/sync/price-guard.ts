@@ -26,6 +26,20 @@ export function expectsPrice(s: StoreSnapshot, today: string): boolean {
 }
 
 /**
+ * 스냅샷에 출시일이 없으면 DB 가 아는 출시일로 채운다. 가격 배치(닌텐도 fetchMany, 스팀 GetItems, 목록 값)는 가격만 주고
+ * 출시일을 안 실어서, 그대로 세면 배치 몫이 통째로 모수에서 빠진다 — 2026-11-11 운영 닌텐도 회차가 300건 중 246건을
+ * "출시일 미상" 으로 빼고 상세로 받은 54건만 셌다. 가드가 지키려는 사고(가격을 통째로 못 읽음)는 바로 그 배치 경로에서 난다.
+ * 스토어가 준 출시일이 있으면 그쪽이 우선이다(DB 값은 그 스토어가 아닌 소스가 정했을 수 있다).
+ */
+export function withKnownRelease(items: ReadonlyArray<{ gameId: string | null; snapshot: StoreSnapshot }>, known: ReadonlyMap<string, string>): StoreSnapshot[] {
+  return items.map(({ gameId, snapshot }) => {
+    if (snapshot.releaseDate || !gameId) return snapshot;
+    const releaseDate = known.get(gameId);
+    return releaseDate ? { ...snapshot, releaseDate } : snapshot;
+  });
+}
+
+/**
  * 값이 못 미더운 항목인가. **0 은 세지 않는다** — 어댑터가 무료(0)와 미판매(null)를 이미 가른다
  * (steam 의 parse-store-items: `is_free ? 0 : null`). 무료 게임의 0 은 올바로 읽은 값이다.
  * 정가가 있는데 0 으로 읽히는 회차는 배치가 아니라 항목별 사고라 priceMisread 가 따로 막는다.

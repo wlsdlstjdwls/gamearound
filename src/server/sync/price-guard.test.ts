@@ -1,6 +1,6 @@
 // 가격 가드 테스트. 2026-09-17 사고를 그대로 재현하는 줄이 아래 "출시예정만 든 배치" 다.
 import { describe, expect, it } from "vitest";
-import { expectsPrice, isoDay, judgePrices } from "./price-guard";
+import { expectsPrice, isoDay, judgePrices, withKnownRelease } from "./price-guard";
 import type { StoreSnapshot } from "@/server/adapters/types";
 
 const TODAY = "2026-09-21";
@@ -83,5 +83,21 @@ describe("judgePrices", () => {
 describe("isoDay", () => {
   it("UTC 날짜 앞 열 글자", () => {
     expect(isoDay(new Date("2026-09-21T15:04:05Z"))).toBe("2026-09-21");
+  });
+});
+
+describe("withKnownRelease", () => {
+  const known = new Map([["g1", "2020-01-01"]]);
+  it("배치가 출시일을 안 주면 DB 출시일로 채워 모수에 넣는다", () => {
+    const [s] = withKnownRelease([{ gameId: "g1", snapshot: snap({ releaseDate: null }) }], known);
+    expect(expectsPrice(s, TODAY)).toBe(true);
+  });
+  it("스토어가 준 출시일이 DB 보다 우선이다", () => {
+    const [s] = withKnownRelease([{ gameId: "g1", snapshot: snap({ releaseDate: "2027-01-01" }) }], known);
+    expect(s.releaseDate).toBe("2027-01-01");
+  });
+  it("신규 대상(gameId 없음)과 DB 에도 없는 게임은 그대로 둔다", () => {
+    const out = withKnownRelease([{ gameId: null, snapshot: snap({ releaseDate: null }) }, { gameId: "g2", snapshot: snap({ releaseDate: null }) }], known);
+    expect(out.every((s) => s.releaseDate === null)).toBe(true);
   });
 });

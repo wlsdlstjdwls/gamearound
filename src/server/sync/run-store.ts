@@ -1,7 +1,7 @@
 // 스토어 소스 실행 — 수집 → 검증 → 반영 3단계. 검증을 통과하지 못하면 아무것도 반영하지 않는다.
 import { getStoreAdapter, type StoreSource } from "@/server/adapters";
 import { BATCH_SIZE, SOURCE_PLATFORMS, SOURCE_REGION } from "./constants";
-import { isoDay, judgePrices } from "./price-guard";
+import { isoDay, judgePrices, withKnownRelease } from "./price-guard";
 import { recordError, type Ctx, type RunOptions } from "./context";
 import { listParentDlcs } from "./dlc-list";
 import { syncPatchNotes } from "./patch-list";
@@ -12,6 +12,8 @@ import { fetchStoreBatched, fetchStoreOneByOne } from "./store-fetch";
 import { listStoreTargets } from "./store-targets";
 import { syncPopularityRanks } from "./rank-writer";
 import { resetEndedDiscounts } from "./ended-discounts";
+import { and, eq, inArray, sql } from "drizzle-orm";
+import { gamePlatforms } from "@/server/db/schema";
 
 export async function runStore(ctx: Ctx, source: StoreSource, opts: RunOptions): Promise<void> {
   const adapter = getStoreAdapter(source);
@@ -54,7 +56,8 @@ export async function runStore(ctx: Ctx, source: StoreSource, opts: RunOptions):
   ];
 
   // 2단계: §10 파싱 검증 — 값이 있어야 할 항목에서 가격을 못 읽는 일이 잦으면 반영 생략(sync/price-guard)
-  const verdict = judgePrices(fetched.map((f) => f.snapshot), isoDay(ctx.now));
+  const known = await knownReleaseDates(ctx, source, fetched.filter((f) => !f.snapshot.releaseDate && f.target.gameId).map((f) => f.target.gameId!));
+  const verdict = judgePrices(withKnownRelease(fetched.map((f) => ({ gameId: f.target.gameId, snapshot: f.snapshot })), known), isoDay(ctx.now));
   if (verdict.blocked) {
     const msg = `가격 검증 실패: 값이 있어야 할 ${verdict.expected}건 중 ${verdict.unreadable}건을 못 읽음 — 반영 생략 (마크업/응답 변경 의심)`;
     ctx.errors.unshift(msg);
@@ -103,4 +106,24 @@ export async function runStore(ctx: Ctx, source: StoreSource, opts: RunOptions):
   } catch (e) {
     recordError(ctx, `${source}:patch`, e);
   }
+}
+
+/**
+ * 가격 검증 모수를 채울 출시일(price-guard 의 withKnownRelease). 출시일은 기기 행마다 있어 이 소스의 기기, 지역 행 중 가장 이른 날을 쓴다.
+ * 한 회차 대상 몇백 건이라 한 번에 묻는다
+ */
+async function knownReleaseDates(ctx: Ctx, source: StoreSource, gameIds: string[]): Promise<Map<string, string>> {
+  if (gameIds.length === 0) return new Map();
+  const rows = await ctx.db
+    .select({ id: gamePlatforms.gameId, releaseDate: sql<string | null>`min(${gamePlatforms.releaseDate})` })
+    .from(gamePlatforms)
+    .where(
+      and(
+        inArray(gamePlatforms.gameId, [...new Set(gameIds)]),
+        inArray(gamePlatforms.platform, SOURCE_PLATFORMS[source]),
+        eq(gamePlatforms.region, SOURCE_REGION[source]),
+      ),
+    )
+    .groupBy(gamePlatforms.gameId);
+  return new Map(rows.filter((r) => r.releaseDate).map((r) => [r.id, r.releaseDate!]));
 }
