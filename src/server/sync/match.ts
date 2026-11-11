@@ -3,13 +3,13 @@
 // matched_by="manual" 행은 크롤러가 절대 덮어쓰지 않는다.
 import { and, eq, inArray, isNull, lt, ne, or, sql } from "drizzle-orm";
 import { getDb } from "@/server/db/client";
-import { gameListStats, gameSourceRefs, games } from "@/server/db/schema";
+import { gameListStats, gamePlatforms, gameSourceRefs, games } from "@/server/db/schema";
 import { updatedBy } from "@/server/db/audit";
 import { getSearchableAdapter, getDisabledReason, isSourceEnabled, type SearchableSource } from "@/server/adapters";
 import type { SearchCandidate, Source } from "@/server/adapters/types";
 import { normalizeTitle, seriesConflict, trigramSimilarity } from "@/lib/slug";
 import { productKindConflict } from "@/lib/product-kind";
-import { MATCHED_FOR_SYNC } from "./constants";
+import { MATCHED_FOR_SYNC, SOURCE_PLATFORMS } from "./constants";
 import { fillMatchedMedia } from "./match-media";
 
 export const AUTO_MATCH_THRESHOLD = 0.9;
@@ -233,6 +233,22 @@ export interface MatchSummary {
  * 해당 소스에 ref 가 없는 게임 + matched_by="none" 으로 기록된 지 NONE_RETRY_DAYS 지난 게임을
  * limit 개까지 매칭. 소스별 minIntervalMs 대기.
  */
+/**
+ * 이 소스 기기에 **스토어가 확인해 줄 수 없는 할인**을 띄운 게임을 앞에 세운다(매장 다음, 인기순 앞).
+ * 2026-09 psprices 병합 행은 공식 상품 id 가 없어(store_external_id 가 "psprices:숫자") 수집이 다시 묻지 못하고,
+ * 할인이 두 달째 그대로 떠 있었다(11-11 실측 약 3,160행). 매칭으로 공식 id 를 붙여야 상세가 값과 할인 종료 시각을 준다.
+ * 기기가 없는 소스(평점, 플레이타임)는 이 순서를 쓰지 않는다
+ */
+function unverifiedSaleFirst(source: SearchableSource) {
+  const platforms = (SOURCE_PLATFORMS as Partial<Record<string, readonly string[]>>)[source];
+  if (!platforms?.length) return sql`0`;
+  return sql`case when exists (
+    select 1 from ${gamePlatforms} gp
+    where gp.game_id = ${games.id} and gp.discount_pct > 0 and gp.store_external_id like 'psprices:%'
+      and gp.platform::text in (${sql.join(platforms.map((p) => sql`${p}`), sql`, `)})
+  ) then 0 else 1 end`;
+}
+
 export async function matchUnmatchedGames(source: SearchableSource, limit: number): Promise<MatchSummary> {
   if (!isSourceEnabled(source)) throw new Error(`${source} 비활성 소스: ${getDisabledReason(source)}`);
   const db = getDb();
@@ -267,6 +283,7 @@ export async function matchUnmatchedGames(source: SearchableSource, limit: numbe
     // 순위(작을수록 위), 평가 수 순이고 둘 다 없는 게임은 예전처럼 생성순으로 뒤에 선다. 값은 목록 집계표(game_list_stats)에서 읽는다
     .orderBy(
       sql`case when ${games.origin} = 'shop' then 0 else 1 end`,
+      unverifiedSaleFirst(source),
       sql`${gameListStats.minRank} asc nulls last`,
       sql`${gameListStats.maxReviews} desc nulls last`,
       games.createdAt,
