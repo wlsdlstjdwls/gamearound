@@ -4,6 +4,7 @@ import { RSS_FEEDS } from "@/server/adapters/news-rss";
 import { GAMEPASS_COLLECTIONS } from "@/server/adapters/gamepass";
 import type { Source } from "@/server/adapters/types";
 import type { StoreSource } from "@/server/adapters";
+import { PSSTORE_SEARCH_LOOKUP_MAX } from "@/server/adapters/psstore/constants";
 import type { Platform, Region } from "@/server/db/schema";
 
 export const LOCK_TTL_SEC = 3600;
@@ -397,7 +398,8 @@ export const CRON_PLAN: Record<CronSource, Record<CronMode, CronRunPlan>> = {
     // 559초. 2026-09-16 에 200 에서 300 으로 올렸다 — 가격 갱신이 Actions 에서 이 크론으로 옮겨 왔다.
     // fetchMany 가 없어 건당 요청 1회(간격 1초) + 반영 0.4초라 건당 1.4초다.
     // 상한은 325건이다(cron-plan.test 의 estimateMs 가 600초에서 역산한다) — 여유를 두고 300 에 멈춘다.
-    prices: { limit: 210, seedTop: 0, pageBudget: 0, match: 0 },
+    // 2026-11-11 PS4 상품 값 묻기(PLATFORM_SIBLING_LIMIT_BY_SOURCE 40건, 건당 1초)를 얹으며 210 에서 185 로 내렸다
+    prices: { limit: 185, seedTop: 0, pageBudget: 0, match: 0 },
     // 578초. fetchMany 가 없어 **한 건이 요청 한 번**이고(간격 1초) 거기에 신규 반영 1.8초가
     // 더 붙어 건당 2.8초다 — 네 소스 중 건당 단가가 제일 비싸다.
     //
@@ -408,8 +410,9 @@ export const CRON_PLAN: Record<CronSource, Record<CronMode, CronRunPlan>> = {
     //   남은 여유를 발견 몫으로
     // 하루 2회 × 120건이면 한 바퀴가 44일에서 29일로 준다.
     discover: { limit: 120, seedTop: 120, pageBudget: 90, match: 8, seedShare: 1 },
-    // 간격 1초. 건당 최대 2.4초 → 200건 552초
-    match: { limit: 0, seedTop: 0, pageBudget: 0, match: 200 },
+    // 2026-11-11 200 에서 60 으로. PS 검색은 한 번에 요청 4번(SEARCH_REQUESTS_PER_QUERY)이라 200건이 800초를 넘겨 매일 504 로 끝났다.
+    // 60건 x 영문, 한국어 두 번 x 4요청 = 480초. 끝까지 도는 60건이 잘리는 200건보다 많이 붙인다
+    match: { limit: 0, seedTop: 0, pageBudget: 0, match: 60 },
   },
   xbox: {
     // 557초(cron-plan.test 추정, 900 이면 612초로 넘친다). 추정은 반영을 건당 0.4초로 보수적으로 센다 —
@@ -771,6 +774,17 @@ export const SALE_END_FILL_LIMIT: Partial<Record<StoreSource, number>> = { pssto
  * 20시간이면 하루 한 번만 다시 묻는다(REFRESH_POPULAR_MIN_AGE_HOURS 와 같은 이유).
  */
 export const SALE_END_FILL_MIN_AGE_HOURS = 20;
+/**
+ * 한 회차에 다른 기기 상품 값을 따로 물을 최대 수(sync/platform-siblings). 상품 한 건이 요청 한 번이라 요청 간격(PS 1초)만큼 회차가 는다.
+ * 크론 몫 어림(cron-plan.test)이 이 수를 통째로 센다. 적지 않은 소스는 묻지 않는다(같은 값 쓰기, 할인 걷기는 요청이 없어 상한 밖이다).
+ * psstore 40 = 2026-11-11 표본 20건 중 따로 된 PS4 상품이 11건, PS 평소 몫에서 PS4 행이 있는 게임은 약 1/3 이라 회차당 40건 안팎이다.
+ */
+export const PLATFORM_SIBLING_LIMIT_BY_SOURCE: Partial<Record<StoreSource, number>> = { psstore: 40 };
+/**
+ * 매칭 검색 한 번이 내는 요청 수(크론 몫 어림용). PS 검색은 결과에서 콘셉트를 알아내려고 상위 상품 상세를 더 연다
+ * (adapters/psstore 의 search, PSSTORE_SEARCH_LOOKUP_MAX). 이걸 1로 세서 PS match 몫 200 이 800초를 넘겨 매일 504 로 끝났다(2026-11-09, 11-10 운영 로그).
+ */
+export const SEARCH_REQUESTS_PER_QUERY: Partial<Record<StoreSource, number>> = { psstore: 1 + PSSTORE_SEARCH_LOOKUP_MAX };
 /**
  * 그보다 오래 안 바뀐 행은 이 자리에서 묻지 않는다. 수집이 손대지 못하는 행(예: 상세가 PS5 만 돌려줘 PS4 행이 09-15 값에 멈춘 405건,
  * 2026-11-11 실측)은 lastSyncedAt 이 오르지 않아 오래된 순 맨 앞에 영원히 남는다 — 상한이 없으면 이 자리를 늘 그 행들이 먹는다.

@@ -46,6 +46,15 @@ export interface StoreSnapshot {
   discountEndsAt?: string | null;
   /** 행사명 ("여름 세일", "주말 특가" 등). steam 만 토큰 → 한국어 라벨 */
   discountName?: string | null;
+  /**
+   * 같은 게임의 다른 기기 상품. 상세가 기본 상품 하나의 값만 줄 때 그 기기 행 값을 따로 물을 수 있게 알려 준다
+   * (psstore: 기본이 PS5 인 콘셉트의 PS4 상품, adapters/psstore/ps4-product). 묻고 쓰는 일은 sync/platform-siblings 가 한다
+   */
+  platformProducts?: Array<
+    | { platform: Platform; kind: "product"; productId: string } // 그 기기 상품을 따로 묻는다
+    | { platform: Platform; kind: "same" } // 한 상품을 두 기기로 판다 — 이 스냅샷 값이 곧 그 기기 값
+    | { platform: Platform; kind: "absent" } // 이 나라 스토어가 그 기기 상품을 안 판다
+  >;
   currentVersion?: string | null;
   releaseDate?: string | null;   // ISO date (YYYY-MM-DD)
   /**

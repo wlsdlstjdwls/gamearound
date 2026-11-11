@@ -15,7 +15,7 @@ import { normalizeTitle } from "@/lib/slug";
 import { psstoreCleanTitle } from "./parse";
 
 /** 일반판 제목에는 없는 낱말. 실측 표본의 에디션 이름(얼티밋, 디럭스, 스페셜, 페이백, 번들)과 흔한 이름을 같이 적었다 */
-const PREMIUM_WORDS = /edition|에디션|deluxe|디럭스|ultimate|얼티밋|gold|골드|premium|프리미엄|bundle|번들|complete|컴플리트|version|버전/i;
+export const PREMIUM_WORDS = /edition|에디션|deluxe|디럭스|ultimate|얼티밋|gold|골드|premium|프리미엄|bundle|번들|complete|컴플리트|version|버전/i;
 
 type ProductRef = { id: string; name?: string | null };
 

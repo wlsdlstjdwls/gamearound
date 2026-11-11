@@ -12,6 +12,7 @@ import { fetchStoreBatched, fetchStoreOneByOne } from "./store-fetch";
 import { listStoreTargets } from "./store-targets";
 import { syncPopularityRanks } from "./rank-writer";
 import { resetEndedDiscounts } from "./ended-discounts";
+import { fetchPlatformSiblings } from "./platform-siblings";
 import { and, eq, inArray, sql } from "drizzle-orm";
 import { gamePlatforms } from "@/server/db/schema";
 
@@ -73,6 +74,17 @@ export async function runStore(ctx: Ctx, source: StoreSource, opts: RunOptions):
 
   // 3단계: 반영 — 읽기와 쓰기를 각각 묶어 보낸다(store-apply)
   const applied = await applyStore(ctx, source, fetched);
+  // 같은 게임의 다른 기기 행(PS4)을 따로 묻는다(sync/platform-siblings). 본편 반영 뒤라 실패해도 본편 값은 남는다.
+  // 아래 단계(DLC, 사양, 패치)에는 넣지 않는다 — 같은 게임을 두 번 돌 뿐이다
+  try {
+    const siblings = await fetchPlatformSiblings(ctx, source, adapter, fetched);
+    if (siblings.fetched.length > 0) await applyStore(ctx, source, siblings.fetched);
+    if (siblings.fetched.length + siblings.absentReset > 0) {
+      console.log(`[sync:${source}] 다른 기기 행 ${siblings.fetched.length}건 값 반영, 스토어가 안 파는 기기 행 할인 ${siblings.absentReset}건 걷음`);
+    }
+  } catch (e) {
+    recordError(ctx, `${source}:siblings`, e);
+  }
   // 아래 단계(DLC, 사양, 패치)는 목록 값으로 가격만 반영한 게임에는 돌리지 않는다. 그 게임들은 이번 회차에 상세를 안 봤고,
   // 큰 세일 회차에는 수백 건이라 단계마다 게임당 요청을 내면 예산을 넘는다(2026-11-10 로컬 실측: PS 528건 회차가
   // DLC 목록 단계에서 1MB 짜리 페이지를 열다 629초). 그 게임들의 DLC 는 평소 상세 갱신 차례에 본다

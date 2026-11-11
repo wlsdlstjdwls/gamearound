@@ -7,6 +7,7 @@
 // 수집 단위는 상품(에디션)이 아니라 콘셉트(게임)다. 상품 단위로 모으면 같은 게임이
 // 디럭스, 번들, PS4판, PS5판으로 여러 번 등록된다.
 import { AdapterError, type PageRetry, type PriceQuote, type SearchCandidate, type StoreAdapter, type StoreSnapshot } from "../types";
+import { psstorePs4OfferFromConcept } from "./ps4-product";
 import { createHttpClient } from "../http";
 import { sleep } from "@/lib/async";
 import { errorMessage } from "@/lib/errors";
@@ -132,7 +133,8 @@ export const psstoreAdapter: StoreAdapter = {
     }
     if (!/^\d+$/.test(externalId)) throw new AdapterError(`PlayStation 외부 ID 형식 오류: ${externalId}`, "psstore", false);
     const raw = await op("conceptRetrieveForCtasWithPrice", { conceptId: externalId }, PSSTORE_QUERY_HASHES.conceptDetail, externalId);
-    const snap = parsePsstoreConcept(raw, externalId);
+    const ps4 = psstorePs4OfferFromConcept(raw);
+    const snap: StoreSnapshot = { ...parsePsstoreConcept(raw, externalId), ...(ps4 ? { platformProducts: [{ platform: "ps4", ...ps4 }] } : {}) };
     // 기본 상품이 에디션이면 일반판 값을 한 번 더 묻는다(근거는 standard-product). 드문 경우에만 나가는 요청이다
     const standardId = psstoreStandardProductIdFromConcept(raw);
     if (!standardId) return snap;

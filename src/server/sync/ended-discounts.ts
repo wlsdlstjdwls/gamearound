@@ -55,6 +55,15 @@ export async function resetEndedDiscounts(ctx: Ctx, platforms: Platform[], regio
         ),
       ),
     );
+  return resetDiscountRows(ctx, rows);
+}
+
+/**
+ * 고른 행의 할인을 걷고 정가로 되돌린다. 끝난 할인(위)과, 스토어가 그 기기 상품을 더는 안 판다고 확인된 행
+ * (sync/platform-siblings 의 absent)이 같은 길을 쓴다. 잠긴 칸이 있거나 정가를 모르는 행은 건너뛴다
+ */
+export async function resetDiscountRows(ctx: Ctx, rows: EndedDiscountRow[]): Promise<number> {
+  const { db } = ctx;
   const targets = pickResettable(rows, (rowId, field) => isLocked(ctx, "game_platforms", rowId, field));
   if (targets.length === 0) return 0;
 

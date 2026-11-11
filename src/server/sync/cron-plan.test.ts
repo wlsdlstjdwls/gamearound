@@ -15,6 +15,8 @@ import {
   CRON_DB_MS_PER_NEW_ITEM,
   CRON_DB_MS_PER_NEW_ITEM_BY_SOURCE,
   CRON_PLAN,
+  PLATFORM_SIBLING_LIMIT_BY_SOURCE,
+  SEARCH_REQUESTS_PER_QUERY,
   CRON_SAFETY_FACTOR,
   CRON_SOURCES,
   CRON_TIME_BUDGET_MS,
@@ -58,7 +60,9 @@ function estimateMs(source: (typeof CRON_SOURCES)[number], mode: CronMode, overr
   // match 모드는 runSource 를 아예 부르지 않는다(route 의 limit 0 분기) — 목록 페이지도 DLC 단계도 없다.
   // 드는 것은 검색뿐이고, 한 건이 최대 두 번 나간다(영문 제목, 한국어 제목. match.ts 의 searchBestCandidate).
   if (mode === "match") {
-    return (plan.match * 2 * adapter.minIntervalMs + plan.match * CRON_DB_MS_PER_ITEM) * CRON_SAFETY_FACTOR;
+    // PS 검색은 한 번에 상품 상세를 몇 개 더 연다(SEARCH_REQUESTS_PER_QUERY). 1로 세면 몫 200 이 실제로는 800초를 넘겼다
+    const perQuery = SEARCH_REQUESTS_PER_QUERY[source] ?? 1;
+    return (plan.match * 2 * perQuery * adapter.minIntervalMs + plan.match * CRON_DB_MS_PER_ITEM) * CRON_SAFETY_FACTOR;
   }
   // 상세 몫(detailTop)도 배치를 못 타고 건마다 상품 HTML 을 한 번 연다
   const detailItems = adapter.batchPricesOnly === "detail" ? plan.seedTop + (plan.detailTop ?? 0) : 0;
@@ -78,12 +82,14 @@ function estimateMs(source: (typeof CRON_SOURCES)[number], mode: CronMode, overr
   // 둘 다 배치가 없어 게임 1개가 요청 1회다.
   const patchRequests = PATCH_SOURCES.includes(source) ? (PATCH_LIST_PER_RUN_BY_SOURCE[source] ?? PATCH_LIST_PER_RUN) : 0;
   const requirementRequests = adapter.fetchRequirements ? REQUIREMENTS_PER_RUN : 0;
+  // 다른 기기 상품 값 묻기(sync/platform-siblings)도 반영 뒤 같은 실행에서 돈다. 이미 아는 게임에만 나간다(신규 시드는 그 기기 행이 없다)
+  const siblingRequests = Math.min(Math.max(plan.limit - plan.seedTop, 0), PLATFORM_SIBLING_LIMIT_BY_SOURCE[source] ?? 0);
 
   // 목록 쪽은 따로 센다 — 목록 간격이 상세 간격과 다른 소스가 있다(nintendo: 목록 한 쪽 6초, 상세 4초)
   const pageMs = plan.pageBudget * (adapter.discoverPageMs ?? adapter.minIntervalMs);
   const requests =
     plan.match + detailItems + Math.ceil(batchedItems / perRequest) + dlcListRequests + dlcFetchRequests +
-    patchRequests + requirementRequests;
+    patchRequests + requirementRequests + siblingRequests;
   // 새로 들어오는 것(시드 + 새 DLC)과 이미 아는 것을 갈라 센다
   const newItems = plan.seedTop + dlcFetchItems;
   const updatedItems = Math.max(plan.limit - plan.seedTop, 0);
