@@ -28,7 +28,7 @@ import { GamePostsLink } from "@/components/game-detail/posts-link";
 import { CriticScores, PlaytimeTiles } from "@/components/game-detail/scores";
 import { Flag } from "@/components/ui/flag";
 import { Tag } from "@/components/ui/tag";
-import { Clamp } from "@/components/ui/tooltip";
+import { FitClamp } from "@/components/ui/fit-clamp";
 import { BellIcon, CalendarIcon } from "@/components/ui/icons";
 import { DETAIL_MESSAGES as D } from "@/lib/games/detail-messages";
 import { formatDate, kstDateKey } from "@/lib/format";
@@ -46,6 +46,10 @@ const GENRE_TAG =
 const META_ITEM = "relative inline-flex items-center gap-x-1.5 pl-3 pr-1.5 before:absolute before:left-[3px] before:text-dim-2 before:content-['|']";
 
 const MS_PER_DAY = 24 * 60 * 60 * 1000;
+/** 설명이 자리가 모자라도 보이는 줄 수(좁은 화면은 늘 이만큼) */
+const DESCRIPTION_MIN_LINES = 3;
+/** 설명을 남는 높이까지 펴는 폭 — 히어로 기둥이 나란히 서는 md(768) 부터 */
+const DESCRIPTION_FIT_QUERY = "(min-width: 768px)";
 
 /** 출시일까지 남은 날(한국 날짜 기준). 날짜 열쇠끼리 빼서 시각 때문에 하루가 흔들리지 않는다 */
 function daysUntil(dateKey: string): number {
@@ -165,10 +169,17 @@ export function DetailHero({
             ))}
           </ul>
         )}
+        {/* 설명은 옆 기둥(커버, 평점) 높이까지 남는 자리를 다 쓰고, 그래도 넘칠 때만 자른다(2026-11-11 사용자 "자리 충분한데 다 안 나온다", ui/fit-clamp).
+            기둥이 나란히 서는 md 부터다. 좁은 화면은 한 기둥이라 남는 높이가 없어 세 줄 그대로다. min-h 는 세 줄(14px x 1.6 x 3) — 그보다 좁으면 줄이 기둥을 민다 */}
         {game.description && (
-          <p className="max-w-[620px] text-[14px] leading-[1.6] text-mut">
-            <Clamp lines={3}>{game.description}</Clamp>
-          </p>
+          <FitClamp
+            minLines={DESCRIPTION_MIN_LINES}
+            fitQuery={DESCRIPTION_FIT_QUERY}
+            boxClassName="min-h-[4.8em] text-[14px] md:min-h-0 md:flex-1"
+            className="max-w-[620px] text-[14px] leading-[1.6] text-mut"
+          >
+            {game.description}
+          </FitClamp>
         )}
         {/* 좁은 화면은 한 기둥이라 높이 맞추기가 필요 없다 — 배지가 커버 밑에 있으면 제목이 한 화면 아래로 밀려 설명 뒤에 둔다 */}
         {(hasPlayModes || game.platforms.length > 0) && <SupportBadges game={game} className="flex md:hidden" />}
