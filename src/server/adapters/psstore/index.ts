@@ -6,7 +6,7 @@
 // 해시는 constants.ts 에 적어 둔다 — 갱신 방법도 거기 주석에 있다.
 // 수집 단위는 상품(에디션)이 아니라 콘셉트(게임)다. 상품 단위로 모으면 같은 게임이
 // 디럭스, 번들, PS4판, PS5판으로 여러 번 등록된다.
-import { AdapterError, type PriceQuote, type SearchCandidate, type StoreAdapter, type StoreSnapshot } from "../types";
+import { AdapterError, type PageRetry, type PriceQuote, type SearchCandidate, type StoreAdapter, type StoreSnapshot } from "../types";
 import { createHttpClient } from "../http";
 import { sleep } from "@/lib/async";
 import { errorMessage } from "@/lib/errors";
@@ -185,10 +185,10 @@ export const psstoreAdapter: StoreAdapter = {
    */
   // 같은 목록이 PS Plus, EA Play 포함 표기도 싣는다(2026-11-10 실측) — 상세 갱신(한 바퀴 2주)을 기다리지 않고 회차마다 맞춘다
   listSubscriptionScope: PSSTORE_LIST_SUBSCRIPTION_SCOPE,
-  async *listPrices(): AsyncGenerator<PriceQuote[]> {
+  async *listPrices(retry: PageRetry = (fn) => fn()): AsyncGenerator<PriceQuote[]> {
     for (let page = 0; page < PSSTORE_DISCOVERY_MAX_PAGES; page += PSSTORE_PRICE_LIST_PARALLEL) {
       const pages = Array.from({ length: PSSTORE_PRICE_LIST_PARALLEL }, (_, i) => page + i);
-      const raws = await Promise.all(pages.map((p) => gridRaw(p, `prices:${p}`)));
+      const raws = await Promise.all(pages.map((p) => retry(() => gridRaw(p, `prices:${p}`))));
       for (const raw of raws) {
         if (gridConceptCount(raw) === 0) return;
         yield parsePsstoreGridPrices(raw);

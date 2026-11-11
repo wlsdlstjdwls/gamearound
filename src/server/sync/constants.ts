@@ -774,6 +774,12 @@ export const PRICE_SWEEP_SOURCES: StoreSource[] = ["nintendo", "nintendo_jp", "p
  */
 export const PRICE_SWEEP_MAX_MS = 150_000;
 /**
+ * 훑기 목록 한 쪽이 일시 실패할 때 다시 묻는 간격. 쪽 하나가 실패하면 그 회차 훑기가 거기서 끝난다 —
+ * 2026-11-11 00:05Z 운영에서 Xbox 첫 쪽이 fetch failed 한 번으로 0/19,945건이 됐다.
+ * 평소 재시도(RETRY_DELAYS_MS, 최대 21초)보다 짧게 둔다: 훑기는 시간 상한(PRICE_SWEEP_MAX_MS) 안에서 돌고, 쪽은 병렬로 묶여 한 쪽이 기다리면 묶음 전체가 선다.
+ */
+export const PRICE_SWEEP_PAGE_RETRY_DELAYS_MS = [1000, 3000];
+/**
  * 훑기에서 고른 행이 한 회차에서 가져갈 최대 비율. 큰 세일이 열린 날 바뀐 행이 수천 개라도
  * 나머지 몫(조회작, 오래된 순)이 0 이 되지 않게 남겨 둔다. 남은 변동은 다음 회차가 다시 훑어 잡는다.
  */

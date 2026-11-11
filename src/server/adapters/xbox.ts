@@ -6,6 +6,7 @@ import { slugify } from "@/lib/slug";
 import { starsToScore } from "@/lib/user-score";
 import {
   AdapterError,
+  type PageRetry,
   type PriceQuote,
   type SearchCandidate,
   type StoreAdapter,
@@ -618,10 +619,10 @@ export const xboxAdapter: StoreAdapter = {
    * 한국 2만 행 한 바퀴가 40분이었다 — browse 는 한 쪽에 약 47개 값이 같이 와서 2분 안쪽이다.
    * 끝은 상품이 하나도 안 실린 쪽이다(가격을 못 읽은 칸이 많아도 끝은 아니다)
    */
-  async *listPrices(): AsyncGenerator<PriceQuote[]> {
+  async *listPrices(retry: PageRetry = (fn) => fn()): AsyncGenerator<PriceQuote[]> {
     for (let page = 1; page <= XBOX_DISCOVERY_MAX_PAGES; page += XBOX_PRICE_LIST_PARALLEL) {
       const pages = Array.from({ length: XBOX_PRICE_LIST_PARALLEL }, (_, i) => page + i);
-      const raws = await Promise.all(pages.map((p) => browseRaw(p, `prices:${p}`)));
+      const raws = await Promise.all(pages.map((p) => retry(() => browseRaw(p, `prices:${p}`))));
       for (const raw of raws) {
         if (((raw as { productSummaries?: unknown[] })?.productSummaries ?? []).length === 0) return;
         yield parseXboxBrowsePrices(raw);

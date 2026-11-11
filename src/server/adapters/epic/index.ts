@@ -6,7 +6,7 @@
 // Cloudflare 가 앞에 있어 브라우저 헤더(Origin, Referer, sec-fetch-*)가 없으면 403 챌린지 HTML 이 온다 —
 // 크롤러 UA 만으로는 통과하지 못해 이 어댑터만 UA 를 브라우저 값으로 덮어쓴다(§10 의 UA 명시 예외).
 // 헤더를 다 맞춰도 Node 는 막힌다(constants 의 EPIC_ENABLE_ENV 주석). 지금은 비활성 소스다.
-import { AdapterError, type PriceQuote, type SearchCandidate, type StoreAdapter, type StoreSnapshot } from "../types";
+import { AdapterError, type PageRetry, type PriceQuote, type SearchCandidate, type StoreAdapter, type StoreSnapshot } from "../types";
 import { createHttpClient } from "../http";
 import { sleep } from "@/lib/async";
 import {
@@ -211,10 +211,10 @@ export const epicAdapter: StoreAdapter = {
    * 요청 둘(한국어, 영문)이라 한국 4,300행 한 바퀴가 나흘이었다(2026-11-10 실측 중앙값 94시간) — 목록은 한 쪽에 40개다.
    * 값은 단건과 같은 파서(toEpicSnapshot)로 읽는다. 무료 미정 상품을 값 없음으로 읽는 규칙도 그대로 따라온다
    */
-  async *listPrices(): AsyncGenerator<PriceQuote[]> {
+  async *listPrices(retry: PageRetry = (fn) => fn()): AsyncGenerator<PriceQuote[]> {
     for (let page = 0; page < EPIC_DISCOVERY_MAX_PAGES; page += EPIC_PRICE_LIST_PARALLEL) {
       const pages = Array.from({ length: EPIC_PRICE_LIST_PARALLEL }, (_, i) => page + i);
-      const raws = await Promise.all(pages.map((p) => searchPage(p, `prices:${p}`)));
+      const raws = await Promise.all(pages.map((p) => retry(() => searchPage(p, `prices:${p}`))));
       for (const raw of raws) {
         const offers = parseEpicSearch(raw);
         if (offers.length === 0) return;

@@ -14,10 +14,11 @@ import type { PriceQuote, StoreAdapter, StoreSnapshot } from "@/server/adapters/
 import type { StoreSource } from "@/server/adapters";
 import { sleep } from "@/lib/async";
 import { errorMessage } from "@/lib/errors";
-import { DEFAULT_FETCH_BATCH_SIZE, MATCHED_FOR_SYNC, PRICE_SWEEP_MAX_MS, SOURCE_PLATFORMS, SOURCE_REGION } from "./constants";
+import { DEFAULT_FETCH_BATCH_SIZE, MATCHED_FOR_SYNC, PRICE_SWEEP_MAX_MS, PRICE_SWEEP_PAGE_RETRY_DELAYS_MS, SOURCE_PLATFORMS, SOURCE_REGION } from "./constants";
 import { missingRefExcluded } from "./missing-refs";
 import { recordError, type Ctx } from "./context";
 import { syncListSubscriptions } from "./list-subscriptions";
+import { fetchWithRetry } from "./retry";
 
 export type SweepRow = {
   gameId: string;
@@ -236,7 +237,7 @@ async function sweepByList(source: StoreSource, adapter: StoreAdapter & { listPr
   let seen = 0;
   let failed = 0;
   try {
-    for await (const quotes of adapter.listPrices()) {
+    for await (const quotes of adapter.listPrices((fn) => fetchWithRetry(fn, PRICE_SWEEP_PAGE_RETRY_DELAYS_MS))) {
       for (const q of quotes) {
         const base = primary.get(q.storeExternalId);
         if (!base) continue;

@@ -8,6 +8,13 @@ export { CRAWLER_USER_AGENT } from "@/lib/site";
 export type Source = "steam" | "psstore" | "xbox" | "nintendo" | "nintendo_jp" | "epic" | "hltb" | "opencritic" | "metacritic" | "rss" | "wikidata" | "wikidata_game" | "gamepass";
 
 /**
+ * 목록 한 쪽 요청을 감싸 다시 시도하는 함수(StoreAdapter.listPrices). 재시도 정책은 sync 가 정한다 —
+ * 어댑터는 "가져오기만" 하고, 훑기의 시간 상한을 아는 쪽이 몇 번, 얼마 간격으로 다시 물을지 고른다.
+ * 쪽 하나가 일시 실패하면 생성기가 통째로 끝나 그 회차 훑기가 0건이 된다(2026-11-11 Xbox 첫 쪽 fetch failed 로 0/19,945건).
+ */
+export type PageRetry = <T>(fn: () => Promise<T>) => Promise<T>;
+
+/**
  * 목록이 준 한 상품의 지금 가격(StoreAdapter.listPrices). 스냅샷에서 가격과 할인 칸만 떼어 온 꼴이다 —
  * 반영은 이 값에 DB 행의 기기, 주소를 얹어 가격만 든 스냅샷으로 만든다(sync/price-sweep).
  */
@@ -319,7 +326,7 @@ export interface SourceAdapter<T extends StoreSnapshot | MetaSnapshot | NewsItem
    * 이 값으로 바로 반영할 수 있어(StoreTarget.prefetched) 큰 세일이 열려도 상품마다 다시 묻지 않는다.
    * 목록이 기본판이 아닌 에디션 가격을 주는 경우가 있어 훑기는 정가가 DB 와 같은 행만 믿는다(price-sweep 의 listMove).
    */
-  listPrices?(): AsyncGenerator<PriceQuote[]>;
+  listPrices?(retry?: PageRetry): AsyncGenerator<PriceQuote[]>;
   /**
    * listPrices 가 포함, 이탈을 말할 수 있는 구독 키. 있으면 훑기가 목록에서 본 상품의 이 구독들을 함께 맞춘다(sync/list-subscriptions).
    * 목록에 안 실리는 구독(PS 의 Ubisoft+)은 넣지 않는다 — 넣으면 목록이 돌 때마다 그 포함이 빠진다
