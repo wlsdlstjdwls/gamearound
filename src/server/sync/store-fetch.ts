@@ -28,6 +28,36 @@ export async function fetchStoreOneByOne(ctx: Ctx, source: StoreSource, adapter:
   return fetched;
 }
 
+/** 상세 화면이 못 주고 가격 배치만 주는 칸. 상세 결과에 배치 값을 덮어쓴다 */
+const BATCH_PRICE_FIELDS = ["listPrice", "currentPrice", "currency", "discountPct", "discountStartsAt", "discountEndsAt"] as const;
+
+/**
+ * 상세(HTML)로 받은 결과에 가격 배치의 값, 특히 **할인 기간**을 얹는다. 닌텐도 상품 HTML 에는 할인 시작, 종료가 없어서
+ * 상세 몫으로 받은 행은 그 회차에 종료 시각이 null 로 덮였다 — 2026-11-11 운영 한국 스위치 할인 1,691행 중 672행이
+ * 그렇게 비어 있었다(같은 상품을 가격 API 로 물으면 end_datetime 이 온다). 배치는 50건에 한 요청이라 덧붙여도 싸다.
+ * 배치가 실패하거나 응답에 없으면 상세 값을 그대로 둔다 — 가격은 상세도 읽는다.
+ */
+export async function withBatchPrices(source: StoreSource, adapter: StoreAdapter, detailed: Fetched): Promise<Fetched> {
+  if (!adapter.fetchMany || detailed.length === 0) return detailed;
+  const size = adapter.batchSize ?? DEFAULT_FETCH_BATCH_SIZE;
+  const byId = new Map<string, StoreSnapshot>();
+  for (let i = 0; i < detailed.length; i += size) {
+    try {
+      const got = await fetchWithRetry(() => adapter.fetchMany!(detailed.slice(i, i + size).map((f) => f.target.externalId)));
+      for (const [id, s] of got) byId.set(id, s);
+    } catch (e) {
+      console.warn(`[sync:${source}] 상세 결과에 가격 배치 얹기 실패, 상세 값만 쓴다: ${errorMessage(e)}`);
+    }
+  }
+  return detailed.map((f) => {
+    const b = byId.get(f.target.externalId);
+    if (!b) return f;
+    const overlay: Partial<StoreSnapshot> = {};
+    for (const k of BATCH_PRICE_FIELDS) if (b[k] !== undefined) Object.assign(overlay, { [k]: b[k] });
+    return { ...f, snapshot: { ...f.snapshot, ...overlay } };
+  });
+}
+
 /**
  * 배치 조회 경로 (steam). 한 요청에 batchSize 개씩 묶는다.
  * 배치 하나가 통째로 실패하면 그 배치만 단건 조회로 되돌린다 — 카탈로그 전체가 한 번의 실패로 멈추지 않게.
@@ -48,7 +78,7 @@ export async function fetchStoreBatched(ctx: Ctx, source: StoreSource, adapter: 
     batchable = targets.filter((t) => !wantsDetail(t));
     if (needDetail.length > 0) {
       console.log(`[sync:${source}] ${needDetail.length}건은 상세 조회로 받는다 (배치는 가격만 준다)`);
-      fetched.push(...(await fetchStoreOneByOne(ctx, source, adapter, needDetail)));
+      fetched.push(...(await withBatchPrices(source, adapter, await fetchStoreOneByOne(ctx, source, adapter, needDetail))));
     }
   }
 

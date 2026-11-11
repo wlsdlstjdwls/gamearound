@@ -762,8 +762,10 @@ export const REFRESH_POPULAR_MIN_AGE_HOURS = 20;
  * 반영이 lastSyncedAt 을 지금으로 올려 오래된 순에 안 걸리니, 따로 자리를 주지 않으면 PS 중앙값 9.5일 동안 "~까지" 가 빈다
  * (11-11 KR 할인 행 중 종료 시각 없는 것 464건). Xbox browse, Epic 목록은 종료 시각을 같이 줘서 넣지 않는다.
  * 40 = 평소 PS 몫 210 의 약 1/5, 큰 세일 날 수천 건은 며칠에 나눠 채운다.
+ * 닌텐도는 목록이 아니라 상세(HTML) 몫이 기간을 지웠다(sync/store-fetch 의 withBatchPrices). 그 수정 전에 비워진 698행을 메우려고 넣는다 —
+ * 가격 배치로 묻는 행이라 50건에 한 요청, 100이면 회차당 두 요청이다.
  */
-export const SALE_END_FILL_LIMIT: Partial<Record<StoreSource, number>> = { psstore: 40 };
+export const SALE_END_FILL_LIMIT: Partial<Record<StoreSource, number>> = { psstore: 40, nintendo: 100 };
 /**
  * 종료 시각을 다시 물을 행은 이만큼 지난 것만 — 상세에도 endTime 이 없는 할인(기한 없는 가격 인하)은 매 회차 같은 행을 묻게 된다.
  * 20시간이면 하루 한 번만 다시 묻는다(REFRESH_POPULAR_MIN_AGE_HOURS 와 같은 이유).
