@@ -25,6 +25,9 @@ import {
   REFRESH_POPULAR_MIN_AGE_HOURS,
   REFRESH_POPULAR_SHARE_BY_SOURCE,
   REFRESH_VIEWED_SHARE,
+  SALE_END_FILL_LIMIT,
+  SALE_END_FILL_MAX_AGE_DAYS,
+  SALE_END_FILL_MIN_AGE_HOURS,
   SOURCE_PLATFORMS,
   SOURCE_REGION,
 } from "./constants";
@@ -144,7 +147,9 @@ export async function listStoreTargets(ctx: Ctx, source: StoreSource, opts: Stor
   });
   // 가격이 바뀐 행이 상세 몫 바로 뒤, 조회작, 인기작보다 앞에 선다(constants 의 PRICE_SWEEP_SOURCES 주석)
   const sweptRows = moves.slice(0, share.swept);
-  const rows = [...detailRows, ...sweptRows, ...mainRows, ...restRows];
+  // 목록이 종료 시각을 안 주는 소스는 할인 중인데 "~까지" 가 빈 행을 상세로 다시 묻는다(SALE_END_FILL_LIMIT 주석)
+  const saleEndRows = share.surge ? [] : await refreshRows(db, source, platforms, region, { saleEndMissing: true, limit: SALE_END_FILL_LIMIT[source] ?? 0 });
+  const rows = [...detailRows, ...sweptRows, ...saleEndRows, ...mainRows, ...restRows];
 
   const seen = new Set<string>();
   const targets: StoreTarget[] = [];
@@ -194,13 +199,17 @@ export async function listStoreTargets(ctx: Ctx, source: StoreSource, opts: Stor
  *
  * 지역을 조건에 넣지 않으면 한 게임에 한국, 일본 행이 둘 다 붙어 같은 대상이 두 번 나오고,
  * 갱신 순서(lastSyncedAt)도 남의 나라 행을 보고 정해진다.
+ *
+ * 오래된 순은 ref 단위로 센다 — 그 ref 의 기기 행 중 **가장 최근에 돈 행**의 시각이다. 행 하나의 시각으로 세면 스토어가 더는
+ * 돌려주지 않는 기기 행(상세가 PS5 만 줘서 09-15 값에 멈춘 PS4 행 1,676건, 2026-11-11 실측)이 늘 맨 앞에 서서,
+ * 회차마다 같은 게임 약 200개를 다시 묻고 나머지 PS 게임은 차례가 안 왔다.
  */
 async function refreshRows(
   db: Db,
   source: StoreSource,
   platforms: Platform[],
   region: Region,
-  opts: { mainOnly?: boolean; limit: number; popular?: boolean; viewedSlugs?: string[]; koMissing?: boolean },
+  opts: { mainOnly?: boolean; limit: number; popular?: boolean; viewedSlugs?: string[]; koMissing?: boolean; saleEndMissing?: boolean },
 ): Promise<Array<{ gameId: string; externalId: string; slug: string; platform: Platform | null }>> {
   if (opts.limit <= 0) return [];
   return db
@@ -237,6 +246,11 @@ async function refreshRows(
                 or ${gamePlatforms.lastSyncedAt} < now() - make_interval(hours => ${REFRESH_POPULAR_MIN_AGE_HOURS}::int))`
           : undefined,
         opts.koMissing ? sql`${gamePlatforms.koText} is null and ${gamePlatforms.storeUrl} is not null` : undefined,
+        opts.saleEndMissing
+          ? sql`${gamePlatforms.discountPct} > 0 and ${gamePlatforms.discountEndsAt} is null and ${gamePlatforms.storeUrl} is not null
+              and ${gamePlatforms.lastSyncedAt} < now() - make_interval(hours => ${SALE_END_FILL_MIN_AGE_HOURS}::int)
+              and ${gamePlatforms.lastSyncedAt} > now() - make_interval(days => ${SALE_END_FILL_MAX_AGE_DAYS}::int)`
+          : undefined,
         opts.viewedSlugs
           ? and(
               inArray(games.slug, opts.viewedSlugs),
@@ -249,7 +263,7 @@ async function refreshRows(
     .orderBy(
       ...(opts.popular
         ? [sql`${gamePlatforms.popularityRank} asc nulls last`, sql`${gamePlatforms.userScoreCount} desc nulls last`]
-        : [sql`${gamePlatforms.lastSyncedAt} asc nulls first`]),
+        : [sql`max(${gamePlatforms.lastSyncedAt}) over (partition by ${gameSourceRefs.gameId}, ${gameSourceRefs.externalId}) asc nulls first`]),
     )
     .limit(opts.limit);
 }

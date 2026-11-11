@@ -750,6 +750,25 @@ export const REFRESH_POPULAR_SHARE_BY_SOURCE: Partial<Record<StoreSource, number
  * 다음 날 같은 시각에는 상위작이 다시 자격을 얻는다(24시간 > 20시간).
  */
 export const REFRESH_POPULAR_MIN_AGE_HOURS = 20;
+/**
+ * 목록 값으로 할인을 바로 반영하면 종료 시각이 비는 소스와, 그 행을 상세로 다시 물을 회차당 자리 수.
+ * PS 전체 게임 목록의 price 에는 endTime 이 없다(2026-11-11 실측: basePrice, discountedPrice, discountText 뿐).
+ * 반영이 lastSyncedAt 을 지금으로 올려 오래된 순에 안 걸리니, 따로 자리를 주지 않으면 PS 중앙값 9.5일 동안 "~까지" 가 빈다
+ * (11-11 KR 할인 행 중 종료 시각 없는 것 464건). Xbox browse, Epic 목록은 종료 시각을 같이 줘서 넣지 않는다.
+ * 40 = 평소 PS 몫 210 의 약 1/5, 큰 세일 날 수천 건은 며칠에 나눠 채운다.
+ */
+export const SALE_END_FILL_LIMIT: Partial<Record<StoreSource, number>> = { psstore: 40 };
+/**
+ * 종료 시각을 다시 물을 행은 이만큼 지난 것만 — 상세에도 endTime 이 없는 할인(기한 없는 가격 인하)은 매 회차 같은 행을 묻게 된다.
+ * 20시간이면 하루 한 번만 다시 묻는다(REFRESH_POPULAR_MIN_AGE_HOURS 와 같은 이유).
+ */
+export const SALE_END_FILL_MIN_AGE_HOURS = 20;
+/**
+ * 그보다 오래 안 바뀐 행은 이 자리에서 묻지 않는다. 수집이 손대지 못하는 행(예: 상세가 PS5 만 돌려줘 PS4 행이 09-15 값에 멈춘 405건,
+ * 2026-11-11 실측)은 lastSyncedAt 이 오르지 않아 오래된 순 맨 앞에 영원히 남는다 — 상한이 없으면 이 자리를 늘 그 행들이 먹는다.
+ * 7일 = 목록 반영 뒤 상세가 endTime 을 끝내 안 주는 할인도 일주일만 다시 묻고 놓는다.
+ */
+export const SALE_END_FILL_MAX_AGE_DAYS = 7;
 
 /**
  * 가격 변동 훑기(sync/price-sweep)를 도는 소스. prices 회차 머리에 이 소스가 아는 상품 가격을 **가격 배치로만** 한 바퀴 묻고,
