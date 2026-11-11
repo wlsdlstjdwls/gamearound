@@ -102,7 +102,10 @@ export function PriceTile({
       {/* 값 묶음 — 목업 .pr. mt-auto 로 바닥에 붙여 줄 수가 다른 카드끼리도 값과 버튼의 높이가 맞는다 */}
       <dl className="mt-auto flex flex-col gap-1 border-t border-line pt-2.5">
         <Row label={D.listPriceRow}>
-          {p.listPrice === null ? (
+          {/* 정가가 비어도 할인이 아니면 지금 값이 곧 정가다 — "-" 옆에 현재 가격만 서면 고장으로 읽혔다(2026-11-11 엘든 링 PS4 카드) */}
+          {p.listPrice === null && p.currentPrice !== null && !hasDiscount ? (
+            <span>{formatPrice(p.currentPrice, p.currency)}</span>
+          ) : p.listPrice === null ? (
             <span className="text-dim">-</span>
           ) : (
             <span className={hasDiscount ? "text-dim-2 line-through" : undefined}>{formatPrice(p.listPrice, p.currency)}</span>
