@@ -216,7 +216,9 @@ export function PriceChart({ series, head, rangeKeys }: { series: PriceSeries[];
                 minTickGap={40}
               />
               <YAxis
-                tickFormatter={(v: number) => formatPrice(v, currency)}
+                // 바닥(0) 눈금은 비운다 — formatPrice 가 0 을 "무료" 로 적는데, 그 글자가 첫 날짜 눈금과 겹쳤다(2026-11-11).
+                // 바닥은 X 축 선이 대신 말한다. 실제 무료 구간은 말풍선이 "무료" 로 보여 준다
+                tickFormatter={(v: number) => (v === 0 ? "" : formatPrice(v, currency))}
                 stroke={token["--line"]}
                 tick={{ fill: token["--dim"], fontSize: 11.5 }}
                 width={80}
