@@ -90,7 +90,9 @@ export function WishHeart({ slug, title, className, variant = "heart", kind = "g
           "press tap inline-flex min-h-[var(--touch-target)] items-center justify-center gap-1.5 rounded-full px-4 text-[13px] font-semibold transition-colors sm:min-h-9 sm:px-3.5",
           // 꺼진 단추도 옅은 파랑이다(2026-11-02) — 줄마다 채운 파랑이 서면 목록 전체가 단추로 읽힌다(nav-must-look-like-nav, 파랑 남발 금지).
           // 켜진 단추는 회색 바탕에 채운 종이라 "이미 받는 중" 이 색이 아니라 모양으로 갈린다
-          shown ? "bg-surface-2 text-ink-2" : "bg-acc-soft text-acc hover:bg-acc hover:text-on-ink",
+          // 2026-11-11 사용자 "출시 알림 버튼 강조 필요": 옅은 파랑 면이 옆의 "출시 예정" 딱지와 똑같아 단추로 안 읽혔다.
+          // 꺼진 단추는 흰 바탕에 파랑 테두리와 굵은 글자 — 채운 파랑 벽은 피하면서 누르는 것임을 모양으로 말한다
+          shown ? "bg-surface-2 text-ink-2" : "bg-surface font-bold text-acc ring-[1.5px] ring-acc ring-inset hover:bg-acc hover:text-on-ink",
           className,
         )}
       >

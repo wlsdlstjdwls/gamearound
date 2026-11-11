@@ -65,9 +65,9 @@ export function UpcomingRow({ entry, subtitle }: { entry: RowEntry; subtitle?: s
         </div>
       </div>
       {/* 좁은 화면 아랫줄은 단추 하나만 오른쪽 끝에 둔다(2026-11-02 모바일 점검). 앞서는 "출시 예정" 딱지 + 줄 폭을 다 채운 파란 단추가
-          줄마다 반복돼 목록이 단추 벽으로 읽혔다. 딱지는 출시 예정 화면 안이라 같은 말을 되풀이할 뿐이어서 좁은 화면에서는 걷는다 */}
+          줄마다 반복돼 목록이 단추 벽으로 읽혔다. "출시 예정" 딱지는 넓은 화면에서도 걷었다(2026-11-11 사용자 "여긴 다 출시 예정 아닌가,
+          딱지와 출시 알림 단추가 똑같아 구분이 안 된다") — 출시 예정 화면과 출시 예정 상자 안이라 같은 말의 되풀이였다 */}
       <div className="col-start-2 flex items-center justify-end gap-2 sm:contents">
-        <span className="hidden shrink-0 rounded-full bg-acc-soft px-2.5 py-1 text-[12px] font-semibold text-acc sm:inline">{M.rowTag}</span>
         <WishHeart slug={entry.game.slug} title={title} variant="release" className="relative z-10 shrink-0" />
       </div>
     </div>

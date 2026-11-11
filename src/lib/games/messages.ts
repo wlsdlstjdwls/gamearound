@@ -423,8 +423,6 @@ export const UPCOMING_MESSAGES = {
   viewLabel: "보기 방식",
   leadMonth: "기대하는 게임의 출시일을 월별로 모아 보세요.",
   leadAll: "출시 예정 게임을 가까운 날짜부터 한눈에 모아 보세요.",
-  /** 줄 오른쪽 상태 꼬리표 */
-  rowTag: "출시 예정",
   /** 출시일 미정 상자(기획서 v2.0 4.4, 목업 월별 보기 아래). 날짜 칸에는 tbaDay 가 선다 */
   tbaTitle: "출시일 미정",
   tbaNote: "일정이 공개되면 월별 일정에 자동으로 표시돼요.",
