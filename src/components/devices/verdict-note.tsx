@@ -47,12 +47,15 @@ export function verdictForDevice(
  * 09-22 에 걷은 "빨간 면 위 빨간 글자" 와 다른 점: 그때는 결론 마디 전체를 칠했고 벽돌색 둘이 겹쳐 탁했다.
  * 지금 --danger 는 맑은 빨강이고(옅은 면 위 4.84:1), 칠하는 것은 알약 하나다.
  * 충족 쪽도 같은 모양(옅은 초록 면 + 테두리)으로 맞췄다 — 한 자리에 두 모양이 번갈아 서면 비교가 안 된다.
+ *
+ * 2026-11-11 세 번째 손질: 테두리와 면을 걷고 아이콘 + 색 글자만 남긴다(사용자: "선 없애고 배경색도 별로").
+ * 알약 면이 빠지면 제목 옆 곁말답게 조용해지고, 색은 아이콘과 글자가 진다. 충족 쪽도 같은 모양으로 맞춘다(위와 같은 이유)
  */
 const TONE: Record<OverallVerdict, { cls: string; Icon: typeof CheckCircleIcon | null }> = {
-  meets_recommended: { cls: "bg-ok-soft text-ok shadow-[inset_0_0_0_1px_var(--ok-line)]", Icon: CheckCircleIcon },
-  meets_minimum: { cls: "bg-ok-soft text-ok shadow-[inset_0_0_0_1px_var(--ok-line)]", Icon: CheckCircleIcon },
-  below_minimum: { cls: "bg-danger-soft text-danger shadow-[inset_0_0_0_1px_var(--danger-line)]", Icon: XCircleIcon },
-  unknown: { cls: "bg-surface-2 text-mut", Icon: null },
+  meets_recommended: { cls: "text-ok", Icon: CheckCircleIcon },
+  meets_minimum: { cls: "text-ok", Icon: CheckCircleIcon },
+  below_minimum: { cls: "text-danger", Icon: XCircleIcon },
+  unknown: { cls: "text-mut", Icon: null },
 };
 
 export function VerdictNote({ devices, groups }: { devices: CompatDevice[]; groups: VerdictGroup[] }) {
@@ -64,7 +67,7 @@ export function VerdictNote({ devices, groups }: { devices: CompatDevice[]; grou
   if (!verdict || verdict.overall === "unknown") return null;
   const { cls, Icon } = TONE[verdict.overall];
   return (
-    <span className={cn("inline-flex shrink-0 items-center gap-1 rounded-full py-1 pl-2 pr-2.5 text-[12px] font-bold leading-none", cls)}>
+    <span className={cn("inline-flex shrink-0 items-center gap-1 text-[12.5px] font-bold leading-none", cls)}>
       {Icon && <Icon size={13} strokeWidth={2.4} />}
       {VERDICT_SHORT_LABEL[verdict.overall]}
     </span>
