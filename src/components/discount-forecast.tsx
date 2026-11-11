@@ -45,7 +45,9 @@ function Plan({ next, expected, running, currency }: { next: Forecast["next"]; e
   const tag = next ? (next.basis === "cycle" ? D.forecastCycleTag(next.cycleDays ?? 0) : D.forecastBasisTag[next.basis]) : null;
   const save = expected ? D.forecastSave(formatPrice(expected.cap - expected.price, currency)) : null;
   return (
-    <div className="flex min-w-0 flex-col gap-3 rounded-[var(--radius-panel)] bg-surface p-4">
+    // 흰 칸이 판의 남는 높이를 먹고 내용은 가운데에 선다(flex-1, justify-center) — 판이 그래프 높이로 늘어날 때 빈자리가
+    // 흰 칸과 단추 사이에 파란 면으로 크게 남았다(2026-11-11 사용자 "높이 고정 아니었니, 어케 해줘", 기록 없는 엘든 링)
+    <div className="flex min-w-0 flex-1 flex-col justify-center gap-3 rounded-[var(--radius-panel)] bg-surface p-4">
       {next && (
         <div className="flex min-w-0 flex-wrap items-center justify-between gap-x-2 gap-y-1">
           <span className="text-[13px] font-bold text-mut">{D.forecastWhenHead(next.name)}</span>
@@ -150,7 +152,7 @@ export function DiscountForecast({
         </p>
       )}
       <Plan next={next} expected={expected} running={running !== null} currency={currency} />
-      {/* 단추와 알림은 판 바닥에 붙는다(mt-auto) — 판이 그래프 높이로 늘어나도 빈자리는 본문과 단추 사이에 남는다 */}
+      {/* 단추와 알림은 판 바닥에 붙는다 — 늘어난 높이는 위 흰 칸(Plan)이 받는다 */}
       <div className="mt-auto flex flex-col gap-3 pt-1">
         {action && <div className="flex w-full [&>*]:flex-1">{action}</div>}
         <p className="text-[12px] leading-[1.6] text-mut">
