@@ -12,7 +12,6 @@ import { formatPrice } from "@/lib/currency";
 import { formatDate } from "@/lib/format";
 import { DETAIL_MESSAGES as D } from "@/lib/games/detail-messages";
 import type { Forecast } from "@/lib/sales/forecast";
-import { EmptyLine } from "@/components/game-detail/empty-line";
 import { CalendarIcon } from "@/components/ui/icons";
 import { Tag } from "@/components/ui/tag";
 import { cn } from "@/lib/cn";
@@ -102,7 +101,7 @@ export function DiscountForecast({
   action,
   basisLabel,
 }: {
-  /** null 이면 날짜도 기록도 없다 — 강조 판 대신 한 줄로 접고 "기록이 쌓이면" 을 말한다(아래 empty) */
+  /** null 이면 날짜도 기록도 없다 — 같은 판에 흰 칸 대신 한 줄만 말한다(아래 empty) */
   forecast: Forecast | null;
   currency: Currency;
   action?: React.ReactNode;
@@ -112,20 +111,10 @@ export function DiscountForecast({
   const running = forecast?.running ?? null;
   const next = forecast?.next ?? null;
   const expected = forecast?.expected ?? null;
-  // 말할 것이 하나도 없으면 파란 강조 판을 세우지 않는다(2026-10-27 사용자 검수: 기록이 없는데 강조 판이 크게 남았다).
-  // 알림 단추는 남긴다 — 예측이 없어도 "싸지면 알려 달라" 는 할 수 있다. 참고용 안내 문단도 예측이 없으니 뺀다
-  if (!running && !next && !expected) {
-    return (
-      <EmptyLine
-        id="forecast-heading"
-        icon={<CalendarIcon size={17} />}
-        title={basisLabel ? `${D.forecastTitle} | ${D.forecastBasisPlatform(basisLabel)}` : D.forecastTitle}
-        action={action}
-      >
-        {D.forecastNoRecord}
-      </EmptyLine>
-    );
-  }
+  // 말할 것이 하나도 없어도 판 모양(머리, 높이)은 그대로 둔다(2026-11-11 사용자 "예측 없으면 높이가 줄고 타이틀도 묘하게 다르다").
+  // 10-27 에는 한 줄(EmptyLine)로 접었는데, 플랫폼 카드를 고를 때마다 판이 줄었다 늘었다 하고 머리 모양이 바뀌었다.
+  // 흰 칸 자리에 한 줄만 말하고, 참고용 안내 문단은 예측이 없으니 뺀다. 알림 단추는 남긴다 — 예측이 없어도 "싸지면 알려 달라" 는 할 수 있다
+  const empty = !running && !next && !expected;
   return (
     // 판은 옆 가격 그래프 높이까지 늘어난다(부르는 쪽 격자가 늘이고, h-full 로 받는다, 2026-11-11 사용자 "높이를 가격 변동 추이와 맞춰").
     // 머리는 아이콘 오른쪽에 제목이 선다(같은 날 사용자). 참고용 알림은 판 안 맨 밑이다 — 판 밖 회색 글은 판과 따로 노는 줄로 읽혔다
@@ -151,17 +140,23 @@ export function DiscountForecast({
           {running.daysLeft !== null && <span className="text-[12.5px] font-semibold">{D.forecastRunningLeftShort(running.daysLeft)}</span>}
         </p>
       )}
-      <Plan next={next} expected={expected} running={running !== null} currency={currency} />
+      {empty ? (
+        <p className="flex min-w-0 flex-1 items-center justify-center rounded-[var(--radius-panel)] bg-surface p-4 text-center text-[13.5px] text-mut">{D.forecastNoRecord}</p>
+      ) : (
+        <Plan next={next} expected={expected} running={running !== null} currency={currency} />
+      )}
       {/* 단추와 알림은 판 바닥에 붙는다 — 늘어난 높이는 위 흰 칸(Plan)이 받는다 */}
       <div className="mt-auto flex flex-col gap-3 pt-1">
         {action && <div className="flex w-full [&>*]:flex-1">{action}</div>}
-        <p className="text-[12px] leading-[1.6] text-mut">
-          {D.forecastDisclaimer.map((line, i) => (
-            <span key={i} className="block">
-              {line}
-            </span>
-          ))}
-        </p>
+        {!empty && (
+          <p className="text-[12px] leading-[1.6] text-mut">
+            {D.forecastDisclaimer.map((line, i) => (
+              <span key={i} className="block">
+                {line}
+              </span>
+            ))}
+          </p>
+        )}
       </div>
     </section>
   );
