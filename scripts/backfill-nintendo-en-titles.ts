@@ -25,7 +25,7 @@ const REQUEUE_SOURCES = ["hltb", "metacritic", "opencritic", "wikidata_game"];
 const WRITE_CHUNK = 500;
 
 type TitleDbEntry = { id?: string | null; nsuId?: number | string | null; name?: string | null };
-type Row = { id: string; title_en: string; nsuid: string };
+type Row = { id: string; title_en: string; norm: string; nsuid: string };
 
 async function loadTitleDb(file: string, dir: string | undefined): Promise<Record<string, TitleDbEntry>> {
   if (dir) return JSON.parse(await readFile(path.join(dir, file), "utf8"));
@@ -40,7 +40,7 @@ async function main(): Promise<number> {
   const db = getDb();
 
   const raw = await db.execute(sql`
-    select distinct on (g.id) g.id, g.title_en, r.external_id as nsuid
+    select distinct on (g.id) g.id, g.title_en, g.title_en_norm as norm, r.external_id as nsuid
     from games g
     join game_source_refs r on r.game_id = g.id and r.source = 'nintendo' and r.matched_by in ('auto', 'manual')
     where g.title_en ~ '[가-힣]'
@@ -63,10 +63,24 @@ async function main(): Promise<number> {
     }
   }
 
+  // 세 번째 출처(2026-11-10): 같은 한국어 제목을 가진 다른 게임(PS, 스팀 등)의 영문 제목. 아시아판 전용 타이틀 ID 는
+  // 미국, 영국에 없어 타이틀 DB 로는 못 찾는데(남은 339건 중 266건), 같은 게임이 다른 스토어에서 한국어, 영문 제목을 둘 다 갖고 있는 경우가 있다.
+  // 정규화한 한국어 제목이 정확히 같을 때만 빌린다(실측 24건 전부 맞았다 — "귀멸의 칼날: 도전, 최강의 대원!" -> "Demon Slayer -Kimetsu no Yaiba- Sweep the Board!")
+  const norms = [...new Set(rows.map((r) => r.norm).filter(Boolean))];
+  const borrowedRaw = norms.length
+    ? await db.execute(sql`
+        select distinct on (o.title_ko_norm) o.title_ko_norm as norm, o.title_en
+        from games o
+        where o.title_ko_norm in (select jsonb_array_elements_text(${JSON.stringify(norms)}::jsonb)) and o.title_en !~ '[가-힣]'
+        order by o.title_ko_norm, o.created_at
+      `)
+    : { rows: [] };
+  const borrowed = new Map(((borrowedRaw.rows ?? borrowedRaw) as Array<{ norm: string; title_en: string }>).map((b) => [b.norm, b.title_en]));
+
   const plans = rows
     .map((r) => {
       const titleId = titleIdByNsuid.get(r.nsuid);
-      const next = pickEnglishTitle(r.title_en, titleId ? enByTitleId.get(titleId) : null);
+      const next = pickEnglishTitle(r.title_en, (titleId ? enByTitleId.get(titleId) : null) ?? borrowed.get(r.norm));
       return { r, next };
     })
     .filter((p): p is { r: Row; next: string } => p.next !== null);
