@@ -9,13 +9,13 @@
 //
 // 실패 격리: 배치 하나가 통째로 실패하면 그 묶음만 다시 한 문장씩 보낸다(§7 — 한 건의 실패가
 // 배치 전체를 멈추면 안 된다). 묶음이 깨지는 일은 드물고, 드문 만큼 느려도 된다.
-import { and, eq, inArray } from "drizzle-orm";
+import { and, eq, getTableColumns, inArray, sql } from "drizzle-orm";
 import { gameCompanies, gamePlatforms, gameSourceRefs, games, priceSnapshots, HOME_REGION } from "@/server/db/schema";
 import type { StoreSource } from "@/server/adapters";
 import type { StoreSnapshot } from "@/server/adapters/types";
 import { normalizeCompanyName } from "@/lib/company-name";
 import { errorMessage } from "@/lib/errors";
-import { MATCHED_FOR_SYNC, WRITE_BATCH_SIZE } from "./constants";
+import { MATCHED_FOR_SYNC, META_OVERWRITE_SOURCES, WRITE_BATCH_SIZE } from "./constants";
 import { correctedContentType } from "./content-type-fix";
 import { isLocked, recordError, type Ctx } from "./context";
 import { companyNamesOf, findCompaniesByAliases } from "./company-writer";
@@ -67,15 +67,39 @@ export async function runStatements(ctx: Ctx, label: string, statements: Stateme
   }
 }
 
-/** 대상 게임들의 기존 행을 한 번에 읽어 둔다 — 계획 단계는 여기서 읽은 것만 본다 */
+/**
+ * 비-권위 소스가 읽을 게임 칸. 긴 글 칸 셋은 첫 글자만 읽는다 — 그 소스는 빈 칸만 채워서(planGameMeta 의 fillOnly)
+ * "비었나" 만 보면 되고, 첫 글자는 빈 문자열, null, 값 있음을 그대로 가른다. 견주기(값이 같은가)는 빈 칸일 때만 하므로 결과가 같다.
+ * 왜: Neon 무료 전송량. 한 회차 Xbox 540게임의 기존 행이 1.18MB 였다(2026-11-12 실측, 이 둘을 줄여 0.45MB)
+ */
+const FILL_ONLY_GAME_COLUMNS = {
+  ...getTableColumns(games),
+  description: sql<string | null>`left(${games.description}, 1)`,
+  coverUrl: sql<string | null>`left(${games.coverUrl}, 1)`,
+  portraitUrl: sql<string | null>`left(${games.portraitUrl}, 1)`,
+};
+
+/**
+ * 대상 게임들의 기존 행을 한 번에 읽어 둔다 — 계획 단계는 여기서 읽은 것만 본다.
+ * 기기 행은 이번 스냅샷의 기기, 지역 것만 읽는다 — 계획은 (기기, 지역)이 같은 행 하나만 찾는다. 남의 나라, 남의 기기 행이 절반을 넘는다
+ */
 async function loadExisting(
   ctx: Ctx,
-  gameIds: string[],
+  applied: Array<{ gameId: string; snapshot: StoreSnapshot }>,
 ): Promise<{ gameById: Map<string, GameRow>; platformsByGame: Map<string, PlatformRow[]> }> {
+  const gameIds = applied.map((a) => a.gameId);
   if (gameIds.length === 0) return { gameById: new Map(), platformsByGame: new Map() };
+  const platforms = [...new Set(applied.map((a) => a.snapshot.platform))];
+  const regions = [...new Set(applied.map((a) => a.snapshot.region ?? HOME_REGION))];
+  const gameQuery = META_OVERWRITE_SOURCES.includes(ctx.source)
+    ? ctx.db.select().from(games).where(inArray(games.id, gameIds))
+    : ctx.db.select(FILL_ONLY_GAME_COLUMNS).from(games).where(inArray(games.id, gameIds));
   const [gameRows, platformRows] = await ctx.db.batch([
-    ctx.db.select().from(games).where(inArray(games.id, gameIds)),
-    ctx.db.select().from(gamePlatforms).where(inArray(gamePlatforms.gameId, gameIds)),
+    gameQuery,
+    ctx.db
+      .select()
+      .from(gamePlatforms)
+      .where(and(inArray(gamePlatforms.gameId, gameIds), inArray(gamePlatforms.platform, platforms), inArray(gamePlatforms.region, regions))),
   ]);
   const platformsByGame = new Map<string, PlatformRow[]>();
   for (const row of platformRows) {
@@ -380,7 +404,7 @@ export async function applyStore(ctx: Ctx, source: StoreSource, fetched: Fetched
   if (applied.length === 0) return applied;
 
   // 2. 기존 행 읽기 — 여기까지가 조회다
-  const { gameById, platformsByGame } = await loadExisting(ctx, applied.map((a) => a.gameId));
+  const { gameById, platformsByGame } = await loadExisting(ctx, applied);
 
   // 3. 계획
   const metaUpdates: Statement[] = [];
