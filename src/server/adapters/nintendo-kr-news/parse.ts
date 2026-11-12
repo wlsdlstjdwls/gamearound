@@ -12,6 +12,8 @@ import {
   DOWNLOAD_HEADING,
   DOWNLOAD_PERIOD,
   DOWNLOAD_RETAILER,
+  EVENT_TITLE_RULES,
+  NINTENDO_SITE_ORIGIN,
   KR_GAME_NSUID,
   NON_BONUS_HEADING,
   NOTE_MARK,
@@ -24,7 +26,8 @@ import {
 } from "./constants";
 import { extractFlight, readJsonAfter, resolveRef } from "./flight";
 
-export type NewsListItem = { slug: string; title: string; publishedAt: string; external: boolean };
+/** link: 바깥 링크 글이 가리키는 주소(공식 소개 페이지, 포켓몬 사이트 등). 우리 글 주소로 열리는 글은 null */
+export type NewsListItem = { slug: string; title: string; publishedAt: string; external: boolean; link: string | null };
 
 export type ParsedBonus = {
   edition: "package" | "download";
@@ -41,6 +44,14 @@ export type ParsedArticle = { nsuids: string[]; bonuses: ParsedBonus[] };
 const LIST_ITEM =
   /"title":("(?:[^"\\]|\\.)*"),"displayDate":"([^"]+)","sortDate":"[^"]*","slug":"([^"]+)","link":(null|"(?:[^"\\]|\\.)*")/g;
 
+function absoluteLink(link: string): string | null {
+  try {
+    return new URL(link, NINTENDO_SITE_ORIGIN).toString();
+  } catch {
+    return null;
+  }
+}
+
 /** 목록 한 쪽의 글들. 바깥 링크 글(link 가 있는 것)은 우리 글 주소로 열리지 않아 external 로 표시한다 */
 export function parseNewsList(html: string): NewsListItem[] {
   const flight = extractFlight(html);
@@ -49,9 +60,20 @@ export function parseNewsList(html: string): NewsListItem[] {
   for (const m of flight.matchAll(LIST_ITEM)) {
     if (seen.has(m[3])) continue;
     seen.add(m[3]);
-    out.push({ slug: m[3], title: (JSON.parse(m[1]) as string).trim(), publishedAt: m[2], external: m[4] !== "null" });
+    // 사이트 안 링크는 "/kr/games/switch2/aa9ja" 처럼 상대 주소로 온다(2026-11-12 실측) — 절대 주소로 바꿔 둔다
+    const rawLink = m[4] === "null" ? "" : (JSON.parse(m[4]) as string).trim();
+    const link = rawLink ? absoluteLink(rawLink) : null;
+    out.push({ slug: m[3], title: (JSON.parse(m[1]) as string).trim(), publishedAt: m[2], external: m[4] !== "null", link });
   }
   return out;
+}
+
+export type EventKind = (typeof EVENT_TITLE_RULES)[number]["kind"];
+
+/** 제목만 보고 이벤트 카드 갈래. 특전 글과 해당 없는 글은 null(EVENT_TITLE_RULES 주석) */
+export function eventKindOf(title: string): EventKind | null {
+  if (isBonusTitle(title)) return null;
+  return EVENT_TITLE_RULES.find((r) => r.pattern.test(title))?.kind ?? null;
 }
 
 /** 제목만 보고 예약 특전 글인지 */

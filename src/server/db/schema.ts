@@ -55,6 +55,8 @@ export * from "./schema-payments";
 export * from "./schema-notifications";
 // 예약 특전(schema-preorder.ts). 스토어가 아니라 퍼블리셔 공지에서 뽑은 사실이라 가격 축과 섞지 않는다.
 export * from "./schema-preorder";
+// 게임 이벤트, 소식 링크(schema-game-events.ts, 2026-11-12). 공유 태그와 원문 링크만 담는다.
+export * from "./schema-game-events";
 // 가입 동의 기록(schema-consents.ts, 2026-10-26). users 행을 넓히지 않으려고 갈라 뒀다(그 파일 머리 주석).
 export * from "./schema-consents";
 // 회사 페이지 관리 신청(schema-company-claims.ts, 2026-11-03). 사람이 쓰는 세계라 갈라 뒀다.

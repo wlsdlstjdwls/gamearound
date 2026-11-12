@@ -3,6 +3,9 @@
 // 스토어 어댑터가 아니다 — 가격도 발견도 없고, 레지스트리(adapters/index)에 넣지 않는다.
 // 목록과 글 모두 별도 JSON API 가 없고 Next 의 RSC 데이터(self.__next_f.push)로 HTML 안에 실려 온다. RSS, sitemap 은 404.
 
+/** 사이트 안 상대 링크("/kr/games/...")를 풀 기준 */
+export const NINTENDO_SITE_ORIGIN = "https://www.nintendo.com";
+
 /** 뉴스 목록. www.nintendo.co.kr/* 는 여기로 넘어온다 */
 export const NEWS_BASE_URL = "https://www.nintendo.com/kr/news";
 
@@ -66,3 +69,30 @@ export const PREORDER_PARSE_VERSION = 1;
 
 /** 요청 간격. 목록 1쪽 + 새 글 몇 건이라 회당 요청이 적다. 닌텐도 스토어 수집과 같은 1초를 쓴다 */
 export const NEWS_INTERVAL_MS = 1000;
+
+/**
+ * 게임 상세 "이벤트, 소식" 카드로 올릴 글의 제목 규칙(sync/game-events). 2026-11-12 뉴스 목록 4쪽(96건) 실측으로 정했다.
+ * 순서가 우선순위다 — "체험판 배포 개시! ... 이벤트" 는 체험판으로 친다. 특전 글은 예약 특전 마디가 따로 받으므로 고르지 않는다.
+ * 고른 예: "「피크민을 찾아라!」 이벤트가 개최됩니다", "게임 트라이얼 개최", "『스타폭스』 무료 업데이트가 오늘 배포", "온라인 챌린지".
+ * 안 고르는 예: 발매 결정, 패키지 예약 일정, 인터뷰, CM 공개, 신작 소프트웨어 정보(여러 게임 묶음).
+ */
+export const EVENT_TITLE_RULES = [
+  { kind: "demo", pattern: /체험판|게임 트라이얼/ },
+  { kind: "update", pattern: /무료 업데이트/ },
+  { kind: "event", pattern: /이벤트|대회|챌린지|축제|개최|컬래버레이션/ },
+] as const;
+
+/**
+ * 공식 소개 페이지. 바깥 링크 글 중 주소가 게임 소개 사이트(/kr/games/...)인 것 — 사용자가 처음 든 예가 이것이다
+ * (www.nintendo.com/kr/games/switch2/ampyc/, 2026-11-12). 이 페이지에 og 태그와 본편 번호가 다 있다.
+ */
+export const OFFICIAL_PAGE_LINK = /^https:\/\/www\.nintendo\.com\/kr\/games\//;
+
+/**
+ * 글 하나가 가리키는 게임이 이보다 많으면 묶음 글(Direct 정리, 세일 특집)로 보고 어느 게임에도 붙이지 않는다.
+ * 이벤트 글은 스위치판과 스위치2 판 두 번호를 함께 적는 일이 흔해 2 로는 모자라다(피크민 이벤트 글: 번호 2개).
+ */
+export const EVENT_MAX_GAMES = 3;
+
+/** 닌텐도 뉴스의 기본 공유 그림. 글마다 같은 로고라 카드 그림으로 쓰지 않는다 */
+export const GENERIC_OG_IMAGE = /\/img\/og_nintendo\.png$/;

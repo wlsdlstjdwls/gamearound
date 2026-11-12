@@ -148,6 +148,7 @@ export const LOCAL_SEED_PLAN: Partial<Record<Source, { seedTop: number; limit?: 
  */
 export const CRON_SOURCES = ["nintendo", "nintendo_jp", "epic", "steam", "psstore", "xbox"] as const;
 // 주기는 vercel.json 의 crons 에 있다 — JSON 이라 주석을 못 달아 근거를 여기 적는다(시각은 UTC).
+//   /api/cron/crawl/game-events           25 0,12 * * *         2026-11-12 추가. 이벤트, 소식 카드(sync/game-events). 0, 12시 창 안에 둬 DB 를 따로 깨우지 않는다
 //   /api/cron/crawl/nintendo/prices       15 0,6,12,18 * * *    하루 4회 × 300건 = 1,200건/일
 //   /api/cron/crawl/nintendo/discover     50 6,18 * * *         하루 2회 × 60건 = 120건/일 (신규는 상품 HTML 이라 4초 간격을 탄다. 2026-10-13 넷에서 둘로)
 //   /api/cron/crawl/nintendo/discover     20 0,12 * * *         2026-11-09 추가. 일본 크론 자리를 한국 신규에 넘겼다(아래)
@@ -1222,6 +1223,25 @@ export const PREORDER_PAGES_MAX = 12;
  * 한 달이 지나면 남은 재고가 거의 없어 내린다. 발매일을 모르면 계속 띄운다.
  */
 export const PREORDER_SHOW_AFTER_RELEASE_DAYS = 30;
+
+/**
+ * 게임 이벤트, 소식 카드(sync/game-events). 닌텐도 뉴스는 특전과 같은 목록이라 같은 쪽 수 규칙을 쓴다 —
+ * 이벤트, 체험판, 업데이트 글은 2026-11-12 실측으로 목록 4쪽(96건)에 20건 남짓이라 하루 두 번 1쪽이면 놓치지 않는다.
+ */
+export const GAME_EVENTS_PAGES_DEFAULT = 1;
+export const GAME_EVENTS_PAGES_MAX = 12;
+/**
+ * 스팀 이벤트를 한 회차에 묻는 게임 수와 대상. 게임 하나에 요청 하나라, 이벤트가 실제로 열리는 인기 게임만 본다.
+ * 인기순위 300위 안을 하루 두 번 40건씩 돌면 나흘에 한 바퀴다 — 이벤트는 보통 1~3주 열려 나흘이면 늦지 않다.
+ */
+export const STEAM_EVENTS_PER_RUN = 40;
+export const STEAM_EVENTS_RANK_MAX = 300;
+/** 스팀 요청 간격. 상점 가격 수집과 같은 예의 간격이다 */
+export const STEAM_EVENTS_INTERVAL_MS = 1000;
+/** 기간을 모르는 소식 카드(닌텐도 글)를 상세에 두는 날 수. 이벤트 글은 대개 한두 달 안에 끝난다 */
+export const GAME_EVENTS_SHOW_DAYS = 45;
+/** 상세에 한 번에 보이는 카드 수 */
+export const GAME_EVENTS_MAX_CARDS = 6;
 
 /**
  * 출시 알림(sync/release-alerts)이 거슬러 보는 날 수. 하루 크론이 실패해 하루 이틀 빠져도 그 사이 출시분을 놓치지 않는다.

@@ -57,6 +57,10 @@
       "schedule": "4 0,12 * * *"
     },
     {
+      "path": "/api/cron/crawl/game-events",
+      "schedule": "25 0,12 * * *"
+    },
+    {
       "path": "/api/cron/crawl/hltb/match",
       "schedule": "4 0,6,12,18 * * *"
     },
