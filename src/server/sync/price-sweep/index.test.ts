@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { listMove, orderMoves, priceMove, quoteSnapshot, sweepShare } from "./price-sweep";
+import { listMove, orderMoves, priceMove, quoteSnapshot, sweepShare } from "@/server/sync/price-sweep";
 
 describe("priceMove", () => {
   it("할인이 새로 열리면 sale-started", () => {
