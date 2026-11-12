@@ -19,6 +19,7 @@ import { IndieGameSection, IndieSuggestSection } from "@/components/indie/game-s
 import { NewsList } from "@/components/news-list";
 import { BEST_MIN_PRICED, PlatformPrices, type PlatformPriceItem } from "@/components/platform-prices";
 import { PreorderBonusesSection } from "@/components/preorder-bonuses-section";
+import { GameEventsSection } from "@/components/game-events-section";
 import { PriceAlertButton, type AlertPlatformOption } from "@/components/price-alert-button";
 import { UpgradeNotes } from "@/components/upgrade-note";
 import { DetailHero } from "@/components/game-detail/hero";
@@ -249,6 +250,10 @@ export default async function GameDetailPage({ params }: Props) {
       {/* 예약 특전, 파는 곳, 개발자 소개 글은 숨김, 재고가 바로 반영돼야 해서 캐시 밖에서 따로 받는다 */}
       <Suspense fallback={null}>
         <PreorderBonusesSection gameId={game.id} />
+      </Suspense>
+      {/* 이벤트, 소식 카드. 관리자가 내리면 바로 빠져야 해서 같은 이유로 캐시 밖이다 */}
+      <Suspense fallback={null}>
+        <GameEventsSection gameId={game.id} />
       </Suspense>
       <Suspense fallback={null}>
         <SellersSlot gameId={game.id} />
