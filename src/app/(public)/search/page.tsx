@@ -134,7 +134,10 @@ export default async function SearchPage({ searchParams }: Props) {
               </li>
             ))}
           </ul>
-          <ReportBlock q={q} empty={false} />
+          {/* 목록과 같은 PendingRegion 안이라 Page 의 gap 이 닿지 않는다 — 간격을 따로 둔다 */}
+          <div className="mt-10">
+            <ReportBlock q={q} empty={false} />
+          </div>
         </>
       )}
       </PendingRegion>
