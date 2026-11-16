@@ -19,6 +19,7 @@ import { runningSaleEndsAt } from "@/lib/sales/detect";
 import { parseRig } from "@/lib/hardware/rig";
 import { titleMatch, titleMatches } from "./title-search";
 import { DTO_CACHE_VERSION, LIST_REVALIDATE_SECONDS } from "@/lib/cache";
+import { parsePreferKey, preferKey, preferOrder, type ListPrefer } from "./prefer-order";
 
 /** 기획서 v2.0 4.3: 게임 목록은 24개 단위 쪽 번호. 1, 2, 3, 4열 모두 줄이 꽉 찬다 */
 export const GAMES_PAGE_SIZE = 24;
@@ -29,7 +30,11 @@ export const GAMES_PAGE_SIZE = 24;
  * 갈래와 스토어를 한 칸에 두는 이유는 주소가 하나만 남기 때문이다 — 칸을 나누면 서로 어긋난
  * 조합(pc + ps5)이 생기고 같은 화면이 두 주소를 갖는다.
  */
-export type GameListFilter = Omit<GamesQuery, "platform"> & { platform?: string };
+export type GameListFilter = Omit<GamesQuery, "platform"> & {
+  platform?: string;
+  /** 앞에 세울 취향(./prefer-order). 주소에는 없고 화면이 로그인한 사람의 취향으로 채운다 */
+  prefer?: ListPrefer;
+};
 
 export type GameListResult = {
   items: GameSummary[];
@@ -185,6 +190,8 @@ async function listGamesRaw(filter: GameListFilter): Promise<GameListResult> {
       sql`${agg.minPrice} asc nulls last`,
     ],
   }[sort];
+  const prefer = preferOrder(filter.prefer);
+  if (prefer) orderBy.unshift(prefer);
 
   // 검색어가 있으면 집계를 left join 으로 붙인다 — inner join 이 한국 행 없는 게임을 통째로 지운다.
   // 플랫폼 필터를 강제하던 힘은 위의 hasVisiblePlatform 이 대신 받는다.
@@ -239,6 +246,7 @@ function listKey(f: GameListFilter): string[] {
     f.rig ?? "",
     f.sort ?? defaultSortFor(f),
     String(f.page ?? 1),
+    preferKey(f.prefer),
   ];
 }
 
@@ -261,7 +269,7 @@ const listByJson = cache(async (json: string): Promise<GameListResult> => {
 /** 목록 — 필터 조합별 1시간 캐시. 크롤러 완료 시 `home` 태그로 함께 무효화된다 */
 export async function listGames(filter: GameListFilter): Promise<GameListResult> {
   // 키 순서와 같은 순서로 다시 세워야 같은 필터가 늘 같은 문자열이 된다
-  const [q, platform, genre, onSale, event, minDiscount, maxPrice, company, subscription, hideFree, korean, rig, sort, page] = listKey(filter);
+  const [q, platform, genre, onSale, event, minDiscount, maxPrice, company, subscription, hideFree, korean, rig, sort, page, prefer] = listKey(filter);
   return listByJson(JSON.stringify({
     q: q || undefined,
     platform: platform || undefined,
@@ -278,6 +286,7 @@ export async function listGames(filter: GameListFilter): Promise<GameListResult>
     rig: rig || undefined,
     sort: sort as GameListFilter["sort"],
     page: Number(page),
+    prefer: parsePreferKey(prefer),
   }));
 }
 

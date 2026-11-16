@@ -34,7 +34,7 @@ import { stagger } from "@/lib/motion";
 import { ROUTES } from "@/lib/routes";
 import { withListRobots } from "@/lib/seo/constants";
 import { readGamesQuery } from "@/lib/games/read-query";
-import { hasExplicitListFilter, isPresetApplied } from "@/lib/onboarding/query";
+import { hasExplicitListFilter } from "@/lib/onboarding/query";
 import { getMyListPreset } from "@/server/services/profiles";
 import { GAMES_PAGE_SIZE, getGameFacets, getPopularGenres, listGames, type FacetScope, type GameFacets, type GameListFilter } from "@/server/services/games";
 import { getRunningSteamSale, type RunningSaleDto } from "@/server/services/sales";
@@ -163,27 +163,18 @@ async function Results({ filter }: { filter: GameListFilter }) {
 export default async function GamesPage({ searchParams }: Props) {
   const raw = readQuery(await searchParams);
   /*
-   * 개인화 기본 조건(2026-10-07 사용자 요청). 사람이 조건을 하나도 안 걸고 왔을 때만 취향을 먼저 건다 —
-   * 주소에 조건이 있으면 주소가 이긴다(공유받은 링크가 남의 취향으로 바뀌면 안 된다).
-   * 걸린 목록의 링크는 전부 all=1 을 싣는다(games-query 의 all 주석): 조건을 지워 나가다 빈 주소에 닿아도
-   * 취향으로 되돌아가지 않게. 취향을 못 읽어도 목록은 서야 해서 실패는 "취향 없음" 으로 접는다.
+   * 개인화는 거르지 않고 순서만 바꾼다(2026-11-16 사용자 "토글 없애고 알고리즘식으로, 필터 걸지 않고 개인화된 목록을 우선").
+   * 조건을 하나도 안 걸고 온 사람에게만 취향 맞는 게임을 앞에 세운다(services/games/prefer-order). 주소에 조건이 있으면
+   * 주소가 이긴다 — 공유받은 링크가 남의 취향으로 바뀌면 안 된다. 10-07 ~ 11-15 의 "내 취향" 토글(game-filters/personal-toggle)은 세우지 않는다.
+   * 취향을 못 읽어도 목록은 서야 해서 실패는 "취향 없음" 으로 접는다.
    */
-  // 취향은 늘 읽는다 — 다른 칩을 눌러 주소에 조건이 생겨도 토글은 남아 있어야 한다(2026-10-12 사용자: "다른 필터 누르니 내 취향 버튼이 사라진다").
-  // 얹는 것은 사람이 아무 조건도 안 걸었을 때만이다. 조건이 있으면 주소가 이긴다(공유받은 링크가 남의 취향으로 바뀌면 안 된다)
   const preset = await getMyListPreset().catch(() => null);
-  const applied = preset !== null && isPresetApplied(raw, preset.query);
-  const query: GamesQuery = preset !== null && !hasExplicitListFilter({ ...raw, all: false }) && !raw.all ? { ...raw, ...preset.query, all: true } : raw;
-  const filter: GameListFilter = query;
+  const query: GamesQuery = raw;
+  const filter: GameListFilter = preset !== null && !hasExplicitListFilter(raw) ? { ...raw, prefer: preset.prefer } : raw;
   // 필터가 바뀌면 경계를 새로 세운다 — 키가 같으면 React 는 이것을 갱신으로 보고
   // 새 값이 올 때까지 옛 목록을 그대로 둔다. 눌렀는데 아무 일도 안 일어나는 것처럼 보이는 자리다.
   const boundaryKey = JSON.stringify(filter);
-  // 취향 토글(필터 맨 위). 정렬은 들고 간다 — 취향을 껐다고 고른 정렬까지 풀리면 다시 골라야 한다.
-  // 끄면 all=1 로 간다: 조건을 지워 나가다 빈 주소에 닿아도 취향으로 되돌아가지 않게(games-query 의 all 주석)
-  const personal: PersonalFilter | null = preset
-    ? applied
-      ? { applied, labels: preset.labels, href: gamesHref({ sort: raw.sort, all: true }), nextQuery: { sort: raw.sort, all: true } }
-      : { applied, labels: preset.labels, href: gamesHref({ sort: raw.sort }), nextQuery: { ...preset.query, sort: raw.sort, all: true } }
-    : null;
+  const personal: PersonalFilter | null = null;
 
   return (
     <Page gap={18}>

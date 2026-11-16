@@ -301,7 +301,12 @@ export async function getMyHomeDeals(): Promise<GameSummary[] | null> {
 }
 
 /** 목록에 먼저 걸 취향 조건과, 화면이 "무엇으로 걸렀는지" 를 말할 이름들 */
-export type ListPreset = { query: GamesQuery; labels: string[] };
+export type ListPreset = {
+  query: GamesQuery;
+  labels: string[];
+  /** 목록 앞자리에 세울 취향(2026-11-16, 거르지 않고 순서만 바꾼다). 장르는 고른 것 전부다 — 거를 때와 달리 여럿을 "또는" 으로 본다 */
+  prefer: { platforms: Platform[]; genres: string[] };
+};
 
 /**
  * 게임 목록의 개인화 기본 조건. 걸 것이 없으면 null — 목록은 지금처럼 전체를 보여 준다.
@@ -324,5 +329,5 @@ export async function getMyListPreset(): Promise<ListPreset | null> {
   if (!query.platform && !query.genre) return null;
 
   const labels = [...(p.platforms ?? []).map((v) => PLATFORM_LABEL[v] ?? v), ...(query.genre ? [query.genre] : [])];
-  return { query, labels };
+  return { query, labels, prefer: { platforms: [...(p.platforms ?? [])], genres: genreNames } };
 }
