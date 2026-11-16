@@ -180,6 +180,12 @@ export function GameCard({
   const releaseLabel = releaseText ?? (best?.releaseDate ? `${formatDate(best.releaseDate)} 출시` : "");
   // 대표 가격 행 하나만 본다 — 배지는 옆에 선 **그 값**이 예약 값이라는 말이다(다른 스토어는 이미 팔 수도 있다)
   const preorder = best ? isPreorder(best) : false;
+  // 값 줄 위 배지 한 줄 — 하나도 없으면 줄을 세우지 않는다
+  const priced = Boolean(best && best.currentPrice !== null);
+  const showPreorder = priced && preorder;
+  const showLow = priced && hasDiscount && Boolean(best?.historicLow);
+  const showSaleEnd = variant !== "release" && hasDiscount && Boolean(best?.discountEndsAt);
+  const hasBadges = showPreorder || showLow || showSaleEnd;
 
   return (
     // 미는 범위는 **카드 한 장 전체**다(2026-09-22, 사용자 지정) — 커버에만 걸면 제목이나 값 위에서
@@ -198,7 +204,7 @@ export function GameCard({
           </span>
         </span>
         {/* 찜 하트(기획서 v2.0 카드 공통, 목업 카드 오른쪽 위). 제목 링크의 ::after 가 카드를 덮으므로 z-10 으로 그 위에 뜬다 */}
-        <WishHeart slug={game.slug} title={title} className="absolute right-3 top-3 z-10" />
+        <WishHeart slug={game.slug} title={title} size="sm" className="absolute right-2.5 top-2.5 z-10" />
 
         <div className="flex min-w-0 flex-1 flex-col gap-1.5 px-1">
           {/* 제목은 줄 하나를 혼자 쓴다(2026-09-29, 사용자: "가시성이 너무 떨어져") — 두 줄까지 펴고 그 뒤를 자른다.
@@ -249,34 +255,40 @@ export function GameCard({
           {/* 기기 배지 줄과 "~에서 더 싸요" 판정 줄은 걷었다(2026-11-16 사용자 "목록 카드 플랫폼 뱃지 제거, ~가 더 싸요 문구 제거").
               카드는 그림, 이름, 장르, 값만 말한다 — 닌텐도 e숍 타일처럼 훑는 눈이 멈출 곳을 줄였다. 기기는 상세에서 본다.
               남은 할인 기간만 장르 아래 오른쪽 끝에 남긴다 */}
-          {variant !== "release" && hasDiscount && best?.discountEndsAt && (
-            <span className="flex justify-end">
-              <SaleBadge variant="inline" discountName={null} discountEndsAt={best.discountEndsAt} />
-            </span>
-          )}
-
-          {/* 값 줄은 카드 **바닥**에 붙는다(mt-auto) — 같은 줄 카드끼리 값이 한 높이에 서서 가로로 견줄 수 있다.
-              할인율, 값, 정가를 한 줄에 흘린다. 좁으면 접힌다 — 값을 자르지 않는다.
+          {/* 값 묶음은 카드 **바닥**에 붙는다(mt-auto) — 같은 줄 카드끼리 값이 한 높이에 서서 가로로 견줄 수 있다.
+              배지(사전 예약, 역대 최저가, 남은 할인 기간)는 값 줄 **위** 한 줄에 모은다(2026-11-16 사용자 "역대 최저가, 사전예약 뱃지 때문에 오와 열이 안 맞는다").
+              전에는 배지가 값 줄 안에 섞여 좁은 카드에서 값 줄이 두 줄로 접혔고, 그 카드만 값이 한 줄 위로 떠 이웃과 높이가 갈렸다.
+              값 줄은 접지 않는다 — 할인율, 값, 정가 한 줄이고 넘치면 정가만 줄어든다.
 
               값은 갈래를 가리지 않고 선다(2026-09-22, 사용자 지적: "최근 출시 영역에서는 금액이 안나옴").
               **값을 모르면 값을 세우지 않는다**(같은 날 사용자 지정: "금액이 없으면 '-' 이것도
               보여주지마") — 카드에서 "-" 한 글자는 "값이 0 인가" 로도 "고장인가" 로도 읽힌다 */}
-          <div className="mt-auto flex flex-wrap items-baseline gap-x-1.5 gap-y-0.5 pt-1">
-            {best && best.currentPrice !== null && (
-              <>
+          <div className="mt-auto flex flex-col gap-1 pt-1">
+            {hasBadges && (
+              <div className="flex min-w-0 items-center gap-1.5">
                 {/* 값 앞에 선다 — 값을 읽기 전에 "지금 사면 출시 날 받는 값" 이라는 걸 먼저 알아야 한다 */}
-                {preorder && <Tag className="self-center">{PREORDER_LABEL}</Tag>}
+                {showPreorder && <Tag>{PREORDER_LABEL}</Tag>}
+                <HistoricLowBadge show={showLow} size="sm" />
+                {showSaleEnd && (
+                  <span className="ml-auto min-w-0">
+                    <SaleBadge variant="inline" discountName={null} discountEndsAt={best?.discountEndsAt} />
+                  </span>
+                )}
+              </div>
+            )}
+            {best && best.currentPrice !== null && (
+              <div className="flex min-w-0 items-baseline gap-x-1.5">
                 {hasDiscount && <DiscountStamp pct={best.discountPct} />}
-                <span className="text-[22px] font-extrabold tracking-[-0.03em] text-ink sm:text-[20px]">
+                <span className="shrink-0 text-[22px] font-extrabold tracking-[-0.03em] text-ink sm:text-[20px]">
                   {formatPrice(best.currentPrice, best.currency)}
                 </span>
                 {hasDiscount && best.listPrice !== null && (
-                  <span className="text-[13px] text-dim-2 line-through sm:text-[12.5px]">{formatPrice(best.listPrice, best.currency)}</span>
+                  <span className="min-w-0 truncate text-[13px] text-dim-2 line-through sm:text-[12.5px]">{formatPrice(best.listPrice, best.currency)}</span>
                 )}
-                <HistoricLowBadge show={hasDiscount && best.historicLow} size="sm" />
-              </>
+              </div>
             )}
-            {variant === "release" && releaseLabel && <span className="ml-auto text-[12.5px] text-dim">{releaseLabel}</span>}
+            {/* 출시일은 값 줄 아래 제 줄이다 — 값 줄은 접지 않으므로 같은 줄에 두면 할인율이 붙은 카드에서 날짜가 판 밖으로 넘쳤다 */}
+            {variant === "release" && releaseLabel && <span className="self-end text-[12.5px] text-dim">{releaseLabel}</span>}
           </div>
         </div>
       </div>

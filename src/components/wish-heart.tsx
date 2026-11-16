@@ -44,7 +44,30 @@ export function markWished(kind: WishKind, slug: string, on: boolean) {
  * 폭은 부르는 쪽이 정한다(className). 좁은 화면의 줄은 이 단추를 줄 아래 넓게 깐다(components/upcoming-row) —
  * 그래서 기본에 shrink-0 을 두지 않는다. cn 은 충돌을 풀지 않아 부르는 쪽의 flex-1 과 싸우면 이기는 쪽이 CSS 순서에 달린다.
  */
-export function WishHeart({ slug, title, className, variant = "heart", kind = "game" }: { slug: string; title: string; className?: string; variant?: "heart" | "release"; kind?: WishKind }) {
+/**
+ * 하트 크기. sm 은 게임 카드 오른쪽 위 하트다(2026-11-16 사용자 "찜하기 버튼도 너무 큰듯") — 그려지는 원은 28px 이고,
+ * 손가락 목표 44px 은 상자 대신 보이지 않는 덧면(::after)이 채운다. .tap 으로 상자를 키우면 휴대폰에서 원이 세로로 늘어 커 보였다
+ */
+const HEART_SIZE = {
+  md: { box: "tap size-9", icon: 17 },
+  sm: { box: "size-7 after:absolute after:-inset-2 after:content-['']", icon: 14 },
+} as const;
+
+export function WishHeart({
+  slug,
+  title,
+  className,
+  variant = "heart",
+  kind = "game",
+  size = "md",
+}: {
+  slug: string;
+  title: string;
+  className?: string;
+  variant?: "heart" | "release";
+  kind?: WishKind;
+  size?: keyof typeof HEART_SIZE;
+}) {
   const { store, toggle: send } = KINDS[kind];
   const { user } = useSession();
   const userId = user?.id ?? null;
@@ -111,13 +134,14 @@ export function WishHeart({ slug, title, className, variant = "heart", kind = "g
       aria-label={`${title} ${shown ? M.on : M.off}`}
       onClick={() => gate(action, () => toggle(!wished))}
       className={cn(
-        "press tap flex size-9 items-center justify-center rounded-full bg-surface/90 shadow-1 backdrop-blur-sm transition-colors",
+        "press flex items-center justify-center rounded-full bg-surface/90 shadow-1 backdrop-blur-sm transition-colors",
+        HEART_SIZE[size].box,
         // 찜하는 순간 한 번 톡 튄다 — 클래스가 붙는 순간에만 돌아서 풀 때는 조용하다
         shown ? "animate-pop text-acc" : "text-dim hover:text-ink",
         className,
       )}
     >
-      <HeartIcon size={17} fill={shown ? "currentColor" : "none"} />
+      <HeartIcon size={HEART_SIZE[size].icon} fill={shown ? "currentColor" : "none"} />
     </button>
   );
 }
