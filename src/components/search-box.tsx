@@ -73,9 +73,14 @@ const INPUT_CLASS =
  * 최소 폭을 걸면 그 순간 셋이 각자 줄을 차지하고 머리띠가 세 배로 자란다.
  * ml-auto: 1024 아래에서는 로고와 오른쪽(개인 자리) 사이의 남는 폭을 이 칸이 먹고
  * 340px 에서 멈춘다 — 더 늘리면 검색칸이 머리띠의 주인공이 되어 로고와 무게가 뒤집힌다.
- * 1024 부터는 로고 바로 옆에 붙는다(2026-10-30 사용자, 메뉴가 이 칸 오른쪽에 선다). 남는 폭은 메뉴 뒤(site-nav 의 lg:mr-auto)가 먹는다.
+ * 1024 부터는 메뉴 바로 오른쪽에 붙는다(2026-11-16 사용자). 남는 폭은 개인 자리 앞(site-header 의 ml-auto)이 먹는다.
  */
-const FORM_CLASS = "relative ml-auto min-w-0 max-w-[340px] flex-1 lg:ml-0";
+const FORM_CLASS = "relative ml-auto min-w-0 max-w-[340px] flex-1 lg:ml-2";
+/**
+ * 머리띠 검색칸을 세우지 않는 화면. 홈은 히어로가 큰 검색칸을 들고 있어 머리띠까지 서면 한 화면에 입력칸이 둘이다(2026-11-16 사용자).
+ * 위 머리말의 "검색창은 하나" 원칙과 같은 이유다
+ */
+const HIDDEN_ON: readonly string[] = [ROUTES.home];
 /** 오른쪽 끝 자리 — 스피너와 지우기 버튼이 번갈아 선다. 폭을 고정해야 글자가 밀리지 않는다 */
 const TRAIL_CLASS = "flex size-7 shrink-0 items-center justify-center";
 
@@ -153,6 +158,8 @@ export function SearchBox() {
     if (onSearchPage && href === `${ROUTES.search}${urlQuery ? `?q=${encodeURIComponent(urlQuery)}` : ""}`) return;
     startTransition(() => router.push(href));
   };
+
+  if (HIDDEN_ON.includes(pathname)) return null;
 
   return (
     <form

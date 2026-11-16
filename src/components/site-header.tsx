@@ -17,7 +17,7 @@ import { UpdateNotice } from "@/components/app-shell/update-notice";
 
 /**
  * 머리띠 + 하위 메뉴 띠(2026-10-26 개편, 기획서 v2.0 3.1, 4.3).
- * 머리띠 한 줄: 락업 + 검색칸 + 상단 메뉴 넷 | 개인 자리(찜, 알림, 계정). 왼쪽은 "무엇을 찾나, 어디로 가나", 오른쪽은 "내 것" 이다.
+ * 머리띠 한 줄: 락업 + 상단 메뉴 넷 + 검색칸 | 개인 자리(찜, 알림, 계정). 왼쪽은 "무엇을 찾나, 어디로 가나", 오른쪽은 "내 것" 이다.
  * 그 아래 하위 메뉴 띠는 머리띠 밖에 둔다 — 이유는 sub-nav 머리 주석(머리띠 높이 토큰).
  *
  * 폭마다 메뉴 넷의 자리(기획서 v2.0 4.1, 목업의 1023, 650 미디어쿼리):
@@ -46,15 +46,16 @@ export function SiteHeader() {
             <BrandLockup wordmarkClassName="hidden sm:inline" />
           </Link>
 
-          {/* 검색칸이 로고 바로 옆, 메뉴가 그 오른쪽이다(2026-10-30 사용자 "검색창을 왼쪽으로, 메뉴를 검색창 오른쪽으로").
-              태블릿에서는 메뉴가 어차피 둘째 줄로 내려가므로(site-nav 의 max-lg:order-last) 이 순서는 넓은 화면에서만 보인다.
+          <Suspense fallback={<SiteNavFallback />}>
+            <SiteNav />
+          </Suspense>
+
+          {/* 메뉴가 로고 옆, 검색칸이 그 오른쪽이다(2026-11-16 사용자 "메뉴를 검색창 왼쪽으로"). 10-30 에 반대로 두었던 것을 되돌렸다.
+              태블릿에서는 메뉴가 둘째 줄로 내려가므로(site-nav 의 max-lg:order-last) 첫 줄은 로고, 검색칸, 개인 자리다.
+              홈에서는 히어로가 큰 검색칸을 들고 있어 이 칸은 서지 않는다(search-box 의 HIDDEN_ON).
               useSearchParams 를 쓰는 칸은 Suspense 안에 둔다 — 없으면 정적으로 뽑히는 화면이 프리렌더 단계에서 실패한다 */}
           <Suspense fallback={<SearchBoxFallback />}>
             <SearchBox />
-          </Suspense>
-
-          <Suspense fallback={<SiteNavFallback />}>
-            <SiteNav />
           </Suspense>
 
           {/* 머리띠 테마 단추는 걷었다(2026-10-30 사용자). 테마는 설정 화면과 좁은 화면 계정 시트(site-menu)에서 고른다 */}
@@ -62,7 +63,7 @@ export function SiteHeader() {
           {/* 종은 알림함 팝오버다(기획서 v2.0 M-03). 가격 알림 관리로 가는 길은 팝오버 맨 아래에 있다.
               좁은 화면에서도 남긴다(2026-10-26) — 테마, 계정 단추와 함께 숨겼더니 휴대폰에서는 알림함에 갈 길이 없었다.
               목업 390 도 종을 머리띠에 둔다 */}
-          <div className="flex shrink-0 items-center gap-1.5">
+          <div className="ml-auto flex shrink-0 items-center gap-1.5">
             {/* 찜 목록 하트(2026-10-28 사용자 지시). 종과 짝으로 선다 */}
             <HeaderWishLink />
             <NotificationBell />
