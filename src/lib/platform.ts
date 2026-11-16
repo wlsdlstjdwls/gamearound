@@ -43,8 +43,11 @@ const ALL_FAMILY_PLATFORMS: Record<PlatformFamily, Platform[]> = {
  * (그 판단이 뒤집힌 적도 있다 — psstore 를 껐다가 같은 날 되살렸다).
  *
  * 화면 질의는 `server/db/visibility` 하나만 탄다.
+ *
+ * Epic Games 를 내렸다(2026-11-16 사용자 "Epic Games 는 서비스 안 하기로 해서 다 숨겨줘"). 수집과 데이터는 그대로다.
+ * 목록 집계표(game_list_stats)는 미리 써 둔 값이라 이 배열을 바꾼 뒤 `pnpm stats:list` 로 다시 써야 최저가에서 Epic 값이 빠진다.
  */
-export const HIDDEN_PLATFORMS: Platform[] = []
+export const HIDDEN_PLATFORMS: Platform[] = ["epic"];
 
 /**
  * 화면에서 숨기는 **지역**. 플랫폼과 같은 규칙이다 — 데이터는 지우지 않고 내보내기만 멈춘다.

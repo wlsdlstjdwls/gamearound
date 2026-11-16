@@ -35,8 +35,7 @@ describe("플랫폼 갈래", () => {
     }
   });
 
-  it("Epic, Steam 은 PC 다", () => {
-    expect(familyOf("epic")).toBe("pc");
+  it("Steam 은 PC 다(Epic 은 2026-11-16 숨겨 갈래가 없다 — 위 숨김 검사)", () => {
     expect(familyOf("steam")).toBe("pc");
   });
 

@@ -12,8 +12,9 @@ describe("orderCards", () => {
   it("PC 에서 안 팔면 PC 빈 칸 하나", () => {
     expect(shape(orderCards([row("ps5")]))).toEqual(["-pc", "ps5", "-xbox", "-nintendo"]);
   });
-  it("파는 PC 스토어는 다 선다", () => {
-    expect(shape(orderCards([row("epic", 9_000), row("steam", 10_000), row("xbox")]))).toEqual(["epic", "steam", "xbox", "-playstation", "-nintendo"]);
+  // Epic 은 2026-11-16 숨겼다(lib/platform 의 HIDDEN_PLATFORMS) — 화면 질의가 행을 먼저 걸러 이 함수까지 오지 않는다
+  it("파는 PC 스토어가 선다", () => {
+    expect(shape(orderCards([row("steam", 10_000), row("xbox")]))).toEqual(["steam", "xbox", "-playstation", "-nintendo"]);
   });
 });
 

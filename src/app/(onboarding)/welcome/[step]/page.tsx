@@ -7,6 +7,7 @@
 import { redirect } from "next/navigation";
 import { ROUTES, WELCOME_FROM_PARAM, WELCOME_FROM_SETTINGS, welcomeStepPath } from "@/lib/routes";
 import { gamesHref } from "@/lib/games-query";
+import { HIDDEN_PLATFORMS } from "@/lib/platform";
 import { DEAL_STYLE_CHOICES, DEAL_STYLE_PATIENCE, GENRE_CARD_LABEL, GENRE_PICK_MAX, PLATFORM_CHOICES, PLATFORM_SHAPE, PLAY_TIME_CHOICES, PLAY_TIME_LENGTH } from "@/lib/onboarding/constants";
 import { summarizeProfile, type ProfileFieldStep } from "@/lib/onboarding/summary";
 import { filledSlots, playerTitle } from "@/lib/onboarding/quest";
@@ -116,7 +117,7 @@ async function questionFor(step: Exclude<OnboardingStep, "intro" | "device" | "n
         name: "platforms",
         // 둘째 줄("PC")을 싣지 않는다 — Steam, Epic 이 PC 인 건 이름이 말하고, 둘째 줄이 하나라도 있으면
         // 격자가 촘촘해지지 못해(ChoiceGrid dense) 일곱 칸이 네 줄을 먹는다
-        options: PLATFORM_CHOICES.map((c) => ({ value: c.value, label: c.label, shape: PLATFORM_SHAPE[c.value] })),
+        options: PLATFORM_CHOICES.filter((c) => !HIDDEN_PLATFORMS.includes(c.value)).map((c) => ({ value: c.value, label: c.label, shape: PLATFORM_SHAPE[c.value] })),
         multiple: true,
         selected: profile.platforms ?? [],
         requireAnswer: false,
