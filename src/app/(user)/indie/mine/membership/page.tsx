@@ -27,6 +27,8 @@ import type { MembershipStatus } from "@/server/db/schema";
 import { requireUserOrRedirect } from "@/server/auth/guards";
 import { tossBillingClientKey, tossBillingConfigured } from "@/server/payments/toss-billing";
 import { getMyMembership } from "@/server/services/membership";
+import { PAID_PRODUCTS_ON } from "@/lib/payments/flags";
+import { redirect } from "next/navigation";
 
 export const metadata: Metadata = { title: M.title, robots: { index: false } };
 
@@ -35,6 +37,8 @@ const STATUS_TONE: Record<MembershipStatus, TagTone> = { active: "ok", canceling
 type Props = { searchParams: Promise<Record<string, string | string[] | undefined>> };
 
 export default async function MembershipPage({ searchParams }: Props) {
+  // 유료 상품을 숨긴 동안은 이 화면을 열지 않는다(lib/payments/flags)
+  if (!PAID_PRODUCTS_ON) redirect(ROUTES.indieMine);
   const user = await requireUserOrRedirect();
   const [m, sp, settings, book, codes] = await Promise.all([getMyMembership(user.id), searchParams, getPricingSettings(), getPriceBook(user.id), getCodeBook()]);
   const started = firstParam(sp.started);

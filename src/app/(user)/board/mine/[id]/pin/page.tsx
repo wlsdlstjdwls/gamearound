@@ -1,7 +1,7 @@
 // /board/mine/[id]/pin — 내 홍보 글을 게시판 홍보 목록 위에 고정(2026-10-27, 기획서 4.2 "게시판 홍보 목록 위 고정", 단건 결제).
 // 판은 components/payments/boost-purchase. 내 홍보 글이 아니면 없는 화면이다(notFound) — 리뷰, 공략 글은 이 자리에 못 건다.
 import type { Metadata } from "next";
-import { notFound } from "next/navigation";
+import { notFound, redirect } from "next/navigation";
 import { BoostPurchase } from "@/components/payments/boost-purchase";
 import { Page, PageHead } from "@/components/ui/page";
 import { isPostId } from "@/lib/community/constants";
@@ -11,6 +11,8 @@ import { PLAN_PARAM, readPlanChoice } from "@/lib/payments/products";
 import { requireUserOrRedirect } from "@/server/auth/guards";
 import { getMyBoostTarget, listMyLiveTargets } from "@/server/services/payments";
 import { getMyMembership } from "@/server/services/membership";
+import { PAID_PRODUCTS_ON } from "@/lib/payments/flags";
+import { ROUTES } from "@/lib/routes";
 
 /** 이 화면의 글 갈래. 고를 상품은 이 글의 자리를 품은 판매 중 상품이다(components/payments/boost-purchase) */
 const KIND = "board_post";
@@ -21,6 +23,8 @@ export const metadata: Metadata = { title: COPY.title, robots: { index: false } 
 type Props = { params: Promise<{ id: string }>; searchParams: Promise<Record<string, string | string[] | undefined>> };
 
 export default async function BoardPinPage({ params, searchParams }: Props) {
+  // 유료 상품을 숨긴 동안은 이 화면을 열지 않는다(lib/payments/flags)
+  if (!PAID_PRODUCTS_ON) redirect(ROUTES.lounge);
   const user = await requireUserOrRedirect();
   const [{ id }, sp] = await Promise.all([params, searchParams]);
   if (!isPostId(id)) notFound();

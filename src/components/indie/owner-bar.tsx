@@ -9,6 +9,7 @@ import { ChatIcon, ChartIcon, EyeIcon, HeartIcon, TrophyIcon } from "@/component
 import { INDIE_OWNER_MESSAGES as M } from "@/lib/indie/owner-messages";
 import { PLANS_MESSAGES } from "@/lib/payments/plans-messages";
 import { indieBoostPath, indieEditPath, indiePlaytestPath, indieStatsDetailPath, ROUTES } from "@/lib/routes";
+import { PAID_PRODUCTS_ON } from "@/lib/payments/flags";
 
 const STAT = "inline-flex items-center gap-1 text-[13px] font-semibold tabular-nums text-ink-2";
 
@@ -55,9 +56,11 @@ export function IndieOwnerBar({ id, live, rank, views, likes, comments }: { id: 
             <Link href={indiePlaytestPath(id)} className={buttonClass({ variant: "secondary", size: "sm" })}>
               {M.playtest}
             </Link>
-            <Link href={indieBoostPath(id)} className={buttonClass({ variant: "accent", size: "sm" })}>
-              {PLANS_MESSAGES.nudgeBoost}
-            </Link>
+            {PAID_PRODUCTS_ON && (
+              <Link href={indieBoostPath(id)} className={buttonClass({ variant: "accent", size: "sm" })}>
+                {PLANS_MESSAGES.nudgeBoost}
+              </Link>
+            )}
           </>
         )}
       </div>

@@ -1,7 +1,7 @@
 // /indie/mine/[id]/boost — 내 인디 게임에 광고 걸기(2026-10-27, 기획서 5장 3단계 부스트 단건 결제, 토스페이먼츠 결제위젯).
 // 판은 components/payments/boost-purchase. 내 글이 아니면 없는 화면이다(notFound).
 import type { Metadata } from "next";
-import { notFound } from "next/navigation";
+import { notFound, redirect } from "next/navigation";
 import { BoostPurchase } from "@/components/payments/boost-purchase";
 import { Page, PageHead } from "@/components/ui/page";
 import { firstParam } from "@/lib/games-query";
@@ -10,6 +10,8 @@ import { PLAN_PARAM, readPlanChoice } from "@/lib/payments/products";
 import { requireUserOrRedirect } from "@/server/auth/guards";
 import { getMyBoostTarget, listMyLiveTargets } from "@/server/services/payments";
 import { getMyMembership } from "@/server/services/membership";
+import { PAID_PRODUCTS_ON } from "@/lib/payments/flags";
+import { ROUTES } from "@/lib/routes";
 
 /** 이 화면의 글 갈래. 고를 상품은 이 글의 자리를 품은 판매 중 상품이다(components/payments/boost-purchase) */
 const KIND = "indie_post";
@@ -20,6 +22,8 @@ export const metadata: Metadata = { title: COPY.title, robots: { index: false } 
 type Props = { params: Promise<{ id: string }>; searchParams: Promise<Record<string, string | string[] | undefined>> };
 
 export default async function IndieBoostPage({ params, searchParams }: Props) {
+  // 유료 상품을 숨긴 동안은 이 화면을 열지 않는다(lib/payments/flags)
+  if (!PAID_PRODUCTS_ON) redirect(ROUTES.indieMine);
   const user = await requireUserOrRedirect();
   const [{ id }, sp] = await Promise.all([params, searchParams]);
   // 같이 사기의 짝 후보를 못 읽으면 낱개만 판다

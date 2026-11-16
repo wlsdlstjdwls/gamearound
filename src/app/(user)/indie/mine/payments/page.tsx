@@ -20,6 +20,8 @@ import type { PaymentStatus } from "@/server/db/schema";
 import { requireUserOrRedirect } from "@/server/auth/guards";
 import { listMyPayments } from "@/server/services/payments";
 import { RefundRequest } from "@/components/payments/refund-request";
+import { PAID_PRODUCTS_ON } from "@/lib/payments/flags";
+import { redirect } from "next/navigation";
 
 export const metadata: Metadata = { title: M.historyTitle, robots: { index: false } };
 
@@ -28,6 +30,8 @@ const STATUS_TONE: Record<PaymentStatus, TagTone> = { pending: "info", paid: "ok
 type Props = { searchParams: Promise<Record<string, string | string[] | undefined>> };
 
 export default async function IndiePaymentsPage({ searchParams }: Props) {
+  // 유료 상품을 숨긴 동안은 이 화면을 열지 않는다(lib/payments/flags)
+  if (!PAID_PRODUCTS_ON) redirect(ROUTES.indieMine);
   const user = await requireUserOrRedirect();
   const [rows, sp, book] = await Promise.all([listMyPayments(user.id), searchParams, getCodeBook()]);
   const paid = firstParam(sp.paid);

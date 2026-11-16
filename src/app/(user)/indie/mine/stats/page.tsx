@@ -34,6 +34,7 @@ import { PAYMENT_MESSAGES as PM } from "@/lib/payments/messages";
 import { PlanNudge } from "@/components/payments/plan-nudge";
 import { requireUserOrRedirect } from "@/server/auth/guards";
 import { getMyIndieStats } from "@/server/services/indie";
+import { PAID_PRODUCTS_ON } from "@/lib/payments/flags";
 
 export const metadata: Metadata = { title: M.statsTitle, robots: { index: false } };
 
@@ -65,7 +66,7 @@ export default async function IndieStatsPage() {
       <PageHead title={M.statsTitle}>
         <p className="text-[14px] text-mut">{M.statsLead}</p>
       </PageHead>
-      {liveRows.length > 0 && <PlanNudge />}
+      {PAID_PRODUCTS_ON && liveRows.length > 0 && <PlanNudge />}
 
       {stats.rows.length === 0 ? (
         <EmptyState title={M.statsEmpty} description={M.statsEmptyLead} action={{ href: ROUTES.indieNew, label: INDIE_MESSAGES.register }} />
@@ -148,7 +149,7 @@ export default async function IndieStatsPage() {
                   </dl>
                   {/* 할 일 단추 줄 — 무게 셋(머리 주석). 광고 걸기, 플레이테스트는 공개 중인 게임에만: 공개 전이면 걸어도 아무도 못 본다 */}
                   <div className="flex flex-wrap items-center gap-2 border-t border-line-soft pt-3">
-                    {r.live && (
+                    {PAID_PRODUCTS_ON && r.live && (
                       <Link href={indieBoostPath(r.id)} className={buttonClass({ variant: "accent", size: "sm" })}>
                         {PM.adBuy}
                       </Link>

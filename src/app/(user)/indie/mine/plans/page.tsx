@@ -20,6 +20,8 @@ import { getPriceBook } from "@/server/services/pricing";
 import { sellingTiers } from "@/lib/pricing/quote";
 import { getPricingSettings } from "@/server/services/settings";
 import { listMyLiveTargets } from "@/server/services/payments";
+import { PAID_PRODUCTS_ON } from "@/lib/payments/flags";
+import { redirect } from "next/navigation";
 
 export const metadata: Metadata = { title: M.title, robots: { index: false } };
 
@@ -30,6 +32,8 @@ function group(title: string, items: Target[], href: (id: string) => string): Pl
 }
 
 export default async function MakerPlansPage() {
+  // 유료 상품을 숨긴 동안은 이 화면을 열지 않는다(lib/payments/flags)
+  if (!PAID_PRODUCTS_ON) redirect(ROUTES.indieMine);
   const user = await requireUserOrRedirect();
   // 글 목록을 못 읽으면 빈 칸으로 — 요금 안내는 그대로 선다
   const [settings, book, membership, indie, promos] = await Promise.all([

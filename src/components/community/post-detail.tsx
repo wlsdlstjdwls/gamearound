@@ -21,6 +21,7 @@ import { COMMUNITY_MESSAGES as M } from "@/lib/community/messages";
 import { DB_DOWN, orDbDown } from "@/lib/db-errors";
 import { formatDateTime } from "@/lib/format";
 import { PAYMENT_MESSAGES } from "@/lib/payments/messages";
+import { PAID_PRODUCTS_ON } from "@/lib/payments/flags";
 import { boardPinPath, postEditPath, ROUTES } from "@/lib/routes";
 import type { PostCategory } from "@/server/db/schema";
 import { getPostDetail, getPostGameCard, listComments } from "@/server/services/community";
@@ -61,7 +62,7 @@ export async function PostDetail({ id, lounge, category }: { id: string; lounge:
             {/* 내 글에만 — 홍보 글은 목록 위 고정을 사는 입구(2026-10-27), 모든 글은 수정, 삭제(2026-10-30). 남에게는 보이지 않는다 */}
             {post.isMine && (
               <span className="ml-auto flex items-center gap-3">
-                {post.category === "promo" && (
+                {PAID_PRODUCTS_ON && post.category === "promo" && (
                   <Link href={boardPinPath(post.id)} className="tap inline-flex items-center font-semibold text-acc hover:underline">
                     {PAYMENT_MESSAGES.adBuy}
                   </Link>

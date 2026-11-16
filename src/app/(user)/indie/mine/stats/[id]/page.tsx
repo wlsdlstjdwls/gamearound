@@ -18,6 +18,7 @@ import { requireUserOrRedirect } from "@/server/auth/guards";
 import { getMyIndieStatsDetail } from "@/server/services/indie";
 import { hasMakerBenefits } from "@/server/services/membership";
 import { EmptyNote } from "@/components/empty-state";
+import { PAID_PRODUCTS_ON } from "@/lib/payments/flags";
 
 export const metadata: Metadata = { robots: { index: false } };
 
@@ -48,7 +49,8 @@ export default async function IndieStatsDetailPage({ params }: Props) {
         <p className="text-[14px] text-mut">{M.lead}</p>
       </PageHead>
 
-      {!member ? (
+      {/* 유료 상품을 숨긴 동안은 누구나 본다(lib/payments/flags) */}
+      {PAID_PRODUCTS_ON && !member ? (
         <section className={sectionCardClass("flex flex-col items-start gap-3")}>
           <h2 className="text-[16px] font-bold text-ink">{M.lockedTitle}</h2>
           <p className="text-[14px] text-mut">{M.lockedLead}</p>

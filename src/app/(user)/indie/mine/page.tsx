@@ -33,6 +33,7 @@ import { indieDetailHref, INDIE_FROM } from "@/lib/indie/query";
 import { indieBoostPath, indieEditPath, ROUTES } from "@/lib/routes";
 import { requireUserOrRedirect } from "@/server/auth/guards";
 import { getMyFameStanding, getMyMonthRanks, listMyIndiePosts } from "@/server/services/indie";
+import { PAID_PRODUCTS_ON } from "@/lib/payments/flags";
 
 export const metadata: Metadata = { title: RV.title, robots: { index: false } };
 
@@ -111,7 +112,7 @@ export default async function IndieMinePage({ searchParams }: Props) {
       {standing && <FameChallenge standing={standing} />}
 
       {/* 공개 중인 게임이 있을 때만 광고 안내 판 — 걸 게임이 없는 사람에게 값부터 내밀지 않는다(10-28, 메뉴 대신 화면 안 입구) */}
-      {posts.some((p) => p.review === "approved" && p.status === "published") && <PlanNudge />}
+      {PAID_PRODUCTS_ON && posts.some((p) => p.review === "approved" && p.status === "published") && <PlanNudge />}
       {posts.length === 0 ? (
         <EmptyState title={M.mineEmpty} description={RV.emptyLead} action={{ href: ROUTES.indieNew, label: INDIE_MESSAGES.register }} />
       ) : (
@@ -160,7 +161,7 @@ export default async function IndieMinePage({ searchParams }: Props) {
                         {p.review === "approved" ? RV.viewGame : RV.edit}
                       </Link>
                       {/* 공개 중인 게임에만 — 광고는 공개 글에만 걸린다(services/payments 의 ownedLiveTarget) */}
-                      {p.review === "approved" && p.status === "published" && (
+                      {PAID_PRODUCTS_ON && p.review === "approved" && p.status === "published" && (
                         <Link href={indieBoostPath(p.id)} className={buttonClass({ variant: "accent", size: "sm" })}>
                           {PLANS_MESSAGES.nudgeBoost}
                         </Link>

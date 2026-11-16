@@ -15,6 +15,8 @@ import { getCodeBook } from "@/server/services/common-codes";
 import { ROUTES } from "@/lib/routes";
 import { requireUserOrRedirect } from "@/server/auth/guards";
 import { listMyBoostPerformance } from "@/server/services/promotions";
+import { PAID_PRODUCTS_ON } from "@/lib/payments/flags";
+import { redirect } from "next/navigation";
 
 export const metadata: Metadata = { title: M.title, robots: { index: false } };
 
@@ -23,6 +25,8 @@ const fmt = (n: number) => n.toLocaleString("ko-KR");
 const ctr = (clicks: number, views: number) => (views > 0 ? `${((clicks / views) * 100).toFixed(1)}%` : "-");
 
 export default async function IndieAdsPage() {
+  // 유료 상품을 숨긴 동안은 이 화면을 열지 않는다(lib/payments/flags)
+  if (!PAID_PRODUCTS_ON) redirect(ROUTES.indieMine);
   const user = await requireUserOrRedirect();
   const [rows, book] = await Promise.all([listMyBoostPerformance(user.id), getCodeBook()]);
   const statsLink = (
