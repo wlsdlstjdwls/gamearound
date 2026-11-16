@@ -4,7 +4,6 @@
 // (어느 게임을 세우는지는 services/promotions/indie-spots).
 import Link from "next/link";
 import { CoverImage } from "@/components/game-card";
-import { IndieStageBadge } from "@/components/indie/stage-badge";
 import { Clamp } from "@/components/ui/tooltip";
 import { SectionHead, sectionCardClass } from "@/components/ui/page";
 import { indiePath } from "@/lib/routes";
@@ -29,7 +28,6 @@ export async function IndieGameSection({ gameId }: { gameId: string }) {
               </span>
               <span className="flex min-w-0 flex-col gap-1">
                 <span className="flex items-center gap-2">
-                  <IndieStageBadge stage={p.stage} />
                   <span className="text-[12.5px] text-dim">{p.developerName}</span>
                 </span>
                 <Clamp lines={2} className="text-[14px] leading-[1.5] text-ink group-hover:text-acc">
@@ -56,7 +54,6 @@ export async function IndieSuggestSection({ gameId, genres }: { gameId: string; 
       </span>
       <span className="flex min-w-0 flex-col gap-1">
         <span className="flex min-w-0 items-center gap-2">
-          <IndieStageBadge stage={p.stage} />
           {spot.boostId && <AdLabel />}
           <Clamp className="min-w-0 text-[14.5px] font-bold text-ink group-hover:text-acc">{p.title}</Clamp>
         </span>

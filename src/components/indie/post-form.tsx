@@ -25,20 +25,21 @@ import {
   INDIE_LINK_MAX,
   INDIE_PLATFORMS,
   INDIE_RELEASE_NOTE_MAX,
-  INDIE_STAGES,
   INDIE_TAGLINE_MAX,
   INDIE_TITLE_MAX,
   INDIE_URL_MAX,
   storeLinkPlatform,
   type IndiePlatform,
 } from "@/lib/indie/constants";
-import { INDIE_FORM_MESSAGES as M, INDIE_GENRE_LABEL, INDIE_LINK_LABEL, INDIE_PLATFORM_LABEL, INDIE_STAGE_HINT, INDIE_STAGE_LABEL } from "@/lib/indie/messages";
-import { cn } from "@/lib/cn";
+import { INDIE_FORM_MESSAGES as M, INDIE_GENRE_LABEL, INDIE_LINK_LABEL, INDIE_PLATFORM_LABEL } from "@/lib/indie/messages";
+import { INDIE_STAGES } from "@/lib/indie/constants";
 import type { IndieDetailDto } from "@/lib/indie/dto";
 import { FormStep } from "@/components/indie/form-step";
 
 const LINK_OPTIONS = INDIE_LINK_KINDS.map((k) => ({ value: k, label: INDIE_LINK_LABEL[k] }));
 const LABEL = FIELD_LABEL_CLASS;
+/** 등록하는 인디 게임의 단계 — 정식 출시 하나다(2026-11-16 사용자) */
+const RELEASED_STAGE: (typeof INDIE_STAGES)[number] = "released";
 const HINT = FIELD_HINT_CLASS;
 
 /** 폭을 꽉 채운다(목업 indreg 의 .pri2) — 긴 폼 끝에서 손가락이 어디를 눌러도 닿게 */
@@ -55,7 +56,6 @@ export function IndiePostForm({ post }: { post?: IndieDetailDto }) {
   const router = useRouter();
   const action = post ? updateIndiePostAction.bind(null, post.id) : createIndiePostAction;
   const [state, formAction, submitting] = useActionState<IndieFormState, FormData>(action, null);
-  const [stage, setStage] = useState<string>(post?.stage ?? INDIE_STAGES[0]);
   const [platforms, setPlatforms] = useState<Set<string>>(new Set(post?.platforms ?? []));
   const [genres, setGenres] = useState<Set<string>>(new Set(post?.genres ?? []));
   // 저장된 링크를 둘로 가른다 — "store:<플랫폼>" 은 플랫폼별 칸으로, 나머지는 그 밖의 링크 칸으로(lib/indie/constants)
@@ -130,28 +130,9 @@ export function IndiePostForm({ post }: { post?: IndieDetailDto }) {
       </div>
       <TextField name="tagline" label={M.taglineLabel} hint={M.taglineHint} defaultValue={post?.tagline} maxLength={INDIE_TAGLINE_MAX} required />
 
-      <fieldset className="flex flex-col gap-1.5">
-        <legend className={`mb-1.5 ${LABEL}`}>{M.stageLabel}</legend>
-        {/* 단계마다 한 줄 뜻을 붙인 고르기 칸(2026-10-28, 사용자: "데모 공개랑 앞서 해보기 차이는?"). 칩 글자만으로는 둘이 갈리지 않았다 */}
-        <div className="grid grid-cols-2 gap-2 lg:grid-cols-4">
-          {INDIE_STAGES.map((s) => {
-            const on = stage === s;
-            return (
-              <label
-                key={s}
-                className={cn(
-                  "press tap flex cursor-pointer flex-col gap-0.5 rounded-[var(--radius-sm)] px-3 py-2.5 transition-colors has-[:focus-visible]:ring-2 has-[:focus-visible]:ring-ink",
-                  on ? "bg-acc-soft shadow-[inset_0_0_0_1.5px_var(--acc)]" : "bg-surface shadow-[inset_0_0_0_1px_var(--line-strong)] hover:bg-surface-2",
-                )}
-              >
-                <input type="radio" name="stage" value={s} checked={on} onChange={() => setStage(s)} className="sr-only" />
-                <span className={cn("text-[14px] font-bold", on ? "text-acc" : "text-ink")}>{INDIE_STAGE_LABEL[s]}</span>
-                <span className="text-[12px] leading-[1.45] text-dim">{INDIE_STAGE_HINT[s]}</span>
-              </label>
-            );
-          })}
-        </div>
-      </fieldset>
+      {/* 개발 단계 고르기는 걷었다(2026-11-16 사용자 "이제는 사실상 정식 출시뿐"). 등록하는 게임은 모두 정식 출시로 저장한다 —
+          스키마의 다른 단계 값(개발 중, 데모, 앞서 해보기)은 옛 글이 갖고 있어 지우지 않는다 */}
+      <input type="hidden" name="stage" value={RELEASED_STAGE} />
 
       <TextField name="releaseNote" label={M.releaseNoteLabel} hint={M.releaseNoteHint} defaultValue={post?.releaseNote ?? ""} maxLength={INDIE_RELEASE_NOTE_MAX} wrapperClassName="sm:max-w-[50%]" />
       </FormStep>
