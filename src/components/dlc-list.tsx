@@ -66,11 +66,12 @@ function useDlcRows(dlcs: DlcDto[]) {
   return { selected, setSelected, platforms, rows };
 }
 
-function DlcBody({ state, hasAddOns }: { state: ReturnType<typeof useDlcRows>; hasAddOns: boolean }) {
+/** inSheet: 추가 콘텐츠 팝업. 플랫폼 칩과 이름을 빼고 줄마다 판을 깐다(헤어라인이 시트 머리 선과 겹쳐 "선이 두 번" 이 됐다) */
+function DlcBody({ state, hasAddOns, inSheet = false }: { state: ReturnType<typeof useDlcRows>; hasAddOns: boolean; inSheet?: boolean }) {
   const { selected, setSelected, platforms, rows } = state;
   return (
     <div className="flex flex-col gap-3">
-      {platforms.length > 1 && (
+      {!inSheet && platforms.length > 1 && (
         <ul className="flex flex-wrap gap-1.5" aria-label="플랫폼">
           <li>
             <ChipButton size="sm" active={selected === null} onClick={() => setSelected(null)}>
@@ -90,7 +91,7 @@ function DlcBody({ state, hasAddOns }: { state: ReturnType<typeof useDlcRows>; h
       {rows.length === 0 ? (
         <p className="text-[13px] text-dim">{hasAddOns ? GAME_MESSAGES.dlcKnownButUnlisted : GAME_MESSAGES.dlcNone}</p>
       ) : (
-        <DlcRows rows={rows} />
+        <DlcRows rows={rows} inSheet={inSheet} showPlatform={!inSheet} />
       )}
     </div>
   );
@@ -131,7 +132,7 @@ export function DlcSheetButton({ dlcs, hasAddOns }: { dlcs: DlcDto[]; hasAddOns:
       label={GAME_MESSAGES.dlcButton(dlcs.length)}
       size="wide"
     >
-      <DlcBody state={state} hasAddOns={hasAddOns} />
+      <DlcBody state={state} hasAddOns={hasAddOns} inSheet />
     </Sheet>
   );
 }

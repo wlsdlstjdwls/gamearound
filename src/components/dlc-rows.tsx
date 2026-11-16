@@ -16,8 +16,11 @@ import type { DlcDto, PlatformDto } from "@/server/services/games";
 
 export type DlcRow = { dlc: DlcDto; best: PlatformDto | null };
 
-/** inSheet: 플랫폼 행 시트 안이면 헤어라인 대신 줄마다 판을 깐다(SHEET_ROWS 주석) */
-export function DlcRows({ rows, inSheet = false }: { rows: DlcRow[]; inSheet?: boolean }) {
+/**
+ * inSheet: 시트 안이면 헤어라인 대신 줄마다 판을 깐다(SHEET_ROWS 주석).
+ * showPlatform: 값 옆 플랫폼 이름. 상세의 추가 콘텐츠 팝업은 끈다(2026-11-16 사용자 "플랫폼은 안 나와도 될 듯") — 그 자리는 최저가 하나다
+ */
+export function DlcRows({ rows, inSheet = false, showPlatform = true }: { rows: DlcRow[]; inSheet?: boolean; showPlatform?: boolean }) {
   return (
     <ul className={inSheet ? SHEET_ROWS : ROWS}>
       {rows.map(({ dlc, best }, i) => (
@@ -47,7 +50,7 @@ export function DlcRows({ rows, inSheet = false }: { rows: DlcRow[]; inSheet?: b
               )}
               {/* 플랫폼 이름은 자리를 이미 알아도 적는다 — 나라가 다르면 이름이 달라지고(Switch 일본),
                   그 값은 한국 계정으로 못 사는 값이다 */}
-              {best && <span className="w-12 text-right text-[12px] text-dim">{platformLabel(best)}</span>}
+              {showPlatform && best && <span className="w-12 text-right text-[12px] text-dim">{platformLabel(best)}</span>}
             </span>
           </Link>
         </li>
