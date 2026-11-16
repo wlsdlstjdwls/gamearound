@@ -1,8 +1,8 @@
 // 개발자 라운지 홈(기획서 v2.0 S-16, 목업 lgHome) — 대시보드형.
 //   머리: 제목 + 글 작성(내 게임 관리는 띠 칸과 현황 띠 링크가 맡는다)
 //   현황 스트립: 등록 게임 수 | 검토 중 | 내 글 반응(최근 7일, 아직 안 본 새 댓글 — 누르면 댓글함). 비로그인은 로그인 안내 한 칸
-//   게시판 고르기 카드: 개발일지 | 질문/피드백 + 전체 글 보기. 하위 띠에서 두 갈래를 뺐으므로(lib/nav 의 hideInBand)
-//   게시판 홈과 같은 카드로 여기서 길을 낸다(2026-10-28, components/community/board-picker)
+//   게시판 고르기 카드는 걷었다(2026-11-16 사용자 "게시판 둘러보기 영역은 제거"). 개발일지, 질문/피드백은 하위 띠 칸이 길을 낸다.
+//   (10-28 에는 띠에서 두 갈래를 빼고 이 카드가 길을 냈다)
 //   왼쪽: 급상승 인기글(줄 오른쪽 끝 "전체 글 보기") + 답변을 기다리는 질문
 //   오른쪽: 내 게임 최근 소식(최대 4개). 비로그인은 로그인 안내, 게임이 없으면 등록 유도. 아래 이용 가이드
 // 검색, 탭, 정렬은 이 화면에 두지 않는다(기획서 S-16 "삭제된 영역") — 라운지 전체 글(S-17)이 맡는다.
@@ -11,13 +11,12 @@
 // 없는 값을 0 으로 적으면 "아무도 반응 안 했다" 로 읽혀 거짓말이 된다.
 import type { Metadata } from "next";
 import Link from "next/link";
-import { BoardPicker } from "@/components/community/board-picker";
 import { HeadLink, RisingBlock, SideEmpty, SidePanel, SideRow, StatStrip, WaitingBlock } from "@/components/community/news-blocks";
 import { WriteLink } from "@/components/community/write-link";
 import { BoardGuide } from "@/components/lounge/board-guide";
 import { DbUnavailable } from "@/components/db-unavailable";
 import { buttonClass } from "@/components/ui/button";
-import { ChatIcon, ClockIcon, FileTextIcon, GamepadIcon, UserIcon } from "@/components/ui/icons";
+import { ChatIcon, ClockIcon, GamepadIcon, UserIcon } from "@/components/ui/icons";
 import { Page, PageHead } from "@/components/ui/page";
 import { LOUNGE_CATEGORIES, writePath } from "@/lib/community/constants";
 import { COMMUNITY_MESSAGES as M } from "@/lib/community/messages";
@@ -34,12 +33,6 @@ import { getCurrentUser } from "@/server/services/users";
 export const dynamic = "force-dynamic";
 
 export const metadata: Metadata = { title: M.loungeTitle, description: L.lead };
-
-/** 게시판 카드 그림 — 개발일지는 글, 질문/피드백은 말풍선 */
-const LOUNGE_STAT_ICON: Record<(typeof LOUNGE_CATEGORIES)[number], React.ReactNode> = {
-  devlog: <FileTextIcon size={19} />,
-  qna: <ChatIcon size={19} />,
-};
 
 /** 오른쪽 칸에 세우는 내 게임 수(기획서 S-16 "내 게임 최대 4개") */
 const MY_GAMES_LIMIT = 4;
@@ -99,7 +92,6 @@ export default async function LoungeHomePage() {
               ) : (
                 <StatStrip label={L.statusLabel} items={[{ label: L.guestLead, value: L.guestLabel, icon: <UserIcon size={19} /> }]} link={{ href: signInPath(ROUTES.lounge), label: L.signIn }} />
               )}
-              <BoardPicker categories={LOUNGE_CATEGORIES} home={home} icons={LOUNGE_STAT_ICON} allHref={ROUTES.loungeAll} />
               <div className="grid items-start gap-6 lg:grid-cols-[minmax(0,1fr)_380px]">
                 <div className="flex min-w-0 flex-col gap-7">
                   <RisingBlock posts={home.rising} allHref={ROUTES.loungeAll} now={now} />

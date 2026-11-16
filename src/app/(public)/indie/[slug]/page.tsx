@@ -34,7 +34,7 @@ import { IndieReportButton } from "@/components/indie/report-button";
 import { FadeImage } from "@/components/ui/fade-image";
 import { Page, SectionHead, sectionCardClass } from "@/components/ui/page";
 import { formatDate } from "@/lib/format";
-import { genreLabels, INDIE_MESSAGES as M, INDIE_PLATFORM_LABEL, INDIE_STAGE_LABEL, INDIE_REVIEW_MESSAGES as RV } from "@/lib/indie/messages";
+import { genreLabels, INDIE_MESSAGES as M, INDIE_PLATFORM_LABEL, INDIE_REVIEW_MESSAGES as RV } from "@/lib/indie/messages";
 import { storeLinkPlatform } from "@/lib/indie/constants";
 import { INDIE_FROM_PARAM, parseIndieFrom, type IndieFrom } from "@/lib/indie/query";
 import { classifyTraffic } from "@/lib/indie/traffic";
@@ -108,7 +108,6 @@ export default async function IndieDetailPage({ params, searchParams }: Props) {
   const otherLinks = post.links.flatMap((l, i) => (stores.some((st) => st.index === i) || i === playPick?.index ? [] : [{ kind: l.kind, href: hrefOf(i) }]));
   const info: Array<{ label: string; value: string | null }> = [
     { label: M.by, value: post.developerName },
-    { label: M.stage, value: INDIE_STAGE_LABEL[post.stage] },
     { label: M.platforms, value: post.platforms.map((p) => INDIE_PLATFORM_LABEL[p]).join(", ") },
     { label: M.genres, value: genreLabels(post.genres).join(", ") || null },
     { label: M.release, value: post.releaseNote },

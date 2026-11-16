@@ -10,9 +10,6 @@ import { gamesHref } from "@/lib/games-query";
 import { INDIE_FROM, INDIE_FROM_PARAM } from "@/lib/indie/query";
 import { ROUTES } from "@/lib/routes";
 
-/** 게임 게시판 글쓰기 화면(app/(user)/board/write). 경로 표시와 칸 켜기가 같은 값을 본다 */
-const BOARD_WRITE_PATH = `${ROUTES.board}/write`;
-
 export type NavSub = {
   label: string;
   href: string;
@@ -86,32 +83,24 @@ export const NAV_SECTIONS: readonly NavSection[] = [
       { label: "슈퍼루키", href: ROUTES.rookies, childQueries: [{ parent: ROUTES.indie, query: { [INDIE_FROM_PARAM]: INDIE_FROM.rookies } }] },
       // 공개된 인디 게임 전체(/indie). 라운지에 "내가 만든 게임" 으로 서 있었지만 남의 게임도 들어 있는 목록이라
       // 인디 게임 메뉴와 겹쳤다 — 한 칸으로 합쳐 여기 둔다(2026-10-28 메뉴 정리, 사용자: "중복되는 것들 통폐합")
-      { label: "전체 인디 게임", href: ROUTES.indie },
-      { label: "플레이테스트", href: ROUTES.playtests },
+      // 이름은 "모든 인디 게임"(2026-11-16 사용자 "메뉴명 변경 필요"). "전체 인디 게임" 은 "전체 게임" 과 붙어 읽혀 게임 탐색의 하위처럼 보였다
+      { label: "모든 인디 게임", href: ROUTES.indie },
     ],
   },
-  {
-    key: "board",
-    label: "게임 게시판",
-    href: ROUTES.board,
-    subs: [
-      // 전체 글(/board/all)은 칸이 없지만 목업(rbPage rha)이 "게시판 홈" 을 켠다 — 라운지 전체 글과 같은 자리다
-      { label: "게시판 홈", href: ROUTES.board, aliases: [ROUTES.boardAll] },
-      // 글쓰기의 category 값은 posts.category 갈래 이름이다(lib/community/constants 의 writePath)
-      { label: "리뷰", href: ROUTES.boardReviews, hideInBand: true, aliasQueries: [{ path: BOARD_WRITE_PATH, query: { category: "review" } }] },
-      { label: "공략", href: ROUTES.boardGuides, hideInBand: true, aliasQueries: [{ path: BOARD_WRITE_PATH, query: { category: "guide" } }] },
-      { label: "홍보", href: ROUTES.boardPromos, hideInBand: true, aliasQueries: [{ path: BOARD_WRITE_PATH, query: { category: "promo" } }] },
-    ],
-  },
+  // 게임 게시판은 메뉴에서 걷었다(2026-11-16 사용자 "게임 게시판 메뉴 삭제", "홍보 게시판은 삭제"). 화면과 글은 남는다 —
+  // 숨긴다 ≠ 지운다(옛 글 주소, 관리자 게시글 관리가 그대로 열린다). 되살리려면 이 자리에 board 묶음을 다시 세운다(git 기록 참고)
   {
     key: "lounge",
     label: "개발자 라운지",
     href: ROUTES.lounge,
     subs: [
       { label: "라운지 홈", href: ROUTES.lounge, aliases: [ROUTES.loungeAll] },
-      // 개발일지, 질문/피드백은 라운지 홈의 글 현황 칸과 목록 옆 메뉴가 길을 낸다 — 게시판의 리뷰, 공략, 홍보와 같은 이유로 띠에서 뺀다(2026-10-28 사용자)
-      { label: "개발일지", href: ROUTES.loungeDevlogs, hideInBand: true },
-      { label: "질문/피드백", href: ROUTES.loungeQna, hideInBand: true },
+      // 개발일지, 질문/피드백을 띠에 다시 세웠다(2026-11-16 사용자 "개발일지, 질문/피드백 메뉴 생성, 게시판 둘러보기 영역은 제거").
+      // 10-28 에는 라운지 홈의 게시판 고르기 카드가 같은 길을 내서 띠에서 뺐는데, 그 카드를 걷었으니 띠가 유일한 길이다
+      { label: "개발일지", href: ROUTES.loungeDevlogs },
+      { label: "질문/피드백", href: ROUTES.loungeQna },
+      // 플레이테스트는 개발자가 테스터를 모으는 자리라 라운지로 옮겼다(2026-11-16 사용자). 인디 게임 메뉴는 "고를 게임" 만 남는다
+      { label: "플레이테스트", href: ROUTES.playtests },
       // 등록현황(/indie/mine)과 내 게임 통계(/indie/mine/stats)는 한 칸이다(2026-10-28 메뉴 정리). 둘 다 내 게임을 돌보는 화면이라
       // 띠에 따로 서면 같은 일이 두 칸이었다. 두 화면 사이는 머리의 탭(components/indie/mine-tabs)으로 오간다.
       // 통계, 플레이테스트 관리, 광고 걸기, 요금, 결제는 모두 /indie/mine 아래라 가장 긴 경로 규칙으로 이 칸이 켜진다
@@ -208,7 +197,7 @@ type Query = { get(name: string): string | null };
 
 /**
  * 지금 주소가 어느 메뉴의 어느 칸인지. 칸이 여럿 맞으면 경로가 긴 쪽, 같으면 주소 조건까지 맞는 쪽이 이긴다
- * (/indie/mine 은 "전체 인디 게임"(/indie)과 "내 게임 관리"(/indie/mine) 둘 다에 걸린다).
+ * (/indie/mine 은 "모든 인디 게임"(/indie)과 "내 게임 관리"(/indie/mine) 둘 다에 걸린다).
  * 소속 메뉴는 있지만 칸이 없는 화면(게임 상세)은 sub 가 null 이다 — 띠는 서되 아무 칸도 켜지 않는다.
  */
 export function resolveNav(pathname: string, query: Query): { section: NavSection | null; sub: NavSub | null } {

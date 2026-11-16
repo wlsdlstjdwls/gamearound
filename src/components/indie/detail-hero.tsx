@@ -21,7 +21,7 @@ import { TrophyIcon } from "@/components/ui/icons";
 import { RANK_TONE, RANK_TONE_TOP } from "@/components/ui/rank-tone";
 import { cn } from "@/lib/cn";
 import type { IndieDetailDto } from "@/lib/indie/dto";
-import { INDIE_MESSAGES as M, INDIE_PLATFORM_LABEL, INDIE_STAGE_LABEL, linkLabel } from "@/lib/indie/messages";
+import { INDIE_MESSAGES as M, INDIE_PLATFORM_LABEL, linkLabel } from "@/lib/indie/messages";
 import { INDIE_PROMO_MESSAGES as PM } from "@/lib/indie/promo-messages";
 import { FAME_MESSAGES as FM, ymLabel } from "@/lib/indie/fame";
 import { gamePath, hallOfFamePath, ROUTES } from "@/lib/routes";
@@ -126,10 +126,7 @@ export function IndieDetailHero({
                 {FM.detailBadge(podium)}
               </Link>
             )}
-            <span className="flex items-center gap-2 text-[12px] font-bold tracking-[0.06em]">
-              <span aria-hidden className="size-2 rounded-full bg-acc-on-ink" />
-              {INDIE_STAGE_LABEL[post.stage]}
-            </span>
+            {/* 개발 단계(앞서 해보기 등) 줄은 걷었다(2026-11-16 사용자 "앞서해보기 문구 제거") */}
             <h1 className="text-[28px] leading-[1.15] font-extrabold tracking-[-0.04em] sm:text-[36px]">{post.title}</h1>
             <p className="text-[15px] leading-[1.6] opacity-80">{post.tagline}</p>
           </div>

@@ -9,7 +9,6 @@ import Link from "next/link";
 import { CARD_SHELL, COVER_CLASS, CoverImage } from "@/components/game-card";
 import { HeartIcon } from "@/components/ui/icons";
 import { Clamp } from "@/components/ui/tooltip";
-import { IndieStageBadge } from "@/components/indie/stage-badge";
 import { WishHeart } from "@/components/wish-heart";
 import { cn } from "@/lib/cn";
 import { formatDotDate } from "@/lib/format";
@@ -24,7 +23,7 @@ export function IndieTagPills({ platforms, genres }: { platforms: readonly Indie
   return (
     <ul className="flex flex-wrap gap-1">
       {items.map((t, i) => (
-        <li key={`${t}-${i}`} className={cn("rounded-[var(--radius-xs)] px-1.5 py-0.5 text-[11.5px] font-semibold", i < platforms.length ? "bg-surface-2 text-ink-2" : "bg-acc-soft text-acc")}>
+        <li key={`${t}-${i}`} className={cn("rounded-[var(--radius-xs)] bg-surface-2 px-1.5 py-0.5 text-[11.5px] font-semibold", i < platforms.length ? "text-ink-2" : "text-mut")}>
           {t}
         </li>
       ))}
@@ -76,14 +75,15 @@ export function IndieCard({
             </Clamp>
           </Link>
         </div>
-        <IndieTagPills platforms={post.platforms} genres={post.genres} />
+        {/* 목록 카드에는 장르만 — 플랫폼 꼬리표, 개발 단계 딱지는 걷었다(2026-11-16 사용자 "목록 카드 플랫폼 뱃지 제거", 색 줄이기).
+            장르 꼬리표도 파랑 면을 걷고 회색 한 톤이다. 파랑은 누르는 것(링크, 할인)의 색이다 */}
+        <IndieTagPills platforms={[]} genres={post.genres} />
         <Clamp lines={2} className="text-[13px] leading-[1.5] text-mut">
           {post.tagline}
         </Clamp>
         {/* 한 줄로 고정한다 — 줄바꿈을 허락하면 만든 사람 이름 길이에 따라 찜 수만 다음 줄로 떨어져 같은 줄 카드끼리 바닥 높이가 달라진다.
             넘치는 것은 가운데 이름 칸이 잘리며 받는다 */}
         <div className="mt-auto flex items-center gap-2 pt-1 text-[12px] text-dim">
-          <IndieStageBadge stage={post.stage} />
           {post.authorIsMaker && <MakerBadge />}
           <Clamp lines={1} className="min-w-0 flex-1">
             {[post.developerName, formatDotDate(post.registeredAt)].join(" | ")}

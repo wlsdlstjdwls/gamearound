@@ -17,7 +17,7 @@ describe("resolveNav", () => {
 
   it("긴 경로가 이긴다: /indie/mine 은 내 게임 관리", () => {
     expect(resolveNav("/indie/mine", q()).sub?.label).toBe("내 게임 관리");
-    expect(resolveNav("/indie/some-game", q()).sub?.label).toBe("전체 인디 게임");
+    expect(resolveNav("/indie/some-game", q()).sub?.label).toBe("모든 인디 게임");
   });
 
   it("통계, 플레이테스트 관리, 광고 걸기와 결제 화면은 모두 내 게임 관리를 켠다", () => {
@@ -38,9 +38,8 @@ describe("resolveNav", () => {
 
   it("하위 칸 밖 소속 경로와 메뉴 밖 화면", () => {
     expect(resolveNav("/search", q("q=a")).section?.key).toBe("explore");
-    expect(resolveNav("/board/reviews", q()).sub?.label).toBe("리뷰");
-    expect(resolveNav("/board/p/abc", q()).sub).toBeNull();
-    expect(resolveNav("/board/p/abc", q()).section?.key).toBe("board");
+    // 게임 게시판은 메뉴에서 걷었다(2026-11-16) — 화면은 남아 열리지만 어느 메뉴도 켜지 않는다
+    expect(resolveNav("/board/reviews", q()).section).toBeNull();
     expect(resolveNav("/", q()).section).toBeNull();
     // 계정 화면은 메뉴 넷 밖의 내 정보 띠(ACCOUNT_SECTION)에 선다
     expect(resolveNav("/settings", q()).section?.key).toBe("account");
@@ -62,21 +61,13 @@ describe("trailKind", () => {
   it("홈은 아무것도 없다", () => expect(trailKind("/", resolveNav("/", q()).sub)).toBeNull());
 });
 
-describe("게임 게시판 상세, 글쓰기의 소속", () => {
-  it("글 상세는 제 게시판 칸을 켜고 되돌아가기 줄은 없다", () => {
-    const r = resolveNav("/board/guides/p/abc", q());
-    expect(r.sub?.label).toBe("공략");
-    expect(trailKind("/board/guides/p/abc", r.sub)).toBeNull();
-  });
-
-  it("글쓰기는 고른 카테고리의 칸을 켠다", () => {
-    expect(resolveNav("/board/write", q("category=promo")).sub?.label).toBe("홍보");
-    expect(resolveNav("/board/write", q()).sub).toBeNull();
-  });
-
-  it("전체 글은 게시판 홈을 켠다", () => {
-    expect(resolveNav("/board/all", q()).sub?.label).toBe("게시판 홈");
-    expect(trailKind("/board/all", resolveNav("/board/all", q()).sub)).toBeNull();
+describe("개발자 라운지 칸", () => {
+  it("개발일지, 질문/피드백, 플레이테스트가 라운지 띠에 선다(2026-11-16)", () => {
+    expect(resolveNav("/lounge/devlogs", q()).sub?.label).toBe("개발일지");
+    expect(resolveNav("/lounge/qna", q()).sub?.label).toBe("질문/피드백");
+    const r = resolveNav("/playtests", q());
+    expect(r.section?.key).toBe("lounge");
+    expect(r.sub?.label).toBe("플레이테스트");
   });
 });
 
@@ -87,12 +78,12 @@ describe("인디 상세의 출처(?from=)", () => {
     const rookies = resolveNav("/indie/some-game", q("from=rookies"));
     expect([rookies.section?.key, rookies.sub?.label]).toEqual(["indie", "슈퍼루키"]);
   });
-  it("등록현황에서 오면 내 게임 관리, 출처가 없거나 모르는 값이면 전체 인디 게임", () => {
+  it("등록현황에서 오면 내 게임 관리, 출처가 없거나 모르는 값이면 모든 인디 게임", () => {
     expect(resolveNav("/indie/some-game", q("from=mine")).sub?.label).toBe("내 게임 관리");
-    expect(resolveNav("/indie/some-game", q("from=zzz")).sub?.label).toBe("전체 인디 게임");
+    expect(resolveNav("/indie/some-game", q("from=zzz")).sub?.label).toBe("모든 인디 게임");
   });
   it("출처는 상세 한 칸에만 먹는다 — 목록, 고치기 화면은 그대로", () => {
-    expect(resolveNav("/indie", q("from=hof")).sub?.label).toBe("전체 인디 게임");
+    expect(resolveNav("/indie", q("from=hof")).sub?.label).toBe("모든 인디 게임");
     expect(resolveNav("/indie/mine/abc", q("from=hof")).sub?.label).toBe("내 게임 관리");
   });
 });
