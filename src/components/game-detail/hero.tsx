@@ -222,14 +222,28 @@ export function DetailHero({
   );
 }
 
-/** 출시 전 게임의 출시일 띠 — 날짜와 남은 날. 원제 줄의 작은 회색 글자로는 "곧 나온다" 가 안 읽혔다(2026-10-28 사용자) */
+/**
+ * 출시 전 게임의 출시일 표 — [D-2 | 11월 18일 (수) 출시] 두 칸짜리 꼬리표.
+ * 처음(2026-10-28)에는 옅은 파란 띠 안에 "2026년 11월 18일 (수) 출시 예정" 긴 문장과 D-day 알약을 겹쳐 넣었는데,
+ * 2026-11-16 사용자 "출시예정 표현 자체를 바꿔줘": 문장이 길고 파란 면이 커서 제목보다 먼저 읽혔다.
+ * 남은 날을 채운 칸 하나로 세우고 날짜는 흰 칸에 짧게 적는다. 올해면 해를 뺀다 — 남은 날이 이미 가까움을 말한다
+ */
 function ReleaseBanner({ date }: { date: string }) {
-  const days = daysUntil(date.slice(0, 10));
+  const key = date.slice(0, 10);
+  const days = daysUntil(key);
+  const full = formatDate(date);
+  const sameYear = key.slice(0, 4) === kstDateKey(new Date()).slice(0, 4);
+  const dateText = sameYear ? full.replace(/^\d+년 /, "") : full;
   return (
-    <p className="inline-flex w-fit flex-wrap items-center gap-x-2.5 gap-y-1 rounded-[var(--radius-md)] bg-acc-soft px-3.5 py-2 text-[14.5px] font-bold text-acc">
-      <CalendarIcon size={17} />
-      <span>{releaseLineText(formatDate(date), true)}</span>
-      {days > 0 && <span className="rounded-full bg-surface px-2 py-0.5 text-[12.5px] font-extrabold tabular-nums text-acc shadow-hair">{D.releaseDday(days)}</span>}
+    <p className="inline-flex w-fit items-stretch overflow-hidden rounded-[var(--radius-sm)] border border-line bg-surface text-[14px] shadow-hair">
+      <span className="flex items-center bg-acc px-3 font-extrabold tabular-nums tracking-[-0.01em] text-on-ink">
+        {days > 0 ? D.releaseDday(days) : D.releaseToday}
+      </span>
+      <span className="flex items-center gap-1.5 px-3 py-1.5 font-bold text-ink">
+        <CalendarIcon size={15} className="shrink-0 text-mut" />
+        {dateText}
+        <span className="font-medium text-mut">{D.releaseSuffix}</span>
+      </span>
     </p>
   );
 }
