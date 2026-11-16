@@ -156,7 +156,7 @@ export function PriceAlertButton({
       >
         {stateful && state !== "none" ? (
           <>
-            <BellIcon size={17} className={state === "on" ? "fill-current" : undefined} />
+            <BellIcon size={17} className={cn("shrink-0", state === "on" && "fill-current")} />
             {M.state[state]}
           </>
         ) : (

@@ -203,7 +203,8 @@ export function DetailHero({
               stateful
               label={
                 <>
-                  <BellIcon size={17} />
+                  {/* 단추 칸이 좁아 글자가 길면 flex 가 아이콘을 눌러 작게 만든다(2026-11-16 사용자) — 아이콘은 줄지 않게 둔다 */}
+                  <BellIcon size={17} className="shrink-0" />
                   {D.heroAlert}
                 </>
               }
