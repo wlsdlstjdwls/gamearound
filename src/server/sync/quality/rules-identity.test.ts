@@ -54,6 +54,14 @@ describe("findMixedIdentity", () => {
     expect(out[0]).toMatchObject({ verdict: "candidate", fix: { kind: "split_store_ref", title: "0 Degrees", toGameId: null } });
   });
 
+  it("psprices 자리표시 제목(psprices sku)은 다른 게임으로 읽지 않는다(11-16 후보 552건)", () => {
+    const out = findMixedIdentity([game("g1", "A Knight's Quest")], [
+      ref("g1", "steam", "A Knight's Quest"),
+      ref("g1", "xbox", "psprices sku"),
+    ]);
+    expect(out).toEqual([]);
+  });
+
   it("떼어 낸 판은 같은 제목 행이 하나 있으면 그리로 옮긴다", () => {
     const out = findMixedIdentity([game("g1", "Expeditions: Rome"), game("g2", "Hidden Cats in Rome")], [
       ref("g1", "steam", "Expeditions: Rome"),

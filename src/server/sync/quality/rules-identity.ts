@@ -66,7 +66,14 @@ export function titlesRelated(a: string, b: string): boolean {
   return union > 0 && shared / union >= RELATED_JACCARD;
 }
 
-const comparable = (t: string | null | undefined): t is string => Boolean(t && t.trim() && !NON_LATIN.test(t));
+/**
+ * 제목이 아니라 자리표시인 matched_title. 11-02 옛 DB 병합이 psprices 에서 온 스토어 연결에 제목 대신 이 말을 넣었다.
+ * 이걸 다른 게임 이름으로 읽으면 멀쩡한 판을 떼어 내라고 한다 — 11-16 회차 후보 575건 중 552건이 이 꼴이었다(전부 넘김)
+ */
+const PLACEHOLDER_TITLES: ReadonlySet<string> = new Set(["psprices sku"]);
+
+const comparable = (t: string | null | undefined): t is string =>
+  Boolean(t && t.trim() && !NON_LATIN.test(t) && !PLACEHOLDER_TITLES.has(t.trim().toLowerCase()));
 
 /** 같은 제목 행 찾기 열쇠. 떼어 낸 판이 갈 제 행이 이미 있으면 새로 세우지 않는다 */
 const titleKey = (t: string) => tokens(t).join("");
