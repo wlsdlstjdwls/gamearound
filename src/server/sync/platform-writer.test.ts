@@ -59,6 +59,26 @@ function row(over: Partial<PlatformRow> = {}): PlatformRow {
   } as PlatformRow;
 }
 
+describe("planPlatform - 스토어가 날짜를 거둔 출시 예정", () => {
+  const plannedSet = (existing: PlatformRow, snap: StoreSnapshot, locks: string[] = []) => {
+    const plan = planPlatform(ctx(locks), existing, "g-1", snap);
+    return plan.kind === "update" ? plan.set : {};
+  };
+  it("스토어가 미정, 날짜 없음이라고 하면 지난 날짜를 지운다(스팀 출시 연기)", () => {
+    const set = plannedSet(row({ releaseDate: "2026-10-29", releaseTba: false }), snapshot({ releaseDate: null, releaseTba: true }));
+    expect(set).toMatchObject({ releaseDate: null, releaseTba: true });
+  });
+  it("미정이라 해도 날짜를 주면 그 날짜를 쓴다", () => {
+    const set = plannedSet(row({ releaseDate: "2026-10-29" }), snapshot({ releaseDate: "2026-12-01", releaseTba: false }));
+    expect(set.releaseDate).toBe("2026-12-01");
+  });
+  it("스토어가 미정을 말하지 않으면(undefined) 날짜를 지키고, 잠긴 날짜도 지킨다", () => {
+    expect(plannedSet(row({ releaseDate: "2026-10-29" }), snapshot({ releaseDate: null })).releaseDate).toBeUndefined();
+    const locked = plannedSet(row({ releaseDate: "2026-10-29" }), snapshot({ releaseDate: null, releaseTba: true }), ["game_platforms:gp-1:release_date"]);
+    expect(locked.releaseDate).toBeUndefined();
+  });
+});
+
 describe("planPlatform - 유저 점수", () => {
   const score = { value: 94, kind: "positive_ratio", count: 487684 } as const;
 

@@ -206,6 +206,13 @@ export function planPlatform(ctx: Ctx, existing: PlatformRow | undefined, gameId
     if (isLocked(ctx, "game_platforms", existing.id, field)) continue;
     if (existing[field] !== value) (set as Record<string, unknown>)[field] = value;
   }
+  // 스토어가 직접 "출시 예정, 날짜 없음" 이라고 하면 옛 날짜를 지운다 — 널 무시 규칙의 예외다(2026-11-16).
+  // 출시가 미뤄지며 스팀이 날짜를 거둬 갔는데 우리는 지난 날짜를 쥐고 있어서 "출시됐는데 가격 없음" 으로 보이던 행이
+  // 스팀 568개였다(러너 실측: 견본 10개 중 9개가 is_coming_soon, 날짜 없음). 원본(raw)이 말한 경우만 본다 —
+  // 자리표시 날짜를 버려 미정이 된 경우(withSaneReleaseDate)는 스토어가 날짜를 거둔 게 아니라 우리가 못 믿은 것이라 기존 값을 지킨다
+  if (raw.releaseTba === true && !raw.releaseDate && existing.releaseDate !== null && !isLocked(ctx, "game_platforms", existing.id, "releaseDate")) {
+    set.releaseDate = null;
+  }
   const priceChanged = Object.keys(set).some((k) => PRICE_FIELDS.has(k));
   // 할인 메타는 null 로 덮어써야 하는 유일한 필드라 PLATFORM_FIELDS 규칙(널 무시) 밖에서 따로 처리
   // misread 면 빈 객체다 — 못 믿을 회차가 진행 중인 진짜 행사 정보를 지워 버리면 안 된다
