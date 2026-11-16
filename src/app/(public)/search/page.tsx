@@ -31,12 +31,18 @@ export const revalidate = 3600;
 
 type Props = { searchParams: Promise<{ q?: string | string[]; sort?: string | string[] }> };
 
+/**
+ * 기본은 출시일 최신순이다(2026-11-16 사용자 "출시일 기준 최신순으로 노출하고 출시일순 필터 추가").
+ * 제목을 찍어 찾아도 같은 이름의 옛 판, 리마스터, 후속작이 함께 걸리는데, 찾는 쪽은 대개 최근 판이다. 관련도순은 칩으로 남긴다
+ */
 const SORTS = [
+  { key: "release", label: "출시일순" },
   { key: "relevance", label: "관련도순" },
   { key: "discount", label: "할인율순" },
   { key: "price", label: "가격순" },
 ] as const;
 type SortKey = (typeof SORTS)[number]["key"];
+const DEFAULT_SORT: SortKey = "release";
 
 function readOne(v: string | string[] | undefined): string {
   return (Array.isArray(v) ? v[0] : v ?? "").trim();
@@ -46,13 +52,14 @@ function readQuery(q: string | string[] | undefined): string {
 }
 function readSort(v: string | string[] | undefined): SortKey {
   const s = readOne(v);
-  return SORTS.some((x) => x.key === s) ? (s as SortKey) : "relevance";
+  return SORTS.some((x) => x.key === s) ? (s as SortKey) : DEFAULT_SORT;
 }
 
-/** 관련도순은 서비스가 준 순서를 그대로 쓴다. 나머지는 화면에서만 다시 정렬한다(질의는 그대로) */
+/** 관련도순은 서비스가 준 순서를 그대로 쓴다. 나머지는 화면에서만 다시 정렬한다(질의는 그대로). 날짜를 모르는 게임은 뒤로 간다 */
 function sortResults(items: GameSummary[], sort: SortKey): GameSummary[] {
   if (sort === "relevance") return items;
   const copy = [...items];
+  if (sort === "release") return copy.sort((a, b) => (b.best?.releaseDate ?? "").localeCompare(a.best?.releaseDate ?? ""));
   if (sort === "discount") return copy.sort((a, b) => (b.best?.discountPct ?? 0) - (a.best?.discountPct ?? 0));
   return copy.sort((a, b) => (a.best?.currentPrice ?? Infinity) - (b.best?.currentPrice ?? Infinity));
 }
@@ -115,7 +122,7 @@ export default async function SearchPage({ searchParams }: Props) {
         />
         <div role="group" aria-label={M.sortLabel} className="flex gap-1">
           {SORTS.map((s) => (
-            <NavChip key={s.key} group="sort" href={`${ROUTES.search}?q=${encodeURIComponent(q)}&sort=${s.key}`} active={s.key === sort}>
+            <NavChip key={s.key} group="sort" href={`${ROUTES.search}?q=${encodeURIComponent(q)}${s.key === DEFAULT_SORT ? "" : `&sort=${s.key}`}`} active={s.key === sort}>
               {s.label}
             </NavChip>
           ))}
@@ -130,7 +137,7 @@ export default async function SearchPage({ searchParams }: Props) {
           <ul className={HOME_GRID_CLASS}>
             {results.map((g, i) => (
               <li key={g.slug} className="enter-item" style={stagger(i)}>
-                <GameCard game={g} />
+                <GameCard game={g} variant={sort === "release" ? "release" : "discount"} />
               </li>
             ))}
           </ul>
