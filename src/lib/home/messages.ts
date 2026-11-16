@@ -12,6 +12,18 @@ export const HOME_MESSAGES = {
   // 390폭에서 칸이 글자 열 개 남짓이라 "게임 이름, 장르, 개발사로 찾아보세요" 가 "찾" 에서 잘렸다(2026-10-30). 머리띠 검색과 같은 말로 줄인다
   heroSearchPlaceholder: "게임, 장르, 개발사",
   heroSearchCta: "검색",
+  /**
+   * 검색 아래 바로 가기 다섯(2026-11-16 기획 점검). 홈에 오는 사람이 하려는 일은 "이 게임 얼마지"(검색) 다음으로
+   * "싸게 살 게 있나, 새로 뭐가 나왔나, 곧 뭐가 나오나, 공짜는 없나, 작은 게임은" 이다. 메뉴 세 칸 밑에 숨어 있던 길을 첫 화면에 꺼낸다
+   */
+  quickLabel: "바로 가기",
+  quick: {
+    sale: { title: "할인 중", body: "지금 깎인 게임" },
+    fresh: { title: "새로 나온 게임", body: "최근 출시 순" },
+    upcoming: { title: "곧 출시", body: "출시일 달력" },
+    free: { title: "무료 게임", body: "0원으로 시작" },
+    indie: { title: "인디 게임", body: "개발자가 올린 게임" },
+  },
   /** 기획서 v2.0 S-01 줄 이름 */
   todayDealsTitle: "오늘의 할인",
   upcomingTitle: "출시 예정",

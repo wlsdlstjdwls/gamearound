@@ -46,7 +46,7 @@ function Plan({ next, expected, running, currency }: { next: Forecast["next"]; e
   return (
     // 흰 칸이 판의 남는 높이를 먹고 내용은 가운데에 선다(flex-1, justify-center) — 판이 그래프 높이로 늘어날 때 빈자리가
     // 흰 칸과 단추 사이에 파란 면으로 크게 남았다(2026-11-11 사용자 "높이 고정 아니었니, 어케 해줘", 기록 없는 엘든 링)
-    <div className="flex min-w-0 flex-1 flex-col justify-center gap-3 rounded-[var(--radius-panel)] bg-surface p-4">
+    <div className="flex min-w-0 flex-1 flex-col justify-center gap-3 rounded-[var(--radius-panel)] bg-surface-2/60 p-4">
       {next && (
         <div className="flex min-w-0 flex-wrap items-center justify-between gap-x-2 gap-y-1">
           <span className="text-[13px] font-bold text-mut">{D.forecastWhenHead(next.name)}</span>
@@ -120,10 +120,11 @@ export function DiscountForecast({
     // 머리는 아이콘 오른쪽에 제목이 선다(같은 날 사용자). 참고용 알림은 판 안 맨 밑이다 — 판 밖 회색 글은 판과 따로 노는 줄로 읽혔다
     <section
       aria-labelledby="forecast-heading"
-      className="flex h-full flex-col gap-3 rounded-[var(--radius-panel)] bg-acc-soft p-5 ring-2 ring-acc ring-inset"
+      // 2026-11-16 색 줄이기: 연파랑 면 + 굵은 파랑 테두리를 걷고 옆 그래프 판과 같은 흰 판이다. 파랑은 안의 값, 단추에만 남긴다
+      className="flex h-full flex-col gap-3 rounded-[var(--radius-panel)] bg-surface p-5 shadow-[var(--elev-card)]"
     >
       <div className="flex min-w-0 items-center gap-3">
-        <span aria-hidden className="grid size-11 shrink-0 place-items-center rounded-full text-acc ring-2 ring-acc ring-inset">
+        <span aria-hidden className="grid size-11 shrink-0 place-items-center rounded-full bg-acc-soft text-acc">
           <CalendarIcon size={20} />
         </span>
         <h2 id="forecast-heading" className="flex min-w-0 flex-wrap items-baseline gap-x-2 text-[17px] font-extrabold text-ink">
@@ -141,7 +142,7 @@ export function DiscountForecast({
         </p>
       )}
       {empty ? (
-        <p className="flex min-w-0 flex-1 items-center justify-center rounded-[var(--radius-panel)] bg-surface p-4 text-center text-[13.5px] leading-[1.6] text-mut">
+        <p className="flex min-w-0 flex-1 items-center justify-center rounded-[var(--radius-panel)] bg-surface-2/60 p-4 text-center text-[13.5px] leading-[1.6] text-mut">
           <span>
             {D.forecastNoRecord.map((line) => (
               <span key={line} className="block">

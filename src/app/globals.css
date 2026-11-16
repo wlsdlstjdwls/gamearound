@@ -8,7 +8,9 @@
    모션 곡선, 시간은 여기 값만 쓴다 — 컴포넌트에 임의 숫자 금지. */
 :root {
   /* 아무 속성도 없는 html 이 곧 라이트다. 테마 스크립트가 막힌 브라우저(사생활 보호 모드)도 라이트로 선다 */
-  --bg: #f4f6f9; /* 페이지 바탕 — 순백이 아니라 한 단 내린 회청. 흰 카드가 바탕과 갈린다 */
+  /* 페이지 바탕 — 2026-11-16 단순화(사용자 "색 남발, 심플하게, 바뀐 게 안 보인다")로 회청(#f4f6f9)에서 거의 흰색으로 올렸다.
+     흰 판을 회색 바탕에 그림자로 띄우던 깊이를 걷고, 판은 헤어라인 한 줄로만 갈린다(아래 --elev-card). 닌텐도 e숍의 밝고 평평한 면을 본떴다 */
+  --bg: #fbfcfd;
   --surface: #ffffff; /* 카드, 헤더, 패널 */
   --surface-2: #eaeef4; /* 칩, hover 면 — 이 위의 --dim 4.66:1 */
   --surface-3: #dfe5ee; /* 이미지 자리표시, 아바타 */
@@ -133,11 +135,12 @@
      1px 이 안쪽에서 잘려 이미지가 밀리지 않는다. 밝은 커버(흰 배경 아트)가 판 위에서 경계 없이 번지던 것을 이 한 줄이 잡는다 */
   --ring-hair: inset 0 0 0 1px rgba(24, 32, 43, 0.08);
   /* 목록 카드 한 벌. 커버보다 링을 옅게, 그림자는 멀리 깐다(한 덩어리가 통째로 뜨는 것이라 접지면이 넓다) */
-  --elev-card: inset 0 0 0 1px rgba(24, 32, 43, 0.06), 0 1px 2px rgba(24, 32, 43, 0.05), 0 10px 24px -8px rgba(24, 32, 43, 0.14);
-  --elev-card-hover: inset 0 0 0 1px rgba(37, 99, 235, 0.22), 0 4px 8px rgba(24, 32, 43, 0.06), 0 20px 40px -10px rgba(24, 32, 43, 0.22);
+  /* 2026-11-16 평평하게: 멀리 깔던 그림자를 걷고 헤어라인 한 줄 + 접지면 한 겹만 남겼다. 떠오름은 손이 올라갈 때(hover)만 말한다 */
+  --elev-card: inset 0 0 0 1px rgba(24, 32, 43, 0.09), 0 1px 2px rgba(24, 32, 43, 0.03);
+  --elev-card-hover: inset 0 0 0 1px rgba(24, 32, 43, 0.14), 0 4px 8px rgba(24, 32, 43, 0.05), 0 14px 28px -12px rgba(24, 32, 43, 0.18);
   /* 옆으로 넘기는 줄(ui/rail) 안 카드의 hover 그림자. 줄은 overflow 상자라 위아래 24px 밖은 직선으로 잘린다 —
      위 토큰은 아래로 50px 가까이 번져 잘린 자리가 바탕 위 구분선으로 보였다(2026-10-30 사용자). 번짐을 24px 안에 가둔다 */
-  --elev-card-hover-rail: inset 0 0 0 1px rgba(37, 99, 235, 0.22), 0 3px 6px rgba(24, 32, 43, 0.06), 0 10px 16px -6px rgba(24, 32, 43, 0.18);
+  --elev-card-hover-rail: inset 0 0 0 1px rgba(24, 32, 43, 0.14), 0 3px 6px rgba(24, 32, 43, 0.05), 0 10px 16px -8px rgba(24, 32, 43, 0.16);
   /* 커버 한 벌 = 링 + 그림자. box-shadow 는 유틸 둘로 겹칠 수 없어 한 토큰으로 묶는다 */
   --elev-cover: inset 0 0 0 1px rgba(24, 32, 43, 0.08), 0 2px 4px rgba(24, 32, 43, 0.05), 0 8px 18px -6px rgba(24, 32, 43, 0.12);
   --elev-cover-hover: inset 0 0 0 1px rgba(24, 32, 43, 0.1), 0 6px 12px rgba(24, 32, 43, 0.07), 0 20px 38px -10px rgba(24, 32, 43, 0.22);
@@ -1229,7 +1232,7 @@ body:has([data-admin-actionbar]) {
 @media (hover: hover) and (pointer: fine) {
   .card-panel:hover {
     box-shadow: var(--elev-card-hover);
-    transform: translateY(-4px);
+    transform: translateY(-2px);
   }
   .rail-track .card-panel:hover {
     box-shadow: var(--elev-card-hover-rail);
