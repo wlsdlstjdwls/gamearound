@@ -64,8 +64,13 @@ export default async function LoungeHomePage() {
       <PageHead
         title={L.title}
         action={
-          // "내 게임 관리" 단추는 뺐다(2026-10-28 기획 점검) — 바로 위 띠의 "내 게임 관리" 칸, 현황 띠의 "개발 현황 보기" 와 셋이 같은 곳으로 갔다
-          <WriteLink href={writePath("devlog")}>{L.write}</WriteLink>
+          // "내 게임 관리" 단추를 글 작성 옆에 되살렸다(2026-11-16 피드백 v11 #26 목업 "하위 탭 + 내 게임 관리 버튼"). 등록은 이 길 한 곳이다(#23)
+          <div className="flex items-center gap-2">
+            <Link href={ROUTES.indieMine} className={buttonClass({ variant: "secondary", size: "sm" })}>
+              {L.myGamesButton}
+            </Link>
+            <WriteLink href={writePath("devlog")}>{L.write}</WriteLink>
+          </div>
         }
       >
         <p className="text-[14px] text-mut">{L.lead}</p>
@@ -90,7 +95,17 @@ export default async function LoungeHomePage() {
                   link={{ href: ROUTES.indieMine, label: L.statDetail }}
                 />
               ) : (
-                <StatStrip label={L.statusLabel} items={[{ label: L.guestLead, value: L.guestLabel, icon: <UserIcon size={19} /> }]} link={{ href: signInPath(ROUTES.lounge), label: L.signIn }} />
+                // 비로그인 띠는 한 줄로 줄였다(2026-11-16 피드백 v11 #26 "로그인 전 빈 배너가 큼") — 목업처럼 옅은 띠에 글 한 줄과 로그인 길
+                <Link
+                  href={signInPath(ROUTES.lounge)}
+                  className="press group flex items-center justify-between gap-3 rounded-[var(--radius-md)] bg-acc-soft px-4 py-3 text-[14px]"
+                >
+                  <span className="flex min-w-0 items-center gap-2 font-semibold text-ink">
+                    <UserIcon size={17} className="shrink-0 text-acc" />
+                    <span className="truncate">{L.guestLabel}</span>
+                  </span>
+                  <span className="shrink-0 text-[13.5px] font-bold text-acc group-hover:underline">{L.signIn}</span>
+                </Link>
               )}
               <div className="grid items-start gap-6 lg:grid-cols-[minmax(0,1fr)_380px]">
                 <div className="flex min-w-0 flex-col gap-7">

@@ -3,6 +3,8 @@ export const LOUNGE_MESSAGES = {
   /** 화면 머리 제목. 메뉴 이름(개발자 라운지)보다 한 낱말 길다 — 목업이 "누구의 라운지인가" 를 머리에서 말한다 */
   title: "인디 개발자 라운지",
   lead: "만드는 과정을 나누고, 막힌 부분은 함께 풀어 봐요.",
+  /** 머리의 내 게임 관리 단추(피드백 v11 #26) */
+  myGamesButton: "내 게임 관리",
   write: "글 작성",
   statusLabel: "내 개발 현황",
   // 현황 띠의 칸(components/community/news-blocks 의 StatStrip). 이름은 칸 위, 수와 단위는 칸 아래에 따로 선다
