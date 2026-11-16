@@ -17,7 +17,7 @@ import Link from "next/link";
 import { EmptyState } from "@/components/empty-state";
 import { IndieCard } from "@/components/indie/indie-card";
 import { Pagination } from "@/components/pagination";
-import { ChevronLeftIcon, SearchIcon, TrophyIcon } from "@/components/ui/icons";
+import { ChevronLeftIcon, SearchIcon, TrophyIcon, GamepadIcon } from "@/components/ui/icons";
 import { NavChip, NavPendingScope, PendingRegion } from "@/components/ui/nav-pending";
 import { Page, PageHead } from "@/components/ui/page";
 import { firstParam } from "@/lib/games-query";
@@ -32,6 +32,8 @@ import { AdLabel } from "@/components/ui/ad-label";
 import { AdTrack } from "@/components/promo/ad-track";
 import { SponsoredPanel } from "@/components/promo/sponsored-panel";
 import { PROMO_MESSAGES as PM } from "@/lib/promo/messages";
+import { InvitePanel } from "@/components/ui/invite-panel";
+import { INVITE_MESSAGES as IV } from "@/lib/indie/messages";
 
 export const metadata: Metadata = { title: M.listTitle, description: M.lead };
 
@@ -160,6 +162,14 @@ export default async function IndiePage({ searchParams }: Props) {
 
         {result.totalPages > 1 && <Pagination page={result.page} totalPages={result.totalPages} hrefFor={(p) => indieHref(stage, q, scope, p)} />}
       </NavPendingScope>
+      {/* 참여 권유(components/ui/invite-panel) — 게임이 적을 때 아래가 비어 보이지 않게, 다음 행동 하나를 권한다 */}
+      <InvitePanel
+        icon={<GamepadIcon size={26} />}
+        title={IV.indie.title}
+        body={IV.indie.body}
+        secondary={{ href: ROUTES.signUp, label: IV.join }}
+        primary={{ href: ROUTES.indieNew, label: IV.indie.action }}
+      />
     </Page>
   );
 }

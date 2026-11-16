@@ -34,6 +34,8 @@ import { hallOfFamePath, ROUTES } from "@/lib/routes";
 import { getMonthRanking, listHallHistory, listIndieImageUrls, type RankedIndie } from "@/server/services/indie";
 import { FAME_INTRO_IMAGE_MAX, type FameIntroSettings } from "@/lib/indie/fame-intro";
 import { getFameIntroSettings } from "@/server/services/settings";
+import { InvitePanel } from "@/components/ui/invite-panel";
+import { INVITE_MESSAGES as IV } from "@/lib/indie/messages";
 
 export const revalidate = 300;
 
@@ -316,6 +318,14 @@ export default async function HallOfFamePage({ searchParams }: Props) {
         {tab === "month" && ym === now && <MyFameMarks />}
       </NavPendingScope>
       <p className="text-[12px] text-dim">{tab === "month" ? M.monthFootnote : pickedYm ? M.top10Footnote : M.historyFootnote}</p>
+      {/* 참여 권유(components/ui/invite-panel) — 게임이 적을 때 아래가 비어 보이지 않게, 다음 행동 하나를 권한다 */}
+      <InvitePanel
+        icon={<TrophyIcon size={26} />}
+        title={IV.fame.title}
+        body={IV.fame.body}
+        secondary={{ href: ROUTES.signUp, label: IV.join }}
+        primary={{ href: ROUTES.indieNew, label: IV.fame.action }}
+      />
     </Page>
   );
 }

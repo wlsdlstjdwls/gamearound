@@ -2,6 +2,8 @@
 import type { PlaytestPhase } from "./playtest";
 
 export const PLAYTEST_MESSAGES = {
+  /** 모집 목록이 한 줄을 못 채울 때 남은 칸의 글(playtests 의 OpenSlot) */
+  openSlot: "내 게임 테스트 열기",
   listTitle: "플레이테스트",
   listLead: "개발 중인 인디 게임을 먼저 해 보고 의견을 보내 주세요. 신청하면 개발자가 직접 연락해요.",
   listEmpty: "지금 모집 중인 플레이테스트가 없어요",

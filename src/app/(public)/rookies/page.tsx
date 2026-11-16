@@ -13,6 +13,9 @@ import { stagger } from "@/lib/motion";
 import { INDIE_FROM } from "@/lib/indie/query";
 import { ROUTES } from "@/lib/routes";
 import { listRookies } from "@/server/services/indie";
+import { InvitePanel } from "@/components/ui/invite-panel";
+import { INVITE_MESSAGES as IV } from "@/lib/indie/messages";
+import { SproutIcon } from "@/components/ui/icons";
 
 // 찜, 조회가 쌓이며 순위가 움직이는 화면이라 짧게 캐시한다
 export const revalidate = 300;
@@ -41,6 +44,14 @@ export default async function RookiesPage() {
         </ul>
       )}
       <p className="text-[12px] text-dim">{M.rookieFootnote}</p>
+      {/* 참여 권유(components/ui/invite-panel) — 게임이 적을 때 아래가 비어 보이지 않게, 다음 행동 하나를 권한다 */}
+      <InvitePanel
+        icon={<SproutIcon size={26} />}
+        title={IV.rookies.title}
+        body={IV.rookies.body}
+        secondary={{ href: ROUTES.signUp, label: IV.join }}
+        primary={{ href: ROUTES.indieNew, label: IV.rookies.action }}
+      />
     </Page>
   );
 }
