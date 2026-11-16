@@ -167,6 +167,7 @@ export function GameCard({
   highlight,
   releaseText,
   subtitle,
+  hideTags = false,
 }: {
   game: GameSummary;
   variant?: "discount" | "release";
@@ -179,6 +180,8 @@ export function GameCard({
   releaseText?: string;
   /** 제목 아래 회색 한 줄. 출시예정의 추가 콘텐츠 카드가 본편 이름을 적는다 — DLC 제목만으로는 무엇에 붙는지 모를 때가 많다 */
   subtitle?: string;
+  /** 판매 형태 꼬리표(무료 플레이, 앞서 해보기)를 숨긴다. 홈 출시 예정 줄이 끈다(2026-11-16 사용자 "앞서 해보기 뱃지 지워줘") */
+  hideTags?: boolean;
 }) {
   const title = game.titleKo ?? game.titleEn;
   const best = game.best;
@@ -186,7 +189,7 @@ export function GameCard({
   // 캐시에 담긴 옛 모양 DTO 에는 이 배열이 없을 수 있다 — 카드 한 장이 화면 전체를 죽이지 않게 받아 준다
   // (판 올리는 자리는 lib/cache 의 DTO_CACHE_VERSION. 여기 기본값은 그 사이를 버티는 몫이다)
   const genres = game.genres ?? [];
-  const tags = game.tags ?? [];
+  const tags = hideTags ? [] : (game.tags ?? []);
   const releaseLabel = releaseText ?? (best?.releaseDate ? `${formatDate(best.releaseDate)} 출시` : "");
   // 대표 가격 행 하나만 본다 — 배지는 옆에 선 **그 값**이 예약 값이라는 말이다(다른 스토어는 이미 팔 수도 있다)
   const preorder = best ? isPreorder(best) : false;
@@ -212,6 +215,8 @@ export function GameCard({
             <CoverImage src={game.coverUrl} alt={`${title} 커버`} sizes="(max-width: 640px) 100vw, (max-width: 768px) 50vw, 25vw" />
           </span>
         </span>
+        {/* 찜 하트는 그림 오른쪽 위다(2026-11-16 사용자 "하트는 이미지에 두자, 공간 차지하네"). 제목 링크의 ::after 가 카드를 덮으므로 z-10 으로 그 위에 뜬다 */}
+        <WishHeart slug={game.slug} title={title} size="sm" className="absolute right-2 top-2 z-10" />
 
         <div className={cn("flex min-w-0 flex-1 flex-col gap-1.5", GAME_CARD_BODY_X)}>
           {/* 카드는 화면 어디서나 **같은 크기**다(2026-11-16 사용자 "카드 크기가 다른 게 보기 싫다").
@@ -258,11 +263,13 @@ export function GameCard({
           </span>
 
           {/* 기기 배지 줄과 "~에서 더 싸요" 판정 줄은 걷었다(2026-11-16 사용자 "목록 카드 플랫폼 뱃지 제거, ~가 더 싸요 문구 제거").
-              배지 줄: 왼쪽 사전 예약 / 오른쪽 남은 할인 기간(출시 갈래는 출시일). 늘 자리를 잡는다 —
+              배지 줄: 왼쪽 사전 예약, 역대 최저가 / 오른쪽 남은 할인 기간(출시 갈래는 출시일). 늘 자리를 잡는다 —
               배지가 값 줄에 섞여 값 줄이 두 줄로 접히던 것을 이 줄이 막는다(2026-11-16 사용자 "오와 열이 안 맞는다") */}
           <div className="mt-auto flex h-5 min-w-0 items-center gap-1.5 pt-1">
             {/* 값 앞에 선다 — 값을 읽기 전에 "지금 사면 출시 날 받는 값" 이라는 걸 먼저 알아야 한다 */}
             {showPreorder && <Tag>{PREORDER_LABEL}</Tag>}
+            {/* 역대 최저가는 면 없는 작은 파란 글자로 값 바로 위에 선다(2026-11-16 사용자). 값 줄에 두면 넷 칸 폭에서 정가가 잘렸다 */}
+            {showLow && <span className="shrink-0 text-[12px] font-semibold text-acc">{GAME_MESSAGES.historicLowLabel}</span>}
             {showSaleEnd && (
               <span className="ml-auto min-w-0">
                 <SaleBadge variant="inline" discountName={null} discountEndsAt={best?.discountEndsAt} />
@@ -271,10 +278,8 @@ export function GameCard({
             {variant === "release" && releaseLabel && <span className="ml-auto min-w-0 truncate text-[12.5px] text-dim">{releaseLabel}</span>}
           </div>
 
-          {/* 값 줄 — 할인율, 값, 정가 한 줄(접지 않는다, 넘치면 정가만 줄어든다)과 오른쪽 끝 찜 하트.
-              하트는 그림 위에서 이 줄로 내렸다(2026-11-16 사용자 "찜하기 버튼을 이미지가 아닌 아래쪽으로") — 그림은 다시 그림만 갖는다.
-              제목 링크의 ::after 가 카드를 덮으므로 하트는 relative z-10 으로 그 위에 뜬다.
-              **값을 모르면 값을 세우지 않는다**(2026-09-22 사용자 "금액이 없으면 '-' 이것도 보여주지마") — 줄 자리와 하트는 남는다 */}
+          {/* 값 줄 — 할인율, 값, 정가 한 줄(접지 않는다, 넘치면 정가만 줄어든다).
+              **값을 모르면 값을 세우지 않는다**(2026-09-22 사용자 "금액이 없으면 '-' 이것도 보여주지마") — 줄 자리는 남는다 */}
           <div className="flex h-8 min-w-0 items-center gap-x-1.5">
             {best && best.currentPrice !== null && (
               <>
@@ -282,20 +287,11 @@ export function GameCard({
                 <span className="shrink-0 text-[22px] font-extrabold tracking-[-0.03em] text-ink sm:text-[20px]">
                   {formatPrice(best.currentPrice, best.currency)}
                 </span>
-                {hasDiscount && !showLow && best.listPrice !== null && (
+                {hasDiscount && best.listPrice !== null && (
                   <span className="min-w-0 truncate text-[13px] text-dim-2 line-through sm:text-[12.5px]">{formatPrice(best.listPrice, best.currency)}</span>
-                )}
-                {/* 역대 최저가는 배지 대신 값 옆 작은 파란 글자다(2026-11-16 사용자 고름: "-96% 1,000원 최저가"). 면이 없어 줄 무게를 건드리지 않는다.
-                    이때는 정가를 걷는다 — 넷 칸 폭(본문 246px)에 할인율, 값, 정가, 최저가, 하트가 다 서면 정가가 "79,..." 로 잘렸다 */}
-                {showLow && (
-                  <span className="shrink-0 text-[12px] font-semibold text-acc">
-                    <span className="sr-only">{GAME_MESSAGES.historicLowSrPrefix}</span>
-                    {GAME_MESSAGES.historicLowShort}
-                  </span>
                 )}
               </>
             )}
-            <WishHeart slug={game.slug} title={title} size="sm" className="relative z-10 ml-auto shrink-0 bg-transparent shadow-none backdrop-blur-none" />
           </div>
         </div>
       </div>

@@ -330,9 +330,6 @@ export const GAME_MESSAGES = {
    * 그 조건이 "역대" 를 말할 근거라 "기록 기준" 같은 단서는 달지 않는다(2026-11-11 사용자 지정)
    */
   historicLowLabel: "역대 최저가",
-  /** 목록 카드에서 값 옆에 붙는 짧은 꼴(2026-11-16 사용자 고름: 면 없는 작은 파란 글자). 낭독기에는 앞의 "역대" 를 sr-only 로 붙인다 */
-  historicLowShort: "최저가",
-  historicLowSrPrefix: "역대 ",
   recordedLowNote: (gap: string, at: string) => `지금보다 ${gap} 쌌어요 | ${at}`,
   patchNone: "아직 모은 패치 기록이 없어요.",
   /** 사양표 아래 한 줄은 없앴다(2026-09-22, 사용자 결정) — 표 자체가 "스토어가 적은 값" 이고,
