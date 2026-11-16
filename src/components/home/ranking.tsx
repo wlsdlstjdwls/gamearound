@@ -12,7 +12,7 @@ import { formatPrice } from "@/lib/currency";
 import { PLATFORM_LABEL } from "@/lib/format";
 import { cn } from "@/lib/cn";
 import { stagger } from "@/lib/motion";
-import { CoverImage, SavingLine } from "@/components/game-card";
+import { CoverImage } from "@/components/game-card";
 import { DiscountText } from "@/components/ui/discount";
 import { Clamp } from "@/components/ui/tooltip";
 import { ROW } from "@/components/ui/page";
@@ -52,7 +52,6 @@ export function HomeRanking({ games }: { games: GameSummary[] }) {
                   <span className="text-[14px] font-extrabold text-ink">{formatPrice(g.best.currentPrice, g.best.currency)}</span>
                 </span>
               )}
-              <SavingLine saving={g.saving} className="text-[12px]" />
             </span>
           </Link>
         </li>

@@ -14,7 +14,6 @@ import { parsePlatformValues } from "@/lib/games-query";
 import { expandPlatformValues } from "@/lib/platform";
 import { DiscountBadge, HistoricLowBadge } from "@/components/ui/discount";
 import { Tag } from "@/components/ui/tag";
-import { PlatformBadges } from "@/components/platform-badges";
 import type { Platform } from "@/server/db/schema";
 import type { GameSummary } from "@/server/services/games";
 import { SaleBadge } from "@/components/sale-badge";
@@ -247,26 +246,14 @@ export function GameCard({
             </span>
           )}
 
-          {/* 기기 줄 — 넓은 화면 둘, 좁은 화면 셋까지 펴고 나머지는 "+N". 최저가 스토어가 맨 앞에 연한 보라로 선다.
-              남은 기간은 넓은 화면에서 이 줄 오른쪽 끝에 선다 — 값 줄 끝에 두면 값, 정가 뒤에 못 붙고
-              혼자 다음 줄로 떨어졌다.
-              플랫폼을 쉼표로 이은 글자에서 배지로 바꾼 이유(2026-09-21): 모양으로 훑는 편이 빠르다.
-              배지는 스토어가 아니라 기기 갈래(PC, PlayStation, Xbox, Switch)다(2026-10-26, 기획서 카드 공통, 목업) */}
-          <div className="flex items-end justify-between gap-2">
-            <PlatformBadges
-              group="device"
-              platforms={game.platforms}
-              highlight={highlight?.platforms}
-              lowest={best?.currentPrice != null ? best.platform : null}
-            />
-            {variant !== "release" && hasDiscount && (
-              <span className="shrink-0 pb-0.5">
-                <SaleBadge variant="inline" discountName={null} discountEndsAt={best?.discountEndsAt} />
-              </span>
-            )}
-          </div>
-
-          <SavingLine saving={game.saving} />
+          {/* 기기 배지 줄과 "~에서 더 싸요" 판정 줄은 걷었다(2026-11-16 사용자 "목록 카드 플랫폼 뱃지 제거, ~가 더 싸요 문구 제거").
+              카드는 그림, 이름, 장르, 값만 말한다 — 닌텐도 e숍 타일처럼 훑는 눈이 멈출 곳을 줄였다. 기기는 상세에서 본다.
+              남은 할인 기간만 장르 아래 오른쪽 끝에 남긴다 */}
+          {variant !== "release" && hasDiscount && best?.discountEndsAt && (
+            <span className="flex justify-end">
+              <SaleBadge variant="inline" discountName={null} discountEndsAt={best.discountEndsAt} />
+            </span>
+          )}
 
           {/* 값 줄은 카드 **바닥**에 붙는다(mt-auto) — 같은 줄 카드끼리 값이 한 높이에 서서 가로로 견줄 수 있다.
               할인율, 값, 정가를 한 줄에 흘린다. 좁으면 접힌다 — 값을 자르지 않는다.

@@ -21,7 +21,6 @@ import { formatPrice } from "@/lib/currency";
 import { formatDate } from "@/lib/format";
 import { PREORDER_LABEL } from "@/lib/games/messages";
 import { isPreorder } from "@/lib/games/preorder";
-import { DEVICE_LABEL, devicesOf } from "@/lib/platform";
 import { cn } from "@/lib/cn";
 import type { GameSummary } from "@/server/services/games";
 
@@ -41,15 +40,6 @@ const DIVIDER = "sm:border-t sm:border-line";
 /** 좁은 화면에서 오른쪽 칸에 서는 줄 */
 const RIGHT_CELL = "max-sm:col-start-2";
 
-/**
- * 기기 이름 줄(목업 "PC, PlayStation, Xbox, Switch"). 스토어(Steam, Epic)와 세대(PS5, PS4)는 기기 하나로 접는다(lib/platform 의 DEVICES).
- * 홈 카드(game-card)의 기기 배지와 같은 갈래다 — 두 카드가 같은 게임을 다른 이름으로 부르지 않게.
- * 캐시에 담긴 옛 모양 DTO 에는 platforms 가 없을 수 있어 빈 배열로 받는다(game-card 주석)
- */
-function deviceNames(game: GameSummary): string {
-  return devicesOf(game.platforms ?? []).map((d) => DEVICE_LABEL[d]).join(", ");
-}
-
 export function GameListCard({ game, variant = "discount", highlight }: { game: GameSummary; variant?: "discount" | "release"; highlight?: CardHighlight }) {
   const title = game.titleKo ?? game.titleEn;
   const best = game.best;
@@ -57,7 +47,6 @@ export function GameListCard({ game, variant = "discount", highlight }: { game: 
   const genres = game.genres ?? [];
   const tags = game.tags ?? [];
   const preorder = best ? isPreorder(best) : false;
-  const devices = deviceNames(game);
   // 남은 기간은 끝나는 시각을 알 때만 선다(SaleBadge inline) — 시각 없는 할인까지 세면 빈 칸이 남았다
   const showSale = variant !== "release" && hasDiscount && Boolean(best?.discountEndsAt);
   // 장르, 꼬리표, 남은 기간이 다 없으면 가운데 칸을 걷는다 — 칸막이 두 줄 사이 빈 띠가 고장처럼 보였다(2026-11-11 목록, GTA VI 등)
@@ -81,11 +70,7 @@ export function GameListCard({ game, variant = "discount", highlight }: { game: 
               {title}
             </Clamp>
           </Link>
-          {devices && (
-            <span className="text-[12px] leading-[1.45] text-acc">
-              <Clamp lines={2}>{devices}</Clamp>
-            </span>
-          )}
+          {/* 기기 이름 줄(파랑 글자)은 걷었다(2026-11-16 사용자 "목록 카드 플랫폼 뱃지 제거") */}
         </div>
       </div>
       <WishHeart slug={game.slug} title={title} className="absolute right-3 top-3 z-10 size-8 shadow-none" />
