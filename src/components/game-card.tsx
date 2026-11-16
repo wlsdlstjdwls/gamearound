@@ -7,12 +7,12 @@ import { Fragment } from "react";
 import { formatPrice } from "@/lib/currency";
 import Link from "next/link";
 import { formatDate, PLATFORM_LABEL } from "@/lib/format";
-import { PREORDER_LABEL, SAVING_MESSAGES } from "@/lib/games/messages";
+import { GAME_MESSAGES, PREORDER_LABEL, SAVING_MESSAGES } from "@/lib/games/messages";
 import { isPreorder } from "@/lib/games/preorder";
 import type { StoreSaving } from "@/lib/games/saving";
 import { parsePlatformValues } from "@/lib/games-query";
 import { expandPlatformValues } from "@/lib/platform";
-import { DiscountBadge, HistoricLowBadge } from "@/components/ui/discount";
+import { DiscountBadge } from "@/components/ui/discount";
 import { Tag } from "@/components/ui/tag";
 import type { Platform } from "@/server/db/schema";
 import type { GameSummary } from "@/server/services/games";
@@ -258,12 +258,11 @@ export function GameCard({
           </span>
 
           {/* 기기 배지 줄과 "~에서 더 싸요" 판정 줄은 걷었다(2026-11-16 사용자 "목록 카드 플랫폼 뱃지 제거, ~가 더 싸요 문구 제거").
-              배지 줄: 왼쪽 사전 예약, 역대 최저가 / 오른쪽 남은 할인 기간(출시 갈래는 출시일). 늘 자리를 잡는다 —
+              배지 줄: 왼쪽 사전 예약 / 오른쪽 남은 할인 기간(출시 갈래는 출시일). 늘 자리를 잡는다 —
               배지가 값 줄에 섞여 값 줄이 두 줄로 접히던 것을 이 줄이 막는다(2026-11-16 사용자 "오와 열이 안 맞는다") */}
           <div className="mt-auto flex h-5 min-w-0 items-center gap-1.5 pt-1">
             {/* 값 앞에 선다 — 값을 읽기 전에 "지금 사면 출시 날 받는 값" 이라는 걸 먼저 알아야 한다 */}
             {showPreorder && <Tag>{PREORDER_LABEL}</Tag>}
-            <HistoricLowBadge show={showLow} size="sm" />
             {showSaleEnd && (
               <span className="ml-auto min-w-0">
                 <SaleBadge variant="inline" discountName={null} discountEndsAt={best?.discountEndsAt} />
@@ -283,8 +282,16 @@ export function GameCard({
                 <span className="shrink-0 text-[22px] font-extrabold tracking-[-0.03em] text-ink sm:text-[20px]">
                   {formatPrice(best.currentPrice, best.currency)}
                 </span>
-                {hasDiscount && best.listPrice !== null && (
+                {hasDiscount && !showLow && best.listPrice !== null && (
                   <span className="min-w-0 truncate text-[13px] text-dim-2 line-through sm:text-[12.5px]">{formatPrice(best.listPrice, best.currency)}</span>
+                )}
+                {/* 역대 최저가는 배지 대신 값 옆 작은 파란 글자다(2026-11-16 사용자 고름: "-96% 1,000원 최저가"). 면이 없어 줄 무게를 건드리지 않는다.
+                    이때는 정가를 걷는다 — 넷 칸 폭(본문 246px)에 할인율, 값, 정가, 최저가, 하트가 다 서면 정가가 "79,..." 로 잘렸다 */}
+                {showLow && (
+                  <span className="shrink-0 text-[12px] font-semibold text-acc">
+                    <span className="sr-only">{GAME_MESSAGES.historicLowSrPrefix}</span>
+                    {GAME_MESSAGES.historicLowShort}
+                  </span>
                 )}
               </>
             )}
