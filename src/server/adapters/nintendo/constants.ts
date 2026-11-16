@@ -71,6 +71,12 @@ export const jpProductUrl = (nsuid: string): string => `https://ec.nintendo.com/
 /** 일본 검색의 hard 값 → 우리 플랫폼. BEE 는 Switch 2 의 개발 코드명이다 */
 export const JP_HARD_PLATFORM: Record<string, Platform> = { "1_HAC": "switch", "05_BEE": "switch2" };
 
+/**
+ * 소개글 앞머리의 판매 안내 문단. 게임 이야기가 아니라 상품 구분이라 설명에서 뺀다
+ * (예: "Nintendo Switch 2 상품입니다.", 2026-11-16 실측 가디언즈 오브 갤럭시). 문단 하나가 통째로 이 꼴일 때만 뺀다
+ */
+export const NINTENDO_DESC_NOTICE = /^Nintendo Switch(?:™)?\s*2?\s*(?:전용\s*)?(?:상품|소프트웨어)입니다\.?$/;
+
 /** 대응언어 목록 안의 한국어 표기 */
 export const NINTENDO_KOREAN_LABEL = "한국어";
 
@@ -90,6 +96,8 @@ export const NINTENDO_SELECTORS = {
   // 대응언어. "한국어, 영어, ..." 쉼표 목록이다. 화면, 자막, 음성은 가르지 않는다
   languages: ".product-attribute.supported_languages .product-attribute-val",
   ogImage: 'meta[property="og:image"]',
+  // 메이커 소개글("※메이커로부터의 설명입니다."). 문단은 <p>, 줄은 <br> 로 끊긴다(2026-11-16 실측, 마리오 카트 8 디럭스, 실크송)
+  description: '[itemprop="description"]',
 } as const;
 
 /**

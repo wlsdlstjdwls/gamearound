@@ -6,6 +6,7 @@ import {
   DIGITAL_ID,
   KR_SKU_CODE,
   KR_SKU_PATTERN,
+  NINTENDO_DESC_NOTICE,
   NINTENDO_KOREAN_LABEL,
   NINTENDO_SELECTORS,
   PLATFORM_SWITCH2,
@@ -71,6 +72,29 @@ export function parseNintendoTitleCode(html: string): string | null {
   return sku.match(KR_SKU_CODE)?.[1] ?? null;
 }
 
+/** <br> 을 바꿔 넣는 표식. 문단 안의 줄을 가른 뒤 띄어쓰기로 다시 잇는다 */
+const LINE_BREAK = "\n";
+
+/**
+ * 메이커 소개글 → 한 덩어리 글. 못 찾으면 null.
+ *
+ * 줄바꿈(<br>, 문단)은 띄어쓰기 하나로 잇는다. 상세 화면은 설명을 한 문단으로 그리고(game-detail/hero),
+ * 스팀, Xbox 의 짧은 소개도 한 문단이라 닌텐도만 줄이 끊겨 보이지 않게 맞춘다.
+ * 판매 안내 문단(NINTENDO_DESC_NOTICE)은 게임 소개가 아니라 뺀다.
+ */
+export function parseNintendoDescription($: CheerioAPI): string | null {
+  const box = $(NINTENDO_SELECTORS.description).first();
+  if (box.length === 0) return null;
+  box.find("br").replaceWith(LINE_BREAK);
+  const blocks = box.find("p").length > 0 ? box.find("p").toArray().map((p) => $(p).text()) : [box.text()];
+  const lines = blocks
+    .flatMap((b) => b.split(LINE_BREAK))
+    .map((l) => l.replace(/\s+/g, " ").trim())
+    .filter((l) => l.length > 0 && !NINTENDO_DESC_NOTICE.test(l));
+  const text = lines.join(" ").trim();
+  return text.length > 0 ? text : null;
+}
+
 /** 상품 페이지 HTML → StoreSnapshot */
 export function parseNintendoProduct(html: string, id: string): StoreSnapshot {
   const $ = load(html);
@@ -110,6 +134,7 @@ export function parseNintendoProduct(html: string, id: string): StoreSnapshot {
     meta: {
       titleEn: title,
       titleKo: title,
+      description: parseNintendoDescription($),
       coverUrl: $(NINTENDO_SELECTORS.ogImage).first().attr("content")?.trim() || null,
       publisher: $(NINTENDO_SELECTORS.publisher).first().text().trim() || null,
       genres: parseNintendoGenres($(NINTENDO_SELECTORS.gameCategory).first().text()),

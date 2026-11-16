@@ -38,6 +38,28 @@ describe("parseNintendoProduct", () => {
     expect(snap.releaseDate).toBeNull();
   });
 
+  it("메이커 소개글: 문단과 <br> 을 한 문단으로 잇는다", () => {
+    const snap = parseNintendoProduct(fixture("nintendo-product-multiplayer.html"), "70010000009373");
+    expect(snap.meta?.description).toMatch(/^모든 장소가 서킷! 레이스, 배틀, 모든 것이 디럭스\. 시리즈 최다 42명의 캐릭터가 등장!/);
+    expect(snap.meta?.description).not.toMatch(/\n/);
+    expect(snap.meta?.description).not.toMatch(/더보기|메이커로부터의 설명/);
+  });
+
+  it("문단 없는 소개글도 읽는다(실크송)", () => {
+    const snap = parseNintendoProduct(fixture("nintendo-product-switch1.html"), "70010000100203");
+    expect(snap.meta?.description).toMatch(/^저주받은 왕국의 정상에 올라라 할로우 나이트: 실크송은/);
+  });
+
+  it("판매 안내 문단(Switch 2 상품입니다)은 뺀다", () => {
+    const snap = parseNintendoProduct(fixture("nintendo-product-sale.html"), "70010000119221");
+    expect(snap.meta?.description).toMatch(/^평단의 찬사를 받은/);
+  });
+
+  it("소개글 칸이 없으면 설명 null", () => {
+    const snap = parseNintendoProduct('<html><body><span itemprop="name">Test</span></body></html>', "70010000000001");
+    expect(snap.meta?.description).toBeNull();
+  });
+
   it("제목이 없으면 파싱 실패(재시도 없음)", () => {
     expect(() => parseNintendoProduct("<html></html>", "x")).toThrowError(AdapterError);
   });
