@@ -16,6 +16,8 @@ import {
   CRON_DB_MS_PER_NEW_ITEM_BY_SOURCE,
   CRON_PLAN,
   PLATFORM_SIBLING_LIMIT_BY_SOURCE,
+  STORE_PAGE_META_LIMIT_BY_SOURCE,
+  STORE_PAGE_SIBLING_LIMIT_BY_SOURCE,
   SEARCH_REQUESTS_PER_QUERY,
   CRON_SAFETY_FACTOR,
   CRON_SOURCES,
@@ -84,12 +86,18 @@ function estimateMs(source: (typeof CRON_SOURCES)[number], mode: CronMode, overr
   const requirementRequests = adapter.fetchRequirements ? REQUIREMENTS_PER_RUN : 0;
   // 다른 기기 상품 값 묻기(sync/platform-siblings)도 반영 뒤 같은 실행에서 돈다. 이미 아는 게임에만 나간다(신규 시드는 그 기기 행이 없다)
   const siblingRequests = Math.min(Math.max(plan.limit - plan.seedTop, 0), PLATFORM_SIBLING_LIMIT_BY_SOURCE[source] ?? 0);
+  // 상품 페이지도 같은 실행에서 돈다. 페이지를 주는 어댑터만 센다 — PS4 확인은 이미 아는 게임에만(siblingRequests 와 같은 모수),
+  // 유통사 채우기는 이번 회차에 상세를 본 게임(새 시드 포함)에만 나간다. 큰 세일 회차는 상세를 쉬어 둘 다 0 이다
+  const storePageRequests = adapter.fetchStorePage
+    ? Math.min(Math.max(plan.limit - plan.seedTop, 0), STORE_PAGE_SIBLING_LIMIT_BY_SOURCE[source] ?? 0) +
+      Math.min(Math.max(plan.limit, 0), STORE_PAGE_META_LIMIT_BY_SOURCE[source] ?? 0)
+    : 0;
 
   // 목록 쪽은 따로 센다 — 목록 간격이 상세 간격과 다른 소스가 있다(nintendo: 목록 한 쪽 6초, 상세 4초)
   const pageMs = plan.pageBudget * (adapter.discoverPageMs ?? adapter.minIntervalMs);
   const requests =
     plan.match + detailItems + Math.ceil(batchedItems / perRequest) + dlcListRequests + dlcFetchRequests +
-    patchRequests + requirementRequests + siblingRequests;
+    patchRequests + requirementRequests + siblingRequests + storePageRequests;
   // 새로 들어오는 것(시드 + 새 DLC)과 이미 아는 것을 갈라 센다
   const newItems = plan.seedTop + dlcFetchItems;
   const updatedItems = Math.max(plan.limit - plan.seedTop, 0);

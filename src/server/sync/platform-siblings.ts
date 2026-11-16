@@ -5,6 +5,9 @@
 // - product: 그 기기 상품을 따로 묻는다. 상품 값에는 할인 종료 시각이 같이 온다 — 짐작이 아니라 스토어 답으로 기간을 안다.
 // - same: 한 상품을 두 기기로 판다("PS4 & PS5"). 본편 값이 곧 그 기기 값이라 요청 없이 같은 값을 쓴다.
 // - absent: 이 나라 스토어가 그 기기 상품을 안 판다. 남은 할인은 확인해 줄 곳이 없으니 걷는다(ended-discounts 와 같은 길).
+//   다만 상세 질의는 상품이 덮는 기기를 안 줘서, 이름에 "PS4 & PS5" 가 없는 묶음 상품도 여기로 온다(2026-11-16 러너 실측 6건 중 5건).
+//   링크 없는 그 기기 행이 있으면 상품 페이지(adapter.fetchStorePage)로 한 번 더 보고, 기본 상품이 그 기기도 덮으면 same 으로 바꾼다
+//   (absentDecision). 그렇게 값을 쓴 행은 본편 콘셉트 id 와 링크를 갖게 되어 다음 회차부터는 요청 없이 same 이다.
 //
 // 하지 않기로 한 것:
 // - **없는 기기 행을 새로 만들지 않는다.** 이미 있는 행만 고친다. 새 행은 그 기기 판매를 화면에 새로 띄우는 일이라
@@ -16,7 +19,7 @@ import { gamePlatforms, games, type Platform } from "@/server/db/schema";
 import type { StoreAdapter, StoreSnapshot } from "@/server/adapters/types";
 import type { StoreSource } from "@/server/adapters";
 import { sleep } from "@/lib/async";
-import { PLATFORM_SIBLING_LIMIT_BY_SOURCE, SOURCE_REGION } from "./constants";
+import { PLATFORM_SIBLING_LIMIT_BY_SOURCE, SOURCE_REGION, STORE_PAGE_SIBLING_LIMIT_BY_SOURCE } from "./constants";
 import { recordError, type Ctx } from "./context";
 import { fetchWithRetry } from "./retry";
 import { resetDiscountRows } from "./ended-discounts";
@@ -60,6 +63,21 @@ export function siblingSnapshot(main: StoreSnapshot, platform: Platform, from: S
   };
 }
 
+/**
+ * "그 기기 상품 없음" 판정을 어떻게 다룰지. 순수 함수라 테스트로 지킨다.
+ *   same    앞 회차에 페이지로 확인해 본편 콘셉트 값을 쓰고 있는 행(같은 콘셉트 id, 링크 있음). 요청 없이 같은 값을 쓴다
+ *   ask     링크 없는 행(병합 때 들어와 화면에서 숨은 값). 상품 페이지로 물어볼 만하다
+ *   absent  그 밖. 지금처럼 할인만 걷는다
+ * 따로 된 PS4 상품 값을 쓰던 행이 상품이 내려가 absent 가 되면 same 으로 잘못 읽을 수 있다 — 상품이 내려가는 일은 드물고,
+ * 그때도 값은 같은 콘셉트의 PS5 값이라 남의 게임 값이 박히지는 않는다
+ */
+export function absentDecision(row: { storeUrl: string | null; storeExternalId: string | null } | undefined, mainExternalId: string, hasProductId: boolean): "same" | "ask" | "absent" {
+  if (!row) return "absent";
+  if (row.storeUrl && row.storeExternalId === mainExternalId) return "same";
+  if (!row.storeUrl && hasProductId) return "ask";
+  return "absent";
+}
+
 export type SiblingResult = { fetched: Fetched; absentReset: number };
 
 /** 값을 쓸 스냅샷(product, same)을 돌려주고, absent 행의 할인은 여기서 걷는다 */
@@ -75,6 +93,8 @@ export async function fetchPlatformSiblings(ctx: Ctx, source: StoreSource, adapt
       slug: games.slug,
       listPrice: gamePlatforms.listPrice,
       discountPct: gamePlatforms.discountPct,
+      storeUrl: gamePlatforms.storeUrl,
+      storeExternalId: gamePlatforms.storeExternalId,
     })
     .from(gamePlatforms)
     .innerJoin(games, eq(games.id, gamePlatforms.gameId))
@@ -84,6 +104,22 @@ export async function fetchPlatformSiblings(ctx: Ctx, source: StoreSource, adapt
 
   const out: Fetched = [];
   const absent: Array<{ id: string; slug: string; listPrice: number | null }> = [];
+  let pageBudget = adapter.fetchStorePage ? (STORE_PAGE_SIBLING_LIMIT_BY_SOURCE[source] ?? 0) : 0;
+  /** 기본 상품이 그 기기도 덮는가. 확인된 행은 요청 없이, 링크 없는 행은 회차 상한 안에서 상품 페이지로 본다 */
+  const coversPlatform = async (item: Want["item"], row: (typeof rows)[number] | undefined, offer: Extract<Offer, { kind: "absent" }>): Promise<boolean> => {
+    const decision = absentDecision(row, item.snapshot.storeExternalId, Boolean(offer.productId));
+    if (decision !== "ask") return decision === "same";
+    if (pageBudget <= 0 || !adapter.fetchStorePage || !offer.productId) return false;
+    pageBudget--;
+    await sleep(adapter.minIntervalMs);
+    try {
+      const page = await fetchWithRetry(() => adapter.fetchStorePage!(item.snapshot.storeExternalId));
+      return (page.platformsByProduct[offer.productId] ?? []).includes(offer.platform);
+    } catch (e) {
+      recordError(ctx, `${source}:${item.snapshot.storeExternalId}:page`, e);
+      return false;
+    }
+  };
   for (const { item, offer } of wants) {
     if (offer.kind === "same") {
       out.push({ target: item.target, snapshot: siblingSnapshot(item.snapshot, offer.platform, item.snapshot) });
@@ -91,6 +127,10 @@ export async function fetchPlatformSiblings(ctx: Ctx, source: StoreSource, adapt
     }
     if (offer.kind === "absent") {
       const row = rowByKey.get(`${item.target.gameId}:${offer.platform}`);
+      if (await coversPlatform(item, row, offer)) {
+        out.push({ target: item.target, snapshot: siblingSnapshot(item.snapshot, offer.platform, item.snapshot) });
+        continue;
+      }
       if (row && (row.discountPct ?? 0) > 0) absent.push(row);
       continue;
     }

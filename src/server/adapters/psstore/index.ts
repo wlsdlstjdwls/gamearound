@@ -6,8 +6,9 @@
 // 해시는 constants.ts 에 적어 둔다 — 갱신 방법도 거기 주석에 있다.
 // 수집 단위는 상품(에디션)이 아니라 콘셉트(게임)다. 상품 단위로 모으면 같은 게임이
 // 디럭스, 번들, PS4판, PS5판으로 여러 번 등록된다.
-import { AdapterError, type PageRetry, type PriceQuote, type SearchCandidate, type StoreAdapter, type StoreSnapshot } from "../types";
+import { AdapterError, type PageRetry, type PriceQuote, type SearchCandidate, type StoreAdapter, type StorePageInfo, type StoreSnapshot } from "../types";
 import { psstorePs4OfferFromConcept } from "./ps4-product";
+import { parsePsstoreConceptPage } from "./concept-page";
 import { createHttpClient } from "../http";
 import { sleep } from "@/lib/async";
 import { errorMessage } from "@/lib/errors";
@@ -38,6 +39,10 @@ export * from "./search";
 export * from "./add-ons";
 
 const http = createHttpClient({ source: "psstore", label: "PlayStation", headers: PSSTORE_HEADERS });
+
+/** 한 실행 안에서 기억할 콘셉트 페이지 수. 회차 상한(sync 의 STORE_PAGE_*_LIMIT 합)보다 넉넉하면 된다 — 실행이 끝나면 함수와 함께 사라진다 */
+const STORE_PAGE_MEMO_MAX = 100;
+const pageMemo = new Map<string, StorePageInfo>();
 
 /** persisted query 는 GET + 쿼리스트링이다. 질의문은 보내지 않고 해시만 보낸다 */
 function opUrl(operationName: string, variables: unknown, sha256Hash: string): string {
@@ -158,6 +163,20 @@ export const psstoreAdapter: StoreAdapter = {
    * 애드온을 이미 서버 렌더링해서 준다(constants 의 "추가 콘텐츠(DLC) 목록" 주석).
    * 한 건에 0.6~1.2MB 짜리 응답이라 비싸다 — 호출 빈도와 건수는 sync/dlc-list 가 막아 준다.
    */
+  /**
+   * 콘셉트 페이지에서만 보이는 유통사, 상품별 기기(concept-page). 콘셉트 id 만 받는다 — DLC 상품 id 는 페이지가 다르다.
+   * 같은 실행에서 PS4 확인과 유통사 채우기가 같은 콘셉트를 물을 수 있어 받은 결과를 잠깐 기억한다(STORE_PAGE_MEMO_MAX)
+   */
+  async fetchStorePage(conceptId: string): Promise<StorePageInfo> {
+    if (!/^\d+$/.test(conceptId)) throw new AdapterError(`PlayStation 콘셉트 id 형식 오류: ${conceptId}`, "psstore", false);
+    const hit = pageMemo.get(conceptId);
+    if (hit) return hit;
+    const page = parsePsstoreConceptPage(await http.text(`${PSSTORE_CONCEPT_URL}/${conceptId}`, { context: `page:${conceptId}` }));
+    if (pageMemo.size >= STORE_PAGE_MEMO_MAX) pageMemo.delete(pageMemo.keys().next().value!);
+    pageMemo.set(conceptId, page);
+    return page;
+  },
+
   async listDlcIds(conceptId: string): Promise<string[]> {
     const html = await http.text(`${PSSTORE_CONCEPT_URL}/${conceptId}`, { context: `dlc:${conceptId}` });
     return parsePsstoreAddOnIds(html);

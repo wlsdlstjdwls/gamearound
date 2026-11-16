@@ -29,7 +29,7 @@ describe("psstorePs4Offer", () => {
   });
   it("콘셉트에 PS4 상품이 하나도 없으면 없다고 말한다(Paper Cut Mansion 실측)", () => {
     const d = { id: "EP5360-PPSA09516_00-PAPERCUTMANPS5EU", name: "Paper Cut Mansion" };
-    expect(psstorePs4Offer(d, [d])).toEqual({ kind: "absent" });
+    expect(psstorePs4Offer(d, [d])).toEqual({ kind: "absent", productId: d.id });
   });
   it("PS4 상품이 있는데 고를 수 없으면 모른다고 한다(없음으로 단정하지 않는다)", () => {
     const products = [ps5, { id: "UP0001-CUSA00002_00-A000000000000000", name: "Game A" }, { id: "UP0001-CUSA00003_00-B000000000000000", name: "Game B" }];

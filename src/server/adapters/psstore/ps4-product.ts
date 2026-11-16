@@ -40,7 +40,7 @@ export function psstorePs4ProductId(defaultProduct: ProductRef | null | undefine
 /** 이름에 두 기기를 함께 적은 상품("PS4 & PS5", "PS4 및 PS5", "PS4/PS5") */
 const CROSS_GEN_NAME = /PS4\s*(?:&|및|\/|and|,)\s*PS5|PS5\s*(?:&|및|\/|and|,)\s*PS4/i;
 
-export type Ps4Offer = { kind: "product"; productId: string } | { kind: "same" } | { kind: "absent" } | null;
+export type Ps4Offer = { kind: "product"; productId: string } | { kind: "same" } | { kind: "absent"; productId: string } | null;
 
 /**
  * 기본 상품이 PS5 인 콘셉트에서 PS4 값을 어디서 얻나. 기본 상품이 PS5 가 아니면 null(콘셉트 값이 곧 그 기기 값이다).
@@ -52,7 +52,8 @@ export function psstorePs4Offer(defaultProduct: (ProductRef & { invariantName?: 
   if (productId) return { kind: "product", productId };
   if (CROSS_GEN_NAME.test(`${defaultProduct.name ?? ""} ${defaultProduct.invariantName ?? ""}`)) return { kind: "same" };
   const anyPs4 = (products ?? []).some((p) => PSSTORE_PS4_TITLE_ID.test(p.id));
-  return anyPs4 ? null : { kind: "absent" };
+  // 기본 상품 id 를 남긴다 — 이름에 기기 표기가 없어도 그 상품이 PS4 를 덮을 수 있어 상품 페이지로 다시 본다(concept-page, sync/platform-siblings)
+  return anyPs4 ? null : { kind: "absent", productId: defaultProduct.id };
 }
 
 const refSchema = z.object({ id: z.string(), name: z.string().nullish() });

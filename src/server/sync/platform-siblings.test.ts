@@ -1,7 +1,7 @@
 // 다른 기기 행 값을 따로 물을 짝 고르기, 가격 칸만 떼기(sync/platform-siblings). DB, 네트워크 없이 본다
 import { describe, expect, it } from "vitest";
 import type { StoreSnapshot } from "@/server/adapters/types";
-import { pickSiblings, siblingSnapshot } from "./platform-siblings";
+import { absentDecision, pickSiblings, siblingSnapshot } from "./platform-siblings";
 import type { Fetched } from "./store-fetch";
 
 const snap = (over: Partial<StoreSnapshot>): StoreSnapshot =>
@@ -33,5 +33,20 @@ describe("siblingSnapshot", () => {
     const s = siblingSnapshot(snap({}), "ps4", product);
     expect(s).toMatchObject({ platform: "ps4", storeExternalId: "100", storeUrl: "https://store/concept/100", currentPrice: 20000, discountEndsAt: "2026-11-20T15:00:00.000Z" });
     expect(s.meta).toBeUndefined();
+  });
+});
+
+describe("absentDecision", () => {
+  const concept = "10004410";
+  it("링크 없는 행(병합 때 들어와 숨은 값)은 상품 페이지로 물어본다", () => {
+    expect(absentDecision({ storeUrl: null, storeExternalId: "psprices:123" }, concept, true)).toBe("ask");
+  });
+  it("앞 회차에 같은 콘셉트로 확인된 행은 요청 없이 같은 값", () => {
+    expect(absentDecision({ storeUrl: "https://store.playstation.com/ko-kr/concept/10004410", storeExternalId: concept }, concept, true)).toBe("same");
+  });
+  it("행이 없거나, 물어볼 기본 상품을 모르거나, 다른 값을 쥔 링크 있는 행이면 지금처럼 없음", () => {
+    expect(absentDecision(undefined, concept, true)).toBe("absent");
+    expect(absentDecision({ storeUrl: null, storeExternalId: "psprices:123" }, concept, false)).toBe("absent");
+    expect(absentDecision({ storeUrl: "https://x", storeExternalId: "OTHER" }, concept, true)).toBe("absent");
   });
 });

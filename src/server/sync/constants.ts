@@ -400,7 +400,8 @@ export const CRON_PLAN: Record<CronSource, Record<CronMode, CronRunPlan>> = {
     // fetchMany 가 없어 건당 요청 1회(간격 1초) + 반영 0.4초라 건당 1.4초다.
     // 상한은 325건이다(cron-plan.test 의 estimateMs 가 600초에서 역산한다) — 여유를 두고 300 에 멈춘다.
     // 2026-11-11 PS4 상품 값 묻기(PLATFORM_SIBLING_LIMIT_BY_SOURCE 40건, 건당 1초)를 얹으며 210 에서 185 로 내렸다
-    prices: { limit: 185, seedTop: 0, pageBudget: 0, match: 0 },
+    // 2026-11-16 상품 페이지 단계(PS4 확인 15, 유통사 15, STORE_PAGE_*_LIMIT_BY_SOURCE)를 얹으며 185 에서 165 로 내렸다(어림 594초)
+    prices: { limit: 165, seedTop: 0, pageBudget: 0, match: 0 },
     // 578초. fetchMany 가 없어 **한 건이 요청 한 번**이고(간격 1초) 거기에 신규 반영 1.8초가
     // 더 붙어 건당 2.8초다 — 네 소스 중 건당 단가가 제일 비싸다.
     //
@@ -781,6 +782,17 @@ export const SALE_END_FILL_MIN_AGE_HOURS = 20;
  * psstore 40 = 2026-11-11 표본 20건 중 따로 된 PS4 상품이 11건, PS 평소 몫에서 PS4 행이 있는 게임은 약 1/3 이라 회차당 40건 안팎이다.
  */
 export const PLATFORM_SIBLING_LIMIT_BY_SOURCE: Partial<Record<StoreSource, number>> = { psstore: 40 };
+/**
+ * 한 회차에 "PS4 상품 없음" 판정을 상품 페이지로 다시 볼 최대 수(sync/platform-siblings, adapters/psstore/concept-page).
+ * 페이지 한 건이 30만~50만 자라 요청 한 번이 상세 질의보다 무겁다. 링크 없는 PS4 행이 있는 게임만 보고, 한 번 확인된 행은 다시 묻지 않는다 —
+ * 대상 2,428게임(11-16 실측)이 회차 넷 × 15건이면 약 40일에 한 바퀴다. 크론 몫 어림(cron-plan.test)이 이 수를 센다
+ */
+export const STORE_PAGE_SIBLING_LIMIT_BY_SOURCE: Partial<Record<StoreSource, number>> = { psstore: 15 };
+/**
+ * 한 회차에 상품 페이지에서 유통사를 채울 최대 수(sync/store-page-meta). 유통사가 빈 PS 출신 본편 1,003건(11-16 실측)이 대상이고
+ * 빈 게임만 묻기 때문에 채워질수록 요청이 준다. 크론 몫 어림(cron-plan.test)이 이 수를 센다
+ */
+export const STORE_PAGE_META_LIMIT_BY_SOURCE: Partial<Record<StoreSource, number>> = { psstore: 15 };
 /**
  * 매칭 검색 한 번이 내는 요청 수(크론 몫 어림용). PS 검색은 결과에서 콘셉트를 알아내려고 상위 상품 상세를 더 연다
  * (adapters/psstore 의 search, PSSTORE_SEARCH_LOOKUP_MAX). 이걸 1로 세서 PS match 몫 200 이 800초를 넘겨 매일 504 로 끝났다(2026-11-09, 11-10 운영 로그).

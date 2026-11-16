@@ -13,6 +13,7 @@ import { listStoreTargets } from "./store-targets";
 import { syncPopularityRanks } from "./rank-writer";
 import { resetEndedDiscounts } from "./ended-discounts";
 import { fetchPlatformSiblings } from "./platform-siblings";
+import { fillPublishersFromStorePage } from "./store-page-meta";
 import { and, eq, inArray, sql } from "drizzle-orm";
 import { gamePlatforms } from "@/server/db/schema";
 
@@ -90,6 +91,14 @@ export async function runStore(ctx: Ctx, source: StoreSource, opts: RunOptions):
   // DLC 목록 단계에서 1MB 짜리 페이지를 열다 629초). 그 게임들의 DLC 는 평소 상세 갱신 차례에 본다
   const prefetchedKeys = new Set(prefetched.map((f) => `${f.target.gameId}:${f.target.externalId}`));
   const detailed = prefetchedKeys.size === 0 ? applied : applied.filter((a) => !prefetchedKeys.has(`${a.gameId}:${a.snapshot.storeExternalId}`));
+
+  // 상품 페이지에서만 보이는 유통사를 빈 본편에 채운다(sync/store-page-meta). 페이지를 주는 소스(psstore)만 돈다
+  try {
+    const publishers = await fillPublishersFromStorePage(ctx, source, adapter, detailed);
+    if (publishers > 0) console.log(`[sync:${source}] 상품 페이지에서 유통사 ${publishers}건 채움`);
+  } catch (e) {
+    recordError(ctx, `${source}:publisher`, e);
+  }
 
   // 4단계: 본편이 알려준 새 DLC 등록. 실패해도 가격 수집 결과는 유지한다.
   // 배치 조회가 DLC 목록을 주지 않는 소스(steam)는 목록을 따로 물어본 뒤 같은 등록 경로로 보낸다

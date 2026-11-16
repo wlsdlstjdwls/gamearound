@@ -53,7 +53,8 @@ export interface StoreSnapshot {
   platformProducts?: Array<
     | { platform: Platform; kind: "product"; productId: string } // 그 기기 상품을 따로 묻는다
     | { platform: Platform; kind: "same" } // 한 상품을 두 기기로 판다 — 이 스냅샷 값이 곧 그 기기 값
-    | { platform: Platform; kind: "absent" } // 이 나라 스토어가 그 기기 상품을 안 판다
+    // 이 나라 스토어가 그 기기 상품을 안 판다. productId 는 본편 기본 상품 — 그 상품이 이 기기도 덮는지 상품 페이지로 다시 볼 수 있게 남긴다
+    | { platform: Platform; kind: "absent"; productId?: string }
   >;
   currentVersion?: string | null;
   releaseDate?: string | null;   // ISO date (YYYY-MM-DD)
@@ -345,6 +346,13 @@ export interface SourceAdapter<T extends StoreSnapshot | MetaSnapshot | NewsItem
   minIntervalMs: number;
 }
 
+/** 상품 페이지에서만 읽는 칸(StoreAdapter.fetchStorePage) */
+export interface StorePageInfo {
+  publisher: string | null;
+  /** 상품 id → 그 상품이 덮는 기기 */
+  platformsByProduct: Record<string, Platform[]>;
+}
+
 export type StoreAdapter = SourceAdapter<StoreSnapshot> & {
   /**
    * 스토어 전체 인기순위만 앞에서부터 훑는다. 후보에 rank 가 실려 온다.
@@ -365,6 +373,11 @@ export type StoreAdapter = SourceAdapter<StoreSnapshot> & {
    * 스냅샷에 dlcExternalIds 를 이미 채워 주는 소스는 이 메서드를 두지 않는다.
    */
   listDlcIds?(key: string): Promise<string[]>;
+  /**
+   * 상세 질의에는 없고 상품 페이지에만 보이는 칸(유통사, 상품마다 덮는 기기). psstore 의 콘셉트 HTML 이다.
+   * 한 번에 수십만 자짜리 요청이라 호출 수는 sync(platform-siblings, store-page-meta)가 회차 상한으로 막는다
+   */
+  fetchStorePage?(externalId: string): Promise<StorePageInfo>;
   /**
    * 목록 요청이 ID 만이 아니라 게임 마스터까지 주는 소스용(nintendo_jp 검색 JSON).
    * 그런 소스는 배치가 가격만 주고 단건 조회 경로가 아예 없어서, 여기서 받은 마스터가
