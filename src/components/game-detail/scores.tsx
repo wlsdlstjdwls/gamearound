@@ -2,7 +2,7 @@
 //
 // 평점(2026-11-16 사용자): 평론 매체 셋(Metacritic, OpenCritic, IGN)만, 게임 설명 바로 아래 한 줄에 로고와 함께 나란히 선다.
 // 유저 점수는 걷었다 — 스토어마다 재는 방식이 달라(긍정 비율, 별점) 한 줄에 평론 점수와 나란히 두면 같은 잣대로 읽혔다.
-// 셋 중 하나라도 있으면 셋 다 세운다. 없는 매체는 "-" 대신 "점수 없음" 으로 말한다 — 한 줄의 칸 수가 게임마다 달라지면 줄이 들쭉날쭉하다.
+// 점수가 없어도 칸 셋은 늘 선다(2026-11-16 사용자). 없는 칸은 흐린 "-" 다 — 칸 수가 게임마다 달라지면 화면이 들쭉날쭉하다.
 // IGN 은 2026-10-27 부터 오픈크리틱 리뷰 목록에서 뽑아 온다(adapters/opencritic).
 //
 // 플레이타임: 목업은 막대 대신 큰 숫자 셋이다. 막대 카드(playtime-card)는 지우지 않고 남겨 두었다 —
@@ -17,34 +17,35 @@ import { scoreLines, type GameDetail, type PlaytimeDto } from "@/server/services
 
 /** 읽는 순서. scoreLines 는 오픈크리틱을 먼저 주지만 화면은 Metacritic 부터다 */
 const CRITICS: readonly CriticKey[] = ["metacritic", "opencritic", "ign"];
+/** 점수 없는 칸의 큰 글자. 낭독기에는 "점수 없음" 을 읽힌다 */
+const NO_SCORE = "-";
 
-export function CriticScores({ game, unreleased }: { game: GameDetail; unreleased: boolean }) {
+export function CriticScores({ game }: { game: GameDetail }) {
   const lines = scoreLines(game.platforms);
-  const known = CRITICS.map((key) => ({ key, line: lines.find((l) => l.key === key) ?? null }));
+  // 점수가 하나도 없어도 칸 셋은 그대로 선다(2026-11-16 사용자 "평점이 없더라도 해당 영역 표기 필요"). "출시 후 표시돼요" 같은 안내 문구는 걷었다
   return (
-    <section aria-labelledby="scores-heading" className="flex flex-col gap-2">
+    <section aria-labelledby="scores-heading">
       <h2 id="scores-heading" className="sr-only">
         {D.scoresLabel}
       </h2>
-      {known.every((k) => k.line === null) ? (
-        // 출시 전이면 "아직 못 모았다" 가 아니라 "출시하면 생긴다" 가 맞는 말이다(기획서 v2.0 S-05)
-        <p className="text-[13px] text-dim">{unreleased ? D.scoresAfterRelease : D.scoresPending}</p>
-      ) : (
-        <dl className="grid grid-cols-3 gap-2">
-          {known.map(({ key, line }) => (
-            <div key={key} className="flex min-w-0 items-center gap-2 rounded-[var(--radius-md)] bg-surface px-3 py-2.5 shadow-hair">
-              <CriticLogo kind={key} size={24} />
-              <div className="flex min-w-0 flex-col">
-                <dt className="truncate text-[11.5px] font-semibold text-mut">{D.scoreLabel[key]}</dt>
-                <dd className={cn("leading-none tracking-[-0.03em]", line ? "text-[20px] font-extrabold text-ink" : "pt-1 text-[12px] text-dim")}>
-                  {line ? line.value : D.scoreNone}
-                  {line?.suffix && <span className="ml-0.5 text-[11px] font-semibold tracking-normal text-dim">{line.suffix}</span>}
+      <dl className="grid grid-cols-3 gap-2 sm:gap-3">
+        {CRITICS.map((key) => {
+          const line = lines.find((l) => l.key === key) ?? null;
+          return (
+            <div key={key} className="flex min-w-0 flex-col gap-2.5 rounded-[var(--radius-md)] bg-surface p-3 shadow-hair sm:flex-row sm:items-center sm:gap-3.5 sm:px-4 sm:py-3.5">
+              <CriticLogo kind={key} size={36} />
+              <div className="flex min-w-0 flex-col gap-1">
+                <dt className="truncate text-[12px] font-semibold text-mut">{D.scoreLabel[key]}</dt>
+                <dd className="flex items-baseline leading-none">
+                  <span className={cn("text-[24px] font-extrabold tracking-[-0.03em] sm:text-[28px]", line ? "text-ink" : "text-dim-2")}>{line ? line.value : NO_SCORE}</span>
+                  {line?.suffix && <span className="ml-0.5 text-[12px] font-semibold text-dim">{line.suffix}</span>}
+                  {!line && <span className="sr-only">{D.scoreNone}</span>}
                 </dd>
               </div>
             </div>
-          ))}
-        </dl>
-      )}
+          );
+        })}
+      </dl>
     </section>
   );
 }
@@ -77,7 +78,7 @@ export function PlaytimeTiles({ playtime, className }: { playtime: PlaytimeDto |
   return (
     // 글자 크기는 화면 폭이 아니라 이 판 폭으로 정한다(@container). 판이 옆 기둥에 서면 넓은 화면에서도 세 칸이 좁아
     // "25.1시간" 이 숫자와 단위로 두 줄에 갈렸다(2026-11-10 사용자). 숫자와 단위는 한 덩어리로 묶어 접히지 않게 한다
-    <section aria-labelledby="playtime-heading" className={cn("@container flex flex-col gap-3 rounded-[var(--radius-panel)] bg-surface p-4 shadow-[var(--elev-card)] sm:p-5", className)}>
+    <section aria-labelledby="playtime-heading" className={cn("@container flex flex-col gap-3 rounded-[var(--radius-panel)] bg-surface p-4 shadow-[var(--elev-card)]", className)}>
       <h2 id="playtime-heading" className="flex items-center gap-1.5 text-[16px] font-extrabold text-ink">
         <ClockIcon size={17} className="text-acc" />
         {D.playtimeTitle}
@@ -85,7 +86,7 @@ export function PlaytimeTiles({ playtime, className }: { playtime: PlaytimeDto |
       {/* 칸 사이 세로선은 목업 그대로 둔다 — 칸 수가 늘 셋이라 2026-09-21 의 "칸 수에 따라 선이 달라진다" 문제가 없다.
           세 칸은 상세 옆 기둥(안쪽 약 292px)과 390폭 휴대폰(약 303px)에서도 지킨다 — 거기서 줄로 세웠더니 목록처럼 보여 사용자가 싫어했다(2026-11-10).
           대신 칸 여백을 줄이고 글자 크기를 판 폭에 맞춘다. 천 시간 넘는 값(MMO)이 하나라도 있으면 한 단계 작게 쓴다 */}
-      <dl className="grid flex-1 grid-cols-1 content-center gap-2 border-t border-line pt-3 @[15rem]:grid-cols-3 @[15rem]:gap-0">
+      <dl className="grid grid-cols-1 gap-2 border-t border-line pt-3 @[15rem]:grid-cols-3 @[15rem]:gap-0">
         {values.map((v, i) => (
           <div
             key={v.key}

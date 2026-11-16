@@ -4,6 +4,8 @@
 export const DETAIL_MESSAGES = {
   /** 평점 칸 이름표. 목업은 영문 "CRITIC SCORES" 인데 유저 점수까지 같은 줄에 서서 "평점" 으로 묶었다 */
   scoresLabel: "평점",
+  /** 제목 위 플랫폼 배지 묶음의 낭독기 이름 */
+  platformsLabel: "지원 플랫폼",
   /** 출시일 띠의 남은 날(game-detail/hero 의 ReleaseBanner) */
   releaseDday: (days: number) => `D-${days}`,
   /** 출시 전 게임의 평점 자리(기획서 v2.0 S-05: 평점은 출시작만) */

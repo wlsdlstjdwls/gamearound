@@ -82,7 +82,7 @@ export function DetailHero({
     <section className="grid gap-x-8 gap-y-5 md:grid-cols-2 lg:grid-cols-[minmax(0,420fr)_minmax(0,420fr)_minmax(0,368fr)] lg:gap-x-10">
       {/* 커버 — 흰 판 위에 한 장(목업 .artc). 가로 아트를 먼저 쓴다: 이 칸은 가로가 긴 상자라 세로 아트를 넣으면
           위아래가 반 넘게 잘린다. 가로 아트가 없는 게임만 세로 아트를 가운데 띠로 보여 준다 */}
-      <div className="enter-item flex flex-col gap-2.5 self-start rounded-[var(--radius-panel)] bg-surface p-2.5 shadow-[var(--elev-card)] sm:p-3" style={stagger(0)}>
+      <div className="enter-item flex flex-col gap-2.5 self-start rounded-[var(--radius-panel)] lg:row-span-2 bg-surface p-2.5 shadow-[var(--elev-card)] sm:p-3" style={stagger(0)}>
         <div className="cover-elev relative aspect-[16/9] w-full overflow-hidden rounded-[var(--radius-cover-lg)] bg-surface-3">
           <CoverImage src={game.coverUrl ?? game.portraitUrl} alt={`${title} 커버`} sizes="(max-width: 767px) 100vw, (max-width: 1023px) 50vw, 420px" priority />
         </div>
@@ -95,17 +95,21 @@ export function DetailHero({
 
       <div className="enter-item flex min-w-0 flex-col gap-3" style={stagger(1)}>
         {/* 지원 플랫폼 이름 줄(목업 .plats). 누르면 그 플랫폼 카드로 미끄러져 내려가 카드가 잠깐 빛난다(platform-jump) */}
+        {/* 지원 플랫폼 배지(2026-11-16 사용자 "제목 위 플랫폼은 뱃지로"). 누르면 그 플랫폼 카드로 미끄러져 내려가 카드가 잠깐 빛난다(platform-jump) */}
         {brands.length > 0 && (
-          <p className="flex flex-wrap items-center gap-x-2 gap-y-1 text-[12.5px] font-bold tracking-[0.06em] text-ink-2">
-            {brands.map((b, i) => (
-              <span key={b.key} className="inline-flex items-center gap-x-2">
-                {i > 0 && <span aria-hidden className="font-normal text-dim-2">|</span>}
-                <PlatformJump anchor={b.anchor} brand={b.key} className="transition-colors hover:text-acc">
+          <ul className="flex flex-wrap items-center gap-1.5" aria-label={D.platformsLabel}>
+            {brands.map((b) => (
+              <li key={b.key}>
+                <PlatformJump
+                  anchor={b.anchor}
+                  brand={b.key}
+                  className="press inline-flex h-7 items-center rounded-full bg-surface px-3 text-[12.5px] font-bold text-ink-2 ring-1 ring-line-strong ring-inset transition-colors hover:text-acc hover:ring-acc"
+                >
                   {b.label}
                 </PlatformJump>
-              </span>
+              </li>
             ))}
-          </p>
+          </ul>
         )}
         {/* 자식(DLC, 에디션)일 때만 선다 */}
         <ContentKindHead contentType={game.contentType} parent={game.parent} />
@@ -179,14 +183,17 @@ export function DetailHero({
             {game.description}
           </FitClamp>
         )}
-        {/* 평론 점수 셋은 설명 바로 아래 한 줄이다(2026-11-16 사용자 "게임 설명 아래에 1행으로 나란히"). 오른쪽 기둥에 있을 때는
-            "무슨 게임인가" 와 "얼마나 잘 만들었나" 가 다른 기둥으로 갈렸다 */}
-        <CriticScores game={game} unreleased={unreleased} />
         {/* 좁은 화면은 한 기둥이라 높이 맞추기가 필요 없다 — 배지가 커버 밑에 있으면 제목이 한 화면 아래로 밀려 설명 뒤에 둔다 */}
         {(hasPlayModes || game.platforms.length > 0) && <SupportBadges game={game} className="flex md:hidden" />}
       </div>
 
-      <div className="enter-item flex min-w-0 flex-col gap-3 md:col-span-2 lg:col-span-1" style={stagger(2)}>
+      {/* 평론 점수 셋 — 설명 바로 아래 한 줄. 넓은 화면은 가운데와 오른쪽 기둥 폭을 함께 써서 칸 셋이 넉넉하다
+          (2026-11-16 사용자 "점수 영역이 너무 좁다"). 커버 기둥이 두 줄을 내려 받는다(lg:row-span-2) */}
+      <div className="enter-item min-w-0 md:col-span-2 lg:col-span-2 lg:col-start-2 lg:row-start-2" style={stagger(2)}>
+        <CriticScores game={game} />
+      </div>
+
+      <div className="enter-item flex min-w-0 flex-col gap-3 md:col-span-2 lg:col-span-1 lg:col-start-3 lg:row-start-1" style={stagger(3)}>
         {/* 찜과 가격 알림(기획서 v2.0 S-05). 둘 다 비로그인이면 로그인 팝업 뒤 이어서 실행된다(auth/login-gate).
             무료 게임에는 알림을 세우지 않는다 — 0원에는 내려갈 자리가 없다(2026-09-21) */}
         <div className={showAlert ? "grid grid-cols-[minmax(0,160fr)_minmax(0,196fr)] gap-2.5" : "flex"}>
@@ -211,7 +218,8 @@ export function DetailHero({
           <WishlistButton gameId={game.id} className="w-full" />
         </div>
         {/* "이 게임 리뷰와 공략 보기" 단추는 걷었다(2026-11-16 사용자, 게임 게시판 메뉴를 걷은 것과 같은 날). 부품(posts-link)은 남겨 둔다 */}
-        <PlaytimeTiles playtime={game.playtime} className="flex-1" />
+        {/* 늘리지 않는다 — 옆 기둥 높이까지 늘였더니 숫자 셋 위아래가 텅 빈 판이 됐다(2026-11-16 사용자 "플레이타임 높이가 너무 높다") */}
+        <PlaytimeTiles playtime={game.playtime} />
       </div>
     </section>
   );
