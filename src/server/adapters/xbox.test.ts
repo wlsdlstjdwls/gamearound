@@ -130,7 +130,8 @@ describe("parseXboxProduct", () => {
     expect(snap.listPrice).toBe(60000);
     expect(snap.currentPrice).toBe(30000);
     expect(snap.discountPct).toBe(50);
-    expect(snap.releaseDate).toBe("2024-03-01");
+    // 15:00Z 는 한국 다음 날 0시다 — 한국 날짜로 읽는다(GTA VI 하루 이른 출시일, 2026-11-16)
+    expect(snap.releaseDate).toBe("2024-03-02");
   });
 
   it("KRW 구매 가용성이 없으면 가격 null", () => {

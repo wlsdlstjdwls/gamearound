@@ -18,6 +18,7 @@ import { xboxContentType } from "./xbox-content-type";
 import { xboxDescription } from "./xbox-description";
 import { xboxGenres } from "./xbox-genres";
 import { sleep } from "@/lib/async";
+import { kstDateKey } from "@/lib/format";
 
 export const XBOX_CATALOG_URL = "https://displaycatalog.mp.microsoft.com/v7.0";
 /**
@@ -278,11 +279,16 @@ const autosuggestSchema = z.object({
 
 // ---- 순수 파서 ----
 
-/** ISO datetime → YYYY-MM-DD (UTC 기준). 잘못된 값은 null */
+/**
+ * ISO datetime → YYYY-MM-DD (**한국 날짜**). 잘못된 값은 null.
+ * 처음엔 UTC 로 잘랐다. 한국 시장 출시 시각은 한국 0시 = 전날 15:00Z 로 와서 하루 이르게 섰다
+ * (2026-11-16 사용자: GTA VI 가 11월 19일인데 18일로 나옴. OriginalReleaseDate "2026-11-18T15:00:00Z").
+ * DB 의 출시일은 한국 날짜로 읽힌다(PS 콘셉트 값도 그 꼴이다)
+ */
 function toIsoDate(v: string | null | undefined): string | null {
   if (!v) return null;
   const d = new Date(v);
-  return Number.isNaN(d.getTime()) ? null : d.toISOString().slice(0, 10);
+  return Number.isNaN(d.getTime()) ? null : kstDateKey(d);
 }
 
 /** 상시 판매 구간의 "종료 없음" 센티널(9998-12-30 등)은 할인 기간이 아니다 */
