@@ -15,6 +15,7 @@ import {
 import { createHttpClient, notFoundAs } from "./http";
 import { parseXboxKorean, parseXboxMultiplayer } from "./xbox-attributes";
 import { xboxContentType } from "./xbox-content-type";
+import { xboxGenres } from "./xbox-genres";
 import { sleep } from "@/lib/async";
 
 export const XBOX_CATALOG_URL = "https://displaycatalog.mp.microsoft.com/v7.0";
@@ -437,6 +438,7 @@ function xboxMeta(
     developer: lp?.DeveloperName?.trim() || null,
     publisher: lp?.PublisherName?.trim() || null,
     multiplayer: parseXboxMultiplayer(product.Properties?.Attributes),
+    genres: xboxGenres(product.Properties?.Categories),
   };
 }
 

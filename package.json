@@ -28,6 +28,7 @@
     "floors:backfill": "tsx scripts/backfill-floors.ts",
     "portraits:backfill": "tsx scripts/backfill-portraits.ts",
     "descriptions:backfill": "tsx scripts/backfill-descriptions.ts",
+    "genres:backfill": "tsx scripts/backfill-genres.ts",
     "nintendo:en-titles": "tsx scripts/backfill-nintendo-en-titles.ts",
     "e2e:onboarding": "node scripts/e2e-onboarding.mjs",
     "e2e:shops": "node scripts/e2e-shops.mjs",

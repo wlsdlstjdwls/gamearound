@@ -20,6 +20,7 @@ import { correctedContentType } from "./content-type-fix";
 import { isLocked, recordError, type Ctx } from "./context";
 import { companyNamesOf, findCompaniesByAliases } from "./company-writer";
 import { createGameFromSnapshot, isTitleEnRecovery, planGameMeta, planSlugRename, type GameRow } from "./game-writer";
+import { fillMissingGenres } from "./genres";
 import { planPlatform, type PlatformPlan, type PlatformRow } from "./platform-writer";
 import { gamesByTitleCode, gamesWithRef, ignoreDiscovery, type StoreTarget } from "./store-targets";
 import { loadGameTitlesFor } from "./title-candidates";
@@ -465,6 +466,14 @@ export async function applyStore(ctx: Ctx, source: StoreSource, fetched: Fetched
     ...inserts.map(({ slug, snapshot }, i) => ({ gamePlatformId: newIds[i], slug, keys: snapshot.subscriptionKeys })),
   ].filter((t): t is { gamePlatformId: string; slug: string; keys: string[] } => Boolean(t.gamePlatformId) && t.keys !== undefined);
   await syncSnapshotSubscriptions(ctx, subscriptionTargets);
+
+  // 장르가 빈 게임만 채운다(근거는 sync/genres). 실패해도 가격 반영은 이미 끝났으니 표본만 남긴다 (§7)
+  try {
+    const filled = new Set(await fillMissingGenres(ctx.db, applied.map(({ gameId, snapshot }) => ({ gameId, genres: snapshot.meta?.genres }))));
+    for (const { gameId, slug } of applied) if (filled.has(gameId)) ctx.changedSlugs.add(slug);
+  } catch (e) {
+    recordError(ctx, `${source}:genres`, e);
+  }
 
   await runStatements(ctx, "dlc-parent", await planParentLinks(ctx, source, applied, gameById));
   await runStatements(ctx, "company-link", await planCompanyLinks(ctx, applied));

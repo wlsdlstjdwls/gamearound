@@ -1,10 +1,10 @@
 // games 테이블 쓰기 — 신규 생성과 마스터 정보 갱신.
 // 원칙 셋: null 로 덮어쓰지 않는다, 잠긴 필드(data_corrections.lock_field)는 건드리지 않는다, 값이 달라질 때만 UPDATE 한다.
-import { eq, inArray } from "drizzle-orm";
-import { gameGenres, gameSourceRefs, games, genres, type ContentType } from "@/server/db/schema";
+import { eq } from "drizzle-orm";
+import { gameSourceRefs, games, type ContentType } from "@/server/db/schema";
 import type { Db } from "@/server/db/client";
 import { AdapterError, type StoreSnapshot } from "@/server/adapters/types";
-import { normalizeGenre } from "@/lib/genres";
+import { linkGenresMany } from "./genres";
 import { hasHangul, slugify, slugWithSuffix } from "@/lib/slug";
 import { cleanStoreTitle, usableDescription } from "@/lib/store-text";
 import { isLocked, type Ctx } from "./context";
@@ -19,16 +19,6 @@ export async function uniqueSlug(db: Db, titleEn: string, externalId: string): P
     if (!hit) return c;
   }
   return candidates[candidates.length - 1];
-}
-
-async function linkGenres(db: Db, gameId: string, names: string[]): Promise<void> {
-  // 저장 전에 우리 어휘로 옮긴다 — 소스마다 다른 말로 주면 같은 장르가 칩 두 개가 된다
-  const clean = Array.from(new Set(names.map((n) => normalizeGenre(n)).filter(Boolean)));
-  if (clean.length === 0) return;
-  await db.insert(genres).values(clean.map((name) => ({ name }))).onConflictDoNothing();
-  const rows = await db.select({ id: genres.id }).from(genres).where(inArray(genres.name, clean));
-  if (rows.length === 0) return;
-  await db.insert(gameGenres).values(rows.map((g) => ({ gameId, genreId: g.id }))).onConflictDoNothing();
 }
 
 /**
@@ -82,7 +72,8 @@ export async function createGameFromSnapshot(
     .insert(gameSourceRefs)
     .values({ gameId: game.id, source: ctx.source, externalId: snapshot.storeExternalId, url: snapshot.storeUrl, matchedBy: "auto", confidence: "1.00" })
     .onConflictDoNothing();
-  await linkGenres(db, game.id, meta.genres ?? []);
+  // 저장 전에 우리 어휘로 옮긴다(linkGenresMany) — 소스마다 다른 말로 주면 같은 장르가 칩 두 개가 된다
+  await linkGenresMany(db, new Map([[game.id, meta.genres ?? []]]));
   return game;
 }
 
