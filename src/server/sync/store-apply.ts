@@ -90,7 +90,6 @@ async function loadExisting(
 ): Promise<{ gameById: Map<string, GameRow>; platformsByGame: Map<string, PlatformRow[]> }> {
   const gameIds = applied.map((a) => a.gameId);
   if (gameIds.length === 0) return { gameById: new Map(), platformsByGame: new Map() };
-  const platforms = [...new Set(applied.map((a) => a.snapshot.platform))];
   const regions = [...new Set(applied.map((a) => a.snapshot.region ?? HOME_REGION))];
   const gameQuery = META_OVERWRITE_SOURCES.includes(ctx.source)
     ? ctx.db.select().from(games).where(inArray(games.id, gameIds))
@@ -100,7 +99,8 @@ async function loadExisting(
     ctx.db
       .select()
       .from(gamePlatforms)
-      .where(and(inArray(gamePlatforms.gameId, gameIds), inArray(gamePlatforms.platform, platforms), inArray(gamePlatforms.region, regions))),
+      // 기기는 거르지 않는다 — 같은 상품이 다른 기기 행으로 이미 붙었는지(아래 중복 막기) 보려면 그 게임의 다른 기기 행도 있어야 한다
+      .where(and(inArray(gamePlatforms.gameId, gameIds), inArray(gamePlatforms.region, regions))),
   ]);
   const platformsByGame = new Map<string, PlatformRow[]>();
   for (const row of platformRows) {
@@ -444,6 +444,11 @@ export async function applyStore(ctx: Ctx, source: StoreSource, fetched: Fetched
     // 지역까지 봐야 한다 — 같은 게임, 같은 기기라도 나라가 다르면 다른 행이고, 섞으면 일본 가격이 한국 행을 덮는다
     const region = snapshot.region ?? HOME_REGION;
     const existing = platformsByGame.get(gameId)?.find((p) => p.platform === snapshot.platform && p.region === region);
+    // 같은 상품(스토어 상품번호)이 이미 다른 기기 행으로 붙어 있으면 새 행을 만들지 않는다(2026-11-16 실측 111건).
+    // 닌텐도 한국은 Switch 2 상품 하나가 Switch 행으로도 한 번 더 붙어 같은 값, 같은 링크의 카드가 둘 섰다. 기기를 고치는 일은 platform-fix 몫이다
+    if (!existing && snapshot.storeExternalId && platformsByGame.get(gameId)?.some((p) => p.region === region && p.platform !== snapshot.platform && p.storeExternalId === snapshot.storeExternalId)) {
+      continue;
+    }
     const plan = planPlatform(ctx, existing, gameId, snapshot);
     if (plan.kind === "insert") {
       inserts.push({ slug, plan, snapshot });

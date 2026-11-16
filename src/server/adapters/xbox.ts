@@ -81,6 +81,31 @@ const availabilitySchema = z.object({
   Conditions: z.object({ StartDate: z.string().nullish(), EndDate: z.string().nullish() }).nullish(),
 });
 
+const SALE_ACTIONS = ["Purchase", "Redeem"];
+/** 판매 구간 시작일 중 "아직 없음" 센티널(1753년)을 거르는 하한 */
+const MIN_REAL_YEAR = 2000;
+/** 최초 출시일이 첫 판매 시작보다 이만큼 넘게 늦으면 다시 올린 상품으로 본다. 예약 판매는 대개 몇 달 앞서 열리므로 한 해로 둔다 */
+const RELISTED_GAP_MS = 365 * 24 * 60 * 60 * 1000;
+
+/**
+ * 출시일 — 시장의 OriginalReleaseDate 를 쓰되, 상품을 다시 올린 경우는 첫 판매 시작일을 쓴다(2026-11-16 실측).
+ * 사이버펑크 2077(BX3M8L83BBRW) 한국 시장은 OriginalReleaseDate 를 2026-10-22 로 주지만 같은 상품의 판매 구간은 2020-12-09 에 시작한다.
+ * 그대로 쓰면 상세 Xbox 카드에 "2026년 10월 22일 출시" 가 섰다(피드백 v11 #13). 예약 판매(판매 시작이 출시보다 몇 달 앞섬)는 건드리지 않는다
+ */
+export function xboxReleaseDate(product: { MarketProperties: { OriginalReleaseDate?: string | null }[]; DisplaySkuAvailabilities: { Availabilities: { Actions?: string[] | null; Conditions?: { StartDate?: string | null } | null }[] }[] }): string | null {
+  const original = product.MarketProperties[0]?.OriginalReleaseDate ?? null;
+  const starts = product.DisplaySkuAvailabilities.flatMap((s) => s.Availabilities)
+    // 구매(Purchase) 또는 코드 교환(Redeem) 구간. 사이버펑크는 2020 년 판매 기록이 교환 SKU 에만 남아 있다. 체험판(License 만)은 빼진다
+    .filter((a) => a.Actions?.some((x) => SALE_ACTIONS.includes(x)))
+    .map((a) => a.Conditions?.StartDate ?? null)
+    .filter((d): d is string => d !== null && new Date(d).getUTCFullYear() >= MIN_REAL_YEAR)
+    .sort();
+  const firstSale = starts[0] ?? null;
+  if (!original) return firstSale;
+  if (firstSale && Date.parse(original) - Date.parse(firstSale) > RELISTED_GAP_MS) return firstSale;
+  return original;
+}
+
 const imageSchema = z.object({ ImagePurpose: z.string().nullish(), Uri: z.string().nullish() });
 
 const productSchema = z.object({
@@ -382,7 +407,7 @@ export function parseXboxProduct(raw: unknown, productId: string, rawEn?: unknow
     // 기간은 할인 중일 때만 의미가 있다(상시 판매 구간의 시작일을 "할인 시작"으로 오해하지 않게)
     discountStartsAt: discountPct > 0 ? price?.startsAt ?? null : null,
     discountEndsAt: discountPct > 0 ? price?.endsAt ?? null : null,
-    releaseDate: toIsoDate(product.MarketProperties[0]?.OriginalReleaseDate),
+    releaseDate: toIsoDate(xboxReleaseDate(product)),
     contentType,
     // 본편 쪽에서 물으면 이 자리가 비어 있다 — 부모를 말해 주는 건 추가 콘텐츠 응답뿐이다
     parentExternalId: isDlc ? xboxAddOnParentId(product) : null,
