@@ -14,15 +14,20 @@ import { cn } from "@/lib/cn";
  * 클래스 문자열을 통째로 둔다 — Tailwind 는 소스에 적힌 글자만 찾으므로 조립한 이름(`bg-${tone}-soft`)은 생성되지 않는다.
  */
 export type TagTone = "acc" | "ok" | "warn" | "info" | "danger" | "plum" | "plumSolid" | "hot" | "neutral" | "outline";
+/*
+ * 2026-11-16 색 줄이기(사용자 "지금 색상 남발하는데 좀 심플하게"): 꼬리표 색을 파랑(강조), 회색(사실), 빨강(경고, 급상승) 셋으로 접었다.
+ * 청록(info), 초록(ok), 보라(plum)는 이름만 남기고 회색, 파랑으로 그린다 — 쓰는 자리 수십 곳을 하나씩 고치지 않고 여기 한 곳에서 접는다.
+ * 주황(warn)은 남긴다: 반려, 주의처럼 사람이 멈춰야 하는 말이다.
+ */
 const TONE: Record<TagTone, string> = {
   acc: "bg-acc-soft text-acc",
-  ok: "bg-ok-soft text-ok",
+  ok: "bg-surface-2 text-ink-2",
   warn: "bg-warn-soft text-warn",
-  info: "bg-info-soft text-info",
+  info: "bg-surface-2 text-ink-2",
   danger: "bg-danger-soft text-danger",
-  plum: "bg-plum-soft text-plum",
-  // 채운 보라 — 가장 윗단 상품의 "모든 혜택" 처럼 한 화면에 하나만 서는 딱지(2026-10-28 사용자: "모든 혜택 뱃지는 강조를 해 주던가")
-  plumSolid: "bg-plum text-on-ink",
+  plum: "bg-acc-soft text-acc",
+  // 채운 강조 — 가장 윗단 상품의 "모든 혜택" 처럼 한 화면에 하나만 서는 딱지(2026-10-28 사용자: "모든 혜택 뱃지는 강조를 해 주던가")
+  plumSolid: "bg-acc text-on-ink",
   // 채운 빨강 — "급상승" 처럼 줄에서 먼저 눈에 걸려야 하는 딱지(10-27, 사용자: "급상승 인기글인데 눈에 잘 안 들어온다")
   hot: "bg-danger text-on-ink",
   // 색 없는 회색 면 — 말머리 옆 곁딱지(스포 없음, 홍보 유형). 줄 하나에 색이 셋, 넷 서면 알록달록해 읽히지 않았다(2026-10-28 사용자)
