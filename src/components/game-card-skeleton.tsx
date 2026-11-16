@@ -3,19 +3,21 @@
 // 실물(game-card)의 껍데기와 커버 상수를 그대로 가져온다. 줄 높이는 game-card 의 제목 두 줄(40),
 // 배지(20), 값(28)을 잰 값이다(2026-09-15 실측: 뼈대 185px 대 실물 273px 으로 어긋나 본문이 올 때 화면이 밀렸다).
 // 카드 안쪽을 화면마다 다시 그리면 그 실측이 화면 수만큼 어긋난다 — 그래서 한 곳에 둔다.
-import { CARD_SHELL, COVER_CLASS } from "@/components/game-card";
+import { GAME_CARD_BODY_X, GAME_CARD_SHELL, GAME_COVER_CLASS } from "@/components/game-card";
 import { LIST_CARD_SHELL, LIST_THUMB_CLASS } from "@/components/game-list-card";
 import { Bone } from "@/components/ui/skeleton";
 import { cn } from "@/lib/cn";
 
 export function GameCardSkeleton() {
   return (
-    <div className={CARD_SHELL} aria-hidden>
-      <div className={cn(COVER_CLASS, "skeleton")} />
-      <div className="flex flex-col gap-1.5 px-1">
-        <Bone className="h-[40px] w-4/5" />
+    <div className={GAME_CARD_SHELL} aria-hidden>
+      <div className={cn(GAME_COVER_CLASS, "skeleton")} />
+      {/* 실물과 같은 줄 자리: 제목 두 줄(2.7em), 장르 20, 배지 20(+pt 4), 값 32 */}
+      <div className={cn("flex flex-col gap-1.5", GAME_CARD_BODY_X)}>
+        <Bone className="h-[2.7em] w-4/5 text-[16px] sm:text-[15px]" />
         <Bone className="h-5 w-2/5 rounded-full" />
-        <Bone className="mt-1 h-7 w-3/5" />
+        <span className="h-5" />
+        <Bone className="h-8 w-3/5" />
       </div>
     </div>
   );

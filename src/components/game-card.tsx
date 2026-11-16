@@ -151,6 +151,16 @@ export const CARD_SHELL = "card-panel flex h-full flex-col gap-2 p-2 pb-3 sm:p-2
 export const COVER_CLASS =
   "relative block aspect-[460/215] w-full overflow-hidden rounded-[var(--radius-md)] bg-surface-3 shadow-hair";
 
+/**
+ * 게임 카드 껍데기와 커버(2026-11-16 사용자 "이미지는 위 영역 꽉 차게", "모서리 덜 둥글게").
+ * 그림이 판 안쪽 여백 없이 위와 양옆에 붙고, 모서리는 판(18px) 대신 카드 반경(12px)이다. 판이 overflow-hidden 이라 그림 위 모서리도 같이 깎인다.
+ * 인디 카드는 아직 위 CARD_SHELL, COVER_CLASS 를 쓴다 — 바꾸라는 말은 게임 카드에 대한 것이었다
+ */
+export const GAME_CARD_SHELL = "card-panel flex h-full flex-col gap-2.5 overflow-hidden !rounded-[var(--radius-md)] pb-3";
+export const GAME_COVER_CLASS = "relative block aspect-[460/215] w-full overflow-hidden bg-surface-3";
+/** 그림 아래 글자 묶음의 좌우 여백 */
+export const GAME_CARD_BODY_X = "px-3";
+
 export function GameCard({
   game,
   variant = "discount",
@@ -180,12 +190,11 @@ export function GameCard({
   const releaseLabel = releaseText ?? (best?.releaseDate ? `${formatDate(best.releaseDate)} 출시` : "");
   // 대표 가격 행 하나만 본다 — 배지는 옆에 선 **그 값**이 예약 값이라는 말이다(다른 스토어는 이미 팔 수도 있다)
   const preorder = best ? isPreorder(best) : false;
-  // 값 줄 위 배지 한 줄 — 하나도 없으면 줄을 세우지 않는다
+  // 값 줄 위 배지 한 줄에 무엇이 서나(줄 자리는 늘 잡는다)
   const priced = Boolean(best && best.currentPrice !== null);
   const showPreorder = priced && preorder;
   const showLow = priced && hasDiscount && Boolean(best?.historicLow);
   const showSaleEnd = variant !== "release" && hasDiscount && Boolean(best?.discountEndsAt);
-  const hasBadges = showPreorder || showLow || showSaleEnd;
 
   return (
     // 미는 범위는 **카드 한 장 전체**다(2026-09-22, 사용자 지정) — 커버에만 걸면 제목이나 값 위에서
@@ -196,25 +205,25 @@ export function GameCard({
           배지 "+N" 더보기 버튼을 넣으면 링크 안의 버튼이 되어(누르면 상세로 넘어간다, 중첩 대화형 요소)
           카드는 div 로, 누를 면은 제목 링크가 늘어나 덮는 방식으로 바꿨다. 버튼만 z-10 으로 그 위에 뜬다.
           포커스 링도 ::after 에 그려 카드 모양 그대로 선다 */}
-      <div className={cn(CARD_SHELL, "cover-zoom group relative")}>
+      <div className={cn(GAME_CARD_SHELL, "cover-zoom group relative")}>
         {/* 판 안이라 그림자를 겹치지 않는다 — 가장자리를 긋는 링 한 줄이면 밝은 커버가 흰 판에 번지지 않는다 */}
-        <span className={COVER_CLASS}>
+        <span className={GAME_COVER_CLASS}>
           <span className="cover-zoom-img absolute inset-0 block">
             <CoverImage src={game.coverUrl} alt={`${title} 커버`} sizes="(max-width: 640px) 100vw, (max-width: 768px) 50vw, 25vw" />
           </span>
         </span>
-        {/* 찜 하트(기획서 v2.0 카드 공통, 목업 카드 오른쪽 위). 제목 링크의 ::after 가 카드를 덮으므로 z-10 으로 그 위에 뜬다 */}
-        <WishHeart slug={game.slug} title={title} size="sm" className="absolute right-2.5 top-2.5 z-10" />
 
-        <div className="flex min-w-0 flex-1 flex-col gap-1.5 px-1">
-          {/* 제목은 줄 하나를 혼자 쓴다(2026-09-29, 사용자: "가시성이 너무 떨어져") — 두 줄까지 펴고 그 뒤를 자른다.
-              순서는 이름 - 기기 - 값(2026-09-30, 사용자: "플랫폼 뱃지가 제목 아래에 있는게 낫지 않나").
-              카드를 훑는 눈은 그림 다음에 이름을 찾는다 — 배지가 그 사이에 서면 한 번 건너뛰어야 했다 */}
+        <div className={cn("flex min-w-0 flex-1 flex-col gap-1.5", GAME_CARD_BODY_X)}>
+          {/* 카드는 화면 어디서나 **같은 크기**다(2026-11-16 사용자 "카드 크기가 다른 게 보기 싫다").
+              그래서 줄마다 자리를 미리 잡는다 — 제목 두 줄, 장르 한 줄, 배지 한 줄, 값 한 줄. 값이 없어도 자리는 남는다.
+              전에는 제목 한 줄/두 줄, 장르 유무, 배지 유무에 따라 카드 키가 달라 줄마다 격자 높이가 갈렸다.
+
+              제목은 두 줄까지 펴고 그 뒤를 자른다(2026-09-29, 사용자: "가시성이 너무 떨어져") */}
           <Link
             href={`/games/${game.slug}`}
-            className="outline-none after:absolute after:inset-0 after:rounded-[var(--radius-panel)] focus-visible:after:ring-2 focus-visible:after:ring-ink focus-visible:after:ring-offset-2 focus-visible:after:ring-offset-bg"
+            className="outline-none after:absolute after:inset-0 after:rounded-[var(--radius-md)] focus-visible:after:ring-2 focus-visible:after:ring-ink focus-visible:after:ring-offset-2 focus-visible:after:ring-offset-bg"
           >
-            <Clamp lines={2} className="text-[16px] font-semibold leading-[1.35] tracking-[-0.015em] text-ink transition-colors duration-fast group-hover:text-acc sm:text-[15px]">
+            <Clamp lines={2} className="min-h-[2.7em] text-[16px] font-semibold leading-[1.35] tracking-[-0.015em] text-ink transition-colors duration-fast group-hover:text-acc sm:text-[15px]">
               {title}
             </Clamp>
           </Link>
@@ -225,59 +234,51 @@ export function GameCard({
             </span>
           )}
 
-          {/* 장르 부제는 장르로 거를 때만 선다 — 늘 서 있으면 회색 한 줄이 카드마다 잘린 채 붙어 값보다 먼저 읽혔다.
-              거를 때는 "왜 이 게임이 여기 있나" 를 말해 주는 값이라 남긴다(고른 장르만 보라) */}
-          {/* 장르는 늘 선다(2026-10-26, 기획서 v2.0 카드 공통: 썸네일, 이름, 장르, 플랫폼, 값, 찜). 장르로 거를 때는 고른 장르만 브랜드색 */}
-          {/* 판매 형태(무료 플레이, 앞서 해보기)는 장르 글자 앞 작은 꼬리표다(2026-10-27, lib/genres) — 장르와 같은 줄에 두어 카드 키를 늘리지 않는다 */}
-          {(genres.length > 0 || tags.length > 0) && (
-            <span className="flex min-w-0 items-center gap-1.5 text-[12.5px] text-dim">
-              {tags.map((t) => (
-                <Tag key={t} small tone="info">
-                  {t}
-                </Tag>
-              ))}
-              {genres.length > 0 && (
-                <span className="min-w-0 flex-1">
-                  <Clamp text={genres.join(", ")}>
-                    {genres.map((g, i) => (
-                      // 쉼표는 색을 입힌 조각 **밖에** 둔다 — 안에 넣으면 고른 장르 앞의 구분자까지 보라가 된다
-                      <Fragment key={g}>
-                        {i > 0 ? ", " : null}
-                        <span className={g === highlight?.genre ? "font-semibold text-acc" : undefined}>{g}</span>
-                      </Fragment>
-                    ))}
-                  </Clamp>
-                </span>
-              )}
-            </span>
-          )}
+          {/* 장르 줄은 늘 자리를 잡는다(비어도). 장르로 거를 때는 고른 장르만 브랜드색.
+              판매 형태(무료 플레이, 앞서 해보기)는 장르 글자 앞 작은 꼬리표다(2026-10-27, lib/genres) */}
+          <span className="flex h-5 min-w-0 items-center gap-1.5 text-[12.5px] text-dim">
+            {tags.map((t) => (
+              <Tag key={t} small tone="info">
+                {t}
+              </Tag>
+            ))}
+            {genres.length > 0 && (
+              <span className="min-w-0 flex-1">
+                <Clamp text={genres.join(", ")}>
+                  {genres.map((g, i) => (
+                    // 쉼표는 색을 입힌 조각 **밖에** 둔다 — 안에 넣으면 고른 장르 앞의 구분자까지 보라가 된다
+                    <Fragment key={g}>
+                      {i > 0 ? ", " : null}
+                      <span className={g === highlight?.genre ? "font-semibold text-acc" : undefined}>{g}</span>
+                    </Fragment>
+                  ))}
+                </Clamp>
+              </span>
+            )}
+          </span>
 
           {/* 기기 배지 줄과 "~에서 더 싸요" 판정 줄은 걷었다(2026-11-16 사용자 "목록 카드 플랫폼 뱃지 제거, ~가 더 싸요 문구 제거").
-              카드는 그림, 이름, 장르, 값만 말한다 — 닌텐도 e숍 타일처럼 훑는 눈이 멈출 곳을 줄였다. 기기는 상세에서 본다.
-              남은 할인 기간만 장르 아래 오른쪽 끝에 남긴다 */}
-          {/* 값 묶음은 카드 **바닥**에 붙는다(mt-auto) — 같은 줄 카드끼리 값이 한 높이에 서서 가로로 견줄 수 있다.
-              배지(사전 예약, 역대 최저가, 남은 할인 기간)는 값 줄 **위** 한 줄에 모은다(2026-11-16 사용자 "역대 최저가, 사전예약 뱃지 때문에 오와 열이 안 맞는다").
-              전에는 배지가 값 줄 안에 섞여 좁은 카드에서 값 줄이 두 줄로 접혔고, 그 카드만 값이 한 줄 위로 떠 이웃과 높이가 갈렸다.
-              값 줄은 접지 않는다 — 할인율, 값, 정가 한 줄이고 넘치면 정가만 줄어든다.
-
-              값은 갈래를 가리지 않고 선다(2026-09-22, 사용자 지적: "최근 출시 영역에서는 금액이 안나옴").
-              **값을 모르면 값을 세우지 않는다**(같은 날 사용자 지정: "금액이 없으면 '-' 이것도
-              보여주지마") — 카드에서 "-" 한 글자는 "값이 0 인가" 로도 "고장인가" 로도 읽힌다 */}
-          <div className="mt-auto flex flex-col gap-1 pt-1">
-            {hasBadges && (
-              <div className="flex min-w-0 items-center gap-1.5">
-                {/* 값 앞에 선다 — 값을 읽기 전에 "지금 사면 출시 날 받는 값" 이라는 걸 먼저 알아야 한다 */}
-                {showPreorder && <Tag>{PREORDER_LABEL}</Tag>}
-                <HistoricLowBadge show={showLow} size="sm" />
-                {showSaleEnd && (
-                  <span className="ml-auto min-w-0">
-                    <SaleBadge variant="inline" discountName={null} discountEndsAt={best?.discountEndsAt} />
-                  </span>
-                )}
-              </div>
+              배지 줄: 왼쪽 사전 예약, 역대 최저가 / 오른쪽 남은 할인 기간(출시 갈래는 출시일). 늘 자리를 잡는다 —
+              배지가 값 줄에 섞여 값 줄이 두 줄로 접히던 것을 이 줄이 막는다(2026-11-16 사용자 "오와 열이 안 맞는다") */}
+          <div className="mt-auto flex h-5 min-w-0 items-center gap-1.5 pt-1">
+            {/* 값 앞에 선다 — 값을 읽기 전에 "지금 사면 출시 날 받는 값" 이라는 걸 먼저 알아야 한다 */}
+            {showPreorder && <Tag>{PREORDER_LABEL}</Tag>}
+            <HistoricLowBadge show={showLow} size="sm" />
+            {showSaleEnd && (
+              <span className="ml-auto min-w-0">
+                <SaleBadge variant="inline" discountName={null} discountEndsAt={best?.discountEndsAt} />
+              </span>
             )}
+            {variant === "release" && releaseLabel && <span className="ml-auto min-w-0 truncate text-[12.5px] text-dim">{releaseLabel}</span>}
+          </div>
+
+          {/* 값 줄 — 할인율, 값, 정가 한 줄(접지 않는다, 넘치면 정가만 줄어든다)과 오른쪽 끝 찜 하트.
+              하트는 그림 위에서 이 줄로 내렸다(2026-11-16 사용자 "찜하기 버튼을 이미지가 아닌 아래쪽으로") — 그림은 다시 그림만 갖는다.
+              제목 링크의 ::after 가 카드를 덮으므로 하트는 relative z-10 으로 그 위에 뜬다.
+              **값을 모르면 값을 세우지 않는다**(2026-09-22 사용자 "금액이 없으면 '-' 이것도 보여주지마") — 줄 자리와 하트는 남는다 */}
+          <div className="flex h-8 min-w-0 items-center gap-x-1.5">
             {best && best.currentPrice !== null && (
-              <div className="flex min-w-0 items-baseline gap-x-1.5">
+              <>
                 {hasDiscount && <DiscountStamp pct={best.discountPct} />}
                 <span className="shrink-0 text-[22px] font-extrabold tracking-[-0.03em] text-ink sm:text-[20px]">
                   {formatPrice(best.currentPrice, best.currency)}
@@ -285,10 +286,9 @@ export function GameCard({
                 {hasDiscount && best.listPrice !== null && (
                   <span className="min-w-0 truncate text-[13px] text-dim-2 line-through sm:text-[12.5px]">{formatPrice(best.listPrice, best.currency)}</span>
                 )}
-              </div>
+              </>
             )}
-            {/* 출시일은 값 줄 아래 제 줄이다 — 값 줄은 접지 않으므로 같은 줄에 두면 할인율이 붙은 카드에서 날짜가 판 밖으로 넘쳤다 */}
-            {variant === "release" && releaseLabel && <span className="self-end text-[12.5px] text-dim">{releaseLabel}</span>}
+            <WishHeart slug={game.slug} title={title} size="sm" className="relative z-10 ml-auto shrink-0 bg-transparent shadow-none backdrop-blur-none" />
           </div>
         </div>
       </div>
