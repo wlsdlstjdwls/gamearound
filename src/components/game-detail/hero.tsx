@@ -114,7 +114,7 @@ export function DetailHero({
         <ContentKindHead contentType={game.contentType} parent={game.parent} />
         <h1 className="text-[28px] font-extrabold leading-[1.15] tracking-[-0.035em] text-ink sm:text-[34px] lg:text-[38px]">{title}</h1>
         {/* 원제, 출시일, 나라 — 기획서 히어로의 "한글명, 영문명, 출시일". 나라는 국기 한 장과 이름(2026-09-22) */}
-        {(meta.length > 0 || origin || game.companies.length > 0 || game.developer || game.publisher) && (
+        {(meta.length > 0 || origin) && (
           // 낱말 사이 세로 막대는 각 낱말의 앞머리(::before)다. 줄이 갈리면 둘째 줄 첫 낱말 앞에 막대가 홀로 남는데,
           // 줄을 왼쪽으로 조금 밀고(-ml) 바깥 상자가 넘친 자리를 자르면(overflow-hidden) 줄 머리의 막대만 잘려 나간다
           <div className="overflow-hidden">
@@ -130,23 +130,6 @@ export function DetailHero({
                 {origin.countryNameKo}
               </span>
             )}
-            {/* 개발, 배급은 딱지가 아니라 나라 옆 글자 링크다(2026-10-27, 사용자: "배지 형태 말고 그냥 국가 옆에 글자 버튼으로") */}
-            {game.companies.map((c) => (
-              <span key={`${c.slug}:${c.role}`} className={META_ITEM}>
-                <Link href={companyPath(c.slug)} className="text-ink-2 underline-offset-2 transition-colors hover:text-acc hover:underline">
-                  <span className="text-dim">{COMPANY_ROLE_LABEL[c.role]}</span> {c.name}
-                </Link>
-              </span>
-            ))}
-            {game.companies.length === 0 &&
-              [game.developer, game.publisher]
-                .filter((v): v is string => Boolean(v))
-                .filter((v, i, all) => all.indexOf(v) === i)
-                .map((name) => (
-                  <span key={name} className={META_ITEM}>
-                    {name}
-                  </span>
-                ))}
           </p>
           </div>
         )}
@@ -216,32 +199,68 @@ export function DetailHero({
         {/* "이 게임 리뷰와 공략 보기" 단추는 걷었다(2026-11-16 사용자, 게임 게시판 메뉴를 걷은 것과 같은 날). 부품(posts-link)은 남겨 둔다 */}
         {/* 늘리지 않는다 — 옆 기둥 높이까지 늘였더니 숫자 셋 위아래가 텅 빈 판이 됐다(2026-11-16 사용자 "플레이타임 높이가 너무 높다") */}
         <PlaytimeTiles playtime={game.playtime} />
-        {/* 출시 전 게임의 출시일 카드. 플레이타임 아래에 제 판으로 선다(2026-11-16 사용자 "플레이타임 아래, 영역 아예 만들어서").
-            제목 밑 띠는 가운데 기둥을 늘렸고, 배지 줄은 플랫폼이 넷이면 넘쳤다. 오른쪽 기둥은 늘 가운데보다 짧아 여유가 있다 */}
-        {unreleased && game.releaseDate && <ReleaseCard date={game.releaseDate} />}
+        {/* 출시일(출시 전만)과 개발, 배급을 플레이타임 아래 한 판에 모은다(2026-11-16 사용자 "플레이타임 아래, 영역 아예 만들어서",
+            "개발, 배급도 오른쪽으로, 밑줄도"). 제목 밑에 두면 가운데 기둥이 늘었다. 판을 둘로 세웠더니 오른쪽 기둥이 가운데보다 길어져
+            가운데에 빈 틈이 생겨 제목 없는 한 판으로 줄였다 — 줄 머리(출시, 개발, 배급)가 곧 이름이다 */}
+        <InfoCard game={game} unreleased={unreleased} />
       </div>
     </section>
   );
 }
 
-/** 출시 전 게임의 출시일 카드 — 남은 날을 크게, 날짜를 옆에. 판 모양은 플레이타임 카드(scores)와 같다 */
-function ReleaseCard({ date }: { date: string }) {
+/** 출시일까지 남은 날과 날짜. 올해면 해를 뺀다 — 남은 날이 이미 가까움을 말한다 */
+function releaseParts(date: string): { dday: string; dateText: string } {
   const key = date.slice(0, 10);
   const days = daysUntil(key);
   const full = formatDate(date);
-  // 올해면 해를 뺀다 — 남은 날이 이미 가까움을 말한다
   const dateText = key.slice(0, 4) === kstDateKey(new Date()).slice(0, 4) ? full.replace(/^\d+년 /, "") : full;
+  return { dday: days > 0 ? D.releaseDday(days) : D.releaseToday, dateText };
+}
+
+/** 출시(출시 전만), 개발, 배급 줄. 회사 행이 이어진 게임은 회사 화면 링크(밑줄), 이름만 아는 게임은 글자만 */
+function InfoCard({ game, unreleased }: { game: GameDetail; unreleased: boolean }) {
+  const companies: Array<{ key: string; role: string; name: string; href: string | null }> =
+    game.companies.length > 0
+      ? game.companies.map((c) => ({ key: `${c.slug}:${c.role}`, role: COMPANY_ROLE_LABEL[c.role], name: c.name, href: companyPath(c.slug) }))
+      : (
+          [
+            ["developer", game.developer],
+            ["publisher", game.publisher],
+          ] as const
+        )
+          .filter((r): r is readonly ["developer" | "publisher", string] => Boolean(r[1]))
+          .map(([role, name]) => ({ key: `${role}:${name}`, role: COMPANY_ROLE_LABEL[role], name, href: null }));
+  const release = unreleased && game.releaseDate ? releaseParts(game.releaseDate) : null;
+  if (!release && companies.length === 0) return null;
   return (
-    <section aria-labelledby="release-heading" className="flex flex-col gap-3 rounded-[var(--radius-panel)] bg-surface p-4 shadow-[var(--elev-card)]">
-      <h2 id="release-heading" className="flex items-center gap-1.5 text-[16px] font-extrabold text-ink">
-        <CalendarIcon size={17} className="text-acc" />
-        {D.releaseCardHeading}
-      </h2>
-      <div className="flex items-baseline justify-between gap-3 border-t border-line pt-3">
-        <span className="text-[26px] font-extrabold leading-none tracking-[-0.03em] tabular-nums text-acc">{days > 0 ? D.releaseDday(days) : D.releaseToday}</span>
-        <span className="text-[14px] font-bold text-ink-2">{dateText}</span>
-      </div>
-    </section>
+    <dl className="flex flex-col gap-2 rounded-[var(--radius-panel)] bg-surface p-4 text-[13.5px] shadow-[var(--elev-card)]">
+      {release && (
+        <div className="flex items-center gap-3">
+          <dt className="flex w-10 shrink-0 items-center gap-1 text-mut">
+            <CalendarIcon size={14} className="shrink-0" />
+            {D.releaseRowLabel}
+          </dt>
+          <dd className="flex min-w-0 items-center gap-2 font-bold text-ink-2">
+            <span className="rounded-[var(--radius-xs)] bg-acc px-1.5 py-0.5 text-[12.5px] font-extrabold tabular-nums text-on-ink">{release.dday}</span>
+            {release.dateText}
+          </dd>
+        </div>
+      )}
+      {companies.map((r) => (
+        <div key={r.key} className="flex items-baseline gap-3">
+          <dt className="w-10 shrink-0 text-mut">{r.role}</dt>
+          <dd className="min-w-0">
+            {r.href ? (
+              <Link href={r.href} className="font-bold text-ink-2 underline decoration-line-strong underline-offset-[3px] transition-colors hover:text-acc hover:decoration-acc">
+                {r.name}
+              </Link>
+            ) : (
+              <span className="font-bold text-ink-2">{r.name}</span>
+            )}
+          </dd>
+        </div>
+      ))}
+    </dl>
   );
 }
 
