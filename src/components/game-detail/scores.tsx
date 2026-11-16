@@ -24,24 +24,24 @@ export function CriticScores({ game }: { game: GameDetail }) {
   const lines = scoreLines(game.platforms);
   // 점수가 하나도 없어도 칸 셋은 그대로 선다(2026-11-16 사용자 "평점이 없더라도 해당 영역 표기 필요"). "출시 후 표시돼요" 같은 안내 문구는 걷었다
   return (
-    <section aria-labelledby="scores-heading">
-      <h2 id="scores-heading" className="sr-only">
+    <section aria-labelledby="scores-heading" className="mt-auto flex flex-col gap-2">
+      <h2 id="scores-heading" className="text-[11.5px] font-bold tracking-[0.06em] text-dim">
         {D.scoresLabel}
       </h2>
-      <dl className="grid grid-cols-3 gap-2 sm:gap-3">
+      <dl className="grid grid-cols-3 gap-2">
         {CRITICS.map((key) => {
           const line = lines.find((l) => l.key === key) ?? null;
           return (
-            <div key={key} className="flex min-w-0 flex-col gap-2.5 rounded-[var(--radius-md)] bg-surface p-3 shadow-hair sm:flex-row sm:items-center sm:gap-3.5 sm:px-4 sm:py-3.5">
-              <CriticLogo kind={key} size={36} />
-              <div className="flex min-w-0 flex-col gap-1">
-                <dt className="truncate text-[12px] font-semibold text-mut">{D.scoreLabel[key]}</dt>
-                <dd className="flex items-baseline leading-none">
-                  <span className={cn("text-[24px] font-extrabold tracking-[-0.03em] sm:text-[28px]", line ? "text-ink" : "text-dim-2")}>{line ? line.value : NO_SCORE}</span>
-                  {line?.suffix && <span className="ml-0.5 text-[12px] font-semibold text-dim">{line.suffix}</span>}
-                  {!line && <span className="sr-only">{D.scoreNone}</span>}
-                </dd>
-              </div>
+            <div key={key} className="flex min-w-0 flex-col gap-2.5 rounded-[var(--radius-md)] bg-surface px-2.5 py-3 shadow-[var(--elev-card)]">
+              <dt className="flex min-w-0 flex-col items-start gap-1.5 sm:flex-row sm:items-center">
+                <CriticLogo kind={key} size={18} />
+                <span className="whitespace-nowrap text-[11px] font-extrabold text-ink-2">{D.scoreLabel[key]}</span>
+              </dt>
+              <dd className="flex items-baseline leading-none">
+                <span className={cn("text-[26px] font-extrabold tracking-[-0.03em]", line ? "text-ink" : "text-dim-2")}>{line ? line.value : NO_SCORE}</span>
+                {line?.suffix && <span className="ml-1 text-[12px] font-semibold text-dim">{line.suffix}</span>}
+                {!line && <span className="sr-only">{D.scoreNone}</span>}
+              </dd>
             </div>
           );
         })}

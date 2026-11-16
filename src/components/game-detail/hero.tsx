@@ -12,7 +12,6 @@
 // 세 기둥 길이를 맞췄다. 출시 전 게임은 출시일을 원제 줄에 묻지 않고 제목 밑에 띠로 세운다(같은 날 "강조 필요").
 import Link from "next/link";
 import { CoverImage } from "@/components/game-card";
-import { SourceRefs } from "@/components/game-detail/sources";
 import { companyPath } from "@/lib/routes";
 import { COMPANY_ROLE_LABEL } from "@/lib/games/messages";
 import { ContentKindHead } from "@/components/content-kind-head";
@@ -79,15 +78,14 @@ export function DetailHero({
   );
 
   return (
-    <section className="grid gap-x-8 gap-y-5 md:grid-cols-2 lg:grid-cols-[minmax(0,420fr)_minmax(0,420fr)_minmax(0,368fr)] lg:gap-x-10">
+    <section className="grid gap-x-8 gap-y-5 md:grid-cols-2 lg:grid-cols-[minmax(0,380fr)_minmax(0,470fr)_minmax(0,330fr)] lg:gap-x-8">
       {/* 커버 — 흰 판 위에 한 장(목업 .artc). 가로 아트를 먼저 쓴다: 이 칸은 가로가 긴 상자라 세로 아트를 넣으면
           위아래가 반 넘게 잘린다. 가로 아트가 없는 게임만 세로 아트를 가운데 띠로 보여 준다 */}
-      <div className="enter-item flex flex-col gap-2.5 self-start rounded-[var(--radius-panel)] lg:row-span-2 bg-surface p-2.5 shadow-[var(--elev-card)] sm:p-3" style={stagger(0)}>
+      <div className="enter-item flex flex-col gap-2.5 self-start rounded-[var(--radius-panel)] bg-surface p-2.5 shadow-[var(--elev-card)] sm:p-3" style={stagger(0)}>
         <div className="cover-elev relative aspect-[16/9] w-full overflow-hidden rounded-[var(--radius-cover-lg)] bg-surface-3">
           <CoverImage src={game.coverUrl ?? game.portraitUrl} alt={`${title} 커버`} sizes="(max-width: 767px) 100vw, (max-width: 1023px) 50vw, 420px" priority />
         </div>
-        {/* 정보 출처는 커버 밑 한 줄(game-detail/sources 머리 주석) */}
-        <SourceRefs refs={game.sourceRefs} />
+        {/* 정보 출처 줄은 걷었다(2026-11-16 피드백 v11 "목업은 정보 출처 없음", "더 컴팩트하게"). 부품(game-detail/sources)은 남겨 둔다 */}
         {/* 플레이 방식, 스팀덱, 네이티브 OS, 한국어 — 목업에는 없지만 이 서비스가 모은 "내 조건에 맞나" 값이라 남긴다.
             커버 판 안 맨 밑에 둔다(머리 주석의 높이 맞추기) */}
         {(hasPlayModes || game.platforms.length > 0) && <SupportBadges game={game} className="hidden border-t border-line px-0.5 pt-2.5 md:flex" />}
@@ -103,7 +101,7 @@ export function DetailHero({
                 <PlatformJump
                   anchor={b.anchor}
                   brand={b.key}
-                  className="press inline-flex h-7 items-center rounded-full bg-surface px-3 text-[12.5px] font-bold text-ink-2 ring-1 ring-line-strong ring-inset transition-colors hover:text-acc hover:ring-acc"
+                  className="press inline-flex h-7 items-center rounded-[var(--radius-xs)] bg-surface-2 px-2.5 text-[12.5px] font-bold text-ink-2 transition-colors hover:text-acc"
                 >
                   {b.label}
                 </PlatformJump>
@@ -183,17 +181,14 @@ export function DetailHero({
             {game.description}
           </FitClamp>
         )}
+        {/* 평론 점수 셋 — 설명 바로 아래 한 줄(피드백 v11 목업: "CRITIC SCORES" 이름표 + 칸 셋). 칸 안은 로고와 이름이 윗줄, 점수가 아랫줄이라
+            가운데 기둥 폭에서도 숫자가 크게 선다(2026-11-16 사용자 "점수 영역이 너무 좁다") */}
+        <CriticScores game={game} />
         {/* 좁은 화면은 한 기둥이라 높이 맞추기가 필요 없다 — 배지가 커버 밑에 있으면 제목이 한 화면 아래로 밀려 설명 뒤에 둔다 */}
         {(hasPlayModes || game.platforms.length > 0) && <SupportBadges game={game} className="flex md:hidden" />}
       </div>
 
-      {/* 평론 점수 셋 — 설명 바로 아래 한 줄. 넓은 화면은 가운데와 오른쪽 기둥 폭을 함께 써서 칸 셋이 넉넉하다
-          (2026-11-16 사용자 "점수 영역이 너무 좁다"). 커버 기둥이 두 줄을 내려 받는다(lg:row-span-2) */}
-      <div className="enter-item min-w-0 md:col-span-2 lg:col-span-2 lg:col-start-2 lg:row-start-2" style={stagger(2)}>
-        <CriticScores game={game} />
-      </div>
-
-      <div className="enter-item flex min-w-0 flex-col gap-3 md:col-span-2 lg:col-span-1 lg:col-start-3 lg:row-start-1" style={stagger(3)}>
+      <div className="enter-item flex min-w-0 flex-col gap-3 md:col-span-2 lg:col-span-1" style={stagger(2)}>
         {/* 찜과 가격 알림(기획서 v2.0 S-05). 둘 다 비로그인이면 로그인 팝업 뒤 이어서 실행된다(auth/login-gate).
             무료 게임에는 알림을 세우지 않는다 — 0원에는 내려갈 자리가 없다(2026-09-21) */}
         <div className={showAlert ? "grid grid-cols-[minmax(0,160fr)_minmax(0,196fr)] gap-2.5" : "flex"}>

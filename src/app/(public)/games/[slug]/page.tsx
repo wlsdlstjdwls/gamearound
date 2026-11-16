@@ -17,14 +17,13 @@ import { GameHeadbar } from "@/components/game-headbar";
 import { GameViewBeacon } from "@/components/game-view-beacon";
 import { IndieGameSection, IndieSuggestSection } from "@/components/indie/game-section";
 import { NewsList } from "@/components/news-list";
-import { BEST_MIN_PRICED, PlatformPrices, type PlatformPriceItem } from "@/components/platform-prices";
+import { PlatformPrices, type PlatformPriceItem } from "@/components/platform-prices";
 import { PreorderBonusesSection } from "@/components/preorder-bonuses-section";
 import { GameEventsSection } from "@/components/game-events-section";
 import { PriceAlertButton, type AlertPlatformOption } from "@/components/price-alert-button";
 import { UpgradeNotes } from "@/components/upgrade-note";
 import { DetailHero } from "@/components/game-detail/hero";
 import { NewsMore } from "@/components/game-detail/news-more";
-import { BuyBar } from "@/components/game-detail/buy-bar";
 import { PRICES_SECTION_ID } from "@/components/game-detail/constants";
 import { EmptyLine } from "@/components/game-detail/empty-line";
 import { PriceChartFallback, PriceChartSlot, SellersSlot } from "@/components/game-detail/slots";
@@ -85,8 +84,6 @@ export default async function GameDetailPage({ params }: Props) {
   const best = cheapestPlatform(game.platforms);
   /** 최저가가 0원 — 할인 알림을 걸 자리가 없다. 값이 없는 것(null)과 가른다 */
   const isFree = best?.currentPrice === 0;
-  // 띠가 "최저가" 라 말해도 되는가 — 가격 카드의 딱지와 같은 규칙(같은 통화로 값이 붙은 카드 둘 이상, platform-prices/prices)
-  const pricedCount = best ? game.platforms.filter((p) => p.currentPrice !== null && p.currency === best.currency).length : 0;
   const unreleased = game.releaseDate !== null && game.releaseDate.slice(0, 10) > kstDateKey(new Date());
   // 출시 전이고 값이 하나도 없을 때만 "출시 예정" 화면이다. 예약 판매로 값이 붙은 게임은 값 카드를 그대로 쓴다(예약 딱지가 말한다)
   const upcoming = unreleased && game.platforms.every((p) => p.currentPrice === null);
@@ -273,17 +270,7 @@ export default async function GameDetailPage({ params }: Props) {
       <Suspense fallback={null}>
         <IndieSuggestSection gameId={game.id} genres={game.genres} />
       </Suspense>
-      {/* 좁은 화면 바닥 구매 띠(game-detail/buy-bar). 값이 하나라도 붙은 게임만 — 출시 전 게임은 띠가 말할 값이 없다 */}
-      {best && best.currentPrice !== null && (
-        <BuyBar
-          label={pricedCount >= BEST_MIN_PRICED ? D.buyBarBest(brandNameOf(best)) : brandNameOf(best)}
-          price={formatPrice(best.currentPrice, best.currency)}
-          listPrice={best.discountPct && best.listPrice !== null && best.listPrice !== best.currentPrice ? formatPrice(best.listPrice, best.currency) : null}
-          discountPct={best.discountPct}
-          storeUrl={best.storeUrl}
-          free={isFree}
-        />
-      )}
+      {/* 좁은 화면 바닥 구매 띠는 걷었다(2026-11-16 피드백 v11 #1 "목업은 하단 고정 바 없음"). 머리 띠(GameHeadbar)가 값을 들고 있다. 부품(game-detail/buy-bar)은 남겨 둔다 */}
     </Page>
   );
 }

@@ -3,7 +3,8 @@
 
 export const DETAIL_MESSAGES = {
   /** 평점 칸 이름표. 목업은 영문 "CRITIC SCORES" 인데 유저 점수까지 같은 줄에 서서 "평점" 으로 묶었다 */
-  scoresLabel: "평점",
+  /** 점수 줄 이름표(피드백 v11 목업 "CRITIC SCORES") */
+  scoresLabel: "평론가 점수",
   /** 제목 위 플랫폼 배지 묶음의 낭독기 이름 */
   platformsLabel: "지원 플랫폼",
   /** 출시일 띠의 남은 날(game-detail/hero 의 ReleaseBanner) */
@@ -11,11 +12,11 @@ export const DETAIL_MESSAGES = {
   /** 출시 전 게임의 평점 자리(기획서 v2.0 S-05: 평점은 출시작만) */
   scoresAfterRelease: "출시 후 평점이 표시돼요",
   scoresPending: "평점을 아직 모으는 중이에요.",
-  scoreLabel: { metacritic: "Metacritic", opencritic: "OpenCritic", ign: "IGN" },
+  scoreLabel: { metacritic: "METACRITIC", opencritic: "OPENCRITIC", ign: "IGN" },
   /** 셋 중 이 매체만 점수가 없을 때(game-detail/scores) */
   scoreNone: "점수 없음",
   /** 히어로 버튼(목업 "가격 알림"). 팝업 안 저장 버튼까지 같은 팝업이라 긴 말(가격 알림 받기)은 할인 예측 판이 아니라 여기서 줄인다 */
-  heroAlert: "가격 알림",
+  heroAlert: "가격 알림 관리",
   playtimeTitle: "플레이타임",
   /** "메인 + 추가" 에서 "메인 + 서브" 로(2026-11-11 사용자 지정). 옛 카드(playtime-card)와 같은 말이 됐다 */
   playtimeItems: { mainStoryHours: "메인 스토리", mainExtraHours: "메인 + 서브", completionistHours: "완전 정복" },
@@ -80,7 +81,8 @@ export const DETAIL_MESSAGES = {
   /** 스토어 주소가 없는 띠 — 가격 비교 마디로 내려간다 */
   buyBarCompare: "가격 비교",
   /** 스크롤 머리바의 단추(game-headbar) */
-  headbarAlert: "할인 알림 받기",
+  /** 피드백 v11 #8: "가격 알림" 을 "가격 알림 관리" 로 — 단추 하나가 걸기, 고치기, 끄기를 다 한다 */
+  headbarAlert: "가격 알림 관리",
   /**
    * 할인 예측 아래 알림. 문장마다 한 줄이다(2026-11-11 사용자: 습니다체, 마침표, 문장 줄바꿈). 다른 문구의 "-해요" 체와 다른 이유:
    * 이 자리는 안내가 아니라 고지라 사용자가 격식체를 골랐다
