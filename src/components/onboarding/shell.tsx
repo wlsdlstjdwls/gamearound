@@ -203,6 +203,17 @@ export function OnboardingShell({
                 <div className="min-w-0 flex-1">
                   <OnboardingSubmit label={editing ? M.edit.save : (submitLabel ?? M.next)} />
                 </div>
+                {back && (
+                  // 글자 단추로 바닥 띠 맨 왼쪽에 둔다(flex-row-reverse 라 DOM 맨 뒤). 머리의 꺾쇠는 그대로 둔다 — 두 자리 다 같은 곳으로 간다.
+                  // 링크라 제출하지 않는다: 이 단계에서 고르던 값은 저장되지 않고, 앞 단계는 저장된 답이 채워진 채 열린다
+                  <Link
+                    href={welcomeStepPath(back)}
+                    className="press tap order-last flex h-11 shrink-0 items-center gap-1 rounded-full pl-2 pr-3.5 text-[13.5px] font-semibold text-ink-2 ring-1 ring-line-strong ring-inset hover:text-ink"
+                  >
+                    <ChevronLeftIcon size={16} />
+                    {M.prev}
+                  </Link>
+                )}
                 {showSkip && (
                   <button
                     type="submit"
