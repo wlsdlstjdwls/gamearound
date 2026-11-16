@@ -18,10 +18,9 @@ import { DiscountBadge, HistoricLowBadge } from "@/components/ui/discount";
 import { PendingNote } from "@/components/ui/pending-note";
 import { ClockIcon } from "@/components/ui/icons";
 import { Tag } from "@/components/ui/tag";
-import { SubscriptionChips } from "@/components/subscription-badges";
 import { PickableTile } from "@/components/game-detail/platform-pick";
 import { brandNameOf, byPrice, generationOf, type PlatformPriceItem } from "@/components/platform-prices/order";
-import { CardHead, Row, STORE_CTA, STORE_LINK_MISSING, TILE, userScoreText } from "@/components/platform-prices/tile";
+import { BestMark, CardHead, hardwareText, PRICE_DIVIDER, Row, STORE_CTA, STORE_LINK_MISSING, SubscriptionRow, TILE } from "@/components/platform-prices/tile";
 
 /**
  * 스토어마다 서는 구매 단추는 스토어 이름만 적는다. "Steam에서 구매" 는 네 칸 격자의 반쪽 단추에서 잘렸다(2026-11-11 실측).
@@ -73,8 +72,6 @@ export function MergedTile({
   secondId,
   isBest,
   release,
-  quotedUserScorePlatform,
-  addons,
 }: {
   /** 카드 머리 이름(PC, PlayStation, Nintendo 일본) */
   label: string;
@@ -88,8 +85,6 @@ export function MergedTile({
   /** 이 카드의 스토어 하나가 화면 전체 최저가다 */
   isBest: boolean;
   release: string | null;
-  quotedUserScorePlatform: PlatformPriceItem["platform"] | null;
-  addons: React.ReactNode;
 }) {
   const ordered = [...rows].sort(byPrice);
   const cheapest = ordered[0];
@@ -99,9 +94,6 @@ export function MergedTile({
   const strictlyCheaper = (p: PlatformPriceItem) => lowest !== null && p.currentPrice === lowest && priced.some((q) => q.currentPrice! > lowest);
   const atLowest = (p: PlatformPriceItem) => lowest !== null && p.currentPrice === lowest;
   const showBest = isBest && cheapest.currentPrice !== 0;
-  // 유저 점수는 히어로 평점 칸이 이미 인용한 스토어 것을 빼고 남는 첫 스토어 것 하나 — 스토어마다 재는 방식이 달라 섞지 않는다
-  const scored = ordered.find((p) => p.platform !== quotedUserScorePlatform && userScoreText(p));
-  const userScore = scored ? `${userScoreText(scored)} | ${lineName(scored)}` : null;
   // 같은 상품 주소를 가리키는 줄(PS5, PS4 겸용 상품)은 단추 하나 — 같은 곳으로 가는 단추 둘은 고르게만 한다
   const buttons = ordered.filter((p, i) => !p.storeUrl || ordered.findIndex((q) => q.storeUrl === p.storeUrl) === i);
   // 구독은 스토어마다 따로 든다(Steam 은 없고 Epic 도 드물다). 같은 구독이 둘에 다 들었으면 칩 하나
@@ -109,32 +101,22 @@ export function MergedTile({
   return (
     <PickableTile brand={pickKey} also={rows.map((r) => brandKeyOf(r.platform))} label={label} id={id} className={cn(TILE, "bg-surface shadow-hair")}>
       {secondId && <span id={secondId} className="absolute -top-24" aria-hidden />}
-      <CardHead name={label}>
-        {showBest && <span className="ml-auto shrink-0 rounded-full bg-acc px-2 py-[3px] text-[11px] font-bold leading-none text-on-ink">최저가</span>}
-      </CardHead>
+      <CardHead name={label}>{showBest && <BestMark />}</CardHead>
 
-      <dl className="flex flex-col gap-1.5">
+      {/* 줄 맞춤은 낱 카드와 같다(tile.tsx 머리 주석). 스토어 줄 묶음이 정가, 현재가 두 줄 자리를 함께 쓴다 */}
+      <dl className="contents">
         <Row label={D.releaseRow}>{release ?? D.releaseUnknown}</Row>
-        {userScore && <Row label={D.userScoreRow}>{userScore}</Row>}
+        <Row label={D.hardwareRow}>{hardwareText(ordered.map((r) => r.platform))}</Row>
       </dl>
-
-      {/* 스토어 줄 — 싼 순. 값 묶음 자리(mt-auto)라 옆 카드의 값과 같은 높이에서 시작한다 */}
-      <dl className="mt-auto flex flex-col gap-2 border-t border-line pt-2.5">
+      <dl className={cn(PRICE_DIVIDER, "row-span-2 flex flex-col justify-center gap-2")}>
         {ordered.map((p) => (
           <StoreLine key={p.platform} p={p} cheapest={strictlyCheaper(p)} />
         ))}
       </dl>
 
-      {subscriptions.length > 0 && (
-        <div className="flex min-w-0 overflow-hidden">
-          <SubscriptionChips subscriptions={subscriptions} />
-        </div>
-      )}
+      <SubscriptionRow subscriptions={subscriptions} />
 
-      {/* 단추가 하나면(PS5, PS4 겸용 상품) 추가 콘텐츠와 한 줄이다 — 낱 카드(PriceTile)와 같은 자리. 스토어 단추가 둘이면(Steam, Epic) 셋이 한 줄에 못 서 추가 콘텐츠가 윗줄로 간다 */}
-      {addons && buttons.length > 1 && <div className="flex pt-1">{addons}</div>}
-      <div className="flex items-center gap-2 pt-1">
-        {buttons.length === 1 && addons}
+      <div className="flex items-end gap-2 pt-1">
         {buttons.map((p) =>
           p.storeUrl ? (
             <a

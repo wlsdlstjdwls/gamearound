@@ -1,4 +1,5 @@
-// 한국어 칩 — 한국어 지원(화면, 자막), 한국어 음성, 한국어 미지원.
+// 한국어 칩 — 한국어 지원(화면, 자막), 한국어 미지원.
+// 한국어 음성 칩은 걷었다(2026-11-16 사용자 "한국어 음성 뱃지는 제거"). 값(ko_voice)은 그대로 모은다.
 //
 // 칩마다 스토어 이름을 붙이는 이유: 같은 게임이라도 판마다 다르다. PC 판은 한국어인데 스위치 판은 아닌 게임이 흔하고
 // (schema 의 ko_text 주석), "한국어 지원" 만 크게 띄우면 그 말을 믿고 스위치 판을 산 사람이 속는다.
@@ -39,18 +40,12 @@ function Chip({ label, stores, tone }: { label: string; stores: string; tone: "o
 
 export function KoreanSupportBadges({ platforms }: Props) {
   const home = platforms.filter((p) => p.region === HOME_REGION);
-  const voice = home.filter((p) => p.koVoice === true);
   const text = home.filter((p) => p.koText === true);
   const none = home.filter((p) => p.koText === false);
-  if (voice.length === 0 && text.length === 0 && none.length === 0) return null;
+  if (text.length === 0 && none.length === 0) return null;
 
   return (
     <ul className="flex flex-wrap gap-1.5" aria-label="한국어">
-      {voice.length > 0 && (
-        <li>
-          <Chip label={KOREAN_SUPPORT_LABEL.voice} stores={labelsOf(voice)} tone="on" />
-        </li>
-      )}
       {text.length > 0 && (
         <li>
           <Chip label={KOREAN_SUPPORT_LABEL.text} stores={labelsOf(text)} tone="on" />

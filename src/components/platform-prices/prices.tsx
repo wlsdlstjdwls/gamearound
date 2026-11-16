@@ -9,30 +9,25 @@
 // 카드 모양은 tile.tsx, 순서와 이름 규칙은 order.ts 가 갖는다. 행사 이름 곁말은 sale-note.tsx.
 // 상태가 없어 서버 컴포넌트다(SaleBadge, 알림 버튼만 클라이언트).
 import { kstDateKey } from "@/lib/format";
-import type { Platform } from "@/server/db/schema";
-import type { DlcDto } from "@/server/services/games";
-import { PlatformAddons } from "@/components/platform-addons";
 import { BEST_MIN_PRICED, brandAnchorId, brandNameOf, byPrice, isUpcomingRow, mergeableGroups, mergeGroupKey, mergePickKey, orderCards, releaseText, rowKey, type PlatformPriceItem } from "@/components/platform-prices/order";
 import { AbsentTile, PriceTile, UpcomingTile } from "@/components/platform-prices/tile";
 import { MergedTile } from "@/components/platform-prices/merged-tile";
 import { PC_PICK_KEY, PLATFORM_FAMILY_LABEL } from "@/lib/platform";
 
-/** 좁은 화면 1장, sm 2장, lg 4장 — 목업 .pg. 스토어가 넷을 넘으면 다음 줄로 이어진다 */
-const GRID = "grid gap-3 sm:grid-cols-2 lg:grid-cols-4 lg:gap-4";
+/**
+ * 좁은 화면 1장, sm 2장, lg 4장 — 목업 .pg. 스토어가 넷을 넘으면 다음 줄로 이어진다.
+ * 카드는 이 격자의 일곱 줄을 빌려 쓴다(tile.tsx 의 TILE, subgrid) — 같은 띠의 카드끼리 줄 높이가 맞는다.
+ * 세로 틈(gap-y)은 띠와 띠 사이 틈이다. 카드 안 줄 틈은 카드가 제 gap-y 로 덮는다
+ */
+const GRID = "grid gap-x-3 gap-y-3 sm:grid-cols-2 lg:grid-cols-4 lg:gap-x-4 lg:gap-y-4";
 
 export function PlatformPrices({
   platforms,
-  quotedUserScorePlatform = null,
-  dlcs = [],
   releaseFallback = null,
   upcomingAll = false,
   releaseAction,
 }: {
   platforms: PlatformPriceItem[];
-  /** 상세 히어로 평점 칸이 이미 인용한 유저 점수의 스토어 */
-  quotedUserScorePlatform?: Platform | null;
-  /** 이 게임의 추가 콘텐츠. 카드마다 자기 플랫폼 것만 걸러 시트에 넣는다(platform-addons 머리 주석) */
-  dlcs?: DlcDto[];
   /** 스토어가 출시일을 안 준 카드(PlayStation)에 대신 적을 게임 단위 출시일 */
   releaseFallback?: string | null;
   /** 게임 전체가 출시 전이고 값이 하나도 없다 — 모든 행을 출시 카드로 세운다(목업 g.up) */
@@ -59,12 +54,6 @@ export function PlatformPrices({
   const anchorOnce = (id: string) => (anchored.has(id) ? undefined : (anchored.add(id), id));
   const today = kstDateKey(new Date());
   const upcoming = (p: PlatformPriceItem) => upcomingAll || isUpcomingRow(p, releaseFallback, today);
-  // 이 플랫폼에 실제로 있는 추가 콘텐츠만 넘긴다. 하나도 없으면 버튼을 안 세운다 —
-  // 열어 봤자 빈 시트인 버튼은 누른 사람을 두 번 움직이게 한다
-  const addonsFor = (p: PlatformPriceItem) => {
-    const mine = dlcs.filter((d) => d.platforms.some((dp) => dp.platform === p.platform) || d.uncheckedPlatforms.includes(p.platform));
-    return mine.length > 0 || p.hasAddOns ? <PlatformAddons platform={p.platform} platformLabel={brandNameOf(p)} dlcs={mine} /> : null;
-  };
   // 같은 갈래 값 카드가 둘 이상이면 한 장으로 합친다 — PC(Steam, Epic), PlayStation(PS5, PS4), Nintendo(Switch, Switch 2).
   // 한쪽이 출시 전이면 합치지 않는다(merged-tile 머리 주석, order 의 mergeableGroups)
   const rowsOnly = cards.flatMap((c) => (c.kind === "row" ? [c.row] : []));
@@ -83,7 +72,6 @@ export function PlatformPrices({
           const gRows = groupRows(group);
           if (p !== gRows[0]) return null; // 묶음 첫 줄 자리에 한 장만 선다
           const [first, ...rest] = gRows.map((r) => anchorOnce(brandAnchorId(r.platform)));
-          const withAddons = [...gRows].sort(byPrice).find((r) => addonsFor(r) !== null);
           return (
             <MergedTile
               key={group}
@@ -94,8 +82,6 @@ export function PlatformPrices({
               secondId={rest.find(Boolean)}
               isBest={gRows.some((r) => rowKey(r) === bestKey)}
               release={gRows.map((r) => releaseText(r, releaseFallback)).find(Boolean) ?? null}
-              quotedUserScorePlatform={quotedUserScorePlatform}
-              addons={withAddons ? addonsFor(withAddons) : null}
             />
           );
         }
@@ -111,8 +97,6 @@ export function PlatformPrices({
             id={id}
             isBest={rowKey(p) === bestKey}
             release={release}
-            skipUserScore={p.platform === quotedUserScorePlatform}
-            addons={addonsFor(p)}
           />
         );
       })}

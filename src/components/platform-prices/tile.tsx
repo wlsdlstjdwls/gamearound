@@ -1,9 +1,12 @@
-// 플랫폼 카드 한 장 — 목업 v2.0 "플랫폼별 가격 비교"(2026-10-26).
+// 플랫폼 카드 한 장 — 목업 v2.0 "플랫폼별 가격 비교"(2026-10-26), 2026-11-16 줄 맞춤 개편.
 //
-// 목업 카드의 순서를 그대로 쌓는다: 이름 - 사실 줄(출시일, 메타크리틱, 지원 기종) - 구분선 - 정가, 현재 가격 - 구매하기.
-// 전 타일(2026-09-30)은 값을 맨 위에 크게 두고 출시일, 버전, 유저 점수를 "i" 말풍선에 숨겼다. 목업은 그 사실들을
-// 줄로 펴 두고 값을 카드 바닥 쪽에 세운다 — 카드 넷을 나란히 놓고 같은 높이의 같은 줄을 가로로 견주게 하려는 배치다.
-// 그래서 줄은 값이 없을 때도 자리를 함부로 비우지 않는다(지원 기종처럼 짝이 없는 플랫폼만 줄을 뺀다).
+// 줄 순서(2026-11-16 사용자 지정): 이름 - 출시일 - 지원 기종 - (구분선) - 정가 - 현재가 - 구독(게임패스 등) - 구매하기.
+// **카드끼리 같은 줄이 같은 높이에 선다**(사용자 "플랫폼끼리의 오와 열을 맞춰야 됨"). 카드마다 제 세로 쌓기였을 때는
+// 할인 배지, 역대 최저가 줄, 구독 칩 유무에 따라 줄이 카드마다 밀려 가로로 견줄 수가 없었다. 지금은 격자(prices.tsx 의 GRID)가
+// 일곱 줄을 갖고 카드는 그 줄을 빌려 쓴다(CSS subgrid, TILE). 한 카드의 어느 줄이 길어지면 같은 띠 카드들의 그 줄이 함께 길어진다.
+// 그래서 값이 없는 줄도 비우지 않고 "-" 나 "없음" 으로 자리를 지킨다.
+//
+// 걷은 것(2026-11-16 사용자): 버전 줄, 유저 점수 줄, 카드 안 추가 콘텐츠 단추(추가 콘텐츠는 플랫폼이 아니라 게임에 딸려 상세의 제 마디로 갔다).
 //
 // 에디션 줄(목업 "얼티밋 에디션")은 없다 — 스토어 행 하나가 어느 판인지 우리는 따로 모르고, 에디션은 아래
 // "에디션" 마디가 판별로 말한다. 모르는 값을 "기본판" 이라 적으면 PS 처럼 기본 상품이 에디션인 스토어에서 거짓이 된다.
@@ -12,7 +15,7 @@ import { platformLabel } from "@/lib/format";
 import { DETAIL_MESSAGES as D } from "@/lib/games/detail-messages";
 import { GAME_MESSAGES, PREORDER_LABEL } from "@/lib/games/messages";
 import { isPreorder } from "@/lib/games/preorder";
-import { countText, scoreToStars } from "@/lib/user-score";
+import { brandKeyOf, DEVICE_LABEL, devicesOf } from "@/lib/platform";
 import { cn } from "@/lib/cn";
 import { buttonClass } from "@/components/ui/button";
 import { DiscountBadge, HistoricLowBadge } from "@/components/ui/discount";
@@ -22,20 +25,26 @@ import { Tag } from "@/components/ui/tag";
 import { SubscriptionChips } from "@/components/subscription-badges";
 import { brandNameOf, generationOf, type PlatformPriceItem } from "@/components/platform-prices/order";
 import { PickableTile } from "@/components/game-detail/platform-pick";
-import { brandKeyOf } from "@/lib/platform";
 
 /** 스토어로 나가는 버튼의 말(기획서 v2.0 S-05 "구매하기") */
 export const STORE_CTA = "구매하기";
 /** 링크가 아직 없는 카드의 버튼 자리에 서는 말. 버튼 모양은 그대로 두고 눌리지만 않는다(기획서 v2.0 S-07) */
 export const STORE_LINK_MISSING = "스토어 링크 준비 중";
 
-/** 카드 껍데기. 최저가 카드만 브랜드 테두리와 연한 면(목업 .pc.fc) — 목록 카드의 "최저" 와 같은 색 문법이다 */
-export const TILE = "relative flex min-w-0 scroll-mt-24 flex-col gap-2.5 rounded-[var(--radius-md)] p-4 sm:p-5";
+/**
+ * 카드 껍데기 — 격자 일곱 줄을 빌려 쓰는 subgrid(머리 주석). row-span 값과 카드 안 줄 수가 늘 같아야 한다.
+ * 줄: 1 이름, 2 출시일, 3 지원 기종, 4 정가, 5 현재가, 6 구독, 7 구매 단추
+ */
+export const TILE = "relative row-span-7 grid min-w-0 scroll-mt-24 grid-rows-subgrid gap-y-2 rounded-[var(--radius-md)] p-4 sm:p-5";
+/** 값 묶음 첫 줄(정가) 위 구분선 */
+export const PRICE_DIVIDER = "border-t border-line pt-2.5";
+/** 칸에 값이 없을 때 */
+export const NONE = "-";
 
 /** 이름표 - 값 한 줄(목업 .row). 값은 줄바꿈하지 않는다 — 날짜가 접히면 같은 줄의 높이가 카드마다 달라진다 */
-export function Row({ label, children }: { label: string; children: React.ReactNode }) {
+export function Row({ label, children, className }: { label: string; children: React.ReactNode; className?: string }) {
   return (
-    <div className="flex items-center justify-between gap-3 text-[13px]">
+    <div className={cn("flex items-center justify-between gap-3 text-[13px]", className)}>
       <dt className="shrink-0 text-mut">{label}</dt>
       <dd className="min-w-0 truncate text-right text-ink">{children}</dd>
     </div>
@@ -51,12 +60,45 @@ export function CardHead({ name, children }: { name: string; children?: React.Re
   );
 }
 
-/** 유저 점수 줄 — 스토어마다 재는 방식이 달라(긍정 비율, 별점) 그 스토어 카드 안에서 말한다 */
-export function userScoreText(p: PlatformPriceItem): string | null {
-  if (!p.userScore) return null;
-  const { value, kind, count } = p.userScore;
-  const score = kind === "star_average" ? `평균 ${scoreToStars(value)}점` : `긍정 ${Math.round(value)}%`;
-  return count > 0 ? `${score} | ${countText(count)}` : score;
+/** 최저가 딱지 — 채운 면 대신 테두리 한 줄(2026-11-16 색 줄이기). 카드 안에서 값 다음으로 눈이 가야 할 말이라 남긴다 */
+export function BestMark() {
+  return <span className="ml-auto shrink-0 rounded-full px-2 py-[3px] text-[11px] font-bold leading-none text-acc ring-1 ring-acc ring-inset">최저가</span>;
+}
+
+/** 지원 기종 줄 — 세대(PS5, Switch 2)를 알면 세대, 아니면 기기 갈래(PC) */
+export function hardwareText(platforms: readonly PlatformPriceItem["platform"][]): string {
+  const names = platforms.map((p) => generationOf(p) ?? devicesOf([p]).map((d) => DEVICE_LABEL[d]).join(", "));
+  return [...new Set(names)].join(", ") || NONE;
+}
+
+/** 구독 줄(6) — 칩이 없으면 "없음" 으로 자리를 지킨다 */
+export function SubscriptionRow({ subscriptions }: { subscriptions: PlatformPriceItem["subscriptions"] }) {
+  return (
+    <div className="flex min-w-0 items-center justify-between gap-3 text-[13px]">
+      <span className="shrink-0 text-mut">{D.subscriptionRow}</span>
+      {subscriptions.length > 0 ? (
+        <span className="flex min-w-0 justify-end overflow-hidden">
+          <SubscriptionChips subscriptions={subscriptions} />
+        </span>
+      ) : (
+        <span className="text-dim">{D.subscriptionNone}</span>
+      )}
+    </div>
+  );
+}
+
+/** 구매 단추 줄(7). 링크가 없어도 단추 자리는 지킨다(2026-09-22, 사용자 지정) — 같은 자리 같은 모양, 눌리지만 않는다 */
+function BuyButton({ p }: { p: PlatformPriceItem }) {
+  return p.storeUrl ? (
+    <a href={p.storeUrl} target="_blank" rel="noopener noreferrer" className={buttonClass({ variant: "accent", size: "row", className: "min-w-0 flex-1" })}>
+      {STORE_CTA}
+      <span className="sr-only"> {platformLabel(p)} (새 창에서 열림)</span>
+    </a>
+  ) : (
+    <span aria-disabled="true" className={buttonClass({ variant: "soft", size: "row", className: "pointer-events-none min-w-0 flex-1 opacity-45" })}>
+      {STORE_LINK_MISSING}
+    </span>
+  );
 }
 
 export function PriceTile({
@@ -64,100 +106,65 @@ export function PriceTile({
   id,
   isBest,
   release,
-  skipUserScore,
-  addons,
 }: {
   p: PlatformPriceItem;
   /** 히어로의 플랫폼 이름이 눌러 내려올 자리. 묶음의 첫 장만 받는다 */
   id?: string;
   isBest: boolean;
   release: string | null;
-  /** 히어로 평점 칸이 이미 인용한 스토어 — 같은 숫자를 한 화면에 두 번 적지 않는다 */
-  skipUserScore: boolean;
-  addons: React.ReactNode;
 }) {
   const hasDiscount = Boolean(p.discountPct && p.discountPct > 0);
   // 무료면 "최저가" 를 세우지 않는다(2026-09-22, 사용자 지정) — 0원은 비교의 대상이 아니다
   const showBest = isBest && p.currentPrice !== 0;
-  const generation = generationOf(p.platform);
-  const userScore = skipUserScore ? null : userScoreText(p);
   return (
-    // 고를 수 있는 카드(game-detail/platform-pick). 최저가는 이제 면을 칠하지 않고 딱지로만 말한다(2026-10-27) —
-    // 연파랑 면이 할인 배지를 묻었고(사용자), 파랑 고리는 "지금 고른 카드" 가 쓴다. 처음 고른 카드가 최저가 카드다
+    // 고를 수 있는 카드(game-detail/platform-pick). 최저가는 면을 칠하지 않고 딱지로만 말한다(2026-10-27)
     <PickableTile brand={brandKeyOf(p.platform)} label={brandNameOf(p)} id={id} className={cn(TILE, "bg-surface shadow-hair")}>
       <CardHead name={brandNameOf(p)}>
         {/* 스토어마다 따로 본다 — PS 는 예약 중이어도 스팀은 이미 팔 수 있다(lib/games/preorder) */}
         {isPreorder(p) && <Tag>{PREORDER_LABEL}</Tag>}
-        {showBest && <span className="ml-auto shrink-0 rounded-full bg-acc px-2 py-[3px] text-[11px] font-bold leading-none text-on-ink">최저가</span>}
+        {showBest && <BestMark />}
       </CardHead>
 
-      <dl className="flex flex-col gap-1.5">
+      {/* dl 은 contents — 줄 하나하나가 격자의 줄(subgrid)에 바로 앉아야 해서 감싸는 상자를 지운다 */}
+      <dl className="contents">
         <Row label={D.releaseRow}>{release ?? D.releaseUnknown}</Row>
-        {/* 메타크리틱 줄은 걷었다(2026-11-11 사용자: "위 평점 칸에 이미 나오는데 굳이"). 평론가 점수는 게임 하나에 하나라 카드마다 같은 숫자를 되풀이했다 */}
-        {generation && <Row label={D.hardwareRow}>{generation}</Row>}
-        {p.currentVersion && <Row label={D.versionRow}>{p.currentVersion}</Row>}
-        {userScore && <Row label={D.userScoreRow}>{userScore}</Row>}
-      </dl>
-
-      {/* 값 묶음 — 목업 .pr. mt-auto 로 바닥에 붙여 줄 수가 다른 카드끼리도 값과 버튼의 높이가 맞는다 */}
-      <dl className="mt-auto flex flex-col gap-1 border-t border-line pt-2.5">
-        <Row label={D.listPriceRow}>
+        <Row label={D.hardwareRow}>{hardwareText([p.platform])}</Row>
+        <Row label={D.listPriceRow} className={PRICE_DIVIDER}>
           {/* 정가가 비어도 할인이 아니면 지금 값이 곧 정가다 — "-" 옆에 현재 가격만 서면 고장으로 읽혔다(2026-11-11 엘든 링 PS4 카드) */}
           {p.listPrice === null && p.currentPrice !== null && !hasDiscount ? (
             <span>{formatPrice(p.currentPrice, p.currency)}</span>
           ) : p.listPrice === null ? (
-            <span className="text-dim">-</span>
+            <span className="text-dim">{NONE}</span>
           ) : (
             <span className={hasDiscount ? "text-dim-2 line-through" : undefined}>{formatPrice(p.listPrice, p.currency)}</span>
           )}
         </Row>
-        <div className="flex items-center justify-between gap-2">
-          <dt className="shrink-0 text-[13px] text-mut">{D.currentPriceRow}</dt>
-          <dd className="flex min-w-0 items-center justify-end gap-1.5 whitespace-nowrap">
-            {/* 값을 아직 못 받았으면 "-" 대신 말로 한다(2026-10-07) — 큰 "-" 는 0원으로도 고장으로도 읽혔다 */}
-            {p.currentPrice === null ? (
-              <PendingNote icon={<ClockIcon size={14} />}>{GAME_MESSAGES.pricePending}</PendingNote>
-            ) : (
-              <span className="text-[22px] font-extrabold tracking-[-0.035em] text-acc sm:text-[24px]">{formatPrice(p.currentPrice, p.currency)}</span>
-            )}
-            {/* 목록 카드와 같은 채운 배지(ui/discount). 연파랑 알약은 최저가 카드의 연파랑 면에 묻혔다(2026-10-27 사용자) */}
-            {hasDiscount && <DiscountBadge pct={p.discountPct} size="sm" />}
-          </dd>
-        </div>
-        {/* 역대 최저가는 값 줄 아래 제 줄에 둔다 — 값 줄에 같이 세우면 네 칸 가격 카드 폭에서 "현재 가격" 이름표를 덮었다(2026-11-11 운영 화면) */}
-        {hasDiscount && p.historicLow && (
-          <div className="flex justify-end">
-            <HistoricLowBadge show size="sm" />
+        <div className="flex flex-col gap-1">
+          <div className="flex items-center justify-between gap-2">
+            <dt className="shrink-0 text-[13px] text-mut">{D.currentPriceRow}</dt>
+            <dd className="flex min-w-0 items-center justify-end gap-1.5 whitespace-nowrap">
+              {/* 값을 아직 못 받았으면 "-" 대신 말로 한다(2026-10-07) — 큰 "-" 는 0원으로도 고장으로도 읽혔다 */}
+              {p.currentPrice === null ? (
+                <PendingNote icon={<ClockIcon size={14} />}>{GAME_MESSAGES.pricePending}</PendingNote>
+              ) : (
+                <span className="text-[22px] font-extrabold tracking-[-0.035em] text-ink sm:text-[24px]">{formatPrice(p.currentPrice, p.currency)}</span>
+              )}
+              {hasDiscount && <DiscountBadge pct={p.discountPct} size="sm" />}
+            </dd>
           </div>
-        )}
+          {/* 역대 최저가는 값 줄 아래 — 값 줄에 같이 세우면 네 칸 폭에서 "현재 가격" 이름표를 덮었다(2026-11-11) */}
+          {hasDiscount && p.historicLow && (
+            <div className="flex justify-end">
+              <HistoricLowBadge show size="sm" />
+            </div>
+          )}
+        </div>
       </dl>
 
-      {/* 구독 칩 — 넘치면 잘려도 된다(구독 여부는 칩 자체가 말한다) */}
-      {p.subscriptions.length > 0 && (
-        <div className="flex min-w-0 overflow-hidden">
-          <SubscriptionChips subscriptions={p.subscriptions} />
-        </div>
-      )}
+      <SubscriptionRow subscriptions={p.subscriptions} />
 
-      <div className="flex items-center gap-2 pt-1">
-        {addons}
-        {/* 링크가 없어도 버튼 자리는 지킨다(2026-09-22, 사용자 지정) — 같은 자리 같은 모양, 눌리지만 않는다.
-            목업은 카드마다 구매 버튼을 채운 면으로 둔다. 최저가는 테두리가 이미 말하므로 버튼으로 또 가르지 않는다 */}
-        {p.storeUrl ? (
-          <a
-            href={p.storeUrl}
-            target="_blank"
-            rel="noopener noreferrer"
-            className={buttonClass({ variant: "accent", size: "row", className: "min-w-0 flex-1" })}
-          >
-            {STORE_CTA}
-            <span className="sr-only"> {platformLabel(p)} (새 창에서 열림)</span>
-          </a>
-        ) : (
-          <span aria-disabled="true" className={buttonClass({ variant: "soft", size: "row", className: "pointer-events-none min-w-0 flex-1 opacity-45" })}>
-            {STORE_LINK_MISSING}
-          </span>
-        )}
+      <div className="flex items-end pt-1">
+        <BuyButton p={p} />
       </div>
     </PickableTile>
   );
@@ -166,12 +173,11 @@ export function PriceTile({
 /** 이 게임 행이 없는 플랫폼 = 흐린 카드 한 장(목업 .pc.no "미지원"). 말은 GAME_MESSAGES.storeAbsent 주석 */
 export function AbsentTile({ id, label }: { id?: string; label: string }) {
   return (
-    // 2026-10-28 사용자 "비워져 있을 때 너무 비어 보인다": 맨 밑 한 줄만 있어 카드 대부분이 빈 칸이었다.
-    // 가운데에 아이콘과 "서비스하지 않아요" 한 줄을 세운다. 흐림(opacity)은 걷었다 — 글자까지 흐려 읽기 힘들었다.
-    // 둘째 줄 "이 플랫폼으로 나오면 가격을 바로 보여 드려요" 는 걷었다(2026-11-11 사용자 "문구 변경하거나 없애자")
+    // 2026-10-28 사용자 "비워져 있을 때 너무 비어 보인다": 가운데에 아이콘과 "서비스하지 않아요" 한 줄을 세운다
     <li id={id} className={cn(TILE, "border border-dashed border-line-strong bg-surface-2/50")}>
       <CardHead name={label} />
-      <div className="flex flex-1 flex-col items-center justify-center gap-2 py-3 text-center">
+      {/* 남은 여섯 줄을 통째로 쓴다(TILE 의 줄 수) */}
+      <div className="row-span-6 flex flex-col items-center justify-center gap-2 py-3 text-center">
         <span aria-hidden className="flex h-11 w-11 items-center justify-center rounded-full bg-surface text-dim shadow-hair">
           <StoreIcon size={20} />
         </span>
@@ -187,16 +193,17 @@ export function AbsentTile({ id, label }: { id?: string; label: string }) {
  * (가격 알림 팝업 M-02 를 그 플랫폼만 고른 채로 연다 — 출시 뒤 첫 값이 붙으면 그 알림이 울린다).
  */
 export function UpcomingTile({ p, id, release, action }: { p: PlatformPriceItem; id?: string; release: string | null; action?: React.ReactNode }) {
-  const generation = generationOf(p.platform);
   return (
     <li id={id} className={cn(TILE, "bg-surface shadow-hair")}>
-      <CardHead name={brandNameOf(p)} />
-      <p className="text-[13.5px] font-bold text-acc">{D.upcomingTag}</p>
-      <dl className="flex flex-col gap-1.5">
+      <CardHead name={brandNameOf(p)}>
+        <span className="ml-auto shrink-0 text-[12.5px] font-bold text-acc">{D.upcomingTag}</span>
+      </CardHead>
+      <dl className="contents">
         <Row label={D.releaseRow}>{release ?? D.releaseUnknown}</Row>
-        {generation && <Row label={D.hardwareRow}>{generation}</Row>}
+        <Row label={D.hardwareRow}>{hardwareText([p.platform])}</Row>
       </dl>
-      {action && <div className="mt-auto flex pt-1">{action}</div>}
+      {/* 값 세 줄과 단추 줄(4~7)을 통째로 쓴다. 단추는 바닥에 붙어 옆 카드의 구매하기와 같은 높이에 선다 */}
+      <div className={cn(PRICE_DIVIDER, "row-span-4 flex items-end")}>{action}</div>
     </li>
   );
 }

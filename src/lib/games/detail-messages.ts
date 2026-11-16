@@ -9,7 +9,9 @@ export const DETAIL_MESSAGES = {
   /** 출시 전 게임의 평점 자리(기획서 v2.0 S-05: 평점은 출시작만) */
   scoresAfterRelease: "출시 후 평점이 표시돼요",
   scoresPending: "평점을 아직 모으는 중이에요.",
-  scoreLabel: { metacritic: "Metacritic", opencritic: "OpenCritic", user: "유저 점수" },
+  scoreLabel: { metacritic: "Metacritic", opencritic: "OpenCritic", ign: "IGN" },
+  /** 셋 중 이 매체만 점수가 없을 때(game-detail/scores) */
+  scoreNone: "점수 없음",
   /** 히어로 버튼(목업 "가격 알림"). 팝업 안 저장 버튼까지 같은 팝업이라 긴 말(가격 알림 받기)은 할인 예측 판이 아니라 여기서 줄인다 */
   heroAlert: "가격 알림",
   playtimeTitle: "플레이타임",
@@ -26,6 +28,11 @@ export const DETAIL_MESSAGES = {
   userScoreRow: "유저 점수",
   listPriceRow: "정가",
   currentPriceRow: "현재 가격",
+  /** 플랫폼 카드의 구독 줄(게임패스, PS Plus 등). 사용자는 "지원하는 게임패스" 라 불렀다(2026-11-16) — 스토어마다 구독 이름이 달라 묶음 이름으로 쓴다 */
+  subscriptionRow: "구독 포함",
+  subscriptionNone: "없음",
+  /** 고른 플랫폼 카드에 패치 기록이 없을 때(game-detail/patch-notes-panel). 기록이 있는 스토어를 알려 준다 */
+  patchesNoneForPick: (stores: string) => `이 플랫폼은 업데이트 기록을 공개하지 않아요. ${stores} 카드를 고르면 기록을 볼 수 있어요.`,
   upcomingTag: "출시 예정",
   releaseAlert: "출시 알림 받기",
   releaseUnknown: "미정",
@@ -93,6 +100,10 @@ export const DETAIL_MESSAGES = {
   tabsLabel: "업데이트와 성능",
   perfNone: "사양 정보가 아직 없어요. PC 스토어가 알려 준 사양만 보여 드려요.",
   perfUpcoming: "출시 전이라 성능 정보가 아직 없어요.",
+  /** 성능 정보 탭 아래 플랫폼별 한 줄(game-detail/perf-row) */
+  perfRowTitle: "플랫폼별 성능",
+  perfRowNone: "공개된 성능 정보가 없어요",
+  perfRowNote: "프레임, 해상도는 스토어가 공개하는 대로 모으는 중이에요.",
   moreHeading: "더 알아보기",
   sourcesHeading: "정보 출처",
 } as const;

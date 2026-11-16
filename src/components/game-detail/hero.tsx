@@ -11,7 +11,6 @@
 // 커버 기둥과 오른쪽 기둥 밑이 크게 비었다. 플레이 방식, 한국어 같은 지원 배지는 커버 밑으로, 평점은 오른쪽 기둥으로 옮겨
 // 세 기둥 길이를 맞췄다. 출시 전 게임은 출시일을 원제 줄에 묻지 않고 제목 밑에 띠로 세운다(같은 날 "강조 필요").
 import Link from "next/link";
-import { Suspense } from "react";
 import { CoverImage } from "@/components/game-card";
 import { SourceRefs } from "@/components/game-detail/sources";
 import { companyPath } from "@/lib/routes";
@@ -24,7 +23,6 @@ import { PriceAlertButton, type AlertPlatformOption } from "@/components/price-a
 import { WishlistButton } from "@/components/wishlist-button";
 import { soldBrands } from "@/components/platform-prices";
 import { PlatformJump } from "@/components/game-detail/platform-jump";
-import { GamePostsLink } from "@/components/game-detail/posts-link";
 import { CriticScores, PlaytimeTiles } from "@/components/game-detail/scores";
 import { Flag } from "@/components/ui/flag";
 import { Tag } from "@/components/ui/tag";
@@ -181,6 +179,9 @@ export function DetailHero({
             {game.description}
           </FitClamp>
         )}
+        {/* 평론 점수 셋은 설명 바로 아래 한 줄이다(2026-11-16 사용자 "게임 설명 아래에 1행으로 나란히"). 오른쪽 기둥에 있을 때는
+            "무슨 게임인가" 와 "얼마나 잘 만들었나" 가 다른 기둥으로 갈렸다 */}
+        <CriticScores game={game} unreleased={unreleased} />
         {/* 좁은 화면은 한 기둥이라 높이 맞추기가 필요 없다 — 배지가 커버 밑에 있으면 제목이 한 화면 아래로 밀려 설명 뒤에 둔다 */}
         {(hasPlayModes || game.platforms.length > 0) && <SupportBadges game={game} className="flex md:hidden" />}
       </div>
@@ -209,11 +210,7 @@ export function DetailHero({
           )}
           <WishlistButton gameId={game.id} className="w-full" />
         </div>
-        {/* 게시판의 이 게임 글로 가는 길(game-detail/posts-link). 수는 캐시 밖이라 따로 기다린다 — 안 오면 줄 없이 간다 */}
-        <Suspense fallback={null}>
-          <GamePostsLink gameId={game.id} slug={game.slug} />
-        </Suspense>
-        <CriticScores game={game} unreleased={unreleased} />
+        {/* "이 게임 리뷰와 공략 보기" 단추는 걷었다(2026-11-16 사용자, 게임 게시판 메뉴를 걷은 것과 같은 날). 부품(posts-link)은 남겨 둔다 */}
         <PlaytimeTiles playtime={game.playtime} className="flex-1" />
       </div>
     </section>

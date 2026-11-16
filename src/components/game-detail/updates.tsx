@@ -2,11 +2,11 @@
 // 패치 기록도 사양도 없는 게임은 탭 둘에 "없어요" 만 든 큰 판 대신 한 줄로 접는다(game-detail/empty-line).
 // 한쪽만 있으면 탭은 그대로 둔다 — 탭이 하나로 줄면 "다른 쪽은 어디 갔지" 가 된다.
 import { Suspense } from "react";
-import { PatchSpeed } from "@/components/patch-list";
 import { PatchNotesPanel } from "@/components/game-detail/patch-notes-panel";
 import { RequirementsBody } from "@/components/requirements-table";
 import { RunCheck } from "@/components/run-check";
 import { EmptyLine } from "@/components/game-detail/empty-line";
+import { PerfRow } from "@/components/game-detail/perf-row";
 import { CompatSlot, VerdictNoteSlot } from "@/components/game-detail/slots";
 import { DetailTabs } from "@/components/ui/tabs";
 import { sectionCardClass } from "@/components/ui/page";
@@ -41,10 +41,8 @@ export function DetailUpdates({ game, patchGroups, upcoming }: { game: GameDetai
           panel: (
             <div className={sectionCardClass("flex min-w-0 flex-col gap-5")}>
               {patchGroups.length > 0 ? (
-                <>
-                  <PatchSpeed groups={patchGroups} />
-                  <PatchNotesPanel groups={patchGroups} limit={TAB_PATCH_LIMIT} />
-                </>
+                // 마지막 패치일 줄(PatchSpeed)도 고른 플랫폼을 따라야 해서 패널 안으로 들어갔다
+                <PatchNotesPanel groups={patchGroups} limit={TAB_PATCH_LIMIT} />
               ) : (
                 <p className="text-[13px] text-dim">{GAME_MESSAGES.patchNone}</p>
               )}
@@ -55,7 +53,7 @@ export function DetailUpdates({ game, patchGroups, upcoming }: { game: GameDetai
           key: "perf",
           label: D.tabPerf,
           panel: (
-            <div className={sectionCardClass("min-w-0")}>
+            <div className={sectionCardClass("flex min-w-0 flex-col gap-6")}>
               {game.requirements.length > 0 ? (
                 <RunCheck
                   verdictTitle={COMPAT_MESSAGES.heading}
@@ -76,6 +74,8 @@ export function DetailUpdates({ game, patchGroups, upcoming }: { game: GameDetai
               ) : (
                 <p className="text-[13px] text-dim">{upcoming ? D.perfUpcoming : D.perfNone}</p>
               )}
+              {/* 내 사양 판정과 PC 최소 사양 아래 플랫폼별 한 줄(2026-11-16 사용자) */}
+              {!upcoming && <PerfRow game={game} />}
             </div>
           ),
         },

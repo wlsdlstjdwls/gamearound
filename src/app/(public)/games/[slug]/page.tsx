@@ -44,7 +44,7 @@ import { buildGameJsonLd, serializeJsonLd } from "@/lib/seo/game-json-ld";
 import { siteOrigin } from "@/lib/seo/constants";
 import { decodeSlugParam } from "@/lib/slug";
 import { GAME_NEWS_SECTION_ID, gamePath, ROUTES } from "@/lib/routes";
-import { bestUserScore, cheapestPlatform, displayTitle, getGameBySlugCached, getGamePatchesCached } from "@/server/services/games";
+import { cheapestPlatform, displayTitle, getGameBySlugCached, getGamePatchesCached } from "@/server/services/games";
 import { getDiscountHistory } from "@/server/services/prices";
 import { HOME_REGION, type Platform } from "@/server/db/schema";
 
@@ -179,8 +179,6 @@ export default async function GameDetailPage({ params }: Props) {
         />
         <PlatformPrices
           platforms={platforms}
-          quotedUserScorePlatform={bestUserScore(game.platforms)?.platform ?? null}
-          dlcs={game.dlcs}
           releaseFallback={game.releaseDate}
           upcomingAll={upcoming}
           // 출시 카드(게임 전체가 출시 전이거나, 이 기기로는 아직인 행)마다 그 플랫폼만 고른 출시 알림
@@ -204,6 +202,14 @@ export default async function GameDetailPage({ params }: Props) {
         <UpgradeNotes upgrades={game.upgrades} />
       </section>
 
+      {/* 추가 콘텐츠 — 플랫폼 카드마다 있던 단추를 게임의 마디 하나로 모았다(2026-11-16 사용자 "플랫폼별이 아니라 게임에 종속").
+          플랫폼으로 거르는 칩은 마디 안에 있다(dlc-list) */}
+      {game.dlcs.length > 0 && (
+        <div className={sectionCardClass("min-w-0")}>
+          <DlcSection id="dlc-heading" title={GAME_MESSAGES.dlcHeading} dlcs={game.dlcs} hasAddOns={game.platforms.some((p) => p.hasAddOns)} />
+        </div>
+      )}
+
       {/* 가격 변동 추이 + 할인 예측(목업 #chs). 넓은 화면은 그래프 1.7 : 예측 1, 좁으면 위아래.
           출시 전 게임은 그릴 값도 예측할 값도 없어 통째로 빠진다(목업 g.up). 무료 게임은 예측 판만 빠진다 */}
       {!upcoming && (
@@ -223,6 +229,10 @@ export default async function GameDetailPage({ params }: Props) {
           )}
         </div>
       )}
+
+      {/* 업데이트 노트 | 성능 정보(목업 .tabs). 둘 다 없으면 한 줄로 접힌다(game-detail/updates).
+          고른 플랫폼 카드를 따라 업데이트 노트가 바뀐다(2026-11-16 사용자) — 그래서 고르기 Provider 안에 둔다. 뉴스보다 위로 올라왔다 */}
+      <DetailUpdates game={game} patchGroups={patchGroups} upcoming={upcoming} />
       </PlatformPickProvider>
 
       {/* 뉴스가 없으면 큰 판 대신 한 줄(game-detail/empty-line) */}
@@ -238,8 +248,6 @@ export default async function GameDetailPage({ params }: Props) {
         </EmptyLine>
       )}
 
-      {/* 업데이트 노트 | 성능 정보(목업 .tabs). 둘 다 없으면 한 줄로 접힌다(game-detail/updates) */}
-      <DetailUpdates game={game} patchGroups={patchGroups} upcoming={upcoming} />
 
       {/* 더 알아보기 — 목업에 없지만 이 서비스가 쌓은 값. 에디션은 "어느 판을 살까" 라 맨 앞이다 */}
       {game.editions.length > 0 && (
