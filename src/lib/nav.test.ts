@@ -62,12 +62,12 @@ describe("trailKind", () => {
 });
 
 describe("개발자 라운지 칸", () => {
-  it("개발일지, 질문/피드백, 플레이테스트가 라운지 띠에 선다(2026-11-16)", () => {
+  it("개발일지, 질문/피드백이 라운지 띠에 선다(2026-11-16)", () => {
     expect(resolveNav("/lounge/devlogs", q()).sub?.label).toBe("개발일지");
     expect(resolveNav("/lounge/qna", q()).sub?.label).toBe("질문/피드백");
-    const r = resolveNav("/playtests", q());
-    expect(r.section?.key).toBe("lounge");
-    expect(r.sub?.label).toBe("플레이테스트");
+  });
+  it("플레이테스트는 메뉴에 서지 않는다(2026-11-16 숨김)", () => {
+    expect(resolveNav("/playtests", q()).sub?.label).not.toBe("플레이테스트");
   });
 });
 

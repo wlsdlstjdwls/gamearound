@@ -99,8 +99,8 @@ export const NAV_SECTIONS: readonly NavSection[] = [
       // 10-28 에는 라운지 홈의 게시판 고르기 카드가 같은 길을 내서 띠에서 뺐는데, 그 카드를 걷었으니 띠가 유일한 길이다
       { label: "개발일지", href: ROUTES.loungeDevlogs },
       { label: "질문/피드백", href: ROUTES.loungeQna },
-      // 플레이테스트는 개발자가 테스터를 모으는 자리라 라운지로 옮겼다(2026-11-16 사용자). 인디 게임 메뉴는 "고를 게임" 만 남는다
-      { label: "플레이테스트", href: ROUTES.playtests },
+      // 플레이테스트는 메뉴에서 걷었다(2026-11-16 사용자 "플레이테스트 메뉴도 숨겨줘"). 화면(/playtests)과 모집 글은 남는다 —
+      // 숨긴다 ≠ 지운다. 되살리려면 이 자리에 { label: "플레이테스트", href: ROUTES.playtests } 를 다시 세운다
       // 등록현황(/indie/mine)과 내 게임 통계(/indie/mine/stats)는 한 칸이다(2026-10-28 메뉴 정리). 둘 다 내 게임을 돌보는 화면이라
       // 띠에 따로 서면 같은 일이 두 칸이었다. 두 화면 사이는 머리의 탭(components/indie/mine-tabs)으로 오간다.
       // 통계, 플레이테스트 관리, 광고 걸기, 요금, 결제는 모두 /indie/mine 아래라 가장 긴 경로 규칙으로 이 칸이 켜진다
