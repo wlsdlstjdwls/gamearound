@@ -13,7 +13,7 @@
 // - "얼마에?" 를 스치는 빛이 한 번이 아니라 몇 초마다 다시 지나간다(.glint-loop)
 // - 판 가장자리에 떠 있던 가격 딱지 셋(-70%, 최저가, 출시 알림)은 같은 날 걷었다(사용자: "더럽다, 바꾸거나 빼라").
 //   판이 지저분해 보이고 단추인지 장식인지 헷갈렸다. 할인, 출시 예정은 바로 아래 줄들이 이미 보여 준다
-// - 검색 단추 위로 빛이 몇 초에 한 번 비스듬히 스친다(.glint-sweep)
+// - 검색 단추 위로 빛이 쉬지 않고 연달아 비스듬히 스친다(.glint-sweep-loop, 2026-11-16 사용자 "멈추지 않고 계속")
 // 전부 CSS 이고, 움직임 줄이기 설정은 전역 킬스위치가 끈다.
 //
 // 2026-10-28 위아래를 줄였다(사용자: "히어로가 너무 크다"). 첫 화면에서 할인 줄이 더 빨리 보이게 하려는 것이다 — 문장 둘과 검색칸은 그대로다.
@@ -82,7 +82,7 @@ export function HomeHero() {
           placeholder={M.heroSearchPlaceholder}
           className="h-11 min-w-0 flex-1 bg-transparent text-[16px] text-ink outline-none placeholder:text-dim"
         />
-        <button type="submit" className="press glint-sweep relative h-11 shrink-0 overflow-hidden rounded-xl bg-acc px-5 text-[14.5px] font-semibold text-on-ink hover:bg-acc-hover">
+        <button type="submit" className="press glint-sweep glint-sweep-loop relative h-11 shrink-0 overflow-hidden rounded-xl bg-acc px-5 text-[14.5px] font-semibold text-on-ink hover:bg-acc-hover">
           {M.heroSearchCta}
         </button>
       </form>

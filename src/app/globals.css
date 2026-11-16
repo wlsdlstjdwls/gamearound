@@ -1805,6 +1805,16 @@ body:has([data-onboarding]) > [data-site-tabbar] {
   animation: glint-sweep calc(var(--duration-glint) * 6) var(--ease-standard) 900ms infinite;
 }
 
+/* 홈 검색 단추의 빛은 쉬지 않고 연달아 지나간다(2026-11-16 사용자 "반짝이는 효과 멈추지 않고 계속 나오게").
+   위 glint-sweep 은 한 번 스치고 오래 쉰다. 여기는 쉬는 구간 없는 같은 궤적을 바로 다시 돈다 */
+@keyframes glint-sweep-loop {
+  from { transform: translateX(-120%) skewX(-18deg); }
+  to { transform: translateX(260%) skewX(-18deg); }
+}
+.glint-sweep.glint-sweep-loop::after {
+  animation: glint-sweep-loop calc(var(--duration-glint) * 2) linear infinite;
+}
+
 /* 하위 메뉴 띠의 현재 위치 밑줄이 그어지듯 선다(components/sub-nav). 화면을 옮길 때마다 한 번 */
 @keyframes underline-grow {
   from { transform: scaleX(0); }
