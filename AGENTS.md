@@ -85,6 +85,10 @@ route(page/action/api)  →  server/services  →  server/adapters | server/db
 
 ## 5. 확장 지점
 
+**서비스 밖인 스토어, 지역은 손대지 않는다.** Epic Games 는 서비스하지 않는다(2026-11-16 사용자 결정, `lib/platform` 의 `HIDDEN_PLATFORMS`).
+일본 지역도 숨김이다(`HIDDEN_REGIONS`). 데이터 점검, 빈칸 집계, 수집 개선, 백필, 매칭 판정에서 이 둘을 빼고, 고치자고 제안하지 않는다.
+집계는 화면과 같은 기준(`server/db/visibility`: 숨긴 플랫폼, 숨긴 지역, 스토어 링크 없는 행 제외)으로 센다. 작업 전에 두 배열을 먼저 읽는다.
+
 새 소스를 붙일 때: 어댑터 1개 추가 → `server/adapters/index.ts` 레지스트리에 등록 → `sync/constants.ts` 에 배치 크기, 플랫폼 매핑 추가. `sync/` 로직은 건드리지 않는다.
 비활성 소스는 지우지 말고 `getDisabledReason()` 에 사유를 남긴다(관리자 화면에 그대로 표시된다).
 
