@@ -136,7 +136,7 @@ export default async function HomePage() {
           <ul className={HOME_FOUR_GRID_CLASS}>
             {upcoming.map((e, i) => (
               <li key={e.game.slug} className={cn("enter-item", HOME_FOUR_ITEM_CLASS)} style={stagger(i + 1)}>
-                <GameCard game={e.game} variant="release" releaseText={formatReleaseDay(e.releaseDate)} hideTags />
+                <GameCard game={e.game} variant="release" releaseText={formatReleaseDay(e.releaseDate)} />
               </li>
             ))}
           </ul>

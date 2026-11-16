@@ -45,6 +45,19 @@ export function normalizeGenre(name: string): string {
  */
 export const GENRE_TAG_NAMES: readonly string[] = ["무료 플레이", "앞서 해보기"];
 
+/** 판매 형태 중 얼리 액세스. 저장 이름은 "앞서 해보기" 그대로다(거르기 길이 그 행에 기댄다) */
+export const EARLY_ACCESS_TAG = "앞서 해보기";
+
+/**
+ * 꼬리표를 화면에 보일 이름. "앞서 해보기" 는 "얼리 액세스" 로 보인다(2026-11-16 사용자 "앞서 해보기 뱃지는 지우고 얼리 액세스 표기", 카드와 상세).
+ * 저장 값을 바꾸지 않고 보일 때만 바꾼다 — 바꾸면 쌓인 장르 행을 옮기는 일이 따로 생긴다
+ */
+const GENRE_TAG_DISPLAY: Readonly<Record<string, string>> = { [EARLY_ACCESS_TAG]: "얼리 액세스" };
+
+export function genreTagLabel(name: string): string {
+  return GENRE_TAG_DISPLAY[name] ?? name;
+}
+
 export function isGenreTag(name: string): boolean {
   return GENRE_TAG_NAMES.includes(name);
 }

@@ -25,6 +25,7 @@ import { PlatformJump } from "@/components/game-detail/platform-jump";
 import { CriticScores, PlaytimeTiles } from "@/components/game-detail/scores";
 import { Flag } from "@/components/ui/flag";
 import { Tag } from "@/components/ui/tag";
+import { genreTagLabel } from "@/lib/genres";
 import { FitClamp } from "@/components/ui/fit-clamp";
 import { BellIcon, CalendarIcon } from "@/components/ui/icons";
 import { DETAIL_MESSAGES as D } from "@/lib/games/detail-messages";
@@ -150,13 +151,13 @@ export function DetailHero({
           </p>
           </div>
         )}
-        {/* 판매 형태(무료 플레이, 앞서 해보기)는 장르가 아니라 카드와 같은 작은 청록 꼬리표로 장르 앞에 선다(2026-10-27, lib/genres) */}
+        {/* 판매 형태(무료 플레이, 얼리 액세스 — 저장 이름은 앞서 해보기, lib/genres 의 genreTagLabel)는 장르가 아니라 카드와 같은 작은 청록 꼬리표로 장르 앞에 선다(2026-10-27, lib/genres) */}
         {(game.genres.length > 0 || game.tags.length > 0) && (
           <ul className="flex flex-wrap items-center gap-1.5" aria-label="장르">
             {game.tags.map((t) => (
               <li key={t}>
                 <Tag small tone="info">
-                  {t}
+                  {genreTagLabel(t)}
                 </Tag>
               </li>
             ))}

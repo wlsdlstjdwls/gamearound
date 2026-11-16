@@ -12,9 +12,9 @@ export function GameCardSkeleton() {
   return (
     <div className={GAME_CARD_SHELL} aria-hidden>
       <div className={cn(GAME_COVER_CLASS, "skeleton")} />
-      {/* 실물과 같은 줄 자리: 제목 두 줄(2.7em), 장르 20, 배지 20(+pt 4), 값 32 */}
+      {/* 실물과 같은 줄 자리: 제목 한 줄(1.35em), 장르 20, 배지 20(+pt 4), 값 32 */}
       <div className={cn("flex flex-col gap-1.5", GAME_CARD_BODY_X)}>
-        <Bone className="h-[2.7em] w-4/5 text-[16px] sm:text-[15px]" />
+        <Bone className="h-[1.35em] w-4/5 text-[16px] sm:text-[15px]" />
         <Bone className="h-5 w-2/5 rounded-full" />
         <span className="h-5" />
         <Bone className="h-8 w-3/5" />

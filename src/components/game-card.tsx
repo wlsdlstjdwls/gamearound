@@ -22,6 +22,7 @@ import { ImageFallback } from "@/components/ui/image-fallback";
 import { Clamp } from "@/components/ui/tooltip";
 import { PointerParallax } from "@/components/ui/pointer-parallax";
 import { cn } from "@/lib/cn";
+import { EARLY_ACCESS_TAG, genreTagLabel } from "@/lib/genres";
 import { WishHeart } from "@/components/wish-heart";
 
 // next.config.ts images.remotePatterns 에 등록된 호스트만 최적화. 그 외는 unoptimized 로 원본 사용(런타임 오류 방지)
@@ -167,7 +168,6 @@ export function GameCard({
   highlight,
   releaseText,
   subtitle,
-  hideTags = false,
 }: {
   game: GameSummary;
   variant?: "discount" | "release";
@@ -180,8 +180,6 @@ export function GameCard({
   releaseText?: string;
   /** 제목 아래 회색 한 줄. 출시예정의 추가 콘텐츠 카드가 본편 이름을 적는다 — DLC 제목만으로는 무엇에 붙는지 모를 때가 많다 */
   subtitle?: string;
-  /** 판매 형태 꼬리표(무료 플레이, 앞서 해보기)를 숨긴다. 홈 출시 예정 줄이 끈다(2026-11-16 사용자 "앞서 해보기 뱃지 지워줘") */
-  hideTags?: boolean;
 }) {
   const title = game.titleKo ?? game.titleEn;
   const best = game.best;
@@ -189,7 +187,7 @@ export function GameCard({
   // 캐시에 담긴 옛 모양 DTO 에는 이 배열이 없을 수 있다 — 카드 한 장이 화면 전체를 죽이지 않게 받아 준다
   // (판 올리는 자리는 lib/cache 의 DTO_CACHE_VERSION. 여기 기본값은 그 사이를 버티는 몫이다)
   const genres = game.genres ?? [];
-  const tags = hideTags ? [] : (game.tags ?? []);
+  const tags = game.tags ?? [];
   const releaseLabel = releaseText ?? (best?.releaseDate ? `${formatDate(best.releaseDate)} 출시` : "");
   // 대표 가격 행 하나만 본다 — 배지는 옆에 선 **그 값**이 예약 값이라는 말이다(다른 스토어는 이미 팔 수도 있다)
   const preorder = best ? isPreorder(best) : false;
@@ -220,15 +218,15 @@ export function GameCard({
 
         <div className={cn("flex min-w-0 flex-1 flex-col gap-1.5", GAME_CARD_BODY_X)}>
           {/* 카드는 화면 어디서나 **같은 크기**다(2026-11-16 사용자 "카드 크기가 다른 게 보기 싫다").
-              그래서 줄마다 자리를 미리 잡는다 — 제목 두 줄, 장르 한 줄, 배지 한 줄, 값 한 줄. 값이 없어도 자리는 남는다.
+              그래서 줄마다 자리를 미리 잡는다 — 제목 한 줄, 장르 한 줄, 배지 한 줄, 값 한 줄. 값이 없어도 자리는 남는다.
               전에는 제목 한 줄/두 줄, 장르 유무, 배지 유무에 따라 카드 키가 달라 줄마다 격자 높이가 갈렸다.
 
-              제목은 두 줄까지 펴고 그 뒤를 자른다(2026-09-29, 사용자: "가시성이 너무 떨어져") */}
+              제목은 한 줄이고 넘치면 말줄임, 올리면 전체 제목을 말풍선으로 띄운다(2026-11-16 사용자 "제목은 1줄, 길면 생략, 툴팁으로", ui/tooltip 의 Clamp) */}
           <Link
             href={`/games/${game.slug}`}
             className="outline-none after:absolute after:inset-0 after:rounded-[var(--radius-md)] focus-visible:after:ring-2 focus-visible:after:ring-ink focus-visible:after:ring-offset-2 focus-visible:after:ring-offset-bg"
           >
-            <Clamp lines={2} className="min-h-[2.7em] text-[16px] font-semibold leading-[1.35] tracking-[-0.015em] text-ink transition-colors duration-fast group-hover:text-acc sm:text-[15px]">
+            <Clamp className="text-[16px] font-semibold leading-[1.35] tracking-[-0.015em] text-ink transition-colors duration-fast group-hover:text-acc sm:text-[15px]">
               {title}
             </Clamp>
           </Link>
@@ -242,11 +240,18 @@ export function GameCard({
           {/* 장르 줄은 늘 자리를 잡는다(비어도). 장르로 거를 때는 고른 장르만 브랜드색.
               판매 형태(무료 플레이, 앞서 해보기)는 장르 글자 앞 작은 꼬리표다(2026-10-27, lib/genres) */}
           <span className="flex h-5 min-w-0 items-center gap-1.5 text-[12.5px] text-dim">
-            {tags.map((t) => (
-              <Tag key={t} small tone="info">
-                {t}
-              </Tag>
-            ))}
+            {/* 얼리 액세스는 꼬리표 면 없이 글자로만 선다(2026-11-16 사용자 "앞서 해보기 뱃지는 모든 카드에서 지우고 얼리 액세스 표기") */}
+            {tags.map((t) =>
+              t === EARLY_ACCESS_TAG ? (
+                <span key={t} className="shrink-0 font-semibold text-mut">
+                  {genreTagLabel(t)}
+                </span>
+              ) : (
+                <Tag key={t} small tone="info">
+                  {genreTagLabel(t)}
+                </Tag>
+              ),
+            )}
             {genres.length > 0 && (
               <span className="min-w-0 flex-1">
                 <Clamp text={genres.join(", ")}>
