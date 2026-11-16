@@ -17,6 +17,7 @@ import { PushToggle } from "@/components/push-toggle";
 import { WishSaleToggle } from "@/components/alerts/wish-sale-toggle";
 import { NewsDigestToggle } from "@/components/settings/news-digest-toggle";
 import { ThemeToggle } from "@/components/theme-toggle";
+import { THEME_SWITCH_ON } from "@/lib/theme";
 import { SignOutButton } from "@/components/auth/sign-out-button";
 import { PersonalizationSection } from "@/components/settings/personalization-section";
 import { Page, PageHead } from "@/components/ui/page";
@@ -95,9 +96,11 @@ export default async function SettingsPage() {
             {/* 주간 맞춤 소식도 "무엇을 받을지" 라 같은 판이다. Boolean 으로 읽는 이유: 칸이 생기기 전에 담긴 세션 사본(Redis)에는 값이 없다(undefined) */}
             <NewsDigestToggle initialOn={Boolean(user.newsDigestOnAt)} className="mt-3" />
           </div>
-          <div className={CARD} style={stagger(3)}>
-            <ThemeToggle />
-          </div>
+          {THEME_SWITCH_ON && (
+            <div className={CARD} style={stagger(3)}>
+              <ThemeToggle />
+            </div>
+          )}
         </div>
       </div>
     </Page>

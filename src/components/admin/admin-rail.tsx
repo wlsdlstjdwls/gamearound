@@ -29,6 +29,7 @@ import { AuthNav } from "@/components/auth/auth-nav";
 import { HeaderWishLink } from "@/components/header-wish-link";
 import { NotificationBell } from "@/components/notification-bell";
 import { ThemeSwitch } from "@/components/theme-switch";
+import { THEME_SWITCH_ON } from "@/lib/theme";
 import { PanelLeftIcon } from "@/components/admin/nav-icons";
 import { useFavorites } from "@/components/admin/nav-favorites";
 import { MenuSearchButton, useTrackRecent } from "@/components/admin/nav-search";
@@ -269,7 +270,7 @@ export function AdminRail({
       {/* 바닥: 머리띠에서 옮겨 온 내 자리(테마, 찜, 알림, 계정). 판은 오른쪽 위로 펴진다(placement "rail") */}
       <div className={cn("flex shrink-0 border-t border-line py-2", collapsed ? "flex-col items-center gap-1 px-1.5" : "items-center justify-between gap-1 px-2.5")}>
         <div className={cn("flex items-center gap-0.5", collapsed && "flex-col")}>
-          <ThemeSwitch className="sm:size-9" />
+          {THEME_SWITCH_ON && <ThemeSwitch className="sm:size-9" />}
           <HeaderWishLink className="sm:size-9" />
           <NotificationBell placement="rail" />
         </div>

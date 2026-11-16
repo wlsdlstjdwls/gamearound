@@ -57,7 +57,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
     <html lang={SITE.locale} className="h-full antialiased" suppressHydrationWarning>
       <body className="flex min-h-full flex-col bg-bg text-ink">
         {/* 본문보다 먼저 실행돼야 흰 섬광이 없다 — 근거는 lib/theme 의 THEME_INIT_SCRIPT 주석 */}
-        <script dangerouslySetInnerHTML={{ __html: THEME_INIT_SCRIPT }} />
+        {THEME_INIT_SCRIPT && <script dangerouslySetInnerHTML={{ __html: THEME_INIT_SCRIPT }} />}
         {/* 관리자 프로그램 탭(iframe) 안인지도 그리기 전에 찍는다. 관리자 레이아웃에 두면 다른 화면에서 /admin 으로 건너갈 때
             React 가 클라이언트에서 script 를 그리며 "Encountered a script tag" 오류를 냈다(2026-10-31). 루트 레이아웃은 클라이언트 이동 때 다시 그려지지 않는다 */}
         <script dangerouslySetInnerHTML={{ __html: FRAME_INIT_SCRIPT }} />

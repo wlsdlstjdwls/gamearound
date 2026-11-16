@@ -2,6 +2,7 @@
 // 알림 받기(위 굵은 선 + 한 줄 + 회색 판), 테마(위 굵은 선 + 칩 셋).
 // 마디 간격 34 는 실물과 같다. 개인화는 답하기 전 모양(설명 한 줄과 "지금 답하기")으로 그린다 — 가입한 사람은 모두
 // 거기서 시작하고, 답한 뒤의 값 줄로 그렸더니(2026-10-08 캡처 비교) 그 마디만 150px 넘게 길었다.
+import { THEME_SWITCH_ON } from "@/lib/theme";
 import { ROWS } from "@/components/ui/page";
 import { Bone, ChipsSkeleton, PageHeadSkeleton, SectionHeadSkeleton, SkeletonPage } from "@/components/ui/skeleton";
 
@@ -51,10 +52,13 @@ export default function SettingsLoading() {
         <Bone className="h-[66px] rounded-xl" />
       </div>
 
-      <div className="flex flex-col gap-3.5">
-        <SectionHeadSkeleton size="sub" width="w-12" />
-        <ChipsSkeleton count={THEME_CHOICES} className="border-t border-line-strong pt-4" />
-      </div>
+      {/* 테마 칸은 실물이 끌 때 뼈대도 걷는다(lib/theme 의 THEME_SWITCH_ON) */}
+      {THEME_SWITCH_ON && (
+        <div className="flex flex-col gap-3.5">
+          <SectionHeadSkeleton size="sub" width="w-12" />
+          <ChipsSkeleton count={THEME_CHOICES} className="border-t border-line-strong pt-4" />
+        </div>
+      )}
     </SkeletonPage>
   );
 }

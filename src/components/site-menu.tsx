@@ -20,6 +20,7 @@ import { buttonClass } from "@/components/ui/button";
 import { BellIcon, HeartIcon, LogOutIcon, ShieldIcon, SlidersIcon, SpinnerIcon, UserIcon } from "@/components/ui/icons";
 import { Sheet } from "@/components/ui/sheet";
 import { ThemeSwitch } from "@/components/theme-switch";
+import { THEME_SWITCH_ON } from "@/lib/theme";
 import { Clamp } from "@/components/ui/tooltip";
 import { Tag } from "@/components/ui/tag";
 
@@ -71,7 +72,7 @@ function GuestBlock({ pathname }: { pathname: string }) {
       <div className="flex flex-col gap-0.5 border-t border-line pt-3">
         {/* 가격 알림은 로그인 화면을 거쳐 열린다(lib/account-menu) — 그래서 지금 위치 표시는 하지 않는다 */}
         <Row link={alerts} current={false} />
-        <ThemeSwitch withLabel />
+        {THEME_SWITCH_ON && <ThemeSwitch withLabel />}
       </div>
     </>
   );
@@ -156,7 +157,7 @@ export function SiteMenu() {
                   <Row key={l.key} link={l} current={isCurrent(l.href)} />
                 ))}
                 {/* 좁은 화면은 머리띠에 테마 단추 자리가 없다 — 시트가 맡는다 */}
-                <ThemeSwitch withLabel />
+                {THEME_SWITCH_ON && <ThemeSwitch withLabel />}
               </div>
             </>
           ) : (

@@ -9,6 +9,13 @@
 //  - light | dark: data-theme 을 찍는다.
 // 아무것도 안 찍힌 상태가 곧 라이트다. 2026-10-26 아침에 다크를 기본으로 올렸다가 같은 날 "너무 어둡다"(사용자)로 되돌렸다.
 // 기기 설정만으로 다크가 되지 않게 둔 이유: 처음 온 사람은 늘 같은 얼굴(라이트)을 본다. 다크는 머리띠 단추로 한 번에 간다.
+/**
+ * 테마 고르기를 세우나. 끄면(2026-11-16 사용자 "테마 설정 일단 없애고 라이트 단일로") 머리띠, 메뉴 시트, 관리자 기둥의 단추와
+ * 설정 화면의 테마 칸이 서지 않고, 첫 페인트 스크립트도 저장된 값을 읽지 않는다 — 전에 다크를 고른 사람도 라이트로 선다.
+ * 다크 토큰(globals.css)과 저장소 코드는 지우지 않는다(숨긴다 ≠ 지운다). 되살리려면 true 로
+ */
+export const THEME_SWITCH_ON = false;
+
 export const THEMES = ["system", "light", "dark"] as const;
 export type Theme = (typeof THEMES)[number];
 
@@ -44,4 +51,4 @@ export function isTheme(v: string | null | undefined): v is Theme {
  * try 로 감싸는 이유: 사생활 보호 모드나 사이트 데이터 차단에서는 localStorage 접근 자체가 던진다.
  * 그때는 아무것도 하지 않는다 — 기본값(다크)이 그대로 선다.
  */
-export const THEME_INIT_SCRIPT = `try{var t=localStorage.getItem(${JSON.stringify(THEME_STORAGE_KEY)});if(t==="light"||t==="dark"||t==="system")document.documentElement.dataset.theme=t}catch(e){}`;
+export const THEME_INIT_SCRIPT = !THEME_SWITCH_ON ? "" : `try{var t=localStorage.getItem(${JSON.stringify(THEME_STORAGE_KEY)});if(t==="light"||t==="dark"||t==="system")document.documentElement.dataset.theme=t}catch(e){}`;

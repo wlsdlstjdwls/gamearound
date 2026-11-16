@@ -19,7 +19,7 @@ export default function RootError({ error }: { error: Error & { digest?: string 
   return (
     <html lang={SITE.locale} className="h-full antialiased" suppressHydrationWarning>
       <body className="flex min-h-full flex-col bg-bg text-ink">
-        <script dangerouslySetInnerHTML={{ __html: THEME_INIT_SCRIPT }} />
+        {THEME_INIT_SCRIPT && <script dangerouslySetInnerHTML={{ __html: THEME_INIT_SCRIPT }} />}
         <title>{ERROR_MESSAGES.title}</title>
         <main className="flex flex-1 flex-col">
           <ErrorNotice error={error} onRetry={() => window.location.reload()} />
