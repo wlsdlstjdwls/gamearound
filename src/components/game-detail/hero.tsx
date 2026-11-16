@@ -73,7 +73,7 @@ export function DetailHero({
   const brands = soldBrands(game.platforms);
   const hasPlayModes = game.supportsSolo || game.supportsCoop || game.supportsPvp || Boolean(game.localMaxPlayers) || Boolean(game.onlineMaxPlayers);
   const showAlert = !isFree && alertOptions.length > 0;
-  // 출시 전이면 출시일은 제목 밑 띠(ReleaseBanner)가 말한다 — 같은 날짜를 두 번 쓰지 않는다
+  // 출시 전이면 출시일은 오른쪽 기둥의 출시일 카드(ReleaseCard)가 말한다 — 같은 날짜를 두 번 쓰지 않는다
   const meta = [game.titleKo ? game.titleEn : null, game.releaseDate && !unreleased ? releaseLineText(formatDate(game.releaseDate), false) : null].filter(
     (v): v is string => Boolean(v),
   );
@@ -113,7 +113,6 @@ export function DetailHero({
         {/* 자식(DLC, 에디션)일 때만 선다 */}
         <ContentKindHead contentType={game.contentType} parent={game.parent} />
         <h1 className="text-[28px] font-extrabold leading-[1.15] tracking-[-0.035em] text-ink sm:text-[34px] lg:text-[38px]">{title}</h1>
-        {unreleased && game.releaseDate && <ReleaseBanner date={game.releaseDate} />}
         {/* 원제, 출시일, 나라 — 기획서 히어로의 "한글명, 영문명, 출시일". 나라는 국기 한 장과 이름(2026-09-22) */}
         {(meta.length > 0 || origin || game.companies.length > 0 || game.developer || game.publisher) && (
           // 낱말 사이 세로 막대는 각 낱말의 앞머리(::before)다. 줄이 갈리면 둘째 줄 첫 낱말 앞에 막대가 홀로 남는데,
@@ -217,34 +216,32 @@ export function DetailHero({
         {/* "이 게임 리뷰와 공략 보기" 단추는 걷었다(2026-11-16 사용자, 게임 게시판 메뉴를 걷은 것과 같은 날). 부품(posts-link)은 남겨 둔다 */}
         {/* 늘리지 않는다 — 옆 기둥 높이까지 늘였더니 숫자 셋 위아래가 텅 빈 판이 됐다(2026-11-16 사용자 "플레이타임 높이가 너무 높다") */}
         <PlaytimeTiles playtime={game.playtime} />
+        {/* 출시 전 게임의 출시일 카드. 플레이타임 아래에 제 판으로 선다(2026-11-16 사용자 "플레이타임 아래, 영역 아예 만들어서").
+            제목 밑 띠는 가운데 기둥을 늘렸고, 배지 줄은 플랫폼이 넷이면 넘쳤다. 오른쪽 기둥은 늘 가운데보다 짧아 여유가 있다 */}
+        {unreleased && game.releaseDate && <ReleaseCard date={game.releaseDate} />}
       </div>
     </section>
   );
 }
 
-/**
- * 출시 전 게임의 출시일 표 — [D-2 | 11월 18일 (수) 출시] 두 칸짜리 꼬리표.
- * 처음(2026-10-28)에는 옅은 파란 띠 안에 "2026년 11월 18일 (수) 출시 예정" 긴 문장과 D-day 알약을 겹쳐 넣었는데,
- * 2026-11-16 사용자 "출시예정 표현 자체를 바꿔줘": 문장이 길고 파란 면이 커서 제목보다 먼저 읽혔다.
- * 남은 날을 채운 칸 하나로 세우고 날짜는 흰 칸에 짧게 적는다. 올해면 해를 뺀다 — 남은 날이 이미 가까움을 말한다
- */
-function ReleaseBanner({ date }: { date: string }) {
+/** 출시 전 게임의 출시일 카드 — 남은 날을 크게, 날짜를 옆에. 판 모양은 플레이타임 카드(scores)와 같다 */
+function ReleaseCard({ date }: { date: string }) {
   const key = date.slice(0, 10);
   const days = daysUntil(key);
   const full = formatDate(date);
-  const sameYear = key.slice(0, 4) === kstDateKey(new Date()).slice(0, 4);
-  const dateText = sameYear ? full.replace(/^\d+년 /, "") : full;
+  // 올해면 해를 뺀다 — 남은 날이 이미 가까움을 말한다
+  const dateText = key.slice(0, 4) === kstDateKey(new Date()).slice(0, 4) ? full.replace(/^\d+년 /, "") : full;
   return (
-    <p className="inline-flex w-fit items-stretch overflow-hidden rounded-[var(--radius-sm)] border border-line bg-surface text-[14px] shadow-hair">
-      <span className="flex items-center bg-acc px-3 font-extrabold tabular-nums tracking-[-0.01em] text-on-ink">
-        {days > 0 ? D.releaseDday(days) : D.releaseToday}
-      </span>
-      <span className="flex items-center gap-1.5 px-3 py-1.5 font-bold text-ink">
-        <CalendarIcon size={15} className="shrink-0 text-mut" />
-        {dateText}
-        <span className="font-medium text-mut">{D.releaseSuffix}</span>
-      </span>
-    </p>
+    <section aria-labelledby="release-heading" className="flex flex-col gap-3 rounded-[var(--radius-panel)] bg-surface p-4 shadow-[var(--elev-card)]">
+      <h2 id="release-heading" className="flex items-center gap-1.5 text-[16px] font-extrabold text-ink">
+        <CalendarIcon size={17} className="text-acc" />
+        {D.releaseCardHeading}
+      </h2>
+      <div className="flex items-baseline justify-between gap-3 border-t border-line pt-3">
+        <span className="text-[26px] font-extrabold leading-none tracking-[-0.03em] tabular-nums text-acc">{days > 0 ? D.releaseDday(days) : D.releaseToday}</span>
+        <span className="text-[14px] font-bold text-ink-2">{dateText}</span>
+      </div>
+    </section>
   );
 }
 

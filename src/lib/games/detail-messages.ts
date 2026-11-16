@@ -9,10 +9,10 @@ export const DETAIL_MESSAGES = {
   platformsLabel: "지원 플랫폼",
   /** 출시일 띠의 남은 날(game-detail/hero 의 ReleaseBanner) */
   releaseDday: (days: number) => `D-${days}`,
-  /** 출시일 표(hero 의 ReleaseBanner) 왼쪽 칸 — 남은 날이 0 인 날 */
-  releaseToday: "오늘",
-  /** 출시일 표 날짜 뒤 꼬리 */
-  releaseSuffix: "출시",
+  /** 출시일 카드(hero 의 ReleaseCard) 제목 */
+  releaseCardHeading: "출시까지",
+  /** 출시일 카드의 큰 글자 — 남은 날이 0 인 날 */
+  releaseToday: "오늘 출시",
   /** 출시 전 게임의 평점 자리(기획서 v2.0 S-05: 평점은 출시작만) */
   scoresAfterRelease: "출시 후 평점이 표시돼요",
   scoresPending: "평점을 아직 모으는 중이에요.",
