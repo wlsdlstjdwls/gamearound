@@ -111,3 +111,14 @@ export function GamesGridSkeleton({ cards, gridClass = GAMES_GRID_CLASS, list = 
     </div>
   );
 }
+
+/** 왼쪽 진열대 메뉴 뼈대(game-filters/rail). 넓은 화면만 선다 — 진열대 여섯 칸(40px) + 장르 무리 */
+export function RailSkeleton() {
+  return (
+    <div aria-hidden className="hidden flex-col gap-1 lg:flex">
+      {Array.from({ length: 6 }, (_, i) => (
+        <Bone key={i} className="h-10 rounded-[var(--radius-sm)]" />
+      ))}
+    </div>
+  );
+}

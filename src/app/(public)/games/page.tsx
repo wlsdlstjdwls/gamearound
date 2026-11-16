@@ -12,15 +12,15 @@
 // 상세에 들어갔다 돌아오면 첫 장부터 다시 내려가야 했다.
 import type { Metadata } from "next";
 import { Suspense } from "react";
-import { highlightFromFilter } from "@/components/game-card";
-import { GameListCard } from "@/components/game-list-card";
+import { GameCard, highlightFromFilter } from "@/components/game-card";
+import { ExploreRail } from "@/components/game-filters/rail";
 import { EmptyState } from "@/components/empty-state";
 import { DbUnavailable } from "@/components/db-unavailable";
 import { nullIfDbUnavailable } from "@/lib/db-errors";
 import { type PersonalFilter } from "@/components/game-filters";
 import { GameFilterBar } from "@/components/game-filters/bar";
 import { ActiveFilters } from "@/components/game-filters/active";
-import { HOME_GRID_CLASS } from "@/lib/games/grid";
+import { GAMES_GRID_CLASS } from "@/lib/games/grid";
 import { FilterStateProvider, PendingResults } from "@/components/game-filters/optimistic";
 import { PendingBar } from "@/components/ui/nav-pending";
 import { Pagination } from "@/components/pagination";
@@ -115,6 +115,13 @@ async function FilterBar({ filter, personal }: { filter: GamesQuery; personal: P
   return <GameFilterBar filter={filter} genres={genres} topGenres={topGenres} sale={sale} personal={personal} />;
 }
 
+/** 왼쪽 진열대 메뉴(game-filters/rail) — 장르 무리를 같은 선택지 질의로 채운다(React cache 라 막대와 질의 한 번을 나눠 쓴다) */
+async function Rail({ filter }: { filter: GamesQuery }) {
+  const scope: FacetScope = filter.onSale || filter.minDiscount !== undefined ? "sale" : "all";
+  const facets = await nullIfDbUnavailable(getGameFacets(scope));
+  return <ExploreRail filter={filter} genres={(facets ?? OUTAGE_FACETS).genres.map((g) => g.name)} />;
+}
+
 async function Results({ filter }: { filter: GameListFilter }) {
   const result = await nullIfDbUnavailable(listGames(filter));
   if (!result) return <DbUnavailable retryHref={gamesHref(filter)} />;
@@ -146,10 +153,11 @@ async function Results({ filter }: { filter: GameListFilter }) {
       {/* 쪽 번호는 누른 순간 켜지고 목록은 흐려진 채 기다린다(ui/nav-pending). 쪽을 바꾸면 맨 위로 간다(Pagination 의 scroll) */}
       <NavPendingScope>
         <PendingRegion className="flex flex-col gap-8">
-          <ul className={HOME_GRID_CLASS}>
+          {/* e숍 타일 격자(2026-11-16) — 세로 커버 카드 3열. 가로 목록 카드(game-list-card)는 왼쪽 진열대가 서며 폭이 모자라 내렸다 */}
+          <ul className={GAMES_GRID_CLASS}>
             {result.items.map((g, i) => (
               <li key={g.slug} className="enter-item" style={stagger(i)}>
-                <GameListCard game={g} variant={filter.sort === "release" ? "release" : "discount"} highlight={highlight} />
+                <GameCard game={g} variant={filter.sort === "release" ? "release" : "discount"} highlight={highlight} />
               </li>
             ))}
           </ul>
@@ -180,20 +188,28 @@ export default async function GamesPage({ searchParams }: Props) {
     <Page gap={18}>
       <PageHead title={query.onSale ? "할인 게임" : "전체 게임"} />
 
-      {/* 막대를 누른 순간 막대와 걸린 조건이 새 조건으로 먼저 바뀌고, 목록은 흐려진 채 기다린다(game-filters/optimistic) */}
+      {/* 막대를 누른 순간 막대와 걸린 조건이 새 조건으로 먼저 바뀌고, 목록은 흐려진 채 기다린다(game-filters/optimistic).
+          넓은 화면은 닌텐도 e숍처럼 왼쪽 진열대 메뉴 + 오른쪽 타일 격자다(game-filters/rail 머리 주석) */}
       <FilterStateProvider filter={query}>
-        {/* 막대에는 키를 주지 않는다 — 다시 세우면 고른 값이 뼈대로 한 번 사라졌다 돌아온다 */}
-        <Suspense fallback={<FilterBarSkeleton />}>
-          <FilterBar filter={query} personal={personal} />
-        </Suspense>
-        <ActiveFilters filter={query} variant="strip" shownElsewhere />
-
-        <PendingResults className="flex min-w-0 flex-col gap-6">
-          {/* 뼈대가 떠 있는 동안에도 로딩 띠를 세운다. 전환은 새 화면이 커밋되는 순간 끝나서 그 뒤로는 PendingResults 의 띠가 꺼진다 */}
-          <Suspense key={boundaryKey} fallback={<><PendingBar on /><ResultCountSkeleton /><GamesGridSkeleton cards={GAMES_PAGE_SIZE} gridClass={HOME_GRID_CLASS} list /></>}>
-            <Results filter={filter} />
+        <div className="grid min-w-0 items-start gap-8 lg:grid-cols-[200px_minmax(0,1fr)]">
+          <Suspense fallback={<div className="hidden lg:block" />}>
+            <Rail filter={query} />
           </Suspense>
-        </PendingResults>
+          <div className="flex min-w-0 flex-col gap-[18px]">
+            {/* 막대에는 키를 주지 않는다 — 다시 세우면 고른 값이 뼈대로 한 번 사라졌다 돌아온다 */}
+            <Suspense fallback={<FilterBarSkeleton />}>
+              <FilterBar filter={query} personal={personal} />
+            </Suspense>
+            <ActiveFilters filter={query} variant="strip" shownElsewhere />
+
+            <PendingResults className="flex min-w-0 flex-col gap-6">
+              {/* 뼈대가 떠 있는 동안에도 로딩 띠를 세운다. 전환은 새 화면이 커밋되는 순간 끝나서 그 뒤로는 PendingResults 의 띠가 꺼진다 */}
+              <Suspense key={boundaryKey} fallback={<><PendingBar on /><ResultCountSkeleton /><GamesGridSkeleton cards={GAMES_PAGE_SIZE} gridClass={GAMES_GRID_CLASS} /></>}>
+                <Results filter={filter} />
+              </Suspense>
+            </PendingResults>
+          </div>
+        </div>
       </FilterStateProvider>
     </Page>
   );
