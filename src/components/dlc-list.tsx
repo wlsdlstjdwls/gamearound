@@ -1,6 +1,6 @@
 // 에디션 목록(과 되살릴 때를 위한 추가 콘텐츠 마디) — 기획서 F5.
 //
-// 추가 콘텐츠는 2026-09-22 에 플랫폼 행의 시트로 옮겼다(components/platform-addons).
+// 추가 콘텐츠는 2026-11-16 부터 상세 가격 비교 머리의 단추(DlcSheetButton)가 팝업으로 연다.
 // 이 마디는 에디션이 쓰고, 줄 모양은 둘이 dlc-rows 로 함께 쓴다.
 // DLC 는 games 행이라 자기 상세 화면도 갖는다. 여기서는 제목과 값만 보여주고 나머지는 그 화면에 맡긴다.
 //
@@ -24,6 +24,7 @@ import { useMemo, useState } from "react";
 import { ChipButton } from "@/components/ui/chip";
 import { DlcRows } from "@/components/dlc-rows";
 import { Collapsible } from "@/components/ui/collapsible";
+import { Sheet } from "@/components/ui/sheet";
 import { cheapestOf } from "@/lib/currency";
 import { PLATFORM_LABEL } from "@/lib/format";
 import { GAME_MESSAGES } from "@/lib/games/messages";
@@ -43,17 +44,8 @@ function priceOf(d: DlcDto, selected: Selected): PlatformDto | null {
   return cheapestOf(d.platforms.filter((p) => p.platform === selected));
 }
 
-export function DlcSection({
-  id,
-  title,
-  dlcs,
-  hasAddOns,
-}: {
-  id: string;
-  title: string;
-  dlcs: DlcDto[];
-  hasAddOns: boolean;
-}) {
+/** 플랫폼 칩 + 줄. 접는 마디(에디션)와 팝업(추가 콘텐츠)이 같은 몸통을 쓴다 */
+function useDlcRows(dlcs: DlcDto[]) {
   const [selected, setSelected] = useState<Selected>(null);
 
   // 목록에 실제로 있는 플랫폼만. 순서는 PLATFORM_ORDER 를 따른다 —
@@ -71,13 +63,13 @@ export function DlcSection({
       })),
     [dlcs, selected],
   );
+  return { selected, setSelected, platforms, rows };
+}
 
+function DlcBody({ state, hasAddOns }: { state: ReturnType<typeof useDlcRows>; hasAddOns: boolean }) {
+  const { selected, setSelected, platforms, rows } = state;
   return (
-    // 접어 두는 이유(2026-09-21): DLC 가 30줄까지 가는 게임이 있고, 그 30줄이 "파는 곳" 과
-    // 패치 기록을 화면 두 개 밖으로 밀었다. 그런데 본편을 보러 온 사람 대부분은 추가 콘텐츠를
-    // 안 연다 — 열 사람은 목적을 갖고 열고, 그때 건수는 제목 옆에서 이미 보인다.
-    <Collapsible id={id} title={title} note={rows.length > 0 ? `${rows.length}개` : undefined}>
-      <div className="flex flex-col gap-3">
+    <div className="flex flex-col gap-3">
       {platforms.length > 1 && (
         <ul className="flex flex-wrap gap-1.5" aria-label="플랫폼">
           <li>
@@ -100,7 +92,46 @@ export function DlcSection({
       ) : (
         <DlcRows rows={rows} />
       )}
-      </div>
+    </div>
+  );
+}
+
+export function DlcSection({
+  id,
+  title,
+  dlcs,
+  hasAddOns,
+}: {
+  id: string;
+  title: string;
+  dlcs: DlcDto[];
+  hasAddOns: boolean;
+}) {
+  const state = useDlcRows(dlcs);
+  return (
+    // 접어 두는 이유(2026-09-21): DLC 가 30줄까지 가는 게임이 있고, 그 30줄이 "파는 곳" 과
+    // 패치 기록을 화면 두 개 밖으로 밀었다. 그런데 본편을 보러 온 사람 대부분은 추가 콘텐츠를
+    // 안 연다 — 열 사람은 목적을 갖고 열고, 그때 건수는 제목 옆에서 이미 보인다.
+    <Collapsible id={id} title={title} note={state.rows.length > 0 ? `${state.rows.length}개` : undefined}>
+      <DlcBody state={state} hasAddOns={hasAddOns} />
     </Collapsible>
+  );
+}
+
+/**
+ * 추가 콘텐츠를 단추 하나로 세우고 팝업(좁은 화면은 바텀시트)으로 연다(2026-11-16 사용자 "따로 버튼 만들어서 팝업으로").
+ * 본문 마디로 두면 가격 비교와 그래프 사이를 통째로 먹었다. 단추 글자에 건수를 적어 열기 전에도 무엇이 몇 개인지 보인다.
+ * 단추의 건수는 늘 전체다 — 칩으로 거르는 일은 연 다음에 일어난다
+ */
+export function DlcSheetButton({ dlcs, hasAddOns }: { dlcs: DlcDto[]; hasAddOns: boolean }) {
+  const state = useDlcRows(dlcs);
+  return (
+    <Sheet
+      title={GAME_MESSAGES.dlcHeading}
+      label={GAME_MESSAGES.dlcButton(dlcs.length)}
+      size="wide"
+    >
+      <DlcBody state={state} hasAddOns={hasAddOns} />
+    </Sheet>
   );
 }

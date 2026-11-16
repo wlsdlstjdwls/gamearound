@@ -301,6 +301,8 @@ export const GAME_MESSAGES = {
    * 사운드트랙을 DLC 라고 부르면 틀린 말이고, "추가 콘텐츠" 는 셋 다 참이다.
    */
   dlcHeading: "추가 콘텐츠",
+  /** 상세 가격 비교 머리의 여는 단추(dlc-list 의 DlcSheetButton). 건수를 같이 적어 열기 전에도 몇 개인지 보인다 */
+  dlcButton: (n: number) => `추가 콘텐츠 ${n}개`,
   /** 목록은 아직인데 스토어가 "추가 콘텐츠 있음"이라고만 알려준 경우 */
   dlcKnownButUnlisted: "추가 콘텐츠가 있어요. 목록은 아직 모으는 중이에요.",
   /** 있다는 것은 알지만 스토어에서 값을 아직 확인 못 한 추가 콘텐츠 줄(DlcDto.uncheckedPlatforms) */

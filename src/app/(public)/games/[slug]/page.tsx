@@ -8,7 +8,7 @@ import type { Metadata } from "next";
 import { Suspense } from "react";
 import { notFound } from "next/navigation";
 import { DbUnavailablePage } from "@/components/db-unavailable";
-import { DlcSection } from "@/components/dlc-list";
+import { DlcSection, DlcSheetButton } from "@/components/dlc-list";
 import { ForecastByPlatform } from "@/components/game-detail/forecast-by-platform";
 import { PlatformPickProvider } from "@/components/game-detail/platform-pick";
 import { brandNameOf, initialPickBrand, isUpcomingRow, pcMergeable } from "@/components/platform-prices/order";
@@ -171,6 +171,9 @@ export default async function GameDetailPage({ params }: Props) {
         <SectionHead
           id="platforms-heading"
           title={upcoming ? D.upcomingHeading : D.priceHeading}
+          // 추가 콘텐츠는 본문 마디 대신 이 머리의 단추로 연다(2026-11-16 사용자 "따로 버튼 만들어서 팝업으로").
+          // 가격을 보던 자리에서 바로 "이 게임에 뭐가 더 있나" 를 열 수 있고, 30줄짜리 마디가 그래프를 밀어내지 않는다
+          action={game.dlcs.length > 0 ? <DlcSheetButton dlcs={game.dlcs} hasAddOns={game.platforms.some((p) => p.hasAddOns)} /> : undefined}
           // 제목 옆 행사 곁말(플랫폼, 할인 기간, 남은 날)은 걷었다(2026-11-11 사용자 "이 문구는 지워 줘").
           // 2026-09-30 에 넣었던 자리다. 할인 기간은 가격 칸과 머리 띠가 이미 말한다. 부품(platform-prices/sale-note)은 남겨 둔다
         />
@@ -198,14 +201,6 @@ export default async function GameDetailPage({ params }: Props) {
         />
         <UpgradeNotes upgrades={game.upgrades} />
       </section>
-
-      {/* 추가 콘텐츠 — 플랫폼 카드마다 있던 단추를 게임의 마디 하나로 모았다(2026-11-16 사용자 "플랫폼별이 아니라 게임에 종속").
-          플랫폼으로 거르는 칩은 마디 안에 있다(dlc-list) */}
-      {game.dlcs.length > 0 && (
-        <div className={sectionCardClass("min-w-0")}>
-          <DlcSection id="dlc-heading" title={GAME_MESSAGES.dlcHeading} dlcs={game.dlcs} hasAddOns={game.platforms.some((p) => p.hasAddOns)} />
-        </div>
-      )}
 
       {/* 가격 변동 추이 + 할인 예측(목업 #chs). 넓은 화면은 그래프 1.7 : 예측 1, 좁으면 위아래.
           출시 전 게임은 그릴 값도 예측할 값도 없어 통째로 빠진다(목업 g.up). 무료 게임은 예측 판만 빠진다 */}
