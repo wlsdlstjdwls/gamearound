@@ -97,6 +97,21 @@ describe("parseXboxProduct", () => {
     expect(snap.meta?.description).toBeNull();
   });
 
+  it("갈래 목록(Categories)이 비면 대표 갈래(Category)로 장르를 단다(GTA VI 얼티밋 에디션)", () => {
+    const raw = {
+      Products: [
+        {
+          ProductId: "X4",
+          ProductKind: "Game",
+          Properties: { Category: "Action & adventure", Categories: null },
+          LocalizedProperties: [{ ProductTitle: "Grand Theft Auto VI: 얼티밋 에디션" }],
+          MarketProperties: [{ OriginalReleaseDate: null }],
+        },
+      ],
+    };
+    expect(parseXboxProduct(raw, "X4", raw).meta?.genres).toEqual(["액션", "어드벤처"]);
+  });
+
   it("MSRP 보다 ListPrice 가 낮으면 할인율 계산", () => {
     const raw = {
       Products: [

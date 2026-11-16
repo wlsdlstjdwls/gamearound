@@ -130,6 +130,8 @@ const productSchema = z.object({
       HasAddOns: z.boolean().nullish(),
       IsDemo: z.boolean().nullish(),
       Categories: z.array(z.string()).nullish(),
+      // 대표 갈래 하나. Categories 가 null 인 상품도 이건 준다(2026-11-16 실측: GTA VI 얼티밋 에디션 "Action & adventure") — 장르의 물러설 자리
+      Category: z.string().nullish(),
       // 인원 속성(xbox-attributes). 인원이 아닌 속성(4K, HDR 등)은 Maximum 이 null 로 섞여 온다
       Attributes: z.array(z.object({ Name: z.string().nullish(), Maximum: z.number().nullish() })).nullish(),
     })
@@ -465,7 +467,7 @@ function xboxMeta(
     developer: lp?.DeveloperName?.trim() || null,
     publisher: lp?.PublisherName?.trim() || null,
     multiplayer: parseXboxMultiplayer(product.Properties?.Attributes),
-    genres: xboxGenres(product.Properties?.Categories),
+    genres: xboxGenres(product.Properties?.Categories?.length ? product.Properties.Categories : product.Properties?.Category ? [product.Properties.Category] : null),
   };
 }
 
