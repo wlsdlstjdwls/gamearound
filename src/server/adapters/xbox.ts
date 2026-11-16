@@ -15,6 +15,7 @@ import {
 import { createHttpClient, notFoundAs } from "./http";
 import { parseXboxKorean, parseXboxMultiplayer } from "./xbox-attributes";
 import { xboxContentType } from "./xbox-content-type";
+import { xboxDescription } from "./xbox-description";
 import { xboxGenres } from "./xbox-genres";
 import { sleep } from "@/lib/async";
 
@@ -117,6 +118,7 @@ const productSchema = z.object({
         DeveloperName: z.string().nullish(),
         PublisherName: z.string().nullish(),
         ShortDescription: z.string().nullish(),
+        ProductDescription: z.string().nullish(),
         Images: z.array(imageSchema).nullish().default([]),
       }),
     )
@@ -432,7 +434,7 @@ function xboxMeta(
   return {
     titleEn,
     titleKo: titleKo && titleKo !== titleEn ? titleKo : null,
-    description: lp?.ShortDescription?.trim() || null,
+    description: xboxDescription(lp?.ShortDescription, lp?.ProductDescription),
     coverUrl: xboxImageUrl(lp?.Images ?? [], XBOX_IMAGE_WIDE),
     portraitUrl: xboxImageUrl(lp?.Images ?? [], XBOX_IMAGE_TALL),
     developer: lp?.DeveloperName?.trim() || null,
