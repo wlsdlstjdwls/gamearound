@@ -244,6 +244,14 @@ export const gamePlatforms = pgTable("game_platforms", {
    * 할인이 끝나 정가로 돌아간 행은 이 값이 남아 있을 수 있어 화면은 할인 중일 때만 믿는다(services 의 mappers)
    */
   historicLow: boolean("historic_low"),
+  /**
+   * 성능 표지(2026-11-16 사용자 "성능 데이터 되는 대로 다"). lib/games/perf 의 PERF_FEATURES 열쇠 목록이다("4k", "60fps", "120fps", "hdr", "raytracing" 등).
+   * 출처: Xbox 는 카탈로그 속성(Capability4k, 60fps ...), Steam 은 PCGamingWiki 의 Video 표. PlayStation, 닌텐도는 스토어가 주지 않아 비어 있다.
+   * null 은 아직 안 물어봄, 빈 배열은 물어봤는데 표지 없음이다
+   */
+  perfFeatures: text("perf_features").array(),
+  /** PCGamingWiki 를 마지막으로 물어본 시각 — 다시 묻는 주기를 정한다(sync/perf-pcgw) */
+  perfCheckedAt: timestamp("perf_checked_at", { withTimezone: true }),
   /** 위 가격 두 개의 통화. 비교, 집계는 같은 통화끼리만 한다(services 의 DISPLAY_CURRENCY) */
   currency: currencyEnum("currency").default("KRW").notNull(),
   metacriticScore: integer("metacritic_score"),

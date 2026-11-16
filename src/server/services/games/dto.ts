@@ -44,6 +44,8 @@ export type PlatformDto = {
   hasAddOns: boolean | null;
   /** 밸브가 매긴 스팀덱 구동 등급. 스팀 행에만 있고, 밸브가 아직 안 본 게임도 null 이다 */
   deckCompat: DeckCompat | null;
+  /** 성능 표지(lib/games/perf 의 PERF_FEATURES 열쇠). Xbox, Steam 행만 채워진다. 옛 캐시에는 이 칸이 없어 화면은 ?? [] 로 읽는다 */
+  perfFeatures?: string[];
   /**
    * 이 스토어가 말한 네이티브 구동 OS. 모르는 스토어(콘솔 전체)는 세 값이 다 null 이라
    * 화면이 "미지원" 과 "모름" 을 가를 수 있다 — false 와 null 을 같게 다루면 거짓을 자신 있게 말하게 된다.

@@ -107,7 +107,7 @@ export const DETAIL_MESSAGES = {
   /** 성능 정보 탭 아래 플랫폼별 한 줄(game-detail/perf-row) */
   perfRowTitle: "플랫폼별 성능",
   perfRowNone: "공개된 성능 정보가 없어요",
-  perfRowNote: "프레임, 해상도는 스토어가 공개하는 대로 모으는 중이에요.",
+  perfRowNote: "Xbox 는 스토어, PC 는 PCGamingWiki 가 공개한 지원 표시예요. PlayStation, Nintendo 는 스토어가 성능 정보를 공개하지 않아요.",
   moreHeading: "더 알아보기",
   sourcesHeading: "정보 출처",
 } as const;

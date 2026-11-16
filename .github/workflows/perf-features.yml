@@ -1,0 +1,41 @@
+# 성능 표지(4K, 60/120fps, HDR, 레이 트레이싱 등)를 채운다 — Xbox 카탈로그 속성, Steam 은 PCGamingWiki(scripts/collect-perf, sync/perf-features).
+#
+# Actions 인 이유: 두 출처 다 IP 를 가리지 않는다(Xbox 카탈로그는 가격 수집이 이미 러너에서 받고, PCGamingWiki 는 curl 로 열린다 — 2026-11-16 실측).
+# 하루 1회, 물어본 지 30일이 지난 행만 회차 몫(Xbox 400, PCGamingWiki 60)만큼 묻는다. 표지는 패치로 드물게 바뀐다.
+# DB 는 고른 행 몇백 개 읽고 한 줄씩 쓴다 — Neon 전송량은 수십 KB 꼴.
+name: perf-features
+
+on:
+  schedule:
+    # 매일 10:10 KST
+    - cron: "10 1 * * *"
+  workflow_dispatch:
+
+concurrency:
+  group: perf-features
+  cancel-in-progress: false
+
+jobs:
+  collect:
+    runs-on: ubuntu-latest
+    # PCGamingWiki 60건 x (요청 둘 + 간격 1.2초) 약 3분, Xbox 20건씩 20번 1분
+    timeout-minutes: 20
+    env:
+      DATABASE_URL: ${{ secrets.DATABASE_URL }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+        with:
+          package_json_file: package.json
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: pnpm
+          cache-dependency-path: pnpm-lock.yaml
+
+      - run: pnpm install --frozen-lockfile
+
+      - name: collect performance features
+        run: pnpm perf:collect

@@ -89,6 +89,7 @@ export function toPlatformDto(p: PlatformRow): PlatformDto {
     syncStatus: p.syncStatus,
     hasAddOns: p.hasAddOns,
     deckCompat: p.deckCompat,
+    perfFeatures: p.perfFeatures ?? [],
     nativeWindows: p.nativeWindows,
     nativeMac: p.nativeMac,
     nativeLinux: p.nativeLinux,
