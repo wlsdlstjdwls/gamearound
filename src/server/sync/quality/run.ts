@@ -20,6 +20,7 @@ import { issueKey, loadGameSlugs, loadQualityInput } from "./load";
 import { findParentChains, findParentMoreSpecific, findReleaseDateGaps, findSharedStoreIds, type QualityFinding } from "./rules";
 import { findDuplicateTitles, findGamesWithParent } from "./rules-structure";
 import { findMixedIdentity } from "./rules-identity";
+import { findOrphanStoreRows } from "./rules-orphan";
 
 export interface QualityRunResult {
   found: number;
@@ -45,6 +46,7 @@ export async function runDataQuality(now: Date = new Date()): Promise<QualityRun
     ...findGamesWithParent(input.games, input.lockedParent),
     ...findDuplicateTitles(input.games, input.storeIds),
     ...findMixedIdentity(input.games, input.titledRefs),
+    ...findOrphanStoreRows(input.orphans),
   ];
 
   const result: QualityRunResult = { found: findings.length, autoApplied: 0, newlyOpened: 0, open: 0, stale: 0, vanished: 0, failed: 0, errors: [] };

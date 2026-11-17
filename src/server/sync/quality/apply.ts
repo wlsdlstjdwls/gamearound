@@ -92,7 +92,27 @@ export async function applyQualityFix(db: Db, fix: QualityFix, actor: QualityAct
       return unlinkMetaRef(db, fix, audit);
     case "split_store_ref":
       return splitStoreRef(db, fix, actor, audit);
+    case "drop_platform_row":
+      return dropPlatformRow(db, fix);
   }
+}
+
+/**
+ * 확정 연결 없이 화면에 걸린 줄을 지운다(rules-orphan). 판정 뒤 그 상품을 가리키는 확정 연결이 생겼으면(사람이 다시 이었다) 멈춘다.
+ * 가격 이력, 패치, 구독은 game_platforms 의 cascade 로 함께 지워진다 — 다른 상품의 이력이라 남길 까닭이 없다.
+ */
+async function dropPlatformRow(db: Db, fix: Extract<QualityFix, { kind: "drop_platform_row" }>): Promise<string[]> {
+  const [linked] = await db
+    .select({ gameId: gameSourceRefs.gameId })
+    .from(gameSourceRefs)
+    .where(and(eq(gameSourceRefs.gameId, fix.gameId), eq(gameSourceRefs.externalId, fix.externalId), inArray(gameSourceRefs.matchedBy, ["auto", "manual"])));
+  if (linked) throw new StaleFixError("연결");
+  const dropped = await db
+    .delete(gamePlatforms)
+    .where(and(eq(gamePlatforms.id, fix.platformRowId), eq(gamePlatforms.storeExternalId, fix.externalId)))
+    .returning({ gameId: gamePlatforms.gameId });
+  if (dropped.length === 0) throw new StaleFixError("플랫폼 줄");
+  return [fix.gameId];
 }
 
 /**

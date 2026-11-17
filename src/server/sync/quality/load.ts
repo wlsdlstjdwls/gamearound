@@ -9,12 +9,16 @@
 //   값 붙은 게임  부모로 쓰이는 게임만(findParentMoreSpecific 이 부모만 묻는다)
 //   스토어 번호, slug  같은 제목 본편 두 줄의 게임만(findDuplicateTitles). 그래서 이 둘은 첫 묶음 뒤에 한 번 더 묻는다
 //   제목 남은 연결  그런 연결이 둘 이상이고 자동 연결이 끼어 있는 게임만(findMixedIdentity 는 하나뿐이면 보지 않는다)
-import { and, eq, inArray, isNotNull, sql } from "drizzle-orm";
+//   고아 줄      링크 걸린 줄 중 그 상품의 확정 연결이 없는 것만(rules-orphan). 2026-11-17 정리 뒤 약 190줄이다
+import { and, eq, inArray, isNotNull, sql, type SQL } from "drizzle-orm";
 import type { Db } from "@/server/db/client";
 import { dataCorrections, dataIssues, gamePlatforms, games, gameSourceRefs } from "@/server/db/schema";
 import { RELEASE_RECENT_DAYS, type QualityGame, type QualityPlatformRow, type QualityRule, type SharedStoreId } from "./rules";
 import type { QualityRef } from "./rules-identity";
 import { duplicateTitlePairs } from "./rules-structure";
+import type { OrphanStoreRow } from "./rules-orphan";
+import { HIDDEN_PLATFORMS, HIDDEN_REGIONS } from "@/lib/platform";
+import { SOURCE_PLATFORMS, SOURCE_REGION } from "../constants";
 
 /** 공유를 따질 연결. pending, none 은 아직 확정이 아니라 둘이 같은 id 를 쥐어도 문제가 아니다 */
 const CONFIRMED_MATCHES = ["auto", "manual"];
@@ -39,6 +43,8 @@ export interface QualityInput {
   titledRefs: QualityRef[];
   /** 이미 남긴 판정. 열쇠는 `${rule}:${subjectKey}` */
   issues: Map<string, { id: string; status: "open" | "applied" | "dismissed" }>;
+  /** 확정 연결 없이 화면에 걸린 플랫폼 줄(rules-orphan) */
+  orphans: OrphanStoreRow[];
 }
 
 export const issueKey = (rule: QualityRule | string, subjectKey: string) => `${rule}:${subjectKey}`;
@@ -50,7 +56,7 @@ export function recentReleaseCutoff(now: Date): string {
 
 export async function loadQualityInput(db: Db, now: Date = new Date()): Promise<QualityInput> {
   const confirmed = inArray(gameSourceRefs.matchedBy, CONFIRMED_MATCHES);
-  const [gameRows, platformRows, pricedRows, lockRows, sharedRows, issueRows, titledRows] = await Promise.all([
+  const [gameRows, platformRows, pricedRows, lockRows, sharedRows, issueRows, titledRows, orphanRows] = await Promise.all([
     db.select({ id: games.id, titleEn: games.titleEn, contentType: games.contentType, parentGameId: games.parentGameId }).from(games),
     db
       .select({ id: gamePlatforms.id, gameId: gamePlatforms.gameId, platform: gamePlatforms.platform, releaseDate: gamePlatforms.releaseDate, price: gamePlatforms.currentPrice })
@@ -105,6 +111,7 @@ export async function loadQualityInput(db: Db, now: Date = new Date()): Promise<
             having count(*) >= ${MIXED_MIN_REFS}::int and bool_or(r.matched_by = 'auto'))`,
         ),
       ),
+    loadOrphanStoreRows(db),
   ]);
 
   const pairIds = duplicateTitlePairs(gameRows).flat().map((g) => g.id);
@@ -140,7 +147,40 @@ export async function loadQualityInput(db: Db, now: Date = new Date()): Promise<
     storeIds,
     titledRefs: titledRows,
     issues: new Map(issueRows.map((r) => [issueKey(r.rule, r.subjectKey), { id: r.id, status: r.status }])),
+    orphans: orphanRows,
   };
+}
+
+/**
+ * 링크가 걸렸는데 그 상품 번호를 가리키는 확정 연결이 그 게임에 없는 줄. 숨긴 플랫폼, 지역은 화면에 안 나와 뺀다(AGENTS §5).
+ * psprices 병합 줄("psprices:숫자")은 공식 번호가 아니라 연결과 견줄 수 없다 — 다른 길(dlc-adopt, PS 몰아 채우기)이 맡는다.
+ * 견주는 연결의 소스를 가리지 않는다: 스토어마다 번호 꼴이 달라 번호가 같으면 같은 상품이다.
+ */
+/** drizzle 은 배열 인자를 낱개로 풀어 보낸다 — any($1::text[]) 대신 값 목록으로 쓴다. 빈 목록이면 거르지 않는다 */
+function notIn(col: SQL, values: readonly string[]): SQL {
+  return values.length === 0 ? sql`true` : sql`${col} not in (${sql.join(values.map((v) => sql`${v}`), sql`, `)})`;
+}
+
+export async function loadOrphanStoreRows(db: Db): Promise<OrphanStoreRow[]> {
+  // 줄의 (기기, 지역)으로 그 줄을 수집하는 소스를 고른다. 값은 코드의 상수라 그대로 SQL 에 넣는다
+  const sourceOf = sql.raw(
+    `case ${Object.entries(SOURCE_PLATFORMS)
+      .map(([src, pfs]) => `when p.platform::text in (${pfs.map((x) => `'${x}'`).join(",")}) and p.region::text = '${SOURCE_REGION[src as keyof typeof SOURCE_REGION]}' then '${src}'`)
+      .join(" ")} end`,
+  );
+  const rows = await db.execute(sql`
+    select p.id, p.game_id as "gameId", g.title_en as "titleEn", p.platform::text as platform, p.store_external_id as "externalId",
+      r.matched_by::text as "refState", r.external_id as "refExternalId"
+    from ${gamePlatforms} p
+    join ${games} g on g.id = p.game_id
+    left join lateral (
+      select rr.matched_by, rr.external_id from ${gameSourceRefs} rr
+      where rr.game_id = p.game_id and rr.source::text = ${sourceOf}) r on true
+    where p.store_url is not null and p.store_external_id not like 'psprices:%'
+      and ${notIn(sql`p.platform::text`, HIDDEN_PLATFORMS)} and ${notIn(sql`p.region::text`, HIDDEN_REGIONS)}
+      and not exists (select 1 from ${gameSourceRefs} c
+        where c.game_id = p.game_id and c.external_id = p.store_external_id and c.matched_by in ('auto', 'manual'))`);
+  return rows.rows as unknown as OrphanStoreRow[];
 }
 
 const loadGameSlugRows = (db: Db, ids: readonly string[]) =>
