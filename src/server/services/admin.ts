@@ -16,6 +16,7 @@ import { requireAdmin } from "@/server/services/users";
 import { DISPLAY_TIME_ZONE } from "@/lib/format";
 import type { SyncRunHealth } from "@/lib/admin/sync-health";
 import { RUNNING_GRACE_MINUTES } from "@/server/services/admin-activity";
+import { SOURCE_PLATFORMS, SOURCE_REGION } from "@/server/sync/constants";
 
 /**
  * 로그 한 줄에서 items(만진 게임 목록)는 뺀다. 한 줄에 수백 건이 실려 있어 로그 표 100줄이면
@@ -156,15 +157,34 @@ export async function approveMatch(gameId: string, source: SourceName): Promise<
  * (후보 0건을 기록하지 않아 hltb 큐 선두가 막혔던 것과 같은 머리막힘, match.ts NO_CANDIDATE_EXTERNAL_ID 참고).
  * none 으로 남기면 checked_at 이 갱신돼 NONE_RETRY_DAYS 동안 조용하고, 그 사이 판정 규칙이 좋아지면
  * 재검색 때 제대로 된 후보를 집는다. 거절한 후보 id 는 그대로 둔다 — 무엇을 보고 물렀는지가 남는다.
+ *
+ * 거절한 상품의 플랫폼 줄도 함께 지운다. 연결만 none 으로 바꾸면 그 줄은 다시 갱신되지 않은 채 화면에 남는다 —
+ * 2026-11-17 실측으로 이렇게 남은 엉뚱한 상품 줄이 365개였다(데이터 점검 orphan_store_row 가 남은 것을 잡는다).
  */
 export async function rejectMatch(gameId: string, source: SourceName): Promise<void> {
   await requireAdmin();
-  const rows = await getDb()
+  const db = getDb();
+  const rows = await db
     .update(gameSourceRefs)
     .set({ matchedBy: "none", confidence: null, checkedAt: new Date() })
     .where(and(eq(gameSourceRefs.gameId, gameId), eq(gameSourceRefs.source, source)))
-    .returning({ gameId: gameSourceRefs.gameId });
+    .returning({ externalId: gameSourceRefs.externalId });
   if (rows.length === 0) throw new Error("해당 소스 매핑이 없습니다");
+  const rejected = rows[0].externalId;
+  // 스토어 소스만 플랫폼 줄이 있다(메타 소스 hltb, 위키데이터 등은 줄이 없다)
+  const platforms = (SOURCE_PLATFORMS as Partial<Record<SourceName, readonly string[]>>)[source];
+  if (rejected && platforms) {
+    await db
+      .delete(gamePlatforms)
+      .where(
+        and(
+          eq(gamePlatforms.gameId, gameId),
+          eq(gamePlatforms.storeExternalId, rejected),
+          inArray(gamePlatforms.platform, platforms as typeof gamePlatforms.platform._.data[]),
+          eq(gamePlatforms.region, SOURCE_REGION[source as keyof typeof SOURCE_REGION]),
+        ),
+      );
+  }
 }
 
 /** 수동 매핑 upsert (game_id, source) 기준. confidence는 비움 */
