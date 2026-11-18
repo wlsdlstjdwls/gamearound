@@ -137,7 +137,46 @@ export default async function IndieDetailPage({ params, searchParams }: Props) {
       {/* 내 게임 띠 — 성적과 할 일(수정, 통계, 플레이테스트, 광고)을 머리 판 위에 모은다(components/indie/owner-bar). 관리자에게는 안 선다 */}
       {isOwner && <IndieOwnerBar id={post.id} live={live} rank={fameRank} views={post.viewCount} likes={post.likeCount} comments={comments.length} />}
 
-      <IndieDetailHero post={post} links={otherLinks} play={play} fameRank={fameRank} fameHistory={fameHistory} />
+      <IndieDetailHero
+        post={post}
+        links={otherLinks}
+        play={play}
+        fameRank={fameRank}
+        fameHistory={fameHistory}
+        side={
+          // 머리 카드 오른쪽(2026-11-18 사용자 "상단 영역이 너무 비어 보인다"): 누가 만들었나, 몇 명이 찜했나, 그리고 찜하기와 소식 받기.
+          // 찜, 소식 받기 단추는 오른쪽 "게임 정보" 칸에서 이리로 옮겼다 — 같은 단추를 두 곳에 두지 않는다
+          <>
+            <div className="flex items-center gap-3">
+              <span aria-hidden className="flex size-11 shrink-0 items-center justify-center rounded-full bg-surface-2 text-[17px] font-extrabold text-ink-2">
+                {post.developerName.slice(0, 1)}
+              </span>
+              <div className="flex min-w-0 flex-col">
+                <span className="text-[12px] text-dim">{M.by}</span>
+                <span className="flex min-w-0 items-center gap-1.5">
+                  <span className="truncate text-[15px] font-bold text-ink">{post.developerName}</span>
+                  {post.authorIsMaker && <MakerBadge />}
+                </span>
+              </div>
+            </div>
+            <dl className="grid grid-cols-2 gap-2">
+              {[
+                // 찜 수는 바로 아래 찜하기 단추가 말한다 — 같은 숫자를 두 번 세우지 않고 올린 날을 둔다
+                { label: M.heroViews, value: post.viewCount.toLocaleString("ko-KR") },
+                { label: M.posted, value: formatDate(post.createdAt) },
+              ].map((c) => (
+                <div key={c.label} className="flex flex-col rounded-[var(--radius-md)] bg-surface-4 px-3 py-2.5">
+                  <dt className="text-[12px] text-mut">{c.label}</dt>
+                  <dd className="truncate text-[17px] font-black tabular-nums tracking-[-0.03em] text-ink">{c.value}</dd>
+                </div>
+              ))}
+            </dl>
+            {post.review === "approved" && <IndieLikeButton postId={post.id} slug={post.slug} likeCount={post.likeCount} />}
+            {/* 자기 소식은 받을 수 없다(services/indie/promo). 공개 글에서만 — 승인 전 글은 보는 사람이 글쓴이, 관리자뿐이다 */}
+            {live && !isOwner && <IndieFollowButton developerUserId={post.authorUserId} />}
+          </>
+        }
+      />
 
       <div className="grid items-start gap-6 lg:grid-cols-[minmax(0,1fr)_320px]">
         <div className="flex min-w-0 flex-col gap-6">
@@ -258,9 +297,7 @@ export default async function IndieDetailPage({ params, searchParams }: Props) {
             ))}
           </dl>
 
-          {post.review === "approved" && <IndieLikeButton postId={post.id} slug={post.slug} likeCount={post.likeCount} />}
-          {/* 자기 소식은 받을 수 없다(services/indie/promo). 공개 글에서만 — 승인 전 글은 보는 사람이 글쓴이, 관리자뿐이다 */}
-          {live && !isOwner && <IndieFollowButton developerUserId={post.authorUserId} />}
+          {/* 찜하기, 소식 받기는 머리 카드 오른쪽으로 옮겼다(2026-11-18) */}
 
           <div className="flex flex-wrap items-center justify-end gap-3 border-t border-line pt-3 text-[12.5px]">
             {/* 글쓴이의 광고, 플레이테스트, 수정 입구는 맨 위 내 게임 띠로 옮겼다(2026-10-30). 여기엔 관리자의 고치기만 남는다 */}

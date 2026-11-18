@@ -145,6 +145,8 @@ export const INDIE_MESSAGES = {
   infoTitle: "게임 정보",
   stage: "개발 단계",
   posted: "올린 날",
+  // 머리 카드 오른쪽 숫자 둘(2026-11-18, app/(public)/indie/[slug])
+  heroViews: "조회",
 } as const;
 
 /** 쓰기, 고치기 폼과 검증 */

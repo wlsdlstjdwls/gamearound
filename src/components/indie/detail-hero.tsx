@@ -51,12 +51,15 @@ export function IndieDetailHero({
   play,
   fameRank,
   fameHistory,
+  side,
 }: {
   post: IndieDetailDto;
   links: IndieHeroLink[];
   play: IndieHeroLink | null;
   fameRank: number | null;
   fameHistory: Array<{ ym: string; rank: number }>;
+  /** 카드 오른쪽 칸(개발자, 찜 수, 찜하기, 소식 받기). 화면이 그려 넘긴다 — 로그인, 글쓴이 여부를 아는 쪽이 화면이다 */
+  side?: React.ReactNode;
 }) {
   const cover = post.images[0];
   const podium = fameRank !== null && fameRank <= RANK_TONE_TOP ? fameRank : null;
@@ -82,16 +85,25 @@ export function IndieDetailHero({
       </div>
 
       {/* 정보 카드 — 배너 아래쪽에 겹쳐 앉는다 */}
-      <div className="relative mx-2.5 -mt-10 flex flex-col gap-4 rounded-[var(--radius-panel)] bg-surface p-4 shadow-[var(--ring-hair),var(--elev-2)] sm:mx-7 sm:-mt-[88px] sm:p-6">
+      {/* 넓은 화면에서는 두 칸이다(2026-11-18 사용자 "상단 영역이 너무 비어 보인다"): 왼쪽 제목과 행동, 오른쪽 개발자와 찜(side) */}
+      <div className="relative mx-2.5 -mt-10 grid gap-5 rounded-[var(--radius-panel)] bg-surface p-4 shadow-[var(--ring-hair),var(--elev-2)] sm:mx-7 sm:-mt-[88px] sm:p-6 lg:grid-cols-[minmax(0,1fr)_280px] lg:gap-8">
+       <div className="flex min-w-0 flex-col gap-4">
         <div className="flex flex-col gap-2">
+          {/* 이번 달 1~3위 딱지(2026-11-18 사용자 "강조도 안 되고, 1, 2, 3위는 멋지게"). 먹색 판에 파란 트로피 + 큰 순위 숫자, 빛이 스친다.
+              금, 은, 동 색은 쓰지 않는다(누런색 금지) — 순위는 숫자 크기가, 특별함은 먹색 판과 빛이 말한다 */}
           {podium && (
             <Link
               href={ROUTES.hallOfFame}
               aria-label={`${FM.detailBadge(podium)}, ${FM.detailBadgeLink}`}
-              className="press tap inline-flex items-center gap-1.5 self-start rounded-full bg-surface-2 px-3.5 py-1.5 text-[13px] font-extrabold text-ink hover:bg-surface-3"
+              className="glint-sweep press tap relative inline-flex items-center gap-2.5 self-start overflow-hidden rounded-[var(--radius-md)] bg-ink py-1.5 pl-2 pr-4 text-on-ink shadow-[var(--elev-2)]"
             >
-              <TrophyIcon size={15} strokeWidth={2.4} />
-              {FM.detailBadge(podium)}
+              <span aria-hidden className="grid size-9 place-items-center rounded-[var(--radius-sm)] bg-[color-mix(in_oklab,var(--on-ink)_12%,transparent)] text-acc-on-ink">
+                <TrophyIcon size={20} strokeWidth={2.2} />
+              </span>
+              <span className="flex flex-col leading-tight">
+                <span className="text-[11.5px] font-semibold opacity-75">{FM.detailBadgeHead}</span>
+                <span className="text-[17px] font-black tracking-[-0.02em]">{FM.detailBadgeRank(podium)}</span>
+              </span>
             </Link>
           )}
           {/* 개발 단계(앞서 해보기 등) 줄은 걷었다(2026-11-16 사용자 "앞서해보기 문구 제거") */}
@@ -144,6 +156,8 @@ export function IndieDetailHero({
             )}
           </div>
         )}
+       </div>
+        {side && <div className="flex min-w-0 flex-col gap-3 border-t border-line-soft pt-4 lg:border-l lg:border-t-0 lg:pl-8 lg:pt-0">{side}</div>}
       </div>
     </section>
   );
