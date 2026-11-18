@@ -21,6 +21,8 @@ import { Comments } from "@/components/community/post-interactions";
 import { DeleteIndiePost } from "@/components/indie/delete-post";
 import { IndieOwnerBar } from "@/components/indie/owner-bar";
 import { IndieDetailHero } from "@/components/indie/detail-hero";
+import { FameRibbon } from "@/components/indie/fame-ribbon";
+import { RANK_TONE_TOP } from "@/components/ui/rank-tone";
 import { MakerBadge } from "@/components/membership/maker-badge";
 import { IndieFollowButton } from "@/components/indie/follow-button";
 import { IndieLikeButton } from "@/components/indie/like-button";
@@ -137,11 +139,13 @@ export default async function IndieDetailPage({ params, searchParams }: Props) {
       {/* 내 게임 띠 — 성적과 할 일(수정, 통계, 플레이테스트, 광고)을 머리 판 위에 모은다(components/indie/owner-bar). 관리자에게는 안 선다 */}
       {isOwner && <IndieOwnerBar id={post.id} live={live} rank={fameRank} views={post.viewCount} likes={post.likeCount} comments={comments.length} />}
 
+      {/* 이번 달 1~3위면 맨 위 금속 띠 + 페이지 바탕(2026-11-18 L2 + C1, components/indie/fame-ribbon) */}
+      {fameRank !== null && fameRank <= RANK_TONE_TOP && <FameRibbon rank={fameRank} />}
+
       <IndieDetailHero
         post={post}
         links={otherLinks}
         play={play}
-        fameRank={fameRank}
         fameHistory={fameHistory}
         // 게임 정보는 머리 카드로 올렸다(2026-11-18 사용자 "오른쪽 하단 게임 정보 내용을 위로"). 사실 줄(facts)은 제목 아래 왼쪽, 단추(actions)는 플레이하기 아래 오른쪽 —
         // 한쪽에 몰면 다른 쪽이 텅 빈다. "게임 정보 / 개발자 이름" 머리 줄은 사실 줄의 "만든 사람" 과 같은 말이라 걷었다

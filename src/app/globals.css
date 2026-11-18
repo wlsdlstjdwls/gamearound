@@ -36,13 +36,23 @@
   --danger-soft: #fff0f0;
   --ok: #0f766e;
   --ok-soft: #e3f3f0;
-  /* 명예의 전당 1~3위 트로피 옆 옅은 판(2026-11-18, components/indie/detail-hero). 트로피 그림 금, 은, 동에 맞춘 거의 흰 면 — 면이 누렇게 읽히지 않게 아주 옅다 */
   /* 인디 상세 본문 한 기둥 폭(2026-11-18 사용자 "가운데 콘텐츠 너비 좀 더 줄이고"). 글 읽는 줄 길이가 넘치지 않는 폭 */
   --indie-body-w: 880px;
-  --medal-1-soft: #fbf7ec;
-  --medal-2-soft: #f3f5f8;
-  --medal-3-soft: #fbf3ed;
-  --medal-line: color-mix(in oklab, var(--line-strong) 70%, transparent);
+  /* 이번 달 명예의 전당 1~3위 인디 상세(2026-11-18 사용자 L2 + C1 선택, components/indie/fame-ribbon). 순위마다 금속 하나:
+     band = 머리 아래 띠의 금속 광택(밝은 끝, 진한 가운데, 다시 밝게), ink = 띠 위 글자, line = 띠 아래 선, tint = 페이지 바탕.
+     은 바탕도 기본 바탕(--bg)과 눈에 띄게 다르게 잡았다(시안에서 "은색이 기본 바탕과 같다" 를 고친 값) */
+  --medal-1-band: linear-gradient(100deg, #f7e7b6 0%, #e7c46a 45%, #c99a2e 70%, #f2dc9a 100%);
+  --medal-2-band: linear-gradient(100deg, #f4f6f9 0%, #cfd6e0 40%, #a9b3c1 65%, #e9edf2 100%);
+  --medal-3-band: linear-gradient(100deg, #f6d7bf 0%, #d99567 45%, #b06a3b 70%, #f0c7a6 100%);
+  --medal-1-ink: #2a1f05;
+  --medal-2-ink: #18202b;
+  --medal-3-ink: #2a1407;
+  --medal-1-line: #b8902f;
+  --medal-2-line: #8f99a8;
+  --medal-3-line: #a8673d;
+  --medal-1-tint: #faf3e1;
+  --medal-2-tint: #eceff4;
+  --medal-3-tint: #f8ece3;
   /* 주의 — 주황. 10-27 에 황토(#8a6a2e)에서 바꿨다(사용자: "누런색은 되도록 쓰지 마") */
   --warn: #c2410c;
   --warn-soft: #fff1e8;
@@ -236,9 +246,18 @@
     --danger-soft: #3a1d27;
     --ok: #3ddc9f;
     --ok-soft: #13302b;
-    --medal-1-soft: #2a2516;
-    --medal-2-soft: #232a35;
-    --medal-3-soft: #2c2019;
+    --medal-1-band: linear-gradient(100deg, #3b2f10 0%, #6b521a 45%, #8a6a22 70%, #4a3a14 100%);
+    --medal-2-band: linear-gradient(100deg, #2b313b 0%, #46505e 40%, #5d6878 65%, #333a45 100%);
+    --medal-3-band: linear-gradient(100deg, #3a2216 0%, #6a3e24 45%, #85502e 70%, #452a1b 100%);
+    --medal-1-ink: #fbf1d6;
+    --medal-2-ink: #eef1f6;
+    --medal-3-ink: #fbe7d9;
+    --medal-1-line: #8a6a22;
+    --medal-2-line: #5d6878;
+    --medal-3-line: #85502e;
+    --medal-1-tint: #1c1910;
+    --medal-2-tint: #191d24;
+    --medal-3-tint: #1d1612;
     --warn: #ff9a5c;
     --warn-soft: #3a2418;
     --plum: #c4a8ff;
@@ -302,9 +321,18 @@
   --danger-soft: #3a1d27;
   --ok: #3ddc9f;
   --ok-soft: #13302b;
-  --medal-1-soft: #2a2516;
-  --medal-2-soft: #232a35;
-  --medal-3-soft: #2c2019;
+  --medal-1-band: linear-gradient(100deg, #3b2f10 0%, #6b521a 45%, #8a6a22 70%, #4a3a14 100%);
+  --medal-2-band: linear-gradient(100deg, #2b313b 0%, #46505e 40%, #5d6878 65%, #333a45 100%);
+  --medal-3-band: linear-gradient(100deg, #3a2216 0%, #6a3e24 45%, #85502e 70%, #452a1b 100%);
+  --medal-1-ink: #fbf1d6;
+  --medal-2-ink: #eef1f6;
+  --medal-3-ink: #fbe7d9;
+  --medal-1-line: #8a6a22;
+  --medal-2-line: #5d6878;
+  --medal-3-line: #85502e;
+  --medal-1-tint: #1c1910;
+  --medal-2-tint: #191d24;
+  --medal-3-tint: #1d1612;
   --warn: #ff9a5c;
   --warn-soft: #3a2418;
   --plum: #c4a8ff;
@@ -373,10 +401,6 @@
   --color-danger-soft: var(--danger-soft);
   --color-ok: var(--ok);
   --color-ok-soft: var(--ok-soft);
-  --color-medal-1-soft: var(--medal-1-soft);
-  --color-medal-2-soft: var(--medal-2-soft);
-  --color-medal-3-soft: var(--medal-3-soft);
-  --color-medal-line: var(--medal-line);
   --color-warn: var(--warn);
   --color-warn-soft: var(--warn-soft);
   --color-plum: var(--plum);
@@ -2022,3 +2046,9 @@ body:has([data-onboarding]) > [data-site-tabbar] {
   width: 100vw;
   margin-inline: calc(50% - 50vw);
 }
+
+/* 이번 달 명예의 전당 1~3위 인디 상세의 페이지 바탕(2026-11-18 사용자 L2 + C1 선택). 표지(data-fame-page)를 단 화면에서만 바탕과 --bg 를 금속 옅은 색으로 —
+   --bg 를 바꾸므로 배너 아래 녹는 막(detail-hero 의 BANNER_FADE)도 그 색으로 녹는다. 흰 카드(bg-surface)는 그대로다. 다른 화면은 표지가 없어 안 바뀐다 */
+body:has([data-fame-page="1"]) { --bg: var(--medal-1-tint); background: var(--medal-1-tint); }
+body:has([data-fame-page="2"]) { --bg: var(--medal-2-tint); background: var(--medal-2-tint); }
+body:has([data-fame-page="3"]) { --bg: var(--medal-3-tint); background: var(--medal-3-tint); }
