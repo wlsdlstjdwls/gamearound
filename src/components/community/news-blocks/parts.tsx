@@ -25,10 +25,14 @@ export function NewsHead({ id, title, note, count, action }: { id: string; title
   );
 }
 
-/** 블록 머리 오른쪽의 작은 이동 링크("전체 글 보기", "홍보 게시판") */
+/**
+ * 블록 머리 오른쪽의 작은 이동 링크("전체 글 보기", "개발 현황 보기", "자세히").
+ * 늘 밑줄을 긋는다(2026-11-18 사용자 "클릭 가능한 버튼들은 밑줄 좀 쳐줘") — 회색 글자만으로는 누를 수 있는 말인지 안 읽혔다.
+ * 색은 회색 그대로, 올리면 먹색으로 짙어진다(파랑 남발 금지)
+ */
 export function HeadLink({ href, children }: { href: string; children: React.ReactNode }) {
   return (
-    <Link href={href} className="text-[13px] text-mut hover:text-acc hover:underline">
+    <Link href={href} className="text-[13px] text-mut underline decoration-line-strong underline-offset-[3px] transition-colors hover:text-ink hover:decoration-ink">
       {children}
     </Link>
   );
