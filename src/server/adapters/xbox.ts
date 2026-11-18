@@ -17,6 +17,7 @@ import { parseXboxKorean, parseXboxMultiplayer } from "./xbox-attributes";
 import { xboxContentType } from "./xbox-content-type";
 import { xboxDescription } from "./xbox-description";
 import { xboxGenres } from "./xbox-genres";
+import { parseXboxDescriptions, type XboxDescription } from "./xbox-preorder";
 import { sleep } from "@/lib/async";
 import { kstDateKey } from "@/lib/format";
 
@@ -573,6 +574,15 @@ async function browseRaw(page: number, context: string): Promise<unknown> {
   u.searchParams.set("PageNumber", String(page));
   u.searchParams.set("ResultsPerPage", String(XBOX_BROWSE_PAGE_SIZE));
   return http.json(u.toString(), { context });
+}
+
+/**
+ * 상품들의 한국어 긴 소개(예약 특전 읽기용, sync/xbox-preorder-bonuses). fetchMany 와 같은 bigIds 묶음, 같은 간격이지만
+ * 한국어 한 번만 묻는다 — 특전은 한국어 소개에만 있고 영문 제목이 필요 없다. 묶음 하나가 실패하면 던진다(부르는 쪽이 그 묶음만 건너뛴다).
+ */
+export async function fetchXboxDescriptions(productIds: string[]): Promise<Map<string, XboxDescription>> {
+  if (productIds.length === 0) return new Map();
+  return parseXboxDescriptions(await http.json(productsUrl(productIds, XBOX_LANGUAGE), { context: `preorder:${productIds.length}` }));
 }
 
 export const xboxAdapter: StoreAdapter = {

@@ -1244,6 +1244,15 @@ export const PREORDER_PAGES_MAX = 12;
 export const PREORDER_SHOW_AFTER_RELEASE_DAYS = 30;
 
 /**
+ * Xbox 예약 특전(sync/xbox-preorder-bonuses)이 한 회차에 소개를 다시 읽을 상품 수 상한. 한국 Xbox 예약 상품이
+ * 2026-11-18 실측 40건이라 평소엔 전부 본다. 300 이면 묶음 15번 x 1.5초 = 약 23초로 크론 경로 maxDuration(120초) 안쪽이다.
+ * 넘치면 출시가 가까운 것부터 본다 — 특전이 곧 끝나는 쪽이 먼저 맞아야 한다.
+ */
+export const XBOX_PREORDER_MAX_ROWS = 300;
+/** 한 번에 묻는 상품 수. 어댑터의 bigIds 묶음(XBOX_BIGIDS_BATCH 20, 2026-09-14 실측)과 같게 둔다 — 더 키우면 검증 안 한 크기다 */
+export const XBOX_PREORDER_BATCH = 20;
+
+/**
  * 게임 이벤트, 소식 카드(sync/game-events). 닌텐도 뉴스는 특전과 같은 목록이라 같은 쪽 수 규칙을 쓴다 —
  * 이벤트, 체험판, 업데이트 글은 2026-11-12 실측으로 목록 4쪽(96건)에 20건 남짓이라 하루 두 번 1쪽이면 놓치지 않는다.
  */

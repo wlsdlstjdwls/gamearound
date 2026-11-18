@@ -6,6 +6,7 @@
 // "잇고 공개" 는 글마다 게임 주소가 달라 일괄 처리 띠에 올리지 않고 상세의 게임 잇기 묶음에 둔다.
 // 그래도 처리 흐름(확인 팝업, 누른 순간 "처리됨", 실패만 되돌림)은 띠와 같은 useApproval 을 탄다 — 게임 주소를 사유 자리로 넘긴다.
 // 공개는 게임이 이어져 있고 특전을 하나 이상 뽑은 글에만 걸린다(서버 moderatePreorderPost 의 조건과 같다).
+// Xbox 출처 글(상품 소개에서 읽음)도 같은 목록에 선다. 이미 게임에 묶여 공개 상태로 들어오고, 숨기면 수집이 되살리지 않는다.
 import { useState } from "react";
 import { moderatePreorderPostAction } from "@/app/(admin)/admin/preorder/actions";
 import { ApprovalBar, useApproval, type ApprovalDecision } from "@/components/admin/screen/approval";
@@ -157,6 +158,9 @@ function Detail({ r, busy, onLink }: { r: Row; busy: boolean; onLink: (slug: str
             <Tag tone={STATUS_TONE[r.status]}>{A.status[r.status]}</Tag>
           </ReadValue>
         </Field>
+        <Field label={A.fieldSource}>
+          <ReadValue>{PREORDER_MESSAGES.sourceCopy(r.source).name}</ReadValue>
+        </Field>
         <Field label={A.fieldPublished}>
           <ReadValue>{r.publishedAt ? formatDotDate(r.publishedAt) : "-"}</ReadValue>
         </Field>
@@ -228,7 +232,7 @@ function Detail({ r, busy, onLink }: { r: Row; busy: boolean; onLink: (slug: str
                     {PREORDER_MESSAGES.retailers} {b.retailers}
                   </span>
                 )}
-                <span className="text-[12px] text-dim">{b.endsOn ? PREORDER_MESSAGES.endsOn(b.endsOn) : PREORDER_MESSAGES.untilStock}</span>
+                <span className="text-[12px] text-dim">{b.endsOn ? PREORDER_MESSAGES.endsOn(b.endsOn) : (PREORDER_MESSAGES.sourceCopy(r.source).noDeadline ?? "-")}</span>
                 {b.notes.map((n, j) => (
                   <span key={j} className="text-[12px] text-mut">
                     {n}

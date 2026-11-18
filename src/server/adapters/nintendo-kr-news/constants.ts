@@ -2,6 +2,7 @@
 //
 // 스토어 어댑터가 아니다 — 가격도 발견도 없고, 레지스트리(adapters/index)에 넣지 않는다.
 // 목록과 글 모두 별도 JSON API 가 없고 Next 의 RSC 데이터(self.__next_f.push)로 HTML 안에 실려 온다. RSS, sitemap 은 404.
+import { PREORDER_SOURCE } from "@/lib/preorder/sources";
 
 /** 사이트 안 상대 링크("/kr/games/...")를 풀 기준 */
 export const NINTENDO_SITE_ORIGIN = "https://www.nintendo.com";
@@ -15,8 +16,8 @@ export const newsListUrl = (page: number): string => (page <= 1 ? NEWS_BASE_URL 
 /** 글 주소. slug 는 Contentful 엔트리 ID 다 */
 export const newsArticleUrl = (slug: string): string => `${NEWS_BASE_URL}/article/${slug}`;
 
-/** 출처 이름(preorder_bonus_posts.source) */
-export const NINTENDO_KR_NEWS_SOURCE = "nintendo_kr";
+/** 출처 이름(preorder_bonus_posts.source). 값은 lib/preorder/sources 한곳에서 정한다 — 화면이 출처마다 문구를 고른다 */
+export const NINTENDO_KR_NEWS_SOURCE = PREORDER_SOURCE.nintendoKr;
 
 /**
  * 특전 글을 고르는 제목 규칙. 실측한 특전 글 여섯 건이 전부 "…예약 (판매 일정 및) 조기 구입 특전 안내" 꼴이다.

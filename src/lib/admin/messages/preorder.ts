@@ -32,6 +32,8 @@ export const PREORDER_ADMIN_MESSAGES = {
   fieldStatus: "상태",
   fieldReason: "검토 사유",
   fieldPublished: "게시일",
+  fieldSource: "출처",
+  /** 닌텐도는 eShop 번호, Xbox 는 스토어 상품 번호가 들어간다 */
   fieldNsuids: "게임 번호",
   fieldGame: "연결 게임",
   fieldGameSlug: "게임 주소",

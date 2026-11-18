@@ -34,7 +34,7 @@ async function bonusesByPost(postIds: string[]): Promise<Map<string, PreorderBon
  */
 export async function listPreorderForGame(gameId: string): Promise<PreorderPostDto[]> {
   const posts = await getDb()
-    .select({ id: preorderBonusPosts.id, url: preorderBonusPosts.url, title: preorderBonusPosts.title })
+    .select({ id: preorderBonusPosts.id, url: preorderBonusPosts.url, title: preorderBonusPosts.title, source: preorderBonusPosts.source })
     .from(preorderBonusPosts)
     .innerJoin(games, eq(games.id, preorderBonusPosts.gameId))
     .where(
@@ -47,7 +47,17 @@ export async function listPreorderForGame(gameId: string): Promise<PreorderPostD
     )
     .orderBy(desc(preorderBonusPosts.publishedAt));
   const bonuses = await bonusesByPost(posts.map((p) => p.id));
-  return posts.map((p) => ({ url: p.url, title: p.title, bonuses: bonuses.get(p.id) ?? [] })).filter((p) => p.bonuses.length > 0);
+  // 같은 게임에 Xbox 상품이 둘 이상 묶이면(외부 ID 공유, 판 합치기) 같은 특전 목록이 두 번 선다 — 특전 이름이 같은 글은 하나만 둔다
+  const seen = new Set<string>();
+  return posts
+    .map((p) => ({ url: p.url, title: p.title, source: p.source, bonuses: bonuses.get(p.id) ?? [] }))
+    .filter((p) => {
+      if (p.bonuses.length === 0) return false;
+      const key = `${p.source}|${p.bonuses.map((b) => b.name).join("|")}`;
+      if (seen.has(key)) return false;
+      seen.add(key);
+      return true;
+    });
 }
 
 /** 관리자 화면. 검토 대기가 먼저, 그다음 최신순 */
@@ -58,6 +68,7 @@ export async function listPreorderForAdmin(): Promise<PreorderAdminRowDto[]> {
       id: preorderBonusPosts.id,
       url: preorderBonusPosts.url,
       title: preorderBonusPosts.title,
+      source: preorderBonusPosts.source,
       publishedAt: preorderBonusPosts.publishedAt,
       status: preorderBonusPosts.status,
       statusReason: preorderBonusPosts.statusReason,
@@ -76,6 +87,7 @@ export async function listPreorderForAdmin(): Promise<PreorderAdminRowDto[]> {
     id: r.id,
     url: r.url,
     title: r.title,
+    source: r.source,
     publishedAt: r.publishedAt,
     status: r.status,
     statusReason: r.statusReason,

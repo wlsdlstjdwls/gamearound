@@ -11,12 +11,15 @@ export type PreorderBonusDto = {
   endsOn: string | null;
 };
 
-export type PreorderPostDto = { url: string; title: string; bonuses: PreorderBonusDto[] };
+/** source: lib/preorder/sources 의 값. 화면이 출처 문구와 링크 이름, 마감일 없는 특전의 문구를 이걸로 고른다 */
+export type PreorderPostDto = { url: string; title: string; source: string; bonuses: PreorderBonusDto[] };
 
 export type PreorderAdminRowDto = {
   id: string;
   url: string;
   title: string;
+  /** lib/preorder/sources 의 값 */
+  source: string;
   publishedAt: Date | null;
   status: PreorderPostStatus;
   statusReason: string | null;
