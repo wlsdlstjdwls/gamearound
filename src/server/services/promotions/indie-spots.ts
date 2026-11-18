@@ -10,6 +10,7 @@ import { and, arrayOverlaps, asc, desc, eq, gt, isNull, lte, ne, or, sql } from 
 import { getDb } from "@/server/db/client";
 import { indiePosts, promotionBoosts } from "@/server/db/schema";
 import { rotateForWindow } from "@/lib/promo/boost";
+import { ADS_ON } from "@/lib/promo/flags";
 import { indieGenresOf } from "@/lib/indie/genre-match";
 import type { IndieCardDto } from "@/lib/indie/dto";
 import { cardColumns, isPublic, toCards, type CardRow } from "@/server/services/indie/read";
@@ -39,6 +40,7 @@ async function oneCard(row: CardRow, boostId: string | null): Promise<IndieSpot 
 
 /** 홈 인디 줄 첫 칸의 광고. 걸린 게임이 없으면 null — 줄은 원래 카드로만 선다 */
 export async function homeIndieAd(): Promise<IndieSpot | null> {
+  if (!ADS_ON) return null;
   const boosted = await boostedIndie();
   const [picked] = rotateForWindow(boosted, 1, new Date());
   return picked ? oneCard(picked.row, picked.boostId) : null;
@@ -51,7 +53,8 @@ export async function homeIndieAd(): Promise<IndieSpot | null> {
 export async function indieSpotForGame(gameId: string, gameGenres: readonly string[]): Promise<IndieSpot | null> {
   const genres = indieGenresOf(gameGenres);
   const sameGenre = (g: readonly string[]) => g.some((x) => (genres as string[]).includes(x));
-  const boosted = (await boostedIndie()).filter((r) => r.gameId !== gameId);
+  // 광고가 꺼져 있으면 걸린 글을 읽지 않고 바로 광고 아닌 추천으로 간다(lib/promo/flags)
+  const boosted = ADS_ON ? (await boostedIndie()).filter((r) => r.gameId !== gameId) : [];
   const now = new Date();
   const [ad] = rotateForWindow(boosted.filter((b) => sameGenre(b.row.genres)), 1, now);
   const [anyAd] = ad ? [ad] : rotateForWindow(boosted, 1, now);

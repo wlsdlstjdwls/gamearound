@@ -11,6 +11,7 @@ import { getDb } from "@/server/db/client";
 import { createdBy, updatedBy } from "@/server/db/audit";
 import { indiePlaytestApplications, indiePlaytests, indiePosts, users } from "@/server/db/schema";
 import { boostEnd, rotateForWindow } from "@/lib/promo/boost";
+import { ADS_ON } from "@/lib/promo/flags";
 import { PLAYTEST_PIN_CAPACITY, playtestPhase, type ApplyPlaytestInput, type CreatePlaytestInput, type PlaytestPhase, type UpdatePlaytestInput } from "@/lib/indie/playtest";
 import { PLAYTEST_MESSAGES as M } from "@/lib/indie/playtest-messages";
 import type { IndieCardDto } from "@/lib/indie/dto";
@@ -195,8 +196,9 @@ export async function listOpenPlaytests(): Promise<PlaytestBoardDto> {
     const r = bySlug.get(card.slug);
     return r ? [{ card, playtest: toDto(r.pt, now), maker: r.maker }] : [];
   });
+  // 맨 위 고정은 "광고" 표시가 붙는 유료 자리다. 광고가 꺼져 있으면 모두 아래 목록에 선다(lib/promo/flags)
   const pinned = rotateForWindow(
-    all.filter((x) => x.maker),
+    ADS_ON ? all.filter((x) => x.maker) : [],
     PLAYTEST_PIN_CAPACITY,
     now,
   );

@@ -9,6 +9,7 @@ import { getDb } from "@/server/db/client";
 import { createdBy, updatedBy } from "@/server/db/audit";
 import { games, indiePosts, posts, promotionBoosts, promotionImpressions, users, type PromoSlot, type PromoSource, type PromoTargetKind } from "@/server/db/schema";
 import { boostEnd, boostProgress, boostState, rotateForWindow, SLOT_CAPACITY, SLOT_TARGET, type BoostState } from "@/lib/promo/boost";
+import { ADS_ON } from "@/lib/promo/flags";
 import { PROMO_MESSAGES as M } from "@/lib/promo/messages";
 import { postPath } from "@/lib/community/constants";
 import { firstImageSrc, postExcerpt } from "@/lib/community/rich-text";
@@ -64,6 +65,7 @@ export type Featured<T> = { boostId: string; item: T };
 
 /** 인디 목록 맨 위 "주목할 게임" 카드. 걸린 글이 없으면 빈 목록 */
 export async function listFeaturedIndie(): Promise<Array<Featured<IndieCardDto>>> {
+  if (!ADS_ON) return [];
   const [rows, boosts] = await Promise.all([
     getDb()
       .select(cardColumns)
@@ -92,6 +94,7 @@ export type PromoPinDto = PostRowDto & { cover: string | null; excerpt: string }
 
 /** 게시판 홍보 목록 위 고정 글 */
 export async function listPinnedPromoPosts(): Promise<Array<Featured<PromoPinDto>>> {
+  if (!ADS_ON) return [];
   const [rows, boosts] = await Promise.all([
     getDb()
       .select({ ...rowColumns, body: posts.body, gameCover: sql<string | null>`(select ${games.coverUrl} from ${games} where ${games.id} = ${posts.gameId})` })
