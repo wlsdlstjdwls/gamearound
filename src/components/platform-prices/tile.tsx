@@ -17,6 +17,7 @@ import { GAME_MESSAGES, PREORDER_LABEL } from "@/lib/games/messages";
 import { isPreorder } from "@/lib/games/preorder";
 import { brandKeyOf, DEVICE_LABEL, devicesOf } from "@/lib/platform";
 import { cn } from "@/lib/cn";
+import { RIPPLE_DELAYS_MS } from "@/lib/motion";
 import { buttonClass } from "@/components/ui/button";
 import { DiscountBadge, HistoricLowBadge } from "@/components/ui/discount";
 import { PendingNote } from "@/components/ui/pending-note";
@@ -74,8 +75,9 @@ export function hardwareText(platforms: readonly PlatformPriceItem["platform"][]
 /** 구독 줄(6) — 칩이 없으면 "없음" 으로 자리를 지킨다 */
 export function SubscriptionRow({ subscriptions }: { subscriptions: PlatformPriceItem["subscriptions"] }) {
   return (
-    <div className="flex min-w-0 items-center justify-between gap-3 text-[13px]">
-      <span className="shrink-0 text-mut">{D.subscriptionRow}</span>
+    // 구독이 여럿이면 칩이 줄마다 쌓이므로(subscription-badges) 이름표는 첫 칩 높이에 맞춰 위에 선다
+    <div className="flex min-w-0 items-start justify-between gap-3 text-[13px]">
+      <span className="shrink-0 pt-0.5 text-mut">{D.subscriptionRow}</span>
       {subscriptions.length > 0 ? (
         <span className="flex min-w-0 justify-end overflow-hidden">
           <SubscriptionChips subscriptions={subscriptions} />
@@ -173,13 +175,20 @@ export function PriceTile({
 /** 이 게임 행이 없는 플랫폼 = 흐린 카드 한 장(목업 .pc.no "미지원"). 말은 GAME_MESSAGES.storeAbsent 주석 */
 export function AbsentTile({ id, label }: { id?: string; label: string }) {
   return (
-    // 2026-10-28 사용자 "비워져 있을 때 너무 비어 보인다": 가운데에 아이콘과 "서비스하지 않아요" 한 줄을 세운다
+    // 2026-10-28 사용자 "비워져 있을 때 너무 비어 보인다": 가운데에 아이콘과 "서비스하지 않습니다" 한 줄을 세운다
     <li id={id} className={cn(TILE, "border border-dashed border-line-strong bg-surface-2/50")}>
       <CardHead name={label} />
       {/* 남은 여섯 줄을 통째로 쓴다(TILE 의 줄 수) */}
       <div className="row-span-6 flex flex-col items-center justify-center gap-2 py-3 text-center">
-        <span aria-hidden className="flex h-11 w-11 items-center justify-center rounded-full bg-surface text-dim shadow-hair">
-          <StoreIcon size={20} />
+        {/* 2026-11-18 사용자 "너무 밋밋하다, 모션 넣을까": 빈 상태(empty-state)와 같은 결의 물결 + 떠 있는 아이콘. 색은 회색 —
+            없는 자리를 파랑으로 칠하면 눈길을 뺏는다(같은 날 "파란색 남발"). 모션 축소는 전역 킬스위치가 끈다 */}
+        <span aria-hidden className="relative grid size-16 place-items-center">
+          {RIPPLE_DELAYS_MS.map((delay) => (
+            <span key={delay} className="soon-ripple absolute inset-1 rounded-full bg-line" style={{ "--stagger": `${delay}ms` } as React.CSSProperties} />
+          ))}
+          <span className="soon-float relative flex h-11 w-11 items-center justify-center rounded-full bg-surface text-dim shadow-hair">
+            <StoreIcon size={20} />
+          </span>
         </span>
         <p className="text-[14px] font-bold text-mut">{GAME_MESSAGES.storeAbsent}</p>
       </div>

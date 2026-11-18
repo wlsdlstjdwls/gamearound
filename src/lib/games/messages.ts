@@ -314,11 +314,11 @@ export const GAME_MESSAGES = {
   /** 그 플랫폼에 이 게임 행이 없는 자리(플랫폼 정보의 빈 타일). 2026-10-07 "서비스 확인 중이에요" 로 바꿨다가
    *  2026-10-27 되돌렸다(사용자: "출시하지 않는 플랫폼은 동일하게 서비스 안 한다고"). "확인 중" 은 끝나지 않는 기다림으로 읽혀
    *  콜 오브 듀티 상세의 빈 Nintendo 카드가 고장처럼 보였다. 출시 예정인 플랫폼은 행이 있어 이 타일이 아니라 출시 예정 카드가 선다 */
-  // 2026-11-18 사용자 "문구 변경": "서비스하지 않아요" 는 우리 사이트가 안 다룬다는 말로 읽혔다. 이 게임이 그 기기로 안 나온 것이라고 말한다
-  storeAbsent: "이 플랫폼엔 출시되지 않았어요",
+  // 2026-11-18 사용자 지정 "서비스하지 않습니다" — 이 두 줄만 -습니다체다(사용자 "습니다/합니다 체로"). 빈 카드 안 한 줄이라 단정한 말이 낫다
+  storeAbsent: "서비스하지 않습니다",
   /** 스토어는 찾았는데 값을 아직 못 받은 자리. 전에는 "-" 한 글자라 0원인지 고장인지 몰랐다 */
-  // 2026-11-18 사용자 "문구 변경": "확인 중" 은 끝나지 않는 기다림으로 읽힌다(storeAbsent 주석과 같은 이유). 사실만 말한다
-  pricePending: "아직 가격 정보가 없어요",
+  // 2026-11-18 사용자 "습니다/합니다 체로". "확인 중" 은 끝나지 않는 기다림으로 읽혀(storeAbsent 주석) 사실만 말한다
+  pricePending: "아직 가격 정보가 없습니다",
   patchHeading: "패치 기록",
   /** 요약 바에 최저가 말고는 아직 아는 값이 없을 때. 빈 칸을 "-" 로 채우는 대신 한 줄로 말한다 */
   summaryPending: "플레이타임과 평점은 아직 파밍 중이에요.",
@@ -381,8 +381,9 @@ export function perHourScopeText(sampleSize: number): string {
  * 구독 칩 문구 — 플랫폼 탭 안에 한 칩씩 선다. 서비스 이름은 구독 레코드가 들고 있고 여기서는 꼬리말만 붙인다.
  * 문장이 아니라 칩인 이유: 이미 그 스토어의 탭 안이라 "어디서" 를 다시 말할 필요가 없다.
  */
-export function subscriptionChipText(label: string): string {
-  return `${label} 포함`;
+export function subscriptionChipText(label: string, orHigher = false): string {
+  // orHigher: 같은 서비스의 위 등급으로도 할 수 있다(lib/subscription-tiers). "PlayStation Plus 스페셜 이상 포함"
+  return `${label}${orHigher ? " 이상" : ""} 포함`;
 }
 
 /**

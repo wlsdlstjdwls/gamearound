@@ -58,10 +58,12 @@ export const DEFAULT_HARDWARE_MODELS = [
  * 라벨은 한국 스토어 표기를 따른다(2026-09-14 실측) — 다른 나라의 Extra, Premium 이 여기서는 스페셜, 디럭스다.
  */
 export const DEFAULT_SUBSCRIPTIONS = [
-  { key: "gamepass_console", labelKo: "Game Pass 콘솔", platform: "xbox" as const, catalogId: GAMEPASS_COLLECTIONS.console },
+  { key: "gamepass_console", labelKo: "Game Pass Ultimate", platform: "xbox" as const, catalogId: GAMEPASS_COLLECTIONS.console },
   { key: "gamepass_pc", labelKo: "PC Game Pass", platform: "xbox" as const, catalogId: GAMEPASS_COLLECTIONS.pc },
-  { key: "psplus_special", labelKo: "PlayStation Plus 스페셜", platform: null, catalogId: null },
-  { key: "psplus_deluxe", labelKo: "PlayStation Plus 디럭스", platform: null, catalogId: null },
+  // 2026-11-18 요금제 구분(lib/subscription-tiers). 콘솔 목록은 얼티밋 카탈로그라 이름을 Ultimate 로 바꿨다
+  { key: "gamepass_essential", labelKo: "Game Pass Essential", platform: "xbox" as const, catalogId: GAMEPASS_COLLECTIONS.essential },
+  { key: "psplus_special", labelKo: "PS Plus 스페셜", platform: null, catalogId: null },
+  { key: "psplus_deluxe", labelKo: "PS Plus 디럭스", platform: null, catalogId: null },
   { key: "ea_play_ps", labelKo: "EA Play", platform: null, catalogId: null },
   { key: "ubisoft_plus_ps", labelKo: "Ubisoft+ Classics", platform: null, catalogId: null },
 ];

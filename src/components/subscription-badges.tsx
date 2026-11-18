@@ -11,17 +11,22 @@
 // 같은 행의 "최저", 할인율은 꽉 찬 --acc 판이라 여기는 연한 --acc-soft 로 한 단 내린다 — 결론이 아니라 곁가지다.
 // 모양도 알약 + 점에서 옆 배지들과 같은 사각 태그(--radius-xs)로 맞춘다. 한 행 안에서 배지가 세 가지 모양으로 서 있었다.
 import { subscriptionChipText } from "@/lib/games/messages";
+import { foldSubscriptionTiers } from "@/lib/subscription-tiers";
 import type { SubscriptionDto } from "@/server/services/games";
 import { tagClass } from "@/components/ui/tag";
 
-/** 한 플랫폼이 포함된 구독들. 없으면 아무것도 그리지 않는다 */
+/**
+ * 한 플랫폼이 포함된 구독들. 없으면 아무것도 그리지 않는다.
+ * 같은 서비스의 등급은 가장 낮은 하나 + "이상" 으로 접는다(lib/subscription-tiers).
+ * 여럿이면 한 줄에 하나씩 오른쪽 끝에 쌓는다(2026-11-18) — 줄 바꿈에 맡기면 칩이 줄 중간에서 갈려 무엇이 한 이름인지 흐렸다
+ */
 export function SubscriptionChips({ subscriptions }: { subscriptions: SubscriptionDto[] }) {
   if (subscriptions.length === 0) return null;
   return (
-    <ul className="flex flex-wrap items-baseline gap-1" aria-label="구독 포함">
-      {subscriptions.map((s) => (
-        <li key={s.key} className={tagClass({ tight: false })}>
-          {subscriptionChipText(s.label)}
+    <ul className="flex flex-col items-end gap-1" aria-label="구독 포함">
+      {foldSubscriptionTiers(subscriptions).map(({ sub, orHigher }) => (
+        <li key={sub.key} className={tagClass({ tight: false })}>
+          {subscriptionChipText(sub.label, orHigher)}
         </li>
       ))}
     </ul>

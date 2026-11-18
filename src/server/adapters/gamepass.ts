@@ -16,8 +16,14 @@ export const GAMEPASS_LANGUAGE = "ko-kr";
  * 바뀌면 이 상수만 고친다(§10).
  */
 export const GAMEPASS_COLLECTIONS = {
+  /** 응답 머리 제목 "모든 콘솔 게임"(2026-11-18 KR 558개). EA Play 93개 중 88개가 여기 들어 있어 얼티밋 콘솔 카탈로그로 읽는다 */
   console: "f6f1f99f-9b49-4ccd-b3bf-4d9767a77f5e",
   pc: "fdd9e2a7-0fee-49f6-ad69-4354098401ff",
+  /**
+   * 응답 머리 제목 "Game Pass Essential"(2026-11-18 KR 116개, 콘솔 목록과 88개 겹침). 2025 요금제 개편의 가장 낮은 등급 —
+   * 여기 든 게임은 위 등급 모두로 할 수 있다(lib/subscription-tiers). 프리미엄 목록 ID 는 sigl 로 받히는 것을 못 찾아 아직 없다
+   */
+  essential: "34031711-5a70-4196-bab7-45757dc2294e",
 } as const;
 
 export type GamepassCollection = keyof typeof GAMEPASS_COLLECTIONS;
