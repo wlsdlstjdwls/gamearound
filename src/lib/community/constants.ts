@@ -2,11 +2,16 @@
 import { ROUTES } from "@/lib/routes";
 import type { PostCategory, PromoType } from "@/server/db/schema";
 
-export const POST_CATEGORIES = ["review", "guide", "promo", "devlog", "qna", "recruit", "tip"] as const satisfies readonly PostCategory[];
+export const POST_CATEGORIES = ["review", "guide", "promo", "devlog", "qna"] as const satisfies readonly PostCategory[];
+/**
+ * 숨긴 갈래. 인원 모집, 개발 팁은 2026-11-18 라운지 시안 C 로 넣었다가 같은 날 숨겼다(사용자 "인원 모집은 뭐냐 갑자기 추가되버림", "개발 팁도 맘대로").
+ * DB 값(0117)과 이름표, 목록 주소는 남긴다 — 숨긴다 ≠ 지운다. 되살리려면 이 배열에서 빼고 위 두 배열, nav, lounge/page 의 LatestBlock 을 되돌린다
+ */
+export const HIDDEN_POST_CATEGORIES = ["recruit", "tip"] as const satisfies readonly PostCategory[];
 /** 게임 게시판에 서는 카테고리 */
 export const BOARD_CATEGORIES = ["review", "guide", "promo"] as const satisfies readonly PostCategory[];
-/** 개발자 라운지에 서는 카테고리. 인원 모집, 개발 팁은 2026-11-18(라운지 시안 C) */
-export const LOUNGE_CATEGORIES = ["devlog", "qna", "recruit", "tip"] as const satisfies readonly PostCategory[];
+/** 개발자 라운지에 서는 카테고리(숨긴 갈래는 HIDDEN_POST_CATEGORIES) */
+export const LOUNGE_CATEGORIES = ["devlog", "qna"] as const satisfies readonly PostCategory[];
 
 export const CATEGORY_LABEL: Record<PostCategory, string> = {
   review: "리뷰",

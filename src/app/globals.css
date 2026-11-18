@@ -1895,14 +1895,11 @@ body:has([data-onboarding]) > [data-site-tabbar] {
   transition: transform var(--duration-base) var(--ease-out-emph);
   pointer-events: none;
 }
+/* 마우스 hover 에는 선을 세우지 않는다(2026-11-18 사용자 "급상승 인기글 호버 시 왼쪽 줄 별로") — hover 는 면(hover:bg-surface-2)만 바뀐다.
+   키보드 포커스에만 남긴다: 포커스 위치를 보이는 일은 접근성 몫이라 걷지 않는다 */
 .row-beam:focus-visible::before,
 .row-beam:has(:focus-visible)::before {
   transform: scaleY(1);
-}
-@media (hover: hover) and (pointer: fine) {
-  .row-beam:hover::before {
-    transform: scaleY(1);
-  }
 }
 
 /* 급상승 1~3위 칸을 빛이 차례로 스친다(news-blocks RisingBlock). 순위마다 어긋남(--glint-delay)이 있어 위에서 아래로 흐른다 */

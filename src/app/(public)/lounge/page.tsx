@@ -6,7 +6,7 @@
 //   왼쪽: 급상승 인기글(줄 오른쪽 끝 "전체 글 보기") + 답변을 기다리는 질문
 //   오른쪽: 내 게임 최근 소식(최대 4개). 비로그인은 로그인 안내, 게임이 없으면 등록 유도. 아래 이용 가이드
 // 2026-11-18 시안 C(사용자 확정, docs/라운지홈_시안_2026-11-18.html): 왼쪽 맨 위에 내 게임 통계(로그인), 플레이테스트 모집,
-//   인원 모집과 개발 팁 줄을 세운다(기획서 v2 커뮤니티 "개발 팁, 인원 모집", 인디홍보 기획의 개발자 흐름). 빈 칸은 접는다:
+//   인원 모집과 개발 팁 줄을 세웠다가 같은 날 숨겼다(사용자 "맘대로 추가", lib/community/constants 의 HIDDEN_POST_CATEGORIES). 빈 칸은 접는다:
 //   비로그인 띠(오른쪽 칸이 같은 로그인 길을 낸다), 수가 전부 0 인 현황 띠, 빈 "답변을 기다리는 질문". 파랑은 머리의 "글 작성" 하나다.
 //   좁은 화면에서 로그인한 사람은 오른쪽 칸(내 게임 소식)을 맨 위에 본다 — 그 사람의 첫 용건이다.
 // 검색, 탭, 정렬은 이 화면에 두지 않는다(기획서 S-16 "삭제된 영역") — 라운지 전체 글(S-17)이 맡는다.
@@ -16,20 +16,20 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { HeadLink, RisingBlock, SideEmpty, SidePanel, SideRow, StatStrip, WaitingBlock } from "@/components/community/news-blocks";
-import { LatestBlock, MyStatsBlock, PlaytestBlock } from "@/components/lounge/home-blocks";
+import { MyStatsBlock, PlaytestBlock } from "@/components/lounge/home-blocks";
 import { WriteLink } from "@/components/community/write-link";
 import { BoardGuide } from "@/components/lounge/board-guide";
 import { DbUnavailable } from "@/components/db-unavailable";
 import { buttonClass } from "@/components/ui/button";
 import { ChatIcon, ClockIcon, GamepadIcon } from "@/components/ui/icons";
 import { Page, PageHead } from "@/components/ui/page";
-import { CATEGORY_LABEL, CATEGORY_LIST_PATH, LOUNGE_CATEGORIES, writePath } from "@/lib/community/constants";
+import { LOUNGE_CATEGORIES, writePath } from "@/lib/community/constants";
 import { COMMUNITY_MESSAGES as M } from "@/lib/community/messages";
 import { nullIfDbUnavailable } from "@/lib/db-errors";
 import { formatDotDate } from "@/lib/format";
 import { LOUNGE_MESSAGES as L } from "@/lib/lounge/messages";
 import { indieEditPath, indiePath, ROUTES, signInPath } from "@/lib/routes";
-import { countUnseenCommentsOnMyPosts, getBoardHome, getLatestByCategory } from "@/server/services/community";
+import { countUnseenCommentsOnMyPosts, getBoardHome } from "@/server/services/community";
 import { getMyIndieTotals, listMyIndiePosts, listOpenPlaytests } from "@/server/services/indie";
 import type { IndieMineRowDto, IndieStatsTotals } from "@/lib/indie/dto";
 import { getCurrentUser } from "@/server/services/users";
@@ -43,10 +43,6 @@ export const metadata: Metadata = { title: M.loungeTitle, description: L.lead };
 const MY_GAMES_LIMIT = 4;
 /** 플레이테스트 모집 줄 수. 셋이면 한눈에 들어오고 나머지는 "전체 보기" 가 플레이테스트 화면으로 보낸다 */
 const PLAYTEST_ROWS = 3;
-/** 인원 모집, 개발 팁 줄 수. 두 블록이 나란히 서서 줄 수가 같아야 높이가 맞는다 */
-const LATEST_ROWS = 3;
-/** 새 글 줄로 세우는 갈래(시안 C) */
-const LATEST_CATEGORIES = ["recruit", "tip"] as const;
 
 function MyGameRow({ p }: { p: IndieMineRowDto }) {
   const approved = p.review === "approved";
@@ -65,8 +61,8 @@ export default async function LoungeHomePage() {
   const [user, loaded] = await Promise.all([
     userP,
     nullIfDbUnavailable(
-      Promise.all([getBoardHome(LOUNGE_CATEGORIES, ["qna"], false), userP.then(mineFor), listOpenPlaytests(), getLatestByCategory(LATEST_CATEGORIES, LATEST_ROWS)]).then(
-        ([home, [mine, reactions, totals], playtests, latest]) => [home, mine, reactions, totals, [...playtests.pinned, ...playtests.rest].slice(0, PLAYTEST_ROWS), latest] as const,
+      Promise.all([getBoardHome(LOUNGE_CATEGORIES, ["qna"], false), userP.then(mineFor), listOpenPlaytests()]).then(
+        ([home, [mine, reactions, totals], playtests]) => [home, mine, reactions, totals, [...playtests.pinned, ...playtests.rest].slice(0, PLAYTEST_ROWS)] as const,
       ),
     ),
   ]);
@@ -92,7 +88,7 @@ export default async function LoungeHomePage() {
         <DbUnavailable retryHref={ROUTES.lounge} />
       ) : (
         (() => {
-          const [home, mine, reactions, totals, playtests, latest] = loaded;
+          const [home, mine, reactions, totals, playtests] = loaded;
           const approvedCount = mine.filter((p) => p.review === "approved").length;
           const pendingCount = mine.filter((p) => p.review === "pending").length;
           // 수가 전부 0 이면 현황 띠를 접는다 — 오른쪽 칸이 "아직 올린 게임이 없어요" 로 같은 말을 한다(시안 C)
@@ -116,10 +112,6 @@ export default async function LoungeHomePage() {
                 <div className="flex min-w-0 flex-col gap-7">
                   {totals && <MyStatsBlock totals={totals} />}
                   <PlaytestBlock items={playtests} />
-                  <div className="grid gap-7 sm:grid-cols-2 sm:gap-4">
-                    <LatestBlock id="recruit-heading" title={CATEGORY_LABEL.recruit} note={L.recruitNote} href={CATEGORY_LIST_PATH.recruit} posts={latest.recruit} empty={L.recruitEmpty} now={now} />
-                    <LatestBlock id="tip-heading" title={CATEGORY_LABEL.tip} note={L.tipNote} href={CATEGORY_LIST_PATH.tip} posts={latest.tip} empty={L.tipEmpty} now={now} />
-                  </div>
                   <RisingBlock posts={home.rising} allHref={ROUTES.loungeAll} now={now} />
                   <WaitingBlock title={M.waitingAnswer} note={M.waitingAnswerNote} posts={home.waiting} cta={M.leaveAnswer} zero={M.zeroAnswers} now={now} />
                 </div>
