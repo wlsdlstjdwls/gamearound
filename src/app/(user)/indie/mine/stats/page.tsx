@@ -38,6 +38,9 @@ import { PAID_PRODUCTS_ON } from "@/lib/payments/flags";
 
 export const metadata: Metadata = { title: M.statsTitle, robots: { index: false } };
 
+/** 플레이테스트 단추를 보일지(2026-11-18 사용자가 숨김). 라운지 홈 플레이테스트 줄도 같은 날 걷었다 — 화면(/playtests)과 기능은 그대로다 */
+const PLAYTEST_BUTTON_ON = false;
+
 const fmt = (n: number) => n.toLocaleString("ko-KR");
 
 /** 그 항목에서 가장 좋은 순위를 가진 내 게임 이름. 게임이 하나면 이름을 따로 적지 않는다(누구 얘기인지 뻔하다) */
@@ -154,7 +157,8 @@ export default async function IndieStatsPage() {
                         {PM.adBuy}
                       </Link>
                     )}
-                    {r.live && (
+                    {/* 플레이테스트 단추는 숨겼다(2026-11-18 사용자 "내 게임 통계 화면 플레이 테스트 버튼도 숨겨줘"). 되살리려면 PLAYTEST_BUTTON_ON 만 켠다 */}
+                    {PLAYTEST_BUTTON_ON && r.live && (
                       <Link href={indiePlaytestPath(r.id)} className={buttonClass({ variant: "secondary", size: "sm" })}>
                         {PLAYTEST_MESSAGES.listTitle}
                       </Link>
