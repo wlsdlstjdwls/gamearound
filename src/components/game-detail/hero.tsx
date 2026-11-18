@@ -31,7 +31,8 @@ import { BellIcon, CalendarIcon } from "@/components/ui/icons";
 import { DETAIL_MESSAGES as D } from "@/lib/games/detail-messages";
 import { formatDate, kstDateKey } from "@/lib/format";
 import { gamesHref } from "@/lib/games-query";
-import { PREORDER_LABEL, releaseLineText } from "@/lib/games/messages";
+import { releaseLineText } from "@/lib/games/messages";
+import { PreorderMark } from "@/components/ui/preorder-mark";
 import { isPreorder } from "@/lib/games/preorder";
 import { stagger } from "@/lib/motion";
 import { cn } from "@/lib/cn";
@@ -97,8 +98,15 @@ export function DetailHero({
       <div className="enter-item flex min-w-0 flex-col gap-3" style={stagger(1)}>
         {/* 지원 플랫폼 이름 줄(목업 .plats). 누르면 그 플랫폼 카드로 미끄러져 내려가 카드가 잠깐 빛난다(platform-jump) */}
         {/* 지원 플랫폼 배지(2026-11-16 사용자 "제목 위 플랫폼은 뱃지로"). 누르면 그 플랫폼 카드로 미끄러져 내려가 카드가 잠깐 빛난다(platform-jump) */}
-        {brands.length > 0 && (
+        {(brands.length > 0 || preorder) && (
           <ul className="flex flex-wrap items-center gap-1.5" aria-label={D.platformsLabel}>
+            {/* 한 스토어라도 예약 구매가 열렸으면 제목 위 맨 앞에서 먼저 말한다(2026-11-18 사용자 "상세에서는 표기가 안 되어 있네", 이어서 "눈에 너무 안 띈다").
+                어느 스토어인지는 아래 가격 카드의 사전예약 딱지가 말한다 */}
+            {preorder && (
+              <li>
+                <PreorderMark size="md" />
+              </li>
+            )}
             {brands.map((b) => (
               <li key={b.key}>
                 <PlatformJump
@@ -130,13 +138,6 @@ export function DetailHero({
               <span className={META_ITEM}>
                 <Flag code={origin.countryCode} />
                 {origin.countryNameKo}
-              </span>
-            )}
-            {/* 한 스토어라도 예약 구매가 열렸으면 제목 밑에서 먼저 말한다(2026-11-18 사용자 "상세에서는 표기가 안 되어 있네").
-                어느 스토어인지는 아래 가격 카드의 사전예약 딱지가 말한다 */}
-            {preorder && (
-              <span className={cn(META_ITEM, "font-semibold text-acc")}>
-                {PREORDER_LABEL}
               </span>
             )}
           </p>

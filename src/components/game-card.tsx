@@ -7,8 +7,9 @@ import { Fragment } from "react";
 import { formatPrice } from "@/lib/currency";
 import Link from "next/link";
 import { formatDate, PLATFORM_LABEL } from "@/lib/format";
-import { GAME_MESSAGES, PREORDER_LABEL, SAVING_MESSAGES } from "@/lib/games/messages";
+import { GAME_MESSAGES, SAVING_MESSAGES } from "@/lib/games/messages";
 import { isPreorder } from "@/lib/games/preorder";
+import { PreorderMark } from "@/components/ui/preorder-mark";
 import type { StoreSaving } from "@/lib/games/saving";
 import { parsePlatformValues } from "@/lib/games-query";
 import { expandPlatformValues } from "@/lib/platform";
@@ -158,8 +159,8 @@ export const COVER_CLASS =
  * 인디 카드는 아직 위 CARD_SHELL, COVER_CLASS 를 쓴다 — 바꾸라는 말은 게임 카드에 대한 것이었다
  */
 export const GAME_CARD_SHELL = "card-panel flex h-full flex-col gap-2.5 overflow-hidden !rounded-[var(--radius-md)] pb-3";
-/** 카드 값 위의 면 없는 파란 글자 표지(사전예약, 역대 최저가). 2026-11-18 사용자 "사전예약도 최저가처럼 글자만" — 둘이 한 모양이다 */
-export const CARD_TEXT_MARK = "shrink-0 text-[12px] font-semibold text-acc";
+/** 카드 값 위의 면 없는 파란 글자 표지(역대 최저가, 2026-11-16 사용자). 사전예약은 ui/preorder-mark 의 먹색 알약이다 */
+const CARD_TEXT_MARK = "shrink-0 text-[12px] font-semibold text-acc";
 
 export const GAME_COVER_CLASS ="relative block aspect-[460/215] w-full overflow-hidden bg-surface-3";
 /** 그림 아래 글자 묶음의 좌우 여백 */
@@ -275,8 +276,8 @@ export function GameCard({
               배지가 값 줄에 섞여 값 줄이 두 줄로 접히던 것을 이 줄이 막는다(2026-11-16 사용자 "오와 열이 안 맞는다") */}
           <div className="mt-auto flex h-5 min-w-0 items-center gap-1.5 pt-1">
             {/* 값 앞에 선다 — 값을 읽기 전에 "지금 사면 출시 날 받는 값" 이라는 걸 먼저 알아야 한다 */}
-            {/* 사전예약도 역대 최저가처럼 면 없는 글자로 선다(2026-11-18 사용자) */}
-            {showPreorder && <span className={CARD_TEXT_MARK}>{PREORDER_LABEL}</span>}
+            {/* 사전예약은 먹색 알약(ui/preorder-mark 주석: 글자만으로는 안 띄었다) */}
+            {showPreorder && <PreorderMark />}
             {/* 역대 최저가는 면 없는 작은 파란 글자로 값 바로 위에 선다(2026-11-16 사용자). 값 줄에 두면 넷 칸 폭에서 정가가 잘렸다 */}
             {showLow && <span className={CARD_TEXT_MARK}>{GAME_MESSAGES.historicLowLabel}</span>}
             {showSaleEnd && (

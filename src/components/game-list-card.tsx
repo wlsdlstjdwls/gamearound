@@ -11,7 +11,7 @@
 // 할인율 배지는 값 바로 앞이다(game-card 의 DiscountStamp 주석, 2026-09-22 사용자 지정) — 목업은 값 뒤지만 그 결정을 지킨다.
 import { Fragment } from "react";
 import Link from "next/link";
-import { CARD_TEXT_MARK, CoverImage, DiscountStamp, type CardHighlight } from "@/components/game-card";
+import { CoverImage, DiscountStamp, type CardHighlight } from "@/components/game-card";
 import { HistoricLowBadge } from "@/components/ui/discount";
 import { SaleBadge } from "@/components/sale-badge";
 import { Tag } from "@/components/ui/tag";
@@ -19,8 +19,8 @@ import { Clamp } from "@/components/ui/tooltip";
 import { WishHeart } from "@/components/wish-heart";
 import { formatPrice } from "@/lib/currency";
 import { formatDate } from "@/lib/format";
-import { PREORDER_LABEL } from "@/lib/games/messages";
 import { isPreorder } from "@/lib/games/preorder";
+import { PreorderMark } from "@/components/ui/preorder-mark";
 import { cn } from "@/lib/cn";
 import type { GameSummary } from "@/server/services/games";
 
@@ -104,8 +104,8 @@ export function GameListCard({ game, variant = "discount", highlight }: { game: 
       <div className={cn(DIVIDER, RIGHT_CELL, "mt-auto flex flex-wrap items-center gap-x-1.5 gap-y-1 sm:pt-3")}>
         {best && best.currentPrice !== null && (
           <>
-            {/* 사전예약은 면 없는 글자(2026-11-18 사용자, game-card 와 같다) */}
-            {preorder && <span className={CARD_TEXT_MARK}>{PREORDER_LABEL}</span>}
+            {/* 사전예약은 먹색 알약(ui/preorder-mark, game-card 와 같다) */}
+            {preorder && <PreorderMark />}
             {hasDiscount && <DiscountStamp pct={best.discountPct} />}
             <span className="text-[19px] font-extrabold tracking-[-0.03em] text-ink">{formatPrice(best.currentPrice, best.currency)}</span>
             {hasDiscount && best.listPrice !== null && <span className="text-[12px] text-dim-2 line-through">{formatPrice(best.listPrice, best.currency)}</span>}
