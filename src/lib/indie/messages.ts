@@ -104,7 +104,7 @@ export const INDIE_MESSAGES = {
   homeTitle: "인디 게임",
   seeAll: "전체 보기",
   back: "인디 게임 목록으로",
-  by: "만든 사람",
+  by: "제작자",
   platforms: "플랫폼",
   release: "출시",
   links: "바로 가기",
@@ -144,7 +144,7 @@ export const INDIE_MESSAGES = {
   /** 상세 오른쪽 카드 */
   infoTitle: "게임 정보",
   stage: "개발 단계",
-  posted: "올린 날",
+  posted: "등록일",
 } as const;
 
 /** 쓰기, 고치기 폼과 검증 */
