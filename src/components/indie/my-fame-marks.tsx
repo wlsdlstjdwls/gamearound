@@ -1,7 +1,7 @@
 "use client";
 // 명예의 전당 순위표 안의 "내 게임" 표시(2026-10-30, 사용자 "내 게임은 지금 뜨는 것도 별로, 서비스 기획 관점에서").
 // 바닥에 떠 있던 카드는 플레이어의 진열장을 개발자 한 사람의 안내판이 가렸다. 게임 순위표처럼 내 자리는 표 **안에서** 짚는다:
-//  - TOP 10 안이면 그 카드, 줄 자체를 바꾼다: data-fame-mine 을 붙이면 globals.css 가 보라로 물들이고 숨겨 둔 "내 게임" 글줄을 편다.
+//  - TOP 10 안이면 그 카드, 줄 자체를 바꾼다: data-fame-mine 을 붙이면 globals.css 가 옅은 회색 면을 깔고 숨겨 둔 "내 게임" 글줄을 편다.
 //    딱지, 띠, 태그를 얹는 방식은 모두 걷었다(2026-10-30 사용자 "뱃지 말고 다른 형태") — 얹은 것은 테두리가 별로이거나, 싸 보이거나,
 //    안 보이거나, 순위 딱지, 글과 겹쳤다. 게임 순위표에서 내 줄만 색이 다른 것처럼 카드가 곧 표시다. 얹는 마디가 없어 겹칠 일도 없다.
 //  - 밖이면 순위표 맨 아래에 얇은 줄 하나를 붙인다. 이미 본 것 아래라 밀어내지 않는다. 누르면 내 게임 관리의 도전 판으로 간다.
@@ -69,20 +69,20 @@ export function MyFameMarks() {
   return (
     <Link
       href={ROUTES.indieMine}
-      className="press enter-item grid grid-cols-[72px_minmax(0,1fr)] items-center gap-x-3 gap-y-1 rounded-[var(--radius-md)] border border-dashed border-plum bg-plum-soft p-3 sm:grid-cols-[96px_minmax(0,1fr)_auto] sm:gap-x-4"
+      className="press enter-item grid grid-cols-[72px_minmax(0,1fr)] items-center gap-x-3 gap-y-1 rounded-[var(--radius-md)] bg-surface-2 p-3 sm:grid-cols-[96px_minmax(0,1fr)_auto] sm:gap-x-4"
     >
       <span className="flex flex-col">
         <span className="text-[15px] font-extrabold text-ink">{M.myOutRank}</span>
-        <span className="inline-flex w-fit items-center gap-1 text-[12px] font-bold text-plum">
+        <span className="inline-flex w-fit items-center gap-1 text-[12px] font-bold text-acc">
           <SproutIcon size={13} />
           {M.myBadge}
         </span>
       </span>
       <span className="flex min-w-0 flex-col gap-0.5">
         <span className="truncate text-[15px] font-bold text-ink">{s.title}</span>
-        <span className="truncate text-[12.5px] font-semibold text-plum">{fameNextLine(s)}</span>
+        <span className="truncate text-[12.5px] font-semibold text-acc">{fameNextLine(s)}</span>
       </span>
-      <span className="col-start-2 text-[13px] font-semibold text-plum sm:col-start-auto">{M.myChallenge}</span>
+      <span className="col-start-2 text-[13px] font-semibold text-acc sm:col-start-auto">{M.myChallenge}</span>
     </Link>
   );
 }

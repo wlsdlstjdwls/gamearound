@@ -1253,15 +1253,10 @@ body:has([data-admin-actionbar]) {
 [data-fame-mine] .fame-see {
   display: none;
 }
-[data-fame-mine] {
-  background-color: color-mix(in oklab, var(--plum) 13%, var(--surface));
-  box-shadow: inset 0 5px 0 var(--plum), 0 0 0 1px color-mix(in oklab, var(--plum) 35%, transparent), 0 14px 32px -18px var(--plum);
-}
-.fame-row[data-fame-mine] {
-  box-shadow: inset 5px 0 0 var(--plum), 0 0 0 1px color-mix(in oklab, var(--plum) 35%, transparent);
-}
-#fame-top[data-fame-mine] {
-  box-shadow: 0 0 0 3px var(--plum), 0 18px 40px -18px var(--plum);
+/* 2026-11-18 사용자 "4~10위 왼쪽 보라줄 별로, 보라색은 다 빼줘": 보라 바탕과 위/왼쪽 띠를 걷었다.
+   내 게임은 옅은 회색 면 한 단계와 "내 게임" 글줄로만 말한다(띠, 둘레 빛 없음, 파랑 남발 금지). 1위 큰 판은 그림 위라 면을 바꾸지 않는다 */
+[data-fame-mine]:not(#fame-top) {
+  background-color: var(--surface-2);
 }
 
 /* "+N" 판(ui/more-toggle)이 열린 동안 그 카드를 이웃 위로 올린다.

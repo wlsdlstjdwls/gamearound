@@ -85,10 +85,10 @@ function ChangeNote({ change, className }: { change: number | null | undefined; 
 
 /** 4위 아래 줄과 역대 선정작 줄이 같은 모양을 쓴다(목업 .hpr): 왼쪽 순위 칸, 작은 커버, 이름과 보조 줄, 오른쪽 끝 알약 */
 /** 내 게임일 때만 펴지는 글줄(새싹 + 문구). 딱지가 아니라 글자다 — 면을 얹으면 순위 딱지, 글과 겹쳤다(2026-10-30 사용자) */
-/** onDark: 1위 큰 판(어두운 그림 위)에서는 보라 글자가 묻혀 흰 글자로 쓴다 — 보라는 판 둘레 빛이 맡는다 */
+/** onDark: 1위 큰 판(어두운 그림 위)에서는 파란 글자가 묻혀 흰 글자로 쓴다. 보라는 이 화면에서 걷었다(2026-11-18 사용자 "보라색은 다 빼줘") */
 function MineLine({ label, className, onDark = false }: { label: string; className?: string; onDark?: boolean }) {
   return (
-    <span className={cn("fame-own items-center gap-1.5 font-bold", onDark ? "text-on-ink" : "text-plum", className)}>
+    <span className={cn("fame-own items-center gap-1.5 font-bold", onDark ? "text-on-ink" : "text-acc", className)}>
       <SproutIcon size={14} />
       {label}
     </span>
@@ -164,8 +164,8 @@ function Ranking({ items, label, finalized, isNow, intro }: { items: RankedIndie
         </Link>
         <FameIntro src={top.card.cover.url} images={intro.images} settings={intro.settings} title={top.card.title} badge={isNow ? M.firstThisMonth : M.firstOf(label)} targetId={FAME_TOP_ID} seenKey={top.card.slug} />
         {rest.slice(0, 2).map((r, i) => (
-          // 2, 3위는 위쪽 브랜드색 띠(단상)와 큰 점수로 4위 아래 줄과 갈린다. 2위 띠가 3위보다 굵고 진하다
-          <Link key={r.card.slug} href={indieDetailHref(r.card.slug, INDIE_FROM.hallOfFame)} {...(isNow ? { [FAME_CARD_ATTR]: r.card.slug } : {})} className={cn("lift press group enter-item relative flex flex-col gap-3 rounded-[var(--radius-panel)] bg-surface p-3.5", i === 0 ? "[box-shadow:inset_0_4px_0_var(--acc),var(--ring-hair)]" : "[box-shadow:inset_0_3px_0_var(--acc-3),var(--ring-hair)]")} style={stagger(i)}>
+          // 2, 3위는 큰 카드와 큰 점수로 4위 아래 줄과 갈린다. 위쪽 파란 띠는 걷었다(2026-11-18 사용자 "2,3위 상단 파란줄은 별로")
+          <Link key={r.card.slug} href={indieDetailHref(r.card.slug, INDIE_FROM.hallOfFame)} {...(isNow ? { [FAME_CARD_ATTR]: r.card.slug } : {})} className="lift press group enter-item relative flex flex-col gap-3 rounded-[var(--radius-panel)] bg-surface p-3.5 [box-shadow:var(--ring-hair)]" style={stagger(i)}>
             <span className="relative block">
               <Cover item={r} sizes="(max-width: 1024px) 100vw, 25vw" />
               {/* 순위 딱지 — 2, 3위도 "올랐다" 가 읽히게 브랜드색 원으로 키웠다(2026-10-27). 누런 금은색은 쓰지 않는다(사용자) */}
