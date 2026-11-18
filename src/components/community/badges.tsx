@@ -45,8 +45,10 @@ export function AuthorName({ post, className }: { post: Pick<PostRowDto, "author
     <span className="inline-flex min-w-0 items-center gap-1.5">
       <span className={className ?? "truncate"}>{post.authorName}</span>
       {post.authorIsDeveloper && (
-        <span className="inline-flex shrink-0 items-center gap-0.5 text-[11.5px] font-bold leading-none text-ink-2">
-          <CheckIcon size={11} aria-hidden />
+        // 2026-11-18 사용자 "개발자 배지를 좀 더 잘 보이게": 글자만으로는 이름 줄에 묻혔다. 먹색 알약 + 흰 체크로 세운다 —
+        // 파랑을 쓰지 않는 건 대표색 남발 탓이고, 사전예약 표지(ui/preorder-mark)와 같은 먹색 알약 결이라 "확인된 표시" 로 함께 읽힌다
+        <span className="inline-flex shrink-0 items-center gap-0.5 rounded-full bg-ink py-[3px] pl-1 pr-1.5 text-[11px] font-bold leading-none text-on-ink">
+          <CheckIcon size={10} strokeWidth={3} aria-hidden />
           {M.developerBadge}
         </span>
       )}
