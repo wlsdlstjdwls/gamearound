@@ -41,14 +41,15 @@ const PLAY = "press tap inline-flex min-h-14 flex-col items-start justify-center
 
 /** 1~3위 판 바깥 빛. 1위는 지나가는 빛까지(머리 주석) */
 const FAME_GLOW = [
-  "glint-sweep shadow-[0_24px_56px_-18px_var(--plum)]",
+  "glint-sweep shadow-[0_24px_56px_-18px_var(--acc)]",
   "shadow-[0_18px_40px_-20px_var(--acc)]",
   "shadow-[0_18px_40px_-20px_var(--info)]",
 ] as const;
 
 /** 1~3위 테두리 색과 오른쪽 위 빛 번짐 색. 테두리는 판 모서리를 따라 도는 2px 고리(가운데를 마스크로 뚫는다) */
 const FAME_TONE = [
-  { ring: "linear-gradient(135deg, var(--acc), var(--plum))", wash: "var(--plum)", washPct: 55 },
+  // 1위 보라 번짐은 걷었다(2026-11-18 사용자 "인디 게임 상세에서 보라색 보이던데 바꾸고") — 파랑 하나, 2위보다 진하게 번진다
+  { ring: "var(--acc)", wash: "var(--acc)", washPct: 55 },
   { ring: "var(--acc)", wash: "var(--acc)", washPct: 38 },
   { ring: "var(--info)", wash: "var(--info)", washPct: 38 },
 ] as const;
@@ -73,9 +74,10 @@ export function IndieDetailHero({
   const podium = fameRank !== null && fameRank <= RANK_TONE_TOP ? fameRank : null;
   return (
     <section className={cn("enter-item relative isolate overflow-hidden rounded-[var(--radius-panel)] bg-ink text-on-ink", podium && FAME_GLOW[podium - 1])}>
-      {/* 대표 그림을 크게 흐려 판의 바탕으로 깐다. 장식이라 alt 를 비우고 읽는 도구에서 숨긴다 */}
+      {/* 대표 그림을 크게 흐려 판의 바탕으로 깐다. 장식이라 alt 를 비우고 읽는 도구에서 숨긴다.
+          2026-11-18 사용자 "상단 색상이 너무 검은색": 그림을 더 드러내고(55% 에서 80%) 오른쪽 어둠 막을 옅게(85% 에서 62%) 했다 — 글은 오른쪽이라 그쪽만 받친다 */}
       {cover && (
-        <div aria-hidden className="pointer-events-none absolute inset-0 -z-10 scale-125 opacity-55 blur-3xl">
+        <div aria-hidden className="pointer-events-none absolute inset-0 -z-10 scale-125 opacity-80 blur-3xl">
           <CoverImage src={cover.url} alt="" sizes="40vw" />
         </div>
       )}
@@ -84,7 +86,7 @@ export function IndieDetailHero({
       <div
         aria-hidden
         className="pointer-events-none absolute inset-0 -z-10"
-        style={{ background: "linear-gradient(90deg, color-mix(in oklab, var(--ink) 30%, transparent), color-mix(in oklab, var(--ink) 85%, transparent))" }}
+        style={{ background: "linear-gradient(90deg, color-mix(in oklab, var(--ink) 10%, transparent), color-mix(in oklab, var(--ink) 62%, transparent))" }}
       />
       {/* 어두운 덮개 뒤에 그려야 빛 번짐이 덮이지 않는다 */}
       {podium && <FameDecor tone={FAME_TONE[podium - 1]} />}
@@ -106,7 +108,7 @@ export function IndieDetailHero({
               </span>
               {/* 트로피는 빛 칸(overflow 숨김) 밖에 둔다 — 안에 두면 모서리에서 잘린다 */}
               {podium === 1 && (
-                <span className="absolute -right-1.5 -top-1.5 grid size-5 place-items-center rounded-full bg-surface text-plum shadow-1">
+                <span className="absolute -right-1.5 -top-1.5 grid size-5 place-items-center rounded-full bg-surface text-acc shadow-1">
                   <TrophyIcon size={12} strokeWidth={2.4} />
                 </span>
               )}
