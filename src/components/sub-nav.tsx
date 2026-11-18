@@ -106,13 +106,13 @@ export function SubNav() {
                   });
                 }}
                 className={cn(
-                  "relative flex h-[var(--touch-target)] items-center whitespace-nowrap px-3 text-[14px] font-semibold transition-colors duration-fast",
-                  // 밑줄은 글자 폭만큼(좌우 여백 안쪽) — 칸 전체 폭으로 그으면 이웃 칸과 붙어 한 줄로 읽힌다
-                  "after:absolute after:inset-x-3 after:bottom-0 after:h-0.5 after:rounded-full after:transition-colors after:duration-fast",
-                  current ? "underline-grow text-acc after:bg-acc" : "text-mut after:bg-transparent hover:text-ink",
+                  // 고른 칸은 밑줄이 아니라 **옅은 회색 알약 면 + 먹색 굵은 글자**다(2026-11-18 사용자 "소메뉴 선택 시 아래 파란 줄 지우고 다른 방식으로").
+                  // 파랑을 쓰지 않는다(같은 날 "파란색 남발"). 알약은 칸 높이(터치 44px) 안에 작게 앉아 띠 높이가 그대로다
+                  "relative flex h-[var(--touch-target)] items-center whitespace-nowrap px-1 text-[14px] transition-colors duration-fast",
+                  current ? "font-bold text-ink" : "font-semibold text-mut hover:text-ink",
                 )}
               >
-                {s.label}
+                <span className={cn("rounded-full px-3 py-1.5 transition-colors duration-fast", current ? "bg-surface-3" : "hover:bg-surface-2")}>{s.label}</span>
               </Link>
             </li>
           );
