@@ -94,11 +94,8 @@ export function DevStatusCard({ status, trend, hasGames }: { status: StatusCell[
         tiles.length > 0 && (
           <div className={cn(NEWS_BOX, "flex flex-col gap-3 p-3 sm:p-4")}>
             <div className="flex items-baseline justify-between gap-3 px-1">
-              {/* 머리 한 줄(2026-11-18 사용자 "지난 30일 반응 | 앞 30일 대비" 를 다르게): 기간은 굵게, 기호의 뜻은 옆에 작게 */}
-              <span className="flex flex-wrap items-baseline gap-x-2">
-                <span className="text-[13px] font-bold text-ink">{L.myStatsNote}</span>
-                <span className="text-[12px] text-dim">{L.myStatsCompare}</span>
-              </span>
+              {/* 머리는 기간 한 마디(2026-11-18 사용자: "| 앞 30일 대비" 를 다르게, 이어서 기호 설명 문구도 지워 달라). ▲▼ 의 뜻은 낭독기 글이 말한다 */}
+              <span className="text-[13px] font-bold text-ink">{L.myStatsNote}</span>
               <HeadLink href={ROUTES.indieStats}>{L.myStatsMore}</HeadLink>
             </div>
             <dl className="grid grid-cols-2 gap-2 sm:grid-cols-4">
@@ -111,7 +108,7 @@ export function DevStatusCard({ status, trend, hasGames }: { status: StatusCell[
                     <dt className="truncate text-[12px] text-mut">{label}</dt>
                     <dd className="flex flex-col">
                       <span className={cn("text-[24px] font-black leading-tight tracking-[-0.03em] tabular-nums", moved(cell.month))}>{cell.month.toLocaleString("ko-KR")}</span>
-                      <span className="text-[12px] font-bold tabular-nums">
+                      <span className="text-[11px] font-semibold tabular-nums">
                         <TrendText change={trendChange(cell.month, cell.prevMonth)} />
                       </span>
                     </dd>
