@@ -10,6 +10,7 @@ import { INDIE_PROMO_MESSAGES as P } from "@/lib/indie/promo-messages";
 import { LOUNGE_MESSAGES as L } from "@/lib/lounge/messages";
 import { stagger } from "@/lib/motion";
 import { ROUTES } from "@/lib/routes";
+import { ChatIcon, EyeIcon, GamepadIcon, HeartIcon } from "@/components/ui/icons";
 import { cn } from "@/lib/cn";
 import type { IndieStatsTotals } from "@/lib/indie/dto";
 import type { PostRowDto } from "@/server/services/community";
@@ -20,75 +21,78 @@ const ROW = "row-beam group flex min-w-0 flex-col gap-1 px-4 py-3.5 transition-c
 type StatusCell = { label: string; value: number; unit: string; href?: string };
 
 /**
- * 내 개발 현황 한 판(2026-11-18 사용자 "현황 띠가 너무 크고 눈에 안 들어온다, 내 게임 통계랑 합쳐도 될 듯").
- * 전에는 큰 현황 띠(아이콘 칸 셋)와 내 게임 통계 판(큰 숫자 넷)이 따로 서서 화면 위 3분의 1 을 먹었다.
- * 이제 한 판 두 줄이다: 윗줄 상태(등록, 검토 중, 새 댓글), 아랫줄 지난 30일 반응(조회, 플레이하기 클릭, 새 찜, 댓글).
- * 눈길은 색이 아니라 숫자 굵기로 잡는다 — 0 은 회색, 0 이 아닌 수만 먹색 굵게 서서 "움직인 것" 이 먼저 보인다.
+ * 내 개발 현황 한 판(2026-11-18 사용자 손질 둘째 회차).
+ * 첫 회차: 큰 현황 띠와 내 게임 통계를 두 줄 글자판으로 합쳤더니 "너무 밋밋함, 다르게 표현하거나 급상승 밑으로". 그래서
+ * - 자리는 급상승 인기글 **아래**다(lounge/page). 라운지의 첫 눈길은 남의 글이고, 내 숫자는 그 뒤에 확인한다.
+ * - 모양은 지난 30일 반응 넷을 **아이콘 + 큰 숫자 타일**로 세운다. 색은 더하지 않는다 — 0 은 회색, 움직인 수만 먹색 굵게라 숫자가 그림이 된다.
+ * - 상태(등록, 검토 중, 새 댓글)는 머리 줄 옆 작은 알약이다. 새 댓글 알약은 댓글함으로 가는 링크다.
  * 게임이 없으면 등록 길 한 줄로 접는다
  */
-export type { StatusCell };
-
 export function DevStatusCard({ status, totals, hasGames }: { status: StatusCell[]; totals: IndieStatsTotals | null; hasGames: boolean }) {
-  const reactions = totals
+  const tiles = totals
     ? [
-        { label: P.statsViews, value: totals.views },
-        { label: P.statsPlays, value: totals.plays },
-        { label: P.statsLikes, value: totals.likes },
-        { label: P.statsComments, value: totals.comments },
+        { label: P.statsViews, value: totals.views, Icon: EyeIcon },
+        { label: P.statsPlays, value: totals.plays, Icon: GamepadIcon },
+        { label: P.statsLikes, value: totals.likes, Icon: HeartIcon },
+        { label: P.statsComments, value: totals.comments, Icon: ChatIcon },
       ]
     : [];
-  const num = (v: number) => cn("tabular-nums", v > 0 ? "font-extrabold text-ink" : "font-semibold text-dim");
+  const moved = (v: number) => (v > 0 ? "text-ink" : "text-dim");
   return (
-    <section aria-labelledby="dev-status-heading" className={cn(NEWS_BOX, "flex flex-col")}>
-      <div className="flex flex-wrap items-center gap-x-5 gap-y-2 px-4 py-3 sm:px-5">
-        <h2 id="dev-status-heading" className="text-[15px] font-extrabold tracking-[-0.02em] text-ink">
+    <section aria-labelledby="dev-status-heading" className="flex flex-col gap-2.5">
+      <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
+        <h2 id="dev-status-heading" className="text-[18px] font-extrabold tracking-[-0.03em] text-ink">
           {L.statusLabel}
         </h2>
-        {hasGames ? (
-          <dl className="flex flex-wrap items-baseline gap-x-4 gap-y-1 text-[13px]">
+        {hasGames && (
+          <ul className="flex flex-wrap items-center gap-1.5 text-[12.5px]">
             {status.map((c) => {
-              const body = (
-                <>
-                  <dt className="text-mut">{c.label}</dt>
-                  <dd className={cn("text-[15px]", num(c.value))}>
-                    {c.value.toLocaleString("ko-KR")}
-                    <span className="ml-0.5 text-[12px] font-medium text-mut">{c.unit}</span>
-                  </dd>
-                </>
-              );
-              return c.href ? (
-                <Link key={c.label} href={c.href} className="press flex items-baseline gap-1.5 rounded-md hover:underline">
-                  {body}
-                </Link>
-              ) : (
-                <div key={c.label} className="flex items-baseline gap-1.5">
-                  {body}
-                </div>
+              const pill = cn("inline-flex items-baseline gap-1 rounded-full bg-surface-2 px-2.5 py-1", c.value > 0 ? "font-bold text-ink" : "font-medium text-mut");
+              const text = `${c.label} ${c.value.toLocaleString("ko-KR")}${c.unit}`;
+              return (
+                <li key={c.label}>
+                  {c.href ? (
+                    <Link href={c.href} className={cn(pill, "press transition-colors hover:bg-surface-3")}>
+                      {text}
+                    </Link>
+                  ) : (
+                    <span className={pill}>{text}</span>
+                  )}
+                </li>
               );
             })}
-          </dl>
-        ) : (
-          <p className="text-[13px] text-mut">{L.noGamesTitle}</p>
+          </ul>
         )}
         <span className="ml-auto">
           <HeadLink href={hasGames ? ROUTES.indieMine : ROUTES.indieNew}>{hasGames ? L.statDetail : L.register}</HeadLink>
         </span>
       </div>
-      {hasGames && reactions.length > 0 && (
-        <div className="flex flex-wrap items-baseline gap-x-5 gap-y-1 border-t border-line-soft bg-surface-4 px-4 py-2.5 text-[13px] sm:px-5">
-          <span className="text-[12.5px] font-semibold text-ink-2">{L.myStatsNote}</span>
-          <dl className="flex flex-wrap items-baseline gap-x-4 gap-y-1">
-            {reactions.map((c) => (
-              <div key={c.label} className="flex items-baseline gap-1.5">
-                <dt className="text-mut">{c.label}</dt>
-                <dd className={cn("text-[15px]", num(c.value))}>{c.value.toLocaleString("ko-KR")}</dd>
-              </div>
-            ))}
-          </dl>
-          <span className="ml-auto">
-            <HeadLink href={ROUTES.indieStats}>{L.myStatsMore}</HeadLink>
-          </span>
+      {!hasGames ? (
+        <div className={NEWS_BOX}>
+          <EmptyRow title={L.noGamesTitle} lead={L.noGamesLead} />
         </div>
+      ) : (
+        tiles.length > 0 && (
+          <div className={cn(NEWS_BOX, "flex flex-col gap-3 p-3 sm:p-4")}>
+            <div className="flex items-baseline justify-between gap-3 px-1">
+              <span className="text-[12.5px] font-semibold text-mut">{L.myStatsNote}</span>
+              <HeadLink href={ROUTES.indieStats}>{L.myStatsMore}</HeadLink>
+            </div>
+            <dl className="grid grid-cols-2 gap-2 sm:grid-cols-4">
+              {tiles.map(({ label, value, Icon }, i) => (
+                <div key={label} className="enter-item flex items-center gap-3 rounded-[var(--radius-md)] bg-surface-4 px-3.5 py-3" style={stagger(i)}>
+                  <span aria-hidden className={cn("grid size-9 shrink-0 place-items-center rounded-full bg-surface", moved(value))}>
+                    <Icon size={17} />
+                  </span>
+                  <span className="flex min-w-0 flex-col">
+                    <dt className="truncate text-[12px] text-mut">{label}</dt>
+                    <dd className={cn("text-[24px] font-black leading-tight tracking-[-0.03em] tabular-nums", moved(value))}>{value.toLocaleString("ko-KR")}</dd>
+                  </span>
+                </div>
+              ))}
+            </dl>
+          </div>
+        )
       )}
     </section>
   );

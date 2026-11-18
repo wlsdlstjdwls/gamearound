@@ -9,7 +9,7 @@
 //   인원 모집과 개발 팁 줄을 세웠다가 같은 날 숨겼다(사용자 "맘대로 추가", lib/community/constants 의 HIDDEN_POST_CATEGORIES). 빈 칸은 접는다:
 //   비로그인 띠(오른쪽 칸이 같은 로그인 길을 낸다), 수가 전부 0 인 현황 띠, 빈 "답변을 기다리는 질문". 파랑은 머리의 "글 작성" 하나다.
 //   좁은 화면에서 로그인한 사람은 오른쪽 칸(내 게임 소식)을 맨 위에 본다 — 그 사람의 첫 용건이다.
-// 2026-11-18 사용자 손질: 현황 띠와 내 게임 통계를 "내 개발 현황" 한 판으로 합치고(home-blocks 의 DevStatusCard), 플레이테스트 줄을 걷고,
+// 2026-11-18 사용자 손질(둘째 회차에 내 개발 현황을 급상승 아래로 내리고 타일로 바꿨다, home-blocks 주석): 현황 띠와 내 게임 통계를 "내 개발 현황" 한 판으로 합치고(home-blocks 의 DevStatusCard), 플레이테스트 줄을 걷고,
 //   오른쪽 칸을 "인디 게임 최근 소식"(새로 공개된 인디 게임, 그림과 함께)으로 바꿨다. 내 게임 줄은 내 개발 현황의 "개발 현황 보기" 가 맡는다.
 //   급상승 줄에는 글에 붙은 게임 그림이 선다(news-blocks/lists).
 // 검색, 탭, 정렬은 이 화면에 두지 않는다(기획서 S-16 "삭제된 영역") — 라운지 전체 글(S-17)이 맡는다.
@@ -92,6 +92,7 @@ export default async function LoungeHomePage() {
             <>
               <div className="grid items-start gap-6 lg:grid-cols-[minmax(0,1fr)_380px]">
                 <div className="flex min-w-0 flex-col gap-7">
+                  <RisingBlock posts={home.rising} allHref={ROUTES.loungeAll} now={now} />
                   {user && (
                     <DevStatusCard
                       hasGames={mine.length > 0}
@@ -104,7 +105,6 @@ export default async function LoungeHomePage() {
                       ]}
                     />
                   )}
-                  <RisingBlock posts={home.rising} allHref={ROUTES.loungeAll} now={now} />
                   <WaitingBlock title={M.waitingAnswer} note={M.waitingAnswerNote} posts={home.waiting} cta={M.leaveAnswer} zero={M.zeroAnswers} now={now} />
                 </div>
                 <SidePanel

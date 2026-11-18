@@ -25,6 +25,7 @@ export const LOUNGE_MESSAGES = {
   signIn: "로그인",
   noGamesTitle: "아직 올린 게임이 없어요",
   noGames: "첫 게임을 등록해 보세요.",
+  noGamesLead: "게임을 등록하면 조회, 플레이하기 클릭, 찜, 댓글이 여기 모여요.",
   register: "내 게임 등록",
   registeredAt: (d: string) => `등록 ${d}`,
   approvedLine: "등록 완료",
