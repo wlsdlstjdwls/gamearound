@@ -14,13 +14,14 @@ import { EmptyNote } from "@/components/empty-state";
 /** 마디에 세우는 글 수 — 소개를 다 읽은 사람이 훑어볼 만큼. 더 보려면 글 상세에서 이어 간다 */
 const RELATED_LIMIT = 5;
 
-export async function IndieRelatedNews({ authorUserId, indiePostId, indieSlug, isOwner }: { authorUserId: string; indiePostId: string; indieSlug: string; isOwner: boolean }) {
+/** className: 넘기면 그 모양으로 선다(인디 상세는 본문 한 판의 마디로 넣는다, 2026-11-18). 없으면 따로 선 마디 카드 */
+export async function IndieRelatedNews({ authorUserId, indiePostId, indieSlug, isOwner, className }: { authorUserId: string; indiePostId: string; indieSlug: string; isOwner: boolean; className?: string }) {
   const posts = await nullIfDbUnavailable(listAuthorLoungePosts(authorUserId, RELATED_LIMIT, indiePostId));
   if (!posts) return null;
   // 남의 게임에서 빈 마디는 아무 말도 안 하는 칸이라 접는다. 본인에게는 첫 개발일지를 권하는 자리로 둔다
   if (posts.length === 0 && !isOwner) return null;
   return (
-    <section aria-labelledby="indie-related" className={sectionCardClass("flex flex-col gap-3")}>
+    <section aria-labelledby="indie-related" className={className ?? sectionCardClass("flex flex-col gap-3")}>
       <SectionHead id="indie-related" title={M.relatedTitle} />
       <p className="-mt-1 text-[13px] text-dim">{M.relatedLead}</p>
       {posts.length === 0 ? (

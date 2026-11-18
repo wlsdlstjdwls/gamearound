@@ -47,6 +47,9 @@ import { decodeSlugParam } from "@/lib/slug";
 import { getIndiePostBySlug } from "@/server/services/indie";
 import { getCurrentUser } from "@/server/services/users";
 
+/** 본문 한 판 안의 마디 하나 — 판의 안쪽 여백을 마디가 맡는다(판은 p-0, 마디 사이는 가는 선) */
+const BODY_SEGMENT = "flex flex-col gap-3 px-4 py-6 sm:px-6";
+
 type Props = { params: Promise<{ slug: string }>; searchParams: Promise<Record<string, string | string[] | undefined>> };
 
 /** 이 조회의 유입 경로(lib/indie/traffic). 우리 사이트 호스트는 요청의 Host 로 안다 — 미리 보기 배포와 운영 주소가 다르다 */
@@ -175,17 +178,18 @@ export default async function IndieDetailPage({ params, searchParams }: Props) {
 
       {/* 본문은 한 기둥, 가운데로 좁힌다(2026-11-18 사용자 "가운데 콘텐츠 너비를 좀 더 줄이고"). 오른쪽 게임 정보 기둥은 머리 카드로 올라갔다 */}
       <div className="mx-auto grid w-full max-w-[var(--indie-body-w)] items-start gap-6">
-        <div className="flex min-w-0 flex-col gap-6">
+        {/* 마디들을 따로 띄운 카드로 두지 않고 흰 판 하나에 가는 선으로 잇는다(2026-11-18 사용자 "각 영역을 따로 두지 말고 쭉 이어지게") */}
+        <div className={sectionCardClass("flex min-w-0 flex-col divide-y divide-line-soft p-0 sm:p-0")}>
           {/* 개발 중인 게임이 가장 원하는 것은 테스터다(기획서 2장 5번) — 영상보다 앞에 둔다 */}
           {playtest && (
-            <section aria-labelledby="indie-playtest" className={sectionCardClass("flex flex-col gap-3 shadow-[inset_0_0_0_1px_var(--acc-3)]")}>
+            <section aria-labelledby="indie-playtest" className={BODY_SEGMENT}>
               <SectionHead id="indie-playtest" title={PLAYTEST_MESSAGES.section} />
               <PlaytestApply postId={post.id} isOwner={isOwner} playtest={playtest} />
             </section>
           )}
 
           {post.youtubeId && (
-            <section aria-labelledby="indie-trailer" className={sectionCardClass("flex flex-col gap-3")}>
+            <section aria-labelledby="indie-trailer" className={BODY_SEGMENT}>
               <SectionHead id="indie-trailer" title={M.trailer} />
               <div className="relative aspect-video w-full overflow-hidden rounded-[var(--radius-md)] bg-surface-3">
                 {/* nocookie 판: 재생 전에는 추적 쿠키를 굽지 않는다. ID 는 검증 때 11자 꼴만 남겼다(lib/indie/schemas) */}
@@ -202,7 +206,7 @@ export default async function IndieDetailPage({ params, searchParams }: Props) {
           )}
 
           {stores.length > 0 && (
-            <section aria-labelledby="indie-buy" className={sectionCardClass("flex flex-col gap-3")}>
+            <section aria-labelledby="indie-buy" className={BODY_SEGMENT}>
               <SectionHead id="indie-buy" title={M.buyTitle} />
               <ul className="grid grid-cols-1 gap-2.5 sm:grid-cols-2">
                 {stores.map((st) => (
@@ -224,14 +228,14 @@ export default async function IndieDetailPage({ params, searchParams }: Props) {
             </section>
           )}
 
-          <section aria-labelledby="indie-about" className={sectionCardClass("flex flex-col gap-3")}>
+          <section aria-labelledby="indie-about" className={BODY_SEGMENT}>
             <SectionHead id="indie-about" title={M.about} />
             {/* 줄바꿈은 글쓴이가 적은 그대로 — 마크다운은 받지 않는다(승인 없이 서는 글에 서식을 열면 도배의 도구가 된다) */}
             <p className="max-w-[720px] whitespace-pre-line text-[15px] leading-[1.8] text-ink-2">{post.body}</p>
           </section>
 
           {shots.length > 0 && (
-            <section aria-labelledby="indie-shots" className={sectionCardClass("flex flex-col gap-3")}>
+            <section aria-labelledby="indie-shots" className={BODY_SEGMENT}>
               <SectionHead id="indie-shots" title={M.screenshots} />
               <ul className="grid grid-cols-1 gap-3 sm:grid-cols-2">
                 {shots.map((s, i) => (
@@ -256,12 +260,12 @@ export default async function IndieDetailPage({ params, searchParams }: Props) {
           )}
 
           <Suspense fallback={null}>
-            <IndieRelatedNews authorUserId={post.authorUserId} indiePostId={post.id} indieSlug={post.slug} isOwner={isOwner} />
+            <IndieRelatedNews authorUserId={post.authorUserId} indiePostId={post.id} indieSlug={post.slug} isOwner={isOwner} className={BODY_SEGMENT} />
           </Suspense>
 
           {/* 플레이한 사람의 말이 쌓이는 곳(기획서 3장 2번). 게시판 댓글 부품 그대로, 받는 액션만 인디 글 것이다 */}
           {live && (
-            <div className={sectionCardClass()}>
+            <div className={BODY_SEGMENT}>
               <Comments postId={post.id} initial={comments} addAction={addIndieCommentAction} mine={{ edit: updateIndieCommentAction, remove: deleteIndieCommentAction }} />
             </div>
           )}
