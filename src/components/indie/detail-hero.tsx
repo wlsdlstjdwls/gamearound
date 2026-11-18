@@ -28,7 +28,11 @@ export const BANNER_H = "h-[220px] sm:h-[400px]";
  * 정보 카드 껍데기 — 배너 아래쪽에 겹쳐 앉는다. 뼈대(indie/[slug]/loading)가 같은 값을 쓴다(실물과 같은 자리).
  * 겹침을 키웠다(2026-11-18 사용자 "제목 영역이 너무 아래, 좀만 더 올리자"): 휴대폰 48px 에서 80px, 넓은 화면 96px 에서 160px
  */
-export const HERO_CARD = "relative mx-2.5 -mt-20 grid gap-5 rounded-[var(--radius-panel)] bg-surface p-4 shadow-[var(--ring-hair),var(--elev-2)] sm:mx-7 sm:-mt-40 sm:p-6 lg:grid-cols-[minmax(0,1fr)_300px] lg:gap-10 lg:p-8";
+export const HERO_CARD = "relative mx-2.5 -mt-20 flex flex-col divide-y divide-line-soft rounded-[var(--radius-panel)] bg-surface shadow-[var(--ring-hair),var(--elev-2)] sm:mx-auto sm:-mt-40 sm:w-[calc(100%-56px)] sm:max-w-[var(--indie-body-w)]";
+/** 카드 폭은 --indie-body-w 로 묶는다(같은 날 "가운데 콘텐츠 너비를 좀 더 줄이고" + "제목 영역이랑 이어 붙여야지" 둘 다). 배너만 화면 끝까지다 */
+/** 카드 머리(제목 + 행동 상자) 두 칸 격자와 본문 마디가 같은 안쪽 여백을 쓴다 — 한 판이라 가장자리 선이 맞아야 한다 */
+export const HERO_PAD = "p-4 sm:p-6 lg:p-8";
+export const HERO_HEAD = "grid gap-5 lg:grid-cols-[minmax(0,1fr)_300px] lg:gap-10";
 
 /** 밝은 판 위 알약(플랫폼, 지난 순위). 회색 테두리 */
 const PILL = "inline-flex items-center rounded-full px-3 py-1 text-[12px] font-semibold text-ink-2 ring-1 ring-line-strong";
@@ -54,6 +58,7 @@ export function IndieDetailHero({
   fameHistory,
   facts = [],
   actions,
+  children,
 }: {
   post: IndieDetailDto;
   links: IndieHeroLink[];
@@ -63,6 +68,8 @@ export function IndieDetailHero({
   facts?: Array<{ label: string; value: React.ReactNode }>;
   /** 플레이하기 아래 단추들(찜하기, 소식 받기, 신고). 화면이 그려 넘긴다 — 로그인, 글쓴이 여부를 아는 쪽이 화면이다 */
   actions?: React.ReactNode;
+  /** 같은 판 안에 이어지는 본문 마디들(구매, 소개, 스크린샷 ...). 마디마다 HERO_PAD 를 쓴다 */
+  children?: React.ReactNode;
 }) {
   const cover = post.images[0];
   return (
@@ -74,7 +81,9 @@ export function IndieDetailHero({
       </div>
 
       {/* 정보 카드 — 배너 아래쪽에 겹쳐 앉는다. 넓은 화면에서는 두 칸(머리 주석) */}
+      {/* 머리와 본문이 흰 판 하나다(2026-11-18 사용자 "위 제목 영역이랑도 이어 붙여야지"). 본문 마디는 화면이 children 으로 넘긴다 */}
       <div className={HERO_CARD}>
+       <div className={cn(HERO_HEAD, HERO_PAD)}>
        <div className="flex min-w-0 flex-col gap-4">
         <div className="flex flex-col gap-2">
           {/* 이번 달 1~3위는 카드 안 판이 아니라 페이지 맨 위 금속 띠가 말한다(components/indie/fame-ribbon, 2026-11-18 L2 + C1) */}
@@ -145,6 +154,8 @@ export function IndieDetailHero({
         {/* 게임 정보의 단추들(2026-11-18 사용자 "오른쪽 하단 게임 정보 내용을 위로"). 사실 줄은 왼쪽 제목 아래다 */}
         {actions && <div className="flex flex-col gap-3">{actions}</div>}
        </div>
+       </div>
+        {children}
       </div>
     </section>
   );

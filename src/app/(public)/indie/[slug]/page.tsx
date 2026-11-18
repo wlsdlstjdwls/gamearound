@@ -20,7 +20,8 @@ import { Suspense } from "react";
 import { Comments } from "@/components/community/post-interactions";
 import { DeleteIndiePost } from "@/components/indie/delete-post";
 import { IndieOwnerBar } from "@/components/indie/owner-bar";
-import { IndieDetailHero } from "@/components/indie/detail-hero";
+import { HERO_PAD, IndieDetailHero } from "@/components/indie/detail-hero";
+import { cn } from "@/lib/cn";
 import { FameRibbon } from "@/components/indie/fame-ribbon";
 import { RANK_TONE_TOP } from "@/components/ui/rank-tone";
 import { MakerBadge } from "@/components/membership/maker-badge";
@@ -34,7 +35,7 @@ import { addIndieCommentAction, deleteIndieCommentAction, updateIndieCommentActi
 import { primaryPlayLink } from "@/lib/indie/promo";
 import { IndieReportButton } from "@/components/indie/report-button";
 import { FadeImage } from "@/components/ui/fade-image";
-import { Page, SectionHead, sectionCardClass } from "@/components/ui/page";
+import { Page, SectionHead } from "@/components/ui/page";
 import { formatDate } from "@/lib/format";
 import { genreLabels, INDIE_MESSAGES as M, INDIE_PLATFORM_LABEL, INDIE_REVIEW_MESSAGES as RV } from "@/lib/indie/messages";
 import { storeLinkPlatform } from "@/lib/indie/constants";
@@ -48,7 +49,7 @@ import { getIndiePostBySlug } from "@/server/services/indie";
 import { getCurrentUser } from "@/server/services/users";
 
 /** 본문 한 판 안의 마디 하나 — 판의 안쪽 여백을 마디가 맡는다(판은 p-0, 마디 사이는 가는 선) */
-const BODY_SEGMENT = "flex flex-col gap-3 px-4 py-6 sm:px-6";
+const BODY_SEGMENT = cn("flex flex-col gap-3", HERO_PAD);
 
 type Props = { params: Promise<{ slug: string }>; searchParams: Promise<Record<string, string | string[] | undefined>> };
 
@@ -174,12 +175,8 @@ export default async function IndieDetailPage({ params, searchParams }: Props) {
             </div>
           </>
         }
-      />
-
-      {/* 본문은 한 기둥, 가운데로 좁힌다(2026-11-18 사용자 "가운데 콘텐츠 너비를 좀 더 줄이고"). 오른쪽 게임 정보 기둥은 머리 카드로 올라갔다 */}
-      <div className="mx-auto grid w-full max-w-[var(--indie-body-w)] items-start gap-6">
-        {/* 마디들을 따로 띄운 카드로 두지 않고 흰 판 하나에 가는 선으로 잇는다(2026-11-18 사용자 "각 영역을 따로 두지 말고 쭉 이어지게") */}
-        <div className={sectionCardClass("flex min-w-0 flex-col divide-y divide-line-soft p-0 sm:p-0")}>
+      >
+        {/* 본문 마디들 — 머리 카드와 같은 흰 판에 선으로 이어진다(2026-11-18 사용자 "각 영역 쭉 이어지게", "위 제목 영역이랑도 이어 붙여야지") */}
           {/* 개발 중인 게임이 가장 원하는 것은 테스터다(기획서 2장 5번) — 영상보다 앞에 둔다 */}
           {playtest && (
             <section aria-labelledby="indie-playtest" className={BODY_SEGMENT}>
@@ -269,9 +266,8 @@ export default async function IndieDetailPage({ params, searchParams }: Props) {
               <Comments postId={post.id} initial={comments} addAction={addIndieCommentAction} mine={{ edit: updateIndieCommentAction, remove: deleteIndieCommentAction }} />
             </div>
           )}
-        </div>
+      </IndieDetailHero>
 
-      </div>
     </Page>
   );
 }
