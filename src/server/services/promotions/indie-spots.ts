@@ -51,6 +51,9 @@ export async function homeIndieAd(): Promise<IndieSpot | null> {
  * 장르가 안 맞고 광고도 없으면 null — 아무 인디 게임이나 세우면 추천이 아니다. 이 게임에 이어진 인디 글은 뺀다 — "개발자가 직접 소개해요" 마디가 이미 그 글이다
  */
 export async function indieSpotForGame(gameId: string, gameGenres: readonly string[]): Promise<IndieSpot | null> {
+  // 광고가 꺼져 있으면 칸째 빠진다(2026-11-18 사용자 "광고 끄기로 했는데 이런 인디 게임은 어때요 영역 아직 나오네").
+  // 광고 아닌 추천으로 채우던 것도 화면에서는 광고 자리로 읽힌다 — 아래 추천 채우기는 ADS_ON 이 켜질 때 그대로 돌아온다
+  if (!ADS_ON) return null;
   const genres = indieGenresOf(gameGenres);
   const sameGenre = (g: readonly string[]) => g.some((x) => (genres as string[]).includes(x));
   // 광고가 꺼져 있으면 걸린 글을 읽지 않고 바로 광고 아닌 추천으로 간다(lib/promo/flags)
