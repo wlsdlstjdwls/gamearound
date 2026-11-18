@@ -131,7 +131,12 @@ export function TabBar({
               )}
             >
               <button type="button" role="tab" aria-selected={on} tabIndex={on ? 0 : -1} onClick={() => onPick(t.key)} className="press flex h-full min-w-0 items-center gap-1.5 pl-3 pr-2">
-                {Icon && <Icon size={14} className={on ? "text-acc" : undefined} />}
+                {/* 메뉴 아이콘은 size 만 받는다 — 색은 감싼 칸이 currentColor 로 넘긴다 */}
+                {Icon && (
+                  <span className={cn("flex shrink-0", on && "text-acc")}>
+                    <Icon size={14} />
+                  </span>
+                )}
                 {t.dirty && <span aria-hidden className="size-1.5 shrink-0 rounded-full bg-acc" />}
                 <span className="truncate">{t.label}</span>
                 {t.dirty && <span className="sr-only">{SM.tabDirty}</span>}
