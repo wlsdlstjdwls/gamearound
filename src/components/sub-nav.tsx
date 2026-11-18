@@ -106,13 +106,13 @@ export function SubNav() {
                   });
                 }}
                 className={cn(
-                  // 고른 칸은 밑줄이 아니라 **옅은 회색 알약 면 + 먹색 굵은 글자**다(2026-11-18 사용자 "소메뉴 선택 시 아래 파란 줄 지우고 다른 방식으로").
-                  // 파랑을 쓰지 않는다(같은 날 "파란색 남발"). 알약은 칸 높이(터치 44px) 안에 작게 앉아 띠 높이가 그대로다
-                  "relative flex h-[var(--touch-target)] items-center whitespace-nowrap px-1 text-[14px] transition-colors duration-fast",
-                  current ? "font-bold text-ink" : "font-semibold text-mut hover:text-ink",
+                  // 고른 칸은 **글자만** 먹색 굵게, 나머지는 옅은 회색 글자다. 줄도 면도 두지 않는다.
+                  // 2026-11-18 사용자: 파란 밑줄 "지우고 다른 방식으로", 회색 알약 면은 "별로" — 넷 가운데 "글자만 진하게" 를 골랐다
+                  "relative flex h-[var(--touch-target)] items-center whitespace-nowrap px-3 text-[14px] transition-colors duration-fast",
+                  current ? "font-extrabold text-ink" : "font-medium text-dim hover:text-ink-2",
                 )}
               >
-                <span className={cn("rounded-full px-3 py-1.5 transition-colors duration-fast", current ? "bg-surface-3" : "hover:bg-surface-2")}>{s.label}</span>
+                {s.label}
               </Link>
             </li>
           );
