@@ -34,7 +34,7 @@ export async function PostDetail({ id, lounge, category }: { id: string; lounge:
   if (loaded === DB_DOWN) return <DbUnavailablePage retryHref={category ? postPath(id, category) : `${lounge ? ROUTES.lounge : ROUTES.board}/p/${id}`} />;
   const [post, comments, game] = loaded;
   // 라운지 글을 게시판 주소로(또는 반대로) 열면 없는 글로 본다 — 메뉴 소속이 주소로 정해지기 때문이다
-  if (!post || (post.category === "devlog" || post.category === "qna") !== lounge) notFound();
+  if (!post || isLoungeCategory(post.category) !== lounge) notFound();
   // 다른 게시판 주소로 연 글(/board/guides/p/<리뷰 id>)은 제 주소로 보낸다 — 띠와 경로가 엉뚱한 게시판을 켜지 않게
   if (category && post.category !== category) permanentRedirect(postPath(post.id, post.category));
   const listPath = CATEGORY_LIST_PATH[post.category];

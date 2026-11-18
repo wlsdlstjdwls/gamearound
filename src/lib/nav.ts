@@ -99,6 +99,9 @@ export const NAV_SECTIONS: readonly NavSection[] = [
       // 10-28 에는 라운지 홈의 게시판 고르기 카드가 같은 길을 내서 띠에서 뺐는데, 그 카드를 걷었으니 띠가 유일한 길이다
       { label: "개발일지", href: ROUTES.loungeDevlogs },
       { label: "질문/피드백", href: ROUTES.loungeQna },
+      // 인원 모집, 개발 팁(2026-11-18 사용자 라운지 시안 C 확정, 기획서 v2 "인디 개발자 커뮤니티: 개발 팁, 인원 모집")
+      { label: "인원 모집", href: ROUTES.loungeRecruits },
+      { label: "개발 팁", href: ROUTES.loungeTips },
       // 플레이테스트는 메뉴에서 걷었다(2026-11-16 사용자 "플레이테스트 메뉴도 숨겨줘"). 화면(/playtests)과 모집 글은 남는다 —
       // 숨긴다 ≠ 지운다. 되살리려면 이 자리에 { label: "플레이테스트", href: ROUTES.playtests } 를 다시 세운다
       // 등록현황(/indie/mine)과 내 게임 통계(/indie/mine/stats)는 한 칸이다(2026-10-28 메뉴 정리). 둘 다 내 게임을 돌보는 화면이라

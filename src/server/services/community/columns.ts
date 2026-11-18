@@ -11,6 +11,16 @@ import type { PostRowDto } from "./dto";
 /** 작성자 이름. 닉네임이 없는 계정(옛 가입)은 이메일 앞부분을 가려서 쓴다 — 이메일을 그대로 내면 주소가 공개된다 */
 export const authorNameSql = sql<string>`coalesce(${users.displayName}, left(split_part(${users.email}, '@', 1), 2) || '***')`;
 
+/**
+ * 갈래 거르기. enum 이 아니라 글자로 견준다(2026-11-18) — 라운지 새 갈래(recruit, tip)를 더하는 마이그레이션 0117 이 운영 DB 에
+ * 들어가기 전에도 질의가 깨지지 않고 그 갈래만 빈 결과가 된다. enum 으로 견주면 PG 가 모르는 값을 enum 으로 바꾸다
+ * "invalid input value for enum" 으로 라운지 화면 전체가 죽는다. 대신 posts_category_created_idx 의 갈래 칸을 못 탄다 —
+ * 글이 수천 건 안팎이라 상태(status) 조건과 정렬로 충분하다. 글이 크게 늘면 enum 비교(inArray)로 되돌린다
+ */
+export function categoryIn(categories: readonly PostCategory[]) {
+  return sql`${posts.category}::text in (${sql.join(categories.map((c) => sql`${c}`), sql`, `)})`;
+}
+
 /** 인기 점수 식(기획서 7장). 쌓아 둔 수로 계산해 줄마다 집계가 돌지 않는다(schema-community 머리 주석) */
 export const popularScoreSql = sql<number>`(${posts.likeCount} + ${posts.commentCount} * ${POPULAR_COMMENT_WEIGHT}::int)`;
 

@@ -4,11 +4,11 @@
 // 안 묶인 글을 같이 세우는 이유: 칸이 생기기 전 글은 전부 비어 있고, 게임을 하나만 올린 개발자는 고를 까닭이 없다.
 // 다른 게임에 묶인 글은 뺀다 — 게임을 여럿 올린 개발자의 소식이 서로 섞이던 것이 이 칸을 만든 이유다.
 import "server-only";
-import { and, desc, eq, inArray, isNull, or } from "drizzle-orm";
+import { and, desc, eq, isNull, or } from "drizzle-orm";
 import { getDb } from "@/server/db/client";
 import { indiePosts, posts, users } from "@/server/db/schema";
 import { LOUNGE_CATEGORIES } from "@/lib/community/constants";
-import { rowColumns, toRow } from "@/server/services/community/columns";
+import { categoryIn, rowColumns, toRow } from "@/server/services/community/columns";
 import type { PostRowDto } from "@/server/services/community/dto";
 
 /** 글쓴이의 공개 라운지 글(개발일지, 질문 피드백) 최신순. indiePostId 를 주면 그 게임 글과 안 묶인 글만(머리 주석) */
@@ -21,7 +21,7 @@ export async function listAuthorLoungePosts(authorUserId: string, limit: number,
       and(
         eq(posts.authorUserId, authorUserId),
         eq(posts.status, "published"),
-        inArray(posts.category, [...LOUNGE_CATEGORIES]),
+        categoryIn(LOUNGE_CATEGORIES),
         indiePostId ? or(eq(posts.indiePostId, indiePostId), isNull(posts.indiePostId)) : undefined,
       ),
     )

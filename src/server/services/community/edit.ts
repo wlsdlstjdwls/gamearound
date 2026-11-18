@@ -2,11 +2,12 @@
 // 광고를 산 홍보 글조차 오타 하나 못 고쳤다. 글쓴이 본인만 한다 — 운영진은 지우지 않고 숨긴다(services/community/admin).
 // 소유자 조건은 질의의 where 에 넣는다(먼저 읽고 비교하지 않는다) — 한 왕복에 끝나고, 읽은 뒤 바뀌는 틈이 없다.
 // 관련 게임, 인디 게임을 slug 에서 id 로 바꾸는 규칙은 등록과 같아서 resolvePostRefs 하나를 같이 쓴다(services/community/posts).
-import { and, eq, inArray } from "drizzle-orm";
+import { and, eq } from "drizzle-orm";
 import { getDb } from "@/server/db/client";
 import { updatedBy } from "@/server/db/audit";
 import { games, indiePosts, posts, type PostCategory, type PromoType } from "@/server/db/schema";
 import { requireUser } from "@/server/services/users";
+import { categoryIn } from "./columns";
 import { displayTitle } from "@/server/services/games";
 import { BOARD_CATEGORIES, isLoungeCategory, LOUNGE_CATEGORIES, takesGame } from "@/lib/community/constants";
 import { POST_EDIT_MESSAGES as M } from "@/lib/community/messages";
@@ -113,7 +114,7 @@ export async function updatePost(id: string, input: PostInput): Promise<{ id: st
   const [row] = await db
     .update(posts)
     .set({ ...postColumns(input), ...refs, ...updatedBy("user", u.id) })
-    .where(and(eq(posts.id, id), eq(posts.authorUserId, u.id), inArray(posts.category, [...sameGroup(input.category)])))
+    .where(and(eq(posts.id, id), eq(posts.authorUserId, u.id), categoryIn(sameGroup(input.category))))
     .returning({ id: posts.id, category: posts.category });
   if (row) return row;
   const [mine] = await db.select({ id: posts.id }).from(posts).where(and(eq(posts.id, id), eq(posts.authorUserId, u.id)));

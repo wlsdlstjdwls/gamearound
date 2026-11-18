@@ -26,6 +26,9 @@ const TONE: Record<PostCategory, { soft: string; solid: string; wash: string }> 
   promo: { soft: "bg-plum-soft text-plum", solid: "group-hover/pick:bg-plum group-hover/pick:text-on-ink", wash: "before:from-plum-soft" },
   devlog: { soft: "bg-info-soft text-info", solid: "group-hover/pick:bg-info group-hover/pick:text-on-ink", wash: "before:from-info-soft" },
   qna: { soft: "bg-plum-soft text-plum", solid: "group-hover/pick:bg-plum group-hover/pick:text-on-ink", wash: "before:from-plum-soft" },
+  // 라운지 새 갈래(2026-11-18). 이 고르기 카드는 지금 라운지 홈에 서지 않는다 — 표를 채우는 몫이라 회색이다
+  recruit: { soft: "bg-surface-2 text-ink-2", solid: "group-hover/pick:bg-ink group-hover/pick:text-on-ink", wash: "before:from-surface-2" },
+  tip: { soft: "bg-surface-2 text-ink-2", solid: "group-hover/pick:bg-ink group-hover/pick:text-on-ink", wash: "before:from-surface-2" },
 };
 
 export function BoardPicker({

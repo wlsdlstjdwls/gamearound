@@ -813,6 +813,20 @@
       "when": 1794500000000,
       "tag": "0115_perf_features",
       "breakpoints": true
+    },
+    {
+      "idx": 116,
+      "version": "7",
+      "when": 1794600000000,
+      "tag": "0116_patch_note_bodies",
+      "breakpoints": true
+    },
+    {
+      "idx": 117,
+      "version": "7",
+      "when": 1794700000000,
+      "tag": "0117_lounge_recruit_tip",
+      "breakpoints": true
     }
   ]
 }

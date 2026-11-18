@@ -185,3 +185,19 @@ export async function getMyIndieStatsDetail(userId: string, postId: string): Pro
     population: ranked.population,
   };
 }
+
+/**
+ * 라운지 홈 "내 게임 통계" 띠(2026-11-18 시안 C)의 30일 합 네 칸. 통계 화면(getMyIndieStats)과 같은 기간, 같은 규칙이지만
+ * 날짜 줄, 순위, 글별 줄을 받지 않는다 — 라운지 홈은 사람마다 매번 그리는 화면이라 무거운 집계를 매번 돌리지 않는다. 질의 한 번이다.
+ */
+export async function getMyIndieTotals(userId: string): Promise<IndieStatsTotals> {
+  const res = await getDb().execute<{ views: number; plays: number; likes: number; comments: number }>(sql`
+    with mine as (select ${indiePosts.id} as id from ${indiePosts} where ${indiePosts.authorUserId} = ${userId})
+    select
+      coalesce((select sum(v.views) from ${indieViewDays} v where v.post_id in (select id from mine) and v.day >= ${windowStartDay}), 0)::int as views,
+      coalesce((select sum(k.clicks) from ${indieLinkClicks} k where k.post_id in (select id from mine) and k.day >= ${windowStartDay} and ${inArray(sql`k.link_kind`, [...PLAY_LINK_KINDS])}), 0)::int as plays,
+      (select count(*) from ${indiePostLikes} l where l.post_id in (select id from mine) and l.created_at >= ${windowStartTs})::int as likes,
+      (select count(*) from ${indiePostComments} m where m.post_id in (select id from mine) and m.author_user_id <> ${userId} and m.status = 'published' and m.created_at >= ${windowStartTs})::int as comments`);
+  const r = res.rows[0];
+  return { ...zero(), views: Number(r?.views ?? 0), plays: Number(r?.plays ?? 0), likes: Number(r?.likes ?? 0), comments: Number(r?.comments ?? 0) };
+}

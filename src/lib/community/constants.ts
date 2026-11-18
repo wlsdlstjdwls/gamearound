@@ -2,11 +2,11 @@
 import { ROUTES } from "@/lib/routes";
 import type { PostCategory, PromoType } from "@/server/db/schema";
 
-export const POST_CATEGORIES = ["review", "guide", "promo", "devlog", "qna"] as const satisfies readonly PostCategory[];
+export const POST_CATEGORIES = ["review", "guide", "promo", "devlog", "qna", "recruit", "tip"] as const satisfies readonly PostCategory[];
 /** 게임 게시판에 서는 카테고리 */
 export const BOARD_CATEGORIES = ["review", "guide", "promo"] as const satisfies readonly PostCategory[];
-/** 개발자 라운지에 서는 카테고리 */
-export const LOUNGE_CATEGORIES = ["devlog", "qna"] as const satisfies readonly PostCategory[];
+/** 개발자 라운지에 서는 카테고리. 인원 모집, 개발 팁은 2026-11-18(라운지 시안 C) */
+export const LOUNGE_CATEGORIES = ["devlog", "qna", "recruit", "tip"] as const satisfies readonly PostCategory[];
 
 export const CATEGORY_LABEL: Record<PostCategory, string> = {
   review: "리뷰",
@@ -14,6 +14,8 @@ export const CATEGORY_LABEL: Record<PostCategory, string> = {
   promo: "홍보",
   devlog: "개발일지",
   qna: "질문/피드백",
+  recruit: "인원 모집",
+  tip: "개발 팁",
 };
 
 /**
@@ -27,6 +29,8 @@ export const CATEGORY_TONE: Record<PostCategory, "acc"> = {
   promo: "acc",
   devlog: "acc",
   qna: "acc",
+  recruit: "acc",
+  tip: "acc",
 };
 
 export const PROMO_TYPES = ["my_game", "project"] as const satisfies readonly PromoType[];
@@ -41,6 +45,8 @@ export const CATEGORY_LIST_PATH: Record<PostCategory, string> = {
   promo: ROUTES.boardPromos,
   devlog: ROUTES.loungeDevlogs,
   qna: ROUTES.loungeQna,
+  recruit: ROUTES.loungeRecruits,
+  tip: ROUTES.loungeTips,
 };
 
 export function isLoungeCategory(c: PostCategory): boolean {

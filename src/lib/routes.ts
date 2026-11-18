@@ -114,6 +114,9 @@ export const ROUTES = {
   lounge: "/lounge",
   loungeDevlogs: "/lounge/devlogs",
   loungeQna: "/lounge/qna",
+  /** 인원 모집, 개발 팁(2026-11-18 라운지 시안 C, 기획서 v2 "개발 팁, 인원 모집") */
+  loungeRecruits: "/lounge/recruits",
+  loungeTips: "/lounge/tips",
   /** 라운지 글 전체(기획서 S-17) */
   loungeAll: "/lounge/all",
   /** 내 라운지 글에 달린 댓글 모아 보기(2026-10-28, 라운지 홈 현황의 "새 댓글" 칸이 연다) */

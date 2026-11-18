@@ -2,12 +2,12 @@
 //   급상승: 최근 3일 안의 글을 (좋아요 + 댓글 x 2) / (경과일 + 1) 로 4개. 모자라면 전체 기간 인기순으로 채운다.
 //   기다리는 글: 최근 14일, 댓글 0개, 최신순 6개.
 // 질의를 모두 나란히 보낸다(Neon 왕복 1회분) — 홈은 첫 화면이라 줄 세운 왕복 수가 곧 속도다.
-import { and, desc, eq, gte, inArray, sql } from "drizzle-orm";
+import { and, desc, eq, gte, sql } from "drizzle-orm";
 import { getDb } from "@/server/db/client";
 import { posts, users, type PostCategory } from "@/server/db/schema";
 import { LATEST_PROMO_LIMIT, RISING_LIMIT, RISING_WINDOW_DAYS, WAITING_LIMIT, WAITING_WINDOW_DAYS } from "@/lib/community/constants";
-import type { BoardHomeDto } from "./dto";
-import { popularScoreSql, rowColumns, toRow } from "./columns";
+import type { BoardHomeDto, PostRowDto } from "./dto";
+import { categoryIn, popularScoreSql, rowColumns, toRow } from "./columns";
 
 /** 한국 날짜의 오늘 0시 — "오늘 올라온 글" 은 한국 사람의 오늘이다 */
 const todayStartSql = sql`(date_trunc('day', now() at time zone 'Asia/Seoul') at time zone 'Asia/Seoul')`;
@@ -15,7 +15,7 @@ const ageDaysSql = sql`(extract(epoch from (now() - ${posts.createdAt})) / 86400
 
 export async function getBoardHome(categories: readonly PostCategory[], waitingCategories: readonly PostCategory[], withPromos: boolean): Promise<BoardHomeDto> {
   const db = getDb();
-  const live = and(eq(posts.status, "published"), inArray(posts.category, [...categories]));
+  const live = and(eq(posts.status, "published"), categoryIn(categories));
   const base = () => db.select(rowColumns).from(posts).innerJoin(users, eq(users.id, posts.authorUserId));
 
   // 채움 후보(전체 기간 인기순)도 첫 묶음에서 같이 받는다(2026-10-30 쿼리 점검) — 글이 적은 지금은 오르는 글이 거의 늘 모자라
@@ -40,7 +40,7 @@ export async function getBoardHome(categories: readonly PostCategory[], waitingC
     waitingCategories.length === 0
       ? Promise.resolve([])
       : base()
-          .where(and(eq(posts.status, "published"), inArray(posts.category, [...waitingCategories]), eq(posts.commentCount, 0), sql`${posts.createdAt} >= now() - make_interval(days => ${WAITING_WINDOW_DAYS}::int)`))
+          .where(and(eq(posts.status, "published"), categoryIn(waitingCategories), eq(posts.commentCount, 0), sql`${posts.createdAt} >= now() - make_interval(days => ${WAITING_WINDOW_DAYS}::int)`))
           .orderBy(desc(posts.createdAt))
           .limit(WAITING_LIMIT),
     withPromos ? base().where(and(eq(posts.status, "published"), eq(posts.category, "promo"))).orderBy(desc(posts.createdAt)).limit(LATEST_PROMO_LIMIT) : Promise.resolve([]),
@@ -60,4 +60,24 @@ export async function getBoardHome(categories: readonly PostCategory[], waitingC
     waiting: waiting.map(toRow),
     latestPromos: promos.map(toRow),
   };
+}
+
+/**
+ * 갈래마다 새 글 몇 줄(라운지 홈의 인원 모집, 개발 팁 줄, 2026-11-18 시안 C). 갈래마다 따로 묻되 나란히 보낸다 — 왕복은 한 번 몫이다.
+ * 마이그레이션 0117 전이면 새 갈래는 빈 줄로 온다(categoryIn 주석).
+ */
+export async function getLatestByCategory<C extends PostCategory>(categories: readonly C[], limit: number): Promise<Record<C, PostRowDto[]>> {
+  const db = getDb();
+  const lists = await Promise.all(
+    categories.map((c) =>
+      db
+        .select(rowColumns)
+        .from(posts)
+        .innerJoin(users, eq(users.id, posts.authorUserId))
+        .where(and(eq(posts.status, "published"), categoryIn([c])))
+        .orderBy(desc(posts.createdAt))
+        .limit(limit),
+    ),
+  );
+  return Object.fromEntries(categories.map((c, i) => [c, lists[i].map(toRow)])) as Record<C, PostRowDto[]>;
 }

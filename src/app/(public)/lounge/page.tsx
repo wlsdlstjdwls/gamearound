@@ -5,6 +5,10 @@
 //   (10-28 에는 띠에서 두 갈래를 빼고 이 카드가 길을 냈다)
 //   왼쪽: 급상승 인기글(줄 오른쪽 끝 "전체 글 보기") + 답변을 기다리는 질문
 //   오른쪽: 내 게임 최근 소식(최대 4개). 비로그인은 로그인 안내, 게임이 없으면 등록 유도. 아래 이용 가이드
+// 2026-11-18 시안 C(사용자 확정, docs/라운지홈_시안_2026-11-18.html): 왼쪽 맨 위에 내 게임 통계(로그인), 플레이테스트 모집,
+//   인원 모집과 개발 팁 줄을 세운다(기획서 v2 커뮤니티 "개발 팁, 인원 모집", 인디홍보 기획의 개발자 흐름). 빈 칸은 접는다:
+//   비로그인 띠(오른쪽 칸이 같은 로그인 길을 낸다), 수가 전부 0 인 현황 띠, 빈 "답변을 기다리는 질문". 파랑은 머리의 "글 작성" 하나다.
+//   좁은 화면에서 로그인한 사람은 오른쪽 칸(내 게임 소식)을 맨 위에 본다 — 그 사람의 첫 용건이다.
 // 검색, 탭, 정렬은 이 화면에 두지 않는다(기획서 S-16 "삭제된 영역") — 라운지 전체 글(S-17)이 맡는다.
 //
 // 내 게임 줄의 반응은 찜과 조회다. 기획서는 "새 댓글" 도 적었지만 인디 게임 글에는 댓글이 없다(lib/indie/fame 머리 주석) —
@@ -12,21 +16,22 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { HeadLink, RisingBlock, SideEmpty, SidePanel, SideRow, StatStrip, WaitingBlock } from "@/components/community/news-blocks";
+import { LatestBlock, MyStatsBlock, PlaytestBlock } from "@/components/lounge/home-blocks";
 import { WriteLink } from "@/components/community/write-link";
 import { BoardGuide } from "@/components/lounge/board-guide";
 import { DbUnavailable } from "@/components/db-unavailable";
 import { buttonClass } from "@/components/ui/button";
-import { ChatIcon, ClockIcon, GamepadIcon, UserIcon } from "@/components/ui/icons";
+import { ChatIcon, ClockIcon, GamepadIcon } from "@/components/ui/icons";
 import { Page, PageHead } from "@/components/ui/page";
-import { LOUNGE_CATEGORIES, writePath } from "@/lib/community/constants";
+import { CATEGORY_LABEL, CATEGORY_LIST_PATH, LOUNGE_CATEGORIES, writePath } from "@/lib/community/constants";
 import { COMMUNITY_MESSAGES as M } from "@/lib/community/messages";
 import { nullIfDbUnavailable } from "@/lib/db-errors";
 import { formatDotDate } from "@/lib/format";
 import { LOUNGE_MESSAGES as L } from "@/lib/lounge/messages";
 import { indieEditPath, indiePath, ROUTES, signInPath } from "@/lib/routes";
-import { countUnseenCommentsOnMyPosts, getBoardHome } from "@/server/services/community";
-import { listMyIndiePosts } from "@/server/services/indie";
-import type { IndieMineRowDto } from "@/lib/indie/dto";
+import { countUnseenCommentsOnMyPosts, getBoardHome, getLatestByCategory } from "@/server/services/community";
+import { getMyIndieTotals, listMyIndiePosts, listOpenPlaytests } from "@/server/services/indie";
+import type { IndieMineRowDto, IndieStatsTotals } from "@/lib/indie/dto";
 import { getCurrentUser } from "@/server/services/users";
 
 // 사람마다 오른쪽 칸(내 게임)과 현황이 달라 요청마다 그린다
@@ -36,6 +41,12 @@ export const metadata: Metadata = { title: M.loungeTitle, description: L.lead };
 
 /** 오른쪽 칸에 세우는 내 게임 수(기획서 S-16 "내 게임 최대 4개") */
 const MY_GAMES_LIMIT = 4;
+/** 플레이테스트 모집 줄 수. 셋이면 한눈에 들어오고 나머지는 "전체 보기" 가 플레이테스트 화면으로 보낸다 */
+const PLAYTEST_ROWS = 3;
+/** 인원 모집, 개발 팁 줄 수. 두 블록이 나란히 서서 줄 수가 같아야 높이가 맞는다 */
+const LATEST_ROWS = 3;
+/** 새 글 줄로 세우는 갈래(시안 C) */
+const LATEST_CATEGORIES = ["recruit", "tip"] as const;
 
 function MyGameRow({ p }: { p: IndieMineRowDto }) {
   const approved = p.review === "approved";
@@ -48,13 +59,15 @@ function MyGameRow({ p }: { p: IndieMineRowDto }) {
 
 export default async function LoungeHomePage() {
   // 게시판 묶음은 사람을 기다릴 일이 없다 — 사람 → 내 글 줄과 나란히 띄운다(2026-10-30 쿼리 점검: 세션이 맨 앞에 줄을 섰다)
-  const mineFor = (user: Awaited<ReturnType<typeof getCurrentUser>>): Promise<[IndieMineRowDto[], number]> =>
-    user ? Promise.all([listMyIndiePosts(user.id), countUnseenCommentsOnMyPosts(user.id, LOUNGE_CATEGORIES)]) : Promise.resolve([[], 0]);
+  const mineFor = (user: Awaited<ReturnType<typeof getCurrentUser>>): Promise<[IndieMineRowDto[], number, IndieStatsTotals | null]> =>
+    user ? Promise.all([listMyIndiePosts(user.id), countUnseenCommentsOnMyPosts(user.id, LOUNGE_CATEGORIES), getMyIndieTotals(user.id)]) : Promise.resolve([[], 0, null]);
   const userP = getCurrentUser().catch(() => null);
   const [user, loaded] = await Promise.all([
     userP,
     nullIfDbUnavailable(
-      Promise.all([getBoardHome(LOUNGE_CATEGORIES, ["qna"], false), userP.then(mineFor)]).then(([home, [mine, reactions]]) => [home, mine, reactions] as const),
+      Promise.all([getBoardHome(LOUNGE_CATEGORIES, ["qna"], false), userP.then(mineFor), listOpenPlaytests(), getLatestByCategory(LATEST_CATEGORIES, LATEST_ROWS)]).then(
+        ([home, [mine, reactions, totals], playtests, latest]) => [home, mine, reactions, totals, [...playtests.pinned, ...playtests.rest].slice(0, PLAYTEST_ROWS), latest] as const,
+      ),
     ),
   ]);
   const now = new Date().getTime();
@@ -79,41 +92,41 @@ export default async function LoungeHomePage() {
         <DbUnavailable retryHref={ROUTES.lounge} />
       ) : (
         (() => {
-          const [home, mine, reactions] = loaded;
+          const [home, mine, reactions, totals, playtests, latest] = loaded;
+          const approvedCount = mine.filter((p) => p.review === "approved").length;
+          const pendingCount = mine.filter((p) => p.review === "pending").length;
+          // 수가 전부 0 이면 현황 띠를 접는다 — 오른쪽 칸이 "아직 올린 게임이 없어요" 로 같은 말을 한다(시안 C)
+          const showStatus = user !== null && approvedCount + pendingCount + reactions > 0;
           return (
             <>
-              {user ? (
+              {showStatus && (
                 <StatStrip
                   label={L.statusLabel}
                   items={[
-                    { label: L.statApproved, value: mine.filter((p) => p.review === "approved").length, unit: L.unitGame, icon: <GamepadIcon size={19} /> },
-                    { label: L.statPendingLabel, value: mine.filter((p) => p.review === "pending").length, unit: L.unitCase, icon: <ClockIcon size={19} /> },
+                    { label: L.statApproved, value: approvedCount, unit: L.unitGame, icon: <GamepadIcon size={19} /> },
+                    { label: L.statPendingLabel, value: pendingCount, unit: L.unitCase, icon: <ClockIcon size={19} /> },
                     // 숫자만 세우면 확인할 길이 없다 — 댓글함(/lounge/comments)이 그 댓글들을 늘어놓고, 누르면 글의 그 댓글로 간다.
                     // 센 것은 아직 안 본 댓글이라(services/community/inbox) 글을 열어 확인하고 돌아오면 숫자가 준다
                     { label: L.statReactionsLabel, value: reactions, unit: L.unitComment, icon: <ChatIcon size={19} />, href: ROUTES.loungeComments },
                   ]}
                   link={{ href: ROUTES.indieMine, label: L.statDetail }}
                 />
-              ) : (
-                // 비로그인 띠는 한 줄로 줄였다(2026-11-16 피드백 v11 #26 "로그인 전 빈 배너가 큼") — 목업처럼 옅은 띠에 글 한 줄과 로그인 길
-                <Link
-                  href={signInPath(ROUTES.lounge)}
-                  className="press group flex items-center justify-between gap-3 rounded-[var(--radius-md)] bg-acc-soft px-4 py-3 text-[14px]"
-                >
-                  <span className="flex min-w-0 items-center gap-2 font-semibold text-ink">
-                    <UserIcon size={17} className="shrink-0 text-acc" />
-                    <span className="truncate">{L.guestLabel}</span>
-                  </span>
-                  <span className="shrink-0 text-[13.5px] font-bold text-acc group-hover:underline">{L.signIn}</span>
-                </Link>
               )}
               <div className="grid items-start gap-6 lg:grid-cols-[minmax(0,1fr)_380px]">
                 <div className="flex min-w-0 flex-col gap-7">
+                  {totals && <MyStatsBlock totals={totals} />}
+                  <PlaytestBlock items={playtests} />
+                  <div className="grid gap-7 sm:grid-cols-2 sm:gap-4">
+                    <LatestBlock id="recruit-heading" title={CATEGORY_LABEL.recruit} note={L.recruitNote} href={CATEGORY_LIST_PATH.recruit} posts={latest.recruit} empty={L.recruitEmpty} now={now} />
+                    <LatestBlock id="tip-heading" title={CATEGORY_LABEL.tip} note={L.tipNote} href={CATEGORY_LIST_PATH.tip} posts={latest.tip} empty={L.tipEmpty} now={now} />
+                  </div>
                   <RisingBlock posts={home.rising} allHref={ROUTES.loungeAll} now={now} />
                   <WaitingBlock title={M.waitingAnswer} note={M.waitingAnswerNote} posts={home.waiting} cta={M.leaveAnswer} zero={M.zeroAnswers} now={now} />
                 </div>
                 <SidePanel
                   id="my-games-heading"
+                  // 오른쪽 칸 단추는 보조 단추다 — 파랑은 머리의 "글 작성" 하나(시안 C). 좁은 화면의 로그인한 사람은 이 칸을 맨 위에 본다
+                  className={user ? "max-lg:order-first" : undefined}
                   title={L.myGames}
                   action={user && mine.length > 0 ? <HeadLink href={ROUTES.indieMine}>{L.statusLink}</HeadLink> : undefined}
                   guide={{
@@ -134,7 +147,7 @@ export default async function LoungeHomePage() {
                       title={L.signInTitle}
                       lead={L.signInLead}
                       action={
-                        <Link href={signInPath(ROUTES.lounge)} className={buttonClass({ size: "sm" })}>
+                        <Link href={signInPath(ROUTES.lounge)} className={buttonClass({ variant: "secondary", size: "sm" })}>
                           {L.signIn}
                         </Link>
                       }
@@ -144,7 +157,7 @@ export default async function LoungeHomePage() {
                       title={L.noGamesTitle}
                       lead={L.noGames}
                       action={
-                        <Link href={ROUTES.indieNew} className={buttonClass({ size: "sm" })}>
+                        <Link href={ROUTES.indieNew} className={buttonClass({ variant: "secondary", size: "sm" })}>
                           {L.register}
                         </Link>
                       }

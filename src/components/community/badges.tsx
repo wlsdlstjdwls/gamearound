@@ -37,7 +37,7 @@ export function GameChip({ title }: { title: string }) {
  * 작성자 이름 + "개발자" 배지(목업 brow, postv 의 .dv). 배지는 승인된 인디 게임을 공개 중인 글쓴이에게만 선다(services/community/columns).
  * 이름은 잘려도 배지는 남는다(shrink-0) — 긴 닉네임 때문에 "확인된 개발자" 라는 말이 사라지면 안 된다.
  * 체크 표시는 글자(✔)가 아니라 아이콘이다 — 글꼴마다 이모지로 바뀌어 색이 제멋대로 칠해진다.
- * 면을 채운 초록 딱지를 걷고 파랑 체크 + 글자만 둔다(2026-10-28 사용자 "개발자 표시 뱃지도"). 줄의 말머리 딱지와 겹쳐 보이지 않게
+ * 면을 채운 초록 딱지를 걷고 체크 + 글자만 둔다(2026-10-28 사용자 "개발자 표시 뱃지도"). 색은 파랑에서 먹색으로 내렸다(2026-11-18 라운지 시안 C). 줄의 말머리 딱지와 겹쳐 보이지 않게
  * 인증 표시처럼 이름 옆에 붙는 글자로 읽힌다.
  */
 export function AuthorName({ post, className }: { post: Pick<PostRowDto, "authorName" | "authorIsDeveloper" | "authorIsMaker">; className?: string }) {
@@ -45,7 +45,7 @@ export function AuthorName({ post, className }: { post: Pick<PostRowDto, "author
     <span className="inline-flex min-w-0 items-center gap-1.5">
       <span className={className ?? "truncate"}>{post.authorName}</span>
       {post.authorIsDeveloper && (
-        <span className="inline-flex shrink-0 items-center gap-0.5 text-[11.5px] font-bold leading-none text-acc">
+        <span className="inline-flex shrink-0 items-center gap-0.5 text-[11.5px] font-bold leading-none text-ink-2">
           <CheckIcon size={11} aria-hidden />
           {M.developerBadge}
         </span>

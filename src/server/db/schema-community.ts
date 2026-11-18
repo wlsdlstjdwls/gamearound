@@ -12,7 +12,8 @@ import { games, users } from "./schema";
 import { indiePosts } from "./schema-indie";
 
 /** 카테고리. 앞 셋은 게임 게시판, 뒤 둘은 개발자 라운지 */
-export const postCategoryEnum = pgEnum("post_category", ["review", "guide", "promo", "devlog", "qna"]);
+// recruit(인원 모집), tip(개발 팁)은 2026-11-18 라운지 갈래(마이그레이션 0117). 맨 뒤에 붙인다 — ALTER TYPE ADD VALUE 는 끝에 더한다
+export const postCategoryEnum = pgEnum("post_category", ["review", "guide", "promo", "devlog", "qna", "recruit", "tip"]);
 /** 홍보 유형(홍보에서만 필수). 기획서 v2.0 이 "라운지에 올린 게임" 유형을 뺐다 */
 export const promoTypeEnum = pgEnum("promo_type", ["my_game", "project"]);
 /** hidden 은 운영진 숨김. 지우기는 상태가 아니라 행 삭제다 */

@@ -5,6 +5,6 @@ export { deletePost, getMyPostForEdit, PostGameNotFoundError, PostIndieNotFoundE
 export { deleteComment, updateComment } from "./comment-edit";
 export { addComment, listComments, listMySavedPosts, toggleLike, toggleSave } from "./reactions";
 export { countUnseenCommentsOnMyPosts, listCommentsOnMyPosts, markCommentsSeen, MY_COMMENTS_WINDOW_DAYS, MY_REACTION_WINDOW_DAYS } from "./inbox";
-export { getBoardHome } from "./home";
+export { getBoardHome, getLatestByCategory } from "./home";
 export { getPostGameCard } from "./game";
 export { countCommunityToday, listCommentsForAdmin, listPostsForAdmin, moderateComment, moderatePost, POST_ADMIN_LIMIT, POST_ADMIN_TABS, type ModerationDecision, type PostAdminTab } from "./admin";

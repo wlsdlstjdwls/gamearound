@@ -16,8 +16,6 @@ export const LOUNGE_MESSAGES = {
   unitCase: "건",
   unitComment: "개",
   statDetail: "개발 현황 보기",
-  guestLabel: "로그인하면 내 개발 현황을 볼 수 있어요",
-  guestLead: "등록한 게임, 검토 상태, 내 글에 달린 반응을 한눈에 봐요.",
   myGames: "내 게임 최근 소식",
   statusLink: "등록현황",
   signInTitle: "로그인이 필요해요",
@@ -37,6 +35,17 @@ export const LOUNGE_MESSAGES = {
   guide: ["내 게임 등록으로 신청해요.", "운영진이 확인하고 승인해요.", "승인되면 모든 인디 게임, 명예의 전당, 슈퍼루키 후보가 돼요.", "개발일지와 질문으로 다른 개발자와 이야기해요."],
   /** 홈 오른쪽 칸 아래 링크(목업 lgHome "라운지 이용 가이드"). 여는 것은 게시판 보조 메뉴의 이용 안내와 같은 시트다(목업 bgd) */
   guideOpen: "라운지 이용 가이드",
+  // 시안 C(2026-11-18 사용자 확정) 맨 위 블록들. 기획서 v2 "개발 팁, 인원 모집", 인디홍보 기획 개발자 흐름(내 게임 통계, 플레이테스트)
+  myStatsTitle: "내 게임 통계",
+  myStatsNote: "지난 30일 동안 내 게임에 모인 반응이에요.",
+  myStatsMore: "자세히",
+  playtestNote: "개발 중인 인디 게임을 먼저 해 보고 의견을 보내 주세요.",
+  allLink: "전체 보기",
+  recruitNote: "함께 만들 사람을 찾아요.",
+  recruitEmpty: "아직 올라온 모집 글이 없어요",
+  tipNote: "만들면서 얻은 요령을 나눠요.",
+  tipEmpty: "아직 올라온 팁이 없어요",
+  firstPostLead: "첫 글을 남겨 보세요.",
 } as const;
 
 /** 내 글에 달린 댓글함(/lounge/comments, 2026-10-28). 라운지 홈 현황의 "새 댓글" 칸이 연다 */

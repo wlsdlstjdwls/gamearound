@@ -14,7 +14,8 @@ import { BOARD_GUIDE_MESSAGES as G, LOUNGE_MESSAGES as L } from "@/lib/lounge/me
 const TRIGGER: Record<"menu" | "link", string> = {
   // 보조 메뉴 판 바닥 줄 — 메뉴 칸과 같은 높이, 오른쪽 꺾쇠(목업 .sdg)
   menu: "tap mt-1 flex min-h-10 w-full items-center justify-between gap-2 rounded-lg border-t border-line-soft px-3 pt-1 text-[13px] text-mut transition-colors hover:bg-surface-2 hover:text-ink",
-  link: "tap inline-flex items-center gap-0.5 text-[13px] font-semibold text-acc hover:underline",
+  // 라운지 홈 오른쪽 칸 아래 글자 링크. 먹색이다(2026-11-18 시안 C, 파랑은 화면당 단추 하나)
+  link: "tap inline-flex items-center gap-0.5 text-[13px] font-semibold text-ink-2 hover:underline",
 };
 
 export function BoardGuide({ label, variant, lounge = true }: { label: string; variant: "menu" | "link"; lounge?: boolean }) {

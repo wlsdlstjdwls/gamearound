@@ -4,11 +4,11 @@
 //
 // "새 댓글" 은 글쓴이가 아직 그 글을 열어 보지 않은 남의 댓글이다. 글을 열면 그 글의 댓글을 모두 본 것으로 적는다(markCommentsSeen) —
 // 글 상세가 댓글을 전부 펼쳐 보여 주므로 열었다는 것이 곧 봤다는 것이다. 댓글 하나씩 "읽음" 을 누르게 하지 않는다.
-import { and, desc, eq, gte, inArray, isNull, ne, sql } from "drizzle-orm";
+import { and, desc, eq, gte, isNull, ne, sql } from "drizzle-orm";
 import { getDb } from "@/server/db/client";
 import { updatedBy } from "@/server/db/audit";
 import { postComments, posts, users, type PostCategory } from "@/server/db/schema";
-import { authorNameSql } from "./columns";
+import { authorNameSql, categoryIn } from "./columns";
 import type { MyPostCommentDto } from "./dto";
 
 /** 라운지 홈 현황의 "새 댓글" 이 세는 기간(기획서 v2.0 S-16 "최근 7일 내 글 반응") */
@@ -22,7 +22,7 @@ export const MY_COMMENTS_LIMIT = 60;
 function onMyPosts(userId: string, categories: readonly PostCategory[], days: number) {
   return and(
     eq(posts.authorUserId, userId),
-    inArray(posts.category, [...categories]),
+    categoryIn(categories),
     eq(posts.status, "published"),
     ne(postComments.authorUserId, userId),
     eq(postComments.status, "published"),

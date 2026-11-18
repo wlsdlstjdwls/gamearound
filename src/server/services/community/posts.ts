@@ -2,7 +2,7 @@
 // 글쓴이 확인은 서비스가 다시 한다(requireUser) — 서버 액션의 검사는 입력 모양만 본다.
 import { ownedByCurrentSession } from "@/server/auth/session";
 import { AUTH_MESSAGES } from "@/lib/auth/messages";
-import { and, asc, desc, eq, gt, ilike, inArray, lt, or, sql, type SQL } from "drizzle-orm";
+import { and, asc, desc, eq, gt, ilike, lt, or, sql, type SQL } from "drizzle-orm";
 import { getDb } from "@/server/db/client";
 import { createdBy } from "@/server/db/audit";
 import { games, posts, users, type PostCategory, type PromoType } from "@/server/db/schema";
@@ -10,7 +10,7 @@ import { getCurrentUser, requireUser } from "@/server/services/users";
 import { POSTS_PAGE_SIZE, postPath, type PopularPeriod, type SearchScope } from "@/lib/community/constants";
 import type { PostInput } from "@/lib/community/schemas";
 import type { PostDetailDto, PostPage } from "./dto";
-import { authorNameSql, popularScoreSql, rowColumns, toRow } from "./columns";
+import { authorNameSql, categoryIn, popularScoreSql, rowColumns, toRow } from "./columns";
 import { isLiked, isSaved } from "./reactions";
 import { postColumns, resolvePostRefs } from "./edit";
 
@@ -43,7 +43,7 @@ export type ListPostsParams = {
 export async function listPosts(p: ListPostsParams): Promise<PostPage> {
   const db = getDb();
   const page = Math.max(1, p.page ?? 1);
-  const conds: (SQL | undefined)[] = [eq(posts.status, "published"), inArray(posts.category, [...p.categories]), searchCond(p.q ?? "", p.scope ?? "all")];
+  const conds: (SQL | undefined)[] = [eq(posts.status, "published"), categoryIn(p.categories), searchCond(p.q ?? "", p.scope ?? "all")];
   if (p.promoType) conds.push(eq(posts.promoType, p.promoType));
   if (p.gameSlug) conds.push(sql`${posts.gameId} = (select ${games.id} from ${games} where ${games.slug} = ${p.gameSlug})`);
   const popular = p.tab === "popular";
