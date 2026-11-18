@@ -128,6 +128,12 @@ export async function listIndieForHome(): Promise<IndieCardDto[]> {
   return cards.length < INDIE_HOME_MIN ? [] : cards;
 }
 
+/** 라운지 홈 "인디 게임 최근 소식"(2026-11-18) — 새로 공개된 인디 게임 몇 장. 홈 줄과 달리 적어도 그대로 세운다 */
+export async function listRecentIndie(limit: number): Promise<IndieCardDto[]> {
+  const rows = await getDb().select(cardColumns).from(indiePosts).where(isPublic).orderBy(desc(indiePosts.createdAt)).limit(limit);
+  return toCards(rows);
+}
+
 /**
  * 상세. 숨긴 글은 글쓴이와 관리자만 본다 — 그 판단은 화면이 viewer 로 한다.
  * cache(): 상세의 generateMetadata 와 화면이 같은 요청 안에서 둘 다 부른다 — 감싸지 않으면 질의가 두 벌 나갔다(2026-10-30 쿼리 점검).

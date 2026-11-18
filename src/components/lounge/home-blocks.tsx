@@ -1,68 +1,95 @@
-// 라운지 홈 맨 위 블록 셋(2026-11-18 사용자 시안 C 확정, docs/라운지홈_시안_2026-11-18.html).
-//   내 게임 통계: 지난 30일 조회, 플레이하기 클릭, 새 찜, 댓글(인디홍보 기획의 개발자 흐름 "내 게임 통계"). 숫자는 services/indie 의 getMyIndieTotals
-//   플레이테스트 모집: 지금 열린 모집 몇 줄. 메뉴에서 걷은 플레이테스트 화면(lib/nav 주석)으로 가는 길을 홈이 낸다
-//   새 글 줄: 인원 모집, 개발 팁(기획서 v2 "인디 개발자 커뮤니티: 개발 팁, 인원 모집")
+// 라운지 홈 맨 위 블록(2026-11-18 사용자 손질로 내 개발 현황 한 판만 남고, 플레이테스트 줄은 걷었다, 인원 모집/개발 팁은 숨김). 처음 모양은 블록 셋(2026-11-18 사용자 시안 C 확정, docs/라운지홈_시안_2026-11-18.html).
+//   내 개발 현황: 윗줄 상태(등록, 검토 중, 새 댓글), 아랫줄 지난 30일 반응(조회, 플레이하기 클릭, 새 찜, 댓글, services/indie 의 getMyIndieTotals)
+//   (플레이테스트 모집 줄은 2026-11-18 사용자 "해당 영역은 없애줘" 로 걷었다. 플레이테스트 화면은 그대로다)
+//   새 글 줄(LatestBlock): 인원 모집, 개발 팁 — 숨긴 갈래라 지금은 부르는 곳이 없다(lib/community/constants 의 HIDDEN_POST_CATEGORIES)
 // 모양은 소식 블록(community/news-blocks)과 같은 흰 판, 같은 머리다. 파랑은 쓰지 않는다 — 화면의 파랑은 머리의 "글 작성" 하나다(사용자 "파란색 남발").
 import Link from "next/link";
 import { AuthorName } from "@/components/community/badges";
 import { EmptyRow, HeadLink, MetaLine, NEWS_BOX, NewsHead, TitleLine } from "@/components/community/news-blocks";
 import { INDIE_PROMO_MESSAGES as P } from "@/lib/indie/promo-messages";
-import { PLAYTEST_MESSAGES as PT } from "@/lib/indie/playtest-messages";
 import { LOUNGE_MESSAGES as L } from "@/lib/lounge/messages";
-import { formatDate } from "@/lib/format";
 import { stagger } from "@/lib/motion";
-import { indiePath, ROUTES } from "@/lib/routes";
+import { ROUTES } from "@/lib/routes";
+import { cn } from "@/lib/cn";
 import type { IndieStatsTotals } from "@/lib/indie/dto";
 import type { PostRowDto } from "@/server/services/community";
-import type { PlaytestCardDto } from "@/server/services/indie";
 
 const ROW = "row-beam group flex min-w-0 flex-col gap-1 px-4 py-3.5 transition-colors hover:bg-surface-2 sm:px-5";
 
-/** 내 게임 통계 띠. 등록 게임이 없어도 0 으로 선다 — 무엇을 세는지 먼저 보여 주는 편이 등록할 이유가 된다 */
-export function MyStatsBlock({ totals }: { totals: IndieStatsTotals }) {
-  const cells = [
-    { label: P.statsViews, value: totals.views },
-    { label: P.statsPlays, value: totals.plays },
-    { label: P.statsLikes, value: totals.likes },
-    { label: P.statsComments, value: totals.comments },
-  ];
-  return (
-    <section aria-labelledby="my-stats-heading" className="flex flex-col gap-2.5">
-      <NewsHead id="my-stats-heading" title={L.myStatsTitle} note={L.myStatsNote} action={<HeadLink href={ROUTES.indieStats}>{L.myStatsMore}</HeadLink>} />
-      <dl className={`${NEWS_BOX} grid grid-cols-2 sm:grid-cols-4`}>
-        {cells.map((c, i) => (
-          <div key={c.label} className="enter-item flex min-w-0 flex-col gap-0.5 border-line-soft px-5 py-4 max-sm:[&:nth-child(n+3)]:border-t sm:[&:not(:first-child)]:border-l max-sm:[&:nth-child(2n)]:border-l" style={stagger(i)}>
-            <dt className="text-[12.5px] text-mut">{c.label}</dt>
-            <dd className="text-[24px] font-black leading-tight tracking-[-0.03em] tabular-nums text-ink">{c.value.toLocaleString("ko-KR")}</dd>
-          </div>
-        ))}
-      </dl>
-    </section>
-  );
-}
+/** 상태 칸 하나(등록, 검토 중, 새 댓글). 누르는 칸은 링크다 */
+type StatusCell = { label: string; value: number; unit: string; href?: string };
 
-/** 플레이테스트 모집 줄. 줄을 누르면 그 인디 게임 상세(모집 판이 있는 곳)로 간다 */
-export function PlaytestBlock({ items }: { items: PlaytestCardDto[] }) {
+/**
+ * 내 개발 현황 한 판(2026-11-18 사용자 "현황 띠가 너무 크고 눈에 안 들어온다, 내 게임 통계랑 합쳐도 될 듯").
+ * 전에는 큰 현황 띠(아이콘 칸 셋)와 내 게임 통계 판(큰 숫자 넷)이 따로 서서 화면 위 3분의 1 을 먹었다.
+ * 이제 한 판 두 줄이다: 윗줄 상태(등록, 검토 중, 새 댓글), 아랫줄 지난 30일 반응(조회, 플레이하기 클릭, 새 찜, 댓글).
+ * 눈길은 색이 아니라 숫자 굵기로 잡는다 — 0 은 회색, 0 이 아닌 수만 먹색 굵게 서서 "움직인 것" 이 먼저 보인다.
+ * 게임이 없으면 등록 길 한 줄로 접는다
+ */
+export type { StatusCell };
+
+export function DevStatusCard({ status, totals, hasGames }: { status: StatusCell[]; totals: IndieStatsTotals | null; hasGames: boolean }) {
+  const reactions = totals
+    ? [
+        { label: P.statsViews, value: totals.views },
+        { label: P.statsPlays, value: totals.plays },
+        { label: P.statsLikes, value: totals.likes },
+        { label: P.statsComments, value: totals.comments },
+      ]
+    : [];
+  const num = (v: number) => cn("tabular-nums", v > 0 ? "font-extrabold text-ink" : "font-semibold text-dim");
   return (
-    <section aria-labelledby="playtest-heading" className="flex flex-col gap-2.5">
-      <NewsHead id="playtest-heading" title={PT.section} note={L.playtestNote} action={<HeadLink href={ROUTES.playtests}>{L.allLink}</HeadLink>} />
-      <div className={NEWS_BOX}>
-        {items.length === 0 ? (
-          <EmptyRow title={PT.listEmpty} lead={PT.listEmptyLead} />
-        ) : (
-          <ul className="divide-y divide-line-soft">
-            {items.map(({ card, playtest }, i) => (
-              <li key={playtest.id} className="enter-item" style={stagger(i)}>
-                <Link href={indiePath(card.slug)} className={ROW}>
-                  <span className="min-w-0 truncate text-[12px] font-semibold text-ink-2">{card.title}</span>
-                  <span className="min-w-0 truncate text-[15.5px] font-bold tracking-[-0.02em] text-ink group-hover:text-acc">{playtest.title}</span>
-                  <span className="text-[12.5px] tabular-nums text-dim">{[PT.closesAt(formatDate(playtest.closesAt)), PT.applicants(playtest.applicants, playtest.slots)].join(" | ")}</span>
+    <section aria-labelledby="dev-status-heading" className={cn(NEWS_BOX, "flex flex-col")}>
+      <div className="flex flex-wrap items-center gap-x-5 gap-y-2 px-4 py-3 sm:px-5">
+        <h2 id="dev-status-heading" className="text-[15px] font-extrabold tracking-[-0.02em] text-ink">
+          {L.statusLabel}
+        </h2>
+        {hasGames ? (
+          <dl className="flex flex-wrap items-baseline gap-x-4 gap-y-1 text-[13px]">
+            {status.map((c) => {
+              const body = (
+                <>
+                  <dt className="text-mut">{c.label}</dt>
+                  <dd className={cn("text-[15px]", num(c.value))}>
+                    {c.value.toLocaleString("ko-KR")}
+                    <span className="ml-0.5 text-[12px] font-medium text-mut">{c.unit}</span>
+                  </dd>
+                </>
+              );
+              return c.href ? (
+                <Link key={c.label} href={c.href} className="press flex items-baseline gap-1.5 rounded-md hover:underline">
+                  {body}
                 </Link>
-              </li>
-            ))}
-          </ul>
+              ) : (
+                <div key={c.label} className="flex items-baseline gap-1.5">
+                  {body}
+                </div>
+              );
+            })}
+          </dl>
+        ) : (
+          <p className="text-[13px] text-mut">{L.noGamesTitle}</p>
         )}
+        <span className="ml-auto">
+          <HeadLink href={hasGames ? ROUTES.indieMine : ROUTES.indieNew}>{hasGames ? L.statDetail : L.register}</HeadLink>
+        </span>
       </div>
+      {hasGames && reactions.length > 0 && (
+        <div className="flex flex-wrap items-baseline gap-x-5 gap-y-1 border-t border-line-soft bg-surface-4 px-4 py-2.5 text-[13px] sm:px-5">
+          <span className="text-[12.5px] font-semibold text-ink-2">{L.myStatsNote}</span>
+          <dl className="flex flex-wrap items-baseline gap-x-4 gap-y-1">
+            {reactions.map((c) => (
+              <div key={c.label} className="flex items-baseline gap-1.5">
+                <dt className="text-mut">{c.label}</dt>
+                <dd className={cn("text-[15px]", num(c.value))}>{c.value.toLocaleString("ko-KR")}</dd>
+              </div>
+            ))}
+          </dl>
+          <span className="ml-auto">
+            <HeadLink href={ROUTES.indieStats}>{L.myStatsMore}</HeadLink>
+          </span>
+        </div>
+      )}
     </section>
   );
 }

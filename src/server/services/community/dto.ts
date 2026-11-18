@@ -23,7 +23,7 @@ export type PostRowDto = {
 };
 
 /** 글에 붙은 게임 — 이름과 게임 상세 주소만 싣는다(id, slug 같은 저장 모양은 화면에 흘리지 않는다) */
-export type PostGameDto = { title: string; href: string };
+export type PostGameDto = { title: string; href: string; coverUrl: string | null };
 
 export type PostPage = { items: PostRowDto[]; total: number; page: number; totalPages: number };
 

@@ -1,5 +1,6 @@
 // 현황 띠와 오른쪽 패널(게시판 홈, 라운지 홈). news-blocks 폴더의 한 조각이다(2026-11-18 갈래 나눔).
 import Link from "next/link";
+import { FadeImage } from "@/components/ui/fade-image";
 import { ChevronLeftIcon } from "@/components/ui/icons";
 import { cn } from "@/lib/cn";
 import { stagger } from "@/lib/motion";
@@ -133,11 +134,28 @@ export function SidePanel({
 }
 
 /** 패널 안 한 줄 — 글자 칸(이름 첫 글자), 제목과 보조 줄, 오른쪽 알약 링크 */
-export function SideRow({ mark, title, lines, href, cta, muted = false }: { mark: string; title: string; lines: React.ReactNode[]; href: string; cta: string; muted?: boolean }) {
+export function SideRow({
+  mark,
+  image,
+  title,
+  lines,
+  href,
+  cta,
+  muted = false,
+}: {
+  mark: string;
+  /** 있으면 첫 글자 대신 그림을 세운다(2026-11-18 사용자 "인디 게임 최근 소식에 강조가 없다") */
+  image?: string | null;
+  title: string;
+  lines: React.ReactNode[];
+  href: string;
+  cta: string;
+  muted?: boolean;
+}) {
   return (
-    <div className="row-beam grid grid-cols-[48px_minmax(0,1fr)_auto] items-center gap-3 overflow-hidden rounded-[var(--radius-inset)] bg-surface-4 p-3 transition-colors hover:bg-surface-2 sm:grid-cols-[52px_minmax(0,1fr)_auto]">
-      <span aria-hidden className="flex size-12 items-center justify-center rounded-[10px] bg-surface-2 text-[19px] font-extrabold text-ink-2 sm:size-[52px]">
-        {mark}
+    <div className="row-beam cover-zoom grid grid-cols-[48px_minmax(0,1fr)_auto] items-center gap-3 overflow-hidden rounded-[var(--radius-inset)] bg-surface-4 p-3 transition-colors hover:bg-surface-2 sm:grid-cols-[52px_minmax(0,1fr)_auto]">
+      <span aria-hidden className="relative flex size-12 items-center justify-center overflow-hidden rounded-[10px] bg-surface-2 text-[19px] font-extrabold text-ink-2 sm:size-[52px]">
+        {image ? <FadeImage src={image} alt="" fill sizes="52px" className="cover-zoom-img object-cover" /> : mark}
       </span>
       <Link href={href} className="flex min-w-0 flex-col gap-0.5 after:absolute after:inset-0">
         <span className="truncate text-[14.5px] font-bold text-ink">{title}</span>

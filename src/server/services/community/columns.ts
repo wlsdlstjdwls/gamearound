@@ -32,6 +32,8 @@ export const popularScoreSql = sql<number>`(${posts.likeCount} + ${posts.comment
  */
 const gameTitleSql = sql<string | null>`(select coalesce(${games.titleKo}, ${games.titleEn}) from ${games} where ${games.id} = ${posts.gameId})`;
 const gameSlugSql = sql<string | null>`(select ${games.slug} from ${games} where ${games.id} = ${posts.gameId})`;
+/** 글 줄 앞 작은 그림(2026-11-18 사용자 "급상승 인기글 포인트가 없다"). 가로 커버라 줄 높이에 맞는다 */
+const gameCoverSql = sql<string | null>`(select ${games.coverUrl} from ${games} where ${games.id} = ${posts.gameId})`;
 
 /**
  * "개발자" 배지의 근거(목업 brow, postv 의 p.dev): 글쓴이가 공개 화면(내가 만든 게임)에 선 인디 게임을 하나라도 가졌는가.
@@ -59,6 +61,7 @@ export const rowColumns = {
   viewCount: posts.viewCount,
   gameTitle: gameTitleSql,
   gameSlug: gameSlugSql,
+  gameCover: gameCoverSql,
 };
 
 type Row = {
@@ -76,8 +79,9 @@ type Row = {
   viewCount: number;
   gameTitle: string | null;
   gameSlug: string | null;
+  gameCover: string | null;
 };
 
-export function toRow({ gameTitle, gameSlug, ...r }: Row): PostRowDto {
-  return { ...r, href: postPath(r.id, r.category), game: gameTitle && gameSlug ? { title: gameTitle, href: gamePath(gameSlug) } : null };
+export function toRow({ gameTitle, gameSlug, gameCover, ...r }: Row): PostRowDto {
+  return { ...r, href: postPath(r.id, r.category), game: gameTitle && gameSlug ? { title: gameTitle, href: gamePath(gameSlug), coverUrl: gameCover } : null };
 }

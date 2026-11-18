@@ -16,8 +16,10 @@ export const LOUNGE_MESSAGES = {
   unitCase: "건",
   unitComment: "개",
   statDetail: "개발 현황 보기",
-  myGames: "내 게임 최근 소식",
-  statusLink: "등록현황",
+  // 오른쪽 칸(2026-11-18 사용자 "내 게임 최근 소식 => 인디 게임 최근 소식"). 내 게임 줄은 위 내 개발 현황 판이 맡고, 이 칸은 새로 공개된 인디 게임을 보인다
+  recentIndie: "인디 게임 최근 소식",
+  recentIndieEmpty: "아직 공개된 인디 게임이 없어요",
+  byDev: (name: string) => `개발자 ${name}`,
   signInTitle: "로그인이 필요해요",
   signInLead: "내 게임의 상태와 반응을 볼 수 있어요.",
   signIn: "로그인",
@@ -36,10 +38,9 @@ export const LOUNGE_MESSAGES = {
   /** 홈 오른쪽 칸 아래 링크(목업 lgHome "라운지 이용 가이드"). 여는 것은 게시판 보조 메뉴의 이용 안내와 같은 시트다(목업 bgd) */
   guideOpen: "라운지 이용 가이드",
   // 시안 C(2026-11-18 사용자 확정) 맨 위 블록들. 기획서 v2 "개발 팁, 인원 모집", 인디홍보 기획 개발자 흐름(내 게임 통계, 플레이테스트)
-  myStatsTitle: "내 게임 통계",
-  myStatsNote: "지난 30일 동안 내 게임에 모인 반응이에요.",
+  // 내 개발 현황 판 아랫줄 머리(home-blocks 의 DevStatusCard). 한 줄 안이라 짧게
+  myStatsNote: "지난 30일 반응",
   myStatsMore: "자세히",
-  playtestNote: "개발 중인 인디 게임을 먼저 해 보고 의견을 보내 주세요.",
   allLink: "전체 보기",
   recruitNote: "함께 만들 사람을 찾아요.",
   recruitEmpty: "아직 올라온 모집 글이 없어요",
