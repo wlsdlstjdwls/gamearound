@@ -44,7 +44,7 @@ export function AuthorName({ post, className }: { post: Pick<PostRowDto, "author
   return (
     <span className="inline-flex min-w-0 items-center gap-1.5">
       <span className={className ?? "truncate"}>{post.authorName}</span>
-      {/* 2026-11-18 체크, 알약을 걷고 도트 글자 DEV(community/dev-mark) */}
+      {/* 2026-11-18 체크, 알약, 도트 DEV 를 거쳐 게임패드 + 개발자 글자(community/dev-mark) */}
       {post.authorIsDeveloper && <DevMark />}
       {post.authorIsMaker && <MakerBadge />}
     </span>
