@@ -31,7 +31,8 @@ import { BellIcon, CalendarIcon } from "@/components/ui/icons";
 import { DETAIL_MESSAGES as D } from "@/lib/games/detail-messages";
 import { formatDate, kstDateKey } from "@/lib/format";
 import { gamesHref } from "@/lib/games-query";
-import { releaseLineText } from "@/lib/games/messages";
+import { PREORDER_LABEL, releaseLineText } from "@/lib/games/messages";
+import { isPreorder } from "@/lib/games/preorder";
 import { stagger } from "@/lib/motion";
 import { cn } from "@/lib/cn";
 import { originCountry, type GameDetail } from "@/server/services/games";
@@ -73,6 +74,7 @@ export function DetailHero({
   const brands = soldBrands(game.platforms);
   const hasPlayModes = game.supportsSolo || game.supportsCoop || game.supportsPvp || Boolean(game.localMaxPlayers) || Boolean(game.onlineMaxPlayers);
   const showAlert = !isFree && alertOptions.length > 0;
+  const preorder = game.platforms.some((p) => isPreorder(p));
   // 출시 전이면 출시일은 오른쪽 기둥의 출시일 카드(ReleaseCard)가 말한다 — 같은 날짜를 두 번 쓰지 않는다
   const meta = [game.titleKo ? game.titleEn : null, game.releaseDate && !unreleased ? releaseLineText(formatDate(game.releaseDate), false) : null].filter(
     (v): v is string => Boolean(v),
@@ -128,6 +130,13 @@ export function DetailHero({
               <span className={META_ITEM}>
                 <Flag code={origin.countryCode} />
                 {origin.countryNameKo}
+              </span>
+            )}
+            {/* 한 스토어라도 예약 구매가 열렸으면 제목 밑에서 먼저 말한다(2026-11-18 사용자 "상세에서는 표기가 안 되어 있네").
+                어느 스토어인지는 아래 가격 카드의 사전예약 딱지가 말한다 */}
+            {preorder && (
+              <span className={cn(META_ITEM, "font-semibold text-acc")}>
+                {PREORDER_LABEL}
               </span>
             )}
           </p>
