@@ -23,7 +23,12 @@ import { FAME_MESSAGES as FM, ymLabel } from "@/lib/indie/fame";
 import { gamePath, hallOfFamePath } from "@/lib/routes";
 
 /** 배너 높이. 휴대폰 220px, 넓은 화면 400px(시안 D). 화면 폭 띠라 비율이 아니라 높이로 묶는다 — 비율이면 큰 모니터에서 배너가 화면을 다 먹는다 */
-const BANNER_H = "h-[220px] sm:h-[400px]";
+export const BANNER_H = "h-[220px] sm:h-[400px]";
+/**
+ * 정보 카드 껍데기 — 배너 아래쪽에 겹쳐 앉는다. 뼈대(indie/[slug]/loading)가 같은 값을 쓴다(실물과 같은 자리).
+ * 겹침을 키웠다(2026-11-18 사용자 "제목 영역이 너무 아래, 좀만 더 올리자"): 휴대폰 48px 에서 80px, 넓은 화면 96px 에서 160px
+ */
+export const HERO_CARD = "relative mx-2.5 -mt-20 grid gap-5 rounded-[var(--radius-panel)] bg-surface p-4 shadow-[var(--ring-hair),var(--elev-2)] sm:mx-7 sm:-mt-40 sm:p-6 lg:grid-cols-[minmax(0,1fr)_300px] lg:gap-10 lg:p-8";
 
 /** 밝은 판 위 알약(플랫폼, 지난 순위). 회색 테두리 */
 const PILL = "inline-flex items-center rounded-full px-3 py-1 text-[12px] font-semibold text-ink-2 ring-1 ring-line-strong";
@@ -69,7 +74,7 @@ export function IndieDetailHero({
       </div>
 
       {/* 정보 카드 — 배너 아래쪽에 겹쳐 앉는다. 넓은 화면에서는 두 칸(머리 주석) */}
-      <div className="relative mx-2.5 -mt-12 grid gap-5 rounded-[var(--radius-panel)] bg-surface p-4 shadow-[var(--ring-hair),var(--elev-2)] sm:mx-7 sm:-mt-24 sm:p-6 lg:grid-cols-[minmax(0,1fr)_300px] lg:gap-10 lg:p-8">
+      <div className={HERO_CARD}>
        <div className="flex min-w-0 flex-col gap-4">
         <div className="flex flex-col gap-2">
           {/* 이번 달 1~3위는 카드 안 판이 아니라 페이지 맨 위 금속 띠가 말한다(components/indie/fame-ribbon, 2026-11-18 L2 + C1) */}
