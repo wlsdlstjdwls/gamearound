@@ -8,6 +8,8 @@ import { INDIE_PLATFORMS, storeLinkKind, storeLinkPlatform, type IndiePlatform }
 
 /** 내 게임 통계가 보는 기간. 기획서 3장 "지난 30일" — 한 달 반응을 보고 다음 글을 쓴다 */
 export const INDIE_STATS_WINDOW_DAYS = 30;
+/** 라운지 홈 내 개발 현황의 "주" 증감률이 보는 기간(이번 7일 대 그 앞 7일, 2026-11-18 사용자 "주 단위 상승률") */
+export const INDIE_TREND_WEEK_DAYS = 7;
 
 /** 스토어 링크 가운데 플레이하기에 먼저 고르는 순서. 웹은 받지 않고 바로 하니 맨 앞, 그다음 인디가 가장 많이 나오는 PC */
 const STORE_PRIORITY: readonly IndiePlatform[] = ["web", "pc", "switch", "playstation", "xbox", "mobile"];

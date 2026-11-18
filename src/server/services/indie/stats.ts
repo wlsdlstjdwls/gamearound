@@ -6,11 +6,11 @@
 // 날짜 줄(days, 2026-10-28 그래프)은 DB 의 generate_series 로 빈 날까지 채워 받는다 — 화면이 날짜를 만들면 서버와 브라우저의 "오늘" 이 어긋난다.
 // 항목별 순위(ranks, 2026-10-28 사용자 "각 항목마다 순위도")는 공개 인디 게임 전부를 모집단으로 창 함수 한 질의에서 센다 — 기간은 위 30일과 같다.
 import "server-only";
-import { and, desc, eq, gte, inArray, ne, sql } from "drizzle-orm";
+import { and, desc, eq, gte, inArray, ne, sql, type SQL } from "drizzle-orm";
 import { getDb } from "@/server/db/client";
 import { developerFollows, indieLinkClicks, indiePostComments, indiePostLikes, indiePosts, indieViewDays, indieViewSources } from "@/server/db/schema";
-import { INDIE_STATS_WINDOW_DAYS, isPlayKind, PLAY_LINK_KINDS } from "@/lib/indie/promo";
-import type { IndieStatsDay, IndieStatsDetailDto, IndieStatsDto, IndieStatsRanks, IndieStatsRowDto, IndieStatsTotals } from "@/lib/indie/dto";
+import { INDIE_STATS_WINDOW_DAYS, INDIE_TREND_WEEK_DAYS, isPlayKind, PLAY_LINK_KINDS } from "@/lib/indie/promo";
+import type { IndieStatsDay, IndieStatsDetailDto, IndieStatsDto, IndieStatsRanks, IndieStatsRowDto, IndieStatsTotals, IndieStatsTrend, IndieTrendCell } from "@/lib/indie/dto";
 import { isPublic } from "./read";
 
 /** 하루 표의 기간 시작(KST 날짜). 오늘 포함 30일 */
@@ -187,17 +187,40 @@ export async function getMyIndieStatsDetail(userId: string, postId: string): Pro
 }
 
 /**
- * 라운지 홈 "내 게임 통계" 띠(2026-11-18 시안 C)의 30일 합 네 칸. 통계 화면(getMyIndieStats)과 같은 기간, 같은 규칙이지만
- * 날짜 줄, 순위, 글별 줄을 받지 않는다 — 라운지 홈은 사람마다 매번 그리는 화면이라 무거운 집계를 매번 돌리지 않는다. 질의 한 번이다.
+ * 라운지 홈 "내 개발 현황"(2026-11-18) — 반응 넷의 이번 7일/그 앞 7일, 이번 30일/그 앞 30일. 통계 화면(getMyIndieStats)과 같은 규칙이지만
+ * 날짜 줄, 순위, 글별 줄을 받지 않는다 — 라운지 홈은 사람마다 매번 그리는 화면이라 질의 한 번으로 끝낸다.
+ * 증감률은 2026-11-18 사용자 "한달, 주 단위 상승률도 보여주면 재밌을 듯(주식처럼)". 앞 구간까지 60일을 한 번에 읽어 조건부 합으로 가른다.
+ * 날짜 칸(day)은 KST 날짜, 생성 시각 칸은 KST 날짜로 바꿔 "며칠 전" 하나로 센다(0 = 오늘) — 위 30일 창과 같은 경계다.
  */
-export async function getMyIndieTotals(userId: string): Promise<IndieStatsTotals> {
-  const res = await getDb().execute<{ views: number; plays: number; likes: number; comments: number }>(sql`
-    with mine as (select ${indiePosts.id} as id from ${indiePosts} where ${indiePosts.authorUserId} = ${userId})
-    select
-      coalesce((select sum(v.views) from ${indieViewDays} v where v.post_id in (select id from mine) and v.day >= ${windowStartDay}), 0)::int as views,
-      coalesce((select sum(k.clicks) from ${indieLinkClicks} k where k.post_id in (select id from mine) and k.day >= ${windowStartDay} and ${inArray(sql`k.link_kind`, [...PLAY_LINK_KINDS])}), 0)::int as plays,
-      (select count(*) from ${indiePostLikes} l where l.post_id in (select id from mine) and l.created_at >= ${windowStartTs})::int as likes,
-      (select count(*) from ${indiePostComments} m where m.post_id in (select id from mine) and m.author_user_id <> ${userId} and m.status = 'published' and m.created_at >= ${windowStartTs})::int as comments`);
-  const r = res.rows[0];
-  return { ...zero(), views: Number(r?.views ?? 0), plays: Number(r?.plays ?? 0), likes: Number(r?.likes ?? 0), comments: Number(r?.comments ?? 0) };
+export async function getMyIndieTrend(userId: string): Promise<IndieStatsTrend> {
+  const D = INDIE_STATS_WINDOW_DAYS;
+  const W = INDIE_TREND_WEEK_DAYS;
+  const today = sql`(now() at time zone 'Asia/Seoul')::date`;
+  const kst = (col: SQL) => sql`(${col} at time zone 'Asia/Seoul')::date`;
+  // 지표 하나의 네 구간 합. 별칭을 붙여 읽는다(별칭은 코드의 고정 낱말이라 sql.raw 로 넣는다)
+  const cells = (key: string, day: SQL, val: SQL) => {
+    const age = sql`(${today} - ${day})`;
+    const part = (cond: SQL, name: string) => sql`coalesce(sum(${val}) filter (where ${cond}), 0)::int as ${sql.raw(`${key}_${name}`)}`;
+    return sql.join(
+      [
+        part(sql`${age} < ${W}::int`, "w"),
+        part(sql`${age} >= ${W}::int and ${age} < ${2 * W}::int`, "pw"),
+        part(sql`${age} < ${D}::int`, "m"),
+        part(sql`${age} >= ${D}::int and ${age} < ${2 * D}::int`, "pm"),
+      ],
+      sql`, `,
+    );
+  };
+  // 숫자 바인딩은 ::int 로 못 박는다 — 안 하면 Neon 이 글자로 받아 date - text 로 깨진다(SQL 파라미터 타입 캐스트)
+  const since = sql`${today} - ${2 * D}::int`;
+  const res = await getDb().execute<Record<string, number>>(sql`
+    with mine as (select ${indiePosts.id} as id from ${indiePosts} where ${indiePosts.authorUserId} = ${userId}),
+    v as (select ${cells("views", sql`v.day`, sql`v.views`)} from ${indieViewDays} v where v.post_id in (select id from mine) and v.day > ${since}),
+    k as (select ${cells("plays", sql`k.day`, sql`k.clicks`)} from ${indieLinkClicks} k where k.post_id in (select id from mine) and k.day > ${since} and ${inArray(sql`k.link_kind`, [...PLAY_LINK_KINDS])}),
+    l as (select ${cells("likes", kst(sql`l.created_at`), sql`1`)} from ${indiePostLikes} l where l.post_id in (select id from mine) and ${kst(sql`l.created_at`)} > ${since}),
+    c as (select ${cells("comments", kst(sql`m.created_at`), sql`1`)} from ${indiePostComments} m where m.post_id in (select id from mine) and m.author_user_id <> ${userId} and m.status = 'published' and ${kst(sql`m.created_at`)} > ${since})
+    select * from v, k, l, c`);
+  const r = res.rows[0] ?? {};
+  const at = (key: string): IndieTrendCell => ({ week: Number(r[`${key}_w`] ?? 0), prevWeek: Number(r[`${key}_pw`] ?? 0), month: Number(r[`${key}_m`] ?? 0), prevMonth: Number(r[`${key}_pm`] ?? 0) });
+  return { views: at("views"), plays: at("plays"), likes: at("likes"), comments: at("comments") };
 }

@@ -32,8 +32,8 @@ import { formatDotDate } from "@/lib/format";
 import { LOUNGE_MESSAGES as L } from "@/lib/lounge/messages";
 import { indiePath, ROUTES } from "@/lib/routes";
 import { countUnseenCommentsOnMyPosts, getBoardHome } from "@/server/services/community";
-import { getMyIndieTotals, listMyIndiePosts, listRecentIndie } from "@/server/services/indie";
-import type { IndieCardDto, IndieMineRowDto, IndieStatsTotals } from "@/lib/indie/dto";
+import { getMyIndieTrend, listMyIndiePosts, listRecentIndie } from "@/server/services/indie";
+import type { IndieCardDto, IndieMineRowDto, IndieStatsTrend } from "@/lib/indie/dto";
 import { getCurrentUser } from "@/server/services/users";
 
 // 사람마다 오른쪽 칸(내 게임)과 현황이 달라 요청마다 그린다
@@ -52,14 +52,14 @@ function RecentIndieRow({ c }: { c: IndieCardDto }) {
 
 export default async function LoungeHomePage() {
   // 게시판 묶음은 사람을 기다릴 일이 없다 — 사람 → 내 글 줄과 나란히 띄운다(2026-10-30 쿼리 점검: 세션이 맨 앞에 줄을 섰다)
-  const mineFor = (user: Awaited<ReturnType<typeof getCurrentUser>>): Promise<[IndieMineRowDto[], number, IndieStatsTotals | null]> =>
-    user ? Promise.all([listMyIndiePosts(user.id), countUnseenCommentsOnMyPosts(user.id, LOUNGE_CATEGORIES), getMyIndieTotals(user.id)]) : Promise.resolve([[], 0, null]);
+  const mineFor = (user: Awaited<ReturnType<typeof getCurrentUser>>): Promise<[IndieMineRowDto[], number, IndieStatsTrend | null]> =>
+    user ? Promise.all([listMyIndiePosts(user.id), countUnseenCommentsOnMyPosts(user.id, LOUNGE_CATEGORIES), getMyIndieTrend(user.id)]) : Promise.resolve([[], 0, null]);
   const userP = getCurrentUser().catch(() => null);
   const [user, loaded] = await Promise.all([
     userP,
     nullIfDbUnavailable(
       Promise.all([getBoardHome(LOUNGE_CATEGORIES, ["qna"], false), userP.then(mineFor), listRecentIndie(RECENT_INDIE_LIMIT)]).then(
-        ([home, [mine, reactions, totals], recent]) => [home, mine, reactions, totals, recent] as const,
+        ([home, [mine, reactions, trend], recent]) => [home, mine, reactions, trend, recent] as const,
       ),
     ),
   ]);
@@ -85,7 +85,7 @@ export default async function LoungeHomePage() {
         <DbUnavailable retryHref={ROUTES.lounge} />
       ) : (
         (() => {
-          const [home, mine, reactions, totals, recent] = loaded;
+          const [home, mine, reactions, trend, recent] = loaded;
           const approvedCount = mine.filter((p) => p.review === "approved").length;
           const pendingCount = mine.filter((p) => p.review === "pending").length;
           return (
@@ -96,7 +96,7 @@ export default async function LoungeHomePage() {
                   {user && (
                     <DevStatusCard
                       hasGames={mine.length > 0}
-                      totals={totals}
+                      trend={trend}
                       status={[
                         { label: L.statApproved, value: approvedCount, unit: L.unitGame },
                         { label: L.statPendingLabel, value: pendingCount, unit: L.unitCase },

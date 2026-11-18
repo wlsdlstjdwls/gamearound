@@ -40,8 +40,15 @@ export const LOUNGE_MESSAGES = {
   guideOpen: "라운지 이용 가이드",
   // 시안 C(2026-11-18 사용자 확정) 맨 위 블록들. 기획서 v2 "개발 팁, 인원 모집", 인디홍보 기획 개발자 흐름(내 게임 통계, 플레이테스트)
   // 내 개발 현황 판 아랫줄 머리(home-blocks 의 DevStatusCard). 한 줄 안이라 짧게
-  myStatsNote: "지난 30일 반응",
+  myStatsNote: "지난 30일 반응 | 주, 월 증감",
   myStatsMore: "자세히",
+  // 타일 증감(home-blocks 의 TrendText). 주 = 이번 7일 대 그 앞 7일, 월 = 이번 30일 대 그 앞 30일
+  trendWeek: "주",
+  trendMonth: "월",
+  trendNone: "-",
+  trendNew: "새로",
+  trendSr: (label: string, kind: "up" | "down" | "flat", pct: number) =>
+    kind === "flat" ? `${label === "주" ? "지난주" : "지난달"}와 같아요` : `${label === "주" ? "지난주" : "지난달"}보다 ${pct}% ${kind === "up" ? "늘었어요" : "줄었어요"}`,
   allLink: "전체 보기",
   recruitNote: "함께 만들 사람을 찾아요.",
   recruitEmpty: "아직 올라온 모집 글이 없어요",

@@ -1,5 +1,5 @@
 // 라운지 홈 맨 위 블록(2026-11-18 사용자 손질로 내 개발 현황 한 판만 남고, 플레이테스트 줄은 걷었다, 인원 모집/개발 팁은 숨김). 처음 모양은 블록 셋(2026-11-18 사용자 시안 C 확정, docs/라운지홈_시안_2026-11-18.html).
-//   내 개발 현황: 윗줄 상태(등록, 검토 중, 새 댓글), 아랫줄 지난 30일 반응(조회, 플레이하기 클릭, 새 찜, 댓글, services/indie 의 getMyIndieTotals)
+//   내 개발 현황: 윗줄 상태(등록, 검토 중, 새 댓글), 아랫줄 지난 30일 반응(조회, 플레이하기 클릭, 새 찜, 댓글, services/indie 의 getMyIndieTrend, 주/월 증감률)
 //   (플레이테스트 모집 줄은 2026-11-18 사용자 "해당 영역은 없애줘" 로 걷었다. 플레이테스트 화면은 그대로다)
 //   새 글 줄(LatestBlock): 인원 모집, 개발 팁 — 숨긴 갈래라 지금은 부르는 곳이 없다(lib/community/constants 의 HIDDEN_POST_CATEGORIES)
 // 모양은 소식 블록(community/news-blocks)과 같은 흰 판, 같은 머리다. 파랑은 쓰지 않는다 — 화면의 파랑은 머리의 "글 작성" 하나다(사용자 "파란색 남발").
@@ -12,10 +12,28 @@ import { stagger } from "@/lib/motion";
 import { ROUTES } from "@/lib/routes";
 import { ChatIcon, EyeIcon, GamepadIcon, HeartIcon } from "@/components/ui/icons";
 import { cn } from "@/lib/cn";
-import type { IndieStatsTotals } from "@/lib/indie/dto";
+import { trendChange, type TrendChange } from "@/lib/indie/trend";
+import type { IndieStatsTrend } from "@/lib/indie/dto";
 import type { PostRowDto } from "@/server/services/community";
 
 const ROW = "row-beam group flex min-w-0 flex-col gap-1 px-4 py-3.5 transition-colors hover:bg-surface-2 sm:px-5";
+
+/**
+ * 증감 한 조각 "주 +25%". 상승은 빨강, 하락은 파랑(2026-11-18 사용자 "주식처럼" — 한국 주식 화면의 색 관례).
+ * 방향은 색과 부호로 말하고 화살표 글자는 쓰지 않는다(AGENTS 4장). 낭독기에는 "늘었어요/줄었어요" 를 말로 준다
+ */
+function TrendText({ label, change }: { label: string; change: TrendChange }) {
+  if (change.kind === "none") return <span className="text-dim">{`${label} ${L.trendNone}`}</span>;
+  if (change.kind === "new") return <span className="text-danger">{`${label} ${L.trendNew}`}</span>;
+  const tone = change.kind === "up" ? "text-danger" : change.kind === "down" ? "text-acc" : "text-dim";
+  const sign = change.kind === "up" ? "+" : change.kind === "down" ? "-" : "";
+  return (
+    <span className={tone}>
+      <span aria-hidden>{`${label} ${sign}${change.pct}%`}</span>
+      <span className="sr-only">{L.trendSr(label, change.kind, change.pct)}</span>
+    </span>
+  );
+}
 
 /** 상태 칸 하나(등록, 검토 중, 새 댓글). 누르는 칸은 링크다 */
 type StatusCell = { label: string; value: number; unit: string; href?: string };
@@ -28,13 +46,13 @@ type StatusCell = { label: string; value: number; unit: string; href?: string };
  * - 상태(등록, 검토 중, 새 댓글)는 머리 줄 옆 작은 알약이다. 새 댓글 알약은 댓글함으로 가는 링크다.
  * 게임이 없으면 등록 길 한 줄로 접는다
  */
-export function DevStatusCard({ status, totals, hasGames }: { status: StatusCell[]; totals: IndieStatsTotals | null; hasGames: boolean }) {
-  const tiles = totals
+export function DevStatusCard({ status, trend, hasGames }: { status: StatusCell[]; trend: IndieStatsTrend | null; hasGames: boolean }) {
+  const tiles = trend
     ? [
-        { label: P.statsViews, value: totals.views, Icon: EyeIcon },
-        { label: P.statsPlays, value: totals.plays, Icon: GamepadIcon },
-        { label: P.statsLikes, value: totals.likes, Icon: HeartIcon },
-        { label: P.statsComments, value: totals.comments, Icon: ChatIcon },
+        { label: P.statsViews, cell: trend.views, Icon: EyeIcon },
+        { label: P.statsPlays, cell: trend.plays, Icon: GamepadIcon },
+        { label: P.statsLikes, cell: trend.likes, Icon: HeartIcon },
+        { label: P.statsComments, cell: trend.comments, Icon: ChatIcon },
       ]
     : [];
   const moved = (v: number) => (v > 0 ? "text-ink" : "text-dim");
@@ -79,14 +97,20 @@ export function DevStatusCard({ status, totals, hasGames }: { status: StatusCell
               <HeadLink href={ROUTES.indieStats}>{L.myStatsMore}</HeadLink>
             </div>
             <dl className="grid grid-cols-2 gap-2 sm:grid-cols-4">
-              {tiles.map(({ label, value, Icon }, i) => (
-                <div key={label} className="enter-item flex items-center gap-3 rounded-[var(--radius-md)] bg-surface-4 px-3.5 py-3" style={stagger(i)}>
-                  <span aria-hidden className={cn("grid size-9 shrink-0 place-items-center rounded-full bg-surface", moved(value))}>
+              {tiles.map(({ label, cell, Icon }, i) => (
+                <div key={label} className="enter-item flex items-start gap-3 rounded-[var(--radius-md)] bg-surface-4 px-3.5 py-3" style={stagger(i)}>
+                  <span aria-hidden className={cn("mt-0.5 grid size-9 shrink-0 place-items-center rounded-full bg-surface", moved(cell.month))}>
                     <Icon size={17} />
                   </span>
                   <span className="flex min-w-0 flex-col">
                     <dt className="truncate text-[12px] text-mut">{label}</dt>
-                    <dd className={cn("text-[24px] font-black leading-tight tracking-[-0.03em] tabular-nums", moved(value))}>{value.toLocaleString("ko-KR")}</dd>
+                    <dd className="flex flex-col">
+                      <span className={cn("text-[24px] font-black leading-tight tracking-[-0.03em] tabular-nums", moved(cell.month))}>{cell.month.toLocaleString("ko-KR")}</span>
+                      <span className="flex flex-wrap gap-x-2 text-[11.5px] font-semibold tabular-nums">
+                        <TrendText label={L.trendWeek} change={trendChange(cell.week, cell.prevWeek)} />
+                        <TrendText label={L.trendMonth} change={trendChange(cell.month, cell.prevMonth)} />
+                      </span>
+                    </dd>
                   </span>
                 </div>
               ))}

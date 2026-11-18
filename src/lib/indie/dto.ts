@@ -110,6 +110,9 @@ export type IndieAdminRowDto = {
 
 /** 내 게임 통계 한 줄(2026-10-27). 기간 수는 지난 INDIE_STATS_WINDOW_DAYS 일, 전체 수는 쌓아 둔 값이다 */
 export type IndieStatsTotals = { views: number; plays: number; outbound: number; likes: number; comments: number };
+/** 지표 하나의 이번 7일/앞 7일, 이번 30일/앞 30일 합(라운지 홈 내 개발 현황의 증감률, services/indie 의 getMyIndieTrend) */
+export type IndieTrendCell = { week: number; prevWeek: number; month: number; prevMonth: number };
+export type IndieStatsTrend = { views: IndieTrendCell; plays: IndieTrendCell; likes: IndieTrendCell; comments: IndieTrendCell };
 export type IndieStatsRowDto = {
   id: string;
   slug: string;
