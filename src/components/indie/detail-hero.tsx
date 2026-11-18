@@ -57,12 +57,18 @@ export function IndieDetailHero({
   play,
   fameRank,
   fameHistory,
+  facts = [],
+  actions,
 }: {
   post: IndieDetailDto;
   links: IndieHeroLink[];
   play: IndieHeroLink | null;
   fameRank: number | null;
   fameHistory: Array<{ ym: string; rank: number }>;
+  /** 게임 정보 사실 줄(만든 사람, 플랫폼, 장르, 출시, 올린 날) — 제목 아래 왼쪽에 두 칸 격자로 선다 */
+  facts?: Array<{ label: string; value: React.ReactNode }>;
+  /** 플레이하기 아래 단추들(찜하기, 소식 받기, 신고). 화면이 그려 넘긴다 — 로그인, 글쓴이 여부를 아는 쪽이 화면이다 */
+  actions?: React.ReactNode;
 }) {
   const cover = post.images[0];
   const podium = fameRank !== null && fameRank <= RANK_TONE_TOP ? fameRank : null;
@@ -120,14 +126,24 @@ export function IndieDetailHero({
           ))}
         </ul>
 
+        {/* 게임 정보 사실 줄 — 플랫폼 알약 아래 두 칸 격자(넓은 화면은 세 칸). 이름표 위, 값 아래. 값은 자르지 않는다(같은 날 "날짜도 다 짤리고" 지적) — 길면 낱말 단위로 줄을 바꾼다 */}
+        {facts.length > 0 && (
+          <dl aria-label={M.infoTitle} className="grid grid-cols-2 gap-x-6 gap-y-3 border-t border-line-soft pt-4 sm:grid-cols-3">
+            {facts.map((f) => (
+              <div key={f.label} className="flex min-w-0 flex-col gap-0.5">
+                <dt className="text-[12px] text-dim">{f.label}</dt>
+                <dd className="break-keep text-[14px] font-semibold text-ink">{f.value}</dd>
+              </div>
+            ))}
+          </dl>
+        )}
        </div>
 
        {/* 행동 상자 — 넓은 화면에서는 오른쪽 칸 가운데에 세로로 쌓인다 */}
-       <div className="flex flex-col gap-3 lg:justify-center lg:border-l lg:border-line-soft lg:pl-10">
+       <div className="flex flex-col gap-3 lg:justify-start lg:border-l lg:border-line-soft lg:pl-10">
         {play && (
           <a href={play.href} target="_blank" rel="noopener noreferrer nofollow ugc" className={cn(PLAY, "self-start lg:self-stretch")}>
             <span className="text-[17px] font-extrabold">{PM.play}</span>
-            <span className="text-[12.5px] font-semibold opacity-85">{PM.playVia(play.kind)}</span>
             <span className="sr-only">{M.newWindow}</span>
           </a>
         )}
@@ -148,6 +164,8 @@ export function IndieDetailHero({
             )}
           </div>
         )}
+        {/* 게임 정보의 단추들(2026-11-18 사용자 "오른쪽 하단 게임 정보 내용을 위로"). 사실 줄은 왼쪽 제목 아래다 */}
+        {actions && <div className="flex flex-col gap-3">{actions}</div>}
        </div>
       </div>
     </section>

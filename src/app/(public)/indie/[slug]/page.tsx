@@ -137,9 +137,40 @@ export default async function IndieDetailPage({ params, searchParams }: Props) {
       {/* 내 게임 띠 — 성적과 할 일(수정, 통계, 플레이테스트, 광고)을 머리 판 위에 모은다(components/indie/owner-bar). 관리자에게는 안 선다 */}
       {isOwner && <IndieOwnerBar id={post.id} live={live} rank={fameRank} views={post.viewCount} likes={post.likeCount} comments={comments.length} />}
 
-      <IndieDetailHero post={post} links={otherLinks} play={play} fameRank={fameRank} fameHistory={fameHistory} />
+      <IndieDetailHero
+        post={post}
+        links={otherLinks}
+        play={play}
+        fameRank={fameRank}
+        fameHistory={fameHistory}
+        // 게임 정보는 머리 카드로 올렸다(2026-11-18 사용자 "오른쪽 하단 게임 정보 내용을 위로"). 사실 줄(facts)은 제목 아래 왼쪽, 단추(actions)는 플레이하기 아래 오른쪽 —
+        // 한쪽에 몰면 다른 쪽이 텅 빈다. "게임 정보 / 개발자 이름" 머리 줄은 사실 줄의 "만든 사람" 과 같은 말이라 걷었다
+        facts={info.map((m) =>
+          // 메이커 꼬리표는 만든 사람 옆에 붙는다(전에는 게임 정보 머리 줄에 있었다)
+          m.label === M.by && post.authorIsMaker ? { label: m.label, value: <span className="inline-flex items-center gap-1.5">{m.value}<MakerBadge /></span> } : m,
+        )}
+        actions={
+          <>
+            {post.review === "approved" && <IndieLikeButton postId={post.id} slug={post.slug} likeCount={post.likeCount} />}
+            {/* 자기 소식은 받을 수 없다(services/indie/promo). 공개 글에서만 — 승인 전 글은 보는 사람이 글쓴이, 관리자뿐이다 */}
+            {live && !isOwner && <IndieFollowButton developerUserId={post.authorUserId} />}
+            <div className="flex flex-wrap items-center justify-end gap-3 text-[12.5px]">
+              {/* 글쓴이의 광고, 플레이테스트, 수정 입구는 맨 위 내 게임 띠로 옮겼다(2026-10-30). 여기엔 관리자의 수정만 남는다 */}
+              {canEdit && !isOwner && (
+                <Link href={indieEditPath(post.id)} className="tap inline-flex items-center text-acc hover:underline">
+                  {M.edit}
+                </Link>
+              )}
+              {/* 지우기는 본인만(기획서 S-19 "본인 게임이면 수정, 삭제"). 관리자는 지우지 않고 숨긴다(/admin/indie) */}
+              {isOwner && <DeleteIndiePost postId={post.id} title={post.title} />}
+              {!isOwner && <IndieReportButton postId={post.id} signedIn={viewer !== null} returnTo={indiePath(post.slug)} />}
+            </div>
+          </>
+        }
+      />
 
-      <div className="grid items-start gap-6 lg:grid-cols-[minmax(0,1fr)_320px]">
+      {/* 본문은 한 기둥, 가운데로 좁힌다(2026-11-18 사용자 "가운데 콘텐츠 너비를 좀 더 줄이고"). 오른쪽 게임 정보 기둥은 머리 카드로 올라갔다 */}
+      <div className="mx-auto grid w-full max-w-[var(--indie-body-w)] items-start gap-6">
         <div className="flex min-w-0 flex-col gap-6">
           {/* 개발 중인 게임이 가장 원하는 것은 테스터다(기획서 2장 5번) — 영상보다 앞에 둔다 */}
           {playtest && (
@@ -232,48 +263,6 @@ export default async function IndieDetailPage({ params, searchParams }: Props) {
           )}
         </div>
 
-        {/* 넓은 화면에서는 스크롤해도 따라온다 — 긴 소개를 읽다가 "어디서 받지" 를 다시 찾아 올라가지 않게 */}
-        <aside aria-labelledby="indie-info" className={sectionCardClass("flex flex-col gap-4 lg:sticky lg:top-24")}>
-          <div className="flex items-center gap-3">
-            <span aria-hidden className="flex size-11 shrink-0 items-center justify-center rounded-full bg-acc-soft text-[17px] font-extrabold text-acc">
-              {post.developerName.slice(0, 1)}
-            </span>
-            <div className="flex min-w-0 flex-col">
-              <h2 id="indie-info" className="text-[15px] font-bold text-ink">
-                {M.infoTitle}
-              </h2>
-              <span className="flex min-w-0 items-center gap-1.5">
-                <span className="truncate text-[12.5px] text-dim">{post.developerName}</span>
-                {post.authorIsMaker && <MakerBadge />}
-              </span>
-            </div>
-          </div>
-
-          <dl className="grid grid-cols-[auto_1fr] gap-x-4 gap-y-2 border-t border-line pt-3 text-[13px]">
-            {info.map((m) => (
-              <div key={m.label} className="contents">
-                <dt className="text-dim">{m.label}</dt>
-                <dd className="min-w-0 text-right text-ink">{m.value}</dd>
-              </div>
-            ))}
-          </dl>
-
-          {post.review === "approved" && <IndieLikeButton postId={post.id} slug={post.slug} likeCount={post.likeCount} />}
-          {/* 자기 소식은 받을 수 없다(services/indie/promo). 공개 글에서만 — 승인 전 글은 보는 사람이 글쓴이, 관리자뿐이다 */}
-          {live && !isOwner && <IndieFollowButton developerUserId={post.authorUserId} />}
-
-          <div className="flex flex-wrap items-center justify-end gap-3 border-t border-line pt-3 text-[12.5px]">
-            {/* 글쓴이의 광고, 플레이테스트, 수정 입구는 맨 위 내 게임 띠로 옮겼다(2026-10-30). 여기엔 관리자의 고치기만 남는다 */}
-            {canEdit && !isOwner && (
-              <Link href={indieEditPath(post.id)} className="tap inline-flex items-center text-acc hover:underline">
-                {M.edit}
-              </Link>
-            )}
-            {/* 지우기는 본인만(기획서 S-19 "본인 게임이면 수정, 삭제"). 관리자는 지우지 않고 숨긴다(/admin/indie) */}
-            {isOwner && <DeleteIndiePost postId={post.id} title={post.title} />}
-            {!isOwner && <IndieReportButton postId={post.id} signedIn={viewer !== null} returnTo={indiePath(post.slug)} />}
-          </div>
-        </aside>
       </div>
     </Page>
   );

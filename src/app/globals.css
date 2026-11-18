@@ -37,6 +37,8 @@
   --ok: #0f766e;
   --ok-soft: #e3f3f0;
   /* 명예의 전당 1~3위 트로피 옆 옅은 판(2026-11-18, components/indie/detail-hero). 트로피 그림 금, 은, 동에 맞춘 거의 흰 면 — 면이 누렇게 읽히지 않게 아주 옅다 */
+  /* 인디 상세 본문 한 기둥 폭(2026-11-18 사용자 "가운데 콘텐츠 너비 좀 더 줄이고"). 글 읽는 줄 길이가 넘치지 않는 폭 */
+  --indie-body-w: 880px;
   --medal-1-soft: #fbf7ec;
   --medal-2-soft: #f3f5f8;
   --medal-3-soft: #fbf3ed;
