@@ -19,28 +19,19 @@ import type { PostRowDto } from "@/server/services/community";
 const ROW = "row-beam group flex min-w-0 flex-col gap-1 px-4 py-3.5 transition-colors hover:bg-surface-2 sm:px-5";
 
 /**
- * 타일 숫자(지난 30일 합) 옆 증감 "▲ 25%". 견주는 것은 그 앞 30일이다 — 큰 숫자와 같은 기간이라 따로 "월" 같은 이름을 붙이지 않는다.
- * 2026-11-18 사용자: 처음 "주 +25% 월 -10%" 두 줄을 달았더니 "▲, ▼ 로, 주 월 표기는 하지 말고". 그래서 30일 대 30일 하나만 세운다
- * (주 증감은 같은 질의가 계속 받는다, services/indie 의 getMyIndieTrend).
- * 상승은 빨강, 하락은 파랑(한국 주식 화면 관례, 같은 날 "주식처럼"). ▲▼ 는 사용자가 고른 표기라 AGENTS 4장의 화살표 금지(←→↑↓)와 별개로 쓴다.
+ * 타일 숫자(지난 30일 합) 아래 증감 "▲ 4". 견주는 것은 그 앞 30일이다 — 큰 숫자와 같은 기간이라 "월" 같은 이름을 붙이지 않는다.
+ * 2026-11-18 사용자 손질 셋: "주 +25% 월 -10%" 에서 "▲ ▼ 로, 주 월 표기 없이", 이어 "100% 가 아니라 몇 개 증가했는지", "새로 표기는 별로".
+ * 그래서 앞 30일 대비 늘고 준 개수 하나만 적는다(주 수치는 getMyIndieTrend 가 계속 받는다). 같으면 아무것도 적지 않는다.
+ * 상승은 빨강, 하락은 파랑(한국 주식 화면 관례). ▲▼ 는 사용자가 고른 표기라 AGENTS 4장의 화살표 금지(←→↑↓)와 별개로 쓴다.
  * 낭독기에는 기호 대신 "늘었어요/줄었어요" 를 말로 준다
  */
 function TrendText({ change }: { change: TrendChange }) {
-  if (change.kind === "none") return null;
-  if (change.kind === "new") {
-    return (
-      <span className="text-danger">
-        <span aria-hidden>{`${L.trendUp} ${L.trendNew}`}</span>
-        <span className="sr-only">{L.trendNewSr}</span>
-      </span>
-    );
-  }
-  const tone = change.kind === "up" ? "text-danger" : change.kind === "down" ? "text-acc" : "text-dim";
-  const mark = change.kind === "up" ? L.trendUp : change.kind === "down" ? L.trendDown : L.trendFlat;
+  if (change.kind === "flat") return null;
+  const up = change.kind === "up";
   return (
-    <span className={tone}>
-      <span aria-hidden>{`${mark} ${change.pct}%`}</span>
-      <span className="sr-only">{L.trendSr(change.kind, change.pct)}</span>
+    <span className={up ? "text-danger" : "text-acc"}>
+      <span aria-hidden>{`${up ? L.trendUp : L.trendDown} ${change.diff.toLocaleString("ko-KR")}`}</span>
+      <span className="sr-only">{L.trendSr(up, change.diff)}</span>
     </span>
   );
 }
@@ -103,7 +94,11 @@ export function DevStatusCard({ status, trend, hasGames }: { status: StatusCell[
         tiles.length > 0 && (
           <div className={cn(NEWS_BOX, "flex flex-col gap-3 p-3 sm:p-4")}>
             <div className="flex items-baseline justify-between gap-3 px-1">
-              <span className="text-[12.5px] font-semibold text-mut">{L.myStatsNote}</span>
+              {/* 머리 한 줄(2026-11-18 사용자 "지난 30일 반응 | 앞 30일 대비" 를 다르게): 기간은 굵게, 기호의 뜻은 옆에 작게 */}
+              <span className="flex flex-wrap items-baseline gap-x-2">
+                <span className="text-[13px] font-bold text-ink">{L.myStatsNote}</span>
+                <span className="text-[12px] text-dim">{L.myStatsCompare}</span>
+              </span>
               <HeadLink href={ROUTES.indieStats}>{L.myStatsMore}</HeadLink>
             </div>
             <dl className="grid grid-cols-2 gap-2 sm:grid-cols-4">
