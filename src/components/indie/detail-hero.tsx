@@ -11,6 +11,7 @@
 // 바깥 링크에 nofollow ugc — 글쓴이가 적은 주소라 링크 도배가 우리 도메인 신용을 먹는다.
 // 맨 앞 큰 단추는 "플레이하기"(2026-10-27, lib/indie/promo). 주소는 화면이 정해 넘긴다 — 공개 글이면 클릭을 세는 경유 주소다(app/api/indie/out).
 // 이번 달 명예의 전당 1~3위는 제목 위 딱지 하나로 말한다(명예의 전당으로 가는 링크). 지난 달 확정 순위는 제목 아래 작은 딱지 줄.
+import Image from "next/image";
 import Link from "next/link";
 import { CoverImage } from "@/components/game-card";
 import { TrophyIcon } from "@/components/ui/icons";
@@ -27,6 +28,13 @@ import { gamePath, hallOfFamePath, ROUTES } from "@/lib/routes";
  * 스팀 머리 그림(460px)은 아래로, 1920px 짜리 스크린샷은 위로 갈리게 잡았다
  */
 const BANNER_SHARP_MIN_W = 1000;
+
+/** 이번 달 1~3위 트로피 그림(public/fame, 2026-11-18 Figma AI 생성 원본은 Figma 파일 "손전등 명예의 전당 트로피"). 1위 금, 2위 은, 3위 동 */
+const TROPHY_SRC = ["/fame/trophy-1.png", "/fame/trophy-2.png", "/fame/trophy-3.png"] as const;
+/** 트로피 그림 크기(px). 두 줄 글자(12px + 19px) 높이보다 조금 크게 — 그림이 판의 주인이다 */
+const TROPHY_PX = 48;
+/** 트로피 옆 옅은 판. 색은 globals.css 의 --medal-*-soft */
+const MEDAL_SOFT = ["bg-medal-1-soft", "bg-medal-2-soft", "bg-medal-3-soft"] as const;
 
 /** 밝은 판 위 알약(플랫폼, 지난 순위). 회색 테두리 */
 const PILL = "inline-flex items-center rounded-full px-3 py-1 text-[12px] font-semibold text-ink-2 ring-1 ring-line-strong";
@@ -84,14 +92,20 @@ export function IndieDetailHero({
       {/* 정보 카드 — 배너 아래쪽에 겹쳐 앉는다 */}
       <div className="relative mx-2.5 -mt-10 flex flex-col gap-4 rounded-[var(--radius-panel)] bg-surface p-4 shadow-[var(--ring-hair),var(--elev-2)] sm:mx-7 sm:-mt-[88px] sm:p-6">
         <div className="flex flex-col gap-2">
+          {/* 이번 달 1~3위(2026-11-18 사용자: 회색 딱지는 "강조가 안 된다", 여러 시안 끝에 Figma AI 로 뽑은 우리 트로피를 골랐다).
+              트로피 그림 + 옅은 금, 은, 동 판 + 두 줄 글자. 테두리 빛, 움직임 없이 "심플하고 세련되게"(같은 날 사용자) */}
           {podium && (
             <Link
               href={ROUTES.hallOfFame}
               aria-label={`${FM.detailBadge(podium)}, ${FM.detailBadgeLink}`}
-              className="press tap inline-flex items-center gap-1.5 self-start rounded-full bg-surface-2 px-3.5 py-1.5 text-[13px] font-extrabold text-ink hover:bg-surface-3"
+              className={cn("press tap group inline-flex items-center gap-3 self-start rounded-[var(--radius-md)] py-1.5 pl-1.5 pr-4 ring-1 ring-medal-line", MEDAL_SOFT[podium - 1])}
             >
-              <TrophyIcon size={15} strokeWidth={2.4} />
-              {FM.detailBadge(podium)}
+              <Image src={TROPHY_SRC[podium - 1]} alt="" width={TROPHY_PX} height={TROPHY_PX} className="drop-shadow-[0_4px_6px_rgb(0_0_0/0.16)]" />
+              <span className="flex flex-col leading-tight">
+                <span className="text-[12px] font-semibold text-mut">{FM.detailBadgeHead}</span>
+                <span className="text-[19px] font-black tracking-[-0.02em] text-ink">{FM.detailBadgeRank(podium)}</span>
+              </span>
+              <span className="ml-2 text-[12.5px] text-mut underline decoration-line-strong underline-offset-[3px] group-hover:text-ink">{FM.detailBadgeLink}</span>
             </Link>
           )}
           {/* 개발 단계(앞서 해보기 등) 줄은 걷었다(2026-11-16 사용자 "앞서해보기 문구 제거") */}

@@ -152,6 +152,9 @@ export const FAME_MESSAGES = {
   /** 인디 상세 머리 판 딱지(2026-10-28). 실시간 잠정 순위라 "이번 달" 을 붙인다 — 확정된 달 순위처럼 읽히지 않게 */
   detailBadge: (n: number) => `이번 달 명예의 전당 ${n}위`,
   detailBadgeLink: "명예의 전당 보기",
+  // 인디 상세 머리의 트로피 판 두 줄(components/indie/detail-hero)
+  detailBadgeHead: "이번 달 명예의 전당",
+  detailBadgeRank: (n: number) => `${n}위`,
   /** 지난 달 확정 순위 딱지(인디 상세). 확정된 달이라 "이번 달" 딱지와 달리 달 이름을 적는다 */
   pastBadges: "지난 명예의 전당",
   pastBadge: (label: string, rank: number) => `${label} 명예의 전당 ${rank}위`,
