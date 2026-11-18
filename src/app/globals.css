@@ -842,6 +842,9 @@ html {
   scrollbar-gutter: stable;
 }
 body {
+  /* 화면 끝까지 꽉 차는 띠(.full-bleed, 2026-11-18 인디 상세 머리 시안 D)는 100vw 라 스크롤바 자리(위 scrollbar-gutter)만큼 오른쪽으로 넘친다.
+     clip 은 스크롤 상자를 만들지 않아 sticky 머리와 기둥을 깨지 않는다 — 그 넘침만 잘라 가로 스크롤이 생기지 않게 한다 */
+  overflow-x: clip;
   background: var(--bg);
   color: var(--ink);
   font-family: var(--font-sans);
@@ -2010,3 +2013,10 @@ body:has([data-onboarding]) > [data-site-tabbar] {
   content: attr(data-placeholder); float: left; height: 0; pointer-events: none; color: var(--dim);
 }
 .rich-editor-area img.ProseMirror-selectednode { box-shadow: 0 0 0 2px var(--acc); }
+
+/* 본문 폭(Page)을 벗어나 화면 끝에서 끝까지 서는 띠(2026-11-18 인디 상세 머리 시안 D "배너를 화면 꽉 차게").
+   부모가 가운데 정렬된 본문 상자일 때 그 가운데에서 화면 반 폭씩 양쪽으로 편다. 넘친 스크롤바 자리는 body 의 overflow-x: clip 이 자른다 */
+.full-bleed {
+  width: 100vw;
+  margin-inline: calc(50% - 50vw);
+}
