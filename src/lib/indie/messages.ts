@@ -121,7 +121,7 @@ export const INDIE_MESSAGES = {
   coverAlt: (title: string) => `${title} 대표 그림`,
   shotAlt: (title: string, n: number) => `${title} 스크린샷 ${n}`,
   rail: { prev: "이전 게임", next: "다음 게임" },
-  edit: "고치기",
+  edit: "수정하기",
   hiddenNotice: "이 글은 지금 숨겨져 있어서 나만 볼 수 있어요.",
   noCoverShort: "대표 그림을 올려야 목록에 보여요",
   hiddenShort: "숨겨져 있어 나만 볼 수 있어요",
@@ -165,7 +165,7 @@ export const INDIE_FORM_MESSAGES = {
   mineAsideEmpty: "올린 게임이 없어요",
   mineAsideEmptyLead: "등록하면 이곳에서 내가 올린 게임을 볼 수 있어요.",
   mineAsideFlow: "등록 요청, 운영진 승인, 최종 등록 순서로 진행돼요. 올린 게임은 언제든 삭제할 수 있어요.",
-  editTitle: "소개 글 고치기",
+  editTitle: "소개 글 수정하기",
   mineTitle: "내가 쓴 소개 글",
   // 등록현황(게임 신청 목록)의 빈 판이다 — "쓴 글" 이면 게시판 화면처럼 읽혔다(2026-10-30 390폭 점검)
   mineEmpty: "아직 등록한 게임이 없어요",
@@ -355,7 +355,7 @@ export const INDIE_REVIEW_MESSAGES = {
   stepDoneSr: "(끝남)",
   noTagline: "한 줄 소개가 아직 없어요",
   viewGame: "게임 보기",
-  edit: "고치기",
+  edit: "수정하기",
 } as const;
 
 /**

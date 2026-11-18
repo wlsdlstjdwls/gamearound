@@ -25,7 +25,7 @@ export const COMPANY_CLAIM_MESSAGES = {
   tagApproved: "승인",
   tagRejected: "반려",
   reasonLabel: "반려 사유",
-  goManage: "회사 정보 고치기",
+  goManage: "회사 정보 수정하기",
   backToCompany: "회사 화면으로",
   nameRequired: "담당자 이름을 적어 주세요",
   emailInvalid: "메일 주소를 확인해 주세요",
@@ -38,7 +38,7 @@ export const COMPANY_CLAIM_MESSAGES = {
 } as const;
 
 export const COMPANY_MANAGE_MESSAGES = {
-  title: "회사 정보 고치기",
+  title: "회사 정보 수정하기",
   lead: "고친 칸은 자동 수집이 덮어쓰지 않아요",
   nameKoLabel: "한글 이름",
   descriptionLabel: "회사 소개",
