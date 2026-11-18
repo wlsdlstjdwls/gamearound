@@ -38,7 +38,7 @@ export function StatsTrend({ days, metrics, title }: { days: IndieStatsDay[]; me
 
   return (
     <section aria-label={title} className="flex flex-col gap-4 rounded-[var(--radius-panel)] bg-surface p-4 shadow-hair sm:p-5">
-      {/* 숫자 칸이 곧 탭이다. 고른 칸은 브랜드색 면 + 위쪽 띠 */}
+      {/* 숫자 칸이 곧 탭이다. 고른 칸은 연한 브랜드색 면 + 옅은 테두리. 위쪽 파란 띠는 걷었다(2026-11-18 사용자 "카드 위 파란 줄 없애줘") */}
       <div role="tablist" aria-label={title} className="grid grid-cols-2 gap-2 sm:grid-cols-4">
         {metrics.map((m) => {
           const on = m.key === metric;
@@ -54,7 +54,7 @@ export function StatsTrend({ days, metrics, title }: { days: IndieStatsDay[]; me
               }}
               className={cn(
                 "press tap flex flex-col items-start gap-0.5 rounded-[var(--radius-md)] px-3.5 py-3 text-left transition-colors",
-                on ? "bg-acc-soft [box-shadow:inset_0_3px_0_var(--acc),inset_0_0_0_1px_var(--acc-3)]" : "bg-surface-2 hover:bg-surface-3",
+                on ? "bg-acc-soft [box-shadow:inset_0_0_0_1px_var(--acc-3)]" : "bg-surface-2 hover:bg-surface-3",
               )}
             >
               <span className={cn("text-[12.5px] font-semibold", on ? "text-acc" : "text-dim")}>{m.label}</span>
