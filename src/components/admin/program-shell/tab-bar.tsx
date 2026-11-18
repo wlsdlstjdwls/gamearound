@@ -122,13 +122,18 @@ export function TabBar({
                   onClose(t.key);
                 }
               }}
+              // 고른 탭 강조(2026-11-18 사용자 "탭에 줄 생기는 거 말고 다른 방식으로"): 위 파란 줄을 걷고 **높이와 면**으로 말한다.
+              // 고른 탭만 한 단 높이 솟아(items-end 줄이라 위로 자란다) 흰 면으로 아래 판과 이어지고 그림자로 떠 있다.
+              // 나머지는 한 단 어두운 면, 옅은 글자로 물러난다. 아이콘만 파랑 — 탭 면을 파랑으로 칠하지 않는다(파랑 남발, 면 뒤집기 금지)
               className={cn(
-                "flex h-9 max-w-[200px] shrink-0 items-center rounded-t-lg border border-b-0 text-[12.5px] transition-colors duration-fast",
-                on ? "border-line-strong bg-surface font-bold text-ink shadow-[inset_0_2px_0_var(--acc)]" : "border-line bg-surface-2 font-medium text-mut hover:bg-surface hover:text-ink",
+                "flex max-w-[200px] shrink-0 items-center rounded-t-lg border border-b-0 text-[12.5px] transition-[height,background-color,color] duration-fast",
+                on
+                  ? "relative z-10 h-10 border-line-strong bg-surface font-bold text-ink shadow-[var(--elev-1)]"
+                  : "h-8 border-line bg-surface-3 font-medium text-dim hover:bg-surface-2 hover:text-ink",
               )}
             >
               <button type="button" role="tab" aria-selected={on} tabIndex={on ? 0 : -1} onClick={() => onPick(t.key)} className="press flex h-full min-w-0 items-center gap-1.5 pl-3 pr-2">
-                {Icon && <Icon size={14} />}
+                {Icon && <Icon size={on ? 15 : 14} className={on ? "text-acc" : undefined} />}
                 {t.dirty && <span aria-hidden className="size-1.5 shrink-0 rounded-full bg-acc" />}
                 <span className="truncate">{t.label}</span>
                 {t.dirty && <span className="sr-only">{SM.tabDirty}</span>}
