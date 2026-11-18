@@ -19,18 +19,28 @@ import type { PostRowDto } from "@/server/services/community";
 const ROW = "row-beam group flex min-w-0 flex-col gap-1 px-4 py-3.5 transition-colors hover:bg-surface-2 sm:px-5";
 
 /**
- * 증감 한 조각 "주 +25%". 상승은 빨강, 하락은 파랑(2026-11-18 사용자 "주식처럼" — 한국 주식 화면의 색 관례).
- * 방향은 색과 부호로 말하고 화살표 글자는 쓰지 않는다(AGENTS 4장). 낭독기에는 "늘었어요/줄었어요" 를 말로 준다
+ * 타일 숫자(지난 30일 합) 옆 증감 "▲ 25%". 견주는 것은 그 앞 30일이다 — 큰 숫자와 같은 기간이라 따로 "월" 같은 이름을 붙이지 않는다.
+ * 2026-11-18 사용자: 처음 "주 +25% 월 -10%" 두 줄을 달았더니 "▲, ▼ 로, 주 월 표기는 하지 말고". 그래서 30일 대 30일 하나만 세운다
+ * (주 증감은 같은 질의가 계속 받는다, services/indie 의 getMyIndieTrend).
+ * 상승은 빨강, 하락은 파랑(한국 주식 화면 관례, 같은 날 "주식처럼"). ▲▼ 는 사용자가 고른 표기라 AGENTS 4장의 화살표 금지(←→↑↓)와 별개로 쓴다.
+ * 낭독기에는 기호 대신 "늘었어요/줄었어요" 를 말로 준다
  */
-function TrendText({ label, change }: { label: string; change: TrendChange }) {
-  if (change.kind === "none") return <span className="text-dim">{`${label} ${L.trendNone}`}</span>;
-  if (change.kind === "new") return <span className="text-danger">{`${label} ${L.trendNew}`}</span>;
+function TrendText({ change }: { change: TrendChange }) {
+  if (change.kind === "none") return null;
+  if (change.kind === "new") {
+    return (
+      <span className="text-danger">
+        <span aria-hidden>{`${L.trendUp} ${L.trendNew}`}</span>
+        <span className="sr-only">{L.trendNewSr}</span>
+      </span>
+    );
+  }
   const tone = change.kind === "up" ? "text-danger" : change.kind === "down" ? "text-acc" : "text-dim";
-  const sign = change.kind === "up" ? "+" : change.kind === "down" ? "-" : "";
+  const mark = change.kind === "up" ? L.trendUp : change.kind === "down" ? L.trendDown : L.trendFlat;
   return (
     <span className={tone}>
-      <span aria-hidden>{`${label} ${sign}${change.pct}%`}</span>
-      <span className="sr-only">{L.trendSr(label, change.kind, change.pct)}</span>
+      <span aria-hidden>{`${mark} ${change.pct}%`}</span>
+      <span className="sr-only">{L.trendSr(change.kind, change.pct)}</span>
     </span>
   );
 }
@@ -106,9 +116,8 @@ export function DevStatusCard({ status, trend, hasGames }: { status: StatusCell[
                     <dt className="truncate text-[12px] text-mut">{label}</dt>
                     <dd className="flex flex-col">
                       <span className={cn("text-[24px] font-black leading-tight tracking-[-0.03em] tabular-nums", moved(cell.month))}>{cell.month.toLocaleString("ko-KR")}</span>
-                      <span className="flex flex-wrap gap-x-2 text-[11.5px] font-semibold tabular-nums">
-                        <TrendText label={L.trendWeek} change={trendChange(cell.week, cell.prevWeek)} />
-                        <TrendText label={L.trendMonth} change={trendChange(cell.month, cell.prevMonth)} />
+                      <span className="text-[12px] font-bold tabular-nums">
+                        <TrendText change={trendChange(cell.month, cell.prevMonth)} />
                       </span>
                     </dd>
                   </span>
