@@ -1,5 +1,9 @@
 // 패치 기록 한글화 도구 — 뽑기(export)와 되쓰기(import) 두 모드.
 //
+// 2026-11-18 사용자 결정으로 이 경로는 물러났다: 이제 본문 전문을 DeepL 로 번역해 patch_notes.body_ko 에 쌓는다
+// (sync/patch-translate, 크론 /api/cron/crawl/patch-translate). 아래 "본문은 저장하지 않는다" 는 그전 규칙이다.
+// 이 도구는 옛 요약(summary_ko)을 손으로 채울 때만 남겨 둔다 — 번역이 없는 기록에서 화면이 요약을 대신 보인다.
+//
 //   pnpm patch:ko --export [--limit 40] [--offset 0] [--out artifacts/patch-ko-todo.jsonl]
 //   pnpm patch:ko --import artifacts/patch-ko-done.jsonl
 //

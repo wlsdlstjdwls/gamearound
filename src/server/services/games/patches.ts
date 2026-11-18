@@ -3,10 +3,11 @@
 // 이 파일이 대답하는 질문은 두 개다:
 //   1. 이 게임은 언제 고쳐졌나 (플랫폼별 목록)
 //   2. 얼마나 자주 고치나 (기록 사이 평균 간격)
-// 본문은 담지 않는다 — 이유는 schema 의 patch_notes 주석(§10 저작권).
-// 한글 제목, 한글 요약은 본문이 아니라 우리가 쓴 글이라 함께 내려보낸다.
+// 2026-11-18 부터 본문(원문 body_en, 한글 전문 body_ko)도 내려보낸다 — 사용자 결정, schema 의 patch_notes 주석.
+// 다만 플랫폼마다 최신 PATCH_BODY_DTO_MAX 건만 본문을 싣는다. 상세 캐시 항목(unstable_cache)이 한 게임 단위라
+// 기록 50건에 본문을 다 실으면 항목 크기가 MB 단위로 커진다. 그 밖의 기록은 제목과 스토어 링크로 선다.
 import { unstable_cache } from "next/cache";
-import { and, desc, eq } from "drizzle-orm";
+import { and, desc, eq, sql } from "drizzle-orm";
 import { getDb } from "@/server/db/client";
 import { gamePlatforms, games, patchNotes, type Platform, type Region } from "@/server/db/schema";
 import { visiblePlatformsOnly } from "@/server/db/visibility";
@@ -15,6 +16,12 @@ import type { PatchNoteDto, PlatformPatchesDto } from "./dto";
 import { DTO_CACHE_VERSION } from "@/lib/cache";
 
 const MS_PER_DAY = 24 * 60 * 60 * 1000;
+
+/**
+ * 플랫폼마다 본문을 실을 최신 기록 수. 화면이 펴 두는 다섯 건(game-detail/patch-notes-panel)에 "더 보기" 로 여는 몇 건을 더한 값이다.
+ * 번역 단계도 최근 공지부터 옮겨서(sync/patch-translate) 이 밖의 기록은 대개 본문이 없다.
+ */
+export const PATCH_BODY_DTO_MAX = 10;
 
 /**
  * 기록된 패치 사이 평균 간격(일). 최신순으로 정렬된 목록을 받는다.
@@ -40,6 +47,8 @@ type Row = {
   title: string;
   titleKo: string | null;
   summaryKo: string | null;
+  bodyEn: string | null;
+  bodyKo: string | null;
   url: string | null;
   publishedAt: Date;
 };
@@ -56,6 +65,8 @@ export function groupPatchesByPlatform(rows: Row[]): PlatformPatchesDto[] {
       title: r.title,
       titleKo: r.titleKo,
       summaryKo: r.summaryKo,
+      bodyEn: r.bodyEn,
+      bodyKo: r.bodyKo,
       url: r.url,
       publishedAt: r.publishedAt.toISOString(),
     };
@@ -69,12 +80,19 @@ export function groupPatchesByPlatform(rows: Row[]): PlatformPatchesDto[] {
     group.count = group.notes.length;
     group.latestAt = group.notes[0]?.publishedAt ?? null;
     group.averageIntervalDays = averageIntervalDays(group.notes);
+    // 행은 최신순으로 들어온다 — 앞 PATCH_BODY_DTO_MAX 건만 본문을 남긴다
+    group.notes.forEach((n, i) => {
+      if (i >= PATCH_BODY_DTO_MAX) {
+        n.bodyEn = null;
+        n.bodyKo = null;
+      }
+    });
   }
   return out.sort(byRegionThenPlatform);
 }
 
-export async function getGamePatches(slug: string): Promise<PlatformPatchesDto[]> {
-  const rows = await getDb()
+function selectPatches(slug: string, withBodies: boolean) {
+  return getDb()
     .select({
       id: patchNotes.id,
       platform: gamePlatforms.platform,
@@ -83,6 +101,8 @@ export async function getGamePatches(slug: string): Promise<PlatformPatchesDto[]
       title: patchNotes.title,
       titleKo: patchNotes.titleKo,
       summaryKo: patchNotes.summaryKo,
+      bodyEn: withBodies ? patchNotes.bodyEn : sql<string | null>`null`,
+      bodyKo: withBodies ? patchNotes.bodyKo : sql<string | null>`null`,
       url: patchNotes.url,
       publishedAt: patchNotes.publishedAt,
     })
@@ -91,7 +111,21 @@ export async function getGamePatches(slug: string): Promise<PlatformPatchesDto[]
     .innerJoin(games, eq(games.id, gamePlatforms.gameId))
     .where(and(eq(games.slug, slug), visiblePlatformsOnly()))
     .orderBy(desc(patchNotes.publishedAt));
-  return groupPatchesByPlatform(rows);
+}
+
+/** Postgres "칸이 없다"(undefined_column). 0116 마이그레이션 전의 DB 에서만 난다 */
+const UNDEFINED_COLUMN = "42703";
+
+export async function getGamePatches(slug: string): Promise<PlatformPatchesDto[]> {
+  try {
+    return groupPatchesByPlatform(await selectPatches(slug, true));
+  } catch (e) {
+    // 코드가 0116(body_*) 마이그레이션보다 먼저 닿은 DB 에서 상세가 통째로 깨지지 않게, 본문 없이 예전처럼 선다.
+    // 마이그레이션이 붙으면 이 길은 다시 타지 않는다
+    const code = (e as { code?: unknown; cause?: { code?: unknown } }).code ?? (e as { cause?: { code?: unknown } }).cause?.code;
+    if (code !== UNDEFINED_COLUMN) throw e;
+    return groupPatchesByPlatform(await selectPatches(slug, false));
+  }
 }
 
 /** 상세, 패치 화면이 같은 캐시 항목을 쓴다 — 태그는 게임 상세와 같은 `game:<slug>` */

@@ -1109,6 +1109,49 @@ export const PATCH_PER_GAME_MAX = 50;
  */
 export const PATCH_SOURCES: StoreSource[] = ["steam"];
 
+/*
+ * 패치 노트 본문 전문 번역(sync/patch-translate, 2026-11-18 사용자 결정 "번역해서 쌓는다").
+ * 엔진은 DeepL API Free(adapters/translate) 하나다 — 한 달 1,000,000자, 넘으면 과금 없이 456 으로 멈춘다.
+ * 아래 값은 전부 그 100만 자를 한 달에 고르게 나눠 쓰려고 정한 것이다.
+ *
+ * 2026-11-18 운영 DB 실측: patch_notes 43,454행 중 최근 열흘 게시일 기준 새 공지는 하루 3~36건(평균 약 15건)이다.
+ * 하루 1,000~1,500행씩 들어오는 것은 처음 물어본 게임의 **지난 기록**(게임당 최대 30건)이라 새 공지가 아니다.
+ * 표본 30건 본문 평균 1,964자(2026-09-15, BBCode 포함) -> 다듬은 뒤 약 1,700자로 보면 새 공지만으로 한 달 약 75만 자다.
+ * 지난 기록 4만여 건(약 7천만 자)은 무료 몫으로는 영영 못 옮긴다 — 그래서 최근 공지 먼저, 그다음 사람들이 보는 게임 순이다.
+ */
+/** 한 달에 패치 번역이 쓸 글자 상한. 100만 자 중 15만 자는 뉴스 제목 번역(한 달 수만 자, adapters/translate 머리 주석)과 손 작업 몫으로 남긴다 */
+export const PATCH_TRANSLATE_MONTHLY_CHARS = 850_000;
+/**
+ * 하루 상한. 월 상한을 31일로 나눈 값이다 — 달 초에 지난 기록이 몰려 몫을 다 먹으면 달 말의 새 공지가 원문으로 남는다.
+ * 남은 날 몫을 앞당겨 쓰지 않는 대신, 하루 몫을 못 채운 날의 나머지는 그냥 버린다(단순함이 낫다).
+ */
+export const PATCH_TRANSLATE_DAILY_CHARS = Math.floor(PATCH_TRANSLATE_MONTHLY_CHARS / 31);
+/**
+ * DeepL 사용량(/v2/usage)이 이만큼 남으면 멈춘다. DeepL 의 한 달은 키 발급일 기준이라 우리 DB 합계(달력 달)와 어긋난다 —
+ * 뉴스 제목 번역이 먹을 자리를 실제 남은 몫에서도 지킨다.
+ */
+export const PATCH_TRANSLATE_DEEPL_RESERVE = 100_000;
+/**
+ * 한 회차에 고를 기록 수. 시간이 상한을 정한다: 서로 다른 게임 40개면 스팀 요청 40회 x 1.5초 = 60초,
+ * DeepL 요청 40회 x 약 2초 = 80초. 크론 함수 300초 안에 넉넉히 든다. 하루 4회 x 40 = 160건으로 새 공지(하루 약 15건)보다 넉넉하다 —
+ * 실제로 멈추는 것은 이 값이 아니라 하루 글자 상한이다.
+ */
+export const PATCH_TRANSLATE_PER_RUN = 40;
+/** 스팀 뉴스 요청 사이 간격(ms). 스팀 어댑터의 minIntervalMs 와 같은 1.5초다 */
+export const PATCH_TRANSLATE_INTERVAL_MS = 1500;
+/**
+ * "새 공지" 의 범위(일). 이 안의 대기 기록을 최신순으로 먼저 옮긴다. 그 밖의 기록은 사람들이 보거나 찜한 게임 것만, 남는 몫으로 옮긴다.
+ * 30일인 이유: 상세 화면의 업데이트 노트가 펴 두는 다섯 건이 대개 한 달 안이다.
+ */
+export const PATCH_TRANSLATE_RECENT_DAYS = 30;
+/**
+ * 한 기록의 본문 글자 상한. 넘으면 원문만 담고 번역하지 않는다('too_long'). 2026-09-15 표본 최대 23,141자 —
+ * 그런 글 하나가 하루 몫(약 27,000자)을 거의 다 먹는다. 15,000자는 표본 중앙값(769자)의 스무 배라 드문 긴 글만 걸린다.
+ */
+export const PATCH_TRANSLATE_BODY_MAX_CHARS = 15_000;
+/** 같은 기록이 이만큼 실패하면 'failed' 로 접는다 — 대기열 머리에 영영 서서 뒤를 막지 않게(hltb 큐 머리막힘 교훈) */
+export const PATCH_TRANSLATE_FAIL_MAX = 3;
+
 /**
  * 한 실행에서 사양(steam appdetails)을 새로 물어볼 게임 수.
  *

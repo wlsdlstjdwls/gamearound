@@ -91,6 +91,13 @@ export type PatchNoteDto = {
    */
   titleKo: string | null;
   summaryKo: string | null;
+  /**
+   * 본문 원문(다듬은 단순 글)과 한글 전문(2026-11-18, sync/patch-translate). 줄 꼴은 `## 제목`, `- 목록`, 보통 줄뿐이다(lib/patch/body-blocks).
+   * 아직 안 옮겼으면 bodyKo 가 null 이고 화면은 원문을, 원문도 없으면 요약이나 링크만 보인다.
+   * 스토어가 처음부터 한국어로 준 공지는 둘이 같은 값이다.
+   */
+  bodyEn: string | null;
+  bodyKo: string | null;
   /** 본문이 있는 스토어 페이지. 글 단위 주소를 주지 않는 소스는 null 이고 화면은 링크 없이 보여 준다 */
   url: string | null;
   publishedAt: string;

@@ -99,4 +99,12 @@ export const SYNC_MESSAGES = {
   totalSnapshots: "가격 수집",
   totalRuns: "수집 실행",
   totalFailed: "금일 실패",
+
+  /* 패치 노트 전문 번역 줄(sync/patch-translate, 2026-11-18). 대기는 최근 공지 창 안만 센다(services/admin-patch-translate) */
+  patchTranslate: "패치 번역",
+  patchDone: "번역 완료",
+  patchQueued: "대기",
+  patchFailed: "실패",
+  patchSkipped: "건너뜀",
+  patchMonthChars: "이번 달 사용 글자 수",
 } as const;

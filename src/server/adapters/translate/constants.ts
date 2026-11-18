@@ -18,3 +18,24 @@ export const DEEPL_MAX_TEXTS = 50;
 export const DEEPL_TARGET_LANG = "KO";
 /** 한도를 다 쓴 달에 DeepL 이 주는 상태 코드. 재시도할 일이 아니라 그달 번역을 멈춘다 */
 export const DEEPL_QUOTA_EXCEEDED = 456;
+
+/**
+ * 이번 달 사용량 주소(GET, 글자를 먹지 않는다). 무료, 유료 주소가 번역과 같은 갈래로 갈린다.
+ * 패치 번역(sync/patch-translate)이 회차 전에 남은 몫을 본다 — DeepL 의 한 달은 달력 달이 아니라 키 발급일 기준이라 우리 DB 합계만으로는 어긋난다.
+ */
+export const DEEPL_FREE_USAGE_URL = "https://api-free.deepl.com/v2/usage";
+export const DEEPL_PRO_USAGE_URL = "https://api.deepl.com/v2/usage";
+
+/**
+ * 긴 글(패치 본문)을 자르는 조각 크기(글자). DeepL 요청 본문 상한은 128 KiB 다(DeepL 문서 "Request size").
+ * 한글, 영문 섞인 글이 글자당 최대 3바이트에 JSON 이스케이프까지 붙어도 한 요청 몫(DEEPL_REQUEST_MAX_CHARS) 이 그 아래에 들게 잡았다.
+ * 5,000 은 문단 여럿을 한 조각에 담을 만큼 커서 문맥이 끊기는 일이 드물다.
+ */
+export const DEEPL_CHUNK_MAX_CHARS = 5000;
+/** 한 요청에 실을 글자 합 상한. 30,000자 x 3바이트 = 90 KB 로 128 KiB 아래다 */
+export const DEEPL_REQUEST_MAX_CHARS = 30000;
+/**
+ * 긴 글 요청의 기다림 상한(ms). 기본 15초(adapters/http)는 제목 몇 줄 기준이다.
+ * 본문 수천 자는 DeepL 쪽 처리에 10초를 넘기기도 해서 넉넉히 잡는다 — 크론 함수 한도(300초) 안에서 몇 건 몫이다.
+ */
+export const DEEPL_LONG_TIMEOUT_MS = 60_000;

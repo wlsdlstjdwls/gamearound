@@ -1,14 +1,16 @@
 // 패치 기록 표시 — 목록(PatchList)과 플랫폼별 속도 비교(PatchSpeed).
 //
-// 본문을 담지 않으므로 목록의 한 줄은 "버전 + 제목 + 종류 + 날짜"다(§10 저작권).
-// 스토어가 한국어 패치 노트를 주지 않아(2026-09-15 실측) 한글은 두 군데서 온다:
-//   titleKo, summaryKo  우리가 본문을 읽고 쓴 글(scripts/patch-ko). 아직 안 쓴 기록은 null 이다
-//   종류 딱지          제목에서 규칙으로 읽어낸 한 마디(lib/patch-kind)
+// 목록의 한 줄은 "버전 + 제목 + 종류 + 날짜" 이고, 그 밑에 본문이 선다(2026-11-18 사용자 결정, components/patch-body).
+// 스토어가 한국어 패치 노트를 주지 않아(2026-09-15 실측) 한글은 세 군데서 온다:
+//   bodyKo, titleKo  번역 단계가 미리 쌓은 전문과 제목(sync/patch-translate). 아직 안 옮긴 기록은 null 이고 원문으로 폴백한다
+//   summaryKo        옛 요약 경로(scripts/patch-ko)의 글. 본문이 없는 기록에서만 보인다
+//   종류 딱지        제목에서 규칙으로 읽어낸 한 마디(lib/patch-kind)
 // 한글 제목이 있으면 그것을 보여 주고 없으면 원문으로 폴백한다 — 채우는 일이 밀려도 목록은 선다.
 // **종류 딱지는 늘 원문 제목으로 읽는다.** 규칙이 영어 낱말로 짜여 있어 한글 제목을 넣으면 아무것도 안 걸린다.
-// 글 단위 주소가 있는 소스(Steam)만 제목이 링크가 되고, 없는 소스는 글자로 남는다 —
-// 열리지 않는 링크를 만들지 않기 위해서다.
+// 원문 글 링크는 본문 밑 "스토어에서 보기" 하나로 모았다(제목까지 링크면 같은 곳으로 가는 길이 둘이다).
+// 글 단위 주소가 없는 소스는 그 링크를 세우지 않는다 — 열리지 않는 링크를 만들지 않기 위해서다.
 import { Clamp } from "@/components/ui/tooltip";
+import { PatchBody } from "@/components/patch-body";
 import { ROWS } from "@/components/ui/page";
 import { formatDate, platformLabel } from "@/lib/format";
 import { GAME_MESSAGES } from "@/lib/games/messages";
@@ -53,26 +55,10 @@ export function PatchList({ items, showPlatform = false }: { items: Item[]; show
         <li key={n.id} className="flex flex-wrap items-baseline gap-x-2.5 gap-y-1 py-[13px]">
           <VersionChip version={n.version} />
           <div className="min-w-0 flex-1 text-[13px] leading-[1.5] text-ink">
-            {n.url ? (
-              <a
-                href={n.url}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="font-semibold transition-colors duration-base hover:text-acc"
-              >
-                <Clamp lines={2}>{n.titleKo ?? n.title}</Clamp>
-                <span className="sr-only"> (새 창에서 열림)</span>
-              </a>
-            ) : (
-              <span className="font-semibold">
-                <Clamp lines={2}>{n.titleKo ?? n.title}</Clamp>
-              </span>
-            )}
-            {n.summaryKo && (
-              <p className="mt-1 text-[12.5px] font-normal leading-[1.55] text-mut">
-                <Clamp lines={3}>{n.summaryKo}</Clamp>
-              </p>
-            )}
+            <span className="font-semibold">
+              <Clamp lines={2}>{n.titleKo ?? n.title}</Clamp>
+            </span>
+            <PatchBody bodyKo={n.bodyKo} bodyEn={n.bodyEn} summaryKo={n.summaryKo} url={n.url} />
           </div>
           <KindChips title={n.title} />
           <p className="flex shrink-0 items-center gap-x-1.5 text-[11.5px] text-dim">

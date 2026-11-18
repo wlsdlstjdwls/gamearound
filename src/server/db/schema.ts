@@ -644,9 +644,10 @@ export const news = pgTable("news", {
 /**
  * 패치 기록 — 설계서 §3.3 의 patch_notes(확장1).
  *
- * body_md 를 두지 않는다(§10 저작권). 뉴스와 같은 규칙이다 — 제목, 링크, 게시 시각까지만 남기고
- * 본문은 스토어 페이지로 보낸다. 이 테이블이 대답하는 질문은 "언제, 얼마나 자주 고쳤나" 이지
- * "무엇을 고쳤나" 가 아니다. 후자를 우리가 보관하면 그건 남의 글을 옮겨 적는 일이다.
+ * 2026-11-18 사용자 결정으로 본문을 담는다(body_en, body_ko). 그전 규칙은 "본문은 두지 않는다(§10 저작권),
+ * 제목, 링크, 게시 시각까지만" 이었고 한글은 요약(summary_ko)만 뒀다. 이제는 스팀 패치 노트를 **전문 번역해 미리 쌓고**
+ * 상세 화면이 한글 전문을 먼저, "원본 보기" 로 영어 원문을, 원문 글 링크를 함께 보인다. 수집 경로(STEAM_NEWS_MAXLENGTH=1)는
+ * 그대로다 — 본문은 번역 단계(sync/patch-translate)만 따로 받아 온다. 매 수집이 본문을 끌고 오지 않게 하려는 것이다.
  *
  * games 가 아니라 game_platforms 에 매다는 이유: 같은 게임이라도 스토어마다 패치 시점이 다르다.
  * "플랫폼별 패치 속도 비교"(기획서 v2 2번)는 이 축이 없으면 아예 계산되지 않는다.
@@ -670,8 +671,8 @@ export const patchNotes = pgTable("patch_notes", {
    * 한글 제목과 한글 요약. 스토어가 한국어 패치 노트를 주지 않아서(2026-09-15 실측:
    * Steam 이벤트를 l=koreana 로 불러도 영어가 온다) 우리가 만들어 채운다.
    *
-   * **본문은 여전히 저장하지 않는다.** 요약은 본문을 읽고 우리가 새로 쓴 글이고,
-   * 전문 번역은 본문을 한글로 옮겨 담는 일이라 §10 의 전제를 깬다 — 그래서 요약만 둔다.
+   * 요약(summary_ko)은 2026-11-18 전에 쓴 옛 경로(scripts/patch-ko)의 결과다. 이제는 아래 body_ko(전문 번역)가 주인이고,
+   * 요약은 번역이 아직 없는 기록에서만 화면이 쓴다. 제목은 번역 단계가 비어 있으면 함께 채운다.
    * 제목을 따로 두는 이유: 목록 한 줄이 "버전, 제목, 종류, 날짜" 라 제목만 한글이어도 화면이 읽힌다.
    *
    * 미생성은 null 이고 화면은 원문으로 폴백한다 — 채우는 일이 밀려도 목록은 그대로 선다.
@@ -682,10 +683,32 @@ export const patchNotes = pgTable("patch_notes", {
   summaryModel: text("summary_model"),
   summarizedAt: timestamp("summarized_at", { withTimezone: true }),
   publishedAt: timestamp("published_at", { withTimezone: true }).notNull(),
+  /**
+   * 본문 원문(2026-11-18). 스토어의 BBCode, HTML 을 걷어 낸 단순 글(제목 줄 `## `, 목록 줄 `- `, 문단은 빈 줄).
+   * 다듬는 규칙은 adapters/steam/clean-patch-body. 그림, 영상 자리는 버린다. 아직 안 받아 온 기록은 null 이다.
+   */
+  bodyEn: text("body_en"),
+  /** 본문 한글 전문(DeepL). 스토어가 처음부터 한국어로 준 공지는 body_en 과 같은 값을 그대로 둔다(body_status = 'source_ko') */
+  bodyKo: text("body_ko"),
+  /** 번역을 마친 시각. 이번 달, 오늘 쓴 글자 수를 셀 때 이 시각으로 자른다 */
+  bodyTranslatedAt: timestamp("body_translated_at", { withTimezone: true }),
+  /**
+   * 번역 단계의 상태. null = 아직 안 봄(대기). 값의 뜻은 sync/patch-translate 의 PatchBodyStatus 주석.
+   * 텍스트로 두는 이유: 화면에 이름표로 나가는 값이 아니라 대기열을 가르는 내부 표시라 enum 마이그레이션을 늘릴 값이 없다
+   */
+  bodyStatus: text("body_status"),
+  /** DeepL 에 실제로 보낸 글자 수. 월 한도(무료 100만 자)를 우리 DB 만으로 셀 수 있게 남긴다 */
+  bodyChars: integer("body_chars"),
+  /** 실패 횟수. 한도(PATCH_TRANSLATE_FAIL_MAX)에 닿으면 'failed' 로 접어 대기열 머리를 막지 않는다 */
+  bodyFailCount: integer("body_fail_count").default(0).notNull(),
+  /** 마지막 실패 사유 표본. 관리자가 "왜 안 되나" 를 되짚는 자리다 */
+  bodyError: text("body_error"),
   ...auditColumns(),
 }, (t) => [
   uniqueIndex("patch_notes_platform_external_uq").on(t.gamePlatformId, t.externalId),
   index("patch_notes_platform_pub_idx").on(t.gamePlatformId, t.publishedAt),
+  // 번역 대기열(상태 null) 을 최신순으로 뽑는다. 43k 행 중 대기만 보는 부분 색인이라 작다
+  index("patch_notes_body_queue_idx").on(t.publishedAt).where(sql`${t.bodyStatus} is null`),
 ]);
 
 // 자체 인증(§6 개정 2026-09-11, 외부 인증 SaaS 미사용). email은 소문자 정규화 후 저장(unique).

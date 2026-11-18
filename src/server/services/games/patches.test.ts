@@ -1,6 +1,6 @@
 // 패치 속도 계산, 플랫폼 묶기 테스트 — 순수 함수만. DB 는 건드리지 않는다.
 import { describe, expect, it } from "vitest";
-import { averageIntervalDays, groupPatchesByPlatform, latestPatches } from "./patches";
+import { averageIntervalDays, groupPatchesByPlatform, latestPatches, PATCH_BODY_DTO_MAX } from "./patches";
 import type { Platform, Region } from "@/server/db/schema";
 
 const at = (iso: string): Date => new Date(iso);
@@ -12,6 +12,8 @@ const row = (over: Partial<Parameters<typeof groupPatchesByPlatform>[0][number]>
   title: "Update",
   titleKo: null,
   summaryKo: null,
+  bodyEn: null,
+  bodyKo: null,
   url: null,
   ...over,
 });
@@ -90,5 +92,16 @@ describe("latestPatches", () => {
     ]);
     expect(latestPatches(groups, 2).map((n) => n.id)).toEqual(["2", "1"]);
     expect(latestPatches(groups, 2)[0].platform).toBe("epic");
+  });
+});
+
+describe("본문 싣기 상한", () => {
+  it("플랫폼마다 최신 PATCH_BODY_DTO_MAX 건만 본문을 남긴다", () => {
+    const rows = Array.from({ length: PATCH_BODY_DTO_MAX + 2 }, (_, i) =>
+      row({ id: String(i), publishedAt: new Date(Date.UTC(2026, 10, 30 - i)), bodyEn: "en", bodyKo: "ko" }),
+    );
+    const [group] = groupPatchesByPlatform(rows);
+    expect(group.notes.filter((n) => n.bodyKo !== null)).toHaveLength(PATCH_BODY_DTO_MAX);
+    expect(group.notes[PATCH_BODY_DTO_MAX].bodyEn).toBeNull();
   });
 });

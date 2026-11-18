@@ -17,6 +17,8 @@
 // 직렬화되는 줄로 펴서 넘기기만 한다. 칸을 그리는 함수는 서버에서 못 넘겨 화면 쪽에 있다.
 // 거르기는 화면이 한다(sync-screen 머리 주석) — 소스가 열댓 줄이라 질의를 나눌 값이 없고, 24시간 요약은 조건과 상관없이 전체를 말해야 한다.
 // 여기서는 주소의 조건을 첫 값으로 넘기기만 한다.
+// 2026-11-18 — 머리 요약 밑에 "패치 번역" 한 줄(번역 완료, 대기, 실패, 건너뜀, 이번 달 글자 수)을 더했다. 스토어 소스가 아니라
+// 표의 줄로 세우지 않고, 24시간 요약처럼 조건과 상관없이 전체를 말하는 자리에 둔다(services/admin-patch-translate).
 import type { Metadata } from "next";
 import { AdminScreenHead } from "@/components/admin/screen/head";
 import { ProgramLink } from "@/components/admin/screen/program-link";
@@ -29,6 +31,7 @@ import { firstParam } from "@/lib/games-query";
 import { ROUTES } from "@/lib/routes";
 import { getSyncOverview, isSourceName, SOURCES, type SyncOverviewItem } from "@/server/services/admin";
 import { getSyncActivity, RUNNING_GRACE_MINUTES, type RunSummary } from "@/server/services/admin-activity";
+import { getPatchTranslateStats, type PatchTranslateStats } from "@/server/services/admin-patch-translate";
 import { getDisabledReason, isSource } from "@/server/adapters";
 import { requireRoleOrForbid } from "@/server/auth/guards";
 
@@ -85,6 +88,30 @@ function Totals({ newGames, snapshots, runs, failedToday }: { newGames: number; 
   );
 }
 
+/** 패치 번역 한 줄. 실패가 있으면 그 숫자만 빨갛다(위 Totals 와 같은 규칙) */
+function PatchTranslateLine({ stats }: { stats: PatchTranslateStats }) {
+  const fmt = (n: number) => n.toLocaleString("ko-KR");
+  const items = [
+    { label: SYNC_MESSAGES.patchDone, value: fmt(stats.done), alert: false },
+    { label: SYNC_MESSAGES.patchQueued, value: fmt(stats.queued), alert: false },
+    { label: SYNC_MESSAGES.patchFailed, value: fmt(stats.failed), alert: stats.failed > 0 },
+    { label: SYNC_MESSAGES.patchSkipped, value: fmt(stats.skipped), alert: false },
+    { label: SYNC_MESSAGES.patchMonthChars, value: `${fmt(stats.monthChars)} / ${fmt(stats.monthLimit)}`, alert: false },
+  ];
+  return (
+    <span className="inline-flex flex-wrap items-baseline gap-x-1.5">
+      <span className="font-semibold text-dim-2">{SYNC_MESSAGES.patchTranslate}</span>
+      {items.map((it) => (
+        <span key={it.label} className="inline-flex items-baseline gap-1">
+          <span aria-hidden>|</span>
+          <span className="text-mut">{it.label}</span>
+          <b className={cn("font-bold tabular-nums", it.alert ? "text-danger" : "text-ink")}>{it.value}</b>
+        </span>
+      ))}
+    </span>
+  );
+}
+
 export default async function AdminSyncOverviewPage({ searchParams }: Props) {
   await requireRoleOrForbid("admin");
   const sp = await searchParams;
@@ -93,7 +120,8 @@ export default async function AdminSyncOverviewPage({ searchParams }: Props) {
   const rawStatus = firstParam(sp.status);
   const status = isSyncHealthFilter(rawStatus) ? rawStatus : "all";
   // 둘을 나란히 던진다 — 줄 세우면 왕복이 그대로 쌓인다(Neon 왕복 비용)
-  const [overview, activity] = await Promise.all([getSyncOverview(), getSyncActivity()]);
+  // 패치 번역 줄은 0116 마이그레이션 전이면 칸이 없어 실패한다 — 그때는 줄만 빼고 화면은 선다
+  const [overview, activity, patchStats] = await Promise.all([getSyncOverview(), getSyncActivity(), getPatchTranslateStats().catch(() => null)]);
   const repo = process.env.NEXT_PUBLIC_GITHUB_REPO;
   const failedToday = overview.items.reduce((n, it) => n + it.failedToday, 0);
   // sort 는 안정 정렬이라 같은 칸끼리는 서비스가 준 순서 그대로다
@@ -106,7 +134,12 @@ export default async function AdminSyncOverviewPage({ searchParams }: Props) {
       <AdminScreenHead
         title={ADMIN_NAV.overview}
         count={rows.length}
-        note={<Totals newGames={activity.newGames} snapshots={activity.priceSnapshots} runs={activity.runs} failedToday={failedToday} />}
+        note={
+          <span className="flex flex-col gap-0.5">
+            <Totals newGames={activity.newGames} snapshots={activity.priceSnapshots} runs={activity.runs} failedToday={failedToday} />
+            {patchStats && <PatchTranslateLine stats={patchStats} />}
+          </span>
+        }
         actions={
           <>
             {/* 스토어 하나의 이력은 상세의 같은 단추가 그 스토어로 걸러 연다 */}

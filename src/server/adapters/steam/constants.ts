@@ -61,7 +61,10 @@ export const STEAM_NEWS_TAG = "patchnotes";
  * 재조회 주기(PATCH_LIST_REFRESH_DAYS) 사이에 빠지는 것이 없다.
  */
 export const STEAM_NEWS_COUNT = 30;
-/** 본문을 안 쓰므로 1글자로 잘라 받는다(§10 저작권) — 응답 크기도 같이 줄어든다 */
+/**
+ * 목록 수집은 본문을 1글자로 잘라 받는다 — 응답 크기가 준다. 2026-11-18 사용자 결정으로 본문을 번역해 쌓게 됐지만
+ * 본문은 번역 단계(sync/patch-translate -> adapters/steam/patch-body, maxlength=0)만 따로 받는다. 이 값을 풀면 매 수집이 본문을 끌고 온다.
+ */
 export const STEAM_NEWS_MAXLENGTH = 1;
 /**
  * 글 단위 스토어 주소. 응답의 url 은 akamaihd 외부 리다이렉트라 그대로 쓰지 않는다 —
