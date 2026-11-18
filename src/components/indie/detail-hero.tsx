@@ -94,26 +94,7 @@ export function IndieDetailHero({
       <div className="grid items-center gap-6 p-4 sm:p-6 lg:grid-cols-[minmax(0,1.3fr)_minmax(0,1fr)] lg:gap-9 lg:p-8">
         <div className="relative aspect-[460/215] w-full overflow-hidden rounded-[var(--radius-md)] bg-surface-3 shadow-3 ring-1 ring-[color-mix(in_oklab,var(--on-ink)_18%,transparent)]">
           <CoverImage src={cover?.url ?? null} alt={M.coverAlt(post.title)} sizes="(max-width: 1024px) 100vw, 60vw" priority />
-          {/* 순위 칸은 장식이다 — 같은 말을 제목 위 딱지가 글자로 한다 */}
-          {podium && (
-            <span aria-hidden className="absolute left-3 top-3">
-              <span
-                className={cn(
-                  "rank-glint grid place-items-center rounded-2xl font-black tabular-nums text-on-ink ring-2 ring-[color-mix(in_oklab,var(--on-ink)_45%,transparent)]",
-                  podium === 1 ? "size-14 text-[26px]" : "size-12 text-[22px]",
-                  RANK_TONE[podium - 1],
-                )}
-              >
-                {podium}
-              </span>
-              {/* 트로피는 빛 칸(overflow 숨김) 밖에 둔다 — 안에 두면 모서리에서 잘린다 */}
-              {podium === 1 && (
-                <span className="absolute -right-1.5 -top-1.5 grid size-5 place-items-center rounded-full bg-surface text-acc shadow-1">
-                  <TrophyIcon size={12} strokeWidth={2.4} />
-                </span>
-              )}
-            </span>
-          )}
+          {/* 그림 모서리의 큰 순위 칸(1, 2, 3)은 걷었다(2026-11-18 사용자 "이미지에 2 붙어 있는 것도 별로"). 순위는 제목 위 딱지가 말한다 */}
         </div>
 
         <div className="flex min-w-0 flex-col gap-4">
