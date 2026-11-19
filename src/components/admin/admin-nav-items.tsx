@@ -9,6 +9,7 @@ import { BarChartIcon, BoardIcon, BoxIcon, BuildingIcon, CardIcon, ChatIcon, Che
 import { CalendarIcon, GamepadIcon, TagIcon, TicketIcon } from "@/components/ui/icons";
 import { Suspense, use, type ComponentType } from "react";
 import { mobilePolicyOf } from "@/lib/admin/mobile";
+import { ADMIN_NAV_BADGES_ON } from "@/lib/admin/rail";
 
 export interface AdminNavCounts {
   matches: number;
@@ -197,7 +198,8 @@ export function Badge({
   className?: string;
 }) {
   const c = use(counts);
-  if (!c) return null;
+  // 배지를 끈 동안(lib/admin/rail 의 ADMIN_NAV_BADGES_ON) 숫자도 점도 세우지 않는다
+  if (!c || !ADMIN_NAV_BADGES_ON) return null;
   const { n, capped } = pick(c);
   if (n <= 0) return null;
   if (dot) {

@@ -16,7 +16,7 @@ import { ProgramShell } from "@/components/admin/program-shell";
 import { cookies } from "next/headers";
 import { raisedClass } from "@/components/ui/page";
 import { AdminStatusBar, AdminStatusProvider } from "@/components/admin/screen/status";
-import { ADMIN_GROUPS_COOKIE, ADMIN_MENU_VIEW_COOKIE, ADMIN_RAIL_COOKIE, readMenuView } from "@/lib/admin/rail";
+import { ADMIN_GROUPS_COOKIE, ADMIN_MENU_VIEW_COOKIE, ADMIN_NAV_BADGES_ON, ADMIN_RAIL_COOKIE, readMenuView } from "@/lib/admin/rail";
 import { requireRoleOrForbid } from "@/server/auth/guards";
 import { getAdminWorkCounts } from "@/server/services/admin-workload";
 import { listAdminFavorites } from "@/server/services/admin-favorites";
@@ -30,7 +30,8 @@ export const dynamic = "force-dynamic";
 export default async function AdminLayout({ children }: { children: React.ReactNode }) {
   const user = await requireRoleOrForbid("admin");
   // 배지가 못 떠도 화면은 살아 있어야 한다 — 숫자는 거들 뿐이고 검수는 각 화면에서 한다
-  const counts = getAdminWorkCounts().catch(() => null);
+  // 메뉴 배지를 끈 동안에는 건수를 읽지 않는다(lib/admin/rail 의 ADMIN_NAV_BADGES_ON)
+  const counts = ADMIN_NAV_BADGES_ON ? getAdminWorkCounts().catch(() => null) : Promise.resolve(null);
   // 즐겨찾기도 기다리지 않는다(배지와 같은 까닭). 못 읽으면 묶음이 안 설 뿐이다
   const favorites = listAdminFavorites(user.id).catch(() => []);
 

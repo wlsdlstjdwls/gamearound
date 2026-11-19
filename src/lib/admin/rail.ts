@@ -1,6 +1,12 @@
 // 관리자 왼쪽 기둥 접힘 쿠키(2026-10-29, components/admin/admin-rail). 서버 레이아웃과 클라이언트 기둥이 같은 이름을 읽는다 —
 // 클라이언트 파일에 두면 서버 컴포넌트가 문자열 대신 클라이언트 참조를 받는다(AGENTS §6, 10-12 푸터 사고).
 export const ADMIN_RAIL_COOKIE = "admin_rail";
+/**
+ * 메뉴 칸의 남은 일 숫자 배지(기둥, 접힌 기둥 점, 휴대폰 바닥 띠). 2026-11-19 사용자 "왼쪽 메뉴에 숫자 뱃지 나오는 것 없애줘" 로 껐다.
+ * 숨김이지 삭제가 아니다 — 배지 부품과 건수 질의는 그대로 두고 이 값만 돌리면 다시 선다(hidden-features).
+ * 끈 동안에는 레이아웃이 건수 질의(getAdminWorkCounts, games 전수 훑기 포함)를 부르지 않는다 — 대시보드는 제가 따로 부른다
+ */
+export const ADMIN_NAV_BADGES_ON = false;
 /** 1년. 한 번 접은 사람은 계속 접어 쓴다 */
 export const ADMIN_RAIL_COOKIE_MAX_AGE = 60 * 60 * 24 * 365;
 /**
