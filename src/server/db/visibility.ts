@@ -5,7 +5,7 @@
 // 숨긴 스토어가 되살아난다 — 그 한 곳이 어디인지는 아무도 모른다.
 //
 // 무엇을 숨길지는 lib/platform 의 HIDDEN_PLATFORMS 가 정한다. 여기는 그걸 SQL 로 옮기기만 한다.
-import { and, isNotNull, notInArray, type SQL } from "drizzle-orm";
+import { and, isNotNull, notInArray, sql, type AnyColumn, type SQL } from "drizzle-orm";
 import { HIDDEN_PLATFORMS, HIDDEN_REGIONS } from "@/lib/platform";
 import { gamePlatforms } from "./schema";
 
@@ -21,6 +21,16 @@ export function visiblePlatformsOnly(): SQL | undefined {
   // 지역도 같은 자리에서 거른다 — 숨긴 나라의 행이 화면 질의마다 따로 걸러지면 한 곳을 빠뜨린다
   if (HIDDEN_REGIONS.length > 0) conds.push(notInArray(gamePlatforms.region, HIDDEN_REGIONS));
   return conds.length === 0 ? undefined : and(...conds);
+}
+
+/**
+ * 그 게임이 화면에 서는가 — 보이는 플랫폼 행이 하나라도 있는가. game_platforms 를 조인하지 않는 질의(게임 단위로 세는 자리)용.
+ *
+ * 관리자 검수 큐의 건수와 목록이 이걸 쓴다(2026-11-19 사용자 확정). 회사 확정 대기가 Epic, 일본 전용 게임까지 세어
+ * 손댈 것이 24건일 때 배지가 "60+" 에 붙어 있었다 — 숨긴 게임은 손대지 않기로 했으니(AGENTS §5) 일거리로 세지 않는다.
+ */
+export function hasVisiblePlatform(gameId: AnyColumn): SQL {
+  return sql`exists (select 1 from ${gamePlatforms} where ${gamePlatforms.gameId} = ${gameId} and ${visiblePlatformsOnly() ?? sql`true`})`;
 }
 
 /**

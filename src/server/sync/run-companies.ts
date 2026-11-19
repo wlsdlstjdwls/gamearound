@@ -22,6 +22,7 @@ import { DISPLAY_TIME_ZONE } from "@/lib/format";
 import { recentlyViewedSlugs } from "@/server/game-views";
 import { BATCH_SIZE, COMPANY_MISS_RETRY_DAYS, COMPANY_REFRESH_DAYS, COMPANY_SEARCH_DEADLINE_MS, IGDB_ENRICH_DEADLINE_MS, IGDB_ENRICH_PER_RUN } from "./constants";
 import type { Db } from "@/server/db/client";
+import { hasVisiblePlatform } from "@/server/db/visibility";
 import { recordError, type Ctx, type RunOptions } from "./context";
 import { fetchWithRetry } from "./retry";
 import { attachCompany, companyNamesOf, findCompaniesByAliases } from "./company-writer";
@@ -52,7 +53,7 @@ export interface CompanyTarget {
  * 회사가 하나도 안 붙은 게임의 개발사, 배급사 문자열을 이름 단위로 묶어 **게임 수가 많은 순**으로 돌려준다.
  * 같은 표기 조합끼리는 DB 에서 먼저 묶는다 — 게임 9천여 건을 행으로 받으면 1MB 가 오간다(2026-09-30 실측).
  */
-export async function listCompanyTargets(db: Db): Promise<CompanyTarget[]> {
+export async function listCompanyTargets(db: Db, opts: { visibleOnly?: boolean } = {}): Promise<CompanyTarget[]> {
   const rows = await db
     .select({
       developer: games.developer,
@@ -65,7 +66,14 @@ export async function listCompanyTargets(db: Db): Promise<CompanyTarget[]> {
     })
     .from(games)
     .leftJoin(gameCompanies, eq(gameCompanies.gameId, games.id))
-    .where(and(isNull(gameCompanies.gameId), or(sql`${games.developer} is not null`, sql`${games.publisher} is not null`)))
+    .where(
+      and(
+        isNull(gameCompanies.gameId),
+        or(sql`${games.developer} is not null`, sql`${games.publisher} is not null`),
+        // 수집은 숨긴 게임의 회사도 붙인다(되살릴 때 빈칸이 없게). 관리자 검수 큐만 화면에 서는 게임으로 좁힌다
+        opts.visibleOnly ? hasVisiblePlatform(games.id) : undefined,
+      ),
+    )
     .groupBy(games.developer, games.publisher);
 
   const byName = new Map<string, CompanyTarget>();
@@ -254,7 +262,7 @@ export async function listPendingCompanyNames(
   db: Db,
   limit: number,
 ): Promise<Array<{ name: string; gameCount: number; outcome: "not_found" | "ambiguous" | null }>> {
-  const [targets, misses] = await Promise.all([listCompanyTargets(db), loadActiveMisses(db, new Date())]);
+  const [targets, misses] = await Promise.all([listCompanyTargets(db, { visibleOnly: true }), loadActiveMisses(db, new Date())]);
   if (targets.length === 0) return [];
   const known = await findCompaniesByAliases(db, targets.map((t) => t.rawName));
   return targets
@@ -273,7 +281,7 @@ export async function countPendingCompanyGroups(db: Db, cap: number): Promise<nu
     .select({ one: sql<number>`1` })
     .from(games)
     .leftJoin(gameCompanies, eq(gameCompanies.gameId, games.id))
-    .where(and(isNull(gameCompanies.gameId), or(sql`${games.developer} is not null`, sql`${games.publisher} is not null`)))
+    .where(and(isNull(gameCompanies.gameId), or(sql`${games.developer} is not null`, sql`${games.publisher} is not null`), hasVisiblePlatform(games.id)))
     .groupBy(games.developer, games.publisher)
     .limit(cap);
   return rows.length;
