@@ -53,12 +53,14 @@ export type Item = {
 };
 
 /**
- * 묶음 제목이 없는 묶음은 칸 하나짜리다 — 제목이 곧 칸 이름이라 두 번 적지 않는다.
- * 순서: 상품, 주문, 운영이 맨 위다(2026-10-29 사용자 "최상단으로"). 매일 여는 자리가 돈과 할 일이 됐고, 수집, 데이터는 배지가 부른다.
- * 묶음, 칸 이름은 ADMIN_NAV(백오피스식 업무 용어, 2026-10-29 밤 사용자가 고른 표)
+ * 상위메뉴 표. 제목이 없는 줄은 칸 하나짜리다 — 제목이 곧 칸 이름이라 두 번 적지 않는다.
+ * 2026-11-19 하는 일 기준으로 다시 묶었다(낱말과 이유는 ADMIN_NAV 머리 주석):
+ *   대시보드, 상품관리, 주문관리(오픈 전이라 프로그램관리에서 숨김, 2026-10-29 사용자 "최상단으로" 라 자리는 맨 위), 업무관리,
+ *   승인관리(판정), 데이터관리(고치기), 콘텐츠관리(서비스에 보이는 것), 수집관리, 통계관리, 시스템관리. 서비스안내서는 기둥 바닥.
+ * 대시보드 기둥도 이 순서를 따른다(work-board) — 번호가 메뉴 자리를 가리킨다.
  */
-export const GROUPS: Array<{ key: string; title?: string; items: Item[] }> = [
-  // 첫 화면 업무 현황판(2026-10-29). 묶음 머리 위 한 칸 — 어느 묶음에 일이 쌓였는지 여기서 보고 내려간다
+export const GROUPS: Array<{ key: string; title?: string; items: Item[]; /** 넓은 화면 기둥 바닥에 따로 선다(도움말 자리). 검색, 더보기 시트에서는 다른 칸과 같다 */ pinned?: boolean }> = [
+  // 첫 화면 업무 현황판(2026-10-29). 어느 상위메뉴에 일이 쌓였는지 여기서 보고 내려간다
   { key: "board", items: [{ href: ROUTES.admin, label: ADMIN_NAV.board, short: ADMIN_NAV.tabShort.board, Icon: BoardIcon }] },
   {
     // 무엇을 얼마에 파나(상품등록), 언제 깎아 주나(프로모션등록), 산 것이 어디 서 있나(광고노출관리)
@@ -80,8 +82,8 @@ export const GROUPS: Array<{ key: string; title?: string; items: Item[] }> = [
     ],
   },
   {
-    key: "ops",
-    title: ADMIN_NAV.groupOps,
+    // 관리자끼리 주고받는 일. 매일 여는 자리라 상위메뉴 안에 묻지 않는다
+    key: "tasks",
     items: [
       {
         href: ROUTES.adminTasks,
@@ -91,7 +93,42 @@ export const GROUPS: Array<{ key: string; title?: string; items: Item[] }> = [
         pick: (c) => ({ n: c.tasksTodo }),
         pick2: { pick: (c) => ({ n: c.tasksDoing }), tone: "doing" },
       },
-      // 그림이 같으면 기둥에서 두 칸이 같은 자리처럼 읽힌다(2026-10-29 광고 관리와 겹쳐 반짝임으로 바꿨다)
+    ],
+  },
+  {
+    // 밖에서 들어온 것을 받을지 정한다. 쌓이면 사용자나 수집이 기다리는 자리라 데이터관리보다 위다
+    key: "approvals",
+    title: ADMIN_NAV.groupApprovals,
+    items: [
+      { href: ROUTES.adminMatches, label: ADMIN_NAV.matches, short: ADMIN_NAV.tabShort.matches, Icon: LinkIcon, pick: (c) => ({ n: c.matches }) },
+      { href: ROUTES.adminIndie, label: ADMIN_NAV.indie, short: ADMIN_NAV.tabShort.indie, Icon: GamepadIcon, pick: (c) => ({ n: c.indie }) },
+      { href: ROUTES.adminCompanyClaims, label: ADMIN_NAV.companyClaims, Icon: BuildingIcon, pick: (c) => ({ n: c.companyClaims }) },
+      { href: ROUTES.shopsAdmin, label: ADMIN_NAV.shops, Icon: StoreIcon, pick: (c) => ({ n: c.shops }) },
+    ],
+  },
+  {
+    // 이미 가진 정보를 고친다. 매장 상품 매핑은 입점 승인 다음 일이지만 하는 일이 "어느 게임인지 고치기" 라 여기 둔다
+    key: "review",
+    title: ADMIN_NAV.groupReview,
+    items: [
+      { href: ROUTES.adminDataIssues, label: ADMIN_NAV.dataIssues, Icon: SearchCheckIcon, pick: (c) => ({ n: c.dataIssues }) },
+      {
+        href: ROUTES.adminCompanies,
+        label: ADMIN_NAV.companies,
+        Icon: BuildingIcon,
+        pick: (c) => ({ n: c.companies, capped: c.companiesCapped }),
+      },
+      { href: ROUTES.adminProducts, label: ADMIN_NAV.products, Icon: BoxIcon, pick: (c) => ({ n: c.products }) },
+    ],
+  },
+  {
+    // 서비스 화면에 보이는 것. 게시글은 배지가 없다 — 신고 장치가 없어 쌓이는 큐가 아니라 훑어보는 목록이다(admin/posts 머리 주석)
+    // 그림이 같으면 기둥에서 두 칸이 같은 자리처럼 읽힌다(2026-10-29 광고 관리와 겹쳐 전시관리를 반짝임으로 바꿨다)
+    key: "content",
+    title: ADMIN_NAV.groupContent,
+    items: [
+      { href: ROUTES.adminPosts, label: ADMIN_NAV.posts, Icon: ChatIcon },
+      { href: ROUTES.adminPreorder, label: ADMIN_NAV.preorder, Icon: CalendarIcon, pick: (c) => ({ n: c.preorder }) },
       { href: ROUTES.adminEffects, label: ADMIN_NAV.effects, Icon: SparkleIcon },
     ],
   },
@@ -103,42 +140,7 @@ export const GROUPS: Array<{ key: string; title?: string; items: Item[] }> = [
       { href: ROUTES.adminSyncLogs, label: ADMIN_NAV.logs, Icon: LogIcon },
     ],
   },
-  {
-    key: "review",
-    title: ADMIN_NAV.groupReview,
-    items: [
-      { href: ROUTES.adminMatches, label: ADMIN_NAV.matches, short: ADMIN_NAV.tabShort.matches, Icon: LinkIcon, pick: (c) => ({ n: c.matches }) },
-      { href: ROUTES.adminDataIssues, label: ADMIN_NAV.dataIssues, Icon: SearchCheckIcon, pick: (c) => ({ n: c.dataIssues }) },
-      {
-        href: ROUTES.adminCompanies,
-        label: ADMIN_NAV.companies,
-        Icon: BuildingIcon,
-        pick: (c) => ({ n: c.companies, capped: c.companiesCapped }),
-      },
-      { href: ROUTES.adminCompanyClaims, label: ADMIN_NAV.companyClaims, Icon: BuildingIcon, pick: (c) => ({ n: c.companyClaims }) },
-      { href: ROUTES.adminPreorder, label: ADMIN_NAV.preorder, Icon: CalendarIcon, pick: (c) => ({ n: c.preorder }) },
-    ],
-  },
-  {
-    // 사람이 올린 것을 보는 자리(2026-10-26, 기획서 v2.0 2.2 운영진: 등록 승인, 노출 관리, 부적절한 글 숨김).
-    // 게시글은 배지가 없다 — 신고 장치가 없어 쌓이는 큐가 아니라 훑어보는 목록이다(admin/posts 머리 주석)
-    key: "community",
-    title: ADMIN_NAV.groupCommunity,
-    items: [
-      { href: ROUTES.adminIndie, label: ADMIN_NAV.indie, short: ADMIN_NAV.tabShort.indie, Icon: GamepadIcon, pick: (c) => ({ n: c.indie }) },
-      { href: ROUTES.adminPosts, label: ADMIN_NAV.posts, Icon: ChatIcon },
-    ],
-  },
-  {
-    // 입점 신청이 들어와야 상품 매핑이 생긴다 — 한 흐름이라 신청을 앞에 둔다
-    key: "shops",
-    title: ADMIN_NAV.groupShops,
-    items: [
-      { href: ROUTES.shopsAdmin, label: ADMIN_NAV.shops, Icon: StoreIcon, pick: (c) => ({ n: c.shops }) },
-      { href: ROUTES.adminProducts, label: ADMIN_NAV.products, Icon: BoxIcon, pick: (c) => ({ n: c.products }) },
-    ],
-  },
-  // 통계, 시스템은 쌓이는 일이 없어 배지가 없다. 업무 현황판 기둥 번호가 메뉴 묶음 순서를 따르므로(work-board) 일 묶음 뒤에 둔다
+  // 통계, 시스템은 쌓이는 일이 없어 배지가 없다. 일 상위메뉴 뒤에 둔다
   {
     key: "stats",
     title: ADMIN_NAV.groupStats,
@@ -155,16 +157,17 @@ export const GROUPS: Array<{ key: string; title?: string; items: Item[] }> = [
       { href: ROUTES.adminPrograms, label: ADMIN_NAV.programs, Icon: ToggleListIcon },
       { href: ROUTES.adminNotifyTemplates, label: ADMIN_NAV.notifyTemplates, Icon: TemplateIcon },
       { href: ROUTES.adminNotifySends, label: ADMIN_NAV.notifySends, Icon: SendIcon },
-      { href: ROUTES.adminGuide, label: ADMIN_NAV.guide, Icon: BookIcon },
     ],
   },
+  // 서비스안내서는 일하는 화면이 아니라 도움말이라 시스템관리에서 꺼내 기둥 바닥에 둔다(2026-11-19)
+  { key: "guide", pinned: true, items: [{ href: ROUTES.adminGuide, label: ADMIN_NAV.guide, Icon: BookIcon }] },
 ];
 
 export const ITEMS = GROUPS.flatMap((g) => g.items);
 
 /**
- * 휴대폰 허용 표만 거른 묶음. 메뉴는 이것을 바로 쓰지 않고 program-policy 의 useMenuGroups(노출, 사용 여부까지 거른다)를 쓴다.
- * 휴대폰이면 닫은 화면(lib/admin/mobile 의 off)을 빼고, 다 빠진 묶음은 제목째 걷는다 —
+ * 휴대폰 허용 표만 거른 상위메뉴. 메뉴는 이것을 바로 쓰지 않고 program-policy 의 useMenuGroups(노출, 사용 여부까지 거른다)를 쓴다.
+ * 휴대폰이면 닫은 화면(lib/admin/mobile 의 off)을 빼고, 다 빠진 상위메뉴는 제목째 걷는다 —
  * 눌러서 "PC에서 열어 주세요" 를 보게 하느니 처음부터 안 보이는 편이 낫다. 주소로 들어오면 그 자리에서 안내한다(mobile-policy).
  */
 export function groupsFor(mobile: boolean): typeof GROUPS {

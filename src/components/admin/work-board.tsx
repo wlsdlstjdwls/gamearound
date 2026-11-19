@@ -1,4 +1,4 @@
-// 관리자 첫 화면 업무 현황판 — 메뉴 묶음마다 기둥 하나, 기둥 안 줄 하나가 "그 화면에 쌓인 일 N건" 이다.
+// 관리자 첫 화면 업무 현황판 — 상위메뉴마다 기둥 하나, 기둥 안 줄 하나가 "그 화면에 쌓인 일 N건" 이다.
 //
 // 본보기는 신세계TV 백오피스 첫 화면이다(2026-10-29, 사용자 "관리자 화면이 어렵다"). 그 화면에서 가져온 것 넷:
 //   1. 업무 단계마다 번호 붙은 기둥 — 메뉴 순서와 같은 번호라 "3번 수집" 이 왼쪽 기둥의 어디인지 바로 잇는다.
@@ -19,13 +19,14 @@ import { InfoTip } from "@/components/ui/tooltip";
 import { panelClass } from "@/components/ui/page";
 import { PENDING_COMPANIES_LIMIT } from "@/server/services/admin-companies";
 import { PROMO_ENDING_SOON_DAYS, type AdminBoard } from "@/server/services/admin-workload";
+import { isProgramShown, type ProgramSettings } from "@/lib/admin/programs";
 
 type Weight = "queue" | "money" | "info";
 type Line = { label: string; hint: string; href: string; n: number; weight: Weight; /** 건수 대신 세울 값(금액 등) */ value?: string; capped?: boolean };
 type Column = { key: string; title: string; lines: Line[] };
 
-/** 기둥 순서는 메뉴 묶음 순서와 같다(admin-nav-items 의 GROUPS) — 번호가 메뉴 자리를 가리키게 */
-function columnsOf(b: AdminBoard): Column[] {
+/** 기둥 순서는 상위메뉴 순서와 같다(admin-nav-items 의 GROUPS) — 번호가 메뉴 자리를 가리키게. 줄은 그 줄이 가는 화면의 상위메뉴 기둥에 선다 */
+function allColumnsOf(b: AdminBoard): Column[] {
   return [
     {
       key: "products",
@@ -43,11 +44,48 @@ function columnsOf(b: AdminBoard): Column[] {
       ],
     },
     {
-      key: "ops",
-      title: ADMIN_NAV.groupOps,
+      key: "tasks",
+      title: ADMIN_NAV.tasks,
       lines: [
         { label: M.tasksTodo, hint: M.tasksTodoHint, href: ROUTES.adminTasks, n: b.tasksTodo, weight: "queue" },
         { label: M.tasksDoing, hint: M.tasksDoingHint, href: ROUTES.adminTasks, n: b.tasksDoing, weight: "info" },
+      ],
+    },
+    {
+      key: "approvals",
+      title: ADMIN_NAV.groupApprovals,
+      lines: [
+        { label: M.matches, hint: M.matchesHint, href: ROUTES.adminMatches, n: b.matches, weight: "queue" },
+        { label: M.indieReview, hint: M.indieReviewHint, href: ROUTES.adminIndie, n: b.indieReview, weight: "queue" },
+        { label: M.indieReported, hint: M.indieReportedHint, href: `${ROUTES.adminIndie}?tab=reported`, n: b.indieReported, weight: "queue" },
+        { label: M.indieLinks, hint: M.indieLinksHint, href: `${ROUTES.adminIndie}?tab=links`, n: b.indieLinks, weight: "queue" },
+        { label: M.companyClaims, hint: M.companyClaimsHint, href: ROUTES.adminCompanyClaims, n: b.companyClaims, weight: "queue" },
+        { label: M.shops, hint: M.shopsHint, href: ROUTES.shopsAdmin, n: b.shops, weight: "queue" },
+      ],
+    },
+    {
+      key: "review",
+      title: ADMIN_NAV.groupReview,
+      lines: [
+        { label: M.dataIssues, hint: M.dataIssuesHint, href: ROUTES.adminDataIssues, n: b.dataIssues, weight: "queue" },
+        {
+          label: M.companies,
+          hint: M.companiesHint(PENDING_COMPANIES_LIMIT),
+          href: ROUTES.adminCompanies,
+          n: b.companies,
+          weight: "queue",
+          capped: b.companiesCapped,
+        },
+        { label: M.products, hint: M.productsHint, href: ROUTES.adminProducts, n: b.products, weight: "queue" },
+      ],
+    },
+    {
+      key: "content",
+      title: ADMIN_NAV.groupContent,
+      lines: [
+        { label: M.preorder, hint: M.preorderHint, href: ROUTES.adminPreorder, n: b.preorder, weight: "queue" },
+        { label: M.postsToday, hint: M.postsTodayHint, href: ROUTES.adminPosts, n: b.postsToday, weight: "info" },
+        { label: M.commentsToday, hint: M.commentsTodayHint, href: `${ROUTES.adminPosts}?tab=comments`, n: b.commentsToday, weight: "info" },
       ],
     },
     {
@@ -58,44 +96,17 @@ function columnsOf(b: AdminBoard): Column[] {
         { label: M.failedRunsToday, hint: M.failedRunsTodayHint, href: ROUTES.adminSyncLogs, n: b.failedRunsToday, weight: "queue" },
       ],
     },
-    {
-      key: "review",
-      title: ADMIN_NAV.groupReview,
-      lines: [
-        { label: M.matches, hint: M.matchesHint, href: ROUTES.adminMatches, n: b.matches, weight: "queue" },
-        { label: M.dataIssues, hint: M.dataIssuesHint, href: ROUTES.adminDataIssues, n: b.dataIssues, weight: "queue" },
-        {
-          label: M.companies,
-          hint: M.companiesHint(PENDING_COMPANIES_LIMIT),
-          href: ROUTES.adminCompanies,
-          n: b.companies,
-          weight: "queue",
-          capped: b.companiesCapped,
-        },
-        { label: M.companyClaims, hint: M.companyClaimsHint, href: ROUTES.adminCompanyClaims, n: b.companyClaims, weight: "queue" },
-        { label: M.preorder, hint: M.preorderHint, href: ROUTES.adminPreorder, n: b.preorder, weight: "queue" },
-      ],
-    },
-    {
-      key: "community",
-      title: ADMIN_NAV.groupCommunity,
-      lines: [
-        { label: M.indieReview, hint: M.indieReviewHint, href: ROUTES.adminIndie, n: b.indieReview, weight: "queue" },
-        { label: M.indieReported, hint: M.indieReportedHint, href: `${ROUTES.adminIndie}?tab=reported`, n: b.indieReported, weight: "queue" },
-        { label: M.indieLinks, hint: M.indieLinksHint, href: `${ROUTES.adminIndie}?tab=links`, n: b.indieLinks, weight: "queue" },
-        { label: M.postsToday, hint: M.postsTodayHint, href: ROUTES.adminPosts, n: b.postsToday, weight: "info" },
-        { label: M.commentsToday, hint: M.commentsTodayHint, href: `${ROUTES.adminPosts}?tab=comments`, n: b.commentsToday, weight: "info" },
-      ],
-    },
-    {
-      key: "shops",
-      title: ADMIN_NAV.groupShops,
-      lines: [
-        { label: M.shops, hint: M.shopsHint, href: ROUTES.shopsAdmin, n: b.shops, weight: "queue" },
-        { label: M.products, hint: M.productsHint, href: ROUTES.adminProducts, n: b.products, weight: "queue" },
-      ],
-    },
   ];
+}
+
+/**
+ * 프로그램관리에서 숨긴 화면으로 가는 줄은 뺀다(2026-11-19). 메뉴에 없는 상품관리, 주문관리가 판에만 1, 2번으로 서면
+ * 메뉴와 판이 다른 말을 하고, 눌러도 막힌 화면이다. 줄이 다 빠진 기둥은 통째로 걷는다
+ */
+function columnsOf(b: AdminBoard, settings: ProgramSettings): Column[] {
+  return allColumnsOf(b)
+    .map((c) => ({ ...c, lines: c.lines.filter((l) => isProgramShown(settings, l.href.split("?")[0])) }))
+    .filter((c) => c.lines.length > 0);
 }
 
 /** 쌓인 일 줄의 합. 훑어볼 양(info)은 빼고 센다 — 화면 머리의 "쌓인 일이 없어요" 와 기둥 머리 숫자가 같은 규칙을 쓴다 */
@@ -103,8 +114,8 @@ function pendingOfLines(lines: Line[]): number {
   return lines.filter((l) => l.weight !== "info").reduce((n, l) => n + l.n, 0);
 }
 
-export function boardPending(b: AdminBoard): number {
-  return pendingOfLines(columnsOf(b).flatMap((c) => c.lines));
+export function boardPending(b: AdminBoard, settings: ProgramSettings): number {
+  return pendingOfLines(columnsOf(b, settings).flatMap((c) => c.lines));
 }
 
 const DOT: Record<Exclude<Weight, "info">, string> = { queue: "bg-acc", money: "bg-danger" };
@@ -184,8 +195,18 @@ function MobileBoard({ columns }: { columns: Column[] }) {
   );
 }
 
-export function WorkBoard({ board, mobile = false }: { board: AdminBoard; /** 휴대폰이면 두 묶음 판(MobileBoard) */ mobile?: boolean }) {
-  const columns = columnsOf(board);
+export function WorkBoard({
+  board,
+  settings,
+  mobile = false,
+}: {
+  board: AdminBoard;
+  /** 프로그램 노출, 사용 여부(services/admin-programs). 숨긴 화면의 줄을 거른다 */
+  settings: ProgramSettings;
+  /** 휴대폰이면 두 칸 판(MobileBoard) */
+  mobile?: boolean;
+}) {
+  const columns = columnsOf(board, settings);
   if (mobile) return <MobileBoard columns={columns} />;
   // 같은 줄의 기둥은 높이를 맞춘다(2026-10-29 사용자 "높이가 다 달라 보기 불편") — 판 바닥이 들쭉날쭉하면 줄을 따라 읽지 못한다
   return (
@@ -217,5 +238,34 @@ export function WorkBoard({ board, mobile = false }: { board: AdminBoard; /** �
   );
 }
 
-/** 기둥 수, 줄 수를 실물과 맞춘 뼈대(admin/loading). 본문이 올 때 판이 밀리지 않게 */
-export const WORK_BOARD_SHAPE = [1, 4, 2, 2, 4, 5, 2] as const;
+/** 숫자를 아직 모를 때 기둥 꼴만 세는 빈 판 */
+const EMPTY_BOARD: AdminBoard = {
+  asOf: 0,
+  refundRequests: 0,
+  boostMissing: 0,
+  monthPaid: 0,
+  membershipsPastDue: 0,
+  promosEndingSoon: 0,
+  tasksTodo: 0,
+  tasksDoing: 0,
+  sourcesAttention: 0,
+  failedRunsToday: 0,
+  matches: 0,
+  dataIssues: 0,
+  companies: 0,
+  companiesCapped: false,
+  companyClaims: 0,
+  preorder: 0,
+  indieReview: 0,
+  indieReported: 0,
+  indieLinks: 0,
+  postsToday: 0,
+  commentsToday: 0,
+  shops: 0,
+  products: 0,
+};
+
+/** 기둥마다 줄 수. 뼈대(admin/loading)가 실물과 같은 꼴로 서게 같은 거르기를 거친다 — 숨긴 화면이 바뀌면 뼈대도 따라 바뀐다 */
+export function workBoardShape(settings: ProgramSettings): number[] {
+  return columnsOf(EMPTY_BOARD, settings).map((c) => c.lines.length);
+}

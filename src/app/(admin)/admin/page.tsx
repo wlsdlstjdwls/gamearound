@@ -15,14 +15,21 @@ import { getAdminBoard, type AdminBoard } from "@/server/services/admin-workload
 import { getDashboardTrend } from "@/server/services/stats";
 import { presetPeriod } from "@/lib/stats/period";
 import { isMobileDevice } from "@/server/device";
+import { getProgramSettings } from "@/server/services/admin-programs";
+import type { ProgramSettings } from "@/lib/admin/programs";
 
 export const metadata: Metadata = { title: ADMIN_NAV.board };
 
 export default async function AdminBoardPage() {
   await requireRoleOrForbid("admin");
   // 한 칸의 질의가 넘어져도 화면은 선다 — 첫 화면이 500 이면 메뉴로도 못 간다
-  const [board, mobile]: [AdminBoard | null, boolean] = await Promise.all([getAdminBoard().catch(() => null), isMobileDevice()]);
-  const pending = board ? boardPending(board) : 0;
+  // 프로그램 설정은 레이아웃이 이미 읽은 캐시라 왕복이 거의 없다(services/admin-programs). 숨긴 화면의 줄을 판에서 거른다
+  const [board, mobile, programs]: [AdminBoard | null, boolean, ProgramSettings] = await Promise.all([
+    getAdminBoard().catch(() => null),
+    isMobileDevice(),
+    getProgramSettings(),
+  ]);
+  const pending = board ? boardPending(board, programs) : 0;
 
   return (
     <section className="flex flex-col gap-4">
@@ -37,7 +44,7 @@ export default async function AdminBoardPage() {
           )
         }
       />
-      {board ? <WorkBoard board={board} mobile={mobile} /> : <p className="rounded-xl bg-surface-2 px-4 py-3 text-[12.5px] text-mut">{M.failed}</p>}
+      {board ? <WorkBoard board={board} settings={programs} mobile={mobile} /> : <p className="rounded-xl bg-surface-2 px-4 py-3 text-[12.5px] text-mut">{M.failed}</p>}
       {/* 추이 그래프는 판 다음이다(components/admin/dashboard-trends). 판을 기다리게 하지 않게 따로 읽고, 못 읽으면 줄을 비운다 */}
       <Suspense fallback={null}>
         <Trends />

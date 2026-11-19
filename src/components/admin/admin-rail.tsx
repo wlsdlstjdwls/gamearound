@@ -115,8 +115,11 @@ export function AdminRail({
   const pathname = useActivePath() ?? current;
   useTrackRecent(pathname);
   // 메뉴 표에 없는 주소(이름이 바뀐 옛 칸)와 프로그램관리에서 끈 칸은 조용히 빠진다
-  const groups = useMenuGroups();
-  const allowed = groups.flatMap((g) => g.items);
+  const menuGroups = useMenuGroups();
+  // 바닥에 따로 서는 칸(서비스안내서). 전체 메뉴, 즐겨찾기 어느 쪽을 보든 같은 자리에 있다
+  const groups = menuGroups.filter((g) => !g.pinned);
+  const pinned = menuGroups.filter((g) => g.pinned).flatMap((g) => g.items);
+  const allowed = menuGroups.flatMap((g) => g.items);
   const favorites = useFavorites();
   const favoriteItems = (favorites ?? []).map((h) => allowed.find((i) => i.href === h)).filter((i): i is Item => Boolean(i));
   // 즐겨찾기 쪽은 제목 없는 묶음 하나다 — 제목 없는 묶음은 상위 칸 꼴로, 접히지 않고 선다
@@ -267,6 +270,27 @@ export function AdminRail({
           );
         })}
       </nav>
+
+      {/* 도움말 자리(서비스안내서). 메뉴가 길어 굴러가도 늘 같은 자리에 보이게 기둥 바닥 위에 붙인다 */}
+      {pinned.length > 0 && (
+        <div className={cn("flex shrink-0 flex-col gap-px border-t border-line py-1.5", collapsed ? "items-center px-1.5" : "px-2.5")}>
+          {pinned.map((item) => {
+            const active = isActive(pathname, item.href);
+            return collapsed ? (
+              <CollapsedItem key={item.href} item={item} active={active} counts={counts} onSoon={onSoon} />
+            ) : (
+              <Link key={item.href} href={item.href} aria-current={active ? "page" : undefined} className={cn(
+                  // 하위 칸 글씨 크기에 그림만 단다. 왼쪽 막대는 안내선이 없는 자리라 빼고 면 색으로만 고른 칸을 가른다
+                  "press flex min-h-[var(--touch-target)] items-center gap-2 rounded-md px-2.5 text-[13px] transition-colors [@media(pointer:fine)]:min-h-8",
+                  active ? "bg-acc-soft font-semibold text-acc" : "font-medium text-mut hover:bg-surface-2 hover:text-ink",
+                )}
+              >
+                <ItemBody item={item} active={false} counts={counts} iconSize={15} badgeClassName="ml-auto" icon />
+              </Link>
+            );
+          })}
+        </div>
+      )}
 
       {/* 바닥: 머리띠에서 옮겨 온 내 자리(테마, 찜, 알림, 계정). 판은 오른쪽 위로 펴진다(placement "rail") */}
       <div className={cn("flex shrink-0 border-t border-line py-2", collapsed ? "flex-col items-center gap-1 px-1.5" : "items-center justify-between gap-1 px-2.5")}>
