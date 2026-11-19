@@ -307,10 +307,10 @@ function PanelPortal({ children }: { children: React.ReactNode }) {
   return panel ? createPortal(children, panel) : null;
 }
 
-/** 기다림 표시. 조금 늦게 떠서(fade-in 지연) 빨리 끝나는 저장, 조회에는 깜빡이지 않는다. 판이 화면보다 길어도 원은 보이는 자리에 붙어 있다(sticky) */
+/** 기다림 표시. 흐리지 않고 흰 막만 살짝 얹는다(bg-surface 40%, 2026-11-19 사용자 "흐려지는 거 대신 흰 투명 배경이 살짝"). 조금 늦게 떠서(fade-in 지연) 빨리 끝나는 저장, 조회에는 깜빡이지 않는다. 판이 화면보다 길어도 원은 보이는 자리에 붙어 있다(sticky) */
 function BusyOverlay({ block, label }: { block: boolean; label: string }) {
   return (
-    <div data-busy-overlay className={cn("absolute inset-0 z-30 animate-fade-in [animation-delay:var(--duration-fast)]", !block && "pointer-events-none")}>
+    <div data-busy-overlay className={cn("absolute inset-0 z-30 rounded-[inherit] bg-surface/40 animate-fade-in [animation-delay:var(--duration-fast)]", !block && "pointer-events-none")}>
       <div role="status" className="sticky top-[40vh] mx-auto mt-24 flex w-fit items-center justify-center text-acc">
         <SpinnerIcon size={36} />
         <span className="sr-only">{label}</span>
