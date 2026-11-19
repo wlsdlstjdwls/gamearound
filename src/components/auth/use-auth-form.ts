@@ -18,9 +18,11 @@ type Options<S extends z.ZodType> = {
    * onBlur 가 이 참조에 매여 있으니 렌더마다 새로 만들지 말고 모듈 상수로 넘긴다.
    */
   remoteChecks?: Readonly<Record<string, (value: string) => Promise<string | null>>>;
+  /** 성공해서 문서를 새로 열기 바로 전(관리자 로그인이 진입 인사 표식을 심는다, lib/admin/greeting) */
+  beforeNavigate?: () => void;
 };
 
-export function useAuthForm<S extends z.ZodType>({ schema, toInput, serverState, submit, remoteChecks }: Options<S>) {
+export function useAuthForm<S extends z.ZodType>({ schema, toInput, serverState, submit, remoteChecks, beforeNavigate }: Options<S>) {
   const formRef = useRef<HTMLFormElement>(null);
   const [clientErrors, setClientErrors] = useState<Record<string, string>>({});
   // onBlur 가 지금 떠 있는 오류를 보려고 둔다 — state 를 의존성에 넣으면 칸마다 핸들러가 매번 새로 생긴다
@@ -58,8 +60,9 @@ export function useAuthForm<S extends z.ZodType>({ schema, toInput, serverState,
   const navigating = Boolean(serverState?.ok);
   useEffect(() => {
     if (!serverState?.ok) return;
+    beforeNavigate?.();
     window.location.replace(serverState.redirectTo);
-  }, [serverState]);
+  }, [serverState, beforeNavigate]);
 
   const validateAll = useCallback((): Record<string, string> => {
     const form = formRef.current;

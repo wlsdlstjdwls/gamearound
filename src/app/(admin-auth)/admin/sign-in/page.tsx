@@ -10,11 +10,11 @@
 // 사이트 머리띠와 푸터는 globals.css 의 `body:has([data-admin-sign-in])` 가 걷는다(관리자 콘솔이 넓은 화면에서 머리띠를 걷는 것과 같은 결).
 import type { Metadata } from "next";
 import Link from "next/link";
-import { redirect } from "next/navigation";
 import { AUTH_MESSAGES as M } from "@/lib/auth/messages";
 import { adminNextPath } from "@/lib/auth/sign-in-path";
 import { ROUTES } from "@/lib/routes";
 import { SITE } from "@/lib/site";
+import { AdminEntering } from "@/components/auth/admin-entering";
 import { SignInForm } from "@/components/auth/sign-in-form";
 import { BrandSymbol } from "@/components/ui/logo";
 import { Page, Panel } from "@/components/ui/page";
@@ -26,9 +26,10 @@ export default async function AdminSignInPage({ searchParams }: { searchParams: 
   const sp = await searchParams;
   const next = adminNextPath(Array.isArray(sp.next) ? sp.next[0] : sp.next);
 
-  // 이미 관리자로 들어와 있으면 칸을 보일 이유가 없다. 회원 계정으로 들어와 있으면 칸을 그대로 보인다 — 관리자 계정으로 바꿔 들어오는 자리다
+  // 이미 관리자로 들어와 있으면 칸 대신 "들어가는 중" 을 세우고 문서를 새로 연다(서버 redirect 를 안 쓰는 까닭은 components/auth/admin-entering).
+  // 회원 계정으로 들어와 있으면 칸을 그대로 보인다 — 관리자 계정으로 바꿔 들어오는 자리다
   const user = await getCurrentUser().catch(() => null);
-  if (user?.role === "admin") redirect(next);
+  const entering = user?.role === "admin";
 
   return (
     <Page pad="auth" data-admin-sign-in className="flex-1 items-center justify-center">
@@ -43,7 +44,7 @@ export default async function AdminSignInPage({ searchParams }: { searchParams: 
             <p className="text-[13px] text-mut">{M.adminSignInSubtitle}</p>
           </div>
         </div>
-        <SignInForm next={next} admin />
+        {entering ? <AdminEntering next={next} /> : <SignInForm next={next} admin />}
         <Link href={ROUTES.home} className="inline-flex h-11 items-center justify-center text-[13px] text-mut underline-offset-4 hover:text-ink hover:underline">
           {M.adminSignInToService}
         </Link>

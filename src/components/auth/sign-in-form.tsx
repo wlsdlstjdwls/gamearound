@@ -4,6 +4,7 @@ import { useActionState, useRef } from "react";
 import { adminSignInAction, signInAction } from "@/app/(auth)/actions";
 import { AUTH_MESSAGES as M } from "@/lib/auth/messages";
 import { signInInputFromForm, signInSchema } from "@/lib/auth/schemas";
+import { markAdminGreeting } from "@/lib/admin/greeting";
 import { stagger } from "@/lib/motion";
 import { ROUTES } from "@/lib/routes";
 import { focusNextOnEnter, useAuthForm } from "@/components/auth/use-auth-form";
@@ -23,6 +24,7 @@ export function SignInForm({ next, admin = false }: { next: string; admin?: bool
     toInput: signInInputFromForm,
     serverState: state,
     submit: formAction,
+    beforeNavigate: admin ? markAdminGreeting : undefined,
   });
   const passwordRef = useRef<HTMLInputElement>(null);
   const busy = pending || navigating;
