@@ -20,6 +20,7 @@ import { Button } from "@/components/ui/button";
 import { ArrowLeftIcon } from "@/components/ui/icons";
 import { useTooltip } from "@/components/ui/tooltip";
 import { FormSelect } from "@/components/ui/select/fields";
+import { cn } from "@/lib/cn";
 import { ADMIN_NAV, GRANTS_MESSAGES as M } from "@/lib/admin/messages";
 import { FULL_GRANT, isLockedCell, NO_GRANT, SELF_LOCKED, type ProgramGrant, type ProgramPerm } from "@/lib/admin/grants";
 import type { AdminAccountDto, GrantRowDto } from "@/server/services/admin-grants";
@@ -29,6 +30,9 @@ const ALL = "all";
 const PERM_ORDER: readonly ProgramPerm[] = ["read", "insert", "delete", "save", "excel"];
 
 type GroupRow = { key: string; name: string; count: number };
+type Side = "off" | "on";
+/** 끌어 놓기로 실어 나르는 값의 형식 이름. 다른 화면의 끌기(파일 등)는 받지 않는다 */
+const DRAG_TYPE = "application/x-admin-programs";
 
 export function UserProgramsScreen({ accounts, rows, meId }: { accounts: AdminAccountDto[]; rows: Record<string, GrantRowDto[]>; meId: string }) {
   const draft = useGrantDraft(accounts, rows, saveUserProgramsAction);
@@ -39,6 +43,9 @@ export function UserProgramsScreen({ accounts, rows, meId }: { accounts: AdminAc
   const [offChecked, setOffChecked] = useState<Set<string>>(() => new Set());
   const [onChecked, setOnChecked] = useState<Set<string>>(() => new Set());
   const [selected, setSelected] = useState<string | null>(null);
+  /** 지금 끌고 있는 줄이 어느 목록에서 왔나. 반대쪽 목록만 받을 자리로 밝힌다 */
+  const [dragFrom, setDragFrom] = useState<Side | null>(null);
+  const [dropOver, setDropOver] = useState<Side | null>(null);
 
   const nameOf = (id: string) => accounts.find((a) => a.id === id)?.name ?? "";
   const locked = (href: string, perm: ProgramPerm) => isLockedCell(meId, userId, href, perm);
@@ -61,15 +68,14 @@ export function UserProgramsScreen({ accounts, rows, meId }: { accounts: AdminAc
     setSelected(null);
   };
 
-  const grant = () => {
-    const hrefs = offRows.filter((p) => offChecked.has(p.href)).map((p) => p.href);
+  const grant = (hrefs = offRows.filter((p) => offChecked.has(p.href)).map((p) => p.href)) => {
     if (hrefs.length === 0) return say(M.pickToGrant, "error");
     draft.commit(userId, hrefs, () => FULL_GRANT, () => M.granted(hrefs.length));
     resetChecks();
   };
 
-  const revoke = () => {
-    const picked = onRows.filter((p) => onChecked.has(p.href));
+  const revoke = (pickedHrefs = onRows.filter((p) => onChecked.has(p.href)).map((p) => p.href)) => {
+    const picked = onRows.filter((p) => pickedHrefs.includes(p.href));
     if (picked.length === 0) return say(M.pickToRevoke, "error");
     // 늘 켜진 칸(대시보드 조회, 내 권한 화면 조회, 저장)이 걸린 줄은 회수할 수 없다 — 빼고 나머지만 거둔다
     const hrefs = picked.filter((p) => !locked(p.href, "read")).map((p) => p.href);
@@ -77,6 +83,47 @@ export function UserProgramsScreen({ accounts, rows, meId }: { accounts: AdminAc
     draft.commit(userId, hrefs, () => NO_GRANT, (n) => (hrefs.length < picked.length ? `${M.revoked(n)} ${M.lockedSkip}` : M.revoked(n)));
     resetChecks();
   };
+
+  /**
+   * 끌어 놓기(2026-11-19 사용자 "각 프로그램 드래그앤드랍으로도"). SBO 도 두 목록 사이를 끌어 옮긴다.
+   * 끈 줄이 체크돼 있으면 체크한 줄 전부를, 아니면 그 줄 하나를 옮긴다 — 화살표 단추와 같은 일을 한다(즉시 저장)
+   */
+  const dragStart = (from: Side) => (key: string, e: React.DragEvent<HTMLDivElement>) => {
+    const checked = from === "off" ? offChecked : onChecked;
+    const hrefs = checked.has(key) ? Array.from(checked) : [key];
+    e.dataTransfer.setData(DRAG_TYPE, JSON.stringify({ from, hrefs }));
+    e.dataTransfer.effectAllowed = "move";
+    setDragFrom(from);
+  };
+  const dragEnd = () => {
+    setDragFrom(null);
+    setDropOver(null);
+  };
+  const dropZone = (to: Side) => ({
+    onDragOver: (e: React.DragEvent) => {
+      if (dragFrom === null || dragFrom === to || !e.dataTransfer.types.includes(DRAG_TYPE)) return;
+      e.preventDefault();
+      e.dataTransfer.dropEffect = "move";
+      setDropOver(to);
+    },
+    onDragLeave: (e: React.DragEvent) => {
+      if (!e.currentTarget.contains(e.relatedTarget as Node | null)) setDropOver(null);
+    },
+    onDrop: (e: React.DragEvent) => {
+      e.preventDefault();
+      const raw = e.dataTransfer.getData(DRAG_TYPE);
+      dragEnd();
+      if (!raw) return;
+      const { from, hrefs } = JSON.parse(raw) as { from: Side; hrefs: string[] };
+      if (from === to) return;
+      if (to === "on") grant(hrefs);
+      else revoke(hrefs);
+    },
+    onDragEnd: dragEnd,
+  });
+  /** 받을 자리 표시: 끄는 동안 반대쪽 목록 테두리를 강조색 점선으로, 그 위에 올리면 면을 옅게 칠한다 */
+  const zoneClass = (to: Side) =>
+    cn("transition-colors duration-fast", dragFrom !== null && dragFrom !== to && "rounded-xl outline-2 outline-dashed outline-offset-2 outline-[var(--acc)]", dropOver === to && "bg-acc-soft");
 
   const copy = async () => {
     if (!copyFrom) return say(M.copyPick, "error");
@@ -93,7 +140,7 @@ export function UserProgramsScreen({ accounts, rows, meId }: { accounts: AdminAc
   };
 
   const groupColumns: GridCol<GroupRow>[] = [
-    { key: "name", label: M.menuTree, width: "minmax(90px,1fr)", value: (g) => g.name },
+    { key: "name", label: M.menuTree, width: "minmax(110px,1fr)", value: (g) => g.name },
     { key: "count", label: M.colCount, width: "48px", align: "right", value: (g) => g.count },
   ];
 
@@ -155,7 +202,7 @@ export function UserProgramsScreen({ accounts, rows, meId }: { accounts: AdminAc
           </Button>
         </SearchBand>
 
-        <div className="grid items-start gap-3 lg:grid-cols-[190px_minmax(0,0.7fr)_auto_minmax(0,1.7fr)]">
+        <div className="grid items-start gap-3 lg:grid-cols-[250px_minmax(0,0.7fr)_auto_minmax(0,1.6fr)]">
           <Pane title={M.menuTree}>
             <DataGrid
               label={M.menuTree}
@@ -171,38 +218,44 @@ export function UserProgramsScreen({ accounts, rows, meId }: { accounts: AdminAc
               fit
             />
           </Pane>
-          <Pane title={M.revokedList}>
-            <DataGrid
-              label={M.revokedList}
-              columns={offColumns}
-              rows={offRows}
-              rowKey={(p) => p.href}
-              checked={offChecked}
-              onChecked={setOffChecked}
-              empty={M.revokedEmpty}
-              fit
-            />
-          </Pane>
-          <div className="flex flex-row justify-center gap-2 lg:flex-col lg:self-center">
-            <MoveButton label={M.grant} hint={M.grantHint} onClick={grant} disabled={draft.pending} toRight />
-            <MoveButton label={M.revoke} hint={M.revokeHint} onClick={revoke} disabled={draft.pending} />
+          <div {...dropZone("off")} className={zoneClass("off")}>
+            <Pane title={M.revokedList}>
+              <DataGrid
+                label={M.revokedList}
+                columns={offColumns}
+                rows={offRows}
+                rowKey={(p) => p.href}
+                checked={offChecked}
+                onChecked={setOffChecked}
+                onRowDragStart={dragStart("off")}
+                empty={M.revokedEmpty}
+                fit
+              />
+            </Pane>
           </div>
-          <Pane title={M.grantedList}>
-            <DataGrid
-              label={M.grantedList}
-              columns={onColumns}
-              rows={onRows}
-              rowKey={(p) => p.href}
-              fileKey={(p) => ({ code: p.href, name: p.name })}
-              selected={selected}
-              onSelect={setSelected}
-              checked={onChecked}
-              onChecked={setOnChecked}
-              rowState={(p) => (draft.changed(userId, p.href) ? "changed" : undefined)}
-              empty={M.grantedEmpty}
-              fit
-            />
-          </Pane>
+          <div className="flex flex-row justify-center gap-2 lg:flex-col lg:self-center">
+            <MoveButton label={M.grant} hint={M.grantHint} onClick={() => grant()} disabled={draft.pending} toRight />
+            <MoveButton label={M.revoke} hint={M.revokeHint} onClick={() => revoke()} disabled={draft.pending} />
+          </div>
+          <div {...dropZone("on")} className={zoneClass("on")}>
+            <Pane title={M.grantedList}>
+              <DataGrid
+                label={M.grantedList}
+                columns={onColumns}
+                rows={onRows}
+                rowKey={(p) => p.href}
+                fileKey={(p) => ({ code: p.href, name: p.name })}
+                selected={selected}
+                onSelect={setSelected}
+                checked={onChecked}
+                onChecked={setOnChecked}
+                onRowDragStart={dragStart("on")}
+                rowState={(p) => (draft.changed(userId, p.href) ? "changed" : undefined)}
+                empty={M.grantedEmpty}
+                fit
+              />
+            </Pane>
+          </div>
         </div>
       </div>
     </>

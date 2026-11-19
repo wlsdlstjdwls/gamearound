@@ -74,6 +74,7 @@ export function DataGrid<T>({
   fit = false,
   bodyMax,
   fileKey,
+  onRowDragStart,
 }: {
   label: string;
   columns: GridCol<T>[];
@@ -101,6 +102,8 @@ export function DataGrid<T>({
   bodyMax?: string;
   /** 엑셀 파일 이름에 붙일 고른 줄의 코드와 이름(프로그램명_코드_명_날짜) */
   fileKey?: (row: T) => { code: string; name: string };
+  /** 넘기면 줄을 끌 수 있다. 무엇을 실어 보낼지는 부르는 화면이 정한다(사용자별프로그램관리의 부여, 회수 끌어 놓기) */
+  onRowDragStart?: (key: string, e: React.DragEvent<HTMLDivElement>) => void;
 }) {
   const id = useId();
   const { say } = useAdminStatus();
@@ -235,6 +238,8 @@ export function DataGrid<T>({
                     aria-selected={onSelect ? on : undefined}
                     tabIndex={onSelect ? (on || (selected === null && i === 0) ? 0 : -1) : undefined}
                     onClick={() => onSelect?.(key)}
+                    draggable={onRowDragStart ? true : undefined}
+                    onDragStart={onRowDragStart ? (e) => onRowDragStart(key, e) : undefined}
                     onKeyDown={(e) => {
                       if (e.target !== e.currentTarget) return;
                       if (e.key === "ArrowDown" || e.key === "ArrowUp") {
