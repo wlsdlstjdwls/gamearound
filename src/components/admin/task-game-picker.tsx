@@ -67,7 +67,7 @@ export function TaskGamePicker({ initial }: { initial?: Picked | null }) {
           {picked.slug && (
             <Link
               href={gamePath(picked.slug)}
-              className="press rounded-[7px] px-2 py-1 text-[13px] text-mut transition-colors hover:text-acc"
+              className="press rounded-[var(--radius-sm)] px-2 py-1 text-[13px] text-mut transition-colors hover:text-acc"
             >
               {TASK_MESSAGES.gamePickOpen}
             </Link>
@@ -75,7 +75,7 @@ export function TaskGamePicker({ initial }: { initial?: Picked | null }) {
           <button
             type="button"
             onClick={() => setPicked(null)}
-            className="press tap inline-flex items-center rounded-[7px] px-2 py-1 text-[13px] text-mut transition-colors hover:text-danger"
+            className="press tap inline-flex items-center rounded-[var(--radius-sm)] px-2 py-1 text-[13px] text-mut transition-colors hover:text-danger"
           >
             {TASK_MESSAGES.gamePickClear}
           </button>

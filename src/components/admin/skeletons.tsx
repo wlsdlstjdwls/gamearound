@@ -27,7 +27,7 @@ export function AdminHeadSkeleton({
         <Bone className={cn("h-[25px]", width)} />
         {lead && <Bone className="h-3.5 w-[460px] max-w-full" />}
       </div>
-      {action && <Bone className={cn("h-9 rounded-[9px]", action)} />}
+      {action && <Bone className={cn("h-9 rounded-[var(--radius-sm)]", action)} />}
     </div>
   );
 }
@@ -66,8 +66,8 @@ export function ModerationRowsSkeleton({ rows, metaLines = 1 }: { rows: number; 
           <div className="flex flex-col gap-2">
             <Bone className="h-9 w-full rounded-lg" />
             <div className="flex gap-1.5">
-              <Bone className="h-8 w-16 rounded-[9px]" />
-              <Bone className="h-8 w-16 rounded-[9px]" />
+              <Bone className="h-8 w-16 rounded-[var(--radius-sm)]" />
+              <Bone className="h-8 w-16 rounded-[var(--radius-sm)]" />
             </div>
           </div>
         </div>

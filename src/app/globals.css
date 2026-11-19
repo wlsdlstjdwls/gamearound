@@ -1040,19 +1040,21 @@ html[data-admin-area] [data-site-footer] {
 }
 
 /*
- * 관리자 화면 모서리(2026-11-19, 사용자 "어드민 화면 필드나 UI 가 둥글둥글한데 좀만 더 각지게"). 백오피스 화면이라 서비스 화면보다 각을 세운다.
- * 부품마다 rounded-* 를 고치지 않고 관리자 문서(html[data-admin-area], 탭 안 문서 포함)에서만 반경 토큰을 한 단씩 낮춘다 —
+ * 관리자 화면 모서리(2026-11-19, 사용자 "어드민 화면 필드나 UI 가 둥글둥글한데 좀만 더 각지게", 이어서 "아예 각지게"). 백오피스 화면이라 모서리를 세운다.
+ * 부품마다 rounded-* 를 고치지 않고 관리자 문서(html[data-admin-area], 탭 안 문서 포함)에서만 반경 토큰을 0 으로 둔다 —
  * 서비스 화면은 그대로이고, 관리자 부품이 새로 생겨도 같은 각을 따른다. 동그라미(rounded-full: 배지, 스위치)는 그대로 둔다
  */
 html[data-admin-area] {
-  --radius-xs: 3px;
-  --radius-sm: 5px;
-  --radius-inset: 4px;
-  --radius-md: 6px;
-  --radius-lg: 6px;
-  --radius-xl: 6px;
-  --radius-2xl: 8px;
-  --radius-panel: 8px;
+  --radius: 0px;
+  --radius-xs: 0px;
+  --radius-sm: 0px;
+  --radius-inset: 0px;
+  --radius-md: 0px;
+  --radius-lg: 0px;
+  --radius-xl: 0px;
+  --radius-2xl: 0px;
+  --radius-3xl: 0px;
+  --radius-panel: 0px;
 }
 
 /*

@@ -31,7 +31,7 @@ function ArchiveRow({ task }: { task: ArchivedTask }) {
       <details className="group">
         <summary className="press flex cursor-pointer list-none flex-col gap-1.5 px-4 py-3.5 transition-colors hover:bg-surface-2 [&::-webkit-details-marker]:hidden">
           <span className="flex min-w-0 items-center gap-2">
-            <span className={cn("shrink-0 rounded-[6px] px-1.5 py-0.5 text-[12px] font-semibold", CATEGORY_BADGE[task.category])}>
+            <span className={cn("shrink-0 rounded-[var(--radius-sm)] px-1.5 py-0.5 text-[12px] font-semibold", CATEGORY_BADGE[task.category])}>
               {name("TASK_CATEGORY", task.category)}
             </span>
             <span className="min-w-0 truncate text-[15px] font-semibold text-ink">{task.title}</span>

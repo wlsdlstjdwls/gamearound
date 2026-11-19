@@ -24,7 +24,7 @@ import { gamePath } from "@/lib/routes";
 import type { RunItem, RunSummary } from "@/server/services/admin-activity";
 import { GameLoader } from "@/components/ui/game-loader";
 
-const TAG = "rounded-[6px] px-1.5 py-0.5 text-[11px] font-semibold";
+const TAG = "rounded-[var(--radius-sm)] px-1.5 py-0.5 text-[11px] font-semibold";
 
 /** 머리의 셈 셋(새로 등록, 값 바뀜, 그대로). 상세 칸과 시트 머리가 같은 셈을 쓴다 */
 export function runCounts(run: RunSummary) {

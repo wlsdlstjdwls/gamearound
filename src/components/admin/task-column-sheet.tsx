@@ -78,10 +78,10 @@ function Row({ task, now, mine, unread, onOpen }: { task: AdminTask; now: number
       </span>
       <span className="flex min-w-0 items-center gap-1.5 text-[12.5px] text-dim">
         {task.category !== "task" && (
-          <span className={cn("shrink-0 rounded-[6px] px-1.5 py-px font-semibold", CATEGORY_BADGE[task.category])}>{name("TASK_CATEGORY", task.category)}</span>
+          <span className={cn("shrink-0 rounded-[var(--radius-sm)] px-1.5 py-px font-semibold", CATEGORY_BADGE[task.category])}>{name("TASK_CATEGORY", task.category)}</span>
         )}
         {task.priority !== "normal" && (
-          <span className={cn("shrink-0 rounded-[6px] px-1.5 py-px font-semibold", PRIORITY_BADGE[task.priority])}>{name("TASK_PRIORITY", task.priority)}</span>
+          <span className={cn("shrink-0 rounded-[var(--radius-sm)] px-1.5 py-px font-semibold", PRIORITY_BADGE[task.priority])}>{name("TASK_PRIORITY", task.priority)}</span>
         )}
         <span className={cn("min-w-0 truncate", mine && "font-semibold text-acc")}>{assigneeName(task) ?? TASK_MESSAGES.cardNoAssignee}</span>
         <span className="ml-auto shrink-0 tabular-nums">{formatAgo(task.updatedAt, now)}</span>

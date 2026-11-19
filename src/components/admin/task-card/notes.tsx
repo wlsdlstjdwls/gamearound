@@ -121,7 +121,7 @@ export function TaskNotes({ taskId, notes, readOnly = false }: { taskId: string;
                         if (!(await askConfirm(TASK_MESSAGES.noteRemoveConfirm, { confirmLabel: CONFIRM_MESSAGES.delete, tone: "danger" }))) return;
                         start(async () => setRemoveState(await deleteNoteAction(n.id)));
                       }}
-                      className="press ml-auto rounded-[5px] px-1.5 py-0.5 text-[12.5px] text-mut transition-colors hover:text-danger disabled:opacity-50"
+                      className="press ml-auto rounded-[var(--radius-sm)] px-1.5 py-0.5 text-[12.5px] text-mut transition-colors hover:text-danger disabled:opacity-50"
                     >
                       {TASK_MESSAGES.noteRemove}
                     </button>

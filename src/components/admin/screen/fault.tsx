@@ -45,7 +45,7 @@ export function AdminFault(props: Props) {
         <div className="flex min-w-0 flex-col gap-1.5">
           <p className="flex items-center gap-2 text-[12px] font-semibold text-dim">
             {M.kind}
-            <span className={cn("rounded-[6px] px-1.5 py-0.5 font-mono text-[11.5px] font-bold", error ? "bg-danger-soft text-danger" : "bg-surface-3 text-mut")}>
+            <span className={cn("rounded-[var(--radius-sm)] px-1.5 py-0.5 font-mono text-[11.5px] font-bold", error ? "bg-danger-soft text-danger" : "bg-surface-3 text-mut")}>
               {error ? M.errorCode : M.notFoundCode}
             </span>
           </p>

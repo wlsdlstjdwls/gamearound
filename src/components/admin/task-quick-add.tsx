@@ -67,7 +67,7 @@ export function TaskQuickAdd({
           // 열리는 그 렌더에서는 아직 칸이 없다 — 다음 프레임에 잡는다
           requestAnimationFrame(() => boxRef.current?.focus());
         }}
-        className="press flex w-full items-center gap-1.5 rounded-[10px] border border-dashed border-line px-2.5 py-2 text-[13px] text-dim transition-colors hover:border-acc hover:text-acc"
+        className="press flex w-full items-center gap-1.5 rounded-[var(--radius-sm)] border border-dashed border-line px-2.5 py-2 text-[13px] text-dim transition-colors hover:border-acc hover:text-acc"
       >
         <span aria-hidden className="text-[14px] leading-none">
           +
@@ -102,7 +102,7 @@ export function TaskQuickAdd({
           setOpen(false);
         }}
         className={cn(
-          "w-full resize-none rounded-[10px] bg-surface px-2.5 py-2 text-[16px] leading-[1.5] text-ink outline-none placeholder:text-dim sm:text-[13.5px]",
+          "w-full resize-none rounded-[var(--radius-sm)] bg-surface px-2.5 py-2 text-[16px] leading-[1.5] text-ink outline-none placeholder:text-dim sm:text-[13.5px]",
           "shadow-[0_0_0_1px_var(--line)] transition-[box-shadow] duration-base ease-standard",
           "focus:shadow-[0_0_0_1px_var(--acc),0_0_0_4px_var(--acc-glow)]",
           pending && "opacity-60",

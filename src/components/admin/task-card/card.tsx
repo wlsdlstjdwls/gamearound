@@ -142,12 +142,12 @@ export function TaskCard({
             <span className="shrink-0 rounded-full bg-danger px-2 py-0.5 text-[12px] font-bold text-on-ink">{TASK_MESSAGES.cardUnread(unread)}</span>
           )}
           {task.category !== "task" && (
-            <span className={cn("shrink-0 rounded-[6px] px-1.5 py-0.5 text-[12px] font-semibold", CATEGORY_BADGE[task.category])}>
+            <span className={cn("shrink-0 rounded-[var(--radius-sm)] px-1.5 py-0.5 text-[12px] font-semibold", CATEGORY_BADGE[task.category])}>
               {name("TASK_CATEGORY", task.category)}
             </span>
           )}
           {task.priority !== "normal" && (
-            <span className={cn("shrink-0 rounded-[6px] px-1.5 py-0.5 text-[12px] font-semibold", PRIORITY_BADGE[task.priority])}>
+            <span className={cn("shrink-0 rounded-[var(--radius-sm)] px-1.5 py-0.5 text-[12px] font-semibold", PRIORITY_BADGE[task.priority])}>
               {name("TASK_PRIORITY", task.priority)}
             </span>
           )}
@@ -177,10 +177,10 @@ export function TaskCard({
         {(stale !== null || task.game || task.shop || task.source) && (
           // 바닥에 붙인다(mt-auto) — 카드마다 붙임표가 같은 높이에 서야 줄이 맞는다. 줄바꿈은 안 한다(높이가 하나다)
           <div className="mt-auto flex min-w-0 shrink-0 items-center gap-1.5 overflow-hidden text-[11.5px] leading-[1.5]">
-            {stale !== null && <span className="shrink-0 rounded-[6px] bg-warn-soft px-1.5 font-semibold text-warn">{TASK_MESSAGES.cardStale(stale)}</span>}
-            {task.game && <span className="min-w-0 truncate rounded-[6px] bg-surface-3 px-1.5 text-acc">{task.game.title}</span>}
-            {task.shop && <span className="min-w-0 truncate rounded-[6px] bg-surface-3 px-1.5 text-mut">{task.shop.name}</span>}
-            {task.source && <span className="rounded-[6px] bg-surface-3 px-1.5 font-mono text-mut">{task.source}</span>}
+            {stale !== null && <span className="shrink-0 rounded-[var(--radius-sm)] bg-warn-soft px-1.5 font-semibold text-warn">{TASK_MESSAGES.cardStale(stale)}</span>}
+            {task.game && <span className="min-w-0 truncate rounded-[var(--radius-sm)] bg-surface-3 px-1.5 text-acc">{task.game.title}</span>}
+            {task.shop && <span className="min-w-0 truncate rounded-[var(--radius-sm)] bg-surface-3 px-1.5 text-mut">{task.shop.name}</span>}
+            {task.source && <span className="rounded-[var(--radius-sm)] bg-surface-3 px-1.5 font-mono text-mut">{task.source}</span>}
           </div>
         )}
         </div>
