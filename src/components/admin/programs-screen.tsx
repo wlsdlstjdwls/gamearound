@@ -112,7 +112,7 @@ export function ProgramsScreen({ settings }: { settings: ProgramSettingRowDto[] 
     {
       key: "visible",
       label: M.colVisible,
-      width: "64px",
+      width: "76px",
       align: "center",
       editable: true,
       value: (r) => (r.visible ? M.visibleLabels.on : M.visibleLabels.off),
@@ -121,7 +121,7 @@ export function ProgramsScreen({ settings }: { settings: ProgramSettingRowDto[] 
     {
       key: "active",
       label: M.colActive,
-      width: "64px",
+      width: "76px",
       align: "center",
       editable: true,
       value: (r) => (r.active ? M.activeLabels.on : M.activeLabels.off),

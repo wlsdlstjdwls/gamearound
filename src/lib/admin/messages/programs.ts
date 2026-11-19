@@ -13,8 +13,8 @@ export const PROGRAMS_MESSAGES = {
   colGroup: "메뉴묶음",
   colName: "프로그램명",
   colHref: "프로그램경로",
-  colVisible: "노출",
-  colActive: "사용",
+  colVisible: "노출여부",
+  colActive: "사용여부",
   colUpdatedBy: "수정자",
   colUpdatedAt: "수정일시",
   /** 끌 수 없는 줄의 칸 말풍선 */
