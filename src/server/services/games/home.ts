@@ -162,5 +162,16 @@ async function getHomeDataRaw(): Promise<HomeData> {
   };
 }
 
+/** 관리자 진입 인사 화면 뒤에 깔 게임 가로 배너(lib/admin/greeting). 홈 캐시에서 뽑아 따로 질의하지 않는다. 못 읽으면 빈 배열 */
+export async function getGreetCovers(limit: number): Promise<string[]> {
+  try {
+    const d = await getHomeData();
+    const urls = [...d.popular, ...d.discounts, ...d.recentReleases, ...d.storeDeals].map((g) => g.coverUrl).filter((u): u is string => !!u);
+    return Array.from(new Set(urls)).slice(0, limit);
+  } catch {
+    return [];
+  }
+}
+
 /** 홈 데이터 — 태그 `home`. 크롤러 완료 시 /api/revalidate 가 항상 무효화 */
 export const getHomeData = unstable_cache(getHomeDataRaw, [DTO_CACHE_VERSION, "home"], { tags: ["home"], revalidate: LIST_REVALIDATE_SECONDS });

@@ -1089,19 +1089,19 @@ html[data-admin-frame] [data-admin-greet] {
   opacity: 0;
   pointer-events: none;
 }
-/* 뒤 그림은 이미 흑백 파일이다. 인사가 머무는 동안 천천히 당겨 오고(fitin 의 ken-burns), 덮개로 눌러 글자를 세운다.
-   fitin 은 사진이라 82% 한 겹이면 됐지만 우리 그림은 글자 많은 표라 가운데 글자와 겹쳐 읽혔다 —
-   그림을 살짝 흐리고(--overlay-blur), 덮개는 가운데를 더 진하게(94%) 가장자리는 fitin 값(82%)으로 둔다 */
-.admin-greet-backdrop {
-  filter: blur(var(--overlay-blur));
-  animation: greet-kenburns 6s var(--ease-standard) both;
+/* 뒤 그림은 게임 가로 배너 벽이다(2026-11-19 사용자 "뒷 배경에 게임 이미지"). 화면보다 넓게 깔아 비스듬히 돌리고 천천히 흘린다 —
+   네모 벽이 반듯하면 표처럼 읽히고, 멈춰 있으면 사진 한 장이다. 배너가 원색이라 덮개는 가운데를 진하게(94%) 가장자리는 fitin 값(82%)으로 눌러 글자를 세운다 */
+.admin-greet-wall {
+  inset: -25% -20%;
+  transform: rotate(-8deg);
+  animation: greet-drift 8s linear both;
 }
 .admin-greet-scrim {
-  background: radial-gradient(ellipse at center, color-mix(in oklab, var(--bg) 94%, transparent) 0%, color-mix(in oklab, var(--bg) 82%, transparent) 70%);
+  background: radial-gradient(ellipse at center, color-mix(in oklab, var(--bg) 94%, transparent) 0%, color-mix(in oklab, var(--bg) 80%, transparent) 75%);
 }
-@keyframes greet-kenburns {
-  from { transform: scale(1.08); }
-  to { transform: scale(1); }
+@keyframes greet-drift {
+  from { transform: rotate(-8deg) translateX(0); }
+  to { transform: rotate(-8deg) translateX(-4%); }
 }
 @keyframes greet-mark {
   from { opacity: 0; transform: scale(0.88); }

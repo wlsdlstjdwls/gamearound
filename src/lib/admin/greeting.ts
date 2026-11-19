@@ -13,20 +13,12 @@ export const ADMIN_GREET_COOKIE = "admin-greet";
 /** 표식 수명(초). 로그인 뒤 첫 문서가 늦게 떠도 남아 있고, 못 지운 표식이 다음 날 뜨지는 않을 만큼 */
 export const ADMIN_GREET_MAX_AGE_SECONDS = 60;
 
-/**
- * 로그인 폼이 이동 직전에 부른다. 브라우저가 심은 쿠키도 다음 요청에 실려 레이아웃이 읽는다.
- * 값은 뒤 그림 순번이다 — 여기서 고르면 서버 그림과 클라이언트 그림이 같은 장을 쓴다(렌더 중에 고르면 매번 달라진다)
- */
+/** 로그인 폼이 이동 직전에 부른다. 브라우저가 심은 쿠키도 다음 요청에 실려 레이아웃이 읽는다 */
 export function markAdminGreeting() {
-  const pick = Math.floor(Math.random() * GREET_BACKDROPS.length);
-  document.cookie = `${ADMIN_GREET_COOKIE}=${pick}; Max-Age=${ADMIN_GREET_MAX_AGE_SECONDS}; path=/; SameSite=Lax`;
+  document.cookie = `${ADMIN_GREET_COOKIE}=1; Max-Age=${ADMIN_GREET_MAX_AGE_SECONDS}; path=/; SameSite=Lax`;
 }
 
-/** 쿠키 값 -> 뒤 그림 주소. 표식이 없거나 엉뚱하면 null(인사 화면을 띄우지 않는다) */
-export function greetBackdropOf(value: string | undefined): string | null {
-  if (value === undefined || !/^\d+$/.test(value)) return null;
-  return GREET_BACKDROPS[Number(value)] ?? null;
-}
+export const isGreetMark = (value: string | undefined) => value === "1";
 
 /**
  * 단계별 머무는 시간(ms). fitin 값(문구 950, 결과 1400, 사라짐 800)에서 문구만 줄였다 — 우리는 권한을 이미 들고 와서 기다릴 일이 없고,
@@ -35,8 +27,7 @@ export function greetBackdropOf(value: string | undefined): string | null {
 export const GREET_TIMING = { phraseMs: 700, resultMs: 1600, fadeMs: 800 } as const;
 
 /**
- * 인사 화면 뒤에 흑백으로 까는 관리자 화면 캡처(fitin 이 앱 화면 사진을 까는 것과 같다, 2026-11-19 사용자 "배경이 없으니까 밋밋하다").
- * public/admin-greet 에 있고, 로그인 폼이 표식을 심을 때 한 장을 고른다(markAdminGreeting).
- * 화면이 크게 바뀌면 다시 찍는다: scripts/admin-drive.py 로 1440x900 캡처 → 흑백 jpg(품질 62).
+ * 인사 화면 뒤에 까는 게임 배너 수(2026-11-19 사용자 "뒷 배경에 게임 이미지 같은거"). fitin 이 앱 화면 사진을 까는 자리다.
+ * 홈 화면 줄(인기, 할인, 최근 출시)의 가로 배너를 쓴다 — 이미 캐시된 값이라 따로 질의하지 않는다. 6열 5줄 벽이 비스듬히 돌려도 화면을 덮는 수다
  */
-export const GREET_BACKDROPS = ["board", "matches", "sync", "sales", "codes"].map((n) => `/admin-greet/${n}.jpg`);
+export const GREET_COVER_COUNT = 30;
