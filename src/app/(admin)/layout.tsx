@@ -26,7 +26,7 @@ import { getProgramSettings } from "@/server/services/admin-programs";
 import { getGrantsOf } from "@/server/services/admin-grants";
 import { isMobileDevice } from "@/server/device";
 import { EntryGreeting } from "@/components/admin/entry-greeting";
-import { ADMIN_GREET_COOKIE } from "@/lib/admin/greeting";
+import { ADMIN_GREET_COOKIE, greetBackdropOf } from "@/lib/admin/greeting";
 
 export const dynamic = "force-dynamic";
 
@@ -43,7 +43,7 @@ export default async function AdminLayout({ children }: { children: React.ReactN
   const opened = decodeURIComponent(jar.get(ADMIN_GROUPS_COOKIE)?.value ?? "").split(",").filter(Boolean);
   const view = readMenuView(jar.get(ADMIN_MENU_VIEW_COOKIE)?.value);
   // 관리자 로그인 직후 첫 문서면 진입 인사 화면을 첫 그림부터 덮는다(lib/admin/greeting)
-  const greet = jar.get(ADMIN_GREET_COOKIE)?.value === "1";
+  const greetBackdrop = greetBackdropOf(jar.get(ADMIN_GREET_COOKIE)?.value);
   // 휴대폰이면 허용 표(lib/admin/mobile)대로 메뉴, 진입, 단추를 줄인다. 폭이 아니라 기기로 가르는 이유는 server/device
   const mobile = await isMobileDevice();
   // 프로그램 노출, 사용 여부는 기다린다 — 메뉴 칸이 섰다 빠지거나 막힌 화면이 그려졌다 바뀌면 고장처럼 보인다. 캐시라 왕복은 거의 없다(services/admin-programs)
@@ -57,7 +57,7 @@ export default async function AdminLayout({ children }: { children: React.ReactN
   return (
     <AdminDeviceProvider mobile={mobile}>
       <AdminProgramsProvider settings={programs} grants={grants}>
-      {greet && <EntryGreeting name={user.displayName ?? user.email} />}
+      {greetBackdrop && <EntryGreeting name={user.displayName ?? user.email} backdrop={greetBackdrop} />}
       <div className="flex md:items-start">
         <AdminNav counts={counts} favorites={favorites} initialCollapsed={collapsed} initialOpened={opened} initialView={view} />
         {/* main 이 아니라 div 인 이유: 루트 레이아웃이 이미 <main> 안에 children 을 넣는다.

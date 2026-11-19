@@ -1089,6 +1089,20 @@ html[data-admin-frame] [data-admin-greet] {
   opacity: 0;
   pointer-events: none;
 }
+/* 뒤 그림은 이미 흑백 파일이다. 인사가 머무는 동안 천천히 당겨 오고(fitin 의 ken-burns), 덮개로 눌러 글자를 세운다.
+   fitin 은 사진이라 82% 한 겹이면 됐지만 우리 그림은 글자 많은 표라 가운데 글자와 겹쳐 읽혔다 —
+   그림을 살짝 흐리고(--overlay-blur), 덮개는 가운데를 더 진하게(94%) 가장자리는 fitin 값(82%)으로 둔다 */
+.admin-greet-backdrop {
+  filter: blur(var(--overlay-blur));
+  animation: greet-kenburns 6s var(--ease-standard) both;
+}
+.admin-greet-scrim {
+  background: radial-gradient(ellipse at center, color-mix(in oklab, var(--bg) 94%, transparent) 0%, color-mix(in oklab, var(--bg) 82%, transparent) 70%);
+}
+@keyframes greet-kenburns {
+  from { transform: scale(1.08); }
+  to { transform: scale(1); }
+}
 @keyframes greet-mark {
   from { opacity: 0; transform: scale(0.88); }
   to { opacity: 1; transform: none; }

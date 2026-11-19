@@ -19,7 +19,7 @@ type Phase = number | "result" | "fading" | "done";
 /** 워드마크 심볼 폭. 로그인 화면 로고(48)보다 한 단계 크게 — 이 화면의 주인공이다 */
 const LOCKUP_SIZE = 72;
 
-export function EntryGreeting({ name }: { name: string }) {
+export function EntryGreeting({ name, backdrop }: { name: string; backdrop: string }) {
   const [phase, setPhase] = useState<Phase>(0);
   const groups = useMenuGroups();
   // 대시보드(제목 없는 칸)는 누구나 열려 있어 "쓸 수 있는 것" 으로 세지 않는다
@@ -60,10 +60,13 @@ export function EntryGreeting({ name }: { name: string }) {
       role="status"
       aria-live="polite"
       onClick={() => setPhase("fading")}
-      className={cn("admin-greet fixed inset-0 z-[80] flex cursor-pointer flex-col items-center justify-center gap-6 bg-bg px-4 text-ink", phase === "fading" && "admin-greet-out")}
+      className={cn("admin-greet fixed inset-0 z-[80] flex cursor-pointer flex-col items-center justify-center gap-6 overflow-hidden bg-bg px-4 text-ink", phase === "fading" && "admin-greet-out")}
     >
-      <BrandLockup size={LOCKUP_SIZE} className="admin-greet-mark" />
-      <div className="flex min-h-28 flex-col items-center gap-2 text-center">
+      {/* 뒤 그림: 관리자 화면 캡처를 흑백으로 천천히 당겨 오고(ken-burns), 바탕색 덮개로 눌러 글자가 앞에 선다(globals.css 의 .admin-greet-*) */}
+      <div aria-hidden className="admin-greet-backdrop absolute inset-0 bg-cover bg-top" style={{ backgroundImage: `url(${backdrop})` }} />
+      <div aria-hidden className="admin-greet-scrim absolute inset-0" />
+      <BrandLockup size={LOCKUP_SIZE} className="admin-greet-mark relative" />
+      <div className="relative flex min-h-28 flex-col items-center gap-2 text-center">
         {typeof phase === "number" ? (
           <p key={phase} className="animate-rise text-[15px] text-mut">
             {M.phrases[phase]}
@@ -72,7 +75,7 @@ export function EntryGreeting({ name }: { name: string }) {
           <Result name={name} groups={titled} />
         )}
       </div>
-      <span className="absolute bottom-6 text-[12px] text-dim">{M.skip}</span>
+      <span className="absolute bottom-6 text-[12px] text-mut">{M.skip}</span>
     </div>
   );
 }
