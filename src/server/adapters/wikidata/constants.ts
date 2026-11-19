@@ -14,6 +14,15 @@ export const WIKIDATA_API_URL = "https://www.wikidata.org/w/api.php";
 export const COMPANY_CLASSES = ["Q210167", "Q1137109", "Q4830453", "Q783794"] as const;
 
 /**
+ * 회사 분류를 지나도 회사가 아닌 분류. Q486972 = 사람 사는 곳(정착지), Q56061 = 행정구역.
+ * 미국 도시는 "미국의 도시 > 미국의 지방자치단체 > 지방 자치 법인(municipal corporation) > 법인 > 회사" 사슬로
+ * 회사 분류(Q783794)를 통과한다(2026-11-19 실측: 개발사 "Antler" 가 노스다코타의 마을 Q2431419 로 붙을 뻔했다).
+ * 같은 날 우리 회사 2,392곳 중 24곳이 이미 지명이었다(Bethesda, Fontainebleau, Forest Lake 등) — 걸린 24곳이 전부 지명이라
+ * 진짜 회사를 떨어뜨리지 않는 것까지 확인했다.
+ */
+export const NON_COMPANY_CLASSES = ["Q486972", "Q56061"] as const;
+
+/**
  * 질의에서 받을 이름 언어(게임, 회사 공통). **mul 이 빠지면 안 된다.**
  *
  * 위키데이터는 라틴 문자권에서 표기가 같은 이름을 언어마다 두지 않고 다국어 라벨(mul) 하나로 옮겼다.
@@ -90,10 +99,12 @@ export const WIKIDATA_TIMEOUT_MS = 30_000;
 export function companyDetailQuery(entityIds: readonly string[], rowLimit = 200): string {
   const values = entityIds.map((q) => `wd:${q}`).join(" ");
   const classes = COMPANY_CLASSES.map((q) => `wd:${q}`).join(" ");
+  const notCompany = NON_COMPANY_CLASSES.map((q) => `wd:${q}`).join(" ");
   return `SELECT ?company ?labelEn ?labelKo ?descKo ?countryLabel ?countryCode ?inception ?hqLabel ?website WHERE {
   VALUES ?company { ${values} }
   VALUES ?cls { ${classes} }
   ?company wdt:P31/wdt:P279* ?cls .
+  FILTER NOT EXISTS { VALUES ?notCompany { ${notCompany} } ?company wdt:P31/wdt:P279* ?notCompany . }
   OPTIONAL { ?company rdfs:label ?labelEn . FILTER(lang(?labelEn) in (${SPARQL_EN_LANGS})) }
   OPTIONAL { ?company rdfs:label ?labelKo . FILTER(lang(?labelKo) = "ko") }
   OPTIONAL { ?company schema:description ?descKo . FILTER(lang(?descKo) = "ko") }
