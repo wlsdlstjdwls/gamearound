@@ -24,6 +24,7 @@ import { useAdminStatus } from "@/components/admin/screen/status";
 import { registerGrid, type GridDump } from "@/components/admin/screen/data-grid/export";
 import { FitFillContext, useFitHeight } from "@/components/admin/screen/data-grid/fit";
 import { alignClass, BottomBar, BODY_CELL, HeadRow, justifyClass, SumRow, TopBar } from "@/components/admin/screen/data-grid/parts";
+import { useRowChecks } from "@/components/admin/screen/data-grid/checks";
 import { cellExport, minWidthOf, pickOf, textOf } from "@/components/admin/screen/data-grid/cells";
 import { GridCards } from "@/components/admin/screen/data-grid/cards";
 import { useMobilePolicy } from "@/components/admin/mobile-policy";
@@ -185,17 +186,8 @@ export function DataGrid<T>({
     say(M.copied(picked.length), "ok");
   };
 
-  const allKeys = filtered.map(rowKey);
-  const allOn = check ? allKeys.length > 0 && allKeys.every((k) => checked.has(k)) : false;
-  const someOn = check ? allKeys.some((k) => checked.has(k)) : false;
-  const toggleAll = () => check && onChecked(allOn ? new Set([...checked].filter((k) => !allKeys.includes(k))) : new Set([...checked, ...allKeys]));
-  const toggleOne = (k: string) => {
-    if (!check) return;
-    const next = new Set(checked);
-    if (next.has(k)) next.delete(k);
-    else next.add(k);
-    onChecked(next);
-  };
+  // 체크 칸: 전체 켜기, 줄 하나, Ctrl/Shift+클릭 다중 선택(data-grid/checks)
+  const { allOn, someOn, toggleAll, toggleOne, rowClick } = useRowChecks({ checked, onChecked, keys: sorted.map(rowKey) });
 
   return (
     <div className={cn("flex min-w-0 flex-col", mobile ? "gap-2" : "overflow-hidden rounded-xl border border-line bg-surface")}>
@@ -238,7 +230,7 @@ export function DataGrid<T>({
                     data-grid-row
                     aria-selected={onSelect ? on : undefined}
                     tabIndex={onSelect ? (on || (selected === null && i === 0) ? 0 : -1) : undefined}
-                    onClick={() => onSelect?.(key)}
+                    onClick={(e) => rowClick(e, key) || onSelect?.(key)}
                     draggable={onRowDragStart ? true : undefined}
                     onDragStart={onRowDragStart ? (e) => onRowDragStart(key, e) : undefined}
                     onKeyDown={(e) => {
