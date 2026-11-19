@@ -23,6 +23,11 @@ export type PriceSeries = {
   discountEndsAt: string | null;
   discountName: string | null;
   storeUrl: string | null;
+  /**
+   * 이 스토어의 출시일(YYYY-MM-DD). 그래프가 그 앞 구간을 "사전예약" 으로 가른다(2026-11-19 사용자, GTA6 예약가만 있던 그래프).
+   * 선택인 이유: 캐시에 담긴 옛 계열에는 이 칸이 없다
+   */
+  releaseDate?: string | null;
 };
 
 async function getPriceHistoryRaw(slug: string, days: number): Promise<PriceSeries[]> {
@@ -42,6 +47,7 @@ async function getPriceHistoryRaw(slug: string, days: number): Promise<PriceSeri
       discountEndsAt: gamePlatforms.discountEndsAt,
       discountName: gamePlatforms.discountName,
       storeUrl: gamePlatforms.storeUrl,
+      releaseDate: gamePlatforms.releaseDate,
     })
     .from(gamePlatforms)
     .where(and(eq(gamePlatforms.gameId, game.id), visiblePlatformsOnly()));
@@ -71,6 +77,10 @@ async function getPriceHistoryRaw(slug: string, days: number): Promise<PriceSeri
   const byGp = new Map<string, PricePoint[]>();
   for (const r of rows) {
     const list = byGp.get(r.gamePlatformId) ?? [];
+    // 바로 앞 점과 값, 할인율이 같으면 버린다 — 수집 행을 다시 만들거나 병합할 때 같은 값이 한 번 더 찍힌다(2026-11-19 GTA6 의 89,800원 두 번).
+    // 계단 그래프라 그려지는 선은 같지만, 말풍선과 점 수가 "값이 또 바뀌었다" 로 읽힌다
+    const prev = list[list.length - 1];
+    if (prev && prev.price === r.price && prev.discountPct === (r.discountPct ?? 0)) continue;
     list.push({ t: r.capturedAt.toISOString(), price: r.price, discountPct: r.discountPct ?? 0, discountName: r.discountName });
     byGp.set(r.gamePlatformId, list);
   }
@@ -87,6 +97,7 @@ async function getPriceHistoryRaw(slug: string, days: number): Promise<PriceSeri
       discountEndsAt: g.discountEndsAt ? g.discountEndsAt.toISOString() : null,
       discountName: g.discountName,
       storeUrl: g.storeUrl,
+      releaseDate: g.releaseDate,
     }))
     .filter((s) => s.points.length > 0)
     .sort((a, b) => PLATFORM_ORDER.indexOf(a.platform) - PLATFORM_ORDER.indexOf(b.platform));

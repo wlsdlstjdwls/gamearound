@@ -24,12 +24,14 @@ import {
 } from "recharts";
 import type { TooltipContentProps } from "recharts";
 import { formatDate } from "@/lib/format";
-import type { Currency, Platform } from "@/server/db/schema";
+import type { Platform } from "@/server/db/schema";
 import type { PriceSeries } from "@/server/services/prices";
 import { useNow } from "@/components/use-now";
 import { ChipButton } from "@/components/ui/chip";
 import { useCssTokens } from "@/components/use-css-tokens";
 import { mergeBrandSeries, prepare, seriesLabel } from "@/components/price-chart/prepare";
+import { PriceTooltip } from "@/components/price-chart/tooltip";
+import { PRICE_CHART_RELEASE_LABEL, PREORDER_LABEL } from "@/lib/games/messages";
 import { ALL_PLATFORMS, usePlatformFilter } from "@/components/price-chart/use-platform-filter";
 
 /**
@@ -109,24 +111,6 @@ const LOW_LABEL_GAP = 14;
 const LOW_LABEL_FLIP_RATIO = 0.2;
 /** X축 오른쪽 여유(구간 폭 대비) — 할인 종료선 라벨 자리 */
 const X_HEADROOM = 0.18;
-function PriceTooltip({ active, payload, label, currency }: TooltipContentProps & { currency: Currency }) {
-  if (!active || !payload || payload.length === 0) return null;
-  return (
-    <div className="rounded-[7px] border border-line-strong bg-surface px-3 py-2 text-[11.5px]">
-      <p className="mb-1 text-dim">{formatDate(new Date(Number(label)))}</p>
-      <ul className="space-y-0.5">
-        {payload.map((e) => (
-          <li key={String(e.dataKey)} className="flex items-center gap-2">
-            <span aria-hidden className="inline-block h-2 w-2 rounded-full" style={{ background: e.color }} />
-            <span className="text-mut">{seriesLabel(String(e.dataKey) as Platform)}</span>
-            <span className="ml-auto font-semibold text-ink">{formatPrice(typeof e.value === "number" ? e.value : null, currency)}</span>
-          </li>
-        ))}
-      </ul>
-    </div>
-  );
-}
-
 /**
  * head, rangeKeys 는 상세 본문에 들어간 그래프(2026-10-26, 목업 "가격 변동 추이")가 쓴다 — 제목과 기간 칩을 한 줄에 세우고
  * 기간은 기획서의 넷(1개월~1년)만 둔다. 전용 화면(/prices)은 둘 다 주지 않아 예전 모양 그대로다.
@@ -149,7 +133,7 @@ export function PriceChart({ series, head, rangeKeys }: { series: PriceSeries[];
   );
   const now = clientNow ?? fallbackNow;
   const range = RANGES.find((r) => r.key === rangeKey) ?? DEFAULT_RANGE;
-  const { data, platforms, single } = useMemo(() => prepare(shown, range.days, now), [shown, range.days, now]);
+  const { data, platforms, single, preorder } = useMemo(() => prepare(shown, range.days, now), [shown, range.days, now]);
 
   // 정가 기준선과 진행 중 할인 구간이 축 밖으로 잘리지 않도록 도메인을 넓힌다
   const yMax = Math.max(
@@ -228,6 +212,18 @@ export function PriceChart({ series, head, rangeKeys }: { series: PriceSeries[];
               <Tooltip content={(props: TooltipContentProps) => <PriceTooltip {...props} currency={currency} />} cursor={{ stroke: token["--dim-2"], strokeDasharray: "3 3" }} />
               {platforms.length > 1 && (
                 <Legend formatter={(v: string) => <span className="text-[12px] text-mut">{seriesLabel(v as Platform)}</span>} />
+              )}
+
+              {/* 사전예약 구간 — 그 값은 예약가라 출시 뒤 값과 견주면 인하처럼 읽힌다(2026-11-19 사용자, GTA6). 할인 음영보다 옅은 면에 이름표만 단다 */}
+              {preorder && (
+                <ReferenceArea x1={preorder.from} x2={preorder.to} fill={token["--surface-4"]} fillOpacity={0.5}>
+                  <Label value={PREORDER_LABEL} position="insideTopLeft" fill={token["--dim"]} fontSize={11.5} />
+                </ReferenceArea>
+              )}
+              {preorder?.releaseAt && (
+                <ReferenceLine x={preorder.releaseAt} stroke={token["--dim-2"]} strokeDasharray="3 3">
+                  <Label value={`${PRICE_CHART_RELEASE_LABEL} ${formatDate(new Date(preorder.releaseAt))}`} position="insideTopRight" fill={token["--dim"]} fontSize={11.5} />
+                </ReferenceLine>
               )}
 
               {/* 진행 중 할인 구간 음영 */}

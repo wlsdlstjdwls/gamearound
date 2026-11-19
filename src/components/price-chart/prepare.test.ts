@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { mergeBrandSeries, seriesLabel } from "@/components/price-chart/prepare";
+import { mergeBrandSeries, prepare, seriesLabel } from "@/components/price-chart/prepare";
 import type { PriceSeries } from "@/server/services/prices";
 
 function series(platform: PriceSeries["platform"], points: [string, number][], currentPrice: number | null): PriceSeries {
@@ -40,5 +40,27 @@ describe("seriesLabel", () => {
   it("세대 묶음은 묶음 이름, 나머지는 플랫폼 이름", () => {
     expect(seriesLabel("ps4")).toBe("PlayStation");
     expect(seriesLabel("xbox")).toBe("Xbox");
+  });
+});
+
+describe("prepare 의 사전예약 구간", () => {
+  const sep = "2026-09-14T00:00:00.000Z";
+  const at = (release: string | null) => ({ ...series("xbox", [[sep, 89800]], 89800), releaseDate: release });
+  const KST_MIDNIGHT = (d: string) => Date.parse(`${d}T00:00:00+09:00`);
+
+  it("출시일이 그래프 안이면 시작부터 출시까지 덮고 출시 세로선을 단다", () => {
+    const now = KST_MIDNIGHT("2026-11-20");
+    expect(prepare([at("2026-11-19")], null, now).preorder).toEqual({ from: Date.parse(sep), to: KST_MIDNIGHT("2026-11-19"), releaseAt: KST_MIDNIGHT("2026-11-19") });
+  });
+
+  it("아직 안 나왔으면 지금까지 덮고 세로선은 없다", () => {
+    const now = KST_MIDNIGHT("2026-11-01");
+    expect(prepare([at("2026-11-19")], null, now).preorder).toEqual({ from: Date.parse(sep), to: now, releaseAt: null });
+  });
+
+  it("출시 뒤에 시작한 그래프, 출시일 모르는 계열은 덮지 않는다", () => {
+    const now = KST_MIDNIGHT("2026-11-20");
+    expect(prepare([at("2026-01-01")], null, now).preorder).toBeNull();
+    expect(prepare([at(null)], null, now).preorder).toBeNull();
   });
 });

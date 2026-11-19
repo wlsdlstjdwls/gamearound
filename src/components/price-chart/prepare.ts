@@ -14,6 +14,11 @@ export type Prepared = {
   platforms: Platform[];
   /** 플랫폼이 하나일 때만 채워지는 보조 표시값 */
   single: { platform: Platform; listPrice: number | null; low: { t: number; price: number } | null; saleFrom: number | null; saleTo: number | null } | null;
+  /**
+   * 사전예약 구간(그래프 시작 ~ 출시 또는 지금). 그 구간의 값은 예약가라 할인, 인하로 읽히면 안 된다(2026-11-19 사용자, GTA6).
+   * releaseAt 은 출시일이 그래프 안에 들면 세로선 자리, 아직 안 나왔으면 null 이다. 그래프가 출시 뒤에서 시작하면 preorder 가 null 이다
+   */
+  preorder: { from: number; to: number; releaseAt: number | null } | null;
 };
 
 /** 그래프 칩, 범례, 말풍선의 이름 — 세대 묶음(PS5, PS4)은 합친 선이라 묶음 이름(PlayStation)으로 부른다 */
@@ -91,6 +96,22 @@ function clampSeries(s: PriceSeries, from: number | null, now: number): Array<{ 
   return out;
 }
 
+/** 출시일 열쇠(한국 날짜) → 한국 자정 시각. 출시일을 모르면 null */
+function releaseMs(date: string | null | undefined): number | null {
+  if (!date) return null;
+  const ms = Date.parse(`${date.slice(0, 10)}T00:00:00+09:00`);
+  return Number.isFinite(ms) ? ms : null;
+}
+
+/** 그린 계열 가운데 가장 이른 출시 — 한 스토어라도 나왔으면 그때부터는 예약가가 아니다 */
+function preorderSpan(series: PriceSeries[], start: number | undefined, now: number): Prepared["preorder"] {
+  const known = series.map((s) => releaseMs(s.releaseDate)).filter((v): v is number => v !== null);
+  if (start === undefined || known.length === 0) return null;
+  const release = Math.min(...known);
+  if (release <= start) return null;
+  return release > now ? { from: start, to: now, releaseAt: null } : { from: start, to: release, releaseAt: release };
+}
+
 export function prepare(series: PriceSeries[], rangeDays: number | null, now: number): Prepared {
   const from = rangeDays === null ? null : now - rangeDays * MS_PER_DAY;
   const byT = new Map<number, MergedPoint>();
@@ -108,6 +129,7 @@ export function prepare(series: PriceSeries[], rangeDays: number | null, now: nu
   }
 
   const data = [...byT.values()].sort((a, b) => a.t - b.t);
+  const preorder = preorderSpan(series, data[0]?.t, now);
 
   if (series.length === 1 && platforms.length === 1) {
     const s = series[0];
@@ -117,8 +139,8 @@ export function prepare(series: PriceSeries[], rangeDays: number | null, now: nu
     const saleTo = onSale && s.discountEndsAt ? new Date(s.discountEndsAt).getTime() : null;
     // 시작을 아는 소스(xbox)는 그 시각부터, 모르는 소스(steam)는 "지금부터 종료까지"만 음영 처리
     const saleFrom = onSale ? (s.discountStartsAt ? new Date(s.discountStartsAt).getTime() : now) : null;
-    return { data, platforms, single: { platform: s.platform, listPrice: s.listPrice, low, saleFrom, saleTo } };
+    return { data, platforms, preorder, single: { platform: s.platform, listPrice: s.listPrice, low, saleFrom, saleTo } };
   }
-  return { data, platforms, single: null };
+  return { data, platforms, preorder, single: null };
 }
 

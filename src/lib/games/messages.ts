@@ -58,6 +58,8 @@ export const KOREAN_SUPPORT_LABEL = {
 export const PREORDER_LABEL = "사전예약";
 /** 출시 당일 표지(ui/release-today-mark). 날짜 글자만으로는 "오늘" 인지 셈해야 알았다(2026-11-19 사용자) */
 export const RELEASE_TODAY_LABEL = "오늘 출시";
+/** 가격 그래프의 출시일 세로선 이름표(price-chart). 그 앞 구간은 PREORDER_LABEL 로 덮는다 */
+export const PRICE_CHART_RELEASE_LABEL = "출시";
 export const PREORDER_HINT = "출시 전이지만 이 스토어에서 지금 예약 구매할 수 있어요";
 
 /**
