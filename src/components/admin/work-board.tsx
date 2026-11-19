@@ -45,7 +45,7 @@ function allColumnsOf(b: AdminBoard): Column[] {
     },
     {
       key: "tasks",
-      title: ADMIN_NAV.tasks,
+      title: ADMIN_NAV.groupOps,
       lines: [
         { label: M.tasksTodo, hint: M.tasksTodoHint, href: ROUTES.adminTasks, n: b.tasksTodo, weight: "queue" },
         { label: M.tasksDoing, hint: M.tasksDoingHint, href: ROUTES.adminTasks, n: b.tasksDoing, weight: "info" },

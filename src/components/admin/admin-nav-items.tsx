@@ -55,11 +55,12 @@ export type Item = {
 /**
  * 상위메뉴 표. 제목이 없는 줄은 칸 하나짜리다 — 제목이 곧 칸 이름이라 두 번 적지 않는다.
  * 2026-11-19 하는 일 기준으로 다시 묶었다(낱말과 이유는 ADMIN_NAV 머리 주석):
- *   대시보드, 상품관리, 주문관리(오픈 전이라 프로그램관리에서 숨김, 2026-10-29 사용자 "최상단으로" 라 자리는 맨 위), 업무관리,
- *   승인관리(판정), 데이터관리(고치기), 콘텐츠관리(서비스에 보이는 것), 수집관리, 통계관리, 시스템관리. 서비스안내서는 기둥 바닥.
+ *   대시보드, 상품관리, 주문관리(오픈 전이라 프로그램관리에서 숨김, 2026-10-29 사용자 "최상단으로" 라 자리는 맨 위), 운영관리,
+ *   승인관리(판정), 데이터관리(고치기), 콘텐츠관리(서비스에 보이는 것), 수집관리, 통계관리, 시스템관리.
+ * 대시보드 말고는 칸이 하나여도 상위메뉴 아래에 둔다(같은 날 사용자 "상위메뉴가 없는 메뉴는 뭐야").
  * 대시보드 기둥도 이 순서를 따른다(work-board) — 번호가 메뉴 자리를 가리킨다.
  */
-export const GROUPS: Array<{ key: string; title?: string; items: Item[]; /** 넓은 화면 기둥 바닥에 따로 선다(도움말 자리). 검색, 더보기 시트에서는 다른 칸과 같다 */ pinned?: boolean }> = [
+export const GROUPS: Array<{ key: string; title?: string; items: Item[] }> = [
   // 첫 화면 업무 현황판(2026-10-29). 어느 상위메뉴에 일이 쌓였는지 여기서 보고 내려간다
   { key: "board", items: [{ href: ROUTES.admin, label: ADMIN_NAV.board, short: ADMIN_NAV.tabShort.board, Icon: BoardIcon }] },
   {
@@ -82,8 +83,9 @@ export const GROUPS: Array<{ key: string; title?: string; items: Item[]; /** 넓
     ],
   },
   {
-    // 관리자끼리 주고받는 일. 매일 여는 자리라 상위메뉴 안에 묻지 않는다
+    // 관리자끼리 주고받는 일
     key: "tasks",
+    title: ADMIN_NAV.groupOps,
     items: [
       {
         href: ROUTES.adminTasks,
@@ -157,10 +159,9 @@ export const GROUPS: Array<{ key: string; title?: string; items: Item[]; /** 넓
       { href: ROUTES.adminPrograms, label: ADMIN_NAV.programs, Icon: ToggleListIcon },
       { href: ROUTES.adminNotifyTemplates, label: ADMIN_NAV.notifyTemplates, Icon: TemplateIcon },
       { href: ROUTES.adminNotifySends, label: ADMIN_NAV.notifySends, Icon: SendIcon },
+      { href: ROUTES.adminGuide, label: ADMIN_NAV.guide, Icon: BookIcon },
     ],
   },
-  // 서비스안내서는 일하는 화면이 아니라 도움말이라 시스템관리에서 꺼내 기둥 바닥에 둔다(2026-11-19)
-  { key: "guide", pinned: true, items: [{ href: ROUTES.adminGuide, label: ADMIN_NAV.guide, Icon: BookIcon }] },
 ];
 
 export const ITEMS = GROUPS.flatMap((g) => g.items);

@@ -55,18 +55,13 @@ export function useProgramSettings(): ProgramSettings {
   return useContext(ProgramsContext);
 }
 
-/**
- * 메뉴에 세울 상위메뉴. 휴대폰 허용 표(groupsFor)를 거친 뒤 노출, 사용을 끈 칸을 빼고, 다 빠진 상위메뉴는 제목째 걷는다.
- * 칸이 하나만 남으면 제목도 뗀다 — 상위메뉴 제목은 칸이 둘 이상일 때만 단다(admin-console-layout 규칙). 매출현황을 숨긴 통계관리처럼
- * 제목 아래 칸 하나만 서면 같은 일을 두 줄로 말하고, 펼치려고 한 번 더 눌러야 한다
- */
+/** 메뉴에 세울 상위메뉴. 휴대폰 허용 표(groupsFor)를 거친 뒤 노출, 사용을 끈 칸을 빼고, 다 빠진 상위메뉴는 제목째 걷는다 */
 export function useMenuGroups(): ReturnType<typeof groupsFor> {
   const { mobile } = useMobilePolicy();
   const settings = useProgramSettings();
   return useMemo(
     () => groupsFor(mobile).map((g) => ({ ...g, items: g.items.filter((i) => isProgramShown(settings, i.href)) }))
-        .filter((g) => g.items.length > 0)
-        .map((g) => (g.items.length === 1 && g.title ? { ...g, title: undefined } : g)),
+        .filter((g) => g.items.length > 0),
     [mobile, settings],
   );
 }
