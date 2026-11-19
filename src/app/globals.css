@@ -1091,10 +1091,28 @@ html[data-admin-frame] [data-admin-greet] {
 }
 /* 뒤 그림은 게임 가로 배너 벽이다(2026-11-19 사용자 "뒷 배경에 게임 이미지"). 화면보다 넓게 깔아 비스듬히 돌리고 천천히 흘린다 —
    네모 벽이 반듯하면 표처럼 읽히고, 멈춰 있으면 사진 한 장이다. 배너가 원색이라 덮개는 가운데를 진하게(94%) 가장자리는 fitin 값(82%)으로 눌러 글자를 세운다 */
+/* 벽은 옅게 떠오르며(배너가 하나씩 뚝뚝 뜨는 것을 가린다) 흐름이 점점 느려진다 — 같은 빠르기로 흐르면 기계처럼 보였다(2026-11-19 사용자 "부드럽게") */
 .admin-greet-wall {
   inset: -25% -20%;
   transform: rotate(-8deg);
-  animation: greet-drift 8s linear both;
+  animation:
+    greet-wall-in 1200ms var(--ease-standard) 150ms both,
+    greet-drift 9s var(--ease-out-emph) both;
+}
+@keyframes greet-wall-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+/* 글자 묶음은 사라질 때 살짝 떠오르며 옅어진다. 덮개 전체가 옅어지는 것(.admin-greet-out)과 겹쳐 대시보드로 스며든다 */
+.admin-greet-out .admin-greet-body {
+  transform: translateY(-8px) scale(1.02);
+  transition: transform var(--greet-fade) var(--ease-standard);
+}
+/* 관리자 로그인 칸은 문서를 새로 열기 직전에 옅게 지운다(sign-in-form 의 data-navigating). 칸이 뚝 끊기고 빈 화면이 비치던 자리 */
+[data-admin-sign-in]:has(form[data-navigating]) > * {
+  opacity: 0;
+  transform: scale(0.98);
+  transition: opacity var(--duration-slow) var(--ease-standard), transform var(--duration-slow) var(--ease-standard);
 }
 .admin-greet-scrim {
   background: radial-gradient(ellipse at center, color-mix(in oklab, var(--bg) 94%, transparent) 0%, color-mix(in oklab, var(--bg) 80%, transparent) 75%);

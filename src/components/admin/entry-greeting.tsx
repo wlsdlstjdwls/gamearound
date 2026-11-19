@@ -72,15 +72,17 @@ export function EntryGreeting({ name, covers }: { name: string; covers: string[]
         </div>
       )}
       <div aria-hidden className="admin-greet-scrim absolute inset-0" />
-      <BrandLockup size={LOCKUP_SIZE} className="admin-greet-mark relative" />
-      <div className="relative flex min-h-28 flex-col items-center gap-2 text-center">
-        {typeof phase === "number" ? (
-          <p key={phase} className="animate-rise text-[15px] text-mut">
-            {M.phrases[phase]}
-          </p>
-        ) : (
-          <Result name={name} groups={titled} />
-        )}
+      <div className="admin-greet-body relative flex flex-col items-center gap-6">
+        <BrandLockup size={LOCKUP_SIZE} className="admin-greet-mark" />
+        <div className="flex min-h-28 flex-col items-center gap-2 text-center">
+          {typeof phase === "number" ? (
+            <p key={phase} className="animate-rise text-[15px] text-mut">
+              {M.phrases[phase]}
+            </p>
+          ) : (
+            <Result name={name} groups={titled} />
+          )}
+        </div>
       </div>
       <span className="absolute bottom-6 text-[12px] text-mut">{M.skip}</span>
     </div>

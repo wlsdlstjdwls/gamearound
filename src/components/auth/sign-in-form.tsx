@@ -32,7 +32,8 @@ export function SignInForm({ next, admin = false }: { next: string; admin?: bool
   // <form> 에 action 을 걸지 않는다 — 걸면 React 19 가 제출 때마다 form.reset() 을 불러
   // 실패한 폼의 칸이 전부 비워진다. 액션은 useAuthForm 의 onSubmit 이 직접 태운다(근거는 그 주석에)
   return (
-    <form ref={formRef} onSubmit={onSubmit} noValidate className="space-y-4">
+    // data-navigating: 성공해서 문서를 새로 여는 중. 관리자 로그인 화면은 이 표시로 칸을 먼저 옅게 지운다(globals.css) — 칸이 뚝 끊기고 빈 화면이 비치지 않게
+    <form ref={formRef} onSubmit={onSubmit} noValidate data-navigating={navigating || undefined} className="space-y-4">
       <input type="hidden" name="next" value={next} />
 
       {formError && (
