@@ -10,12 +10,14 @@
 // 입력, 삭제, 저장은 그 일을 하는 화면(폼)이 함수를 넘길 때만 켜진다.
 import { useEffect, useRef, useState, useTransition } from "react";
 import { usePathname, useRouter } from "next/navigation";
+import { createPortal } from "react-dom";
 import { GROUPS, isActive, ITEMS } from "@/components/admin/admin-nav-items";
 import { FavoriteStar } from "@/components/admin/nav-favorites";
 import { programOf } from "@/components/admin/program-shell/programs";
 import { useAdminStatus } from "@/components/admin/screen/status";
 import { useTooltip } from "@/components/ui/tooltip";
 import { cn } from "@/lib/cn";
+import { GameLoader } from "@/components/ui/game-loader";
 import { isFavoriteHref } from "@/lib/admin/favorites";
 import { buildXlsx, withRowNumbers, xlsxFileName } from "@/lib/admin/xlsx";
 import { formatDateTime } from "@/lib/format";
@@ -178,7 +180,14 @@ export function AdminScreenHead({
   }, [saving, say]);
   // 조회, 저장이 서버를 기다리는 동안 판 맨 위에 흐르는 띠(2026-11-19, 사용자 "저장할 때 로딩바 같은 것도 없네").
   // 단추 색만 바뀌어서는 눌렸는지 모른다. 띠 모양은 주소 이동 중 띠와 같다(globals.css 의 .pending-bar, ui/nav-pending)
-  const pendingBar = (saving || refreshing) && <span aria-hidden className="pending-bar" />;
+  // 저장 중에는 화면 전체를 흐리게 덮고 가운데 로딩바를 세운다(같은 날 사용자 "화면에 블러 처리 + 로딩바"). 덮개가 클릭을 막아 저장 중 다른 값을 고치지 못한다.
+  // 다시 조회는 덮지 않고 위 띠만 흐른다 — 조회는 자주 누르고, 그때마다 화면이 흐려지면 거슬린다
+  const pendingBar = (
+    <>
+      {(saving || refreshing) && <span aria-hidden className="pending-bar" />}
+      {saving && <SavingOverlay />}
+    </>
+  );
 
   const excel = () => {
     // 공통 그리드가 걸어 둔 전체 줄이 먼저다(쪽을 나눠도 다 나간다). 없으면 화면의 목록 표(data-grid 표시)를 읽는다
@@ -288,5 +297,23 @@ export function AdminScreenHead({
       </div>
       {pendingBar}
     </header>
+  );
+}
+
+/**
+ * 저장 중 덮개. 탭 안 문서(iframe)에서는 그 탭 판만, 바깥 문서에서는 창 전체를 덮는다. 조금 늦게 떠서(fade-in 지연) 빨리 끝나는 저장에는 깜빡이지 않는다.
+ * body 로 띄운다 — 머리띠의 backdrop-blur 가 fixed 의 기준 상자가 되어, 그 안에 그리면 덮개가 머리띠 높이에 갇힌다
+ */
+function SavingOverlay() {
+  return createPortal(
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-surface/50 backdrop-blur-sm animate-fade-in [animation-delay:var(--duration-fast)]">
+      <div className="flex flex-col items-center gap-2 rounded-2xl border border-line bg-surface px-8 pb-5 pt-4 shadow-lg">
+        <GameLoader size="md" label={M.saving} />
+        <p aria-hidden className="text-[13px] font-semibold text-ink-2">
+          {M.saving}
+        </p>
+      </div>
+    </div>,
+    document.body,
   );
 }
