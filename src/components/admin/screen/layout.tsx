@@ -104,7 +104,8 @@ export function Pane({ title, actions, children, className }: { title?: React.Re
     <section className={cn("min-w-0 rounded-xl border border-line bg-surface-4", className)}>
       {(title || actions) && (
         <div className="flex min-h-11 flex-wrap items-center justify-between gap-2 rounded-t-xl border-b border-line bg-surface px-3.5 py-1.5">
-          <h2 className="flex min-w-0 items-center gap-2 text-[14px] font-extrabold text-ink before:h-3.5 before:w-[3px] before:shrink-0 before:rounded-full before:bg-acc">{title}</h2>
+          {/* 제목 앞 파란 막대는 2026-11-19 걷었다(사용자 "타이틀 앞 파란띠는 다르게, 띠 방식 UI 는 쓰지 마"). 제목 띠의 흰 면과 아래 선이 판 머리를 가른다 */}
+          <h2 className="flex min-w-0 items-center gap-2 text-[14px] font-extrabold text-ink">{title}</h2>
           {actions && <div className="flex flex-wrap items-center gap-1.5">{actions}</div>}
         </div>
       )}

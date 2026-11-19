@@ -1,8 +1,5 @@
 // 그리드 칸 값 읽기(2026-10-30, data-grid/index 가 300줄을 넘어 뗐다). 표(index), 카드(cards), 엑셀이 같은 글자를 써야 해서 한 곳에 둔다.
-import type { GridCol, RowState } from "@/components/admin/screen/data-grid";
-
-/** 줄 상태 막대 색(신규, 수정, 삭제, 오류) */
-export const STATE_BAR: Record<RowState, string> = { new: "before:bg-plum", changed: "before:bg-acc", deleted: "before:bg-danger", error: "before:bg-danger" };
+import type { GridCol } from "@/components/admin/screen/data-grid";
 
 /** 칸 폭의 최소 합(px). 이보다 좁을 때만 그리드가 옆으로 굴러간다 — 늘어나는 칸(1fr)이 글자 길이만큼 넓어져 늘 굴러가던 것을 막는다 */
 export function minWidthOf(widths: string[]): number {

@@ -13,7 +13,8 @@
 // 쪽 넘김은 paging 하나로 켜고 끈다(켤 목록과 끌 목록의 기준은 lib/admin/grid 의 GridPaging). 쪽 크기는 아래 띠에서 바꾼다.
 // 고른 줄이 다른 쪽에 있으면(자동 선택, 정렬, 찾기 뒤) 그 쪽으로 넘어간다 — 고른 줄이 안 보이는 쪽에 머물면 상세만 바뀌어 헷갈린다.
 // 고른 줄은 진한 면(--acc-row) + 테두리로 그린다 — 옅은 칩 면(--acc-soft)은 줄무늬, hover 와 구분되지 않았다(2026-10-30 사용자).
-// 왼쪽 파란 막대는 2026-11-19 뺐다(사용자 "행 선택되면 왼쪽에 파란띠 생기는 것도 별로다"). 줄 왼쪽 막대는 신규, 수정, 오류 표시(STATE_BAR)에만 남는다.
+// 왼쪽 파란 막대는 2026-11-19 뺐다(사용자 "행 선택되면 왼쪽에 파란띠 생기는 것도 별로다"). 같은 날 신규, 수정, 오류 줄의 왼쪽 막대도 걷었다
+// (사용자 "띠 방식 UI 는 쓰지 마") — 그 줄은 No 칸의 글자(신규, 수정, 삭제, 오류)가 말한다.
 import { Clamp } from "@/components/ui/tooltip";
 import { useContext, useEffect, useId, useMemo, useRef, useState } from "react";
 import { cn } from "@/lib/cn";
@@ -23,7 +24,7 @@ import { useAdminStatus } from "@/components/admin/screen/status";
 import { registerGrid, type GridDump } from "@/components/admin/screen/data-grid/export";
 import { FitFillContext, useFitHeight } from "@/components/admin/screen/data-grid/fit";
 import { alignClass, BottomBar, BODY_CELL, HeadRow, justifyClass, SumRow, TopBar } from "@/components/admin/screen/data-grid/parts";
-import { cellExport, minWidthOf, pickOf, STATE_BAR, textOf } from "@/components/admin/screen/data-grid/cells";
+import { cellExport, minWidthOf, pickOf, textOf } from "@/components/admin/screen/data-grid/cells";
 import { GridCards } from "@/components/admin/screen/data-grid/cards";
 import { useMobilePolicy } from "@/components/admin/mobile-policy";
 
@@ -254,7 +255,6 @@ export function DataGrid<T>({
                       on ? "bg-acc-row font-semibold text-ink shadow-[inset_0_0_0_1px_var(--acc)]" : onSelect && "hover:bg-surface-2",
                       rowTone?.(row) === "muted" && !on && "text-dim",
                       st === "deleted" && "line-through",
-                      st && cn("before:absolute before:inset-y-1 before:left-0 before:w-[3px] before:rounded-full", STATE_BAR[st]),
                     )}
                     style={{ gridTemplateColumns: template }}
                   >

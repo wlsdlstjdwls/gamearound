@@ -143,12 +143,12 @@ export function AdminRail({
       "press flex min-h-[var(--touch-target)] items-center gap-2.5 rounded-lg px-2.5 text-[14px] transition-colors [@media(pointer:fine)]:min-h-9",
       active ? "bg-acc font-bold text-on-ink" : "font-bold text-ink-2 hover:bg-surface-2 hover:text-ink",
     );
-  /** 하위 칸. 그림 없이 작은 글씨, 지금 보는 칸은 옅은 파랑과 왼쪽 막대(안내선 위에 겹친다) */
+  /** 하위 칸. 그림 없이 작은 글씨, 지금 보는 칸은 옅은 파랑 면(왼쪽 막대는 2026-11-19 걷었다, 사용자 "띠 방식 UI 는 쓰지 마") */
   const subClass = (active: boolean) =>
     cn(
       "press relative flex min-h-[var(--touch-target)] items-center gap-2 rounded-md pl-3 pr-2 text-[13px] transition-colors [@media(pointer:fine)]:min-h-8",
       active
-        ? "bg-acc-soft font-semibold text-acc before:absolute before:inset-y-1 before:-left-[7px] before:w-[3px] before:rounded-full before:bg-acc"
+        ? "bg-acc-soft font-semibold text-acc"
         : "font-medium text-mut hover:bg-surface-2 hover:text-ink",
     );
 
