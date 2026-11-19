@@ -12,7 +12,8 @@
 // 엑셀은 이 그리드가 전체 줄을 걸어 둔 것을 받아 간다(export.ts) — 쪽을 나눠도 모든 줄이 나간다.
 // 쪽 넘김은 paging 하나로 켜고 끈다(켤 목록과 끌 목록의 기준은 lib/admin/grid 의 GridPaging). 쪽 크기는 아래 띠에서 바꾼다.
 // 고른 줄이 다른 쪽에 있으면(자동 선택, 정렬, 찾기 뒤) 그 쪽으로 넘어간다 — 고른 줄이 안 보이는 쪽에 머물면 상세만 바뀌어 헷갈린다.
-// 고른 줄은 진한 면(--acc-row) + 테두리 + 왼쪽 막대로 그린다 — 옅은 칩 면(--acc-soft)은 줄무늬, hover 와 구분되지 않았다(2026-10-30 사용자).
+// 고른 줄은 진한 면(--acc-row) + 테두리로 그린다 — 옅은 칩 면(--acc-soft)은 줄무늬, hover 와 구분되지 않았다(2026-10-30 사용자).
+// 왼쪽 파란 막대는 2026-11-19 뺐다(사용자 "행 선택되면 왼쪽에 파란띠 생기는 것도 별로다"). 줄 왼쪽 막대는 신규, 수정, 오류 표시(STATE_BAR)에만 남는다.
 import { Clamp } from "@/components/ui/tooltip";
 import { useContext, useEffect, useId, useMemo, useRef, useState } from "react";
 import { cn } from "@/lib/cn";
@@ -249,7 +250,6 @@ export function DataGrid<T>({
                       rowTone?.(row) === "muted" && !on && "text-dim",
                       st === "deleted" && "line-through",
                       st && cn("before:absolute before:inset-y-1 before:left-0 before:w-[3px] before:rounded-full", STATE_BAR[st]),
-                      !st && on && "before:absolute before:inset-y-0 before:left-0 before:w-1 before:bg-acc",
                     )}
                     style={{ gridTemplateColumns: template }}
                   >
