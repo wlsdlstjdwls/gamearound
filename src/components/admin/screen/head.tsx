@@ -161,7 +161,8 @@ export function AdminScreenHead({
     const t = toolsRef.current;
     if (t.dirty && !(await askConfirm(M.confirmDiscard, { confirmLabel: M.retrieve, tone: "danger" }))) return;
     if (t.retrieve) {
-      t.retrieve();
+      // 화면이 준 조회도 전환 안에서 돌린다 — 그 안의 router.refresh 가 끝날 때까지 refreshing 이 켜져 도는 원이 선다
+      startRefresh(() => t.retrieve?.());
       return;
     }
     say(M.refreshing);
@@ -178,11 +179,11 @@ export function AdminScreenHead({
   useEffect(() => {
     if (saving) say(M.saving);
   }, [saving, say]);
-  // 저장 중에는 프로그램 판을 흐리게 덮고 가운데 도는 원을 세운다(2026-11-19 사용자 "저장할 때 로딩바 같은 것도 없네", "블러 처리 + 로딩바", 이어서 "화면 전체보단 그 프로그램만, 다른 메뉴엔 영향 없게").
-  // 덮개가 판 안 클릭을 막아 저장 중 다른 값을 고치지 못한다. 판 위 얇은 띠는 두지 않는다(같은 날 사용자 "상단 로딩바는 없애") — 다시 조회는 툴바 단추 색과 상태줄만 말한다
-  const pendingBar = saving && (
+  // 저장, 다시 조회 중에는 프로그램 판 가운데 도는 원을 세운다(2026-11-19 사용자 "저장할 때 로딩바 같은 것도 없네", "그 프로그램만, 다른 메뉴엔 영향 없게",
+  // "화면 흐려지지 않고 그냥 로딩바만, 조회할 때도"). 판을 흐리지 않는다. 저장 중에만 투명 덮개가 판 안 클릭을 막는다 — 저장 중 값을 고치면 저장한 값과 화면이 어긋난다
+  const pendingBar = (saving || refreshing) && (
     <PanelPortal>
-      <SavingOverlay />
+      <BusyOverlay block={saving} label={saving ? M.saving : M.refreshing} />
     </PanelPortal>
   );
 
@@ -306,16 +307,13 @@ function PanelPortal({ children }: { children: React.ReactNode }) {
   return panel ? createPortal(children, panel) : null;
 }
 
-/**
- * 저장 중 덮개. 조금 늦게 떠서(fade-in 지연) 빨리 끝나는 저장에는 깜빡이지 않는다. 판이 화면보다 길어도 도는 원은 보이는 자리에 붙어 있다(sticky).
- * 표시는 흔한 도는 원 하나다 — 손전등이 달리는 GameLoader 와 흰 상자는 사용자가 싫어했다(2026-11-19 "그냥 일반적인 로딩바로")
- */
-function SavingOverlay() {
+/** 기다림 표시. 조금 늦게 떠서(fade-in 지연) 빨리 끝나는 저장, 조회에는 깜빡이지 않는다. 판이 화면보다 길어도 원은 보이는 자리에 붙어 있다(sticky) */
+function BusyOverlay({ block, label }: { block: boolean; label: string }) {
   return (
-    <div className="absolute inset-0 z-30 rounded-[inherit] bg-surface/50 backdrop-blur-sm animate-fade-in [animation-delay:var(--duration-fast)]">
+    <div data-busy-overlay className={cn("absolute inset-0 z-30 animate-fade-in [animation-delay:var(--duration-fast)]", !block && "pointer-events-none")}>
       <div role="status" className="sticky top-[40vh] mx-auto mt-24 flex w-fit items-center justify-center text-acc">
         <SpinnerIcon size={36} />
-        <span className="sr-only">{M.saving}</span>
+        <span className="sr-only">{label}</span>
       </div>
     </div>
   );
