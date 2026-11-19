@@ -47,7 +47,7 @@ export async function listPreorderForGame(gameId: string): Promise<PreorderPostD
     )
     .orderBy(desc(preorderBonusPosts.publishedAt));
   const bonuses = await bonusesByPost(posts.map((p) => p.id));
-  // 같은 게임에 Xbox 상품이 둘 이상 묶이면(외부 ID 공유, 판 합치기) 같은 특전 목록이 두 번 선다 — 특전 이름이 같은 글은 하나만 둔다
+  // 같은 게임에 같은 스토어 상품이 둘 이상 묶이면(외부 ID 공유, 판 합치기) 같은 특전 목록이 두 번 선다 — 특전 이름이 같은 글은 하나만 둔다
   const seen = new Set<string>();
   return posts
     .map((p) => ({ url: p.url, title: p.title, source: p.source, bonuses: bonuses.get(p.id) ?? [] }))

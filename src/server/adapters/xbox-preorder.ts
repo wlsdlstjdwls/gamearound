@@ -99,7 +99,8 @@ export function readHeading(line: string): Heading | null {
   return null;
 }
 
-function deadlineOf(line: string): string | null {
+/** 줄에서 마감일(YYYY-MM-DD)을 읽는다. PlayStation 소개(psstore/preorder)도 같은 꼴이라 함께 쓴다 */
+export function deadlineOf(line: string): string | null {
   const m = DEADLINE.exec(line);
   if (!m) return null;
   const [y, mo, d] = [Number(m[1]), Number(m[2]), Number(m[3])];

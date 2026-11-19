@@ -3,7 +3,7 @@
 // 이미지는 unoptimized 로 원본 서버에서 바로 띄운다. 최적화를 태우면 Vercel 에 사본이 남는다 —
 // 출처 약관이 사진 복제를 금해서 핫링크만 한다(schema-preorder 머리 주석).
 // 출처와 원문 링크를 늘 붙인다. 링크는 자유지만 출처를 밝히라는 것이 같은 약관의 조건이다.
-// Xbox 출처 글은 상품 소개에서 읽은 것이라 "Xbox 스토어 기준" 과 스토어 상품 링크를 단다. 그림이 없어 그림 칸을 두지 않는다.
+// 스토어 출처 글(Xbox, PlayStation)은 상품 소개에서 읽은 것이라 "… 스토어 기준" 과 스토어 상품 링크를 단다. 그림이 없어 그림 칸을 두지 않는다.
 import Image from "next/image";
 import { SectionHead, sectionCardClass } from "@/components/ui/page";
 import { formatDate } from "@/lib/format";
@@ -45,13 +45,14 @@ function BonusItem({ bonus, noDeadline, withImage }: { bonus: PreorderBonusDto; 
 export async function PreorderBonusesSection({ gameId }: { gameId: string }) {
   const posts = await listPreorderForGame(gameId);
   if (posts.length === 0) return null;
-  const sources = new Set(posts.map((p) => p.source));
+  // 머리 설명은 출처마다 다르다. 출처가 섞여도 설명이 같으면(Xbox 와 PlayStation) 그 설명을 쓰고, 다르면 기본 설명으로 물러선다
+  const leads = new Set(posts.map((p) => M.sourceCopy(p.source).lead));
   return (
     <section aria-labelledby="preorder-heading" className={sectionCardClass("flex flex-col gap-4")}>
-      <SectionHead id="preorder-heading" title={M.title} note={sources.size === 1 ? M.sourceCopy(posts[0].source).lead : M.lead} />
+      <SectionHead id="preorder-heading" title={M.title} note={leads.size === 1 ? [...leads][0] : M.lead} />
       {posts.map((post) => {
         const copy = M.sourceCopy(post.source);
-        // 그림 칸은 그림이 하나라도 있는 글에만 둔다 — 상품 소개에서 읽은 글(Xbox)은 그림이 없어 빈 회색 칸만 늘어선다
+        // 그림 칸은 그림이 하나라도 있는 글에만 둔다 — 상품 소개에서 읽은 글(Xbox, PlayStation)은 그림이 없어 빈 회색 칸만 늘어선다
         const withImage = post.bonuses.some((b) => b.imageUrl);
         return (
           <div key={post.url} className="flex flex-col gap-3">

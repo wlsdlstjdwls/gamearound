@@ -1310,6 +1310,19 @@ export const PREORDER_SHOW_AFTER_RELEASE_DAYS = 30;
 export const XBOX_PREORDER_MAX_ROWS = 300;
 /** 한 번에 묻는 상품 수. 어댑터의 bigIds 묶음(XBOX_BIGIDS_BATCH 20, 2026-09-14 실측)과 같게 둔다 — 더 키우면 검증 안 한 크기다 */
 export const XBOX_PREORDER_BATCH = 20;
+/**
+ * PlayStation 예약 특전(sync/psstore-preorder-bonuses)이 한 회차에 콘셉트 페이지를 받을 수 상한. 묶음 질의가 없어 한 건에 한 요청이고
+ * (페이지 0.13~0.7MB), 요청 사이에 어댑터 간격(1초)을 둔다. 2026-11-19 미리 보기 실측: 한국 예약 PS 콘셉트 28건을 31초에 읽었다(한 건 약 1.1초).
+ * 100 이면 약 2분이라 재시도 몇 건이 끼어도 크론 경로 maxDuration(300초) 안쪽이다. 넘치면 출시가 가까운 것부터 본다.
+ */
+export const PSSTORE_PREORDER_MAX_ROWS = 100;
+/**
+ * 페이지 한 건의 재시도 간격. 2026-11-19 이 PC 실측에서 28건 중 1~3건이 "fetch failed"(연결 끊김)로 떨어졌고 곧바로 다시 받으면 열렸다.
+ * 한 번만 다시 묻는다 — 기본 재시도(RETRY_DELAYS_MS 21초)를 건마다 걸면 막힌 날 크론 시간을 넘긴다.
+ */
+export const PSSTORE_PREORDER_RETRY_DELAYS_MS = [2_000];
+/** 연달아 이만큼 실패하면 그 회차의 남은 페이지를 건너뛴다 — 스토어가 막힌 날 한 건 15초 타임아웃을 끝까지 채우지 않게 */
+export const PSSTORE_PREORDER_FAIL_STREAK_MAX = 3;
 
 /**
  * 게임 이벤트, 소식 카드(sync/game-events). 닌텐도 뉴스는 특전과 같은 목록이라 같은 쪽 수 규칙을 쓴다 —

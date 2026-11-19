@@ -9,6 +9,7 @@
 import { AdapterError, type PageRetry, type PriceQuote, type SearchCandidate, type StoreAdapter, type StorePageInfo, type StoreSnapshot } from "../types";
 import { psstorePs4OfferFromConcept } from "./ps4-product";
 import { parsePsstoreConceptPage } from "./concept-page";
+import { parsePsstoreDescription, type PsstoreDescription } from "./preorder-page";
 import { createHttpClient } from "../http";
 import { sleep } from "@/lib/async";
 import { errorMessage } from "@/lib/errors";
@@ -85,6 +86,15 @@ async function gridRaw(page: number, context: string): Promise<unknown> {
 function gridConceptCount(raw: unknown): number {
   const concepts = (raw as { data?: { categoryGridRetrieve?: { concepts?: unknown[] | null } } })?.data?.categoryGridRetrieve?.concepts;
   return Array.isArray(concepts) ? concepts.length : 0;
+}
+
+/**
+ * 콘셉트 기본 상품의 긴 소개(예약 특전 읽기용, sync/psstore-preorder-bonuses). fetchStorePage 와 같은 페이지지만 기억해 두지 않는다 —
+ * 예약 상품만 하루 두 번 한 번씩 받고, 같은 실행에서 다시 물을 일이 없다. 페이지에 캐시가 없으면 null 이다(부르는 쪽이 "모름" 으로 다룬다).
+ */
+export async function fetchPsstoreDescription(conceptId: string): Promise<PsstoreDescription | null> {
+  if (!/^\d+$/.test(conceptId)) throw new AdapterError(`PlayStation 콘셉트 id 형식 오류: ${conceptId}`, "psstore", false);
+  return parsePsstoreDescription(await http.text(`${PSSTORE_CONCEPT_URL}/${conceptId}`, { context: `preorder:${conceptId}` }));
 }
 
 export const psstoreAdapter: StoreAdapter = {

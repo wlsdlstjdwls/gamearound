@@ -7,6 +7,8 @@ export const PREORDER_SOURCE = {
   nintendoKr: "nintendo_kr",
   /** Xbox 스토어 한국 상품 소개의 특전 목록. 상품 번호로 게임에 이미 묶여 있어 바로 공개한다 */
   xboxKr: "xbox_kr",
+  /** PlayStation 스토어 한국 콘셉트의 기본 상품 소개 특전 목록. 콘셉트 번호로 게임에 이미 묶여 있어 바로 공개한다 */
+  psstoreKr: "psstore_kr",
 } as const;
 
 export type PreorderSource = (typeof PREORDER_SOURCE)[keyof typeof PREORDER_SOURCE];
