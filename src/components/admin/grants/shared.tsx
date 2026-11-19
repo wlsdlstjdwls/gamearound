@@ -65,9 +65,13 @@ export function useGrantDraft(accounts: AdminAccountDto[], initialRows: Record<s
     setValue(next);
   }
 
-  const cell = (userId: string, href: string): GrantCell => value[userId]?.[href] ?? EMPTY_CELL;
-  const changed = (userId: string, href: string) => !sameGrant(cell(userId, href), saved[userId]?.[href] ?? EMPTY_CELL);
-  const changes = accounts.flatMap((a) => PROGRAMS.filter((p) => changed(a.id, p.href)).map((p) => ({ userId: a.id, href: p.href })));
+  const cellIn = (cells: Cells, userId: string, href: string): GrantCell => cells[userId]?.[href] ?? EMPTY_CELL;
+  const changesOf = (cells: Cells) =>
+    accounts.flatMap((a) => PROGRAMS.filter((p) => !sameGrant(cellIn(cells, a.id, p.href), cellIn(saved, a.id, p.href))).map((p) => ({ userId: a.id, href: p.href })));
+
+  const cell = (userId: string, href: string) => cellIn(value, userId, href);
+  const changed = (userId: string, href: string) => !sameGrant(cell(userId, href), cellIn(saved, userId, href));
+  const changes = changesOf(value);
   const dirty = changes.length > 0;
 
   useEffect(() => {
@@ -75,29 +79,49 @@ export function useGrantDraft(accounts: AdminAccountDto[], initialRows: Record<s
     return () => reportDirty(false);
   }, [dirty]);
 
-  const setGrant = (userId: string, href: string, next: (g: ProgramGrant) => ProgramGrant) =>
-    setValue((v) => {
-      const old = v[userId]?.[href] ?? EMPTY_CELL;
-      return { ...v, [userId]: { ...v[userId], [href]: { ...old, ...next(old) } } };
-    });
+  const withGrants = (cells: Cells, userId: string, hrefs: readonly string[], next: (g: ProgramGrant, href: string) => ProgramGrant): Cells => {
+    const row = { ...cells[userId] };
+    for (const href of hrefs) {
+      const old = cellIn(cells, userId, href);
+      row[href] = { ...old, ...next(old, href) };
+    }
+    return { ...cells, [userId]: row };
+  };
 
-  const save = () => {
-    if (!dirty) return;
-    const snapshot = value;
+  const setGrant = (userId: string, href: string, next: (g: ProgramGrant) => ProgramGrant) => setValue((v) => withGrants(v, userId, [href], next));
+
+  /** 이 값으로 저장한다. 바뀐 칸만 계정별로 묶어 보낸다. 보낼 것이 없으면 false */
+  const persist = (cells: Cells, done?: (written: number) => string): boolean => {
+    const list = changesOf(cells);
+    if (list.length === 0) return false;
     const byUser = new Map<string, GrantsInput["rows"]>();
-    for (const { userId, href } of changes) {
-      const g = cell(userId, href);
+    for (const { userId, href } of list) {
+      const g = cellIn(cells, userId, href);
       byUser.set(userId, [...(byUser.get(userId) ?? []), { href, read: g.read, insert: g.insert, save: g.save, delete: g.delete, excel: g.excel }]);
     }
     const input = Array.from(byUser, ([userId, rows]) => ({ userId, rows }));
+    setValue(cells);
     start(async () => {
       const res = await action(input).catch(() => ({ ok: false as const, error: M.failed }));
-      if (!res.ok) return say(res.error, "error");
-      setSaved(snapshot);
-      say(M.saved(res.written), "ok");
+      if (!res.ok) {
+        setValue(value);
+        return say(res.error, "error");
+      }
+      setSaved(cells);
+      say((done ?? M.saved)(res.written), "ok");
       router.refresh();
     });
+    return true;
   };
+
+  const save = () => void persist(value);
+
+  /**
+   * 고친 값을 들고 바로 저장한다(백오피스 부여, 회수 화살표와 권한복사가 누르는 즉시 반영되는 것과 같다).
+   * 아직 저장 안 한 칸 고침도 같이 간다 — 따로 두면 저장 뒤 새로 그리기가 그 고침을 지운다
+   */
+  const commit = (userId: string, hrefs: readonly string[], next: (g: ProgramGrant, href: string) => ProgramGrant, done: (written: number) => string) =>
+    persist(withGrants(value, userId, hrefs, next), done);
 
   const retrieve = () => {
     setValue(saved);
@@ -105,7 +129,7 @@ export function useGrantDraft(accounts: AdminAccountDto[], initialRows: Record<s
     say(M.reloaded);
   };
 
-  return { cell, changed, changes, dirty, setGrant, save, retrieve, pending };
+  return { cell, changed, changes, dirty, setGrant, save, commit, retrieve, pending };
 }
 
 /** 그리드 칸 안 체크. 프로그램관리의 칸과 같은 모양이다. 잠긴 칸은 켜진 채 흐리게 둔다 */
