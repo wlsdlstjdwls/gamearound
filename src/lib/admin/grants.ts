@@ -1,4 +1,4 @@
-// 관리자 계정별 프로그램 권한 판정(2026-11-19, 사용자 "사용자별프로그램권한 관리할 수 있는 화면"). 표는 schema-admin 의 adminProgramGrants.
+// 관리자 계정별 프로그램 권한 판정(2026-11-19). 표는 schema-admin 의 adminProgramGrants. 고치는 화면은 둘: 사용자별프로그램관리(사용), 프로그램별사용자권한관리(단추 권한).
 // 메뉴(program-policy), 화면 툴바(screen/head), 페이지, 서버 액션 가드(services/admin-grants), 권한관리 화면이 같이 쓴다. 순수 함수만 둔다.
 //
 // 권한은 백오피스(SBO) 툴바 단추 다섯과 같은 갈래다: 조회, 입력, 저장, 삭제, 엑셀. 줄이 없으면 전부 막힘이다(사용자 결정).
@@ -22,10 +22,16 @@ export const FULL_GRANT: ProgramGrant = { read: true, insert: true, save: true, 
 export const ALWAYS_READ: readonly string[] = [ROUTES.admin];
 
 /**
- * 자기 자신에게서 뺄 수 없는 권한. 권한관리 화면의 조회, 저장을 스스로 끄면 그 계정은 되돌릴 길이 없고,
- * 관리자가 한 명뿐이면 아무도 권한을 못 고친다. 남의 것은 끌 수 있다
+ * 자기 자신에게서 뺄 수 없는 권한. 권한을 고치는 두 화면(사용자별프로그램관리, 프로그램별사용자권한관리)의 조회, 저장을 스스로 끄면
+ * 그 계정은 되돌릴 길이 없고, 관리자가 한 명뿐이면 아무도 권한을 못 고친다. 남의 것은 끌 수 있다
  */
-export const SELF_LOCKED: { href: string; perms: readonly ProgramPerm[] } = { href: ROUTES.adminGrants, perms: ["read", "save"] };
+export const SELF_LOCKED: { hrefs: readonly string[]; perms: readonly ProgramPerm[] } = { hrefs: [ROUTES.adminUserPrograms, ROUTES.adminGrants], perms: ["read", "save"] };
+
+/** 이 계정(actor)이 보는 이 줄의 이 칸이 잠겼나. 대시보드 조회는 누구에게나, 권한 화면 조회, 저장은 자기 계정에만 잠긴다 */
+export function isLockedCell(actorId: string, userId: string, href: string, perm: ProgramPerm): boolean {
+  if (perm === "read" && ALWAYS_READ.includes(href)) return true;
+  return actorId === userId && SELF_LOCKED.hrefs.includes(href) && SELF_LOCKED.perms.includes(perm);
+}
 
 export function grantOf(grants: ProgramGrants, href: string): ProgramGrant {
   if (grants === null) return FULL_GRANT;
@@ -65,14 +71,25 @@ export const grantsInputSchema = z.object({
     .refine((rows) => new Set(rows.map((r) => r.href)).size === rows.length, { message: "duplicate" }),
 });
 
+/**
+ * 한 번 저장에 여러 계정. 사용자별프로그램관리는 계정 하나, 프로그램별사용자권한관리는 프로그램 하나를 두고 여러 계정을 고친다.
+ * 관리자 계정은 몇 안 되어 상한을 작게 둔다
+ */
+export const grantsBatchSchema = z
+  .array(grantsInputSchema)
+  .min(1)
+  .max(50)
+  .refine((b) => new Set(b.map((x) => x.userId)).size === b.length, { message: "duplicate" });
+
 export type GrantsInput = z.infer<typeof grantsInputSchema>;
 export type GrantRowInput = GrantsInput["rows"][number];
 
-/** 이 저장이 자기 권한관리 조회, 저장을 끄나 */
+/** 이 저장이 자기 권한 화면 조회, 저장을 끄나 */
 export function dropsSelfLock(actorId: string, input: GrantsInput): boolean {
   if (input.userId !== actorId) return false;
-  const row = input.rows.find((r) => r.href === SELF_LOCKED.href);
-  if (!row) return false;
-  const g = normalizeGrant(row);
-  return SELF_LOCKED.perms.some((p) => !g[p]);
+  return input.rows.some((row) => {
+    if (!SELF_LOCKED.hrefs.includes(row.href)) return false;
+    const g = normalizeGrant(row);
+    return SELF_LOCKED.perms.some((p) => !g[p]);
+  });
 }

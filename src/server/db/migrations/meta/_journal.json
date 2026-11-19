@@ -841,6 +841,13 @@
       "when": 1794900000000,
       "tag": "0119_admin_program_grants",
       "breakpoints": true
+    },
+    {
+      "idx": 120,
+      "version": "7",
+      "when": 1794990000000,
+      "tag": "0120_admin_user_programs",
+      "breakpoints": true
     }
   ]
 }

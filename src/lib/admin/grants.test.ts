@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { canProgram, dropsSelfLock, FULL_GRANT, grantOf, NO_GRANT, normalizeGrant, programOfPath } from "@/lib/admin/grants";
+import { canProgram, dropsSelfLock, FULL_GRANT, grantOf, isLockedCell, NO_GRANT, normalizeGrant, programOfPath } from "@/lib/admin/grants";
 import { ROUTES } from "@/lib/routes";
 
 const ME = "11111111-1111-4111-8111-111111111111";
@@ -54,5 +54,18 @@ describe("자기 잠금 막기", () => {
   it("둘 다 켜져 있거나 남의 계정이면 통과", () => {
     expect(dropsSelfLock(ME, { userId: ME, rows: [row(true, true)] })).toBe(false);
     expect(dropsSelfLock(ME, { userId: OTHER, rows: [row(false, false)] })).toBe(false);
+  });
+});
+
+describe("두 권한 화면의 자기 잠금", () => {
+  const row = (href: string, read: boolean) => ({ href, read, insert: false, save: read, delete: false, excel: false });
+  it("사용자별프로그램관리 사용을 스스로 끄면 막는다", () => {
+    expect(dropsSelfLock(ME, { userId: ME, rows: [row(ROUTES.adminUserPrograms, false)] })).toBe(true);
+  });
+  it("잠긴 칸: 대시보드 사용은 누구나, 권한 화면은 자기 계정만", () => {
+    expect(isLockedCell(ME, OTHER, ROUTES.admin, "read")).toBe(true);
+    expect(isLockedCell(ME, ME, ROUTES.adminUserPrograms, "save")).toBe(true);
+    expect(isLockedCell(ME, OTHER, ROUTES.adminUserPrograms, "save")).toBe(false);
+    expect(isLockedCell(ME, ME, ROUTES.adminGrants, "excel")).toBe(false);
   });
 });

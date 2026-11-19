@@ -144,6 +144,7 @@ export const ROUTES = {
   adminPrograms: "/admin/programs",
   /** 관리자 계정별 프로그램 권한(조회, 입력, 저장, 삭제, 엑셀)(2026-11-19) */
   adminGrants: "/admin/grants",
+  adminUserPrograms: "/admin/user-programs",
   adminNotifyTemplates: "/admin/notify-templates",
   adminNotifySends: "/admin/notify-sends",
   /** 서비스 변경 안내서 보기(2026-10-30). 본문은 apiAdminGuide 가 관리자에게만 내보낸다(lib/admin/guide) */

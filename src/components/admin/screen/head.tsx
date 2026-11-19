@@ -120,7 +120,7 @@ export function AdminScreenHead({
   // 휴대폰에서는 아예 쓰지 않는 단추라 좁은 머리 줄만 차지한다
   const { mobile, can } = useMobilePolicy();
   const editable = can("edit");
-  // 내 프로그램 권한(사용자별프로그램권한관리)이 없는 단추는 넘겨받지 않은 것으로 친다 — 흐리게 서고 단축키도 같이 꺼진다.
+  // 내 프로그램 권한(프로그램별사용자권한관리)이 없는 단추는 넘겨받지 않은 것으로 친다 — 흐리게 서고 단축키도 같이 꺼진다.
   // 막는 일은 서버 액션(services/admin-grants 의 requireProgram)이 하고, 여기는 헛누르지 않게 하는 표시다
   const grant = useScreenGrant(usePathname());
   const granted: ScreenTools = {

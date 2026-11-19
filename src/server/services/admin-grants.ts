@@ -114,30 +114,34 @@ export async function listGrantRowsByUser(): Promise<Record<string, GrantRowDto[
 const same = (a: ProgramGrant, b: ProgramGrant) => a.read === b.read && a.insert === b.insert && a.save === b.save && a.delete === b.delete && a.excel === b.excel;
 const isEmpty = (g: ProgramGrant) => !(g.read || g.insert || g.save || g.delete || g.excel);
 
-/** 바뀐 줄만 쓴다(table-audit-columns). 쓴 줄 수를 돌려준다. 대상이 관리자가 아니면 아무것도 쓰지 않는다 */
-export async function saveGrants(actorId: string, input: GrantsInput): Promise<number> {
-  if (input.rows.length === 0) return 0;
+/** 바뀐 줄만 쓴다(table-audit-columns). 여러 계정을 한 번에 받고 쓴 줄 수를 돌려준다. 대상 중 관리자가 아닌 계정이 있으면 아무것도 쓰지 않는다 */
+export async function saveGrants(actorId: string, batch: GrantsInput[]): Promise<number> {
+  const inputs = batch.filter((b) => b.rows.length > 0);
+  if (inputs.length === 0) return 0;
   const db = getDb();
-  const [target] = await db.select({ role: users.role }).from(users).where(eq(users.id, input.userId));
-  if (target?.role !== "admin") throw new Error(M.notAdmin);
+  const userIds = inputs.map((b) => b.userId);
+  const targets = await db.select({ id: users.id, role: users.role }).from(users).where(inArray(users.id, userIds));
+  if (targets.length !== userIds.length || targets.some((t) => t.role !== "admin")) throw new Error(M.notAdmin);
   const existing = await db
-    .select(GRANT_COLS)
+    .select({ ...GRANT_COLS, userId: adminProgramGrants.userId })
     .from(adminProgramGrants)
-    .where(and(eq(adminProgramGrants.userId, input.userId), inArray(adminProgramGrants.href, input.rows.map((r) => r.href))));
-  const before = new Map(existing.map((r) => [r.href, pickGrant(r)]));
-  const changed = input.rows
-    .map((r) => ({ href: r.href, g: normalizeGrant(pickGrant(r)) }))
-    .filter(({ href, g }) => {
-      const old = before.get(href);
-      // 줄이 없으면 전부 막힘이다 — 막힘 그대로면 쓸 일이 없다
-      return old ? !same(old, g) : !isEmpty(g);
-    });
+    .where(inArray(adminProgramGrants.userId, userIds));
+  const before = new Map(existing.map((r) => [`${r.userId} ${r.href}`, pickGrant(r)]));
+  const changed = inputs.flatMap((b) =>
+    b.rows
+      .map((r) => ({ userId: b.userId, href: r.href, g: normalizeGrant(pickGrant(r)) }))
+      .filter(({ userId, href, g }) => {
+        const old = before.get(`${userId} ${href}`);
+        // 줄이 없으면 전부 막힘이다 — 막힘 그대로면 쓸 일이 없다
+        return old ? !same(old, g) : !isEmpty(g);
+      }),
+  );
   if (changed.length === 0) return 0;
-  const writes = changed.map(({ href, g }) => {
+  const writes = changed.map(({ userId, href, g }) => {
     const set = { canRead: g.read, canInsert: g.insert, canSave: g.save, canDelete: g.delete, canExcel: g.excel };
     return db
       .insert(adminProgramGrants)
-      .values({ userId: input.userId, href, ...set, ...createdBy("admin", actorId) })
+      .values({ userId, href, ...set, ...createdBy("admin", actorId) })
       .onConflictDoUpdate({ target: [adminProgramGrants.userId, adminProgramGrants.href], set: { ...set, ...updatedBy("admin", actorId) } });
   });
   const [first, ...rest] = writes;

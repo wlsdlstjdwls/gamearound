@@ -157,6 +157,7 @@ export const GROUPS: Array<{ key: string; title?: string; items: Item[] }> = [
     items: [
       { href: ROUTES.adminCodes, label: ADMIN_NAV.codes, Icon: CodeIcon },
       { href: ROUTES.adminPrograms, label: ADMIN_NAV.programs, Icon: ToggleListIcon },
+      { href: ROUTES.adminUserPrograms, label: ADMIN_NAV.userPrograms, Icon: UsersIcon },
       { href: ROUTES.adminGrants, label: ADMIN_NAV.grants, Icon: KeyIcon },
       { href: ROUTES.adminNotifyTemplates, label: ADMIN_NAV.notifyTemplates, Icon: TemplateIcon },
       { href: ROUTES.adminNotifySends, label: ADMIN_NAV.notifySends, Icon: SendIcon },

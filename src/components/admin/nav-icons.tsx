@@ -113,7 +113,7 @@ export function ToggleListIcon(p: IconProps) {
   );
 }
 
-/** 사용자별프로그램권한관리 — 열쇠 */
+/** 프로그램별사용자권한관리 — 열쇠 */
 export function KeyIcon(p: IconProps) {
   return (
     <svg {...base(p)}>
