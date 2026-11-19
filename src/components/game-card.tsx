@@ -11,6 +11,7 @@ import { GAME_MESSAGES, SAVING_MESSAGES } from "@/lib/games/messages";
 import { isPreorder } from "@/lib/games/preorder";
 import { PreorderMark } from "@/components/ui/preorder-mark";
 import { ReleaseTodayMark } from "@/components/ui/release-today-mark";
+import { CARD_TEXT_MARK } from "@/components/ui/text-mark";
 import type { StoreSaving } from "@/lib/games/saving";
 import { parsePlatformValues } from "@/lib/games-query";
 import { expandPlatformValues } from "@/lib/platform";
@@ -160,8 +161,6 @@ export const COVER_CLASS =
  * 인디 카드는 아직 위 CARD_SHELL, COVER_CLASS 를 쓴다 — 바꾸라는 말은 게임 카드에 대한 것이었다
  */
 export const GAME_CARD_SHELL = "card-panel flex h-full flex-col gap-2.5 overflow-hidden !rounded-[var(--radius-md)] pb-3";
-/** 카드 값 위의 면 없는 파란 글자 표지(역대 최저가, 2026-11-16 사용자). 사전예약은 ui/preorder-mark 의 먹색 알약이다 */
-const CARD_TEXT_MARK = "shrink-0 text-[12px] font-semibold text-acc";
 
 export const GAME_COVER_CLASS ="relative block aspect-[460/215] w-full overflow-hidden bg-surface-3";
 /** 그림 아래 글자 묶음의 좌우 여백 */
