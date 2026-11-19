@@ -1,6 +1,6 @@
 "use client";
 // 프로그램관리 화면 본문(2026-11-19, 사용자 "어드민 화면 메뉴 정리, 프로그램 노출 사용 여부 관리하는 화면"). 백오피스 프로그램관리 꼴:
-// 위 조회조건(메뉴묶음, 프로그램명, 노출여부, 사용여부), 아래 프로그램 그리드 한 장. 노출, 사용 칸을 그리드 안에서 바로 고치고 툴바 저장(F9, Ctrl+S)으로 한 번에 보낸다.
+// 위 조회조건(상위메뉴, 프로그램명, 노출여부, 사용여부), 아래 프로그램 그리드 한 장. 노출, 사용 칸을 그리드 안에서 바로 고치고 툴바 저장(F9, Ctrl+S)으로 한 번에 보낸다.
 // 칸이 둘뿐이라 상세 폼을 따로 두지 않는다(admin-form-rules: 칸 몇 개짜리 상세는 만들지 않는다).
 //
 // 프로그램 목록은 메뉴 표(admin-nav-items 의 GROUPS)다 — 입력, 삭제가 없는 이유다. 화면은 코드가 있어야 열리므로 여기서 새 프로그램을 만들 수 없다.
@@ -108,7 +108,6 @@ export function ProgramsScreen({ settings }: { settings: ProgramSettingRowDto[] 
   const columns: GridCol<Row>[] = [
     { key: "group", label: M.colGroup, width: "minmax(96px,0.8fr)", value: (r) => r.group },
     { key: "name", label: M.colName, width: "minmax(140px,1.2fr)", value: (r) => r.name },
-    { key: "href", label: M.colHref, width: "minmax(140px,1.2fr)", value: (r) => r.href },
     {
       key: "visible",
       label: M.colVisible,
@@ -138,7 +137,7 @@ export function ProgramsScreen({ settings }: { settings: ProgramSettingRowDto[] 
     { value: OFF, label: labels.off },
   ];
   const q = f.name.trim().toLowerCase();
-  const rows = value.filter((r) => (f.group === ALL || r.group === f.group) && (!q || r.name.toLowerCase().includes(q) || r.href.includes(q)) && matchFlag(f.visible, r.visible) && matchFlag(f.active, r.active));
+  const rows = value.filter((r) => (f.group === ALL || r.group === f.group) && (!q || r.name.toLowerCase().includes(q)) && matchFlag(f.visible, r.visible) && matchFlag(f.active, r.active));
 
   return (
     <>

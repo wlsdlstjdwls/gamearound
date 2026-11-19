@@ -1,7 +1,7 @@
 // 프로그램관리(/admin/programs) 문구(2026-11-19).
 export const PROGRAMS_MESSAGES = {
   search: "조회조건",
-  searchGroup: "메뉴묶음",
+  searchGroup: "상위메뉴",
   searchName: "프로그램명",
   searchVisible: "노출여부",
   searchActive: "사용여부",
@@ -10,9 +10,8 @@ export const PROGRAMS_MESSAGES = {
   activeLabels: { on: "사용", off: "미사용" },
   list: "프로그램 목록",
   empty: "조건에 맞는 프로그램이 없어요.",
-  colGroup: "메뉴묶음",
+  colGroup: "상위메뉴",
   colName: "프로그램명",
-  colHref: "프로그램경로",
   colVisible: "노출여부",
   colActive: "사용여부",
   colUpdatedBy: "수정자",
