@@ -115,7 +115,11 @@ export function TabBar({
             <div
               key={t.key}
               onContextMenu={(e) => openMenu(e, t.key)}
-              // 가운데 단추로 닫기 — 브라우저 탭과 같은 손버릇
+              // 가운데 단추로 닫기 — 브라우저 탭과 같은 손버릇.
+              // 누르는 순간(mousedown)을 막아야 한다 — 막지 않으면 윈도우 Chrome 이 자동 스크롤 모드로 들어가 auxclick 이 오지 않는다(2026-11-19 사용자 "휠 누르면 꺼지게")
+              onMouseDown={(e) => {
+                if (e.button === 1) e.preventDefault();
+              }}
               onAuxClick={(e) => {
                 if (e.button === 1 && t.closable) {
                   e.preventDefault();
