@@ -150,7 +150,11 @@ export const psstoreAdapter: StoreAdapter = {
         standardId,
       );
       if (std.currentPrice == null || std.currentPrice <= 0 || (snap.currentPrice != null && std.currentPrice >= snap.currentPrice)) return snap;
-      return { ...snap, listPrice: std.listPrice, currentPrice: std.currentPrice, discountPct: std.discountPct, discountEndsAt: std.discountEndsAt };
+      // 링크도 일반판 상품 쪽으로 돌린다(2026-11-19 사용자, GTA VI). 콘셉트 링크는 스토어가 고른 기본 상품(얼티밋)을 열어
+      // 값은 89,800원인데 누르면 112,800원 화면이 떴다. 외부 id 는 콘셉트 그대로 둔다 — 수집 열쇠다.
+      // PS4 짝이 있으면 콘셉트 링크를 남긴다: 짝 행은 본편 링크를 그대로 쓰는데(sync/platform-siblings) 일반판 상품은 PS5 상품이다
+      const storeUrl = ps4 ? snap.storeUrl : std.storeUrl;
+      return { ...snap, storeUrl, listPrice: std.listPrice, currentPrice: std.currentPrice, discountPct: std.discountPct, discountEndsAt: std.discountEndsAt };
     } catch (e) {
       // 일반판 조회가 실패해도 콘셉트 값은 살린다 — 에디션 값이 빈칸보다는 낫다
       console.warn(`[psstore] 일반판 값 조회 실패 (${standardId}): ${errorMessage(e)}`);
