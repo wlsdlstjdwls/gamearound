@@ -1,12 +1,14 @@
 "use server";
 // 인증 Server Action (§5.2: 호출자가 우리 UI → Server Action). zod 검증 → 레이트리밋 → 서비스 → 세션 쿠키.
 // 리다이렉트는 클라이언트가 수행한다(헤더 SessionProvider 갱신 후 soft navigation) — 액션은 redirectTo만 돌려준다.
+import { cookies } from "next/headers";
 import { unavailableOr } from "@/lib/db-errors";
 import { MAINTENANCE_MESSAGES } from "@/lib/messages";
 import { RATE_LIMIT } from "@/lib/auth/constants";
 import { AUTH_MESSAGES as M } from "@/lib/auth/messages";
 import { displayNameSchema, emailSchema, fieldErrorsOf, signInInputFromForm, signInSchema, signUpInputFromForm, signUpSchema } from "@/lib/auth/schemas";
 import { adminNextPath } from "@/lib/auth/sign-in-path";
+import { ADMIN_GREET_COOKIE, ADMIN_GREET_MAX_AGE_SECONDS } from "@/lib/admin/greeting";
 import { afterSignUpPath, safeNextPath } from "@/lib/routes";
 import type { Role } from "@/server/db/schema";
 import { checkRateLimit, getRequestMeta, hashKeyPart } from "@/server/auth/rate-limit";
@@ -126,10 +128,15 @@ export async function signInAction(_prev: AuthActionState, formData: FormData): 
   return signInWith(formData, { admit: () => true, redirectTo: nextFrom(formData) });
 }
 
-/** 관리자 로그인. 관리자 아닌 계정은 세션 없이 돌려보내고, 로그인 뒤에는 관리자 영역으로만 보낸다 */
+/**
+ * 관리자 로그인. 관리자 아닌 계정은 세션 없이 돌려보내고, 로그인 뒤에는 관리자 영역으로만 보낸다.
+ * 들어가면 진입 인사 화면이 한 번 뜨도록 표식을 심는다(lib/admin/greeting). 클라이언트가 지워야 해서 httpOnly 가 아니다 — 값은 "1" 뿐이다
+ */
 export async function adminSignInAction(_prev: AuthActionState, formData: FormData): Promise<AuthActionState> {
   const next = formData.get("next");
-  return signInWith(formData, { admit: (role) => role === "admin", redirectTo: adminNextPath(typeof next === "string" ? next : null) });
+  const res = await signInWith(formData, { admit: (role) => role === "admin", redirectTo: adminNextPath(typeof next === "string" ? next : null) });
+  if (res?.ok) (await cookies()).set(ADMIN_GREET_COOKIE, "1", { path: "/", maxAge: ADMIN_GREET_MAX_AGE_SECONDS, sameSite: "lax", secure: process.env.NODE_ENV === "production" });
+  return res;
 }
 
 /** 로그아웃 — 세션 행 삭제 + 쿠키 제거. 실패해도 쿠키는 지운다 */

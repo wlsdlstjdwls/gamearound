@@ -18,6 +18,7 @@ export * from "./game";
 export * from "./codes";
 export * from "./programs";
 export * from "./grants";
+export * from "./greeting";
 export * from "./notify";
 export * from "./stats";
 export * from "./guide";

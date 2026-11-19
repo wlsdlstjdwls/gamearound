@@ -1069,9 +1069,31 @@ html[data-admin-frame] [data-admin-rail],
 html[data-admin-frame] [data-admin-tabbar],
 html[data-admin-frame] [data-admin-shell],
 html[data-admin-frame] [data-site-header],
-html[data-admin-frame] [data-site-footer] {
+html[data-admin-frame] [data-site-footer],
+html[data-admin-frame] [data-admin-greet] {
   display: none !important;
 }
+/*
+ * 관리자 진입 인사(components/admin/entry-greeting, lib/admin/greeting). 박자는 lib/admin/greeting 의 GREET_TIMING 과 같은 값이다.
+ * 워드마크가 살짝 커지며 들어오고(fitin 의 zoom-in), 끝날 때 덮개째 옅어진다. 움직임을 줄인 사람은 전역 킬스위치가 첫 프레임에 세운다.
+ */
+.admin-greet {
+  --greet-mark: 700ms;
+  --greet-fade: 800ms;
+  transition: opacity var(--greet-fade) var(--ease-standard);
+}
+.admin-greet-mark {
+  animation: greet-mark var(--greet-mark) var(--ease-out-emph) both;
+}
+.admin-greet-out {
+  opacity: 0;
+  pointer-events: none;
+}
+@keyframes greet-mark {
+  from { opacity: 0; transform: scale(0.88); }
+  to { opacity: 1; transform: none; }
+}
+
 html[data-admin-frame] [data-admin-content] {
   padding: 0;
 }
