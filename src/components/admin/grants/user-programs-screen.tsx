@@ -12,6 +12,8 @@ import { useState } from "react";
 import { saveUserProgramsAction } from "@/app/(admin)/admin/user-programs/actions";
 import { Check, PROGRAM_GROUPS, PROGRAMS, toggled, useGrantDraft, type ProgramRow } from "@/components/admin/grants/shared";
 import { DataGrid, type GridCol } from "@/components/admin/screen/data-grid";
+import { FitFillContext } from "@/components/admin/screen/data-grid/fit";
+import { MenuTree, type TreeNode } from "@/components/admin/grants/menu-tree";
 import { AdminScreenHead } from "@/components/admin/screen/head";
 import { Pane, SearchBand, SearchItem } from "@/components/admin/screen/layout";
 import { useAdminStatus } from "@/components/admin/screen/status";
@@ -26,10 +28,12 @@ import { FULL_GRANT, isLockedCell, NO_GRANT, SELF_LOCKED, type ProgramGrant, typ
 import type { AdminAccountDto, GrantRowDto } from "@/server/services/admin-grants";
 
 const ALL = "all";
+/** 트리 마디 열쇠 머리. 상위메뉴 이름과 프로그램 주소가 겹치지 않게 가른다 */
+const GROUP_KEY = "g:";
+const PROGRAM_KEY = "p:";
 /** 권한있는 프로그램의 칸 순서. SBO 사용자프로그램관리와 같다(조회, 입력, 삭제, 저장, 출력, 엑셀 — 출력은 없다) */
 const PERM_ORDER: readonly ProgramPerm[] = ["read", "insert", "delete", "save", "excel"];
 
-type GroupRow = { key: string; name: string; count: number };
 type Side = "off" | "on";
 /** 끌어 놓기로 실어 나르는 값의 형식 이름. 다른 화면의 끌기(파일 등)는 받지 않는다 */
 const DRAG_TYPE = "application/x-admin-programs";
@@ -39,7 +43,8 @@ export function UserProgramsScreen({ accounts, rows, meId }: { accounts: AdminAc
   const { say } = useAdminStatus();
   const [userId, setUserId] = useState<string>(accounts.find((a) => a.id === meId)?.id ?? accounts[0]?.id ?? "");
   const [copyFrom, setCopyFrom] = useState("");
-  const [group, setGroup] = useState<string>(ALL);
+  /** 왼쪽 트리에서 고른 마디. ALL, 상위메뉴(g:이름), 프로그램(p:주소) */
+  const [node, setNode] = useState<string>(ALL);
   const [offChecked, setOffChecked] = useState<Set<string>>(() => new Set());
   const [onChecked, setOnChecked] = useState<Set<string>>(() => new Set());
   const [selected, setSelected] = useState<string | null>(null);
@@ -51,11 +56,20 @@ export function UserProgramsScreen({ accounts, rows, meId }: { accounts: AdminAc
   const locked = (href: string, perm: ProgramPerm) => isLockedCell(meId, userId, href, perm);
   const has = (p: ProgramRow) => draft.cell(userId, p.href).read || locked(p.href, "read");
 
-  const inGroup = PROGRAMS.filter((p) => group === ALL || p.group === group);
+  const inGroup = PROGRAMS.filter((p) => node === ALL || node === `${GROUP_KEY}${p.group}` || node === `${PROGRAM_KEY}${p.href}`);
   const offRows = inGroup.filter((p) => !has(p));
   const onRows = inGroup.filter(has);
 
-  const groupRows: GroupRow[] = [{ key: ALL, name: M.menuAll, count: PROGRAMS.length }, ...PROGRAM_GROUPS.map((g) => ({ key: g, name: g, count: PROGRAMS.filter((p) => p.group === g).length }))];
+  /** SBO 'Program' 트리 꼴: 전체 > 상위메뉴 > 프로그램(grants/menu-tree) */
+  const tree: TreeNode = {
+    key: ALL,
+    label: M.menuAll,
+    count: PROGRAMS.length,
+    children: PROGRAM_GROUPS.map((g) => {
+      const items = PROGRAMS.filter((p) => p.group === g);
+      return { key: `${GROUP_KEY}${g}`, label: g, count: items.length, children: items.map((p) => ({ key: `${PROGRAM_KEY}${p.href}`, label: p.name })) };
+    }),
+  };
 
   const resetChecks = () => {
     setOffChecked(new Set());
@@ -144,11 +158,6 @@ export function UserProgramsScreen({ accounts, rows, meId }: { accounts: AdminAc
     resetChecks();
   };
 
-  const groupColumns: GridCol<GroupRow>[] = [
-    { key: "name", label: M.menuTree, width: "minmax(110px,1fr)", value: (g) => g.name },
-    { key: "count", label: M.colCount, width: "48px", align: "right", value: (g) => g.count },
-  ];
-
   const offColumns: GridCol<ProgramRow>[] = [
     { key: "name", label: M.colName, width: "minmax(90px,1fr)", value: (p) => p.name },
   ];
@@ -207,24 +216,22 @@ export function UserProgramsScreen({ accounts, rows, meId }: { accounts: AdminAc
           </Button>
         </SearchBand>
 
-        <div className="grid items-start gap-3 lg:grid-cols-[250px_minmax(0,0.7fr)_auto_minmax(0,1.6fr)]">
+        <div className="grid items-start gap-3 lg:grid-cols-[250px_minmax(0,1fr)_auto_480px]">
           <Pane title={M.menuTree}>
-            <DataGrid
+            <MenuTree
               label={M.menuTree}
-              columns={groupColumns}
-              rows={groupRows}
-              rowKey={(g) => g.key}
-              selected={group}
+              root={tree}
+              selected={node}
               onSelect={(k) => {
-                setGroup(k);
+                setNode(k);
                 resetChecks();
               }}
-              empty={M.programsEmpty}
-              fit
             />
           </Pane>
           <div {...dropZone("off")} className="relative self-stretch">
             <DropHint show={dragFrom === "on"} over={dropOver === "off"} text={M.dropToRevoke} />
+            {/* 두 목록과 트리는 줄 수와 상관없이 화면 바닥까지 같은 높이로 선다(2026-11-19 사용자 "권한없는 프로그램도 높이를 고정") */}
+            <FitFillContext value>
             <Pane title={M.revokedList}>
               <DataGrid
                 label={M.revokedList}
@@ -238,6 +245,7 @@ export function UserProgramsScreen({ accounts, rows, meId }: { accounts: AdminAc
                 fit
               />
             </Pane>
+            </FitFillContext>
           </div>
           <div className="flex flex-row justify-center gap-2 lg:flex-col lg:self-center">
             <MoveButton label={M.grant} hint={M.grantHint} onClick={() => grant()} disabled={draft.pending} toRight />
@@ -245,6 +253,7 @@ export function UserProgramsScreen({ accounts, rows, meId }: { accounts: AdminAc
           </div>
           <div {...dropZone("on")} className="relative self-stretch">
             <DropHint show={dragFrom === "off"} over={dropOver === "on"} text={M.dropToGrant} />
+            <FitFillContext value>
             <Pane title={M.grantedList}>
               <DataGrid
                 label={M.grantedList}
@@ -262,6 +271,7 @@ export function UserProgramsScreen({ accounts, rows, meId }: { accounts: AdminAc
                 fit
               />
             </Pane>
+            </FitFillContext>
           </div>
         </div>
       </div>
