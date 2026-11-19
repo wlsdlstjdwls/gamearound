@@ -17,7 +17,7 @@ import { programOf } from "@/components/admin/program-shell/programs";
 import { useAdminStatus } from "@/components/admin/screen/status";
 import { useTooltip } from "@/components/ui/tooltip";
 import { cn } from "@/lib/cn";
-import { GameLoader } from "@/components/ui/game-loader";
+import { SpinnerIcon } from "@/components/ui/icons";
 import { isFavoriteHref } from "@/lib/admin/favorites";
 import { buildXlsx, withRowNumbers, xlsxFileName } from "@/lib/admin/xlsx";
 import { formatDateTime } from "@/lib/format";
@@ -304,16 +304,17 @@ function PanelPortal({ children }: { children: React.ReactNode }) {
   return panel ? createPortal(children, panel) : null;
 }
 
-/** 저장 중 덮개. 조금 늦게 떠서(fade-in 지연) 빨리 끝나는 저장에는 깜빡이지 않는다. 판이 화면보다 길어도 로딩바는 보이는 자리에 붙어 있다(sticky) */
+/**
+ * 저장 중 덮개. 조금 늦게 떠서(fade-in 지연) 빨리 끝나는 저장에는 깜빡이지 않는다. 판이 화면보다 길어도 도는 원은 보이는 자리에 붙어 있다(sticky).
+ * 표시는 흔한 도는 원 하나다 — 손전등이 달리는 GameLoader 와 흰 상자는 사용자가 싫어했다(2026-11-19 "그냥 일반적인 로딩바로")
+ */
 function SavingOverlay() {
   return (
     <div className="absolute inset-0 z-30 rounded-[inherit] bg-surface/50 backdrop-blur-sm animate-fade-in [animation-delay:var(--duration-fast)]">
       <span aria-hidden className="pending-bar pending-bar-local" />
-      <div className="sticky top-[35vh] mx-auto mt-24 flex w-fit flex-col items-center gap-2 rounded-2xl border border-line bg-surface px-8 pb-5 pt-4 shadow-lg">
-        <GameLoader size="md" label={M.saving} />
-        <p aria-hidden className="text-[13px] font-semibold text-ink-2">
-          {M.saving}
-        </p>
+      <div role="status" className="sticky top-[40vh] mx-auto mt-24 flex w-fit items-center justify-center text-acc">
+        <SpinnerIcon size={36} />
+        <span className="sr-only">{M.saving}</span>
       </div>
     </div>
   );
