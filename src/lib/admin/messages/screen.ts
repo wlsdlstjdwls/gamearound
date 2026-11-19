@@ -51,6 +51,8 @@ export const SCREEN_MESSAGES = {
   statusLabel: "처리 결과",
   retrieved: (n: number) => `${n.toLocaleString("ko-KR")}건 조회됐어요`,
   refreshing: "다시 조회하는 중이에요",
+  /** 저장을 누른 뒤 서버 응답을 기다리는 동안. 끝나면 각 화면의 결과 문구가 덮는다 */
+  saving: "저장하는 중이에요",
   refreshed: "다시 조회했어요",
   excelDone: (n: number) => `${n.toLocaleString("ko-KR")}건을 엑셀로 다운로드했어요`,
   excelEmpty: "다운로드할 목록이 없어요",

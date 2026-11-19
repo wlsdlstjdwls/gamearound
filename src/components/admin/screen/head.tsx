@@ -171,6 +171,14 @@ export function AdminScreenHead({
     if (wasRefreshing.current && !refreshing) say(count !== undefined ? M.retrieved(count) : M.refreshed, "ok");
     wasRefreshing.current = refreshing;
   }, [refreshing, count, say]);
+  // 저장 중에는 상태줄에 한 줄 남긴다. 끝난 뒤 문구(저장했어요, 실패)는 각 화면이 쓴다
+  const saving = Boolean(givenTools.saving);
+  useEffect(() => {
+    if (saving) say(M.saving);
+  }, [saving, say]);
+  // 조회, 저장이 서버를 기다리는 동안 판 맨 위에 흐르는 띠(2026-11-19, 사용자 "저장할 때 로딩바 같은 것도 없네").
+  // 단추 색만 바뀌어서는 눌렸는지 모른다. 띠 모양은 주소 이동 중 띠와 같다(globals.css 의 .pending-bar, ui/nav-pending)
+  const pendingBar = (saving || refreshing) && <span aria-hidden className="pending-bar" />;
 
   const excel = () => {
     // 공통 그리드가 걸어 둔 전체 줄이 먼저다(쪽을 나눠도 다 나간다). 없으면 화면의 목록 표(data-grid 표시)를 읽는다
@@ -242,6 +250,7 @@ export function AdminScreenHead({
           {actions && <div className="flex flex-wrap items-center gap-2">{actions}</div>}
         </header>
         <MobileActionBar />
+        {pendingBar}
       </>
     );
   }
@@ -277,6 +286,7 @@ export function AdminScreenHead({
           {can("excel") && <ToolButton label={M.excel} tip={M.excelKey} Icon={DownloadIcon} onClick={excel} disabled={!hasGrid} />}
         </div>
       </div>
+      {pendingBar}
     </header>
   );
 }
