@@ -9,7 +9,7 @@ import { ROUTES } from "@/lib/routes";
 import { grantBoost, revokeBoost } from "@/server/services/promotions";
 import { refundPayment, type RefundMode } from "@/server/services/payments";
 import { PAYMENT_MESSAGES as PM } from "@/lib/payments/messages";
-import { requireAdmin } from "@/server/services/users";
+import { requireProgram } from "@/server/services/admin-grants";
 
 export type PromoActionResult = { ok: true } | { ok: false; error: string };
 
@@ -23,7 +23,7 @@ function refresh() {
 
 export async function grantBoostAction(input: GrantBoostInput): Promise<PromoActionResult> {
   try {
-    const admin = await requireAdmin();
+    const admin = await requireProgram(ROUTES.adminPromotions, "save");
     const parsed = grantBoostSchema.safeParse(input);
     if (!parsed.success) return { ok: false, error: M.failed };
     await grantBoost(parsed.data, admin.id);
@@ -36,7 +36,7 @@ export async function grantBoostAction(input: GrantBoostInput): Promise<PromoAct
 
 export async function revokeBoostAction(id: string): Promise<PromoActionResult> {
   try {
-    const admin = await requireAdmin();
+    const admin = await requireProgram(ROUTES.adminPromotions, "save");
     if (!z.uuid().safeParse(id).success) return { ok: false, error: M.failed };
     await revokeBoost(id, admin.id);
     refresh();
@@ -51,7 +51,7 @@ const REFUND_REASON_MAX = 200;
 
 export async function refundPaymentAction(orderId: string, mode: RefundMode, reason: string): Promise<({ ok: true; amount: number }) | { ok: false; error: string }> {
   try {
-    const admin = await requireAdmin();
+    const admin = await requireProgram(ROUTES.adminPayments, "save");
     if (mode !== "full" && mode !== "prorated") return { ok: false, error: PM.refundNotAllowed };
     const amount = await refundPayment(String(orderId).slice(0, 64), mode, String(reason ?? "").trim().slice(0, REFUND_REASON_MAX), admin.id);
     refresh();

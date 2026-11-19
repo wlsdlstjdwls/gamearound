@@ -5,13 +5,14 @@ import { actionError } from "@/lib/db-errors";
 import { CODES_MESSAGES as M } from "@/lib/admin/messages";
 import { commonCodeGroupSchema } from "@/lib/codes/schemas";
 import { CODES_TAG, saveCodeGroup } from "@/server/services/common-codes";
-import { requireAdmin } from "@/server/services/users";
+import { requireProgram } from "@/server/services/admin-grants";
+import { ROUTES } from "@/lib/routes";
 
 export type CodesActionResult = { ok: true } | { ok: false; error: string };
 
 export async function saveCodeGroupAction(input: unknown, isNew: boolean): Promise<CodesActionResult> {
   try {
-    const admin = await requireAdmin();
+    const admin = await requireProgram(ROUTES.adminCodes, "save");
     const parsed = commonCodeGroupSchema.safeParse(input);
     if (!parsed.success) return { ok: false, error: M.invalid };
     const r = await saveCodeGroup(admin.id, parsed.data, isNew);

@@ -113,6 +113,16 @@ export function ToggleListIcon(p: IconProps) {
   );
 }
 
+/** 사용자별프로그램권한관리 — 열쇠 */
+export function KeyIcon(p: IconProps) {
+  return (
+    <svg {...base(p)}>
+      <circle cx="8" cy="15" r="4" />
+      <path d="M10.8 12.2 20 3M16 7l3 3M14 9l2 2" />
+    </svg>
+  );
+}
+
 /** 알림템플릿관리 — 줄이 비어 있는 종이 */
 export function TemplateIcon(p: IconProps) {
   return (

@@ -6,13 +6,14 @@ import type { Metadata } from "next";
 import { AdminScreenHead } from "@/components/admin/screen/head";
 import { PreorderScreen } from "@/components/admin/preorder-screen";
 import { ADMIN_NAV } from "@/lib/admin/messages";
-import { requireRoleOrForbid } from "@/server/auth/guards";
 import { listPreorderForAdmin } from "@/server/services/preorder-bonuses";
+import { requireProgramPage } from "@/server/services/admin-grants";
+import { ROUTES } from "@/lib/routes";
 
 export const metadata: Metadata = { title: ADMIN_NAV.preorder };
 
 export default async function AdminPreorderPage() {
-  await requireRoleOrForbid("admin");
+  await requireProgramPage(ROUTES.adminPreorder);
   const rows = await listPreorderForAdmin();
 
   return (

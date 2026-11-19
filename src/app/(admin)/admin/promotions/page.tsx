@@ -6,13 +6,14 @@
 import type { Metadata } from "next";
 import { PromotionsScreen } from "@/components/admin/promotions-screen";
 import { ADMIN_NAV } from "@/lib/admin/messages";
-import { requireRoleOrForbid } from "@/server/auth/guards";
 import { listBoostCandidates, listBoostsForAdmin } from "@/server/services/promotions";
+import { requireProgramPage } from "@/server/services/admin-grants";
+import { ROUTES } from "@/lib/routes";
 
 export const metadata: Metadata = { title: ADMIN_NAV.promotions };
 
 export default async function AdminPromotionsPage() {
-  await requireRoleOrForbid("admin");
+  await requireProgramPage(ROUTES.adminPromotions);
   const [rows, candidates] = await Promise.all([listBoostsForAdmin(), listBoostCandidates()]);
   return <PromotionsScreen rows={rows} candidates={candidates} />;
 }

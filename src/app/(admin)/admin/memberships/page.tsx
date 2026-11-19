@@ -13,14 +13,14 @@ import { formatAmount } from "@/lib/currency";
 import { MEMBERSHIP_MESSAGES as M } from "@/lib/membership/messages";
 import { ROUTES } from "@/lib/routes";
 import type { MembershipStatus } from "@/server/db/schema";
-import { requireRoleOrForbid } from "@/server/auth/guards";
 import { listMembershipsForAdmin } from "@/server/services/membership";
+import { requireProgramPage } from "@/server/services/admin-grants";
 
 export const metadata: Metadata = { title: ADMIN_NAV.memberships };
 
 
 export default async function AdminMembershipsPage() {
-  await requireRoleOrForbid("admin");
+  await requireProgramPage(ROUTES.adminMemberships);
   const rows = await listMembershipsForAdmin();
   const count = (st: MembershipStatus) => rows.filter((m) => m.status === st).length;
   // 다음 달에 실제로 청구될 줄만 — 해지 예약은 이번 기간이 끝나면 멈추고, 결제 실패는 다시 청구하지만 될지 모른다

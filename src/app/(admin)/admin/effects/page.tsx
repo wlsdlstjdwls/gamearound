@@ -4,13 +4,14 @@
 import type { Metadata } from "next";
 import { EffectsScreen } from "@/components/admin/effects-screen";
 import { ADMIN_NAV } from "@/lib/admin/messages";
-import { requireRoleOrForbid } from "@/server/auth/guards";
 import { getFameIntroSettings, SETTING_KEYS } from "@/server/services/settings";
+import { requireProgramPage } from "@/server/services/admin-grants";
+import { ROUTES } from "@/lib/routes";
 
 export const metadata: Metadata = { title: ADMIN_NAV.effects };
 
 export default async function AdminEffectsPage() {
-  await requireRoleOrForbid("admin");
+  await requireProgramPage(ROUTES.adminEffects);
   const settings = await getFameIntroSettings();
   return <EffectsScreen code={SETTING_KEYS.fameIntro} initial={settings} />;
 }

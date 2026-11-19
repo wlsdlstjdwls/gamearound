@@ -5,7 +5,7 @@ import { cn } from "@/lib/cn";
 import { ADMIN_NAV } from "@/lib/admin/messages";
 import { COMING_SOON } from "@/lib/messages/coming-soon";
 import { ROUTES } from "@/lib/routes";
-import { BarChartIcon, BoardIcon, BoxIcon, BuildingIcon, CardIcon, ChatIcon, CheckListIcon, LinkIcon, LogIcon, MegaphoneIcon, PulseIcon, SearchCheckIcon, SparkleIcon, StoreIcon, UsersIcon, CodeIcon, ToggleListIcon, TemplateIcon, SendIcon, TrendIcon, BookIcon } from "@/components/admin/nav-icons";
+import { BarChartIcon, BoardIcon, BoxIcon, BuildingIcon, CardIcon, ChatIcon, CheckListIcon, LinkIcon, LogIcon, MegaphoneIcon, PulseIcon, SearchCheckIcon, SparkleIcon, StoreIcon, UsersIcon, CodeIcon, ToggleListIcon, TemplateIcon, SendIcon, TrendIcon, BookIcon, KeyIcon } from "@/components/admin/nav-icons";
 import { CalendarIcon, GamepadIcon, TagIcon, TicketIcon } from "@/components/ui/icons";
 import { Suspense, use, type ComponentType } from "react";
 import { mobilePolicyOf } from "@/lib/admin/mobile";
@@ -157,6 +157,7 @@ export const GROUPS: Array<{ key: string; title?: string; items: Item[] }> = [
     items: [
       { href: ROUTES.adminCodes, label: ADMIN_NAV.codes, Icon: CodeIcon },
       { href: ROUTES.adminPrograms, label: ADMIN_NAV.programs, Icon: ToggleListIcon },
+      { href: ROUTES.adminGrants, label: ADMIN_NAV.grants, Icon: KeyIcon },
       { href: ROUTES.adminNotifyTemplates, label: ADMIN_NAV.notifyTemplates, Icon: TemplateIcon },
       { href: ROUTES.adminNotifySends, label: ADMIN_NAV.notifySends, Icon: SendIcon },
       { href: ROUTES.adminGuide, label: ADMIN_NAV.guide, Icon: BookIcon },

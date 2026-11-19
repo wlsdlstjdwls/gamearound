@@ -4,12 +4,13 @@
 import type { Metadata } from "next";
 import { ProgramsScreen } from "@/components/admin/programs-screen";
 import { ADMIN_NAV } from "@/lib/admin/messages";
-import { requireRoleOrForbid } from "@/server/auth/guards";
 import { listProgramSettingRows } from "@/server/services/admin-programs";
+import { requireProgramPage } from "@/server/services/admin-grants";
+import { ROUTES } from "@/lib/routes";
 
 export const metadata: Metadata = { title: ADMIN_NAV.programs };
 
 export default async function AdminProgramsPage() {
-  await requireRoleOrForbid("admin");
+  await requireProgramPage(ROUTES.adminPrograms);
   return <ProgramsScreen settings={await listProgramSettingRows()} />;
 }

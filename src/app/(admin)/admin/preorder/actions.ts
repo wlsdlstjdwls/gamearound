@@ -6,7 +6,7 @@ import { gamePath, ROUTES } from "@/lib/routes";
 import { PREORDER_ADMIN_MESSAGES } from "@/lib/admin/messages";
 import { preorderLinkSchema, preorderModerationSchema } from "@/lib/preorder/schemas";
 import { moderatePreorderPost } from "@/server/services/preorder-bonuses";
-import { requireAdmin } from "@/server/services/users";
+import { requireProgram } from "@/server/services/admin-grants";
 
 const A = PREORDER_ADMIN_MESSAGES;
 
@@ -14,7 +14,7 @@ export type PreorderModerationState = { ok: true; message: string } | { ok: fals
 
 export async function moderatePreorderPostAction(_prev: PreorderModerationState, formData: FormData): Promise<PreorderModerationState> {
   try {
-    const admin = await requireAdmin();
+    const admin = await requireProgram(ROUTES.adminPreorder, "save");
     const input = {
       postId: formData.get("postId"),
       decision: formData.get("decision"),

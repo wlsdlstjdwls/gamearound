@@ -1,7 +1,7 @@
 // /shops/admin — 입점승인관리. 설계서 §11.
 //
 // `/admin/shops` 가 아닌 이유: 주소를 잘못 치면 `/admin` 으로 들어간다. 다만 **경로 분리는 실수 방지고
-// 진짜 방어는 여기 첫 줄의 requireRoleOrForbid 다.** 경로를 어디로 옮기든 그 줄이 없으면 뚫린다.
+// 진짜 방어는 여기 첫 줄의 requireProgramPage(관리자 확인 + 조회 권한) 다.** 경로를 어디로 옮기든 그 줄이 없으면 뚫린다.
 //
 // `/shops/[slug]` 와 부딪히는 문제는 RESERVED_SHOP_SLUGS 가 신청 단계에서 막는다(lib/routes).
 //
@@ -13,9 +13,9 @@ import { ShopsScreen } from "@/components/admin/shops-screen";
 import { ADMIN_NAV } from "@/lib/admin/messages";
 import { SHOP_ADMIN_MESSAGES } from "@/lib/shops/messages";
 import { ROUTES } from "@/lib/routes";
-import { requireRoleOrForbid } from "@/server/auth/guards";
 import { listShopsByStatus } from "@/server/services/shops";
 import type { ShopStatus } from "@/server/db/schema";
+import { requireProgramPage } from "@/server/services/admin-grants";
 
 export const metadata: Metadata = { title: ADMIN_NAV.shops };
 // 심사 화면은 늘 지금 값을 봐야 한다 — 승인하고 새로 고쳤는데 옛 목록이 뜨면 두 번 누른다
@@ -34,7 +34,7 @@ function isStatus(v: string | undefined): v is ShopStatus {
 type Props = { searchParams: Promise<Record<string, string | string[] | undefined>> };
 
 export default async function ShopsAdminPage({ searchParams }: Props) {
-  await requireRoleOrForbid("admin");
+  await requireProgramPage(ROUTES.shopsAdmin);
   const raw = (await searchParams).status;
   const picked = Array.isArray(raw) ? raw[0] : raw;
   const status: ShopStatus = isStatus(picked) ? picked : "pending";

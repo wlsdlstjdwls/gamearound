@@ -11,13 +11,13 @@ import type { PricingSettings } from "@/lib/pricing/settings";
 import { ROUTES } from "@/lib/routes";
 import { getPricingSettings, setPricingSettings, SETTINGS_TAG } from "@/server/services/settings";
 import { lockedPromotionEdits } from "@/lib/pricing/promo-terms";
-import { requireAdmin } from "@/server/services/users";
+import { requireProgram } from "@/server/services/admin-grants";
 
 export type PricingActionResult = { ok: true } | { ok: false; error: string };
 
 export async function savePricingAction(input: unknown): Promise<PricingActionResult> {
   try {
-    const admin = await requireAdmin();
+    const admin = await requireProgram(ROUTES.adminPricing, "save");
     // 폼과 같은 저장 검사(lib/pricing/admin-validation). 틀리면 첫 칸의 까닭을 돌려준다
     const parsed = pricingSaveSchema.safeParse(input);
     if (!parsed.success) {

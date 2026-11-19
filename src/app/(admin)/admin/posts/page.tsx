@@ -13,9 +13,9 @@ import { POST_ADMIN_MESSAGES as M, ADMIN_NAV } from "@/lib/admin/messages";
 import { CATEGORY_LABEL } from "@/lib/community/constants";
 import { firstParam } from "@/lib/games-query";
 import { ROUTES } from "@/lib/routes";
-import { requireRoleOrForbid } from "@/server/auth/guards";
 import { listAllCommentsForAdmin } from "@/server/services/indie";
 import { listPostsForAdmin, POST_ADMIN_LIMIT, POST_ADMIN_TABS, type AdminCommentRowDto, type AdminPostRowDto, type PostAdminTab } from "@/server/services/community";
+import { requireProgramPage } from "@/server/services/admin-grants";
 
 export const metadata: Metadata = { title: ADMIN_NAV.posts };
 
@@ -64,7 +64,7 @@ function commentRow(r: AdminCommentRowDto): PostAdminRow {
 }
 
 export default async function AdminPostsPage({ searchParams }: Props) {
-  await requireRoleOrForbid("admin");
+  await requireProgramPage(ROUTES.adminPosts);
   const sp = await searchParams;
   const raw = firstParam(sp.tab);
   const tab: PostAdminTab = (POST_ADMIN_TABS as readonly string[]).includes(raw ?? "") ? (raw as PostAdminTab) : POST_ADMIN_TABS[0];

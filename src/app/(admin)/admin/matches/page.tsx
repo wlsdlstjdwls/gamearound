@@ -10,12 +10,13 @@ import { MatchesScreen, type MatchRow } from "@/components/admin/matches-screen"
 import { MATCH_MESSAGES, sourceLabel, ADMIN_NAV } from "@/lib/admin/messages";
 import { countPendingMatches, listPendingMatches } from "@/server/services/admin";
 import { AUTO_MATCH_THRESHOLD, PENDING_MATCH_THRESHOLD } from "@/server/sync/match";
-import { requireRoleOrForbid } from "@/server/auth/guards";
+import { requireProgramPage } from "@/server/services/admin-grants";
+import { ROUTES } from "@/lib/routes";
 
 export const metadata: Metadata = { title: ADMIN_NAV.matches };
 
 export default async function AdminMatchesPage() {
-  await requireRoleOrForbid("admin");
+  await requireProgramPage(ROUTES.adminMatches);
   const [pending, total] = await Promise.all([listPendingMatches(), countPendingMatches()]);
   const rows: MatchRow[] = pending.map((p) => ({
     key: `${p.gameId}-${p.source}`,

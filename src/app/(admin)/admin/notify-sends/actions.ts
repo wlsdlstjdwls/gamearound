@@ -15,13 +15,13 @@ import type { NotifySendStatus } from "@/server/db/schema";
 import { sendManualPush, sendManualWebNotice } from "@/server/services/notify-admin";
 import { renderEmailSubject } from "@/lib/notify/email";
 import { isPlainMedium } from "@/lib/notify/medium";
-import { requireAdmin } from "@/server/services/users";
+import { requireProgram } from "@/server/services/admin-grants";
 
 export type SendActionResult = { ok: true; status: NotifySendStatus; error: string | null } | { ok: false; error: string };
 
 export async function sendNoticeAction(input: unknown): Promise<SendActionResult> {
   try {
-    const admin = await requireAdmin();
+    const admin = await requireProgram(ROUTES.adminNotifySends, "save");
     const parsed = manualSendSchema.safeParse(input);
     if (!parsed.success) return { ok: false, error: M.invalid };
     const { body, vars, medium, channel, recipient, subject, templateCode } = parsed.data;

@@ -24,6 +24,7 @@ import { deleteUpgrade, upsertUpgrade } from "@/server/services/admin-upgrades";
 import { requireAdmin } from "@/server/services/users";
 import { getSyncRunItems, type RunItems } from "@/server/services/admin-activity";
 import { ADMIN_ACTION_MESSAGES as A } from "@/lib/admin/messages";
+import { requireProgram } from "@/server/services/admin-grants";
 
 export type AdminActionState = { ok: true; message?: string } | { ok: false; error: string } | null;
 
@@ -74,7 +75,7 @@ function revalidateGame(gameId: string) {
 
 export async function approveMatchAction(gameId: string, source: string): Promise<AdminActionState> {
   try {
-    await requireAdmin();
+    await requireProgram(ROUTES.adminMatches, "save");
     const p = matchSchema.safeParse({ gameId, source });
     if (!p.success) return { ok: false, error: A.invalid };
     await approveMatch(p.data.gameId, p.data.source);
@@ -87,7 +88,7 @@ export async function approveMatchAction(gameId: string, source: string): Promis
 
 export async function rejectMatchAction(gameId: string, source: string): Promise<AdminActionState> {
   try {
-    await requireAdmin();
+    await requireProgram(ROUTES.adminMatches, "save");
     const p = matchSchema.safeParse({ gameId, source });
     if (!p.success) return { ok: false, error: A.invalid };
     await rejectMatch(p.data.gameId, p.data.source);
@@ -180,7 +181,7 @@ export async function upsertUpgradeAction(_prev: AdminActionState, formData: For
 /** 검수 큐의 이름 하나를 위키데이터에서 다시 조회해 회사로 붙인다 */
 export async function resolveCompanyAction(rawName: string): Promise<AdminActionState> {
   try {
-    await requireAdmin();
+    await requireProgram(ROUTES.adminCompanies, "save");
     const p = z.string().trim().min(1).max(200).safeParse(rawName);
     if (!p.success) return { ok: false, error: A.invalidName };
     const result = await resolveCompanyName(p.data);
@@ -247,7 +248,7 @@ export async function deleteUpgradeAction(gameId: string, id: number): Promise<A
  */
 export async function approveProductMatchAction(productId: string): Promise<AdminActionState> {
   try {
-    await requireAdmin();
+    await requireProgram(ROUTES.adminProducts, "save");
     const p = z.uuid().safeParse(productId);
     if (!p.success) return { ok: false, error: A.invalid };
     await approveProductMatch(p.data);
@@ -260,7 +261,7 @@ export async function approveProductMatchAction(productId: string): Promise<Admi
 
 export async function rejectProductMatchAction(productId: string): Promise<AdminActionState> {
   try {
-    await requireAdmin();
+    await requireProgram(ROUTES.adminProducts, "save");
     const p = z.uuid().safeParse(productId);
     if (!p.success) return { ok: false, error: A.invalid };
     await rejectProductMatch(p.data);

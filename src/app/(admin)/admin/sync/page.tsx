@@ -33,7 +33,7 @@ import { getSyncOverview, isSourceName, SOURCES, type SyncOverviewItem } from "@
 import { getSyncActivity, RUNNING_GRACE_MINUTES, type RunSummary } from "@/server/services/admin-activity";
 import { getPatchTranslateStats, type PatchTranslateStats } from "@/server/services/admin-patch-translate";
 import { getDisabledReason, isSource } from "@/server/adapters";
-import { requireRoleOrForbid } from "@/server/auth/guards";
+import { requireProgramPage } from "@/server/services/admin-grants";
 
 export const metadata: Metadata = { title: ADMIN_NAV.overview };
 
@@ -113,7 +113,7 @@ function PatchTranslateLine({ stats }: { stats: PatchTranslateStats }) {
 }
 
 export default async function AdminSyncOverviewPage({ searchParams }: Props) {
-  await requireRoleOrForbid("admin");
+  await requireProgramPage(ROUTES.adminSync);
   const sp = await searchParams;
   const rawSource = firstParam(sp.source);
   const source = isSourceName(rawSource) ? rawSource : "all";

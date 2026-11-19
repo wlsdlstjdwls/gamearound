@@ -3,13 +3,14 @@
 import type { Metadata } from "next";
 import { GuideScreen } from "@/components/admin/guide-screen";
 import { ADMIN_NAV } from "@/lib/admin/messages";
-import { requireRoleOrForbid } from "@/server/auth/guards";
 import { getLatestGuide } from "@/server/services/admin-guide";
+import { requireProgramPage } from "@/server/services/admin-grants";
+import { ROUTES } from "@/lib/routes";
 
 export const metadata: Metadata = { title: ADMIN_NAV.guide };
 
 export default async function AdminGuidePage() {
-  await requireRoleOrForbid("admin");
+  await requireProgramPage(ROUTES.adminGuide);
   // 저장소를 못 읽으면 빈 화면으로 둔다 — 안내서 하나 때문에 관리자 화면이 오류로 바뀌지 않게
   const guide = await getLatestGuide().catch(() => null);
   return <GuideScreen uploadedAt={guide ? guide.uploadedAt.toISOString() : null} />;

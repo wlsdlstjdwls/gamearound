@@ -6,6 +6,7 @@ import { actionError } from "@/lib/db-errors";
 import { QUALITY_MESSAGES as M } from "@/lib/admin/messages";
 import { ROUTES } from "@/lib/routes";
 import { decideDataIssue } from "@/server/services/admin-data-issues";
+import { requireProgram } from "@/server/services/admin-grants";
 
 const schema = z.object({ id: z.uuid(), decision: z.enum(["apply", "dismiss"]) });
 
@@ -15,6 +16,8 @@ export async function decideDataIssueAction(id: string, decision: "apply" | "dis
   const parsed = schema.safeParse({ id, decision });
   if (!parsed.success) return { ok: false, error: M.failed };
   try {
+    // 관리자 확인은 서비스가 다시 하고, 프로그램 권한은 여기서 본다(services/admin-grants)
+    await requireProgram(ROUTES.adminDataIssues, "save");
     const out = await decideDataIssue(parsed.data.id, parsed.data.decision);
     if (!out.ok) return { ok: false, error: out.reason === "stale" ? M.stale : M.failed };
     for (const slug of out.slugs) revalidateTag(`game:${slug}`, "max");

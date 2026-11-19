@@ -8,13 +8,13 @@ import { contentModerationSchema, type ContentModerationInput } from "@/lib/admi
 import { ROUTES } from "@/lib/routes";
 import { moderateComment, moderatePost } from "@/server/services/community";
 import { moderateIndieComment } from "@/server/services/indie";
-import { requireAdmin } from "@/server/services/users";
+import { requireProgram } from "@/server/services/admin-grants";
 
 export type ContentModerationResult = { ok: true } | { ok: false; error: string };
 
 export async function moderateContentAction(input: ContentModerationInput): Promise<ContentModerationResult> {
   try {
-    const admin = await requireAdmin();
+    const admin = await requireProgram(ROUTES.adminPosts, "save");
     const parsed = contentModerationSchema.safeParse(input);
     if (!parsed.success) return { ok: false, error: M.failed };
     const { kind, id, decision } = parsed.data;

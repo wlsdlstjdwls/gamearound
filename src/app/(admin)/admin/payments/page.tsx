@@ -9,13 +9,14 @@ import { PaymentsScreen } from "@/components/admin/payments-screen";
 import { ADMIN_NAV } from "@/lib/admin/messages";
 import { formatAmount } from "@/lib/currency";
 import { PAYMENT_MESSAGES as PM } from "@/lib/payments/messages";
-import { requireRoleOrForbid } from "@/server/auth/guards";
 import { getPaymentSummaryForAdmin, listPaymentsForAdmin } from "@/server/services/payments";
+import { requireProgramPage } from "@/server/services/admin-grants";
+import { ROUTES } from "@/lib/routes";
 
 export const metadata: Metadata = { title: ADMIN_NAV.payments };
 
 export default async function AdminPaymentsPage() {
-  await requireRoleOrForbid("admin");
+  await requireProgramPage(ROUTES.adminPayments);
   const [paid, sum] = await Promise.all([listPaymentsForAdmin(), getPaymentSummaryForAdmin()]);
 
   return (

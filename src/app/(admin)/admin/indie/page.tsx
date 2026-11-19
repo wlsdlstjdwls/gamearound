@@ -10,8 +10,8 @@ import { ADMIN_NAV } from "@/lib/admin/messages";
 import { firstParam } from "@/lib/games-query";
 import { INDIE_ADMIN_MESSAGES as A } from "@/lib/indie/messages";
 import { ROUTES } from "@/lib/routes";
-import { requireRoleOrForbid } from "@/server/auth/guards";
 import { INDIE_ADMIN_TABS, listIndieForAdmin, type IndieAdminTab } from "@/server/services/indie";
+import { requireProgramPage } from "@/server/services/admin-grants";
 
 export const metadata: Metadata = { title: ADMIN_NAV.indie };
 
@@ -24,7 +24,7 @@ function tabHref(tab: IndieAdminTab): string {
 }
 
 export default async function AdminIndiePage({ searchParams }: Props) {
-  await requireRoleOrForbid("admin");
+  await requireProgramPage(ROUTES.adminIndie);
   const raw = firstParam((await searchParams).tab);
   const tab: IndieAdminTab = (INDIE_ADMIN_TABS as readonly string[]).includes(raw ?? "") ? (raw as IndieAdminTab) : INDIE_ADMIN_TABS[0];
   const rows = await listIndieForAdmin(tab);

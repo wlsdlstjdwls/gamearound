@@ -7,7 +7,7 @@ import { ROUTES } from "@/lib/routes";
 import { SHOP_ADMIN_MESSAGES, SHOP_MESSAGES } from "@/lib/shops/messages";
 import { shopReviewSchema } from "@/lib/shops/schemas";
 import { reviewShop } from "@/server/services/shops";
-import { requireRole } from "@/server/services/users";
+import { requireProgram } from "@/server/services/admin-grants";
 
 export type ShopReviewState = { ok: true; message: string } | { ok: false; error: string } | null;
 
@@ -20,7 +20,7 @@ const DONE: Record<string, string> = {
 
 export async function reviewShopAction(_prev: ShopReviewState, formData: FormData): Promise<ShopReviewState> {
   try {
-    const admin = await requireRole("admin");
+    const admin = await requireProgram(ROUTES.shopsAdmin, "save");
     const parsed = shopReviewSchema.safeParse({
       shopId: String(formData.get("shopId") ?? ""),
       decision: String(formData.get("decision") ?? ""),

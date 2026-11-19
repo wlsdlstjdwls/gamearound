@@ -12,16 +12,19 @@ import { EmptyNote } from "@/components/empty-state";
 import { groupsFor, ITEMS } from "@/components/admin/admin-nav-items";
 import { useMobilePolicy } from "@/components/admin/mobile-policy";
 import { inFrame, isFrameMessage, postToTop } from "@/components/admin/program-shell/frame";
-import { PROGRAMS_MESSAGES as M } from "@/lib/admin/messages";
+import { GRANTS_MESSAGES, PROGRAMS_MESSAGES as M } from "@/lib/admin/messages";
 import { blockedProgramOf, isProgramShown, type ProgramSettings } from "@/lib/admin/programs";
+import { canProgram, grantOf, programOfPath, type ProgramGrant, type ProgramGrants } from "@/lib/admin/grants";
 import { ROUTES } from "@/lib/routes";
 import { ProgramLink } from "@/components/admin/screen/program-link";
 
 /** 같은 문서 안에서 저장 소식을 나르는 사건 이름 */
 const LOCAL_EVENT = "admin-programs-local";
 const ProgramsContext = createContext<ProgramSettings>({});
+/** 내 프로그램 권한(lib/admin/grants). 레이아웃이 계정별로 읽어 준다. null 은 판정하지 않음 */
+const GrantsContext = createContext<ProgramGrants>(null);
 
-export function AdminProgramsProvider({ settings, children }: { settings: ProgramSettings; children: React.ReactNode }) {
+export function AdminProgramsProvider({ settings, grants, children }: { settings: ProgramSettings; grants: ProgramGrants; children: React.ReactNode }) {
   const [value, setValue] = useState(settings);
   // 서버가 새 값을 주면(저장 뒤 새로 그리기) 그 값으로 선다
   const [source, setSource] = useState(settings);
@@ -42,7 +45,22 @@ export function AdminProgramsProvider({ settings, children }: { settings: Progra
       window.removeEventListener("message", onMessage);
     };
   }, []);
-  return <ProgramsContext.Provider value={value}>{children}</ProgramsContext.Provider>;
+  return (
+    <ProgramsContext.Provider value={value}>
+      <GrantsContext.Provider value={grants}>{children}</GrantsContext.Provider>
+    </ProgramsContext.Provider>
+  );
+}
+
+export function useProgramGrants(): ProgramGrants {
+  return useContext(GrantsContext);
+}
+
+/** 지금 화면(주소)이 속한 프로그램의 내 권한. 메뉴 밖 화면(게임 고치기)은 관리자면 다 된다 — 어느 프로그램 권한으로 볼지 정할 수 없다 */
+export function useScreenGrant(pathname: string): ProgramGrant {
+  const grants = useProgramGrants();
+  const href = programOfPath(pathname, MENU_HREFS);
+  return href === null ? grantOf(null, pathname) : grantOf(grants, href);
 }
 
 /** 저장한 값을 메뉴에 바로 알린다(이 문서와, 탭 안이면 바깥 기둥) */
@@ -59,10 +77,12 @@ export function useProgramSettings(): ProgramSettings {
 export function useMenuGroups(): ReturnType<typeof groupsFor> {
   const { mobile } = useMobilePolicy();
   const settings = useProgramSettings();
+  const grants = useProgramGrants();
   return useMemo(
-    () => groupsFor(mobile).map((g) => ({ ...g, items: g.items.filter((i) => isProgramShown(settings, i.href)) }))
+    // 조회 권한이 없는 칸도 뺀다(lib/admin/grants) — 눌러서 막힌 안내를 보게 하느니 처음부터 안 보이는 편이 낫다
+    () => groupsFor(mobile).map((g) => ({ ...g, items: g.items.filter((i) => isProgramShown(settings, i.href) && canProgram(grants, i.href, "read")) }))
         .filter((g) => g.items.length > 0),
-    [mobile, settings],
+    [mobile, settings, grants],
   );
 }
 
@@ -72,6 +92,17 @@ const MENU_HREFS = ITEMS.map((i) => i.href);
 export function ProgramGate({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const settings = useProgramSettings();
+  const grant = useScreenGrant(pathname);
+  if (!grant.read) {
+    return (
+      <section className="flex flex-col gap-3 py-2">
+        <EmptyNote title={GRANTS_MESSAGES.blockedTitle}>{GRANTS_MESSAGES.blockedBody}</EmptyNote>
+        <div className="flex flex-wrap items-center gap-2">
+          <ProgramLink href={ROUTES.admin} />
+        </div>
+      </section>
+    );
+  }
   if (!blockedProgramOf(pathname, MENU_HREFS, settings)) return children;
   return (
     <section className="flex flex-col gap-3 py-2">

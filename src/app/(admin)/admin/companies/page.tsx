@@ -9,13 +9,14 @@ import type { Metadata } from "next";
 import { AdminScreenHead } from "@/components/admin/screen/head";
 import { CompaniesScreen } from "@/components/admin/companies-screen";
 import { ADMIN_NAV } from "@/lib/admin/messages";
-import { requireRoleOrForbid } from "@/server/auth/guards";
 import { listCompaniesForAdmin, listPendingCompanies } from "@/server/services/admin-companies";
+import { requireProgramPage } from "@/server/services/admin-grants";
+import { ROUTES } from "@/lib/routes";
 
 export const metadata: Metadata = { title: ADMIN_NAV.companies };
 
 export default async function AdminCompaniesPage() {
-  await requireRoleOrForbid("admin");
+  await requireProgramPage(ROUTES.adminCompanies);
   const [pending, known] = await Promise.all([listPendingCompanies(), listCompaniesForAdmin()]);
 
   return (

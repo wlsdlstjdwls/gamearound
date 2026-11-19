@@ -6,13 +6,13 @@ import { NOTIFY_MESSAGES as M } from "@/lib/admin/messages";
 import { notifyTemplateSchema } from "@/lib/notify/schemas";
 import { ROUTES } from "@/lib/routes";
 import { saveNotifyTemplate } from "@/server/services/notify-admin";
-import { requireAdmin } from "@/server/services/users";
+import { requireProgram } from "@/server/services/admin-grants";
 
 export type TemplateActionResult = { ok: true } | { ok: false; error: string };
 
 export async function saveTemplateAction(input: unknown, isNew: boolean): Promise<TemplateActionResult> {
   try {
-    const admin = await requireAdmin();
+    const admin = await requireProgram(ROUTES.adminNotifyTemplates, "save");
     const parsed = notifyTemplateSchema.safeParse(input);
     if (!parsed.success) return { ok: false, error: M.invalid };
     const r = await saveNotifyTemplate(admin.id, parsed.data, isNew);

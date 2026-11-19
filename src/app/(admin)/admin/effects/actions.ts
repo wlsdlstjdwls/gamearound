@@ -7,13 +7,13 @@ import { EFFECTS_MESSAGES as M } from "@/lib/admin/messages";
 import { fameIntroSettingsSchema } from "@/lib/indie/fame-intro";
 import { ROUTES } from "@/lib/routes";
 import { setFameIntroSettings, SETTINGS_TAG } from "@/server/services/settings";
-import { requireAdmin } from "@/server/services/users";
+import { requireProgram } from "@/server/services/admin-grants";
 
 export type EffectsActionResult = { ok: true } | { ok: false; error: string };
 
 export async function saveFameIntroAction(input: unknown): Promise<EffectsActionResult> {
   try {
-    const admin = await requireAdmin();
+    const admin = await requireProgram(ROUTES.adminEffects, "save");
     const parsed = fameIntroSettingsSchema.safeParse(input);
     if (!parsed.success) return { ok: false, error: M.failed };
     await setFameIntroSettings(admin.id, parsed.data);

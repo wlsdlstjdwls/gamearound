@@ -232,3 +232,25 @@ export const adminPrograms = pgTable("admin_programs", {
   active: boolean("active").default(true).notNull(),
   ...auditColumns(),
 });
+
+/**
+ * 관리자 계정별 프로그램 권한(2026-11-19, 사용자 "사용자별프로그램권한 관리할 수 있는 화면"). 사용자별프로그램권한관리 화면이 고친다.
+ * 백오피스(SBO)처럼 툴바 단추 다섯(조회, 입력, 저장, 삭제, 엑셀)을 따로 준다.
+ *
+ * **줄이 없으면 전부 막힘이다**(사용자 결정). 새로 관리자가 된 계정은 대시보드만 보이고, 권한관리에서 켜 줘야 화면이 열린다.
+ * 그래서 이 표를 만들 때(0119) 그때 있던 관리자 계정에는 모든 프로그램을 다 켠 줄을 넣었다. 새 프로그램을 붙이면 누구에게도 줄이 없으니 켜 줘야 한다.
+ * 프로그램 목록은 프로그램관리처럼 코드가 가진다(admin-nav-items 의 GROUPS). 열쇠는 메뉴 주소다.
+ * 조회가 꺼지면 나머지 넷은 뜻이 없다 — 저장 경로(lib/admin/grants)가 같이 끈다.
+ */
+export const adminProgramGrants = pgTable("admin_program_grants", {
+  userId: uuid("user_id")
+    .notNull()
+    .references(() => users.id, { onDelete: "cascade" }),
+  href: text("href").notNull(),
+  canRead: boolean("can_read").default(false).notNull(),
+  canInsert: boolean("can_insert").default(false).notNull(),
+  canSave: boolean("can_save").default(false).notNull(),
+  canDelete: boolean("can_delete").default(false).notNull(),
+  canExcel: boolean("can_excel").default(false).notNull(),
+  ...auditColumns(),
+}, (t) => [primaryKey({ columns: [t.userId, t.href] })]);

@@ -14,7 +14,8 @@ import { firstParam } from "@/lib/games-query";
 import { isSyncRunHealth, syncHealthOf, type SyncRunHealth } from "@/lib/admin/sync-health";
 import { isSourceName, listSyncLogs, SOURCES, type SyncLogRow } from "@/server/services/admin";
 import { RUNNING_GRACE_MINUTES } from "@/server/services/admin-activity";
-import { requireRoleOrForbid } from "@/server/auth/guards";
+import { requireProgramPage } from "@/server/services/admin-grants";
+import { ROUTES } from "@/lib/routes";
 
 export const metadata: Metadata = { title: ADMIN_NAV.logs };
 
@@ -41,7 +42,7 @@ function toRow(l: SyncLogRow, now: number): SyncLogGridRow {
 }
 
 export default async function SyncLogsPage({ searchParams }: Props) {
-  await requireRoleOrForbid("admin");
+  await requireProgramPage(ROUTES.adminSyncLogs);
   const sp = await searchParams;
   const rawSource = firstParam(sp.source);
   const source = isSourceName(rawSource) ? rawSource : undefined;

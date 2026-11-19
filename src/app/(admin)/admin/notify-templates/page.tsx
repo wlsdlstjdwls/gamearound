@@ -4,14 +4,15 @@ import type { Metadata } from "next";
 import { NotifyTemplatesScreen } from "@/components/admin/notify/templates-screen";
 import { ADMIN_NAV } from "@/lib/admin/messages";
 import { CODE_GROUPS } from "@/lib/codes/groups";
-import { requireRoleOrForbid } from "@/server/auth/guards";
 import { getActiveCodes } from "@/server/services/common-codes";
 import { listNotifyTemplates } from "@/server/services/notify-admin";
+import { requireProgramPage } from "@/server/services/admin-grants";
+import { ROUTES } from "@/lib/routes";
 
 export const metadata: Metadata = { title: ADMIN_NAV.notifyTemplates };
 
 export default async function AdminNotifyTemplatesPage() {
-  await requireRoleOrForbid("admin");
+  await requireProgramPage(ROUTES.adminNotifyTemplates);
   const [templates, channels, categories] = await Promise.all([listNotifyTemplates(), getActiveCodes(CODE_GROUPS.notifyChannel), getActiveCodes(CODE_GROUPS.notifyCategory)]);
   return (
     <NotifyTemplatesScreen

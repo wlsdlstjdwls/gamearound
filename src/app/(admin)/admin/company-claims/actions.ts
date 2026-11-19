@@ -6,13 +6,13 @@ import { COMPANY_CLAIM_ADMIN_MESSAGES as A, COMPANY_CLAIM_MESSAGES as C } from "
 import { companyClaimReviewSchema } from "@/lib/companies/schemas";
 import { ROUTES, companyClaimPath } from "@/lib/routes";
 import { reviewCompanyClaim } from "@/server/services/company-claims";
-import { requireRole } from "@/server/services/users";
+import { requireProgram } from "@/server/services/admin-grants";
 
 export type CompanyClaimReviewState = { ok: true; message: string } | { ok: false; error: string } | null;
 
 export async function reviewCompanyClaimAction(_prev: CompanyClaimReviewState, formData: FormData): Promise<CompanyClaimReviewState> {
   try {
-    const admin = await requireRole("admin");
+    const admin = await requireProgram(ROUTES.adminCompanyClaims, "save");
     const parsed = companyClaimReviewSchema.safeParse({
       claimId: String(formData.get("claimId") ?? ""),
       decision: String(formData.get("decision") ?? ""),

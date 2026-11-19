@@ -7,9 +7,9 @@ import { CompanyClaimsScreen } from "@/components/admin/company-claims-screen";
 import { ADMIN_NAV } from "@/lib/admin/messages";
 import { COMPANY_CLAIM_ADMIN_MESSAGES as A } from "@/lib/companies/messages";
 import { ROUTES } from "@/lib/routes";
-import { requireRoleOrForbid } from "@/server/auth/guards";
 import { listCompanyClaims } from "@/server/services/company-claims";
 import type { CompanyClaimStatus } from "@/server/db/schema";
+import { requireProgramPage } from "@/server/services/admin-grants";
 
 export const metadata: Metadata = { title: ADMIN_NAV.companyClaims };
 // 심사 화면은 늘 지금 값을 봐야 한다
@@ -25,7 +25,7 @@ const STATUSES: Array<{ status: CompanyClaimStatus; label: string }> = [
 type Props = { searchParams: Promise<Record<string, string | string[] | undefined>> };
 
 export default async function AdminCompanyClaimsPage({ searchParams }: Props) {
-  await requireRoleOrForbid("admin");
+  await requireProgramPage(ROUTES.adminCompanyClaims);
   const raw = (await searchParams).status;
   const picked = Array.isArray(raw) ? raw[0] : raw;
   const status = STATUSES.find((s) => s.status === picked)?.status ?? "pending";

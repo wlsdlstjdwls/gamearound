@@ -26,6 +26,7 @@ import { GRID_MESSAGES, SCREEN_MESSAGES as M } from "@/lib/admin/messages";
 import { useSession } from "@/components/auth/session-provider";
 import { askConfirm } from "@/components/ui/confirm-dialog";
 import { useMobilePolicy } from "@/components/admin/mobile-policy";
+import { useScreenGrant } from "@/components/admin/program-policy";
 import { MobileActionBar, publishMobileTools } from "@/components/admin/screen/mobile-tools";
 import { DownloadIcon, MinusCircleIcon, PlusCircleIcon, RefreshIcon, SaveIcon, type IconProps } from "@/components/admin/screen/tool-icons";
 
@@ -119,7 +120,16 @@ export function AdminScreenHead({
   // 휴대폰에서는 아예 쓰지 않는 단추라 좁은 머리 줄만 차지한다
   const { mobile, can } = useMobilePolicy();
   const editable = can("edit");
-  const tools: ScreenTools = editable ? givenTools : { retrieve: givenTools.retrieve };
+  // 내 프로그램 권한(사용자별프로그램권한관리)이 없는 단추는 넘겨받지 않은 것으로 친다 — 흐리게 서고 단축키도 같이 꺼진다.
+  // 막는 일은 서버 액션(services/admin-grants 의 requireProgram)이 하고, 여기는 헛누르지 않게 하는 표시다
+  const grant = useScreenGrant(usePathname());
+  const granted: ScreenTools = {
+    ...givenTools,
+    insert: grant.insert ? givenTools.insert : undefined,
+    delete: grant.delete ? givenTools.delete : undefined,
+    save: grant.save ? givenTools.save : undefined,
+  };
+  const tools: ScreenTools = editable ? granted : { retrieve: givenTools.retrieve };
   const { user } = useSession();
   const path = usePath();
   const favoriteKey = useFavoriteKey();
@@ -188,6 +198,7 @@ export function AdminScreenHead({
   );
 
   const excel = () => {
+    if (!grant.excel) return;
     // 공통 그리드가 걸어 둔 전체 줄이 먼저다(쪽을 나눠도 다 나간다). 없으면 화면의 목록 표(data-grid 표시)를 읽는다
     const grid = registeredGrids()[0];
     const { head, rows, pick } = grid ?? { ...readGrid(), pick: null };
@@ -290,7 +301,7 @@ export function AdminScreenHead({
               <ToolButton label={M.save} tip={M.saveKey} Icon={SaveIcon} onClick={tools.save} disabled={!tools.save || Boolean(tools.saveDisabled)} busy={tools.saving} />
             </>
           )}
-          {can("excel") && <ToolButton label={M.excel} tip={M.excelKey} Icon={DownloadIcon} onClick={excel} disabled={!hasGrid} />}
+          {can("excel") && <ToolButton label={M.excel} tip={M.excelKey} Icon={DownloadIcon} onClick={excel} disabled={!hasGrid || !grant.excel} />}
         </div>
       </div>
       {pendingBar}

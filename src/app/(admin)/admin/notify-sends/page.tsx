@@ -4,12 +4,12 @@ import type { Metadata } from "next";
 import { NotifySendsScreen } from "@/components/admin/notify/sends-screen";
 import { ADMIN_NAV } from "@/lib/admin/messages";
 import { CODE_GROUPS } from "@/lib/codes/groups";
-import { NOTIFY_COMPOSE_PARAM } from "@/lib/routes";
+import { NOTIFY_COMPOSE_PARAM, ROUTES } from "@/lib/routes";
 import { periodRange, resolvePeriod } from "@/lib/stats/period";
-import { requireRoleOrForbid } from "@/server/auth/guards";
 import { notifyMediumEnum, notifySendStatusEnum, type NotifyMedium, type NotifySendStatus } from "@/server/db/schema";
 import { getActiveCodes } from "@/server/services/common-codes";
 import { listNotifySends, listNotifyTemplates, NOTIFY_SENDS_LIMIT } from "@/server/services/notify-admin";
+import { requireProgramPage } from "@/server/services/admin-grants";
 
 export const metadata: Metadata = { title: ADMIN_NAV.notifySends };
 
@@ -20,7 +20,7 @@ const MAX_DAYS = 92;
 type Search = Promise<Record<string, string | string[] | undefined>>;
 
 export default async function AdminNotifySendsPage({ searchParams }: { searchParams: Search }) {
-  await requireRoleOrForbid("admin");
+  await requireProgramPage(ROUTES.adminNotifySends);
   const sp = await searchParams;
   const one = (k: string) => (typeof sp[k] === "string" ? (sp[k] as string) : undefined);
   const period = resolvePeriod({ from: one("from"), to: one("to") }, { defaultDays: DEFAULT_DAYS, maxDays: MAX_DAYS });

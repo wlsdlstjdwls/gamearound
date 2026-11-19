@@ -27,6 +27,7 @@ export const ADMIN_MENU_KEYWORDS: Readonly<Record<string, readonly string[]>> = 
   [ROUTES.adminStatsUsage]: ["방문", "유입", "가입", "이용 통계"],
   [ROUTES.adminCodes]: ["공통코드", "코드북", "코드"],
   [ROUTES.adminPrograms]: ["프로그램", "메뉴 노출", "메뉴 정리", "사용여부"],
+  [ROUTES.adminGrants]: ["권한", "사용자 권한", "프로그램 권한", "계정 권한"],
   [ROUTES.adminNotifyTemplates]: ["텔레그램", "알림 문구", "템플릿"],
   [ROUTES.adminNotifySends]: ["알림 발송", "직접 보내기", "발송 이력"],
   [ROUTES.adminGuide]: ["안내서", "매뉴얼", "변경 안내"],

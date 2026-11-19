@@ -8,8 +8,8 @@ import { savePlanSchema } from "@/lib/admin/plan-schemas";
 import { ROUTES } from "@/lib/routes";
 import { createTaskForPlanItem, registerPlanAttachment, removePlanAttachment, savePlan, setTaskPlanItem } from "@/server/services/admin-plan";
 import { planAttachmentRegisterSchema } from "@/lib/admin/task-attachments";
-import { requireAdmin } from "@/server/services/users";
 import { bumpWorkVersion } from "@/server/services/admin-tasks";
+import { requireProgram } from "@/server/services/admin-grants";
 
 export type PlanActionResult = { ok: true; id?: string } | { ok: false; error: string };
 
@@ -22,7 +22,7 @@ async function refresh() {
 
 export async function savePlanAction(input: unknown): Promise<PlanActionResult> {
   try {
-    await requireAdmin();
+    await requireProgram(ROUTES.adminTasks, "save");
     const parsed = savePlanSchema.safeParse(input);
     if (!parsed.success) return { ok: false, error: M.invalid };
     await savePlan(parsed.data);
@@ -35,7 +35,7 @@ export async function savePlanAction(input: unknown): Promise<PlanActionResult> 
 
 export async function createPlanTaskAction(itemId: unknown): Promise<PlanActionResult> {
   try {
-    await requireAdmin();
+    await requireProgram(ROUTES.adminTasks, "insert");
     const id = z.uuid().parse(itemId);
     const taskId = await createTaskForPlanItem(id);
     if (!taskId) return { ok: false, error: M.failed };
@@ -49,7 +49,7 @@ export async function createPlanTaskAction(itemId: unknown): Promise<PlanActionR
 /** 카드의 일정 연결 바꾸기(빈 값이면 해제). 일정 화면의 "연결 해제" 와 업무요청 팝업의 일정 칸이 같이 쓴다 */
 export async function linkTaskPlanAction(taskId: unknown, planItemId: unknown): Promise<PlanActionResult> {
   try {
-    await requireAdmin();
+    await requireProgram(ROUTES.adminTasks, "save");
     const task = z.uuid().parse(taskId);
     const item = z.union([z.uuid(), z.literal(""), z.null()]).parse(planItemId);
     await setTaskPlanItem(task, item || null);
@@ -62,7 +62,7 @@ export async function linkTaskPlanAction(taskId: unknown, planItemId: unknown): 
 
 export async function registerPlanAttachmentAction(input: unknown): Promise<PlanActionResult> {
   try {
-    await requireAdmin();
+    await requireProgram(ROUTES.adminTasks, "save");
     const p = planAttachmentRegisterSchema.safeParse(input);
     if (!p.success) return { ok: false, error: M.invalid };
     await registerPlanAttachment(p.data);
@@ -75,7 +75,7 @@ export async function registerPlanAttachmentAction(input: unknown): Promise<Plan
 
 export async function removePlanAttachmentAction(id: unknown): Promise<PlanActionResult> {
   try {
-    await requireAdmin();
+    await requireProgram(ROUTES.adminTasks, "delete");
     await removePlanAttachment(z.uuid().parse(id));
     await refresh();
     return { ok: true };

@@ -9,8 +9,8 @@ import { buttonClass } from "@/components/ui/button";
 import { TaskArchiveList } from "@/components/admin/task-archive-list";
 import { TASK_MESSAGES } from "@/lib/admin/messages";
 import { ROUTES } from "@/lib/routes";
-import { requireRoleOrForbid } from "@/server/auth/guards";
 import { ARCHIVE_VISIBLE_LIMIT, listArchived } from "@/server/services/admin-tasks";
+import { requireProgramPage } from "@/server/services/admin-grants";
 
 export const metadata: Metadata = { title: TASK_MESSAGES.archiveTitle };
 // 되돌린 일이 곧바로 빠져야 한다 — 옛 목록이 뜨면 두 번 되돌린다(판과 같은 이유)
@@ -18,7 +18,7 @@ export const dynamic = "force-dynamic";
 
 export default async function AdminTasksArchivePage() {
   // 판 화면과 같은 이유로 먼저 막는다(레이아웃과 나란히 렌더되어 서비스의 requireAdmin 이 로그를 남긴다)
-  await requireRoleOrForbid("admin");
+  await requireProgramPage(ROUTES.adminTasks);
   const tasks = await listArchived();
 
   return (

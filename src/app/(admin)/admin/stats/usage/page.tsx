@@ -4,8 +4,9 @@ import type { Metadata } from "next";
 import { UsageScreen } from "@/components/admin/stats/usage-screen";
 import { ADMIN_NAV, STATS_MESSAGES } from "@/lib/admin/messages";
 import { resolvePeriod } from "@/lib/stats/period";
-import { requireRoleOrForbid } from "@/server/auth/guards";
 import { getUsageStats } from "@/server/services/stats";
+import { requireProgramPage } from "@/server/services/admin-grants";
+import { ROUTES } from "@/lib/routes";
 
 export const metadata: Metadata = { title: ADMIN_NAV.statsUsage };
 
@@ -15,7 +16,7 @@ const MAX_DAYS = 92;
 type Search = Promise<Record<string, string | string[] | undefined>>;
 
 export default async function AdminStatsUsagePage({ searchParams }: { searchParams: Search }) {
-  await requireRoleOrForbid("admin");
+  await requireProgramPage(ROUTES.adminStatsUsage);
   const sp = await searchParams;
   const period = resolvePeriod({ from: sp.from, to: sp.to }, { defaultDays: DEFAULT_DAYS, maxDays: MAX_DAYS });
   // 한 질의가 넘어져도 화면 틀은 선다 — 메뉴로 다른 화면에 갈 수 있어야 한다

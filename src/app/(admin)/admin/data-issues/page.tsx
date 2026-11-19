@@ -8,13 +8,14 @@ import type { Metadata } from "next";
 import { AdminScreenHead } from "@/components/admin/screen/head";
 import { DataIssuesScreen } from "@/components/admin/data-issues-screen";
 import { ADMIN_NAV } from "@/lib/admin/messages";
-import { requireRoleOrForbid } from "@/server/auth/guards";
 import { listDataIssues } from "@/server/services/admin-data-issues";
+import { requireProgramPage } from "@/server/services/admin-grants";
+import { ROUTES } from "@/lib/routes";
 
 export const metadata: Metadata = { title: ADMIN_NAV.dataIssues };
 
 export default async function AdminDataIssuesPage() {
-  await requireRoleOrForbid("admin");
+  await requireProgramPage(ROUTES.adminDataIssues);
   const { open, recentAuto } = await listDataIssues();
 
   return (

@@ -4,13 +4,14 @@
 import type { Metadata } from "next";
 import { PricingForm } from "@/components/admin/pricing-form";
 import { ADMIN_NAV } from "@/lib/admin/messages";
-import { requireRoleOrForbid } from "@/server/auth/guards";
 import { getPricingSettings } from "@/server/services/settings";
+import { requireProgramPage } from "@/server/services/admin-grants";
+import { ROUTES } from "@/lib/routes";
 
 export const metadata: Metadata = { title: ADMIN_NAV.discounts };
 
 export default async function AdminDiscountsPage() {
-  await requireRoleOrForbid("admin");
+  await requireProgramPage(ROUTES.adminDiscounts);
   const settings = await getPricingSettings();
   // 제목, 설명, 요금 화면 열기, 저장은 폼 머리 툴바가 한 줄로 세운다(pricing-form 주석)
   return <PricingForm initial={settings} part="discounts" title={ADMIN_NAV.discounts} />;

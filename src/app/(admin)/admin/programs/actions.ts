@@ -7,13 +7,13 @@ import { PROGRAMS_MESSAGES as M } from "@/lib/admin/messages";
 import { programSettingsInputSchema } from "@/lib/admin/programs";
 import { ROUTES } from "@/lib/routes";
 import { ADMIN_PROGRAMS_TAG, saveProgramSettings } from "@/server/services/admin-programs";
-import { requireAdmin } from "@/server/services/users";
+import { requireProgram } from "@/server/services/admin-grants";
 
 export type ProgramsActionResult = { ok: true; written: number } | { ok: false; error: string };
 
 export async function saveProgramSettingsAction(input: unknown): Promise<ProgramsActionResult> {
   try {
-    const admin = await requireAdmin();
+    const admin = await requireProgram(ROUTES.adminPrograms, "save");
     const parsed = programSettingsInputSchema.safeParse(input);
     if (!parsed.success) return { ok: false, error: M.invalid };
     const written = await saveProgramSettings(admin.id, parsed.data);

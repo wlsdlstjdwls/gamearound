@@ -7,15 +7,16 @@
 import type { Metadata } from "next";
 import { AdminScreenHead } from "@/components/admin/screen/head";
 import { ProductsScreen, type ProductMatchRow } from "@/components/admin/products-screen";
-import { requireRoleOrForbid } from "@/server/auth/guards";
 import { countSuggestedProductMatches, listSuggestedProductMatches } from "@/server/services/admin-products";
 import { AUTO_MATCH_THRESHOLD, PENDING_MATCH_THRESHOLD } from "@/server/sync/match";
 import { PRODUCT_MATCH_MESSAGES as M, ADMIN_NAV } from "@/lib/admin/messages";
+import { requireProgramPage } from "@/server/services/admin-grants";
+import { ROUTES } from "@/lib/routes";
 
 export const metadata: Metadata = { title: ADMIN_NAV.products };
 
 export default async function AdminProductMatchesPage() {
-  await requireRoleOrForbid("admin");
+  await requireProgramPage(ROUTES.adminProducts);
   const [queue, total] = await Promise.all([listSuggestedProductMatches(), countSuggestedProductMatches()]);
   const rows: ProductMatchRow[] = queue.map((p) => ({
     productId: p.productId,

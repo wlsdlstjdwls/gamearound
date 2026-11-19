@@ -6,13 +6,13 @@ import { indiePath, ROUTES } from "@/lib/routes";
 import { INDIE_ADMIN_MESSAGES as A, INDIE_FORM_MESSAGES as M } from "@/lib/indie/messages";
 import { indieModerationSchema } from "@/lib/indie/schemas";
 import { moderateIndiePost } from "@/server/services/indie";
-import { requireAdmin } from "@/server/services/users";
+import { requireProgram } from "@/server/services/admin-grants";
 
 export type IndieModerationState = { ok: true; message: string } | { ok: false; error: string } | null;
 
 export async function moderateIndiePostAction(_prev: IndieModerationState, formData: FormData): Promise<IndieModerationState> {
   try {
-    const admin = await requireAdmin();
+    const admin = await requireProgram(ROUTES.adminIndie, "save");
     const parsed = indieModerationSchema.safeParse({
       postId: formData.get("postId"),
       decision: formData.get("decision"),

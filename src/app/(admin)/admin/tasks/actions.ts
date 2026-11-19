@@ -26,6 +26,7 @@ import { searchShopGames } from "@/server/services/shop-games";
 import type { ShopGameOptionDto } from "@/lib/shops/game-option";
 import { requireAdmin } from "@/server/services/users";
 import { bumpWorkVersion } from "@/server/services/admin-tasks";
+import { requireProgram } from "@/server/services/admin-grants";
 
 /** `id` 는 방금 만든 할 일, 기록의 id 다 — 화면이 거기에 파일을 이어 붙인다(첨부, 2026-10-02) */
 export type TaskActionState = { ok: true; message?: string; id?: string } | { ok: false; error: string } | null;
@@ -74,7 +75,7 @@ async function revalidate() {
 
 export async function createTaskAction(_prev: TaskActionState, form: FormData): Promise<TaskActionState> {
   try {
-    const admin = await requireAdmin();
+    const admin = await requireProgram(ROUTES.adminTasks, "insert");
     const p = createSchema.safeParse({
       title: form.get("title"),
       body: form.get("body") ?? undefined,
@@ -109,7 +110,7 @@ export async function createTaskAction(_prev: TaskActionState, form: FormData): 
 /** 칸 옮기기와 자리 바꾸기. `before` 는 끌어 놓은 자리(그 카드 앞, null 이면 맨 끝). 안 주면 받는 칸 맨 위다(moveTask 주석) */
 export async function moveTaskAction(id: string, to: string, before?: string | null): Promise<TaskActionState> {
   try {
-    const admin = await requireAdmin();
+    const admin = await requireProgram(ROUTES.adminTasks, "save");
     const p = z.object({ id: z.uuid(), to: statusSchema, before: z.uuid().nullable().optional() }).safeParse({ id, to, before });
     if (!p.success) return { ok: false, error: TASK_MESSAGES.invalid };
     const moved = await moveTask(p.data.id, p.data.to, p.data.before);
@@ -123,7 +124,7 @@ export async function moveTaskAction(id: string, to: string, before?: string | n
 
 export async function deleteTaskAction(id: string): Promise<TaskActionState> {
   try {
-    await requireAdmin();
+    await requireProgram(ROUTES.adminTasks, "delete");
     const p = z.uuid().safeParse(id);
     if (!p.success) return { ok: false, error: TASK_MESSAGES.invalid };
     await deleteTask(p.data);
@@ -137,7 +138,7 @@ export async function deleteTaskAction(id: string): Promise<TaskActionState> {
 /** 카드 고치기 — 제목과 메모, 급함, 갈래, 게임, 담당자. 칸과 순서는 각자의 액션이 맡는다(자취를 남겨야 해서) */
 export async function updateTaskAction(_prev: TaskActionState, form: FormData): Promise<TaskActionState> {
   try {
-    const admin = await requireAdmin();
+    const admin = await requireProgram(ROUTES.adminTasks, "save");
     const p = z
       .object({
         id: z.uuid(),
@@ -184,7 +185,7 @@ export async function updateTaskAction(_prev: TaskActionState, form: FormData): 
 
 export async function addNoteAction(_prev: TaskActionState, form: FormData): Promise<TaskActionState> {
   try {
-    const admin = await requireAdmin();
+    const admin = await requireProgram(ROUTES.adminTasks, "save");
     const p = z
       .object({ taskId: z.uuid(), body: z.string().trim().max(NOTE_MAX), hasFiles: z.literal("1").optional() })
       .safeParse({ taskId: form.get("taskId"), body: form.get("body") ?? "", hasFiles: form.get("hasFiles") ?? undefined });
@@ -203,7 +204,7 @@ export async function addNoteAction(_prev: TaskActionState, form: FormData): Pro
 
 export async function deleteNoteAction(id: string): Promise<TaskActionState> {
   try {
-    await requireAdmin();
+    await requireProgram(ROUTES.adminTasks, "delete");
     const p = z.uuid().safeParse(id);
     if (!p.success) return { ok: false, error: TASK_MESSAGES.invalid };
     await deleteNote(p.data);
@@ -229,7 +230,7 @@ export async function searchTaskGamesAction(term: string): Promise<ShopGameOptio
 /** 끝난 일 치우기 — 판에서 걷는다(지우지 않는다). 걷은 일은 지난 일 화면에 남는다 */
 export async function archiveDoneAction(): Promise<TaskActionState> {
   try {
-    await requireAdmin();
+    await requireProgram(ROUTES.adminTasks, "save");
     const n = await archiveDone();
     await revalidate();
     return { ok: true, message: TASK_MESSAGES.archived(n) };
@@ -241,7 +242,7 @@ export async function archiveDoneAction(): Promise<TaskActionState> {
 /** 걷은 일을 판(완료 칸)으로 되돌린다 */
 export async function restoreTaskAction(id: string): Promise<TaskActionState> {
   try {
-    await requireAdmin();
+    await requireProgram(ROUTES.adminTasks, "save");
     const p = z.uuid().safeParse(id);
     if (!p.success) return { ok: false, error: TASK_MESSAGES.invalid };
     await restoreTask(p.data);
@@ -255,7 +256,7 @@ export async function restoreTaskAction(id: string): Promise<TaskActionState> {
 /** 브라우저가 Blob 으로 올린 파일을 할 일(또는 기록)에 적는다. 파일이 정말 거기 있는지는 서비스가 저장소에 묻는다 */
 export async function registerAttachmentAction(input: AttachmentRegisterInput): Promise<TaskActionState> {
   try {
-    await requireAdmin();
+    await requireProgram(ROUTES.adminTasks, "save");
     const p = attachmentRegisterSchema.safeParse(input);
     if (!p.success) return { ok: false, error: TASK_MESSAGES.invalid };
     await registerAttachment(p.data);
@@ -268,7 +269,7 @@ export async function registerAttachmentAction(input: AttachmentRegisterInput): 
 
 export async function removeAttachmentAction(id: string): Promise<TaskActionState> {
   try {
-    await requireAdmin();
+    await requireProgram(ROUTES.adminTasks, "delete");
     const p = z.uuid().safeParse(id);
     if (!p.success) return { ok: false, error: TASK_MESSAGES.invalid };
     await removeAttachment(p.data);
