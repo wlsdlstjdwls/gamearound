@@ -27,7 +27,7 @@ import { Flag } from "@/components/ui/flag";
 import { Tag } from "@/components/ui/tag";
 import { genreTagLabel } from "@/lib/genres";
 import { FitClamp } from "@/components/ui/fit-clamp";
-import { BellIcon, CalendarIcon } from "@/components/ui/icons";
+import { BellIcon } from "@/components/ui/icons";
 import { DETAIL_MESSAGES as D } from "@/lib/games/detail-messages";
 import { formatDate, kstDateKey } from "@/lib/format";
 import { gamesHref } from "@/lib/games-query";
@@ -254,8 +254,8 @@ function InfoCard({ game, showRelease }: { game: GameDetail; showRelease: boolea
     <dl className="flex flex-col gap-2 rounded-[var(--radius-panel)] bg-surface p-4 text-[13.5px] shadow-[var(--elev-card)]">
       {release && (
         <div className="flex items-center gap-3">
-          <dt className="flex w-10 shrink-0 items-center gap-1 text-mut">
-            <CalendarIcon size={14} className="shrink-0" />
+          {/* 이름표 앞 달력 아이콘은 걷었다(2026-11-19 사용자 "출시 앞에 아이콘도 빼") — 개발, 배급 줄과 같은 글자만 */}
+          <dt className="w-10 shrink-0 text-mut">
             {D.releaseRowLabel}
           </dt>
           <dd className="flex min-w-0 items-center gap-2 font-bold text-ink-2">
