@@ -8,6 +8,7 @@ import { markAdminGreeting } from "@/lib/admin/greeting";
 import { stagger } from "@/lib/motion";
 import { ROUTES } from "@/lib/routes";
 import { focusNextOnEnter, useAuthForm } from "@/components/auth/use-auth-form";
+import { GreetIntro } from "@/components/admin/greet-frame";
 import { Button } from "@/components/ui/button";
 import { FormMessage } from "@/components/ui/form-message";
 import { PasswordField } from "@/components/ui/password-field";
@@ -32,8 +33,9 @@ export function SignInForm({ next, admin = false }: { next: string; admin?: bool
   // <form> 에 action 을 걸지 않는다 — 걸면 React 19 가 제출 때마다 form.reset() 을 불러
   // 실패한 폼의 칸이 전부 비워진다. 액션은 useAuthForm 의 onSubmit 이 직접 태운다(근거는 그 주석에)
   return (
-    // data-navigating: 성공해서 문서를 새로 여는 중. 관리자 로그인 화면은 이 표시로 칸을 먼저 옅게 지운다(globals.css) — 칸이 뚝 끊기고 빈 화면이 비치지 않게
-    <form ref={formRef} onSubmit={onSubmit} noValidate data-navigating={navigating || undefined} className="space-y-4">
+    <form ref={formRef} onSubmit={onSubmit} noValidate className="space-y-4">
+      {/* 관리자 로그인이 성공하면 문서를 새로 열기 전에 진입 인사의 첫 장면을 덮는다 — 새 문서의 인사 화면과 한 장면으로 이어진다(admin/greet-frame) */}
+      {admin && navigating && <GreetIntro />}
       <input type="hidden" name="next" value={next} />
 
       {formError && (

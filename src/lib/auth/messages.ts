@@ -31,7 +31,6 @@ export const AUTH_MESSAGES = {
   adminSignInSubtitle: "관리자 계정으로 로그인해 주세요",
   adminSignInBadge: "관리자",
   adminSignInToService: "서비스 홈으로",
-  adminEntering: "관리자 화면으로 들어가는 중",
   signedOut: "로그아웃했어요",
   // UI 라벨
   signInTitle: "다시 만나서 반가워요",

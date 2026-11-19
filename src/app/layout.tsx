@@ -11,6 +11,8 @@ import { SITE } from "@/lib/site";
 import { THEME_INIT_SCRIPT } from "@/lib/theme";
 import { FRAME_INIT_SCRIPT } from "@/components/admin/program-shell/frame";
 import { ADMIN_AREA_INIT_SCRIPT } from "@/lib/admin/area";
+import { ADMIN_GREET_INIT_SCRIPT } from "@/lib/admin/greeting";
+import { GreetCurtain } from "@/components/admin/greet-frame";
 import { AdminAreaMarker } from "@/components/app-shell/admin-area-marker";
 import { SessionProvider } from "@/components/auth/session-provider";
 import { LoginGateProvider } from "@/components/auth/login-gate";
@@ -63,6 +65,9 @@ export default async function RootLayout({ children }: { children: React.ReactNo
         <script dangerouslySetInnerHTML={{ __html: FRAME_INIT_SCRIPT }} />
         {/* 관리자 화면이면 머리띠를 그리기 전부터 걷는다(lib/admin/area). 기둥이 늦게 와도 머리띠가 보였다 사라지지 않는다 */}
         <script dangerouslySetInnerHTML={{ __html: ADMIN_AREA_INIT_SCRIPT }} />
+        {/* 관리자 로그인 직후 첫 문서면 진입 인사의 첫 장면을 그리기 전부터 덮는다(lib/admin/greeting). 영역 표시 다음에 돌아야 한다 */}
+        <script dangerouslySetInnerHTML={{ __html: ADMIN_GREET_INIT_SCRIPT }} />
+        <GreetCurtain />
         <SessionProvider>
           <CodeBookProvider book={codeBook}>
           {/* 토스트와 로그인 팝업(M-01)은 화면 어디서든 부르므로 세션 바로 안쪽에 한 번 선다 */}
