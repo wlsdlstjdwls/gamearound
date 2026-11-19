@@ -1,10 +1,10 @@
 // 메타 소스 실행 — 플레이타임(HLTB)과 평점(OpenCritic, Metacritic).
-import { and, eq, inArray, sql } from "drizzle-orm";
+import { and, eq, inArray, sql, type SQL } from "drizzle-orm";
 import { gamePlatforms, gameSourceRefs, games, playtimes } from "@/server/db/schema";
 import { getMetaAdapter, type MetaSource } from "@/server/adapters";
 import type { MetaSnapshot } from "@/server/adapters/types";
 import { sleep } from "@/lib/async";
-import { BATCH_SIZE, MATCHED_FOR_SYNC } from "./constants";
+import { BATCH_SIZE, FRESH_FOLLOWUP_DAYS, FRESH_RELEASE_DAYS, MATCHED_FOR_SYNC } from "./constants";
 import { isLocked, recordError, type Ctx, type RunOptions } from "./context";
 import { applyAliases } from "./alias-writer";
 import { usefulAliases } from "@/server/adapters/wikidata/game";
@@ -19,7 +19,25 @@ export interface MetaTarget {
   titleEn?: string | null;
 }
 
-async function listMetaTargets(ctx: Ctx, source: MetaSource, limit: number): Promise<MetaTarget[]> {
+/**
+ * 갓 출시한 게임을 줄 맨 앞에, 그 안에서는 최근 출시 순으로 세우는 정렬 두 칸(constants 의 FRESH_RELEASE_DAYS 주석).
+ *
+ * @param filled 이 소스의 값이 이미 찼는가(찼으면 앞줄에 서지 않는다)
+ * @param seenAt 이 소스를 마지막으로 물은 시각(평점은 ref.checked_at, HLTB 는 playtimes.last_synced_at)
+ *
+ * 출시일은 그 게임 기기 행 가운데 **오늘까지 나온 가장 늦은 날**이다 — 한 기기가 늦게 나오면 그 기기 출시도 신작으로 친다.
+ * 날짜는 한국 날짜, 비교는 한국 자정 시각이다(출시일 열쇠가 한국 날짜라서).
+ * 앞줄이 아닌 게임에는 두 칸 다 같은 값(1, null)을 줘서 원래 순서를 건드리지 않는다.
+ */
+function freshFirst(filled: SQL, seenAt: SQL): SQL[] {
+  const today = sql`(now() at time zone 'Asia/Seoul')::date`;
+  const released = sql`(select max(fp.release_date) from ${gamePlatforms} fp where fp.game_id = ${gameSourceRefs.gameId} and fp.release_date between ${today} - ${FRESH_RELEASE_DAYS}::int and ${today})`;
+  const at = (offsetDays: number) => sql`((${released} + ${offsetDays}::int)::timestamp at time zone 'Asia/Seoul')`;
+  const due = sql`(${released} is not null and not (${filled}) and (${seenAt} is null or ${seenAt} < ${at(0)} or (${today} >= ${released} + ${FRESH_FOLLOWUP_DAYS}::int and ${seenAt} < ${at(FRESH_FOLLOWUP_DAYS)})))`;
+  return [sql`case when ${due} then 0 else 1 end`, sql`case when ${due} then ${released} end desc nulls last`];
+}
+
+export async function listMetaTargets(ctx: Ctx, source: MetaSource, limit: number): Promise<MetaTarget[]> {
   const { db } = ctx;
   const base = db
     .select({ gameId: gameSourceRefs.gameId, externalId: gameSourceRefs.externalId, slug: games.slug, titleEn: games.titleEn })
@@ -29,7 +47,8 @@ async function listMetaTargets(ctx: Ctx, source: MetaSource, limit: number): Pro
     return base
       .leftJoin(playtimes, eq(playtimes.gameId, gameSourceRefs.gameId))
       .where(and(eq(gameSourceRefs.source, source), inArray(gameSourceRefs.matchedBy, MATCHED_FOR_SYNC)))
-      .orderBy(sql`${playtimes.lastSyncedAt} asc nulls first`)
+      // 갓 출시한 게임 먼저(freshFirst), 그다음 오래 안 본 순
+      .orderBy(...freshFirst(sql`${playtimes.mainStoryHours} is not null`, sql`${playtimes.lastSyncedAt}`), sql`${playtimes.lastSyncedAt} asc nulls first`)
       .limit(limit);
   }
   if (source === "wikidata_game") {
@@ -50,10 +69,13 @@ async function listMetaTargets(ctx: Ctx, source: MetaSource, limit: number): Pro
     source === "opencritic"
       ? sql`${gamePlatforms.opencriticScore} is not null`
       : sql`${gamePlatforms.metacriticScore} is not null and ${gamePlatforms.metacriticUserScore} is not null`;
+  const hasScore = sql`exists (select 1 from ${gamePlatforms} where ${gamePlatforms.gameId} = ${gameSourceRefs.gameId} and ${filled})`;
   return base
     .where(and(eq(gameSourceRefs.source, source), inArray(gameSourceRefs.matchedBy, MATCHED_FOR_SYNC)))
     .orderBy(
-      sql`exists (select 1 from ${gamePlatforms} where ${gamePlatforms.gameId} = ${gameSourceRefs.gameId} and ${filled})`,
+      // 갓 출시한 게임이 맨 앞이다(freshFirst, 2026-11-19 GTA6 출시 당일 빈칸)
+      ...freshFirst(hasScore, sql`${gameSourceRefs.checkedAt}`),
+      hasScore,
       gameSourceRefs.checkedAt,
     )
     .limit(limit);
