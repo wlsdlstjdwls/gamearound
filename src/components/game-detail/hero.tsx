@@ -227,12 +227,12 @@ export function DetailHero({
 }
 
 /** 출시일까지 남은 날과 날짜. 올해면 해를 뺀다 — 남은 날이 이미 가까움을 말한다 */
-function releaseParts(date: string): { dday: string; dateText: string } {
+function releaseParts(date: string): { dday: string; today: boolean; dateText: string } {
   const key = date.slice(0, 10);
   const days = daysUntil(key);
   const full = formatDate(date);
   const dateText = key.slice(0, 4) === kstDateKey(new Date()).slice(0, 4) ? full.replace(/^\d+년 /, "") : full;
-  return { dday: days > 0 ? D.releaseDday(days) : D.releaseToday, dateText };
+  return { dday: days > 0 ? D.releaseDday(days) : D.releaseToday, today: days <= 0, dateText };
 }
 
 /** 출시(출시 전과 당일만), 개발, 배급 줄. 회사 행이 이어진 게임은 회사 화면 링크(밑줄), 이름만 아는 게임은 글자만 */
@@ -259,7 +259,13 @@ function InfoCard({ game, showRelease }: { game: GameDetail; showRelease: boolea
             {D.releaseRowLabel}
           </dt>
           <dd className="flex min-w-0 items-center gap-2 font-bold text-ink-2">
-            <span className="rounded-[var(--radius-xs)] bg-acc px-1.5 py-0.5 text-[12.5px] font-extrabold tabular-nums text-on-ink">{release.dday}</span>
+            {/* 출시 당일은 면 없는 파란 글자다 — 카드의 "오늘 출시", 역대 최저가와 같은 모양(2026-11-19 사용자 "상세 뱃지는 왜 안 바꿈").
+                남은 날(D-n)은 그대로 채운 면이다 */}
+            {release.today ? (
+              <span className="font-bold text-acc">{D.releaseToday}</span>
+            ) : (
+              <span className="rounded-[var(--radius-xs)] bg-acc px-1.5 py-0.5 text-[12.5px] font-extrabold tabular-nums text-on-ink">{release.dday}</span>
+            )}
             {release.dateText}
           </dd>
         </div>
