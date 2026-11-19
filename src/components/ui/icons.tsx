@@ -66,6 +66,16 @@ export function ChevronLeftIcon(p: IconProps) {
   );
 }
 
+/** 화살표(대가 있는 꺾쇠) — 목록 사이로 옮기는 단추(사용자별프로그램관리 부여, 회수). 꺾쇠만 있으면 "펼치기" 로 읽혀 옮긴다는 말이 안 섰다 */
+export function ArrowLeftIcon(p: IconProps) {
+  return (
+    <svg {...base(p)}>
+      <path d="M19 12H5" />
+      <path d="m11 6-6 6 6 6" />
+    </svg>
+  );
+}
+
 /** 채운 삼각 — 구분선 접기 단추. 작은 크기에서 꺾쇠(<)보다 방향이 또렷하고 덜 거칠다 */
 export function CaretLeftIcon(p: IconProps) {
   return (

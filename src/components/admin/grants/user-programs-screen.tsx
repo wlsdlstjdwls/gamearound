@@ -17,7 +17,8 @@ import { Pane, SearchBand, SearchItem } from "@/components/admin/screen/layout";
 import { useAdminStatus } from "@/components/admin/screen/status";
 import { askConfirm } from "@/components/ui/confirm-dialog";
 import { Button } from "@/components/ui/button";
-import { ChevronLeftIcon } from "@/components/ui/icons";
+import { ArrowLeftIcon } from "@/components/ui/icons";
+import { useTooltip } from "@/components/ui/tooltip";
 import { FormSelect } from "@/components/ui/select/fields";
 import { ADMIN_NAV, GRANTS_MESSAGES as M } from "@/lib/admin/messages";
 import { FULL_GRANT, isLockedCell, NO_GRANT, SELF_LOCKED, type ProgramGrant, type ProgramPerm } from "@/lib/admin/grants";
@@ -97,7 +98,6 @@ export function UserProgramsScreen({ accounts, rows, meId }: { accounts: AdminAc
   ];
 
   const offColumns: GridCol<ProgramRow>[] = [
-    { key: "id", label: M.colProgramId, width: "minmax(80px,1fr)", value: (p) => p.href },
     { key: "name", label: M.colName, width: "minmax(90px,1fr)", value: (p) => p.name },
   ];
 
@@ -120,8 +120,7 @@ export function UserProgramsScreen({ accounts, rows, meId }: { accounts: AdminAc
   });
 
   const onColumns: GridCol<ProgramRow>[] = [
-    { key: "id", label: M.colProgramId, width: "minmax(80px,0.9fr)", value: (p) => p.href },
-    { key: "name", label: M.colName, width: "minmax(100px,1.1fr)", value: (p) => p.name },
+    { key: "name", label: M.colName, width: "minmax(120px,1fr)", value: (p) => p.name },
     ...PERM_ORDER.map(permColumn),
   ];
 
@@ -137,23 +136,26 @@ export function UserProgramsScreen({ accounts, rows, meId }: { accounts: AdminAc
           <SearchItem label={M.targetAccount}>
             <FormSelect name="up-target" label={M.targetAccount} hideLabel size="md" value={userId} onChange={pickUser} options={accounts.map((a) => ({ value: a.id, label: a.name }))} />
           </SearchItem>
-          <SearchItem label={M.copySource}>
-            <FormSelect
+          {/* 이 칸만 넓힌다 — 고르기 전 안내 문구와 관리자 이름이 고정 폭(SearchItem 기본)에서 잘렸다(2026-11-19 사용자) */}
+          <SearchItem label={M.copySource} auto>
+            <div className="w-56">
+              <FormSelect
               name="up-copy"
               label={M.copySource}
               hideLabel
               size="md"
               value={copyFrom}
               onChange={setCopyFrom}
-              options={[{ value: "", label: M.copyPick }, ...accounts.filter((a) => a.id !== userId).map((a) => ({ value: a.id, label: a.name }))]}
-            />
+              options={[{ value: "", label: M.copyPlaceholder }, ...accounts.filter((a) => a.id !== userId).map((a) => ({ value: a.id, label: a.name }))]}
+              />
+            </div>
           </SearchItem>
           <Button size="sm" variant="secondary" onClick={() => void copy()} disabled={draft.pending}>
             {M.copy}
           </Button>
         </SearchBand>
 
-        <div className="grid items-start gap-3 lg:grid-cols-[170px_minmax(0,0.7fr)_auto_minmax(0,1.7fr)]">
+        <div className="grid items-start gap-3 lg:grid-cols-[190px_minmax(0,0.7fr)_auto_minmax(0,1.7fr)]">
           <Pane title={M.menuTree}>
             <DataGrid
               label={M.menuTree}
@@ -182,14 +184,8 @@ export function UserProgramsScreen({ accounts, rows, meId }: { accounts: AdminAc
             />
           </Pane>
           <div className="flex flex-row justify-center gap-2 lg:flex-col lg:self-center">
-            <Button size="sm" variant="secondary" onClick={grant} disabled={draft.pending} aria-label={M.grantHint}>
-              {M.grant}
-              <ChevronLeftIcon size={14} className="rotate-180" />
-            </Button>
-            <Button size="sm" variant="secondary" onClick={revoke} disabled={draft.pending} aria-label={M.revokeHint}>
-              <ChevronLeftIcon size={14} />
-              {M.revoke}
-            </Button>
+            <MoveButton label={M.grant} hint={M.grantHint} onClick={grant} disabled={draft.pending} toRight />
+            <MoveButton label={M.revoke} hint={M.revokeHint} onClick={revoke} disabled={draft.pending} />
           </div>
           <Pane title={M.grantedList}>
             <DataGrid
@@ -209,6 +205,29 @@ export function UserProgramsScreen({ accounts, rows, meId }: { accounts: AdminAc
           </Pane>
         </div>
       </div>
+    </>
+  );
+}
+
+/**
+ * 부여, 회수 단추. 글자 없이 화살표만 둔다(2026-11-19 사용자 "부여 회수 버튼은 문구는 지우고", SBO 도 아이콘만이다).
+ * 무엇을 하는지는 올리면 말풍선으로 띄우고, 낭독기에는 이름과 설명을 같이 준다
+ */
+function MoveButton({ label, hint, onClick, disabled, toRight = false }: { label: string; hint: string; onClick: () => void; disabled: boolean; toRight?: boolean }) {
+  const { triggerProps, tooltip } = useTooltip<HTMLButtonElement>(`${label} | ${hint}`, true, "press");
+  return (
+    <>
+      <button
+        type="button"
+        {...triggerProps}
+        onClick={onClick}
+        disabled={disabled}
+        aria-label={`${label}, ${hint}`}
+        className="press inline-flex size-9 items-center justify-center rounded-[var(--radius-md)] border border-line-strong bg-surface text-ink-2 hover:bg-surface-2 hover:text-ink disabled:opacity-50"
+      >
+        <ArrowLeftIcon size={18} className={toRight ? "rotate-180" : undefined} />
+      </button>
+      {tooltip}
     </>
   );
 }
