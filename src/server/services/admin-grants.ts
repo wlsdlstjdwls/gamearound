@@ -10,7 +10,7 @@
 import "server-only";
 import { unstable_cache } from "next/cache";
 import { redirect } from "next/navigation";
-import { and, asc, eq, inArray, sql } from "drizzle-orm";
+import { and, asc, eq, inArray } from "drizzle-orm";
 import { alias } from "drizzle-orm/pg-core";
 import { getDb } from "@/server/db/client";
 import { adminProgramGrants, users } from "@/server/db/schema";
@@ -73,8 +73,6 @@ export interface AdminAccountDto {
   id: string;
   name: string;
   email: string;
-  /** 조회 권한이 켜진 프로그램 수 */
-  readCount: number;
 }
 
 /** 권한관리 왼쪽 목록. 관리자 계정만, 이름 순 */
@@ -84,12 +82,11 @@ export async function listAdminAccounts(): Promise<AdminAccountDto[]> {
       id: users.id,
       name: users.displayName,
       email: users.email,
-      readCount: sql<number>`(select count(*)::int from ${adminProgramGrants} g where g.user_id = ${users.id} and g.can_read)`,
     })
     .from(users)
     .where(eq(users.role, "admin"))
     .orderBy(asc(users.displayName), asc(users.email));
-  return rows.map((r) => ({ id: r.id, name: r.name ?? r.email, email: r.email, readCount: Number(r.readCount) }));
+  return rows.map((r) => ({ id: r.id, name: r.name ?? r.email, email: r.email }));
 }
 
 export interface GrantRowDto extends ProgramGrant {

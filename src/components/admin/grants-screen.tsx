@@ -117,7 +117,6 @@ export function GrantsScreen({ accounts, rows: initialRows, meId }: { accounts: 
   const accountColumns: GridCol<AdminAccountDto>[] = [
     { key: "name", label: M.colAccount, width: "minmax(90px,1fr)", value: (a) => a.name },
     { key: "email", label: M.colEmail, width: "minmax(120px,1.2fr)", value: (a) => a.email },
-    { key: "readCount", label: M.colReadCount, width: "72px", align: "right", value: (a) => a.readCount, text: (a) => M.readCount(a.readCount) },
   ];
 
   const permColumn = (perm: ProgramPerm): GridCol<Row> => ({

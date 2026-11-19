@@ -9,8 +9,6 @@ export const GRANTS_MESSAGES = {
   accountsEmpty: "관리자 계정이 없어요.",
   colAccount: "관리자명",
   colEmail: "이메일",
-  colReadCount: "조회 가능",
-  readCount: (n: number) => `${n}개`,
   list: "프로그램 권한 목록",
   listTitle: (name: string) => `${name} 프로그램 권한`,
   pickAccount: "왼쪽에서 관리자를 고르면 프로그램 권한이 보여요.",
