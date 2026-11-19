@@ -21,6 +21,7 @@ import { formatPrice } from "@/lib/currency";
 import { formatDate } from "@/lib/format";
 import { isPreorder } from "@/lib/games/preorder";
 import { PreorderMark } from "@/components/ui/preorder-mark";
+import { ReleaseTodayMark } from "@/components/ui/release-today-mark";
 import { cn } from "@/lib/cn";
 import type { GameSummary } from "@/server/services/games";
 
@@ -102,6 +103,8 @@ export function GameListCard({ game, variant = "discount", highlight }: { game: 
 
       {/* 값 줄은 카드 바닥에 붙는다 — 같은 줄 카드끼리 값이 한 높이에 서서 가로로 견줄 수 있다. 값을 모르면 세우지 않는다(game-card 주석) */}
       <div className={cn(DIVIDER, RIGHT_CELL, "mt-auto flex flex-wrap items-center gap-x-1.5 gap-y-1 sm:pt-3")}>
+        {/* 출시 당일 표지는 값을 몰라도 선다(game-card 와 같다, ui/release-today-mark) */}
+        <ReleaseTodayMark releaseDate={best?.releaseDate} />
         {best && best.currentPrice !== null && (
           <>
             {/* 사전예약은 먹색 알약(ui/preorder-mark, game-card 와 같다) */}

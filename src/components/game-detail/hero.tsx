@@ -56,6 +56,11 @@ function daysUntil(dateKey: string): number {
   return Math.round((Date.parse(dateKey) - Date.parse(kstDateKey(new Date()))) / MS_PER_DAY);
 }
 
+/** 출시일이 오늘(한국 날짜)인가 */
+function isReleaseToday(date: string | null): boolean {
+  return date !== null && daysUntil(date.slice(0, 10)) === 0;
+}
+
 export function DetailHero({
   game,
   title,
@@ -76,8 +81,11 @@ export function DetailHero({
   const hasPlayModes = game.supportsSolo || game.supportsCoop || game.supportsPvp || Boolean(game.localMaxPlayers) || Boolean(game.onlineMaxPlayers);
   const showAlert = !isFree && alertOptions.length > 0;
   const preorder = game.platforms.some((p) => isPreorder(p));
-  // 출시 전이면 출시일은 오른쪽 기둥의 출시일 카드(ReleaseCard)가 말한다 — 같은 날짜를 두 번 쓰지 않는다
-  const meta = [game.titleKo ? game.titleEn : null, game.releaseDate && !unreleased ? releaseLineText(formatDate(game.releaseDate), false) : null].filter(
+  // 출시일 카드는 출시 당일까지 선다(2026-11-19 사용자) — 당일에는 "오늘" 을 띄운다. unreleased(오늘보다 뒤)로 가르면 그날 카드가 사라져
+  // 제목 밑 날짜 글자만 남았다. 알림 종류, 가격 칸 같은 다른 판정은 그대로 unreleased 를 쓴다(당일은 이미 판다)
+  const releaseCard = unreleased || isReleaseToday(game.releaseDate);
+  // 출시일 카드가 서면 날짜는 그 카드가 말한다 — 같은 날짜를 두 번 쓰지 않는다
+  const meta = [game.titleKo ? game.titleEn : null, game.releaseDate && !releaseCard ? releaseLineText(formatDate(game.releaseDate), false) : null].filter(
     (v): v is string => Boolean(v),
   );
 
@@ -212,7 +220,7 @@ export function DetailHero({
         {/* 출시일(출시 전만)과 개발, 배급을 플레이타임 아래 한 판에 모은다(2026-11-16 사용자 "플레이타임 아래, 영역 아예 만들어서",
             "개발, 배급도 오른쪽으로, 밑줄도"). 제목 밑에 두면 가운데 기둥이 늘었다. 판을 둘로 세웠더니 오른쪽 기둥이 가운데보다 길어져
             가운데에 빈 틈이 생겨 제목 없는 한 판으로 줄였다 — 줄 머리(출시, 개발, 배급)가 곧 이름이다 */}
-        <InfoCard game={game} unreleased={unreleased} />
+        <InfoCard game={game} showRelease={releaseCard} />
       </div>
     </section>
   );
@@ -227,8 +235,8 @@ function releaseParts(date: string): { dday: string; dateText: string } {
   return { dday: days > 0 ? D.releaseDday(days) : D.releaseToday, dateText };
 }
 
-/** 출시(출시 전만), 개발, 배급 줄. 회사 행이 이어진 게임은 회사 화면 링크(밑줄), 이름만 아는 게임은 글자만 */
-function InfoCard({ game, unreleased }: { game: GameDetail; unreleased: boolean }) {
+/** 출시(출시 전과 당일만), 개발, 배급 줄. 회사 행이 이어진 게임은 회사 화면 링크(밑줄), 이름만 아는 게임은 글자만 */
+function InfoCard({ game, showRelease }: { game: GameDetail; showRelease: boolean }) {
   const companies: Array<{ key: string; role: string; name: string; href: string | null }> =
     game.companies.length > 0
       ? game.companies.map((c) => ({ key: `${c.slug}:${c.role}`, role: COMPANY_ROLE_LABEL[c.role], name: c.name, href: companyPath(c.slug) }))
@@ -240,7 +248,7 @@ function InfoCard({ game, unreleased }: { game: GameDetail; unreleased: boolean 
         )
           .filter((r): r is readonly ["developer" | "publisher", string] => Boolean(r[1]))
           .map(([role, name]) => ({ key: `${role}:${name}`, role: COMPANY_ROLE_LABEL[role], name, href: null }));
-  const release = unreleased && game.releaseDate ? releaseParts(game.releaseDate) : null;
+  const release = showRelease && game.releaseDate ? releaseParts(game.releaseDate) : null;
   if (!release && companies.length === 0) return null;
   return (
     <dl className="flex flex-col gap-2 rounded-[var(--radius-panel)] bg-surface p-4 text-[13.5px] shadow-[var(--elev-card)]">

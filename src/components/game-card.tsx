@@ -10,6 +10,7 @@ import { formatDate, PLATFORM_LABEL } from "@/lib/format";
 import { GAME_MESSAGES, SAVING_MESSAGES } from "@/lib/games/messages";
 import { isPreorder } from "@/lib/games/preorder";
 import { PreorderMark } from "@/components/ui/preorder-mark";
+import { ReleaseTodayMark } from "@/components/ui/release-today-mark";
 import type { StoreSaving } from "@/lib/games/saving";
 import { parsePlatformValues } from "@/lib/games-query";
 import { expandPlatformValues } from "@/lib/platform";
@@ -276,6 +277,8 @@ export function GameCard({
               배지가 값 줄에 섞여 값 줄이 두 줄로 접히던 것을 이 줄이 막는다(2026-11-16 사용자 "오와 열이 안 맞는다") */}
           <div className="mt-auto flex h-5 min-w-0 items-center gap-1.5 pt-1">
             {/* 값 앞에 선다 — 값을 읽기 전에 "지금 사면 출시 날 받는 값" 이라는 걸 먼저 알아야 한다 */}
+            {/* 출시 당일이면 맨 앞(2026-11-19 사용자). 오늘인지는 브라우저가 정한다 — 캐시된 카드라 서버 판정은 자정을 넘겨 남는다(ui/release-today-mark) */}
+            <ReleaseTodayMark releaseDate={best?.releaseDate} />
             {/* 사전예약은 먹색 알약(ui/preorder-mark 주석: 글자만으로는 안 띄었다) */}
             {showPreorder && <PreorderMark />}
             {/* 역대 최저가는 면 없는 작은 파란 글자로 값 바로 위에 선다(2026-11-16 사용자). 값 줄에 두면 넷 칸 폭에서 정가가 잘렸다 */}

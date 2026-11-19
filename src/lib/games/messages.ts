@@ -56,6 +56,8 @@ export const KOREAN_SUPPORT_LABEL = {
  * 말풍선 문구는 배지가 무엇을 근거로 섰는지 말한다 — 우리 판정이 아니라 스토어가 출시 전에 값을 붙였다는 사실이다.
  */
 export const PREORDER_LABEL = "사전예약";
+/** 출시 당일 표지(ui/release-today-mark). 날짜 글자만으로는 "오늘" 인지 셈해야 알았다(2026-11-19 사용자) */
+export const RELEASE_TODAY_LABEL = "오늘 출시";
 export const PREORDER_HINT = "출시 전이지만 이 스토어에서 지금 예약 구매할 수 있어요";
 
 /**
