@@ -1,8 +1,9 @@
 "use client";
 // 사용자별프로그램관리 왼쪽 메뉴 트리(2026-11-19 사용자 "상위메뉴도 sbo 처럼 만들 수 있나"). SBO 사용자프로그램관리의 'Program' 트리 꼴:
-// 전체 > 상위메뉴(접고 펴기) > 프로그램(잎). 고른 마디가 가운데 두 목록을 거른다 — 상위메뉴면 그 아래 프로그램, 잎이면 그 프로그램 하나.
-// SBO 는 처음에 다 접어 둔다(collapseAll). 우리도 상위메뉴는 접어 두고 전체만 펴 둔다 — 상위메뉴 열 개가 한눈에 서야 고르기 쉽다.
+// 마디(전체 > 상위메뉴)를 고르면 가운데 두 목록을 거른다. 프로그램은 잎으로 넣지 않는다(user-programs-screen 의 tree 주석).
+// 처음에는 전체를 펴 둔다 — 상위메뉴 열 개가 한눈에 서야 고르기 쉽다. 단계가 더 깊어져도 같은 부품으로 그린다.
 //
+// 마디를 더블클릭하면 펴고 접는다(앞 ▸ 단추도 그대로 된다). 더블클릭 때 글자가 긁혀 선택되지 않게 select-none.
 // 키보드는 트리 표준을 따른다(WAI-ARIA tree): 위아래로 옮기고, 오른쪽은 펴기 또는 첫 자식, 왼쪽은 접기 또는 부모, Enter, Space 로 고른다.
 // 높이는 화면 바닥까지 맞추고(그리드의 fit 과 같은 자로 잰다) 넘치면 트리 안만 구른다.
 import { useMemo, useRef, useState } from "react";
@@ -92,9 +93,11 @@ export function MenuTree({ label, root, selected, onSelect }: { label: string; r
               setFocus(f.node.key);
               onSelect(f.node.key);
             }}
+            // 더블클릭으로 펴고 접는다(2026-11-19 사용자, SBO 트리와 같다). 한 번 누르기는 고르기다
+            onDoubleClick={has ? () => toggle(f.node.key) : undefined}
             onKeyDown={(e) => onKey(e, i)}
             className={cn(
-              "mx-1 flex min-h-9 cursor-pointer items-center gap-1 rounded-md pr-2 text-[13px] outline-none transition-colors duration-fast focus-visible:shadow-[inset_0_0_0_2px_var(--acc)]",
+              "mx-1 flex min-h-9 cursor-pointer select-none items-center gap-1 rounded-md pr-2 text-[13px] outline-none transition-colors duration-fast focus-visible:shadow-[inset_0_0_0_2px_var(--acc)]",
               on ? "bg-acc-row font-semibold text-ink" : "text-ink-2 hover:bg-surface-2",
               f.depth === 0 && "font-semibold",
             )}

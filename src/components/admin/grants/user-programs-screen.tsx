@@ -28,9 +28,8 @@ import { FULL_GRANT, isLockedCell, NO_GRANT, SELF_LOCKED, type ProgramGrant, typ
 import type { AdminAccountDto, GrantRowDto } from "@/server/services/admin-grants";
 
 const ALL = "all";
-/** 트리 마디 열쇠 머리. 상위메뉴 이름과 프로그램 주소가 겹치지 않게 가른다 */
+/** 트리 마디 열쇠 머리. 상위메뉴 이름이 "all" 과 겹치지 않게 가른다 */
 const GROUP_KEY = "g:";
-const PROGRAM_KEY = "p:";
 /** 권한있는 프로그램의 칸 순서. SBO 사용자프로그램관리와 같다(조회, 입력, 삭제, 저장, 출력, 엑셀 — 출력은 없다) */
 const PERM_ORDER: readonly ProgramPerm[] = ["read", "insert", "delete", "save", "excel"];
 
@@ -43,7 +42,7 @@ export function UserProgramsScreen({ accounts, rows, meId }: { accounts: AdminAc
   const { say } = useAdminStatus();
   const [userId, setUserId] = useState<string>(accounts.find((a) => a.id === meId)?.id ?? accounts[0]?.id ?? "");
   const [copyFrom, setCopyFrom] = useState("");
-  /** 왼쪽 트리에서 고른 마디. ALL, 상위메뉴(g:이름), 프로그램(p:주소) */
+  /** 왼쪽 트리에서 고른 마디. ALL 또는 상위메뉴(g:이름) */
   const [node, setNode] = useState<string>(ALL);
   const [offChecked, setOffChecked] = useState<Set<string>>(() => new Set());
   const [onChecked, setOnChecked] = useState<Set<string>>(() => new Set());
@@ -56,19 +55,19 @@ export function UserProgramsScreen({ accounts, rows, meId }: { accounts: AdminAc
   const locked = (href: string, perm: ProgramPerm) => isLockedCell(meId, userId, href, perm);
   const has = (p: ProgramRow) => draft.cell(userId, p.href).read || locked(p.href, "read");
 
-  const inGroup = PROGRAMS.filter((p) => node === ALL || node === `${GROUP_KEY}${p.group}` || node === `${PROGRAM_KEY}${p.href}`);
+  const inGroup = PROGRAMS.filter((p) => node === ALL || node === `${GROUP_KEY}${p.group}`);
   const offRows = inGroup.filter((p) => !has(p));
   const onRows = inGroup.filter(has);
 
-  /** SBO 'Program' 트리 꼴: 전체 > 상위메뉴 > 프로그램(grants/menu-tree) */
+  /**
+   * SBO 'Program' 트리 꼴, 메뉴 단계까지만: 전체 > 상위메뉴(grants/menu-tree). 프로그램은 트리에 넣지 않는다 —
+   * 가운데 두 목록이 곧 프로그램이고, "상위메뉴" 칸에 프로그램이 잎으로 나오면 이름과 어긋난다(2026-11-19 사용자 "상위메뉴인데 진짜 하위메뉴가 나오면 어쩌냐")
+   */
   const tree: TreeNode = {
     key: ALL,
     label: M.menuAll,
     count: PROGRAMS.length,
-    children: PROGRAM_GROUPS.map((g) => {
-      const items = PROGRAMS.filter((p) => p.group === g);
-      return { key: `${GROUP_KEY}${g}`, label: g, count: items.length, children: items.map((p) => ({ key: `${PROGRAM_KEY}${p.href}`, label: p.name })) };
-    }),
+    children: PROGRAM_GROUPS.map((g) => ({ key: `${GROUP_KEY}${g}`, label: g, count: PROGRAMS.filter((p) => p.group === g).length })),
   };
 
   const resetChecks = () => {
