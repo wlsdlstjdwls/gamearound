@@ -21,6 +21,8 @@ import { requireRoleOrForbid } from "@/server/auth/guards";
 import { getAdminWorkCounts } from "@/server/services/admin-workload";
 import { listAdminFavorites } from "@/server/services/admin-favorites";
 import { AdminDeviceProvider, MobileGate } from "@/components/admin/mobile-policy";
+import { AdminProgramsProvider, ProgramGate } from "@/components/admin/program-policy";
+import { getProgramSettings } from "@/server/services/admin-programs";
 import { isMobileDevice } from "@/server/device";
 
 export const dynamic = "force-dynamic";
@@ -38,6 +40,8 @@ export default async function AdminLayout({ children }: { children: React.ReactN
   const view = readMenuView(jar.get(ADMIN_MENU_VIEW_COOKIE)?.value);
   // 휴대폰이면 허용 표(lib/admin/mobile)대로 메뉴, 진입, 단추를 줄인다. 폭이 아니라 기기로 가르는 이유는 server/device
   const mobile = await isMobileDevice();
+  // 프로그램 노출, 사용 여부는 기다린다 — 메뉴 칸이 섰다 빠지거나 막힌 화면이 그려졌다 바뀌면 고장처럼 보인다. 캐시라 왕복은 거의 없다(services/admin-programs)
+  const programs = await getProgramSettings();
 
   // 2026-10-29(사용자 "왼쪽 메뉴를 왼쪽에 붙이고 접었다 펼 수 있게, 공간 활용"): 가운데 1440 폭 안에 기둥과 본문을 띄우던 Page 를 걷었다.
   // 기둥은 화면 왼쪽 끝에 붙고(admin-rail), 본문은 남은 폭을 다 쓴다 — 표와 판이 주인공인 화면이라 폭이 곧 칸 수다.
@@ -45,6 +49,7 @@ export default async function AdminLayout({ children }: { children: React.ReactN
   // 같은 날 넓은 화면에서는 사이트 머리띠도 걷었다(admin-rail 머리 주석, globals.css 의 data-admin-rail).
   return (
     <AdminDeviceProvider mobile={mobile}>
+      <AdminProgramsProvider settings={programs}>
       <div className="flex md:items-start">
         <AdminNav counts={counts} favorites={favorites} initialCollapsed={collapsed} initialOpened={opened} initialView={view} />
         {/* main 이 아니라 div 인 이유: 루트 레이아웃이 이미 <main> 안에 children 을 넣는다.
@@ -73,6 +78,7 @@ export default async function AdminLayout({ children }: { children: React.ReactN
           </AdminStatusProvider>
         </div>
       </div>
+      </AdminProgramsProvider>
     </AdminDeviceProvider>
   );
 }
@@ -82,7 +88,10 @@ function AdminPanel({ children }: { children: React.ReactNode }) {
   return (
     <div className={raisedClass("flex w-full min-w-0 flex-col gap-4 p-4 sm:p-5")}>
       {/* 휴대폰에서 닫은 화면은 본문 대신 PC 안내(components/admin/mobile-policy) */}
-      <MobileGate>{children}</MobileGate>
+      <MobileGate>
+        {/* 프로그램관리에서 사용 안 함으로 끈 화면은 본문 대신 안내(components/admin/program-policy) */}
+        <ProgramGate>{children}</ProgramGate>
+      </MobileGate>
       <AdminStatusBar />
     </div>
   );

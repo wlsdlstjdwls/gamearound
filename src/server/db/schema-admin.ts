@@ -215,3 +215,20 @@ export const adminFavorites = pgTable("admin_favorites", {
   sortOrder: integer("sort_order").default(0).notNull(),
   ...auditColumns(),
 }, (t) => [primaryKey({ columns: [t.userId, t.href] })]);
+
+/**
+ * 관리자 프로그램(메뉴 칸) 노출, 사용 여부(2026-11-19, 사용자 "어드민 화면 프로그램 노출 사용 여부 관리하는 화면"). 프로그램관리 화면이 고친다.
+ *
+ * 프로그램 목록은 코드(components/admin/admin-nav-items 의 GROUPS)가 가진다 — 화면은 코드가 있어야 열리므로 DB 가 새 프로그램을 만들 수 없다.
+ * 이 표는 그 목록 위에 덮어쓰기만 한다. 줄이 없으면 노출, 사용 둘 다 켜짐이다(새 메뉴 칸은 손대지 않아도 선다).
+ * 열쇠는 즐겨찾기(admin_favorites)와 같이 메뉴 주소다. 메뉴 칸에 따로 id 가 없고, 주소가 바뀌면 옛 줄은 조용히 안 읽힌다.
+ *
+ * visible: 메뉴(기둥, 바닥 띠, 메뉴 검색, 즐겨찾기)에 세우나. 끄면 주소로는 열린다.
+ * active: 쓰는 프로그램인가. 끄면 메뉴에서도 빠지고 주소로 들어와도 본문 대신 안내가 선다.
+ */
+export const adminPrograms = pgTable("admin_programs", {
+  href: text("href").primaryKey(),
+  visible: boolean("visible").default(true).notNull(),
+  active: boolean("active").default(true).notNull(),
+  ...auditColumns(),
+});

@@ -1,0 +1,31 @@
+// 프로그램관리(/admin/programs) 문구(2026-11-19).
+export const PROGRAMS_MESSAGES = {
+  search: "조회조건",
+  searchGroup: "메뉴묶음",
+  searchName: "프로그램명",
+  searchVisible: "노출여부",
+  searchActive: "사용여부",
+  all: "전체",
+  visibleLabels: { on: "노출", off: "미노출" },
+  activeLabels: { on: "사용", off: "미사용" },
+  list: "프로그램 목록",
+  empty: "조건에 맞는 프로그램이 없어요.",
+  colGroup: "메뉴묶음",
+  colName: "프로그램명",
+  colHref: "프로그램경로",
+  colVisible: "노출",
+  colActive: "사용",
+  colUpdatedBy: "수정자",
+  colUpdatedAt: "수정일시",
+  /** 끌 수 없는 줄의 칸 말풍선 */
+  locked: "끌 수 없는 프로그램이에요.",
+  checkVisible: (name: string) => `${name} 메뉴 노출`,
+  checkActive: (name: string) => `${name} 사용`,
+  saved: (n: number) => (n > 0 ? `${n}건 저장했어요.` : "바뀐 값이 없어요."),
+  reloaded: "다시 조회했어요.",
+  invalid: "저장할 수 없는 값이 있어요.",
+  failed: "저장하지 못했어요. 잠시 뒤 다시 저장해 주세요.",
+  /** 사용 안 함인 프로그램에 주소로 들어왔을 때(program-policy) */
+  blockedTitle: "사용하지 않는 프로그램이에요",
+  blockedBody: "프로그램관리에서 사용으로 바꾸면 다시 열려요.",
+} as const;

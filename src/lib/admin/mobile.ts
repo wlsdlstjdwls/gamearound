@@ -56,6 +56,7 @@ export const ADMIN_MOBILE: Readonly<Record<string, MobilePolicy>> = {
   [ROUTES.adminStatsSales]: { access: "full" },
   [ROUTES.adminStatsUsage]: { access: "full" },
   [ROUTES.adminCodes]: { access: "full" },
+  [ROUTES.adminPrograms]: { access: "full" },
   [ROUTES.adminNotifyTemplates]: { access: "full" },
   [ROUTES.adminNotifySends]: { access: "full" },
   [ROUTES.adminGuide]: { access: "full" },

@@ -44,8 +44,8 @@ import { ROUTES } from "@/lib/routes";
 import { ComingSoon } from "@/components/ui/coming-soon";
 
 import { AdminRail } from "@/components/admin/admin-rail";
-import { Badge, ITEMS, ItemBody, isActive, groupsFor, type AdminNavCounts, type Item } from "@/components/admin/admin-nav-items";
-import { useMobilePolicy } from "@/components/admin/mobile-policy";
+import { Badge, ITEMS, ItemBody, isActive, type AdminNavCounts, type Item } from "@/components/admin/admin-nav-items";
+import { useMenuGroups } from "@/components/admin/program-policy";
 import { useFavorites, useSeedFavorites } from "@/components/admin/nav-favorites";
 import { MenuSearchDialog, MenuSearchPanel, useMenuSearchHotkey } from "@/components/admin/nav-search";
 import { FavoritesEmpty, MenuViewTabs, useMenuView } from "@/components/admin/nav-view";
@@ -113,7 +113,7 @@ export function AdminNav({
   /** 지금 사유를 말하고 있는 칸. 한 번에 하나만 뜬다 */
   const [soon, setSoon] = useState<Item | null>(null);
   const [menuOpen, setMenuOpen] = useState(false);
-  const groups = groupsFor(useMobilePolicy().mobile);
+  const groups = useMenuGroups();
   useSeedFavorites(favorites);
   useMenuSearchHotkey();
   const favoriteHrefs = useFavorites();

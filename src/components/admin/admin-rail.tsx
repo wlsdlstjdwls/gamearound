@@ -23,8 +23,8 @@ import { useActivePath } from "@/components/admin/program-shell/store";
 import { Suspense, useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useMobilePolicy } from "@/components/admin/mobile-policy";
-import { Badge, groupsFor, isActive, ItemBody, ITEMS, type AdminNavCounts, type Item, type Pick } from "@/components/admin/admin-nav-items";
+import { Badge, isActive, ItemBody, type AdminNavCounts, type Item, type Pick } from "@/components/admin/admin-nav-items";
+import { useMenuGroups } from "@/components/admin/program-policy";
 import { AuthNav } from "@/components/auth/auth-nav";
 import { HeaderWishLink } from "@/components/header-wish-link";
 import { NotificationBell } from "@/components/notification-bell";
@@ -113,13 +113,14 @@ export function AdminRail({
   // 탭 껍데기가 있으면 고른 탭의 칸을 켠다 — 바깥 주소는 처음 연 화면에 머문다(program-shell)
   const current = usePathname();
   const pathname = useActivePath() ?? current;
-  const { mobile } = useMobilePolicy();
   useTrackRecent(pathname);
-  // 메뉴 표에 없는 주소(이름이 바뀐 옛 칸)는 조용히 빠진다
+  // 메뉴 표에 없는 주소(이름이 바뀐 옛 칸)와 프로그램관리에서 끈 칸은 조용히 빠진다
+  const groups = useMenuGroups();
+  const allowed = groups.flatMap((g) => g.items);
   const favorites = useFavorites();
-  const favoriteItems = (favorites ?? []).map((h) => ITEMS.find((i) => i.href === h)).filter((i): i is Item => Boolean(i));
+  const favoriteItems = (favorites ?? []).map((h) => allowed.find((i) => i.href === h)).filter((i): i is Item => Boolean(i));
   // 즐겨찾기 쪽은 제목 없는 묶음 하나다 — 제목 없는 묶음은 상위 칸 꼴로, 접히지 않고 선다
-  const rows: Array<{ key: string; title?: string; items: Item[] }> = view === "favorites" ? (favoriteItems.length > 0 ? [{ key: "favorites", items: favoriteItems }] : []) : groupsFor(mobile);
+  const rows: Array<{ key: string; title?: string; items: Item[] }> = view === "favorites" ? (favoriteItems.length > 0 ? [{ key: "favorites", items: favoriteItems }] : []) : groups;
   // 목록을 아직 못 읽었으면(null) 빈 안내도 띄우지 않는다 — 안내가 떴다 칸으로 바뀌면 고장처럼 보인다
   const favoritesEmpty = view === "favorites" && favorites !== null && favoriteItems.length === 0;
   const [collapsed, setCollapsed] = useState(initialCollapsed);

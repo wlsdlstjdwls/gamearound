@@ -5,7 +5,7 @@ import { cn } from "@/lib/cn";
 import { ADMIN_NAV } from "@/lib/admin/messages";
 import { COMING_SOON } from "@/lib/messages/coming-soon";
 import { ROUTES } from "@/lib/routes";
-import { BarChartIcon, BoardIcon, BoxIcon, BuildingIcon, CardIcon, ChatIcon, CheckListIcon, LinkIcon, LogIcon, MegaphoneIcon, PulseIcon, SearchCheckIcon, SparkleIcon, StoreIcon, UsersIcon, CodeIcon, TemplateIcon, SendIcon, TrendIcon, BookIcon } from "@/components/admin/nav-icons";
+import { BarChartIcon, BoardIcon, BoxIcon, BuildingIcon, CardIcon, ChatIcon, CheckListIcon, LinkIcon, LogIcon, MegaphoneIcon, PulseIcon, SearchCheckIcon, SparkleIcon, StoreIcon, UsersIcon, CodeIcon, ToggleListIcon, TemplateIcon, SendIcon, TrendIcon, BookIcon } from "@/components/admin/nav-icons";
 import { CalendarIcon, GamepadIcon, TagIcon, TicketIcon } from "@/components/ui/icons";
 import { Suspense, use, type ComponentType } from "react";
 import { mobilePolicyOf } from "@/lib/admin/mobile";
@@ -151,6 +151,7 @@ export const GROUPS: Array<{ key: string; title?: string; items: Item[] }> = [
     title: ADMIN_NAV.groupSystem,
     items: [
       { href: ROUTES.adminCodes, label: ADMIN_NAV.codes, Icon: CodeIcon },
+      { href: ROUTES.adminPrograms, label: ADMIN_NAV.programs, Icon: ToggleListIcon },
       { href: ROUTES.adminNotifyTemplates, label: ADMIN_NAV.notifyTemplates, Icon: TemplateIcon },
       { href: ROUTES.adminNotifySends, label: ADMIN_NAV.notifySends, Icon: SendIcon },
       { href: ROUTES.adminGuide, label: ADMIN_NAV.guide, Icon: BookIcon },
@@ -161,7 +162,8 @@ export const GROUPS: Array<{ key: string; title?: string; items: Item[] }> = [
 export const ITEMS = GROUPS.flatMap((g) => g.items);
 
 /**
- * 메뉴에 세울 묶음. 휴대폰이면 닫은 화면(lib/admin/mobile 의 off)을 빼고, 다 빠진 묶음은 제목째 걷는다 —
+ * 휴대폰 허용 표만 거른 묶음. 메뉴는 이것을 바로 쓰지 않고 program-policy 의 useMenuGroups(노출, 사용 여부까지 거른다)를 쓴다.
+ * 휴대폰이면 닫은 화면(lib/admin/mobile 의 off)을 빼고, 다 빠진 묶음은 제목째 걷는다 —
  * 눌러서 "PC에서 열어 주세요" 를 보게 하느니 처음부터 안 보이는 편이 낫다. 주소로 들어오면 그 자리에서 안내한다(mobile-policy).
  */
 export function groupsFor(mobile: boolean): typeof GROUPS {

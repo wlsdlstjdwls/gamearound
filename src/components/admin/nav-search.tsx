@@ -10,8 +10,8 @@
 // 탭 안 문서(iframe)에서 누른 Ctrl+K 는 그 문서에만 닿으므로 바깥에 알려 바깥이 판을 연다 — 판이 탭 안에 갇히면 기둥 폭만큼 잘린다.
 import { useEffect, useId, useMemo, useRef, useState, useSyncExternalStore } from "react";
 import Link from "next/link";
-import { groupsFor, ITEMS, type Item } from "@/components/admin/admin-nav-items";
-import { useMobilePolicy } from "@/components/admin/mobile-policy";
+import { ITEMS, type Item } from "@/components/admin/admin-nav-items";
+import { useMenuGroups } from "@/components/admin/program-policy";
 import { useFavorites } from "@/components/admin/nav-favorites";
 import { StarIcon } from "@/components/admin/nav-icons";
 import { inFrame, isFrameMessage, postToTop } from "@/components/admin/program-shell/frame";
@@ -83,12 +83,12 @@ export function useMenuSearchHotkey() {
   }, []);
 }
 
-/** 찾을 칸 전부. 휴대폰이면 닫힌 화면은 메뉴처럼 뺀다(groupsFor) */
+/** 찾을 칸 전부. 휴대폰에서 닫힌 화면, 프로그램관리에서 끈 칸은 메뉴처럼 뺀다(useMenuGroups) */
 function useEntries(): Entry[] {
-  const { mobile } = useMobilePolicy();
+  const groups = useMenuGroups();
   return useMemo(
-    () => groupsFor(mobile).flatMap((g) => g.items.map((item) => ({ ...item, group: g.title, keywords: ADMIN_MENU_KEYWORDS[item.href] }))),
-    [mobile],
+    () => groups.flatMap((g) => g.items.map((item) => ({ ...item, group: g.title, keywords: ADMIN_MENU_KEYWORDS[item.href] }))),
+    [groups],
   );
 }
 

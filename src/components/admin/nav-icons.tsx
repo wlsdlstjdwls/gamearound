@@ -100,6 +100,19 @@ export function CodeIcon(p: IconProps) {
   );
 }
 
+/** 프로그램관리 — 줄마다 켜고 끄는 스위치 */
+export function ToggleListIcon(p: IconProps) {
+  return (
+    <svg {...base(p)}>
+      <rect x="3" y="5" width="9" height="5" rx="2.5" />
+      <circle cx="9.5" cy="7.5" r="1" />
+      <rect x="3" y="14" width="9" height="5" rx="2.5" />
+      <circle cx="5.5" cy="16.5" r="1" />
+      <path d="M15 7.5h6M15 16.5h6" />
+    </svg>
+  );
+}
+
 /** 알림템플릿관리 — 줄이 비어 있는 종이 */
 export function TemplateIcon(p: IconProps) {
   return (

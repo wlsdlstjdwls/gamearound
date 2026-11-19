@@ -140,6 +140,8 @@ export const ROUTES = {
   adminEffects: "/admin/effects",
   /** 시스템관리(2026-10-30): 공통코드, 알림 템플릿, 알림 발송 */
   adminCodes: "/admin/codes",
+  /** 프로그램(메뉴 칸) 노출, 사용 여부(2026-11-19) */
+  adminPrograms: "/admin/programs",
   adminNotifyTemplates: "/admin/notify-templates",
   adminNotifySends: "/admin/notify-sends",
   /** 서비스 변경 안내서 보기(2026-10-30). 본문은 apiAdminGuide 가 관리자에게만 내보낸다(lib/admin/guide) */

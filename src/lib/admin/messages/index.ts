@@ -16,6 +16,7 @@ export * from "./promotions";
 export * from "./effects";
 export * from "./game";
 export * from "./codes";
+export * from "./programs";
 export * from "./notify";
 export * from "./stats";
 export * from "./guide";
