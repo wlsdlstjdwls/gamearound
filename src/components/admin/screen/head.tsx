@@ -178,11 +178,13 @@ export function AdminScreenHead({
   useEffect(() => {
     if (saving) say(M.saving);
   }, [saving, say]);
-  // 조회, 저장이 서버를 기다리는 동안 판 맨 위에 흐르는 띠(2026-11-19, 사용자 "저장할 때 로딩바 같은 것도 없네").
-  // 단추 색만 바뀌어서는 눌렸는지 모른다. 띠 모양은 주소 이동 중 띠와 같다(globals.css 의 .pending-bar, ui/nav-pending)
-  // 저장 중에는 프로그램 판을 흐리게 덮고 가운데 로딩바를 세운다(같은 날 사용자 "블러 처리 + 로딩바", 이어서 "화면 전체보단 그 프로그램만, 다른 메뉴엔 영향 없게").
-  // 덮개가 판 안 클릭을 막아 저장 중 다른 값을 고치지 못한다. 다시 조회는 덮지 않고 판 위 띠만 흐른다 — 조회는 자주 누르고, 그때마다 흐려지면 거슬린다
-  const pendingBar = (saving || refreshing) && <PanelPortal>{saving ? <SavingOverlay /> : <span aria-hidden className="pending-bar pending-bar-local" />}</PanelPortal>;
+  // 저장 중에는 프로그램 판을 흐리게 덮고 가운데 도는 원을 세운다(2026-11-19 사용자 "저장할 때 로딩바 같은 것도 없네", "블러 처리 + 로딩바", 이어서 "화면 전체보단 그 프로그램만, 다른 메뉴엔 영향 없게").
+  // 덮개가 판 안 클릭을 막아 저장 중 다른 값을 고치지 못한다. 판 위 얇은 띠는 두지 않는다(같은 날 사용자 "상단 로딩바는 없애") — 다시 조회는 툴바 단추 색과 상태줄만 말한다
+  const pendingBar = saving && (
+    <PanelPortal>
+      <SavingOverlay />
+    </PanelPortal>
+  );
 
   const excel = () => {
     // 공통 그리드가 걸어 둔 전체 줄이 먼저다(쪽을 나눠도 다 나간다). 없으면 화면의 목록 표(data-grid 표시)를 읽는다
@@ -311,7 +313,6 @@ function PanelPortal({ children }: { children: React.ReactNode }) {
 function SavingOverlay() {
   return (
     <div className="absolute inset-0 z-30 rounded-[inherit] bg-surface/50 backdrop-blur-sm animate-fade-in [animation-delay:var(--duration-fast)]">
-      <span aria-hidden className="pending-bar pending-bar-local" />
       <div role="status" className="sticky top-[40vh] mx-auto mt-24 flex w-fit items-center justify-center text-acc">
         <SpinnerIcon size={36} />
         <span className="sr-only">{M.saving}</span>
