@@ -49,6 +49,10 @@ export const GRANTS_MESSAGES = {
   granted: (n: number) => `${n}건 부여했어요.`,
   revoked: (n: number) => `${n}건 회수했어요.`,
   revokedEmpty: "권한없는 프로그램이 없어요.",
+  /** 끌어 놓기: 끄는 동안 받을 목록에 뜨는 안내와 끌려가는 이름표 */
+  dropToGrant: "여기에 놓으면 부여돼요",
+  dropToRevoke: "여기에 놓으면 회수돼요",
+  dragLabel: (name: string, n: number) => (n > 1 ? `${name} 외 ${n - 1}개` : name),
   grantedEmpty: "권한있는 프로그램이 없어요.",
   // 프로그램별사용자권한관리
   programUsersList: "사용자 권한 목록",

@@ -93,6 +93,14 @@ export function UserProgramsScreen({ accounts, rows, meId }: { accounts: AdminAc
     const hrefs = checked.has(key) ? Array.from(checked) : [key];
     e.dataTransfer.setData(DRAG_TYPE, JSON.stringify({ from, hrefs }));
     e.dataTransfer.effectAllowed = "move";
+    // 끌려가는 그림을 줄 통째 대신 작은 이름표로 — 줄 그림은 커서를 가려 어디에 닿았는지 안 보였다
+    const name = PROGRAMS.find((p) => p.href === key)?.name ?? key;
+    const tag = document.createElement("div");
+    tag.textContent = M.dragLabel(name, hrefs.length);
+    tag.className = "fixed -left-[999px] top-0 rounded-full bg-acc px-3 py-1.5 text-[13px] font-semibold text-on-ink shadow-2";
+    document.body.appendChild(tag);
+    e.dataTransfer.setDragImage(tag, 14, 14);
+    requestAnimationFrame(() => tag.remove());
     setDragFrom(from);
   };
   const dragEnd = () => {
@@ -121,9 +129,6 @@ export function UserProgramsScreen({ accounts, rows, meId }: { accounts: AdminAc
     },
     onDragEnd: dragEnd,
   });
-  /** 받을 자리 표시: 끄는 동안 반대쪽 목록 테두리를 강조색 점선으로, 그 위에 올리면 면을 옅게 칠한다 */
-  const zoneClass = (to: Side) =>
-    cn("transition-colors duration-fast", dragFrom !== null && dragFrom !== to && "rounded-xl outline-2 outline-dashed outline-offset-2 outline-[var(--acc)]", dropOver === to && "bg-acc-soft");
 
   const copy = async () => {
     if (!copyFrom) return say(M.copyPick, "error");
@@ -218,7 +223,8 @@ export function UserProgramsScreen({ accounts, rows, meId }: { accounts: AdminAc
               fit
             />
           </Pane>
-          <div {...dropZone("off")} className={zoneClass("off")}>
+          <div {...dropZone("off")} className="relative self-stretch">
+            <DropHint show={dragFrom === "on"} over={dropOver === "off"} text={M.dropToRevoke} />
             <Pane title={M.revokedList}>
               <DataGrid
                 label={M.revokedList}
@@ -237,7 +243,8 @@ export function UserProgramsScreen({ accounts, rows, meId }: { accounts: AdminAc
             <MoveButton label={M.grant} hint={M.grantHint} onClick={() => grant()} disabled={draft.pending} toRight />
             <MoveButton label={M.revoke} hint={M.revokeHint} onClick={() => revoke()} disabled={draft.pending} />
           </div>
-          <div {...dropZone("on")} className={zoneClass("on")}>
+          <div {...dropZone("on")} className="relative self-stretch">
+            <DropHint show={dragFrom === "off"} over={dropOver === "on"} text={M.dropToGrant} />
             <Pane title={M.grantedList}>
               <DataGrid
                 label={M.grantedList}
@@ -282,5 +289,25 @@ function MoveButton({ label, hint, onClick, disabled, toRight = false }: { label
       </button>
       {tooltip}
     </>
+  );
+}
+
+/**
+ * 받을 자리 표시(2026-11-19 사용자 "잡고 드래그 하면 금지 표시뜨고 옮길수 있는지 없는지 잘 모르겠네").
+ * 끄는 동안 반대쪽 목록 칸 전체(목록이 짧아도 칸 높이 끝까지)를 점선 판으로 덮고 "여기에 놓으면 부여돼요" 를 띄운다. 올리면 판이 진해진다.
+ * 판은 pointer-events 를 받지 않는다 — 끌기 신호는 그 밑 칸(dropZone)이 받는다
+ */
+function DropHint({ show, over, text }: { show: boolean; over: boolean; text: string }) {
+  if (!show) return null;
+  return (
+    <div
+      aria-hidden
+      className={cn(
+        "pointer-events-none absolute inset-0 z-10 flex items-center justify-center rounded-xl border-2 border-dashed border-[var(--acc)] transition-colors duration-fast",
+        over ? "bg-acc-soft/90" : "bg-surface/70",
+      )}
+    >
+      <span className="rounded-full bg-acc px-4 py-2 text-[13.5px] font-semibold text-on-ink shadow-2">{text}</span>
+    </div>
   );
 }

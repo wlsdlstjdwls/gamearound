@@ -250,7 +250,7 @@ export function DataGrid<T>({
                     className={cn(
                       "relative grid min-h-11 items-stretch border-b border-line-soft text-[13px] outline-none transition-colors duration-fast last:border-b-0 focus-visible:shadow-[inset_0_0_0_2px_var(--acc)] [@media(pointer:fine)]:min-h-10",
                       i % 2 === 1 && !on && "bg-surface-2/40",
-                      onSelect && "cursor-pointer",
+                      onRowDragStart ? "cursor-grab active:cursor-grabbing" : onSelect && "cursor-pointer",
                       on ? "bg-acc-row font-semibold text-ink shadow-[inset_0_0_0_1px_var(--acc)]" : onSelect && "hover:bg-surface-2",
                       rowTone?.(row) === "muted" && !on && "text-dim",
                       st === "deleted" && "line-through",
