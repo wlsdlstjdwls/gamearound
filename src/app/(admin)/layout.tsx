@@ -86,7 +86,8 @@ export default async function AdminLayout({ children }: { children: React.ReactN
 /** 흰 판 한 장 + 바닥 상태줄. 판 바닥에 처리 결과 한 줄(백오피스의 하단 상태줄, components/admin/screen/status) */
 function AdminPanel({ children }: { children: React.ReactNode }) {
   return (
-    <div className={raisedClass("flex w-full min-w-0 flex-col gap-4 p-4 sm:p-5")}>
+    // data-admin-panel: 저장 중 덮개와 로딩 띠가 이 판 안에만 선다(screen/head 의 PanelPortal) — 메뉴, 탭 줄은 그대로 눌린다
+    <div data-admin-panel className={raisedClass("relative flex w-full min-w-0 flex-col gap-4 p-4 sm:p-5")}>
       {/* 휴대폰에서 닫은 화면은 본문 대신 PC 안내(components/admin/mobile-policy) */}
       <MobileGate>
         {/* 프로그램관리에서 사용 안 함으로 끈 화면은 본문 대신 안내(components/admin/program-policy) */}

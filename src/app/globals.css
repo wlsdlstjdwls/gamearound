@@ -576,6 +576,14 @@
     opacity: 0.6;
   }
 }
+/* 관리자 프로그램 판 안 띠(screen/head). 판 맨 위 가장자리에 붙고 판 밖(메뉴, 탭 줄)은 덮지 않는다 */
+.pending-bar.pending-bar-local {
+  position: absolute;
+  top: 0;
+  z-index: 31;
+  border-top-left-radius: var(--radius-panel);
+  border-top-right-radius: var(--radius-panel);
+}
 @keyframes pending-slide {
   from { transform: translateX(-100%); }
   to { transform: translateX(250%); }
