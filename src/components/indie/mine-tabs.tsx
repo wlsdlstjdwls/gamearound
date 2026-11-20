@@ -4,6 +4,7 @@
 // 띠에서 칸이 빠진 만큼 두 화면 사이 길은 여기서 낸다. 처음엔 필터 칩(NavChip)이었는데 같은 날 "눌릴 수 있는 버튼인지 티가 안 난다" —
 // 칩은 이 사이트에서 "목록 거르기" 모양이라 화면을 바꾸는 길로 읽히지 않았다.
 // 지금은 그림 + 이름을 단 큰 탭 둘을 회색 홈 안에 나란히 둔다(분할 단추). 지금 화면은 흰 판이 떠 있고, 다른 화면은 hover 때 흰 판이 비친다.
+// 그림은 먹색이다(2026-11-20 색 줄이기) — 켜진 탭의 파랑 그림이 화면의 파랑 단추와 같은 색이라 강조가 둘로 갈렸다. 켜짐은 흰 판(면 명암)이 말한다.
 // 경로가 달라 loading.tsx 가 바로 뜨므로(누른 순간 화면이 바뀐다) 낙관 표시를 따로 두지 않는다.
 import Link from "next/link";
 import { ChartIcon, FileTextIcon } from "@/components/ui/icons";
@@ -35,7 +36,7 @@ export function MineTabs({ current }: { current: (typeof TABS)[number]["href"] }
               on ? "bg-surface text-ink shadow-[var(--elev-1)]" : "text-mut hover:bg-surface/70 hover:text-ink",
             )}
           >
-            <span aria-hidden className={cn("transition-colors duration-base", on ? "text-acc" : "text-dim group-hover/tab:text-acc")}>
+            <span aria-hidden className={cn("transition-colors duration-base", on ? "text-ink" : "text-dim group-hover/tab:text-ink")}>
               {t.icon}
             </span>
             {t.label}

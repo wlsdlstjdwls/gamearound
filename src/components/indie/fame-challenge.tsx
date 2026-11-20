@@ -15,6 +15,8 @@ const POINTS = [
   { icon: EyeIcon, label: M.myPointView },
 ] as const;
 
+// 색은 판 안의 단추 하나("개발일지 쓰기")에만 남긴다(2026-11-20 사용자 "색상도 너무 많이 써서 눈아픔"). 메달, 머리말, 진행 막대, 점수 알약까지
+// 파랑이 다섯 겹이라 무엇을 누르는지가 묻혔다 — 메달은 회색 면에 먹색 숫자, 막대는 먹색이다
 export function FameChallenge({ standing: s }: { standing: MyFameStanding }) {
   const head = s.rank === 1 ? M.myRankFirst(s.title) : s.rank ? M.myRanked(s.title, s.rank) : M.myUnranked(s.title);
   const next = fameNextLine(s);
@@ -24,7 +26,7 @@ export function FameChallenge({ standing: s }: { standing: MyFameStanding }) {
   return (
     <section aria-label={M.myHead} className="enter-item flex flex-col gap-4 rounded-[var(--radius-panel)] bg-surface p-4 shadow-hair sm:flex-row sm:items-center sm:gap-6 sm:p-5">
       {/* 순위 메달 — 순위 안이면 숫자, 밖이면 트로피. 이 판에서 가장 먼저 읽혀야 하는 것이다 */}
-      <Link href={ROUTES.hallOfFame} aria-label={M.hofTitle} className="press grid size-16 shrink-0 place-items-center self-start rounded-full bg-acc text-on-ink shadow-[0_8px_18px_-8px_var(--acc)] sm:self-center">
+      <Link href={ROUTES.hallOfFame} aria-label={M.hofTitle} className="press grid size-16 shrink-0 place-items-center self-start rounded-full bg-surface-3 text-ink transition-colors hover:bg-line sm:self-center">
         {s.rank ? (
           <span className="flex items-baseline text-[24px] font-black tabular-nums leading-none">
             {s.rank}
@@ -35,7 +37,7 @@ export function FameChallenge({ standing: s }: { standing: MyFameStanding }) {
         )}
       </Link>
       <div className="flex min-w-0 flex-1 flex-col gap-1.5">
-        <span className="text-[12px] font-bold text-acc">{M.myHead}</span>
+        <span className="text-[12px] font-bold text-dim">{M.myHead}</span>
         <span className="truncate text-[17px] font-extrabold tracking-[-0.02em] text-ink">{head}</span>
         {next && <span className="text-[13.5px] font-semibold text-ink-2">{next}</span>}
         {progress && (
@@ -47,13 +49,13 @@ export function FameChallenge({ standing: s }: { standing: MyFameStanding }) {
             aria-valuenow={pct}
             className="mt-0.5 h-2 w-full max-w-[460px] overflow-hidden rounded-full bg-surface-3"
           >
-            <span className="bar-grow block h-full rounded-full bg-acc" style={{ ["--bar-w" as string]: `${pct}%` }} />
+            <span className="bar-grow block h-full rounded-full bg-ink-2" style={{ ["--bar-w" as string]: `${pct}%` }} />
           </div>
         )}
         <ul aria-label={M.myHow} className="mt-1 flex flex-wrap gap-1.5">
           {POINTS.map(({ icon: Icon, label }) => (
-            <li key={label} className="inline-flex items-center gap-1 rounded-full bg-acc-soft px-2.5 py-1 text-[12px] font-semibold text-ink-2">
-              <Icon size={13} className="text-acc" />
+            <li key={label} className="inline-flex items-center gap-1 rounded-full bg-surface-2 px-2.5 py-1 text-[12px] font-semibold text-ink-2">
+              <Icon size={13} className="text-dim" />
               {label}
             </li>
           ))}

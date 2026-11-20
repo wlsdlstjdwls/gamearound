@@ -18,7 +18,7 @@ import { MineTabs } from "@/components/indie/mine-tabs";
 import { RejectionSheet } from "@/components/indie/rejection-sheet";
 import { buttonClass } from "@/components/ui/button";
 import { FormMessage } from "@/components/ui/form-message";
-import { Page, PageHead } from "@/components/ui/page";
+import { Page, PageHead, PageLead } from "@/components/ui/page";
 import { Clamp } from "@/components/ui/tooltip";
 import { FadeImage } from "@/components/ui/fade-image";
 import { EyeIcon, GamepadIcon, HeartIcon, TrophyIcon } from "@/components/ui/icons";
@@ -39,17 +39,16 @@ export const metadata: Metadata = { title: RV.title, robots: { index: false } };
 
 type Props = { searchParams: Promise<Record<string, string | string[] | undefined>> };
 
-/** 위 집계 칸 — 칸마다 그 상태의 색 점 하나(진행 단계 점과 같은 색)로 어느 줄을 세는지 잇는다. 숫자는 들어올 때 한 번 떠오른다 */
-const TILE_DOT: Record<"total" | keyof typeof INDIE_REVIEW_LABEL, string> = { total: "bg-ink", pending: "bg-acc", approved: "bg-ok", rejected: "bg-danger" };
-
-function Tile({ label, value, tone, i }: { label: string; value: number; tone: keyof typeof TILE_DOT; i: number }) {
+/**
+ * 위 집계 칸. 색 점(먹, 파랑, 초록, 빨강)을 걷었다(2026-11-20 사용자 "색상도 너무 많이 써서 눈아픔") — 칸 이름이 이미 상태를 말한다.
+ * 상태는 글자와 무게로 가른다: 센 것이 있는 칸은 먹색 굵은 숫자, 0 인 칸은 회색. 숫자는 들어올 때 한 번 떠오른다.
+ * 좁은 화면은 판 한 장에 네 칸을 한 줄로 세운다 — 2x2 흰 판 네 장이 목록보다 먼저 첫 화면을 먹었다. 넓은 화면은 칸마다 판 그대로다
+ */
+function Tile({ label, value, i }: { label: string; value: number; i: number }) {
   return (
-    <div className="enter-item flex flex-col gap-1 rounded-[var(--radius-md)] bg-surface px-4 py-3.5 shadow-hair" style={stagger(i)}>
-      <span className="flex items-center gap-1.5 text-[12.5px] text-dim">
-        <span aria-hidden className={cn("size-2 rounded-full", TILE_DOT[tone])} />
-        {label}
-      </span>
-      <span className="text-[22px] font-black tabular-nums text-ink sm:text-[26px]">{value.toLocaleString("ko-KR")}</span>
+    <div className="enter-item flex min-w-0 flex-col gap-0.5 px-3 py-3 sm:gap-1 sm:rounded-[var(--radius-md)] sm:bg-surface sm:px-4 sm:py-3.5 sm:shadow-hair" style={stagger(i)}>
+      <span className="truncate text-[12px] text-dim sm:text-[12.5px]">{label}</span>
+      <span className={cn("text-[20px] font-black tabular-nums sm:text-[26px]", value > 0 ? "text-ink" : "text-dim")}>{value.toLocaleString("ko-KR")}</span>
     </div>
   );
 }
@@ -63,7 +62,8 @@ function Reactions({ rank, views, likes }: { rank: number | undefined; views: nu
   return (
     <div className="flex flex-wrap items-center gap-1.5">
       {rank !== undefined && (
-        <Link href={ROUTES.hallOfFame} className="press inline-flex h-7 items-center gap-1 rounded-full bg-acc px-2.5 text-[12px] font-bold text-white">
+        // 채운 파랑 딱지를 걷었다(2026-11-20 색 줄이기). 회색 면에 먹색 굵은 글자 + 트로피 — 무게가 자랑을 말하고, 파랑은 줄의 단추 하나에만 남긴다
+        <Link href={ROUTES.hallOfFame} className="press inline-flex h-7 items-center gap-1 rounded-full bg-surface-3 px-2.5 text-[12px] font-bold text-ink hover:bg-line">
           <TrophyIcon size={13} aria-hidden />
           {RV.fameRank(rank)}
         </Link>
@@ -74,7 +74,7 @@ function Reactions({ rank, views, likes }: { rank: number | undefined; views: nu
         {views.toLocaleString("ko-KR")}
       </span>
       <span className="inline-flex h-7 items-center gap-1 rounded-full bg-surface-2 px-2.5 text-[12px] font-semibold tabular-nums text-ink-2">
-        <HeartIcon size={13} aria-hidden className="text-danger" />
+        <HeartIcon size={13} aria-hidden />
         <span className="sr-only">{RV.likes}</span>
         {likes.toLocaleString("ko-KR")}
       </span>
@@ -96,15 +96,15 @@ export default async function IndieMinePage({ searchParams }: Props) {
   return (
     <Page gap={20}>
       <MineTabs current={ROUTES.indieMine} />
-      <PageHead menuScreen title={RV.title} action={!full && <WriteLink href={ROUTES.indieNew}>{INDIE_MESSAGES.register}</WriteLink>}>
-        <p className="text-[14px] text-mut">{RV.lead}</p>
+      <PageHead menuScreen leadRow title={RV.title} action={!full && <WriteLink href={ROUTES.indieNew} size="head">{INDIE_MESSAGES.register}</WriteLink>}>
+        <PageLead>{RV.lead}</PageLead>
       </PageHead>
       {firstParam(sp.full) && full && <FormMessage tone="info">{M.tooManyPosts(INDIE_POSTS_PER_USER_MAX)}</FormMessage>}
-      <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-4 sm:gap-3.5">
-        <Tile label={RV.total} value={posts.length} tone="total" i={0} />
-        <Tile label={INDIE_REVIEW_LABEL.pending} value={pending} tone="pending" i={1} />
-        <Tile label={INDIE_REVIEW_LABEL.approved} value={approved} tone="approved" i={2} />
-        <Tile label={INDIE_REVIEW_LABEL.rejected} value={rejected} tone="rejected" i={3} />
+      <div className="grid grid-cols-4 divide-x divide-line-soft rounded-[var(--radius-md)] bg-surface shadow-hair sm:gap-3.5 sm:divide-x-0 sm:rounded-none sm:bg-transparent sm:shadow-none">
+        <Tile label={RV.total} value={posts.length} i={0} />
+        <Tile label={INDIE_REVIEW_LABEL.pending} value={pending} i={1} />
+        <Tile label={INDIE_REVIEW_LABEL.approved} value={approved} i={2} />
+        <Tile label={INDIE_REVIEW_LABEL.rejected} value={rejected} i={3} />
       </div>
 
       {/* 명예의 전당 도전(2026-10-30) — 명예의 전당 화면에 떠 있던 "내 게임은 지금" 의 오르는 법을 작업실로 옮겼다(indie/fame-challenge).

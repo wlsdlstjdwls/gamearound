@@ -1615,7 +1615,8 @@ li:has([data-more-open]) {
   position: absolute;
   inset: 0;
   border-radius: inherit;
-  background: var(--acc);
+  /* 먹색 번짐(2026-11-20 색 줄이기, indie/review-steps 머리 주석) — 점이 먹색이라 번짐도 같은 톤이다 */
+  background: var(--ink-2);
   animation: soon-ripple calc(var(--duration-ambient) / 3) var(--ease-standard) infinite both;
   z-index: -1;
 }
