@@ -60,7 +60,7 @@ export function PatchBody({ bodyKo, bodyEn, summaryKo, url }: { bodyKo: string |
       ) : (
         summaryKo && <p className="text-[12.5px] leading-[1.55] text-mut">{summaryKo}</p>
       )}
-      {bodyKo === null && <p className="text-[11.5px] text-dim">{bodyEn ? M.pendingWithOriginal : M.pending}</p>}
+      {bodyKo === null && <p className="text-[11.5px] text-dim max-sm:text-[12.5px]">{bodyEn ? M.pendingWithOriginal : M.pending}</p>}
       <div className="flex flex-wrap items-center gap-x-3">
         {truncated && (
           <button type="button" aria-expanded={open} onClick={() => setOpen((v) => !v)} className={ACTION}>

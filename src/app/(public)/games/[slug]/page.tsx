@@ -24,7 +24,7 @@ import { PriceAlertButton, type AlertPlatformOption } from "@/components/price-a
 import { UpgradeNotes } from "@/components/upgrade-note";
 import { DetailHero } from "@/components/game-detail/hero";
 import { NewsMore } from "@/components/game-detail/news-more";
-import { PRICES_SECTION_ID } from "@/components/game-detail/constants";
+import { PRICES_SECTION_ID, QUIET_FILL_BELOW_MD } from "@/components/game-detail/constants";
 import { EmptyLine } from "@/components/game-detail/empty-line";
 import { PriceChartFallback, PriceChartSlot, SellersSlot } from "@/components/game-detail/slots";
 import { DetailUpdates } from "@/components/game-detail/updates";
@@ -160,7 +160,8 @@ export default async function GameDetailPage({ params }: Props) {
         platforms={[...new Set(game.platforms.map((p) => p.platform))]}
         alertAction={
           canAlert ? (
-            <PriceAlertButton gameId={game.id} gameSlug={game.slug} gameTitle={title} options={alertOptions} slot="headbar" size="sm" label={D.headbarAlert} />
+            // 휴대폰에서는 옅은 단추다 — 그 폭의 채운 파랑은 제목 밑 최저가 구매 하나(game-detail/constants 의 QUIET_FILL_BELOW_MD)
+            <PriceAlertButton gameId={game.id} gameSlug={game.slug} gameTitle={title} options={alertOptions} slot="headbar" size="sm" className={QUIET_FILL_BELOW_MD} label={D.headbarAlert} />
           ) : null
         }
       />
@@ -216,7 +217,7 @@ export default async function GameDetailPage({ params }: Props) {
               byBrand={forecastByBrand}
               labels={brandLabels}
               currency={DISPLAY_CURRENCY}
-              action={canAlert ? <PriceAlertButton gameId={game.id} gameSlug={game.slug} gameTitle={title} options={alertOptions} slot="forecast" label={D.forecastAlert} /> : undefined}
+              action={canAlert ? <PriceAlertButton gameId={game.id} gameSlug={game.slug} gameTitle={title} options={alertOptions} slot="forecast" className={QUIET_FILL_BELOW_MD} label={D.forecastAlert} /> : undefined}
             />
           )}
         </div>

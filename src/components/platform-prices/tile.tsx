@@ -26,6 +26,7 @@ import { Tag } from "@/components/ui/tag";
 import { SubscriptionChips } from "@/components/subscription-badges";
 import { brandNameOf, generationOf, type PlatformPriceItem } from "@/components/platform-prices/order";
 import { PickableTile } from "@/components/game-detail/platform-pick";
+import { QUIET_FILL_BELOW_MD } from "@/components/game-detail/constants";
 
 /** 스토어로 나가는 버튼의 말(기획서 v2.0 S-05 "구매하기") */
 export const STORE_CTA = "구매하기";
@@ -61,9 +62,21 @@ export function CardHead({ name, children }: { name: string; children?: React.Re
   );
 }
 
-/** 최저가 딱지 — 채운 면 대신 테두리 한 줄(2026-11-16 색 줄이기). 카드 안에서 값 다음으로 눈이 가야 할 말이라 남긴다 */
+/**
+ * 최저가 딱지 — 채운 면 대신 테두리 한 줄(2026-11-16 색 줄이기). 카드 안에서 값 다음으로 눈이 가야 할 말이라 남긴다.
+ * 테두리와 글자는 먹색이다(2026-11-20 사용자 점검 "파랑이 많다") — 파랑은 누르는 것의 색인데 이 딱지는 눌리지 않는다.
+ * 어느 카드가 싼지는 그 카드의 채운 구매 단추(primaryBuyRow)가 함께 말한다
+ */
 export function BestMark() {
-  return <span className="ml-auto shrink-0 rounded-full px-2 py-[3px] text-[11px] font-bold leading-none text-acc ring-1 ring-acc ring-inset">최저가</span>;
+  return <span className="ml-auto shrink-0 rounded-full px-2 py-[3px] text-[12px] font-bold leading-none text-ink-2 ring-1 ring-line-strong ring-inset">최저가</span>;
+}
+
+/**
+ * 카드의 구매 단추 모양. 채운 파랑은 화면 전체에서 한 행(primaryBuyRow)만 받고 나머지는 옅은 단추다(2026-11-20).
+ * 휴대폰에서는 그 한 행도 옅다 — 제목 밑 최저가 줄(game-detail/quick-buy)이 같은 행의 채운 단추를 들고 있어 같은 곳으로 가는 파랑이 둘이 된다
+ */
+export function buyButtonClass(primary: boolean, className?: string): string {
+  return buttonClass({ variant: primary ? "accent" : "soft", size: "row", className: cn(primary && QUIET_FILL_BELOW_MD, className) });
 }
 
 /** 지원 기종 줄 — 세대(PS5, Switch 2)를 알면 세대, 아니면 기기 갈래(PC) */
@@ -90,9 +103,9 @@ export function SubscriptionRow({ subscriptions }: { subscriptions: PlatformPric
 }
 
 /** 구매 단추 줄(7). 링크가 없어도 단추 자리는 지킨다(2026-09-22, 사용자 지정) — 같은 자리 같은 모양, 눌리지만 않는다 */
-function BuyButton({ p }: { p: PlatformPriceItem }) {
+function BuyButton({ p, primary }: { p: PlatformPriceItem; primary: boolean }) {
   return p.storeUrl ? (
-    <a href={p.storeUrl} target="_blank" rel="noopener noreferrer" className={buttonClass({ variant: "accent", size: "row", className: "min-w-0 flex-1" })}>
+    <a href={p.storeUrl} target="_blank" rel="noopener noreferrer" className={buyButtonClass(primary, "min-w-0 flex-1")}>
       {STORE_CTA}
       <span className="sr-only"> {platformLabel(p)} (새 창에서 열림)</span>
     </a>
@@ -107,12 +120,15 @@ export function PriceTile({
   p,
   id,
   isBest,
+  primary,
   release,
 }: {
   p: PlatformPriceItem;
   /** 히어로의 플랫폼 이름이 눌러 내려올 자리. 묶음의 첫 장만 받는다 */
   id?: string;
   isBest: boolean;
+  /** 이 행이 채운 구매 단추를 받는다(order 의 primaryBuyRow) */
+  primary: boolean;
   release: string | null;
 }) {
   const hasDiscount = Boolean(p.discountPct && p.discountPct > 0);
@@ -166,7 +182,7 @@ export function PriceTile({
       <SubscriptionRow subscriptions={p.subscriptions} />
 
       <div className="flex items-end pt-1">
-        <BuyButton p={p} />
+        <BuyButton p={p} primary={primary} />
       </div>
     </PickableTile>
   );

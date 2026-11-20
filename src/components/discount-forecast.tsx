@@ -82,7 +82,7 @@ function Plan({ next, expected, running, currency }: { next: Forecast["next"]; e
           >
             <span className="absolute inset-y-0 left-0 rounded-full bg-acc" style={{ width: pctOf(expected.price, expected.cap) }} />
           </PriceBar>
-          <p className="text-[11.5px] leading-[1.5] text-dim">
+          <p className="text-[11.5px] leading-[1.5] text-dim max-sm:text-[12.5px]">
             {expected.basis === "recorded-low"
               ? D.forecastBasisLow(formatDate(expected.at))
               : D.forecastBasisRate(expected.pct)}

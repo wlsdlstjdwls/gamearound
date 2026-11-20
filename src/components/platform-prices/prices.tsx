@@ -9,7 +9,7 @@
 // 카드 모양은 tile.tsx, 순서와 이름 규칙은 order.ts 가 갖는다. 행사 이름 곁말은 sale-note.tsx.
 // 상태가 없어 서버 컴포넌트다(SaleBadge, 알림 버튼만 클라이언트).
 import { kstDateKey } from "@/lib/format";
-import { BEST_MIN_PRICED, brandAnchorId, brandNameOf, byPrice, isUpcomingRow, mergeableGroups, mergeGroupKey, mergePickKey, orderCards, releaseText, rowKey, type PlatformPriceItem } from "@/components/platform-prices/order";
+import { BEST_MIN_PRICED, brandAnchorId, brandNameOf, byPrice, isUpcomingRow, mergeableGroups, mergeGroupKey, mergePickKey, orderCards, primaryBuyRow, releaseText, rowKey, type PlatformPriceItem } from "@/components/platform-prices/order";
 import { AbsentTile, PriceTile, UpcomingTile } from "@/components/platform-prices/tile";
 import { MergedTile } from "@/components/platform-prices/merged-tile";
 import { PC_PICK_KEY, PLATFORM_FAMILY_LABEL } from "@/lib/platform";
@@ -50,6 +50,9 @@ export function PlatformPrices({
   // 통화가 다른 카드는 견주지 않으므로(byPrice) 같은 통화끼리만 센다
   const priced = cheapest?.currentPrice != null ? platforms.filter((p) => p.currentPrice !== null && p.currency === cheapest.currency).length : 0;
   const bestKey = cheapest && priced >= BEST_MIN_PRICED ? rowKey(cheapest) : null;
+  // 채운 구매 단추는 화면 전체에서 이 행 하나만(2026-11-20, order 의 primaryBuyRow). 휴대폰 제목 밑 최저가 줄도 같은 행이다
+  const primary = primaryBuyRow(platforms);
+  const primaryKey = primary ? rowKey(primary) : null;
   // 히어로 이름이 눌러 내려올 id 는 묶음의 첫 카드만 받는다 — 같은 id 가 둘이면 링크가 엉뚱한 장을 잡는다
   const anchored = new Set<string>();
   const anchorOnce = (id: string) => (anchored.has(id) ? undefined : (anchored.add(id), id));
@@ -85,6 +88,7 @@ export function PlatformPrices({
               id={first}
               secondId={rest.find(Boolean)}
               isBest={gRows.some((r) => rowKey(r) === bestKey)}
+              primaryKey={primaryKey}
               release={gRows.map((r) => releaseText(r, releaseFallback)).find(Boolean) ?? null}
             />
           );
@@ -100,6 +104,7 @@ export function PlatformPrices({
             p={p}
             id={id}
             isBest={rowKey(p) === bestKey}
+            primary={rowKey(p) === primaryKey}
             release={release}
           />
         );

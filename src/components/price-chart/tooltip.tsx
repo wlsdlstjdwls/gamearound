@@ -9,7 +9,7 @@ import { seriesLabel } from "@/components/price-chart/prepare";
 export function PriceTooltip({ active, payload, label, currency }: TooltipContentProps & { currency: Currency }) {
   if (!active || !payload || payload.length === 0) return null;
   return (
-    <div className="rounded-[7px] border border-line-strong bg-surface px-3 py-2 text-[11.5px]">
+    <div className="rounded-[7px] border border-line-strong bg-surface px-3 py-2 text-[11.5px] max-sm:text-[12.5px]">
       <p className="mb-1 text-dim">{formatDate(new Date(Number(label)))}</p>
       <ul className="space-y-0.5">
         {payload.map((e) => (

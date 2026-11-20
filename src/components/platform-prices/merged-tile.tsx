@@ -19,12 +19,12 @@ import { PendingNote } from "@/components/ui/pending-note";
 import { ClockIcon } from "@/components/ui/icons";
 import { Tag } from "@/components/ui/tag";
 import { PickableTile } from "@/components/game-detail/platform-pick";
-import { brandNameOf, byPrice, generationOf, type PlatformPriceItem } from "@/components/platform-prices/order";
-import { BestMark, CardHead, hardwareText, PRICE_DIVIDER, Row, STORE_CTA, STORE_LINK_MISSING, SubscriptionRow, TILE } from "@/components/platform-prices/tile";
+import { brandNameOf, byPrice, generationOf, rowKey, type PlatformPriceItem } from "@/components/platform-prices/order";
+import { BestMark, buyButtonClass, CardHead, hardwareText, PRICE_DIVIDER, Row, STORE_CTA, STORE_LINK_MISSING, SubscriptionRow, TILE } from "@/components/platform-prices/tile";
 
 /**
  * 스토어마다 서는 구매 단추는 스토어 이름만 적는다. "Steam에서 구매" 는 네 칸 격자의 반쪽 단추에서 잘렸다(2026-11-11 실측).
- * 무엇을 하는 단추인지는 카드의 다른 단추(구매하기)와 같은 채운 모양이 말하고, 낭독기에는 뒤에 "에서 구매" 를 붙인다
+ * 무엇을 하는 단추인지는 카드의 다른 단추(구매하기)와 같은 모양이 말하고, 낭독기에는 뒤에 "에서 구매" 를 붙인다
  */
 const STORE_CTA_SR = "에서 구매";
 
@@ -71,6 +71,7 @@ export function MergedTile({
   id,
   secondId,
   isBest,
+  primaryKey,
   release,
 }: {
   /** 카드 머리 이름(PC, PlayStation, Nintendo 일본) */
@@ -84,6 +85,8 @@ export function MergedTile({
   secondId?: string;
   /** 이 카드의 스토어 하나가 화면 전체 최저가다 */
   isBest: boolean;
+  /** 채운 구매 단추를 받는 행의 열쇠(order 의 primaryBuyRow, rowKey). 이 카드 밖의 행이면 이 카드 단추는 모두 옅다 */
+  primaryKey: string | null;
   release: string | null;
 }) {
   const ordered = [...rows].sort(byPrice);
@@ -92,7 +95,6 @@ export function MergedTile({
   const priced = ordered.filter((p) => p.currentPrice !== null && p.currency === cheapest.currency);
   const lowest = priced.length > 0 ? Math.min(...priced.map((p) => p.currentPrice!)) : null;
   const strictlyCheaper = (p: PlatformPriceItem) => lowest !== null && p.currentPrice === lowest && priced.some((q) => q.currentPrice! > lowest);
-  const atLowest = (p: PlatformPriceItem) => lowest !== null && p.currentPrice === lowest;
   const showBest = isBest && cheapest.currentPrice !== 0;
   // 같은 상품 주소를 가리키는 줄(PS5, PS4 겸용 상품)은 단추 하나 — 같은 곳으로 가는 단추 둘은 고르게만 한다
   const buttons = ordered.filter((p, i) => !p.storeUrl || ordered.findIndex((q) => q.storeUrl === p.storeUrl) === i);
@@ -124,7 +126,8 @@ export function MergedTile({
               href={p.storeUrl}
               target="_blank"
               rel="noopener noreferrer"
-              className={buttonClass({ variant: atLowest(p) ? "accent" : "soft", size: "row", className: "min-w-0 flex-1" })}
+              // 채운 파랑은 화면 전체 한 행만(2026-11-20, tile 의 buyButtonClass). 전에는 묶음 안 싼 쪽마다 채워 카드마다 파랑이 섰다
+              className={buyButtonClass(rowKey(p) === primaryKey, "min-w-0 flex-1")}
             >
               <span className="truncate">{buttons.length === 1 ? STORE_CTA : lineName(p)}</span>
               <span className="sr-only">{STORE_CTA_SR} {platformLabel(p)} (새 창에서 열림)</span>

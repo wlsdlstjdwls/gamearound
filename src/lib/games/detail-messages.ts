@@ -21,6 +21,10 @@ export const DETAIL_MESSAGES = {
   scoreNone: "점수 없음",
   /** 히어로 버튼(목업 "가격 알림"). 팝업 안 저장 버튼까지 같은 팝업이라 긴 말(가격 알림 받기)은 할인 예측 판이 아니라 여기서 줄인다 */
   heroAlert: "가격 알림",
+  /** 휴대폰 제목 밑 최저가 줄의 이름표(game-detail/quick-buy, 2026-11-20) */
+  quickBuyLabel: "최저가",
+  /** 같은 줄 낭독 이름 */
+  quickBuyAria: "최저가와 구매",
   playtimeTitle: "플레이타임",
   /** "메인 + 추가" 에서 "메인 + 서브" 로(2026-11-11 사용자 지정). 옛 카드(playtime-card)와 같은 말이 됐다 */
   playtimeItems: { mainStoryHours: "메인 스토리", mainExtraHours: "메인 + 서브", completionistHours: "완전 정복" },

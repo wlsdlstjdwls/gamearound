@@ -61,7 +61,8 @@ export function PatchList({ items, showPlatform = false }: { items: Item[]; show
             <PatchBody bodyKo={n.bodyKo} bodyEn={n.bodyEn} summaryKo={n.summaryKo} url={n.url} />
           </div>
           <KindChips title={n.title} />
-          <p className="flex shrink-0 items-center gap-x-1.5 text-[11.5px] text-dim">
+          {/* 휴대폰은 읽는 글자를 12.5px 로(2026-11-20 사용자 점검 "11px 대 작은 글자가 많다"). 넓은 화면은 그대로 */}
+          <p className="flex shrink-0 items-center gap-x-1.5 text-[11.5px] text-dim max-sm:text-[12.5px]">
             {showPlatform && n.platform && (
               <>
                 <span>{platformLabel({ platform: n.platform, region: n.region ?? "KR" })}</span>

@@ -25,7 +25,8 @@ export function CriticScores({ game }: { game: GameDetail }) {
   // 점수가 하나도 없어도 칸 셋은 그대로 선다(2026-11-16 사용자 "평점이 없더라도 해당 영역 표기 필요"). "출시 후 표시돼요" 같은 안내 문구는 걷었다
   return (
     <section aria-labelledby="scores-heading" className="mt-auto flex flex-col gap-2">
-      <h2 id="scores-heading" className="text-[11.5px] font-bold tracking-[0.06em] text-dim">
+      {/* 휴대폰에서 이름표 글자를 한 단계 키운다(2026-11-20 사용자 점검 "11px 대 작은 글자가 많다"). 넓은 화면은 세 기둥 높이 맞추기 때문에 그대로다 */}
+      <h2 id="scores-heading" className="text-[11.5px] font-bold tracking-[0.06em] text-dim max-sm:text-[12.5px]">
         {D.scoresLabel}
       </h2>
       <dl className="grid grid-cols-3 gap-2">
@@ -35,7 +36,7 @@ export function CriticScores({ game }: { game: GameDetail }) {
             <div key={key} className="flex min-w-0 flex-col gap-2.5 rounded-[var(--radius-md)] bg-surface px-2.5 py-3 shadow-[var(--elev-card)]">
               <dt className="flex min-w-0 flex-col items-start gap-1.5 sm:flex-row sm:items-center">
                 <CriticLogo kind={key} size={18} />
-                <span className="whitespace-nowrap text-[11px] font-extrabold text-ink-2">{D.scoreLabel[key]}</span>
+                <span className="whitespace-nowrap text-[11px] font-extrabold text-ink-2 max-sm:text-[12px]">{D.scoreLabel[key]}</span>
               </dt>
               <dd className="flex items-baseline leading-none">
                 <span className={cn("text-[26px] font-extrabold tracking-[-0.03em]", line ? "text-ink" : "text-dim-2")}>{line ? line.value : NO_SCORE}</span>

@@ -12,8 +12,8 @@
 // 세 기둥 길이를 맞췄다. 출시 전 게임은 출시일을 원제 줄에 묻지 않고 제목 밑에 띠로 세운다(같은 날 "강조 필요").
 import Link from "next/link";
 import { CoverImage } from "@/components/game-card";
-import { companyPath } from "@/lib/routes";
-import { COMPANY_ROLE_LABEL } from "@/lib/games/messages";
+import { daysUntil, InfoCard } from "@/components/game-detail/info-card";
+import { QuickBuy } from "@/components/game-detail/quick-buy";
 import { ContentKindHead } from "@/components/content-kind-head";
 import { KoreanSupportBadges } from "@/components/korean-support-badges";
 import { MultiplayerBadges } from "@/components/multiplayer-badges";
@@ -29,7 +29,8 @@ import { genreTagLabel } from "@/lib/genres";
 import { FitClamp } from "@/components/ui/fit-clamp";
 import { BellIcon } from "@/components/ui/icons";
 import { DETAIL_MESSAGES as D } from "@/lib/games/detail-messages";
-import { formatDate, kstDateKey } from "@/lib/format";
+import { formatDate } from "@/lib/format";
+import { normalizeForSearch } from "@/lib/slug";
 import { gamesHref } from "@/lib/games-query";
 import { releaseLineText } from "@/lib/games/messages";
 import { PreorderMark } from "@/components/ui/preorder-mark";
@@ -43,18 +44,20 @@ const GENRE_TAG =
   "press inline-flex min-h-[32px] items-center rounded-full bg-surface px-3.5 text-[13px] font-semibold text-ink ring-1 ring-line-strong ring-inset transition-colors duration-base hover:text-acc hover:ring-acc";
 
 /** 원제, 출시일, 나라, 개발, 배급 한 줄의 낱말. 앞머리 막대는 줄 머리에서 잘린다(쓰는 자리 주석) */
+/**
+ * 휴대폰(md 아래)에서 안 걸린 알림 단추의 채운 파랑을 옅은 단추로(2026-11-20 사용자 점검 "파랑이 많다"). 그 폭에서는 제목 밑 최저가 줄의
+ * 구매 단추(game-detail/quick-buy)가 첫 화면의 채운 파랑이다. 넓은 화면은 채운 파랑 그대로다(2026-10-30 사용자 "눈에 안 띈다" 로 채웠다).
+ * 상태는 단추가 data-alert 로 알린다(price-alert-button 의 stateful) — 받는 중(옅은 파랑), 멈춤(회색)은 손대지 않는다. 값은 soft 변형과 같다
+ */
+const ALERT_QUIET_BELOW_MD =
+  "max-md:data-[alert=none]:border max-md:data-[alert=none]:border-line-strong max-md:data-[alert=none]:bg-surface max-md:data-[alert=none]:text-ink max-md:data-[alert=none]:shadow-hair";
+
 const META_ITEM = "relative inline-flex items-center gap-x-1.5 pl-3 pr-1.5 before:absolute before:left-[3px] before:text-dim-2 before:content-['|']";
 
-const MS_PER_DAY = 24 * 60 * 60 * 1000;
 /** 설명이 자리가 모자라도 보이는 줄 수(좁은 화면은 늘 이만큼) */
 const DESCRIPTION_MIN_LINES = 3;
 /** 설명을 남는 높이까지 펴는 폭 — 히어로 기둥이 나란히 서는 md(768) 부터 */
 const DESCRIPTION_FIT_QUERY = "(min-width: 768px)";
-
-/** 출시일까지 남은 날(한국 날짜 기준). 날짜 열쇠끼리 빼서 시각 때문에 하루가 흔들리지 않는다 */
-function daysUntil(dateKey: string): number {
-  return Math.round((Date.parse(dateKey) - Date.parse(kstDateKey(new Date()))) / MS_PER_DAY);
-}
 
 /** 출시일이 오늘(한국 날짜)인가 */
 function isReleaseToday(date: string | null): boolean {
@@ -85,7 +88,9 @@ export function DetailHero({
   // 제목 밑 날짜 글자만 남았다. 알림 종류, 가격 칸 같은 다른 판정은 그대로 unreleased 를 쓴다(당일은 이미 판다)
   const releaseCard = unreleased || isReleaseToday(game.releaseDate);
   // 출시일 카드가 서면 날짜는 그 카드가 말한다 — 같은 날짜를 두 번 쓰지 않는다
-  const meta = [game.titleKo ? game.titleEn : null, game.releaseDate && !releaseCard ? releaseLineText(formatDate(game.releaseDate), false) : null].filter(
+  // 원제는 보이는 제목과 다를 때만 — 한글 제목 칸에 영문 제목이 그대로 든 게임(GTA VI 등)은 같은 이름이 제목 밑에 또 섰다(2026-11-20 사용자 점검)
+  const originalTitle = game.titleKo && game.titleEn && normalizeForSearch(game.titleEn) !== normalizeForSearch(title) ? game.titleEn : null;
+  const meta = [originalTitle, game.releaseDate && !releaseCard ? releaseLineText(formatDate(game.releaseDate), false) : null].filter(
     (v): v is string => Boolean(v),
   );
 
@@ -93,7 +98,9 @@ export function DetailHero({
     <section className="grid gap-x-8 gap-y-5 md:grid-cols-2 lg:grid-cols-[minmax(0,380fr)_minmax(0,470fr)_minmax(0,330fr)] lg:gap-x-8">
       {/* 커버 — 흰 판 위에 한 장(목업 .artc). 가로 아트를 먼저 쓴다: 이 칸은 가로가 긴 상자라 세로 아트를 넣으면
           위아래가 반 넘게 잘린다. 가로 아트가 없는 게임만 세로 아트를 가운데 띠로 보여 준다 */}
-      <div className="enter-item flex flex-col gap-2.5 self-start rounded-[var(--radius-panel)] bg-surface p-2.5 shadow-[var(--elev-card)] sm:p-3" style={stagger(0)}>
+      {/* 휴대폰(md 아래)에서는 흰 판을 걷는다(2026-11-20 사용자 점검 "그림 테두리가 두 겹") — 그 폭에서는 판 안에 배지가 없어(md:flex)
+          판이 그림 둘레 10px 흰 테 하나뿐이었고, 그림의 그림자(cover-elev)와 판의 그림자가 두 겹 테두리로 보였다 */}
+      <div className="enter-item flex flex-col gap-2.5 self-start max-md:w-full md:rounded-[var(--radius-panel)] md:bg-surface md:p-3 md:shadow-[var(--elev-card)]" style={stagger(0)}>
         <div className="cover-elev relative aspect-[16/9] w-full overflow-hidden rounded-[var(--radius-cover-lg)] bg-surface-3">
           <CoverImage src={game.coverUrl ?? game.portraitUrl} alt={`${title} 커버`} sizes="(max-width: 767px) 100vw, (max-width: 1023px) 50vw, 420px" priority />
         </div>
@@ -151,6 +158,8 @@ export function DetailHero({
           </p>
           </div>
         )}
+        {/* 휴대폰만 — 제목 밑 최저가와 구매 단추(game-detail/quick-buy). 넓은 화면은 바로 아래 가격 카드가 첫 화면에 든다 */}
+        <QuickBuy platforms={game.platforms} />
         {/* 판매 형태(무료 플레이, 얼리 액세스 — 저장 이름은 앞서 해보기, lib/genres 의 genreTagLabel)는 장르가 아니라 카드와 같은 작은 청록 꼬리표로 장르 앞에 선다(2026-10-27, lib/genres) */}
         {(game.genres.length > 0 || game.tags.length > 0) && (
           <ul className="flex flex-wrap items-center gap-1.5" aria-label="장르">
@@ -209,7 +218,7 @@ export function DetailHero({
                   {D.heroAlert}
                 </>
               }
-              className="w-full"
+              className={cn("w-full", ALERT_QUIET_BELOW_MD)}
             />
           )}
           <WishlistButton gameId={game.id} className="w-full" />
@@ -223,68 +232,6 @@ export function DetailHero({
         <InfoCard game={game} showRelease={releaseCard} />
       </div>
     </section>
-  );
-}
-
-/** 출시일까지 남은 날과 날짜. 올해면 해를 뺀다 — 남은 날이 이미 가까움을 말한다 */
-function releaseParts(date: string): { dday: string; today: boolean; dateText: string } {
-  const key = date.slice(0, 10);
-  const days = daysUntil(key);
-  const full = formatDate(date);
-  const dateText = key.slice(0, 4) === kstDateKey(new Date()).slice(0, 4) ? full.replace(/^\d+년 /, "") : full;
-  return { dday: days > 0 ? D.releaseDday(days) : D.releaseToday, today: days <= 0, dateText };
-}
-
-/** 출시(출시 전과 당일만), 개발, 배급 줄. 회사 행이 이어진 게임은 회사 화면 링크(밑줄), 이름만 아는 게임은 글자만 */
-function InfoCard({ game, showRelease }: { game: GameDetail; showRelease: boolean }) {
-  const companies: Array<{ key: string; role: string; name: string; href: string | null }> =
-    game.companies.length > 0
-      ? game.companies.map((c) => ({ key: `${c.slug}:${c.role}`, role: COMPANY_ROLE_LABEL[c.role], name: c.name, href: companyPath(c.slug) }))
-      : (
-          [
-            ["developer", game.developer],
-            ["publisher", game.publisher],
-          ] as const
-        )
-          .filter((r): r is readonly ["developer" | "publisher", string] => Boolean(r[1]))
-          .map(([role, name]) => ({ key: `${role}:${name}`, role: COMPANY_ROLE_LABEL[role], name, href: null }));
-  const release = showRelease && game.releaseDate ? releaseParts(game.releaseDate) : null;
-  if (!release && companies.length === 0) return null;
-  return (
-    <dl className="flex flex-col gap-2 rounded-[var(--radius-panel)] bg-surface p-4 text-[13.5px] shadow-[var(--elev-card)]">
-      {release && (
-        <div className="flex items-center gap-3">
-          {/* 이름표 앞 달력 아이콘은 걷었다(2026-11-19 사용자 "출시 앞에 아이콘도 빼") — 개발, 배급 줄과 같은 글자만 */}
-          <dt className="w-10 shrink-0 text-mut">
-            {D.releaseRowLabel}
-          </dt>
-          <dd className="flex min-w-0 items-center gap-2 font-bold text-ink-2">
-            {/* 출시 당일은 면 없는 파란 글자다 — 카드의 "오늘 출시", 역대 최저가와 같은 모양(2026-11-19 사용자 "상세 뱃지는 왜 안 바꿈").
-                남은 날(D-n)은 그대로 채운 면이다 */}
-            {release.today ? (
-              <span className="font-bold text-acc">{D.releaseToday}</span>
-            ) : (
-              <span className="rounded-[var(--radius-xs)] bg-acc px-1.5 py-0.5 text-[12.5px] font-extrabold tabular-nums text-on-ink">{release.dday}</span>
-            )}
-            {release.dateText}
-          </dd>
-        </div>
-      )}
-      {companies.map((r) => (
-        <div key={r.key} className="flex items-baseline gap-3">
-          <dt className="w-10 shrink-0 text-mut">{r.role}</dt>
-          <dd className="min-w-0">
-            {r.href ? (
-              <Link href={r.href} className="font-bold text-ink-2 underline decoration-line-strong underline-offset-[3px] transition-colors hover:text-acc hover:decoration-acc">
-                {r.name}
-              </Link>
-            ) : (
-              <span className="font-bold text-ink-2">{r.name}</span>
-            )}
-          </dd>
-        </div>
-      ))}
-    </dl>
   );
 }
 

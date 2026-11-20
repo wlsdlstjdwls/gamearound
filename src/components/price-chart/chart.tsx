@@ -302,7 +302,7 @@ export function PriceChart({ series, head, rangeKeys }: { series: PriceSeries[];
       )}
 
       {dropped.length > 0 && (
-        <p className="text-[11.5px] text-dim">
+        <p className="text-[11.5px] text-dim max-sm:text-[12.5px]">
           {dropped.map((s) => seriesLabel(s.platform)).join(", ")}는 결제 통화가 달라 이 그래프에 함께 그리지 않아요. 아래 표에서 통화 그대로 볼 수 있어요.
         </p>
       )}
