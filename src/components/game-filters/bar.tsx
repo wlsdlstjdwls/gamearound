@@ -14,6 +14,7 @@
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { ChipNavLink } from "@/components/ui/chip-nav";
+import { cn } from "@/lib/cn";
 import { SearchIcon } from "@/components/ui/icons";
 import { Select, type SelectOption } from "@/components/ui/select";
 import { HideAfter } from "@/components/sales/hide-after";
@@ -154,7 +155,10 @@ export function GameFilterBar({
 
       {/* 둘째 줄: 요즘 많이 찾는 장르(다시 누르면 풀린다) | 켜고 끄는 조건.
           밑줄(헤어라인)은 걷었다(2026-10-28, 사용자 "공백도 많고 자리도 많이 차지") — 결과 수 줄과 사이에 빈 띠만 하나 더 만들었다 */}
-      <div className={FILTER_CHIP_ROW_CLASS}>
+      {/* 좁은 화면에서는 "요즘 많이 찾는 장르" 를 숨긴다(2026-11-20 사용자 "모바일에서는 요즘 많이 찾는 장르는 숨기자") — 장르 드롭다운이 같은 일을 한다.
+          그 폭에 남는 칩(세일, 취향)이 없으면 줄째 숨긴다. 빈 줄이 남으면 위아래 틈(gap) 하나가 그대로 빈 띠가 된다 */}
+      <div className={cn(FILTER_CHIP_ROW_CLASS, !sale && !personal && "max-sm:hidden")}>
+        <span className="hidden sm:contents">
         {topGenres.length > 0 && <span className="mr-1 whitespace-nowrap text-[13px] text-dim">{M.topGenres}</span>}
         {/* compact: 손가락 기기에서 상자를 44px 로 키우지 않고 덧면으로 누를 범위를 준다(chipClass 주석).
             상자째 키우면 12.5px 글자에 44px 알약이 서서 뭉툭했다(2026-11-20 사용자 "장르 뱃지도 좀 너무 뭉툭") */}
@@ -163,6 +167,7 @@ export function GameFilterBar({
             {g}
           </ChipNavLink>
         ))}
+        </span>
         <span className="flex-1" />
         {sale && (
           <HideAfter untilIso={sale.endsAt}>

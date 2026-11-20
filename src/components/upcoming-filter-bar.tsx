@@ -7,6 +7,7 @@
 //
 // 누른 순간 먼저 바뀐다(AGENTS 6장): 드롭다운과 칩은 고른 값을 제 상태로 먼저 그리고, 이동은 화면의 NavPendingScope 에 맡겨
 // 결과 자리(PendingRegion)가 흐려진다. 서버가 새 값으로 다시 그리면 그 값을 따른다.
+import { cn } from "@/lib/cn";
 import { useEffect, useRef, useState } from "react";
 import { SearchIcon } from "@/components/ui/icons";
 import { NavChip, useNavPendingGo } from "@/components/ui/nav-pending";
@@ -147,8 +148,9 @@ export function UpcomingFilterBar({
         </span>
       </div>
 
+      {/* 좁은 화면에서는 숨긴다(2026-11-20 사용자 "모바일에서는 요즘 많이 찾는 장르는 숨기자"). 장르 드롭다운이 같은 일을 한다 */}
       {topGenres.length > 0 && (
-        <div className={FILTER_CHIP_ROW_CLASS}>
+        <div className={cn(FILTER_CHIP_ROW_CLASS, "max-sm:hidden")}>
           <span className="mr-1 whitespace-nowrap text-[13px] text-dim">{M.topGenres}</span>
           {topGenres.map((g) => (
             <NavChip key={g} group="upcoming-genre" href={href({ genre: filter.genre === g ? undefined : g })} active={filter.genre === g} outline compact>

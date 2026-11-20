@@ -87,7 +87,8 @@ export function FilterBarSkeleton({ chips = true }: { chips?: boolean } = {}) {
         ))}
       </div>
       <div className="hidden rounded-[var(--radius-panel)] bg-surface/60 shadow-hair sm:block sm:h-[112px] lg:h-16" />
-      {chips && <div className="flex h-[33px] items-center gap-2 overflow-hidden">
+      {/* 좁은 화면은 장르 칩 줄을 숨긴다(game-filters/bar). 세일, 취향 칩이 있으면 실물은 33px 줄이 서지만 뼈대는 그걸 모른다 — 흔한 쪽(없음)에 맞춘다 */}
+      {chips && <div className="flex h-[33px] items-center gap-2 overflow-hidden max-sm:hidden">
         {["w-28", "w-14", "w-16", "w-20"].map((w) => (
           <Bone key={w} className={`h-[33px] shrink-0 rounded-full ${w}`} />
         ))}
