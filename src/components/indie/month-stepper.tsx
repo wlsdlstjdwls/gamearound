@@ -17,8 +17,10 @@ export function MonthStepper({ months, current, nowYm, labels }: { months: reado
   const newer = i > 0 ? months[i - 1] : undefined;
   const shown = months[i];
   return (
-    <div role="group" aria-label={labels.group} className="flex items-center gap-2">
-      <div className="flex items-center gap-1 rounded-full bg-surface p-1 shadow-hair">
+    // 좁은 화면에서는 명예의 전당 흰 판 안에 서서(page 의 탭 묶음) 제 알약 면을 걷고 판 폭을 다 쓴다 — 이전 | 달 이름 | 다음(2026-11-20).
+    // 넓은 화면은 예전 그대로 흰 알약이다
+    <div role="group" aria-label={labels.group} className="flex w-full items-center gap-2 md:w-auto">
+      <div className="flex flex-1 items-center justify-between gap-1 md:flex-none md:rounded-full md:bg-surface md:p-1 md:shadow-hair">
         {older ? (
           <NavChip group="ym" href={older.href} aria-label={labels.prev} size="page">
             <ChevronLeftIcon size={16} />
@@ -30,7 +32,8 @@ export function MonthStepper({ months, current, nowYm, labels }: { months: reado
         )}
         <span aria-live="polite" className="min-w-[124px] text-center text-[15px] font-extrabold tabular-nums tracking-[-0.02em] text-ink">
           {shown?.label}
-          {shownYm === nowYm && <span className="ml-1.5 align-[1px] text-[11.5px] font-bold text-acc">{labels.nowTag}</span>}
+          {/* "이번 달" 은 파란 글자에서 회색 면 꼬리표로(2026-11-20) — 파랑은 누르는 것의 색이라 달 이름 옆에서 링크처럼 읽혔다 */}
+          {shownYm === nowYm && <span className="ml-2 inline-block rounded-[var(--radius-xs)] bg-surface-2 px-1.5 py-0.5 align-[2px] text-[11.5px] font-semibold text-mut">{labels.nowTag}</span>}
         </span>
         {newer ? (
           <NavChip group="ym" href={newer.href} aria-label={labels.next} size="page">

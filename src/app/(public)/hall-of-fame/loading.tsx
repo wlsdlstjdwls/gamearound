@@ -10,7 +10,9 @@ export default function HallOfFameLoading() {
   return (
     <SkeletonPage gap={20}>
       <PageHeadSkeleton width="w-36" desc={1} />
-      <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+      {/* 좁은 화면: 탭(반반 칸)과 달 고르기가 흰 판 하나에 묶인다(page 주석). 높이는 390px 실측 114px(2026-11-20) */}
+      <Bone className="h-[114px] w-full rounded-[var(--radius-panel)] md:hidden" />
+      <div className="hidden md:flex md:flex-row md:items-center md:justify-between">
         <ChipsSkeleton count={2} />
         {/* 달 고르기(indie/month-stepper) — 흰 알약 안의 이전, 달 이름, 다음 */}
         <Bone className="h-10 w-[236px] rounded-full" />

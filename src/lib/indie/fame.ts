@@ -143,6 +143,8 @@ export const FAME_MESSAGES = {
   views: (n: number) => `조회 ${n.toLocaleString("ko-KR")}`,
   byDev: (name: string) => `개발자 ${name}`,
   rank: (n: number) => `${n}위`,
+  /** 순위 숫자의 꼬리 글자(components/indie/rank-mark). 숫자와 크기를 갈라 써서 rank() 와 따로 둔다 */
+  rankUnit: "위",
   /** 지난달 대비 점수 변화(목업 hrow 의 순위 아래 한 줄). 화살표 글자 대신 부호로 방향을 말한다(AGENTS 4장) */
   change: (pct: number) => (pct > 0 ? `+${pct}%` : `${pct}%`),
   changeFromLast: (pct: number) => `지난달 대비 ${pct > 0 ? `+${pct}` : pct}%`,

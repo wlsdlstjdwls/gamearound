@@ -214,7 +214,8 @@ export function FameIntro({ src, images, title, badge, targetId, settings, seenK
         style={{ background: "linear-gradient(to top, color-mix(in oklab, var(--ink) 90%, transparent), color-mix(in oklab, var(--ink) 65%, transparent) 45%, transparent)" }}
       />
       <div className={cn("absolute inset-x-0 bottom-0 flex flex-col items-center gap-3 px-6 pb-[14vh] text-center transition-[opacity,transform] duration-slow ease-out-emph", showText ? "translate-y-0 opacity-100" : "translate-y-5 opacity-0")}>
-        <span className="inline-flex items-center gap-1.5 rounded-full bg-acc px-3.5 py-1.5 text-[14px] font-bold text-on-ink">
+        {/* 파란 알약은 걷었다(2026-11-20 사용자 "1위 뱃지 표기가 좀 꾸지다") — 줄어들어 앉을 1위 판의 딱지(indie/rank-mark)와 같은 반투명 잉크 면이다 */}
+        <span className="inline-flex items-center gap-1.5 rounded-[var(--radius-sm)] bg-[color-mix(in_oklab,var(--ink)_62%,transparent)] px-3.5 py-1.5 text-[14px] font-bold text-on-ink backdrop-blur-sm">
           <TrophyIcon size={16} strokeWidth={2.2} />
           {badge}
         </span>
