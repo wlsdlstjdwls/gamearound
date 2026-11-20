@@ -174,19 +174,20 @@ async function AllGames({ total, page, filter }: { total: number; page: number; 
 
 /**
  * 머리: 제목, 한 줄 설명, 보기 전환(목업의 오른쪽 탭 둘). 하나만 켜지는 칩이라 NavChip 이다(AGENTS 6장).
- * 좁은 화면은 보기 전환을 제목 줄 오른쪽에 세운다(2026-11-20 사용자 "출시예정 UI/UX 불편") — 설명 밑에 44px 칩 둘이 한 줄을 따로 먹어
- * 보기 전환, 필터, 달 띠가 세 덩어리로 겹쳤다. 칩은 compact(덧면 44px)라 33px 로 선다. 넓은 화면은 예전처럼 설명 줄 끝에 선다
+ * 좁은 화면은 머리가 눈에 서지 않는다(2026-11-20 사용자 "전체보기 월별보기, 너무 선택할 게 많고 복잡해"). 제목은 하위 메뉴 띠가 말하고,
+ * 보기 전환은 달 줄 맨 앞 "전체" 칩이 맡고(upcoming-month-nav), 제목 없이 덩그러니 남는 설명 한 줄은 뺀다. h1 만 낭독기용으로 남는다 —
+ * 껍데기는 max-sm:contents 라 Page 의 틈(gap)을 한 칸도 먹지 않는다(sr-only 는 absolute 라 칸이 아니다). 넓은 화면은 예전 그대로다
  */
 function UpcomingHead({ all, filter = {} }: { all: boolean; filter?: UpcomingFilter }) {
   return (
-    <div className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-x-3 gap-y-1.5 sm:flex sm:flex-wrap sm:items-end sm:justify-between sm:gap-4">
-      <div className="contents sm:flex sm:flex-col sm:gap-1.5">
+    <div className="max-sm:contents sm:flex sm:flex-wrap sm:items-end sm:justify-between sm:gap-4">
+      <div className="max-sm:contents sm:flex sm:flex-col sm:gap-1.5">
         {/* 좁은 화면은 제목을 눈에서만 감춘다(2026-11-20 사용자 "모바일에서 각 상단 타이틀은 다 빼자, 메뉴로 표현 되니까") —
             바로 위 하위 메뉴 띠가 "출시 예정" 을 켜 두고 있다. h1 은 낭독기, 검색 로봇용으로 남긴다(PageHead 의 hideTitle 과 같은 이유) */}
         <h1 className="max-sm:sr-only sm:text-[30px] sm:font-extrabold sm:tracking-[-0.03em] sm:text-ink">{M.title}</h1>
-        <p className="col-span-2 row-start-2 text-[14px] text-mut">{all ? M.leadAll : M.leadMonth}</p>
+        <p className="text-[14px] text-mut max-sm:hidden">{all ? M.leadAll : M.leadMonth}</p>
       </div>
-      <div role="group" aria-label={M.viewLabel} className="col-span-2 row-start-1 flex gap-1.5">
+      <div role="group" aria-label={M.viewLabel} className="flex gap-1.5 max-sm:hidden">
         <NavChip group="upcoming-view" href={upcomingAllHref(1, filter)} active={all} outline compact>
           {M.viewAll}
         </NavChip>
@@ -271,16 +272,21 @@ export default async function UpcomingPage({ searchParams }: Props) {
 
         <PendingRegion className="flex flex-col gap-5">
           {all ? (
+            <>
+            {/* 좁은 화면은 전체 보기에서도 달 줄이 선다 — 맨 앞 "전체" 칩이 켜진 채로, 보기 전환 칩 대신이다(upcoming-month-nav 의 all). 넓은 화면은 숨는다 */}
+            {months.length > 0 && <UpcomingMonthNav months={months} activeKey="" filter={filter} all phoneOnly />}
             <section aria-label={M.viewAll} className="flex flex-col gap-4">
               <SectionHead title={M.viewAll} note={upcomingCountText(total)} />
               <Suspense key={`all:${page}:${filterKey}`} fallback={<GamesGridSkeleton cards={UPCOMING_PAGE_SIZE} gridClass={HOME_GRID_CLASS} />}>
                 <AllGames total={total} page={page} filter={filter} />
               </Suspense>
             </section>
+            </>
           ) : (
             <>
               {/* 달 탭 띠(components/upcoming-month-nav). 달이 하나뿐이면 세우지 않는다 — 고를 데가 없는 띠는 제목을 한 번 더 쓰는 일이다 */}
-              {active && months.length > 1 && <UpcomingMonthNav months={months} activeKey={active.key} filter={filter} />}
+              {/* 좁은 화면은 달이 하나여도 세운다 — 맨 앞 "전체" 칩이 보기 전환 자리라 고를 데가 있다. 넓은 화면은 달이 둘 이상일 때만 */}
+              {active && (months.length > 1 ? <UpcomingMonthNav months={months} activeKey={active.key} filter={filter} /> : <UpcomingMonthNav months={months} activeKey={active.key} filter={filter} phoneOnly />)}
 
               {!active ? (
                 <p className="rounded-xl bg-surface-2 px-4 py-3.5 text-[13px] text-dim">{hasUpcomingFilter(filter) ? M.emptyFiltered : M.empty}</p>

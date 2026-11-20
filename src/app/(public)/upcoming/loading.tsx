@@ -14,10 +14,19 @@ export default function UpcomingLoading() {
   return (
     <SkeletonPage gap={20}>
       <UpcomingHeadSkeleton />
-      <FilterBarSkeleton chips={false} />
+      {/* 좁은 화면 막대는 알약 둘(장르, 플랫폼)이다 — 정렬은 그 폭에서 숨는다(upcoming-filter-bar). 넓은 화면은 공용 뼈대 그대로 */}
+      <div className="flex h-9 gap-2 sm:hidden">
+        <Bone className="h-9 w-[104px] shrink-0 rounded-full" />
+        <Bone className="h-9 w-[112px] shrink-0 rounded-full" />
+      </div>
+      <div className="max-sm:hidden">
+        <FilterBarSkeleton chips={false} />
+      </div>
       <div className="flex flex-col gap-5">
         <div className="-mx-5 flex h-[var(--month-nav-h)] items-center gap-1.5 overflow-hidden border-b border-line px-5 sm:-mx-7 sm:px-7">
           {/* 실물(upcoming-month-nav): 해 머리 글자 + 36px 달 칩이 한 줄로 잇는다 */}
+          {/* 좁은 화면은 맨 앞에 "전체" 칩이 선다(보기 전환 대신) */}
+          <Bone className="mr-1 h-9 w-[58px] shrink-0 rounded-full sm:hidden" />
           <Bone className="mr-0.5 h-3.5 w-11 shrink-0" />
           {Array.from({ length: MONTH_TABS }).map((_, i) => (
             <Bone key={i} className="h-9 w-[76px] shrink-0 rounded-full" />

@@ -432,6 +432,8 @@ export const UPCOMING_MESSAGES = {
   viewAll: "전체 보기",
   viewMonth: "월별 보기",
   viewLabel: "보기 방식",
+  /** 좁은 화면 달 줄 맨 앞 칩 — 전체 보기로 간다(upcoming-month-nav, 2026-11-20 사용자 "선택할 게 많고 복잡해") */
+  monthNavAll: "전체",
   leadMonth: "기대하는 게임의 출시일을 월별로 모아 보세요.",
   leadAll: "출시 예정 게임을 가까운 날짜부터 한눈에 모아 보세요.",
   /** 출시일 미정 상자(기획서 v2.0 4.4, 목업 월별 보기 아래). 날짜 칸에는 tbaDay 가 선다 */

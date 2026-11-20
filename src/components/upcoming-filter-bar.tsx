@@ -133,7 +133,9 @@ export function UpcomingFilterBar({
         </label>
         <Select hideLabel label={M.genreLabel} value={filter.genre ?? ALL} options={genreOptions} scroll={false} onNavigate={pick("genre")} size="bar" className={`${FILTER_SELECT_CLASS} lg:w-[180px]`} />
         <Select hideLabel label={M.platformLabel} value={platformNow || ALL} options={platformOptions} scroll={false} onNavigate={pick("platform")} size="bar" className={`${FILTER_SELECT_CLASS} lg:w-[180px]`} />
-        <Select hideLabel label={M.sortLabel} value={sortNow} options={sortOptions} scroll={false} onNavigate={pick("sort")} size="bar" className={`${FILTER_SELECT_CLASS} lg:w-[150px]`} />
+        {/* 정렬은 좁은 화면에서 숨긴다(2026-11-20 사용자 "선택할 게 많고 복잡해") — 출시일순이 기본이고 그 폭의 필터는 장르, 플랫폼 둘이다.
+            주소에 정렬이 걸려 있으면 그대로 세워 걸린 조건으로 보이게 둔다(초기화도 그때 선다) */}
+        <Select hideLabel label={M.sortLabel} value={sortNow} options={sortOptions} scroll={false} onNavigate={pick("sort")} size="bar" className={cn(FILTER_SELECT_CLASS, "lg:w-[150px]", !filter.sort && "max-sm:hidden")} />
         <span className={hasUpcomingFilter(filter) ? "contents" : FILTER_RESET_IDLE}>
           <button
             type="button"

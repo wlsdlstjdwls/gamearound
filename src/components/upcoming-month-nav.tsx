@@ -20,20 +20,33 @@
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { cn } from "@/lib/cn";
-import { byYear, upcomingMonthHref, type UpcomingFilter } from "@/lib/games/upcoming";
+import { byYear, upcomingAllHref, upcomingHref, upcomingMonthHref, type UpcomingFilter } from "@/lib/games/upcoming";
+import { UPCOMING_MESSAGES as M } from "@/lib/games/messages";
 
-export function UpcomingMonthNav({ months, activeKey, filter }: { months: { key: string; total: number }[]; activeKey: string; filter: UpcomingFilter }) {
-  const [picked, setPicked] = useState(activeKey);
-  const [prevActive, setPrevActive] = useState(activeKey);
+/** 고른 칩 열쇠 중 "전체 보기" 자리. 달 열쇠(YYYY-MM)와 겹치지 않는다 */
+const ALL_KEY = "all";
+
+/**
+ * all: 지금 전체 보기다. 좁은 화면은 보기 전환 칩을 걷고 이 줄 맨 앞 "전체" 칩이 그 일을 한다(2026-11-20 사용자
+ * "출시 예정 날짜고르기, 필터링, 전체보기 월별보기, 너무 선택할 게 많고 복잡해"). 보기 전환, 달 고르기가 두 겹이던 것을 한 줄로 합쳤다.
+ * 넓은 화면은 예전 그대로다 — "전체" 칩은 sm 부터 숨고, 전체 보기에서는 줄째 숨는다(page 가 phoneOnly 를 준다).
+ */
+export function UpcomingMonthNav({ months, activeKey, filter, all = false, phoneOnly = false }: { months: { key: string; total: number }[]; activeKey: string; filter: UpcomingFilter; all?: boolean; phoneOnly?: boolean }) {
+  const current = all ? ALL_KEY : activeKey;
+  const [picked, setPicked] = useState(current);
+  const [prevActive, setPrevActive] = useState(current);
   const navRef = useRef<HTMLElement>(null);
   const firstKey = months[0]?.key;
   const years = byYear(months);
 
   // 서버가 다른 달을 세웠으면(뒤로가기, 주소 직접 입력) 그쪽을 따른다 — effect 가 아니라 렌더에서 맞춘다
-  if (activeKey !== prevActive) {
-    setPrevActive(activeKey);
-    setPicked(activeKey);
+  if (current !== prevActive) {
+    setPrevActive(current);
+    setPicked(current);
   }
+  // 전체 보기에서 첫 달로 갈 때는 월별을 주소에 적는다 — 꼬리 없는 주소는 기억한 보기(쿠키)로 열려 전체 보기로 되돌아간다
+  const monthHref = (key: string) => (all && key === firstKey ? upcomingHref({ monthView: true }, filter) : upcomingMonthHref(key, firstKey, filter));
+  const allHref = upcomingAllHref(1, filter);
 
   // 켜진 탭이 띠 밖으로 밀려 있으면 띠만 가로로 민다. scrollIntoView 는 문서까지 세로로 움직여서 쓰지 않는다
   useEffect(() => {
@@ -55,8 +68,22 @@ export function UpcomingMonthNav({ months, activeKey, filter }: { months: { key:
     <nav
       ref={navRef}
       aria-label="달 고르기"
-      className="sticky top-[var(--header-h)] z-20 -mx-5 flex h-[var(--month-nav-h)] items-center gap-1.5 overflow-x-auto border-b border-line bg-bg/95 px-5 backdrop-blur [scrollbar-width:none] sm:-mx-7 sm:px-7"
+      className={cn(
+        "sticky top-[var(--header-h)] z-20 -mx-5 flex h-[var(--month-nav-h)] items-center gap-1.5 overflow-x-auto border-b border-line bg-bg/95 px-5 backdrop-blur [scrollbar-width:none] sm:-mx-7 sm:px-7",
+        phoneOnly && "sm:hidden",
+      )}
     >
+      <Link
+        href={allHref}
+        aria-current={picked === ALL_KEY ? "page" : undefined}
+        onClick={() => setPicked(ALL_KEY)}
+        className={cn(
+          "press tap-inset mr-1 flex h-9 shrink-0 items-center rounded-full px-3.5 text-[14.5px] leading-none transition-colors duration-base sm:hidden",
+          picked === ALL_KEY ? "bg-acc-soft font-bold text-acc" : "font-semibold text-ink-2 hover:bg-surface-2 hover:text-ink",
+        )}
+      >
+        {M.monthNavAll}
+      </Link>
       {years.map((g, i) => (
         // 둘째 해부터 앞 해와 조금 띄운다 — 해 머리가 앞 달 칩에 붙으면 그 달의 꼬리표로 읽힌다
         <div key={g.year} role="group" aria-label={`${g.year}년`} className={cn("flex shrink-0 items-center gap-1.5", i > 0 && "ml-2")}>
@@ -68,7 +95,7 @@ export function UpcomingMonthNav({ months, activeKey, filter }: { months: { key:
             return (
               <Link
                 key={m.key}
-                href={upcomingMonthHref(m.key, firstKey, filter)}
+                href={monthHref(m.key)}
                 aria-current={on ? "page" : undefined}
                 aria-label={`${g.year}년 ${m.month} ${m.total.toLocaleString("ko-KR")}개`}
                 onClick={() => setPicked(m.key)}
