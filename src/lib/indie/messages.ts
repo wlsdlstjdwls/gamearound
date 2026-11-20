@@ -318,6 +318,8 @@ export const INDIE_REVIEW_TONE = { pending: "warn", approved: "acc", rejected: "
 export const INDIE_REVIEW_MESSAGES = {
   /** 등록 완료 줄의 성적 딱지(2026-10-28) */
   fameRank: (rank: number) => `명예의 전당 ${rank}위`,
+  /** 성적 줄의 순위 앞 이름표(2026-11-20) — 숫자는 indie/rank-mark 가 굵게 따로 세운다 */
+  fameLabel: "명예의 전당",
   views: "조회",
   likes: "찜",
   pendingNotice: "운영진이 확인하고 있어요. 승인되면 모든 인디 게임, 명예의 전당, 슈퍼루키에 올라가요.",
@@ -339,7 +341,8 @@ export const INDIE_REVIEW_MESSAGES = {
     { head: "내가 만든 게임", body: "다른 게임의 이름, 이미지, 영상을 쓰지 않아요. 함께 만든 팀이면 소개에 팀 이름을 적어요." },
   ],
   title: "등록현황",
-  lead: "내 게임 등록으로 신청한 게임의 승인 상태를 확인해요. 운영진 승인이 끝나야 모든 인디 게임 목록에 올라가요.",
+  // 휴대폰에서 "내 게임 등록" 단추 옆에 줄을 바꿔 서므로 짧게 줄였다(2026-11-20 사용자 "글자가 잘리는데"). 뜻은 같다
+  lead: "신청한 게임의 승인 상태를 확인해요. 승인이 끝나야 인디 게임 목록에 올라가요.",
   total: "전체 신청",
   appliedAt: "신청일",
   applied: "신청",

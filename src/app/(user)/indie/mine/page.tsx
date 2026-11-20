@@ -7,30 +7,22 @@
 // 오른쪽 진행 단계 셋(indie/review-steps)과 한 줄 설명, 할 일 단추. 줄은 차례로 떠오른다(stagger). 상태 알약은 단계 그림이 대신한다.
 // 공개 중인 게임 줄에는 "광고 걸기", 목록 위에는 광고 안내 판(payments/plan-nudge)을 둔다 — 광고, 멤버십 메뉴 칸 대신(10-28).
 // 반려된 글은 "고쳐서 다시 신청" 으로 고치기 화면에 간다 — 저장하면 다시 승인 대기다(services/indie/write).
+// 게임 한 줄은 indie/mine-row 가 그린다(2026-11-20 뺐다).
 import { PlanNudge } from "@/components/payments/plan-nudge";
-import { PLANS_MESSAGES } from "@/lib/payments/plans-messages";
 import type { Metadata } from "next";
-import Link from "next/link";
 import { WriteLink } from "@/components/community/write-link";
 import { EmptyState } from "@/components/empty-state";
 import { FameChallenge } from "@/components/indie/fame-challenge";
+import { MineRow } from "@/components/indie/mine-row";
 import { MineTabs } from "@/components/indie/mine-tabs";
-import { RejectionSheet } from "@/components/indie/rejection-sheet";
-import { buttonClass } from "@/components/ui/button";
 import { FormMessage } from "@/components/ui/form-message";
 import { Page, PageHead, PageLead } from "@/components/ui/page";
-import { Clamp } from "@/components/ui/tooltip";
-import { FadeImage } from "@/components/ui/fade-image";
-import { EyeIcon, GamepadIcon, HeartIcon, TrophyIcon } from "@/components/ui/icons";
-import { ReviewSteps } from "@/components/indie/review-steps";
 import { stagger } from "@/lib/motion";
 import { cn } from "@/lib/cn";
-import { formatDotDate } from "@/lib/format";
 import { firstParam } from "@/lib/games-query";
 import { INDIE_POSTS_PER_USER_MAX } from "@/lib/indie/constants";
-import { genreLabels, INDIE_FORM_MESSAGES as M, INDIE_MESSAGES, INDIE_PLATFORM_LABEL, INDIE_REVIEW_LABEL, INDIE_REVIEW_MESSAGES as RV } from "@/lib/indie/messages";
-import { indieDetailHref, INDIE_FROM } from "@/lib/indie/query";
-import { indieBoostPath, indieEditPath, ROUTES } from "@/lib/routes";
+import { INDIE_FORM_MESSAGES as M, INDIE_MESSAGES, INDIE_REVIEW_LABEL, INDIE_REVIEW_MESSAGES as RV } from "@/lib/indie/messages";
+import { ROUTES } from "@/lib/routes";
 import { requireUserOrRedirect } from "@/server/auth/guards";
 import { getMyFameStanding, getMyMonthRanks, listMyIndiePosts } from "@/server/services/indie";
 import { PAID_PRODUCTS_ON } from "@/lib/payments/flags";
@@ -49,35 +41,6 @@ function Tile({ label, value, i }: { label: string; value: number; i: number }) 
     <div className="enter-item flex min-w-0 flex-col gap-0.5 px-3 py-3 sm:gap-1 sm:rounded-[var(--radius-md)] sm:bg-surface sm:px-4 sm:py-3.5 sm:shadow-hair" style={stagger(i)}>
       <span className="truncate text-[12px] text-dim sm:text-[12.5px]">{label}</span>
       <span className={cn("text-[20px] font-black tabular-nums sm:text-[26px]", value > 0 ? "text-ink" : "text-dim")}>{value.toLocaleString("ko-KR")}</span>
-    </div>
-  );
-}
-
-/**
- * 등록 완료 줄의 성적(2026-10-28 사용자 "명예의 전당 순위, 조회 수, 찜 수를 예쁘게 — 뿌듯할 듯").
- * 순위는 이번 달 TOP 안일 때만 채운 파란 딱지로 세운다 — 숫자 셋이 같은 무게면 자랑할 것이 묻힌다.
- * 조회, 찜은 누적이다(글 표의 카운터). 이번 달 수는 명예의 전당과 통계 화면이 따로 말한다.
- */
-function Reactions({ rank, views, likes }: { rank: number | undefined; views: number; likes: number }) {
-  return (
-    <div className="flex flex-wrap items-center gap-1.5">
-      {rank !== undefined && (
-        // 채운 파랑 딱지를 걷었다(2026-11-20 색 줄이기). 회색 면에 먹색 굵은 글자 + 트로피 — 무게가 자랑을 말하고, 파랑은 줄의 단추 하나에만 남긴다
-        <Link href={ROUTES.hallOfFame} className="press inline-flex h-7 items-center gap-1 rounded-full bg-surface-3 px-2.5 text-[12px] font-bold text-ink hover:bg-line">
-          <TrophyIcon size={13} aria-hidden />
-          {RV.fameRank(rank)}
-        </Link>
-      )}
-      <span className="inline-flex h-7 items-center gap-1 rounded-full bg-surface-2 px-2.5 text-[12px] font-semibold tabular-nums text-ink-2">
-        <EyeIcon size={13} aria-hidden />
-        <span className="sr-only">{RV.views}</span>
-        {views.toLocaleString("ko-KR")}
-      </span>
-      <span className="inline-flex h-7 items-center gap-1 rounded-full bg-surface-2 px-2.5 text-[12px] font-semibold tabular-nums text-ink-2">
-        <HeartIcon size={13} aria-hidden />
-        <span className="sr-only">{RV.likes}</span>
-        {likes.toLocaleString("ko-KR")}
-      </span>
     </div>
   );
 }
@@ -116,62 +79,10 @@ export default async function IndieMinePage({ searchParams }: Props) {
       {posts.length === 0 ? (
         <EmptyState title={M.mineEmpty} description={RV.emptyLead} action={{ href: ROUTES.indieNew, label: INDIE_MESSAGES.register }} />
       ) : (
-        <ul className="flex flex-col gap-3">
-          {posts.map((p, i) => {
-            const meta = [[...p.platforms.map((x) => INDIE_PLATFORM_LABEL[x]), ...genreLabels(p.genres)].join(", "), `${formatDotDate(p.createdAt)} ${RV.applied}`].filter(Boolean).join(" | ");
-            // 잘 보이고 있는 줄에는 한 줄 설명을 달지 않는다(10-28 사용자: "내가 만든 게임에 보이고 있어요" 문구 없애 줘) — 단계 그림이 이미 "등록 완료" 를 말한다
-            const note = p.review === "pending" ? RV.pendingShort : p.review === "approved" ? (p.status === "published" ? (p.hasCover ? null : INDIE_MESSAGES.noCoverShort) : INDIE_MESSAGES.hiddenShort) : null;
-            // 등록 완료 줄은 공개 상세로, 그 밖은 고치기로 간다(기획서 S-22 "등록 완료 행은 S-19 로")
-            const to = p.review === "approved" ? indieDetailHref(p.slug, INDIE_FROM.mine) : indieEditPath(p.id);
-            return (
-              <li key={p.id} className="enter-item lift grid grid-cols-[96px_minmax(0,1fr)] gap-x-3.5 gap-y-3 rounded-[var(--radius-panel)] bg-surface p-3.5 shadow-hair sm:grid-cols-[176px_minmax(0,1fr)_auto] sm:gap-x-5 sm:p-4" style={stagger(i)}>
-                <Link href={to} tabIndex={-1} aria-hidden className="relative block aspect-[16/9] self-start overflow-hidden rounded-[var(--radius-cover)] bg-surface-3">
-                  {p.coverUrl ? <FadeImage src={p.coverUrl} alt="" fill sizes="(max-width: 640px) 96px, 176px" className="object-cover" /> : <span className="grid size-full place-items-center text-dim"><GamepadIcon size={22} /></span>}
-                </Link>
-                <div className="flex min-w-0 flex-col gap-1">
-                  <Link href={to} className="min-w-0 truncate text-[16px] font-bold text-ink hover:text-acc sm:text-[17px]">
-                    {p.title}
-                  </Link>
-                  <Clamp lines={2} className={cn("text-[13.5px] leading-[1.55]", p.tagline ? "text-mut" : "text-dim")}>
-                    {p.tagline || RV.noTagline}
-                  </Clamp>
-                  <span className="truncate text-[12px] text-dim">{meta}</span>
-                </div>
-                {/* 오른쪽 기둥: 진행 단계, 한 줄 설명, 할 일 단추. 좁은 화면에서는 커버와 글 아래 한 줄로 내려온다 */}
-                <div className="col-span-2 flex flex-col gap-2.5 border-t border-line-soft pt-3 sm:col-span-1 sm:w-[260px] sm:border-l sm:border-t-0 sm:pl-5 sm:pt-0">
-                  <ReviewSteps review={p.review} />
-                  {p.review === "approved" && <Reactions rank={ranks.get(p.id)} views={p.viewCount} likes={p.likeCount} />}
-                  {/* 반려 줄에는 사유를 적지 않는다(2026-10-28 사용자 "사유는 사유 보기 단추로만"). 한 줄로 잘린 사유와 글자 링크가
-                      같은 빨강이라 둘이 갈리지 않았다 — 단계 그림이 이미 "반려" 를 말하고, 전문은 단추가 연다 */}
-                  {note && (
-                    <Clamp lines={1} className="text-[12.5px] text-dim">
-                      {note}
-                    </Clamp>
-                  )}
-                  {p.review === "rejected" ? (
-                    <div className="flex items-center gap-2">
-                      <RejectionSheet title={p.title} reason={p.reviewReason} editHref={indieEditPath(p.id)} />
-                      <Link href={indieEditPath(p.id)} className={buttonClass({ variant: "accent", size: "sm" })}>
-                        {RV.resubmit}
-                      </Link>
-                    </div>
-                  ) : (
-                    <div className="flex items-center gap-2">
-                      <Link href={to} className={buttonClass({ variant: p.review === "approved" ? "soft" : "secondary", size: "sm" })}>
-                        {p.review === "approved" ? RV.viewGame : RV.edit}
-                      </Link>
-                      {/* 공개 중인 게임에만 — 광고는 공개 글에만 걸린다(services/payments 의 ownedLiveTarget) */}
-                      {PAID_PRODUCTS_ON && p.review === "approved" && p.status === "published" && (
-                        <Link href={indieBoostPath(p.id)} className={buttonClass({ variant: "accent", size: "sm" })}>
-                          {PLANS_MESSAGES.nudgeBoost}
-                        </Link>
-                      )}
-                    </div>
-                  )}
-                </div>
-              </li>
-            );
-          })}
+        <ul className="flex flex-col gap-3 sm:gap-3.5">
+          {posts.map((p, i) => (
+            <MineRow key={p.id} post={p} rank={ranks.get(p.id)} i={i} />
+          ))}
         </ul>
       )}
     </Page>

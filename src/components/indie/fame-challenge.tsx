@@ -3,6 +3,7 @@
 // 주인공이 뒤바뀐다. 진열장에는 순위표 안 "내 게임" 딱지만 남기고(indie/my-fame-marks), 오르는 법은 개발자 작업실인 이 화면에 둔다.
 // 로그인한 사람만 오는 화면이라 서버가 바로 그린다 — 명예의 전당(ISR)처럼 늦게 떠서 화면을 밀 일이 없다.
 import Link from "next/link";
+import { RankMark } from "@/components/indie/rank-mark";
 import { buttonClass } from "@/components/ui/button";
 import { ChatIcon, EyeIcon, HeartIcon, TrophyIcon } from "@/components/ui/icons";
 import { FAME_MESSAGES as M, fameNextLine, fameProgress, type MyFameStanding } from "@/lib/indie/fame";
@@ -25,16 +26,11 @@ export function FameChallenge({ standing: s }: { standing: MyFameStanding }) {
 
   return (
     <section aria-label={M.myHead} className="enter-item flex flex-col gap-4 rounded-[var(--radius-panel)] bg-surface p-4 shadow-hair sm:flex-row sm:items-center sm:gap-6 sm:p-5">
-      {/* 순위 메달 — 순위 안이면 숫자, 밖이면 트로피. 이 판에서 가장 먼저 읽혀야 하는 것이다 */}
-      <Link href={ROUTES.hallOfFame} aria-label={M.hofTitle} className="press grid size-16 shrink-0 place-items-center self-start rounded-full bg-surface-3 text-ink transition-colors hover:bg-line sm:self-center">
-        {s.rank ? (
-          <span className="flex items-baseline text-[24px] font-black tabular-nums leading-none">
-            {s.rank}
-            <span className="text-[12px] font-bold">위</span>
-          </span>
-        ) : (
-          <TrophyIcon size={26} />
-        )}
+      {/* 순위 — 명예의 전당 표기 그대로(indie/rank-mark: 굵은 숫자 + 작은 "위", 면 없음, 2026-11-20 사용자 "5위 뱃지도 별로").
+          회색 원 메달은 단추처럼 읽혔다. 순위 밖이면 트로피 그림만 회색으로 선다.
+          좁은 화면에서는 걷는다 — 바로 아래 머리말("지금 5위예요")이 같은 말을 하고, 판 위에 숫자 혼자 한 줄을 먹었다. 순위표 길은 "순위표 보기" 단추가 낸다 */}
+      <Link href={ROUTES.hallOfFame} aria-label={M.hofTitle} className="press hidden shrink-0 items-center self-center transition-opacity hover:opacity-75 sm:flex sm:min-w-16 sm:justify-center">
+        {s.rank ? <RankMark rank={s.rank} unit={M.rankUnit} size="lg" /> : <TrophyIcon size={26} className="text-dim" />}
       </Link>
       <div className="flex min-w-0 flex-1 flex-col gap-1.5">
         <span className="text-[12px] font-bold text-dim">{M.myHead}</span>

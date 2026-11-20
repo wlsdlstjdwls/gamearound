@@ -15,8 +15,10 @@ export function RejectionSheet({ title, reason, editHref }: { title: string; rea
       title={`${title} ${RV.reason}`}
       label={RV.viewReason}
       unstyledTrigger
-      // 글자 링크가 아니라 단추다(2026-10-28 사용자). 반려를 말하는 자리라 빨간 테두리 단추(danger), 옆 "고쳐서 다시 신청" 과 같은 크기
-      triggerClassName={buttonClass({ variant: "danger", size: "sm" })}
+      // 글자 링크가 아니라 단추다(2026-10-28 사용자). 옆 "고쳐서 다시 신청" 과 같은 크기.
+      // 빨간 테두리(danger)는 걷었다(2026-11-20 사용자 "색상도 너무 많이 써서 눈아픔") — 빨강은 지우기처럼 되돌릴 수 없는 일의 색이고,
+      // 사유를 읽는 일은 위험하지 않다. "반려" 는 단계 그림의 X 와 굵은 글자가 말한다
+      triggerClassName={buttonClass({ variant: "secondary", size: "sm" })}
     >
       <div className="flex flex-col gap-5">
         <p className="whitespace-pre-wrap rounded-[var(--radius-md)] bg-danger-soft px-4 py-3.5 text-[14.5px] leading-[1.7] text-ink">{reason ?? RV.reasonMissing}</p>
