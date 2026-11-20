@@ -7,7 +7,7 @@ import { Bone, SectionHeadSkeleton, SkeletonPage } from "@/components/ui/skeleto
 import { FilterBarSkeleton } from "@/app/(public)/games/skeletons";
 import { MonthGamesSkeleton, UpcomingHeadSkeleton } from "@/app/(public)/upcoming/skeletons";
 
-const MONTH_TABS = 7; // 실물은 오늘부터 대여섯 달 + 연도 표지 — 넓은 화면 한 줄을 채우는 수
+const MONTH_TABS = 7; // 실물은 오늘부터 대여섯 달 + 해 머리 — 넓은 화면 한 줄을 채우는 수
 const SKELETON_ROWS = 8; // 첫 화면을 채우는 줄 수(실물 한 쪽은 UPCOMING_PAGE_SIZE 24)
 
 export default function UpcomingLoading() {
@@ -17,9 +17,10 @@ export default function UpcomingLoading() {
       <FilterBarSkeleton chips={false} />
       <div className="flex flex-col gap-5">
         <div className="-mx-5 flex h-[var(--month-nav-h)] items-center gap-1.5 overflow-hidden border-b border-line px-5 sm:-mx-7 sm:px-7">
-          <Bone className="mr-1.5 h-8 w-24 shrink-0 rounded-full" />
+          {/* 실물(upcoming-month-nav): 해 머리 글자 + 36px 달 칩이 한 줄로 잇는다 */}
+          <Bone className="mr-0.5 h-3.5 w-11 shrink-0" />
           {Array.from({ length: MONTH_TABS }).map((_, i) => (
-            <Bone key={i} className="h-[43px] w-[52px] shrink-0 rounded-xl" />
+            <Bone key={i} className="h-9 w-[76px] shrink-0 rounded-full" />
           ))}
         </div>
         <section className="flex flex-col gap-4">

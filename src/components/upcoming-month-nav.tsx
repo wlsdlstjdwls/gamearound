@@ -19,19 +19,15 @@
 
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
 import { cn } from "@/lib/cn";
 import { byYear, upcomingMonthHref, type UpcomingFilter } from "@/lib/games/upcoming";
 
 export function UpcomingMonthNav({ months, activeKey, filter }: { months: { key: string; total: number }[]; activeKey: string; filter: UpcomingFilter }) {
-  const router = useRouter();
   const [picked, setPicked] = useState(activeKey);
   const [prevActive, setPrevActive] = useState(activeKey);
   const navRef = useRef<HTMLElement>(null);
   const firstKey = months[0]?.key;
   const years = byYear(months);
-  // 띠에 세울 해 = 지금 고른 달의 해
-  const year = years.find((g) => g.months.some((m) => m.key === picked)) ?? years[0] ?? { year: "", months: [] };
 
   // 서버가 다른 달을 세웠으면(뒤로가기, 주소 직접 입력) 그쪽을 따른다 — effect 가 아니라 렌더에서 맞춘다
   if (activeKey !== prevActive) {
@@ -50,67 +46,45 @@ export function UpcomingMonthNav({ months, activeKey, filter }: { months: { key:
     }
   }, [picked]);
 
-  // 좁은 화면(360)에서 해 고르기 + 달 넷이 15px 넘쳐 띠가 조금씩 밀렸다(2026-10-27 실측) — 간격과 칸 너비를 sm 아래에서만 줄였다
+  // 2026-11-20: 해 고르기를 걷고 달을 한 줄로 잇는다(사용자 "출시 예정화면 날짜 선택하는게 불편"). 해 단추와 달 칩이 두 단계로 갈려
+  // 다음 해의 달을 보려면 해를 먼저 바꿔야 했고, 고른 달은 파랑 꽉 찬 큰 칸(52x43)으로 부풀어 띠에서 혼자 튀었다.
+  // 이제 달 칩이 오늘부터 끝까지 이어 서고, 해가 바뀌는 첫 달 앞에만 작은 해 머리("2027년")가 선다 — 첫 해도 머리를 단다(어느 해인지 띠가 말한다).
+  // 고른 달은 옅은 파랑 면 + 파랑 글자(바닥 탭바의 켜진 칸과 같은 말)로 절제한다. 건수는 달 옆 작은 회색 숫자다.
+  // 이전/다음 단추(명예의 전당 month-stepper)도 그려 봤지만 출시 예정은 "어느 달에 몇 개가 있나" 를 한눈에 보는 게 일이라 한 줄이 낫다
   return (
     <nav
       ref={navRef}
       aria-label="달 고르기"
-      className="sticky top-[var(--header-h)] z-20 -mx-5 flex h-[var(--month-nav-h)] items-center gap-2 overflow-x-auto sm:gap-3 border-b border-line bg-bg/95 px-5 backdrop-blur [scrollbar-width:none] sm:-mx-7 sm:px-7"
+      className="sticky top-[var(--header-h)] z-20 -mx-5 flex h-[var(--month-nav-h)] items-center gap-1.5 overflow-x-auto border-b border-line bg-bg/95 px-5 backdrop-blur [scrollbar-width:none] sm:-mx-7 sm:px-7"
     >
-      {years.length > 1 ? (
-        <div role="group" aria-label="해 고르기" className="flex shrink-0 items-center gap-0.5 rounded-full bg-surface-2 p-0.5">
-          {years.map((g) => {
-            const on = g.year === year.year;
+      {years.map((g, i) => (
+        // 둘째 해부터 앞 해와 조금 띄운다 — 해 머리가 앞 달 칩에 붙으면 그 달의 꼬리표로 읽힌다
+        <div key={g.year} role="group" aria-label={`${g.year}년`} className={cn("flex shrink-0 items-center gap-1.5", i > 0 && "ml-2")}>
+          <span aria-hidden className="shrink-0 pr-0.5 text-[12px] font-bold tabular-nums text-dim">
+            {g.year}년
+          </span>
+          {g.months.map((m) => {
+            const on = m.key === picked;
             return (
-              <button
-                key={g.year}
-                type="button"
-                aria-pressed={on}
-                onClick={() => {
-                  if (on) return;
-                  const first = g.months[0];
-                  if (!first) return;
-                  setPicked(first.key);
-                  router.push(upcomingMonthHref(first.key, firstKey, filter), { scroll: false });
-                }}
+              <Link
+                key={m.key}
+                href={upcomingMonthHref(m.key, firstKey, filter)}
+                aria-current={on ? "page" : undefined}
+                aria-label={`${g.year}년 ${m.month} ${m.total.toLocaleString("ko-KR")}개`}
+                onClick={() => setPicked(m.key)}
                 className={cn(
-                  "press tap-inset rounded-full px-3 py-1.5 text-[13px] font-bold tabular-nums transition-[background-color,color,box-shadow] duration-base",
-                  on ? "bg-surface text-ink shadow-1" : "text-dim hover:text-ink",
+                  "press tap-inset flex h-9 shrink-0 items-center gap-1 rounded-full px-3.5 leading-none transition-colors duration-base",
+                  on ? "bg-acc-soft text-acc" : "text-ink-2 hover:bg-surface-2 hover:text-ink",
                 )}
               >
-                {g.year}
-              </button>
+                <span className={cn("text-[14.5px]", on ? "font-bold" : "font-semibold")}>{m.month}</span>
+                {/* 건수는 달 옆 한 단 작게 — 고르는 값은 달이고 숫자는 그 달의 크기다 */}
+                <span className={cn("text-[12px] font-medium tabular-nums", on ? "text-acc/80" : "text-dim")}>{m.total.toLocaleString("ko-KR")}</span>
+              </Link>
             );
           })}
         </div>
-      ) : (
-        <span className="shrink-0 text-[13px] font-bold tabular-nums text-ink-2">{year.year}</span>
-      )}
-      <span aria-hidden className="h-6 w-px shrink-0 bg-line-strong" />
-      <div key={year.year} className="animate-fade-in flex shrink-0 items-center gap-1.5">
-        {year.months.map((m) => {
-          const on = m.key === picked;
-          return (
-            <Link
-              key={m.key}
-              href={upcomingMonthHref(m.key, firstKey, filter)}
-              aria-current={on ? "page" : undefined}
-              onClick={() => setPicked(m.key)}
-              className={cn(
-                "press tap flex min-w-[52px] shrink-0 flex-col items-center justify-center rounded-xl px-2.5 py-1 leading-tight sm:min-w-[56px] sm:px-3 transition-colors duration-base",
-                // 두 상태 모두 테두리 1px 을 둘러야 켜고 끌 때 높이가 안 어긋난다
-                on ? "border border-acc bg-acc text-on-ink hover:bg-acc-hover" : "border border-line bg-surface text-ink hover:bg-surface-2",
-              )}
-            >
-              <span className="text-[15px] font-bold">{m.month}</span>
-              {/* 건수는 달 아래 한 단 물러난다 — 고르는 값은 달이고 숫자는 그 달의 크기다 */}
-              <span className={cn("text-[11.5px] font-medium tabular-nums", on ? "text-on-ink/80" : "text-mut")}>
-                {m.total.toLocaleString("ko-KR")}개
-              </span>
-            </Link>
-          );
-        })}
-      </div>
+      ))}
     </nav>
   );
 }

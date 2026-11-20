@@ -181,10 +181,12 @@ function UpcomingHead({ all, filter = {} }: { all: boolean; filter?: UpcomingFil
   return (
     <div className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-x-3 gap-y-1.5 sm:flex sm:flex-wrap sm:items-end sm:justify-between sm:gap-4">
       <div className="contents sm:flex sm:flex-col sm:gap-1.5">
-        <h1 className="col-start-1 row-start-1 text-[26px] font-extrabold tracking-[-0.03em] text-ink sm:text-[30px]">{M.title}</h1>
+        {/* 좁은 화면은 제목을 눈에서만 감춘다(2026-11-20 사용자 "모바일에서 각 상단 타이틀은 다 빼자, 메뉴로 표현 되니까") —
+            바로 위 하위 메뉴 띠가 "출시 예정" 을 켜 두고 있다. h1 은 낭독기, 검색 로봇용으로 남긴다(PageHead 의 hideTitle 과 같은 이유) */}
+        <h1 className="max-sm:sr-only sm:text-[30px] sm:font-extrabold sm:tracking-[-0.03em] sm:text-ink">{M.title}</h1>
         <p className="col-span-2 row-start-2 text-[14px] text-mut">{all ? M.leadAll : M.leadMonth}</p>
       </div>
-      <div role="group" aria-label={M.viewLabel} className="col-start-2 row-start-1 flex gap-1.5">
+      <div role="group" aria-label={M.viewLabel} className="col-span-2 row-start-1 flex gap-1.5">
         <NavChip group="upcoming-view" href={upcomingAllHref(1, filter)} active={all} outline compact>
           {M.viewAll}
         </NavChip>

@@ -16,15 +16,16 @@ const PICK_CARD_HEIGHT = "h-[275px] sm:h-[281px] [&>*]:h-full";
 /** 좁은 화면에서 세울 기대작 카드 수(아래 주석) */
 const MOBILE_PICK_CARDS = 2;
 
-/** 머리: 제목(26, sm 30px), 한 줄 설명, 보기 전환 칩 둘(33px). 좁은 화면은 칩이 제목 줄 오른쪽에 선다(page 의 UpcomingHead 와 같은 격자) */
+/** 머리: 제목(sm 30px, 좁은 화면은 감춤), 한 줄 설명, 보기 전환 칩 둘(33px). 좁은 화면은 칩이 첫 줄, 설명이 둘째 줄(page 의 UpcomingHead 와 같은 격자) */
 export function UpcomingHeadSkeleton() {
   return (
     <div aria-hidden className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-x-3 gap-y-1.5 sm:flex sm:flex-wrap sm:items-end sm:justify-between sm:gap-4">
       <div className="contents sm:flex sm:flex-col sm:gap-1.5">
-        <Bone className="col-start-1 row-start-1 h-[39px] w-28 sm:h-[45px]" />
+        {/* 좁은 화면은 제목이 감춰져(page 의 UpcomingHead) 뼈대도 세우지 않는다 */}
+        <Bone className="hidden h-[45px] w-28 sm:block" />
         <Bone className="col-span-2 row-start-2 h-[21px] w-64" />
       </div>
-      <div className="col-start-2 row-start-1 flex gap-1.5">
+      <div className="col-span-2 row-start-1 flex gap-1.5">
         <Bone className="h-[33px] w-[78px] rounded-full" />
         <Bone className="h-[33px] w-[78px] rounded-full" />
       </div>
