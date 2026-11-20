@@ -94,7 +94,7 @@ export default async function IndieStatsDetailPage({ params }: Props) {
                     <li key={s.source} className="grid grid-cols-[minmax(0,9rem)_1fr_auto] items-center gap-3 text-[13.5px]">
                       <span className="truncate text-ink">{sourceLabel(s.source)}</span>
                       <span aria-hidden className="h-2 overflow-hidden rounded-full bg-surface-2">
-                        <span className="block h-full rounded-full bg-acc" style={{ width: `${Math.max(pct, 2)}%` }} />
+                        <span className="block h-full rounded-full bg-ink-2" style={{ width: `${Math.max(pct, 2)}%` }} />
                       </span>
                       <span className="tabular-nums text-mut">
                         {s.views.toLocaleString("ko-KR")} ({M.share(pct.toFixed(0))})

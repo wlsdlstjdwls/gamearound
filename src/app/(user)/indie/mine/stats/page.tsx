@@ -124,7 +124,7 @@ export default async function IndieStatsPage() {
                   <div className="grid gap-3 sm:grid-cols-[minmax(0,1fr)_200px] sm:items-center">
                     <div className="flex min-w-0 flex-col gap-1">
                       <h2 className="min-w-0 truncate text-[17px] font-extrabold tracking-[-0.02em] text-ink">{r.title}</h2>
-                      <span className={cn("text-[12.5px] font-semibold", r.live ? "text-ok" : "text-dim")}>{r.live ? M.statsLive : M.statsNotLive}</span>
+                      <span className={cn("text-[12.5px] font-semibold", r.live ? "text-mut" : "text-dim")}>{r.live ? M.statsLive : M.statsNotLive}</span>
                     </div>
                     {r.live && (
                       <div className="flex flex-col gap-0.5">
@@ -139,9 +139,10 @@ export default async function IndieStatsPage() {
                         <dt className="text-[12.5px] text-dim">{c.label}</dt>
                         <dd className="flex flex-wrap items-center gap-1.5">
                           <span className="text-[20px] font-black tabular-nums text-ink">{fmt(c.value)}</span>
-                          {/* 순위 딱지 — 1위만 채운 면, 나머지는 연한 면. 숫자 옆이라 "이 숫자가 몇 위" 로 읽힌다 */}
+                          {/* 순위 — 숫자 옆이라 "이 숫자가 몇 위" 로 읽힌다. 면 없는 회색 글자다(2026-11-20 색 줄이기, 등록현황과 같은 문법).
+                              전에는 파란 알약이라 누를 것으로 읽혔고, 1위만 채운 면이라 칸마다 색이 갈렸다 */}
                           {c.rank !== null && (
-                            <span className={cn("rounded-full px-1.5 py-0.5 text-[11px] font-bold tabular-nums", c.rank === 1 ? "bg-acc text-white" : "bg-acc-soft text-acc")}>
+                            <span className="text-[12px] font-bold tabular-nums text-mut">
                               {M.statsRank(c.rank)}
                             </span>
                           )}

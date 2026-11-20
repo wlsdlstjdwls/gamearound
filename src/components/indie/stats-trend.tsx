@@ -38,7 +38,8 @@ export function StatsTrend({ days, metrics, title }: { days: IndieStatsDay[]; me
 
   return (
     <section aria-label={title} className="flex flex-col gap-4 rounded-[var(--radius-panel)] bg-surface p-4 shadow-hair sm:p-5">
-      {/* 숫자 칸이 곧 탭이다. 고른 칸은 연한 브랜드색 면 + 옅은 테두리. 위쪽 파란 띠는 걷었다(2026-11-18 사용자 "카드 위 파란 줄 없애줘") */}
+      {/* 숫자 칸이 곧 탭이다. 고른 칸은 흰 면 + 먹색 테두리, 나머지는 회색 면(면 명암이 말한다). 위쪽 파란 띠는 걷었다(2026-11-18 사용자 "카드 위 파란 줄 없애줘").
+          파란 면, 파란 글자도 걷었다(2026-11-20 색 줄이기) — 파랑은 아래 추이 선 하나만 남는다 */}
       <div role="tablist" aria-label={title} className="grid grid-cols-2 gap-2 sm:grid-cols-4">
         {metrics.map((m) => {
           const on = m.key === metric;
@@ -54,12 +55,12 @@ export function StatsTrend({ days, metrics, title }: { days: IndieStatsDay[]; me
               }}
               className={cn(
                 "press tap flex flex-col items-start gap-0.5 rounded-[var(--radius-md)] px-3.5 py-3 text-left transition-colors",
-                on ? "bg-acc-soft [box-shadow:inset_0_0_0_1px_var(--acc-3)]" : "bg-surface-2 hover:bg-surface-3",
+                on ? "bg-surface [box-shadow:inset_0_0_0_1.5px_var(--ink-2)]" : "bg-surface-2 hover:bg-surface-3",
               )}
             >
-              <span className={cn("text-[12.5px] font-semibold", on ? "text-acc" : "text-dim")}>{m.label}</span>
+              <span className={cn("text-[12.5px] font-semibold", on ? "text-ink" : "text-dim")}>{m.label}</span>
               <span className="text-[22px] font-black tabular-nums text-ink sm:text-[26px]">{fmt(m.total)}</span>
-              {m.note && <span className={cn("text-[11.5px] font-semibold", on ? "text-acc" : "text-mut")}>{m.note}</span>}
+              {m.note && <span className="text-[11.5px] font-semibold text-mut">{m.note}</span>}
             </button>
           );
         })}

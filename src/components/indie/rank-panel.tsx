@@ -3,6 +3,7 @@
 // 막대 길이가 곧 자리다: 1위면 꽉 차고, 꼴찌 쪽일수록 짧다(lib/indie/stats-rank 의 rankPosition 을 뒤집은 값).
 // "120개 중 37위" 를 숫자로만 두면 좋은 건지 나쁜 건지 한 번 더 계산해야 한다 — 막대가 그 계산을 대신한다.
 // 숫자는 늘 글자로 함께 선다(색이나 길이만으로 말하지 않는다). 순위가 없는 항목은 바닥 막대와 "아직 순위 밖이에요".
+// 막대는 먹색 한 톤이다(2026-11-20 색 줄이기) — 파랑은 누르는 것의 색이라 막대가 단추처럼 읽혔다.
 // 상태가 없어 서버 컴포넌트다. 자라는 모션은 전역 .bar-grow + stagger(i).
 import type { CSSProperties } from "react";
 import { cn } from "@/lib/cn";
@@ -34,7 +35,7 @@ export function RankPanel({ title, lead, items, population, className }: { title
                 {it.note && <span className="truncate text-[11.5px] text-dim">{it.note}</span>}
               </span>
               <span className="col-span-2 row-start-2 h-2.5 overflow-hidden rounded-full bg-surface-2 sm:col-span-1 sm:row-start-auto">
-                {has && <span className={cn("bar-grow block h-full rounded-full", it.rank === 1 ? "bg-acc" : "bg-acc/75")} style={{ "--bar-w": `${fill}%`, ...stagger(i) } as CSSProperties} />}
+                {has && <span className={cn("bar-grow block h-full rounded-full", it.rank === 1 ? "bg-ink-2" : "bg-ink-2/55")} style={{ "--bar-w": `${fill}%`, ...stagger(i) } as CSSProperties} />}
               </span>
               <span className="col-start-2 row-start-1 flex items-baseline justify-end gap-1.5 text-right sm:col-start-auto sm:row-start-auto">
                 {has ? (

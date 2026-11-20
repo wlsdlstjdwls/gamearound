@@ -3,7 +3,7 @@
 //
 // 막대 하나에 숫자 하나 — 위 칸(조회, 플레이하기 클릭, 새 찜, 댓글)을 누르면 그 숫자로 바뀐다(누른 즉시, 상태는 이 안에만).
 // 항목을 한 축에 섞지 않는 이유는 stats-trend 와 같다: 조회는 수백, 찜은 한 자릿수라 작은 쪽이 바닥에 깔린다.
-// 색은 한 가지(--acc)다 — 막대는 게임이라는 같은 갈래의 크기를 말할 뿐이라 갈래 색이 필요 없다. 가장 큰 막대만 진하게 해 눈이 먼저 간다.
+// 색은 한 가지(먹색, 2026-11-20 색 줄이기 전에는 --acc)다 — 막대는 게임이라는 같은 갈래의 크기를 말할 뿐이라 갈래 색이 필요 없다. 가장 큰 막대만 진하게 해 눈이 먼저 간다.
 // 값은 막대 끝에 늘 글자로 선다(막대 길이만으로 말하지 않는다). 순서는 큰 값부터.
 import { useState } from "react";
 import type { CSSProperties } from "react";
@@ -76,7 +76,7 @@ export function GameCompare({
               <li key={g.id} className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-x-3 gap-y-1 sm:grid-cols-[minmax(0,180px)_minmax(0,1fr)_64px]">
                 <span className="truncate text-[13.5px] text-ink">{g.title}</span>
                 <span className="col-span-2 row-start-2 h-3 overflow-hidden rounded-r-[4px] bg-surface-2 sm:col-span-1 sm:row-start-auto">
-                  {v > 0 && <span className={cn("bar-grow block h-full rounded-r-[4px]", i === 0 ? "bg-acc" : "bg-acc/55")} style={{ "--bar-w": `${pct}%`, ...stagger(i) } as CSSProperties} />}
+                  {v > 0 && <span className={cn("bar-grow block h-full rounded-r-[4px]", i === 0 ? "bg-ink-2" : "bg-ink-2/45")} style={{ "--bar-w": `${pct}%`, ...stagger(i) } as CSSProperties} />}
                 </span>
                 <span className="col-start-2 row-start-1 text-right text-[13px] font-bold tabular-nums text-ink sm:col-start-auto sm:row-start-auto">{fmt(v)}</span>
               </li>
