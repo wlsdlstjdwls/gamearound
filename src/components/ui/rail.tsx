@@ -8,6 +8,8 @@
 // 손가락은 밀고, 마우스는 단추를 누른다. 단추는 hover 가 있는 기기에만 선다 — 터치 화면에서는 밀기가 더 빠르고,
 // 단추가 카드 위에 떠 있으면 카드를 누르려다 단추를 누른다. 끝에 닿으면 그쪽 단추를 끈다.
 // 칸은 scroll-snap 으로 한 장씩 멈춘다. 다음 칸 끝이 늘 조금 비쳐 "더 있다" 를 말한다(좁은 화면 80%).
+// 단추의 세로 자리는 카드 그림의 가운데다(2026-11-20 점검). 카드 높이의 가운데에 두었더니 그림 아래 제목 줄 위에 떠
+// 390, 700, 1280 모두 옆 카드 제목을 가렸다. 그림 높이는 카드 폭에 따라 달라 CSS 로 못 박지 못해 첫 그림을 재서 넘긴다(못 재면 가운데).
 import { useEffect, useRef, useState } from "react";
 import { cn } from "@/lib/cn";
 import { RAIL_ITEM_CLASS, RAIL_TRACK_CLASS } from "@/lib/rail";
@@ -19,11 +21,16 @@ const PAGE_RATIO = 0.85;
 export function Rail({ items, labels }: { items: Array<{ key: string; node: React.ReactNode }>; labels: { prev: string; next: string } }) {
   const ref = useRef<HTMLUListElement>(null);
   const [edge, setEdge] = useState({ start: true, end: false });
+  // 단추 가운데가 설 자리(줄 상자 위에서 px). null 이면 줄 높이의 가운데
+  const [mid, setMid] = useState<number | null>(null);
 
   const measure = () => {
     const el = ref.current;
     if (!el) return;
     setEdge({ start: el.scrollLeft <= 1, end: el.scrollLeft + el.clientWidth >= el.scrollWidth - 1 });
+    const img = el.querySelector("li img")?.getBoundingClientRect();
+    const box = el.parentElement?.getBoundingClientRect();
+    setMid(img && box && img.height > 0 ? Math.round(img.top - box.top + img.height / 2) : null);
   };
   // 칸 수와 폭은 그린 뒤에야 안다 — 줄이 화면보다 짧으면 처음부터 양쪽이 끝이다
   useEffect(() => {
@@ -59,19 +66,21 @@ export function Rail({ items, labels }: { items: Array<{ key: string; node: Reac
           </li>
         ))}
       </ul>
-      <RailButton dir={-1} hidden={edge.start} label={labels.prev} onClick={() => go(-1)} />
-      <RailButton dir={1} hidden={edge.end} label={labels.next} onClick={() => go(1)} />
+      <RailButton dir={-1} hidden={edge.start} mid={mid} label={labels.prev} onClick={() => go(-1)} />
+      <RailButton dir={1} hidden={edge.end} mid={mid} label={labels.next} onClick={() => go(1)} />
     </div>
   );
 }
 
-function RailButton({ dir, hidden, label, onClick }: { dir: -1 | 1; hidden: boolean; label: string; onClick: () => void }) {
+function RailButton({ dir, hidden, mid, label, onClick }: { dir: -1 | 1; hidden: boolean; mid: number | null; label: string; onClick: () => void }) {
   return (
     <button
       type="button"
       aria-label={label}
       onClick={onClick}
       tabIndex={hidden ? -1 : 0}
+      // 단추 높이(44)의 반을 빼 가운데를 맞춘다
+      style={mid !== null ? { top: mid - 22 } : undefined}
       className={cn(
         "press absolute top-[calc(50%-22px)] z-10 hidden h-11 w-11 items-center justify-center rounded-full bg-surface text-ink shadow-2 transition-opacity duration-base [@media(hover:hover)]:flex",
         dir < 0 ? "-left-4" : "-right-4",

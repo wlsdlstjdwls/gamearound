@@ -81,23 +81,25 @@ export function InstallBanner() {
 
   return (
     <div role="region" aria-label={M.region} className="animate-fade-in border-b border-line-soft bg-surface tab:hidden">
-      <div className="flex items-center gap-3 py-2 pl-4 pr-1.5">
-        <span aria-hidden className="grid size-9 shrink-0 place-items-center rounded-[10px] bg-surface-2">
-          <BrandSymbol size={22} />
+      {/* 한 줄이다(2026-11-20 점검: 두 줄 + 36px 그림이라 첫 화면을 61px 먹었다). 보조 문구는 낭독기에만 남기고,
+          단추와 닫기는 작게 그리되 누르는 범위는 덧면(tap-inset)으로 44px 을 지킨다 */}
+      <div className="flex items-center gap-2.5 py-1.5 pl-4 pr-2">
+        <span aria-hidden className="grid size-6 shrink-0 place-items-center rounded-[7px] bg-surface-2">
+          <BrandSymbol size={15} />
         </span>
-        <span className="flex min-w-0 flex-1 flex-col leading-tight">
-          <strong className="truncate text-[13.5px] font-bold text-ink">{M.title}</strong>
-          <span className="truncate text-[12px] text-mut">{M.body}</span>
+        <span className="min-w-0 flex-1 truncate text-[13px] leading-tight">
+          <strong className="font-bold text-ink">{M.title}</strong>
+          <span className="sr-only"> {M.body}</span>
         </span>
-        <button type="button" onClick={add} aria-expanded={mode === "ios" ? open : undefined} className="press h-8 shrink-0 rounded-full bg-acc px-4 text-[13px] font-bold text-on-ink">
+        <button type="button" onClick={add} aria-expanded={mode === "ios" ? open : undefined} className="press tap-inset h-7 shrink-0 rounded-full bg-acc px-3.5 text-[12.5px] font-bold text-on-ink">
           {M.add}
         </button>
-        <button type="button" onClick={dismiss} aria-label={M.close} className="press tap grid size-11 shrink-0 place-items-center text-dim">
-          <XIcon size={18} />
+        <button type="button" onClick={dismiss} aria-label={M.close} className="press tap-inset grid h-7 w-11 shrink-0 place-items-center text-dim">
+          <XIcon size={15} />
         </button>
       </div>
       {open && (
-        <ol className="animate-rise flex flex-col gap-1 px-4 pb-3 pl-[64px] text-[12.5px] text-ink-2">
+        <ol className="animate-rise flex flex-col gap-1 px-4 pb-3 pl-[50px] text-[12.5px] text-ink-2">
           {M.iosSteps.map((s, i) => (
             <li key={s} className="flex gap-2">
               <span className="font-bold text-acc">{i + 1}</span>
