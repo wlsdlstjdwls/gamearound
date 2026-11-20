@@ -1739,6 +1739,17 @@ li:has([data-more-open]) {
 .sheet[data-side="right"] .sheet__panel[data-dragging="true"] {
   animation: none;
 }
+/* 오른쪽 서랍 + fit: 높이를 내용에 맞추고 위에 붙인다(ui/sheet 의 fit 주석, 2026-11-20 계정 시트 아래가 통째로 비던 것).
+   위 모서리는 화면 끝에 닿아 각지고, 떠 있는 아래 왼쪽 모서리만 둥글다. 내용이 화면보다 길면 판 안에서 스크롤한다 */
+.sheet[data-side="right"][data-fit][open] {
+  align-items: flex-start;
+}
+.sheet[data-side="right"][data-fit] .sheet__panel {
+  height: auto;
+  max-height: 100%;
+  border-bottom: 1px solid var(--line);
+  border-radius: 0 0 0 var(--radius-md);
+}
 
 /* 손잡이는 바닥 시트의 물건이다 — 가로로 미는 서랍에서 가로 막대는 방향을 거짓말한다 */
 .sheet[data-side="right"] .sheet__grip-row {

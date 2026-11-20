@@ -95,6 +95,8 @@ export function SiteMenu() {
     <Sheet
       title={SHEET_TITLE}
       side="right"
+      // 항목이 몇 줄뿐이라 화면 끝까지 서면 아래가 통째로 빈다 — 내용 높이로 위에 붙인다(2026-11-20 점검)
+      fit
       unstyledTrigger
       triggerClassName={cn(
         "flex size-[var(--touch-target)] shrink-0 items-center justify-center rounded-full outline-none transition-colors focus-visible:ring-2 focus-visible:ring-ink tab:hidden",

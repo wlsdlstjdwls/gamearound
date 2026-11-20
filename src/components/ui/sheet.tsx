@@ -53,6 +53,7 @@ export function Sheet({
   unstyledTrigger = false,
   side = "bottom",
   size = "auto",
+  fit = false,
   open: openProp,
   onOpenChange,
 }: {
@@ -86,6 +87,11 @@ export function Sheet({
    * 좁은 화면에서는 어느 쪽이든 화면 폭을 다 쓰므로 이 값이 하는 일이 없다.
    */
   size?: "auto" | "wide";
+  /**
+   * 오른쪽 서랍의 높이를 내용에 맞춘다(위에 붙고 아래는 비운다). 항목 몇 줄뿐인 서랍(계정 시트)이 화면 끝까지 서면
+   * 아래가 통째로 빈 판으로 남는다(2026-11-20 점검: 로그인 전 계정 시트는 단추 둘과 줄 하나뿐이었다). 바닥 시트는 원래 내용 높이라 하는 일이 없다
+   */
+  fit?: boolean;
   /**
    * 바깥이 여닫는 모드. 주면 이 시트는 **버튼을 그리지 않고** 이 값만 따른다.
    *
@@ -335,6 +341,7 @@ export function Sheet({
         className="sheet"
         data-side={side}
         data-size={size}
+        data-fit={fit || undefined}
         aria-labelledby={titleId}
         onClose={() => {
           appliedRef.current = false;
