@@ -23,6 +23,7 @@ import { OfflineNotice } from "@/components/offline-notice";
 import { VisitBeacon } from "@/components/visit-beacon";
 import { CodeBookProvider } from "@/components/code-book";
 import { getCodeBook } from "@/server/services/common-codes";
+import { DevApiLog } from "@/components/dev/api-log";
 
 // OG 이미지 URL 은 절대 경로여야 한다. 배포 주소를 모르면 Next 가 상대 경로로 내보내고 SNS 에서 미리보기가 깨진다.
 const siteUrl = process.env.NEXT_PUBLIC_APP_URL;
@@ -68,6 +69,8 @@ export default async function RootLayout({ children }: { children: React.ReactNo
         {/* 관리자 로그인 직후 첫 문서면 진입 인사의 첫 장면을 그리기 전부터 덮는다(lib/admin/greeting). 영역 표시 다음에 돌아야 한다 */}
         <script dangerouslySetInnerHTML={{ __html: ADMIN_GREET_INIT_SCRIPT }} />
         <GreetCurtain />
+        {/* 개발 모드에서만 개발자도구 콘솔에 API 호출 로그를 찍는다(components/dev/api-log). 운영 번들에는 안 실린다 */}
+        {process.env.NODE_ENV === "development" && <DevApiLog />}
         <SessionProvider>
           <CodeBookProvider book={codeBook}>
           {/* 토스트와 로그인 팝업(M-01)은 화면 어디서든 부르므로 세션 바로 안쪽에 한 번 선다 */}
