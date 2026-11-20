@@ -35,8 +35,8 @@ export default function GameDetailLoading() {
         </div>
         <div className="flex min-w-0 flex-col gap-3 md:col-span-2 lg:col-span-1">
           <div className="grid grid-cols-2 gap-2.5">
-            <div className="skeleton h-12 rounded-[var(--radius-sm)]" />
-            <div className="skeleton h-12 rounded-[var(--radius-sm)]" />
+            <div className="skeleton tap h-10 rounded-xl" />
+            <div className="skeleton tap h-10 rounded-xl" />
           </div>
           <div className="skeleton min-h-[150px] flex-1 rounded-[var(--radius-panel)]" />
         </div>

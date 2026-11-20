@@ -57,7 +57,7 @@ export function WishlistButton({ gameId, className }: { gameId: string; classNam
       type="button"
       aria-pressed={shown}
       onClick={() => gate(action, () => toggle(!wished))}
-      className={buttonClass({ variant: shown ? "picked" : "secondary", size: "lg", className })}
+      className={buttonClass({ variant: shown ? "picked" : "secondary", size: "pair", className })}
     >
       <HeartIcon size={17} className={shown ? "animate-pop fill-current" : undefined} />
       {shown ? M.on : M.off}

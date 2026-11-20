@@ -7,7 +7,7 @@ import { cn } from "@/lib/cn";
 import { SpinnerIcon } from "@/components/ui/icons";
 
 export type ButtonVariant = "primary" | "accent" | "tint" | "picked" | "soft" | "secondary" | "ghost" | "danger";
-export type ButtonSize = "sm" | "md" | "lg" | "row" | "head";
+export type ButtonSize = "sm" | "md" | "lg" | "row" | "head" | "pair";
 
 /*
  * 2026-09-22 — "버튼이 전체적으로 밋밋하다"(사용자). 두 갈래를 더했다.
@@ -55,6 +55,12 @@ const SIZE: Record<ButtonSize, string> = {
    * tap 으로 상자째 키우면 설명 문구 옆 한 줄에서 꽉 찬 파랑 44px 이 두꺼웠다(2026-11-20 사용자 "글작성 버튼이 너무 두껍다"). 넓은 화면은 md 와 같다
    */
   head: "tap-inset h-9 px-3.5 text-[13px] sm:h-10 sm:px-4 sm:text-[13.5px]",
+  /**
+   * 게임 상세 히어로의 가격 알림, 찜하기 짝(2026-11-20 사용자 "버튼이 글자에 비해 큼, 두 버튼 크기도 다른 듯").
+   * lg(46px, 14px 글자)는 글자보다 상자가 커 보였다 — 상자는 40px 로 낮추고 글자는 15px 굵게. 손가락 기기는 tap 이 44px 로 올린다.
+   * 굵기를 크기에 붙이는 이유: secondary 변형은 굵기가 없어 찜하기만 가는 글자였다
+   */
+  pair: "tap h-10 px-4 text-[15px] font-semibold rounded-xl",
 };
 
 export function buttonClass(opts: { variant?: ButtonVariant; size?: ButtonSize; fullWidth?: boolean; className?: string } = {}): string {

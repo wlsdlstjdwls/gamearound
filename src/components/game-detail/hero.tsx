@@ -191,7 +191,8 @@ export function DetailHero({
       <div className="enter-item flex min-w-0 flex-col gap-3 md:col-span-2 lg:col-span-1" style={stagger(2)}>
         {/* 찜과 가격 알림(기획서 v2.0 S-05). 둘 다 비로그인이면 로그인 팝업 뒤 이어서 실행된다(auth/login-gate).
             무료 게임에는 알림을 세우지 않는다 — 0원에는 내려갈 자리가 없다(2026-09-21) */}
-        <div className={showAlert ? "grid grid-cols-[minmax(0,160fr)_minmax(0,196fr)] gap-2.5" : "flex"}>
+        {/* 두 단추는 같은 폭, 같은 크기(button 의 pair)다(2026-11-20 사용자 "두 개의 버튼 크기도 좀 다른 것 같음"). 전에는 160:196 으로 찜하기가 넓었다 */}
+        <div className={showAlert ? "grid grid-cols-2 gap-2.5" : "flex"}>
           {showAlert && (
             <PriceAlertButton
               gameId={game.id}
@@ -200,6 +201,7 @@ export function DetailHero({
               kind={unreleased ? "release" : "price"}
               options={alertOptions}
               variant="secondary"
+              size="pair"
               stateful
               label={
                 <>
