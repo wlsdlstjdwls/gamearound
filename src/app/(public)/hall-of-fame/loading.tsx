@@ -1,5 +1,5 @@
 // 명예의 전당 뼈대 — 기본 화면(이번 달 주목작)을 닮게: 제목과 설명, 탭 둘 + 달 고르기, 1위 큰 판과 2, 3위 카드(1.9 : 1 : 1),
-// 4~10위 줄(순위 칸, 작은 커버, 이름과 보조 줄, 오른쪽 플랫폼 알약). "내 게임은 지금" 카드는 개발자 본인에게만 서서 그리지 않는다.
+// 4~10위 줄(순위, 작은 커버, 제목과 회색 줄, 오른쪽 변동). "내 게임은 지금" 카드는 개발자 본인에게만 서서 그리지 않는다.
 import { Bone, ChipsSkeleton, PageHeadSkeleton, SkeletonPage } from "@/components/ui/skeleton";
 
 /** 4~10위 — 1~3위를 뺀 TOP 10 의 나머지 */
@@ -41,20 +41,20 @@ export default function HallOfFameLoading() {
           <Bone className="h-[25px] w-40" />
           <div className="flex flex-col gap-2.5">
             {Array.from({ length: REST_ROWS }).map((_, i) => (
-              <div
-                key={i}
-                className="grid grid-cols-[72px_minmax(0,1fr)] items-center gap-x-3 gap-y-1.5 rounded-[var(--radius-md)] bg-surface p-3 shadow-hair sm:grid-cols-[96px_112px_minmax(0,1fr)_auto] sm:gap-x-4"
-              >
-                <div className="flex flex-col gap-1">
-                  <Bone className="h-5 w-10" />
-                  <Bone className="h-3.5 w-14" />
+              // 4~10위 줄(indie/fame-rows 의 RankRow): 순위 | 작은 커버 | 제목, 회색 한 줄, 보조 줄 | 오른쪽 변동(넓은 화면은 아래 플랫폼 꼬리표).
+              // 글 칸 세 줄(23 + 19 + 18, 사이 2)과 위아래 12 가 줄 높이 87px 이다(2026-11-20 390px, 1440px 실측)
+              <div key={i} className="grid grid-cols-[28px_76px_minmax(0,1fr)_auto] items-center gap-x-3 rounded-[var(--radius-md)] bg-surface p-3 shadow-hair sm:grid-cols-[44px_112px_minmax(0,1fr)_auto] sm:gap-x-4">
+                <Bone className="h-6 w-6 justify-self-center" />
+                <Bone className="aspect-[460/215] w-full rounded-[var(--radius-cover)]" />
+                <div className="flex min-w-0 flex-col gap-0.5">
+                  <Bone className="h-[23px] w-1/2" />
+                  <Bone className="h-[19px] w-4/5" />
+                  <Bone className="h-[18px] w-1/3" />
                 </div>
-                <Bone className="hidden aspect-[460/215] w-full rounded-[var(--radius-cover)] sm:block" />
-                <div className="flex min-w-0 flex-col gap-1.5">
-                  <Bone className="h-5 w-1/2" />
-                  <Bone className="h-4 w-4/5" />
+                <div className="flex flex-col items-end gap-1.5">
+                  <Bone className="h-4 w-12" />
+                  <Bone className="hidden h-[26px] w-20 rounded-lg sm:block" />
                 </div>
-                <Bone className="col-start-2 h-7 w-20 rounded-lg sm:col-start-auto" />
               </div>
             ))}
           </div>

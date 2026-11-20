@@ -20,15 +20,15 @@ import { FadeImage } from "@/components/ui/fade-image";
 import { ChevronLeftIcon } from "@/components/ui/icons";
 import { NavChip, NavPendingScope, PendingRegion } from "@/components/ui/nav-pending";
 import { Page, PageHead } from "@/components/ui/page";
-import { SproutIcon, TrophyIcon } from "@/components/ui/icons";
+import { TrophyIcon } from "@/components/ui/icons";
 import { FameIntro } from "@/components/indie/fame-intro";
 import { MonthStepper } from "@/components/indie/month-stepper";
 import { MyFameMarks } from "@/components/indie/my-fame-marks";
 import { RankMark } from "@/components/indie/rank-mark";
-import { cn } from "@/lib/cn";
+import { ChangeNote, Cover, devGenreOf, HistoryRow, MineLine, platformsOf, RankRow } from "@/components/indie/fame-rows";
 import { nullIfDbUnavailable } from "@/lib/db-errors";
 import { FAME_MESSAGES as M, FAME_CARD_ATTR, isYm, kstYm, prevYm, ymLabel } from "@/lib/indie/fame";
-import { genreLabels, INDIE_PLATFORM_LABEL } from "@/lib/indie/messages";
+import { genreLabels } from "@/lib/indie/messages";
 import { stagger } from "@/lib/motion";
 import { indieDetailHref, INDIE_FROM } from "@/lib/indie/query";
 import { hallOfFamePath, ROUTES } from "@/lib/routes";
@@ -55,71 +55,6 @@ const first = (v: string | string[] | undefined) => (Array.isArray(v) ? v[0] : v
 const NOWRAP_CHIP = "shrink-0 justify-center whitespace-nowrap max-md:py-2 max-md:text-[14px]";
 
 const href = hallOfFamePath;
-
-function Cover({ item, sizes, className }: { item: RankedIndie; sizes: string; className?: string }) {
-  return (
-    <span className={cn("relative block aspect-[460/215] w-full overflow-hidden rounded-[var(--radius-cover)] bg-surface-3", className)}>
-      <FadeImage src={item.card.cover.url} alt="" fill sizes={sizes} className="object-cover" />
-    </span>
-  );
-}
-
-/** "개발자 X | 장르 | 조회 n | 찜 n" — 목업 hsm, hrow 의 보조 줄 */
-function metaOf(item: RankedIndie): string {
-  const c = item.card;
-  return [M.byDev(c.developerName), genreLabels(c.genres).join(", "), M.views(c.viewCount), M.likes(c.likeCount)].filter(Boolean).join(" | ");
-}
-
-const platformsOf = (item: RankedIndie) => item.card.platforms.map((p) => INDIE_PLATFORM_LABEL[p]).join(", ");
-
-const PLATFORM_PILL = "rounded-lg bg-surface-2 px-2.5 py-1 text-[12px] font-semibold text-ink-2";
-
-/**
- * 지난달 대비 한 마디(목업 hrow 순위 아래 "27%"). 오르면 초록(--ok, 이 화면에서 "좋아졌다" 한 가지만 말한다), 내리면 흐린 글자.
- * 지난달 점수가 없으면 "새로 진입". 견줄 일이 없는 자리(역대 선정작)는 change 가 없어 아무것도 안 세운다
- */
-function ChangeNote({ change, className }: { change: number | null | undefined; className?: string }) {
-  if (change === undefined) return null;
-  const text = change === null ? M.newEntry : M.change(change);
-  return <span className={cn("text-[11.5px] font-semibold tabular-nums", change === null ? "text-acc" : change > 0 ? "text-ok" : "text-dim", className)}>{text}</span>;
-}
-
-/** 4위 아래 줄과 역대 선정작 줄이 같은 모양을 쓴다(목업 .hpr): 왼쪽 순위 칸, 작은 커버, 이름과 보조 줄, 오른쪽 끝 알약 */
-/** 내 게임일 때만 펴지는 글줄(새싹 + 문구). 딱지가 아니라 글자다 — 면을 얹으면 순위 딱지, 글과 겹쳤다(2026-10-30 사용자) */
-/** onDark: 1위 큰 판(어두운 그림 위)에서는 파란 글자가 묻혀 흰 글자로 쓴다. 보라는 이 화면에서 걷었다(2026-11-18 사용자 "보라색은 다 빼줘") */
-function MineLine({ label, className, onDark = false }: { label: string; className?: string; onDark?: boolean }) {
-  return (
-    <span className={cn("fame-own items-center gap-1.5 font-bold", onDark ? "text-on-ink" : "text-acc", className)}>
-      <SproutIcon size={14} />
-      {label}
-    </span>
-  );
-}
-
-function RankRow({ to, rank, sub, item, right, note, slot }: { to: string; rank: React.ReactNode; sub?: string; item: RankedIndie | null; right: React.ReactNode; note?: React.ReactNode; slot?: string }) {
-  return (
-    <li>
-      <Link href={to} {...(slot ? { [FAME_CARD_ATTR]: slot } : {})} className="fame-row press relative grid grid-cols-[72px_minmax(0,1fr)] items-center gap-x-3 gap-y-1.5 rounded-[var(--radius-md)] bg-surface p-3 shadow-hair transition-colors hover:bg-surface-2 sm:grid-cols-[96px_112px_minmax(0,1fr)_auto] sm:gap-x-4">
-        <span className="flex flex-col">
-          <span className="text-[15px] font-extrabold text-ink">{rank}</span>
-          {sub && <span className="text-[11.5px] font-semibold text-acc">{sub}</span>}
-          <ChangeNote change={item?.change} />
-        </span>
-        {item ? <Cover item={item} sizes="112px" className="hidden sm:block" /> : <span className="hidden sm:block" />}
-        <span className="flex min-w-0 flex-col gap-0.5">
-          {/* 제목 옆 "내 게임" 글자는 내 게임일 때만 펴진다(globals.css 의 .fame-own) — 한 줄 안이라 줄 높이가 안 바뀐다 */}
-          <span className="flex min-w-0 items-center gap-2">
-            <span className="truncate text-[15px] font-bold text-ink">{item?.card.title ?? "-"}</span>
-            {slot && <MineLine label={M.myBadge} className="shrink-0 text-[12.5px]" />}
-          </span>
-          {item && <span className="truncate text-[12.5px] text-dim">{metaOf(item)}</span>}
-          {note}
-        </span>
-        <span className="col-start-2 justify-self-start sm:col-start-auto sm:justify-self-end">{right}</span>
-      </Link>
-    </li>
-  );
-}
 
 function Ranking({ items, label, finalized, isNow, intro }: { items: RankedIndie[]; label: string; finalized: boolean; isNow: boolean; intro: { images: string[]; settings: FameIntroSettings } }) {
   if (items.length === 0) return <EmptyState title={M.empty} description={M.emptyLead} />;
@@ -184,7 +119,7 @@ function Ranking({ items, label, finalized, isNow, intro }: { items: RankedIndie
             </span>
             <span className="flex min-w-0 flex-col gap-1">
               <span className="truncate text-[16px] font-bold text-ink group-hover:text-acc">{r.card.title}</span>
-              <span className="truncate text-[12.5px] text-dim">{[M.byDev(r.card.developerName), genreLabels(r.card.genres).join(", ")].filter(Boolean).join(" | ")}</span>
+              <span className="truncate text-[12.5px] text-dim">{devGenreOf(r)}</span>
             </span>
             <span className="mt-auto flex flex-wrap items-baseline gap-x-3 border-t border-line-soft pt-2.5 text-[12.5px] text-mut">
               <span className="text-[20px] font-black tabular-nums text-ink">{M.score(r.score)}</span>
@@ -212,15 +147,16 @@ function Ranking({ items, label, finalized, isNow, intro }: { items: RankedIndie
                   key={r.card.slug}
                   to={indieDetailHref(r.card.slug, INDIE_FROM.hallOfFame)}
                   rank={<RankMark rank={i + 4} unit={M.rankUnit} />}
-                  sub={M.score(r.score)}
                   item={r}
                   slot={isNow ? r.card.slug : undefined}
-                  right={<span className={PLATFORM_PILL}>{platformsOf(r)}</span>}
                   note={
-                    <span className="flex flex-wrap gap-x-3 text-[12px] font-semibold">
-                      {!finalized && <span className="text-acc">{M.gapToAbove(i + 3, gap)}</span>}
-                      {r.card.slug === riserSlug && <span className="text-ok">{M.topRiser}</span>}
-                    </span>
+                    // 회색 보조 줄 — 파랑, 초록을 걷었다(2026-11-20, 파랑은 링크 색, 초록 배지 금지). "가장 많이 올랐어요" 만 잉크로 한 단계 세운다
+                    (!finalized || r.card.slug === riserSlug) && (
+                      <span className="flex flex-wrap gap-x-3 text-[12px] text-mut">
+                        {!finalized && <span>{M.gapToAbove(i + 3, gap)}</span>}
+                        {r.card.slug === riserSlug && <span className="font-semibold text-ink-2">{M.topRiser}</span>}
+                      </span>
+                    )
                   }
                 />
               );
@@ -250,7 +186,7 @@ function Top10({ ym, items }: { ym: string; items: RankedIndie[] }) {
       ) : (
         <ol className="flex flex-col gap-2.5">
           {items.map((r, i) => (
-            <RankRow key={r.card.slug} to={indieDetailHref(r.card.slug, INDIE_FROM.hallOfFame)} rank={<RankMark rank={i + 1} unit={M.rankUnit} />} sub={M.score(r.score)} item={r} right={<span className={PLATFORM_PILL}>{platformsOf(r)}</span>} />
+            <RankRow key={r.card.slug} to={indieDetailHref(r.card.slug, INDIE_FROM.hallOfFame)} rank={<RankMark rank={i + 1} unit={M.rankUnit} />} item={r} />
           ))}
         </ol>
       )}
@@ -322,7 +258,7 @@ export default async function HallOfFamePage({ searchParams }: Props) {
             <ol className="flex flex-col gap-2.5">
               {/* 역대 줄은 게임 상세가 아니라 그 달 TOP 10 으로 간다(기획서 S-08) */}
               {data.h.map((row) => (
-                <RankRow key={row.ym} to={href("history", row.ym)} rank={ymLabel(row.ym)} sub={M.monthFirst} item={row.top} right={<span className="text-[13px] font-semibold text-acc">{M.seeRanking}</span>} />
+                <HistoryRow key={row.ym} to={href("history", row.ym)} monthLabel={ymLabel(row.ym)} item={row.top} />
               ))}
             </ol>
           )}
