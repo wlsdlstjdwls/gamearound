@@ -234,7 +234,9 @@ export function PriceChart({ series, head, rangeKeys }: { series: PriceSeries[];
               {/* 사전예약 구간 — 그 값은 예약가라 출시 뒤 값과 견주면 인하처럼 읽힌다(2026-11-19 사용자, GTA6). 할인 음영보다 옅은 면에 이름표만 단다 */}
               {preorder && (
                 <ReferenceArea x1={preorder.from} x2={preorder.to} fill={token["--surface-4"]} fillOpacity={0.5}>
-                  <Label value={PREORDER_LABEL} position="insideTopLeft" fill={token["--dim"]} fontSize={11.5} />
+                  {/* 이름표는 구간 아래쪽에 둔다(2026-11-20 사용자 확인). 위쪽에 두면 출시선 이름표("출시 날짜")가 선 왼쪽으로 펼쳐지며
+                      같은 높이에서 겹쳐 "사전예약" 과 "출시" 가 한 덩어리로 뭉갰다(GTA6, 390px). 값 선은 대개 축 위쪽이라 아래가 비어 있다 */}
+                  <Label value={PREORDER_LABEL} position="insideBottomLeft" fill={token["--dim"]} fontSize={11.5} />
                 </ReferenceArea>
               )}
               {preorder?.releaseAt && (
