@@ -25,21 +25,9 @@ import { ImageFallback } from "@/components/ui/image-fallback";
 import { Clamp } from "@/components/ui/tooltip";
 import { PointerParallax } from "@/components/ui/pointer-parallax";
 import { cn } from "@/lib/cn";
+import { isOptimizableImage } from "@/lib/image-hosts";
 import { EARLY_ACCESS_TAG, genreTagLabel } from "@/lib/genres";
 import { WishHeart } from "@/components/wish-heart";
-
-// next.config.ts images.remotePatterns 에 등록된 호스트만 최적화. 그 외는 unoptimized 로 원본 사용(런타임 오류 방지)
-const OPTIMIZABLE_HOSTS = ["cdn.akamai.steamstatic.com", "shared.akamai.steamstatic.com", "cdn.cloudflare.steamstatic.com"];
-
-function isOptimizable(url: string): boolean {
-  try {
-    const { protocol, hostname } = new URL(url);
-    if (protocol !== "https:") return false;
-    return OPTIMIZABLE_HOSTS.includes(hostname) || hostname.endsWith(".public.blob.vercel-storage.com");
-  } catch {
-    return false;
-  }
-}
 
 /**
  * 커버 이미지. 부모가 relative + 크기를 정한다.
@@ -60,7 +48,7 @@ export function CoverImage({
   const fallback = <ImageFallback label={`${alt} (이미지 없음)`} />;
   if (!src) return fallback;
   // alt 을 spread 에 섞지 않는다 — jsx-a11y 가 정적으로 못 읽어 경고를 낸다
-  const props = { src, fill: true as const, sizes, unoptimized: !isOptimizable(src), className: "object-cover" };
+  const props = { src, fill: true as const, sizes, unoptimized: !isOptimizableImage(src), className: "object-cover" };
   // 그림이 오는 동안에도 빈 회색 면 대신 로고가 밑에 깔린다 — 그림은 그 위로 페이드인한다(2026-11-11 사용자, 출시 예정 목록의 회색 상자).
   // 밑판은 장식이라 낭독기에서 숨긴다(이름은 그림의 alt 가 말한다)
   return (

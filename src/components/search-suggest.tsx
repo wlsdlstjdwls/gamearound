@@ -5,6 +5,7 @@
 // 받는 시점: 입력을 멈추고 SUGGEST_DEBOUNCE_MS 뒤. 늦게 온 옛 응답이 새 글자의 목록을 덮지 않게 AbortController 로 앞 요청을 끊는다.
 import { useEffect, useMemo, useState } from "react";
 import { FadeImage } from "@/components/ui/fade-image";
+import { isOptimizableImage } from "@/lib/image-hosts";
 import { cn } from "@/lib/cn";
 import { gamePath, ROUTES } from "@/lib/routes";
 import { companyHref, genreHref, SUGGEST_DEBOUNCE_MS, SUGGEST_MESSAGES as M, SUGGEST_MIN_CHARS } from "@/lib/search/suggest";
@@ -110,7 +111,7 @@ export function SuggestPanel({
               >
                 {o.group === "games" && (
                   <span className="relative h-8 w-[60px] shrink-0 overflow-hidden rounded-[var(--radius-inset)] bg-surface-3">
-                    {o.coverUrl && <FadeImage src={o.coverUrl} alt="" fill sizes="60px" className="object-cover" />}
+                    {o.coverUrl && <FadeImage src={o.coverUrl} alt="" fill sizes="60px" unoptimized={!isOptimizableImage(o.coverUrl)} className="object-cover" />}
                   </span>
                 )}
                 <span className="flex min-w-0 flex-1 flex-col">
