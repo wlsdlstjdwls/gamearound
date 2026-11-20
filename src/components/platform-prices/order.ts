@@ -4,7 +4,7 @@
 import { formatDate, PLATFORM_LABEL, platformLabel, REGION_SUFFIX } from "@/lib/format";
 import { brandKeyOf, brandOf, familyOf, PC_PICK_KEY, PLATFORM_BRANDS, PLATFORM_FAMILIES, PLATFORM_FAMILY_LABEL, PLATFORM_ORDER, type PlatformFamily } from "@/lib/platform";
 import type { Freshness } from "@/lib/freshness";
-import { HOME_REGION, type Platform, type Region } from "@/server/db/schema";
+import type { Platform, Region } from "@/server/db/schema";
 import type { PlatformDto } from "@/server/services/games";
 
 export type PlatformPriceItem = PlatformDto & { freshness: Freshness };
@@ -38,18 +38,6 @@ export function byPrice(a: PlatformDto, b: PlatformDto): number {
   if (b.currentPrice === null) return -1;
   if (a.currency !== b.currency) return 0;
   return a.currentPrice - b.currentPrice;
-}
-
-/**
- * 채운 파랑 "구매하기" 를 받을 단 하나의 행 — 값과 스토어 링크가 다 있는 행 가운데 가장 싼 것(2026-11-20 사용자 점검 "파랑이 많다").
- * 카드마다 채운 단추였을 때 구매하기 둘셋에 알림 단추까지 한 화면에 파랑이 대여섯 개였다. 휴대폰 제목 밑 최저가 줄(game-detail/quick-buy)과
- * 가격 카드가 같은 행을 가리켜야 해서 한곳에서 고른다. 한국 행을 먼저 본다(다른 나라 값은 참고로만 보여 준다), 없으면 전체에서.
- * "최저가" 딱지(BEST_MIN_PRICED)와 달리 값 붙은 행이 하나뿐이어도 고른다 — 견줄 상대가 없어도 살 곳은 있다
- */
-export function primaryBuyRow<T extends PlatformDto>(platforms: readonly T[]): T | null {
-  const buyable = platforms.filter((p) => p.currentPrice !== null && Boolean(p.storeUrl));
-  const home = buyable.filter((p) => p.region === HOME_REGION);
-  return [...(home.length > 0 ? home : buyable)].sort(byPrice)[0] ?? null;
 }
 
 /**

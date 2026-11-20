@@ -13,7 +13,6 @@
 import Link from "next/link";
 import { CoverImage } from "@/components/game-card";
 import { daysUntil, InfoCard } from "@/components/game-detail/info-card";
-import { QuickBuy } from "@/components/game-detail/quick-buy";
 import { ContentKindHead } from "@/components/content-kind-head";
 import { KoreanSupportBadges } from "@/components/korean-support-badges";
 import { MultiplayerBadges } from "@/components/multiplayer-badges";
@@ -44,13 +43,6 @@ const GENRE_TAG =
   "press inline-flex min-h-[32px] items-center rounded-full bg-surface px-3.5 text-[13px] font-semibold text-ink ring-1 ring-line-strong ring-inset transition-colors duration-base hover:text-acc hover:ring-acc";
 
 /** 원제, 출시일, 나라, 개발, 배급 한 줄의 낱말. 앞머리 막대는 줄 머리에서 잘린다(쓰는 자리 주석) */
-/**
- * 휴대폰(md 아래)에서 안 걸린 알림 단추의 채운 파랑을 옅은 단추로(2026-11-20 사용자 점검 "파랑이 많다"). 그 폭에서는 제목 밑 최저가 줄의
- * 구매 단추(game-detail/quick-buy)가 첫 화면의 채운 파랑이다. 넓은 화면은 채운 파랑 그대로다(2026-10-30 사용자 "눈에 안 띈다" 로 채웠다).
- * 상태는 단추가 data-alert 로 알린다(price-alert-button 의 stateful) — 받는 중(옅은 파랑), 멈춤(회색)은 손대지 않는다. 값은 soft 변형과 같다
- */
-const ALERT_QUIET_BELOW_MD =
-  "max-md:data-[alert=none]:border max-md:data-[alert=none]:border-line-strong max-md:data-[alert=none]:bg-surface max-md:data-[alert=none]:text-ink max-md:data-[alert=none]:shadow-hair";
 
 const META_ITEM = "relative inline-flex items-center gap-x-1.5 pl-3 pr-1.5 before:absolute before:left-[3px] before:text-dim-2 before:content-['|']";
 
@@ -158,8 +150,6 @@ export function DetailHero({
           </p>
           </div>
         )}
-        {/* 휴대폰만 — 제목 밑 최저가와 구매 단추(game-detail/quick-buy). 넓은 화면은 바로 아래 가격 카드가 첫 화면에 든다 */}
-        <QuickBuy platforms={game.platforms} />
         {/* 판매 형태(무료 플레이, 얼리 액세스 — 저장 이름은 앞서 해보기, lib/genres 의 genreTagLabel)는 장르가 아니라 카드와 같은 작은 청록 꼬리표로 장르 앞에 선다(2026-10-27, lib/genres) */}
         {(game.genres.length > 0 || game.tags.length > 0) && (
           <ul className="flex flex-wrap items-center gap-1.5" aria-label="장르">
@@ -218,7 +208,7 @@ export function DetailHero({
                   {D.heroAlert}
                 </>
               }
-              className={cn("w-full", ALERT_QUIET_BELOW_MD)}
+              className="w-full"
             />
           )}
           <WishlistButton gameId={game.id} className="w-full" />

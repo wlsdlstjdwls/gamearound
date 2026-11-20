@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { initialPickBrand, isUpcomingRow, orderCards, primaryBuyRow, type PlatformPriceItem } from "./order";
+import { initialPickBrand, isUpcomingRow, orderCards, type PlatformPriceItem } from "./order";
 
 /** 카드 순서만 보는 시험이라 순서에 쓰는 칸만 채운다 */
 const row = (platform: string, currentPrice: number | null = 10_000) => ({ platform, region: "KR", currentPrice, currency: "KRW" }) as unknown as PlatformPriceItem;
@@ -46,20 +46,5 @@ describe("isUpcomingRow", () => {
   });
   it("오늘 나온 행은 출시 예정이 아니다", () => {
     expect(isUpcomingRow(at("2026-10-27T00:00:00.000Z"), null, today)).toBe(false);
-  });
-});
-
-describe("primaryBuyRow", () => {
-  const buy = (platform: string, currentPrice: number | null, storeUrl: string | null = "https://store.example", region = "KR") =>
-    ({ platform, region, currentPrice, currency: "KRW", storeUrl }) as unknown as PlatformPriceItem;
-  it("값과 링크가 다 있는 행 가운데 가장 싼 것", () => {
-    expect(primaryBuyRow([buy("ps5", 50_000), buy("steam", 40_000), buy("xbox", 30_000, null)])?.platform).toBe("steam");
-  });
-  it("값 붙은 행이 하나뿐이어도 고른다, 하나도 없으면 null", () => {
-    expect(primaryBuyRow([buy("ps5", 50_000), buy("steam", null)])?.platform).toBe("ps5");
-    expect(primaryBuyRow([buy("ps5", null)])).toBeNull();
-  });
-  it("한국 행을 먼저 본다", () => {
-    expect(primaryBuyRow([buy("switch", 1_000, "https://jp.example", "JP"), buy("ps5", 50_000)])?.platform).toBe("ps5");
   });
 });

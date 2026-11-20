@@ -19,7 +19,7 @@ import { PendingNote } from "@/components/ui/pending-note";
 import { ClockIcon } from "@/components/ui/icons";
 import { Tag } from "@/components/ui/tag";
 import { PickableTile } from "@/components/game-detail/platform-pick";
-import { brandNameOf, byPrice, generationOf, rowKey, type PlatformPriceItem } from "@/components/platform-prices/order";
+import { brandNameOf, byPrice, generationOf, type PlatformPriceItem } from "@/components/platform-prices/order";
 import { BestMark, buyButtonClass, CardHead, hardwareText, PRICE_DIVIDER, Row, STORE_CTA, STORE_LINK_MISSING, SubscriptionRow, TILE } from "@/components/platform-prices/tile";
 
 /**
@@ -71,7 +71,6 @@ export function MergedTile({
   id,
   secondId,
   isBest,
-  primaryKey,
   release,
 }: {
   /** 카드 머리 이름(PC, PlayStation, Nintendo 일본) */
@@ -85,8 +84,6 @@ export function MergedTile({
   secondId?: string;
   /** 이 카드의 스토어 하나가 화면 전체 최저가다 */
   isBest: boolean;
-  /** 채운 구매 단추를 받는 행의 열쇠(order 의 primaryBuyRow, rowKey). 이 카드 밖의 행이면 이 카드 단추는 모두 옅다 */
-  primaryKey: string | null;
   release: string | null;
 }) {
   const ordered = [...rows].sort(byPrice);
@@ -126,8 +123,8 @@ export function MergedTile({
               href={p.storeUrl}
               target="_blank"
               rel="noopener noreferrer"
-              // 채운 파랑은 화면 전체 한 행만(2026-11-20, tile 의 buyButtonClass). 전에는 묶음 안 싼 쪽마다 채워 카드마다 파랑이 섰다
-              className={buyButtonClass(rowKey(p) === primaryKey, "min-w-0 flex-1")}
+              // 고른 카드의 단추만 채운 파랑이다(2026-11-20, tile 의 buyButtonClass). 전에는 묶음 안 싼 쪽마다 채워 카드마다 파랑이 섰다
+              className={buyButtonClass("min-w-0 flex-1")}
             >
               <span className="truncate">{buttons.length === 1 ? STORE_CTA : lineName(p)}</span>
               <span className="sr-only">{STORE_CTA_SR} {platformLabel(p)} (새 창에서 열림)</span>

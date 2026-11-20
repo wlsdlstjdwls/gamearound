@@ -21,8 +21,6 @@ export default function GameDetailLoading() {
         <div className="flex min-w-0 flex-col gap-3">
           <div className="skeleton h-4 w-40 rounded" />
           <div className="skeleton h-[38px] w-[300px] max-w-full rounded" />
-          {/* 휴대폰 제목 밑 최저가 줄(game-detail/quick-buy). 390px 실측 75px(2026-11-20) */}
-          <div className="skeleton h-[75px] rounded-[var(--radius-md)] md:hidden" />
           <div className="flex gap-1.5">
             <div className="skeleton h-8 w-16 rounded-full" />
             <div className="skeleton h-8 w-20 rounded-full" />
