@@ -36,6 +36,7 @@ import { firstParam, MAX_PARAM_LEN } from "@/lib/games-query";
 import { UPCOMING_MESSAGES as M, upcomingAddonParentText, upcomingCountText } from "@/lib/games/messages";
 import { HOME_GRID_CLASS } from "@/lib/games/grid";
 import {
+  groupByReleaseDay,
   hasUpcomingFilter,
   pickUpcomingMonth,
   readUpcomingFilter,
@@ -92,15 +93,37 @@ async function MonthGames({ monthKey, monthTotal, page, filter }: { monthKey: st
   const picks = page === 1 ? allPicks : [];
   // 날짜순에서 기대작은 빠진다(picksCte) — 쪽 수는 그 달 전체에서 기대작을 뺀 수로 센다
   const totalPages = Math.max(Math.ceil((monthTotal - allPicks.length) / UPCOMING_PAGE_SIZE), 1);
+  // 날짜순(기본 정렬)이면 같은 날끼리 날짜 머리 하나 아래 묶는다(lib/games/upcoming 의 groupByReleaseDay, 2026-11-20 사용자 "날짜 표현방식이 불편").
+  // 인기순이면 날짜가 뒤섞여 묶음이 하루짜리 조각이 되므로 줄마다 날짜 칸을 그대로 둔다
+  const byDay = !filter.sort;
+  let order = picks.length;
+  const rows = byDay ? (
+    <div className="flex flex-col gap-5">
+      {groupByReleaseDay(items).map((g, gi) => (
+        <section key={`${g.day}-${gi}`} aria-label={g.day ? formatReleaseDay(g.day) : M.tbaDay} className="flex flex-col gap-2">
+          <h4 className="px-1 text-[14px] font-bold tracking-[-0.01em] text-ink-2 tabular-nums">{g.day ? formatReleaseDay(g.day) : M.tbaDay}</h4>
+          <ul className="flex flex-col gap-2">
+            {g.items.map((entry) => (
+              <li key={entry.game.slug} className="enter-item" style={stagger(order++)}>
+                <UpcomingRow entry={entry} showDate={false} />
+              </li>
+            ))}
+          </ul>
+        </section>
+      ))}
+    </div>
+  ) : (
+    <ul className="flex flex-col gap-2.5">
+      {items.map((entry, i) => (
+        <li key={entry.game.slug} className="enter-item" style={stagger(picks.length + i)}>
+          <UpcomingRow entry={entry} />
+        </li>
+      ))}
+    </ul>
+  );
   const list = (
     <>
-      <ul className="flex flex-col gap-2.5">
-        {items.map((entry, i) => (
-          <li key={entry.game.slug} className="enter-item" style={stagger(picks.length + i)}>
-            <UpcomingRow entry={entry} />
-          </li>
-        ))}
-      </ul>
+      {rows}
       <Pagination page={page} totalPages={totalPages} hrefFor={(n) => upcomingHref({ month: monthKey, page: n }, filter)} />
     </>
   );
@@ -149,19 +172,23 @@ async function AllGames({ total, page, filter }: { total: number; page: number; 
   );
 }
 
-/** 머리: 제목, 한 줄 설명, 보기 전환(목업의 오른쪽 탭 둘). 하나만 켜지는 칩이라 NavChip 이다(AGENTS 6장) */
+/**
+ * 머리: 제목, 한 줄 설명, 보기 전환(목업의 오른쪽 탭 둘). 하나만 켜지는 칩이라 NavChip 이다(AGENTS 6장).
+ * 좁은 화면은 보기 전환을 제목 줄 오른쪽에 세운다(2026-11-20 사용자 "출시예정 UI/UX 불편") — 설명 밑에 44px 칩 둘이 한 줄을 따로 먹어
+ * 보기 전환, 필터, 달 띠가 세 덩어리로 겹쳤다. 칩은 compact(덧면 44px)라 33px 로 선다. 넓은 화면은 예전처럼 설명 줄 끝에 선다
+ */
 function UpcomingHead({ all, filter = {} }: { all: boolean; filter?: UpcomingFilter }) {
   return (
-    <div className="flex flex-wrap items-end justify-between gap-4">
-      <div className="flex flex-col gap-1.5">
-        <h1 className="text-[26px] font-extrabold tracking-[-0.03em] text-ink sm:text-[30px]">{M.title}</h1>
-        <p className="text-[14px] text-mut">{all ? M.leadAll : M.leadMonth}</p>
+    <div className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-x-3 gap-y-1.5 sm:flex sm:flex-wrap sm:items-end sm:justify-between sm:gap-4">
+      <div className="contents sm:flex sm:flex-col sm:gap-1.5">
+        <h1 className="col-start-1 row-start-1 text-[26px] font-extrabold tracking-[-0.03em] text-ink sm:text-[30px]">{M.title}</h1>
+        <p className="col-span-2 row-start-2 text-[14px] text-mut">{all ? M.leadAll : M.leadMonth}</p>
       </div>
-      <div role="group" aria-label={M.viewLabel} className="flex gap-1.5">
-        <NavChip group="upcoming-view" href={upcomingAllHref(1, filter)} active={all} outline>
+      <div role="group" aria-label={M.viewLabel} className="col-start-2 row-start-1 flex gap-1.5">
+        <NavChip group="upcoming-view" href={upcomingAllHref(1, filter)} active={all} outline compact>
           {M.viewAll}
         </NavChip>
-        <NavChip group="upcoming-view" href={upcomingHref({ monthView: true }, filter)} active={!all} outline>
+        <NavChip group="upcoming-view" href={upcomingHref({ monthView: true }, filter)} active={!all} outline compact>
           {M.viewMonth}
         </NavChip>
       </div>
@@ -259,7 +286,7 @@ export default async function UpcomingPage({ searchParams }: Props) {
                 <section aria-labelledby="upcoming-month-heading" className="flex flex-col gap-4">
                   <SectionHead id="upcoming-month-heading" title={formatMonthLabel(active.key)} note={upcomingCountText(active.total)} />
                   {/* 달이 바뀌면 경계를 새로 세운다 — 키가 같으면 React 가 갱신으로 보고 옛 달을 새 달이 올 때까지 둔다(games/page 와 같은 이유) */}
-                  <Suspense key={`${active.key}:${page}:${filterKey}`} fallback={<MonthGamesSkeleton rows={Math.min(active.total, UPCOMING_PAGE_SIZE)} picks={page === 1} />}>
+                  <Suspense key={`${active.key}:${page}:${filterKey}`} fallback={<MonthGamesSkeleton rows={Math.min(active.total, UPCOMING_PAGE_SIZE)} picks={page === 1} byDay={!filter.sort} />}>
                     <MonthGames monthKey={active.key} monthTotal={active.total} page={page} filter={filter} />
                   </Suspense>
                 </section>

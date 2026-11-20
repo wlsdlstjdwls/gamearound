@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { byYear, hasUpcomingFilter, pickUpcomingAddons, pickUpcomingMonth, readUpcomingFilter, upcomingAllHref, upcomingHref, upcomingMonthHref } from "./upcoming";
+import { byYear, groupByReleaseDay, hasUpcomingFilter, pickUpcomingAddons, pickUpcomingMonth, readUpcomingFilter, upcomingAllHref, upcomingHref, upcomingMonthHref } from "./upcoming";
 
 describe("byYear", () => {
   it("연도가 바뀌는 자리에서만 묶음을 새로 연다", () => {
@@ -80,5 +80,25 @@ describe("upcomingHref", () => {
   it("조건이 있으면 기대작 줄을 걷는다", () => {
     expect(hasUpcomingFilter({})).toBe(false);
     expect(hasUpcomingFilter({ platform: "pc" })).toBe(true);
+  });
+});
+
+describe("groupByReleaseDay", () => {
+  it("붙어 있는 같은 날만 묶고 받은 순서를 지킨다", () => {
+    const rows = [
+      { id: "a", releaseDate: "2026-11-21" },
+      { id: "b", releaseDate: "2026-11-21" },
+      { id: "c", releaseDate: "2026-11-22" },
+      { id: "d", releaseDate: "2026-11-21" },
+    ];
+    expect(groupByReleaseDay(rows).map((g) => [g.day, g.items.map((r) => r.id)])).toEqual([
+      ["2026-11-21", ["a", "b"]],
+      ["2026-11-22", ["c"]],
+      ["2026-11-21", ["d"]],
+    ]);
+  });
+
+  it("빈 목록은 빈 묶음", () => {
+    expect(groupByReleaseDay([])).toEqual([]);
   });
 });

@@ -39,3 +39,34 @@ export const SORTS_SALE = ["discount", "popular", "release"] as const;
  * 350 은 한 낱말을 치는 사이의 손 멈춤보다 길고, "다 쳤는데 안 바뀐다" 로 읽히기 전의 값이다
  */
 export const LIST_SEARCH_DEBOUNCE_MS = 350;
+
+/*
+ * 목록 위 필터 막대의 모양 — 전체 게임(./bar)과 출시 예정(components/upcoming-filter-bar)이 같이 쓴다(2026-11-20).
+ * 두 막대가 따로 적고 있어 한쪽만 고치면 두 화면 필터가 갈렸다.
+ *
+ * 좁은 화면(sm 미만)은 판 없이 한 줄 가로로 미끄러지는 알약 줄이다(사용자 "필터가 UI/UX 관점에서 불편", 390px 실측).
+ * 44px 칸 셋과 초기화가 흰 판 안에서 두 줄로 서서 첫 화면의 3분의 1을 먹었다. 목록 안 검색칸은 그 폭에서 걷었다(머리띠 검색과 중복).
+ * 줄은 본문 좌우 여백(px-5)까지 넘겨 화면 끝에서 잘려 보이게 한다 — 끝이 잘려 있어야 "옆으로 더 있다" 가 읽힌다.
+ * 위아래 py-2 -my-2 는 칸 밖으로 8px 넘기는 손가락 덧면(.tap-inset)이 스크롤 상자에 잘리지 않게 둔 자리다.
+ * sm 부터는 예전 흰 판 그대로다.
+ */
+export const FILTER_PANEL_CLASS =
+  "-mx-5 -my-2 flex items-center gap-2 overflow-x-auto px-5 py-2 [scrollbar-width:none] sm:mx-0 sm:my-0 sm:flex-wrap sm:overflow-visible sm:rounded-[var(--radius-panel)] sm:bg-surface sm:p-2 sm:shadow-hair lg:flex-nowrap lg:gap-2.5 lg:p-2.5";
+
+/** 막대 안 드롭다운 칸. 좁은 화면은 글자만큼(shrink-0), sm 부터 나눠 갖는다. lg 폭은 칸마다 달라 부르는 쪽이 붙인다 */
+export const FILTER_SELECT_CLASS = "shrink-0 sm:min-w-0 sm:flex-[1_1_140px] lg:flex-none";
+
+/**
+ * 필터 초기화. 좁은 화면에서는 걸린 조건이 있을 때만 선다(FILTER_RESET_IDLE) — 걸린 게 없는데 서 있으면 칸 하나만 먹는다.
+ * 넓은 화면은 늘 선다(바꾸지 않는다). IDLE 은 단추를 감싸는 span 에 준다 — 단추에 hidden 을 같이 주면 inline-flex 와 CSS 순서 싸움이 된다(cn 은 겹친 값을 안 지운다)
+ */
+export const FILTER_RESET_CLASS =
+  "tap-inset inline-flex h-9 shrink-0 items-center whitespace-nowrap rounded-full px-3 text-[13.5px] font-medium text-mut hover:bg-surface-2 hover:text-ink sm:h-11 sm:rounded-xl";
+export const FILTER_RESET_IDLE = "hidden sm:contents";
+
+/**
+ * 둘째 줄(요즘 많이 찾는 장르, 켜고 끄는 조건). 좁은 화면은 한 줄 가로 스크롤이다 — 꺾이면 이름표와 칩 넷이 두 줄을 먹었다.
+ * 칩은 compact(덧면 44px)라 py-2 -my-2 로 덧면 자리를 둔다(위 FILTER_PANEL_CLASS 와 같은 이유)
+ */
+export const FILTER_CHIP_ROW_CLASS =
+  "-mx-5 -my-2 flex items-center gap-2 overflow-x-auto px-5 py-2 [scrollbar-width:none] sm:mx-0 sm:my-0 sm:flex-wrap sm:gap-y-2 sm:overflow-visible sm:p-0 [&>*]:shrink-0";

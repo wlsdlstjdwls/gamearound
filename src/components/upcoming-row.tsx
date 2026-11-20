@@ -21,6 +21,14 @@ const ROW_SHELL = "group relative grid grid-cols-[3rem_minmax(0,1fr)] items-cent
 /** 그림 칸(좁은 88, 넓은 132 폭, 스토어 가로 커버 비율) */
 const ROW_COVER = "relative aspect-[460/215] w-[88px] shrink-0 overflow-hidden rounded-[var(--radius-inset)] bg-surface-3 shadow-hair sm:w-[132px]";
 
+/*
+ * 날짜 묶음 안의 줄(showDate={false}, 2026-11-20 사용자 "출시예정 날짜 표현방식이 불편"). 날짜는 묶음 머리(page 의 MonthGames)가 한 번만 말하고,
+ * 줄은 그림 | 제목과 장르 | 출시 알림 한 줄이다. 좁은 화면에서 날짜 칸과 줄 아래 단추 한 줄을 걷으니 한 화면에 줄이 두 배 가까이 선다.
+ * 그림을 좁은 화면에서 72 로 줄인 이유: 390 에서 88 이면 작은 출시 알림 단추를 옆에 세웠을 때 제목 칸이 120px 대로 줄어 이름이 세 줄로 접혔다
+ */
+const COMPACT_SHELL = "group relative flex items-center gap-3 rounded-[var(--radius-md)] bg-surface p-3 shadow-hair transition-shadow hover:shadow-2 sm:gap-4 sm:p-3.5";
+const COMPACT_COVER = "relative aspect-[460/215] w-[72px] shrink-0 overflow-hidden rounded-[var(--radius-inset)] bg-surface-3 shadow-hair sm:w-[132px]";
+
 /** 줄 하나. 날짜가 null 이면 출시일 미정 상자의 줄이다(날짜 칸에 "미정") */
 type RowEntry = { game: GameSummary; releaseDate: string | null };
 
@@ -29,12 +37,44 @@ function platformNames(entry: RowEntry): string {
   return devicesOf(entry.game.platforms).map((d) => DEVICE_LABEL[d]).join(", ");
 }
 
-/** subtitle: 본편 이름처럼 장르보다 먼저 읽혀야 하는 한 마디(출시 예정의 추가 콘텐츠 상자). 장르 줄 앞에 붙는다 */
-export function UpcomingRow({ entry, subtitle }: { entry: RowEntry; subtitle?: string }) {
+/** 제목 링크 + 장르, 기기 한 줄. 두 모양(날짜 칸 있는 줄, 날짜 묶음 안의 줄)이 같이 쓴다 */
+function RowText({ entry, title, subtitle, compact = false }: { entry: RowEntry; title: string; subtitle?: string; compact?: boolean }) {
+  const genres = entry.game.genres ?? [];
+  return (
+    <div className="flex min-w-0 flex-1 flex-col gap-1">
+      {/* 줄 전체를 덮는 것은 제목 링크의 ::after 다(카드와 같은 수법) — 출시 알림 단추만 z-10 으로 그 위에 뜬다.
+          제목은 두 줄까지 감싼다 — 한 줄로 자르면 같은 시리즈의 부제가 모두 "..." 뒤로 숨어 어느 게임인지 안 읽힌다 */}
+      <Link href={`/games/${entry.game.slug}`} className="outline-none after:absolute after:inset-0 after:rounded-[var(--radius-md)] focus-visible:after:ring-2 focus-visible:after:ring-ink">
+        <Clamp lines={2} className={compact ? "text-[14.5px] font-semibold leading-snug text-ink group-hover:text-acc sm:text-[16px]" : "text-[15px] font-semibold leading-snug text-ink group-hover:text-acc sm:text-[16px]"}>
+          {title}
+        </Clamp>
+      </Link>
+      <span className="text-[12.5px] text-dim">
+        <Clamp>{[subtitle, genres.join(", "), platformNames(entry)].filter(Boolean).join(" | ")}</Clamp>
+      </span>
+    </div>
+  );
+}
+
+/**
+ * subtitle: 본편 이름처럼 장르보다 먼저 읽혀야 하는 한 마디(출시 예정의 추가 콘텐츠 상자). 장르 줄 앞에 붙는다.
+ * showDate: false 면 날짜 묶음 안의 줄이다(위 COMPACT_SHELL 주석). 출시일 미정 상자, 추가 콘텐츠 상자, 인기순 정렬은 날짜 칸을 그대로 둔다
+ */
+export function UpcomingRow({ entry, subtitle, showDate = true }: { entry: RowEntry; subtitle?: string; showDate?: boolean }) {
   const title = entry.game.titleKo ?? entry.game.titleEn;
+  if (!showDate) {
+    return (
+      <div className={COMPACT_SHELL}>
+        <span className={COMPACT_COVER}>
+          <CoverImage src={entry.game.coverUrl} alt="" sizes="132px" />
+        </span>
+        <RowText entry={entry} title={title} subtitle={subtitle} compact />
+        <WishHeart slug={entry.game.slug} title={title} variant="release" size="sm" className="relative z-10 shrink-0" />
+      </div>
+    );
+  }
   const [y, m, d] = (entry.releaseDate ?? "").split("-").map(Number);
   const weekday = y && m && d ? WEEKDAY_LABEL[new Date(Date.UTC(y, m - 1, d)).getUTCDay()] : "";
-  const genres = entry.game.genres ?? [];
 
   return (
     // 좁은 화면(sm 미만)은 두 줄 격자다(2026-10-26, 목업 390 의 월별 줄): 윗줄은 날짜 | 그림과 제목, 아랫줄은 오른쪽 끝에 출시 알림 단추.
@@ -57,18 +97,7 @@ export function UpcomingRow({ entry, subtitle }: { entry: RowEntry; subtitle?: s
         <span className={ROW_COVER}>
           <CoverImage src={entry.game.coverUrl} alt="" sizes="132px" />
         </span>
-        <div className="flex min-w-0 flex-1 flex-col gap-1">
-          {/* 줄 전체를 덮는 것은 제목 링크의 ::after 다(카드와 같은 수법) — 출시 알림 단추만 z-10 으로 그 위에 뜬다.
-              제목은 두 줄까지 감싼다 — 한 줄로 자르면 같은 시리즈의 부제가 모두 "..." 뒤로 숨어 어느 게임인지 안 읽힌다 */}
-          <Link href={`/games/${entry.game.slug}`} className="outline-none after:absolute after:inset-0 after:rounded-[var(--radius-md)] focus-visible:after:ring-2 focus-visible:after:ring-ink">
-            <Clamp lines={2} className="text-[15px] font-semibold leading-snug text-ink group-hover:text-acc sm:text-[16px]">
-              {title}
-            </Clamp>
-          </Link>
-          <span className="text-[12.5px] text-dim">
-            <Clamp>{[subtitle, genres.join(", "), platformNames(entry)].filter(Boolean).join(" | ")}</Clamp>
-          </span>
-        </div>
+        <RowText entry={entry} title={title} subtitle={subtitle} />
       </div>
       {/* 좁은 화면 아랫줄은 단추 하나만 오른쪽 끝에 둔다(2026-11-02 모바일 점검). 앞서는 "출시 예정" 딱지 + 줄 폭을 다 채운 파란 단추가
           줄마다 반복돼 목록이 단추 벽으로 읽혔다. "출시 예정" 딱지는 넓은 화면에서도 걷었다(2026-11-11 사용자 "여긴 다 출시 예정 아닌가,
@@ -107,13 +136,26 @@ export function UpcomingRowSkeleton() {
   );
 }
 
-/** 줄 뼈대 여럿 — 실물 목록(ul.flex-col.gap-2.5)과 같은 간격 */
-export function UpcomingRowsSkeleton({ rows }: { rows: number }) {
+/** 날짜 묶음 안의 줄 뼈대(위 UpcomingRow showDate={false} 와 같은 껍데기). 좁은 화면은 제목이 두 줄로 접히는 줄이 많아 둘째 줄 자리를 둔다 */
+export function UpcomingCompactRowSkeleton() {
   return (
-    <div className="flex flex-col gap-2.5" aria-busy="true">
-      {Array.from({ length: rows }).map((_, i) => (
-        <UpcomingRowSkeleton key={i} />
-      ))}
+    <div className={COMPACT_SHELL} aria-hidden>
+      <span className={`${COMPACT_COVER} skeleton`} />
+      <div className="flex min-w-0 flex-1 flex-col gap-1.5">
+        <Bone className="h-[18px] w-3/5 sm:h-5" />
+        <Bone className="h-[18px] w-2/5 sm:hidden" />
+        <Bone className="h-3.5 w-2/5" />
+      </div>
+      <Bone className="h-8 w-[84px] shrink-0 rounded-full" />
+    </div>
+  );
+}
+
+/** 줄 뼈대 여럿 — 실물 목록(ul.flex-col.gap-2.5)과 같은 간격. compact 는 날짜 묶음 안의 줄이다 */
+export function UpcomingRowsSkeleton({ rows, compact = false }: { rows: number; compact?: boolean }) {
+  return (
+    <div className={compact ? "flex flex-col gap-2" : "flex flex-col gap-2.5"} aria-busy="true">
+      {Array.from({ length: rows }).map((_, i) => (compact ? <UpcomingCompactRowSkeleton key={i} /> : <UpcomingRowSkeleton key={i} />))}
     </div>
   );
 }

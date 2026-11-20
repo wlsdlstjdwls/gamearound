@@ -52,11 +52,23 @@ type Place = { left: number; width: number; top?: number; bottom?: number };
  * (모바일 필터 시트, 폼). 시트에서 sm 을 그대로 쓰면 36px 짜리 칸이 화면 폭을 가득 채운 채 서서,
  * 폭은 큰데 높이만 낮은 눌리지 않을 것 같은 상자가 된다.
  */
+/*
+ * shape: 모서리와 손가락 범위. 기본은 상자째 44px(.tap)이다.
+ * bar 는 목록 위 필터 막대의 칸이다(2026-11-20 사용자 "필터가 UI/UX 관점에서 불편"). 좁은 화면에서는 한 줄 가로로 미끄러지는
+ * 36px 알약이고 손가락 범위는 덧면(.tap-inset)이 준다 — 44px 상자 셋이 두 줄로 서서 첫 화면을 먹던 것을 한 줄로 줄였다.
+ * sm 부터는 lg 와 같은 칸이다(넓은 화면은 바꾸지 않는다). cn 은 겹친 클래스를 지우지 않아 모양을 크기마다 통째로 둔다
+ */
 const FIELD_SIZE = {
-  sm: { field: "h-9 px-3 text-[12.5px]", label: "text-[11.5px]", option: "px-3 py-2 text-[13px]" },
+  sm: { field: "h-9 px-3 text-[12.5px]", shape: "tap rounded-[var(--radius-sm)]", label: "text-[11.5px]", option: "px-3 py-2 text-[13px]" },
   // md: 검색칸 옆 범위 고르기(검색어 칸, 검색 단추와 키를 맞춘다 — 셋 다 40px)
-  md: { field: "h-10 px-3 text-[14px]", label: "text-[12px]", option: "px-3 py-2.5 text-[14px]" },
-  lg: { field: "h-11 px-3.5 text-[14px]", label: "text-[12px]", option: "px-3.5 py-3 text-[14.5px]" },
+  md: { field: "h-10 px-3 text-[14px]", shape: "tap rounded-[var(--radius-sm)]", label: "text-[12px]", option: "px-3 py-2.5 text-[14px]" },
+  lg: { field: "h-11 px-3.5 text-[14px]", shape: "tap rounded-[var(--radius-sm)]", label: "text-[12px]", option: "px-3.5 py-3 text-[14.5px]" },
+  bar: {
+    field: "h-9 px-3.5 text-[13.5px] sm:h-11 sm:text-[14px]",
+    shape: "tap-inset rounded-full sm:rounded-[var(--radius-sm)]",
+    label: "text-[12px]",
+    option: "px-3.5 py-3 text-[14.5px]",
+  },
 } as const;
 export type SelectSize = keyof typeof FIELD_SIZE;
 
@@ -273,7 +285,8 @@ export function SelectCore({
         }}
         onKeyDown={onKeyDown}
         className={cn(
-          "press tap flex w-full items-center gap-2 rounded-[var(--radius-sm)] border bg-surface text-left transition-[border-color,color,box-shadow] duration-base",
+          "press flex w-full items-center gap-2 border bg-surface text-left transition-[border-color,color,box-shadow] duration-base",
+          box.shape,
           box.field,
           open ? "border-acc text-ink shadow-[0_0_0_3px_var(--acc-glow)]" : "border-line-strong text-ink-2 hover:border-acc hover:text-ink",
           disabled && "cursor-not-allowed opacity-50 hover:border-line-strong hover:text-ink-2",

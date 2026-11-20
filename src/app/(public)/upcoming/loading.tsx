@@ -14,7 +14,7 @@ export default function UpcomingLoading() {
   return (
     <SkeletonPage gap={20}>
       <UpcomingHeadSkeleton />
-      <FilterBarSkeleton chips={false} phoneSearch />
+      <FilterBarSkeleton chips={false} />
       <div className="flex flex-col gap-5">
         <div className="-mx-5 flex h-[var(--month-nav-h)] items-center gap-1.5 overflow-hidden border-b border-line px-5 sm:-mx-7 sm:px-7">
           <Bone className="mr-1.5 h-8 w-24 shrink-0 rounded-full" />

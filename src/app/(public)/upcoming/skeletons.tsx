@@ -16,24 +16,28 @@ const PICK_CARD_HEIGHT = "h-[275px] sm:h-[281px] [&>*]:h-full";
 /** 좁은 화면에서 세울 기대작 카드 수(아래 주석) */
 const MOBILE_PICK_CARDS = 2;
 
-/** 머리: 제목(26, sm 30px), 한 줄 설명, 보기 전환 칩 둘(좁은 화면은 손가락 크기 44) */
+/** 머리: 제목(26, sm 30px), 한 줄 설명, 보기 전환 칩 둘(33px). 좁은 화면은 칩이 제목 줄 오른쪽에 선다(page 의 UpcomingHead 와 같은 격자) */
 export function UpcomingHeadSkeleton() {
   return (
-    <div aria-hidden className="flex flex-wrap items-end justify-between gap-4">
-      <div className="flex flex-col gap-1.5">
-        <Bone className="h-[39px] w-28 sm:h-[45px]" />
-        <Bone className="h-[21px] w-64" />
+    <div aria-hidden className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-x-3 gap-y-1.5 sm:flex sm:flex-wrap sm:items-end sm:justify-between sm:gap-4">
+      <div className="contents sm:flex sm:flex-col sm:gap-1.5">
+        <Bone className="col-start-1 row-start-1 h-[39px] w-28 sm:h-[45px]" />
+        <Bone className="col-span-2 row-start-2 h-[21px] w-64" />
       </div>
-      <div className="flex gap-1.5">
-        <Bone className="h-11 w-[78px] rounded-full sm:h-[33px]" />
-        <Bone className="h-11 w-[78px] rounded-full sm:h-[33px]" />
+      <div className="col-start-2 row-start-1 flex gap-1.5">
+        <Bone className="h-[33px] w-[78px] rounded-full" />
+        <Bone className="h-[33px] w-[78px] rounded-full" />
       </div>
     </div>
   );
 }
 
+/** 날짜 묶음 하나에 세울 뼈대 줄 수 — 실물은 하루 1~10줄이라 가운데 값으로 머리를 끼운다 */
+const ROWS_PER_DAY = 4;
+
 /** 고른 달의 본문(page 의 MonthGames). picks 면 첫 쪽이라 기대작 카드 줄이 앞에 선다 */
-export function MonthGamesSkeleton({ rows, picks }: { rows: number; picks: boolean }) {
+/** byDay: 날짜순 정렬이라 날짜 머리 아래 줄이 묶인다(page 의 MonthGames) */
+export function MonthGamesSkeleton({ rows, picks, byDay = true }: { rows: number; picks: boolean; byDay?: boolean }) {
   return (
     <div className="flex flex-col gap-8">
       {picks && (
@@ -52,7 +56,19 @@ export function MonthGamesSkeleton({ rows, picks }: { rows: number; picks: boole
       )}
       <div className="flex flex-col gap-3.5">
         {picks && <SectionHeadSkeleton size="sub" width="w-24" />}
-        <UpcomingRowsSkeleton rows={rows} />
+        {byDay ? (
+          <div className="flex flex-col gap-5">
+            {Array.from({ length: Math.ceil(rows / ROWS_PER_DAY) }).map((_, i) => (
+              <div key={i} className="flex flex-col gap-2">
+                {/* 날짜 머리 14px 한 줄(21px) */}
+                <Bone className="mx-1 h-[21px] w-24" />
+                <UpcomingRowsSkeleton rows={Math.min(ROWS_PER_DAY, rows - i * ROWS_PER_DAY)} compact />
+              </div>
+            ))}
+          </div>
+        ) : (
+          <UpcomingRowsSkeleton rows={rows} />
+        )}
       </div>
     </div>
   );

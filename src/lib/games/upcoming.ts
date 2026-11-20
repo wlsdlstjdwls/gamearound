@@ -153,3 +153,19 @@ export function pickUpcomingAddons<T extends { title: string; releaseDate: strin
     .sort((a, b) => (a.c.releaseDate < b.c.releaseDate ? -1 : a.c.releaseDate > b.c.releaseDate ? 1 : a.i - b.i))
     .map(({ c }) => c);
 }
+
+/**
+ * 출시 예정 월별 날짜순 목록을 같은 날끼리 묶는다(2026-11-20 사용자 "출시예정 날짜 표현방식이 불편").
+ * 줄마다 큰 날짜 "21 / 11월 | 토" 가 되풀이돼 같은 날 여덟 줄이면 같은 날짜를 여덟 번 읽었다 — 날짜 머리 하나 아래 줄을 모은다.
+ * 받은 순서를 지키고 **붙어 있는 것만** 묶는다. 다시 정렬하지 않는 이유: 순서는 서버 질의가 정한 것이고(날짜, 같은 날은 인기순),
+ * 여기서 섞으면 쪽 번호 경계와 어긋난다. 정렬이 날짜순이 아닐 때는 부르지 않는다(묶음이 하루짜리 조각으로 흩어진다).
+ */
+export function groupByReleaseDay<T extends { releaseDate: string | null }>(items: readonly T[]): { day: string | null; items: T[] }[] {
+  const out: { day: string | null; items: T[] }[] = [];
+  for (const item of items) {
+    const last = out[out.length - 1];
+    if (last && last.day === item.releaseDate) last.items.push(item);
+    else out.push({ day: item.releaseDate, items: [item] });
+  }
+  return out;
+}

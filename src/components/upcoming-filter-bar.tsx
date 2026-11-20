@@ -11,10 +11,18 @@ import { useEffect, useRef, useState } from "react";
 import { SearchIcon } from "@/components/ui/icons";
 import { NavChip, useNavPendingGo } from "@/components/ui/nav-pending";
 import { Select, type SelectOption } from "@/components/ui/select";
-import { LIST_PLATFORM_CHOICES, LIST_SEARCH_DEBOUNCE_MS } from "@/components/game-filters/constants";
+import {
+  FILTER_CHIP_ROW_CLASS,
+  FILTER_PANEL_CLASS,
+  FILTER_RESET_CLASS,
+  FILTER_RESET_IDLE,
+  FILTER_SELECT_CLASS,
+  LIST_PLATFORM_CHOICES,
+  LIST_SEARCH_DEBOUNCE_MS,
+} from "@/components/game-filters/constants";
 import { joinPlatformValues, parsePlatformValues } from "@/lib/games-query";
 import { GAMES_FILTER_MESSAGES as M } from "@/lib/games/messages";
-import { upcomingHref, UPCOMING_SORT_LABEL, UPCOMING_SORTS, type UpcomingFilter, type UpcomingPlace } from "@/lib/games/upcoming";
+import { hasUpcomingFilter, upcomingHref, UPCOMING_SORT_LABEL, UPCOMING_SORTS, type UpcomingFilter, type UpcomingPlace } from "@/lib/games/upcoming";
 import { PLATFORM_VALUE_ORDER } from "@/lib/platform";
 
 const ALL = "__all__";
@@ -97,8 +105,10 @@ export function UpcomingFilterBar({
 
   return (
     <div className="flex flex-col gap-3">
-      <div role="search" className="flex flex-wrap items-center gap-2 rounded-[var(--radius-panel)] bg-surface p-2 shadow-hair lg:flex-nowrap lg:gap-2.5 lg:p-2.5">
-        <label className="flex h-11 min-w-0 flex-[1_1_100%] items-center gap-2.5 rounded-xl bg-bg px-3.5 focus-within:shadow-[0_0_0_1px_var(--acc),0_0_0_4px_var(--acc-glow)] lg:flex-[1_1_260px]">
+      {/* 막대 모양은 전체 게임과 같다(game-filters/constants 의 FILTER_*). 좁은 화면에서 목록 안 검색칸을 걷는 것도 같은 판단이다(2026-11-20) —
+          그 폭에는 머리띠 검색칸이 서 있고, 칸 둘이 위아래로 붙어 같은 일로 읽혔다. 걸린 검색어는 초기화로 풀린다 */}
+      <div role="search" className={FILTER_PANEL_CLASS}>
+        <label className="hidden h-11 min-w-0 flex-[1_1_100%] items-center sm:flex gap-2.5 rounded-xl bg-bg px-3.5 focus-within:shadow-[0_0_0_1px_var(--acc),0_0_0_4px_var(--acc-glow)] lg:flex-[1_1_260px]">
           <SearchIcon size={18} className="shrink-0 text-dim" />
           <span className="sr-only">{M.listSearchLabel}</span>
           <input
@@ -120,26 +130,28 @@ export function UpcomingFilterBar({
             className="h-full min-w-0 flex-1 bg-transparent text-[16px] text-ink outline-none placeholder:text-dim"
           />
         </label>
-        <Select hideLabel label={M.genreLabel} value={filter.genre ?? ALL} options={genreOptions} scroll={false} onNavigate={pick("genre")} size="lg" className="min-w-0 flex-[1_1_140px] lg:w-[180px] lg:flex-none" />
-        <Select hideLabel label={M.platformLabel} value={platformNow || ALL} options={platformOptions} scroll={false} onNavigate={pick("platform")} size="lg" className="min-w-0 flex-[1_1_140px] lg:w-[180px] lg:flex-none" />
-        <Select hideLabel label={M.sortLabel} value={sortNow} options={sortOptions} scroll={false} onNavigate={pick("sort")} size="lg" className="min-w-0 flex-[1_1_140px] lg:w-[150px] lg:flex-none" />
-        <button
-          type="button"
-          onClick={() => {
-            setText("");
-            go({ q: undefined, genre: undefined, platform: undefined, sort: undefined });
-          }}
-          className="tap inline-flex h-11 shrink-0 items-center rounded-xl px-3 text-[13.5px] font-medium text-mut hover:bg-surface-2 hover:text-ink"
-        >
-          {M.reset}
-        </button>
+        <Select hideLabel label={M.genreLabel} value={filter.genre ?? ALL} options={genreOptions} scroll={false} onNavigate={pick("genre")} size="bar" className={`${FILTER_SELECT_CLASS} lg:w-[180px]`} />
+        <Select hideLabel label={M.platformLabel} value={platformNow || ALL} options={platformOptions} scroll={false} onNavigate={pick("platform")} size="bar" className={`${FILTER_SELECT_CLASS} lg:w-[180px]`} />
+        <Select hideLabel label={M.sortLabel} value={sortNow} options={sortOptions} scroll={false} onNavigate={pick("sort")} size="bar" className={`${FILTER_SELECT_CLASS} lg:w-[150px]`} />
+        <span className={hasUpcomingFilter(filter) ? "contents" : FILTER_RESET_IDLE}>
+          <button
+            type="button"
+            onClick={() => {
+              setText("");
+              go({ q: undefined, genre: undefined, platform: undefined, sort: undefined });
+            }}
+            className={FILTER_RESET_CLASS}
+          >
+            {M.reset}
+          </button>
+        </span>
       </div>
 
       {topGenres.length > 0 && (
-        <div className="flex flex-wrap items-center gap-2">
-          <span className="mr-1 text-[13px] text-dim">{M.topGenres}</span>
+        <div className={FILTER_CHIP_ROW_CLASS}>
+          <span className="mr-1 whitespace-nowrap text-[13px] text-dim">{M.topGenres}</span>
           {topGenres.map((g) => (
-            <NavChip key={g} group="upcoming-genre" href={href({ genre: filter.genre === g ? undefined : g })} active={filter.genre === g} outline>
+            <NavChip key={g} group="upcoming-genre" href={href({ genre: filter.genre === g ? undefined : g })} active={filter.genre === g} outline compact>
               {g}
             </NavChip>
           ))}

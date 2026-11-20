@@ -48,6 +48,16 @@ export function markWished(kind: WishKind, slug: string, on: boolean) {
  * 하트 크기. sm 은 게임 카드 오른쪽 위 하트다(2026-11-16 사용자 "찜하기 버튼도 너무 큰듯") — 그려지는 원은 28px 이고,
  * 손가락 목표 44px 은 상자 대신 보이지 않는 덧면(::after)이 채운다. .tap 으로 상자를 키우면 휴대폰에서 원이 세로로 늘어 커 보였다
  */
+/**
+ * 출시 알림 단추 크기. sm 은 출시 예정 날짜 묶음 안의 줄 오른쪽 끝이다(2026-11-20 사용자 "출시예정 날짜 표현방식이 불편") —
+ * 줄 아래 한 줄을 따로 차지하던 44px 단추를 제목 옆으로 올리며 32px 로 줄였다. 손가락 범위는 덧면(.tap-inset)이 준다.
+ * 글자는 그대로 선다(아래 release 주석, 2026-10-26)
+ */
+const RELEASE_SIZE = {
+  md: { box: "tap min-h-[var(--touch-target)] gap-1.5 px-4 text-[13px] sm:min-h-9 sm:px-3.5", icon: 15 },
+  sm: { box: "tap-inset h-8 gap-1 px-3 text-[12.5px]", icon: 13 },
+} as const;
+
 const HEART_SIZE = {
   md: { box: "tap size-9", icon: 17 },
   sm: { box: "size-7 after:absolute after:-inset-2 after:content-['']", icon: 14 },
@@ -110,7 +120,8 @@ export function WishHeart({
         aria-label={`${title} ${shown ? M.releaseOn : M.releaseOff}`}
         onClick={() => gate(action, () => toggle(!wished))}
         className={cn(
-          "press tap inline-flex min-h-[var(--touch-target)] items-center justify-center gap-1.5 rounded-full px-4 text-[13px] font-semibold transition-colors sm:min-h-9 sm:px-3.5",
+          "press inline-flex items-center justify-center whitespace-nowrap rounded-full font-semibold transition-colors",
+          RELEASE_SIZE[size].box,
           // 꺼진 단추도 옅은 파랑이다(2026-11-02) — 줄마다 채운 파랑이 서면 목록 전체가 단추로 읽힌다(nav-must-look-like-nav, 파랑 남발 금지).
           // 켜진 단추는 회색 바탕에 채운 종이라 "이미 받는 중" 이 색이 아니라 모양으로 갈린다
           // 2026-11-11 사용자 "출시 알림 버튼 강조 필요": 옅은 파랑 면이 옆의 "출시 예정" 딱지와 똑같아 단추로 안 읽혔다.
@@ -119,7 +130,7 @@ export function WishHeart({
           className,
         )}
       >
-        <BellIcon size={15} className={shown ? "fill-current" : undefined} />
+        <BellIcon size={RELEASE_SIZE[size].icon} className={shown ? "fill-current" : undefined} />
         {/* 글자는 어디서나 선다(2026-10-26). 예전에는 좁은 화면에서 종만 남겼는데, 무엇을 하는 단추인지 말이 없어 목업(문구가 있는 넓은 단추)과 달랐다.
             제목이 잘리던 문제는 단추를 줄 아래로 내려 푼다(components/upcoming-row) */}
         <span aria-hidden>{shown ? M.releaseOn : M.releaseOff}</span>

@@ -22,7 +22,18 @@ import { GAMES_FILTER_MESSAGES as M } from "@/lib/games/messages";
 import { PLATFORM_VALUE_ORDER } from "@/lib/platform";
 import { RUNNING_SALE_MESSAGES } from "@/lib/sales/messages";
 import type { RunningSaleDto } from "@/server/services/sales";
-import { KEEP_SCROLL, LIST_PLATFORM_CHOICES, LIST_SEARCH_DEBOUNCE_MS, SORTS_ALL, SORTS_SALE } from "./constants";
+import {
+  FILTER_CHIP_ROW_CLASS,
+  FILTER_PANEL_CLASS,
+  FILTER_RESET_CLASS,
+  FILTER_RESET_IDLE,
+  FILTER_SELECT_CLASS,
+  KEEP_SCROLL,
+  LIST_PLATFORM_CHOICES,
+  LIST_SEARCH_DEBOUNCE_MS,
+  SORTS_ALL,
+  SORTS_SALE,
+} from "./constants";
 import { useFilterClick, useFilterNavigate, useFilterQuery } from "./optimistic";
 import { PersonalToggle, type PersonalFilter } from "./personal-toggle";
 
@@ -98,10 +109,15 @@ export function GameFilterBar({
   // 초기화: 이 화면의 정체(할인 게임이면 할인 중)만 남기고 검색어, 장르, 플랫폼, 정렬, 조건을 푼다.
   // all=1 을 싣는 이유: 빈 주소에 닿으면 취향이 다시 걸린다(games-query 의 all 주석)
   const resetHref = gamesHref({ onSale: filter.onSale, all: true });
+  // 초기화가 풀 것이 있나 — 좁은 화면은 있을 때만 단추를 세운다(constants 의 FILTER_RESET_CLASS). 화면의 정체(onSale)와 쪽 번호는 셈에서 뺀다
+  const anyActive = Boolean(
+    filter.q || filter.genre || filter.platform || filter.event || filter.minDiscount || filter.maxPrice || filter.company ||
+      filter.subscription || filter.hideFree || filter.korean || filter.rig || (filter.sort && filter.sort !== defaultSortFor(filter)),
+  );
 
   return (
     <div className="flex flex-col gap-3">
-      <div role="search" className="flex flex-wrap items-center gap-2 rounded-[var(--radius-panel)] bg-surface p-2 shadow-hair lg:flex-nowrap lg:gap-2.5 lg:p-2.5">
+      <div role="search" className={FILTER_PANEL_CLASS}>
         {/* 좁은 화면에서는 걷는다(2026-11-20 사용자 "상단 헤더에도 검색창이 있어, 중복") — 그 폭은 머리띠에 검색칸이 서 있고
             칸 둘이 위아래로 붙어 같은 일로 읽혔다. 걸린 검색어는 걸린 조건 줄(active)에서 풀 수 있다 */}
         <label className="hidden h-11 min-w-0 flex-[1_1_100%] items-center sm:flex gap-2.5 rounded-xl bg-bg px-3.5 focus-within:shadow-[0_0_0_1px_var(--acc),0_0_0_4px_var(--acc-glow)] lg:flex-[1_1_260px]">
@@ -126,18 +142,20 @@ export function GameFilterBar({
             className="h-full min-w-0 flex-1 bg-transparent text-[16px] text-ink outline-none placeholder:text-dim"
           />
         </label>
-        <Select hideLabel label={M.genreLabel} value={filter.genre ?? ALL} options={genreOptions} scroll={false} onNavigate={go} size="lg" className="min-w-0 flex-[1_1_140px] lg:w-[180px] lg:flex-none" />
-        <Select hideLabel label={M.platformLabel} value={platformNow || ALL} options={platformOptions} scroll={false} onNavigate={go} size="lg" className="min-w-0 flex-[1_1_140px] lg:w-[180px] lg:flex-none" />
-        <Select hideLabel label={M.sortLabel} value={sortNow} options={sortOptions} scroll={false} onNavigate={go} size="lg" className="min-w-0 flex-[1_1_140px] lg:w-[150px] lg:flex-none" />
-        <Link {...KEEP_SCROLL} href={resetHref} onClick={click(resetHref)} className="tap inline-flex h-11 shrink-0 items-center rounded-xl px-3 text-[13.5px] font-medium text-mut hover:bg-surface-2 hover:text-ink">
-          {M.reset}
-        </Link>
+        <Select hideLabel label={M.genreLabel} value={filter.genre ?? ALL} options={genreOptions} scroll={false} onNavigate={go} size="bar" className={`${FILTER_SELECT_CLASS} lg:w-[180px]`} />
+        <Select hideLabel label={M.platformLabel} value={platformNow || ALL} options={platformOptions} scroll={false} onNavigate={go} size="bar" className={`${FILTER_SELECT_CLASS} lg:w-[180px]`} />
+        <Select hideLabel label={M.sortLabel} value={sortNow} options={sortOptions} scroll={false} onNavigate={go} size="bar" className={`${FILTER_SELECT_CLASS} lg:w-[150px]`} />
+        <span className={anyActive ? "contents" : FILTER_RESET_IDLE}>
+          <Link {...KEEP_SCROLL} href={resetHref} onClick={click(resetHref)} className={FILTER_RESET_CLASS}>
+            {M.reset}
+          </Link>
+        </span>
       </div>
 
       {/* 둘째 줄: 요즘 많이 찾는 장르(다시 누르면 풀린다) | 켜고 끄는 조건.
           밑줄(헤어라인)은 걷었다(2026-10-28, 사용자 "공백도 많고 자리도 많이 차지") — 결과 수 줄과 사이에 빈 띠만 하나 더 만들었다 */}
-      <div className="flex flex-wrap items-center gap-x-2 gap-y-2">
-        {topGenres.length > 0 && <span className="mr-1 text-[13px] text-dim">{M.topGenres}</span>}
+      <div className={FILTER_CHIP_ROW_CLASS}>
+        {topGenres.length > 0 && <span className="mr-1 whitespace-nowrap text-[13px] text-dim">{M.topGenres}</span>}
         {/* compact: 손가락 기기에서 상자를 44px 로 키우지 않고 덧면으로 누를 범위를 준다(chipClass 주석).
             상자째 키우면 12.5px 글자에 44px 알약이 서서 뭉툭했다(2026-11-20 사용자 "장르 뱃지도 좀 너무 뭉툭") */}
         {topGenres.map((g) => (

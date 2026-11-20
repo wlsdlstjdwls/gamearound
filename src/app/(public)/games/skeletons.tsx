@@ -73,17 +73,23 @@ export function ListTitleSkeleton() {
 
 /** chips: "요즘 많이 찾는 장르" 줄까지. 출시 예정 막대는 그 줄을 걷었다(upcoming/page) */
 /**
- * phoneSearch: 좁은 화면에서도 목록 안 검색칸이 서는 막대인가(출시 예정, upcoming-filter-bar). 그 막대는 164px 이다.
- * 전체 게임(game-filters/bar)은 그 폭에서 검색칸을 걷어 셀렉트 두 줄만 남아 112px 이다(2026-11-20 390px 실측)
+ * 목록 위 필터 막대(game-filters/constants 의 FILTER_*). 전체 게임, 할인 게임, 출시 예정이 같은 모양이다.
+ * 좁은 화면: 판 없이 36px 알약 셋(장르, 플랫폼, 정렬)이 한 줄로 선다 — 목록 안 검색칸은 그 폭에서 걷었고, 초기화는 걸린 조건이 있을 때만 선다.
+ * sm: 흰 판 112px(검색칸 한 줄 + 칸 셋 한 줄), lg: 한 줄 64px. 칩 줄은 어느 폭이나 한 줄 33px 이다(좁은 화면은 가로 스크롤).
+ * 2026-11-20 390px 실측
  */
-export function FilterBarSkeleton({ chips = true, phoneSearch = false }: { chips?: boolean; phoneSearch?: boolean } = {}) {
+export function FilterBarSkeleton({ chips = true }: { chips?: boolean } = {}) {
   return (
     <div aria-hidden className="flex flex-col gap-3">
-      <div className={`rounded-[var(--radius-panel)] bg-surface/60 shadow-hair sm:h-[112px] lg:h-16 ${phoneSearch ? "h-[164px]" : "h-[112px]"}`} />
-      {/* 칩은 어느 폭에서나 33px 이다(compact, 덧면으로 44px). 좁은 화면은 이름표와 칩 넷이 두 줄로 꺾여 33 + 8 + 33 */}
-      {chips && <div className="flex h-[74px] flex-wrap content-start items-center gap-2 sm:h-[33px]">
+      <div className="flex h-9 gap-2 overflow-hidden sm:hidden">
+        {["w-[104px]", "w-[112px]", "w-[86px]"].map((w) => (
+          <Bone key={w} className={`h-9 shrink-0 rounded-full ${w}`} />
+        ))}
+      </div>
+      <div className="hidden rounded-[var(--radius-panel)] bg-surface/60 shadow-hair sm:block sm:h-[112px] lg:h-16" />
+      {chips && <div className="flex h-[33px] items-center gap-2 overflow-hidden">
         {["w-28", "w-14", "w-16", "w-20"].map((w) => (
-          <Bone key={w} className={`h-[33px] rounded-full ${w}`} />
+          <Bone key={w} className={`h-[33px] shrink-0 rounded-full ${w}`} />
         ))}
       </div>}
     </div>
