@@ -8,13 +8,16 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useOptimistic, useTransition } from "react";
 import { isPlainClick } from "@/components/ui/chip-nav";
+import { useReportRoutePending } from "@/components/ui/route-pending";
 import { cn } from "@/lib/cn";
 
 export type BoardSideItem = { href: string; label: string; count: number | null };
 
 export function BoardSideLinks({ items, current }: { items: readonly BoardSideItem[]; current: string }) {
   const router = useRouter();
-  const [, startTransition] = useTransition();
+  const [pending, startTransition] = useTransition();
+  // 게시판을 옮기는 동안 앞 게시판 목록을 흐리게 둔다(ui/route-pending) — 또렷하면 새 게시판 결과로 읽힌다
+  useReportRoutePending(pending);
   const [picked, setPicked] = useOptimistic<string | null>(null);
   const on = picked ?? current;
   return (

@@ -21,6 +21,7 @@ import Link from "next/link";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useLayoutEffect, useOptimistic, useRef, useTransition } from "react";
 import { isPlainClick } from "@/components/ui/chip-nav";
+import { useReportRoutePending } from "@/components/ui/route-pending";
 import { cn } from "@/lib/cn";
 import { isSubScreen, resolveNav } from "@/lib/nav";
 
@@ -28,7 +29,9 @@ export function SubNav() {
   const pathname = usePathname();
   const searchParams = useSearchParams();
   const router = useRouter();
-  const [, startTransition] = useTransition();
+  const [pending, startTransition] = useTransition();
+  // 이동을 기다리는 동안 화면의 결과 자리가 흐려진다(ui/route-pending)
+  useReportRoutePending(pending);
   const [picked, setPicked] = useOptimistic<string | null>(null);
   const { section, sub } = resolveNav(pathname, searchParams);
   const navRef = useRef<HTMLElement>(null);

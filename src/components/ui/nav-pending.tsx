@@ -16,6 +16,7 @@ import { useRouter } from "next/navigation";
 import { createContext, useContext, useOptimistic, useTransition, type ComponentProps } from "react";
 import { chipClass, type ChipSize } from "@/components/ui/chip";
 import { isPlainClick } from "@/components/ui/chip-nav";
+import { useRoutePending } from "@/components/ui/route-pending";
 import { cn } from "@/lib/cn";
 
 type Picked = { group: string; href: string } | null;
@@ -110,9 +111,14 @@ export function PendingBar({ on }: { on: boolean }) {
   return on ? <span aria-hidden className="pending-bar" /> : null;
 }
 
-/** 결과 자리. 누를 수는 있다(가려 막지 않는다) — 기다리는 동안 다른 칩으로 바꿔 누를 수 있어야 한다 */
+/**
+ * 결과 자리. 누를 수는 있다(가려 막지 않는다) — 기다리는 동안 다른 칩으로 바꿔 누를 수 있어야 한다.
+ * 틀 안 칩의 이동뿐 아니라 화면 밖 메뉴(하위 메뉴 띠, 게시판 보조 칩)의 이동에도 흐려진다(ui/route-pending)
+ */
 export function PendingRegion({ className, children }: { className?: string; children: React.ReactNode }) {
-  const pending = useContext(ScopeContext)?.pending ?? false;
+  const scopePending = useContext(ScopeContext)?.pending ?? false;
+  const routePending = useRoutePending();
+  const pending = scopePending || routePending;
   return (
     <>
       <PendingBar on={pending} />
