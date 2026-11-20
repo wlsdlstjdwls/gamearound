@@ -38,6 +38,13 @@ export async function PostDetail({ id, lounge, category }: { id: string; lounge:
   // 다른 게시판 주소로 연 글(/board/guides/p/<리뷰 id>)은 제 주소로 보낸다 — 띠와 경로가 엉뚱한 게시판을 켜지 않게
   if (category && post.category !== category) permanentRedirect(postPath(post.id, post.category));
   const listPath = CATEGORY_LIST_PATH[post.category];
+  // 맨 아래 "목록으로" 는 게시판 글에만 둔다(2026-11-20 사용자 점검 "목록으로가 위아래 둘"). 라운지 글은 맨 위 되돌아가기 링크가 같은 곳으로 간다 —
+  // 게시판 글의 맨 위는 "이전 화면" 이라 목록으로 가는 길이 아래 하나뿐이다
+  const bottomList = !lounge;
+  const adjacent = [
+    { label: M.prev, n: post.prev },
+    { label: M.next, n: post.next },
+  ].filter((a) => a.n !== null);
   const body = isRichBody(post.body) ? (
     <div className="post-body break-words" dangerouslySetInnerHTML={{ __html: sanitizePostHtml(post.body) }} />
   ) : (
@@ -88,22 +95,23 @@ export async function PostDetail({ id, lounge, category }: { id: string; lounge:
         <Comments postId={post.id} initial={comments} replies />
       </div>
 
-      <nav aria-label={M.backToList} className="flex flex-col divide-y divide-line-soft overflow-hidden rounded-[var(--radius-md)] bg-surface shadow-hair">
-        {[
-          { label: M.prev, n: post.prev },
-          { label: M.next, n: post.next },
-        ].map(({ label, n }) =>
-          n ? (
-            <Link key={label} href={n.href} className="flex min-h-[var(--touch-target)] items-center gap-3 px-4 text-[14px] hover:bg-surface-2">
-              <span className="w-14 shrink-0 text-[12.5px] text-dim">{label}</span>
-              <span className="truncate text-ink">{n.title}</span>
+      {(adjacent.length > 0 || bottomList) && (
+        <nav aria-label={bottomList ? M.backToList : M.adjacentPosts} className="flex flex-col divide-y divide-line-soft overflow-hidden rounded-[var(--radius-md)] bg-surface shadow-hair">
+          {adjacent.map(({ label, n }) =>
+            n ? (
+              <Link key={label} href={n.href} className="flex min-h-[var(--touch-target)] items-center gap-3 px-4 text-[14px] hover:bg-surface-2">
+                <span className="w-14 shrink-0 text-[12.5px] text-dim">{label}</span>
+                <span className="truncate text-ink">{n.title}</span>
+              </Link>
+            ) : null,
+          )}
+          {bottomList && (
+            <Link href={listPath} className="flex min-h-[var(--touch-target)] items-center justify-center text-[14px] font-semibold text-acc hover:bg-surface-2">
+              {M.backToList}
             </Link>
-          ) : null,
-        )}
-        <Link href={listPath} className="flex min-h-[var(--touch-target)] items-center justify-center text-[14px] font-semibold text-acc hover:bg-surface-2">
-          {M.backToList}
-        </Link>
-      </nav>
+          )}
+        </nav>
+      )}
     </Page>
   );
 }

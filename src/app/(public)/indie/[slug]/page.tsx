@@ -36,7 +36,7 @@ import { primaryPlayLink } from "@/lib/indie/promo";
 import { IndieReportButton } from "@/components/indie/report-button";
 import { FadeImage } from "@/components/ui/fade-image";
 import { Page, SectionHead } from "@/components/ui/page";
-import { formatDate } from "@/lib/format";
+import { formatDotDate } from "@/lib/format";
 import { genreLabels, INDIE_MESSAGES as M, INDIE_PLATFORM_LABEL, INDIE_REVIEW_MESSAGES as RV } from "@/lib/indie/messages";
 import { storeLinkPlatform } from "@/lib/indie/constants";
 import { INDIE_FROM_PARAM, parseIndieFrom, type IndieFrom } from "@/lib/indie/query";
@@ -112,12 +112,13 @@ export default async function IndieDetailPage({ params, searchParams }: Props) {
   });
   // 머리 판에는 구매 마디에 안 든 링크만, 플레이하기 단추가 이미 가리키는 링크도 뺀다 — 같은 링크를 두 번 세우지 않는다
   const otherLinks = post.links.flatMap((l, i) => (stores.some((st) => st.index === i) || i === playPick?.index ? [] : [{ kind: l.kind, href: hrefOf(i) }]));
-  const info: Array<{ label: string; value: string | null }> = [
+  // 올린 날은 점 날짜 한 줄이다(2026-11-20 사용자 점검 "등록일이 두 줄로 꺾인다"). 요일까지 적은 꼴은 390px 두 칸 격자(약 150px)를 넘겨 꺾였다
+  const info: Array<{ label: string; value: string | null; nowrap?: boolean }> = [
     { label: M.by, value: post.developerName },
     { label: M.platforms, value: post.platforms.map((p) => INDIE_PLATFORM_LABEL[p]).join(", ") },
     { label: M.genres, value: genreLabels(post.genres).join(", ") || null },
     { label: M.release, value: post.releaseNote },
-    { label: M.posted, value: formatDate(post.createdAt) },
+    { label: M.posted, value: formatDotDate(post.createdAt), nowrap: true },
   ].filter((m) => Boolean(m.value));
 
   return (
@@ -212,11 +213,11 @@ export default async function IndieDetailPage({ params, searchParams }: Props) {
                       href={hrefOf(st.index)}
                       target="_blank"
                       rel="noopener noreferrer nofollow ugc"
-                      className="lift press flex min-h-[var(--touch-target)] flex-col gap-0.5 rounded-[var(--radius-md)] bg-surface-2 px-4 py-3 transition-colors hover:bg-acc-soft"
+                      className="lift press flex min-h-[var(--touch-target)] items-center rounded-[var(--radius-md)] bg-surface-2 px-4 py-3 transition-colors hover:bg-acc-soft"
                     >
-                      <span className="text-[12px] text-dim">{INDIE_PLATFORM_LABEL[st.platform]}</span>
+                      {/* 스토어 이름 한 줄(2026-11-20 사용자 점검 "PC / PC 스토어 / 구매하러 가기" 같은 말 세 번). 플랫폼 이름표는 스토어 이름에 들어 있고,
+                          "구매하러 가기" 는 마디 제목(플랫폼별 구매하러 가기)이 이미 말한다 */}
                       <span className="text-[14.5px] font-bold text-ink">{M.storeOf(INDIE_PLATFORM_LABEL[st.platform])}</span>
-                      <span className="text-[13px] font-semibold text-acc">{M.buyCta}</span>
                       <span className="sr-only">{M.newWindow}</span>
                     </a>
                   </li>

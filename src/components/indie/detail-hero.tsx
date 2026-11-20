@@ -45,8 +45,12 @@ const LINK_PRIMARY = cn(LINK_BASE, "bg-acc text-on-ink hover:bg-acc-hover");
 /** 머리 판에 서는 링크 하나. href 는 화면이 정한다(머리 주석) */
 export type IndieHeroLink = { kind: string; href: string };
 
-/** 플레이하기 큰 단추 — 주 행동이라 판에서 가장 크고, 아래 작은 줄이 어디로 가는지 말한다. 넓은 화면에서는 행동 상자 폭을 다 쓴다 */
-const PLAY = "press tap inline-flex min-h-14 flex-col items-start justify-center rounded-[var(--radius-md)] bg-acc px-6 py-2 text-on-ink shadow-3 hover:bg-acc-hover lg:w-full lg:items-center";
+/**
+ * 플레이하기 큰 단추 — 주 행동이라 판에서 가장 크고, 아래 작은 줄이 어디로 가는지 말한다. 넓은 화면에서는 행동 상자 폭을 다 쓴다.
+ * 휴대폰(640 아래)도 폭을 다 쓴다(2026-11-20 사용자 점검 "플레이하기 단추가 폭 절반이라 어정쩡") — 390px 에서 121px 짜리가 왼쪽에 붙어
+ * 아래 찜하기(꽉 찬 폭)보다 작아 주 행동이 둘째로 읽혔다. 640~1023 은 그대로 둔다(두 칸 아래 한 칸 판이라 넓게 늘이면 단추가 판만 해진다)
+ */
+const PLAY = "press tap inline-flex min-h-14 flex-col items-start justify-center rounded-[var(--radius-md)] bg-acc px-6 py-2 text-on-ink shadow-3 hover:bg-acc-hover max-sm:items-center lg:w-full lg:items-center";
 
 /** 배너 아래 반을 페이지 바탕색으로 녹이는 막 */
 const BANNER_FADE = { background: "linear-gradient(to bottom, transparent, var(--bg))" } as const;
@@ -65,7 +69,7 @@ export function IndieDetailHero({
   play: IndieHeroLink | null;
   fameHistory: Array<{ ym: string; rank: number }>;
   /** 게임 정보 사실 줄(만든 사람, 플랫폼, 장르, 출시, 올린 날) — 제목 아래 왼쪽에 두 칸 격자로 선다 */
-  facts?: Array<{ label: string; value: React.ReactNode }>;
+  facts?: Array<{ label: string; value: React.ReactNode; nowrap?: boolean }>;
   /** 플레이하기 아래 단추들(찜하기, 소식 받기, 신고). 화면이 그려 넘긴다 — 로그인, 글쓴이 여부를 아는 쪽이 화면이다 */
   actions?: React.ReactNode;
   /** 같은 판 안에 이어지는 본문 마디들(구매, 소개, 스크린샷 ...). 마디마다 HERO_PAD 를 쓴다 */
@@ -119,7 +123,7 @@ export function IndieDetailHero({
             {facts.map((f) => (
               <div key={f.label} className="flex min-w-0 flex-col gap-0.5">
                 <dt className="text-[12px] text-dim">{f.label}</dt>
-                <dd className="break-keep text-[14px] font-semibold text-ink">{f.value}</dd>
+                <dd className={cn("break-keep text-[14px] font-semibold text-ink", f.nowrap && "whitespace-nowrap")}>{f.value}</dd>
               </div>
             ))}
           </dl>
@@ -129,7 +133,7 @@ export function IndieDetailHero({
        {/* 행동 상자 — 넓은 화면에서는 오른쪽 칸 가운데에 세로로 쌓인다 */}
        <div className="flex flex-col gap-3 lg:justify-start lg:border-l lg:border-line-soft lg:pl-10">
         {play && (
-          <a href={play.href} target="_blank" rel="noopener noreferrer nofollow ugc" className={cn(PLAY, "self-start lg:self-stretch")}>
+          <a href={play.href} target="_blank" rel="noopener noreferrer nofollow ugc" className={cn(PLAY, "self-start max-sm:self-stretch lg:self-stretch")}>
             <span className="text-[17px] font-extrabold">{PM.play}</span>
             <span className="sr-only">{M.newWindow}</span>
           </a>

@@ -8,11 +8,17 @@ import { reportIndiePostAction } from "@/app/(user)/indie/actions";
 import { Button } from "@/components/ui/button";
 import { chipClass } from "@/components/ui/chip";
 import { FormMessage } from "@/components/ui/form-message";
+import { AlertCircleIcon } from "@/components/ui/icons";
 import { Sheet } from "@/components/ui/sheet";
 import { INDIE_REPORT_MESSAGES as R } from "@/lib/indie/messages";
 import { signInPath } from "@/lib/routes";
 
-const TRIGGER = "tap inline-flex items-center text-[12.5px] text-dim underline-offset-2 hover:text-ink hover:underline";
+/**
+ * 신고 입구. 2026-11-20 사용자 점검 "신고 단추가 너무 작다" — 12.5px 글자 둘(폭 22px)이라 손가락이 옆 칸을 눌렀다.
+ * 그림(느낌표 원) + 13px 글자에 좌우 여백을 주고 누르는 범위를 가로세로 44px 이상으로 잡는다. 회색 그대로다 — 눈에 띄라는 단추가 아니다
+ */
+const TRIGGER =
+  "press tap inline-flex min-w-[var(--touch-target)] items-center justify-center gap-1 rounded-full px-2.5 text-[13px] font-medium text-dim underline-offset-2 transition-colors hover:bg-surface-2 hover:text-ink";
 
 export function IndieReportButton({ postId, signedIn, returnTo }: { postId: string; signedIn: boolean; returnTo: string }) {
   const [open, setOpen] = useState(false);
@@ -23,6 +29,7 @@ export function IndieReportButton({ postId, signedIn, returnTo }: { postId: stri
   if (!signedIn) {
     return (
       <Link href={signInPath(returnTo)} className={TRIGGER}>
+        <AlertCircleIcon size={14} aria-hidden />
         {R.open}
       </Link>
     );
@@ -31,6 +38,7 @@ export function IndieReportButton({ postId, signedIn, returnTo }: { postId: stri
   return (
     <>
       <button type="button" onClick={() => setOpen(true)} className={TRIGGER}>
+        <AlertCircleIcon size={14} aria-hidden />
         {R.open}
       </button>
       <Sheet title={R.title} open={open} onOpenChange={setOpen}>

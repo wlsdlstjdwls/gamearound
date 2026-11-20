@@ -31,7 +31,9 @@ export function PostGameCard({ game }: { game: GameSummary }) {
           href={gamePath(game.slug)}
           className="outline-none after:absolute after:inset-0 after:rounded-[var(--radius-md)] focus-visible:after:ring-2 focus-visible:after:ring-ink focus-visible:after:ring-offset-2 focus-visible:after:ring-offset-bg"
         >
-          <Clamp lines={1} className="text-[15.5px] font-bold tracking-[-0.02em] text-ink transition-colors duration-fast group-hover:text-acc">
+          {/* 제목은 세 줄까지(2026-11-20 사용자 점검 "관련 게임 제목이 잘린다"). 390px 에서 글자 칸이 약 128px 라 "Hollow Knight: Silksong (할로우 나이트: 실크송)" 이
+              한 줄에서 잘렸고 두 줄로도 모자랐다. 넓은 화면은 칸이 넓어 한두 줄에서 끝난다. 그래도 넘치면 Clamp 가 말풍선으로 전체를 띄운다 */}
+          <Clamp lines={3} className="break-words text-[15.5px] font-bold tracking-[-0.02em] text-ink transition-colors duration-fast group-hover:text-acc">
             {title}
           </Clamp>
         </Link>

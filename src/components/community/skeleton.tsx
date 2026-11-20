@@ -147,9 +147,12 @@ export function PostDetailSkeleton({ backLink = false }: { backLink?: boolean })
             <Bone className="h-4 w-1/2" />
           </div>
         ))}
-        <div className="flex min-h-[var(--touch-target)] items-center justify-center">
-          <Bone className="h-4 w-24" />
-        </div>
+        {/* 맨 아래 목록으로는 게시판 글에만 선다(post-detail, 2026-11-20) — 라운지 글(backLink)은 맨 위 링크 하나다 */}
+        {!backLink && (
+          <div className="flex min-h-[var(--touch-target)] items-center justify-center">
+            <Bone className="h-4 w-24" />
+          </div>
+        )}
       </div>
     </SkeletonPage>
   );

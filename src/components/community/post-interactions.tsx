@@ -10,7 +10,7 @@ import { COMMENT_FIELD, CommentBody, type CommentListOps, type CommentMineAction
 import { useLoginGate, useResume } from "@/components/auth/login-gate";
 import { forgetDraft, rememberDraft, takeDraft } from "@/lib/auth/resume";
 import { Button } from "@/components/ui/button";
-import { HeartIcon } from "@/components/ui/icons";
+import { ChatIcon, HeartIcon } from "@/components/ui/icons";
 import { useToast } from "@/components/ui/toast";
 import { cn } from "@/lib/cn";
 import { COMMENT_BODY_MAX, commentAnchor } from "@/lib/community/constants";
@@ -227,8 +227,16 @@ function Thread({ root, replies, postId, onAdded, addAction, canReply, mine, ops
   return (
     <li id={commentAnchor(root.id)} className={COMMENT_ITEM_CLASS}>
       <CommentBody c={root} mine={mine} ops={ops} />
+      {/* 답글 단추(2026-11-20 사용자 점검 "답글 단추가 작다"): 12.5px 글자 둘(폭 30px)이라 손가락으로 집기 어려웠다.
+          말풍선 그림 + 13px 글자에 좌우 여백, 누르는 폭을 44px 이상으로. 글자 첫머리가 본문 첫 글자와 줄을 맞추게 왼쪽 여백만큼 당긴다 */}
       {canReply && (
-        <button type="button" aria-expanded={open} onClick={() => setOpen((v) => !v)} className="tap -ml-1 w-fit rounded-md px-1 text-[12.5px] font-semibold text-mut hover:text-acc">
+        <button
+          type="button"
+          aria-expanded={open}
+          onClick={() => setOpen((v) => !v)}
+          className="press tap -ml-2.5 inline-flex w-fit min-w-[var(--touch-target)] items-center gap-1.5 rounded-full px-2.5 text-[13px] font-semibold text-mut transition-colors hover:bg-surface-2 hover:text-ink"
+        >
+          <ChatIcon size={14} aria-hidden />
           {M.reply}
           {replies.length > 0 && <span className="ml-1 tabular-nums text-dim">{replies.length}</span>}
         </button>

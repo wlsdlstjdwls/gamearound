@@ -41,7 +41,8 @@ export default function IndieDetailLoading() {
               </div>
             </div>
             <div className="flex flex-col gap-3 lg:border-l lg:border-line-soft lg:pl-10">
-              <Bone className="h-14 w-40 rounded-[var(--radius-md)] lg:w-full" />
+              {/* 휴대폰은 플레이하기가 꽉 찬 폭이다(detail-hero 의 PLAY, 2026-11-20) */}
+              <Bone className="h-14 w-40 rounded-[var(--radius-md)] max-sm:w-full lg:w-full" />
               <Bone className="h-11 w-full rounded-xl" />
               <Bone className="h-11 w-full rounded-xl" />
             </div>
@@ -50,7 +51,8 @@ export default function IndieDetailLoading() {
             <SectionHeadSkeleton width="w-44" />
             <div className="grid gap-2.5 sm:grid-cols-2">
               {Array.from({ length: BUY_TILES }).map((_, i) => (
-                <Bone key={i} className="h-[86px] rounded-[var(--radius-md)]" />
+                // 스토어 이름 한 줄 칸(2026-11-20 세 줄에서 줄였다) — 실측 높이
+                <Bone key={i} className="h-[46px] rounded-[var(--radius-md)]" />
               ))}
             </div>
           </div>

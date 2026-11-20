@@ -91,7 +91,6 @@ export const INDIE_MESSAGES = {
   likesLabel: "찜",
   genres: "장르",
   buyTitle: "플랫폼별 구매하러 가기",
-  buyCta: "구매하러 가기",
   storeOf: (platform: string) => `${platform} 스토어`,
   countSuffix: "개",
   cta: "내 게임 소개하기",

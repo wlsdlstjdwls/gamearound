@@ -83,6 +83,8 @@ export const COMMUNITY_MESSAGES = {
   backToList: "목록으로",
   prev: "이전 글",
   next: "다음 글",
+  /** 글 상세 맨 아래 이전/다음 글 줄의 낭독 이름. 라운지 글은 그 줄에 "목록으로" 가 없다(post-detail) */
+  adjacentPosts: "이전 글과 다음 글",
   spoilerWarnTitle: "스포가 포함된 글이에요",
   spoilerWarnLead: "결말이나 반전이 담겨 있을 수 있어요.",
   spoilerReveal: "스포 보기",
