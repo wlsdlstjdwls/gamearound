@@ -137,7 +137,8 @@ export const FAME_MESSAGES = {
   rookieEmpty: "아직 슈퍼루키가 없어요",
   rookieEmptyLead: "내 게임을 등록하고 승인을 받으면 한 달 동안 후보가 돼요.",
   rookieCta: "내 게임 등록",
-  rookieFootnote: "등록된 지 한 달이 안 된 게임 중 찜과 조회 반응을 바탕으로 골라요.",
+  /** 뽑는 기준만 말한다 — "한 달이 안 된" 은 위 설명과 아래 권유 판 제목이 이미 말해 세 번 겹쳤다(2026-11-20 점검) */
+  rookieFootnote: "찜과 조회 반응을 바탕으로 골라요.",
   daysAgo: (n: number) => (n <= 0 ? "오늘 등록" : `${n}일 전 등록`),
   likes: (n: number) => `찜 ${n.toLocaleString("ko-KR")}`,
   views: (n: number) => `조회 ${n.toLocaleString("ko-KR")}`,
