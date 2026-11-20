@@ -19,6 +19,8 @@ import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { SearchIcon, SpinnerIcon, XIcon } from "@/components/ui/icons";
 import { MAX_PARAM_LEN } from "@/lib/games-query";
 import { ROUTES } from "@/lib/routes";
+import { INDIE_MESSAGES } from "@/lib/indie/messages";
+import { resolveNav } from "@/lib/nav";
 import { SuggestPanel, useSuggest, type SuggestOption } from "@/components/search-suggest";
 
 const SEARCH_PLACEHOLDER = "게임, 장르, 개발사 검색";
@@ -35,10 +37,23 @@ function subscribeNarrow(onChange: () => void) {
   return () => mq.removeEventListener("change", onChange);
 }
 
-/** 서버와 하이드레이션 첫 그림은 긴 자리글이다(서버는 폭을 모른다). 붙은 뒤 좁으면 바꾼다 — useSyncExternalStore 가 어긋남 없이 넘긴다 */
-function useSearchPlaceholder(): string {
-  const narrow = useSyncExternalStore(subscribeNarrow, () => window.matchMedia(NARROW_QUERY).matches, () => false);
-  return narrow ? SEARCH_PLACEHOLDER_NARROW : SEARCH_PLACEHOLDER;
+/** 서버와 하이드레이션 첫 그림은 넓은 쪽이다(서버는 폭을 모른다). 붙은 뒤 좁으면 바꾼다 — useSyncExternalStore 가 어긋남 없이 넘긴다 */
+function useNarrow(): boolean {
+  return useSyncExternalStore(subscribeNarrow, () => window.matchMedia(NARROW_QUERY).matches, () => false);
+}
+
+/*
+ * 인디 게임 메뉴 안의 좁은 화면에서는 이 칸이 인디 게임을 찾는다(2026-11-20 사용자 고른 안 "머리띠 검색을 인디로 전환").
+ * 그 폭에서는 모든 인디 게임 목록의 제 검색칸을 걷었다(app/(public)/indie/page) — 머리띠 칸과 목록 칸이 위아래로 붙어 검색창이 둘로 보였다.
+ * 그런데 /search 는 스토어 게임만 찾아 목록 칸을 그냥 걷으면 인디 게임을 찾을 길이 없어진다. 그래서 칸 하나가 메뉴에 따라 찾는 곳을 바꾼다.
+ *
+ * 좁은 화면(탭바가 서는 650 이하)만 바꾸는 이유: 넓은 화면은 목록이 제 검색칸을 그대로 갖고 있어 머리띠까지 인디로 바꾸면
+ * 한 화면의 칸 둘이 같은 일을 하고, 인디 화면에서 스토어 게임을 찾으려던 사람이 길을 잃는다. 넓은 화면은 둘이 다른 일을 하는 지금 그대로가 낫다.
+ * 목록 칸을 걷는 경계도 같은 650(max-tab)이라 어느 폭에서도 인디를 찾는 칸은 하나다.
+ * 자동완성은 끈다 — 후보가 스토어 게임, 장르, 개발사라 인디 칸 아래에 뜨면 엉뚱한 곳으로 데려간다.
+ */
+function useIndieMode(narrow: boolean, pathname: string, params: URLSearchParams): boolean {
+  return narrow && resolveNav(pathname, params).section?.key === "indie";
 }
 
 /** 주소에 실리는 형태. 비교와 전송이 같은 규칙을 써야 "바뀌었나" 판정이 흔들리지 않는다 */
@@ -101,11 +116,15 @@ export function SearchBoxFallback() {
 }
 
 export function SearchBox() {
-  const placeholder = useSearchPlaceholder();
+  const narrow = useNarrow();
   const router = useRouter();
   const pathname = usePathname();
   const params = useSearchParams();
-  const onSearchPage = pathname === ROUTES.search;
+  const indie = useIndieMode(narrow, pathname, params);
+  const placeholder = indie ? INDIE_MESSAGES.searchLabel : narrow ? SEARCH_PLACEHOLDER_NARROW : SEARCH_PLACEHOLDER;
+  // 이 칸이 보내는 곳. 인디 모드면 모든 인디 게임 목록(그 화면의 ?q 를 그대로 읽는다)
+  const target = indie ? ROUTES.indie : ROUTES.search;
+  const onSearchPage = pathname === target;
   const urlQuery = onSearchPage ? params.get("q") ?? "" : "";
 
   const [value, setValue] = useState(urlQuery);
@@ -118,7 +137,7 @@ export function SearchBox() {
   // 목록은 칸에 포커스가 있고 사람이 막 친 글자가 있을 때만 편다. 고르거나 Esc, 바깥을 누르면 닫는다
   const [open, setOpen] = useState(false);
   const [active, setActive] = useState(-1);
-  const { options, empty } = useSuggest(value);
+  const { options, empty } = useSuggest(indie ? "" : value);
   const shown = open && options !== null;
 
   // 바깥 누름으로 닫기 — 터치 기기는 mousedown 이 늦게 와서 touchstart 도 함께 듣는다(auth/user-menu 와 같은 규칙)
@@ -154,8 +173,8 @@ export function SearchBox() {
   /** 지금 칸에 있는 글자로 검색 화면에 간다. 빈 칸이면 질의 없는 검색 화면으로 — 결과를 지우는 일도 하나의 요청이다 */
   const submit = () => {
     const next = trimQuery(value);
-    const href = next ? `${ROUTES.search}?q=${encodeURIComponent(next)}` : ROUTES.search;
-    if (onSearchPage && href === `${ROUTES.search}${urlQuery ? `?q=${encodeURIComponent(urlQuery)}` : ""}`) return;
+    const href = next ? `${target}?q=${encodeURIComponent(next)}` : target;
+    if (onSearchPage && href === `${target}${urlQuery ? `?q=${encodeURIComponent(urlQuery)}` : ""}`) return;
     startTransition(() => router.push(href));
   };
 
@@ -173,7 +192,7 @@ export function SearchBox() {
         submit();
       }}
     >
-      <label htmlFor="q" className="sr-only">게임 검색</label>
+      <label htmlFor="q" className="sr-only">{indie ? INDIE_MESSAGES.searchLabel : "게임 검색"}</label>
       <div className={FIELD_CLASS}>
         <SearchIcon size={15} className="shrink-0 text-dim" />
         <input
@@ -230,7 +249,7 @@ export function SearchBox() {
                   inputRef.current?.focus(); // 지운 뒤 다시 칠 수 있어야 한다 — 포커스를 잃으면 한 번 더 눌러야 한다
                   // 결과 화면에서 지웠으면 결과도 같이 걷는다. 칸만 비우고 결과가 남아 있으면
                   // 화면이 말하는 질의와 칸에 적힌 질의가 어긋난다
-                  if (onSearchPage && urlQuery) startTransition(() => router.push(ROUTES.search));
+                  if (onSearchPage && urlQuery) startTransition(() => router.push(target));
                 }}
                 // 보이는 동그라미는 28px 이지만 손가락이 닿는 넓이는 44px 이다. 상자를 키우지 않고
                 // ::after 로 덮는 이유: 입력칸 높이(36px)를 넘기면 머리띠가 통째로 두꺼워진다

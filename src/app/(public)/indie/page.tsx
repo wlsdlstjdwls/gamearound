@@ -122,7 +122,9 @@ export default async function IndiePage({ searchParams }: Props) {
       <NavPendingScope>
         {/* 개발 단계 칩(앞서 해보기, 출시 등)과 검색 범위 드롭다운을 걷었다(2026-11-16 사용자 "필터 아예 제거"). 이 화면은 거르는 곳이 아니라
             둘러보는 곳이다 — 닌텐도 e숍처럼 카드만 쭉 세우고, 찾는 게임이 있으면 검색칸 하나로 간다. 옛 ?stage= 주소는 무시한다 */}
-        <div className="flex justify-end">
+        {/* 좁은 화면(650 이하)에서는 걷는다 — 그 폭에서는 머리띠 검색칸이 인디 게임 메뉴 안에서 이 목록을 찾는다(components/search-box 의 useIndieMode).
+            칸 둘이 위아래로 붙어 검색창이 둘로 보였다(2026-11-20 사용자). 걸린 검색어 줄(아래)은 그대로 서서 풀 수 있다 */}
+        <div className="flex justify-end max-tab:hidden">
           <form role="search" action={ROUTES.indie} className="flex w-full min-w-0 items-center gap-1.5 md:w-auto">
             <span className="tap flex h-10 min-w-0 flex-1 items-center gap-2 rounded-xl border border-line-strong bg-surface pl-3 pr-1 focus-within:border-acc md:w-[260px] md:flex-none">
               <SearchIcon size={15} className="shrink-0 text-dim" />
