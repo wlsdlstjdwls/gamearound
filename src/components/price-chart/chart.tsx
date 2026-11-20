@@ -28,6 +28,7 @@ import type { Platform } from "@/server/db/schema";
 import type { PriceSeries } from "@/server/services/prices";
 import { useNow } from "@/components/use-now";
 import { ChipButton } from "@/components/ui/chip";
+import { cn } from "@/lib/cn";
 import { useCssTokens } from "@/components/use-css-tokens";
 import { mergeBrandSeries, prepare, seriesLabel } from "@/components/price-chart/prepare";
 import { PriceTooltip } from "@/components/price-chart/tooltip";
@@ -148,12 +149,13 @@ export function PriceChart({ series, head, rangeKeys }: { series: PriceSeries[];
 
   /* 플랫폼이 둘 이상일 때만 고르는 자리를 만든다 — 하나뿐이면 "전체" 와 그 하나가 같은 말이다 */
   const platformChips = drawn.length > 1 && (
-        <div role="group" aria-label="플랫폼 선택" className="flex flex-wrap gap-1">
-          <ChipButton active={isOn(ALL_PLATFORMS)} onClick={() => choose(ALL_PLATFORMS)}>
+        // 좁은 화면은 꺾지 않고 가로로 민다 — 플랫폼이 넷이면 둘째 줄에 칩 하나가 떨어져 다른 묶음처럼 보였다
+        <div role="group" aria-label="플랫폼 선택" className="-mx-1 flex gap-1.5 overflow-x-auto px-1 py-2 [scrollbar-width:none] sm:flex-wrap sm:overflow-visible sm:py-0">
+          <ChipButton active={isOn(ALL_PLATFORMS)} onClick={() => choose(ALL_PLATFORMS)} className="shrink-0 whitespace-nowrap">
             전체
           </ChipButton>
           {drawn.map((s) => (
-            <ChipButton key={s.platform} active={isOn(s.platform)} onClick={() => choose(s.platform)}>
+            <ChipButton key={s.platform} active={isOn(s.platform)} onClick={() => choose(s.platform)} className="shrink-0 whitespace-nowrap">
               {/* 칩의 점이 그래프의 선 색과 같아야 "이 칩이 저 선" 이 말없이 이어진다 */}
               <span
                 aria-hidden
@@ -168,12 +170,27 @@ export function PriceChart({ series, head, rangeKeys }: { series: PriceSeries[];
   const rangeRow = (
     <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-2">
         {head}
-        <div role="group" aria-label="기간 선택" className="flex flex-wrap gap-1">
-          {ranges.map((r) => (
-            <ChipButton key={r.key} active={r.key === rangeKey} onClick={() => setRangeKey(r.key)}>
-              {r.label}
-            </ChipButton>
-          ))}
+        {/* 기간은 하나만 고르는 칸 넷이라 한 판 위의 세그먼트로 세운다(2026-11-20 사용자 "가격변동 추이 필터 기능들 모바일에 맞게").
+            칩 넷일 때는 고른 "1년" 만 파란 알약으로 부풀고 나머지는 맨 글자라 아래 플랫폼 칩과 모양이 겹쳐 무엇이 무엇을 거르는지 안 갈렸다.
+            좁은 화면은 판이 폭을 다 써서 칸 넷이 고르게 나뉜다. 고른 칸은 면 명암(흰 면 + 그림자)으로만 말한다 — 파랑은 아래 플랫폼 칩의 몫이다 */}
+        <div role="group" aria-label="기간 선택" className="grid w-full grid-cols-4 gap-0.5 rounded-xl bg-surface-2 p-1 sm:inline-grid sm:w-auto">
+          {ranges.map((r) => {
+            const on = r.key === rangeKey;
+            return (
+              <button
+                key={r.key}
+                type="button"
+                aria-pressed={on}
+                onClick={() => setRangeKey(r.key)}
+                className={cn(
+                  "press tap-inset h-8 rounded-lg px-3 text-[13px] tabular-nums transition-colors duration-fast",
+                  on ? "bg-surface font-semibold text-ink shadow-1" : "text-mut hover:text-ink",
+                )}
+              >
+                {r.label}
+              </button>
+            );
+          })}
         </div>
       </div>
   );

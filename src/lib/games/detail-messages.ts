@@ -54,7 +54,8 @@ export const DETAIL_MESSAGES = {
   forecastNoDate: "다음 할인 시기는 아직 알 수 없어요.",
   forecastExpected: "예상 가격",
   /** 두 줄이다(2026-11-11 사용자 확정 문구, 줄바꿈까지). 화면은 줄마다 block 으로 세운다 */
-  forecastNoRecord: ["아직 예상 가격이 없어요.", "조금만 기다려 주세요."] as const,
+  // 첫 줄은 -습니다체다(2026-11-20 사용자 지정 "없어요 -> 없습니다")
+  forecastNoRecord: ["아직 예상 가격이 없습니다.", "조금만 기다려 주세요."] as const,
   forecastAlert: "알림 설정하기",
   /** 예측 판의 "언제" 칸(2026-11-11 사용자 "그림이나 UI 로 가시성 높게"). 큰 D-숫자 위의 머리말 */
   forecastWhenHead: (name: string | null) => (name ? `${name}까지` : "다음 할인까지"),
@@ -97,7 +98,8 @@ export const DETAIL_MESSAGES = {
   newsLess: "접기",
   newsEmpty: "관련 뉴스가 아직 없어요.",
   /** 패치 기록도 사양도 없을 때 한 줄로 접은 마디(game-detail/updates) */
-  updatesEmpty: "업데이트 노트와 성능 정보가 아직 없어요.",
+  // -습니다체다(2026-11-20 사용자 지정 "없어요 -> 없습니다")
+  updatesEmpty: "업데이트 노트와 성능 정보가 아직 없습니다.",
   updatesEmptyUpcoming: "출시 뒤 업데이트 노트와 성능 정보가 채워져요.",
   tabPatches: "업데이트 노트",
   /** 업데이트 노트 접기(2026-11-11 사용자 "접었다 펼칠 수 있게"). 접힌 동안 단추가 몇 건이 더 있는지 말한다 */

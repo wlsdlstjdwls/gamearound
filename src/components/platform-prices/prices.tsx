@@ -13,6 +13,7 @@ import { BEST_MIN_PRICED, brandAnchorId, brandNameOf, byPrice, isUpcomingRow, me
 import { AbsentTile, PriceTile, UpcomingTile } from "@/components/platform-prices/tile";
 import { MergedTile } from "@/components/platform-prices/merged-tile";
 import { PC_PICK_KEY, PLATFORM_FAMILY_LABEL } from "@/lib/platform";
+import { GAME_MESSAGES } from "@/lib/games/messages";
 
 /**
  * 좁은 화면 1장, sm 2장, lg 4장 — 목업 .pg. 스토어가 넷을 넘으면 다음 줄로 이어진다.
@@ -60,11 +61,14 @@ export function PlatformPrices({
   const merged = mergeableGroups(rowsOnly, upcoming);
   const groupRows = (key: string) => rowsOnly.filter((r) => mergeGroupKey(r) === key);
 
+  const absent = cards.flatMap((c) => (c.kind === "absent" ? [c.brand.label] : []));
   return (
+    <>
     <ul className={GRID}>
       {cards.map((c) => {
         if (c.kind === "absent") {
-          return <AbsentTile key={c.brand.key} id={anchorOnce(brandAnchorId(c.brand.platform))} label={c.brand.label} />;
+          // 좁은 화면에서는 카드를 숨기고 격자 아래 한 줄로 모은다(AbsentLine). 한 장에 약 180px 이라 안 파는 곳이 파는 곳을 밀어냈다
+          return <AbsentTile key={c.brand.key} id={anchorOnce(brandAnchorId(c.brand.platform))} label={c.brand.label} className="max-sm:hidden" />;
         }
         const p = c.row;
         const group = mergeGroupKey(p);
@@ -101,5 +105,20 @@ export function PlatformPrices({
         );
       })}
     </ul>
+    {absent.length > 0 && <AbsentLine labels={absent} />}
+    </>
+  );
+}
+
+/**
+ * 좁은 화면의 안 파는 플랫폼 한 줄(2026-11-20 사용자 "플랫폼 서비스 하지 않는 건 뒤로 밀고 1행으로 간단하게").
+ * 넓은 화면은 카드 그대로다 — 네 칸 격자에서 빈 자리가 "없다" 를 말한다(머리 주석 2026-09-21).
+ */
+function AbsentLine({ labels }: { labels: string[] }) {
+  return (
+    <p className="mt-3 flex flex-wrap items-baseline gap-x-2 gap-y-0.5 rounded-xl border border-dashed border-line-strong bg-surface-2/50 px-4 py-3 text-[13px] sm:hidden">
+      <span className="text-dim">{GAME_MESSAGES.storeAbsentHead}</span>
+      <span className="font-semibold text-mut">{labels.join(", ")}</span>
+    </p>
   );
 }

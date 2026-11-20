@@ -173,10 +173,10 @@ export function PriceTile({
 }
 
 /** 이 게임 행이 없는 플랫폼 = 흐린 카드 한 장(목업 .pc.no "미지원"). 말은 GAME_MESSAGES.storeAbsent 주석 */
-export function AbsentTile({ id, label }: { id?: string; label: string }) {
+export function AbsentTile({ id, label, className }: { id?: string; label: string; className?: string }) {
   return (
     // 2026-10-28 사용자 "비워져 있을 때 너무 비어 보인다": 가운데에 아이콘과 "서비스하지 않습니다" 한 줄을 세운다
-    <li id={id} className={cn(TILE, "border border-dashed border-line-strong bg-surface-2/50")}>
+    <li id={id} className={cn(TILE, "border border-dashed border-line-strong bg-surface-2/50", className)}>
       <CardHead name={label} />
       {/* 남은 여섯 줄을 통째로 쓴다(TILE 의 줄 수) */}
       <div className="row-span-6 flex flex-col items-center justify-center gap-2 py-3 text-center">
