@@ -18,7 +18,6 @@ export const HOME_MESSAGES = {
   upcomingEmpty: "출시일이 잡힌 게임이 아직 없어요.",
   popularGamesTitle: "인기 게임",
   genresTitle: "장르 바로가기",
-  more: "더보기",
   discountsTitle: "지금 할인 중",
   storeDealsTitle: "스토어만 바꿔도 더 싸요",
   storeDealsNote: "같은 기기에서 고를 수 있는 스토어끼리 견줬어요",

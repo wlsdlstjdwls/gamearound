@@ -118,7 +118,7 @@ export default async function HomePage() {
           style={stagger(0)}
           id="discounts-heading"
           title={M.todayDealsTitle}
-          action={discounts.length > 0 && <SeeAll href={`${ROUTES.game}?sale=1`} label={M.more} />}
+          action={discounts.length > 0 && <SeeAll href={`${ROUTES.game}?sale=1`} />}
         />
         {discounts.length === 0 ? (
           <EmptyState title={M.discountsEmptyTitle} description={M.discountsEmptyBody} action={{ href: ROUTES.game, label: M.discountsEmptyAction }} />
@@ -129,7 +129,7 @@ export default async function HomePage() {
 
       {/* 2 — 출시 예정 넷, 출시일이 가까운 순. 더보기는 출시 예정(S-03). 좁은 화면은 할인 줄과 같은 넘기는 줄(lib/games/grid) */}
       <section aria-labelledby="upcoming-heading" className="flex flex-col gap-4">
-        <SectionHead id="upcoming-heading" title={M.upcomingTitle} action={upcoming.length > 0 && <SeeAll href={ROUTES.upcoming} label={M.more} />} />
+        <SectionHead id="upcoming-heading" title={M.upcomingTitle} action={upcoming.length > 0 && <SeeAll href={ROUTES.upcoming} />} />
         {upcoming.length === 0 ? (
           <EmptyNote>{M.upcomingEmpty}</EmptyNote>
         ) : (
@@ -174,8 +174,9 @@ export default async function HomePage() {
 
 function SeeAll({ href, label = M.seeAll }: { href: string; label?: string }) {
   return (
-    // 제목보다 먼저 읽히지 않게 회색으로 물린다(2026-10-07). 보라는 hover 에서만 — 화면의 보라는 할인율이 먼저 가져간다
-    <Link href={href} className="tap inline-flex items-center text-[12.5px] font-medium text-mut hover:text-acc hover:underline">
+    // 제목보다 먼저 읽히지 않게 회색으로 물린다(2026-10-07). 보라는 hover 에서만 — 화면의 보라는 할인율이 먼저 가져간다.
+    // 밑줄은 늘 긋는다(2026-11-20 사용자 "전체보기 글자 밑줄좀"). 회색 글자만으로는 누르는 것으로 안 읽혔다 — 라운지 "전체 보기"(news-blocks/parts)와 같은 옅은 밑줄이다
+    <Link href={href} className="tap inline-flex items-center text-[12.5px] font-medium text-mut underline decoration-line-strong underline-offset-[3px] hover:text-acc hover:decoration-acc">
       {label}
     </Link>
   );
