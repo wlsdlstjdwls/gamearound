@@ -16,6 +16,11 @@ import { indieDetailHref, type IndieFrom } from "@/lib/indie/query";
 import { genreLabels, INDIE_MESSAGES as M, INDIE_PLATFORM_LABEL } from "@/lib/indie/messages";
 import type { IndieCardDto } from "@/lib/indie/dto";
 
+/** 좁은 화면 가로 줄 카드(IndieCard 의 phoneRow) — 껍데기, 그림 칸, 글 칸. 뼈대도 같은 값을 쓴다 */
+export const INDIE_ROW_SHELL = "max-sm:flex-row max-sm:gap-3 max-sm:p-2.5";
+export const INDIE_ROW_COVER = "max-sm:w-[128px] max-sm:shrink-0 max-sm:self-start";
+export const INDIE_ROW_BODY = "max-sm:gap-1 max-sm:px-0";
+
 /** 플랫폼, 장르 알약 — 목업 .pl. 카드와 등록현황 줄이 같은 모양을 쓴다 */
 export function IndieTagPills({ platforms, genres }: { platforms: readonly IndieCardDto["platforms"][number][]; genres: readonly string[] }) {
   const items = [...platforms.map((p) => INDIE_PLATFORM_LABEL[p]), ...genreLabels(genres)];
@@ -35,6 +40,9 @@ export function IndieTagPills({ platforms, genres }: { platforms: readonly Indie
  * from: 상세의 경로 줄, 메뉴 강조를 정하는 출처(lib/indie/query). 슈퍼루키가 싣는다 — 목록, 홈 줄은 기본이다.
  * wide: 가로 카드(sm 이상에서 그림 왼쪽, 글 오른쪽). 인디 목록 "주목할 게임" 이 한두 장뿐일 때 쓴다(2026-10-29) — 세로 카드 한 장이
  *   넓은 유료 판의 4분의 1만 채워 판이 비어 보였다. 좁은 화면에서는 세로 카드 그대로다.
+ * phoneRow: 좁은 화면(640 미만)에서 그림 왼쪽 128px, 글 오른쪽인 가로 줄 카드(2026-11-20 모바일 점검, 모든 인디 게임).
+ *   세로 카드는 390px 에서 한 장이 286px 이라 첫 화면에 둘뿐이었다. 두 칸 격자는 칸이 170px 이라 제목, 소개가 눌려 가로 줄을 골랐다.
+ *   목록 화면만 켠다 — 홈 줄(넘기는 줄), 슈퍼루키, 찜 목록은 그림이 주인인 자리라 세로 그대로다. 뼈대(indie-card-skeleton)도 같은 값을 쓴다.
  * footer: 카드 바닥 칸막이 아래 한 묶음(플레이테스트의 모집 이름, 마감, 신청 수). 카드 **안**에 둔다(2026-11-02 모바일 점검) —
  *   카드 밖 아래에 두면 한 열로 쌓이는 좁은 화면에서 다음 카드의 머리말처럼 읽혔다.
  */
@@ -43,27 +51,33 @@ export function IndieCard({
   badge,
   from,
   wide = false,
+  phoneRow = false,
   footer,
 }: {
   post: IndieCardDto;
   badge?: React.ReactNode;
   from?: IndieFrom;
   wide?: boolean;
+  phoneRow?: boolean;
   footer?: React.ReactNode;
 }) {
   return (
-    <div className={cn(CARD_SHELL, "cover-zoom group relative", wide && "sm:flex-row sm:gap-4 sm:p-3")}>
+    <div className={cn(CARD_SHELL, "cover-zoom group relative", wide && "sm:flex-row sm:gap-4 sm:p-3", phoneRow && INDIE_ROW_SHELL)}>
       {/* 손을 올리면 그림이 살짝 자라고 빛이 한 번 스친다(.cover-glint) */}
-      <span className={cn(COVER_CLASS, "cover-glint", wide && "sm:w-[46%] sm:max-w-[360px] sm:shrink-0")}>
+      <span className={cn(COVER_CLASS, "cover-glint", wide && "sm:w-[46%] sm:max-w-[360px] sm:shrink-0", phoneRow && INDIE_ROW_COVER)}>
         <span className="cover-zoom-img absolute inset-0 block">
-          <CoverImage src={post.cover.url} alt={M.coverAlt(post.title)} sizes="(max-width: 640px) 100vw, (max-width: 768px) 50vw, 25vw" />
+          <CoverImage
+            src={post.cover.url}
+            alt={M.coverAlt(post.title)}
+            sizes={phoneRow ? "(max-width: 640px) 128px, (max-width: 768px) 50vw, 25vw" : "(max-width: 640px) 100vw, (max-width: 768px) 50vw, 25vw"}
+          />
         </span>
         {/* 찜 하트(2026-10-29, 상세에만 있던 찜을 카드에도). 게임 카드와 같은 자리, 같은 부품이다 — 제목 링크의 ::after 가 카드를 덮어 z-10 으로 그 위에 뜬다.
             카드가 아니라 커버 상자 안에 두는 이유: 가로 카드(wide)에서 카드 오른쪽 위는 제목 줄이라 하트가 글자를 가린다 */}
         {/* size="sm" 은 게임 카드와 같다 — md 는 .tap 이 휴대폰에서 높이만 44px 로 키워 원이 세로로 늘어 보였다(2026-11-20) */}
-        <WishHeart kind="indie" slug={post.slug} title={post.title} size="sm" className="absolute right-2 top-2 z-10" />
+        <WishHeart kind="indie" slug={post.slug} title={post.title} size="sm" className={cn("absolute right-2 top-2 z-10", phoneRow && "max-sm:right-1 max-sm:top-1")} />
       </span>
-      <div className={cn("flex min-w-0 flex-1 flex-col gap-1.5 px-1", wide && "sm:py-1")}>
+      <div className={cn("flex min-w-0 flex-1 flex-col gap-1.5 px-1", wide && "sm:py-1", phoneRow && INDIE_ROW_BODY)}>
         <div className="flex min-w-0 items-center gap-1.5">
           {badge}
           {/* 누를 면은 제목 링크의 ::after 다 — 게임 카드와 같은 구조(game-card 주석) */}
@@ -79,7 +93,8 @@ export function IndieCard({
         {/* 목록 카드에는 장르만 — 플랫폼 꼬리표, 개발 단계 딱지는 걷었다(2026-11-16 사용자 "목록 카드 플랫폼 뱃지 제거", 색 줄이기).
             장르 꼬리표도 파랑 면을 걷고 회색 한 톤이다. 파랑은 누르는 것(링크, 할인)의 색이다 */}
         <IndieTagPills platforms={[]} genres={post.genres} />
-        <Clamp lines={2} className="text-[13px] leading-[1.5] text-mut">
+        {/* 가로 줄 카드에서는 소개를 한 줄로 — 두 줄을 허락하면 소개 길이에 따라 줄 높이가 116, 136 으로 갈려 목록이 들쭉날쭉했다 */}
+        <Clamp lines={2} className={cn("text-[13px] leading-[1.5] text-mut", phoneRow && "max-sm:line-clamp-1")}>
           {post.tagline}
         </Clamp>
         {/* 한 줄로 고정한다 — 줄바꿈을 허락하면 만든 사람 이름 길이에 따라 찜 수만 다음 줄로 떨어져 같은 줄 카드끼리 바닥 높이가 달라진다.

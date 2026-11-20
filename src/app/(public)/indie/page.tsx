@@ -156,7 +156,8 @@ export default async function IndiePage({ searchParams }: Props) {
             <ul className={HOME_GRID_CLASS}>
               {result.items.map((post, i) => (
                 <li key={post.slug} className="enter-item" style={stagger(i)}>
-                  <IndieCard post={post} />
+                  {/* 좁은 화면은 가로 줄 카드(IndieCard 의 phoneRow, 2026-11-20 모바일 점검) */}
+                  <IndieCard post={post} phoneRow />
                 </li>
               ))}
             </ul>

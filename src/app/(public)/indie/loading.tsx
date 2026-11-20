@@ -24,7 +24,7 @@ export default function IndieLoading() {
       </div>
       <div className={HOME_GRID_CLASS}>
         {Array.from({ length: SKELETON_CARDS }).map((_, i) => (
-          <IndieCardSkeleton key={i} />
+          <IndieCardSkeleton key={i} phoneRow />
         ))}
       </div>
     </SkeletonPage>

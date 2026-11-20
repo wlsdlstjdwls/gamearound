@@ -9,17 +9,22 @@
 // 목록에서 다시 만났을 때 같은 것인지 알아보려면 제목을 다시 읽어야 했다.
 // 카드는 직접 짜지 않고 GameCard 를 그대로 쓴다 — 손으로 짠 줄 마크업이 카드가 바뀔 때마다
 // 뒤처지던 자리다(장르, 할인 스탬프, 플랫폼 배지가 여기만 없거나 달랐다).
+//
+// 좁은 화면(640 미만)은 목록(/games)의 가로형 카드(GameListCard)다(2026-11-20 모바일 점검). 세로 카드는 390px 에서 한 장이 297px 이라
+// 첫 화면에 둘, 결과 일곱 건을 보려면 화면 네 개 반을 내려야 했다. 목록 화면도 좁은 폭에서는 같은 가로형이라 "같은 게임이 같은 모양" 은 지켜진다.
+// 칸마다 두 카드를 다 그리고 폭으로 하나를 숨긴다(SEARCH_CARD_PHONE, SEARCH_CARD_WIDE) — 숨긴 쪽은 display:none 이라 낭독기에도, 늦게 받는 그림에도 잡히지 않는다.
 import type { Metadata } from "next";
 import { after } from "next/server";
 import { MissingGameRequest } from "@/components/search/missing-request";
 import { SEARCH_MESSAGES as M } from "@/lib/search/messages";
 import { recordSearchMiss } from "@/server/services/search-misses";
 import { GameCard } from "@/components/game-card";
+import { GameListCard } from "@/components/game-list-card";
 import { EmptyState } from "@/components/empty-state";
 import { DbUnavailable } from "@/components/db-unavailable";
 import { nullIfDbUnavailable } from "@/lib/db-errors";
 import { Page, PageHead } from "@/components/ui/page";
-import { HOME_GRID_CLASS } from "@/lib/games/grid";
+import { HOME_GRID_CLASS, SEARCH_CARD_PHONE, SEARCH_CARD_WIDE } from "@/lib/games/grid";
 import { stagger } from "@/lib/motion";
 import { ROUTES } from "@/lib/routes";
 import { searchGames, type GameSummary } from "@/server/services/games";
@@ -137,7 +142,12 @@ export default async function SearchPage({ searchParams }: Props) {
           <ul className={HOME_GRID_CLASS}>
             {results.map((g, i) => (
               <li key={g.slug} className="enter-item" style={stagger(i)}>
-                <GameCard game={g} variant={sort === "release" ? "release" : "discount"} />
+                <div className={SEARCH_CARD_PHONE}>
+                  <GameListCard game={g} variant={sort === "release" ? "release" : "discount"} />
+                </div>
+                <div className={SEARCH_CARD_WIDE}>
+                  <GameCard game={g} variant={sort === "release" ? "release" : "discount"} />
+                </div>
               </li>
             ))}
           </ul>

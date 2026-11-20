@@ -43,3 +43,10 @@ export const HOME_FOUR_GRID_CLASS = `${RAIL_TRACK_CLASS} sm:mx-0 sm:grid sm:grid
 
 /** HOME_FOUR_GRID_CLASS 의 칸. 좁은 화면에서는 넘기는 줄의 칸 폭, sm 부터는 격자 칸이 폭을 정한다 */
 export const HOME_FOUR_ITEM_CLASS = `${RAIL_ITEM_CLASS} sm:w-auto`;
+
+/**
+ * 검색 결과 칸 하나에 두 카드를 두고 폭으로 하나만 세운다(2026-11-20 모바일 점검, search/page 머리 주석).
+ * 좁은 화면(640 미만)은 목록의 가로형 카드(game-list-card), sm 부터는 세로 카드(game-card). 뼈대(search/loading)도 같은 값을 쓴다
+ */
+export const SEARCH_CARD_PHONE = "h-full sm:hidden";
+export const SEARCH_CARD_WIDE = "h-full max-sm:hidden";
