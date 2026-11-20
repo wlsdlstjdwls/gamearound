@@ -25,7 +25,7 @@ function LabelValueRows({ rows, rowClass }: { rows: number; rowClass: string }) 
 export default function SettingsLoading() {
   return (
     <SkeletonPage width="tight" gap={34}>
-      <PageHeadSkeleton width="w-20" />
+      <PageHeadSkeleton menuScreen width="w-20" />
 
       <div className="flex flex-col gap-3.5">
         <SectionHeadSkeleton size="sub" width="w-12" action />

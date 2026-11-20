@@ -11,7 +11,7 @@ export default function WishlistLoading() {
     <SkeletonPage gap={26}>
       <div className="flex flex-wrap items-end justify-between gap-x-6 gap-y-4">
         <div className="flex flex-col gap-1.5">
-          <Bone className="h-[30px] w-36 sm:h-[37px]" />
+          <Bone className="h-[30px] w-36 max-sm:hidden sm:h-[37px]" />
           <Bone className="h-4 w-52" />
         </div>
         <ChipsSkeleton count={2} />

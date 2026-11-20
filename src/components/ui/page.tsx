@@ -176,6 +176,7 @@ export function PageHead({
   action,
   size = "page",
   hideTitle = false,
+  menuScreen = false,
   className,
   style,
   children,
@@ -190,6 +191,12 @@ export function PageHead({
    * 머리띠가 지금 보고 있는 메뉴를 보라색으로 말해 주므로 눈으로 읽는 제목은 같은 말을 두 번 한다.
    */
   hideTitle?: boolean;
+  /**
+   * 메뉴 띠(sub-nav)의 칸 화면이다 — 좁은 화면에서만 제목을 감춘다(2026-11-20 사용자 "모바일에서 각 상단 타이틀은 다 빼자, 메뉴로 표현 되니까").
+   * 그 폭에서는 바로 위 띠의 켜진 칸이 같은 이름을 말해 28px 제목이 첫 화면만 먹었다. hideTitle 과 같은 까닭으로 h1 은 sr-only 로 남긴다.
+   * 제목 줄 껍데기는 display: contents 로 풀어 빈 줄과 그 틈(gap)이 안 남는다 — 설명 문단, 단추는 그대로 선다
+   */
+  menuScreen?: boolean;
   className?: string;
   style?: React.CSSProperties;
   children?: React.ReactNode;
@@ -201,10 +208,10 @@ export function PageHead({
   return (
     // children(설명 문단)은 제목 줄 **아래** 줄에 통째로 눕는다.
     // 같은 flex 행에 두면 제목과 오른쪽 버튼 사이에 문단이 끼어 셋이 한 줄로 읽혔다(2026-09-21).
-    <div className={cn("flex flex-col gap-2.5", className)} style={style}>
-      <div className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-2">
-        <div className="flex min-w-0 flex-wrap items-baseline gap-x-2.5 gap-y-1">
-          <h1 className={hideTitle ? "sr-only" : cn("font-extrabold text-ink", TITLE_SIZE[size])}>{title}</h1>
+    <div className={cn("flex flex-col gap-2.5", menuScreen && !note && !action && !children && "max-sm:contents", className)} style={style}>
+      <div className={cn("flex flex-wrap items-baseline justify-between gap-x-4 gap-y-2", menuScreen && !note && !action && "max-sm:contents")}>
+        <div className={cn("flex min-w-0 flex-wrap items-baseline gap-x-2.5 gap-y-1", menuScreen && !note && "max-sm:contents")}>
+          <h1 className={hideTitle ? "sr-only" : cn("font-extrabold text-ink", TITLE_SIZE[size], menuScreen && "max-sm:sr-only")}>{title}</h1>
           {note && <span className="text-[13.5px] text-mut">{note}</span>}
         </div>
         {/* justify-between 은 한 줄일 때만 오른쪽 끝을 만든다. 좁은 화면에서 줄이 갈리면

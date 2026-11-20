@@ -36,7 +36,7 @@ export function LoungeHomeSkeleton() {
     <SkeletonPage gap={24}>
       <div className="flex flex-col gap-2.5">
         <div className="flex items-center justify-between gap-4">
-          <Bone className="h-[30px] w-36 sm:h-[37px]" />
+          <Bone className="h-[30px] w-36 max-sm:invisible sm:h-[37px]" />
           {/* 좁은 화면은 "글 작성" 하나만 선다(lounge/page 머리). 손가락 기기에서 단추는 44px 이다(390px 실측) */}
           <div className="flex gap-2">
             <Bone className="hidden h-10 w-24 rounded-xl sm:block" />

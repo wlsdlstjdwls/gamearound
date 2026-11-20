@@ -59,17 +59,20 @@ export function PageHeadSkeleton({
   width = "w-48",
   desc = 0,
   action,
+  menuScreen = false,
 }: {
   size?: "page" | "hero";
   width?: string;
   desc?: number;
   /** 오른쪽 끝 단추 자리의 폭 클래스 */
   action?: string;
+  /** 실물 PageHead 의 menuScreen — 좁은 화면에서 제목 자리를 걷는다(단추가 없으면 줄째) */
+  menuScreen?: boolean;
 }) {
   return (
-    <div className="flex flex-col gap-2.5">
-      <div className="flex items-center justify-between gap-4">
-        <Bone className={cn(size === "hero" ? "h-[33px] sm:h-[43px]" : "h-[30px] sm:h-[37px]", width, "max-w-full")} />
+    <div className={cn("flex flex-col gap-2.5", menuScreen && !action && desc === 0 && "max-sm:hidden")}>
+      <div className={cn("flex items-center justify-between gap-4", menuScreen && !action && "max-sm:hidden", menuScreen && action && "max-sm:justify-end")}>
+        <Bone className={cn(size === "hero" ? "h-[33px] sm:h-[43px]" : "h-[30px] sm:h-[37px]", width, "max-w-full", menuScreen && "max-sm:hidden")} />
         {action && <Bone className={cn("h-9 rounded-[9px]", action)} />}
       </div>
       {Array.from({ length: desc }).map((_, i) => (

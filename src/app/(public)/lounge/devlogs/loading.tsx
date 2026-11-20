@@ -3,5 +3,5 @@ import { PostBoardSkeleton } from "@/components/community/skeleton";
 import { LOUNGE_CATEGORIES } from "@/lib/community/constants";
 
 export default function Loading() {
-  return <PostBoardSkeleton menu={LOUNGE_CATEGORIES.length + 1} />;
+  return <PostBoardSkeleton menu={LOUNGE_CATEGORIES.length + 1} menuScreen />;
 }

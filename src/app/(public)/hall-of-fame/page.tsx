@@ -284,7 +284,7 @@ export default async function HallOfFamePage({ searchParams }: Props) {
 
   return (
     <Page gap={20}>
-      <PageHead title={M.hofTitle}>
+      <PageHead menuScreen title={M.hofTitle}>
         <p className="text-[14px] text-mut">{M.hofHeadLead}</p>
       </PageHead>
       <NavPendingScope>

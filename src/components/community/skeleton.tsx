@@ -37,10 +37,10 @@ export function PostRowsSkeleton({ rows }: { rows: number }) {
  * 게시판 목록 한 벌(post-board) — 머리(제목, 설명, 글쓰기 단추), 왼쪽 보조 메뉴 판, 오른쪽 흰 판(판 이름 + 검색, 탭 줄, 목록), 맨 아래 각주.
  * menu: 보조 메뉴 칸 수(전체 글 + 카테고리 수). promoTabs: 홍보 게시판의 유형 칩(전체 + PROMO_TYPES) 자리
  */
-export function PostBoardSkeleton({ menu, promoTabs = 0 }: { menu: number; promoTabs?: number }) {
+export function PostBoardSkeleton({ menu, promoTabs = 0, menuScreen = false }: { menu: number; promoTabs?: number; menuScreen?: boolean }) {
   return (
     <SkeletonPage gap={20}>
-      <PageHeadSkeleton width="w-28" desc={1} action="w-28" />
+      <PageHeadSkeleton width="w-28" desc={1} action="w-28" menuScreen={menuScreen} />
       <div className="grid grid-cols-1 items-start gap-4 lg:grid-cols-[176px_minmax(0,1fr)] lg:gap-5">
         <div className="min-w-0 rounded-[var(--radius-md)] bg-surface p-2 shadow-hair">
           <Bone className="mx-3 mb-1.5 mt-2 hidden h-3.5 w-12 lg:block" />

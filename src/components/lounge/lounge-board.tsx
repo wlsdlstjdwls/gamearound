@@ -21,6 +21,7 @@ export function LoungeBoard({ title, categories, base, query }: { title: string;
       base={base}
       query={query}
       sideFoot={<BoardGuide label={G.open} variant="menu" />}
+      menuScreen
     />
   );
 }

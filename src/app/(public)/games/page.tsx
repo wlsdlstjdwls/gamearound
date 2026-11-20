@@ -178,7 +178,7 @@ export default async function GamesPage({ searchParams }: Props) {
 
   return (
     <Page gap={18}>
-      <PageHead title={query.onSale ? "할인 게임" : "전체 게임"} />
+      <PageHead menuScreen title={query.onSale ? "할인 게임" : "전체 게임"} />
 
       {/* 막대를 누른 순간 막대와 걸린 조건이 새 조건으로 먼저 바뀌고, 목록은 흐려진 채 기다린다(game-filters/optimistic).
           왼쪽 진열대 메뉴는 걷었다(2026-11-16 같은 날 사용자 "필요없다") — 위 막대 하나가 거르는 자리다 */}

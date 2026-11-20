@@ -96,7 +96,7 @@ export default async function IndieMinePage({ searchParams }: Props) {
   return (
     <Page gap={20}>
       <MineTabs current={ROUTES.indieMine} />
-      <PageHead title={RV.title} action={!full && <WriteLink href={ROUTES.indieNew}>{INDIE_MESSAGES.register}</WriteLink>}>
+      <PageHead menuScreen title={RV.title} action={!full && <WriteLink href={ROUTES.indieNew}>{INDIE_MESSAGES.register}</WriteLink>}>
         <p className="text-[14px] text-mut">{RV.lead}</p>
       </PageHead>
       {firstParam(sp.full) && full && <FormMessage tone="info">{M.tooManyPosts(INDIE_POSTS_PER_USER_MAX)}</FormMessage>}

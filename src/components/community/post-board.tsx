@@ -47,6 +47,8 @@ type Props = {
    * 검색, 인기글, 유형 거름 결과 위에 고정 글이 서면 고른 조건과 상관없는 글이 맨 위에 끼어든다
    */
   pinned?: Promise<Array<Featured<PromoPinDto>>>;
+  /** 메뉴 띠의 칸 화면(라운지 게시판)이면 좁은 화면에서 제목을 감춘다(ui/page 의 PageHead menuScreen). 게임 게시판은 메뉴에서 걷어 띠가 없다 */
+  menuScreen?: boolean;
 };
 
 /**
@@ -135,13 +137,13 @@ async function Results({ categories, base, query, pinned }: { categories: readon
   );
 }
 
-export function PostBoard({ title, categories, family, allPath, base, query, sideFoot, pinned }: Props) {
+export function PostBoard({ title, categories, family, allPath, base, query, sideFoot, pinned, menuScreen = false }: Props) {
   const single = categories.length === 1 ? categories[0] : undefined;
   const copy = BOARD_PAGE_COPY[single ?? (isLoungeCategory(family[0]) ? "loungeAll" : "boardAll")];
   const head = single ? `${CATEGORY_LABEL[single]} ${M.boardHeadSuffix}` : M.allPostsHead;
   return (
     <Page gap={20}>
-      <PageHead title={title} action={<WriteLink href={writePath(single)}>{copy.write}</WriteLink>}>
+      <PageHead menuScreen={menuScreen} title={title} action={<WriteLink href={writePath(single)}>{copy.write}</WriteLink>}>
         <p className="text-[14px] text-mut">{copy.lead}</p>
       </PageHead>
       <div className="grid grid-cols-1 items-start gap-4 lg:grid-cols-[176px_minmax(0,1fr)] lg:gap-5">

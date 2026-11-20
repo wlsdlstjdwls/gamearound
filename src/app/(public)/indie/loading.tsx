@@ -11,7 +11,7 @@ export default function IndieLoading() {
   return (
     <SkeletonPage gap={22}>
       <div className="flex flex-col gap-2.5">
-        <Bone className="h-8 w-48" />
+        <Bone className="h-8 w-48 max-sm:hidden" />
         <Bone className="h-4 w-72 max-w-full" />
       </div>
       <Bone className="h-[112px] rounded-[var(--radius-md)] sm:h-[76px]" />

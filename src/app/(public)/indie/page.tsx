@@ -69,7 +69,7 @@ export default async function IndiePage({ searchParams }: Props) {
 
   const head = (
     // "내 게임 등록" 단추는 걷었다(2026-11-16 피드백 v11 #23 "내 게임 등록 중복") — 등록은 개발자 라운지의 내 게임 관리 한 곳에서 한다
-    <PageHead title={M.listTitle}>
+    <PageHead menuScreen title={M.listTitle}>
       <p className="text-[14px] text-mut">{M.lead}</p>
     </PageHead>
   );

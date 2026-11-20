@@ -26,7 +26,7 @@ export default async function RookiesPage() {
   const rookies = await nullIfDbUnavailable(listRookies());
   return (
     <Page gap={22}>
-      <PageHead title={M.rookieTitle}>
+      <PageHead menuScreen title={M.rookieTitle}>
         <p className="text-[14px] text-mut">{M.rookieLead}</p>
       </PageHead>
       {!rookies ? (

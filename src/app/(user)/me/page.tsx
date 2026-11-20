@@ -45,7 +45,7 @@ export default async function MePage({ searchParams }: Props) {
     // 간격과 프로필 판 여백을 한 단씩 줄였다(2026-10-28 사용자 "화면이 꽉 찼는데 스크롤이 생긴다") — 1536x864 에서
     // 저장한 글 탭이 화면보다 5px 길어 스크롤이 섰다. 사진은 키운 채 두고 판 안팎의 빈 띠만 걷는다
     <Page gap={18}>
-      <PageHead title={M.title} />
+      <PageHead menuScreen title={M.title} />
       <section className="max-w-[var(--page-w-tight)] rounded-[var(--radius-panel)] bg-surface p-4 shadow-hair sm:p-5">
         <AvatarEditor userId={user.id} name={name} initialUrl={user.avatarUrl} />
       </section>

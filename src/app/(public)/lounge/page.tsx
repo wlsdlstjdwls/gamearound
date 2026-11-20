@@ -67,7 +67,7 @@ export default async function LoungeHomePage() {
 
   return (
     <Page gap={24}>
-      <PageHead
+      <PageHead menuScreen
         title={L.title}
         action={
           // "내 게임 관리" 단추를 글 작성 옆에 되살렸다(2026-11-16 피드백 v11 #26 목업 "하위 탭 + 내 게임 관리 버튼"). 등록은 이 길 한 곳이다(#23)

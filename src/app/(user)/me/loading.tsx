@@ -8,7 +8,7 @@ const SKELETON_ROWS = 8; // 한 쪽 20줄 중 첫 화면에 보이는 만큼
 export default function MeLoading() {
   return (
     <SkeletonPage gap={18}>
-      <PageHeadSkeleton width="w-24" />
+      <PageHeadSkeleton menuScreen width="w-24" />
       <div className="max-w-[var(--page-w-tight)] rounded-[var(--radius-panel)] bg-surface p-4 shadow-hair sm:p-5">
         <div className="flex items-center gap-5">
           <Bone className="size-24 shrink-0 rounded-full sm:size-28" />

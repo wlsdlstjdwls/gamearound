@@ -6,7 +6,7 @@ const SKELETON_ROWS = 8; // 첫 화면에 보이는 만큼
 export default function NotificationsLoading() {
   return (
     <SkeletonPage gap={22}>
-      <PageHeadSkeleton width="w-24" />
+      <PageHeadSkeleton menuScreen width="w-24" />
       <div className="flex flex-col divide-y divide-line-soft overflow-hidden rounded-[var(--radius-panel)] bg-surface shadow-hair">
         {Array.from({ length: SKELETON_ROWS }).map((_, i) => (
           <div key={i} className="flex items-center gap-3.5 px-4 py-3.5 sm:px-5">

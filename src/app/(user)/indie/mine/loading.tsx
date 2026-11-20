@@ -6,7 +6,7 @@ const SKELETON_ROWS = 3; // 한 사람이 올리는 글은 몇 개 안 된다(IN
 export default function IndieMineLoading() {
   return (
     <SkeletonPage width="tight" gap={18}>
-      <PageHeadSkeleton width="w-40" action="w-28" />
+      <PageHeadSkeleton menuScreen width="w-40" action="w-28" />
       <RowsSkeleton
         rows={SKELETON_ROWS}
         renderRow={() => (

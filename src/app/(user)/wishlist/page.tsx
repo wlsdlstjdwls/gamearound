@@ -92,7 +92,7 @@ export default async function WishlistPage({ searchParams }: Props) {
       <NavPendingScope>
       <header className="flex flex-wrap items-end justify-between gap-x-6 gap-y-4">
         <div>
-          <PageHead title={WISHLIST_MESSAGES.title} />
+          <PageHead menuScreen title={WISHLIST_MESSAGES.title} />
           <p className="mt-1.5 text-[13.5px] text-mut">
             {/* 빈 목록에 "0개 중 0개가 지금 할인 중이에요" 는 말이 안 된다(2026-10-30 390폭 점검) — 담긴 게 있을 때만 센다 */}
             {items.length > 0 && (

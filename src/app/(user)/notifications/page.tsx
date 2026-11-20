@@ -44,7 +44,7 @@ export default async function NotificationsPage({ searchParams }: { searchParams
   return (
     <Page gap={22}>
       <NavPendingScope>
-        <PageHead title={M.pageTitle} note={total > 0 ? M.pageNote(total, unread) : undefined} />
+        <PageHead menuScreen title={M.pageTitle} note={total > 0 ? M.pageNote(total, unread) : undefined} />
         <PendingRegion>
           {items.length === 0 ? (
             <EmptyState icon={<span className="bell-ring"><BellIcon size={20} /></span>} title={M.empty} description={M.pageEmptyBody} action={{ href: ROUTES.game, label: M.pageEmptyAction }} />

@@ -57,7 +57,7 @@ export default async function SettingsPage() {
 
   return (
     <Page gap={20}>
-      <PageHead title="설정" />
+      <PageHead menuScreen title="설정" />
 
       <div className="grid items-start gap-5 lg:grid-cols-[300px_minmax(0,1fr)]">
         {/* 나 — 프로필 판. 넓은 화면에서는 오른쪽을 읽는 동안 따라 내려온다 */}

@@ -68,7 +68,8 @@ export function FiltersSkeleton({ filter }: { filter: GamesQuery }) {
  *   막대: 좁은 화면 164(칸이 세 줄), sm 112(두 줄), lg 64(한 줄). 칩 줄: 손가락 크기 칩이 두 줄인 좁은 화면 96, 그 위 33
  */
 export function ListTitleSkeleton() {
-  return <div aria-hidden className="skeleton h-7 w-36 rounded-lg sm:h-8" />;
+  // 좁은 화면은 제목을 감춘다(PageHead menuScreen) — 뼈대도 그 폭에서 걷는다
+  return <div aria-hidden className="skeleton h-7 w-36 rounded-lg max-sm:hidden sm:h-8" />;
 }
 
 /** chips: "요즘 많이 찾는 장르" 줄까지. 출시 예정 막대는 그 줄을 걷었다(upcoming/page) */

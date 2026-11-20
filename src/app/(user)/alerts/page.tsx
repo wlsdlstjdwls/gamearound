@@ -80,7 +80,7 @@ export default async function AlertsPage({ searchParams }: { searchParams: Promi
 
   return (
     <Page gap={26}>
-      <PageHead
+      <PageHead menuScreen
         title={M.title}
         action={
           pushCount > 0 ? (

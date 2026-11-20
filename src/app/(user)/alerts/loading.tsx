@@ -10,7 +10,7 @@ const SKELETON_ROWS = 4;
 export default function AlertsLoading() {
   return (
     <SkeletonPage gap={26}>
-      <PageHeadSkeleton width="w-24" action="w-28 rounded-full" />
+      <PageHeadSkeleton menuScreen width="w-24" action="w-28 rounded-full" />
 
       <div className="grid grid-cols-3 gap-2.5">
         {Array.from({ length: STATS }).map((_, i) => (
