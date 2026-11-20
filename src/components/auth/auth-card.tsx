@@ -131,8 +131,10 @@ export function AuthCard({
           {children}
         </Panel>
 
-        {/* 좁은 화면에서는 셋째 줄. 넓은 화면에서만 왼쪽 칸 둘째 줄로 올라가 카피 아래에 붙는다 */}
-        <ul className="reveal row-start-3 flex flex-col gap-3 lg:col-start-1 lg:row-start-2 lg:self-start" style={stagger(2)}>
+        {/* 좁은 화면에서는 셋째 줄. 넓은 화면에서만 왼쪽 칸 둘째 줄로 올라가 카피 아래에 붙는다.
+            바닥 탭바가 서는 폭(650 까지)에서는 숨긴다(2026-11-20 점검) — 폼 아래 소개 목록과 알림 미리 보기가 첫 화면 끝에서 탭바 밑에 깔려
+            반쯤 가렸고, 로그인하러 온 사람에게는 읽을 이유가 적다. 화면 정체성은 위 제목 블록이 말한다 */}
+        <ul className="reveal row-start-3 flex flex-col gap-3 max-tab:hidden lg:col-start-1 lg:row-start-2 lg:self-start" style={stagger(2)}>
           {LEAD_POINTS.map((point, i) => (
             <li key={point.text} className="enter-item flex items-center gap-3 text-[13.5px] text-ink-2" style={stagger(i + 3)}>
               <span aria-hidden className="grid size-8 shrink-0 place-items-center rounded-full bg-acc-soft text-acc">
