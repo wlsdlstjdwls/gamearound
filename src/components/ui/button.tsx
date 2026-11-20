@@ -7,7 +7,7 @@ import { cn } from "@/lib/cn";
 import { SpinnerIcon } from "@/components/ui/icons";
 
 export type ButtonVariant = "primary" | "accent" | "tint" | "picked" | "soft" | "secondary" | "ghost" | "danger";
-export type ButtonSize = "sm" | "md" | "lg" | "row";
+export type ButtonSize = "sm" | "md" | "lg" | "row" | "head";
 
 /*
  * 2026-09-22 — "버튼이 전체적으로 밋밋하다"(사용자). 두 갈래를 더했다.
@@ -50,6 +50,11 @@ const SIZE: Record<ButtonSize, string> = {
   lg: "h-[46px] px-5 text-[14px] rounded-xl",
   /** 값 표의 줄 안에 서는 크기. 줄 높이(15px 패딩 + 값)를 안 키우려고 md 보다 4px 낮다 */
   row: "tap h-9 px-[15px] text-[13px] rounded-xl",
+  /**
+   * 메뉴 화면 머리의 글쓰기 단추(PageHead menuScreen). 좁은 화면은 36px 로 얇게 서고 44px 은 덧면(tap-inset)이 준다 —
+   * tap 으로 상자째 키우면 설명 문구 옆 한 줄에서 꽉 찬 파랑 44px 이 두꺼웠다(2026-11-20 사용자 "글작성 버튼이 너무 두껍다"). 넓은 화면은 md 와 같다
+   */
+  head: "tap-inset h-9 px-3.5 text-[13px] sm:h-10 sm:px-4 sm:text-[13.5px]",
 };
 
 export function buttonClass(opts: { variant?: ButtonVariant; size?: ButtonSize; fullWidth?: boolean; className?: string } = {}): string {

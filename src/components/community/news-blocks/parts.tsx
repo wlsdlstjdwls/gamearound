@@ -51,11 +51,12 @@ export function EmptyRow({ title, lead }: { title: string; lead: string }) {
  * 딱지 줄 — 줄 성격 딱지, 관련 게임, 카테고리, 지난 시간(목업 hotRow, waitRow 의 "게임 이름 + 카테고리").
  * 게임 이름이 길면 그것만 잘린다 — 카테고리와 시간은 짧고 늘 읽혀야 한다.
  */
-export function MetaLine({ flag, post, now }: { flag?: React.ReactNode; post: PostRowDto; now: number }) {
+/** phoneQuiet: 좁은 화면에서 게임 이름도 회색 한 톤으로 내린다 — 급상승 줄은 그 폭에서 제목이 주인공이라 굵은 게임 이름이 제목과 다퉜다(lists 의 RisingBlock) */
+export function MetaLine({ flag, post, now, phoneQuiet = false }: { flag?: React.ReactNode; post: PostRowDto; now: number; phoneQuiet?: boolean }) {
   return (
     <span className="flex min-w-0 items-center gap-2 text-[12px] text-dim">
       {flag}
-      {post.game && <span className="min-w-0 truncate font-semibold text-ink-2">{post.game.title}</span>}
+      {post.game && <span className={cn("min-w-0 truncate font-semibold text-ink-2", phoneQuiet && "max-sm:font-normal max-sm:text-dim")}>{post.game.title}</span>}
       <span className={post.game ? "shrink-0" : "truncate"}>{CATEGORY_LABEL[post.category]}</span>
       <span className="shrink-0">{formatAgo(post.createdAt, now)}</span>
     </span>
@@ -69,7 +70,7 @@ export function TitleLine({ post, awaiting = true }: { post: PostRowDto; awaitin
     // "1인 개발 3개월 차, 전투 시스템 갈아엎은 ..." 처럼 글의 요점이 잘려 줄마다 무슨 글인지 안 읽혔다. 딱지는 첫 줄에 붙는다(items-start)
     <span className="flex min-w-0 items-start gap-1.5 sm:items-center">
       <PostTags post={post} showCategory={false} awaiting={awaiting} />
-      <span className="line-clamp-2 min-w-0 text-[15.5px] font-bold leading-[1.4] tracking-[-0.02em] text-ink group-hover:text-acc sm:line-clamp-1">{post.title}</span>
+      <span className="line-clamp-2 min-w-0 text-[16px] font-bold sm:text-[15.5px] leading-[1.4] tracking-[-0.02em] text-ink group-hover:text-acc sm:line-clamp-1">{post.title}</span>
     </span>
   );
 }

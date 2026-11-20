@@ -11,6 +11,7 @@ import { FormSelect, Select } from "@/components/ui/select";
 import { POPULAR_PERIODS, POPULAR_PERIOD_LABEL, PROMO_TYPES, PROMO_TYPE_LABEL, SEARCH_SCOPES, SEARCH_SCOPE_LABEL, type SearchScope } from "@/lib/community/constants";
 import { COMMUNITY_MESSAGES as M } from "@/lib/community/messages";
 import { boardHref, type BoardQuery } from "@/lib/community/query";
+import { cn } from "@/lib/cn";
 
 export function BoardControls({
   base,
@@ -18,6 +19,7 @@ export function BoardControls({
   promoTabs = false,
   head,
   popularLead,
+  phoneLight = false,
 }: {
   base: string;
   query: BoardQuery;
@@ -26,6 +28,11 @@ export function BoardControls({
   head?: React.ReactNode;
   /** 인기글 탭일 때 탭 아래 한 줄("최근 7일 동안 ...") */
   popularLead?: string | null;
+  /**
+   * 메뉴 화면(라운지 게시판)의 좁은 폭에서 검색 단추를 걷는다(2026-11-20 사용자 "각 게시판도 UI/UX 개선") — 범위 칸, 검색칸, 꽉 찬 파랑 단추가
+   * 한 줄에 서서 목록보다 먼저 눈에 걸렸다. 검색칸은 type=search 라 휴대폰 자판의 검색 키(엔터)로 보낸다
+   */
+  phoneLight?: boolean;
 }) {
   const router = useRouter();
   const [, start] = useTransition();
@@ -70,7 +77,7 @@ export function BoardControls({
               className="min-w-0 flex-1 bg-transparent text-[16px] text-ink outline-none placeholder:text-dim"
             />
           </span>
-          <button type="submit" className="press tap h-10 shrink-0 rounded-xl bg-acc px-4 text-[14px] font-semibold text-on-ink hover:bg-acc-hover">
+          <button type="submit" className={cn("press tap h-10 shrink-0 rounded-xl bg-acc px-4 text-[14px] font-semibold text-on-ink hover:bg-acc-hover", phoneLight && "max-sm:hidden")}>
             {M.search}
           </button>
         </form>

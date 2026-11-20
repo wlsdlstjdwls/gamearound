@@ -40,9 +40,10 @@ export function PostRowsSkeleton({ rows }: { rows: number }) {
 export function PostBoardSkeleton({ menu, promoTabs = 0, menuScreen = false }: { menu: number; promoTabs?: number; menuScreen?: boolean }) {
   return (
     <SkeletonPage gap={20}>
-      <PageHeadSkeleton width="w-28" desc={1} action="w-28" menuScreen={menuScreen} />
+      <PageHeadSkeleton width="w-28" desc={1} action="w-28" menuScreen={menuScreen} leadRow />
+      {/* 메뉴 화면(라운지)의 좁은 폭은 실물처럼 판 두 겹을 걷는다(post-board 주석): 보조 메뉴는 판 없는 칩 줄, 목록은 바탕에 바로, 검색 단추 없음 */}
       <div className="grid grid-cols-1 items-start gap-4 lg:grid-cols-[176px_minmax(0,1fr)] lg:gap-5">
-        <div className="min-w-0 rounded-[var(--radius-md)] bg-surface p-2 shadow-hair">
+        <div className={cn("min-w-0 rounded-[var(--radius-md)] bg-surface p-2 shadow-hair", menuScreen && "max-sm:-mx-1 max-sm:bg-transparent max-sm:p-0 max-sm:shadow-none")}>
           <Bone className="mx-3 mb-1.5 mt-2 hidden h-3.5 w-12 lg:block" />
           <div className="flex gap-1 overflow-hidden lg:flex-col">
             {Array.from({ length: menu }).map((_, i) => (
@@ -52,14 +53,14 @@ export function PostBoardSkeleton({ menu, promoTabs = 0, menuScreen = false }: {
           {/* 맨 아래 "게시판 이용 안내" 줄 */}
           <Bone className="mt-1 hidden h-10 w-full rounded-lg lg:block" />
         </div>
-        <div className="flex min-w-0 flex-col gap-4 rounded-[var(--radius-md)] bg-surface p-4 shadow-hair sm:p-5">
+        <div className={cn("flex min-w-0 flex-col gap-4 rounded-[var(--radius-md)] bg-surface p-4 shadow-hair sm:p-5", menuScreen && "max-sm:bg-transparent max-sm:p-0 max-sm:shadow-none")}>
           <div className="flex flex-col gap-3">
             <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
               <Bone className="h-5 w-40" />
               <div className="flex items-center gap-1.5">
                 <Bone className="h-10 w-[92px] shrink-0 rounded-xl" />
                 <Bone className="h-10 min-w-0 flex-1 rounded-xl md:w-[240px] md:flex-none" />
-                <Bone className="h-10 w-[60px] shrink-0 rounded-xl" />
+                <Bone className={cn("h-10 w-[60px] shrink-0 rounded-xl", menuScreen && "max-sm:hidden")} />
               </div>
             </div>
             <div className="flex flex-wrap items-center gap-x-3 gap-y-2 border-b border-line-soft pb-3">
@@ -79,6 +80,8 @@ export function PostBoardSkeleton({ menu, promoTabs = 0, menuScreen = false }: {
           <PostRowsSkeleton rows={BOARD_SKELETON_ROWS} />
         </div>
       </div>
+      {/* 좁은 폭의 메뉴 화면은 이용 안내 링크가 각주 위로 내려온다(실측 44px 줄) */}
+      {menuScreen && <Bone className="h-11 w-36 rounded-lg sm:hidden" />}
       <Bone className="h-3.5 w-72 max-w-full" />
     </SkeletonPage>
   );

@@ -24,7 +24,7 @@ import { WriteLink } from "@/components/community/write-link";
 import { BoardGuide } from "@/components/lounge/board-guide";
 import { DbUnavailable } from "@/components/db-unavailable";
 import { buttonClass } from "@/components/ui/button";
-import { Page, PageHead } from "@/components/ui/page";
+import { Page, PageHead, PageLead } from "@/components/ui/page";
 import { LOUNGE_CATEGORIES, writePath } from "@/lib/community/constants";
 import { COMMUNITY_MESSAGES as M } from "@/lib/community/messages";
 import { nullIfDbUnavailable } from "@/lib/db-errors";
@@ -67,7 +67,7 @@ export default async function LoungeHomePage() {
 
   return (
     <Page gap={24}>
-      <PageHead menuScreen
+      <PageHead menuScreen leadRow
         title={L.title}
         action={
           // "내 게임 관리" 단추를 글 작성 옆에 되살렸다(2026-11-16 피드백 v11 #26 목업 "하위 탭 + 내 게임 관리 버튼"). 등록은 이 길 한 곳이다(#23)
@@ -80,11 +80,11 @@ export default async function LoungeHomePage() {
                 {L.myGamesButton}
               </Link>
             </span>
-            <WriteLink href={writePath("devlog")}>{L.write}</WriteLink>
+            <WriteLink href={writePath("devlog")} size="head">{L.write}</WriteLink>
           </div>
         }
       >
-        <p className="text-[14px] text-mut">{L.lead}</p>
+        <PageLead>{L.lead}</PageLead>
       </PageHead>
       {!loaded ? (
         <DbUnavailable retryHref={ROUTES.lounge} />

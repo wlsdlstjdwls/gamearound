@@ -4,6 +4,7 @@
 //
 // 860 짜리 한 칸(narrow)을 지웠다(2026-09-21): 알림 하나만 그 폭을 쓰고 있었는데, 목록과 위시리스트를
 // 오가다 알림에 들어오면 본문이 혼자 좁아져 화면이 한 번 흔들렸다. 폭이 다르면 다른 이유가 있어야 한다.
+import { Clamp } from "@/components/ui/tooltip";
 import { cn } from "@/lib/cn";
 
 export type PageWidth = "default" | "read" | "tight" | "wide";
@@ -177,6 +178,7 @@ export function PageHead({
   size = "page",
   hideTitle = false,
   menuScreen = false,
+  leadRow = false,
   className,
   style,
   children,
@@ -197,6 +199,11 @@ export function PageHead({
    * 제목 줄 껍데기는 display: contents 로 풀어 빈 줄과 그 틈(gap)이 안 남는다 — 설명 문단, 단추는 그대로 선다
    */
   menuScreen?: boolean;
+  /**
+   * menuScreen 에서 좁은 화면일 때 설명(children)과 단추(action)를 한 줄에 세운다. 설명은 PageLead 한 줄로 준다.
+   * 부르는 쪽이 고른다 — 설명이 두 문단인 화면(가격 알림)까지 한 줄로 끌려오지 않게
+   */
+  leadRow?: boolean;
   className?: string;
   style?: React.CSSProperties;
   children?: React.ReactNode;
@@ -204,22 +211,46 @@ export function PageHead({
   // 제목만 있고 감춘 화면은 껍데기를 세우지 않는다 — 빈 div 하나가 페이지 간격(gap)을 한 칸 더 먹는다.
   // sr-only 는 absolute 라 flex 칸을 차지하지 않는다(그래서 이 한 줄만 남기면 간격이 안 생긴다)
   if (hideTitle && !note && !action && !children) return <h1 className="sr-only">{title}</h1>;
+  const inline = Boolean(menuScreen && leadRow && !note && action && children);
 
   return (
     // children(설명 문단)은 제목 줄 **아래** 줄에 통째로 눕는다.
     // 같은 flex 행에 두면 제목과 오른쪽 버튼 사이에 문단이 끼어 셋이 한 줄로 읽혔다(2026-09-21).
-    <div className={cn("flex flex-col gap-2.5", menuScreen && !note && !action && !children && "max-sm:contents", className)} style={style}>
-      <div className={cn("flex flex-wrap items-baseline justify-between gap-x-4 gap-y-2", menuScreen && !note && !action && "max-sm:contents")}>
+    // 메뉴 화면에 단추와 설명이 함께 있으면(라운지 홈, 라운지 게시판, 내 게임 관리) 좁은 화면에서 둘을 한 줄에 세운다
+    // (2026-11-20 사용자 "상단 글이랑 글작성 버튼은 한 행에"). 제목이 sr-only 로 빠지면 단추 혼자 한 줄을 먹고 설명이 그 아래로 처졌다.
+    // 제목 줄 껍데기를 contents 로 풀고 단추를 뒤로 보낸다. 설명은 부르는 쪽이 PageLead(한 줄로 자르고 잘리면 말풍선)로 준다
+    <div
+      className={cn(
+        "flex flex-col gap-2.5",
+        menuScreen && !note && !action && !children && "max-sm:contents",
+        inline && "max-sm:flex-row max-sm:items-center max-sm:gap-3",
+        className,
+      )}
+      style={style}
+    >
+      <div className={cn("flex flex-wrap items-baseline justify-between gap-x-4 gap-y-2", ((menuScreen && !note && !action) || inline) && "max-sm:contents")}>
         <div className={cn("flex min-w-0 flex-wrap items-baseline gap-x-2.5 gap-y-1", menuScreen && !note && "max-sm:contents")}>
           <h1 className={hideTitle ? "sr-only" : cn("font-extrabold text-ink", TITLE_SIZE[size], menuScreen && "max-sm:sr-only")}>{title}</h1>
           {note && <span className="text-[13.5px] text-mut">{note}</span>}
         </div>
         {/* justify-between 은 한 줄일 때만 오른쪽 끝을 만든다. 좁은 화면에서 줄이 갈리면
             혼자 남은 이 조각이 왼쪽에 붙어 제목 아래 들여쓴 것처럼 보였다 — ml-auto 가 두 경우를 같게 만든다 */}
-        {action && <div className="ml-auto">{action}</div>}
+        {action && <div className={cn("ml-auto", inline && "max-sm:order-last max-sm:shrink-0")}>{action}</div>}
       </div>
-      {children}
+      {inline ? <div className="min-w-0 max-sm:flex-1">{children}</div> : children}
     </div>
+  );
+}
+
+/**
+ * 머리 설명 한 줄(PageHead 의 children). 메뉴 화면의 좁은 폭에서는 글쓰기 단추와 한 줄에 서므로 한 줄로 자르고, 잘렸을 때만 전체 문구를 말풍선으로 띄운다(ui/tooltip).
+ * 넓은 화면은 예전처럼 줄을 바꿔 다 보인다
+ */
+export function PageLead({ children }: { children: string }) {
+  return (
+    <Clamp lines={1} className="text-[14px] text-mut sm:whitespace-normal">
+      {children}
+    </Clamp>
   );
 }
 

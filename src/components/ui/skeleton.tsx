@@ -60,6 +60,7 @@ export function PageHeadSkeleton({
   desc = 0,
   action,
   menuScreen = false,
+  leadRow = false,
 }: {
   size?: "page" | "hero";
   width?: string;
@@ -68,15 +69,31 @@ export function PageHeadSkeleton({
   action?: string;
   /** 실물 PageHead 의 menuScreen — 좁은 화면에서 제목 자리를 걷는다(단추가 없으면 줄째) */
   menuScreen?: boolean;
+  /**
+   * 실물 PageHead 의 leadRow — 좁은 화면에서 설명 한 줄과 단추(head 크기 36px)가 한 줄에 선다.
+   * 넓은 화면 설명 줄은 PageLead 한 줄 높이 24px 다(2026-11-20 1440 실측: 머리 71 = 제목 37 + 10 + 24)
+   */
+  leadRow?: boolean;
 }) {
+  const inline = menuScreen && leadRow && Boolean(action) && desc > 0;
   return (
-    <div className={cn("flex flex-col gap-2.5", menuScreen && !action && desc === 0 && "max-sm:hidden")}>
-      <div className={cn("flex items-center justify-between gap-4", menuScreen && !action && "max-sm:hidden", menuScreen && action && "max-sm:justify-end")}>
+    <div className={cn("flex flex-col gap-2.5", menuScreen && !action && desc === 0 && "max-sm:hidden", inline && "max-sm:flex-row max-sm:items-center max-sm:gap-3")}>
+      <div
+        className={cn(
+          "flex items-center justify-between gap-4",
+          menuScreen && !action && "max-sm:hidden",
+          menuScreen && action && !inline && "max-sm:justify-end",
+          inline && "max-sm:contents",
+        )}
+      >
         <Bone className={cn(size === "hero" ? "h-[33px] sm:h-[43px]" : "h-[30px] sm:h-[37px]", width, "max-w-full", menuScreen && "max-sm:hidden")} />
-        {action && <Bone className={cn("h-9 rounded-[9px]", action)} />}
+        {action && <Bone className={cn("rounded-[9px]", inline ? "h-9 max-sm:order-last max-sm:shrink-0 sm:h-10" : "h-9", action)} />}
       </div>
       {Array.from({ length: desc }).map((_, i) => (
-        <Bone key={i} className={cn("h-4 max-w-full", i === desc - 1 ? "w-[260px]" : "w-[420px]")} />
+        <Bone
+          key={i}
+          className={cn(inline ? "h-4 max-sm:min-w-0 max-sm:flex-1 sm:h-6" : "h-4", "max-w-full", i === desc - 1 ? "w-[260px]" : "w-[420px]")}
+        />
       ))}
     </div>
   );
