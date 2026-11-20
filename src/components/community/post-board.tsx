@@ -48,9 +48,25 @@ type Props = {
    * 검색, 인기글, 유형 거름 결과 위에 고정 글이 서면 고른 조건과 상관없는 글이 맨 위에 끼어든다
    */
   pinned?: Promise<Array<Featured<PromoPinDto>>>;
-  /** 메뉴 띠의 칸 화면(라운지 게시판)이면 좁은 화면에서 제목을 감춘다(ui/page 의 PageHead menuScreen). 게임 게시판은 메뉴에서 걷어 띠가 없다 */
+  /**
+   * 메뉴 띠의 칸 화면(라운지 게시판)이면 좁은 화면에서 제목을 감춘다(ui/page 의 PageHead menuScreen). 게임 게시판은 메뉴에서 걷어 띠가 없다.
+   * 이 화면은 안쪽 Suspense(보조 메뉴, 글 수, 목록)도 두지 않는다(2026-11-20 사용자 "각 탭 누를 때마다 화면 깜빡이네").
+   * 게시판마다 경로가 달라 안쪽 경계가 이동마다 새로 붙고, 새로 붙은 경계는 전환 중에도 대체 화면(회색 막대, 480px 회색 판)을 그린다 —
+   * 390px 실측: 누르고 200ms 뒤 글 줄 0, 600ms 뒤 다시 8. 경계를 걷으면 기다림은 묶음의 loading 경계(app/(public)/lounge/(boards)/loading)로 올라가고,
+   * 그 경계는 게시판 사이 이동에서 이미 붙어 있어 앞 화면이 남는다. 같은 게시판 안의 탭, 검색은 NavPendingScope 가 목록을 흐리게 둔다
+   */
   menuScreen?: boolean;
 };
+
+/** 안쪽 기다림 경계 — 메뉴 화면은 두지 않는다(Props.menuScreen 주석) */
+function Hold({ on, fallback, holdKey, children }: { on: boolean; fallback: React.ReactNode; holdKey?: string; children: React.ReactNode }) {
+  if (!on) return <>{children}</>;
+  return (
+    <Suspense key={holdKey} fallback={fallback}>
+      {children}
+    </Suspense>
+  );
+}
 
 /**
  * 목록 질의 한 번. 머리 줄 글 수와 목록이 같은 결과를 나눠 쓴다(요청 하나 안에서만 산다).
@@ -126,8 +142,7 @@ export function PostBoard({ title, categories, family, allPath, base, query, sid
   return (
     <Page gap={20}>
       <PageHead menuScreen={menuScreen} leadRow title={title} action={<WriteLink href={writePath(single)} size={menuScreen ? "head" : "md"}>{copy.write}</WriteLink>}>
-        {/* 메뉴 화면(라운지)만 좁은 폭에서 단추와 한 줄로 서며 한 줄로 잘린다. 게임 게시판은 예전 그대로 문단이다 */}
-        {menuScreen ? <PageLead>{copy.lead}</PageLead> : <p className="text-[14px] text-mut">{copy.lead}</p>}
+        <PageLead>{copy.lead}</PageLead>
       </PageHead>
       <div className="grid grid-cols-1 items-start gap-4 lg:grid-cols-[176px_minmax(0,1fr)] lg:gap-5">
         {/* 메뉴 화면(라운지)의 좁은 폭은 판 두 겹을 걷는다(2026-11-20 사용자 "각 게시판도 UI/UX 개선"). 보조 메뉴 판과 목록 판이 흰 판 두 장으로 쌓이고
@@ -141,9 +156,9 @@ export function PostBoard({ title, categories, family, allPath, base, query, sid
           )}
         >
           <p className="hidden px-3 pb-1.5 pt-2 text-[11.5px] font-bold tracking-[0.06em] text-dim lg:block">{M.boardSideLabel}</p>
-          <Suspense fallback={<Bone className="h-10 w-full" />}>
+          <Hold on={!menuScreen} fallback={<Bone className="h-10 w-full" />}>
             <SideMenu family={family} allPath={allPath} current={base} />
-          </Suspense>
+          </Hold>
           <div className={cn(menuScreen && "max-sm:hidden")}>{sideFoot ?? <BoardGuide label={G.open} variant="menu" lounge={false} />}</div>
         </nav>
         <NavPendingScope>
@@ -160,14 +175,14 @@ export function PostBoard({ title, categories, family, allPath, base, query, sid
               phoneLight={menuScreen}
               popularLead={query.tab === "popular" ? M.popularLead(POPULAR_PERIOD_LABEL[query.period]) : null}
               head={
-                <Suspense key={JSON.stringify(query)} fallback={<span className="text-[15px] font-extrabold text-ink">{head}</span>}>
+                <Hold on={!menuScreen} holdKey={JSON.stringify(query)} fallback={<span className="text-[15px] font-extrabold text-ink">{head}</span>}>
                   <BoardCount categories={categories} query={query} head={head} base={base} />
-                </Suspense>
+                </Hold>
               }
             />
-            <Suspense key={JSON.stringify(query)} fallback={<Bone className="h-[480px] w-full" />}>
+            <Hold on={!menuScreen} holdKey={JSON.stringify(query)} fallback={<Bone className="h-[480px] w-full" />}>
               <Results categories={categories} base={base} query={query} pinned={pinned} />
-            </Suspense>
+            </Hold>
           </section>
         </NavPendingScope>
       </div>

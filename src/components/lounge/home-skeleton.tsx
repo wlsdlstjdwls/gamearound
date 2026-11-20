@@ -37,7 +37,7 @@ export function LoungeHomeSkeleton() {
   return (
     <SkeletonPage gap={24}>
       {/* 머리는 실물(lounge/page 의 PageHead menuScreen leadRow)과 같다: 좁은 폭은 설명 한 줄 + "글 작성"(36px) 한 줄, 넓은 폭은 제목 + 단추 둘 + 설명 */}
-      <div className="flex flex-col gap-2.5 max-sm:flex-row max-sm:items-center max-sm:gap-3">
+      <div className="flex flex-col gap-2.5 max-sm:flex-row max-sm:items-start max-sm:gap-3">
         <div className="flex items-center justify-between gap-4 max-sm:contents">
           <Bone className="h-[30px] w-36 max-sm:hidden sm:h-[37px]" />
           <div className="flex gap-2 max-sm:order-last max-sm:shrink-0">
@@ -45,7 +45,15 @@ export function LoungeHomeSkeleton() {
             <Bone className="h-9 w-[87px] rounded-xl sm:h-10 sm:w-24" />
           </div>
         </div>
-        <Bone className="h-4 w-[420px] max-w-full max-sm:min-w-0 max-sm:flex-1 sm:h-6" />
+        {/* 설명은 390px 에서 두 줄로 꺾인다(실측 머리 51 = 7 + 22 x 2). 넓은 화면은 한 줄 24px */}
+        <div className="flex min-w-0 flex-col max-sm:flex-1 max-sm:pt-[7px]">
+          <span className="flex h-[22px] items-center sm:h-6">
+            <Bone className="h-4 w-full max-w-full sm:w-[420px]" />
+          </span>
+          <span className="flex h-[22px] items-center sm:hidden">
+            <Bone className="h-4 w-3/5" />
+          </span>
+        </div>
       </div>
 
       <div className="grid items-start gap-6 lg:grid-cols-[minmax(0,1fr)_380px]">

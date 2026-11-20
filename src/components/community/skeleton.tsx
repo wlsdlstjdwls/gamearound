@@ -37,10 +37,11 @@ export function PostRowsSkeleton({ rows }: { rows: number }) {
  * 게시판 목록 한 벌(post-board) — 머리(제목, 설명, 글쓰기 단추), 왼쪽 보조 메뉴 판, 오른쪽 흰 판(판 이름 + 검색, 탭 줄, 목록), 맨 아래 각주.
  * menu: 보조 메뉴 칸 수(전체 글 + 카테고리 수). promoTabs: 홍보 게시판의 유형 칩(전체 + PROMO_TYPES) 자리
  */
-export function PostBoardSkeleton({ menu, promoTabs = 0, menuScreen = false }: { menu: number; promoTabs?: number; menuScreen?: boolean }) {
+/** leadLines: 좁은 화면 머리 설명 줄 수(ui/skeleton 의 PageHeadSkeleton). 게시판마다 문구 길이가 달라 부르는 쪽이 준다 */
+export function PostBoardSkeleton({ menu, promoTabs = 0, menuScreen = false, leadLines = 1 }: { menu: number; promoTabs?: number; menuScreen?: boolean; leadLines?: number }) {
   return (
     <SkeletonPage gap={20}>
-      <PageHeadSkeleton width="w-28" desc={1} action="w-28" menuScreen={menuScreen} leadRow />
+      <PageHeadSkeleton width="w-28" desc={1} action="w-28" menuScreen={menuScreen} leadRow leadLines={leadLines} />
       {/* 메뉴 화면(라운지)의 좁은 폭은 실물처럼 판 두 겹을 걷는다(post-board 주석): 보조 메뉴는 판 없는 칩 줄, 목록은 바탕에 바로, 검색 단추 없음 */}
       <div className="grid grid-cols-1 items-start gap-4 lg:grid-cols-[176px_minmax(0,1fr)] lg:gap-5">
         <div className={cn("min-w-0 rounded-[var(--radius-md)] bg-surface p-2 shadow-hair", menuScreen && "max-sm:-mx-1 max-sm:bg-transparent max-sm:p-0 max-sm:shadow-none")}>
@@ -82,7 +83,15 @@ export function PostBoardSkeleton({ menu, promoTabs = 0, menuScreen = false }: {
       </div>
       {/* 좁은 폭의 메뉴 화면은 이용 안내 링크가 각주 위로 내려온다(실측 44px 줄) */}
       {menuScreen && <Bone className="h-11 w-36 rounded-lg sm:hidden" />}
-      <Bone className="h-3.5 w-72 max-w-full" />
+      {/* 각주(12px, 줄 18px). 390px 에서는 두 줄로 꺾인다(실측 36) */}
+      <div className="flex flex-col">
+        <span className="flex h-[18px] items-center">
+          <Bone className="h-3 w-full max-w-full sm:w-72" />
+        </span>
+        <span className="flex h-[18px] items-center sm:hidden">
+          <Bone className="h-3 w-2/5" />
+        </span>
+      </div>
     </SkeletonPage>
   );
 }

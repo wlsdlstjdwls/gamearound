@@ -185,7 +185,8 @@ export const BOARD_PAGE_COPY: Record<PostCategory | "boardAll" | "loungeAll", { 
   review: { lead: "게임을 직접 해 본 사람들의 리뷰를 읽고 남겨 보세요.", write: "리뷰 작성" },
   guide: { lead: "막히는 구간과 플레이 팁을 사람들이 직접 정리해요.", write: "공략 작성" },
   promo: { lead: "내가 만든 게임이나 진행 중인 프로젝트를 소개해 보세요.", write: "홍보 작성" },
-  loungeAll: { lead: "개발일지, 질문, 인원 모집, 개발 팁을 한곳에서 모아 보세요.", write: "글쓰기" },
+  // 인원 모집, 개발 팁은 숨긴 게시판이라 문구에서 뺐다(2026-11-20, lib/community/constants 의 HIDDEN_POST_CATEGORIES). 되살리면 여기도 되돌린다
+  loungeAll: { lead: "개발일지와 질문을 한곳에서 모아 보세요.", write: "글쓰기" },
   devlog: { lead: "게임을 만들어 가는 과정을 기록하고 나눠요.", write: "개발일지 작성" },
   qna: { lead: "막히는 부분을 묻고, 내 게임에 대한 피드백을 받아 보세요.", write: "질문 작성" },
   recruit: { lead: "함께 만들 사람을 찾거나 내 실력을 보탤 팀을 찾아요.", write: "모집 글 작성" },

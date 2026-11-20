@@ -4,7 +4,6 @@
 //
 // 860 짜리 한 칸(narrow)을 지웠다(2026-09-21): 알림 하나만 그 폭을 쓰고 있었는데, 목록과 위시리스트를
 // 오가다 알림에 들어오면 본문이 혼자 좁아져 화면이 한 번 흔들렸다. 폭이 다르면 다른 이유가 있어야 한다.
-import { Clamp } from "@/components/ui/tooltip";
 import { cn } from "@/lib/cn";
 
 export type PageWidth = "default" | "read" | "tight" | "wide";
@@ -218,14 +217,15 @@ export function PageHead({
     // 같은 flex 행에 두면 제목과 오른쪽 버튼 사이에 문단이 끼어 셋이 한 줄로 읽혔다(2026-09-21).
     // 메뉴 화면에 단추와 설명이 함께 있으면(라운지 홈, 라운지 게시판, 내 게임 관리) 좁은 화면에서 둘을 한 줄에 세운다
     // (2026-11-20 사용자 "상단 글이랑 글작성 버튼은 한 행에"). 제목이 sr-only 로 빠지면 단추 혼자 한 줄을 먹고 설명이 그 아래로 처졌다.
-    // 제목 줄 껍데기를 contents 로 풀고 단추를 뒤로 보낸다. 설명은 부르는 쪽이 PageLead(한 줄로 자르고 잘리면 말풍선)로 준다
+    // 제목 줄 껍데기를 contents 로 풀고 단추를 뒤로 보낸다. 설명은 줄을 바꿔 다 보이고 단추는 오른쪽 위에 붙는다(items-start) —
+    // 한 줄로 자르고 말풍선을 달았더니 휴대폰에서 "승인 상..." 처럼 잘린 채 읽혔다(2026-11-20 사용자 "글자가 잘리는데", 손가락 기기엔 올릴 손이 없다)
     <div
       className={cn(
         "flex flex-col gap-2.5",
         // 설명 문단(children)이 있어도 좁은 화면에서는 껍데기를 푼다 — 문단을 그 폭에서 숨긴 화면(명예의 전당, 슈퍼루키, 모든 인디 게임)에
         // 빈 껍데기가 남아 페이지 틈 한 칸을 먹지 않게. 보이는 문단은 페이지의 칸으로 바로 선다(제목이 sr-only 라 위에 붙을 것이 없다)
         menuScreen && !note && !action && "max-sm:contents",
-        inline && "max-sm:flex-row max-sm:items-center max-sm:gap-3",
+        inline && "max-sm:flex-row max-sm:items-start max-sm:gap-3",
         className,
       )}
       style={style}
@@ -239,21 +239,18 @@ export function PageHead({
             혼자 남은 이 조각이 왼쪽에 붙어 제목 아래 들여쓴 것처럼 보였다 — ml-auto 가 두 경우를 같게 만든다 */}
         {action && <div className={cn("ml-auto", inline && "max-sm:order-last max-sm:shrink-0")}>{action}</div>}
       </div>
-      {inline ? <div className="min-w-0 max-sm:flex-1">{children}</div> : children}
+      {/* 첫 줄(22px)이 단추(36px) 가운데 높이에 오게 7px 내린다 */}
+      {inline ? <div className="min-w-0 max-sm:flex-1 max-sm:pt-[7px]">{children}</div> : children}
     </div>
   );
 }
 
 /**
- * 머리 설명 한 줄(PageHead 의 children). 메뉴 화면의 좁은 폭에서는 글쓰기 단추와 한 줄에 서므로 한 줄로 자르고, 잘렸을 때만 전체 문구를 말풍선으로 띄운다(ui/tooltip).
- * 넓은 화면은 예전처럼 줄을 바꿔 다 보인다
+ * 머리 설명 문단(PageHead 의 children). 메뉴 화면의 좁은 폭(leadRow)에서는 글쓰기 단추 왼쪽에 서고 줄을 바꿔 다 보인다.
+ * 자르지 않는다(2026-11-20 사용자 "글자가 잘리는데") — 길면 문구를 줄인다(문구 상수 쪽에서). 줄 높이는 단추(36px)와 첫 줄이 맞게 22px 이다
  */
 export function PageLead({ children }: { children: string }) {
-  return (
-    <Clamp lines={1} className="text-[14px] text-mut sm:whitespace-normal">
-      {children}
-    </Clamp>
-  );
+  return <p className="text-[14px] leading-[22px] text-mut sm:leading-normal">{children}</p>;
 }
 
 /** 섹션 제목 크기 — 판이 사라진 화면에서 섹션을 가르는 건 여백과 이 크기차뿐이다.

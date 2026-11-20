@@ -62,6 +62,7 @@ export function PageHeadSkeleton({
   menuScreen = false,
   leadRow = false,
   phoneDesc = true,
+  leadLines = 1,
 }: {
   size?: "page" | "hero";
   width?: string;
@@ -77,10 +78,15 @@ export function PageHeadSkeleton({
   leadRow?: boolean;
   /** false 면 좁은 화면에서 설명 줄을 걷는다(실물이 그 폭에서 문단을 숨긴 화면: 명예의 전당, 슈퍼루키, 모든 인디 게임) */
   phoneDesc?: boolean;
+  /**
+   * leadRow 의 좁은 화면 설명 줄 수. 실물은 설명을 자르지 않고 단추 옆에서 줄을 바꾼다(ui/page 의 PageLead) —
+   * 머리 높이 = 위 여백 7 + 22 x 줄 수(단추 36 보다 작으면 36). 390px 실측(2026-11-20): 한 줄 36, 두 줄 51, 세 줄 73
+   */
+  leadLines?: number;
 }) {
   const inline = menuScreen && leadRow && Boolean(action) && desc > 0;
   return (
-    <div className={cn("flex flex-col gap-2.5", menuScreen && !action && (desc === 0 || !phoneDesc) && "max-sm:hidden", inline && "max-sm:flex-row max-sm:items-center max-sm:gap-3")}>
+    <div className={cn("flex flex-col gap-2.5", menuScreen && !action && (desc === 0 || !phoneDesc) && "max-sm:hidden", inline && "max-sm:flex-row max-sm:items-start max-sm:gap-3")}>
       <div
         className={cn(
           "flex items-center justify-between gap-4",
@@ -92,12 +98,18 @@ export function PageHeadSkeleton({
         <Bone className={cn(size === "hero" ? "h-[33px] sm:h-[43px]" : "h-[30px] sm:h-[37px]", width, "max-w-full", menuScreen && "max-sm:hidden")} />
         {action && <Bone className={cn("rounded-[9px]", inline ? "h-9 max-sm:order-last max-sm:shrink-0 sm:h-10" : "h-9", action)} />}
       </div>
-      {Array.from({ length: desc }).map((_, i) => (
-        <Bone
-          key={i}
-          className={cn(inline ? "h-4 max-sm:min-w-0 max-sm:flex-1 sm:h-6" : "h-4", "max-w-full", i === desc - 1 ? "w-[260px]" : "w-[420px]")}
-        />
-      ))}
+      {inline ? (
+        <div className="flex min-w-0 flex-col max-sm:flex-1 max-sm:pt-[7px]">
+          {/* 좁은 화면: 22px 줄마다 막대 하나. 넓은 화면: 한 줄 24px */}
+          {Array.from({ length: leadLines }).map((_, i) => (
+            <span key={i} className={cn("flex h-[22px] items-center sm:h-6", i > 0 && "sm:hidden")}>
+              <Bone className={cn("h-4 max-w-full", i === leadLines - 1 && leadLines > 1 ? "w-3/5 sm:w-[420px]" : "w-full sm:w-[420px]")} />
+            </span>
+          ))}
+        </div>
+      ) : (
+        Array.from({ length: desc }).map((_, i) => <Bone key={i} className={cn("h-4 max-w-full", i === desc - 1 ? "w-[260px]" : "w-[420px]")} />)
+      )}
     </div>
   );
 }
