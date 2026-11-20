@@ -16,9 +16,14 @@ import { indieDetailHref, type IndieFrom } from "@/lib/indie/query";
 import { genreLabels, INDIE_MESSAGES as M, INDIE_PLATFORM_LABEL } from "@/lib/indie/messages";
 import type { IndieCardDto } from "@/lib/indie/dto";
 
-/** 좁은 화면 가로 줄 카드(IndieCard 의 phoneRow) — 껍데기, 그림 칸, 글 칸. 뼈대도 같은 값을 쓴다 */
+/**
+ * 좁은 화면 가로 줄 카드(IndieCard 의 phoneRow) — 껍데기, 그림 칸, 글 칸. 뼈대도 같은 값을 쓴다.
+ * 그림은 카드 높이를 꽉 채운다(2026-11-20 사용자 "카드 높이랑 이미지 크기랑 좀 안 맞는 듯"). 처음엔 128px 폭에 원래 비율(460:215)이라
+ * 그림 높이 60px 이 글 칸(약 96px) 위에만 붙어 아래가 비었다. 비율을 풀고 줄 높이에 맞춰 늘린다 — 넘치는 양옆은 object-cover 가 자른다.
+ * 폭을 136px 로 조금 넓혀 잘리는 양을 줄인다
+ */
 export const INDIE_ROW_SHELL = "max-sm:flex-row max-sm:gap-3 max-sm:p-2.5";
-export const INDIE_ROW_COVER = "max-sm:w-[128px] max-sm:shrink-0 max-sm:self-start";
+export const INDIE_ROW_COVER = "max-sm:w-[136px] max-sm:shrink-0 max-sm:self-stretch max-sm:aspect-auto";
 export const INDIE_ROW_BODY = "max-sm:gap-1 max-sm:px-0";
 
 /** 플랫폼, 장르 알약 — 목업 .pl. 카드와 등록현황 줄이 같은 모양을 쓴다 */
@@ -69,7 +74,7 @@ export function IndieCard({
           <CoverImage
             src={post.cover.url}
             alt={M.coverAlt(post.title)}
-            sizes={phoneRow ? "(max-width: 640px) 128px, (max-width: 768px) 50vw, 25vw" : "(max-width: 640px) 100vw, (max-width: 768px) 50vw, 25vw"}
+            sizes={phoneRow ? "(max-width: 640px) 136px, (max-width: 768px) 50vw, 25vw" : "(max-width: 640px) 100vw, (max-width: 768px) 50vw, 25vw"}
           />
         </span>
         {/* 찜 하트(2026-10-29, 상세에만 있던 찜을 카드에도). 게임 카드와 같은 자리, 같은 부품이다 — 제목 링크의 ::after 가 카드를 덮어 z-10 으로 그 위에 뜬다.
