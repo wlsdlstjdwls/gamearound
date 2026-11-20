@@ -70,7 +70,7 @@ async function SideMenu({ family, allPath, current }: { family: readonly PostCat
         aria-current={href === current ? "page" : undefined}
         className={cn(
           "flex min-h-10 shrink-0 items-center justify-between gap-3 whitespace-nowrap rounded-lg px-3 text-[13.5px] transition-colors",
-          href === current ? "bg-acc-soft font-bold text-acc shadow-[inset_3px_0_0_var(--acc)]" : "text-ink-2 hover:bg-surface-2 hover:text-ink",
+          href === current ? "bg-acc-soft font-bold text-acc" : "text-ink-2 hover:bg-surface-2 hover:text-ink",
         )}
       >
         <span>{label}</span>

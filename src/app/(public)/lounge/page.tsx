@@ -71,10 +71,15 @@ export default async function LoungeHomePage() {
         title={L.title}
         action={
           // "내 게임 관리" 단추를 글 작성 옆에 되살렸다(2026-11-16 피드백 v11 #26 목업 "하위 탭 + 내 게임 관리 버튼"). 등록은 이 길 한 곳이다(#23)
+          // 좁은 화면은 "글 작성" 하나만 제목 옆에 둔다(2026-11-20 사용자 "머리 단추 배치 어색") — 단추 둘이 제목 아래 줄로 꺾여
+          // 제목과 설명 사이에 혼자 떠 있었다. 내 게임 관리는 바로 위 하위 메뉴 띠의 칸이 같은 길을 낸다.
+          // 단추에 hidden 을 직접 주지 않는 이유: cn 은 buttonClass 의 inline-flex 를 지우지 않아 CSS 순서 싸움이 된다
           <div className="flex items-center gap-2">
-            <Link href={ROUTES.indieMine} className={buttonClass({ variant: "secondary", size: "sm" })}>
-              {L.myGamesButton}
-            </Link>
+            <span className="hidden sm:contents">
+              <Link href={ROUTES.indieMine} className={buttonClass({ variant: "secondary", size: "sm" })}>
+                {L.myGamesButton}
+              </Link>
+            </span>
             <WriteLink href={writePath("devlog")}>{L.write}</WriteLink>
           </div>
         }

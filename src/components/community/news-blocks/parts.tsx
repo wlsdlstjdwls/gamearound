@@ -65,9 +65,11 @@ export function MetaLine({ flag, post, now }: { flag?: React.ReactNode; post: Po
 /** 제목 줄 — 스포, 홍보 유형 딱지가 제목 앞에 붙는다(카테고리는 딱지 줄이 이미 말한다) */
 export function TitleLine({ post, awaiting = true }: { post: PostRowDto; awaiting?: boolean }) {
   return (
-    <span className="flex min-w-0 items-center gap-1.5">
+    // 좁은 화면은 제목을 두 줄까지 편다(2026-11-20 사용자 "라운지 홈 모바일 가독성") — 한 줄로 자르면 390px 에서
+    // "1인 개발 3개월 차, 전투 시스템 갈아엎은 ..." 처럼 글의 요점이 잘려 줄마다 무슨 글인지 안 읽혔다. 딱지는 첫 줄에 붙는다(items-start)
+    <span className="flex min-w-0 items-start gap-1.5 sm:items-center">
       <PostTags post={post} showCategory={false} awaiting={awaiting} />
-      <span className="min-w-0 truncate text-[15.5px] font-bold tracking-[-0.02em] text-ink group-hover:text-acc">{post.title}</span>
+      <span className="line-clamp-2 min-w-0 text-[15.5px] font-bold leading-[1.4] tracking-[-0.02em] text-ink group-hover:text-acc sm:line-clamp-1">{post.title}</span>
     </span>
   );
 }

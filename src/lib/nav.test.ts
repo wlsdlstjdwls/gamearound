@@ -95,6 +95,9 @@ describe("isSubScreen", () => {
     expect(band("/games", "sale=1")).toBe(true);
     expect(band("/indie")).toBe(true);
   });
+  it("칸의 별칭 화면에도 띠가 선다 — 라운지 전체 글", () => {
+    expect(band("/lounge/all")).toBe(true);
+  });
   it("칸에 속하지 않은 상세 화면에서는 서지 않는다", () => {
     expect(band("/games/007-first-light")).toBe(false);
     expect(band("/indie/some-game")).toBe(false);

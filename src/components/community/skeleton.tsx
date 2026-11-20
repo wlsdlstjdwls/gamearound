@@ -13,17 +13,20 @@ const TITLE_WIDTHS = ["w-3/5", "w-2/5", "w-1/2", "w-[45%]", "w-2/3", "w-[38%]"];
 /** 목록 첫 화면 줄 수 — 한 쪽은 20줄(POSTS_PAGE_SIZE)이지만 첫 화면에 보이는 만큼만 세운다 */
 const BOARD_SKELETON_ROWS = 10;
 
-/** 글 목록 줄(post-list 의 bare). 왼쪽 말머리와 제목, 오른쪽 작성자, 날짜, 조회, 좋아요 — 좁은 화면은 오른쪽 값이 아래 줄로 내려간다 */
+/**
+ * 글 목록 줄(post-list 의 bare). 넓은 화면은 한 줄(말머리와 제목 | 작성자, 날짜, 조회, 좋아요),
+ * 좁은 화면은 딱지 줄 | 제목 | 값 줄 세 줄이다. 높이는 390px 실측(2026-11-20): 14 + 17.5 + 6 + 21 + 6 + 18 + 14 = 96.5
+ */
 export function PostRowsSkeleton({ rows }: { rows: number }) {
   return (
     <div aria-hidden className="-mx-1 divide-y divide-line-soft">
       {Array.from({ length: rows }).map((_, i) => (
-        <div key={i} className="flex min-h-[var(--touch-target)] flex-col gap-1 px-1 py-3 sm:flex-row sm:items-center sm:gap-4">
-          <div className="flex min-w-0 flex-1 items-center gap-2">
-            <Bone className="h-5 w-10 shrink-0 rounded-[5px]" />
-            <Bone className={cn("h-5", TITLE_WIDTHS[i % TITLE_WIDTHS.length])} />
+        <div key={i} className="flex min-h-[var(--touch-target)] flex-col gap-1.5 px-1 py-3.5 sm:flex-row sm:items-center sm:gap-4 sm:py-3">
+          <div className="flex min-w-0 flex-1 flex-col gap-1.5 sm:flex-row sm:items-center sm:gap-2">
+            <Bone className="h-[17.5px] w-24 shrink-0 rounded-[5px] sm:h-5 sm:w-10" />
+            <Bone className={cn("h-[21px] sm:h-5", TITLE_WIDTHS[i % TITLE_WIDTHS.length])} />
           </div>
-          <Bone className="h-4 w-52 shrink-0" />
+          <Bone className="h-[18px] w-52 shrink-0 sm:h-4" />
         </div>
       ))}
     </div>

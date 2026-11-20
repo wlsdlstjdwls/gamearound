@@ -187,7 +187,9 @@ function pathOf(href: string): string {
  * 하위 메뉴 띠는 칸 화면에서만 선다(2026-11-11 사용자: "서브 메뉴에 속한 화면이 아니면 서브 메뉴는 미노출", components/sub-nav)
  */
 export function isSubScreen(pathname: string, sub: NavSub | null): boolean {
-  return sub !== null && pathOf(sub.href) === pathname;
+  // 별칭(라운지 전체 글 /lounge/all)도 칸 화면이다. 빼먹으면 띠가 안 서고, trailKind 는 별칭을 칸으로 봐 "이전 화면" 도 안 세워
+  // 그 화면에서 라운지로 돌아갈 길이 하나도 없었다(2026-11-20 사용자 "뒤로가기 버튼이나 이런것두 없넹")
+  return sub !== null && (pathOf(sub.href) === pathname || (sub.aliases?.includes(pathname) ?? false));
 }
 
 function under(pathname: string, path: string): boolean {

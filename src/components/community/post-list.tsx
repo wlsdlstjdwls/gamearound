@@ -1,5 +1,5 @@
 // 게시판 목록 줄(기획서 v2.0 5.2 "목록 행"). 한 줄에 제목 하나로 압축해 많은 글을 보여 준다 —
-// 말머리, 관련 게임, 제목, 댓글 수가 왼쪽, 작성자, 날짜, 조회, 좋아요가 오른쪽. 좁은 화면에서는 오른쪽 값이 제목 아래 한 줄로 내려간다.
+// 말머리, 관련 게임, 제목, 댓글 수가 왼쪽, 작성자, 날짜, 조회, 좋아요가 오른쪽. 좁은 화면에서는 딱지 줄, 제목, 값 줄 세 줄로 선다.
 // 말머리는 카테고리 하나짜리 게시판(공략, 개발일지)에서도 세운다 — 기획서 7장 "말머리: 카테고리별 색이 다름" 은 목록 행의 약속이고,
 // 리뷰만 스포 딱지가, 홍보만 유형 딱지가 서는 탓에 공략 줄만 맨 제목으로 시작하면 다른 게시판과 줄 모양이 달라진다.
 import Link from "next/link";
@@ -22,15 +22,22 @@ export function PostList({ posts, rank = false, rankFrom = 1, showCategory = tru
     <ul className={cn("divide-y divide-line-soft", bare ? "-mx-1" : "overflow-hidden rounded-[var(--radius-md)] bg-surface shadow-hair")}>
       {posts.map((p, i) => {
         const row = (
-          <Link href={p.href} className={cn("row-beam group flex min-h-[var(--touch-target)] flex-col gap-1 py-3 transition-colors hover:bg-surface-2 sm:flex-row sm:items-center sm:gap-4", bare ? "rounded-lg px-1" : "px-4")}>
-            <span className="flex min-w-0 flex-1 items-center gap-2">
-              {rank && <span className="w-6 shrink-0 text-center text-[13px] font-bold tabular-nums text-acc">{rankFrom + i}</span>}
-              <PostTags post={p} showCategory={showCategory} />
-              {p.game && <GameChip title={p.game.title} />}
-              <span className="truncate text-[14.5px] font-semibold text-ink group-hover:text-acc">{p.title}</span>
-              {p.commentCount > 0 && <span className="shrink-0 text-[12.5px] font-bold text-acc">[{p.commentCount}]</span>}
+          <Link href={p.href} className={cn("row-beam group flex min-h-[var(--touch-target)] flex-col gap-1.5 py-3.5 transition-colors hover:bg-surface-2 sm:flex-row sm:items-center sm:gap-4 sm:py-3", bare ? "rounded-lg px-1" : "px-4")}>
+            {/* 좁은 화면은 세 줄이다: 딱지 줄 | 제목(두 줄까지) | 값 줄. 한 줄에 말머리, 상태, 게임 딱지와 제목을 다 세우면
+                390px 에서 제목이 "유니티 2..." 로 잘려 글이 하나도 안 읽혔다(2026-11-20 사용자 "글도 하나도 눈에 안들어온다").
+                넓은 화면은 딱지 줄이 contents 로 풀려 예전처럼 한 줄에 선다 */}
+            <span className="flex min-w-0 flex-1 flex-col gap-1.5 sm:flex-row sm:items-center sm:gap-2">
+              <span className="flex min-w-0 items-center gap-1.5 empty:hidden sm:contents">
+                {rank && <span className="w-6 shrink-0 text-center text-[13px] font-bold tabular-nums text-acc">{rankFrom + i}</span>}
+                <PostTags post={p} showCategory={showCategory} />
+                {p.game && <GameChip title={p.game.title} />}
+              </span>
+              <span className="flex min-w-0 items-baseline gap-1.5">
+                <span className="line-clamp-2 min-w-0 text-[15px] font-semibold leading-[1.4] text-ink group-hover:text-acc sm:line-clamp-1 sm:text-[14.5px]">{p.title}</span>
+                {p.commentCount > 0 && <span className="shrink-0 text-[12.5px] font-bold text-acc">[{p.commentCount}]</span>}
+              </span>
             </span>
-            <span className="flex shrink-0 items-center gap-3 text-[12.5px] tabular-nums text-dim">
+            <span className="flex min-w-0 shrink-0 items-center gap-2.5 text-[12px] tabular-nums text-dim sm:gap-3 sm:text-[12.5px]">
               <AuthorName post={p} className="max-w-[120px] truncate" />
               <span>{formatPostDate(p.createdAt)}</span>
               <span>
