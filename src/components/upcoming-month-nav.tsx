@@ -21,21 +21,21 @@ import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { cn } from "@/lib/cn";
 import { byYear, upcomingAllHref, upcomingHref, upcomingMonthHref, type UpcomingFilter } from "@/lib/games/upcoming";
-import { UPCOMING_MESSAGES as M } from "@/lib/games/messages";
+import { UpcomingMonthStepper } from "@/components/upcoming-month-stepper";
 
 /** 고른 칩 열쇠 중 "전체 보기" 자리. 달 열쇠(YYYY-MM)와 겹치지 않는다 */
 const ALL_KEY = "all";
 
 /**
- * all: 지금 전체 보기다. 좁은 화면은 보기 전환 칩을 걷고 이 줄 맨 앞 "전체" 칩이 그 일을 한다(2026-11-20 사용자
- * "출시 예정 날짜고르기, 필터링, 전체보기 월별보기, 너무 선택할 게 많고 복잡해"). 보기 전환, 달 고르기가 두 겹이던 것을 한 줄로 합쳤다.
- * 넓은 화면은 예전 그대로다 — "전체" 칩은 sm 부터 숨고, 전체 보기에서는 줄째 숨는다(page 가 phoneOnly 를 준다).
+ * all: 지금 전체 보기다. 좁은 화면은 보기 전환 칩을 걷고 이 띠가 그 일을 한다(2026-11-20 사용자
+ * "출시 예정 날짜고르기, 필터링, 전체보기 월별보기, 너무 선택할 게 많고 복잡해") — 스테퍼 시트 맨 위 "전체", 전체 보기의 "다음" 이 첫 달.
+ * 넓은 화면은 예전 그대로다 — 전체 보기에서는 띠째 숨는다(page 가 phoneOnly 를 준다).
  */
 export function UpcomingMonthNav({ months, activeKey, filter, all = false, phoneOnly = false }: { months: { key: string; total: number }[]; activeKey: string; filter: UpcomingFilter; all?: boolean; phoneOnly?: boolean }) {
   const current = all ? ALL_KEY : activeKey;
   const [picked, setPicked] = useState(current);
   const [prevActive, setPrevActive] = useState(current);
-  const navRef = useRef<HTMLElement>(null);
+  const navRef = useRef<HTMLDivElement>(null);
   const firstKey = months[0]?.key;
   const years = byYear(months);
 
@@ -63,27 +63,21 @@ export function UpcomingMonthNav({ months, activeKey, filter, all = false, phone
   // 다음 해의 달을 보려면 해를 먼저 바꿔야 했고, 고른 달은 파랑 꽉 찬 큰 칸(52x43)으로 부풀어 띠에서 혼자 튀었다.
   // 이제 달 칩이 오늘부터 끝까지 이어 서고, 해가 바뀌는 첫 달 앞에만 작은 해 머리("2027년")가 선다 — 첫 해도 머리를 단다(어느 해인지 띠가 말한다).
   // 고른 달은 옅은 파랑 면 + 파랑 글자(바닥 탭바의 켜진 칸과 같은 말)로 절제한다. 건수는 달 옆 작은 회색 숫자다.
-  // 이전/다음 단추(명예의 전당 month-stepper)도 그려 봤지만 출시 예정은 "어느 달에 몇 개가 있나" 를 한눈에 보는 게 일이라 한 줄이 낫다
+  // 같은 날 오후 좁은 화면은 이전/다음 스테퍼로 바꿨다(사용자 "음 여전히 날짜 선택이 불편한디") — 390 폭에서는 칩이 두세 개만 보여 한 줄의 장점이 없었다. 넓은 화면은 칩 줄 그대로
+  // 좁은 화면은 이전/다음 스테퍼(upcoming-month-stepper, 2026-11-20 사용자 "여전히 날짜 선택이 불편"), 넓은 화면은 달 칩 한 줄이다.
+  // 둘이 같은 sticky 띠 안에 서서 띠 높이(--month-nav-h)와 머리띠 아래 붙는 자리는 하나다. 가로 스크롤은 칩 줄 안에서만 일어난다
   return (
     <nav
-      ref={navRef}
       aria-label="달 고르기"
       className={cn(
-        "sticky top-[var(--header-h)] z-20 -mx-5 flex h-[var(--month-nav-h)] items-center gap-1.5 overflow-x-auto border-b border-line bg-bg/95 px-5 backdrop-blur [scrollbar-width:none] sm:-mx-7 sm:px-7",
+        "sticky top-[var(--header-h)] z-20 -mx-5 flex h-[var(--month-nav-h)] items-center border-b border-line bg-bg/95 px-3 backdrop-blur sm:-mx-7 sm:px-7",
         phoneOnly && "sm:hidden",
       )}
     >
-      <Link
-        href={allHref}
-        aria-current={picked === ALL_KEY ? "page" : undefined}
-        onClick={() => setPicked(ALL_KEY)}
-        className={cn(
-          "press tap-inset mr-1 flex h-9 shrink-0 items-center rounded-full px-3.5 text-[14.5px] leading-none transition-colors duration-base sm:hidden",
-          picked === ALL_KEY ? "bg-acc-soft font-bold text-acc" : "font-semibold text-ink-2 hover:bg-surface-2 hover:text-ink",
-        )}
-      >
-        {M.monthNavAll}
-      </Link>
+      <div className="w-full sm:hidden">
+        <UpcomingMonthStepper months={months} current={activeKey} all={all} hrefOf={monthHref} allHref={allHref} />
+      </div>
+      <div ref={navRef} className="flex h-full w-full items-center gap-1.5 overflow-x-auto [scrollbar-width:none] max-sm:hidden">
       {years.map((g, i) => (
         // 둘째 해부터 앞 해와 조금 띄운다 — 해 머리가 앞 달 칩에 붙으면 그 달의 꼬리표로 읽힌다
         <div key={g.year} role="group" aria-label={`${g.year}년`} className={cn("flex shrink-0 items-center gap-1.5", i > 0 && "ml-2")}>
@@ -112,6 +106,7 @@ export function UpcomingMonthNav({ months, activeKey, filter, all = false, phone
           })}
         </div>
       ))}
+      </div>
     </nav>
   );
 }

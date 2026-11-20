@@ -23,14 +23,20 @@ export default function UpcomingLoading() {
         <FilterBarSkeleton chips={false} />
       </div>
       <div className="flex flex-col gap-5">
-        <div className="-mx-5 flex h-[var(--month-nav-h)] items-center gap-1.5 overflow-hidden border-b border-line px-5 sm:-mx-7 sm:px-7">
-          {/* 실물(upcoming-month-nav): 해 머리 글자 + 36px 달 칩이 한 줄로 잇는다 */}
-          {/* 좁은 화면은 맨 앞에 "전체" 칩이 선다(보기 전환 대신) */}
-          <Bone className="mr-1 h-9 w-[58px] shrink-0 rounded-full sm:hidden" />
-          <Bone className="mr-0.5 h-3.5 w-11 shrink-0" />
-          {Array.from({ length: MONTH_TABS }).map((_, i) => (
-            <Bone key={i} className="h-9 w-[76px] shrink-0 rounded-full" />
-          ))}
+        <div className="-mx-5 flex h-[var(--month-nav-h)] items-center border-b border-line px-3 sm:-mx-7 sm:px-7">
+          {/* 좁은 화면(upcoming-month-stepper): 이전 단추 40 | 가운데 달 이름 + 개수 | 다음 단추 40 */}
+          <div className="flex w-full items-center justify-between sm:hidden">
+            <Bone className="h-8 w-10 rounded-full" />
+            <Bone className="h-6 w-40" />
+            <Bone className="h-8 w-10 rounded-full" />
+          </div>
+          {/* 넓은 화면(upcoming-month-nav): 해 머리 글자 + 36px 달 칩이 한 줄로 잇는다 */}
+          <div className="flex items-center gap-1.5 overflow-hidden max-sm:hidden">
+            <Bone className="mr-0.5 h-3.5 w-11 shrink-0" />
+            {Array.from({ length: MONTH_TABS }).map((_, i) => (
+              <Bone key={i} className="h-9 w-[76px] shrink-0 rounded-full" />
+            ))}
+          </div>
         </div>
         <section className="flex flex-col gap-4">
           <SectionHeadSkeleton width="w-40" />

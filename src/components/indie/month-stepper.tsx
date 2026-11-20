@@ -3,8 +3,8 @@
 // 예전에는 여섯 달을 칩 여섯 개로 늘어놓아 한 줄을 다 먹고, 390 폭에서는 가로로 밀어야 했다. 달은 차례가 있는 값이라
 // 앞뒤로 한 칸씩 넘기는 것이 자연스럽다. 이번 달이 아니면 "이번 달" 로 바로 돌아오는 칩을 하나 더 세운다.
 // 화살표는 NavChip(같은 무리 "ym")이라 누른 순간 켜지고, 가운데 달 이름은 useNavPicked 로 고른 달을 먼저 그린다(AGENTS 6장).
-import { ChevronLeftIcon } from "@/components/ui/icons";
 import { NavChip, useNavPicked } from "@/components/ui/nav-pending";
+import { StepArrow } from "@/components/ui/step-arrow";
 
 type Month = { ym: string; label: string; href: string };
 
@@ -21,29 +21,14 @@ export function MonthStepper({ months, current, nowYm, labels }: { months: reado
     // 넓은 화면은 예전 그대로 흰 알약이다
     <div role="group" aria-label={labels.group} className="flex w-full items-center gap-2 md:w-auto">
       <div className="flex flex-1 items-center justify-between gap-1 md:flex-none md:rounded-full md:bg-surface md:p-1 md:shadow-hair">
-        {older ? (
-          <NavChip group="ym" href={older.href} aria-label={labels.prev} size="page">
-            <ChevronLeftIcon size={16} />
-          </NavChip>
-        ) : (
-          <span aria-hidden className="grid h-8 w-10 place-items-center text-line-strong">
-            <ChevronLeftIcon size={16} />
-          </span>
-        )}
+        {/* 양 끝 단추는 출시 예정 달 고르기와 같은 부품이다(ui/step-arrow) */}
+        <StepArrow dir="prev" group="ym" href={older?.href} label={labels.prev} />
         <span aria-live="polite" className="min-w-[124px] text-center text-[15px] font-extrabold tabular-nums tracking-[-0.02em] text-ink">
           {shown?.label}
           {/* "이번 달" 은 파란 글자에서 회색 면 꼬리표로(2026-11-20) — 파랑은 누르는 것의 색이라 달 이름 옆에서 링크처럼 읽혔다 */}
           {shownYm === nowYm && <span className="ml-2 inline-block rounded-[var(--radius-xs)] bg-surface-2 px-1.5 py-0.5 align-[2px] text-[11.5px] font-semibold text-mut">{labels.nowTag}</span>}
         </span>
-        {newer ? (
-          <NavChip group="ym" href={newer.href} aria-label={labels.next} size="page">
-            <ChevronLeftIcon size={16} className="rotate-180" />
-          </NavChip>
-        ) : (
-          <span aria-hidden className="grid h-8 w-10 place-items-center text-line-strong">
-            <ChevronLeftIcon size={16} className="rotate-180" />
-          </span>
-        )}
+        <StepArrow dir="next" group="ym" href={newer?.href} label={labels.next} />
       </div>
       {shownYm !== nowYm && months[0] && (
         <NavChip group="ym" href={months[0].href} compact outline className="shrink-0 whitespace-nowrap">

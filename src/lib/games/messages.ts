@@ -434,6 +434,15 @@ export const UPCOMING_MESSAGES = {
   viewLabel: "보기 방식",
   /** 좁은 화면 달 줄 맨 앞 칩 — 전체 보기로 간다(upcoming-month-nav, 2026-11-20 사용자 "선택할 게 많고 복잡해") */
   monthNavAll: "전체",
+  /** 좁은 화면 달 스테퍼(upcoming-month-stepper, 2026-11-20 사용자 "여전히 날짜 선택이 불편" 뒤 고른 이전/다음 단추 안) */
+  monthPrev: "이전 달",
+  monthNext: "다음 달",
+  /** 전체 보기에서 오른쪽 단추 — 월별 보기의 첫 달로 간다 */
+  monthFirst: "첫 달 보기",
+  monthSheetTitle: "달 고르기",
+  /** 가운데 이름 단추의 낭독 이름. 누르면 달 목록 시트가 열린다 */
+  monthSheetOpen: (current: string) => `${current}, 달 목록 열기`,
+  monthAllCenter: "전체 출시 예정",
   leadMonth: "기대하는 게임의 출시일을 월별로 모아 보세요.",
   leadAll: "출시 예정 게임을 가까운 날짜부터 한눈에 모아 보세요.",
   /** 출시일 미정 상자(기획서 v2.0 4.4, 목업 월별 보기 아래). 날짜 칸에는 tbaDay 가 선다 */

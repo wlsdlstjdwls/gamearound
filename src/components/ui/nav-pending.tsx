@@ -84,6 +84,15 @@ export function useNavPicked(group: string): string | undefined {
 }
 
 /**
+ * 링크 모양이 아닌 자리(시트 안 격자 칸 등)가 NavChip 과 같은 무리(group)로 갈 때 — 고른 값이 useNavPicked 에 바로 잡혀
+ * 같은 무리의 이름표가 먼저 바뀐다(출시 예정 달 시트, 2026-11-20). 틀 밖이면 undefined
+ */
+export function useNavGroupGo(group: string): ((href: string) => void) | undefined {
+  const scope = useContext(ScopeContext);
+  return scope ? (href) => scope.go(group, href, false) : undefined;
+}
+
+/**
  * 링크가 아닌 자리(드롭다운, 입력칸)가 같은 틀 안에서 주소로 갈 때. 결과 자리(PendingRegion)가 같이 흐려진다.
  * 틀 밖이면 undefined — 부르는 쪽이 평범한 이동으로 내려간다.
  */
