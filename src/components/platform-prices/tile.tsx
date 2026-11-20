@@ -26,7 +26,6 @@ import { Tag } from "@/components/ui/tag";
 import { SubscriptionChips } from "@/components/subscription-badges";
 import { brandNameOf, generationOf, type PlatformPriceItem } from "@/components/platform-prices/order";
 import { PickableTile } from "@/components/game-detail/platform-pick";
-import { QUIET_FILL_BELOW_MD } from "@/components/game-detail/constants";
 
 /** 스토어로 나가는 버튼의 말(기획서 v2.0 S-05 "구매하기") */
 export const STORE_CTA = "구매하기";
@@ -73,10 +72,10 @@ export function BestMark() {
 
 /**
  * 카드의 구매 단추 모양. 채운 파랑은 화면 전체에서 한 행(primaryBuyRow)만 받고 나머지는 옅은 단추다(2026-11-20).
- * 휴대폰에서는 그 한 행도 옅다 — 제목 밑 최저가 줄(game-detail/quick-buy)이 같은 행의 채운 단추를 들고 있어 같은 곳으로 가는 파랑이 둘이 된다
+ * 휴대폰에서도 그 한 행은 채운 파랑이다 — 제목 밑 최저가 줄(game-detail/quick-buy)은 구매 단추 없이 이 카드로 내려 주기만 한다
  */
 export function buyButtonClass(primary: boolean, className?: string): string {
-  return buttonClass({ variant: primary ? "accent" : "soft", size: "row", className: cn(primary && QUIET_FILL_BELOW_MD, className) });
+  return buttonClass({ variant: primary ? "accent" : "soft", size: "row", className });
 }
 
 /** 지원 기종 줄 — 세대(PS5, Switch 2)를 알면 세대, 아니면 기기 갈래(PC) */

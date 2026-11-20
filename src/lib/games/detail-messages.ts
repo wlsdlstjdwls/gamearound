@@ -24,7 +24,9 @@ export const DETAIL_MESSAGES = {
   /** 휴대폰 제목 밑 최저가 줄의 이름표(game-detail/quick-buy, 2026-11-20) */
   quickBuyLabel: "최저가",
   /** 같은 줄 낭독 이름 */
-  quickBuyAria: "최저가와 구매",
+  quickBuyAria: "최저가, 누르면 스토어별 가격으로 내려가요",
+  /** 같은 줄 오른쪽 끝 안내(2026-11-20 사용자 "구매하기 버튼이 굳이 따로 필요한가") */
+  quickBuyMore: "가격 비교",
   playtimeTitle: "플레이타임",
   /** "메인 + 추가" 에서 "메인 + 서브" 로(2026-11-11 사용자 지정). 옛 카드(playtime-card)와 같은 말이 됐다 */
   playtimeItems: { mainStoryHours: "메인 스토리", mainExtraHours: "메인 + 서브", completionistHours: "완전 정복" },
