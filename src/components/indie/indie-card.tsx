@@ -60,7 +60,8 @@ export function IndieCard({
         </span>
         {/* 찜 하트(2026-10-29, 상세에만 있던 찜을 카드에도). 게임 카드와 같은 자리, 같은 부품이다 — 제목 링크의 ::after 가 카드를 덮어 z-10 으로 그 위에 뜬다.
             카드가 아니라 커버 상자 안에 두는 이유: 가로 카드(wide)에서 카드 오른쪽 위는 제목 줄이라 하트가 글자를 가린다 */}
-        <WishHeart kind="indie" slug={post.slug} title={post.title} className="absolute right-2 top-2 z-10" />
+        {/* size="sm" 은 게임 카드와 같다 — md 는 .tap 이 휴대폰에서 높이만 44px 로 키워 원이 세로로 늘어 보였다(2026-11-20) */}
+        <WishHeart kind="indie" slug={post.slug} title={post.title} size="sm" className="absolute right-2 top-2 z-10" />
       </span>
       <div className={cn("flex min-w-0 flex-1 flex-col gap-1.5 px-1", wide && "sm:py-1")}>
         <div className="flex min-w-0 items-center gap-1.5">

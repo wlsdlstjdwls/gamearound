@@ -1,5 +1,5 @@
 "use client";
-// 좁은 화면(650px 이하, 기획서 4.1 모바일)의 바닥 탭바 — 홈 + 상단 메뉴 넷(목업 390 의 #nav).
+// 좁은 화면(650px 이하, 기획서 4.1 모바일)의 바닥 탭바 — 홈 + 상단 메뉴(NAV_SECTIONS, 목업 390 의 #nav).
 //
 // 왜 바닥인가: 휴대폰에서 메뉴 넷이 햄버거 시트 안에 접혀 있으면 "게시판이 어디 있지" 를 매번 시트를 열어야 알았다.
 // 엄지가 닿는 바닥에 늘 서 있으면 서비스의 전부(메뉴 넷)가 한눈에 보이고 한 번에 간다. 머리띠는 한 줄 그대로라 자라지 않는다.
@@ -71,7 +71,9 @@ function TabbarNav({ query }: { query: URLSearchParams }) {
       aria-label={TABBAR_LABEL}
       // 높이는 토큰으로 못 박는다(--tabbar-h) — 문서 바닥 여백과 토스트 자리가 같은 값을 읽어야 어긋나지 않는다.
       // 홈 인디케이터 높이는 그 바깥에 더한다(box-content + 아래 안쪽 여백)
-      className="fixed inset-x-0 bottom-0 z-40 box-content grid h-[var(--tabbar-h)] grid-cols-5 gap-0.5 border-t border-line bg-[var(--header-glass)] px-1.5 pb-[env(safe-area-inset-bottom)] backdrop-blur-[var(--header-blur)] tab:hidden"
+      // 칸 수는 TABS 에서 읽는다 — 5 로 박아 두었더니 게시판을 메뉴에서 걷은 뒤(칸 넷) 오른쪽 한 칸이 비어 왼쪽으로 쏠렸다(2026-11-20)
+      style={{ gridTemplateColumns: `repeat(${TABS.length}, minmax(0, 1fr))` }}
+      className="fixed inset-x-0 bottom-0 z-40 box-content grid h-[var(--tabbar-h)] gap-0.5 border-t border-line bg-[var(--header-glass)] px-1.5 pb-[env(safe-area-inset-bottom)] backdrop-blur-[var(--header-blur)] tab:hidden"
     >
       {TABS.map((t) => {
         const current = t.key === on;
