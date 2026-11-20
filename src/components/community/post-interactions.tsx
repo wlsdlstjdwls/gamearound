@@ -202,7 +202,9 @@ function CommentComposer({
  * 댓글 한 줄. 댓글함(/lounge/comments)에서 #comment-<id> 로 들어오면 그 줄까지 내려온다 — 머리띠(--header-h)에 가리지 않게
  * 그만큼 여백을 두고(scroll-margin), 도착한 줄은 잠깐 빛을 깔아 "여기" 를 알린다(globals.css 의 .comment-target)
  */
-const COMMENT_ITEM_CLASS = "comment-target flex scroll-mt-[calc(var(--header-h)+24px)] flex-col gap-1 py-3.5";
+// 댓글 한 묶음의 위아래 여백. 2026-11-20 사용자 "댓글끼리 구분이 잘 안 된다" — 14px 여백에 옅은 칸막이(line-soft)뿐이라 댓글이 한 덩어리로 읽혔다.
+// 여백을 18px 로 넓히고 칸막이를 한 단계 진하게(아래 ul 의 divide-line) 한다
+const COMMENT_ITEM_CLASS = "comment-target flex scroll-mt-[calc(var(--header-h)+24px)] flex-col gap-1 py-[18px]";
 
 /**
  * 원댓글 하나와 그 답글들. 답글은 왼쪽 선 하나로 묶어 들여 세운다(한 단계뿐이라 선 하나면 "누구에게 한 말" 이 읽힌다).
@@ -242,7 +244,9 @@ function Thread({ root, replies, postId, onAdded, addAction, canReply, mine, ops
         </button>
       )}
       {(replies.length > 0 || open) && (
-        <div className="mt-1.5 flex flex-col gap-3 border-l-2 border-line pl-4 sm:ml-1">
+        // 답글 묶음은 회색 면 한 판이다(2026-11-20). 전에는 왼쪽 세로 막대(border-l-2)였는데 띠 꼴 강조라 걷었고(띠 UI 금지),
+        // 면이 "이 답글들은 위 댓글에 딸렸다" 를 막대보다 또렷하게 말해 다음 댓글과도 갈린다
+        <div className="mt-1.5 flex flex-col gap-3 rounded-[var(--radius-md)] bg-surface-2 px-3.5 py-3 sm:ml-1">
           {replies.length > 0 && (
             <ul className="flex flex-col gap-3" aria-label={M.replyTo(root.authorName)}>
               {replies.map((r) => (
@@ -333,7 +337,7 @@ export function Comments({ postId, initial, addAction = addCommentAction, mine =
       {roots.length === 0 ? (
         <EmptyNote>{M.commentEmpty}</EmptyNote>
       ) : (
-        <ul className="flex flex-col divide-y divide-line-soft">
+        <ul className="flex flex-col divide-y divide-line">
           {roots.map((c) => (
             <Thread key={c.id} root={c} replies={byParent.get(c.id) ?? []} postId={postId} onAdded={add} addAction={addAction} canReply={replies} mine={mine} ops={ops} />
           ))}

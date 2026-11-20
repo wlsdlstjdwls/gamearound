@@ -125,9 +125,9 @@ export function PostDetailSkeleton({ backLink = false }: { backLink?: boolean })
 
       <div className="flex flex-col gap-4 rounded-[var(--radius-panel)] bg-surface p-5 shadow-hair sm:p-8">
         <Bone className="h-6 w-16" />
-        <div className="flex flex-col divide-y divide-line-soft">
+        <div className="flex flex-col divide-y divide-line">
           {Array.from({ length: DETAIL_COMMENTS }).map((_, i) => (
-            <div key={i} className="flex flex-col gap-1.5 py-3.5">
+            <div key={i} className="flex flex-col gap-1.5 py-[18px]">
               <Bone className="h-4 w-28" />
               <Bone className={cn("h-5", i === 0 ? "w-4/5" : "w-1/2")} />
             </div>
