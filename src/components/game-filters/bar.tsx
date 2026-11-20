@@ -102,7 +102,9 @@ export function GameFilterBar({
   return (
     <div className="flex flex-col gap-3">
       <div role="search" className="flex flex-wrap items-center gap-2 rounded-[var(--radius-panel)] bg-surface p-2 shadow-hair lg:flex-nowrap lg:gap-2.5 lg:p-2.5">
-        <label className="flex h-11 min-w-0 flex-[1_1_100%] items-center gap-2.5 rounded-xl bg-bg px-3.5 focus-within:shadow-[0_0_0_1px_var(--acc),0_0_0_4px_var(--acc-glow)] lg:flex-[1_1_260px]">
+        {/* 좁은 화면에서는 걷는다(2026-11-20 사용자 "상단 헤더에도 검색창이 있어, 중복") — 그 폭은 머리띠에 검색칸이 서 있고
+            칸 둘이 위아래로 붙어 같은 일로 읽혔다. 걸린 검색어는 걸린 조건 줄(active)에서 풀 수 있다 */}
+        <label className="hidden h-11 min-w-0 flex-[1_1_100%] items-center sm:flex gap-2.5 rounded-xl bg-bg px-3.5 focus-within:shadow-[0_0_0_1px_var(--acc),0_0_0_4px_var(--acc-glow)] lg:flex-[1_1_260px]">
           <SearchIcon size={18} className="shrink-0 text-dim" />
           <span className="sr-only">{M.listSearchLabel}</span>
           <input
@@ -136,15 +138,17 @@ export function GameFilterBar({
           밑줄(헤어라인)은 걷었다(2026-10-28, 사용자 "공백도 많고 자리도 많이 차지") — 결과 수 줄과 사이에 빈 띠만 하나 더 만들었다 */}
       <div className="flex flex-wrap items-center gap-x-2 gap-y-2">
         {topGenres.length > 0 && <span className="mr-1 text-[13px] text-dim">{M.topGenres}</span>}
+        {/* compact: 손가락 기기에서 상자를 44px 로 키우지 않고 덧면으로 누를 범위를 준다(chipClass 주석).
+            상자째 키우면 12.5px 글자에 44px 알약이 서서 뭉툭했다(2026-11-20 사용자 "장르 뱃지도 좀 너무 뭉툭") */}
         {topGenres.map((g) => (
-          <ChipNavLink key={g} {...nav(href({ genre: filter.genre === g ? undefined : g }))} outline active={filter.genre === g}>
+          <ChipNavLink key={g} {...nav(href({ genre: filter.genre === g ? undefined : g }))} outline compact active={filter.genre === g}>
             {g}
           </ChipNavLink>
         ))}
         <span className="flex-1" />
         {sale && (
           <HideAfter untilIso={sale.endsAt}>
-            <ChipNavLink {...nav(href({ event: filter.event === sale.key ? undefined : sale.key }))} outline active={filter.event === sale.key} toggle>
+            <ChipNavLink {...nav(href({ event: filter.event === sale.key ? undefined : sale.key }))} outline compact active={filter.event === sale.key} toggle>
               {RUNNING_SALE_MESSAGES.chip(sale.name)}
               <span className="sr-only">{filter.event === sale.key ? M.toggleOn : M.toggleOff}</span>
             </ChipNavLink>
@@ -152,10 +156,15 @@ export function GameFilterBar({
         )}
         {/* "무료 제외" 칩은 걷었다(2026-10-27, 사용자). 인기순이 무료 게임을 이미 뒤로 보내서 할 일이 없다.
             nofree=1 주소는 계속 읽고, 걸려 있으면 걸린 조건 줄(active.tsx)에서 풀 수 있다 */}
-        <ChipNavLink {...nav(href({ korean: !filter.korean }))} outline active={Boolean(filter.korean)} toggle>
-          {M.korean}
-          <span className="sr-only">{filter.korean ? M.toggleOn : M.toggleOff}</span>
-        </ChipNavLink>
+        {/* 한국어 지원은 좁은 화면에서 숨긴다(2026-11-20 사용자 "필터가 너무 많아 불편, 한국어 지원 필터는 숨길까"). 숨긴다 ≠ 지운다 —
+            korean=1 주소는 계속 읽고, 걸려 있으면 걸린 조건 줄에서 풀린다. 되살리려면 감싼 span 을 걷는다.
+            칩에 hidden 을 직접 주지 않는 이유: cn 은 겹친 display 를 지우지 않아 inline-flex 와 CSS 순서 싸움이 된다 */}
+        <span className="hidden sm:contents">
+          <ChipNavLink {...nav(href({ korean: !filter.korean }))} outline compact active={Boolean(filter.korean)} toggle>
+            {M.korean}
+            <span className="sr-only">{filter.korean ? M.toggleOn : M.toggleOff}</span>
+          </ChipNavLink>
+        </span>
         {personal && <PersonalToggle personal={personal} sheet={false} />}
       </div>
     </div>
