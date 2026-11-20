@@ -5,6 +5,7 @@
 // 받는 시점: 입력을 멈추고 SUGGEST_DEBOUNCE_MS 뒤. 늦게 온 옛 응답이 새 글자의 목록을 덮지 않게 AbortController 로 앞 요청을 끊는다.
 import { useEffect, useMemo, useState } from "react";
 import { FadeImage } from "@/components/ui/fade-image";
+import { Clamp } from "@/components/ui/tooltip";
 import { isOptimizableImage } from "@/lib/image-hosts";
 import { cn } from "@/lib/cn";
 import { gamePath, ROUTES } from "@/lib/routes";
@@ -85,7 +86,8 @@ export function SuggestPanel({
   onHover: (i: number) => void;
 }) {
   return (
-    <div className="absolute inset-x-0 top-[calc(100%+6px)] z-50 overflow-hidden rounded-[var(--radius-md)] bg-surface shadow-3 ring-1 ring-line">
+    // 640 아래에서는 머리띠 폭을 다 쓴다(좌우 12px) — 검색칸이 static 이라 기준이 머리띠다(search-box 의 FORM_CLASS 주석)
+    <div className="absolute inset-x-0 top-[calc(100%+6px)] z-50 overflow-hidden rounded-[var(--radius-md)] bg-surface shadow-3 ring-1 ring-line max-sm:inset-x-3 max-sm:top-[calc(100%+4px)]">
       {empty && <p className="px-4 pt-3 text-[13px] text-dim">{M.empty}</p>}
       <ul id={id} role="listbox" aria-label={M.listLabel} className="max-h-[min(70vh,480px)] overflow-y-auto py-1.5">
         {options.map((o, i) => {
@@ -104,7 +106,7 @@ export function SuggestPanel({
                 }}
                 onMouseEnter={() => onHover(i)}
                 className={cn(
-                  "mx-1.5 flex min-h-[var(--touch-target)] cursor-pointer items-center gap-3 rounded-lg px-2.5 text-[14px]",
+                  "mx-1.5 flex min-h-[var(--touch-target)] cursor-pointer items-center gap-3 rounded-lg px-2.5 py-1 text-[14px]",
                   o.group === "all" && "mt-1 border-t border-line-soft font-semibold text-acc",
                   i === active ? "bg-surface-2 text-ink" : o.group === "all" ? "" : "text-ink-2",
                 )}
@@ -115,7 +117,8 @@ export function SuggestPanel({
                   </span>
                 )}
                 <span className="flex min-w-0 flex-1 flex-col">
-                  <span className="truncate">{o.label}</span>
+                  {/* 제목은 두 줄까지(긴 부제, 에디션 이름이 한 줄에서 잘렸다). 그래도 잘리면 올렸을 때 전체를 띄운다 */}
+                  <Clamp lines={2} className="break-words">{o.label}</Clamp>
                   {o.sub && <span className="truncate text-[12px] text-dim">{o.sub}</span>}
                 </span>
               </div>
