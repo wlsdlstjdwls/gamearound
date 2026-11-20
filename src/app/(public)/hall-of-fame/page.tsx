@@ -221,7 +221,8 @@ export default async function HallOfFamePage({ searchParams }: Props) {
   return (
     <Page gap={20}>
       <PageHead menuScreen title={M.hofTitle}>
-        <p className="text-[14px] text-mut">{M.hofHeadLead}</p>
+        {/* 좁은 화면에서는 숨긴다(2026-11-20 사용자 "상단 문구 제거"). 메뉴 띠가 화면 이름을 말하고, 문구 한 줄이 첫 화면만 밀었다 */}
+        <p className="text-[14px] text-mut max-sm:hidden">{M.hofHeadLead}</p>
       </PageHead>
       <NavPendingScope>
         {/* 좁은 화면: 탭과 달 고르기를 흰 판 하나에 묶는다(2026-11-20 사용자 "상단 탭도 불편, 날짜 이동도 어색"). 전에는 알약 둘과

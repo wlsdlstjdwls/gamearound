@@ -70,7 +70,8 @@ export default async function IndiePage({ searchParams }: Props) {
   const head = (
     // "내 게임 등록" 단추는 걷었다(2026-11-16 피드백 v11 #23 "내 게임 등록 중복") — 등록은 개발자 라운지의 내 게임 관리 한 곳에서 한다
     <PageHead menuScreen title={M.listTitle}>
-      <p className="text-[14px] text-mut">{M.lead}</p>
+      {/* 좁은 화면에서는 숨긴다(2026-11-20 사용자 "상단 문구 제거"). 메뉴 띠가 화면 이름을 말하고, 문구 한 줄이 첫 화면만 밀었다 */}
+        <p className="text-[14px] text-mut max-sm:hidden">{M.lead}</p>
     </PageHead>
   );
   // DB 가 안 열린 날: 제목은 세우고 목록 자리에만 안내를 둔다(components/db-unavailable)

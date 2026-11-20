@@ -61,6 +61,7 @@ export function PageHeadSkeleton({
   action,
   menuScreen = false,
   leadRow = false,
+  phoneDesc = true,
 }: {
   size?: "page" | "hero";
   width?: string;
@@ -74,10 +75,12 @@ export function PageHeadSkeleton({
    * 넓은 화면 설명 줄은 PageLead 한 줄 높이 24px 다(2026-11-20 1440 실측: 머리 71 = 제목 37 + 10 + 24)
    */
   leadRow?: boolean;
+  /** false 면 좁은 화면에서 설명 줄을 걷는다(실물이 그 폭에서 문단을 숨긴 화면: 명예의 전당, 슈퍼루키, 모든 인디 게임) */
+  phoneDesc?: boolean;
 }) {
   const inline = menuScreen && leadRow && Boolean(action) && desc > 0;
   return (
-    <div className={cn("flex flex-col gap-2.5", menuScreen && !action && desc === 0 && "max-sm:hidden", inline && "max-sm:flex-row max-sm:items-center max-sm:gap-3")}>
+    <div className={cn("flex flex-col gap-2.5", menuScreen && !action && (desc === 0 || !phoneDesc) && "max-sm:hidden", inline && "max-sm:flex-row max-sm:items-center max-sm:gap-3")}>
       <div
         className={cn(
           "flex items-center justify-between gap-4",

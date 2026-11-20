@@ -9,7 +9,7 @@ const PODIUM = 2; // 2위, 3위
 export default function HallOfFameLoading() {
   return (
     <SkeletonPage gap={20}>
-      <PageHeadSkeleton menuScreen width="w-36" desc={1} />
+      <PageHeadSkeleton menuScreen width="w-36" desc={1} phoneDesc={false} />
       {/* 좁은 화면: 탭(반반 칸)과 달 고르기가 흰 판 하나에 묶인다(page 주석). 높이는 390px 실측 114px(2026-11-20) */}
       <Bone className="h-[114px] w-full rounded-[var(--radius-panel)] md:hidden" />
       <div className="hidden md:flex md:flex-row md:items-center md:justify-between">

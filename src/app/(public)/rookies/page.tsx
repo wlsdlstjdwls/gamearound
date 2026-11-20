@@ -27,7 +27,8 @@ export default async function RookiesPage() {
   return (
     <Page gap={22}>
       <PageHead menuScreen title={M.rookieTitle}>
-        <p className="text-[14px] text-mut">{M.rookieLead}</p>
+        {/* 좁은 화면에서는 숨긴다(2026-11-20 사용자 "상단 문구 제거"). 메뉴 띠가 화면 이름을 말하고, 문구 한 줄이 첫 화면만 밀었다 */}
+        <p className="text-[14px] text-mut max-sm:hidden">{M.rookieLead}</p>
       </PageHead>
       {!rookies ? (
         <DbUnavailable retryHref={ROUTES.rookies} />

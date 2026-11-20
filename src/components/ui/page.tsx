@@ -222,7 +222,9 @@ export function PageHead({
     <div
       className={cn(
         "flex flex-col gap-2.5",
-        menuScreen && !note && !action && !children && "max-sm:contents",
+        // 설명 문단(children)이 있어도 좁은 화면에서는 껍데기를 푼다 — 문단을 그 폭에서 숨긴 화면(명예의 전당, 슈퍼루키, 모든 인디 게임)에
+        // 빈 껍데기가 남아 페이지 틈 한 칸을 먹지 않게. 보이는 문단은 페이지의 칸으로 바로 선다(제목이 sr-only 라 위에 붙을 것이 없다)
+        menuScreen && !note && !action && "max-sm:contents",
         inline && "max-sm:flex-row max-sm:items-center max-sm:gap-3",
         className,
       )}

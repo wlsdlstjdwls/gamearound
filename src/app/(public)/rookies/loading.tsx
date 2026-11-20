@@ -9,7 +9,7 @@ const SKELETON_CARDS = 8; // 4열 두 줄 — 실물은 최대 12장이지만 �
 export default function RookiesLoading() {
   return (
     <SkeletonPage gap={22}>
-      <PageHeadSkeleton menuScreen width="w-32" desc={1} />
+      <PageHeadSkeleton menuScreen width="w-32" desc={1} phoneDesc={false} />
       <div className={HOME_GRID_CLASS}>
         {Array.from({ length: SKELETON_CARDS }).map((_, i) => (
           <IndieCardSkeleton key={i} />
