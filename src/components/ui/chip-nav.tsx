@@ -79,10 +79,10 @@ export function ChipNavLink({ active = false, filled = false, size, className, c
         onClick?.(e);
         if (toggle && isPlainClick(e)) setShown(!shown);
       }}
-      // compact 에서는 overflow-hidden 을 걷는다 — 그 모드의 탭 범위는 칩 **밖으로** 8px 넘긴
+      // compact(기본값)에서는 overflow-hidden 을 걷는다 — 그 모드의 탭 범위는 칩 **밖으로** 8px 넘긴
       // 덧면이라(globals.css 의 .tap-inset) 잘라 내면 손가락 목표가 도로 칩 크기가 된다.
       // 막(PendingVeil)이 튀어나올 걱정은 없다: .chip-pending 이 border-radius 를 물려받는다
-      className={chipClass({ active: shown, filled, size, compact, outline, className: `relative ${compact ? "" : "overflow-hidden"} ${className ?? ""}`.trim() })}
+      className={chipClass({ active: shown, filled, size, compact, outline, className: `relative ${compact === false ? "overflow-hidden" : ""} ${className ?? ""}`.trim() })}
       {...rest}
     >
       {toggle && <ChipCheck on={shown} />}

@@ -54,7 +54,8 @@ export function markWished(kind: WishKind, slug: string, on: boolean) {
  * 글자는 그대로 선다(아래 release 주석, 2026-10-26)
  */
 const RELEASE_SIZE = {
-  md: { box: "tap min-h-[var(--touch-target)] gap-1.5 px-4 text-[13px] sm:min-h-9 sm:px-3.5", icon: 15 },
+  // 휴대폰에서도 36px 로 서고 44px 터치는 덧면이 준다(2026-11-20 사용자 "모바일 뱃지들이 위아래 공백이 많은듯")
+  md: { box: "tap-inset h-9 gap-1.5 px-4 text-[13px] sm:px-3.5", icon: 15 },
   sm: { box: "tap-inset h-8 gap-1 px-3 text-[12.5px]", icon: 13 },
 } as const;
 

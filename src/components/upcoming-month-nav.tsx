@@ -74,7 +74,7 @@ export function UpcomingMonthNav({ months, activeKey, filter }: { months: { key:
                   router.push(upcomingMonthHref(first.key, firstKey, filter), { scroll: false });
                 }}
                 className={cn(
-                  "press tap rounded-full px-3 py-1.5 text-[13px] font-bold tabular-nums transition-[background-color,color,box-shadow] duration-base",
+                  "press tap-inset rounded-full px-3 py-1.5 text-[13px] font-bold tabular-nums transition-[background-color,color,box-shadow] duration-base",
                   on ? "bg-surface text-ink shadow-1" : "text-dim hover:text-ink",
                 )}
               >

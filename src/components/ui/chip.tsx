@@ -18,7 +18,7 @@ const SIZE: Record<ChipSize, string> = {
    *
    * 줄높이를 1.3 으로 조이고 위아래를 3px 로 줄여 22px 로 만든다. 더 줄이지 않는 이유:
    * 안에 11px 짜리 X 표시가 들어가고, 그 아래로는 글자와 아이콘이 테두리에 닿는다.
-   * 손가락 목표는 여기서 줄지 않는다 — compact 가 44px 을 덧면으로 따로 준다(chipClass 주석).
+   * 손가락 목표는 여기서 줄지 않는다 — compact(기본값)가 44px 을 덧면으로 따로 준다(chipClass 주석).
    */
   xs: "px-2.5 py-[3px] text-[12px] leading-[1.3]",
   /** 관리자 목록, 차트 기간처럼 조밀한 자리 */
@@ -69,15 +69,16 @@ const IDLE_OUTLINE = "border border-line-strong bg-surface text-ink shadow-hair 
  * hover:bg-acc-hover 가 둘 다 남아 CSS 순서로 밝은 면이 이겼고, 그 위에 흰 글자가 섰다.
  */
 export function chipClass(opts: { active?: boolean; filled?: boolean; size?: ChipSize; className?: string; compact?: boolean; outline?: boolean } = {}): string {
-  const { active = false, filled = false, size = "md", className, compact = false, outline = false } = opts;
+  const { active = false, filled = false, size = "md", className, compact = true, outline = false } = opts;
   const on = active || filled;
   return cn(
     // tap: 손가락 기기에서만 최소 높이를 44px 로 올린다(globals.css). 칩은 12~13px 글자라
     // 실제 높이가 30~33px 밖에 되지 않아 필터, 페이지 이동에서 옆 칩이 눌리는 자리였다.
     //
-    // compact 는 그 44px 을 **덧면으로** 준다(tap-inset). 칩의 높이가 곧 그 줄의 높이인 자리
-    // (걸린 조건 띠)에서만 쓴다 — 거기서는 상자를 키우면 띠가 통째로 두꺼워진다.
-    // 누르는 범위는 두 방식 모두 44px 이다.
+    // compact 는 그 44px 을 **덧면으로** 준다(tap-inset). 누르는 범위는 두 방식 모두 44px 이다.
+    // 2026-11-20 부터 compact 가 기본이다(사용자 "모바일 뱃지들이 위아래 공백이 많은듯", 같은 날 "장르 뱃지 뭉툭").
+    // 상자째 44px 로 키우면 12~13px 글자 위아래로 6~7px 씩 빈 면이 생겨 휴대폰에서만 알약이 부풀었다.
+    // 상자를 키워야 하는 자리가 생기면 compact={false} 를 넘긴다
     "press inline-flex items-center rounded-full transition-colors duration-base",
     compact ? "tap-inset" : "tap",
     SIZE[size],
