@@ -20,8 +20,11 @@ import { SECTION_SIZE } from "@/components/ui/page";
 import { cn } from "@/lib/cn";
 
 /** 요약 줄과 본문이 **반드시** 같은 값을 써야 두 기둥이 맞는다. 한 곳에서만 고친다 */
-/** 판정 5 : 사양 7(2026-11-23 사용자 "구동 사양 영역이 더 넓으면"). 사양표는 최소, 권장 두 칸에 긴 부품 이름이 서고, 판정은 짧은 줄뿐이다 */
-const GRID = "grid min-w-0 items-start gap-x-10 gap-y-6 lg:grid-cols-[minmax(0,5fr)_minmax(0,7fr)]";
+/**
+ * 판정 1 : 사양 2(2026-11-23 사용자 "구동 사양 영역이 더 넓으면", 5 : 7 뒤 "더 넓게"). 사양표는 최소, 권장 두 칸에 긴 부품 이름이 서고,
+ * 판정은 짧은 줄뿐이다. 판정 칸은 320px 밑으로 줄지 않는다 — 부위 줄(이름, 내 부품, 결과)이 그 아래에서 접힌다
+ */
+const GRID = "grid min-w-0 items-start gap-x-8 gap-y-6 lg:grid-cols-[minmax(320px,1fr)_minmax(0,2fr)]";
 
 function Title({ id, title, note }: { id: string; title: string; note?: React.ReactNode }) {
   return (
