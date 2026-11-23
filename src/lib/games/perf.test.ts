@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { perfFromPcgwWikitext, perfFromXboxAttributes, perfHeadline } from "./perf";
+import { perfFromPcgwWikitext, perfFromXboxAttributes, perfLines } from "./perf";
 
 describe("perfFromXboxAttributes", () => {
   it("사이버펑크 2077 한국 응답의 속성", () => {
@@ -16,7 +16,16 @@ describe("perfFromPcgwWikitext", () => {
   });
 });
 
-describe("perfHeadline", () => {
-  it("최대 해상도와 프레임", () => expect(perfHeadline(["4k", "60fps", "120fps"])).toBe("4K | 120fps"));
-  it("모르면 null", () => expect(perfHeadline(["hdr"])).toBeNull());
+describe("perfLines", () => {
+  it("해상도, 프레임은 가장 높은 값 하나", () =>
+    expect(perfLines(["4k", "120fps", "60fps"])).toEqual([
+      { label: "최대 해상도", value: "4K" },
+      { label: "최대 프레임", value: "120fps" },
+    ]));
+  it("같은 갈래는 쉼표로 잇는다", () =>
+    expect(perfLines(["hdr", "raytracing", "upscaling", "framegen"])).toEqual([
+      { label: "화질", value: "HDR, 레이 트레이싱" },
+      { label: "성능 기술", value: "업스케일링, 프레임 생성" },
+    ]));
+  it("없으면 빈 배열", () => expect(perfLines([])).toEqual([]));
 });

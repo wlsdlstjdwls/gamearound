@@ -113,6 +113,10 @@ export const DETAIL_MESSAGES = {
   /** 성능 정보 탭 아래 플랫폼별 한 줄(game-detail/perf-row) */
   perfRowTitle: "플랫폼별 성능",
   perfRowNone: "공개된 성능 정보가 없어요",
+  /** 칸 안 줄 이름 — 성능 표지 밖의 스토어 사실(game-detail/perf-row). 표지 줄 이름은 lib/games/perf 의 perfLines */
+  perfLineModel: "기종",
+  perfLineDeck: "스팀덱",
+  perfLineUpgrade: "업그레이드",
   perfRowNote: "Xbox 는 스토어, PC 는 PCGamingWiki 가 공개한 지원 표시예요. PlayStation, Nintendo 는 스토어가 성능 정보를 공개하지 않아요.",
   moreHeading: "더 알아보기",
   sourcesHeading: "정보 출처",

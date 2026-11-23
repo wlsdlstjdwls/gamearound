@@ -35,6 +35,13 @@ export const DECK_COMPAT_LABEL: Record<DeckCompat, string> = {
   unsupported: "스팀덱 미지원",
 };
 
+/** 줄 이름이 이미 "스팀덱" 인 자리(game-detail/perf-row)의 값 — 같은 낱말을 두 번 적지 않는다 */
+export const DECK_COMPAT_SHORT: Record<DeckCompat, string> = {
+  verified: "검증됨",
+  playable: "구동 가능",
+  unsupported: "미지원",
+};
+
 /** 네이티브로 도는 OS 칩. 참인 것만 적는다 — 우회 실행(Proton, 포팅 툴킷)은 우리가 보증할 값이 아니다 */
 export const NATIVE_OS_LABEL = {
   mac: "맥 지원",

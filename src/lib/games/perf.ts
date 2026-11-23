@@ -71,10 +71,27 @@ export function perfFromPcgwWikitext(wikitext: string): PerfFeature[] {
   return normalizePerf(out);
 }
 
-/** 화면 한 줄 요약 — 최대 해상도와 최대 프레임("4K | 120fps"). 둘 다 모르면 null */
-export function perfHeadline(features: readonly string[]): string | null {
-  const res = features.includes("8k") ? "8K" : features.includes("4k") ? "4K" : null;
-  const fps = features.includes("120fps") ? "120fps" : features.includes("60fps") ? "60fps" : null;
-  const parts = [res, fps].filter((v): v is string => v !== null);
-  return parts.length > 0 ? parts.join(" | ") : null;
+/**
+ * 화면 줄 — "항목 이름: 값" 꼴(2026-11-23 사용자 "4K | 120fps 라고 쓰지 말고 어떤 항목이 무슨 값인지").
+ * 해상도와 프레임은 가장 높은 값 하나만(4K 를 지원하면 1080p 도 된다), 나머지는 같은 갈래끼리 쉼표로 잇는다.
+ * 값이 없는 갈래는 줄을 세우지 않는다 — "-" 줄이 늘어서면 고장으로 읽힌다(requirements-table 과 같은 규칙).
+ */
+const PERF_LINES: ReadonlyArray<{ label: string; keys: readonly PerfFeature[]; top?: boolean }> = [
+  { label: "최대 해상도", keys: ["8k", "4k"], top: true },
+  { label: "최대 프레임", keys: ["120fps", "60fps"], top: true },
+  { label: "화질", keys: ["hdr", "raytracing"] },
+  { label: "성능 기술", keys: ["upscaling", "framegen", "vrr"] },
+  { label: "화면 비율", keys: ["ultrawide"] },
+  { label: "최적화", keys: ["series_optimized"] },
+];
+
+export type PerfLine = { label: string; value: string };
+
+export function perfLines(features: readonly string[]): PerfLine[] {
+  return PERF_LINES.flatMap((line) => {
+    const hit = line.keys.filter((k) => features.includes(k));
+    if (hit.length === 0) return [];
+    const values = (line.top ? hit.slice(0, 1) : hit).map((k) => PERF_FEATURE_LABEL[k]);
+    return [{ label: line.label, value: values.join(", ") }];
+  });
 }
