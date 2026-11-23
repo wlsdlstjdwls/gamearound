@@ -46,6 +46,7 @@ export function RunCheck({
   requirementNote,
   verdict,
   requirements,
+  footer,
   defaultOpen = true,
 }: {
   verdictTitle: string;
@@ -56,6 +57,8 @@ export function RunCheck({
   requirementNote?: string;
   verdict: React.ReactNode;
   requirements: React.ReactNode;
+  /** 두 기둥 아래 폭 전체에 서는 덧붙임(플랫폼별 성능). 마디와 함께 접힌다(2026-11-23 사용자 "접으면 플랫폼별 성능은 여전히 보인다") */
+  footer?: React.ReactNode;
   defaultOpen?: boolean;
 }) {
   return (
@@ -88,6 +91,7 @@ export function RunCheck({
           {requirements}
         </div>
       </div>
+      {footer && <div className="mt-6">{footer}</div>}
     </details>
   );
 }

@@ -77,7 +77,8 @@ export function BestMark({ label = "최저가" }: { label?: string }) {
  * 최저가는 오른쪽 끝 테두리 알약 그대로다.
  */
 export function HeadMarks({ best, historicLow }: { best: boolean; historicLow: boolean }) {
-  if (historicLow) return <span className="shrink-0 text-[11px] font-bold text-danger">{GAME_MESSAGES.historicLowLabel}</span>;
+  // 문구는 짧은 꼴 "역대최저"(같은 날 "더 줄여줘") — 이름 옆 곁말이라 넉 자로 족하다. 다른 자리(목록 카드 배지)는 긴 꼴 그대로
+  if (historicLow) return <span className="shrink-0 text-[11px] font-bold text-danger">{GAME_MESSAGES.historicLowShort}</span>;
   if (!best) return null;
   return (
     <span className="ml-auto flex shrink-0 items-center">
@@ -148,12 +149,16 @@ export function PriceTile({
   release: string | null;
 }) {
   const hasDiscount = Boolean(p.discountPct && p.discountPct > 0);
+  // PC 카드는 머리가 기기 이름(PC), 지원 줄이 스토어(Steam)다(2026-11-23 사용자 "Steam 이랑 PC 랑 위치가 바뀜").
+  // 콘솔 카드가 머리에 기기 갈래(PlayStation), 지원 줄에 세대(PS5)를 두는 것과 같은 꼴이다
+  const isPc = devicesOf([p.platform])[0] === "pc";
+  const headName = isPc ? DEVICE_LABEL.pc : brandNameOf(p);
   // 무료면 "최저가" 를 세우지 않는다(2026-09-22, 사용자 지정) — 0원은 비교의 대상이 아니다
   const showBest = isBest && p.currentPrice !== 0;
   return (
     // 고를 수 있는 카드(game-detail/platform-pick). 최저가는 면을 칠하지 않고 딱지로만 말한다(2026-10-27)
     <PickableTile brand={brandKeyOf(p.platform)} label={brandNameOf(p)} id={id} className={cn(TILE, "bg-surface shadow-hair")}>
-      <CardHead name={brandNameOf(p)}>
+      <CardHead name={headName}>
         {/* 스토어마다 따로 본다 — PS 는 예약 중이어도 스팀은 이미 팔 수 있다(lib/games/preorder) */}
         {isPreorder(p) && <Tag>{PREORDER_LABEL}</Tag>}
         <HeadMarks best={showBest} historicLow={hasDiscount && Boolean(p.historicLow)} />
@@ -162,7 +167,7 @@ export function PriceTile({
       {/* dl 은 contents — 줄 하나하나가 격자의 줄(subgrid)에 바로 앉아야 해서 감싸는 상자를 지운다 */}
       <dl className="contents">
         <Row label={D.releaseRow}>{release ?? D.releaseUnknown}</Row>
-        <Row label={D.hardwareRow}>{hardwareText([p.platform])}</Row>
+        <Row label={D.hardwareRow}>{isPc ? brandNameOf(p) : hardwareText([p.platform])}</Row>
         <Row label={D.listPriceRow} className={PRICE_DIVIDER}>
           {/* 정가가 비어도 할인이 아니면 지금 값이 곧 정가다 — "-" 옆에 현재 가격만 서면 고장으로 읽혔다(2026-11-11 엘든 링 PS4 카드) */}
           {p.listPrice === null && p.currentPrice !== null && !hasDiscount ? (

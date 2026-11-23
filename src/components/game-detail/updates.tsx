@@ -70,12 +70,16 @@ export function DetailUpdates({ game, patchGroups, upcoming }: { game: GameDetai
                     </Suspense>
                   }
                   requirements={<RequirementsBody groups={game.requirements} />}
+                  // 플랫폼별 성능도 이 마디 안이다 — 마디를 접으면 같이 접힌다(2026-11-23 사용자)
+                  footer={!upcoming && <PerfRow game={game} />}
                 />
               ) : (
-                <p className="text-[13px] text-dim">{upcoming ? D.perfUpcoming : D.perfNone}</p>
+                <>
+                  <p className="text-[13px] text-dim">{upcoming ? D.perfUpcoming : D.perfNone}</p>
+                  {/* 사양이 없는 게임(콘솔 전용)은 접는 마디가 없어 플랫폼별 성능만 선다 */}
+                  {!upcoming && <PerfRow game={game} />}
+                </>
               )}
-              {/* 내 사양 판정과 PC 최소 사양 아래 플랫폼별 한 줄(2026-11-16 사용자) */}
-              {!upcoming && <PerfRow game={game} />}
             </div>
           ),
         },

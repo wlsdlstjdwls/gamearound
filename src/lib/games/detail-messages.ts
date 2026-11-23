@@ -30,7 +30,7 @@ export const DETAIL_MESSAGES = {
   upcomingHeading: "출시 정보",
   releaseRow: "출시일",
   metacriticRow: "메타크리틱",
-  hardwareRow: "지원 기종",
+  hardwareRow: "지원",
   versionRow: "버전",
   userScoreRow: "유저 점수",
   listPriceRow: "정가",
@@ -113,13 +113,13 @@ export const DETAIL_MESSAGES = {
   perfUpcoming: "출시 전이라 성능 정보가 아직 없어요.",
   /** 성능 정보 탭 아래 플랫폼별 한 줄(game-detail/perf-row) */
   perfRowTitle: "플랫폼별 성능",
-  perfRowNone: "공개된 성능 정보가 없어요.",
+  perfRowNone: "공개된 성능 정보가 없습니다.",
   /** 칸 안 줄 이름 — 성능 표지 밖의 스토어 사실(game-detail/perf-row). 표지 줄 이름은 lib/games/perf 의 perfLines */
   perfLineModel: "기종",
   perfLineDeck: "스팀덱",
   perfLineUpgrade: "업그레이드",
   /** 이 게임이 안 나온 기기 칸(네 칸은 늘 선다, game-detail/perf-row) */
-  perfRowNotReleased: "이 기기로는 출시하지 않았어요.",
+  perfRowNotReleased: "이 기기로는 출시하지 않았습니다.",
   moreHeading: "더 알아보기",
   sourcesHeading: "정보 출처",
 } as const;

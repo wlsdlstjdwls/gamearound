@@ -114,7 +114,10 @@ export type PriceCard = { kind: "row"; row: PlatformPriceItem } | { kind: "absen
  * 한 줄에 나란히 서서 비교한다. 갈래 순서는 그대로 지켜 PC 카드가 늘 앞에 선다 — 이름표가 없어도 자리가 갈래를 말한다.
  */
 export function orderCards(platforms: PlatformPriceItem[]): PriceCard[] {
-  const rows = groupByBrand([...platforms].sort(byPrice));
+  // 갈래 안 순서는 값이 아니라 플랫폼 순(PLATFORM_ORDER: PS5, PS4, Xbox, Switch)이다(2026-11-23 사용자 "플스가 Xbox 보다 앞에").
+  // 값 순이면 게임마다 카드 자리가 바뀌어 "PlayStation 카드는 어디" 를 매번 찾아야 했다. 같은 묶음 안은 여전히 싼 순이다(sort 는 안정 정렬)
+  const rank = (p: Platform) => PLATFORM_ORDER.indexOf(p);
+  const rows = groupByBrand([...platforms].sort(byPrice)).sort((a, b) => rank(a.platform) - rank(b.platform));
   const absent = absentBrands(new Set(platforms.map((p) => p.platform)));
   return PLATFORM_FAMILIES.flatMap((family): PriceCard[] => [
     ...rows.filter((r) => familyOf(r.platform) === family).map((row) => ({ kind: "row" as const, row })),

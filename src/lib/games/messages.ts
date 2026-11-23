@@ -355,6 +355,8 @@ export const GAME_MESSAGES = {
    * 그 조건이 "역대" 를 말할 근거라 "기록 기준" 같은 단서는 달지 않는다(2026-11-11 사용자 지정)
    */
   historicLowLabel: "역대 최저가",
+  /** 가격 비교 카드 이름 옆 곁말(platform-prices/tile 의 HeadMarks) */
+  historicLowShort: "역대최저",
   recordedLowNote: (gap: string, at: string) => `지금보다 ${gap} 쌌어요 | ${at}`,
   patchNone: "아직 모은 패치 기록이 없어요.",
   /** 사양표 아래 한 줄은 없앴다(2026-09-22, 사용자 결정) — 표 자체가 "스토어가 적은 값" 이고,
