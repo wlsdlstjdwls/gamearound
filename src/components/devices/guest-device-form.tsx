@@ -46,6 +46,7 @@ export function GuestDeviceForm({
   onSaved,
   lead,
   columns = true,
+  onCancel,
 }: {
   current: CompatDevice | null;
   onSaved: (device: CompatDevice) => void;
@@ -57,6 +58,8 @@ export function GuestDeviceForm({
   lead?: string;
   /** 넓은 자리에서는 세 칸을 나란히, 좁은 기둥(목록 필터)에서는 세로로 쌓는다 */
   columns?: boolean;
+  /** 적어 둔 기기를 고치다 그만두는 길(상세 판정 칸). 없으면 취소 단추를 세우지 않는다 */
+  onCancel?: () => void;
 }) {
   // 사람이 고른 값만 상태로 둔다. 아직 안 고른 칸(null)은 감지 결과가, 그것도 없으면 기본값이 채운다 —
   // "내가 적은 값" 과 "우리가 채운 값" 을 한 상태에 섞으면 감지가 사람 글자를 덮는 사고가 난다
@@ -182,6 +185,11 @@ export function GuestDeviceForm({
         <button type="button" onClick={save} className={buttonClass({ variant: "accent" })}>
           {COMPAT_MESSAGES.check}
         </button>
+        {onCancel && (
+          <button type="button" onClick={onCancel} className={buttonClass({ variant: "secondary" })}>
+            {COMPAT_MESSAGES.cancel}
+          </button>
+        )}
         <DetectButton
           quiet
           onDetected={(spec) => {

@@ -15,6 +15,8 @@
 //      그걸 모르면 사람이 할 수 있는 일(램 증설, 설정 낮추기)을 고를 수 없다.
 //      권장 판정도 같이 돌린다 — 최소를 넘은 사람이 다음에 묻는 것은 "쾌적한가" 하나다.
 import { useState } from "react";
+import Link from "next/link";
+import { ROUTES } from "@/lib/routes";
 import { ROWS } from "@/components/ui/page";
 import { chipClass } from "@/components/ui/chip";
 import { Clamp } from "@/components/ui/tooltip";
@@ -164,6 +166,7 @@ export function CompatSection({
           // 비회원에게 로그인부터 요구하지 않는다(설계 §4). 이 자리에서 바로 적게 하고 브라우저에 둔다
           <GuestDeviceForm
             current={guest}
+            onCancel={device ? () => setEditing(false) : undefined}
             onSaved={(d) => {
               setSelected(d.id);
               setEditing(false);
@@ -171,21 +174,44 @@ export function CompatSection({
           />
         )}
 
-        {device && all.length > 1 && (
-          <ul className="flex flex-wrap gap-1.5" aria-label="기기 고르기">
-            {all.map((d) => (
-              <li key={d.id}>
-                <button
-                  type="button"
-                  onClick={() => setSelected(d.id)}
-                  aria-pressed={d.id === device.id}
-                  className={chipClass({ active: d.id === device.id })}
-                >
-                  {d.label}
-                </button>
-              </li>
-            ))}
-          </ul>
+        {device && !editing && (
+          // 판정 기기 줄(2026-11-23). 무엇으로 판정했는지, 어디서 바꾸는지를 판정 위에 늘 세운다.
+          // 기기를 한 번 적으면 입력 칸이 사라지는데, 전에는 고치는 길이 판정 맨 밑 작은 글자(비회원)뿐이었고
+          // 계정에 기기를 둔 사람에게는 아예 없었다 — "입력이 없어졌다" 로 읽혔다.
+          // 부품 값은 여기 되풀이하지 않는다 — 바로 아래 항목 줄이 부위마다 내 값을 적는다.
+          <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
+            <span className="text-[12.5px] font-medium text-dim">{COMPAT_MESSAGES.judgedWith}</span>
+            {all.length > 1 ? (
+              <ul className="flex flex-wrap gap-1.5" aria-label={COMPAT_MESSAGES.judgedWith}>
+                {all.map((d) => (
+                  <li key={d.id}>
+                    <button
+                      type="button"
+                      onClick={() => setSelected(d.id)}
+                      aria-pressed={d.id === device.id}
+                      className={chipClass({ active: d.id === device.id })}
+                    >
+                      {d.label}
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            ) : (
+              <span className="text-[13.5px] font-bold text-ink">
+                {device.label} <span className="font-medium text-mut">({OS_FAMILY_LABEL[device.osFamily]})</span>
+              </span>
+            )}
+            {/* 계정 기기는 설정 화면이 제자리다(여러 대, 저장공간까지). 브라우저 기기는 이 자리에서 바로 고친다 */}
+            {devices.length > 0 ? (
+              <Link href={ROUTES.settingsDevices} className="ml-auto text-[12.5px] font-semibold text-acc hover:underline">
+                {COMPAT_MESSAGES.manageDevices}
+              </Link>
+            ) : (
+              <button type="button" onClick={() => setEditing(true)} className="ml-auto text-[12.5px] font-semibold text-acc hover:underline">
+                {COMPAT_MESSAGES.changeSpec}
+              </button>
+            )}
+          </div>
         )}
 
         {device && !group && !editing && (
@@ -249,15 +275,6 @@ export function CompatSection({
             </ul>
             {/* 면책이 아니라 기준이다(messages 의 basis 주석) — "다를 수 있어요" 를 지운 자리다 */}
             <p className="text-[11.5px] leading-[1.6] text-dim">{COMPAT_MESSAGES.basis}</p>
-            {/* 등록된 기기가 없는 사람(= 브라우저에 적어 둔 사람)만 여기서 고친다.
-                계정에 기기가 있는 사람은 설정 화면이 제자리다 */}
-            {devices.length === 0 && (
-              <div>
-                <button type="button" onClick={() => setEditing(true)} className="text-[12.5px] text-acc hover:underline">
-                  {COMPAT_MESSAGES.editDevice}
-                </button>
-              </div>
-            )}
           </>
         )}
       </div>
