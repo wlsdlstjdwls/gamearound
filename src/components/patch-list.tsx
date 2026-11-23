@@ -1,20 +1,22 @@
+"use client";
 // 패치 기록 표시 — 목록(PatchList)과 플랫폼별 속도 비교(PatchSpeed).
 //
-// 목록의 한 줄은 "버전 + 제목 + 종류 + 날짜" 이고, 그 밑에 본문이 선다(2026-11-18 사용자 결정, components/patch-body).
-// 스토어가 한국어 패치 노트를 주지 않아(2026-09-15 실측) 한글은 세 군데서 온다:
-//   bodyKo, titleKo  번역 단계가 미리 쌓은 전문과 제목(sync/patch-translate). 아직 안 옮긴 기록은 null 이고 원문으로 폴백한다
-//   summaryKo        옛 요약 경로(scripts/patch-ko)의 글. 본문이 없는 기록에서만 보인다
-//   종류 딱지        제목에서 규칙으로 읽어낸 한 마디(lib/patch-kind)
-// 한글 제목이 있으면 그것을 보여 주고 없으면 원문으로 폴백한다 — 채우는 일이 밀려도 목록은 선다.
-// **종류 딱지는 늘 원문 제목으로 읽는다.** 규칙이 영어 낱말로 짜여 있어 한글 제목을 넣으면 아무것도 안 걸린다.
-// 원문 글 링크는 본문 밑 "스토어에서 보기" 하나로 모았다(제목까지 링크면 같은 곳으로 가는 길이 둘이다).
-// 글 단위 주소가 없는 소스는 그 링크를 세우지 않는다 — 열리지 않는 링크를 만들지 않기 위해서다.
+// 목록의 한 줄은 "버전 + 제목 + 날짜" 뿐이다(2026-11-23 사용자 "목록에는 제목+버전 정도만"). 본문은 줄을 눌러 여는 팝업에서 본다:
+//   번역본(bodyKo)이 있는 줄   누르면 팝업(ui/sheet)에 한글 전문, "영어 원문 보기" 바꾸기, 머리에 스토어 원문 링크
+//   번역본이 없고 주소가 있는 줄  누르면 스토어 원문으로 바로 간다(새 창). 팝업에 원문을 옮겨 담지 않는다 — 원문은 스토어가 더 잘 보인다
+//   둘 다 없는 줄             누를 곳이 없어 글자만 선다. 열리지 않는 링크를 만들지 않는다
+// 전에는 줄마다 본문 280자와 "스토어에서 보기" 가 서서 다섯 건이 화면 한 장을 넘었다.
+// 종류 딱지(lib/patch-kind)도 목록에서 뺐다 — 제목, 버전만 두라는 지시다. 규칙은 lib 에 남아 있다.
+// 한글 제목(titleKo)이 있으면 그것을, 없으면 원문 제목을 쓴다.
+// 팝업은 목록 하나에 한 장이다 — 줄마다 dialog 를 두면 기록 50건이 dialog 50개가 된다.
+import { useState } from "react";
 import { Clamp } from "@/components/ui/tooltip";
+import { Sheet } from "@/components/ui/sheet";
 import { PatchBody } from "@/components/patch-body";
 import { ROWS } from "@/components/ui/page";
 import { formatDate, platformLabel } from "@/lib/format";
 import { GAME_MESSAGES } from "@/lib/games/messages";
-import { patchKindLabels } from "@/lib/patch-kind";
+import { PATCH_BODY_MESSAGES as M } from "@/lib/patch/messages";
 import type { PatchNoteDto, PlatformPatchesDto } from "@/server/services/games";
 import type { Platform, Region } from "@/server/db/schema";
 
@@ -25,55 +27,95 @@ function VersionChip({ version }: { version: string | null }) {
   );
 }
 
-/**
- * 무엇을 고친 패치인지 한글 한 마디로. 제목이 영어라 이게 없으면 목록이 통째로 영어다.
- * 읽어내지 못한 제목에는 아무것도 붙이지 않는다(lib/patch-kind).
- */
-function KindChips({ title }: { title: string }) {
-  const labels = patchKindLabels(title);
-  if (labels.length === 0) return null;
+type Item = PatchNoteDto & { platform?: Platform; region?: Region };
+
+/** 줄 전체가 누르는 자리다. 버튼이든 링크든 같은 차림이어야 번역 유무로 목록이 들쭉날쭉하지 않는다 */
+const ROW_ACTION =
+  "press tap -mx-2.5 flex min-w-0 flex-1 items-baseline gap-x-2.5 gap-y-1 rounded-[var(--radius-sm)] px-2.5 py-[11px] text-left transition-colors duration-base hover:bg-surface-2";
+
+function RowInner({ n, showPlatform, tail }: { n: Item; showPlatform: boolean; tail?: React.ReactNode }) {
   return (
     <>
-      {labels.map((label) => (
-        <span key={label} className="shrink-0 rounded-full bg-surface-2 px-2 py-[2px] text-[11px] text-ink-2">
-          {label}
-        </span>
-      ))}
+      <VersionChip version={n.version} />
+      <span className="min-w-0 flex-1 text-[13.5px] font-semibold leading-[1.5] text-ink">
+        <Clamp lines={1}>{n.titleKo ?? n.title}</Clamp>
+      </span>
+      {tail}
+      {/* 휴대폰은 읽는 글자를 12.5px 로(2026-11-20 사용자 점검 "11px 대 작은 글자가 많다"). 넓은 화면은 그대로 */}
+      <span className="flex shrink-0 items-center gap-x-1.5 text-[11.5px] text-dim max-sm:text-[12.5px]">
+        {showPlatform && n.platform && (
+          <>
+            <span>{platformLabel({ platform: n.platform, region: n.region ?? "KR" })}</span>
+            <span aria-hidden>|</span>
+          </>
+        )}
+        <time dateTime={n.publishedAt}>{formatDate(n.publishedAt)}</time>
+      </span>
     </>
   );
 }
 
-type Item = PatchNoteDto & { platform?: Platform; region?: Region };
-
 export function PatchList({ items, showPlatform = false }: { items: Item[]; showPlatform?: boolean }) {
+  const [openId, setOpenId] = useState<string | null>(null);
+  const opened = items.find((n) => n.id === openId && n.bodyKo !== null) ?? null;
+
   if (items.length === 0) {
     return <p className="py-3 text-[13px] text-dim">{GAME_MESSAGES.patchNone}</p>;
   }
   return (
-    <ul className={ROWS}>
-      {items.map((n) => (
-        <li key={n.id} className="flex flex-wrap items-baseline gap-x-2.5 gap-y-1 py-[13px]">
-          <VersionChip version={n.version} />
-          <div className="min-w-0 flex-1 text-[13px] leading-[1.5] text-ink">
-            <span className="font-semibold">
-              <Clamp lines={2}>{n.titleKo ?? n.title}</Clamp>
-            </span>
-            <PatchBody bodyKo={n.bodyKo} bodyEn={n.bodyEn} summaryKo={n.summaryKo} url={n.url} />
-          </div>
-          <KindChips title={n.title} />
-          {/* 휴대폰은 읽는 글자를 12.5px 로(2026-11-20 사용자 점검 "11px 대 작은 글자가 많다"). 넓은 화면은 그대로 */}
-          <p className="flex shrink-0 items-center gap-x-1.5 text-[11.5px] text-dim max-sm:text-[12.5px]">
-            {showPlatform && n.platform && (
-              <>
-                <span>{platformLabel({ platform: n.platform, region: n.region ?? "KR" })}</span>
-                <span aria-hidden>|</span>
-              </>
+    <>
+      <ul className={ROWS}>
+        {items.map((n) => (
+          <li key={n.id} className="flex">
+            {n.bodyKo !== null ? (
+              <button type="button" aria-haspopup="dialog" onClick={() => setOpenId(n.id)} className={ROW_ACTION}>
+                <RowInner n={n} showPlatform={showPlatform} />
+              </button>
+            ) : n.url ? (
+              <a href={n.url} target="_blank" rel="noopener noreferrer" className={ROW_ACTION}>
+                <RowInner
+                  n={n}
+                  showPlatform={showPlatform}
+                  tail={<span className="shrink-0 rounded-full bg-surface-2 px-2 py-[2px] text-[11px] font-semibold text-mut">{M.originalOnly}</span>}
+                />
+                <span className="sr-only"> (새 창에서 열림)</span>
+              </a>
+            ) : (
+              <div className="flex min-w-0 flex-1 items-baseline gap-x-2.5 py-[11px]">
+                <RowInner n={n} showPlatform={showPlatform} />
+              </div>
             )}
-            <time dateTime={n.publishedAt}>{formatDate(n.publishedAt)}</time>
-          </p>
-        </li>
-      ))}
-    </ul>
+          </li>
+        ))}
+      </ul>
+      <Sheet
+        title={opened ? (opened.titleKo ?? opened.title) : ""}
+        size="wide"
+        open={opened !== null}
+        onOpenChange={(v) => {
+          if (!v) setOpenId(null);
+        }}
+        actions={
+          opened?.url ? (
+            <a href={opened.url} target="_blank" rel="noopener noreferrer" className="press tap text-[13px] font-semibold text-acc hover:underline">
+              {M.openOriginal}
+              <span className="sr-only"> (새 창에서 열림)</span>
+            </a>
+          ) : null
+        }
+      >
+        {opened && opened.bodyKo !== null && (
+          <div className="flex flex-col gap-3">
+            <p className="flex flex-wrap items-center gap-2 text-[12.5px] text-dim">
+              <VersionChip version={opened.version} />
+              <time dateTime={opened.publishedAt}>{formatDate(opened.publishedAt)}</time>
+            </p>
+            {/* 열 때마다 원문 바꾸기 상태가 처음(번역)으로 돌아가게 글 id 를 열쇠로 준다 */}
+            <PatchBody key={opened.id} bodyKo={opened.bodyKo} bodyEn={opened.bodyEn} />
+          </div>
+        )}
+      </Sheet>
+    </>
   );
 }
 
