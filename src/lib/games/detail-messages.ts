@@ -37,7 +37,8 @@ export const DETAIL_MESSAGES = {
   currentPriceRow: "현재 가격",
   /** 플랫폼 카드의 구독 줄(게임패스, PS Plus 등). 사용자는 "지원하는 게임패스" 라 불렀다(2026-11-16) — 스토어마다 구독 이름이 달라 묶음 이름으로 쓴다 */
   subscriptionRow: "구독",
-  subscriptionNone: "없음",
+  /** 구독이 없을 때 — 다른 빈 줄과 같은 "-"(2026-11-23 사용자) */
+  subscriptionNone: "-",
   /** 고른 플랫폼 카드에 패치 기록이 없을 때(game-detail/patch-notes-panel). 2026-11-23 사용자 지정 문구 — 전에는 기록 있는 스토어 카드를 고르라고 했다 */
   patchesNoneForPick: "업데이트 내역을 확인 중입니다.",
   upcomingTag: "출시 예정",
