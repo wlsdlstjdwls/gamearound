@@ -60,7 +60,7 @@ export function AvatarEditor({ userId, name, initialUrl }: { userId: string; nam
 
   return (
     <div className="flex items-center gap-5">
-      <span className="relative flex size-24 shrink-0 sm:size-28 items-center justify-center overflow-hidden rounded-full bg-surface-3 text-[34px] font-black text-acc shadow-hair">
+      <span className="relative flex size-24 shrink-0 sm:size-28 items-center justify-center overflow-hidden rounded-full bg-surface-3 text-[34px] font-black text-ink-2 shadow-hair">
         {url ? (
           // 미리보기는 blob: 주소라 next/image 최적화를 탈 수 없다 — 그냥 img 다
           // eslint-disable-next-line @next/next/no-img-element
@@ -76,8 +76,9 @@ export function AvatarEditor({ userId, name, initialUrl }: { userId: string; nam
             {M.avatarChange}
             <input ref={input} type="file" accept="image/*" className="sr-only" onChange={(e) => onPick(e.target.files?.[0])} />
           </label>
+          {/* 테두리 보조 단추(2026-11-23 사용자 "기본 이미지로 — 버튼 느낌이 안 난다") — 글자만 있는 ghost 는 안내 글로 읽혔다 */}
           {url && (
-            <button type="button" onClick={reset} disabled={busy} className={buttonClass({ variant: "ghost", size: "sm" })}>
+            <button type="button" onClick={reset} disabled={busy} className={buttonClass({ variant: "secondary", size: "sm" })}>
               {M.avatarReset}
             </button>
           )}

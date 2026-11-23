@@ -51,18 +51,20 @@ export default async function MePage({ searchParams }: Props) {
       </section>
       <NavPendingScope>
         <div role="group" aria-label={M.title} className="flex gap-1.5">
-          <NavChip group="tab" current="page" href={meHref("posts")} active={tab === "posts"}>
+          <NavChip group="tab" current="page" ink href={meHref("posts")} active={tab === "posts"}>
             {M.tabPosts}
           </NavChip>
-          <NavChip group="tab" current="page" href={meHref("saved")} active={tab === "saved"}>
+          <NavChip group="tab" current="page" ink href={meHref("saved")} active={tab === "saved"}>
             {M.tabSaved}
           </NavChip>
         </div>
         {/* 목록은 흰 판 한 장 안에(목업 actPage 의 .bcd) — 게시판 목록과 같은 줄 모양이다.
             빈 목록은 판을 세우지 않는다 — 흰 판 안에 회색 빈 상자가 또 앉아 두 겹이 됐고, 그만큼 화면이 길어져 쓸데없이 스크롤됐다(2026-10-28) */}
         <PendingRegion className={result.items.length > 0 ? "mt-3 flex flex-col gap-3 rounded-[var(--radius-md)] bg-surface p-3 shadow-hair sm:p-4" : "mt-3 flex flex-col gap-3"}>
+          {/* quiet: 말머리 딱지와 댓글 수를 회색으로(2026-11-23 사용자 "내 활동 댓글 수 색상 없앰, 태그 색상 바꿈") — 내 글 모아 보기라 갈래를 색으로 가를 일이 적다 */}
           <PostList
             bare
+            quiet
             posts={result.items}
             empty={tab === "saved" ? { title: M.savedEmpty, description: M.savedEmptyLead } : { title: M.postsEmpty, description: M.postsEmptyLead, action: { href: writePath(), label: COMMUNITY_MESSAGES.write } }}
           />

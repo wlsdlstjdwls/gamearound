@@ -5,7 +5,7 @@
 import Link from "next/link";
 import { EmptyState } from "@/components/empty-state";
 import { cn } from "@/lib/cn";
-import { AuthorName, GameChip, PostTags } from "@/components/community/badges";
+import { AuthorName, CategoryTag, GameChip, PostTags } from "@/components/community/badges";
 import { COMMUNITY_MESSAGES as M } from "@/lib/community/messages";
 import { formatPostDate } from "@/lib/format";
 import { stagger } from "@/lib/motion";
@@ -16,25 +16,35 @@ import type { PostRowDto } from "@/server/services/community";
  * bare: 이미 흰 판 안에 서는 목록(게시판 목록, 내 활동) — 판을 한 겹 더 두르지 않고 줄 사이 선만 긋는다.
  * 홍보 게시판 위 유료 고정 글은 이 줄이 아니라 카드 묶음으로 선다(components/promo/promo-pins, 2026-10-29).
  */
-export function PostList({ posts, rank = false, rankFrom = 1, showCategory = true, empty, bare = false }: { posts: PostRowDto[]; rank?: boolean; rankFrom?: number; showCategory?: boolean; empty?: { title: string; description?: string; action?: { href: string; label: string } }; bare?: boolean }) {
+/** quiet: 내 활동 화면 차림 — 말머리 딱지 회색, 댓글 수 빨강, 제목 hover 밑줄, 줄 hover 는 딱지보다 옅은 면(2026-11-23 사용자) */
+export function PostList({ posts, rank = false, rankFrom = 1, showCategory = true, empty, bare = false, quiet = false }: { posts: PostRowDto[]; rank?: boolean; rankFrom?: number; showCategory?: boolean; empty?: { title: string; description?: string; action?: { href: string; label: string } }; bare?: boolean; quiet?: boolean }) {
   if (posts.length === 0) return <EmptyState title={empty?.title ?? M.emptyTitle} description={empty?.description ?? M.emptyLead} action={empty?.action} />;
   return (
     <ul className={cn("divide-y divide-line-soft", bare ? "-mx-1" : "overflow-hidden rounded-[var(--radius-md)] bg-surface shadow-hair")}>
       {posts.map((p, i) => {
         const row = (
-          <Link href={p.href} className={cn("row-beam group flex min-h-[var(--touch-target)] flex-col gap-1.5 py-3.5 transition-colors hover:bg-surface-2 sm:flex-row sm:items-center sm:gap-4 sm:py-3", bare ? "rounded-lg px-1" : "px-4")}>
+          // quiet 에서는 줄 hover 면을 회색 딱지(surface-2)보다 옅은 면으로 — 같은 면이면 마우스를 올린 줄의 딱지가 바탕에 묻혔다(2026-11-23 사용자 "뱃지가 구분이 안 된다")
+          <Link href={p.href} className={cn("row-beam group flex min-h-[var(--touch-target)] flex-col gap-1.5 py-3.5 transition-colors sm:flex-row sm:items-center sm:gap-4 sm:py-3", quiet ? "hover:bg-surface-4" : "hover:bg-surface-2", bare ? "rounded-lg px-1" : "px-4")}>
             {/* 좁은 화면은 세 줄이다: 딱지 줄 | 제목(두 줄까지) | 값 줄. 한 줄에 말머리, 상태, 게임 딱지와 제목을 다 세우면
                 390px 에서 제목이 "유니티 2..." 로 잘려 글이 하나도 안 읽혔다(2026-11-20 사용자 "글도 하나도 눈에 안들어온다").
                 넓은 화면은 딱지 줄이 contents 로 풀려 예전처럼 한 줄에 선다 */}
             <span className="flex min-w-0 flex-1 flex-col gap-1.5 sm:flex-row sm:items-center sm:gap-2">
               <span className="flex min-w-0 items-center gap-1.5 empty:hidden sm:contents">
                 {rank && <span className="w-6 shrink-0 text-center text-[13px] font-bold tabular-nums text-acc">{rankFrom + i}</span>}
-                <PostTags post={p} showCategory={showCategory} />
-                {p.game && <GameChip title={p.game.title} />}
+                {/* quiet(내 활동)은 말머리 딱지 하나만 — 스포 여부, 답변 대기, 관련 게임 딱지까지 한 줄에 2~3개씩 서 지저분했다(2026-11-23 사용자) */}
+                {quiet ? (
+                  showCategory && <CategoryTag category={p.category} quiet />
+                ) : (
+                  <>
+                    <PostTags post={p} showCategory={showCategory} />
+                    {p.game && <GameChip title={p.game.title} />}
+                  </>
+                )}
               </span>
               <span className="flex min-w-0 items-baseline gap-1.5">
-                <span className="line-clamp-2 min-w-0 text-[15px] font-semibold leading-[1.4] text-ink group-hover:text-acc sm:line-clamp-1 sm:text-[14.5px]">{p.title}</span>
-                {p.commentCount > 0 && <span className="shrink-0 text-[12.5px] font-bold text-acc">[{p.commentCount}]</span>}
+                <span className={cn("line-clamp-2 min-w-0 text-[15px] font-semibold leading-[1.4] text-ink sm:line-clamp-1 sm:text-[14.5px]", quiet ? "underline-offset-4 group-hover:underline" : "group-hover:text-acc")}>{p.title}</span>
+                {/* 댓글 수: quiet(내 활동)은 빨강(2026-11-23 사용자 "댓글 수량은 빨간색") */}
+                {p.commentCount > 0 && <span className={cn("shrink-0 text-[12.5px] font-bold", quiet ? "text-danger" : "text-acc")}>[{p.commentCount}]</span>}
               </span>
             </span>
             <span className="flex min-w-0 shrink-0 items-center gap-2.5 text-[12px] tabular-nums text-dim sm:gap-3 sm:text-[12.5px]">

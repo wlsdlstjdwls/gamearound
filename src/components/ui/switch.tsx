@@ -15,7 +15,8 @@ export function SwitchTrack({ on, className }: { on: boolean; className?: string
   return (
     <span
       aria-hidden
-      className={cn("flex h-[26px] w-[46px] shrink-0 items-center rounded-full p-[3px] transition-colors duration-base", on ? "bg-acc" : "bg-line-strong", className)}
+      className={cn("flex h-[26px] w-[46px] shrink-0 items-center rounded-full p-[3px] transition-colors duration-base", // 켜짐은 먹색(2026-11-23 사용자 "가격 알림, 설정 토글 버튼 파란색 제거") — 파랑은 누르면 어딘가로 가는 단추의 색이다
+        on ? "bg-ink" : "bg-line-strong", className)}
     >
       <span className={cn("h-5 w-5 rounded-full transition-transform duration-base ease-out-emph", on ? "translate-x-5 bg-on-ink" : "bg-surface")} />
     </span>

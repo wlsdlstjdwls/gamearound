@@ -44,7 +44,15 @@ export default async function NotificationsPage({ searchParams }: { searchParams
   return (
     <Page gap={22}>
       <NavPendingScope>
-        <PageHead menuScreen title={M.pageTitle} note={total > 0 ? M.pageNote(total, unread) : undefined} />
+        <PageHead menuScreen title={M.pageTitle} note={
+            total > 0 ? (
+              <>
+                {M.pageNoteTotal(total)}
+                {/* 새 알림 수는 빨강(2026-11-23 사용자 "새 알림 빨간색으로") */}
+                {unread > 0 && <b className="font-bold text-danger">{M.pageNoteUnread(unread)}</b>}
+              </>
+            ) : undefined
+          } />
         <PendingRegion>
           {items.length === 0 ? (
             <EmptyState icon={<span className="bell-ring"><BellIcon size={20} /></span>} title={M.empty} description={M.pageEmptyBody} action={{ href: ROUTES.game, label: M.pageEmptyAction }} />
@@ -54,7 +62,7 @@ export default async function NotificationsPage({ searchParams }: { searchParams
                 {items.map((n, i) => {
                   const body = (
                     <>
-                      <span aria-hidden className={cn("grid size-9 shrink-0 place-items-center rounded-full", n.read ? "bg-surface-2 text-mut" : "bg-acc-soft text-acc")}>
+                      <span aria-hidden className={cn("grid size-9 shrink-0 place-items-center rounded-full", n.read ? "bg-surface-2 text-mut" : "bg-surface-2 text-ink")}>
                         {KIND_ICON[n.kind]}
                       </span>
                       <span className="flex min-w-0 flex-1 flex-col gap-0.5">
@@ -62,8 +70,8 @@ export default async function NotificationsPage({ searchParams }: { searchParams
                         <span className="text-[12px] text-dim">{formatPostDate(n.createdAt)}</span>
                       </span>
                       {!n.read && (
-                        <span className="flex shrink-0 items-center gap-1.5 text-[11.5px] font-semibold text-acc">
-                          <span aria-hidden className="size-2 rounded-full bg-acc" />
+                        <span className="flex shrink-0 items-center gap-1.5 text-[11.5px] font-semibold text-danger">
+                          <span aria-hidden className="size-2 rounded-full bg-danger" />
                           {M.unread}
                         </span>
                       )}

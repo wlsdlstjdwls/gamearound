@@ -22,7 +22,8 @@ export const AUTH_MESSAGES = {
   // 결과 — 계정 존재 여부를 드러내지 않는다(열거 방지)
   invalidCredentials: "이메일 또는 비밀번호가 올바르지 않아요",
   emailTaken: "이미 가입된 이메일이에요. 로그인해 주세요",
-  tooManyAttempts: "시도가 너무 많아요. 잠시 후 다시 시도해 주세요",
+  /** 습니다체, 문장마다 마침표(2026-11-23 사용자) */
+  tooManyAttempts: "시도가 너무 많습니다. 잠시 후 다시 시도해 주십시오.",
   serverError: "잠시 문제가 생겼어요. 다시 시도해 주세요",
   loginRequired: "로그인이 필요합니다",
   forbidden: "권한이 없습니다",

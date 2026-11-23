@@ -10,7 +10,8 @@ export const NOTIFICATION_MESSAGES = {
   seeAll: "전체 보기",
   /** 알림함 전체 화면 */
   pageTitle: "알림함",
-  pageNote: (total: number, unread: number) => (unread > 0 ? `${total.toLocaleString("ko-KR")}건, 새 알림 ${unread.toLocaleString("ko-KR")}건` : `${total.toLocaleString("ko-KR")}건`),
+  pageNoteTotal: (total: number) => `${total.toLocaleString("ko-KR")}건`,
+  pageNoteUnread: (unread: number) => `, 새 알림 ${unread.toLocaleString("ko-KR")}건`,
   pageEmptyBody: "찜한 게임이 할인하거나 내 글에 댓글이 달리면 여기에 모여요.",
   pageEmptyAction: "게임 둘러보기",
   unread: "새 알림",

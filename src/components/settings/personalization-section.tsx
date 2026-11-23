@@ -54,7 +54,7 @@ export function PersonalizationSection({ profile, names }: Props) {
               <Link
                 href={welcomeEditPath(f.step)}
                 aria-label={`${f.label} ${f.value === null ? M.pick : M.change}`}
-                className="press tap flex h-11 shrink-0 items-center rounded-full px-2.5 text-[13px] font-semibold text-acc hover:underline"
+                className="press tap flex h-11 shrink-0 items-center rounded-full px-2.5 text-[13px] font-semibold text-ink underline decoration-ink/40 underline-offset-4 hover:decoration-ink"
               >
                 {f.value === null ? M.pick : M.change}
               </Link>

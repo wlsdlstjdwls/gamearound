@@ -21,9 +21,7 @@ import { THEME_SWITCH_ON } from "@/lib/theme";
 import { SignOutButton } from "@/components/auth/sign-out-button";
 import { PersonalizationSection } from "@/components/settings/personalization-section";
 import { Page, PageHead } from "@/components/ui/page";
-import { Tag } from "@/components/ui/tag";
 import { stagger } from "@/lib/motion";
-import { ROLE_LABEL } from "@/lib/auth/constants";
 import { formatDate } from "@/lib/format";
 import { requireUserOrRedirect } from "@/server/auth/guards";
 import { countMyPushSubscriptions } from "@/server/services/push";
@@ -63,7 +61,7 @@ export default async function SettingsPage() {
         {/* 나 — 프로필 판. 넓은 화면에서는 오른쪽을 읽는 동안 따라 내려온다 */}
         <section aria-label="계정" className="enter-item flex flex-col gap-4 rounded-[var(--radius-panel)] bg-surface p-5 shadow-[var(--elev-card)] lg:sticky lg:top-[calc(var(--header-h)+16px)]" style={stagger(0)}>
           <div className="flex items-center gap-3.5">
-            <span aria-hidden className="grid size-14 shrink-0 place-items-center rounded-full bg-acc-soft text-[22px] font-extrabold text-acc">
+            <span aria-hidden className="grid size-14 shrink-0 place-items-center rounded-full bg-surface-2 text-[22px] font-extrabold text-ink-2">
               {(user.displayName ?? user.email).slice(0, 1)}
             </span>
             <div className="min-w-0">
@@ -72,12 +70,7 @@ export default async function SettingsPage() {
             </div>
           </div>
           <dl className="flex flex-col divide-y divide-line-soft border-y border-line-soft">
-            <div className="flex items-center justify-between gap-4 py-2.5">
-              <dt className="text-[12.5px] text-dim">권한</dt>
-              <dd>
-                <Tag>{ROLE_LABEL[user.role] ?? user.role}</Tag>
-              </dd>
-            </div>
+            {/* "권한" 줄은 걷었다(2026-11-23 사용자 "권한 항목 제거") — 회원에게 역할 이름은 쓸 데가 없다 */}
             <Row label="가입일" value={formatDate(user.createdAt)} />
           </dl>
           <SignOutButton />

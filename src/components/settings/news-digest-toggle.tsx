@@ -18,7 +18,7 @@ export function NewsDigestToggle({ initialOn, className }: { initialOn: boolean;
       action={setNewsDigestAction}
       className={className}
       extra={() => (
-        <Link href={ROUTES.newsMine} className="mt-1.5 inline-flex min-h-[44px] items-center text-[12.5px] font-semibold text-acc underline-offset-2 hover:underline">
+        <Link href={ROUTES.newsMine} className="mt-1.5 inline-flex min-h-[44px] items-center text-[12.5px] font-semibold text-ink underline decoration-ink/40 underline-offset-4 hover:decoration-ink">
           {M.seeMine}
         </Link>
       )}
