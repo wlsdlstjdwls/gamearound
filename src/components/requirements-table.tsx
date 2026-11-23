@@ -11,8 +11,8 @@ import { formatSizeMb } from "@/lib/format";
 import { OS_FAMILY_LABEL, REQUIREMENT_ROW_LABEL, REQUIREMENT_TIER_LABEL } from "@/lib/games/messages";
 import type { RequirementDto, RequirementGroupDto } from "@/server/services/games";
 
-/** 탭 순서 — 사양을 적은 게임 수 순(윈도우 6,347, 맥 1,649, 리눅스 1,052, 2026-11-23 실측) */
-const OS_ORDER: RequirementGroupDto["osFamily"][] = ["windows", "mac", "linux"];
+/** 탭 순서와 세우는 탭 — 윈도우, 맥 둘(2026-11-23 사용자). 사양을 적은 게임 수도 이 순서다(윈도우 6,347, 맥 1,649, 2026-11-23 실측) */
+const OS_ORDER: RequirementGroupDto["osFamily"][] = ["windows", "mac"];
 const OS_TABS_LABEL = "운영체제";
 
 /** 표에 세울 줄과 그 값 꺼내는 법. 순서가 곧 화면 순서다 — 사용자가 먼저 보는 것부터 */
@@ -79,15 +79,18 @@ function OsTable({ group, showTitle }: { group: RequirementGroupDto; showTitle: 
  */
 export function RequirementsBody({ groups }: { groups: RequirementGroupDto[] }) {
   if (groups.length === 0) return null;
-  // 운영체제가 둘 이상이면 탭으로 하나씩 본다(2026-11-23 사용자 "윈도우, 맥 탭으로 구분"). 표 셋을 세로로 쌓으면
-  // 맥 사용자가 윈도우 표를 지나 내려가야 했고, 같은 칸 이름이 세 번 되풀이됐다. 한 벌뿐이면 탭 없이 표만 둔다.
-  if (groups.length === 1) return <OsTable group={groups[0]} showTitle />;
-  const sorted = [...groups].sort((a, b) => OS_ORDER.indexOf(a.osFamily) - OS_ORDER.indexOf(b.osFamily));
+  // 윈도우, 맥 두 탭으로 하나씩 본다(2026-11-23 사용자 "윈도우/맥 탭 형태로, 탭을 바꿔도 높이가 변하지 않게").
+  // 표를 세로로 쌓으면 맥 사용자가 윈도우 표를 지나 내려가야 했고, 같은 칸 이름이 되풀이됐다.
+  // 리눅스 표는 세우지 않는다 — 사용자가 두 탭으로 정했다. 리눅스 사양만 있는 게임은 그 표를 그대로 보인다(빈 칸보다 낫다).
+  const shown = OS_ORDER.flatMap((os) => groups.filter((g) => g.osFamily === os));
+  if (shown.length === 0) return <OsTable group={groups[0]} showTitle />;
+  if (shown.length === 1) return <OsTable group={shown[0]} showTitle />;
   return (
     <DetailTabs
       size="sm"
+      keepHeight
       label={OS_TABS_LABEL}
-      tabs={sorted.map((g) => ({ key: g.osFamily, label: OS_FAMILY_LABEL[g.osFamily], panel: <OsTable group={g} showTitle={false} /> }))}
+      tabs={shown.map((g) => ({ key: g.osFamily, label: OS_FAMILY_LABEL[g.osFamily], panel: <OsTable group={g} showTitle={false} /> }))}
     />
   );
 }
