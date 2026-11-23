@@ -33,7 +33,7 @@ import type { GameSummary } from "@/server/services/games";
  * 오른쪽 칸에 칸막이 없이 잇는다(한 장 120px 안팎). 묶음 div 는 `max-sm:contents` 로 풀려 격자 칸이 된다 — 마크업은 하나다.
  * sm 부터는 목업 3단 그대로다.
  */
-export const LIST_CARD_SHELL = "card-panel grid h-full grid-cols-[64px_minmax(0,1fr)] content-start gap-x-3 p-3 sm:flex sm:flex-col sm:gap-x-0 sm:p-3.5";
+export const LIST_CARD_SHELL = "card-panel !rounded-[var(--radius-card)] grid h-full grid-cols-[64px_minmax(0,1fr)] content-start gap-x-3 p-3 sm:flex sm:flex-col sm:gap-x-0 sm:p-3.5";
 /** 정사각 그림 한 변(목업 72px, 좁은 화면 64px). 좁은 화면에서는 오른쪽 칸 줄 셋을 다 차지한다 */
 export const LIST_THUMB_CLASS = "relative size-16 shrink-0 overflow-hidden rounded-[var(--radius-md)] bg-surface-3 shadow-hair max-sm:row-span-3 sm:size-[72px]";
 /** 칸막이 — 이름 묶음, 장르, 값 사이. 좁은 화면에서는 걷는다 */
@@ -65,7 +65,7 @@ export function GameListCard({ game, variant = "discount", highlight }: { game: 
           {/* 카드 전체를 덮는 것은 제목 링크의 ::after 다(game-card 와 같은 수법) — 찜 하트만 z-10 으로 그 위에 뜬다 */}
           <Link
             href={`/games/${game.slug}`}
-            className="outline-none after:absolute after:inset-0 after:rounded-[var(--radius-panel)] focus-visible:after:ring-2 focus-visible:after:ring-ink focus-visible:after:ring-offset-2 focus-visible:after:ring-offset-bg"
+            className="outline-none after:absolute after:inset-0 after:rounded-[var(--radius-card)] focus-visible:after:ring-2 focus-visible:after:ring-ink focus-visible:after:ring-offset-2 focus-visible:after:ring-offset-bg"
           >
             <Clamp lines={2} className="text-[15px] font-bold leading-[1.35] tracking-[-0.015em] text-ink transition-colors duration-fast group-hover:text-acc">
               {title}

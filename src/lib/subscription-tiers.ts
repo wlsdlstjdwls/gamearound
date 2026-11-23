@@ -15,6 +15,12 @@ export const SUBSCRIPTION_LADDERS: readonly (readonly string[])[] = [
   ["gamepass_essential", "gamepass_console"],
 ];
 
+/**
+ * 다른 구독에 통째로 들어 있는 구독 — 둘 다 붙은 행에서는 안쪽 것을 세우지 않는다(2026-11-23 사용자 "Xbox 는 구독권이 왜 2개나 됨").
+ * Game Pass Ultimate 는 PC Game Pass 카탈로그를 품는다. 둘을 나란히 적으면 다른 두 혜택처럼 읽혔다. PC Game Pass 만 붙은 행은 그대로 선다.
+ */
+export const SUBSCRIPTION_COVERED_BY: Readonly<Record<string, string>> = { gamepass_pc: "gamepass_console" };
+
 export type SubscriptionChip<T extends { key: string }> = { sub: T; orHigher: boolean };
 
 /** 받은 순서를 지키되, 같은 사다리에서는 가장 낮은 등급 하나만 남긴다 */
@@ -22,6 +28,8 @@ export function foldSubscriptionTiers<T extends { key: string }>(subs: readonly 
   const keys = new Set(subs.map((s) => s.key));
   const out: SubscriptionChip<T>[] = [];
   for (const s of subs) {
+    const cover = SUBSCRIPTION_COVERED_BY[s.key];
+    if (cover && keys.has(cover)) continue;
     const ladder = SUBSCRIPTION_LADDERS.find((l) => l.includes(s.key));
     if (!ladder) {
       out.push({ sub: s, orHigher: false });

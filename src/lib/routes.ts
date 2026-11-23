@@ -162,6 +162,8 @@ export const ROUTES = {
   apiAuthMe: "/api/auth/me",
   /** 홈 할인 줄의 개인화판. 홈 캐시를 깨지 않으려고 마운트 뒤 따로 받아 갈아 끼운다(api/me/picks 주석) */
   apiMePicks: "/api/me/picks",
+  /** 패치 노트 원문 한 건(업데이트 노트 팝업이 본문 없는 글을 열 때) */
+  apiPatchBody: (id: string) => `/api/games/patch-body/${encodeURIComponent(id)}`,
   /** 명예의 전당 "내 게임 자리". 화면 캐시를 깨지 않으려고 마운트 뒤 따로 받는다(api/me/fame 주석) */
   apiMeFame: "/api/me/fame",
   apiPushSubscribe: "/api/push/subscribe",

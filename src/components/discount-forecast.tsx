@@ -132,13 +132,14 @@ export function DiscountForecast({
           {basisLabel && <span className="text-[12.5px] font-bold text-acc">{D.forecastBasisPlatform(basisLabel)}</span>}
         </h2>
       </div>
-      {/* 진행 중 할인은 채운 파랑 띠 — 기다릴 일보다 지금 살 수 있다는 말이 먼저다 */}
+      {/* 진행 중 할인 — 기다릴 일보다 지금 살 수 있다는 말이 먼저다. 채운 파랑 면은 걷었다(2026-11-23 사용자 "파란 배경이 도배돼 눈이 아프다").
+          옅은 회색 면에 먹색 글자, 할인율만 빨강 — 플랫폼별 가격 비교의 빨강 할인율과 같은 색이다 */}
       {running && (
-        <p className="flex min-w-0 flex-wrap items-center justify-between gap-x-3 gap-y-1 rounded-[var(--radius-panel)] bg-acc px-4 py-2.5 text-on-ink">
+        <p className="flex min-w-0 flex-wrap items-center justify-between gap-x-3 gap-y-1 rounded-[var(--radius-panel)] bg-surface-2 px-4 py-2.5 text-ink">
           <span className="text-[14px] font-bold">
-            {D.forecastRunningNow(running.name)} <b className="font-black tabular-nums">-{running.pct}%</b>
+            {D.forecastRunningNow(running.name)} <b className="font-black tabular-nums text-danger">-{running.pct}%</b>
           </span>
-          {running.daysLeft !== null && <span className="text-[12.5px] font-semibold">{D.forecastRunningLeftShort(running.daysLeft)}</span>}
+          {running.daysLeft !== null && <span className="text-[12.5px] font-semibold text-mut">{D.forecastRunningLeftShort(running.daysLeft)}</span>}
         </p>
       )}
       {empty ? (

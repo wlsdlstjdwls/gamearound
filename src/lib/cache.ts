@@ -126,6 +126,9 @@ export const DTO_CACHE_VERSION = "v40";
 /** 목록, 검색, 홈처럼 태그 무효화로 갱신되는 화면의 기본 재검증 주기(초) */
 export const LIST_REVALIDATE_SECONDS = 3600;
 
+/** 그 자리에서 받은 패치 노트 원문(services/games/patch-body)을 쥐는 시간(초). 올라온 공지는 거의 안 고쳐져 하루면 넉넉하다 */
+export const PATCH_BODY_REVALIDATE_SECONDS = 86400;
+
 /**
  * 시간당 가격 분포(카탈로그 전체 백분위)의 수명(초) = 6시간.
  * 가격 크롤이 8시간 주기인데, 한 번 돌아도 수만 건의 사분위 경계는 사람 눈에 보일 만큼 안 움직인다.

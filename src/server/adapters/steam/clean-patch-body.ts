@@ -54,6 +54,8 @@ export function cleanSteamPatchBody(raw: string): string {
 
   // 3. 목록: [*] 와 <li> 는 목록 줄로. 목록 머리, 꼬리는 줄바꿈
   s = s.replace(/\[\*\]/g, "\n- ");
+  // 항목 닫는 짝 [/*] — 스팀 편집기가 항목마다 붙이는 꼴이 있다. 안 걷으면 글자 그대로 남아 번역문에도 실려 왔다(2026-11-23 사용자 발견, 143건 중 29건)
+  s = s.replace(/\[\/\*\]/g, "");
   s = s.replace(/<li[^>]*>/gi, "\n- ").replace(/<\/li>/gi, "");
   s = s.replace(/\[\/?(?:list|olist)(?:=[^\]]*)?\]/gi, "\n\n");
   s = s.replace(/<\/?(?:ul|ol)[^>]*>/gi, "\n\n");

@@ -52,8 +52,8 @@ export function verdictForDevice(
  * 알약 면이 빠지면 제목 옆 곁말답게 조용해지고, 색은 아이콘과 글자가 진다. 충족 쪽도 같은 모양으로 맞춘다(위와 같은 이유)
  */
 const TONE: Record<OverallVerdict, { cls: string; Icon: typeof CheckCircleIcon | null }> = {
-  meets_recommended: { cls: "text-ok", Icon: CheckCircleIcon },
-  meets_minimum: { cls: "text-ok", Icon: CheckCircleIcon },
+  meets_recommended: { cls: "text-verdict-ok", Icon: CheckCircleIcon },
+  meets_minimum: { cls: "text-verdict-ok", Icon: CheckCircleIcon },
   below_minimum: { cls: "text-danger", Icon: XCircleIcon },
   unknown: { cls: "text-mut", Icon: null },
 };

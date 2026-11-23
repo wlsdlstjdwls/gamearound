@@ -14,21 +14,25 @@ import { subscriptionChipText } from "@/lib/games/messages";
 import { foldSubscriptionTiers } from "@/lib/subscription-tiers";
 import type { SubscriptionDto } from "@/server/services/games";
 import { tagClass } from "@/components/ui/tag";
+import { Clamp } from "@/components/ui/tooltip";
 
 /**
  * 한 플랫폼이 포함된 구독들. 없으면 아무것도 그리지 않는다.
  * 같은 서비스의 등급은 가장 낮은 하나 + "이상" 으로 접는다(lib/subscription-tiers).
- * 여럿이면 한 줄에 하나씩 오른쪽 끝에 쌓는다(2026-11-18) — 줄 바꿈에 맡기면 칩이 줄 중간에서 갈려 무엇이 한 이름인지 흐렸다
+ * **한 줄 회색 딱지 하나**에 쉼표로 잇는다(2026-11-23 사용자 "구독 칸은 최대한 1줄로"). 전에는 구독마다 한 줄씩 쌓여(2026-11-18)
+ * Xbox 카드의 구독 줄이 셋까지 늘고, 같은 띠 카드들의 그 줄도 같이 높아졌다. 넘치면 잘리고 올렸을 때 전체가 말풍선으로 뜬다(ui/tooltip 의 Clamp)
  */
 export function SubscriptionChips({ subscriptions }: { subscriptions: SubscriptionDto[] }) {
   if (subscriptions.length === 0) return null;
+  const text = foldSubscriptionTiers(subscriptions)
+    .map(({ sub, orHigher }) => subscriptionChipText(sub.label, orHigher))
+    .join(", ");
   return (
-    <ul className="flex flex-col items-end gap-1" aria-label="구독 포함">
-      {foldSubscriptionTiers(subscriptions).map(({ sub, orHigher }) => (
-        <li key={sub.key} className={tagClass({ tight: false })}>
-          {subscriptionChipText(sub.label, orHigher)}
-        </li>
-      ))}
-    </ul>
+    // 색은 회색(2026-11-23 사용자 "배지 색 바꿔") — 파랑은 누르는 것의 색인데 이 딱지는 눌리지 않는 사실이다
+    <span className={tagClass({ tight: false, tone: "info", className: "min-w-0 max-w-full" })}>
+      <Clamp lines={1} className="min-w-0">
+        {text}
+      </Clamp>
+    </span>
   );
 }

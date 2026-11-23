@@ -14,13 +14,13 @@ import { isPreorder } from "@/lib/games/preorder";
 import { brandKeyOf } from "@/lib/platform";
 import { cn } from "@/lib/cn";
 import { buttonClass } from "@/components/ui/button";
-import { DiscountBadge, HistoricLowBadge } from "@/components/ui/discount";
+import { DiscountRate } from "@/components/ui/discount";
 import { PendingNote } from "@/components/ui/pending-note";
 import { ClockIcon } from "@/components/ui/icons";
 import { Tag } from "@/components/ui/tag";
 import { PickableTile } from "@/components/game-detail/platform-pick";
 import { brandNameOf, byPrice, generationOf, type PlatformPriceItem } from "@/components/platform-prices/order";
-import { BestMark, buyButtonClass, CardHead, hardwareText, PRICE_DIVIDER, Row, STORE_CTA, STORE_LINK_MISSING, SubscriptionRow, TILE } from "@/components/platform-prices/tile";
+import { buyButtonClass, HeadMarks, CardHead, hardwareText, PRICE_DIVIDER, Row, STORE_CTA, STORE_LINK_MISSING, SubscriptionRow, TILE } from "@/components/platform-prices/tile";
 
 /**
  * 스토어마다 서는 구매 단추는 스토어 이름만 적는다. "Steam에서 구매" 는 네 칸 격자의 반쪽 단추에서 잘렸다(2026-11-11 실측).
@@ -49,17 +49,13 @@ function StoreLine({ p, cheapest }: { p: PlatformPriceItem; cheapest: boolean })
           ) : (
             <>
               {hasDiscount && p.listPrice !== null && <span className="text-[12px] text-dim-2 line-through">{formatPrice(p.listPrice, p.currency)}</span>}
+              {/* 할인율은 값 앞, 빨강(tile 과 같다). 역대 최저가는 카드 머리 딱지 자리(HeadMarks) */}
+              {hasDiscount && <DiscountRate pct={p.discountPct} />}
               <span className={cn("text-[18px] font-extrabold tracking-[-0.03em] sm:text-[19px]", cheapest ? "text-acc" : "text-ink")}>{formatPrice(p.currentPrice, p.currency)}</span>
             </>
           )}
-          {hasDiscount && <DiscountBadge pct={p.discountPct} size="sm" />}
         </dd>
       </div>
-      {hasDiscount && p.historicLow && (
-        <div className="flex justify-end">
-          <HistoricLowBadge show size="sm" />
-        </div>
-      )}
     </div>
   );
 }
@@ -100,7 +96,10 @@ export function MergedTile({
   return (
     <PickableTile brand={pickKey} also={rows.map((r) => brandKeyOf(r.platform))} label={label} id={id} className={cn(TILE, "bg-surface shadow-hair")}>
       {secondId && <span id={secondId} className="absolute -top-24" aria-hidden />}
-      <CardHead name={label}>{showBest && <BestMark />}</CardHead>
+      {/* 역대 최저가는 묶음 안 어느 스토어든 지금 그 값이면 선다 — 어느 줄인지는 그 줄의 빨강 할인율이 말한다 */}
+      <CardHead name={label}>
+        <HeadMarks best={showBest} historicLow={ordered.some((p) => Boolean(p.discountPct && p.discountPct > 0 && p.historicLow))} />
+      </CardHead>
 
       {/* 줄 맞춤은 낱 카드와 같다(tile.tsx 머리 주석). 스토어 줄 묶음이 정가, 현재가 두 줄 자리를 함께 쓴다 */}
       <dl className="contents">

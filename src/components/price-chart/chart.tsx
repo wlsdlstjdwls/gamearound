@@ -27,7 +27,7 @@ import { formatDate } from "@/lib/format";
 import type { Platform } from "@/server/db/schema";
 import type { PriceSeries } from "@/server/services/prices";
 import { useNow } from "@/components/use-now";
-import { ChipButton } from "@/components/ui/chip";
+import { chipClass } from "@/components/ui/chip";
 import { cn } from "@/lib/cn";
 import { useCssTokens } from "@/components/use-css-tokens";
 import { mergeBrandSeries, prepare, seriesLabel } from "@/components/price-chart/prepare";
@@ -51,12 +51,23 @@ import { ALL_PLATFORMS, usePlatformFilter } from "@/components/price-chart/use-p
 const PLATFORM_TOKEN: Record<Platform, string> = {
   steam: "--store-steam", // 파랑
   epic: "--store-epic", // 주황
-  ps5: "--store-ps5", // 노랑
+  ps5: "--store-ps5", // 남회색
   ps4: "--store-ps4", // 자홍
   xbox: "--store-xbox", // 초록
   switch: "--store-switch", // 보라
   switch2: "--store-switch2", // 빨강
 };
+
+/**
+ * 플랫폼 고르기 칩. 고른 칩은 먹색 테두리와 굵은 글자뿐이다(2026-11-23 사용자 "탭 선택이 파란색이라 눈 아프다").
+ * 채운 파랑 칩이 선 색 점(플랫폼 색)을 덮어 "이 칩이 저 선" 이 흐려졌다 — 칩의 색은 점 하나가 맡는다
+ */
+function pickChip(on: boolean): string {
+  return chipClass({
+    outline: true,
+    className: cn("shrink-0 whitespace-nowrap", on && "!bg-surface font-bold !text-ink ring-1 ring-ink ring-inset"),
+  });
+}
 
 /** 그래프의 판 색(격자, 축, 기준선). 화면의 나머지와 같은 토큰을 쓴다 */
 const CHART_TOKENS = [
@@ -151,11 +162,11 @@ export function PriceChart({ series, head, rangeKeys }: { series: PriceSeries[];
   const platformChips = drawn.length > 1 && (
         // 좁은 화면은 꺾지 않고 가로로 민다 — 플랫폼이 넷이면 둘째 줄에 칩 하나가 떨어져 다른 묶음처럼 보였다
         <div role="group" aria-label="플랫폼 선택" className="-mx-1 flex gap-1.5 overflow-x-auto px-1 py-2 [scrollbar-width:none] sm:flex-wrap sm:overflow-visible sm:py-0">
-          <ChipButton active={isOn(ALL_PLATFORMS)} onClick={() => choose(ALL_PLATFORMS)} className="shrink-0 whitespace-nowrap">
+          <button type="button" aria-pressed={isOn(ALL_PLATFORMS)} onClick={() => choose(ALL_PLATFORMS)} className={pickChip(isOn(ALL_PLATFORMS))}>
             전체
-          </ChipButton>
+          </button>
           {drawn.map((s) => (
-            <ChipButton key={s.platform} active={isOn(s.platform)} onClick={() => choose(s.platform)} className="shrink-0 whitespace-nowrap">
+            <button key={s.platform} type="button" aria-pressed={isOn(s.platform)} onClick={() => choose(s.platform)} className={pickChip(isOn(s.platform))}>
               {/* 칩의 점이 그래프의 선 색과 같아야 "이 칩이 저 선" 이 말없이 이어진다 */}
               <span
                 aria-hidden
@@ -163,7 +174,7 @@ export function PriceChart({ series, head, rangeKeys }: { series: PriceSeries[];
                 style={{ background: token[PLATFORM_TOKEN[s.platform]] }}
               />
               {seriesLabel(s.platform)}
-            </ChipButton>
+            </button>
           ))}
         </div>
       );

@@ -68,17 +68,22 @@
   --status-done: #20b26b;
   --price-bad: #c4452c;
   --verdict-bad: #e03131;
+  /* 구동 판정 "돌아가요" 초록 — fitin-app 의 status_success 값(2026-11-23 사용자 "fitin-app 초록 참고"). 면은 같은 색 12% */
+  --verdict-ok: #04aa58;
+  --verdict-ok-soft: rgba(4, 170, 88, 0.12);
   --on-ink: #ffffff; /* 잉크, 악센트 판 위의 글자 */
   --overlay: rgba(24, 32, 43, 0.42);
   /* 가격 그래프의 스토어 브랜드 색 */
-  --store-steam: #2a78d6;
+  /* 2026-11-23 사용자 "플랫폼 색이 구분 안 된다, 서로 완전 다르게": 스팀 파랑과 PS5 청록이 같은 계열이라 겹쳤다.
+     PS5 를 짙은 남회색으로 빼고 나머지도 색상환에서 멀게 — 파랑, 남회색, 자홍, 초록, 보라, 빨강 */
+  --store-steam: #2563eb;
   --store-epic: #eb6834;
   --store-gog: #1baf7a;
-  --store-ps5: #0891b2; /* 청록. 10-27 호박(#eda100)에서 — 누런 선은 쓰지 않는다(사용자). 스팀 파랑, PS4 분홍, Xbox 초록과 갈린다 */
-  --store-ps4: #e87ba4;
-  --store-xbox: #008300;
-  --store-switch: #4a3aa7;
-  --store-switch2: #e34948;
+  --store-ps5: #334155; /* 남회색. 10-27 호박에서 청록으로, 11-23 청록에서 — 스팀 파랑과 같은 계열이라 선이 갈리지 않았다 */
+  --store-ps4: #db2777;
+  --store-xbox: #16a34a;
+  --store-switch: #7c3aed;
+  --store-switch2: #e03131;
   --beam: #ffb21e; /* 로고 손전등 빛. 그림 전용. lib/brand.ts 의 BRAND_COLOR.beam 과 같은 값 */
   /* 브랜드 밝기 사다리(막대 그래프 등 면 전용). --acc 와 --surface 를 섞으므로 테마별로 따로 적지 않는다 */
   --acc-2: color-mix(in oklab, var(--acc) 58%, var(--surface));
@@ -166,14 +171,17 @@
   --radius-xs: 6px; /* 배지, 태그 */
   --radius-sm: 11px; /* 버튼, 입력 필드 — 리디자인에서 면이 커지며 한 단 올렸다 */
   --radius-inset: 7px; /* 작은 인셋 박스, 썸네일 */
-  --radius-md: 12px; /* 카드, 패널 */
-  --radius-lg: 12px;
-  --radius-xl: 12px;
+  /* 2026-11-23 사용자 "플랫폼별 가격 비교 카드, 할인 예측, 가격 변동 추이 등 모든 카드가 너무 둥글다, 각지게": 카드, 패널을 한 단씩 내렸다 */
+  --radius-md: 8px; /* 카드, 패널 */
+  --radius-lg: 8px;
+  --radius-xl: 8px;
   /* 커버 이미지, 패널 — 리디자인에서 커버가 카드의 주역이 되면서 면이 커졌다.
      같은 12px 를 쓰면 460x215 짜리 면에서 모서리가 거의 직각으로 읽힌다 */
-  --radius-cover: 14px; /* 목록 카드 커버 */
-  --radius-cover-lg: 16px; /* 상세 히어로 커버 */
-  --radius-panel: 18px; /* 채운 면 패널(로그인 상자 등) */
+  --radius-cover: 8px; /* 목록 카드 커버 */
+  --radius-cover-lg: 10px; /* 상세 히어로 커버 */
+  --radius-panel: 10px; /* 채운 면 패널(로그인 상자 등), 상세의 할인 예측, 가격 변동 판 */
+  /* 게임 카드(격자, 목록 보기) — 2026-11-23 사용자 "모서리를 좀 더 각지게". 패널 토큰을 같이 내리면 로그인 상자까지 바뀌어 따로 둔다 */
+  --radius-card: 6px;
   --touch-target: 44px;
 
   /* 레이아웃 최대폭 — 리디자인 스펙 1200. 카드 격자가 한 줄에 4장 서는 최소 폭이다 */
@@ -270,15 +278,17 @@
     --status-done: #3ddc9f;
     --price-bad: #ff8466;
     --verdict-bad: #ff6b78;
+    --verdict-ok: #2fd17f;
+    --verdict-ok-soft: rgba(47, 209, 127, 0.14);
     --on-ink: #131923; /* 잉크, 악센트 판 위의 글자 = 바탕색 */
     --overlay: rgba(6, 10, 18, 0.62);
     /* 가격 그래프의 스토어 브랜드 색 — 어두운 바탕에서 서로 갈리는 한 단 밝은 값 */
     --store-steam: #5b9ce8;
     --store-epic: #f5895a;
     --store-gog: #35c894;
-    --store-ps5: #38bdf8;
+    --store-ps5: #cbd5e1;
     --store-ps4: #f094b6;
-    --store-xbox: #3fb23f;
+    --store-xbox: #4ade80;
     --store-switch: #8d7df0;
     --store-switch2: #ed6e6d;
     /* 다크에서는 검은 그림자가 바탕에 묻혀 링이 깊이를 맡는다. 8% 링은 안 보였다(10-26 2차) — 13~14% 로 올렸다 */
@@ -345,15 +355,17 @@
   --status-done: #3ddc9f;
   --price-bad: #ff8466;
   --verdict-bad: #ff6b78;
+  --verdict-ok: #2fd17f;
+  --verdict-ok-soft: rgba(47, 209, 127, 0.14);
   --on-ink: #131923; /* 잉크, 악센트 판 위의 글자 = 바탕색 */
   --overlay: rgba(6, 10, 18, 0.62);
   /* 가격 그래프의 스토어 브랜드 색 — 어두운 바탕에서 서로 갈리는 한 단 밝은 값 */
   --store-steam: #5b9ce8;
   --store-epic: #f5895a;
   --store-gog: #35c894;
-  --store-ps5: #38bdf8;
+  --store-ps5: #cbd5e1;
   --store-ps4: #f094b6;
-  --store-xbox: #3fb23f;
+  --store-xbox: #4ade80;
   --store-switch: #8d7df0;
   --store-switch2: #ed6e6d;
   /* 다크에서는 검은 그림자가 바탕에 묻혀 링이 깊이를 맡는다. 8% 링은 안 보였다(10-26 2차) — 13~14% 로 올렸다 */
@@ -413,6 +425,8 @@
   --color-status-done: var(--status-done);
   --color-price-bad: var(--price-bad);
   --color-verdict-bad: var(--verdict-bad);
+  --color-verdict-ok: var(--verdict-ok);
+  --color-verdict-ok-soft: var(--verdict-ok-soft);
   --color-on-ink: var(--on-ink);
 
   --color-store-steam: var(--store-steam);

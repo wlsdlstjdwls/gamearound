@@ -33,7 +33,7 @@ export function PatchNotesPanel({ groups: all, limit }: { groups: PlatformPatche
   const [open, setOpen] = useState(false);
   const group = groups.find((g) => keyOf(g) === picked) ?? first;
   if (!group) {
-    return <p className="text-[13px] text-dim">{D.patchesNoneForPick([...new Set(all.map((g) => platformLabel(g)))].join(", "))}</p>;
+    return <p className="text-[13px] text-dim">{D.patchesNoneForPick}</p>;
   }
   const items = group ? [...group.notes].sort((a, b) => b.publishedAt.localeCompare(a.publishedAt)).slice(0, limit) : [];
   const more = items.length > PATCH_PREVIEW;

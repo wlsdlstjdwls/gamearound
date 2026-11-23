@@ -82,9 +82,9 @@ export function RequirementsBody({ groups }: { groups: RequirementGroupDto[] }) 
   // 윈도우, 맥 두 탭으로 하나씩 본다(2026-11-23 사용자 "윈도우/맥 탭 형태로, 탭을 바꿔도 높이가 변하지 않게").
   // 표를 세로로 쌓으면 맥 사용자가 윈도우 표를 지나 내려가야 했고, 같은 칸 이름이 되풀이됐다.
   // 리눅스 표는 세우지 않는다 — 사용자가 두 탭으로 정했다. 리눅스 사양만 있는 게임은 그 표를 그대로 보인다(빈 칸보다 낫다).
-  const shown = OS_ORDER.flatMap((os) => groups.filter((g) => g.osFamily === os));
-  if (shown.length === 0) return <OsTable group={groups[0]} showTitle />;
-  if (shown.length === 1) return <OsTable group={shown[0]} showTitle />;
+  // 한 벌뿐이어도 탭으로 세운다(같은 날 "한 개라도 탭으로") — 게임마다 표 머리 모양이 바뀌면 어느 운영체제 표인지 다시 읽어야 한다
+  const tabbed = OS_ORDER.flatMap((os) => groups.filter((g) => g.osFamily === os));
+  const shown = tabbed.length > 0 ? tabbed : groups.slice(0, 1);
   return (
     <DetailTabs
       size="sm"

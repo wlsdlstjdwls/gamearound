@@ -11,6 +11,11 @@ export type PatchBlock =
 
 const HEADING = /^#{1,6}\s+/;
 const ITEM = /^[-*]\s+/;
+/**
+ * 스팀 항목 닫는 표시 [/*] — 다듬기(clean-patch-body)가 걷지만, 고치기 전에 쌓인 본문과 그 번역문에 남아 있어 읽을 때도 걷는다.
+ * 앞뒤 빈 줄까지 줄바꿈 하나로 접는다 — 표시가 항목 사이에 빈 줄을 끼워 둬서 그냥 지우면 목록이 항목마다 끊긴다
+ */
+const BBCODE_ITEM_END = /\s*\[\/\*\]\s*/g;
 
 export function parsePatchBody(text: string): PatchBlock[] {
   const out: PatchBlock[] = [];
@@ -19,7 +24,7 @@ export function parsePatchBody(text: string): PatchBlock[] {
     if (current) out.push(current);
     current = null;
   };
-  for (const raw of text.split("\n")) {
+  for (const raw of text.replace(BBCODE_ITEM_END, "\n").split("\n")) {
     const line = raw.trim();
     if (line.length === 0) {
       close();

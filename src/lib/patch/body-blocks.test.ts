@@ -17,6 +17,9 @@ describe("parsePatchBody", () => {
     ]);
   });
 
+  it("스팀 항목 닫는 표시 [/*] 는 걷고 목록을 잇는다", () => {
+    expect(parsePatchBody("- 가\n\n[/*]\n- 나\n\n[/*]")).toEqual([{ kind: "list", items: ["가", "나"] }]);
+  });
   it("빈 글은 빈 배열", () => {
     expect(parsePatchBody("\n\n")).toEqual([]);
   });

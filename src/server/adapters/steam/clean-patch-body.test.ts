@@ -12,6 +12,9 @@ describe("cleanSteamPatchBody", () => {
     expect(cleanSteamPatchBody(raw)).toBe("Hello\n\nWorld");
   });
 
+  it("항목 닫는 짝 [/*] 는 걷는다", () => {
+    expect(cleanSteamPatchBody("[list][*]가[/*][*]나[/*][/list]")).not.toContain("[/*]");
+  });
   it("링크는 글만 남긴다", () => {
     expect(cleanSteamPatchBody("See [url=https://example.com]the forum[/url] for more")).toBe("See the forum for more");
   });

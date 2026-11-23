@@ -1,17 +1,19 @@
 "use client";
 // 패치 기록 표시 — 목록(PatchList)과 플랫폼별 속도 비교(PatchSpeed).
 //
-// 목록의 한 줄은 "버전 + 제목 + 날짜" 뿐이다(2026-11-23 사용자 "목록에는 제목+버전 정도만"). 본문은 줄을 눌러 여는 팝업에서 본다:
-//   번역본(bodyKo)이 있는 줄   누르면 팝업(ui/sheet)에 한글 전문, "영어 원문 보기" 바꾸기, 머리에 스토어 원문 링크
-//   번역본이 없고 주소가 있는 줄  누르면 스토어 원문으로 바로 간다(새 창). 팝업에 원문을 옮겨 담지 않는다 — 원문은 스토어가 더 잘 보인다
-//   둘 다 없는 줄             누를 곳이 없어 글자만 선다. 열리지 않는 링크를 만들지 않는다
+// 목록의 한 줄은 "제목 + 버전 + 날짜" 뿐이다(2026-11-23 사용자 "목록에는 제목+버전 정도만", "버전이 없는 글도 있으니 버전은 글 뒤에").
+// 줄은 모두 같은 팝업(ui/sheet)을 연다(같은 날 "목록에 원문 표기는 좀 그럼, 다 통일로 팝업"):
+//   번역본이 있으면 "번역 | 원문" 탭, 원문뿐이면 원문, 쌓인 본문이 없으면 연 순간 스토어에서 원문을 받는다(RemoteBody).
+//   머리에 스토어 원문 링크(주소가 있을 때).
 // 전에는 줄마다 본문 280자와 "스토어에서 보기" 가 서서 다섯 건이 화면 한 장을 넘었다.
 // 종류 딱지(lib/patch-kind)도 목록에서 뺐다 — 제목, 버전만 두라는 지시다. 규칙은 lib 에 남아 있다.
 // 한글 제목(titleKo)이 있으면 그것을, 없으면 원문 제목을 쓴다.
 // 팝업은 목록 하나에 한 장이다 — 줄마다 dialog 를 두면 기록 50건이 dialog 50개가 된다.
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { ROUTES } from "@/lib/routes";
 import { Clamp } from "@/components/ui/tooltip";
 import { Sheet } from "@/components/ui/sheet";
+import { GameLoader } from "@/components/ui/game-loader";
 import { PatchBody } from "@/components/patch-body";
 import { ROWS } from "@/components/ui/page";
 import { formatDate, platformLabel } from "@/lib/format";
@@ -33,14 +35,15 @@ type Item = PatchNoteDto & { platform?: Platform; region?: Region };
 const ROW_ACTION =
   "press tap -mx-2.5 flex min-w-0 flex-1 items-baseline gap-x-2.5 gap-y-1 rounded-[var(--radius-sm)] px-2.5 py-[11px] text-left transition-colors duration-base hover:bg-surface-2";
 
-function RowInner({ n, showPlatform, tail }: { n: Item; showPlatform: boolean; tail?: React.ReactNode }) {
+function RowInner({ n, showPlatform }: { n: Item; showPlatform: boolean }) {
   return (
     <>
-      <VersionChip version={n.version} />
-      <span className="min-w-0 flex-1 text-[13.5px] font-semibold leading-[1.5] text-ink">
-        <Clamp lines={1}>{n.titleKo ?? n.title}</Clamp>
+      <span className="flex min-w-0 flex-1 items-baseline gap-2">
+        <span className="min-w-0 text-[13.5px] font-semibold leading-[1.5] text-ink">
+          <Clamp lines={1}>{n.titleKo ?? n.title}</Clamp>
+        </span>
+        <VersionChip version={n.version} />
       </span>
-      {tail}
       {/* 휴대폰은 읽는 글자를 12.5px 로(2026-11-20 사용자 점검 "11px 대 작은 글자가 많다"). 넓은 화면은 그대로 */}
       <span className="flex shrink-0 items-center gap-x-1.5 text-[11.5px] text-dim max-sm:text-[12.5px]">
         {showPlatform && n.platform && (
@@ -55,9 +58,33 @@ function RowInner({ n, showPlatform, tail }: { n: Item; showPlatform: boolean; t
   );
 }
 
+type Remote = { state: "loading" } | { state: "done"; bodyEn: string | null };
+
+/**
+ * 본문을 쌓아 두지 않은 글(번역 단계가 고르지 않은 대부분)의 원문을 연 순간 받는다(api/games/patch-body, 2026-11-23 사용자
+ * "영어 본문을 보여 주면 되잖아"). 기다리는 동안 한 줄만 서고, 못 받으면(오래된 글, 스팀 실패) 요약이나 안내 한 줄로 끝난다.
+ */
+function RemoteBody({ id, fallback }: { id: string; fallback: string | null }) {
+  const [remote, setRemote] = useState<Remote>({ state: "loading" });
+  useEffect(() => {
+    const ctrl = new AbortController();
+    fetch(ROUTES.apiPatchBody(id), { signal: ctrl.signal })
+      .then((r) => (r.ok ? (r.json() as Promise<{ bodyEn: string | null }>) : { bodyEn: null }))
+      .then((d) => setRemote({ state: "done", bodyEn: d.bodyEn }))
+      .catch(() => {
+        if (!ctrl.signal.aborted) setRemote({ state: "done", bodyEn: null });
+      });
+    return () => ctrl.abort();
+  }, [id]);
+  // 기다림은 글자 대신 로딩바(ui/game-loader, 2026-11-23 사용자 "불러오는 중이에요 치우고 로딩바로")
+  if (remote.state === "loading") return <GameLoader className="my-auto self-center" />;
+  if (remote.bodyEn) return <PatchBody bodyKo={null} bodyEn={remote.bodyEn} />;
+  return <p className="text-[13.5px] leading-[1.7] text-mut">{fallback ?? M.noBody}</p>;
+}
+
 export function PatchList({ items, showPlatform = false }: { items: Item[]; showPlatform?: boolean }) {
   const [openId, setOpenId] = useState<string | null>(null);
-  const opened = items.find((n) => n.id === openId && n.bodyKo !== null) ?? null;
+  const opened = items.find((n) => n.id === openId) ?? null;
 
   if (items.length === 0) {
     return <p className="py-3 text-[13px] text-dim">{GAME_MESSAGES.patchNone}</p>;
@@ -67,24 +94,9 @@ export function PatchList({ items, showPlatform = false }: { items: Item[]; show
       <ul className={ROWS}>
         {items.map((n) => (
           <li key={n.id} className="flex">
-            {n.bodyKo !== null ? (
-              <button type="button" aria-haspopup="dialog" onClick={() => setOpenId(n.id)} className={ROW_ACTION}>
-                <RowInner n={n} showPlatform={showPlatform} />
-              </button>
-            ) : n.url ? (
-              <a href={n.url} target="_blank" rel="noopener noreferrer" className={ROW_ACTION}>
-                <RowInner
-                  n={n}
-                  showPlatform={showPlatform}
-                  tail={<span className="shrink-0 rounded-full bg-surface-2 px-2 py-[2px] text-[11px] font-semibold text-mut">{M.originalOnly}</span>}
-                />
-                <span className="sr-only"> (새 창에서 열림)</span>
-              </a>
-            ) : (
-              <div className="flex min-w-0 flex-1 items-baseline gap-x-2.5 py-[11px]">
-                <RowInner n={n} showPlatform={showPlatform} />
-              </div>
-            )}
+            <button type="button" aria-haspopup="dialog" onClick={() => setOpenId(n.id)} className={ROW_ACTION}>
+              <RowInner n={n} showPlatform={showPlatform} />
+            </button>
           </li>
         ))}
       </ul>
@@ -104,14 +116,20 @@ export function PatchList({ items, showPlatform = false }: { items: Item[]; show
           ) : null
         }
       >
-        {opened && opened.bodyKo !== null && (
-          <div className="flex flex-col gap-3">
+        {opened && (
+          // 높이 고정(2026-11-23 사용자 "상세 팝업은 높이 고정") — 글마다 길이가 달라 팝업이 열 때마다 커졌다 줄었다 했고,
+          // 원문을 받아 오는 동안 로딩바 높이에서 본문 높이로 튀었다. 긴 본문은 이 안에서만 스크롤한다
+          <div className="flex h-[min(60vh,520px)] flex-col gap-3 overflow-y-auto overscroll-contain">
             <p className="flex flex-wrap items-center gap-2 text-[12.5px] text-dim">
-              <VersionChip version={opened.version} />
               <time dateTime={opened.publishedAt}>{formatDate(opened.publishedAt)}</time>
+              <VersionChip version={opened.version} />
             </p>
-            {/* 열 때마다 원문 바꾸기 상태가 처음(번역)으로 돌아가게 글 id 를 열쇠로 준다 */}
-            <PatchBody key={opened.id} bodyKo={opened.bodyKo} bodyEn={opened.bodyEn} />
+            {/* 열 때마다 탭이 처음(번역)으로 돌아가게 글 id 를 열쇠로 준다 */}
+            {opened.bodyKo !== null || opened.bodyEn !== null ? (
+              <PatchBody key={opened.id} bodyKo={opened.bodyKo} bodyEn={opened.bodyEn} />
+            ) : (
+              <RemoteBody key={opened.id} id={opened.id} fallback={opened.summaryKo} />
+            )}
           </div>
         )}
       </Sheet>

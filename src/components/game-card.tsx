@@ -148,7 +148,7 @@ export const COVER_CLASS =
  * 그림이 판 안쪽 여백 없이 위와 양옆에 붙고, 모서리는 판(18px) 대신 카드 반경(12px)이다. 판이 overflow-hidden 이라 그림 위 모서리도 같이 깎인다.
  * 인디 카드는 아직 위 CARD_SHELL, COVER_CLASS 를 쓴다 — 바꾸라는 말은 게임 카드에 대한 것이었다
  */
-export const GAME_CARD_SHELL = "card-panel flex h-full flex-col gap-2.5 overflow-hidden !rounded-[var(--radius-md)] pb-3";
+export const GAME_CARD_SHELL = "card-panel flex h-full flex-col gap-2.5 overflow-hidden !rounded-[var(--radius-card)] pb-3";
 
 export const GAME_COVER_CLASS ="relative block aspect-[460/215] w-full overflow-hidden bg-surface-3";
 /** 그림 아래 글자 묶음의 좌우 여백 */
@@ -216,7 +216,7 @@ export function GameCard({
               제목은 한 줄이고 넘치면 말줄임, 올리면 전체 제목을 말풍선으로 띄운다(2026-11-16 사용자 "제목은 1줄, 길면 생략, 툴팁으로", ui/tooltip 의 Clamp) */}
           <Link
             href={`/games/${game.slug}`}
-            className="outline-none after:absolute after:inset-0 after:rounded-[var(--radius-md)] focus-visible:after:ring-2 focus-visible:after:ring-ink focus-visible:after:ring-offset-2 focus-visible:after:ring-offset-bg"
+            className="outline-none after:absolute after:inset-0 after:rounded-[var(--radius-card)] focus-visible:after:ring-2 focus-visible:after:ring-ink focus-visible:after:ring-offset-2 focus-visible:after:ring-offset-bg"
           >
             <Clamp className="text-[16px] font-semibold leading-[1.35] tracking-[-0.015em] text-ink transition-colors duration-fast group-hover:text-acc sm:text-[15px]">
               {title}

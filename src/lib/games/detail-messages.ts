@@ -36,10 +36,10 @@ export const DETAIL_MESSAGES = {
   listPriceRow: "정가",
   currentPriceRow: "현재 가격",
   /** 플랫폼 카드의 구독 줄(게임패스, PS Plus 등). 사용자는 "지원하는 게임패스" 라 불렀다(2026-11-16) — 스토어마다 구독 이름이 달라 묶음 이름으로 쓴다 */
-  subscriptionRow: "구독 포함",
+  subscriptionRow: "구독",
   subscriptionNone: "없음",
-  /** 고른 플랫폼 카드에 패치 기록이 없을 때(game-detail/patch-notes-panel). 기록이 있는 스토어를 알려 준다 */
-  patchesNoneForPick: (stores: string) => `이 플랫폼은 업데이트 기록을 공개하지 않아요. ${stores} 카드를 고르면 기록을 볼 수 있어요.`,
+  /** 고른 플랫폼 카드에 패치 기록이 없을 때(game-detail/patch-notes-panel). 2026-11-23 사용자 지정 문구 — 전에는 기록 있는 스토어 카드를 고르라고 했다 */
+  patchesNoneForPick: "업데이트 내역을 확인 중입니다.",
   upcomingTag: "출시 예정",
   releaseAlert: "출시 알림 받기",
   releaseUnknown: "미정",
@@ -112,12 +112,13 @@ export const DETAIL_MESSAGES = {
   perfUpcoming: "출시 전이라 성능 정보가 아직 없어요.",
   /** 성능 정보 탭 아래 플랫폼별 한 줄(game-detail/perf-row) */
   perfRowTitle: "플랫폼별 성능",
-  perfRowNone: "공개된 성능 정보가 없어요",
+  perfRowNone: "공개된 성능 정보가 없어요.",
   /** 칸 안 줄 이름 — 성능 표지 밖의 스토어 사실(game-detail/perf-row). 표지 줄 이름은 lib/games/perf 의 perfLines */
   perfLineModel: "기종",
   perfLineDeck: "스팀덱",
   perfLineUpgrade: "업그레이드",
-  perfRowNote: "Xbox 는 스토어, PC 는 PCGamingWiki 가 공개한 지원 표시예요. PlayStation, Nintendo 는 스토어가 성능 정보를 공개하지 않아요.",
+  /** 이 게임이 안 나온 기기 칸(네 칸은 늘 선다, game-detail/perf-row) */
+  perfRowNotReleased: "이 기기로는 출시하지 않았어요.",
   moreHeading: "더 알아보기",
   sourcesHeading: "정보 출처",
 } as const;

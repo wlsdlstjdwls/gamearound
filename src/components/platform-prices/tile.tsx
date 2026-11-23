@@ -19,7 +19,7 @@ import { brandKeyOf, DEVICE_LABEL, devicesOf } from "@/lib/platform";
 import { cn } from "@/lib/cn";
 import { RIPPLE_DELAYS_MS } from "@/lib/motion";
 import { buttonClass } from "@/components/ui/button";
-import { DiscountBadge, HistoricLowBadge } from "@/components/ui/discount";
+import { DiscountRate } from "@/components/ui/discount";
 import { PendingNote } from "@/components/ui/pending-note";
 import { ClockIcon, StoreIcon } from "@/components/ui/icons";
 import { Tag } from "@/components/ui/tag";
@@ -65,8 +65,23 @@ export function CardHead({ name, children }: { name: string; children?: React.Re
  * 최저가 딱지 — 채운 면 대신 테두리 한 줄(2026-11-16 색 줄이기). 카드 안에서 값 다음으로 눈이 가야 할 말이라 남긴다.
  * 테두리와 글자는 먹색이다(2026-11-20 사용자 점검 "파랑이 많다") — 파랑은 누르는 것의 색인데 이 딱지는 눌리지 않는다.
  */
-export function BestMark() {
-  return <span className="ml-auto shrink-0 rounded-full px-2 py-[3px] text-[12px] font-bold leading-none text-ink-2 ring-1 ring-line-strong ring-inset">최저가</span>;
+export function BestMark({ label = "최저가" }: { label?: string }) {
+  return <span className="shrink-0 rounded-full px-2 py-[3px] text-[12px] font-bold leading-none text-ink-2 ring-1 ring-line-strong ring-inset">{label}</span>;
+}
+
+/**
+ * 카드 머리 오른쪽 딱지 자리 — 최저가와 역대 최저가가 같은 자리에 선다(2026-11-23 사용자
+ * "역대 최저가가 최저가 딱지와 같은 자리여야 하는데 아래에 나온다"). 딱지는 **하나만**: 역대 최저가면 그것만, 아니면 최저가
+ * (같은 날 "둘 중 하나만, 역대 최저가가 맞으면 역대 최저가만"). 역대 최저가가 더 센 말이라 둘을 나란히 두면 같은 말을 두 번 한다.
+ * 차림은 최저가 딱지와 같은 테두리 알약, 색 없음(같은 날 "뱃지 형태는 기본으로, 색상 넣지 말고").
+ */
+export function HeadMarks({ best, historicLow }: { best: boolean; historicLow: boolean }) {
+  if (!best && !historicLow) return null;
+  return (
+    <span className="ml-auto flex shrink-0 items-center">
+      <BestMark label={historicLow ? GAME_MESSAGES.historicLowLabel : undefined} />
+    </span>
+  );
 }
 
 /**
@@ -90,9 +105,9 @@ export function hardwareText(platforms: readonly PlatformPriceItem["platform"][]
 /** 구독 줄(6) — 칩이 없으면 "없음" 으로 자리를 지킨다 */
 export function SubscriptionRow({ subscriptions }: { subscriptions: PlatformPriceItem["subscriptions"] }) {
   return (
-    // 구독이 여럿이면 칩이 줄마다 쌓이므로(subscription-badges) 이름표는 첫 칩 높이에 맞춰 위에 선다
-    <div className="flex min-w-0 items-start justify-between gap-3 text-[13px]">
-      <span className="shrink-0 pt-0.5 text-mut">{D.subscriptionRow}</span>
+    // 구독은 한 줄 딱지 하나다(subscription-badges) — 이름표와 가운데를 맞춘다
+    <div className="flex min-w-0 items-center justify-between gap-3 text-[13px]">
+      <span className="shrink-0 text-mut">{D.subscriptionRow}</span>
       {subscriptions.length > 0 ? (
         <span className="flex min-w-0 justify-end overflow-hidden">
           <SubscriptionChips subscriptions={subscriptions} />
@@ -139,7 +154,7 @@ export function PriceTile({
       <CardHead name={brandNameOf(p)}>
         {/* 스토어마다 따로 본다 — PS 는 예약 중이어도 스팀은 이미 팔 수 있다(lib/games/preorder) */}
         {isPreorder(p) && <Tag>{PREORDER_LABEL}</Tag>}
-        {showBest && <BestMark />}
+        <HeadMarks best={showBest} historicLow={hasDiscount && Boolean(p.historicLow)} />
       </CardHead>
 
       {/* dl 은 contents — 줄 하나하나가 격자의 줄(subgrid)에 바로 앉아야 해서 감싸는 상자를 지운다 */}
@@ -161,20 +176,15 @@ export function PriceTile({
             <dt className="shrink-0 text-[13px] text-mut">{D.currentPriceRow}</dt>
             <dd className="flex min-w-0 items-center justify-end gap-1.5 whitespace-nowrap">
               {/* 값을 아직 못 받았으면 "-" 대신 말로 한다(2026-10-07) — 큰 "-" 는 0원으로도 고장으로도 읽혔다 */}
+              {/* 할인율이 값 앞(2026-11-23 사용자). 역대 최저가는 머리 딱지 자리로 갔다(HeadMarks) */}
+              {hasDiscount && <DiscountRate pct={p.discountPct} />}
               {p.currentPrice === null ? (
                 <PendingNote icon={<ClockIcon size={14} />}>{GAME_MESSAGES.pricePending}</PendingNote>
               ) : (
                 <span className="text-[22px] font-extrabold tracking-[-0.035em] text-ink sm:text-[24px]">{formatPrice(p.currentPrice, p.currency)}</span>
               )}
-              {hasDiscount && <DiscountBadge pct={p.discountPct} size="sm" />}
             </dd>
           </div>
-          {/* 역대 최저가는 값 줄 아래 — 값 줄에 같이 세우면 네 칸 폭에서 "현재 가격" 이름표를 덮었다(2026-11-11) */}
-          {hasDiscount && p.historicLow && (
-            <div className="flex justify-end">
-              <HistoricLowBadge show size="sm" />
-            </div>
-          )}
         </div>
       </dl>
 

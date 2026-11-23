@@ -47,6 +47,7 @@ export function GuestDeviceForm({
   lead,
   columns = true,
   onCancel,
+  bare = false,
 }: {
   current: CompatDevice | null;
   onSaved: (device: CompatDevice) => void;
@@ -60,6 +61,8 @@ export function GuestDeviceForm({
   columns?: boolean;
   /** 적어 둔 기기를 고치다 그만두는 길(상세 판정 칸). 없으면 취소 단추를 세우지 않는다 */
   onCancel?: () => void;
+  /** 팝업 안처럼 이미 판이 있는 자리 — 회색 판(Panel)을 한 겹 더 깔지 않는다 */
+  bare?: boolean;
 }) {
   // 사람이 고른 값만 상태로 둔다. 아직 안 고른 칸(null)은 감지 결과가, 그것도 없으면 기본값이 채운다 —
   // "내가 적은 값" 과 "우리가 채운 값" 을 한 상태에 섞으면 감지가 사람 글자를 덮는 사고가 난다
@@ -99,7 +102,7 @@ export function GuestDeviceForm({
   }
 
   return (
-    <Panel className="flex flex-col gap-4 p-4">
+    <Shell bare={bare}>
       {lead && <p className="text-[13px] leading-[1.7] text-mut">{lead}</p>}
       {/* 자동으로 채운 결과. 버튼은 남겨 둔다 — 감지가 실패했거나 기기를 바꾼 사람이 다시 부른다 */}
       {autoNote && (
@@ -202,6 +205,10 @@ export function GuestDeviceForm({
           {COMPAT_MESSAGES.cta}
         </Link>
       </div>
-    </Panel>
+    </Shell>
   );
+}
+
+function Shell({ bare, children }: { bare: boolean; children: React.ReactNode }) {
+  return bare ? <div className="flex flex-col gap-4">{children}</div> : <Panel className="flex flex-col gap-4 p-4">{children}</Panel>;
 }

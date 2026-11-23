@@ -60,6 +60,19 @@ export function DiscountBadge({ pct, size = "md", className }: { pct: number | n
 }
 
 /**
+ * 값 앞에 서는 빨강 할인율 배지(플랫폼별 가격 비교, 2026-11-23 사용자 "할인율이 금액 앞에, 빨간색으로", "배지로").
+ * 모양과 크기는 DiscountBadge 와 같고 면만 빨강이다. 채운 파랑 배지는 다른 자리(카드, 목록)에 그대로 둔다.
+ */
+export function DiscountRate({ pct, size = "sm", className }: { pct: number | null | undefined; size?: keyof typeof BADGE_SIZE; className?: string }) {
+  if (!pct || pct <= 0) return null;
+  return (
+    <span className={cn("inline-flex shrink-0 items-center self-center rounded-[var(--radius-xs)] bg-danger font-extrabold leading-none tracking-[-0.02em] text-on-ink", BADGE_SIZE[size], className)}>
+      <DiscountText pct={pct} />
+    </span>
+  );
+}
+
+/**
  * 역대 최저가 배지. 할인율 배지(채운 파랑) 옆에 서서 같은 높이를 쓰되 연한 면으로 한 단계 낮춘다 —
  * 두 배지가 같은 채운 면이면 어느 것이 값인지 눈이 고르지 못한다. 초록은 쓰지 않는다(관리자, 사용자 화면 공통 색 규칙)
  */
