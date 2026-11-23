@@ -6,9 +6,14 @@
 //
 // 값이 없는 줄은 그리지 않는다. 멀티플레이 칩에서 배운 것과 같다 — 빈칸을 "-" 로 채우면
 // 화면에서 제일 큰 자리가 줄줄이 "-" 가 되고, 그건 "아직 모은다" 가 아니라 "고장 났다" 로 읽힌다.
+import { DetailTabs } from "@/components/ui/tabs";
 import { formatSizeMb } from "@/lib/format";
 import { OS_FAMILY_LABEL, REQUIREMENT_ROW_LABEL, REQUIREMENT_TIER_LABEL } from "@/lib/games/messages";
 import type { RequirementDto, RequirementGroupDto } from "@/server/services/games";
+
+/** 탭 순서 — 사양을 적은 게임 수 순(윈도우 6,347, 맥 1,649, 리눅스 1,052, 2026-11-23 실측) */
+const OS_ORDER: RequirementGroupDto["osFamily"][] = ["windows", "mac", "linux"];
+const OS_TABS_LABEL = "운영체제";
 
 /** 표에 세울 줄과 그 값 꺼내는 법. 순서가 곧 화면 순서다 — 사용자가 먼저 보는 것부터 */
 const ROWS: Array<{ key: keyof typeof REQUIREMENT_ROW_LABEL; valueOf: (r: RequirementDto) => string }> = [
@@ -22,7 +27,7 @@ const ROWS: Array<{ key: keyof typeof REQUIREMENT_ROW_LABEL; valueOf: (r: Requir
   // "그 밖에"(note_text)는 여기 없다 — 뺀 근거는 lib/games/messages 의 REQUIREMENT_ROW_LABEL 주석
 ];
 
-function OsTable({ group }: { group: RequirementGroupDto }) {
+function OsTable({ group, showTitle }: { group: RequirementGroupDto; showTitle: boolean }) {
   const tiers = [group.minimum, group.recommended].filter((t): t is RequirementDto => t !== null);
   // 양쪽 다 빈 줄은 세우지 않는다
   const rows = ROWS.map((row) => ({ ...row, values: tiers.map(row.valueOf) })).filter((row) => row.values.some(Boolean));
@@ -30,7 +35,7 @@ function OsTable({ group }: { group: RequirementGroupDto }) {
 
   return (
     <div className="flex flex-col gap-2">
-      <h3 className="text-[13px] font-bold text-ink">{OS_FAMILY_LABEL[group.osFamily]}</h3>
+      {showTitle && <h3 className="text-[13px] font-bold text-ink">{OS_FAMILY_LABEL[group.osFamily]}</h3>}
       <div className="overflow-x-auto">
         <table className="w-full min-w-[320px] border-collapse text-left text-[12.5px]">
           <thead>
@@ -74,11 +79,15 @@ function OsTable({ group }: { group: RequirementGroupDto }) {
  */
 export function RequirementsBody({ groups }: { groups: RequirementGroupDto[] }) {
   if (groups.length === 0) return null;
+  // 운영체제가 둘 이상이면 탭으로 하나씩 본다(2026-11-23 사용자 "윈도우, 맥 탭으로 구분"). 표 셋을 세로로 쌓으면
+  // 맥 사용자가 윈도우 표를 지나 내려가야 했고, 같은 칸 이름이 세 번 되풀이됐다. 한 벌뿐이면 탭 없이 표만 둔다.
+  if (groups.length === 1) return <OsTable group={groups[0]} showTitle />;
+  const sorted = [...groups].sort((a, b) => OS_ORDER.indexOf(a.osFamily) - OS_ORDER.indexOf(b.osFamily));
   return (
-    <div className="flex flex-col gap-5">
-      {groups.map((g) => (
-        <OsTable key={g.osFamily} group={g} />
-      ))}
-    </div>
+    <DetailTabs
+      size="sm"
+      label={OS_TABS_LABEL}
+      tabs={sorted.map((g) => ({ key: g.osFamily, label: OS_FAMILY_LABEL[g.osFamily], panel: <OsTable group={g} showTitle={false} /> }))}
+    />
   );
 }

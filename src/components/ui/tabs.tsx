@@ -7,12 +7,28 @@
 // 키보드: 탭 줄 안에서 좌우 화살표, Home, End 로 옮기고 그 자리에서 연다(WAI-ARIA 탭 패턴, 자동 활성화).
 // 닫힌 패널은 hidden 으로 둔다 — 지우면 그 안의 접힘 상태, 판정 결과가 탭을 오갈 때마다 처음으로 돌아간다.
 import { useId, useRef, useState } from "react";
+import { chipClass } from "@/components/ui/chip";
 import { cn } from "@/lib/cn";
 
 export type DetailTab = { key: string; label: string; panel: React.ReactNode };
 
-/** active, onChange 를 주면 바깥이 고른 탭을 쥔다(관리자 요금 문구: 고른 카드를 미리 보기도 따라간다) */
-export function DetailTabs({ label, tabs, active: controlled, onChange }: { label: string; tabs: DetailTab[]; active?: string; onChange?: (key: string) => void }) {
+/**
+ * active, onChange 를 주면 바깥이 고른 탭을 쥔다(관리자 요금 문구: 고른 카드를 미리 보기도 따라간다).
+ * size "sm" 은 탭 안의 탭(성능 정보 안 운영체제)이다 — 큰 알약 줄이 겹치면 어느 쪽이 바깥인지 안 읽혀 칩 차림을 쓴다.
+ */
+export function DetailTabs({
+  label,
+  tabs,
+  active: controlled,
+  onChange,
+  size = "md",
+}: {
+  label: string;
+  tabs: DetailTab[];
+  active?: string;
+  onChange?: (key: string) => void;
+  size?: "md" | "sm";
+}) {
   const [own, setOwn] = useState(tabs[0]?.key ?? "");
   const active = controlled ?? own;
   const setActive = (key: string) => {
@@ -35,8 +51,15 @@ export function DetailTabs({ label, tabs, active: controlled, onChange }: { labe
   };
 
   return (
-    <div className="flex min-w-0 flex-col gap-3.5">
-      <div role="tablist" aria-label={label} className="inline-flex max-w-full gap-1 self-start overflow-x-auto rounded-full bg-surface p-1 shadow-hair">
+    <div className={cn("flex min-w-0 flex-col", size === "sm" ? "gap-3" : "gap-3.5")}>
+      <div
+        role="tablist"
+        aria-label={label}
+        className={cn(
+          "inline-flex max-w-full self-start overflow-x-auto",
+          size === "sm" ? "gap-1.5" : "gap-1 rounded-full bg-surface p-1 shadow-hair",
+        )}
+      >
         {tabs.map((t, i) => {
           const on = t.key === active;
           return (
@@ -53,10 +76,14 @@ export function DetailTabs({ label, tabs, active: controlled, onChange }: { labe
               tabIndex={on ? 0 : -1}
               onClick={() => setActive(t.key)}
               onKeyDown={(e) => onKey(e, i)}
-              className={cn(
-                "press min-h-[var(--touch-target)] whitespace-nowrap rounded-full px-5 text-[14px] font-semibold transition-colors duration-fast sm:px-6",
-                on ? "bg-acc-soft text-acc ring-1 ring-acc ring-inset" : "text-mut hover:text-ink",
-              )}
+              className={
+                size === "sm"
+                  ? chipClass({ active: on, size: "sm", outline: true })
+                  : cn(
+                      "press min-h-[var(--touch-target)] whitespace-nowrap rounded-full px-5 text-[14px] font-semibold transition-colors duration-fast sm:px-6",
+                      on ? "bg-acc-soft text-acc ring-1 ring-acc ring-inset" : "text-mut hover:text-ink",
+                    )
+              }
             >
               {t.label}
             </button>
