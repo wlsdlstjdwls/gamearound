@@ -149,7 +149,8 @@ export function WishHeart({
         "press flex items-center justify-center rounded-full bg-surface/90 shadow-1 backdrop-blur-sm transition-colors",
         HEART_SIZE[size].box,
         // 찜하는 순간 한 번 톡 튄다 — 클래스가 붙는 순간에만 돌아서 풀 때는 조용하다
-        shown ? "animate-pop text-acc" : "text-dim hover:text-ink",
+        // 찜한 하트는 빨강(2026-11-23 사용자 "하트 찜 표시도 빨간색으로")
+        shown ? "animate-pop text-danger" : "text-dim hover:text-ink",
         className,
       )}
     >

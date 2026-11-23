@@ -92,19 +92,21 @@ export function DetailHero({
           위아래가 반 넘게 잘린다. 가로 아트가 없는 게임만 세로 아트를 가운데 띠로 보여 준다 */}
       {/* 휴대폰(md 아래)에서는 흰 판을 걷는다(2026-11-20 사용자 점검 "그림 테두리가 두 겹") — 그 폭에서는 판 안에 배지가 없어(md:flex)
           판이 그림 둘레 10px 흰 테 하나뿐이었고, 그림의 그림자(cover-elev)와 판의 그림자가 두 겹 테두리로 보였다 */}
-      {/* 세 기둥 바닥을 맞춘다(2026-11-23 사용자 "서로 높이가 안 맞아 안정감이 없다"): 줄 높이는 가운데 기둥이 정하고,
-          커버 판은 그 높이까지 늘어 배지 줄을 바닥에 붙이고(mt-auto), 오른쪽 기둥은 마지막 판(개발, 배급)이 남은 높이를 받는다 */}
-      <div className="enter-item flex flex-col gap-2.5 max-md:w-full md:rounded-[var(--radius-panel)] md:bg-surface md:p-3 md:shadow-[var(--elev-card)]" style={stagger(0)}>
+      {/* 세 기둥 바닥 맞추기(2026-11-23 사용자 "서로 높이가 안 맞아 안정감이 없다"). 처음엔 커버 판과 오른쪽 마지막 판을 가운데 높이까지 늘였는데
+          "늘린 데가 비어서 보기 싫다" 해 거꾸로 했다 — 양옆은 제 높이 그대로, **가운데 기둥이 그 높이에 맞춰 설명을 줄인다**(아래 가운데 기둥 주석) */}
+      <div className="enter-item flex flex-col gap-2.5 self-start max-md:w-full md:rounded-[var(--radius-panel)] md:bg-surface md:p-3 md:shadow-[var(--elev-card)]" style={stagger(0)}>
         <div className="cover-elev relative aspect-[16/9] w-full overflow-hidden rounded-[var(--radius-cover-lg)] bg-surface-3">
           <CoverImage src={game.coverUrl ?? game.portraitUrl} alt={`${title} 커버`} sizes="(max-width: 767px) 100vw, (max-width: 1023px) 50vw, 420px" priority />
         </div>
         {/* 정보 출처 줄은 걷었다(2026-11-16 피드백 v11 "목업은 정보 출처 없음", "더 컴팩트하게"). 부품(game-detail/sources)은 남겨 둔다 */}
         {/* 플레이 방식, 스팀덱, 네이티브 OS, 한국어 — 목업에는 없지만 이 서비스가 모은 "내 조건에 맞나" 값이라 남긴다.
             커버 판 안 맨 밑에 둔다(머리 주석의 높이 맞추기) */}
-        {(hasPlayModes || game.platforms.length > 0) && <SupportBadges game={game} className="hidden border-t border-line px-0.5 pt-2.5 md:mt-auto md:flex" />}
+        {(hasPlayModes || game.platforms.length > 0) && <SupportBadges game={game} className="hidden border-t border-line px-0.5 pt-2.5 md:flex" />}
       </div>
 
-      <div className="enter-item flex min-w-0 flex-col gap-3" style={stagger(1)}>
+      {/* 가운데 기둥은 줄 높이를 정하지 않는다(lg:h-0) — 양옆 중 높은 쪽 높이를 받아(min-h-full) 설명(FitClamp)이 남는 자리만큼만 편다.
+          세 기둥이 나란히 서는 lg 부터다. md 는 커버와 둘이라 제 높이를 그대로 쓴다 */}
+      <div className="enter-item flex min-w-0 flex-col gap-3 lg:h-0 lg:min-h-full" style={stagger(1)}>
         {/* 지원 플랫폼 이름 줄(목업 .plats). 누르면 그 플랫폼 카드로 미끄러져 내려가 카드가 잠깐 빛난다(platform-jump) */}
         {/* 지원 플랫폼 배지(2026-11-16 사용자 "제목 위 플랫폼은 뱃지로"). 누르면 그 플랫폼 카드로 미끄러져 내려가 카드가 잠깐 빛난다(platform-jump) */}
         {(brands.length > 0 || preorder) && (
@@ -190,7 +192,7 @@ export function DetailHero({
         {(hasPlayModes || game.platforms.length > 0) && <SupportBadges game={game} className="flex md:hidden" />}
       </div>
 
-      <div className="enter-item flex min-w-0 flex-col gap-3 md:col-span-2 lg:col-span-1 lg:[&>*:last-child]:flex-1" style={stagger(2)}>
+      <div className="enter-item flex min-w-0 flex-col gap-3 self-start md:col-span-2 lg:col-span-1" style={stagger(2)}>
         {/* 찜과 가격 알림(기획서 v2.0 S-05). 둘 다 비로그인이면 로그인 팝업 뒤 이어서 실행된다(auth/login-gate).
             무료 게임에는 알림을 세우지 않는다 — 0원에는 내려갈 자리가 없다(2026-09-21) */}
         {/* 두 단추는 같은 폭, 같은 크기(button 의 pair)다(2026-11-20 사용자 "두 개의 버튼 크기도 좀 다른 것 같음"). 전에는 160:196 으로 찜하기가 넓었다 */}

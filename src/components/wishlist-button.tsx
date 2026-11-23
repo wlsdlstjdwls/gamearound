@@ -59,7 +59,8 @@ export function WishlistButton({ gameId, className }: { gameId: string; classNam
       onClick={() => gate(action, () => toggle(!wished))}
       className={buttonClass({ variant: shown ? "picked" : "secondary", size: "pair", className })}
     >
-      <HeartIcon size={17} className={shown ? "animate-pop fill-current" : undefined} />
+      {/* 찜한 하트는 빨강 — 목록 카드의 하트(wish-heart)와 같은 색(2026-11-23 사용자) */}
+      <HeartIcon size={17} className={shown ? "animate-pop fill-current text-danger" : undefined} />
       {shown ? M.on : M.off}
     </button>
   );

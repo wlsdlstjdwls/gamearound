@@ -45,7 +45,7 @@ export function HomeRanking({ games }: { games: GameSummary[] }) {
                   <span>{PLATFORM_LABEL[g.best.platform] ?? g.best.platform}</span>
                   <span aria-hidden>|</span>
                   {g.best.discountPct != null && g.best.discountPct > 0 && (
-                    <span className="font-bold text-acc">
+                    <span className="font-bold text-danger">
                       <DiscountText pct={g.best.discountPct} />
                     </span>
                   )}

@@ -120,9 +120,10 @@ export function TextField({ label, labelMark, hideLabel, hint, under, error, lea
             // 포커스가 가면 화면을 확대하고, 확대된 배율은 입력을 마쳐도 돌아오지 않는다.
             // 14px 이던 값을 올렸다(2026-09-22 실측: 로그인, 가입의 모든 칸이 14px 이었다).
             // 높이는 46px 그대로라 줄 위치는 밀리지 않는다 — 글자만 커진다.
-            compact ? "h-11 min-h-11" : "h-[46px] min-h-[46px]",
+            // 2026-11-23 사용자 "필드들이 위아래 양옆으로 넓다, 좁혀": 넓은 화면은 40px, 휴대폰은 터치 타깃 44px(AGENTS 6장)을 지킨다
+            compact ? "h-11 min-h-11 sm:h-10 sm:min-h-10" : "h-11 min-h-11 sm:h-10 sm:min-h-10",
             dense && "lg:h-9 lg:min-h-9 lg:text-[14px] lg:placeholder:text-[13px]",
-            "w-full min-w-0 flex-1 bg-transparent px-3.5 text-[16px] text-ink outline-none placeholder:text-dim disabled:cursor-not-allowed disabled:text-mut",
+            "w-full min-w-0 flex-1 bg-transparent px-3 text-[16px] text-ink outline-none placeholder:text-dim disabled:cursor-not-allowed disabled:text-mut",
             leading ? "pl-0.5" : null,
             "autofill:shadow-[inset_0_0_0_1000px_var(--surface)] autofill:[-webkit-text-fill-color:var(--ink)]",
             className,

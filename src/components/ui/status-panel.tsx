@@ -68,7 +68,8 @@ export function StatusPanel({
       )}
       {code && <p aria-hidden className="text-[44px] font-black leading-none tracking-[-0.06em] text-acc-3 sm:text-[56px]">{code}</p>}
       <h2 className={cn("font-extrabold tracking-[-0.02em] text-ink", size === "page" ? "text-[20px]" : "text-[17px]")}>{title}</h2>
-      <p className="max-w-[360px] text-[13.5px] leading-[1.7] text-mut">{body}</p>
+      {/* 본문의 \n 을 줄바꿈으로 살린다(오류 안내 두 줄, lib/messages 의 ERROR_MESSAGES) */}
+      <p className="max-w-[360px] whitespace-pre-line text-[13.5px] leading-[1.7] text-mut">{body}</p>
       {actions && <div className="mt-3 flex flex-wrap justify-center gap-2">{actions}</div>}
       {footnote && <div className="mt-3 text-[11.5px] leading-[1.6] text-dim-2">{footnote}</div>}
     </section>

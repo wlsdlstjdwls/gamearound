@@ -17,7 +17,7 @@ import { GAME_MESSAGES, PREORDER_LABEL } from "@/lib/games/messages";
 import { isPreorder } from "@/lib/games/preorder";
 import { brandKeyOf, DEVICE_LABEL, devicesOf } from "@/lib/platform";
 import { cn } from "@/lib/cn";
-import { RIPPLE_DELAYS_MS } from "@/lib/motion";
+import { FloatingIcon } from "@/components/ui/floating-icon";
 import { buttonClass } from "@/components/ui/button";
 import { DiscountRate } from "@/components/ui/discount";
 import { PendingNote } from "@/components/ui/pending-note";
@@ -214,14 +214,9 @@ export function AbsentTile({ id, label, className }: { id?: string; label: strin
       <div className="row-span-6 flex flex-col items-center justify-center gap-2 py-3 text-center">
         {/* 2026-11-18 사용자 "너무 밋밋하다, 모션 넣을까": 빈 상태(empty-state)와 같은 결의 물결 + 떠 있는 아이콘. 색은 회색 —
             없는 자리를 파랑으로 칠하면 눈길을 뺏는다(같은 날 "파란색 남발"). 모션 축소는 전역 킬스위치가 끈다 */}
-        <span aria-hidden className="relative grid size-16 place-items-center">
-          {RIPPLE_DELAYS_MS.map((delay) => (
-            <span key={delay} className="soon-ripple absolute inset-1 rounded-full bg-line" style={{ "--stagger": `${delay}ms` } as React.CSSProperties} />
-          ))}
-          <span className="soon-float relative flex h-11 w-11 items-center justify-center rounded-full bg-surface text-dim shadow-hair">
-            <StoreIcon size={20} />
-          </span>
-        </span>
+        <FloatingIcon>
+          <StoreIcon size={20} />
+        </FloatingIcon>
         <p className="text-[14px] font-bold text-mut">{GAME_MESSAGES.storeAbsent}</p>
       </div>
     </li>

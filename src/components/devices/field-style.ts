@@ -4,7 +4,8 @@
 // 컴포넌트를 그대로 쓰지 않는 이유는 글자 크기 하나다: 이 칸들은 16px 여야 한다(iOS 가 그 아래에서 화면을 당긴다).
 // cn 은 단순 이어붙이기라 TextField 의 14px 를 밖에서 못 덮는다 — 같은 값을 여기 한 번 적는다.
 export const FIELD_CLASS =
-  "h-[46px] w-full rounded-xl bg-surface px-3.5 text-[16px] text-ink outline-none transition-[box-shadow] duration-base ease-standard " +
+  // 높이, 옆 여백은 공용 TextField 와 같다(2026-11-23 좁힘: 넓은 화면 40px, 휴대폰 44px)
+  "h-11 w-full rounded-xl bg-surface px-3 text-[16px] sm:h-10 text-ink outline-none transition-[box-shadow] duration-base ease-standard " +
   "shadow-[0_0_0_1px_var(--line)] placeholder:text-dim focus:shadow-[0_0_0_1px_var(--acc),0_0_0_4px_var(--acc-glow)]";
 
 /** 칸 이름. TextField 의 라벨과 같은 크기, 같은 색이다 */

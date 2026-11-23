@@ -12,7 +12,8 @@ import { formatPrice } from "@/lib/currency";
 import { formatDate } from "@/lib/format";
 import { DETAIL_MESSAGES as D } from "@/lib/games/detail-messages";
 import type { Forecast } from "@/lib/sales/forecast";
-import { CalendarIcon } from "@/components/ui/icons";
+import { CalendarIcon, ChartIcon } from "@/components/ui/icons";
+import { FloatingIcon } from "@/components/ui/floating-icon";
 import { Tag } from "@/components/ui/tag";
 import { cn } from "@/lib/cn";
 import type { Currency } from "@/server/db/schema";
@@ -143,15 +144,19 @@ export function DiscountForecast({
         </p>
       )}
       {empty ? (
-        <p className="flex min-w-0 flex-1 items-center justify-center rounded-[var(--radius-panel)] bg-surface-2/60 p-4 text-center text-[13.5px] leading-[1.6] text-mut">
-          <span>
+        // 아이콘 모션을 함께 띄운다(2026-11-23 사용자 "아이콘도 같이 나오게 모션그래픽") — 가격 카드의 빈 칸과 같은 부품(ui/floating-icon)
+        <div className="flex min-w-0 flex-1 flex-col items-center justify-center gap-2 rounded-[var(--radius-panel)] bg-surface-2/60 p-4 text-center text-[13.5px] leading-[1.6] text-mut">
+          <FloatingIcon>
+            <ChartIcon size={20} />
+          </FloatingIcon>
+          <p>
             {D.forecastNoRecord.map((line) => (
               <span key={line} className="block">
                 {line}
               </span>
             ))}
-          </span>
-        </p>
+          </p>
+        </div>
       ) : (
         <Plan next={next} expected={expected} running={running !== null} currency={currency} />
       )}

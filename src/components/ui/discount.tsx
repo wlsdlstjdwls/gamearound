@@ -53,7 +53,8 @@ export function DiscountBadge({ pct, size = "md", className }: { pct: number | n
   if (!pct || pct <= 0) return null;
   return (
     // self-center: 값과 baseline 으로 맞추면 면이 위로 떠 보인다(글자 크기가 다르다)
-    <span className={cn("inline-flex shrink-0 items-center self-center rounded-[var(--radius-xs)] bg-acc font-extrabold leading-none tracking-[-0.02em] text-on-ink", BADGE_SIZE[size], className)}>
+    // 채운 빨강(2026-11-23 사용자 "모든 목록의 게임 카드 할인율 배지는 빨간색으로") — 가격 비교 카드의 DiscountRate 와 같은 색이다
+    <span className={cn("inline-flex shrink-0 items-center self-center rounded-[var(--radius-xs)] bg-danger font-extrabold leading-none tracking-[-0.02em] text-on-ink", BADGE_SIZE[size], className)}>
       <DiscountText pct={pct} />
     </span>
   );

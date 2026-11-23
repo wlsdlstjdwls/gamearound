@@ -39,8 +39,7 @@ export function InfoCard({ game, showRelease }: { game: GameDetail; showRelease:
   const release = showRelease && game.releaseDate ? releaseParts(game.releaseDate) : null;
   if (!release && companies.length === 0) return null;
   return (
-    // 히어로 오른쪽 기둥의 마지막 판이라 남은 높이까지 늘어난다(hero 의 세 기둥 바닥 맞추기) — 늘어도 줄이 위에 몰리지 않게 가운데로 모은다
-    <dl className="flex flex-col justify-center gap-2 rounded-[var(--radius-panel)] bg-surface p-4 text-[13.5px] shadow-[var(--elev-card)]">
+    <dl className="flex flex-col gap-2 rounded-[var(--radius-panel)] bg-surface p-4 text-[13.5px] shadow-[var(--elev-card)]">
       {release && (
         <div className="flex items-center gap-3">
           {/* 이름표 앞 달력 아이콘은 걷었다(2026-11-19 사용자 "출시 앞에 아이콘도 빼") — 개발, 배급 줄과 같은 글자만 */}
