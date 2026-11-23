@@ -73,13 +73,15 @@ export function BestMark({ label = "최저가" }: { label?: string }) {
  * 카드 머리 오른쪽 딱지 자리 — 최저가와 역대 최저가가 같은 자리에 선다(2026-11-23 사용자
  * "역대 최저가가 최저가 딱지와 같은 자리여야 하는데 아래에 나온다"). 딱지는 **하나만**: 역대 최저가면 그것만, 아니면 최저가
  * (같은 날 "둘 중 하나만, 역대 최저가가 맞으면 역대 최저가만"). 역대 최저가가 더 센 말이라 둘을 나란히 두면 같은 말을 두 번 한다.
- * 차림은 최저가 딱지와 같은 테두리 알약, 색 없음(같은 날 "뱃지 형태는 기본으로, 색상 넣지 말고").
+ * 역대 최저가는 딱지가 아니라 플랫폼 이름 바로 오른쪽 빨강 글자다(같은 날 "뱃지 형태 말고 플랫폼명 오른쪽에 빨간 글자로").
+ * 최저가는 오른쪽 끝 테두리 알약 그대로다.
  */
 export function HeadMarks({ best, historicLow }: { best: boolean; historicLow: boolean }) {
-  if (!best && !historicLow) return null;
+  if (historicLow) return <span className="shrink-0 text-[12.5px] font-bold text-danger">{GAME_MESSAGES.historicLowLabel}</span>;
+  if (!best) return null;
   return (
     <span className="ml-auto flex shrink-0 items-center">
-      <BestMark label={historicLow ? GAME_MESSAGES.historicLowLabel : undefined} />
+      <BestMark />
     </span>
   );
 }
