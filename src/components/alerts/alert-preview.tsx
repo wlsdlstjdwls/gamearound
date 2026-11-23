@@ -44,7 +44,7 @@ export async function AlertPreview({ v }: { v: AlertView }) {
             <h3 className="text-[13px] font-semibold text-ink">{M.previewWeb}</h3>
             {push && (
               <div className="flex items-start gap-3 rounded-xl bg-surface-2 p-3.5 shadow-hair">
-                <span aria-hidden className="grid size-9 shrink-0 place-items-center rounded-lg bg-acc-soft text-acc">
+                <span aria-hidden className="grid size-9 shrink-0 place-items-center rounded-lg bg-surface-2 text-ink-2">
                   <BellIcon size={18} />
                 </span>
                 <div className="flex min-w-0 flex-col gap-0.5">
@@ -69,7 +69,7 @@ export async function AlertPreview({ v }: { v: AlertView }) {
               <span className="text-dim">{M.previewEmailTo}</span>
               <b className="font-bold text-ink">{mail.subject}</b>
               <span className="whitespace-pre-line text-mut">{mail.text}</span>
-              <span className="font-semibold text-acc">{M.previewEmailLink}</span>
+              <span className="font-semibold text-ink underline decoration-ink/40 underline-offset-4">{M.previewEmailLink}</span>
             </div>
           </section>
         )}

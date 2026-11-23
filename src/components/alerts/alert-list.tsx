@@ -19,7 +19,7 @@ import { FadeImage } from "@/components/ui/fade-image";
 import { ImageFallback } from "@/components/ui/image-fallback";
 import { Clamp } from "@/components/ui/tooltip";
 import { Tag } from "@/components/ui/tag";
-import { DiscountBadge } from "@/components/ui/discount";
+import { DiscountStamp } from "@/components/game-card";
 import { CheckIcon } from "@/components/ui/icons";
 import { formatPrice } from "@/lib/currency";
 import { formatDate, PLATFORM_LABEL } from "@/lib/format";
@@ -57,7 +57,7 @@ function ProgressBar({ v, index }: { v: AlertView; index: number }) {
         aria-valuenow={pct}
         className="relative h-1.5 w-full max-w-[240px] overflow-hidden rounded-full bg-surface-2"
       >
-        <span className={cn("bar-grow absolute inset-y-0 left-0 rounded-full", "bg-acc")} style={{ ["--bar-w" as string]: `${pct}%`, ...stagger(index) }} />
+        <span className={cn("bar-grow absolute inset-y-0 left-0 rounded-full", "bg-ink-2")} style={{ ["--bar-w" as string]: `${pct}%`, ...stagger(index) }} />
       </span>
       {!v.status.met && <span className="shrink-0 text-[11.5px] font-semibold text-mut">{M.progress(pct)}</span>}
     </div>
@@ -72,16 +72,20 @@ function StatusLine({ v }: { v: AlertView }) {
       {/* 조건 충족은 연한 파랑 알약 + 채운 체크(2026-10-30 사용자 "색도 그렇고 맘에 안 든다", 잉크 면은 "너무 어둡다").
           연두 알약은 개편 뒤 파랑 화면에서 혼자 튀었다. 옆 할인 배지가 채운 파랑이라 이쪽은 연한 면으로 둬서 둘이 갈린다 */}
       {met && (
-        <span className="inline-flex items-center gap-1 rounded-full bg-acc-soft py-1 pl-1 pr-2 text-[11.5px] font-bold leading-none text-acc shadow-[inset_0_0_0_1px_var(--acc-3)]">
-          <span aria-hidden className="grid size-3.5 place-items-center rounded-full bg-acc text-on-ink">
+        <span className="inline-flex items-center gap-1 rounded-full bg-surface-2 py-1 pl-1 pr-2 text-[11.5px] font-bold leading-none text-ink-2">
+          <span aria-hidden className="grid size-3.5 place-items-center rounded-full bg-ink text-on-ink">
             <CheckIcon size={9} strokeWidth={3.5} />
           </span>
           {M.metLabel}
         </span>
       )}
       <span className="text-mut">{PLATFORM_LABEL[best.platform] ?? best.platform}</span>
-      <DiscountBadge pct={best.discountPct} size="sm" />
+      {/* 할인율(빨강 글자), 할인가, 취소선 정가 — 목록 카드, 가격 비교 카드와 같은 순서(2026-11-23 사용자 "할인율 쓸 거면 원가, 할인가 둘 다") */}
+      <DiscountStamp pct={best.discountPct} size="sm" />
       <span className="text-[14px] font-extrabold tracking-[-0.02em] text-ink">{formatPrice(best.currentPrice, best.currency)}</span>
+      {best.discountPct && best.listPrice != null && best.listPrice !== best.currentPrice ? (
+        <span className="text-[12px] text-dim-2 line-through">{formatPrice(best.listPrice, best.currency)}</span>
+      ) : null}
       {!met && gap && <span className="text-dim">| {gapText(gap)}</span>}
     </p>
   );
@@ -111,7 +115,7 @@ export function AlertList({ views }: { views: AlertView[] }) {
             key={g.gameId}
             className={cn(
               // 한 줄을 낮게(2026-10-27, 사용자: "알림 한 영역이 너무 많이 공간을 차지한다") — 제목 옆에 플랫폼, 그 아래 한 줄에 지금 값과 조건
-              "enter-item lift flex flex-wrap items-center gap-x-4 gap-y-2.5 rounded-[var(--radius-md)] bg-surface px-3.5 py-3 shadow-[var(--elev-card)] transition-shadow duration-base hover:shadow-[var(--elev-card-hover)] sm:flex-nowrap",
+              "enter-item flex flex-wrap items-center gap-x-4 gap-y-2.5 rounded-[var(--radius-md)] bg-surface px-3.5 py-3 shadow-[var(--elev-card)] transition-shadow duration-base hover:shadow-[var(--elev-card-hover)] sm:flex-nowrap",
               !g.isActive && "opacity-60",
             )}
             style={stagger(i)}
@@ -121,7 +125,7 @@ export function AlertList({ views }: { views: AlertView[] }) {
             </Link>
             <div className="flex min-w-0 flex-1 flex-col gap-1.5">
               <div className="flex min-w-0 flex-wrap items-center gap-x-2 gap-y-1">
-                <Link href={gamePath(v.game.slug)} className="min-w-0 text-[15px] font-bold tracking-[-0.02em] text-ink hover:text-acc">
+                <Link href={gamePath(v.game.slug)} className="min-w-0 text-[15px] font-bold tracking-[-0.02em] text-ink underline-offset-4 hover:underline">
                   <Clamp>{v.game.title}</Clamp>
                 </Link>
                 {/* 플랫폼 칩. 묶음 안에서 꺼 둔 플랫폼만 흐리게 — 묶음이 켜져 있어도 그 플랫폼은 안 온다 */}
@@ -158,7 +162,7 @@ export function AlertList({ views }: { views: AlertView[] }) {
                     className="mr-1"
                   />
                 ) : (
-                  <Link href={`${ROUTES.alerts}?game=${encodeURIComponent(v.game.slug)}`} className="press tap mr-1.5 inline-flex items-center text-[12.5px] font-semibold text-acc hover:underline">
+                  <Link href={`${ROUTES.alerts}?game=${encodeURIComponent(v.game.slug)}`} className="press tap mr-1.5 inline-flex items-center text-[12.5px] font-semibold text-ink underline decoration-ink/40 underline-offset-4 hover:decoration-ink">
                     {M.editCondition}
                   </Link>
                 )}

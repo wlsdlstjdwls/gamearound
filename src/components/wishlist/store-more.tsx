@@ -20,7 +20,7 @@ export function StoreMore({ device, rows }: { device: string; rows: StoreMoreRow
           <span key={r.store} className="contents">
             <span className={cn("flex items-center gap-1.5 truncate", r.lowest ? "font-bold" : "opacity-85")}>
               {r.store}
-              {r.lowest && <span className="rounded-full bg-acc px-1.5 text-[10.5px] font-bold leading-[16px]">{M.storeLowest}</span>}
+              {r.lowest && <span className="text-[10.5px] font-bold leading-[16px] text-danger">{M.storeLowest}</span>}
             </span>
             <span className={cn("text-right tabular-nums", r.lowest ? "font-bold" : "opacity-85")}>{r.price}</span>
           </span>
@@ -35,7 +35,7 @@ export function StoreMore({ device, rows }: { device: string; rows: StoreMoreRow
         type="button"
         // 스크린리더에는 말풍선 대신 글자를 그대로 준다 — 말풍선은 시각 처리라 aria-hidden 이다
         aria-label={label}
-        className="press shrink-0 rounded-full bg-surface-2 px-1.5 text-[11px] font-bold leading-[18px] text-mut transition-colors duration-base hover:bg-acc-soft hover:text-acc"
+        className="press shrink-0 rounded-full bg-surface-2 px-1.5 text-[11px] font-bold leading-[18px] text-mut transition-colors duration-base hover:bg-surface-3 hover:text-ink"
         {...triggerProps}
       >
         +{rows.length - 1}

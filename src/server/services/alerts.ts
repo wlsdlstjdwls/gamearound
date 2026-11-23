@@ -87,6 +87,7 @@ export async function listAlertViews(): Promise<AlertsOverview> {
         currentPrice: gamePlatforms.currentPrice,
         currency: gamePlatforms.currency,
         discountPct: gamePlatforms.discountPct,
+        listPrice: gamePlatforms.listPrice,
       })
       .from(gamePlatforms)
       .where(and(inArray(gamePlatforms.gameId, myGameIds), eq(gamePlatforms.region, HOME_REGION), visiblePlatformsOnly())),

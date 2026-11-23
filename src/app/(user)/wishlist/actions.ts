@@ -29,7 +29,9 @@ export async function toggleWishlistAction(gameId: string): Promise<WishToggleRe
   if (!parsed.success) return { ok: false, error: "잘못된 게임 ID입니다" };
   try {
     const [r, saleAlerts] = await Promise.all([toggleWishlist(parsed.data), saleAlertsOn()]);
-    revalidatePath("/wishlist");
+    // revalidatePath 를 부르지 않는다(2026-11-23 사용자 "찜하기, 찜풀기 왜 이렇게 느리냐"). 액션 안에서 부르면 응답이 지금 화면(게임 상세)을
+    // 통째로 다시 그려 실어 보내, 상세의 질의 여럿(Neon 왕복)을 다 기다린 뒤에야 단추의 전환이 끝났다.
+    // /wishlist 는 요청마다 그리는 화면이라(쿠키를 읽는다) 다음에 열 때 어차피 새 값이다
     return { ok: true, wished: r.wished, saleAlerts };
   } catch (e) {
     return { ok: false, error: actionError(e, ACTION_MESSAGES.failed) };

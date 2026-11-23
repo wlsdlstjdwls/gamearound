@@ -7,7 +7,7 @@
 import { cheapestOf, formatPrice } from "@/lib/currency";
 import type { Metadata } from "next";
 import Link from "next/link";
-import { DiscountBadge } from "@/components/ui/discount";
+import { DiscountStamp } from "@/components/game-card";
 import { EmptyState } from "@/components/empty-state";
 import { WishlistRemoveButton } from "@/components/wishlist-button";
 import { WishlistCard } from "@/components/wishlist/item";
@@ -16,13 +16,11 @@ import { ImageFallback } from "@/components/ui/image-fallback";
 import { Page, PageHead, SectionHead } from "@/components/ui/page";
 import { Clamp } from "@/components/ui/tooltip";
 import { PLATFORM_LABEL } from "@/lib/format";
-import { DEVICE_LABEL, DEVICES, deviceOf } from "@/lib/platform";
+import { DEVICE_LABEL, DEVICE_SHORT_LABEL, DEVICES, deviceOf } from "@/lib/platform";
 import { gamesHref } from "@/lib/games-query";
-import { collectedAtText, getFreshness } from "@/lib/freshness";
 import { stagger } from "@/lib/motion";
 import { ROUTES } from "@/lib/routes";
 import { listWishlist, type WishlistItem } from "@/server/services/wishlist";
-import { getCurrentUser } from "@/server/services/users";
 import { listAlerts } from "@/server/services/alerts";
 import { listMyIndieWishes } from "@/server/services/indie";
 import { IndieWishes } from "@/components/wishlist/indie-wishes";
@@ -64,25 +62,19 @@ function maxDiscount(item: WishlistItem): number {
   return Math.max(0, ...item.game.platforms.map((p) => p.discountPct ?? 0));
 }
 
-function isOnSale(item: WishlistItem): boolean {
-  return maxDiscount(item) > 0;
-}
-
 export default async function WishlistPage({ searchParams }: Props) {
   const explicit = readSortParam((await searchParams).sort);
   const sort: SortKey = explicit ?? readPref((await cookies()).get(PREF_COOKIES.wishlistSort)?.value, SORT_KEYS) ?? "sale";
   // 세 질의는 서로 기다릴 일이 없어 나란히 묻는다(Neon 왕복은 줄 세운 수가 속도를 정한다)
   // 사용자는 레이아웃이 이미 읽었다(요청 안에서 한 번만 묻는다) — 줄에 끼워도 왕복이 늘지 않는다
-  const [items, alerts, indie, me] = await Promise.all([listWishlist(), listAlerts(), listMyIndieWishes(), getCurrentUser()]);
-  // 찜 할인 알림이 켜져 있나(sync/dispatch-wish-alerts). 머리 한 줄이 "할인하면 알려 드려요" 를 말할지 정한다
-  const saleAlerts = me?.wishSaleAlertsOffAt === null;
+  // 머리 한 줄("N개 중 M개가 지금 할인 중", 찜 할인 알림 켜짐 여부)을 걷어 사용자를 따로 묻지 않는다(2026-11-23)
+  const [items, alerts, indie] = await Promise.all([listWishlist(), listAlerts(), listMyIndieWishes()]);
   // 한 게임에 플랫폼별 알림이 여럿일 수 있다 — 하나라도 켜져 있으면 받는 중
   const alertState = new Map<string, AlertState>();
   for (const a of alerts) {
     if (a.isActive) alertState.set(a.gameId, "on");
     else if (!alertState.has(a.gameId)) alertState.set(a.gameId, "paused");
   }
-  const onSaleCount = items.filter(isOnSale).length;
   // listWishlist 는 추가순(최근 먼저)으로 온다 — "할인 중 먼저"만 화면에서 다시 정렬한다
   const sorted = sort === "added" ? items : [...items].sort((a, b) => maxDiscount(b) - maxDiscount(a));
 
@@ -93,24 +85,13 @@ export default async function WishlistPage({ searchParams }: Props) {
       <header className="flex flex-wrap items-end justify-between gap-x-6 gap-y-4">
         <div>
           <PageHead menuScreen title={WISHLIST_MESSAGES.title} />
-          <p className="mt-1.5 text-[13.5px] text-mut">
-            {/* 빈 목록에 "0개 중 0개가 지금 할인 중이에요" 는 말이 안 된다(2026-10-30 390폭 점검) — 담긴 게 있을 때만 센다 */}
-            {items.length > 0 && (
-              <>
-                {items.length}개 중 <span className="font-bold text-acc">{onSaleCount}개가 지금 할인 중</span>이에요.{" "}
-              </>
-            )}
-            {saleAlerts ? WISHLIST_MESSAGES.saleAlertsOn : WISHLIST_MESSAGES.saleAlertsOff}{" "}
-            <Link href={ROUTES.alerts} className="font-semibold text-ink-2 underline-offset-2 hover:text-acc hover:underline">
-              {WISHLIST_MESSAGES.saleAlertsLink}
-            </Link>
-          </p>
+          {/* "7개 중 3개가 지금 할인 중이에요. 할인이 붙으면 알려 드려요." 줄은 걷었다(2026-11-23 사용자 "문구 제거") — 카드의 빨간 할인율과 알림 단추가 같은 말을 한다 */}
         </div>
         {/* 정렬은 게임 줄에만 먹는다 — 게임 찜이 비었으면 고를 것이 없다 */}
         {items.length > 0 && (
         <div role="group" aria-label="정렬" className="flex shrink-0 gap-1.5">
           {SORTS.map((s) => (
-            <NavChip key={s.key} group="sort" href={`${ROUTES.wishlist}?sort=${s.key}`} active={s.key === sort}>
+            <NavChip key={s.key} group="sort" ink href={`${ROUTES.wishlist}?sort=${s.key}`} active={s.key === sort}>
               {s.label}
             </NavChip>
           ))}
@@ -137,14 +118,16 @@ export default async function WishlistPage({ searchParams }: Props) {
             // "최저가" 는 기기 줄끼리 비교할 때만 뜻이 있다 — 값 있는 기기가 하나뿐이면 붙이지 않는다
             const pricedCount = new Set(game.platforms.filter((p) => p.currentPrice !== null).map((p) => deviceOf(p.platform))).size;
             const title = game.titleKo ?? game.titleEn;
-            const stalest = game.platforms.find((p) => getFreshness(p.lastSyncedAt, p.syncStatus) !== "fresh");
             const alert = alertState.get(game.id) ?? "none";
 
             return (
               // 카드(2026-10-27). 게임 목록 카드처럼 흰 판 위 커버가 먼저 서고, 값 줄과 알림 단추가 아래에 앉는다
               // 커버는 다른 카드(game-card 의 CARD_SHELL, COVER_CLASS)처럼 판 안쪽에 둥글게 앉힌다(2026-10-28 사용자 "찜 카드만 이미지 형태가 달라 이상하다").
               // 판 끝까지 붙어 모서리만 잘리던 모양이 홈, 목록 카드와 달랐다
-              <WishlistCard key={game.id} className="enter-item lift group flex gap-3 overflow-hidden p-2 sm:flex-col sm:gap-1 sm:p-2.5 rounded-[var(--radius-panel)] bg-surface shadow-[var(--elev-card)] transition-shadow duration-base hover:shadow-[var(--elev-card-hover)]" style={stagger(i)}>
+              // 카드 전체가 게임 상세로 가는 자리다(2026-11-23 사용자 "카드에 마우스를 올려도 단추 색도 커서도 안 바뀐다").
+              // 떠오르는 hover(lift)는 그대로 두고, 제목 링크의 덧면(after:inset-0)을 카드 전체로 펼쳐 커서와 누름이 카드 어디서나 같게 했다.
+              // 카드에 올리면 알림 단추도 같이 한 단계 진해진다(group-hover). 알림 단추, 지우기, 스토어 더보기는 덧면 위(relative z-10)에 서서 제 일을 한다
+              <WishlistCard key={game.id} className="enter-item lift group relative flex cursor-pointer gap-3 overflow-hidden p-2 sm:flex-col sm:gap-1 sm:p-2.5 rounded-[var(--radius-panel)] bg-surface shadow-[var(--elev-card)] transition-shadow duration-base hover:shadow-[var(--elev-card-hover)]" style={stagger(i)}>
                 <Link href={`/games/${game.slug}`} className="cover-zoom relative block min-h-[96px] w-[108px] shrink-0 overflow-hidden rounded-[var(--radius-md)] bg-surface-3 shadow-hair sm:w-auto" tabIndex={-1} aria-hidden>
                   {game.coverUrl ? (
                     <FadeImage
@@ -163,10 +146,12 @@ export default async function WishlistPage({ searchParams }: Props) {
 
                 <div className="flex min-w-0 flex-1 flex-col gap-2 py-1 pr-1 sm:gap-2.5 sm:px-1.5 sm:pb-1 sm:pt-2">
                   <div className="flex items-start justify-between gap-2">
-                    <Link href={`/games/${game.slug}`} className="min-w-0 text-[15px] font-extrabold tracking-[-0.025em] text-ink hover:text-acc">
+                    <Link href={`/games/${game.slug}`} className="min-w-0 text-[15px] font-extrabold tracking-[-0.025em] text-ink underline-offset-4 after:absolute after:inset-0 after:content-[''] group-hover:underline">
                       <Clamp>{title}</Clamp>
                     </Link>
-                    <WishlistRemoveButton gameId={game.id} title={title} />
+                    <span className="relative z-10">
+                      <WishlistRemoveButton gameId={game.id} title={title} />
+                    </span>
                   </div>
 
                   {/* 플랫폼 줄은 게임과 상관없이 기기 갈래 넷(DEVICES)을 같은 순서로 세운다(2026-10-30 사용자 "카드 높이가 다르다").
@@ -190,17 +175,31 @@ export default async function WishlistPage({ searchParams }: Props) {
                           }))
                         : [];
                       return (
-                        // 칸이 270px 까지 좁아져 "최저가" 낱말이 한 줄에 같이 못 선다 — 최저가는 낱말 대신 파랑 굵은 값으로 말한다
-                        <li key={d} className="flex min-w-0 items-baseline gap-1.5 whitespace-nowrap">
-                          <span className="w-[96px] shrink-0 whitespace-nowrap text-dim">{DEVICE_LABEL[d]}</span>
+                        // 칸이 270px 까지 좁아져 "최저가" 낱말이 한 줄에 같이 못 선다 — 최저가는 낱말 대신 굵은 값으로 말한다. 금액은 늘 검정이다(2026-11-23 사용자 "금액은 검정색이어야지"), 빨강은 할인율에만
+                        // 한 줄 그대로(줄바꿈 금지, 2026-11-23 사용자 "금액이 줄바꿈된다"). 할인율, 할인가, 정가가 한 줄에 들어가도록
+                        // 기기 이름 칸은 가장 긴 "Nintendo Switch" 가 안 잘리는 92px(12px 글자, 같은 날 "Nintendo Switch 잘린다"). 넘치면 정가가 말줄임으로 줄어든다(할인가는 줄지 않는다)
+                        <li key={d} className="flex min-w-0 items-baseline gap-1 whitespace-nowrap text-[12.5px]">
+                          {/* 휴대폰은 커버가 왼쪽에 서서 칸이 좁다 — 짧은 이름(PS, Switch)으로 칸을 46px 로 줄인다. 낭독기는 긴 이름을 읽는다 */}
+                          <span className="w-[46px] shrink-0 whitespace-nowrap text-[12px] text-dim sm:w-[90px]">
+                            <span aria-hidden className="sm:hidden">{DEVICE_SHORT_LABEL[d]}</span>
+                            <span className="max-sm:sr-only">{DEVICE_LABEL[d]}</span>
+                          </span>
                           {p ? (
                             <>
-                              <span className={cn("relative shrink-0", isLowest && pricedCount > 1 ? "font-bold text-acc" : "text-ink")}>
+                              {/* 할인율(빨강 글자), 할인가, 취소선 정가 순서(2026-11-23 사용자 "할인율 쓸 거면 원가, 할인가 둘 다") */}
+                              <DiscountStamp pct={p.discountPct} size="sm" />
+                              <span className={cn("relative shrink-0", isLowest && pricedCount > 1 ? "font-bold text-ink" : "text-ink")}>
                                 {formatPrice(p.currentPrice, p.currency)}
                                 {isLowest && pricedCount > 1 && <span className="sr-only"> 최저가</span>}
                               </span>
-                              <DiscountBadge pct={p.discountPct} size="sm" />
-                              {storeRows.length > 1 && <StoreMore device={DEVICE_LABEL[d]} rows={storeRows} />}
+                              {p.discountPct && p.listPrice !== null && p.listPrice !== p.currentPrice ? (
+                                <span className="min-w-0 truncate text-[11px] text-dim-2 line-through">{formatPrice(p.listPrice, p.currency)}</span>
+                              ) : null}
+                              {storeRows.length > 1 && (
+                                <span className="relative z-10">
+                                  <StoreMore device={DEVICE_LABEL[d]} rows={storeRows} />
+                                </span>
+                              )}
                             </>
                           ) : (
                             <span className="text-dim">{WISHLIST_MESSAGES.platformMissing}</span>
@@ -210,20 +209,19 @@ export default async function WishlistPage({ searchParams }: Props) {
                     })}
                   </ul>
 
-                  {/* 오래된 값 알림도 자리를 늘 잡아 둔다 — 있는 카드만 한 줄 길어지면 높이가 다시 갈린다 */}
-                  <p className={cn("text-[12px] text-warn", !stalest && "invisible")} aria-hidden={!stalest}>
-                    {stalest ? `${collectedAtText(stalest.lastSyncedAt)} | 스토어에서 확인 권장` : WISHLIST_MESSAGES.platformMissing}
-                  </p>
+                  {/* "N일 전 기준 | 스토어에서 확인 권장" 줄은 걷었다(2026-11-23 사용자 "이 문구도 지워") */}
                   {/* 누르고 싶은 단추로(2026-10-27, 사용자). 카드 바닥 전체 폭, 파랑 면 위 종 — 누르면 채운 파랑으로 바뀐다.
                       받는 중이면 처음부터 채운 파랑, 멈춤이면 회색 테두리라 세 상태가 한눈에 갈린다 */}
                   <Link
                     href={`${ROUTES.alerts}?game=${encodeURIComponent(game.slug)}`}
                     data-alert={alert}
                     className={cn(
-                      "press group/alert mt-auto inline-flex h-11 w-full items-center justify-center gap-1.5 rounded-[var(--radius-sm)] text-[14px] font-bold transition-colors duration-base",
-                      alert === "on" && "bg-acc text-on-ink hover:opacity-90",
-                      alert === "paused" && "border border-line bg-surface text-mut hover:border-acc hover:text-acc",
-                      alert === "none" && "bg-acc-soft text-acc hover:bg-acc hover:text-on-ink",
+                      "press group/alert relative z-10 mt-auto inline-flex h-11 w-full items-center justify-center gap-1.5 rounded-[var(--radius-sm)] text-[14px] font-bold transition-colors duration-base",
+                      alert === "on" && "bg-ink text-on-ink hover:opacity-90 group-hover:opacity-90",
+                      alert === "paused" && "border border-line bg-surface text-mut hover:border-ink hover:text-ink group-hover:border-ink group-hover:text-ink",
+                      // 만들기는 파랑(2026-11-23 사용자 "알림 설정 버튼 티가 안 남", "마우스 올리면 파란색", "할인 알림 만들기 색상 파란색으로") —
+                      // 옅은 파랑 면에 파랑 글자, 카드나 단추에 올리면 채운 파랑이 된다. 이 카드에서 해야 할 일이 남은 단추라 파랑을 남긴다
+                      alert === "none" && "bg-acc-soft text-acc hover:bg-acc hover:text-on-ink group-hover:bg-acc group-hover:text-on-ink",
                     )}
                   >
                     <BellIcon size={16} className="transition-transform duration-base group-hover/alert:-rotate-12" />

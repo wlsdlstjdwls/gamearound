@@ -18,7 +18,8 @@ import { AUTH_MESSAGES } from "@/lib/auth/messages";
  * 칸을 더 쓰려면 아래 WISH_GAME_COLUMNS, WISH_PLATFORM_COLUMNS 에 같이 더한다
  */
 const WISH_GAME_COLUMNS = { id: true, slug: true, titleKo: true, titleEn: true, coverUrl: true } as const;
-const WISH_PLATFORM_COLUMNS = { id: true, platform: true, region: true, storeUrl: true, currentPrice: true, currency: true, discountPct: true, lastSyncedAt: true, syncStatus: true } as const;
+// listPrice: 찜 카드가 할인율 옆에 정가를 함께 적는다(2026-11-23 사용자 "원가, 할인가 둘 다")
+const WISH_PLATFORM_COLUMNS = { id: true, platform: true, region: true, storeUrl: true, currentPrice: true, listPrice: true, currency: true, discountPct: true, lastSyncedAt: true, syncStatus: true } as const;
 type GameRow = typeof games.$inferSelect;
 type PlatformRow = typeof gamePlatforms.$inferSelect;
 export type WishlistGame = Pick<GameRow, keyof typeof WISH_GAME_COLUMNS> & { platforms: Pick<PlatformRow, keyof typeof WISH_PLATFORM_COLUMNS>[] };

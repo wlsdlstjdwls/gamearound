@@ -9,7 +9,8 @@ import type { Currency } from "@/server/db/schema";
 export type AlertCondition = { minDiscountPct: number | null; targetPrice: number | null };
 
 /** 판정에 필요한 플랫폼 행 한 줄 */
-export type AlertPriceRow = { platform: string; currentPrice: number | null; currency: Currency; discountPct: number | null };
+/** listPrice: 할인 전 값 — 화면이 할인율 옆에 정가를 함께 적는다(2026-11-23 사용자 "할인율 쓸 거면 원가, 할인가 둘 다"). 판정에는 쓰지 않는다 */
+export type AlertPriceRow = { platform: string; currentPrice: number | null; currency: Currency; discountPct: number | null; listPrice?: number | null };
 
 export type AlertMode = "discount" | "price";
 

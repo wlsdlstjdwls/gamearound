@@ -2,11 +2,12 @@
 import { formatPrice } from "@/lib/currency";
 
 /** "어떤 때 알려 주나" 한 문장. 목록 머리와 팝업(M-02) 머리가 같은 말을 해야 해서 한 자리에 둔다 */
-const PRICE_ALERT_LEAD = "고른 플랫폼에서 다음 할인이 시작되면 알려 드려요";
+/** 2026-11-23 사용자 지정 문구(습니다체). 가격 알림 화면 머리와 알림 팝업 머리가 같이 쓴다 */
+const PRICE_ALERT_LEAD = "선택한 플랫폼에서 다음 할인이 시작되면 알려드립니다";
 
 export const ALERT_MESSAGES = {
   title: "가격 알림",
-  lead: `${PRICE_ALERT_LEAD}. 수정을 누르면 플랫폼과 받는 방법을 다시 고를 수 있어요.`,
+  lead: `${PRICE_ALERT_LEAD}.`,
   pushSettings: "푸시 설정",
   /** 머리 숫자 셋의 이름 */
   statActive: "켜 둔 알림",
@@ -89,7 +90,7 @@ export const PRICE_ALERT_MESSAGES = {
   state: { on: "알림 받는 중", paused: "알림 멈춤" },
   /** 출시 예정 게임의 "출시 알림 받기" 로 열면 release 다(목업 alm 의 g.up) */
   title: { price: "가격 알림 설정", release: "출시 알림 설정" },
-  lead: { price: PRICE_ALERT_LEAD, release: "고른 플랫폼에서 출시되면 알려 드려요" },
+  lead: { price: PRICE_ALERT_LEAD, release: "선택한 플랫폼에서 출시되면 알려드립니다" },
   platformsLegend: "알림 받을 플랫폼",
   channelLegend: "알림 받는 방법",
   // "웹 알림" 과 "웹푸시" 를 화면에서 "푸시 알림" 하나로 부른다(2026-10-27, 사용자: "웹푸시, 앱푸시 나눠야 되나? 푸시 알림으로 통일") — 값 이름(web)은 그대로
@@ -110,7 +111,8 @@ export const PRICE_ALERT_MESSAGES = {
 /** 찜 할인 알림 스위치(2026-10-30). 설정과 가격 알림 화면이 같은 손잡이를 세운다(components/alerts/wish-sale-toggle) */
 export const WISH_ALERT_MESSAGES = {
   title: "찜한 게임 할인 알림",
-  on: "찜한 게임에 할인이 붙거나 역대 최저가가 되면 알려 드려요",
-  off: "찜한 게임은 알리지 않아요. 가격 알림을 건 게임만 받아요",
+  /** 습니다체, 마침표(2026-11-23 사용자) */
+  on: "찜한 게임이 할인을 시작하거나 역대 최저가가 되면 알려 드립니다.",
+  off: "찜한 게임은 알리지 않습니다. 가격 알림을 설정한 게임만 알려 드립니다.",
   failed: "바꾸지 못했어요. 잠시 뒤 다시 해 주세요",
 } as const;

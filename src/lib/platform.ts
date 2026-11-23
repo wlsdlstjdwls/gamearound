@@ -189,6 +189,8 @@ export type Device = (typeof DEVICES)[number];
  * 2026-10-30(사용자): 필터는 "Nintendo Switch", 카드는 "Switch" 로 이름이 갈려 있어 기획서 v2.0 S-02 의 이름으로 통일했다
  */
 export const DEVICE_LABEL: Record<Device, string> = { pc: "PC", playstation: "PlayStation", xbox: "Xbox", switch: "Nintendo Switch" };
+/** 좁은 칸용 짧은 이름 — 휴대폰 찜 카드의 기기별 값 줄(2026-11-23, 할인율, 할인가, 정가가 한 줄에 들어가게) */
+export const DEVICE_SHORT_LABEL: Record<Device, string> = { pc: "PC", playstation: "PS", xbox: "Xbox", switch: "Switch" };
 
 const DEVICE_OF: Record<Platform, Device> = {
   steam: "pc",

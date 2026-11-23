@@ -40,13 +40,13 @@ export const metadata: Metadata = { title: M.title };
 function Stat({ label, value, tone, icon, index }: { label: string; value: number; tone?: "ok"; icon: React.ReactNode; index: number }) {
   const lit = tone === "ok" && value > 0;
   return (
-    <div className={cn("enter-item flex flex-col gap-2 rounded-[var(--radius-md)] px-3.5 py-3.5 sm:flex-row sm:items-center sm:gap-3.5 sm:px-4", lit ? "bg-acc-soft shadow-[inset_0_0_0_1px_var(--acc-3)]" : "bg-surface shadow-[var(--elev-1)]")} style={stagger(index)}>
-      <span aria-hidden className={cn("grid size-9 shrink-0 place-items-center rounded-full sm:size-11", lit ? "bg-acc text-on-ink" : "bg-acc-soft text-acc")}>
+    <div className={cn("enter-item flex flex-col gap-2 rounded-[var(--radius-md)] px-3.5 py-3.5 sm:flex-row sm:items-center sm:gap-3.5 sm:px-4", lit ? "bg-surface shadow-[inset_0_0_0_1px_var(--ink)]" : "bg-surface shadow-[var(--elev-1)]")} style={stagger(index)}>
+      <span aria-hidden className={cn("grid size-9 shrink-0 place-items-center rounded-full sm:size-11", lit ? "bg-ink text-on-ink" : "bg-surface-2 text-ink-2")}>
         {icon}
       </span>
       <span className="flex min-w-0 flex-col gap-1">
-        <span className={cn("text-[12px]", lit ? "font-semibold text-acc" : "text-dim")}>{label}</span>
-        <span className={cn("text-[22px] font-extrabold leading-none tracking-[-0.03em] sm:text-[24px]", lit ? "text-acc" : "text-ink")}>{value.toLocaleString("ko-KR")}</span>
+        <span className={cn("text-[12px]", lit ? "font-semibold text-ink" : "text-dim")}>{label}</span>
+        <span className={cn("text-[22px] font-extrabold leading-none tracking-[-0.03em] sm:text-[24px]", "text-ink")}>{value.toLocaleString("ko-KR")}</span>
       </span>
     </div>
   );
@@ -97,9 +97,9 @@ export default async function AlertsPage({ searchParams }: { searchParams: Promi
       </PageHead>
 
       {pushCount === 0 && (
-        <div role="status" className="animate-rise flex flex-wrap items-center justify-between gap-3 rounded-[var(--radius-md)] bg-acc-soft px-4 py-3">
+        <div role="status" className="animate-rise flex flex-wrap items-center justify-between gap-3 rounded-[var(--radius-md)] bg-surface-2 px-4 py-3">
           <p className="flex items-center gap-2.5 text-[13.5px] font-semibold text-ink-2">
-            <span aria-hidden className="bell-ring grid size-8 shrink-0 place-items-center rounded-full bg-surface text-acc shadow-1">
+            <span aria-hidden className="bell-ring grid size-8 shrink-0 place-items-center rounded-full bg-surface text-ink shadow-1">
               <BellIcon size={16} />
             </span>
             {M.pushOff}
