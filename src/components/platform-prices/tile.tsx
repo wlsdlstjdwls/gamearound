@@ -77,7 +77,7 @@ export function BestMark({ label = "최저가" }: { label?: string }) {
  * 최저가는 오른쪽 끝 테두리 알약 그대로다.
  */
 export function HeadMarks({ best, historicLow }: { best: boolean; historicLow: boolean }) {
-  if (historicLow) return <span className="shrink-0 text-[12.5px] font-bold text-danger">{GAME_MESSAGES.historicLowLabel}</span>;
+  if (historicLow) return <span className="shrink-0 text-[11px] font-bold text-danger">{GAME_MESSAGES.historicLowLabel}</span>;
   if (!best) return null;
   return (
     <span className="ml-auto flex shrink-0 items-center">

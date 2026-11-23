@@ -21,19 +21,20 @@ import { cn } from "@/lib/cn";
 
 /** 요약 줄과 본문이 **반드시** 같은 값을 써야 두 기둥이 맞는다. 한 곳에서만 고친다 */
 /**
- * 판정 1 : 사양 2(2026-11-23 사용자 "구동 사양 영역이 더 넓으면", 5 : 7 뒤 "더 넓게"). 사양표는 최소, 권장 두 칸에 긴 부품 이름이 서고,
- * 판정은 짧은 줄뿐이다. 판정 칸은 320px 밑으로 줄지 않는다 — 부위 줄(이름, 내 부품, 결과)이 그 아래에서 접힌다
+ * 판정 칸은 300px 고정, 나머지를 사양표가 다 쓴다(2026-11-23 사용자 "구동 사양 영역이 더 넓으면" 세 번째: 5 : 7, 1 : 2 다음).
+ * 사양표는 최소, 권장 두 칸에 긴 부품 이름이 서고, 판정은 짧은 줄뿐이다. 300px 은 부위 줄(이름, 내 부품, 결과)이 접히지 않는 폭이다
  */
-const GRID = "grid min-w-0 items-start gap-x-8 gap-y-6 lg:grid-cols-[minmax(320px,1fr)_minmax(0,2fr)]";
+const GRID = "grid min-w-0 items-start gap-x-8 gap-y-6 lg:grid-cols-[300px_minmax(0,1fr)]";
 
 function Title({ id, title, note }: { id: string; title: string; note?: React.ReactNode }) {
   return (
-    <span className="flex min-w-0 flex-wrap items-baseline gap-x-2.5 gap-y-1">
+    // 제목과 곁말은 한 줄이다(2026-11-23 사용자 "충족/미충족 뱃지가 줄바꿈된다") — 곁말은 접지 않고, 넘치면 제목 쪽이 줄어든다
+    <span className="flex min-w-0 flex-nowrap items-baseline gap-x-2.5">
       {/* summary 안이라 h2 를 쓴다 — 마디 제목의 격은 다른 마디와 같아야 한다(SECTION_SIZE) */}
       <h2 id={id} className={SECTION_SIZE.section}>
         {title}
       </h2>
-      {note && <span className="text-[13px] text-dim">{note}</span>}
+      {note && <span className="shrink-0 whitespace-nowrap text-[13px] text-dim">{note}</span>}
     </span>
   );
 }

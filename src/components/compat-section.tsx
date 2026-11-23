@@ -252,6 +252,7 @@ function DeviceSheet({
             }}
             cpuOptions={cpuOptions}
             gpuOptions={gpuOptions}
+            compact
             onDone={() => {
               onClose();
               router.refresh();

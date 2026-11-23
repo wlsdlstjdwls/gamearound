@@ -37,11 +37,17 @@ export function DeviceForm({
   cpuOptions,
   gpuOptions,
   onDone,
+  compact = false,
 }: {
   device?: DeviceDto & { cpuName: string | null; gpuName: string | null };
   cpuOptions: ModelOption[];
   gpuOptions: ModelOption[];
   onDone?: () => void;
+  /**
+   * 팝업 꼴(게임 상세의 "내 PC 사양", 2026-11-23 사용자 "컴팩트하게, 스크롤 안 생기게").
+   * 칸을 두 열로 짝지어 네 줄로 접고, 칸 밑 안내 문구를 뺀다. 자세한 안내는 설정의 기기 화면(이 폼의 기본 꼴)이 그대로 보인다
+   */
+  compact?: boolean;
 }) {
   const [state, formAction, submitting] = useActionState(async (prev: ActionState, fd: FormData) => {
     const next = await saveDeviceAction(prev, fd);
@@ -58,17 +64,18 @@ export function DeviceForm({
   const gpuSuggest = usePartSuggest(`${uid}-gpu`, gpuOptions, gpu, setGpu);
 
   return (
-    <ActionForm action={formAction} state={state} pending={submitting} className="flex flex-col gap-4">
+    <ActionForm action={formAction} state={state} pending={submitting} className={compact ? "flex flex-col gap-3" : "flex flex-col gap-4"}>
       {device && <input type="hidden" name="id" value={device.id} />}
       <input type="hidden" name="osFamily" value={os} />
 
+      <div className={compact ? "grid gap-3 sm:grid-cols-2" : "contents"}>
       <TextField
         label="기기 이름"
         name="label"
         defaultValue={device?.label ?? ""}
         maxLength={DEVICE_LABEL_MAX}
         placeholder="집 데스크탑"
-        hint={DEVICE_MESSAGES.labelHint}
+        hint={compact ? undefined : DEVICE_MESSAGES.labelHint}
         required
       />
 
@@ -82,25 +89,30 @@ export function DeviceForm({
               onClick={() => setOs(value)}
               aria-pressed={os === value}
               // 온보딩, 상세 간이 폼과 같은 칩이다 — 여기만 검정 알약이라 같은 질문이 화면마다 달라 보였다(2026-09-30)
-              className={chipClass({ active: os === value, size: "lg", outline: true })}
+              className={chipClass({ active: os === value, size: compact ? "sm" : "lg", outline: true })}
             >
               {OS_FAMILY_LABEL[value]}
             </button>
           ))}
         </div>
       </fieldset>
+      </div>
 
-      <DetectButton
-        size="md"
-        onDetected={(spec) => {
-          if (spec.gpuName) setGpu(spec.gpuName);
-          if (spec.osFamily) setOs(spec.osFamily);
-        }}
-      />
+      {/* 팝업 꼴에서는 감지 단추가 저장 단추 옆으로 간다(아래) */}
+      {!compact && (
+        <DetectButton
+          size="md"
+          onDetected={(spec) => {
+            if (spec.gpuName) setGpu(spec.gpuName);
+            if (spec.osFamily) setOs(spec.osFamily);
+          }}
+        />
+      )}
 
-      <TextField label="프로세서" name="cpuText" {...cpuSuggest.inputProps} popup={cpuSuggest.popup} placeholder="Core i5 8400" hint={DEVICE_MESSAGES.partHint} />
-
-      <TextField label="그래픽" name="gpuText" {...gpuSuggest.inputProps} popup={gpuSuggest.popup} placeholder="GeForce GTX 1060" hint={DEVICE_MESSAGES.partHint} />
+      <div className={compact ? "grid gap-3 sm:grid-cols-2" : "contents"}>
+        <TextField label="프로세서" name="cpuText" {...cpuSuggest.inputProps} popup={cpuSuggest.popup} placeholder="Core i5 8400" hint={compact ? undefined : DEVICE_MESSAGES.partHint} />
+        <TextField label="그래픽" name="gpuText" {...gpuSuggest.inputProps} popup={gpuSuggest.popup} placeholder="GeForce GTX 1060" hint={compact ? undefined : DEVICE_MESSAGES.partHint} />
+      </div>
 
       <div className="grid grid-cols-2 gap-3">
         <TextField label="메모리 (GB)" name="ramGb" type="number" inputMode="numeric" min={1} step={1} defaultValue={mbToGb(device?.ramMb ?? null) ?? ""} placeholder="16" />
@@ -115,7 +127,16 @@ export function DeviceForm({
         </p>
       )}
 
-      <div className="flex justify-end">
+      <div className={compact ? "flex flex-wrap items-center justify-end gap-2" : "flex justify-end"}>
+        {compact && (
+          <DetectButton
+            quiet
+            onDetected={(spec) => {
+              if (spec.gpuName) setGpu(spec.gpuName);
+              if (spec.osFamily) setOs(spec.osFamily);
+            }}
+          />
+        )}
         <SubmitButton editing={Boolean(device)} />
       </div>
     </ActionForm>

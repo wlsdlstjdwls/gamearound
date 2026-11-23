@@ -88,20 +88,23 @@ const CHART_TOKENS = [
 /**
  * 색 말고 하나 더 — 선 모양. 색만으로 가르면 두 가지 자리에서 진다:
  * 가격이 같아 선이 정확히 포개지는 구간(위의 선만 보인다), 그리고 색각 이상.
- * 파선이면 아래 선이 틈으로 비친다. 대표 플랫폼(steam)만 실선으로 두어 기준선을 만든다.
+ * 파선이면 아래 선이 틈으로 비친다 — 그래서 한때 스팀만 실선이고 나머지는 파선이었다.
+ * 2026-11-23 전부 실선으로 되돌렸다(사용자 "플스 색이 눈에 안 보여", 두 번). 2px 파선은 틈이 선의 절반이라 색이 반쯤 날아가
+ * 주황으로 바꿔도 흐렸다. 색은 이제 색상환에서 멀게 갈려 있고(globals 의 --store-*), 포개지는 구간은 툴팁이 값을 다 적는다.
  */
 const PLATFORM_DASH: Record<Platform, string | undefined> = {
   steam: undefined,
-  epic: "7 4",
-  ps5: "11 4",
-  ps4: "7 3 2 3",
-  xbox: "1 4",
-  switch: "13 4 2 4",
-  switch2: "4 3",
+  epic: undefined,
+  ps5: undefined,
+  ps4: undefined,
+  xbox: undefined,
+  switch: undefined,
+  switch2: undefined,
 };
 
 /** 선 굵기는 전부 같다 — 굵기로 순위를 말하지 않는다(색과 선 모양이 이미 정체를 말한다) */
-const LINE_WIDTH = 2;
+/** 선 굵기 — 실선만 남기며 2 에서 한 단 올렸다. 얇은 선은 밝은 색(주황, 초록)이 흰 판에서 옅어진다 */
+const LINE_WIDTH = 2.5;
 
 /** 기간 선택 — days=null 은 전체. 짧은 쪽부터 선다(기획서 v2.0 S-05: 1개월, 3개월, 6개월, 1년) */
 const RANGES: Array<{ key: string; label: string; days: number | null }> = [
