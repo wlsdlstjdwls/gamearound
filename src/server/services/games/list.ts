@@ -154,9 +154,16 @@ async function listGamesRaw(filter: GameListFilter): Promise<GameListResult> {
   }
   const where = allOf(...conds);
 
+  /**
+   * 인기순이 쓰는 "자리"(스토어 순번, 없으면 평가 수, HLTB 기록 인원으로 환산한 자리). 값이 있으면 어디선가 알려진 게임이다.
+   * 할인율순이 이것으로 먼저 가르는 이유(2026-11-23 사용자 확정): 할인율만 보면 1,000원대 무명작이 90% 할인으로 맨 위를 차지했고,
+   * 그 자리를 성인물(Hentai 제목 등)이 채웠다. 성인물 표시는 아직 수집하지 않아(12월에 붙일 일) 지금은 무명작을 통째로 뒤로 보낸다.
+   * 지우지는 않는다 — 알려진 게임 뒤에서 같은 할인율순으로 그대로 이어진다
+   */
+  const popularitySlot = sql`coalesce(${agg.minRank}, least(${reviewRankExpr(agg)}, ${hltbRankExpr()}))`;
   // nulls last 로 값 없는 게임(가격 미수집, 출시일 미상)이 앞을 차지하지 않게 한다
   const orderBy = {
-    discount: [sql`${agg.hasBaseCurrency} desc`, sql`${agg.maxDiscount} desc nulls last`, sql`${agg.minPrice} asc nulls last`],
+    discount: [sql`${agg.hasBaseCurrency} desc`, sql`(${popularitySlot} is not null) desc`, sql`${agg.maxDiscount} desc nulls last`, sql`${agg.minPrice} asc nulls last`],
     price: [sql`${agg.minPrice} asc nulls last`, sql`${agg.maxDiscount} desc nulls last`],
     release: [sql`${agg.maxRelease} desc nulls last`],
     title: [asc(sql`coalesce(${games.titleKo}, ${games.titleEn})`)],
@@ -179,7 +186,7 @@ async function listGamesRaw(filter: GameListFilter): Promise<GameListResult> {
       // (Postgres 의 least 는 null 을 무시한다, 2026-09-21 확인).
       //
       // 자리가 같으면 실제 순번이 이긴다 — 스토어가 센 값이 우리가 환산한 값보다 낫다.
-      sql`coalesce(${agg.minRank}, least(${reviewRankExpr(agg)}, ${hltbRankExpr()})) asc nulls last`,
+      sql`${popularitySlot} asc nulls last`,
       sql`(${agg.minRank} is not null) desc`,
       sql`${agg.hasBaseCurrency} desc`,
       // 자리를 못 받은 뒷줄의 기준. 기록 인원수를 평가 수보다 앞에 두는 이유는 기기를 안 가려서다 —

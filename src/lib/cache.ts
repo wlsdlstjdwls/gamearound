@@ -120,7 +120,8 @@
 // v37(2026-11-11): 상세의 추가 콘텐츠, 에디션 칸에서 값 있는 형제와 겹치는 값 없는 자식(psprices 병합분)을 빼고 값 없는 줄을 뒤로 — 옛 캐시엔 중복 줄이 남는다
 // v38(2026-11-11): DlcDto.uncheckedPlatforms(가격 확인 전 줄). v37 과 같은 날이지만 v37 꼴로 쌓인 캐시가 새 칸 없이 남아 올린다
 // v39(2026-11-16): PlatformDto 에 perfFeatures(성능 표지)
-export const DTO_CACHE_VERSION = "v39";
+// v40(2026-11-23): 할인율순이 알려진 게임(인기 자리 있음)을 먼저 세운다(services/games/list). 모양은 같고 순서만 — v17 처럼 안 올리면 옛 순서가 한 시간을 더 산다
+export const DTO_CACHE_VERSION = "v40";
 
 /** 목록, 검색, 홈처럼 태그 무효화로 갱신되는 화면의 기본 재검증 주기(초) */
 export const LIST_REVALIDATE_SECONDS = 3600;
