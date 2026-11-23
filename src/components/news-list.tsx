@@ -82,7 +82,8 @@ export function NewsList({ items, showGame = false }: { items: NewsDto[]; showGa
                   {n.summary}
                 </Clamp>
               )}
-              <p className="mt-1 flex flex-wrap items-center gap-x-1.5 text-[11.5px] text-dim">
+              {/* 출처 줄은 12px — 11.5px 는 휴대폰에서 읽기 버거웠다(2026-11-20 점검). 라운지 뉴스 블록 메타 줄(news-blocks/lists)과 같은 크기 */}
+              <p className="mt-1 flex flex-wrap items-center gap-x-1.5 text-[12px] text-dim">
                 <span>{n.sourceName}</span>
                 <span aria-hidden>|</span>
                 <time dateTime={n.publishedAt}>{formatDateTime(n.publishedAt)}</time>
