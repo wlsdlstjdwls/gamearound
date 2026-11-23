@@ -24,11 +24,8 @@ export function CriticScores({ game }: { game: GameDetail }) {
   const lines = scoreLines(game.platforms);
   // 점수가 하나도 없어도 칸 셋은 그대로 선다(2026-11-16 사용자 "평점이 없더라도 해당 영역 표기 필요"). "출시 후 표시돼요" 같은 안내 문구는 걷었다
   return (
-    <section aria-labelledby="scores-heading" className="mt-auto flex flex-col gap-2">
-      {/* 휴대폰에서 이름표 글자를 한 단계 키운다(2026-11-20 사용자 점검 "11px 대 작은 글자가 많다"). 넓은 화면은 세 기둥 높이 맞추기 때문에 그대로다 */}
-      <h2 id="scores-heading" className="text-[11.5px] font-bold tracking-[0.06em] text-dim max-sm:text-[12.5px]">
-        {D.scoresLabel}
-      </h2>
+    // 보이는 이름표 "평론가 점수" 는 걷었다(2026-11-23 사용자 "문구 제거") — 칸마다 매체 로고와 이름이 선다. 낭독기에는 이름을 남긴다
+    <section aria-label={D.scoresLabel} className="mt-auto flex flex-col gap-2">
       <dl className="grid grid-cols-3 gap-2">
         {CRITICS.map((key) => {
           const line = lines.find((l) => l.key === key) ?? null;
