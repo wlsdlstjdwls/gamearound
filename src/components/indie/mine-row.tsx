@@ -33,7 +33,7 @@ function Reactions({ rank, views, likes }: { rank: number | undefined; views: nu
   return (
     <div className="flex flex-wrap items-center gap-x-4 gap-y-1.5">
       {rank !== undefined && (
-        <Link href={ROUTES.hallOfFame} aria-label={RV.fameRank(rank)} className="press inline-flex items-center gap-2 transition-opacity hover:opacity-75">
+        <Link href={ROUTES.hallOfFame} aria-label={RV.fameRank(rank)} className="press tap-inset inline-flex items-center gap-2 transition-opacity hover:opacity-75">
           <span aria-hidden className="inline-flex items-center gap-1 text-[12px] font-semibold text-mut">
             <TrophyIcon size={13} />
             {RV.fameLabel}
@@ -56,7 +56,7 @@ function Reactions({ rank, views, likes }: { rank: number | undefined; views: nu
 }
 
 export function MineRow({ post: p, rank, i }: { post: IndieMineRowDto; rank: number | undefined; i: number }) {
-  const meta = [[...p.platforms.map((x) => INDIE_PLATFORM_LABEL[x]), ...genreLabels(p.genres)].join(", "), `${formatDotDate(p.createdAt)} ${RV.applied}`].filter(Boolean).join(" | ");
+  const tags = [...p.platforms.map((x) => INDIE_PLATFORM_LABEL[x]), ...genreLabels(p.genres)].join(", ");
   // 잘 보이고 있는 줄에는 한 줄 설명을 달지 않는다(10-28 사용자: "내가 만든 게임에 보이고 있어요" 문구 없애 줘) — 단계 그림이 이미 "등록 완료" 를 말한다
   const note = p.review === "pending" ? RV.pendingShort : p.review === "approved" ? (p.status === "published" ? (p.hasCover ? null : INDIE_MESSAGES.noCoverShort) : INDIE_MESSAGES.hiddenShort) : null;
   // 등록 완료 줄은 공개 상세로, 그 밖은 고치기로 간다(기획서 S-22 "등록 완료 행은 S-19 로")
@@ -67,15 +67,24 @@ export function MineRow({ post: p, rank, i }: { post: IndieMineRowDto; rank: num
         {p.coverUrl ? <FadeImage src={p.coverUrl} alt="" fill sizes="(max-width: 640px) 104px, 176px" className="object-cover" /> : <span className="grid size-full place-items-center text-dim"><GamepadIcon size={22} /></span>}
       </Link>
       <div className="flex min-w-0 flex-col gap-1.5">
-        <Link href={to} className="line-clamp-2 min-w-0 text-[16px] font-bold leading-[1.35] text-ink hover:text-acc sm:line-clamp-1 sm:text-[17px]">
+        <Link href={to} className="tap-inset line-clamp-2 min-w-0 text-[16px] font-bold leading-[1.35] text-ink hover:text-acc sm:line-clamp-1 sm:text-[17px]">
           {p.title}
         </Link>
         <Clamp lines={2} className={cn("text-[13.5px] leading-[1.55]", p.tagline ? "text-mut" : "text-dim")}>
           {p.tagline || RV.noTagline}
         </Clamp>
-        <Clamp lines={1} className="text-[12px] text-dim">
-          {meta}
-        </Clamp>
+        {/* 플랫폼, 장르만 줄여 자르고 신청일은 늘 다 보인다(2026-11-23) — 한 Clamp 로 이으면 390px 에서 장르가 길 때 날짜가 "…" 로 잘렸다 */}
+        <p className="flex min-w-0 items-center gap-1.5 text-[12px] text-dim">
+          {tags && (
+            <>
+              <Clamp lines={1} className="min-w-0">
+                {tags}
+              </Clamp>
+              <span aria-hidden>|</span>
+            </>
+          )}
+          <span className="shrink-0">{`${formatDotDate(p.createdAt)} ${RV.applied}`}</span>
+        </p>
       </div>
       {/* 오른쪽 기둥: 진행 단계, 성적, 한 줄 설명, 할 일 단추. 좁은 화면에서는 그림과 글 아래로 내려온다 */}
       <div className="col-span-2 flex flex-col gap-3 border-t border-line-soft pt-4 sm:col-span-1 sm:w-[260px] sm:gap-2.5 sm:border-l sm:border-t-0 sm:pl-5 sm:pt-0">
