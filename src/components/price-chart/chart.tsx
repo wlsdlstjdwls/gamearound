@@ -51,7 +51,7 @@ import { ALL_PLATFORMS, usePlatformFilter } from "@/components/price-chart/use-p
 const PLATFORM_TOKEN: Record<Platform, string> = {
   steam: "--store-steam", // 파랑
   epic: "--store-epic", // 주황
-  ps5: "--store-ps5", // 남회색
+  ps5: "--store-ps5", // 주황
   ps4: "--store-ps4", // 자홍
   xbox: "--store-xbox", // 초록
   switch: "--store-switch", // 보라

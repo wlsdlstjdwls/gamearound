@@ -75,15 +75,15 @@
   --overlay: rgba(24, 32, 43, 0.42);
   /* 가격 그래프의 스토어 브랜드 색 */
   /* 2026-11-23 사용자 "플랫폼 색이 구분 안 된다, 서로 완전 다르게": 스팀 파랑과 PS5 청록이 같은 계열이라 겹쳤다.
-     PS5 를 짙은 남회색으로 빼고 나머지도 색상환에서 멀게 — 파랑, 남회색, 자홍, 초록, 보라, 빨강 */
+     PS5 를 주황으로 빼고 나머지도 색상환에서 멀게 — 파랑, 주황, 자홍, 초록, 보라, 빨강 */
   --store-steam: #2563eb;
   --store-epic: #eb6834;
   --store-gog: #1baf7a;
-  --store-ps5: #334155; /* 남회색. 10-27 호박에서 청록으로, 11-23 청록에서 — 스팀 파랑과 같은 계열이라 선이 갈리지 않았다 */
+  --store-ps5: #f97316; /* 주황. 10-27 호박에서 청록, 11-23 청록(스팀 파랑과 같은 계열)에서 남회색, 같은 날 남회색(축 회색, 먹색 칩에 묻힘, 사용자 "플스 색이 안 보여")에서. Epic 주황은 숨긴 스토어라 겹칠 일이 없다 */
   --store-ps4: #db2777;
   --store-xbox: #16a34a;
   --store-switch: #7c3aed;
-  --store-switch2: #e03131;
+  --store-switch2: #dc2626;
   --beam: #ffb21e; /* 로고 손전등 빛. 그림 전용. lib/brand.ts 의 BRAND_COLOR.beam 과 같은 값 */
   /* 브랜드 밝기 사다리(막대 그래프 등 면 전용). --acc 와 --surface 를 섞으므로 테마별로 따로 적지 않는다 */
   --acc-2: color-mix(in oklab, var(--acc) 58%, var(--surface));
@@ -286,7 +286,7 @@
     --store-steam: #5b9ce8;
     --store-epic: #f5895a;
     --store-gog: #35c894;
-    --store-ps5: #cbd5e1;
+    --store-ps5: #fb923c;
     --store-ps4: #f094b6;
     --store-xbox: #4ade80;
     --store-switch: #8d7df0;
@@ -363,7 +363,7 @@
   --store-steam: #5b9ce8;
   --store-epic: #f5895a;
   --store-gog: #35c894;
-  --store-ps5: #cbd5e1;
+  --store-ps5: #fb923c;
   --store-ps4: #f094b6;
   --store-xbox: #4ade80;
   --store-switch: #8d7df0;
