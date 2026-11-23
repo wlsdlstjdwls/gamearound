@@ -77,7 +77,7 @@ export function BestMark({ label = "최저가" }: { label?: string }) {
  * 최저가는 오른쪽 끝 테두리 알약 그대로다.
  */
 export function HeadMarks({ best, historicLow }: { best: boolean; historicLow: boolean }) {
-  // 문구는 짧은 꼴 "역대최저"(같은 날 "더 줄여줘") — 이름 옆 곁말이라 넉 자로 족하다. 다른 자리(목록 카드 배지)는 긴 꼴 그대로
+  // 문구는 띄어쓰기 없는 "역대최저가"(같은 날 "더 줄여줘" 뒤 "역대최저가로 나와야 됨") — 다른 자리(목록 카드 배지)는 "역대 최저가" 그대로
   if (historicLow) return <span className="shrink-0 text-[11px] font-bold text-danger">{GAME_MESSAGES.historicLowShort}</span>;
   if (!best) return null;
   return (

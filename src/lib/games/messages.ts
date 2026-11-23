@@ -356,7 +356,7 @@ export const GAME_MESSAGES = {
    */
   historicLowLabel: "역대 최저가",
   /** 가격 비교 카드 이름 옆 곁말(platform-prices/tile 의 HeadMarks) */
-  historicLowShort: "역대최저",
+  historicLowShort: "역대최저가",
   recordedLowNote: (gap: string, at: string) => `지금보다 ${gap} 쌌어요 | ${at}`,
   patchNone: "아직 모은 패치 기록이 없어요.",
   /** 사양표 아래 한 줄은 없앴다(2026-09-22, 사용자 결정) — 표 자체가 "스토어가 적은 값" 이고,

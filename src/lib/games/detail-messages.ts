@@ -52,7 +52,6 @@ export const DETAIL_MESSAGES = {
   /** 고른 플랫폼 카드의 이름(game-detail/platform-pick). 예측이 그 플랫폼 값만 본다는 말 */
   forecastBasisPlatform: (name: string) => `${name} 기준`,
   // "기록이 쌓이면" 꼴은 쓰지 않는다(2026-11-11 사용자 "할인 기록을 쌓는단 말이 맘에 안 듦") — 지금 없는 것만 짧게 말한다
-  forecastNoDate: "다음 할인 시기는 아직 알 수 없어요.",
   forecastExpected: "예상 가격",
   /** 두 줄이다(2026-11-11 사용자 확정 문구, 줄바꿈까지). 화면은 줄마다 block 으로 세운다 */
   // 첫 줄은 -습니다체다(2026-11-20 사용자 지정 "없어요 -> 없습니다")
@@ -118,8 +117,6 @@ export const DETAIL_MESSAGES = {
   perfLineModel: "기종",
   perfLineDeck: "스팀덱",
   perfLineUpgrade: "업그레이드",
-  /** 이 게임이 안 나온 기기 칸(네 칸은 늘 선다, game-detail/perf-row) */
-  perfRowNotReleased: "이 기기로는 출시하지 않았습니다.",
   moreHeading: "더 알아보기",
   sourcesHeading: "정보 출처",
 } as const;

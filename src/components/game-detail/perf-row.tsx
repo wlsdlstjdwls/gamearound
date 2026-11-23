@@ -9,7 +9,9 @@
 // 어느 출처도 주지 않는다 — 지어내지 않는다.
 // 네 기기 칸은 늘 선다(2026-11-23 사용자 "없어도 닌텐도 칸을 넣어줘") — 이 게임이 안 나온 기기는 "출시하지 않았어요" 라고 말한다.
 // 칸 안 줄은 두 열 격자, 이름 위 값 아래(같은 날 "세로로 너무 길어지니 2열로"). 출처 안내 줄은 걷었다(같은 날 사용자).
-import { DECK_COMPAT_SHORT, upgradeText } from "@/lib/games/messages";
+import { DECK_COMPAT_SHORT, GAME_MESSAGES, upgradeText } from "@/lib/games/messages";
+import { FloatingIcon } from "@/components/ui/floating-icon";
+import { GamepadIcon } from "@/components/ui/icons";
 import { DETAIL_MESSAGES as D } from "@/lib/games/detail-messages";
 import { formatPrice } from "@/lib/currency";
 import { PLATFORM_LABEL } from "@/lib/format";
@@ -28,13 +30,13 @@ function cellOf(game: GameDetail, device: Device): Cell {
   const gens = [...new Set(rows.map((r) => PLATFORM_LABEL[r.platform]).filter(Boolean))];
   // 기종이 칸 이름과 같으면("Xbox" 칸의 "Xbox") 말할 것이 없어 줄을 세우지 않는다
   const model = gens.filter((g) => g !== DEVICE_LABEL[device]);
-  if (device !== "pc" && model.length > 0) lines.unshift({ label: D.perfLineModel, value: model.join(", ") });
+  if (device !== "pc" && model.length > 0) lines.unshift({ label: D.perfLineModel, values: model });
   const deck = [...new Set(rows.flatMap((r) => (r.deckCompat ? [DECK_COMPAT_SHORT[r.deckCompat]] : [])))];
-  if (deck.length > 0) lines.push({ label: D.perfLineDeck, value: deck.join(", ") });
+  if (deck.length > 0) lines.push({ label: D.perfLineDeck, values: deck });
   const upgrades = game.upgrades
     .filter((u) => devicesOf([u.toPlatform])[0] === device)
     .map((u) => upgradeText(u.kind, PLATFORM_LABEL[u.toPlatform] ?? u.toPlatform, u.kind === "paid" && u.price !== null ? formatPrice(u.price) : null));
-  if (upgrades.length > 0) lines.push({ label: D.perfLineUpgrade, value: [...new Set(upgrades)].join(", ") });
+  if (upgrades.length > 0) lines.push({ label: D.perfLineUpgrade, values: [...new Set(upgrades)] });
   return { device, released: rows.length > 0, lines };
 }
 
@@ -55,12 +57,24 @@ export function PerfRow({ game }: { game: GameDetail }) {
                 {c.lines.map((l) => (
                   <div key={l.label} className="flex min-w-0 flex-col gap-0.5">
                     <dt className="text-[11.5px] text-dim">{l.label}</dt>
-                    <dd className="min-w-0 break-keep text-[12.5px] font-semibold leading-[1.45] text-ink-2">{l.value}</dd>
+                    <dd className="flex min-w-0 flex-col break-keep text-[12.5px] font-semibold leading-[1.45] text-ink-2">
+                      {l.values.map((v) => (
+                        <span key={v}>{v}</span>
+                      ))}
+                    </dd>
                   </div>
                 ))}
               </dl>
+            ) : c.released ? (
+              <p className="text-[12.5px] text-dim">{D.perfRowNone}</p>
             ) : (
-              <p className="text-[12.5px] text-dim">{c.released ? D.perfRowNone : D.perfRowNotReleased}</p>
+              // 나오지 않은 기기 칸은 가격 비교의 빈 카드와 같은 얼굴이다 — 같은 문구, 같은 물결 아이콘(2026-11-23 사용자 "문구 변경, 아이콘, 모션")
+              <div className="flex flex-1 flex-col items-center justify-center gap-1.5 py-1 text-center">
+                <FloatingIcon>
+                  <GamepadIcon size={20} />
+                </FloatingIcon>
+                <p className="text-[13px] font-bold text-mut">{GAME_MESSAGES.storeAbsent}</p>
+              </div>
             )}
           </li>
         ))}

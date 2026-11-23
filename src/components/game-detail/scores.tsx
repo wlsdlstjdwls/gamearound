@@ -5,7 +5,7 @@
 // 점수가 없어도 칸 셋은 늘 선다(2026-11-16 사용자). 없는 칸은 흐린 "-" 다 — 칸 수가 게임마다 달라지면 화면이 들쭉날쭉하다.
 // IGN 은 2026-10-27 부터 오픈크리틱 리뷰 목록에서 뽑아 온다(adapters/opencritic).
 //
-// 플레이타임: 목업은 막대 대신 큰 숫자 셋이다. 막대 카드(playtime-card)는 지우지 않고 남겨 두었다 —
+// 플레이타임: 이름, 막대, 시간 세 줄(2026-11-23 개편, PlaytimeTiles 주석). 시간당 가격이 붙는 막대 카드(playtime-card)는 따로 남아 있다 —
 // 시간당 가격(SHOW_PRICE_PER_HOUR)을 되살릴 때 그 카드가 다시 쓰인다.
 import { DETAIL_MESSAGES as D } from "@/lib/games/detail-messages";
 import { toPositiveNumber } from "@/lib/price-per-hour";
@@ -52,9 +52,10 @@ const PLAYTIME_KEYS = ["mainStoryHours", "mainExtraHours", "completionistHours"]
 
 /** 이 시간부터는 소수를 떼고 천 단위 쉼표를 찍는다 — "1250.5시간" 은 칸을 넘기고, 100시간 넘는 게임에서 0.5시간은 정보가 아니다 */
 const WHOLE_HOURS_FROM = 100;
-/** 네 자리(천 단위 쉼표 포함) 값. 세 칸 한 칸 폭(약 90px)에 기본 크기로는 안 들어간다 */
-const LONG_HOURS_FROM = 1000;
-
+/** 막대 진하기 — 메인이 가장 진하고 갈수록 옅다(같은 잣대 세 단계) */
+const BAR_TONE = ["bg-ink", "bg-ink/60", "bg-ink/30"] as const;
+/** 아주 짧은 값도 막대가 보이게 하는 최소 폭(%) — 0 에 가까우면 "값 없음" 과 구별되지 않는다 */
+const BAR_MIN_PCT = 4;
 /** 시간 숫자 — 소수 첫째 자리까지. HLTB 는 25.5 같은 반 시간을 준다 */
 function hoursText(h: number): string {
   if (h >= WHOLE_HOURS_FROM) return Math.round(h).toLocaleString("ko-KR");
@@ -63,7 +64,6 @@ function hoursText(h: number): string {
 
 export function PlaytimeTiles({ playtime, className }: { playtime: PlaytimeDto | null; className?: string }) {
   const values = PLAYTIME_KEYS.map((k) => ({ key: k, hours: toPositiveNumber(playtime?.[k]) }));
-  const longHours = values.some((v) => v.hours !== null && v.hours >= LONG_HOURS_FROM);
   // 값이 하나도 없으면 판 대신 한 줄(game-detail/empty-line, 2026-10-27 사용자 검수: 빈 판이 많다).
   // 부르는 쪽의 늘리기(flex-1)도 받지 않는다 — 안내 한 줄이 옆 칸 높이만큼 비어 늘어났다(2026-10-26)
   if (values.every((v) => v.hours === null)) {
@@ -73,35 +73,34 @@ export function PlaytimeTiles({ playtime, className }: { playtime: PlaytimeDto |
       </EmptyLine>
     );
   }
+  const max = Math.max(...values.map((v) => v.hours ?? 0));
   return (
-    // 글자 크기는 화면 폭이 아니라 이 판 폭으로 정한다(@container). 판이 옆 기둥에 서면 넓은 화면에서도 세 칸이 좁아
-    // "25.1시간" 이 숫자와 단위로 두 줄에 갈렸다(2026-11-10 사용자). 숫자와 단위는 한 덩어리로 묶어 접히지 않게 한다
-    <section aria-labelledby="playtime-heading" className={cn("@container flex flex-col gap-3 rounded-[var(--radius-panel)] bg-surface p-4 shadow-[var(--elev-card)]", className)}>
-      <h2 id="playtime-heading" className="flex items-center gap-1.5 text-[16px] font-extrabold text-ink">
-        <ClockIcon size={17} className="text-acc" />
+    // 2026-11-23 사용자 "플레이타임 표현 방식 UI/UX 개선": 큰 숫자 세 칸은 바로 옆 평론 점수 세 칸과 꼴이 같아 둘이 한 묶음처럼 읽혔고,
+    // 세 값의 차이("완벽하게는 메인의 몇 배") 는 숫자를 빼 봐야 알았다. 이름, 가장 긴 값에 맞춘 막대, 시간을 한 줄씩 세 줄로 바꿨다.
+    // 막대 색은 먹색 한 가지를 진하기로 가른다 — 같은 게임의 같은 잣대라 색을 갈라 다른 것처럼 보일 이유가 없다(파랑 남발 금지).
+    <section aria-labelledby="playtime-heading" className={cn("flex flex-col gap-3 rounded-[var(--radius-panel)] bg-surface p-4 shadow-[var(--elev-card)]", className)}>
+      <h2 id="playtime-heading" className="flex items-center gap-1.5 text-[15px] font-extrabold text-ink">
+        <ClockIcon size={16} className="text-mut" />
         {D.playtimeTitle}
       </h2>
-      {/* 칸 사이 세로선은 목업 그대로 둔다 — 칸 수가 늘 셋이라 2026-09-21 의 "칸 수에 따라 선이 달라진다" 문제가 없다.
-          세 칸은 상세 옆 기둥(안쪽 약 292px)과 390폭 휴대폰(약 303px)에서도 지킨다 — 거기서 줄로 세웠더니 목록처럼 보여 사용자가 싫어했다(2026-11-10).
-          대신 칸 여백을 줄이고 글자 크기를 판 폭에 맞춘다. 천 시간 넘는 값(MMO)이 하나라도 있으면 한 단계 작게 쓴다 */}
-      <dl className="grid grid-cols-1 gap-2 border-t border-line pt-3 @[15rem]:grid-cols-3 @[15rem]:gap-0">
+      <dl className="flex flex-col gap-2">
         {values.map((v, i) => (
-          <div
-            key={v.key}
-            className={cn(
-              "flex min-w-0 items-baseline justify-between gap-2 @[15rem]:flex-col @[15rem]:items-start @[15rem]:justify-start @[15rem]:gap-1.5 @[15rem]:px-2",
-              i === 0 ? "@[15rem]:pl-0" : "@[15rem]:border-l @[15rem]:border-line",
-            )}
-          >
-            <dt className="text-[12px] leading-[1.4] text-mut">{D.playtimeItems[v.key]}</dt>
-            <dd
-              className={cn(
-                "whitespace-nowrap font-extrabold leading-none tracking-[-0.03em] text-ink",
-                longHours ? "text-[16px] @[26rem]:text-[20px] @[32rem]:text-[24px]" : "text-[20px] @[26rem]:text-[24px] @[32rem]:text-[28px]",
+          <div key={v.key} className="grid grid-cols-[72px_minmax(0,1fr)_auto] items-center gap-2.5">
+            <dt className="truncate text-[12px] text-mut">{D.playtimeItems[v.key]}</dt>
+            <span aria-hidden className="h-2 overflow-hidden rounded-full bg-surface-2">
+              {v.hours !== null && max > 0 && (
+                <span className={cn("block h-full rounded-full", BAR_TONE[i])} style={{ width: `${Math.max((v.hours / max) * 100, BAR_MIN_PCT)}%` }} />
               )}
-            >
-              {v.hours === null ? <span className="text-dim-2">-</span> : hoursText(v.hours)}
-              {v.hours !== null && <small className="ml-0.5 text-[12px] font-bold tracking-normal">{D.playtimeUnit}</small>}
+            </span>
+            <dd className="min-w-[64px] whitespace-nowrap text-right font-extrabold leading-none tracking-[-0.02em] text-ink">
+              {v.hours === null ? (
+                <span className="text-[15px] text-dim-2">-</span>
+              ) : (
+                <>
+                  <span className="text-[15px]">{hoursText(v.hours)}</span>
+                  <small className="ml-0.5 text-[11.5px] font-bold tracking-normal text-mut">{D.playtimeUnit}</small>
+                </>
+              )}
             </dd>
           </div>
         ))}

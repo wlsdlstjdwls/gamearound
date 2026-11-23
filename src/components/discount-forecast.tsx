@@ -24,7 +24,7 @@ function PriceBar({ label, value, tone, children }: { label: string; value: Reac
     <div className="flex min-w-0 flex-col gap-1.5">
       <div className="flex min-w-0 flex-wrap items-baseline justify-between gap-x-2 text-[12.5px]">
         <span className="font-semibold text-mut">{label}</span>
-        <b className={cn("font-extrabold tabular-nums", tone === "sale" ? "text-[14px] text-acc" : "text-ink")}>{value}</b>
+        <b className={cn("font-extrabold tabular-nums", tone === "sale" ? "text-[14px] text-danger" : "text-ink")}>{value}</b>
       </div>
       <div aria-hidden className="relative h-2.5 overflow-hidden rounded-full bg-line-soft">
         {children}
@@ -51,22 +51,21 @@ function Plan({ next, expected, running, currency }: { next: Forecast["next"]; e
       {next && (
         <div className="flex min-w-0 flex-wrap items-center justify-between gap-x-2 gap-y-1">
           <span className="text-[13px] font-bold text-mut">{D.forecastWhenHead(next.name)}</span>
-          {tag && <Tag tone={next.basis === "confirmed" ? "acc" : "neutral"}>{tag}</Tag>}
+          {tag && <Tag tone="neutral">{tag}</Tag>}
         </div>
       )}
       <div className="flex min-w-0 flex-wrap items-end justify-between gap-x-3 gap-y-1">
-        {next ? (
-          <p className="text-[40px] font-black leading-none tracking-[-0.03em] text-acc tabular-nums">
+        {/* 다음 할인 날을 모를 때의 "아직 알 수 없어요" 줄은 걷었다(2026-11-23 사용자 "문구 제거") — 아래 값 줄만 선다 */}
+        {next && (
+          <p className="text-[40px] font-black leading-none tracking-[-0.03em] text-ink tabular-nums">
             <span aria-hidden>{D.forecastDday(next.daysUntil)}</span>
             <span className="sr-only">{D.forecastDdaySr(next.daysUntil)}</span>
           </p>
-        ) : (
-          <p className="text-[13.5px] text-mut">{D.forecastNoDate}</p>
         )}
         {save && (
           <p className="text-[14px] font-bold text-ink">
             {save.before}
-            <b className="text-[17px] font-extrabold text-acc tabular-nums">{save.amount}</b>
+            <b className="text-[17px] font-extrabold text-danger tabular-nums">{save.amount}</b>
             {save.after}
           </p>
         )}
@@ -81,7 +80,7 @@ function Plan({ next, expected, running, currency }: { next: Forecast["next"]; e
             value={formatPrice(expected.price, currency)}
             tone="sale"
           >
-            <span className="absolute inset-y-0 left-0 rounded-full bg-acc" style={{ width: pctOf(expected.price, expected.cap) }} />
+            <span className="absolute inset-y-0 left-0 rounded-full bg-ink-2" style={{ width: pctOf(expected.price, expected.cap) }} />
           </PriceBar>
           <p className="text-[11.5px] leading-[1.5] text-dim max-sm:text-[12.5px]">
             {expected.basis === "recorded-low"
@@ -96,6 +95,8 @@ function Plan({ next, expected, running, currency }: { next: Forecast["next"]; e
   );
 }
 
+// 2026-11-23 사용자 "할인 예측이 아직도 다 파란색이라 눈 아프다": 판 안의 파랑(아이콘 면, 기준 플랫폼, D-데이, 막대, 확정 꼬리표)을 걷었다.
+// 숫자와 막대는 먹색, 돈 이야기(할인가, 아끼는 돈)만 빨강 — 가격 비교의 빨강 할인율과 같은 뜻의 같은 색이다. 파랑은 판 밑 단추에만 남는다.
 export function DiscountForecast({
   forecast,
   currency,
@@ -125,12 +126,12 @@ export function DiscountForecast({
       className="flex h-full flex-col gap-3 rounded-[var(--radius-panel)] bg-surface p-5 shadow-[var(--elev-card)]"
     >
       <div className="flex min-w-0 items-center gap-3">
-        <span aria-hidden className="grid size-11 shrink-0 place-items-center rounded-full bg-acc-soft text-acc">
+        <span aria-hidden className="grid size-11 shrink-0 place-items-center rounded-full bg-surface-2 text-mut">
           <CalendarIcon size={20} />
         </span>
         <h2 id="forecast-heading" className="flex min-w-0 flex-wrap items-baseline gap-x-2 text-[17px] font-extrabold text-ink">
           {D.forecastTitle}
-          {basisLabel && <span className="text-[12.5px] font-bold text-acc">{D.forecastBasisPlatform(basisLabel)}</span>}
+          {basisLabel && <span className="text-[12.5px] font-bold text-mut">{D.forecastBasisPlatform(basisLabel)}</span>}
         </h2>
       </div>
       {/* 진행 중 할인 — 기다릴 일보다 지금 살 수 있다는 말이 먼저다. 채운 파랑 면은 걷었다(2026-11-23 사용자 "파란 배경이 도배돼 눈이 아프다").
@@ -140,7 +141,13 @@ export function DiscountForecast({
           <span className="text-[14px] font-bold">
             {D.forecastRunningNow(running.name)} <b className="font-black tabular-nums text-danger">-{running.pct}%</b>
           </span>
-          {running.daysLeft !== null && <span className="text-[12.5px] font-semibold text-mut">{D.forecastRunningLeftShort(running.daysLeft)}</span>}
+          {/* 남은 날은 D-데이(2026-11-23 사용자 "11일 뒤 끝나요 를 D데이로") — 낭독기에는 문장으로 */}
+          {running.daysLeft !== null && (
+            <span className="text-[13px] font-extrabold tabular-nums text-ink-2">
+              <span aria-hidden>{D.forecastDday(running.daysLeft)}</span>
+              <span className="sr-only">{D.forecastRunningLeftShort(running.daysLeft)}</span>
+            </span>
+          )}
         </p>
       )}
       {empty ? (

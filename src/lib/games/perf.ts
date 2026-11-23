@@ -85,13 +85,14 @@ const PERF_LINES: ReadonlyArray<{ label: string; keys: readonly PerfFeature[]; t
   { label: "최적화", keys: ["series_optimized"] },
 ];
 
-export type PerfLine = { label: string; value: string };
+/** values 는 한 줄에 하나씩 선다(2026-11-23 사용자 "각 값들은 줄바꿈으로") — 쉼표로 이으면 칸 폭에서 아무 데서나 접혔다 */
+export type PerfLine = { label: string; values: string[] };
 
 export function perfLines(features: readonly string[]): PerfLine[] {
   return PERF_LINES.flatMap((line) => {
     const hit = line.keys.filter((k) => features.includes(k));
     if (hit.length === 0) return [];
     const values = (line.top ? hit.slice(0, 1) : hit).map((k) => PERF_FEATURE_LABEL[k]);
-    return [{ label: line.label, value: values.join(", ") }];
+    return [{ label: line.label, values }];
   });
 }
