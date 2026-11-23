@@ -5,6 +5,9 @@
 // "지원 안 함" 과 "스토어가 안 알려 줌" 을 겸한다. 실측(2026-09-15): 팰월드의 Steam 카테고리에는
 // PvP 항목이 아예 없어(싱글, 멀티, 협동, 온라인 협동까지만) 화면이 "PvP 안 됨" 으로 그었다.
 // 모르는 것을 그리지 않으면 이 거짓말이 사라진다. 아는 것만 말한다.
+import { FactEmpty, FactRow } from "@/components/ui/fact-row";
+import { FACT_ROW_LABEL } from "@/lib/games/messages";
+
 type Props = {
   localMaxPlayers: number | null;
   onlineMaxPlayers: number | null;
@@ -13,14 +16,7 @@ type Props = {
   supportsPvp: boolean;
 };
 
-function Chip({ children }: { children: React.ReactNode }) {
-  return (
-    <span className="inline-flex items-center rounded-full bg-surface-2 px-[11px] py-[5px] text-[12.5px] text-ink-2">
-      {children}
-    </span>
-  );
-}
-
+/** 플레이 방식 줄. 회색 알약을 걷고 글자만 쉼표로 잇는다(ui/fact-row 머리 주석) */
 export function MultiplayerBadges(p: Props) {
   const items = [
     p.supportsSolo ? "솔로" : null,
@@ -30,15 +26,9 @@ export function MultiplayerBadges(p: Props) {
     p.onlineMaxPlayers && p.onlineMaxPlayers > 0 ? `온라인 최대 ${p.onlineMaxPlayers}인` : null,
   ].filter((v): v is string => v !== null);
 
-  if (items.length === 0) return null;
-
   return (
-    <ul className="flex flex-wrap gap-1.5" aria-label="플레이 방식">
-      {items.map((label) => (
-        <li key={label}>
-          <Chip>{label}</Chip>
-        </li>
-      ))}
-    </ul>
+    <FactRow label={FACT_ROW_LABEL.play}>
+      {items.length > 0 ? <span className="font-semibold">{items.join(", ")}</span> : <FactEmpty />}
+    </FactRow>
   );
 }

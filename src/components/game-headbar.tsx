@@ -17,12 +17,15 @@ import { useEffect, useRef, useState, useSyncExternalStore } from "react";
 import { createPortal } from "react-dom";
 import Link from "next/link";
 import { BrandSymbol } from "@/components/ui/logo";
-import { PlatformBadges } from "@/components/platform-badges";
 import { Clamp } from "@/components/ui/tooltip";
 import { DiscountBadge } from "@/components/ui/discount";
+import { buttonClass } from "@/components/ui/button";
+import { SaleBadge } from "@/components/sale-badge";
+import { WishlistButton } from "@/components/wishlist-button";
+import { CoverImage } from "@/components/game-card";
+import { DETAIL_MESSAGES as D } from "@/lib/games/detail-messages";
 import { ROUTES } from "@/lib/routes";
 import { SITE } from "@/lib/site";
-import type { Platform } from "@/server/db/schema";
 
 /** 머리띠 높이와 같은 값(globals.css 의 --header-h). 깎을 만큼 깎아야 "가려짐" 판정이 맞는다 */
 const HEADER_H_VAR = "--header-h";
@@ -44,20 +47,36 @@ function headerHeight(): number {
 
 export function GameHeadbar({
   title,
+  coverUrl,
+  storeLabel,
+  buyUrl,
   price,
   listPrice,
   discountPct,
-  platforms,
+  discountEndsAt,
+  gameId,
   alertAction,
 }: {
   title: string;
+  /**
+   * 2026-11-23 사용자 "스크롤하면 상단 헤더 정보가 바뀌는데 빈약함" — 제목, 값만 있던 띠에 셋을 더했다:
+   * 작은 커버(무슨 게임을 보고 있는지 그림으로), 최저가가 어느 스토어인지, 그 스토어로 가는 구매 단추.
+   * 띠는 "지금 이 게임을 어디서 얼마에" 를 스크롤 중에도 들고 있는 자리라, 그 질문의 끝(사러 가기)까지 닿아야 한다
+   */
+  coverUrl: string | null;
+  /** 최저가를 파는 스토어 이름(Steam, PS5). 값 옆에 회색으로 */
+  storeLabel: string | null;
+  /** 최저가 스토어 주소. 없으면 구매 단추를 세우지 않는다 */
+  buyUrl: string | null;
   /** 이미 서식을 입힌 최저가. 통화 규칙은 lib/currency 가 갖는다 — 이 바는 글자만 받는다 */
   price: string | null;
   /** 할인 전 값. 할인이 없거나 같은 값이면 null 이고 그때는 취소선을 안 세운다 */
   listPrice: string | null;
   discountPct: number | null;
-  /** 지원 플랫폼 배지. 목록 카드와 같은 컴포넌트를 쓴다 — 같은 사실을 두 모양으로 그리지 않는다 */
-  platforms: Platform[];
+  /** 최저가 스토어의 할인 끝나는 시각 — 값 옆에 "N일 남음" 을 단다. 지원 플랫폼 배지 줄은 걷었다(2026-11-23 사용자 "Steam 이 두 번, 중복") */
+  discountEndsAt: string | null;
+  /** 찜 단추용(2026-11-23 사용자 "찜하기 버튼은?") */
+  gameId: string;
   /**
    * 할인 알림 단추. 무료 게임은 없다(히어로의 버튼과 같은 규칙 — 내려갈 자리가 없다).
    * 주소 링크(/alerts?game=)였다가 2026-10-27 가격 알림 팝업 단추(price-alert-button)로 바꿨다(사용자: "누르면 로그인 안 되어 있으면
@@ -112,6 +131,12 @@ export function GameHeadbar({
                 <BrandSymbol size={24} />
               </Link>
 
+              {coverUrl && (
+                // 작은 커버 — 좁은 화면에서는 제목, 값 자리를 먼저 준다
+                <span className="relative hidden aspect-[16/9] h-10 shrink-0 overflow-hidden rounded-[var(--radius-cover)] bg-surface-3 shadow-hair sm:block">
+                  <CoverImage src={coverUrl} alt="" sizes="72px" />
+                </span>
+              )}
               {/* 제목과 값이 위아래로 선다 — 한 줄에 몰면 값이 제목 뒤로 밀려 좁은 화면에서 먼저 잘린다 */}
               <span className="flex min-w-0 flex-1 flex-col justify-center gap-0.5">
                 <Clamp lines={1} className="text-[14px] font-extrabold leading-tight tracking-[-0.035em] text-ink">
@@ -125,19 +150,30 @@ export function GameHeadbar({
                       <span className="text-[14px] font-extrabold tracking-[-0.03em] text-ink">{price}</span>
                       {/* 목록 카드와 같은 채운 배지(2026-10-27 사용자: "머리바의 할인 배지도 제대로") */}
                       <DiscountBadge pct={discountPct} size="sm" />
+                      {storeLabel && <span className="whitespace-nowrap text-[12px] font-semibold text-mut">{storeLabel}</span>}
                     </span>
                   )}
-                  {/* 배지는 좁은 화면에서 접는다 — 거기서는 제목과 값이 먼저다 */}
-                  <span className="hidden min-w-0 sm:flex">
-                    <PlatformBadges platforms={platforms} />
-                  </span>
+                  {/* 할인이 끝나는 때 — 스크롤 중에도 "지금 사야 하나" 를 말한다. 좁은 화면에서는 값이 먼저라 접는다 */}
+                  {discountPct ? (
+                    <span className="hidden min-w-0 sm:flex">
+                      <SaleBadge variant="inline" discountName={null} discountEndsAt={discountEndsAt} />
+                    </span>
+                  ) : null}
                 </span>
               </span>
 
               {/* 띠가 숨은 동안에는 단추도 손이 닿지 않게(inert) — 안 보이는 단추에 탭 초점이 들어가면 안 된다 */}
-              {alertAction && (
-                <span inert={!on} className="shrink-0">
+              {/* 단추 셋은 차림이 다르다(같은 날 "가격 알림, 구매하기 버튼이 똑같다"): 찜, 알림은 테두리 보조 단추, 구매하기만 채운 파랑 */}
+              {(
+                <span inert={!on} className="flex shrink-0 items-center gap-2">
+                  <WishlistButton gameId={gameId} size="sm" className="max-sm:hidden" />
                   {alertAction}
+                  {buyUrl && (
+                    <a href={buyUrl} target="_blank" rel="noopener noreferrer" className={buttonClass({ variant: "accent", size: "sm", className: "max-sm:hidden" })}>
+                      {D.buyBarCta}
+                      <span className="sr-only"> (새 창에서 열림)</span>
+                    </a>
+                  )}
                 </span>
               )}
             </div>

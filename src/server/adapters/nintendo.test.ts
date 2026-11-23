@@ -38,16 +38,16 @@ describe("parseNintendoProduct", () => {
     expect(snap.releaseDate).toBeNull();
   });
 
-  it("메이커 소개글: 문단과 <br> 을 한 문단으로 잇는다", () => {
+  it("메이커 소개글: 문단과 <br> 은 줄바꿈 하나로 남긴다(설명 팝업이 소제목을 가른다)", () => {
     const snap = parseNintendoProduct(fixture("nintendo-product-multiplayer.html"), "70010000009373");
-    expect(snap.meta?.description).toMatch(/^모든 장소가 서킷! 레이스, 배틀, 모든 것이 디럭스\. 시리즈 최다 42명의 캐릭터가 등장!/);
-    expect(snap.meta?.description).not.toMatch(/\n/);
+    expect(snap.meta?.description).toMatch(/^모든 장소가 서킷! 레이스, 배틀, 모든 것이 디럭스\.\s시리즈 최다 42명의 캐릭터가 등장!/);
+    expect(snap.meta?.description).not.toMatch(/\n\s*\n/);
     expect(snap.meta?.description).not.toMatch(/더보기|메이커로부터의 설명/);
   });
 
   it("문단 없는 소개글도 읽는다(실크송)", () => {
     const snap = parseNintendoProduct(fixture("nintendo-product-switch1.html"), "70010000100203");
-    expect(snap.meta?.description).toMatch(/^저주받은 왕국의 정상에 올라라 할로우 나이트: 실크송은/);
+    expect(snap.meta?.description).toMatch(/^저주받은 왕국의 정상에 올라라\n할로우 나이트: 실크송은/);
   });
 
   it("판매 안내 문단(Switch 2 상품입니다)은 뺀다", () => {

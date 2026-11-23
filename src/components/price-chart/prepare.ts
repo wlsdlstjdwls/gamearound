@@ -7,7 +7,15 @@ import type { PriceSeries } from "@/server/services/prices";
 
 const MS_PER_DAY = 24 * 60 * 60 * 1000;
 
-export type MergedPoint = { t: number } & Partial<Record<Platform, number>>;
+/**
+ * sales: 그 시각 그 계열이 할인 중이면 할인율과 행사 이름(2026-11-23 사용자 "가격이 달라지는 경우 무슨 세일이었는지도 표기").
+ * 스냅샷에 이미 discount_name 이 남아 있어(schema 의 price_snapshots) 질의를 늘리지 않는다. 말풍선(./tooltip)이 값 옆에 붙인다
+ */
+export type SalePoint = { pct: number; name: string | null };
+export type MergedPoint = { t: number; sales?: Partial<Record<Platform, SalePoint>> } & Partial<Record<Platform, number>>;
+type ClampedPoint = { t: number; price: number; sale: SalePoint | null };
+
+const saleOf = (pct: number | null | undefined, name: string | null | undefined): SalePoint | null => (pct && pct > 0 ? { pct, name: name?.trim() || null } : null);
 
 export type Prepared = {
   data: MergedPoint[];
@@ -72,17 +80,17 @@ export function mergeBrandSeries(series: PriceSeries[]): PriceSeries[] {
 }
 
 /** 한 플랫폼의 시계열을 [구간 시작, ..., 지금] 으로 정규화 */
-function clampSeries(s: PriceSeries, from: number | null, now: number): Array<{ t: number; price: number }> {
+function clampSeries(s: PriceSeries, from: number | null, now: number): ClampedPoint[] {
   const sorted = s.points
-    .map((p) => ({ t: new Date(p.t).getTime(), price: p.price }))
+    .map((p) => ({ t: new Date(p.t).getTime(), price: p.price, sale: saleOf(p.discountPct, p.discountName) }))
     .filter((p) => Number.isFinite(p.t))
     .sort((a, b) => a.t - b.t);
   if (sorted.length === 0) return [];
 
-  const out: Array<{ t: number; price: number }> = [];
+  const out: ClampedPoint[] = [];
   if (from !== null) {
     const prior = [...sorted].reverse().find((p) => p.t < from);
-    if (prior) out.push({ t: from, price: prior.price }); // 구간 시작 앵커
+    if (prior) out.push({ t: from, price: prior.price, sale: prior.sale }); // 구간 시작 앵커
     out.push(...sorted.filter((p) => p.t >= from));
   } else {
     out.push(...sorted);
@@ -92,7 +100,7 @@ function clampSeries(s: PriceSeries, from: number | null, now: number): Array<{ 
   // 마지막 기록 → 지금까지 수평 유지 (현재가가 있으면 그 값으로)
   const last = out[out.length - 1];
   const currentPrice = s.currentPrice ?? last.price;
-  if (now > last.t) out.push({ t: now, price: currentPrice });
+  if (now > last.t) out.push({ t: now, price: currentPrice, sale: s.currentPrice !== null ? saleOf(s.discountPct, s.discountName) : last.sale });
   return out;
 }
 
@@ -124,6 +132,7 @@ export function prepare(series: PriceSeries[], rangeDays: number | null, now: nu
     for (const p of points) {
       const row = byT.get(p.t) ?? { t: p.t };
       row[s.platform] = p.price;
+      if (p.sale) row.sales = { ...row.sales, [s.platform]: p.sale };
       byT.set(p.t, row);
     }
   }

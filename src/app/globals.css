@@ -613,6 +613,38 @@
 .soon-float {
   animation: soon-float 3.4s var(--ease-standard) infinite;
 }
+/* 빈 플레이타임 판의 시계 바늘(game-detail/scores 의 PlaytimeClock). 바늘은 시계 한가운데(12, 12)를 축으로 돈다 —
+   SVG 요소의 기본 축은 그림 왼쪽 위라 view-box 기준으로 옮긴다. 짧은바늘은 긴바늘의 열두 배 느리다(실제 시계 비례) */
+.clock-hand {
+  transform-box: view-box;
+  transform-origin: 12px 12px;
+  animation: spin-slow 4s linear infinite;
+}
+.clock-hand-hour {
+  animation-duration: 48s;
+}
+/* 빈 플레이타임 판의 막대(game-detail/scores). 왼쪽에서 차오르고, 잠깐 머문 뒤 옅어져 다시 — "시간을 재는 중".
+   시차(--stagger)는 지연 동안에도 0% 모습이어야 해서 both 다(soon-ripple 과 같은 이유) */
+.playtime-wait {
+  transform-origin: left center;
+  animation: playtime-wait 3.6s var(--ease-standard) infinite both;
+  animation-delay: var(--stagger, 0ms);
+}
+/* 값 있는 플레이타임 판의 막대가 한 번 차오른다(playtime-wait 의 차오름과 같은 몸짓, 한 번만) */
+.playtime-grow {
+  transform-origin: left center;
+  animation: playtime-grow 0.9s var(--ease-standard) both;
+  animation-delay: var(--stagger, 0ms);
+}
+@keyframes playtime-grow {
+  from { transform: scaleX(0); }
+  to { transform: scaleX(1); }
+}
+@keyframes playtime-wait {
+  0% { transform: scaleX(0); opacity: 1; }
+  55% { transform: scaleX(1); opacity: 1; }
+  80%, 100% { transform: scaleX(1); opacity: 0; }
+}
 
 /* 기다림 그림(components/ui/game-loader). 손전등은 막대 위에 서서 달리고(left), 달리는 동안 깡총 뛴다(translate).
    채움 막대와 손전등이 같은 keyframes 를 타서 손전등이 늘 채움의 끝에 있다 — 빛이 길을 밝히며 지나간 자리가 차오르는 그림이다.

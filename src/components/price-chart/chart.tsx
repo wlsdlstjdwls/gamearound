@@ -188,7 +188,13 @@ export function PriceChart({ series, head, rangeKeys }: { series: PriceSeries[];
         {/* 기간은 하나만 고르는 칸 넷이라 한 판 위의 세그먼트로 세운다(2026-11-20 사용자 "가격변동 추이 필터 기능들 모바일에 맞게").
             칩 넷일 때는 고른 "1년" 만 파란 알약으로 부풀고 나머지는 맨 글자라 아래 플랫폼 칩과 모양이 겹쳐 무엇이 무엇을 거르는지 안 갈렸다.
             좁은 화면은 판이 폭을 다 써서 칸 넷이 고르게 나뉜다. 고른 칸은 면 명암(흰 면 + 그림자)으로만 말한다 — 파랑은 아래 플랫폼 칩의 몫이다 */}
-        <div role="group" aria-label="기간 선택" className="grid w-full grid-cols-4 gap-0.5 rounded-xl bg-surface-2 p-1 sm:inline-grid sm:w-auto">
+        {/* 칸 수는 기간 수 그대로다 — grid-cols-4 로 못 박아 두니 기간이 다섯인 가격 변동 화면에서 "전체" 가 둘째 줄로 떨어졌다(2026-11-23 사용자 "줄바꿈 되어 있고") */}
+        <div
+          role="group"
+          aria-label="기간 선택"
+          className="grid w-full gap-0.5 rounded-xl bg-surface-2 p-1 sm:inline-grid sm:w-auto"
+          style={{ gridTemplateColumns: `repeat(${ranges.length}, minmax(0, 1fr))` }}
+        >
           {ranges.map((r) => {
             const on = r.key === rangeKey;
             return (

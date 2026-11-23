@@ -2,7 +2,8 @@
 // 할인 예측, 플레이타임, 뉴스, 업데이트와 성능, 가격 추이가 각자 큰 판을 세우고 그 안에 "아직 없어요" 한 줄만 두면
 // 화면 절반이 빈 판이 된다. 제목은 남긴다 — 마디가 통째로 사라지면 "이 서비스는 그걸 안 보여 준다" 로 읽힌다.
 // 값이 생기면 부르는 쪽이 원래 판으로 돌아간다. 이 줄은 모양만 갖는다(문구는 부르는 쪽이 넘긴다).
-import { EmptyScene } from "@/components/ui/empty-scene";
+import { FloatingIcon } from "@/components/ui/floating-icon";
+import { FileTextIcon } from "@/components/ui/icons";
 import { cn } from "@/lib/cn";
 
 export function EmptyLine({
@@ -31,8 +32,10 @@ export function EmptyLine({
         {icon && <span className="text-acc">{icon}</span>}
         {title}
       </h2>
-      {/* 빈 화면과 같은 손전등이 훑는다(ui/empty-scene) — "값이 없다" 를 고장이 아니라 "아직 못 찾았다" 로 읽게 한다. 좁은 기둥에서는 글자리를 먼저 준다 */}
-      <EmptyScene size="mini" className="order-first hidden sm:block" />
+      {/* 빈 자리 아이콘(ui/floating-icon) — 손전등이 빛을 훑던 그림을 바꿨다(2026-11-23 사용자 "빈값 아이콘 바꾸자"). 좁은 기둥에서는 글자리를 먼저 준다 */}
+      <FloatingIcon size="sm" className="order-first max-sm:hidden">
+        <FileTextIcon size={17} />
+      </FloatingIcon>
       {/* 좁은 기둥(할인 예측, 플레이타임)에서는 글이 제목 옆에 끼어 한 글자 폭으로 접히지 않고 다음 줄로 내려가게 최소 폭을 준다 */}
       <p className="min-w-[14rem] flex-1 text-[13px] text-dim">{children}</p>
       {action && <div className="shrink-0">{action}</div>}

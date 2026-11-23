@@ -18,6 +18,10 @@ import { buttonClass } from "@/components/ui/button";
 import { cn } from "@/lib/cn";
 import { XIcon } from "@/components/ui/icons";
 
+/** 지금 열린 시트 수와, 첫 시트가 열리기 전의 html overflow(스크롤 잠금, 아래 useEffect) */
+let openSheets = 0;
+let savedOverflow = "";
+
 /** 데스크톱 팝업으로 바뀌는 폭. globals.css 의 .sheet 미디어 쿼리와 같은 값이어야 한다 */
 const DESKTOP_MIN_WIDTH = 640;
 
@@ -47,6 +51,7 @@ const EXIT_FALLBACK_MS = 320;
 export function Sheet({
   label,
   title,
+  titleSlot,
   actions,
   children,
   triggerClassName,
@@ -64,6 +69,11 @@ export function Sheet({
   label?: React.ReactNode;
   /** 시트 머리에 적을 제목. 스크린 리더가 읽는 이름이기도 하다 */
   title: string;
+  /**
+   * 머리에 제목 대신 그릴 모양(2026-11-23, 업데이트 노트의 "날짜 제목 버전" — 셋이 같은 글자면 어디까지가 날짜고 버전인지 안 갈렸다).
+   * 낭독기는 여전히 title 을 읽는다. 주지 않으면 title 글자 그대로다
+   */
+  titleSlot?: React.ReactNode;
   /**
    * 머리 오른쪽, 닫기 버튼 앞에 서는 행동(2026-10-12, 할 일 고치기 팝업의 저장).
    * 본문 바닥에 붙인 저장 줄은 긴 메모 아래로 밀려 스크롤해야 보였고, 좁은 화면에서는 화면 아래 한 줄을 늘 먹었다.
@@ -121,6 +131,8 @@ export function Sheet({
   const openedAtRef = useRef(0);
   const interactableRef = useRef(false);
   const closingRef = useRef(false);
+  /** 이번 닫힘이 Esc(키보드)였나 — 닫힌 뒤 초점 처리가 갈린다(onClose) */
+  const closedByKeyRef = useRef(false);
   // 드래그 한 번의 상태. 포인터가 눌린 동안만 채워진다
   const dragRef = useRef<{ startY: number; lastY: number; lastAt: number; velocity: number } | null>(null);
 
@@ -256,13 +268,17 @@ export function Sheet({
   // 제자리(문서 맨 위)로 돌아가서, 스크롤을 내린 채 시트를 열면 헤더가 화면 밖으로 사라졌다(2026-09-30 실측:
   // scrollY 1500 에서 헤더 top -1500). 예전에 있던 body position: fixed 묶기도 같은 결과라 뺐다.
   // 시트 안 스크롤이 뒤로 번지는 건 본문 칸의 overscroll-contain 이 막는다.
+  // 잠금은 열린 시트 수로 센다 — 시트 안에 시트가 열리면 저마다 "이전 값" 을 기억했다가 닫히는 순서에 따라 hidden 을 되돌려 놓아
+  // 다 닫은 뒤에도 화면이 안 굴러갔다(2026-11-23 사용자 "끄고 나면 원래 화면 스크롤도 안 됨")
   useEffect(() => {
     if (!open) return;
     const html = document.documentElement;
-    const previous = html.style.overflow;
+    if (openSheets === 0) savedOverflow = html.style.overflow;
+    openSheets += 1;
     html.style.overflow = "hidden";
     return () => {
-      html.style.overflow = previous;
+      openSheets -= 1;
+      if (openSheets === 0) html.style.overflow = savedOverflow;
     };
   }, [open]);
 
@@ -343,7 +359,14 @@ export function Sheet({
         data-size={size}
         data-fit={fit || undefined}
         aria-labelledby={titleId}
-        onClose={() => {
+        // 시트 안에 시트가 열린 경우(업데이트 노트 전체 보기 안의 글 상세) 안쪽 dialog 의 close, cancel 이 React 나무를 타고 바깥 시트까지 올라와
+        // Esc 한 번에 둘 다 닫혔다(2026-11-23 사용자). 이 시트의 일만 하고 위로 보내지 않는다
+        onClose={(e) => {
+          e.stopPropagation();
+          // 마우스(닫기 단추, 막)로 닫았으면 브라우저가 여는 단추로 돌려준 초점을 푼다 — 돌려받은 초점에 고리가 그려져
+          // "팝업 닫으면 전체보기 버튼에 테두리가 생김"(2026-11-23 사용자). Esc 로 닫은 키보드 사용자에게는 초점을 그대로 둔다
+          if (!closedByKeyRef.current) requestAnimationFrame(() => (document.activeElement as HTMLElement | null)?.blur?.());
+          closedByKeyRef.current = false;
           appliedRef.current = false;
           setSelfOpen(false);
           onOpenChange?.(false);
@@ -351,6 +374,8 @@ export function Sheet({
         // Esc 는 브라우저가 곧장 닫아 버린다 — 막고 우리 퇴장 모션을 태운다
         onCancel={(e) => {
           e.preventDefault();
+          e.stopPropagation();
+          closedByKeyRef.current = true;
           close();
         }}
       >
@@ -388,7 +413,7 @@ export function Sheet({
           >
             {/* 행동이 함께 서면 제목은 한 줄로 자른다 — 꺾이면 머리가 두 줄이 되어 본문을 먹는다. 전체 제목은 본문 첫 칸에 있다 */}
             <h2 id={titleId} className={cn("min-w-0 text-[15px] font-bold tracking-[-0.02em] text-ink", actions != null && "truncate")}>
-              {title}
+              {titleSlot ?? title}
             </h2>
             {actions && <div className="ml-auto flex shrink-0 items-center gap-2">{actions}</div>}
             <button

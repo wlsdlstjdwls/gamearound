@@ -5,12 +5,11 @@
 // 점수가 없어도 칸 셋은 늘 선다(2026-11-16 사용자). 없는 칸은 흐린 "-" 다 — 칸 수가 게임마다 달라지면 화면이 들쭉날쭉하다.
 // IGN 은 2026-10-27 부터 오픈크리틱 리뷰 목록에서 뽑아 온다(adapters/opencritic).
 //
-// 플레이타임: 이름, 막대, 시간 세 줄(2026-11-23 개편, PlaytimeTiles 주석). 시간당 가격이 붙는 막대 카드(playtime-card)는 따로 남아 있다 —
+// 플레이타임: 큰 숫자 세 칸 + 칸마다 얇은 막대(2026-11-23, PlaytimeTiles 주석). 시간당 가격이 붙는 막대 카드(playtime-card)는 따로 남아 있다 —
 // 시간당 가격(SHOW_PRICE_PER_HOUR)을 되살릴 때 그 카드가 다시 쓰인다.
 import { DETAIL_MESSAGES as D } from "@/lib/games/detail-messages";
 import { toPositiveNumber } from "@/lib/price-per-hour";
 import { cn } from "@/lib/cn";
-import { EmptyLine } from "@/components/game-detail/empty-line";
 import { ClockIcon } from "@/components/ui/icons";
 import { CriticLogo, type CriticKey } from "@/components/game-detail/critic-logos";
 import { scoreLines, type GameDetail, type PlaytimeDto } from "@/server/services/games";
@@ -62,49 +61,87 @@ function hoursText(h: number): string {
   return String(Math.round(h * 10) / 10);
 }
 
+/** 빈 판 막대의 길이(%) — 메인 스토리, 메인 + 서브, 완전 정복의 보통 비례. 그림일 뿐 값이 아니다 */
+const WAIT_BAR_PCT = [45, 70, 100] as const;
+/** 세 막대가 차오르는 시차 — 위에서 아래로 차례로 */
+const WAIT_STAGGER_MS = 350;
+
+/**
+ * 바늘이 도는 작은 시계(빈 플레이타임 판의 문구 앞). 긴바늘은 한 바퀴 4초, 짧은바늘은 그 열두 배 — 실제 시계와 같은 비례다.
+ * 움직임은 globals.css 의 .clock-hand 이고 움직임 줄이기 설정이면 전역 킬스위치가 멈춘다
+ */
+function PlaytimeClock() {
+  return (
+    <svg aria-hidden viewBox="0 0 24 24" className="size-4 shrink-0" fill="none" stroke="currentColor" strokeLinecap="round">
+      <circle cx="12" cy="12" r="9.5" strokeWidth="2" />
+      <line x1="12" y1="12" x2="12" y2="7.5" strokeWidth="2.4" className="clock-hand clock-hand-hour" />
+      <line x1="12" y1="12" x2="12" y2="5" strokeWidth="2" className="clock-hand" />
+    </svg>
+  );
+}
+
+/** 천 시간 넘는 값(MMO)이 하나라도 있으면 숫자를 한 단계 작게 — 세 칸 폭에서 "1,250시간" 이 넘친다 */
+const LONG_HOURS_FROM = 1000;
+
+/**
+ * 플레이타임 — 세 칸 가로(메인 스토리 | 메인 + 서브 | 완전 정복). 2026-11-23 사용자: 세로 세 줄(이름, 막대, 시간)로 바꿨다가
+ * "여전히 보기 그래, 이전처럼 3열이 나을 듯" — 큰 숫자 세 칸으로 되돌렸다. 대신 칸마다 숫자 밑에 얇은 막대를 남긴다:
+ * 가장 긴 값에 맞춘 길이라 "완전 정복은 메인의 몇 배" 가 숫자를 빼 보지 않아도 보인다(세로 줄 판에서 얻은 것 하나).
+ * 값이 없으면 같은 세 칸에 흐린 "-" 와 천천히 차오르는 막대(playtime-wait), 밑에 도는 시계와 문구 — 같은 날 사용자 "없을 때 표현 아주 좋다"
+ */
 export function PlaytimeTiles({ playtime, className }: { playtime: PlaytimeDto | null; className?: string }) {
   const values = PLAYTIME_KEYS.map((k) => ({ key: k, hours: toPositiveNumber(playtime?.[k]) }));
-  // 값이 하나도 없으면 판 대신 한 줄(game-detail/empty-line, 2026-10-27 사용자 검수: 빈 판이 많다).
-  // 부르는 쪽의 늘리기(flex-1)도 받지 않는다 — 안내 한 줄이 옆 칸 높이만큼 비어 늘어났다(2026-10-26)
-  if (values.every((v) => v.hours === null)) {
-    return (
-      <EmptyLine id="playtime-heading" icon={<ClockIcon size={17} />} title={D.playtimeTitle}>
-        {D.playtimeEmpty}
-      </EmptyLine>
-    );
-  }
+  const empty = values.every((v) => v.hours === null);
   const max = Math.max(...values.map((v) => v.hours ?? 0));
+  const longHours = values.some((v) => v.hours !== null && v.hours >= LONG_HOURS_FROM);
   return (
-    // 2026-11-23 사용자 "플레이타임 표현 방식 UI/UX 개선": 큰 숫자 세 칸은 바로 옆 평론 점수 세 칸과 꼴이 같아 둘이 한 묶음처럼 읽혔고,
-    // 세 값의 차이("완벽하게는 메인의 몇 배") 는 숫자를 빼 봐야 알았다. 이름, 가장 긴 값에 맞춘 막대, 시간을 한 줄씩 세 줄로 바꿨다.
-    // 막대 색은 먹색 한 가지를 진하기로 가른다 — 같은 게임의 같은 잣대라 색을 갈라 다른 것처럼 보일 이유가 없다(파랑 남발 금지).
-    <section aria-labelledby="playtime-heading" className={cn("flex flex-col gap-3 rounded-[var(--radius-panel)] bg-surface p-4 shadow-[var(--elev-card)]", className)}>
+    // 글자 크기는 화면 폭이 아니라 이 판 폭으로 정한다(@container) — 옆 기둥에 서면 넓은 화면에서도 세 칸이 좁다(2026-11-10)
+    <section aria-labelledby="playtime-heading" className={cn("@container flex flex-col gap-3 rounded-[var(--radius-panel)] bg-surface p-4 shadow-[var(--elev-card)]", className)}>
       <h2 id="playtime-heading" className="flex items-center gap-1.5 text-[15px] font-extrabold text-ink">
         <ClockIcon size={16} className="text-mut" />
         {D.playtimeTitle}
       </h2>
-      <dl className="flex flex-col gap-2">
+      <dl className="grid grid-cols-3 border-t border-line pt-3">
         {values.map((v, i) => (
-          <div key={v.key} className="grid grid-cols-[72px_minmax(0,1fr)_auto] items-center gap-2.5">
-            <dt className="truncate text-[12px] text-mut">{D.playtimeItems[v.key]}</dt>
-            <span aria-hidden className="h-2 overflow-hidden rounded-full bg-surface-2">
-              {v.hours !== null && max > 0 && (
-                <span className={cn("block h-full rounded-full", BAR_TONE[i])} style={{ width: `${Math.max((v.hours / max) * 100, BAR_MIN_PCT)}%` }} />
-              )}
-            </span>
-            <dd className="min-w-[64px] whitespace-nowrap text-right font-extrabold leading-none tracking-[-0.02em] text-ink">
-              {v.hours === null ? (
-                <span className="text-[15px] text-dim-2">-</span>
-              ) : (
-                <>
-                  <span className="text-[15px]">{hoursText(v.hours)}</span>
-                  <small className="ml-0.5 text-[11.5px] font-bold tracking-normal text-mut">{D.playtimeUnit}</small>
-                </>
-              )}
+          <div key={v.key} className={cn("flex min-w-0 flex-col gap-1.5 px-2.5", i === 0 ? "pl-0" : "border-l border-line", i === values.length - 1 && "pr-0")}>
+            <dt className="truncate text-[12px] leading-[1.4] text-mut">{D.playtimeItems[v.key]}</dt>
+            <dd className="flex min-w-0 flex-col gap-2">
+              <span
+                className={cn(
+                  "whitespace-nowrap font-extrabold leading-none tracking-[-0.03em]",
+                  v.hours === null ? "text-dim-2" : "text-ink",
+                  longHours ? "text-[16px] @[22rem]:text-[20px]" : "text-[20px] @[22rem]:text-[24px]",
+                )}
+              >
+                {v.hours === null ? "-" : hoursText(v.hours)}
+                {v.hours !== null && <small className="ml-0.5 text-[12px] font-bold tracking-normal text-mut">{D.playtimeUnit}</small>}
+              </span>
+              <span aria-hidden className="h-1.5 overflow-hidden rounded-full bg-surface-2">
+                {empty ? (
+                  <span
+                    className="playtime-wait block h-full rounded-full bg-line-strong"
+                    style={{ width: `${WAIT_BAR_PCT[i]}%`, "--stagger": `${i * WAIT_STAGGER_MS}ms` } as React.CSSProperties}
+                  />
+                ) : (
+                  v.hours !== null &&
+                  max > 0 && (
+                    <span
+                      className={cn("playtime-grow block h-full rounded-full", BAR_TONE[i])}
+                      style={{ width: `${Math.max((v.hours / max) * 100, BAR_MIN_PCT)}%`, "--stagger": `${i * WAIT_STAGGER_MS}ms` } as React.CSSProperties}
+                    />
+                  )
+                )}
+              </span>
             </dd>
           </div>
         ))}
       </dl>
+      {empty && (
+        <p className="flex items-center gap-1.5 text-[12.5px] text-dim">
+          <PlaytimeClock />
+          {D.playtimeEmpty}
+        </p>
+      )}
     </section>
   );
 }

@@ -25,6 +25,7 @@ import { ChipButton } from "@/components/ui/chip";
 import { DlcRows } from "@/components/dlc-rows";
 import { Collapsible } from "@/components/ui/collapsible";
 import { Sheet } from "@/components/ui/sheet";
+import { TEXT_LINK } from "@/components/ui/button";
 import { cheapestOf } from "@/lib/currency";
 import { PLATFORM_LABEL } from "@/lib/format";
 import { GAME_MESSAGES } from "@/lib/games/messages";
@@ -131,6 +132,9 @@ export function DlcSheetButton({ dlcs, hasAddOns }: { dlcs: DlcDto[]; hasAddOns:
       title={GAME_MESSAGES.dlcHeading}
       label={GAME_MESSAGES.dlcButton(dlcs.length)}
       size="wide"
+      // 밑줄 글자 단추(2026-11-23 사용자 "추가 콘텐츠 3개도 밑줄 글자 버튼으로") — 마디 머리의 다른 여는 단추들과 같은 꼴
+      unstyledTrigger
+      triggerClassName={TEXT_LINK}
     >
       <DlcBody state={state} hasAddOns={hasAddOns} inSheet />
     </Sheet>

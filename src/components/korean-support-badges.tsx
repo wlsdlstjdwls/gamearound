@@ -9,53 +9,46 @@
 // 모르는 판(null)은 어느 칩에도 넣지 않는다.
 //
 // 일본 스토어 행은 보지 않는다. 한국 계정으로 사는 판이 아니고, 그 판의 언어는 한국판과 다를 수 있다.
-import { KOREAN_SUPPORT_LABEL } from "@/lib/games/messages";
+import { FactEmpty, FactRow } from "@/components/ui/fact-row";
+import { FACT_ROW_LABEL } from "@/lib/games/messages";
 import { platformLabel } from "@/lib/format";
-import { cn } from "@/lib/cn";
-import { CheckIcon } from "@/components/ui/icons";
 import { HOME_REGION } from "@/server/db/schema";
 import type { PlatformDto } from "@/server/services/games";
 
 type Props = { platforms: Pick<PlatformDto, "platform" | "region" | "koText" | "koVoice">[] };
 
-const CHIP = "inline-flex items-center gap-1.5 rounded-full px-[11px] py-[5px] text-[12.5px]";
+/** 줄 이름표가 "한국어" 라 값은 지원 여부만 말한다 */
+const KO_VALUE = { on: "지원", off: "미지원" } as const;
 
 /** 같은 스토어 이름이 둘 이상의 행(PS4, PS5 처럼 기기만 다른 행)에서 겹쳐 나오지 않게 접는다 */
 function labelsOf(rows: Props["platforms"]): string {
   return [...new Set(rows.map((p) => platformLabel(p)))].join(", ");
 }
 
-function Chip({ label, stores, tone }: { label: string; stores: string; tone: "on" | "off" }) {
-  return (
-    // 켜진 칩도 이 줄의 다른 칩(솔로, 협동)과 같은 회색 면이다 — 줄 전체가 "이 게임에 대한 사실" 한 묶음이다(2026-11-11, 같은 날 연파랑, 검정 면,
-    // 검정 테두리를 거쳐 사용자가 고름). 연파랑은 누르는 것(링크, 할인)의 색이라 정보 칩이 단추처럼 읽혔고, 검정은 두 칩만 튀었다.
-    // 지원하는 칩은 앞의 체크와 진한 굵은 글자로, 미지원은 체크 없이 옅은 글자로 갈린다
-    <span className={cn(CHIP, tone === "on" ? "bg-surface-2 text-ink" : "bg-surface-2 text-dim")}>
-      {tone === "on" && <CheckIcon size={13} className="-mr-0.5 shrink-0" aria-hidden />}
-      <span className={tone === "on" ? "font-bold" : undefined}>{label}</span>
-      <span className={tone === "on" ? "text-mut" : undefined}>{stores}</span>
-    </span>
-  );
-}
-
+/**
+ * 한국어 줄 — 지원은 굵은 진한 글자 뒤 스토어 이름, 미지원은 옅은 글자(ui/fact-row 머리 주석).
+ * 앞의 체크 표시는 걷었다(2026-11-23 사용자 "체크 표기가 어색") — 이름표 줄 꼴에서는 글자 "지원" 이 이미 답이고, 옆 PC 줄에는 체크가 없다.
+ * 스토어 이름은 회색으로 물러선다 — 이 줄의 답은 "지원" 이고 어디서인지는 덧말이다
+ */
 export function KoreanSupportBadges({ platforms }: Props) {
   const home = platforms.filter((p) => p.region === HOME_REGION);
   const text = home.filter((p) => p.koText === true);
   const none = home.filter((p) => p.koText === false);
-  if (text.length === 0 && none.length === 0) return null;
-
   return (
-    <ul className="flex flex-wrap gap-1.5" aria-label="한국어">
+    <FactRow label={FACT_ROW_LABEL.korean}>
+      {text.length === 0 && none.length === 0 && <FactEmpty />}
       {text.length > 0 && (
-        <li>
-          <Chip label={KOREAN_SUPPORT_LABEL.text} stores={labelsOf(text)} tone="on" />
-        </li>
+        <span className="inline-flex items-center gap-1.5">
+          <b className="font-bold text-ink">{KO_VALUE.on}</b>
+          {/* 스토어 이름은 괄호로 묶는다(2026-11-23 사용자) — "지원 Steam, PS5" 로 붙여 두면 스토어 이름까지 값으로 읽혔다 */}
+          <span className="text-mut">({labelsOf(text)})</span>
+        </span>
       )}
       {none.length > 0 && (
-        <li>
-          <Chip label={KOREAN_SUPPORT_LABEL.none} stores={labelsOf(none)} tone="off" />
-        </li>
+        <span className="inline-flex items-center gap-1 text-dim">
+          {KO_VALUE.off} ({labelsOf(none)})
+        </span>
       )}
-    </ul>
+    </FactRow>
   );
 }

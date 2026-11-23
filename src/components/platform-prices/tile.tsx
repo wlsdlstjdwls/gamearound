@@ -13,7 +13,7 @@
 import { formatPrice } from "@/lib/currency";
 import { platformLabel } from "@/lib/format";
 import { DETAIL_MESSAGES as D } from "@/lib/games/detail-messages";
-import { GAME_MESSAGES, PREORDER_LABEL } from "@/lib/games/messages";
+import { DECK_COMPAT_LABEL, GAME_MESSAGES, PREORDER_LABEL } from "@/lib/games/messages";
 import { isPreorder } from "@/lib/games/preorder";
 import { brandKeyOf, DEVICE_LABEL, devicesOf } from "@/lib/platform";
 import { cn } from "@/lib/cn";
@@ -62,30 +62,25 @@ export function CardHead({ name, children }: { name: string; children?: React.Re
 }
 
 /**
- * 최저가 딱지 — 채운 면 대신 테두리 한 줄(2026-11-16 색 줄이기). 카드 안에서 값 다음으로 눈이 가야 할 말이라 남긴다.
- * 테두리와 글자는 먹색이다(2026-11-20 사용자 점검 "파랑이 많다") — 파랑은 누르는 것의 색인데 이 딱지는 눌리지 않는다.
- */
-export function BestMark({ label = "최저가" }: { label?: string }) {
-  return <span className="shrink-0 rounded-full px-2 py-[3px] text-[12px] font-bold leading-none text-ink-2 ring-1 ring-line-strong ring-inset">{label}</span>;
-}
-
-/**
  * 카드 머리 오른쪽 딱지 자리 — 최저가와 역대 최저가가 같은 자리에 선다(2026-11-23 사용자
  * "역대 최저가가 최저가 딱지와 같은 자리여야 하는데 아래에 나온다"). 딱지는 **하나만**: 역대 최저가면 그것만, 아니면 최저가
  * (같은 날 "둘 중 하나만, 역대 최저가가 맞으면 역대 최저가만"). 역대 최저가가 더 센 말이라 둘을 나란히 두면 같은 말을 두 번 한다.
  * 역대 최저가는 딱지가 아니라 플랫폼 이름 바로 오른쪽 빨강 글자다(같은 날 "뱃지 형태 말고 플랫폼명 오른쪽에 빨간 글자로").
- * 최저가는 오른쪽 끝 테두리 알약 그대로다.
+ * 최저가도 같은 자리, 같은 빨강 글자다(같은 날 "최저가 뱃지도 역대최저가랑 동일하게").
  */
-export function HeadMarks({ best, historicLow }: { best: boolean; historicLow: boolean }) {
+export function HeadMarks({ best, historicLow, bestElsewhere = false }: { best: boolean; historicLow: boolean; bestElsewhere?: boolean }) {
+  // 다른 카드가 최저가면 이 카드의 역대 최저가는 걷는다(2026-11-23 사용자 "PC 에도 최저가 뱃지 있고 PlayStation 에도 역대최저가 문구 있고").
+  // 화면에 "최저가" 말이 두 카드에 서면 어디가 싼지 다시 따져야 한다 — 최저가 표시는 화면에 한 곳뿐이다
+  if (bestElsewhere) return null;
   // 문구는 띄어쓰기 없는 "역대최저가"(같은 날 "더 줄여줘" 뒤 "역대최저가로 나와야 됨") — 다른 자리(목록 카드 배지)는 "역대 최저가" 그대로
   if (historicLow) return <span className="shrink-0 text-[11px] font-bold text-danger">{GAME_MESSAGES.historicLowShort}</span>;
   if (!best) return null;
-  return (
-    <span className="ml-auto flex shrink-0 items-center">
-      <BestMark />
-    </span>
-  );
+  // 최저가도 역대최저가와 같은 꼴 — 이름 오른쪽 빨강 글자(2026-11-23 사용자 "최저가 뱃지도 역대최저가랑 동일하게"). 테두리 알약은 걷었다
+  return <span className="shrink-0 text-[11px] font-bold text-danger">{BEST_LABEL}</span>;
 }
+
+/** 최저가 글자(HeadMarks) */
+const BEST_LABEL = "최저가";
 
 /**
  * 카드의 구매 단추 모양. 평소에는 모두 같은 옅은 단추이고, 지금 고른 카드(platform-pick 의 PickableTile, li[data-picked])의 단추만 채운 파랑이다.
@@ -97,6 +92,15 @@ const PICKED_FILL =
   "[li[data-picked]_&]:border-acc [li[data-picked]_&]:bg-acc [li[data-picked]_&]:text-on-ink [li[data-picked]_&]:shadow-1 [li[data-picked]_&]:hover:border-acc-hover [li[data-picked]_&]:hover:bg-acc-hover [li[data-picked]_&]:hover:text-on-ink";
 export function buyButtonClass(className?: string): string {
   return buttonClass({ variant: "soft", size: "row", className: cn(PICKED_FILL, className) });
+}
+
+/**
+ * PC 카드 지원 줄 뒤에 스팀덱 등급을 잇는다(2026-11-23 사용자 "스팀덱은 가격 비교 카드 지원 항목에 같이"). 등급은 스팀만 주므로 첫 값이 답이다.
+ * 히어로 왼쪽 사실 줄에 있던 "스팀덱" 줄은 걷었다 — 이 게임을 어디서 사서 어디서 돌리느냐는 가격 카드에서 고르는 질문이다
+ */
+export function withDeck(text: string, rows: readonly Pick<PlatformPriceItem, "deckCompat">[]): string {
+  const deck = rows.find((r) => r.deckCompat !== null)?.deckCompat ?? null;
+  return deck ? `${text} | ${DECK_COMPAT_LABEL[deck]}` : text;
 }
 
 /** 지원 기종 줄 — 세대(PS5, Switch 2)를 알면 세대, 아니면 기기 갈래(PC) */
@@ -140,12 +144,15 @@ export function PriceTile({
   p,
   id,
   isBest,
+  bestElsewhere,
   release,
 }: {
   p: PlatformPriceItem;
   /** 히어로의 플랫폼 이름이 눌러 내려올 자리. 묶음의 첫 장만 받는다 */
   id?: string;
   isBest: boolean;
+  /** 다른 카드가 화면 전체 최저가다 — 이 카드의 역대 최저가 글자를 걷는다(HeadMarks) */
+  bestElsewhere: boolean;
   release: string | null;
 }) {
   const hasDiscount = Boolean(p.discountPct && p.discountPct > 0);
@@ -161,13 +168,13 @@ export function PriceTile({
       <CardHead name={headName}>
         {/* 스토어마다 따로 본다 — PS 는 예약 중이어도 스팀은 이미 팔 수 있다(lib/games/preorder) */}
         {isPreorder(p) && <Tag>{PREORDER_LABEL}</Tag>}
-        <HeadMarks best={showBest} historicLow={hasDiscount && Boolean(p.historicLow)} />
+        <HeadMarks best={showBest} bestElsewhere={bestElsewhere} historicLow={hasDiscount && Boolean(p.historicLow)} />
       </CardHead>
 
       {/* dl 은 contents — 줄 하나하나가 격자의 줄(subgrid)에 바로 앉아야 해서 감싸는 상자를 지운다 */}
       <dl className="contents">
         <Row label={D.releaseRow}>{release ?? D.releaseUnknown}</Row>
-        <Row label={D.hardwareRow}>{isPc ? brandNameOf(p) : hardwareText([p.platform])}</Row>
+        <Row label={D.hardwareRow}>{isPc ? withDeck(brandNameOf(p), [p]) : hardwareText([p.platform])}</Row>
         <Row label={D.listPriceRow} className={PRICE_DIVIDER}>
           {/* 정가가 비어도 할인이 아니면 지금 값이 곧 정가다 — "-" 옆에 현재 가격만 서면 고장으로 읽혔다(2026-11-11 엘든 링 PS4 카드) */}
           {p.listPrice === null && p.currentPrice !== null && !hasDiscount ? (

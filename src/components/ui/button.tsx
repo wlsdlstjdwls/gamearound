@@ -63,6 +63,14 @@ const SIZE: Record<ButtonSize, string> = {
   pair: "tap h-10 px-4 text-[15px] font-semibold rounded-xl",
 };
 
+/**
+ * 밑줄 글자 단추 — "자세히 보기", "전체 보기", "추가 콘텐츠 3개", 뉴스 "더보기", "스토어 원문" 처럼 마디 머리 오른쪽에서 다른 화면, 팝업을 여는 자리(2026-11-23 사용자,
+ * 여러 차례 "검은색으로, 밑줄도"). 면, 테두리 없이 먹색 글자와 옅은 밑줄이고 손이 닿으면 밑줄이 진해진다.
+ * 팝업을 닫으면 초점이 이 단추로 돌아오는데, 마우스로 눌렀을 때 테두리가 남지 않게 focus-visible 에만 고리를 단다
+ */
+export const TEXT_LINK =
+  "tap-inset inline-flex shrink-0 items-center rounded-[var(--radius-xs)] text-[12.5px] font-semibold text-ink underline decoration-ink/40 underline-offset-4 outline-none transition-colors duration-fast hover:decoration-ink focus-visible:ring-2 focus-visible:ring-ink";
+
 export function buttonClass(opts: { variant?: ButtonVariant; size?: ButtonSize; fullWidth?: boolean; className?: string } = {}): string {
   const { variant = "primary", size = "md", fullWidth = false, className } = opts;
   return cn(

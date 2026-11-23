@@ -10,14 +10,11 @@ import type { Currency } from "@/server/db/schema";
 export function ForecastByPlatform({
   all,
   byBrand,
-  labels,
   currency,
   action,
 }: {
   all: Forecast | null;
   byBrand: Record<string, Forecast | null>;
-  /** 묶음 열쇠 -> 화면 이름(PlayStation) */
-  labels: Record<string, string>;
   currency: Currency;
   action?: React.ReactNode;
 }) {
@@ -26,7 +23,7 @@ export function ForecastByPlatform({
   return (
     // 고른 묶음이 바뀌면 판이 한 번 떠오른다 — 값이 바뀌었다는 것을 눈이 놓치지 않게
     <div key={own ? brand : "all"} className="h-full animate-rise">
-      <DiscountForecast forecast={own ? byBrand[brand] : all} currency={currency} action={action} basisLabel={own ? labels[brand] : undefined} />
+      <DiscountForecast forecast={own ? byBrand[brand] : all} currency={currency} action={action} />
     </div>
   );
 }

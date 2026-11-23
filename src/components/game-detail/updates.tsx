@@ -11,10 +11,7 @@ import { CompatSlot, VerdictNoteSlot } from "@/components/game-detail/slots";
 import { DetailTabs } from "@/components/ui/tabs";
 import { sectionCardClass } from "@/components/ui/page";
 import { DETAIL_MESSAGES as D } from "@/lib/games/detail-messages";
-import { COMPAT_MESSAGES, GAME_MESSAGES, OS_FAMILY_LABEL } from "@/lib/games/messages";
-import { requirementSummaryParts } from "@/lib/games/requirement-summary";
-import { CpuIcon, GpuIcon, MemoryIcon } from "@/components/ui/icons";
-import { tagClass } from "@/components/ui/tag";
+import { GAME_MESSAGES } from "@/lib/games/messages";
 import type { GameDetail, getGamePatchesCached } from "@/server/services/games";
 
 /**
@@ -24,28 +21,6 @@ import type { GameDetail, getGamePatchesCached } from "@/server/services/games";
 const TAB_PATCH_LIMIT = 50;
 
 type PatchGroups = Awaited<ReturnType<typeof getGamePatchesCached>>;
-
-/** 접힌 "구동 사양" 머리의 부품 칩 — 최소(없으면 권장) 사양을 부품마다 아이콘과 함께. 아무것도 모르면 운영체제 이름만 */
-function SpecChips({ groups }: { groups: GameDetail["requirements"] }) {
-  const parts = requirementSummaryParts(groups);
-  if (!parts) return <span className="text-[13px] text-dim">{groups.map((g) => OS_FAMILY_LABEL[g.osFamily]).join(", ")}</span>;
-  const chips = [
-    { key: "cpu", Icon: CpuIcon, text: parts.cpu },
-    { key: "gpu", Icon: GpuIcon, text: parts.gpu },
-    { key: "ram", Icon: MemoryIcon, text: parts.ram },
-  ].filter((c): c is { key: string; Icon: typeof CpuIcon; text: string } => Boolean(c.text));
-  return (
-    <>
-      <span className="text-[12.5px] font-bold text-mut">{parts.tier}</span>
-      {chips.map(({ key, Icon, text }) => (
-        <span key={key} className={tagClass({ tone: "info", tight: false, className: "gap-1 text-[12px]" })}>
-          <Icon size={13} className="shrink-0 text-dim" />
-          {text}
-        </span>
-      ))}
-    </>
-  );
-}
 
 export function DetailUpdates({ game, patchGroups, upcoming }: { game: GameDetail; patchGroups: PatchGroups; upcoming: boolean }) {
   if (patchGroups.length === 0 && game.requirements.length === 0) {
@@ -80,23 +55,20 @@ export function DetailUpdates({ game, patchGroups, upcoming }: { game: GameDetai
             <div className={sectionCardClass("flex min-w-0 flex-col gap-6")}>
               {game.requirements.length > 0 ? (
                 <RunCheck
-                  verdictTitle={COMPAT_MESSAGES.heading}
-                  verdictNote={
+                  title={GAME_MESSAGES.requirementHeading}
+                  note={
                     <Suspense fallback={null}>
                       <VerdictNoteSlot groups={game.requirements} />
                     </Suspense>
                   }
-                  requirementTitle={GAME_MESSAGES.requirementHeading}
-                  requirementNote={<SpecChips groups={game.requirements} />}
-                  verdict={
-                    <Suspense fallback={null}>
-                      <CompatSlot groups={game.requirements} platforms={game.platforms} />
-                    </Suspense>
-                  }
-                  requirements={<RequirementsBody groups={game.requirements} />}
                   // 플랫폼별 성능도 이 마디 안이다 — 마디를 접으면 같이 접힌다(2026-11-23 사용자)
                   footer={!upcoming && <PerfRow game={game} />}
-                />
+                >
+                  {/* 기기를 읽는 동안에는 내 PC 칸 없는 사양표가 먼저 선다 — 표 자리가 비었다 차면 아래가 통째로 밀린다 */}
+                  <Suspense fallback={<RequirementsBody groups={game.requirements} />}>
+                    <CompatSlot groups={game.requirements} platforms={game.platforms} />
+                  </Suspense>
+                </RunCheck>
               ) : (
                 <>
                   <p className="text-[13px] text-dim">{upcoming ? D.perfUpcoming : D.perfNone}</p>

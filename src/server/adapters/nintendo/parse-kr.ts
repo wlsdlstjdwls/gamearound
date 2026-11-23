@@ -78,8 +78,9 @@ const LINE_BREAK = "\n";
 /**
  * 메이커 소개글 → 한 덩어리 글. 못 찾으면 null.
  *
- * 줄바꿈(<br>, 문단)은 띄어쓰기 하나로 잇는다. 상세 화면은 설명을 한 문단으로 그리고(game-detail/hero),
- * 스팀, Xbox 의 짧은 소개도 한 문단이라 닌텐도만 줄이 끊겨 보이지 않게 맞춘다.
+ * 줄바꿈(<br>, 문단)은 줄바꿈 하나로 남긴다(2026-11-23 사용자 "♦ 로 시작하는 줄은 누가 봐도 제목인데 왜 구분 안 했나").
+ * 전에는 띄어쓰기로 이어 "♦ 두 시대 소년 링크는..." 처럼 소제목과 본문이 한 줄에 붙어, 설명 팝업(lib/paragraphs)이 소제목을 가를 수 없었다.
+ * 히어로의 짧은 설명은 HTML 이 줄바꿈을 띄어쓰기로 그리므로 모양이 그대로다.
  * 판매 안내 문단(NINTENDO_DESC_NOTICE)은 게임 소개가 아니라 뺀다.
  */
 export function parseNintendoDescription($: CheerioAPI): string | null {
@@ -91,7 +92,7 @@ export function parseNintendoDescription($: CheerioAPI): string | null {
     .flatMap((b) => b.split(LINE_BREAK))
     .map((l) => l.replace(/\s+/g, " ").trim())
     .filter((l) => l.length > 0 && !NINTENDO_DESC_NOTICE.test(l));
-  const text = lines.join(" ").trim();
+  const text = lines.join(LINE_BREAK).trim();
   return text.length > 0 ? text : null;
 }
 

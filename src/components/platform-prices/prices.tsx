@@ -45,11 +45,18 @@ export function PlatformPrices({
   }
 
   // 최저가는 **값 순서**로 정한다. 묶음 정렬이 카드 자리를 바꾸므로 "맨 앞 카드" 로 잡으면 엉뚱한 카드에 붙는다
-  const cheapest = [...platforms].sort(byPrice)[0] ?? null;
+  // 0원 카드는 견주지 않는다 — 무료는 "최저가" 를 달지 않는 값인데(tile 의 showBest), 그 카드가 최저가 자리를 차지하면 다른 카드의
+  // 역대최저가까지 지워졌다(2026-11-23 사용자 "목록 카드에는 역대최저가가 있는데 상세엔 없다", NBA 2K27 의 Xbox 0원)
+  const cheapest = [...platforms].filter((p) => p.currentPrice !== 0).sort(byPrice)[0] ?? null;
   // 값이 붙은 카드가 둘 이상일 때만 "최저가" 다(2026-10-27 사용자). 하나뿐이면 견줄 대상이 없어 그 말이 거짓이 된다 —
   // 통화가 다른 카드는 견주지 않으므로(byPrice) 같은 통화끼리만 센다
-  const priced = cheapest?.currentPrice != null ? platforms.filter((p) => p.currentPrice !== null && p.currency === cheapest.currency).length : 0;
-  const bestKey = cheapest && priced >= BEST_MIN_PRICED ? rowKey(cheapest) : null;
+  const priced = cheapest?.currentPrice != null ? platforms.filter((p) => p.currentPrice !== null && p.currentPrice !== 0 && p.currency === cheapest.currency).length : 0;
+  // 같은 최저값인 카드가 둘 이상이면 아무 카드에도 "최저가" 를 달지 않는다(2026-11-23 사용자 "PC, PS, Xbox 다 할인 가격이 똑같은데 왜 PC 에만 최저가").
+  // 값 순서에서 맨 앞이 된 것은 정렬의 우연일 뿐이다. 같은 갈래 묶음(PC 의 Steam, Epic)은 한 카드라 한 번만 센다
+  const tiedCards = cheapest?.currentPrice != null
+    ? new Set(platforms.filter((p) => p.currency === cheapest.currency && p.currentPrice === cheapest.currentPrice).map((p) => mergeGroupKey(p) ?? rowKey(p))).size
+    : 0;
+  const bestKey = cheapest && priced >= BEST_MIN_PRICED && tiedCards === 1 ? rowKey(cheapest) : null;
   // 히어로 이름이 눌러 내려올 id 는 묶음의 첫 카드만 받는다 — 같은 id 가 둘이면 링크가 엉뚱한 장을 잡는다
   const anchored = new Set<string>();
   const anchorOnce = (id: string) => (anchored.has(id) ? undefined : (anchored.add(id), id));
@@ -85,6 +92,7 @@ export function PlatformPrices({
               id={first}
               secondId={rest.find(Boolean)}
               isBest={gRows.some((r) => rowKey(r) === bestKey)}
+              bestElsewhere={bestKey !== null && !gRows.some((r) => rowKey(r) === bestKey)}
               release={gRows.map((r) => releaseText(r, releaseFallback)).find(Boolean) ?? null}
             />
           );
@@ -100,6 +108,7 @@ export function PlatformPrices({
             p={p}
             id={id}
             isBest={rowKey(p) === bestKey}
+            bestElsewhere={bestKey !== null && rowKey(p) !== bestKey}
             release={release}
           />
         );

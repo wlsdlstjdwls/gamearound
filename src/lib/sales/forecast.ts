@@ -58,7 +58,8 @@ export type Forecast = {
   /** 지금 진행 중인 할인. daysLeft 는 끝나는 날을 스토어가 알려 줬을 때만 */
   running: { name: string | null; pct: number; daysLeft: number | null } | null;
   /** 다음 할인까지. basis 가 cycle 이면 name 이 없고 cycleDays 가 붙는다 */
-  next: { name: string | null; daysUntil: number; basis: "confirmed" | "estimated" | "cycle"; cycleDays: number | null } | null;
+  /** startsAt: 예상 시작 시각(ISO). 판이 D-숫자 밑에 날짜로 적는다(2026-11-23 사용자 "언제 할인을 예측하는지에 대한 내용은 없냐") */
+  next: { name: string | null; daysUntil: number; startsAt: string; basis: "confirmed" | "estimated" | "cycle"; cycleDays: number | null } | null;
   /**
    * 예상 가격과 그 폭. recorded-low 는 at(본 날), best-rate 는 pct(할인율)가 붙는다.
    * cap 은 기다리지 않고 살 수 있는 값(진행 중 할인이 있으면 그 할인이 끝난 뒤의 값) — 화면이 "지금 대 기다리면" 을 견준다
@@ -134,7 +135,7 @@ export function forecastDiscount(input: { rows: ForecastRow[]; history: Platform
   if (priced.some((r) => r.platform === CALENDAR_PLATFORM)) {
     // 시작이 기준 뒤인 회차만. 지금 스팀 세일이 진행 중인데 이 게임이 할인하지 않으면 그 세일은 이 게임의 할인이 아니다
     const sale = upcomingSales(now).find((s) => s.startsAt.getTime() > from.getTime());
-    if (sale) next = { name: sale.sale.name, daysUntil: daysBetween(now, sale.startsAt), basis: sale.source, cycleDays: null };
+    if (sale) next = { name: sale.sale.name, daysUntil: daysBetween(now, sale.startsAt), startsAt: sale.startsAt.toISOString(), basis: sale.source, cycleDays: null };
   } else {
     const pricedPlatforms = new Set(priced.map((r) => r.platform));
     const best = input.history
@@ -142,7 +143,7 @@ export function forecastDiscount(input: { rows: ForecastRow[]; history: Platform
       .map((h) => nextByCycle(h.saleStarts, from))
       .filter((c): c is NonNullable<typeof c> => c !== null)
       .sort((a, b) => a.at.getTime() - b.at.getTime())[0];
-    if (best) next = { name: null, daysUntil: daysBetween(now, best.at), basis: "cycle", cycleDays: best.cycleDays };
+    if (best) next = { name: null, daysUntil: daysBetween(now, best.at), startsAt: best.at.toISOString(), basis: "cycle", cycleDays: best.cycleDays };
   }
 
   // 3. 예상 가격 — 위쪽 한계는 기다리지 않고 살 수 있는 값이다. 진행 중이면 그 할인이 끝난 뒤의 값(정가)이 기준이다

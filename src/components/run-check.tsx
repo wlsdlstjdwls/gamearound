@@ -1,102 +1,43 @@
-// "돌아가나" 마디 — 판정(내 PC 로 돌아갈까요)과 근거(구동 사양)를 **한 덩어리로** 접고 편다.
+// "돌아가나" 마디 — 구동 사양표와 내 PC 판정을 **한 표로** 접고 편다(2026-11-23 사용자 "내 PC 구동 확인, 구동 사양을 합쳐서").
 //
-// 왜 하나로 묶었나(2026-09-21): 아침에 좌우 두 기둥으로 갈라 놓고 보니 둘이 남남처럼 보였다.
-// 왼쪽은 안 접히는 마디 제목이고 오른쪽은 접히는 마디 제목이라 생김새부터 달랐고(오른쪽만 세모와
-// 누름 면이 있다), 제목 줄의 높이가 달라 두 기둥의 첫 글자 기준선도 어긋났다.
-// 그런데 이 둘은 원래 한 질문의 결론과 근거다 — 따로 접히면 근거만 펴 놓거나 결론만 펴 놓는,
-// 아무도 원하지 않는 상태가 만들어진다.
+// 2026-09-21 부터 판정(왼쪽 300px)과 사양표(오른쪽)를 두 기둥으로 묶어 왔다. 같은 부품(프로세서, 그래픽)을 왼쪽에서 내 값으로,
+// 오른쪽에서 요구값으로 두 번 읽어야 했다 — 지금은 사양표 맨 오른쪽 "내 PC" 칸이 같은 줄에서 답한다(compat-section, requirements-table).
 //
-// **맞추는 방법**: 요약 줄과 본문이 *같은 격자 상수*(GRID)를 쓴다. 그래서 왼쪽 제목의 시작점은
-// 왼쪽 본문의 시작점과, 오른쪽 제목은 오른쪽 본문과 정확히 같은 x 에 선다.
-// 세모는 격자 밖에 절대 위치로 띄운다 — 격자 안에 넣으면 그만큼 칸이 줄어 본문과 어긋나고,
-// 좁은 화면에서 둘째 칸이 사라질 때 세모까지 같이 사라진다.
-// 요약 줄의 좌우 여백(-mx + px)은 서로 상쇄되므로 격자 폭은 본문 격자와 같다.
-//
-// 좁은 화면(lg 아래)에서는 기둥이 하나라 오른쪽 제목을 요약 줄에서 뺀다 — 거기 두면 제목 둘이
-// 붙어 선 뒤 본문 둘이 이어져, 둘째 제목이 제 본문에서 화면 하나만큼 떨어진다.
-// 대신 그 제목을 오른쪽 본문 바로 위에 세운다.
+// **머리는 접든 펴든 같은 모양이다**(같은 날 사용자 "접었다 펼칠 때마다 구동 사양 위치가 바뀌고 옆 정보가 사라졌다 생겼다").
+// 전에는 접히면 한 줄 흐름(flex), 펴면 본문과 같은 격자(grid)로 바뀌고 부품 칩은 접힌 때만 보였다 — 누를 때마다 제목이 옮겨 다녔다.
+// 이제 [제목, 판정 한 마디, 여닫기 단추] 한 줄 그대로이고 바뀌는 것은 세모의 방향뿐이다.
 import { DisclosureToggle } from "@/components/ui/collapsible";
 import { SECTION_SIZE } from "@/components/ui/page";
-import { cn } from "@/lib/cn";
-
-/** 요약 줄과 본문이 **반드시** 같은 값을 써야 두 기둥이 맞는다. 한 곳에서만 고친다 */
-/**
- * 판정 칸은 300px 고정, 나머지를 사양표가 다 쓴다(2026-11-23 사용자 "구동 사양 영역이 더 넓으면" 세 번째: 5 : 7, 1 : 2 다음).
- * 사양표는 최소, 권장 두 칸에 긴 부품 이름이 서고, 판정은 짧은 줄뿐이다. 300px 은 부위 줄(이름, 내 부품, 결과)이 접히지 않는 폭이다
- */
-const GRID = "grid min-w-0 items-start gap-x-8 gap-y-6 lg:grid-cols-[300px_minmax(0,1fr)]";
-
-/**
- * 접힌 머리(2026-11-23 사용자 "접었을 때 공백이 너무 많다"): 펼친 때의 두 기둥 격자를 접힌 때에도 쓰니 왼쪽 300px 칸 끝과 오른쪽 사이가 텅 비었다.
- * 접히면 한 줄로 붙여 흘리고(flex), 펼치면 본문 두 기둥과 같은 격자로 선다(group-open:grid). 여닫기 단추도 흐름 안 맨 끝이다
- */
-const HEAD = "flex min-w-0 flex-wrap items-center gap-x-8 gap-y-2 group-open:grid group-open:items-start lg:group-open:grid-cols-[300px_minmax(0,1fr)_auto]";
-
-function Title({ id, title, note }: { id: string; title: string; note?: React.ReactNode }) {
-  return (
-    // 제목과 곁말은 한 줄이다(2026-11-23 사용자 "충족/미충족 뱃지가 줄바꿈된다") — 곁말은 접지 않고, 넘치면 제목 쪽이 줄어든다
-    <span className="flex min-w-0 flex-nowrap items-center gap-x-2.5">
-      {/* summary 안이라 h2 를 쓴다 — 마디 제목의 격은 다른 마디와 같아야 한다(SECTION_SIZE) */}
-      <h2 id={id} className={SECTION_SIZE.section}>
-        {title}
-      </h2>
-      {note && <span className="flex shrink-0 items-center whitespace-nowrap text-[13px] text-dim">{note}</span>}
-    </span>
-  );
-}
 
 export function RunCheck({
-  verdictTitle,
-  verdictNote,
-  requirementTitle,
-  requirementNote,
-  verdict,
-  requirements,
+  title,
+  note,
+  children,
   footer,
   defaultOpen = true,
 }: {
-  verdictTitle: string;
-  /** 판정 제목 옆 한 줄 — 지금 어떤 기기로 재고 있는지(devices/device-note). 접힌 채로도 보여야 한다 */
-  verdictNote?: React.ReactNode;
-  requirementTitle: string;
-  /** 제목 옆 회색 문구(어느 OS 사양이 있는지). 접힌 상태에서 "안에 뭐가 있나" 를 말하는 자리다 */
-  requirementNote?: React.ReactNode;
-  verdict: React.ReactNode;
-  requirements: React.ReactNode;
-  /** 두 기둥 아래 폭 전체에 서는 덧붙임(플랫폼별 성능). 마디와 함께 접힌다(2026-11-23 사용자 "접으면 플랫폼별 성능은 여전히 보인다") */
+  title: string;
+  /** 제목 옆 판정 한 마디(devices/verdict-note). 접힌 채로도 결론을 말한다 */
+  note?: React.ReactNode;
+  /** 판정 기기 줄 + 사양표(내 PC 칸 포함) */
+  children: React.ReactNode;
+  /** 표 아래 폭 전체에 서는 덧붙임(플랫폼별 성능). 마디와 함께 접힌다(2026-11-23 사용자 "접으면 플랫폼별 성능은 여전히 보인다") */
   footer?: React.ReactNode;
   defaultOpen?: boolean;
 }) {
   return (
     <details open={defaultOpen} className="disclosure group flex flex-col">
       {/* list-none 둘 다 필요하다 — 사파리는 ::-webkit-details-marker 로만 세모를 지운다(Collapsible 과 같은 규칙) */}
-      <summary className="tap -mx-2.5 block cursor-pointer list-none rounded-[var(--radius-sm)] px-2.5 py-2 transition-colors duration-base hover:bg-surface-2 [&::-webkit-details-marker]:hidden">
-        <span className={HEAD}>
-          <Title id="compat-heading" title={verdictTitle} note={verdictNote} />
-          {/* 사양 요약(부품 칩)은 접혔을 때만 — 펴면 바로 아래 표가 같은 값을 다 적는다 */}
-          <span className="hidden min-w-0 lg:block">
-            <span className="flex min-w-0 flex-wrap items-center gap-x-2.5 gap-y-1.5">
-              <h2 id="requirements-heading" className={SECTION_SIZE.section}>
-                {requirementTitle}
-              </h2>
-              {requirementNote && <span className="flex min-w-0 flex-wrap items-center gap-1.5 group-open:hidden">{requirementNote}</span>}
-            </span>
-          </span>
-          <DisclosureToggle className="ml-auto group-open:ml-0 group-open:justify-self-end" />
-        </span>
+      {/* 머리는 한 단계 작은 제목(sub)에 위아래 여백을 줄였다(2026-11-23 사용자 "글자가 너무 크고 펼치기 전 위아래 공백이 너무 크다") —
+          탭 판 안의 마디라 화면 마디 제목(section, 25px) 크기는 넘쳤다 */}
+      <summary className="tap -mx-2.5 flex cursor-pointer list-none items-center gap-2.5 rounded-[var(--radius-sm)] px-2.5 py-1 transition-colors duration-base hover:bg-surface-2 [&::-webkit-details-marker]:hidden">
+        <h2 id="compat-heading" className={SECTION_SIZE.sub}>
+          {title}
+        </h2>
+        {note && <span className="flex min-w-0 items-center whitespace-nowrap text-[13px]">{note}</span>}
+        <DisclosureToggle className="ml-auto size-8" />
       </summary>
-
-      {/* 헤어라인 하나가 두 기둥을 가로질러 지난다 — 이게 "한 영역" 이라는 가장 강한 신호다.
-          전에는 기둥마다 제 선을 따로 그어 두 개의 표로 읽혔다 */}
-      <div className={cn(GRID, "border-t border-line-strong pt-4")}>
-        <div className="min-w-0">{verdict}</div>
-        <div className="flex min-w-0 flex-col gap-3.5">
-          <div className="lg:hidden">
-            <Title id="requirements-heading-narrow" title={requirementTitle} />
-          </div>
-          {requirements}
-        </div>
-      </div>
+      <div className="mt-2 flex min-w-0 flex-col gap-3.5 border-t border-line-strong pt-4">{children}</div>
       {footer && <div className="mt-6">{footer}</div>}
     </details>
   );

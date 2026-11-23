@@ -11,8 +11,8 @@ import { DbUnavailablePage } from "@/components/db-unavailable";
 import { DlcSection, DlcSheetButton } from "@/components/dlc-list";
 import { ForecastByPlatform } from "@/components/game-detail/forecast-by-platform";
 import { PlatformPickProvider } from "@/components/game-detail/platform-pick";
-import { brandNameOf, initialPickBrand, isUpcomingRow, pcMergeable } from "@/components/platform-prices/order";
-import { brandKeyOf, familyOf, PC_PICK_KEY, PLATFORM_FAMILY_LABEL } from "@/lib/platform";
+import { initialPickBrand, isUpcomingRow, pcMergeable } from "@/components/platform-prices/order";
+import { brandKeyOf, familyOf, PC_PICK_KEY } from "@/lib/platform";
 import { GameHeadbar } from "@/components/game-headbar";
 import { GameViewBeacon } from "@/components/game-view-beacon";
 import { IndieGameSection, IndieSuggestSection } from "@/components/indie/game-section";
@@ -25,14 +25,13 @@ import { UpgradeNotes } from "@/components/upgrade-note";
 import { DetailHero } from "@/components/game-detail/hero";
 import { NewsMore } from "@/components/game-detail/news-more";
 import { PRICES_SECTION_ID } from "@/components/game-detail/constants";
-import { EmptyLine } from "@/components/game-detail/empty-line";
 import { PriceChartFallback, PriceChartSlot, SellersSlot } from "@/components/game-detail/slots";
 import { DetailUpdates } from "@/components/game-detail/updates";
 import { BackLink } from "@/components/ui/back-link";
 import { Page, SectionHead, sectionCardClass } from "@/components/ui/page";
 import { DB_DOWN, orDbDown } from "@/lib/db-errors";
 import { DISPLAY_CURRENCY, formatPrice } from "@/lib/currency";
-import { kstDateKey } from "@/lib/format";
+import { kstDateKey, platformLabel } from "@/lib/format";
 import { getFreshness } from "@/lib/freshness";
 import { DETAIL_MESSAGES as D } from "@/lib/games/detail-messages";
 import { GAME_MESSAGES } from "@/lib/games/messages";
@@ -81,9 +80,13 @@ export default async function GameDetailPage({ params }: Props) {
 
   const title = displayTitle(game);
   const platforms: PlatformPriceItem[] = game.platforms.map((p) => ({ ...p, freshness: getFreshness(p.lastSyncedAt, p.syncStatus) }));
-  const best = cheapestPlatform(game.platforms);
-  /** 최저가가 0원 — 할인 알림을 걸 자리가 없다. 값이 없는 것(null)과 가른다 */
-  const isFree = best?.currentPrice === 0;
+  // 0원 행은 최저가 후보에서 뺀다 — 한 스토어만 0원(구독 포함가가 잘못 들어온 Xbox 등)이면 그 0원이 최저가가 돼
+  // 게임 전체가 무료로 읽히고 가격 알림, 할인 예측이 사라졌다(2026-11-23 사용자, NBA 2K27). 값이 붙은 행이 모두 0원일 때만 무료다
+  const pricedRows = game.platforms.filter((p) => p.currentPrice !== null);
+  const paidRows = pricedRows.filter((p) => p.currentPrice! > 0);
+  const best = cheapestPlatform(paidRows.length > 0 ? paidRows : game.platforms);
+  /** 값이 붙은 행이 모두 0원 — 할인 알림을 걸 자리가 없다. 값이 없는 것(null)과 가른다 */
+  const isFree = pricedRows.length > 0 && paidRows.length === 0;
   const unreleased = game.releaseDate !== null && game.releaseDate.slice(0, 10) > kstDateKey(new Date());
   // 출시 전이고 값이 하나도 없을 때만 "출시 예정" 화면이다. 예약 판매로 값이 붙은 게임은 값 카드를 그대로 쓴다(예약 딱지가 말한다)
   const upcoming = unreleased && game.platforms.every((p) => p.currentPrice === null);
@@ -120,7 +123,6 @@ export default async function GameDetailPage({ params }: Props) {
       now,
     });
   }
-  const brandLabels = { ...Object.fromEntries(game.platforms.map((p) => [brandKeyOf(p.platform), brandNameOf(p)])), [PC_PICK_KEY]: PLATFORM_FAMILY_LABEL.pc };
   // 처음 고른 카드 = 줄의 맨 앞에 선, 파는 플랫폼 카드(2026-10-27 사용자: "처음 들어왔을 때 가장 맨 앞 서비스 중인 플랫폼이 선택되고").
   // 최저가 카드로 열면 고리가 줄 가운데에서 켜져 "왜 이게 골라져 있지" 로 읽혔다. 그 뒤는 사람이 고를 때마다 바뀐다.
   // 값 없는 카드는 건너뛴다(order 의 initialPickBrand)
@@ -153,14 +155,17 @@ export default async function GameDetailPage({ params }: Props) {
           "히어로를 지나쳤나" 가 된다. 히어로에서 최저가 큰 글자를 걷은 뒤로는 이 띠가 스크롤 중 값을 들고 있는 유일한 자리다 */}
       <GameHeadbar
         title={title}
+        coverUrl={game.coverUrl ?? game.portraitUrl}
+        storeLabel={best && best.currentPrice !== null ? platformLabel(best) : null}
+        buyUrl={best?.storeUrl ?? null}
         price={best && best.currentPrice !== null ? formatPrice(best.currentPrice, best.currency) : null}
         listPrice={best && best.discountPct && best.listPrice !== null && best.listPrice !== best.currentPrice ? formatPrice(best.listPrice, best.currency) : null}
         discountPct={best?.discountPct ?? null}
-        // 나라별로 여러 행인 플랫폼(스위치 한국, 일본)이 배지로 두 번 서지 않게 접는다
-        platforms={[...new Set(game.platforms.map((p) => p.platform))]}
+        discountEndsAt={best?.discountEndsAt ?? null}
+        gameId={game.id}
         alertAction={
           canAlert ? (
-            <PriceAlertButton gameId={game.id} gameSlug={game.slug} gameTitle={title} options={alertOptions} slot="headbar" size="sm" label={D.headbarAlert} />
+            <PriceAlertButton gameId={game.id} gameSlug={game.slug} gameTitle={title} options={alertOptions} slot="headbar" size="sm" variant="secondary" label={D.headbarAlert} />
           ) : null
         }
       />
@@ -214,7 +219,6 @@ export default async function GameDetailPage({ params }: Props) {
             <ForecastByPlatform
               all={forecast}
               byBrand={forecastByBrand}
-              labels={brandLabels}
               currency={DISPLAY_CURRENCY}
               action={canAlert ? <PriceAlertButton gameId={game.id} gameSlug={game.slug} gameTitle={title} options={alertOptions} slot="forecast" label={D.forecastAlert} /> : undefined}
             />
@@ -234,11 +238,7 @@ export default async function GameDetailPage({ params }: Props) {
             <NewsList items={game.news} />
           </NewsMore>
         </div>
-      ) : (
-        <EmptyLine id="news-heading" title={D.newsHeading}>
-          {D.newsEmpty}
-        </EmptyLine>
-      )}
+      ) : null /* 뉴스가 없으면 마디째 숨긴다(2026-11-23 사용자 "뉴스 없으면 해당 영역 숨기기") */}
 
 
       {/* 더 알아보기 — 목업에 없지만 이 서비스가 쌓은 값. 에디션은 "어느 판을 살까" 라 맨 앞이다 */}

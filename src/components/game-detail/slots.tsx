@@ -1,6 +1,7 @@
 // 상세 화면에서 Suspense 안에 따로 받는 조각들 — 본문(getGameBySlugCached)과 같이 기다리지 않는 값.
 // page.tsx 에서 옮겨 왔다(2026-10-26, 300줄 규약). 각 조각이 왜 따로인지는 조각마다 적었다.
 import Link from "next/link";
+import { TEXT_LINK } from "@/components/ui/button";
 import { CompatSection } from "@/components/compat-section";
 import { EmptyLine } from "@/components/game-detail/empty-line";
 import { VerdictNote } from "@/components/devices/verdict-note";
@@ -85,7 +86,7 @@ function ChartHead({ slug }: { slug: string }) {
         {D.chartHeading}
       </h2>
       {/* 전용 화면은 지우지 않았다 — 기간 "전체" 와 플랫폼별 요약 표는 거기만 있다 */}
-      <Link href={gamePricesPath(slug)} className="text-[12.5px] text-acc hover:underline">
+      <Link href={gamePricesPath(slug)} className={TEXT_LINK}>
         {D.chartMore}
       </Link>
     </div>
@@ -105,7 +106,7 @@ export async function PriceChartSlot({ slug }: { slug: string }) {
         id="chart-heading"
         title={D.chartHeading}
         action={
-          <Link href={gamePricesPath(slug)} className="text-[12.5px] text-acc hover:underline">
+          <Link href={gamePricesPath(slug)} className={TEXT_LINK}>
             {D.chartMore}
           </Link>
         }

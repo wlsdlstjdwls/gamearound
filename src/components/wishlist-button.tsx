@@ -15,7 +15,8 @@ import { isWishedAction, removeFromWishlistAction, toggleWishlistAction } from "
 import { WISHLIST_MESSAGES as M } from "@/lib/wishlist/messages";
 import { useWishlistItem } from "@/components/wishlist/item";
 
-export function WishlistButton({ gameId, className }: { gameId: string; className?: string }) {
+/** size: pair 는 히어로의 알림 짝, sm 은 스크롤 머리바(2026-11-23 사용자 "찜하기 버튼은?") */
+export function WishlistButton({ gameId, className, size = "pair" }: { gameId: string; className?: string; size?: "pair" | "sm" }) {
   const { user } = useSession();
   const [wished, setWished] = useState(false);
   const [known, setKnown] = useState(false);
@@ -56,11 +57,12 @@ export function WishlistButton({ gameId, className }: { gameId: string; classNam
     <button
       type="button"
       aria-pressed={shown}
-      onClick={() => gate(action, () => toggle(!wished))}
-      className={buttonClass({ variant: shown ? "picked" : "secondary", size: "pair", className })}
+      // 화면에 보이는 값(shown)을 뒤집는다 — 확정 값(wished)을 쓰면 응답 전 두 번째 누름이 같은 쪽으로 또 눌렸다
+      onClick={() => gate(action, () => toggle(!shown))}
+      className={buttonClass({ variant: shown ? "picked" : "secondary", size, className })}
     >
       {/* 찜한 하트는 빨강 — 목록 카드의 하트(wish-heart)와 같은 색(2026-11-23 사용자) */}
-      <HeartIcon size={17} className={shown ? "animate-pop fill-current text-danger" : undefined} />
+      <HeartIcon size={size === "sm" ? 15 : 17} className={shown ? "animate-pop fill-current text-danger" : undefined} />
       {shown ? M.on : M.off}
     </button>
   );

@@ -17,11 +17,12 @@ function Blocks({ blocks }: { blocks: PatchBlock[] }) {
     <>
       {blocks.map((b, i) =>
         b.kind === "heading" ? (
-          <p key={i} className="mt-2 text-[14.5px] font-bold text-ink first:mt-0">
+          // 소제목은 위 문단과 한 칸 더 띄우고 굵은 먹색 — 패치 노트는 "새 기능 / 수정 / 알려진 문제" 같은 갈래로 읽힌다
+          <h3 key={i} className="mt-3 border-b border-line-soft pb-1.5 text-[15.5px] font-extrabold text-ink first:mt-0">
             {b.text}
-          </p>
+          </h3>
         ) : b.kind === "list" ? (
-          <ul key={i} className="list-disc space-y-0.5 pl-5">
+          <ul key={i} className="list-disc space-y-1.5 pl-5 marker:text-dim-2">
             {b.items.map((it, j) => (
               <li key={j}>{it}</li>
             ))}
@@ -45,7 +46,9 @@ function Blocks({ blocks }: { blocks: PatchBlock[] }) {
 function BodyText({ text, lang }: { text: string; lang: "ko" | "en" }) {
   const blocks = useMemo(() => parsePatchBody(text), [text]);
   return (
-    <div lang={lang} className="flex flex-col gap-2 text-[14px] leading-[1.7] break-words text-ink-2">
+    // 2026-11-23 사용자 "노트 상세에서 노트 내용도 가독성 좋게" — 14px 촘촘한 글을 15px, 줄 간격 1.8, 문단 사이 한 칸 더, 한 줄 길이 상한(38em)으로.
+    // break-keep 은 한국어 낱말이 줄 끝에서 쪼개지지 않게(영어 원문에는 영향 없다), 긴 주소는 break-words 가 자른다
+    <div lang={lang} className="flex max-w-[38em] flex-col gap-3 text-[15px] leading-[1.8] break-words break-keep text-ink-2">
       <Blocks blocks={blocks} />
     </div>
   );

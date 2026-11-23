@@ -25,7 +25,8 @@ export const DETAIL_MESSAGES = {
   /** "메인 + 추가" 에서 "메인 + 서브" 로(2026-11-11 사용자 지정). 옛 카드(playtime-card)와 같은 말이 됐다 */
   playtimeItems: { mainStoryHours: "메인 스토리", mainExtraHours: "메인 + 서브", completionistHours: "완전 정복" },
   playtimeUnit: "시간",
-  playtimeEmpty: "플레이타임 정보를 아직 모으는 중이에요.",
+  /** 습니다체(2026-11-23 사용자 지정) — 할인 예측의 빈 문구와 같은 결이다 */
+  playtimeEmpty: "플레이타임 정보를 아직 모으는 중입니다.",
   priceHeading: "플랫폼별 가격 비교",
   upcomingHeading: "출시 정보",
   releaseRow: "출시일",
@@ -49,8 +50,6 @@ export const DETAIL_MESSAGES = {
   chartEmpty: "가격이 바뀌면 기록이 쌓이고, 그때부터 그래프가 그려져요.",
   chartShort: (since: string) => `가격 기록은 ${since}부터 모으고 있어요. 날이 지날수록 그래프가 채워져요.`,
   forecastTitle: "할인 예측",
-  /** 고른 플랫폼 카드의 이름(game-detail/platform-pick). 예측이 그 플랫폼 값만 본다는 말 */
-  forecastBasisPlatform: (name: string) => `${name} 기준`,
   // "기록이 쌓이면" 꼴은 쓰지 않는다(2026-11-11 사용자 "할인 기록을 쌓는단 말이 맘에 안 듦") — 지금 없는 것만 짧게 말한다
   forecastExpected: "예상 가격",
   /** 두 줄이다(2026-11-11 사용자 확정 문구, 줄바꿈까지). 화면은 줄마다 block 으로 세운다 */
@@ -60,6 +59,12 @@ export const DETAIL_MESSAGES = {
   /** 예측 판의 "언제" 칸(2026-11-11 사용자 "그림이나 UI 로 가시성 높게"). 큰 D-숫자 위의 머리말 */
   forecastWhenHead: (name: string | null) => (name ? `${name}까지` : "다음 할인까지"),
   forecastDday: (n: number) => `D-${n}`,
+  /** 예측이 없는 빈 판의 D-숫자 자리(2026-11-23 빈 판을 값 있는 꼴로 세움) */
+  forecastDdayUnknown: "D-?",
+  /** 다음 할인 날을 셀 근거가 없을 때 D-? 밑 한 줄(습니다체, 할인 예측 판의 다른 고지와 같다) */
+  forecastWhenUnknown: "할인 기록이 더 쌓이면 시기를 예측합니다.",
+  /** D-숫자 밑 예상 시작 날짜 */
+  forecastStartsOn: (day: string) => `${day} 시작 예상`,
   /** 낭독기는 "D-37" 을 "디 빼기 삼십칠" 로 읽는다 — 말로 바꿔 준다 */
   forecastDdaySr: (n: number) => `${n}일 남았어요`,
   /** 근거 딱지. 예전 문장 꼴("공지된 일정이에요.")을 딱지 크기로 줄였다 */
@@ -68,14 +73,12 @@ export const DETAIL_MESSAGES = {
   /** 진행 중 할인 띠 */
   forecastRunningNow: (name: string | null) => `지금 ${name ?? "할인"} 중`,
   forecastRunningLeftShort: (n: number) => `${n}일 뒤 끝나요`,
-  /** 값 견주기 막대 두 줄(2026-11-11 사용자 "막대가 뭘 나타내는지 모르겠다" — 표식 하나 대신 지금 대 그때를 나란히) */
+  /** 값 막대의 양끝 이름표(2026-11-23 두 줄 막대를 한 줄로 합침, components/discount-forecast 의 PriceBar) */
   forecastNowLabel: "지금 가격",
   /** 진행 중 할인이 있으면 견줄 값은 지금 값이 아니라 그 할인이 끝난 뒤의 값이다 */
   forecastAfterRunLabel: "할인 끝나면",
   forecastSaleLabel: (name: string | null) => (name ? `${name} 예상` : "다음 할인 예상"),
   forecastSave: (amount: string) => ({ before: "기다리면 약 ", amount, after: " 아껴요" }),
-  forecastBasisLow: (date: string) => `${date}에 본 기록 최저가로 셈했어요.`,
-  forecastBasisRate: (pct: number) => `이 스토어의 가장 큰 할인율(-${pct}%)로 셈했어요.`,
   /** 히어로의 게시판 링크(game-detail/posts-link) */
   postsLink: (n: number) => `이 게임 리뷰와 공략 ${n.toLocaleString("ko-KR")}개 보기`,
   postsFirst: "이 게임 첫 리뷰 쓰기",
@@ -93,9 +96,9 @@ export const DETAIL_MESSAGES = {
    * 이 자리는 안내가 아니라 고지라 사용자가 격식체를 골랐다
    */
   forecastDisclaimer: ["지난 가격과 세일 일정으로 예측한 참고 정보입니다.", "실제 할인 시기와 가격은 다를 수 있습니다."],
-  newsHeading: "최신 관련 뉴스",
+  /** 2026-11-23 사용자 "최신 관련 뉴스 -> 최신 뉴스" */
+  newsHeading: "최신 뉴스",
   newsMore: "더보기",
-  newsLess: "접기",
   newsEmpty: "관련 뉴스가 아직 없습니다.",
   /** 패치 기록도 사양도 없을 때 한 줄로 접은 마디(game-detail/updates) */
   // -습니다체다(2026-11-20 사용자 지정 "없어요 -> 없습니다")
@@ -103,8 +106,9 @@ export const DETAIL_MESSAGES = {
   updatesEmptyUpcoming: "출시 뒤 업데이트 노트와 성능 정보가 채워져요.",
   tabPatches: "업데이트 노트",
   /** 업데이트 노트 접기(2026-11-11 사용자 "접었다 펼칠 수 있게"). 접힌 동안 단추가 몇 건이 더 있는지 말한다 */
-  patchesMore: (n: number) => `${n.toLocaleString("ko-KR")}건 모두 보기`,
-  patchesLess: "접기",
+  /** 업데이트 노트 마디 오른쪽 위 단추와 그 팝업 제목(2026-11-23, 아래로 펴던 "N건 모두 보기" 를 걷었다) */
+  patchesAll: "전체 보기",
+  patchesAllTitle: (platform: string, n: number) => `${platform} 업데이트 노트 ${n.toLocaleString("ko-KR")}건`,
   patchesPlatformLabel: "업데이트 노트 플랫폼",
   tabPerf: "성능 정보",
   tabsLabel: "업데이트와 성능",
@@ -112,7 +116,6 @@ export const DETAIL_MESSAGES = {
   perfUpcoming: "출시 전이라 성능 정보가 아직 없어요.",
   /** 성능 정보 탭 아래 플랫폼별 한 줄(game-detail/perf-row) */
   perfRowTitle: "플랫폼별 성능",
-  perfRowNone: "공개된 성능 정보가 없습니다.",
   /** 칸 안 줄 이름 — 성능 표지 밖의 스토어 사실(game-detail/perf-row). 표지 줄 이름은 lib/games/perf 의 perfLines */
   perfLineModel: "기종",
   perfLineDeck: "스팀덱",

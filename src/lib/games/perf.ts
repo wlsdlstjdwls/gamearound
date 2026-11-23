@@ -74,7 +74,9 @@ export function perfFromPcgwWikitext(wikitext: string): PerfFeature[] {
 /**
  * 화면 줄 — "항목 이름: 값" 꼴(2026-11-23 사용자 "4K | 120fps 라고 쓰지 말고 어떤 항목이 무슨 값인지").
  * 해상도와 프레임은 가장 높은 값 하나만(4K 를 지원하면 1080p 도 된다), 나머지는 같은 갈래끼리 쉼표로 잇는다.
- * 값이 없는 갈래는 줄을 세우지 않는다 — "-" 줄이 늘어서면 고장으로 읽힌다(requirements-table 과 같은 규칙).
+ * keepEmpty 면 값이 없는 갈래도 빈 values 로 남긴다 — 상세의 플랫폼별 성능 칸은 항목을 늘 다 세운다(2026-11-23 사용자 "값 없더라도 다 노출, 없으면 -").
+ * 기기 칸 넷이 **같은 항목**을 같은 순서로 세워야 가로로 견줄 수 있다(같은 날 "각 카드에 나오는 항목이 똑같아야"). 그래서 한 기기에서만
+ * 뜻이 있는 갈래는 줄로 두지 않는다 — Xbox 의 "Series X|S 최적화" 표지(series_optimized)는 모으기만 하고 화면 줄은 걷었다(같은 날 "최적화도...").
  */
 const PERF_LINES: ReadonlyArray<{ label: string; keys: readonly PerfFeature[]; top?: boolean }> = [
   { label: "최대 해상도", keys: ["8k", "4k"], top: true },
@@ -82,16 +84,15 @@ const PERF_LINES: ReadonlyArray<{ label: string; keys: readonly PerfFeature[]; t
   { label: "화질", keys: ["hdr", "raytracing"] },
   { label: "성능 기술", keys: ["upscaling", "framegen", "vrr"] },
   { label: "화면 비율", keys: ["ultrawide"] },
-  { label: "최적화", keys: ["series_optimized"] },
 ];
 
 /** values 는 한 줄에 하나씩 선다(2026-11-23 사용자 "각 값들은 줄바꿈으로") — 쉼표로 이으면 칸 폭에서 아무 데서나 접혔다 */
 export type PerfLine = { label: string; values: string[] };
 
-export function perfLines(features: readonly string[]): PerfLine[] {
+export function perfLines(features: readonly string[], keepEmpty = false): PerfLine[] {
   return PERF_LINES.flatMap((line) => {
     const hit = line.keys.filter((k) => features.includes(k));
-    if (hit.length === 0) return [];
+    if (hit.length === 0) return keepEmpty ? [{ label: line.label, values: [] }] : [];
     const values = (line.top ? hit.slice(0, 1) : hit).map((k) => PERF_FEATURE_LABEL[k]);
     return [{ label: line.label, values }];
   });

@@ -18,7 +18,7 @@ import { FileTextIcon, SpinnerIcon } from "@/components/ui/icons";
 import { buttonClass } from "@/components/ui/button";
 import { PatchBody } from "@/components/patch-body";
 import { ROWS } from "@/components/ui/page";
-import { formatDate, platformLabel } from "@/lib/format";
+import { formatDate, formatDotDate, platformLabel } from "@/lib/format";
 import { GAME_MESSAGES } from "@/lib/games/messages";
 import { PATCH_BODY_MESSAGES as M } from "@/lib/patch/messages";
 import type { PatchNoteDto, PlatformPatchesDto } from "@/server/services/games";
@@ -132,7 +132,20 @@ export function PatchList({ items, showPlatform = false }: { items: Item[]; show
         ))}
       </ul>
       <Sheet
-        title={opened ? (opened.titleKo ?? opened.title) : ""}
+        // 날짜 앞, 버전 뒤로 제목에 붙인다(2026-11-23 사용자) — 본문 위 날짜, 버전 줄은 걷었다. 같은 값을 두 번 쓰지 않는다
+        title={opened ? [formatDotDate(opened.publishedAt), opened.titleKo ?? opened.title, opened.version].filter(Boolean).join("  ") : ""}
+        // 날짜는 옅은 숫자, 제목은 진한 굵은 글자, 버전은 고정폭 딱지 — 셋이 같은 글자라 구분이 안 됐다(같은 날 사용자)
+        titleSlot={
+          opened ? (
+            <span className="flex min-w-0 items-center gap-2">
+              <time dateTime={opened.publishedAt} className="shrink-0 text-[13px] font-medium tabular-nums text-dim">
+                {formatDotDate(opened.publishedAt)}
+              </time>
+              <span className="min-w-0 truncate">{opened.titleKo ?? opened.title}</span>
+              <VersionChip version={opened.version} />
+            </span>
+          ) : null
+        }
         size="wide"
         open={opened !== null}
         onOpenChange={(v) => {
@@ -140,7 +153,7 @@ export function PatchList({ items, showPlatform = false }: { items: Item[]; show
         }}
         actions={
           opened?.url ? (
-            <a href={opened.url} target="_blank" rel="noopener noreferrer" className="press tap text-[13px] font-semibold text-acc hover:underline">
+            <a href={opened.url} target="_blank" rel="noopener noreferrer" className="press tap text-[13px] font-semibold text-ink underline decoration-ink/40 underline-offset-4 transition-colors duration-fast hover:decoration-ink">
               {M.openOriginal}
               <span className="sr-only"> (새 창에서 열림)</span>
             </a>
@@ -151,10 +164,6 @@ export function PatchList({ items, showPlatform = false }: { items: Item[]; show
           // 높이 고정(2026-11-23 사용자 "상세 팝업은 높이 고정") — 글마다 길이가 달라 팝업이 열 때마다 커졌다 줄었다 했고,
           // 원문을 받아 오는 동안 로딩바 높이에서 본문 높이로 튀었다. 긴 본문은 이 안에서만 스크롤한다
           <div className="flex h-[min(60vh,520px)] flex-col gap-3 overflow-y-auto overscroll-contain">
-            <p className="flex flex-wrap items-center gap-2 text-[12.5px] text-dim">
-              <time dateTime={opened.publishedAt}>{formatDate(opened.publishedAt)}</time>
-              <VersionChip version={opened.version} />
-            </p>
             {/* 열 때마다 탭이 처음(번역)으로 돌아가게 글 id 를 열쇠로 준다 */}
             {opened.bodyKo !== null || opened.bodyEn !== null ? (
               <PatchBody key={opened.id} bodyKo={opened.bodyKo} bodyEn={opened.bodyEn} />
@@ -185,7 +194,7 @@ export function PatchSpeed({ groups }: { groups: PlatformPatchesDto[] }) {
               그 평균은 우리가 모은 범위 안에서만 참이라 단서 없이는 읽는 사람을 속인다.
               게다가 이 화면에서 패치가 답하는 질문은 "아직 돌보나" 하나이고 거기엔 날짜면 족하다.
               건수와 간격은 services 가 계속 계산한다 — 다시 적을 자리가 생기면 값은 이미 있다 */}
-          <dd className="text-right text-[13px] text-ink">{g.latestAt ? formatDate(g.latestAt) : "-"}</dd>
+          {/* 마지막으로 고친 날은 걷었다(2026-11-23 사용자 "플랫폼 오른쪽 날짜는 지워줘") — 바로 아래 목록 첫 줄이 같은 날짜를 말한다 */}
         </div>
       ))}
     </dl>

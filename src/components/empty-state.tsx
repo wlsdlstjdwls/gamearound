@@ -9,6 +9,8 @@
 import Link from "next/link";
 import { buttonClass } from "@/components/ui/button";
 import { EmptyScene } from "@/components/ui/empty-scene";
+import { FloatingIcon } from "@/components/ui/floating-icon";
+import { FileTextIcon } from "@/components/ui/icons";
 import { cn } from "@/lib/cn";
 import { RIPPLE_DELAYS_MS } from "@/lib/motion";
 
@@ -64,7 +66,10 @@ export function EmptyState({
 export function EmptyNote({ children, title, action, className }: { children?: React.ReactNode; title?: string; action?: React.ReactNode; className?: string }) {
   return (
     <div role="status" className={cn("flex flex-wrap items-center gap-x-3.5 gap-y-2.5 rounded-xl bg-surface-2/70 px-3.5 py-3", className)}>
-      <EmptyScene size="mini" className="bg-surface" />
+      {/* 상세 빈 줄과 같은 조용한 아이콘(ui/floating-icon) — 손전등 그림은 2026-11-23 사용자 "빈값 아이콘 바꾸자" 로 큰 빈 화면에만 남았다 */}
+      <FloatingIcon size="sm" className="bg-surface">
+        <FileTextIcon size={17} />
+      </FloatingIcon>
       <div className="min-w-0 flex-1">
         {title && <p className="text-[13.5px] font-bold text-ink">{title}</p>}
         {children && <p className={cn("text-[12.5px] leading-[1.6]", title ? "text-dim" : "text-mut")}>{children}</p>}

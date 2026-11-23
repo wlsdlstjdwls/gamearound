@@ -52,6 +52,13 @@ export const NATIVE_OS_LABEL = {
  * 한국어 칩. 판마다 다르므로 칩 옆에 그 판의 스토어 이름을 붙인다(components/korean-support-badges).
  * "지원" 은 화면이나 자막 중 하나라도 한국어라는 뜻이다 — 둘을 가르는 스토어가 없어 한 말로 묶는다.
  */
+/** 상세 커버 밑 사실 줄의 이름표(ui/fact-row). 값 글자에 갈래 이름이 이미 들어 있어도(스팀덱 미지원) 줄 머리가 먼저 갈래를 말한다 */
+/**
+ * "PC" 줄은 둘로 갈랐다(2026-11-23 사용자 "PC 라 써 놓고 스팀덱 구동 가능이냐"). 스팀덱은 제 이름표를 갖고 값은 등급만,
+ * 운영체제 줄은 네이티브로 도는 OS(윈도우, 맥, 리눅스)다
+ */
+export const FACT_ROW_LABEL = { genre: "장르", play: "플레이", os: "운영체제", korean: "한국어" } as const;
+
 export const KOREAN_SUPPORT_LABEL = {
   text: "한국어 지원",
   voice: "한국어 음성",
@@ -197,6 +204,8 @@ export const COMPAT_MESSAGES = {
    * 기기를 한 번 적으면 입력 칸이 사라지고 무엇으로 판정했는지, 어디서 고치는지가 안 보였다 — 판정 위에 늘 한 줄로 세운다
    */
   judgedWith: "판정 기기",
+  /** 사양표 맨 오른쪽 칸 머리(2026-11-23 판정과 사양표 합침) */
+  mineColumn: "내 PC",
   changeSpec: "사양 수정",
   cancel: "취소",
   /** 기기가 없을 때 판정 기기 줄 — 입력은 팝업 단추가 연다 */

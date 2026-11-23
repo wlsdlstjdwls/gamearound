@@ -11,7 +11,7 @@ import { platformLabel } from "@/lib/format";
 import { DETAIL_MESSAGES as D } from "@/lib/games/detail-messages";
 import { GAME_MESSAGES, PREORDER_LABEL } from "@/lib/games/messages";
 import { isPreorder } from "@/lib/games/preorder";
-import { brandKeyOf } from "@/lib/platform";
+import { brandKeyOf, devicesOf } from "@/lib/platform";
 import { cn } from "@/lib/cn";
 import { buttonClass } from "@/components/ui/button";
 import { DiscountRate } from "@/components/ui/discount";
@@ -20,7 +20,7 @@ import { ClockIcon } from "@/components/ui/icons";
 import { Tag } from "@/components/ui/tag";
 import { PickableTile } from "@/components/game-detail/platform-pick";
 import { brandNameOf, byPrice, generationOf, type PlatformPriceItem } from "@/components/platform-prices/order";
-import { buyButtonClass, HeadMarks, CardHead, hardwareText, PRICE_DIVIDER, Row, STORE_CTA, STORE_LINK_MISSING, SubscriptionRow, TILE } from "@/components/platform-prices/tile";
+import { buyButtonClass, withDeck, HeadMarks, CardHead, hardwareText, PRICE_DIVIDER, Row, STORE_CTA, STORE_LINK_MISSING, SubscriptionRow, TILE } from "@/components/platform-prices/tile";
 
 /**
  * 스토어마다 서는 구매 단추는 스토어 이름만 적는다. "Steam에서 구매" 는 네 칸 격자의 반쪽 단추에서 잘렸다(2026-11-11 실측).
@@ -67,6 +67,7 @@ export function MergedTile({
   id,
   secondId,
   isBest,
+  bestElsewhere,
   release,
 }: {
   /** 카드 머리 이름(PC, PlayStation, Nintendo 일본) */
@@ -80,6 +81,8 @@ export function MergedTile({
   secondId?: string;
   /** 이 카드의 스토어 하나가 화면 전체 최저가다 */
   isBest: boolean;
+  /** 다른 카드가 화면 전체 최저가다 — 역대 최저가 글자를 걷는다(HeadMarks) */
+  bestElsewhere: boolean;
   release: string | null;
 }) {
   const ordered = [...rows].sort(byPrice);
@@ -98,13 +101,13 @@ export function MergedTile({
       {secondId && <span id={secondId} className="absolute -top-24" aria-hidden />}
       {/* 역대 최저가는 묶음 안 어느 스토어든 지금 그 값이면 선다 — 어느 줄인지는 그 줄의 빨강 할인율이 말한다 */}
       <CardHead name={label}>
-        <HeadMarks best={showBest} historicLow={ordered.some((p) => Boolean(p.discountPct && p.discountPct > 0 && p.historicLow))} />
+        <HeadMarks best={showBest} bestElsewhere={bestElsewhere} historicLow={ordered.some((p) => Boolean(p.discountPct && p.discountPct > 0 && p.historicLow))} />
       </CardHead>
 
       {/* 줄 맞춤은 낱 카드와 같다(tile.tsx 머리 주석). 스토어 줄 묶음이 정가, 현재가 두 줄 자리를 함께 쓴다 */}
       <dl className="contents">
         <Row label={D.releaseRow}>{release ?? D.releaseUnknown}</Row>
-        <Row label={D.hardwareRow}>{hardwareText(ordered.map((r) => r.platform))}</Row>
+        <Row label={D.hardwareRow}>{devicesOf([ordered[0].platform])[0] === "pc" ? withDeck(hardwareText(ordered.map((r) => r.platform)), ordered) : hardwareText(ordered.map((r) => r.platform))}</Row>
       </dl>
       <dl className={cn(PRICE_DIVIDER, "row-span-2 flex flex-col justify-center gap-2")}>
         {ordered.map((p) => (

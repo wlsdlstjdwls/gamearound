@@ -1,5 +1,5 @@
 "use client";
-// "내 PC 로 돌아갈까요" — 설계 문서 §7. 사양표 옆에서 결론과 부위별 결과를 말한다.
+// "내 PC 로 돌아갈까요" — 설계 문서 §7. 판정 기기 줄 + 사양표(맨 오른쪽 "내 PC" 칸에 부위별 결과)를 한 덩어리로 그린다(2026-11-23 합침).
 //
 // **클라이언트에서 판정하는 이유가 둘이다.**
 //   1) 비회원의 기기는 브라우저에만 있다. 로그인을 요구하면 이 기능을 아무도 안 쓴다(설계 §4).
@@ -24,7 +24,7 @@ import { Clamp } from "@/components/ui/tooltip";
 import { CheckCircleIcon, MinusCircleIcon, XCircleIcon } from "@/components/ui/icons";
 import { cn } from "@/lib/cn";
 import { formatSizeMb } from "@/lib/format";
-import { COMPAT_MESSAGES, OS_FAMILY_LABEL, VERDICT_PART_LABEL } from "@/lib/games/messages";
+import { COMPAT_MESSAGES, OS_FAMILY_LABEL } from "@/lib/games/messages";
 import { useGuestDevice, type CompatDevice } from "@/components/devices/guest-device";
 import { GuestDeviceForm } from "@/components/devices/guest-device-form";
 import { findModel, listModels, modelByKey } from "@/lib/hardware";
@@ -32,6 +32,7 @@ import { type PartSlot, type PartVerdict, type RequirementSpec } from "@/lib/har
 import { verdictForDevice, type VerdictGroup } from "@/components/devices/verdict-note";
 import { nativeSupport, type NativeFlags } from "@/lib/hardware/native";
 import type { RequirementGroupDto } from "@/server/services/games";
+import { RequirementsBody, type MineColumn } from "@/components/requirements-table";
 
 export type { CompatDevice };
 
@@ -84,6 +85,34 @@ function mineText(device: CompatDevice, slot: PartSlot): string | null {
   return findModel(slot, key)?.name ?? key;
 }
 
+/** 사양표 줄 열쇠 ← 판정 부위. 운영체제, DirectX, 비디오 메모리 줄은 판정하지 않아 내 PC 칸이 빈다(운영체제 줄만 내 OS 이름) */
+const ROW_OF_SLOT: Record<PartSlot, "cpuText" | "gpuText" | "ramMb" | "storageMb"> = { cpu: "cpuText", gpu: "gpuText", ram: "ramMb", storage: "storageMb" };
+
+/** 내 PC 칸 한 줄씩 — 내 값(길면 한 줄로 자르고 말풍선)과 충족 아이콘. 결과 글자는 아이콘 옆에 짧게 */
+function mineColumn(device: CompatDevice, osFamily: CompatDevice["osFamily"], parts: PartVerdict[]): MineColumn {
+  const cells: MineColumn["cells"] = { osText: <span className="font-semibold">{OS_FAMILY_LABEL[device.osFamily]}</span> };
+  for (const p of parts) {
+    const tone = PART_TONE[p.status];
+    const mine = mineText(device, p.slot);
+    const why = p.status === "unknown" ? whyText(p.reason) : null;
+    cells[ROW_OF_SLOT[p.slot]] = (
+      <span className="flex min-w-0 flex-col gap-0.5">
+        {mine && (
+          <Clamp lines={1} className="min-w-0 max-w-[16rem] font-semibold text-ink">
+            {mine}
+          </Clamp>
+        )}
+        <span className={cn("flex items-center gap-1 text-[12px]", p.status === "unknown" ? "text-mut" : cn("font-bold", tone.text))}>
+          <tone.Icon size={13} className="shrink-0" />
+          {statusText(p.status)}
+          {why && <span className="font-normal text-dim-2">{why}</span>}
+        </span>
+      </span>
+    );
+  }
+  return { osFamily, label: COMPAT_MESSAGES.mineColumn, cells };
+}
+
 export function CompatSection({
   groups,
   devices,
@@ -119,7 +148,8 @@ export function CompatSection({
     //   - 부위 줄은 헤어라인 표 대신 촘촘한 세 줄 — 이름, 내 값, 결과 아이콘.
     <section aria-labelledby="compat-heading" className="flex flex-col gap-3">
       <div className="flex flex-wrap items-center gap-x-2.5 gap-y-2">
-        <span className="text-[12.5px] font-medium text-dim">{COMPAT_MESSAGES.judgedWith}</span>
+        {/* "판정 기기 | 내 PC (윈도우)" 글은 걷었다(2026-11-23 사용자 "문구 제거") — 표 머리의 "내 PC" 칸이 같은 말을 한다.
+            기기가 둘 이상이면 고르는 칩만, 기기가 없으면 안내 한 줄만 남는다 */}
         {device && all.length > 1 ? (
           <ul className="flex flex-wrap gap-1.5" aria-label={COMPAT_MESSAGES.judgedWith}>
             {all.map((d) => (
@@ -130,13 +160,9 @@ export function CompatSection({
               </li>
             ))}
           </ul>
-        ) : device ? (
-          <span className="text-[13px] font-bold text-ink">
-            {device.label} <span className="font-medium text-mut">({OS_FAMILY_LABEL[device.osFamily]})</span>
-          </span>
-        ) : (
+        ) : !device ? (
           <span className="text-[13px] text-mut">{COMPAT_MESSAGES.noDevice}</span>
-        )}
+        ) : null}
         <button
           type="button"
           aria-haspopup="dialog"
@@ -153,47 +179,20 @@ export function CompatSection({
         <p className="text-[13px] leading-[1.7] text-mut">{nativeNote(platforms, device.osFamily)}</p>
       )}
 
+      {/* 사양표와 판정을 한 표로(2026-11-23 사용자 "내 PC 구동 확인, 구동 사양을 합쳐서"). 표 맨 오른쪽 "내 PC" 칸에 내 값과 충족 여부가 같은 줄로 선다.
+          전에는 판정(내 값, 결과)과 사양표(요구값)가 좌우 두 기둥이라 같은 부품을 두 자리에서 오가며 견줬다 */}
+      <RequirementsBody groups={groups} mine={device && verdict && group ? mineColumn(device, device.osFamily, verdict.parts) : undefined} />
+
       {device && verdict && (
-        <>
-          {/* 결론 알약("최소 사양에 못 미쳐요")과 병목 한 줄은 걷었다(2026-11-23 사용자 "제거") — 마디 제목 옆 한 마디(VerdictNote)가
-              같은 결론을 접힌 채로도 말한다. 여기는 부위별 결과만 */}
-          {/* 요구값은 옆 기둥 사양표가 적는다(2026-09-22 사용자 "최소는 나올 필요 없고 내 기기 정보") — 여기는 내 값과 결과만 */}
-          <ul className="flex flex-col gap-1">
-            {verdict.parts.map((p) => {
-              const partTone = PART_TONE[p.status];
-              const mine = mineText(device, p.slot);
-              const why = p.status === "unknown" ? whyText(p.reason) : null;
-              return (
-                <li key={p.slot} className="grid grid-cols-[64px_minmax(0,1fr)_auto] items-center gap-2.5 text-[13px] leading-[1.6]">
-                  <span className="text-dim">{VERDICT_PART_LABEL[p.slot]}</span>
-                  <span className="flex min-w-0 items-baseline gap-2">
-                    {/* 내 부품 이름은 길다("AMD Ryzen 7 5800X3D") — 한 줄로 자르고 잘렸을 때만 말풍선이 붙는다 */}
-                    {mine && (
-                      <Clamp lines={1} className="min-w-0 text-ink-2">
-                        {mine}
-                      </Clamp>
-                    )}
-                    {why && <span className="shrink-0 text-[11.5px] text-dim-2">{why}</span>}
-                  </span>
-                  <span className={cn("flex shrink-0 items-center gap-1 text-[12.5px]", p.status === "unknown" ? "text-mut" : cn("font-bold", partTone.text))}>
-                    <partTone.Icon size={14} className="shrink-0" />
-                    {statusText(p.status)}
-                  </span>
-                </li>
-              );
-            })}
-          </ul>
-          {/* 면책이 아니라 기준이다(messages 의 basis 주석) */}
-          {/* 문장이 아니라 "이름: 값" 두 줄(2026-11-23 사용자 "문구가 아니라 타이틀: 값 이런 식으로") */}
-          <dl className="flex flex-col gap-0.5 text-[11.5px] leading-[1.6]">
-            {COMPAT_MESSAGES.basis.map((b) => (
-              <div key={b.label} className="flex gap-1.5">
-                <dt className="shrink-0 font-semibold text-mut">{b.label}:</dt>
-                <dd className="text-dim">{b.value}</dd>
-              </div>
-            ))}
-          </dl>
-        </>
+        // 면책이 아니라 기준이다(messages 의 basis 주석). 문장이 아니라 "이름: 값" 두 줄(2026-11-23 사용자)
+        <dl className="flex flex-col gap-0.5 text-[11.5px] leading-[1.6]">
+          {COMPAT_MESSAGES.basis.map((b) => (
+            <div key={b.label} className="flex gap-1.5">
+              <dt className="shrink-0 font-semibold text-mut">{b.label}:</dt>
+              <dd className="text-dim">{b.value}</dd>
+            </div>
+          ))}
+        </dl>
       )}
 
       <DeviceSheet

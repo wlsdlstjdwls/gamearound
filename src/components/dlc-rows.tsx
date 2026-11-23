@@ -38,10 +38,16 @@ export function DlcRows({ rows, inSheet = false, showPlatform = true }: { rows: 
             </Clamp>
             <span className="sr-only">(새 창에서 열림)</span>
             <span className="flex shrink-0 items-baseline gap-3 text-[12.5px]">
-              {/* 할인율은 브랜드색이다 — 빨강은 이 화면에서 "마감 임박" 이 이미 쓰고 있다 */}
-              {best?.discountPct ? <span className="font-bold text-acc">-{best.discountPct}%</span> : null}
+              {/* 할인율은 빨강, 그 뒤 할인가, 그 뒤 취소선 정가(2026-11-23 사용자 "추가 콘텐츠 팝업에서 할인율은 빨간색, 원가, 할인가 표기도") —
+                  가격 비교 카드, 목록 카드와 같은 순서와 색이다 */}
+              {best?.discountPct ? <span className="font-extrabold text-danger tabular-nums">-{best.discountPct}%</span> : null}
               {best ? (
-                <span className="text-[15px] font-extrabold tracking-[-0.03em] text-ink">{formatPrice(best.currentPrice, best.currency)}</span>
+                <span className="flex items-baseline gap-1.5">
+                  <span className="text-[15px] font-extrabold tracking-[-0.03em] text-ink">{formatPrice(best.currentPrice, best.currency)}</span>
+                  {best.discountPct && best.listPrice !== null && best.listPrice !== best.currentPrice ? (
+                    <span className="text-[12px] text-dim-2 line-through">{formatPrice(best.listPrice, best.currency)}</span>
+                  ) : null}
+                </span>
               ) : dlc.uncheckedPlatforms.length > 0 ? (
                 // 있다는 것만 아는 줄. 값 자리를 비워 두면 공짜나 고장으로 읽힌다 — 확인 전이라고 말한다
                 <span className="text-[12.5px] text-dim">{GAME_MESSAGES.dlcPriceUnchecked}</span>
