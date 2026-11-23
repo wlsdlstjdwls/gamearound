@@ -20,6 +20,10 @@
 //      글자를 치는 순간 사라졌다.
 // **2026-09-30** — 칩을 테두리 짝(outline)으로. 테두리 없는 칩은 회색 글자만 남아 "8GB 16GB" 가
 // 고를 칸이 아니라 바탕에 적힌 글씨로 읽혔다(사용자 지적). 칩이 몇 개 안 서는 입력 자리라 기둥의 소음 사정이 없다.
+// **2026-11-23 — 안내 문장을 하나로 줄였다(사용자 "영역 정리좀").** 칸 밑 주의(cpuHint, gpuHint), 감지 단추 밑 메모리 사정,
+// 맨 아래 로그인 권유까지 회색 문장 다섯 줄이 칸보다 길었다. 남긴 것은 맨 위 한 줄(무엇이 채워졌고 무엇을 적을지)뿐이다.
+// 칸 밑 주의는 온보딩 기기 단계에서 먼저 뺐고(device-step 주석), 자세한 주의는 설정의 기기 화면이 그대로 보여 준다.
+// 칸은 두 줄 — 프로세서와 그래픽 한 줄, 메모리 한 줄. 반쪽 기둥에 셋을 나란히 두면 칸마다 주의 문구가 서너 줄로 접혔다.
 import { useMemo, useState } from "react";
 import Link from "next/link";
 import { buttonClass } from "@/components/ui/button";
@@ -34,7 +38,8 @@ import { useDetectedSpec } from "./use-detected-spec";
 import { ROUTES } from "@/lib/routes";
 import type { OsFamily } from "@/server/db/schema";
 import { saveGuestDevice, type CompatDevice } from "./guest-device";
-import { FIELD_CLASS, HINT_CLASS, LABEL_CLASS } from "./field-style";
+import { FIELD_CLASS, LABEL_CLASS } from "./field-style";
+import { cn } from "@/lib/cn";
 
 export function GuestDeviceForm({
   current,
@@ -93,6 +98,12 @@ export function GuestDeviceForm({
   return (
     <Panel className="flex flex-col gap-4 p-4">
       {lead && <p className="text-[13px] leading-[1.7] text-mut">{lead}</p>}
+      {/* 자동으로 채운 결과. 버튼은 남겨 둔다 — 감지가 실패했거나 기기를 바꾼 사람이 다시 부른다 */}
+      {autoNote && (
+        <p aria-live="polite" className="text-[12.5px] leading-[1.6] text-mut">
+          {autoNote}
+        </p>
+      )}
 
       <div>
         <span className={LABEL_CLASS}>운영체제</span>
@@ -112,7 +123,7 @@ export function GuestDeviceForm({
         </ul>
       </div>
 
-      <div className={`grid gap-3.5 ${columns ? "sm:grid-cols-3" : ""}`}>
+      <div className={`grid gap-3.5 ${columns ? "sm:grid-cols-2" : ""}`}>
         <div>
           <label className={LABEL_CLASS} htmlFor="guest-cpu">
             프로세서
@@ -122,7 +133,6 @@ export function GuestDeviceForm({
             <input {...cpuSuggest.inputProps} placeholder="Core i5 8400" className={FIELD_CLASS} />
             {cpuSuggest.popup}
           </div>
-          <p className={HINT_CLASS}>{DEVICE_MESSAGES.cpuHint}</p>
         </div>
 
         <div>
@@ -133,24 +143,23 @@ export function GuestDeviceForm({
             <input {...gpuSuggest.inputProps} placeholder="GeForce GTX 1060" className={FIELD_CLASS} />
             {gpuSuggest.popup}
           </div>
-          {/* 브라우저가 읽은 값이 게임용 그래픽이 아닐 수 있다는 사실은 이 칸 옆에서만 뜻이 있다 */}
-          <p className={HINT_CLASS}>{DEVICE_MESSAGES.gpuHint}</p>
         </div>
 
-        <div>
+        <div className={columns ? "sm:col-span-2" : undefined}>
           <label className={LABEL_CLASS} htmlFor="guest-ram">
             메모리 (GB)
           </label>
+          <div className={cn("flex flex-wrap gap-2", columns ? "sm:flex-nowrap sm:items-center" : "flex-col")}>
           <input
             id="guest-ram"
             value={ram}
             onChange={(e) => setRam(e.target.value)}
             inputMode="numeric"
             placeholder="16"
-            className={FIELD_CLASS}
+            className={cn(FIELD_CLASS, columns && "sm:w-[120px]")}
           />
-          {/* 빠른 선택 — 누르면 위 칸에 그대로 들어간다. 목록에 없는 값은 칸에 적는다 */}
-          <ul className="mt-2 flex flex-wrap gap-1.5" aria-label="메모리 빠른 선택">
+          {/* 빠른 선택 — 누르면 칸에 그대로 들어간다. 목록에 없는 값은 칸에 적는다. 넓은 자리에서는 칸 옆에 선다 */}
+          <ul className="flex flex-wrap gap-1.5" aria-label="메모리 빠른 선택">
             {RAM_QUICK_GB.map((gb) => (
               <li key={gb}>
                 <button
@@ -164,33 +173,26 @@ export function GuestDeviceForm({
               </li>
             ))}
           </ul>
+          </div>
         </div>
       </div>
 
-      {/* 자동으로 채운 결과. 버튼은 남겨 둔다 — 감지가 실패했거나 기기를 바꾼 사람이 다시 부른다 */}
-      {autoNote && (
-        <p aria-live="polite" className="text-[11.5px] leading-[1.6] text-dim">
-          {autoNote}
-        </p>
-      )}
 
-      <div className="flex flex-wrap items-center gap-2">
+      <div className="flex flex-wrap items-start gap-2">
         <button type="button" onClick={save} className={buttonClass({ variant: "accent" })}>
           {COMPAT_MESSAGES.check}
         </button>
         <DetectButton
+          quiet
           onDetected={(spec) => {
             if (spec.gpuName) setGpuPick(spec.gpuName);
             if (spec.osFamily) setOsPick(spec.osFamily);
           }}
         />
-      </div>
-
-      <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
-        <Link href={ROUTES.settingsDevices} className="text-[12.5px] text-acc hover:underline">
+        {/* 로그인 권유 문장은 뺐다 — 링크 이름이 이미 "여러 대 관리" 라 하는 일을 말한다 */}
+        <Link href={ROUTES.settingsDevices} className="ml-auto self-center text-[12.5px] text-acc hover:underline">
           {COMPAT_MESSAGES.cta}
         </Link>
-        <p className="text-[11.5px] text-dim">{DEVICE_MESSAGES.guestNote}</p>
       </div>
     </Panel>
   );

@@ -12,9 +12,12 @@ import type { OsFamily } from "@/server/db/schema";
 export function DetectButton({
   onDetected,
   size = "sm",
+  quiet = false,
 }: {
   onDetected: (spec: { gpuName: string | null; osFamily: OsFamily | null }) => void;
   size?: "sm" | "md";
+  /** 누르기 전 메모리 사정 문구를 띄우지 않는다(상세 판정 칸, 2026-11-23 안내 줄이기). 누른 뒤 결과는 그대로 말한다 */
+  quiet?: boolean;
 }) {
   const [note, setNote] = useState<string | null>(null);
 
@@ -35,7 +38,7 @@ export function DetectButton({
       </div>
       {/* 결과를 읽어 주지 않으면 화면이 조용히 바뀐 것처럼 보인다 — 어느 칸이 찼는지 말해 준다 */}
       <p aria-live="polite" className="text-[11.5px] leading-[1.6] text-dim">
-        {note ?? M.detectRamNote}
+        {note ?? (quiet ? null : M.detectRamNote)}
       </p>
     </div>
   );
