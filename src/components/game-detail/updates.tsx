@@ -12,7 +12,9 @@ import { DetailTabs } from "@/components/ui/tabs";
 import { sectionCardClass } from "@/components/ui/page";
 import { DETAIL_MESSAGES as D } from "@/lib/games/detail-messages";
 import { COMPAT_MESSAGES, GAME_MESSAGES, OS_FAMILY_LABEL } from "@/lib/games/messages";
-import { requirementSummary } from "@/lib/games/requirement-summary";
+import { requirementSummaryParts } from "@/lib/games/requirement-summary";
+import { CpuIcon, GpuIcon, MemoryIcon } from "@/components/ui/icons";
+import { tagClass } from "@/components/ui/tag";
 import type { GameDetail, getGamePatchesCached } from "@/server/services/games";
 
 /**
@@ -22,6 +24,28 @@ import type { GameDetail, getGamePatchesCached } from "@/server/services/games";
 const TAB_PATCH_LIMIT = 50;
 
 type PatchGroups = Awaited<ReturnType<typeof getGamePatchesCached>>;
+
+/** 접힌 "구동 사양" 머리의 부품 칩 — 최소(없으면 권장) 사양을 부품마다 아이콘과 함께. 아무것도 모르면 운영체제 이름만 */
+function SpecChips({ groups }: { groups: GameDetail["requirements"] }) {
+  const parts = requirementSummaryParts(groups);
+  if (!parts) return <span className="text-[13px] text-dim">{groups.map((g) => OS_FAMILY_LABEL[g.osFamily]).join(", ")}</span>;
+  const chips = [
+    { key: "cpu", Icon: CpuIcon, text: parts.cpu },
+    { key: "gpu", Icon: GpuIcon, text: parts.gpu },
+    { key: "ram", Icon: MemoryIcon, text: parts.ram },
+  ].filter((c): c is { key: string; Icon: typeof CpuIcon; text: string } => Boolean(c.text));
+  return (
+    <>
+      <span className="text-[12.5px] font-bold text-mut">{parts.tier}</span>
+      {chips.map(({ key, Icon, text }) => (
+        <span key={key} className={tagClass({ tone: "info", tight: false, className: "gap-1 text-[12px]" })}>
+          <Icon size={13} className="shrink-0 text-dim" />
+          {text}
+        </span>
+      ))}
+    </>
+  );
+}
 
 export function DetailUpdates({ game, patchGroups, upcoming }: { game: GameDetail; patchGroups: PatchGroups; upcoming: boolean }) {
   if (patchGroups.length === 0 && game.requirements.length === 0) {
@@ -63,7 +87,7 @@ export function DetailUpdates({ game, patchGroups, upcoming }: { game: GameDetai
                     </Suspense>
                   }
                   requirementTitle={GAME_MESSAGES.requirementHeading}
-                  requirementNote={requirementSummary(game.requirements) ?? game.requirements.map((g) => OS_FAMILY_LABEL[g.osFamily]).join(", ")}
+                  requirementNote={<SpecChips groups={game.requirements} />}
                   verdict={
                     <Suspense fallback={null}>
                       <CompatSlot groups={game.requirements} platforms={game.platforms} />

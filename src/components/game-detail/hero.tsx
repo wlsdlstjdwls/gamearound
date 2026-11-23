@@ -104,9 +104,9 @@ export function DetailHero({
         {(hasPlayModes || game.platforms.length > 0) && <SupportBadges game={game} className="hidden border-t border-line px-0.5 pt-2.5 md:flex" />}
       </div>
 
-      {/* 가운데 기둥은 줄 높이를 정하지 않는다(lg:h-0) — 양옆 중 높은 쪽 높이를 받아(min-h-full) 설명(FitClamp)이 남는 자리만큼만 편다.
-          세 기둥이 나란히 서는 lg 부터다. md 는 커버와 둘이라 제 높이를 그대로 쓴다 */}
-      <div className="enter-item flex min-w-0 flex-col gap-3 lg:h-0 lg:min-h-full" style={stagger(1)}>
+      {/* 가운데 기둥은 줄 높이를 정할 때 설명을 세 줄로만 친다(설명 상자의 h-0 + min-h 세 줄). 줄 높이는 세 기둥 중 가장 큰 값이고,
+          설명은 남는 높이만큼 편다(FitClamp). 처음엔 기둥 통째로 h-0 을 줬다가 설명이 한두 줄 높이로 눌려 점수 칸을 덮었다(2026-11-23 사용자 "겹친다") */}
+      <div className="enter-item flex min-w-0 flex-col gap-3" style={stagger(1)}>
         {/* 지원 플랫폼 이름 줄(목업 .plats). 누르면 그 플랫폼 카드로 미끄러져 내려가 카드가 잠깐 빛난다(platform-jump) */}
         {/* 지원 플랫폼 배지(2026-11-16 사용자 "제목 위 플랫폼은 뱃지로"). 누르면 그 플랫폼 카드로 미끄러져 내려가 카드가 잠깐 빛난다(platform-jump) */}
         {(brands.length > 0 || preorder) && (
@@ -179,7 +179,7 @@ export function DetailHero({
           <FitClamp
             minLines={DESCRIPTION_MIN_LINES}
             fitQuery={DESCRIPTION_FIT_QUERY}
-            boxClassName="min-h-[4.8em] text-[14px] md:min-h-0 md:flex-1"
+            boxClassName="min-h-[4.8em] text-[14px] md:h-0 md:flex-1"
             className="max-w-[620px] text-[14px] leading-[1.6] text-mut"
           >
             {game.description}

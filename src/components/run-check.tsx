@@ -15,7 +15,7 @@
 // 좁은 화면(lg 아래)에서는 기둥이 하나라 오른쪽 제목을 요약 줄에서 뺀다 — 거기 두면 제목 둘이
 // 붙어 선 뒤 본문 둘이 이어져, 둘째 제목이 제 본문에서 화면 하나만큼 떨어진다.
 // 대신 그 제목을 오른쪽 본문 바로 위에 세운다.
-import { ChevronDownIcon } from "@/components/ui/icons";
+import { DisclosureToggle } from "@/components/ui/collapsible";
 import { SECTION_SIZE } from "@/components/ui/page";
 import { cn } from "@/lib/cn";
 
@@ -26,15 +26,21 @@ import { cn } from "@/lib/cn";
  */
 const GRID = "grid min-w-0 items-start gap-x-8 gap-y-6 lg:grid-cols-[300px_minmax(0,1fr)]";
 
+/**
+ * 접힌 머리(2026-11-23 사용자 "접었을 때 공백이 너무 많다"): 펼친 때의 두 기둥 격자를 접힌 때에도 쓰니 왼쪽 300px 칸 끝과 오른쪽 사이가 텅 비었다.
+ * 접히면 한 줄로 붙여 흘리고(flex), 펼치면 본문 두 기둥과 같은 격자로 선다(group-open:grid). 여닫기 단추도 흐름 안 맨 끝이다
+ */
+const HEAD = "flex min-w-0 flex-wrap items-center gap-x-8 gap-y-2 group-open:grid group-open:items-start lg:group-open:grid-cols-[300px_minmax(0,1fr)_auto]";
+
 function Title({ id, title, note }: { id: string; title: string; note?: React.ReactNode }) {
   return (
     // 제목과 곁말은 한 줄이다(2026-11-23 사용자 "충족/미충족 뱃지가 줄바꿈된다") — 곁말은 접지 않고, 넘치면 제목 쪽이 줄어든다
-    <span className="flex min-w-0 flex-nowrap items-baseline gap-x-2.5">
+    <span className="flex min-w-0 flex-nowrap items-center gap-x-2.5">
       {/* summary 안이라 h2 를 쓴다 — 마디 제목의 격은 다른 마디와 같아야 한다(SECTION_SIZE) */}
       <h2 id={id} className={SECTION_SIZE.section}>
         {title}
       </h2>
-      {note && <span className="shrink-0 whitespace-nowrap text-[13px] text-dim">{note}</span>}
+      {note && <span className="flex shrink-0 items-center whitespace-nowrap text-[13px] text-dim">{note}</span>}
     </span>
   );
 }
@@ -54,7 +60,7 @@ export function RunCheck({
   verdictNote?: React.ReactNode;
   requirementTitle: string;
   /** 제목 옆 회색 문구(어느 OS 사양이 있는지). 접힌 상태에서 "안에 뭐가 있나" 를 말하는 자리다 */
-  requirementNote?: string;
+  requirementNote?: React.ReactNode;
   verdict: React.ReactNode;
   requirements: React.ReactNode;
   /** 두 기둥 아래 폭 전체에 서는 덧붙임(플랫폼별 성능). 마디와 함께 접힌다(2026-11-23 사용자 "접으면 플랫폼별 성능은 여전히 보인다") */
@@ -64,19 +70,19 @@ export function RunCheck({
   return (
     <details open={defaultOpen} className="disclosure group flex flex-col">
       {/* list-none 둘 다 필요하다 — 사파리는 ::-webkit-details-marker 로만 세모를 지운다(Collapsible 과 같은 규칙) */}
-      <summary className="tap relative -mx-2.5 block cursor-pointer list-none rounded-[var(--radius-sm)] px-2.5 py-2 transition-colors duration-base hover:bg-surface-2 [&::-webkit-details-marker]:hidden">
-        <span className={GRID}>
+      <summary className="tap -mx-2.5 block cursor-pointer list-none rounded-[var(--radius-sm)] px-2.5 py-2 transition-colors duration-base hover:bg-surface-2 [&::-webkit-details-marker]:hidden">
+        <span className={HEAD}>
           <Title id="compat-heading" title={verdictTitle} note={verdictNote} />
-          {/* pr-9 는 세모와 글자가 겹치지 않게 띄우는 값이다. 칸의 폭은 안 바뀌므로 본문과 계속 맞는다 */}
-          <span className="hidden pr-9 lg:block">
-            <Title id="requirements-heading" title={requirementTitle} note={requirementNote} />
+          {/* 사양 요약(부품 칩)은 접혔을 때만 — 펴면 바로 아래 표가 같은 값을 다 적는다 */}
+          <span className="hidden min-w-0 lg:block">
+            <span className="flex min-w-0 flex-wrap items-center gap-x-2.5 gap-y-1.5">
+              <h2 id="requirements-heading" className={SECTION_SIZE.section}>
+                {requirementTitle}
+              </h2>
+              {requirementNote && <span className="flex min-w-0 flex-wrap items-center gap-1.5 group-open:hidden">{requirementNote}</span>}
+            </span>
           </span>
-        </span>
-        <span
-          aria-hidden
-          className="absolute right-2.5 top-2 grid size-7 shrink-0 place-items-center rounded-full border border-line-strong bg-surface-2 text-mut transition-colors duration-base group-open:bg-transparent group-open:text-dim"
-        >
-          <ChevronDownIcon className="size-4 transition-transform duration-base group-open:rotate-180" />
+          <DisclosureToggle className="ml-auto group-open:ml-0 group-open:justify-self-end" />
         </span>
       </summary>
 
@@ -86,7 +92,7 @@ export function RunCheck({
         <div className="min-w-0">{verdict}</div>
         <div className="flex min-w-0 flex-col gap-3.5">
           <div className="lg:hidden">
-            <Title id="requirements-heading-narrow" title={requirementTitle} note={requirementNote} />
+            <Title id="requirements-heading-narrow" title={requirementTitle} />
           </div>
           {requirements}
         </div>

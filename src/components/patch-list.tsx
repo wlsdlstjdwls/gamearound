@@ -13,7 +13,9 @@ import { useEffect, useState } from "react";
 import { ROUTES } from "@/lib/routes";
 import { Clamp } from "@/components/ui/tooltip";
 import { Sheet } from "@/components/ui/sheet";
-import { GameLoader } from "@/components/ui/game-loader";
+import { FloatingIcon } from "@/components/ui/floating-icon";
+import { FileTextIcon, SpinnerIcon } from "@/components/ui/icons";
+import { buttonClass } from "@/components/ui/button";
 import { PatchBody } from "@/components/patch-body";
 import { ROWS } from "@/components/ui/page";
 import { formatDate, platformLabel } from "@/lib/format";
@@ -64,7 +66,29 @@ type Remote = { state: "loading" } | { state: "done"; bodyEn: string | null };
  * 본문을 쌓아 두지 않은 글(번역 단계가 고르지 않은 대부분)의 원문을 연 순간 받는다(api/games/patch-body, 2026-11-23 사용자
  * "영어 본문을 보여 주면 되잖아"). 기다리는 동안 한 줄만 서고, 못 받으면(오래된 글, 스팀 실패) 요약이나 안내 한 줄로 끝난다.
  */
-function RemoteBody({ id, fallback }: { id: string; fallback: string | null }) {
+/**
+ * 본문을 못 받았을 때(오래돼 스팀 목록에서 빠진 글, 스팀 실패) — 팝업 가운데 물결 아이콘, 한 줄, 원문으로 가는 단추(2026-11-23 사용자
+ * "없으면 없다고 가운데 문구랑 모션 아이콘, 버튼으로 원문 이동"). 옛 요약(summaryKo)이 있으면 안내 대신 그 요약을 보인다
+ */
+function NoBody({ url, fallback }: { url: string | null; fallback: string | null }) {
+  if (fallback) return <p className="text-[13.5px] leading-[1.7] text-mut">{fallback}</p>;
+  return (
+    <div className="flex flex-1 flex-col items-center justify-center gap-3 text-center">
+      <FloatingIcon>
+        <FileTextIcon size={20} />
+      </FloatingIcon>
+      <p className="text-[14px] font-bold text-mut">{M.noBody}</p>
+      {url && (
+        <a href={url} target="_blank" rel="noopener noreferrer" className={buttonClass({ variant: "secondary", size: "sm" })}>
+          {M.openOriginalButton}
+          <span className="sr-only">{" (새 창에서 열림)"}</span>
+        </a>
+      )}
+    </div>
+  );
+}
+
+function RemoteBody({ id, url, fallback }: { id: string; url: string | null; fallback: string | null }) {
   const [remote, setRemote] = useState<Remote>({ state: "loading" });
   useEffect(() => {
     const ctrl = new AbortController();
@@ -76,10 +100,17 @@ function RemoteBody({ id, fallback }: { id: string; fallback: string | null }) {
       });
     return () => ctrl.abort();
   }, [id]);
-  // 기다림은 글자 대신 로딩바(ui/game-loader, 2026-11-23 사용자 "불러오는 중이에요 치우고 로딩바로")
-  if (remote.state === "loading") return <GameLoader className="my-auto self-center" />;
+  // 기다림은 가운데 도는 원 하나(2026-11-23 사용자: 글자 대신 로딩 표시, 손전등 막대 말고 동그라미). 낭독기에는 role=status 로 알린다
+  if (remote.state === "loading") {
+    return (
+      <div role="status" className="flex flex-1 items-center justify-center text-mut">
+        <SpinnerIcon size={28} className="animate-spin" />
+        <span className="sr-only">{M.loadingSr}</span>
+      </div>
+    );
+  }
   if (remote.bodyEn) return <PatchBody bodyKo={null} bodyEn={remote.bodyEn} />;
-  return <p className="text-[13.5px] leading-[1.7] text-mut">{fallback ?? M.noBody}</p>;
+  return <NoBody url={url} fallback={fallback} />;
 }
 
 export function PatchList({ items, showPlatform = false }: { items: Item[]; showPlatform?: boolean }) {
@@ -128,7 +159,7 @@ export function PatchList({ items, showPlatform = false }: { items: Item[]; show
             {opened.bodyKo !== null || opened.bodyEn !== null ? (
               <PatchBody key={opened.id} bodyKo={opened.bodyKo} bodyEn={opened.bodyEn} />
             ) : (
-              <RemoteBody key={opened.id} id={opened.id} fallback={opened.summaryKo} />
+              <RemoteBody key={opened.id} id={opened.id} url={opened.url} fallback={opened.summaryKo} />
             )}
           </div>
         )}

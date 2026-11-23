@@ -10,6 +10,30 @@ import { ChevronDownIcon } from "@/components/ui/icons";
 import { SECTION_SIZE, type SectionSize } from "@/components/ui/page";
 import { cn } from "@/lib/cn";
 
+/**
+ * 여닫기 단추 — 테두리 알약에 "펼치기" / "접기" 글자와 세모(2026-11-23 사용자 "접었다 펼치는 버튼 UI/UX 개선").
+ * 전에는 동그란 테두리 안 세모뿐이라 누르는 곳인지, 지금 어느 상태인지가 안 읽혔다. 글자는 details 의 열림(group-open)을 CSS 로 읽어
+ * 둘 중 하나만 보인다 — 서버 컴포넌트로 남는다. summary 전체가 눌리는 자리이고 이 단추는 그 표시다(aria-hidden, 상태는 details 가 알린다)
+ */
+export function DisclosureToggle({ className }: { className?: string }) {
+  return (
+    <span
+      aria-hidden
+      className={cn(
+        "inline-flex h-8 shrink-0 items-center gap-1 rounded-full px-3 text-[12.5px] font-semibold text-mut ring-1 ring-line-strong ring-inset transition-colors duration-base group-hover:text-ink",
+        className,
+      )}
+    >
+      <span className="group-open:hidden">{DISCLOSURE_LABEL.open}</span>
+      <span className="hidden group-open:inline">{DISCLOSURE_LABEL.close}</span>
+      <ChevronDownIcon className="size-4 transition-transform duration-base group-open:rotate-180" />
+    </span>
+  );
+}
+
+/** 여닫기 단추 글자 */
+const DISCLOSURE_LABEL = { open: "펼치기", close: "접기" } as const;
+
 export function Collapsible({
   id,
   title,
@@ -49,12 +73,7 @@ export function Collapsible({
           </h2>
           {note && <span className="text-[13px] text-dim">{note}</span>}
         </span>
-        <span
-          aria-hidden
-          className="grid size-7 shrink-0 place-items-center rounded-full border border-line-strong bg-surface-2 text-mut transition-colors duration-base group-open:bg-transparent group-open:text-dim"
-        >
-          <ChevronDownIcon className="size-4 transition-transform duration-base group-open:rotate-180" />
-        </span>
+        <DisclosureToggle />
       </summary>
       <div className="pt-3.5">{children}</div>
     </details>

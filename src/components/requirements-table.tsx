@@ -56,11 +56,18 @@ function OsTable({ group, showTitle }: { group: RequirementGroupDto; showTitle: 
                 <th scope="row" className="py-2 pr-3 font-medium text-dim">
                   {REQUIREMENT_ROW_LABEL[row.key]}
                 </th>
-                {row.values.map((v, i) => (
-                  <td key={tiers[i].tier} className="py-2 pr-3 leading-[1.6] text-mut">
-                    {v}
+                {/* 최소와 권장이 같은 값이면 한 칸으로 합친다(2026-11-23 사용자 "동일한 값일 때는 통일해서") — 같은 글자 두 번이 표를 길게 했다 */}
+                {row.values.length === 2 && row.values[0] === row.values[1] ? (
+                  <td colSpan={2} className="py-2 pr-3 leading-[1.6] text-mut">
+                    {row.values[0]}
                   </td>
-                ))}
+                ) : (
+                  row.values.map((v, i) => (
+                    <td key={tiers[i].tier} className="py-2 pr-3 leading-[1.6] text-mut">
+                      {v}
+                    </td>
+                  ))
+                )}
               </tr>
             ))}
           </tbody>

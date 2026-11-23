@@ -35,6 +35,17 @@ function pickGroup(groups: RequirementSummaryInput[]): RequirementSummaryInput |
  * 최소 사양 한 줄. 최소가 없으면 권장으로 대신한다(스토어가 하나만 적는 게임이 있다) —
  * 그때는 "권장" 이라고 말해야 한다. 아는 것이 하나도 없으면 null 이고 제목 옆은 비운다.
  */
+export type RequirementSummaryParts = { tier: "최소" | "권장"; cpu: string | null; gpu: string | null; ram: string | null };
+
+/** 접힌 머리의 부품 칩(2026-11-23 사용자 "구동 사양 오른쪽 한 줄이 보기 어렵다") — "|" 로 이은 한 줄 대신 부품마다 칩 하나 */
+export function requirementSummaryParts(groups: RequirementSummaryInput[]): RequirementSummaryParts | null {
+  const group = pickGroup(groups);
+  const spec = group ? group.minimum ?? group.recommended : null;
+  if (!group || !spec) return null;
+  const parts = { tier: group.minimum ? ("최소" as const) : ("권장" as const), cpu: firstCandidate(spec.cpuText), gpu: firstCandidate(spec.gpuText), ram: spec.ramMb ? formatSizeMb(spec.ramMb) : null };
+  return parts.cpu || parts.gpu || parts.ram ? parts : null;
+}
+
 export function requirementSummary(groups: RequirementSummaryInput[]): string | null {
   const group = pickGroup(groups);
   if (!group) return null;
