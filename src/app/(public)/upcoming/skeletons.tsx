@@ -21,7 +21,6 @@ export function UpcomingHeadSkeleton() {
   return (
     <div aria-hidden className="hidden sm:flex sm:flex-wrap sm:items-end sm:justify-between sm:gap-4">
       <div className="flex flex-col gap-1.5">
-        <Bone className="h-[45px] w-28" />
         <Bone className="h-[21px] w-64" />
       </div>
       <div className="flex gap-1.5">

@@ -69,7 +69,7 @@ export function PageHeadSkeleton({
   desc?: number;
   /** 오른쪽 끝 단추 자리의 폭 클래스 */
   action?: string;
-  /** 실물 PageHead 의 menuScreen — 좁은 화면에서 제목 자리를 걷는다(단추가 없으면 줄째) */
+  /** 실물 PageHead 의 menuScreen — 모든 폭에서 제목 자리를 걷는다(단추와 설명이 없으면 줄째) */
   menuScreen?: boolean;
   /**
    * 실물 PageHead 의 leadRow — 좁은 화면에서 설명 한 줄과 단추(head 크기 36px)가 한 줄에 선다.
@@ -86,20 +86,28 @@ export function PageHeadSkeleton({
 }) {
   const inline = menuScreen && leadRow && Boolean(action) && desc > 0;
   return (
-    <div className={cn("flex flex-col gap-2.5", menuScreen && !action && (desc === 0 || !phoneDesc) && "max-sm:hidden", inline && "max-sm:flex-row max-sm:items-start max-sm:gap-3")}>
+    // 메뉴 화면은 모든 폭에서 제목 자리를 걷는다(실물 PageHead 의 menuScreen, 2026-11-23). 설명을 휴대폰에서만 숨긴 화면(phoneDesc=false)은 그 폭에서 머리째 걷는다
+    <div
+      className={cn(
+        "flex flex-col gap-2.5",
+        menuScreen && !action && desc === 0 && "hidden",
+        menuScreen && !action && !phoneDesc && "max-sm:hidden",
+        inline && "flex-row items-start gap-3",
+      )}
+    >
       <div
         className={cn(
           "flex items-center justify-between gap-4",
-          menuScreen && !action && "max-sm:hidden",
-          menuScreen && action && !inline && "max-sm:justify-end",
-          inline && "max-sm:contents",
+          menuScreen && !action && "hidden",
+          menuScreen && action && !inline && "justify-end",
+          inline && "contents",
         )}
       >
-        <Bone className={cn(size === "hero" ? "h-[33px] sm:h-[43px]" : "h-[30px] sm:h-[37px]", width, "max-w-full", menuScreen && "max-sm:hidden")} />
-        {action && <Bone className={cn("rounded-[9px]", inline ? "h-9 max-sm:order-last max-sm:shrink-0 sm:h-10" : "h-9", action)} />}
+        <Bone className={cn(size === "hero" ? "h-[33px] sm:h-[43px]" : "h-[30px] sm:h-[37px]", width, "max-w-full", menuScreen && "hidden")} />
+        {action && <Bone className={cn("rounded-[9px]", inline ? "h-9 order-last shrink-0 sm:h-10" : "h-9", action)} />}
       </div>
       {inline ? (
-        <div className="flex min-w-0 flex-col max-sm:flex-1 max-sm:pt-[7px]">
+        <div className="flex min-w-0 flex-1 flex-col pt-[7px]">
           {/* 좁은 화면: 22px 줄마다 막대 하나. 넓은 화면: 한 줄 24px */}
           {Array.from({ length: leadLines }).map((_, i) => (
             <span key={i} className={cn("flex h-[22px] items-center sm:h-6", i > 0 && "sm:hidden")}>

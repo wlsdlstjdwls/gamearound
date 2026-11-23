@@ -47,13 +47,15 @@ type NavChipProps = Omit<ComponentProps<typeof Link>, "className" | "href" | "on
   className?: string;
   compact?: boolean;
   outline?: boolean;
+  /** 고른 칩을 먹색 면으로(chipClass 의 ink) */
+  ink?: boolean;
   /** 쪽 번호처럼 문서 맨 위로 가야 하는 이동. 거르는 칩은 제자리(false) */
   scroll?: boolean;
   /** aria-current 값. 쪽 번호는 "page", 나머지는 "true" */
   current?: "page" | "true";
 };
 
-export function NavChip({ href, group, active = false, size, className, compact, outline, scroll = false, current = "true", children, ...rest }: NavChipProps) {
+export function NavChip({ href, group, active = false, size, className, compact, outline, ink, scroll = false, current = "true", children, ...rest }: NavChipProps) {
   const scope = useContext(ScopeContext);
   const mine = scope?.picked?.group === group;
   const on = mine ? scope?.picked?.href === href : active;
@@ -67,7 +69,7 @@ export function NavChip({ href, group, active = false, size, className, compact,
         e.preventDefault();
         scope.go(group, href, scroll);
       }}
-      className={chipClass({ active: on, size, className, compact, outline })}
+      className={chipClass({ active: on, size, className, compact, outline, ink })}
       {...rest}
     >
       {children}

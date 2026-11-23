@@ -62,16 +62,11 @@ export function FiltersSkeleton({ filter }: { filter: GamesQuery }) {
 }
 
 /**
- * 목록 머리 뼈대 셋 — 제목, 필터 막대, 결과 수 줄. loading.tsx(다른 화면에서 들어올 때)와 페이지 안 Suspense 가 같이 쓴다.
+ * 목록 머리 뼈대 둘 — 필터 막대, 결과 수 줄(제목은 모든 폭에서 감춘다, PageHead menuScreen 2026-11-23). loading.tsx(다른 화면에서 들어올 때)와 페이지 안 Suspense 가 같이 쓴다.
  * 높이는 2026-11-11 실물을 폭마다 잰 값이다(390 휴대폰, 640, 768, 1024, 1280, 1440). 전에는 막대 한 덩어리 118px 에 결과 수 줄이 없어
  * 휴대폰에서는 막대(검색, 셀렉트 둘, 정렬 164 + 장르 칩 두 줄 96)가 올 때 목록이 150px 넘게 밀렸다(사용자 "스켈레톤이랑 실제 화면이 다르던데").
  *   막대: 좁은 화면 164(칸이 세 줄), sm 112(두 줄), lg 64(한 줄). 칩 줄: 손가락 크기 칩이 두 줄인 좁은 화면 96, 그 위 33
  */
-export function ListTitleSkeleton() {
-  // 좁은 화면은 제목을 감춘다(PageHead menuScreen) — 뼈대도 그 폭에서 걷는다
-  return <div aria-hidden className="skeleton h-7 w-36 rounded-lg max-sm:hidden sm:h-8" />;
-}
-
 /** chips: "요즘 많이 찾는 장르" 줄까지. 출시 예정 막대는 그 줄을 걷었다(upcoming/page) */
 /**
  * 목록 위 필터 막대(game-filters/constants 의 FILTER_*). 전체 게임, 할인 게임, 출시 예정이 같은 모양이다.

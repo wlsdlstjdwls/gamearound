@@ -5,14 +5,13 @@
 import { GameGridSkeleton } from "@/components/game-card-skeleton";
 import { SkeletonPage } from "@/components/ui/skeleton";
 import { HOME_GRID_CLASS } from "@/lib/games/grid";
-import { FilterBarSkeleton, ListTitleSkeleton, ResultCountSkeleton } from "./skeletons";
+import { FilterBarSkeleton, ResultCountSkeleton } from "./skeletons";
 
 const SKELETON_CARDS = 12; // 1, 2, 3, 4열 모두 줄이 꽉 차는 수 — 실물 한 장(GAMES_PAGE_SIZE 24)의 첫 화면만 채우면 된다
 
 export default function GamesLoading() {
   return (
     <SkeletonPage gap={18}>
-      <ListTitleSkeleton />
       <FilterBarSkeleton />
       <div className="flex flex-col gap-6">
         <ResultCountSkeleton />

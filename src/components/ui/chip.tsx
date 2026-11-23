@@ -59,6 +59,8 @@ const IDLE = "text-mut hover:bg-surface-2 hover:text-ink";
  * 그래서 이 모드에서만 헤어라인을 준다. 고른 칩에도 같은 두께의 테두리를 둘러야 두 상태의 높이가
  * 1px 씩 어긋나지 않는다 — cn 은 단순 이어붙이기라 나중 클래스가 이기지 않는다(lib/cn).
  */
+const ACTIVE_INK = "bg-ink font-semibold text-on-ink hover:opacity-90";
+const ACTIVE_OUTLINE_INK = "border border-ink bg-ink font-semibold text-on-ink hover:opacity-90";
 const ACTIVE_OUTLINE = "border border-acc bg-acc font-semibold text-on-ink hover:bg-acc-hover";
 const IDLE_OUTLINE = "border border-line-strong bg-surface text-ink shadow-hair hover:border-ink hover:bg-surface-2";
 
@@ -68,8 +70,8 @@ const IDLE_OUTLINE = "border border-line-strong bg-surface text-ink shadow-hair 
  * cn 은 클래스를 합치기만 하고 겹친 것을 지우지 않는다. IDLE 의 hover:bg-surface-2 와 덮어쓴
  * hover:bg-acc-hover 가 둘 다 남아 CSS 순서로 밝은 면이 이겼고, 그 위에 흰 글자가 섰다.
  */
-export function chipClass(opts: { active?: boolean; filled?: boolean; size?: ChipSize; className?: string; compact?: boolean; outline?: boolean } = {}): string {
-  const { active = false, filled = false, size = "md", className, compact = true, outline = false } = opts;
+export function chipClass(opts: { active?: boolean; filled?: boolean; size?: ChipSize; className?: string; compact?: boolean; outline?: boolean; square?: boolean; ink?: boolean } = {}): string {
+  const { active = false, filled = false, size = "md", className, compact = true, outline = false, square = false, ink = false } = opts;
   const on = active || filled;
   return cn(
     // tap: 손가락 기기에서만 최소 높이를 44px 로 올린다(globals.css). 칩은 12~13px 글자라
@@ -79,10 +81,13 @@ export function chipClass(opts: { active?: boolean; filled?: boolean; size?: Chi
     // 2026-11-20 부터 compact 가 기본이다(사용자 "모바일 뱃지들이 위아래 공백이 많은듯", 같은 날 "장르 뱃지 뭉툭").
     // 상자째 44px 로 키우면 12~13px 글자 위아래로 6~7px 씩 빈 면이 생겨 휴대폰에서만 알약이 부풀었다.
     // 상자를 키워야 하는 자리가 생기면 compact={false} 를 넘긴다
-    "press inline-flex items-center rounded-full transition-colors duration-base",
+    // square: 알약 대신 각진 네모(2026-11-23 사용자 "요즘 많이 찾는 장르 뱃지도 각지게", 게임 카드와 같은 날). cn 은 겹친 모서리를 못 걸러 둘 중 하나만 넣는다
+    "press inline-flex items-center transition-colors duration-base",
+    square ? "rounded-[var(--radius-xs)]" : "rounded-full",
     compact ? "tap-inset" : "tap",
     SIZE[size],
-    outline ? (on ? ACTIVE_OUTLINE : IDLE_OUTLINE) : on ? ACTIVE : IDLE,
+    // ink: 고른 칩을 파랑 대신 먹색 면으로(2026-11-23 사용자 "내 활동, 찜 목록 화면 파란색 줄이자") — 계정 화면들의 탭, 정렬 칩
+    outline ? (on ? (ink ? ACTIVE_OUTLINE_INK : ACTIVE_OUTLINE) : IDLE_OUTLINE) : on ? (ink ? ACTIVE_INK : ACTIVE) : IDLE,
     className,
   );
 }

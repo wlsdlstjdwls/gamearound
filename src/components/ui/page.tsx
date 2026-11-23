@@ -193,7 +193,8 @@ export function PageHead({
    */
   hideTitle?: boolean;
   /**
-   * 메뉴 띠(sub-nav)의 칸 화면이다 — 좁은 화면에서만 제목을 감춘다(2026-11-20 사용자 "모바일에서 각 상단 타이틀은 다 빼자, 메뉴로 표현 되니까").
+   * 메뉴 띠(sub-nav)의 칸 화면이다 — 제목을 감춘다. 처음엔 좁은 화면에서만이었다(2026-11-20 사용자 "모바일에서 각 상단 타이틀은 다 빼자, 메뉴로 표현 되니까"),
+   * 2026-11-23 사용자 "각 화면들 타이틀 지우라니까" 로 모든 폭에서 감춘다 — 넓은 화면도 머리띠 메뉴의 켜진 칸이 같은 이름을 말한다.
    * 그 폭에서는 바로 위 띠의 켜진 칸이 같은 이름을 말해 28px 제목이 첫 화면만 먹었다. hideTitle 과 같은 까닭으로 h1 은 sr-only 로 남긴다.
    * 제목 줄 껍데기는 display: contents 로 풀어 빈 줄과 그 틈(gap)이 안 남는다 — 설명 문단, 단추는 그대로 선다
    */
@@ -224,23 +225,23 @@ export function PageHead({
         "flex flex-col gap-2.5",
         // 설명 문단(children)이 있어도 좁은 화면에서는 껍데기를 푼다 — 문단을 그 폭에서 숨긴 화면(명예의 전당, 슈퍼루키, 모든 인디 게임)에
         // 빈 껍데기가 남아 페이지 틈 한 칸을 먹지 않게. 보이는 문단은 페이지의 칸으로 바로 선다(제목이 sr-only 라 위에 붙을 것이 없다)
-        menuScreen && !note && !action && "max-sm:contents",
-        inline && "max-sm:flex-row max-sm:items-start max-sm:gap-3",
+        menuScreen && !note && !action && "contents",
+        inline && "flex-row items-start gap-3",
         className,
       )}
       style={style}
     >
-      <div className={cn("flex flex-wrap items-baseline justify-between gap-x-4 gap-y-2", ((menuScreen && !note && !action) || inline) && "max-sm:contents")}>
-        <div className={cn("flex min-w-0 flex-wrap items-baseline gap-x-2.5 gap-y-1", menuScreen && !note && "max-sm:contents")}>
-          <h1 className={hideTitle ? "sr-only" : cn("font-extrabold text-ink", TITLE_SIZE[size], menuScreen && "max-sm:sr-only")}>{title}</h1>
+      <div className={cn("flex flex-wrap items-baseline justify-between gap-x-4 gap-y-2", ((menuScreen && !note && !action) || inline) && "contents")}>
+        <div className={cn("flex min-w-0 flex-wrap items-baseline gap-x-2.5 gap-y-1", menuScreen && !note && "contents")}>
+          <h1 className={hideTitle ? "sr-only" : cn("font-extrabold text-ink", TITLE_SIZE[size], menuScreen && "sr-only")}>{title}</h1>
           {note && <span className="text-[13.5px] text-mut">{note}</span>}
         </div>
         {/* justify-between 은 한 줄일 때만 오른쪽 끝을 만든다. 좁은 화면에서 줄이 갈리면
             혼자 남은 이 조각이 왼쪽에 붙어 제목 아래 들여쓴 것처럼 보였다 — ml-auto 가 두 경우를 같게 만든다 */}
-        {action && <div className={cn("ml-auto", inline && "max-sm:order-last max-sm:shrink-0")}>{action}</div>}
+        {action && <div className={cn("ml-auto", inline && "order-last shrink-0")}>{action}</div>}
       </div>
       {/* 첫 줄(22px)이 단추(36px) 가운데 높이에 오게 7px 내린다 */}
-      {inline ? <div className="min-w-0 max-sm:flex-1 max-sm:pt-[7px]">{children}</div> : children}
+      {inline ? <div className="min-w-0 flex-1 pt-[7px]">{children}</div> : children}
     </div>
   );
 }

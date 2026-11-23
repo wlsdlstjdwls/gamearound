@@ -55,6 +55,8 @@ type ChipNavLinkProps = Omit<ComponentProps<typeof Link>, "className" | "prefetc
   compact?: boolean;
   /** 안 고른 칩에도 헤어라인을 준다 — 손가락 기기의 필터 시트(chip.tsx 의 IDLE_OUTLINE 주석) */
   outline?: boolean;
+  /** 알약 대신 각진 네모(chipClass 의 square) */
+  square?: boolean;
   /**
    * 켜고 끄는 칩(무료 제외, 한국어 지원 등). 앞에 체크 네모가 서고, **누른 순간 켜짐이 바뀐다**.
    * 2026-10-12 사용자: "토글은 빨라야 한다, 조회는 좀 느려도". 주소 이동이 끝나야 active 가 바뀌니
@@ -63,7 +65,7 @@ type ChipNavLinkProps = Omit<ComponentProps<typeof Link>, "className" | "prefetc
   toggle?: boolean;
 };
 
-export function ChipNavLink({ active = false, filled = false, size, className, compact, outline, toggle = false, children, onClick, ...rest }: ChipNavLinkProps) {
+export function ChipNavLink({ active = false, filled = false, size, className, compact, outline, square, toggle = false, children, onClick, ...rest }: ChipNavLinkProps) {
   const [warm, setWarm] = useState(false);
   const warmUp = () => setWarm(true);
   const [shown, setShown] = useOptimisticToggle(active);
@@ -82,7 +84,7 @@ export function ChipNavLink({ active = false, filled = false, size, className, c
       // compact(기본값)에서는 overflow-hidden 을 걷는다 — 그 모드의 탭 범위는 칩 **밖으로** 8px 넘긴
       // 덧면이라(globals.css 의 .tap-inset) 잘라 내면 손가락 목표가 도로 칩 크기가 된다.
       // 막(PendingVeil)이 튀어나올 걱정은 없다: .chip-pending 이 border-radius 를 물려받는다
-      className={chipClass({ active: shown, filled, size, compact, outline, className: `relative ${compact === false ? "overflow-hidden" : ""} ${className ?? ""}`.trim() })}
+      className={chipClass({ active: shown, filled, size, compact, outline, square, className: `relative ${compact === false ? "overflow-hidden" : ""} ${className ?? ""}`.trim() })}
       {...rest}
     >
       {toggle && <ChipCheck on={shown} />}

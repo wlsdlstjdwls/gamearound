@@ -163,7 +163,7 @@ export function GameFilterBar({
         {/* compact: 손가락 기기에서 상자를 44px 로 키우지 않고 덧면으로 누를 범위를 준다(chipClass 주석).
             상자째 키우면 12.5px 글자에 44px 알약이 서서 뭉툭했다(2026-11-20 사용자 "장르 뱃지도 좀 너무 뭉툭") */}
         {topGenres.map((g) => (
-          <ChipNavLink key={g} {...nav(href({ genre: filter.genre === g ? undefined : g }))} outline compact active={filter.genre === g}>
+          <ChipNavLink key={g} {...nav(href({ genre: filter.genre === g ? undefined : g }))} outline compact square active={filter.genre === g}>
             {g}
           </ChipNavLink>
         ))}
@@ -171,7 +171,7 @@ export function GameFilterBar({
         <span className="flex-1" />
         {sale && (
           <HideAfter untilIso={sale.endsAt}>
-            <ChipNavLink {...nav(href({ event: filter.event === sale.key ? undefined : sale.key }))} outline compact active={filter.event === sale.key} toggle>
+            <ChipNavLink {...nav(href({ event: filter.event === sale.key ? undefined : sale.key }))} outline compact square active={filter.event === sale.key} toggle>
               {RUNNING_SALE_MESSAGES.chip(sale.name)}
               <span className="sr-only">{filter.event === sale.key ? M.toggleOn : M.toggleOff}</span>
             </ChipNavLink>
@@ -183,7 +183,7 @@ export function GameFilterBar({
             korean=1 주소는 계속 읽고, 걸려 있으면 걸린 조건 줄에서 풀린다. 되살리려면 감싼 span 을 걷는다.
             칩에 hidden 을 직접 주지 않는 이유: cn 은 겹친 display 를 지우지 않아 inline-flex 와 CSS 순서 싸움이 된다 */}
         <span className="hidden sm:contents">
-          <ChipNavLink {...nav(href({ korean: !filter.korean }))} outline compact active={Boolean(filter.korean)} toggle>
+          <ChipNavLink {...nav(href({ korean: !filter.korean }))} outline compact square active={Boolean(filter.korean)} toggle>
             {M.korean}
             <span className="sr-only">{filter.korean ? M.toggleOn : M.toggleOff}</span>
           </ChipNavLink>

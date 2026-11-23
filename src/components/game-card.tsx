@@ -15,7 +15,7 @@ import { CARD_TEXT_MARK } from "@/components/ui/text-mark";
 import type { StoreSaving } from "@/lib/games/saving";
 import { parsePlatformValues } from "@/lib/games-query";
 import { expandPlatformValues } from "@/lib/platform";
-import { DiscountBadge } from "@/components/ui/discount";
+import { DiscountText } from "@/components/ui/discount";
 import { Tag } from "@/components/ui/tag";
 import type { Platform } from "@/server/db/schema";
 import type { GameSummary } from "@/server/services/games";
@@ -93,9 +93,17 @@ export function SavingLine({ saving, className }: { saving: StoreSaving | null |
 // 센 덩어리라 값보다 먼저 읽혔다.
 // 2026-10-07(사용자 선택) 채운 면으로 되돌렸다. 카드가 이제 흰 판 위라 덩어리가 판 안에 갇히고, 연보라 바탕으로
 // 옮긴 뒤 보라 글자만으로는 숫자 둘(할인율, 값)이 같은 무게로 붙어 읽혔다. 값보다 작게 두어 "값이 주인" 은 지킨다.
-// 모양은 ui/discount 의 DiscountBadge 하나다(2026-10-27, 상세와 머리바, 찜 카드가 같이 쓴다)
-export function DiscountStamp({ pct }: { pct: number | null }) {
-  return <DiscountBadge pct={pct} />;
+// 상세, 머리바, 찜 카드의 할인율 딱지는 ui/discount 의 DiscountBadge 다 — 목록 카드만 아래처럼 글자다
+// 2026-11-23 사용자 "게임 목록에서 카드들의 할인율도 빨간색으로 표기하자니까" — 상세 가격 카드의 할인율(값 앞 빨강 글자)과 같은 꼴로 맞췄다.
+// 빨간 면 딱지는 카드마다 덩어리가 하나 더 서서 값보다 먼저 눈에 걸렸다. 글자 크기는 값(20~22px)보다 작게 두어 "값이 주인" 은 지킨다
+/** size: md 는 카드 값 줄(값 20~22px 옆), sm 은 작은 줄 안(찜 카드 기기별 값, 알림 목록) */
+export function DiscountStamp({ pct, size = "md" }: { pct: number | null; size?: "md" | "sm" }) {
+  if (!pct || pct <= 0) return null;
+  return (
+    <b className={cn("shrink-0 font-extrabold tracking-[-0.02em] text-danger tabular-nums", size === "sm" ? "text-[12px]" : "text-[17px] sm:text-[16px]")}>
+      <DiscountText pct={pct} />
+    </b>
+  );
 }
 
 /**
@@ -141,7 +149,7 @@ export const CARD_SHELL = "card-panel flex h-full flex-col gap-2 p-2 pb-3 sm:p-2
 
 /** 커버 상자. 뼈대도 같은 값을 써야 본문이 올 때 격자가 밀리지 않는다 */
 export const COVER_CLASS =
-  "relative block aspect-[460/215] w-full overflow-hidden rounded-[var(--radius-md)] bg-surface-3 shadow-hair";
+  "relative block aspect-[460/215] w-full overflow-hidden rounded-[var(--radius-cover)] bg-surface-3 shadow-hair";
 
 /**
  * 게임 카드 껍데기와 커버(2026-11-16 사용자 "이미지는 위 영역 꽉 차게", "모서리 덜 둥글게").

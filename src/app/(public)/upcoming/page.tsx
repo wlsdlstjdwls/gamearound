@@ -184,7 +184,8 @@ function UpcomingHead({ all, filter = {} }: { all: boolean; filter?: UpcomingFil
       <div className="max-sm:contents sm:flex sm:flex-col sm:gap-1.5">
         {/* 좁은 화면은 제목을 눈에서만 감춘다(2026-11-20 사용자 "모바일에서 각 상단 타이틀은 다 빼자, 메뉴로 표현 되니까") —
             바로 위 하위 메뉴 띠가 "출시 예정" 을 켜 두고 있다. h1 은 낭독기, 검색 로봇용으로 남긴다(PageHead 의 hideTitle 과 같은 이유) */}
-        <h1 className="max-sm:sr-only sm:text-[30px] sm:font-extrabold sm:tracking-[-0.03em] sm:text-ink">{M.title}</h1>
+        {/* 2026-11-23 사용자 "각 화면 타이틀 지우라니까" — 넓은 화면에서도 감춘다(PageHead menuScreen 과 같다) */}
+        <h1 className="sr-only">{M.title}</h1>
         <p className="text-[14px] text-mut max-sm:hidden">{all ? M.leadAll : M.leadMonth}</p>
       </div>
       <div role="group" aria-label={M.viewLabel} className="flex gap-1.5 max-sm:hidden">
