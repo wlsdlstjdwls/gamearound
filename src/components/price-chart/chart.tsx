@@ -59,13 +59,14 @@ const PLATFORM_TOKEN: Record<Platform, string> = {
 };
 
 /**
- * 플랫폼 고르기 칩. 고른 칩은 먹색 테두리와 굵은 글자뿐이다(2026-11-23 사용자 "탭 선택이 파란색이라 눈 아프다").
+ * 플랫폼 고르기 칩. 고른 칩은 먹색으로 채운다(2026-11-23 사용자 "탭 선택이 파란색이라 눈 아프다" 다음 "테두리만으론 눈에 안 띈다").
+ * 기간 칸도 같은 먹색 채움이다 — 파랑 없이도 고른 것이 한눈에 보인다.
  * 채운 파랑 칩이 선 색 점(플랫폼 색)을 덮어 "이 칩이 저 선" 이 흐려졌다 — 칩의 색은 점 하나가 맡는다
  */
 function pickChip(on: boolean): string {
   return chipClass({
     outline: true,
-    className: cn("shrink-0 whitespace-nowrap", on && "!bg-surface font-bold !text-ink ring-1 ring-ink ring-inset"),
+    className: cn("shrink-0 whitespace-nowrap", on && "!bg-ink font-bold !text-on-ink ring-1 ring-ink ring-inset"),
   });
 }
 
@@ -195,7 +196,7 @@ export function PriceChart({ series, head, rangeKeys }: { series: PriceSeries[];
                 onClick={() => setRangeKey(r.key)}
                 className={cn(
                   "press tap-inset h-8 rounded-lg px-3 text-[13px] tabular-nums transition-colors duration-fast",
-                  on ? "bg-surface font-semibold text-ink shadow-1" : "text-mut hover:text-ink",
+                  on ? "bg-ink font-semibold text-on-ink shadow-1" : "text-mut hover:text-ink",
                 )}
               >
                 {r.label}
